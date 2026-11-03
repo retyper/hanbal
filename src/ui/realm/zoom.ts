@@ -68,6 +68,50 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
   /** 판의 왼쪽 위가 칸 안에서 놓인 자리 — 칸보다 작으면 가운데 놓이므로 0 이 아니다 */
   const off = (): [number, number] => { const m = map(); return m === null ? [0, 0] : [m.offsetLeft, m.offsetTop] }
 
+  /**
+   * 화면에 고을이 얼마나 빽빽한가 — 보이는 칸 넓이를 보이는 고을 수로 나눈 한 변(px). 배율이 커도 땅이 넓어 고을이 많이 보이면 작다
+   * (형 11-04: "화면에 오브젝트 개수를 세어서 확대 축소에 따라 간소화를 진행하는 보더라인" · docs/realm/MAP-LOD.md)
+   */
+  function spacing(m: HTMLElement): number {
+    const mw = m.offsetWidth
+    const mh = m.offsetHeight
+    if (mw <= 0 || mh <= 0) return Infinity
+    const [ox, oy] = off()
+    const x0 = (wrap.scrollLeft - ox) / mw
+    const y0 = (wrap.scrollTop - oy) / mh
+    const x1 = x0 + wrap.clientWidth / mw
+    const y1 = y0 + wrap.clientHeight / mh
+    let n = 0
+    for (const nd of m.querySelectorAll<HTMLElement>('.nd[data-node]')) {
+      const x = parseFloat(nd.style.left) / 100
+      const y = parseFloat(nd.style.top) / 100
+      if (x >= x0 && x <= x1 && y >= y0 && y <= y1) n++
+    }
+    return n === 0 ? Infinity : Math.sqrt((wrap.clientWidth * wrap.clientHeight) / n)
+  }
+  const ZL_RANK = { far: 0, mid: 1, near: 2 } as const
+  type Zl = keyof typeof ZL_RANK
+  /** 배율로 본 단계와 빽빽함으로 본 단계 가운데 더 간소한 쪽 · 경계에서 깜빡이지 않게 지금 단계 쪽으로 mapLodHyst 만큼 끈다 */
+  function tierOf(m: HTMLElement): Zl {
+    const R = P.realm
+    const rz = z / cover()
+    // 고을이 드문 판(배우는 판·변한)은 배율로는 「멀리」만 가른다 — 가까이·중간은 빽빽함이 정한다 (처음 여는 배율에서 걷는 군사가 그대로 보이게)
+    const dense = m.dataset['dense'] !== undefined
+    const byZoom: Zl = rz >= (dense ? R.mapZoomNearAt : R.mapZoomMidAt) ? 'near' : rz >= R.mapZoomMidAt ? 'mid' : 'far'
+    const cur = (m.dataset['zl'] ?? 'mid') as Zl
+    const sp = spacing(m)
+    const h = (lim: number, tier: Zl): number => lim * (ZL_RANK[cur] >= ZL_RANK[tier] ? 1 - R.mapLodHyst : 1 + R.mapLodHyst)
+    const byDense: Zl = sp >= h(R.mapLodNearPx, 'near') ? 'near' : sp >= h(R.mapLodMidPx, 'mid') ? 'mid' : 'far'
+    return ZL_RANK[byZoom] <= ZL_RANK[byDense] ? byZoom : byDense
+  }
+  /** 단계만 다시 — 밀어서 보이는 고을이 바뀌었을 때 (배율은 그대로) */
+  function retier(): void {
+    const m = map()
+    if (m === null) return
+    const zl = tierOf(m)
+    if (m.dataset['zl'] !== zl) { m.dataset['zl'] = zl; declutterSoon(wrap) }
+  }
+
   function paintZ(): void {
     const m = map()
     if (m === null) return
@@ -79,8 +123,7 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     m.style.setProperty('--zs', String(Math.sqrt(z)))
     // 줌 단계 — 멀리(나라 이름만) · 중간(도읍·우리 고을 · 꾸밈 칩 없이) · 가까이(전부). 이름표를 보이고 감추는 건 CSS 가 이 값 하나로 한다
     // (FOCUS G · 형: "이름표가 줌과 상관없이 고정 → 멀리서 이름표만 보임" · mapview MAP_CSS 의 data-zl 규칙)
-    const rz = z / cover()
-    const zl = rz >= P.realm.mapZoomNearAt ? 'near' : rz >= P.realm.mapZoomMidAt ? 'mid' : 'far'
+    const zl = tierOf(m)
     if (m.dataset['zl'] !== zl) m.dataset['zl'] = zl
     declutterSoon(wrap) // 배율이 바뀌면 글씨가 말·숫자와 겹칠 수 있다 — 그린 뒤 비킨다
   }
@@ -131,7 +174,7 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     const m = map()
     if (m !== null) { m.style.transform = ''; m.style.transformOrigin = ''; m.style.willChange = '' }
     window.clearTimeout(panT)
-    panT = window.setTimeout(() => wrap.classList.remove('panning'), P.realm.mapPanRestMs)
+    panT = window.setTimeout(() => { wrap.classList.remove('panning'); retier() }, P.realm.mapPanRestMs) // 다 밀고 나면 보이는 고을 수로 단계를 다시
     if (g === null || g.s === 1) return
     z = clamp(z * g.s)
     paintZ()
@@ -145,7 +188,7 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
   wrap.addEventListener('scroll', () => {
     wrap.classList.add('panning')
     window.clearTimeout(panT)
-    panT = window.setTimeout(() => wrap.classList.remove('panning'), P.realm.mapPanRestMs)
+    panT = window.setTimeout(() => { wrap.classList.remove('panning'); retier() }, P.realm.mapPanRestMs) // 다 밀고 나면 보이는 고을 수로 단계를 다시
   }, { passive: true })
 
   wrap.addEventListener('wheel', (ev) => {

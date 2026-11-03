@@ -533,6 +533,17 @@ export const MAP_CSS = `
    멀리: 고을 이름 대신 나라 이름만 크게 · 중간(빽빽한 판): 도읍·우리 고을만 · 가까이: 전부. 고른 고을 · 위협받는 고을 · 칠 채비가 모인 고을(.lkeep)은 늘.
    감춘 이름은 상자가 없어 declutter 가 건너뛴다 — 단계를 바꿀 때 속성 하나만 바뀐다 */
 .map[data-zl="far"] .lb:not(.lkeep), .map[data-zl="mid"][data-dense] .lb:not(.lkeep):not(.lmid) { display: none; }
+/* 간소화 단계 (docs/realm/MAP-LOD.md · 형 11-04: "이 정도 축소되면 더 간소화") — 단계는 배율과 화면 빽빽함(zoom.ts tierOf) 가운데 간소한 쪽.
+   중간: 이름표는 이름만(특산 칸·옛 이름·깃발 칩 없음) · 길 기호 없음 · 군대는 얼굴과 수만(걷는 군사 그림·「명령?」 없음) · 「개척단 필요」는 고른 곳만
+   멀리: 위 + 나라 이름 · 도읍과 지킬 곳(.lkeep) 이름만 · 군대 줄(사기 바) 없음 */
+.map:not([data-zl="near"]) .lb .lbg, .map:not([data-zl="near"]) .lb .lbf, .map:not([data-zl="near"]) svg .rsign, .map:not([data-zl="near"]) svg .tw { display: none; }
+.map:not([data-zl="near"]) .lb small:not(.nowi) { display: none !important; }
+.map:not([data-zl="near"]) .tok .squad, .map:not([data-zl="near"]) .tok .ask { display: none; }
+.map:not([data-zl="near"]) .tok.unit { grid-template-columns: var(--tw); }
+.map:not([data-zl="near"]) .nd:not(.sel) .stl, .map:not([data-zl="near"]) .nd:not(.sel) .frtb { display: none; }
+.map[data-zl="mid"] .lb:not(.lkeep):not(.lmid) { display: none; }
+.map[data-zl="far"] .tok .hp { display: none; }
+.map[data-zl="far"] .lb.k-cap.me { display: flex; }
 .map .nnms { position: absolute; inset: 0; z-index: 5; pointer-events: none; display: none; }
 .map[data-zl="far"] .nnms { display: block; }
 /* 나라 이름 — 그 나라 빛 글씨에 대비되는 테 (우리 나라는 늘 우리 파랑) · 글씨 크기는 화면 px 로 늘 같다 */

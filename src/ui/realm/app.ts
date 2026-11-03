@@ -1507,6 +1507,30 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return h + `<button class="btn ghost" data-act="scout-ask-no">그대로 둔다</button></div></div>`
   }
 
+  /**
+   * 전군 집결 — 길 위에 있지 않은 우리 군대를 모두 이 고을로 (먼 갈 곳 goal · 한 걸음씩 저절로 · goal.ts).
+   * 형 11-04: "모든 군사한테 여기로 모여라 명령 · 마을 토글 버튼 중에 집결 버튼". 닿을 길이 없는 군대·이미 와 있는 군대는 빠진다
+   */
+  function rallyPlan(r: Realm, node: string): Array<{ army: string; edge: string; seasons: number }> {
+    const out: Array<{ army: string; edge: string; seasons: number }> = []
+    for (const a of sorted(Object.values(r.armies))) {
+      if (a.faction !== me() || a.march !== null || a.at === node || a.id.startsWith('~')) continue
+      const x = goalReach(r, me(), a.at).get(node)
+      if (x !== undefined) out.push({ army: a.id, edge: x.edge, seasons: x.seasons })
+    }
+    return out
+  }
+  /** 지금 이 고을로 모이는 중인가 — 모일 군대가 다 이리로 가고 있다 */
+  const rallyOn = (r: Realm, node: string, plan: ReadonlyArray<{ army: string }>): boolean =>
+    plan.length > 0 && plan.every((p) => (pick[p.army]?.goal ?? (goalStop.includes(p.army) ? undefined : r.armies[p.army]?.goal)) === node)
+  function rallyHtml(r: Realm, node: string): string {
+    const plan = rallyPlan(r, node)
+    const on = rallyOn(r, node, plan)
+    const far = plan.reduce((m, p) => Math.max(m, p.seasons), 0)
+    const why = plan.length === 0 ? '모일 군대가 없습니다 (다 와 있거나 길 위에 있거나 닿을 길이 없습니다)' : null
+    return `<div class="btns"><button class="btn ${on ? 'on' : ''}" data-act="rally" data-node="${node}"${why === null ? '' : noBtn(why)}>${icon('unit-drummers', 'wki')}${on ? `전군 집결 중 · 누르면 푼다` : `전군 집결 · 군대 ${plan.length}`}${plan.length > 0 && !on ? ` <small class="mute">늦어도 ${turnsLabel(r, far)}</small>` : ''}</button></div>`
+  }
+
   /** 정찰꾼이 다 나갔으면 새 곳으로 돌릴 정찰꾼 — 고정 안 한 것이 먼저, 그다음 먼저 보낸 것 · 남았으면 '' */
   function scoutBump(r: Realm): string {
     if (scouts.length < scoutCap(r, me())) return ''
@@ -4821,6 +4845,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += draftCard(r, id, true)
       h += `<div class="btns"><button class="btn ${guarded ? 'on' : ''}" data-act="guard" data-node="${id}" data-tip="경계를 올리면 이 고을로 오는 기습이 잘 들킨다 · 한 계절 동안"${guarded || (canGuard(r, me(), id) && left().grain >= guardCost().grain) ? '' : noBtn(shortOf({ grain: guardCost().grain }) || '이번 계절엔 이미 경계를 올렸습니다')}>경계 강화 ${costHtml({ grain: guardCost().grain })}</button></div>`
       h += guardPathHtml(r, id)
+      h += rallyHtml(r, id)
       // 목책·해자 — 나무로 짓는다 (땅마다 나는 것). 다음 계절에 선다
       const nb = nextBuild(r, id)
       const queued = musters.some((o) => o.kind === 'build' && o.node === id) || (r.builds ?? []).some((b) => b.node === id)
@@ -4924,6 +4949,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const ok = going === undefined && (queued || (canBuild(r, me(), id, what) && left().wood >= bc.wood && left().grain >= bc.grain))
         const label = going !== undefined ? `${turnsLabel(r, Math.max(1, going.done - r.season + 1))} 남음` : BUILD_NAME[what]
         bs.push(rb('build', icon(what === 'moat' ? 'settle-moat' : 'settle-palisade'), label, ` data-what="${what}"${ok ? '' : noBtn(buildWhy(r, id, what))}`, queued || going !== undefined ? ' on' : ''))
+      }
+      // 전군 집결 — 북을 울려 모든 군대를 이 고을로 (형 11-04: "마을 토글 버튼 중에 집결 버튼") · 모일 군대가 있거나 모이는 중일 때만
+      {
+        const plan = rallyPlan(r, id)
+        const on = rallyOn(r, id, plan)
+        if (plan.length > 0) bs.push(rb('rally', icon('unit-drummers'), on ? '집결 중' : `집결 ${plan.length}`, '', on ? ' on' : ''))
       }
       bs.push(more)
       // 부채꼴 — 위쪽 가운데를 중심으로 왼쪽부터 오른쪽으로 (이름표는 고을 아래에 있다)
@@ -7362,6 +7393,22 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         armyOrders = [...armyOrders, ...os]
         for (const o of os) if (o.kind === 'merge') delete pick[o.army]
         armySel = [into]
+        break
+      }
+      case 'rally': {
+        // 전군 집결 — 다시 누르면 푼다 (그 군대들의 먼 갈 곳을 거둔다)
+        if (r === null) break
+        const node = d['node']!
+        const plan = rallyPlan(r, node)
+        if (plan.length === 0) break
+        if (rallyOn(r, node, plan)) {
+          for (const p of plan) { delete pick[p.army]; if (r.armies[p.army]?.goal !== undefined && !goalStop.includes(p.army)) goalStop = [...goalStop, p.army] }
+          break
+        }
+        goalStop = goalStop.filter((id) => !plan.some((p) => p.army === id))
+        for (const p of plan) pick[p.army] = { edge: p.edge, ambush: false, goal: node }
+        marchSfx()
+        goToast(`<b>${plan.length}</b>개 군대가 <b>${esc(josa(r.nodes[node]?.name ?? '', '으로', '로'))}</b> 모인다 · 늦어도 <b>${turnsLabel(r, plan.reduce((m, p) => Math.max(m, p.seasons), 0))}</b>`)
         break
       }
       case 'go': {

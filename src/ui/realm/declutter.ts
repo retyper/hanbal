@@ -62,7 +62,8 @@ export function declutter(map: HTMLElement): void {
       break
     }
     // 빈 데가 없으면 덜 중요한 이름은 숨긴다 — 가까이 보면 다시 뜬다 (CK3·지도 그리기의 글씨 위계). 도읍·우리 고을은 늘 남는다
-    const crowd = !found && rk >= 2
+    // 가까이가 아니면 우리 고을 이름도 겹치면 숨긴다 — 큰 나라는 이름표가 거의 다 우리 고을이라 아무것도 안 걸러졌다 (형 11-04 "아직도 너무 어지럽다")
+    const crowd = !found && rk >= (map.dataset['zl'] === 'near' ? 2 : 1)
     if (crowd) { writes.push(() => l.classList.add('crowd')); continue }
     // .lb 는 translateX(-50%) 로 가운데를 맞춘다 — left 는 상자 가운데
     const left = `${(((pick[0] + w / 2) - mr.left) / mr.width * 100).toFixed(3)}%`
