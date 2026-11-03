@@ -2482,11 +2482,12 @@ export const WAR_CSS = `
 @media (prefers-reduced-motion: reduce) { .ap .wfield *, .ap .wfield .tk.tkf, .ap .wfield.play { animation: none !important; transition: none !important; } .ap .wpop { opacity: 1; } }
 .ap .wbar i { position: relative; display: block; height: 100%; border-radius: 6px; overflow: hidden; }
 /* 흐르는 빗금 — 45도 네모 칸이라야 칸 이음매가 안 보인다 · 115도 빗금을 34px 칸에 넣었더니 이음매마다 끊겨 바코드처럼 보였다 (형 10-29) */
-.ap .wbar i::before { content: ''; position: absolute; inset: 0; background-image: linear-gradient(135deg, #ffffff2a 25%, #ffffff00 25% 50%, #ffffff2a 50% 75%, #ffffff00 75%); background-size: 18px 18px; animation: wbarflow 1.1s linear infinite; }
-.ap .wbar i::after { content: ''; position: absolute; top: 0; bottom: 0; left: -45%; width: 45%; background: linear-gradient(90deg, #fff0, #ffffffb0, #fff0); animation: wbarshine 3s ease-in-out infinite; }
+/* 빗금·빛줄은 transform 으로만 민다 — background-position·left 를 움직이면 막대 넷이 틀마다 다시 그려져 폰에서 버벅였다 (형 11-03) */
+.ap .wbar i::before { content: ''; position: absolute; top: 0; bottom: 0; left: -18px; right: 0; background-image: linear-gradient(135deg, #ffffff2a 25%, #ffffff00 25% 50%, #ffffff2a 50% 75%, #ffffff00 75%); background-size: 18px 18px; animation: wbarflow 1.1s linear infinite; }
+.ap .wbar i::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 45%; translate: -100% 0; background: linear-gradient(90deg, #fff0, #ffffffb0, #fff0); animation: wbarshine 3s ease-in-out infinite; }
 .ap .ws.foe .wbar i::after { animation-delay: 1.4s; }
-@keyframes wbarflow { to { background-position: 18px 0; } }
-@keyframes wbarshine { 0% { left: -45%; } 55%, 100% { left: 110%; } }
+@keyframes wbarflow { to { translate: 18px 0; } }
+@keyframes wbarshine { 0% { translate: -100% 0; } 55%, 100% { translate: 245% 0; } }
 @media (prefers-reduced-motion: reduce) { .ap .wbar i::before, .ap .wbar i::after, .ap .ws.us .wpf > i, .ap .wbg, .ap .wember { animation: none !important; } }
 .ap .wbar i.wgr { animation-duration: .4s; animation-timing-function: ease-out; animation-delay: var(--bd, 2.4s); animation-fill-mode: both; }
 .ap .wbar i.wgr.cut { animation-duration: .04s; animation-timing-function: linear; }
@@ -2940,10 +2941,6 @@ export const WAR_CSS = `
 .ap .wfpx { margin-left: auto; width: 30px; height: 30px; border-radius: 15px; border: 1px solid #6a5a48; background: #2a221a; color: #e8dcc4; font-size: 14px; cursor: pointer; flex: none; }
 .ap .wfpg { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; }
 /* 좁은 화면에서 전장을 안 가리게 줄인 판 (placePop · 형 11-02) — 깃발 넷을 한 줄에, 이름은 깃발 밑 · 누가 나서나·도움말은 「자세히」에만 */
-.ap .wfpop.tight { width: calc(100vw - 12px); padding: 6px; } .ap .wfpop.tight .wfphint, .ap .wfpop.tight .wwho { display: none !important; }
-.ap .wfpop.tight .wfph { margin-bottom: 4px; } .ap .wfpop.tight .wfpg { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
-.ap .wfpop.tight .wcmd.mini { flex-direction: column; min-height: 0; padding: 4px 2px 3px; gap: 2px; text-align: center; } .ap .wfpop.tight .wcmd.mini .wflag { width: 26px; }
-.ap .wfpop.tight .wcmd.mini .wct { justify-content: center; } .ap .wfpop.tight .wcmd.mini .wct > b { font-size: 12.5px; } .ap .wfpop.tight .wfplook { margin-top: 4px; padding: 4px 6px; }
 .ap .wfpop .wcmd.mini { min-width: 0; overflow: hidden; min-height: 44px; padding: 5px 6px 5px 4px; flex-direction: row; align-items: center; gap: 4px; text-align: left; border: 1px solid #6a5236; border-image: none; border-radius: 10px; background: #241b12; filter: none; }
 .ap .wfpop .wcmd.mini.on { border-color: var(--gold); background: #3a2e1c; box-shadow: 0 0 0 2px #d9b36a66; }
 .ap .wfpop .wcmd.mini .wflag { width: 30px; height: auto; flex: none; }
@@ -2957,6 +2954,33 @@ export const WAR_CSS = `
 .ap .wfpop .wcmd.mini .wct > b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .ap .wfpop .wcmd.mini .wct > em.rec { font-size: 0; padding: 0 3px; } .ap .wfpop .wcmd.mini .wct > em.rec::before { content: '★'; font-size: 11px; }
 .ap .wfph b, .ap .wfph small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.ap .wfpop { box-sizing: border-box; } /* 폭에 안쪽 여백·테까지 넣는다 — 안 넣으면 100vw-12px 판이 화면 오른쪽으로 5px 튀어나왔다 (형 11-03) */
+/* 좁은 화면에서 전장을 안 가리게 줄인 판 (placePop · 형 11-02 · 11-03: "깃발창이 짜부돼서 오른쪽으로 튀어나옴 · 글자 작아져도 되니 공간 활용")
+   양옆 6px 를 띄운 화면 폭 · 머리는 한 줄(작은 얼굴·이름·✕) · 깃발은 몇 개든 한 줄에 같은 폭으로(그림 위 · 이름 밑) · 판세는 막대 한 줄 ·
+   꾹 누르면 피해·사기 표(±)가 그 밑에 붙고 판은 위로 자란다 (아래는 화면 끝에 붙어 있다). 누가 나서나·도움말은 「자세히」에만.
+   아래 규칙들보다 뒤에 두고 .wr 을 더 붙인다 — 앞에 두었더니 보통 판 규칙(가로 줄·최소 높이 44px)이 덮어 칸이 짜부됐다 */
+.ap .wr .wfpop.tight { width: auto; right: 6px; padding: 5px 6px 6px; border-radius: 12px; max-height: calc(100dvh - 12px); }
+.ap .wr .wfpop.tight .wfphint, .ap .wr .wfpop.tight .wwho, .ap .wr .wfpop.tight .wfplook .wlkn { display: none !important; }
+.ap .wr .wfpop.tight .wfph { gap: 6px; margin-bottom: 4px; min-height: 0; }
+.ap .wr .wfpop.tight .wfph .wgi, .ap .wr .wfpop.tight .wfph .wgi.f .wf, .ap .wr .wfpop.tight .wfph .wgi.f img { width: 22px; height: 22px; }
+.ap .wr .wfpop.tight .wfph b { font-size: 13.5px; } .ap .wr .wfpop.tight .wfph small { font-size: 11px; }
+.ap .wr .wfpop.tight .wfpx { width: 26px; height: 26px; font-size: 12px; }
+.ap .wr .wfpop.lead.tight .wfph .wgi.f, .ap .wr .wfpop.lead.tight .wfph .wgi.f .wf, .ap .wr .wfpop.lead.tight .wfph .wgi.f img { width: 36px; height: 42px; border-radius: 7px; }
+.ap .wr .wfpop.lead.tight .wfph .wgi.f { border-width: 1.5px; }
+.ap .wr .wfpop.tight .wfpg { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; }
+.ap .wr .wfpop.tight .wcmd.mini { flex-direction: column; align-items: center; justify-content: center; min-height: 0; padding: 4px 1px 3px; gap: 1px; text-align: center; border-radius: 8px; }
+.ap .wr .wfpop.tight .wcmd.mini .wflag, .ap .wr .wfpop.tight .wcmd.mini > img { position: static; width: 22px; height: auto; max-height: 30px; object-fit: contain; }
+.ap .wr .wfpop.tight .wcmd.mini .wct, .ap .wr .wfpop.tight .wcmd.mini .wct:has(> .wodd) { flex-direction: column; align-items: center; gap: 0; width: 100%; }
+.ap .wr .wfpop.tight .wcmd.mini .wct > b { max-width: 100%; font-size: 11.5px; line-height: 1.2; }
+.ap .wr .wfpop.tight .wcmd.mini .wct > .wodd { font-size: 10.5px; line-height: 1.1; }
+.ap .wr .wfpop.tight .wcmd.mini .wct > em.rec { position: absolute; right: 2px; top: 2px; padding: 0 2px; } .ap .wr .wfpop.tight .wcmd.mini .wct > em.rec::before { font-size: 9px; }
+.ap .wr .wfpop.tight .wfplook { margin-top: 4px; padding: 3px 6px; border-radius: 8px; }
+.ap .wr .wfpop.tight .wfplook .wguess { gap: 2px 4px; }
+.ap .wr .wfpop.tight .wfplook .wguess .wgq, .ap .wr .wfpop.tight .wfplook .wguess > .wgk { font-size: 10px; }
+.ap .wr .wfpop.tight .wfplook .wguess > b { width: auto; min-width: 4.4em; font-size: 11px; }
+.ap .wr .wfpop.tight .wfplook .wguess .wgl { font-size: 10.5px; } .ap .wr .wfpop.tight .wfplook .wguess .wgl b { font-size: 11px; }
+.ap .wr .wfpop.tight .wfplook .wguess .wgx { padding: 2px 4px; gap: 1px 2px; margin-top: 2px; }
+.ap .wr .wfpop.tight .wfplook .wguess .wgx > b { font-size: 11px; } .ap .wr .wfpop.tight .wfplook .wguess .wgx > .wgk { font-size: 10px; } .ap .wr .wfpop.tight .wfplook .wguess .wgx > .wgxn { font-size: 9px; }
 
 .ap .wgh { font-size: 13.5px; margin-bottom: 4px; } .ap .wgh b { color: var(--gold); margin-right: 4px; }
 .ap .wcmdgrid { display: grid; grid-template-columns: 1fr; gap: 6px; } /* 한 열 (형 10-25) */
@@ -3446,6 +3470,10 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     }
   }
 
+  /** 그린 차례 — 다음 틀에 미룬 되감기가 그 사이 또 그렸으면 걷히게 */
+  let paintGen = 0
+  /** 위 띠 높이(--wtoph) — 바뀔 때만 적는다 (뿌리에 변수를 적으면 판 전체 스타일을 다시 셈한다) */
+  let topH = -1
   const paintNow = (anim: boolean, endNow = false): void => {
     const l = t.line!
     const shown = upto ?? (l.pending !== undefined ? l.pending.round : (l.rounds ?? []).length)
@@ -3473,15 +3501,22 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     // (불티는 투명에서 다시 떠 낱낱이 깜빡) · 연출 없이 다시 그릴 때도 병사가 다시 걸어 들어왔다 (형 10-31: 합이 풀릴 때·끝날 때 낱낱이 깜빡)
     const again = [fxEl, ...sc.querySelectorAll<HTMLElement>('.wvs, .wfield, .wnext, .wend')]
     if (had !== null) {
-      for (const e of again) {
-        for (const a of e.getAnimations({ subtree: true })) {
-          if (!had.has(a)) continue // 이번에 새로 걸린 연출은 스스로 처음부터 돈다
-          const tm = a.effect?.getTiming()
-          // 늘 도는 것(끝없고 기다림 없이 바로 도는 것)은 그대로 둔다 — 불티·먼지·물결·숨쉬기·깃발 손짓
-          if (tm === undefined || (tm.iterations === Infinity && Number(tm.delay ?? 0) <= 0)) continue
-          a.currentTime = 0
+      // 되감기는 다음 틀 처음에 — 여기서 getAnimations 를 부르면 막 바꾼 판 전체의 스타일을 그 자리에서 셈하고, 아래(위 띠 높이 재기·보석 자리)에서
+      // 또 셈해 합이 넘어갈 때마다 폰에서 0.3~0.6초 멈췄다 (형 11-03: "아직도 전투할 때 버벅" · tools/war-perf.ts). 틀 처음엔 그 틀의 셈 한 번으로 끝난다
+      const gen = ++paintGen
+      requestAnimationFrame(() => {
+        if (gen !== paintGen || ov.classList.contains('fast')) return
+        for (const e of again) {
+          if (!e.isConnected) continue
+          for (const a of e.getAnimations({ subtree: true })) {
+            if (!had.has(a)) continue // 이번에 새로 걸린 연출은 스스로 처음부터 돈다
+            const tm = a.effect?.getTiming()
+            // 늘 도는 것(끝없고 기다림 없이 바로 도는 것)은 그대로 둔다 — 불티·먼지·물결·숨쉬기·깃발 손짓
+            if (tm === undefined || (tm.iterations === Infinity && Number(tm.delay ?? 0) <= 0)) continue
+            a.currentTime = 0
+          }
         }
-      }
+      })
     } else if (!rewind) {
       // getAnimations 가 없는 옛 브라우저 — 옛 길(한 틀 안에서 껐다 켠다)
       for (const e of again) e.classList.add('wrs')
@@ -3550,7 +3585,11 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     if (cutVoice !== null) { const v = cutVoice; timers.push(window.setTimeout(() => say(v), P.realm.warVoiceArtS * 1000)); cutVoice = null }
     if (!anim && !endNow) band(l)
     // 싸운다를 누르면 — 이번 합이 위 카드 바로 밑에 오게, 판이 끝났으면 결과가 다 풀린 뒤 결과로 (형 10-23: "싸운다 누르면 스크롤 맨 위로 가는 게 맞나?")
-    ov.style.setProperty('--wtoph', `${(sc.querySelector<HTMLElement>('.wtop')?.offsetHeight ?? 170) + 8}px`) // 붙박이 위 카드에 가리지 않게
+    // 붙박이 위 카드에 가리지 않게 — 재는 건 다음 틀 처음에 (여기서 재면 막 바꾼 판을 그 자리에서 한 번 더 셈한다 · 형 11-03 버벅임)
+    requestAnimationFrame(() => {
+      const h = (sc.querySelector<HTMLElement>('.wtop')?.offsetHeight ?? 170) + 8
+      if (h !== topH) { topH = h; ov.style.setProperty('--wtoph', `${h}px`) }
+    })
     if (anim) {
       const lr = (l.rounds ?? [])[shown - 1]
       const res = lr !== undefined ? roundPlan(lr, l.atkFaction === host.me).result : STAGE_S[2]
@@ -3949,10 +3988,12 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     if (box === null) return
     const gu = card?.querySelector('.wguess')
     box.innerHTML = gu != null && card !== null ? `<div class="wlkn">${esc(card.querySelector('.wct > b')?.textContent ?? '')}: 이번 합</div>${gu.outerHTML}` : ''
-    box.classList.toggle('held', table) // 0.5초 넘게 누르고 있으면 피해·사기 표까지 (형 10-28) · 다른 깃발을 누르면 다시 막대만
+    // 0.5초 넘게 누르고 있으면 피해·사기 표까지 (형 10-28) · 다른 깃발을 누르면 다시 막대만
+    // 표가 붙거나 걷히면 판 높이가 바뀐다 — 다시 놓아야 표가 화면 밑으로 잘리지 않는다 (형 11-03: "꾹 누를 때 보이는 +- 도 화면에 잘 나오게")
+    let moved = box.classList.contains('held') !== table
+    box.classList.toggle('held', table)
     // 장수가 여럿 — 누른 깃발이 비기·겨루기·사로잡기면 그 아래 「누가 나서나 · 누구를 잡나」 (끌어 놓기 전에 고른다)
     const kind = card === null ? undefined : WHO_KINDS.find((k) => card.classList.contains(k))
-    let moved = false
     for (const row of pop.querySelectorAll<HTMLElement>('.wwho')) { const on = kind !== undefined && row.classList.contains(kind); if (row.classList.contains('show') !== on) { row.classList.toggle('show', on); moved = true } }
     if (moved && !pop.hidden) placePop()
   }
@@ -4019,7 +4060,13 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     showHold(flagHold(card), pq.left + pq.width / 2, pq.top + 18)
     showLook(card)
     window.clearTimeout(lookT)
-    lookT = window.setTimeout(() => { if (drag?.card === card && !drag.on) showLook(card, true) }, P.realm.warLookTableMs)
+    lookT = window.setTimeout(() => {
+      if (drag?.card !== card || drag.on) return
+      showLook(card, true)
+      // 표가 붙어 판이 위로 자랐다 — 설명 창도 판 위로 다시 (판 머리를 덮었다)
+      const q2 = pop.getBoundingClientRect()
+      if (hold.isOpen()) showHold(flagHold(card), q2.left + q2.width / 2, q2.top + 18)
+    }, P.realm.warLookTableMs)
     if (armed !== card) { armed?.classList.remove('armed'); armed = card; card.classList.add('armed') }
     aimAt(card)
     drag = { card, x0: ev.clientX, y0: ev.clientY, on: false, id: ev.pointerId }
@@ -4037,7 +4084,14 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const d = drag
     drag = null
     d.card.classList.remove('dragging')
-    if (!d.on) { hideHold(); if (armed === d.card && d.card.isConnected) aimAt(d.card); return } // 누르기만 했다 — 화살은 그 깃발에서 가운데를 가리킨 채
+    window.clearTimeout(lookT)
+    if (!d.on) {
+      hideHold()
+      // 꾹 눌러 붙은 피해·사기 표는 손을 떼면 설명 창과 함께 걷힌다 — 판이 다시 낮아져 전장이 보인다
+      if (pop.querySelector('.wfplook.held') !== null) lookT = window.setTimeout(() => { if (drag === null && d.card.isConnected) showLook(d.card) }, P.realm.warHoldLingerMs)
+      if (armed === d.card && d.card.isConnected) aimAt(d.card)
+      return
+    } // 누르기만 했다 — 화살은 그 깃발에서 가운데를 가리킨 채
     hideHold(0)
     if (ev.type === 'pointerup' && overField(ev.clientX, ev.clientY)) {
       swallow = true // 놓은 뒤 오는 click 이 전장 누르기로 깃발 판을 다시 열지 않게
@@ -4106,11 +4160,12 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     // 전장(깃발을 끌어다 놓는 곳)을 가리면 화면 맨 아래로 내려 아래 띠를 덮고, 그래도 가리면 판을 줄인다
     // (형 11-02 · 동생 폰 411×780: 판이 전장의 3분의 2를 덮어 끌어 놓을 데가 없었다)
     const field = sc.querySelector<HTMLElement>('.wtop .wfield')?.getBoundingClientRect()
-    if (field !== undefined && top < field.bottom - 4) {
+    if (pop.classList.contains('tight')) top = vh - ph - 6 // 줄인 판은 늘 화면 맨 아래 · 꾹 눌러 표가 붙으면 위로 자란다
+    else if (field !== undefined && top < field.bottom - 4) {
       top = vh - ph - 6
-      if (top < field.bottom - 4 && !pop.classList.contains('tight')) { pop.classList.add('tight'); placePop(); return }
+      if (top < field.bottom - 4) { pop.classList.add('tight'); placePop(); return }
     }
-    pop.style.left = `${Math.round(left)}px`
+    pop.style.left = `${Math.round(pop.classList.contains('tight') ? 6 : left)}px` // 줄인 판은 양옆 6px (오른쪽은 CSS right)
     pop.style.top = `${Math.round(top)}px`
   }
   /** 이 합을 고른 대로 싸운다 */

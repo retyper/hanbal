@@ -94,7 +94,8 @@ export const WINFX_CSS = `
   animation: wfring .9s ease-out calc(var(--wd) + .12s) both; }
 .ap .winfx .wf-ring.two { animation-delay: calc(var(--wd) + .32s); border-width: 3px; }
 /* 0% 는 숨긴다 — 기다리는 동안(animation-delay) 첫 칸이 보이면 안 된다 */
-@keyframes wfring { 0% { opacity: 0; transform: scale(.3); } 2% { opacity: .9; transform: scale(.3); } 100% { opacity: 0; transform: scale(4.2); border-width: 1px; } }
+/* 테 굵기는 움직이지 않는다 — border-width 를 바꾸면 틀마다 다시 그려 커지는 고리가 버벅였다 (형 11-03) */
+@keyframes wfring { 0% { opacity: 0; transform: scale(.3); } 2% { opacity: .9; transform: scale(.3); } 100% { opacity: 0; transform: scale(4.2); } }
 .ap .winfx .wf-burst { position: absolute; width: 0; height: 0; }
 /* 불티 한 알 — 날아가는 쪽으로 길쭉한 낟알 (빛살처럼 붙박이로 서 있지 않고 날아가며 꺼진다) */
 .ap .winfx .wf-burst b { position: absolute; left: 0; top: 0; width: calc(var(--s) * 2.6); height: var(--s); margin: calc(var(--s) / -2) 0 0 0; border-radius: 50%;
@@ -153,6 +154,16 @@ export const WINFX_CSS = `
   .ap .winfx.lose::after { backdrop-filter: none; -webkit-backdrop-filter: none; background: #0008; }
   .ap .winfx .wf-word .wf-logo, .ap .winfx .wf-word b, .ap .winfx.lose .wf-word b { filter: none; }
 }
+/* 고사양이 아니면 (폰 · 형 11-03: "대승이나 대패 나올 때도 깜빡") — 크롬은 커졌다 줄어드는 층을 가장 클 때 크기로 굽는다.
+   로고가 2.8배에서 내려앉으면 화면 몇 장 크기의 그림이 한꺼번에 구워져 그래픽 한도를 넘고 화면이 통째로 빠졌다 (메모리 mobile-gpu-layer-limit).
+   1.35배에서 박히게 · 화면보다 큰 빛 막은 화면 크기로 · 불티 빛무리(box-shadow)는 빼고 낟알 그러데이션만 · 흑백 막은 검은 막으로 */
+.ap:not(.q-high) .winfx .wf-word, .ap:not(.q-high) .winfx .wf-word.crack { animation-name: wfslamlite; }
+@keyframes wfslamlite { 0% { opacity: 0; transform: scale(1.35); } 60% { opacity: 1; transform: scale(.97); } 100% { opacity: 1; transform: none; } }
+.ap:not(.q-high) .winfx.lose .wf-word { animation-name: wfsink; } .ap:not(.q-high) .winfx.lose .wf-word.crack { animation-name: wfslamlite; }
+.ap:not(.q-high) .winfx::before, .ap:not(.q-high) .winfx .wf-flash, .ap:not(.q-high) .winfx.lose::after { inset: 0; }
+.ap:not(.q-high) .winfx .wf-burst b, .ap:not(.q-high) .winfx .wf-ring { box-shadow: none; }
+.ap:not(.q-high) .winfx.lose::after { backdrop-filter: none; -webkit-backdrop-filter: none; background: #0008; }
+.ap:not(.q-high) .winfx .wf-word .wf-logo, .ap:not(.q-high) .winfx .wf-word b, .ap:not(.q-high) .winfx.lose .wf-word b { filter: none; }
 `
 
 /** 폰 떨림 — 이겼을 때 "파바방" (안드로이드만 · 아이폰 사파리는 진동을 막아 두었다) */
