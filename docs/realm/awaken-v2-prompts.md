@@ -39,3 +39,4 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-02-goguryeo-lady 고구려 무녀 — 1차 2판(edu · 골반 아래 잘라 냄, 원본 -raw) — 11-03
 - w-06-buyeo-huntress 부여 사냥꾼 — 1차 2판(edu) — 11-03
 - w-10-pirate-captain 해적 선장 — 1차 2판(edu) — 11-03
+- w-90-saro-danbi 나정 지기 단비 — 1차 2판(edu) — 11-03
