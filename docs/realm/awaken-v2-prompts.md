@@ -86,3 +86,6 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-25-bihwa-priestess 비화 무녀 — 1차 2판(retyper92 · 검토 PASS) — 11-03
 - w-27-mokji-jinha 목지 진왕 — 1차 2판(retyper92 · 검토 PASS) — 11-03
 - w-28-michuhol-bira 미추홀 비라 — 1차 2판(retyper92 · 검토 PASS) — 11-03
+- 검토: w-26 이서 말괄량이 장군 — 몸은 통과, 휜 어깨 가리개·교차 붉은 안깃·머리띠가 사무라이처럼 읽힘 → 둥근 판 어깨·목 가리개·머리띠 없이 다시
+- 검토: w-17 마한 진주 해녀 — 그물 쥔 팔의 아래팔이 너무 짧음 → 손을 엉덩이께로 늘어뜨린 자세로 다시
+- 11-03 밤 다섯 계정 모두 한도. 다시 뽑을 것: w-17 해녀 · w-21 백제 무희(긴 저고리) · w-26 이서 장군(사무라이 결 빼기) · 그 뒤 나라 임금 얼굴 w-46~51 · w-53~64 · 떠돌이 w-29~45 순
