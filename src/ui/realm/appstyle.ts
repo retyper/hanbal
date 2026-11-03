@@ -965,6 +965,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .cost .cg i { font-style: normal; font-size: 9px; color: #ff6a4a; margin-right: 1px; }
 .ap .cost .cgi { width: 16px; height: 16px; object-fit: contain; }
 .ap .btn.pri .cost .cg { background: #2a0e08e0; }
+/* 드는 값은 금빛 중립 · 모자라서 못 하는 단추 안에서만 붉다 — 「드는 값」과 「안 된다」가 같은 붉은빛이라 할 수 있는 것도 망설였다 (위원회 11-04 UX ⑥) */
+.ap .btn .cost .cg { background: #2a2016d8; border-color: #c9a45a88; color: #f3e6c8; } .ap .btn .cost .cg i { color: #e0b060; }
+.ap .btn.pri .cost .cg { background: #1f170fe0; }
+.ap .btn[aria-disabled="true"] .cost .cg { background: #3a1410d0; border-color: #c8503a99; color: #ffd0c0; } .ap .btn[aria-disabled="true"] .cost .cg i { color: #ff6a4a; }
 .ap .hback { margin: 0 0 6px; }
 /* 정찰 고정 📌 */
 .ap .srow { display: flex; align-items: stretch; gap: 4px; } .ap .srow > .row { flex: 1; min-width: 0; }
