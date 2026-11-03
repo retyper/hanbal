@@ -976,6 +976,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .wishg { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: #f3e6c8; }
 .ap .wishg i { font-style: normal; letter-spacing: 1px; color: #8a7a5a; font-size: 11px; } .ap .wishg.ok i { color: #e8c15a; }
 .ap .wishp { margin-top: 6px; font-size: 13px; color: #ffe2a0; display: flex; align-items: center; gap: 4px; }
+.ap .wishc .wki, .ap h3 .wki { width: 26px; height: 26px; object-fit: contain; flex: none; }
 .ap .limwhy[aria-disabled="true"] { opacity: 1; cursor: pointer; }
 .ap .limwhy { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; margin-left: 4px; padding: 0; border-radius: 50%; border: 1px solid #c8503a99; background: #3a1410d0; vertical-align: middle; } .ap .limwhy .cgi { width: 18px; height: 18px; object-fit: contain; }
 .ap .hback { margin: 0 0 6px; }
