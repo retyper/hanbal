@@ -32,3 +32,4 @@ This is an original character from my own Korean historical fantasy strategy gam
 - l-L3-heo-hwangok 허황옥 — 2차(edu) — 11-03
 - w-04-gaya-swordswoman 다나(가야 여검사) — 2차(edu) — 11-03
 - w-98-byeonhan-danbi 단비 — 2차(edu · 허리 아래 잘라 냄, 원본 -raw) — 11-03
+- w-101-garak-singwigan 신귀간 — 2차(edu) — 11-03
