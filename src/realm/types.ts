@@ -58,6 +58,8 @@ export interface RNode {
   settledOut?: { readonly season: number; readonly n: number }
   /** 백성 배치로 이 고을로 오는 길 위의 집 — 계절마다 조금씩 닿는다 (economy.stepInbound). 없으면 없음 · 옛 저장에도 없다 */
   inbound?: { readonly faction: string; readonly n: number }
+  /** 곳간을 열어 유민을 부른 턴 (economy.applyCall · 고을마다 한 계절에 한 번) */
+  calledAt?: number
   /** 지금 주인이 이 고을을 쥔 계절 (차지·개척·다시 일어남) — 화면의 「최근에 차지한 고을 먼저」 (형 10-27). 판 처음부터 쥔 고을은 없음 */
   takenAt?: number
 }
@@ -1006,6 +1008,8 @@ export type Order =
   | { readonly kind: 'party'; readonly faction: string; readonly node: string; readonly edge?: string; readonly goal?: string }
   /** 개척단을 길 하나로 보낸다 */
   | { readonly kind: 'partyGo'; readonly party: string; readonly edge: string }
+  /** 곳간 열기 · 유민 부르기 — 곡식을 내고 n 집이 걸어 들어온다 (economy.applyCall) */
+  | { readonly kind: 'call'; readonly faction: string; readonly node: string; readonly n: number }
   /** 백성 배치(사민) — 고을마다 더하고 빼는 집 (합 0) */
   | { readonly kind: 'place'; readonly faction: string; readonly delta: Readonly<Record<string, number>> }
   /** 개척단이 선 우리 고을에 눌러앉는다 — 이주 */
@@ -1191,6 +1195,7 @@ export type ReportLine =
   /** 집이 옮겨 갔다 — auto 면 붐비는 고을에서 저절로, 아니면 억지 이주 */
   | { readonly kind: 'migrate'; readonly faction: string; readonly from: string; readonly to: string; readonly n: number; readonly auto?: boolean; readonly walk?: boolean }
   | { readonly kind: 'place'; readonly faction: string; readonly n: number; readonly to: readonly string[] }
+  | { readonly kind: 'call'; readonly faction: string; readonly node: string; readonly n: number; readonly grain: number }
   | { readonly kind: 'cohabit'; readonly faction: string; readonly hero: string; readonly with: string; readonly to: string }
   | { readonly kind: 'hunger'; readonly faction: string }
   | { readonly kind: 'envoy'; readonly from: string; readonly to: string; readonly ask: EnvoyAsk; readonly accepted: boolean; readonly why?: Why; readonly about?: string; readonly hero?: string; readonly node?: string }

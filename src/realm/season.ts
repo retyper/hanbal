@@ -27,7 +27,7 @@ import {
 } from './diplomacy.ts'
 import {
   addGood, applyArm, applyBuild, applyGuard, applyWork, stepWorks, draftIronCost, foundCost, draftLimit, draftNeeds, draftPay, militiaMen, onTake, resolveRites, settleCost, settleLimit, stepBuilds, stepEconomy,
-  migrateHouses, placeHouses, setMigrateAuto, spentThisSeason, stepInbound, stepMigration, stockOf,
+  applyCall, migrateHouses, placeHouses, setMigrateAuto, spentThisSeason, stepInbound, stepMigration, stockOf,
 } from './economy.ts'
 import { hasCustom, noteCustom, noteOnce } from './data/customs.ts'
 import { concealBonus, passExtra, rescueCapital, riseState, siegeFort, stepCustoms } from './hooks.ts'
@@ -699,6 +699,7 @@ function applyArmyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]
     else if (o.kind === 'partyJoin') joinParty(r, o, lines)
     else if (o.kind === 'migrate') migrateHouses(r, o, lines)
     else if (o.kind === 'place') placeHouses(r, o, lines)
+    else if (o.kind === 'call') applyCall(r, o, lines)
     else if (o.kind === 'migrateAuto') setMigrateAuto(r, o)
     else if (o.kind === 'guard') applyGuard(r, o, lines)
     else if (o.kind === 'arm') applyArm(r, o, lines)

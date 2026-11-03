@@ -641,6 +641,60 @@ export function placeHouses(r: Realm, o: Extract<Order, { kind: 'place' }>, line
   lines.push({ kind: 'place', faction: o.faction, n: moved, to: ids.filter((id) => o.delta[id]! > 0) })
 }
 
+
+/**
+ * 곳간 열기 · 유민 부르기 (위원회 11-04 림월드 자리 ① · 형: "곡식이 쓸모없다 · 넣으면 불어나는 것") —
+ * 곡식을 내면 난세를 떠도는 유민 몇 집이 길을 따라 걸어 들어와(inbound · stepInbound) 그 고을 백성이 된다.
+ * 집이 늘면 일손(workMul) · 특산 · 징병 한도 · 이듬해 가을걷이가 함께 는다. 「어디에 부를까」가 곧 「무엇이 모자라나」다.
+ * 고을마다 한 계절에 한 번 · 한 번에 품의 callRoomShare 까지 · 나라 집이 많을수록 비싸다 · 남의 군대가 머무는 고을·굶는 나라는 못 연다.
+ */
+export function callPrice(r: Realm, faction: string): number {
+  const R = P.realm
+  const all = Object.values(r.nodes).reduce((s, n) => s + (n.owner === faction ? n.hh : 0), 0)
+  return R.callGrainPerHH * (1 + all / Math.max(1, R.callNationHH))
+}
+
+/** 이 고을에 이번에 부를 수 있는 집 — 안 되면 0 (까닭은 callWhy) */
+export function callLimit(r: Realm, faction: string, node: string): number {
+  return callWhy(r, faction, node) === null ? callRoom(r, faction, node) : 0
+}
+
+function callRoom(r: Realm, faction: string, node: string): number {
+  const R = P.realm
+  const n = r.nodes[node]
+  if (n === undefined) return 0
+  const room = homeRoom(n) - n.hh - inboundOf(n, faction)
+  const once = Math.max(Math.round(R.callMin), Math.floor(homeRoom(n) * R.callRoomShare))
+  const price = callPrice(r, faction)
+  const grain = price > 0 ? Math.floor(stockOf(r, faction).grain / price) : Infinity
+  return Math.max(0, Math.min(room, once, grain))
+}
+
+/** 못 여는 까닭 — 되면 null */
+export function callWhy(r: Realm, faction: string, node: string): string | null {
+  const n = r.nodes[node]
+  if (n === undefined || n.owner !== faction || n.kind === 'sodo' || n.hh <= 0) return '우리 고을이 아닙니다'
+  if (n.calledAt !== undefined && n.calledAt + seasons(r, 1) > r.season) return '이번 계절엔 이미 불렀습니다'
+  if (Object.values(r.armies).some((a) => a.at === node && a.faction !== faction)) return '남의 군대가 머물러 유민이 오지 않습니다'
+  if (stockOf(r, faction).grain < upkeepOf(r, faction, false)) return '곳간이 비어 유민을 먹일 수 없습니다'
+  if (homeRoom(n) - n.hh - inboundOf(n, faction) <= 0) return '이 고을은 집이 꽉 찼습니다'
+  if (callRoom(r, faction, node) <= 0) return '곡식이 모자랍니다'
+  return null
+}
+
+export function callCost(r: Realm, faction: string, n: number): { grain: number } {
+  return { grain: Math.ceil(n * callPrice(r, faction)) }
+}
+
+export function applyCall(r: Realm, o: Extract<Order, { kind: 'call' }>, lines: ReportLine[]): void {
+  if (!Number.isInteger(o.n) || o.n < 1 || o.n > callLimit(r, o.faction, o.node)) return
+  const n = r.nodes[o.node]!
+  const g = callCost(r, o.faction, o.n).grain
+  stockOf(r, o.faction).grain -= g
+  n.inbound = { faction: o.faction, n: inboundOf(n, o.faction) + o.n }
+  n.calledAt = r.season
+  lines.push({ kind: 'call', faction: o.faction, node: o.node, n: o.n, grain: g })
+}
 /** 이 고을로 오는 길 위의 집 — 그 나라 몫만 */
 export function inboundOf(n: RNode, faction: string): number {
   return n.inbound !== undefined && n.inbound.faction === faction ? n.inbound.n : 0

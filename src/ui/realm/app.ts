@@ -33,7 +33,7 @@ import {
   GOODS, armCost, buildCost, canBuild, canGuard, draftCost, draftIronCost, draftLimit, draftNeeds, draftPay, goodOf, guardCost, hhGrowth, isCoast, militiaMen, nextBuild, nodeHarvest, nodeYield, nodeSpecials, upkeepOf, riteAllowed, riteCost,
   autoFlows, crowdOf, migratePath, fieldMul, homeRoom, inboundOf, inboundRate, isRiverside, landMul, placeLimit, placeNodes, workMul,
   goodsWorth,
-  foundCost,
+  foundCost, callCost, callLimit, callWhy,
 } from '../../realm/economy.ts'
 import { goalReach, goalRoute } from '../../realm/goal.ts'
 import { approachMoves, armyPower, jointWin, matchupHints, movesOf, type Move } from '../../realm/estimate.ts'
@@ -2734,6 +2734,25 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * 고을 하나의 징병 칸 — 징병 판과 고을 판이 같이 쓴다. big 이면 병종을 큰 그림으로
    * (형: "내도시 누르면 여기서 징병 누를필요 없이 바로 큰 병종별 이미지와 함께 간편하게 뽑을수 있게")
    */
+  /**
+   * 곳간 열기 · 유민 부르기 단추 (economy.applyCall · 위원회 11-04 림월드 ①) — 곡식을 내면 유민이 길을 따라 걸어 들어온다.
+   * 고른 뒤 다시 누르면 거둔다 · 못 하면 까닭과 소리 (disabled 금지)
+   */
+  function callBtn(r: Realm, id: string, ring: boolean): string {
+    const queued = musters.find((o): o is Extract<Order, { kind: 'call' }> => o.kind === 'call' && o.node === id)
+    if (queued !== undefined) {
+      return ring
+        ? `<button class="nrb on" data-act="call" data-node="${id}">${icon('unit-porters')}<small>유민 ${queued.n}</small></button>`
+        : `<div class="btns"><button class="btn on" data-act="call" data-node="${id}">${icon('unit-porters', 'wki')}곳간을 연다 · 유민 ${queued.n}집이 온다 <small class="mute">누르면 거둔다</small></button></div>`
+    }
+    const why = callWhy(r, me(), id)
+    const n = callLimit(r, me(), id)
+    const c = callCost(r, me(), n)
+    if (ring) return why === '우리 고을이 아닙니다' ? '' : `<button class="nrb" data-act="call" data-node="${id}"${why === null ? '' : noBtn(why)}>${icon('unit-porters')}<small>${why === null ? `유민 ${n}` : '유민'}</small></button>`
+    return `<div class="btns"><button class="btn" data-act="call" data-node="${id}"${why === null ? '' : noBtn(why)}>${icon('unit-porters', 'wki')}곳간 열기 · 유민 ${why === null ? `${n}집 ${costHtml({ grain: c.grain })}` : ''}</button></div>`
+      + `<p class="mute">곡식을 내면 떠도는 백성이 길을 따라 들어와 이 고을 집이 됩니다. 집이 늘면 특산·장정·가을걷이가 함께 늡니다. 고을마다 한 계절에 한 번.</p>`
+  }
+
   function draftCard(r: Realm, id: string, big: boolean): string {
     const n = r.nodes[id]!
     const pending = musters.filter((o): o is Extract<Order, { kind: 'draft' }> => o.kind === 'draft')
@@ -4850,6 +4869,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         }
       }
       h += draftCard(r, id, true)
+      h += callBtn(r, id, false)
       h += `<div class="btns"><button class="btn ${guarded ? 'on' : ''}" data-act="guard" data-node="${id}" data-tip="경계를 올리면 이 고을로 오는 기습이 잘 들킨다 · 한 계절 동안"${guarded || (canGuard(r, me(), id) && left().grain >= guardCost().grain) ? '' : noBtn(shortOf({ grain: guardCost().grain }) || '이번 계절엔 이미 경계를 올렸습니다')}>경계 강화 ${costHtml({ grain: guardCost().grain })}</button></div>`
       h += guardPathHtml(r, id)
       h += rallyHtml(r, id)
@@ -4947,6 +4967,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       const done = musters.reduce((s, o) => s + (o.kind === 'draft' && o.node === id ? o.n : 0), 0)
       bs.push(rb('nr-draft', icon('unit-spear'), done > 0 ? `+${done}` : '징병', draftLimit(r, me(), id) - done > 0 || done > 0 ? '' : noBtn('이번 달엔 이 고을에서 더 뽑을 장정이 없습니다'), done > 0 ? ' on' : ''))
+      { const cb = callBtn(r, id, true); if (cb !== '') bs.push(cb) }
       const nb = nextBuild(r, id)
       const going = (r.builds ?? []).find((b) => b.node === id)
       if (nb !== null || going !== undefined) {
@@ -7776,6 +7797,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const node = d['node']!
         const same = (o: Order): boolean => o.kind === 'build' && o.node === node
         musters = musters.some(same) ? musters.filter((o) => !same(o)) : [...musters, { kind: 'build', faction: me(), node, what: d['what'] as 'palisade' | 'moat' }]
+        break
+      }
+      case 'call': {
+        // 곳간 열기 — 이번에 부를 수 있는 만큼 한꺼번에 · 다시 누르면 거둔다
+        const node = d['node']!
+        const same = (o: Order): boolean => o.kind === 'call' && o.node === node
+        if (musters.some(same)) { musters = musters.filter((o) => !same(o)); break }
+        const n = callLimit(plan(), me(), node)
+        if (n > 0) musters = [...musters, { kind: 'call', faction: me(), node, n }]
         break
       }
       case 'market': openSheet({ kind: 'market' }); break

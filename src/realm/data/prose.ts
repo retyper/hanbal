@@ -845,6 +845,8 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
         : line.what === 'seed' ? `상단에서 좋은 씨앗을 곡식 ${line.price}에 샀다. 올해 가을걷이가 늘겠다.`
         : line.what === 'silk' ? `상단에서 비단을 곡식 ${line.price}에 사서 이웃 나라들에 보냈다.`
           : `상단에서 ${line.good !== undefined ? GOOD_NAME[line.good] : ''} ${line.n}단을 곡식 ${line.price}섬에 샀다.`
+    case 'call':
+      return line.faction === viewer ? `${node(line.node)}에 곳간을 열었다. 곡식 ${line.grain}섬에 유민 ${line.n}집이 길을 따라 들어온다.` : null
     case 'sell':
       return line.faction === viewer ? `상단에 ${GOOD_NAME[line.good]} ${line.n}단을 팔아 곡식 ${line.grain}섬을 받았다.` : null
     case 'work':

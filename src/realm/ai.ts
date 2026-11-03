@@ -20,6 +20,7 @@ import {
 } from './diplomacy.ts'
 import {
   armCost, buildCost, canBuild, canGuard, deongiMen, deongiSplit, draftCost, draftLimit, draftNeeds, goodOf, goodsWorth, guardCost, hhOf, menOf, nextBuild, riteAllowed, riteCost, settleLimit, settleTargets, sonoeRoom, stockOf, upkeepOf,
+  callLimit,
 } from './economy.ts'
 import { hasCustom } from './data/customs.ts'
 import { ambushWorth, jointWin, movesOf, type Move } from './estimate.ts'
@@ -601,6 +602,18 @@ function builds(r: Realm, faction: string): Order[] {
 }
 
 /**
+ * 곳간 열기 — 군량 여유가 aiCallSpare 를 넘으면 품이 가장 넉넉한 고을로 유민을 부른다 (위원회 11-04 림월드 ① · 쌓이기만 하던 곡식이 사람이 된다).
+ * 짓기와 따로 — 짓기가 계절마다 하나라 늘 일터가 먼저 먹었다
+ */
+function calls(r: Realm, faction: string): Order[] {
+  const spare = stockOf(r, faction).grain - P.realm.aiDraftReserve * upkeepOf(r, faction, true)
+  if (spare <= P.realm.aiCallSpare) return []
+  const best = sorted(Object.values(r.nodes)).filter((n) => n.owner === faction).map((n) => ({ n, k: callLimit(r, faction, n.id) })).filter((x) => x.k > 0)
+    .sort((a, b) => b.k - a.k || (a.n.id < b.n.id ? -1 : 1))[0]
+  return best !== undefined ? [{ kind: 'call', faction, node: best.n.id, n: best.k }] : []
+}
+
+/**
  * 약조를 깬다 (형: "동맹국도 우릴 배신할수 있고 적국도 아군이 되기도 하는 … 근거가 있게") — 까닭이 있을 때 aiBreakChance 로.
  * 상대가 앞서가는 나라가 됐거나(너무 커졌다), 탐욕스러운 나라에게 상대가 만만해 보일 때. 플레이어도 든다 — 깨면 통보가 간다.
  * 깨면 다음 계절부터 칠 수 있다 (spared) — 한 계절의 말미가 플레이어에게는 경고다.
@@ -767,6 +780,7 @@ function decideNow(r: Realm, faction: string, brain: Brain): Order[] {
   const end = isSeasonEnd(r)
   const talk = brain === 'random' ? [] : [...answers(r, faction), ...(end ? [...breaks(r, faction), ...envoys(r, faction)] : [])]
   const bs = brain === 'random' || !end ? [] : builds(r, faction)
+  const cs = brain === 'random' || brain === 'reckless' || !end ? [] : calls(upTo([...first, ...gs, ...bs]), faction)
   // 공작은 징병·개척·제사·경계로 곡식을 쓴 뒤의 창고로 셈한다 (판정도 그 뒤다 — 2단계)
   const ps = brain === 'random' || !end ? [] : plots(upTo([...first, ...gs]), faction, brain)
   const hs = brain === 'random' ? [] : heroCare(r, faction)
@@ -776,7 +790,7 @@ function decideNow(r: Realm, faction: string, brain: Brain): Order[] {
   // 출정은 aiMarchEvery 턴마다 정한다 — 달 시계에서 달마다 정하면 싸움의 박자가 세 배가 된다 (길은 달로 가도 군장은 계절마다 출정을 정한다)
   // 연달아 진 AI 나라는 몇 계절 새 출정을 쉰다 (달 시계 · rout.ts · FOCUS C)
   const go = aiMarchTurn(r, faction) && !beatenResting(r, faction)
-  return [...talk, ...first, ...gs, ...ps, ...bw, ...hs, ...as, ...bs, ...lentMoves(r, faction), ...(!go ? [] : brain === 'planner' ? plan(r, faction) : moves(r, faction, brain))]
+  return [...talk, ...first, ...gs, ...ps, ...bw, ...hs, ...as, ...bs, ...cs, ...lentMoves(r, faction), ...(!go ? [] : brain === 'planner' ? plan(r, faction) : moves(r, faction, brain))]
 }
 
 /**

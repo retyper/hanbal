@@ -328,7 +328,7 @@ export function cardPreview(r: Realm, c: Card, pick: 0 | 1 | 2, have?: { readonl
     }
     case 'gift':
       // 크게 답례하면 곡식이 나간다 — 받은 선물보다 크게 (형 11-04: "후하게 대접한다에 돈 쓰는 게 없이 친해지기만 함")
-      return { sure: pick === 0 ? { grain: earn(R.cardGoodGrain) } : { grain: -earn(R.cardGiftReturn), favor: [{ to: c.from !== undefined ? [c.from] : [], d: R.cardGiftFavor }] } }
+      return { sure: pick === 0 ? { grain: earn(R.cardGoodGrain) } : { grain: cost(R.cardGiftReturn), favor: [{ to: c.from !== undefined ? [c.from] : [], d: R.cardGiftFavor }] } }
     case 'fishbridge':
       // 나루를 끊는다 — 쫓던 동부여 군대의 기가 꺾인다 · 알린다 — 우리 기운이 오른다
       return { sure: pick === 0 ? { foe: { faction: 'buyeo', d: R.cardFishMorale } } : cheer }
