@@ -1078,7 +1078,7 @@ const ANIM_SOL = SOL_ANIM_AR // 병종 → 띠 한 칸의 가로세로 비 (art.
  * (형 10-25: "수군이미지는 배태우지말고 … 오직 수상전투 할때만 배탄 수군")
  */
 function solArt(k: string, sea: boolean): string {
-  if (k === 'militia') return 'spear' // 농민군 — 전용 그림이 오기 전까지 창병 그림을 작고 흐리게 (.tkm)
+  // 농민군은 제 그림(anim2/militia.png · 삼베옷·도롱이·돌창 · 제미나이 11-04) — 조금 작게 (.tkm)
   return k === 'boat' && !sea ? 'marine' : k
 }
 /**
@@ -1603,7 +1603,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       // 병사 하나 — 큰 병사는 크게, 깃발 병사는 등에 나라 깃발
       const tok = (tk: Tok, x: number, oy: number): string => {
         const k = solArt(tk.k, sea)
-        const mil = tk.k === 'militia' ? ' tkm' : '' // 농민군 — 작고 흐리게
+        const mil = tk.k === 'militia' ? ' tkm' : '' // 농민군 — 조금 작게
         const { r, s2 } = tk
         const hl = oy < -0.5 ? ' hi' : oy > 0.5 ? ' lo' : ''
         const sc = ((0.8 + 0.4 * ((oy + 40) / 80)) * TSC[tk.t]).toFixed(2)
@@ -2155,7 +2155,7 @@ export const WAR_CSS = `
 .ap .wf2s .tk.wsp::before { content: ''; position: absolute; left: 18%; right: 18%; bottom: -4%; height: 12%; border-radius: 50%; background: radial-gradient(closest-side, #000b, #0000); z-index: -1; pointer-events: none; }
 .ap .wf2s .tk.wsp.tkd::before { opacity: .4; }
 /* 농민군 — 돌창 든 마을 사람: 작고 흐리게 · 발밑 고리는 흙빛 (filter 없이 · 폰 그래픽 한도) · 전용 그림은 그림 줄 「농민군 띠」 (형 11-03: "정찰 땐 200~300인데 창방패병 1000이면 당황") */
-.ap .wf2s .tk.tkm { scale: .82; opacity: .78; }
+.ap .wf2s .tk.tkm { scale: .9; }
 .ap .wf2s .tk.wsp.tkm::before, .ap .wf2s.foe .tk.wsp.tkm.tku::before, .ap .wf2s .tk.wsp.tkm.tku::before { background: radial-gradient(closest-side, #000a, #0006 50%, #b08a4ac0 74%, #b08a4a00); }
 /* 폰 — v2 말은 그림 칸이 몸의 서너 배로 넓다(창이 다 뻗어도 들어가게). 그 말에 빛(filter: drop-shadow)을 걸면 폰에서 칸이 통째로 하늘색 띠로 번졌다
    (형 10-29 갤럭시: 목책 곁 우리 창병 위에 기울어진 하늘색 막대 · 너비 128px = 창병 칸 131px · 기울기 8도 = 돌격 앞줄 9도). 폰에선 빛을 끄고 발밑 고리로 편을 가른다 */

@@ -447,10 +447,10 @@ export const UNIT_ICON = {
  * 병사 동작 그림 둘째 판(public/realm/anim2/<병종>.png · 20컷: 서기 4 · 걷기 8 · 공격 6 · 움찔 · 쓰러짐) 한 칸의 가로세로 비 — tools/anim-pack.py 가 찍어 준다.
  * 있는 병종만 새 띠로 그린다 (없으면 옛 8컷 띠). 칸이 넓다 — 창이 다 뻗어도 들어가게 (형 10-29)
  */
-export const SOL_ANIM2: Readonly<Record<string, number>> = { spear: 548 / 160, bow: 629 / 160, shield: 317 / 160, pike: 475 / 160, axe: 208 / 160, marine: 372 / 160, horse: 232 / 160, boat: 336 / 160, crossbow: 768 / 160 }
+export const SOL_ANIM2: Readonly<Record<string, number>> = { militia: 168 / 160, spear: 548 / 160, bow: 629 / 160, shield: 317 / 160, pike: 475 / 160, axe: 208 / 160, marine: 372 / 160, horse: 232 / 160, boat: 336 / 160, crossbow: 768 / 160 }
 /** 지도 길 위의 이주민 — 지게 진 사람 걷기 8컷 띠 (제미나이 11-03 · assets_src/realm/gemini/migrant · tools/strip-frames.mjs 4x2) · 칸 가로/세로 */
 export const MIGRANT_ANIM = { file: 'anim2/migrant.png', nf: 8, ar: 102 / 160 } as const
-export const SOL_ANIM_AR: Readonly<Record<string, number>> = { spear: 167 / 160, shield: 165 / 160, bow: 139 / 160, horse: 157 / 160, boat: 164 / 160, crossbow: 152 / 160, pike: 162 / 160, axe: 144 / 160, marine: 155 / 160 }
+export const SOL_ANIM_AR: Readonly<Record<string, number>> = { militia: 168 / 160, spear: 167 / 160, shield: 165 / 160, bow: 139 / 160, horse: 157 / 160, boat: 164 / 160, crossbow: 152 / 160, pike: 162 / 160, axe: 144 / 160, marine: 155 / 160 }
 
 /**
  * 장수 동작 그림(public/realm/anim2/gen-<결>.png · 20컷, 병사 v2 띠와 같은 차례: 서기 4 · 걷기 8 · 공격 6 · 움찔 · 쓰러짐) — tools/general-pack.py 가 찍어 준다.
