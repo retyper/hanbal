@@ -69,3 +69,4 @@ This is an original character from my own Korean historical fantasy strategy gam
 - 다음 차례: 소금 과부(받기) · 연회 첩자 · w-20 대장장이 딸 · w-08 마한 전사 · w-83·84·85 · w-96 · w-91·92·93 · w-21(18세 · 노출 낮게)
 - w-18-jinhan-salt-widow 진한 소금 과부 — 1차 2판(roqkfeke12 · 검토 PASS) — 11-03
 - w-14-feast-spy 연회 첩자 — 1차 2판(roqkfeke12 · 검토 PASS) — 11-03
+- w-20-gaya-smith-daughter 가야 대장장이 딸 — 1차 2판(roqkfeke12 · 검토 PASS) — 11-03
