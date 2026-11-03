@@ -82,3 +82,4 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-91-saro-mulsae 사로 양산 물새 — 1차 2판(retyper92 · 검토 PASS) — 11-03
 - 검토: w-21 백제 무희(18세) — 허리가 드러남 → 저고리를 길게 해 치마허리와 겹치게 다시 (몸은 통과)
 - w-23-usisan-whale-queen 우시산 고래 여왕 — 1차 2판(retyper92 · 검토 PASS) — 11-03
+- w-24-apdok-queen 압독 여왕 — 1차 2판(retyper92 · 검토 PASS) — 11-03
