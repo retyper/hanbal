@@ -55,3 +55,4 @@ This is an original character from my own Korean historical fantasy strategy gam
 - l-L3-heo-hwangok 허황옥 — 1차 다시(두 팔 · edu · 검토 PASS) — 11-03
 - w-52-biryuna-songbi 송비 — 1차 2판(retyper · 검토 PASS) — 11-03
 - w-67-buyeo-haedal 해달 — 1차 2판(retyper · 검토 PASS) — 11-03
+- w-70-bukokjeo-mulbeom 물범 — 1차 2판(retyper · 검토 PASS) — 11-03
