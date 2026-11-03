@@ -80,3 +80,5 @@ This is an original character from my own Korean historical fantasy strategy gam
 - 11-03 밤 roqkfeke12 까지 다 씀. 남은 차례: w-93 사로 범이(프롬프트 준비됨 · 한도로 못 뽑음) · w-91 사로 물새(19세) · w-21 백제 무희(18세 · 노출 낮게) · 그 뒤 이름 없는 w- 얼굴들(옛 결 각성)
 - w-93-saro-beomi 사로 진지 범이 — 1차 2판(retyper92 · 검토 PASS) — 11-03
 - w-91-saro-mulsae 사로 양산 물새 — 1차 2판(retyper92 · 검토 PASS) — 11-03
+- 검토: w-21 백제 무희(18세) — 허리가 드러남 → 저고리를 길게 해 치마허리와 겹치게 다시 (몸은 통과)
+- w-23-usisan-whale-queen 우시산 고래 여왕 — 1차 2판(retyper92 · 검토 PASS) — 11-03
