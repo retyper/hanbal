@@ -75,3 +75,4 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-83-gyeonji-beodeul 견지 버들 — 1차 2판(roqkfeke12 · 트임 위로 잘라 냄, 원본 -raw) — 11-03
 - w-85-sinji-neoul 신지 너울 — 1차 2판(roqkfeke12 · 검토 PASS) — 11-03
 - w-84-salhae-dallae 살해 달래 — 1차 2판(roqkfeke12 · 고리자루 쌍칼 · 검토 PASS) — 11-03
+- w-96-haengin-neoul 행인 너울 — 1차 2판(roqkfeke12 · 검토 PASS) — 11-03
