@@ -33,7 +33,7 @@ import {
   GOODS, armCost, buildCost, canBuild, canGuard, draftCost, draftIronCost, draftLimit, draftNeeds, draftPay, goodOf, guardCost, hhGrowth, isCoast, militiaMen, nextBuild, nodeHarvest, nodeYield, nodeSpecials, upkeepOf, riteAllowed, riteCost,
   autoFlows, crowdOf, migratePath, fieldMul, homeRoom, inboundOf, inboundRate, isRiverside, landMul, placeLimit, placeNodes, workMul,
   goodsWorth,
-  foundCost, callCost, callLimit, callWhy,
+  foundCost, callCost, callLimit, callWhy, draftWhy,
 } from '../../realm/economy.ts'
 import { goalReach, goalRoute } from '../../realm/goal.ts'
 import { approachMoves, armyPower, jointWin, matchupHints, movesOf, type Move } from '../../realm/estimate.ts'
@@ -2787,6 +2787,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   /** 이 고을에서 이 병종을 못 뽑는 까닭 — 단추를 죽이지 않고 누르면 이 말과 소리 (위원회 11-04 UX ⑤ · 기병이 골라지고 「군사 0명 뽑기」가 남았다) */
   const unitWhy = (u: UnitKind): string => u === 'horse' ? '말이 없습니다. 목장(너른벌)에서 나거나 상단에서 삽니다' : u === 'boat' ? '배 지을 나무가 없습니다. 솔숲·산·산성 땅에서 납니다' : u === 'crossbow' ? '쇠뇌 틀이 다 찼거나 쇠가 없습니다' : '이번 달엔 이 고을에서 더 뽑을 장정이 없습니다'
+  /** 「최대 n」을 막는 것 — 그림 한 칸 · 누르면 한 줄 (위원회 11-04 UX ⑫) */
+  const limWhyHtml = (w: 'season' | 'cap' | 'grain' | 'goods', u: UnitKind): string => {
+    const [ic, why] = w === 'grain' ? [GOOD_ICON.grain, '곡식이 모자라 이만큼만 뽑습니다'] : w === 'cap' ? ['unit-spear', '나라가 먹일 수 있는 군사가 다 찼습니다. 고을과 집이 늘면 더 뽑습니다'] : w === 'goods' ? [u === 'horse' ? GOOD_ICON.horse : u === 'boat' ? GOOD_ICON.wood : GOOD_ICON.iron, unitWhy(u)] : ['settle-farm-village', '이 고을이 이번 계절에 내놓을 장정 몫입니다. 계절이 바뀌면 다시 찹니다']
+    return `<button class="limwhy" data-act="busy"${noBtn(why)}>${icon(ic, 'cgi')}</button>`
+  }
   function draftCard(r: Realm, id: string, big: boolean): string {
     const n = r.nodes[id]!
     const pending = musters.filter((o): o is Extract<Order, { kind: 'draft' }> => o.kind === 'draft')
@@ -2837,7 +2842,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       // 뽑은 만큼 일손이 빠진다 (season.draftArmy · draftHHPerMan) — 글 대신 집 ▼ 칩 (가을걷이는 봄 띠가 이미 말한다)
       const hhLoss = Math.round(want * P.realm.draftHHPerMan)
       h += `<div class="stepper"><button data-act="dn" data-node="${n.id}" data-d="${-step}">−</button><b>${want}</b>`
-      h += `<button data-act="dn" data-node="${n.id}" data-d="${step}">+</button><span class="mute">명 · 최대 ${lim}</span>${costHtml({ grain: Math.ceil(dp.grain), ...(dp.iron > 0 ? { iron: dp.iron } : {}) })}`
+      h += `<button data-act="dn" data-node="${n.id}" data-d="${step}">+</button><span class="mute">명 · 최대 ${lim}</span>${lim < militiaMen(r, n.id) ? limWhyHtml(draftWhy(r, me(), n.id, unit), unit) : ''}${costHtml({ grain: Math.ceil(dp.grain), ...(dp.iron > 0 ? { iron: dp.iron } : {}) })}`
       h += `${hhLoss > 0 ? `<span class="cost"><b class="cg" title="집 ${hhLoss}"><i>▼</i>${icon('settle-farm-village', 'cgi')}${hhLoss}</b></span>` : ''}</div>`
       // 뽑기 단추는 숫자 줄 밑에 크게 한 줄 — 이게 뽑는 단추라고 바로 알게 (형 10-27)
       h += `<div class="btns"><button class="btn pri men wide" data-act="draft" data-node="${n.id}"${want <= 0 ? noBtn(unitWhy(unit)) : ''}>군사 ${want}명 뽑기</button></div>`

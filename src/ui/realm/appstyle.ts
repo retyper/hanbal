@@ -969,6 +969,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .btn .cost .cg { background: #2a2016d8; border-color: #c9a45a88; color: #f3e6c8; } .ap .btn .cost .cg i { color: #e0b060; }
 .ap .btn.pri .cost .cg { background: #1f170fe0; }
 .ap .btn[aria-disabled="true"] .cost .cg { background: #3a1410d0; border-color: #c8503a99; color: #ffd0c0; } .ap .btn[aria-disabled="true"] .cost .cg i { color: #ff6a4a; }
+.ap .limwhy[aria-disabled="true"] { opacity: 1; cursor: pointer; }
+.ap .limwhy { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; margin-left: 4px; padding: 0; border-radius: 50%; border: 1px solid #c8503a99; background: #3a1410d0; vertical-align: middle; } .ap .limwhy .cgi { width: 18px; height: 18px; object-fit: contain; }
 .ap .hback { margin: 0 0 6px; }
 /* 정찰 고정 📌 */
 .ap .srow { display: flex; align-items: stretch; gap: 4px; } .ap .srow > .row { flex: 1; min-width: 0; }

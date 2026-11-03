@@ -291,6 +291,20 @@ export function draftLimit(r: Realm, faction: string, node: string, unit?: UnitK
   return Math.max(0, Math.min(per, cap, grain, goods))
 }
 
+/** 징병 한도를 막는 것 — 넷 가운데 가장 작은 것 (화면이 「최대 n」 곁에 그림으로 · 위원회 11-04 UX ⑫ · 「장정 40」인데 「최대 5」라 버그로 읽혔다) */
+export function draftWhy(r: Realm, faction: string, node: string, unit?: UnitKind): 'season' | 'cap' | 'grain' | 'goods' {
+  const R = P.realm
+  const lim = draftLimit(r, faction, node, unit)
+  // 병종 탓(말·나무·쇠)이면 그것 — 창병으로 셈한 한도보다 작다
+  if (unit !== undefined && unit !== 'spear' && lim < draftLimit(r, faction, node)) return 'goods'
+  const men = menOf(r, faction)
+  const cap = Math.floor((R.draftCap + draftCapBonus(r, faction) - (hasCustom(r, faction, 'dalcheon') ? R.dalcheonCap : 0)) * (hhOf(r, faction) + men)) - men
+  const grain = (R.draftGrain > 0 ? Math.floor(stockOf(r, faction).grain / R.draftGrain) : Infinity) + deongiMen(r, faction)
+  if (lim >= grain) return 'grain'
+  if (lim >= cap) return 'cap'
+  return 'season'
+}
+
 /** 덩이쇠(변한) — 곡식이 모자랄 때 창고의 쇠로 더 뽑을 수 있는 사람 (쇠를 돈처럼). 덩이쇠가 없으면 0 */
 export function deongiMen(r: Realm, faction: string): number {
   if (!hasCustom(r, faction, 'deongisoe') || P.realm.deongiIron <= 0) return 0
