@@ -49,3 +49,4 @@ This is an original character from my own Korean historical fantasy strategy gam
 - 앞으로: 받을 때마다 검토 에이전트가 팔·손을 세고, 애매하면 넣지 않는다. 자세는 팔이 몸 앞에서 엇갈리지 않는 단순한 것으로.
 - l-L7-aryeong 아령 — 1차 2판(edu · 검토 PASS) — 11-03
 - w-01-silla-princess 신라 공주 — 1차 2판 다시(edu · 검토 PASS) — 11-03
+- w-05-baekje-queen 백제 왕비 — 1차 2판 다시(edu · 검토 PASS) — 11-03
