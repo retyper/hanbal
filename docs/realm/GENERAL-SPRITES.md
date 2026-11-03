@@ -118,4 +118,6 @@ BACKGROUND: flat pure bright green #00FF00 everywhere, no shadows, no ground lin
 5. 화면 그림(1024폭)을 blob 으로 받는다 — 원본 받기 단추는 자주 안 먹힌다
 6. `key-png` → C 의 두 컷을 A·B 의 우하단 칸에 옮김(scratchpad copycell/copyrect) → `strip-frames`(4x2 · B 는 "1,1,2,2,3,4,4,5,6,6,7,8") → `tools/assemble-gen20.mjs` → 찍힌 ar·body 를 `GEN_ANIM` 에
 - 다시 끝낸 것: 칼·활·언월도·여창·여활 장수 · 온조 · 주몽 · 이주민(지도)
-- 남은 것: 여창·여활의 우하단 두 컷(걷기 8번을 4번으로 빌려 씀 · 쓰러짐은 별표 자리를 지움) · 병사 창병·방패병 걷기(같은 병) · 장수마다 제 그림(형 11-03: "여유롭다면 장수마다 전투판 유닛 애니메이션")
+- 11-04: 여창 우하단 두 컷을 새 장(C)으로 갈아 끼움 (`sh tools/fixbr.sh gen-w-spear gen-w-spear-a.png gen-w-spear-b.png "1,1,2,2,3,4,4,5,6,6,7,8" <쓰러짐 네모>` · 검사 그림은 $TMPDIR/chk.png · 쓰러짐 네모 0.01,0.78,0.28,0.22)
+- 11-04: 여활도 같은 길로 (쓰러짐 네모 0.005,0.78,0.26,0.22)
+- 남은 것: 병사 창병·방패병 걷기(같은 병) · 장수마다 제 그림(형 11-03: "여유롭다면 장수마다 전투판 유닛 애니메이션")
