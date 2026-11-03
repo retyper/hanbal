@@ -474,9 +474,10 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   songbi: { ar: 154 / 160, body: 0.934, bow: true }, // 11-04 제 띠 (edu 3.1 Pro · 노란 둥근 무늬 옷·붉은 댕기 · 첫 장은 땅딸막하고 활을 가로로 들어 버림 — 「모델처럼 키 큰」「활은 세워」를 머리말에 넣어 새 대화로)
   hyeokgeose: { ar: 147 / 160, body: 0.921 }, // 11-04 제 띠 (roqkfeke12 u/0 자동 모드 · 흰 비단·보랏빛 깃·곡옥·긴 머리 · 쇠투구)
   oi: { ar: 159 / 160, body: 0.961 }, // 11-04 제 띠 (u/0 · 깃털 다발 쇠투구·붉은 테 미늘·짧은 수염 · 창)
+  mari: { ar: 161 / 160, body: 0.968 }, // 11-04 제 띠 (u/0 · 상투·머리띠·콧등 칼자국·밧줄 타래·푸른 삼베 · 맞음 컷은 창을 둘 쥐고 나와 막기 컷으로 · 찌르기 창끝이 조금 잘림)
 }
 /** 제 그림이 있는 장수 (장수 id → gen-<이름>.png 의 이름) */
-export const GEN_OWN: Readonly<Record<string, string>> = { 'jm-jumong': 'jumong', 'mh-onjo': 'onjo', 'tut-onjo': 'onjo', 'mh-soseono': 'soseono', 'sr-aryeong': 'aryeong', 'jm-haedal': 'haedal', 'buyeo-1': 'haedal', 'jm-songbi': 'songbi', 'biryuna-ruler': 'songbi', 'sr-hyeokgeose': 'hyeokgeose', 'jm-oi': 'oi' }
+export const GEN_OWN: Readonly<Record<string, string>> = { 'jm-jumong': 'jumong', 'mh-onjo': 'onjo', 'tut-onjo': 'onjo', 'mh-soseono': 'soseono', 'sr-aryeong': 'aryeong', 'jm-haedal': 'haedal', 'buyeo-1': 'haedal', 'jm-songbi': 'songbi', 'biryuna-ruler': 'songbi', 'sr-hyeokgeose': 'hyeokgeose', 'jm-oi': 'oi', 'jm-mari': 'mari' }
 type GenLook = { readonly id?: string; readonly look: 'g' | 'w'; readonly traits: readonly string[]; readonly mu: number; readonly tong: number; readonly ryak: number; readonly chi: number; readonly deok: number }
 /**
  * 장수 → 싸움터에 설 그림 (순수). 제 그림이 있으면 그것 · 명궁이면 활 · 통솔이 가장 높고 비기가 날 만큼(tacArtMinStat) 높은 남자는 말 탄 장수 ·
