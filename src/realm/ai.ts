@@ -13,7 +13,7 @@
  */
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
-import { WORKS, canWork, workCost, workOptions } from './works.ts'
+import { WORKS, canWork, targetLv, workCost, workOptions } from './works.ts'
 import { ageSeasons, isSeasonEnd, monthly, seasonIdx } from './calendar.ts'
 import {
   allyFoe, bigTwo, canEscort, envoyOptions, favorOf, friendly, jointTargets, lentStep, nationPower, openAsks, pledgedNodes, powerRange, relationOf, tradeOffer,
@@ -593,7 +593,7 @@ function builds(r: Realm, faction: string): Order[] {
   }
   // 고을 일터 — 지킬 것을 다 둘렀으면 큰 고을부터 그 땅에 맞는 일터를 (둘째 줄이 열려 있으면 그것부터 · works.ts)
   for (const n of mine.slice().sort((a, b) => b.hh - a.hh || (a.id < b.id ? -1 : 1))) {
-    const opts = workOptions(r, n.id).filter((w) => canWork(r, faction, n.id, w) && (workCost(w).grain ?? 0) <= spare)
+    const opts = workOptions(r, n.id).filter((w) => canWork(r, faction, n.id, w) && (workCost(w, targetLv(r, n.id, w)).grain ?? 0) <= spare)
     const pick = opts.find((w) => WORKS[w].needs !== undefined) ?? opts.find((w) => w !== 'yard') ?? opts[0]
     if (pick !== undefined) return [{ kind: 'work', faction, node: n.id, what: pick }]
   }

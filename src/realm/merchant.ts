@@ -13,7 +13,7 @@
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { addGood, goodOf, isCoast, stockOf, worthOf } from './economy.ts'
-import { hasWork } from './works.ts'
+import { bestWorkLv } from './works.ts'
 import type { UnitKind } from './battle.ts'
 import type { Good, Order, Realm, ReportLine } from './types.ts'
 
@@ -50,7 +50,7 @@ function marketNode(r: Realm, faction: string): string | null {
 
 /** 다음에 들를 턴 — 장터가 있으면 더 자주 */
 function every(r: Realm, faction: string): number {
-  return Math.max(2, Math.round(P.realm.merchantEvery * (hasWork(r, faction, 'market') ? P.realm.workMarketEvery : 1)))
+  return Math.max(2, Math.round(P.realm.merchantEvery * Math.pow(P.realm.workMarketEvery, bestWorkLv(r, faction, 'market'))))
 }
 
 /** 물건 고르기 — 시드로 섞어 slots 가지 */
@@ -67,7 +67,7 @@ function stockFor(r: Realm, faction: string): Offer[] {
     { what: 'drum', n: 1, price: R.drumGrain, many: 1 },
     { what: 'ingot', good: 'iron', n: 60, price: Math.round(60 * worthOf('iron') * mk * 0.75), many: 1 },
   ]
-  const slots = Math.max(1, Math.round(R.merchantSlots + (hasWork(r, faction, 'market') ? 1 : 0)))
+  const slots = Math.max(1, Math.round(R.merchantSlots + bestWorkLv(r, faction, 'market')))
   const keyed = pool.map((p, i) => ({ p, i, k: roll(r.seed, r.season, `merchant:${faction}:${i}`) })).sort((a, b) => a.k - b.k || a.i - b.i)
   return keyed.slice(0, slots).sort((a, b) => a.i - b.i).map(({ p, i }) => {
     const { many, ...rest } = p

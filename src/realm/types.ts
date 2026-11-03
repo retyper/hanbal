@@ -37,6 +37,8 @@ export interface RNode {
   readonly old?: string
   /** 고을 일터 — 고을마다 하나 · 고을과 함께 넘어간다 (works.ts) */
   readonly work?: import('./works.ts').WorkWhat
+  /** 일터의 단 (없으면 1) — 올릴수록 효과가 곱으로 붙는다 */
+  readonly workLv?: number
   readonly kind: NodeKind
   readonly tags: readonly Tag[]
   /** 다스리는 세력 id. 무주지는 null */
@@ -943,7 +945,7 @@ export interface Realm {
   /** 짓는 중 — 이 계절 끝에 그 고을 꼬리표가 된다 (economy.applyBuild · stepBuilds) */
   builds?: Array<{ readonly faction: string; readonly node: string; readonly what: BuildWhat; readonly done: number }>
   /** 짓는 중인 고을 일터 (works.ts) — 목책 줄과 따로 */
-  works?: Array<{ readonly faction: string; readonly node: string; readonly what: import('./works.ts').WorkWhat; readonly done: number }>
+  works?: Array<{ readonly faction: string; readonly node: string; readonly what: import('./works.ts').WorkWhat; readonly done: number; readonly lv?: number }>
   /** 머무는 떠돌이 상단 — 나라마다 (merchant.ts) */
   markets?: Record<string, import('./merchant.ts').Market>
   /** 다음 상단이 올 턴 — 나라마다 */
@@ -1249,7 +1251,7 @@ export type ReportLine =
   | { readonly kind: 'partyBack'; readonly faction: string; readonly party: string; readonly node: string; readonly by: string; readonly back: string; readonly n: number }
   /** 짓기 — 시작했다(done false) · 섰다(done true) */
   | { readonly kind: 'build'; readonly faction: string; readonly node: string; readonly what: BuildWhat; readonly done: boolean }
-  | { readonly kind: 'work'; readonly faction: string; readonly node: string; readonly what: import('./works.ts').WorkWhat; readonly done: boolean }
+  | { readonly kind: 'work'; readonly faction: string; readonly node: string; readonly what: import('./works.ts').WorkWhat; readonly done: boolean; readonly lv?: number }
   | { readonly kind: 'merchant'; readonly faction: string; readonly node: string; readonly come: boolean }
   | { readonly kind: 'buy'; readonly faction: string; readonly what: import('./merchant.ts').OfferWhat; readonly n: number; readonly price: number; readonly good?: Good; readonly unit?: import('./battle.ts').UnitKind }
   | { readonly kind: 'sell'; readonly faction: string; readonly good: Good; readonly n: number; readonly grain: number }

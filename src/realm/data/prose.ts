@@ -847,8 +847,8 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
     case 'work':
       if (line.faction !== viewer) return null
       return line.done
-        ? `${node(line.node)}에 ${josa(WORKS[line.what].name, '이', '가')} 섰다. ${WORKS[line.what].does}.`
-        : `${node(line.node)}에 ${josa(WORKS[line.what].name, '을', '를')} 짓기 시작했다.`
+        ? (line.lv !== undefined ? `${node(line.node)}의 ${WORKS[line.what].name}, ${line.lv}단으로 올랐다. ${WORKS[line.what].does}.` : `${node(line.node)}에 ${josa(WORKS[line.what].name, '이', '가')} 섰다. ${WORKS[line.what].does}.`)
+        : (line.lv !== undefined ? `${node(line.node)}의 ${WORKS[line.what].name}, ${line.lv}단으로 올리기 시작했다.` : `${node(line.node)}에 ${josa(WORKS[line.what].name, '을', '를')} 짓기 시작했다.`)
     case 'spoil':
       return line.faction === viewer ? `겨울 동안 곡식 ${line.grain}섬이 썩었다. 소금이 모자랐다.` : null
     case 'discover':

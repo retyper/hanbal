@@ -109,7 +109,7 @@ import { chiefCastOf, hireVoicePath, voiceGate, voiceKind, voicePath, type Voice
 import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
 import { loadTip, tipHtml, tipReadMs } from './loadtips.ts'
 import { worldMapReady } from './worldmap.ts'
-import { WORKS, workBlocked, workCost, workOptions, type WorkWhat } from '../../realm/works.ts'
+import { WORKS, lvGain, workBlocked, workCost, workLv, workOptions, type WorkWhat } from '../../realm/works.ts'
 import { marketIn, marketOf, sellLimit, sellPrice, type Offer } from '../../realm/merchant.ts'
 import { QUALITY_CSS, gfxRowHtml, setGfxPref, startQuality } from './quality.ts'
 import { HOWWIN_CSS, bannerHtml, closeHowWin, howWinDue, howWinMark, lessons, lossOf, openLessons, showBanner, syncPin, type HowKit, type LessonGo, type Loss } from './howwin.ts'
@@ -1820,7 +1820,20 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (n.kind === 'sodo' || (n.kind === 'wild' && n.hh <= 0)) return ''
     if (n.work !== undefined) {
       const w = WORKS[n.work]
-      return `<div class="wkc"><b>일터</b> ${icon(w.icon, 'wki')}<b>${w.name}</b> <span class="mute">${esc(w.does)}</span></div>`
+      const lv = workLv(n)
+      const max = Math.round(P.realm.workLvMax)
+      const stars = '★'.repeat(lv) + '☆'.repeat(Math.max(0, max - lv))
+      let h = `<div class="wkc"><b>일터</b> ${icon(w.icon, 'wki')}<b>${w.name}</b> <span class="wkl">${stars}</span> <span class="mute">${esc(w.does)}</span></div>`
+      const going = (r.works ?? []).find((x) => x.node === id)
+      if (going !== undefined) return h + `<div class="wkc">${icon(w.icon, 'wki')}${going.lv ?? lv + 1}단으로 올리는 중 · ${turnsLabel(r, Math.max(1, going.done - r.season + 1))} 남음</div>`
+      if (lv >= max) return h
+      const c = workCost(n.work, lv + 1)
+      const queued = musters.some((o) => o.kind === 'work' && o.node === id)
+      const lock = workBlocked(r, me(), id, n.work)
+      const short = shortOf(c as Partial<Record<Good, number>>)
+      const why = lock ?? (short !== '' ? short : null)
+      h += `<div class="btns wkb"><button class="btn${queued ? ' on' : ''}" data-act="work" data-node="${id}" data-what="${n.work}"${queued || why === null ? '' : noBtn(why)}>${icon(w.icon, 'wki')}<b>${lv + 1}단으로 올리기</b> ${costHtml(c)}<small class="mute"> 효과 ${(Math.round((lvGain(lv + 1) / lvGain(lv)) * 10) / 10)}배</small></button></div>`
+      return h
     }
     const going = (r.works ?? []).find((w) => w.node === id)
     if (going !== undefined) return `<div class="wkc"><b>일터</b> ${icon(WORKS[going.what].icon, 'wki')}${WORKS[going.what].name} 짓는 중 · ${turnsLabel(r, Math.max(1, going.done - r.season + 1))} 남음</div>`

@@ -1337,6 +1337,7 @@ export const UI_CSS = `
 /* 획득! — 고을을 얻거나 새 마을이 섰다 (형 11-01: "이로운 게 생기면 크고 확실하게") · 튀어 오르고, 생산품이 하나씩 퐁 · 금빛 낱알이 사방으로 · 스스로 걷힌다 */
 /* 고을 일터 칸 (works.ts · 형 11-03 "마을 내정") */
 .ap .wkc { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin: 8px 0 2px; }
+  .ap .wkl { color: #e8c15a; letter-spacing: 1px; font-size: 12px; }
 .ap .wkc img.wki, .ap .wkb img.wki { width: 30px !important; height: 30px !important; flex: none; object-fit: contain; }
 .ap .wkb .btn { padding: 6px 10px; min-height: 0; }
 .ap .wkb { flex-wrap: wrap; }
