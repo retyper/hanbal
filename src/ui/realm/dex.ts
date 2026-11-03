@@ -151,7 +151,7 @@ function card(k: DexKit, x: DexHero, f: number, sel: boolean): string {
   const g = lv >= 2 ? ` style="--g:${GRADE_COLOR[x.grade]}"` : ''
   const gr = k.grow(x.id)
   const grow = gr.lv > 0 || gr.relics !== '' ? `<span class="dxgr">${gr.lv > 0 ? `<b>단련 ${gr.lv}</b>` : ''}${gr.relics}</span>` : ''
-  return `<button class="dxc lv${lv}${lv >= 2 ? ' graded' : ''}${sel ? ' sel' : ''}" data-act="dex-sel" data-id="${x.id}"${g}>${face}${grow}${f & DEX_CAUGHT ? '<span class="rope" title="사로잡은 적이 있다"></span>' : ''}${name}<span class="dxm">${k.esc(x.board === 'wander' ? '떠돌이' : x.nationName)}</span><span class="pips">${pips}</span></button>`
+  return `<button class="dxc lv${lv}${lv >= 2 ? ' graded' : ''}${sel ? ' sel' : ''}" data-act="dex-sel" data-id="${x.id}"${g}>${face}${name}<span class="dxm">${k.esc(x.board === 'wander' ? '떠돌이' : x.nationName)}</span>${grow}<span class="pips">${pips}</span></button>`
 }
 
 /** 고른 장수 — 아래에 붙는 판 */
@@ -243,8 +243,8 @@ export const DEX_CSS = `
 .ap .dexp .dxc.graded { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--g) 70%, transparent)); }
 .ap .dexp .dxc.lv4 { border-image: url(__ART__ui/frame-panel.png?v=3) 118 / 10px stretch; background: linear-gradient(#2c2618, #1f1710) padding-box; }
 .ap .dexp .dxc.sel { filter: drop-shadow(0 0 3px #ffd27a) drop-shadow(0 0 8px #ffd27a88); }
-/* 판 밖에서 키운 것 — 얼굴 위 왼쪽에 단련 단계 · 지닌 유물 (형 10-26: 영웅전 카드에도 「단련 n」) */
-.ap .dexp .dxc .dxgr { position: absolute; top: 3px; left: 3px; z-index: 2; display: flex; align-items: center; gap: 1px; pointer-events: none; }
+/* 판 밖에서 키운 것 — 이름 밑 한 줄에 단련 단계 · 지닌 유물 (형 10-26: 영웅전 카드에도 「단련 n」 · 11-03: 얼굴 위에 얹었더니 얼굴을 가렸다) */
+.ap .dexp .dxc .dxgr { display: flex; align-items: center; justify-content: center; gap: 1px; max-width: 100%; pointer-events: none; }
 .ap .dexp .dxc .dxgr b { padding: 0 2px; border: 4px solid transparent; border-image: url(__ART__ui/btn-dark.png?v=2) 30 33 fill / 4px 5px stretch; border-radius: 0; background: none; color: #ffe08a; font-size: 10px; font-weight: 800; white-space: nowrap; }
 .ap .dexp .dxc .dxgr .rlchip { width: 18px; height: 18px; margin-left: 1px; } .ap .dexp .dxc .dxgr .rlchip img { width: 15px; height: 15px; }
 .ap .dexp .dxgrl { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 6px 0 0; font-size: 12.5px; color: #cbbf9f; }
@@ -258,8 +258,6 @@ export const DEX_CSS = `
 .ap .dexp .pips { display: flex; gap: 3px; margin-top: 1px; } .ap .dexp .pips i { width: 6px; height: 6px; border-radius: 50%; background: #463a33; }
 .ap .dexp .pips i.on:nth-child(1) { background: #90827a; } .ap .dexp .pips i.on:nth-child(2) { background: #a8b8d0; }
 .ap .dexp .pips i.on:nth-child(3) { background: #e0915a; } .ap .dexp .pips i.on:nth-child(4) { background: #f0c860; }
-.ap .dexp .rope { position: absolute; top: 46px; right: 10px; width: 22px; height: 22px; border-radius: 50%; background: #8a5a2a; border: 2px solid #e0b070;
-  box-shadow: 0 1px 4px #000a; } .ap .dexp .rope::after { content: ''; position: absolute; inset: 4px; border-radius: 50%; border: 2px dashed #f0d8a8; }
 .ap .dexp .dxclan { max-width: 980px; margin: 10px auto; padding: 0 14px 40px; display: flex; flex-direction: column; gap: 8px; }
 .ap .dexp .clk { display: flex; gap: 10px; align-items: center; padding: 0; border-radius: 0; border: 10px solid transparent; border-image: url(__ART__ui/card.png?v=1) 24 fill / 10px stretch; background: none; }
 .ap .dexp .clk > div { display: flex; flex-direction: column; gap: 2px; } .ap .dexp .clk .dxf.none { font-size: 16px; color: #f0b8c8; }
