@@ -14,10 +14,14 @@ import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { addGood, goodOf, isCoast, stockOf, worthOf } from './economy.ts'
 import { bestWorkLv } from './works.ts'
+import { setHarvest } from './events.ts'
+import { addFavor } from './diplomacy.ts'
+import { knownOf } from './discovery.ts'
 import type { UnitKind } from './battle.ts'
-import type { Good, Order, Realm, ReportLine } from './types.ts'
+import type { Good, Hero, Order, Realm, ReportLine } from './types.ts'
 
-export type OfferWhat = 'good' | 'merc' | 'drum' | 'ingot'
+/** good 자원 묶음 · ingot 큰 묶음(싸게 · 쇠뿐 아니라 소금·말·나무도 · good 에 무엇인지) · merc 용병 · drum 큰 북 · heal 약초 · seed 좋은 씨앗 · silk 비단 선물 */
+export type OfferWhat = 'good' | 'merc' | 'drum' | 'ingot' | 'heal' | 'seed' | 'silk'
 
 export interface Offer {
   readonly id: string
@@ -41,6 +45,11 @@ export interface Market {
   sold: number
 }
 
+/** 다쳐 누운 우리 장수 — 약초가 일으킨다 */
+function hurtHeroes(r: Realm, faction: string): Hero[] {
+  return Object.values(r.heroes).filter((h) => h.faction === faction && h.status === 'free' && h.woundedUntil !== undefined && h.woundedUntil > r.season)
+}
+
 /** 상단이 설 고을 — 사람 사는 바닷가 우리 고을 가운데 큰 곳, 없으면 도읍 */
 function marketNode(r: Realm, faction: string): string | null {
   const coast = Object.values(r.nodes).filter((n) => n.owner === faction && n.hh > 0 && n.kind !== 'sodo' && isCoast(r, n.id))
@@ -58,14 +67,24 @@ function stockFor(r: Realm, faction: string): Offer[] {
   const R = P.realm
   const mk = R.merchantMarkup
   const pool: Array<Omit<Offer, 'id' | 'left'> & { many: number }> = [
-    { what: 'good', good: 'iron', n: 20, price: Math.round(20 * worthOf('iron') * mk), many: 2 },
-    { what: 'good', good: 'salt', n: 25, price: Math.round(25 * worthOf('salt') * mk), many: 2 },
-    { what: 'good', good: 'horse', n: 10, price: Math.round(10 * worthOf('horse') * mk), many: 2 },
-    { what: 'good', good: 'wood', n: 25, price: Math.round(25 * worthOf('wood') * mk), many: 2 },
+    { what: 'good', good: 'iron', n: 20, price: Math.round(20 * worthOf('iron') * mk), many: 3 },
+    { what: 'good', good: 'salt', n: 25, price: Math.round(25 * worthOf('salt') * mk), many: 3 },
+    { what: 'good', good: 'horse', n: 10, price: Math.round(10 * worthOf('horse') * mk), many: 3 },
+    { what: 'good', good: 'wood', n: 25, price: Math.round(25 * worthOf('wood') * mk), many: 3 },
     { what: 'merc', unit: 'spear', n: R.mercMen, price: Math.round(R.mercMen * R.mercGrainPer), many: 1 },
     { what: 'merc', unit: 'bow', n: Math.round(R.mercMen * 0.7), price: Math.round(R.mercMen * 0.7 * R.mercGrainPer * 1.3), many: 1 },
+    { what: 'merc', unit: 'shield', n: Math.round(R.mercMen * 0.8), price: Math.round(R.mercMen * 0.8 * R.mercGrainPer * 1.2), many: 1 },
+    { what: 'merc', unit: 'horse', n: Math.round(R.mercMen * 0.4), price: Math.round(R.mercMen * 0.4 * R.mercGrainPer * 2.2), many: 1 },
     { what: 'drum', n: 1, price: R.drumGrain, many: 1 },
+    // 큰 묶음 — 낱개보다 싸다 (쇠 · 소금 · 말 · 나무)
     { what: 'ingot', good: 'iron', n: 60, price: Math.round(60 * worthOf('iron') * mk * 0.75), many: 1 },
+    { what: 'ingot', good: 'salt', n: 80, price: Math.round(80 * worthOf('salt') * mk * 0.75), many: 1 },
+    { what: 'ingot', good: 'horse', n: 30, price: Math.round(30 * worthOf('horse') * mk * 0.75), many: 1 },
+    { what: 'ingot', good: 'wood', n: 80, price: Math.round(80 * worthOf('wood') * mk * 0.75), many: 1 },
+    // 판의 다른 자리에 닿는 것 — 다친 장수 · 가을걷이 · 이웃의 마음 (형 11-04: "살 게 더 다양하고 많았으면")
+    ...(hurtHeroes(r, faction).length > 0 ? [{ what: 'heal' as const, n: 1, price: R.healGrain, many: 1 }] : []),
+    { what: 'seed', n: 1, price: R.seedGrain, many: 1 },
+    ...(knownOf(r, faction).some((x) => x !== faction) ? [{ what: 'silk' as const, n: 1, price: R.silkGrain, many: 1 }] : []),
   ]
   const slots = Math.max(1, Math.round(R.merchantSlots + bestWorkLv(r, faction, 'market')))
   const keyed = pool.map((p, i) => ({ p, i, k: roll(r.seed, r.season, `merchant:${faction}:${i}`) })).sort((a, b) => a.k - b.k || a.i - b.i)
@@ -109,7 +128,7 @@ export function stepMarket(r: Realm, lines: ReportLine[]): void {
 export function canBuy(r: Realm, faction: string, offer: string): boolean {
   const m = marketOf(r, faction)
   const o = m?.offers.find((x) => x.id === offer)
-  return o !== undefined && o.left > 0 && stockOf(r, faction).grain >= o.price
+  return o !== undefined && o.left > 0 && stockOf(r, faction).grain >= o.price && (o.what !== 'heal' || hurtHeroes(r, faction).length > 0)
 }
 
 export function applyBuy(r: Realm, o: Extract<Order, { kind: 'buy' }>, lines: ReportLine[]): void {
@@ -119,7 +138,14 @@ export function applyBuy(r: Realm, o: Extract<Order, { kind: 'buy' }>, lines: Re
   stockOf(r, o.faction).grain -= of.price
   of.left -= 1
   if ((of.what === 'good' || of.what === 'ingot') && of.good !== undefined) addGood(r, o.faction, of.good, of.n)
-  else if (of.what === 'drum') {
+  else if (of.what === 'heal') {
+    // 약초 — 다쳐 누운 우리 장수가 바로 일어난다
+    for (const h of hurtHeroes(r, o.faction)) delete h.woundedUntil
+  } else if (of.what === 'seed') setHarvest(r, o.faction, 1 + P.realm.seedHarvest)
+  else if (of.what === 'silk') {
+    // 비단 선물 — 아는 나라마다 마음이 조금씩
+    for (const x of knownOf(r, o.faction)) if (x !== o.faction) addFavor(r, o.faction, x, P.realm.silkFavor)
+  } else if (of.what === 'drum') {
     for (const a of Object.values(r.armies)) if (a.faction === o.faction) a.morale = Math.min(P.realm.moraleMax, a.morale + P.realm.drumMorale)
   } else if (of.what === 'merc' && of.unit !== undefined) {
     let id = ''

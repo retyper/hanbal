@@ -11,6 +11,7 @@ import assert from 'node:assert/strict'
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import { marketOf, sellLimit } from '../../src/realm/merchant.ts'
 import { goodOf } from '../../src/realm/economy.ts'
+import { knownOf } from '../../src/realm/discovery.ts'
 import { advance } from '../../src/realm/season.ts'
 import { P } from '../../src/tune/params.ts'
 import type { Realm } from '../../src/realm/types.ts'
@@ -66,5 +67,36 @@ describe('떠돌이 상단', () => {
     const a = untilMarket(byeonhanMini(3))
     const b = untilMarket(byeonhanMini(3))
     assert.deepEqual(marketOf(a, a.player)!.offers, marketOf(b, b.player)!.offers)
+  })
+})
+
+describe('떠돌이 상단 — 판의 다른 자리에 닿는 물건 (형 11-04: "살 게 더 다양하고 많았으면")', () => {
+  /** 상단을 세우고 그 물건 하나만 놓는다 */
+  const withOffer = (what: 'heal' | 'seed' | 'silk'): Realm => {
+    const r = untilMarket(byeonhanMini(1))
+    r.stock[r.player]!.grain = 5000
+    r.markets![r.player]!.offers.splice(0, Infinity, { id: 'x', what, n: 1, price: 50, left: 1 })
+    return r
+  }
+  it('약초 — 다쳐 누운 우리 장수가 바로 일어난다 · 다친 장수가 없으면 안 산다', () => {
+    const r = withOffer('heal')
+    assert.equal(advance(r, [{ kind: 'buy', faction: r.player, offer: 'x' }]).report.lines.filter((l) => l.kind === 'buy').length, 0)
+    const h = Object.values(r.heroes).find((x) => x.faction === r.player && x.status === 'free')!
+    h.woundedUntil = r.season + 5
+    const { next, report } = advance(r, [{ kind: 'buy', faction: r.player, offer: 'x' }])
+    assert.equal(report.lines.filter((l) => l.kind === 'buy').length, 1)
+    assert.ok((next.heroes[h.id]!.woundedUntil ?? -1) <= next.season)
+  })
+  it('좋은 씨앗 — 그해 가을걷이 곱이 오른다', () => {
+    const r = withOffer('seed')
+    const { next } = advance(r, [{ kind: 'buy', faction: r.player, offer: 'x' }])
+    assert.ok((next.harvestMod?.[r.player]?.mul ?? 1) > (r.harvestMod?.[r.player]?.mul ?? 1))
+  })
+  it('비단 — 아는 나라의 호감이 오른다', () => {
+    const r = withOffer('silk')
+    const a = advance(r, []).next
+    const b = advance(r, [{ kind: 'buy', faction: r.player, offer: 'x' }]).next
+    assert.ok(knownOf(r, r.player).some((x) => x !== r.player))
+    assert.notDeepEqual(a.relations, b.relations)
   })
 })

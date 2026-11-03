@@ -260,7 +260,7 @@ export const CARDS: Readonly<Record<CardKind, CardInfo>> = {
     ask: '어떻게 맞을까?',
     opts: [
       { name: '선물을 받는다', does: '곡식이 들어온다' },
-      { name: '크게 답례한다', does: '{f}의 호감이 크게 오른다' },
+      { name: '크게 답례한다', does: '곡식을 내어 답례한다 · {f}의 호감이 크게 오른다' },
     ],
   },
   hunt: {

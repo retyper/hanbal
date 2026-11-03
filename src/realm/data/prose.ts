@@ -841,6 +841,9 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       if (line.faction !== viewer) return null
       return line.what === 'merc' && line.unit !== undefined ? `상단에서 ${UNIT_NAME[line.unit]} 용병 ${line.n}명을 곡식 ${line.price}에 샀다.`
         : line.what === 'drum' ? `상단에서 큰 북을 곡식 ${line.price}에 샀다. 우리 군대의 사기가 올랐다.`
+        : line.what === 'heal' ? `상단에서 약초와 꿀을 곡식 ${line.price}에 샀다. 다쳐 누웠던 장수들이 일어났다.`
+        : line.what === 'seed' ? `상단에서 좋은 씨앗을 곡식 ${line.price}에 샀다. 올해 가을걷이가 늘겠다.`
+        : line.what === 'silk' ? `상단에서 비단을 곡식 ${line.price}에 사서 이웃 나라들에 보냈다.`
           : `상단에서 ${line.good !== undefined ? GOOD_NAME[line.good] : ''} ${line.n}단을 곡식 ${line.price}섬에 샀다.`
     case 'sell':
       return line.faction === viewer ? `상단에 ${GOOD_NAME[line.good]} ${line.n}단을 팔아 곡식 ${line.grain}섬을 받았다.` : null

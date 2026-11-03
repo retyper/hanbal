@@ -1819,10 +1819,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   // ───────── 떠돌이 상단 (merchant.ts · 형 11-03: "쇼핑이란 걸 할 수 있어야 한다")
   const offerName = (o: Offer): string => o.what === 'merc' && o.unit !== undefined ? `${UNIT_NAME[o.unit]} 용병 ${o.n}명`
-    : o.what === 'drum' ? '큰 북' : o.what === 'ingot' ? `덩이쇠 꾸러미 · 철 ${o.n}` : `${o.good !== undefined ? GOOD_NAME[o.good] : ''} ${o.n}`
+    : o.what === 'drum' ? '큰 북' : o.what === 'heal' ? '약초와 꿀' : o.what === 'seed' ? '좋은 씨앗' : o.what === 'silk' ? '비단 선물'
+      : o.what === 'ingot' ? (o.good === 'iron' ? `덩이쇠 꾸러미 · 철 ${o.n}` : `${o.good !== undefined ? GOOD_NAME[o.good] : ''} 큰 묶음 ${o.n}`) : `${o.good !== undefined ? GOOD_NAME[o.good] : ''} ${o.n}`
   const offerDoes = (o: Offer): string => o.what === 'merc' ? '상단이 선 고을에 바로 군대가 선다'
-    : o.what === 'drum' ? `모든 우리 군대 사기 +${Math.round(P.realm.drumMorale * 100)}` : o.what === 'ingot' ? '철 큰 묶음 · 낱개보다 싸다' : '곳간에 바로 든다'
-  const offerIcon = (o: Offer): string => o.what === 'merc' && o.unit !== undefined ? UNIT_ICON[o.unit] : o.what === 'drum' ? 'unit-drummers' : o.good !== undefined ? GOOD_ICON[o.good] : 'route-caravan'
+    : o.what === 'drum' ? `모든 우리 군대 사기 +${Math.round(P.realm.drumMorale * 100)}`
+      : o.what === 'heal' ? '다쳐 누운 우리 장수가 모두 바로 일어난다'
+        : o.what === 'seed' ? `올해 가을걷이 +${Math.round(P.realm.seedHarvest * 100)}%`
+          : o.what === 'silk' ? `아는 나라마다 호감 +${P.realm.silkFavor}`
+            : o.what === 'ingot' ? '큰 묶음 · 낱개보다 싸다' : '곳간에 바로 든다'
+  const offerIcon = (o: Offer): string => o.what === 'merc' && o.unit !== undefined ? UNIT_ICON[o.unit] : o.what === 'drum' ? 'unit-drummers'
+    : o.what === 'heal' ? 'good-honey' : o.what === 'seed' ? 'good-millet' : o.what === 'silk' ? 'good-silk' : o.good !== undefined ? GOOD_ICON[o.good] : 'route-caravan'
   /** 이번 턴 골라 둔 팔기 — 물건마다 개수 · 받을 곡식 합 */
   const pendingSell = (): { by: Partial<Record<Good, number>>; grain: number } => {
     const by: Partial<Record<Good, number>> = {}

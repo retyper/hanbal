@@ -4162,12 +4162,21 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     pop.replaceChildren()
     popG = undefined
   }
+  /**
+   * 깃발 판을 붙일 자리 — 그 무리가 전장에 그려져 있으면 그 무리, 아니면(아직 안 닿은 원군과 함께 오는 궁병처럼 그림이 없다) 우리 다른 무리 · 그것도 없으면 전장 가운데.
+   * 예전엔 자리가 없으면 판이 안 떠서 고를 수가 없었고, 자동전투로 넘길 수밖에 없었다 (형 11-04: "원군 도착 직전에 궁병 선택지가 있는데 궁병이 없어서 뭘 고를 수가 없음")
+   */
+  const popRect = (g: Grp | 'lead'): DOMRect => {
+    const q = groupRect('us', g) ?? groupRect('us', 'lead') ?? groupRect('us', 'front') ?? groupRect('us', 'bows') ?? groupRect('us', 'horse')
+    if (q !== null) return q
+    const fr = sc.querySelector<HTMLElement>('.wfield')?.getBoundingClientRect()
+    return fr !== undefined && fr.width > 0 ? new DOMRect(fr.left + fr.width * 0.3, fr.top + fr.height * 0.5, fr.width * 0.2, 40) : new DOMRect(window.innerWidth * 0.4, window.innerHeight * 0.4, window.innerWidth * 0.2, 40)
+  }
   /** 무리 곁의 깃발 판 — 아래 깃발 칸의 카드를 작게 옮겨 온다 (누르면 같은 일) */
   const openPop = (g: Grp | 'lead'): void => {
     const pane = sc.querySelector<HTMLElement>(`.wgrp[data-g="${g}"]`)
     const tab = sc.querySelector<HTMLElement>(`.wgt[data-g="${g}"]`)
-    const q = groupRect('us', g)
-    if (pane === null || tab === null || q === null) { closePop(); return }
+    if (pane === null || tab === null) { closePop(); return }
     const name = tab.querySelector('.wgn b')?.textContent ?? ''
     const sub = tab.querySelector('.wgn small')?.textContent ?? ''
     fillPane(pane)
@@ -4192,7 +4201,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   }
   /** 깃발 판 자리 — 그 무리 위 가운데, 높이는 아래 띠 바로 위 · 판 높이가 바뀌면(누가 나서나 줄) 다시 */
   const placePop = (): void => {
-    const q = popG === undefined ? null : groupRect('us', popG)
+    const q = popG === undefined ? null : popRect(popG)
     if (q === null) return
     const vw = window.innerWidth
     const vh = window.innerHeight
