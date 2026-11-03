@@ -31,11 +31,12 @@ describe('곳간 열기', () => {
     assert.ok(got >= lim - 1, `${got} / ${lim}`)
   })
 
-  it('한 계절에 한 번 · 한도를 넘으면 아무 일도 없다', () => {
+  it('한 계절에 한 번 · 한도를 넘으면 한도까지만', () => {
     const r = byeonhanMini(1)
     r.stock['us']!.grain = 3000
     const lim = callLimit(r, 'us', 'our-north')
-    assert.deepEqual(advance(r, [call('our-north', lim + 1)]).next, advance(r, []).next)
+    // 한도를 넘게 부르면 한도까지만 (검토 11-04)
+    assert.equal(advance(r, [call('our-north', lim + 50)]).report.lines.find((l) => l.kind === 'call')?.n, lim)
     const p = planned(r, [call('our-north', lim)])
     assert.equal(callLimit(p, 'us', 'our-north'), 0)
     assert.notEqual(callWhy(p, 'us', 'our-north'), null)

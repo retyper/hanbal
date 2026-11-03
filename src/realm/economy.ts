@@ -704,13 +704,16 @@ export function callCost(r: Realm, faction: string, n: number): { grain: number 
 }
 
 export function applyCall(r: Realm, o: Extract<Order, { kind: 'call' }>, lines: ReportLine[]): void {
-  if (!Number.isInteger(o.n) || o.n < 1 || o.n > callLimit(r, o.faction, o.node)) return
+  // 한도를 넘으면 한도까지만 — 앞선 명령이 곡식을 써서 줄었어도 조용히 사라지지 않게 (검토 11-04)
+  if (!Number.isInteger(o.n) || o.n < 1) return
+  const k = Math.min(o.n, callLimit(r, o.faction, o.node))
+  if (k < 1) return
   const n = r.nodes[o.node]!
-  const g = callCost(r, o.faction, o.n).grain
+  const g = callCost(r, o.faction, k).grain
   stockOf(r, o.faction).grain -= g
-  n.inbound = { faction: o.faction, n: inboundOf(n, o.faction) + o.n }
+  n.inbound = { faction: o.faction, n: inboundOf(n, o.faction) + k }
   n.calledAt = r.season
-  lines.push({ kind: 'call', faction: o.faction, node: o.node, n: o.n, grain: g })
+  lines.push({ kind: 'call', faction: o.faction, node: o.node, n: k, grain: g })
 }
 /** 이 고을로 오는 길 위의 집 — 그 나라 몫만 */
 export function inboundOf(n: RNode, faction: string): number {

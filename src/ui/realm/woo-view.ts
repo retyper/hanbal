@@ -121,7 +121,7 @@ export function pickBoxHtml(k: WooKit, r: Realm, me: string, captive: string, se
   h += `<div class="dp-grid">`
   for (const { x: y, job } of list) {
     if (job !== null) {
-      h += `<button class="dp-c busy" aria-disabled="true" data-tip="${k.esc(job)}">${k.bust(y, 'face')}<b>${k.name(y.name)}</b>${statsHtml(y)}<small class="dp-job">⏳ ${k.esc(job)}</small></button>`
+      h += `<button class="dp-c busy" data-act="busy" aria-disabled="true" data-why="${k.esc(job)}" data-tip="${k.esc(job)}">${k.bust(y, 'face')}<b>${k.name(y.name)}</b>${statsHtml(y)}<small class="dp-job">⏳ ${k.esc(job)}</small></button>`
       continue
     }
     h += `<button class="dp-c${y.id === sel ? ' on' : ''}" data-act="dp-by" data-id="${captive}" data-by="${y.id}">${y.id === best ? '<i class="recst">추천</i>' : ''}${k.bust(y, 'face')}<b>${k.name(y.name)}</b>${statsHtml(y)}${perHtml(r, captive, y.id)}</button>`

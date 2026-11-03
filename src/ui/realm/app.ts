@@ -941,7 +941,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * 이번 계절 고른 것을 다 치르고 남는 것 (형: "철이부족해도 강화 선택이 가능해져버려있고") — 징병·무장·목책·경계는 엔진과 같은 함수로
    * 먼저 해 보고, 제사·공작·자객의 활·사신 선물은 값만 뺀다. 단추는 이 남은 몫으로 켜고 끈다. 그리기 한 번에 한 번 셈한다.
    */
-  let leftCache: { key: string; st: Record<Good, number> } | null = null
+  let leftCache: { key: string; st: Record<Good, number>; p: Realm } | null = null
+  /** 이번 계절 고른 것(징병·장터 저울·곳간 열기 등 musters 까지)을 다 해 본 판 — 한도를 셀 때 (검토 11-04: plan() 은 musters 가 빠져 저울·곳간이 한도를 넘겨 쌓였다) */
+  function leftPlan(): Realm { left(); return leftCache!.p }
   function left(): Record<Good, number> {
     const key = JSON.stringify([realm!.season, armyOrders, settles, heroOrders, musters, guards, guardAp, rite, plots, envoys])
     if (leftCache !== null && leftCache.key === key) return leftCache.st
@@ -960,7 +962,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (const e of Object.values(envoys)) for (const g of GOODS) st[g] -= e.give[g] ?? 0
     // 원정 길 양식 — 계절을 넘길 때 징병·등용 뒤에 치른다. 여기서 안 빼면 「보낼 수 있다」고 해 놓고 말없이 빠진다 (형 10-24)
     for (const o of heroOrders) if (o.kind === 'expedition') st.grain -= P.realm.expGrainPer * EXP_SEASONS[o.len]
-    leftCache = { key, st }
+    leftCache = { key, st, p }
     return st
   }
 
@@ -1853,7 +1855,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function wishHtml(r: Realm): string {
     const w = r.marketWish?.[me()]
     if (w === undefined) return ''
-    const s = r.stock[me()]
+    const p = leftPlan()
+    const s = p.stock[me()]
     const rows = (Object.entries(w.goods) as Array<[Good, number]>).map(([g, n]) => {
       const have = Math.floor(goodOf(s, g))
       const cells = 5
@@ -1861,7 +1864,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       return `<span class="wishg${have >= n ? ' ok' : ''}">${icon(GOOD_ICON[g], 'wki')}<b>${Math.min(have, n)}/${n}</b><i>${'■'.repeat(lit)}${'□'.repeat(cells - lit)}</i></span>`
     }).join('')
     const prize = w.reward === 'hero' ? `${icon('unit-general', 'wki')}떠도는 장수 하나 (값 없이)` : `${icon('route-caravan', 'wki')}먼 나라의 소문`
-    const ready = wishReady(r, me())
+    const ready = wishReady(p, me()) // 이번 달 팔기로 고른 몫까지 빼고 본다 (검토 11-04)
     const queued = musters.some((o) => o.kind === 'wish')
     let h = `<h3>${icon('good-tribute-bell', 'wki')} 상단의 주문</h3><div class="wishc${ready ? ' ready' : ''}"><div class="wishgs">${rows}</div><div class="wishp">갚음 · ${prize}</div>`
     if (marketOf(r, me()) !== null) h += `<div class="btns"><button class="btn pri${queued ? ' on' : ''}" data-act="wish"${ready || queued ? '' : noBtn('아직 다 모으지 못했습니다')}>${queued ? '주문을 맞바꾼다 · 누르면 거둔다' : '주문을 맞바꾼다'}</button></div>`
@@ -1874,7 +1877,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    */
   function scaleHtml(r: Realm): string {
     if (!hasScale(r, me())) return ''
-    const p = plan()
+    const p = leftPlan()
     const room = scaleRoom(p, me())
     let h = `<h3>${icon('settle-market', 'wki')} 장터 저울</h3><p class="mute">상단보다 값이 나쁩니다 · 이번 달 남은 몫 곡식 ${room}</p><div class="mkls">`
     for (const g of ['salt', 'iron', 'wood', 'horse'] as const) {
@@ -2792,16 +2795,17 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * 곳간 열기 · 유민 부르기 단추 (economy.applyCall · 위원회 11-04 림월드 ①) — 곡식을 내면 유민이 길을 따라 걸어 들어온다.
    * 고른 뒤 다시 누르면 거둔다 · 못 하면 까닭과 소리 (disabled 금지)
    */
-  function callBtn(r: Realm, id: string, ring: boolean): string {
+  function callBtn(_r: Realm, id: string, ring: boolean): string {
     const queued = musters.find((o): o is Extract<Order, { kind: 'call' }> => o.kind === 'call' && o.node === id)
     if (queued !== undefined) {
       return ring
         ? `<button class="nrb on" data-act="call" data-node="${id}">${icon('unit-porters')}<small>유민 ${queued.n}</small></button>`
         : `<div class="btns"><button class="btn on" data-act="call" data-node="${id}">${icon('unit-porters', 'wki')}곳간을 연다 · 유민 ${queued.n}집이 온다 <small class="mute">누르면 거둔다</small></button></div>`
     }
-    const why = callWhy(r, me(), id)
-    const n = callLimit(r, me(), id)
-    const c = callCost(r, me(), n)
+    const lp = leftPlan() // 이번 달 쓴 곡식까지 빼고 (검토 11-04)
+    const why = callWhy(lp, me(), id)
+    const n = callLimit(lp, me(), id)
+    const c = callCost(lp, me(), n)
     if (ring) return why === '우리 고을이 아닙니다' ? '' : `<button class="nrb" data-act="call" data-node="${id}"${why === null ? '' : noBtn(why)}>${icon('unit-porters')}<small>${why === null ? `유민 ${n}` : '유민'}</small></button>`
     return `<div class="btns"><button class="btn" data-act="call" data-node="${id}"${why === null ? '' : noBtn(why)}>${icon('unit-porters', 'wki')}곳간 열기 · 유민 ${why === null ? `${n}집 ${costHtml({ grain: c.grain })}` : ''}</button></div>`
       + `<p class="mute">곡식을 내면 떠도는 백성이 길을 따라 들어와 이 고을 집이 됩니다. 집이 늘면 특산·장정·가을걷이가 함께 늡니다. 고을마다 한 계절에 한 번.</p>`
@@ -2867,7 +2871,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<button data-act="dn" data-node="${n.id}" data-d="${step}">+</button><span class="mute">명 · 최대 ${lim}</span>${lim < militiaMen(r, n.id) ? limWhyHtml(draftWhy(r, me(), n.id, unit), unit) : ''}${costHtml({ grain: Math.ceil(dp.grain), ...(dp.iron > 0 ? { iron: dp.iron } : {}) })}`
       h += `${hhLoss > 0 ? `<span class="cost"><b class="cg" title="집 ${hhLoss}"><i>▼</i>${icon('settle-farm-village', 'cgi')}${hhLoss}</b></span>` : ''}</div>`
       // 뽑기 단추는 숫자 줄 밑에 크게 한 줄 — 이게 뽑는 단추라고 바로 알게 (형 10-27)
-      h += `<div class="btns"><button class="btn pri men wide" data-act="draft" data-node="${n.id}"${want <= 0 ? noBtn(unitWhy(unit)) : ''}>군사 ${want}명 뽑기</button></div>`
+      h += `<div class="btns"><button class="btn pri men wide" data-act="draft" data-node="${n.id}"${want <= 0 ? noBtn(lim > 0 ? '+ 를 눌러 뽑을 수를 고르세요' : unitWhy(unit)) : ''}>군사 ${want}명 뽑기</button></div>`
       h += mine()
       h += `</div>`
     }
@@ -4095,7 +4099,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (const { x, why } of list) {
       const st = def.stat.map((k) => `<i>${STAT_NAME[k]} ${x[k]}</i>`).join('')
       h += why !== null
-        ? `<button class="busy" aria-disabled="true" data-tip="${esc(why)}">${bust(x, 'face')}<b>${nameHtml(x.name)}</b><small>⏳ ${esc(why)}</small></button>`
+        ? `<button class="busy" data-act="busy"${noBtn(why)}>${bust(x, 'face')}<b>${nameHtml(x.name)}</b><small>⏳ ${esc(why)}</small></button>`
         : `<button class="${x.id === pickId ? 'on' : ''}" data-act="cmd-hero" data-id="${x.id}">${bust(x, 'face')}<b>${nameHtml(x.name)}</b><small>${st}</small><small class="cdo">${esc(doingShort(r, x))}</small></button>`
     }
     h += `</div>`
@@ -5814,7 +5818,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const body = `<b>${esc(levelName(t))}</b><span>${esc(LEVEL_LINE[t] ?? '')}</span><small>${region === 'tutorial' ? '0장은 촌장으로 배웁니다' : carry > 0 ? `장수 ${carry}명까지 데려감` : '장수를 데려가지 못함'}</small>`
       h += t <= open
         ? `<button class="trow${t === pick ? ' on' : ''}${t === TIER_MAX ? ' apex' : ''}" data-act="tier-pick" data-v="${t}">${body}</button>`
-        : `<button class="trow locked"${noBtn('앞 세기로 이기면 열립니다')}>🔒 ${body}</button>`
+        : `<button class="trow locked" data-act="busy"${noBtn('앞 세기로 이기면 열립니다')}>🔒 ${body}</button>`
     }
     return h + `</div></div>`
   }
@@ -6313,7 +6317,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const ringEl = at.closest<HTMLElement>('.nring')
     const rb = ringEl !== null ? [...ringEl.querySelectorAll<HTMLElement>('.nrb')].map((e) => e.getBoundingClientRect()) : []
     const b = rb.length > 0 ? new DOMRect(Math.min(...rb.map((q) => q.left)), Math.min(...rb.map((q) => q.top)), Math.max(...rb.map((q) => q.right)) - Math.min(...rb.map((q) => q.left)), Math.max(...rb.map((q) => q.bottom)) - Math.min(...rb.map((q) => q.top)) + 14) : at.getBoundingClientRect()
-    const up = ringEl === null && b.top > box.offsetHeight + 24
+    // 둘레 아래에 자리가 없으면(화면 아래쪽 고을) 둘레 위로 (검토 11-04)
+    const up = ringEl === null ? b.top > box.offsetHeight + 24 : b.bottom + box.offsetHeight + 24 > innerHeight
     const half = box.offsetWidth / 2
     box.classList.toggle('up', up)
     box.classList.toggle('dn', !up)
@@ -6412,7 +6417,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (armySel.length > 0 || partySel !== '' || sheet !== null || realm.nodes[ring] === undefined) ring = '' // 군대·개척단을 고르거나 판을 열면 둘레 단추는 접힌다
     const mh = mapPart(r)
     if (mh !== lastMap || first) {
+      // 줌 단계는 새 지도로 이어 간다 — 다시 깔 때마다 'mid' 에서 다시 재 경계 근처 이름표가 깜빡였다 (검토 11-04)
+      const zl0 = wrap.querySelector<HTMLElement>('.map')?.dataset['zl']
       wrap.innerHTML = mh
+      if (zl0 !== undefined) { const m1 = wrap.querySelector<HTMLElement>('.map'); if (m1 !== null) m1.dataset['zl'] = zl0 }
       lastMap = mh
       // 다음 계절 바탕을 미리 — 계절이 넘어갈 때 새 그림을 그제야 받느라 깜빡였다 (형 10-23). 그린 뒤 한숨 돌리고
       const rg = r.region ?? 'byeonhan-mini'
@@ -6950,7 +6958,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const top = root.querySelector<HTMLElement>('.mapwrap')?.getBoundingClientRect().top ?? 0
         ringDeg = cy - top < m ? 270 : cx < m ? 0 : cx > innerWidth - m ? 180 : 90 }
       paint()
-      if (ring !== '') requestAnimationFrame(ringIntoView)
+      // 둘레 단추가 다 튀어나온 뒤에 잰다 — 바로 재면 고을 가운데에 모여 있어 밖인지 모른다 (검토 11-04) · 숨은 탭이면 안 돈다
+      if (ring !== '') window.setTimeout(() => { if (document.visibilityState === 'visible') ringIntoView() }, P.realm.mapRingSettleMs + 6 * P.realm.mapRingStaggerMs)
       return
     }
     const d = t.dataset
@@ -7913,7 +7922,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const node = d['node']!
         const same = (o: Order): boolean => o.kind === 'call' && o.node === node
         if (musters.some(same)) { musters = musters.filter((o) => !same(o)); break }
-        const n = callLimit(plan(), me(), node)
+        const n = callLimit(leftPlan(), me(), node) // 징병·저울로 쓴 곡식까지 빼고 (검토 11-04)
         if (n > 0) musters = [...musters, { kind: 'call', faction: me(), node, n }]
         break
       }

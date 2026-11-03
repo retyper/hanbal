@@ -173,7 +173,7 @@ export function tutStyle(step: TutStep | undefined): string {
   if (step?.war === undefined) return ''
   const { pick, go, tab } = step.war
   // 고르기 전엔 그 탭 · 그 명령 카드, 고른 뒤엔 (잠겨 있으면) 아직 안 고른 무리 탭, 켜지면 「전투 개시」 (「★ 권함대로 채운다」는 뺐다 — 형 10-25)
-  const sels = [`.ap .wr ${pick}:not(.on)`, `.ap .wr:has(${pick}.on) ${go}:not([disabled])`, `.ap .wr:has(${pick}.on):has(${go}[disabled]) .wgt[data-g]:not(.done)`]
+  const sels = [`.ap .wr ${pick}:not(.on)`, `.ap .wr:has(${pick}.on) ${go}:not([disabled]):not([aria-disabled="true"])`, `.ap .wr:has(${pick}.on):has(${go}:is([disabled], [aria-disabled="true"])) .wgt[data-g]:not(.done)`]
   if (tab !== undefined) sels.push(`.ap .wr:not(:has(${pick}.on)) ${tab}:not(.on)`)
   return `${sels.join(', ')} { outline: 3px solid #ffd27a; outline-offset: 3px; animation: tutglow .9s ease-in-out infinite alternate; border-radius: 10px; }`
 }
@@ -247,7 +247,7 @@ export function createSpot(root: HTMLElement): Spot {
   let last = ''
 
   const shown = (el: HTMLElement): boolean => {
-    if ((el as HTMLButtonElement).disabled) return false
+    if ((el as HTMLButtonElement).disabled || el.getAttribute('aria-disabled') === 'true') return false // 못 하는 단추(noBtn)도 비추지 않는다 (검토 11-04)
     const b = el.getBoundingClientRect()
     return b.width > 1 && b.height > 1 && getComputedStyle(el).visibility !== 'hidden'
   }

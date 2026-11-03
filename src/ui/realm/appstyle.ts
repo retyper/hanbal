@@ -1198,7 +1198,7 @@ export const UI_CSS = `
 .ap .btn.ghost { color: #c9bea6; } /* filter(saturate·brightness)는 뺐다 — 폰에서 흐린 단추가 보라색이거나 아예 안 보였다 (형 10-28) */
 .ap .btn:disabled, .ap .btn:disabled:hover, .ap .btn[aria-disabled="true"], .ap .btn[aria-disabled="true"]:hover { filter: grayscale(.7) brightness(.7); opacity: .6; transform: none; }
 /* 못 하는 단추(noBtn · aria-disabled) — 예전 :disabled 꼴 그대로 흐리게. 누르면 까닭과 소리 (위원회 11-04 UX ④ · disabled 는 눌러도 아무 일 없었다) */
-.ap button[aria-disabled="true"]:not(.btn):not(.nrb) { opacity: .45; cursor: default; }
+.ap button[aria-disabled="true"]:not(.btn):not(.nrb):not(.limwhy) { opacity: .45; cursor: default; }
 .ap .draftc.big .dbig button[aria-disabled="true"] { opacity: .45; }
 .ap .btn.sm { border-width: 7px 9px; border-image-width: 7px 9px; padding: 1px 4px; }
 .ap .btn.wide { padding: 7px 8px; } .ap .btn.big { padding: 7px 18px; }
