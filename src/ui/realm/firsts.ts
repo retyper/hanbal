@@ -52,6 +52,8 @@ export const FIRST_CSS = `
 .ap .fhint.up::after { bottom: -7px; }
 .ap .fhint.dn::after { top: -7px; transform: translateX(-50%) rotate(225deg); }
 .ap .fhint.out { opacity: 0; transition: opacity .3s ease; }
+/* 말풍선은 누름을 막지 않는다 — 밑의 단추가 그대로 눌린다 (「자세히」만 받는다 · 저절로 걷힌다 · 위원회 11-04 UX ③) */
+.ap .fhint { pointer-events: none; } .ap .fhint .fhmore { pointer-events: auto; }
 .ap .fhon { outline: 3px solid #ffd27a; outline-offset: 3px; border-radius: 10px; animation: fhpulse 1s ease-in-out infinite alternate; }
 @keyframes fhin { from { opacity: 0; scale: .85; } to { opacity: 1; scale: 1; } }
 @keyframes fhpulse { from { outline-color: #ffd27a; } to { outline-color: #ffd27a44; } }

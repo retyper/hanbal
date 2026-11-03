@@ -4988,8 +4988,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       bs.push(more)
       // 부채꼴 — 위쪽 가운데를 중심으로 왼쪽부터 오른쪽으로 (이름표는 고을 아래에 있다)
-      const arc = P.realm.mapRingArc
-      const R = P.realm.mapRingR
+      // 단추 수만큼 부채가 넓어지고, 이웃 단추 사이(활꼴 현)가 mapRingGap 이상 되게 반지름을 키운다 — 여섯이 되면서 겹쳐 옆 단추가 눌렸다 (위원회 11-04 UX ①)
+      const cnt = bs.length
+      const arc = cnt > 1 ? Math.min(P.realm.mapRingArcMax, Math.max(P.realm.mapRingArc, P.realm.mapRingStep * (cnt - 1))) : 0
+      const step = cnt > 1 ? arc / (cnt - 1) : 0
+      const R = cnt > 1 ? Math.max(P.realm.mapRingR, P.realm.mapRingGap / (2 * Math.sin((step * Math.PI) / 360))) : P.realm.mapRingR
       const btns = bs.map((b, i) => {
         const deg = bs.length > 1 ? 90 + arc / 2 - (arc * i) / (bs.length - 1) : 90
         const a = (deg * Math.PI) / 180
@@ -6234,8 +6237,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (box === null || at === null) { firstClose(); return }
     root.querySelectorAll('.fhon').forEach((e) => { if (e !== at) e.classList.remove('fhon') })
     at.classList.add('fhon')
-    const b = at.getBoundingClientRect()
-    const up = b.top > box.offsetHeight + 24
+    // 둘레 단추의 말풍선은 부채 전체의 아래에 — 위에 뜨면 옆 단추 둘과 위 띠를 덮었다 (위원회 11-04 UX ③)
+    const ringEl = at.closest<HTMLElement>('.nring')
+    const rb = ringEl !== null ? [...ringEl.querySelectorAll<HTMLElement>('.nrb')].map((e) => e.getBoundingClientRect()) : []
+    const b = rb.length > 0 ? new DOMRect(Math.min(...rb.map((q) => q.left)), Math.min(...rb.map((q) => q.top)), Math.max(...rb.map((q) => q.right)) - Math.min(...rb.map((q) => q.left)), Math.max(...rb.map((q) => q.bottom)) - Math.min(...rb.map((q) => q.top)) + 14) : at.getBoundingClientRect()
+    const up = ringEl === null && b.top > box.offsetHeight + 24
     const half = box.offsetWidth / 2
     box.classList.toggle('up', up)
     box.classList.toggle('dn', !up)
