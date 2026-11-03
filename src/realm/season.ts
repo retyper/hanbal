@@ -55,6 +55,7 @@ import { healWarDead, menByFaction, noteBeaten, noteWarDead } from './rout.ts'
 import {
   ambushTraitOf, applyHeroOrders, battleGrowth, heroArt, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, isRuler, ironhandAt, noteMet, oneJobPerHero, postHero, releaseCaptives, stepHeroes, stepServed, sweepHeroes,
 } from './heroes.ts'
+import { applyBuy, applySell, stepMarket } from './merchant.ts'
 import type {
   Approach, Army, BattleStart, Cmd, EdgeKind, Hero, Order, Ration, Realm, REdge, Report, ReportLine, RNode, SeasonOfYear, SnipeZone, Tactic,
 } from './types.ts'
@@ -703,6 +704,8 @@ function applyArmyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]
     else if (o.kind === 'arm') applyArm(r, o, lines)
     else if (o.kind === 'build') applyBuild(r, o, lines)
     else if (o.kind === 'work') applyWork(r, o, lines)
+    else if (o.kind === 'buy') applyBuy(r, o, lines)
+    else if (o.kind === 'sell') applySell(r, o, lines)
   }
   applyHeroOrders(r, orders, lines) // 맡기기·이끌기·회유·들이기 — 나누기·해산 뒤 (떼어 낸 군대를 이끌 수 있게)
   applyTalks(r, orders, lines) // 옥중 담판 — 회유를 건 뒤 (처음 회유하는 계절에도 열린다 · woo.ts)
@@ -1819,6 +1822,7 @@ export function advance(
   shareIntel(r) // 9 — 동맹은 본 것을 나눈다
   stepBuilds(r, lines) // 9 — 다 지은 목책·해자가 선다
   stepWorks(r, lines) // 다 지은 고을 일터가 선다 (works.ts)
+  stepMarket(r, lines) // 떠돌이 상단이 오고 간다 (merchant.ts)
   stepCustoms(r, lines) // 9 — 풍습의 걸음: 다시 일어남 · 쇠 실은 배 · 말 치는 들 · 거른 봄 제사 (hooks.ts)
   refreshSpies(r) // 9 — 첩자가 본다
   for (const [f, spies] of Object.entries(r.spies ?? {})) for (const s of spies) noteMet(r, f, heroesAtNode(r, s.node))

@@ -15,7 +15,7 @@ import { goodOf, isCoast, isRiverside, isWoody, stockOf } from './economy.ts'
 import type { Good, Realm, RNode } from './types.ts'
 import { josa } from './data/prose.ts'
 
-export type WorkWhat = 'paddy' | 'saltpan' | 'smelter' | 'lumber' | 'ranch' | 'yard' | 'smithy' | 'jeotgal'
+export type WorkWhat = 'paddy' | 'saltpan' | 'smelter' | 'lumber' | 'ranch' | 'yard' | 'market' | 'smithy' | 'jeotgal'
 
 export interface WorkDef {
   readonly name: string
@@ -37,12 +37,13 @@ export const WORKS: Readonly<Record<WorkWhat, WorkDef>> = {
   smelter: { name: '쇠부리터', does: '이 고을 쇠가 더 난다', icon: 'treasure-iron-ingots', land: (_r, n) => village(n) && (n.kind === 'ironMine' || n.kind === 'port') },
   lumber: { name: '목수 마을', does: '이 고을 나무가 곱절로 난다', icon: 'good-wood', land: (r, n) => village(n) && isWoody(r, n.id) },
   ranch: { name: '말 목장', does: '이 고을 말이 곱절로 난다', icon: 'good-horse', land: (_r, n) => village(n) && n.tags.includes('pasture') },
+  market: { name: '장터', does: '떠돌이 상단이 더 자주 오고 물건이 한 가지 더', icon: 'settle-market', land: (_r, n) => village(n) && n.kind !== 'wild' && n.hh >= P.realm.workMarketHH },
   yard: { name: '장정 마을', does: '이 고을에서 군사를 더 뽑는다', icon: 'unit-spear', land: (_r, n) => village(n) && n.kind !== 'wild' },
   smithy: { name: '대장간', does: '나라 전체 무장 올리기에 쇠가 덜 든다', icon: 'settle-forge', land: (_r, n) => village(n) && n.kind !== 'wild', needs: 'smelter' },
   jeotgal: { name: '젓갈 창고', does: '밖에 나간 군사의 소금이 반만 든다 · 군대가 더 오래 밖을 돈다', icon: 'good-soybean-jar', land: (r, n) => village(n) && isCoast(r, n.id), needs: 'saltpan' },
 }
 
-export const WORK_ORDER: readonly WorkWhat[] = ['paddy', 'saltpan', 'smelter', 'lumber', 'ranch', 'yard', 'smithy', 'jeotgal']
+export const WORK_ORDER: readonly WorkWhat[] = ['paddy', 'saltpan', 'smelter', 'lumber', 'ranch', 'yard', 'market', 'smithy', 'jeotgal']
 
 /** 짓는 값 — 곡식·나무 + 그 일터가 쓰는 특산 (둘째 줄은 첫째 줄의 열매를 먹는다: 대장간은 쇠, 젓갈 창고는 소금) */
 export function workCost(what: WorkWhat): Partial<Record<Good, number>> {
@@ -50,6 +51,7 @@ export function workCost(what: WorkWhat): Partial<Record<Good, number>> {
   // 논·장정 마을은 곡식만 (나무 없는 들판 나라도 지을 수 있게 · 시뮬: 목지가 곡식 782에 나무 1로 막혔다)
   if (what === 'paddy' || what === 'yard') return { grain: R.workGrain }
   const base: Partial<Record<Good, number>> = { grain: R.workGrain, wood: R.workWood }
+  if (what === 'market') return { grain: R.workMarketGrain, wood: R.workWood }
   if (what === 'smithy') return { ...base, iron: R.workSmithyIron }
   if (what === 'jeotgal') return { ...base, salt: R.workJeotgalSalt }
   return base

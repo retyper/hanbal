@@ -834,6 +834,16 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       return line.done
         ? `${node(line.node)}에 ${josa(BUILD_NAME[line.what], "이", "가")} 섰다.`
         : `${node(line.node)}에 ${josa(BUILD_NAME[line.what], '을', '를')} 짓기 시작했다. ${monthly(after) ? '석 달 뒤에' : '이 계절이 끝나면'} 선다.`
+    case 'merchant':
+      if (line.faction !== viewer) return null
+      return line.come ? `떠돌이 상단이 ${node(line.node)}에 들렀다. 물건이 몇 가지 있다.` : `상단이 ${josa(node(line.node), '을', '를')} 떠났다.`
+    case 'buy':
+      if (line.faction !== viewer) return null
+      return line.what === 'merc' && line.unit !== undefined ? `상단에서 ${UNIT_NAME[line.unit]} 용병 ${line.n}명을 곡식 ${line.price}에 샀다.`
+        : line.what === 'drum' ? `상단에서 큰 북을 곡식 ${line.price}에 샀다. 우리 군대의 사기가 올랐다.`
+          : `상단에서 ${line.good !== undefined ? GOOD_NAME[line.good] : ''} ${line.n}단을 곡식 ${line.price}섬에 샀다.`
+    case 'sell':
+      return line.faction === viewer ? `상단에 ${GOOD_NAME[line.good]} ${line.n}단을 팔아 곡식 ${line.grain}섬을 받았다.` : null
     case 'work':
       if (line.faction !== viewer) return null
       return line.done

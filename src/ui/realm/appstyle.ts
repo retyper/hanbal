@@ -1342,6 +1342,15 @@ export const UI_CSS = `
 .ap .wkb { flex-wrap: wrap; }
 .ap .wkb .btn { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 3px; text-align: left; }
 .ap .wkb .btn small { flex-basis: 100%; font-size: 11px; }
+/* 떠돌이 상단 (merchant.ts) */
+.ap .mkls { display: flex; flex-direction: column; gap: 6px; margin: 6px 0 10px; }
+.ap .mkrow { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 10px; background: #1f1a14; border: 1px solid #3a3024; }
+.ap .mkrow .mkt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ap .mkrow .mkt small { font-size: 11.5px; }
+.ap .mkrow .btn { flex: none; padding: 6px 10px; min-height: 0; }
+.ap .mkchip img.wki { width: 22px !important; height: 22px !important; vertical-align: middle; }
+.ap .mkrow img.wki { width: 38px !important; height: 38px !important; flex: none; object-fit: contain; }
+.ap h3 img.wki { width: 30px !important; height: 30px !important; vertical-align: middle; display: inline-block; }
 .ap .gnpop { position: fixed; left: 50%; top: 40%; z-index: 110; transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; animation: gnlife var(--life, 2.6s) linear both; }
 .ap .gnbox { position: relative; min-width: min(86vw, 320px); max-width: min(92vw, 440px); padding: 16px 22px 18px; border-radius: 16px; background: linear-gradient(#2c2112f5, #1a130af5); border: 2px solid #f0c860; box-shadow: 0 0 0 4px #f0c86033, 0 10px 30px #000c; color: #f8ecd0; animation: gnin .42s cubic-bezier(.3, 1.7, .5, 1) both; }
 .ap .gnh { display: block; text-align: center; font-family: var(--display); font-weight: 400; font-size: clamp(44px, 11vw, 64px); line-height: 1.05; color: #ffd76a; text-shadow: 0 3px 0 #4a3010, 0 0 18px #ffc04088; margin-bottom: 8px; }

@@ -944,6 +944,10 @@ export interface Realm {
   builds?: Array<{ readonly faction: string; readonly node: string; readonly what: BuildWhat; readonly done: number }>
   /** 짓는 중인 고을 일터 (works.ts) — 목책 줄과 따로 */
   works?: Array<{ readonly faction: string; readonly node: string; readonly what: import('./works.ts').WorkWhat; readonly done: number }>
+  /** 머무는 떠돌이 상단 — 나라마다 (merchant.ts) */
+  markets?: Record<string, import('./merchant.ts').Market>
+  /** 다음 상단이 올 턴 — 나라마다 */
+  marketNext?: Record<string, number>
   /**
    * 발견 (2026-10-19) — 나라마다 아는 나라 id (id 순서). 없으면(옛 판 · 변한·영남 판) 모두 안다.
    * 삼한 남부 판은 제 나라와 이웃만 알고 시작한다 (discovery.ts)
@@ -1074,6 +1078,9 @@ export type Order =
   | { readonly kind: 'build'; readonly faction: string; readonly node: string; readonly what: BuildWhat }
   /** 고을 일터 짓기 (works.ts) */
   | { readonly kind: 'work'; readonly faction: string; readonly node: string; readonly what: import('./works.ts').WorkWhat }
+  /** 상단에서 사기 · 팔기 (merchant.ts) */
+  | { readonly kind: 'buy'; readonly faction: string; readonly offer: string }
+  | { readonly kind: 'sell'; readonly faction: string; readonly good: Good; readonly n: number }
   /** 자객의 활을 한 단계 올린다 — 곡식·철이 크게 든다 (plots.bowUpCost) */
   | { readonly kind: 'bowUp'; readonly faction: string }
 
@@ -1243,6 +1250,9 @@ export type ReportLine =
   /** 짓기 — 시작했다(done false) · 섰다(done true) */
   | { readonly kind: 'build'; readonly faction: string; readonly node: string; readonly what: BuildWhat; readonly done: boolean }
   | { readonly kind: 'work'; readonly faction: string; readonly node: string; readonly what: import('./works.ts').WorkWhat; readonly done: boolean }
+  | { readonly kind: 'merchant'; readonly faction: string; readonly node: string; readonly come: boolean }
+  | { readonly kind: 'buy'; readonly faction: string; readonly what: import('./merchant.ts').OfferWhat; readonly n: number; readonly price: number; readonly good?: Good; readonly unit?: import('./battle.ts').UnitKind }
+  | { readonly kind: 'sell'; readonly faction: string; readonly good: Good; readonly n: number; readonly grain: number }
   /** 겨울에 소금이 모자라 곡식이 썩었다 */
   | { readonly kind: 'spoil'; readonly faction: string; readonly grain: number }
   /** 첩보 — `viewer` 의 첩자가 `about` 나라에서 들은 것 (보는 나라에게만) */

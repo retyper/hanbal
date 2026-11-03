@@ -110,6 +110,7 @@ import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
 import { loadTip, tipHtml, tipReadMs } from './loadtips.ts'
 import { worldMapReady } from './worldmap.ts'
 import { WORKS, workBlocked, workCost, workOptions, type WorkWhat } from '../../realm/works.ts'
+import { marketIn, marketOf, sellLimit, sellPrice, type Offer } from '../../realm/merchant.ts'
 import { QUALITY_CSS, gfxRowHtml, setGfxPref, startQuality } from './quality.ts'
 import { HOWWIN_CSS, bannerHtml, closeHowWin, howWinDue, howWinMark, lessons, lossOf, openLessons, showBanner, syncPin, type HowKit, type LessonGo, type Loss } from './howwin.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
@@ -380,7 +381,7 @@ type Ask = EnvoyAsk
 type Envoy = Extract<Order, { kind: 'envoy' }>
 type Sheet =
   | { kind: 'army' } | { kind: 'draft' } | { kind: 'people' } | { kind: 'diplo' } | { kind: 'scout' } | { kind: 'nation' } | { kind: 'help' }
-  | { kind: 'node'; id: string } | { kind: 'heroes' } | { kind: 'hero'; id: string } | { kind: 'log' } | { kind: 'place' }
+  | { kind: 'node'; id: string } | { kind: 'heroes' } | { kind: 'hero'; id: string } | { kind: 'log' } | { kind: 'place' } | { kind: 'market' }
 
 const REL_NAME = { war: '전쟁', neutral: '중립', truce: '화친', ally: '동맹' } as const
 /** 지금 사이가 뜻하는 것 — 나라 카드 밑 한 줄 */
@@ -1768,6 +1769,48 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return `새 마을 값이 모자란다 · 곡식 ${fc.grain} · 나무 ${fc.wood} (고을이 많을수록 비싸다)`
   }
 
+
+  // ───────── 떠돌이 상단 (merchant.ts · 형 11-03: "쇼핑이란 걸 할 수 있어야 한다")
+  const offerName = (o: Offer): string => o.what === 'merc' && o.unit !== undefined ? `${UNIT_NAME[o.unit]} 용병 ${o.n}명`
+    : o.what === 'drum' ? '큰 북' : o.what === 'ingot' ? `덩이쇠 꾸러미 · 철 ${o.n}` : `${o.good !== undefined ? GOOD_NAME[o.good] : ''} ${o.n}`
+  const offerDoes = (o: Offer): string => o.what === 'merc' ? '상단이 선 고을에 바로 군대가 선다'
+    : o.what === 'drum' ? `모든 우리 군대 사기 +${Math.round(P.realm.drumMorale * 100)}` : o.what === 'ingot' ? '철 큰 묶음 · 낱개보다 싸다' : '곳간에 바로 든다'
+  const offerIcon = (o: Offer): string => o.what === 'merc' && o.unit !== undefined ? UNIT_ICON[o.unit] : o.what === 'drum' ? 'unit-drummers' : o.good !== undefined ? GOOD_ICON[o.good] : 'route-caravan'
+  /** 이번 턴 골라 둔 팔기 — 물건마다 개수 · 받을 곡식 합 */
+  const pendingSell = (): { by: Partial<Record<Good, number>>; grain: number } => {
+    const by: Partial<Record<Good, number>> = {}
+    let grain = 0
+    for (const o of musters) if (o.kind === 'sell') { by[o.good] = (by[o.good] ?? 0) + o.n; grain += sellPrice(o.good, o.n) }
+    return { by, grain }
+  }
+  function marketSheet(r: Realm): string {
+    const m = marketOf(r, me())
+    if (m === null) return `<h3>떠돌이 상단</h3><p class="mute">다음 상단은 ${turnsLabel(r, Math.max(1, marketIn(r, me())))} 뒤에 옵니다.</p>`
+    const st = left()
+    let h = `<h3>${icon('route-caravan', 'wki')} 떠돌이 상단 · ${esc(r.nodes[m.at]?.name ?? '')}</h3><p class="mute">${turnsLabel(r, m.until - r.season + 1)} 더 머뭅니다 · 물건마다 개수가 정해져 있습니다</p><div class="mkls">`
+    for (const o of m.offers) {
+      const bought = musters.filter((x) => x.kind === 'buy' && x.offer === o.id).length
+      const rest = o.left - bought
+      const can = rest > 0 && st.grain >= o.price
+      h += `<div class="mkrow">${icon(offerIcon(o), 'wki')}<div class="mkt"><b>${esc(offerName(o))}</b><small class="mute">${esc(offerDoes(o))} · 남은 ${rest}</small></div>`
+        + `<button class="btn${bought > 0 ? ' on' : ''}" data-act="buy" data-offer="${o.id}"${can ? '' : noBtn(rest <= 0 ? '다 팔렸습니다' : shortOf({ grain: o.price }))}>${costHtml({ grain: o.price })}${bought > 0 ? ` ×${bought}` : ''}</button>`
+        + `${bought > 0 ? `<button class="btn ghost" data-act="buyx" data-offer="${o.id}">−</button>` : ''}</div>`
+    }
+    const ps = pendingSell()
+    const room = Math.max(0, P.realm.merchantSellCap - m.sold - ps.grain)
+    h += `</div><h3>우리 것 팔기</h3><p class="mute">이번 상단에 더 받을 수 있는 곡식 ${room}</p><div class="mkls">`
+    for (const g of ['salt', 'iron', 'wood', 'horse'] as const) {
+      const have = Math.floor(goodOf(r.stock[me()], g)) - (ps.by[g] ?? 0)
+      const per = sellPrice(g, 10) / 10
+      const lim = Math.max(0, Math.min(have, per > 0 ? Math.floor(room / per) : 0, sellLimit(r, me(), g) - (ps.by[g] ?? 0)))
+      if (have <= 0 && (ps.by[g] ?? 0) === 0) continue
+      const ten = Math.min(10, lim)
+      h += `<div class="mkrow">${icon(GOOD_ICON[g], 'wki')}<div class="mkt"><b>${GOOD_NAME[g]} ${have}</b><small class="mute">${ps.by[g] !== undefined ? `팔기로 함 ${ps.by[g]} · ` : ''}10에 곡식 ${sellPrice(g, 10)}</small></div>`
+        + `<button class="btn" data-act="sell" data-good="${g}" data-n="${ten}"${ten > 0 ? '' : noBtn('더 팔 수 없습니다')}>${ten} 팔기</button>`
+        + `<button class="btn" data-act="sell" data-good="${g}" data-n="${lim}"${lim > 0 ? '' : noBtn('더 팔 수 없습니다')}>다 · ${lim}</button></div>`
+    }
+    return h + '</div>'
+  }
   /**
    * 고을 일터 칸 — 지었으면 그 일터와 효과 한 줄, 짓는 중이면 남은 달, 아니면 이 땅에 맞는 일터 단추들
    * (잠긴 것도 까닭과 함께 보인다: "쇠부리터가 먼저" — 그래서 쇠 나는 땅을 넓히고 지키고 싶어진다 · 형 11-03)
@@ -4404,6 +4447,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    */
   function todoHtml(r: Realm): string {
     if (r.region === 'tutorial' || r.outcome || sheet !== null) return ''
+    // 떠돌이 상단이 머물면 늘 — 누구에게나 (배우는 사람만이 아니라)
+    const mk = marketOf(r, me())
+    if (mk !== null) return `<button class="todochip mkchip" data-act="market">${icon('route-caravan', 'wki')} 떠돌이 상단이 ${esc(r.nodes[mk.at]?.name ?? '')}에 왔다 · ${turnsLabel(r, mk.until - r.season + 1)} 머문다</button>`
     // 장수가 알아서 일하는 것은 알림 거리가 아니다 — 늘 그렇다 (형 10-26: "원래 자동으로 다 알아서 하지만") · 장수 판 맨 위에 누가 어디로 가는지
     if (!novice()) return ''
     const drafted = musters.some((o) => o.kind === 'draft')
@@ -6217,6 +6263,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         case 'draft': body = draftSheet(r); break
         case 'people': body = peopleSheet(r); break
         case 'place': body = placeSheet(); break
+        case 'market': body = marketSheet(r); break
         case 'diplo': body = diploSheet(r); break
         case 'scout': body = nudgeHtml(r, 'scout') + scoutSheet(r); break
         case 'heroes': body = nudgeHtml(r, 'heroes') + heroesSheet(r); break
@@ -7612,6 +7659,22 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const node = d['node']!
         const same = (o: Order): boolean => o.kind === 'build' && o.node === node
         musters = musters.some(same) ? musters.filter((o) => !same(o)) : [...musters, { kind: 'build', faction: me(), node, what: d['what'] as 'palisade' | 'moat' }]
+        break
+      }
+      case 'market': openSheet({ kind: 'market' }); break
+      case 'buy': musters = [...musters, { kind: 'buy', faction: me(), offer: d['offer']! }]; break
+      case 'buyx': {
+        const i = musters.map((o) => o.kind === 'buy' && o.offer === d['offer']).lastIndexOf(true)
+        if (i >= 0) musters = musters.filter((_, j) => j !== i)
+        break
+      }
+      case 'sell': {
+        const g = d['good'] as Good
+        const n = Number(d['n'] ?? 0)
+        if (!(n > 0)) break
+        const had = musters.find((o) => o.kind === 'sell' && o.good === g)
+        const total = (had !== undefined && had.kind === 'sell' ? had.n : 0) + n
+        musters = [...musters.filter((o) => !(o.kind === 'sell' && o.good === g)), { kind: 'sell', faction: me(), good: g, n: total }]
         break
       }
       case 'wallall': {
