@@ -309,6 +309,7 @@ export const FACE_AGE: Readonly<Record<string, CastAge>> = {
   'g-66-buyeo-geumha': { age: 52, grey: true },
   'g-66-geonma-malbalgup': { age: 42, grey: false },
   'g-67-buyeo-daeso': { age: 24, grey: false },
+  'g-100-buyeo-old-daeso': { age: 72, grey: true },
   'g-67-gosaburi-buri': { age: 34, grey: false },
   'g-68-baekje-onnuri': { age: 44, grey: false },
   'g-68-mujin-bitgoeul': { age: 34, grey: false },
