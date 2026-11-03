@@ -191,6 +191,8 @@ export function nodeYield(r: Realm, node: string, season = seasonOf(r)): Partial
   }
   if (isWoody(r, node)) out.wood = Math.round(R.woodPerNode * w)
   if (n.tags.includes('pasture')) out.horse = Math.round(R.horsePerPasture * w)
+  // 들판에 연 말 목장 — 너른벌의 몫만큼 (works.ts · 위원회 11-04 림월드)
+  else if (n.work === 'ranch') out.horse = Math.round(R.horsePerPasture * w * R.ranchPlainShare)
   // 일터 — 그 고을 특산 곱 (works.ts · 소금밭·쇠부리터·목수 마을·말 목장)
   for (const g of ['salt', 'iron', 'wood', 'horse'] as const) if (out[g] !== undefined) out[g] = Math.round(out[g]! * workMulAt(r, node, g))
   return out

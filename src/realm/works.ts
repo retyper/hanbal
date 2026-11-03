@@ -36,7 +36,8 @@ export const WORKS: Readonly<Record<WorkWhat, WorkDef>> = {
   saltpan: { name: '소금밭', does: '이 고을 소금이 곱절로 난다', icon: 'settle-salt-town', land: (r, n) => village(n) && isCoast(r, n.id) },
   smelter: { name: '쇠부리터', does: '이 고을 쇠가 더 난다', icon: 'treasure-iron-ingots', land: (_r, n) => village(n) && (n.kind === 'ironMine' || n.kind === 'port') },
   lumber: { name: '목수 마을', does: '이 고을 나무가 곱절로 난다', icon: 'good-wood', land: (r, n) => village(n) && isWoody(r, n.id) },
-  ranch: { name: '말 목장', does: '이 고을 말이 곱절로 난다', icon: 'good-horse', land: (_r, n) => village(n) && n.tags.includes('pasture') },
+  // 너른벌(pasture)이면 말이 곱절 · 아니어도 들판 마을(숲·바닷가 아님)이면 목장을 열어 말을 기른다 — 너른벌이 드물어 판마다 말이 0이었다 (위원회 11-04 림월드)
+  ranch: { name: '말 목장', does: '이 고을에서 말이 난다 (너른벌이면 곱절)', icon: 'good-horse', land: (r, n) => village(n) && (n.tags.includes('pasture') || (n.kind !== 'wild' && !isWoody(r, n.id) && !isCoast(r, n.id))) },
   market: { name: '장터', does: '떠돌이 상단이 더 자주 오고 물건이 한 가지 더 (단마다)', icon: 'settle-market', land: (_r, n) => village(n) && n.kind !== 'wild' && n.hh >= P.realm.workMarketHH },
   yard: { name: '장정 마을', does: '이 고을에서 군사를 더 뽑는다', icon: 'unit-spear', land: (_r, n) => village(n) && n.kind !== 'wild' },
   smithy: { name: '대장간', does: '나라 전체 무장 올리기에 쇠가 덜 든다', icon: 'settle-forge', land: (_r, n) => village(n) && n.kind !== 'wild', needs: 'smelter' },
