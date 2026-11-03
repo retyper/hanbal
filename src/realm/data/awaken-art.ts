@@ -153,6 +153,7 @@ export const AWAKEN_ART: ReadonlySet<string> = new Set([
   'w-95-michuhol-haebi',
   'w-96-haengin-neoul',
   'w-97-goguryeo-mir',
+  'w-100-garak-sincheongan',
   'w-101-garak-singwigan',
   'w-98-byeonhan-danbi',
 ])
