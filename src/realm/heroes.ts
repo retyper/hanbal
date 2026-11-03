@@ -831,7 +831,7 @@ export function gainXp(h: Hero, stat: GrowStat, n: number, lines: ReportLine[]):
 }
 
 /** 싸움이 끝났다 — 이끈 장수들 (사로잡히거나 죽은 이는 빠진다). won·lost 는 군대의 장수 id, 교착이면 drawn */
-export function battleGrowth(r: Realm, won: readonly (string | null)[], lost: readonly (string | null)[], drawn: readonly (string | null)[], lines: ReportLine[]): void {
+export function battleGrowth(r: Realm, won: readonly (string | null)[], lost: readonly (string | null)[], drawn: readonly (string | null)[], lines: ReportLine[], fair = true): void {
   const R = P.realm
   const each = (ids: readonly (string | null)[], f: (h: Hero) => void): void => {
     for (const id of [...new Set(ids)].sort()) {
@@ -842,9 +842,9 @@ export function battleGrowth(r: Realm, won: readonly (string | null)[], lost: re
   each(won, (h) => { gainXp(h, 'mu', R.xpWin, lines); gainXp(h, 'tong', R.xpWin, lines); addBond(r, h, R.bondWin, lines) })
   each(lost, (h) => { gainXp(h, 'mu', R.xpLose, lines); gainXp(h, 'tong', R.xpLose, lines); addBond(r, h, -R.bondLose, lines) })
   each(drawn, (h) => { gainXp(h, 'mu', R.xpLose, lines); gainXp(h, 'tong', R.xpLose, lines) })
-  // 각성 — 우리(플레이어) 장수만. 이기면 불꽃 하나, 지거나 비기면 다 꺼진다 (내리 이김 · 형 10-31)
+  // 각성 — 우리(플레이어) 장수만. 제 몫의 싸움(fair)을 이기면 불꽃 하나 · 지거나 비기면 하나 꺼진다 (위원회 11-04 던파 · 예전엔 지면 다 꺼졌다)
   const ours = (h: Hero): boolean => h.faction === r.player && h.ascended !== true
-  each(won, (h) => { if (ours(h)) kindle(h, lines) })
+  each(won, (h) => { if (ours(h) && fair) kindle(h, lines) })
   // 깨어난 장수의 불꽃은 각성기의 연료 (위원회 11-04 던파 ① · DESIRE §8) — 이기면 하나 붙고(셋까지), 지거나 비기면 하나 꺼지고, 다 꺼지면 깨어남이 풀린다
   const woke = (h: Hero): boolean => h.faction === r.player && h.ascended === true
   each(won, (h) => { if (woke(h)) h.flames = Math.min(Math.round(R.ascendWins), (h.flames ?? 0) + 1) })
@@ -852,7 +852,7 @@ export function battleGrowth(r: Realm, won: readonly (string | null)[], lost: re
   // 함께 이긴 우리 장수끼리 가까워진다 (친밀)
   const mates = [...new Set(won)].filter((id): id is string => id !== null && r.heroes[id]?.faction === r.player && r.heroes[id]?.status === 'free').sort()
   for (let i = 0; i < mates.length; i++) for (let j = i + 1; j < mates.length; j++) addTie(r, mates[i]!, mates[j]!, R.tieWin)
-  each([...lost, ...drawn], (h) => { if (ours(h)) delete h.flames })
+  each([...lost, ...drawn], (h) => { if (ours(h)) { const n = (h.flames ?? 0) - 1; if (n > 0) h.flames = n; else delete h.flames } })
 }
 
 /** 불꽃 하나 — 다 켜지면 각성: 능력치가 모두 ascendBonus 오른다 (10 을 넘을 수 있다 · 그 판에서만) */

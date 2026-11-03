@@ -1316,7 +1316,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       : `<img class="flm" src="${ART}fx/awaken/slot-off.png" alt="">`).join('')
     // 깨어난 뒤의 불꽃은 각성기의 연료 — 「각성」 붓글씨 곁에 남은 불꽃 (위원회 11-04 던파 ①)
     if (x.ascended === true) return `<span class="flms on" data-act="flm" data-why="각성했습니다. 불꽃 ${n}/${P.realm.ascendWins}. 싸움에서 불꽃 하나를 태워 각성기를 씁니다(마지막 하나는 남습니다). 이기면 하나 붙고, 지면 하나 꺼지고, 다 꺼지면 깨어남이 풀립니다"><img class="flmw" src="${ART}fx/awaken/word.png" alt="각성">${cells}</span>`
-    return `<span class="flms" data-act="flm" data-why="불꽃 ${n}/${P.realm.ascendWins}. 내리 이기면 한 칸씩 붙고, 다 붙으면 각성해 능력치가 모두 오릅니다. 지면 다 꺼집니다">${cells}</span>`
+    return `<span class="flms" data-act="flm" data-why="불꽃 ${n}/${P.realm.ascendWins}. 만만치 않은 적을 이기면 한 칸씩 붙고, 다 붙으면 각성해 능력치가 모두 오릅니다. 지면 한 칸 꺼집니다">${cells}</span>`
   }
   /**
    * 각성 연출 — 우리 장수가 내리 이겨 각성하면 그 자리에서 크게 (형 10-31: 3연승 직후 각성 연출 · 메모리 WWE 오버액션).

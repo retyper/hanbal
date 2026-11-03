@@ -100,7 +100,7 @@ export const TUT_STEPS: readonly TutStep[] = [
     press: ['.next'], done: (c) => c.r.season >= 1,
   },
   {
-    id: 'flame', name: '각성 불꽃', what: '내리 세 번 이긴 장수는 각성합니다', text: '「장수」의 「우리 장수」에서 오간을 누르고, 얼굴 아래 불꽃 칸 셋을 눌러 보세요. 싸움을 이길 때마다 한 칸씩 붙고, 지면 다 꺼집니다. 세 칸이 다 붙으면 각성해 얼굴이 바뀌고 능력치가 모두 오릅니다. 오간은 벌써 두 번 이겼습니다.',
+    id: 'flame', name: '각성 불꽃', what: '세 번 이긴 장수는 각성합니다', text: '「장수」의 「우리 장수」에서 오간을 누르고, 얼굴 아래 불꽃 칸 셋을 눌러 보세요. 만만치 않은 적을 이길 때마다 한 칸씩 붙고, 지면 한 칸 꺼집니다. 세 칸이 다 붙으면 각성해 얼굴이 바뀌고 능력치가 모두 오릅니다. 오간은 벌써 두 번 이겼습니다.',
     // 각성을 첫 판에서 맛보게 — 오간은 불꽃 둘을 켠 채 시작하고(regions/tutorial) 갯골 싸움을 이기면 각성한다 (형 11-01: "튜토리얼에 장수각성도")
     press: ['[data-act="flm"]', '[data-act="hero"][data-id="tut-ogan"]', '[data-act="htab"][data-v="mine"]', tab('heroes')],
     done: (c) => c.acts.has('flm') || c.r.heroes['tut-ogan']?.ascended === true || fought(c),

@@ -1219,6 +1219,9 @@ function fieldBattles(r: Realm, tactics: Readonly<Record<string, Tactic>>, lines
       payPress(r, res.pressA, lead.faction)
       payPress(r, res.pressD, defs[0]!.faction)
       const outcome = res.outcome
+      // 제 몫의 싸움 — 진 쪽이 이긴 쪽의 flameFairShare 넘게 있어야 불꽃이 붙는다 (위원회 11-04 던파 · 빈 고을 줍기로 각성하지 않게)
+      const menA0 = atks.reduce((s, x) => s + Object.values(x.mix).reduce((t, v) => t + (v ?? 0), 0), 0)
+      const menD0 = defs.reduce((s, x) => s + Object.values(x.mix).reduce((t, v) => t + (v ?? 0), 0), 0)
       for (const x of atks) scaleByGroups(x, res.ga)
       for (const x of defs) scaleByGroups(x, res.gd)
       shiftMorale(atks, res.dma)
@@ -1231,8 +1234,8 @@ function fieldBattles(r: Realm, tactics: Readonly<Record<string, Tactic>>, lines
       burnWake(r, res.wokeA, lines)
       burnWake(r, res.wokeD, lines)
       // 이끈 장수가 자란다 (HEROES §6) — 사로잡히거나 죽은 이는 빠진다
-      if (atkWon) battleGrowth(r, atkHeroes, defHeroes, [], lines)
-      else if (atkLost) battleGrowth(r, defHeroes, atkHeroes, [], lines)
+      if (atkWon) battleGrowth(r, atkHeroes, defHeroes, [], lines, menD0 >= P.realm.flameFairShare * menA0)
+      else if (atkLost) battleGrowth(r, defHeroes, atkHeroes, [], lines, menA0 >= P.realm.flameFairShare * menD0)
       else battleGrowth(r, [], [], [...atkHeroes, ...defHeroes], lines)
       battleMerit(r, atkHeroes, defHeroes, atkWon ? 'a' : atkLost ? 'd' : null, res.duel?.winner, fateOf.captives) // 단련 공 (drill.ts)
       // 진 쪽(교착이면 둘 다)은 떠난 고을로 — 그새 남이 쥐었으면 이웃의 제 땅, 없으면 흩어진다 (달 시계: 진 쪽은 도망병도 · fallBack)
