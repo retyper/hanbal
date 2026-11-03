@@ -3619,7 +3619,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         ov.querySelector('.wrlc')?.remove()
         const el = document.createElement('div')
         el.className = 'wrlc'
-        el.innerHTML = `<i class="wrlc-img" style="background-image:url('${host.art}event/event-relief-cavalry.jpg')"></i><i class="wrlc-sweep"></i><div class="wrlc-t"><b>원군이다!</b><span>${rd.relief.horse ? '기병 ' : ''}${rd.relief.men.toLocaleString('ko-KR')}명</span></div>`
+        el.innerHTML = `<i class="wrlc-img" style="background-image:url('${host.art}event/event-relief-charge.jpg')"></i><i class="wrlc-sweep"></i><div class="wrlc-t"><b>원군이다!</b><span>${rd.relief.horse ? '기병 ' : ''}${rd.relief.men.toLocaleString('ko-KR')}명</span></div>`
         el.addEventListener('animationend', (e) => { if (e.target === el) el.remove() })
         el.addEventListener('click', (e) => { e.stopPropagation(); el.remove() })
         ov.appendChild(el)
