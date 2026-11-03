@@ -37,3 +37,4 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-01-silla-princess 신라 공주 — 1차 2판(edu) — 11-03
 - w-05-baekje-queen 백제 왕비 — 1차 2판(edu) — 11-03
 - w-02-goguryeo-lady 고구려 무녀 — 1차 2판(edu · 골반 아래 잘라 냄, 원본 -raw) — 11-03
+- w-06-buyeo-huntress 부여 사냥꾼 — 1차 2판(edu) — 11-03
