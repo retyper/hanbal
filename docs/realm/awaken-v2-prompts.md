@@ -63,3 +63,7 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-19-buyeo-fur-princess 부여 털옷 공주 — 1차 2판(retyper · 검토 PASS) — 11-03
 - w-22-dongye-tiger-huntress 동예 범 사냥꾼 — 1차 2판(retyper · 검토 PASS) — 11-03
 - 검토: w-18 소금 과부 두 장 — 몸은 통과, 넓은 금빛 깃이 기모노처럼 읽혀 넣지 않음 → 좁은 저고리 깃·고름으로 다시
+- 검토: w-14 연회 첩자 — 몸은 통과, 흰 안깃·넓은 소매가 기모노처럼 읽혀 넣지 않음 · 잔도 서양 술잔 → 굽다리 토기 잔으로 다시
+- 받다 끊긴 것: w-18 소금 과부 다시 판(roqkfeke12 · chatgpt.com/c/6ae9b15c-8b84-83ec-afa2-b5a786673bb8 에 그림이 있음, 아직 안 받음)
+- ★ 기모노 막는 문구(11-03 · 여밈 옷을 어깨에서 내리면 자꾸 기모노가 됨): "a clearly KOREAN hanbok, not a kimono: a short cropped jeogori ending above the waist with a NARROW git collar and a goreum ribbon bow, a high-waisted chima skirt" + Do NOT "kimono, wide collar band, white inner collar, obi"
+- 다음 차례: 소금 과부(받기) · 연회 첩자 · w-20 대장장이 딸 · w-08 마한 전사 · w-83·84·85 · w-96 · w-91·92·93 · w-21(18세 · 노출 낮게)
