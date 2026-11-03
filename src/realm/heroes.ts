@@ -867,8 +867,9 @@ function kindle(h: Hero, lines: ReportLine[]): void {
   // 깨어나면 불꽃 셋이 그대로 연료가 된다 — 각성기 한 번에 하나씩 태운다 (burnWake)
   h.flames = Math.round(R.ascendWins)
   h.ascended = true
+  h.ascents = (h.ascents ?? 0) + 1
   for (const s of GROW) h[s] += R.ascendBonus
-  lines.push({ kind: 'ascend', hero: h.id })
+  lines.push({ kind: 'ascend', hero: h.id, ...(h.ascents > 1 ? { again: true as const } : {}) })
 }
 
 /** 깨어난 장수의 불꽃 하나가 꺼진다 — 다 꺼지면 깨어남이 풀리고 각성 몫이 빠진다 (얼굴은 face.ts 가 본래대로) */

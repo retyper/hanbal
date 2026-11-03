@@ -295,6 +295,8 @@ export interface Hero {
   flames?: number
   /** 각성했다 — 이 판에서 능력치가 모두 오르고 얼굴이 각성 초상으로 (heroes.battleGrowth) */
   ascended?: boolean
+  /** 이 판에서 깨어난 횟수 — 불꽃이 다 꺼져 풀린 뒤 다시 깨어나면 2 부터 (짧은 연출) */
+  ascents?: number
   /** 자라는 능력치마다 쌓인 공 — growNeed 를 채우면 한 단계 오른다 */
   xp?: Partial<Record<GrowStat, number>>
   /** 이 장수가 자라서 오른 단계 (화면이 "얼마나 컸나"를 보인다) */
@@ -1320,7 +1322,8 @@ export type ReportLine =
   | { readonly kind: 'awaken'; readonly hero: string; readonly trait: string }
   /** 각성 불꽃이 하나 켜졌다 (n / ascendWins) · 각성했다 — 능력치가 모두 오른다 (형 10-31) */
   | { readonly kind: 'kindle'; readonly hero: string; readonly n: number }
-  | { readonly kind: 'ascend'; readonly hero: string }
+  /** 깨어났다 · again 이면 이 판에서 다시 깨어난 것 (화면은 짧은 연출 ascendAgainMs) */
+  | { readonly kind: 'ascend'; readonly hero: string; readonly again?: true }
   /** 각성한 장수의 불꽃이 다 꺼져 깨어남이 풀렸다 — 얼굴이 본래로 돌아오고 각성 몫이 빠진다 (heroes.battleGrowth · 위원회 11-04 던파 ①) */
   | { readonly kind: 'fade'; readonly hero: string }
   /**

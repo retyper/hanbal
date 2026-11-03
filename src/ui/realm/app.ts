@@ -1322,6 +1322,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    */
   // 개발판에서만 — 각성 연출을 바로 띄워 본다 (콘솔 · tools/phone-shot PRE): __ascend('장수 id')
   // 숫자를 주면 우리 장수 가운데 그 차례 (기운마다 돌려 보기)
+  // 다시 깨어남(짧은 연출)도 바로: __ascendAgain('장수 id')
+  if (import.meta.env.DEV) (window as unknown as Record<string, unknown>)['__ascendAgain'] = (id: string): void => { if (realm !== null) ascendShow(realm, [{ kind: 'ascend', hero: id, again: true }]) }
   if (import.meta.env.DEV) (window as unknown as Record<string, unknown>)['__ascend'] = (id: string | number | string[] = 0): string => {
     if (Array.isArray(id)) { if (realm !== null) ascendShow(realm, id.map((hero) => ({ kind: 'ascend' as const, hero }))); return id.join(',') }
     if (realm === null) return ''
@@ -1344,6 +1346,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const b = bustOf(h.id)
     const FX = `${ART}fx/awaken/`
     const R = P.realm
+    // 이 판에서 다시 깨어나면 짧게 — 모든 때를 ascendAgainMs 에 맞춰 줄인다 (위원회 11-04 던파 ② · 처음은 길고 다시는 짧고 세게)
+    const k = l.again === true ? R.ascendAgainMs / R.ascendOkMs : 1
+    const t = (ms: number): number => Math.round(ms * k)
     const e = elemOf(h)
     const E = ELEM[e]
     const sd = h.id.length + h.name.length
@@ -1352,15 +1357,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const phone = window.matchMedia('(pointer: coarse)').matches
     const n = phone ? R.ascendEmbersPhone : R.ascendEmbers
     const jit = (i: number, k: number): number => ((i * 73 + k * 151 + h.id.length * 37) % 101) / 101 // 불티 자리 — 장수마다 같은 흩어짐
-    const embers = Array.from({ length: n }, (_, i) => `<i style="--x:${(jit(i, 1) * 100).toFixed(1)}%;--s:${(0.5 + jit(i, 2)).toFixed(2)};--d:${(2.2 + jit(i, 3) * 2).toFixed(2)}s;--dl:${(R.ascendVortexMs / 1000 + jit(i, 4) * 2.4).toFixed(2)}s;--dx:${((jit(i, 5) - 0.5) * 60).toFixed(0)}px">${mote(e, ART, i)}</i>`).join('')
+    const embers = Array.from({ length: n }, (_, i) => `<i style="--x:${(jit(i, 1) * 100).toFixed(1)}%;--s:${(0.5 + jit(i, 2)).toFixed(2)};--d:${(2.2 + jit(i, 3) * 2).toFixed(2)}s;--dl:${(t(R.ascendVortexMs) / 1000 + jit(i, 4) * 2.4 * k).toFixed(2)}s;--dx:${((jit(i, 5) - 0.5) * 60).toFixed(0)}px">${mote(e, ART, i)}</i>`).join('')
     // 불혀 여섯 — WebGL 이 없을 때(.nogl)만 보인다
     const tongues = [-34, -22, -10, 64, 76, 88].map((l, i) => `<img class="axtg" src="${FX}flame.png" style="--i:${i};--l:${l}%" alt="">`).join('')
     // 빈 청동 자리 위에 지금 타는 불 (burn.ts 셰이더) · WebGL 이 없으면 그린 불(slot-on · 불혀 그림)로 (.nogl)
     const slots = [0, 1, 2].map((i) => `<i class="axslot" style="--i:${i}"><img class="off" src="${FX}slot-off.png" alt=""><img class="on" src="${FX}slot-on.png" alt=""><canvas class="axsb"></canvas></i>`).join('')
     const stats = (['mu', 'tong', 'ryak', 'chi', 'deok'] as const).map((s, i) => `<span class="axst" style="--i:${i}">${STAT_NAME[s]} <s>${h[s] - R.ascendBonus}</s><b>${h[s]}</b></span>`).join('')
     const el = document.createElement('div')
-    el.className = 'ascfx evo'
-    el.style.cssText = `--t0:${R.ascendSlotMs}ms;--tg:${R.ascendSlotGapMs}ms;--tv:${R.ascendVortexMs}ms;--tb:${R.ascendBeastMs}ms;--tf:${R.ascendFlashMs}ms;--tok:${R.ascendOkMs}ms;${elemVars(e)}`
+    el.className = `ascfx evo${l.again === true ? ' again' : ''}`
+    el.style.cssText = `--t0:${t(R.ascendSlotMs)}ms;--tg:${t(R.ascendSlotGapMs)}ms;--tv:${t(R.ascendVortexMs)}ms;--tb:${t(R.ascendBeastMs)}ms;--tf:${t(R.ascendFlashMs)}ms;--tok:${t(R.ascendOkMs)}ms;${elemVars(e)}`
     // 불 캔버스는 액자 그림 뒤 — 혀가 청동 테 너머에서 솟는다 · 액자 위엔 불빛을 받는 겹(axglow) · 바닥 불도 같은 셰이더 (그림 검토 11-01)
     const fr = `--bt:${R.ascendFrameTop};--bs:${R.ascendFrameSide};--bb:${R.ascendFrameBot}`
     el.innerHTML = `<div class="axveil"></div><img class="axwall" src="${FX}wall.png" alt=""><canvas class="axground"></canvas>`
@@ -1377,20 +1382,20 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     root.appendChild(el)
     // 불을 피운다 — 세 자리는 북소리마다 하나씩 (늘 불) · 액자·바닥은 그 장수의 기운 빛으로. 하나라도 못 피우면 그린 불로 (.nogl)
     const lit = [
-      ...[...el.querySelectorAll<HTMLCanvasElement>('.axsb')].map((cv, i) => burn(cv, { mode: 'socket', at: R.ascendSlotMs + i * R.ascendSlotGapMs, ramp: R.ascendIgniteMs, seed: i * 3.1 })),
-      ...[...el.querySelectorAll<HTMLCanvasElement>('.axburn')].map((cv) => burn(cv, { mode: 'frame', at: R.ascendVortexMs, ramp: R.ascendFlashMs - R.ascendVortexMs, top: R.ascendFrameTop, side: R.ascendFrameSide, bot: R.ascendFrameBot, seed: 7.3, colors: E.c })),
-      ...[...el.querySelectorAll<HTMLCanvasElement>('.axground')].map((cv) => burn(cv, { mode: 'ground', at: R.ascendFlashMs - R.ascendFrameLeadMs, ramp: R.ascendFrameLeadMs * 1.5, seed: 2.2, colors: E.c })),
+      ...[...el.querySelectorAll<HTMLCanvasElement>('.axsb')].map((cv, i) => burn(cv, { mode: 'socket', at: t(R.ascendSlotMs + i * R.ascendSlotGapMs), ramp: t(R.ascendIgniteMs), seed: i * 3.1 })),
+      ...[...el.querySelectorAll<HTMLCanvasElement>('.axburn')].map((cv) => burn(cv, { mode: 'frame', at: t(R.ascendVortexMs), ramp: t(R.ascendFlashMs - R.ascendVortexMs), top: R.ascendFrameTop, side: R.ascendFrameSide, bot: R.ascendFrameBot, seed: 7.3, colors: E.c })),
+      ...[...el.querySelectorAll<HTMLCanvasElement>('.axground')].map((cv) => burn(cv, { mode: 'ground', at: t(R.ascendFlashMs - R.ascendFrameLeadMs), ramp: t(R.ascendFrameLeadMs * 1.5), seed: 2.2, colors: E.c })),
     ]
     if (lit.some((x) => !x)) el.classList.add('nogl')
     // 소리 — 모임(차오름) · 소용돌이에 그 기운의 소리 · 짐승의 울음 · 번쩍(파·파·밤 하강) · 장수의 한마디
     // 북 두구두구 · 불꽃 칸 방울 · 뿔나팔은 뺐다 (형 11-03: "북 방울 나팔 뺀 게 나은 듯")
     const at = (ms: number, f: () => void): void => { timers.push(window.setTimeout(() => { if (el.isConnected && document.visibilityState === 'visible') f() }, ms)) }
     ding(snd('ax_rise'), 0.6)
-    if (E.sfx !== null) { const s = E.sfx; at(R.ascendVortexMs, () => ding(snd(s), 0.8)) }
-    at(R.ascendBeastMs, () => ding(snd(E.cry), 0.9))
-    at(R.ascendFlashMs - preRoll('ax_flash'), () => ding(snd('ax_flash'), 0.95))
-    at(R.ascendFlashMs, () => { if (typeof navigator.vibrate === 'function') navigator.vibrate([40, 40, 80, 40, 120]) })
-    at(R.ascendFlashMs + 1100, () => { if (h.status === 'free' && !isRuler(r, h.id)) ding(voicePath(h, 'tap', false), 0.9) })
+    if (E.sfx !== null) { const s = E.sfx; at(t(R.ascendVortexMs), () => ding(snd(s), 0.8)) }
+    at(t(R.ascendBeastMs), () => ding(snd(E.cry), 0.9))
+    at(Math.max(0, t(R.ascendFlashMs) - preRoll('ax_flash')), () => ding(snd('ax_flash'), 0.95))
+    at(t(R.ascendFlashMs), () => { if (typeof navigator.vibrate === 'function') navigator.vibrate([40, 40, 80, 40, 120]) })
+    at(t(R.ascendFlashMs) + 1100, () => { if (h.status === 'free' && !isRuler(r, h.id)) ding(voicePath(h, 'tap', false), 0.9) })
   }
   /** 승리가 가깝다 — 넷 가운데 하나가 이번 계절에 문턱(pathAlertShare)을 넘으면 크게 한 번 (형 10-26: "승리 목표 달성의 80%가 되면 한번 알림") */
   function nearWinToast(prev: Realm, next: Realm): void {

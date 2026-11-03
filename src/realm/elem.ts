@@ -27,7 +27,7 @@ export function elemOf(h: Pick<Hero, 'id' | 'traits' | 'mu' | 'tong' | 'ryak' | 
 }
 
 /**
- * 각성기를 켠 기운 — 첫 판은 땅·바람·불 (위원회 11-04 던파 ① 짓는 차례 3). 물(되살림)·번개(적 깃발 앞면)는 다음에 켠다.
+ * 각성기를 켠 기운 — 다섯 다 (위원회 11-04 던파 ①: 첫 판 땅·바람·불 → 둘째 판 물(동해의 파도 · 되살림)·번개(백두의 지혜 · 적의 수를 먼저 본다)).
  * 여기 없는 기운의 장수는 각성해도 각성기 단추가 안 뜬다 (비기는 그대로)
  */
-export const WAKE_ON: ReadonlySet<Elem> = new Set<Elem>(['earth', 'wind', 'fire'])
+export const WAKE_ON: ReadonlySet<Elem> = new Set<Elem>(['earth', 'wind', 'fire', 'water', 'bolt'])
