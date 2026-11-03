@@ -7,6 +7,7 @@
 
 export type CardKind = 'drought' | 'bounty' | 'locust' | 'plague' | 'halo' | 'quarrel' | 'waship' | 'pirates' | 'exile' | 'fugitive' | 'whale' | 'fishbridge' | 'gogak' | 'romance'
   | 'sowfest' | 'skyfest' | 'mentor' | 'smith' | 'homenews' | 'song' | 'spring' | 'gift' | 'hunt' | 'rival'
+  | 'mhscold' | 'mhhunt' | 'opengate' | 'redsail' | 'selfpot'
 
 export interface CardOpt { readonly name: string; readonly does: string }
 
@@ -201,6 +202,62 @@ export const CARDS: Readonly<Record<CardKind, CardInfo>> = {
     opts: [
       { name: '이웃을 부른다', does: '곡식을 내어 잔치를 연다 · 아는 나라마다 우리를 좋게 본다' },
       { name: '군대가 맹세한다', does: '군대 사기가 크게 오른다' },
+    ],
+  },
+  // ── 장마다 사서의 한 장면 (위원회 11-04 역사 ③ · events.chapterCard 가 정해진 계절에 · 자유 판에는 안 온다)
+  // 1장 마한 — 『삼국사기』 백제본기 온조왕 24년 「王慙 遂壞其柵」
+  mhscold: {
+    name: '마한왕의 꾸짖음', kind: 'outside', bad: false, icon: 'mood-angry', art: 'event-outside-envoy',
+    line: '마한왕이 사신을 보내 꾸짖는다.',
+    beats: ['마한왕이 사신을 보내 꾸짖는다.', '「땅을 내주었더니 목책을 세워 우리를 막는가.」'],
+    ask: '어찌 답할까?',
+    opts: [
+      { name: '목책을 허문다', does: '목지가 우리를 크게 좋게 본다' },
+      { name: '못 들은 척 쌓는다', does: '고을마다 경계가 오르고 목지가 우리를 나쁘게 본다' },
+    ],
+  },
+  // 1장 마한 — 온조왕 26년 「陽言田獵 潛襲馬韓」
+  mhhunt: {
+    name: '사냥을 나간다', kind: 'people', bad: false, icon: 'unit-scouts', art: 'event-goguryeo-hunt',
+    line: '가을 사냥 철이 되었다.',
+    beats: ['가을 사냥 철이 되었다.', '장수들이 군사를 모아 들로 나갈 채비를 한다.'],
+    ask: '사냥을 어찌할까?',
+    opts: [
+      { name: '사냥이라 알리고 몰래 친다', does: '목지 군대의 사기가 꺾인다' },
+      { name: '정말 사냥한다', does: '군대 사기와 장수의 정이 오른다' },
+    ],
+  },
+  // 2장 서라벌 — 혁거세 30년, 바깥 군대가 밤에도 문을 열어 둔 것을 보고 「도가 있는 나라」라며 물러갔다
+  opengate: {
+    name: '밤에도 문을 열어 둔 나라', kind: 'outside', bad: false, icon: 'settle-palisade', art: 'event-night-raid',
+    line: '바깥 군대가 서라벌 가까이 왔다는 소문이 돈다.',
+    beats: ['바깥 군대가 서라벌 가까이 왔다는 소문이 돈다.', '여섯 마을 사람들은 밤에도 문을 닫지 않는다.'],
+    ask: '문을 어찌할까?',
+    opts: [
+      { name: '문을 열어 둔다', does: '아는 나라마다 우리를 좋게 보고 장수들 정이 오른다' },
+      { name: '성문을 닫는다', does: '고을마다 경계가 오른다' },
+    ],
+  },
+  // 4장 구지봉 — 『삼국유사』 가락국기 48년, 붉은 돛을 단 배가 서남쪽 바다에서 왔다
+  redsail: {
+    name: '붉은 돛', kind: 'outside', bad: false, icon: 'route-caravan', art: 'event-eight-harbours',
+    line: '서남쪽 바다에서 붉은 돛을 단 배가 들어온다.',
+    beats: ['서남쪽 바다에서 붉은 돛을 단 배가 들어온다.', '배에 귀한 손님이 탔다고 한다.'],
+    ask: '어찌 맞을까?',
+    opts: [
+      { name: '신하를 보내 맞는다', does: '손님이 따라오면 장수들 정과 사기가 크게 오른다 · 「가벼이 따라가리오」 하고 안 오기도 한다' },
+      { name: '몸소 장막을 치고 기다린다', does: '곡식이 든다 · 장수들 정과 사기가 틀림없이 크게 오른다' },
+    ],
+  },
+  // 5장 대무신왕 — 대무신왕 4년, 비류수 가에서 저절로 끓는 솥을 얻었고 솥을 진 사내에게 성을 내렸다
+  selfpot: {
+    name: '저절로 끓는 솥', kind: 'sky', bad: false, icon: 'good-soybean-jar', art: 'event-divination',
+    line: '비류수 가에서 불 없이 저절로 끓는 솥을 얻었다.',
+    beats: ['비류수 가에서 불 없이 저절로 끓는 솥을 얻었다.', '솥을 지고 온 힘센 사내가 곁에 섰다.'],
+    ask: '솥을 어찌할까?',
+    opts: [
+      { name: '솥으로 군량을 댄다', does: '곡식이 들어온다' },
+      { name: '솥 진 사내에게 성을 내린다', does: '새 장수가 된다' },
     ],
   },
   // 맞수 — 같은 적장과 여러 번 맞선 우리 장수 (위원회 11-04 역사 ① · memory.rivalOf) · 『삼국사기』 동명성왕 원년 주몽과 송양의 활 겨루기

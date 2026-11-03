@@ -138,9 +138,22 @@ function candidates(r: Realm, f: string, season: number): Array<{ card: Card; w:
  * 엄리대수의 다리는 추격 때(둘째 계절) · 비류국의 고각은 송양이 아직 안 따를 때(다섯째 계절)
  */
 function chapterCard(r: Realm, season: number): Card | null {
-  if (r.scenario?.id !== 'jumong' || r.player !== 'goguryeo') return null
-  if (seasonIdx(r, season) === P.realm.cardFishSeason) return { kind: 'fishbridge', season }
-  if (seasonIdx(r, season) === P.realm.cardGogakSeason && r.factions['biryuna'] !== undefined) return { kind: 'gogak', season }
+  const id = r.scenario?.id
+  const at = (k: number): boolean => seasonIdx(r, season) === Math.round(k)
+  const R = P.realm
+  // 3장 주몽 — 엄리대수의 다리 · 비류국의 고각
+  if (id === 'jumong' && r.player === 'goguryeo') {
+    if (at(R.cardFishSeason)) return { kind: 'fishbridge', season }
+    if (at(R.cardGogakSeason) && r.factions['biryuna'] !== undefined) return { kind: 'gogak', season }
+  }
+  // 1장 마한 · 2장 서라벌 · 4장 구지봉 · 5장 대무신왕 — 사서의 한 장면 (위원회 11-04 역사 ③)
+  if (id === 'mahan' && r.player === 'baekje' && r.factions['mokji'] !== undefined) {
+    if (at(R.cardMhScoldSeason)) return { kind: 'mhscold', season }
+    if (at(R.cardMhHuntSeason)) return { kind: 'mhhunt', season }
+  }
+  if (id === 'seorabeol' && r.player === 'saro' && at(R.cardOpenGateSeason)) return { kind: 'opengate', season }
+  if (id === 'gujibong' && r.player === 'garak' && at(R.cardRedSailSeason)) return { kind: 'redsail', season }
+  if (id === 'daemusin' && r.player === 'goguryeo' && at(R.cardSelfPotSeason)) return { kind: 'selfpot', season }
   return null
 }
 
@@ -335,6 +348,22 @@ export function cardPreview(r: Realm, c: Card, pick: 0 | 1 | 2, have?: { readonl
       return { sure: pick === 0 ? { grain: cost(R.cardFeastGrain), favor: [{ to: knownOf(r, f).filter((x) => x !== f), d: R.cardSkyGuestFavor }] } : { morale: R.cardSkyMorale } }
     case 'hunt':
       return { sure: pick === 0 ? cheer : { grain: earn(R.cardGoodGrain) } }
+    // ── 장마다 사서의 한 장면 (위원회 11-04 역사 ③)
+    case 'mhscold':
+      return { sure: pick === 0 ? { favor: [{ to: ['mokji'], d: R.cardChapFavor }] } : { watch: R.cardHaloWatch, favor: [{ to: ['mokji'], d: -R.cardFavorDown }] } }
+    case 'mhhunt':
+      return { sure: pick === 0 ? { foe: { faction: 'mokji', d: R.cardChapFoeMorale } } : cheer }
+    case 'opengate':
+      return { sure: pick === 0 ? { favor: [{ to: knownOf(r, f).filter((x) => x !== f), d: R.cardSkyFavor }], bond: R.cardBond } : { watch: R.cardHaloWatch } }
+    case 'redsail':
+      if (pick === 0) return { sure: {}, chance: R.cardRedSailOk, die: 'greet', win: { bond: R.cardChapBond, morale: R.cardSkyMorale }, lose: {} }
+      return { sure: { grain: cost(R.cardFeastGrain), bond: R.cardChapBond, morale: R.cardSkyMorale } }
+    case 'selfpot': {
+      if (pick === 0) return { sure: { grain: earn(R.cardChapGrain) } }
+      const pool = poolFree(r)
+      const p = pool[Math.floor(roll(r.seed, r.season, 'card-res:selfpot:who') * pool.length)]
+      return p !== undefined && homeOf(r, f) !== null ? { sure: { join: p.id }, hero: p.id } : { sure: { bond: R.cardBond } }
+    }
     case 'rival': {
       // 도전장 — 다음에 만나면 결판 · 그 장수가 칼을 간다(무예 +) · 술 한 동이 — 곡식을 내어 원한을 풀고 그 나라 호감 (뒤에 데려오기 쉽게)
       if (pick === 0) return { sure: { stat: [c.hero!, 'mu', R.cardMentorStat], bonds: [[c.hero!, R.cardRivalBond]] }, hero: c.hero! }
