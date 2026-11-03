@@ -9,7 +9,7 @@
 import { faceFile, noteAscended } from './face.ts'
 import { aiOrders, strikeLive } from '../../realm/ai.ts'
 import { headcount, strength, type Equip, type UnitKind } from '../../realm/battle.ts'
-import { bustOf, CUSTOM_ICON, FACTION_ART, GOOD_ICON, SEASON_ICON, SOL_ANIM2, SOL_ANIM_AR, UNIT_ICON, flagIcon, kidBust, nodeIcon, nodePos, noteGrowing, noteKids } from '../../realm/data/art.ts'
+import { bustOf, CUSTOM_ICON, FACTION_ART, GOOD_ICON, MIGRANT_ANIM, SEASON_ICON, SOL_ANIM2, SOL_ANIM_AR, UNIT_ICON, flagIcon, kidBust, nodeIcon, nodePos, noteGrowing, noteKids } from '../../realm/data/art.ts'
 import { AWAKEN_ART } from '../../realm/data/awaken-art.ts'
 import { NATIONS, type NationInfo } from '../../realm/data/nations.ts'
 import { YEONGNAM_NATIONS } from '../../realm/data/nations-yeongnam.ts'
@@ -1622,6 +1622,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (const p of partiesOf(r, me())) {
       const was = realm!.parties?.[p.id]?.march
       tokens.push({ army: p.id, node: p.march?.from ?? p.at, men: p.hh, sel: partySel === p.id, going: p.march !== null && was == null, img: `${ART}icon/unit-porters.png`, party: true,
+        // 떠 있는 짐꾼 그림 대신 걷는 이주민 하나 (형 11-03: 병사처럼) — 서 있을 땐 첫 컷, 길 위에선 여덟 컷을 다 걷는다
+        squad: [{ src: `${ART}${MIGRANT_ANIM.file}`, ar: MIGRANT_ANIM.ar, m: true }],
         ...(was != null ? { march: { from: was.from, to: was.to, left: was.left } } : {}) })
     }
     const a0 = armySel.length > 0 ? r.armies[armySel[0]!] : undefined

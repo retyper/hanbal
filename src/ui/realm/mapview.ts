@@ -8,7 +8,7 @@
  */
 import { faceFile } from './face.ts'
 import { headcount } from '../../realm/battle.ts'
-import { FACTION_ART, GOOD_ICON, REGION_ART, SEASON_MAP, flagIcon, nodeIcon, nodePos } from '../../realm/data/art.ts'
+import { FACTION_ART, GOOD_ICON, MIGRANT_ANIM, REGION_ART, SEASON_MAP, flagIcon, nodeIcon, nodePos } from '../../realm/data/art.ts'
 import { ageSeasons, seasons } from '../../realm/calendar.ts'
 import { EDGE_NAME, GOOD_NAME, NODE_KIND_NAME, NODE_NOW, tagNow, turnWord, turnsLabel } from '../../realm/data/prose.ts'
 import { worldGeoOf } from '../../realm/data/regions/index.ts'
@@ -418,6 +418,12 @@ export const MAP_CSS = `
 @keyframes mqatk { from { translate: calc(var(--a0, 57.1429%) * (1 - var(--nf, 8)) / var(--nf, 8)) 0; } to { translate: calc(var(--a1, 85.7143%) * (1 - var(--nf, 8)) / var(--nf, 8)) 0; } }
 /* 새 20컷 띠(v2 · tools/anim-pack.py) — 칸이 넓다. 병사 자리는 옛 비 그대로, 안의 그림만 --r 배 넓혀 가운데에 (형 10-29) */
 .map .tok.unit .sq.v2 u { left: 50%; right: auto; width: calc(var(--r, 1) * 100%); transform: translateX(-50%); --nf: 20; --i0: 0%; --i1: 21.0526%; --w0: 21.0526%; --w1: 63.1579%; --a0: 63.1579%; --a1: 94.7368%; --al: 89.4737%; --fl: 94.7368%; --mqidlen: 4; --mqwalkn: 8; --mqatkn: 6; --mqidles: 1.6; --mqwalks: 1.4; --mqatks: 1.3; --spdraws: 1.2; }
+/* 개척단 — 이주민 걷기 8컷 띠(MIGRANT_ANIM) 하나. 서 있으면 첫 컷 · 길 위·떠나는 달엔 여덟 컷 · 고르면 제자리 걸음.
+   얼굴 칸 대신 점선 동그라미 짐꾼 그림은 감추고 사람 하나만 (형 11-03: "이미지 둥둥 떠다니게 말고 병사처럼") */
+.map .tok.unit .sq.mg u { --nf: 8; --i0: 0%; --i1: 14.2857%; --mqidlen: 1; --w0: 0%; --w1: 114.2857%; --mqwalkn: 8; --mqwalks: 2.3; --a0: 0%; --a1: 114.2857%; --mqatkn: 8; --mqatks: 3; }
+.map .tok.unit.party { grid-template-columns: 0 calc(var(--tw) * 1.1); }
+.map .tok.unit.party > img { display: none; }
+.map .tok.unit.party > b { white-space: nowrap; }
 .map .tok.unit.going .sq u::before, .map .toks.mv .tok.unit .sq u::before { animation: mqwalk calc(.42s * var(--mqwalks, 1)) steps(var(--mqwalkn, 2)) calc(var(--j) * -.14s) infinite; }
 .map .tok.unit.sel .sq u::before { animation: mqatk calc(.32s * var(--mqatks, 1)) steps(var(--mqatkn, 2)) calc(var(--j) * .06s) 3, mqidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--mqidles, 1)) steps(var(--mqidlen, 2)) calc(1.1s - var(--k, .5) * 1.6s) infinite; }
 .map .tok.unit .squad::after { content: ''; position: absolute; left: -4%; right: -4%; bottom: -14%; height: 34%; border-radius: 50%; border: 2px solid transparent; z-index: -1; pointer-events: none; }
@@ -481,7 +487,9 @@ export const MAP_CSS = `
 /* 군사만 가면 얻는 곳 — 글 대신 고을 그림 오른쪽 위에 둥근 배지 하나 (형 11-01: "군사 이동 필요가 도시 명찰이랑 겹친다 · 직관적이게 군사 보내고 싶게").
    생산품 그림이 반짝이고 창이 콕콕 — 누르면 고을 카드의 「군사 보내기」. 그림 안에 앉아서 그림을 비켜 놓이는 이름표와 안 겹친다 · opacity·transform 만 (폰 GPU) */
 .map .nd .frtb { position: absolute; right: -4%; top: 2%; z-index: 3; display: inline-flex; align-items: center; gap: 1px; padding: 2px 4px 2px 3px; border-radius: 999px;
-  background: #5a2c12f0; border: 1.5px solid #ffd27a; box-shadow: 0 0 0 2px #ffd27a44, 0 2px 5px #000a; pointer-events: none; font-size: calc(1.9cqh * var(--ls, 1)); }
+  background: #5a2c12f0; border: 1.5px solid #ffd27a; box-shadow: 0 0 0 2px #ffd27a44, 0 2px 5px #000a; pointer-events: none;
+  /* 다른 지도 표처럼 확대에 맞서 줄인다 — 줌 몫이 빠져 가까이 보면 화면 반을 덮었다 (형 11-03: 우산국 감포 「엄청 큰 오브젝트」) */
+  font-size: clamp(9px, calc(1.9cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 15px); }
 .map .nd .frtb img { width: 1.35em; height: 1.35em; object-fit: contain; display: block; }
 .map .nd .frtb .frtp { position: relative; display: inline-block; }
 .map .nd .frtb .frtp::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; background: radial-gradient(circle, #fff6c8cc 0, #ffd76a55 40%, #ffd76a00 70%); opacity: 0; animation: frtglint 1.6s ease-in-out infinite; pointer-events: none; }
@@ -491,6 +499,8 @@ export const MAP_CSS = `
 @media (prefers-reduced-motion: reduce) { .map .nd .frtb .frtp::after, .map .nd .frtb .frts { animation: none; } }
 /* 길 위의 백성 — 걷는 짐꾼 (SMIL) · 발자국 같은 옅은 점선 · 군대·개척단을 고르면 고른 것만 또렷하게 */
 .map svg.mwalk { z-index: 3; pointer-events: none; }
+/* 걷는 이주민 — 지도 단위로 그려져 확대하면 같이 부푼다. 말·이름표처럼 √배율만 커지게 되줄인다 (발끝이 축 · 형 11-03 "엄청 큰 오브젝트") */
+.map svg.mwalk .wk { scale: calc(1 / var(--zs, 1)); }
 .map svg.mwalk .wtrail { fill: none; stroke: #f3e2b4; stroke-width: 3; stroke-dasharray: 2 9; stroke-linecap: round; opacity: .7; }
 .map:has(.tok.sel) svg.mwalk .walk:not(.sel), .map:has(.tok.sel) .toks.mv:not(:has(.tok.sel)) { opacity: .3; }
 /* 개척단이 못 닿는 빈 땅 — 잿빛, 가만히 (깜빡이는 「＋마을」과 갈리게) */
@@ -973,7 +983,7 @@ export function mapHtml(
   const ours = (t: MapToken): boolean => t.foe === undefined && t.ally === undefined && t.party !== true
   const tokBtn = (t: MapToken, ang?: number): string =>
     `<button class="tok${t.squad !== undefined ? ' unit' : ''}${ours(t) && t.march === undefined && !t.going ? ' idle' : ''}${t.sel ? ' sel' : ''}${t.going ? ' going' : ''}${t.ally !== undefined ? ' ally' : ''}${t.party === true ? ' party' : ''}${t.foe !== undefined ? ` foe${t.sneak === true ? ' sneak' : ''}` : ''}" data-act="${t.foe !== undefined ? 'foetok' : t.party === true ? 'ptok' : 'tok'}" data-army="${t.army}" style="${tokKit(t)}">`
-    + `${t.sel ? GEM : ''}${ang !== undefined ? `<i class="dir" style="--a:${ang.toFixed(0)}deg"></i>` : ''}${ours(t) ? '<i class="flag"></i>' : ''}${t.wait === true ? `<i class="ask" style="--ae:${P.realm.mapAskEveryS}s;--ad:${(-(jit(t.army) * P.realm.mapAskEveryS)).toFixed(1)}s">명령?</i>` : ''}${t.squad !== undefined ? `<span class="squad">${t.squad.map((q, j) => `<i class="sq${q.r !== undefined ? ' v2' : ''}" style="--ar:${q.ar.toFixed(3)};${q.r !== undefined ? `--r:${q.r.toFixed(3)};` : ''}--j:${j};--k:${((([...t.army].reduce((h, ch) => h * 31 + ch.charCodeAt(0), 7) + j * 53) % 97 + 97) % 97 / 97).toFixed(2)}"><u style="background-image:url('${q.src}')"></u></i>`).join('')}</span>` : ''}<img src="${t.img}" alt="">${t.foe !== undefined && t.known !== true ? '<i class="unk">?</i>' : ''}${t.foe !== undefined ? '' : t.morale !== undefined ? `<i class="hp mor${t.morale < P.realm.mapMoraleLow ? ' low' : ''}" style="--p:${Math.max(0.06, Math.min(1, t.morale / P.realm.moraleMax)).toFixed(2)}"></i>` : `<i class="hp" style="--p:${Math.max(0.08, t.men / topMen).toFixed(2)}"></i>`}<b>${t.foe !== undefined ? (t.known === true ? `적 ${t.men}` : '적') : `${t.ally !== undefined ? '도움 ' : t.party === true ? '개척 ' : ''}${t.men}`}</b></button>`
+    + `${t.sel ? GEM : ''}${ang !== undefined ? `<i class="dir" style="--a:${ang.toFixed(0)}deg"></i>` : ''}${ours(t) ? '<i class="flag"></i>' : ''}${t.wait === true ? `<i class="ask" style="--ae:${P.realm.mapAskEveryS}s;--ad:${(-(jit(t.army) * P.realm.mapAskEveryS)).toFixed(1)}s">명령?</i>` : ''}${t.squad !== undefined ? `<span class="squad">${t.squad.map((q, j) => `<i class="sq${q.r !== undefined ? ' v2' : ''}${q.m === true ? ' mg' : ''}" style="--ar:${q.ar.toFixed(3)};${q.r !== undefined ? `--r:${q.r.toFixed(3)};` : ''}--j:${j};--k:${((([...t.army].reduce((h, ch) => h * 31 + ch.charCodeAt(0), 7) + j * 53) % 97 + 97) % 97 / 97).toFixed(2)}"><u style="background-image:url('${q.src}')"></u></i>`).join('')}</span>` : ''}<img src="${t.img}" alt="">${t.foe !== undefined && t.known !== true ? '<i class="unk">?</i>' : ''}${t.foe !== undefined ? '' : t.morale !== undefined ? `<i class="hp mor${t.morale < P.realm.mapMoraleLow ? ' low' : ''}" style="--p:${Math.max(0.06, Math.min(1, t.morale / P.realm.moraleMax)).toFixed(2)}"></i>` : `<i class="hp" style="--p:${Math.max(0.08, t.men / topMen).toFixed(2)}"></i>`}<b>${t.foe !== undefined ? (t.known === true ? `적 ${t.men}` : '적') : `${t.ally !== undefined ? '도움 ' : t.party === true ? '개척 ' : ''}${t.men}`}</b></button>`
   let toks = ''
   // 길 위의 우리 군대 — 떠난 쪽에서 삼분의 일쯤 (가운데의 "n계절" 글씨를 안 가린다)
   for (const t of tokens) {
@@ -1014,12 +1024,20 @@ export function mapHtml(
     for (let i = 1; i < seg.length; i++) len += Math.hypot(seg[i]![0] - seg[i - 1]![0], seg[i]![1] - seg[i - 1]![1])
     const dur = Math.max(P.realm.mapWalkMinS, len / (W * P.realm.mapWalkSpeed))
     const flip = seg[seg.length - 1]![0] < seg[0]![0] ? ' transform="scale(-1 1)"' : ''
+    // 걷는 이주민 — 정지 그림(짐꾼 무리)을 띄워 들썩이던 것을 병사처럼 걷기 그림띠로 (형 11-03: "이미지 둥둥 떠다니게 말고 제미나이로 병사 구현했던 것처럼 이주민 애니메이션").
+    // 칸 하나만 보이는 작은 svg 안에서 띠를 x 로 한 칸씩 넘긴다 (SMIL discrete) · 발이 길 위의 점에 닿는다.
+    // 크기는 지도 단위라 확대하면 같이 부풀었다 → .wk 가 CSS 로 √배율만큼 되줄인다 (말·이름표와 같은 결 · 형 11-03: "엄청 큰 오브젝트")
+    const fh = sz * 0.95
+    const fw = fh * MIGRANT_ANIM.ar
+    const xs = Array.from({ length: MIGRANT_ANIM.nf }, (_, f) => (-fw * f).toFixed(1)).join(';')
     let g = `<path class="wtrail" d="${d}"/>`
     for (let i = 0; i < n; i++) {
-      g += `<g><animateMotion dur="${dur.toFixed(2)}s" begin="${(-(dur * (i + jit(k)) / n)).toFixed(2)}s" repeatCount="indefinite" path="${d}"/>`
-        + `<animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.12;.85;1" dur="${dur.toFixed(2)}s" begin="${(-(dur * (i + jit(k)) / n)).toFixed(2)}s" repeatCount="indefinite"/>`
-        + `<g><animateTransform attributeName="transform" type="translate" values="0 0;0 ${(-sz * 0.1).toFixed(1)};0 0" dur=".5s" repeatCount="indefinite"/>`
-        + `<image href="${art}icon/unit-porters.png" x="${(-sz / 2).toFixed(1)}" y="${(-sz * 0.9).toFixed(1)}" width="${sz.toFixed(1)}" height="${sz.toFixed(1)}"${flip}/></g></g>`
+      const b0 = (-(dur * (i + jit(k)) / n)).toFixed(2)
+      g += `<g><animateMotion dur="${dur.toFixed(2)}s" begin="${b0}s" repeatCount="indefinite" path="${d}"/>`
+        + `<animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.12;.85;1" dur="${dur.toFixed(2)}s" begin="${b0}s" repeatCount="indefinite"/>`
+        + `<g class="wk"><g${flip}><svg x="${(-fw / 2).toFixed(1)}" y="${(-fh * 0.97).toFixed(1)}" width="${fw.toFixed(1)}" height="${fh.toFixed(1)}" viewBox="0 0 ${fw.toFixed(1)} ${fh.toFixed(1)}" overflow="hidden">`
+        + `<image href="${art}${MIGRANT_ANIM.file}" x="0" y="0" width="${(fw * MIGRANT_ANIM.nf).toFixed(1)}" height="${fh.toFixed(1)}" preserveAspectRatio="none">`
+        + `<animate attributeName="x" values="${xs}" calcMode="discrete" dur="${P.realm.mapWalkStepS}s" begin="${(-(P.realm.mapWalkStepS * (i * 0.37 + jit(k)))).toFixed(2)}s" repeatCount="indefinite"/></image></svg></g></g></g>`
     }
     return g
   }
@@ -1080,7 +1098,7 @@ export interface MapToken {
   /** 이번 계절 아직 명령이 없는 우리 군대 — 「명령?」 말풍선 (문명의 "유닛 명령 필요") */
   readonly wait?: boolean
   /** 땅에 선 병사 셋 — 그 군대에 많은 병종의 동작 그림 (형 10-28: "둥실 떠다니기만 하면 뭐하냐 · 유닛처럼") */
-  readonly squad?: ReadonlyArray<{ readonly src: string; readonly ar: number; readonly r?: number }>
+  readonly squad?: ReadonlyArray<{ readonly src: string; readonly ar: number; readonly r?: number; /** 이주민 걷기 8컷 띠 (개척단) */ readonly m?: boolean }>
 }
 
 /** 고른 군대가 갈 수 있는 고을 — 칩은 판세(싸울 곳) 또는 걸리는 계절 */
