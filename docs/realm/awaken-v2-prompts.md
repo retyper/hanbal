@@ -23,3 +23,4 @@ This is an original character from my own Korean historical fantasy strategy gam
 - l-L2-soseono 소서노 — 1차 2판(Facts Gamble) · 2차(edu) — 11-03
 - w-97-goguryeo-mir 미르 — 1차(새 얼굴이라 처음 · edu) — 11-03
 - w-98-byeonhan-danbi 단비 — 1차(새 얼굴 · edu) — 11-03
+- w-101-garak-singwigan 신귀간 — 1차(새 얼굴 · edu) — 11-03
