@@ -463,7 +463,7 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   'g-bow': { ar: 192 / 160, body: 0.948, bow: true }, // 11-03 20컷 다시 (걷기가 한 자세였다)
   'g-spear': { ar: 189 / 160, body: 0.914 }, // 11-03 20컷 다시 (걷기가 한 자세였다)
   'w-spear': { ar: 184 / 160, body: 0.955 }, // 11-03 20컷 다시 (걷기가 한 자세였다)
-  'w-bow': { ar: 185 / 160, body: 0.967, bow: true },
+  'w-bow': { ar: 152 / 160, body: 0.968, bow: true }, // 11-03 20컷 다시 (걷기가 한 자세였다)
   mount: { ar: 246 / 160, body: 0.968 },
   // 제 그림 (GEN_OWN) — 글 주문만으로 받은 장수 (docs/realm/GENERAL-SPRITES.md)
   jumong: { ar: 243 / 160, body: 0.948, bow: true },
