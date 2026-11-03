@@ -58,3 +58,4 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-70-bukokjeo-mulbeom 물범 — 1차 2판(retyper · 검토 PASS) — 11-03
 - w-90-saro-danbi 나정 지기 단비 — 1차 2판 다시(retyper · 검토 PASS) — 11-03
 - w-12-court-dancer 고구려 무희 — 1차 2판(retyper · 검토 PASS) — 11-03
+- w-03-goguryeo-archer 매화(고구려 떠돌이 궁수) — 1차 2판(retyper · 검토 PASS) — 11-03
