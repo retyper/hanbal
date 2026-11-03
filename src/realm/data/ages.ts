@@ -255,6 +255,7 @@ export const FACE_AGE: Readonly<Record<string, CastAge>> = {
   'g-96-garak-suro': { age: 16, grey: false },
   'g-19-sabeol-veteran': { age: 55, grey: true },
   'g-20-samul-sea-lord': { age: 34, grey: false },
+  'g-97-tahae': { age: 25, grey: false },
   'g-22-ungcheon-gomnae': { age: 35, grey: false },
   'g-23-sangdang-soedal': { age: 50, grey: true },
   'g-24-wansan-onsan': { age: 23, grey: false },
