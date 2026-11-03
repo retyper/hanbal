@@ -2554,6 +2554,19 @@ export const WAR_CSS = `
 .ap .wcmds > i { font-style: normal; color: #c8402a; }
 .ap .wst { margin: 6px 0 2px; }
 .ap .wacts { display: flex; flex-direction: column; gap: 4px; margin: 2px 0 6px; }
+/* 우리 원군이 처음 닿는 합 — 화면을 가로지르는 기병 (draw · 형 11-03: 로한의 기병대 오마주) · 넓은 칸은 opacity 만, 움직이는 건 빛띠 하나 (폰 그래픽 한도) · 해 동그라미·햇살 없음 */
+.ap .wrlc { position: fixed; inset: 0; z-index: 97; display: grid; place-items: center; overflow: hidden; background: #000a; cursor: pointer; animation: wrlcout .45s ease-in 2.1s forwards; }
+@keyframes wrlcout { to { opacity: 0; visibility: hidden; } }
+.ap .wrlc-img, .ap .wrlc-sweep { position: absolute; top: 50%; height: min(56vh, 70vw); translate: 0 -50%; }
+.ap .wrlc-img { left: 0; right: 0; background: center 40% / cover no-repeat; box-shadow: 0 0 0 2px #e0bd78, 0 14px 40px #000; opacity: 0; animation: wrlcin .35s ease-out forwards; }
+@keyframes wrlcin { to { opacity: 1; } }
+.ap .wrlc-sweep { left: 0; width: 34%; background: linear-gradient(90deg, #fff0, #fff2cc99 50%, #fff0); transform: translateX(-110%); animation: wrlcsweep 1.2s ease-in-out .2s forwards; pointer-events: none; }
+@keyframes wrlcsweep { to { transform: translateX(320%); } }
+.ap .wrlc-t { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; animation: wrlcslam .5s cubic-bezier(.2, 1.4, .35, 1) .35s both; }
+.ap .wrlc-t b { font-family: "East Sea Dokdo", var(--display); font-weight: 400; font-size: clamp(66px, 19vw, 128px); line-height: .9; color: #ffe2a0; text-shadow: 0 3px 0 #2a1606, 0 0 18px #ffb84a, 0 6px 18px #000; }
+.ap .wrlc-t span { font-family: "Gowun Batang", serif; font-size: clamp(16px, 4.6vw, 22px); font-weight: 700; color: #fff4dc; text-shadow: 0 2px 6px #000; }
+@keyframes wrlcslam { from { opacity: 0; transform: scale(1.4); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .ap .wrlc-sweep { display: none; } }
 .ap .wrelief { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0 6px; padding: 8px 10px; border-radius: 12px; font-size: 14px; animation: wrel .9s ease-out both; }
 .ap .wrelief img { width: 34px; height: 34px; object-fit: contain; }
 .ap .wrelief b { font-family: 'Gowun Batang', serif; font-size: 18px; }
@@ -3597,6 +3610,25 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     if (cutSfx !== null) { for (const [s, k] of cutSfx) at(s, SK_SFX[k], 0.5); cutSfx = null } // 장수 기술 장면의 소리 — sound() 가 앞의 것을 걷은 뒤에
     // 외침도 sound() 뒤에 건다 — 전엔 앞에 걸어 sound() 의 clearTimers 가 바로 걷어 싸움에서 목소리가 한 번도 안 났다 (형 10-26: "전투할때도")
     if (cutVoice !== null) { const v = cutVoice; timers.push(window.setTimeout(() => say(v), P.realm.warVoiceArtS * 1000)); cutVoice = null }
+    // 우리 원군이 처음 닿는 합 — 금빛 카드 한 줄만으론 약했다. 기병이 빛을 몰고 언덕을 달려 내려오는 장면이 화면을 가로지르고 말발굽·함성 (형 11-03: 로한의 기병대 오마주)
+    if (anim) {
+      const rs = l.rounds ?? []
+      const rd = rs[shown - 1]
+      const ourS = l.atkFaction === host.me ? 'a' : 'd'
+      if (rd?.relief !== undefined && rd.relief.side === ourS && !rs.slice(0, shown - 1).some((x) => x.relief?.side === ourS)) {
+        ov.querySelector('.wrlc')?.remove()
+        const el = document.createElement('div')
+        el.className = 'wrlc'
+        el.innerHTML = `<i class="wrlc-img" style="background-image:url('${host.art}event/event-relief-cavalry.jpg')"></i><i class="wrlc-sweep"></i><div class="wrlc-t"><b>원군이다!</b><span>${rd.relief.horse ? '기병 ' : ''}${rd.relief.men.toLocaleString('ko-KR')}명</span></div>`
+        el.addEventListener('animationend', (e) => { if (e.target === el) el.remove() })
+        el.addEventListener('click', (e) => { e.stopPropagation(); el.remove() })
+        ov.appendChild(el)
+        at(0, snd('cmd_horse'), 0.55)
+        at(0.35, BATTLE_SFX.cry, 0.5)
+        at(0.7, BATTLE_SFX.charge, 0.45)
+        buzz(0.35, [30, 40, 60])
+      }
+    }
     if (!anim && !endNow) band(l)
     // 싸운다를 누르면 — 이번 합이 위 카드 바로 밑에 오게, 판이 끝났으면 결과가 다 풀린 뒤 결과로 (형 10-23: "싸운다 누르면 스크롤 맨 위로 가는 게 맞나?")
     // 붙박이 위 카드에 가리지 않게 — 재는 건 다음 틀 처음에 (여기서 재면 막 바꾼 판을 그 자리에서 한 번 더 셈한다 · 형 11-03 버벅임)
