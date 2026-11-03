@@ -468,9 +468,10 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   // 제 그림 (GEN_OWN) — 글 주문만으로 받은 장수 (docs/realm/GENERAL-SPRITES.md)
   jumong: { ar: 156 / 160, body: 0.961, bow: true }, // 11-03 20컷 다시 (걷기가 한 자세였다 · 우하단 칸은 비워 받음)
   onjo: { ar: 152 / 160, body: 0.928 }, // 11-03 20컷 다시 (걷기가 한 자세였다 · 우하단 별표 칸은 따로 받아 끼움) // 첫 판은 불꽃 금관이라 버리고 쇠투구로 다시 (형 10-30: "금관은 왕의 것이지, 장수의 것이 아니야")
+  soseono: { ar: 178 / 160, body: 0.941 }, // 11-04 제 띠 (걷기 A 는 Argon · 서기·공격 B 와 쓰러짐은 edu 3.1 Pro 에 A 를 참조로 · 걷기는 네 자세가 두 번 돈다 — 반대 다리로 다시 받은 장은 옷이 바뀌어 버림)
 }
 /** 제 그림이 있는 장수 (장수 id → gen-<이름>.png 의 이름) */
-export const GEN_OWN: Readonly<Record<string, string>> = { 'jm-jumong': 'jumong', 'mh-onjo': 'onjo', 'tut-onjo': 'onjo' }
+export const GEN_OWN: Readonly<Record<string, string>> = { 'jm-jumong': 'jumong', 'mh-onjo': 'onjo', 'tut-onjo': 'onjo', 'mh-soseono': 'soseono' }
 type GenLook = { readonly id?: string; readonly look: 'g' | 'w'; readonly traits: readonly string[]; readonly mu: number; readonly tong: number; readonly ryak: number; readonly chi: number; readonly deok: number }
 /**
  * 장수 → 싸움터에 설 그림 (순수). 제 그림이 있으면 그것 · 명궁이면 활 · 통솔이 가장 높고 비기가 날 만큼(tacArtMinStat) 높은 남자는 말 탄 장수 ·
