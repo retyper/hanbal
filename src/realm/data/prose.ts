@@ -744,6 +744,11 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       if (h === undefined || h.faction !== viewer) return null
       return `${josa(h.name, '이', '가')} 각성했다! 능력치가 모두 ${P.realm.ascendBonus} 올랐다.`
     }
+    case 'fade': {
+      const h = after.heroes[line.hero]
+      if (h === undefined || h.faction !== viewer) return null
+      return `${h.name}의 불꽃이 다 꺼졌다. 깨어남이 풀렸다. ${P.realm.ascendWins}번 내리 이기면 다시 깨어난다.`
+    }
     // 사건 카드 · 점괘 (SYSTEMS §9) — 우리 것만
     case 'card': {
       if (line.faction !== viewer) return null
@@ -1180,6 +1185,17 @@ export function roundStory(rd: RoundLog, prev: RoundLog | undefined, c: StoryCtx
         shout: `${josa(hx, '이', '가')} 크게 외쳐 군사를 일으켰다. ${who(x)} 군사들의 기세가 오른다.`,
       }
       out.push(line[a.art])
+    } else if (a.c === 'wake' && a.wake !== undefined) {
+      // 각성기 — 불꽃 하나를 태워 그 합의 규칙을 꺾는다 (tactics 'wake' · 위원회 11-04 던파 ①)
+      const hx = named(a.hero, x)
+      const line: Record<typeof a.wake, string> = {
+        earth: `${josa(hx, '이', '가')} 불꽃 하나를 태웠다. 곰이 일어서듯 ${who(x)} 진이 땅에 뿌리를 내린다. 이 싸움에선 무너지지 않는다.`,
+        wind: `${josa(hx, '이', '가')} 불꽃 하나를 태웠다. 학의 날개 같은 바람이 일어 ${who(y)} 화살이 허공에서 흩어진다.`,
+        fire: `${josa(hx, '이', '가')} 불꽃 하나를 태웠다. 범이 포효하듯 ${who(x)} 군사가 밀려도 물러서지 않는다.`,
+        water: `${josa(hx, '이', '가')} 불꽃 하나를 태웠다.`,
+        bolt: `${josa(hx, '이', '가')} 불꽃 하나를 태웠다.`,
+      }
+      out.push(line[a.wake])
     } else if (a.c === 'retreat') {
       if (a.res === 'fail') out.push(`${josa(who(x), '이', '가')} 징을 쳐 군사를 물리려 했지만 ${who(y)} 군사가 따라붙었다. 등을 보인 채 ${josa(ppl(a.sl ?? 0), '을', '를')} 잃었다.`)
       else out.push(`${josa(who(x), '이', '가')} 징을 쳐 군사를 물렸다. 물러나며 ${josa(ppl(a.sl ?? 0), '을', '를')} 잃었다.`)

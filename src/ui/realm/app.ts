@@ -1304,13 +1304,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 각성 불꽃 칸 — 우리 장수만. 빈 칸 셋이 이길 때마다 켜진다 · 각성하면 「각성」 띠 (형 10-31) */
   function flamesHtml(x: Hero): string {
     if (realm === null || x.faction !== me() || isRuler(realm, x.id)) return ''
-    if (x.ascended === true) return `<span class="flms on" data-act="flm" data-why="각성했습니다. 이 판에서 능력치가 모두 올랐습니다"><img class="flmw" src="${ART}fx/awaken/word.png" alt="각성"></span>`
     const n = x.flames ?? 0
     // 빈 칸·붙은 칸은 청동 불꽃 자리 그림 둘 (형 11-01: "빈 엠블럼 칸이랑 채워진 불 이미지 다 새로" · 제미나이 Argon)
     // 붙은 칸은 청동 자리는 가만히 · 그 안의 불만 일렁인다 (형 11-01: "촛대에 불 붙었을 때 촛대가 춤추는 거 봤냐? 불만 활활 타올라야지")
     const cells = Array.from({ length: P.realm.ascendWins }, (_, i) => i < n
       ? `<span class="flm lit"><img src="${ART}fx/awaken/slot-on.png" alt=""><i class="flmf"><img src="${ART}fx/awaken/flame.png" alt=""></i></span>`
       : `<img class="flm" src="${ART}fx/awaken/slot-off.png" alt="">`).join('')
+    // 깨어난 뒤의 불꽃은 각성기의 연료 — 「각성」 붓글씨 곁에 남은 불꽃 (위원회 11-04 던파 ①)
+    if (x.ascended === true) return `<span class="flms on" data-act="flm" data-why="각성했습니다. 불꽃 ${n}/${P.realm.ascendWins}. 싸움에서 불꽃 하나를 태워 각성기를 씁니다(마지막 하나는 남습니다). 이기면 하나 붙고, 지면 하나 꺼지고, 다 꺼지면 깨어남이 풀립니다"><img class="flmw" src="${ART}fx/awaken/word.png" alt="각성">${cells}</span>`
     return `<span class="flms" data-act="flm" data-why="불꽃 ${n}/${P.realm.ascendWins}. 내리 이기면 한 칸씩 붙고, 다 붙으면 각성해 능력치가 모두 오릅니다. 지면 다 꺼집니다">${cells}</span>`
   }
   /**
@@ -5465,6 +5466,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'bowUp': ic = 'unit-archer'; break
       case 'suzerain': ic = 'treasure-silla-crown'; break
       case 'grow': case 'bond': case 'awaken': case 'kindle': case 'ascend': ic = 'status-morale-up'; break
+      case 'fade': ic = 'status-morale-down'; break
       case 'wed': ic = 'status-alliance'; break
       case 'persuade': ic = l.step === 'waver' ? 'status-alliance' : 'status-morale-down'; break
       case 'exile': ic = 'status-bad-omen'; break

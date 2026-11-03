@@ -28,6 +28,8 @@ import { morph, morphInto } from './morph.ts'
 import { holdBox } from './holdbox.ts'
 import { TIER_MEN, sideIdx, tierCounts, tierPrec, tierStanding, type Tier } from './troops.ts'
 import { preloadSkillFx, skillCues, skillCutHtml, type SkSfx, type SkillId } from './skillfx.ts'
+import { ELEM } from './ascend.ts'
+import type { Elem } from '../../realm/elem.ts'
 import { cellColor, lookCells, lookNums, oneChance, pctText, signed, type LookCell } from './lookword.ts'
 
 const esc = (s: string): string =>
@@ -56,7 +58,7 @@ export const CMD_NAME: Record<Cmd, string> = {
   charge: '돌격', hold: '방진', open: '길 트기', ford: '여울 막기', rocks: '바위 굴리기', gate: '성문 깨기', ram: '배 들이받기',
   volley: '화살비', counter: '맞쏘기', fire: '불화살', height: '높은 곳',
   flank: '옆치기', punch: '돌파', pursue: '추격', guard: '호위',
-  drum: '격려', duel: '장수 겨루기', capture: '적장 사로잡기', retreat: '퇴각한다', art: '장수의 비기', feast: '호궤',
+  drum: '격려', duel: '장수 겨루기', capture: '적장 사로잡기', retreat: '퇴각한다', art: '장수의 비기', feast: '호궤', wake: '각성기',
 }
 /** 깃발 한 줄 — 무엇을 이기고 무엇에 지나 */
 const CMD_DOES: Record<Cmd, string> = {
@@ -82,6 +84,7 @@ const CMD_DOES: Record<Cmd, string> = {
   // 퇴각 — 사실상 이 싸움을 지는 것 (형 10-24: "물러난다는 사실상 패배 확정 · 퇴각한다 · 붉게 · 설명 확실히")
   retreat: '이 싸움을 접고 퇴각을 꾀한다. 빠져나가면 이 싸움은 지지만 군사를 덜 잃고 장수는 안 잡힌다. 따라잡히면 등을 보인 채 크게 잃고 싸움이 이어진다. 적 말이 많을수록 · 사기가 꺾였을수록 어렵고, 우리 말이 호위하거나 어두우면 쉽다',
   art: '그 장수만의 수 · 한 판에 한 번',
+  wake: '깨어난 장수가 불꽃 하나를 태워 이 싸움의 규칙 하나를 꺾는다 · 곰은 이 싸움 무너지지 않고, 학은 이 합 화살이 안 닿고 물러나기가 반드시 되며, 범은 이 합 상성에 져도 밀리지 않는다 · 한 판에 한 번 · 마지막 불꽃은 남는다',
 }
 
 /**
@@ -93,6 +96,15 @@ const CMD_SHORT: Record<Cmd, string> = {
   volley: '앞줄에 화살비 · 방진에 잘 먹힌다', counter: '적 궁수를 누른다', fire: '불을 놓는다 · 바람이 돌면 위험', height: '내리쏜다 · 방진도 단단',
   flank: '옆으로 돌아 궁수를 친다', punch: '앞줄과 함께 들이친다', pursue: '흔들리는 적을 크게 벤다', guard: '장수를 지킨다',
   drum: '사기가 오른다', duel: '장수끼리 맞붙는다', capture: '적장을 잡으러 간다 · 놓치면 잃는다', retreat: '빠져나가면 진다 · 덜 잃는다 · 따라잡힐 수 있다', art: '그 장수만의 수', feast: '사기를 크게 · 이 합엔 덜 꺾인다',
+  wake: '불꽃 하나로 규칙을 꺾는다',
+}
+
+/** 각성기의 이름 — 기운마다 (DESIRE §13-3 · 땅·바람·불만 켜졌다 · realm/elem.ts WAKE_ON) */
+export const WAKE_NAME: Readonly<Record<import('../../realm/elem.ts').Elem, string>> = {
+  earth: '금강의 기개', wind: '태백의 바람', fire: '한라의 격노', water: '동해의 파도', bolt: '백두의 지혜',
+}
+const WAKE_SHORT: Readonly<Record<import('../../realm/elem.ts').Elem, string>> = {
+  earth: '이 싸움 무너지지 않는다', wind: '화살이 안 닿고 물러나기는 반드시', fire: '상성에 져도 밀리지 않는다', water: '', bolt: '',
 }
 
 /** 장수의 비기 — 이름 · 그림 · 하는 일 (heroes.heroArt · tactics 의 비기). 장수마다 다르니 깃발에 그 이름으로 뜬다 */
@@ -307,6 +319,8 @@ export const BATTLE_SFX = {
   // 사람 고함·비명(roar · herodeath · bossdeath)은 걷었다 (형 10-23: "비명소리인지 사람 고함인지 너무 AI 가 만든 티") — 말발굽·쇠·북으로
   flank: snd('cmd_horse'), punch: snd('cmd_horse'), pursue: snd('cmd_horse'), guard: snd('cmd_guard'),
   drum: snd('cmd_drum'), duel: snd('cmd_duel'), capture: snd('cmd_capture'), retreat: snd('cmd_retreat'), art: snd('cmd_art'),
+  /** 각성기 — 비기 소리 자리 (짐승 울음은 컷인이 따로 낸다) */
+  wake: snd('cmd_art'),
   /** 호궤 — 엽전 대신 곡식이 풀리는 소리 자리 (싸움 소리 고르기 판에서 바꾼다) */
   feast: snd('tap_coin'),
   /** 맞부딪힘 — 상성에서 이겼다(필살) · 그냥 */
@@ -646,7 +660,7 @@ function actRow(x: Act, ourS: 'a' | 'd', art: string, mixA: Readonly<Partial<Rec
     const other = x.s === 'a' ? 'd' : 'a'
     const r = ACT_RES[x.res]
     const good = r === 'even' ? '' : (r === 'ok') === us ? ' good' : ' bad'
-    const verb = x.c === 'art' && x.art !== undefined ? ART_NAME[x.art] : CMD_NAME[x.c]
+    const verb = x.c === 'art' && x.art !== undefined ? ART_NAME[x.art] : x.c === 'wake' && x.wake !== undefined ? WAKE_NAME[x.wake] : CMD_NAME[x.c]
     // 표시와 말은 늘 우리 눈으로 — 우리 일: 「우리 무리 → 적 무리 · 먹혔다」 · 적의 일은 거울로: 「당했다 · 우리 무리 ← 적 무리 적」
     // (형 11-02: "우리꺼였으면 적은 「당했다 ~병 ← 어쩌구 적」 이런 식으로 거꾸로 · 화살표도 두껍게")
     const badge = good === ' good' ? '✓' : good === ' bad' ? '✕' : '='
@@ -794,7 +808,9 @@ function introLine(l: BattleLine, weAtk: boolean, foe: string): string {
  * 깃발 그림 — 명령마다 한 폭 (public/realm/flag · 제미나이 Argon 네 장을 잘랐다, assets_src/realm/flags).
  * 형 10-23: "깃발을 고르는 거였다면 돌격·방진·길 트기 같은 카드들을 깃발처럼 이미지 만들어서 UI 고도화 했어야"
  */
-export function flagSrc(art: string, c: Cmd, ak?: Art): string {
+export function flagSrc(art: string, c: Cmd, ak?: Art, wk?: Elem): string {
+  // 각성기는 깃발 대신 그 기운의 짐승 (fx/awaken · 각성 연출의 그림 그대로 · 새 그림 0장)
+  if (c === 'wake') return wk !== undefined ? `${art}fx/awaken/beast-${ELEM[wk].beast}.png` : `${art}flag/flag-drum.png`
   return `${art}flag/flag-${c === 'art' ? (ak !== undefined ? `art-${ak}` : 'drum') : c}.png`
 }
 
@@ -1093,6 +1109,8 @@ export function splitMilitia(mix: Readonly<Partial<Record<string, number>>>, mil
 const FIELD_CMD: ReadonlySet<string> = new Set(['charge', 'hold', 'open', 'volley', 'counter', 'flank', 'punch', 'pursue', 'guard', 'drum', 'capture', 'duel', 'retreat'])
 /** 장면이 뜨는 장수의 명령 — 비기는 비기마다 (skillfx.ts). 격려는 흔해 장면을 띄우지 않는다 — 합마다 2초씩 전장을 가렸다 (형 10-25 · 전장의 격려 고리로 보인다) */
 const CUT_OF: Readonly<Partial<Record<Cmd, SkillId>>> = { duel: 'duel', capture: 'capture', retreat: 'retreat' }
+/** 각성기의 장면 뼈대 — 땅은 버텨라(방패) · 바람은 거짓 퇴각(휘감김) · 불은 선봉(돌진) · 물·번개는 아직 안 켰다(realm/elem WAKE_ON) */
+const WAKE_CUT: Readonly<Record<Elem, SkillId>> = { earth: 'stand', wind: 'feint', fire: 'vanguard', water: 'rite', bolt: 'snipe' }
 /** 장면의 소리 — 장면이 부르는 이름을 싸움 소리로 */
 const SK_SFX: Readonly<Record<SkSfx, string>> = {
   whoosh: BATTLE_SFX.art, draw: snd('tap_arms'), release: BATTLE_SFX.counter, impact: BATTLE_SFX.crit, drum: BATTLE_SFX.drum, bell: snd('tap_bell'), rite: snd('tap_rite'),
@@ -1884,7 +1902,12 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       const gu = p.look !== undefined ? (() => { const o = withPick(sel, g, c); return lookHtml(lookFor(p.look, o, now), orderKey(o)) })() : ''
       // 적 낌새를 이기는 깃발은 카드가 빛난다 (형 10-29) · 무엇이 무엇을 이기나는 위 띠의 「상성」 판에
       const ctr = beatsHint(c, ak, p.hint) ? ' wbxc' : ''
-      return `<button class="wcmd ${c}${on ? ' on' : ''}${recNow === c ? ' rec' : ''}${ctr}" data-war="pick" data-g="${g}" data-c="${c}" data-more="${esc(ak !== undefined ? ART_DOES[ak] : CMD_DOES[c])}"><img class="wflag" src="${flagSrc(art, c, ak)}" alt=""><span class="wct"><b>${ak !== undefined ? ART_NAME[ak] : CMD_NAME[c]}</b>${tag}${feel}<small>${esc(ak !== undefined ? ART_SHORT[ak] : CMD_SHORT[c])}</small>${gu}</span></button>`
+      // 각성기 — 그 기운의 이름과 짐승 (깃발 대신) · 금빛 테 (.wcmd.wake)
+      const wk = c === 'wake' ? p.wake : undefined
+      if (wk !== undefined) tag = `<em class="art">각성기</em>`
+      const nm = wk !== undefined ? WAKE_NAME[wk] : ak !== undefined ? ART_NAME[ak] : CMD_NAME[c]
+      const sh = wk !== undefined ? WAKE_SHORT[wk] : ak !== undefined ? ART_SHORT[ak] : CMD_SHORT[c]
+      return `<button class="wcmd ${c}${on ? ' on' : ''}${recNow === c ? ' rec' : ''}${ctr}" data-war="pick" data-g="${g}" data-c="${c}" data-more="${esc(ak !== undefined ? ART_DOES[ak] : CMD_DOES[c])}"><img class="wflag${wk !== undefined ? ' wbeast' : ''}" src="${flagSrc(art, c, ak, wk)}" alt=""><span class="wct"><b>${nm}</b>${tag}${feel}<small>${esc(sh)}</small>${gu}</span></button>`
     }
     // 무리 탭 — 누른 무리만 빛나고 그 무리 깃발만 보인다. 무리마다 다 고르면 「전투 개시」가 켜진다
     // (형 10-24: "깃발이 너무 많아서 헷갈려 · 창병 방패병을 탭하면 빛나면서 걔네들 깃발만 · 다 고른 뒤에 전투개시 버튼 활성화")
@@ -1957,6 +1980,9 @@ export const WAR_CSS = `
 /* 화면을 굴리지 않는다 (형 10-28: "합 할 때마다 슬라이드로 내려가며 설명 보게 하지 말고 · 하스스톤은 팝업 · 터치하면 뜨는 상자") —
    마지막 합은 전장 위 상자로 떴다 사라지고(--pd 뒤), 지난 합들은 「기록」을 누르면 뜨는 판 안에. 끝난 판의 결과는 화면 아래에 붙는다 */
 .ap .wr:not(.logopen) .wlog > :not(.wrd.slow) { display: none; }
+/* 각성기 카드 — 금빛 테 · 깃발 대신 기운의 짐승 (검은 바탕 그림이라 screen) */
+.ap .wcmd.wake { box-shadow: 0 0 0 1.5px #ffd27a, 0 0 12px #ffb04a66; }
+.ap .wcmd .wflag.wbeast { mix-blend-mode: screen; object-fit: contain; }
 .ap .wr:not(.logopen) .wlog .wrd.slow { position: fixed; left: 50%; top: auto; bottom: calc(12px + env(safe-area-inset-bottom)); max-height: 46vh; overflow: hidden; z-index: 70; width: min(92vw, 480px); box-sizing: border-box; margin: 0; padding: 10px 14px; border-radius: 14px;
   background: #1a130cf2; border: 1.5px solid #c9a45a; box-shadow: 0 10px 30px #000c; pointer-events: none; transform: translateX(-50%);
   animation: wrpin .25s ease-out both, wrpout .45s ease-in var(--pd, 4s) forwards; }
@@ -3586,15 +3612,18 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       const mine = act?.c === 'capture' ? undefined : act?.hero
       const leadH = heroById(mine ?? l.start?.heroes[weAtk ? 0 : 1] ?? null)
       const ak = c === 'art' ? (act?.art ?? (leadH !== undefined ? heroArt(leadH) : undefined)) : undefined
-      const kind: SkillId | undefined = ak ?? CUT_OF[c]
+      // 각성기 — 그 기운에 맞는 장면 뼈대를 빌리고(새 그림 0장) 그 위로 기운의 짐승이 솟았다 사라진다
+      const wk = c === 'wake' ? act?.wake : undefined
+      const kind: SkillId | undefined = wk !== undefined ? WAKE_CUT[wk] : ak ?? CUT_OF[c]
       const hero = l.start?.heroes[weAtk ? 0 : 1] ?? null
       if (kind !== undefined && hero !== null) {
         // 장면의 얼굴은 나선 장수 (부장이 비기를 쓰면 그 부장) · 사로잡기·물러나기는 총대장
         const actor = mine !== undefined && heroById(mine) !== undefined ? mine : hero
         const name = heroById(actor)?.name ?? ''
         const el = document.createElement('div')
-        el.innerHTML = skillCutHtml(host.art, kind, faceFile(actor) ?? null, name, ak !== undefined ? ART_NAME[ak] : CMD_NAME[c])
+        el.innerHTML = skillCutHtml(host.art, kind, faceFile(actor) ?? null, name, wk !== undefined ? WAKE_NAME[wk] : ak !== undefined ? ART_NAME[ak] : CMD_NAME[c])
         const cut = el.firstElementChild as HTMLElement
+        if (wk !== undefined) cut.insertAdjacentHTML('beforeend', `<img class="wsk-beast" src="${host.art}fx/awaken/beast-${ELEM[wk].beast}.png" alt="">`)
         cut.addEventListener('animationend', (e) => { if (e.target === cut) cut.remove() })
         cut.addEventListener('click', (e) => { e.stopPropagation(); cut.remove() })
         ov.querySelector('.wsk')?.remove()

@@ -15,6 +15,7 @@ import { TRAITS, TRAIT, type TraitGrade } from './data/traits.ts'
 import type { Art, EdgeKind, GrowStat, Hero, Order, Realm, ReportLine, RNode } from './types.ts'
 import { migratePath } from './economy.ts'
 import { relicBest, relicMul, relicSum } from './relics.ts'
+import { WAKE_ON, elemOf, type Elem } from './elem.ts'
 
 const byId = <T extends { id: string }>(xs: Iterable<T>): T[] => [...xs].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 
@@ -844,6 +845,10 @@ export function battleGrowth(r: Realm, won: readonly (string | null)[], lost: re
   // 각성 — 우리(플레이어) 장수만. 이기면 불꽃 하나, 지거나 비기면 다 꺼진다 (내리 이김 · 형 10-31)
   const ours = (h: Hero): boolean => h.faction === r.player && h.ascended !== true
   each(won, (h) => { if (ours(h)) kindle(h, lines) })
+  // 깨어난 장수의 불꽃은 각성기의 연료 (위원회 11-04 던파 ① · DESIRE §8) — 이기면 하나 붙고(셋까지), 지거나 비기면 하나 꺼지고, 다 꺼지면 깨어남이 풀린다
+  const woke = (h: Hero): boolean => h.faction === r.player && h.ascended === true
+  each(won, (h) => { if (woke(h)) h.flames = Math.min(Math.round(R.ascendWins), (h.flames ?? 0) + 1) })
+  each([...lost, ...drawn], (h) => { if (woke(h)) dimFlame(h, lines) })
   // 함께 이긴 우리 장수끼리 가까워진다 (친밀)
   const mates = [...new Set(won)].filter((id): id is string => id !== null && r.heroes[id]?.faction === r.player && r.heroes[id]?.status === 'free').sort()
   for (let i = 0; i < mates.length; i++) for (let j = i + 1; j < mates.length; j++) addTie(r, mates[i]!, mates[j]!, R.tieWin)
@@ -859,10 +864,38 @@ function kindle(h: Hero, lines: ReportLine[]): void {
     lines.push({ kind: 'kindle', hero: h.id, n })
     return
   }
-  delete h.flames
+  // 깨어나면 불꽃 셋이 그대로 연료가 된다 — 각성기 한 번에 하나씩 태운다 (burnWake)
+  h.flames = Math.round(R.ascendWins)
   h.ascended = true
   for (const s of GROW) h[s] += R.ascendBonus
   lines.push({ kind: 'ascend', hero: h.id })
+}
+
+/** 깨어난 장수의 불꽃 하나가 꺼진다 — 다 꺼지면 깨어남이 풀리고 각성 몫이 빠진다 (얼굴은 face.ts 가 본래대로) */
+function dimFlame(h: Hero, lines: ReportLine[]): void {
+  const n = (h.flames ?? 0) - 1
+  if (n > 0) { h.flames = n; return }
+  delete h.flames
+  delete h.ascended
+  for (const s of GROW) h[s] -= P.realm.ascendBonus
+  lines.push({ kind: 'fade', hero: h.id })
+}
+
+/**
+ * 각성기를 쥐었나 — 깨어난 **우리** 장수 · 불꽃이 wakeMinFlames 이상 · 켠 기운(WAKE_ON)이면 그 기운, 아니면 null.
+ * 적에게는 주지 않는다 ("운에 졌다"가 된다 · 위원회 11-04 던파 ①)
+ */
+export function wakeOf(r: Realm, h: Hero): Elem | null {
+  if (h.faction !== r.player || h.ascended !== true || (h.flames ?? 0) < Math.round(P.realm.wakeMinFlames)) return null
+  const e = elemOf(h)
+  return WAKE_ON.has(e) ? e : null
+}
+
+/** 각성기를 쓴 장수 — 불꽃 하나를 태운다. 마지막 불꽃은 태우지 않는다 (지면 꺼질 몫은 남는다) */
+export function burnWake(r: Realm, id: string | undefined, _lines: ReportLine[]): void {
+  const h = id !== undefined ? r.heroes[id] : undefined
+  if (h === undefined || h.ascended !== true) return
+  h.flames = Math.max(1, (h.flames ?? 1) - 1)
 }
 
 /**

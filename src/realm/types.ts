@@ -477,6 +477,8 @@ export type Cmd =
   | 'flank' | 'punch' | 'pursue' | 'guard'
   // 장수 — 북을 친다(그냥 지휘) · 장수 겨루기 · 적장 사로잡기 · 물러나기 · 그 장수만의 비기(한 판에 한 번 — Art) · 호궤(곳간의 곡식을 풀어 먹인다 — 한 판에 한 번)
   | 'drum' | 'duel' | 'capture' | 'retreat' | 'art' | 'feast'
+  // 각성기 — 각성한 우리 장수가 불꽃 하나를 태워 그 합의 규칙 하나를 꺾는다 (한 판에 한 번 · 위원회 11-04 던파 ① · DESIRE §8·§13-3)
+  | 'wake'
 
 /**
  * 장수의 비기 — 장수마다 하나, 한 판에 한 번 (형 2026-10-20: "장수스킬 장수가 있건없건 똑같나?? 싸우는 장수의 특별한 액티브 스킬이 있다면
@@ -520,6 +522,8 @@ export interface Act {
   readonly guard?: number
   /** 장수의 비기 — c 가 'art' 일 때 무엇 */
   readonly art?: Art
+  /** 각성기의 기운 — c 가 'wake' 일 때 (realm/elem.ts) */
+  readonly wake?: import('./elem.ts').Elem
   /** 나선 장수 (비기 · 겨루기 · 사로잡힌 이) */
   readonly hero?: string
 }
@@ -647,6 +651,8 @@ export interface Pending {
   readonly seen: boolean
   /** 우리 장수의 비기 — 장수의 명령에 'art' 가 있으면 그것 */
   readonly art?: Art
+  /** 각성기를 낼 장수의 기운 — 장수의 명령에 'wake' 가 있으면 그것 (깃발 그림·이름) */
+  readonly wake?: import('./elem.ts').Elem
   /** 이 싸움의 우리 장수들 — 총대장이 먼저 · 비기 · 썼나 (장수가 여럿이면 누가 나설지 고른다) */
   readonly heroes?: ReadonlyArray<{ readonly id: string; readonly chief: boolean; readonly mu: number; readonly art?: Art; readonly artUsed: boolean }>
   /** 적장들 — 사로잡을 수 있는 몫 (총대장은 호위가 두껍다) */
@@ -1313,6 +1319,8 @@ export type ReportLine =
   /** 각성 불꽃이 하나 켜졌다 (n / ascendWins) · 각성했다 — 능력치가 모두 오른다 (형 10-31) */
   | { readonly kind: 'kindle'; readonly hero: string; readonly n: number }
   | { readonly kind: 'ascend'; readonly hero: string }
+  /** 각성한 장수의 불꽃이 다 꺼져 깨어남이 풀렸다 — 얼굴이 본래로 돌아오고 각성 몫이 빠진다 (heroes.battleGrowth · 위원회 11-04 던파 ①) */
+  | { readonly kind: 'fade'; readonly hero: string }
   /**
    * 풍습·나라 고리·땅 한 수가 걸렸다 (data/customs.ts · customs-rules.ts) — 누가 · 무엇이 · 어디서 · 누구와 · 얼마나.
    * first — 이 나라에 처음 걸렸다 (화면이 크게: 도장 · 사서 한 줄 · 북)
