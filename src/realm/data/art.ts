@@ -462,7 +462,7 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   'g-sword': { ar: 162 / 160, body: 0.941 }, // 11-03 걷기가 한 자세라 20컷 통째로 다시 (제미나이 4 Argon · tools/assemble-gen20.mjs)
   'g-bow': { ar: 192 / 160, body: 0.948, bow: true }, // 11-03 20컷 다시 (걷기가 한 자세였다)
   'g-spear': { ar: 189 / 160, body: 0.914 }, // 11-03 20컷 다시 (걷기가 한 자세였다)
-  'w-spear': { ar: 437 / 160, body: 0.996 },
+  'w-spear': { ar: 184 / 160, body: 0.955 }, // 11-03 20컷 다시 (걷기가 한 자세였다)
   'w-bow': { ar: 185 / 160, body: 0.967, bow: true },
   mount: { ar: 246 / 160, body: 0.968 },
   // 제 그림 (GEN_OWN) — 글 주문만으로 받은 장수 (docs/realm/GENERAL-SPRITES.md)
