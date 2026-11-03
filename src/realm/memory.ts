@@ -432,3 +432,22 @@ export function councilRecord(r: Realm, hero: string, since: number): { s: numbe
   }
   return null
 }
+
+/**
+ * 맞수 — 우리 장수 가운데 같은 적장과 싸움·겨루기로 rivalMeet 번 넘게 맞선 짝 (위원회 11-04 역사 ① · 기억 장부를 읽는 첫 카드).
+ * 적장은 아직 남의 장수로 살아 있어야 한다. 여럿이면 가장 많이 맞선 짝 · 같으면 id 순 (A1)
+ */
+export function rivalOf(r: Realm, faction: string): { hero: string; foe: string; n: number } | null {
+  let best: { hero: string; foe: string; n: number } | null = null
+  for (const h of Object.values(r.heroes).sort((a, b) => (a.id < b.id ? -1 : 1))) {
+    if (h.faction !== faction || h.status !== 'free') continue
+    const count = new Map<string, number>()
+    for (const m of h.mem ?? []) if ((m.k === 'battle' || m.k === 'duel') && m.who !== undefined) count.set(m.who, (count.get(m.who) ?? 0) + 1)
+    for (const [foe, n] of [...count].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
+      const y = r.heroes[foe]
+      if (y === undefined || y.faction === faction || y.status !== 'free' || n < P.realm.rivalMeet) continue
+      if (best === null || n > best.n) best = { hero: h.id, foe, n }
+    }
+  }
+  return best
+}

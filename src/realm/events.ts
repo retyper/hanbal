@@ -16,6 +16,7 @@ import { HERO_POOL } from './data/heroes-pool.ts'
 import { addFavor } from './diplomacy.ts'
 import { knownOf } from './discovery.ts'
 import { addBond, addTie, canWed, hasTrait, homeOf, isRuler, postHero, tieOf, wed, wedCost } from './heroes.ts'
+import { rivalOf } from './memory.ts'
 import type { Card, GrowStat, Hero, Order, Realm, ReportLine } from './types.ts'
 
 const byId = <T extends { id: string }>(xs: Iterable<T>): T[] => [...xs].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
@@ -84,6 +85,9 @@ function candidates(r: Realm, f: string, season: number): Array<{ card: Card; w:
   for (const a of heroes) for (const b of heroes) if (a.mu - b.mu >= P.realm.cardMentorGap) pairsM.push([a, b])
   const pm = pickOf(pairsM, 'card-mentor')
   if (pm !== undefined) add('mentor', G, { hero: pm[0].id, hero2: pm[1].id })
+  // 맞수 — 같은 적장과 rivalMeet 번 넘게 맞선 우리 장수 (위원회 11-04 역사 ①)
+  const rv = rivalOf(r, f)
+  if (rv !== null) add('rival', P.realm.cardRivalW, { hero: rv.hero, hero2: rv.foe })
   const mine = byId(Object.values(r.nodes)).find((n) => n.owner === f && n.kind === 'ironMine')
   if (mine !== undefined) add('smith', G, { node: mine.id })
   const kin = pickOf(heroes, 'card-home')
@@ -162,11 +166,13 @@ export function drawCard(r: Realm, season: number): Card | null {
 export function cardValid(r: Realm, c: Card): boolean {
   const f = r.player
   if (f === undefined) return false
-  for (const h of [c.hero, c.hero2]) {
+  // 맞수는 둘째가 남의 장수 — 그 나라에서 아직 살아 있어야 한다 (위원회 11-04 역사 ①)
+  for (const h of c.kind === 'rival' ? [c.hero] : [c.hero, c.hero2]) {
     if (h === undefined) continue
     const x = r.heroes[h]
     if (x === undefined || x.faction !== f || x.status !== 'free') return false
   }
+  if (c.kind === 'rival') { const y = c.hero2 !== undefined ? r.heroes[c.hero2] : undefined; if (y === undefined || y.faction === f || y.status !== 'free') return false }
   if (c.node !== undefined && r.nodes[c.node]?.owner !== f) return false
   if (c.kind === 'exile' && (poolFree(r).length === 0 || (c.guest !== undefined && !poolFree(r).some((h) => h.id === c.guest)))) return false
   if (c.kind === 'romance' && !canWed(r, f, c.hero ?? '', c.hero2 ?? '')) return false
@@ -223,6 +229,8 @@ export interface CardFx {
   readonly gain?: ReadonlyArray<readonly [node: string, hh: number]>
   /** 한 장수의 능력치가 오른다 (스승과 제자) — 판 안에서 자란 몫(grown)으로 센다 */
   readonly stat?: readonly [hero: string, stat: GrowStat, n: number]
+  /** 남의 장수의 원한이 한 겹 풀린다 (맞수에게 술 한 동이 · 담판·회유가 쉬워진다) */
+  readonly soothe?: string
   /** 두 장수 사이의 친밀 ± (heroes.ties · 스승과 제자 · 다툼의 앙금 · 위원회 11-04 F7·F12) */
   readonly ties?: ReadonlyArray<readonly [a: string, b: string, d: number]>
 }
@@ -327,6 +335,12 @@ export function cardPreview(r: Realm, c: Card, pick: 0 | 1 | 2, have?: { readonl
       return { sure: pick === 0 ? { grain: cost(R.cardFeastGrain), favor: [{ to: knownOf(r, f).filter((x) => x !== f), d: R.cardSkyGuestFavor }] } : { morale: R.cardSkyMorale } }
     case 'hunt':
       return { sure: pick === 0 ? cheer : { grain: earn(R.cardGoodGrain) } }
+    case 'rival': {
+      // 도전장 — 다음에 만나면 결판 · 그 장수가 칼을 간다(무예 +) · 술 한 동이 — 곡식을 내어 원한을 풀고 그 나라 호감 (뒤에 데려오기 쉽게)
+      if (pick === 0) return { sure: { stat: [c.hero!, 'mu', R.cardMentorStat], bonds: [[c.hero!, R.cardRivalBond]] }, hero: c.hero! }
+      const foeF = r.heroes[c.hero2!]?.faction
+      return { sure: { grain: cost(R.cardRivalWine), soothe: c.hero2!, ...(foeF !== undefined ? { favor: [{ to: [foeF], d: R.cardRivalFavor }] } : {}) } }
+    }
     case 'mentor':
       return pick === 0
         ? { sure: { stat: [c.hero2!, 'mu', R.cardMentorStat] }, hero: c.hero2! }
@@ -384,6 +398,7 @@ function applyFx(r: Realm, f: string, fx: CardFx, tally: { grain: number; iron: 
   if (fx.watch !== undefined) for (const n of Object.values(r.nodes)) if (n.owner === f) { const w = (r.watch[n.id] ??= { alert: 0, lull: 0 }); w.alert = Math.min(1, w.alert + fx.watch) }
   for (const fv of fx.favor ?? []) for (const o of fv.to) addFavor(r, f, o, fv.d)
   for (const [a, b, d] of fx.ties ?? []) addTie(r, a, b, d)
+  if (fx.soothe !== undefined) { const y = r.heroes[fx.soothe]; if (y !== undefined && (y.grudge ?? 0) > 0) y.grudge = Math.max(0, y.grudge! - 1) }
   if (fx.wed !== undefined) {
     const g0 = st.grain
     if (wed(r, { kind: 'wed', faction: f, a: fx.wed[0], b: fx.wed[1] }, lines)) tally.grain += st.grain - g0

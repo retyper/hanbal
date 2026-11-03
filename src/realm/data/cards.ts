@@ -6,7 +6,7 @@
  */
 
 export type CardKind = 'drought' | 'bounty' | 'locust' | 'plague' | 'halo' | 'quarrel' | 'waship' | 'pirates' | 'exile' | 'fugitive' | 'whale' | 'fishbridge' | 'gogak' | 'romance'
-  | 'sowfest' | 'skyfest' | 'mentor' | 'smith' | 'homenews' | 'song' | 'spring' | 'gift' | 'hunt'
+  | 'sowfest' | 'skyfest' | 'mentor' | 'smith' | 'homenews' | 'song' | 'spring' | 'gift' | 'hunt' | 'rival'
 
 export interface CardOpt { readonly name: string; readonly does: string }
 
@@ -201,6 +201,17 @@ export const CARDS: Readonly<Record<CardKind, CardInfo>> = {
     opts: [
       { name: '이웃을 부른다', does: '곡식을 내어 잔치를 연다 · 아는 나라마다 우리를 좋게 본다' },
       { name: '군대가 맹세한다', does: '군대 사기가 크게 오른다' },
+    ],
+  },
+  // 맞수 — 같은 적장과 여러 번 맞선 우리 장수 (위원회 11-04 역사 ① · memory.rivalOf) · 『삼국사기』 동명성왕 원년 주몽과 송양의 활 겨루기
+  rival: {
+    name: '맞수', kind: 'people', bad: false, icon: 'treasure-ring-sword', art: 'event-war-council',
+    line: '{a} 장수가 {b}의 이름을 되뇐다.',
+    beats: ['{a} 장수가 {b}의 이름을 되뇐다.', '벌써 몇 번째 맞선 사이다.'],
+    ask: '맞수를 어찌할까?',
+    opts: [
+      { name: '도전장을 보낸다', does: '{a}의 무예가 오르고 정이 오른다' },
+      { name: '술 한 동이를 보낸다', does: '곡식이 조금 든다 · {b}의 원한이 풀리고 그 나라가 우리를 좋게 본다 (뒤에 데려오기 쉽다)' },
     ],
   },
   mentor: {
