@@ -495,6 +495,8 @@ function fxHtml(r: Realm, fx: CardFx): string {
   if (fx.morale !== undefined) h += fxChip(fx.morale > 0, fx.morale > 0 ? 'status-morale-up' : 'status-morale-down', `사기 ${signed(Math.round(fx.morale * 100))}%`)
   if (fx.bond !== undefined) h += fxChip(fx.bond > 0, fx.bond > 0 ? 'mood-warm' : 'mood-angry', `장수들 정 ${signed(fx.bond)}`)
   for (const [id, d] of fx.bonds ?? []) h += fxChip(d > 0, d > 0 ? 'mood-warm' : 'mood-angry', `${r.heroes[id]?.name ?? ''} 정 ${signed(d)}`)
+  // 두 장수 사이 (친밀 · 위원회 11-04 F7·F12)
+  for (const [a, b, d] of fx.ties ?? []) h += fxChip(d > 0, d > 0 ? 'mood-warm' : 'mood-angry', `${r.heroes[a]?.name ?? ''}·${r.heroes[b]?.name ?? ''} 사이 ${signed(d)}`)
   const hh = (fx.hurt ?? []).reduce((a, [, d]) => a + d, 0)
   if (hh > 0) h += fxChip(false, 'settle-hamlet', `집 -${hh}`)
   if (fx.watch !== undefined) h += fxChip(true, 'settle-beacon', `경계 +${Math.round(fx.watch * 100)}%`)

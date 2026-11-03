@@ -9,13 +9,13 @@
  * 순서: 1 명령 확정 때 이번 카드의 답을 건다 (resolveCard) → 7 가을걷이가 그해 배수(harvestMod)를 읽는다 → 11 계절을 넘긴 뒤 다음 카드를 편다 (stepCards).
  */
 import { roll } from '../core/rng.ts'
-import { monthly, perSeason, seasonIdx, seasonNo, yearOf } from './calendar.ts'
+import { monthly, perSeason, seasonIdx, seasonNo, seasons, yearOf } from './calendar.ts'
 import { P } from '../tune/params.ts'
 import { CARDS, CARD_KINDS, QUARREL_WHYS, cardFallback, type CardKind, type QuarrelWhy } from './data/cards.ts'
 import { HERO_POOL } from './data/heroes-pool.ts'
 import { addFavor } from './diplomacy.ts'
 import { knownOf } from './discovery.ts'
-import { addBond, canWed, hasTrait, homeOf, isRuler, tieOf, wed, wedCost } from './heroes.ts'
+import { addBond, addTie, canWed, hasTrait, homeOf, isRuler, postHero, tieOf, wed, wedCost } from './heroes.ts'
 import type { Card, GrowStat, Hero, Order, Realm, ReportLine } from './types.ts'
 
 const byId = <T extends { id: string }>(xs: Iterable<T>): T[] => [...xs].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
@@ -37,6 +37,12 @@ function pickKnown(r: Realm, f: string, season: number, key: string): string | n
   return known.length > 0 ? known[Math.floor(roll(r.seed, season, key) * known.length)]! : null
 }
 
+/** 되풀이를 재는 열쇠 — 갈래 + 주인공 (둘이면 둘 · 순서 무관) */
+function cardKey(c: Card): string {
+  const who = [c.hero, c.hero2].filter((x): x is string => x !== undefined).sort().join('+')
+  return who !== '' ? `${c.kind}:${who}` : c.kind
+}
+
 /** 그 계절에 올 수 있는 카드와 무게 */
 function candidates(r: Realm, f: string, season: number): Array<{ card: Card; w: number }> {
   const y = seasonNo(r, season)
@@ -46,7 +52,10 @@ function candidates(r: Realm, f: string, season: number): Array<{ card: Card; w:
   const heroes = freeHeroes(r, f)
   const badMul = (r.tier ?? 1) < 1 ? P.realm.easyBad : 1 + P.realm.cardTierBad * (Math.max(1, r.tier ?? 1) - 1)
   const add = (kind: CardKind, w: number, more: Partial<Card> = {}): void => {
-    out.push({ card: { kind, season, ...more }, w: w * (CARDS[kind].bad ? badMul : 1) })
+    const card: Card = { kind, season, ...more }
+    const seen = r.cardSeen?.[cardKey(card)]
+    const fresh = seen === undefined || season - seen >= seasons(r, P.realm.cardSeenSeasons)
+    out.push({ card, w: w * (CARDS[kind].bad ? badMul : 1) * (fresh ? 1 : P.realm.cardSeenMul) })
   }
   if (y === 0 || y === 1) { add('drought', 1); add('bounty', 0.8) }
   if (y === 1) add('locust', 0.6)
@@ -80,7 +89,8 @@ function candidates(r: Realm, f: string, season: number): Array<{ card: Card; w:
   const kin = pickOf(heroes, 'card-home')
   const home = homeOf(r, f)
   if (kin !== undefined && home !== null) add('homenews', G, { hero: kin.id, node: home })
-  const bard = [...heroes].sort((a, b) => b.deok - a.deok || (a.id < b.id ? -1 : 1))[0]
+  // 노래꾼 — 덕 높은 셋 가운데 굴려서 (위원회 11-04 F8 · 늘 같은 사람이었다)
+  const bard = pickOf([...heroes].sort((a, b) => b.deok - a.deok || (a.id < b.id ? -1 : 1)).slice(0, 3), 'card-bard')
   if (bard !== undefined) add('song', G, { hero: bard.id })
   const well = pickOf(big, 'card-spring')
   if (well !== undefined) add('spring', G, { node: well })
@@ -213,6 +223,8 @@ export interface CardFx {
   readonly gain?: ReadonlyArray<readonly [node: string, hh: number]>
   /** 한 장수의 능력치가 오른다 (스승과 제자) — 판 안에서 자란 몫(grown)으로 센다 */
   readonly stat?: readonly [hero: string, stat: GrowStat, n: number]
+  /** 두 장수 사이의 친밀 ± (heroes.ties · 스승과 제자 · 다툼의 앙금 · 위원회 11-04 F7·F12) */
+  readonly ties?: ReadonlyArray<readonly [a: string, b: string, d: number]>
 }
 
 export interface CardPlan {
@@ -245,7 +257,8 @@ export function cardPreview(r: Realm, c: Card, pick: 0 | 1 | 2, have?: { readonl
     case 'drought':
       return { sure: pick === 0 ? { grain: cost(R.cardDroughtPray), harvest: R.cardDroughtPrayMul } : { grain: cost(R.cardDroughtDam), harvest: R.cardDroughtDamMul } }
     case 'bounty':
-      return { sure: pick === 0 ? { harvest: R.cardBountyMul } : { grain: cost(R.cardFeastGrain), ...cheer } }
+      // 크게 잔치한다 — 풍년 몫을 먹는다: 곡식은 안 들고 가을걷이가 조금 · 사기와 정이 크게 (위원회 11-04 F3 · 창고에 늘 밀렸다)
+      return { sure: pick === 0 ? { harvest: R.cardBountyMul } : { harvest: R.cardBountyFeastMul, morale: R.cardSkyMorale, bond: R.cardBountyFeastBond } }
     case 'locust':
       if (pick === 0) return { sure: { harvest: R.cardLocustBurnMul } }
       // 산천에 빈다 — 『삼국사기』 파사이사금 30년 「王遍祭山川，以祈禳之，蝗滅」 · 곡식을 조금 바치고, 흔히 메뚜기가 사라진다 (형 10-24)
@@ -254,15 +267,17 @@ export function cardPreview(r: Realm, c: Card, pick: 0 | 1 | 2, have?: { readonl
       if (pick === 0) return { sure: { hurt: hurt([c.node!], R.cardPlagueShut), grain: cost(R.cardPlagueShutGrain) } }
       return { sure: {}, chance: R.cardPlagueOk, die: 'spread', win: {}, lose: { hurt: hurt(bigNodes(r, f).slice(0, 2), R.cardPlagueHit) } }
     case 'halo':
-      return { sure: pick === 0 ? { morale: R.cardMorale } : { watch: R.cardHaloWatch } }
+      // 길조라 외친다 — 밖에 군대가 없으면 사기 대신 장수들 정 (위원회 11-04 F9 · 군대가 없으면 0 이었다)
+      return { sure: pick === 0 ? (Object.values(r.armies).some((a) => a.faction === f) ? { morale: R.cardMorale } : { bond: R.cardBond }) : { watch: R.cardHaloWatch } }
     case 'quarrel': {
       // 침묵 — 둘이 스스로 풀면 아무 일 없고, 앙금이 남으면 둘 다 군장이 외면했다고 서운해한다 (형 10-29: "침묵하는데 정이 오를 일이 뭐가 있지")
       if (pick === 2) {
         const both = (d: number): CardFx => ({ bonds: [[c.hero!, d], [c.hero2!, d]] })
-        return { sure: {}, chance: R.cardQuarrelHushOk, die: 'hush', win: {}, lose: both(-R.cardQuarrelHush) }
+        return { sure: {}, chance: R.cardQuarrelHushOk, die: 'hush', win: { ties: [[c.hero!, c.hero2!, R.cardQuarrelMendTie]] }, lose: both(-R.cardQuarrelHush) } // 풀리면 스스로 가까워진다 (위원회 11-04 F12)
       }
       const [win, lose] = pick === 0 ? [c.hero!, c.hero2!] : [c.hero2!, c.hero!]
-      return { sure: { bonds: [[win, R.cardQuarrel], [lose, -R.cardQuarrel]] }, hero: win }
+      // 편들면 둘 사이에 앙금이 남는다 (위원회 11-04 F12)
+      return { sure: { bonds: [[win, R.cardQuarrel], [lose, -R.cardQuarrel]], ties: [[win, lose, -R.cardQuarrelGrudge]] }, hero: win }
     }
     case 'waship':
       if (pick === 0) {
@@ -274,12 +289,14 @@ export function cardPreview(r: Realm, c: Card, pick: 0 | 1 | 2, have?: { readonl
       }
     case 'pirates':
       if (pick === 0) return { sure: { grain: cost(R.cardPirateRansom) } }
-      return { sure: {}, chance: R.cardPirateOk, die: 'fight', win: { iron: R.cardPirateIron }, lose: { hurt: hurt([c.node!], R.cardPirateHit), grain: cost(R.cardPirateLoss) } }
+      // 맞선다 — 포구를 맡은 장수와 경계가 이길 가망을 올린다 (위원회 11-04 F10 · 통제 원칙)
+      return { sure: {}, chance: Math.min(R.cardPirateMax, R.cardPirateOk + (postHero(r, c.node!) !== null ? R.cardPirateChief : 0) + (r.watch[c.node!]?.alert ?? 0) * R.cardPirateWatch), die: 'fight', win: { iron: R.cardPirateIron }, lose: { hurt: hurt([c.node!], R.cardPirateHit), grain: cost(R.cardPirateLoss) } }
     case 'exile': {
-      if (pick === 1) return { sure: {} }
+      // 돌려보낸다 — 쫓아낸 나라가 우리를 좋게 본다 · 받으면 그 나라가 노한다 (위원회 11-04 F5 · 돌려보내기가 아무 일 없어 늘 밀렸다)
+      if (pick === 1) return { sure: c.from !== undefined ? { favor: [{ to: [c.from], d: R.cardExileReturnFavor }] } : {} }
       const pool = poolFree(r)
       const p = c.guest !== undefined ? pool.find((h) => h.id === c.guest) : pool[Math.floor(roll(r.seed, r.season, `card-res:${c.kind}:who`) * pool.length)]
-      return p !== undefined && homeOf(r, f) !== null ? { sure: { grain: cost(R.cardExileCost), join: p.id }, hero: p.id } : { sure: {} }
+      return p !== undefined && homeOf(r, f) !== null ? { sure: { grain: cost(R.cardExileCost), join: p.id, ...(c.from !== undefined ? { favor: [{ to: [c.from], d: -R.cardFavorDown }] } : {}) }, hero: p.id } : { sure: {} }
     }
     case 'fugitive': {
       // 내놓으라는 나라가 있으면 — 법을 지키면 그 나라만 노하고, 넘겨주면 그 나라는 반기고 다른 나라들이 법을 깼다고 본다
@@ -297,7 +314,8 @@ export function cardPreview(r: Realm, c: Card, pick: 0 | 1 | 2, have?: { readonl
       const both = (d: number): CardFx => ({ bonds: [[c.hero!, d], [c.hero2!, d]] })
       if (pick === 0) return { sure: { grain: -Math.min(st.grain, wedCost(r, c.hero!, c.hero2!)), wed: [c.hero!, c.hero2!] }, hero: c.hero! }
       if (pick === 1) return { sure: {}, chance: R.cardRomanceOk, die: 'love', win: both(R.cardRomanceBond), lose: {} }
-      return { sure: both(-R.cardRomanceSplit) }
+      // 떼어 놓는다 — 군기가 선다 (위원회 11-04 F1 · does 에 적어 놓고 셈에 없었다)
+      return { sure: { ...both(-R.cardRomanceSplit), morale: R.cardRomanceDrill } }
     }
     case 'whale':
       return { sure: pick === 0 ? { grain: Math.max(R.cardWhaleMin, earn(R.cardWhaleShare)) } : cheer }
@@ -305,19 +323,22 @@ export function cardPreview(r: Realm, c: Card, pick: 0 | 1 | 2, have?: { readonl
     case 'sowfest':
       return { sure: pick === 0 ? cheer : { harvest: R.cardSowMul } }
     case 'skyfest':
-      return { sure: pick === 0 ? { favor: [{ to: knownOf(r, f).filter((x) => x !== f), d: R.cardSkyFavor }] } : { morale: R.cardSkyMorale } }
+      // 이웃을 부른다 — 잔치를 여니 곡식이 든다 (위원회 11-04 F4 · 공짜였다)
+      return { sure: pick === 0 ? { grain: cost(R.cardFeastGrain), favor: [{ to: knownOf(r, f).filter((x) => x !== f), d: R.cardSkyGuestFavor }] } : { morale: R.cardSkyMorale } }
     case 'hunt':
       return { sure: pick === 0 ? cheer : { grain: earn(R.cardGoodGrain) } }
     case 'mentor':
       return pick === 0
         ? { sure: { stat: [c.hero2!, 'mu', R.cardMentorStat] }, hero: c.hero2! }
-        : { sure: { bonds: [[c.hero!, R.cardPairBond], [c.hero2!, R.cardPairBond]] } }
+        // 함께 다니게 한다 — 두 장수 사이가 가까워진다(친밀 ties) · 군장과의 정도 조금 (위원회 11-04 F7 · 「두 장수의 정」이라 써 놓고 군장 정에 적었다)
+        : { sure: { ties: [[c.hero!, c.hero2!, R.cardMentorTie]], bonds: [[c.hero!, R.cardMentorBond], [c.hero2!, R.cardMentorBond]] } }
     case 'smith':
       return { sure: pick === 0 ? { iron: R.cardSmithIron } : { grain: earn(R.cardGoodGrain) } }
     case 'homenews': {
       const n = r.nodes[c.node!]
       const add = n !== undefined ? Math.max(R.cardHomeMin, Math.round(n.hh * R.cardHomeShare)) : 0
-      return pick === 0 ? { sure: { gain: [[c.node!, add]] } } : { sure: { bonds: [[c.hero!, R.cardHomeBond]] }, hero: c.hero! }
+      // 받아들인다 — 사람을 먹이니 곡식이 든다 (위원회 11-04 F6)
+      return pick === 0 ? { sure: { gain: [[c.node!, add]], grain: cost(R.cardExileCost) } } : { sure: { bonds: [[c.hero!, R.cardHomeBond]] }, hero: c.hero! }
     }
     case 'song':
       return { sure: pick === 0 ? { morale: R.cardMorale } : { favor: [{ to: knownOf(r, f).filter((x) => x !== f), d: R.cardSkyFavor }] }, hero: c.hero! }
@@ -362,6 +383,7 @@ function applyFx(r: Realm, f: string, fx: CardFx, tally: { grain: number; iron: 
   for (const [id, d] of fx.bonds ?? []) { const h = r.heroes[id]; if (h !== undefined) addBond(r, h, d, lines) }
   if (fx.watch !== undefined) for (const n of Object.values(r.nodes)) if (n.owner === f) { const w = (r.watch[n.id] ??= { alert: 0, lull: 0 }); w.alert = Math.min(1, w.alert + fx.watch) }
   for (const fv of fx.favor ?? []) for (const o of fv.to) addFavor(r, f, o, fv.d)
+  for (const [a, b, d] of fx.ties ?? []) addTie(r, a, b, d)
   if (fx.wed !== undefined) {
     const g0 = st.grain
     if (wed(r, { kind: 'wed', faction: f, a: fx.wed[0], b: fx.wed[1] }, lines)) tally.grain += st.grain - g0
@@ -381,6 +403,8 @@ export function resolveCard(r: Realm, orders: readonly Order[], lines: ReportLin
   if (c === undefined || c === null || f === undefined) return
   r.card = null
   if (c.season !== r.season || !cardValid(r, c)) return
+  // 본 카드 — 같은 갈래·같은 사람은 한동안 덜 온다 (위원회 11-04 F13 · 같은 연정·같은 고향 소식이 열 판에 넷꼴로 되풀이)
+  ;(r.cardSeen ??= {})[cardKey(c)] = r.season
   const o = orders.find((x): x is Extract<Order, { kind: 'card' }> => x.kind === 'card' && x.faction === f)
   // 고르지 않으면 첫째 — 다만 망명자는 돌려보낸다 (가만히 있는데 장수가 느는 일이 없게 · 받으려면 눌러서) · 장수 다툼은 침묵
   const n = CARDS[c.kind].opts.length

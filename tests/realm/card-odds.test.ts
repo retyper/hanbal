@@ -38,15 +38,17 @@ describe('사건 카드 — 굴리는 답의 %', () => {
   for (const x of rolled) {
     it(`${x.kind} — 미리 본 % 가 판정 문턱이고, 여러 판이면 그 비율로 이룬다`, () => {
       let wins = 0
+      let want = x.want
       const N = 300
       for (let seed = 1; seed <= N; seed++) {
         const { r, pv, line } = play(seed, (r) => ({ kind: x.kind, season: r.season, node: ourNode(r) }), x.pick)
-        assert.equal(pv.chance, x.want)
+        // 바다 도적은 포구를 맡은 장수·경계로 가망이 오른다 (위원회 11-04 F10) — 바탕 이상 끝 이하 · 나머지는 그대로
+        if (x.kind === 'pirates') { assert.ok(pv.chance! >= x.want && pv.chance! <= P.realm.cardPirateMax, `${pv.chance}`); want = pv.chance! } else assert.equal(pv.chance, x.want)
         assert.equal(pv.die, x.die)
         assert.equal(line.good, roll(r.seed, r.season, `card-res:${x.kind}:${x.die}`) < pv.chance!, `${seed}`)
         if (line.good === true) wins++
       }
-      assert.ok(Math.abs(wins / N - x.want) < 0.08, `${x.kind} ${wins}/${N} vs ${x.want}`)
+      assert.ok(Math.abs(wins / N - want) < 0.08, `${x.kind} ${wins}/${N} vs ${want}`)
     })
   }
 

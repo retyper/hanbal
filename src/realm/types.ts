@@ -891,6 +891,8 @@ export interface Realm {
   /** 이번 계절 우리 나라에 온 사건 카드 (events.ts) · 한 계절 앞서 뽑아 둔 다음 카드 (점괘가 엿본다). 옛 저장에는 없다 */
   card?: Card | null
   cardNext?: Card | null
+  /** 본 카드의 열쇠(갈래+주인공) → 본 턴 — 한동안 덜 온다 (events.cardKey · 위원회 11-04 F13) */
+  cardSeen?: Record<string, number>
   /** 혼인의 열매 — due 계절에 자식 장수가 나선다 (heroes.stepHeroes). 옛 저장에는 없다 */
   /** 혼인의 열매 — due 계절에 아이가 나선다 · wed 혼인한 계절 · late 신혼에 떨어져 지내 늦어진 계절 (옛 저장엔 wed·late 가 없다) */
   births?: Array<{ a: string; b: string; faction: string; due: number; wed?: number; late?: number }>
