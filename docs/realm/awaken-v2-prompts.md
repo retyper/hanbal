@@ -70,3 +70,4 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-18-jinhan-salt-widow 진한 소금 과부 — 1차 2판(roqkfeke12 · 검토 PASS) — 11-03
 - w-14-feast-spy 연회 첩자 — 1차 2판(roqkfeke12 · 검토 PASS) — 11-03
 - w-20-gaya-smith-daughter 가야 대장장이 딸 — 1차 2판(roqkfeke12 · 검토 PASS) — 11-03
+- w-08-mahan-warrior 마한 전사 — 1차 2판(roqkfeke12 · 검토 PASS) — 11-03
