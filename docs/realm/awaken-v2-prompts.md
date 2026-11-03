@@ -54,3 +54,4 @@ This is an original character from my own Korean historical fantasy strategy gam
 - 다음 차례(여캐 1차 2판): 허황옥(검토 중) · 송비 · 해달 · 물범 w-70 · 그 뒤 이름 있는 장수가 쓰는 w- 얼굴 순
 - l-L3-heo-hwangok 허황옥 — 1차 다시(두 팔 · edu · 검토 PASS) — 11-03
 - w-52-biryuna-songbi 송비 — 1차 2판(retyper · 검토 PASS) — 11-03
+- w-67-buyeo-haedal 해달 — 1차 2판(retyper · 검토 PASS) — 11-03
