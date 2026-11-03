@@ -62,3 +62,4 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-11-assassin 자객 — 1차 2판(retyper · 검토 PASS · 닌자 결 없음) — 11-03
 - w-19-buyeo-fur-princess 부여 털옷 공주 — 1차 2판(retyper · 검토 PASS) — 11-03
 - w-22-dongye-tiger-huntress 동예 범 사냥꾼 — 1차 2판(retyper · 검토 PASS) — 11-03
+- 검토: w-18 소금 과부 두 장 — 몸은 통과, 넓은 금빛 깃이 기모노처럼 읽혀 넣지 않음 → 좁은 저고리 깃·고름으로 다시
