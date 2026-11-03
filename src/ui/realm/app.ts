@@ -109,6 +109,7 @@ import { chiefCastOf, hireVoicePath, voiceGate, voiceKind, voicePath, type Voice
 import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
 import { loadTip, tipHtml, tipReadMs } from './loadtips.ts'
 import { worldMapReady } from './worldmap.ts'
+import { loadBar } from './loadbar.ts'
 import { WORKS, lvGain, workBlocked, workCost, workLv, workOptions, type WorkWhat } from '../../realm/works.ts'
 import { postGain } from '../../realm/postgain.ts'
 import { marketIn, marketOf, sellLimit, sellPrice, type Offer } from '../../realm/merchant.ts'
@@ -6726,7 +6727,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     cov.innerHTML = `<img src="${ART}logo/emblem-dagger.png" alt=""><p class="sptip">${tipHtml(tip, esc)}</p><div class="lbar go"><i></i></div>`
     const readMs = tipReadMs(tip, P.realm.loadTipMinMs, P.realm.loadTipPerCharMs, P.realm.loadTipMaxMs)
     let loaded = false
-    const gone = (): void => { if (cov.classList.contains('out')) return; cov.classList.add('out'); cov.addEventListener('transitionend', () => cov.remove(), { once: true }) }
+    let finishBar = (): void => {}
+    const gone = (): void => { if (cov.classList.contains('out')) return; finishBar(); cov.classList.add('out'); cov.addEventListener('transitionend', () => cov.remove(), { once: true }) }
     cov.addEventListener('click', () => { if (loaded) gone() }) // 다 받았으면 누르면 바로
     root.appendChild(cov)
     const fill = cov.querySelector<HTMLElement>('.lbar i')!
@@ -6741,16 +6743,19 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         }
       }
       const all = [...urls]
-      let n = 0
       const t0 = performance.now()
-      const step = (): void => { n++; fill.style.width = `${Math.round(8 + (92 * n) / Math.max(1, all.length + 1))}%` }
-      fill.style.width = '8%'
-      const load = all.map((u) => new Promise<void>((ok) => { const i = new Image(); i.onload = i.onerror = () => { step(); ok() }; i.src = u }))
+      // 받은 만큼 + 기다린 만큼 점점 (ui/realm/loadbar.ts · 형 11-04: "95% 에서 멈춰 있다가 100") — 지도 바탕이 큰 몫
+      const R = P.realm
+      const lb = loadBar(fill, 8)
+      finishBar = (): void => lb.finish()
+      // 읽힐 시간도 막대의 몫 — 걷히는 때에 100% (받는 그림들과 같은 무게)
+      lb.add(new Promise<void>((ok) => setTimeout(ok, readMs)), Math.max(1, all.length) / (1 - R.loadBarMapShare), readMs, true)
+      const load: Array<Promise<unknown>> = all.map((u) => lb.add(new Promise<void>((ok) => { const i = new Image(); i.onload = i.onerror = () => ok(); i.src = u }), 1, R.loadBarImgExpectMs))
       // 넓어지는 지도의 바탕은 조각을 잇고 계절 빛을 입히느라 늦게 선다 — 그것까지 기다린다 (형 11-03: "맵이 로딩도 안 되어 있는데")
-      if (realm !== null) load.push(worldMapReady(ART, seasonOf(realm), realm.region ?? 'byeonhan-mini').then(() => { step() }))
+      if (realm !== null) load.push(lb.add(worldMapReady(ART, seasonOf(realm), realm.region ?? 'byeonhan-mini'), (Math.max(1, all.length) * R.loadBarMapShare) / (1 - R.loadBarMapShare), R.loadBarMapExpectMs))
       const late = new Promise<void>((ok) => setTimeout(ok, COVER_MAX_MS))
       void Promise.race([Promise.all(load), late]).then(() => {
-        fill.style.width = '100%'
+
         loaded = true
         // 가운데 한 줄을 읽을 만큼은 보인다 (형 11-03) · 그 전에 눌러 걷을 수 있다
         setTimeout(gone, Math.max(250, readMs - (performance.now() - t0)))

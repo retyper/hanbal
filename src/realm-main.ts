@@ -39,6 +39,7 @@ import { defaultLabel, dropSave, listSaves, makeSaveFile, parseSaveFile, readSav
 import { P } from './tune/params.ts'
 import { loadTip, tipHtml, tipReadMs } from './ui/realm/loadtips.ts'
 import { worldMapReady } from './ui/realm/worldmap.ts'
+import { loadBar } from './ui/realm/loadbar.ts'
 import { GEN_ANIM, MIGRANT_ANIM, SOL_ANIM2, nodeIcon } from './realm/data/art.ts'
 
 const KEY = 'hanbal.realm.v2'
@@ -367,17 +368,14 @@ function hideSplashWhenReady(): void {
   const t0 = performance.now()
   const bar = el.querySelector<HTMLElement>('.lbar')
   const fill = bar?.querySelector<HTMLElement>('i') ?? null
-  let done = 0
-  let total = 3
-  const tick = (): void => {
-    done++
-    if (bar === null || fill === null) return
-    const now = getComputedStyle(fill).width
-    bar.classList.add('go')
-    fill.style.width = now
-    requestAnimationFrame(() => { fill.style.width = `${Math.round(28 + (72 * Math.min(done, total)) / total)}%` })
+  // 받은 만큼 + 기다린 만큼 점점 찬다 — 무거운 지도 바탕이 막대의 큰 몫 (ui/realm/loadbar.ts · 형 11-04: "95% 에서 멈춰 있다가 100")
+  bar?.classList.add('go')
+  const lb = fill !== null ? loadBar(fill, 4) : null
+  const R = P.realm
+  const img = (src: string, w: number): Promise<void> => {
+    const p = new Promise<void>((ok) => { const i = new Image(); i.onload = i.onerror = () => ok(); i.src = src })
+    return lb?.add(p, w, R.loadBarImgExpectMs) ?? p
   }
-  const img = (src: string): Promise<void> => new Promise((ok) => { const i = new Image(); i.onload = i.onerror = () => { tick(); ok() }; i.src = src })
   const base = import.meta.env.BASE_URL
   const art = `${base}realm/`
   // 판을 하던 사람이면 그 판의 지도 바탕(조각을 잇고 계절 빛을 입히는 데 몇 초 걸린다) · 고을 그림 · 병사·장수 그림띠까지 받고 걷는다
@@ -389,11 +387,14 @@ function hideSplashWhenReady(): void {
     ...Object.keys(GEN_ANIM).map((k) => `${art}anim2/gen-${k}.png`),
     `${art}${MIGRANT_ANIM.file}`,
   ]
-  total = 3 + game.length + (r !== null ? 1 : 0)
+  // 몫 — 지도 바탕이 있으면 그것이 loadBarMapShare, 나머지를 글꼴과 그림들이 똑같이 나눈다
+  const smalls = 3 + game.length
+  const mapW = r !== null ? (smalls * R.loadBarMapShare) / (1 - R.loadBarMapShare) : 0
+  const fonts = document.fonts.ready.then(() => undefined)
   const ready = Promise.all([
-    document.fonts.ready.then(() => { tick() }), img(`${base}realm/title/title-lobby.jpg`), img(`${base}realm/logo/emblem-dagger.png`),
-    ...game.map(img),
-    ...(r !== null ? [worldMapReady(art, seasonOf(r), r.region ?? 'byeonhan-mini').then(() => { tick() })] : []),
+    lb?.add(fonts, 1, R.loadBarImgExpectMs) ?? fonts, img(`${base}realm/title/title-lobby.jpg`, 1), img(`${base}realm/logo/emblem-dagger.png`, 1),
+    ...game.map((u) => img(u, 1)),
+    ...(r !== null ? [(() => { const p = worldMapReady(art, seasonOf(r), r.region ?? 'byeonhan-mini'); return lb?.add(p, mapW, R.loadBarMapExpectMs) ?? p })()] : []),
   ])
   const late = new Promise<void>((ok) => setTimeout(ok, r !== null ? SPLASH_MAX_GAME_MS : SPLASH_MAX_MS))
   // 가운데 한 줄 — 도움말 · 옛 기록 · 읽을 만큼 머문다 (형 11-03: "스플래시 좀 더 길게 · 읽을 수 있을 정도로") · 다 받았으면 누르면 바로 걷힌다
@@ -401,8 +402,11 @@ function hideSplashWhenReady(): void {
   const tipEl = el.querySelector<HTMLElement>('.sptip')
   if (tipEl !== null) { tipEl.innerHTML = tipHtml(tip, (s) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`)); tipEl.classList.add('on') }
   const minMs = Math.max(SPLASH_MIN_MS, tipReadMs(tip, P.realm.loadTipMinMs, P.realm.loadTipPerCharMs, P.realm.loadTipMaxMs))
+  // 읽힐 시간도 막대의 몫 — 다 받고도 100% 에서 몇 초 멈춰 있지 않게, 걷히는 때에 100% 가 되게 (받는 일들과 같은 무게)
+  lb?.add(new Promise<void>((ok) => setTimeout(ok, minMs)), smalls + mapW, minMs, true)
   const gone = (): void => {
     if (el.classList.contains('out')) return
+    lb?.finish()
     el.classList.add('out')
     el.addEventListener('transitionend', () => el.remove(), { once: true })
   }
