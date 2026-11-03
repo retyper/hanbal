@@ -179,3 +179,44 @@ export function applySell(r: Realm, o: Extract<Order, { kind: 'sell' }>, lines: 
   m.sold += g
   lines.push({ kind: 'sell', faction: o.faction, good: o.good, n: o.n, grain: g })
 }
+
+// ───────── 장터 저울 (위원회 11-04 림월드 ③) — 장터 일터가 있으면 상단이 없는 달에도 바꿀 곳이 있다
+// 상단보다 나쁜 값(팔기 scaleSellRate · 사기 scaleBuyMul) · 달마다 곡식으로 친 한도 scaleCap × 장터 단 · 용병·북·씨앗·비단은 상단에만
+
+/** 저울이 있나 — 플레이어 나라 · 장터 일터가 있다 */
+export function hasScale(r: Realm, faction: string): boolean {
+  return faction === r.player && bestWorkLv(r, faction, 'market') > 0
+}
+
+/** 이번 달 저울에 남은 몫 (곡식으로 친) */
+export function scaleRoom(r: Realm, faction: string): number {
+  if (!hasScale(r, faction)) return 0
+  const used = r.scaleUsed?.[faction]
+  const spent = used !== undefined && used.season === r.season ? used.grain : 0
+  return Math.max(0, Math.round(P.realm.scaleCap * bestWorkLv(r, faction, 'market')) - spent)
+}
+
+/** 저울 값 — 팔면 받는 곡식 · 사면 내는 곡식 */
+export const scaleSellPrice = (good: Good, n: number): number => Math.floor(n * worthOf(good) * P.realm.scaleSellRate)
+export const scaleBuyPrice = (good: Good, n: number): number => Math.ceil(n * worthOf(good) * P.realm.scaleBuyMul)
+
+/** 저울로 팔 수 있는 개수 · 살 수 있는 개수 */
+export function scaleLimit(r: Realm, faction: string, good: Good, buy: boolean): number {
+  if (good === 'grain' || worthOf(good) <= 0) return 0
+  const room = scaleRoom(r, faction)
+  if (buy) {
+    const per = worthOf(good) * P.realm.scaleBuyMul
+    return Math.max(0, Math.floor(Math.min(room, stockOf(r, faction).grain) / per))
+  }
+  const per = worthOf(good) * P.realm.scaleSellRate
+  return Math.max(0, Math.min(Math.floor(goodOf(stockOf(r, faction), good)), Math.floor(room / per)))
+}
+
+export function applyScale(r: Realm, o: Extract<Order, { kind: 'scale' }>, lines: ReportLine[]): void {
+  if (!Number.isInteger(o.n) || o.n < 1 || o.n > scaleLimit(r, o.faction, o.good, o.buy)) return
+  const g = o.buy ? scaleBuyPrice(o.good, o.n) : scaleSellPrice(o.good, o.n)
+  if (o.buy) { stockOf(r, o.faction).grain -= g; addGood(r, o.faction, o.good, o.n) } else { addGood(r, o.faction, o.good, -o.n); stockOf(r, o.faction).grain += g }
+  const used = (r.scaleUsed ??= {})[o.faction]
+  r.scaleUsed[o.faction] = { season: r.season, grain: (used !== undefined && used.season === r.season ? used.grain : 0) + g }
+  lines.push({ kind: 'scale', faction: o.faction, good: o.good, n: o.n, grain: g, buy: o.buy })
+}

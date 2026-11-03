@@ -55,7 +55,7 @@ import { healWarDead, menByFaction, noteBeaten, noteWarDead } from './rout.ts'
 import {
   ambushTraitOf, applyHeroOrders, battleGrowth, burnWake, wakeOf, heroArt, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, isRuler, ironhandAt, noteMet, oneJobPerHero, postHero, releaseCaptives, stepHeroes, stepServed, sweepHeroes,
 } from './heroes.ts'
-import { applyBuy, applySell, stepMarket } from './merchant.ts'
+import { applyBuy, applyScale, applySell, stepMarket } from './merchant.ts'
 import type {
   Approach, Army, BattleStart, Cmd, EdgeKind, Hero, Order, Ration, Realm, REdge, Report, ReportLine, RNode, SeasonOfYear, SnipeZone, Tactic,
 } from './types.ts'
@@ -707,6 +707,7 @@ function applyArmyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]
     else if (o.kind === 'work') applyWork(r, o, lines)
     else if (o.kind === 'buy') applyBuy(r, o, lines)
     else if (o.kind === 'sell') applySell(r, o, lines)
+    else if (o.kind === 'scale') applyScale(r, o, lines)
   }
   applyHeroOrders(r, orders, lines) // 맡기기·이끌기·회유·들이기 — 나누기·해산 뒤 (떼어 낸 군대를 이끌 수 있게)
   applyTalks(r, orders, lines) // 옥중 담판 — 회유를 건 뒤 (처음 회유하는 계절에도 열린다 · woo.ts)

@@ -112,7 +112,7 @@ import { worldMapReady } from './worldmap.ts'
 import { loadBar } from './loadbar.ts'
 import { WORKS, lvGain, workBlocked, workCost, workLv, workOptions, type WorkWhat } from '../../realm/works.ts'
 import { postGain } from '../../realm/postgain.ts'
-import { marketIn, marketOf, sellLimit, sellPrice, type Offer } from '../../realm/merchant.ts'
+import { hasScale, marketIn, marketOf, scaleBuyPrice, scaleLimit, scaleRoom, scaleSellPrice, sellLimit, sellPrice, type Offer } from '../../realm/merchant.ts'
 import { QUALITY_CSS, gfxRowHtml, setGfxPref, startQuality } from './quality.ts'
 import { HOWWIN_CSS, bannerHtml, closeHowWin, howWinDue, howWinMark, lessons, lossOf, openLessons, showBanner, syncPin, type HowKit, type LessonGo, type Loss } from './howwin.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
@@ -1846,9 +1846,31 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (const o of musters) if (o.kind === 'sell') { by[o.good] = (by[o.good] ?? 0) + o.n; grain += sellPrice(o.good, o.n) }
     return { by, grain }
   }
+  /**
+   * 장터 저울 칸 (merchant.applyScale · 위원회 11-04 림월드 ③) — 장터가 있으면 상단이 없는 달에도 남는 것을 곡식으로, 곡식을 모자란 것으로.
+   * 값은 상단보다 나쁘고 달마다 한도 · 10씩 · 고른 뒤 다시 누르면 하나씩 거둔다
+   */
+  function scaleHtml(r: Realm): string {
+    if (!hasScale(r, me())) return ''
+    const p = plan()
+    const room = scaleRoom(p, me())
+    let h = `<h3>${icon('settle-market', 'wki')} 장터 저울</h3><p class="mute">상단보다 값이 나쁩니다 · 이번 달 남은 몫 곡식 ${room}</p><div class="mkls">`
+    for (const g of ['salt', 'iron', 'wood', 'horse'] as const) {
+      const mine = musters.filter((o): o is Extract<Order, { kind: 'scale' }> => o.kind === 'scale' && o.good === g)
+      const sold = mine.filter((o) => !o.buy).reduce((s, o) => s + o.n, 0)
+      const bought = mine.filter((o) => o.buy).reduce((s, o) => s + o.n, 0)
+      const sl = Math.min(10, scaleLimit(p, me(), g, false))
+      const bl = Math.min(10, scaleLimit(p, me(), g, true))
+      h += `<div class="mkrow">${icon(GOOD_ICON[g], 'wki')}<div class="mkt"><b>${GOOD_NAME[g]} ${Math.floor(goodOf(p.stock[me()], g))}</b><small class="mute">${sold > 0 ? `파는 중 ${sold} · ` : ''}${bought > 0 ? `사는 중 ${bought} · ` : ''}10에 팔면 곡식 ${scaleSellPrice(g, 10)} · 사면 ${scaleBuyPrice(g, 10)}</small></div>`
+        + `<button class="btn" data-act="scale" data-good="${g}" data-v="sell" data-n="${sl}"${sl > 0 ? '' : noBtn('더 팔 수 없습니다: 가진 것이 없거나 이번 달 몫을 다 썼습니다')}>${sl} 팔기</button>`
+        + `<button class="btn" data-act="scale" data-good="${g}" data-v="buy" data-n="${bl}"${bl > 0 ? '' : noBtn('더 살 수 없습니다: 곡식이 모자라거나 이번 달 몫을 다 썼습니다')}>${bl} 사기</button>`
+        + `${mine.length > 0 ? `<button class="btn ghost" data-act="scalex" data-good="${g}">−</button>` : ''}</div>`
+    }
+    return h + '</div>'
+  }
   function marketSheet(r: Realm): string {
     const m = marketOf(r, me())
-    if (m === null) return `<h3>떠돌이 상단</h3><p class="mute">다음 상단은 ${turnsLabel(r, Math.max(1, marketIn(r, me())))} 뒤에 옵니다.</p>`
+    if (m === null) return `<h3>떠돌이 상단</h3><p class="mute">다음 상단은 ${turnsLabel(r, Math.max(1, marketIn(r, me())))} 뒤에 옵니다.</p>` + scaleHtml(r)
     const st = left()
     let h = `<h3>${icon('route-caravan', 'wki')} 떠돌이 상단 · ${esc(r.nodes[m.at]?.name ?? '')}</h3><p class="mute">${turnsLabel(r, m.until - r.season + 1)} 더 머뭅니다 · 물건마다 개수가 정해져 있습니다</p><div class="mkls">`
     for (const o of m.offers) {
@@ -1872,7 +1894,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         + `<button class="btn" data-act="sell" data-good="${g}" data-n="${ten}"${ten > 0 ? '' : noBtn('더 팔 수 없습니다')}>${ten} 팔기</button>`
         + `<button class="btn" data-act="sell" data-good="${g}" data-n="${lim}"${lim > 0 ? '' : noBtn('더 팔 수 없습니다')}>다 · ${lim}</button></div>`
     }
-    return h + '</div>'
+    return h + '</div>' + scaleHtml(r)
   }
   /**
    * 고을 일터 칸 — 지었으면 그 일터와 효과 한 줄, 짓는 중이면 남은 달, 아니면 이 땅에 맞는 일터 단추들
@@ -4892,6 +4914,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       h += draftCard(r, id, true)
       h += callBtn(r, id, false)
+      // 장터 저울 — 장터가 선 고을이면 (위원회 11-04 림월드 ③)
+      if (r.nodes[id]?.work === 'market') h += `<div class="btns"><button class="btn" data-act="market">${icon('settle-market', 'wki')}장터 저울 · 남는 것을 곡식으로</button></div>`
       h += `<div class="btns"><button class="btn ${guarded ? 'on' : ''}" data-act="guard" data-node="${id}" data-tip="경계를 올리면 이 고을로 오는 기습이 잘 들킨다 · 한 계절 동안"${guarded || (canGuard(r, me(), id) && left().grain >= guardCost().grain) ? '' : noBtn(shortOf({ grain: guardCost().grain }) || '이번 계절엔 이미 경계를 올렸습니다')}>경계 강화 ${costHtml({ grain: guardCost().grain })}</button></div>`
       h += guardPathHtml(r, id)
       h += rallyHtml(r, id)
@@ -7867,6 +7891,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         break
       }
       case 'market': openSheet({ kind: 'market' }); break
+      case 'scale': {
+        const n = Number(d['n']); const g = d['good'] as Good
+        if (n > 0) musters = [...musters, { kind: 'scale', faction: me(), good: g, n, buy: d['v'] === 'buy' }]
+        break
+      }
+      case 'scalex': {
+        const i = musters.map((o) => o.kind === 'scale' && o.good === d['good']).lastIndexOf(true)
+        if (i >= 0) musters = musters.filter((_, j) => j !== i)
+        break
+      }
       case 'buy': musters = [...musters, { kind: 'buy', faction: me(), offer: d['offer']! }]; break
       case 'buyx': {
         const i = musters.map((o) => o.kind === 'buy' && o.offer === d['offer']).lastIndexOf(true)
