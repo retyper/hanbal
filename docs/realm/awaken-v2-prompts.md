@@ -74,3 +74,4 @@ This is an original character from my own Korean historical fantasy strategy gam
 - 검토: w-84 살해 달래 — 쌍칼이 둥근 날밑·감은 자루라 일본 칼처럼 읽힘 → 고리자루 칼(환두대도)·곧은 날로 다시
 - w-83-gyeonji-beodeul 견지 버들 — 1차 2판(roqkfeke12 · 트임 위로 잘라 냄, 원본 -raw) — 11-03
 - w-85-sinji-neoul 신지 너울 — 1차 2판(roqkfeke12 · 검토 PASS) — 11-03
+- w-84-salhae-dallae 살해 달래 — 1차 2판(roqkfeke12 · 고리자루 쌍칼 · 검토 PASS) — 11-03
