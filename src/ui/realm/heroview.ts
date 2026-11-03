@@ -210,6 +210,11 @@ export const HERO_CSS = `
 .ap .cmdt b { color: #f0e0b8; } .ap .cmdt small { font-size: 11.5px; color: var(--mute); }
 .ap .cmdgo { width: 100%; justify-content: center; margin-top: 6px; }
 .ap .cmdt:disabled { opacity: .45; cursor: default; }
+.ap .cmdt .pgc { display: flex; flex-wrap: wrap; gap: 3px; margin: 2px 0; }
+.ap .cmdt .pgc .gain, .ap .cmdt .pgc .cost { display: inline-flex; }
+.ap .cmdt.pgtop { border-color: #e8c15a; box-shadow: 0 0 0 1px #e8c15a66 inset; }
+.ap .cmdt .pgst { font-style: normal; font-size: 11px; color: #1a1408; background: #e8c15a; border-radius: 999px; padding: 0 6px; margin-right: 2px; }
+.ap .cmdt .pgfr { width: 16px; height: 16px; object-fit: contain; vertical-align: -3px; }
 .ap .cmdm { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%; }
 .ap .cmdm button { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; min-height: 64px; padding: 6px 4px; cursor: pointer; }
 .ap .cmdm button b { font-size: 13px; color: #ffd27a; }

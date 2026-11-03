@@ -41,7 +41,7 @@ import { kitLines } from '../../realm/kit.ts'
 import { alertRange, seenMix, visibleRange } from '../../realm/intel.ts'
 import { advance, concealOf, draftable, forceOf, newArmyId, otherEnd, planned, rationCost, rationExtra, seasonOf, seenMarches } from '../../realm/season.ts'
 import { ageSeasons, isSeasonEnd, isSeasonStart, monthly, seasonIdx, seasons, type ClockKind } from '../../realm/calendar.ts'
-import { draftScouts, parseScoutKeep, scoutCap, scoutTargets, watchedNodes } from '../../realm/scouts.ts'
+import { draftScouts, parseScoutKeep, scoutCap, scoutTargets, townCount, watchedNodes } from '../../realm/scouts.ts'
 import { NIGHT_OPS, PLOT_OPS, exposeChance, assassinArrows, assassinBow, assassinGuard, bowUpCost, escapeChance, plotAgents, plotCap, plotChance, plotCost, plotTargets, rescueGuard } from '../../realm/plots.ts'
 import { allianceWhy, leaderOf, tookRecently, truceWhy, winningAgainst } from '../../realm/stance.ts'
 // 등용 대사 — 장수마다 한 마디 (형 10-24: "장수마다 각각 등용 대사 개성 있고 다양하고 독특하게")
@@ -110,6 +110,7 @@ import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
 import { loadTip, tipHtml, tipReadMs } from './loadtips.ts'
 import { worldMapReady } from './worldmap.ts'
 import { WORKS, lvGain, workBlocked, workCost, workLv, workOptions, type WorkWhat } from '../../realm/works.ts'
+import { postGain } from '../../realm/postgain.ts'
 import { marketIn, marketOf, sellLimit, sellPrice, type Offer } from '../../realm/merchant.ts'
 import { QUALITY_CSS, gfxRowHtml, setGfxPref, startQuality } from './quality.ts'
 import { HOWWIN_CSS, bannerHtml, closeHowWin, howWinDue, howWinMark, lessons, lossOf, openLessons, showBanner, syncPin, type HowKit, type LessonGo, type Loss } from './howwin.ts'
@@ -301,8 +302,8 @@ const GUIDE: Readonly<Record<string, { readonly title: string; readonly body: Re
   ] },
   scout: { title: '정찰', body: [
     '우리 고을과 길로 맞닿은 고을은 정찰 없이도 군세가 대강 보입니다.',
-    '정찰꾼은 먼 곳을 봅니다. 고을이 늘면 정찰꾼도 늘어 셋까지 됩니다.',
-    '정찰꾼마다 한 곳에 갑니다. 다 나갔을 때 새 곳을 고르면 먼저 보낸 정찰꾼이 그리로 갑니다.',
+    `정찰꾼은 먼 곳을 봅니다. 처음엔 한 명, 우리 고을이 ${P.realm.scoutTowns2}곳이면 둘, ${P.realm.scoutTowns3}곳이면 셋이 됩니다.`,
+    '정찰꾼마다 한 곳에 갑니다. 다 나갔을 때 새 곳을 고르면 어느 정찰을 거둘지 묻습니다.',
     '다녀오면 그곳의 군세·병종·경계가 정확히 보입니다. 오래되면 흐려집니다.',
   ] },
 }
@@ -704,6 +705,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   const landSeen = new Set<string>()
   /** 이번 턴 보낼 정찰꾼 — 고을마다 하나 · 정찰꾼 수(scouts.scoutCap: 고을 수에 따라 1·2·3)까지 (FOCUS D) */
   let scouts: string[] = []
+  /** 정찰꾼이 다 나갔을 때 새로 고른 곳 — 어느 정찰꾼을 거둘지 묻는 동안 (형 11-04: "이미 풀배치면 기존 어디를 빼고 여기 배치하겠냐고 물어봐야") */
+  let scoutAsk: string | null = null
   /** 정찰 고정 — 매 계절 저절로 그곳으로 (형 10-23: "정찰을 매 턴 보내야 하는데 지속 정찰로 고정 버튼") · 이 기기에 · 옛 글(고을 하나)도 읽는다 */
   const KEEP_KEY = 'hanbal.realm.scoutKeep'
   let scoutKeep = ((): string[] => { try { return parseScoutKeep(localStorage.getItem(KEEP_KEY)) } catch { return [] } })()
@@ -1311,11 +1314,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
   /**
    * 각성 연출 — 우리 장수가 내리 이겨 각성하면 그 자리에서 크게 (형 10-31: 3연승 직후 각성 연출 · 메모리 WWE 오버액션).
-   * 각성 초상이 아래에서 솟고 빛이 터진다. 누르거나 몇 초 뒤 걷힌다. 여럿이면 첫째만 크게, 나머지는 보고에
+   * 각성 초상이 아래에서 솟고 빛이 터진다. 확인을 눌러야 걷힌다. 여럿이면 차례로 하나씩 다 크게 (형 11-04: "두 장수가 동시에 각성하는데 한 장수만 연출")
    */
   // 개발판에서만 — 각성 연출을 바로 띄워 본다 (콘솔 · tools/phone-shot PRE): __ascend('장수 id')
   // 숫자를 주면 우리 장수 가운데 그 차례 (기운마다 돌려 보기)
-  if (import.meta.env.DEV) (window as unknown as Record<string, unknown>)['__ascend'] = (id: string | number = 0): string => {
+  if (import.meta.env.DEV) (window as unknown as Record<string, unknown>)['__ascend'] = (id: string | number | string[] = 0): string => {
+    if (Array.isArray(id)) { if (realm !== null) ascendShow(realm, id.map((hero) => ({ kind: 'ascend' as const, hero }))); return id.join(',') }
     if (realm === null) return ''
     const hid = typeof id === 'string' ? id : sorted(Object.values(realm.heroes).filter((x) => x.faction === me() && x.status === 'free'))[id]?.id ?? ''
     ascendShow(realm, [{ kind: 'ascend', hero: hid }])
@@ -1323,7 +1327,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return x !== undefined ? `${x.name} ${elemOf(x)}` : ''
   }
   function ascendShow(r: Realm, lines: readonly ReportLine[]): void {
-    const l = lines.find((x): x is Extract<ReportLine, { kind: 'ascend' }> => x.kind === 'ascend' && r.heroes[x.hero]?.faction === me())
+    const mine = lines.filter((x): x is Extract<ReportLine, { kind: 'ascend' }> => x.kind === 'ascend' && r.heroes[x.hero]?.faction === me())
+    const l = mine[0]
+    const rest = mine.slice(1)
     if (l === undefined) return
     const h = r.heroes[l.hero]!
     root.querySelector('.ascfx')?.remove()
@@ -1360,7 +1366,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       + `<b class="axname">${esc(h.name)}</b><div class="axstats">${stats}</div></div>${ringsHtml(e, ART)}<div class="axflash"></div>`
       + `<div class="axok"><button class="btn pri">확인</button></div>`
     const timers: number[] = []
-    const gone = (): void => { timers.forEach((t) => window.clearTimeout(t)); if (!el.isConnected) return; el.classList.add('out'); window.setTimeout(() => el.remove(), 350) }
+    // 다음 각성이 줄 서 있으면 걷히자마자 이어서 (같은 달에 둘이 각성해도 둘 다 크게)
+    const gone = (): void => { timers.forEach((t) => window.clearTimeout(t)); if (!el.isConnected) return; el.classList.add('out'); window.setTimeout(() => { el.remove(); if (rest.length > 0) ascendShow(r, rest) }, 350) }
     // 확인 단추만 닫는다 — 단추는 능력치가 다 오른 뒤에 뜬다 (CSS --tok · 그 전엔 눌리지 않는다)
     el.querySelector('.axok button')?.addEventListener('click', (ev) => { ev.stopPropagation(); gone() })
     root.appendChild(el)
@@ -1473,16 +1480,31 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return scoutTargets(r, me()).filter((id) => { const o = r.nodes[id]?.owner ?? null; return o === null || met(r, me(), o) })
   }
 
-  /** 정찰꾼을 그곳으로 (보내면 고정도 된다 · 10-24 「정찰 기본 고정」) · 이미 갔으면 거둔다 · 다 나갔으면 먼저 보낸 정찰꾼을 돌린다 */
+  /** 정찰꾼을 그곳으로 (보내면 고정도 된다 · 10-24 「정찰 기본 고정」) · 이미 갔으면 거둔다 · 다 나갔으면 어느 정찰꾼을 거둘지 묻는다 */
   function toggleScout(r: Realm, node: string): void {
+    scoutAsk = null
     if (scouts.includes(node)) {
       scouts = scouts.filter((x) => x !== node)
       setKeep(scoutKeep.filter((x) => x !== node))
       return
     }
-    const out = scoutBump(r)
-    scouts = [...scouts.filter((x) => x !== out), node]
+    if (scouts.length >= scoutCap(r, me())) { scoutAsk = node; return }
+    scouts = [...scouts, node]
+    setKeep([...scoutKeep.filter((x) => x !== node), node])
+  }
+
+  /** 묻고 나서 — `out` 정찰을 거두고 `node` 로 */
+  function swapScout(out: string, node: string): void {
+    scoutAsk = null
+    scouts = [...scouts.filter((x) => x !== out && x !== node), node]
     setKeep([...scoutKeep.filter((x) => x !== out && x !== node), node])
+  }
+
+  /** 다 나갔을 때 묻는 상자 — 나가 있는 정찰꾼마다 「여기를 거두고 보낸다」 단추 */
+  function scoutAskHtml(r: Realm, node: string): string {
+    let h = `<div class="scask"><p>${icon('unit-scouts', 'ssic')}정찰꾼 ${scouts.length}명이 다 나가 있습니다. 어디를 거두고 <b>${esc(josa(r.nodes[node]?.name ?? '', '으로', '로'))}</b> 보낼까요?</p><div class="btns">`
+    for (const id of scouts) h += `<button class="btn" data-act="scout-swap" data-out="${id}" data-node="${node}">${esc(r.nodes[id]?.name ?? '')} 거두고 보내기</button>`
+    return h + `<button class="btn ghost" data-act="scout-ask-no">그대로 둔다</button></div></div>`
   }
 
   /** 정찰꾼이 다 나갔으면 새 곳으로 돌릴 정찰꾼 — 고정 안 한 것이 먼저, 그다음 먼저 보낸 것 · 남았으면 '' */
@@ -3969,26 +3991,42 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
   }
 
-  /** 고을 맡기의 갈 곳 — 이끌던 군대에서 빠져 이 고을 · 지금 있는 고을 · 우리 땅으로 이어진 다른 고을(정예가 따라가고 한 계절 길에 있다) */
+  /**
+   * 고을 맡기의 갈 곳 — 이끌던 군대에서 빠져 이 고을 · 지금 있는 고을 · 우리 땅으로 이어진 다른 고을(정예가 따라가고 한 계절 길에 있다).
+   * 고을마다 이 장수를 앉히면 달라지는 것을 그림과 숫자로 (postgain.ts · 형 11-04: "어느 마을을 보내야 뭐가 좋은지 선택지에서 다 보여야 함") ·
+   * 득이 큰 고을부터 · 맨 위에 추천
+   */
   function postTargets(r: Realm, x: Hero): string {
     const army = Object.values(r.armies).find((a) => a.hero === x.id)
     const at = army?.at ?? x.at ?? null
     if (at === null) return ''
-    const holderOf = (n: string): Hero | undefined => Object.values(r.heroes).find((y) => y.post === n && y.faction === me() && y.id !== x.id)
-    const card = (n: string, sub: string): string => {
-      const hd = holderOf(n)
-      return `<button class="cmdt" data-act="assign" data-id="${x.id}" data-node="${n}"><b>${esc(r.nodes[n]?.name ?? '')}</b><small>${sub}${hd !== undefined ? ` · ${esc(hd.name)} 대신` : ''}</small></button>`
-    }
-    let h = ''
+    const opts: Array<{ n: string; sub: string }> = []
     if (army !== undefined) {
-      if (army.march === null && r.nodes[at]?.owner === me() && at !== r.factions[me()]?.capital) h += card(at, '군대에서 빠져 맡는다')
+      if (army.march === null && r.nodes[at]?.owner === me() && at !== r.factions[me()]?.capital) opts.push({ n: at, sub: '군대에서 빠져 맡는다' })
     } else {
       const cap = r.factions[me()]?.capital
-      if (x.post !== at && r.nodes[at]?.owner === me() && at !== cap) h += card(at, '지금 있는 고을')
+      if (x.post !== at && r.nodes[at]?.owner === me() && at !== cap) opts.push({ n: at, sub: '지금 있는 고을' })
       const far = myTowns(r).filter((n) => n.id !== at && n.id !== cap && n.kind !== 'sodo' && n.hh > 0 && migratePath(r, me(), at, n.id) !== null)
-      for (const n of far) h += card(n.id, `정예 ${P.realm.escortMen}명과 한 ${turnWord(r)} 길`)
+      for (const n of far) opts.push({ n: n.id, sub: `정예 ${P.realm.escortMen}명과 한 ${turnWord(r)} 길` })
     }
-    if (h === '') return ''
+    if (opts.length === 0) return ''
+    const rows = opts.map((o) => ({ ...o, g: postGain(r, x.id, o.n) })).sort((a, b) => b.g.score - a.g.score || (a.n < b.n ? -1 : 1))
+    let h = ''
+    rows.forEach(({ n, sub, g }, i) => {
+      const hd = g.replaces !== null ? r.heroes[g.replaces] : undefined
+      let fx = ''
+      if (g.grain !== 0) fx += fxChip(g.grain > 0, GOOD_ICON.grain, `가을걷이 ${signed(g.grain)}`)
+      if (g.militia !== 0) fx += fxChip(g.militia > 0, 'unit-spear', `장정 ${signed(g.militia)}`)
+      if (g.grow !== 0) fx += fxChip(g.grow > 0, 'settle-hamlet', `늘기 ${signed(g.grow)}%`)
+      if (g.alert !== 0) fx += fxChip(g.alert > 0, 'settle-beacon', `경계 ${signed(g.alert)}%`)
+      if (g.iron > 0) fx += gainHtml({ iron: g.iron })
+      if (g.ironhand) fx += fxChip(true, 'treasure-ring-sword', '철검 군사')
+      const top = i === 0 && rows.length > 1 && g.score > 0
+      h += `<button class="cmdt${top ? ' pgtop' : ''}" data-act="assign" data-id="${x.id}" data-node="${n}">`
+        + `<b>${top ? '<i class="pgst">★ 추천</i> ' : ''}${esc(r.nodes[n]?.name ?? '')}${g.front ? ` ${icon('settle-palisade', 'pgfr')}` : ''}</b>`
+        + `<span class="pgc">${fx !== '' ? fx : '<small>달라지는 것 없음</small>'}</span>`
+        + `<small>${sub}${hd !== undefined ? ` · ${esc(hd.name)} 대신` : ''}</small></button>`
+    })
     return `<div class="cmdts">${h}</div>` + (x.post != null ? `<button class="btn ghost" data-act="assign" data-id="${x.id}" data-node="">맡은 고을을 내려놓는다</button>` : '')
   }
 
@@ -4307,11 +4345,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     let slots = ''
     for (let i = 0; i < opens.length; i++) {
       const id = scouts[i]
-      if (i >= cap) slots += `<span class="sslot lock">${icon('unit-scouts', 'ssic')}<b>🔒 고을 ${opens[i]}</b></span>`
+      if (i >= cap) slots += `<span class="sslot lock">${icon('unit-scouts', 'ssic')}<b>🔒 고을 ${opens[i]}곳</b></span>`
       else if (id !== undefined) slots += `<button class="sslot on" data-act="scout" data-node="${id}" aria-label="정찰 거두기">${icon('unit-scouts', 'ssic')}<b>${esc(r.nodes[id]?.name ?? '')}</b><i>✕</i></button>`
       else slots += `<span class="sslot">${icon('unit-scouts', 'ssic')}<b>쉬는 중</b></span>`
     }
-    let h = `<div class="scouthd">${icon('unit-scouts', 'scic')}<div><b>정찰꾼 ${cap}명</b><span>👁 이웃 고을은 늘 보입니다 · 정찰은 먼 곳을 봅니다</span></div></div><div class="sslots">${slots}</div>`
+    const towns = townCount(r, me())
+    const nextAt = opens.find((t) => t > towns)
+    const grow = nextAt !== undefined ? `<span class="scgrow">${icon('settle-hamlet', 'ssic')}우리 고을 <b>${towns}/${nextAt}곳</b> · ${nextAt}곳이 되면 정찰꾼 한 명 더</span>` : `<span class="scgrow">정찰꾼이 다 찼습니다 (고을 ${towns}곳)</span>`
+    let h = `<div class="scouthd">${icon('unit-scouts', 'scic')}<div><b>정찰꾼 ${cap}명</b><span>👁 이웃 고을은 늘 보입니다 · 정찰은 먼 곳을 봅니다</span>${grow}</div></div><div class="sslots">${slots}</div>` + (scoutAsk !== null && !scouts.includes(scoutAsk) ? scoutAskHtml(r, scoutAsk) : '')
     const watched = new Set(watchedNodes(r, me()))
     const all = scoutable(r)
     const ageOf = (id: string): number => { const f = known[id]?.force; return f ? r.season - f.season : Infinity }
@@ -4830,7 +4871,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const watch = watchedNodes(r, me()).includes(id) ? '<div class="mute">👁 이웃 고을이라 군세가 늘 대강 보입니다</div>' : ''
         h += `<div class="scoutbox">${watch}<div class="mute">${icon('unit-scouts', 'ssic')} 정찰꾼 <b>${scouts.length}/${scoutCap(r, me())}</b> · 군세·병종·경계가 정확히 보입니다</div>`
         // 보낸 뒤엔 금빛 테 대신 눌려 들어간 단추 (형 10-27: "황금 테두리가 아니라 눌려 있는 버튼 연출로")
-        h += `<button class="btn ${on ? 'prs' : ''}" data-act="scout" data-node="${id}">${on ? '정찰꾼이 여기로 간다 · 누르면 거둔다' : there !== '' ? `정찰꾼을 ${esc(there)}에서 여기로 돌린다` : '여기로 정찰을 보낸다'}</button>`
+        h += `<button class="btn ${on ? 'prs' : ''}" data-act="scout" data-node="${id}">${on ? '정찰꾼이 여기로 간다 · 누르면 거둔다' : there !== '' ? '여기로 정찰을 보낸다 · 하나를 거둬야 합니다' : '여기로 정찰을 보낸다'}</button>` + (scoutAsk === id ? scoutAskHtml(r, id) : '')
         // 고정 풀기는 따로 떼어 아래에 — 붙어 있으면 잘못 누른다 (형 10-24)
         if (on || keep) h += `<button class="btn sm ${keep ? 'prs' : 'ghost'} keepbtn" data-act="scout-keep" data-node="${id}">${keep ? `📌 매 ${turnWord(r)} 여기로 고정됨 · 누르면 푼다` : `📌 매 ${turnWord(r)} 여기로 고정`}</button>`
         h += `</div>`
@@ -7805,6 +7846,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       // 정찰은 보내면 기본으로 그곳에 고정 — 고정은 📌 로 푼다 (형 10-24: "정찰 한번 보내면 기본이 고정이어야 하고 선택에 따라 고정 풀게")
       case 'scout': if (realm !== null) toggleScout(realm, d['node']!); break
+      case 'scout-swap': swapScout(d['out']!, d['node']!); break
+      case 'scout-ask-no': scoutAsk = null; break
       case 'scout-keep': { const n = d['node']!; if (scoutKeep.includes(n)) setKeep(scoutKeep.filter((x) => x !== n)); else if (realm !== null && !scouts.includes(n)) toggleScout(realm, n); else setKeep([...scoutKeep, n]); break }
       default: return
     }

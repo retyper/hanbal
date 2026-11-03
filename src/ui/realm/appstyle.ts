@@ -540,6 +540,11 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .sslot { display: flex; align-items: center; gap: 4px; min-width: 0; padding: 5px 6px; border-radius: 10px; border: 1px dashed #4f5a3a; background: #161b12; color: var(--mute); font: inherit; font-size: 12px; text-align: left; }
 .ap .sslot b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
 .ap .sslot .ssic { width: 24px; height: 24px; flex: none; object-fit: contain; }
+.ap .scouthd .scgrow { display: block; margin-top: 4px; font-size: 12px; color: #d8e8b0; }
+.ap .scouthd .scgrow .ssic, .ap .scask .ssic { width: 22px; height: 22px; flex: none; object-fit: contain; vertical-align: middle; margin-right: 3px; }
+.ap .scouthd .scgrow b { display: inline; font-size: 12.5px; color: #f0e0b8; }
+.ap .scask { margin: 8px 0; padding: 8px 10px; border-radius: 10px; border: 1px solid #e8c15a; background: #2a2218; }
+.ap .scask p { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin: 0 0 6px; font-size: 13px; }
 .ap .sslot.on { border-style: solid; border-color: #8ab07a; background: #1c2a1c; color: #d8f0c8; cursor: pointer; } .ap .sslot.on i { font-style: normal; flex: none; opacity: .7; }
 .ap .sslot.lock { opacity: .55; } .ap .sslot.lock .ssic { filter: grayscale(1); } .ap .sslot:not(.on) .ssic { opacity: .6; }
 .ap .scoutbox .ssic { width: 20px; height: 20px; vertical-align: -5px; object-fit: contain; }
