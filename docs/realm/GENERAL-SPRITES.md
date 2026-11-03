@@ -89,6 +89,7 @@ BACKGROUND: flat pure bright green #00FF00 everywhere, no shadows, no ground lin
 - 을음 ✔ 11-04 `gen-eureum.png` (칸 147x160 · u/0 · 마젠타 바탕) — 칼은 「곧은 외날 고리자루 · 휘지 않음」을 A·B 머리말 모두에 넣어 거의 곧게 나왔다(막기 컷만 휘어 뺌). 쓰러짐 장은 모델이 초록 바탕으로 그려 녹색 옷이 키에 먹힐 뻔 → key-png 55 35 로 좁게 따냈다
 - 오간 ✔ 11-04 `gen-ogan.png` (칸 162x160 · u/0 · `mh-ogan`·`tut-ogan`) — 첫 장은 style-anchor 병사의 베옷을 베끼고 컷마다 갑옷이 들쭉날쭉 · 컷 밑에 글자. 「EVERY pose the SAME outfit … NOT beige」「NO CAPTIONS」를 넣어 새 대화로 다시
 - 대왕 다물 ✔ 11-04 `gen-damul.png` (칸 162x160 · u/0 · `goguryeo-ruler`) — 쓰러짐은 B 를 다시 그리며 우하단 칸에(별표는 초록 지우기)
+- 남은 것 (11-04 04:3x 모든 계정 한도로 멈춤): 송양(`jm-songyang` · 활 · A 주문은 public/_tmp/walk2/prompt.txt 꼴 · 깃털 고깔 관·점무늬 남색 두루마기·금 드리개) · 매눈(`chief` · 활 · 꿩깃 검은 두건·붉은 두루마기) · 협보(곧은 칼로 다시) · 말 탄 넷(비류·금하·거타·쇠보 — 말 띠 굽는 길이 아직 없다)
 - 협보 ✘ 11-04 미룸 — B 의 칼이 휜 칼(왜도 꼴)로 나왔고 「곧은 고리자루 칼」로 고쳐 달래도 그대로였다. 다시 할 땐 A 의 CHARACTER 에 「곧은 외날 고리자루 칼, 휘지 않음」을 처음부터 넣는다 (A 는 assets_src/.../gen-hyeopbo-a.png 에 있음)
 
 생김새는 `docs/realm/cast/part-*.md` 의 「겉모습」 줄을 영어로 옮겨 `<한 줄 생김새>` 자리에 넣는다. 초상(bust)을 올리지 않는다 — 글만. 결(무기·자세)은 아래 「결」 그대로 두어 공격 컷이 같은 박자로 돈다.
