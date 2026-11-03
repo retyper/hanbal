@@ -76,6 +76,10 @@ BACKGROUND: flat pure bright green #00FF00 everywhere, no shadows, no ground lin
 
 ## 장수마다 제 그림 — 다음 스물 (이름난 차례)
 
+**11-04 굽는 길 (제 띠 · 4 Argon)** — 참조는 `style-anchor.png`(병사 넷) 하나만. 결의 장(gen-<결>-a.png)을 참조로 주면 그 결의 얼굴·옷을 그대로 베끼고 여덟 칸을 다 채웠다(소서노 첫 장 버림).
+주문 A = 「THE 7 POSES · slot 8 bottom-right EMPTY」 걷기(11-03 다시 굽기와 같은 글) + 「CHARACTER: <생김새>」 · 같은 대화에서 주문 B(서기 2 · 공격 3 · 막기 · 맞음, 7명 · 우하단 비움) · 주문 C(왼쪽 위 걷기 8번 · 왼쪽 아래 쓰러짐) → `sh tools/fixbr.sh gen-<이름> gen-<이름>-a.png gen-<이름>-b.png "1,1,2,2,3,4,4,5,6,6,7,8" <쓰러짐 네모>` → `GEN_ANIM['<이름>']` · `GEN_OWN[장수 id] = '<이름>'`(같은 초상을 쓰는 id 모두).
+- 소서노: A 받음(붉은 비단·검은 털·쇠 흉갑 · 7명 · 우하단 빔) · B 에서 Argon 한도 (11-04 02:06) — 대화 `gemini.google.com/u/4/app/e832d7e8cc84b039` 에서 B·C 를 잇는다
+
 생김새는 `docs/realm/cast/part-*.md` 의 「겉모습」 줄을 영어로 옮겨 `<한 줄 생김새>` 자리에 넣는다. 초상(bust)을 올리지 않는다 — 글만. 결(무기·자세)은 아래 「결」 그대로 두어 공격 컷이 같은 박자로 돈다.
 
 | # | 장수 | id | 결 | 그림에 넣을 것 (cast 겉모습에서) |
