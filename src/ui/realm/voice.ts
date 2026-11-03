@@ -245,7 +245,7 @@ const VOICE_OF_FACE: Readonly<Record<string, VoiceKind>> = {
   'g-24-wansan-onsan': 'm-charm', 'g-51-biryuna-mulgyeol': 'm-charm', 'g-62-beonye-hanul': 'm-charm', 'g-74-saro-hyeokgeose': 'm-charm',
   'g-84-wander-seoneul': 'm-charm', 'g-67-buyeo-daeso': 'm-charm',
   // 거친 얼굴 — 장사 · 술꾼 · 덩치
-  'g-04-jinhan-giant': 'm-gruff', 'g-07-drunk-warrior': 'm-gruff', 'g-33-jeoga-metdol': 'm-gruff', 'g-45-dabeol-deulgae': 'm-gruff',
+  'g-04-jinhan-giant': 'm-gruff', 'g-98-goguryeo-gwaeyu': 'm-gruff', 'g-07-drunk-warrior': 'm-gruff', 'g-33-jeoga-metdol': 'm-gruff', 'g-45-dabeol-deulgae': 'm-gruff',
   'g-61-heomcheuk-bawi': 'm-gruff', 'g-63-heomcheuk-beogeum': 'm-gruff',
   // 책사 · 무당 얼굴 — 차분한 소리
   'g-06-strategist': 'm-sage', 'g-73-baekje-eureum': 'm-sage', 'g-75-saro-hogong': 'm-sage', 'g-36-gammun-gamdol': 'm-sage',
