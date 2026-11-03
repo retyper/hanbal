@@ -53,7 +53,7 @@ import { noteMemory, type Departure } from './memory.ts'
 import { relicHas, relicHorseMulOf, relicLeft, relicMoraleOf, relicMul, relicSum, relicWith, spendRelic } from './relics.ts'
 import { healWarDead, menByFaction, noteBeaten, noteWarDead } from './rout.ts'
 import {
-  ambushTraitOf, applyHeroOrders, battleGrowth, burnWake, wakeOf, heroArt, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, isRuler, ironhandAt, noteMet, oneJobPerHero, postHero, releaseCaptives, stepHeroes, stepServed, sweepHeroes,
+  ambushTraitOf, applyHeroOrders, battleGrowth, burnWake, trueWakeOf, wakeOf, heroArt, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, isRuler, ironhandAt, noteMet, oneJobPerHero, postHero, releaseCaptives, stepHeroes, stepServed, sweepHeroes,
 } from './heroes.ts'
 import { applyBuy, applyScale, applySell, applyWish, stepMarket } from './merchant.ts'
 import type {
@@ -997,7 +997,7 @@ export function sideOf(
     const wake = wakeOf(r, x)
     return {
       id: x.id, mu: x.mu, ryak: x.ryak, coward: hasTrait(x, 'coward'), ...(art !== undefined ? { art } : {}), ...styleOf(x), ...(duel > 0 ? { duel } : {}),
-      ...(chant ? { chant: relicMul(x, 'chant') } : {}), ...(steady !== 1 ? { steady } : {}), ...(wake !== null ? { wake } : {}),
+      ...(chant ? { chant: relicMul(x, 'chant') } : {}), ...(steady !== 1 ? { steady } : {}), ...(wake !== null ? { wake } : {}), ...(wake !== null && trueWakeOf(r, x) ? { trueWake: true as const } : {}),
     }
   }
   const specials: Cmd[] = []
@@ -1234,6 +1234,8 @@ function fieldBattles(r: Realm, tactics: Readonly<Record<string, Tactic>>, lines
       const fateOf = battleFates(r, res, sa, sd, atks, defs, lead.faction, defs[0]!.faction, key, lines)
       burnWake(r, res.wokeA, lines)
       burnWake(r, res.wokeD, lines)
+      // 진각성은 한 판에 한 번 — 장부에 적는다 (DESIRE §17)
+      for (const id of [res.trueA, res.trueD]) if (id !== undefined && !(r.trueWoke ?? []).includes(id)) (r.trueWoke ??= []).push(id)
       // 이끈 장수가 자란다 (HEROES §6) — 사로잡히거나 죽은 이는 빠진다
       if (atkWon) battleGrowth(r, atkHeroes, defHeroes, [], lines, menD0 >= P.realm.flameFairShare * menA0)
       else if (atkLost) battleGrowth(r, defHeroes, atkHeroes, [], lines, menA0 >= P.realm.flameFairShare * menD0)

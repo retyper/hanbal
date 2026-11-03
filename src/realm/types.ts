@@ -526,6 +526,8 @@ export interface Act {
   readonly art?: Art
   /** 각성기의 기운 — c 가 'wake' 일 때 (realm/elem.ts) */
   readonly wake?: import('./elem.ts').Elem
+  /** 진각성으로 낸 각성기 (큰 싸움 · 한 판에 한 번 · DESIRE §17) */
+  readonly true?: true
   /** 나선 장수 (비기 · 겨루기 · 사로잡힌 이) */
   readonly hero?: string
 }
@@ -964,6 +966,8 @@ export interface Realm {
   scaleUsed?: Record<string, { readonly season: number; readonly grain: number }>
   /** 상단이 남긴 쪽지 — 다음에 올 때 모아 둘 것과 갚음 (merchant.makeWish · 나라마다 하나) */
   marketWish?: Record<string, import('./merchant.ts').Wish>
+  /** 이 판에서 진각성한 장수 — 한 판에 한 번 (heroes.trueWakeOf · DESIRE §17) */
+  trueWoke?: string[]
   /** 다음 상단이 올 턴 — 나라마다 */
   marketNext?: Record<string, number>
   /**

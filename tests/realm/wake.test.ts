@@ -195,3 +195,26 @@ describe('각성기 — 불꽃', () => {
     assert.equal(wakeOf(r, foe), null)
   })
 })
+
+describe('진각성 (DESIRE §17 · 한 판에 한 번 · 큰 싸움에서만)', () => {
+  const trueWaker = (e: 'earth' | 'fire'): Side['hero'] => ({ id: 'me', mu: 6, ryak: 5, coward: false, wake: e, trueWake: true })
+  it('큰 싸움이면 각성기가 진각성으로 터지고 적 사기가 더 꺾인다 · 작은 싸움이면 보통 각성기', () => {
+    const big = play(side(1, MIX, true, { hero: trueWaker('fire') }), side(1, MIX), 'tw1', 3, 'wake')
+    assert.equal(big.trueA, 'me')
+    assert.ok(big.rounds.flatMap((rd) => rd.acts ?? []).some((a) => a.c === 'wake' && a.true === true))
+    const small = play(side(1, MIX, true, { hero: trueWaker('fire') }), side(0.3, { spear: 10 }), 'tw1', 3, 'wake')
+    assert.equal(small.trueA, undefined)
+  })
+  it('진각성 장부 — 이 판에서 한 번 하면 다시 자격이 없다', async () => {
+    const { trueWakeOf } = await import('../../src/realm/heroes.ts')
+    const r = byeonhanMini(1)
+    const h = r.heroes['chief']!
+    h.faction = r.player
+    ;(h as Hero).ascended = true
+    assert.equal(trueWakeOf(r, h), false) // 2차 초상이 없는 장수
+    r.heroes['sr-aryeong'] = { ...h, id: 'sr-aryeong' }
+    assert.equal(trueWakeOf(r, r.heroes['sr-aryeong']!), true)
+    r.trueWoke = ['sr-aryeong']
+    assert.equal(trueWakeOf(r, r.heroes['sr-aryeong']!), false)
+  })
+})

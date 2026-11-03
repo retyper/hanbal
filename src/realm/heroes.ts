@@ -15,6 +15,7 @@ import { TRAITS, TRAIT, type TraitGrade } from './data/traits.ts'
 import type { Art, EdgeKind, GrowStat, Hero, Order, Realm, ReportLine, RNode } from './types.ts'
 import { migratePath } from './economy.ts'
 import { relicBest, relicMul, relicSum } from './relics.ts'
+import { TRUE_WAKE } from './data/awaken2.ts'
 import { WAKE_ON, elemOf, type Elem } from './elem.ts'
 
 const byId = <T extends { id: string }>(xs: Iterable<T>): T[] => [...xs].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
@@ -890,6 +891,11 @@ export function wakeOf(r: Realm, h: Hero): Elem | null {
   if (h.faction !== r.player || h.ascended !== true || (h.flames ?? 0) < Math.round(P.realm.wakeMinFlames)) return null
   const e = elemOf(h)
   return WAKE_ON.has(e) ? e : null
+}
+
+/** 진각성할 수 있나 — 2차 초상이 있고 깨어났고 이 판에서 아직 진각성하지 않았다 (DESIRE §17 · 던파처럼 한 판에 한 번) */
+export function trueWakeOf(r: Realm, h: Hero): boolean {
+  return h.faction === r.player && h.ascended === true && TRUE_WAKE.has(h.id) && !(r.trueWoke ?? []).includes(h.id)
 }
 
 /** 각성기를 쓴 장수 — 불꽃 하나를 태운다. 마지막 불꽃은 태우지 않는다 (지면 꺼질 몫은 남는다) */

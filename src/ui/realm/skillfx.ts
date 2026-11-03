@@ -252,6 +252,9 @@ export const SKFX_CSS = `
 @keyframes wsk-dim { 0% { opacity: 0; } 8% { opacity: var(--dim); } 86% { opacity: var(--dim); } 100% { opacity: 0; } }
 /* 각성기 — 기운의 짐승이 뒤에서 솟았다 빛으로 흩어진다 (fx/awaken/beast-* · 검은 바탕이라 screen) · 남아 있지 않는다 (형 11-03) */
 .ap .wsk .wsk-beast { position: absolute; left: 50%; top: 46%; width: 92cqw; max-width: 92cqh; z-index: 1; pointer-events: none; mix-blend-mode: screen; opacity: 0; transform: translate(-50%, -50%) scale(.7); animation: wsk-beast var(--end) ease-out both; }
+/* 진각성 — 짐승이 둘(마주 보며) · 막이 금빛으로 짙게 (DESIRE §17 · 한 판에 한 번) */
+.ap .wsk.wsk-true .wsk-beast { left: 66%; } .ap .wsk.wsk-true .wsk-beast.b2 { left: 34%; scale: -1 1; animation-delay: 140ms; }
+.ap .wsk.wsk-true .wsk-dim { background: radial-gradient(ellipse at 50% 46%, #ffd27a33, #000c 70%); }
 @keyframes wsk-beast { 0% { opacity: 0; transform: translate(-50%, -40%) scale(.7); } 22% { opacity: .95; transform: translate(-50%, -52%) scale(1); } 62% { opacity: .85; transform: translate(-50%, -54%) scale(1.06); } 100% { opacity: 0; transform: translate(-50%, -58%) scale(1.18); } }
 .ap .wsk-sp { position: absolute; display: block; translate: -50% -50%; pointer-events: none; }
 .ap .wsk-sp > img { display: block; width: 100%; height: auto; opacity: 0; animation-timing-function: cubic-bezier(.2, .9, .3, 1); animation-fill-mode: both; }

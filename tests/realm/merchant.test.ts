@@ -117,7 +117,7 @@ describe('상단의 주문 (위원회 11-04 림월드 ②)', () => {
     r = advance(r, []).next // 떠난 다음 달에 쪽지가 선다
     r = untilMarket(r)
     const w = r.marketWish![r.player]!
-    for (const [g, n] of Object.entries(w.goods)) (r.stock[r.player] as Record<string, number>)[g] = n! + 5
+    for (const [g, n] of Object.entries(w.goods)) (r.stock[r.player] as unknown as Record<string, number>)[g] = n! + 5
     assert.equal(wishReady(r, r.player), true)
     const { next, report } = advance(r, [{ kind: 'wish', faction: r.player }])
     assert.equal(report.lines.filter((l) => l.kind === 'wish').length, 1)

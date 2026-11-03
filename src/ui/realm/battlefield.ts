@@ -12,7 +12,7 @@
  * 확률은 숫자로 안 보인다 — 사로잡기는 말과 색으로, 대신 사람 수(날랜 무리 · 호위)는 보인다 (realm-no-numbers).
  */
 import { faceFile } from './face.ts'
-import { FACTION_ART, SOL_ANIM2, SOL_ANIM_AR, UNIT_ICON, flagIcon, genArtOf, generalSprite } from '../../realm/data/art.ts'
+import { FACTION_ART, SOL_ANIM2, bustOf, SOL_ANIM_AR, UNIT_ICON, flagIcon, genArtOf, generalSprite } from '../../realm/data/art.ts'
 import { battleName, endStory, fieldName, groupLabel, josa, roundStory, storyCtx, TURN, turnWord, UNIT_NAME } from '../../realm/data/prose.ts'
 import { BATTLE_STYLES, groupMen, groupOf, lookRound, nightAt, type BattleStyle, type RoundAt } from '../../realm/tactics.ts'
 import { rehearse, type BattleLine } from '../../realm/warroom.ts'
@@ -3625,9 +3625,13 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         const actor = mine !== undefined && heroById(mine) !== undefined ? mine : hero
         const name = heroById(actor)?.name ?? ''
         const el = document.createElement('div')
-        el.innerHTML = skillCutHtml(host.art, kind, faceFile(actor) ?? null, name, wk !== undefined ? WAKE_NAME[wk] : ak !== undefined ? ART_NAME[ak] : CMD_NAME[c])
+        // 진각성 — 2차 초상 · 이름 앞에 「진」 · 짐승이 둘 (DESIRE §17 · 한 판에 한 번이라 크게)
+        const tru = act?.true === true
+        const b2 = tru ? bustOf(actor) ?? null : null
+        el.innerHTML = skillCutHtml(host.art, kind, b2 !== null ? `../awaken2-hd/${b2}` : faceFile(actor) ?? null, name, wk !== undefined ? `${tru ? '진 · ' : ''}${WAKE_NAME[wk]}` : ak !== undefined ? ART_NAME[ak] : CMD_NAME[c])
         const cut = el.firstElementChild as HTMLElement
-        if (wk !== undefined) cut.insertAdjacentHTML('beforeend', `<img class="wsk-beast" src="${host.art}fx/awaken/beast-${ELEM[wk].beast}.png" alt="">`)
+        if (wk !== undefined) cut.insertAdjacentHTML('beforeend', `<img class="wsk-beast" src="${host.art}fx/awaken/beast-${ELEM[wk].beast}.png" alt="">${tru ? `<img class="wsk-beast b2" src="${host.art}fx/awaken/beast-${ELEM[wk].beast}.png" alt="">` : ''}`)
+        if (tru) cut.classList.add('wsk-true')
         cut.addEventListener('animationend', (e) => { if (e.target === cut) cut.remove() })
         cut.addEventListener('click', (e) => { e.stopPropagation(); cut.remove() })
         ov.querySelector('.wsk')?.remove()

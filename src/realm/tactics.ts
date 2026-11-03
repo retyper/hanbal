@@ -109,6 +109,8 @@ export interface SideHero {
    * 이번에 켠 기운은 땅·바람·불 (물·번개는 다음 · params wakeElems)
    */
   readonly wake?: import('./elem.ts').Elem
+  /** 진각성할 수 있다 — 큰 싸움(적이 trueWakeBig 몫 넘게)에서 각성기가 진각성기로 (한 판에 한 번 · DESIRE §17) */
+  readonly trueWake?: true
 }
 
 /** 각성기를 낼 장수 — 고른 이(who)가 각성기를 쥐었으면 그, 아니면 쥔 장수 가운데 앞선 이 */
@@ -175,6 +177,8 @@ export interface FightResult {
   readonly pressD: number
   /** 각성기를 쓴 장수 — 부른 쪽이 그 장수의 불꽃 하나를 태운다 (heroes.burnWake) */
   readonly wokeA?: string
+  readonly trueA?: string
+  readonly trueD?: string
   readonly wokeD?: string
 }
 
@@ -300,6 +304,9 @@ export interface State {
   shakenD: boolean
   /** 각성기 — 쓴 장수(불꽃을 태운다) · 땅: 이 싸움 무너지지 않는다 · 바람: 이 싸움 물러나기는 반드시 된다 */
   wokeA?: string
+  /** 진각성한 장수 — 부른 쪽이 이 판의 진각성 장부에 적는다 (heroes.trueWakeOf) */
+  trueA?: string
+  trueD?: string
   wokeD?: string
   wardA?: boolean
   wardD?: boolean
@@ -983,6 +990,7 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
     clock: { night: clock.night, slots }, dusk: duskLog, pressA: press.a, pressD: press.d,
     ...(memo.pending !== undefined ? { pending: memo.pending } : {}),
     ...(st.wokeA !== undefined ? { wokeA: st.wokeA } : {}), ...(st.wokeD !== undefined ? { wokeD: st.wokeD } : {}),
+    ...(st.trueA !== undefined ? { trueA: st.trueA } : {}), ...(st.trueD !== undefined ? { trueD: st.trueD } : {}),
   }
 }
 
@@ -1372,7 +1380,12 @@ function resolveRound(
       if (x === 'a') st.seerA = true
       else st.seerD = true
     }
-    acts.push({ s: x, g: 'lead', c: 'wake', wake: e, hero: actor.id, n: 1, res: 'ok' })
+    // 진각성 — 큰 싸움(적이 우리의 trueWakeBig 몫 넘게)이면 각성기 위에 한 번 더: 적 사기가 크게 꺾이고 우리는 오른다 (한 판에 한 번 · DESIRE §17 · 던파의 초필살기처럼 드물게)
+    const big = actor.trueWake === true && live(side(x === 'a' ? 'd' : 'a').s, 1, 1, false) >= R.trueWakeBig * live(side(x).s, 1, 1, false)
+    if (big) {
+      if (x === 'a') { st.md = Math.max(0, st.md - R.trueWakeShock); st.ma += R.trueWakeLift; st.trueA = actor.id } else { st.ma = Math.max(0, st.ma - R.trueWakeShock); st.md += R.trueWakeLift; st.trueD = actor.id }
+    }
+    acts.push({ s: x, g: 'lead', c: 'wake', wake: e, hero: actor.id, n: 1, res: 'ok', ...(big ? { true: true as const } : {}) })
   }
 
   // ── 장수의 비기 — 한 판에 한 번 (heroes.heroArt). 앞줄이 맞붙기 전에 건다
