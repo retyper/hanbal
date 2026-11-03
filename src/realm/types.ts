@@ -35,6 +35,8 @@ export interface RNode {
   readonly name: string
   /** 지금 지명으로 바꾼 고을의 옛 이름 (꼬리말 뗀 것 · '' 이면 바꿨으되 따로 적을 옛 이름 없음) — data/placenames.ts */
   readonly old?: string
+  /** 고을 일터 — 고을마다 하나 · 고을과 함께 넘어간다 (works.ts) */
+  readonly work?: import('./works.ts').WorkWhat
   readonly kind: NodeKind
   readonly tags: readonly Tag[]
   /** 다스리는 세력 id. 무주지는 null */
@@ -940,6 +942,8 @@ export interface Realm {
   region?: RegionId
   /** 짓는 중 — 이 계절 끝에 그 고을 꼬리표가 된다 (economy.applyBuild · stepBuilds) */
   builds?: Array<{ readonly faction: string; readonly node: string; readonly what: BuildWhat; readonly done: number }>
+  /** 짓는 중인 고을 일터 (works.ts) — 목책 줄과 따로 */
+  works?: Array<{ readonly faction: string; readonly node: string; readonly what: import('./works.ts').WorkWhat; readonly done: number }>
   /**
    * 발견 (2026-10-19) — 나라마다 아는 나라 id (id 순서). 없으면(옛 판 · 변한·영남 판) 모두 안다.
    * 삼한 남부 판은 제 나라와 이웃만 알고 시작한다 (discovery.ts)
@@ -1068,6 +1072,8 @@ export type Order =
   | { readonly kind: 'arm'; readonly army: string; readonly unit?: UnitKind }
   /** 짓기 (나무의 쓰임) — 제 고을에 목책 또는 (목책이 있으면) 해자. 나무·곡식이 들고 다음 계절부터 선다 (economy.buildCost) */
   | { readonly kind: 'build'; readonly faction: string; readonly node: string; readonly what: BuildWhat }
+  /** 고을 일터 짓기 (works.ts) */
+  | { readonly kind: 'work'; readonly faction: string; readonly node: string; readonly what: import('./works.ts').WorkWhat }
   /** 자객의 활을 한 단계 올린다 — 곡식·철이 크게 든다 (plots.bowUpCost) */
   | { readonly kind: 'bowUp'; readonly faction: string }
 
@@ -1236,6 +1242,7 @@ export type ReportLine =
   | { readonly kind: 'partyBack'; readonly faction: string; readonly party: string; readonly node: string; readonly by: string; readonly back: string; readonly n: number }
   /** 짓기 — 시작했다(done false) · 섰다(done true) */
   | { readonly kind: 'build'; readonly faction: string; readonly node: string; readonly what: BuildWhat; readonly done: boolean }
+  | { readonly kind: 'work'; readonly faction: string; readonly node: string; readonly what: import('./works.ts').WorkWhat; readonly done: boolean }
   /** 겨울에 소금이 모자라 곡식이 썩었다 */
   | { readonly kind: 'spoil'; readonly faction: string; readonly grain: number }
   /** 첩보 — `viewer` 의 첩자가 `about` 나라에서 들은 것 (보는 나라에게만) */

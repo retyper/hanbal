@@ -12,6 +12,7 @@ import { monthly, monthOf, seasonOf, seasons, yearOf, type ClockKind, type Clock
 import type { ConcealWhy } from '../season.ts'
 import { TRAIT } from './traits.ts'
 import { RELIC } from './relics.ts'
+import { WORKS } from '../works.ts'
 
 export const SEASON_NAME: Record<SeasonOfYear, string> = {
   spring: '봄', summer: '여름', autumn: '가을', winter: '겨울',
@@ -833,6 +834,11 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       return line.done
         ? `${node(line.node)}에 ${josa(BUILD_NAME[line.what], "이", "가")} 섰다.`
         : `${node(line.node)}에 ${josa(BUILD_NAME[line.what], '을', '를')} 짓기 시작했다. ${monthly(after) ? '석 달 뒤에' : '이 계절이 끝나면'} 선다.`
+    case 'work':
+      if (line.faction !== viewer) return null
+      return line.done
+        ? `${node(line.node)}에 ${josa(WORKS[line.what].name, '이', '가')} 섰다. ${WORKS[line.what].does}.`
+        : `${node(line.node)}에 ${josa(WORKS[line.what].name, '을', '를')} 짓기 시작했다.`
     case 'spoil':
       return line.faction === viewer ? `겨울 동안 곡식 ${line.grain}섬이 썩었다. 소금이 모자랐다.` : null
     case 'discover':

@@ -1335,6 +1335,13 @@ export const UI_CSS = `
 /* 「다음 달」을 넘긴 직후 잠깐 — 흐리고 안 눌린다 (형 11-01: 두세 번 눌러 두세 달이 넘어갔다) */
 .ap.nxlock .next { pointer-events: none; filter: grayscale(.7) brightness(.75); transition: filter .15s; }
 /* 획득! — 고을을 얻거나 새 마을이 섰다 (형 11-01: "이로운 게 생기면 크고 확실하게") · 튀어 오르고, 생산품이 하나씩 퐁 · 금빛 낱알이 사방으로 · 스스로 걷힌다 */
+/* 고을 일터 칸 (works.ts · 형 11-03 "마을 내정") */
+.ap .wkc { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin: 8px 0 2px; }
+.ap .wkc img.wki, .ap .wkb img.wki { width: 30px !important; height: 30px !important; flex: none; object-fit: contain; }
+.ap .wkb .btn { padding: 6px 10px; min-height: 0; }
+.ap .wkb { flex-wrap: wrap; }
+.ap .wkb .btn { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 3px; text-align: left; }
+.ap .wkb .btn small { flex-basis: 100%; font-size: 11px; }
 .ap .gnpop { position: fixed; left: 50%; top: 40%; z-index: 110; transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; animation: gnlife var(--life, 2.6s) linear both; }
 .ap .gnbox { position: relative; min-width: min(86vw, 320px); max-width: min(92vw, 440px); padding: 16px 22px 18px; border-radius: 16px; background: linear-gradient(#2c2112f5, #1a130af5); border: 2px solid #f0c860; box-shadow: 0 0 0 4px #f0c86033, 0 10px 30px #000c; color: #f8ecd0; animation: gnin .42s cubic-bezier(.3, 1.7, .5, 1) both; }
 .ap .gnh { display: block; text-align: center; font-family: var(--display); font-weight: 400; font-size: clamp(44px, 11vw, 64px); line-height: 1.05; color: #ffd76a; text-shadow: 0 3px 0 #4a3010, 0 0 18px #ffc04088; margin-bottom: 8px; }

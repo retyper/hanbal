@@ -109,6 +109,7 @@ import { chiefCastOf, hireVoicePath, voiceGate, voiceKind, voicePath, type Voice
 import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
 import { loadTip, tipHtml, tipReadMs } from './loadtips.ts'
 import { worldMapReady } from './worldmap.ts'
+import { WORKS, workBlocked, workCost, workOptions, type WorkWhat } from '../../realm/works.ts'
 import { QUALITY_CSS, gfxRowHtml, setGfxPref, startQuality } from './quality.ts'
 import { HOWWIN_CSS, bannerHtml, closeHowWin, howWinDue, howWinMark, lessons, lossOf, openLessons, showBanner, syncPin, type HowKit, type LessonGo, type Loss } from './howwin.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
@@ -1765,6 +1766,35 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (Math.floor(n.hh * P.realm.partyShare) < P.realm.partyMin) return '백성이 아직 적다'
     const fc = foundCost(r, me())
     return `새 마을 값이 모자란다 · 곡식 ${fc.grain} · 나무 ${fc.wood} (고을이 많을수록 비싸다)`
+  }
+
+  /**
+   * 고을 일터 칸 — 지었으면 그 일터와 효과 한 줄, 짓는 중이면 남은 달, 아니면 이 땅에 맞는 일터 단추들
+   * (잠긴 것도 까닭과 함께 보인다: "쇠부리터가 먼저" — 그래서 쇠 나는 땅을 넓히고 지키고 싶어진다 · 형 11-03)
+   */
+  function workCardHtml(r: Realm, id: string): string {
+    const n = r.nodes[id]!
+    if (n.kind === 'sodo' || (n.kind === 'wild' && n.hh <= 0)) return ''
+    if (n.work !== undefined) {
+      const w = WORKS[n.work]
+      return `<div class="wkc"><b>일터</b> ${icon(w.icon, 'wki')}<b>${w.name}</b> <span class="mute">${esc(w.does)}</span></div>`
+    }
+    const going = (r.works ?? []).find((w) => w.node === id)
+    if (going !== undefined) return `<div class="wkc"><b>일터</b> ${icon(WORKS[going.what].icon, 'wki')}${WORKS[going.what].name} 짓는 중 · ${turnsLabel(r, Math.max(1, going.done - r.season + 1))} 남음</div>`
+    const opts = workOptions(r, id)
+    if (opts.length === 0) return ''
+    let h = `<div class="wkc"><b>일터</b> <span class="mute">고을마다 하나 · ${turnsLabel(r, Math.max(1, Math.round(P.realm.workTurns)))} 걸려 선다</span></div><div class="btns wkb">`
+    for (const w of opts) {
+      const d = WORKS[w]
+      const c = workCost(w)
+      const queued = musters.some((o) => o.kind === 'work' && o.node === id && o.what === w)
+      const other = musters.some((o) => o.kind === 'work' && o.node === id && o.what !== w)
+      const lock = workBlocked(r, me(), id, w)
+      const short = shortOf(c as Partial<Record<Good, number>>)
+      const why = other ? '이 고을엔 다른 일터를 고르셨습니다' : lock ?? (short !== '' ? short : null)
+      h += `<button class="btn${queued ? ' on' : ''}" data-act="work" data-node="${id}" data-what="${w}"${queued || why === null ? '' : noBtn(why)}>${icon(d.icon, 'wki')}<b>${d.name}</b>${lock !== null ? ` <span class="mute">🔒 ${esc(lock)}</span>` : ` ${costHtml(c)}`}<small class="mute"> ${esc(d.does)}</small></button>`
+    }
+    return h + '</div>'
   }
 
   /** 지도에서 켜고 끄는 겹 (형: "좌하단에는 확대축소말고 뭔가 보이기 안보이기 토글 필요할듯") — 끈 것은 .ap.hide-<id> */
@@ -4677,6 +4707,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         h += `<div class="btns"><button class="btn ${queued ? 'on' : ''}" data-act="build" data-node="${id}" data-what="${nb}"${ok ? '' : noBtn(buildWhy(r, id, nb))}>${going !== undefined ? `${BUILD_NAME[going.what]} 짓는 중 · ${turnsLabel(r, Math.max(1, going.done - r.season + 1))} 남음` : queued ? `${BUILD_NAME[nb]} 짓기 시작 · ${turnsLabel(r, seasons(r, 1))} 걸린다` : `${josa(BUILD_NAME[nb], '을', '를')} 두른다 ${costHtml({ wood: bc.wood, grain: bc.grain })}`}</button></div>`
         h += `<p class="mute">${nb === 'palisade' ? '지키는 쪽이 세진다.' : '목책 앞에서 한 번 더 막는다 · 겨울엔 언다.'} ${turnsLabel(r, seasons(r, 1))} 걸려 선다.</p>`
       }
+      // 고을 일터 — 고을마다 하나 · 땅에 맞는 것만 · 둘째 줄은 첫째 줄이 우리 땅 어딘가에 있어야 (works.ts · 형 11-03 "마을 내정")
+      h += workCardHtml(r, id)
     }
     // 이 땅에서 나는 것 — 남의 고을·빈땅도 보인다 (칠 까닭 · 바꿀 까닭). 우리 고을은 위 「고을 형편」 밑에 이미 있다
     if (!ours) h += fold('yield', '이 땅에서 나는 것', nodeYieldHtml(r, id))
@@ -7551,6 +7583,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const node = d['node']!
         const same = (o: Order): boolean => o.kind === 'build' && o.node === node
         musters = musters.some(same) ? musters.filter((o) => !same(o)) : [...musters, { kind: 'build', faction: me(), node, what: d['what'] as 'palisade' | 'moat' }]
+        break
+      }
+      case 'work': {
+        // 고을 일터 — 한 고을에 하나만 고른다 · 다시 누르면 거둔다
+        const node = d['node']!
+        const what = d['what'] as WorkWhat
+        const had = musters.some((o) => o.kind === 'work' && o.node === node && o.what === what)
+        musters = musters.filter((o) => !(o.kind === 'work' && o.node === node))
+        if (!had) musters = [...musters, { kind: 'work', faction: me(), node, what }]
         break
       }
       case 'dmode': diploMode = d['v'] as 'envoy' | 'plot' | 'scout'; break

@@ -22,6 +22,7 @@ import { relicSum } from './relics.ts'
 import type { Equip, UnitKind } from './battle.ts'
 import { TIERS, kitOf, lowestTier, nextTier, upgradeKind } from './kit.ts'
 import type { Army, BuildWhat, Good, Goods, Order, ReportLine, Realm, RNode, Stock } from './types.ts'
+import { canWork, hasWork, workCost, workMulAt } from './works.ts'
 
 function menIn(mix: Readonly<Partial<Record<string, number>>>): number {
   let n = 0
@@ -139,7 +140,7 @@ export function landMul(r: Realm, node: string): number {
 }
 
 /** 가을걷이 배수 — 다스림(군장·맡은 장수) × 땅의 결 */
-export const fieldMul = (r: Realm, node: string): number => harvestMul(r, node) * landMul(r, node)
+export const fieldMul = (r: Realm, node: string): number => harvestMul(r, node) * landMul(r, node) * workMulAt(r, node, 'harvest') // 논 (works.ts)
 
 /** 일손 배수 — 철·나무·소금·말은 사는 집이 많을수록 더 난다 (workMin ~ workMax) */
 export function workMul(hh: number): number {
@@ -190,6 +191,8 @@ export function nodeYield(r: Realm, node: string, season = seasonOf(r)): Partial
   }
   if (isWoody(r, node)) out.wood = Math.round(R.woodPerNode * w)
   if (n.tags.includes('pasture')) out.horse = Math.round(R.horsePerPasture * w)
+  // 일터 — 그 고을 특산 곱 (works.ts · 소금밭·쇠부리터·목수 마을·말 목장)
+  for (const g of ['salt', 'iron', 'wood', 'horse'] as const) if (out[g] !== undefined) out[g] = Math.round(out[g]! * workMulAt(r, node, g))
   return out
 }
 
@@ -217,7 +220,7 @@ export function awayMen(r: Realm, faction: string): number {
 
 /** 밖에 나간 군사의 소금 — 이만큼 있으면 군량이 늘지 않는다 */
 export function awaySalt(r: Realm, faction: string): number {
-  return Math.ceil(awayMen(r, faction) * P.realm.saltPerAway)
+  return Math.ceil(awayMen(r, faction) * P.realm.saltPerAway * (hasWork(r, faction, 'jeotgal') ? P.realm.workJeotgalSalt2 : 1)) // 젓갈 창고 (works.ts)
 }
 
 /** 장정 (SYSTEMS §4-6 · FLOW §2) — 그 고을 가호에 비례. 산성은 사람은 적어도 성이 높다 */
@@ -271,7 +274,7 @@ export function draftLimit(r: Realm, faction: string, node: string, unit?: UnitK
   // 한 계절 몫 — 달 시계면 석 달이 한 장부: 이번 계절에 이미 뽑은 만큼 빼고, 계절 처음의 가호로 센다 (옛 판은 장부가 없다)
   const sent = spentThisSeason(r, n.drafted)
   const back = sent > 0 ? n.drafted!.hh : 0 // 뽑느라 빠진 가호
-  const per = Math.floor((n.hh + back) * R.draftPerSeason * shareOpen(r)) - sent
+  const per = Math.floor((n.hh + back) * R.draftPerSeason * shareOpen(r) * workMulAt(r, node, 'draft')) - sent // 장정 마을 (works.ts)
   const men = menOf(r, faction)
   const capShare = R.draftCap + draftCapBonus(r, faction) - (hasCustom(r, faction, 'dalcheon') ? R.dalcheonCap : 0)
   const cap = Math.floor(capShare * (hhOf(r, faction) + men)) - men
@@ -411,6 +414,30 @@ export function stepBuilds(r: Realm, lines: ReportLine[]): void {
     if (b.what === 'earthwall') noteCustom(r, lines, b.faction, 'dalbeol', { node: b.node })
   }
   r.builds = keep
+}
+
+/** 고을 일터 짓기를 시작한다 — 값을 치르고 workTurns 턴 뒤 선다 (works.ts · stepWorks) */
+export function applyWork(r: Realm, o: Extract<Order, { kind: 'work' }>, lines: ReportLine[]): void {
+  if (!canWork(r, o.faction, o.node, o.what) || (r.works ?? []).some((w) => w.node === o.node)) return
+  for (const [g, v] of Object.entries(workCost(o.what)) as Array<[Good, number]>) {
+    if (g === 'grain') stockOf(r, o.faction).grain -= v
+    else addGood(r, o.faction, g, -v)
+  }
+  ;(r.works ??= []).push({ faction: o.faction, node: o.node, what: o.what, done: r.season + Math.max(1, Math.round(P.realm.workTurns)) - 1 })
+  lines.push({ kind: 'work', faction: o.faction, node: o.node, what: o.what, done: false })
+}
+
+/** 다 지은 일터가 선다 — 그 사이 고을을 잃었으면 무너진다 */
+export function stepWorks(r: Realm, lines: ReportLine[]): void {
+  const keep: NonNullable<Realm['works']> = []
+  for (const w of r.works ?? []) {
+    if (w.done > r.season) { keep.push(w); continue }
+    const n = r.nodes[w.node]
+    if (n === undefined || n.owner !== w.faction || n.work !== undefined) continue
+    r.nodes[w.node] = { ...n, work: w.what }
+    lines.push({ kind: 'work', faction: w.faction, node: w.node, what: w.what, done: true })
+  }
+  r.works = keep
 }
 
 /** 이 길이 `from` 과 `to` 를 잇는가 — 이으면 그 길 */
@@ -878,6 +905,8 @@ export function armCost(r: Realm, army: string, unit?: UnitKind): { iron: number
   if (low === null || n <= 0) return null
   // 쇠 다루기(땅) — 쇠가 나는 나라는 무장을 올리는 쇠가 덜 든다
   if (hasCustom(r, a.faction, 'landIron')) iron *= P.realm.landIronArm
+  // 대장간 — 쇠부리터의 열매로 무장을 싸게 올린다 (works.ts)
+  if (hasWork(r, a.faction, 'smithy')) iron *= P.realm.workSmithyArm
   const out = { iron: Math.ceil(iron), grain: Math.ceil(n * P.realm.armGrain), to: low.to, from: low.from, n }
   return unit !== undefined ? { ...out, unit } : out
 }

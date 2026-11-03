@@ -26,7 +26,7 @@ import {
   shareIntel, stationFriction, stepLent,
 } from './diplomacy.ts'
 import {
-  addGood, applyArm, applyBuild, applyGuard, draftIronCost, foundCost, draftLimit, draftNeeds, draftPay, militiaMen, onTake, resolveRites, settleCost, settleLimit, stepBuilds, stepEconomy,
+  addGood, applyArm, applyBuild, applyGuard, applyWork, stepWorks, draftIronCost, foundCost, draftLimit, draftNeeds, draftPay, militiaMen, onTake, resolveRites, settleCost, settleLimit, stepBuilds, stepEconomy,
   migrateHouses, placeHouses, setMigrateAuto, spentThisSeason, stepInbound, stepMigration, stockOf,
 } from './economy.ts'
 import { hasCustom, noteCustom, noteOnce } from './data/customs.ts'
@@ -702,6 +702,7 @@ function applyArmyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]
     else if (o.kind === 'guard') applyGuard(r, o, lines)
     else if (o.kind === 'arm') applyArm(r, o, lines)
     else if (o.kind === 'build') applyBuild(r, o, lines)
+    else if (o.kind === 'work') applyWork(r, o, lines)
   }
   applyHeroOrders(r, orders, lines) // 맡기기·이끌기·회유·들이기 — 나누기·해산 뒤 (떼어 낸 군대를 이끌 수 있게)
   applyTalks(r, orders, lines) // 옥중 담판 — 회유를 건 뒤 (처음 회유하는 계절에도 열린다 · woo.ts)
@@ -1817,6 +1818,7 @@ export function advance(
   if (end) stationFriction(r, lines) // 9 — 동맹 땅에 약속 없이 머무는 군대 (형 10-24)
   shareIntel(r) // 9 — 동맹은 본 것을 나눈다
   stepBuilds(r, lines) // 9 — 다 지은 목책·해자가 선다
+  stepWorks(r, lines) // 다 지은 고을 일터가 선다 (works.ts)
   stepCustoms(r, lines) // 9 — 풍습의 걸음: 다시 일어남 · 쇠 실은 배 · 말 치는 들 · 거른 봄 제사 (hooks.ts)
   refreshSpies(r) // 9 — 첩자가 본다
   for (const [f, spies] of Object.entries(r.spies ?? {})) for (const s of spies) noteMet(r, f, heroesAtNode(r, s.node))

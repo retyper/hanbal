@@ -27,6 +27,7 @@ import { boardRoutes } from './roadlayout.ts'
 import { ZONES } from '../../realm/data/zones/index.ts'
 import { inkOn, kitVars, nationKit } from './kitcolor.ts'
 import { worldMapFallback, worldMapUrl } from './worldmap.ts'
+import { WORKS } from '../../realm/works.ts'
 
 /** 미리 받아 둔 다음 계절 지도 그림 — 붙잡아 두어야 브라우저가 풀어 둔 그림을 버리지 않는다 */
 const warm = new Map<string, HTMLImageElement>()
@@ -344,6 +345,7 @@ export const MAP_CSS = `
 @keyframes cmkhot { 50% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .map .lb .lbg i.cmk.hot::after { animation: none; } }
 /* 겨울 고기잡이 표 — 얼어 흐려진다 */
+.map .lb .lbg img.lbw { border-radius: 50%; box-shadow: 0 0 0 1.5px #ffd27a; background: #3a2a18; padding: .08em; }
 .map .lb .lbg img.frz { opacity: .5; filter: grayscale(1) brightness(1.25) drop-shadow(0 0 1px #7fb6d8); }
 /* 지은 것 — 목책·해자 (고을 왼쪽 위) */
 /* 글자 표 — 마을 그림으로 두면 또 하나의 마을처럼 보였다 (형: "도읍 좌상단에 마을이미지는 뭐지? 이거장터라는 얘긴가?") */
@@ -941,8 +943,10 @@ export function mapHtml(
     }).join('')
     // 특산·지은 것은 이름표 옆 어두운 칸에 — 고을 그림 위에 흰 동그라미로 떠 있으면 이웃 고을 것인지 헷갈리고 지도가 어지럽다
     // (형 10-24: "지역에서 생산되는 품목도 우상단 동그라미가 아니라 더 효과적이게" — 문명 6 도시 배너처럼 이름에 붙인다)
-    const tray = sp.length > 0 || fish !== '' || dfs.length > 0 || cms.length > 0 || bld !== ''
-      ? `<span class="lbg${n.owner === null || n.hh <= 0 ? ' idle' : ''}">${sp.map((g) => `<img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}" title="${GOOD_NAME[g]}: 사람이 살면 난다">`).join('')}${fish}${dfs.map((t) => `<i class="${t}" title="${DEF_TITLE[t]}">${DEF_NAME[t]}</i>`).join('')}`
+    // 고을 일터 — 이름표 칸 맨 앞에 금테 그림 하나 (works.ts · 규칙은 지도에 보이게)
+    const wk = n.work !== undefined ? `<img class="lbw" src="${art}icon/${WORKS[n.work].icon}.png" alt="${WORKS[n.work].name}" title="${WORKS[n.work].name}: ${WORKS[n.work].does}">` : ''
+    const tray = wk !== '' || sp.length > 0 || fish !== '' || dfs.length > 0 || cms.length > 0 || bld !== ''
+      ? `<span class="lbg${n.owner === null || n.hh <= 0 ? ' idle' : ''}">${wk}${sp.map((g) => `<img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}" title="${GOOD_NAME[g]}: 사람이 살면 난다">`).join('')}${fish}${dfs.map((t) => `<i class="${t}" title="${DEF_TITLE[t]}">${DEF_NAME[t]}</i>`).join('')}`
         + `${bld}${cms.map((m) => `<i class="cmk${m.hot === true ? ' hot' : ''}" title="${m.tip}"${m.hot === true ? ` data-l="${m.label}"` : ''}>${m.label}</i>`).join('')}</span>`
       : ''
     labels.push({
