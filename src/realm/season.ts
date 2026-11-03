@@ -53,7 +53,7 @@ import { noteMemory, type Departure } from './memory.ts'
 import { relicHas, relicHorseMulOf, relicLeft, relicMoraleOf, relicMul, relicSum, relicWith, spendRelic } from './relics.ts'
 import { healWarDead, menByFaction, noteBeaten, noteWarDead } from './rout.ts'
 import {
-  ambushTraitOf, applyHeroOrders, battleGrowth, heroArt, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, isRuler, ironhandAt, noteMet, oneJobPerHero, postHero, releaseCaptives, stepHeroes, stepServed, sweepHeroes,
+  ambushTraitOf, applyHeroOrders, battleGrowth, burnWake, wakeOf, heroArt, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, isRuler, ironhandAt, noteMet, oneJobPerHero, postHero, releaseCaptives, stepHeroes, stepServed, sweepHeroes,
 } from './heroes.ts'
 import { applyBuy, applySell, stepMarket } from './merchant.ts'
 import type {
@@ -992,9 +992,10 @@ export function sideOf(
     const chant = relicHas(x, 'chant')
     const art = chant ? 'rite' : heroArt(x)
     const steady = relicMul(x, 'steady')
+    const wake = wakeOf(r, x)
     return {
       id: x.id, mu: x.mu, ryak: x.ryak, coward: hasTrait(x, 'coward'), ...(art !== undefined ? { art } : {}), ...styleOf(x), ...(duel > 0 ? { duel } : {}),
-      ...(chant ? { chant: relicMul(x, 'chant') } : {}), ...(steady !== 1 ? { steady } : {}),
+      ...(chant ? { chant: relicMul(x, 'chant') } : {}), ...(steady !== 1 ? { steady } : {}), ...(wake !== null ? { wake } : {}),
     }
   }
   const specials: Cmd[] = []
@@ -1226,6 +1227,8 @@ function fieldBattles(r: Realm, tactics: Readonly<Record<string, Tactic>>, lines
       const atkHeroes = atks.map((x) => x.hero)
       const defHeroes = defs.map((x) => x.hero)
       const fateOf = battleFates(r, res, sa, sd, atks, defs, lead.faction, defs[0]!.faction, key, lines)
+      burnWake(r, res.wokeA, lines)
+      burnWake(r, res.wokeD, lines)
       // 이끈 장수가 자란다 (HEROES §6) — 사로잡히거나 죽은 이는 빠진다
       if (atkWon) battleGrowth(r, atkHeroes, defHeroes, [], lines)
       else if (atkLost) battleGrowth(r, defHeroes, atkHeroes, [], lines)
@@ -1495,6 +1498,9 @@ function fight(
   const atkHeroes = atks.map((x) => x.hero)
   const defHeroes = defenders.map((x) => x.hero)
   const { captured, killed, captives, fallen } = battleFates(r, res, sa, sd, atks, defenders, a.faction, defFaction, key, lines)
+  // 각성기를 쓴 장수는 불꽃 하나를 태운다 (heroes.burnWake · 마지막 불꽃은 남는다)
+  burnWake(r, res.wokeA, lines)
+  burnWake(r, res.wokeD, lines)
   // 이끈 장수가 자란다 (HEROES §6) — 사로잡히거나 죽은 이는 빠진다
   if (atkWon) battleGrowth(r, atkHeroes, defHeroes, [], lines)
   else if (atkLost) battleGrowth(r, defHeroes, atkHeroes, [], lines)

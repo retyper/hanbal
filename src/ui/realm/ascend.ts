@@ -9,10 +9,11 @@
  *  4. 번쩍 — 각성 초상 · 충격파 고리 · 「각성」 붓글씨 · 능력치
  * 알갱이는 낱낱이 (메모리: 이펙트는 낱낱이) · 넓은 막은 opacity 만 (메모리: 폰 그래픽 한도) · 움직임은 작은 칸에만.
  */
-import type { Hero } from '../../realm/types.ts'
+import type { Elem } from '../../realm/elem.ts'
 import type { Slot } from './sound.ts'
 
-export type Elem = 'fire' | 'water' | 'bolt' | 'wind' | 'earth'
+// 기운을 고르는 셈은 판(src/realm/elem.ts)에 있다 — 각성기 판정이 기운에 기댄다 (위원회 11-04 던파 ①)
+export { elemOf, type Elem } from '../../realm/elem.ts'
 
 export interface ElemInfo {
   readonly name: string
@@ -33,25 +34,6 @@ export const ELEM: Readonly<Record<Elem, ElemInfo>> = {
   bolt: { name: '번개', beast: 'hawk', beastName: '매', c: ['#2a0a6a', '#7a5aff', '#a8e0ff', '#ffffff'], sfx: 'battle_crit', cry: 'ax_hawk' },
   wind: { name: '바람', beast: 'crane', beastName: '학', c: ['#063a30', '#1aa88a', '#a8f4d8', '#f6fffa'], sfx: 'arrow_volley', cry: 'ax_crane' },
   earth: { name: '땅', beast: 'bear', beastName: '곰', c: ['#3a2006', '#a86a1a', '#f0c060', '#fff4d6'], sfx: 'cmd_rocks', cry: 'ax_bear' },
-}
-
-/** 장수마다 정해 두는 결 (장수 설정 docs/realm/cast 가 정하면 여기에) — 없으면 특성 · 가장 높은 능력치로 */
-const ELEM_OF: Readonly<Record<string, Elem>> = {}
-
-const BY_TRAIT: ReadonlyArray<readonly [string, Elem]> = [
-  ['river', 'water'], ['shaman', 'bolt'], ['nighteye', 'bolt'], ['archer', 'wind'], ['mountain', 'earth'], ['steadfast', 'earth'], ['smith', 'fire'], ['ironhand', 'fire'],
-]
-/** 무예는 불(범) · 통솔은 땅(곰) · 지략은 번개(매) · 내정은 물(용) · 매력은 바람(학) */
-const BY_STAT: ReadonlyArray<readonly ['mu' | 'tong' | 'ryak' | 'chi' | 'deok', Elem]> = [['mu', 'fire'], ['tong', 'earth'], ['ryak', 'bolt'], ['chi', 'water'], ['deok', 'wind']]
-
-export function elemOf(h: Hero): Elem {
-  const set = ELEM_OF[h.id]
-  if (set !== undefined) return set
-  const ts = h.traits ?? []
-  for (const [t, e] of BY_TRAIT) if (ts.includes(t)) return e
-  let best = BY_STAT[0]!
-  for (const x of BY_STAT) if (h[x[0]] > h[best[0]]) best = x
-  return best[1]
 }
 
 /** 판마다 같은 흩어짐 (꾸밈이라 판의 시드와 상관없다) */

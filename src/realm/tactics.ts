@@ -104,6 +104,17 @@ export interface SideHero {
   readonly chant?: number
   /** 그 쪽이 지는 합에서 꺾이는 사기에 곱한다 — 팔주령 (relics.ts) */
   readonly steady?: number
+  /**
+   * 각성기를 쓸 수 있으면 그 기운 — 각성했고 불꽃이 wakeMinFlames 이상인 **우리** 장수만 (적에게는 주지 않는다 · 위원회 11-04 던파 ①).
+   * 이번에 켠 기운은 땅·바람·불 (물·번개는 다음 · params wakeElems)
+   */
+  readonly wake?: import('./elem.ts').Elem
+}
+
+/** 각성기를 낼 장수 — 고른 이(who)가 각성기를 쥐었으면 그, 아니면 쥔 장수 가운데 앞선 이 */
+function wakeActor(s: Side, who: string | undefined): SideHero | undefined {
+  const hs = heroesOf(s).filter((h) => h.wake !== undefined)
+  return hs.find((h) => h.id === who) ?? hs[0]
 }
 
 /** 그 쪽의 장수 — 총대장이 먼저 */
@@ -162,6 +173,9 @@ export interface FightResult {
   /** 한 합 더에 낸 곡식 — 부른 쪽이 곳간에서 뺀다 */
   readonly pressA: number
   readonly pressD: number
+  /** 각성기를 쓴 장수 — 부른 쪽이 그 장수의 불꽃 하나를 태운다 (heroes.burnWake) */
+  readonly wokeA?: string
+  readonly wokeD?: string
 }
 
 /** 싸움의 때 — night: 기습·야습(밤 싸움) · edge: 먹힌 기습이라 치는 쪽이 첫 때에 세다 */
@@ -183,7 +197,7 @@ const HOLDS: ReadonlySet<Cmd> = new Set(['hold', 'ford', 'rocks'])
 const CHARGES: ReadonlySet<Cmd> = new Set(['charge', 'gate', 'ram'])
 /** 한 번만 쓰는 명령 */
 // 비기는 장수마다 한 번 — 여기 없고 State.arts 가 센다
-const ONCE: ReadonlySet<Cmd> = new Set(['ford', 'rocks', 'gate', 'ram', 'fire', 'height', 'duel', 'feast'])
+const ONCE: ReadonlySet<Cmd> = new Set(['ford', 'rocks', 'gate', 'ram', 'fire', 'height', 'duel', 'feast', 'wake'])
 
 /** 호궤에 드는 곡식 — 군사 수에 비례 (부르는 쪽이 곳간과 견준다) */
 export const feastCost = (men: number): number => Math.max(1, Math.ceil(men * P.realm.tacFeastGrainPer))
@@ -284,6 +298,13 @@ export interface State {
   /** 총대장을 잃어 지휘가 흔들리는 합 — 이 합(번호)까지 북과 물러나기뿐 */
   shakenA: boolean
   shakenD: boolean
+  /** 각성기 — 쓴 장수(불꽃을 태운다) · 땅: 이 싸움 무너지지 않는다 · 바람: 이 싸움 물러나기는 반드시 된다 */
+  wokeA?: string
+  wokeD?: string
+  wardA?: boolean
+  wardD?: boolean
+  sureRetA?: boolean
+  sureRetD?: boolean
 }
 
 export interface Ctx {
@@ -450,6 +471,8 @@ export function leadOptions(me: Side, foe: Side, used: ReadonlySet<Cmd>, foeHero
   if (me.feast !== undefined && !used.has('feast')) out.push('feast')
   // 장수의 비기 — 장수마다 한 번 (명궁의 한 발은 쏠 적장이 있어야)
   if (artActor(me, foe, undefined, arts, foeHeroGone) !== undefined) out.push('art')
+  // 각성기 — 한 판에 한 번 · 불꽃을 태울 수 있는 각성 장수가 있을 때만
+  if (!used.has('wake') && wakeActor(me, undefined) !== undefined) out.push('wake')
   if (foe.hero !== null && !foeHeroGone && heroesOf(me).some((h) => h.mu >= P.realm.tacDuelMu) && !used.has('duel')) out.push('duel')
   // 적장 사로잡기는 한 판에 한 번 먹힌다 — 하나를 잡은 뒤엔 남은 장수가 경계해 다시 못 파고든다
   // (형 10-26: "적이 적장잡기 성공하니까 장수 둘 다 잡혀서 끝나 버림")
@@ -521,14 +544,18 @@ function aiOrder(c: Ctx, me: Side, foe: Side, mine: 'a' | 'd', st: State, cap: n
   const giveUp = me.player
     ? edge < R.tacAiRetreatMineEdge && myN < R.tacAiRetreatMineMen
     : atk ? edge < (coward ? 0.35 : 0.22) && myN < 0.75 : edge < 0.12 && myN < 0.5
-  if (lopts.includes('capture') && cap >= R.tacAiCapture) lead = 'capture'
+  // 맡긴 우리 싸움 — 각성 장수는 밀리는 합에 각성기를 터뜨린다 (적은 각성기가 없다 · SideHero.wake)
+  const wakeHere = me.player === true && lopts.includes('wake') && (edge < R.wakeAiEdge || myN < R.wakeAiMen)
+  if (wakeHere) lead = 'wake'
+  else if (lopts.includes('capture') && cap >= R.tacAiCapture) lead = 'capture'
   // 물러날 가망이 너무 낮으면 등을 보이느니 끝까지 싸운다 (말이 있으면 호위시킬 셈으로 잰다)
   else if (!stay && giveUp && retreatOdds(c, st, mine, groups.includes('horse'), dark) >= R.tacAiRetreatOdds) lead = 'retreat'
   // 맡긴 싸움 — 사기가 흔들리면 곳간을 푼다 (호궤)
   else if (lopts.includes('feast') && (mine === 'a' ? st.ma : st.md) / Math.max(0.05, me.morale + (me.moraleBonus ?? 0)) < R.tacAiFeast) lead = 'feast'
   else if (lopts.includes('duel') && champ !== undefined && foe.hero !== null && champ.mu >= (duelist(foe, undefined)?.mu ?? 0) + 1 && r('duel') < 0.4) lead = 'duel'
   else if (lopts.includes('art') && actor !== undefined && artNow(actor.art!, foe, foeRatio, r)) lead = 'art'
-  const out: { front?: Cmd; bows?: Cmd; horse?: Cmd; lead: Cmd; who?: string } = { lead, ...(lead === 'art' && actor !== undefined ? { who: actor.id } : lead === 'duel' && champ !== undefined ? { who: champ.id } : {}) }
+  const waker = lead === 'wake' ? wakeActor(me, undefined) : undefined
+  const out: { front?: Cmd; bows?: Cmd; horse?: Cmd; lead: Cmd; who?: string } = { lead, ...(lead === 'art' && actor !== undefined ? { who: actor.id } : lead === 'duel' && champ !== undefined ? { who: champ.id } : waker !== undefined ? { who: waker.id } : {}) }
   if (groups.includes('front')) {
     const opts = groupOptions(me, foe, 'front', used)
     const terr = opts.find((x) => ONCE.has(x))
@@ -636,6 +663,9 @@ const cloneState = (st: State): State => ({
   fa: { ...st.fa }, fd: { ...st.fd }, ma: st.ma, md: st.md, usedA: new Set(st.usedA), usedD: new Set(st.usedD),
   lostA: st.lostA, lostD: st.lostD, hurtA: st.hurtA, hurtD: st.hurtD,
   artsA: new Set(st.artsA), artsD: new Set(st.artsD), shakenA: st.shakenA, shakenD: st.shakenD,
+  ...(st.wokeA !== undefined ? { wokeA: st.wokeA } : {}), ...(st.wokeD !== undefined ? { wokeD: st.wokeD } : {}),
+  ...(st.wardA === true ? { wardA: true } : {}), ...(st.wardD === true ? { wardD: true } : {}),
+  ...(st.sureRetA === true ? { sureRetA: true } : {}), ...(st.sureRetD === true ? { sureRetD: true } : {}),
 })
 
 /** 고른 것을 맞춘다 — 비기는 아직 안 쓴 장수가(쓴 이는 arts 에 적는다) · 겨루기는 고른 이(없으면 무예 높은 이)가 · 사로잡기는 겨눈 적장(없으면 총대장)을 */
@@ -646,6 +676,7 @@ function normOrder(o: RoundOrder & { lead: Cmd }, me: Side, foe: Side, arts: Set
     arts.add(h.id)
     return { ...o, who: h.id }
   }
+  if (o.lead === 'wake') { const h = wakeActor(me, o.who); return h !== undefined ? { ...o, who: h.id } : { ...o, lead: 'drum' } }
   if (o.lead === 'duel') { const h = duelist(me, o.who); return h !== undefined ? { ...o, who: h.id } : { ...o, lead: 'drum' } }
   if (o.lead === 'capture') { const t = heroesOf(foe).find((h) => h.id === o.target) ?? foe.hero; return t !== null ? { ...o, target: t.id } : { ...o, lead: 'drum' } }
   return o
@@ -849,6 +880,7 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
           // 깃발 그림의 비기 — 다음에 낼 장수의 것, 다 썼으면 총대장의 것
           ...((artActor(me, foe, undefined, arts, gone) ?? me.hero)?.art !== undefined ? { art: (artActor(me, foe, undefined, arts, gone) ?? me.hero)!.art! } : {}),
           ...(me.feast !== undefined ? { feast: me.feast } : {}),
+          ...(wakeActor(me, undefined)?.wake !== undefined && !used.has('wake') ? { wake: wakeActor(me, undefined)!.wake! } : {}),
           // 장수가 여럿이면 — 누가 나설지 · 누구를 잡을지 고른다 (형 10-25)
           heroes: heroesOf(me).map((h) => ({ id: h.id, chief: h.id === me.hero?.id, mu: h.mu, ...(h.art !== undefined ? { art: h.art } : {}), artUsed: arts.has(h.id) })),
           foeHeroes: gone ? [] : heroesOf(foe).map((h) => ({ id: h.id, chief: h.id === foe.hero?.id, p: capOf(mine, false, h).p })),
@@ -897,8 +929,11 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
       break
     }
     // 무너짐 — 처음보다 많이 줄었거나 사기가 꺾였다. 둘 다면 더 밀린 쪽만
-    const dA = downOf(c, st, 'a', baseA)
-    const dD = downOf(c, st, 'd', baseD)
+    // 금강의 기개(땅의 각성기) — 이 싸움 그 쪽은 무너지지 않는다
+    const dA0 = downOf(c, st, 'a', baseA)
+    const dD0 = downOf(c, st, 'd', baseD)
+    const dA = st.wardA === true ? { down: false, men: false } : dA0
+    const dD = st.wardD === true ? { down: false, men: false } : dD0
     if (dA.down || dD.down) {
       const s = shareOf(c, st)
       broke = dA.down && dD.down ? (s >= 0.5 ? 'd' : 'a') : dA.down ? 'a' : 'd'
@@ -937,6 +972,7 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
     taken, fell, chiefA: atk.hero?.id ?? null, chiefD: def.hero?.id ?? null,
     clock: { night: clock.night, slots }, dusk: duskLog, pressA: press.a, pressD: press.d,
     ...(memo.pending !== undefined ? { pending: memo.pending } : {}),
+    ...(st.wokeA !== undefined ? { wokeA: st.wokeA } : {}), ...(st.wokeD !== undefined ? { wokeD: st.wokeD } : {}),
   }
 }
 
@@ -1201,7 +1237,9 @@ function resolveRound(
     const x: 'a' | 'd' = oa.lead === 'retreat' ? 'a' : 'd'
     const guard = side(x).o.horse === 'guard' && men(x, 'horse') >= 1
     const p = retreatOdds(c, st, x, guard, night)
-    if (rk(i, `ret-${x}`) >= p) {
+    // 태백의 바람(바람의 각성기)을 쓴 쪽은 이 싸움 물러나기가 반드시 된다
+    const sure = x === 'a' ? st.sureRetA === true : st.sureRetD === true
+    if (!sure && rk(i, `ret-${x}`) >= p) {
       const k = R.tacRoundLoss * R.tacRetFailLoss * (guard ? R.tacGuardRetreat : 1) * (side(x).s.easy === true ? R.easyRetreatFail : 1)
       let sl = 0
       for (const g of GRPS) sl += hurt(x, g, menNow(side(x).g0, side(x).f, g) * k, false)
@@ -1284,6 +1322,24 @@ function resolveRound(
     const fromHorse = Math.min(lostSquad, men(x, 'horse'))
     const sl = hurt(x, 'horse', fromHorse) + hurt(x, 'front', lostSquad - fromHorse)
     acts.push({ s: x, g: 'lead', c: 'capture', n: cap.squad, tg: 'lead', sl, res: 'fail', guard: cap.escort })
+  }
+
+  // ── 각성기 — 한 판에 한 번 · 불꽃 하나를 태운다(부른 쪽 heroes.burnWake). 기운마다 그 합의 규칙 하나를 꺾는다 (위원회 11-04 던파 ① · DESIRE §13-3)
+  //   땅(곰 · 금강의 기개): 이 싸움 그 쪽은 무너지지 않는다 · 바람(학 · 태백의 바람): 이 합 적의 화살이 안 닿고, 이 싸움 물러나기는 반드시 된다
+  //   불(범 · 한라의 격노): 이 합 상성에 져도 그 몫을 안 진다
+  const noArrow: Record<'a' | 'd', boolean> = { a: false, d: false }
+  const rage: Record<'a' | 'd', boolean> = { a: false, d: false }
+  for (const x of ['a', 'd'] as const) {
+    if (side(x).o.lead !== 'wake' || duelRes?.loser === x) continue
+    const actor = wakeActor(side(x).s, side(x).o.who)
+    if (actor?.wake === undefined) continue
+    if (x === 'a') st.wokeA = actor.id
+    else st.wokeD = actor.id
+    const e = actor.wake
+    if (e === 'earth') { if (x === 'a') st.wardA = true; else st.wardD = true }
+    else if (e === 'wind') { noArrow[x] = true; if (x === 'a') st.sureRetA = true; else st.sureRetD = true }
+    else if (e === 'fire') rage[x] = true
+    acts.push({ s: x, g: 'lead', c: 'wake', wake: e, hero: actor.id, n: 1, res: 'ok' })
   }
 
   // ── 장수의 비기 — 한 판에 한 번 (heroes.heroArt). 앞줄이 맞붙기 전에 건다
@@ -1396,8 +1452,9 @@ function resolveRound(
     // 돌격 > 길 트기 (벌어진 앞줄을 뚫고 궁수에게 닿는다) · 길 트기 > 방진 (서 있는 방패 벽에 화살이 쏟아진다 — 활에서 셈한다)
     for (const [c1, o1] of [['a', 'd'], ['d', 'a']] as const) if (beat === null && charging(c1) && opening(o1)) beat = c1
     for (const [o1, h1] of [['a', 'd'], ['d', 'a']] as const) if (beat === null && opening(o1) && holding(h1)) beat = o1
-    if (beat === 'a') { sa *= R.tacTriUp; sd *= R.tacTriDown; takeA *= R.tacTriTakeWin; takeD *= R.tacTriTakeLose }
-    if (beat === 'd') { sd *= R.tacTriUp; sa *= R.tacTriDown; takeD *= R.tacTriTakeWin; takeA *= R.tacTriTakeLose }
+    // 한라의 격노(불의 각성기)를 쓴 쪽은 상성에 져도 진 몫(약해짐·더 잃음)이 1 이다
+    if (beat === 'a') { sa *= R.tacTriUp; takeA *= R.tacTriTakeWin; if (!rage.d) { sd *= R.tacTriDown; takeD *= R.tacTriTakeLose } }
+    if (beat === 'd') { sd *= R.tacTriUp; takeD *= R.tacTriTakeWin; if (!rage.a) { sa *= R.tacTriDown; takeA *= R.tacTriTakeLose } }
     // 서로 버티거나 서로 길을 트면 앞줄끼리는 크게 안 붙는다 · 길 튼 쪽과 방진은 활이 싸운다
     if ((holding('a') || opening('a')) && (holding('d') || opening('d'))) scale *= R.tacStall
     const p = clamp(edgeOf(sa, sd) + jit('front'), 0.03, 0.97)
@@ -1442,6 +1499,8 @@ function resolveRound(
     const ob = side(x).o.bows
     if (ob === undefined || !has(x, 'bows')) continue
     const n = start(x, 'bows')
+    // 태백의 바람 — 이 합 그 쪽에는 화살이 안 닿는다
+    if (noArrow[y]) { acts.push({ s: x, g: 'bows', c: ob, n, res: 'blocked' }); continue }
     let s = pow(x, 'bows') * draw[x]
     if (side(y).o.bows === 'counter' && has(y, 'bows') && men(y, 'bows') >= men(x, 'bows') * 0.5 && ob !== 'counter') s *= R.tacCounterCut
     if (ob === 'height') s *= R.tacHeight
