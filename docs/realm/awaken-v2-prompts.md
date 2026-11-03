@@ -26,3 +26,4 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-101-garak-singwigan 신귀간 — 1차(새 얼굴 · edu) — 11-03
 - w-100-garak-sincheongan 신천간 — 1차(새 얼굴 · edu) — 11-03
 - w-99-garak-yucheongan 유천간 — 1차(새 얼굴 · edu) — 11-03
+- l-L3-heo-hwangok 허황옥 — 1차(전설인데 각성 그림이 없었다 · edu) — 11-03
