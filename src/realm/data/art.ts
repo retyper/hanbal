@@ -467,7 +467,7 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   mount: { ar: 246 / 160, body: 0.968 },
   // 제 그림 (GEN_OWN) — 글 주문만으로 받은 장수 (docs/realm/GENERAL-SPRITES.md)
   jumong: { ar: 243 / 160, body: 0.948, bow: true },
-  onjo: { ar: 281 / 160, body: 0.986 }, // 첫 판은 불꽃 금관이라 버리고 쇠투구로 다시 (형 10-30: "금관은 왕의 것이지, 장수의 것이 아니야")
+  onjo: { ar: 152 / 160, body: 0.928 }, // 11-03 20컷 다시 (걷기가 한 자세였다 · 우하단 별표 칸은 따로 받아 끼움) // 첫 판은 불꽃 금관이라 버리고 쇠투구로 다시 (형 10-30: "금관은 왕의 것이지, 장수의 것이 아니야")
 }
 /** 제 그림이 있는 장수 (장수 id → gen-<이름>.png 의 이름) */
 export const GEN_OWN: Readonly<Record<string, string>> = { 'jm-jumong': 'jumong', 'mh-onjo': 'onjo', 'tut-onjo': 'onjo' }
