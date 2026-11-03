@@ -1319,6 +1319,8 @@ export const UI_CSS = `
    고른 것과 갈 곳만 남는다. opacity 만 (폰 그래픽 한도) */
 .ap .legend, .ap .zbtns, .ap .roadkey, .ap .todo, .ap .goalb { transition: opacity .2s ease; }
 .ap.sel-open .legend, .ap.sel-open .roadkey, .ap.sel-open .todo, .ap.sel-open .goalb { opacity: .12; pointer-events: none; } /* 보기·＋·－ 는 남긴다 — 먼 갈 곳을 고르려면 당겨 봐야 한다 */
+/* 지도를 미는 동안에도 할 일 띠는 비킨다 — 밑의 남해안 고을을 띠 위로 끌어올려 누르게 (위원회 11-04 UX ②) */
+.ap:has(.mapwrap.panning) .todo { opacity: .12; pointer-events: none; transition: opacity .15s; }
 @media (prefers-reduced-motion: reduce) { .ap .legend, .ap .zbtns, .ap .roadkey, .ap .todo, .ap .goalb { transition: none; } }
 /* 고을 둘레 단추 (ZAXIS-1031 5·6단계) — 지도 판 안에 얹어 끌고 당기면 고을과 함께 간다. 작은 칸의 opacity·scale 만 (폰 그래픽 한도) */
 .ap .map .nring { position: absolute; z-index: 40; pointer-events: auto; }

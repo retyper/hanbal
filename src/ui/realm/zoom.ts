@@ -118,6 +118,8 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     m.style.height = `${z * 100}%`
     // 칸보다 낮으면 위아래 가운데로 (옆은 .map 의 margin auto 가 맞춘다)
     m.style.marginTop = z < 1 ? `${((1 - z) / 2) * wrap.clientHeight}px` : ''
+    // 아래 띠(할 일 · 다음 달 · 보기/＋/－) 높이만큼 굴릴 여백 — 남해안 고을이 띠 밑에 갇혀 못 눌렸다 (위원회 11-04 UX ②)
+    m.style.marginBottom = `${P.realm.mapBottomRoom}px`
     // 글씨는 배율의 제곱근만큼 — 크게 보면 조금 커지되 고을 그림만큼 부풀지 않게
     m.style.setProperty('--z', String(z))
     m.style.setProperty('--zs', String(Math.sqrt(z)))
