@@ -459,7 +459,7 @@ export const SOL_ANIM_AR: Readonly<Record<string, number>> = { spear: 167 / 160,
  */
 export type GenSprite = 'g-sword' | 'g-bow' | 'g-spear' | 'w-spear' | 'w-bow' | 'mount'
 export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: number; bow?: true }>>> = {
-  'g-sword': { ar: 255 / 160, body: 0.946 },
+  'g-sword': { ar: 162 / 160, body: 0.941 }, // 11-03 걷기가 한 자세라 20컷 통째로 다시 (제미나이 4 Argon · tools/assemble-gen20.mjs)
   'g-bow': { ar: 182 / 160, body: 0.984, bow: true },
   'g-spear': { ar: 297 / 160, body: 0.988 },
   'w-spear': { ar: 437 / 160, body: 0.996 },
