@@ -821,14 +821,16 @@ export function gainXp(h: Hero, stat: GrowStat, n: number, lines: ReportLine[]):
   if (n <= 0 || h.status !== 'free') return
   const xp = (h.xp ??= {})
   xp[stat] = (xp[stat] ?? 0) + n
-  while (h[stat] < 10 && (xp[stat] ?? 0) >= growNeed(h, stat)) {
+  // 상한 10 은 바탕으로 — 각성 몫(ascendBonus)은 빼고 센다 (각성 중에 9→10 이 막히고 공이 지워졌다 · sim-lens 11-04)
+  const base = (): number => h[stat] - (h.ascended === true ? P.realm.ascendBonus : 0)
+  while (base() < 10 && (xp[stat] ?? 0) >= growNeed(h, stat)) {
     xp[stat] = (xp[stat] ?? 0) - growNeed(h, stat)
     h[stat] += 1
     const g = (h.grown ??= {})
     g[stat] = (g[stat] ?? 0) + 1
     lines.push({ kind: 'grow', hero: h.id, stat })
   }
-  if (h[stat] >= 10) xp[stat] = 0
+  if (base() >= 10) xp[stat] = 0
 }
 
 /** 싸움이 끝났다 — 이끈 장수들 (사로잡히거나 죽은 이는 빠진다). won·lost 는 군대의 장수 id, 교착이면 drawn */
@@ -848,7 +850,7 @@ export function battleGrowth(r: Realm, won: readonly (string | null)[], lost: re
   each(won, (h) => { if (ours(h) && fair) kindle(h, lines) })
   // 깨어난 장수의 불꽃은 각성기의 연료 (위원회 11-04 던파 ① · DESIRE §8) — 이기면 하나 붙고(셋까지), 지거나 비기면 하나 꺼지고, 다 꺼지면 깨어남이 풀린다
   const woke = (h: Hero): boolean => h.faction === r.player && h.ascended === true
-  each(won, (h) => { if (woke(h)) h.flames = Math.min(Math.round(R.ascendWins), (h.flames ?? 0) + 1) })
+  each(won, (h) => { if (woke(h) && fair) h.flames = Math.min(Math.round(R.ascendWins), (h.flames ?? 0) + 1) }) // 연료도 제 몫의 싸움으로만
   each([...lost, ...drawn], (h) => { if (woke(h)) dimFlame(h, lines) })
   // 함께 이긴 우리 장수끼리 가까워진다 (친밀)
   const mates = [...new Set(won)].filter((id): id is string => id !== null && r.heroes[id]?.faction === r.player && r.heroes[id]?.status === 'free').sort()

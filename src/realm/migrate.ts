@@ -58,6 +58,8 @@ export function migrate(r: Realm): void {
   for (const f of Object.values(r.factions)) if (f.migrateOff !== undefined) delete f.migrateOff
   // 특성이 생기기 전의 판 — 장수마다 빈 특성 줄을 채운다 (없으면 정이 100에 닿는 계절에 막혔다)
   for (const h of Object.values(r.heroes)) if (!Array.isArray(h.traits)) (h as { traits: readonly string[] }).traits = []
+  // 불꽃이 연료가 되기 전(11-04 각성기)의 판 — 깨어난 장수는 불꽃을 지웠다. 그대로면 첫 패배에 각성이 풀린다 (sim-lens 11-04) · 다 켠 채로 시작
+  for (const h of Object.values(r.heroes)) if (h.ascended === true && h.flames === undefined) h.flames = Math.round(P.realm.ascendWins)
   for (const w of r.wanderers ?? []) if (!Array.isArray(w.hero.traits)) (w.hero as { traits: readonly string[] }).traits = []
   // 옥중 담판이 생기기 전의 판 (docs/realm/WOO.md) — 갇힌 계절을 모르는 포로는 지금 갇힌 것으로 (시작한 계절이 없는 회유는 「마주 앉기」를 바로 열 수 있다)
   for (const h of Object.values(r.heroes)) if (h.status === 'captive') h.caughtAt ??= r.season

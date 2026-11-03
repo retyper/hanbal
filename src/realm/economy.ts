@@ -682,7 +682,8 @@ function callRoom(r: Realm, faction: string, node: string): number {
   const room = homeRoom(n) - n.hh - inboundOf(n, faction)
   const once = Math.max(Math.round(R.callMin), Math.floor(homeRoom(n) * R.callRoomShare))
   const price = callPrice(r, faction)
-  const grain = price > 0 ? Math.floor(stockOf(r, faction).grain / price) : Infinity
+  // 한 계절 군량은 남긴다 — 곳간을 다 비워 계절 끝에 굶지 않게 (sim-lens 11-04)
+  const grain = price > 0 ? Math.floor(Math.max(0, stockOf(r, faction).grain - upkeepOf(r, faction, false)) / price) : Infinity
   return Math.max(0, Math.min(room, once, grain))
 }
 

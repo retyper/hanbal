@@ -186,6 +186,9 @@ export function cardValid(r: Realm, c: Card): boolean {
     if (x === undefined || x.faction !== f || x.status !== 'free') return false
   }
   if (c.kind === 'rival') { const y = c.hero2 !== undefined ? r.heroes[c.hero2] : undefined; if (y === undefined || y.faction === f || y.status !== 'free') return false }
+  // 장 카드의 상대 나라가 그새 망했으면 안 편다 (sim-lens 11-04)
+  if ((c.kind === 'mhscold' || c.kind === 'mhhunt') && r.factions['mokji'] === undefined) return false
+  if (c.kind === 'gogak' && r.factions['biryuna'] === undefined) return false
   if (c.node !== undefined && r.nodes[c.node]?.owner !== f) return false
   if (c.kind === 'exile' && (poolFree(r).length === 0 || (c.guest !== undefined && !poolFree(r).some((h) => h.id === c.guest)))) return false
   if (c.kind === 'romance' && !canWed(r, f, c.hero ?? '', c.hero2 ?? '')) return false
@@ -492,6 +495,8 @@ export function stepCards(r: Realm, lines: ReportLine[]): void {
   }
   const next = r.cardNext
   r.card = next !== undefined && next !== null && next.season === r.season && cardValid(r, next) ? next : next === undefined ? drawCard(r, r.season) : null
+  // 편 카드는 바로 「본 것」 — 다음 계절 카드를 미리 뽑기 전에 적어야 바로 다음 칸에 같은 것이 안 온다 (sim-lens 11-04 · F13)
+  if (r.card !== null && r.card !== undefined) (r.cardSeen ??= {})[cardKey(r.card)] = r.card.season
   r.cardNext = drawCard(r, r.season + perSeason(r)) // 다음 계절의 첫 턴
   const dv = canDivine(r, f, lines)
   if (!dv.ok) return

@@ -124,3 +124,25 @@ describe('상단의 주문 (위원회 11-04 림월드 ②)', () => {
     assert.equal(next.marketWish?.[r.player] === undefined || next.marketWish[r.player] !== w, true)
   })
 })
+
+describe('상단의 주문 — 갚을 것이 바닥나면 (sim-lens 11-04)', () => {
+  it('소문 쪽지인데 모르는 나라가 없으면 장수로 · 둘 다 없으면 맞바꾸지 않고 물건도 그대로', () => {
+    let r = untilMarket(byeonhanMini(1))
+    r.stock[r.player]!.wood = 50
+    r.marketWish = { [r.player]: { goods: { wood: 10 }, reward: 'news' } }
+    // 모든 나라를 안다
+    for (const f of Object.keys(r.factions)) if (f !== r.player) (r.known ??= {} as never)
+    const all = Object.keys(r.factions)
+    ;(r as unknown as { known: Record<string, string[]> }).known = Object.fromEntries(all.map((f) => [f, all]))
+    // 장수 풀도 다 썼다
+    r.poolUsed = [...(r.poolUsed ?? []), ...Array.from({ length: 2000 }, (_, i) => `x${i}`)]
+    const ready = wishReady(r, r.player)
+    const { next, report } = advance(r, [{ kind: 'wish', faction: r.player }])
+    if (!ready) {
+      assert.equal(report.lines.filter((l) => l.kind === 'wish').length, 0)
+      assert.ok(goodOf(next.stock[r.player], 'wood') >= 40) // 물건을 빼앗기지 않았다
+    } else {
+      assert.equal(report.lines.filter((l) => l.kind === 'wish').length, 1)
+    }
+  })
+})

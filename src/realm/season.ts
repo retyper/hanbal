@@ -1489,6 +1489,10 @@ function fight(
   const outcome = res.outcome
 
   // 손실 · 사기 — 장정은 판정에만 선다 (r.armies 에 없다)
+  // 제 몫의 싸움 — 진 쪽(지킨 쪽은 장정까지)이 이긴 쪽의 flameFairShare 넘게 있어야 불꽃이 붙는다 (빈 고을 줍기로 각성하지 않게 · sim-lens 11-04)
+  const menOfMix = (m: Army['mix']): number => Object.values(m).reduce((t: number, v) => t + (v ?? 0), 0)
+  const menA0 = legs.reduce((s, l) => s + menOfMix(l.army.mix), 0)
+  const menD0 = defenders.reduce((s, d) => s + menOfMix(d.mix), 0)
   for (const l of legs) scaleByGroups(l.army, res.ga)
   for (const d of defenders) scaleByGroups(d, res.gd)
   shiftMorale(atks, res.dma)
@@ -1508,9 +1512,10 @@ function fight(
   // 각성기를 쓴 장수는 불꽃 하나를 태운다 (heroes.burnWake · 마지막 불꽃은 남는다)
   burnWake(r, res.wokeA, lines)
   burnWake(r, res.wokeD, lines)
+  for (const id of [res.trueA, res.trueD]) if (id !== undefined && !(r.trueWoke ?? []).includes(id)) (r.trueWoke ??= []).push(id) // 진각성은 한 판에 한 번
   // 이끈 장수가 자란다 (HEROES §6) — 사로잡히거나 죽은 이는 빠진다
-  if (atkWon) battleGrowth(r, atkHeroes, defHeroes, [], lines)
-  else if (atkLost) battleGrowth(r, defHeroes, atkHeroes, [], lines)
+  if (atkWon) battleGrowth(r, atkHeroes, defHeroes, [], lines, menD0 >= P.realm.flameFairShare * menA0)
+  else if (atkLost) battleGrowth(r, defHeroes, atkHeroes, [], lines, menA0 >= P.realm.flameFairShare * menD0)
   else battleGrowth(r, [], [], [...atkHeroes, ...defHeroes], lines)
   battleMerit(r, atkHeroes, defHeroes, atkWon ? 'a' : atkLost ? 'd' : null, res.duel?.winner, captives) // 단련 공 (drill.ts)
 
