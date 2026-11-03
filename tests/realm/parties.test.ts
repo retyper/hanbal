@@ -47,7 +47,7 @@ describe('개척단', () => {
     assert.equal(ps[0]!.hh, n)
     assert.ok(report.lines.some((l) => l.kind === 'party'))
     assert.ok(next.nodes[from]!.hh <= hh0 - n + hh0 * 0.2) // 꾸린 만큼 빠진다 (그 계절 늘어난 몫은 덤)
-    assert.ok(next.stock[r.player]!.grain <= g0 - partyCost(n).grain + 1000)
+    assert.ok(next.stock[r.player]!.grain <= g0 - partyCost(r, r.player, n).grain + 1000)
   })
 
   it('길을 함께 주면 떠나고, 빈땅에 닿으면 마을이 선다', () => {

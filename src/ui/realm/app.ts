@@ -33,6 +33,7 @@ import {
   GOODS, armCost, buildCost, canBuild, canGuard, draftCost, draftIronCost, draftLimit, draftNeeds, draftPay, goodOf, guardCost, hhGrowth, isCoast, militiaMen, nextBuild, nodeHarvest, nodeYield, nodeSpecials, upkeepOf, riteAllowed, riteCost,
   autoFlows, crowdOf, migratePath, fieldMul, homeRoom, inboundOf, inboundRate, isRiverside, landMul, placeLimit, placeNodes, workMul,
   goodsWorth,
+  foundCost,
 } from '../../realm/economy.ts'
 import { goalReach, goalRoute } from '../../realm/goal.ts'
 import { approachMoves, armyPower, jointWin, matchupHints, movesOf, type Move } from '../../realm/estimate.ts'
@@ -258,8 +259,8 @@ const GUIDE: Readonly<Record<string, { readonly title: string; readonly body: Re
   people: { title: '백성', body: [
     '고을마다 나는 것이 다르다. 강가 들은 쌀이 더 나고, 철산은 철, 바닷가는 소금·물고기, 숲은 나무, 목장은 말이 난다. 쌀과 특산은 사는 집이 많을수록 많이 난다.',
     '백성 배치: 고을에서 떼어 모았다가 원하는 고을에 나누어 붓는다. 한 계절에 나라 집의 몇 할까지, 옮긴 집마다 곡식이 든다.',
-    '개척단: 우리 고을에서 꾸리면 맞닿은 빈땅으로 바로 떠난다. 닿으면 새 마을이 선다. 다른 우리 고을로 데려가 「여기 자리 잡기」를 누르면 그 고을로 이주한다.',
-    '군대로 빈땅을 차지하면 깃발만 꽂힌다. 사는 사람이 없어 아무것도 안 난다.',
+    '개척단: 도읍에서 꾸린다. 곡식·나무가 많이 들고(고을이 많을수록 더) 몇 달 채비한 뒤 떠난다. 빈땅에 닿으면 새 마을이 선다. 다른 우리 고을로 데려가 「여기 자리 잡기」를 누르면 그 고을로 이주한다.',
+    '군대는 빈땅을 밟아도 차지하지 못한다. 새 마을은 개척단만 연다. 억지 이주는 길로 맞닿은 이웃 고을끼리만 된다.',
     '붐비는(품을 넘긴) 고을의 백성은 저절로 한산한 이웃 고을로 조금씩 넘어간다.',
   ] },
   place: { title: '백성 배치', body: [
@@ -1622,7 +1623,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 개척단의 말 — 군대 말처럼 누르면 고르고 갈 곳이 빛난다 (지난 계절부터 길 위에 있으면 길 가운데)
     for (const p of partiesOf(r, me())) {
       const was = realm!.parties?.[p.id]?.march
-      tokens.push({ army: p.id, node: p.march?.from ?? p.at, men: p.hh, sel: partySel === p.id, going: p.march !== null && was == null, img: `${ART}icon/unit-porters.png`, party: true,
+      tokens.push({ army: p.id, node: p.march?.from ?? p.at, men: p.hh, sel: partySel === p.id, going: p.march !== null && was == null, img: `${ART}icon/unit-porters.png`, party: true, ...(p.readyAt !== undefined && p.readyAt > r.season ? { prep: p.readyAt - r.season } : {}),
         // 떠 있는 짐꾼 그림 대신 걷는 이주민 하나 (형 11-03: 병사처럼) — 서 있을 땐 첫 컷, 길 위에선 여덟 컷을 다 걷는다
         squad: [{ src: `${ART}${MIGRANT_ANIM.file}`, ar: MIGRANT_ANIM.ar, m: true }],
         ...(was != null ? { march: { from: was.from, to: was.to, left: was.left } } : {}) })
@@ -1732,7 +1733,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (k <= 0) return `<p class="mute">${esc(partyWhy(r, cap))}</p>`
     const route = partyRoute(r, me(), cap, to)
     if (route === null) return `<p class="mute">도읍에서 우리 땅을 따라 가는 길이 지금은 막혔습니다</p>`
-    const c = partyCost(k)
+    const c = partyCost(r, me(), k)
     return `<button class="btn pri home wide ${cls}" data-act="party-goal" data-node="${to}">${icon('unit-porters')}개척단 보내기 · ${turnsLabel(r, route.turns)} ${costHtml({ grain: c.grain, wood: c.wood })}</button><p class="mute">도읍에서 떠나 우리 고을을 거쳐 저절로 갑니다</p>`
   }
 
@@ -1762,7 +1763,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (partiesOf(r, me()).length >= P.realm.partyMax) return `개척단은 한꺼번에 ${P.realm.partyMax}까지 둔다`
     const n = r.nodes[node]!
     if (Math.floor(n.hh * P.realm.partyShare) < P.realm.partyMin) return '백성이 아직 적다'
-    return '곡식이나 나무가 모자란다'
+    const fc = foundCost(r, me())
+    return `새 마을 값이 모자란다 · 곡식 ${fc.grain} · 나무 ${fc.wood} (고을이 많을수록 비싸다)`
   }
 
   /** 지도에서 켜고 끄는 겹 (형: "좌하단에는 확대축소말고 뭔가 보이기 안보이기 토글 필요할듯") — 끈 것은 .ap.hide-<id> */
@@ -2761,7 +2763,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const src = partySource(r, to)
     if (src === null) return h + capPartyHtml(r, to, 'stlgo') + `</div>`
     const k = partySize(r, me(), src.from)
-    const c = partyCost(k)
+    const c = partyCost(r, me(), k)
     h += `<button class="btn pri home wide stlgo" data-act="party-to" data-node="${to}" data-from="${src.from}" data-edge="${src.edge}">${esc(r.nodes[src.from]?.name ?? '')}에서 개척단 보내기${settleRec(r) === to ? REC_ST : ''}</button>`
     return h + `<p class="mute">백성 ${k}가구 ${costHtml({ grain: c.grain, wood: c.wood })}</p></div>`
   }
@@ -4358,7 +4360,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const t = asks > 0 && tabWait(r, 'diplo') === 0 ? { tab: 'diplo', line: `사신이 왔다: 외교에서 답한다` }
       : !drafted && canDraft && r.season < 4 ? { tab: 'draft', line: '징병에서 군사를 뽑는다 (⚡ 알아서 뽑기)' }
         : idle > 0 ? { tab: 'heroes', line: `쉬는 장수 ${idle}명: 장수에서 일을 맡긴다` }
-          : armyIdle && r.season >= 1 ? { tab: 'army', line: '군대에서 갈 곳을 고른다. 빈땅·약한 이웃' }
+          : armyIdle && r.season >= 1 ? { tab: 'army', line: '군대로 안개를 걷거나 약한 이웃을 친다' }
             : null
     return t === null ? '' : `<button class="todochip" data-act="tab" data-tab="${t.tab}">👉 이번 ${turnWord(r)} · ${esc(t.line)}</button>`
   }
@@ -4594,7 +4596,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       + `<p>${realm !== null && monthly(realm) ? '<b>한 달 = 한 턴 · 석 달 = 한 계절.</b> 명령을 고르고 다음 달을 누릅니다. 봄은 3·4·5월, 여름 6·7·8월, 가을 9·10·11월, 겨울 12·1·2월입니다.' : '<b>한 계절 = 한 턴.</b> 명령을 고르고 다음 계절을 누릅니다.'}</p>`
       + `<p><b>봄</b>에 심은 집 수만큼 가을에 거두니, 봄에 군사를 뽑으면 그만큼 가을걷이가 준다. <b>여름</b>엔 장마로 나루가 막히고 길이 느려진다. `
       + `<b>가을</b>엔 곡식이 들어오고, <b>겨울</b>엔 강이 얼어 언 강을 건너 기습하기 좋지만 고개가 막히고 군량이 더 든다.</p>`
-      + `<p><b>개척단</b> 빈땅은 아무도 안 사는 땅이다. 우리 고을에서 「개척단 꾸리기」를 하면 지도에 개척단이 서고, 군대처럼 빈땅으로 옮기면 그 자리에 마을이 선다. 빈땅을 눌러 「개척단 보내기」를 해도 된다. 곡식·나무가 든다. 붐비는 고을의 백성은 저절로 이웃 고을로 옮겨 간다.</p>`
+      + `<p><b>개척단</b> 빈땅은 아무도 안 사는 땅이다. 우리 고을에서 「개척단 꾸리기」를 하면 지도에 개척단이 서고, 빈땅에 닿으면 그 자리에 마을이 선다. 빈땅을 눌러 「개척단 보내기」를 해도 된다. 곡식·나무가 많이 들고 몇 달 채비한 뒤 떠난다. 군대는 빈땅을 차지하지 못한다. 붐비는 고을의 백성은 저절로 이웃 고을로 옮겨 간다.</p>`
       + `<p><b>백성 · 장정 · 군사</b> 백성은 가구로 센다. 한 가구는 다섯 식구 남짓이고, 농사지어 곡식을 낸다. 징병하면 가구에서 사내를 뽑는다. 군사 둘에 한 가구 몫의 일손이 빠져 그만큼 덜 거둔다. 군사는 움직이고 쳐들어가지만 곡식을 먹는다. 곡식이 떨어지면 사기가 꺾인다. 장정은 뽑히지 않은 사내들로, 적이 오면 돌창·몽둥이를 들고 제 고을만 지킨다(집 둘에 하나꼴 · 수는 많아도 약하다). 해산하면 일손이 집으로 돌아간다.</p>`
       + `<p><b>지도</b> 땅 색과 깃발이 주인. 왼쪽 위 깃발을 누르면 그 나라 땅만 또렷하다. 초록 수는 우리 군사, 붉은 수는 정찰꾼이 본 적 군세, ?는 아직 못 본 곳. ✕는 이번 ${turnWord(realm ?? {})} 막힌 길. 보랏빛 화살은 다가오는 적.</p>`
       + `<p><b>판세</b>는 색으로 보인다. 초록이면 이길 듯하고 붉으면 질 듯하다. 두 색이 섞이고 ?가 붙으면 아직 잘 모른다. 정찰하면 또렷해진다.</p>`
@@ -4652,7 +4654,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (settles.some((o) => o.kind === 'party' && o.node === id)) h += `<div class="btns"><button class="btn home wide on" data-act="party-undo" data-node="${id}">개척단을 꾸렸다 · 누르면 거둔다</button></div>`
         else {
           const k = partySize(r, me(), id)
-          const c = partyCost(k)
+          const c = partyCost(r, me(), k)
           const near = partyMoves(r, me(), id).filter((m) => m.found).sort((x, y) => x.seasons - y.seasons || (x.to < y.to ? -1 : 1))[0]
           // 갈 빈땅이 없으면 개척은 할 일이 아니다 — 단추를 아예 안 보인다 (형 10-27: "주변에 빈땅이 있을 때만 · 다른 때에는 개척 전혀 필요가 없잖아")
           if (near !== undefined) {
@@ -4803,7 +4805,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const src = goingP === undefined && foundLands(r).includes(id) ? partySource(r, id) : null
         if (goingP !== undefined) h += `<button class="btn home wide on nrbig" data-act="ptok" data-army="${goingP.id}" data-node="${id}">${icon('unit-porters')}${esc(r.nodes[goingP.home]?.name ?? '')} 개척단이 가는 중</button>`
         else if (src !== null) {
-          const c = partyCost(partySize(r, me(), src.from))
+          const c = partyCost(r, me(), partySize(r, me(), src.from))
           h += `<button class="btn pri home wide nrbig" data-act="party-to" data-node="${id}" data-from="${src.from}" data-edge="${src.edge}">${icon('unit-porters')}개척단 보내기 ${costHtml({ grain: c.grain, wood: c.wood })}</button>`
         } else if (foundLands(r).includes(id)) h += capPartyHtml(r, id, 'nrbig')
         else h += `<p class="nrwhy">${esc(noReachWhy(r, me(), id))}<small>개척단은 도읍에서 꾸려 우리 땅을 거쳐 빈 땅으로 갑니다</small></p>`

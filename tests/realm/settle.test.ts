@@ -14,7 +14,7 @@ import assert from 'node:assert/strict'
 import { aiOrders, decide } from '../../src/realm/ai.ts'
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import { PEOPLE_SCALE as S } from '../../src/realm/migrate.ts'
-import { settleCost, settleLimit, settleTargets } from '../../src/realm/economy.ts'
+import { foundCost, settleCost, settleLimit, settleTargets } from '../../src/realm/economy.ts'
 import { advance, planned } from '../../src/realm/season.ts'
 import { P } from '../../src/tune/params.ts'
 import type { Order, Realm } from '../../src/realm/types.ts'
@@ -61,7 +61,8 @@ describe('개척', () => {
     // 곡식: 개척 값 + 군량
     const plain = advance(r, []).next
     // 떠난 사람만큼 물고기가 덜 든다 (바닷가 국읍)
-    assert.ok(Math.abs(plain.stock['us']!.grain - next.stock['us']!.grain - settleCost(n).grain) <= Math.ceil(n * P.realm.fishPerHH) + 1)
+    // 새 마을 값(foundCost)도 든다 (형 11-03)
+    assert.ok(Math.abs(plain.stock['us']!.grain - next.stock['us']!.grain - settleCost(n).grain - foundCost(r, 'us').grain) <= Math.ceil(n * P.realm.fishPerHH) + 1)
     assert.ok(next.intel['us']!['guya-cap']?.land)
   })
 
@@ -95,9 +96,9 @@ describe('개척', () => {
     assert.equal(settleLimit(winter, 'anya', 'anya-fort', 'wild-galmae'), 0)
     // 곡식이 없으면 못 간다 · 조금 있으면 그만큼만
     const poor = planned(r, [])
-    poor.stock['us']!.grain = 0
+    poor.stock['us']!.grain = foundCost(poor, 'us').grain - 1 // 새 마을 값도 못 치른다
     assert.equal(settleLimit(poor, 'us', 'our-cap', 'wild-dolseom'), 0)
-    poor.stock['us']!.grain = 6
+    poor.stock['us']!.grain = foundCost(poor, 'us').grain + 6 // 새 마을 값을 치르고 남는 만큼
     assert.equal(settleLimit(poor, 'us', 'our-cap', 'wild-dolseom'), Math.floor(6 / P.realm.settleGrain))
   })
 
@@ -120,13 +121,13 @@ describe('개척', () => {
     assert.ok(advance(s, []).next.nodes['wild-dolseom']!.hh >= Math.round(s.nodes['wild-dolseom']!.hh * (1 + P.realm.settleGrow)) - 1)
   })
 
-  it('군대가 빈 빈땅에 걸어 들어가면 깃발을 꽂는다 — 싸움도 전쟁도 아니다. 그 뒤 사람을 보낸다', () => {
+  it('군대가 빈 빈땅에 걸어 들어가도 우리 땅이 아니다 — 새 마을은 사람을 보내야 선다 (형 11-03)', () => {
     const r = byeonhanMini(1)
     const { next, report } = advance(r, [{ kind: 'march', army: 'a-us', edge: 'e34', ambush: false }])
     assert.equal(report.lines.filter((l) => l.kind === 'battle').length, 0)
-    assert.equal(report.lines.filter((l) => l.kind === 'relation').length, 0)
-    assert.equal(next.nodes['wild-dolseom']!.owner, 'us')
-    assert.equal(next.nodes['wild-dolseom']!.hh, 0)
+    assert.equal(report.lines.filter((l) => l.kind === 'take').length, 0)
+    assert.equal(next.armies['a-us']!.at, 'wild-dolseom')
+    assert.equal(next.nodes['wild-dolseom']!.owner, null)
     assert.ok(settleLimit(next, 'us', 'our-cap', 'wild-dolseom') > 0)
   })
 

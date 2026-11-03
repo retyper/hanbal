@@ -709,6 +709,8 @@ export interface Party {
   march: { readonly from: string; readonly to: string; readonly edge: string; left: number } | null
   /** 갈 빈땅 — 우리 땅을 거쳐 한 칸씩 저절로 간다 (도읍에 맞닿지 않은 빈땅 · 형 11-01: "토함 산성 빈땅인데 왜 개척단이 안 보내지냐") */
   goal?: string
+  /** 이 턴부터 떠날 수 있다 — 꾸린 뒤 도읍에서 채비하는 동안은 서 있다 (P.realm.partyPrepTurns · 형 11-03) */
+  readyAt?: number
 }
 
 export interface Army {

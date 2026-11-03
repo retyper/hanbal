@@ -26,7 +26,7 @@ import {
   shareIntel, stationFriction, stepLent,
 } from './diplomacy.ts'
 import {
-  addGood, applyArm, applyBuild, applyGuard, draftIronCost, draftLimit, draftNeeds, draftPay, militiaMen, onTake, resolveRites, settleCost, settleLimit, stepBuilds, stepEconomy,
+  addGood, applyArm, applyBuild, applyGuard, draftIronCost, foundCost, draftLimit, draftNeeds, draftPay, militiaMen, onTake, resolveRites, settleCost, settleLimit, stepBuilds, stepEconomy,
   migrateHouses, placeHouses, setMigrateAuto, spentThisSeason, stepInbound, stepMigration, stockOf,
 } from './economy.ts'
 import { hasCustom, noteCustom, noteOnce } from './data/customs.ts'
@@ -661,6 +661,11 @@ function settleLand(r: Realm, o: Extract<Order, { kind: 'settle' }>, lines: Repo
   if (!Number.isInteger(o.n) || o.n < 1 || o.n > settleLimit(r, o.faction, o.from, o.to)) return
   const from = r.nodes[o.from]!
   const to = r.nodes[o.to]!
+  if (to.owner === null) { // 새 마을 값 (economy.foundCost)
+    const fc = foundCost(r, o.faction)
+    stockOf(r, o.faction).grain -= fc.grain
+    addGood(r, o.faction, 'wood', -fc.wood)
+  }
   from.hh -= o.n
   to.hh += o.n
   to.owner = o.faction
@@ -1547,6 +1552,8 @@ function walkIn(r: Realm, live: readonly Army[], node: RNode, lines: ReportLine[
     a.came = r.season
     lines.push({ kind: 'arrive', army: a.id, node: node.id })
   }
+  // 아무도 안 쥔 빈땅은 군대가 밟아도 우리 땅이 아니다 — 새 마을은 개척단만 연다 (형 11-03: "군사가 밟기만 하면 내 영토 · 몇 턴만 지나면 엄청 많은데 다 텅텅 빈 땅")
+  if (node.kind === 'wild' && node.owner === null) return
   if (node.owner !== lead.faction && node.kind !== 'sodo' && !allied(r, lead.faction, node.owner)) {
     provoke(r, lead.faction, node.owner, lines)
     noteTake(r, lead.faction, node.owner, node.id)

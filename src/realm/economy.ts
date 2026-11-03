@@ -427,6 +427,27 @@ function edgeBetween(r: Realm, from: string, to: string) {
  * 셋 가운데 작은 것: from 가호의 settleShare · to 에 남은 품(room − hh) · 창고가 대는 곡식.
  * 길로 맞닿고 그 길이 이번 계절에 열려 있어야 하고, to 는 아무도 안 쥐었거나 제 땅이며 남의 군대가 머물지 않아야 한다.
  */
+/**
+ * 새 마을을 여는 값 — 개척단을 꾸리든(플레이어) 곁 빈땅에 바로 보내든(AI 개척) 한 번에 같은 덩이가 든다.
+ * 이미 가진 고을이 많을수록 비싸다 (문명의 개척자 값처럼 · 형 11-03: "개척단을 꾸리는 데 비용이 매우 많이 들고")
+ */
+export function foundCost(r: Realm, faction: string): { grain: number; wood: number } {
+  const R = P.realm
+  const towns = Object.values(r.nodes).filter((n) => n.owner === faction && n.kind !== 'sodo').length
+  return { grain: Math.round(R.foundGrain + R.foundGrainPerTown * towns), wood: Math.round(R.foundWood) }
+}
+
+/** 새 마을 값을 치르고 남는 곡식·나무로 몇 가구를 더 보낼 수 있나 — 값도 못 치르면 0 */
+function afterFound(r: Realm, faction: string): number {
+  const R = P.realm
+  const st = stockOf(r, faction)
+  const c = foundCost(r, faction)
+  const grain = st.grain - c.grain
+  const wood = goodOf(st, 'wood') - c.wood
+  if (grain < 0 || wood < 0) return 0
+  return Math.min(R.settleGrain > 0 ? Math.floor(grain / R.settleGrain) : Infinity, R.settleWood > 0 ? Math.floor(wood / R.settleWood) : Infinity)
+}
+
 export function settleLimit(r: Realm, faction: string, from: string, to: string): number {
   const R = P.realm
   const a = r.nodes[from]
@@ -439,7 +460,9 @@ export function settleLimit(r: Realm, faction: string, from: string, to: string)
   const sent = spentThisSeason(r, a.settledOut) // 달 시계 — 이번 계절에 이미 떠나보낸 집
   const share = Math.floor((a.hh + sent) * R.settleShare * shareOpen(r)) - sent
   const room = Math.max(0, (b.room ?? 0) - b.hh)
-  const grain = R.settleGrain > 0 ? Math.floor(stockOf(r, faction).grain / R.settleGrain) : Infinity
+  // 새 마을이면(아직 아무도 안 쥔 빈땅) 새 마을 값을 먼저 치르고 남는 것으로 — 이미 연 우리 마을에 더 보내는 건 가구 몫만
+  const left = b.owner === null ? afterFound(r, faction) : Infinity
+  const grain = Math.min(left, R.settleGrain > 0 ? Math.floor(stockOf(r, faction).grain / R.settleGrain) : Infinity)
   const wood = R.settleWood > 0 ? Math.floor(goodOf(stockOf(r, faction), 'wood') / R.settleWood) : Infinity
   return Math.max(0, Math.min(share, room, grain, wood))
 }
@@ -507,7 +530,9 @@ export function migrateLimit(r: Realm, faction: string, from: string, to: string
   const a = r.nodes[from]
   const b = r.nodes[to]
   if (a === undefined || b === undefined || a.owner !== faction || b.owner !== faction || a.kind === 'sodo' || b.kind === 'sodo') return 0
-  if (migratePath(r, faction, from, to) === null) return 0
+  // 길로 맞닿은 이웃 고을끼리만 — 멀리 한 번에 옮기는 지름길이 개척단을 앞질렀다 (형 11-03: "이주시켜서 개척단보다 빠르게 인구 분배")
+  const ed = edgeBetween(r, from, to)
+  if (ed === null || blockedWhy(ed, r) !== null) return 0
   // 한 계절 몫은 계절 처음의 집 기준 — 이미 내보낸 만큼 뺀다 (형: "최대로 해서 옮기기 적용했는데 왜 더 옮겨지는거임? 2개씩 계속 쌓임")
   const sent = spentThisSeason(r, a.movedOut)
   const share = Math.floor((a.hh + sent) * R.migrateShare * shareOpen(r)) - sent
@@ -547,7 +572,7 @@ export function placeNodes(r: Realm, faction: string): string[] {
   const cap = r.factions[faction]?.capital
   return Object.values(r.nodes)
     .filter((n) => n.owner === faction && n.kind !== 'sodo' && (n.id === cap || (cap !== undefined && migratePath(r, faction, cap, n.id) !== null)))
-    .filter((n) => n.kind !== 'wild' || n.hh > 0 || (n.room ?? 0) > 0)
+    .filter((n) => n.kind !== 'wild' || n.hh > 0) // 사람 없는 빈땅은 개척단만 연다 (형 11-03)
     .map((n) => n.id).sort()
 }
 

@@ -10,7 +10,7 @@
  * AI 는 예전처럼 맞닿은 빈땅에 곧바로 보낸다 (settle 명령) — 판의 결정론은 이 모듈도 같은 길을 밟는다 (A1).
  */
 import { P } from '../tune/params.ts'
-import { goodOf, stockOf } from './economy.ts'
+import { foundCost, goodOf, stockOf } from './economy.ts'
 import { blockedWhy } from './calendar.ts'
 import { marchTurns } from './season.ts'
 import type { Order, Party, Realm, ReportLine } from './types.ts'
@@ -24,15 +24,22 @@ export function partySize(r: Realm, faction: string, from: string): number {
   if (r.factions[faction]?.capital !== from) return 0
   if (Object.values(r.parties ?? {}).filter((p) => p.faction === faction).length >= R.partyMax) return 0
   const want = Math.floor(a.hh * R.partyShare)
-  const grain = R.settleGrain > 0 ? Math.floor(stockOf(r, faction).grain / R.settleGrain) : Infinity
-  const wood = R.settleWood > 0 ? Math.floor(goodOf(stockOf(r, faction), 'wood') / R.settleWood) : Infinity
+  // 새 마을 값(economy.foundCost)을 먼저 치르고 남는 곡식·나무로 가구 몫을 셈한다
+  const fc = foundCost(r, faction)
+  const st = stockOf(r, faction)
+  const grainLeft = st.grain - fc.grain
+  const woodLeft = goodOf(st, 'wood') - fc.wood
+  if (grainLeft < 0 || woodLeft < 0) return 0
+  const grain = R.settleGrain > 0 ? Math.floor(grainLeft / R.settleGrain) : Infinity
+  const wood = R.settleWood > 0 ? Math.floor(woodLeft / R.settleWood) : Infinity
   const n = Math.min(want, grain, wood)
   return n >= R.partyMin ? n : 0
 }
 
-/** 꾸리는 데 드는 것 — 가구 하나에 곡식·나무 (개척과 같은 셈) */
-export function partyCost(n: number): { grain: number; wood: number } {
-  return { grain: Math.ceil(n * P.realm.settleGrain), wood: Math.ceil(n * P.realm.settleWood) }
+/** 꾸리는 데 드는 것 — 새 마을 값(economy.foundCost) + 가구 하나에 곡식·나무 */
+export function partyCost(r: Realm, faction: string, n: number): { grain: number; wood: number } {
+  const fc = foundCost(r, faction)
+  return { grain: fc.grain + Math.ceil(n * P.realm.settleGrain), wood: fc.wood + Math.ceil(n * P.realm.settleWood) }
 }
 
 /** 마을을 열 수 있는 땅인가 — 빈땅이고, 아무도 안 쥐었거나 제 땅이며 품이 남았다 */
@@ -112,7 +119,7 @@ export function formParty(r: Realm, o: Extract<Order, { kind: 'party' }>, lines:
   if (r.factions[o.faction] === undefined) return
   const n = partySize(r, o.faction, o.node)
   if (n <= 0) return
-  const c = partyCost(n)
+  const c = partyCost(r, o.faction, n)
   const node = r.nodes[o.node]!
   node.hh -= n
   const st = stockOf(r, o.faction)
@@ -123,8 +130,15 @@ export function formParty(r: Realm, o: Extract<Order, { kind: 'party' }>, lines:
   for (let k = 2; ps[id] !== undefined; k++) id = `party-${r.season}-${o.node}-${k}`
   const p: Party = { id, faction: o.faction, home: o.node, at: o.node, hh: n, march: null }
   ps[id] = p
-  if (o.edge !== undefined) startMarch(r, p, o.edge)
-  else if (o.goal !== undefined) { p.goal = o.goal; goOn(r, p) }
+  // 채비 — 꾸린 뒤 partyPrepTurns 턴은 도읍에 서 있다가 떠난다 (형 11-03: "개척단을 꾸리는 데 비용이 매우 많이 들고" · 문명의 개척자 생산 턴).
+  // 갈 곳은 지금 정해 두고, 다 되면 저절로 간다. 채비가 없으면 예전처럼 바로 떠난다
+  const prep = Math.max(0, Math.round(P.realm.partyPrepTurns))
+  if (prep > 0) p.readyAt = r.season + prep
+  if (o.edge !== undefined) {
+    const to = partyMoves(r, o.faction, o.node).find((m) => m.edge === o.edge)?.to
+    if (prep === 0) startMarch(r, p, o.edge)
+    else if (to !== undefined) p.goal = to
+  } else if (o.goal !== undefined) { p.goal = o.goal; if (prep === 0) goOn(r, p) }
   lines.push({ kind: 'party', faction: o.faction, party: id, node: o.node, n })
 }
 
@@ -147,6 +161,7 @@ export function joinParty(r: Realm, o: Extract<Order, { kind: 'partyJoin' }>, li
 export function moveParty(r: Realm, o: Extract<Order, { kind: 'partyGo' }>): void {
   const p = r.parties?.[o.party]
   if (p === undefined || p.march !== null) return
+  if (p.readyAt !== undefined && r.season < p.readyAt) { const to = partyMoves(r, p.faction, p.at).find((m) => m.edge === o.edge)?.to; if (to !== undefined) p.goal = to; return } // 채비 중엔 갈 곳만 바꾼다
   delete p.goal // 손으로 길을 고르면 저절로 가기는 멈춘다
   startMarch(r, p, o.edge)
 }
@@ -162,6 +177,7 @@ export function stepParties(r: Realm, lines: ReportLine[]): void {
   const order = Object.keys(ps).sort((a, b) => Number(ps[b]!.faction === r.player) - Number(ps[a]!.faction === r.player) || (a < b ? -1 : a > b ? 1 : 0))
   for (const id of order) {
     const p = ps[id]!
+    if (p.march === null && p.readyAt !== undefined && r.season < p.readyAt && !hostileHere(r, p.faction, p.at)) continue // 아직 채비 중 (적이 도읍에 들면 흩어진다)
     let from: string | null = null
     if (p.march !== null) {
       p.march.left -= 1
