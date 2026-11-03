@@ -1192,8 +1192,8 @@ export function roundStory(rd: RoundLog, prev: RoundLog | undefined, c: StoryCtx
         earth: `${josa(hx, '이', '가')} 불꽃 하나를 태웠다. 곰이 일어서듯 ${who(x)} 진이 땅에 뿌리를 내린다. 이 싸움에선 무너지지 않는다.`,
         wind: `${josa(hx, '이', '가')} 불꽃 하나를 태웠다. 학의 날개 같은 바람이 일어 ${who(y)} 화살이 허공에서 흩어진다.`,
         fire: `${josa(hx, '이', '가')} 불꽃 하나를 태웠다. 범이 포효하듯 ${who(x)} 군사가 밀려도 물러서지 않는다.`,
-        water: `${josa(hx, '이', '가')} 불꽃 하나를 태웠다.`,
-        bolt: `${josa(hx, '이', '가')} 불꽃 하나를 태웠다.`,
+        water: `${josa(hx, '이', '가')} 불꽃 하나를 태웠다. 용이 물마루를 일으키자 쓰러졌던 ${who(x)} 군사가 하나둘 다시 일어선다.`,
+        bolt: `${josa(hx, '이', '가')} 불꽃 하나를 태웠다. 매가 높이 떠 ${who(y)} 진을 내려다본다. 이 싸움에선 ${who(y)} 수가 먼저 보인다.`,
       }
       out.push(line[a.wake])
     } else if (a.c === 'retreat') {

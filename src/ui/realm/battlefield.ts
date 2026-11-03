@@ -84,7 +84,7 @@ const CMD_DOES: Record<Cmd, string> = {
   // 퇴각 — 사실상 이 싸움을 지는 것 (형 10-24: "물러난다는 사실상 패배 확정 · 퇴각한다 · 붉게 · 설명 확실히")
   retreat: '이 싸움을 접고 퇴각을 꾀한다. 빠져나가면 이 싸움은 지지만 군사를 덜 잃고 장수는 안 잡힌다. 따라잡히면 등을 보인 채 크게 잃고 싸움이 이어진다. 적 말이 많을수록 · 사기가 꺾였을수록 어렵고, 우리 말이 호위하거나 어두우면 쉽다',
   art: '그 장수만의 수 · 한 판에 한 번',
-  wake: '깨어난 장수가 불꽃 하나를 태워 이 싸움의 규칙 하나를 꺾는다 · 곰은 이 싸움 무너지지 않고, 학은 이 합 화살이 안 닿고 물러나기가 반드시 되며, 범은 이 합 상성에 져도 밀리지 않는다 · 한 판에 한 번 · 마지막 불꽃은 남는다',
+  wake: '깨어난 장수가 불꽃 하나를 태워 이 싸움의 규칙 하나를 꺾는다 · 곰은 이 싸움 무너지지 않고, 학은 이 합 화살이 안 닿고 물러나기가 반드시 되며, 범은 이 합 상성에 져도 밀리지 않고, 용은 쓰러진 군사 일부가 다시 서고 사기가 처음으로 돌아오며, 매는 이 싸움 적의 수를 먼저 보고 이 합 적의 꾀를 꿰뚫는다 · 한 판에 한 번 · 마지막 불꽃은 남는다',
 }
 
 /**
@@ -99,12 +99,12 @@ const CMD_SHORT: Record<Cmd, string> = {
   wake: '불꽃 하나로 규칙을 꺾는다',
 }
 
-/** 각성기의 이름 — 기운마다 (DESIRE §13-3 · 땅·바람·불만 켜졌다 · realm/elem.ts WAKE_ON) */
+/** 각성기의 이름 — 기운마다 (DESIRE §13-3 · 다섯 다 켜졌다 · realm/elem.ts WAKE_ON) */
 export const WAKE_NAME: Readonly<Record<import('../../realm/elem.ts').Elem, string>> = {
   earth: '금강의 기개', wind: '태백의 바람', fire: '한라의 격노', water: '동해의 파도', bolt: '백두의 지혜',
 }
 const WAKE_SHORT: Readonly<Record<import('../../realm/elem.ts').Elem, string>> = {
-  earth: '이 싸움 무너지지 않는다', wind: '화살이 안 닿고 물러나기는 반드시', fire: '상성에 져도 밀리지 않는다', water: '', bolt: '',
+  earth: '이 싸움 무너지지 않는다', wind: '화살이 안 닿고 물러나기는 반드시', fire: '상성에 져도 밀리지 않는다', water: '쓰러진 군사가 다시 서고 사기가 처음으로', bolt: '적의 수를 먼저 본다 · 꾀는 들킨다',
 }
 
 /** 장수의 비기 — 이름 · 그림 · 하는 일 (heroes.heroArt · tactics 의 비기). 장수마다 다르니 깃발에 그 이름으로 뜬다 */
@@ -814,12 +814,14 @@ export function flagSrc(art: string, c: Cmd, ak?: Art, wk?: Elem): string {
   return `${art}flag/flag-${c === 'art' ? (ak !== undefined ? `art-${ak}` : 'drum') : c}.png`
 }
 
-function flags(o: RoundOrder | undefined, chip: Cmd, art: string, ak?: Art): string {
+function flags(o: RoundOrder | undefined, chip: Cmd, art: string, ak?: Art, wk?: Elem): string {
   const xs: Cmd[] = o === undefined ? [chip] : [o.front, o.bows, o.horse, o.lead !== 'drum' ? o.lead : undefined].filter((c): c is Cmd => c !== undefined)
-  // 장수의 비기는 그 비기의 이름·그림으로 (빛나는 칩)
+  // 장수의 비기는 그 비기의 이름·그림으로 (빛나는 칩) · 각성기는 그 기운의 이름과 짐승으로
   return xs.map((c) => (c === 'art' && ak !== undefined
     ? `<span class="wfl art"><img class="flg" src="${flagSrc(art, c, ak)}" alt="">${ART_NAME[ak]}</span>`
-    : `<span class="wfl"><img class="flg" src="${flagSrc(art, c)}" alt="">${CMD_NAME[c]}</span>`)).join('')
+    : c === 'wake' && wk !== undefined
+      ? `<span class="wfl art"><img class="flg" src="${flagSrc(art, c, undefined, wk)}" alt="">${WAKE_NAME[wk]}</span>`
+      : `<span class="wfl"><img class="flg" src="${flagSrc(art, c)}" alt="">${CMD_NAME[c]}</span>`)).join('')
 }
 
 /** 싸움터 그림의 땅 — HoMM3 처럼 그 땅이 배경이 된다 (형: "싸울때 배경이 전쟁터 배경이어야") · docs/GAP.md §12 */
@@ -1774,7 +1776,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const d = (k: 0 | 1 | 2): string => (slow ? ` style="--d:${tAt(k)}s"` : '')
     h += `<div class="wrd${slow ? ' slow' : ''}${crit ? ' crit' : ''}${rd.night === true ? ' night' : ''}"${slow ? ` style="--pd:${(tAt(2) + P.realm.warRoundPopHoldS).toFixed(2)}s"` : ''}><div class="wrn">${ck !== undefined ? `${slotName(ck, i)} · ` : ''}${ROUND_NAME[i] ?? `${i + 1}`} 합</div>${reliefBanner(rd, ourS, art)}`
     const akOf = (sd: 'a' | 'd'): Art | undefined => (rd.acts ?? []).find((x) => x.c === 'art' && x.s === sd)?.art
-    h += `<div class="wcmds"${d(0)}><span class="wc us"><em class="wck">우리</em>${flags(weAtk ? rd.oa : rd.od, weAtk ? rd.a : rd.d, art, akOf(ourS))}</span><i>×</i><span class="wc foe"><em class="wck">적</em>${flags(weAtk ? rd.od : rd.oa, weAtk ? rd.d : rd.a, art, akOf(ourS === 'a' ? 'd' : 'a'))}</span></div>`
+    const wkOf = (sd: 'a' | 'd'): Elem | undefined => (rd.acts ?? []).find((x) => x.c === 'wake' && x.s === sd)?.wake
+    h += `<div class="wcmds"${d(0)}><span class="wc us"><em class="wck">우리</em>${flags(weAtk ? rd.oa : rd.od, weAtk ? rd.a : rd.d, art, akOf(ourS), wkOf(ourS))}</span><i>×</i><span class="wc foe"><em class="wck">적</em>${flags(weAtk ? rd.od : rd.oa, weAtk ? rd.d : rd.a, art, akOf(ourS === 'a' ? 'd' : 'a'))}</span></div>`
     const story = ctx !== null ? roundStory(rd, rounds[i - 1], ctx) : []
     // 누가 누구를 · 됐나 — 그림 줄이 먼저, 글 이야기는 그 밑에 작게
     const rows = actRows(rd.acts, ourS, art, mixOf(0), mixOf(1))
@@ -1920,7 +1923,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     for (const x of panes) {
       const c = sel[x.g]
       const ak = c === 'art' ? artFor(p, sel.who) : undefined
-      const chip = c !== undefined ? `<span class="wgs"><img src="${flagSrc(art, c, ak)}" alt="">${esc(ak !== undefined ? ART_NAME[ak] : CMD_NAME[c])}</span>` : '<span class="wgs none">선택</span>'
+      const wkc = c === 'wake' ? p.wake : undefined
+      const chip = c !== undefined ? `<span class="wgs"><img src="${flagSrc(art, c, ak, wkc)}" alt="">${esc(ak !== undefined ? ART_NAME[ak] : wkc !== undefined ? WAKE_NAME[wkc] : CMD_NAME[c])}</span>` : '<span class="wgs none">선택</span>'
       h += `<button class="wgt${x === act ? ' on' : ''}${c !== undefined ? ' done' : ''}" data-war="gtab" data-g="${x.g}">${x.icon}<span class="wgn"><b>${esc(x.name)}</b><small>${esc(x.sub)}</small></span>${chip}</button>`
     }
     h += `</div>`

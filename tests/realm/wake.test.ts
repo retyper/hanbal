@@ -20,7 +20,18 @@ const side = (F: number, mix: Side['mix'], player = false, over: Partial<Side> =
   F, mix, morale: 1, hero: { id: player ? 'me' : 'foe', mu: 5, ryak: 5, coward: false }, hungry: false, specials: [], water: false, player, seen: true, ...over,
 })
 const MIX = { spear: 40, bow: 40, shield: 20 }
-const waker = (e: 'earth' | 'wind' | 'fire'): Side['hero'] => ({ id: 'me', mu: 6, ryak: 5, coward: false, wake: e })
+const waker = (e: 'earth' | 'wind' | 'fire' | 'water' | 'bolt'): Side['hero'] => ({ id: 'me', mu: 6, ryak: 5, coward: false, wake: e })
+
+/** 합마다 고른다 — n 번째 합(0부터)에 각성기를 낸다 */
+const playAt = (me: Side, foe: Side, key: string, seed: number, at: number): ReturnType<typeof fightRounds> => {
+  const cmds: RoundOrder[] = []
+  let t = fightRounds(me, foe, key, seed, 0, { cmds, open: true })
+  for (let g = 0; g < 10 && t.pending !== undefined; g++) {
+    cmds.push({ front: 'hold', bows: 'volley', lead: g === at ? 'wake' : 'drum' })
+    t = fightRounds(me, foe, key, seed, 0, { cmds, open: true })
+  }
+  return t
+}
 
 /** 플레이어가 합마다 고른다 — 첫 합에 각성기를 낸다 */
 const play = (me: Side, foe: Side, key: string, seed: number, lead0: NonNullable<RoundOrder['lead']>): ReturnType<typeof fightRounds> => {
@@ -80,6 +91,60 @@ describe('각성기 — 싸움', () => {
   })
 })
 
+describe('각성기 — 둘째 판 (물 · 번개)', () => {
+  it('물 — 쓰러진 우리 군사 일부가 다시 서고 사기가 처음으로', () => {
+    // 둘째 합에 쓴다 — 첫 합에 잃은 몫이 있어야 되살린다. 같은 판에서 북만 친 것과 견준다
+    const foe = side(1.4, MIX, false, { capture: 'never' })
+    let more = 0
+    let n = 0
+    for (let s = 1; s <= 8; s++) {
+      const plain = playAt(side(1, MIX, true, { hero: waker('water') }), foe, `wa${s}`, s, 99)
+      const woke = playAt(side(1, MIX, true, { hero: waker('water') }), foe, `wa${s}`, s, 1)
+      const r1p = plain.rounds[1]
+      const r1w = woke.rounds[1]
+      if (r1p === undefined || r1w === undefined) continue
+      n++
+      // 둘째 합이 끝났을 때 남은 우리 몫이 북만 친 판보다 많다 (되살아난 몫)
+      if (r1w.na > r1p.na) more++
+    }
+    assert.ok(n > 0 && more >= Math.ceil(n * 0.75), `${more}/${n}`)
+  })
+
+  it('번개 — 이 싸움 남은 합은 적의 수를 먼저 본다 (낌새가 늘 맞다)', () => {
+    // 적을 못 본 싸움(seen 거짓) — 쓰기 전엔 낌새가 없다가, 쓴 뒤 합부터 「봤다」로 뜬다
+    const me = side(1, MIX, true, { hero: waker('bolt'), seen: false })
+    const foe = side(1, MIX)
+    const cmds: RoundOrder[] = []
+    let t = fightRounds(me, foe, 'bo', 2, 0, { cmds, open: true })
+    assert.equal(t.pending?.hint ?? null, null)
+    cmds.push({ front: 'hold', bows: 'volley', lead: 'wake' })
+    t = fightRounds(me, foe, 'bo', 2, 0, { cmds, open: true })
+    assert.ok(t.pending !== undefined)
+    assert.notEqual(t.pending!.hint ?? null, null)
+    assert.equal(t.pending!.hintSrc, 'saw')
+  })
+
+  it('번개 — 이 합 적의 꾀(매복)는 들켜 헛일', () => {
+    const me = side(1, MIX, true, { hero: waker('bolt') })
+    const foe = side(1, MIX, false, { hero: { id: 'foe', mu: 5, ryak: 5, coward: false, art: 'ambush' } })
+    const t = play(me, foe, 'bo2', 4, 'wake')
+    const foeArts = t.rounds[0]!.acts?.filter((a) => a.s === 'd' && a.c === 'art') ?? []
+    for (const a of foeArts) assert.equal(a.res, 'wasted')
+  })
+
+  it('다시 깨어나면 보고 줄에 again — 화면이 짧은 연출로', () => {
+    const r = byeonhanMini(1)
+    const h = Object.values(r.heroes).filter((x) => x.faction === r.player && x.status === 'free').sort((a, b) => (a.id < b.id ? -1 : 1)).at(-1)!
+    const lines: ReportLine[] = []
+    for (let i = 0; i < P.realm.ascendWins; i++) battleGrowth(r, [h.id], [], [], lines)
+    assert.ok(lines.some((l) => l.kind === 'ascend' && l.again === undefined))
+    for (let i = 0; i < P.realm.ascendWins; i++) battleGrowth(r, [], [h.id], [], lines) // 다 꺼져 풀린다
+    const more: ReportLine[] = []
+    for (let i = 0; i < P.realm.ascendWins; i++) battleGrowth(r, [h.id], [], [], more)
+    assert.ok(more.some((l) => l.kind === 'ascend' && l.again === true))
+  })
+})
+
 describe('각성기 — 불꽃', () => {
   const setup = (): { r: ReturnType<typeof byeonhanMini>; h: Hero } => {
     const r = byeonhanMini(1)
@@ -121,7 +186,7 @@ describe('각성기 — 불꽃', () => {
     const lines: ReportLine[] = []
     for (let i = 0; i < P.realm.ascendWins; i++) battleGrowth(r, [h.id], [], [], lines)
     const e = elemOf(h)
-    assert.equal(wakeOf(r, h), e === 'earth' || e === 'wind' || e === 'fire' ? e : null)
+    assert.equal(wakeOf(r, h), e) // 다섯 기운 다 켰다 (둘째 판)
     h.flames = 1
     assert.equal(wakeOf(r, h), null)
     const foe = Object.values(r.heroes).find((x) => x.faction !== r.player)!

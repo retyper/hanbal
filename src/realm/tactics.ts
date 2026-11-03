@@ -305,6 +305,12 @@ export interface State {
   wardD?: boolean
   sureRetA?: boolean
   sureRetD?: boolean
+  /** 지금까지 쓰러진 몫(무리마다 · g0 대비) — 물(동해의 파도)이 그 일부를 다시 세운다 */
+  fellA?: Record<Grp, number>
+  fellD?: Record<Grp, number>
+  /** 번개(백두의 지혜) — 이 싸움 남은 합은 적의 수를 먼저 본다(낌새가 늘 맞다) */
+  seerA?: boolean
+  seerD?: boolean
 }
 
 export interface Ctx {
@@ -666,6 +672,8 @@ const cloneState = (st: State): State => ({
   ...(st.wokeA !== undefined ? { wokeA: st.wokeA } : {}), ...(st.wokeD !== undefined ? { wokeD: st.wokeD } : {}),
   ...(st.wardA === true ? { wardA: true } : {}), ...(st.wardD === true ? { wardD: true } : {}),
   ...(st.sureRetA === true ? { sureRetA: true } : {}), ...(st.sureRetD === true ? { sureRetD: true } : {}),
+  ...(st.fellA !== undefined ? { fellA: { ...st.fellA } } : {}), ...(st.fellD !== undefined ? { fellD: { ...st.fellD } } : {}),
+  ...(st.seerA === true ? { seerA: true } : {}), ...(st.seerD === true ? { seerD: true } : {}),
 })
 
 /** 고른 것을 맞춘다 — 비기는 아직 안 쓴 장수가(쓴 이는 arts 에 적는다) · 겨루기는 고른 이(없으면 무예 높은 이)가 · 사로잡기는 겨눈 적장(없으면 총대장)을 */
@@ -863,7 +871,9 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
         const ff = mine === 'a' ? st.fd : st.fa
         const foeNow: Partial<Record<Grp, number>> = {}
         for (const g of groupsOf(foe.mix)) foeNow[g] = Math.round(menNow(g0f, ff, g))
-        const seenHint = hintOf(me, foe, foeAi.front, `${key}:t${i}`, seed, season)
+        // 백두의 지혜(번개 각성기)를 쓴 뒤로는 적이 낼 앞줄 수를 늘 맞게 본다
+        const seer = mine === 'a' ? st.seerA === true : st.seerD === true
+        const seenHint = seer && foeAi.front !== undefined ? { cmd: basicCmd(foeAi.front), src: 'saw' as const } : hintOf(me, foe, foeAi.front, `${key}:t${i}`, seed, season)
         memo.pending = {
           round: i,
           groups: groupsOf(me.mix).map((g) => ({ g, men: Math.round(menNow(g0m, fm, g)), options: groupOptions(me, foe, g, used) })),
@@ -1214,6 +1224,9 @@ function resolveRound(
   const chipOf = (o: RoundOrder & { lead: Cmd }): Cmd => (o.lead !== 'drum' ? o.lead : o.front ?? o.bows ?? o.horse ?? 'drum')
   const finish = (beat: 'a' | 'd' | null, extra: Partial<RoundLog> = {}): RoundLog => {
     for (const g of GRPS) {
+      // 쓰러진 몫을 적어 둔다 (물 · 동해의 파도가 일부를 다시 세운다)
+      if (g0a[g] > 0) { const d = Math.min(st.fa[g], lossA[g] / g0a[g]); if (d > 0) (st.fellA ??= { front: 0, bows: 0, horse: 0 })[g] += d }
+      if (g0d[g] > 0) { const d = Math.min(st.fd[g], lossD[g] / g0d[g]); if (d > 0) (st.fellD ??= { front: 0, bows: 0, horse: 0 })[g] += d }
       st.fa[g] = g0a[g] > 0 ? Math.max(0, st.fa[g] - lossA[g] / g0a[g]) : 0
       st.fd[g] = g0d[g] > 0 ? Math.max(0, st.fd[g] - lossD[g] / g0d[g]) : 0
     }
@@ -1329,6 +1342,7 @@ function resolveRound(
   //   불(범 · 한라의 격노): 이 합 상성에 져도 그 몫을 안 진다
   const noArrow: Record<'a' | 'd', boolean> = { a: false, d: false }
   const rage: Record<'a' | 'd', boolean> = { a: false, d: false }
+  const seer: Record<'a' | 'd', boolean> = { a: false, d: false }
   for (const x of ['a', 'd'] as const) {
     if (side(x).o.lead !== 'wake' || duelRes?.loser === x) continue
     const actor = wakeActor(side(x).s, side(x).o.who)
@@ -1339,6 +1353,25 @@ function resolveRound(
     if (e === 'earth') { if (x === 'a') st.wardA = true; else st.wardD = true }
     else if (e === 'wind') { noArrow[x] = true; if (x === 'a') st.sureRetA = true; else st.sureRetD = true }
     else if (e === 'fire') rage[x] = true
+    else if (e === 'water') {
+      // 동해의 파도 — 쓰러진 우리 군사 몫이 다시 서고 사기가 처음으로 (밀려왔다 다시 이는 물결 · 원군 몫은 건드리지 않는다)
+      const fell = x === 'a' ? st.fellA : st.fellD
+      const f = side(x).f
+      if (fell !== undefined) for (const g of GRPS) {
+        const back = fell[g] * R.wakeReviveShare
+        if (back <= 0) continue
+        f[g] += back
+        fell[g] -= back
+      }
+      const m0 = side(x).s.morale + (side(x).s.moraleBonus ?? 0)
+      if (x === 'a') st.ma = Math.max(st.ma, m0)
+      else st.md = Math.max(st.md, m0)
+    } else if (e === 'bolt') {
+      // 백두의 지혜 — 이 싸움 남은 합은 적의 수를 먼저 본다 · 이 합 적의 꾀(거짓 퇴각·매복·항복 권유)는 들켜 헛일
+      seer[x] = true
+      if (x === 'a') st.seerA = true
+      else st.seerD = true
+    }
     acts.push({ s: x, g: 'lead', c: 'wake', wake: e, hero: actor.id, n: 1, res: 'ok' })
   }
 
@@ -1355,6 +1388,8 @@ function resolveRound(
     if (art === undefined || actor === null) continue
     const hero = actor.id
     const y = other(x)
+    // 백두의 지혜를 쓴 쪽에게 거는 꾀는 들킨다
+    if (seer[y] && (art === 'feint' || art === 'ambush' || art === 'sway')) { acts.push({ s: x, g: 'lead', c: 'art', art, hero, n: 1, res: 'wasted' }); continue }
     const ratioY = moraleOf(y) / Math.max(0.05, side(y).s.morale)
     switch (art) {
       case 'snipe': {
