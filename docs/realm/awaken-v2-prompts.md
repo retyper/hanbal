@@ -50,3 +50,5 @@ This is an original character from my own Korean historical fantasy strategy gam
 - l-L7-aryeong 아령 — 1차 2판(edu · 검토 PASS) — 11-03
 - w-01-silla-princess 신라 공주 — 1차 2판 다시(edu · 검토 PASS) — 11-03
 - w-05-baekje-queen 백제 왕비 — 1차 2판 다시(edu · 검토 PASS) — 11-03
+- 검토 탈락(넣지 않음): w-52-biryuna-songbi 송비(활시위가 활 끝에 안 닿음) · w-67-buyeo-haedal 해달(활 든 팔 길이 불가능 · 화살촉이 양 끝) — 활 든 자세는 "활은 시위를 당기지 않고 등에 메거나 내려 쥠"으로 다시
+- 다음 차례(여캐 1차 2판): 허황옥(검토 중) · 송비 · 해달 · 물범 w-70 · 그 뒤 이름 있는 장수가 쓰는 w- 얼굴 순
