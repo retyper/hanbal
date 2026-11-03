@@ -35,3 +35,4 @@ This is an original character from my own Korean historical fantasy strategy gam
 - ~~w-101-garak-singwigan 신귀간 — 2차~~ 팔·몸통이 뒤틀려 걷음(형 지적) — 다시 뽑을 것
 - w-100-garak-sincheongan 신천간 — 2차(edu) — 11-03
 - w-01-silla-princess 신라 공주 — 1차 2판(edu) — 11-03
+- w-05-baekje-queen 백제 왕비 — 1차 2판(edu) — 11-03
