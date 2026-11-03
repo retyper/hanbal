@@ -239,7 +239,7 @@ const VOICE_OF_FACE: Readonly<Record<string, VoiceKind>> = {
   'g-19-sabeol-veteran': 'm-elder', 'g-29-yeonna-myeongsol': 'm-elder', 'g-50-bullae-gwaha': 'm-elder', 'g-54-mokji-mahan': 'm-elder',
   'g-69-goryong-yong': 'm-elder', 'g-77-saro-sobeol': 'm-elder', 'g-90-haengin-gomok': 'm-elder',
   // 젊은 얼굴 — 군주여도 젊은 소리
-  'g-02-goguryeo-archer-prince': 'm-knight', 'g-12-silla-youth': 'm-young', 'g-43-hwanna-amnok': 'm-young', 'g-56-haseulla-gwahama': 'm-young',
+  'g-02-goguryeo-archer-prince': 'm-knight', 'g-94-golpo-maenun': 'm-knight', 'g-12-silla-youth': 'm-young', 'g-43-hwanna-amnok': 'm-young', 'g-56-haseulla-gwahama': 'm-young',
   'g-64-jumong': 'm-young', 'g-71-baekje-onjo': 'm-knight', 'g-28-goguryeo-damul': 'm-young',
   // 고운 얼굴 — 매혹
   'g-24-wansan-onsan': 'm-charm', 'g-51-biryuna-mulgyeol': 'm-charm', 'g-62-beonye-hanul': 'm-charm', 'g-74-saro-hyeokgeose': 'm-charm',

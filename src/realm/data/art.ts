@@ -37,7 +37,7 @@ export const REGION_ART: Readonly<Record<RegionId, { dir: string; ext: string; w
 
 /** 장수 id → 명치판 (bust/<이름>.jpg). g- 남자 장수 · w- 여인 · l- 전설 */
 export const HERO_BUST: Readonly<Record<string, string>> = {
-  chief: 'g-02-goguryeo-archer-prince', // 플레이어 — 활 쏘는 군장 (신궁)
+  chief: 'g-94-golpo-maenun', // 살해 매눈 — 골포국의 활 쏘는 장군 · 주몽(g-64)과 판박이던 g-02 를 걷음 (형 11-03)
   'guya-1': 'g-11-gaya-iron-general', // 진지렴 거타 — 가락국의 철
   'guya-2': 'g-04-jinhan-giant', // 험측 마루
   'anya-1': 'w-04-gaya-swordswoman', // 신지 아라 — 아라국의 여 신지
