@@ -84,3 +84,4 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-23-usisan-whale-queen 우시산 고래 여왕 — 1차 2판(retyper92 · 검토 PASS) — 11-03
 - w-24-apdok-queen 압독 여왕 — 1차 2판(retyper92 · 검토 PASS) — 11-03
 - w-25-bihwa-priestess 비화 무녀 — 1차 2판(retyper92 · 검토 PASS) — 11-03
+- w-27-mokji-jinha 목지 진왕 — 1차 2판(retyper92 · 검토 PASS) — 11-03
