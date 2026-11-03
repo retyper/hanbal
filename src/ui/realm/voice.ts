@@ -235,18 +235,18 @@ export const HIRE_LOW: ReadonlySet<string> = new Set<string>([
  */
 const VOICE_OF_FACE: Readonly<Record<string, VoiceKind>> = {
   // 늙은 얼굴 — 흰 수염 · 주름 · 쉰 넘은 군장
-  'g-01-master-smith': 'm-elder', 'g-05-mahan-chieftain': 'm-elder', 'g-15-shaman-man': 'm-elder', 'g-18-daegaya-king': 'm-elder', 'g-96-garak-suro': 'm-young',
+  'g-01-master-smith': 'm-elder', 'g-05-mahan-chieftain': 'm-elder', 'g-102-garak-yeodogan': 'm-gruff', 'g-15-shaman-man': 'm-elder', 'g-18-daegaya-king': 'm-elder', 'g-96-garak-suro': 'm-young',
   'g-19-sabeol-veteran': 'm-elder', 'g-99-goguryeo-maro': 'm-young', 'g-29-yeonna-myeongsol': 'm-elder', 'g-50-bullae-gwaha': 'm-elder', 'g-54-mokji-mahan': 'm-elder',
   'g-69-goryong-yong': 'm-elder', 'g-77-saro-sobeol': 'm-elder', 'g-90-haengin-gomok': 'm-elder',
   // 젊은 얼굴 — 군주여도 젊은 소리
-  'g-02-goguryeo-archer-prince': 'm-knight', 'g-94-golpo-maenun': 'm-knight', 'g-95-goguryeo-daemusin': 'm-knight', 'g-12-silla-youth': 'm-young', 'g-43-hwanna-amnok': 'm-young', 'g-56-haseulla-gwahama': 'm-young',
+  'g-02-goguryeo-archer-prince': 'm-knight', 'g-94-golpo-maenun': 'm-knight', 'g-101-garak-adogan': 'm-elder', 'g-95-goguryeo-daemusin': 'm-knight', 'g-12-silla-youth': 'm-young', 'g-43-hwanna-amnok': 'm-young', 'g-56-haseulla-gwahama': 'm-young',
   'g-64-jumong': 'm-young', 'g-71-baekje-onjo': 'm-knight', 'g-28-goguryeo-damul': 'm-young',
   // 고운 얼굴 — 매혹
   'g-24-wansan-onsan': 'm-charm', 'g-51-biryuna-mulgyeol': 'm-charm', 'g-62-beonye-hanul': 'm-charm', 'g-74-saro-hyeokgeose': 'm-charm',
   'g-84-wander-seoneul': 'm-charm', 'g-67-buyeo-daeso': 'm-charm', 'g-100-buyeo-old-daeso': 'm-elder',
   // 거친 얼굴 — 장사 · 술꾼 · 덩치
   'g-04-jinhan-giant': 'm-gruff', 'g-98-goguryeo-gwaeyu': 'm-gruff', 'g-07-drunk-warrior': 'm-gruff', 'g-33-jeoga-metdol': 'm-gruff', 'g-45-dabeol-deulgae': 'm-gruff',
-  'g-61-heomcheuk-bawi': 'm-gruff', 'g-63-heomcheuk-beogeum': 'm-gruff',
+  'g-61-heomcheuk-bawi': 'm-gruff', 'g-103-garak-pidogan': 'm-gruff', 'g-63-heomcheuk-beogeum': 'm-gruff',
   // 책사 · 무당 얼굴 — 차분한 소리
   'g-06-strategist': 'm-sage', 'g-73-baekje-eureum': 'm-sage', 'g-75-saro-hogong': 'm-sage', 'g-36-gammun-gamdol': 'm-sage',
   // 자란 아이 — 얼굴마다 설정대로 (docs/realm/cast/kids.md · 형 10-29)
