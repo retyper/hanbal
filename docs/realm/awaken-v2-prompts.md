@@ -76,3 +76,4 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-85-sinji-neoul 신지 너울 — 1차 2판(roqkfeke12 · 검토 PASS) — 11-03
 - w-84-salhae-dallae 살해 달래 — 1차 2판(roqkfeke12 · 고리자루 쌍칼 · 검토 PASS) — 11-03
 - w-96-haengin-neoul 행인 너울 — 1차 2판(roqkfeke12 · 검토 PASS) — 11-03
+- w-92-saro-dallae 사로 고야 달래 — 1차 2판(roqkfeke12 · 검토 PASS) — 11-03
