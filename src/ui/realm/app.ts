@@ -5002,7 +5002,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const step = cnt > 1 ? arc / (cnt - 1) : 0
       const R = cnt > 1 ? Math.max(P.realm.mapRingR, P.realm.mapRingGap / (2 * Math.sin((step * Math.PI) / 360))) : P.realm.mapRingR
       const btns = bs.map((b, i) => {
-        const deg = bs.length > 1 ? 90 + arc / 2 - (arc * i) / (bs.length - 1) : 90
+        const deg = bs.length > 1 ? ringDeg + arc / 2 - (arc * i) / (bs.length - 1) : ringDeg
         const a = (deg * Math.PI) / 180
         return b.replace('<button class="nrb', `<button style="--x:${(Math.cos(a) * R).toFixed(1)}px;--y:${(-Math.sin(a) * R).toFixed(1)}px;--i:${i}" class="nrb`)
       }).join('')
@@ -6266,12 +6266,36 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     window.setTimeout(() => box.remove(), 300)
   }
 
+  /**
+   * 둘레 단추가 화면 밖으로 나가면 그만큼만 지도를 민다 — 가장자리 고을은 단추 절반이 잘려 못 눌렀다 (위원회 11-04 UX ⑧).
+   * 위·아래 띠에 가리는 곳도 화면 밖으로 친다
+   */
+  function ringIntoView(): void {
+    const wrap = root.querySelector<HTMLElement>('.mapwrap')
+    const bs = [...root.querySelectorAll<HTMLElement>('.nring .nrb, .nring.card')]
+    if (wrap === null || bs.length === 0) return
+    const w = wrap.getBoundingClientRect()
+    const qs = bs.map((b) => b.getBoundingClientRect())
+    const pad = P.realm.mapRingEdgePad
+    const top = w.top + pad
+    const bottom = Math.min(w.bottom, root.querySelector<HTMLElement>('.todo')?.getBoundingClientRect().top ?? w.bottom) - pad
+    const l = Math.min(...qs.map((q) => q.left))
+    const rgt = Math.max(...qs.map((q) => q.right))
+    const t = Math.min(...qs.map((q) => q.top))
+    const btm = Math.max(...qs.map((q) => q.bottom))
+    const dx = l < w.left + pad ? l - (w.left + pad) : rgt > w.right - pad ? rgt - (w.right - pad) : 0
+    const dy = t < top ? t - top : btm > bottom ? btm - bottom : 0
+    if (dx !== 0 || dy !== 0) wrap.scrollBy({ left: dx, top: dy, behavior: 'smooth' })
+  }
+
   /** 마지막으로 깐 지도 글 — 같으면 다시 깔지 않는다 */
   let lastMap = ''
   /** 둘레 단추를 마지막으로 얹은 지도 · 그 단추 · 그 고을 — 바뀔 때만 갈아 끼운다 */
   let lastMapRing = ''
   let lastRing = ''
   let lastRingId = ''
+  /** 둘레 부채의 가운데 각도 — 90 은 위 · 가장자리 고을이면 안쪽으로 돌린다 */
+  let ringDeg = 90
   /** 지난번 그린 판 — 바뀌었을 때만 카드를 펼친다 */
   let lastSheet = ''
 
@@ -6858,7 +6882,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const was = ring
       sheet = null
       ring = was === id ? '' : id
+      // 부채가 열릴 쪽 — 화면 가장자리에 붙은 고을이면 안쪽으로 (위원회 11-04 UX ⑧ · 단추가 화면 밖으로 잘렸다)
+      { const q = t.getBoundingClientRect(); const cx = q.left + q.width / 2; const cy = q.top + q.height / 2; const m = P.realm.mapRingR + P.realm.mapRingGap
+        const top = root.querySelector<HTMLElement>('.mapwrap')?.getBoundingClientRect().top ?? 0
+        ringDeg = cy - top < m ? 270 : cx < m ? 0 : cx > innerWidth - m ? 180 : 90 }
       paint()
+      if (ring !== '') requestAnimationFrame(ringIntoView)
       return
     }
     const d = t.dataset
