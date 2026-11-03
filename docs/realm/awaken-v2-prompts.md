@@ -67,3 +67,4 @@ This is an original character from my own Korean historical fantasy strategy gam
 - 받다 끊긴 것: w-18 소금 과부 다시 판(roqkfeke12 · chatgpt.com/c/6ae9b15c-8b84-83ec-afa2-b5a786673bb8 에 그림이 있음, 아직 안 받음)
 - ★ 기모노 막는 문구(11-03 · 여밈 옷을 어깨에서 내리면 자꾸 기모노가 됨): "a clearly KOREAN hanbok, not a kimono: a short cropped jeogori ending above the waist with a NARROW git collar and a goreum ribbon bow, a high-waisted chima skirt" + Do NOT "kimono, wide collar band, white inner collar, obi"
 - 다음 차례: 소금 과부(받기) · 연회 첩자 · w-20 대장장이 딸 · w-08 마한 전사 · w-83·84·85 · w-96 · w-91·92·93 · w-21(18세 · 노출 낮게)
+- w-18-jinhan-salt-widow 진한 소금 과부 — 1차 2판(roqkfeke12 · 검토 PASS) — 11-03
