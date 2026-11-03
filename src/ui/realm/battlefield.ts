@@ -814,12 +814,14 @@ export function flagSrc(art: string, c: Cmd, ak?: Art, wk?: Elem): string {
   return `${art}flag/flag-${c === 'art' ? (ak !== undefined ? `art-${ak}` : 'drum') : c}.png`
 }
 
-function flags(o: RoundOrder | undefined, chip: Cmd, art: string, ak?: Art): string {
+function flags(o: RoundOrder | undefined, chip: Cmd, art: string, ak?: Art, wk?: Elem): string {
   const xs: Cmd[] = o === undefined ? [chip] : [o.front, o.bows, o.horse, o.lead !== 'drum' ? o.lead : undefined].filter((c): c is Cmd => c !== undefined)
-  // 장수의 비기는 그 비기의 이름·그림으로 (빛나는 칩)
+  // 장수의 비기는 그 비기의 이름·그림으로 (빛나는 칩) · 각성기는 그 기운의 이름과 짐승으로
   return xs.map((c) => (c === 'art' && ak !== undefined
     ? `<span class="wfl art"><img class="flg" src="${flagSrc(art, c, ak)}" alt="">${ART_NAME[ak]}</span>`
-    : `<span class="wfl"><img class="flg" src="${flagSrc(art, c)}" alt="">${CMD_NAME[c]}</span>`)).join('')
+    : c === 'wake' && wk !== undefined
+      ? `<span class="wfl art"><img class="flg" src="${flagSrc(art, c, undefined, wk)}" alt="">${WAKE_NAME[wk]}</span>`
+      : `<span class="wfl"><img class="flg" src="${flagSrc(art, c)}" alt="">${CMD_NAME[c]}</span>`)).join('')
 }
 
 /** 싸움터 그림의 땅 — HoMM3 처럼 그 땅이 배경이 된다 (형: "싸울때 배경이 전쟁터 배경이어야") · docs/GAP.md §12 */
@@ -1774,7 +1776,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const d = (k: 0 | 1 | 2): string => (slow ? ` style="--d:${tAt(k)}s"` : '')
     h += `<div class="wrd${slow ? ' slow' : ''}${crit ? ' crit' : ''}${rd.night === true ? ' night' : ''}"${slow ? ` style="--pd:${(tAt(2) + P.realm.warRoundPopHoldS).toFixed(2)}s"` : ''}><div class="wrn">${ck !== undefined ? `${slotName(ck, i)} · ` : ''}${ROUND_NAME[i] ?? `${i + 1}`} 합</div>${reliefBanner(rd, ourS, art)}`
     const akOf = (sd: 'a' | 'd'): Art | undefined => (rd.acts ?? []).find((x) => x.c === 'art' && x.s === sd)?.art
-    h += `<div class="wcmds"${d(0)}><span class="wc us"><em class="wck">우리</em>${flags(weAtk ? rd.oa : rd.od, weAtk ? rd.a : rd.d, art, akOf(ourS))}</span><i>×</i><span class="wc foe"><em class="wck">적</em>${flags(weAtk ? rd.od : rd.oa, weAtk ? rd.d : rd.a, art, akOf(ourS === 'a' ? 'd' : 'a'))}</span></div>`
+    const wkOf = (sd: 'a' | 'd'): Elem | undefined => (rd.acts ?? []).find((x) => x.c === 'wake' && x.s === sd)?.wake
+    h += `<div class="wcmds"${d(0)}><span class="wc us"><em class="wck">우리</em>${flags(weAtk ? rd.oa : rd.od, weAtk ? rd.a : rd.d, art, akOf(ourS), wkOf(ourS))}</span><i>×</i><span class="wc foe"><em class="wck">적</em>${flags(weAtk ? rd.od : rd.oa, weAtk ? rd.d : rd.a, art, akOf(ourS === 'a' ? 'd' : 'a'))}</span></div>`
     const story = ctx !== null ? roundStory(rd, rounds[i - 1], ctx) : []
     // 누가 누구를 · 됐나 — 그림 줄이 먼저, 글 이야기는 그 밑에 작게
     const rows = actRows(rd.acts, ourS, art, mixOf(0), mixOf(1))
@@ -1920,7 +1923,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     for (const x of panes) {
       const c = sel[x.g]
       const ak = c === 'art' ? artFor(p, sel.who) : undefined
-      const chip = c !== undefined ? `<span class="wgs"><img src="${flagSrc(art, c, ak)}" alt="">${esc(ak !== undefined ? ART_NAME[ak] : CMD_NAME[c])}</span>` : '<span class="wgs none">선택</span>'
+      const wkc = c === 'wake' ? p.wake : undefined
+      const chip = c !== undefined ? `<span class="wgs"><img src="${flagSrc(art, c, ak, wkc)}" alt="">${esc(ak !== undefined ? ART_NAME[ak] : wkc !== undefined ? WAKE_NAME[wkc] : CMD_NAME[c])}</span>` : '<span class="wgs none">선택</span>'
       h += `<button class="wgt${x === act ? ' on' : ''}${c !== undefined ? ' done' : ''}" data-war="gtab" data-g="${x.g}">${x.icon}<span class="wgn"><b>${esc(x.name)}</b><small>${esc(x.sub)}</small></span>${chip}</button>`
     }
     h += `</div>`

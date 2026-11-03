@@ -1292,6 +1292,10 @@ export const UI_CSS = `
   animation: axstat .4s cubic-bezier(.2, 1.6, .4, 1) calc(var(--tf) + 1000ms + var(--i) * 140ms) forwards; }
 .ap .axst s { margin: 0 2px; color: #a08c70; } .ap .axst b { color: #9fe08a; font-weight: 900; } .ap .axst b::before { content: '›'; margin-right: 3px; color: #ffd76a; }
 @keyframes axstat { from { opacity: 0; transform: translateY(8px) scale(.6); } to { opacity: 1; transform: none; } }
+/* 다시 깨어남(짧은 연출 · ascendAgainMs) — 번쩍 뒤 붓글씨·이름·능력치를 바짝 붙여 「확인」 전에 다 보이게 */
+.ap .ascfx.again .axword { animation-delay: calc(var(--tf) + 80ms); }
+.ap .ascfx.again .axname { animation-delay: calc(var(--tf) + 220ms); }
+.ap .ascfx.again .axst { animation-delay: calc(var(--tf) + 300ms + var(--i) * 60ms); }
 .ap .axflash { position: absolute; inset: 0; background: #fff6dc; opacity: 0; pointer-events: none; animation: axflash .6s ease-out var(--tf) forwards; }
 @keyframes axflash { 0% { opacity: 0; } 15% { opacity: .92; } 100% { opacity: 0; } }
 /* 동작 줄이기(맥 손쉬운 사용) — 각성은 판의 큰 순간이라 연출은 그대로 두고 화면 흔들림만 뺀다

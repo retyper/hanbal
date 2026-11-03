@@ -3794,6 +3794,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     a.march = { from: f.from, to: f.to, edge: f.edge, left: 1, ambush: false, aim: r.nodes[f.to]?.owner ?? null }
     // 장수 여럿 — 우리 군대 둘을 더 같은 길로 (비기·겨루기 「누가 나서나」 · 「누구를 잡나」도 시험되게)
     for (const b of mine.filter((x) => x !== a).slice(0, 2)) { b.at = f.from; b.march = { ...a.march } }
+    // 개발판에서만 — 각성기를 바로 시험: window.__sparWake = 'water' | 'bolt' | 'earth' | 'wind' | 'fire' (버리는 연습 판의 앞 장수를 깨운다)
+    const wk = import.meta.env.DEV ? (window as unknown as Record<string, unknown>)['__sparWake'] : undefined
+    const lead = a.hero !== null ? r.heroes[a.hero] : undefined
+    if (typeof wk === 'string' && lead !== undefined) {
+      const trait: Record<string, string> = { water: 'river', bolt: 'shaman', wind: 'archer', earth: 'mountain', fire: 'smith' }
+      r.heroes[lead.id] = { ...lead, traits: [trait[wk] ?? 'river', ...(lead.traits ?? []).filter((x) => !Object.values(trait).includes(x))], ascended: true, flames: Math.round(P.realm.ascendWins) }
+    }
     const back = (): void => { warOn = false; front = { kind: 'title' }; paint() }
     try {
       if (openWar(root, r, aiOrders(r), { art: ART, me: r.player, ding, warm: warmSfx, music: (k) => { if (k === 'war') music.war(); else music.result(k) }, done: back })) { warOn = true; music.war(); music.primeResults(); return }
