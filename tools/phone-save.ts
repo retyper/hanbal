@@ -13,7 +13,7 @@ import type { Card, ReportLine } from '../src/realm/types.ts'
 const out = process.argv[2]!
 const kind = process.argv[3] ?? 'quarrel-town'
 const seed = Number(process.argv[4] ?? 7)
-const r0 = startRegion('byeonhan-mini', seed, 'us')
+const r0 = startRegion((process.env.REGION ?? 'byeonhan-mini') as Parameters<typeof startRegion>[0], seed, process.env.NATION ?? 'us')
 const { next, report } = advance(r0, [])
 const ours = Object.values(next.heroes).filter((h) => h.faction === next.player && h.status === 'free')
 // 장수가 모자라면 남의 장수를 데려와 둘을 맞춘다 (남녀 하나씩)
@@ -65,5 +65,5 @@ if (kind === 'lost') {
   } as unknown as ReportLine)
 }
 const quiet = kind === 'captive' || kind === 'woo' || kind === 'woo0' // 보고 없이 판 위에서 연다
-writeFileSync(out, JSON.stringify({ v: 2, nation: 'us', seed, log: [], realm: next, before: quiet ? null : r0, report: quiet ? null : report }))
+writeFileSync(out, JSON.stringify({ v: 2, nation: process.env.NATION ?? 'us', seed, log: [], realm: next, before: quiet ? null : r0, report: quiet ? null : report }))
 console.log('ok', kind, g.name, w.name)

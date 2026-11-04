@@ -101,8 +101,8 @@ const ROAD_LOOK: Readonly<Record<EdgeKind, RoadLook>> = {
   ] },
   // 갈대밭 — 판자를 깐 둑길
   reeds: { sh: '#d2ca82', shW: 14, edge: '#3a3418', bed: '#9a8a56', bedW: 5, tex: [{ c: '#5a4a26', w: 5, dash: '1.1 2.3', op: 0.7, cap: 'butt' }] },
-  // 나루 — 물을 건너는 자리 (물살)
-  ford: { sh: '#d4ebf6', shW: 14, edge: '#1d4a6a', bed: '#3d7fa8', bedW: 6, mid: '#eef8ff', midW: 1.8, midDash: '5 9' },
+  // 나루 — 강가를 따라 가다 물을 건너는 길. 예전엔 파란 관에 흰 물살이라 진짜 강과 겹쳐 지렁이처럼 보였다 (형 11-04) → 강둑 흙길에 물빛 가는 줄 하나 · 나루 기호(배)가 건너는 자리를 말한다
+  ford: { sh: '#e2e6d8', shW: 13, edge: '#34485a', bed: '#7f8a78', bedW: 5.5, mid: '#b9dcef', midW: 1.6, midDash: '4 8', midOp: 0.9 },
   sea: { sh: '#e4f6ff', shW: 13, bed: '#22608f', bedW: 4.5, bedDash: '8 8' }, // 뱃길 — 멀리 건너오는 길이라 또렷하게
   // 갯벌 — 질척한 바닥에 발자국
   mudflat: { sh: '#dcd1ba', shW: 14, edge: '#3a342a', bed: '#857a68', bedW: 5, tex: [{ c: '#4a4236', w: 1.6, dash: '1.4 4.2', op: 0.6 }] },

@@ -174,23 +174,44 @@ export const midOf = (p: readonly Pt[]): Pt => trimPolyline(p, 0.5, 0.5)[0]!
 
 // ───────── 강 (영남 판)
 
-/** 강을 또렷하게 — 굵기는 밑그림의 굵기를 그림 너비에 맞춘다 (낙동강이 가장 굵다) */
-export function riversSvg(region: RegionId, W: number, H: number): string {
-  const g = worldGeoOf(region)
+/** 강 줄기 — 지도 좌표의 꺾은선과 하구 굵기 (그려 넣은 지도 판은 빈 배열: 강이 그림 속에 있다) */
+export function riverLines(region: RegionId, W: number, H: number): ReadonlyArray<{ name: string; pts: Pt[]; w: number }> {
   // 그려 넣은 지도(map-world 조각)에는 강이 이미 그림 속에 있다 — 그 위에 또 그리면 그림과 어긋나 빈 데·끊긴 데에 파란 선이 뜬다 (형 10-23)
-  if (region !== 'yeongnam' || g !== null) return ''
+  if (region !== 'yeongnam' || worldGeoOf(region) !== null) return []
   const k = W / 1536
-  let s = '<g class="rivers" fill="none" stroke-linecap="round" stroke-linejoin="round">'
-  for (const r of RIVERS) {
-    const pts = r.pts.map(([lon, lat]) => {
-      const [x, y] = yeongnamPos(lon, lat)
-      return [x * W, y * H] as const
-    })
-    const d = smoothPath(pts)
-    s += `<path d="${d}" stroke="#f3e6c8" stroke-width="${f1(r.w * k + 3)}" opacity=".55"/>`
-    s += `<path d="${d}" stroke="#3d78b0" stroke-width="${f1(r.w * k)}" opacity=".85"><title>${r.name}</title></path>`
+  return RIVERS.map((r) => ({ name: r.name, w: r.w * k, pts: r.pts.map(([lon, lat]) => { const [x, y] = yeongnamPos(lon, lat); return [x * W, y * H] as Pt }) }))
+}
+
+/** 강물이 가늘게 시작하는 몫 (하구 굵기에 곱한다) · 굵기를 나눠 그리는 마디 수 */
+const RIVER_SRC = 0.3
+const RIVER_STEPS = 6
+/** 먹선 테두리 · 물빛 · 강 무리 전체의 진하기 — 밑그림(종이·먹)과 같은 결 */
+const RIVER_INK = '#45647a'
+const RIVER_WASH = '#86abc4'
+const RIVER_OP = 0.72
+/** 먹선 테두리는 물빛보다 옅게 — 진하면 관(管)처럼 두 줄로 읽힌다 */
+const RIVER_INK_OP = 0.5
+
+/**
+ * 강 — 근원에서 가늘게 시작해 하구로 갈수록 굵어진다 (형 11-04: "물길끼리 합쳐지는 게 지렁이 겹쳐 놓은 것 같다 · 지도에 안 어울린다").
+ * 예전엔 같은 굵기 파란 띠에 크림빛 테두리라 갈래가 만나는 곳이 덩어리처럼 겹쳤다. 이제 먹선 테두리에 옅은 물빛 · 갈래는 가는 끝으로 본줄기에 스민다.
+ * 굵기 마디를 겹쳐 그려도 진해지지 않게 무리 전체에 진하기를 준다
+ */
+export function riversSvg(region: RegionId, W: number, H: number): string {
+  const lines = riverLines(region, W, H)
+  if (lines.length === 0) return ''
+  let ink = ''
+  let wash = ''
+  for (const r of lines) {
+    for (let i = 0; i < RIVER_STEPS; i++) {
+      const t0 = i / RIVER_STEPS
+      const w = r.w * (RIVER_SRC + (1 - RIVER_SRC) * ((i + 1) / RIVER_STEPS))
+      const d = smoothPath(trimPolyline(r.pts, t0, 1))
+      ink += `<path d="${d}" stroke="${RIVER_INK}" stroke-width="${f1(w + 1.4)}"/>`
+      wash += `<path d="${d}" stroke="${RIVER_WASH}" stroke-width="${f1(w)}">${i === 0 ? `<title>${r.name}</title>` : ''}</path>`
+    }
   }
-  return s + '</g>'
+  return `<g class="rivers" fill="none" stroke-linecap="round" stroke-linejoin="round"><g opacity="${RIVER_INK_OP}">${ink}</g><g opacity="${RIVER_OP}">${wash}</g></g>`
 }
 
 // ───────── 뭍
