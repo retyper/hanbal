@@ -751,6 +751,18 @@ export function mapHtml(
       svg += `<path d="M${mx - s} ${my - s}L${mx + s} ${my + s}M${mx + s} ${my - s}L${mx - s} ${my + s}" stroke="#a02a1a" stroke-width="${6 * sw}" stroke-linecap="round"/>`
     }
   }
+  // 한 끝만 아는 길 — 아는 고을에서 모르는 땅 쪽으로 길머리만 보이고 흐려진다 (형 11-04: "옆 마을은 안 보여도 그 길 일부는 보여야").
+  // 기호는 안 단다 (무슨 길인지는 가 봐야 안다)
+  if (r.known !== undefined) {
+    const RR = P.realm
+    for (const ed of Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))) {
+      if (seen(ed.a) === seen(ed.b)) continue
+      const pts = seen(ed.a) ? route(ed) : [...route(ed)].reverse()
+      const sure = RR.mapRoadStub * RR.mapRoadStubFade
+      svg += `<g class="rstub">${roadSvg(smoothPath(trimPolyline(pts, 0, sure)), ed.kind, sw, RR.mapRoadStubOp)}`
+        + `${roadSvg(smoothPath(trimPolyline(pts, sure * 0.9, RR.mapRoadStub)), ed.kind, sw, RR.mapRoadStubOp / 2)}</g>`
+    }
+  }
   if (ranging) {
     // 고른 군대가 선 고을 — 갈 수 있는 길들이 모두 거기서 나간다(가장 많이 겹치는 끝). 먼 곳도 첫 길은 거기서 떠난다
     const ends = new Map<string, number>()
