@@ -218,5 +218,6 @@ export const AWAKEN_ART: ReadonlySet<string> = new Set([
  * 제미나이(Veo) 그림→영상으로 굽는다: 카메라 고정 · 숨쉬기 · 머리칼·소매 살랑 · 눈 한 번 깜빡 · 처음과 끝이 맞게. 큰 칸(영웅전 각성 보기)에서만 돈다
  */
 export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
+  'g-13-baekje-general', // 11-05 오간 — 튜토리얼에서 모두가 처음 보는 각성 (형: 움직이는 건 튜토리얼 장수부터)
   'l-L2-soseono', // 11-05 시험 · 1장 소서노 (게임에 나오는 전설)
 ])

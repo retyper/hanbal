@@ -166,7 +166,7 @@ export function movesOf(r: Realm, faction: string, a: Army): Move[] {
     // 풍습 — 고갯목은 고갯길 한 계절 더 (hooks.passExtra · 판정 season.applyOrders 와 같다)
     const shut = blockedWhy(ed, r)
     out.push({
-      edge: ed, to, seasons: Math.max(1, marchTurns(r, ed) + passExtra(r, faction, ed.kind) + (shut !== null ? R.hardExtra : 0) - marchCut(r, a)), blocked: shut, hostile,
+      edge: ed, to, seasons: Math.max(1, marchTurns(r, ed) + passExtra(r, faction, ed.kind) + (shut !== null ? R.hardExtra : 0) - marchCut(r, a, ed)), blocked: shut, hostile,
       win: v.win, winAmbush: v.ambush, winCaught: v.caught, age: v.age, ambushP,
       ...concealBits(concealOf(r, ed.id, headcount(forceOf(r, a)), to)), walled: fortMul(node, season) > 1,
     })

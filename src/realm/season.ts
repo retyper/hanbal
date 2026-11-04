@@ -206,8 +206,15 @@ export function forceOf(r: Realm, a: Army): Force {
 }
 
 /** 수레바퀴모양 토기 — 이 군대를 이끄는 장수가 지녔으면 길이 이만큼 짧다 (relics.ts · 행군 명령과 길 고르기 화면이 함께 쓴다) */
-export function marchCut(r: Realm, a: Army): number {
-  return relicSum(heroOf(r, a), 'march')
+/**
+ * 행군 단축 — 수레바퀴모양 토기(relics.ts) + 말 탄 군대 (형 11-05: "기병 부대는 이동 달도 짧아야 · 창원에서 대구까지 말 타면 하루" · 림월드 탈것).
+ * 군대의 horseMarchShare 넘게가 기병이면 뭍길에서 horseMarchCut 달 덜 걸린다 — 섞인 군대는 느린 보병에 맞춰 간다 · 뱃길은 배가 정한다
+ */
+export function marchCut(r: Realm, a: Army, ed?: REdge): number {
+  const R = P.realm
+  const men = Object.values(a.mix).reduce((s, n) => s + (n ?? 0), 0)
+  const horse = monthly(r) && ed?.kind !== 'sea' && men > 0 && (a.mix.horse ?? 0) / men >= R.horseMarchShare ? Math.round(R.horseMarchCut) : 0
+  return relicSum(heroOf(r, a), 'march') + horse
 }
 
 /** 진묘수 — 이 나라(faction)가 그 고을에 쳐들어가면 싸움 없이 돌려보낼 고을지기 (남은 횟수가 있을 때 · relics.ts) */
@@ -773,7 +780,7 @@ function applyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]): v
       left += P.realm.hardExtra
       lines.push({ kind: 'blocked', army: a.id, edge: ed.id, why, lost: Math.max(0, before - headcount(forceOf(r, a))) })
     }
-    left = Math.max(1, left - marchCut(r, a)) // 수레바퀴모양 토기 (relics.ts)
+    left = Math.max(1, left - marchCut(r, a, ed)) // 수레바퀴모양 토기 (relics.ts) · 말 탄 군대
     // 군량 — 길 계절에 더해 몇 계절치를 챙기나. 더 챙길수록 곡식이 들고, 0 이면 닿자마자 바닥이다
     const extra = rationFor(r, a, o.ration, left)
     if (extra > 0) stockOf(r, a.faction).grain -= rationCost(r, a, left, extra)
