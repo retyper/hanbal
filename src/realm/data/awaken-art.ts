@@ -40,6 +40,7 @@ export const AWAKEN_ART: ReadonlySet<string> = new Set([
   'g-76-mokji-jinha',
   'l-L1-yuhwa', // 11-04 저녁 · 전설
   'l-L10-pyeonggang', // 11-04 저녁 · 전설
+  'l-L4-bari-gongju', // 11-04 저녁 · 전설
   'l-L2-soseono',
   'l-L7-aryeong',
   'w-01-silla-princess',
