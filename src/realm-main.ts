@@ -511,9 +511,10 @@ const app = mountRealmApp(root, {
   gameCount: () => games.length,
   pastGames: () => [...games].reverse().map((g) => ({
     nation: g.nation, name: g.name ?? '', region: g.region ?? null, tier: g.tier ?? null, ...(g.clock !== undefined ? { clock: g.clock } : {}), started: g.started,
-    end: g.end, seasons: g.turns.length, current: g.seed === state?.seed,
+    end: g.end, seasons: g.turns.length, current: g.seed === state?.seed, seed: g.seed,
   })),
   history: () => (game?.turns ?? []).map((t) => ({ s: t.s, lines: t.lines, me: t.me, ...(t.all !== undefined ? { all: t.all } : {}) })),
+  pastHistory: (seed) => (games.find((g) => g.seed === seed)?.turns ?? []).map((t) => ({ s: t.s, lines: t.lines, me: t.me, ...(t.all !== undefined ? { all: t.all } : {}) })),
   savedAt: () => state?.at ?? null,
   async resetPlay() {
     // 서버 것부터 — 이 기기만 지우면 다음 맞추기 때 서버의 도감·해금이 되살아난다. 서버를 못 지우면 이 기기 것도 그대로 둔다

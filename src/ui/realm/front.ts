@@ -502,10 +502,8 @@ const FILM = (k: FrontKit, name: string): string => `${k.art}film/${name}.jpg`
  * 화면 전체를 덮고, 마지막 장에서 「승리」가 쾅 박히며 불티가 튄다 (형 10-23: "창이 화면 전체로 · 승리면 승리라고 제대로").
  * 다 돌고 나면 ‹ › 로 지나간 장면을 다시 넘겨 본다 (형: "방금 지나간 역사 슬라이드들도 버튼 눌러서 샥샥").
  */
-export function endingHtml(k: FrontKit, r: Realm, history: History, keep = '', foot = ''): string {
-  const win = r.outcome?.kind === 'win'
-  const all = r.unified !== undefined
-  const region = r.region ?? 'byeonhan-mini'
+/** 판의 큰일 — 이긴 싸움 · 쥔 고을 · 동맹 · 들인 장수 (끝 화면 필름·연대기와 「나의 역사」 책이 같이 쓴다) */
+export function chronicleOf(k: FrontKit, r: Realm, history: History): { events: Array<{ s: number; t: string; big: boolean; img: string; em?: string }>; won: number; lost: number; found: number; heroes: number; takes: number } {
   const me = r.player
   const name = (f: string): string => r.factions[f]?.name ?? ''
   const node = (id: string): string => r.nodes[id]?.name ?? ''
@@ -559,6 +557,16 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = '', f
       }
     }
   }
+  return { events, won, lost, found, heroes, takes }
+}
+
+export function endingHtml(k: FrontKit, r: Realm, history: History, keep = '', foot = ''): string {
+  const win = r.outcome?.kind === 'win'
+  const all = r.unified !== undefined
+  const region = r.region ?? 'byeonhan-mini'
+  const me = r.player
+  const name = (f: string): string => r.factions[f]?.name ?? ''
+  const { events, won, lost, found, heroes } = chronicleOf(k, r, history)
   // 큰일 먼저 — 도읍과 동맹, 그다음 나머지. 계절 순으로
   const ranked = [...events.filter((e) => e.big), ...events.filter((e) => !e.big)]
   const pickd = ranked.slice(0, 9).sort((a, b) => a.s - b.s)

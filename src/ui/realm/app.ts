@@ -56,7 +56,8 @@ import { P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, noReachWhy, visibleNodes, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
 import { LEGACY_CSS, bringHtml, clearBring, toggleBring } from './legacy.ts'
 import { TOWN_CSS, townVeilHtml, townViewHtml } from './townview.ts'
-import { RISE_CSS } from './risegraph.ts'
+import { RISE_CSS, riseGraphHtml } from './risegraph.ts'
+import { BOOK_CSS, bookHtml, shelfHtml, type Book } from './bookshelf.ts'
 import { DEX_CSS, clanHeroes, dexHtml, dexToastHtml, loadDex, recordDex, toggleDexAwake, type DexBoard } from './dex.ts'
 import { DEX_SERVED, dexCatalog } from '../../realm/dex.ts'
 import { DRILL_CSS, drillLevel, engraveRun, hasDrill, loadDrill, raiseHero, yardHtml, yardStripHtml, type DrillKit } from './drill.ts'
@@ -103,7 +104,7 @@ import { diploTips, type DiploTip } from '../../realm/advice.ts'
 import { MOOD_CSS, MOOD_WORD, moodImg, moodOf } from './mood.ts'
 import { AUD_CSS, askSay, pactSay, typed, type PactKind } from './audience.ts'
 import { customDef, customsOf } from '../../realm/data/customs.ts'
-import { BOARDS, FRONT_CSS, PROLOGUE_STEPS, customsHtml, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, slotsHtml, titleHtml, type FrontKit, type History, type SlotInfo } from './front.ts'
+import { BOARDS, FRONT_CSS, PROLOGUE_STEPS, chronicleOf, customsHtml, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, slotsHtml, titleHtml, type FrontKit, type History, type SlotInfo } from './front.ts'
 import { SCENE_SOUND, makeMusic, playOnce, preRoll, snd, sndFile, tapSlot, warmOnce } from './sound.ts'
 import { exileArt, exileBeats, fugitiveBeats, quarrelArt, quarrelBeats, romanceBeats, romanceFlip, sayOfBeat } from './card-lines.ts'
 import { HERO_POOL } from '../../realm/data/heroes-pool.ts'
@@ -140,6 +141,8 @@ export interface AppHost {
   gameCount(): number
   /** 「나의 역사」 — 둔 판들, 최근 것부터 (형 10-25: "완료한 게임들 기록은 어디서 보냐 · 나의 역사 기록") */
   pastGames?(): ReadonlyArray<PastGame>
+  /** 지난 판의 계절 기록 — 「나의 역사」 책 (형 11-05: "역사책으로 책장 만들어 준다며") */
+  pastHistory?(seed: number): History
   /** 이 판의 지난 계절 보고들 — 끝 화면의 연대기 */
   history(): History
   /** 마지막으로 저장한 때 (ISO) — 첫 화면의 "이어 하기" */
@@ -623,6 +626,8 @@ export interface PastGame {
   readonly seasons: number
   readonly clock?: 'month'
   readonly current: boolean
+  /** 판의 시드 — 「나의 역사」 책을 펼칠 때 그 판의 기록을 찾는다 */
+  readonly seed?: number
 }
 
 type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region: RegionId } | { kind: 'detail'; region: RegionId; id: string } | { kind: 'annals' }
@@ -635,7 +640,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + MEM_CSS + ASCEND_CSS + HILITE_CSS + TOWN_CSS.replaceAll('__ART__', ART) + RISE_CSS
+  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + MEM_CSS + ASCEND_CSS + HILITE_CSS + TOWN_CSS.replaceAll('__ART__', ART) + RISE_CSS + BOOK_CSS
   document.head.appendChild(style)
   root.classList.add('ap')
   // 그래픽 단계 저사양 · 보통 · 고사양 (quality.ts · 형 10-29: 폰 절전 모드에서 그림이 다 깨졌다)
@@ -793,6 +798,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function pinChime(): void {
     P.realm.pinChimeRates.forEach((rate, i) => window.setTimeout(() => ding(snd('tap_bell'), P.realm.pinChimeVol, rate), i * P.realm.pinChimeGapMs))
   }
+  /** 나의 역사에서 펼친 책 (그 판의 시드) */
+  let bookSeed: number | null = null
   /** 마을 안 (TOWN.md) — 열린 고을 · 처음 그리면 밝아지며 */
   let townIn: string | null = null
   let townFresh = false
@@ -4785,16 +4792,35 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       return ch !== undefined ? `${chapterTag(ch.n)} ${ch.name}` : (BOARD_NAME_OF[rg] ?? '')
     }
     let h = `<div class="front annals"><div class="fhead"><button class="btn ghost" data-act="fr-back">‹ 처음으로</button><h2>나의 역사</h2></div>`
-    h += `<p class="ansum">둔 판 ${xs.length} · 이긴 판 ${won}</p><div class="anl">`
-    for (const g of xs) {
-      // 끝이 없으면 하는 중(지금 판) · 멈춘 판(선반에 올려 둔 판 — 첫 화면 「다른 판」에서 잇는다)
-      const [cls, word] = g.end === null ? (g.current ? ['now', '하는 중'] : ['quit', '멈춘 판']) : g.end.kind === 'win' ? ['win', '이겼다'] : g.end.kind === 'lose' ? ['lose', '졌다'] : ['quit', '그만뒀다']
+    h += `<p class="ansum">둔 판 ${xs.length} · 이긴 판 ${won}</p>`
+    // 판마다 한 권 — 책등은 나라 빛 · 두께는 판의 길이 · 누르면 펼친다 (형 11-05: "역사책으로 책장 만들어 준다며")
+    const res = (g: PastGame): [Book['result'], string] => g.end === null ? (g.current ? ['now', '하는 중'] : ['quit', '멈춘 판']) : g.end.kind === 'win' ? ['win', '이겼다'] : g.end.kind === 'lose' ? ['lose', '졌다'] : ['quit', '그만뒀다']
+    const titleOfG = (g: PastGame): string => g.name !== '' ? g.name : (FACTION_NAME_OF[g.nation] ?? g.nation)
+    const subOf = (g: PastGame): string => {
       const d = new Date(g.started)
       const date = Number.isFinite(d.getTime()) ? `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}` : ''
-      h += `<div class="anr ${cls}">${emblem(g.nation, 'anem')}<span class="ant"><b>${esc(g.name !== '' ? g.name : (FACTION_NAME_OF[g.nation] ?? g.nation))}</b><small>${esc(boardOf(g.region))}${g.tier !== null && g.region !== 'tutorial' ? ` · ${esc(levelName(g.tier))}` : ''}</small></span>`
-        + `<span class="anx"><i class="anres">${word}</i><small>${g.end !== null ? esc(seasonLabel({ season: g.end.season, clock: g.clock }, g.end.season)) : `${turnsLabel(g, g.seasons)}째`} · ${date}</small></span></div>`
+      return `${boardOf(g.region)}${g.tier !== null && g.region !== 'tutorial' ? ` · ${levelName(g.tier)}` : ''} · ${g.end !== null ? seasonLabel({ season: g.end.season, clock: g.clock }, g.end.season) : `${turnsLabel(g, g.seasons)}째`}${date !== '' ? ` · ${date}` : ''}`
     }
-    return h + `</div></div>`
+    const books: Book[] = xs.filter((g) => g.seed !== undefined).map((g) => {
+      const [result, word] = res(g)
+      return { seed: g.seed!, title: titleOfG(g), sub: subOf(g), result, word, seasons: g.seasons, color: nationKit(g.nation).c, emblem: emblem(g.nation, 'bkem') }
+    })
+    h += shelfHtml(books, esc)
+    // 펼친 책 — 그 판의 처음 모습에서 이름을 꺼내 본기와 흥망 그래프를
+    const g = bookSeed !== null ? xs.find((x) => x.seed === bookSeed) : undefined
+    if (g !== undefined && g.seed !== undefined) {
+      const hist = host.pastHistory?.(g.seed) ?? []
+      let r0: Realm | null = null
+      try { r0 = startRegion((g.region ?? 'byeonhan-mini') as RegionId, g.seed, g.nation) } catch { r0 = null }
+      const [result, word] = res(g)
+      const ch = r0 !== null ? chronicleOf(KIT, r0, hist) : null
+      const clocked = { clock: g.clock }
+      const lines = (ch?.events ?? []).slice().sort((a, b) => a.s - b.s).map((e) => ({ when: seasonLabel({ season: e.s, ...clocked }, e.s), t: e.t, big: e.big }))
+      const stats = ch !== null ? `<div class="stats"><span><b>${ch.won}</b>이긴 싸움</span><span><b>${ch.lost}</b>진 싸움</span>${ch.takes > 0 ? `<span><b>${ch.takes}</b>쥔 고을</span>` : ''}${ch.heroes > 0 ? `<span><b>${ch.heroes}</b>얻은 장수</span>` : ''}</div>` : ''
+      const graph = r0 !== null ? riseGraphHtml(hist, { me: r0.player, mine: '#2f8cff', colorOf: (f) => nationKit(f).c, nameOf: (f) => r0!.factions[f]?.name ?? f, esc }) : ''
+      h += bookHtml({ title: titleOfG(g), sub: subOf(g), word, result, emblem: emblem(g.nation, 'bkem'), color: nationKit(g.nation).c, lines, stats, graph }, esc)
+    }
+    return h + `</div>`
   }
 
   /** 판을 연다 — 데려갈 수 있는 장수가 있으면 먼저 「데려갈 장수」 팝업 (배우는 판·동행이 없는 난세·영웅전에 거느린 이가 없으면 곧장) */
@@ -7122,7 +7148,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const r = realm !== null ? plan() : null
     switch (d['act']) {
       case 'continue': front = null; paint(); coverMap(); return
-      case 'annals-open': front = { kind: 'annals' }; paint(); return
+      case 'annals-open': bookSeed = null; front = { kind: 'annals' }; paint(); return
+      case 'book-open': bookSeed = Number(d['seed']); paint(); return
+      case 'book-close': bookSeed = null; paint(); return
       case 'slot-go': {
         // 고른 판으로 — 하던 판은 선반에 (realm-main.onResume). 옮겼으면 바로 그 판으로 들어간다
         slotArmed = null
