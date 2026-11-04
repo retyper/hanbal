@@ -1349,6 +1349,8 @@ export const UI_CSS = `
 .ap .map .nring.own .nrb { position: absolute; left: 0; top: 0; width: 46px; height: 46px; margin: -23px 0 0 -23px; padding: 0; transform: translate(var(--x), var(--y));
   display: grid; place-items: center; border-radius: 50%; border: 2px solid #c9a45a; background: #1c1610f0; color: #f3e6c8; box-shadow: 0 2px 6px #000a; -webkit-tap-highlight-color: transparent; }
 .ap .map .nring.own .nrb img { width: 30px; height: 30px; object-fit: contain; }
+.ap .cpic { display: inline-flex; align-items: center; } .ap .cpic i { font-style: normal; font-size: 11px; font-weight: 700; color: #f3d48a; margin: 0 1px; }
+.ap .map .nring.own .nrb .cpic img { width: 19px; height: 19px; } .ap .btn .cpic { margin-right: 6px; } .ap .btn .cpic img { width: 22px; height: 22px; object-fit: contain; }
 .ap .map .nring.own .nrb .nrf { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; object-position: 50% 15%; }
 .ap .map .nring.own .nrb small { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 1px; white-space: nowrap; font-size: 11px; font-weight: 800; line-height: 1.35;
   color: #fff3d6; background: #201811e6; border-radius: 6px; padding: 0 4px; }

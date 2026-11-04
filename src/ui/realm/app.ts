@@ -2817,19 +2817,24 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * 고른 뒤 다시 누르면 거둔다 · 못 하면 까닭과 소리 (disabled 금지)
    */
   function callBtn(_r: Realm, id: string, ring: boolean): string {
+    // 「유민」은 낯선 말이었다 — 화면엔 「곡식 → 백성」 그림과 「+n집」 · 설명은 꾹 누르면(PC 는 올리면) (형 11-04: "눌러 봐도 뭐 하는 건지 알 수 있게 만들지를 않았잖아")
+    const pic = `<span class="cpic">${icon(GOOD_ICON.grain)}<i>›</i>${icon('unit-porters')}</span>`
     const queued = musters.find((o): o is Extract<Order, { kind: 'call' }> => o.kind === 'call' && o.node === id)
     if (queued !== undefined) {
+      const tip = ` data-tip="곳간을 엽니다" data-more="${esc(`다음 달 떠도는 백성 ${queued.n}집이 길을 따라 걸어와 이 고을 사람이 됩니다. 다시 누르면 거둡니다.`)}"`
       return ring
-        ? `<button class="nrb on" data-act="call" data-node="${id}">${icon('unit-porters')}<small>유민 ${queued.n}</small></button>`
-        : `<div class="btns"><button class="btn on" data-act="call" data-node="${id}">${icon('unit-porters', 'wki')}곳간을 연다 · 유민 ${queued.n}집이 온다 <small class="mute">누르면 거둔다</small></button></div>`
+        ? `<button class="nrb on" data-act="call" data-node="${id}"${tip}>${pic}<small>+${queued.n}집</small></button>`
+        : `<div class="btns"><button class="btn on" data-act="call" data-node="${id}"${tip}>${pic}곳간을 엽니다 · 다음 달 백성 ${queued.n}집 <small class="mute">누르면 거둡니다</small></button></div>`
     }
     const lp = leftPlan() // 이번 달 쓴 곡식까지 빼고 (검토 11-04)
     const why = callWhy(lp, me(), id)
     const n = callLimit(lp, me(), id)
     const c = callCost(lp, me(), n)
-    if (ring) return why === '우리 고을이 아닙니다' ? '' : `<button class="nrb" data-act="call" data-node="${id}"${why === null ? '' : noBtn(why)}>${icon('unit-porters')}<small>${why === null ? `유민 ${n}` : '유민'}</small></button>`
-    return `<div class="btns"><button class="btn" data-act="call" data-node="${id}"${why === null ? '' : noBtn(why)}>${icon('unit-porters', 'wki')}곳간 열기 · 유민 ${why === null ? `${n}집 ${costHtml({ grain: c.grain })}` : ''}</button></div>`
-      + `<p class="mute">곡식을 내면 떠도는 백성이 길을 따라 들어와 이 고을 집이 됩니다. 집이 늘면 특산·장정·가을걷이가 함께 늡니다. 고을마다 한 계절에 한 번.</p>`
+    const what = '곡식을 내면 떠도는 백성이 길을 따라 걸어와 이 고을 사람이 됩니다. 사람이 늘면 특산·장정·가을걷이가 함께 늘어납니다. 고을마다 한 계절에 한 번입니다.'
+    const tip = ` data-tip="${esc(why === null ? `곳간 열기 · 곡식 ${c.grain}섬 → 백성 ${n}집` : `곳간 열기 · ${why}`)}" data-more="${esc(what)}"`
+    if (ring) return why === '우리 고을이 아닙니다' ? '' : `<button class="nrb" data-act="call" data-node="${id}"${why === null ? '' : noBtn(why)}${tip}>${pic}<small>${why === null ? `+${n}집` : '곳간'}</small></button>`
+    return `<div class="btns"><button class="btn" data-act="call" data-node="${id}"${why === null ? '' : noBtn(why)}${tip}>${pic}곳간 열기 ${why === null ? `· 백성 +${n}집 ${costHtml({ grain: c.grain })}` : ''}</button></div>`
+      + `<p class="mute">${what}</p>`
   }
 
   /** 이 고을에서 이 병종을 못 뽑는 까닭 — 단추를 죽이지 않고 누르면 이 말과 소리 (위원회 11-04 UX ⑤ · 기병이 골라지고 「군사 0명 뽑기」가 남았다) */
@@ -7964,7 +7969,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const same = (o: Order): boolean => o.kind === 'call' && o.node === node
         if (musters.some(same)) { musters = musters.filter((o) => !same(o)); break }
         const n = callLimit(leftPlan(), me(), node) // 징병·저울로 쓴 곡식까지 빼고 (검토 11-04)
-        if (n > 0) musters = [...musters, { kind: 'call', faction: me(), node, n }]
+        if (n > 0) {
+          const g = callCost(leftPlan(), me(), n).grain
+          musters = [...musters, { kind: 'call', faction: me(), node, n }]
+          // 누르면 무슨 일인지 바로 — 곡식이 나가고 다음 달 사람이 온다 (형 11-04)
+          goToast(`${icon(GOOD_ICON.grain, 'wki')}<b>곳간을 엽니다</b> 곡식 ${g}섬 → 다음 달 백성 ${n}집이 ${esc(josa(r?.nodes[node]?.name ?? '', '으로', '로'))} 옵니다`)
+        }
         break
       }
       case 'market': openSheet({ kind: 'market' }); break

@@ -692,8 +692,8 @@ export function callWhy(r: Realm, faction: string, node: string): string | null 
   const n = r.nodes[node]
   if (n === undefined || n.owner !== faction || n.kind === 'sodo' || n.hh <= 0) return '우리 고을이 아닙니다'
   if (n.calledAt !== undefined && n.calledAt + seasons(r, 1) > r.season) return '이번 계절엔 이미 불렀습니다'
-  if (Object.values(r.armies).some((a) => a.at === node && a.faction !== faction)) return '남의 군대가 머물러 유민이 오지 않습니다'
-  if (stockOf(r, faction).grain < upkeepOf(r, faction, false)) return '곳간이 비어 유민을 먹일 수 없습니다'
+  if (Object.values(r.armies).some((a) => a.at === node && a.faction !== faction)) return '남의 군대가 머물러 백성이 오지 않습니다'
+  if (stockOf(r, faction).grain < upkeepOf(r, faction, false)) return '곳간이 비어 백성을 먹일 수 없습니다'
   if (homeRoom(n) - n.hh - inboundOf(n, faction) <= 0) return '이 고을은 집이 꽉 찼습니다'
   if (callRoom(r, faction, node) <= 0) return '곡식이 모자랍니다'
   return null
