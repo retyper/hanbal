@@ -7,7 +7,8 @@
   - 남장수 1차 42명 `docs/realm/awaken-next-men.html` (아티팩트 9bdQ176XBt2fcmydo3A4qc)
   - 여장수 1차 옛 틀 다시 52명 · 2차 99명 `docs/realm/awaken-women-next.html` (아티팩트 PSJxC2XzkgzdCvX3LsGEKv) — 2차를 받으면 `awaken2(-hd)/` 에 굽고 `src/realm/data/awaken2.ts` TRUE_WAKE 에 장수 id 를 더한다
   - 변한 단비 2차 원본 `assets_src/realm/awaken2/w-98-byeonhan-danbi-raw.png` 은 아직 안 넣었다
-- 챗지피티 한도: edu 11-05 PM 7:38 · Facts 11-05 PM 6:25 (ART-QUEUE 맨 위 표)
+- ✔ 11-04 밤 형이 구운 것 넣음: 남장수 42명 전부 · 여장수 1차 다시 열하나(w-04~w-33) · 남은 여장수 1차 다시 41명 · 2차 99명
+- 챗지피티 한도: 11-05 PM 6:25 Facts · 7:38 edu · 8:31 retyper · 10:11 retyper92 · 10:23 roqkfeke12 (ART-QUEUE 맨 위 표)
 
 ## ★ (11-04 오후 · 긴급 위원회 뒤 · 형 "니 의견대로 계속 해")
 
