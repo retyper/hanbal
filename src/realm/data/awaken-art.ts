@@ -34,6 +34,7 @@ export const AWAKEN_ART: ReadonlySet<string> = new Set([
   'g-30-gwanna-soemoe',
   'g-31-buyeo-geumha',
   'g-32-uga-sodu',
+  'g-71-baekje-onjo', // 11-04 저녁 챗지피티 · 튜토리얼·1장 임금
   'g-76-mokji-jinha',
   'l-L2-soseono',
   'l-L7-aryeong',
