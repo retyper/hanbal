@@ -1,6 +1,15 @@
 # 진행 상황 · 2026-11-04 기준
 
-## ★ 여기서 이어서 한다 (11-04 오후 · 긴급 위원회 뒤 · 형 "니 의견대로 계속 해")
+## ★ 여기서 이어서 한다 (11-04 밤 · 각성 그림 · 형이 직접 굽는 중)
+
+- 오늘 저녁 각성 그림: 다시 그릴 열둘 끝 · 1장 핵심(온조·을음·마려) · 전설 여섯(평강·바리공주·선녀·정견모주·낙랑공주·웅녀) 새로 · 짐승 그림자 넣지 않음(형)
+- **형이 챗지피티로 직접 굽는다** — 받은 그림은 ~/Downloads 에 둔다 → 내가 얼굴을 보고 id 를 맞춰 굽기(900·320 q88) · AWAKEN_ART 더하기 · 커밋
+  - 남장수 1차 42명 `docs/realm/awaken-next-men.html` (아티팩트 9bdQ176XBt2fcmydo3A4qc)
+  - 여장수 1차 옛 틀 다시 52명 · 2차 99명 `docs/realm/awaken-women-next.html` (아티팩트 PSJxC2XzkgzdCvX3LsGEKv) — 2차를 받으면 `awaken2(-hd)/` 에 굽고 `src/realm/data/awaken2.ts` TRUE_WAKE 에 장수 id 를 더한다
+  - 변한 단비 2차 원본 `assets_src/realm/awaken2/w-98-byeonhan-danbi-raw.png` 은 아직 안 넣었다
+- 챗지피티 한도: edu 11-05 PM 7:38 · Facts 11-05 PM 6:25 (ART-QUEUE 맨 위 표)
+
+## ★ (11-04 오후 · 긴급 위원회 뒤 · 형 "니 의견대로 계속 해")
 
 **왜:** 막내·둘째·지인 셋 다 튜토리얼만 끝내고 다시 안 옴. 결론은 `docs/realm/council/1104b/README.md` (여섯 자리 보고 · evidence.md 가 첫 10분 잰 것).
 - 지은 것: 튜토리얼 오간 각성 버그 · 1장·1:1 유예 2년 → 1계절 · VS 셈 손가락 · 첫 계절 정찰 붙잡기 뺌 · 싸움 뒤 걷을 것 줄임 · 「다음 달」 ⚔ 예고에 길 위의 적
