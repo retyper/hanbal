@@ -488,6 +488,8 @@ function gainHtml(g: Partial<Record<'grain' | 'iron' | 'wood' | 'salt' | 'horse'
 /** 물건 아닌 것 — 수확·사기·정·집·경계·호감·장수. 좋으면 ▲ 푸르게 · 나쁘면 ▼ 붉게 (costHtml·gainHtml 과 같은 꼴) */
 const fxChip = (good: boolean, ic: string, text: string): string =>
   `<span class="${good ? 'gain' : 'cost'}"><b class="${good ? 'gg' : 'cg'}" title="${esc(text)}"><i>${good ? '▲' : '▼'}</i>${icon(ic, 'cgi')}${esc(text)}</b></span>`
+/** 재해의 세기 — 불꽃 셋 가운데 켜진 수 (작은 1 · 보통 2 · 큰 3) · 꾹 누르면 말로 (형 11-05: "재해 강도를 표시하면서") */
+const sevPips = (sev: 1 | 2 | 3 | undefined): string => sev === undefined ? '' : `<i class="sevp s${sev}" data-tip="${sev === 1 ? '작게 왔다 · 피해가 적고 막기 쉽다' : sev === 3 ? '크게 왔다 · 피해가 크고 막기 어렵다' : '보통 세기'}">${[1, 2, 3].map((k) => `<u class="${k <= sev ? 'on' : ''}"></u>`).join('')}</i>`
 const signed = (n: number): string => (n > 0 ? `+${n}` : `${n}`)
 /** 걸리는 때 칩 — 사거나 고르는 것이 다음 달에 바로 되지 않으면 몇 달인지 (형 11-04: "다음 턴에 발생하는 거 아니면 몇 달 걸리는지 다 제대로 써 줘야") */
 const whenChip = (label: string): string => `<span class="whenc" title="걸리는 때"><b>⏳${esc(label)}</b></span>`
@@ -3142,14 +3144,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       return `<div class="csub csay" aria-live="polite"><span class="cwho">${bust(who, 'cwf')}<small>${esc(who.name)}</small></span><span class="cline">${esc(say.line)}</span></div>`
     }
     if (at < beats.length) {
-      return `<div class="cardc story${info.bad ? ' bad' : ''}" data-act="card-beat">${img}<div class="cb"><b>${icon(info.icon, 'cic')}${esc(info.name)}</b>`
+      return `<div class="cardc story${info.bad ? ' bad' : ''}" data-act="card-beat">${img}<div class="cb"><b>${icon(info.icon, 'cic')}${esc(info.name)}${sevPips(c.sev)}</b>`
         + beatHtml(beats[at]!) + `<div class="cnav"><small>${at + 1}/${beats.length} · 누르면 다음 ›</small><button class="cskip" data-act="card-skip">건너뛰기 »</button></div></div></div>`
     }
     // 쫓겨 온 사람은 받기 전에 누구인지 — 얼굴 · 이름 · 특성
     // 연정 소문은 두 사람 얼굴을 나란히 — 탭탭 넘기다 와도 누가 누구인지 (형 10-29: "누가 누구랑 뭔 일 있는지 전혀 모른다")
     const who0 = guest !== undefined ? `<div class="cguest">${bust(guest, 'cof')}<span><b>${esc(guest.name)}</b><span class="wtr">${traitChips(guest, true)}</span></span></div>`
       : c.kind === 'romance' && qa !== undefined && qb !== undefined ? `<div class="cguest">${bust(qa, 'cof')}<b>${esc(qa.name)}</b><span class="cheart">♥</span>${bust(qb, 'cof')}<b>${esc(qb.name)}</b></div>` : ''
-    let h = `<div class="cardc${info.bad ? ' bad' : ''}${info.opts.length > 2 ? ' n3' : ''}">${img}<div class="cb"><b>${icon(info.icon, 'cic')}${esc(info.name)}</b>${who0}<p class="cask">${esc(sub(info.ask))}</p><div class="copts">`
+    let h = `<div class="cardc${info.bad ? ' bad' : ''}${info.opts.length > 2 ? ' n3' : ''}">${img}<div class="cb"><b>${icon(info.icon, 'cic')}${esc(info.name)}${sevPips(c.sev)}</b>${who0}<p class="cask">${esc(sub(info.ask))}</p><div class="copts">`
     // 고르지 않았을 때 걸리는 답 — 엔진(events.resolveCard)과 같게: 망명자는 둘째(돌려보낸다) · 장수 다툼은 침묵
     const fallback = cardFallback(c.kind)
     info.opts.forEach((o, i) => {

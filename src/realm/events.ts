@@ -11,7 +11,8 @@
 import { roll } from '../core/rng.ts'
 import { monthly, perSeason, seasonIdx, seasonNo, seasons, yearOf } from './calendar.ts'
 import { P } from '../tune/params.ts'
-import { CARDS, CARD_KINDS, QUARREL_WHYS, cardFallback, type CardKind, type QuarrelWhy } from './data/cards.ts'
+import { CARDS, CARD_KINDS, QUARREL_WHYS, SEV_KINDS, cardFallback, type CardKind, type QuarrelWhy } from './data/cards.ts'
+import { isRiverside } from './economy.ts'
 import { HERO_POOL } from './data/heroes-pool.ts'
 import { addFavor } from './diplomacy.ts'
 import { knownOf } from './discovery.ts'
@@ -53,7 +54,12 @@ function candidates(r: Realm, f: string, season: number): Array<{ card: Card; w:
   const heroes = freeHeroes(r, f)
   const badMul = (r.tier ?? 1) < 1 ? P.realm.easyBad : 1 + P.realm.cardTierBad * (Math.max(1, r.tier ?? 1) - 1)
   const add = (kind: CardKind, w: number, more: Partial<Card> = {}): void => {
-    const card: Card = { kind, season, ...more }
+    // 재해는 세기를 굴린다 — 작게 · 보통 · 크게 (난세가 높을수록 크게가 잦다 · 형 11-05)
+    const R = P.realm
+    const strong = R.cardSevStrong + R.cardSevStrongTier * Math.max(0, (r.tier ?? 1) - 1)
+    const u = roll(r.seed, season, `card-sev:${kind}`)
+    const sev: 1 | 2 | 3 | undefined = SEV_KINDS.has(kind) ? (u < R.cardSevWeak ? 1 : u > 1 - strong ? 3 : 2) : undefined
+    const card: Card = { kind, season, ...(sev !== undefined ? { sev } : {}), ...more }
     const seen = r.cardSeen?.[cardKey(card)]
     const fresh = seen === undefined || season - seen >= seasons(r, P.realm.cardSeenSeasons)
     out.push({ card, w: w * (CARDS[kind].bad ? badMul : 1) * (fresh ? 1 : P.realm.cardSeenMul) })
@@ -61,6 +67,9 @@ function candidates(r: Realm, f: string, season: number): Array<{ card: Card; w:
   if (y === 0 || y === 1) { add('drought', 1); add('bounty', 0.8) }
   if (y === 1) add('locust', 0.6)
   if ((y === 1 || y === 2) && big.length > 0) add('plague', 0.7, { node: big[0]! })
+  // 강 범람 — 여름 장마 · 강가 고을이 있을 때 (가장 큰 강가 고을)
+  const river = big.filter((id) => isRiverside(r, id))
+  if (y === 1 && river.length > 0) add('flood', P.realm.cardFloodW, { node: river[0]! })
   add('halo', 0.6)
   if (heroes.length >= 2) {
     const i = Math.floor(roll(r.seed, season, 'card-q1') * heroes.length)
@@ -277,19 +286,29 @@ export function cardPreview(r: Realm, c: Card, pick: 0 | 1 | 2, have?: { readonl
   const hurt = (nodes: readonly string[], share: number): Array<readonly [string, number]> =>
     nodes.flatMap((id) => (r.nodes[id] !== undefined ? [[id, Math.round(r.nodes[id]!.hh * share)] as const] : []))
   const cheer: CardFx = { morale: R.cardMorale, bond: R.cardBond }
+  // 재해의 세기 — 작으면 피해가 줄고 맞서기·빌기가 쉽다 · 크면 거꾸로 (형 11-05) · 세기 없는 카드(옛 저장)는 보통
+  const m = c.sev === 1 ? R.cardSevWeakMul : c.sev === 3 ? R.cardSevStrongMul : 1
+  const less = (mul: number): number => 1 - (1 - mul) * m // 가을걷이 곱(1 아래)의 모자람을 세기만큼
+  const ok = (p: number): number => Math.max(0.05, Math.min(0.95, p - (((c.sev ?? 2) - 2) * R.cardSevOkShift)))
   switch (c.kind) {
     case 'drought':
-      return { sure: pick === 0 ? { grain: cost(R.cardDroughtPray), harvest: R.cardDroughtPrayMul } : { grain: cost(R.cardDroughtDam), harvest: R.cardDroughtDamMul } }
+      return { sure: pick === 0 ? { grain: cost(R.cardDroughtPray * m), harvest: less(R.cardDroughtPrayMul) } : { grain: cost(R.cardDroughtDam * m), harvest: less(R.cardDroughtDamMul) } }
     case 'bounty':
       // 크게 잔치한다 — 풍년 몫을 먹는다: 곡식은 안 들고 가을걷이가 조금 · 사기와 정이 크게 (위원회 11-04 F3 · 창고에 늘 밀렸다)
       return { sure: pick === 0 ? { harvest: R.cardBountyMul } : { harvest: R.cardBountyFeastMul, morale: R.cardSkyMorale, bond: R.cardBountyFeastBond } }
     case 'locust':
-      if (pick === 0) return { sure: { harvest: R.cardLocustBurnMul } }
+      if (pick === 0) return { sure: { harvest: less(R.cardLocustBurnMul) } }
       // 산천에 빈다 — 『삼국사기』 파사이사금 30년 「王遍祭山川，以祈禳之，蝗滅」 · 곡식을 조금 바치고, 흔히 메뚜기가 사라진다 (형 10-24)
-      return { sure: { grain: cost(R.cardLocustPray) }, chance: R.cardLocustOk, die: 'wait', win: {}, lose: { harvest: R.cardLocustFailMul } }
+      return { sure: { grain: cost(R.cardLocustPray) }, chance: ok(R.cardLocustOk), die: 'wait', win: {}, lose: { harvest: less(R.cardLocustFailMul) } }
     case 'plague':
-      if (pick === 0) return { sure: { hurt: hurt([c.node!], R.cardPlagueShut), grain: cost(R.cardPlagueShutGrain) } }
-      return { sure: {}, chance: R.cardPlagueOk, die: 'spread', win: {}, lose: { hurt: hurt(bigNodes(r, f).slice(0, 2), R.cardPlagueHit) } }
+      if (pick === 0) return { sure: { hurt: hurt([c.node!], R.cardPlagueShut * m), grain: cost(R.cardPlagueShutGrain * m) } }
+      return { sure: {}, chance: ok(R.cardPlagueOk), die: 'spread', win: {}, lose: { hurt: hurt(bigNodes(r, f).slice(0, 2), R.cardPlagueHit * m) } }
+    case 'flood': {
+      // 둑을 쌓는다 — 곡식이 들고 집은 조금만 잃는다 · 기다린다 — 강가 고을마다 집을 잃지만 물이 빠진 들에 새 흙이 앉아 그해 가을걷이가 는다 (클수록 둘 다 크다 · 문명의 범람원)
+      if (pick === 0) return { sure: { grain: cost(R.cardFloodDam * m), hurt: hurt([c.node!], R.cardFloodDamHurt * m) } }
+      const banks = bigNodes(r, f).filter((id) => isRiverside(r, id))
+      return { sure: { hurt: hurt(banks, R.cardFloodHit * m), harvest: 1 + R.cardFloodRich * m } }
+    }
     case 'halo':
       // 길조라 외친다 — 밖에 군대가 없으면 사기 대신 장수들 정 (위원회 11-04 F9 · 군대가 없으면 0 이었다)
       return { sure: pick === 0 ? (Object.values(r.armies).some((a) => a.faction === f) ? { morale: R.cardMorale } : { bond: R.cardBond }) : { watch: R.cardHaloWatch } }
@@ -312,9 +331,9 @@ export function cardPreview(r: Realm, c: Card, pick: 0 | 1 | 2, have?: { readonl
         return { sure: { grain: -g, iron: Math.round(g / R.cardIronBuy) } }
       }
     case 'pirates':
-      if (pick === 0) return { sure: { grain: cost(R.cardPirateRansom) } }
+      if (pick === 0) return { sure: { grain: cost(R.cardPirateRansom * m) } }
       // 맞선다 — 포구를 맡은 장수와 경계가 이길 가망을 올린다 (위원회 11-04 F10 · 통제 원칙)
-      return { sure: {}, chance: Math.min(R.cardPirateMax, R.cardPirateOk + (postHero(r, c.node!) !== null ? R.cardPirateChief : 0) + (r.watch[c.node!]?.alert ?? 0) * R.cardPirateWatch), die: 'fight', win: { iron: R.cardPirateIron }, lose: { hurt: hurt([c.node!], R.cardPirateHit), grain: cost(R.cardPirateLoss) } }
+      return { sure: {}, chance: Math.min(R.cardPirateMax, ok(R.cardPirateOk) + (postHero(r, c.node!) !== null ? R.cardPirateChief : 0) + (r.watch[c.node!]?.alert ?? 0) * R.cardPirateWatch), die: 'fight', win: { iron: Math.round(R.cardPirateIron * m) }, lose: { hurt: hurt([c.node!], R.cardPirateHit), grain: cost(R.cardPirateLoss) } }
     case 'exile': {
       // 돌려보낸다 — 쫓아낸 나라가 우리를 좋게 본다 · 받으면 그 나라가 노한다 (위원회 11-04 F5 · 돌려보내기가 아무 일 없어 늘 밀렸다)
       if (pick === 1) return { sure: c.from !== undefined ? { favor: [{ to: [c.from], d: R.cardExileReturnFavor }] } : {} }

@@ -5,7 +5,7 @@
  * 그림은 이미 받아 둔 사건 삽화 (public/realm/event/). 글은 쉬운 말로 (메모리 realm-plain-words).
  */
 
-export type CardKind = 'drought' | 'bounty' | 'locust' | 'plague' | 'halo' | 'quarrel' | 'waship' | 'pirates' | 'exile' | 'fugitive' | 'whale' | 'fishbridge' | 'gogak' | 'romance'
+export type CardKind = 'drought' | 'bounty' | 'locust' | 'plague' | 'flood' | 'halo' | 'quarrel' | 'waship' | 'pirates' | 'exile' | 'fugitive' | 'whale' | 'fishbridge' | 'gogak' | 'romance'
   | 'sowfest' | 'skyfest' | 'mentor' | 'smith' | 'homenews' | 'song' | 'spring' | 'gift' | 'hunt' | 'rival'
   | 'mhscold' | 'mhhunt' | 'opengate' | 'redsail' | 'selfpot'
 
@@ -95,6 +95,17 @@ export const CARDS: Readonly<Record<CardKind, CardInfo>> = {
     opts: [
       { name: '문을 닫는다', does: '{n}의 집이 조금 줄어든다 · 곡식이 조금 든다 · 번지지 않는다' },
       { name: '내버려 둔다', does: '그냥 지나가기도 하고, 큰 고을 둘의 집이 크게 줄기도 한다' },
+    ],
+  },
+  // 강 범람 — 문명의 범람원처럼: 크게 넘치면 집이 쓸려 가지만, 물이 빠진 들은 기름져 그해 가을걷이가 는다 (형 11-05)
+  flood: {
+    name: '강 범람', kind: 'sky', bad: true, icon: 'status-bad-omen', art: 'event-flood',
+    line: '장맛비에 강이 넘친다. {n} 들이 물에 잠긴다.',
+    beats: ['장맛비가 그치지 않는다.', '강둑을 넘은 물이 {n} 들로 밀려든다.'],
+    ask: '물을 어찌할까?',
+    opts: [
+      { name: '둑을 쌓는다', does: '곡식이 든다 · 집은 거의 안 잃지만 들에 새 흙도 안 앉는다' },
+      { name: '물이 빠지길 기다린다', does: '강가 고을 집을 잃는다 · 물이 빠진 들에 기름진 흙이 앉아 그해 가을걷이가 는다 (클수록 둘 다 크다)' },
     ],
   },
   halo: {
@@ -402,11 +413,27 @@ const FUGITIVE_FROM: Pick<CardInfo, 'line' | 'ask' | 'opts'> = {
 }
 
 /** 이 카드의 글·그림 — 장수 다툼은 까닭(why)에 따라 (없으면 덩이쇠 몫) · 소도의 도망자는 내놓으라는 나라가 있으면 */
-export function cardInfo(c: { readonly kind: CardKind; readonly why?: QuarrelWhy; readonly from?: string }): CardInfo {
+export function cardInfo(c: { readonly kind: CardKind; readonly why?: QuarrelWhy; readonly from?: string; readonly sev?: 1 | 2 | 3 }): CardInfo {
   if (c.kind === 'quarrel') return { ...CARDS.quarrel, ...QUARREL_WHY[c.why ?? 'spoils'] }
   if (c.kind === 'fugitive' && c.from !== undefined) return { ...CARDS.fugitive, ...FUGITIVE_FROM }
-  return CARDS[c.kind]
+  const base = CARDS[c.kind]
+  const s = SEV[c.kind]
+  if (s === undefined || c.sev === undefined || c.sev === 2) return base
+  // 세기가 다르면 이름과 자막 한 줄이 다르다 — 「큰 돌림병」은 첫 장부터 무겁게 (형 11-05)
+  const i = c.sev === 1 ? 0 : 1
+  return { ...base, name: s.name[i]!, beats: [...base.beats, s.beat[i]!] }
 }
+
+/** 세기마다의 이름(작은 · 큰)과 덧붙는 자막 한 줄 — 보통은 본래 이름 (SEV_KINDS) */
+const SEV: Partial<Record<CardKind, { readonly name: readonly [string, string]; readonly beat: readonly [string, string] }>> = {
+  drought: { name: ['마른 봄', '큰 가뭄'], beat: ['다행히 땅이 아주 메마르진 않았다.', '우물마저 말라 간다. 몇 해 만의 큰 가뭄이다!'] },
+  locust: { name: ['메뚜기 몇 무리', '하늘을 덮은 메뚜기'], beat: ['무리가 크지는 않다.', '해가 가려질 만큼 끝없이 몰려온다!'] },
+  plague: { name: ['가벼운 돌림병', '큰 돌림병'], beat: ['앓는 이가 아직 많지는 않다.', '마을마다 곡소리가 끊이지 않는다!'] },
+  pirates: { name: ['좀도둑 배 몇 척', '바다 도적 큰 무리'], beat: ['배 몇 척뿐인 좀도둑이다.', '수평선을 메운 큰 무리다!'] },
+  flood: { name: ['작은 물난리', '큰 홍수'], beat: ['물은 무릎께에서 멎었다.', '지붕까지 물이 찬다. 몇십 년 만의 큰물이다!'] },
+}
+/** 세기를 굴리는 재해 */
+export const SEV_KINDS: ReadonlySet<CardKind> = new Set(Object.keys(SEV) as CardKind[])
 
 /** 고르지 않으면 걸리는 답 — 장수 다툼은 침묵 · 망명자는 돌려보낸다 · 연정 소문은 모른 척 · 나머지는 첫째 */
 export const cardFallback = (kind: CardKind): 0 | 1 | 2 => (kind === 'quarrel' ? 2 : kind === 'exile' || kind === 'romance' ? 1 : 0)

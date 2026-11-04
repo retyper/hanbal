@@ -966,6 +966,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .cost .cg { display: inline-flex; align-items: center; gap: 1px; padding: 0 6px 0 3px; border-radius: 999px; background: #3a1410d0; border: 1px solid #c8503a99; color: #ffd0c0; font-size: 12.5px; font-weight: 700; line-height: 1.5; font-variant-numeric: tabular-nums; }
 .ap .cost .cg i { font-style: normal; font-size: 9px; color: #ff6a4a; margin-right: 1px; }
 .ap .whenc { display: inline-flex; align-items: center; margin-left: 4px; vertical-align: middle; } .ap .whenc b { padding: 0 7px 0 5px; border-radius: 999px; background: #1e2a3ad0; border: 1px solid #7aa0d099; color: #d6e6ff; font-size: 12.5px; font-weight: 700; line-height: 1.5; white-space: nowrap; }
+/* 재해 세기 — 붉은 칸 셋 가운데 켜진 수 (형 11-05) */
+.ap .sevp { display: inline-flex; gap: 2px; margin-left: 8px; vertical-align: middle; font-style: normal; } .ap .sevp u { width: 9px; height: 14px; border-radius: 2px; background: #ffffff22; border: 1px solid #ffffff33; } .ap .sevp u.on { background: #e0503a; border-color: #ff9a7a; box-shadow: 0 0 6px #ff5a3a88; } .ap .sevp.s3 u.on { background: #ff2a1a; animation: sevpulse .8s ease-in-out infinite alternate; } @keyframes sevpulse { to { box-shadow: 0 0 10px #ff3a1acc; } }
 .ap .cost .cgi { width: 16px; height: 16px; object-fit: contain; }
 .ap .btn.pri .cost .cg { background: #2a0e08e0; }
 /* 드는 값은 금빛 중립 · 모자라서 못 하는 단추 안에서만 붉다 — 「드는 값」과 「안 된다」가 같은 붉은빛이라 할 수 있는 것도 망설였다 (위원회 11-04 UX ⑥) */

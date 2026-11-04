@@ -394,6 +394,8 @@ export interface Card {
   readonly guest?: string
   /** 그 일이 난 이웃 나라 — 쫓겨 온 사람의 고향 · 소도 도망자를 내놓으라는 나라 */
   readonly from?: string
+  /** 재해의 세기 — 1 작은 · 2 보통 · 3 큰 (형 11-05: "더 강한 전염병 · 더 약한 왜구 · 재해 강도를 표시하면서 variation") · 없으면 보통(옛 저장) */
+  readonly sev?: 1 | 2 | 3
 }
 
 /** 원정 한 번 — back 계절에 돌아와 got 을 푼다 */
