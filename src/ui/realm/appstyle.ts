@@ -1269,6 +1269,7 @@ export const UI_CSS = `
 .ap .axold { animation: axgone .25s linear var(--tf) forwards; }
 @keyframes axgone { to { opacity: 0; } }
 .ap .axnew { opacity: 0; animation: axfade .25s ease-out var(--tf) forwards; }
+.ap video.axnew { object-position: 50% 6%; } /* 세로 고리 영상 — 위(왕관·머리)를 살리고 아래 제미나이 표식은 잘려 나간다 */
 .ap .axtg { position: absolute; bottom: -6%; left: var(--l); width: 46%; z-index: -1; transform-origin: 50% 100%; opacity: 0; pointer-events: none;
   animation: axtg .5s ease-out calc(var(--tf) - 600ms + var(--i) * 40ms) forwards, axlick .9s ease-in-out calc(var(--tf) + var(--i) * 70ms) infinite alternate; }
 @keyframes axtg { from { opacity: 0; transform: scaleY(.2); } to { opacity: 1; transform: translateY(-10%) scaleY(1.9); } }

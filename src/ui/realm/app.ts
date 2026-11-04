@@ -10,7 +10,7 @@ import { faceFile, noteAscended } from './face.ts'
 import { aiOrders, strikeLive } from '../../realm/ai.ts'
 import { headcount, strength, type Equip, type UnitKind } from '../../realm/battle.ts'
 import { bustOf, CUSTOM_ICON, FACTION_ART, GOOD_ICON, MIGRANT_ANIM, SEASON_ICON, SOL_ANIM2, SOL_ANIM_AR, UNIT_ICON, flagIcon, kidBust, nodeIcon, nodePos, noteGrowing, noteKids } from '../../realm/data/art.ts'
-import { AWAKEN_ART } from '../../realm/data/awaken-art.ts'
+import { AWAKEN_ART, AWAKEN_LOOP } from '../../realm/data/awaken-art.ts'
 import { NATIONS, type NationInfo } from '../../realm/data/nations.ts'
 import { YEONGNAM_NATIONS } from '../../realm/data/nations-yeongnam.ts'
 import { SOUTH_NATIONS } from '../../realm/data/nations-south.ts'
@@ -579,6 +579,7 @@ const DEX_KIT = {
   kid: (key: string, look: 'g' | 'w', traits?: readonly string[]): string | null => { const f = kidBust(key, look, traits); return f !== undefined ? `${ART}bust/${f}.jpg` : null },
   grow: (id: string): { lv: number; relics: string } => ({ lv: drillLevel(id), relics: relicChips(ART, esc, wornBy(id)) }),
   awake: (id: string): string | null => { const b = bustOf(id); return b !== undefined && AWAKEN_ART.has(b) ? `${ART}awaken-hd/${b}.jpg` : null },
+  awakeLoop: (id: string): string | null => { const b = bustOf(id); return b !== undefined && AWAKEN_LOOP.has(b) ? `${ART}awaken-loop/${b}.mp4` : null },
 }
 
 /** 처음 몸 — 영웅전 명부 · 가문의 아이 (단련터 · 동행 고르기의 단련 몸) */
@@ -646,6 +647,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   // 그래픽 단계 저사양 · 보통 · 고사양 (quality.ts · 형 10-29: 폰 절전 모드에서 그림이 다 깨졌다)
   startQuality(root, (h) => goToast(h))
   installTips(root)
+  // 숨 쉬는 각성 영상 — 탭이 숨으면 멈추고 돌아오면 다시 (절대 규칙 4 · 배터리)
+  document.addEventListener('visibilitychange', () => {
+    for (const v of root.querySelectorAll<HTMLVideoElement>('video[loop]')) {
+      if (document.visibilityState === 'visible') void v.play().catch(() => undefined)
+      else v.pause()
+    }
+  })
   /** 배경 음악 · 계절 바람 — 싸움 창이 열려 있으면 싸움 음악 */
   const music = makeMusic(BASE, muted, () => root.querySelector('.nightov') !== null) // 밤 판이 떠 있으면 조용히 — 밤 판은 제 소리를 낸다
   let warOn = false
@@ -1413,7 +1421,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const E = ELEM[e]
     const sd = h.id.length + h.name.length
     const before = b !== undefined ? `<img class="axold" src="${ART}bust-hd/${b}.jpg" onerror="this.onerror=null;this.src='${ART}bust/${b}.jpg'" alt="">` : ''
-    const after = b !== undefined && AWAKEN_ART.has(b) ? `<img class="axnew" src="${ART}awaken-hd/${b}.jpg" alt="">` : before.replace('axold', 'axnew')
+    // 숨 쉬는 고리 영상이 있으면 각성 초상이 움직인다 (형 11-05 · live2d 같은 idle) · 저사양은 그림
+    const loopOk = b !== undefined && AWAKEN_LOOP.has(b) && !root.classList.contains('q-low')
+    const after = loopOk ? `<video class="axnew" src="${ART}awaken-loop/${b}.mp4" poster="${ART}awaken-hd/${b}.jpg" autoplay muted loop playsinline preload="auto"></video>` : b !== undefined && AWAKEN_ART.has(b) ? `<img class="axnew" src="${ART}awaken-hd/${b}.jpg" alt="">` : before.replace('axold', 'axnew')
     const phone = window.matchMedia('(pointer: coarse)').matches
     const n = phone ? R.ascendEmbersPhone : R.ascendEmbers
     const jit = (i: number, k: number): number => ((i * 73 + k * 151 + h.id.length * 37) % 101) / 101 // 불티 자리 — 장수마다 같은 흩어짐
@@ -6244,8 +6254,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * 장수 그림을 화면 가득 (형 10-25: "이미지 클릭하면 왕크게 구경할 수 있게 · 유저들이 이미지 구경하고 싶잖아").
    * 큰 판(bust-hd 900px)을 먼저, 없으면 카드 그림. 아무 데나 누르면 닫힌다
    */
-  function openBust(src: string): void {
+  function openBust(src: string, loop?: string): void {
     root.querySelector('.bview')?.remove()
+    // 고리 영상이 있으면 크게 숨 쉬는 초상 (형 11-05 · live2d 같은 idle) · 없으면 그림
+    if (loop !== undefined && loop !== '') {
+      root.insertAdjacentHTML('beforeend', `<div class="bview" data-act="bust-close" role="dialog" aria-label="장수 그림 크게"><video src="${loop}" poster="${src}" autoplay muted loop playsinline></video><small>누르면 닫힌다</small></div>`)
+      return
+    }
     root.insertAdjacentHTML('beforeend', `<div class="bview" data-act="bust-close" role="dialog" aria-label="장수 그림 크게"><img alt=""><small>누르면 닫힌다</small></div>`)
     const img = root.querySelector<HTMLImageElement>('.bview img')!
     img.addEventListener('error', () => { if (img.src !== new URL(src, location.href).href) img.src = src }, { once: true })
@@ -8225,7 +8240,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (h !== undefined && h.faction === me() && h.status === 'free' && !isRuler(realm!, h.id) && voiceGate(performance.now())) ding(voicePath(h, 'tap', false), 0.9)
         openSheet({ kind: 'hero', id: d['id']! }); return
       }
-      case 'bust-view': openBust(d['src']!); return
+      case 'bust-view': openBust(d['src']!, d['loop']); return
       case 'bust-close': root.querySelector('.bview')?.remove(); return
       case 'assign':
         heroOrders = [...heroOrders, { kind: 'assign', hero: d['id']!, node: d['node'] ? d['node'] : null }]

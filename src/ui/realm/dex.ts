@@ -130,6 +130,8 @@ interface DexKit {
   readonly grow: (hero: string) => { lv: number; relics: string }
   /** 각성 초상 주소 — 그림이 없으면 null */
   readonly awake: (hero: string) => string | null
+  /** 각성 초상의 숨 쉬는 고리 영상 — 없으면 null (AWAKEN_LOOP) */
+  readonly awakeLoop?: (hero: string) => string | null
 }
 
 /**
@@ -170,7 +172,10 @@ function detail(k: DexKit, x: DexHero, f: number): string {
   let h = `<div class="dxsel"><button class="x" data-act="dex-sel" aria-label="닫기">✕</button>`
   const aw = (f & DEX_AWOKE) !== 0 ? k.awake(x.id) : null
   const src = awakeAll ? aw : k.bust(x.id)
-  h += `<div class="dxtop">${lv > 0 && src !== null ? `<img class="dxbig" src="${src}" alt="" data-act="bust-view" data-src="${src}">` : '<span class="dxbig none">?</span>'}<div>`
+  // 각성 보기에 고리 영상이 있으면 숨 쉬는 초상 (형 11-05 · 저사양·동작 줄이기에선 첫 장면에 멈춘다)
+  const loop = awakeAll && aw !== null ? k.awakeLoop?.(x.id) ?? null : null
+  const big = loop !== null ? `<video class="dxbig dxloop" src="${loop}" poster="${aw}" autoplay muted loop playsinline preload="auto" data-act="bust-view" data-src="${aw}" data-loop="${loop}"></video>` : `<img class="dxbig" src="${src}" alt="" data-act="bust-view" data-src="${src}">`
+  h += `<div class="dxtop">${lv > 0 && src !== null ? big : '<span class="dxbig none">?</span>'}<div>`
   h += `<b class="dxname">${lv > 0 ? nameHtml(x.name) : '???'}</b>`
   h += `<span class="mute">${k.esc(whereHint(x))}</span>`
   if (lv >= 2) h += `<span class="grade" style="--g:${GRADE_COLOR[x.grade]}">${GRADE_NAME[x.grade]}</span>`
@@ -281,6 +286,7 @@ export const DEX_CSS = `
 /* PC 는 탭이 줄을 넘겨 접힌다 — 마우스로는 옆으로 밀어 볼 수 없었다 (형 11-05: 삼한·북녘을 볼 수 없음) */
 @media (hover: hover) and (pointer: fine) { .ap .dexp .dxtabs { flex-wrap: wrap; overflow-x: visible; justify-content: center; } }
 .ap .dexp .dxtop { display: flex; gap: 12px; align-items: center; } .ap .dexp .dxtop > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.ap .dexp video.dxbig { object-position: 50% 6%; }
 .ap .dexp .dxbig { width: 96px; height: 96px; border-radius: 0; object-fit: cover; object-position: top; flex: none; box-sizing: border-box; border: 9px solid transparent; border-image: url(__ART__ui/frame-portrait.png) 60 / 9px stretch; }
 .ap .dexp .dxbig.none { display: grid; place-items: center; background: #17110c; color: #60524a; font-size: 40px; }
 .ap .dexp .dxname { font-size: 19px; color: var(--gold); font-family: 'Gowun Batang', serif; }
