@@ -1084,6 +1084,26 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const all = sorted(Object.values(r.heroes)).filter(can)
     return [...all.filter((x) => x.at === a.at), ...all.filter((x) => x.at !== a.at)]
   }
+  /**
+   * 이 군대를 못 이끄는 까닭 — leadCands 와 같은 셈을 하나씩 (형 11-04: "별동대에 장수 배치가 안 됨 · 다솜 배치 왜 안 되냐" —
+   * 못 고르는 장수가 말없이 목록에서 사라졌다). 이끌 수 있으면 null
+   */
+  function leadWhy(r: Realm, a: Army, x: Hero): string | null {
+    if (x.faction !== me()) return '우리 장수가 아닙니다'
+    if (x.status === 'captive') return '잡혀 있습니다'
+    if (x.status !== 'free') return '이끌 수 없습니다'
+    const led = Object.values(r.armies).find((b) => b.hero === x.id)
+    if (led !== undefined) return `${armyName(r, led)} 군대를 이끌고 있습니다`
+    const job = heroBusy(r, x.id)
+    if (job !== null) return job
+    if (x.at === null) return '길 위에 있어 올 수 없습니다'
+    if (handLocked(r, x.id)) return `이번 ${turnWord(r)} 쓸 일손을 다 썼습니다 (${handsUsed()}/${handsCap(r)})`
+    if (x.at !== a.at) {
+      if (r.nodes[a.at]?.owner !== me()) return `이 군대가 우리 땅 밖(${r.nodes[a.at]?.name ?? ''})에 있어 ${r.nodes[x.at]?.name ?? ''}에서 올 수 없습니다`
+      if (migratePath(r, me(), x.at, a.at) === null) return `${r.nodes[x.at]?.name ?? ''}에서 우리 땅으로 이어진 길이 없습니다`
+    }
+    return null
+  }
   /** 이끌 장수 고르기의 꼬리표 — 맡은 고을(이끌면 내려놓는다) · 멀리서 오면 어디서 */
   function leadTags(r: Realm, a: Army, x: Hero): string {
     const t: string[] = []
@@ -2381,15 +2401,21 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const cur = a.hero !== null ? r.heroes[a.hero] : undefined
     const cands = leadCands(r, a)
     let h = `<div class="ldpk"><b>누가 이끄나</b>`
-    if (cur === undefined && cands.length === 0) return h + `<p class="mute">맡길 장수가 없다</p></div>`
+    if (cur === undefined && !Object.values(r.heroes).some((x) => x.faction === me() && x.status === 'free')) return h + `<p class="mute">맡길 장수가 없습니다</p></div>`
     h += `<div class="cmdp">`
     if (cur !== undefined) h += `<button class="on" data-act="ldpop" data-army="${a.id}">${bust(cur, 'face')}<b>${nameHtml(cur.name)}</b><small><i>이끄는 중</i>${st(cur)}</small></button>`
     for (const x of cands) {
       const ruler = isRuler(r, x.id)
       h += `<button data-act="ldpick" data-army="${a.id}" data-id="${x.id}"${ruler ? ` data-tip="${RULER_LEAD_TIP}"` : ''}>${bust(x, 'face')}<b>${nameHtml(x.name)}</b><small>${ruler ? '<i>친히 이끈다</i>' : ''}${leadTags(r, a, x)}${st(x)}</small></button>`
     }
+    // 못 이끄는 우리 장수도 흐리게 — 누르면 까닭이 뜬다 (말없이 사라지면 "왜 안 되냐" · 메모리 wwe-overreaction-ux)
+    const off = sorted(Object.values(r.heroes)).filter((x) => x.faction === me() && x.status === 'free' && x.id !== cur?.id && !cands.some((c) => c.id === x.id))
+    for (const x of off) {
+      const why = leadWhy(r, a, x) ?? '이끌 수 없습니다'
+      h += `<button class="ldoff" data-act="ldpick" data-army="${a.id}" data-id="${x.id}"${noBtn(why)}>${bust(x, 'face')}<b>${nameHtml(x.name)}</b><small><i class="ldwhy">${esc(why)}</i></small></button>`
+    }
     h += `</div>`
-    if (cands.length === 0) h += `<p class="mute">바꿀 장수가 없다</p>`
+    if (cands.length === 0 && off.length === 0) h += `<p class="mute">바꿀 장수가 없습니다</p>`
     if (cur !== undefined) h += `<button class="btn ghost sm" data-act="ldpick" data-army="${a.id}" data-id="">장수 없이</button>`
     return h + `</div>`
   }

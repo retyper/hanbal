@@ -822,6 +822,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .selbar .sbfb.on .sbface { box-shadow: 0 0 0 2px #ffd27a, 0 0 10px #ffd27a; }
 .ap .selbar .ldpk { flex-basis: 100%; min-width: 0; display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--line); padding-top: 6px; }
 .ap .selbar .ldpk > b { font-size: 13px; color: #e0bd78; } .ap .selbar .ldpk .mute { margin: 0; font-size: 12.5px; } .ap .selbar .ldpk > .btn { align-self: flex-start; }
+.ap .ldpk .cmdp button.ldoff { opacity: .55; } .ap .ldpk .cmdp button.ldoff .ldwhy { font-style: normal; color: #f0a890; white-space: normal; }
 /* 집 보내기 — 고른 고을 그림 · 집 막대 · 조금·알맞게·많이 */
 .ap .pprow { flex: 1; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; padding: 0; }
 /* 고른 말 띠는 글만큼만 — 화면 끝까지 늘이지 않는다 (형 10-23: "박스가 너무 크면 그거에 가려진 마을을 선택할 수가 없어") */
