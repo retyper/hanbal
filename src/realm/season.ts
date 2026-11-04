@@ -1492,7 +1492,7 @@ function fight(
   // 제 몫의 싸움 — 진 쪽(지킨 쪽은 장정까지)이 이긴 쪽의 flameFairShare 넘게 있어야 불꽃이 붙는다 (빈 고을 줍기로 각성하지 않게 · sim-lens 11-04)
   const menOfMix = (m: Army['mix']): number => Object.values(m).reduce((t: number, v) => t + (v ?? 0), 0)
   const menA0 = legs.reduce((s, l) => s + menOfMix(l.army.mix), 0)
-  const menD0 = defenders.reduce((s, d) => s + menOfMix(d.mix), 0)
+  const menD0 = defenders.reduce((s, d) => s + menOfMix(d.mix), 0) + militiaN // 장정까지 (빠뜨려 튜토리얼 오간이 갯골을 이기고도 각성하지 못했다 · 긴급 위원회 11-04 기록원)
   for (const l of legs) scaleByGroups(l.army, res.ga)
   for (const d of defenders) scaleByGroups(d, res.gd)
   shiftMorale(atks, res.dma)

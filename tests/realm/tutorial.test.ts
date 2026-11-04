@@ -62,6 +62,19 @@ describe('배우는 판', () => {
     }
   })
 
+  it('오간이 갯골 싸움을 이기면 각성한다 — 튜토리얼이 약속한 것 (지킨 쪽 장정까지 쳐서 제 몫의 싸움 · 긴급 위원회 11-04)', () => {
+    let won = 0
+    for (let seed = 1; seed <= 12; seed++) {
+      const r = startTutorial(seed)
+      let x = advance(r, [{ kind: 'march', army: 'a-us', edge: 't01', ambush: false }, ...aiOrders(r)]).next
+      for (let s = 0; s < 3 && x.nodes['tut-gaetgol']!.owner !== 'baekje'; s++) x = advance(x, aiOrders(x)).next
+      if (x.nodes['tut-gaetgol']!.owner !== 'baekje') continue // 이 시드는 못 이겼다 — 각성은 이겨야
+      won++
+      assert.equal(x.heroes['tut-ogan']!.ascended, true, `시드 ${seed}: 불꽃 ${x.heroes['tut-ogan']!.flames}`)
+    }
+    assert.ok(won >= 6, `갯골을 이긴 시드 ${won}/12`)
+  })
+
   it('미추홀 도읍을 쥐면 이긴다', () => {
     const r = startTutorial(3)
     assert.equal(checkOutcome(r), null)
