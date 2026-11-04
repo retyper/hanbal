@@ -129,10 +129,24 @@ function flagsIn(r: Realm, h: Hero): number {
  * 한 판을 훑어 도감을 채운다 — 새로 켜진 칸이 있는 장수를 돌려준다 (화면이 "도감에 올랐다"를 띄운다).
  * `dex` 는 바꾸지 않고 새 것을 돌려준다.
  */
+/** 배우는 판의 장수 → 1장(마한)의 같은 사람 */
+const TUT_SAME: Readonly<Record<string, string>> = { 'tut-ogan': 'mh-ogan', 'tut-onjo': 'mh-onjo' }
+
 export function scanDex(dex: Readonly<Dex>, r: Realm): { dex: Dex; fresh: Array<{ id: string; was: number; now: number }> } {
   const out: Dex = { ...dex }
   const fresh: Array<{ id: string; was: number; now: number }> = []
-  if (r.region === 'tutorial') return { dex: out, fresh }
+  // 배우는 판은 셈하지 않는다 — 다만 깨어남은 1장의 같은 사람에게 적는다 (튜토리얼 오간 각성을 영웅전에서 켤 수 있게 · 형 11-04)
+  if (r.region === 'tutorial') {
+    for (const [t, id] of Object.entries(TUT_SAME)) {
+      const h = r.heroes[t]
+      if (h === undefined || h.faction !== r.player || h.ascended !== true) continue
+      const was = out[id]?.f ?? 0
+      if ((was & DEX_AWOKE) !== 0) continue
+      out[id] = { f: was | DEX_AWOKE, b: out[id]?.b ?? 'mahan' }
+      fresh.push({ id, was, now: was | DEX_AWOKE })
+    }
+    return { dex: out, fresh }
+  }
   const board: RegionId = r.region ?? 'byeonhan-mini'
   const known = new Set(dexCatalog().map((x) => x.id))
   const add = (id: string, f: number): void => {
