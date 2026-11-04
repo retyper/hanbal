@@ -6378,13 +6378,18 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const qs = bs.map((b) => b.getBoundingClientRect())
     const pad = P.realm.mapRingEdgePad
     const top = w.top + pad
-    const bottom = Math.min(w.bottom, root.querySelector<HTMLElement>('.todo')?.getBoundingClientRect().top ?? w.bottom) - pad
+    // 아래 할 일 띠가 숨었으면(높이 0 · PC 에서 top 0 으로 읽힘) 지도 끝을 쓴다 — 0 을 바닥으로 읽어 지도가 아래로 확 내려갔다 (형 11-04: "이서 도읍 눌렀는데 카메라가 아래로 확")
+    // 할 일 칩은 오른쪽 아래 작은 상자다 — 둘레와 가로로 겹칠 때만 바닥으로 친다
     const l = Math.min(...qs.map((q) => q.left))
     const rgt = Math.max(...qs.map((q) => q.right))
+    const td = root.querySelector<HTMLElement>('.todo')?.getBoundingClientRect()
+    const floor = td !== undefined && td.height > 0 && td.top > top && td.top < w.bottom && td.left < rgt && td.right > l ? td.top : w.bottom
+    const bottom = floor - pad
     const t = Math.min(...qs.map((q) => q.top))
     const btm = Math.max(...qs.map((q) => q.bottom))
     const dx = l < w.left + pad ? l - (w.left + pad) : rgt > w.right - pad ? rgt - (w.right - pad) : 0
-    const dy = t < top ? t - top : btm > bottom ? btm - bottom : 0
+    // 둘레가 보이는 칸보다 크면 위를 맞춘다 (아래를 맞추면 위가 잘린다) · 밀어도 둘레 높이만큼까지만
+    const dy = t < top ? t - top : btm > bottom ? Math.min(btm - bottom, Math.max(0, t - top)) : 0
     if (dx !== 0 || dy !== 0) wrap.scrollBy({ left: dx, top: dy, behavior: 'smooth' })
   }
 
