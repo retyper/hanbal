@@ -33,7 +33,7 @@ import {
   GOODS, armCost, buildCost, canBuild, canGuard, draftCost, draftIronCost, draftLimit, draftNeeds, draftPay, goodOf, guardCost, hhGrowth, isCoast, militiaMen, nextBuild, nodeHarvest, nodeYield, nodeSpecials, upkeepOf, riteAllowed, riteCost,
   autoFlows, crowdOf, migratePath, fieldMul, homeRoom, inboundOf, inboundRate, isRiverside, landMul, placeLimit, placeNodes, workMul,
   goodsWorth,
-  callCost, callLimit, callWhy, draftWhy, grainAtSeasonEnd, isWoody,
+  callCost, callLimit, callWhy, draftWhy, grainAtSeasonEnd, isWoody, shareOpen, stockOf,
 } from '../../realm/economy.ts'
 import { goalReach, goalRoute } from '../../realm/goal.ts'
 import { approachMoves, armyPower, jointWin, matchupHints, movesOf, type Move } from '../../realm/estimate.ts'
@@ -485,6 +485,8 @@ function gainHtml(g: Partial<Record<'grain' | 'iron' | 'wood' | 'salt' | 'horse'
 const fxChip = (good: boolean, ic: string, text: string): string =>
   `<span class="${good ? 'gain' : 'cost'}"><b class="${good ? 'gg' : 'cg'}" title="${esc(text)}"><i>${good ? '▲' : '▼'}</i>${icon(ic, 'cgi')}${esc(text)}</b></span>`
 const signed = (n: number): string => (n > 0 ? `+${n}` : `${n}`)
+/** 걸리는 때 칩 — 사거나 고르는 것이 다음 달에 바로 되지 않으면 몇 달인지 (형 11-04: "다음 턴에 발생하는 거 아니면 몇 달 걸리는지 다 제대로 써 줘야") */
+const whenChip = (label: string): string => `<span class="whenc" title="걸리는 때"><b>⏳${esc(label)}</b></span>`
 /** 사건 답 한 갈래가 하는 일 — 아이콘과 숫자로 (형 10-25: "얻게 되거나 잃게 되는 거 이미지랑 숫자로 확실하게" · ODDS 원칙 3) */
 function fxHtml(r: Realm, fx: CardFx): string {
   const g = fx.grain ?? 0
@@ -873,6 +875,17 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 백성 배치 판에서 고르는 중인 몫 — 고을 → 더하고 뺀 집 (모아 둔 백성 = −합) */
   let placeDraft: Record<string, number> = {}
   /** 백성 배치 −/+ 한 번의 몫 — 뗄 때는 한 집은 남기고 한도 안에서, 부을 때는 모아 둔 만큼 · 품까지. 0 이면 못 누른다 */
+  /** 백성 배치 「−」가 막힌 까닭 — 「더 뺄 백성이 없다」 하나로 다 덮으면 꽉 찬 고을이 왜 안 되는지 모른다 (형 11-05: "인구 꽉 찬 합천야로랑 사천은 분배를 할 수가 없잖아") */
+  function subWhy(id: string): string {
+    const base = realm!
+    const n = base.nodes[id]!
+    if (n.hh + (placeDraft[id] ?? 0) <= 1) return '더 뺄 백성이 없습니다'
+    const lim = placeLimit(base, me())
+    const grainCap = P.realm.migrateGrain > 0 ? Math.floor(Math.max(0, stockOf(base, me()).grain) / P.realm.migrateGrain) : Infinity
+    if (lim <= 0 && grainCap <= 0) return `곡식이 모자랍니다 (옮기는 집마다 곡식 ${P.realm.migrateGrain})`
+    if (monthly(base) && shareOpen(base) < 1) return `이번 ${turnWord(base)} 옮길 몫을 다 썼습니다 · 계절이 깊어질수록 몫이 열립니다 (나라 집의 ${Math.round(P.realm.placeShare * 100)}%까지)`
+    return `이번 계절 옮길 몫을 다 썼습니다 (나라 집의 ${Math.round(P.realm.placeShare * 100)}%까지)`
+  }
   function placeStepOf(id: string, add: boolean): number {
     const base = realm!
     const ids = placeNodes(base, me())
@@ -1992,7 +2005,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const lock = workBlocked(r, me(), id, n.work)
       const short = shortOf(c as Partial<Record<Good, number>>)
       const why = lock ?? (short !== '' ? short : null)
-      h += `<div class="btns wkb"><button class="btn${queued ? ' on' : ''}" data-act="work" data-node="${id}" data-what="${n.work}"${queued || why === null ? '' : noBtn(why)}>${icon(w.icon, 'wki')}<b>${lv + 1}단으로 올리기</b> ${costHtml(c)}<small class="mute"> 효과 ${(Math.round((lvGain(lv + 1) / lvGain(lv)) * 10) / 10)}배</small></button></div>`
+      h += `<div class="btns wkb"><button class="btn${queued ? ' on' : ''}" data-act="work" data-node="${id}" data-what="${n.work}"${queued || why === null ? '' : noBtn(why)}>${icon(w.icon, 'wki')}<b>${lv + 1}단으로 올리기</b> ${costHtml(c)}${whenChip(turnsLabel(r, Math.max(1, Math.round(P.realm.workTurns * P.realm.workLvTurnsMul))))}<small class="mute"> 효과 ${(Math.round((lvGain(lv + 1) / lvGain(lv)) * 10) / 10)}배</small></button></div>`
       return h
     }
     const going = (r.works ?? []).find((w) => w.node === id)
@@ -2008,7 +2021,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const lock = workBlocked(r, me(), id, w)
       const short = shortOf(c as Partial<Record<Good, number>>)
       const why = other ? '이 고을엔 다른 일터를 고르셨습니다' : lock ?? (short !== '' ? short : null)
-      h += `<button class="btn${queued ? ' on' : ''}" data-act="work" data-node="${id}" data-what="${w}"${queued || why === null ? '' : noBtn(why)}>${icon(d.icon, 'wki')}<b>${d.name}</b>${lock !== null ? ` <span class="mute">🔒 ${esc(lock)}</span>` : ` ${costHtml(c)}`}<small class="mute"> ${esc(d.does)}</small></button>`
+      h += `<button class="btn${queued ? ' on' : ''}" data-act="work" data-node="${id}" data-what="${w}"${queued || why === null ? '' : noBtn(why)}>${icon(d.icon, 'wki')}<b>${d.name}</b>${lock !== null ? ` <span class="mute">🔒 ${esc(lock)}</span>` : ` ${costHtml(c)}${whenChip(turnsLabel(r, Math.max(1, Math.round(P.realm.workTurns))))}`}<small class="mute"> ${esc(d.does)}</small></button>`
     }
     return h + '</div>'
   }
@@ -2851,24 +2864,27 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * 곳간 열기 · 유민 부르기 단추 (economy.applyCall · 위원회 11-04 림월드 ①) — 곡식을 내면 유민이 길을 따라 걸어 들어온다.
    * 고른 뒤 다시 누르면 거둔다 · 못 하면 까닭과 소리 (disabled 금지)
    */
-  function callBtn(_r: Realm, id: string, ring: boolean): string {
+  function callBtn(r: Realm, id: string, ring: boolean): string {
     // 「유민」은 낯선 말이었다 — 화면엔 「곡식 → 백성」 그림과 「+n집」 · 설명은 꾹 누르면(PC 는 올리면) (형 11-04: "눌러 봐도 뭐 하는 건지 알 수 있게 만들지를 않았잖아")
     const pic = `<span class="cpic">${icon(GOOD_ICON.grain)}<i>›</i>${icon('unit-porters')}</span>`
+    // 다 들어오기까지 — 한 달에 inboundRate 집씩 걸어 들어온다 (이미 오는 길의 집 뒤로) · 형 11-04: "몇 달 걸리는지 다 제대로"
+    const takes = (k: number): number => { const nd = r.nodes[id]; return nd === undefined ? 1 : Math.max(1, Math.ceil((inboundOf(nd, me()) + k) / Math.max(1, inboundRate(nd, r)))) }
+    const comeText = (k: number): string => (takes(k) <= 1 ? '다음 달' : `다음 달부터 ${turnsLabel(r, takes(k))}에 걸쳐`)
     const queued = musters.find((o): o is Extract<Order, { kind: 'call' }> => o.kind === 'call' && o.node === id)
     if (queued !== undefined) {
-      const tip = ` data-tip="곳간을 엽니다" data-more="${esc(`다음 달 떠도는 백성 ${queued.n}집이 길을 따라 걸어와 이 고을 사람이 됩니다. 다시 누르면 거둡니다.`)}"`
+      const tip = ` data-tip="곳간을 엽니다" data-more="${esc(`${comeText(queued.n)} 떠도는 백성 ${queued.n}집이 길을 따라 걸어와 이 고을 사람이 됩니다. 다시 누르면 거둡니다.`)}"`
       return ring
         ? `<button class="nrb on" data-act="call" data-node="${id}"${tip}>${pic}<small>+${queued.n}집</small></button>`
-        : `<div class="btns"><button class="btn on" data-act="call" data-node="${id}"${tip}>${pic}곳간을 엽니다 · 다음 달 백성 ${queued.n}집 <small class="mute">누르면 거둡니다</small></button></div>`
+        : `<div class="btns"><button class="btn on" data-act="call" data-node="${id}"${tip}>${pic}곳간을 엽니다 · 백성 ${queued.n}집${whenChip(takes(queued.n) <= 1 ? "다음 달" : turnsLabel(r, takes(queued.n)))} <small class="mute">누르면 거둡니다</small></button></div>`
     }
     const lp = leftPlan() // 이번 달 쓴 곡식까지 빼고 (검토 11-04)
     const why = callWhy(lp, me(), id)
     const n = callLimit(lp, me(), id)
     const c = callCost(lp, me(), n)
     const what = '곡식을 내면 떠도는 백성이 길을 따라 걸어와 이 고을 사람이 됩니다. 사람이 늘면 특산·장정·가을걷이가 함께 늘어납니다. 고을마다 한 계절에 한 번입니다.'
-    const tip = ` data-tip="${esc(why === null ? `곳간 열기 · 곡식 ${c.grain}섬 → 백성 ${n}집` : `곳간 열기 · ${why}`)}" data-more="${esc(what)}"`
+    const tip = ` data-tip="${esc(why === null ? `곳간 열기 · 곡식 ${c.grain}섬 → 백성 ${n}집 · ${comeText(n)}` : `곳간 열기 · ${why}`)}" data-more="${esc(what)}"`
     if (ring) return why === '우리 고을이 아닙니다' ? '' : `<button class="nrb" data-act="call" data-node="${id}"${why === null ? '' : noBtn(why)}${tip}>${pic}<small>${why === null ? `+${n}집` : '곳간'}</small></button>`
-    return `<div class="btns"><button class="btn" data-act="call" data-node="${id}"${why === null ? '' : noBtn(why)}${tip}>${pic}곳간 열기 ${why === null ? `· 백성 +${n}집 ${costHtml({ grain: c.grain })}` : ''}</button></div>`
+    return `<div class="btns"><button class="btn" data-act="call" data-node="${id}"${why === null ? '' : noBtn(why)}${tip}>${pic}곳간 열기 ${why === null ? `· 백성 +${n}집 ${costHtml({ grain: c.grain })}${whenChip(takes(n) <= 1 ? "다음 달" : turnsLabel(r, takes(n)))}` : ''}</button></div>`
       + `<p class="mute">${what}</p>`
   }
 
@@ -3020,7 +3036,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const ib = inboundOf(n, me()) + Math.max(0, dd)
       const coming = ib > 0 ? `<span class="pltag go">${icon('unit-porters', 'plem')}오는 중 ${ib.toLocaleString('ko-KR')}가구 · ${turnsLabel(realm!, Math.ceil(ib / inboundRate(n, realm!)))}</span>` : ''
       h += `<div class="plcard${cap ? ' plcap' : ''}${dd !== 0 ? (dd > 0 ? ' up' : ' down') : ''}"><div class="plch"><b>${cap ? '<i class="star">★</i>' : ''}${esc(n.name)}</b><span class="mute">${cap ? '우리 도읍' : NODE_KIND_NAME[n.kind]}</span>${land}${border}${coming}</div>`
-        + `<div class="plrow"><button class="btn sm" data-act="pl-sub" data-node="${id}"${kSub > 0 ? '' : noBtn('더 뺄 백성이 없습니다')}>−${kSub > 0 ? kSub : step}</button>`
+        + `<div class="plrow"><button class="btn sm" data-act="pl-sub" data-node="${id}"${kSub > 0 ? '' : noBtn(subWhy(id))}>−${kSub > 0 ? kSub : step}</button>`
         + `<div class="plmid"><b>${now.toLocaleString('ko-KR')}가구${dd !== 0 ? ` <i>${dd > 0 ? '+' : ''}${dd}</i>` : ''}</b><span class="plbar"><i style="width:${Math.min(100, Math.round((now / Math.max(1, room)) * 100))}%"></i></span><small>품 ${room.toLocaleString('ko-KR')} · ${yl} <small>계절마다 · 쌀은 한 해</small></small></div>`
         + `<button class="btn sm" data-act="pl-add" data-node="${id}"${kAdd > 0 ? '' : noBtn('더 받을 자리가 없거나 나눌 백성이 없습니다')}>+${kAdd > 0 ? kAdd : step}</button></div></div>`
     }
@@ -5008,7 +5024,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           // 갈 빈땅이 없으면 개척은 할 일이 아니다 — 단추를 아예 안 보인다 (형 10-27: "주변에 빈땅이 있을 때만 · 다른 때에는 개척 전혀 필요가 없잖아")
           if (near !== undefined) {
             const what = `${esc(josa(r.nodes[near.to]?.name ?? '', '으로', '로'))} 개척단 보내기`
-            h += `<div class="btns"><button class="btn pri home wide" data-act="party" data-node="${id}"${k > 0 ? '' : noBtn(partyWhy(r, id))}>${icon('unit-porters')}${what}${k > 0 ? ` · 백성 ${k}가구` : ''} ${costHtml({ grain: c.grain, wood: c.wood })}</button></div>`
+            h += `<div class="btns"><button class="btn pri home wide" data-act="party" data-node="${id}"${k > 0 ? '' : noBtn(partyWhy(r, id))}>${icon('unit-porters')}${what}${k > 0 ? ` · 백성 ${k}가구` : ''} ${costHtml({ grain: c.grain, wood: c.wood })}${whenChip(`채비 ${turnsLabel(r, Math.max(1, Math.round(P.realm.partyPrepTurns)))} + 길 ${turnsLabel(r, near.seasons)}`)}</button></div>`
           }
         }
       }
@@ -5109,7 +5125,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         // 개척단은 도읍에서만 꾸린다 — 다른 고을엔 단추를 안 둔다 · 갈 빈 땅이 어디든 닿으면 뜬다
         const near = r.factions[me()]?.capital === id && foundLands(r).length > 0
         if (settles.some((o) => o.kind === 'party' && o.node === id)) bs.push(rb('party-undo', icon('unit-porters'), '거둔다', '', ' on'))
-        else if (near) bs.push(rb('party', icon('unit-porters'), '개척단', partySize(r, me(), id) > 0 ? '' : noBtn(partyWhy(r, id))))
+        else if (near) bs.push(rb('party', icon('unit-porters'), '개척단', `${partySize(r, me(), id) > 0 ? '' : noBtn(partyWhy(r, id))} data-tip="${esc(`개척단 · 채비 ${turnsLabel(r, Math.max(1, Math.round(P.realm.partyPrepTurns)))} 뒤 떠나 빈 땅에 새 마을`)}"`))
       }
       const done = musters.reduce((s, o) => s + (o.kind === 'draft' && o.node === id ? o.n : 0), 0)
       bs.push(rb('nr-draft', icon('unit-spear'), done > 0 ? `+${done}` : '징병', draftLimit(r, me(), id) - done > 0 || done > 0 ? '' : noBtn('이번 달엔 이 고을에서 더 뽑을 장정이 없습니다'), done > 0 ? ' on' : ''))
@@ -5122,7 +5138,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const bc = buildCost(what, r, me())
         const ok = going === undefined && (queued || (canBuild(r, me(), id, what) && left().wood >= bc.wood && left().grain >= bc.grain))
         const label = going !== undefined ? `${turnsLabel(r, Math.max(1, going.done - r.season + 1))} 남음` : BUILD_NAME[what]
-        bs.push(rb('build', icon(what === 'moat' ? 'settle-moat' : 'settle-palisade'), label, ` data-what="${what}"${ok ? '' : noBtn(buildWhy(r, id, what))}`, queued || going !== undefined ? ' on' : ''))
+        bs.push(rb('build', icon(what === 'moat' ? 'settle-moat' : 'settle-palisade'), label, ` data-what="${what}" data-tip="${esc(`${BUILD_NAME[what]} · ${turnsLabel(r, seasons(r, 1))} 걸려 선다`)}"${ok ? '' : noBtn(buildWhy(r, id, what))}`, queued || going !== undefined ? ' on' : ''))
       }
       // 전군 집결 — 북을 울려 모든 군대를 이 고을로 (형 11-04: "마을 토글 버튼 중에 집결 버튼") · 모일 군대가 있거나 모이는 중일 때만
       {
@@ -8042,7 +8058,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           const g = callCost(leftPlan(), me(), n).grain
           musters = [...musters, { kind: 'call', faction: me(), node, n }]
           // 누르면 무슨 일인지 바로 — 곡식이 나가고 다음 달 사람이 온다 (형 11-04)
-          goToast(`${icon(GOOD_ICON.grain, 'wki')}<b>곳간을 엽니다</b> 곡식 ${g}섬 → 다음 달 백성 ${n}집이 ${esc(josa(r?.nodes[node]?.name ?? '', '으로', '로'))} 옵니다`)
+          const nd = r?.nodes[node]
+          const m = nd !== undefined && r !== null ? Math.max(1, Math.ceil((inboundOf(nd, me()) + n) / Math.max(1, inboundRate(nd, r)))) : 1
+          goToast(`${icon(GOOD_ICON.grain, 'wki')}<b>곳간을 엽니다</b> 곡식 ${g}섬 → 백성 ${n}집이 ${m <= 1 ? "다음 달" : `다음 달부터 ${turnsLabel(r!, m)}에 걸쳐`} ${esc(josa(nd?.name ?? '', '으로', '로'))} 옵니다`)
         }
         break
       }
