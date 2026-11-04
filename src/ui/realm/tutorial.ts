@@ -71,7 +71,7 @@ export const TUT_STEPS: readonly TutStep[] = [
   },
   {
     id: 'council', name: '전략 회의', what: '적을 치기 전에 장수들의 뜻을 듣고 정합니다',
-    text: '장수가 한 사람씩 아뢰면 눌러서 들으세요. 다 들으면 따를 말을 하나 고릅니다. 다 정하면 맨 아래 「출정」을 누르세요.',
+    text: '싸우러 가기 전 회의가 열립니다. 장수가 아뢰면 눌러서 듣고 따를 말을 고를 수 있습니다. 다 정하면 맨 아래 「출정」을 누르세요.',
     // 회의를 ✕ 로 그만두면 다시 군대 말부터 (지도)
     press: [...COUNCIL, '.nd[data-node="tut-gaetgol"][data-act="go"]', '.tok[data-army="a-us"]'],
     done: (c) => (shut(c) && marching(c)) || Object.values(c.r.armies).some((a) => a.faction === c.r.player && a.at === 'tut-gaetgol'),
@@ -136,6 +136,8 @@ export const TUT_STEPS: readonly TutStep[] = [
   {
     id: 'win', name: '도읍 차지', what: '적의 도읍을 쥐면 이깁니다', text: '마지막입니다. 군대를 미추홀 도읍으로 보내세요. 전략 회의에서 「출정」, 그다음 「다음 달」을 누르면 됩니다. 도읍을 쥐면 이 판을 이깁니다.',
     press: [...COUNCIL, ['.next', marching], '.nd[data-node="tut-michuhol-cap"][data-act="go"]', ['.tok[data-army="a-us"]', ready], ['.next', () => true]],
+    // 둘째 싸움도 깃발을 빛낸다 — 권하는 깃발 · 다 고르면 「전투 개시」 (검증 11-04: 마지막 싸움엔 안내 빛이 없었다)
+    war: { pick: '[data-war="pick"].rec', go: '[data-war="go"]' },
     done: (c) => c.r.outcome?.kind === 'win',
   },
 ]
