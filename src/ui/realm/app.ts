@@ -33,7 +33,7 @@ import {
   GOODS, armCost, buildCost, canBuild, canGuard, draftCost, draftIronCost, draftLimit, draftNeeds, draftPay, goodOf, guardCost, hhGrowth, isCoast, militiaMen, nextBuild, nodeHarvest, nodeYield, nodeSpecials, upkeepOf, riteAllowed, riteCost,
   autoFlows, crowdOf, migratePath, fieldMul, homeRoom, inboundOf, inboundRate, isRiverside, landMul, placeLimit, placeNodes, workMul,
   goodsWorth,
-  foundCost, callCost, callLimit, callWhy, draftWhy,
+  callCost, callLimit, callWhy, draftWhy,
 } from '../../realm/economy.ts'
 import { goalReach, goalRoute } from '../../realm/goal.ts'
 import { approachMoves, armyPower, jointWin, matchupHints, movesOf, type Move } from '../../realm/estimate.ts'
@@ -1789,11 +1789,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (cap === undefined) return ''
     const mine = settles.find((o) => o.kind === 'party' && o.node === cap)
     if (mine !== undefined && mine.kind === 'party' && mine.goal === to) return `<button class="btn home wide on ${cls}" data-act="party-undo" data-node="${cap}">${icon('unit-porters')}개척단이 떠난다 · 누르면 거둔다</button>`
-    if (mine !== undefined) return `<p class="mute">이번 ${turnWord(r)} 개척단은 이미 다른 곳으로 꾸렸습니다</p>`
+    // 못 보내는 때도 단추는 그대로 두고 흐리게 — 누르면 까닭과 소리 (형 11-04: "버튼 비활성화를 시켜야지 설명 텍스트로 모자라다고 하면 어떡하냐")
+    const off = (why: string, cost = ''): string => `<button class="btn home wide ${cls}" data-act="party-goal" data-node="${to}"${noBtn(why)}>${icon('unit-porters')}개척단 보내기 ${cost}</button>`
+    if (mine !== undefined) return off(`이번 ${turnWord(r)} 개척단은 이미 다른 곳으로 꾸렸습니다`)
     const k = partySize(r, me(), cap)
-    if (k <= 0) return `<p class="mute">${esc(partyWhy(r, cap))}</p>`
+    if (k <= 0) { const c0 = partyCost(r, me(), P.realm.partyMin); return off(partyWhy(r, cap), costHtml({ grain: c0.grain, wood: c0.wood })) }
     const route = partyRoute(r, me(), cap, to)
-    if (route === null) return `<p class="mute">도읍에서 우리 땅을 따라 가는 길이 지금은 막혔습니다</p>`
+    if (route === null) return off('도읍에서 우리 땅을 따라 가는 길이 지금은 막혔습니다')
     const c = partyCost(r, me(), k)
     return `<button class="btn pri home wide ${cls}" data-act="party-goal" data-node="${to}">${icon('unit-porters')}개척단 보내기 · ${turnsLabel(r, route.turns)} ${costHtml({ grain: c.grain, wood: c.wood })}</button><p class="mute">도읍에서 떠나 우리 고을을 거쳐 저절로 갑니다</p>`
   }
@@ -1820,12 +1822,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   /** 개척단을 못 꾸리는 까닭 한 줄 */
   function partyWhy(r: Realm, node: string): string {
-    if (r.factions[me()]?.capital !== node) return '개척단은 도읍에서만 꾸린다'
-    if (partiesOf(r, me()).length >= P.realm.partyMax) return `개척단은 한꺼번에 ${P.realm.partyMax}까지 둔다`
+    if (r.factions[me()]?.capital !== node) return '개척단은 도읍에서만 꾸립니다'
+    if (partiesOf(r, me()).length >= P.realm.partyMax) return `개척단은 한꺼번에 ${P.realm.partyMax}까지 둡니다`
     const n = r.nodes[node]!
-    if (Math.floor(n.hh * P.realm.partyShare) < P.realm.partyMin) return '백성이 아직 적다'
-    const fc = foundCost(r, me())
-    return `새 마을 값이 모자란다 · 곡식 ${fc.grain} · 나무 ${fc.wood} (고을이 많을수록 비싸다)`
+    if (Math.floor(n.hh * P.realm.partyShare) < P.realm.partyMin) return '도읍 백성이 아직 적습니다'
+    return shortOf(partyCost(r, me(), P.realm.partyMin)) || '새 마을 값이 모자랍니다'
   }
 
 
@@ -3091,7 +3092,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const stay = Math.max(0, w.until - r.season)
     return `<div class="cardc wandc"><img class="cimg" src="${ART}event/event-wanderer-arrives.jpg" alt=""><div class="cb"><b>떠돌이 인재가 왔다</b>`
       + `<p>${esc(`${josa(w.hero.name, '이', '가')} ${r.nodes[w.node]?.name ?? ''}에 머문다`)}</p><div class="wtr">${traitChips(w.hero, true)}</div><div class="copts">`
-      + `<button class="copt hasf${ans === true ? ' on' : ''}" data-act="wand-pick" data-id="${w.hero.id}" data-v="1"${can ? '' : noBtn('곡식이 모자랍니다')}>${bust(w.hero, 'cof')}<span class="cot"><b>들인다</b><span>${can ? costHtml({ grain: w.price }) : `곡식이 모자란다 ${costHtml({ grain: w.price })}`}</span></span></button>`
+      + `<button class="copt hasf${ans === true ? ' on' : ''}" data-act="wand-pick" data-id="${w.hero.id}" data-v="1"${can ? '' : noBtn('곡식이 모자랍니다')}>${bust(w.hero, 'cof')}<span class="cot"><b>들인다</b><span>${costHtml({ grain: w.price })}</span></span></button>`
       + `<button class="copt${ans === false ? ' on' : ''}" data-act="wand-pick" data-id="${w.hero.id}" data-v="0"><span class="cot"><b>나중에 정한다</b><span>${turnsLabel(r, stay)} 안에 떠난다 · 장수 탭에서 들일 수 있다</span></span></button>`
       + `</div></div></div>`
   }
@@ -3287,7 +3288,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const gain = season === 'spring' ? '그해 가을 수확량이 늘어난다' : '모든 군대의 사기가 오른다'
     const label = season === 'spring' ? '봄 제사를 지낸다' : '가을 제사를 지낸다'
     if (season !== 'spring' && season !== 'autumn') h += `<div class="mute">지금은 제사철이 아니다. 봄과 가을에 지낸다.</div>`
-    else if (!rite && !riteAllowed(r, me())) h += `<div class="mute">지금은 지낼 수 없다. 소도 곁 고을이 없거나 곡식이 모자라다.</div>${cost}`
+    else if (!rite && !riteAllowed(r, me())) h += `<div class="btns"><button class="btn wide ritebtn" data-act="rite"${noBtn('소도 곁 고을이 없거나 곡식이 모자랍니다')}><b>${label}</b>${cost}<span class="gain">${gain}</span></button></div>`
     else h += `<div class="btns"><button class="btn ${rite ? 'on' : ''} wide ritebtn" data-act="rite"${short ? noBtn('제사 곡식이나 쇠가 모자랍니다') : ''}><b>${rite ? `${label} · 누르면 거둔다` : label}</b>${cost}<span class="gain">${gain}</span></button></div>`
     return h + `</div>`
   }
@@ -4396,7 +4397,6 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<span class="tr3">${chips}<span class="trait" style="--g:${GRADE_COLOR[inh.surpriseGrade]}"><b>?</b><i>${GRADE_NAME[inh.surpriseGrade]} 이상 · 드묾</i></span></span></span></button>`
     }
     for (const y of tied) h += `<button class="wcand busy" data-act="busy"${noBtn(heroJob(r, y.id)?.[1] ?? '다른 일을 하고 있습니다')}>${bust(y, 'face')}<span><b>${nameHtml(y.name)}</b><span class="hdo">⏳ ${esc(heroJob(r, y.id)?.[1] ?? '')}</span></span></button>`
-    if (cands.length > 0 && cands.every((y) => grain < wedCost(r, x.id, y.id))) h += `<p class="mute">곡식이 모자란다 (${Math.floor(grain)}).</p>`
     return h + `</div>`
   }
 
@@ -4454,7 +4454,6 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `</div>`
     // 못 보내도 단추는 그대로 — 흐리게 두고 까닭을 밑에 (형 10-23: "버튼은 두되 비활성화해 두라고")
     h += `<button class="btn" data-act="exp-go" data-id="${x.id}"${block !== null ? noBtn(block) : ''}>${esc(josa(DESTS[pick.dest].name, '으로', '로'))} 보낸다 ${costHtml({ grain: P.realm.expGrainPer * EXP_SEASONS[pick.len] }, '길 양식')}</button>`
-    if (block !== null) h += `<p class="mute">${esc(block)}</p>`
     return h + `</div>`
   }
 
@@ -4933,13 +4932,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (settles.some((o) => o.kind === 'party' && o.node === id)) h += `<div class="btns"><button class="btn home wide on" data-act="party-undo" data-node="${id}">개척단을 꾸렸다 · 누르면 거둔다</button></div>`
         else {
           const k = partySize(r, me(), id)
-          const c = partyCost(r, me(), k)
+          const c = partyCost(r, me(), k > 0 ? k : P.realm.partyMin)
           const near = partyMoves(r, me(), id).filter((m) => m.found).sort((x, y) => x.seasons - y.seasons || (x.to < y.to ? -1 : 1))[0]
           // 갈 빈땅이 없으면 개척은 할 일이 아니다 — 단추를 아예 안 보인다 (형 10-27: "주변에 빈땅이 있을 때만 · 다른 때에는 개척 전혀 필요가 없잖아")
           if (near !== undefined) {
             const what = `${esc(josa(r.nodes[near.to]?.name ?? '', '으로', '로'))} 개척단 보내기`
-            h += `<div class="btns"><button class="btn pri home wide" data-act="party" data-node="${id}"${k > 0 ? '' : noBtn(partyWhy(r, id))}>${icon('unit-porters')}${what}${k > 0 ? ` · 백성 ${k}가구 ${costHtml({ grain: c.grain, wood: c.wood })}` : ''}</button></div>`
-            if (k <= 0) h += `<p class="mute">${esc(partyWhy(r, id))}</p>`
+            h += `<div class="btns"><button class="btn pri home wide" data-act="party" data-node="${id}"${k > 0 ? '' : noBtn(partyWhy(r, id))}>${icon('unit-porters')}${what}${k > 0 ? ` · 백성 ${k}가구` : ''} ${costHtml({ grain: c.grain, wood: c.wood })}</button></div>`
           }
         }
       }

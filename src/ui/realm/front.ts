@@ -23,7 +23,7 @@ import { winFxHtml } from './winfx.ts'
 import { levelName } from '../../realm/tier.ts'
 import { KYEOL_INFO, customDef, kyeolOf, nativeCustoms, type CustomId, type CustomTier } from '../../realm/data/customs.ts'
 import { KYEOL_ARMY, KYEOL_MIX, NATION_MIX, mixOf } from '../../realm/data/armymix.ts'
-import { CUSTOM_ICON } from '../../realm/data/art.ts'
+import { CUSTOM_ICON, UNIT_ICON } from '../../realm/data/art.ts'
 
 /** 층의 이름 (CUSTOMS §8-1) — 결에 속한 모두 · 그 나라 이야기 · 그 나라 땅 */
 const TIER_LABEL: Readonly<Record<CustomTier, string>> = { kyeol: '결 풍습', nation: '나라 고리', land: '땅이 준 한 수' }
@@ -44,17 +44,23 @@ export function customsHtml(k: Pick<FrontKit, 'esc'> & Partial<Pick<FrontKit, 'i
   const army = KYEOL_ARMY[kyeol]
   if (ky.name === '' && list.length === 0 && army === '') return ''
   let h = `<div class="kyeol">${ky.name !== '' ? `<p class="kl"><b>${k.esc(ky.name)}</b> ${k.esc(ky.line)}</p>` : ''}`
-  for (const id of list) {
-    const c = customDef(id)
-    const tip = c.verb !== '' ? `${c.source}: ${c.verb}` : c.source
-    const ic = CUSTOM_ICON[id] !== undefined && k.icon !== undefined ? k.icon(CUSTOM_ICON[id]!, 'cuic') : ''
-    h += `<div class="cust t-${c.tier}" data-tip="${k.esc(tip)}"><b>${ic}${k.esc(c.name)}</b><span class="do">${k.esc(c.does)}</span><span class="co">${k.esc(c.cost)}</span>`
-      + `<span class="ctag"><i>${TIER_LABEL[c.tier]}</i><i class="s">${c.sure}</i></span></div>`
+  // 풍습은 그림과 이름만 — 무엇이 되고 무엇을 내주는지는 누르면 뜬다 (형 11-04: "국가 설정 설명 텍스트 너무 많음 · 덩이쇠 뱃길 설명도 터치할 때 튀어나오게")
+  if (list.length > 0) {
+    h += '<div class="custs">'
+    for (const id of list) {
+      const c = customDef(id)
+      const tip = c.verb !== '' ? `${c.source}: ${c.verb}` : c.source
+      const ic = CUSTOM_ICON[id] !== undefined && k.icon !== undefined ? k.icon(CUSTOM_ICON[id]!, 'cuic') : ''
+      const peek = `<small>${TIER_LABEL[c.tier]} · ${c.sure}</small><b>${k.esc(c.name)}</b><span class="pd">+ ${k.esc(c.does)}</span><span class="pc">− ${k.esc(c.cost)}</span>${tip !== '' ? `<span class="pp">${k.esc(tip)}</span>` : ''}`
+      h += `<div class="cust t-${c.tier}" data-peek>${ic}<b>${k.esc(c.name)}</b><span class="peek">${peek}</span></div>`
+    }
+    h += '</div>'
   }
-  // 군대의 결 — 무엇을 많이 뽑나 (남의 나라도 이 비로 뽑는다)
+  // 군대의 결 — 무엇을 많이 뽑나 (남의 나라도 이 비로 뽑는다) · 병종은 그림으로, 풀이는 누르면
   const src = NATION_MIX[nation]?.source ?? KYEOL_MIX[kyeol].source
-  const shares = mix.filter(([, w]) => w > 0).map(([u, w]) => `<i>${k.esc(UNIT_NAME[u])} ${Math.round(w * 100)}%</i>`).join('')
-  if (shares !== '') h += `<div class="carmy"${src !== '' ? ` data-tip="${k.esc(src)}"` : ''}><b>군대 짜임</b>${army !== '' ? `<span>${k.esc(army)}</span>` : ''}<span class="cmix">${shares}</span><small class="cmw">이 나라 군사는 대개 이 비율로 짜입니다. 처음 군대도, 알아서 뽑을 때도</small></div>`
+  const shares = mix.filter(([, w]) => w > 0).map(([u, w]) => `<i>${k.icon !== undefined ? k.icon(UNIT_ICON[u], 'cmi') : ''}${k.esc(UNIT_NAME[u])} ${Math.round(w * 100)}%</i>`).join('')
+  const armyTip = [army, '이 나라 군사는 대개 이 비율로 짜입니다. 처음 군대도, 알아서 뽑을 때도', src].filter((s) => s !== '').join(' · ')
+  if (shares !== '') h += `<div class="carmy" data-tip="${k.esc(armyTip)}"><b>군대</b><span class="cmix">${shares}</span></div>`
   return h + '</div>'
 }
 
@@ -786,17 +792,22 @@ export const FRONT_CSS = `
 /* 나라의 결 · 풍습 카드 */
 .ap .kyeol { margin: 8px 0; display: flex; flex-direction: column; gap: 6px; }
 .ap .kyeol .kl { margin: 0; font-size: 13px; color: #d8cfbd; } .ap .kyeol .kl b { color: var(--gold); margin-right: 4px; }
-.ap .cust { display: grid; grid-template-columns: auto 1fr; gap: 1px 8px; padding: 6px 9px; border-radius: 10px; background: #2a201599; border-left: 3px solid #c9a45a; font-size: 12.5px; }
-.ap .cust b { grid-row: span 3; align-self: center; color: #f3d48a; font-size: 14px; min-width: 52px; max-width: 6.5em; word-break: keep-all; }
-.ap .cust b .cuic { display: block; width: 30px; height: 30px; margin: 0 auto 2px; }
-.ap .cust.t-nation { border-left-color: #e0763a; background: #3a1f1299; } .ap .cust.t-nation b { color: #ffc28a; }
-.ap .cust.t-land { border-left-color: #7fa86a; background: #1f2a1a99; } .ap .cust.t-land b { color: #cfe6a8; }
-.ap .cust .ctag { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; } .ap .cust .ctag i { font-style: normal; font-size: 10.5px; padding: 0 6px; border-radius: 8px; background: #ffffff14; color: #b8ab92; }
-.ap .cust .ctag i.s { color: #e6d3a8; background: #c9a45a2e; }
+.ap .custs { display: flex; flex-wrap: wrap; gap: 6px; }
+.ap .cust { position: relative; flex: 1 1 0; min-width: 76px; max-width: 140px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 6px 6px; border-radius: 10px; background: #2a201599; border-bottom: 3px solid #c9a45a; cursor: pointer; -webkit-user-select: none; user-select: none; }
+.ap .cust b { color: #f3d48a; font-size: 13px; line-height: 1.2; text-align: center; word-break: keep-all; }
+.ap .cust .cuic { display: block; width: 36px; height: 36px; object-fit: contain; }
+/* 누르면 뜬다는 표 — 귀퉁이 작은 물음 */
+.ap .cust::after { content: '?'; position: absolute; top: 3px; right: 5px; font-size: 10px; font-weight: 800; color: #f3d48a99; }
+.ap .cust:active { transform: scale(.96); }
+.ap .cust.t-nation { border-bottom-color: #e0763a; background: #3a1f1299; } .ap .cust.t-nation b { color: #ffc28a; }
+.ap .cust.t-land { border-bottom-color: #7fa86a; background: #1f2a1a99; } .ap .cust.t-land b { color: #cfe6a8; }
+/* 풍습 말풍선 — 되는 것 초록 · 내주는 것 붉게 */
+.ap .tipb.peekb .pd { color: #b4e6a0; margin-bottom: 4px; } .ap .tipb.peekb .pc { color: #ffab98; margin-bottom: 6px; } .ap .tipb.peekb .pp { font-size: 12px; color: #a89c84; margin: 0; }
 .ap .carmy { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; padding: 5px 9px; border-radius: 10px; background: #1a1d2299; border-left: 3px solid #8a96a8; font-size: 12px; color: #c9cfd8; }
+.ap .carmy b { color: #dfe5ee; } .ap .carmy .cmix { display: flex; flex-wrap: wrap; gap: 4px 10px; } .ap .carmy .cmix i { font-style: normal; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; } .ap .carmy .cmi { width: 22px; height: 22px; object-fit: contain; }
 /* 서막 둘째 장은 밝은 한지 위 — 결의 한 줄은 먹빛으로, 카드는 짙게 */
 .ap .prologue .kyeol .kl { color: #4a3826; } .ap .prologue .kyeol .kl b { color: #7a1f10; }
-.ap .prologue .cust, .ap .prologue .carmy { background-color: #2a2015ee; text-align: left; } .ap .prologue .cust.t-nation { background-color: #3a1f12ee; } .ap .prologue .cust.t-land { background-color: #1f2a1aee; } .ap .prologue .carmy { background-color: #1a1d22ee; }
+.ap .prologue .cust { background-color: #2a2015ee; } .ap .prologue .carmy { text-align: left; } .ap .prologue .cust.t-nation { background-color: #3a1f12ee; } .ap .prologue .cust.t-land { background-color: #1f2a1aee; } .ap .prologue .carmy { background-color: #1a1d22ee; }
 /* 서막이 화면보다 길면 — 가운데 맞춤이면 위(초상)와 아래(단추)가 같이 잘렸다. 넘치면 위에서부터 놓이고 굴러간다 (형 11-01: "정보가 너무 많을 때 화면 넘쳐버리는데") */
 .ap .prologue { justify-content: safe center; overflow-y: auto; overscroll-behavior: contain; }
 /* 폰 — 나라 소개 장을 촘촘히: 초상은 화면 높이 몫으로 · 글자·풍습 카드는 한 단계 작게 */
@@ -809,12 +820,11 @@ export const FRONT_CSS = `
   .ap .prologue .pt > span { margin: 0 0 4px; font-size: 13px; }
   .ap .prologue .pt p { font-size: 13.5px; line-height: 1.55; margin: 0 0 8px; }
   .ap .prologue .kyeol .kl { font-size: 13px; line-height: 1.5; }
-  .ap .prologue .cust { padding: 4px 8px; font-size: 11.5px; line-height: 1.4; margin-top: 5px; }
-  .ap .prologue .cust b { font-size: 12.5px; min-width: 46px; } .ap .prologue .cust b .cuic { width: 24px; height: 24px; }
+  .ap .prologue .cust { padding: 6px 4px 5px; min-width: 70px; }
+  .ap .prologue .cust b { font-size: 12.5px; } .ap .prologue .cust .cuic { width: 32px; height: 32px; }
   .ap .prologue .carmy { font-size: 11.5px; padding: 4px 8px; }
   .ap .prologue .pnav { margin-top: 10px; }
 }
-.ap .carmy .cmw { flex-basis: 100%; font-size: 11px; color: #a8b0bc; }
 /* 승리 목표 — 도장 찍듯 내려앉는 판 · 붉은 띠 「승리 목표」 · 자유 판은 넷을 한 줄씩 (형 10-29: "무조건 읽게끔") */
 .ap .prologue .pgoal .gbox { position: relative; box-sizing: border-box; width: min(100%, 640px); margin: 0 auto 16px; padding: 12px 14px 12px; border: 3px double #7a1f10; background: #f6ead0e6; box-shadow: 0 6px 18px #0005; text-align: center; animation: gstamp .55s cubic-bezier(.2,.9,.3,1.3) .1s both; }
 .ap .prologue .pgoal .gtag { display: inline-block; padding: 3px 16px; background: #7a1f10; color: #fff3d6; font-weight: 800; letter-spacing: .3em; font-size: 14px; margin-bottom: 8px; }
@@ -830,8 +840,6 @@ export const FRONT_CSS = `
 @keyframes gin { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .ap .prologue .pgoal .gbox, .ap .prologue .pgoal .gpaths li { animation: none; } }
 .ap .carmy b { color: #dfe6f0; font-size: 13px; } .ap .carmy .cmix { display: flex; flex-wrap: wrap; gap: 4px; } .ap .carmy .cmix i { font-style: normal; padding: 0 6px; border-radius: 8px; background: #ffffff12; }
-.ap .cust .do { color: #d8e6c8; } .ap .cust .co { color: #e0b0a0; }
-.ap .cust .do::before { content: '+ '; color: #9fd18b; } .ap .cust .co::before { content: '− '; color: #e08a74; }
 .ap .front-end .stats { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 8px 0; }
 .ap .front-end .stats span { min-width: 64px; padding: 6px 8px; border-radius: 10px; background: #ffffff0d; text-align: center; font-size: 12px; color: #a89c84; }
 .ap .front-end .stats b { display: block; font-size: 20px; color: var(--gold); }

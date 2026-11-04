@@ -360,8 +360,8 @@ describe('나라 고르기 · 서막 둘째 장의 카드', () => {
   it('영남 스물한 나라 모두 — 고리(또는 땅 한 수) 카드 · 확신 표기 · 군대의 결이 보인다', () => {
     for (const n of YEONGNAM_NATIONS) {
       const h = customsHtml({ esc: (s) => s, icon: (x) => `[${x}]` }, n.id)
-      assert.ok(/class="cust t-(nation|land)"/.test(h), `${n.id} 고리 카드`)
-      assert.ok(/(문헌|고고학|전승|땅)<\/i>/.test(h), `${n.id} 확신 표기`)
+      assert.ok(/class="cust t-(nation|land)" data-peek/.test(h), `${n.id} 고리 카드 (누르면 뜸)`)
+      assert.ok(/ · (문헌|고고학|전승|땅)<\/small>/.test(h), `${n.id} 확신 표기`)
       assert.ok(h.includes('class="carmy"'), `${n.id} 군대`)
     }
     // 골벌은 쇠뇌가 군대 비에 든다
