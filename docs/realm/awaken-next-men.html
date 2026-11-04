@@ -1,0 +1,234 @@
+<title>남은 각성 프롬프트</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@700;800&family=Gowun+Dodum&display=swap">
+<style>
+/* 판: 장수 초상과 같은 남색 판 위에 청동 띠 · 카드 격자 · 단일 어두운 결 (여장수 페이지와 같은 꼴) */
+:root {
+  --bg: #1c2129;
+  --panel: #252b35;
+  --line: #3a4250;
+  --fg: #e7e2d6;
+  --dim: #9aa0a8;
+  --bronze: #c9a25a;
+  --done: #5e8c6a;
+  --display: "Nanum Myeongjo", "Batang", serif;
+  --body: "Gowun Dodum", "Malgun Gothic", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 64px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 22px; }
+h1 { font-family: var(--display); font-weight: 800; font-size: clamp(26px, 5vw, 38px); margin: 0; letter-spacing: .02em; text-wrap: balance; }
+h1 span { color: var(--bronze); }
+.how { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.how li { border-top: 2px solid var(--bronze); padding-top: 8px; color: var(--dim); font-size: 14px; }
+.how b { color: var(--fg); display: block; font-weight: normal; font-family: var(--display); font-size: 16px; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.bar input { flex: 1 1 200px; min-width: 0; background: var(--panel); border: 1px solid var(--line); color: var(--fg); border-radius: 6px; padding: 9px 12px; font: inherit; }
+.chip { background: transparent; border: 1px solid var(--line); color: var(--dim); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+.chip[aria-pressed="true"] { border-color: var(--bronze); color: var(--bronze); }
+.count { color: var(--dim); font-size: 13px; margin-left: auto; font-variant-numeric: tabular-nums; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; display: grid; grid-template-columns: 84px 1fr; gap: 12px; padding: 12px; align-items: start; }
+.card.is-done { opacity: .55; }
+.card img { width: 84px; height: 84px; object-fit: cover; border-radius: 6px; background: var(--bg); }
+.info { min-width: 0; display: grid; gap: 6px; }
+.name { font-family: var(--display); font-size: 18px; font-weight: 700; line-height: 1.2; }
+.meta { color: var(--dim); font-size: 12.5px; display: flex; flex-wrap: wrap; gap: 4px 8px; }
+.tag { color: var(--bronze); }
+.file { font-family: ui-monospace, Consolas, monospace; font-size: 11.5px; color: var(--dim); word-break: break-all; }
+.note { font-size: 12.5px; color: #e0b46a; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.copy { background: var(--bronze); color: #1c2129; border: 0; border-radius: 6px; padding: 7px 14px; font: inherit; font-weight: bold; cursor: pointer; }
+.copy.ok { background: var(--done); color: var(--fg); }
+.done { color: var(--dim); font-size: 13px; display: inline-flex; gap: 4px; align-items: center; cursor: pointer; }
+details { grid-column: 1 / -1; font-size: 13px; color: var(--dim); }
+details summary { cursor: pointer; }
+details pre { white-space: pre-wrap; word-break: break-word; background: var(--bg); padding: 10px; border-radius: 6px; color: var(--fg); font-size: 12.5px; max-height: 320px; overflow: auto; }
+button:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--bronze); outline-offset: 2px; }
+textarea.fallback { position: fixed; left: -9999px; }
+</style>
+
+<div class="wrap">
+  <h1>남은 <span>각성</span> 프롬프트</h1>
+  <ul class="how">
+    <li><b>1. 챗지피티 새 대화</b>장수 한 명마다 새 대화를 엽니다. 거절된 대화창은 계속 거절합니다.</li>
+    <li><b>2. 그림 붙이기</b>카드 아래 적힌 파일(bust-hd)을 붙입니다.</li>
+    <li><b>3. 복사해서 붙여넣기</b>자세와 옷은 장수마다 이미 들어 있습니다.</li>
+    <li><b>4. 받으면 그냥 두기</b>다운로드 폴더에 두시면 제가 얼굴을 보고 맞춰 넣습니다. 다 구움에 체크해 두세요.</li>
+  </ul>
+  <div class="bar">
+    <input id="q" type="search" placeholder="이름 · 파일 찾기" aria-label="이름 찾기">
+    <div class="row" id="chips"></div>
+    <span class="count" id="count"></span>
+  </div>
+  <div class="grid" id="grid"></div>
+  <p class="meta">그래도 막힐 때 프롬프트 맨 끝에 덧붙일 한 줄: <code>Render him in a slightly more stylized illustrated look than the reference.</code></p>
+</div>
+
+<script>
+const OLD = '각성 그림이 이미 있습니다. 다시 구울 때만 씁니다'
+const SMALL = 'bust-hd 가 없어 작은 그림(bust/)을 붙입니다'
+// bust-hd 에 없고 bust/ 에만 있는 얼굴
+const BUST_ONLY = new Set(['g-60-golbeol-golgae', 'g-61-apdok-ap', 'g-62-gammun-gamnamu', 'g-63-chopal-yeoul', 'g-64-michuhol-sogeumkkun', 'g-65-sangdang-soemangchi', 'g-66-geonma-malbalgup', 'g-67-gosaburi-buri', 'g-68-mujin-bitgoeul', 'g-69-goryong-yong', 'g-70-siljik-pado'])
+
+// [그림, 이름, 나이, 갈래, 자세, 옷, 메모]
+const H = [
+['g-64-jumong','주몽',20,'A','drawing his maekgung toward the sky in a sweeping upward arc, head thrown back, the arrow blazing like a falling star','a red spotted Goguryeo robe with a fur collar over gold-edged lamellar, a patterned hat with tall feathers, a gilt-bronze belt'],
+['g-74-saro-hyeokgeose','혁거세',18,'K','stepping forward out of a burst of golden light motes, one hand over his heart, head slightly tilted, a serene smile','a white silk robe with a violet collar, a gold headband strung with gogok, a gogok necklace, a gold-embroidered sash'],
+['g-96-garak-suro','수로',20,'K','raising a glowing iron ingot high in one hand like molten metal while the other hand grips the hilt of a sword at his hip, long hair and red headband ribbons streaming, a calm young king\'s gaze','a white and gold silk robe of a Gaya king opened at the chest over gold-edged iron lamellar, a long red headband under a gold circlet with gogok, a gold dragon-embossed belt'],
+['g-95-goguryeo-daemusin','대무신왕',20,'K','turning sharply to command his army, one fist clenching a rolled war map and pointing it forward, his horn bow slung across his back, tall helmet plumes whipping in the wind','a dark green Goguryeo robe with a red dot pattern under gilt lamellar armor, a fur mantle, a black helmet with tall pheasant plumes and a gold crest, a quiver of arrows'],
+['g-94-golpo-maenun','매눈',33,'A','holding his short horn bow lowered with an arrow nocked, turning his head sharply toward an unseen target with narrowed hawk-like eyes, the arrow tip gleaming','rust-dark iron scale lamellar over a worn grey robe, leather straps, a quiver at his hip, a single feather in his topknot, a short beard'],
+['g-92-goguryeo-mari','마리',36,'W','unwinding the rope from his forearm with a snap while bracing the spear behind him, calm hard eyes','leather lamellar, a rope coil, a scar across his nose, a topknot'],
+['g-91-biryu-songyang','송양',52,'K','holding his maekgung upright beside him like a scepter, chin lifted proudly, eyes cold','a spotted navy durumagi, a pointed feathered cap, gold belt pendants, a greying goatee'],
+['g-97-tahae','탈해',25,'B','slinging a heavy coil of ship rope over one shoulder with a wild grin, the other hand on a short blade at his hip, hair whipping in a sea wind','a sleeveless deep-blue sea robe open at the chest, a ragged fur shoulder cape, rope and shell-bead necklaces with a white stone pendant, a feather in his hair, bronze arm bands'],
+['g-98-goguryeo-gwaeyu','괴유',35,'W','heaving a huge greatsword off his shoulder into a low ready stance, one pale eye glowing faintly, a menacing grin','blackened iron lamellar under a heavy grey fur mantle, a topknot, a thick beard'],
+['g-99-goguryeo-maro','마로',30,'H','planting a bell-hung spear beside him and pulling a coil of rope taut across his chest, a knowing half smile','a brown patterned fur cape over a green hemp robe, leather straps, a rope coil over one shoulder, a small bronze bell on the spear, a topknot, light stubble'],
+['g-100-buyeo-old-daeso','늙은 대소왕',72,'K','gripping a gilded horsewhip like a scepter and leaning forward, eyes blazing with old pride and fury, his long white beard swept by wind','a dark crimson brocade royal robe with gold cloud embroidery, a thick fur collar, a tall gold cap crown, long jade bead necklaces'],
+['g-67-buyeo-daeso','대소',24,'K','lounging sideways and lifting a gold wine cup to his lips, looking down at the viewer from lowered eyelids with a contemptuous smirk','a red silk robe with a white fur collar, a headband hung with gold dangles, gold rings, a slender build'],
+['g-65-goguryeo-damul','대왕 다물',50,'K','seated on an unseen throne, leaning forward with both hands stacked on the pommel of his ring-pommel sword, stern eyes boring into the viewer','a purple silk royal robe under gilt lamellar, a tiger-skin cloak, a tall crown with a gold eagle and feathers, a long greying beard'],
+['g-66-buyeo-geumha','왕 금하',52,'K','holding up a bronze mirror so it catches the light and studying the viewer in its reflection with cool half-lidded eyes, the horse-head staff in his other hand','a bear-fur cloak over white silk, a gold crown with horse motifs over a white fur hat, gogok pendants, a braided greying beard'],
+['g-68-baekje-onnuri','신지 온누리',44,'K','drawing his ring-pommel sword halfway with one hand while holding a rolled decree in the other, turned three-quarters, a measured upright gaze','a navy silk durumagi with gold flower patterns, a black hat with gold flower ornaments, a jade norigae at his belt'],
+['g-101-garak-adogan','아도간',56,'S','raising a gnarled wooden staff high as if calling the nine villages together, the other hand clasping a bronze pendant, a wise stern gaze','a beige hemp robe with a blue-and-gold zigzag collar, a bronze disc pendant, a topknot with a cord, a long grey-streaked beard'],
+['g-102-garak-yeodogan','여도간',48,'F','hoisting a huge sheaf of golden rice onto his shoulder with a booming laugh, the grain glinting with light','a striped hemp robe with a blue zigzag collar, a dark blue sash, a topknot, a full beard, strong farmer\'s arms'],
+['g-103-garak-pidogan','피도간',40,'W','swinging a long-hafted iron axe up onto his shoulder, glaring forward','a fur cape over a hemp robe with a blue-and-gold zigzag collar, a claw-tooth necklace, a leather headband, a topknot, a short beard'],
+['g-104-garak-odogan','오도간',44,'T','fanning out iron ingots in one hand like a winning hand of cards, the other thumb hooked on a bronze balance scale at his belt, a sly grin','a cream silk robe with a zigzag collar, a blue sash strung with cowrie shells, a bronze scale at the belt, a topknot, a goatee'],
+['g-105-garak-yusugan','유수간',37,'H','thrusting a barbed fishing spear forward with a woven basket on his back, intense focused eyes','a rough hemp robe with a blue zigzag collar, rope bindings, long tied-back hair'],
+['g-106-garak-ocheongan','오천간',45,'B','swinging a heavy oar off his shoulder into a fighting stance with a gap-toothed roar of laughter','a ragged sleeveless hemp robe with a blue zigzag collar, coiled rope across his chest, a wave tattoo on his arm, a cloth headband, a thick beard'],
+['g-59-yangmaek-maekson','군장 맥손',47,'A','testing his bowstring with two fingers drawn back beside his ear, eyes narrowed in a fierce frown at the viewer, the feathers in his headband stirring','a thick fur cloak over a spotted coat, a leather headband with two feathers, a maekgung and quiver, a scar at the corner of his mouth'],
+['g-60-eupcha-hangyeol','읍차 한결',40,'W','raising a long pole with a torn plain white war flag high overhead in one hand, looking up at it as the cloth snaps in the wind','iron lamellar armor with gold edges, a grey headband, a short cape, a gogok cord at his throat'],
+['g-61-heomcheuk-bawi','험측 바위',38,'W','tearing a sticky rice cake in two with both hands, eyes closed in bliss, the log club on his back, seen slightly from above','a straining hemp tunic belted with a gilt-bronze plate over his big belly, a leather shoulder guard, rice grains in his beard'],
+['g-62-beonye-hanul','번예 한울',22,'A','drawing his bow with one eye shut in a wink, aiming slightly off to the side, a cocky smile, loose hair falling across his face','a loosely tied hemp jeogori with gold trim, jade earrings, a leather bracer and a quiver strap across his chest'],
+['g-63-heomcheuk-beogeum','험측 버금',30,'W','in a low wrestler crouch with both arms spread wide to grapple, leaning toward the viewer, a cocky grin','a short sleeveless hemp vest belted with a thick ssireum sash, bronze armbands, a cloth headband'],
+['g-69-guya-soebo','진지렴 쇠보',48,'K','swinging his great hammer up onto his shoulder in a shower of sparks, laughing a broad generous laugh','a gold leaf crown, a royal leather apron with gold plates over lamellar, crystal and gold bead necklaces, soot on his cheeks'],
+['g-75-saro-hogong','호공',56,'T','tapping one of the gourds at his waist while holding up a wooden tally, winking mid-chuckle','a worn navy hemp traveling robe refreshed with gold trim, two gourds at the waist, a bundle of shells'],
+['g-77-saro-sobeol','촌장 소벌도리',72,'K','leaning on his crooked staff hung with millet heads, the other hand raised to the side in blessing, a kind wrinkled smile','a fur shawl over a white robe, a gogok necklace, a white topknot and a long white beard'],
+['g-78-saro-alpyeong','촌장 알평',50,'S','turning a pebble between his fingers and studying it with narrowed eyes, body turned away, a feathered staff in the crook of his arm','a grey-blue hemp durumagi with bronze trim, a birch-bark headband, a pebble pouch at his waist, a goatee'],
+['g-79-saro-jibaekho','촌장 지백호',42,'H','driving his long spear down diagonally as if pinning a beast, the white tiger cloak flaring behind him','a white tiger pelt cloak, a tiger-tooth and jade necklace, a bushy beard, a fierce scowl'],
+['g-80-saro-guryema','촌장 구례마',34,'H','emerging from shadow with his bow half-drawn, only one side of his face lit, amber eyes glowing','a wolf-fur hood with feathers, a dark coat, leather bracers, a quiver on his back'],
+['g-81-saro-jita','촌장 지타',50,'T','holding a blue glass bead up to the light between two fingers and grinning at the viewer over it','an ochre silk robe, colorful bead necklaces, a salt pouch and a bundle of iron ingots, a curled mustache'],
+['g-82-saro-hojin','촌장 호진',46,'H','hefting his carved great axe across his body with the bear-head pelt over his head and a rope coil slung on his shoulder, scowling','a bear pelt cloak, a high topknot with a bronze ring, the carved axe, a scar on his forehead'],
+['g-83-mokji-keundol','신지 큰돌',46,'W','smashing two big iron hammers together in front of his chest so sparks burst outward, roaring','iron lamellar with gold edges, spiral tattoos on his neck and arms, blue and amber bead necklaces'],
+['g-84-wander-seoneul','견지 서늘',23,'W','snapping his sword down to his side after a stroke, turned away, cold eyes sliding toward the viewer from under his bangs','a sleeveless black fitted top, a red waist sash, earrings, firm bare arms'],
+['g-85-wander-ure','읍차 우레',30,'W','swinging a great crescent-bladed glaive in a wide arc behind him while raising a wine gourd in the other hand, laughing','a navy silk robe worn loosely with gold arm rings, thick dark brows'],
+['g-86-mokji-geumbawi','읍차 금바위',48,'W','arms crossed like a boulder, one shoulder thrust forward, glaring sideways from under heavy brows','a coarse brown fur coat with gilt-bronze clasps, a topknot with a hairpin, a gogok necklace, a sword at his waist'],
+['g-87-wae-chief','왜인 우두머리',38,'W','leaping in with his broad blade raised two-handed overhead, teeth bared in a savage grin','a sharkskin shoulder cape, fish-scale tattoos on his face and arms, a tooth necklace, rough leather straps','일본풍 갑옷이나 칼이 나오면 버리고 다시 굽습니다'],
+['g-88-wander-soeul','견지 쇠울',33,'I','walking forward with the big hammer over his shoulder, glancing to the side, a calm resolute face, a ring-pommel sword at his hip','a leather apron over a grey quilted coat, a grey headband, soot on his face'],
+['g-90-haengin-gomok','군장 고목',63,'K','planting his gnarled staff and leaning into the wind, looking down from a high ridge with stern lowered eyes, the bear cloak whipping','a bear-fur cloak, a bronze bell necklace, a claw ornament in his greying topknot, a long grey beard'],
+['g-93-jomun-solgae','살해 솔개',39,'H','looking down from a high perch with his bow lowered, one corner of his mouth raised in a cold sneer, hawk feathers fluttering','a worn leather coat with gilt trim, hawk feathers in his topknot, a quiver, a mustache and beard'],
+]
+
+const KIND = { W: '무장', A: '궁수', S: '책사', K: '왕', M: '무당', T: '장사꾼', H: '사냥꾼', B: '뱃사람', I: '대장장이', F: '일꾼' }
+
+function agePhrase(a) {
+  if (a <= 22) return 'in his early twenties'
+  if (a <= 26) return 'in his mid-twenties'
+  if (a <= 29) return 'in his late twenties'
+  if (a <= 34) return 'in his early thirties'
+  if (a <= 39) return 'in his late thirties'
+  if (a <= 49) return 'in his forties'
+  if (a <= 59) return 'in his fifties'
+  if (a <= 69) return 'in his sixties'
+  return 'in his seventies'
+}
+function tone(a) {
+  if (a <= 29) return 'dashing and heroic'
+  if (a >= 50) return 'dignified and commanding'
+  return 'powerful and battle-worn'
+}
+
+function prompt([img, , age, , pose, outfit]) {
+  return `This is an original character from my own Korean historical fantasy strategy game. The attached portrait is an AI-generated illustration of a fictional adult man ${agePhrase(age)}, not a real person. Create a square 1:1 image of the SAME character in his awakened form, the moment he reaches his full power.
+
+Identity: keep the exact same face, age, ethnicity, hairstyle, facial hair, body build and color palette, so he is instantly recognizable as the same hero.
+
+Framing: upper-body shot from just above the head to around the waist. The pose must be dynamic and asymmetric, not a frontal symmetrical bust: ${pose}. The face does not need to be centered, and one shoulder may turn away from the viewer. No open palm pushed toward the viewer.
+
+Style: semi-realistic painterly splash art, the quality of a premium Korean MMORPG male class illustration, dramatic soft rim light, high detail. Plain very dark slate-blue studio background (#1c2129) with a stronger warm glow behind the shoulders. No scenery, landscape, buildings or sky.
+
+Costume (the main focus): a high-fashion warrior design, ${tone(age)}, neither fully covered in armor nor bare. A strong, broad-shouldered silhouette true to his build: ${outfit}. Gilt-bronze ornaments, small iron lamellar plates edged in gold, comma-shaped jade (gogok) beads, silk and fur. Ancient Korean Samhan / Three Kingdoms motifs, reimagined boldly and ornately. Confident, majestic, powerful.
+
+Expression: the same personality as the reference, but more intense and resolved, a fierce or serene inner fire in the eyes. The irises may glow faintly.
+
+Power: an aura of light rising like heat haze, with small individual sparks and light motes drawn one by one, not a single blob. If he holds a weapon, it gleams with the same light.
+
+Do NOT draw: a halo or disc behind the head, sun rays, any red circle or sun symbol, Japanese or Chinese style armor or clothing, ninja masks, katana, shuriken, horns, demonic features, any animal or animal spirit, any text, letters, banner, caption, watermark or frame.`
+}
+
+const KEY = 'awaken-next-men'
+let done = {}
+try { done = JSON.parse(localStorage.getItem(KEY) || '{}') || {} } catch (e) { done = {} }
+function saveDone() { try { localStorage.setItem(KEY, JSON.stringify(done)) } catch (e) {} }
+
+let filter = ''
+const grid = document.getElementById('grid')
+const q = document.getElementById('q')
+const chips = document.getElementById('chips')
+const count = document.getElementById('count')
+
+for (const k of ['', ...Object.keys(KIND)]) {
+  const b = document.createElement('button')
+  b.className = 'chip'
+  b.type = 'button'
+  b.textContent = k ? KIND[k] : '전부'
+  b.setAttribute('aria-pressed', String(k === filter))
+  b.onclick = () => { filter = k; for (const c of chips.children) c.setAttribute('aria-pressed', 'false'); b.setAttribute('aria-pressed', 'true'); render() }
+  chips.appendChild(b)
+}
+
+function copyText(text, btn) {
+  const ok = () => { btn.textContent = '복사됨'; btn.classList.add('ok'); setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('ok') }, 1600) }
+  const fallback = () => {
+    const t = document.createElement('textarea'); t.className = 'fallback'; t.value = text; document.body.appendChild(t); t.select()
+    try { document.execCommand('copy'); ok() } catch (e) { btn.textContent = '아래 글을 직접 복사' }
+    t.remove()
+  }
+  try { navigator.clipboard.writeText(text).then(ok, fallback) } catch (e) { fallback() }
+}
+
+function render() {
+  const s = q.value.trim().toLowerCase()
+  grid.textContent = ''
+  let n = 0
+  for (const h of H) {
+    const [img, name, age, kind, , , note] = h
+    if (filter && kind !== filter) continue
+    if (s && !(name + img).toLowerCase().includes(s)) continue
+    n++
+    const dir = BUST_ONLY.has(img) ? 'bust' : 'bust-hd'
+    const text = prompt(h)
+    const card = document.createElement('article')
+    card.className = 'card' + (done[img] ? ' is-done' : '')
+    card.innerHTML = `
+      <img src="bust/${img}.jpg" alt="${name}" loading="lazy">
+      <div class="info">
+        <div class="name">${name}</div>
+        <div class="meta"><span>${age}살</span><span class="tag">${KIND[kind]}</span></div>
+        <div class="file">D:/flutter/arrow_game_one/public/realm/${dir}/${img}.jpg</div>
+        ${note ? `<div class="note">${note}</div>` : ''}
+        <div class="row">
+          <button class="copy" type="button">복사</button>
+          <label class="done"><input type="checkbox" id="d-${img}" ${done[img] ? 'checked' : ''}> 다 구움</label>
+        </div>
+      </div>
+      <details><summary>프롬프트 보기</summary><pre></pre></details>`
+    // 아티팩트로 올리면 bust/ 가 곁에 있고, 저장소에서 바로 열면 docs/realm 에서 public 으로 거슬러 간다
+    const pic = card.querySelector('img')
+    pic.onerror = () => { pic.onerror = null; pic.src = `../../public/realm/bust/${img}.jpg` }
+    card.querySelector('pre').textContent = text
+    card.querySelector('.copy').onclick = e => copyText(text, e.currentTarget)
+    card.querySelector('input').onchange = e => { done[img] = e.target.checked; if (!done[img]) delete done[img]; saveDone(); card.classList.toggle('is-done', e.target.checked) }
+    grid.appendChild(card)
+  }
+  const d = H.filter(h => done[h[0]]).length
+  count.textContent = `${n}명 · 다 구움 ${d}/${H.length}`
+}
+q.oninput = render
+render()
+</script>
