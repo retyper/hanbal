@@ -3122,6 +3122,9 @@ export const WAR_CSS = `
 .ap .wofoot > .wocd { display: inline-grid; place-items: center; width: 52px; height: 52px; margin-top: 12px; border-radius: 50%; border: 2px solid #f6d8a0; background: #000b; box-shadow: 0 0 16px #ff6a3a66, 0 4px 12px #000c; animation: wrin .4s ease-out var(--d, 2.5s) both; }
 .ap .wofoot > .wocd i { font-style: normal; font-family: var(--display); font-size: 26px; color: #fff3dc; text-shadow: 0 0 10px #ff6a3a, 0 2px 4px #000; }
 .ap .wofoot > .wocd i.tk { animation: wocdtk .45s cubic-bezier(.2, 1.6, .4, 1); } @keyframes wocdtk { from { scale: 1.6; opacity: .3; } to { scale: 1; opacity: 1; } }
+/* 누르면 넘어간다는 것을 글 대신 손가락으로 (긴급 위원회 11-04 · 셈 화면을 누르면 바로 걷히는데 그런 표시가 없었다) */
+.ap .wofoot > .wocd { position: relative; } .ap .wofoot > .wocd::after { content: "👆"; position: absolute; left: 100%; top: 50%; margin: -14px 0 0 8px; font-size: 24px; line-height: 1; animation: wotap 1s ease-in-out infinite alternate; }
+@keyframes wotap { from { transform: translateY(0); opacity: .55; } to { transform: translateY(-6px); opacity: 1; } }
 .ap .wopen .wob { position: absolute; inset: -4%; background: center / cover no-repeat; filter: brightness(.75) saturate(1.05); animation: wozoom 3.4s ease-out both; }
 /* 고사양이 아니면 여는 그림도 filter·크게 키우기 없이 어둠에서 밝아지기만 (화면보다 큰 층 · 폰 깜빡임) */
 .ap:not(.q-high) .wopen .wob { inset: 0; filter: none; animation: wozoomlite 1.2s ease-out both; } @keyframes wozoomlite { from { opacity: .25; } to { opacity: .85; } }
