@@ -641,6 +641,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let warOn = false
   /** 줄 서 있거나 떠 있는 장면(사로잡음·등용·혼례…) 수 — 각성 연출은 이것이 다 걷힌 뒤에 (playScenes) */
   let scenesLeft = 0
+  /** 이번 넘김에 전장에서 본 싸움의 열쇠 (battle line key) */
+  let warWatched = new Set<string>()
   root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><div class="seasonp" aria-hidden="true">${seasonParticles()}</div><div class="legend"></div><div class="zbtns"><button data-act="layers" class="lyb" aria-label="보기">👁</button><button data-act="zin">＋</button><button data-act="zout">－</button></div><div class="layers"></div><button class="next" data-act="next"></button><div class="todo"></div><div class="selbar"></div><div class="roadkey"></div><div class="tutband"></div><div class="goalb"></div>`
     + `<nav class="tabs"></nav><div class="back" data-act="close"></div><section class="sheet"></section><div class="modal"></div><div class="plbox"></div>`
   const $ = (sel: string): HTMLElement => root.querySelector<HTMLElement>(sel)!
@@ -1467,7 +1469,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (!monthly(r)) return ''
     const out: string[] = []
     const vis = visibleNodes(r, me())
-    if (Object.values(r.armies).some((a) => a.faction !== me() && strikeLive(r, a) && r.nodes[a.strike!.node]?.owner === me() && vis.has(a.at))) out.push('<i class="nxp foe">⚔</i>')
+    // 적이 친다 — 채비를 마친 군대이거나, 길 위에서 다음 달 우리 고을에 닿는 군대 (긴급 위원회 11-04 · 예고가 「다음 달」에 붙어야 넘기고 싶다)
+    if (Object.values(r.armies).some((a) => a.faction !== me() && ((strikeLive(r, a) && r.nodes[a.strike!.node]?.owner === me() && vis.has(a.at))
+      || (a.march !== null && a.march.left <= 1 && r.nodes[a.march.to]?.owner === me() && (vis.has(a.at) || vis.has(a.march.to)))))) out.push('<i class="nxp foe">⚔</i>')
     if (Object.values(r.armies).some((a) => a.faction === me() && a.march !== null && a.march.left <= 1)) out.push(`<i class="nxp">${icon('unit-spear')}</i>`)
     if ((r.builds ?? []).some((b) => b.faction === me() && b.done <= r.season)) out.push(`<i class="nxp">${icon('settle-palisade')}</i>`)
     if (isSeasonEnd(r)) out.push(`<i class="nxp">${icon(SEASON_ICON[seasonOf(r, r.season + 1)])}</i>`)
@@ -5257,7 +5261,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     let best: { ev: string; hero: Hero | null; line: string } | null = null
     let rank = 0
     for (const l of rep.lines) {
-      if (l.kind !== 'battle') continue
+      if (l.kind !== 'battle' || (l.key !== undefined && warWatched.has(l.key))) continue // 전장에서 본 싸움은 다시 안 그린다
       const weAtk = b.armies[l.attacker]?.faction === after.player
       if (!weAtk && l.defender !== after.player) continue
       const cap = l.captured !== null ? after.heroes[l.captured] : undefined
@@ -5366,7 +5370,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (!showReport || before === null || report === null) return ''
     const season = seasonOf(r)
     // 우리가 낀 싸움은 카드로 한 판씩 풀어 보이고, 글 줄에서는 뺀다
-    const cards = report.lines.map((l, i) => (l.kind === 'battle' ? battleCard(before!, r, l, me(), ART, i) : ''))
+    // 전장에서 직접 본 싸움은 다시 적지 않는다 — 결과·옥·획득에 이어 소식판이 같은 싸움을 세 번째로 적었다 (긴급 위원회 11-04)
+    const cards = report.lines.map((l, i) => (l.kind === 'battle' && !(l.key !== undefined && warWatched.has(l.key)) ? battleCard(before!, r, l, me(), ART, i) : ''))
     // 넓어지는 지도 — 모르는 나라 이야기는 들리지 않는다 (줄에 적힌 나라 id 를 훑는다)
     const heard = (l: ReportLine): boolean => r.known === undefined
       || Object.values(l).every((v) => typeof v !== 'string' || r.factions[v] === undefined || met(r, me(), v))
@@ -5396,7 +5401,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         + `<div class="rdecide full">${first}</div><p class="fdnote">${todo > 1 ? `고르면 다음 것이 이어진다 · 남은 ${todo - 1}` : `고르면 이 ${turnWord(r)}의 소식이 이어진다`}</p></div>`
     }
     // 고을을 쥐었거나 잃었다 — 어디인지 큰 그림과 함께 하나씩, 확인만 누르고 넘어간다 (형 10-25)
-    const lands = (r.region ?? 'byeonhan-mini') === 'tutorial' ? [] : landChanges(before, r).filter((x) => !landSeen.has(x.key))
+    // 싸워서 쥔 고을은 뺀다 — 전장 끝 화면이 「차지했다」를 보였고 「획득!」이 또 뜬다 (긴급 위원회 11-04 · 싸움 하나에 걷을 것이 넷이었다)
+    const fought = new Set(report.lines.flatMap((l) => (l.kind === 'battle' ? [l.node] : [])))
+    const lands = (r.region ?? 'byeonhan-mini') === 'tutorial' ? [] : landChanges(before, r).filter((x) => !landSeen.has(x.key) && !(x.won && fought.has(x.node)))
     // 우리 공작이 먹혔다 — 갈래마다 제 그림으로 크게 (형 10-25: "공작이 성공한 것도 각각 이미지 · 전체화면 연출 · 확인 버튼")
     const wins = (r.region ?? 'byeonhan-mini') === 'tutorial' ? [] : plotWins(r, report).filter((x) => !landSeen.has(x.key))
     const pacts = (r.region ?? 'byeonhan-mini') === 'tutorial' ? [] : pactBigs(r, report).filter((x) => !landSeen.has(x.key))
@@ -7277,6 +7284,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         fastNext = false
         // 우리가 낄 싸움이 있으면 전장이 먼저 열린다 — 합마다 직접 지휘하고, 그 명령으로 넘긴다 (battlefield.ts)
         const finish = (tactics: Record<string, Tactic>): void => {
+          warWatched = new Set(Object.keys(tactics)) // 전장에서 본 싸움 — 소식판에서 다시 펼치지 않는다
           warOn = false
           const cmds: Order[] = Object.entries(tactics).map(([key, t]) => ({ kind: 'command', key, cmds: t.cmds, ...(t.dusk !== undefined && t.dusk.length > 0 ? { dusk: t.dusk } : {}) }))
           endSeason(prev, [...orders, ...cmds], ai)
