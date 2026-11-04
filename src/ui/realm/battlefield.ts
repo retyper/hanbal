@@ -3023,7 +3023,8 @@ export const WAR_CSS = `
    양옆 6px 를 띄운 화면 폭 · 머리는 한 줄(작은 얼굴·이름·✕) · 깃발은 몇 개든 한 줄에 같은 폭으로(그림 위 · 이름 밑) · 판세는 막대 한 줄 ·
    꾹 누르면 피해·사기 표(±)가 그 밑에 붙고 판은 위로 자란다 (아래는 화면 끝에 붙어 있다). 누가 나서나·도움말은 「자세히」에만.
    아래 규칙들보다 뒤에 두고 .wr 을 더 붙인다 — 앞에 두었더니 보통 판 규칙(가로 줄·최소 높이 44px)이 덮어 칸이 짜부됐다 */
-.ap .wr .wfpop.tight { width: auto; right: 6px; padding: 5px 6px 6px; border-radius: 12px; max-height: calc(100dvh - 12px); }
+.ap .wr .wfpop.tight { width: min(560px, calc(100vw - 12px)); right: auto; padding: 5px 6px 6px; border-radius: 12px; max-height: calc(100dvh - 12px); }
+/* 줄인 판도 넓은 화면에선 그만큼만 — PC·가로 폰에서 양끝까지 늘어나 깃발 셋이 쓸데없이 길었다 (형 11-05) */
 .ap .wr .wfpop.tight .wfphint, .ap .wr .wfpop.tight .wwho, .ap .wr .wfpop.tight .wfplook .wlkn { display: none !important; }
 .ap .wr .wfpop.tight .wfph { gap: 6px; margin-bottom: 4px; min-height: 0; }
 .ap .wr .wfpop.tight .wfph .wgi, .ap .wr .wfpop.tight .wfph .wgi.f .wf, .ap .wr .wfpop.tight .wfph .wgi.f img { width: 22px; height: 22px; }
@@ -4255,7 +4256,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const vh = window.innerHeight
     const pw = pop.offsetWidth
     const ph = pop.offsetHeight
-    const left = Math.max(8, Math.min(vw - pw - 8, q.left + q.width / 2 - pw / 2))
+    const edge = pop.classList.contains('tight') ? 6 : 8
+    const left = Math.max(edge, Math.min(vw - pw - edge, q.left + q.width / 2 - pw / 2))
     // 화면 아래쪽에 — 아래 띠 바로 위 (형 10-28: "깃발 선택 창이 너무 위로 가지 않게 아래에") · 띠가 없으면 무리 밑
     const bar = ready.hidden ? null : ready.getBoundingClientRect()
     let top = bar !== null ? bar.top - ph + 14 : q.bottom + 8
@@ -4268,7 +4270,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       top = vh - ph - 6
       if (top < field.bottom - 4) { pop.classList.add('tight'); placePop(); return }
     }
-    pop.style.left = `${Math.round(pop.classList.contains('tight') ? 6 : left)}px` // 줄인 판은 양옆 6px (오른쪽은 CSS right)
+    pop.style.left = `${Math.round(left)}px` // 줄인 판도 그 무리 밑 가운데 (폭은 CSS 가 정한다 · 좁은 폰에선 양옆 6px 과 같다)
     pop.style.top = `${Math.round(top)}px`
   }
   /** 이 합을 고른 대로 싸운다 */
