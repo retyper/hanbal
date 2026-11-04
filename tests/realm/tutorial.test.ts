@@ -167,6 +167,6 @@ describe('배우는 판 — 갇히지 않는다', () => {
     const c = { r, orders: [persuade], report: null, acts: new Set<string>() }
     const at = (id: string): number => TUT_STEPS.findIndex((s) => s.id === id)
     assert.equal(tutAt(at('persuade'), { ...c, ov: 'talk' }), at('talk'))
-    assert.equal(tutAt(at('talk'), { ...c, ov: null }), at('plot'))
+    assert.equal(tutAt(at('talk'), { ...c, ov: null }), at('draft')) // 싸움부터 — 담판 뒤에 살림 단계 (긴급 위원회 11-04)
   })
 })

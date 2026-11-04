@@ -65,47 +65,6 @@ export const TUT_STEPS: readonly TutStep[] = [
     press: ['.legend .lg.me'], done: (c) => c.acts.has('home'),
   },
   {
-    id: 'draft', name: '징병', what: '마을 장정을 뽑아 군사로 만듭니다', text: '위례 도읍을 누르세요. 둘레에 단추가 뜹니다. 「징병」을 누르고 군사를 뽑으세요.',
-    // 고을을 누르면 둘레 단추(z축) — 본 게임과 같은 길로 (형 11-01: "튜토리얼도 지금에 맞게") · 징병 탭으로 열어도 된다
-    press: ['[data-act="draft"]', '.nring [data-act="nr-draft"][data-node="tut-wirye-cap"]', '.nd[data-node="tut-wirye-cap"]'], done: (c) => has(c, 'draft'),
-  },
-  {
-    id: 'settle', name: '개척', what: '백성을 빈땅에 보내 새 마을을 엽니다', text: '빈땅 솔뫼로 「개척단 보내기」를 누르세요. 군사가 아니라 농사지을 백성이 도읍에서 떠납니다. 닿으면 새 마을이 섭니다.',
-    press: ['[data-act="party-to"][data-node="tut-solmoe"]', '.sheet [data-act="party"][data-node="tut-wirye-cap"]', '.nd[data-node="tut-solmoe"]'], done: (c) => has(c, 'party') || has(c, 'settle'),
-  },
-  {
-    id: 'build', name: '건설', what: '나무로 목책을 둘러 고을을 지킵니다', text: '위례 도읍을 다시 누르고 「목책」을 누르세요. 나무 울타리를 두르면 적이 쳐들어와도 오래 버팁니다. 몇 달 걸려 다 지어집니다. 나무가 모자라면 단추를 눌렀을 때 까닭이 뜹니다.',
-    // 첫 판엔 짓기를 한 번도 안 가르쳤다 — 목책을 눌러도 반응이 없다는 형 11-01 지적의 뿌리 · 둘레 단추로
-    press: ['.nring [data-act="build"][data-node="tut-wirye-cap"]', '.nd[data-node="tut-wirye-cap"]'],
-    done: (c) => has(c, 'build') || (c.r.builds ?? []).some((b) => b.faction === c.r.player) || c.r.season > 0,
-  },
-  {
-    id: 'scout', name: '정찰', what: '적 고을의 군세를 미리 엿봅니다', text: '왼쪽(서쪽) 갯골 마을을 누르고 「정찰」을 누르세요. 적 군세가 얼마인지 보입니다.',
-    press: ['[data-act="scout"][data-node="tut-gaetgol"]', '.nd[data-node="tut-gaetgol"]'], done: (c) => has(c, 'scout'),
-  },
-  {
-    id: 'envoy', name: '사신', what: '이웃 나라에 말과 선물을 보냅니다', text: '갯골 마을을 누르고 「외교」를 누르세요. 미추홀에 「선물」 사신을 보냅니다. 곡식을 조금 얹고 「사신을 보낸다」를 누르면 됩니다. 선물은 늘 받아 줍니다.',
-    press: [
-      '.trade [data-act="envoy"]', '.trade [data-act="cq"][data-side="give"][data-res="grain"]:not([data-d^="-"])',
-      '[data-act="compose"][data-ask="gift"]', '[data-act="compose-go"][data-ask="gift"]', '.nring [data-act="nr-diplo"]', '.nd[data-node="tut-gaetgol"]',
-    ],
-    done: (c) => has(c, 'envoy'),
-  },
-  {
-    id: 'rite', name: '제사', what: '소도에서 하늘에 빌어 수확을 늘립니다', text: '아차 마을 위 「큰나무 소도」를 누르고 봄 제사를 지내세요. 그해 가을 수확량이 늘어납니다.',
-    press: ['[data-act="rite"]', '.nd[data-node="tut-sodo"]'], done: (c) => has(c, 'rite') || c.r.season > 0,
-  },
-  {
-    id: 'next', name: '다음 달', what: '정한 일이 한꺼번에 이루어집니다', text: '이제 「다음 달」을 누르세요. 고른 일이 한꺼번에 이루어지고 소식이 옵니다.',
-    press: ['.next'], done: (c) => c.r.season >= 1,
-  },
-  {
-    id: 'flame', name: '각성 불꽃', what: '세 번 이긴 장수는 각성합니다', text: '「장수」의 「우리 장수」에서 오간을 누르고, 얼굴 아래 불꽃 칸 셋을 눌러 보세요. 만만치 않은 적을 이길 때마다 한 칸씩 붙고, 지면 한 칸 꺼집니다. 세 칸이 다 붙으면 각성해 얼굴이 바뀌고 능력치가 모두 오릅니다. 오간은 벌써 두 번 이겼습니다.',
-    // 각성을 첫 판에서 맛보게 — 오간은 불꽃 둘을 켠 채 시작하고(regions/tutorial) 갯골 싸움을 이기면 각성한다 (형 11-01: "튜토리얼에 장수각성도")
-    press: ['[data-act="flm"]', '[data-act="hero"][data-id="tut-ogan"]', '[data-act="htab"][data-v="mine"]', tab('heroes')],
-    done: (c) => c.acts.has('flm') || c.r.heroes['tut-ogan']?.ascended === true || fought(c),
-  },
-  {
     id: 'march', name: '출정', what: '군대를 다른 고을로 보냅니다', text: '갈대울의 우리 군대 말(장수 얼굴)을 누르고, 밝아진 갯골 마을을 누르세요. 그리로 갑니다.',
     press: ['.nd[data-node="tut-gaetgol"][data-act="go"]', '.tok[data-army="a-us"]'],
     done: (c) => c.ov === 'strat' || (shut(c) && marching(c)) || Object.values(c.r.armies).some((a) => a.faction === c.r.player && a.at === 'tut-gaetgol'),
@@ -135,6 +94,39 @@ export const TUT_STEPS: readonly TutStep[] = [
     text: '말할 거리를 하나 고르고 「이 말로 한다」를 누르세요. 마디마다 마음의 벽이 깎입니다. 벽이 무너지면 「손을 내민다」, 끝나면 「확인」을 누르세요.',
     press: ['.dpov [data-act="dp-ok"]', '.dpov [data-act="dp-hand"]', '.dpov [data-act="dp-say"]', '.dpov [data-act="dp-sel"]'],
     done: (c) => !haveFoe(c) || (shut(c) && persuading(c)),
+  },
+  {
+    id: 'draft', name: '징병', what: '마을 장정을 뽑아 군사로 만듭니다', text: '위례 도읍을 누르세요. 둘레에 단추가 뜹니다. 「징병」을 누르고 군사를 뽑으세요.',
+    // 고을을 누르면 둘레 단추(z축) — 본 게임과 같은 길로 (형 11-01: "튜토리얼도 지금에 맞게") · 징병 탭으로 열어도 된다
+    press: ['[data-act="draft"]', '.nring [data-act="nr-draft"][data-node="tut-wirye-cap"]', '.nd[data-node="tut-wirye-cap"]'], done: (c) => has(c, 'draft'),
+  },
+  {
+    id: 'settle', name: '개척', what: '백성을 빈땅에 보내 새 마을을 엽니다', text: '빈땅 솔뫼로 「개척단 보내기」를 누르세요. 군사가 아니라 농사지을 백성이 도읍에서 떠납니다. 닿으면 새 마을이 섭니다.',
+    press: ['[data-act="party-to"][data-node="tut-solmoe"]', '.sheet [data-act="party"][data-node="tut-wirye-cap"]', '.nd[data-node="tut-solmoe"]'], done: (c) => has(c, 'party') || has(c, 'settle'),
+  },
+  {
+    id: 'build', name: '건설', what: '나무로 목책을 둘러 고을을 지킵니다', text: '위례 도읍을 다시 누르고 성 쌓기 단추(목책, 이미 있으면 해자)를 누르세요. 성을 두르면 적이 쳐들어와도 오래 버팁니다. 몇 달 걸려 다 지어집니다. 나무가 모자라면 단추를 눌렀을 때 까닭이 뜹니다.',
+    // 첫 판엔 짓기를 한 번도 안 가르쳤다 — 목책을 눌러도 반응이 없다는 형 11-01 지적의 뿌리 · 둘레 단추로
+    press: ['.nring [data-act="build"][data-node="tut-wirye-cap"]', '.nd[data-node="tut-wirye-cap"]'],
+    // 싸움 뒤로 옮겨 첫 달이 지나도 남는다 — 나무가 모자라 막히면 몇 달 뒤 저절로 넘어간다 (긴급 위원회 11-04)
+    done: (c) => has(c, 'build') || (c.r.builds ?? []).some((b) => b.faction === c.r.player) || c.r.season > 5,
+  },
+  {
+    // 싸움을 앞으로 당겨 갯골은 이미 우리 땅 — 이제 미추홀 도읍을 엿본다 (긴급 위원회 11-04)
+    id: 'scout', name: '정찰', what: '적 고을의 군세를 미리 엿봅니다', text: '미추홀 도읍을 누르고 「정찰」을 누르세요. 적 군세가 얼마인지 보입니다.',
+    press: ['[data-act="scout"][data-node="tut-michuhol-cap"]', '.nd[data-node="tut-michuhol-cap"]'], done: (c) => has(c, 'scout'),
+  },
+  {
+    id: 'envoy', name: '사신', what: '이웃 나라에 말과 선물을 보냅니다', text: '미추홀 도읍을 누르고 「외교」를 누르세요. 미추홀에 「선물」 사신을 보냅니다. 곡식을 조금 얹고 「사신을 보낸다」를 누르면 됩니다. 선물은 늘 받아 줍니다.',
+    press: [
+      '.trade [data-act="envoy"]', '.trade [data-act="cq"][data-side="give"][data-res="grain"]:not([data-d^="-"])',
+      '[data-act="compose"][data-ask="gift"]', '[data-act="compose-go"][data-ask="gift"]', '.nring [data-act="nr-diplo"]', '.nd[data-node="tut-michuhol-cap"]',
+    ],
+    done: (c) => has(c, 'envoy'),
+  },
+  {
+    id: 'rite', name: '제사', what: '소도에서 하늘에 빌어 수확을 늘립니다', text: '아차 마을 위 「큰나무 소도」를 누르고 봄 제사를 지내세요. 그해 가을 수확량이 늘어납니다.',
+    press: ['[data-act="rite"]', '.nd[data-node="tut-sodo"]'], done: (c) => has(c, 'rite') || c.r.season > 2, // 봄 석 달 안이면 지낸다
   },
   {
     id: 'plot', name: '공작', what: '몰래 적을 흔듭니다. 소문·방화·암살', text: '「외교」의 「공작」에서 「소문」을 열고 미추홀을 고른 뒤, 보낼 사람(고용 밀정)을 누르세요. 미추홀 군사의 사기가 꺾입니다.',
