@@ -24,6 +24,8 @@ import { levelName } from '../../realm/tier.ts'
 import { KYEOL_INFO, customDef, kyeolOf, nativeCustoms, type CustomId, type CustomTier } from '../../realm/data/customs.ts'
 import { KYEOL_ARMY, KYEOL_MIX, NATION_MIX, mixOf } from '../../realm/data/armymix.ts'
 import { CUSTOM_ICON, UNIT_ICON } from '../../realm/data/art.ts'
+import { nationKit } from './kitcolor.ts'
+import { riseGraphHtml } from './risegraph.ts'
 
 /** 층의 이름 (CUSTOMS §8-1) — 결에 속한 모두 · 그 나라 이야기 · 그 나라 땅 */
 const TIER_LABEL: Readonly<Record<CustomTier, string>> = { kyeol: '결 풍습', nation: '나라 고리', land: '땅이 준 한 수' }
@@ -82,7 +84,10 @@ export interface FrontKit {
 }
 
 /** 지난 계절들의 보고 — 판 기록에서 (realm-main) */
-export type History = ReadonlyArray<{ readonly s: number; readonly lines: readonly ReportLine[] }>
+export type History = ReadonlyArray<{ readonly s: number; readonly lines: readonly ReportLine[]
+  /** 그 계절 넘긴 뒤 우리 살림 · 모든 나라 [고을, 집, 군사] (흥망 그래프 · 옛 기록엔 all 이 없다) */
+  readonly me?: { readonly nodes: number; readonly hh: number; readonly men: number }
+  readonly all?: Readonly<Record<string, readonly [number, number, number]>> }>
 
 /**
  * 판 — 해 보고 싶은 이야기 묶음 (형 2026-10-22: "지도가 작냐 크냐가 중요한게 아님 … 게임 패키지처럼 정말 이거 해보고싶다라는 마음이 들게
@@ -597,6 +602,8 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = '', f
   h += `<div class="stats"><span><b>${years}</b>해</span><span><b>${capsHeld(r, me)}</b>도읍</span><span><b>${won}</b>이긴 싸움</span><span><b>${lost}</b>진 싸움</span>`
   // 0 은 안 보인다 — 꼭대기에서 「얻은 장수 0」이 바람을 뺐다 (긴급 위원회 11-04 · evidence c08-03)
   h += `${r.known !== undefined && found > 0 ? `<span><b>${found}</b>새로 안 나라</span>` : ''}${heroes > 0 ? `<span><b>${heroes}</b>얻은 장수</span>` : ''}</div>`
+  // 흥망 그래프 — 군사 · 고을 · 백성, 우리는 파랑 굵게 · 남은 나라 깃발 빛 (DESIRE §9 · 형 11-05: "그래프 하나도 없는데?")
+  h += riseGraphHtml(history, { me, mine: '#2f8cff', colorOf: (f) => nationKit(f).c, nameOf: name, esc: k.esc })
   // 얻은 것(세기·휘장·무덤·단련) 먼저, 연대기는 접어서 — 늘어놓았더니 난잡했다 (형 10-28: "결과 보는 부분이랑 그 아래 버튼들이 정리가 안 돼 있음")
   if (keep !== '') h += `<div class="gains">${keep}</div>`
   if (pickd.length > 0) h += `<details class="chron"><summary>연대기 <small>${pickd.length}</small></summary>${pickd.map((e) => `<p class="${e.big ? 'big' : ''}"><i>${k.esc(seasonLabel(r, e.s))}</i>${k.esc(e.t)}</p>`).join('')}</details>`
