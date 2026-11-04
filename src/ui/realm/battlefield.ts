@@ -2255,6 +2255,13 @@ export const WAR_CSS = `
 .ap .wfield.enter .wgen.gsp.gbw .gspf { animation: spwalk .6s steps(8) 4, spshot 1.1s steps(1) 2.4s 1, spidle 2.6s steps(4) 3.5s infinite; }
 .ap .wfield.play .wf2s:is([data-l="art"], [data-l="duel"], [data-l="capture"], [data-l="drum"]) .wgen.gsp:not(.gdown):not(.gfall) .gspf { animation: spidle 2.6s steps(4) infinite, gatk .9s steps(1) calc(var(--hd) - 1.2s) 3; }
 .ap .wfield.play .wf2s:is([data-l="art"], [data-l="duel"], [data-l="capture"], [data-l="drum"]) .wgen.gsp.gbw:not(.gdown):not(.gfall) .gspf { animation: spidle 2.6s steps(4) infinite, spshot 1.1s steps(1) calc(var(--hd) - 1.2s) 3; }
+/* 합마다 장수도 칼질한다 — 자기 깃발이 아닌 합엔 진 맨 뒤에 서 있기만 해서 "장수 유닛은 왜 안 움직이냐 · 공격·기술이 하나도 안 보임"(형 11-04) ·
+   맞부딪는 때에 한 번 · 자기 깃발(비기·겨루기·사로잡기·북) 합엔 앞으로 뛰어들어 세 번(아래 gdash) */
+.ap .wfield.play:not(.enter) .wf2s:not(:is([data-l="art"], [data-l="duel"], [data-l="capture"], [data-l="drum"])) .wgen.gsp:not(.gdown):not(.gfall) .gspf { animation: spidle 2.6s steps(4) infinite, gatk .9s steps(1) calc(var(--hd) - .5s) 1; }
+.ap .wfield.play:not(.enter) .wf2s:not(:is([data-l="art"], [data-l="duel"], [data-l="capture"], [data-l="drum"])) .wgen.gsp.gbw:not(.gdown):not(.gfall) .gspf { animation: spidle 2.6s steps(4) infinite, spshot 1.1s steps(1) calc(var(--hd) - .6s) 1; }
+.ap .wfield.play:not(.enter) .wf2s:is([data-l="art"], [data-l="duel"], [data-l="capture"], [data-l="drum"]) .wgen.gsp:not(.gdown):not(.gfall):not(.gbw) { animation: gdash 3.4s cubic-bezier(.3, 0, .2, 1) calc(var(--hd) - 1.3s) 1 both; }
+@keyframes gdash { 0% { translate: 0 0; } 25%, 75% { translate: clamp(40px, 16cqw, 120px) 0; } 100% { translate: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .ap .wfield.play .wgen.gsp { animation: none !important; } }
 @keyframes gatk { 0% { background-position-x: 63.1579%; } 10% { background-position-x: 68.4211%; } 26% { background-position-x: 73.6842%; } 40% { background-position-x: 78.9474%; } 66% { background-position-x: 84.2105%; } 84%, 100% { background-position-x: 89.4737%; } }
 /* 사로잡히거나 쓰러진 장수 — 그 합엔 휘청(18) 했다가 쓰러지고(19) 깃대가 넘어간다 · 다음 합부터 누운 채 */
 .ap .wfield .wgen.gsp.gfall .gspf { animation: gdie 1.3s steps(1) calc(var(--hd) + .1s) forwards; }
