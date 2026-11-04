@@ -107,6 +107,8 @@ export interface YardOpts {
   readonly from: 'end' | 'title'
   /** 열어 둔 유물 칸 — 그 장수 카드 밑에 고르기가 펼쳐진다 */
   readonly slot?: { readonly id: string; readonly i: number } | null
+  /** 쓸 공이 남았는데 나가려 했다 — 한 번 더 누르면 나간다 · 공을 쓸 장수 카드가 빛난다 (형 11-05: "다음으로 눌렀을 때 쓸 공이 남아 있으면 안 되잖아") */
+  readonly leaveArmed?: boolean
 }
 
 /** 의리가 움직인 까닭 — 쉬운 말로 */
@@ -139,6 +141,7 @@ export function yardHtml(k: DrillKit, o: YardOpts): string {
   h += `<p class="dylead">판에서 쌓은 공으로 장수를 단련한다. 져도 공은 남는다. 단련 한 단계마다 능력치 하나가 +1, 값은 ${spendCost(0)}에서 시작해 단계마다 ${spendCost(1) - spendCost(0)}씩 오른다.</p>`
   if (list.length === 0) h += `<p class="mute dylead">아직 공을 새긴 장수가 없다. 판에서 싸우고 고을을 맡으면 공이 쌓이고, 판이 끝나면 여기서 쓴다.</p>`
   h += `<div class="dyl">`
+  let usable = 0 // 지금 공으로 하나라도 올릴 수 있는 장수
   for (const id of list) {
     const e = ent(id)
     const born = bodyFor(k, id, e)
@@ -150,7 +153,9 @@ export function yardHtml(k: DrillKit, o: YardOpts): string {
     for (let left = e.points; left >= spendCost(e.level + can); can++) left -= spendCost(e.level + can)
     const to = Math.min(100, (e.points / cost) * 100)
     const from = o.anim ? Math.min(100, (Math.max(0, e.points - gain) / cost) * 100) : to
-    h += `<div class="dyc${gain > 0 && o.anim ? ' fresh' : ''}"><div class="dyf">${src !== null ? `<img src="${src}" alt="">` : '<span class="nof"></span>'}`
+    const canUp = born !== null && DRILL_STATS.some((s) => raiseState(store, id, s, born, relicRoom(wornBy(id), wornLv())) === 'ok')
+    if (canUp) usable++
+    h += `<div class="dyc${gain > 0 && o.anim ? ' fresh' : ''}${canUp && o.leaveArmed === true ? ' canup' : ''}"><div class="dyf">${src !== null ? `<img src="${src}" alt="">` : '<span class="nof"></span>'}`
     h += `<div class="dyn"><b>${nameHtml(name)}</b>${e.level > 0 ? `<span class="dlv">단련 ${e.level}</span>` : '<span class="dlv zero">단련 0</span>'}`
     if (o.fell.includes(id)) h += `<small class="dyfell">이 판에서 쓰러졌다. 다음 판엔 돌아온다</small>`
     h += `</div></div>`
@@ -187,7 +192,7 @@ export function yardHtml(k: DrillKit, o: YardOpts): string {
     if (sel !== null) h += pickerHtml(k.relic, id, sel)
     h += `</div>`
   }
-  h += `</div>${relicDexHtml(k.relic)}<div class="dygo"><button class="btn pri big" data-act="dy-next">${o.from === 'end' ? '다음으로 ›' : '처음으로'}</button></div>`
+  h += `</div>${relicDexHtml(k.relic)}<div class="dygo">${o.leaveArmed === true && usable > 0 ? `<p class="dywarn">아직 쓸 공이 남은 장수가 ${usable}명 있습니다 · 빛나는 카드의 + 를 눌러 단련하세요</p>` : ''}<button class="btn pri big${o.leaveArmed === true && usable > 0 ? ' armed' : ''}" data-act="dy-next" data-usable="${usable}">${o.leaveArmed === true && usable > 0 ? '그래도 나간다' : o.from === 'end' ? '다음으로 ›' : '처음으로'}</button></div>`
   return h + `<p class="fine">점선은 처음 몸, 금빛은 단련한 몸: 다음 판을 열 때 우리 장수와 데려간 장수가 이 몸으로, 끼운 유물을 지니고 온다.</p></div>`
 }
 
@@ -248,6 +253,12 @@ export const DRILL_CSS = `
 .ap .dyplus small { font-weight: 700; font-size: 10.5px; color: #4a2e10; margin-left: 2px; }
 .ap .dyplus:disabled { border-image: url(__ART__ui/btn-dark.png?v=2) 30 33 fill / 6px 8px stretch; color: #8a7e6a; cursor: default; } .ap .dyplus:disabled small { color: #8a7e6a; }
 .ap .front.dyard .dygo { display: flex; justify-content: center; margin: 12px 0 4px; }
+/* 쓸 공이 남은 채 나가려 했다 — 그 장수 카드가 금빛으로 숨 쉬고, 아래에 한 줄 (형 11-05) */
+.ap .dyc.canup { box-shadow: 0 0 0 3px #ffd98a, 0 0 22px #ffb02a99; animation: dycanup 1s ease-in-out infinite alternate; }
+@keyframes dycanup { from { box-shadow: 0 0 0 2px #ffd98a99, 0 0 10px #ffb02a55; } to { box-shadow: 0 0 0 4px #ffd98a, 0 0 26px #ffb02aaa; } }
+.ap .dygo .dywarn { margin: 0 0 8px; color: #ffd27a; font-weight: 700; text-align: center; }
+.ap .dygo .btn.armed { opacity: .85; }
+@media (prefers-reduced-motion: reduce) { .ap .dyc.canup { animation: none; } }
 .ap .dystrip { max-width: 560px; margin: 10px auto 4px; padding: 2px 4px; border: 12px solid transparent; border-image: url(__ART__ui/frame-panel.png?v=3) 118 / 12px stretch; border-radius: 0; background: #1f1710f2 padding-box; text-align: left; }
 .ap .dystrip h4 { margin: 0 0 6px; color: var(--gold); } .ap .dystrip h4 small { color: var(--mute); font-weight: 400; margin-left: 6px; }
 .ap .dystrip .dysl { display: flex; flex-wrap: wrap; gap: 6px; }

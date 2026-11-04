@@ -805,6 +805,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (Object.keys(g).length > 0) drillGain = g
   }
   /** 단련터를 나선다 — 끝 화면에서 왔으면 끝 화면으로(필름은 건너뛰고 단추부터), 첫 화면에서 왔으면 첫 화면으로 */
+  /** 단련터에서 쓸 공이 남은 채 「다음으로」를 한 번 눌렀다 */
+  let yardArmed = false
   const yardLeave = (): void => {
     const end = front?.kind === 'drill' && front.from === 'end' && realm?.outcome != null
     drillGain = {}
@@ -5971,7 +5973,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         return titleHtml(KIT, realm, host.savedAt(), installCard() + links, realm === null && !tutorialOver(), loadBtn + dexBtn, realm !== null && !realm.outcome ? contHook(realm) : '')
       }
       case 'dex': return dexHtml(DEX_KIT, f.board, f.sel, f.back === null ? '판으로' : '처음으로')
-      case 'drill': return yardHtml(DRILL_KIT, f)
+      case 'drill': return yardHtml(DRILL_KIT, { ...f, leaveArmed: yardArmed })
       case 'tomb': return tombRun(realm) ? tombHtml(RELIC_KIT, realm, f.fresh) : ''
       case 'annals': return annalsHtml()
       case 'boards': return boardHtml(KIT, realm !== null && !realm.outcome, unlockedBoards(realm?.region ?? null), tierWon)
@@ -7225,9 +7227,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'unwed': heroOrders = heroOrders.filter((o) => !(o.kind === 'wed' && (o.a === d['id'] || o.b === d['id']))); break
       case 'dex-open': root.querySelector('.dxtoast')?.remove(); front = { kind: 'dex', board: 'all', sel: null, back: front }; sheet = null; paint(); return
       // 단련터 — 끝 화면에서 · 첫 화면에서 (HERO-GROWTH ★ §C)
-      case 'dy-open': if (realm !== null) { engraveNow(realm); front = yardFromEnd(realm); sheet = null; $('.mapwrap').scrollTop = 0 } paint(); return
-      case 'dy-title': front = { kind: 'drill', from: 'title', ids: null, gain: {}, fell: [], anim: true, last: null }; sheet = null; paint(); return
-      case 'dy-next': yardLeave(); return
+      case 'dy-open': yardArmed = false; if (realm !== null) { engraveNow(realm); front = yardFromEnd(realm); sheet = null; $('.mapwrap').scrollTop = 0 } paint(); return
+      case 'dy-title': yardArmed = false; front = { kind: 'drill', from: 'title', ids: null, gain: {}, fell: [], anim: true, last: null }; sheet = null; paint(); return
+      case 'dy-next': {
+        // 쓸 공이 남았으면 한 번은 붙잡는다 — 빛나는 카드 · 한 번 더 누르면 나간다 (형 11-05)
+        if (!yardArmed && Number(d['usable'] ?? 0) > 0) { yardArmed = true; paint(); requestAnimationFrame(() => scrollInside(root.querySelector<HTMLElement>('.dyc.canup'), 'center')); return }
+        yardArmed = false
+        yardLeave(); return
+      }
       case 'dy-up': {
         if (front === null || front.kind !== 'drill') return
         const id = d['id']!
