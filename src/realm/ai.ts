@@ -212,12 +212,18 @@ export function pursuing(r: Realm, faction: string): boolean {
   return r.scenario?.id === 'jumong' && faction === 'buyeo' && seasonIdx(r) < P.realm.pursuitSeasons
 }
 
+/** 판의 초반 유예 (계절) — 1:1 판과 1장은 짧게 (긴급 위원회 11-04 · 긴 판은 그대로) */
+export function graceOf(r: Realm): number {
+  const R = P.realm
+  return r.scenario?.id === 'mahan' ? R.aiGraceMahan : r.region === 'byeonhan-mini' ? R.aiGraceDuel : R.aiGrace
+}
+
 export function spared(r: Realm, faction: string, to: string): boolean {
   const owner = r.nodes[to]?.owner
   if (owner === null || owner === undefined || owner === faction) return false
   // 화친·동맹을 맺은 나라는 치지 않는다 (FLOW §4)
   if (friendly(r, faction, owner)) return true
-  if (r.factions[owner]?.mind !== 'player' || seasonIdx(r) >= P.realm.aiGrace) return false
+  if (r.factions[owner]?.mind !== 'player' || seasonIdx(r) >= graceOf(r)) return false
   // 2장 동부여의 추격군 — 주몽을 쫓아 첫 몇 계절은 유예 없이 내려온다 (CAMPAIGN §1 · 점검 10-25)
   if (pursuing(r, faction)) return false
   return !(r.provoked ?? []).includes(faction)
@@ -979,7 +985,7 @@ export function aiOrders(r: Realm): Order[] {
       }
       // 넓어지는 지도 (삼한 남부 판) — 플레이어가 아직 모르는 먼 나라는 가볍게 굴린다: aiFarEvery 계절에 한 번만 다 생각하고,
       // 나머지 계절은 청에 답하고 징병만 한다 (나라가 서른여섯이라 폰에서 버티려고). 발견이 없는 판은 늘 다 생각한다
-      const far = r.known !== undefined && player !== undefined && !knows(r, player, f.id)
+      const far = r.region !== 'byeonhan-mini' && r.known !== undefined && player !== undefined && !knows(r, player, f.id) // 1:1 판은 나라가 둘뿐이라 늘 다 생각한다 (긴급 위원회 11-04)
       const every = r.region === 'world' ? P.realm.aiFarEveryWorld : P.realm.aiFarEvery
       // 칠 턴이 된 채비 (달 시계) — 가볍게 굴리는 계절에도 낸다. 채비한 군대는 이번 턴 다른 명령에서 뺀다
       const ripe = strikes(r, f.id)
@@ -1005,7 +1011,8 @@ export function aiOrders(r: Realm): Order[] {
  */
 function approach(r: Realm, faction: string, decided: readonly Order[]): Order[] {
   const R = P.realm
-  if (seasonIdx(r) < R.aiApproachFrom || beatenResting(r, faction)) return []
+  const duel = r.region === 'byeonhan-mini' // 1:1 판은 일찍 · 하나뿐인 군대로도 다가간다 (긴급 위원회 11-04)
+  if (seasonIdx(r) < (duel ? R.aiApproachDuel : R.aiApproachFrom) || beatenResting(r, faction)) return []
   const busy = new Set(decided.flatMap((o) => ('army' in o && typeof o.army === 'string' ? [o.army] : [])))
   const cap = r.factions[faction]?.capital
   const mine = sorted(Object.values(r.armies)).filter((a) => a.faction === faction && a.lent === undefined)
@@ -1013,16 +1020,17 @@ function approach(r: Realm, faction: string, decided: readonly Order[]): Order[]
   const edges = Object.values(r.edges).sort((a, b) => (a.id < b.id ? -1 : 1))
   const passable = (id: string): boolean => {
     const n = r.nodes[id]
-    return n !== undefined && n.kind !== 'sodo' && (n.owner === faction || (n.owner === null && n.kind === 'wild'))
+    return n !== undefined && n.kind !== 'sodo' && (n.owner === faction || (n.owner === null && (n.kind === 'wild' || duel))) // 1:1 판은 빈 옛 고을도 지나간다
   }
   const goal = (id: string): boolean => {
     const n = r.nodes[id]
-    return n !== undefined && n.kind !== 'sodo' && n.owner !== faction && !(n.owner === null && n.kind === 'wild') && !spared(r, faction, id)
+    // 1:1 판은 빈 옛 고을을 줍고 다니지 말고 맞수에게 (긴급 위원회 11-04 · 빈 고을만 돌다 48달 동안 못 만났다)
+    return n !== undefined && n.kind !== 'sodo' && n.owner !== faction && !(n.owner === null && (n.kind === 'wild' || duel)) && !spared(r, faction, id)
   }
   const out: Order[] = []
   let atCap = cap === undefined ? 0 : mine.filter((a) => a.at === cap && a.march === null).length
   for (const a of idle) {
-    if (a.at === cap && atCap <= 1 && (mine.length > 1 || seasonIdx(r) < R.aiApproachSolo)) continue
+    if (a.at === cap && atCap <= 1 && (mine.length > 1 || seasonIdx(r) < (duel ? R.aiApproachDuel : R.aiApproachSolo))) continue
     // 너비 우선 — 처음 디딘 길을 기억한다 (같은 판이면 같은 길: 길 id 순)
     const first = new Map<string, string>([[a.at, '']])
     let queue = [a.at]

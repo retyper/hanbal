@@ -44,10 +44,13 @@ export function keepRivals(r: Realm, n: number): Realm {
   // 서로 만나면서 게임을 시작하는 게 불편"). 그 안에서는 (시드 · 나라 id) 굴림 차례, 모자라면 먼 나라부터 채운다 (A1)
   const hops = hopsFrom(r, me !== undefined ? r.factions[me]?.capital : undefined)
   const far = (f: string): number => hops.get(r.factions[f]?.capital ?? '') ?? Infinity
-  const gap = P.realm.rivalGapHops
+  const gap = r.region === 'byeonhan-mini' ? P.realm.rivalGapHopsDuel : P.realm.rivalGapHops // 1:1 판은 붙어서 (긴급 위원회 11-04)
   const others = Object.keys(r.factions).filter((f) => f !== me).sort()
   const shuffled = others.sort((a, b) => roll(r.seed, 0, `rival:${a}`) - roll(r.seed, 0, `rival:${b}`))
-  const kept = new Set([...shuffled.filter((f) => far(f) > gap), ...shuffled.filter((f) => far(f) <= gap).sort((a, b) => far(b) - far(a))].slice(0, n))
+  // 1:1 판은 gap 걸음 넘는 나라 가운데 가장 가까운 나라 — 서너 달 안에 마주친다 (긴급 위원회 11-04 · 멀리 뽑으면 48달 동안 못 만났다)
+  const duel = r.region === 'byeonhan-mini'
+  const pool = duel ? [...shuffled.filter((f) => far(f) > gap)].sort((a, b) => far(a) - far(b)) : shuffled.filter((f) => far(f) > gap)
+  const kept = new Set([...pool, ...shuffled.filter((f) => far(f) <= gap).sort((a, b) => far(b) - far(a))].slice(0, n))
   if (me !== undefined) kept.add(me)
   const gone = (f: string | null): boolean => f !== null && !kept.has(f)
   for (const [id, node] of Object.entries(r.nodes)) if (gone(node.owner)) r.nodes[id] = emptied(node)

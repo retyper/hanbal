@@ -102,7 +102,8 @@ function openRegion(region: RegionId, seed: number, player: string, edit?: (r: R
     case 'gujibong': return startGujibong(seed)
     case 'daemusin': return startDaemusin(seed)
     // 자유판마다 타국 수가 정해져 있다 — 판마다 무작위 나라, 나머지 나라 땅은 빈 땅 (rivals.ts · FOCUS.md J)
-    default: return free(keepRivals(startRealm(seed, player), P.realm.miniRivals))
+    // 새 1:1 판은 판 이름을 적어 둔다 — 짧은 유예·붙은 시작이 이 판에만 걸리게 (긴급 위원회 11-04 · 옛 저장은 비어 있어 예전대로)
+    default: { const r0 = startRealm(seed, player); r0.region = 'byeonhan-mini'; return free(keepRivals(r0, P.realm.miniRivals)) }
   }
 }
 
