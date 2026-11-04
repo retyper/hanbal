@@ -284,7 +284,8 @@ export function detailHtml(k: FrontKit, region: RegionId, id: string, carry = ''
   h += `<div class="dcard">${k.face(id, 'dface', k.boardRuler?.(region, id))}<div class="db"><div class="dn">${k.emblem(id, 'dem')}<div><b>${k.esc(n.name)}</b><span>${k.esc(n.place)}</span></div></div>`
   h += `<p class="blurb">${k.esc(n.blurb)}</p>${customsHtml(k, id)}${barsHtml(n)}`
   h += `<p class="src">${k.esc(n.source)}</p>${n.hard ? '<p class="hard">어려운 나라다. 처음이면 다른 나라를 권한다.</p>' : ''}`
-  h += `${carry}<button class="btn pri big" data-act="fr-start" data-id="${id}">이 나라로 시작</button></div></div></div>`
+  // 시작 단추는 화면 아래 붙박이 — 잠긴 세기 칸을 지나 굴려야 보였다 (긴급 위원회 11-04 · 메모리 confirm-bar-bottom)
+  h += `${carry}<div class="dstart"><button class="btn pri big" data-act="fr-start" data-id="${id}">이 나라로 시작</button></div></div></div></div>`
   return h
 }
 
@@ -876,6 +877,10 @@ export const FRONT_CSS = `
 .ap .front-end .chron > summary { cursor: pointer; color: var(--gold); font-weight: 700; padding: 4px 0; } .ap .front-end .chron > summary small { color: var(--mute); font-weight: 500; }
 .ap .front-end .gains { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
 .ap .front-end .gains > * { margin: 0; }
+/* 큰 단추(다음 · 새 게임)는 화면 아래 붙박이 — 승리 화면에서 「다음: 1:1」이 화면 밖(y=918)이었다 (긴급 위원회 11-04) */
+.ap .front-end .endbtns .ebmain { position: sticky; bottom: 0; z-index: 3; padding: 10px 0 calc(8px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(#0b0d1100, #0b0d11ee 30%); }
+.ap .front.detail .dstart { position: sticky; bottom: 0; z-index: 3; padding: 10px 0 calc(8px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(#0b0d1100, #0b0d11ee 30%); }
+.ap .front.detail .dstart .btn { width: 100%; justify-content: center; }
 .ap .front-end .endbtns { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
 .ap .front-end .endbtns .ebmain { display: grid; gap: 8px; } .ap .front-end .endbtns .ebmain .btn { width: 100%; justify-content: center; font-size: 16px; padding-top: 6px; padding-bottom: 6px; }
 .ap .front-end .endbtns .ebsub { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; } .ap .front-end .endbtns .ebsub .btn { width: 100%; justify-content: center; flex-direction: column; font-size: 13.5px; }
