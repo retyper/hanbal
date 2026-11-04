@@ -109,7 +109,7 @@ export const WINFX_CSS = `
 @keyframes wfrain { 0% { opacity: 0; transform: translateY(0) rotate(0); } 10% { opacity: 1; } 100% { opacity: 0; transform: translateY(110vh) translateX(30px) rotate(540deg); } }
 /* 큰 글자 — 위에서 쾅 박히고 한 번 흔들린다 */
 .ap .winfx .wf-word { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; animation: wfslam .7s cubic-bezier(.2, 1.4, .35, 1) var(--wd) both; }
-.ap .winfx .wf-word .wf-logo { width: min(82vw, 620px); height: auto; filter: drop-shadow(0 8px 18px #000d) drop-shadow(0 0 26px #ffd27a77); }
+.ap .winfx .wf-word .wf-logo { width: min(82vw, 620px); height: auto; max-height: 58vh; object-fit: contain; filter: drop-shadow(0 8px 18px #000d) drop-shadow(0 0 26px #ffd27a77); }
 .ap .winfx.brief .wf-word .wf-logo { width: min(70vw, 480px); }
 .ap .winfx .wf-word .wf-logo.great { width: min(80vw, 560px); }
 .ap .winfx.brief .wf-word .wf-logo.great { width: min(72vw, 460px); }
