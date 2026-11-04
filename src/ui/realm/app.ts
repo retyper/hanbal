@@ -33,7 +33,7 @@ import {
   GOODS, armCost, buildCost, canBuild, canGuard, draftCost, draftIronCost, draftLimit, draftNeeds, draftPay, goodOf, guardCost, hhGrowth, isCoast, militiaMen, nextBuild, nodeHarvest, nodeYield, nodeSpecials, upkeepOf, riteAllowed, riteCost,
   autoFlows, crowdOf, migratePath, fieldMul, homeRoom, inboundOf, inboundRate, isRiverside, landMul, placeLimit, placeNodes, workMul,
   goodsWorth,
-  callCost, callLimit, callWhy, draftWhy,
+  callCost, callLimit, callWhy, draftWhy, grainAtSeasonEnd,
 } from '../../realm/economy.ts'
 import { goalReach, goalRoute } from '../../realm/goal.ts'
 import { approachMoves, armyPower, jointWin, matchupHints, movesOf, type Move } from '../../realm/estimate.ts'
@@ -1473,10 +1473,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 적이 친다 — 채비를 마친 군대이거나, 길 위에서 다음 달 우리 고을에 닿는 군대 (긴급 위원회 11-04 · 예고가 「다음 달」에 붙어야 넘기고 싶다)
     if (Object.values(r.armies).some((a) => a.faction !== me() && ((strikeLive(r, a) && r.nodes[a.strike!.node]?.owner === me() && vis.has(a.at))
       || (a.march !== null && a.march.left <= 1 && r.nodes[a.march.to]?.owner === me() && (vis.has(a.at) || vis.has(a.march.to)))))) out.push('<i class="nxp foe">⚔</i>')
+    // 곡식 — 곳간은 계절 끝 달에만 드나든다 (난 것 + 가을걷이 − 군량) · 그 달에 「곡식 +n」 (형 11-04: "다음 달에 들어올 곡식도 그 버튼에")
+    if (isSeasonEnd(r)) {
+      const g = grainAtSeasonEnd(r, me())
+      if (g !== 0) out.push(`<i class="nxp gr${g < 0 ? ' dn' : ''}" data-tip="${g > 0 ? '다음 달 곳간에 들어올 곡식' : '다음 달 곳간에서 나갈 곡식 (군량이 난 것보다 많다)'}">${icon(GOOD_ICON.grain)}<b>${g > 0 ? '+' : '−'}${Math.abs(g)}</b></i>`)
+    }
     if (Object.values(r.armies).some((a) => a.faction === me() && a.march !== null && a.march.left <= 1)) out.push(`<i class="nxp">${icon('unit-spear')}</i>`)
     if ((r.builds ?? []).some((b) => b.faction === me() && b.done <= r.season)) out.push(`<i class="nxp">${icon('settle-palisade')}</i>`)
     if (isSeasonEnd(r)) out.push(`<i class="nxp">${icon(SEASON_ICON[seasonOf(r, r.season + 1)])}</i>`)
-    return out.length === 0 ? '' : `<span class="nxps">${out.slice(0, 3).join('')}</span>`
+    return out.length === 0 ? '' : `<span class="nxps">${out.slice(0, 4).join('')}</span>`
   }
   /**
    * 「이어 하기」 단추의 한 줄 — 다음에 열면 무엇이 걸려 있나 (긴급 위원회 11-04 · loop B7: 다음 날 첫 화면이 돌아올 이유가 되게).

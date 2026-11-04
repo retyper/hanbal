@@ -84,6 +84,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .next span { font-size: 20px; margin-left: 4px; }
 .ap .next .nxps { display: inline-flex; gap: 2px; margin: -6px 6px -6px -8px; vertical-align: middle; } .ap .next .nxps .nxp { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #00000040; font-style: normal; font-size: 15px; margin: 0; }
 .ap .next .nxps .nxp img { width: 22px; height: 22px; } .ap .next .nxps .nxp.foe { background: #7a1a10; color: #fff; }
+.ap .next .nxps .nxp.gr { width: auto; padding: 0 7px 0 3px; border-radius: 13px; display: inline-flex; gap: 2px; background: #2c4a1c; } .ap .next .nxps .nxp.gr img { width: 20px; height: 20px; } .ap .next .nxps .nxp.gr b { font-size: 13px; color: #d8f0a8; font-variant-numeric: tabular-nums; } .ap .next .nxps .nxp.gr.dn { background: #5a1c14; } .ap .next .nxps .nxp.gr.dn b { color: #ffc0a8; }
 .ap .next:active { transform: translateY(1px); filter: brightness(.95); }
 .ap.sheet-open .next { opacity: 0; pointer-events: none; }
 

@@ -14,7 +14,10 @@ const out = process.argv[2]!
 const kind = process.argv[3] ?? 'quarrel-town'
 const seed = Number(process.argv[4] ?? 7)
 const r0 = startRegion((process.env.REGION ?? 'byeonhan-mini') as Parameters<typeof startRegion>[0], seed, process.env.NATION ?? 'us')
-const { next, report } = advance(r0, [])
+// ADV=n — 그만큼 더 넘긴 판 (달 시계에서 계절 끝 달을 찍을 때)
+let r1 = r0
+for (let i = 0; i < Number(process.env.ADV ?? 0); i++) r1 = advance(r1, []).next
+const { next, report } = advance(r1, [])
 const ours = Object.values(next.heroes).filter((h) => h.faction === next.player && h.status === 'free')
 // 장수가 모자라면 남의 장수를 데려와 둘을 맞춘다 (남녀 하나씩)
 for (const look of ['g', 'w'] as const) {

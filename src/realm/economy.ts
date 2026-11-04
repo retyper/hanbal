@@ -1070,6 +1070,27 @@ export function onTake(r: Realm, node: string): void {
 }
 
 /**
+ * 이번 계절이 끝날 때 곳간에 드나들 곡식 (난 것 + 바깥 교역 + 가을걷이 − 군량) — stepEconomy 의 곡식 셈을 읽기만 한다.
+ * 「다음 달」 단추가 계절 끝 달에 보인다 (형 11-04: "다음 달에 들어올 곡식도 그 버튼에"). 겨울 썩음은 빼고 셈한다
+ */
+export function grainAtSeasonEnd(r: Realm, f: string): number {
+  const R = P.realm
+  const sname = seasonOf(r)
+  const nodes = Object.values(r.nodes).filter((n) => n.owner === f)
+  let g = 0
+  for (const n of nodes) g += goodOf(nodeYield(r, n.id, sname), 'grain')
+  g += r.factions[f]?.income?.grain ?? 0
+  if (sname === 'summer') {
+    let sown = 0
+    for (const n of nodes) sown += n.sown * fieldMul(r, n.id)
+    const tm = tierMul(r.tier ?? 1)
+    const base = Math.round(sown * R.harvestPerHH * (f !== r.player ? tm.income : tm.ours) * harvestModOf(r, f))
+    g += base + (r.blessed?.[f] === yearOf(r) ? Math.round(base * R.riteHarvest * riteMul(r, f)) : 0)
+  }
+  return g - upkeepOf(r, f, sname === 'winter')
+}
+
+/**
  * 7 — 생산 · 수확 · 소모 (SYSTEMS §12). `season` 은 0 봄 · 1 여름 · 2 가을 · 3 겨울.
  * `fought` 는 이번 계절에 싸움이 난 고을 — 그 고을의 가호는 늘지 않는다.
  */
