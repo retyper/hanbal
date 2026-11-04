@@ -7300,7 +7300,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'rl-close': if (front !== null && front.kind === 'drill') front = { ...front, anim: false, gain: {}, slot: null }; paint(); return
       case 'dex-close': if (front !== null && front.kind === 'dex') front = front.back; paint(); return
       case 'dex-board': if (front !== null && front.kind === 'dex') { front = { ...front, board: d['v'] as DexBoard, sel: null }; root.querySelector('.front.dexp')?.scrollTo(0, 0) } paint(); return
-      case 'dex-awake': toggleDexAwake(d['id']!); paint(); return
+      case 'dex-awake': toggleDexAwake(); paint(); return
       case 'dex-sel': if (front !== null && front.kind === 'dex') front = { ...front, sel: d['id'] === undefined || d['id'] === front.sel ? null : d['id'] }; paint(); return
       case 'fr-endless': if (realm !== null) { realm.endless = true; looking = false; showReport = false } paint(); return
       case 'pl-next': case 'pl-skip': {

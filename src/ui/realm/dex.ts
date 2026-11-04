@@ -132,13 +132,15 @@ interface DexKit {
   readonly awake: (hero: string) => string | null
 }
 
-/** 영웅전에서 각성 초상을 켜 둔 장수 (화면만의 것 · 판 밖에는 각성 얼굴을 안 보인다 · 형 11-03: "각성은 게임판에서만 · 한 번 성공했으면 영웅전에서 토글") */
-// 켜 둔 것은 이 기기에 남긴다 — 다시 열 때마다 꺼져 있었다 (형 11-04: "영웅전에서 각성 상태로 전환하는 버튼")
-const AWAKE_KEY = 'hanbal.realm.dexAwake'
-const awakeOn = ((): Set<string> => { try { const v = JSON.parse(localStorage.getItem(AWAKE_KEY) ?? '[]') as unknown; return new Set(Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []) } catch { return new Set<string>() } })()
-export function toggleDexAwake(id: string): void {
-  if (awakeOn.has(id)) awakeOn.delete(id); else awakeOn.add(id)
-  try { localStorage.setItem(AWAKE_KEY, JSON.stringify([...awakeOn])) } catch { /* 저장 못 하는 곳 */ }
+/**
+ * 영웅전 각성 보기 — 머리 줄 오른쪽 「각성」 하나로 모든 초상을 각성 얼굴로 (형 11-05: "캐릭터마다 버튼 말고 상단 영웅전 줄 오른쪽 끝 토글 · 각성 못 본 건 물음표").
+ * 화면만의 것 · 이 기기에 남긴다. 판 밖에는 각성 얼굴을 안 보이는 원칙(형 11-03)은 이 토글을 켰을 때만 깬다
+ */
+const AWAKE_KEY = 'hanbal.realm.dexAwakeAll'
+let awakeAll = ((): boolean => { try { return localStorage.getItem(AWAKE_KEY) === '1' } catch { return false } })()
+export function toggleDexAwake(): void {
+  awakeAll = !awakeAll
+  try { localStorage.setItem(AWAKE_KEY, awakeAll ? '1' : '0') } catch { /* 저장 못 하는 곳 */ }
 }
 
 /** 모르는 장수의 귀띔 — 어디 가면 만나나 */
@@ -151,14 +153,15 @@ function card(k: DexKit, x: DexHero, f: number, sel: boolean): string {
   const lv = dexLevel(f)
   // 각성해 본 장수는 켜 둔 대로 각성 얼굴 · 귀퉁이에 불꽃 표 (누르면 자세히에서 켜고 끈다)
   const aw = (f & DEX_AWOKE) !== 0 ? k.awake(x.id) : null
-  const src = aw !== null && awakeOn.has(x.id) ? aw : k.bust(x.id)
-  const face = lv === 0 || src === null ? `<span class="dxf none">${lv === 0 ? '?' : ''}</span>` : `<img class="dxf" src="${src}" alt="" loading="lazy">`
+  // 각성 보기를 켰으면 각성 얼굴 · 각성을 못 본 장수는 물음표 (형 11-05)
+  const src = awakeAll ? aw : k.bust(x.id)
+  const face = lv === 0 || src === null ? `<span class="dxf none">${lv === 0 || awakeAll ? '?' : ''}</span>` : `<img class="dxf" src="${src}" alt="" loading="lazy">`
   const name = lv === 0 ? '<b class="dxn">???</b>' : `<b class="dxn">${nameHtml(x.name)}</b>`
   const pips = [DEX_HEARD, DEX_MET, DEX_CAUGHT, DEX_SERVED].map((b, i) => `<i class="${f & b ? 'on' : ''}" title="${LV_NAME[i + 1]}"></i>`).join('')
   const g = lv >= 2 ? ` style="--g:${GRADE_COLOR[x.grade]}"` : ''
   const gr = k.grow(x.id)
   const grow = gr.lv > 0 || gr.relics !== '' ? `<span class="dxgr">${gr.lv > 0 ? `<b>단련 ${gr.lv}</b>` : ''}${gr.relics}</span>` : ''
-  return `<button class="dxc lv${lv}${lv >= 2 ? ' graded' : ''}${sel ? ' sel' : ''}" data-act="dex-sel" data-id="${x.id}"${g}>${face}${name}<span class="dxm">${k.esc(x.board === 'wander' ? '떠돌이' : x.nationName)}</span>${grow}${aw !== null ? `<i class="dxawb${awakeOn.has(x.id) ? ' on' : ''}">🔥</i>` : ''}<span class="pips">${pips}</span></button>`
+  return `<button class="dxc lv${lv}${lv >= 2 ? ' graded' : ''}${sel ? ' sel' : ''}" data-act="dex-sel" data-id="${x.id}"${g}>${face}${name}<span class="dxm">${k.esc(x.board === 'wander' ? '떠돌이' : x.nationName)}</span>${grow}${aw !== null && !awakeAll ? '<i class="dxawb">🔥</i>' : ''}<span class="pips">${pips}</span></button>`
 }
 
 /** 고른 장수 — 아래에 붙는 판 */
@@ -166,13 +169,12 @@ function detail(k: DexKit, x: DexHero, f: number): string {
   const lv = dexLevel(f)
   let h = `<div class="dxsel"><button class="x" data-act="dex-sel" aria-label="닫기">✕</button>`
   const aw = (f & DEX_AWOKE) !== 0 ? k.awake(x.id) : null
-  const src = aw !== null && awakeOn.has(x.id) ? aw : k.bust(x.id)
+  const src = awakeAll ? aw : k.bust(x.id)
   h += `<div class="dxtop">${lv > 0 && src !== null ? `<img class="dxbig" src="${src}" alt="" data-act="bust-view" data-src="${src}">` : '<span class="dxbig none">?</span>'}<div>`
   h += `<b class="dxname">${lv > 0 ? nameHtml(x.name) : '???'}</b>`
   h += `<span class="mute">${k.esc(whereHint(x))}</span>`
   if (lv >= 2) h += `<span class="grade" style="--g:${GRADE_COLOR[x.grade]}">${GRADE_NAME[x.grade]}</span>`
   h += `<span class="lvs">${[DEX_HEARD, DEX_MET, DEX_CAUGHT, DEX_SERVED].map((b, i) => `<i class="${f & b ? 'on' : ''}">${LV_NAME[i + 1]}</i>`).join('')}</span>`
-  if (aw !== null) h += `<button class="btn dxaw${awakeOn.has(x.id) ? ' on' : ''}" data-act="dex-awake" data-id="${x.id}">🔥 ${awakeOn.has(x.id) ? '각성 · 켜짐' : '각성 · 꺼짐'}</button>`
   h += `</div></div>`
   const gr = k.grow(x.id)
   const grown = gr.lv > 0 || gr.relics !== '' ? `<p class="dxgrl">${gr.lv > 0 ? `<b>단련 ${gr.lv}</b> 단련터에서 키운 몸으로 다음 판에 온다` : ''}${gr.relics !== '' ? `<span>지닌 유물 ${gr.relics}</span>` : ''}</p>` : ''
@@ -188,7 +190,7 @@ export function dexHtml(k: DexKit, board: DexBoard, sel: string | null, back: st
   const dex = loadDex()
   const all = dexCatalog()
   const c = dexCounts(dex)
-  let h = `<div class="front dexp"><div class="fhead"><button class="btn ghost" data-act="dex-close">‹ ${k.esc(back)}</button><h2>영웅전</h2></div>`
+  let h = `<div class="front dexp"><div class="fhead"><button class="btn ghost" data-act="dex-close">‹ ${k.esc(back)}</button><h2>영웅전</h2><button class="dxawall${awakeAll ? ' on' : ''}" data-act="dex-awake" aria-pressed="${awakeAll}" data-tip="각성 얼굴로 보기 · 각성을 못 본 장수는 물음표">🔥 각성</button></div>`
   h += `<div class="dxsum"><div class="dxbar"><i class="s" style="width:${(c.served / c.total) * 100}%"></i><i class="c" style="width:${(c.caught / c.total) * 100}%"></i><i class="m" style="width:${(c.met / c.total) * 100}%"></i><i class="h" style="width:${(c.heard / c.total) * 100}%"></i></div>`
   h += `<p><span><b>${c.served}</b>거느림</span><span><b>${c.caught}</b>사로잡음</span><span><b>${c.met}</b>만남</span><span><b>${c.heard}</b>들음</span><span class="mute">모두 ${c.total}</span></p>`
   h += `<p class="mute">판이 끝나도, 져도 남는다. 사로잡고 거느린 장수가 쌓인다.</p></div>`
@@ -227,9 +229,7 @@ export function dexToastHtml(k: DexKit, items: ReadonlyArray<{ id: string; lv: 2
 
 export const DEX_CSS = `
 /* 각성 초상 켜기 — 우리 장수로 한 번 각성해 본 이만 (형 11-03) */
-.ap .dexp .dxaw { align-self: flex-start; margin-top: 6px; } .ap .dexp .dxaw.on { color: #ffd27a; border-color: #c9a45a; }
 .ap .dexp .dxc { position: relative; } .ap .dexp .dxawb { position: absolute; top: 4px; right: 4px; font-style: normal; font-size: 14px; line-height: 1; opacity: .45; filter: grayscale(.6); } .ap .dexp .dxawb.on { opacity: 1; filter: drop-shadow(0 0 4px #ff9a3a); }
-.ap .dexp .dxaw { font-size: 15px; padding: 6px 14px; } .ap .dexp .dxaw.on { background: #3a1f12; box-shadow: 0 0 10px #ff9a3a66; }
 /* 둥근 얼굴 — 청동 테 그림(ui/ring-portrait.png · 테 두께는 지름의 17%) · 얼굴이 줄지 않게 칸을 키운다 (형 10-29: "박스 테두리들이 여전히 css") */
 .ap .dexp .dxf, .ap .dxt img { background: url(__ART__ui/ring-portrait.png) center / 100% 100% no-repeat, #17110c; background-origin: border-box; border-style: solid; border-color: transparent; border-radius: 50%; box-sizing: border-box; }
 .ap .dexp .dxf { width: 78px !important; height: 78px !important; border-width: 13px; } .ap .dexp .dxf.none { border: 13px solid transparent !important; background: url(__ART__ui/ring-portrait.png) center / 100% 100% no-repeat, #17110c !important; background-origin: border-box !important; }
@@ -270,11 +270,16 @@ export const DEX_CSS = `
 .ap .dexp .dxclan { max-width: 980px; margin: 10px auto; padding: 0 14px 40px; display: flex; flex-direction: column; gap: 8px; }
 .ap .dexp .clk { display: flex; gap: 10px; align-items: center; padding: 0; border-radius: 0; border: 10px solid transparent; border-image: url(__ART__ui/card.png?v=1) 24 fill / 10px stretch; background: none; }
 .ap .dexp .clk > div { display: flex; flex-direction: column; gap: 2px; } .ap .dexp .clk .dxf.none { font-size: 16px; color: #f0b8c8; }
-.ap .dexp .dxsel { position: fixed; left: 50%; bottom: 0; transform: translateX(-50%); width: min(560px, 100%); max-height: 62vh; overflow-y: auto; z-index: 6; box-sizing: border-box;
+.ap .dexp .dxsel { position: fixed; left: 50%; bottom: 0; transform: translateX(-50%); width: min(560px, 100%); max-height: 62vh; overflow-y: auto; overflow-x: hidden; z-index: 6; box-sizing: border-box;
   padding: 0 0 env(safe-area-inset-bottom); border-radius: 0; border: 18px solid transparent; border-bottom-width: 12px; border-image: url(__ART__ui/panel.png?v=2) 64 fill / 18px 18px 12px stretch; background: none;
   box-shadow: 0 -8px 30px #000a; animation: dxup .25s ease-out both; }
 @keyframes dxup { from { transform: translate(-50%, 30px); opacity: 0; } to { transform: translateX(-50%); opacity: 1; } }
-.ap .dexp .dxsel .x { position: absolute; right: -6px; top: -8px; width: 38px; height: 34px; border: 6px solid transparent; border-image: url(__ART__ui/btn-dark.png?v=2) 30 33 fill / 6px 8px stretch; border-radius: 0; background: none; color: #efe3c6; font-weight: 700; cursor: pointer; }
+.ap .dexp .dxsel .x { position: absolute; right: 0; top: 0; z-index: 2; width: 38px; height: 34px; border: 6px solid transparent; border-image: url(__ART__ui/btn-dark.png?v=2) 30 33 fill / 6px 8px stretch; border-radius: 0; background: none; color: #efe3c6; font-weight: 700; cursor: pointer; }
+/* 각성 보기 토글 — 머리 줄 오른쪽 끝 · 켜면 금빛으로 눌린 채 (형 11-05) */
+.ap .dexp .fhead .dxawall { margin-left: auto; flex: none; padding: 7px 14px; border-radius: 999px; border: 1.5px solid #8a6a3a; background: #1c1610e0; color: #e6d6b6; font: inherit; font-weight: 800; cursor: pointer; }
+.ap .dexp .fhead .dxawall.on { border-color: #ffd98a; background: radial-gradient(circle at 50% 40%, #e8b85a, #9a6a24); color: #2a1a08; box-shadow: inset 0 3px 7px #0009, 0 0 12px #ff9a3a88; }
+/* PC 는 탭이 줄을 넘겨 접힌다 — 마우스로는 옆으로 밀어 볼 수 없었다 (형 11-05: 삼한·북녘을 볼 수 없음) */
+@media (hover: hover) and (pointer: fine) { .ap .dexp .dxtabs { flex-wrap: wrap; overflow-x: visible; justify-content: center; } }
 .ap .dexp .dxtop { display: flex; gap: 12px; align-items: center; } .ap .dexp .dxtop > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .ap .dexp .dxbig { width: 96px; height: 96px; border-radius: 0; object-fit: cover; object-position: top; flex: none; box-sizing: border-box; border: 9px solid transparent; border-image: url(__ART__ui/frame-portrait.png) 60 / 9px stretch; }
 .ap .dexp .dxbig.none { display: grid; place-items: center; background: #17110c; color: #60524a; font-size: 40px; }
