@@ -33,7 +33,7 @@ import {
   GOODS, armCost, buildCost, canBuild, canGuard, draftCost, draftIronCost, draftLimit, draftNeeds, draftPay, goodOf, guardCost, hhGrowth, isCoast, militiaMen, nextBuild, nodeHarvest, nodeYield, nodeSpecials, upkeepOf, riteAllowed, riteCost,
   autoFlows, crowdOf, migratePath, fieldMul, homeRoom, inboundOf, inboundRate, isRiverside, landMul, placeLimit, placeNodes, workMul,
   goodsWorth,
-  callCost, callLimit, callWhy, draftWhy, grainAtSeasonEnd,
+  callCost, callLimit, callWhy, draftWhy, grainAtSeasonEnd, isWoody,
 } from '../../realm/economy.ts'
 import { goalReach, goalRoute } from '../../realm/goal.ts'
 import { approachMoves, armyPower, jointWin, matchupHints, movesOf, type Move } from '../../realm/estimate.ts'
@@ -55,6 +55,7 @@ import type { Approach, Army, BuildWhat, EdgeKind, EnvoyAsk, ExpDest, Good, Hand
 import { P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, noReachWhy, visibleNodes, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
 import { LEGACY_CSS, bringHtml, clearBring, toggleBring } from './legacy.ts'
+import { TOWN_CSS, townVeilHtml, townViewHtml } from './townview.ts'
 import { DEX_CSS, clanHeroes, dexHtml, dexToastHtml, loadDex, recordDex, toggleDexAwake, type DexBoard } from './dex.ts'
 import { DEX_SERVED, dexCatalog } from '../../realm/dex.ts'
 import { DRILL_CSS, drillLevel, engraveRun, hasDrill, loadDrill, raiseHero, yardHtml, yardStripHtml, type DrillKit } from './drill.ts'
@@ -631,7 +632,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + MEM_CSS + ASCEND_CSS + HILITE_CSS
+  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + MEM_CSS + ASCEND_CSS + HILITE_CSS + TOWN_CSS.replaceAll('__ART__', ART)
   document.head.appendChild(style)
   root.classList.add('ap')
   // 그래픽 단계 저사양 · 보통 · 고사양 (quality.ts · 형 10-29: 폰 절전 모드에서 그림이 다 깨졌다)
@@ -783,6 +784,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let cmdJob: CmdJob | null = null
   /** 판을 열기 전 「데려갈 장수」 팝업 — 고른 판 (형 10-25: "게임 시작할 때 데려갈 장수가 팝업으로 · 영웅전 내 기록의 장수만 · 가능한 수대로 체크") */
   let bringAsk: { nation: string; region: RegionId; tier: number } | null = null
+  /** 마을 안 (TOWN.md) — 열린 고을 · 처음 그리면 밝아지며 */
+  let townIn: string | null = null
+  let townFresh = false
   /** 이번에 새로 새긴 단련 공 — 끝 화면이 처음 그려질 때 (drill.engraveRun). 단련터의 막대가 이만큼 차오른다 */
   let drillGain: Record<string, number> = {}
   /** 판이 끝났으면 공을 새긴다 — 몇 번 불러도 한 번만 든다 (무한 모드로 이어 둔 몫만 더) */
@@ -5100,6 +5104,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const on = rallyOn(r, id, plan)
         if (plan.length > 0) bs.push(rb('rally', icon('unit-drummers'), on ? '집결 중' : `집결 ${plan.length}`, '', on ? ' on' : ''))
       }
+      // 마을 안 — 일터와 일하는 사람들이 보이는 곳 (docs/realm/TOWN.md · 형 11-04: "마을이 확대되면서 fade out fade in")
+      if (n.work !== undefined || workOptions(r, id).length > 0) {
+        const going = (r.works ?? []).some((w) => w.node === id)
+        bs.push(rb('town-in', icon(n.work !== undefined ? WORKS[n.work].icon : nodeIcon(n)), going ? '짓는 중' : '마을 안', ' data-tip="마을 안 · 일터와 일하는 사람들"', going ? ' on' : ''))
+      }
       bs.push(more)
       // 부채꼴 — 위쪽 가운데를 중심으로 왼쪽부터 오른쪽으로 (이름표는 고을 아래에 있다)
       // 단추 수만큼 부채가 넓어지고, 이웃 단추 사이(활꼴 현)가 mapRingGap 이상 되게 반지름을 키운다 — 여섯이 되면서 겹쳐 옆 단추가 눌렸다 (위원회 11-04 UX ①)
@@ -6301,11 +6310,40 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       fitLabels(root) // 단추 글이 넘치면 줄바꿈 대신 글씨를 줄인다 (형 10-25)
       stratPaint() // 전략 회의 화면 — 열려 있으면 다시 그린다
       wooPaint() // 회유할 사람 고르기 상자
+      townPaint() // 마을 안 — 열려 있으면 다시 그린다 (일터를 고르면 바로 바뀐다)
       marquee(root) // 말줄임으로 잘린 한 줄 글은 지하철 안내판처럼 흐른다 (형 10-29)
       firstsAfterPaint()
     } catch (e) {
       failNote(e)
     }
+  }
+
+  /** 마을 안 (TOWN.md 1단계) — 열린 고을이 있으면 덮개에 그린다 · 우리 고을이 아니게 됐으면 걷는다 */
+  function townPaint(): void {
+    let ov = root.querySelector<HTMLElement>('.townov')
+    const r = realm
+    const n = townIn !== null && r !== null ? r.nodes[townIn] : undefined
+    if (r === null || n === undefined || n.owner !== me() || warOn || front !== null) {
+      if (ov !== null && !ov.classList.contains('out')) ov.remove()
+      townIn = null
+      return
+    }
+    // 바탕 — 물가 · 숲 · 들판 (마을 터 그림이 구워지기 전엔 전장 바탕을 빌린다 · ART-QUEUE)
+    const bg = isCoast(r, n.id) || isRiverside(r, n.id) ? 'battle/battle-ford.jpg' : isWoody(r, n.id) ? 'battle/battle-forest.jpg' : 'battle/battle-field.jpg'
+    const going = (r.works ?? []).find((w) => w.node === n.id)
+    const html = townViewHtml({
+      id: n.id, name: esc(n.name), hh: n.hh, bg, art: ART, fresh: townFresh,
+      work: n.work !== undefined ? { img: `${ART}icon/${WORKS[n.work].icon}.png`, name: WORKS[n.work].name, lv: workLv(n), max: Math.round(P.realm.workLvMax) } : null,
+      going: going !== undefined ? { img: `${ART}icon/${WORKS[going.what].icon}.png`, name: WORKS[going.what].name, left: `${turnsLabel(r, Math.max(1, going.done - r.season + 1))} 남음` } : null,
+      card: workCardHtml(r, n.id),
+      plan: (() => { const q = musters.find((o): o is Extract<Order, { kind: 'work' }> => o.kind === 'work' && o.node === n.id); return q !== undefined ? { img: `${ART}icon/${WORKS[q.what].icon}.png`, name: WORKS[q.what].name } : null })(),
+    })
+    if (ov === null) {
+      root.insertAdjacentHTML('beforeend', `<div class="townov" style="--tf:${P.realm.townFadeMs}ms"></div>`)
+      ov = root.querySelector<HTMLElement>('.townov')!
+    }
+    ov.innerHTML = html
+    townFresh = false
   }
 
   /** 처음 한 번 알림 (firsts.ts) — 본 것 · 떠 있는 것 */
@@ -8013,6 +8051,33 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const plan = wallPlan(realm!)
         if (plan.ok) musters = [...musters, ...plan.list.map((x): Order => ({ kind: 'build', faction: me(), node: x.node, what: x.what }))]
         break
+      }
+      case 'town-in': {
+        // 마을 안으로 — 고을 그림이 그 자리에서 커지며 어두워지고(townZoomMs), 그 끝에 마을 안이 밝아진다 (형 11-04)
+        const id = d['node']!
+        const el = root.querySelector<HTMLElement>(`.nd[data-node="${id}"]`)
+        const b = el?.getBoundingClientRect()
+        const src = el?.querySelector('img')?.getAttribute('src') ?? `${ART}icon/settle-farm-village.png`
+        root.querySelector('.tvveil')?.remove()
+        if (b !== undefined) root.insertAdjacentHTML('beforeend', townVeilHtml(b.x + b.width / 2, b.y + b.height / 2, src))
+        const veil = root.querySelector<HTMLElement>('.tvveil')
+        veil?.style.setProperty('--tz', `${P.realm.townZoomMs}ms`)
+        window.setTimeout(() => {
+          townIn = id
+          townFresh = true
+          ring = ''
+          paint()
+          // 막은 마을 안이 밝아진 뒤 걷는다 (그 사이 지도가 비치지 않게)
+          window.setTimeout(() => veil?.remove(), P.realm.townFadeMs)
+        }, b !== undefined ? P.realm.townZoomMs : 0)
+        return
+      }
+      case 'town-out': {
+        const ov = root.querySelector<HTMLElement>('.townov')
+        if (ov === null) { townIn = null; paint(); return }
+        ov.classList.add('out')
+        window.setTimeout(() => { ov.remove(); townIn = null; paint() }, P.realm.townFadeMs)
+        return
       }
       case 'work': {
         // 고을 일터 — 한 고을에 하나만 고른다 · 다시 누르면 거둔다
