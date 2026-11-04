@@ -115,6 +115,16 @@ export function tierWon(region: RegionId): number {
   return load().tiers?.[region] ?? 0
 }
 
+/** 판을 한 번이라도 이겼나 (튜토리얼 승리 포함) — 설치 권하는 카드는 그 뒤에 (긴급 위원회 11-04 · ftue B11) */
+export function everWon(): boolean {
+  return load().won.length > 0
+}
+
+/** 튜토리얼을 끝까지 했나 (그만둔 것은 아니다) */
+export function tutorialDone(): boolean {
+  return load().tutorial === 'done'
+}
+
 export function tutorialOver(): boolean {
   return load().tutorial !== undefined
 }

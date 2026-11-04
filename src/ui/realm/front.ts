@@ -166,7 +166,7 @@ export function slotsHtml(k: FrontKit, slots: readonly SlotInfo[], armed: number
   return h + `</div>`
 }
 
-export function titleHtml(k: FrontKit, r: Realm | null, savedAt: string | null, links = '', firstTime = false, more = ''): string {
+export function titleHtml(k: FrontKit, r: Realm | null, savedAt: string | null, links = '', firstTime = false, more = '', hook = ''): string {
   // 로비 — 산마루에서 내려다본 일흔여덟 나라의 땅 · 로고는 청동 거울과 맥궁의 문장 + 붓글씨 (형: "게임 로고랑 파비콘, 로비 배경은 좀 제대로")
   let h = `<div class="front title"><div class="kv" style="background-image:url('${k.art}title/title-lobby.jpg')"></div><div class="tv">`
   // 로고 밑엔 단추만 — 설명 글은 걷었다 (형 10-23: "로고 밑에 텍스트 설명 너무 많음. 다른 명작 게임들에서는 그런 거 없잖아")
@@ -178,6 +178,8 @@ export function titleHtml(k: FrontKit, r: Realm | null, savedAt: string | null, 
     const name = r.factions[me]?.name ?? ''
     h += `<button class="cont" data-act="continue">${k.face(me, 'cface', r.factions[me]?.ruler ?? undefined)}<span class="ct"><b>${k.emblem(me, 'cem')}${k.esc(name)} 이어 하기</b>`
     h += `<span>${k.esc(seasonLabel(r))} · 도읍 ${capsHeld(r, me)}/${winNeed(region)}${r.known !== undefined ? ` · 아는 나라 ${(r.known[me]?.length ?? 0) - (r.meet?.wait.length ?? 0) + 1}/${Object.keys(r.factions).length}` : ''}</span>`
+    // 걸려 있는 일 한 줄 — 다음에 열 까닭 (loop B7)
+    if (hook !== '') h += `<em class="chook">${k.esc(hook)}</em>`
     h += `${savedAt !== null ? `<small>최근 저장 · ${k.esc(agoText(savedAt))}</small>` : ''}</span></button>`
   }
   // 처음 켠 사람은 배우는 판으로 (형: "맨 위 첫번째 할 게임은 1:1수준으로 여러 기능 익혀가며 쉽게")
@@ -593,7 +595,8 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = '', f
   const tt = titleOf(r)
   if (tt !== null) h += `<div class="seal${win ? '' : ' lost'}"><b>${k.esc(tt.name)}</b><span>${k.esc(tt.line)}</span></div>`
   h += `<div class="stats"><span><b>${years}</b>해</span><span><b>${capsHeld(r, me)}</b>도읍</span><span><b>${won}</b>이긴 싸움</span><span><b>${lost}</b>진 싸움</span>`
-  h += `${r.known !== undefined ? `<span><b>${found}</b>새로 안 나라</span>` : ''}<span><b>${heroes}</b>얻은 장수</span></div>`
+  // 0 은 안 보인다 — 꼭대기에서 「얻은 장수 0」이 바람을 뺐다 (긴급 위원회 11-04 · evidence c08-03)
+  h += `${r.known !== undefined && found > 0 ? `<span><b>${found}</b>새로 안 나라</span>` : ''}${heroes > 0 ? `<span><b>${heroes}</b>얻은 장수</span>` : ''}</div>`
   // 얻은 것(세기·휘장·무덤·단련) 먼저, 연대기는 접어서 — 늘어놓았더니 난잡했다 (형 10-28: "결과 보는 부분이랑 그 아래 버튼들이 정리가 안 돼 있음")
   if (keep !== '') h += `<div class="gains">${keep}</div>`
   if (pickd.length > 0) h += `<details class="chron"><summary>연대기 <small>${pickd.length}</small></summary>${pickd.map((e) => `<p class="${e.big ? 'big' : ''}"><i>${k.esc(seasonLabel(r, e.s))}</i>${k.esc(e.t)}</p>`).join('')}</details>`
@@ -705,6 +708,7 @@ export const FRONT_CSS = `
 .ap .front .cont .cface { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #c9a45a; }
 .ap .front .cont .ct { display: flex; flex-direction: column; gap: 2px; } .ap .front .cont .ct b { font-size: 16px; color: #f3d48a; display: flex; align-items: center; gap: 6px; }
 .ap .front .cont .ct span { font-size: 13px; color: #d8d0c0; } .ap .front .cont small { font-size: 11px; color: #8f8778; }
+.ap .front .cont .chook { font-style: normal; font-size: 13px; color: #f0b98a; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .ap .front img.cem { width: 22px; height: 22px; vertical-align: middle; }
 /* 판 고르기 */
 .ap .front .bcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 14px; padding: 10px 14px 24px; max-width: 1180px; margin: 0 auto; }

@@ -89,7 +89,7 @@ import { ASCEND_CSS, ELEM, elemOf, elemVars, gatherHtml, mote, ringsHtml, vortex
 import { HILITE_CSS, hilite } from './hilite.ts'
 import { TUT_CSS, TUT_STEPS, createSpot, tutAt, tutBandHtml, tutStyle } from './tutorial.ts'
 import { LOG_CSS, LOG_GROUPS, lineNations, logGroup, logNations, logRows, logbookHtml, type LogFilter } from './logbook.ts'
-import { markTutorialOver, markWon, nationWon, tutorialOver, unlockedBoards, tierOpen, tierWon } from './unlock.ts'
+import { everWon, markTutorialOver, markWon, nationWon, tutorialDone, tutorialOver, unlockedBoards, tierOpen, tierWon } from './unlock.ts'
 import { TINT_CSS, tint } from './tint.ts'
 import { SAVE_CSS, saveBoxHtml, type SaveAsk } from './savebox.ts'
 import { defaultLabel, type SaveMeta } from './saves.ts'
@@ -202,6 +202,7 @@ type InstallPrompt = { prompt(): Promise<void> }
 const installPrompt = (): InstallPrompt | null => (window as unknown as { __bip?: InstallPrompt }).__bip ?? null
 /** 「앱으로 설치」 카드를 다시 보지 않기 — 이 기기에만 · 숨겨도 작은 단추는 남는다 */
 const INSTALL_HIDE_KEY = 'hanbal.installHide'
+const INSTALL_SEEN_KEY = 'hanbal.installSeen' // 첫 승리 뒤 한 번 보였다 — 그 뒤로는 「더 보기」의 단추로만 (ftue B11)
 const installed = (): boolean => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches
 /** 장의 목표 띠를 접어 두었나 — 이 기기에만 */
 const GOAL_FOLD_KEY = 'hanbal.realm.goalfold'
@@ -1476,6 +1477,21 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if ((r.builds ?? []).some((b) => b.faction === me() && b.done <= r.season)) out.push(`<i class="nxp">${icon('settle-palisade')}</i>`)
     if (isSeasonEnd(r)) out.push(`<i class="nxp">${icon(SEASON_ICON[seasonOf(r, r.season + 1)])}</i>`)
     return out.length === 0 ? '' : `<span class="nxps">${out.slice(0, 3).join('')}</span>`
+  }
+  /**
+   * 「이어 하기」 단추의 한 줄 — 다음에 열면 무엇이 걸려 있나 (긴급 위원회 11-04 · loop B7: 다음 날 첫 화면이 돌아올 이유가 되게).
+   * 우리 땅으로 오는 적(보이는 것) → 옥에서 회유 중인 적장 → 가는 중인 우리 군대. 없으면 빈 줄
+   */
+  function contHook(r: Realm): string {
+    const my = r.player
+    const vis = visibleNodes(r, my)
+    const foe = Object.values(r.armies).find((a) => a.faction !== my && a.march !== null && r.nodes[a.march.to]?.owner === my && (vis.has(a.at) || vis.has(a.march.to)))
+    if (foe?.march) return `⚔ ${josa(r.factions[foe.faction]?.name ?? '적', '이', '가')} ${josa(r.nodes[foe.march.to]?.name ?? '', '으로', '로')} 온다`
+    const woo = Object.values(r.heroes).find((h) => h.status === 'captive' && h.captor === my && h.persuade !== undefined)
+    if (woo !== undefined) return `🔗 ${woo.name} 회유 중`
+    const go = Object.values(r.armies).find((a) => a.faction === my && a.march !== null)
+    if (go?.march) return `${josa(armyName(r, go), '이', '가')} ${josa(r.nodes[go.march.to]?.name ?? '', '으로', '로')} 가는 중`
+    return ''
   }
   function armyHoldHtml(r: Realm, a: Army, foe: boolean): string {
     const go =a.march !== null ? `<p>${esc(josa(r.nodes[a.march.to]?.name ?? '', '으로', '로'))} 가는 중 · ${esc(arriveWhen(r, a.march.left))}</p>` : ''
@@ -4552,6 +4568,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let acctArmed = false
   /** 이번에 띄운 동안 「확인」으로 닫았다 (다시 보지 않기를 안 골랐으면 다음에 켤 때 또 뜬다) */
   let instClosed = false
+  let instNow = false // 이번에 열린 동안은 계속 보인다 (다시 그려도)
   /**
    * 이 기기에 이미 깔린 앱이 있나 — 깔려 있으면 크롬이 설치 신호(beforeinstallprompt)를 안 줘서 설치 단추를 띄울 수 없다
    * (형 10-30: "상단에 아직도 텍스트로만 앱설치 안내 · 앱설치 버튼 어디갔음"). realm.webmanifest 의 related_applications 로 묻는다
@@ -4604,6 +4621,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     let hide = false
     try { hide = localStorage.getItem(INSTALL_HIDE_KEY) === '1' } catch { hide = false }
     if (hide || instClosed) return '' // 다시 여는 단추는 「더 보기」 안에 (frontHtml links)
+    // 처음 온 사람의 첫 화면엔 안 띄운다 — 첫 승리 뒤에 한 번만 (긴급 위원회 11-04 · ftue B11: 첫 화면 누를 거리 11 → 7)
+    if (!instNow) {
+      let seen = false
+      try { seen = localStorage.getItem(INSTALL_SEEN_KEY) === '1' } catch { seen = false }
+      if (seen || !everWon()) return ''
+      instNow = true
+      try { localStorage.setItem(INSTALL_SEEN_KEY, '1') } catch { /* 저장 못 하는 곳 */ }
+    }
     // 카카오톡 안의 브라우저는 설치를 못 한다 — 바깥 브라우저(크롬·사파리)로 여는 단추 (지인들은 카톡으로 받은 주소를 연다)
     if (/KAKAOTALK/i.test(navigator.userAgent)) {
       return `<div class="instc"><button class="instx" data-act="inst-ok" aria-label="닫기">✕</button><b>📲 앱으로 설치하면 더 편리합니다</b><p>카카오톡 안에서는 설치할 수 없습니다. 아래 단추로 ${ios ? '사파리' : '크롬'}에서 연 뒤 설치해 주세요.</p>`
@@ -4702,6 +4727,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function startWithBring(nation: string, region: RegionId, tier: number): void {
     if (region === 'tutorial' || retainMaxOf(tier) === 0 || servedHeroes().length === 0) { host.onNewGame(nation, region, tier); return }
     bringAsk = { nation, region, tier }
+    // 늘 빈 채로 연다 — 지난 판의 고름이 미리 체크돼 있지 않게 (형 11-04: "데려갈 장수 선택할 때 default 로 미리 선택돼 있는 것 없애")
+    clearBring()
     bringPopup()
   }
   /** 「데려갈 장수」 팝업을 (다시) 그린다 — 영웅전에서 거느려 본 장수만 · 난세가 허락하는 수까지 체크 */
@@ -4786,15 +4813,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function novice(): boolean {
     return !(['mahan', 'jumong', 'seorabeol', 'gujibong', 'daemusin', 'byeonhan-mini', 'yeongnam', 'south', 'world'] as const).some((b) => tierWon(b) > 0)
   }
-  /** 이 탭이 열리기까지 남은 계절 (0 이면 열림) */
+  /** 이 탭이 열리기까지 남은 계절 (0 이면 열림) — 튜토리얼을 마친 손님에겐 안 잠근다: 다 써 본 탭을 다시 잠그니 첫 석 달 소식이 「새로 열렸다」 셋뿐이었다 (긴급 위원회 11-04 · loop B5) */
   function tabWait(r: Realm, id: (typeof TABS)[number]['id']): number {
-    if (r.region === 'tutorial' || !novice()) return 0
+    if (r.region === 'tutorial' || !novice() || tutorialDone()) return 0
     return Math.max(0, TAB_OPEN_AT[id] - r.season)
   }
   /** 이번에 막 열린 탭 — 반짝이고 한 줄 알림 (판마다 한 번) */
   let newTab = ''
   function noteNewTabs(r: Realm): void {
-    if (r.region === 'tutorial' || !novice()) return
+    if (r.region === 'tutorial' || !novice() || tutorialDone()) return
     const key = 'hanbal.realm.tabsOpen'
     let seen: { seed: number; ids: string[] } = { seed: r.seed, ids: [] }
     try { const v = JSON.parse(localStorage.getItem(key) ?? 'null') as typeof seen | null; if (v !== null && v.seed === r.seed) seen = v } catch { /* 처음 */ }
@@ -5864,7 +5891,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         // 끝나지 않은 다른 판들은 불러오기 안에 (형 10-28: 첫 화면에 늘어놓으니 단추가 화면 밖으로) — 몇 판 있는지만 단추에
         const shelfN = (host.slots?.() ?? []).length
         const loadBtn = host.saves !== undefined ? `<button class="btn big" data-act="save-open-title">불러오기${shelfN > 0 ? `<small class="ldn">끝나지 않은 판 ${shelfN}</small>` : ''}</button>` : ''
-        return titleHtml(KIT, realm, host.savedAt(), installCard() + links, realm === null && !tutorialOver(), loadBtn + dexBtn)
+        return titleHtml(KIT, realm, host.savedAt(), installCard() + links, realm === null && !tutorialOver(), loadBtn + dexBtn, realm !== null && !realm.outcome ? contHook(realm) : '')
       }
       case 'dex': return dexHtml(DEX_KIT, f.board, f.sel, f.back === null ? '판으로' : '처음으로')
       case 'drill': return yardHtml(DRILL_KIT, f)
@@ -7208,7 +7235,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         root.querySelector('.instc')?.remove()
         return
       }
-      case 'inst-show': { try { localStorage.removeItem(INSTALL_HIDE_KEY) } catch { /* 저장 못 하는 곳 */ } instClosed = false; fmoreOpen = false; break }
+      case 'inst-show': { instNow = true; try { localStorage.removeItem(INSTALL_HIDE_KEY) } catch { /* 저장 못 하는 곳 */ } instClosed = false; fmoreOpen = false; break }
       case 'reset-play':
         if (!resetArmed) { resetArmed = true; paint(); return }
         resetArmed = false
