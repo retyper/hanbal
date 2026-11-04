@@ -7242,7 +7242,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (ev.timeStamp < nextDoneAt + P.realm.nextLockMs || root.classList.contains('nxlock')) return
         if (root.querySelector('.wr') !== null) return // 싸움 화면이 떠 있으면 다음 계절을 또 열지 않는다 · 겹쳐 눌러 싸움 판이 셋 쌓였다(10-29 시험)
         // 문명의 "명령을 기다리는 유닛" — 쉬는 장수가 있거나 정찰을 안 보냈으면 한 번은 그 판으로 데려간다. 한 번 더 누르면 그냥 넘긴다
-        if (nudgedAt !== seasonIdx(realm) && realm.region !== 'tutorial') {
+        // 판 첫 계절은 붙잡지 않는다 — 첫 「다음 달」에 달 대신 정찰 판이 떠 막혔다 (긴급 위원회 11-04 · loop B4)
+        if (nudgedAt !== seasonIdx(realm) && realm.region !== 'tutorial' && seasonIdx(realm) > 0) {
           // 장수 탭이 아직 안 열렸으면 쉬는 장수로 붙잡지 않는다 · 재상이 맡을 장수로도 붙잡지 않는다 (직접 부리는 장수만)
           const idle = tabWait(realm, 'heroes') > 0 ? [] : waitingHeroes(plan())
           // 정찰은 싸울 상대가 있을 때만 붙잡는다 — 싸움도 없는데 정찰을 보내게 만들었다 (형 11-01)
