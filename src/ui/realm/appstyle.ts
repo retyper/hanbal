@@ -1355,7 +1355,12 @@ export const UI_CSS = `
 .ap .map .nring.own .nrb .nrf { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; object-position: 50% 15%; }
 .ap .map .nring.own .nrb small { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 1px; white-space: nowrap; font-size: 11px; font-weight: 800; line-height: 1.35;
   color: #fff3d6; background: #201811e6; border-radius: 6px; padding: 0 4px; }
-.ap .map .nring .nrb.on { border-color: #8fd06a; box-shadow: 0 0 0 2px #8fd06a55, 0 2px 6px #000a; }
+/* 고른 단추 — 눌린 채로 남는다: 금빛으로 채워져 안으로 꺼지고(안쪽 그림자 · 조금 작게) 귀퉁이에 ✓ · 이름표도 금빛 (형 11-04: "초록색으로 하지 말고 눌린 느낌으로 · 확실히 알게") */
+.ap .map .nring .nrb.on { border-color: #ffd98a; background: radial-gradient(circle at 50% 40%, #e8b85a, #9a6a24); scale: .9; box-shadow: inset 0 3px 7px #000c, 0 0 0 3px #ffd98a66; animation: nrbon .32s ease-out; }
+.ap .map .nring .nrb.on::after { content: "✓"; position: absolute; right: -6px; top: -6px; width: 20px; height: 20px; border-radius: 50%; background: #ffd98a; color: #2a1a08; font-size: 13px; font-weight: 900; line-height: 20px; text-align: center; box-shadow: 0 1px 3px #000a; }
+.ap .map .nring.own .nrb.on small { background: #e8b85a; color: #2a1a08; }
+.ap .map .nring.card .nrb.on { position: relative; }
+@keyframes nrbon { 0% { scale: 1.15; } 60% { scale: .86; } 100% { scale: .9; } }
 .ap .map .nring .nrb.empty { border-style: dashed; }
 .ap .map .nring .nrb:disabled, .ap .map .nring .nrb[aria-disabled="true"] { opacity: .45; }
 /* 못 하는 단추를 눌렀다 — 까닭 한 줄이 위로 튀어 올랐다 걷힌다 · 단추는 도리질 (형 11-01: "아무 반응 없는 게 미비함") */
