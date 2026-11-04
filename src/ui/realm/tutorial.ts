@@ -180,7 +180,7 @@ export function tutStyle(step: TutStep | undefined): string {
 
 export function tutBandHtml(i: number, esc: (s: string) => string, stuck = false): string {
   if (i >= TUT_STEPS.length) {
-    return `<div class="tutb done"><b>다 배웠습니다</b><span>이제 작은 판(변한 여섯 나라)이 열렸습니다. 처음 화면의 「새 게임」에서 고를 수 있습니다.</span><button class="btn sm on" data-act="tut-end">처음으로</button></div>`
+    return `<div class="tutb done"><b>다 배웠습니다</b><span>다음은 1:1 판 「쇠의 바다」입니다. 나라 둘이 맞붙습니다.</span><button class="btn sm pri" data-act="tut-next">1:1 판으로 ›</button><button class="btn sm" data-act="tut-end">처음으로</button></div>`
   }
   // 건너뛰기 — 한 단계에 오래 머물면(갇힌 듯하면) 그때만 뜬다. 평소엔 눌러야 할 것을 눌러야 넘어간다 (형 10-20) · 막히면 그대로 떠난다 (형 10-24)
   const st = TUT_STEPS[i]!

@@ -20,7 +20,7 @@ import { MAHAN_NATIONS } from '../../realm/data/regions/mahan.ts'
 import { SEORA_NATIONS } from '../../realm/data/regions/seorabeol.ts'
 import { GUJI_NATIONS } from '../../realm/data/regions/gujibong.ts'
 import { DAEMUSIN_NATIONS } from '../../realm/data/regions/daemusin.ts'
-import { chapterOfRegion } from '../../realm/data/campaign.ts'
+import { chapterOfRegion, chapterTag } from '../../realm/data/campaign.ts'
 import { knownOf, met } from '../../realm/discovery.ts'
 import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
 import { CARDS, cardFallback, cardInfo } from '../../realm/data/cards.ts'
@@ -4679,7 +4679,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const boardOf = (rg: string | null): string => {
       if (rg === null) return ''
       const ch = chapterOfRegion(rg as RegionId)
-      return ch !== undefined ? `${ch.n}장 ${ch.name}` : (BOARD_NAME_OF[rg] ?? '')
+      return ch !== undefined ? `${chapterTag(ch.n)} ${ch.name}` : (BOARD_NAME_OF[rg] ?? '')
     }
     let h = `<div class="front annals"><div class="fhead"><button class="btn ghost" data-act="fr-back">‹ 처음으로</button><h2>나의 역사</h2></div>`
     h += `<p class="ansum">둔 판 ${xs.length} · 이긴 판 ${won}</p><div class="anl">`
@@ -5813,7 +5813,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     let h = `<div class="tierp"><b>세기</b><div class="tlist">`
     for (let t = 0; t <= last; t++) {
       const carry = retainMaxOf(t)
-      const body = `<b>${esc(levelName(t))}</b><span>${esc(LEVEL_LINE[t] ?? '')}</span><small>${region === 'tutorial' ? '0장은 촌장으로 배웁니다' : carry > 0 ? `장수 ${carry}명까지 데려감` : '장수를 데려가지 못함'}</small>`
+      const body = `<b>${esc(levelName(t))}</b><span>${esc(LEVEL_LINE[t] ?? '')}</span><small>${region === 'tutorial' ? '튜토리얼은 촌장으로 배웁니다' : carry > 0 ? `장수 ${carry}명까지 데려감` : '장수를 데려가지 못함'}</small>`
       h += t <= open
         ? `<button class="trow${t === pick ? ' on' : ''}${t === TIER_MAX ? ' apex' : ''}" data-act="tier-pick" data-v="${t}">${body}</button>`
         : `<button class="trow locked" data-act="busy"${noBtn('앞 세기로 이기면 열립니다')}>🔒 ${body}</button>`
@@ -7032,6 +7032,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'fr-tutorial': host.onNewGame('baekje', 'tutorial', 0); return // 0장은 늘 촌장 (형 11-02)
       case 'fr-locked': return
       case 'tut-end': markTutorialOver('done'); front = { kind: 'title' }; paint(); return
+      // 튜토리얼 다음은 1:1 자유 판 (형 11-04)
+      case 'tut-next': markTutorialOver('done'); front = { kind: 'nations', region: 'byeonhan-mini' }; $('.mapwrap').scrollTop = 0; paint(); return
       case 'tut-skip': {
         // 이 단계를 건너뛴다 — 다음 단계부터 (마지막이면 끝)
         if (realm === null) return

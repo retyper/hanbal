@@ -13,7 +13,7 @@
 import { titleOf } from '../../realm/title.ts'
 import type { NationInfo } from '../../realm/data/nations.ts'
 import { badgeRank, lockWhy } from './unlock.ts'
-import { CHAPTERS, chapterOfRegion } from '../../realm/data/campaign.ts'
+import { CHAPTERS, chapterOfRegion, chapterTag } from '../../realm/data/campaign.ts'
 import { placeOf } from '../../realm/data/regions/index.ts'
 import { seasonOf, yearOf } from '../../realm/calendar.ts'
 import { UNIT_NAME, battleName, josa, seasonLabel } from '../../realm/data/prose.ts'
@@ -116,6 +116,12 @@ export const BOARDS: ReadonlyArray<{ id: RegionId; name: string; era: string; ho
   },
 ]
 
+/** 판에 나오는 나라 수 — 우리까지 (자유 판 카드 우하단 · 형 11-04: "전체 국가 수 표시해줘. 1:1은 2겠지") */
+export function boardNations(region: RegionId): number {
+  const R = P.realm
+  return region === 'tutorial' ? 2 : region === 'yeongnam' ? R.yeongnamRivals + 1 : region === 'south' ? R.southRivals + 1 : region === 'world' ? R.worldRivals + 1 : R.miniRivals + 1
+}
+
 /** 이기려면 쥘 도읍 수 (season.ts checkOutcome 과 같은 값) */
 export function winNeed(region: RegionId): number {
   if (region === 'tutorial') return 2 // 배우는 판 — 미추홀 도읍 하나 (제 도읍 포함 둘)
@@ -143,7 +149,7 @@ export interface SlotInfo {
 /** 판 이름 — 캠페인의 장이면 「n장 이름」 */
 export function boardLabel(region: RegionId): string {
   const ch = chapterOfRegion(region)
-  return ch !== undefined ? `${ch.n}장 ${ch.name}` : BOARDS.find((b) => b.id === region)?.name ?? ''
+  return ch !== undefined ? `${chapterTag(ch.n)} ${ch.name}` : BOARDS.find((b) => b.id === region)?.name ?? ''
 }
 
 /**
@@ -197,22 +203,27 @@ export function boardHtml(k: FrontKit, hasGame: boolean, unlocked?: ReadonlySet<
   let h = `<div class="front boards"><div class="fhead"><button class="btn ghost" data-act="fr-back">‹ 처음으로</button><h2>어느 이야기로 시작할까</h2></div>`
   const names = Object.fromEntries(BOARDS.map((b) => [b.id, b.name])) as Partial<Record<RegionId, string>>
   // 캠페인 — 사료의 사건 하나가 한 장 (CAMPAIGN.md · 형: "문명처럼 … 특수한 승리조건"). 장은 배우는 차례로 열린다
+  const c0 = h.length
   h += `<h3 class="bsec"><b>캠페인</b><span>삼국의 새벽, 사서에 남은 일을 그 사람이 되어</span></h3><div class="bcards chaps">`
   CHAPTERS.forEach((c, i) => {
     const prev = CHAPTERS[i - 1]
     const ready = c.region !== null
     const open = ready && (unlocked === undefined || unlocked.has(c.region!))
     const why = !ready ? '짓는 중: 곧 열린다' : prev !== undefined ? `앞 장 「${prev.name}」에서 이기면 열린다` : lockWhy(c.region!, names)
-    const peek = `<span class="peek"><small>${c.n}장 · ${k.esc(c.era)}</small><b>${k.esc(c.name)}</b><span class="ph">${k.esc(c.hook)}</span>`
+    const peek = `<span class="peek"><small>${chapterTag(c.n)} · ${k.esc(c.era)}</small><b>${k.esc(c.name)}</b><span class="ph">${k.esc(c.hook)}</span>`
       + `<span class="pp">${k.esc(c.hero)}: ${k.esc(c.goal)}</span></span>`
     h += `<button class="bcard chap${open ? '' : ' locked'}" ${open ? `data-act="fr-board" data-v="${c.region}"` : 'data-act="fr-locked"'} data-peek><span class="bth" style="background-image:url('${k.art}${c.art}')">`
     // 아직 지도가 없는 장은 자물쇠가 아니라 「짓는 중」 — 앞 장을 깨도 안 열려 자물쇠면 버그처럼 보인다 (형 10-24: "2장 깼는데 왜 3장 안 열리냐")
     // 깬 장 — 금빛 도장 (형 10-24: "깬 캠페인은 깼다는 표시")
     const cleared = ready && (tierWon?.(c.region!) ?? 0) > 0
     const cr = badgeRank(tierWon?.(c.region!) ?? 0)
-    h += `<i class="bbadge">${c.n}장</i>${cleared ? `<img class="cleared" src="${k.art}ui/badge/won-${cr}.png" alt="깼다" title="깼다">` : ''}${open ? '' : ready ? '<i class="lock">🔒</i>' : '<i class="lock wip">🛠 짓는 중</i>'}<span class="btitle"><small>${k.esc(c.era)} · ${k.esc(c.hero)}</small><b>${k.esc(c.name)}</b>${open ? '' : `<em>${k.esc(why)}</em>`}</span></span>${peek}</button>`
+    h += `<i class="bbadge${c.n === 0 ? " tut" : ""}">${chapterTag(c.n)}</i>${cleared ? `<img class="cleared" src="${k.art}ui/badge/won-${cr}.png" alt="깼다" title="깼다">` : ''}${open ? '' : ready ? '<i class="lock">🔒</i>' : '<i class="lock wip">🛠 짓는 중</i>'}<span class="btitle"><small>${k.esc(c.era)} · ${k.esc(c.hero)}</small><b>${k.esc(c.name)}</b>${open ? '' : `<em>${k.esc(why)}</em>`}</span></span>${peek}</button>`
   })
-  h += `</div><h3 class="bsec"><b>자유 판</b><span>나라 하나를 골라 마음대로, 정복 · 맹주 · 철과 뱃길 · 큰 제사</span></h3><div class="bcards">`
+  // 캠페인 칸과 자유 판 칸을 따로 모았다가 — 튜토리얼을 마치고 1:1 을 아직 안 이긴 사람에겐 자유 판이 위로 (형 11-04: "캠페인 대신 1:1 일반게임")
+  const camp = h.slice(c0) + '</div>'
+  h = h.slice(0, c0)
+  const f0 = h.length
+  h += `<h3 class="bsec"><b>자유 판</b><span>나라 하나를 골라 마음대로, 정복 · 맹주 · 철과 뱃길 · 큰 제사</span></h3><div class="bcards">`
   for (const b of BOARDS) {
     if (CHAPTERS.some((c) => c.region === b.id)) continue // 장으로 올라간 판
     const open = unlocked === undefined || unlocked.has(b.id)
@@ -220,12 +231,20 @@ export function boardHtml(k: FrontKit, hasGame: boolean, unlocked?: ReadonlySet<
     const goal = b.id === 'tutorial' ? '미추홀 도읍을 쥐면 끝' : `도읍 ${winNeed(b.id)}곳을 쥐면 이긴다`
     const lv = levelName(tierWon?.(b.id) ?? 1)
     const won = b.id !== 'tutorial' && (tierWon?.(b.id) ?? 0) > 0 ? `<i>「${lv}」${josa(lv, '으로', '로').slice(lv.length)} 이겼다</i>` : ''
+    // 튜토리얼을 마친 사람은 캠페인보다 1:1 자유 판부터 (형 11-04: "캠페인 대신 1:1 일반게임을 시켜야 할 거 같은데" · 막내가 1장 3분 만에 접었다)
+    const nextUp = b.id === 'byeonhan-mini' && open && unlocked !== undefined && (tierWon?.(b.id) ?? 0) === 0
+    const badge = nextUp ? '튜토리얼 다음은 여기' : b.badge
+    const nn = boardNations(b.id)
     const peek = `<span class="peek"><small>${k.esc(b.era)}</small><b>${k.esc(b.name)}</b><span class="ph">${k.esc(b.hook)}</span><span class="pp">${k.esc(b.play)}</span>`
-      + `<span class="pm"><i>나라 ${k.nations(b.id).length}</i><i>${goal}</i><i>한 판이 ${b.length}</i>${won}</span></span>`
+      + `<span class="pm"><i>나라 ${nn}</i><i>${goal}</i><i>한 판이 ${b.length}</i>${won}</span></span>`
     h += `<button class="bcard${open ? '' : ' locked'}" data-act="${open ? 'fr-board' : 'fr-locked'}" data-v="${b.id}" data-peek><span class="bth" style="background-image:url('${k.art}${b.art}')">`
-    h += `${b.badge !== undefined && open ? `<i class="bbadge">${k.esc(b.badge)}</i>` : ''}${open ? '' : '<i class="lock">🔒</i>'}<span class="btitle"><small>${k.esc(b.era)}</small><b>${k.esc(b.name)}</b>${open ? '' : `<em>${k.esc(lockWhy(b.id, names))}</em>`}</span></span>${peek}</button>`
+    h += `${badge !== undefined && open ?`<i class="bbadge${nextUp ? ' upnext' : ''}">${k.esc(badge)}</i>` : ''}<i class="bnum"><b>${nn}</b>나라${nn === 2 ? ' · 1:1' : ''}</i>${open ? '' : '<i class="lock">🔒</i>'}<span class="btitle"><small>${k.esc(b.era)}</small><b>${k.esc(b.name)}</b>${open ? '' : `<em>${k.esc(lockWhy(b.id, names))}</em>`}</span></span>${peek}</button>`
   }
-  h += `</div>${hasGame ? '<p class="fine">새 게임을 시작하면 지금 판은 끝난 판으로 기록된다.</p>' : ''}</div>`
+  const free = h.slice(f0) + '</div>'
+  h = h.slice(0, f0)
+  const freeFirst = unlocked !== undefined && unlocked.has('byeonhan-mini') && (tierWon?.('byeonhan-mini') ?? 0) === 0
+  h += freeFirst ? free + camp : camp + free
+  h += `${hasGame ? '<p class="fine">새 게임을 시작하면 지금 판은 끝난 판으로 기록된다.</p>' : ''}</div>`
   return h
 }
 
@@ -405,7 +424,7 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
     const free = ch === undefined && region !== 'tutorial'
     const one = ch !== undefined ? k.esc(ch.goal) : region === 'tutorial' ? '미추홀 도읍을 쥐면 이깁니다' : `도읍 <b>${need}</b>곳을 쥔다`
     const paths = free ? `<ol class="gpaths">${WIN_PATHS.map(([ic, name, what], i) => `<li style="--d:${(0.35 + i * 0.18).toFixed(2)}s">${k.icon(ic, 'gpi')}<b>${name}</b><span>${i === 0 ? `도읍 <b>${need}</b>곳을 쥔다` : what}</span></li>`).join('')}</ol>` : ''
-    const head = `<div class="gbox"><span class="gtag">승리 목표</span>${ch !== undefined ? `<small class="gch">${ch.n}장 · ${k.esc(ch.name)}</small>` : ''}`
+    const head = `<div class="gbox"><span class="gtag">승리 목표</span>${ch !== undefined ? `<small class="gch">${chapterTag(ch.n)} · ${k.esc(ch.name)}</small>` : ''}`
       + (free ? `<p class="gone">넷 가운데 <b>하나만</b> 이루면 이깁니다</p>${paths}` : `<p class="gone big">${one}</p>`)
       + `<p class="glose">우리 도읍을 잃으면 집니다</p></div>`
     body = `<div class="pl pgoal">${head}<div class="ways">`
@@ -582,7 +601,9 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = '', f
   if (win && ch !== undefined) h += `<blockquote class="srcline">${k.esc(ch.source)}</blockquote>`
   // 단추 — 큰 것(다음 장 · 새 게임) 한 줄씩, 작은 것은 두 칸씩 · 기록 내보내기 같은 것은 맨 밑에 작게
   h += `<div class="btns endbtns"><div class="ebmain">`
-  if (nextCh !== undefined) h += `<button class="btn pri nextch" data-act="fr-board" data-v="${nextCh.region}">다음 장: ${nextCh.n}장 ${k.esc(nextCh.name)} ›</button>`
+  // 튜토리얼 다음은 캠페인 1장이 아니라 1:1 자유 판 (형 11-04: "캠페인 대신 1:1 일반게임을 시켜야 할 거 같은데")
+  if (win && region === 'tutorial') h += `<button class="btn pri nextch" data-act="fr-board" data-v="byeonhan-mini">다음: 1:1 「${k.esc(BOARDS.find((b) => b.id === 'byeonhan-mini')?.name ?? '')}」 ›</button>`
+  else if (nextCh !== undefined) h += `<button class="btn pri nextch" data-act="fr-board" data-v="${nextCh.region}">다음 장: ${chapterTag(nextCh.n)} ${k.esc(nextCh.name)} ›</button>`
   // 새 게임이 맨 앞 — 무한 모드는 하고 싶은 사람만 고르는 곁길 (형 10-24: "무한모드를 1번 선택하게 되면 안 돼")
   h += `<button class="btn${nextCh !== undefined ? '' : ' pri'}" data-act="fr-new">새 게임</button></div><div class="ebsub">`
   h += `<button class="btn" data-act="fr-again">${k.esc(josa(name(me), "으로", "로"))} 다시</button><button class="btn" data-act="fr-look">지도 둘러보기</button>`
@@ -705,6 +726,13 @@ export const FRONT_CSS = `
 .ap .front .bb .bmeta { display: flex; flex-wrap: wrap; gap: 4px; font-size: 12px; color: #a89c84; } .ap .front .bb .bmeta i { font-style: normal; padding: 1px 8px; border-radius: 9px; border: 1px solid #54412a; }
 .ap .front .bb .bmeta.tierw, .ap .front .bb .bmeta.lockwhy { display: block; }
 .ap .front .btitle em { font-style: normal; font-size: 12.5px; color: #e8c070; margin-top: 2px; }
+/* 자유 판 — 판에 나오는 나라 수 (우하단 · 형 11-04) · 제목이 그 칸을 비켜 간다 */
+.ap .front .bnum { position: absolute; right: 10px; bottom: 10px; z-index: 2; display: inline-flex; align-items: baseline; gap: 2px; font-style: normal; font-size: 12px; font-weight: 700; color: #f3e6c8; background: #0b0d11d8; border: 1px solid #c9a45a99; border-radius: 10px; padding: 3px 9px; }
+.ap .front .bnum b { font-size: 18px; color: #ffd98a; }
+.ap .front .bcard:not(.chap) .btitle { right: 96px; }
+/* 튜토리얼 꼬리표 · 튜토리얼 다음 판 — 눈에 띄게 */
+.ap .front .bcard.chap .bbadge.tut { background: linear-gradient(#a8e08a, #5a9a3a); color: #10200a; }
+.ap .front .bbadge.upnext { background: linear-gradient(#ffe08a, #e0a030); animation: tutglow .9s ease-in-out infinite alternate; }
 .ap .front .bcards .bcard { -webkit-touch-callout: none; }
 /* 캠페인 · 자유 판 머리 */
 .ap .front .bsec { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; max-width: 1180px; margin: 14px auto 0; padding: 0 16px; font-weight: 400; }

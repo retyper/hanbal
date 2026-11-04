@@ -121,3 +121,6 @@ export function chapterScenario(id: string): Scenario {
 export function chapterOfRegion(region: RegionId): Chapter | undefined {
   return CHAPTERS.find((c) => c.region === region)
 }
+
+/** 장의 꼬리표 — 0장은 「튜토리얼」로 밝힌다 (형 11-04: "0장을 튜토리얼로 명시해야겠음") · 나머지는 「n장」 */
+export const chapterTag = (n: number): string => n === 0 ? '튜토리얼' : `${n}장`

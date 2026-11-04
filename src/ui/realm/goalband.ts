@@ -2,7 +2,7 @@
  * 이 장의 목표 띠 — 캠페인 판에서 지도 왼쪽 위에 (CAMPAIGN.md §3). 목표마다 이뤘으면 ✓, 아니면 막대 (숫자 대신 감).
  * 판을 읽기만 한다.
  */
-import { chapterOfRegion } from '../../realm/data/campaign.ts'
+import { chapterOfRegion, chapterTag } from '../../realm/data/campaign.ts'
 import { seasonIdx } from '../../realm/calendar.ts'
 import { josa } from '../../realm/data/prose.ts'
 import { goalState, seasonsLeft } from '../../realm/scenario.ts'
@@ -38,7 +38,7 @@ export function goalBandHtml(r: Realm, esc: (s: string) => string, folded = fals
   const done = r.outcome?.kind === 'win'
   const states = sc.win.map((g) => done || goalState({ ...r, scenario: sc }, g).done)
   const marks = states.map((ok) => (ok ? '◆' : '◇')).join('')
-  let h = `<button class="gbh" data-act="goal-fold" aria-expanded="${folded ? 'false' : 'true'}"><small>${ch.n}장</small><b>${esc(ch.name)}</b><span class="gmk">${folded ? marks : ''}</span><i class="gfold">${folded ? '▸' : '▾'}</i></button>`
+  let h = `<button class="gbh" data-act="goal-fold" aria-expanded="${folded ? 'false' : 'true'}"><small>${chapterTag(ch.n)}</small><b>${esc(ch.name)}</b><span class="gmk">${folded ? marks : ''}</span><i class="gfold">${folded ? '▸' : '▾'}</i></button>`
   if (folded) return h
   return h + goalRowsHtml(r, esc)
 }
