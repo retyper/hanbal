@@ -16,18 +16,21 @@
  *   allyWait      때를 기다린다 — {foe} {ally}
  *   allySow       이간한다 — {foe} {ally}
  *   allyGo        그래도 친다 (거친 이만) — {foe} {ally}
+ *   skyWait       날씨·때를 기다린다 (장마가 걷히면 · 해자가 얼면) — {there} · 까닭(그 날씨)은 앞에 붙는다
+ *   skyGo         그래도 지금 친다 — {there}
  */
 import type { Hero } from '../../realm/types.ts'
 import { fill, pickIdx, sageuk } from './council-says.ts'
 import { voiceKind, type VoiceKind } from './voice.ts'
 
-export type Scheme = 'plotAdvise' | 'plotAgainst' | 'pincerAdvise' | 'pincerAgainst' | 'allyHold' | 'allyWait' | 'allySow' | 'allyGo'
+export type Scheme = 'plotAdvise' | 'plotAgainst' | 'pincerAdvise' | 'pincerAgainst' | 'allyHold' | 'allyWait' | 'allySow' | 'allyGo' | 'skyWait' | 'skyGo'
 type Tone = 'gruff' | 'young' | 'wise' | 'knight' | 'sly' | 'shaman'
 
 /** 처지마다 반드시 들어갈 칸 (시험이 본다) */
 export const SCHEME_NEED: Readonly<Record<Scheme, readonly string[]>> = {
   plotAdvise: ['foe', 'there'], plotAgainst: ['there'], pincerAdvise: ['there'], pincerAgainst: ['there'],
   allyHold: ['foe', 'ally'], allyWait: ['ally'], allySow: ['foe', 'ally'], allyGo: ['foe'],
+  skyWait: ['there'], skyGo: ['there'],
 }
 
 const TONE_OF: Readonly<Record<VoiceKind, Tone>> = {
@@ -71,6 +74,14 @@ export const SCHEME_SAYS: Readonly<Record<Tone, Readonly<Record<Scheme, readonly
       '{ally|이} 군사를 모으기 전에 {foe|을} 끝내면 그만입니다. 머뭇거리면 둘이 함께 오옵니다. 그래도 치시지요!',
       '저들이 한패라 겁나서 칼을 거두면 다들 우리를 우습게 봅니다. {ally|이} 오기 전에 {foe|을} 짓밟겠습니다. 치게 해 주십시오!',
     ],
+    skyWait: [
+      '하늘을 거슬러 싸우면 장사도 힘을 못 씁니다. 한 {turn}만 참았다가 {there|을} 치시지요. 그때는 제가 맨 앞에 서겠습니다.',
+      '때를 잘못 고르면 칼보다 날씨에 먼저 집니다. {there}에는 하늘이 돕는 날 들어가시지요.',
+    ],
+    skyGo: [
+      '비든 얼음이든 저들도 똑같이 맞습니다. {there|은} 지금 치시지요!',
+      '날씨를 기다리다 저들이 먼저 채비를 끝냅니다. 이번 {turn}에 {there|을} 치게 해 주십시오!',
+    ],
   },
   young: {
     plotAdvise: [
@@ -104,6 +115,14 @@ export const SCHEME_SAYS: Readonly<Record<Tone, Readonly<Record<Scheme, readonly
     allyGo: [
       '{ally|이} 군사를 모으기 전에 끝내면 됩니다! 우리가 빠르면 둘의 약조도 소용없습니다. {foe|을} 지금 치시지요!',
       '저들 둘이 두려워 물러서면 아무것도 못 얻습니다! {foe|을} 치고, {ally|이} 오면 그때 또 싸우겠습니다. 치게 해 주십시오!',
+    ],
+    skyWait: [
+      '조금만 기다리면 하늘이 우리 편이 됩니다! {there|은} 그때 쳐도 늦지 않습니다.',
+      '서두르면 길에서 기운을 다 뺍니다. {there}에 닿는 날을 하늘에 맞추시지요!',
+    ],
+    skyGo: [
+      '날씨 탓은 겁쟁이들 말입니다! 지금 {there|을} 치게 해 주십시오!',
+      '기다리는 사이 {there}의 성은 더 굳어집니다. 지금 가시지요!',
     ],
   },
   wise: {
@@ -139,6 +158,14 @@ export const SCHEME_SAYS: Readonly<Record<Tone, Readonly<Record<Scheme, readonly
       '{ally|이} 움직이기까지는 시간이 걸립니다. 그 전에 {foe|을} 꺾으면 둘의 약조도 쓸모가 없어집니다. 지금 치시지요.',
       '{ally}에서 돕는 군사는 먼 데서 오옵니다. {foe|을} 빨리 꺾으면 저들이 닿기 전에 끝납니다. 치시지요.',
     ],
+    skyWait: [
+      '옛사람은 하늘과 땅의 때를 먼저 보았습니다. {there|을} 치는 일은 한 {turn} 미루어도 늦지 않습니다.',
+      '때를 얻으면 힘을 덜 들입니다. {there}에는 날씨가 돕는 때에 드시지요.',
+    ],
+    skyGo: [
+      '하늘의 때보다 사람의 때가 급합니다. {there}의 채비가 덜 되었을 때 치시지요.',
+      '날씨는 저들에게도 똑같이 옵니다. {there|을} 지금 치는 편이 낫습니다.',
+    ],
   },
   knight: {
     plotAdvise: [
@@ -172,6 +199,14 @@ export const SCHEME_SAYS: Readonly<Record<Tone, Readonly<Record<Scheme, readonly
     allyGo: [
       '{ally|이} 오기 전에 {foe|을} 꺾겠습니다. 시간을 주면 둘이 함께 오옵니다. 지금 치시지요.',
       '머뭇거리면 {ally}의 군사가 먼저 닿습니다. {foe|을} 먼저 치시지요.',
+    ],
+    skyWait: [
+      '군사는 때를 맞춰 움직여야 합니다. 한 {turn} 기다렸다가 {there|을} 치시지요.',
+      '날씨가 바뀌면 싸움의 셈도 바뀝니다. {there}에는 그 뒤에 드시지요.',
+    ],
+    skyGo: [
+      '날씨를 기다리다 기회를 놓칠 수 있습니다. {there|을} 지금 치시지요.',
+      '군사의 사기가 높을 때 움직여야 합니다. 이번 {turn}에 {there|을} 치시지요.',
     ],
   },
   sly: {
@@ -207,6 +242,14 @@ export const SCHEME_SAYS: Readonly<Record<Tone, Readonly<Record<Scheme, readonly
       '{ally|이} 셈을 마치기 전에 {foe|을} 치면 됩니다. 지금 치시지요.',
       '{ally|은} 이기는 편에 붙을 나라입니다. {foe|을} 빨리 꺾으면 {ally}도 입을 다뭅니다. 치시지요.',
     ],
+    skyWait: [
+      '서두를 까닭이 없지요. 하늘이 저들 편을 거두는 날 {there|을} 치시면 됩니다.',
+      '한 {turn}만 기다리시지요. {there}의 사람들은 날씨를 믿고 마음을 놓을 것입니다.',
+    ],
+    skyGo: [
+      '모두가 날씨를 핑계로 쉴 때가 가장 좋은 때입니다. {there|을} 지금 치시지요.',
+      '저들도 우리가 기다릴 줄 압니다. 그러니 지금 {there|을} 치시지요.',
+    ],
   },
   shaman: {
     plotAdvise: [
@@ -240,6 +283,14 @@ export const SCHEME_SAYS: Readonly<Record<Tone, Readonly<Record<Scheme, readonly
     allyGo: [
       '신령께서 지금이라 하십니다. {ally|이} 오기 전에 {foe|을} 치시지요.',
       '점괘가 맑습니다. {foe|을} 치면 {ally|은} 움직이지 못할 것입니다. 치시지요.',
+    ],
+    skyWait: [
+      '하늘의 기운이 아직 우리 편이 아닙니다. 한 {turn} 기다렸다가 {there|을} 치시지요.',
+      '바람과 물이 바뀌는 날이 옵니다. {there}에는 그날 드시지요.',
+    ],
+    skyGo: [
+      '하늘의 뜻은 이미 내렸습니다. {there|을} 지금 치시지요.',
+      '날씨는 핑계일 뿐입니다. 신령이 이번 {turn|을} 가리킵니다. {there|을} 치시지요.',
     ],
   },
 }

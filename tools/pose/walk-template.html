@@ -1,0 +1,52 @@
+<!doctype html><meta charset="utf-8"><title>walk template</title>
+<style>html,body{margin:0;background:#fff}svg{display:block}</style>
+<body>
+<svg id="s" width="1600" height="900" viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg"></svg>
+<script>
+// 걷기 자세 틀 (형 11-05: "틀을 먼저 줘서 의도한 대로") — 옆에서 본 걷기 8컷 + 서기 4컷.
+// 디딤 → 내려앉음 → 지나감 → 솟음을 오른발(빨강·앞다리) · 왼발(파랑·뒷다리) 번갈아. 팔은 같은 쪽 다리와 반대로 흔든다.
+// 각도는 수직에서 앞(오른쪽)이 + · 정강이·아래팔은 절대 각도
+const W = 400, H = 300
+const L = { thigh: 52, shin: 52, torso: 70, upper: 38, lower: 36, head: 17 }
+// [허벅지, 정강이] — 앞다리(빨강) / 뒷다리(파랑) · 몸 높낮이 · [위팔, 아래팔] 앞팔(빨강) / 뒷팔(파랑)
+const HALF = [
+  { near: [28, 20], far: [-24, -38], bob: 0, nArm: [-26, -14], fArm: [26, 52], name: 'CONTACT' },
+  { near: [16, -8], far: [-16, -62], bob: 7, nArm: [-16, -8], fArm: [16, 38], name: 'DOWN' },
+  { near: [0, -1], far: [16, -48], bob: -2, nArm: [0, 6], fArm: [0, 6], name: 'PASSING' },
+  { near: [-18, -26], far: [32, 8], bob: -8, nArm: [18, 42], fArm: [-18, -10], name: 'UP' },
+]
+const swap = (f) => ({ near: f.far, far: f.near, bob: f.bob, nArm: f.fArm, fArm: f.nArm, name: f.name })
+const WALK = [...HALF, ...HALF.map(swap)]
+const STAND = [0, 1, 2, 3].map((i) => ({ near: [4, 0], far: [-4, 0], bob: i % 2 ? 2 : 0, nArm: [-6, 4], fArm: [6, 10], name: 'STAND' }))
+const rad = (d) => (d * Math.PI) / 180
+const seg = (x, y, len, deg) => [x + Math.sin(rad(deg)) * len, y + Math.cos(rad(deg)) * len]
+const s = document.getElementById("s")
+// ?plain — 제미나이에 넣는 판: 초록 바탕 · 회색 마네킹(앞 밝게 · 뒤 어둡게) · 글자·땅선 없음 (색 막대와 글자를 그대로 베껴 그렸다 11-05)
+const plain = new URLSearchParams(location.search).has("plain")
+const NEAR = plain ? "#b9b9b9" : "#e0302a", FAR = plain ? "#5a5a5a" : "#3a6fe0", BODY = plain ? "#8a8a8a" : "#222"
+const TH = plain ? 2 : 1
+if (plain) document.body.style.background = s.style.background = "#00ff00"
+let h = ''
+const draw = (f, cx, top, label, ground) => {
+  // 딛은 발(더 낮은 발)이 늘 땅선에 닿게 엉덩이 높이를 맞춘다 — 몸이 오르내리는 것도 여기서 나온다
+  const reach = (a) => Math.cos(rad(a[0])) * L.thigh + Math.cos(rad(a[1])) * L.shin
+  const hipY = ground - Math.max(reach(f.near), reach(f.far)) - 6
+  const hip = [cx, hipY]
+  const neck = [cx + 4, hipY - L.torso]
+  const limb = (base, a1, a2, l1, l2, col, w) => { const k = seg(base[0], base[1], l1, a1); const e = seg(k[0], k[1], l2, a2); return `<polyline points="${base} ${k} ${e}" fill="none" stroke="${col}" stroke-width="${w * TH}" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${e[0]}" cy="${e[1]}" r="${w * TH * 0.6}" fill="${col}"/>` }
+  // 뒤(파랑)를 먼저, 앞(빨강)을 나중에
+  h += limb(neck, f.fArm[0], f.fArm[1], L.upper, L.lower, FAR, 9)
+  h += limb(hip, f.far[0], f.far[1], L.thigh, L.shin, FAR, 12)
+  h += `<line x1="${hip[0]}" y1="${hip[1]}" x2="${neck[0]}" y2="${neck[1]}" stroke="${BODY}" stroke-width="${14 * TH}" stroke-linecap="round"/>`
+  h += `<circle cx="${neck[0] + 4}" cy="${neck[1] - L.head - 4}" r="${L.head}" fill="${BODY}"/>`
+  h += `<path d="M${neck[0] + 12} ${neck[1] - L.head - 8} l12 4 l-12 4z" fill="${BODY}"/>` // 코 — 오른쪽을 본다
+  h += limb(hip, f.near[0], f.near[1], L.thigh, L.shin, NEAR, 13)
+  h += limb(neck, f.nArm[0], f.nArm[1], L.upper, L.lower, NEAR, 10)
+  if (!plain) h += `<line x1="${cx - 90}" y1="${ground}" x2="${cx + 90}" y2="${ground}" stroke="#999" stroke-width="2" stroke-dasharray="6 6"/>`
+  if (!plain) h += `<text x="${cx - 150}" y="${top + 36}" font-size="30" font-family="Arial" font-weight="bold" fill="#222">${label}</text>`
+  if (!plain) h += `<text x="${cx - 150}" y="${top + 62}" font-size="16" font-family="Arial" fill="#555">${f.name}</text>`
+}
+WALK.forEach((f, i) => { const col = i % 4, row = Math.floor(i / 4); const cx = col * W + W / 2; const top = row * H; draw(f, cx, top, String(i + 1), top + 160 + L.thigh + L.shin + 2) })
+STAND.forEach((f, i) => { const cx = i * W + W / 2; const top = 2 * H; draw(f, cx, top, `S${i + 1}`, top + 160 + L.thigh + L.shin + 2) })
+s.innerHTML = h
+</script>

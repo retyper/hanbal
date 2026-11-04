@@ -141,3 +141,13 @@ BACKGROUND: flat pure bright green #00FF00 everywhere, no shadows, no ground lin
 - 11-04 병사 창병·방패병 걷기를 다시 봤다: 한 자세가 아니라 닿기·내리기·지나기·오르기 넷이 두 번 돈다(같은 다리가 앞) — 그대로 둔다. Argon 으로 다시 받아 봐도 5~8 이 1~4 를 되풀이했고 창끝이 칸 경계를 넘어 잘렸다(`sol-spear-a·c.png` · 쓰지 않음). 한 컷만 반대를 보면 `tools/flipcell.ps1`
 - 11-04 농민군 20컷 띠 (`anim2/militia.png` · 칸 168x160 · 같은 A·B·C 길 · B 지도 "1,1,2,2,3,4,4,5,6,6,7,8" · 쓰러짐 네모 0.005,0.75,0.245,0.245) — 머리말에 "무기 끝까지 제 칸 안에"를 못 박으면 잘리지 않는다
 - 남은 것: 장수마다 제 그림(형 11-03: "여유롭다면 장수마다 전투판 유닛 애니메이션")
+
+## ★ 11-05 자세 틀을 먼저 줘 봤다 — 세 번 다 실패 (형: "틀을 먼저 줘서 의도한 대로")
+
+틀: `tools/pose/walk-template.html` (8컷 = 닿기·내리기·지나기·오르기 × 두 다리 · 서기 4 · 앞다리 빨강/뒷다리 파랑 · 딛은 발은 늘 땅선) ·
+`?plain` 은 초록 바탕 회색 마네킹(글자·선 없음). 찍은 것(저장소 밖 · assets_src) `assets_src/realm/gemini/generals/walk-pose-template.png` · `walk-pose-plain.png` — 다시 찍기: `node --experimental-strip-types tools/phone-shot.ts out.png - 1600 900 http://localhost:5174/_tmp/walk-template.html?plain` (public/_tmp 에 복사해 둠).
+제미나이 u/0 (나노 바나나) 로 칼 장수(`g-sword-a.png`) 시험:
+1. 틀(색 막대·번호) 을 IMAGE 1 · 장수를 IMAGE 2 → **틀의 번호·글자·빨강파랑 다리까지 그대로 그렸다**
+2. 회색 마네킹 틀 위에 덧그리기 → **회색 다리를 지우지 않고 남겼다** · 셋째 줄에 다섯 명
+3. 장수를 IMAGE 1 · 틀을 「설명 그림일 뿐」으로 IMAGE 2 · 사고 수준 높음 → 깔끔하지만 **여덟 컷 다리가 거의 같다** (`walk2/test-pose-template-fail.png`)
+→ 그림 모델은 한 장에 여러 걷기 자세를 다리까지 맞추지 못한다 (11-04 Argon 도 같았다). 다음 길: **동영상 모델(Veo)로 제자리걸음 10초 → 한 걸음(두 발)만큼 여덟 프레임을 뽑아 초록 따기** — 동영상은 다리가 저절로 번갈아 간다

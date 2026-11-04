@@ -17,13 +17,13 @@
 import { guardAdjust, guardWeights, type GuardWhy } from '../../realm/council.ts'
 import { headcount } from '../../realm/battle.ts'
 import { josa, turnsLabel, turnWord } from '../../realm/data/prose.ts'
-import { seasons } from '../../realm/calendar.ts'
+import { blockedWhy, isMonsoon, seasonOf, seasons } from '../../realm/calendar.ts'
 import { relationOf } from '../../realm/diplomacy.ts'
 import { met } from '../../realm/discovery.ts'
 import { movesOf, type ApproachMove, type Move } from '../../realm/estimate.ts'
 import { hasTrait, isAway, isRuler } from '../../realm/heroes.ts'
 import { foeAlliesWhenStruck, lastBattleVs } from '../../realm/memory.ts'
-import { forceOf, otherEnd } from '../../realm/season.ts'
+import { forceOf, marchTurns, otherEnd } from '../../realm/season.ts'
 import type { Approach, Army, Hero, Order, Realm } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { councilFact, grainSeen, heroRouteFact, heroSplitFact, lostLast, nationRouteFacts, nationSplitFact, plotFact, whenSaid, type RouteFact } from './council-recall.ts'
@@ -63,7 +63,7 @@ export interface Voice {
   readonly doubt?: boolean
 }
 
-export type AgendaId = 'ally' | 'plot' | 'wait' | 'pincer' | 'keep' | 'route' | 'ration'
+export type AgendaId = 'ally' | 'plot' | 'wait' | 'sky' | 'pincer' | 'keep' | 'route' | 'ration'
 export interface Agenda {
   readonly id: AgendaId
   readonly title: string
@@ -331,6 +331,31 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
     }
   }
 
+  // ①-3 하늘 — 한 번 기다리면 날씨가 돕는다 (형 11-05: "군사회의도 더 다양한 제안 · 쌓이는 게 아니라 다양성"):
+  //   장마 끝물(지금 떠나면 길이 늘고 다음 턴엔 아니다) · 해자를 두른 고을에 기다리면 해자가 언 겨울에 닿는다 (fortMoat 는 겨울에 안 걸린다)
+  //   지금 떠나도 다음에 떠나도 길이 막히지 않을 때만 · 다른 「때」 안건(동맹 · 기다림)이 섰으면 그쪽에 기다림이 있다
+  if (!out.some((x) => x.id === 'ally' || x.id === 'wait') && blockedWhy(m.edge, r, r.season + 1) === null) {
+    const t1 = r.season + 1
+    const now = marchTurns(r, m.edge)
+    const later = marchTurns(r, m.edge, t1)
+    const mud = isMonsoon(r) && later < now
+    const ice = !mud && node.tags.includes('moat') && seasonOf(r, r.season + now) !== 'winter' && seasonOf(r, t1 + later) === 'winter'
+    if (mud || ice) {
+      const why = mud ? `장마에 떠나면 ${there}까지 ${turnsLabel(r, now - later)} 더 걸립니다.` : `${josa(there, '은', '는')} 해자를 둘렀습니다. 한 ${turnWord(r)} 늦게 떠나면 해자가 언 겨울에 닿습니다.`
+      const mine = new Set<string>()
+      const sage = pickSeat((h) => h.ryak + (calm(h) ? 2 : 0) + (hasTrait(h, 'farmer') ? 2 : 0) - (bold(h) ? 3 : 0), (h) => !bold(h) || h.ryak >= P.realm.cnReadRyak, mine)
+      if (sage !== undefined) {
+        used.add(sage.id)
+        const voices: Voice[] = [{ hero: sage, label: mud ? '장마 뒤에' : '해자가 얼면', move: 'skyWait', line: schemeSay(sage, 'skyWait', base, r.season, why), opt: { k: 'wait' } }]
+        const hot = counter(mine)
+        voices.push(hot !== undefined
+          ? { hero: hot, label: '지금 친다', move: 'skyGo', line: schemeSay(hot, 'skyGo', base, r.season), opt: { k: 'go' } }
+          : { hero: null, label: '지금 친다', line: `기다리지 않는다: 이번 ${turnWord(r)}에 친다`, opt: { k: 'go' } })
+        out.push({ id: 'sky', title: mud ? '장마가 걷히길 기다릴까' : '해자가 얼길 기다릴까', voices })
+      }
+    }
+  }
+
   // ①-2 두 갈래 — 다른 우리 군대가 다른 길로 같은 계절에 닿을 수 있고, 성이 굳거나 · 지난번에 졌거나 · 승산이 빠듯하면
   const pin = pincerArmy(r, me, a, m, ctx)
   const lost = lostLast(r, me, def)
@@ -501,9 +526,26 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
       out.push({ id: 'ration', title: '군량을 얼마나 챙길까', voices })
     }
   }
-  return recallCouncil(r, out)
+  return recallCouncil(r, fewer(out))
 }
 
+
+/** 「때」를 묻는 안건 — 한 회의에 하나만 (먼저 선 것이 가장 급한 것) */
+const WHEN: ReadonlySet<AgendaId> = new Set(['ally', 'plot', 'wait', 'sky'])
+/**
+ * 안건은 적게, 결은 여럿 (형 11-05: "한번에 너무 많은 제안이 5개 넘어가고 쌓이는 게 아니라 제안의 다양성") —
+ * 「때」 안건은 하나만, 모두 합쳐 cnAgendaMax 까지. 선 차례(급한 것 먼저)를 지킨다. 빠진 안건은 고르지 않은 채(기본값)로 간다
+ */
+function fewer(ags: readonly Agenda[]): Agenda[] {
+  const out: Agenda[] = []
+  let when = false
+  for (const ag of ags) {
+    if (out.length >= Math.round(P.realm.cnAgendaMax)) break
+    if (WHEN.has(ag.id)) { if (when) continue; when = true }
+    out.push(ag)
+  }
+  return out
+}
 /**
  * 지난 회의 — 장수마다 처음 말할 때 한 번: 지난번 그 장수의 말을 따라 잘 됐으면 「지난번 소장의 말대로 …」(금빛 테),
  * 빗나갔으면 머뭇거리는 말을 앞에 붙인다 (형 10-30: "캐릭터가 사람처럼 기억하는 듯")

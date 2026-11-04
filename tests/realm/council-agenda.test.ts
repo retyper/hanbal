@@ -20,12 +20,14 @@ import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import { REGION_IDS, regionNations, startRegion } from '../../src/realm/data/regions/index.ts'
 import { approachMoves, movesOf } from '../../src/realm/estimate.ts'
 import { hasTrait } from '../../src/realm/heroes.ts'
-import { otherEnd } from '../../src/realm/season.ts'
+import { marchTurns, otherEnd } from '../../src/realm/season.ts'
+import { isMonsoon, seasonOf } from '../../src/realm/calendar.ts'
 import type { Hero, Realm } from '../../src/realm/types.ts'
 import { P } from '../../src/tune/params.ts'
 import { councilAgendas, takeCount, type Agenda } from '../../src/ui/realm/council-agenda.ts'
 import { fill, NEED, sageuk, SAYS, TRAIT_SAYS, VOLUNTEER, VOLUNTEER_ASK, type Move } from '../../src/ui/realm/council-says.ts'
 
+const WHEN_IDS = new Set(['ally', 'plot', 'wait', 'sky'])
 const CTX = { canLead: () => true, rationNow: 2, rationCost: () => 10, grain: 1000 }
 const MOVES = Object.keys(NEED) as Move[]
 /** 받침 있는 낱말 · 없는 낱말 두 벌 */
@@ -129,6 +131,8 @@ describe('전략 회의 — 사람다움과 작동 (모든 판)', () => {
             const ags = councilAgendas(r, r.player, a, m, approachMoves(r, r.player, a, m), { ...CTX, canLead: can })
             if (ags.length === 0) continue
             councils++
+            assert.ok(ags.length <= Math.round(P.realm.cnAgendaMax), `${region} 안건 ${ags.length}: ${ags.map((x) => x.id).join(',')}`)
+            assert.ok(ags.filter((x) => WHEN_IDS.has(x.id)).length <= 1, `${region} 「때」 안건 둘: ${ags.map((x) => x.id).join(',')}`)
             const lines = ags.flatMap((ag) => ag.voices.filter((v) => v.hero !== null).map((v) => v.line))
             assert.equal(new Set(lines).size, lines.length, `한 회의에 같은 말: ${lines.join(' / ')}`)
             for (const ag of ags) {
@@ -202,5 +206,51 @@ describe('전략 회의 — 사람다움과 작동 (모든 판)', () => {
     const w = ags.find((x) => x.id === 'wait')
     assert.ok(w !== undefined, ags.map((x) => x.id).join(','))
     assert.ok(w.voices.some((v) => v.opt.k === 'wait') && w.voices.some((v) => v.opt.k === 'go'))
+  })
+
+  it('장마 끝물이면 「장마가 걷히길 기다릴까」 · 해자를 두른 고을은 기다리면 언 해자에 닿을 때 「해자가 얼길」 (형 11-05: 제안의 다양성)', () => {
+    // 뭍길로 남의 고을을 칠 수 있는 판을 찾는다 (달 시계 · 지략 높은 장수들)
+    type Case = { r: Realm; a: string; edge: string; to: string }
+    const cases: Case[] = []
+    for (const region of REGION_IDS) {
+      if (region === 'tutorial') continue
+      for (let seed = 1; seed <= 3; seed++) {
+        const r = startRegion(region, seed, regionNations(region)[seed % regionNations(region).length]!)
+        ;(r as { clock: string }).clock = 'month'
+        for (const h of Object.values(r.heroes)) if (h.faction === r.player) h.ryak = 9
+        for (const a of Object.values(r.armies).filter((x) => x.faction === r.player && x.march === null)) {
+          const m = movesOf(r, r.player, a).find((x) => x.hostile && x.edge.kind !== 'ford' && x.edge.kind !== 'pass' && x.edge.kind !== 'sea')
+          if (m !== undefined) cases.push({ r, a: a.id, edge: m.edge.id, to: otherEnd(m.edge, a.at)! })
+        }
+      }
+    }
+    assert.ok(cases.length > 0)
+    const at = (c: Case, t: number): Agenda[] => { (c.r as { season: number }).season = t; return agendasOf(c.r, c.a, c.edge) }
+    // 8월 — 이번에 떠나면 장마 한 달이 붙고 9월엔 없다 · 7월엔 기다려도 장마라 서지 않는다
+    let mud = 0
+    for (const c of cases) {
+      const ag = at(c, 5).find((x) => x.id === 'sky')
+      if (ag === undefined) continue
+      mud++
+      assert.ok(ag.voices.some((v) => v.opt.k === 'wait' && v.hero !== null && v.line.includes('장마')) && ag.voices.some((v) => v.opt.k === 'go'))
+      assert.ok(!at(c, 4).some((x) => x.id === 'sky'), '7월에 장마 안건')
+    }
+    assert.ok(mud > 0, '8월에 장마 안건이 한 번도 안 섰다')
+    // 해자 — 지금 떠나면 겨울 전에, 한 턴 늦으면 겨울에 닿는 때 · 해자가 없으면 서지 않는다
+    let ice = 0
+    for (const c of cases) {
+      const ed = c.r.edges[c.edge]!
+      let t = 0
+      while (t < 24 && !(!isMonsoon(c.r, t) && seasonOf(c.r, t + marchTurns(c.r, ed, t)) !== 'winter' && seasonOf(c.r, t + 1 + marchTurns(c.r, ed, t + 1)) === 'winter')) t++
+      const tags = c.r.nodes[c.to]!.tags as string[]
+      const had = tags.includes('moat')
+      if (!had) tags.push('moat')
+      const ag = at(c, t).find((x) => x.id === 'sky')
+      if (ag !== undefined) { ice++; assert.ok(ag.title.includes('해자')) }
+      tags.splice(tags.indexOf('moat'), 1)
+      assert.ok(!at(c, t).some((x) => x.id === 'sky'), '해자 없는 고을에 해자 안건')
+      if (had) tags.push('moat')
+    }
+    assert.ok(ice > 0, '해자 안건이 한 번도 안 섰다')
   })
 })
