@@ -67,6 +67,27 @@ if (kind === 'lost') {
     rounds: [R('d', 'charge', 'hold'), R('a', 'hold', 'charge'), R('d', 'open', 'charge'), R('d', 'charge', 'hold')],
   } as unknown as ReportLine)
 }
-const quiet = kind === 'captive' || kind === 'woo' || kind === 'woo0' // 보고 없이 판 위에서 연다
+// 협공 — 우리 군대 둘이 같은 남의 고을에 같은 턴에 닿을 수 있게: 남의 고을 곁 우리 고을 둘에 군대를 하나씩 세운다 (형 11-05 협공 반짝임 확인)
+if (kind === 'pincer') {
+  const mine = new Set(Object.values(next.nodes).filter((n) => n.owner === next.player).map((n) => n.id))
+  const nb = (id: string): string[] => Object.values(next.edges).flatMap((e) => (e.a === id ? [e.b] : e.b === id ? [e.a] : []))
+  const foe = Object.values(next.nodes).filter((n) => n.owner !== null && n.owner !== next.player && n.kind !== 'sodo').sort((a, b) => (a.id < b.id ? -1 : 1))
+  const base = Object.values(next.armies).find((a) => a.faction === next.player)!
+  for (const f of foe) {
+    const near = nb(f.id).filter((x) => x !== f.id)
+    if (near.length < 2) continue
+    // 남의 고을 곁 두 자리 — 우리 땅으로 바꿔 두고 군대를 하나씩
+    const [p, q] = near.slice(0, 2) as [string, string]
+    for (const x of [p, q]) { next.nodes[x]!.owner = next.player; mine.add(x) }
+    base.at = p
+    base.march = null
+    const half = Object.fromEntries(Object.entries(base.mix).map(([k, n]) => [k, Math.floor((n as number) / 2)]))
+    for (const [k, n] of Object.entries(half)) (base.mix as Record<string, number>)[k] = (base.mix as Record<string, number>)[k]! - (n as number)
+    next.armies['pin-2'] = { ...base, id: 'pin-2', at: q, hero: null, mix: half }
+    console.log('pincer', f.name, '<-', next.nodes[p]!.name, next.nodes[q]!.name)
+    break
+  }
+}
+const quiet = kind === 'captive' || kind === 'woo' || kind === 'woo0' || kind === 'pincer' // 보고 없이 판 위에서 연다
 writeFileSync(out, JSON.stringify({ v: 2, nation: process.env.NATION ?? 'us', seed, log: [], realm: next, before: quiet ? null : r0, report: quiet ? null : report }))
 console.log('ok', kind, g.name, w.name)

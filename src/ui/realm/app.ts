@@ -786,6 +786,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let cmdJob: CmdJob | null = null
   /** 판을 열기 전 「데려갈 장수」 팝업 — 고른 판 (형 10-25: "게임 시작할 때 데려갈 장수가 팝업으로 · 영웅전 내 기록의 장수만 · 가능한 수대로 체크") */
   let bringAsk: { nation: string; region: RegionId; tier: number } | null = null
+  /** 협공 짝을 마지막으로 울린 때 — 같은 고름엔 한 번만 */
+  let pinRung = ''
+  /** 뾰로로롱 — 방울을 점점 높게 셋 (형 11-05: "소리가 들려도 되고 · 뾰로로롱") */
+  function pinChime(): void {
+    P.realm.pinChimeRates.forEach((rate, i) => window.setTimeout(() => ding(snd('tap_bell'), P.realm.pinChimeVol, rate), i * P.realm.pinChimeGapMs))
+  }
   /** 마을 안 (TOWN.md) — 열린 고을 · 처음 그리면 밝아지며 */
   let townIn: string | null = null
   let townFresh = false
@@ -1755,16 +1761,19 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const a = a0?.faction === me() ? a0 : undefined
     // 다른 우리 군대가 언제 어디에 닿나 — 이미 가는 군대 · 이번 계절에 보낼 군대. 칠 곳 칩에 협공을 미리 (형: "같은 계절에 도착하게 맞춰서 … 합쳐져서 공격이 안오네??")
     const others = new Map<string, number[]>()
+    /** 협공에 낄 수 있는 우리 군대 — 그 군대 말이 반짝인다 (형 11-05: "협공 가능한 군사 쪽에서 이펙트 · 소리 · 뾰로로롱") */
+    const mates: Array<{ id: string; to: string; k: number }> = []
+    const pinMates = new Set<string>()
     for (const o of Object.values(r.armies)) {
       if (o.faction !== me() || armySel.includes(o.id)) continue
       const c = pick[o.id]
       const when = o.march !== null ? { to: o.march.to, k: o.march.left } : c !== undefined ? (() => { const mv = movesOf(r, me(), o).find((x) => x.edge.id === c.edge); return mv !== undefined ? { to: mv.to, k: mv.seasons } : null })() : null
-      if (when !== null) others.set(when.to, [...(others.get(when.to) ?? []), when.k])
+      if (when !== null) { others.set(when.to, [...(others.get(when.to) ?? []), when.k]); mates.push({ id: o.id, to: when.to, k: when.k }) }
     }
     const pincerChip = (to: string, k: number, hostile: boolean): string => {
       const ks = others.get(to)
       if (!hostile || ks === undefined) return ''
-      if (ks.includes(k)) return `<span class="tn pin">협공</span>`
+      if (ks.includes(k)) { for (const x of mates) if (x.to === to && x.k === k) pinMates.add(x.id); return `<span class="tn pin">협공</span>` }
       const d = Math.min(...ks.map((x) => Math.abs(x - k)))
       return `<span class="tn hard">${turnsLabel(r, d)} 어긋남</span>`
     }
@@ -1809,6 +1818,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       else if (!atkWon && l.defender === me() && r.nodes[l.node]?.owner === me()) held.add(l.node)
     }
     if (armySel.length === 0 && partySel === '') for (const to of going) stl.add(to)
+    // 협공 짝 — 그 군대 말이 반짝이고, 군대를 고른 그때 한 번 「뾰로로롱」 (형 11-05)
+    if (pinMates.size > 0) {
+      for (let i = 0; i < tokens.length; i++) if (pinMates.has(tokens[i]!.army)) tokens[i] = { ...tokens[i]!, pin: true }
+      const key = `${r.season}:${armySel.join(',')}:${[...pinMates].sort().join(',')}`
+      if (key !== pinRung) { pinRung = key; pinChime() }
+    } else pinRung = ''
     return mapHtml(r, me(), ART, marches, sel, focus, tokens, targets, fr, stl, burn, going, taken, held, scouts)
   }
 

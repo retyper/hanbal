@@ -403,6 +403,12 @@ export const MAP_CSS = `
 /* 고을 이름표도 누르면 그 고을 — 말이 고을 그림 위에 서 있어도 이름으로 들어간다 */
 .map .lbs .lb { pointer-events: auto; cursor: pointer; }
 .map .tok { position: relative; }
+/* 협공 짝 — 발밑에 금빛 테가 숨 쉬고 불티 넷이 맴돈다 (형 11-05: "텍스트 하나만 주지 말고 협공 가능한 군사 쪽에서 이펙트") · 작은 칸이라 폰 그래픽 한도 걱정 없음 */
+.map .tok.pin::before { content: ""; position: absolute; left: 50%; bottom: -10%; width: 190%; aspect-ratio: 2.2; translate: -50% 0; border-radius: 50%; border: 4px solid #fff0a8; background: radial-gradient(ellipse, #ffd24a66, #ffd24a00 70%); box-shadow: 0 0 18px 4px #ffc82a, inset 0 0 14px #ffd24acc; z-index: -1; pointer-events: none; animation: pinring .8s ease-in-out infinite alternate; }
+.map .tok.pin::after { content: "✦ 협공 ✦"; position: absolute; left: 50%; top: -42%; translate: -50% 0; padding: 1px 8px; border-radius: 999px; background: #3a2408e6; border: 1.5px solid #ffe08a; font-size: 13px; font-weight: 900; color: #fff3b0; text-shadow: 0 0 6px #ffb02a; box-shadow: 0 0 12px #ffc82a; pointer-events: none; white-space: nowrap; animation: pinspark 1s ease-in-out infinite alternate; }
+@keyframes pinring { from { scale: .92; opacity: .85; } to { scale: 1.12; opacity: 1; } }
+@keyframes pinspark { from { translate: -50% 0; } to { translate: -50% -5px; } }
+@media (prefers-reduced-motion: reduce) { .map .tok.pin::before, .map .tok.pin::after { animation: none; } }
 /* 살아 있는 말 — 쉬는 군대는 들썩이고 · 군기가 펄럭이고 · 명령이 없으면 「명령?」 */
 .map .tok.idle { animation: tokidle 2.2s ease-in-out infinite alternate; } .map .toks .tok.idle:nth-child(2) { animation-delay: -.8s; } .map .toks .tok.idle:nth-child(3) { animation-delay: -1.5s; }
 @keyframes tokidle { from { transform: translateY(0); } to { transform: translateY(-14%); } }
@@ -1017,7 +1023,7 @@ export function mapHtml(
   // 우리 군대의 말은 살아 있다 — 군기가 펄럭이고, 쉬는 군대는 숨 쉬듯 들썩인다 (형 10-27 지인: "유닛을 전혀 안 누르더라 · 누르고 싶은 모습으로 · idle 모션")
   const ours = (t: MapToken): boolean => t.foe === undefined && t.ally === undefined && t.party !== true
   const tokBtn = (t: MapToken, ang?: number): string =>
-    `<button class="tok${t.squad !== undefined ? ' unit' : ''}${ours(t) && t.march === undefined && !t.going ? ' idle' : ''}${t.sel ? ' sel' : ''}${t.going ? ' going' : ''}${t.ally !== undefined ? ' ally' : ''}${t.party === true ? ' party' : ''}${t.foe !== undefined ? ` foe${t.sneak === true ? ' sneak' : ''}` : ''}" data-act="${t.foe !== undefined ? 'foetok' : t.party === true ? 'ptok' : 'tok'}" data-army="${t.army}" style="${tokKit(t)}">`
+    `<button class="tok${t.squad !== undefined ? ' unit' : ''}${ours(t) && t.march === undefined && !t.going ? ' idle' : ''}${t.sel ? ' sel' : ''}${t.going ? ' going' : ''}${t.pin === true ? ' pin' : ''}${t.ally !== undefined ? ' ally' : ''}${t.party === true ? ' party' : ''}${t.foe !== undefined ? ` foe${t.sneak === true ? ' sneak' : ''}` : ''}" data-act="${t.foe !== undefined ? 'foetok' : t.party === true ? 'ptok' : 'tok'}" data-army="${t.army}" style="${tokKit(t)}">`
     + `${t.sel ? GEM : ''}${ang !== undefined ? `<i class="dir" style="--a:${ang.toFixed(0)}deg"></i>` : ''}${ours(t) ? '<i class="flag"></i>' : ''}${t.wait === true ? `<i class="ask" style="--ae:${P.realm.mapAskEveryS}s;--ad:${(-(jit(t.army) * P.realm.mapAskEveryS)).toFixed(1)}s">명령?</i>` : ''}${t.squad !== undefined ? `<span class="squad">${t.squad.map((q, j) => `<i class="sq${q.r !== undefined ? ' v2' : ''}${q.m === true ? ' mg' : ''}" style="--ar:${q.ar.toFixed(3)};${q.r !== undefined ? `--r:${q.r.toFixed(3)};` : ''}--j:${j};--k:${((([...t.army].reduce((h, ch) => h * 31 + ch.charCodeAt(0), 7) + j * 53) % 97 + 97) % 97 / 97).toFixed(2)}"><u style="background-image:url('${q.src}')"></u></i>`).join('')}</span>` : ''}<img src="${t.img}" alt="">${t.foe !== undefined && t.known !== true ? '<i class="unk">?</i>' : ''}${t.foe !== undefined ? '' : t.morale !== undefined ? `<i class="hp mor${t.morale < P.realm.mapMoraleLow ? ' low' : ''}" style="--p:${Math.max(0.06, Math.min(1, t.morale / P.realm.moraleMax)).toFixed(2)}"></i>` : `<i class="hp" style="--p:${Math.max(0.08, t.men / topMen).toFixed(2)}"></i>`}<b>${t.foe !== undefined ? (t.known === true ? `적 ${t.men}` : '적') : `${t.ally !== undefined ? '도움 ' : t.party === true ? (t.prep !== undefined && t.prep > 0 ? `채비 ${t.prep}달 · ` : '개척 ') : ''}${t.men}`}</b></button>`
   let toks = ''
   // 길 위의 우리 군대 — 떠난 쪽에서 삼분의 일쯤 (가운데의 "n계절" 글씨를 안 가린다)
@@ -1135,6 +1141,8 @@ export interface MapToken {
   /** 이번 계절 아직 명령이 없는 우리 군대 — 「명령?」 말풍선 (문명의 "유닛 명령 필요") */
   readonly wait?: boolean
   /** 땅에 선 병사 셋 — 그 군대에 많은 병종의 동작 그림 (형 10-28: "둥실 떠다니기만 하면 뭐하냐 · 유닛처럼") */
+  /** 협공에 낄 수 있는 짝 — 반짝이는 테와 불티 (형 11-05) */
+  readonly pin?: boolean
   readonly squad?: ReadonlyArray<{ readonly src: string; readonly ar: number; readonly r?: number; /** 이주민 걷기 8컷 띠 (개척단) */ readonly m?: boolean }>
 }
 
