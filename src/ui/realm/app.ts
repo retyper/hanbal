@@ -4303,7 +4303,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     let h = `<button class="btn ghost sm hback" data-act="hero-back">‹ 장수 목록</button><div class="hcard">`
     // 사서에 남은 사람 — 얼굴 모서리의 「📜?」를 누르면 사서의 이야기 (형 10-25: 이름 줄에 붙이면 특성처럼 보였다 · 그림과 물음표만)
     const annal = annalOf(x.id)
-    h += `<div class="hpic">${file !== undefined ? `<img class="big" src="${ART}bust/${file}.jpg" alt="" data-act="bust-view" data-src="${ART}bust/${file}.jpg">` : bust(x, 'face')}${annal !== undefined ? `<button class="annb" data-act="annal" data-id="${x.id}" aria-label="사서에 남은 이야기">📜<b>?</b></button>` : ''}${flamesHtml(x)}</div>`
+    // 각성해 숨 쉬는 고리 영상이 있으면 영상으로 — 골반까지 세로로 (형 11-05: "명치까지 오는 게 아니라 골반까지 나오는 게 핵심") · 저사양은 그림
+    const bo = bustOf(x.id)
+    const hloop = x.ascended === true && bo !== undefined && AWAKEN_LOOP.has(bo) && !root.classList.contains('q-low') ? `${ART}awaken-loop/${bo}.mp4` : null
+    const hpic = hloop !== null ? `<video class="big vloop" src="${hloop}" poster="${ART}awaken-hd/${bo}.jpg" autoplay muted loop playsinline preload="auto" data-act="bust-view" data-src="${ART}awaken-hd/${bo}.jpg" data-loop="${hloop}"></video>`
+      : file !== undefined ? `<img class="big" src="${ART}bust/${file}.jpg" alt="" data-act="bust-view" data-src="${ART}bust/${file}.jpg">` : bust(x, 'face')
+    h += `<div class="hpic">${hpic}${annal !== undefined ? `<button class="annb" data-act="annal" data-id="${x.id}" aria-label="사서에 남은 이야기">📜<b>?</b></button>` : ''}${flamesHtml(x)}</div>`
     // 판 밖 단련을 들고 온 장수 — 「단련 n」 (HERO-GROWTH ★ §A)
     h += `<div class="hn">${nameHtml(x.name)}${x.drill !== undefined && x.drill.lv > 0 && x.faction === me() ? ` <span class="dlv">단련 ${x.drill.lv}</span>` : ''}${x.faction === me() ? relicChips(ART, esc, x.relics, x.relicLv ?? {}) : ''}</div><div class="mute">${emblem(x.faction)}${esc(r.factions[x.faction]?.name ?? '떠돌이')}${isRuler(r, x.id) ? ' 군주' : ''} · ${esc(roleLine(r, x))}</div>`
     // 기억 — 겪은 일이 계절 차례 그림으로, 이름 바로 밑에 (MEMORY §3-2 5). 남의 장수는 우리와 얽힌 일만
@@ -6274,7 +6279,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     root.querySelector('.bview')?.remove()
     // 고리 영상이 있으면 크게 숨 쉬는 초상 (형 11-05 · live2d 같은 idle) · 없으면 그림
     if (loop !== undefined && loop !== '') {
-      root.insertAdjacentHTML('beforeend', `<div class="bview" data-act="bust-close" role="dialog" aria-label="장수 그림 크게"><video src="${loop}" poster="${src}" autoplay muted loop playsinline></video><small>누르면 닫힌다</small></div>`)
+      root.insertAdjacentHTML('beforeend', `<div class="bview" data-act="bust-close" role="dialog" aria-label="장수 그림 크게"><video class="vloop" src="${loop}" poster="${src}" autoplay muted loop playsinline></video><small>누르면 닫힌다</small></div>`)
       return
     }
     root.insertAdjacentHTML('beforeend', `<div class="bview" data-act="bust-close" role="dialog" aria-label="장수 그림 크게"><img alt=""><small>누르면 닫힌다</small></div>`)

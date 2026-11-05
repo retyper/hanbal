@@ -180,8 +180,10 @@ export const HERO_CSS = `
 .ap .bview { position: absolute; inset: 0; z-index: 95; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
   background: #000e; cursor: zoom-out; animation: bvin .2s ease-out; }
 .ap .bview img, .ap .bview video { max-width: min(96vw, 900px); max-height: 88dvh; object-fit: contain; border-radius: 14px; box-shadow: 0 0 40px #000; border: 2px solid #6a5a3a; }
-/* 숨 쉬는 각성 영상(세로 9:16) — 정사각으로 위쪽을 보인다 · 아래 귀퉁이의 제미나이 표식(✦)이 잘려 나간다 */
-.ap .bview video { width: min(92vw, 88dvh, 900px); aspect-ratio: 1; object-fit: cover; object-position: 50% 6%; }
+/* 숨 쉬는 각성 영상(720×1280) — 골반까지 세로로 쓰고 아래 제미나이 표식(✦ · 세로 88~92%)만 잘라 낸다 (형 11-05: "잘리는 거 줄여서 영상 통째로") */
+.ap video.vloop { aspect-ratio: 720 / 1100; object-fit: cover; object-position: 50% 0; }
+.ap .bview video.vloop { height: min(88dvh, calc(96vw * 1100 / 720)); width: auto; max-width: none; }
+.ap .hcard video.big.vloop { width: 150px; height: auto; border-radius: 16px; border: 2px solid #6a5a3a; display: block; }
 .ap .bview small { color: #cbbf9f; font-size: 12px; }
 @keyframes bvin { from { opacity: 0; transform: scale(.94); } }
 @media (prefers-reduced-motion: reduce) { .ap .bview { animation: none; } }
