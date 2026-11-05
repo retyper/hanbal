@@ -100,6 +100,7 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-78-wansan-wan 완산 완 — 2차(roqkfeke12 · 사람마다 다른 옷 틀: 달밤 대숲 명사수 · 대나무빛 · 흰 깃털 어깨 · 한 줄 화살빛) — 11-05 밤
 - w-79-yangmaek-solmae 양맥 솔매 — 2차(roqkfeke12 · 사람마다 다른 옷 틀: 골짜기 물길 척후 · 퉁명한 얼굴 · 털조끼·점무늬 · 허리에 말린 물고기 · 물길 리본) — 11-05 밤
 - w-82-ungcheon-gom 웅천 곰 — 2차(roqkfeke12 · 사람마다 다른 옷 틀: 곰가죽 두건 여장사 · 쇠테 몽둥이 · 곰 기운 붓자국 · 소리 내어 웃음) — 11-05 밤
+- w-68-maek-beombal 맥 범발 — 2차(roqkfeke12 · 사람마다 다른 옷 틀: 밤 표범 사냥꾼 · 어둠 속 빛나는 눈들 · 보랏빛 발톱 자국 · 거꾸로 쥔 단검 · 골벌 범(범)과 갈라 둠) — 11-05 밤
 - ~~w-01-silla-princess 신라 공주 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - ~~w-05-baekje-queen 백제 왕비 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - w-02-goguryeo-lady 고구려 무녀 — 1차 2판(edu · 골반 아래 잘라 냄, 원본 -raw) — 11-03
@@ -129,6 +130,7 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-78-wansan-wan 완산 완 — 2차(roqkfeke12 · 사람마다 다른 옷 틀: 달밤 대숲 명사수 · 대나무빛 · 흰 깃털 어깨 · 한 줄 화살빛) — 11-05 밤
 - w-79-yangmaek-solmae 양맥 솔매 — 2차(roqkfeke12 · 사람마다 다른 옷 틀: 골짜기 물길 척후 · 퉁명한 얼굴 · 털조끼·점무늬 · 허리에 말린 물고기 · 물길 리본) — 11-05 밤
 - w-82-ungcheon-gom 웅천 곰 — 2차(roqkfeke12 · 사람마다 다른 옷 틀: 곰가죽 두건 여장사 · 쇠테 몽둥이 · 곰 기운 붓자국 · 소리 내어 웃음) — 11-05 밤
+- w-68-maek-beombal 맥 범발 — 2차(roqkfeke12 · 사람마다 다른 옷 틀: 밤 표범 사냥꾼 · 어둠 속 빛나는 눈들 · 보랏빛 발톱 자국 · 거꾸로 쥔 단검 · 골벌 범(범)과 갈라 둠) — 11-05 밤
 - w-90-saro-danbi 나정 지기 단비 — 1차 2판 다시(retyper · 검토 PASS) — 11-03
 - w-12-court-dancer 고구려 무희 — 1차 2판(retyper · 검토 PASS) — 11-03
 - w-03-goguryeo-archer 매화(고구려 떠돌이 궁수) — 1차 2판(retyper · 검토 PASS) — 11-03
