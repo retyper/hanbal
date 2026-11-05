@@ -6,7 +6,7 @@
 import type { WorkWhat } from '../works.ts'
 
 /** 단 그림을 구운 일터 */
-export const TOWN_WORK_ART: ReadonlySet<WorkWhat> = new Set<WorkWhat>(['paddy'])
+export const TOWN_WORK_ART: ReadonlySet<WorkWhat> = new Set<WorkWhat>(['paddy', 'saltpan', 'smelter', 'lumber'])
 
 /** 그 일터 그 단의 그림 (public/realm 기준) — 없으면 null */
 export const townSprite = (what: WorkWhat, lv: number): string | null =>
