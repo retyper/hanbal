@@ -67,6 +67,7 @@ const VOICE_OF: Readonly<Record<string, VoiceKind>> = {
   'dokro-2': 'm-veteran', // 견지 쇠돌
   'mh-ogan': 'm-veteran', // 오간
   'tut-ogan': 'm-veteran', // 오간
+  'tut-malgalgi': 'w-bright', // 말갈기 — 살해 말갈기와 같은 목소리 (voice-hero SAME_VOICE)
   'jm-oi': 'm-gruff', // 오이
   'samul-ruler': 'm-young', // 읍차 물결 (그림대로 · 군주 결 대신)
   'ungcheon-ruler': 'm-veteran', // 읍차 곰내

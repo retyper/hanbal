@@ -68,8 +68,10 @@ const h = (
 // 온조와 함께 내려온 열 신하 가운데 오간·마려 (백제본기) · 비류 · 해비는 지어낸 미추홀의 여인 장수
 const HEROES: Hero[] = [
   h('tut-onjo', '온조', 'baekje', 'g', [5, 6, 7, 6, 8, 9], ['charm'], 'tut-wirye-cap'),
-  // 불꽃 둘을 켠 채 — 갯골 싸움을 이기면 첫 판에서 각성을 맛본다 (형 11-01)
-  { ...h('tut-ogan', '오간', 'baekje', 'g', [7, 5, 6, 4, 5, 8], ['archer', 'nighteye']), flames: 2 },
+  // 불꽃 둘을 켠 채 — 갯골 싸움을 이기면 첫 판에서 각성을 맛본다 (형 11-01) · 각성을 보여 주는 장수는 노출 없는 무난한 여인 장수로 (형 11-05: "w-77-sabeol-malgalgi 정도 어때?")
+  // 말갈기 — 사벌의 말괄량이 말꾼이 온조의 무리에 섞여 내려왔다 (지어낸 사람 · 영남 판의 살해 말갈기와 같은 얼굴·목소리)
+  h('tut-ogan', '오간', 'baekje', 'g', [7, 5, 6, 4, 5, 8], ['archer', 'nighteye'], 'tut-wirye-cap'),
+  { ...h('tut-malgalgi', '말갈기', 'baekje', 'w', [7, 5, 6, 4, 5, 8], ['river']), flames: 2 },
   h('tut-maryeo', '마려', 'baekje', 'g', [5, 5, 4, 6, 4, 7], ['farmer'], 'tut-wirye-cap'),
   h('tut-biryu', '비류', 'michuhol', 'g', [6, 7, 4, 5, 4, 8], ['smith'], 'tut-michuhol-cap'),
   // 사로잡기를 배우는 상대 장수 — 여인. 무예가 낮아 일기토도 겁낼 것 없다
@@ -82,7 +84,7 @@ const a = (id: string, faction: string, hero: string | null, at: string, mix0: A
 }
 
 const ARMIES: Army[] = [
-  a('a-us', 'baekje', 'tut-ogan', 'tut-galdae', { spear: 90, bow: 40, shield: 20 }, 'ironTip'),
+  a('a-us', 'baekje', 'tut-malgalgi', 'tut-galdae', { spear: 90, bow: 40, shield: 20 }, 'ironTip'),
   a('a-guya', 'michuhol', 'tut-haebi', 'tut-gaetgol', { spear: 30, bow: 15 }, 'bronze'),
 ]
 

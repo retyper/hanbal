@@ -130,7 +130,7 @@ function flagsIn(r: Realm, h: Hero): number {
  * `dex` 는 바꾸지 않고 새 것을 돌려준다.
  */
 /** 배우는 판의 장수 → 1장(마한)의 같은 사람 */
-const TUT_SAME: Readonly<Record<string, string>> = { 'tut-ogan': 'mh-ogan', 'tut-onjo': 'mh-onjo' }
+const TUT_SAME: Readonly<Record<string, string>> = { 'tut-ogan': 'mh-ogan', 'tut-malgalgi': 'sabeol-1', 'tut-onjo': 'mh-onjo' }
 
 export function scanDex(dex: Readonly<Dex>, r: Realm): { dex: Dex; fresh: Array<{ id: string; was: number; now: number }> } {
   const out: Dex = { ...dex }

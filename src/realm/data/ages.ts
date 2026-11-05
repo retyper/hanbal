@@ -19,6 +19,7 @@ export const CAST_AGE: Readonly<Record<string, CastAge>> = {
   'wander-17': { age: 20, grey: false },
   'mh-ogan': { age: 42, grey: false },
   'tut-ogan': { age: 42, grey: false },
+  'tut-malgalgi': { age: 19, grey: false },
   'wander-19': { age: 54, grey: true },
   'jm-oi': { age: 34, grey: false },
   'saro-ruler': { age: 42, grey: false },

@@ -77,7 +77,7 @@ export const TUT_STEPS: readonly TutStep[] = [
     done: (c) => (shut(c) && marching(c)) || Object.values(c.r.armies).some((a) => a.faction === c.r.player && a.at === 'tut-gaetgol'),
   },
   {
-    id: 'battle', name: '전투', what: '합마다 명령을 골라 싸웁니다', text: '「다음 달」을 누르면 전장이 열립니다. 아래 무리마다 깃발을 하나씩 끌어 전장에 놓으세요. 「장수」에선 「적장 사로잡기」를 골라 보세요. 이 판에선 반드시 잡힙니다. 이기면 오간의 마지막 불꽃이 붙습니다.',
+    id: 'battle', name: '전투', what: '합마다 명령을 골라 싸웁니다', text: '「다음 달」을 누르면 전장이 열립니다. 아래 무리마다 깃발을 하나씩 끌어 전장에 놓으세요. 「장수」에선 「적장 사로잡기」를 골라 보세요. 이 판에선 반드시 잡힙니다. 이기면 말갈기의 마지막 불꽃이 붙습니다.',
     // 사로잡기는 「장수」 탭에 있다 · 「전투 개시」는 무리마다 다 고르면 켜진다 — 나머지는 ★ 권함으로 채운다
     press: ['.next'], war: { pick: '[data-war="pick"][data-c="capture"]', go: '[data-war="go"]', tab: '[data-war="gtab"][data-g="lead"]' },
     done: fought,
