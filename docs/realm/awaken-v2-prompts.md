@@ -56,7 +56,7 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-22-dongye-tiger-huntress 동예 범 사냥꾼 — 2차(retyper) — 11-05 밤
 - w-18-jinhan-salt-widow 진한 소금 과부 — 2차(retyper) — 11-05 밤
 - w-43-uga-nuri 우가 너리(첫 판 치마가 짧아 「긴 치마 · 한쪽 트임만」으로 고침) — 2차(retyper) — 11-05 밤
-- ~~w-44-okjeo-sogeumbi 동옥저 소금비~~ — 트임이 허리띠 밑까지라 걷음(-rejected) · 같은 대화에서 고쳐 달라니 「성적 콘텐츠 방지」로 거절 · 새 대화에서 다시 — 11-05 밤
+- w-44-okjeo-sogeumbi 동옥저 소금비 — 발목 치마 틀로 다시 받아 넣음 · 첫 판은 트임이 허리띠 밑까지라 걷음(-rejected) · 같은 대화에서 고쳐 달라니 「성적 콘텐츠 방지」로 거절 · 새 대화에서 다시 — 11-05 밤
 - w-27-mokji-jinha 목지 진하 — 2차(retyper · 긴 치마 틀) — 11-05 밤
 - w-38-sangdang-bulmae 상당 불매 — 발목 치마 틀로 다시 받아 넣음 · 첫 판은 「긴 치마」를 넣어도 트임이 사타구니 곁까지라 걷음(-rejected) · 다음부터는 「ankle-length skirt, legs covered except one knee-high slit」 — 11-05 밤
 - w-39-gosaburi-galmae 고사부리 갈매 — 2차(retyper · 발목 치마 틀이 먹힘) — 11-05 밤
