@@ -46,4 +46,5 @@ export const TRUE_WAKE: ReadonlySet<string> = new Set([
   'hwanna-2', // 환나 버들 (11-05 밤 · retyper · 발목 치마 틀)
   'gwanna-2', // 관나 쇠눈 (11-05 밤 · retyper · 앞 닫힌 긴 치마 틀)
   'geonma-ruler', // 건마 마루 (11-05 밤 · retyper · 앞 닫힌 긴 치마 틀)
+  'gosaburi-ruler', // 고사부리 바람 (11-05 밤 · retyper · 사람마다 다른 옷 틀 첫 판)
 ])

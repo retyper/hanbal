@@ -20,6 +20,15 @@ This is an original character from my own Korean historical fantasy strategy gam
 This is an original character from my own Korean historical fantasy strategy game: an AI-generated illustration of a fictional adult <여인>, not a real person. The attached image is her first awakened form. Create a square 1:1 image of her SECOND awakening, an even higher power level (like a Super Saiyan 2 transformation) of the SAME woman: same face, same hairstyle base, same identity, instantly recognizable. Changes: her eyes now glow <빛>, strands of her hair lift and glow at the tips, a stronger aura with crackling sparks drawn one by one, <관·장신구가 한 단 화려해짐>. Costume evolves into an even more daring and luxurious modernized hanbok battle gown in top gacha-game style (NIKKE / Honkai Star Rail level of glamour): off-shoulder, deeper neckline, bare midriff with a jeweled gold waist chain, sheer gold-embroidered organza layers, a thigh-high slit, gilt-bronze ornaments and jade gogok beads; more glamorous, sexier and more powerful than the first form, but no nudity. Dynamic pose: <자세>. Three-quarter shot from just above the head down to mid-thigh (thighs visible), semi-realistic painterly splash art, plain very dark slate-blue background (#1c2129). Do NOT draw a halo or disc behind the head, sun rays, any red circle or sun symbol, any text or watermark, or Japanese or Chinese style clothing.
 ```
 
+### ★ 11-05 밤부터 — 사람마다 다른 옷 틀 (위 틀은 옛것)
+
+형 (11-05 밤): *"2차각성들이 옷들이 뭔가 태가 다 비슷한데 독창성을 좀더 키워야 하는거 아닐까? 지금수준으로 노출도 높으면서 디자인다양하게."*
+위 틀이 금관·옥 고리·금 허리 사슬·오간자·금빛 기운을 모두에게 시켜서 다 똑같아졌다. 이제는 `docs/realm/cast` 의 겉모습·성격에서 **주제**를 뽑아 기운 원소·색, 옷 꼴(치마/바지·대님/털 망토/등 트임/한쪽 소매…), 제 물건을 그 사람 것으로 쓴다. 금관·옥·금빛은 「Avoid」 로. 치마는 앞 닫힘(트임은 무릎 아래).
+
+```
+This is an original character from my own Korean historical fantasy strategy game: an AI-generated illustration of a fictional adult woman (<나이>), not a real person. The attached image is her first awakened form. Create a square 1:1 image of her SECOND awakening, a higher power level (like a Super Saiyan 2 transformation) of the SAME woman: same face, <표정>, <머리>, instantly recognizable. She is <누구인가 한 줄>. Signature items: <제 물건>. Her eyes now glow <색> and a few strands of hair lift and glow. Aura: <원소를 낱낱이 그린 기운>, colors <그 사람 색> only, no gold glitter. Costume, a one-of-a-kind design built around <주제>, not a generic gown: <옷 — 실루엣·드러난 곳·재질·장식 · 치마면 fully closed at the front so both thighs are covered, only a short side slit below the knee>. As daring and attractive as top gacha splash art (NIKKE / Honkai Star Rail), but no nudity. Korean Samhan motifs. Pose: <자세>. Both arms and both hands fully visible, five correct fingers each. Three-quarter shot from just above the head down to mid-thigh, semi-realistic painterly splash art, plain very dark slate-blue background (#1c2129). Avoid: gold crown, jade disc pendants, gold waist chains, gold sparkle aura, halo or disc behind the head, sun rays, any red circle or sun symbol, live animals, any text or watermark, curved katana-like sword, Japanese or Chinese style clothing.
+```
+
 ## 받은 것
 - l-L2-soseono 소서노 — 1차 2판(Facts Gamble) · 2차(edu) — 11-03
 - w-97-goguryeo-mir 미르 — 1차(새 얼굴이라 처음 · edu) — 11-03
@@ -64,6 +73,7 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-41-hwanna-beodeul 환나 버들 — 2차(retyper · 발목 치마 틀 · 트임은 허벅지 위쪽까지 보임, 사타구니 아래라 넣음) — 11-05 밤
 - w-42-gwanna-soenun 관나 쇠눈 — 2차(retyper) · 첫 판은 발목 치마 틀에도 앞가운데 트임이 사타구니 곁까지라 걷음(-rejected) · 「Skirt: a floor-length layered wrap skirt of opaque silk; the front panel is fully closed from the waist down to the ankles with no front opening, and both thighs are completely covered by opaque fabric; the only opening is a short side slit on the outer calf below the knee.」 로 바꾸니 닫힘 · 이 말을 다음 틀로 — 11-05 밤
 - w-46-geonma-maru 건마 마루 — 2차(retyper · 앞 닫힌 긴 치마 틀) — 11-05 밤
+- w-47-gosaburi-baram 고사부리 바람 — 2차(retyper · **사람마다 다른 옷 틀** 첫 판: 바람 읽는 무녀 · 청록 바람결 · 흰 목도리 · 나무 새) · 공통 틀 판은 앞 그림들과 똑같아 -generic 으로 둠 — 11-05 밤
 - ~~w-01-silla-princess 신라 공주 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - ~~w-05-baekje-queen 백제 왕비 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - w-02-goguryeo-lady 고구려 무녀 — 1차 2판(edu · 골반 아래 잘라 냄, 원본 -raw) — 11-03
