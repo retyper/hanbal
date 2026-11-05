@@ -222,4 +222,5 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'l-L2-soseono', // 11-05 1장 소서노 · v2: 숨 따라 가슴·옷이 오르내린다 (형: "개쩐다")
   'w-95-michuhol-haebi', // 11-05 해비 — 튜토리얼 · 숨을 더 세게(전투 뒤 숨 고르기 · 형: "출렁임 한 단계 더 세게")
   'w-30-guya-soebi', // 11-05 쇠비 — 형의 최애 · 숨을 더 세게(가슴이 또렷이 출렁)
+  'w-33-gammun-gamsil', // 11-05 감실 — 형의 최애 · 출렁임을 걸면 제미나이가 거절해(그림이 드러나서) 잔잔한 숨으로
 ])
