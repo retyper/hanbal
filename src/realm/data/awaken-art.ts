@@ -219,5 +219,6 @@ export const AWAKEN_ART: ReadonlySet<string> = new Set([
  */
 export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'g-13-baekje-general', // 11-05 오간 — 튜토리얼에서 모두가 처음 보는 각성 (형: 움직이는 건 튜토리얼 장수부터)
-  'l-L2-soseono', // 11-05 시험 · 1장 소서노 (게임에 나오는 전설)
+  'l-L2-soseono', // 11-05 1장 소서노 · v2: 숨 따라 가슴·옷이 오르내린다 (형: "개쩐다")
+  'w-95-michuhol-haebi', // 11-05 해비 — 튜토리얼 · 숨을 더 세게(전투 뒤 숨 고르기 · 형: "출렁임 한 단계 더 세게")
 ])
