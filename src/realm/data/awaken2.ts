@@ -66,4 +66,5 @@ export const TRUE_WAKE: ReadonlySet<string> = new Set([
   'eumjeup-1', // 읍즙 벌 (11-05 밤 · roqkfeke12 · 사람마다 다른 옷 틀 · 말벌 여전사 · 고리자루 칼)
   'samul-1', // 사물 사공 (11-05 밤 · roqkfeke12 · 사람마다 다른 옷 틀 · 강물 뱃사공 큰누이 노)
   'daegaya-1', // 대가야 쇠뫼 (11-05 밤 · roqkfeke12 · 사람마다 다른 옷 틀 · 쇠뫼 대장장이 · 떠도는 덩이쇠)
+  'wansan-1', // 완산 완 (11-05 밤 · roqkfeke12 · 사람마다 다른 옷 틀 · 달밤 대숲 명사수)
 ])
