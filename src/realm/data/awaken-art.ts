@@ -249,6 +249,7 @@ export const AWAKEN2_LOOP: ReadonlySet<string> = new Set([
   'w-20-gaya-smith-daughter', // 11-06 새벽 아름 — 망치를 내리쳐 불꽃 · 웃으며 다시 어깨에
   'w-51-haseulla-dangung', // 11-06 아침 단궁 — 웃지 않고 매섭게 쏘고 다시 당긴다 (성격대로)
   'w-59-jomun-irang', // 11-06 아침 이랑 — 무표정으로 단검을 돌려 쥐고 몸을 틀어 베고 다시 막는다
+  'w-69-jeoga-eomni', // 11-06 아침 엄니 — 입 다문 채 창을 땅에 꽂고 입김 · 다시 겨눔 (중간에 화면이 전신으로 물러났다 돌아온다)
 ])
 /** 정사각 판으로 구운 진각성 영상 (11-05 낮의 둘) — 나머지는 판 없이 세로 `<id>.t2.mp4` */
 export const AWAKEN2_LOOP_SQ: ReadonlySet<string> = new Set(['w-97-goguryeo-mir', 'l-L7-aryeong'])
