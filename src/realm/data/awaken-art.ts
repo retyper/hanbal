@@ -217,6 +217,14 @@ export const AWAKEN_ART: ReadonlySet<string> = new Set([
  * 각성 초상의 숨 쉬는 고리 영상 (public/realm/awaken-loop/<그림 id>.mp4 · 720×1280 세로 · 10초) — 형 11-05: "live2d 처럼 영웅 이미지도 idle 모션".
  * 제미나이(Veo) 그림→영상으로 굽는다: 카메라 고정 · 숨쉬기 · 머리칼·소매 살랑 · 눈 한 번 깜빡 · 처음과 끝이 맞게. 큰 칸(영웅전 각성 보기)에서만 돈다
  */
+/**
+ * 숨 쉬는 영상을 정사각 판으로 만든 초상 — 그림을 9:16 가운데에 통째로 두고 위아래를 흐리게 채워 넣었다(tools/veo/pad.sh).
+ * 파일은 `<id>.sq.mp4` · 화면은 가운데 정사각만 오려 원본 전체가 움직인다 (형 11-05: "넣은 이미지 전체가 안 나오고 세로로 길게 나와 아쉽다")
+ */
+export const AWAKEN_LOOP_SQ: ReadonlySet<string> = new Set<string>([])
+/** 숨 쉬는 영상 파일 — public/realm 아래 */
+export const loopFile = (id: string): string => `awaken-loop/${id}${AWAKEN_LOOP_SQ.has(id) ? '.sq' : ''}.mp4`
+
 export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'g-13-baekje-general', // 11-05 오간 — 튜토리얼에서 모두가 처음 보는 각성 (형: 움직이는 건 튜토리얼 장수부터)
   'l-L2-soseono', // 11-05 1장 소서노 · v2: 숨 따라 가슴·옷이 오르내린다 (형: "개쩐다")

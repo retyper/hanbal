@@ -10,7 +10,7 @@ import { faceFile, noteAscended } from './face.ts'
 import { aiOrders, strikeLive } from '../../realm/ai.ts'
 import { headcount, strength, type Equip, type UnitKind } from '../../realm/battle.ts'
 import { bustOf, CUSTOM_ICON, FACTION_ART, GOOD_ICON, MIGRANT_ANIM, SEASON_ICON, SOL_ANIM2, SOL_ANIM_AR, UNIT_ICON, flagIcon, kidBust, nodeIcon, nodePos, noteGrowing, noteKids } from '../../realm/data/art.ts'
-import { AWAKEN_ART, AWAKEN_LOOP } from '../../realm/data/awaken-art.ts'
+import { AWAKEN_ART, AWAKEN_LOOP, loopFile } from '../../realm/data/awaken-art.ts'
 import { NATIONS, type NationInfo } from '../../realm/data/nations.ts'
 import { YEONGNAM_NATIONS } from '../../realm/data/nations-yeongnam.ts'
 import { SOUTH_NATIONS } from '../../realm/data/nations-south.ts'
@@ -532,6 +532,8 @@ const bustHd = (h: Hero | undefined, cls: string): string =>
   h !== undefined && faceFile(h.id) !== undefined
     ? `<img class="${cls}" src="${ART}bust-hd/${faceFile(h.id)}.jpg" onerror="this.onerror=null;this.src='${ART}bust/${faceFile(h.id)}.jpg'" alt="">`
     : ''
+/** 정사각 판으로 만든 숨 쉬는 영상이면 ' sq' — 가운데 정사각만 오린다 (awaken-art AWAKEN_LOOP_SQ) */
+const sqCls = (u: string | null): string => (u !== null && u.endsWith('.sq.mp4') ? ' sq' : '')
 const bust = (h: Hero | undefined, cls = 'face'): string =>
   h !== undefined && faceFile(h.id) !== undefined ? `<img class="${cls}" src="${ART}bust/${faceFile(h.id)}.jpg" alt="">` : `<span class="${cls} noface"></span>`
 /** 우리 나라 — 깃발마다 금빛 후광을 두른다 (형 2026-10-20: "사용자의 나라는 로그에서 아이콘도 뭔가 후광이 있거나 특별하게 … 내나라가 어느나란지도 모르겠어서") */
@@ -581,7 +583,7 @@ const DEX_KIT = {
   kid: (key: string, look: 'g' | 'w', traits?: readonly string[]): string | null => { const f = kidBust(key, look, traits); return f !== undefined ? `${ART}bust/${f}.jpg` : null },
   grow: (id: string): { lv: number; relics: string } => ({ lv: drillLevel(id), relics: relicChips(ART, esc, wornBy(id)) }),
   awake: (id: string): string | null => { const b = bustOf(id); return b !== undefined && AWAKEN_ART.has(b) ? `${ART}awaken-hd/${b}.jpg` : null },
-  awakeLoop: (id: string): string | null => { const b = bustOf(id); return b !== undefined && AWAKEN_LOOP.has(b) ? `${ART}awaken-loop/${b}.mp4` : null },
+  awakeLoop: (id: string): string | null => { const b = bustOf(id); return b !== undefined && AWAKEN_LOOP.has(b) ? `${ART}${loopFile(b)}` : null },
 }
 
 /** 처음 몸 — 영웅전 명부 · 가문의 아이 (단련터 · 동행 고르기의 단련 몸) */
@@ -1441,7 +1443,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const before = b !== undefined ? `<img class="axold" src="${ART}bust-hd/${b}.jpg" onerror="this.onerror=null;this.src='${ART}bust/${b}.jpg'" alt="">` : ''
     // 숨 쉬는 고리 영상이 있으면 각성 초상이 움직인다 (형 11-05 · live2d 같은 idle) · 저사양은 그림
     const loopOk = b !== undefined && AWAKEN_LOOP.has(b) && !root.classList.contains('q-low')
-    const after = loopOk ? `<video class="axnew" src="${ART}awaken-loop/${b}.mp4" poster="${ART}awaken-hd/${b}.jpg" autoplay muted loop playsinline preload="auto"></video>` : b !== undefined && AWAKEN_ART.has(b) ? `<img class="axnew" src="${ART}awaken-hd/${b}.jpg" alt="">` : before.replace('axold', 'axnew')
+    const after = loopOk ? `<video class="axnew${sqCls(loopFile(b!))}" src="${ART}${loopFile(b!)}" poster="${ART}awaken-hd/${b}.jpg" autoplay muted loop playsinline preload="auto"></video>` : b !== undefined && AWAKEN_ART.has(b) ? `<img class="axnew" src="${ART}awaken-hd/${b}.jpg" alt="">` : before.replace('axold', 'axnew')
     const phone = window.matchMedia('(pointer: coarse)').matches
     const n = phone ? R.ascendEmbersPhone : R.ascendEmbers
     const jit = (i: number, k: number): number => ((i * 73 + k * 151 + h.id.length * 37) % 101) / 101 // 불티 자리 — 장수마다 같은 흩어짐
@@ -2442,8 +2444,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const sh = v.hero!
       const sf = faceFile(sh.id)
       const sb = bustOf(sh.id)
-      const sloop = sh.ascended === true && sb !== undefined && AWAKEN_LOOP.has(sb) && !root.classList.contains('q-low') ? `${ART}awaken-loop/${sb}.mp4` : null
-      const big = sloop !== null ? `<video class="cnbig vloop" src="${sloop}" poster="${ART}awaken-hd/${sb}.jpg" autoplay muted loop playsinline preload="auto" data-quiet="1"></video>`
+      const sloop = sh.ascended === true && sb !== undefined && AWAKEN_LOOP.has(sb) && !root.classList.contains('q-low') ? `${ART}${loopFile(sb)}` : null
+      const big = sloop !== null ? `<video class="cnbig vloop${sqCls(sloop)}" src="${sloop}" poster="${ART}awaken-hd/${sb}.jpg" autoplay muted loop playsinline preload="auto" data-quiet="1"></video>`
         : sf !== undefined ? `<img class="cnbig" src="${ART}bust-hd/${sf}.jpg" onerror="this.onerror=null;this.src='${ART}bust/${sf}.jpg'" alt="">` : bust(sh, 'cnbig')
       return `<div class="cnstage" data-act="cn-next"><h3 class="cnt">${esc(ag.title)}</h3><div class="cnspk${v.proven === true ? ' gold' : ''}">${big}<b>${nameHtml(sh.name)}</b>${v.proven === true ? '<i class="cngold">지난번 말이 맞았다</i>' : ''}</div>`
         + `<p class="cnsub" aria-live="polite">${hilite(r, me(), v.line)}</p><div class="cnav"><small>${beat + 1}/${says.length} · 누르면 다음 ›</small><button class="cskip" data-act="cn-skip">건너뛰기 »</button></div></div>`
@@ -4359,8 +4361,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const annal = annalOf(x.id)
     // 각성해 숨 쉬는 고리 영상이 있으면 영상으로 — 골반까지 세로로 (형 11-05: "명치까지 오는 게 아니라 골반까지 나오는 게 핵심") · 저사양은 그림
     const bo = bustOf(x.id)
-    const hloop = x.ascended === true && bo !== undefined && AWAKEN_LOOP.has(bo) && !root.classList.contains('q-low') ? `${ART}awaken-loop/${bo}.mp4` : null
-    const hpic = hloop !== null ? `<video class="big vloop" src="${hloop}" poster="${ART}awaken-hd/${bo}.jpg" autoplay muted loop playsinline preload="auto" data-act="bust-view" data-src="${ART}awaken-hd/${bo}.jpg" data-loop="${hloop}"></video>`
+    const hloop = x.ascended === true && bo !== undefined && AWAKEN_LOOP.has(bo) && !root.classList.contains('q-low') ? `${ART}${loopFile(bo)}` : null
+    const hpic = hloop !== null ? `<video class="big vloop${sqCls(hloop)}" src="${hloop}" poster="${ART}awaken-hd/${bo}.jpg" autoplay muted loop playsinline preload="auto" data-act="bust-view" data-src="${ART}awaken-hd/${bo}.jpg" data-loop="${hloop}"></video>`
       : file !== undefined ? `<img class="big" src="${ART}bust/${file}.jpg" alt="" data-act="bust-view" data-src="${ART}bust/${file}.jpg">` : bust(x, 'face')
     h += `<div class="hpic">${hpic}${annal !== undefined ? `<button class="annb" data-act="annal" data-id="${x.id}" aria-label="사서에 남은 이야기">📜<b>?</b></button>` : ''}${flamesHtml(x)}</div>`
     // 판 밖 단련을 들고 온 장수 — 「단련 n」 (HERO-GROWTH ★ §A)
@@ -6333,7 +6335,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     root.querySelector('.bview')?.remove()
     // 고리 영상이 있으면 크게 숨 쉬는 초상 (형 11-05 · live2d 같은 idle) · 없으면 그림
     if (loop !== undefined && loop !== '') {
-      root.insertAdjacentHTML('beforeend', `<div class="bview" data-act="bust-close" role="dialog" aria-label="장수 그림 크게"><video class="vloop" src="${loop}" poster="${src}" autoplay muted loop playsinline></video><small>누르면 닫힌다</small></div>`)
+      root.insertAdjacentHTML('beforeend', `<div class="bview" data-act="bust-close" role="dialog" aria-label="장수 그림 크게"><video class="vloop${sqCls(loop)}" src="${loop}" poster="${src}" autoplay muted loop playsinline></video><small>누르면 닫힌다</small></div>`)
       return
     }
     root.insertAdjacentHTML('beforeend', `<div class="bview" data-act="bust-close" role="dialog" aria-label="장수 그림 크게"><img alt=""><small>누르면 닫힌다</small></div>`)

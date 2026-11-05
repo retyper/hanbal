@@ -184,6 +184,9 @@ export const HERO_CSS = `
 .ap video.vloop { aspect-ratio: 720 / 1100; object-fit: cover; object-position: 50% 0; }
 .ap .bview video.vloop { height: min(88dvh, calc(96vw * 1100 / 720)); width: auto; max-width: none; }
 .ap .hcard video.big.vloop { width: 150px; height: auto; border-radius: 16px; border: 2px solid #6a5a3a; display: block; }
+/* 정사각 판으로 만든 영상(.sq · tools/veo/pad.sh) — 가운데 정사각만 오려 원본 그림 전체가 숨 쉰다 */
+.ap video.sq { aspect-ratio: 1 !important; object-fit: cover; object-position: 50% 50% !important; }
+.ap .bview video.vloop.sq { height: min(88dvh, 96vw, 900px); }
 .ap .bview small { color: #cbbf9f; font-size: 12px; }
 @keyframes bvin { from { opacity: 0; transform: scale(.94); } }
 @media (prefers-reduced-motion: reduce) { .ap .bview { animation: none; } }
