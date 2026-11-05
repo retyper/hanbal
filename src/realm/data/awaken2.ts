@@ -32,4 +32,5 @@ export const TRUE_WAKE: ReadonlySet<string> = new Set([
   'miri-2', // 추화의 고구려 무녀 (11-05 밤 · edu)
   'wander-06', 'dm-buyeo-2', // 부여 사냥꾼 (11-05 밤 · edu · 같은 초상)
   'michuhol-2', // 미추홀 갯내 (11-05 밤 · edu)
+  'sr-danbi', // 나정 지기 단비 (11-05 밤 · edu)
 ])

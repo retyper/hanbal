@@ -49,6 +49,7 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-02-goguryeo-lady 고구려 무녀 — 2차(edu · 공통 틀에 「휜 칼 금지」 더함) — 11-05 밤
 - w-06-buyeo-huntress 부여 사냥꾼(오른손 창대 잡은 데 살짝 어색) — 2차(edu) — 11-05 밤
 - w-37-michuhol-gaennae 미추홀 갯내 — 2차(edu) — 11-05 밤
+- w-90-saro-danbi 나정 지기 단비 — 2차(edu) — 11-05 밤
 - ~~w-01-silla-princess 신라 공주 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - ~~w-05-baekje-queen 백제 왕비 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - w-02-goguryeo-lady 고구려 무녀 — 1차 2판(edu · 골반 아래 잘라 냄, 원본 -raw) — 11-03
