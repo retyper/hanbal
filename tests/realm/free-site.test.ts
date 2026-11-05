@@ -85,3 +85,39 @@ describe('주인 없는 터 — 달마다 (형 11-05: "군대 보내 놓고 있�
     assert.ok(hauls >= 3, `여섯 달에 ${hauls}번만 거뒀다`)
   })
 })
+
+describe('주인 없는 터 — 개척단 (형 11-05: "감포로 보낸 개척단이 영원히 도착을 안 해서 개척단을 못 보낸다")', () => {
+  it('편입 값을 떠날 때 치른다 · 닿으면 곳간이 비어도 서고 · 옛 판처럼 안 치르고 닿은 개척단도 서 있지 않는다', async () => {
+    const { formParty, partyCost, stepParties } = await import('../../src/realm/parties.ts')
+    const { foundCost } = await import('../../src/realm/economy.ts')
+    const { r, site } = setup()
+    const me = r.player
+    const cap = r.factions[me]!.capital
+    const s = r.stock[me]!
+    s.grain = 99999; (s as Record<string, number>).wood = 9999
+    r.nodes[cap]!.hh += 400
+    const g0 = s.grain
+    formParty(r, { kind: 'party', faction: me, node: cap, goal: site }, [])
+    const p = Object.values(r.parties ?? {})[0]!
+    assert.equal(p.paid, site)
+    // 떠날 때 치른 곡식에 편입 값이 들었다
+    const extra = foundCost(r, me, true).grain - foundCost(r, me).grain
+    assert.ok(g0 - s.grain >= partyCost(r, me, p.hh).grain + extra - 1)
+    // 곳간을 비우고 닿게 한다 → 그래도 선다
+    s.grain = 0; (s as Record<string, number>).wood = 0
+    p.readyAt = undefined; p.at = site; p.march = null
+    for (const a of Object.values(r.armies)) if (a.at === site && a.faction !== me) a.at = cap
+    const lines: ReportLine[] = []
+    stepParties(r, lines)
+    assert.equal(r.nodes[site]!.owner, me)
+    // 옛 판 — 안 치르고 닿은 개척단 (paid 없음) 도 곳간이 비었어도 선다
+    const { r: r2, site: site2 } = setup()
+    const me2 = r2.player
+    r2.stock[me2]!.grain = 0
+    r2.parties = { old: { id: 'old', faction: me2, home: r2.factions[me2]!.capital, at: site2, hh: 20, march: null, goal: site2 } }
+    for (const a of Object.values(r2.armies)) if (a.at === site2 && a.faction !== me2) a.at = r2.factions[me2]!.capital
+    stepParties(r2, [])
+    assert.equal(r2.nodes[site2]!.owner, me2)
+    assert.ok(r2.stock[me2]!.grain >= 0)
+  })
+})

@@ -853,6 +853,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .selbar.pp { padding: 0 2px; gap: 4px; border-width: 9px; border-image-width: 9px; flex-wrap: nowrap; }
 .ap .selbar.pp .sbface { width: 28px; height: 28px; margin-right: -4px; }
 .ap .selbar.pp .sbt { min-width: 0; margin-left: 6px; } .ap .selbar.pp .sbt b { font-size: 13px; white-space: nowrap; } .ap .selbar.pp .sbt span { font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ap .selbar .sbt span.ppwhy { color: #ffb88a; font-weight: 700; white-space: normal; }
 .ap .selbar.pp .btn { padding: 1px 6px; font-size: 12.5px; white-space: nowrap; } .ap .selbar.pp .sbx { padding: 2px 4px; font-size: 16px; }
 .ap .selbar .ppface { object-fit: contain; border-color: #e0b070; background: #3a2c1e; padding: 2px; box-sizing: border-box; }
 .ap .selbar .sbt .ppbar { color: #e0b070; letter-spacing: 1px; }

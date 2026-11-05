@@ -34,7 +34,7 @@ import {
   GOODS, armCost, buildCost, canBuild, canGuard, draftCost, draftIronCost, draftLimit, draftNeeds, draftPay, goodOf, guardCost, hhGrowth, isCoast, militiaMen, nextBuild, nodeHarvest, nodeYield, nodeSpecials, upkeepOf, riteAllowed, riteCost,
   autoFlows, crowdOf, migratePath, fieldMul, homeRoom, inboundOf, inboundRate, isRiverside, landMul, placeLimit, placeNodes, workMul,
   goodsWorth,
-  callCost, callLimit, callWhy, draftWhy, grainAtSeasonEnd, isWoody, shareOpen, stockOf, freeSite, foundCost,
+  callCost, callLimit, callWhy, draftWhy, grainAtSeasonEnd, isWoody, shareOpen, stockOf, freeSite,
 } from '../../realm/economy.ts'
 import { goalReach, goalRoute } from '../../realm/goal.ts'
 import { approachMoves, armyPower, jointWin, matchupHints, movesOf, type Move } from '../../realm/estimate.ts'
@@ -1988,11 +1988,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 못 보내는 때도 단추는 그대로 두고 흐리게 — 누르면 까닭과 소리 (형 11-04: "버튼 비활성화를 시켜야지 설명 텍스트로 모자라다고 하면 어떡하냐")
     const off = (why: string, cost = ''): string => `<button class="btn home wide ${cls}" data-act="party-goal" data-node="${to}"${noBtn(why)}>${icon('unit-porters')}개척단 보내기 ${cost}</button>`
     if (mine !== undefined) return off(`이번 ${turnWord(r)} 개척단은 이미 다른 곳으로 꾸렸습니다`)
-    const k = partySize(r, me(), cap)
-    if (k <= 0) { const c0 = partyCost(r, me(), P.realm.partyMin); return off(partyWhy(r, cap), costHtml({ grain: c0.grain, wood: c0.wood })) }
+    const k = partySize(r, me(), cap, freeSite(r.nodes[to]))
+    if (k <= 0) { const c0 = partyCost(r, me(), P.realm.partyMin, freeSite(r.nodes[to])); return off(partyWhy(r, cap, freeSite(r.nodes[to])), costHtml({ grain: c0.grain, wood: c0.wood })) }
     const route = partyRoute(r, me(), cap, to)
     if (route === null) return off('도읍에서 우리 땅을 따라 가는 길이 지금은 막혔습니다')
-    const c = partyCost(r, me(), k)
+    const c = partyCost(r, me(), k, freeSite(r.nodes[to]))
     return `<button class="btn pri home wide ${cls}" data-act="party-goal" data-node="${to}">${icon('unit-porters')}개척단 보내기 · ${turnsLabel(r, route.turns)} ${costHtml({ grain: c.grain, wood: c.wood })}</button><p class="mute">도읍에서 떠나 우리 고을을 거쳐 저절로 갑니다</p>`
   }
 
@@ -2008,7 +2008,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const caps = new Set(Object.values(r.factions).map((f) => f.capital))
     const c: Array<{ from: string; edge: string }> = []
     for (const n of Object.values(r.nodes)) {
-      if (n.owner !== me() || n.kind === 'wild' || settles.some((o) => o.kind === 'party' && o.node === n.id) || partySize(r, me(), n.id) <= 0) continue
+      if (n.owner !== me() || n.kind === 'wild' || settles.some((o) => o.kind === 'party' && o.node === n.id) || partySize(r, me(), n.id, freeSite(r.nodes[to])) <= 0) continue
       const m = partyMoves(r, me(), n.id).find((x) => x.to === to && x.found)
       if (m !== undefined) c.push({ from: n.id, edge: m.edge })
     }
@@ -2017,12 +2017,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   /** 개척단을 못 꾸리는 까닭 한 줄 */
-  function partyWhy(r: Realm, node: string): string {
+  function partyWhy(r: Realm, node: string, site = false): string {
     if (r.factions[me()]?.capital !== node) return '개척단은 도읍에서만 꾸립니다'
     if (partiesOf(r, me()).length >= P.realm.partyMax) return `개척단은 한꺼번에 ${P.realm.partyMax}까지 둡니다`
     const n = r.nodes[node]!
     if (Math.floor(n.hh * P.realm.partyShare) < P.realm.partyMin) return '도읍 백성이 아직 적습니다'
-    return shortOf(partyCost(r, me(), P.realm.partyMin)) || '새 마을 값이 모자랍니다'
+    return shortOf(partyCost(r, me(), P.realm.partyMin, site)) || '새 마을 값이 모자랍니다'
   }
 
 
@@ -2292,6 +2292,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     let h = `<div class="sbf">${icon('unit-porters', 'sbface ppface')}</div><div class="sbt"><b>${esc(r.nodes[p.home]?.name ?? '')} 개척단 · 백성 ${p.hh}가구</b>`
     if (was != null) h += `<span>${esc(josa(r.nodes[was.to]?.name ?? '', '으로', '로'))} 가는 중 · ${esc(arriveWhen(realm!, was.left))}</span>`
     else if (p.march !== null) h += `<span>→ ${esc(r.nodes[p.march.to]?.name ?? '')} · ${foundable(r, me(), p.march.to) ? '닿으면 새 마을' : '지나간다'} · ${esc(arriveWhen(realm!, p.march.left))}</span>`
+    else if (p.goal !== undefined && r.nodes[p.goal] !== undefined) {
+      // 갈 곳을 정해 둔 개척단 — 채비 중이면 언제 떠나나 · 길이 막혀 서 있으면 왜 막혔나 (형 11-05: "감포로 보낸 개척단이 영원히 도착을 안 해")
+      const to = r.nodes[p.goal]!.name
+      const foe = Object.values(r.armies).find((a) => a.at === p.goal && a.march === null && a.faction !== me())
+      if (p.readyAt !== undefined && r.season < p.readyAt) h += `<span>${esc(josa(to, '으로', '로'))} 갈 채비 · ${esc(arriveWhen(realm!, p.readyAt - r.season))} 떠난다</span>`
+      else if (foe !== undefined) h += `<span class="ppwhy">${esc(to)}에 ${esc(r.factions[foe.faction]?.name ?? '다른 나라')} 군대가 머물러 못 간다 · 비키면 바로 간다</span>`
+      else if (partyRoute(r, me(), p.at, p.goal) === null) h += `<span class="ppwhy">${esc(josa(to, '으로', '로'))} 가는 길이 막혔다 · ${esc(noReachWhy(r, me(), p.goal))}</span>`
+      else h += `<span>${esc(josa(to, '으로', '로'))} 다음 ${turnWord(r)} 떠난다</span>`
+    }
     else h += `<span>${partyTargets(r, p.id).length > 0 ? '보낼 곳을 선택한다' : '지금 갈 수 있는 길이 없다'}</span>`
     h += `</div>`
     if (joinHere(p.at).some((x) => x.id === p.id)) h += `<button class="btn pri home sm" data-act="ptjoin" data-army="${p.id}">여기 자리 잡기</button>`
@@ -3225,8 +3234,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (going !== undefined) return h + `<button class="btn home wide stlgo on" data-act="ptok" data-army="${going.id}" data-node="${to}">${esc(r.nodes[going.home]?.name ?? '')} 개척단이 간다 · 백성 ${going.hh}가구</button></div>`
     const src = partySource(r, to)
     if (src === null) return h + capPartyHtml(r, to, 'stlgo') + `</div>`
-    const k = partySize(r, me(), src.from)
-    const c = partyCost(r, me(), k)
+    const k = partySize(r, me(), src.from, freeSite(n))
+    const c = partyCost(r, me(), k, freeSite(n))
     h += `<button class="btn pri home wide stlgo" data-act="party-to" data-node="${to}" data-from="${src.from}" data-edge="${src.edge}">${esc(r.nodes[src.from]?.name ?? '')}에서 개척단 보내기${settleRec(r) === to ? REC_ST : ''}</button>`
     return h + `<p class="mute">백성 ${k}가구 ${costHtml({ grain: c.grain, wood: c.wood })}</p></div>`
   }
@@ -5387,7 +5396,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const src = goingP === undefined && foundLands(r).includes(id) ? partySource(r, id) : null
         if (goingP !== undefined) return `<button class="btn home wide on nrbig" data-act="ptok" data-army="${goingP.id}" data-node="${id}">${icon('unit-porters')}${esc(r.nodes[goingP.home]?.name ?? '')} 개척단이 가는 중</button>`
         if (src !== null) {
-          const c = partyCost(r, me(), partySize(r, me(), src.from))
+          const c = partyCost(r, me(), partySize(r, me(), src.from, freeSite(n)), freeSite(n))
           return `<button class="btn pri home wide nrbig" data-act="party-to" data-node="${id}" data-from="${src.from}" data-edge="${src.edge}">${icon('unit-porters')}개척단 보내기 ${costHtml({ grain: c.grain, wood: c.wood })}</button>`
         }
         if (foundLands(r).includes(id)) return capPartyHtml(r, id, 'nrbig')
@@ -5416,10 +5425,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
             ? `<button class="btn pri wide nrbig" data-act="send-army" data-node="${id}" data-army="${s.army}">${icon('unit-spear')}${esc(r.heroes[r.armies[s.army]?.hero ?? '']?.name ?? '우리')} 군대 보내기 · ${turnsLabel(r, s.seasons)}</button><p class="nrwhy"><small>군사가 닿으면 쌓인 것을 거두고, 머무는 동안 ${turnWord(r)}마다 거둡니다</small></p>`
             : `<button class="btn wide nrbig" data-act="send-army" data-node="${id}"${noBtn('여기로 갈 수 있는 쉬는 군대가 없습니다. 징병하거나 가는 중인 군대가 닿기를 기다리세요')}>${icon('unit-spear')}군사 이동 필요</button>`
         }
-        // 우리 땅으로 — 개척단이 닿을 때 편입 값을 더 치른다 (economy.foundCost · siteAnnexMul)
-        const a1 = foundCost(r, me(), true)
-        const a0 = foundCost(r, me())
-        h += settleHtml() + `<p class="nrwhy"><small>개척단이 닿으면 우리 땅이 됩니다 · 닿을 때 더 드는 값 ${costHtml({ grain: a1.grain - a0.grain, wood: a1.wood - a0.wood })}</small></p>`
+        // 우리 땅으로 — 개척단 값에 편입 값까지 들어 있다 (떠날 때 치른다 · parties.formParty)
+        h += settleHtml() + `<p class="nrwhy"><small>개척단이 닿으면 우리 땅이 됩니다 · 편입 값까지 떠날 때 치릅니다</small></p>`
       } else if (n.owner === null && n.kind !== 'wild' && n.kind !== 'sodo' && n.hh > 0) {
         const s = senderFor(r, id)
         h += s !== null

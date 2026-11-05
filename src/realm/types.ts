@@ -735,6 +735,8 @@ export interface Party {
   goal?: string
   /** 이 턴부터 떠날 수 있다 — 꾸린 뒤 도읍에서 채비하는 동안은 서 있다 (P.realm.partyPrepTurns · 형 11-03) */
   readyAt?: number
+  /** 편입 값을 떠날 때 미리 치른 주인 없는 철광·포구 — 그곳에 닿으면 더 안 치른다 (형 11-05) */
+  readonly paid?: string
 }
 
 export interface Army {

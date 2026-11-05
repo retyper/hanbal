@@ -16,7 +16,8 @@ import { marchTurns } from './season.ts'
 import type { Order, Party, Realm, ReportLine } from './types.ts'
 
 /** 고을에서 꾸릴 수 있는 개척단의 가구 수 — 안 되면 0 (도읍 · 곡식·나무·가구·개척단 수) */
-export function partySize(r: Realm, faction: string, from: string): number {
+/** `site` — 주인 없는 철광·포구로 가는 개척단이면 편입 값(economy.foundCost site)을 떠날 때 함께 치른다 */
+export function partySize(r: Realm, faction: string, from: string, site = false): number {
   const R = P.realm
   const a = r.nodes[from]
   if (a === undefined || a.owner !== faction || a.kind === 'sodo' || a.kind === 'wild') return 0
@@ -25,7 +26,7 @@ export function partySize(r: Realm, faction: string, from: string): number {
   if (Object.values(r.parties ?? {}).filter((p) => p.faction === faction).length >= R.partyMax) return 0
   const want = Math.floor(a.hh * R.partyShare)
   // 새 마을 값(economy.foundCost)을 먼저 치르고 남는 곡식·나무로 가구 몫을 셈한다
-  const fc = foundCost(r, faction)
+  const fc = foundCost(r, faction, site)
   const st = stockOf(r, faction)
   const grainLeft = st.grain - fc.grain
   const woodLeft = goodOf(st, 'wood') - fc.wood
@@ -37,8 +38,8 @@ export function partySize(r: Realm, faction: string, from: string): number {
 }
 
 /** 꾸리는 데 드는 것 — 새 마을 값(economy.foundCost) + 가구 하나에 곡식·나무 */
-export function partyCost(r: Realm, faction: string, n: number): { grain: number; wood: number } {
-  const fc = foundCost(r, faction)
+export function partyCost(r: Realm, faction: string, n: number, site = false): { grain: number; wood: number } {
+  const fc = foundCost(r, faction, site)
   return { grain: fc.grain + Math.ceil(n * P.realm.settleGrain), wood: fc.wood + Math.ceil(n * P.realm.settleWood) }
 }
 
@@ -117,9 +118,12 @@ function startMarch(r: Realm, p: Party, edge: string): void {
 /** 꾸리기 — 고을의 백성을 떼어 개척단을 세운다. 길을 함께 골랐으면 바로 떠난다 */
 export function formParty(r: Realm, o: Extract<Order, { kind: 'party' }>, lines: ReportLine[]): void {
   if (r.factions[o.faction] === undefined) return
-  const n = partySize(r, o.faction, o.node)
+  // 갈 곳이 주인 없는 철광·포구면 편입 값까지 떠날 때 치른다 — 닿은 뒤 값이 모자라 말없이 서 있던 일 (형 11-05: "감포로 보낸 개척단이 영원히 도착을 안 해서 개척단을 못 보낸다")
+  const target = o.edge !== undefined ? partyMoves(r, o.faction, o.node).find((m) => m.edge === o.edge)?.to : o.goal
+  const site = target !== undefined && freeSite(r.nodes[target])
+  const n = partySize(r, o.faction, o.node, site)
   if (n <= 0) return
-  const c = partyCost(r, o.faction, n)
+  const c = partyCost(r, o.faction, n, site)
   const node = r.nodes[o.node]!
   node.hh -= n
   const st = stockOf(r, o.faction)
@@ -128,7 +132,7 @@ export function formParty(r: Realm, o: Extract<Order, { kind: 'party' }>, lines:
   const ps = (r.parties ??= {})
   let id = `party-${r.season}-${o.node}`
   for (let k = 2; ps[id] !== undefined; k++) id = `party-${r.season}-${o.node}-${k}`
-  const p: Party = { id, faction: o.faction, home: o.node, at: o.node, hh: n, march: null }
+  const p: Party = { id, faction: o.faction, home: o.node, at: o.node, hh: n, march: null, ...(site ? { paid: target } : {}) }
   ps[id] = p
   // 채비 — 꾸린 뒤 partyPrepTurns 턴은 도읍에 서 있다가 떠난다 (형 11-03: "개척단을 꾸리는 데 비용이 매우 많이 들고" · 문명의 개척자 생산 턴).
   // 갈 곳은 지금 정해 두고, 다 되면 저절로 간다. 채비가 없으면 예전처럼 바로 떠난다
@@ -201,12 +205,14 @@ export function stepParties(r: Realm, lines: ReportLine[]): void {
       delete ps[id]
       continue
     }
-    // 주인 없는 철광·포구는 편입 값이 더 든다 (새 마을 값과의 차이를 이때 치른다 · 못 치르면 기다린다 · economy.foundCost)
-    const extra = freeSite(r.nodes[p.at]) ? ((a, b) => ({ grain: a.grain - b.grain, wood: a.wood - b.wood }))(foundCost(r, p.faction, true), foundCost(r, p.faction)) : { grain: 0, wood: 0 }
-    const canPay = stockOf(r, p.faction).grain >= extra.grain && goodOf(stockOf(r, p.faction), 'wood') >= extra.wood
-    if (foundable(r, p.faction, p.at) && canPay && (p.goal === undefined || p.goal === p.at)) { // 갈 곳이 따로 있으면 거쳐 가는 우리 마을엔 눌러앉지 않는다
-      stockOf(r, p.faction).grain -= extra.grain
-      const s = stockOf(r, p.faction); s.wood = goodOf(s, 'wood') - extra.wood
+    // 주인 없는 철광·포구는 편입 값이 더 든다 — 그곳을 갈 곳으로 꾸린 개척단은 떠날 때 이미 치렀다(paid).
+    // 안 치르고 닿았으면(길을 바꿔 왔거나 옛 판) 있는 만큼 치르고 선다 · 모자라 말없이 서 있던 일은 없앤다 (형 11-05: "감포 개척단이 영원히 도착을 안 해")
+    const site = freeSite(r.nodes[p.at])
+    const extra = site && p.paid !== p.at ? ((a, b) => ({ grain: a.grain - b.grain, wood: a.wood - b.wood }))(foundCost(r, p.faction, true), foundCost(r, p.faction)) : { grain: 0, wood: 0 }
+    if (foundable(r, p.faction, p.at) && (p.goal === undefined || p.goal === p.at)) { // 갈 곳이 따로 있으면 거쳐 가는 우리 마을엔 눌러앉지 않는다
+      const s = stockOf(r, p.faction)
+      s.grain -= Math.min(extra.grain, Math.max(0, s.grain))
+      s.wood = goodOf(s, 'wood') - Math.min(extra.wood, Math.max(0, goodOf(s, 'wood')))
       const n = r.nodes[p.at]!
       n.hh += p.hh
       n.owner = p.faction
