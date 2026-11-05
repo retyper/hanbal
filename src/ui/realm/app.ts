@@ -56,6 +56,7 @@ import { P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, noReachWhy, visibleNodes, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
 import { LEGACY_CSS, bringHtml, clearBring, toggleBring } from './legacy.ts'
 import { TOWN_CSS, townVeilHtml, townViewHtml } from './townview.ts'
+import { TOWN_GROUND, townSprite } from '../../realm/data/town-art.ts'
 import { RISE_CSS, riseGraphHtml } from './risegraph.ts'
 import { BOOK_CSS, bookHtml, shelfHtml, type Book } from './bookshelf.ts'
 import { DEX_CSS, clanHeroes, dexHtml, dexToastHtml, loadDex, recordDex, toggleDexAwake, type DexBoard } from './dex.ts'
@@ -6510,16 +6511,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       townIn = null
       return
     }
-    // 바탕 — 물가 · 숲 · 들판 (마을 터 그림이 구워지기 전엔 전장 바탕을 빌린다 · ART-QUEUE)
-    const bg = isCoast(r, n.id) || isRiverside(r, n.id) ? 'battle/battle-ford.jpg' : isWoody(r, n.id) ? 'battle/battle-forest.jpg' : 'battle/battle-field.jpg'
+    // 바탕 — 물가 · 숲 · 들판 (비스듬히 내려다본 빈 터 · town-art.ts)
+    const bg = isCoast(r, n.id) || isRiverside(r, n.id) ? TOWN_GROUND.water : isWoody(r, n.id) ? TOWN_GROUND.wood : TOWN_GROUND.field
     const going = (r.works ?? []).find((w) => w.node === n.id)
     const html = townViewHtml({
       id: n.id, name: esc(n.name), hh: n.hh, bg, art: ART, fresh: townFresh,
-      works: worksOf(n).map(([w, lv]) => ({ img: `${ART}icon/${WORKS[w].icon}.png`, name: WORKS[w].name, lv, max: Math.round(P.realm.workLvMax) })),
+      works: worksOf(n).map(([w, lv]) => { const sp = townSprite(w, lv); return { icon: WORKS[w].icon, name: WORKS[w].name, lv, max: Math.round(P.realm.workLvMax), sprite: sp !== null ? `${ART}${sp}` : null } }),
       lots: lotCap(n), fresh2: going !== undefined && lvOf(n, going.what) === 0,
-      going: going !== undefined ? { img: `${ART}icon/${WORKS[going.what].icon}.png`, name: WORKS[going.what].name, left: `${turnsLabel(r, Math.max(1, going.done - r.season + 1))} 남음` } : null,
+      going: going !== undefined ? { icon: WORKS[going.what].icon, name: WORKS[going.what].name, left: `${turnsLabel(r, Math.max(1, going.done - r.season + 1))} 남음` } : null,
       card: workCardHtml(r, n.id),
-      plan: (() => { const q = musters.find((o): o is Extract<Order, { kind: 'work' }> => o.kind === 'work' && o.node === n.id); return q !== undefined ? { img: `${ART}icon/${WORKS[q.what].icon}.png`, name: WORKS[q.what].name } : null })(),
+      plan: (() => { const q = musters.find((o): o is Extract<Order, { kind: 'work' }> => o.kind === 'work' && o.node === n.id); return q !== undefined ? { icon: WORKS[q.what].icon, name: WORKS[q.what].name, sprite: ((sp) => (sp !== null ? `${ART}${sp}` : null))(townSprite(q.what, lvOf(n, q.what) + 1)) } : null })(),
     })
     if (ov === null) {
       root.insertAdjacentHTML('beforeend', `<div class="townov" style="--tf:${P.realm.townFadeMs}ms"></div>`)
