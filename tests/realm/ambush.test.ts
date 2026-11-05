@@ -9,10 +9,11 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { headcount } from '../../src/realm/battle.ts'
+import { headcount, hides } from '../../src/realm/battle.ts'
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import { CONCEAL_LINE } from '../../src/realm/data/prose.ts'
 import { movesOf } from '../../src/realm/estimate.ts'
+import { guardPick } from '../../src/realm/council.ts'
 import { advance, concealOf, forceOf } from '../../src/realm/season.ts'
 import { P } from '../../src/tune/params.ts'
 import type { Order, Realm, ReportLine } from '../../src/realm/types.ts'
@@ -38,11 +39,12 @@ describe('기습 — 길과 때', () => {
     for (const w of [...forest.why, ...field.why, ...winter.why, ...big.why, ...small.why]) assert.ok(CONCEAL_LINE[w] !== undefined, w)
   })
 
-  /** 갯마을 군대를 안개골에 두고 안야 도읍으로 기습 — 굴림이 `want` 가 되는 시드를 찾는다 */
+  /** 갯마을 군대를 안개골에 두고 안야 도읍으로 기습 — `want` 가 되는 시드를 찾는다. 기습은 조건이라(형 11-05) 먹히게 하려면 작은 무리로 방심한 고을을 친다 */
   function find(want: 'success' | 'caught'): { before: Realm; next: Realm; line: Battle } {
     for (let seed = 1; seed <= 400; seed++) {
       const r = byeonhanMini(seed)
       r.armies['a-us']!.at = 'our-north'
+      if (want === 'success') { r.armies['a-us']!.mix = { spear: 60 }; r.watch['anya-cap']!.lull = P.realm.lullMax; r.watch['anya-cap']!.alert = 0 }
       const o: Order = { kind: 'march', army: 'a-us', edge: 'e05', ambush: true }
       const res = advance(r, [o])
       const line = res.report.lines.find((l): l is Battle => l.kind === 'battle' && l.node === 'anya-cap')
@@ -73,5 +75,38 @@ describe('기습 — 길과 때', () => {
     const toAnya = ms.find((m) => m.to === 'anya-cap')!
     assert.equal(toAnya.walled, true)
     assert.ok(['good', 'fair', 'poor'].includes(toAnya.conceal))
+  })
+})
+
+/** 기습은 주사위가 아니라 조건 (형 11-05: "기습은 확률이 낮으니 거의 안 하게 된다 · 냉병기 전투에서는 어떻게 하더라") */
+describe('기습 — 조건', () => {
+  const run = (seed: number, good: boolean): { line: Battle | undefined; guard: string | null } => {
+    const r = byeonhanMini(seed)
+    r.armies['a-us']!.at = 'our-north'
+    if (good) { r.armies['a-us']!.mix = { spear: 60 }; r.watch['anya-cap']!.lull = P.realm.lullMax; r.watch['anya-cap']!.alert = 0 }
+    else { r.armies['a-us']!.mix = { spear: 2000 }; r.watch['anya-cap']!.lull = 0; r.watch['anya-cap']!.alert = P.realm.alertMax }
+    const cmd = Object.values(r.armies).filter((x) => x.at === 'anya-cap' && x.hero !== null).map((x) => r.heroes[x.hero!]!).sort((x, y) => y.ryak - x.ryak || (x.id < y.id ? -1 : 1))[0] ?? null
+    const g = guardPick(r, 'anya-cap', r.nodes['anya-cap']!.owner!, 'us', cmd, r.season)
+    const res = advance(r, [{ kind: 'march', army: 'a-us', edge: 'e05', ambush: true }])
+    return { line: res.report.lines.find((l): l is Battle => l.kind === 'battle' && l.node === 'anya-cap'), guard: g?.ap ?? null }
+  }
+  it('작은 무리 · 방심한 고을 — 저들이 밤길을 지키지 않으면 어느 판이든 먹힌다', () => {
+    let n = 0
+    for (let seed = 1; seed <= 30; seed++) {
+      const { line, guard } = run(seed, true)
+      if (line === undefined || guard === 'night') continue
+      n++
+      assert.equal(line.ambush, 'success', `씨앗 ${seed}`)
+    }
+    assert.ok(n > 0)
+  })
+  it('큰 무리 · 경계 높은 고을 — 어느 판이든 들킨다', () => {
+    for (let seed = 1; seed <= 30; seed++) {
+      const { line } = run(seed, false)
+      if (line !== undefined) assert.equal(line.ambush, 'caught', `씨앗 ${seed}`)
+    }
+  })
+  it('문턱 — 숨음이 ambushPass 이상이면 숨는다', () => {
+    assert.ok(hides(P.realm.ambushPass) && !hides(P.realm.ambushPass - 0.01))
   })
 })

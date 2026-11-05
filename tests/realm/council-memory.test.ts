@@ -44,6 +44,10 @@ function setup(seed = 4): { r: Realm; a: Army; m: Move; def: string; me: string 
   // 자리의 첫 장수는 신중한 이 — 거친 이만 앉으면 말리는 이가 없다
   ;(seat(r, a, 0) as unknown as { traits: string[] }).traits = ['careful']
   const m = movesOf(r, me, a).find((x) => x.hostile)!
+  // 밤길이 숨을 수 있는 판 — 기습은 조건이라(형 11-05) 반드시 들킬 길은 기억이 있어도 권하지 않는다: 이끄는 이는 꾀가 높고 저들의 경계는 방금 본 0
+  if (a.hero !== null) r.heroes[a.hero]!.ryak = 9
+  const k0 = (r.intel[me] ??= {})[m.to]
+  ;(r.intel[me] as Record<string, unknown>)[m.to] = { land: true, force: null, ...(k0 ?? {}), alert: { v: 0, season: r.season } }
   return { r, a, m, def: r.nodes[m.to]!.owner!, me }
 }
 

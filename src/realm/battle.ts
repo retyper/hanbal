@@ -299,6 +299,15 @@ export function ambushSizePenalty(men: number): number {
 }
 
 /**
+ * 숨어 닿나 (형 11-05: "기습은 확률이 낮으니 거의 안 하게 된다 · 냉병기 전투에서는 어떻게 하더라") — 주사위가 아니라 조건이다.
+ * 숨음(ambushChance 가 셈한 값 · 길목 보정 뒤)이 ambushPass 를 넘으면 반드시 숨어 닿고, 밑이면 들킨다.
+ * 남은 모름은 하나 — 저들이 그 길목을 지키느냐 (council.guardPick · 장수들이 읽어 말한다)
+ */
+export function hides(p: number): boolean {
+  return p >= P.realm.ambushPass
+}
+
+/**
  * 기습 확률 (SYSTEMS §3)
  *   은폐(길·고을·계절) + 략 차이 × 계수 + 특성 보정 + 방심 − 경계 → [ambushMin, ambushMax]
  * 경계·방심은 각자의 상한으로 먼저 자른다 — 둘은 따로 센다.

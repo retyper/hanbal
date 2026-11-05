@@ -572,6 +572,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .hw { min-width: 0; display: flex; flex-direction: row; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 12px;
   border: 1px solid var(--line); background: #241a12; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
 .ap .hw b { font-size: 15px; } .ap .hw .ln { font-size: 13px; color: #cfc6b4; } .ap .hw .mute { white-space: normal; font-size: 12px; }
+.ap .hw .hok { font-size: 13px; color: #8fe07a; } .ap .hw .hno { font-size: 13px; color: #ff8a6a; } .ap .hw[aria-disabled="true"] { opacity: 0.62; }
 .ap .hw .hwl { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; } .ap .hw .hwl small { font-weight: 400; color: var(--mute); font-size: 12px; }
 .ap .hw .hwr { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; } .ap .hw .hwr .ln { white-space: nowrap; }
 .ap .hw.on { border-color: #e0bd78; background: #3a3020; } .ap .hw.amb.on { border-color: #9a7ad8; background: #2a2440; }

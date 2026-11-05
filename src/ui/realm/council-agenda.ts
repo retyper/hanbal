@@ -421,6 +421,8 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
       return x === undefined || ap === 'road' ? 0 : read === null ? x.p : guardAdjust(x.p, ap, read)
     }
     const has = (ap: Approach): boolean => moves.some((x) => x.ap === ap)
+    // 이번에 반드시 들킬 숨는 길은 권하지 않는다 (형 11-05: 주사위 말고 조건 — 그 길 단추는 막혀 있다)
+    const open = (ap: Approach): boolean => moves.some((x) => x.ap === ap && (ap === 'road' || x.hide.free))
     const voices: Voice[] = []
     const said = new Set<Approach>()
     const add = (v: Voice, ap: Approach): void => { if (!said.has(ap)) { said.add(ap); voices.push(v) } }
@@ -436,9 +438,9 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
     let recall: { h: Hero; f: RouteFact } | null = null
     for (const h of rseats) {
       const f = heroRouteFact(r, h.id, def)
-      if (f !== null && f.won && has(f.ap) && !(timid(h) && f.ap === 'cliff')) { recall = { h, f }; break }
+      if (f !== null && f.won && open(f.ap) && !(timid(h) && f.ap === 'cliff')) { recall = { h, f }; break }
     }
-    if (recall === null && nf.best !== null && has(nf.best.ap)) {
+    if (recall === null && nf.best !== null && open(nf.best.ap)) {
       const nb = nf.best
       const h = rseats.find((x) => !(timid(x) && nb.ap === 'cliff'))
       if (h !== undefined) recall = { h, f: nb }
@@ -452,7 +454,7 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
       if (hasTrait(h, 'coward')) continue
       const vol = VOLUNTEER.find((v) => hasTrait(h, v.trait) && has(v.ap))
       if (vol === undefined) continue
-      if (q(vol.ap, readOf(h).ap) < P.realm.cnAdviseMin) continue
+      if (q(vol.ap, readOf(h).ap) < P.realm.ambushPass) continue
       const leads = h.id === a.hero
       if (!leads && !ctx.canLead(h.id)) continue
       const ask = askOf(h)[leads ? 'leads' : 'lead']
@@ -468,7 +470,7 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
       let sneak: Approach | null = null
       let sp = -1
       for (const x of moves) if (x.ap !== 'road' && q(x.ap, rd.ap) > sp) { sp = q(x.ap, rd.ap); sneak = x.ap }
-      const sneakOk = sneak !== null && sp >= P.realm.cnAdviseMin
+      const sneakOk = sneak !== null && sp >= P.realm.ambushPass
       const strong = m.win !== null && m.win[0] >= 0.5
       if (bold(h) && has('road') && (strong || m.win === null)) {
         // 거친 이는 대로 — 판세를 알면 「우리가 세다」, 모르면 「모르니 정면」
@@ -495,7 +497,7 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
       voices[i] = { ...v, line: withWhy(f.line, v.line) }
     }
     // 모두 한 길을 권하는데 진 길을 들었으면 — 군주가 그래도 그 길로 갈 수 있게 곁에 (진 일이 보여야 고를 거리가 된다)
-    if (voices.length === 1 && citedLoss !== null && has(citedLoss) && voices[0]!.opt.k === 'route' && voices[0]!.opt.ap !== citedLoss) {
+    if (voices.length === 1 && citedLoss !== null && open(citedLoss) && voices[0]!.opt.k === 'route' && voices[0]!.opt.ap !== citedLoss) {
       voices.push({ hero: null, label: AP_LABEL[citedLoss], line: `그래도 ${josa(AP_NAME[citedLoss], '으로', '로')} 간다`, opt: { k: 'route', ap: citedLoss } })
     }
     // 말이 하나뿐이고 숨는 길이면 — 군주의 대로를 곁에 (갈리지 않으면 회의가 아니다)

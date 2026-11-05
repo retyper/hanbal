@@ -17,7 +17,7 @@ import { roll } from '../core/rng.ts'
 import { fewerSwords, resolveContests, scenarioOutcome } from './scenario.ts'
 import { P } from '../tune/params.ts'
 import {
-  OPEN_FIELD, ambushChance, ambushSizePenalty, headcount, power, strength, winChance,
+  OPEN_FIELD, ambushChance, ambushSizePenalty, hides, headcount, power, strength, winChance,
   type Equip, type Force, type Kit, type UnitKind,
 } from './battle.ts'
 import { BATTLE_STYLES, feastCost, fightRounds, groupOf, heroesOf, type BattleStyle, type FightResult, type Side, type Terrain } from './tactics.ts'
@@ -1372,12 +1372,13 @@ function fight(
     let amb: 'none' | 'success' | 'caught' = 'none'
     if (ap === 'cliff') {
       const c = cliffChance(r, x)
-      amb = roll(r.seed, r.season, `cliff:${ed.id}:${x.id}`) < (guard === null ? c : Math.min(1, Math.max(0, guard.ap === 'cliff' ? c - R.cnWatchHit : c + R.cnWatchMiss))) ? 'success' : 'caught'
+      // 주사위 말고 조건 (형 11-05) — 오를 힘이 문턱을 넘으면 오른다 · 저들이 벼랑을 지키면 깎인다
+      amb = hides(guard === null ? c : Math.min(1, Math.max(0, guard.ap === 'cliff' ? c - R.cnWatchHit : c + R.cnWatchMiss))) ? 'success' : 'caught'
     } else if (ap !== 'road') {
       const size = -ambushSizePenalty(headcount(forceOf(r, x))) + ambushTraitOf(heroOf(r, x), ed.kind)
       const p0 = ambushChance(conceal(ed, node, season) + approachConceal(ap) + concealBonus(r, x.faction, ed.kind), heroOf(r, x)?.ryak ?? 1, bestRyak(r, defenders), size, w.lull, w.alert)
       const p = guard === null ? p0 : guardAdjust(p0, ap, guard.ap)
-      amb = roll(r.seed, r.season, `ambush:${ed.id}:${x.id}`) < p ? 'success' : 'caught'
+      amb = hides(p) ? 'success' : 'caught'
     }
     return { army: x, edge: ed, ambush: amb, ap }
   })

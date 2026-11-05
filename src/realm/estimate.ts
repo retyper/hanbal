@@ -7,8 +7,9 @@
 import { P } from '../tune/params.ts'
 import { ageSeasons } from './calendar.ts'
 import {
-  ambushChance, ambushSizePenalty, counterMul, fightHead, gearMul, headcount, leadMul, roleMul, strength, winChance, type Field, type Force, type UnitKind,
+  ambushChance, ambushSizePenalty, hides, counterMul, fightHead, gearMul, headcount, leadMul, roleMul, strength, winChance, type Field, type Force, type UnitKind,
 } from './battle.ts'
+import { guardAdjust, guardWeights } from './council.ts'
 import { passable } from './diplomacy.ts'
 import { militiaMen } from './economy.ts'
 import { ambushTraitOf } from './heroes.ts'
@@ -136,6 +137,35 @@ export function jointWin(r: Realm, faction: string, legs: readonly { army: Army;
   return winVs(r, faction, to, f).win
 }
 
+/** 숨어 닿을지 — 저들이 이 길목을 비웠을 때 · 지켰을 때 (주사위 말고 조건 · 형 11-05) · g 는 저들이 이 길목을 지킬 몫(길목 무게 · 남의 속이라 범위로만 말한다) */
+export interface Hide {
+  readonly free: boolean
+  readonly guarded: boolean
+  readonly g: number
+}
+
+/** 지키는 쪽의 장수 — 그 고을에 선 적 군대 가운데 지략이 가장 높은 이 (council-lines · season.fight 와 같은 셈) */
+function guardCmd(r: Realm, to: string, def: string) {
+  const hs = Object.values(r.armies).filter((x) => x.at === to && x.march === null && x.faction === def && x.hero !== null).map((x) => r.heroes[x.hero!]).filter((h) => h !== undefined)
+  return hs.sort((x, y) => y.ryak - x.ryak || (x.id < y.id ? -1 : 1))[0] ?? null
+}
+
+/** 숨음 p 로 이 길(ap)을 갈 때 — 길목을 비웠으면/지켰으면 숨어 닿나, 지킬 몫은 얼마나 */
+export function hideOf(r: Realm, faction: string, to: string, ap: Approach, p: number): Hide {
+  const def = r.nodes[to]?.owner ?? null
+  const ws = def === null || def === faction || r.nodes[to]?.kind === 'sodo' ? [] : guardWeights(r, to, def, faction, guardCmd(r, to, def))
+  if (ws.length < 2) return { free: hides(p), guarded: hides(p), g: 0 }
+  const sum = ws.reduce((s, x) => s + x.w, 0)
+  const g = sum > 0 ? (ws.find((x) => x.ap === ap)?.w ?? 0) / sum : 0
+  const other: Approach = ap === 'road' ? 'night' : 'road'
+  return ap === 'cliff'
+    ? { free: hides(Math.min(1, p + P.realm.cnWatchMiss)), guarded: hides(Math.max(0, p - P.realm.cnWatchHit)), g }
+    : { free: hides(guardAdjust(p, ap, other)), guarded: hides(guardAdjust(p, ap, ap)), g }
+}
+
+/** 숨어 닿을 몫 — 비웠을 때 닿으면 (1 − g), 지켰을 때도 닿으면 g 를 더한다 (AI 가 정면과 견준다) */
+export const hideShare = (h: Hide): number => (h.free ? 1 - h.g : 0) + (h.guarded ? h.g : 0)
+
 /** 기습의 기대 승률 — 먹힐 확률로 기습·들킴 범위의 가운데를 섞는다. AI 가 정면과 견준다. 모르면 null */
 export function ambushWorth(m: Move): number | null {
   if (m.winAmbush === null || m.winCaught === null) return null
@@ -162,7 +192,9 @@ export function movesOf(r: Realm, faction: string, a: Army): Move[] {
     const k = known[to]
     const v = winVs(r, faction, to, myF, { force: forceOf(r, a), edge: ed.kind })
     const al = k?.alert ? alertRange(k.alert.v, ageSeasons(r, k.alert.season)) : null
-    const ambushP = ambushChance(conceal(ed, node, season) + concealBonus(r, faction, ed.kind), myRyak, R.aiAssumeRyak, size + ambushTraitOf(a.hero !== null ? (r.heroes[a.hero] ?? null) : null, ed.kind), 0, al === null ? R.aiAssumeAlert : al[1])
+    const p0 = ambushChance(conceal(ed, node, season) + concealBonus(r, faction, ed.kind), myRyak, R.aiAssumeRyak, size + ambushTraitOf(a.hero !== null ? (r.heroes[a.hero] ?? null) : null, ed.kind), 0, al === null ? R.aiAssumeAlert : al[1])
+    // 숨어 닿을 몫 — 조건(숨음 ≥ 문턱)과 저들이 밤길을 지킬 몫으로 (형 11-05: 주사위 말고 조건)
+    const ambushP = hideShare(hideOf(r, faction, to, 'night', p0))
     // 풍습 — 고갯목은 고갯길 한 계절 더 (hooks.passExtra · 판정 season.applyOrders 와 같다)
     const shut = blockedWhy(ed, r)
     out.push({
@@ -177,8 +209,10 @@ export function movesOf(r: Realm, faction: string, a: Army): Move[] {
 /** 진군 방식 하나의 셈 — 고르는 화면이 말·색으로 보인다 (확률은 숫자로 안 보인다) */
 export interface ApproachMove {
   readonly ap: Approach
-  /** 먹힐 확률 (대로는 1 — 숨지 않는다) */
+  /** 숨음 — 먹힐 확률이 아니라 조건의 값 (문턱 ambushPass 와 견준다 · 대로는 1 — 숨지 않는다) */
   readonly p: number
+  /** 숨어 닿나 — 길목을 비웠을 때 · 지켰을 때 · 지킬 몫 (대로는 숨지 않는다) */
+  readonly hide: Hide
   /** 먹혔을 때 · 들켰을 때의 판세 범위. 모르면 null */
   readonly hit: Range | null
   readonly miss: Range | null
@@ -203,14 +237,14 @@ export function approachMoves(r: Realm, faction: string, a: Army, m: Move): Appr
   for (const ap of approachOptions(r, m.edge, m.to)) {
     const seasons = m.seasons + (ap === 'ridge' ? R.apRidgeExtra : 0)
     if (ap === 'road') {
-      out.push({ ap, p: 1, hit: m.win, miss: m.win, seasons })
+      out.push({ ap, p: 1, hide: { free: false, guarded: false, g: 0 }, hit: m.win, miss: m.win, seasons })
       continue
     }
     const p = ap === 'cliff'
       ? cliffChance(r, a)
       : ambushChance(conceal(m.edge, node, season) + approachConceal(ap) + concealBonus(r, faction, m.edge.kind), myRyak, R.aiAssumeRyak, size, 0, al === null ? R.aiAssumeAlert : al[1])
     const hit = ap === 'ridge' ? mid(m.win, m.winAmbush) : m.winAmbush
-    out.push({ ap, p, hit, miss: m.winCaught, seasons })
+    out.push({ ap, p, hide: hideOf(r, faction, m.to, ap, p), hit, miss: m.winCaught, seasons })
   }
   return out
 }

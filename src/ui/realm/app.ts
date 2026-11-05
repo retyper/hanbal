@@ -39,7 +39,7 @@ import { goalReach, goalRoute } from '../../realm/goal.ts'
 import { approachMoves, armyPower, jointWin, matchupHints, movesOf, type Move } from '../../realm/estimate.ts'
 import { kitLines } from '../../realm/kit.ts'
 import { alertRange, seenMix, visibleRange } from '../../realm/intel.ts'
-import { advance, concealOf, draftable, forceOf, newArmyId, otherEnd, planned, rationCost, rationExtra, seasonOf, seenMarches } from '../../realm/season.ts'
+import { type ConcealWhy, advance, concealOf, draftable, forceOf, newArmyId, otherEnd, planned, rationCost, rationExtra, seasonOf, seenMarches } from '../../realm/season.ts'
 import { ageSeasons, isSeasonEnd, isSeasonStart, monthly, seasonIdx, seasons, type ClockKind } from '../../realm/calendar.ts'
 import { draftScouts, parseScoutKeep, scoutCap, scoutTargets, townCount, watchedNodes } from '../../realm/scouts.ts'
 import { NIGHT_OPS, PLOT_OPS, exposeChance, assassinArrows, assassinBow, assassinGuard, bowUpCost, escapeChance, plotAgents, plotCap, plotChance, plotCost, plotTargets, rescueGuard } from '../../realm/plots.ts'
@@ -120,7 +120,7 @@ import { QUALITY_CSS, gfxRowHtml, setGfxPref, startQuality } from './quality.ts'
 import { HOWWIN_CSS, bannerHtml, closeHowWin, howWinDue, howWinMark, lessons, lossOf, openLessons, showBanner, syncPin, type HowKit, type LessonGo, type Loss } from './howwin.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
 import { FEEL_CSS, alertFeel, ambushRangeFeel, chanceFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
-import { adviseMarch, guardRange } from './council-lines.ts'
+import { adviseMarch } from './council-lines.ts'
 import { cmdPickId } from './cmdpick.ts'
 import { APPROACH_SHORT, COUNCIL_ART, councilAgendas, howOf, planChoice, planOrders, takeCount, type Agenda, type AgendaId, type CouncilPlan, type Voice } from './council-agenda.ts'
 
@@ -2561,6 +2561,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   // ───────── 군대
+  /** 숨기 나쁜 조건 — 숨지 못할 때 까닭으로 든다 */
+  const HIDE_BAD: ReadonlySet<ConcealWhy> = new Set<ConcealWhy>(['field', 'pass', 'ford', 'sea', 'mudflat', 'reedsWinter', 'bigArmy'])
   /**
    * 어떻게 갈지 — 진군 방식과 군량 (형: "강을 도하해 기습 · 대로로 행군 · 산기슭으로 · 절벽을 올라간다 · 식량은 어떻게 챙겨가고").
    * 방식마다 얻는 것과 거는 것을 말로, 먹힐 낌새와 판세를 색으로. 숨어 가는 길은 도박이다 — 큰 군대는 잘 안 숨는다.
@@ -2577,26 +2579,38 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       // 군막 — 장수 둘이 저마다 길 하나를 권하고 적이 지킬 길목을 읽는다 (council-lines.ts · COUNCIL.md 1주 조각 ②)
       // 전략 회의 화면에서는 안건이 이미 말했다 — 길 단추에 얼굴을 또 붙이지 않는다 (quiet)
       const advs = quiet ? [] : adviseMarch(r, me(), a, m.to, moves, expLeaving)
+      // 숨지 못하는 까닭 — 이 길의 나쁜 조건 (형 11-05: 주사위 말고 조건 · 못 하면 까닭)
+      const cv0 = concealOf(r, m.edge.id, headcount(forceOf(r, a)), m.to)
+      const badWhy = cv0.why.filter((w) => HIDE_BAD.has(w)).map((w) => CONCEAL_LINE[w])
       h += `<div class="how">`
       for (const x of moves) {
         const does = APPROACH_DOES[x.ap]
         const adv = advs.find((v) => v.ap === x.ap)
+        const caught = x.ap !== 'road' && !x.hide.free
+        const deny = caught ? noBtn(x.ap === 'cliff' ? '오르지 못합니다: 무리가 크거나 이끄는 장수의 무예가 모자랍니다' : `숨지 못합니다${badWhy.length > 0 ? `: ${badWhy.join(' · ')}` : ': 저들의 경계가 높습니다'}`) : ''
         // 한 줄에 하나 — 왼쪽은 이름과 얻고 거는 것, 오른쪽은 판세 (좁은 폰에서도 읽히게) · 권한 장수가 있으면 얼굴과 한 줄
-        h += `<button class="hw ${x.ap !== 'road' ? 'amb ' : ''}${chosen === x.ap ? 'on' : ''}${adv !== undefined ? ' adv' : ''}" data-act="ap" data-army="${key}" data-v="${x.ap}" data-adv="${adv?.hero.id ?? ''}" data-tip="${esc(`${turnText(r, does.gain)}. ${does.risk}`)}">`
+        h += `<button class="hw ${x.ap !== 'road' ? 'amb ' : ''}${chosen === x.ap ? 'on' : ''}${adv !== undefined ? ' adv' : ''}" data-act="ap" data-army="${key}" data-v="${x.ap}" data-adv="${adv?.hero.id ?? ''}" data-tip="${esc(`${turnText(r, does.gain)}. ${does.risk}`)}"${deny}>`
         if (adv !== undefined) h += `<span class="hwa">${bust(adv.hero, 'hwf')}<span class="hws"><b>${esc(adv.hero.name)}</b> ${esc(adv.say)}<small>${esc(adv.readSay)}</small></span></span>`
         h += `<span class="hwl"><b>${APPROACH_NAME[x.ap]}${x.seasons !== m.seasons ? ` <small>${turnsLabel(r, x.seasons)}</small>` : ''}</b>`
         h += `</span><span class="hwr">`
         if (x.ap === 'road') h += `<span class="ln">${feel(x.hit)}</span>`
         else {
-          // 적이 이 길목을 지키면 깎이고 비켜 가면 오른다 — 남의 속이 섞여 범위 (ODDS)
-          const [lo, hi] = guardRange(x.p, x.ap)
-          h += `<span class="ln">${x.ap === 'cliff' ? '오르기' : '몰래'} ${ambushRangeFeel(lo, hi)}</span><span class="ln">되면 ${feel(x.hit)} · 들키면 ${feel(x.miss)}</span>`
+          // 주사위 말고 조건 (형 11-05) — 숨음이 문턱을 넘으면 반드시 된다 · 남은 모름은 저들이 이 길목을 지키느냐 하나(남의 속이라 범위 · ODDS)
+          const verb = x.ap === 'cliff' ? '오르기' : '몰래'
+          const hd = x.hide
+          if (!hd.free) h += `<span class="ln">${verb} <b class="hno">✗ 들킨다</b></span><span class="ln">들키면 ${feel(x.miss)}</span>`
+          else if (hd.guarded) h += `<span class="ln">${verb} <b class="hok">✓ 반드시 된다</b></span><span class="ln">되면 ${feel(x.hit)}</span>`
+          else {
+            const s = 1 - hd.g
+            const sp = P.realm.hideGuardSpread
+            h += `<span class="ln">${verb} ${ambushRangeFeel(Math.max(0, s - sp), Math.min(1, s + sp))}</span><span class="ln">길목이 비면 ${feel(x.hit)} · 지키면 ${feel(x.miss)}</span>`
+          }
         }
         h += `</span></button>`
       }
       h += `</div>`
       // 길과 때 (형이 고름: "길과 때의 싸움") — 이 길이 왜 숨기 좋은지·나쁜지
-      const cv = concealOf(r, m.edge.id, headcount(forceOf(r, a)), m.to)
+      const cv = cv0
       const cw = cv.why.map((w) => CONCEAL_LINE[w]).filter((x) => x !== undefined)
       h += `<p class="mute tip"><b${cw.length > 0 ? ` data-tip="${esc(cw.join(' · '))}"` : ''}>${cv.tier === 'good' ? '숨기 좋은 길' : cv.tier === 'fair' ? '그저 그런 길' : '숨기 나쁜 길'}</b></p>`
     }

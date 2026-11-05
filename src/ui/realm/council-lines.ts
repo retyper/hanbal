@@ -73,8 +73,8 @@ function wantOf(h: Hero, moves: readonly ApproachMove[], read: Approach | null):
     const x = moves.find((y) => y.ap === ap)
     return x === undefined || ap === 'road' ? 0 : read === null ? x.p : guardAdjust(x.p, ap, read)
   }
-  // 특성이 먼저 말한다 — 다만 그 길이 거의 막혔으면(가망이 cnAdviseMin 밑) 고집하지 않는다
-  const fits = (ap: Approach): boolean => has(ap) && q(ap) >= P.realm.cnAdviseMin
+  // 특성이 먼저 말한다 — 다만 그 길이 거의 막혔으면(읽은 대로 가도 숨음이 문턱 ambushPass 밑) 고집하지 않는다
+  const fits = (ap: Approach): boolean => has(ap) && q(ap) >= P.realm.ambushPass
   if (hasTrait(h, 'mountain') && fits('ridge')) return 'ridge'
   if (hasTrait(h, 'river') && fits('ford')) return 'ford'
   if (hasTrait(h, 'nighteye') && fits('night')) return 'night'
@@ -85,7 +85,7 @@ function wantOf(h: Hero, moves: readonly ApproachMove[], read: Approach | null):
     if (x.ap === 'road') continue
     if (q(x.ap) > bp) { bp = q(x.ap); best = x.ap }
   }
-  return best !== null && bp >= P.realm.cnAdviseMin ? best : has('road') ? 'road' : (best ?? 'road')
+  return best !== null && bp >= P.realm.ambushPass ? best : has('road') ? 'road' : (best ?? 'road')
 }
 
 /** 군막에 앉은 둘의 말 — 적 고을을 칠 때만 (빈 땅·소도면 빈 배열) · 원정 가 있거나 이번 계절 떠나는 이(leaving)는 앉지 않는다 */
@@ -113,9 +113,3 @@ export function adviseMarch(r: Realm, me: string, a: Army, to: string, moves: re
   return out
 }
 
-/** 숨어 닿을 가망의 범위 — 읽힌 때와 비켜 간 때 (ODDS 원칙 1: 남의 속이 섞이면 범위) */
-export const guardRange = (p: number, ap: Approach): readonly [number, number] => {
-  // 절벽은 오를 가망이라 0~1 안에서 (season.fight 와 같게)
-  if (ap === 'cliff') return [Math.max(0, p - P.realm.cnWatchHit), Math.min(1, p + P.realm.cnWatchMiss)]
-  return [guardAdjust(p, ap, ap), guardAdjust(p, ap, ap === 'road' ? 'night' : 'road')]
-}

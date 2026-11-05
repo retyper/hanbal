@@ -38,15 +38,18 @@ const splitOf = (os: readonly Order[], army: string): Extract<Order, { kind: 'sp
   os.find((o): o is Extract<Order, { kind: 'split' }> => o.kind === 'split' && o.army === army)
 
 describe('AI 별동대', () => {
-  it('갈대 물가로 목책 마을을 — 작은 무리가 기습으로 간다, 나머지는 남는다', () => {
+  it('갈대 물가로 목책 마을을 — 기습으로 간다 (떼어 낸 작은 무리면 나머지는 남는다)', () => {
     const os = decide(setup(), 'guya', 'cautious')
     const sp = splitOf(os, 'a-guya-2')
-    assert.ok(sp !== undefined, `별동대가 안 떠났다: ${JSON.stringify(os.filter((o) => o.kind === 'march' || o.kind === 'split'))}`)
-    const n = Object.values(sp.take).reduce((s, v) => s + (v ?? 0), 0)
-    assert.ok(n <= P.realm.ambushFreeMen && n >= P.realm.splitMin, `별동대 ${n}명`)
-    const m = os.find((o): o is Extract<Order, { kind: 'march' }> => o.kind === 'march' && o.army === sp.id)
-    assert.ok(m !== undefined && m.ambush === true && m.edge === 'e08', JSON.stringify(m))
-    assert.ok(!os.some((o) => o.kind === 'march' && o.army === 'a-guya-2'), '나머지도 떠났다')
+    // 기습은 조건이라(형 11-05) 무리가 이미 작아 통째로도 숨으면 떼지 않고 다 같이 숨어 간다
+    const goer = sp?.id ?? 'a-guya-2'
+    const m = os.find((o): o is Extract<Order, { kind: 'march' }> => o.kind === 'march' && o.army === goer)
+    assert.ok(m !== undefined && m.ambush === true && m.edge === 'e08', JSON.stringify(os.filter((o) => o.kind === 'march' || o.kind === 'split')))
+    if (sp !== undefined) {
+      const n = Object.values(sp.take).reduce((s, v) => s + (v ?? 0), 0)
+      assert.ok(n <= P.realm.ambushFreeMen && n >= P.realm.splitMin, `별동대 ${n}명`)
+      assert.ok(!os.some((o) => o.kind === 'march' && o.army === 'a-guya-2'), '나머지도 떠났다')
+    }
   })
 
   it('도읍은 별동대로 노리지 않는다', () => {

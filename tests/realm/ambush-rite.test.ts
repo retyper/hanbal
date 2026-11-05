@@ -15,7 +15,7 @@ import { ambushSizePenalty } from '../../src/realm/battle.ts'
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import { allyFoe, pairKey } from '../../src/realm/diplomacy.ts'
 import { riteAllowed, riteCost } from '../../src/realm/economy.ts'
-import { movesOf } from '../../src/realm/estimate.ts'
+import { approachMoves, movesOf } from '../../src/realm/estimate.ts'
 import { advance, nodeStrength } from '../../src/realm/season.ts'
 import { P } from '../../src/tune/params.ts'
 import type { Order, Realm, ReportLine, Tag } from '../../src/realm/types.ts'
@@ -121,7 +121,13 @@ describe('큰 군대는 잘 안 숨는다', () => {
     const big = movesOf(r, 'us', r.armies['a-us']!).find((m) => m.to === 'goja-vil')!
     r.armies['a-us']!.mix = { spear: 40, bow: 20 }
     const small = movesOf(r, 'us', r.armies['a-us']!).find((m) => m.to === 'goja-vil')!
-    assert.ok(small.ambushP > big.ambushP)
+    // 기습은 조건이라 가망은 같을 수 있다 (둘 다 못 숨으면 0) — 숨음 값은 작은 쪽이 높다 (형 11-05)
+    assert.ok(small.ambushP >= big.ambushP)
+    const night = (m: typeof big): number => approachMoves(r, 'us', r.armies['a-us']!, m).find((x) => x.ap === 'night')?.p ?? 0
+    r.armies['a-us']!.mix = { spear: 40, bow: 20 }
+    const ps = night(small)
+    r.armies['a-us']!.mix = { spear: 900 }
+    assert.ok(ps > night(movesOf(r, 'us', r.armies['a-us']!).find((m) => m.to === 'goja-vil')!))
   })
 })
 
