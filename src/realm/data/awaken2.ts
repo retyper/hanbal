@@ -13,4 +13,6 @@ export const TRUE_WAKE: ReadonlySet<string> = new Set([
   'jomun-2', // 번예 오디 (11-05 저녁 · 형의 최애)
   'mh-soseono', // 소서노 (11-05 저녁 · 11-03 판은 팔이 빠져 걷었다)
   'jm-haedal', 'buyeo-1', // 해달 (11-05 저녁 · 같은 초상)
+  'jm-songbi', 'biryuna-ruler', // 송비 (11-05 저녁 · 같은 초상)
+  'baekje-2', // 매나 (11-05 저녁)
 ])
