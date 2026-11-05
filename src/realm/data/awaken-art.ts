@@ -221,14 +221,14 @@ export const AWAKEN_ART: ReadonlySet<string> = new Set([
  * 숨 쉬는 영상을 정사각 판으로 만든 초상 — 그림을 9:16 가운데에 통째로 두고 위아래를 흐리게 채워 넣었다(tools/veo/pad.sh).
  * 파일은 `<id>.sq.mp4` · 화면은 가운데 정사각만 오려 원본 전체가 움직인다 (형 11-05: "넣은 이미지 전체가 안 나오고 세로로 길게 나와 아쉽다")
  */
-export const AWAKEN_LOOP_SQ: ReadonlySet<string> = new Set<string>(['w-35-jomun-odi'])
+export const AWAKEN_LOOP_SQ: ReadonlySet<string> = new Set<string>(['w-35-jomun-odi', 'w-95-michuhol-haebi'])
 /** 숨 쉬는 영상 파일 — public/realm 아래 */
 export const loopFile = (id: string): string => `awaken-loop/${id}${AWAKEN_LOOP_SQ.has(id) ? '.sq' : ''}.mp4`
 
 export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'g-13-baekje-general', // 11-05 오간 — 튜토리얼에서 모두가 처음 보는 각성 (형: 움직이는 건 튜토리얼 장수부터)
   'l-L2-soseono', // 11-05 1장 소서노 · v2: 숨 따라 가슴·옷이 오르내린다 (형: "개쩐다")
-  'w-95-michuhol-haebi', // 11-05 해비 — 튜토리얼 · 숨을 더 세게(전투 뒤 숨 고르기 · 형: "출렁임 한 단계 더 세게")
+  'w-95-michuhol-haebi', // 11-05 해비 — 튜토리얼 · 정사각 판으로 다시 · 굿판 뒤 숨 고르기로 한 단계 더 세게 (형: "해비 더 세게")
   'w-30-guya-soebi', // 11-05 쇠비 — 형의 최애 · 숨을 더 세게(가슴이 또렷이 출렁)
   'w-33-gammun-gamsil', // 11-05 감실 — 형의 최애 · 출렁임을 걸면 제미나이가 거절해(그림이 드러나서) 잔잔한 숨으로
   'w-35-jomun-odi', // 11-05 오디 — 형의 최애 · 정사각 판(그림 전체가 움직인다) · 웃으며 숨 · 누에고치가 손 위에서 돈다
