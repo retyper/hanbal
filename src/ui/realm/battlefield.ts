@@ -907,6 +907,9 @@ function guardChip(r: Realm, l: BattleLine, weAtk: boolean): TerrChip | null {
   if (g === undefined || l.field === true) return null
   const ap = l.approach ?? 'road'
   const read = ap === g
+  // 대로로 왔는데 다른 길목을 지켰다 — 판정에 아무것도 걸리지 않는다(대로는 숨지 않는다 · 성에서 기다린 그대로 맞는다).
+  // 「적이 다른 길로 왔다 · 적에게 이롭다」가 떴던 것은 거짓이었다 (형 11-05: "대로로 쳐들어갔거나 성에서 기다렸는데도 길이 엇갈렸다 적에게 이롭다")
+  if (ap === 'road' && g !== 'road') return null
   const adv = l.adviser !== undefined ? r.heroes[l.adviser]?.name : undefined
   const [icon] = AP_CHIP[g]
   if (weAtk) {

@@ -13,7 +13,7 @@ import {
   ageSeasons, blockedWhy, isMonsoon, isSeasonEnd, isSeasonStart, monthOf, perSeason, seasonEndTurn, seasonIdx, seasonOf, seasons, yearOf,
 } from '../../src/realm/calendar.ts'
 import { aiOrders, decide } from '../../src/realm/ai.ts'
-import { startRegion } from '../../src/realm/data/regions/index.ts'
+import { regionNations, startRegion } from '../../src/realm/data/regions/index.ts'
 import { seasonLabel, turnsLabel } from '../../src/realm/data/prose.ts'
 import { draftLimit, spentThisSeason } from '../../src/realm/economy.ts'
 import { advance, marchTurns } from '../../src/realm/season.ts'
@@ -139,5 +139,17 @@ describe('달 시계의 박자', () => {
     assert.equal(r.heroes[h.id]!.served, 1)
     const e = Object.values(r.edges).find((x) => x.kind === 'field')!
     assert.equal(marchTurns(r, e), 1 + P.realm.marchSummerExtra) // 옛 셈: 여름 들길 두 계절
+  })
+})
+
+/** 길 하나는 한 달 (형 11-05: "존나 가까운데 왜 2달이나 걸리는지") — 장마가 아니면 이웃 고을은 다음 달에 닿는다 */
+describe('가까운 길은 한 달', () => {
+  it('영남·서라벌·구지봉 판의 길은 봄에 모두 한 달 · 마한 고개도 금현성 먼 고개 하나만 두 달', () => {
+    for (const reg of ['yeongnam', 'seorabeol', 'gujibong'] as const) {
+      const r = startRegion(reg, 7, regionNations(reg)[0]!)
+      for (const e of Object.values(r.edges)) assert.equal(marchTurns(r, e, 0), 1, `${reg} ${e.id}`)
+    }
+    const m = startRegion('mahan', 7, regionNations('mahan')[0]!)
+    assert.ok(Object.values(m.edges).filter((e) => marchTurns(m, e, 0) > 1).length <= 1)
   })
 })

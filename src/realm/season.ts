@@ -102,7 +102,8 @@ export function marchTurns(r: Realm, ed: REdge, t: number = r.season): number {
   const mul = ed.kind === 'pass' || ed.kind === 'mudflat' ? R.marchMonthSlow : ed.kind === 'sea' ? R.marchMonthSea : 1
   const unit = monthKm(r.roadKm)
   const km = (r.roadKm?.[ed.id] ?? unit) * mul
-  const base = Math.max(1, Math.min(R.marchMonthMax, Math.round(km / unit)))
+  // 길 하나는 한 달 — 그 판 보통 길의 marchLongAt 배를 넘는 먼 길만 더 걸린다 (형 11-05: "존나 가까운데 왜 2달이나 걸리는지" · 마한 금현성 89km 고개가 넉 달이었다)
+  const base = Math.max(1, Math.min(R.marchMonthMax, Math.round(km / unit / R.marchLongAt)))
   return base + (isMonsoon(r, t) ? R.marchSummerExtra : 0)
 }
 
