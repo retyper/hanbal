@@ -27,4 +27,6 @@ export const TRUE_WAKE: ReadonlySet<string> = new Set([
   'dabeol-2', // 다벌 달빛 (11-05 저녁)
   'iseo-1', // 이서 말괄량이 장수 (11-05 저녁 · edu)
   'us-2', // 골포 잔물 (11-05 저녁 · edu)
+  'chopal-2', // 초팔 들메 (11-05 밤 · edu)
+  'golbeol-2', // 골벌 부들 (11-05 밤 · edu · 첫 판은 칼이 휘어 곧은 고리자루로 고침)
 ])
