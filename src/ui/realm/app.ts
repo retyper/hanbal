@@ -656,6 +656,21 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       else v.pause()
     }
   })
+  // 숨 쉬는 각성 영상의 소리 — 영상에 든 음악·효과음을 함께 낸다 (형 11-05: "같이 들려도 상관없다 · 효과음 같이 들어 있어서 좋다").
+  // 소리 끄기면 끈 채로 · 브라우저가 소리를 막으면(아직 아무것도 안 누른 판) 끈 채로라도 돈다 · 여럿이면 새로 뜬 것 하나만 소리 (겹치지 않게)
+  const voiceLoop = (v: HTMLVideoElement): void => {
+    if (muted()) return
+    for (const o of root.querySelectorAll<HTMLVideoElement>('video[loop]')) if (o !== v) o.muted = true
+    v.volume = P.realm.loopVolume
+    v.muted = false
+    void v.play().catch(() => { v.muted = true; void v.play().catch(() => undefined) })
+  }
+  new MutationObserver((ms) => {
+    for (const m of ms) for (const n of m.addedNodes) {
+      const v = n instanceof HTMLVideoElement ? n : n instanceof HTMLElement ? n.querySelector<HTMLVideoElement>('video[loop]') : null
+      if (v !== null && v.loop) voiceLoop(v)
+    }
+  }).observe(root, { childList: true, subtree: true })
   /** 배경 음악 · 계절 바람 — 싸움 창이 열려 있으면 싸움 음악 */
   const music = makeMusic(BASE, muted, () => root.querySelector('.nightov') !== null) // 밤 판이 떠 있으면 조용히 — 밤 판은 제 소리를 낸다
   let warOn = false
@@ -7469,7 +7484,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (p !== null) void p.prompt().catch(() => { /* 막힌 곳 */ }).finally(() => { delete (window as unknown as { __bip?: InstallPrompt }).__bip; paint() })
         break
       }
-      case 'mute': try { localStorage.setItem(MUTE_KEY, muted() ? '0' : '1') } catch { /* 저장 못 하는 곳 */ } music.refresh(); break
+      case 'mute': try { localStorage.setItem(MUTE_KEY, muted() ? '0' : '1') } catch { /* 저장 못 하는 곳 */ } music.refresh(); for (const v of root.querySelectorAll<HTMLVideoElement>('video[loop]')) v.muted = true; break
       case 'focus': focus = focus === d['id'] ? null : d['id']!; break
       case 'rep-close': showReport = false; paint(); return
       case 'strat-x': {
