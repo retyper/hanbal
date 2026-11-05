@@ -73,8 +73,8 @@ interface Turn {
   readonly lines: readonly ReportLine[]
   /** 넘긴 뒤 내 살림 */
   readonly me: { nodes: number; hh: number; men: number; grain: number; iron: number }
-  /** 넘긴 뒤 모든 나라 — [고을, 백성(집), 군사] (판 끝 흥망 그래프 · DESIRE §9 lotOfAll) · 옛 기록엔 없다 */
-  readonly all?: Readonly<Record<string, readonly [number, number, number]>>
+  /** 넘긴 뒤 모든 나라 — [고을, 백성(집), 군사, 곡식, 철] (판 끝 흥망 그래프 · DESIRE §9 lotOfAll) · 옛 기록엔 없거나 앞의 셋뿐 */
+  readonly all?: Readonly<Record<string, readonly number[]>>
   /** 누른 것 — [계절 시작부터 ms, 손짓, 대상] */
   taps: Array<[number, string, string]>
 }
@@ -313,14 +313,15 @@ function myLot(r: Realm): Turn['me'] {
   }
 }
 
-/** 모든 나라의 고을·집·군사 — 판 끝 흥망 그래프 (형 11-05: "게임 끝났을 때 그래프 만들어 준다며") · 망한 나라(고을·군사 0)는 뺀다 */
-function lotOfAll(r: Realm): Record<string, [number, number, number]> {
-  const out: Record<string, [number, number, number]> = {}
+/** 모든 나라의 고을·집·군사·곡식·철 — 판 끝 흥망 그래프 (형 11-05: "자원양도 보여주고") (형 11-05: "게임 끝났을 때 그래프 만들어 준다며") · 망한 나라(고을·군사 0)는 뺀다 */
+function lotOfAll(r: Realm): Record<string, number[]> {
+  const out: Record<string, number[]> = {}
   for (const f of Object.keys(r.factions).sort()) {
     const nodes = Object.values(r.nodes).filter((n) => n.owner === f)
     const men = Object.values(r.armies).filter((a) => a.faction === f).reduce((s, a) => s + headcount(forceOf(r, a)), 0)
     if (nodes.length === 0 && men === 0) continue
-    out[f] = [nodes.length, Math.round(nodes.reduce((s, n) => s + n.hh, 0)), men]
+    const st = r.stock[f]
+    out[f] = [nodes.length, Math.round(nodes.reduce((s, n) => s + n.hh, 0)), men, Math.round(st?.grain ?? 0), Math.round(st?.iron ?? 0)]
   }
   return out
 }

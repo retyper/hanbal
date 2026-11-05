@@ -86,8 +86,8 @@ export interface FrontKit {
 /** 지난 계절들의 보고 — 판 기록에서 (realm-main) */
 export type History = ReadonlyArray<{ readonly s: number; readonly lines: readonly ReportLine[]
   /** 그 계절 넘긴 뒤 우리 살림 · 모든 나라 [고을, 집, 군사] (흥망 그래프 · 옛 기록엔 all 이 없다) */
-  readonly me?: { readonly nodes: number; readonly hh: number; readonly men: number }
-  readonly all?: Readonly<Record<string, readonly [number, number, number]>> }>
+  readonly me?: { readonly nodes: number; readonly hh: number; readonly men: number; readonly grain?: number; readonly iron?: number }
+  readonly all?: Readonly<Record<string, readonly number[]>> }>
 
 /**
  * 판 — 해 보고 싶은 이야기 묶음 (형 2026-10-22: "지도가 작냐 크냐가 중요한게 아님 … 게임 패키지처럼 정말 이거 해보고싶다라는 마음이 들게
