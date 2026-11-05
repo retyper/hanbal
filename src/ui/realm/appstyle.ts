@@ -776,12 +776,30 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .stov .sthd .stx { position: absolute; right: 8px; top: 8px; width: 38px; height: 34px; border: 6px solid transparent; border-image: url(__ART__ui/btn-dark.png?v=2) 30 33 fill / 6px 8px stretch; background: none; color: #efe3c6; font-weight: 700; cursor: pointer; }
 .ap .cnstage { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 10px; padding: 14px 16px calc(16px + env(safe-area-inset-bottom)); cursor: pointer; }
 .ap .cnstage .cnt { margin: 0 0 auto; padding-top: 6px; font-family: 'Gowun Batang', serif; font-size: 20px; color: #ffd27a; text-shadow: 0 2px 6px #000; text-align: center; }
-.ap .cnspk { display: flex; flex-direction: column; align-items: center; gap: 6px; animation: cnpop .45s cubic-bezier(.2,.9,.3,1.2) both; }
-.ap .cnspk .cnbig { width: min(46vw, 210px); aspect-ratio: 1; height: auto; object-fit: cover; object-position: top; box-sizing: border-box; border: 12px solid transparent; border-image: url(__ART__ui/frame-portrait.png) 60 / 12px stretch; filter: drop-shadow(0 8px 16px #000c); }
-.ap .cnspk b { font-size: 18px; color: #ffe0a0; text-shadow: 0 2px 4px #000; }
-/* 지난번 말이 맞았던 장수 — 얼굴에 금빛 테 · 이름 밑에 작은 금빛 표 (MEMORY §3-2 1 · 형 10-30: "사람처럼 기억하는 듯") */
-.ap .cnspk .cnbig.gold { box-shadow: 0 0 0 3px #f2c14e, 0 0 22px #f2c14e99; }
-.ap .cnspk .cngold { padding: 2px 10px; border-radius: 10px; background: #3a2a10e6; border: 1px solid #f2c14e; color: #ffe08a; font-size: 12.5px; font-style: normal; }
+.ap .cnspk { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0; animation: cnpop .45s cubic-bezier(.2,.9,.3,1.2) both; }
+/* 액자 없이 크게 — 가장자리는 군막에 녹는다 (형 11-05: 창세기전처럼 화면 가운데서 말한다) · 양옆과 위아래를 따로 흐려 겹친다(민무늬 판의 네모가 안 보이게) · 움직이지 않는 가림이라 폰 그래픽 한도에 안 걸린다 */
+.ap .cnspk .cnbig { display: block; width: min(86vw, 420px, 50vh); aspect-ratio: 1; height: auto; object-fit: cover; object-position: top;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent), linear-gradient(transparent, #000 10%, #000 72%, transparent);
+  -webkit-mask-composite: source-in; mask-image: linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent), linear-gradient(transparent, #000 10%, #000 72%, transparent); mask-composite: intersect; }
+.ap .cnspk video.cnbig { width: min(62vw, 320px, calc(50vh * 720 / 1100)); aspect-ratio: 720 / 1100; }
+/* 낮은 가로 화면(폰 눕힘) — 얼굴은 왼쪽, 말은 오른쪽 (세로로 쌓으면 머리 위가 잘렸다) */
+@media (max-height: 520px) and (min-aspect-ratio: 4/3) {
+  .ap .cnstage { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; align-items: center; column-gap: 18px; row-gap: 4px; padding-top: 6px; padding-bottom: 8px; }
+  .ap .cnstage .cnt { grid-column: 1 / -1; margin: 0; }
+  .ap .cnstage .cnspk { grid-row: 2; }
+  .ap .cnspk .cnbig { width: min(36vw, 50vh); }
+  .ap .cnspk video.cnbig { width: min(28vw, calc(50vh * 720 / 1100)); }
+  .ap .cnstage .cnsub { grid-row: 2; grid-column: 2; align-self: center; max-height: 100%; overflow-y: auto; padding: 8px 12px; font-size: 14.5px; line-height: 1.5; }
+  .ap .cnstage .cnt { font-size: 17px; padding-top: 0; }
+  .ap .cnspk b { margin-top: -24px; font-size: 15px; padding: 2px 12px; }
+  .ap .cnstage .cnav { grid-column: 1 / -1; width: 100%; }
+}
+.ap .cnspk .cnbig.noface { width: 120px; height: 120px; border-radius: 50%; background: #2a2016; }
+/* 이름표 — 그림 아랫단에 걸친다 */
+.ap .cnspk b { position: relative; margin-top: -30px; padding: 4px 18px; border-radius: 8px; background: #1a120ae8; border: 1px solid #c9a45a; font-size: 18px; color: #ffe0a0; text-shadow: 0 2px 4px #000; box-shadow: 0 4px 12px #000a; }
+/* 지난번 말이 맞았던 장수 — 이름표가 금빛 · 밑에 작은 금빛 표 (MEMORY §3-2 1 · 형 10-30: "사람처럼 기억하는 듯") */
+.ap .cnspk.gold b { border-color: #f2c14e; box-shadow: 0 0 0 1px #f2c14e, 0 0 16px #f2c14e99; }
+.ap .cnspk .cngold { margin-top: 6px; padding: 2px 10px; border-radius: 10px; background: #3a2a10e6; border: 1px solid #f2c14e; color: #ffe08a; font-size: 12.5px; font-style: normal; }
 .ap .cnsub { width: min(100%, 620px); box-sizing: border-box; margin: 0; padding: 14px 16px; font-size: 16.5px; line-height: 1.6; color: #fff4dc; text-align: center; word-break: keep-all; overflow-wrap: anywhere;
   background: #000a; border: 10px solid transparent; border-image: url(__ART__ui/card.png?v=1) 24 fill / 10px stretch; animation: csubin .4s ease-out .15s both; }
 .ap .cnstage .cnav { width: min(100%, 620px); display: flex; justify-content: space-between; align-items: center; color: #cbbf9f; font-size: 12.5px; }

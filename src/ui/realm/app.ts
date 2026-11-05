@@ -659,6 +659,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   // 숨 쉬는 각성 영상의 소리 — 영상에 든 음악·효과음을 함께 낸다 (형 11-05: "같이 들려도 상관없다 · 효과음 같이 들어 있어서 좋다").
   // 소리 끄기면 끈 채로 · 브라우저가 소리를 막으면(아직 아무것도 안 누른 판) 끈 채로라도 돈다 · 여럿이면 새로 뜬 것 하나만 소리 (겹치지 않게)
   const voiceLoop = (v: HTMLVideoElement): void => {
+    if (v.dataset['quiet'] !== undefined) return
     if (muted()) return
     for (const o of root.querySelectorAll<HTMLVideoElement>('video[loop]')) if (o !== v) o.muted = true
     v.volume = P.realm.loopVolume
@@ -2436,7 +2437,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const says = ag.voices.filter((v) => v.hero !== null)
     if (beat < says.length) {
       const v = says[beat]!
-      return `<div class="cnstage" data-act="cn-next"><h3 class="cnt">${esc(ag.title)}</h3><div class="cnspk">${bust(v.hero!, v.proven === true ? 'cnbig gold' : 'cnbig')}<b>${nameHtml(v.hero!.name)}</b>${v.proven === true ? '<i class="cngold">지난번 말이 맞았다</i>' : ''}</div>`
+      // 말하는 장수는 액자 없이 크게 — 화면 가운데 서서 말한다 (형 11-05: "액자에 담지 말고 · 창세기전처럼 캐릭터가 화면 중앙에서 대화하듯")
+      // 큰 그림(bust-hd) · 각성해 숨 쉬는 영상이 있으면 영상(소리는 끈다 — 말이 넘어갈 때마다 음악이 처음부터 돈다)
+      const sh = v.hero!
+      const sf = faceFile(sh.id)
+      const sb = bustOf(sh.id)
+      const sloop = sh.ascended === true && sb !== undefined && AWAKEN_LOOP.has(sb) && !root.classList.contains('q-low') ? `${ART}awaken-loop/${sb}.mp4` : null
+      const big = sloop !== null ? `<video class="cnbig vloop" src="${sloop}" poster="${ART}awaken-hd/${sb}.jpg" autoplay muted loop playsinline preload="auto" data-quiet="1"></video>`
+        : sf !== undefined ? `<img class="cnbig" src="${ART}bust-hd/${sf}.jpg" onerror="this.onerror=null;this.src='${ART}bust/${sf}.jpg'" alt="">` : bust(sh, 'cnbig')
+      return `<div class="cnstage" data-act="cn-next"><h3 class="cnt">${esc(ag.title)}</h3><div class="cnspk${v.proven === true ? ' gold' : ''}">${big}<b>${nameHtml(sh.name)}</b>${v.proven === true ? '<i class="cngold">지난번 말이 맞았다</i>' : ''}</div>`
         + `<p class="cnsub" aria-live="polite">${hilite(r, me(), v.line)}</p><div class="cnav"><small>${beat + 1}/${says.length} · 누르면 다음 ›</small><button class="cskip" data-act="cn-skip">건너뛰기 »</button></div></div>`
     }
     const ruler = r.factions[me()]?.ruler
