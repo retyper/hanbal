@@ -24,4 +24,5 @@ export const TRUE_WAKE: ReadonlySet<string> = new Set([
   'miri-ruler', // 추화 달래 (11-05 저녁)
   'usisan-ruler', // 우시산 고래 여왕 (11-05 저녁)
   'apdok-ruler', // 압독 여왕 (11-05 저녁)
+  'dabeol-2', // 다벌 달빛 (11-05 저녁)
 ])
