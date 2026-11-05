@@ -20,7 +20,7 @@ import { crowdOf, freeSite, inboundOf, isCoast, nodeHarvest, nodeSpecials, nodeY
 import { visibleRange } from '../../realm/intel.ts'
 import { customMarks } from '../../realm/hooks.ts'
 import { blockedWhy, forceOf, seasonOf } from '../../realm/season.ts'
-import type { EdgeKind, NodeKind, Realm, REdge, RegionId, SeasonOfYear } from '../../realm/types.ts'
+import type { EdgeKind, Good, NodeKind, Realm, REdge, RegionId, SeasonOfYear } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { curvePts, ferryAt, landClipSvg, midOf, riversSvg, smoothPath, tidyEnds, trimPolyline, type Pt } from './mapgeo.ts'
 import { boardRoutes } from './roadlayout.ts'
@@ -220,6 +220,9 @@ export const MAP_CSS = `
 @keyframes wonring { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.3); } 10% { opacity: .9; } 100% { opacity: 0; transform: translate(-50%, -50%) scale(2.4); } }
 .map .nd .wonchip, .map .nd .heldchip { position: absolute; left: 50%; bottom: 102%; transform: translateX(-50%); white-space: nowrap; pointer-events: none; z-index: 4; border-radius: 8px; padding: 0 6px;
   font-size: clamp(10px, calc(1.5cqh / var(--z, 1) * var(--zs, 1)), 13px); font-weight: 700; }
+.map .nd .haulchip { position: absolute; left: 50%; bottom: 102%; transform: translateX(-50%); white-space: nowrap; pointer-events: none; z-index: 5; display: inline-flex; align-items: center; gap: 2px; padding: 1px 7px; border-radius: 10px; background: #3a2a10; color: #ffe08a; border: 1px solid #ffd27a; box-shadow: 0 0 10px #ffd27a88; font-weight: 900; font-size: 13px; animation: haulup 2.6s cubic-bezier(.2, .8, .3, 1) .5s both; }
+.map .nd .haulchip img { width: 18px; height: 18px; }
+@keyframes haulup { 0% { opacity: 0; transform: translate(-50%, 10px) scale(.6); } 14% { opacity: 1; transform: translate(-50%, 0) scale(1.25); } 26% { transform: translate(-50%, 0) scale(1); } 78% { opacity: 1; transform: translate(-50%, -14px); } 100% { opacity: 0; transform: translate(-50%, -24px); } }
 .map .nd .wonchip { background: #3a2a10; color: #ffe2a0; border: 1px solid #ffd27a; animation: wonchip 3.2s ease-out 1s both; }
 @keyframes wonchip { 0% { opacity: 0; transform: translate(-50%, 6px); } 12% { opacity: 1; transform: translate(-50%, 0); } 80% { opacity: 1; } 100% { opacity: 0; } }
 .map .nd .heldchip { background: #14243a; color: #cfe6ff; border: 1px solid #7ab0f0; box-shadow: 0 0 8px #7ab0f088; animation: wonchip 3.6s ease-out .6s both; }
@@ -236,7 +239,8 @@ export const MAP_CSS = `
 .map[data-region="yeongnam"] .lb, .map[data-region="south"] .lb, .map[data-region="world"] .lb { font-size: clamp(8px, calc(1.9cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 12.5px); border-left-width: .45em; padding: 0 .28em 0 .16em; }
 .map[data-region="yeongnam"] .lb .lbg img, .map[data-region="south"] .lb .lbg img, .map[data-region="world"] .lb .lbg img { width: 1.25em; height: 1.25em; }
 /* 주인 없는 철광·포구에 쌓인 것 — 금빛 숫자 (군대가 밟으면 거둔다 · 형 11-05) */
-.map .lb .lbg .lbst { display: inline-flex; align-items: center; gap: 1px; padding: 0 3px; border-radius: 6px; background: #3a2a10; color: #ffd76a; font-weight: 800; font-size: .85em; font-variant-numeric: tabular-nums; }
+.map .lb .lbg .lbst { position: relative; display: inline-flex; align-items: center; gap: 1px; padding: 0 3px 2px; border-radius: 6px; background: #3a2a10; color: #ffd76a; font-weight: 800; font-size: .85em; font-variant-numeric: tabular-nums; }
+.map .lb .lbg .lbst::after { content: ""; position: absolute; left: 3px; bottom: 0; height: 2px; width: calc((100% - 6px) * var(--f, 0)); border-radius: 1px; background: #ffd76a; }
 .map .lb small.nowi { display: inline; font-size: .68em; font-weight: 500; margin: 0 0 0 .3em; opacity: .75; }
 .map .lb .lbe { width: 1.1em; height: 1.1em; object-fit: contain; flex: none; filter: drop-shadow(0 0 1px #fff); }
 .map .lb .lbt { display: flex; flex-direction: column; align-items: flex-start; }
@@ -641,6 +645,8 @@ export function mapHtml(
   held: ReadonlySet<string> = new Set(),
   /** 척후를 보낸 고을들 — 금빛 고리(누르라는 듯 보였다) 대신 작은 「척후」 표 (형 10-27) · 정찰꾼 여럿 (FOCUS D) */
   scouting: readonly string[] = [],
+  /** 지난 달 우리가 주인 없는 철광·포구에서 거둔 것 — 그 고을에서 「+n 철」이 떠오른다 (형 11-05: "내가 먹는 것도 실감이 안 남") */
+  hauled: ReadonlyMap<string, Partial<Record<Good, number>>> = new Map(),
 ): string {
   // 판마다 지도 그림·좌표계·기호 크기 (영남 판은 고을이 빽빽해 작게)
   const region = r.region ?? 'byeonhan-mini'
@@ -985,7 +991,8 @@ export function mapHtml(
     const mkt = marketOf(r, r.player)?.at === n.id ? `<img class="lbw" src="${art}icon/route-caravan.png" alt="상단" title="떠돌이 상단이 머문다">` : ''
     const wk = worksOf(n).map(([w]) => `<img class="lbw" src="${art}icon/${WORKS[w].icon}.png" alt="${WORKS[w].name}" title="${WORKS[w].name}: ${WORKS[w].does}">`).join('')
     // 주인 없는 철광·포구에 쌓인 것 — 군대가 밟으면 그 나라가 거둔다 (형 11-05 · 규칙은 지도에 보이게)
-    const stash = freeSite(n) ? (Object.entries(n.stash ?? {}) as Array<[keyof typeof GOOD_NAME, number]>).filter(([, v]) => Math.floor(v) > 0).map(([g, v]) => `<span class="lbst" title="쌓인 ${GOOD_NAME[g]} · 군대가 밟으면 거둔다 · 편입은 개척으로"><img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}">${Math.floor(v)}</span>`).join('') : ''
+    // 쌓인 것 — 1 이 안 돼도 보인다: 숫자 + 아래에 차오르는 띠 (형 11-05: "쌓이는 것도 안 보이고 · 유저는 이거 모른다고")
+    const stash = freeSite(n) ? (Object.entries(n.stash ?? {}) as Array<[keyof typeof GOOD_NAME, number]>).filter(([, v]) => v > 0.01).map(([g, v]) => `<span class="lbst" title="쌓인 ${GOOD_NAME[g]} · 군사가 머물면 달마다 거둔다 · 우리 땅으로는 개척단" style="--f:${(v - Math.floor(v + 1e-9)).toFixed(2)}"><img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}">${Math.floor(v + 1e-9)}</span>`).join('') : ''
     const tray = stash !== '' || mkt !== '' || wk !== '' || sp.length > 0 || fish !== '' || dfs.length > 0 || cms.length > 0 || bld !== ''
       ? `<span class="lbg${n.owner === null || n.hh <= 0 ? ' idle' : ''}">${stash}${mkt}${wk}${sp.map((g) => `<img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}" title="${GOOD_NAME[g]}: 사람이 살면 난다">`).join('')}${fish}${dfs.map((t) => `<i class="${t}" title="${DEF_TITLE[t]}">${DEF_NAME[t]}</i>`).join('')}`
         + `${bld}${cms.map((m) => `<i class="cmk${m.hot === true ? ' hot' : ''}" title="${m.tip}"${m.hot === true ? ` data-l="${m.label}"` : ''}>${m.label}</i>`).join('')}</span>`
@@ -1009,10 +1016,10 @@ export function mapHtml(
     const holyFront = n.kind === 'sodo'
       ? `<img class="sr f" src="${art}fx/sodo-rope.png" alt=""><img class="sc c1" src="${art}fx/sodo-cloth-a.png" alt=""><img class="sc c2" src="${art}fx/sodo-cloth-b.png" alt=""><img class="sc c3" src="${art}fx/sodo-cloth-a.png" alt="">` : ''
     const sct = scouting.includes(n.id) ? `<span class="sctmk" title="척후가 이 고을을 엿본다"><img src="${art}icon/unit-scouts.png" alt="">척후</span>` : ''
-    // 주인 없이 사람만 사는 철광·포구 — 지키는 군대가 없어 우리 군대가 닿기만 하면 싸움 없이 우리 땅 (season.walkIn · 형 10-31: "문명6 촌락처럼")
+    // 주인 없이 사람만 사는 고을 — 군대가 닿으면 철광·포구는 쌓인 것을 거두고(편입은 개척단 · 형 11-05) 그 밖은 싸움 없이 우리 땅 (season.walkIn · 형 10-31: "문명6 촌락처럼")
     const freeTake = owner === null && n.kind !== 'wild' && n.kind !== 'sodo' && n.hh > 0 && !Object.values(r.armies).some((a) => a.at === n.id && a.march === null)
-      ? `<span class="frtb" title="군사 이동 필요: 주인이 없어 군사가 닿으면 싸움 없이 우리 땅이 됩니다">${nodeSpecials(r, n.id).slice(0, 2).map((g) => `<i class="frtp"><img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}"></i>`).join('')}<i class="frts"><img src="${art}icon/unit-spear.png" alt=""></i></span>` : ''
-    nodes += `${holy}<span class="base"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${holyFront}<span class="ring"></span>${selected === n.id ? GEM : ''}${sct}${taken.has(n.id) ? `<img class="burnsm won" src="${art}fx/smoke.png" alt=""><span class="plant"><i class="pole"></i><i class="cloth" style="--fc:${FACTION_ART[me]?.color ?? '#c9a45a'}"><img src="${art}icon/${FACTION_ART[me]?.emblem ?? 'emblem-shell'}.png" alt=""></i></span><i class="wonring"></i><span class="wonchip">점령</span>` : burning.has(n.id) ? `<img class="burnsm" src="${art}fx/smoke.png" alt=""><img class="burnfx" src="${art}fx/fire.png" alt="">` : lived ? '<i class="smk"></i>' : ''}${held.has(n.id) ? '<span class="heldchip">🛡 지켜 냈다</span>' : ''}${mist}${ice}${gface}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${poisedAt.has(n.id) ? '<span class="strk"><i>⚔</i>다음 달 친다</span>' : ''}${tg !== undefined ? (tg.chip !== '' ? `<span class="tchip">${tg.chip}</span>` : '') : settleable.has(n.id) ? (settling.has(n.id) ? '' : '<span class="stl">개척단 필요</span>') : freeTake !== '' ? freeTake : crowd}</div>`
+      ? `<span class="frtb" title="주인 없는 터: 군사가 닿으면 쌓인 것을 거두고, 머무는 동안 달마다 거둡니다 · 우리 땅으로는 개척단">${nodeSpecials(r, n.id).slice(0, 2).map((g) => `<i class="frtp"><img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}"></i>`).join('')}<i class="frts"><img src="${art}icon/unit-spear.png" alt=""></i></span>` : ''
+    nodes += `${holy}<span class="base"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${holyFront}<span class="ring"></span>${selected === n.id ? GEM : ''}${sct}${taken.has(n.id) ? `<img class="burnsm won" src="${art}fx/smoke.png" alt=""><span class="plant"><i class="pole"></i><i class="cloth" style="--fc:${FACTION_ART[me]?.color ?? '#c9a45a'}"><img src="${art}icon/${FACTION_ART[me]?.emblem ?? 'emblem-shell'}.png" alt=""></i></span><i class="wonring"></i><span class="wonchip">점령</span>` : burning.has(n.id) ? `<img class="burnsm" src="${art}fx/smoke.png" alt=""><img class="burnfx" src="${art}fx/fire.png" alt="">` : lived ? '<i class="smk"></i>' : ''}${held.has(n.id) ? '<span class="heldchip">🛡 지켜 냈다</span>' : ''}${hauled.has(n.id) ? `<span class="haulchip">${(Object.entries(hauled.get(n.id)!) as Array<[Good, number]>).map(([g, v]) => `<b>+${v}</b><img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}">`).join('')}</span>` : ''}${mist}${ice}${gface}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${poisedAt.has(n.id) ? '<span class="strk"><i>⚔</i>다음 달 친다</span>' : ''}${tg !== undefined ? (tg.chip !== '' ? `<span class="tchip">${tg.chip}</span>` : '') : settleable.has(n.id) ? (settling.has(n.id) ? '' : '<span class="stl">개척단 필요</span>') : freeTake !== '' ? freeTake : crowd}</div>`
   }
   // 우리 군대의 말 — 고을 밑에 나란히. 누르면 고르고, 갈 곳이 지도에 밝아진다
   const byNode = new Map<string, MapToken[]>()
@@ -1783,7 +1790,7 @@ function fogWords(r: Realm, me: string, region: RegionId, W: number, H: number, 
  */
 export function noReachWhy(r: Realm, me: string, id: string): string {
   const n = r.nodes[id]
-  if (n !== undefined && (n.room ?? 0) - n.hh <= 0) return '더 들어설 자리 없음'
+  if (n !== undefined && !freeSite(n) && (n.room ?? 0) - n.hh <= 0) return '더 들어설 자리 없음' // 주인 없는 철광·포구는 사람이 이미 산다 — 자리 셈이 아니다
   // 개척단은 다른 나라 군대가 머문 땅에 못 선다 — 보이는 군대일 때만 그렇게 말한다 (11-01 형: "적의 군대가 없는 마을인데 적군 있다고")
   const vis = visibleNodes(r, me)
   if (vis.has(id) && Object.values(r.armies).some((a) => a.at === id && a.march === null && a.faction !== me)) return '다른 나라 군대가 머묾'

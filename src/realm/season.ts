@@ -27,7 +27,7 @@ import {
 } from './diplomacy.ts'
 import {
   addGood, applyArm, applyBuild, applyGuard, applyWork, stepWorks, draftIronCost, foundCost, draftLimit, draftNeeds, draftPay, militiaMen, onTake, resolveRites, settleCost, settleLimit, stepBuilds, stepEconomy,
-  applyCall, freeSite, haulAt, migrateHouses, placeHouses, setMigrateAuto, spentThisSeason, stepInbound, stepMigration, stockOf,
+  applyCall, freeSite, haulAt, stepSites, migrateHouses, placeHouses, setMigrateAuto, spentThisSeason, stepInbound, stepMigration, stockOf,
 } from './economy.ts'
 import { hasCustom, noteCustom, noteOnce } from './data/customs.ts'
 import { concealBonus, passExtra, rescueCapital, riseState, siegeFort, stepCustoms } from './hooks.ts'
@@ -1889,6 +1889,7 @@ export function advance(
   noteBeaten(r, lines) // 5 끝 — 달 시계: 연달아 진 AI 나라는 새 출정을 쉰다 (rout.ts)
   stepParties(r, lines) // 5 — 개척단이 한 턴 간다 · 빈땅에 닿으면 마을 · 적 곁이면 흩어진다
   stepFood(r, lines) // 5 끝 — 남의 땅에 머무는 군대가 군량을 먹는다
+  stepSites(r, seasonOf(r), lines, perSeason(r)) // 5 끝 — 주인 없는 철광·포구: 달마다 쌓이고, 머무는 군대의 나라가 다 찬 몫을 거둔다 (형 11-05)
   sweepHeroes(r, lines) // 5 끝 — 잃은 고을에 혼자 있던 장수는 물러나거나 잡힌다
   // 계절마다 한 번 도는 일 — 달 시계면 그 계절의 마지막 달에만 (TIME-TABLE §3). 계절 단위 수치(params)를 그대로 쓴다.
   // 싸움이 난 고을은 석 달 내내 모아 둔다 (가호가 안 는다 · 자동 분배가 안 보낸다)

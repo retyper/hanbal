@@ -38,7 +38,7 @@ describe('주인 없는 철광·포구', () => {
     assert.equal(x.armies[army]?.at, site)
     assert.equal(x.nodes[site]!.owner, null)
   })
-  it('비워 두면 쌓이고(위 끝 있음) · 머무는 군대의 나라가 거둔다 · 거두면 다시 0부터', () => {
+  it('비워 두면 쌓이고(위 끝 있음) · 머무는 군대의 나라가 거둔다 · 덜 찬 몫은 남는다', () => {
     const { r, site } = setup()
     for (const a of Object.values(r.armies)) if (a.at === site) a.at = 'nowhere'
     const lines: ReportLine[] = []
@@ -62,6 +62,26 @@ describe('주인 없는 철광·포구', () => {
     assert.ok(out.some((l) => l.kind === 'haul' && l.faction === me))
     const gained = (['iron', 'salt', 'wood', 'horse'] as const).reduce((s, g) => s + goodOf(r.stock[me], g) - goodOf(before, g), 0)
     assert.ok(gained > 0)
-    assert.equal(Object.values(r.nodes[site]!.stash ?? {}).reduce((s, v) => s + (v ?? 0), 0), 0)
+    // 다 찬 몫만 가져가고 덜 찬 몫(1 아래)은 남아 다음 달에 이어 찬다
+    for (const v of Object.values(r.nodes[site]!.stash ?? {})) assert.ok((v ?? 0) < 1)
+  })
+})
+
+describe('주인 없는 터 — 달마다 (형 11-05: "군대 보내 놓고 있으면 철 매 턴 수급되는 거 아니었어?")', () => {
+  it('우리 군대가 머물면 계절 끝이 아니어도 달마다 거두고 · 철치 소출의 반이 석 달에 고루 들어온다', () => {
+    const { r, site } = setup()
+    const me = r.player
+    for (const a of Object.values(r.armies)) if (a.at === site) a.at = 'nowhere'
+    const a = Object.values(r.armies).find((x) => x.faction === me)!
+    a.at = site; a.march = null
+    r.nodes[site]!.stash = {}
+    let x = r
+    let hauls = 0
+    for (let i = 0; i < 6; i++) {
+      const res = advance(x, [])
+      x = res.next
+      if (res.report.lines.some((l) => l.kind === 'haul' && l.faction === me && l.node === site)) hauls++
+    }
+    assert.ok(hauls >= 3, `여섯 달에 ${hauls}번만 거뒀다`)
   })
 })

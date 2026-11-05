@@ -33,14 +33,14 @@ import {
   GOODS, armCost, buildCost, canBuild, canGuard, draftCost, draftIronCost, draftLimit, draftNeeds, draftPay, goodOf, guardCost, hhGrowth, isCoast, militiaMen, nextBuild, nodeHarvest, nodeYield, nodeSpecials, upkeepOf, riteAllowed, riteCost,
   autoFlows, crowdOf, migratePath, fieldMul, homeRoom, inboundOf, inboundRate, isRiverside, landMul, placeLimit, placeNodes, workMul,
   goodsWorth,
-  callCost, callLimit, callWhy, draftWhy, grainAtSeasonEnd, isWoody, shareOpen, stockOf,
+  callCost, callLimit, callWhy, draftWhy, grainAtSeasonEnd, isWoody, shareOpen, stockOf, freeSite, foundCost,
 } from '../../realm/economy.ts'
 import { goalReach, goalRoute } from '../../realm/goal.ts'
 import { approachMoves, armyPower, jointWin, matchupHints, movesOf, type Move } from '../../realm/estimate.ts'
 import { kitLines } from '../../realm/kit.ts'
 import { alertRange, seenMix, visibleRange } from '../../realm/intel.ts'
 import { type ConcealWhy, advance, concealOf, draftable, forceOf, newArmyId, otherEnd, planned, rationCost, rationExtra, seasonOf, seenMarches } from '../../realm/season.ts'
-import { ageSeasons, isSeasonEnd, isSeasonStart, monthly, seasonIdx, seasons, type ClockKind } from '../../realm/calendar.ts'
+import { ageSeasons, isSeasonEnd, isSeasonStart, monthly, perSeason, seasonIdx, seasons, type ClockKind } from '../../realm/calendar.ts'
 import { draftScouts, parseScoutKeep, scoutCap, scoutTargets, townCount, watchedNodes } from '../../realm/scouts.ts'
 import { NIGHT_OPS, PLOT_OPS, exposeChance, assassinArrows, assassinBow, assassinGuard, bowUpCost, escapeChance, plotAgents, plotCap, plotChance, plotCost, plotTargets, rescueGuard } from '../../realm/plots.ts'
 import { allianceWhy, leaderOf, tookRecently, truceWhy, winningAgainst } from '../../realm/stance.ts'
@@ -846,6 +846,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let bringAsk: { nation: string; region: RegionId; tier: number } | null = null
   /** 협공 짝을 마지막으로 울린 때 — 같은 고름엔 한 번만 */
   let pinRung = ''
+  /** 거둔 소리를 낸 보고 — 같은 달 보고로 지도를 다시 그려도 한 번만 */
+  let haulRung = -1
   /** 뾰로로롱 — 방울을 점점 높게 셋 (형 11-05: "소리가 들려도 되고 · 뾰로로롱") */
   function pinChime(): void {
     P.realm.pinChimeRates.forEach((rate, i) => window.setTimeout(() => ding(snd('tap_bell'), P.realm.pinChimeVol, rate), i * P.realm.pinChimeGapMs))
@@ -1918,7 +1920,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const key = `${r.season}:${armySel.join(',')}:${[...pinMates].sort().join(',')}`
       if (key !== pinRung) { pinRung = key; pinChime() }
     } else pinRung = ''
-    return mapHtml(r, me(), ART, marches, sel, focus, tokens, targets, fr, stl, burn, going, taken, held, scouts)
+    // 주인 없는 철광·포구에서 거둔 것 — 그 고을에 「+n 철」이 떠오르고 엽전 소리 한 번 (형 11-05: "내가 먹는 것도 실감이 안 남 · 소리로든 눈에 쌓이는 게 보이든")
+    const hauled = new Map<string, Partial<Record<Good, number>>>()
+    for (const l of report?.lines ?? []) if (l.kind === 'haul' && l.faction === me()) hauled.set(l.node, l.goods)
+    if (hauled.size > 0 && haulRung !== r.season) { haulRung = r.season; window.setTimeout(() => ding(snd('coins'), P.realm.haulCoinVol), 500) }
+    return mapHtml(r, me(), ART, marches, sel, focus, tokens, targets, fr, stl, burn, going, taken, held, scouts, hauled)
   }
 
   /**
@@ -5348,16 +5354,45 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<div class="nrh">${icon(nodeIcon(n), 'nic')}<b>${esc(n.name)}</b></div>`
       if (gains !== '') h += `<div class="nrl"><span>생산품</span><span class="nrg">${gains}</span></div>`
       const wildFree = n.kind === 'wild' && (n.owner === null || (ours && n.hh <= 0))
-      if (wildFree) {
-        // 빈 땅 한 단추 (z축 6단계) — 개척단이 닿으면 큰 단추 하나 · 못 닿으면 까닭 한 줄
+      // 개척단 큰 단추 하나 — 가는 중 · 맞닿은 고을에서 · 도읍에서 우리 땅을 거쳐 · 못 닿으면 까닭 한 줄 (빈 땅과 주인 없는 터가 같이 쓴다)
+      const settleHtml = (): string => {
         const goingP = partiesOf(r, me()).find((x) => x.march?.to === id || x.goal === id)
         const src = goingP === undefined && foundLands(r).includes(id) ? partySource(r, id) : null
-        if (goingP !== undefined) h += `<button class="btn home wide on nrbig" data-act="ptok" data-army="${goingP.id}" data-node="${id}">${icon('unit-porters')}${esc(r.nodes[goingP.home]?.name ?? '')} 개척단이 가는 중</button>`
-        else if (src !== null) {
+        if (goingP !== undefined) return `<button class="btn home wide on nrbig" data-act="ptok" data-army="${goingP.id}" data-node="${id}">${icon('unit-porters')}${esc(r.nodes[goingP.home]?.name ?? '')} 개척단이 가는 중</button>`
+        if (src !== null) {
           const c = partyCost(r, me(), partySize(r, me(), src.from))
-          h += `<button class="btn pri home wide nrbig" data-act="party-to" data-node="${id}" data-from="${src.from}" data-edge="${src.edge}">${icon('unit-porters')}개척단 보내기 ${costHtml({ grain: c.grain, wood: c.wood })}</button>`
-        } else if (foundLands(r).includes(id)) h += capPartyHtml(r, id, 'nrbig')
-        else h += `<p class="nrwhy">${esc(noReachWhy(r, me(), id))}<small>개척단은 도읍에서 꾸려 우리 땅을 거쳐 빈 땅으로 갑니다</small></p>`
+          return `<button class="btn pri home wide nrbig" data-act="party-to" data-node="${id}" data-from="${src.from}" data-edge="${src.edge}">${icon('unit-porters')}개척단 보내기 ${costHtml({ grain: c.grain, wood: c.wood })}</button>`
+        }
+        if (foundLands(r).includes(id)) return capPartyHtml(r, id, 'nrbig')
+        // 못 보내도 단추는 흐리게 남긴다 — 누르면 까닭 (형 11-04: "버튼 비활성화를 시켜야지 설명 텍스트로 모자라다고 하면 어떡하냐")
+        const why = noReachWhy(r, me(), id)
+        return `<button class="btn home wide nrbig" data-act="party-goal" data-node="${id}"${noBtn(why)}>${icon('unit-porters')}개척단 보내기</button><p class="nrwhy">${esc(why)}<small>개척단은 도읍에서 꾸려 우리 땅을 거쳐 갑니다</small></p>`
+      }
+      if (wildFree) h += settleHtml() // 빈 땅 한 단추 (z축 6단계)
+      else if (freeSite(n)) {
+        // 주인 없는 철광·포구 (형 11-05: "군대 보내 놓고 있으면 내 땅이 아니어도 철 매 턴 수급 · 쌓이는 게 눈에 보이게") —
+        // 쌓인 것(덜 찬 몫은 차오르는 띠) · 우리 군사가 지키면 달마다 거둔다 · 우리 땅으로 삼으려면 개척단
+        const R = P.realm
+        const y = nodeYield(r, id, seasonOf(r))
+        const gs = GOODS.filter((g) => g !== 'grain' && goodOf(y, g) > 0)
+        const per = perSeason(r)
+        const fmt = (v: number): string => (Math.round(v * 10) / 10).toLocaleString('ko-KR')
+        const pile = gs.map((g) => { const v = n.stash?.[g] ?? 0; return `<span class="sst" title="${GOOD_NAME[g]}"><img src="${ART}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}"><b>${Math.floor(v + 1e-9)}</b><i style="--p:${Math.round((v - Math.floor(v + 1e-9)) * 100)}%"></i></span>` }).join('')
+        const rate = gs.map((g) => `<span class="sst"><img src="${ART}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}"><b>+${fmt((goodOf(y, g) * R.siteYieldMul) / per)}</b></span>`).join('')
+        h += `<div class="nrl"><span>쌓인 것</span><span class="nrg">${pile}</span></div>`
+        const held = Object.values(r.armies).filter((a) => a.at === id && a.march === null)
+        if (held.some((a) => a.faction === me())) {
+          h += `<div class="nrhold${held.some((a) => a.faction !== me()) ? ' off' : ''}"><span>${icon('unit-spear')}${held.some((a) => a.faction !== me()) ? '남의 군대와 함께 버텨 아무도 못 거둡니다' : `우리 군사가 지킵니다 · ${turnWord(r)}마다 거둡니다`}</span><span class="nrg">${rate}</span></div>`
+        } else {
+          const s = senderFor(r, id)
+          h += s !== null
+            ? `<button class="btn pri wide nrbig" data-act="send-army" data-node="${id}" data-army="${s.army}">${icon('unit-spear')}${esc(r.heroes[r.armies[s.army]?.hero ?? '']?.name ?? '우리')} 군대 보내기 · ${turnsLabel(r, s.seasons)}</button><p class="nrwhy"><small>군사가 닿으면 쌓인 것을 거두고, 머무는 동안 ${turnWord(r)}마다 거둡니다</small></p>`
+            : `<button class="btn wide nrbig" data-act="send-army" data-node="${id}"${noBtn('여기로 갈 수 있는 쉬는 군대가 없습니다. 징병하거나 가는 중인 군대가 닿기를 기다리세요')}>${icon('unit-spear')}군사 이동 필요</button>`
+        }
+        // 우리 땅으로 — 개척단이 닿을 때 편입 값을 더 치른다 (economy.foundCost · siteAnnexMul)
+        const a1 = foundCost(r, me(), true)
+        const a0 = foundCost(r, me())
+        h += settleHtml() + `<p class="nrwhy"><small>개척단이 닿으면 우리 땅이 됩니다 · 닿을 때 더 드는 값 ${costHtml({ grain: a1.grain - a0.grain, wood: a1.wood - a0.wood })}</small></p>`
       } else if (n.owner === null && n.kind !== 'wild' && n.kind !== 'sodo' && n.hh > 0) {
         const s = senderFor(r, id)
         h += s !== null

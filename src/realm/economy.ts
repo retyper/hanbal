@@ -1102,8 +1102,6 @@ export function grainAtSeasonEnd(r: Realm, f: string): number {
 export function stepEconomy(r: Realm, season: number, fought: ReadonlySet<string>, lines: ReportLine[]): void {
   const R = P.realm
   const winter = season === 3
-  // 주인 없는 철광·포구 — 난 것이 쌓이고, 머무는 군대의 나라가 거둔다 (형 11-05)
-  stepSites(r, season === 0 ? 'spring' : season === 1 ? 'summer' : season === 2 ? 'autumn' : 'winter', lines)
   for (const f of Object.keys(r.factions).sort()) {
     const s = stockOf(r, f)
     const fac = r.factions[f]!
@@ -1191,27 +1189,30 @@ export function harvestModOf(r: Realm, f: string): number {
 /** 주인 없는 철광·포구 — 군대로는 쥐지 못한다(개척으로 편입) · 난 것이 쌓였다가 밟은 군대의 나라가 거둔다 */
 export const freeSite = (n: RNode | undefined): boolean => n !== undefined && n.owner === null && (n.kind === 'ironMine' || n.kind === 'port')
 
-/** 그 터에 쌓인 것을 이 나라가 거둔다 — 쌓인 게 있으면 보고 한 줄 */
+/** 그 터에 쌓인 것을 이 나라가 거둔다 — 다 찬 몫만 가져가고 덜 찬 몫(소수)은 남겨 두어 다음 달에 이어 찬다 · 거둔 게 있으면 보고 한 줄 */
 export function haulAt(r: Realm, faction: string, node: string, lines: ReportLine[]): void {
   const n = r.nodes[node]
   if (!freeSite(n) || r.factions[faction] === undefined) return
   const got: Partial<Record<Good, number>> = {}
+  const left: Partial<Record<Good, number>> = {}
   for (const [g, v] of Object.entries(n!.stash ?? {}) as Array<[Good, number]>) {
-    const k = Math.floor(v)
+    const k = Math.floor(v + 1e-9)
+    if (v - k > 1e-9) left[g] = v - k
     if (k <= 0) continue
     got[g] = k
     if (g === 'grain') stockOf(r, faction).grain += k
     else addGood(r, faction, g, k)
   }
-  n!.stash = {}
+  n!.stash = left
   if (Object.keys(got).length > 0) lines.push({ kind: 'haul', faction, node, goods: got })
 }
 
 /**
- * 철마다(stepEconomy) — 주인 없는 터는 그 철에 난 것(곡식 빼고)을 쌓는다 · 위 끝은 siteStashSeasons 철치.
- * 그 터에 머무는 군대가 한 나라뿐이면 그 나라가 쌓인 것을 거둔다 (여러 나라가 버티면 아무도 못 거둔다)
+ * 턴마다 — 주인 없는 터는 그 턴에 난 것(곡식 빼고 · 철치 소출을 `per` 턴으로 나눈 몫)을 쌓는다 · 위 끝은 siteStashSeasons 철치.
+ * 그 터에 머무는 군대가 한 나라뿐이면 그 나라가 다 찬 몫을 거둔다 (여러 나라가 버티면 아무도 못 거둔다)
+ * (형 11-05: "군대 보내 놓고 있으면 내 땅이 아니어도 철 매 턴 수급되는 거 아니었어?" — 전엔 계절 끝에만 돌고 덜 찬 몫을 버려 군대가 있으면 영영 0이었다)
  */
-export function stepSites(r: Realm, sname: SeasonOfYear, lines: ReportLine[]): void {
+export function stepSites(r: Realm, sname: SeasonOfYear, lines: ReportLine[], per = 1): void {
   const R = P.realm
   for (const n of Object.values(r.nodes).filter((x) => freeSite(x)).sort((x, y) => (x.id < y.id ? -1 : 1))) {
     const y = nodeYield(r, n.id, sname)
@@ -1221,7 +1222,7 @@ export function stepSites(r: Realm, sname: SeasonOfYear, lines: ReportLine[]): v
       const v = goodOf(y, g)
       if (v <= 0) continue
       const add = v * R.siteYieldMul
-      st[g] = Math.min(add * R.siteStashSeasons, (st[g] ?? 0) + add)
+      st[g] = Math.min(add * R.siteStashSeasons, (st[g] ?? 0) + add / per)
     }
     n.stash = st
     const holders = new Set(Object.values(r.armies).filter((a) => a.at === n.id && a.march === null).map((a) => a.faction))

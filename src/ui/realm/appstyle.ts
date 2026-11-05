@@ -1454,6 +1454,14 @@ export const UI_CSS = `
 .ap .map .nring.card .nrb img { width: 26px; height: 26px; object-fit: contain; } .ap .map .nring.card .nrb small { font-size: 11px; font-weight: 700; }
 .ap .map .nring .nrbig { margin-top: 6px; } .ap .map .nring .nrbig img { width: 22px; height: 22px; vertical-align: middle; margin-right: 4px; }
 .ap .map .nring .nrwhy { margin: 6px 0 0; font-weight: 800; color: #ffd9a0; } .ap .map .nring .nrwhy img { width: 18px; height: 18px; vertical-align: middle; margin-right: 3px; }
+/* 주인 없는 철광·포구 카드 — 쌓인 것(덜 찬 몫은 아래 띠가 차오른다) · 지키는 동안 달마다 거둠 (형 11-05: "쌓이는 게 눈에 보이게") */
+.ap .map .nring .sst { position: relative; display: inline-flex; align-items: center; gap: 2px; padding: 1px 6px 4px 3px; border-radius: 8px; background: #3a2a10; color: #ffd76a; font-weight: 800; font-variant-numeric: tabular-nums; }
+.ap .map .nring .sst b { font-size: 15px; }
+.ap .map .nring .sst i { position: absolute; left: 4px; right: 4px; bottom: 1px; height: 3px; border-radius: 2px; background: #ffffff22; overflow: hidden; }
+.ap .map .nring .sst i::after { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--p, 0%); background: #ffd76a; }
+.ap .map .nring .nrhold { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 6px; padding: 6px 8px; border-radius: 10px; background: #14243a; border: 1px solid #7ab0f0; color: #cfe6ff; font-weight: 800; }
+.ap .map .nring .nrhold.off { background: #2a1a14; border-color: #a06a4a; color: #f0c8a8; }
+.ap .map .nring .nrhold > span:first-child { display: inline-flex; align-items: center; gap: 4px; } .ap .map .nring .nrhold img { width: 20px; height: 20px; vertical-align: middle; }
 .ap .map .nring .nrwhy small { display: block; font-weight: 400; font-size: 11.5px; color: #d8c8a8; }
 @media (prefers-reduced-motion: reduce) { .ap .map .nring.pop, .ap .map .nring.pop .nrb { animation: none; } }
 `
