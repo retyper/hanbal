@@ -69,7 +69,7 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-27-mokji-jinha 목지 진하 — 2차(retyper · 긴 치마 틀) — 11-05 밤
 - w-38-sangdang-bulmae 상당 불매 — 발목 치마 틀로 다시 받아 넣음 · 첫 판은 「긴 치마」를 넣어도 트임이 사타구니 곁까지라 걷음(-rejected) · 다음부터는 「ankle-length skirt, legs covered except one knee-high slit」 — 11-05 밤
 - w-39-gosaburi-galmae 고사부리 갈매 — 2차(retyper · 발목 치마 틀이 먹힘) — 11-05 밤
-- ~~w-40-mujin-munui 무진 문의~~ — 앞가운데 트임이 깊어 걷음(-rejected) · 다시 뽑을 거리 — 11-05 밤
+- w-40-mujin-munui 무진 문의 — 2차 다시(retyper · 사람마다 다른 옷 틀: 굿판 무당 · 오방색 띠 · 방울 · 팔 문신) · 첫 판은 앞가운데 트임이 깊어 걷음(-rejected) — 11-05 밤
 - w-41-hwanna-beodeul 환나 버들 — 2차(retyper · 발목 치마 틀 · 트임은 허벅지 위쪽까지 보임, 사타구니 아래라 넣음) — 11-05 밤
 - w-42-gwanna-soenun 관나 쇠눈 — 2차(retyper) · 첫 판은 발목 치마 틀에도 앞가운데 트임이 사타구니 곁까지라 걷음(-rejected) · 「Skirt: a floor-length layered wrap skirt of opaque silk; the front panel is fully closed from the waist down to the ankles with no front opening, and both thighs are completely covered by opaque fabric; the only opening is a short side slit on the outer calf below the knee.」 로 바꾸니 닫힘 · 이 말을 다음 틀로 — 11-05 밤
 - w-46-geonma-maru 건마 마루 — 2차(retyper · 앞 닫힌 긴 치마 틀) — 11-05 밤
