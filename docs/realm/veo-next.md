@@ -1,0 +1,17 @@
+# 진각성 영상 다음 줄 (11-06 · 성격대로 동작)
+
+형 (11-06 새벽): *"모든 캐릭터가 웃어야 하는 건 아닌데 왜 다 웃게 만드냐"* — 큰 동작은 그대로, **표정과 동작은 그 사람 성격대로**. 웃음은 호탕·명랑한 사람만.
+만든 것(해달·쇠비·비라·아름)은 그대로 둔다. 굽는 법: Jay u/4 → 동영상 → 세로 → 원본 `assets_src/realm/awaken2/<id>.png` → 아래 글.
+받으면 `public/realm/awaken-loop/<id>.t2.mp4` · `AWAKEN2_LOOP` 에 더함 · 여섯 장면(`public/_tmp/frames.html?v=`)으로 움직임 확인.
+공통 머리: `Show the whole image. Camera completely static, no zoom, no pan, framing never changes.` · 공통 꼬리: `Energetic, dynamic, fluid motion with clear weight and physics — never still. The last frame matches the first frame so the video loops smoothly. No text.` · 「bounce/heaves」 낱말 금지(오류).
+
+| 차례 | 장수 · 원본 | 성격 | 표정 | 동작 |
+|---|---|---|---|---|
+| 1 | 단궁 w-51-haseulla-dangung | 매서움·자부 | **웃지 않음** · 매서운 눈, 이를 악문 집중 | 활을 끝까지 당겨 몸이 떨리다 → 쏘아 시위가 튕기고 몸이 뒤로 젖혀짐 → 바로 다음 살을 뽑아 다시 겨눔 · 진홍 화살빛 |
+| 2 | 이랑 w-59-jomun-irang | 경계·감정 안 드러냄 | **무표정** · 차가운 눈 | 쌍단검을 손안에서 한 바퀴 돌려 거꾸로 잡고 → 낮게 몸을 틀어 두 번 베는 시늉 → 다시 막는 자세 · 팔 문신이 빛 |
+| 3 | 엄니 w-69-jeoga-eomni | 과묵·사나움 | **입 굳게 다묾** · 노려봄 | 창을 들어 땅에 쾅 내리꽂아 눈보라가 터짐 → 무겁게 숨을 내쉬며 입김 → 다시 창을 겨눔 |
+| 4 | 범발 w-68-maek-beombal | 대담·장난 | 비스듬한 **비웃음**·혀로 입술 | 나뭇가지 위에서 웅크렸다 몸을 털며 고양이처럼 기지개 → 단검을 손가락에서 돌림 → 다시 웅크려 덮칠 자세 |
+| 5 | 한라 w-58-tamna-halla | 신령·엄숙 | **엄숙** · 반쯤 감은 눈 | 거울을 천천히 들어 비추자 용암빛이 번쩍 → 방울을 흔들며 몸을 천천히 돌려 굿 춤 한 바퀴 → 동백 꽃잎이 휘몰아침 |
+| 6 | 바람 w-47-gosaburi-baram | 신중·영리 | 엷은 **속을 읽는 미소** | 바람이 바뀌자 고개를 돌려 바람을 읽고 → 나무 새를 날리듯 손을 펼침 → 흰 목도리가 크게 휘날리고 다시 칼자루에 손 |
+| 7 | 곰 w-82-ungcheon-gom | 호탕·장난 | **크게 웃음**(맞는 사람) | 몽둥이를 한 바퀴 휘둘러 땅을 쾅 → 배를 잡고 웃음 → 다시 어깨에 |
+| 8 | 사공 w-73-samul-sagong | 호쾌 | **시원하게 웃음** | 노를 크게 저어 물보라를 일으키고 → 노를 어깨에 걸치고 웃으며 손짓 |
