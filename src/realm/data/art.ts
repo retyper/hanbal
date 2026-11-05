@@ -485,9 +485,10 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   malgalgi: { ar: 157 / 160, body: 0.948 }, // 11-05 밤 제 띠 (제미나이 u/0 자동 모드 · 겨자빛 저고리·가죽 조끼·방울 땋은머리·창 · 칸 선은 key-png 지울곳으로 · 걷기 여덟째는 넷째 · 쓰러짐은 C 장 · 휘두르기 초록 자국은 초록 지우기)
   haebi: { ar: 156 / 160, body: 0.941 }, // 11-05 밤 제 띠 (제미나이 edu Flash — Pro 붐벼서 · 남색 민소매·붉은 허리띠·큰 도끼 · 첫 판(u/0)은 납작한 벡터 그림체에 맨다리라 버림 · 막기 컷은 도끼가 둘이라 빼고 공격은 3·4·5 · 쓰러짐은 C 우하단 · ✦ 표식은 clean-alpha clone 으로 덮음)
   soebi: { ar: 144 / 160, body: 0.934 }, // 11-05 밤 제 띠 (제미나이 edu Flash · 가야 세로 판갑·붉은 저고리·한쪽 쇠 견갑·덩이쇠 허리띠·큰 쇠망치 · A·B 는 칸 선 없이 · 쓰러짐 장의 칸 선은 장화 자리만 남기고 지움)
+  ara: { ar: 156 / 160, body: 0.887 }, // 11-05 밤 제 띠 (제미나이 edu Flash · 단발·쇠비늘 갑옷·곧은 고리자루 칼(날밑 없음) · C 는 B 를 다시 그리며 왼쪽 아래만 쓰러짐으로)
 }
 /** 제 그림이 있는 장수 (장수 id → gen-<이름>.png 의 이름) */
-export const GEN_OWN: Readonly<Record<string, string>> = { 'jm-jumong': 'jumong', 'mh-onjo': 'onjo', 'tut-onjo': 'onjo', 'mh-soseono': 'soseono', 'sr-aryeong': 'aryeong', 'jm-haedal': 'haedal', 'buyeo-1': 'haedal', 'jm-songbi': 'songbi', 'biryuna-ruler': 'songbi', 'sr-hyeokgeose': 'hyeokgeose', 'jm-oi': 'oi', 'jm-mari': 'mari', 'jm-daeso': 'daeso', 'mh-eureum': 'eureum', 'mh-ogan': 'ogan', 'tut-ogan': 'ogan', 'goguryeo-ruler': 'damul', 'jm-songyang': 'songyang', chief: 'maenun', 'jm-hyeopbo': 'hyeopbo', 'tut-malgalgi': 'malgalgi', 'sabeol-1': 'malgalgi', 'tut-haebi': 'haebi', 'guya-3': 'soebi' }
+export const GEN_OWN: Readonly<Record<string, string>> = { 'jm-jumong': 'jumong', 'mh-onjo': 'onjo', 'tut-onjo': 'onjo', 'mh-soseono': 'soseono', 'sr-aryeong': 'aryeong', 'jm-haedal': 'haedal', 'buyeo-1': 'haedal', 'jm-songbi': 'songbi', 'biryuna-ruler': 'songbi', 'sr-hyeokgeose': 'hyeokgeose', 'jm-oi': 'oi', 'jm-mari': 'mari', 'jm-daeso': 'daeso', 'mh-eureum': 'eureum', 'mh-ogan': 'ogan', 'tut-ogan': 'ogan', 'goguryeo-ruler': 'damul', 'jm-songyang': 'songyang', chief: 'maenun', 'jm-hyeopbo': 'hyeopbo', 'tut-malgalgi': 'malgalgi', 'sabeol-1': 'malgalgi', 'tut-haebi': 'haebi', 'guya-3': 'soebi', 'anya-1': 'ara' }
 type GenLook = { readonly id?: string; readonly look: 'g' | 'w'; readonly traits: readonly string[]; readonly mu: number; readonly tong: number; readonly ryak: number; readonly chi: number; readonly deok: number }
 /**
  * 장수 → 싸움터에 설 그림 (순수). 제 그림이 있으면 그것 · 명궁이면 활 · 통솔이 가장 높고 비기가 날 만큼(tacArtMinStat) 높은 남자는 말 탄 장수 ·
