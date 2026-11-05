@@ -57,4 +57,5 @@ export const TRUE_WAKE: ReadonlySet<string> = new Set([
   'guga-ruler', // 구가 누리 (11-05 밤 · retyper92 · 사람마다 다른 옷 틀 · 흰 털옷 공주)
   'bullae-ruler', // 불래 박달 (11-05 밤 · retyper92 · 사람마다 다른 옷 틀 · 산길 지킴이 암각화 돌)
   'iseo-ruler', // 이서 신애 (11-05 밤 · retyper92 · 사람마다 다른 옷 틀 · 별 셈 책사 산가지)
+  'byeokjin-ruler', // 벽진 별 (11-05 밤 · retyper92 · 사람마다 다른 옷 틀 · 대장간 처녀)
 ])
