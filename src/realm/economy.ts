@@ -157,6 +157,48 @@ export function isWoody(r: Realm, node: string): boolean {
 }
 
 /**
+ * 땅의 결 — 같은 특산이라도 땅마다 잘 나고 덜 난다 (형 11-05: "쌀만 +30% 인 데가 있는 것뿐만 아니라 어떤 땅은 나무도 잘 자라고 철도 묻혀 있어야").
+ * 쌀: 강가 논 + · 높은 터 − (landMul) · 나무: 솔숲 + · 숲길 없이 언덕·산성뿐이면 − · 철: 붉은 흙(iron 꼬리표) 마을은 철광이 아니어도 조금 ·
+ * 소금: 갯벌이 닿는 바닷가 +. 지도·고을 카드·개척 카드가 이것 하나로 보여 준다 (메모리 rules-visible-on-map)
+ */
+export interface SoilMark { readonly good: Good; readonly up: boolean; readonly name: string; readonly pct: number }
+
+const hasEdge = (r: Realm, node: string, kind: string): boolean => Object.values(r.edges).some((e) => (e.a === node || e.b === node) && e.kind === kind)
+
+/** 나무 배수 — 솔숲은 울창하고, 숲길 없이 언덕·산성뿐인 터는 성기다 */
+export function woodMul(r: Realm, node: string): number {
+  const n = r.nodes[node]
+  if (n === undefined || !isWoody(r, node)) return 1
+  if (n.tags.includes('pines')) return 1 + P.realm.soilWoodRich
+  if (!hasEdge(r, node, 'forest')) return 1 - P.realm.soilWoodPoor
+  return 1
+}
+
+/** 소금 배수 — 갯벌이 닿는 바닷가는 소금밭이 넓다 */
+export const saltMul = (r: Realm, node: string): number => (isCoast(r, node) && hasEdge(r, node, 'mudflat') ? 1 + P.realm.soilSaltRich : 1)
+
+/** 쇠가 묻힌 땅 — 붉은 흙(iron 꼬리표)이 드러난 마을 · 철광·포구가 아니어도 철이 조금 난다 */
+export const buriedIron = (n: RNode | undefined): boolean => n !== undefined && n.tags.includes('iron') && n.kind !== 'ironMine' && n.kind !== 'port' && n.kind !== 'sodo'
+
+/** 그 땅의 결 — 좋고 나쁨이 있는 것만 (화면이 같이 쓴다) */
+export function soilOf(r: Realm, node: string): SoilMark[] {
+  const n = r.nodes[node]
+  if (n === undefined || n.kind === 'sodo') return []
+  const R = P.realm
+  const out: SoilMark[] = []
+  const lm = landMul(r, node)
+  if (lm > 1) out.push({ good: 'grain', up: true, name: '기름진 논', pct: Math.round((lm - 1) * 100) })
+  else if (lm < 1) out.push({ good: 'grain', up: false, name: '척박한 밭', pct: Math.round((1 - lm) * 100) })
+  const wm = woodMul(r, node)
+  if (wm > 1) out.push({ good: 'wood', up: true, name: '울창한 숲', pct: Math.round((wm - 1) * 100) })
+  else if (wm < 1) out.push({ good: 'wood', up: false, name: '성긴 숲', pct: Math.round((1 - wm) * 100) })
+  if (buriedIron(n)) out.push({ good: 'iron', up: true, name: '쇠가 묻힌 땅', pct: Math.round(R.soilIronBuried * 100) })
+  const sm = saltMul(r, node)
+  if (sm > 1) out.push({ good: 'salt', up: true, name: '너른 갯벌', pct: Math.round((sm - 1) * 100) })
+  return out
+}
+
+/**
  * 그 땅의 특산 — 사람이 살면 나는 것 (곡식 말고). 주인이 없어도 정해져 있다 — 지도가 고을마다 그림으로 보이고,
  * 빈땅을 일구기 전에 "여기 말이 난다"를 알 수 있다. nodeYield 와 같은 규칙 (형: "마을마다 특산품이 다른거라면 이미지마다 명확히")
  */
@@ -164,7 +206,7 @@ export function nodeSpecials(r: Realm, node: string): Good[] {
   const n = r.nodes[node]
   if (n === undefined || n.kind === 'sodo') return []
   const out: Good[] = []
-  if (n.kind === 'ironMine' || n.kind === 'port') out.push('iron')
+  if (n.kind === 'ironMine' || n.kind === 'port' || buriedIron(n)) out.push('iron')
   if (isCoast(r, node)) out.push('salt')
   if (isWoody(r, node)) out.push('wood')
   if (n.tags.includes('pasture')) out.push('horse')
@@ -183,14 +225,16 @@ export function nodeYield(r: Realm, node: string, season = seasonOf(r)): Partial
   // 달천 철광(우시산) — 그 나라가 쥔 철광은 쇠가 곱으로 난다 (data/customs.ts)
   if (n.kind === 'ironMine') out.iron = Math.round(R.ironPerMine * w * (hasCustom(r, n.owner, 'dalcheon') ? R.dalcheonMul : 1))
   if (n.kind === 'port') out.iron = (out.iron ?? 0) + Math.round(R.ironPerPort * w)
+  // 쇠가 묻힌 땅 — 철광이 아니어도 붉은 흙에서 철이 조금 (soilIronBuried · 형 11-05)
+  if (buriedIron(n)) out.iron = (out.iron ?? 0) + Math.round(R.ironPerMine * R.soilIronBuried * w)
   // 덩이쇠 묶음 — 지닌 장수가 맡은 고을은 철이 더 난다 (relics.ts · 유물은 우리 장수만 지니니 우리 고을만 본다)
   const ingot = n.owner === r.player ? relicSum(postHero(r, node), 'iron') : 0
   if (ingot > 0) out.iron = (out.iron ?? 0) + ingot
   if (isCoast(r, node)) {
-    out.salt = Math.round(R.saltPerCoast * w)
+    out.salt = Math.round(R.saltPerCoast * w * saltMul(r, node))
     if (season !== 'winter') out.grain = Math.round(n.hh * R.fishPerHH)
   }
-  if (isWoody(r, node)) out.wood = Math.round(R.woodPerNode * w)
+  if (isWoody(r, node)) out.wood = Math.round(R.woodPerNode * w * woodMul(r, node))
   if (n.tags.includes('pasture')) out.horse = Math.round(R.horsePerPasture * w)
   // 들판에 연 말 목장 — 너른벌의 몫만큼 (works.ts · 위원회 11-04 림월드)
   else if (lvOf(n, 'ranch') > 0) out.horse = Math.round(R.horsePerPasture * w * R.ranchPlainShare)

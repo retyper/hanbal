@@ -16,7 +16,7 @@ import { strikeLive } from '../../realm/ai.ts'
 import { relationOf } from '../../realm/diplomacy.ts'
 import { met } from '../../realm/discovery.ts'
 import { postHero, rulerOf } from '../../realm/heroes.ts'
-import { crowdOf, freeSite, inboundOf, isCoast, nodeHarvest, nodeSpecials, nodeYield } from '../../realm/economy.ts'
+import { crowdOf, freeSite, soilOf, inboundOf, isCoast, nodeHarvest, nodeSpecials, nodeYield } from '../../realm/economy.ts'
 import { visibleRange } from '../../realm/intel.ts'
 import { customMarks } from '../../realm/hooks.ts'
 import { blockedWhy, forceOf, seasonOf } from '../../realm/season.ts'
@@ -241,6 +241,10 @@ export const MAP_CSS = `
 /* 주인 없는 철광·포구에 쌓인 것 — 금빛 숫자 (군대가 밟으면 거둔다 · 형 11-05) */
 .map .lb .lbg .lbst { position: relative; display: inline-flex; align-items: center; gap: 1px; padding: 0 3px 2px; border-radius: 6px; background: #3a2a10; color: #ffd76a; font-weight: 800; font-size: .85em; font-variant-numeric: tabular-nums; }
 .map .lb .lbg .lbst::after { content: ""; position: absolute; left: 3px; bottom: 0; height: 2px; width: calc((100% - 6px) * var(--f, 0)); border-radius: 1px; background: #ffd76a; }
+/* 땅의 결 — 특산 그림 귀퉁이에 ▲ 잘 난다(금빛) · ▼ 덜 난다(잿빛) (economy.soilOf · 형 11-05) */
+.map .lb .lbg .lbsl { position: relative; display: inline-flex; }
+.map .lb .lbg .lbsl i { position: absolute; right: -.25em; bottom: -.2em; font-style: normal; font-size: .62em; line-height: 1; font-weight: 900; text-shadow: 0 0 2px #000, 0 0 2px #000; }
+.map .lb .lbg .lbsl.up i { color: #ffd76a; } .map .lb .lbg .lbsl.dn i { color: #b8b0a0; }
 .map .lb small.nowi { display: inline; font-size: .68em; font-weight: 500; margin: 0 0 0 .3em; opacity: .75; }
 .map .lb .lbe { width: 1.1em; height: 1.1em; object-fit: contain; flex: none; filter: drop-shadow(0 0 1px #fff); }
 .map .lb .lbt { display: flex; flex-direction: column; align-items: flex-start; }
@@ -965,6 +969,10 @@ export function mapHtml(
     nodes += `<div class="nd${kcls}${tg === undefined && settleable.has(n.id) && !settling.has(n.id) ? ' stlok' : ''}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${tcls}${far}${thr}${fr}"${go} data-node="${n.id}" style="left:${p[0] * 100}%;top:${p[1] * 100}%;--c:${color};--s:${sizeOf(n.hh).toFixed(2)};--d:${(-beat(n.id) * 7).toFixed(2)}s" title="${n.name} · ${NODE_KIND_NAME[n.kind]} · ${who}"${more !== '' ? ` data-more="${more}"` : ''}>`
     // 특산 — 사람이 살면 나는 것 (쇠·소금·나무·말). 빈땅도 보여 "일구면 말이 난다"를 미리 안다
     const sp = nodeSpecials(r, n.id)
+    // 땅의 결 — 특산 그림에 ▲(잘 난다)·▼(덜 난다) · 쌀이 좋고 나쁜 땅은 벼 그림도 (economy.soilOf · 형 11-05 · 메모리 rules-visible-on-map)
+    const soil = new Map(soilOf(r, n.id).map((s) => [s.good, s] as const))
+    const spImg = (g: Good, tip: string): string => { const s = soil.get(g); const img = `<img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}"${s === undefined ? ` title="${tip}"` : ''}>`; return s === undefined ? img : `<span class="lbsl ${s.up ? 'up' : 'dn'}" title="${s.name}">${img}<i>${s.up ? '▲' : '▼'}</i></span>` }
+    const riceSoil = soil.get('grain')
     // 바닷가 고기잡이 — 곡식이 조금 난다. 겨울엔 바다가 거칠어 쉰다 (economy.nodeYield) → 표가 얼어 흐려진다
     const fish = n.kind !== 'sodo' && isCoast(r, n.id)
       ? `<img class="${season === 'winter' ? 'frz' : ''}" src="${art}icon/good-dried-fish.png" alt="고기" title="${season === 'winter' ? '겨울: 바다가 거칠어 고기잡이를 쉰다' : '고기잡이: 겨울 빼고 곡식이 조금 난다'}">`
@@ -995,8 +1003,8 @@ export function mapHtml(
     // 주인 없는 철광·포구에 쌓인 것 — 군대가 밟으면 그 나라가 거둔다 (형 11-05 · 규칙은 지도에 보이게)
     // 쌓인 것 — 1 이 안 돼도 보인다: 숫자 + 아래에 차오르는 띠 (형 11-05: "쌓이는 것도 안 보이고 · 유저는 이거 모른다고")
     const stash = freeSite(n) ? (Object.entries(n.stash ?? {}) as Array<[keyof typeof GOOD_NAME, number]>).filter(([, v]) => v > 0.01).map(([g, v]) => `<span class="lbst" title="쌓인 ${GOOD_NAME[g]} · 군사가 머물면 달마다 거둔다 · 우리 땅으로는 개척단" style="--f:${(v - Math.floor(v + 1e-9)).toFixed(2)}"><img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}">${Math.floor(v + 1e-9)}</span>`).join('') : ''
-    const tray = stash !== '' || mkt !== '' || wk !== '' || sp.length > 0 || fish !== '' || dfs.length > 0 || cms.length > 0 || bld !== ''
-      ? `<span class="lbg${n.owner === null || n.hh <= 0 ? ' idle' : ''}">${stash}${mkt}${wk}${sp.map((g) => `<img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}" title="${GOOD_NAME[g]}: 사람이 살면 난다">`).join('')}${fish}${dfs.map((t) => `<i class="${t}" title="${DEF_TITLE[t]}">${DEF_NAME[t]}</i>`).join('')}`
+    const tray = stash !== '' || mkt !== '' || wk !== '' || sp.length > 0 || riceSoil !== undefined || fish !== '' || dfs.length > 0 || cms.length > 0 || bld !== ''
+      ? `<span class="lbg${n.owner === null || n.hh <= 0 ? ' idle' : ''}">${stash}${mkt}${wk}${[...(riceSoil !== undefined ? [spImg('grain', '')] : []), ...sp.map((g) => spImg(g, `${GOOD_NAME[g]}: 사람이 살면 난다`))].join('')}${fish}${dfs.map((t) => `<i class="${t}" title="${DEF_TITLE[t]}">${DEF_NAME[t]}</i>`).join('')}`
         + `${bld}${cms.map((m) => `<i class="cmk${m.hot === true ? ' hot' : ''}" title="${m.tip}"${m.hot === true ? ` data-l="${m.label}"` : ''}>${m.label}</i>`).join('')}</span>`
       : ''
     labels.push({
@@ -1005,7 +1013,7 @@ export function mapHtml(
       // 줌 단계 (FOCUS G) — lkeep: 어느 배율에서도 보인다 (고른 고을 · 위협받는 우리 고을 · 칠 채비가 모인 고을) · lmid: 중간 배율에서도 (도읍 · 우리 고을 · 우리 땅과 맞닿은 고을)
       cls: `${kcls}${ours ? ' me' : ''}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${far}${fr}`
         + `${selected === n.id || threatened.has(n.id) || poisedAt.has(n.id) ? ' lkeep' : ''}${n.kind === 'capital' || cap || ours || nearMine.has(n.id) ? ' lmid' : ''}`,
-      kit: owner !== null ? kitVars(owner) : '', emb, rel: relChip(r, me, owner), force, tray, trayW: sp.length + (fish !== '' ? 1 : 0) + dfs.length * 1.6 + cms.reduce((s, m) => s + 0.6 + m.label.length * 0.62, 0),
+      kit: owner !== null ? kitVars(owner) : '', emb, rel: relChip(r, me, owner), force, tray, trayW: sp.length + (riceSoil !== undefined ? 1 : 0) + (fish !== '' ? 1 : 0) + dfs.length * 1.6 + cms.reduce((s, m) => s + 0.6 + m.label.length * 0.62, 0),
     })
     // 맡은 장수 — 우리 고을이면 얼굴을 작게 (형 10-23: "마을에 장수 배치한 거 아직 맵에선 아무것도 안 보이던데")
     const gv = ours ? govOf.get(n.id) : undefined

@@ -45,7 +45,7 @@ const wild = (id: string, name: string, tags: RNode['tags'], room: number, ll: r
  */
 const NODES: RNode[] = [
   // ── 동해 쪽 진한
-  node('y-saro-cap', '사로 도읍', 'capital', ['palisade'], 'saro', 340, [129.21, 35.84]), // 경주 — 『삼국사기』 신라본기
+  node('y-saro-cap', '사로 도읍', 'capital', ['palisade', 'iron'], /* 쇠가 묻힌 땅 — 경주 황성동 제철 유적 */ 'saro', 340, [129.21, 35.84]), // 경주 — 『삼국사기』 신라본기
   node('y-saro-fort', '토함 산성', 'fort', ['high'], 'saro', 60, [129.33, 35.77]),
   node('y-saro-port', '감포 항구', 'port', [], 'saro', 100, [129.42, 35.8]), // 바닷가에 붙도록 안으로
   node('y-eumjeup-cap', '음즙벌 도읍', 'capital', ['palisade'], 'eumjeup', 350, [129.23, 35.99]), // 안강
@@ -59,14 +59,14 @@ const NODES: RNode[] = [
   node('y-guya-iron', '물금 철광', 'ironMine', ['iron'], 'guya', 150, [128.98, 35.33]), // 양산 물금
   node('y-guya-v', '봉황 마을', 'village', [], 'guya', 250, [128.76, 35.28]), // 김해 진영
   node('y-us-cap', '골포 도읍', 'capital', ['palisade'], 'us', 300, [128.57, 35.22]), // 마산 [설] — 포상팔국
-  node('y-us-v', '다호리 마을', 'village', ['reeds'], 'us', 150, [128.62, 35.34]), // 창원 동읍 다호리 (봉황 마을과 겹치지 않게 조금 서북으로)
+  node('y-us-v', '다호리 마을', 'village', ['reeds', 'iron'], /* 쇠가 묻힌 땅 — 창원 다호리 덩이쇠·쇠도끼 */ 'us', 150, [128.62, 35.34]), // 창원 동읍 다호리 (봉황 마을과 겹치지 않게 조금 서북으로)
   node('y-anya-cap', '아라 도읍', 'capital', ['palisade', 'high'], 'anya', 400, [128.41, 35.27]), // 함안 — 지리지 "본래 아시량국"
   node('y-anya-fort', '남강 산성', 'fort', ['high'], 'anya', 100, [128.26, 35.34]), // 의령
   node('y-goja-cap', '고자 도읍', 'port', ['palisade'], 'goja', 400, [128.32, 35.0]), // 고성 — 지리지 "본래 고자군"
   node('y-goja-v', '갯벌 마을', 'village', [], 'goja', 200, [128.42, 34.95]), // 통영 쪽 — 그림의 바닷가에 맞춰 올렸다
   node('y-samul-cap', '사물 도읍', 'port', ['palisade'], 'samul', 300, [128.07, 35.07]), // 사천 — 지리지 "본래 사물현"
   // ── 낙동강 가운데
-  node('y-miri-cap', '추화 도읍', 'capital', ['palisade', 'moat'], 'miri', 600, [128.75, 35.49]), // 밀양 [설]
+  node('y-miri-cap', '추화 도읍', 'capital', ['palisade', 'moat', 'iron'], /* 쇠가 묻힌 땅 — 밀양 사촌 제철 유적 */ 'miri', 600, [128.75, 35.49]), // 밀양 [설]
   node('y-miri-v', '삼랑 나루 마을', 'village', ['reeds', 'shallows'], 'miri', 300, [128.82, 35.41]), // 삼랑진
   node('y-bihwa-cap', '비화 도읍', 'capital', ['palisade'], 'bihwa', 400, [128.5, 35.54]), // 창녕 — 『삼국유사』 오가야
   node('y-chopal-cap', '초팔 도읍', 'capital', ['palisade'], 'chopal', 300, [128.27, 35.57]), // 합천 초계 — 신라본기 파사이사금

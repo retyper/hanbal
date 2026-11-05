@@ -39,7 +39,7 @@ const NODES: RNode[] = [
   node('anya-fort', '남강 산성', 'fort', ['high'], 'anya', 100),
   node('anya-vil', '솔숲 마을', 'village', ['pines'], 'anya', 250),
   // 추화국 推火 — 밀양 (『삼국사기』 지리지 "본래 추화군" — 나라 이름은 [설] · 위서 미리미동국) · 낙동강 가 농사
-  node('miri-cap', '추화 도읍', 'capital', ['palisade', 'moat'], 'miri', 750),
+  node('miri-cap', '추화 도읍', 'capital', ['palisade', 'moat', 'iron'], /* 쇠가 묻힌 땅 — 밀양 사촌 제철 유적 */ 'miri', 750),
   node('miri-vil', '여울목 마을', 'village', ['reeds', 'shallows'], 'miri', 450),
   // 고자국 古自 — 고성 (『삼국사기』 지리지 "본래 고자군" · 포상팔국 고사포 · 위서 고자미동국) · 남해 포구
   node('goja-cap', '고자 도읍', 'port', ['palisade'], 'goja', 500),

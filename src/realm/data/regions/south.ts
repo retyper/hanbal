@@ -39,7 +39,7 @@ const NEW_NODES: RNode[] = [
   node('m-mokji-cap', '목지 도읍', 'capital', ['palisade'], 'mokji', 550, [127.17, 36.9]), // 천안 직산 [설] — 위서 목지국, 진왕의 자리
   node('m-mokji-v', '아산만 포구', 'port', [], 'mokji', 200, [126.95, 36.9]),
   node('m-ungcheon-cap', '웅천 도읍', 'capital', ['palisade', 'high'], 'ungcheon', 350, [127.12, 36.46]), // 공주 — 지리지 "본래 백제 웅천"
-  node('m-sangdang-cap', '상당 도읍', 'capital', ['palisade'], 'sangdang', 350, [127.49, 36.64]), // 청주 — 지리지 "본래 백제 상당"
+  node('m-sangdang-cap', '상당 도읍', 'capital', ['palisade', 'iron'], /* 쇠가 묻힌 땅 — 곁의 진천 석장리 제철 유적 */ 'sangdang', 350, [127.49, 36.64]), // 청주 — 지리지 "본래 백제 상당"
   node('m-sangdang-iron', '국원 철광', 'ironMine', ['iron'], 'sangdang', 120, [127.93, 36.97]), // 충주 — 철이 난다
   node('m-sodo', '마한 소도', 'sodo', ['sodo'], null, 0, [127.05, 36.18]), // 위서 한조: 마한의 소도
   // ── 전라 (마한 남부)
