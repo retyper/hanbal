@@ -59,6 +59,7 @@ This is an original character from my own Korean historical fantasy strategy gam
 - ~~w-44-okjeo-sogeumbi 동옥저 소금비~~ — 트임이 허리띠 밑까지라 걷음(-rejected) · 같은 대화에서 고쳐 달라니 「성적 콘텐츠 방지」로 거절 · 새 대화에서 다시 — 11-05 밤
 - w-27-mokji-jinha 목지 진하 — 2차(retyper · 긴 치마 틀) — 11-05 밤
 - ~~w-38-sangdang-bulmae 상당 불매~~ — 「긴 치마」를 넣어도 트임이 사타구니 곁까지라 걷음(-rejected) · 다음부터는 「ankle-length skirt, legs covered except one knee-high slit」 — 11-05 밤
+- w-39-gosaburi-galmae 고사부리 갈매 — 2차(retyper · 발목 치마 틀이 먹힘) — 11-05 밤
 - ~~w-01-silla-princess 신라 공주 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - ~~w-05-baekje-queen 백제 왕비 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - w-02-goguryeo-lady 고구려 무녀 — 1차 2판(edu · 골반 아래 잘라 냄, 원본 -raw) — 11-03
