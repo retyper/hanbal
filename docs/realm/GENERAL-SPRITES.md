@@ -98,6 +98,7 @@ BACKGROUND: flat pure bright green #00FF00 everywhere, no shadows, no ground lin
 - 쇠비 ✔ 11-05 밤 `gen-soebi.png` (칸 144x160 · edu Flash · `guya-3`) — 큰 쇠망치 · A·B 는 칸 선이 없어 지울곳 없이 · C 쓰러짐은 왼쪽 아래 칸 선을 넘어 장화가 걸쳐 「0.246,0,0.254,0.86;0.246,0.93,0.254,1」 로 장화 자리만 남기고 선을 지움 · copyrect 0,0.78,0.285,0.22
 - 아라 ✔ 11-05 밤 `gen-ara.png` (칸 156x160 · edu Flash · `anya-1`) — 「straight blade · NO handguard · ring at the end」 을 머리말에 넣어 곧은 고리자루 칼 · C 는 B 를 다시 그리며 왼쪽 아래만 쓰러짐(copyrect 0,0.78,0.275,0.22)
 - 허황옥 ✔ 11-05 밤 `gen-heo.png` (칸 150x160 · edu Flash · `gj-heo`) — B 의 서기 둘이 걷는 자세라 C 에서 서기·맞음·쓰러짐 셋을 받아 B 의 1·7·8 칸에 갈아 끼움(copycell · copyrect) · B 지도 "1,1,1,1,3,4,4,5,6,6,7,8" · edu 가 중간에 「텍스트만 만든다」고 답하면 「image generation tool 로」 다시 시키면 됐다
+- 감실 ✔ 11-05 밤 `gen-gamsil.png` (칸 156x160 · edu Flash · `gammun-2`) — 쓰러짐 장(C)이 딴 옷(베이지 병사)으로 나와 버리고 **맞음 컷을 90도 눕혀 쓰러짐으로**: `powershell -NoProfile -File tools/laydown.ps1 -In fb.png -SrcCell 7 -DstCell 8 -Out fb2.png` (ps1 은 UTF-8 BOM 필수)
 - ✗ 11-05 밤 걷기 다리 바꾸기 넷째 실패: 소서노 걷기 1~4컷을 초록 바탕 한 줄로 주고 「두 다리만 바꿔 같은 4컷」을 시켰더니 거의 같은 그림(무릎 든 다리도 같은 쪽)을 돌려줬다(u/0 · walkfix/cmp.png). 다음: Veo 제자리걸음 영상에서 컷 뽑기
 
 생김새는 `docs/realm/cast/part-*.md` 의 「겉모습」 줄을 영어로 옮겨 `<한 줄 생김새>` 자리에 넣는다. 초상(bust)을 올리지 않는다 — 글만. 결(무기·자세)은 아래 「결」 그대로 두어 공격 컷이 같은 박자로 돈다.
