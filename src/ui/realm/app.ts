@@ -1528,11 +1528,40 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
   /** 군대 말 꾹 누름 상자 — 우리·동맹은 장수·사람 수·병종·사기 · 적은 나라와 가는 곳만 (군세는 정찰로 안다) */
   /**
+   * 다음 달에 이기나 (형 11-05: "다음 턴에 승리 확정이라면 다음 달 버튼에 승리라는 걸 알 수 있게") — 지금 명령 그대로 한 달을 미리 넘겨 본다.
+   * 판은 결정론이라(A1) 넘겨 본 그대로 된다. 다만 우리가 낄 싸움이 있으면 장담하지 않는다(전장에서 직접 지휘하면 바뀐다).
+   * 멈춘 사이에 한 번만 센다(winAheadMs) · 명령이 같으면 다시 안 센다 · 숨은 탭에선 안 센다(절대 규칙 4)
+   */
+  let winAhead: { key: string; win: boolean } = { key: '', win: false }
+  let winJob = 0
+  function scheduleWinAhead(r: Realm): void {
+    if (r.outcome) return
+    const key = `${r.season}|${JSON.stringify(ordersNow())}`
+    if (winAhead.key === key) return
+    window.clearTimeout(winJob)
+    winJob = window.setTimeout(() => {
+      const base = realm
+      if (base === null || base.season !== r.season || base.outcome || document.hidden) return
+      let win = false
+      try {
+        // 넘기는 것은 지금 판(realm) — 화면의 r 은 이번 달 명령을 미리 얹은 판(plan)이다 · 「다음 달」과 같은 셈(ordersNow · 재상 · AI)
+        const res = advance(base, [...ordersNow(), ...chancellorOrders(), ...aiOrders(base)])
+        const o = res.next.outcome
+        win = o != null && o.kind === 'win' && !res.report.lines.some((l) => l.kind === 'battle' && (l.atkFaction === me() || l.defender === me()))
+      } catch { win = false }
+      const was = winAhead.win
+      winAhead = { key, win }
+      if (win !== was) { const b = root.querySelector('.next'); if (b !== null) b.innerHTML = `${nextPreview(r)}다음 ${turnWord(r)} <span>›</span>` }
+    }, P.realm.winAheadMs)
+  }
+  /**
    * 「다음 달」 단추 앞의 작은 그림 — 다음 달이 무엇을 가져오나 (loop-lens 11-01: "단추가 아무것도 말하지 않는다")
    * ⚔ 적이 친다(모인 적이 보일 때) · 우리 군대가 닿는다 · 짓던 것이 선다 · 계절이 바뀐다(다음 계절 그림). 셋까지
    */
   function nextPreview(r: Realm): string {
-    if (!monthly(r)) return ''
+    // 다음 달에 이긴다 — 맨 앞에 금빛 「승리」 (미리 넘겨 본 셈 · scheduleWinAhead)
+    const win = winAhead.win && winAhead.key.startsWith(`${r.season}|`) ? `<i class="nxp win" data-tip="지금 명령대로면 다음 ${turnWord(r)}에 이긴다">${icon('emblem-crown')}<b>승리</b></i>` : ''
+    if (!monthly(r)) return win === '' ? '' : `<span class="nxps">${win}</span>`
     const out: string[] = []
     const vis = visibleNodes(r, me())
     // 적이 친다 — 채비를 마친 군대이거나, 길 위에서 다음 달 우리 고을에 닿는 군대 (긴급 위원회 11-04 · 예고가 「다음 달」에 붙어야 넘기고 싶다)
@@ -1546,6 +1575,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (Object.values(r.armies).some((a) => a.faction === me() && a.march !== null && a.march.left <= 1)) out.push(`<i class="nxp">${icon('unit-spear')}</i>`)
     if ((r.builds ?? []).some((b) => b.faction === me() && b.done <= r.season)) out.push(`<i class="nxp">${icon('settle-palisade')}</i>`)
     if (isSeasonEnd(r)) out.push(`<i class="nxp">${icon(SEASON_ICON[seasonOf(r, r.season + 1)])}</i>`)
+    if (win !== '') out.unshift(win)
     return out.length === 0 ? '' : `<span class="nxps">${out.slice(0, 4).join('')}</span>`
   }
   /**
@@ -6673,6 +6703,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const waiting = openAsks(realm, me()).filter((a) => answers[a.id] === undefined).length
     morph($('.legend'), legendHtml(r) + (waiting > 0 ? `<button class="askpill" data-act="tab" data-tab="diplo">${icon('good-tribute-bell')}사신 ${waiting}</button>` : ''))
     $('.next').innerHTML = `${nextPreview(r)}다음 ${turnWord(r)} <span>›</span>`
+    scheduleWinAhead(r)
     morph($('.todo'), todoHtml(r))
     morph($('.goalb'), goalBandHtml(r, esc, goalFolded()) + contestHtml(r)) // 캠페인의 장이면 이 장의 목표 — 접을 수 있다
     $('.goalb').classList.toggle('folded', goalFolded())
