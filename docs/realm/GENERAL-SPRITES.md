@@ -93,6 +93,8 @@ BACKGROUND: flat pure bright green #00FF00 everywhere, no shadows, no ground lin
 - 매눈 ✔ 11-04 `gen-maenun.png` (칸 146x160 · u/0 · `chief` 는 초상 표에 없어 GEN_OWN 에 손으로)
 - 남은 것: 말 탄 넷(비류·금하·거타·쇠보 — 말 띠 굽는 길이 아직 없다)
 - 협보 ✔ 11-04 `gen-hyeopbo.png` (칸 163x160 · u/0) — 첫 판은 휜 칼(왜도 꼴)이라 버리고, 「perfectly STRAIGHT single-edged blade · round ring pommel · NOT curved, NOT a katana」를 A·B 머리말 모두에 넣어 새 대화로 다시 → 모든 컷 곧은 칼
+- 말갈기 ✔ 11-05 밤 `gen-malgalgi.png` (칸 157x160 · u/0 자동 모드 · `tut-malgalgi`·`sabeol-1` — 튜토리얼 각성 장수) — A·B·C 모두 칸 선을 그려 key-png 지울곳 "0.246,0,0.254,1;0.496,0,0.504,1;0.746,0,0.754,1;0,0.493,1,0.507" · C 는 B 를 다시 그리며 왼쪽 아래만 쓰러짐으로(copyrect 0,0.78,0.25,0.22) · 걷기 여덟째는 A 넷째(copycell) · 휘두르기 옅은 초록 자국은 scratchpad degreen(g-max(r,b)>15 지움)
+- ✗ 11-05 밤 걷기 다리 바꾸기 넷째 실패: 소서노 걷기 1~4컷을 초록 바탕 한 줄로 주고 「두 다리만 바꿔 같은 4컷」을 시켰더니 거의 같은 그림(무릎 든 다리도 같은 쪽)을 돌려줬다(u/0 · walkfix/cmp.png). 다음: Veo 제자리걸음 영상에서 컷 뽑기
 
 생김새는 `docs/realm/cast/part-*.md` 의 「겉모습」 줄을 영어로 옮겨 `<한 줄 생김새>` 자리에 넣는다. 초상(bust)을 올리지 않는다 — 글만. 결(무기·자세)은 아래 「결」 그대로 두어 공격 컷이 같은 박자로 돈다.
 
