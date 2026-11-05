@@ -74,6 +74,7 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-42-gwanna-soenun 관나 쇠눈 — 2차(retyper) · 첫 판은 발목 치마 틀에도 앞가운데 트임이 사타구니 곁까지라 걷음(-rejected) · 「Skirt: a floor-length layered wrap skirt of opaque silk; the front panel is fully closed from the waist down to the ankles with no front opening, and both thighs are completely covered by opaque fabric; the only opening is a short side slit on the outer calf below the knee.」 로 바꾸니 닫힘 · 이 말을 다음 틀로 — 11-05 밤
 - w-46-geonma-maru 건마 마루 — 2차(retyper · 앞 닫힌 긴 치마 틀) — 11-05 밤
 - w-47-gosaburi-baram 고사부리 바람 — 2차(retyper · **사람마다 다른 옷 틀** 첫 판: 바람 읽는 무녀 · 청록 바람결 · 흰 목도리 · 나무 새) · 공통 틀 판은 앞 그림들과 똑같아 -generic 으로 둠 — 11-05 밤
+- w-51-haseulla-dangung 하슬라 단궁 — 2차(retyper · 사람마다 다른 옷 틀: 표범 사냥꾼 · 진홍 · 바지와 대님 · 활) — 11-05 밤
 - ~~w-01-silla-princess 신라 공주 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - ~~w-05-baekje-queen 백제 왕비 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - w-02-goguryeo-lady 고구려 무녀 — 1차 2판(edu · 골반 아래 잘라 냄, 원본 -raw) — 11-03
