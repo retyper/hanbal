@@ -53,4 +53,5 @@ export const TRUE_WAKE: ReadonlySet<string> = new Set([
   'mujin-2', // 무진 문의 (11-05 밤 · retyper · 사람마다 다른 옷 틀 · 굿판 무당 오방색)
   'tamna-ruler', // 탐라 한라 (11-05 밤 · retyper · 사람마다 다른 옷 틀 · 화산섬 무당 군장)
   'golbeol-ruler', // 골벌 범 (11-05 밤 · retyper · 사람마다 다른 옷 틀 · 범 사냥꾼 발톱)
+  'jomun-ruler', // 조문 이랑 (11-05 밤 · retyper92 · 사람마다 다른 옷 틀 · 쌍단검 호위)
 ])

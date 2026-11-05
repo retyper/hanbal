@@ -30,7 +30,7 @@ This is an original character from my own Korean historical fantasy strategy gam
 ```
 
 ### 다음 줄 (11-05 밤 retyper 한도에서 멈춤 · 이 순서로)
-- **w-59-jomun-irang 조문 이랑** (`jomun-ruler`) — 보내 놓고 한도 문구만 받음. 주제: 낯선 이를 안 믿는 호위 · 쌍 청동 단검 · 검은 가죽 조끼(붉은 끈 엮음) · 팔 문신이 빛남 · 붉은·푸른 구슬 · 가죽 바지에 붉은 끈 · 기운은 붉은·코발트 칼자국 · 「ninja mask」 를 Avoid 에 (메모리 no-ninja-assassin)
+- ~~w-59-jomun-irang 조문 이랑~~ ✔ retyper92 로 받음. 주제: 낯선 이를 안 믿는 호위 · 쌍 청동 단검 · 검은 가죽 조끼(붉은 끈 엮음) · 팔 문신이 빛남 · 붉은·푸른 구슬 · 가죽 바지에 붉은 끈 · 기운은 붉은·코발트 칼자국 · 「ninja mask」 를 Avoid 에 (메모리 no-ninja-assassin)
 - 그다음: 구가 누리(19 · 흰 털옷 · 금 개 노리개 — 살아 있는 개는 빼고 노리개로) · 불래 박달(범가죽 · 짐승 이빨 · 황토빛 · 뿔활) · 이서 신애 · 벽진 별 · 우산 해솔 · 무진 무등(52 · 산 같은 노장 · 매 깃털 창 — 드러냄은 어깨 정도로) · 동옥저 소금(52 · 소금길 여주인)
 - 옛 공통 틀로 넣은 것(서로 닮음 — 형이 바라면 다시): 환나 버들 · 관나 쇠눈 · 건마 마루 · 그 앞 11-05 진각성 모두
 
@@ -84,6 +84,7 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-54-maga-dalli 마가 달리 — 2차(retyper · 사람마다 다른 옷 틀: 초원 기마 궁수 · 늑대털 조끼 · 바지 · 푸른 번개) — 11-05 밤
 - w-58-tamna-halla 탐라 한라 — 2차(retyper · 사람마다 다른 옷 틀: 화산섬 무당 군장 · 용암 갑옷 · 동백 · 거울엔 화산) — 11-05 밤
 - w-60-golbeol-beom 골벌 범 — 2차(retyper · 사람마다 다른 옷 틀: 범 사냥꾼 · 범가죽 · 줄무늬 칠 · 청동 발톱 · 바지) — 11-05 밤
+- w-59-jomun-irang 조문 이랑 — 2차(retyper92 · 사람마다 다른 옷 틀: 쌍 청동 단검 호위 · 검은 가죽 · 붉은 끈 · 문신) — 11-05 밤
 - ~~w-01-silla-princess 신라 공주 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - ~~w-05-baekje-queen 백제 왕비 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - w-02-goguryeo-lady 고구려 무녀 — 1차 2판(edu · 골반 아래 잘라 냄, 원본 -raw) — 11-03
