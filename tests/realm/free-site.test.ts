@@ -94,7 +94,7 @@ describe('주인 없는 터 — 개척단 (형 11-05: "감포로 보낸 개척�
     const me = r.player
     const cap = r.factions[me]!.capital
     const s = r.stock[me]!
-    s.grain = 99999; (s as Record<string, number>).wood = 9999
+    s.grain = 99999; s.wood = 9999
     r.nodes[cap]!.hh += 400
     const g0 = s.grain
     formParty(r, { kind: 'party', faction: me, node: cap, goal: site }, [])
@@ -104,8 +104,8 @@ describe('주인 없는 터 — 개척단 (형 11-05: "감포로 보낸 개척�
     const extra = foundCost(r, me, true).grain - foundCost(r, me).grain
     assert.ok(g0 - s.grain >= partyCost(r, me, p.hh).grain + extra - 1)
     // 곳간을 비우고 닿게 한다 → 그래도 선다
-    s.grain = 0; (s as Record<string, number>).wood = 0
-    p.readyAt = undefined; p.at = site; p.march = null
+    s.grain = 0; s.wood = 0
+    delete p.readyAt; p.at = site; p.march = null
     for (const a of Object.values(r.armies)) if (a.at === site && a.faction !== me) a.at = cap
     const lines: ReportLine[] = []
     stepParties(r, lines)

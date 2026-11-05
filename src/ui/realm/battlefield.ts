@@ -1575,7 +1575,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       const gNow = gDown && anim && last?.lostHero?.hero === hero
       const gCls = ` gsp g-${ga.kind}${ga.bow === true ? ' gbw' : ''}${ga.kind === 'mount' ? ' gmt' : ''}${gNow ? ' gfall' : gDown ? ' gdown' : ''}`
       const gen = `<span class="wgen${gCls}" style="--fc:${fc};--gar:${ga.ar.toFixed(3)};--gb:${ga.body.toFixed(3)}"><i class="wpole">${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}</i><i class="gbody"><b class="gspf" style="background-image:url('${art}anim2/gen-${ga.kind}.png')"></b></i>${face(hero, art, 'unit-general')}</span>`
-      const cues = '<i class="wq q-charge"><b>돌격</b></i><i class="wq q-hold"></i><i class="wq q-shoot"></i><i class="wq q-ride"></i><i class="wq q-drum"></i><i class="wq q-cap"><b>사로잡으러</b></i><i class="wq q-back"><b>물러난다</b></i>'
+      const cues = '<i class="wq q-charge"><b>돌격</b></i><i class="wq q-hold"></i><i class="wq q-shoot"></i><i class="wq q-ride"></i><i class="wq q-cap"><b>사로잡으러</b></i><i class="wq q-back"><b>물러난다</b></i>'
       if (men <= 0) return `<div class="wf2s ${cls}"${formAttrs(o)}>${terrainProps(cls)}${gen}${cues}</div>`
       // 병사 그림 — 어느 싸움이든 한 잣대: 작은 병사 10명 · 큰 병사(2배) 100명 · 깃발 병사 1000명 (troops.ts · 형 11-01: "보기만 해도 몇명인지").
       // 전엔 큰 쪽 군대에 맞춘 로그 눈금(백 명 8 · 천 명 13)이라 920 명과 340 명이 13 대 5 로 보였다 — 판마다 잣대가 달라 셀 수가 없었다
@@ -2307,9 +2307,6 @@ export const WAR_CSS = `
 .ap .wf2s[data-b] .q-shoot { opacity: .85; } .ap .wf2s[data-b="fire"] .q-shoot { border-top-color: #ff8a3a; filter: drop-shadow(0 0 5px #ff5a1a); } .ap .wf2s[data-b="counter"] .q-shoot { height: 30%; top: 26%; }
 .ap .wf2s .q-ride { left: 20%; top: 6%; width: 38%; height: 34%; border-top: 2px dashed #c8e8ff; border-right: 2px dashed #c8e8ff; border-radius: 0 60% 0 0; }
 .ap .wf2s[data-h="flank"] .q-ride, .ap .wf2s[data-h="pursue"] .q-ride { opacity: .85; }
-.ap .wf2s .q-drum { left: 7%; top: 47%; width: clamp(40px, 11cqw, 64px); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; border: 2px solid #ffd27a; }
-.ap .wf2s[data-l="drum"] .q-drum, .ap .wf2s[data-l="art"] .q-drum { opacity: 1; animation: wqdrum 1s ease-out infinite; } @keyframes wqdrum { from { scale: .6; opacity: 1; } to { scale: 1.5; opacity: 0; } }
-.ap .wf2s[data-l="art"] .q-drum { border-color: #ff9ad8; }
 .ap .wf2s .q-cap { left: 11%; top: 38%; width: 80%; border-top: 2px dashed #ffb070; text-align: left; padding-left: 14%; box-sizing: border-box; white-space: nowrap; color: #ffb070; } /* 글자는 제 쪽에 — 가운데 두면 양쪽이 같이 낼 때 겹친다 */
 .ap .wf2s .q-cap b { position: relative; top: -16px; text-shadow: 0 1px 3px #000; }
 .ap .wf2s[data-l="capture"] .q-cap { opacity: 1; }
