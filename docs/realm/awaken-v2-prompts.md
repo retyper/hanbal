@@ -90,6 +90,7 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-61-iseo-sinae 이서 신애 — 2차(retyper92 · 사람마다 다른 옷 틀: 별 셈 책사 · 하늘빛 · 떠다니는 산가지 · 별자리 빛) — 11-05 밤
 - w-62-byeokjin-byeol 벽진 별 — 2차(retyper92 · 사람마다 다른 옷 틀: 대장간 처녀 · 쇠빛 푸름 · 불티 · 집게와 달군 쇠 · 망치) — 11-05 밤
 - w-63-us-haesol 우시산 해솔 — 2차(retyper92 · 사람마다 다른 옷 틀: 바닷가 소나무 · 솔가지 지팡이 · 솔방울·물보라) · 치마 끝 물결 무늬가 청해파 꼴이라 일본풍으로 보이면 다시(다음엔 「no seigaiha wave pattern」) — 11-05 밤
+- w-65-goguryeo-hwalmi 고구려 활미 — 2차(retyper92 · 사람마다 다른 옷 틀: 고분벽화 사냥 궁수 · 흰 바탕 검은 점무늬 저고리·바지 · 붉은 붓자국 · 이마 점 없이) — 11-05 밤
 - ~~w-01-silla-princess 신라 공주 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - ~~w-05-baekje-queen 백제 왕비 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - w-02-goguryeo-lady 고구려 무녀 — 1차 2판(edu · 골반 아래 잘라 냄, 원본 -raw) — 11-03
