@@ -94,6 +94,7 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-74-balla-dokmudeom 반라 독무덤 — 2차(retyper92 · 사람마다 다른 옷 틀: 옹관 무덤지기 · 푸른 혼불 · 검붉은 옷 · 청동 거울) — 11-05 밤
 - w-70-bukokjeo-mulbeom 북옥저 물범 — 2차(retyper92 · 사람마다 다른 옷 틀: 얼음 바다 작살 사냥꾼 · 물범 가죽 · 얼음 조각 · 밧줄) — 11-05 밤
 - w-71-yeonna-neoul 연나 너울 — 2차(roqkfeke12 · 사람마다 다른 옷 틀: 산안개 길잡이 · 보랏빛 안개 · 길 불빛 · 꿩 깃 · 창) — 11-05 밤
+- w-72-eumjeup-beol 읍즙 벌 — 2차(roqkfeke12 · 사람마다 다른 옷 틀: 이름이 벌이라 말벌 여전사 · 호박빛 줄무늬 · 빛 벌떼 · 벌집 무늬) · 첫 판은 칼에 둥근 날밑(츠바)이 달려 걷음 → 「plain handle with NO handguard · ring at the very END」로 다시 — 11-05 밤
 - ~~w-01-silla-princess 신라 공주 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - ~~w-05-baekje-queen 백제 왕비 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - w-02-goguryeo-lady 고구려 무녀 — 1차 2판(edu · 골반 아래 잘라 냄, 원본 -raw) — 11-03
@@ -117,6 +118,7 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-67-buyeo-haedal 해달 — 1차 2판(retyper · 검토 PASS) — 11-03
 - w-70-bukokjeo-mulbeom 물범 — 1차 2판(retyper · 검토 PASS) — 11-03
 - w-71-yeonna-neoul 연나 너울 — 2차(roqkfeke12 · 사람마다 다른 옷 틀: 산안개 길잡이 · 보랏빛 안개 · 길 불빛 · 꿩 깃 · 창) — 11-05 밤
+- w-72-eumjeup-beol 읍즙 벌 — 2차(roqkfeke12 · 사람마다 다른 옷 틀: 이름이 벌이라 말벌 여전사 · 호박빛 줄무늬 · 빛 벌떼 · 벌집 무늬) · 첫 판은 칼에 둥근 날밑(츠바)이 달려 걷음 → 「plain handle with NO handguard · ring at the very END」로 다시 — 11-05 밤
 - w-90-saro-danbi 나정 지기 단비 — 1차 2판 다시(retyper · 검토 PASS) — 11-03
 - w-12-court-dancer 고구려 무희 — 1차 2판(retyper · 검토 PASS) — 11-03
 - w-03-goguryeo-archer 매화(고구려 떠돌이 궁수) — 1차 2판(retyper · 검토 PASS) — 11-03
