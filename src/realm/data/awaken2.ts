@@ -55,4 +55,5 @@ export const TRUE_WAKE: ReadonlySet<string> = new Set([
   'golbeol-ruler', // 골벌 범 (11-05 밤 · retyper · 사람마다 다른 옷 틀 · 범 사냥꾼 발톱)
   'jomun-ruler', // 조문 이랑 (11-05 밤 · retyper92 · 사람마다 다른 옷 틀 · 쌍단검 호위)
   'guga-ruler', // 구가 누리 (11-05 밤 · retyper92 · 사람마다 다른 옷 틀 · 흰 털옷 공주)
+  'bullae-ruler', // 불래 박달 (11-05 밤 · retyper92 · 사람마다 다른 옷 틀 · 산길 지킴이 암각화 돌)
 ])
