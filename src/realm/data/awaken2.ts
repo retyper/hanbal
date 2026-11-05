@@ -38,4 +38,5 @@ export const TRUE_WAKE: ReadonlySet<string> = new Set([
   'goryong-ruler', // 고룡 구름 (11-05 밤 · retyper)
   'wander-08', // 동예 범 사냥꾼 (11-05 밤 · retyper)
   'wander-01', // 진한 소금 과부 (11-05 밤 · retyper)
+  'uga-2', // 우가 너리 (11-05 밤 · retyper · 첫 판 치마가 짧아 길게 고침)
 ])

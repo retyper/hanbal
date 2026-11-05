@@ -55,6 +55,7 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-49-goryong-gureum 고룡 구름 — 2차(retyper) — 11-05 밤
 - w-22-dongye-tiger-huntress 동예 범 사냥꾼 — 2차(retyper) — 11-05 밤
 - w-18-jinhan-salt-widow 진한 소금 과부 — 2차(retyper) — 11-05 밤
+- w-43-uga-nuri 우가 너리(첫 판 치마가 짧아 「긴 치마 · 한쪽 트임만」으로 고침) — 2차(retyper) — 11-05 밤
 - ~~w-01-silla-princess 신라 공주 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - ~~w-05-baekje-queen 백제 왕비 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - w-02-goguryeo-lady 고구려 무녀 — 1차 2판(edu · 골반 아래 잘라 냄, 원본 -raw) — 11-03
