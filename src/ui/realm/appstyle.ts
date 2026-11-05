@@ -781,7 +781,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .cnspk .cnbig { display: block; width: min(86vw, 420px, 50vh); aspect-ratio: 1; height: auto; object-fit: cover; object-position: top;
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent), linear-gradient(transparent, #000 10%, #000 72%, transparent);
   -webkit-mask-composite: source-in; mask-image: linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent), linear-gradient(transparent, #000 10%, #000 72%, transparent); mask-composite: intersect; }
-.ap .cnspk video.cnbig { width: min(62vw, 320px, calc(50vh * 720 / 1100)); aspect-ratio: 720 / 1100; }
+.ap .cnspk video.cnbig { width: min(62vw, 320px, calc(50vh * 720 / 1120)); aspect-ratio: 720 / 1120; }
 .ap .cnspk video.cnbig.sq { width: min(86vw, 420px, 50vh); }
 /* 낮은 가로 화면(폰 눕힘) — 얼굴은 왼쪽, 말은 오른쪽 (세로로 쌓으면 머리 위가 잘렸다) */
 @media (max-height: 520px) and (min-aspect-ratio: 4/3) {
@@ -789,7 +789,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
   .ap .cnstage .cnt { grid-column: 1 / -1; margin: 0; }
   .ap .cnstage .cnspk { grid-row: 2; }
   .ap .cnspk .cnbig { width: min(36vw, 50vh); }
-  .ap .cnspk video.cnbig { width: min(28vw, calc(50vh * 720 / 1100)); }
+  .ap .cnspk video.cnbig { width: min(28vw, calc(50vh * 720 / 1120)); }
   .ap .cnstage .cnsub { grid-row: 2; grid-column: 2; align-self: center; max-height: 100%; overflow-y: auto; padding: 8px 12px; font-size: 14.5px; line-height: 1.5; }
   .ap .cnstage .cnt { font-size: 17px; padding-top: 0; }
   .ap .cnspk b { margin-top: -24px; font-size: 15px; padding: 2px 12px; }
@@ -1135,7 +1135,13 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .plcard.off { opacity: .55; } .ap .plcard.off p { margin: 4px 0 0; font-size: 12.5px; }
 .ap .plcard.up { border-color: #6fae5a; background: #1c2416; } .ap .plcard.down { border-color: #b8784a; background: #261c14; }
 .ap .plch { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; } .ap .plch b { font-size: 15px; }
+/* 글·값·칩이 많은 넓은 단추 — 폰 폭에서 줄을 바꿔 다 보이게 (형 11-05 사로 도읍 개척단 단추가 왼쪽에서 잘리고 칩이 삐져나갔다) */
+.ap .btn.wrapb { flex-wrap: wrap; white-space: normal; justify-content: center; row-gap: 4px; height: auto; min-height: 44px; text-align: center; }
 .ap .pltag { font-size: 11.5px; padding: 1px 7px; border-radius: 999px; } .ap .pltag.rv { background: #183048; color: #a8d4ff; border: 1px solid #3a6a9a; } .ap .pltag.hl { background: #2e2618; color: #d8c090; border: 1px solid #6a5a3a; }
+/* 고을 카드의 땅의 결 — 잘 나는 것은 금빛 · 덜 나는 것은 잿빛 (형 11-05) */
+.ap .soilrow { display: flex; flex-wrap: wrap; gap: 4px; } .ap .soil { display: inline-flex; align-items: center; gap: 2px; font-style: normal; padding: 0 7px 0 3px; border-radius: 9px; font-size: 12.5px; }
+.ap .soil.up { background: #3a2a10; color: #ffe2a0; border: 1px solid #c8a050; } .ap .soil.dn { background: #26221c; color: #b8b0a0; border: 1px solid #4a4438; }
+.ap .soil u { text-decoration: none; font-weight: 800; margin-left: 2px; }
 .ap .pltag.bd { background: #3a1a14; color: #ffc8b0; border: 1px solid #a04a30; display: inline-flex; align-items: center; gap: 3px; flex-wrap: wrap; } .ap .pltag .plem { width: 16px; height: 16px; object-fit: contain; }
 .ap .pltag.go { background: #3a2a14; color: #fbe8c8; border: 1px solid #e0b070; display: inline-flex; align-items: center; gap: 3px; }
 /* 우리 도읍 카드 — 우리 땅 파랑 테 · 별 (형 10-31: "우리 도읍은 확실하게 표시" · 금빛 테는 노란 나라와 헷갈렸다) */

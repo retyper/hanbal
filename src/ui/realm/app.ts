@@ -32,9 +32,9 @@ import {
 import { canEscort, envoyChanceFor, envoyClash, envoyOptions, favorOf, friendly, jointTargets, lentEta, openAsks, relationOf } from '../../realm/diplomacy.ts'
 import {
   GOODS, armCost, buildCost, canBuild, canGuard, draftCost, draftIronCost, draftLimit, draftNeeds, draftPay, goodOf, guardCost, hhGrowth, isCoast, militiaMen, nextBuild, nodeHarvest, nodeYield, nodeSpecials, upkeepOf, riteAllowed, riteCost,
-  autoFlows, crowdOf, migratePath, fieldMul, homeRoom, inboundOf, inboundRate, isRiverside, landMul, placeLimit, placeNodes, workMul,
+  autoFlows, crowdOf, migratePath, fieldMul, homeRoom, inboundOf, inboundRate, isRiverside, placeLimit, placeNodes, workMul,
   goodsWorth,
-  callCost, callLimit, callWhy, draftWhy, grainAtSeasonEnd, isWoody, shareOpen, stockOf, freeSite,
+  callCost, callLimit, callWhy, draftWhy, grainAtSeasonEnd, isWoody, shareOpen, stockOf, freeSite, soilOf,
 } from '../../realm/economy.ts'
 import { goalReach, goalRoute } from '../../realm/goal.ts'
 import { approachMoves, armyPower, jointWin, matchupHints, movesOf, type Move } from '../../realm/estimate.ts'
@@ -1465,6 +1465,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const x = realm.heroes[hid]
     return x !== undefined ? `${x.name} ${elemOf(x)}` : ''
   }
+  /** 각성 연출이 떠 있는 동안 미룬 소리 — 연출이 다 걷히면 차례로 (형 11-05: "각성 연출하는데 교역 요청이 동시에 떠서 각성 뒤로 목소리 들림") */
+  const afterAscend: Array<() => void> = []
+  /** 각성 연출이 떠 있으면 걷힌 뒤로 미루고, 아니면 바로 */
+  const whenClear = (f: () => void): void => { if (root.querySelector('.ascfx') !== null) afterAscend.push(f); else f() }
   function ascendShow(r: Realm, lines: readonly ReportLine[]): void {
     const mine = lines.filter((x): x is Extract<ReportLine, { kind: 'ascend' }> => x.kind === 'ascend' && r.heroes[x.hero]?.faction === me())
     const l = mine[0]
@@ -1511,7 +1515,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       + `<div class="axok"><button class="btn pri">확인</button></div>`
     const timers: number[] = []
     // 다음 각성이 줄 서 있으면 걷히자마자 이어서 (같은 달에 둘이 각성해도 둘 다 크게)
-    const gone = (): void => { timers.forEach((t) => window.clearTimeout(t)); if (!el.isConnected) return; el.classList.add('out'); window.setTimeout(() => { el.remove(); if (rest.length > 0) ascendShow(r, rest) }, 350) }
+    const gone = (): void => { timers.forEach((t) => window.clearTimeout(t)); if (!el.isConnected) return; el.classList.add('out'); window.setTimeout(() => { el.remove(); if (rest.length > 0) ascendShow(r, rest); else afterAscend.splice(0).forEach((f) => f()) }, 350) }
     // 확인 단추만 닫는다 — 단추는 능력치가 다 오른 뒤에 뜬다 (CSS --tok · 그 전엔 눌리지 않는다)
     el.querySelector('.axok button')?.addEventListener('click', (ev) => { ev.stopPropagation(); gone() })
     root.appendChild(el)
@@ -3184,7 +3188,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const room = homeRoom(n)
       const now = n.hh + d(id)
       const cap = base.factions[me()]?.capital === id
-      const land = isRiverside(base, id) ? `<span class="pltag rv">강가 논 · 쌀 +${Math.round(P.realm.riverRice * 100)}%</span>` : landMul(base, id) < 1 ? `<span class="pltag hl">높은 터 · 쌀 −${Math.round(P.realm.hillRice * 100)}%</span>` : ''
+      // 땅의 결 — 쌀만이 아니라 나무·철·소금도 (economy.soilOf · 형 11-05)
+      const land = soilOf(base, id).map((s) => `<span class="pltag ${s.up ? 'rv' : 'hl'}">${esc(s.name)} · ${s.good === 'iron' && s.up ? '철 조금' : `${GOOD_NAME[s.good]} ${s.up ? '+' : '−'}${s.pct}%`}</span>`).join('')
       // 이만큼 살면 나는 것 — 쌀(내년 봄 심는 집 기준)과 특산
       const pr = { ...base, nodes: { ...base.nodes, [id]: { ...n, hh: now } } }
       const y = nodeYield(pr, id, 'summer')
@@ -3382,8 +3387,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const say = askSay(a.kind, f?.mind, lead !== undefined ? voiceKind(lead, true) : 'm-elder', lead !== undefined ? chiefCastOf(lead) : 'a')
     if (!bigSounded.has(`aud:${a.id}`)) {
       bigSounded.add(`aud:${a.id}`)
-      window.setTimeout(() => ding(snd(threat ? 'bad_small' : 'envoy'), 0.5), 200)
+      // 각성 연출이 떠 있으면 다 걷힌 뒤에 — 연출 뒤로 사신 목소리가 깔리지 않게 (형 11-05)
+      whenClear(() => {
+        window.setTimeout(() => ding(snd(threat ? 'bad_small' : 'envoy'), 0.5), 200)
       if (lead !== undefined) window.setTimeout(() => { if (document.querySelector('.ap .aud') !== null && voiceGate(performance.now())) ding(say.voice, P.realm.voiceVol) }, P.realm.chiefVoiceMs)
+      })
     }
     const face = bustHd(lead, 'audlord') || bust(lead, 'audlord')
     const what = askLine(a, f?.name ?? '', a.node !== undefined ? (r.nodes[a.node]?.name ?? '') : '', r)
@@ -5225,7 +5233,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           // 갈 빈땅이 없으면 개척은 할 일이 아니다 — 단추를 아예 안 보인다 (형 10-27: "주변에 빈땅이 있을 때만 · 다른 때에는 개척 전혀 필요가 없잖아")
           if (near !== undefined) {
             const what = `${esc(josa(r.nodes[near.to]?.name ?? '', '으로', '로'))} 개척단 보내기`
-            h += `<div class="btns"><button class="btn pri home wide" data-act="party" data-node="${id}"${k > 0 ? '' : noBtn(partyWhy(r, id))}>${icon('unit-porters')}${what}${k > 0 ? ` · 백성 ${k}가구` : ''} ${costHtml({ grain: c.grain, wood: c.wood })}${whenChip(`채비 ${turnsLabel(r, Math.max(1, Math.round(P.realm.partyPrepTurns)))} + 길 ${turnsLabel(r, near.seasons)}`)}</button></div>`
+            h += `<div class="btns"><button class="btn pri home wide wrapb" data-act="party" data-node="${id}"${k > 0 ? '' : noBtn(partyWhy(r, id))}>${icon('unit-porters')}${what}${k > 0 ? ` · 백성 ${k}가구` : ''} ${costHtml({ grain: c.grain, wood: c.wood })}${whenChip(`채비 ${turnsLabel(r, Math.max(1, Math.round(P.realm.partyPrepTurns)))} + 길 ${turnsLabel(r, near.seasons)}`)}</button></div>`
           }
         }
       }
@@ -5535,8 +5543,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     if (hv > 0) h += `<span>가을걷이</span><b>${icon('good-rice', 'gic')}곡식 약 ${hv} <small>여름이 끝날 때</small></b>`
     if (n.kind !== 'sodo' && n.owner !== null) {
-      const lm = landMul(r, id)
-      if (lm !== 1) h += `<span>땅</span><b>${lm > 1 ? `강가 논: 쌀이 ${Math.round((lm - 1) * 100)}% 더 난다` : `높은 터: 쌀이 ${Math.round((1 - lm) * 100)}% 덜 난다`}</b>`
+      // 땅의 결 — 쌀·나무·철·소금이 이 땅에서 더 나고 덜 난다 (economy.soilOf · 형 11-05: "어떤 땅은 나무도 잘 자라고 철도 묻혀 있어야")
+      const soil = soilOf(r, id)
+      if (soil.length > 0) h += `<span>땅</span><b class="soilrow">${soil.map((s) => `<i class="soil ${s.up ? 'up' : 'dn'}">${icon(GOOD_ICON[s.good], 'gic')}${esc(s.name)} <u>${s.good === 'iron' && s.up ? '철 조금' : `${s.up ? '+' : '−'}${s.pct}%`}</u></i>`).join('')}</b>`
       // 소수는 안 보인다 — 말로 (형 10-23: "소수는 아무 데도 안 쓰고 있지 않냐")
       if (goods.some((g) => g !== 'grain')) { const w = workMul(n.hh); h += `<span>일손</span><b>${w < 0.75 ? '모자라다' : w < 1.2 ? '알맞다' : '넉넉하다'} <small>사는 집이 많을수록 철·나무·소금·말이 더 난다</small></b>` }
     }

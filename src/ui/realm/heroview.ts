@@ -181,8 +181,9 @@ export const HERO_CSS = `
   background: #000e; cursor: zoom-out; animation: bvin .2s ease-out; }
 .ap .bview img, .ap .bview video { max-width: min(96vw, 900px); max-height: 88dvh; object-fit: contain; border-radius: 14px; box-shadow: 0 0 40px #000; border: 2px solid #6a5a3a; }
 /* 숨 쉬는 각성 영상(720×1280) — 골반까지 세로로 쓰고 아래 제미나이 표식(✦ · 세로 88~92%)만 잘라 낸다 (형 11-05: "잘리는 거 줄여서 영상 통째로") */
-.ap video.vloop { aspect-ratio: 720 / 1100; object-fit: cover; object-position: 50% 0; }
-.ap .bview video.vloop { height: min(88dvh, calc(96vw * 1100 / 720)); width: auto; max-width: none; }
+/* 세로 영상은 위에서 720×1120 까지 — 아래 제미나이 ✦ 표식(세로 88~92%)만 잘라 낸 가장 큰 판 (형 11-05: "세로로 좀 더 길더라도 더 가까이 보는 게 훨씬 좋다 · 하단 워터마크 정도만 잘라도") */
+.ap video.vloop { aspect-ratio: 720 / 1120; object-fit: cover; object-position: 50% 0; }
+.ap .bview video.vloop { height: min(88dvh, calc(96vw * 1120 / 720)); width: auto; max-width: none; }
 .ap .hcard video.big.vloop { width: 150px; height: auto; border-radius: 16px; border: 2px solid #6a5a3a; display: block; }
 /* 정사각 판으로 만든 영상(.sq · tools/veo/pad.sh) — 가운데 정사각만 오려 원본 그림 전체가 숨 쉰다 */
 .ap video.sq { aspect-ratio: 1 !important; object-fit: cover; object-position: 50% 50% !important; }
