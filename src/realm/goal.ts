@@ -9,7 +9,7 @@
  */
 import { friendly } from './diplomacy.ts'
 import { blockedWhy } from './calendar.ts'
-import { marchTurns } from './season.ts'
+import { marchTurns, packMonths } from './season.ts'
 import { P } from '../tune/params.ts'
 import type { Order, Realm } from './types.ts'
 
@@ -36,6 +36,8 @@ export function goalReach(r: Realm, faction: string, from: string): Map<string, 
   for (const xs of adj.values()) xs.sort((x, y) => (x.to < y.to ? -1 : x.to > y.to ? 1 : x.edge < y.edge ? -1 : 1))
   // 지나갈 수 있는 땅 위의 가장 짧은 길 (다익스트라 — 고을 수가 작아 줄 세우기로 충분하다)
   const best = new Map<string, Reach>()
+  /** 가장 짧은 길로 그 고을에 닿는 마지막 걸음 — [앞 고을, 길] (이어 걷기 셈에 길 전체가 든다) */
+  const prev = new Map<string, readonly [string, string]>()
   const done = new Set<string>([from])
   const open: Array<{ id: string; r: Reach }> = []
   const relax = (at: string, base: Reach | null): void => {
@@ -45,6 +47,7 @@ export function goalReach(r: Realm, faction: string, from: string): Map<string, 
       const old = best.get(x.to)
       if (old !== undefined && (old.seasons < cand.seasons || (old.seasons === cand.seasons && old.hops <= cand.hops))) continue
       best.set(x.to, cand)
+      prev.set(x.to, [at, x.edge])
       // 끝 고을은 어디든 되지만, 그 너머로는 지나갈 수 있는 땅만 이어 간다
       if (through(x.to) && !done.has(x.to)) open.push({ id: x.to, r: cand })
     }
@@ -57,7 +60,14 @@ export function goalReach(r: Realm, faction: string, from: string): Map<string, 
     done.add(cur.id)
     relax(cur.id, cur.r)
   }
-  return best
+  // 달 수는 길 전체로 — 짧은 길은 한 달 안에 이어 걷는다 (season.packMonths · 판정의 이어 걷기와 같은 셈 · 형 11-05)
+  const out = new Map<string, Reach>()
+  for (const [id, b] of best) {
+    const eds = []
+    for (let at = id, i = 0; at !== from && i < 64; i++) { const p = prev.get(at); if (p === undefined) break; const e = r.edges[p[1]]; if (e !== undefined) eds.unshift(e); at = p[0] }
+    out.set(id, { ...b, seasons: Math.max(1, packMonths(r, eds) + eds.filter((e) => blockedWhy(e, r) !== null).length * P.realm.hardExtra) })
+  }
+  return out
 }
 
 /** 갈 곳까지의 걸음들 — [떠나는 고을, 닿는 고을] (지도에 길 전체를 화살로) · 닿지 못하면 빈 줄 */

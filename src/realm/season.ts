@@ -40,7 +40,7 @@ import { scoutCap, watchBorders } from './scouts.ts'
 import { stepSuzerain, suzerainEnd } from './suzerain.ts'
 import { pathsEnd, stepPaths } from './paths.ts'
 import { sendExpeditions, stepExpeditions } from './expedition.ts'
-import { goalSteps } from './goal.ts'
+import { goalReach, goalSteps } from './goal.ts'
 import { resolveCard, stepCards } from './events.ts'
 import { guardAdjust, guardPick, pathKey } from './council.ts'
 import { PEOPLE_SCALE, migrate } from './migrate.ts'
@@ -89,6 +89,46 @@ export function marchSeasons(kind: EdgeKind, season: SeasonOfYear): number {
 }
 
 /**
+ * 길 하나의 무게 — 한 달 길이(그 판 보통 길 × marchLongAt)에 대한 몫 (달 시계 · 옛 판은 1).
+ * 1 밑이면 한 달 안에 다음 길까지 이어 걸을 수 있다 (형 11-05: "지도에서는 가까운데 2달씩 걸리는 데들 왤케 많냐" — 바로 잇는 길이 없어 두 길을 거쳤다)
+ */
+export function edgeLoad(r: Realm, ed: REdge): number {
+  if (!monthly(r)) return 1
+  const R = P.realm
+  const mul = ed.kind === 'pass' || ed.kind === 'mudflat' ? R.marchMonthSlow : ed.kind === 'sea' ? R.marchMonthSea : 1
+  const unit = monthKm(r.roadKm)
+  return ((r.roadKm?.[ed.id] ?? unit) * mul) / unit / R.marchLongAt
+}
+
+/**
+ * 이어 걷기의 몫 — 그 판 보통 길 길이에 대한 이 길의 몫 (길 길이를 모르는 판은 이어 걷지 않는다 · Infinity).
+ * 한 달에 이어 걷는 길들의 합은 marchChainSpan 까지 — 지도에서 가까운 곳만 한 달에 (형 11-05: "지도에서는 가까운데 2달씩")
+ */
+export function chainFrac(r: Realm, ed: REdge): number {
+  if (!monthly(r) || r.roadKm === undefined) return Infinity
+  const R = P.realm
+  const mul = ed.kind === 'pass' || ed.kind === 'mudflat' ? R.marchMonthSlow : ed.kind === 'sea' ? R.marchMonthSea : 1
+  return ((r.roadKm[ed.id] ?? monthKm(r.roadKm)) * mul) / monthKm(r.roadKm)
+}
+
+/**
+ * 길들을 차례로 걸을 때 몇 달 — 짧은 길은 한 달 안에 이어 걷는다 (남은 몫에 다음 길이 들어가면 그 달에) · 긴 길은 제 달 수.
+ * 화면의 「n달 뒤 닿는다」와 판정(resolveMarches 의 이어 걷기)이 같은 셈을 쓴다. 장마철은 이어 걷지 않는다
+ */
+export function packMonths(r: Realm, eds: readonly REdge[], t: number = r.season): number {
+  let months = 0
+  let room = 0
+  for (const ed of eds) {
+    const f = chainFrac(r, ed)
+    if (months > 0 && f <= room + 1e-9 && !isMonsoon(r, t + months - 1)) { room -= f; continue }
+    const m = marchTurns(r, ed, t + months)
+    months += m
+    room = m === 1 && Number.isFinite(f) ? Math.max(0, P.realm.marchChainSpan - f) : 0
+  }
+  return months
+}
+
+/**
  * 길 하나를 지나는 턴 수 — `t` 턴에 떠나면.
  *  - 옛 판: marchSeasons (길 종류 · 여름)
  *  - 달 시계: 지도 위 길이 ÷ 한 달 행군 (형 10-31: "지도에서 가까우면 실제로도 가까워야 함") — 고갯길·갯벌은 길게 치고,
@@ -99,11 +139,8 @@ export function marchSeasons(kind: EdgeKind, season: SeasonOfYear): number {
 export function marchTurns(r: Realm, ed: REdge, t: number = r.season): number {
   if (!monthly(r)) return marchSeasons(ed.kind, seasonOf(r, t))
   const R = P.realm
-  const mul = ed.kind === 'pass' || ed.kind === 'mudflat' ? R.marchMonthSlow : ed.kind === 'sea' ? R.marchMonthSea : 1
-  const unit = monthKm(r.roadKm)
-  const km = (r.roadKm?.[ed.id] ?? unit) * mul
   // 길 하나는 한 달 — 그 판 보통 길의 marchLongAt 배를 넘는 먼 길만 더 걸린다 (형 11-05: "존나 가까운데 왜 2달이나 걸리는지" · 마한 금현성 89km 고개가 넉 달이었다)
-  const base = Math.max(1, Math.min(R.marchMonthMax, Math.round(km / unit / R.marchLongAt)))
+  const base = Math.max(1, Math.min(R.marchMonthMax, Math.round(edgeLoad(r, ed))))
   return base + (isMonsoon(r, t) ? R.marchSummerExtra : 0)
 }
 
@@ -1577,6 +1614,31 @@ function fight(
   lines.push(...scattered)
 }
 
+
+/**
+ * 이어 걷기 — 먼 갈 곳으로 가는 군대가 짧은 길 끝에 닿았으면, 그 달에 남은 몫으로 다음 길까지 간다 (packMonths 와 같은 셈).
+ * 싸울 곳 · 친하지 않은 남의 땅 · 막힌 길 · 장마철엔 이어 가지 않는다 — 다음 달에 제대로 닿는다 (형 11-05: "가까운데 2달씩")
+ */
+function chainOn(r: Realm, a: Army, room: number, lines: ReportLine[]): void {
+  for (let i = 0; i < 8; i++) {
+    if (r.armies[a.id] === undefined || a.march !== null || a.goal === undefined || a.goal === null || a.at === a.goal) return
+    if (isMonsoon(r, r.season)) return
+    const step = goalReach(r, a.faction, a.at).get(a.goal)
+    const ed = step !== undefined ? r.edges[step.edge] : undefined
+    if (ed === undefined || blockedWhy(ed, r) !== null) return
+    const f = chainFrac(r, ed)
+    if (f > room + 1e-9) return
+    const to = otherEnd(ed, a.at)
+    const n = to !== null ? r.nodes[to] : undefined
+    if (to === null || n === undefined || n.kind === 'sodo' || contested(r, to, a.faction)) return
+    if (n.owner !== null && n.owner !== a.faction && !friendly(r, a.faction, n.owner)) return
+    room -= f
+    a.at = to
+    a.came = r.season
+    lines.push({ kind: 'arrive', army: a.id, node: to })
+    if (freeSite(n)) haulAt(r, a.faction, to, lines)
+  }
+}
 /** 싸움 없이 들어간다 — 군대가 고을에 닿고, 남의 땅이면 쥔다 (동맹의 땅은 지나갈 뿐) */
 function walkIn(r: Realm, live: readonly Army[], node: RNode, lines: ReportLine[]): void {
   const lead = live[0]!
@@ -1651,7 +1713,10 @@ function resolveMarches(
       fight(r, [...live, ...wave], snipes, tactics, lines, new Set(wave.map((x) => x.id)))
       continue
     }
+    // 짧은 길이었으면 그 달에 남은 몫 (장마철이 아니고 한 달 안에 닿는 길) — 갈 곳이 남은 군대는 이어 걷는다
+    const rooms = new Map(live.map((x) => { const f = chainFrac(r, r.edges[x.march!.edge]!); return [x.id, Number.isFinite(f) && !isMonsoon(r, r.season) ? Math.max(0, P.realm.marchChainSpan - f) : 0] as const }))
     walkIn(r, live, node, lines)
+    for (const x of live) chainOn(r, x, rooms.get(x.id) ?? 0, lines)
   }
   // 병력이 바닥난 군대는 흩어진다
   for (const a of Object.values(r.armies)) if (headcount(forceOf(r, a)) < 1) delete r.armies[a.id]

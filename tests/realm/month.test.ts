@@ -153,3 +153,26 @@ describe('가까운 길은 한 달', () => {
     assert.ok(Object.values(m.edges).filter((e) => marchTurns(m, e, 0) > 1).length <= 1)
   })
 })
+
+/** 이어 걷기 — 바로 잇는 길이 없어도 짧은 길 둘이면 한 달에 닿는다 · 화면 셈(goalReach)과 판정이 같다 (형 11-05: "지도에서는 가까운데 2달씩") */
+describe('짧은 길은 이어 걷는다', () => {
+  it('두 길을 거쳐 가는 가까운 곳이 화면에 한 달이면, 정말 한 달 뒤 그곳에 서 있다', async () => {
+    const { goalReach } = await import('../../src/realm/goal.ts')
+    let found = false
+    for (const reg of ['yeongnam', 'gujibong', 'seorabeol'] as const) {
+      const r = startRegion(reg, 7, regionNations(reg)[0]!)
+      for (const a of Object.values(r.armies).filter((x) => x.faction === r.player && x.march === null)) {
+        const reach = goalReach(r, r.player, a.at)
+        const hit = [...reach.entries()].find(([to, x]) => x.hops >= 2 && x.seasons === 1 && (r.nodes[to]!.owner === r.player || r.nodes[to]!.owner === null) && r.nodes[to]!.kind !== 'sodo')
+        if (hit === undefined) continue
+        ;(r.armies[a.id] as { goal?: string | null }).goal = hit[0]
+        const next = advance(r, []).next
+        assert.equal(next.armies[a.id]?.at, hit[0], `${reg} ${a.at} → ${hit[0]}`)
+        found = true
+        break
+      }
+      if (found) break
+    }
+    assert.ok(found, '두 길 한 달짜리 쌍을 못 찾았다')
+  })
+})
