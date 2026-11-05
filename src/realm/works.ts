@@ -2,7 +2,8 @@
  * 고을 일터 — 마을 내정의 첫 판 (형 11-03: "마을 먹고 할 게 없다" → "마을 내정도 해 보자 · 이거 하려면 다른 걸 해 둬야 하고
  * 나가서 채집해야 다음 콘텐츠를 즐길 수 있는, 콘텐츠 사이의 유기적임" · 위원회 DESIRE §10 「고을 결」).
  *
- * - 고을마다 일터는 하나. 그 땅에 맞는 것만 지을 수 있다 (바닷가 → 소금밭 · 쇠 나는 곳 → 쇠부리터 …)
+ * - 고을마다 터가 집 수만큼(작은 마을 1 → 큰 고을 workLotMax) — 터마다 서로 다른 일터 하나 · 그 땅에 맞는 것만 (바닷가 → 소금밭 · 쇠 나는 곳 → 쇠부리터 …)
+ *   (형 11-05: "논을 지으면 다른 걸 아예 못 짓는 게 말이 안 돼") · 옛 판의 n.work·workLv 는 첫 터로 읽는다 (lvOf)
  * - **둘째 줄 일터는 첫째 줄 일터가 우리 땅 어딘가에 있어야 열린다** — 대장간은 쇠부리터가, 젓갈 창고는 소금밭이.
  *   그래서 바닷가·쇠 나는 땅을 넓혀야 하고(개척단), 그 땅을 지켜야 한다. 일터는 고을과 함께 넘어간다 — 남이 지어 둔 대장간을 먹는 맛.
  * - 효과는 숫자 곱 하나씩이 나라 셈에 걸린다: 논(가을걷이) · 소금밭·쇠부리터·목수·목장(그 특산) · 장정 마을(징병) ·
@@ -64,8 +65,41 @@ export function workCost(what: WorkWhat, lv = 1): Partial<Record<Good, number>> 
   return scale(base)
 }
 
-/** 일터의 단 (지었으면 1부터) */
-export const workLv = (n: RNode | undefined): number => (n?.work === undefined ? 0 : n.workLv ?? 1)
+/** 이 고을의 이 일터 단 (없으면 0) — 터마다 일터 (n.lots) · 옛 판은 n.work·workLv 하나 */
+export function lvOf(n: RNode | undefined, what: WorkWhat): number {
+  if (n === undefined) return 0
+  const v = n.lots?.[what]
+  if (v !== undefined) return v
+  return n.work === what ? n.workLv ?? 1 : 0
+}
+
+/** 이 고을에 선 일터들 — [일터, 단] (WORK_ORDER 차례) */
+export function worksOf(n: RNode | undefined): Array<[WorkWhat, number]> {
+  if (n === undefined) return []
+  return WORK_ORDER.map((w): [WorkWhat, number] => [w, lvOf(n, w)]).filter(([, lv]) => lv > 0)
+}
+
+/**
+ * 이 고을의 터 수 — 땅 크기대로 (형 11-05: "도읍 땅이 제일 크고 작은 덴 작고 · 이런 차별성이 있어야 땅도 넓힐 맛") ·
+ * 도읍 workLotCapital · 마을·포구 workLotTown · 산성·철광 workLotSmall · 개척한 빈 땅 1(품이 workLotWildRoom 넘는 너른 벌이면 2) · 소도 0
+ */
+export function lotCap(n: RNode | undefined): number {
+  if (n === undefined || n.kind === 'sodo') return 0
+  const R = P.realm
+  const v = n.kind === 'capital' ? R.workLotCapital : n.kind === 'village' || n.kind === 'port' ? R.workLotTown : n.kind === 'fort' || n.kind === 'ironMine' ? R.workLotSmall : 1 + ((n.room ?? 0) >= R.workLotWildRoom ? 1 : 0)
+  return Math.max(1, Math.round(v))
+}
+
+/** 일터를 세운다 (단까지) — 옛 n.work·workLv 를 터로 옮겨 적는다 */
+export function withWork(n: RNode, what: WorkWhat, lv: number): RNode {
+  const lots: Partial<Record<WorkWhat, number>> = Object.fromEntries(worksOf(n))
+  lots[what] = lv
+  const { work: _w, workLv: _l, ...rest } = n
+  return { ...rest, lots }
+}
+
+/** 일터의 단 — 일터를 주면 그 일터, 안 주면 가장 높은 것 (없으면 0) */
+export const workLv = (n: RNode | undefined, what?: WorkWhat): number => (what !== undefined ? lvOf(n, what) : Math.max(0, ...worksOf(n).map(([, lv]) => lv)))
 
 /** 단마다 효과 몫 — 1단 1 · 2단 workLv2Gain · 3단 workLv3Gain (곱으로 붙는다) */
 export function lvGain(lv: number): number {
@@ -81,7 +115,7 @@ export const cutMul = (base: number, lv: number): number => Math.max(P.realm.wor
 /** 그 나라가 가진 이 일터 가운데 가장 높은 단 (없으면 0) */
 export function bestWorkLv(r: Realm, faction: string, what: WorkWhat): number {
   let best = 0
-  for (const n of Object.values(r.nodes)) if (n.owner === faction && n.work === what) best = Math.max(best, n.workLv ?? 1)
+  for (const n of Object.values(r.nodes)) if (n.owner === faction) best = Math.max(best, lvOf(n, what))
   return best
 }
 
@@ -95,11 +129,12 @@ export function workBlocked(r: Realm, faction: string, node: string, what: WorkW
   const n = r.nodes[node]
   const d = WORKS[what]
   if (n === undefined || n.owner !== faction) return '우리 고을이 아니다'
-  if (n.work !== undefined && n.work !== what) return '일터는 고을마다 하나'
-  if (n.work === what && workLv(n) >= Math.round(P.realm.workLvMax)) return '다 올렸다'
+  const lv = lvOf(n, what)
+  if (lv === 0 && worksOf(n).length >= lotCap(n)) return `터가 다 찼다 (${n.kind === 'capital' ? '도읍' : '이 고을'} 터 ${lotCap(n)}곳)`
+  if (lv >= Math.round(P.realm.workLvMax)) return '다 올렸다'
   if ((r.builds ?? []).some((b) => b.node === node) || (r.works ?? []).some((w) => w.node === node)) return '짓는 중이다'
   if (!d.land(r, n)) return '이 땅에 맞지 않는다'
-  if (n.work === undefined && d.needs !== undefined && !hasWork(r, faction, d.needs)) return `${josa(WORKS[d.needs].name, '이', '가')} 먼저 있어야 한다`
+  if (lv === 0 && d.needs !== undefined && !hasWork(r, faction, d.needs)) return `${josa(WORKS[d.needs].name, '이', '가')} 먼저 있어야 한다`
   return null
 }
 
@@ -113,7 +148,7 @@ export function workOptions(r: Realm, node: string): WorkWhat[] {
 /** 이번에 지으면 몇 단이 되나 — 새로면 1, 올리면 다음 단 */
 export function targetLv(r: Realm, node: string, what: WorkWhat): number {
   const n = r.nodes[node]
-  return n?.work === what ? workLv(n) + 1 : 1
+  return lvOf(n, what) + 1
 }
 
 export function canWork(r: Realm, faction: string, node: string, what: WorkWhat): boolean {
@@ -126,15 +161,14 @@ export function canWork(r: Realm, faction: string, node: string, what: WorkWhat)
 /** 효과 곱 — 고을 하나 (특산·가을걷이·징병) · 단이 오를수록 곱으로 더 */
 export function workMulAt(r: Realm, node: string, what: 'harvest' | 'draft' | Good): number {
   const n = r.nodes[node]
-  const w = n?.work
-  if (w === undefined) return 1
+  if (n === undefined) return 1
   const R = P.realm
-  const lv = workLv(n)
-  if (what === 'harvest') return w === 'paddy' ? upMul(R.workPaddyMul, lv) : 1
-  if (what === 'draft') return w === 'yard' ? upMul(R.workYardMul, lv) : 1
-  if (what === 'salt') return w === 'saltpan' ? upMul(R.workGoodMul, lv) : 1
-  if (what === 'iron') return w === 'smelter' ? upMul(R.workSmelterMul, lv) : 1
-  if (what === 'wood') return w === 'lumber' ? upMul(R.workGoodMul, lv) : 1
-  if (what === 'horse') return w === 'ranch' ? upMul(R.workGoodMul, lv) : 1
+  // 터마다 일터 — 그 효과를 내는 일터의 단으로 (없으면 1)
+  if (what === 'harvest') return upMul(R.workPaddyMul, lvOf(n, 'paddy'))
+  if (what === 'draft') return upMul(R.workYardMul, lvOf(n, 'yard'))
+  if (what === 'salt') return upMul(R.workGoodMul, lvOf(n, 'saltpan'))
+  if (what === 'iron') return upMul(R.workSmelterMul, lvOf(n, 'smelter'))
+  if (what === 'wood') return upMul(R.workGoodMul, lvOf(n, 'lumber'))
+  if (what === 'horse') return upMul(R.workGoodMul, lvOf(n, 'ranch'))
   return 1
 }

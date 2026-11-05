@@ -22,7 +22,7 @@ import { relicSum } from './relics.ts'
 import type { Equip, UnitKind } from './battle.ts'
 import { TIERS, kitOf, lowestTier, nextTier, upgradeKind } from './kit.ts'
 import type { Army, BuildWhat, Good, Goods, Order, ReportLine, Realm, RNode, Stock } from './types.ts'
-import { bestWorkLv, canWork, cutMul, targetLv, workCost, workLv, workMulAt } from './works.ts'
+import { bestWorkLv, canWork, cutMul, lotCap, lvOf, targetLv, withWork, workCost, workMulAt, worksOf } from './works.ts'
 
 function menIn(mix: Readonly<Partial<Record<string, number>>>): number {
   let n = 0
@@ -192,7 +192,7 @@ export function nodeYield(r: Realm, node: string, season = seasonOf(r)): Partial
   if (isWoody(r, node)) out.wood = Math.round(R.woodPerNode * w)
   if (n.tags.includes('pasture')) out.horse = Math.round(R.horsePerPasture * w)
   // 들판에 연 말 목장 — 너른벌의 몫만큼 (works.ts · 위원회 11-04 림월드)
-  else if (n.work === 'ranch') out.horse = Math.round(R.horsePerPasture * w * R.ranchPlainShare)
+  else if (lvOf(n, 'ranch') > 0) out.horse = Math.round(R.horsePerPasture * w * R.ranchPlainShare)
   // 일터 — 그 고을 특산 곱 (works.ts · 소금밭·쇠부리터·목수 마을·말 목장)
   for (const g of ['salt', 'iron', 'wood', 'horse'] as const) if (out[g] !== undefined) out[g] = Math.round(out[g]! * workMulAt(r, node, g))
   return out
@@ -452,8 +452,9 @@ export function stepWorks(r: Realm, lines: ReportLine[]): void {
     const n = r.nodes[w.node]
     const lv = w.lv ?? 1
     if (n === undefined || n.owner !== w.faction) continue
-    if (lv === 1 ? n.work !== undefined : n.work !== w.what || workLv(n) !== lv - 1) continue
-    r.nodes[w.node] = { ...n, work: w.what, ...(lv > 1 ? { workLv: lv } : {}) }
+    // 터마다 일터 — 바로 아랫단이어야 오르고, 새로 세우려면 빈 터가 있어야 한다
+    if (lvOf(n, w.what) !== lv - 1 || (lv === 1 && worksOf(n).length >= lotCap(n))) continue
+    r.nodes[w.node] = withWork(n, w.what, lv)
     lines.push({ kind: 'work', faction: w.faction, node: w.node, what: w.what, done: true, ...(lv > 1 ? { lv } : {}) })
   }
   r.works = keep

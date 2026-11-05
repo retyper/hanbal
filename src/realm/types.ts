@@ -35,10 +35,12 @@ export interface RNode {
   readonly name: string
   /** 지금 지명으로 바꾼 고을의 옛 이름 (꼬리말 뗀 것 · '' 이면 바꿨으되 따로 적을 옛 이름 없음) — data/placenames.ts */
   readonly old?: string
-  /** 고을 일터 — 고을마다 하나 · 고을과 함께 넘어간다 (works.ts) */
+  /** 옛 판의 고을 일터 하나 — 이제는 lots (works.lvOf 가 둘 다 읽는다) */
   readonly work?: import('./works.ts').WorkWhat
   /** 일터의 단 (없으면 1) — 올릴수록 효과가 곱으로 붙는다 */
   readonly workLv?: number
+  /** 터마다 일터 — 일터 → 단 (고을 종류만큼 터 · works.lotCap) · 고을과 함께 넘어간다 (형 11-05: 논을 지으면 다른 걸 못 짓는 게 말이 안 된다) */
+  readonly lots?: Readonly<Partial<Record<import('./works.ts').WorkWhat, number>>>
   readonly kind: NodeKind
   readonly tags: readonly Tag[]
   /** 다스리는 세력 id. 무주지는 null */

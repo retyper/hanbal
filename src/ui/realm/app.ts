@@ -113,7 +113,7 @@ import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
 import { loadTip, tipHtml, tipReadMs } from './loadtips.ts'
 import { worldMapReady } from './worldmap.ts'
 import { loadBar } from './loadbar.ts'
-import { WORKS, lvGain, workBlocked, workCost, workLv, workOptions, type WorkWhat } from '../../realm/works.ts'
+import { WORKS, lotCap, lvGain, lvOf, workBlocked, workCost, workOptions, worksOf, type WorkWhat } from '../../realm/works.ts'
 import { postGain } from '../../realm/postgain.ts'
 import { hasScale, marketIn, marketOf, scaleBuyPrice, scaleLimit, scaleRoom, scaleSellPrice, sellLimit, sellPrice, wishReady, type Offer } from '../../realm/merchant.ts'
 import { QUALITY_CSS, gfxRowHtml, setGfxPref, startQuality } from './quality.ts'
@@ -2070,42 +2070,46 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return h + '</div>' + wishHtml(r) + scaleHtml(r)
   }
   /**
-   * 고을 일터 칸 — 지었으면 그 일터와 효과 한 줄, 짓는 중이면 남은 달, 아니면 이 땅에 맞는 일터 단추들
+   * 고을 일터 칸 — 터 n/최대 · 선 일터마다 단과 올리기 · 빈 터가 있으면 이 땅에 맞는 새 일터
    * (잠긴 것도 까닭과 함께 보인다: "쇠부리터가 먼저" — 그래서 쇠 나는 땅을 넓히고 지키고 싶어진다 · 형 11-03)
+   * 터는 땅 크기대로 — 도읍이 가장 많다 (형 11-05: "논을 지으면 다른 걸 못 짓는 게 말이 안 돼 · 도읍 땅이 제일 크고")
+   * 한 고을은 한 번에 하나만 짓는다 (일손)
    */
   function workCardHtml(r: Realm, id: string): string {
     const n = r.nodes[id]!
     if (n.kind === 'sodo' || (n.kind === 'wild' && n.hh <= 0)) return ''
-    if (n.work !== undefined) {
-      const w = WORKS[n.work]
-      const lv = workLv(n)
-      const max = Math.round(P.realm.workLvMax)
+    const cap = lotCap(n)
+    const built = worksOf(n)
+    const opts = workOptions(r, id).filter((w) => lvOf(n, w) === 0)
+    if (built.length === 0 && opts.length === 0) return ''
+    const max = Math.round(P.realm.workLvMax)
+    const going = (r.works ?? []).find((x) => x.node === id)
+    const queuedHere = musters.find((o): o is Extract<Order, { kind: 'work' }> => o.kind === 'work' && o.node === id)
+    const lots = Array.from({ length: cap }, (_, i) => `<i class="wklot${i < built.length ? ' on' : ''}"></i>`).join('')
+    let h = `<div class="wkc"><b>일터</b> <span class="wklots" data-tip="이 땅의 터 ${cap}곳 · 터마다 다른 일터 하나를 짓고 단을 올린다">${lots}</span> <span class="mute">터 ${built.length}/${cap}</span></div>`
+    for (const [w, lv] of built) {
+      const d = WORKS[w]
       const stars = '★'.repeat(lv) + '☆'.repeat(Math.max(0, max - lv))
-      let h = `<div class="wkc"><b>일터</b> ${icon(w.icon, 'wki')}<b>${w.name}</b> <span class="wkl">${stars}</span> <span class="mute">${esc(w.does)}</span></div>`
-      const going = (r.works ?? []).find((x) => x.node === id)
-      if (going !== undefined) return h + `<div class="wkc">${icon(w.icon, 'wki')}${going.lv ?? lv + 1}단으로 올리는 중 · ${turnsLabel(r, Math.max(1, going.done - r.season + 1))} 남음</div>`
-      if (lv >= max) return h
-      const c = workCost(n.work, lv + 1)
-      const queued = musters.some((o) => o.kind === 'work' && o.node === id)
-      const lock = workBlocked(r, me(), id, n.work)
+      h += `<div class="wkc">${icon(d.icon, 'wki')}<b>${d.name}</b> <span class="wkl">${stars}</span> <span class="mute">${esc(d.does)}</span></div>`
+      if (going?.what === w) { h += `<div class="wkc">${icon(d.icon, 'wki')}${going.lv ?? lv + 1}단으로 올리는 중 · ${turnsLabel(r, Math.max(1, going.done - r.season + 1))} 남음</div>`; continue }
+      if (lv >= max) continue
+      const c = workCost(w, lv + 1)
+      const queued = queuedHere?.what === w
+      const lock = workBlocked(r, me(), id, w)
       const short = shortOf(c as Partial<Record<Good, number>>)
-      const why = lock ?? (short !== '' ? short : null)
-      h += `<div class="btns wkb"><button class="btn${queued ? ' on' : ''}" data-act="work" data-node="${id}" data-what="${n.work}"${queued || why === null ? '' : noBtn(why)}>${icon(w.icon, 'wki')}<b>${lv + 1}단으로 올리기</b> ${costHtml(c)}${whenChip(turnsLabel(r, Math.max(1, Math.round(P.realm.workTurns * P.realm.workLvTurnsMul))))}<small class="mute"> 효과 ${(Math.round((lvGain(lv + 1) / lvGain(lv)) * 10) / 10)}배</small></button></div>`
-      return h
+      const why = queuedHere !== undefined && !queued ? '이번 달엔 이 고을에서 다른 일을 고르셨습니다 (한 번에 하나)' : lock ?? (short !== '' ? short : null)
+      h += `<div class="btns wkb"><button class="btn${queued ? ' on' : ''}" data-act="work" data-node="${id}" data-what="${w}"${queued || why === null ? '' : noBtn(why)}>${icon(d.icon, 'wki')}<b>${d.name} ${lv + 1}단으로</b> ${costHtml(c)}${whenChip(turnsLabel(r, Math.max(1, Math.round(P.realm.workTurns * P.realm.workLvTurnsMul))))}<small class="mute"> 효과 ${(Math.round((lvGain(lv + 1) / lvGain(lv)) * 10) / 10)}배</small></button></div>`
     }
-    const going = (r.works ?? []).find((w) => w.node === id)
-    if (going !== undefined) return `<div class="wkc"><b>일터</b> ${icon(WORKS[going.what].icon, 'wki')}${WORKS[going.what].name} 짓는 중 · ${turnsLabel(r, Math.max(1, going.done - r.season + 1))} 남음</div>`
-    const opts = workOptions(r, id)
-    if (opts.length === 0) return ''
-    let h = `<div class="wkc"><b>일터</b> <span class="mute">고을마다 하나 · ${turnsLabel(r, Math.max(1, Math.round(P.realm.workTurns)))} 걸려 선다</span></div><div class="btns wkb">`
+    if (going !== undefined && lvOf(n, going.what) === 0) h += `<div class="wkc">${icon(WORKS[going.what].icon, 'wki')}${WORKS[going.what].name} 짓는 중 · ${turnsLabel(r, Math.max(1, going.done - r.season + 1))} 남음</div>`
+    if (opts.length === 0) return h
+    h += `<div class="wkc"><span class="mute">빈 터에 새로 · ${turnsLabel(r, Math.max(1, Math.round(P.realm.workTurns)))} 걸려 선다</span></div><div class="btns wkb">`
     for (const w of opts) {
       const d = WORKS[w]
       const c = workCost(w)
-      const queued = musters.some((o) => o.kind === 'work' && o.node === id && o.what === w)
-      const other = musters.some((o) => o.kind === 'work' && o.node === id && o.what !== w)
+      const queued = queuedHere?.what === w
       const lock = workBlocked(r, me(), id, w)
       const short = shortOf(c as Partial<Record<Good, number>>)
-      const why = other ? '이 고을엔 다른 일터를 고르셨습니다' : lock ?? (short !== '' ? short : null)
+      const why = queuedHere !== undefined && !queued ? '이번 달엔 이 고을에서 다른 일을 고르셨습니다 (한 번에 하나)' : lock ?? (short !== '' ? short : null)
       h += `<button class="btn${queued ? ' on' : ''}" data-act="work" data-node="${id}" data-what="${w}"${queued || why === null ? '' : noBtn(why)}>${icon(d.icon, 'wki')}<b>${d.name}</b>${lock !== null ? ` <span class="mute">🔒 ${esc(lock)}</span>` : ` ${costHtml(c)}${whenChip(turnsLabel(r, Math.max(1, Math.round(P.realm.workTurns))))}`}<small class="mute"> ${esc(d.does)}</small></button>`
     }
     return h + '</div>'
@@ -5162,7 +5166,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += draftCard(r, id, true)
       h += callBtn(r, id, false)
       // 장터 저울 — 장터가 선 고을이면 (위원회 11-04 림월드 ③)
-      if (r.nodes[id]?.work === 'market') h += `<div class="btns"><button class="btn" data-act="market">${icon('settle-market', 'wki')}장터 저울 · 남는 것을 곡식으로</button></div>`
+      if (lvOf(r.nodes[id], 'market') > 0) h += `<div class="btns"><button class="btn" data-act="market">${icon('settle-market', 'wki')}장터 저울 · 남는 것을 곡식으로</button></div>`
       h += `<div class="btns"><button class="btn ${guarded ? 'on' : ''}" data-act="guard" data-node="${id}" data-tip="경계를 올리면 이 고을로 오는 기습이 잘 들킨다 · 한 계절 동안"${guarded || (canGuard(r, me(), id) && left().grain >= guardCost().grain) ? '' : noBtn(shortOf({ grain: guardCost().grain }) || '이번 계절엔 이미 경계를 올렸습니다')}>경계 강화 ${costHtml({ grain: guardCost().grain })}</button></div>`
       h += guardPathHtml(r, id)
       h += rallyHtml(r, id)
@@ -5278,9 +5282,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (plan.length > 0) bs.push(rb('rally', icon('unit-drummers'), on ? '집결 중' : `집결 ${plan.length}`, '', on ? ' on' : ''))
       }
       // 마을 안 — 일터와 일하는 사람들이 보이는 곳 (docs/realm/TOWN.md · 형 11-04: "마을이 확대되면서 fade out fade in")
-      if (n.work !== undefined || workOptions(r, id).length > 0) {
+      if (worksOf(n).length > 0 || workOptions(r, id).length > 0) {
         const going = (r.works ?? []).some((w) => w.node === id)
-        bs.push(rb('town-in', icon(n.work !== undefined ? WORKS[n.work].icon : nodeIcon(n)), going ? '짓는 중' : '마을 안', ' data-tip="마을 안 · 일터와 일하는 사람들"', going ? ' on' : ''))
+        bs.push(rb('town-in', icon(worksOf(n)[0] !== undefined ? WORKS[worksOf(n)[0]![0]].icon : nodeIcon(n)), going ? '짓는 중' : '마을 안', ' data-tip="마을 안 · 일터와 일하는 사람들"', going ? ' on' : ''))
       }
       bs.push(more)
       // 부채꼴 — 위쪽 가운데를 중심으로 왼쪽부터 오른쪽으로 (이름표는 고을 아래에 있다)
@@ -6511,7 +6515,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const going = (r.works ?? []).find((w) => w.node === n.id)
     const html = townViewHtml({
       id: n.id, name: esc(n.name), hh: n.hh, bg, art: ART, fresh: townFresh,
-      work: n.work !== undefined ? { img: `${ART}icon/${WORKS[n.work].icon}.png`, name: WORKS[n.work].name, lv: workLv(n), max: Math.round(P.realm.workLvMax) } : null,
+      works: worksOf(n).map(([w, lv]) => ({ img: `${ART}icon/${WORKS[w].icon}.png`, name: WORKS[w].name, lv, max: Math.round(P.realm.workLvMax) })),
+      lots: lotCap(n), fresh2: going !== undefined && lvOf(n, going.what) === 0,
       going: going !== undefined ? { img: `${ART}icon/${WORKS[going.what].icon}.png`, name: WORKS[going.what].name, left: `${turnsLabel(r, Math.max(1, going.done - r.season + 1))} 남음` } : null,
       card: workCardHtml(r, n.id),
       plan: (() => { const q = musters.find((o): o is Extract<Order, { kind: 'work' }> => o.kind === 'work' && o.node === n.id); return q !== undefined ? { img: `${ART}icon/${WORKS[q.what].icon}.png`, name: WORKS[q.what].name } : null })(),

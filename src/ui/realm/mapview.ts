@@ -27,7 +27,7 @@ import { boardRoutes } from './roadlayout.ts'
 import { ZONES } from '../../realm/data/zones/index.ts'
 import { inkOn, kitVars, nationKit } from './kitcolor.ts'
 import { worldMapFallback, worldMapUrl } from './worldmap.ts'
-import { WORKS } from '../../realm/works.ts'
+import { WORKS, worksOf } from '../../realm/works.ts'
 import { marketOf } from '../../realm/merchant.ts'
 
 /** 미리 받아 둔 다음 계절 지도 그림 — 붙잡아 두어야 브라우저가 풀어 둔 그림을 버리지 않는다 */
@@ -981,7 +981,7 @@ export function mapHtml(
     // (형 10-24: "지역에서 생산되는 품목도 우상단 동그라미가 아니라 더 효과적이게" — 문명 6 도시 배너처럼 이름에 붙인다)
     // 고을 일터 — 이름표 칸 맨 앞에 금테 그림 하나 (works.ts · 규칙은 지도에 보이게)
     const mkt = marketOf(r, r.player)?.at === n.id ? `<img class="lbw" src="${art}icon/route-caravan.png" alt="상단" title="떠돌이 상단이 머문다">` : ''
-    const wk = n.work !== undefined ? `<img class="lbw" src="${art}icon/${WORKS[n.work].icon}.png" alt="${WORKS[n.work].name}" title="${WORKS[n.work].name}: ${WORKS[n.work].does}">` : ''
+    const wk = worksOf(n).map(([w]) => `<img class="lbw" src="${art}icon/${WORKS[w].icon}.png" alt="${WORKS[w].name}" title="${WORKS[w].name}: ${WORKS[w].does}">`).join('')
     const tray = mkt !== '' || wk !== '' || sp.length > 0 || fish !== '' || dfs.length > 0 || cms.length > 0 || bld !== ''
       ? `<span class="lbg${n.owner === null || n.hh <= 0 ? ' idle' : ''}">${mkt}${wk}${sp.map((g) => `<img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}" title="${GOOD_NAME[g]}: 사람이 살면 난다">`).join('')}${fish}${dfs.map((t) => `<i class="${t}" title="${DEF_TITLE[t]}">${DEF_NAME[t]}</i>`).join('')}`
         + `${bld}${cms.map((m) => `<i class="cmk${m.hot === true ? ' hot' : ''}" title="${m.tip}"${m.hot === true ? ` data-l="${m.label}"` : ''}>${m.label}</i>`).join('')}</span>`

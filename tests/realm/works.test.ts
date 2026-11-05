@@ -2,7 +2,7 @@
  * 고을 일터 · 단 올리기 (works.ts · 형 11-03 "1 사면 나중에 2가 되고 5가 돼")
  *  - 지으면 workTurns 뒤에 선다 · 값이 든다
  *  - 같은 일터를 다시 고르면 단이 오른다 · 값은 workLvCostMul 의 거듭제곱 · 효과는 곱으로 더
- *  - workLvMax 를 넘지 못한다 · 다른 일터는 못 짓는다
+ *  - workLvMax 를 넘지 못한다 · 터가 남으면 다른 일터도 짓는다 · 터 수는 땅 크기대로 (형 11-05)
  *  - 같은 판이면 같은 결과 (A1)
  */
 import { describe, it } from 'node:test'
@@ -10,7 +10,7 @@ import assert from 'node:assert/strict'
 
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import { advance } from '../../src/realm/season.ts'
-import { canWork, workBlocked, workCost, workLv, workMulAt } from '../../src/realm/works.ts'
+import { canWork, lotCap, lvOf, workBlocked, workCost, workLv, workMulAt, worksOf } from '../../src/realm/works.ts'
 import { P } from '../../src/tune/params.ts'
 import type { Order, Realm } from '../../src/realm/types.ts'
 
@@ -31,7 +31,7 @@ function build(r0: Realm, what: 'paddy' | 'yard'): Realm {
 describe('일터 단 올리기', () => {
   it('지으면 1단 · 다시 고르면 2단 · 3단 · 그 위는 못 올린다', () => {
     let r = build(byeonhanMini(1), 'paddy')
-    assert.equal(r.nodes['our-cap']!.work, 'paddy')
+    assert.equal(lvOf(r.nodes['our-cap'], 'paddy'), 1)
     assert.equal(workLv(r.nodes['our-cap']), 1)
     const m1 = workMulAt(r, 'our-cap', 'harvest')
     r = build(r, 'paddy')
@@ -45,7 +45,7 @@ describe('일터 단 올리기', () => {
     assert.ok(Math.abs((m2 - 1) / (m1 - 1) - P.realm.workLv2Gain) < 1e-9)
     assert.equal(workBlocked(r, r.player, 'our-cap', 'paddy'), '다 올렸다')
     assert.equal(canWork(r, r.player, 'our-cap', 'paddy'), false)
-    assert.notEqual(workBlocked(r, r.player, 'our-cap', 'yard'), null) // 고을마다 하나
+    assert.equal(workBlocked(r, r.player, 'our-cap', 'yard'), null) // 터가 남으면 다른 일터도 (형 11-05: 논을 지으면 다른 걸 못 짓는 게 말이 안 된다)
   })
 
   it('올리는 값은 단마다 workLvCostMul 배', () => {
@@ -67,5 +67,28 @@ describe('일터 단 올리기', () => {
     const b = build(build(byeonhanMini(2), 'yard'), 'yard')
     assert.deepEqual(a, b)
     assert.equal(workLv(a.nodes['our-cap']), 2)
+  })
+})
+
+describe('터 — 땅 크기대로 여러 일터 (형 11-05)', () => {
+  it('도읍은 터가 가장 많고 · 논과 장정 마을이 함께 선다 · 터가 차면 더는 못 새로 짓는다', () => {
+    let r = build(byeonhanMini(1), 'paddy')
+    r = build(r, 'yard')
+    const cap = r.nodes['our-cap']!
+    assert.deepEqual(worksOf(cap).map(([w]) => w), ['paddy', 'yard'])
+    assert.ok(workMulAt(r, 'our-cap', 'harvest') > 1 && workMulAt(r, 'our-cap', 'draft') > 1)
+    assert.equal(lotCap(cap), Math.round(P.realm.workLotCapital))
+    const village = Object.values(r.nodes).find((n) => n.kind === 'village' || n.kind === 'port')!
+    assert.ok(lotCap(cap) > lotCap(village))
+    // 터를 다 채우면 새 일터는 막힌다 (올리기는 된다)
+    r.nodes['our-cap'] = { ...cap, lots: { paddy: 1, yard: 1, market: 1, smithy: 1 } }
+    assert.match(workBlocked(r, r.player, 'our-cap', 'saltpan') ?? '', /터가 다 찼다|맞지 않는다/)
+    assert.equal(workBlocked(r, r.player, 'our-cap', 'paddy'), null)
+  })
+  it('옛 판의 일터 하나(work·workLv)도 그대로 읽는다', () => {
+    const r = byeonhanMini(1)
+    const n = { ...r.nodes['our-cap']!, work: 'paddy' as const, workLv: 2 }
+    assert.equal(lvOf(n, 'paddy'), 2)
+    assert.deepEqual(worksOf(n), [['paddy', 2]])
   })
 })

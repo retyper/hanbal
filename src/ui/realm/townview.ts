@@ -21,8 +21,12 @@ export interface TownViewIn {
   /** 바탕 그림 경로 (art 기준) */
   readonly bg: string
   readonly art: string
-  /** 일터 그림 · 이름 · 단 (없으면 null) */
-  readonly work: { readonly img: string; readonly name: string; readonly lv: number; readonly max: number } | null
+  /** 선 일터들 — 그림 · 이름 · 단 (터마다 하나 · 형 11-05: 논을 지으면 다른 걸 못 짓는 게 말이 안 된다) */
+  readonly works: ReadonlyArray<{ readonly img: string; readonly name: string; readonly lv: number; readonly max: number }>
+  /** 이 땅의 터 수 (works.lotCap) */
+  readonly lots: number
+  /** 짓는 것이 새 일터인가 (아니면 선 일터를 올리는 중) */
+  readonly fresh2?: boolean
   /** 짓는 중 — 그림 · 남은 때 글 (없으면 null) */
   readonly going: { readonly img: string; readonly name: string; readonly left: string } | null
   /** 이번 달 짓기로 고른 일터 그림 (다음 달부터 선다 · 없으면 null) */
@@ -45,7 +49,7 @@ export function townViewHtml(t: TownViewIn): string {
   const n = Math.max(Math.round(R.townWalkMin), Math.min(Math.round(R.townWalkMax), Math.round(t.hh / Math.max(1, R.townHHPerWalker))))
   const busy = t.going !== null
   // 일꾼 — 셋에 하나는 터 곁에서 일하고(짓는 중이면 절반) 나머지는 마을을 오간다
-  const atWork = t.work !== null || busy ? Math.max(1, Math.round(n * (busy ? 0.5 : 0.34))) : 0
+  const atWork = t.works.length > 0 || busy ? Math.max(1, Math.round(n * (busy ? 0.5 : 0.34))) : 0
   let folk = ''
   for (let i = 0; i < n; i++) {
     const a = hash01(t.id, i)
@@ -66,17 +70,17 @@ export function townViewHtml(t: TownViewIn): string {
       folk += `<i class="tvf walk" style="left:${x0.toFixed(1)}%;top:${y.toFixed(1)}%;--dx:${(x1 - x0).toFixed(1)}vw;--sc:${sc.toFixed(2)};--dur:${(7 + c * 6).toFixed(1)}s;--d:${(-a * 9).toFixed(1)}s"><u></u></i>`
     }
   }
-  let mid = ''
-  if (busy) {
-    mid = `<div class="tvb going"><img src="${t.going!.img}" alt=""><span class="tvsc"></span><b class="tvl">${t.going!.name} 짓는 중 · ${t.going!.left}</b></div>`
-  } else if (t.plan != null && t.work === null) {
-    mid = `<div class="tvb plan"><img src="${t.plan.img}" alt=""><span class="tvsc"></span><b class="tvl">${t.plan.name} · 다음 달부터 짓습니다</b></div>`
-  } else if (t.work !== null) {
-    const stars = '★'.repeat(t.work.lv) + '☆'.repeat(Math.max(0, t.work.max - t.work.lv))
-    mid = `<div class="tvb" style="--lv:${t.work.lv}"><img src="${t.work.img}" alt=""><b class="tvl">${t.work.name} <i>${stars}</i></b></div>`
-  } else {
-    mid = `<div class="tvb empty"><span class="tvlot"></span><b class="tvl">빈 터</b></div>`
+  // 터 — 땅 크기만큼 나란히 · 선 일터(단만큼 크게) · 짓는 중(비계) · 이번 달 고른 것 · 빈 터
+  const slots: string[] = []
+  for (const w of t.works) {
+    const stars = '★'.repeat(w.lv) + '☆'.repeat(Math.max(0, w.max - w.lv))
+    const up = busy && t.going!.name === w.name
+    slots.push(`<div class="tvb${up ? ' going' : ''}" style="--lv:${w.lv}"><img src="${w.img}" alt="">${up ? '<span class="tvsc"></span>' : ''}<b class="tvl">${w.name} <i>${stars}</i>${up ? ` · ${t.going!.left}` : ''}</b></div>`)
   }
+  if (busy && t.fresh2 === true) slots.push(`<div class="tvb going"><img src="${t.going!.img}" alt=""><span class="tvsc"></span><b class="tvl">${t.going!.name} 짓는 중 · ${t.going!.left}</b></div>`)
+  else if (t.plan != null && !t.works.some((w) => w.name === t.plan!.name)) slots.push(`<div class="tvb plan"><img src="${t.plan.img}" alt=""><span class="tvsc"></span><b class="tvl">${t.plan.name} · 다음 달부터</b></div>`)
+  while (slots.length < t.lots) slots.push(`<div class="tvb empty"><span class="tvlot"></span><b class="tvl">빈 터</b></div>`)
+  const mid = `<div class="tvlots" style="--n:${slots.length}">${slots.join('')}</div>`
   return `<div class="townv${t.fresh ? ' fresh' : ''}" role="dialog" aria-label="${t.name} 마을 안">`
     + `<div class="tvstage" style="background-image:url('${t.art}${t.bg}')">${mid}${folk}`
     + `<div class="tvhd"><b>${t.name}</b><span>집 ${t.hh}</span></div>`
@@ -105,13 +109,15 @@ export const TOWN_CSS = `
 .ap .tvhd { position: absolute; left: 12px; top: 10px; display: flex; gap: 10px; align-items: baseline; background: #1c1610d8; border: 1px solid #c9a45a; border-radius: 12px; padding: 6px 12px; color: #f3e6c8; }
 .ap .tvhd b { font-size: 18px; color: #f3d48a; } .ap .tvhd span { font-size: 13px; }
 .ap .tvx { position: absolute; right: 12px; top: 10px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid #c9a45a; background: #1c1610e0; color: #f3e6c8; font-size: 20px; cursor: pointer; }
-.ap .tvb { position: absolute; z-index: 4; left: 50%; top: 62%; width: calc(clamp(160px, 34vw, 260px) * (0.8 + var(--lv, 1) * 0.2)); translate: -50% -50%; display: grid; justify-items: center; }
+/* 터 — 땅 크기만큼 나란히 (새 마을 그림이 들어오면 그림의 터 자리로 옮긴다) */
+.ap .tvlots { position: absolute; z-index: 4; left: 4%; right: 4%; top: 46%; display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 2%; align-items: end; }
+.ap .tvb { position: relative; z-index: 4; width: calc(100% * (0.7 + var(--lv, 1) * 0.1)); justify-self: center; display: grid; justify-items: center; }
 .ap .tvb img { width: 100%; height: auto; filter: drop-shadow(0 8px 10px #000a); }
-.ap .tvb .tvl { position: relative; z-index: 5; margin-top: -6px; background: #1c1610e0; border: 1px solid #c9a45a; border-radius: 10px; padding: 2px 10px; color: #f3e6c8; font-size: 14px; white-space: nowrap; }
+.ap .tvb .tvl { position: relative; z-index: 5; margin-top: -6px; background: #1c1610e0; border: 1px solid #c9a45a; border-radius: 10px; padding: 2px 8px; color: #f3e6c8; font-size: 13px; text-align: center; word-break: keep-all; max-width: 100%; }
 .ap .tvb .tvl i { font-style: normal; color: #f3d48a; }
 .ap .tvb.going img { opacity: .55; } .ap .tvb.plan img { opacity: .6; animation: tvplan 1.4s ease-in-out infinite alternate; } @keyframes tvplan { from { opacity: .45; } to { opacity: .85; } }
 .ap .tvb.going .tvsc, .ap .tvb.plan .tvsc { position: absolute; left: 8%; right: 8%; top: 10%; bottom: 22%; border: 3px solid #6a4a2a; background: repeating-linear-gradient(60deg, #0000 0 18px, #6a4a2acc 18px 21px); border-radius: 4px; }
-.ap .tvb.empty { width: min(30vw, 220px); }
+.ap .tvb.empty { width: 100%; }
 .ap .tvb.empty .tvlot { width: 100%; aspect-ratio: 2.2; border: 3px dashed #f3e6c8aa; border-radius: 50%; background: radial-gradient(ellipse, #6a4a2a55, #0000 70%); }
 /* 마을 사람 — 유민 걷기 8컷 띠 · 오가는 이는 가로로 오가며 돌아선다 · 일하는 이는 제자리에서 까딱 */
 .ap .tvf { position: absolute; width: 30px; height: ${(30 / MIGRANT_ANIM.ar).toFixed(0)}px; margin: -${(30 / MIGRANT_ANIM.ar).toFixed(0)}px 0 0 -15px; z-index: 3; pointer-events: none; }
