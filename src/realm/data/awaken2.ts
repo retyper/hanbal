@@ -41,4 +41,5 @@ export const TRUE_WAKE: ReadonlySet<string> = new Set([
   'uga-2', // 우가 너리 (11-05 밤 · retyper · 첫 판 치마가 짧아 길게 고침)
   'mokji-ruler', // 목지 진하 (11-05 밤 · retyper)
   'gosaburi-2', // 고사부리 갈매 (11-05 밤 · retyper · 발목 치마 틀)
+  'sangdang-2', // 상당 불매 (11-05 밤 · retyper · 발목 치마 틀로 다시)
 ])
