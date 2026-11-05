@@ -62,6 +62,7 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-39-gosaburi-galmae 고사부리 갈매 — 2차(retyper · 발목 치마 틀이 먹힘) — 11-05 밤
 - ~~w-40-mujin-munui 무진 문의~~ — 앞가운데 트임이 깊어 걷음(-rejected) · 다시 뽑을 거리 — 11-05 밤
 - w-41-hwanna-beodeul 환나 버들 — 2차(retyper · 발목 치마 틀 · 트임은 허벅지 위쪽까지 보임, 사타구니 아래라 넣음) — 11-05 밤
+- w-42-gwanna-soenun 관나 쇠눈 — 2차(retyper) · 첫 판은 발목 치마 틀에도 앞가운데 트임이 사타구니 곁까지라 걷음(-rejected) · 「Skirt: a floor-length layered wrap skirt of opaque silk; the front panel is fully closed from the waist down to the ankles with no front opening, and both thighs are completely covered by opaque fabric; the only opening is a short side slit on the outer calf below the knee.」 로 바꾸니 닫힘 · 이 말을 다음 틀로 — 11-05 밤
 - ~~w-01-silla-princess 신라 공주 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - ~~w-05-baekje-queen 백제 왕비 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - w-02-goguryeo-lady 고구려 무녀 — 1차 2판(edu · 골반 아래 잘라 냄, 원본 -raw) — 11-03
