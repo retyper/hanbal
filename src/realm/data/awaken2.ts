@@ -22,4 +22,6 @@ export const TRUE_WAKE: ReadonlySet<string> = new Set([
   'goja-2', // 고자 진주 해녀 (11-05 저녁)
   'dokro-1', 'gj-tahae-1', // 독로 해적 선장 (11-05 저녁 · 같은 초상)
   'miri-ruler', // 추화 달래 (11-05 저녁)
+  'usisan-ruler', // 우시산 고래 여왕 (11-05 저녁)
+  'apdok-ruler', // 압독 여왕 (11-05 저녁)
 ])
