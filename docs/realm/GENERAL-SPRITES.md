@@ -99,6 +99,7 @@ BACKGROUND: flat pure bright green #00FF00 everywhere, no shadows, no ground lin
 - 아라 ✔ 11-05 밤 `gen-ara.png` (칸 156x160 · edu Flash · `anya-1`) — 「straight blade · NO handguard · ring at the end」 을 머리말에 넣어 곧은 고리자루 칼 · C 는 B 를 다시 그리며 왼쪽 아래만 쓰러짐(copyrect 0,0.78,0.275,0.22)
 - 허황옥 ✔ 11-05 밤 `gen-heo.png` (칸 150x160 · edu Flash · `gj-heo`) — B 의 서기 둘이 걷는 자세라 C 에서 서기·맞음·쓰러짐 셋을 받아 B 의 1·7·8 칸에 갈아 끼움(copycell · copyrect) · B 지도 "1,1,1,1,3,4,4,5,6,6,7,8" · edu 가 중간에 「텍스트만 만든다」고 답하면 「image generation tool 로」 다시 시키면 됐다
 - 감실 ✔ 11-05 밤 `gen-gamsil.png` (칸 156x160 · edu Flash · `gammun-2`) — 쓰러짐 장(C)이 딴 옷(베이지 병사)으로 나와 버리고 **맞음 컷을 90도 눕혀 쓰러짐으로**: `powershell -NoProfile -File tools/laydown.ps1 -In fb.png -SrcCell 7 -DstCell 8 -Out fb2.png` (ps1 은 UTF-8 BOM 필수)
+- ✗ 11-06 새벽 오디(`jomun-2`) 시험 — 안 넣음. 이 무렵 u/0·u/2·u/4 는 **기준 그림(style-anchor)을 붙인 긴 주문에만 오류**를 냈고 간단한 그림(청동 종)은 그려 줬다 → 한도가 아니라 주문 탓. 그림 없이 글로만 시키니 u/4(Flash-Lite)가 그려 줬으나: 첫 판은 창을 컷마다 앞손↔뒷손 바꿔 듦(같은 대화에서 고쳐 달라니 같은 그림) · 새 대화에 「창은 늘 앞손」을 넣으니 맞았지만 B 가 A 보다 12% 크고 바탕 초록이 옅어 옷이 분홍빛으로 따짐 · 컷마다 글자 꼬리표·땅선. 원본 walk2/gen-odi-a·b.png. 다시 할 때: 기준 그림을 붙이지 말고, A·B 를 **한 장에 같은 크기로** 시키거나 B 를 A 크기에 맞춰 줄이고(strip 배율 비교), key-png 단단함을 낮춰 볼 것
 - ✗ 11-05 밤 걷기 다리 바꾸기 넷째 실패: 소서노 걷기 1~4컷을 초록 바탕 한 줄로 주고 「두 다리만 바꿔 같은 4컷」을 시켰더니 거의 같은 그림(무릎 든 다리도 같은 쪽)을 돌려줬다(u/0 · walkfix/cmp.png). 다음: Veo 제자리걸음 영상에서 컷 뽑기
 
 생김새는 `docs/realm/cast/part-*.md` 의 「겉모습」 줄을 영어로 옮겨 `<한 줄 생김새>` 자리에 넣는다. 초상(bust)을 올리지 않는다 — 글만. 결(무기·자세)은 아래 「결」 그대로 두어 공격 컷이 같은 박자로 돈다.
