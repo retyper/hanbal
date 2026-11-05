@@ -64,6 +64,8 @@ export interface RNode {
   calledAt?: number
   /** 지금 주인이 이 고을을 쥔 계절 (차지·개척·다시 일어남) — 화면의 「최근에 차지한 고을 먼저」 (형 10-27). 판 처음부터 쥔 고을은 없음 */
   takenAt?: number
+  /** 주인 없는 철광·포구에 쌓인 것 — 군대가 밟으면 그 나라가 거둔다 (economy.stepSites · 형 11-05) */
+  stash?: Partial<Record<Good, number>>
 }
 
 export interface REdge {
@@ -1216,6 +1218,8 @@ export type ReportLine =
   /** 장터 — 화친·동맹인 두 나라가 이번 계절 곡식을 얻었다 (둘 다 grain 씩) */
   | { readonly kind: 'market'; readonly a: string; readonly b: string; readonly grain: number }
   | { readonly kind: 'draft'; readonly faction: string; readonly node: string; readonly unit: UnitKind; readonly n: number; readonly army: string }
+  /** 주인 없는 철광·포구에 쌓인 것을 군대가 거뒀다 (형 11-05: 밟은 군사의 나라가 철을 얻는다) */
+  | { readonly kind: 'haul'; readonly faction: string; readonly node: string; readonly goods: Readonly<Partial<Record<Good, number>>> }
   | { readonly kind: 'disband'; readonly army: string; readonly node: string; readonly n: number }
   | { readonly kind: 'settle'; readonly faction: string; readonly from: string; readonly to: string; readonly n: number }
   /** 집이 옮겨 갔다 — auto 면 붐비는 고을에서 저절로, 아니면 억지 이주 */

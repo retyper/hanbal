@@ -10,7 +10,7 @@
  * AI 는 예전처럼 맞닿은 빈땅에 곧바로 보낸다 (settle 명령) — 판의 결정론은 이 모듈도 같은 길을 밟는다 (A1).
  */
 import { P } from '../tune/params.ts'
-import { foundCost, goodOf, stockOf } from './economy.ts'
+import { foundCost, freeSite, goodOf, stockOf } from './economy.ts'
 import { blockedWhy } from './calendar.ts'
 import { marchTurns } from './season.ts'
 import type { Order, Party, Realm, ReportLine } from './types.ts'
@@ -42,10 +42,10 @@ export function partyCost(r: Realm, faction: string, n: number): { grain: number
   return { grain: fc.grain + Math.ceil(n * P.realm.settleGrain), wood: fc.wood + Math.ceil(n * P.realm.settleWood) }
 }
 
-/** 마을을 열 수 있는 땅인가 — 빈땅이고, 아무도 안 쥐었거나 제 땅이며 품이 남았다 */
+/** 마을을 열 수 있는 땅인가 — 빈땅이고 아무도 안 쥐었거나 제 땅이며 품이 남았거나 · 주인 없는 철광·포구 (개척으로 편입 · 형 11-05) */
 export function foundable(r: Realm, faction: string, node: string): boolean {
   const n = r.nodes[node]
-  return n !== undefined && n.kind === 'wild' && (n.owner === null || n.owner === faction) && (n.room ?? 0) - n.hh > 0
+  return n !== undefined && (freeSite(n) || (n.kind === 'wild' && (n.owner === null || n.owner === faction) && (n.room ?? 0) - n.hh > 0))
 }
 
 /** 적 군대가 머문다 — 개척단이 서면 흩어진다 */
@@ -201,7 +201,12 @@ export function stepParties(r: Realm, lines: ReportLine[]): void {
       delete ps[id]
       continue
     }
-    if (foundable(r, p.faction, p.at) && (p.goal === undefined || p.goal === p.at)) { // 갈 곳이 따로 있으면 거쳐 가는 우리 마을엔 눌러앉지 않는다
+    // 주인 없는 철광·포구는 편입 값이 더 든다 (새 마을 값과의 차이를 이때 치른다 · 못 치르면 기다린다 · economy.foundCost)
+    const extra = freeSite(r.nodes[p.at]) ? ((a, b) => ({ grain: a.grain - b.grain, wood: a.wood - b.wood }))(foundCost(r, p.faction, true), foundCost(r, p.faction)) : { grain: 0, wood: 0 }
+    const canPay = stockOf(r, p.faction).grain >= extra.grain && goodOf(stockOf(r, p.faction), 'wood') >= extra.wood
+    if (foundable(r, p.faction, p.at) && canPay && (p.goal === undefined || p.goal === p.at)) { // 갈 곳이 따로 있으면 거쳐 가는 우리 마을엔 눌러앉지 않는다
+      stockOf(r, p.faction).grain -= extra.grain
+      const s = stockOf(r, p.faction); s.wood = goodOf(s, 'wood') - extra.wood
       const n = r.nodes[p.at]!
       n.hh += p.hh
       n.owner = p.faction

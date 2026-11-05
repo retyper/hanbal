@@ -27,7 +27,7 @@ import {
 } from './diplomacy.ts'
 import {
   addGood, applyArm, applyBuild, applyGuard, applyWork, stepWorks, draftIronCost, foundCost, draftLimit, draftNeeds, draftPay, militiaMen, onTake, resolveRites, settleCost, settleLimit, stepBuilds, stepEconomy,
-  applyCall, migrateHouses, placeHouses, setMigrateAuto, spentThisSeason, stepInbound, stepMigration, stockOf,
+  applyCall, freeSite, haulAt, migrateHouses, placeHouses, setMigrateAuto, spentThisSeason, stepInbound, stepMigration, stockOf,
 } from './economy.ts'
 import { hasCustom, noteCustom, noteOnce } from './data/customs.ts'
 import { concealBonus, passExtra, rescueCapital, riseState, siegeFort, stepCustoms } from './hooks.ts'
@@ -671,7 +671,7 @@ function settleLand(r: Realm, o: Extract<Order, { kind: 'settle' }>, lines: Repo
   const from = r.nodes[o.from]!
   const to = r.nodes[o.to]!
   if (to.owner === null) { // 새 마을 값 (economy.foundCost)
-    const fc = foundCost(r, o.faction)
+    const fc = foundCost(r, o.faction, freeSite(to))
     stockOf(r, o.faction).grain -= fc.grain
     addGood(r, o.faction, 'wood', -fc.wood)
   }
@@ -1538,7 +1538,9 @@ function fight(
     // 물러날 곳이 없으면 흩어진다 (달 시계: 섬멸)
     for (const d of defenders) fallBack(r, d, retreatTo(r, d, node.id, null), scatterShare(true, outcome === 'rout'), a.faction, node.id, key, scattered)
     for (const x of atks) x.at = node.id
-    if (node.kind !== 'sodo' && node.owner !== a.faction && !allied(r, a.faction, node.owner)) {
+    // 주인 없는 철광·포구는 이겨도 쥐지 못한다 — 쌓인 것만 거둔다 (형 11-05)
+    if (freeSite(node)) haulAt(r, a.faction, node.id, lines)
+    else if (node.kind !== 'sodo' && node.owner !== a.faction && !allied(r, a.faction, node.owner)) {
       noteTake(r, a.faction, node.owner, node.id)
       onTake(r, node.id)
       freeAtCapital(r, node.id, node.owner, a.faction, lines)
@@ -1586,6 +1588,8 @@ function walkIn(r: Realm, live: readonly Army[], node: RNode, lines: ReportLine[
   }
   // 아무도 안 쥔 빈땅은 군대가 밟아도 우리 땅이 아니다 — 새 마을은 개척단만 연다 (형 11-03: "군사가 밟기만 하면 내 영토 · 몇 턴만 지나면 엄청 많은데 다 텅텅 빈 땅")
   if (node.kind === 'wild' && node.owner === null) return
+  // 주인 없는 철광·포구 — 밟아도 우리 땅이 아니다 · 쌓인 것을 거둔다 (편입은 개척으로 · 형 11-05)
+  if (freeSite(node)) { haulAt(r, lead.faction, node.id, lines); return }
   if (node.owner !== lead.faction && node.kind !== 'sodo' && !allied(r, lead.faction, node.owner)) {
     provoke(r, lead.faction, node.owner, lines)
     noteTake(r, lead.faction, node.owner, node.id)

@@ -16,7 +16,7 @@ import { strikeLive } from '../../realm/ai.ts'
 import { relationOf } from '../../realm/diplomacy.ts'
 import { met } from '../../realm/discovery.ts'
 import { postHero, rulerOf } from '../../realm/heroes.ts'
-import { crowdOf, inboundOf, isCoast, nodeHarvest, nodeSpecials, nodeYield } from '../../realm/economy.ts'
+import { crowdOf, freeSite, inboundOf, isCoast, nodeHarvest, nodeSpecials, nodeYield } from '../../realm/economy.ts'
 import { visibleRange } from '../../realm/intel.ts'
 import { customMarks } from '../../realm/hooks.ts'
 import { blockedWhy, forceOf, seasonOf } from '../../realm/season.ts'
@@ -235,6 +235,8 @@ export const MAP_CSS = `
 /* 나라 많은 판 — 이름표를 작게 (한 줄 · 글씨 작게 · 깃발·특산 칸도 작게) */
 .map[data-region="yeongnam"] .lb, .map[data-region="south"] .lb, .map[data-region="world"] .lb { font-size: clamp(8px, calc(1.9cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 12.5px); border-left-width: .45em; padding: 0 .28em 0 .16em; }
 .map[data-region="yeongnam"] .lb .lbg img, .map[data-region="south"] .lb .lbg img, .map[data-region="world"] .lb .lbg img { width: 1.25em; height: 1.25em; }
+/* 주인 없는 철광·포구에 쌓인 것 — 금빛 숫자 (군대가 밟으면 거둔다 · 형 11-05) */
+.map .lb .lbg .lbst { display: inline-flex; align-items: center; gap: 1px; padding: 0 3px; border-radius: 6px; background: #3a2a10; color: #ffd76a; font-weight: 800; font-size: .85em; font-variant-numeric: tabular-nums; }
 .map .lb small.nowi { display: inline; font-size: .68em; font-weight: 500; margin: 0 0 0 .3em; opacity: .75; }
 .map .lb .lbe { width: 1.1em; height: 1.1em; object-fit: contain; flex: none; filter: drop-shadow(0 0 1px #fff); }
 .map .lb .lbt { display: flex; flex-direction: column; align-items: flex-start; }
@@ -982,8 +984,10 @@ export function mapHtml(
     // 고을 일터 — 이름표 칸 맨 앞에 금테 그림 하나 (works.ts · 규칙은 지도에 보이게)
     const mkt = marketOf(r, r.player)?.at === n.id ? `<img class="lbw" src="${art}icon/route-caravan.png" alt="상단" title="떠돌이 상단이 머문다">` : ''
     const wk = worksOf(n).map(([w]) => `<img class="lbw" src="${art}icon/${WORKS[w].icon}.png" alt="${WORKS[w].name}" title="${WORKS[w].name}: ${WORKS[w].does}">`).join('')
-    const tray = mkt !== '' || wk !== '' || sp.length > 0 || fish !== '' || dfs.length > 0 || cms.length > 0 || bld !== ''
-      ? `<span class="lbg${n.owner === null || n.hh <= 0 ? ' idle' : ''}">${mkt}${wk}${sp.map((g) => `<img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}" title="${GOOD_NAME[g]}: 사람이 살면 난다">`).join('')}${fish}${dfs.map((t) => `<i class="${t}" title="${DEF_TITLE[t]}">${DEF_NAME[t]}</i>`).join('')}`
+    // 주인 없는 철광·포구에 쌓인 것 — 군대가 밟으면 그 나라가 거둔다 (형 11-05 · 규칙은 지도에 보이게)
+    const stash = freeSite(n) ? (Object.entries(n.stash ?? {}) as Array<[keyof typeof GOOD_NAME, number]>).filter(([, v]) => Math.floor(v) > 0).map(([g, v]) => `<span class="lbst" title="쌓인 ${GOOD_NAME[g]} · 군대가 밟으면 거둔다 · 편입은 개척으로"><img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}">${Math.floor(v)}</span>`).join('') : ''
+    const tray = stash !== '' || mkt !== '' || wk !== '' || sp.length > 0 || fish !== '' || dfs.length > 0 || cms.length > 0 || bld !== ''
+      ? `<span class="lbg${n.owner === null || n.hh <= 0 ? ' idle' : ''}">${stash}${mkt}${wk}${sp.map((g) => `<img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}" title="${GOOD_NAME[g]}: 사람이 살면 난다">`).join('')}${fish}${dfs.map((t) => `<i class="${t}" title="${DEF_TITLE[t]}">${DEF_NAME[t]}</i>`).join('')}`
         + `${bld}${cms.map((m) => `<i class="cmk${m.hot === true ? ' hot' : ''}" title="${m.tip}"${m.hot === true ? ` data-l="${m.label}"` : ''}>${m.label}</i>`).join('')}</span>`
       : ''
     labels.push({

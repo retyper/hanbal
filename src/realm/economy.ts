@@ -21,7 +21,7 @@ import { guardOptions } from './council.ts'
 import { relicSum } from './relics.ts'
 import type { Equip, UnitKind } from './battle.ts'
 import { TIERS, kitOf, lowestTier, nextTier, upgradeKind } from './kit.ts'
-import type { Army, BuildWhat, Good, Goods, Order, ReportLine, Realm, RNode, Stock } from './types.ts'
+import type { Army, BuildWhat, Good, Goods, Order, ReportLine, Realm, RNode, SeasonOfYear, Stock } from './types.ts'
 import { bestWorkLv, canWork, cutMul, lotCap, lvOf, targetLv, withWork, workCost, workMulAt, worksOf } from './works.ts'
 
 function menIn(mix: Readonly<Partial<Record<string, number>>>): number {
@@ -175,7 +175,8 @@ export function nodeSpecials(r: Realm, node: string): Good[] {
 export function nodeYield(r: Realm, node: string, season = seasonOf(r)): Partial<Record<Good, number>> {
   const R = P.realm
   const n = r.nodes[node]
-  if (n === undefined || n.owner === null || n.kind === 'sodo' || (n.kind === 'wild' && n.hh <= 0)) return {}
+  // 주인 없는 철광·포구도 사람이 남아 일한다 — 난 것은 그 터에 쌓인다 (stepSites · 형 11-05)
+  if (n === undefined || (n.owner === null && !freeSite(n)) || n.kind === 'sodo' || (n.kind === 'wild' && n.hh <= 0)) return {}
   const out: Partial<Record<Good, number>> = {}
   // 일손 — 사람이 많을수록 더 캐고 더 벤다 (곡식·물고기는 원래 가호에 비례)
   const w = workMul(n.hh)
@@ -478,17 +479,19 @@ function edgeBetween(r: Realm, from: string, to: string) {
  * 새 마을을 여는 값 — 개척단을 꾸리든(플레이어) 곁 빈땅에 바로 보내든(AI 개척) 한 번에 같은 덩이가 든다.
  * 이미 가진 고을이 많을수록 비싸다 (문명의 개척자 값처럼 · 형 11-03: "개척단을 꾸리는 데 비용이 매우 많이 들고")
  */
-export function foundCost(r: Realm, faction: string): { grain: number; wood: number } {
+export function foundCost(r: Realm, faction: string, site = false): { grain: number; wood: number } {
   const R = P.realm
   const towns = Object.values(r.nodes).filter((n) => n.owner === faction && n.kind !== 'sodo').length
-  return { grain: Math.round(R.foundGrain + R.foundGrainPerTown * towns), wood: Math.round(R.foundWood) }
+  // 주인 없는 철광·포구를 편입하면 siteAnnexMul 배 — 사람과 광산이 이미 있다 (형 11-05 · 싸게 쥐면 그 길로 철과 뱃길이 너무 빨랐다)
+  const m = site ? R.siteAnnexMul : 1
+  return { grain: Math.round((R.foundGrain + R.foundGrainPerTown * towns) * m), wood: Math.round(R.foundWood * m) }
 }
 
 /** 새 마을 값을 치르고 남는 곡식·나무로 몇 가구를 더 보낼 수 있나 — 값도 못 치르면 0 */
-function afterFound(r: Realm, faction: string): number {
+function afterFound(r: Realm, faction: string, site = false): number {
   const R = P.realm
   const st = stockOf(r, faction)
-  const c = foundCost(r, faction)
+  const c = foundCost(r, faction, site)
   const grain = st.grain - c.grain
   const wood = goodOf(st, 'wood') - c.wood
   if (grain < 0 || wood < 0) return 0
@@ -500,15 +503,16 @@ export function settleLimit(r: Realm, faction: string, from: string, to: string)
   const a = r.nodes[from]
   const b = r.nodes[to]
   if (a === undefined || b === undefined || a.owner !== faction || a.kind === 'sodo') return 0
-  if (b.kind !== 'wild' || (b.owner !== null && b.owner !== faction)) return 0
+  // 빈땅 · 주인 없는 철광·포구(군대로는 못 쥔다 · 개척으로 편입 · 형 11-05)
+  if ((b.kind !== 'wild' && !freeSite(b)) || (b.owner !== null && b.owner !== faction)) return 0
   const ed = edgeBetween(r, from, to)
   if (ed === null || blockedWhy(ed, r) !== null) return 0
   if (Object.values(r.armies).some((x) => x.at === to && x.march === null && x.faction !== faction)) return 0
   const sent = spentThisSeason(r, a.settledOut) // 달 시계 — 이번 계절에 이미 떠나보낸 집
   const share = Math.floor((a.hh + sent) * R.settleShare * shareOpen(r)) - sent
-  const room = Math.max(0, (b.room ?? 0) - b.hh)
+  const room = Math.max(0, (b.kind === 'wild' ? b.room ?? 0 : homeRoom(b)) - b.hh)
   // 새 마을이면(아직 아무도 안 쥔 빈땅) 새 마을 값을 먼저 치르고 남는 것으로 — 이미 연 우리 마을에 더 보내는 건 가구 몫만
-  const left = b.owner === null ? afterFound(r, faction) : Infinity
+  const left = b.owner === null ? afterFound(r, faction, freeSite(b)) : Infinity
   const grain = Math.min(left, R.settleGrain > 0 ? Math.floor(stockOf(r, faction).grain / R.settleGrain) : Infinity)
   const wood = R.settleWood > 0 ? Math.floor(goodOf(stockOf(r, faction), 'wood') / R.settleWood) : Infinity
   return Math.max(0, Math.min(share, room, grain, wood))
@@ -1098,6 +1102,8 @@ export function grainAtSeasonEnd(r: Realm, f: string): number {
 export function stepEconomy(r: Realm, season: number, fought: ReadonlySet<string>, lines: ReportLine[]): void {
   const R = P.realm
   const winter = season === 3
+  // 주인 없는 철광·포구 — 난 것이 쌓이고, 머무는 군대의 나라가 거둔다 (형 11-05)
+  stepSites(r, season === 0 ? 'spring' : season === 1 ? 'summer' : season === 2 ? 'autumn' : 'winter', lines)
   for (const f of Object.keys(r.factions).sort()) {
     const s = stockOf(r, f)
     const fac = r.factions[f]!
@@ -1177,4 +1183,48 @@ export function stepEconomy(r: Realm, season: number, fought: ReadonlySet<string
 export function harvestModOf(r: Realm, f: string): number {
   const m = r.harvestMod?.[f]
   return m !== undefined && m.year === yearOf(r) ? m.mul : 1
+}
+
+// ───────── 주인 없는 자원 터 (형 11-05: "철광 같은 데는 점령하자마자 내 땅이 되면 안 된다 · 철광이 매 턴 철을 내고 밟은 군사의 나라가 얻는다 ·
+// 주둔하면 계속 얻고, 비우면 또 쌓이다가 다시 밟으면 또 얻는다 · 편입하려면 개척")
+
+/** 주인 없는 철광·포구 — 군대로는 쥐지 못한다(개척으로 편입) · 난 것이 쌓였다가 밟은 군대의 나라가 거둔다 */
+export const freeSite = (n: RNode | undefined): boolean => n !== undefined && n.owner === null && (n.kind === 'ironMine' || n.kind === 'port')
+
+/** 그 터에 쌓인 것을 이 나라가 거둔다 — 쌓인 게 있으면 보고 한 줄 */
+export function haulAt(r: Realm, faction: string, node: string, lines: ReportLine[]): void {
+  const n = r.nodes[node]
+  if (!freeSite(n) || r.factions[faction] === undefined) return
+  const got: Partial<Record<Good, number>> = {}
+  for (const [g, v] of Object.entries(n!.stash ?? {}) as Array<[Good, number]>) {
+    const k = Math.floor(v)
+    if (k <= 0) continue
+    got[g] = k
+    if (g === 'grain') stockOf(r, faction).grain += k
+    else addGood(r, faction, g, k)
+  }
+  n!.stash = {}
+  if (Object.keys(got).length > 0) lines.push({ kind: 'haul', faction, node, goods: got })
+}
+
+/**
+ * 철마다(stepEconomy) — 주인 없는 터는 그 철에 난 것(곡식 빼고)을 쌓는다 · 위 끝은 siteStashSeasons 철치.
+ * 그 터에 머무는 군대가 한 나라뿐이면 그 나라가 쌓인 것을 거둔다 (여러 나라가 버티면 아무도 못 거둔다)
+ */
+export function stepSites(r: Realm, sname: SeasonOfYear, lines: ReportLine[]): void {
+  const R = P.realm
+  for (const n of Object.values(r.nodes).filter((x) => freeSite(x)).sort((x, y) => (x.id < y.id ? -1 : 1))) {
+    const y = nodeYield(r, n.id, sname)
+    const st: Partial<Record<Good, number>> = { ...(n.stash ?? {}) }
+    for (const g of GOODS) {
+      if (g === 'grain') continue
+      const v = goodOf(y, g)
+      if (v <= 0) continue
+      const add = v * R.siteYieldMul
+      st[g] = Math.min(add * R.siteStashSeasons, (st[g] ?? 0) + add)
+    }
+    n.stash = st
+    const holders = new Set(Object.values(r.armies).filter((a) => a.at === n.id && a.march === null).map((a) => a.faction))
+    if (holders.size === 1) haulAt(r, [...holders][0]!, n.id, lines)
+  }
 }

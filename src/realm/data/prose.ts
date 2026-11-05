@@ -535,6 +535,11 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
     case 'partyBack':
       if (line.faction !== viewer) return null
       return `${josa(fname(line.by), '이', '가')} ${josa(node(line.node), '을', '를')} 먼저 일궜다. 개척단 ${line.n}가구가 ${josa(node(line.back), '으로', '로')} 돌아와 다음 갈 곳을 기다린다.`
+    case 'haul':
+      // 주인 없는 철광·포구에 쌓인 것을 거뒀다 (형 11-05) · 남의 것은 우리 땅에 맞닿은 곳만 소문으로
+      if (line.faction === viewer) return `우리 군사가 ${node(line.node)}에 쌓인 것을 거둬 왔다: ${goodsLine(line.goods)}. 머물면 철마다 거두고, 비우면 다시 쌓인다.`
+      if (!Object.values(after.edges).some((e) => (e.a === line.node && after.nodes[e.b]?.owner === viewer) || (e.b === line.node && after.nodes[e.a]?.owner === viewer))) return null
+      return `소문. ${josa(fname(line.faction), '이', '가')} ${node(line.node)}에 쌓인 것을 거둬 갔다.`
     case 'settle':
       // 개척은 계절을 넘기면 바로 자리 잡는다 — 길 위에 머물지 않는다
       if (line.faction === viewer) return `${node(line.from)}의 백성 ${line.n}가구가 ${josa(node(line.to), '에', '에')} 자리 잡았다. 새 마을이 선다.`
