@@ -94,6 +94,7 @@ BACKGROUND: flat pure bright green #00FF00 everywhere, no shadows, no ground lin
 - 남은 것: 말 탄 넷(비류·금하·거타·쇠보 — 말 띠 굽는 길이 아직 없다)
 - 협보 ✔ 11-04 `gen-hyeopbo.png` (칸 163x160 · u/0) — 첫 판은 휜 칼(왜도 꼴)이라 버리고, 「perfectly STRAIGHT single-edged blade · round ring pommel · NOT curved, NOT a katana」를 A·B 머리말 모두에 넣어 새 대화로 다시 → 모든 컷 곧은 칼
 - 말갈기 ✔ 11-05 밤 `gen-malgalgi.png` (칸 157x160 · u/0 자동 모드 · `tut-malgalgi`·`sabeol-1` — 튜토리얼 각성 장수) — A·B·C 모두 칸 선을 그려 key-png 지울곳 "0.246,0,0.254,1;0.496,0,0.504,1;0.746,0,0.754,1;0,0.493,1,0.507" · C 는 B 를 다시 그리며 왼쪽 아래만 쓰러짐으로(copyrect 0,0.78,0.25,0.22) · 걷기 여덟째는 A 넷째(copycell) · 휘두르기 옅은 초록 자국은 `node tools/degreen.mjs <띠> <띠> 15`(g-max(r,b)>15 지움)
+- 해비 ✔ 11-05 밤 `gen-haebi.png` (칸 156x160 · edu Flash · `tut-haebi`) — u/0 첫 판은 납작한 벡터 그림체·맨다리라 버림(-flat-rejected) → 머리말에 「soft painterly shading … NOT flat vector」「trousers and tall boots」를 못 박음 · u/0 은 다섯 장 뒤 오류, u/1 은 「지금 이미지를 못 만든다」, edu 는 Pro 붐벼 Flash 로 · 막기 컷 도끼 둘이라 B 지도 "1,1,2,2,3,3,4,4,5,5,7,8" · C 는 쓰러짐을 우하단 칸에 그려 ✦ 와 겹침 → `node tools/clean-alpha.mjs fc.png fc.png clone=0.910,0.836,15,-28,6`
 - ✗ 11-05 밤 걷기 다리 바꾸기 넷째 실패: 소서노 걷기 1~4컷을 초록 바탕 한 줄로 주고 「두 다리만 바꿔 같은 4컷」을 시켰더니 거의 같은 그림(무릎 든 다리도 같은 쪽)을 돌려줬다(u/0 · walkfix/cmp.png). 다음: Veo 제자리걸음 영상에서 컷 뽑기
 
 생김새는 `docs/realm/cast/part-*.md` 의 「겉모습」 줄을 영어로 옮겨 `<한 줄 생김새>` 자리에 넣는다. 초상(bust)을 올리지 않는다 — 글만. 결(무기·자세)은 아래 「결」 그대로 두어 공격 컷이 같은 박자로 돈다.
