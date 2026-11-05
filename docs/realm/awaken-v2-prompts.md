@@ -77,6 +77,7 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-51-haseulla-dangung 하슬라 단궁 — 2차(retyper · 사람마다 다른 옷 틀: 표범 사냥꾼 · 진홍 · 바지와 대님 · 활) — 11-05 밤
 - w-53-hwanna-gabi 환나 가비 — 2차(retyper · 사람마다 다른 옷 틀: 여우털 장사 여왕 · 호박 구슬 · 저울 · 이끼빛) — 11-05 밤
 - w-54-maga-dalli 마가 달리 — 2차(retyper · 사람마다 다른 옷 틀: 초원 기마 궁수 · 늑대털 조끼 · 바지 · 푸른 번개) — 11-05 밤
+- w-58-tamna-halla 탐라 한라 — 2차(retyper · 사람마다 다른 옷 틀: 화산섬 무당 군장 · 용암 갑옷 · 동백 · 거울엔 화산) — 11-05 밤
 - ~~w-01-silla-princess 신라 공주 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - ~~w-05-baekje-queen 백제 왕비 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - w-02-goguryeo-lady 고구려 무녀 — 1차 2판(edu · 골반 아래 잘라 냄, 원본 -raw) — 11-03
