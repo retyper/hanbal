@@ -25,7 +25,8 @@
 
 **★★★★★ 11-05 형 — 마을 안 다시 (스타크래프트처럼 비스듬히 내려다본 빈 터 · 터마다 일터 1·2·3단 · 목책·해자 · 망치질 일꾼) · 제미나이 Jay 빼고 u/0~u/3 돌려 가며**
 - ✔ 시험 셋 (assets_src/realm/town): 빈 터 바탕(납작 · u/0) → 논 단계 시트(u/1 → 자홍 바탕 u/2) → **아이소 2:1 바탕(u/3 · test-ground-iso.png)** 이 건물 각도와 맞는다. 맞춰 본 그림 public/_tmp/town/compose.html
-- 다음: 일터 아홉 × (1·2·3단 + 짓는 중) 시트 — 2×2 · 자홍 #FF00FF · 「everything inside its ring of stones · no grass outside」 · IMAGE 1 = test-paddy-tiers2.png(각도) · 바탕 셋(들판·물가·숲) · 목책·해자·흙성 테두리 · 망치질 일꾼 띠
+- 됨 11-05 오후: 일터 아홉 × 1·2·3단 모두 (u/0·u/1 · 같은 대화에 「Same reference image, same rules」로 이어 굽기가 빠르다 · 시트 원본 assets_src/realm/town/sheet-*.png)
+- 다음: 바탕 둘(물가·숲) · 목책·해자·흙성 테두리 · 망치질 일꾼 띠 — 2×2 · 자홍 #FF00FF · IMAGE 1 = test-paddy-tiers2.png(각도)
 
 **(옛) 11-04 밤 형 — 마을 안 (docs/realm/TOWN.md 1단계) · 제미나이(사물·풍경 · 사람 없음) · 시험 한 장 먼저**
 - 마을 터 바탕 셋 — 들판 · 물가 · 숲(산골). 위에서 비스듬히 내려다본 빈 마을 마당과 둘레 초가 몇 채 · 가운데는 비운 터(일터가 설 자리) · 지도·전장과 같은 수채 그림결 · 사람·짐승·글자 없음 · 16:9 → `public/realm/town/town-<field|water|wood>.jpg` · 지금은 전장 바탕을 빌린다(전장 화살·찢긴 깃발이 보여 어색) → townview 의 bg 만 바꾼다
