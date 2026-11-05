@@ -242,9 +242,10 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
 export const AWAKEN2_LOOP: ReadonlySet<string> = new Set([
   'w-97-goguryeo-mir', // 11-05 미르 — 번개 속에 활을 당긴 채 숨
   'l-L7-aryeong', // 11-05 알영 — 볏단과 푸른 용
-  'w-67-buyeo-haedal', // 11-05 밤 해달 — 판 없이 세로 · 활을 당긴 채 숨
+  'w-67-buyeo-haedal', // 11-06 새벽 해달 다시 — 쏘고 웃고 한 바퀴 돌아 다시 당긴다 (형: 옛 판은 거의 정지 화면)
   'w-52-biryuna-songbi', // 11-05 밤 송비 — 판 없이 세로 · 손 위 단풍이 돈다
-  'w-30-guya-soebi', // 11-05 밤 쇠비 — 판 없이 세로 · 허벅지 틀이라 아래 ✦ 를 잘라도 골반까지 · 출렁임 낱말은 Veo 가 두 번 오류라 잔잔한 숨으로
+  'w-30-guya-soebi', // 11-06 새벽 쇠비 다시 — 망치를 휘두르고 젖혀 웃는다 · 출렁임 낱말은 오류라 숨·무게로
+  'w-28-michuhol-bira', // 11-06 새벽 비라 — 수정 덩이를 던져 받고 웃으며 한 바퀴 춤
 ])
 /** 정사각 판으로 구운 진각성 영상 (11-05 낮의 둘) — 나머지는 판 없이 세로 `<id>.t2.mp4` */
 export const AWAKEN2_LOOP_SQ: ReadonlySet<string> = new Set(['w-97-goguryeo-mir', 'l-L7-aryeong'])
