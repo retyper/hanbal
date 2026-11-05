@@ -51,6 +51,7 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-37-michuhol-gaennae 미추홀 갯내 — 2차(edu) — 11-05 밤
 - w-90-saro-danbi 나정 지기 단비 — 2차(edu) — 11-05 밤
 - ~~w-94-mokji-dallae 원산 지기 달래~~ — 트임이 사타구니까지 비어 보여 걷음(-rejected) · 다시 뽑을 땐 「skirt slit only to mid-thigh, fully covered hips」를 넣는다 — 11-05 밤
+- w-50-siljik-mulga 실직 물가 — 2차(retyper · 공통 틀에 「트임은 허벅지 가운데까지 · 엉덩이는 가림」 더함) — 11-05 밤
 - ~~w-01-silla-princess 신라 공주 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - ~~w-05-baekje-queen 백제 왕비 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - w-02-goguryeo-lady 고구려 무녀 — 1차 2판(edu · 골반 아래 잘라 냄, 원본 -raw) — 11-03

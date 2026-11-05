@@ -33,4 +33,5 @@ export const TRUE_WAKE: ReadonlySet<string> = new Set([
   'wander-06', 'dm-buyeo-2', // 부여 사냥꾼 (11-05 밤 · edu · 같은 초상)
   'michuhol-2', // 미추홀 갯내 (11-05 밤 · edu)
   'sr-danbi', // 나정 지기 단비 (11-05 밤 · edu)
+  'siljik-ruler', // 실직 물가 (11-05 밤 · retyper)
 ])
