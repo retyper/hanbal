@@ -70,4 +70,5 @@ export const TRUE_WAKE: ReadonlySet<string> = new Set([
   'yangmaek-1', // 양맥 솔매 (11-05 밤 · roqkfeke12 · 사람마다 다른 옷 틀 · 골짜기 물길 퉁명이)
   'ungcheon-1', // 웅천 곰 (11-05 밤 · roqkfeke12 · 사람마다 다른 옷 틀 · 곰가죽 여장사 몽둥이)
   'maek-1', // 맥 범발 (11-05 밤 · roqkfeke12 · 사람마다 다른 옷 틀 · 밤 표범 사냥꾼)
+  'jeoga-1', // 저가 엄니 (11-05 밤 · roqkfeke12 · 사람마다 다른 옷 틀 · 멧돼지 씨족 겨울 노장)
 ])
