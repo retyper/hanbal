@@ -40,6 +40,7 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-52-biryuna-songbi 송비 · w-36-baekje-maena 매나(활시위가 조금 어색 · 다시 뽑을 거리) — 2차(Facts · 허벅지 틀) — 11-05 저녁
 - w-25-bihwa-priestess 비화 무녀 · w-20-gaya-smith-daughter 아름 — 2차(Facts · 허벅지 틀) — 11-05 저녁
 - w-28-michuhol-bira 비라 · w-45-tamna-oreumbi 오름비 — 2차(Facts · 허벅지 틀) — 11-05 저녁
+- w-17-mahan-pearl-diver 진주 해녀 — 2차(Facts · 허벅지 틀) — 11-05 저녁
 - ~~w-01-silla-princess 신라 공주 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - ~~w-05-baekje-queen 백제 왕비 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - w-02-goguryeo-lady 고구려 무녀 — 1차 2판(edu · 골반 아래 잘라 냄, 원본 -raw) — 11-03
