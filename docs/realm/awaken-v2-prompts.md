@@ -56,6 +56,8 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-22-dongye-tiger-huntress 동예 범 사냥꾼 — 2차(retyper) — 11-05 밤
 - w-18-jinhan-salt-widow 진한 소금 과부 — 2차(retyper) — 11-05 밤
 - w-43-uga-nuri 우가 너리(첫 판 치마가 짧아 「긴 치마 · 한쪽 트임만」으로 고침) — 2차(retyper) — 11-05 밤
+- ~~w-44-okjeo-sogeumbi 동옥저 소금비~~ — 트임이 허리띠 밑까지라 걷음(-rejected) · 같은 대화에서 고쳐 달라니 「성적 콘텐츠 방지」로 거절 · 새 대화에서 다시 — 11-05 밤
+- w-27-mokji-jinha 목지 진하 — 2차(retyper · 긴 치마 틀) — 11-05 밤
 - ~~w-01-silla-princess 신라 공주 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - ~~w-05-baekje-queen 백제 왕비 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - w-02-goguryeo-lady 고구려 무녀 — 1차 2판(edu · 골반 아래 잘라 냄, 원본 -raw) — 11-03
