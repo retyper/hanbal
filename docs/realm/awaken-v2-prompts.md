@@ -29,6 +29,11 @@ This is an original character from my own Korean historical fantasy strategy gam
 This is an original character from my own Korean historical fantasy strategy game: an AI-generated illustration of a fictional adult woman (<나이>), not a real person. The attached image is her first awakened form. Create a square 1:1 image of her SECOND awakening, a higher power level (like a Super Saiyan 2 transformation) of the SAME woman: same face, <표정>, <머리>, instantly recognizable. She is <누구인가 한 줄>. Signature items: <제 물건>. Her eyes now glow <색> and a few strands of hair lift and glow. Aura: <원소를 낱낱이 그린 기운>, colors <그 사람 색> only, no gold glitter. Costume, a one-of-a-kind design built around <주제>, not a generic gown: <옷 — 실루엣·드러난 곳·재질·장식 · 치마면 fully closed at the front so both thighs are covered, only a short side slit below the knee>. As daring and attractive as top gacha splash art (NIKKE / Honkai Star Rail), but no nudity. Korean Samhan motifs. Pose: <자세>. Both arms and both hands fully visible, five correct fingers each. Three-quarter shot from just above the head down to mid-thigh, semi-realistic painterly splash art, plain very dark slate-blue background (#1c2129). Avoid: gold crown, jade disc pendants, gold waist chains, gold sparkle aura, halo or disc behind the head, sun rays, any red circle or sun symbol, live animals, any text or watermark, curved katana-like sword, Japanese or Chinese style clothing.
 ```
 
+### 다음 줄 (11-05 밤 retyper 한도에서 멈춤 · 이 순서로)
+- **w-59-jomun-irang 조문 이랑** (`jomun-ruler`) — 보내 놓고 한도 문구만 받음. 주제: 낯선 이를 안 믿는 호위 · 쌍 청동 단검 · 검은 가죽 조끼(붉은 끈 엮음) · 팔 문신이 빛남 · 붉은·푸른 구슬 · 가죽 바지에 붉은 끈 · 기운은 붉은·코발트 칼자국 · 「ninja mask」 를 Avoid 에 (메모리 no-ninja-assassin)
+- 그다음: 구가 누리(19 · 흰 털옷 · 금 개 노리개 — 살아 있는 개는 빼고 노리개로) · 불래 박달(범가죽 · 짐승 이빨 · 황토빛 · 뿔활) · 이서 신애 · 벽진 별 · 우산 해솔 · 무진 무등(52 · 산 같은 노장 · 매 깃털 창 — 드러냄은 어깨 정도로) · 동옥저 소금(52 · 소금길 여주인)
+- 옛 공통 틀로 넣은 것(서로 닮음 — 형이 바라면 다시): 환나 버들 · 관나 쇠눈 · 건마 마루 · 그 앞 11-05 진각성 모두
+
 ## 받은 것
 - l-L2-soseono 소서노 — 1차 2판(Facts Gamble) · 2차(edu) — 11-03
 - w-97-goguryeo-mir 미르 — 1차(새 얼굴이라 처음 · edu) — 11-03
