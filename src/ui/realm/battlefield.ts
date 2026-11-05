@@ -1910,10 +1910,11 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       const ctr = beatsHint(c, ak, p.hint) ? ' wbxc' : ''
       // 각성기 — 그 기운의 이름과 짐승 (깃발 대신) · 금빛 테 (.wcmd.wake)
       const wk = c === 'wake' ? p.wake : undefined
-      if (wk !== undefined) tag = `<em class="art">각성기</em>`
+      // 진각성 — 이 싸움이 크면 각성기 단추가 「진각성」으로 금빛이 짙어지고, 작으면 「진각성은 큰 싸움에서」 꼬리 (형 11-05: "진각성 방법도 자연스럽게 알 수 있어야")
+      if (wk !== undefined) tag = p.trueWake === 'big' ? `<em class="art tru">진각성</em>` : `<em class="art">각성기</em>${p.trueWake === 'small' ? '<small class="trun">진각성은 큰 싸움에서</small>' : ''}`
       const nm = wk !== undefined ? WAKE_NAME[wk] : ak !== undefined ? ART_NAME[ak] : CMD_NAME[c]
       const sh = wk !== undefined ? WAKE_SHORT[wk] : ak !== undefined ? ART_SHORT[ak] : CMD_SHORT[c]
-      return `<button class="wcmd ${c}${on ? ' on' : ''}${recNow === c ? ' rec' : ''}${ctr}" data-war="pick" data-g="${g}" data-c="${c}" data-more="${esc(ak !== undefined ? ART_DOES[ak] : CMD_DOES[c])}"><img class="wflag${wk !== undefined ? ' wbeast' : ''}" src="${flagSrc(art, c, ak, wk)}" alt=""><span class="wct"><b>${nm}</b>${tag}${feel}<small>${esc(sh)}</small>${gu}</span></button>`
+      return `<button class="wcmd ${c}${on ? ' on' : ''}${recNow === c ? ' rec' : ''}${ctr}${wk !== undefined && p.trueWake === 'big' ? ' tru' : ''}" data-war="pick" data-g="${g}" data-c="${c}" data-more="${esc(ak !== undefined ? ART_DOES[ak] : CMD_DOES[c])}"><img class="wflag${wk !== undefined ? ' wbeast' : ''}" src="${flagSrc(art, c, ak, wk)}" alt=""><span class="wct"><b>${nm}</b>${tag}${feel}<small>${esc(sh)}</small>${gu}</span></button>`
     }
     // 무리 탭 — 누른 무리만 빛나고 그 무리 깃발만 보인다. 무리마다 다 고르면 「전투 개시」가 켜진다
     // (형 10-24: "깃발이 너무 많아서 헷갈려 · 창병 방패병을 탭하면 빛나면서 걔네들 깃발만 · 다 고른 뒤에 전투개시 버튼 활성화")
@@ -2629,6 +2630,7 @@ export const WAR_CSS = `
 .ap .wpush { margin: 4px 0 0; text-align: center; font-size: 13px; color: var(--mute); }
 .ap .wpush.good { color: var(--good); } .ap .wpush.bad { color: var(--bad); }
 .ap .wfl.art { color: #ffd27a; text-shadow: 0 0 6px #ffd27a88; } .ap .wcmd.art { border-color: #c8a050; background: linear-gradient(#2a2418, #1d1a14); } .ap .wcmd em.art { background: #c8a050; color: #1b1408; }
+/* 진각성 — 각성기 단추가 진각성이 되는 싸움이면 금빛이 짙게 숨 쉬고 「진각성」 · 작은 싸움이면 꼬리 한 줄 (형 11-05) */.ap .wcmd.wake.tru { border-color: #ffd76a; box-shadow: 0 0 0 1px #ffd76a, 0 0 14px #ffb84a99; animation: trubtn 1.2s ease-in-out infinite alternate; }@keyframes trubtn { to { box-shadow: 0 0 0 2px #ffe8a8, 0 0 22px #ffb84acc; } }.ap .wcmd em.art.tru { background: #ffd76a; color: #3a2408; font-weight: 900; }.ap .wcmd small.trun { display: block; font-size: 10.5px; color: #c8b890; font-weight: 600; }@media (prefers-reduced-motion: reduce) { .ap .wcmd.wake.tru { animation: none; } }.ap.q-low .wcmd.wake.tru { animation: none; }
 /* 무리마다 잃은 사람 — 그림 칩 */
 .ap .wloss { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin: 3px 0 0; font-size: 13px; }
 .ap .wloss > span { display: inline-flex; align-items: center; gap: 5px; } .ap .wloss .us { color: #9fd18b; } .ap .wloss .foe { color: #e8a08a; }

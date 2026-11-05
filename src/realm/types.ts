@@ -663,6 +663,8 @@ export interface Pending {
   readonly art?: Art
   /** 각성기를 낼 장수의 기운 — 장수의 명령에 'wake' 가 있으면 그것 (깃발 그림·이름) */
   readonly wake?: import('./elem.ts').Elem
+  /** 각성기를 낼 장수가 진각성할 수 있는 장수면 — 'big' 이 싸움이 커서 각성기를 쓰면 진각성 · 'small' 싸움이 작아 각성기만 (tactics · DESIRE §17) */
+  readonly trueWake?: 'big' | 'small'
   /** 이 싸움의 우리 장수들 — 총대장이 먼저 · 비기 · 썼나 (장수가 여럿이면 누가 나설지 고른다) */
   readonly heroes?: ReadonlyArray<{ readonly id: string; readonly chief: boolean; readonly mu: number; readonly art?: Art; readonly artUsed: boolean }>
   /** 적장들 — 사로잡을 수 있는 몫 (총대장은 호위가 두껍다) */

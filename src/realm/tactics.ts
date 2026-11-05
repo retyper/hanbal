@@ -898,6 +898,8 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
           ...((artActor(me, foe, undefined, arts, gone) ?? me.hero)?.art !== undefined ? { art: (artActor(me, foe, undefined, arts, gone) ?? me.hero)!.art! } : {}),
           ...(me.feast !== undefined ? { feast: me.feast } : {}),
           ...(wakeActor(me, undefined)?.wake !== undefined && !used.has('wake') ? { wake: wakeActor(me, undefined)!.wake! } : {}),
+          // 진각성할 장수가 각성기를 낼 수 있으면 — 큰 싸움이면 'big'(각성기를 쓰면 진각성) · 아니면 'small' (화면이 각성기 단추에 「진」을 띄운다 · 형 11-05: "진각성 방법도 자연스럽게")
+          ...(wakeActor(me, undefined)?.trueWake === true && !used.has('wake') ? { trueWake: live(foe, 1, 1, false) >= P.realm.trueWakeBig * live(me, 1, 1, false) ? 'big' as const : 'small' as const } : {}),
           // 장수가 여럿이면 — 누가 나설지 · 누구를 잡을지 고른다 (형 10-25)
           heroes: heroesOf(me).map((h) => ({ id: h.id, chief: h.id === me.hero?.id, mu: h.mu, ...(h.art !== undefined ? { art: h.art } : {}), artUsed: arts.has(h.id) })),
           foeHeroes: gone ? [] : heroesOf(foe).map((h) => ({ id: h.id, chief: h.id === foe.hero?.id, p: capOf(mine, false, h).p })),

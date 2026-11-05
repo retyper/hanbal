@@ -304,6 +304,8 @@ export const MAP_CSS = `
 /* 척후를 보낸 고을 — 작은 표 하나 (움직이지 않는다) */
 .map .nd .sctmk { position: absolute; left: 50%; top: -4%; transform: translate(-50%, -100%); display: flex; align-items: center; gap: 2px; padding: 1px 7px 1px 2px; border-radius: 999px; background: #1c2a1ce6; border: 1px solid #8ab07a; color: #d8f0c8; font-size: 11px; font-weight: 700; white-space: nowrap; pointer-events: none; z-index: 5; }
 .map .nd .sctmk img { width: 18px; height: 18px; object-fit: contain; }
+/* 척후 표가 서면 머리 위의 다른 표(친다 · 갈 곳 칩 · 개척 · 점령·지켜 냄·거둠)는 한 칸 위로 — 같은 자리에 겹쳐 못 읽었다 (형 11-05) */
+.map .nd:has(> .sctmk) > :is(.strk, .tchip, .stl, .wonchip, .heldchip, .haulchip) { bottom: calc(104% + 24px); }
 /* 고른 것 — 고리·금빛 번짐 대신 머리 위에 도는 초록 사각뿔 (싸움판의 보석과 한 벌 · 형 10-29: "전투 때 녹색 3d 포인터 · 맵에서도 · 지금 css 강조효과 너무 별로") */
 .map .mgem { position: absolute; left: 50%; top: 2%; z-index: 6; width: 0; height: 0; pointer-events: none; perspective: 260px;
   --a: calc(19px * var(--aw, 1)); --s: calc(26.5px * var(--aw, 1)); --t: 20.9deg; animation: mgembob 1.1s ease-in-out infinite alternate; }

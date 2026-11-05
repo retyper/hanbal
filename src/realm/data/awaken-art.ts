@@ -233,3 +233,13 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'w-33-gammun-gamsil', // 11-05 감실 — 형의 최애 · 출렁임을 걸면 제미나이가 거절해(그림이 드러나서) 잔잔한 숨으로
   'w-35-jomun-odi', // 11-05 오디 — 형의 최애 · 정사각 판(그림 전체가 움직인다) · 웃으며 숨 · 누에고치가 손 위에서 돈다
 ])
+
+/**
+ * 진각성(2차) 초상의 숨 쉬는 영상 — 정사각 판 `awaken-loop/<그림 id>.t2.sq.mp4` (tools/veo/pad.sh TIER=2).
+ * 그 판에서 진각성한 장수는 장수 판의 초상이 이 영상으로 바뀌고, 아직이면 장수 판의 「진각성」 칸에서 미리 본다 (형 11-05: "테스트하면서 진각성 영상을 보고 싶어")
+ */
+export const AWAKEN2_LOOP: ReadonlySet<string> = new Set([
+  'w-97-goguryeo-mir', // 11-05 미르 — 번개 속에 활을 당긴 채 숨
+  'l-L7-aryeong', // 11-05 알영 — 볏단과 푸른 용
+])
+export const loopFile2 = (id: string): string => `awaken-loop/${id}.t2.sq.mp4`

@@ -187,6 +187,21 @@ export const HERO_CSS = `
 /* 정사각 판으로 만든 영상(.sq · tools/veo/pad.sh) — 가운데 정사각만 오려 원본 그림 전체가 숨 쉰다 */
 .ap video.sq { aspect-ratio: 1 !important; object-fit: cover; object-position: 50% 50% !important; }
 .ap .bview video.vloop.sq { height: min(88dvh, 96vw, 900px); }
+/* 장수 판의 「진각성」 칸 — 잠긴 진각성 초상 + 조건 셋(켜지면 금빛 ✓) · 누르면 진각성 영상 미리 보기 (형 11-05) */
+.ap .twc { display: flex; align-items: center; gap: 10px; width: 100%; margin: 8px 0 4px; padding: 6px 10px 6px 6px; border-radius: 12px; background: #17120c; border: 1px solid #5a4a2a; color: #e8dcc0; text-align: left; cursor: pointer; transition: transform .08s; }
+.ap .twc:active { transform: scale(.97); }
+.ap .twc.on { border-color: #f2c14e; box-shadow: 0 0 12px #f2c14e66; background: #2a2010; }
+.ap .twc .twp { position: relative; flex: none; width: 64px; height: 64px; border-radius: 10px; overflow: hidden; border: 1px solid #6a5a3a; }
+.ap .twc .twp img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ap .twc:not(.on) .twp::after { content: ""; position: absolute; inset: 0; background: #0b0906a8; }
+.ap .twc .twl { position: absolute; z-index: 1; left: 4px; top: 2px; font-style: normal; font-size: 16px; }
+.ap .twc .twv { position: absolute; z-index: 1; right: 4px; bottom: 2px; width: 22px; height: 22px; border-radius: 50%; background: #000a; color: #ffe8a8; font-style: normal; font-size: 11px; display: grid; place-items: center; border: 1px solid #f2c14e; }
+.ap .twc .twt { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ap .twc .twt > b { font-size: 16px; color: #f2c14e; letter-spacing: .1em; }
+.ap .twc .twcs { display: flex; flex-wrap: wrap; gap: 4px; }
+.ap .twc .twk { display: inline-flex; align-items: center; gap: 2px; padding: 1px 7px; border-radius: 9px; background: #241c12; border: 1px solid #4a3c26; color: #9a8c70; font-style: normal; font-size: 12px; }
+.ap .twc .twk.ok { background: #4a3610; border-color: #f2c14e; color: #ffe8a8; }
+.ap .twc .twk u { text-decoration: none; color: #ffd76a; font-weight: 900; }
 .ap .bview small { color: #cbbf9f; font-size: 12px; }
 @keyframes bvin { from { opacity: 0; transform: scale(.94); } }
 @media (prefers-reduced-motion: reduce) { .ap .bview { animation: none; } }

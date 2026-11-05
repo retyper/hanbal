@@ -10,7 +10,8 @@ import { faceFile, noteAscended } from './face.ts'
 import { aiOrders, strikeLive } from '../../realm/ai.ts'
 import { headcount, strength, type Equip, type UnitKind } from '../../realm/battle.ts'
 import { bustOf, CUSTOM_ICON, FACTION_ART, GOOD_ICON, MIGRANT_ANIM, SEASON_ICON, SOL_ANIM2, SOL_ANIM_AR, UNIT_ICON, flagIcon, kidBust, nodeIcon, nodePos, noteGrowing, noteKids } from '../../realm/data/art.ts'
-import { AWAKEN_ART, AWAKEN_LOOP, loopFile } from '../../realm/data/awaken-art.ts'
+import { AWAKEN2_LOOP, AWAKEN_ART, AWAKEN_LOOP, loopFile, loopFile2 } from '../../realm/data/awaken-art.ts'
+import { TRUE_WAKE } from '../../realm/data/awaken2.ts'
 import { NATIONS, type NationInfo } from '../../realm/data/nations.ts'
 import { YEONGNAM_NATIONS } from '../../realm/data/nations-yeongnam.ts'
 import { SOUTH_NATIONS } from '../../realm/data/nations-south.ts'
@@ -1416,6 +1417,24 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       ['철과 뱃길', io.gate ? cl(io.iron / Math.max(1, io.need)) : 0],
       ['큰 제사', cl(Math.min(ri.chain / Math.max(1, ri.need), ri.hh / Math.max(1, ri.hhNeed)))],
     ]
+  }
+  /**
+   * 장수 판의 「진각성」 칸 — 진각성 그림이 있는 우리 장수만 (data/awaken2 TRUE_WAKE).
+   * 아직이면 진각성 초상이 어둡게 잠겨 있고, 조건 셋(각성 · 불꽃 둘 · 큰 싸움)이 그림 표로 켜진다 · 누르면 진각성 영상을 크게 미리 본다.
+   * 진각성했으면 금빛으로 열린다 (형 11-05: "진각성 방법도 어딘가에서 자연스럽게 알 수 있어야 · 게임하면서 알 수 있게")
+   */
+  function trueWakeCard(x: Hero, bo: string, woke: boolean, loop: string | null): string {
+    const R = P.realm
+    const asc = x.ascended === true
+    const fl = x.flames ?? 0
+    const need = Math.round(R.wakeMinFlames)
+    const chip = (ok: boolean, ic: string, label: string, tip: string): string => `<i class="twk${ok ? ' ok' : ''}" data-tip="${esc(tip)}">${ic}<b>${label}</b>${ok ? '<u>✓</u>' : ''}</i>`
+    const conds = woke ? '' : `<span class="twcs">${chip(asc, '✦', '각성', '먼저 각성해야 합니다. 만만치 않은 적을 내리 이겨 불꽃 셋을 다 붙이면 각성합니다')}`
+      + `${chip(asc && fl >= need, '🔥', `불꽃 ${Math.min(fl, need)}/${need}`, `각성기를 쓰려면 불꽃이 ${need}개 있어야 합니다. 이기면 붙고 지면 꺼집니다`)}`
+      + `${chip(false, '⚔', '큰 싸움', `적의 힘이 우리의 ${Math.round(R.trueWakeBig * 100)}% 넘는 싸움에서 각성기를 쓰면 진각성합니다 · 한 판에 한 번`)}</span>`
+    return `<button class="twc${woke ? ' on' : ''}" data-act="bust-view" data-src="${ART}awaken2-hd/${bo}.jpg" data-loop="${loop ?? ''}" data-tip="${esc(woke ? '이 판에서 진각성했습니다' : '누르면 진각성한 모습을 미리 봅니다')}">`
+      + `<span class="twp"><img src="${ART}awaken2/${bo}.jpg" alt="">${woke ? '' : '<i class="twl">🔒</i>'}${loop !== null ? '<i class="twv">▶</i>' : ''}</span>`
+      + `<span class="twt"><b>진각성</b>${conds}</span></button>`
   }
   /** 각성 불꽃 칸 — 우리 장수만. 빈 칸 셋이 이길 때마다 켜진다 · 각성하면 「각성」 띠 (형 10-31) */
   function flamesHtml(x: Hero): string {
@@ -4395,10 +4414,18 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const annal = annalOf(x.id)
     // 각성해 숨 쉬는 고리 영상이 있으면 영상으로 — 골반까지 세로로 (형 11-05: "명치까지 오는 게 아니라 골반까지 나오는 게 핵심") · 저사양은 그림
     const bo = bustOf(x.id)
-    const hloop = x.ascended === true && bo !== undefined && AWAKEN_LOOP.has(bo) && !root.classList.contains('q-low') ? `${ART}${loopFile(bo)}` : null
-    const hpic = hloop !== null ? `<video class="big vloop${sqCls(hloop)}" src="${hloop}" poster="${ART}awaken-hd/${bo}.jpg" autoplay muted loop playsinline preload="auto" data-act="bust-view" data-src="${ART}awaken-hd/${bo}.jpg" data-loop="${hloop}"></video>`
+    const lowQ = root.classList.contains('q-low')
+    // 진각성 — 그 판에서 진각성한 장수는 초상이 진각성 영상(정사각)으로 · 아직이면 아래 「진각성」 칸에서 미리 본다 (형 11-05: "진각성 방법도 자연스럽게 알 수 있어야 · 게임하면서 진각성 영상을 보고 싶어")
+    const tw = x.faction === me() && TRUE_WAKE.has(x.id) && bo !== undefined
+    const woke2 = tw && (r.trueWoke ?? []).includes(x.id)
+    const loop2 = tw && AWAKEN2_LOOP.has(bo!) && !lowQ ? `${ART}${loopFile2(bo!)}` : null
+    const hloop = woke2 && loop2 !== null ? loop2 : x.ascended === true && bo !== undefined && AWAKEN_LOOP.has(bo) && !lowQ ? `${ART}${loopFile(bo)}` : null
+    const hpost = woke2 ? `${ART}awaken2-hd/${bo}.jpg` : `${ART}awaken-hd/${bo}.jpg`
+    const hpic = hloop !== null ? `<video class="big vloop${sqCls(hloop)}" src="${hloop}" poster="${hpost}" autoplay muted loop playsinline preload="auto" data-act="bust-view" data-src="${hpost}" data-loop="${hloop}"></video>`
+      : woke2 ? `<img class="big" src="${hpost}" alt="" data-act="bust-view" data-src="${hpost}">`
       : file !== undefined ? `<img class="big" src="${ART}bust/${file}.jpg" alt="" data-act="bust-view" data-src="${ART}bust/${file}.jpg">` : bust(x, 'face')
     h += `<div class="hpic">${hpic}${annal !== undefined ? `<button class="annb" data-act="annal" data-id="${x.id}" aria-label="사서에 남은 이야기">📜<b>?</b></button>` : ''}${flamesHtml(x)}</div>`
+    if (tw) h += trueWakeCard(x, bo!, woke2, loop2)
     // 판 밖 단련을 들고 온 장수 — 「단련 n」 (HERO-GROWTH ★ §A)
     h += `<div class="hn">${nameHtml(x.name)}${x.drill !== undefined && x.drill.lv > 0 && x.faction === me() ? ` <span class="dlv">단련 ${x.drill.lv}</span>` : ''}${x.faction === me() ? relicChips(ART, esc, x.relics, x.relicLv ?? {}) : ''}</div><div class="mute">${emblem(x.faction)}${esc(r.factions[x.faction]?.name ?? '떠돌이')}${isRuler(r, x.id) ? ' 군주' : ''} · ${esc(roleLine(r, x))}</div>`
     // 기억 — 겪은 일이 계절 차례 그림으로, 이름 바로 밑에 (MEMORY §3-2 5). 남의 장수는 우리와 얽힌 일만
