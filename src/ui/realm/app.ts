@@ -535,6 +535,29 @@ const bustHd = (h: Hero | undefined, cls: string): string =>
     : ''
 /** 정사각 판으로 만든 숨 쉬는 영상이면 ' sq' — 가운데 정사각만 오린다 (awaken-art AWAKEN_LOOP_SQ) */
 const sqCls = (u: string | null): string => (u !== null && u.endsWith('.sq.mp4') ? ' sq' : '')
+/**
+ * 마을 안을 오갈 때의 카메라 — 지도(.map)를 그 고을 자리를 축으로 늘린다(tvdive 파고듦 · tvrise 물러남 · townview TOWN_CSS).
+ * 저사양이면 지도를 늘리지 않고 막만 (메모리 mobile-gpu-layer-limit) · 고을이 없으면 아무것도 안 한다
+ */
+function townCam(nd: HTMLElement | null | undefined, cls: 'tvdive' | 'tvrise'): HTMLElement | null {
+  const map = nd?.closest<HTMLElement>('.map')
+  if (nd == null || map == null || map.closest('.q-low') !== null) return null
+  map.classList.remove('tvdive', 'tvrise')
+  map.style.setProperty('--ox', nd.style.left || '50%')
+  map.style.setProperty('--oy', nd.style.top || '50%')
+  map.style.setProperty('--ds', String(P.realm.townDiveScale))
+  // 고을이 화면 가운데로 오며 다가간다 — 축은 고을 자리라 옮김만 더하면 고을이 칸 가운데에 닿는다
+  const nb = nd.getBoundingClientRect()
+  const wb = (map.parentElement ?? map).getBoundingClientRect()
+  map.style.setProperty('--dx', `${(wb.left + wb.width / 2 - (nb.left + nb.width / 2)).toFixed(0)}px`)
+  map.style.setProperty('--dy', `${(wb.top + wb.height / 2 - (nb.top + nb.height / 2)).toFixed(0)}px`)
+  map.style.setProperty('--tz', `${P.realm.townZoomMs}ms`)
+  map.style.setProperty('--tf', `${P.realm.townFadeMs}ms`)
+  void map.offsetWidth // 같은 이름을 다시 걸어도 처음부터 돌게
+  map.classList.add(cls)
+  if (cls === 'tvrise') map.addEventListener('animationend', () => map.classList.remove('tvrise'), { once: true })
+  return map
+}
 const bust = (h: Hero | undefined, cls = 'face'): string =>
   h !== undefined && faceFile(h.id) !== undefined ? `<img class="${cls}" src="${ART}bust/${faceFile(h.id)}.jpg" alt="">` : `<span class="${cls} noface"></span>`
 /** 우리 나라 — 깃발마다 금빛 후광을 두른다 (형 2026-10-20: "사용자의 나라는 로그에서 아이콘도 뭔가 후광이 있거나 특별하게 … 내나라가 어느나란지도 모르겠어서") */
@@ -6523,7 +6546,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       plan: (() => { const q = musters.find((o): o is Extract<Order, { kind: 'work' }> => o.kind === 'work' && o.node === n.id); return q !== undefined ? { icon: WORKS[q.what].icon, name: WORKS[q.what].name, sprite: ((sp) => (sp !== null ? `${ART}${sp}` : null))(townSprite(q.what, lvOf(n, q.what) + 1)) } : null })(),
     })
     if (ov === null) {
-      root.insertAdjacentHTML('beforeend', `<div class="townov" style="--tf:${P.realm.townFadeMs}ms"></div>`)
+      root.insertAdjacentHTML('beforeend', `<div class="townov" style="--tf:${P.realm.townFadeMs}ms;--bf:${P.realm.townBoardFrom}"></div>`)
       ov = root.querySelector<HTMLElement>('.townov')!
     }
     ov.innerHTML = html
@@ -8247,30 +8270,36 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         break
       }
       case 'town-in': {
-        // 마을 안으로 — 고을 그림이 그 자리에서 커지며 어두워지고(townZoomMs), 그 끝에 마을 안이 밝아진다 (형 11-04)
+        // 마을 안으로 — 카메라가 지도 속 그 고을로 파고든다: 지도가 그 고을을 축으로 커지며 끝 무렵 어두워지고(townZoomMs),
+        // 그 끝에 마을 판이 다가오며 밝아진다 (형 11-05: "카메라가 마을로 들어가는 연출이어야지 마을 혼자 커지는 연출이어선 안 돼")
         const id = d['node']!
         const el = root.querySelector<HTMLElement>(`.nd[data-node="${id}"]`)
         const b = el?.getBoundingClientRect()
-        const src = el?.querySelector('img')?.getAttribute('src') ?? `${ART}icon/settle-farm-village.png`
         root.querySelector('.tvveil')?.remove()
-        if (b !== undefined) root.insertAdjacentHTML('beforeend', townVeilHtml(b.x + b.width / 2, b.y + b.height / 2, src))
+        if (b !== undefined) root.insertAdjacentHTML('beforeend', townVeilHtml(b.x + b.width / 2, b.y + b.height / 2))
         const veil = root.querySelector<HTMLElement>('.tvveil')
         veil?.style.setProperty('--tz', `${P.realm.townZoomMs}ms`)
+        const dive = townCam(el, 'tvdive')
         window.setTimeout(() => {
           townIn = id
           townFresh = true
           ring = ''
           paint()
-          // 막은 마을 안이 밝아진 뒤 걷는다 (그 사이 지도가 비치지 않게)
-          window.setTimeout(() => veil?.remove(), P.realm.townFadeMs)
+          // 막은 마을 안이 밝아진 뒤 걷는다 (그 사이 지도가 비치지 않게) · 늘린 지도도 그때 제 크기로
+          window.setTimeout(() => { veil?.remove(); dive?.classList.remove('tvdive') }, P.realm.townFadeMs)
         }, b !== undefined ? P.realm.townZoomMs : 0)
         return
       }
       case 'town-out': {
         const ov = root.querySelector<HTMLElement>('.townov')
         if (ov === null) { townIn = null; paint(); return }
+        const from = townIn
         ov.classList.add('out')
-        window.setTimeout(() => { ov.remove(); townIn = null; paint() }, P.realm.townFadeMs)
+        // 판이 멀어지며 어두워진 뒤 · 지도가 그 고을에서 물러난다 (들어갈 때의 거꾸로)
+        window.setTimeout(() => {
+          ov.remove(); townIn = null; paint()
+          if (from !== null) townCam(root.querySelector<HTMLElement>(`.nd[data-node="${from}"]`), 'tvrise')
+        }, P.realm.townFadeMs)
         return
       }
       case 'work': {

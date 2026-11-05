@@ -125,22 +125,33 @@ export function townViewHtml(t: TownViewIn): string {
     + `<div class="tvcard">${t.card}</div></div>`
 }
 
-/** 들어갈 때의 막 — 고을 그림이 그 자리에서 커지며 어두워진다 (작은 그림 하나만 키운다 · 넓은 칸 transform 금지) */
-export function townVeilHtml(x: number, y: number, img: string): string {
-  return `<div class="tvveil" style="--x:${x.toFixed(0)}px;--y:${y.toFixed(0)}px"><img class="tvlens" src="${img}" alt=""></div>`
+/**
+ * 들어갈 때의 막 — 카메라가 지도 속 그 고을로 파고든다 (형 11-05: "카메라가 마을로 들어가는 연출 · 마을 혼자 커지면 안 된다").
+ * 지도(.map)가 그 고을을 축으로 커지고(.tvdive · 손가락 확대와 같은 GPU 늘림 · 잠깐만) 막은 끝 무렵에 그 고을 둘레부터 어두워진다.
+ * 그 끝에 마을 판이 조금 작게서 다가오며 밝아진다(.fresh) — 나갈 땐 거꾸로 판이 멀어지고 지도가 그 고을에서 물러난다(.tvrise)
+ */
+export function townVeilHtml(x: number, y: number): string {
+  return `<div class="tvveil" style="--x:${x.toFixed(0)}px;--y:${y.toFixed(0)}px"></div>`
 }
 
 export const TOWN_CSS = `
-.ap .tvveil { position: fixed; inset: 0; z-index: 60; pointer-events: none; background: radial-gradient(circle at var(--x) var(--y), #0000 0, #0b0906 60vmax); opacity: 0; animation: tvveil var(--tz, .48s) ease-in forwards; }
-@keyframes tvveil { to { opacity: 1; } }
-.ap .tvveil .tvlens { position: absolute; left: var(--x); top: var(--y); width: 90px; height: 90px; margin: -45px 0 0 -45px; object-fit: contain; animation: tvlens var(--tz, .48s) ease-in forwards; }
-@keyframes tvlens { 60% { opacity: 1; } to { transform: scale(5.5); opacity: 0; } }
+.ap .tvveil { position: fixed; inset: 0; z-index: 60; pointer-events: none; background: radial-gradient(circle at var(--x) var(--y), #0b090699 0, #0b0906 45vmax); opacity: 0; animation: tvveil var(--tz, .56s) ease-in forwards; }
+@keyframes tvveil { 0%, 40% { opacity: 0; } to { opacity: 1; } }
+.ap .map.tvdive { transform-origin: var(--ox) var(--oy); animation: tvdive var(--tz, .56s) cubic-bezier(.55, 0, .85, .4) forwards; }
+@keyframes tvdive { to { transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(var(--ds, 5)); } }
+.ap .map.tvdive .nring { opacity: 0; transition: opacity .12s; }
+.ap .map.tvrise { transform-origin: var(--ox) var(--oy); animation: tvrise var(--tf, .38s) cubic-bezier(.15, .65, .35, 1) both; }
+@keyframes tvrise { from { transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(var(--ds, 5)); opacity: .15; } }
 .ap .townov { position: fixed; inset: 0; z-index: 61; background: #0b0906; display: grid; }
 .ap .townv { display: grid; grid-template-rows: 1fr auto; height: 100%; min-height: 0; }
-.ap .townv.fresh { animation: tvin var(--tf, .32s) ease-out both; }
+.ap .townv.fresh { animation: tvin var(--tf, .38s) ease-out both; }
 @keyframes tvin { from { opacity: 0; } }
-.ap .townov.out { animation: tvout var(--tf, .32s) ease-in forwards; }
+.ap .townv.fresh .tvboard { animation: tvnear var(--tf, .38s) cubic-bezier(.2, .7, .3, 1) both; }
+@keyframes tvnear { from { transform: scale(var(--bf, .84)); } }
+.ap .townov.out { animation: tvout var(--tf, .38s) ease-in forwards; }
 @keyframes tvout { to { opacity: 0; } }
+.ap .townov.out .tvboard { animation: tvaway var(--tf, .38s) ease-in forwards; }
+@keyframes tvaway { to { transform: scale(var(--bf, .84)); } }
 /* 판 — 바탕 그림 한 장(1376×768)을 칸에 맞춘다 · 폰 세로는 터 넷이 다 들어오게 양옆(바깥 풀밭)을 잘라 크게 (터는 가로 14~86%) */
 .ap .tvstage { position: relative; overflow: hidden; background: #2c3a1e; min-height: 0; container-type: size; }
 .ap .tvboard { --bw: min(100cqw / 0.76, 100cqh * 1376 / 768); position: absolute; left: 50%; top: 50%; width: var(--bw); aspect-ratio: 1376 / 768; margin-left: calc(var(--bw) / -2); margin-top: calc(var(--bw) * 768 / 1376 / -2); }
@@ -175,6 +186,6 @@ export const TOWN_CSS = `
 .ap .tvf.work s { position: absolute; left: 60%; bottom: -2px; width: 10px; height: 10px; border-radius: 50%; background: #d8c09088; animation: tvdust 1.1s ease-out var(--d, 0s) infinite; }
 @keyframes tvdust { from { transform: scale(.3); opacity: .9; } to { transform: scale(1.8) translateY(-6px); opacity: 0; } }
 .ap .tvcard { background: #1c1610; border-top: 2px solid #c9a45a; padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px)); max-height: 42vh; overflow: auto; color: #f3e6c8; }
-@media (prefers-reduced-motion: reduce) { .ap .tvf, .ap .tvf u, .ap .tvf s, .ap .tvveil, .ap .tvveil .tvlens, .ap .townv.fresh { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .ap .tvf, .ap .tvf u, .ap .tvf s, .ap .tvveil, .ap .map.tvdive, .ap .map.tvrise, .ap .townv.fresh, .ap .townv.fresh .tvboard, .ap .townov.out .tvboard { animation: none !important; } }
 .ap.q-low .tvf u, .ap.q-low .tvf s, .ap.q-low .tvf.walk { animation-play-state: paused; }
 `
