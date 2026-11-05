@@ -246,6 +246,7 @@ export const AWAKEN2_LOOP: ReadonlySet<string> = new Set([
   'w-52-biryuna-songbi', // 11-05 밤 송비 — 판 없이 세로 · 손 위 단풍이 돈다
   'w-30-guya-soebi', // 11-06 새벽 쇠비 다시 — 망치를 휘두르고 젖혀 웃는다 · 출렁임 낱말은 오류라 숨·무게로
   'w-28-michuhol-bira', // 11-06 새벽 비라 — 수정 덩이를 던져 받고 웃으며 한 바퀴 춤
+  'w-20-gaya-smith-daughter', // 11-06 새벽 아름 — 망치를 내리쳐 불꽃 · 웃으며 다시 어깨에
 ])
 /** 정사각 판으로 구운 진각성 영상 (11-05 낮의 둘) — 나머지는 판 없이 세로 `<id>.t2.mp4` */
 export const AWAKEN2_LOOP_SQ: ReadonlySet<string> = new Set(['w-97-goguryeo-mir', 'l-L7-aryeong'])
