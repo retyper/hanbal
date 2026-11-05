@@ -62,4 +62,5 @@ export const TRUE_WAKE: ReadonlySet<string> = new Set([
   'goguryeo-2', // 고구려 활미 (11-05 밤 · retyper92 · 사람마다 다른 옷 틀 · 고분벽화 점무늬 사냥 궁수)
   'balla-1', // 반라 독무덤 (11-05 밤 · retyper92 · 사람마다 다른 옷 틀 · 옹관 무덤지기 혼불)
   'bukokjeo-1', 'jm-okjeo-1', // 북옥저 물범 (11-05 밤 · retyper92 · 사람마다 다른 옷 틀 · 얼음 바다 작살 사냥꾼)
+  'yeonna-1', // 연나 너울 (11-05 밤 · roqkfeke12 · 사람마다 다른 옷 틀 · 산안개 길잡이)
 ])
