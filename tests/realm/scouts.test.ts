@@ -13,11 +13,35 @@ import { startRegion, regionNations } from '../../src/realm/data/regions/index.t
 import { ageSeasons } from '../../src/realm/calendar.ts'
 import { visibleRange } from '../../src/realm/intel.ts'
 import { draftScouts, parseScoutKeep, scoutCap, scoutTargets, townCount, watchedNodes } from '../../src/realm/scouts.ts'
-import { advance, neighbors, nodeStrength, planned } from '../../src/realm/season.ts'
+import { advance, neighbors, nodeStrength, planned, scoutSeesNode, seenMarches, seenScoutedStationary } from '../../src/realm/season.ts'
 import type { Order, Realm } from '../../src/realm/types.ts'
 import { P } from '../../src/tune/params.ts'
 
 const fresh = (): Realm => planned(byeonhanMini(1), [])
+
+describe('빈땅 척후의 적군 시야', () => {
+  it('척후가 본 빈땅으로 오가거나 그곳에 머무는 적군을 보고, 정보가 낡으면 보이지 않는다', () => {
+    const r = fresh()
+    const node = 'wild-galmae'
+    const foe = r.armies['a-anya-1']!
+    assert.equal(r.nodes[node]?.owner, null)
+    assert.equal(r.nodes['anya-fort']?.owner, 'anya')
+    foe.at = node
+    foe.march = { from: node, to: 'anya-fort', edge: 'test', left: 1, ambush: false }
+    assert.ok(!seenMarches(r, 'us').some((a) => a.id === foe.id), '척후 없이 빈땅의 적을 보았다')
+    ;(r.intel['us'] ??= {})[node] = { land: true, force: { f0: 0, src: 'scout', u: 0.5, season: r.season }, alert: null }
+    assert.equal(scoutSeesNode(r, 'us', node), true)
+    assert.ok(seenMarches(r, 'us').some((a) => a.id === foe.id), '빈땅에서 떠나는 적을 못 보았다')
+    foe.march = { from: 'anya-fort', to: node, edge: 'test', left: 1, ambush: false }
+    assert.ok(seenMarches(r, 'us').some((a) => a.id === foe.id), '빈땅으로 오는 적을 못 보았다')
+    foe.march = null
+    assert.ok(seenScoutedStationary(r, 'us').some((a) => a.id === foe.id), '빈땅에 머무는 적을 못 보았다')
+    assert.ok(nodeStrength(r, node, null) > 0, '빈땅에 머무는 적의 군세가 0으로 보인다')
+    r.season += 2
+    assert.equal(scoutSeesNode(r, 'us', node), false)
+    assert.ok(!seenScoutedStationary(r, 'us').some((a) => a.id === foe.id), '낡은 척후 보고가 적군을 계속 보여 준다')
+  })
+})
 
 /** 우리 땅을 n 곳으로 — 남의 고을을 차례로 넘겨받는다 (시험에서만) */
 function withTowns(r: Realm, n: number): Realm {

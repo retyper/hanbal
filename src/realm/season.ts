@@ -335,18 +335,31 @@ function contested(r: Realm, node: string, faction: string): boolean {
   return armiesAt(r, node).some((d) => !allied(r, faction, d.faction))
 }
 
-/** 행군은 보인다 (FLOW §7 #2) — 이 나라 고을에 맞닿은 길 위의 남의 군대. id 순서 */
+/** 최근 직접 정찰·첩자가 본 고을 — 빈땅이라도 길을 오가는 군대를 본다. */
+export function scoutSeesNode(r: Realm, faction: string, node: string): boolean {
+  const f = r.intel[faction]?.[node]?.force
+  return f !== null && f !== undefined && (f.src === 'scout' || f.src === 'spy') && f.season >= r.season - 1
+}
+
+/** 행군은 보인다 (FLOW §7 #2) — 우리 고을에 맞닿거나 최근 직접 본 고을에 드나드는 남의 군대. id 순서 */
 export function seenMarches(r: Realm, faction: string): Army[] {
   const mine = (id: string): boolean => r.nodes[id]?.owner === faction
   return Object.values(r.armies)
-    .filter((a) => a.faction !== faction && a.march !== null && (mine(a.march.from) || mine(a.march.to)))
+    .filter((a) => a.faction !== faction && a.march !== null && (mine(a.march.from) || mine(a.march.to) || scoutSeesNode(r, faction, a.march.from) || scoutSeesNode(r, faction, a.march.to)))
+    .sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0))
+}
+
+/** 정찰한 고을에 머무는 남의 군대도 지도에 보인다. */
+export function seenScoutedStationary(r: Realm, faction: string): Army[] {
+  return Object.values(r.armies)
+    .filter((a) => a.faction !== faction && a.march === null && scoutSeesNode(r, faction, a.at))
     .sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0))
 }
 
 /** 정보가 다루는 그 고을의 군세 — 머무는 군대와 장정 strength 의 합 (intel.ts 의 F) */
 export function nodeStrength(r: Realm, node: string, owner: string | null): number {
   let f = 0
-  for (const a of armiesAt(r, node)) if (a.faction === owner) f += strength(forceOf(r, a))
+  for (const a of armiesAt(r, node)) if (owner === null || a.faction === owner) f += strength(forceOf(r, a))
   const m = militiaOf(r, node)
   if (m !== null && m.faction === owner) f += strength(forceOf(r, m))
   return f
@@ -359,7 +372,7 @@ export function nodeStrength(r: Realm, node: string, owner: string | null): numb
 export function seenShares(r: Realm, node: string, owner: string | null): { mix?: Partial<Record<UnitKind, number>> } {
   const sum: Partial<Record<UnitKind, number>> = {}
   for (const a of armiesAt(r, node)) {
-    if (a.faction !== owner) continue
+    if (owner !== null && a.faction !== owner) continue
     for (const [k, v] of Object.entries(a.mix) as Array<[UnitKind, number]>) sum[k] = (sum[k] ?? 0) + v
   }
   const m = militiaOf(r, node)

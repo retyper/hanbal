@@ -40,7 +40,7 @@ import { goalReach, goalRoute } from '../../realm/goal.ts'
 import { approachMoves, armyPower, jointWin, matchupHints, movesOf, type Move } from '../../realm/estimate.ts'
 import { kitLines } from '../../realm/kit.ts'
 import { alertRange, seenMix, visibleRange } from '../../realm/intel.ts'
-import { type ConcealWhy, advance, concealOf, draftable, forceOf, newArmyId, otherEnd, planned, rationCost, rationExtra, seasonOf, seenMarches } from '../../realm/season.ts'
+import { type ConcealWhy, advance, concealOf, draftable, forceOf, newArmyId, otherEnd, planned, rationCost, rationExtra, seasonOf, seenMarches, seenScoutedStationary } from '../../realm/season.ts'
 import { ageSeasons, isSeasonEnd, isSeasonStart, monthly, perSeason, seasonIdx, seasons, type ClockKind } from '../../realm/calendar.ts'
 import { draftScouts, parseScoutKeep, scoutCap, scoutTargets, townCount, watchedNodes } from '../../realm/scouts.ts'
 import { NIGHT_OPS, PLOT_OPS, exposeChance, assassinArrows, assassinBow, assassinGuard, bowUpCost, escapeChance, plotAgents, plotCap, plotChance, plotCost, plotTargets, rescueGuard } from '../../realm/plots.ts'
@@ -1868,6 +1868,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       tokens.push({ army: a.id, node: a.march.from, men: known ? headcount(forceOf(r, a)) : 0, sel: false, going: false, foe: a.faction,
         img: file !== undefined ? `${ART}bust/${file}.jpg` : `${ART}icon/${UNIT_ICON[kinds[0] ?? 'spear']}.png`, squad: squadOf(known ? kinds : []),
         ...(known ? { known: true } : {}), ...(sneaky.has(a.id) ? { sneak: true } : {}), march: { from: a.march.from, to: a.march.to, left: a.march.left } })
+    }
+    // 빈땅에 둔 척후도 그 고을에 머무는 적을 본다. 길 위의 적과 달리 고을 위에 말을 둔다.
+    for (const a of seenScoutedStationary(r, me())) {
+      const kinds = (Object.entries(a.mix) as Array<[UnitKind, number]>).filter(([, v]) => v > 0).sort((x, y) => y[1] - x[1]).map(([k]) => k)
+      const hero = a.hero !== null ? r.heroes[a.hero] : undefined
+      const file = hero !== undefined ? faceFile(hero.id) : undefined
+      tokens.push({ army: a.id, node: a.at, men: headcount(forceOf(r, a)), sel: false, going: false, foe: a.faction, known: true,
+        img: file !== undefined ? `${ART}bust/${file}.jpg` : `${ART}icon/${UNIT_ICON[kinds[0] ?? 'spear']}.png`, squad: squadOf(kinds) })
     }
     // 개척단의 말 — 군대 말처럼 누르면 고르고 갈 곳이 빛난다 (지난 계절부터 길 위에 있으면 길 가운데)
     for (const p of partiesOf(r, me())) {
