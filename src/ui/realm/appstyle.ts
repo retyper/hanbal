@@ -781,15 +781,14 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .cnspk .cnbig { display: block; width: min(86vw, 420px, 50vh); aspect-ratio: 1; height: auto; object-fit: cover; object-position: top;
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent), linear-gradient(transparent, #000 10%, #000 72%, transparent);
   -webkit-mask-composite: source-in; mask-image: linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent), linear-gradient(transparent, #000 10%, #000 72%, transparent); mask-composite: intersect; }
-.ap .cnspk video.cnbig { width: min(62vw, 320px, calc(50vh * 720 / 1120)); aspect-ratio: 720 / 1120; }
-.ap .cnspk video.cnbig.sq { width: min(86vw, 420px, 50vh); }
+.ap .cnspk video.cnbig, .ap .cnspk video.cnbig.sq { width: min(62vw, 320px, calc(50vh * 9 / 16)); aspect-ratio: 9 / 16; object-fit: contain; -webkit-mask-image: none; mask-image: none; }
 /* 낮은 가로 화면(폰 눕힘) — 얼굴은 왼쪽, 말은 오른쪽 (세로로 쌓으면 머리 위가 잘렸다) */
 @media (max-height: 520px) and (min-aspect-ratio: 4/3) {
   .ap .cnstage { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; align-items: center; column-gap: 18px; row-gap: 4px; padding-top: 6px; padding-bottom: 8px; }
   .ap .cnstage .cnt { grid-column: 1 / -1; margin: 0; }
   .ap .cnstage .cnspk { grid-row: 2; }
   .ap .cnspk .cnbig { width: min(36vw, 50vh); }
-  .ap .cnspk video.cnbig { width: min(28vw, calc(50vh * 720 / 1120)); }
+  .ap .cnspk video.cnbig { width: min(28vw, calc(50vh * 9 / 16)); }
   .ap .cnstage .cnsub { grid-row: 2; grid-column: 2; align-self: center; max-height: 100%; overflow-y: auto; padding: 8px 12px; font-size: 14.5px; line-height: 1.5; }
   .ap .cnstage .cnt { font-size: 17px; padding-top: 0; }
   .ap .cnspk b { margin-top: -24px; font-size: 15px; padding: 2px 12px; }

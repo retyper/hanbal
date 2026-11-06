@@ -158,6 +158,14 @@ export const ASCEND_CSS = `
 .ap .axok { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; display: flex; justify-content: center; padding: 14px 16px calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, #000c 40%);
   opacity: 0; pointer-events: none; animation: axokin .4s ease-out var(--tok) forwards; }
 .ap .axok .btn { min-width: min(70vw, 280px); font-size: 18px; padding: 12px 18px; display: inline-flex; justify-content: center; align-items: center; text-align: center; } /* 글자 가운데 (형 11-05) */
+/* 세로 Veo는 영상 전체를 보이고, 액자선은 영상 바깥에 둔다. 하단 표식만 각성 문양으로 가린다. */
+.ap .ascfx.portrait-video .axcard { width: min(90vw, 390px, 38vh); aspect-ratio: 9 / 16; }
+.ap .ascfx.portrait-video .axwin { inset: 0; }
+.ap .ascfx.portrait-video .axold { object-fit: contain; }
+.ap .ascfx.portrait-video video.axnew { object-fit: contain; object-position: center; }
+.ap .ascfx.portrait-video .axframe, .ap .ascfx.portrait-video .axglow { display: none; }
+.ap .ascfx.portrait-video .axcard::after { content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; box-shadow: 0 0 0 2px #d59b55, 0 0 18px #d77f2680; }
+.ap .ascfx.portrait-video .vmark { opacity: 0; animation: axfade .25s ease-out var(--tf) forwards; }
 @keyframes axokin { from { opacity: 0; } to { opacity: 1; pointer-events: auto; } }
 /* 동작 줄이기에서도 모임·소용돌이·번개는 보인다 (형 11-03 맥북 · appstyle 의 .ascfx 줄 참고) */
 `

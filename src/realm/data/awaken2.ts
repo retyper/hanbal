@@ -2,6 +2,9 @@
  * 진각성(2차 각성)을 할 수 있는 장수 — 2차 초상이 있는 이만 (public/realm/awaken2 · DESIRE §17 · 위원회 11-04).
  * 판의 셈(sim)이 그림 파일을 보지 않게 이름으로 적는다. 그림을 더 받으면 여기에 더한다
  */
+/** 출시 전 테스트에서는 잠긴 진각성 그림을 미리 볼 수 있다. 출시 직전 false로 바꾸면 잠긴 칸은 눌러도 반응하지 않는다. */
+export const LOCKED_TRUE_WAKE_PREVIEW = true
+
 export const TRUE_WAKE: ReadonlySet<string> = new Set([
   'sr-aryeong', // 알영
   'gj-heo', // 허황옥
@@ -71,4 +74,31 @@ export const TRUE_WAKE: ReadonlySet<string> = new Set([
   'ungcheon-1', // 웅천 곰 (11-05 밤 · roqkfeke12 · 사람마다 다른 옷 틀 · 곰가죽 여장사 몽둥이)
   'maek-1', // 맥 범발 (11-05 밤 · roqkfeke12 · 사람마다 다른 옷 틀 · 밤 표범 사냥꾼)
   'jeoga-1', // 저가 엄니 (11-05 밤 · roqkfeke12 · 사람마다 다른 옷 틀 · 멧돼지 씨족 겨울 노장)
+  // 11-07 새로 받은 진각성 초상 — 원본/900px/320px를 함께 확인해 연결.
+  'usisan-1', // 살해 쇠물 g-01
+  'wander-18', // 신지 고은 w-01
+  'wander-02', // 살해 매화 w-03
+  'wander-09', // 신지 별하 w-05
+  'wander-20', // 마한 전사 w-08
+  'gj-singwigan', // 신귀간 w-101
+  'wander-04', // 자객 w-11
+  'wander-03', // 무희 w-12
+  'wander-13', // 연회 첩자 w-14
+  'wander-07', // 읍차 가온 w-19
+  'wander-05', // 견지 버들 w-83
+  'wander-21', // 살해 달래 w-84
+  'wander-22', // 신지 너울 w-85
+  'sr-yangsan-1', // 사로 물새 w-91
+  'sr-goya-1', // 사로 달래 w-92
+  'sr-jinji-1', // 사로 범이 w-93
+  'tut-haebi', // 해비 w-95
+  'jm-haengin-1', // 행인 너울 w-96
+  'wander-15', // 변한 단비 w-98
+  'gj-yucheongan', // 유천간 w-99
+  'anya-2', // 견지 솔미 w-13
+  'wander-10', // 백제 무희 w-21
+  'gampyeong-1', // 감평 뱃사공 w-76
+  'sabeol-1', 'tut-malgalgi', // 말갈기 w-77
+  'usan-1', // 우산 강치 w-80
+  'byeokjin-1', // 벽진 별빛 w-81
 ])

@@ -3,14 +3,17 @@
  * 표는 하나만 크게 — 위 단추로 군사 · 고을 · 백성 · 곡식 · 철을 바꿔 본다 (형 11-05: "3개 한 번에 말고 1개만, 버튼 눌러서 바꿔 볼 수 있게 · 자원양도").
  * 바꾸기는 라디오 단추와 CSS 만으로 — 다시 그리지 않는다. 고른 단추는 금빛 + ✓ (메모리 wwe-overreaction-ux).
  * 우리는 늘 고정 파랑(메모리 my-land-fixed-blue)으로 굵게, 남은 나라는 깃발 빛으로 가늘게.
- * 눈금 숫자는 없다 — 줄 끝에 지금 값 하나 (숫자는 판 끝 한 번만 · DESIRE §9 선 5).
+ * 가로축은 실제 날짜, 세로축은 현재 지표의 값 — 긴 판에서도 변화량을 읽을 수 있게 한다.
  * 옛 판 기록엔 모든 나라 값(all)이 없거나 앞의 셋뿐이다 — 없는 값은 그 줄을 비운다.
  */
 import type { History } from './front.ts'
 
 const W = 300
-const H = 120
-const PAD = 6
+const H = 160
+const LEFT = 56
+const RIGHT = W - 9
+const TOP = 12
+const BOTTOM = 129
 /** all 의 칸 · me 의 이름 · 단위 */
 const METRICS = [
   { i: 2, key: 'men', name: '군사', unit: '명' },
@@ -20,6 +23,9 @@ const METRICS = [
   { i: 4, key: 'iron', name: '철', unit: '' },
 ] as const
 type Metric = (typeof METRICS)[number]
+const axisNumber = (v: number): string => v >= 10000
+  ? new Intl.NumberFormat('ko-KR', { notation: 'compact', maximumFractionDigits: 1 }).format(v)
+  : Math.round(v).toLocaleString('ko-KR')
 
 export interface RiseKit {
   readonly me: string
@@ -28,6 +34,7 @@ export interface RiseKit {
   readonly colorOf: (f: string) => string
   readonly nameOf: (f: string) => string
   readonly esc: (s: string) => string
+  readonly dateOf: (season: number) => string
 }
 
 /** 한 나라의 한 줄 — 달마다 값 (그때 몰랐으면 null) */
@@ -46,8 +53,8 @@ function pathOf(vals: ReadonlyArray<number | null>, max: number): string {
   let pen = false
   vals.forEach((v, j) => {
     if (v === null) { pen = false; return }
-    const x = PAD + (n <= 1 ? 0 : (j / (n - 1)) * (W - PAD * 2))
-    const y = H - PAD - (max > 0 ? (v / max) * (H - PAD * 2) : 0)
+    const x = LEFT + (n <= 1 ? 0 : (j / (n - 1)) * (RIGHT - LEFT))
+    const y = BOTTOM - (max > 0 ? (v / max) * (BOTTOM - TOP) : 0)
     d += `${pen ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`
     pen = true
   })
@@ -73,8 +80,22 @@ export function riseGraphHtml(h: History, k: RiseKit): string {
     const max = Math.max(1, ...mine.map((v) => v ?? 0), ...theirs.flatMap((x) => x.v.map((v) => v ?? 0)))
     const last = [...mine].reverse().find((v) => v !== null) ?? 0
     tabs += `<label for="${id}-${j}"><b>${m.name}</b><small>${Math.round(last).toLocaleString('ko-KR')}${m.unit}</small></label>`
-    let svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">`
-    svg += `<line x1="${PAD}" y1="${H - PAD}" x2="${W - PAD}" y2="${H - PAD}" stroke="#ffffff22" stroke-width="1"/>`
+    let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${m.name} 흥망 그래프">`
+    for (const fraction of [0, .5, 1]) {
+      const y = BOTTOM - fraction * (BOTTOM - TOP)
+      const value = axisNumber(max * fraction)
+      svg += `<line x1="${LEFT}" y1="${y}" x2="${RIGHT}" y2="${y}" stroke="#ffffff2c" stroke-width="1"/>`
+      svg += `<text x="${LEFT - 5}" y="${y + 3}" text-anchor="end" fill="#cfc3ad" font-size="10">${value}${m.unit}</text>`
+    }
+    const marks = [...new Set([0, Math.floor((h.length - 1) / 2), h.length - 1])]
+    marks.forEach((idx, pos) => {
+      const point = h[idx]
+      if (point === undefined) return
+      const x = LEFT + (idx / (h.length - 1)) * (RIGHT - LEFT)
+      const anchor = pos === 0 ? 'start' : pos === marks.length - 1 ? 'end' : 'middle'
+      svg += `<line x1="${x}" y1="${BOTTOM}" x2="${x}" y2="${BOTTOM + 4}" stroke="#ffffff66" stroke-width="1"/>`
+      svg += `<text x="${x}" y="${H - 7}" text-anchor="${anchor}" fill="#cfc3ad" font-size="10">${k.esc(k.dateOf(point.s))}</text>`
+    })
     for (const x of theirs) {
       const d = pathOf(x.v, max)
       if (d !== '') svg += `<path d="${d}" fill="none" stroke="${k.colorOf(x.f)}" stroke-width="1.6" stroke-linejoin="round" opacity=".75" vector-effect="non-scaling-stroke"><title>${k.esc(k.nameOf(x.f))}</title></path>`
@@ -105,7 +126,7 @@ export const RISE_CSS = `
 .ap .risetabs label b { font-size: 13.5px; } .ap .risetabs label small { font-size: 12px; color: #8fc4ff; font-weight: 700; font-variant-numeric: tabular-nums; }
 .ap .risefigs .risec { display: none; margin: 0; padding: 6px 8px 4px; border-radius: 10px; background: #0b0a08b3; border: 1px solid #4a4030; animation: risein .25s ease-out; }
 @keyframes risein { from { opacity: 0; transform: translateY(4px); } }
-.ap .risec svg { display: block; width: 100%; height: 120px; }
+.ap .risec svg { display: block; width: 100%; height: auto; }
 ${PICK}
 .ap .risekey { margin: 6px 0 0; font-size: 12px; color: #b8b0a0; display: flex; flex-wrap: wrap; gap: 2px 10px; align-items: center; }
 .ap .risekey i { display: inline-block; width: 14px; height: 4px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }

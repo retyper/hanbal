@@ -180,14 +180,14 @@ export const HERO_CSS = `
 .ap .bview { position: absolute; inset: 0; z-index: 95; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
   background: #000e; cursor: zoom-out; animation: bvin .2s ease-out; }
 .ap .bview img, .ap .bview video { max-width: min(96vw, 900px); max-height: 88dvh; object-fit: contain; border-radius: 14px; box-shadow: 0 0 40px #000; border: 2px solid #6a5a3a; }
-/* 숨 쉬는 각성 영상(720×1280) — 골반까지 세로로 쓰고 아래 제미나이 표식(✦ · 세로 88~92%)만 잘라 낸다 (형 11-05: "잘리는 거 줄여서 영상 통째로") */
-/* 세로 영상은 위에서 720×1120 까지 — 아래 제미나이 ✦ 표식(세로 88~92%)만 잘라 낸 가장 큰 판 (형 11-05: "세로로 좀 더 길더라도 더 가까이 보는 게 훨씬 좋다 · 하단 워터마크 정도만 잘라도") */
-.ap video.vloop { aspect-ratio: 720 / 1120; object-fit: cover; object-position: 50% 0; }
-.ap .bview video.vloop { height: min(88dvh, calc(96vw * 1120 / 720)); width: auto; max-width: none; }
-.ap .hcard video.big.vloop { width: 150px; height: auto; border-radius: 16px; border: 2px solid #6a5a3a; display: block; }
-/* 정사각 판으로 만든 영상(.sq · tools/veo/pad.sh) — 가운데 정사각만 오려 원본 그림 전체가 숨 쉰다 */
-.ap video.sq { aspect-ratio: 1 !important; object-fit: cover; object-position: 50% 50% !important; }
-.ap .bview video.vloop.sq { height: min(88dvh, 96vw, 900px); }
+/* 각성 영상은 720×1280 전체를 보여 준다. 오른쪽 아래 표식만 작은 각성 문양으로 덮는다. */
+.ap video.vloop, .ap video.vloop.sq { aspect-ratio: 9 / 16; object-fit: contain; object-position: center; }
+.ap .bview .vfull { position: relative; display: block; height: min(88dvh, calc(96vw * 16 / 9)); aspect-ratio: 9 / 16; box-shadow: 0 0 40px #000; }
+.ap .bview .vfull video.vloop { display: block; width: 100%; height: 100%; max-width: none; max-height: none; border: 0; border-radius: 0; box-shadow: none; }
+.ap .vthumb { position: relative; display: inline-block; max-width: 100%; }
+.ap .hcard .vthumb video.big.vloop { width: 150px; height: auto; border: 0; border-radius: 0; display: block; }
+.ap .vmark { position: absolute; right: 4.8%; bottom: 1.8%; width: 15%; height: 6.8%; display: grid; place-items: center; box-sizing: border-box; border: 1px solid #f2c875; border-radius: 35%; background: radial-gradient(circle, #8d4b20 8%, #36200eea 78%); color: #ffe3a1; font-size: clamp(12px, 3.5cqw, 22px); font-style: normal; line-height: 1; text-shadow: 0 1px 2px #000; box-shadow: 0 1px 8px #000b; pointer-events: none; z-index: 5; }
+.ap .vthumb .vmark { font-size: 13px; }
 /* 장수 판의 「진각성」 칸 — 잠긴 진각성 초상 + 조건 셋(켜지면 금빛 ✓) · 누르면 진각성 영상 미리 보기 (형 11-05) */
 .ap .twc { display: flex; align-items: center; gap: 10px; width: 100%; margin: 8px 0 4px; padding: 6px 10px 6px 6px; border-radius: 12px; background: #17120c; border: 1px solid #5a4a2a; color: #e8dcc0; text-align: left; cursor: pointer; transition: transform .08s; }
 .ap .twc:active { transform: scale(.97); }

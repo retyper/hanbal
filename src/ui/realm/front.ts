@@ -16,7 +16,7 @@ import { badgeRank, lockWhy } from './unlock.ts'
 import { CHAPTERS, chapterOfRegion, chapterTag } from '../../realm/data/campaign.ts'
 import { placeOf } from '../../realm/data/regions/index.ts'
 import { seasonOf, yearOf } from '../../realm/calendar.ts'
-import { UNIT_NAME, battleName, josa, seasonLabel } from '../../realm/data/prose.ts'
+import { UNIT_NAME, battleName, dateLabel, josa, seasonLabel } from '../../realm/data/prose.ts'
 import type { Realm, RegionId, ReportLine } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { winFxHtml } from './winfx.ts'
@@ -611,7 +611,7 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = '', f
   // 0 은 안 보인다 — 꼭대기에서 「얻은 장수 0」이 바람을 뺐다 (긴급 위원회 11-04 · evidence c08-03)
   h += `${r.known !== undefined && found > 0 ? `<span><b>${found}</b>새로 안 나라</span>` : ''}${heroes > 0 ? `<span><b>${heroes}</b>얻은 장수</span>` : ''}</div>`
   // 흥망 그래프 — 군사 · 고을 · 백성, 우리는 파랑 굵게 · 남은 나라 깃발 빛 (DESIRE §9 · 형 11-05: "그래프 하나도 없는데?")
-  h += riseGraphHtml(history, { me, mine: '#2f8cff', colorOf: (f) => nationKit(f).c, nameOf: name, esc: k.esc })
+  h += riseGraphHtml(history, { me, mine: '#2f8cff', colorOf: (f) => nationKit(f).c, nameOf: name, esc: k.esc, dateOf: (s) => dateLabel(r, s) })
   // 얻은 것(세기·휘장·무덤·단련) 먼저, 연대기는 접어서 — 늘어놓았더니 난잡했다 (형 10-28: "결과 보는 부분이랑 그 아래 버튼들이 정리가 안 돼 있음")
   if (keep !== '') h += `<div class="gains">${keep}</div>`
   if (pickd.length > 0) h += `<details class="chron"><summary>연대기 <small>${pickd.length}</small></summary>${pickd.map((e) => `<p class="${e.big ? 'big' : ''}"><i>${k.esc(seasonLabel(r, e.s))}</i>${k.esc(e.t)}</p>`).join('')}</details>`
