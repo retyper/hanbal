@@ -219,6 +219,7 @@ export function slotsHtml(k: RelicKit, hero: string, level: number, sel: number 
   const s = loadRelics()
   const worn = s.wear[hero] ?? []
   const n = slotsFor(level)
+  const available = Object.keys(s.own).some((id) => { const who = holderOf(s, id); return who === null || who === hero })
   const none = Object.keys(s.own).length === 0
   let h = `<div class="rlslots">`
   for (let i = 0; i < n; i++) {
@@ -228,7 +229,7 @@ export function slotsHtml(k: RelicKit, hero: string, level: number, sel: number 
       const lv = relicLevel(s.own[id], id)
       h += `<button class="rlslot full${on}" data-act="rl-slot" data-id="${k.esc(hero)}" data-i="${i}" data-tip="${k.esc(tipOf(id, lv))}"><img src="${img(k, id)}" alt=""><span><b>${k.esc(RELIC[id]!.name)} ${stars(id, lv)}</b><small>${k.esc(relicLine(id, lv))}</small></span></button>`
     } else {
-      h += `<button class="rlslot${on}" data-act="rl-slot" data-id="${k.esc(hero)}" data-i="${i}"${none ? ' disabled data-tip="이긴 판의 옛 무덤에서 얻는다"' : ''}><i>＋</i><span>${none ? '유물 칸: 이기면 옛 무덤에서' : '유물 끼우기'}</span></button>`
+      h += `<button class="rlslot${on}" data-act="rl-slot" data-id="${k.esc(hero)}" data-i="${i}"${available ? '' : ` disabled data-tip="${none ? '이긴 판의 옛 무덤에서 얻는다' : '다른 장수가 지닌 유물은 먼저 빼야 한다'}"`}><i>＋</i><span>${none ? '유물 칸: 이기면 옛 무덤에서' : available ? '유물 끼우기' : '낄 수 있는 유물 없음'}</span></button>`
     }
   }
   if (n < slotsFor(Number.MAX_SAFE_INTEGER)) h += `<small class="rlmore">단련 ${josa(String(slotsAt()), '이면', '면')} 한 칸 더</small>`
@@ -241,18 +242,22 @@ const slotsAt = (): number => {
   return 0
 }
 
-/** 칸을 누르면 — 가진 유물 고르기 (지닌 이가 있으면 옮긴다) */
+/** 칸을 누르면 — 다른 장수가 지닌 것은 빼고 고른다 */
 export function pickerHtml(k: RelicKit, hero: string, slot: number): string {
   const s = loadRelics()
   const cur = s.wear[hero]?.[slot]
-  const ids = RELICS.filter((d) => s.own[d.id] !== undefined).map((d) => d.id)
+  const ids = RELICS.filter((d) => {
+    if (s.own[d.id] === undefined) return false
+    const who = holderOf(s, d.id)
+    return who === null || who === hero
+  }).map((d) => d.id)
   let h = `<div class="rlpick"><div class="rlph"><b>유물 고르기</b><button class="btn ghost sm" data-act="rl-close">닫기</button></div><div class="rlpl">`
   for (const id of ids) {
     const d = RELIC[id]!
     const lv = relicLevel(s.own[id], id)
     const who = holderOf(s, id)
     const here = who === hero
-    const by = who !== null && !here ? `<i class="rlwho">${k.esc(josa(k.nameOf(who), '이', '가'))} 지녔다: 옮긴다</i>` : here ? '<i class="rlwho me">이 장수가 지녔다</i>' : ''
+    const by = here ? '<i class="rlwho me">이 장수가 지녔다</i>' : ''
     h += `<button class="rlopt t-${d.tier}${id === cur ? ' cur' : ''}" data-act="rl-put" data-id="${k.esc(hero)}" data-i="${slot}" data-r="${k.esc(id)}"${id === cur ? ' disabled' : ''}>`
       + `<img src="${img(k, id)}" alt=""><span><b>${k.esc(d.name)} ${stars(id, lv)}</b><small>${TIER_NAME[d.tier]} · ${k.esc(d.era)}</small><em>${k.esc(relicLine(id, lv))}</em>${by}</span></button>`
   }

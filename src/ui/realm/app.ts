@@ -7518,7 +7518,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'tomb-seen': front = { kind: 'tomb', fresh: false }; paint(); return
       case 'tomb-back': front = null; fastNext = true; paint(); return
-      // 단련터의 유물 칸 — 누르면 고르기가 펼쳐지고, 고르면 끼운다 (다른 장수가 지녔으면 옮긴다)
+      // 단련터의 유물 칸 — 누르면 고르기가 펼쳐지고, 비어 있는 유물만 끼운다
       case 'rl-slot': {
         if (front === null || front.kind !== 'drill') return
         const id = d['id']!

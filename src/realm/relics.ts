@@ -2,7 +2,7 @@
  * 유물 — 이긴 판의 껴묻거리를 장수가 지닌다 (docs/realm/HERO-GROWTH.md ★ 둘째 판 §B · 형 10-26: "획득한 유물은 장수가 장착 … 아티팩트 같은 느낌으로").
  *
  *   판 끝   이기면 「옛 무덤을 열었다」 — 판의 땅에서 상자 셋 (drawChests · 판의 시드로 정한다 → 다시 열어도 같은 셋). 하나를 고른다.
- *   단련터  장수마다 유물 한 칸 (단련 relicTwoAt 넘으면 두 칸). 다른 장수에게서 옮겨 끼워도 된다. 유물은 잃지 않는다.
+ *   단련터  장수마다 유물 한 칸 (단련 relicTwoAt 넘으면 두 칸). 다른 장수가 지녔으면 먼저 빼야 한다. 유물은 잃지 않는다.
  *   다음 판 판을 열 때 우리 장수(drillRealm 뒤)에 지닌 유물을 붙인다 (relicRealm) — `Hero.relics`. 판은 그 효과를 읽는다.
  *   강화  가진 것을 또 고르면 한 단계 (★ relicLvMax 까지 · 고른 횟수 n 으로 센다) — 단계는 `Hero.relicLv` 로 판에 들고 간다 (FOCUS F).
  *   드문 상자 판 끝 무덤에 relicRareChance 몫으로 넷째 상자 — 귀함·보배만 (drawRare).
@@ -345,13 +345,15 @@ export function holderOf(store: RelicStore, relic: string): string | null {
 }
 
 /**
- * 장수의 칸에 유물을 끼운다 — 가진 것만 · 칸은 slotsFor(단련). 다른 장수가 지녔으면 그에게서 뺀다 (하나는 한 사람만 지닌다).
+ * 장수의 칸에 유물을 끼운다 — 가진 것만 · 칸은 slotsFor(단련). 다른 장수가 지닌 것은 먼저 빼야 한다.
  * 같은 장수의 다른 칸에 있었으면 자리만 바꾼다. 못 끼우면 받은 그대로
  */
 export function equip(store: RelicStore, hero: string, slot: number, relic: string, level: number): RelicStore {
   if (store.own[relic] === undefined || RELIC[relic] === undefined) return store
   const slots = slotsFor(level)
   if (slot < 0 || slot >= slots) return store
+  const holder = holderOf(store, relic)
+  if (holder !== null && holder !== hero) return store
   const wear: Record<string, string[]> = {}
   for (const [hid, ids] of Object.entries(store.wear)) {
     const left = ids.filter((x) => x !== relic)

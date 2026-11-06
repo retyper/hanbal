@@ -30,6 +30,7 @@ import { advance, battleFates, forceOf, preview, sideOf } from '../../src/realm/
 import { feastCost, fightRounds, type FightResult, type Side } from '../../src/realm/tactics.ts'
 import type { Hero, Order, Realm, RegionId, ReportLine } from '../../src/realm/types.ts'
 import { P } from '../../src/tune/params.ts'
+import { pickerHtml, slotsHtml, type RelicKit } from '../../src/ui/realm/relics.ts'
 
 const R = P.realm
 const bihwa = (seed = 7): Realm => startRegion('yeongnam', seed, 'bihwa')
@@ -136,17 +137,39 @@ describe('유물 — 끼우기', () => {
     assert.deepEqual(s.wear['a'], ['ingots', 'gogok'])
   })
 
-  it('가진 것만 · 하나는 한 사람만 — 다른 장수에게서 옮긴다 · 비우기', () => {
+  it('가진 것만 · 다른 장수가 지닌 것은 먼저 빼야 한다', () => {
     let s = owning('gogok')
     assert.equal(equip(s, 'a', 0, 'crown', 0), s, '없는 유물')
     s = equip(s, 'a', 0, 'gogok', 0)
+    assert.equal(equip(s, 'b', 0, 'gogok', 0), s, '남이 지닌 유물은 자동으로 옮기지 않는다')
+    assert.equal(holderOf(s, 'gogok'), 'a')
+    s = unequip(s, 'a', 0)
     s = equip(s, 'b', 0, 'gogok', 0)
-    assert.equal(s.wear['a'], undefined)
     assert.deepEqual(s.wear['b'], ['gogok'])
     assert.equal(holderOf(s, 'gogok'), 'b')
     s = unequip(s, 'b', 0)
     assert.equal(holderOf(s, 'gogok'), null)
     assert.equal(unequip(s, 'b', 0), s)
+  })
+
+  it('선택 목록에는 다른 장수가 지닌 유물이 나오지 않는다', () => {
+    let s = owning('gogok', 'ingots', 'crown')
+    s = equip(s, 'a', 0, 'gogok', 0)
+    s = equip(s, 'b', 0, 'crown', 0)
+    const kit: RelicKit = { art: '/realm/', esc: (x) => x, nameOf: (x) => x }
+    const before = Object.getOwnPropertyDescriptor(globalThis, 'localStorage')
+    Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: { getItem: () => JSON.stringify(s) } })
+    try {
+      const picker = pickerHtml(kit, 'a', 0)
+      assert.match(picker, /data-r="gogok"/)
+      assert.match(picker, /data-r="ingots"/)
+      assert.doesNotMatch(picker, /data-r="crown"/)
+      s = equip(s, 'c', 0, 'ingots', 0)
+      assert.match(slotsHtml(kit, 'd', 0, null), /disabled data-tip="다른 장수가 지닌 유물은 먼저 빼야 한다"/)
+    } finally {
+      if (before === undefined) Reflect.deleteProperty(globalThis, 'localStorage')
+      else Object.defineProperty(globalThis, 'localStorage', before)
+    }
   })
 })
 
