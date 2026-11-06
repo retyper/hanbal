@@ -174,6 +174,39 @@ export const SCENE_SOUND: Readonly<Record<string, Slot>> = {
 /** 소리 크기 — 음악은 뒤에 깔리게, 바람소리는 더 낮게 */
 const BGM_VOL = 0.22
 const AMB_VOL = 0.1
+
+export type SoundChannel = 'bgm' | 'sfx' | 'voice'
+const VOLUME_KEY = 'hanbal.realm.volume.'
+const SOUND_NAME: Readonly<Record<SoundChannel, string>> = { bgm: '배경음', sfx: '효과음', voice: '사람 목소리' }
+/** 저장하지 않은 기기는 각 소리 100%. 전체 소리 끄기는 기존 설정을 따른다. */
+export function soundVolume(channel: SoundChannel): number {
+  try {
+    const raw = localStorage.getItem(VOLUME_KEY + channel)
+    if (raw !== null) {
+      const n = Number(raw)
+      if (Number.isFinite(n)) return Math.max(0, Math.min(1, n))
+    }
+  } catch { /* 저장소가 막힌 곳은 기본값 */ }
+  return 1
+}
+export function setSoundVolume(channel: SoundChannel, value: number): void {
+  if (!Number.isFinite(value)) return
+  try { localStorage.setItem(VOLUME_KEY + channel, String(Math.max(0, Math.min(1, value)))) } catch { /* 이번 판은 기본값 */ }
+}
+export function volumeRowsHtml(): string {
+  return `<div class="volumes"><b>소리 크기</b>${(['bgm', 'sfx', 'voice'] as const).map((c) => {
+    const n = Math.round(soundVolume(c) * 100)
+    return `<label class="volrow"><span>${SOUND_NAME[c]}</span><input type="range" min="0" max="100" step="1" value="${n}" data-vol="${c}" aria-label="${SOUND_NAME[c]} 크기"><output>${n}%</output></label>`
+  }).join('')}</div>`
+}
+
+export const VOLUME_CSS = `
+.ap .volumes { display: grid; gap: 8px; margin: 14px 0; padding: 12px; border: 1px solid #6d4b2b; border-radius: 10px; background: #211810; }
+.ap .volumes > b { color: #e4c385; font-size: 14px; }
+.ap .volrow { display: grid; grid-template-columns: 78px minmax(100px, 1fr) 42px; align-items: center; gap: 8px; color: #ddd0b2; font-size: 13px; }
+.ap .volrow input { width: 100%; accent-color: #d9a65a; cursor: pointer; }
+.ap .volrow output { text-align: right; font-variant-numeric: tabular-nums; color: #f0d39b; }
+`
 /** 음악이 들어오고 빠지는 빠르기 (초 — setTargetAtTime 의 시간 상수) */
 const FADE_S = 0.25
 
@@ -265,7 +298,7 @@ export function playOnce(url0: string, vol: number, rate = 1, dur = 0): void {
 }
 
 /** 한 줄로 도는 소리 하나 (음악 · 바람). 곡마다 요소를 하나씩 두고 다시 쓴다 — 싸움 뒤 지도 음악은 멈춘 자리에서 잇는다 */
-function track(base: string, vol: number): { prime(slot: Slot): void; want(slot: Slot | null): void; pause(): void; resume(): void; reset(): void } {
+function track(base: string, vol: () => number): { prime(slot: Slot): void; want(slot: Slot | null): void; pause(): void; resume(): void; reset(): void; refreshVolume(): void } {
   const els = new Map<Slot, { el: HTMLAudioElement; gain: GainNode | null }>()
   let cur: Slot | null = null
   /** 바로 앞에 틀던 곡 — 새 곡 파일이 없으면 이리로 돌아간다 */
@@ -288,7 +321,7 @@ function track(base: string, vol: number): { prime(slot: Slot): void; want(slot:
         el.addEventListener('ended', () => {
           i = (i + 1) % list.length
           el.src = `${base}realm/sfx/${sndFile(slot, list[i])}`
-          el.volume = gainOf(slot, list[i])
+          el.volume = gainOf(slot, list[i]) * (n?.gain === null ? vol() : 1)
           if (!REST.has(slot)) { if (cur === slot) start(); return }
           const { bgmRestMinS: lo, bgmRestMaxS: hi } = P.realm
           rest = window.setTimeout(() => { rest = 0; if (cur === slot) start() }, (lo + Math.random() * Math.max(0, hi - lo)) * 1000)
@@ -298,7 +331,7 @@ function track(base: string, vol: number): { prime(slot: Slot): void; want(slot:
         missing.add(slot)
         if (cur === slot) { cur = null; if (prev !== null && !missing.has(prev)) { cur = prev; start() } }
       })
-      n = { el, gain: wire(el, vol) }
+      n = { el, gain: wire(el, vol()) }
       if (n.gain !== null) n.gain.gain.value = 0
       els.set(slot, n)
     }
@@ -309,8 +342,9 @@ function track(base: string, vol: number): { prime(slot: Slot): void; want(slot:
     window.clearTimeout(fading.get(cur))
     fading.delete(cur)
     const n = node(cur)
+    if (n.gain === null) n.el.volume = vol()
     void n.el.play().then(() => {
-      if (n.gain !== null && ctx) n.gain.gain.setTargetAtTime(vol, ctx.currentTime, FADE_S)
+      if (n.gain !== null && ctx) n.gain.gain.setTargetAtTime(vol(), ctx.currentTime, FADE_S)
     }).catch(() => { /* 아직 손을 안 댔다 — 첫 탭에 다시 */ })
   }
   /** 잦아든 뒤 멈출 때를 기다리는 곡 — 그새 다시 틀면 걷는다 */
@@ -357,11 +391,17 @@ function track(base: string, vol: number): { prime(slot: Slot): void; want(slot:
     },
     pause() { stop(cur) },
     resume() { if (cur !== null && els.get(cur)?.el.paused !== false) start() },
+    refreshVolume() {
+      for (const [slot, n] of els) {
+        if (n.gain !== null) n.gain.gain.value = slot === cur && !n.el.paused ? vol() : 0
+        else n.el.volume = slot === cur && !n.el.paused ? vol() : 0
+      }
+    },
   }
 }
 
 /** 배경 음악 + 계절 바람 — muted() 나 quiet()(밤 판이 떠 있다) 가 참이면 안 튼다 */
-export function makeMusic(base: string, muted: () => boolean, quiet: () => boolean): {
+export function makeMusic(base: string, muted: () => boolean, quiet: () => boolean, volume: () => number = () => 1): {
   map(season: 'spring' | 'summer' | 'autumn' | 'winter'): void
   war(): void
   /** 첫 화면 — 판 음악을 끊고 첫 화면 음악 (아직 없으면 조용히) */
@@ -376,11 +416,12 @@ export function makeMusic(base: string, muted: () => boolean, quiet: () => boole
   /** 혼례 장면 — 닫으면 부른 쪽이 map() 으로 되돌린다 (가락은 스르르 잦아든다) */
   wedding(): void
   refresh(): void
+  refreshVolume(): void
   /** 판이 바뀌었다 — 모든 음악을 처음으로 (형 11-03: "게임 새로 시작되면 bgm 관련된 건 다 처음부터") */
   reset(): void
 } {
-  const bgm = track(base, BGM_VOL)
-  const amb = track(base, AMB_VOL)
+  const bgm = track(base, () => BGM_VOL * volume())
+  const amb = track(base, () => AMB_VOL * volume())
   let mode: { bgm: Slot | null; amb: Slot | null } | null = null
   const off = (): boolean => mode === null || muted() || quiet()
   const apply = (): void => {
@@ -413,6 +454,7 @@ export function makeMusic(base: string, muted: () => boolean, quiet: () => boole
     bridal() { mode = { bgm: 'bgm_bridal', amb: null }; apply() },
     wedding() { mode = { bgm: 'bgm_wed', amb: null }; apply() },
     refresh: apply,
+    refreshVolume() { bgm.refreshVolume(); amb.refreshVolume() },
     reset() { bgm.reset(); amb.reset(); mode = null },
   }
 }

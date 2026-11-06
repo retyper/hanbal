@@ -16,9 +16,9 @@
  * 움직임을 단 규칙마다 쌍둥이 규칙을 만든다: `:where(.ap.q-low) :is(원래 선택자) { animation-play-state: running, paused }`.
  * :where 라 세기가 원래와 같고 뒤에 오니, 원래 규칙만 이기고 더 센 규칙에는 진다 (덮는 차례가 원래와 같다).
  *
- * 자동 (기본): 폰은 보통 · 마우스 쓰는 컴퓨터는 고사양에서 시작. 지도가 처음 뜬 뒤 · 첫 싸움 · 탭에 다시 돌아왔을 때 프레임을 2초 잰다.
+ * 자동 (기본): 메모리가 모자라지 않으면 폰과 컴퓨터 모두 고사양에서 시작. 지도가 처음 뜬 뒤 · 탭에 다시 돌아왔을 때 프레임을 2초 잰다.
  * 가운데값이 28ms 를 넘거나(절전 모드의 30장) 긴 프레임이 많으면 한 단계 내린다. 배터리가 20% 아래이고 충전 중이 아니어도 내린다.
- * 기기 메모리 4GB 이하는 보통까지만. 자동은 내리기만 하고, 바꾼 뒤 1분 안엔 다시 안 바꾼다 (오르내림 막기). 저사양이 되면 한 줄 알림.
+ * 기기 메모리 4GB 이하는 보통까지만. 버벅이면 내리고 충분히 부드러워지면 다시 올린다. 바꾼 뒤 잠시 재조정하지 않는다.
  * 움직임 줄이기(prefers-reduced-motion)를 켠 기기는 단계와 상관없이 꾸밈 움직임만 멈춘다 (q-calm).
  *
  * 배터리 (절대 규칙 4 · 고사양에서도): 아무것도 안 누른 채 45초가 지나면 꾸밈 움직임을 멈춘다 (q-rest · 싸움 중엔 안 멈춤).
@@ -34,8 +34,6 @@ export type GfxPref = 'auto' | Tier
 const ORDER: readonly Tier[] = ['low', 'mid', 'high']
 export const TIER_NAME: Readonly<Record<Tier, string>> = { low: '저사양', mid: '보통', high: '고사양' }
 const PREF_KEY = 'hanbal.realm.gfx'
-/** 자동이 마지막으로 정한 단계와 그때 (다음에 켤 때 P.realm.gfxRememberH 시간 동안 그 아래로 시작) */
-const AUTO_KEY = 'hanbal.realm.gfx.auto'
 /** 저사양에서도 멈추지 않는 끝없는 움직임: 긴 이름을 흘려 보여 주는 글 (fit.ts marquee) */
 const KEEP_RUNNING: ReadonlySet<string> = new Set(['mqgo'])
 /** 쌍둥이 규칙을 만들지 않는 규칙: 이 파일이 쓴 것 */
@@ -232,10 +230,9 @@ function readPref(): GfxPref {
   return 'auto'
 }
 
-/** 자동의 출발점: 폰은 보통 · 마우스 컴퓨터는 고사양 · 메모리 적은 기기는 그 아래 · 얼마 전 자동이 내렸으면 거기서 */
-/** 기기만 보고 정한 위끝: 폰 보통 · 마우스 컴퓨터 고사양 · 메모리 적으면 그 아래 */
+/** 기기만 보고 정한 위끝: 기본은 고사양 · 메모리가 적으면 그 아래 */
 function deviceTier(): Tier {
-  let t: Tier = mq('(pointer: fine)') && mq('(hover: hover)') ? 'high' : 'mid'
+  let t: Tier = 'high'
   const mem = (navigator as Navigator & { deviceMemory?: number }).deviceMemory
   if (typeof mem === 'number' && mem > 0) {
     if (mem <= P.realm.gfxMemLow) t = 'low'
@@ -245,12 +242,7 @@ function deviceTier(): Tier {
 }
 
 function baseTier(): Tier {
-  let t: Tier = deviceTier()
-  try {
-    const a = JSON.parse(localStorage.getItem(AUTO_KEY) ?? 'null') as { t?: unknown; at?: unknown } | null
-    if (a !== null && isTier(a.t) && typeof a.at === 'number' && Date.now() - a.at < P.realm.gfxRememberH * 3600_000) t = lower(t, a.t)
-  } catch { /* 깨진 기록은 버린다 */ }
-  return t
+  return deviceTier()
 }
 
 function apply(): void {
@@ -266,7 +258,6 @@ function stepDown(why: 'frames' | 'battery'): void {
   lastStep = now
   tier = ORDER[ORDER.indexOf(tier) - 1]!
   apply()
-  try { localStorage.setItem(AUTO_KEY, JSON.stringify({ t: tier, at: Date.now() })) } catch { /* 이번 판만 */ }
   // 절전 모드를 켰는지는 알 수 없다 · 본 것만 말한다 (형 10-30: "절전 상태 풀었는데 왜 절전 상태로 바꿨다고 뜨지?")
   if (tier === 'low') say(why === 'battery' ? '배터리가 적어 그래픽을 가볍게 바꿨습니다' : '화면이 버벅여 그래픽을 가볍게 바꿨습니다 · 나라 탭에서 바꿀 수 있습니다')
 }
@@ -281,7 +272,6 @@ function stepUp(): void {
   lastStep = now
   tier = ORDER[ORDER.indexOf(tier) + 1]!
   apply()
-  try { localStorage.setItem(AUTO_KEY, JSON.stringify({ t: tier, at: Date.now() })) } catch { /* 이번 판만 */ }
 }
 
 /** 손으로 고른다 (설정 단추) · 자동으로 돌리면 출발점부터 다시 잰다 */
@@ -290,7 +280,6 @@ export function setGfxPref(v: string | undefined): void {
   pref = p
   try { if (p === 'auto') localStorage.removeItem(PREF_KEY); else localStorage.setItem(PREF_KEY, p) } catch { /* 이번 판만 */ }
   if (p === 'auto') {
-    try { localStorage.removeItem(AUTO_KEY) } catch { /* 그대로 */ }
     tier = baseTier()
     lastStep = Number.NEGATIVE_INFINITY
     later(probe)

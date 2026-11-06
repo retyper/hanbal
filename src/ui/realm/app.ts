@@ -107,7 +107,7 @@ import { MOOD_CSS, MOOD_WORD, moodImg, moodOf } from './mood.ts'
 import { AUD_CSS, askSay, pactSay, typed, type PactKind } from './audience.ts'
 import { customDef, customsOf } from '../../realm/data/customs.ts'
 import { BOARDS, FRONT_CSS, PROLOGUE_STEPS, chronicleOf, customsHtml, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, slotsHtml, titleHtml, type FrontKit, type History, type SlotInfo } from './front.ts'
-import { SCENE_SOUND, makeMusic, playOnce, preRoll, snd, sndFile, tapSlot, warmOnce } from './sound.ts'
+import { SCENE_SOUND, VOLUME_CSS, makeMusic, playOnce, preRoll, setSoundVolume, snd, sndFile, soundVolume, tapSlot, volumeRowsHtml, warmOnce } from './sound.ts'
 import { exileArt, exileBeats, fugitiveBeats, quarrelArt, quarrelBeats, romanceBeats, romanceFlip, sayOfBeat } from './card-lines.ts'
 import { HERO_POOL } from '../../realm/data/heroes-pool.ts'
 import { chiefCastOf, hireVoicePath, voiceGate, voiceKind, voicePath, type VoiceLine } from './voice.ts'
@@ -223,7 +223,8 @@ function muted(): boolean {
 const sfxUrl = (name: string): string => `${name.includes('/') ? BASE : SFX}${name}${/\.\w+(#t=[\d.]+)?$/.test(name) ? '' : '.ogg'}`
 function ding(name: string, vol = 0.6, rate = 1, dur = 0): void {
   if (muted()) return
-  playOnce(sfxUrl(name), vol, rate, dur) // 탭이 가려져 있으면 안 낸다 (규칙 4)
+  const gain = soundVolume(name.startsWith('realm/voice/') ? 'voice' : 'sfx')
+  if (gain > 0) playOnce(sfxUrl(name), vol * gain, rate, dur) // 탭이 가려져 있으면 안 낸다 (규칙 4)
 }
 /** 곧 낼 소리를 미리 받아 풀어 둔다 — 처음 한 번이 늦게 나지 않게 (싸움이 열릴 때) */
 function warmSfx(names: readonly string[]): void {
@@ -670,7 +671,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + MEM_CSS + ASCEND_CSS + HILITE_CSS + TOWN_CSS.replaceAll('__ART__', ART) + RISE_CSS + BOOK_CSS
+  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS.replaceAll('__ART__', ART) + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + VOLUME_CSS + MEM_CSS + ASCEND_CSS.replaceAll('__ART__', ART) + HILITE_CSS + TOWN_CSS.replaceAll('__ART__', ART) + RISE_CSS + BOOK_CSS
   document.head.appendChild(style)
   root.classList.add('ap')
   // 그래픽 단계 저사양 · 보통 · 고사양 (quality.ts · 형 10-29: 폰 절전 모드에서 그림이 다 깨졌다)
@@ -689,7 +690,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (v.dataset['quiet'] !== undefined) return
     if (muted()) return
     for (const o of root.querySelectorAll<HTMLVideoElement>('video[loop]')) if (o !== v) o.muted = true
-    v.volume = P.realm.loopVolume
+    v.volume = P.realm.loopVolume * soundVolume('sfx')
     v.muted = false
     void v.play().catch(() => { v.muted = true; void v.play().catch(() => undefined) })
   }
@@ -700,7 +701,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
   }).observe(root, { childList: true, subtree: true })
   /** 배경 음악 · 계절 바람 — 싸움 창이 열려 있으면 싸움 음악 */
-  const music = makeMusic(BASE, muted, () => root.querySelector('.nightov') !== null) // 밤 판이 떠 있으면 조용히 — 밤 판은 제 소리를 낸다
+  const music = makeMusic(BASE, muted, () => root.querySelector('.nightov') !== null, () => soundVolume('bgm')) // 밤 판이 떠 있으면 조용히 — 밤 판은 제 소리를 낸다
   let warOn = false
   /** 줄 서 있거나 떠 있는 장면(사로잡음·등용·혼례…) 수 — 각성 연출은 이것이 다 걷힌 뒤에 (playScenes) */
   let scenesLeft = 0
@@ -1506,15 +1507,22 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const el = document.createElement('div')
     el.className = `ascfx evo${l.again === true ? ' again' : ''}${loopOk ? ' portrait-video' : ''}`
     el.style.cssText = `--t0:${t(R.ascendSlotMs)}ms;--tg:${t(R.ascendSlotGapMs)}ms;--tv:${t(R.ascendVortexMs)}ms;--tb:${t(R.ascendBeastMs)}ms;--tf:${t(R.ascendFlashMs)}ms;--tok:${t(R.ascendOkMs)}ms;${elemVars(e)}`
-    // 불 캔버스는 액자 그림 뒤 — 혀가 청동 테 너머에서 솟는다 · 액자 위엔 불빛을 받는 겹(axglow) · 바닥 불도 같은 셰이더 (그림 검토 11-01)
+    // 번쩍 전에는 원래 초상·청동 액자·불꽃 칸을 그대로 둔다. 세로 영상은 번쩍 뒤 별도 무대에만 드러난다.
     const fr = `--bt:${R.ascendFrameTop};--bs:${R.ascendFrameSide};--bb:${R.ascendFrameBot}`
+    const title = `<div class="axtitle"><img class="axbrush" src="${FX}brush.png" alt=""><img class="axword" src="${FX}word.png" alt="각성"></div>`
+    const result = `${title}<b class="axname">${esc(h.name)}</b><div class="axstats">${stats}</div>`
+    const finalVideo = loopOk ? `<div class="axpost"><div class="axmedia">${after.replace('<video ', '<video data-quiet="1" ')}<i class="vmark" aria-hidden="true"></i></div>${result}</div>` : ''
     el.innerHTML = `<div class="axveil"></div><img class="axwall" src="${FX}wall.png" alt=""><canvas class="axground"></canvas>`
       + `<img class="axbeast" src="${FX}beast-${E.beast}.png" alt="" onerror="this.classList.add('gone')">${gatherHtml(e, phone ? R.ascendGatherPhone : R.ascendGather, sd, ART, { sec: R.ascendStreakSec, spread: R.ascendStreakSpreadSec, stagger: R.ascendStreakStaggerSec })}<div class="axembers">${embers}</div>`
-      + `<div class="axstage"><div class="axcard">${tongues}<div class="axwin">${before}<i class="axsil"></i>${after}${loopOk ? '<i class="vmark" aria-hidden="true">✦</i>' : ''}</div><canvas class="axburn" style="${fr}"></canvas><img class="axframe" src="${FX}frame0.png" alt=""><img class="axglow" src="${FX}frame0.png" alt="">${vortexHtml(e, phone ? R.ascendOrbitPhone : R.ascendOrbit, sd, ART)}</div><div class="axslots">${slots}</div>`
-      + `<div class="axtitle"><img class="axbrush" src="${FX}brush.png" alt=""><img class="axword" src="${FX}word.png" alt="각성"></div>`
-      + `<b class="axname">${esc(h.name)}</b><div class="axstats">${stats}</div></div>${ringsHtml(e, ART)}<div class="axflash"></div>`
+      + `<div class="axstage"><div class="axcard">${tongues}<div class="axwin">${before}<i class="axsil"></i>${loopOk ? '' : after}</div><canvas class="axburn" style="${fr}"></canvas><img class="axframe" src="${FX}frame0.png" alt=""><img class="axglow" src="${FX}frame0.png" alt="">${vortexHtml(e, phone ? R.ascendOrbitPhone : R.ascendOrbit, sd, ART)}</div><div class="axslots">${slots}</div>${loopOk ? '' : result}</div>${finalVideo}${ringsHtml(e, ART)}<div class="axflash"></div>`
       + `<div class="axok"><button class="btn pri">확인</button></div>`
     const timers: number[] = []
+    if (loopOk) timers.push(window.setTimeout(() => {
+      if (!el.isConnected) return
+      const v = el.querySelector<HTMLVideoElement>('.axpost video')
+      if (v !== null) { v.currentTime = 0; delete v.dataset['quiet']; voiceLoop(v) }
+      el.classList.add('revealed')
+    }, t(R.ascendFlashMs)))
     // 다음 각성이 줄 서 있으면 걷히자마자 이어서 (같은 달에 둘이 각성해도 둘 다 크게)
     const gone = (): void => { timers.forEach((t) => window.clearTimeout(t)); if (!el.isConnected) return; el.classList.add('out'); window.setTimeout(() => { el.remove(); if (rest.length > 0) ascendShow(r, rest); else afterAscend.splice(0).forEach((f) => f()) }, 350) }
     // 확인 단추만 닫는다 — 단추는 능력치가 다 오른 뒤에 뜬다 (CSS --tok · 그 전엔 눌리지 않는다)
@@ -2520,7 +2528,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const sf = faceFile(sh.id)
       const sb = bustOf(sh.id)
       const sloop = sh.ascended === true && sb !== undefined && AWAKEN_LOOP.has(sb) && !root.classList.contains('q-low') ? `${ART}${loopFile(sb)}` : null
-      const big = sloop !== null ? `<span class="vthumb"><video class="cnbig vloop${sqCls(sloop)}" src="${sloop}" poster="${ART}awaken-hd/${sb}.jpg" autoplay muted loop playsinline preload="auto" data-quiet="1"></video><i class="vmark" aria-hidden="true">✦</i></span>`
+      const big = sloop !== null ? `<span class="vthumb"><video class="cnbig vloop${sqCls(sloop)}" src="${sloop}" poster="${ART}awaken-hd/${sb}.jpg" autoplay muted loop playsinline preload="auto" data-quiet="1"></video><i class="vmark" aria-hidden="true"></i></span>`
         : sf !== undefined ? `<img class="cnbig" src="${ART}bust-hd/${sf}.jpg" onerror="this.onerror=null;this.src='${ART}bust/${sf}.jpg'" alt="">` : bust(sh, 'cnbig')
       return `<div class="cnstage" data-act="cn-next"><h3 class="cnt">${esc(ag.title)}</h3><div class="cnspk${v.proven === true ? ' gold' : ''}">${big}<b>${nameHtml(sh.name)}</b>${v.proven === true ? '<i class="cngold">지난번 말이 맞았다</i>' : ''}</div>`
         + `<p class="cnsub" aria-live="polite">${hilite(r, me(), v.line)}</p><div class="cnav"><small>${beat + 1}/${says.length} · 누르면 다음 ›</small><button class="cskip" data-act="cn-skip">건너뛰기 »</button></div></div>`
@@ -4447,7 +4455,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const loop2 = tw && AWAKEN2_LOOP.has(bo!) && !lowQ ? `${ART}${loopFile2(bo!)}` : null
     const hloop = woke2 && loop2 !== null ? loop2 : x.ascended === true && bo !== undefined && AWAKEN_LOOP.has(bo) && !lowQ ? `${ART}${loopFile(bo)}` : null
     const hpost = woke2 ? `${ART}awaken2-hd/${bo}.jpg` : `${ART}awaken-hd/${bo}.jpg`
-    const hpic = hloop !== null ? `<span class="vthumb"><video class="big vloop${sqCls(hloop)}" src="${hloop}" poster="${hpost}" autoplay muted loop playsinline preload="auto" data-act="bust-view" data-src="${hpost}" data-loop="${hloop}"></video><i class="vmark" aria-hidden="true">✦</i></span>`
+    const hpic = hloop !== null ? `<span class="vthumb"><video class="big vloop${sqCls(hloop)}" src="${hloop}" poster="${hpost}" autoplay muted loop playsinline preload="auto" data-act="bust-view" data-src="${hpost}" data-loop="${hloop}"></video><i class="vmark" aria-hidden="true"></i></span>`
       : woke2 ? `<img class="big" src="${hpost}" alt="" data-act="bust-view" data-src="${hpost}">`
       : file !== undefined ? `<img class="big" src="${ART}bust/${file}.jpg" alt="" data-act="bust-view" data-src="${ART}bust/${file}.jpg">` : bust(x, 'face')
     h += `<div class="hpic">${hpic}${annal !== undefined ? `<button class="annb" data-act="annal" data-id="${x.id}" aria-label="사서에 남은 이야기">📜<b>?</b></button>` : ''}${flamesHtml(x)}</div>`
@@ -4815,7 +4823,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<button class="btn ghost" data-act="mute">${muted() ? '소리 켜기' : '소리 끄기'}</button><button class="btn ghost" data-act="export" data-tip="지금까지 둔 판 ${host.gameCount()}개의 기록을 파일로 받는다">기록 내보내기</button>`
     h += `<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}" data-tip="활쏘기 모드 (신궁)">활터</a>${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
     h += `<button class="btn ghost" data-act="newgame" data-tip="판 고르기로, 새 게임을 시작하기 전까지 지금 판은 그대로다">새 게임</button><button class="btn ghost" data-act="lobby" data-tip="이 판은 저장돼 있어 「이어 하기」로 돌아온다">⌂ 첫 화면으로</button></div>`
-    return h + gfxRowHtml() + acctHtml() + resetHtml()
+    return h + gfxRowHtml() + volumeRowsHtml() + acctHtml() + resetHtml()
   }
 
   // ───────── 계정 (docs/realm/SERVER.md) — 나라 판 맨 아래 · 첫 화면 한 줄 · 갈라진 판 고르기
@@ -6182,7 +6190,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   // ───────── 판 바깥 — 첫 화면 · 판 고르기 · 나라 고르기 (front.ts)
   function frontHtml(f: Front): string {
     // 활터·연습장·소리 출처·시험·기록·로그인은 「더 보기」 안에 접는다 — 늘어놓았더니 폰에서 화면 밑으로 넘쳤다 (형 10-28)
-    const links = `<details class="fmore"${fmoreOpen ? ' open' : ''}><summary class="btn ghost">더 보기</summary><button class="fmbg" data-act="fmore-x" aria-label="닫기"></button><div class="fmpan"><b class="fmh">더 보기</b>${document.documentElement.classList.contains('gfxsafe') ? '<small class="mute">그래픽 호환 모드 켜짐</small>' : ''}${gfxRowHtml()}${f.kind === 'title' ? acctLine() : ''}<p class="fine">${installed() ? '' : `<button class="btn ghost" data-act="inst-show">📲 앱으로 설치</button>`}<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">활터</a> ${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
+    const links = `<details class="fmore"${fmoreOpen ? ' open' : ''}><summary class="btn ghost">더 보기</summary><button class="fmbg" data-act="fmore-x" aria-label="닫기"></button><div class="fmpan"><b class="fmh">더 보기</b>${document.documentElement.classList.contains('gfxsafe') ? '<small class="mute">그래픽 호환 모드 켜짐</small>' : ''}${gfxRowHtml()}${volumeRowsHtml()}${f.kind === 'title' ? acctLine() : ''}<p class="fine">${installed() ? '' : `<button class="btn ghost" data-act="inst-show">📲 앱으로 설치</button>`}<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">활터</a> ${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
       // 소리의 출처 — 공공누리 제1유형·CC BY 는 출처를 밝혀야 쓸 수 있다 (형 10-23: "출처표기해야 상업적으로 사용가능하니까 주의")
       + ` <a class="btn ghost" href="${BASE}realm/credits.html">소리 출처</a>`
       // 새 전투 시험 (BATTLE-LIVE 0번) — 이 기기에서만 켜진다 · 형과 지인이 켜고 꺼 보며 견준다 (형 10-28)
@@ -6450,7 +6458,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     root.querySelector('.bview')?.remove()
     // 고리 영상이 있으면 크게 숨 쉬는 초상 (형 11-05 · live2d 같은 idle) · 없으면 그림
     if (loop !== undefined && loop !== '') {
-      root.insertAdjacentHTML('beforeend', `<div class="bview" data-act="bust-close" role="dialog" aria-label="장수 그림 크게"><span class="vfull"><video class="vloop${sqCls(loop)}" src="${loop}" poster="${src}" autoplay muted loop playsinline></video><i class="vmark" aria-hidden="true">✦</i></span><small>누르면 닫힌다</small></div>`)
+      root.insertAdjacentHTML('beforeend', `<div class="bview" data-act="bust-close" role="dialog" aria-label="장수 그림 크게"><span class="vfull"><video class="vloop${sqCls(loop)}" src="${loop}" poster="${src}" autoplay muted loop playsinline></video><i class="vmark" aria-hidden="true"></i></span><small>누르면 닫힌다</small></div>`)
       return
     }
     root.insertAdjacentHTML('beforeend', `<div class="bview" data-act="bust-close" role="dialog" aria-label="장수 그림 크게"><img alt=""><small>누르면 닫힌다</small></div>`)
@@ -7283,6 +7291,17 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   // ───────── 손짓 — 한 곳에서 받는다
+  root.addEventListener('input', (ev) => {
+    const input = ev.target
+    if (!(input instanceof HTMLInputElement)) return
+    const channel = input.dataset['vol']
+    if (channel !== 'bgm' && channel !== 'sfx' && channel !== 'voice') return
+    setSoundVolume(channel, Number(input.value) / 100)
+    const out = input.closest('.volrow')?.querySelector('output')
+    if (out !== null && out !== undefined) out.textContent = `${input.value}%`
+    if (channel === 'bgm') music.refreshVolume()
+    if (channel === 'sfx') for (const v of root.querySelectorAll<HTMLVideoElement>('video[loop]')) v.volume = P.realm.loopVolume * soundVolume('sfx')
+  })
   // 전체 화면 — 처음 손이 닿는 그 순간에 (형 10-23: "게임 시작하자마자 되어야 하는 거 아님?").
   // 브라우저는 손짓 없이는 못 켜게 막는다 — 첫 화면·불러오는 화면을 포함해 어디든 처음 누르면 켠다 (손을 뗄 때가 브라우저가 허락하는 때)
   root.addEventListener('click', (ev) => {
@@ -7611,7 +7630,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (p !== null) void p.prompt().catch(() => { /* 막힌 곳 */ }).finally(() => { delete (window as unknown as { __bip?: InstallPrompt }).__bip; paint() })
         break
       }
-      case 'mute': try { localStorage.setItem(MUTE_KEY, muted() ? '0' : '1') } catch { /* 저장 못 하는 곳 */ } music.refresh(); for (const v of root.querySelectorAll<HTMLVideoElement>('video[loop]')) v.muted = true; break
+      case 'mute': {
+        try { localStorage.setItem(MUTE_KEY, muted() ? '0' : '1') } catch { /* 저장 못 하는 곳 */ }
+        music.refresh()
+        for (const v of root.querySelectorAll<HTMLVideoElement>('video[loop]')) v.muted = true
+        if (!muted()) {
+          const active = root.querySelector<HTMLVideoElement>('.ascfx video[loop], .bview video[loop], .hpic video[loop]')
+          if (active !== null) voiceLoop(active)
+        }
+        break
+      }
       case 'focus': focus = focus === d['id'] ? null : d['id']!; break
       case 'rep-close': showReport = false; paint(); return
       case 'strat-x': {

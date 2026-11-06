@@ -158,14 +158,21 @@ export const ASCEND_CSS = `
 .ap .axok { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; display: flex; justify-content: center; padding: 14px 16px calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, #000c 40%);
   opacity: 0; pointer-events: none; animation: axokin .4s ease-out var(--tok) forwards; }
 .ap .axok .btn { min-width: min(70vw, 280px); font-size: 18px; padding: 12px 18px; display: inline-flex; justify-content: center; align-items: center; text-align: center; } /* 글자 가운데 (형 11-05) */
-/* 세로 Veo는 영상 전체를 보이고, 액자선은 영상 바깥에 둔다. 하단 표식만 각성 문양으로 가린다. */
-.ap .ascfx.portrait-video .axcard { width: min(90vw, 390px, 38vh); aspect-ratio: 9 / 16; }
-.ap .ascfx.portrait-video .axwin { inset: 0; }
-.ap .ascfx.portrait-video .axold { object-fit: contain; }
-.ap .ascfx.portrait-video video.axnew { object-fit: contain; object-position: center; }
-.ap .ascfx.portrait-video .axframe, .ap .ascfx.portrait-video .axglow { display: none; }
-.ap .ascfx.portrait-video .axcard::after { content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; box-shadow: 0 0 0 2px #d59b55, 0 0 18px #d77f2680; }
-.ap .ascfx.portrait-video .vmark { opacity: 0; animation: axfade .25s ease-out var(--tf) forwards; }
+/* 번쩍 전의 정사각 초상·청동 액자·불꽃 칸은 원본 연출 그대로. 번쩍에만 교체한다. */
+.ap .ascfx.portrait-video.revealed .axstage { opacity: 0; visibility: hidden; }
+.ap .ascfx.portrait-video .axpost { position: absolute; inset: 0; z-index: 5; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 12px calc(76px + env(safe-area-inset-bottom)); gap: 3px; opacity: 0; pointer-events: none; transition: opacity .3s ease-out; }
+.ap .ascfx.portrait-video.revealed .axpost { opacity: 1; }
+.ap .ascfx.portrait-video .axmedia { position: relative; flex: none; width: min(34.875dvh, calc((100dvh - 230px) * .5625), calc(100vw - 48px)); min-width: 120px; aspect-ratio: 9 / 16; background: #100b0a; box-shadow: 0 0 40px #e8aa5b55; }
+.ap .ascfx.portrait-video .axmedia video.axnew { position: relative; display: block; width: 100%; height: 100%; opacity: 1; animation: none; object-fit: contain; object-position: center; }
+/* 기존 각성 청동 액자를 세로 9분할로 이어 붙인다. 가운데는 비워 영상 전체를 보인다. */
+.ap .ascfx.portrait-video .axmedia::after { content: ''; position: absolute; inset: -17px; z-index: 4; pointer-events: none; border: 19px solid transparent; border-image: url(__ART__fx/awaken/frame0.png) 112 / 19px / 0 stretch; filter: drop-shadow(0 0 7px #f0a65a88); }
+.ap .ascfx.portrait-video .axmedia .vmark { z-index: 5; }
+.ap .ascfx.portrait-video .axpost .axtitle { width: min(32vw, 160px); margin-top: 3px; }
+.ap .ascfx.portrait-video .axpost .axname { margin-top: -15px; padding: 0 16px; }
+.ap .ascfx.portrait-video .axpost .axstats { max-width: min(92vw, 440px); margin-top: 2px; }
+.ap .ascfx.portrait-video .axpost .axst { padding: 2px 6px; font-size: 11px; }
+.ap .ascfx.portrait-video .axflash { z-index: 7; }
+.ap .ascfx.portrait-video .axok { z-index: 8; }
 @keyframes axokin { from { opacity: 0; } to { opacity: 1; pointer-events: auto; } }
 /* 동작 줄이기에서도 모임·소용돌이·번개는 보인다 (형 11-03 맥북 · appstyle 의 .ascfx 줄 참고) */
 `
