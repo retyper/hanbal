@@ -2528,7 +2528,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const sf = faceFile(sh.id)
       const sb = bustOf(sh.id)
       const sloop = sh.ascended === true && sb !== undefined && AWAKEN_LOOP.has(sb) && !root.classList.contains('q-low') ? `${ART}${loopFile(sb)}` : null
-      const big = sloop !== null ? `<span class="vthumb"><video class="cnbig vloop${sqCls(sloop)}" src="${sloop}" poster="${ART}awaken-hd/${sb}.jpg" autoplay muted loop playsinline preload="auto" data-quiet="1"></video><i class="vmark" aria-hidden="true"></i></span>`
+      const big = sloop !== null ? `<video class="cnbig vloop${sqCls(sloop)}" src="${sloop}" poster="${ART}awaken-hd/${sb}.jpg" autoplay muted loop playsinline preload="auto" data-quiet="1"></video>`
         : sf !== undefined ? `<img class="cnbig" src="${ART}bust-hd/${sf}.jpg" onerror="this.onerror=null;this.src='${ART}bust/${sf}.jpg'" alt="">` : bust(sh, 'cnbig')
       return `<div class="cnstage" data-act="cn-next"><h3 class="cnt">${esc(ag.title)}</h3><div class="cnspk${v.proven === true ? ' gold' : ''}">${big}<b>${nameHtml(sh.name)}</b>${v.proven === true ? '<i class="cngold">지난번 말이 맞았다</i>' : ''}</div>`
         + `<p class="cnsub" aria-live="polite">${hilite(r, me(), v.line)}</p><div class="cnav"><small>${beat + 1}/${says.length} · 누르면 다음 ›</small><button class="cskip" data-act="cn-skip">건너뛰기 »</button></div></div>`
