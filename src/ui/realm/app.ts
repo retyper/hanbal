@@ -90,7 +90,7 @@ import { MEM_CSS, memRowHtml } from './memrow.ts'
 import { attachZoom } from './zoom.ts'
 import { holdBox, longPress } from './holdbox.ts'
 import { burn } from './burn.ts'
-import { ASCEND_CSS, ELEM, elemOf, elemVars, gatherHtml, mote, ringsHtml, vortexHtml } from './ascend.ts'
+import { ASCEND_CSS, ELEM, awakeningGemHtml, elemOf, elemVars, gatherHtml, mote, ringsHtml, vortexHtml } from './ascend.ts'
 import { HILITE_CSS, hilite } from './hilite.ts'
 import { TUT_CSS, TUT_STEPS, createSpot, tutAt, tutBandHtml, tutStyle } from './tutorial.ts'
 import { LOG_CSS, LOG_GROUPS, lineNations, logGroup, logNations, logRows, logbookHtml, type LogFilter } from './logbook.ts'
@@ -1434,7 +1434,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       + `${chip(asc && fl >= need, '🔥', `불꽃 ${Math.min(fl, need)}/${need}`, `각성기를 쓰려면 불꽃이 ${need}개 있어야 합니다. 이기면 붙고 지면 꺼집니다`)}`
       + `${chip(false, '⚔', '큰 싸움', `적의 힘이 우리의 ${Math.round(R.trueWakeBig * 100)}% 넘는 싸움에서 각성기를 쓰면 진각성합니다 · 한 판에 한 번`)}</span>`
     const canView = woke || LOCKED_TRUE_WAKE_PREVIEW
-    return `<button class="twc${woke ? ' on' : ''}"${canView ? ` data-act="bust-view" data-src="${ART}awaken2-hd/${bo}.jpg" data-loop="${loop ?? ''}"` : ' disabled'} data-tip="${esc(woke ? '이 판에서 진각성했습니다' : canView ? '누르면 진각성한 모습을 미리 봅니다' : '진각성하면 모습을 볼 수 있습니다')}">`
+    return `<button class="twc${woke ? ' on' : ''}"${canView ? ` data-act="bust-view" data-src="${ART}awaken2-hd/${bo}.jpg" data-loop="${loop ?? ''}" data-elem="${elemOf(x)}"` : ' disabled'} data-tip="${esc(woke ? '이 판에서 진각성했습니다' : canView ? '누르면 진각성한 모습을 미리 봅니다' : '진각성하면 모습을 볼 수 있습니다')}">`
       + `<span class="twp"><img src="${ART}awaken2/${bo}.jpg" alt="">${woke ? '' : '<i class="twl">🔒</i>'}${loop !== null ? '<i class="twv">▶</i>' : ''}</span>`
       + `<span class="twt"><b>진각성</b>${conds}</span></button>`
   }
@@ -1511,7 +1511,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const fr = `--bt:${R.ascendFrameTop};--bs:${R.ascendFrameSide};--bb:${R.ascendFrameBot}`
     const title = `<div class="axtitle"><img class="axbrush" src="${FX}brush.png" alt=""><img class="axword" src="${FX}word.png" alt="각성"></div>`
     const result = `${title}<b class="axname">${esc(h.name)}</b><div class="axstats">${stats}</div>`
-    const finalVideo = loopOk ? `<div class="axpost"><div class="axmedia">${after.replace('<video ', '<video data-quiet="1" ')}<i class="vmark" aria-hidden="true"></i></div>${result}</div>` : ''
+    const finalVideo = loopOk ? `<div class="axpost"><div class="axmedia">${after.replace('<video ', '<video data-quiet="1" ')}${awakeningGemHtml(e, ART)}</div>${result}</div>` : ''
     el.innerHTML = `<div class="axveil"></div><img class="axwall" src="${FX}wall.png" alt=""><canvas class="axground"></canvas>`
       + `<img class="axbeast" src="${FX}beast-${E.beast}.png" alt="" onerror="this.classList.add('gone')">${gatherHtml(e, phone ? R.ascendGatherPhone : R.ascendGather, sd, ART, { sec: R.ascendStreakSec, spread: R.ascendStreakSpreadSec, stagger: R.ascendStreakStaggerSec })}<div class="axembers">${embers}</div>`
       + `<div class="axstage"><div class="axcard">${tongues}<div class="axwin">${before}<i class="axsil"></i>${loopOk ? '' : after}</div><canvas class="axburn" style="${fr}"></canvas><img class="axframe" src="${FX}frame0.png" alt=""><img class="axglow" src="${FX}frame0.png" alt="">${vortexHtml(e, phone ? R.ascendOrbitPhone : R.ascendOrbit, sd, ART)}</div><div class="axslots">${slots}</div>${loopOk ? '' : result}</div>${finalVideo}${ringsHtml(e, ART)}<div class="axflash"></div>`
@@ -4455,7 +4455,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const loop2 = tw && AWAKEN2_LOOP.has(bo!) && !lowQ ? `${ART}${loopFile2(bo!)}` : null
     const hloop = woke2 && loop2 !== null ? loop2 : x.ascended === true && bo !== undefined && AWAKEN_LOOP.has(bo) && !lowQ ? `${ART}${loopFile(bo)}` : null
     const hpost = woke2 ? `${ART}awaken2-hd/${bo}.jpg` : `${ART}awaken-hd/${bo}.jpg`
-    const hpic = hloop !== null ? `<span class="vthumb"><video class="big vloop${sqCls(hloop)}" src="${hloop}" poster="${hpost}" autoplay muted loop playsinline preload="auto" data-act="bust-view" data-src="${hpost}" data-loop="${hloop}"></video><i class="vmark" aria-hidden="true"></i></span>`
+    const e = elemOf(x)
+    const hpic = hloop !== null ? `<span class="vthumb"><video class="big vloop${sqCls(hloop)}" src="${hloop}" poster="${hpost}" autoplay muted loop playsinline preload="auto" data-act="bust-view" data-src="${hpost}" data-loop="${hloop}" data-elem="${e}"></video>${awakeningGemHtml(e, ART)}</span>`
       : woke2 ? `<img class="big" src="${hpost}" alt="" data-act="bust-view" data-src="${hpost}">`
       : file !== undefined ? `<img class="big" src="${ART}bust/${file}.jpg" alt="" data-act="bust-view" data-src="${ART}bust/${file}.jpg">` : bust(x, 'face')
     h += `<div class="hpic">${hpic}${annal !== undefined ? `<button class="annb" data-act="annal" data-id="${x.id}" aria-label="사서에 남은 이야기">📜<b>?</b></button>` : ''}${flamesHtml(x)}</div>`
@@ -6454,11 +6455,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * 장수 그림을 화면 가득 (형 10-25: "이미지 클릭하면 왕크게 구경할 수 있게 · 유저들이 이미지 구경하고 싶잖아").
    * 큰 판(bust-hd 900px)을 먼저, 없으면 카드 그림. 아무 데나 누르면 닫힌다
    */
-  function openBust(src: string, loop?: string): void {
+  function openBust(src: string, loop?: string, elem?: string): void {
     root.querySelector('.bview')?.remove()
     // 고리 영상이 있으면 크게 숨 쉬는 초상 (형 11-05 · live2d 같은 idle) · 없으면 그림
     if (loop !== undefined && loop !== '') {
-      root.insertAdjacentHTML('beforeend', `<div class="bview" data-act="bust-close" role="dialog" aria-label="장수 그림 크게"><span class="vfull"><video class="vloop${sqCls(loop)}" src="${loop}" poster="${src}" autoplay muted loop playsinline></video><i class="vmark" aria-hidden="true"></i></span><small>누르면 닫힌다</small></div>`)
+      root.insertAdjacentHTML('beforeend', `<div class="bview" data-act="bust-close" role="dialog" aria-label="장수 그림 크게"><span class="vfull"><video class="vloop${sqCls(loop)}" src="${loop}" poster="${src}" autoplay muted loop playsinline></video>${awakeningGemHtml(elem, ART)}</span><small>누르면 닫힌다</small></div>`)
       return
     }
     root.insertAdjacentHTML('beforeend', `<div class="bview" data-act="bust-close" role="dialog" aria-label="장수 그림 크게"><img alt=""><small>누르면 닫힌다</small></div>`)
@@ -8468,7 +8469,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (h !== undefined && h.faction === me() && h.status === 'free' && !isRuler(realm!, h.id) && voiceGate(performance.now())) ding(voicePath(h, 'tap', false), 0.9)
         openSheet({ kind: 'hero', id: d['id']! }); return
       }
-      case 'bust-view': openBust(d['src']!, d['loop']); return
+      case 'bust-view': openBust(d['src']!, d['loop'], d['elem']); return
       case 'bust-close': root.querySelector('.bview')?.remove(); return
       case 'assign':
         heroOrders = [...heroOrders, { kind: 'assign', hero: d['id']!, node: d['node'] ? d['node'] : null }]

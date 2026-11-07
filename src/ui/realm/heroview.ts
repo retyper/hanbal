@@ -186,9 +186,9 @@ export const HERO_CSS = `
 .ap .bview .vfull video.vloop { display: block; width: 100%; height: 100%; max-width: none; max-height: none; border: 0; border-radius: 0; box-shadow: none; }
 .ap .vthumb { position: relative; display: inline-block; max-width: 100%; }
 .ap .hcard .vthumb video.big.vloop { width: 150px; height: auto; border: 0; border-radius: 0; display: block; }
-/* 720×1280 영상에서 표식 중심은 (600, 1160), 폭은 48px. 64px 문장을 같은 중심에 얹는다. */
-.ap .vmark { position: absolute; right: 16.6667%; bottom: 9.375%; transform: translate(50%, 50%); width: 8.8889%; aspect-ratio: 1;
-  background: url(__ART__logo/veo-emblem.png) center / contain no-repeat; filter: drop-shadow(0 1px 2px #0009); pointer-events: none; z-index: 5; }
+/* 720×1280 영상의 표식 중심 (600, 1160)에 육각 보석의 중심을 맞춘다. */
+.ap .vmark { position: absolute; right: 16.6667%; bottom: 9.375%; transform: translate(50%, 50%); width: 10%; aspect-ratio: 1;
+  background-position: center; background-size: contain; background-repeat: no-repeat; filter: drop-shadow(0 1px 2px #0009); pointer-events: none; z-index: 5; }
 /* 장수 판의 「진각성」 칸 — 잠긴 진각성 초상 + 조건 셋(켜지면 금빛 ✓) · 누르면 진각성 영상 미리 보기 (형 11-05) */
 .ap .twc { display: flex; align-items: center; gap: 10px; width: 100%; margin: 8px 0 4px; padding: 6px 10px 6px 6px; border-radius: 12px; background: #17120c; border: 1px solid #5a4a2a; color: #e8dcc0; text-align: left; cursor: pointer; transition: transform .08s; }
 .ap .twc:active { transform: scale(.97); }

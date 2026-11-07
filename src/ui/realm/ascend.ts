@@ -36,6 +36,12 @@ export const ELEM: Readonly<Record<Elem, ElemInfo>> = {
   earth: { name: '땅', beast: 'bear', beastName: '곰', c: ['#3a2006', '#a86a1a', '#f0c060', '#fff4d6'], sfx: 'cmd_rocks', cry: 'ax_bear' },
 }
 
+/** 영상에 얹는 보석은 각성 때 솟는 짐승과 같은 기운을 쓴다. */
+export function awakeningGemHtml(elem: string | undefined, art: string): string {
+  if (elem === undefined || !Object.hasOwn(ELEM, elem)) return ''
+  return `<i class="vmark" style="background-image:url('${art}fx/awaken/gem-${elem}.png')" aria-hidden="true"></i>`
+}
+
 /** 판마다 같은 흩어짐 (꾸밈이라 판의 시드와 상관없다) */
 const jit = (i: number, k: number, s: number): number => ((i * 73 + k * 151 + s * 37) % 101) / 101
 

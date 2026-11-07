@@ -9,6 +9,7 @@ import { DEX_AWOKE, DEX_CAUGHT, DEX_HEARD, DEX_MET, DEX_SERVED, dexCatalog, dexC
 import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
 import { noteKids } from '../../realm/data/art.ts'
 import { josa } from '../../realm/data/prose.ts'
+import { elemOf } from '../../realm/elem.ts'
 import type { Hero, Realm, RegionId } from '../../realm/types.ts'
 import { heroRadar, nameHtml, traitChips } from './heroview.ts'
 
@@ -174,7 +175,7 @@ function detail(k: DexKit, x: DexHero, f: number): string {
   const src = awakeAll ? aw : k.bust(x.id)
   // 각성 보기에 고리 영상이 있으면 숨 쉬는 초상 (형 11-05 · 저사양·동작 줄이기에선 첫 장면에 멈춘다)
   const loop = awakeAll && aw !== null ? k.awakeLoop?.(x.id) ?? null : null
-  const big = loop !== null ? `<video class="dxbig dxloop${loop.endsWith('.sq.mp4') ? ' sq' : ''}" src="${loop}" poster="${aw}" autoplay muted loop playsinline preload="auto" data-act="bust-view" data-src="${aw}" data-loop="${loop}"></video>` : `<img class="dxbig" src="${src}" alt="" data-act="bust-view" data-src="${src}">`
+  const big = loop !== null ? `<video class="dxbig dxloop${loop.endsWith('.sq.mp4') ? ' sq' : ''}" src="${loop}" poster="${aw}" autoplay muted loop playsinline preload="auto" data-act="bust-view" data-src="${aw}" data-loop="${loop}" data-elem="${elemOf(x.hero)}"></video>` : `<img class="dxbig" src="${src}" alt="" data-act="bust-view" data-src="${src}">`
   h += `<div class="dxtop">${lv > 0 && src !== null ? big : '<span class="dxbig none">?</span>'}<div>`
   h += `<b class="dxname">${lv > 0 ? nameHtml(x.name) : '???'}</b>`
   h += `<span class="mute">${k.esc(whereHint(x))}</span>`
