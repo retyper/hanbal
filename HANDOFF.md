@@ -1,5 +1,7 @@
 # 삼한열전 Claude 인수인계 — 2026-11-08 KST
 
+공개 적용 확인: 에셋 릴리스 `719e3c18`, CI run42385431285 SUCCESS, 공개719e3c18ff와68파일 해시 일치(00:18KST). 자세한 증거는 `docs/realm/production/release-validation-20261108.md`.
+
 현재 기록이 과거 제작표·예약보다 우선한다. `master`, 원격 `retyper/hanbal`. 게임: https://retyper.github.io/hanbal/realm.html
 
 ## 제출 소유권과 한도

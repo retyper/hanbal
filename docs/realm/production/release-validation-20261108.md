@@ -13,3 +13,9 @@
 ## 배포 확인
 
 커밋·CI·공개 파일 해시 확인 결과는 아래 후속 기록에 덧붙인다. 이 로컬 검증만으로 공개 적용 완료라 주장하지 않는다.
+
+## 공개 적용 완료 — 2026-11-08 00:18 KST
+
+에셋 릴리스 커밋 `719e3c18ff4a556814997bd37ea700f6e607c37b`, GitHub Actions run `42385431285`는 서버 타입검사·전체 테스트·빌드·예산·Pages 배포 전부 SUCCESS다. 공개 version.txt=`719e3c18ff`, 교정 JPG66개와 채택 MP4 두 개 **총68파일 HTTP200·바이트/SHA256 일치**를 직접 확인했다. [검증 영수증](public-release-verification-20261108.json). 기존 사용자 변경2개도 작업 전 해시와 일치한다.
+
+이후 문서 전용 커밋은 에셋 릴리스를 바꾸지 않는다. raw PNG33/ZIP은 로컬 보존본이며 GitHub에 올라간 것은 정규 JPG·채택 MP4·검수/인수인계 기록이다. 공개 게임: https://retyper.github.io/hanbal/realm.html

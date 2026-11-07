@@ -1,0 +1,554 @@
+{
+  "verifiedAtKst": "2026-11-08T00:18:05.186764+09:00",
+  "assetReleaseCommit": "719e3c18",
+  "publicVersion": "719e3c18ff",
+  "count": 68,
+  "allMatched": true,
+  "userDirtPreserved": true,
+  "files": [
+    {
+      "path": "realm/bust-hd/g-24-wansan-onsan.jpg",
+      "status": 200,
+      "bytes": 157772,
+      "sha256": "c238534ef4671f9d2cc3f984b52a585fe8f41d3ab3d4465f8aa244edae553cf9",
+      "expectedSha256": "c238534ef4671f9d2cc3f984b52a585fe8f41d3ab3d4465f8aa244edae553cf9",
+      "matches": true
+    },
+    {
+      "path": "realm/bust/g-24-wansan-onsan.jpg",
+      "status": 200,
+      "bytes": 23633,
+      "sha256": "58e654e9cb1fcb69aaf451cc1014f29dc3e5d06bec3586b2270111f7b9400a04",
+      "expectedSha256": "58e654e9cb1fcb69aaf451cc1014f29dc3e5d06bec3586b2270111f7b9400a04",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-hd/w-101-garak-singwigan.jpg",
+      "status": 200,
+      "bytes": 317708,
+      "sha256": "798f3c64ae8dd028d6df70c4e49f5af193b24858a0024b3a427e95684678b1c2",
+      "expectedSha256": "798f3c64ae8dd028d6df70c4e49f5af193b24858a0024b3a427e95684678b1c2",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken/w-101-garak-singwigan.jpg",
+      "status": 200,
+      "bytes": 49102,
+      "sha256": "e50c0d5c7482ce8327652882daf6633f8d9fef36a75e46e64a3e4d71643dfed8",
+      "expectedSha256": "e50c0d5c7482ce8327652882daf6633f8d9fef36a75e46e64a3e4d71643dfed8",
+      "matches": true
+    },
+    {
+      "path": "realm/bust-hd/w-40-mujin-munui.jpg",
+      "status": 200,
+      "bytes": 238880,
+      "sha256": "b52521bce57eb1cb3f278156c0bdc2e7c9e23d92c8c33f595efd823548250fb9",
+      "expectedSha256": "b52521bce57eb1cb3f278156c0bdc2e7c9e23d92c8c33f595efd823548250fb9",
+      "matches": true
+    },
+    {
+      "path": "realm/bust/w-40-mujin-munui.jpg",
+      "status": 200,
+      "bytes": 40191,
+      "sha256": "7e559f8579a47f5e5db51b741c3bdc799d97b7aeb9e3e40cf395d4bfe9a2b31c",
+      "expectedSha256": "7e559f8579a47f5e5db51b741c3bdc799d97b7aeb9e3e40cf395d4bfe9a2b31c",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-hd/w-47-gosaburi-baram.jpg",
+      "status": 200,
+      "bytes": 270214,
+      "sha256": "f6f48452eb99006925dee16f99c1c5dcb84853d5a3d8889929c6a5c3fd142377",
+      "expectedSha256": "f6f48452eb99006925dee16f99c1c5dcb84853d5a3d8889929c6a5c3fd142377",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken/w-47-gosaburi-baram.jpg",
+      "status": 200,
+      "bytes": 42733,
+      "sha256": "83c7b5132bdd5a2e0a23632198a999f0cf9c2655ba27ab311765163bd02d41bd",
+      "expectedSha256": "83c7b5132bdd5a2e0a23632198a999f0cf9c2655ba27ab311765163bd02d41bd",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-hd/w-54-maga-dalli.jpg",
+      "status": 200,
+      "bytes": 276042,
+      "sha256": "b428601f85a8b80fdf3f47e97b07a05c7d9dcf2111dc121058be557be34b0c37",
+      "expectedSha256": "b428601f85a8b80fdf3f47e97b07a05c7d9dcf2111dc121058be557be34b0c37",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken/w-54-maga-dalli.jpg",
+      "status": 200,
+      "bytes": 39580,
+      "sha256": "ebb7ee7804db0853cca5684d1d17f20afc1a28e65e3218aec84fda90b486559c",
+      "expectedSha256": "ebb7ee7804db0853cca5684d1d17f20afc1a28e65e3218aec84fda90b486559c",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-hd/w-57-bullae-bakdal.jpg",
+      "status": 200,
+      "bytes": 266972,
+      "sha256": "1494d3aeb09baa047358d8ee881552f9c826f3464ef88b3d32364f60e84fc9c8",
+      "expectedSha256": "1494d3aeb09baa047358d8ee881552f9c826f3464ef88b3d32364f60e84fc9c8",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken/w-57-bullae-bakdal.jpg",
+      "status": 200,
+      "bytes": 39495,
+      "sha256": "43daf0ff6a3a94b1760b8354407448d2ce6b5ade438a6f46eff28d1a9cd0870c",
+      "expectedSha256": "43daf0ff6a3a94b1760b8354407448d2ce6b5ade438a6f46eff28d1a9cd0870c",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-hd/w-62-byeokjin-byeol.jpg",
+      "status": 200,
+      "bytes": 208782,
+      "sha256": "9236ae149a7192218826c76e63074082bf434d9dc03b69d9c75352da1d1358e2",
+      "expectedSha256": "9236ae149a7192218826c76e63074082bf434d9dc03b69d9c75352da1d1358e2",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken/w-62-byeokjin-byeol.jpg",
+      "status": 200,
+      "bytes": 35345,
+      "sha256": "2dcd69bf45e3cd786723ef80be70278c82a3995d79ab214c882f6684ea764433",
+      "expectedSha256": "2dcd69bf45e3cd786723ef80be70278c82a3995d79ab214c882f6684ea764433",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-hd/w-65-goguryeo-hwalmi.jpg",
+      "status": 200,
+      "bytes": 271667,
+      "sha256": "8d21860efbf51ca1dfdeb8e9e08796b2044a33abf26cb3700d49a1573ba30d76",
+      "expectedSha256": "8d21860efbf51ca1dfdeb8e9e08796b2044a33abf26cb3700d49a1573ba30d76",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken/w-65-goguryeo-hwalmi.jpg",
+      "status": 200,
+      "bytes": 39789,
+      "sha256": "8ae6a7fd88e6f387b0696692d34fea978872d3fcae044da5e9e4cbe2c3ab2352",
+      "expectedSha256": "8ae6a7fd88e6f387b0696692d34fea978872d3fcae044da5e9e4cbe2c3ab2352",
+      "matches": true
+    },
+    {
+      "path": "realm/bust-hd/w-65-goguryeo-hwalmi.jpg",
+      "status": 200,
+      "bytes": 159553,
+      "sha256": "a674b93cd5b68cc33f3237c90326ff205b7221f266381c8860804cb2ed7fa690",
+      "expectedSha256": "a674b93cd5b68cc33f3237c90326ff205b7221f266381c8860804cb2ed7fa690",
+      "matches": true
+    },
+    {
+      "path": "realm/bust/w-65-goguryeo-hwalmi.jpg",
+      "status": 200,
+      "bytes": 26837,
+      "sha256": "4b60330ce5033a7d9c8fd4265b4775eee89709b197dbd8a878828288d5fc1e53",
+      "expectedSha256": "4b60330ce5033a7d9c8fd4265b4775eee89709b197dbd8a878828288d5fc1e53",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-hd/w-66-saro-noeul.jpg",
+      "status": 200,
+      "bytes": 245279,
+      "sha256": "fc8ac80191f13db2f913a0e79ad56072660779b77c95f3f5f8c7645f2d8a115e",
+      "expectedSha256": "fc8ac80191f13db2f913a0e79ad56072660779b77c95f3f5f8c7645f2d8a115e",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken/w-66-saro-noeul.jpg",
+      "status": 200,
+      "bytes": 40903,
+      "sha256": "4f668ca2e27a73aa3e776cbf5fd71f804e012c102d4e046f43245ba32d946e65",
+      "expectedSha256": "4f668ca2e27a73aa3e776cbf5fd71f804e012c102d4e046f43245ba32d946e65",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-hd/w-74-balla-dokmudeom.jpg",
+      "status": 200,
+      "bytes": 241752,
+      "sha256": "a905069174ab1365b8ba3f37880cbc8e691bd90186a16e9694a28bcf8977986f",
+      "expectedSha256": "a905069174ab1365b8ba3f37880cbc8e691bd90186a16e9694a28bcf8977986f",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken/w-74-balla-dokmudeom.jpg",
+      "status": 200,
+      "bytes": 34384,
+      "sha256": "f37d191705c3b65782cbc617c7b63b944fa401724b10e2fe3c478936d85c2cce",
+      "expectedSha256": "f37d191705c3b65782cbc617c7b63b944fa401724b10e2fe3c478936d85c2cce",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-hd/w-78-wansan-wan.jpg",
+      "status": 200,
+      "bytes": 256991,
+      "sha256": "8343dcda9fe0a96555ef3d26a9e4d684b710ea2bd24b349913b8f5356261cf5a",
+      "expectedSha256": "8343dcda9fe0a96555ef3d26a9e4d684b710ea2bd24b349913b8f5356261cf5a",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken/w-78-wansan-wan.jpg",
+      "status": 200,
+      "bytes": 39381,
+      "sha256": "27a6cc1af9a6f42b2cc700e50917705fd14caad6a97958ffcf17c08de1a8e865",
+      "expectedSha256": "27a6cc1af9a6f42b2cc700e50917705fd14caad6a97958ffcf17c08de1a8e865",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-hd/w-80-usan-gangchi.jpg",
+      "status": 200,
+      "bytes": 276488,
+      "sha256": "90c5362755ea15cd52ba27e503d42aa292c180aa849fd06f0056f9ef3d5d143a",
+      "expectedSha256": "90c5362755ea15cd52ba27e503d42aa292c180aa849fd06f0056f9ef3d5d143a",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken/w-80-usan-gangchi.jpg",
+      "status": 200,
+      "bytes": 43336,
+      "sha256": "50932238b8a26a2de6b7756663432f892f2b767f84b009e1c8683be95ace767e",
+      "expectedSha256": "50932238b8a26a2de6b7756663432f892f2b767f84b009e1c8683be95ace767e",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-hd/w-82-ungcheon-gom.jpg",
+      "status": 200,
+      "bytes": 286651,
+      "sha256": "20d088be586ef5284978b32fa238c52b29a3030c6db004bfd7af808a9e4d3951",
+      "expectedSha256": "20d088be586ef5284978b32fa238c52b29a3030c6db004bfd7af808a9e4d3951",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken/w-82-ungcheon-gom.jpg",
+      "status": 200,
+      "bytes": 44124,
+      "sha256": "060e2bdee47aa1d91842afb95a54b6c3118b71b25d5e652360440075eb3bf459",
+      "expectedSha256": "060e2bdee47aa1d91842afb95a54b6c3118b71b25d5e652360440075eb3bf459",
+      "matches": true
+    },
+    {
+      "path": "realm/bust-hd/w-84-salhae-dallae.jpg",
+      "status": 200,
+      "bytes": 171977,
+      "sha256": "1b6dbe9b71824693413dd4c7d29e6c494c0e133da73e0a6e7f10134f818215c0",
+      "expectedSha256": "1b6dbe9b71824693413dd4c7d29e6c494c0e133da73e0a6e7f10134f818215c0",
+      "matches": true
+    },
+    {
+      "path": "realm/bust/w-84-salhae-dallae.jpg",
+      "status": 200,
+      "bytes": 25655,
+      "sha256": "e592a9196539989f65f370288712e9729915693313464cbc981d93ba0d7e607a",
+      "expectedSha256": "e592a9196539989f65f370288712e9729915693313464cbc981d93ba0d7e607a",
+      "matches": true
+    },
+    {
+      "path": "realm/bust-hd/w-90-saro-danbi.jpg",
+      "status": 200,
+      "bytes": 170029,
+      "sha256": "6c0fd728880c95768567b5a31b2994ceea64ca65266bf4897179dfe811f401e4",
+      "expectedSha256": "6c0fd728880c95768567b5a31b2994ceea64ca65266bf4897179dfe811f401e4",
+      "matches": true
+    },
+    {
+      "path": "realm/bust/w-90-saro-danbi.jpg",
+      "status": 200,
+      "bytes": 28342,
+      "sha256": "07e5ee71b7dd111d5f9b5e027f0e406a7893d36917a0f14884a27b05cbf084ef",
+      "expectedSha256": "07e5ee71b7dd111d5f9b5e027f0e406a7893d36917a0f14884a27b05cbf084ef",
+      "matches": true
+    },
+    {
+      "path": "realm/bust-hd/w-92-saro-dallae.jpg",
+      "status": 200,
+      "bytes": 197506,
+      "sha256": "61b0d73fbd7f1d3fa88efc5278e1d61cc4ed9741193608bdd6c81d7ff5199b82",
+      "expectedSha256": "61b0d73fbd7f1d3fa88efc5278e1d61cc4ed9741193608bdd6c81d7ff5199b82",
+      "matches": true
+    },
+    {
+      "path": "realm/bust/w-92-saro-dallae.jpg",
+      "status": 200,
+      "bytes": 29036,
+      "sha256": "0ed6beaf3fd238782b7de4d34c9f8ff43616c767e5292555d0a6530af82e9618",
+      "expectedSha256": "0ed6beaf3fd238782b7de4d34c9f8ff43616c767e5292555d0a6530af82e9618",
+      "matches": true
+    },
+    {
+      "path": "realm/bust-hd/w-97-goguryeo-mir.jpg",
+      "status": 200,
+      "bytes": 209347,
+      "sha256": "83ccce269a026ac5c378637dd367fcdc0f573ffb4bf6e67bfb16984835e2a4ed",
+      "expectedSha256": "83ccce269a026ac5c378637dd367fcdc0f573ffb4bf6e67bfb16984835e2a4ed",
+      "matches": true
+    },
+    {
+      "path": "realm/bust/w-97-goguryeo-mir.jpg",
+      "status": 200,
+      "bytes": 30639,
+      "sha256": "c2d96dfd6c47244e81484423b44c560c2097a708b433d2779e180c93c55533ca",
+      "expectedSha256": "c2d96dfd6c47244e81484423b44c560c2097a708b433d2779e180c93c55533ca",
+      "matches": true
+    },
+    {
+      "path": "realm/bust-hd/w-09-byeonhan-smith.jpg",
+      "status": 200,
+      "bytes": 179622,
+      "sha256": "d2bfb8fe34b74483c99bee120343cd689765e7a66ead0fc65b93934c57145815",
+      "expectedSha256": "d2bfb8fe34b74483c99bee120343cd689765e7a66ead0fc65b93934c57145815",
+      "matches": true
+    },
+    {
+      "path": "realm/bust/w-09-byeonhan-smith.jpg",
+      "status": 200,
+      "bytes": 26233,
+      "sha256": "e9453779f277a35bd017380c235c4113eb8baf47a184b5cdce29d3f2e7a5e011",
+      "expectedSha256": "e9453779f277a35bd017380c235c4113eb8baf47a184b5cdce29d3f2e7a5e011",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-hd/l-L6-jeonggyeon-moju.jpg",
+      "status": 200,
+      "bytes": 259999,
+      "sha256": "4eb5bb08362e77e50e4294c2f66b3f16f687ae2caec6442b9a3aa2cb6fea3d76",
+      "expectedSha256": "4eb5bb08362e77e50e4294c2f66b3f16f687ae2caec6442b9a3aa2cb6fea3d76",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken/l-L6-jeonggyeon-moju.jpg",
+      "status": 200,
+      "bytes": 43451,
+      "sha256": "a693fc652bebd615335a4edee3c1a1a2fc9c955f930cc8c207f37d0298b1b895",
+      "expectedSha256": "a693fc652bebd615335a4edee3c1a1a2fc9c955f930cc8c207f37d0298b1b895",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-hd/w-10-pirate-captain.jpg",
+      "status": 200,
+      "bytes": 311730,
+      "sha256": "e2bd23a29a73d662276e46d6b13d461a0a08574ca05cfd41977b2eeeee7d0668",
+      "expectedSha256": "e2bd23a29a73d662276e46d6b13d461a0a08574ca05cfd41977b2eeeee7d0668",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken/w-10-pirate-captain.jpg",
+      "status": 200,
+      "bytes": 51416,
+      "sha256": "27e06fa9858d289e62a26334ce71b0c9d3580021ac343477783b62816fe1ae89",
+      "expectedSha256": "27e06fa9858d289e62a26334ce71b0c9d3580021ac343477783b62816fe1ae89",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-hd/w-40-mujin-munui.jpg",
+      "status": 200,
+      "bytes": 307526,
+      "sha256": "3359af2f8286e1df6b4a45ba151c588eb49def046c4f402ca9da88f7f0a23402",
+      "expectedSha256": "3359af2f8286e1df6b4a45ba151c588eb49def046c4f402ca9da88f7f0a23402",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken/w-40-mujin-munui.jpg",
+      "status": 200,
+      "bytes": 51071,
+      "sha256": "ec711f155badbf1d56f9832aee4719fccbdad73a28cb0eda29913597bb26bbb3",
+      "expectedSha256": "ec711f155badbf1d56f9832aee4719fccbdad73a28cb0eda29913597bb26bbb3",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-hd/g-87-wae-chief.jpg",
+      "status": 200,
+      "bytes": 308454,
+      "sha256": "524276cd5addbb7aad44b9a54dabd2a7e69e460f8c0e294bcd229ed01cae408f",
+      "expectedSha256": "524276cd5addbb7aad44b9a54dabd2a7e69e460f8c0e294bcd229ed01cae408f",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken/g-87-wae-chief.jpg",
+      "status": 200,
+      "bytes": 42954,
+      "sha256": "7d2238f6ef45269ced781384e6976093c14ad91cb3664c491fca390b10e60908",
+      "expectedSha256": "7d2238f6ef45269ced781384e6976093c14ad91cb3664c491fca390b10e60908",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-hd/g-91-biryu-songyang.jpg",
+      "status": 200,
+      "bytes": 273001,
+      "sha256": "416f6bf133221fd0a38517b8fc1fb3e0a9d7bc694f7628bb94dae2f4c7430ab4",
+      "expectedSha256": "416f6bf133221fd0a38517b8fc1fb3e0a9d7bc694f7628bb94dae2f4c7430ab4",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken/g-91-biryu-songyang.jpg",
+      "status": 200,
+      "bytes": 38322,
+      "sha256": "3c60dab01ac7ab706f5cb7f94bbcf6ad4ef57487fa78efe155d52c344f5a2a7b",
+      "expectedSha256": "3c60dab01ac7ab706f5cb7f94bbcf6ad4ef57487fa78efe155d52c344f5a2a7b",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-hd/g-93-jomun-solgae.jpg",
+      "status": 200,
+      "bytes": 281189,
+      "sha256": "32d1f4aadf1f26bbcb38e2adb239761b3b5d323e67174a40b168d78ab1ec84bd",
+      "expectedSha256": "32d1f4aadf1f26bbcb38e2adb239761b3b5d323e67174a40b168d78ab1ec84bd",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken/g-93-jomun-solgae.jpg",
+      "status": 200,
+      "bytes": 42546,
+      "sha256": "aaf0b1417de3f341e3fb6d1ccb86acbc9fdb4b1540313b5f5a91e67e744f3f36",
+      "expectedSha256": "aaf0b1417de3f341e3fb6d1ccb86acbc9fdb4b1540313b5f5a91e67e744f3f36",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-hd/g-94-golpo-maenun.jpg",
+      "status": 200,
+      "bytes": 224327,
+      "sha256": "dbbfd4c3af6483f74b09e978e216fde49941ed53ab97a5a6e1d85a7eca4d44db",
+      "expectedSha256": "dbbfd4c3af6483f74b09e978e216fde49941ed53ab97a5a6e1d85a7eca4d44db",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken/g-94-golpo-maenun.jpg",
+      "status": 200,
+      "bytes": 30569,
+      "sha256": "af86c5392e66cf918f070a411b96cac4dfd10c92d0ef035565a1e27924e3c3c8",
+      "expectedSha256": "af86c5392e66cf918f070a411b96cac4dfd10c92d0ef035565a1e27924e3c3c8",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-hd/l-L3-heo-hwangok.jpg",
+      "status": 200,
+      "bytes": 329387,
+      "sha256": "d1677f18af9903990ed37b32faa2e52de12e15907e94c50e1c7b4c2377cfccb1",
+      "expectedSha256": "d1677f18af9903990ed37b32faa2e52de12e15907e94c50e1c7b4c2377cfccb1",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken/l-L3-heo-hwangok.jpg",
+      "status": 200,
+      "bytes": 50019,
+      "sha256": "6bdb025b03642f2f7741f9d0cc7c578a1d0c1216442e7a25fdc8df364e540665",
+      "expectedSha256": "6bdb025b03642f2f7741f9d0cc7c578a1d0c1216442e7a25fdc8df364e540665",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-hd/l-L4-bari-gongju.jpg",
+      "status": 200,
+      "bytes": 285085,
+      "sha256": "4db6c3741cb0baf8806c3e0b4d00c576be2c55424f6026eca0b9ca8e3653144b",
+      "expectedSha256": "4db6c3741cb0baf8806c3e0b4d00c576be2c55424f6026eca0b9ca8e3653144b",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken/l-L4-bari-gongju.jpg",
+      "status": 200,
+      "bytes": 46131,
+      "sha256": "fae9416735238fa00f076b446dbd5e8dc0237f9c5a0ec0f44c83362abfe6de02",
+      "expectedSha256": "fae9416735238fa00f076b446dbd5e8dc0237f9c5a0ec0f44c83362abfe6de02",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-hd/g-24-wansan-onsan.jpg",
+      "status": 200,
+      "bytes": 266879,
+      "sha256": "03960ef456897cd60c42316d6ebcabb2404f9f4484ca077543a6f95a05a601af",
+      "expectedSha256": "03960ef456897cd60c42316d6ebcabb2404f9f4484ca077543a6f95a05a601af",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken/g-24-wansan-onsan.jpg",
+      "status": 200,
+      "bytes": 39272,
+      "sha256": "dc3a4a391620cd780a8313545d9c86934591267d2a581197c8434adcce430613",
+      "expectedSha256": "dc3a4a391620cd780a8313545d9c86934591267d2a581197c8434adcce430613",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-hd/g-29-yeonna-myeongsol.jpg",
+      "status": 200,
+      "bytes": 207701,
+      "sha256": "e50c84449c9c4e2d90ec666d58536f0701c67df8183fc456d593fde21c5512f7",
+      "expectedSha256": "e50c84449c9c4e2d90ec666d58536f0701c67df8183fc456d593fde21c5512f7",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken/g-29-yeonna-myeongsol.jpg",
+      "status": 200,
+      "bytes": 35526,
+      "sha256": "9ac19ae59d8c965645b224fcde5214ce837f6cd9a6c9e19e4164cd6b9f5dade0",
+      "expectedSha256": "9ac19ae59d8c965645b224fcde5214ce837f6cd9a6c9e19e4164cd6b9f5dade0",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-hd/g-38-chopal-palmae.jpg",
+      "status": 200,
+      "bytes": 285531,
+      "sha256": "fd923865ec2f665d6d9dcf5e7237c7b5695e17270a14132c1c6d619b7f26a858",
+      "expectedSha256": "fd923865ec2f665d6d9dcf5e7237c7b5695e17270a14132c1c6d619b7f26a858",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken/g-38-chopal-palmae.jpg",
+      "status": 200,
+      "bytes": 41717,
+      "sha256": "c9e2cf1bd2090abcf17bf74e03bf733182d7a1774b94202986df03bcd6de2a2b",
+      "expectedSha256": "c9e2cf1bd2090abcf17bf74e03bf733182d7a1774b94202986df03bcd6de2a2b",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-hd/g-64-jumong.jpg",
+      "status": 200,
+      "bytes": 325403,
+      "sha256": "9c5b4dc6bb21a3cf0efa9d07abf80ed2c1053e092529766914ce3c2acf570ac1",
+      "expectedSha256": "9c5b4dc6bb21a3cf0efa9d07abf80ed2c1053e092529766914ce3c2acf570ac1",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken/g-64-jumong.jpg",
+      "status": 200,
+      "bytes": 46351,
+      "sha256": "3bb9e8ab04563445d5ec8c8d935e12dde9b514c1fefbd090b5b02525f3731ec0",
+      "expectedSha256": "3bb9e8ab04563445d5ec8c8d935e12dde9b514c1fefbd090b5b02525f3731ec0",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-hd/g-80-saro-guryema.jpg",
+      "status": 200,
+      "bytes": 265959,
+      "sha256": "311f5495605937618a909bbdc7380439c348517f95a1ea81422cb384c21c26bd",
+      "expectedSha256": "311f5495605937618a909bbdc7380439c348517f95a1ea81422cb384c21c26bd",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken/g-80-saro-guryema.jpg",
+      "status": 200,
+      "bytes": 42820,
+      "sha256": "a5819b23edc13139b37175c3cf2898c173f36164aeca1222e955f2ca6949b3d7",
+      "expectedSha256": "a5819b23edc13139b37175c3cf2898c173f36164aeca1222e955f2ca6949b3d7",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-loop/w-69-jeoga-eomni.mp4",
+      "status": 200,
+      "bytes": 6958718,
+      "sha256": "1cc902f881a3c734d03222ee19906d9440501f51415f60548b5cea9c0007a3ef",
+      "expectedSha256": "1cc902f881a3c734d03222ee19906d9440501f51415f60548b5cea9c0007a3ef",
+      "matches": true
+    },
+    {
+      "path": "realm/awaken-loop/w-67-buyeo-haedal.mp4",
+      "status": 200,
+      "bytes": 5436524,
+      "sha256": "14af9c922bc1417f59c866bcce31764e308bee27a3f738beb2380090bd83b5a9",
+      "expectedSha256": "14af9c922bc1417f59c866bcce31764e308bee27a3f738beb2380090bd83b5a9",
+      "matches": true
+    }
+  ]
+}
