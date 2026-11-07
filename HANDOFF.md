@@ -2,6 +2,7 @@
 
 - **Veo 소유는 Claude.** 다음 제출은 Jay(u/4) Gemini 동영상 한도가 풀리는 **11-08 03:54 KST 이후**. Codex veo-1 은 다시 켜지 않는다. 원장은 Windows Codex outputs/veo-production-queue.json · state.json ().
 - **다음 대상 (1명 1회 · 20~30대 여성 1차각성 · 사전 검수 먼저):** 빛나 w-25(bitna-t1.txt · 원본 SHA 대조) → 갯내 w-37 → 부들 w-32 → 무늬 w-40(교정 대기목록이라 원본 검수 뒤) → 독무덤 w-74(같음). 미제출 문안에 **카메라 눈맞춤**을 넣어 고친 뒤 claim→제출→submitted 기록. 9:16 은 UI 에서 직접 선택. 박달·활미는 HOLD, 물새·시내는 제공자 거절이라 다시 내지 않는다.
+- **11-08 03:58 새벽 Veo 점검 결과: 제출 0건.** 다음 차례 넷이 원장에서 모두 막혀 있다. 빛나 w-25 는 이전 시도가 있고 원본 그림이 바뀌어 재시도 승인 필요. 갯내 w-37·부들 w-32 는 9:16 가까운 구도에서 쌍단검·부들 이삭이 잘리는 구도 충돌(authorized false). 무늬 w-40·독무덤 w-74 는 원본 사전 검수 대기. 형이 이 중 무엇을 낼지(또는 다른 여장수) 정해 주면 그때 낸다. Jay u/4 한도는 풀렸을 것이나 UI 로 확인하지 않았다.
 - 챗지피티: 애플(hephaestosian)·Facts Gamble 모두 한도. **형 11-08: 무료 계정은 오후 6시쯤까지 없음 · roqkfeke12 는 결제 계정이라 쓰지 않는다.** 바다쇠 g-03 진각성만 받았고 마루 g-04 부터 남음(문안 Codex outputs/next-chatgpt-awakening-prompts.md · next-male-awakening-prompts-g05-g08.md).
 - 이번에 끝낸 것: 범발·활미 전투 20셀(SPRITE-BEOMBAL·HWALMI.md) · 마을 안 폰 UX(슬라이드 0) · 쇠비 목소리(옛 Leda 유지, 첫 대답만 새로) · 바다쇠 진각성 · 공유 하네스 스킬 6개(D:/codex-shared-config 커밋 1f818d1 · 푸시 안 함) · 도구 조사(RESOURCE-TOOLING-REVIEW.md 11-08 절).
 - 남은 것: 마을 바탕 새 그림(assets_src/realm/town/ground-field-v2.png 울타리 마을 · lot-field-v2.png 빈 터 한 칸) 을 판에 얹기 · 남자 장수 여덟 전용 녹음(주몽부터, AI 스튜디오 authuser=0) · 형께 물음 셋(TOWN.md 11-08 절 끝).
