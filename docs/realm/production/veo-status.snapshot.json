@@ -1,0 +1,338 @@
+{
+  "schemaVersion": 1,
+  "purpose": "read-only portable snapshot; never submit or claim from this file",
+  "capturedDateKst": "2026-11-07",
+  "sourceOfTruth": {
+    "owner": "Codex Windows",
+    "automation": "veo-1",
+    "nextCheckKst": "2026-11-07 17:54",
+    "liveQueueWindowsPath": "C:\\Users\\my\\Documents\\Codex\\2026-11-06\\windows-pc-claude-code-claude-code\\outputs\\veo-production-queue.json",
+    "liveStateWindowsPath": "C:\\Users\\my\\Documents\\Codex\\2026-11-06\\windows-pc-claude-code-claude-code\\outputs\\veo-production-state.json",
+    "liveQueueRepoPath": null
+  },
+  "counts": {
+    "active": 0,
+    "accepted": 2,
+    "held": 3,
+    "claims": 0
+  },
+  "legacyAttempt": {
+    "attemptId": "legacy-maehwa-t1-v1",
+    "portraitId": "w-03-goguryeo-archer",
+    "tier": "1",
+    "status": "held",
+    "reason": "blurred_bands_from_square_input",
+    "sourceSha256": "cdbb370fa4d50a281d18559b335f5ad86969a2121b56ddc7fcdd7d5e86d9c674"
+  },
+  "jobs": [
+    {
+      "jobId": "t1-maehwa-portrait-replacement",
+      "portraitId": "w-03-goguryeo-archer",
+      "tier": "1",
+      "status": "held",
+      "reason": "mid_clip_pose_discontinuity",
+      "sourcePath": "public/realm/awaken-hd/w-03-goguryeo-archer.jpg",
+      "sourceSha256": "6bd25e222780b5e918f214b88dee24636428e1c833b431842c55fe158b952f91",
+      "attemptId": "t1-maehwa-portrait-replacement:2"
+    },
+    {
+      "jobId": "t1-haesol-first",
+      "portraitId": "w-63-us-haesol",
+      "tier": "1",
+      "status": "accepted",
+      "reason": "visual_review_accepted_loop_and_audio_not_fully_verified",
+      "sourcePath": "public/realm/awaken-hd/w-63-us-haesol.jpg",
+      "sourceSha256": "3912def4d672b416aa5ba8b8f7343bb97d5ccb08204a402737155bea38665a78",
+      "attemptId": "t1-haesol-first:3"
+    },
+    {
+      "jobId": "t1-byeol-first",
+      "portraitId": "w-62-byeokjin-byeol",
+      "tier": "1",
+      "status": "accepted",
+      "reason": "visual_review_accepted_loop_and_audio_not_fully_verified",
+      "sourcePath": "public/realm/awaken-hd/w-62-byeokjin-byeol.jpg",
+      "sourceSha256": "b793b7bb89b5dde287028009cd05262a407f1690df684e7bbeffdf20af82ee49",
+      "attemptId": "t1-byeol-first:4"
+    },
+    {
+      "jobId": "t1-bitna-source-review",
+      "portraitId": "w-25-bihwa-priestess",
+      "tier": "1",
+      "status": "deferred",
+      "reason": "source_or_portrait_repair_required",
+      "sourcePath": "public/realm/awaken-hd/w-25-bihwa-priestess.jpg",
+      "sourceSha256": "230216f878827aeaa63f44fbae5971f074b4ee8cb2c3c0725c4d6588abda42fe",
+      "attemptId": null
+    },
+    {
+      "jobId": "t1-dalli-first",
+      "portraitId": "w-54-maga-dalli",
+      "tier": "1",
+      "status": "held",
+      "reason": "user_rejected_unnatural_motion",
+      "sourcePath": "public/realm/awaken-hd/w-54-maga-dalli.jpg",
+      "sourceSha256": "3754cb1216abaab8a5e81e070235512fc9ea2c550f1481cea5a5d949842deafd",
+      "attemptId": "t1-dalli-first:5"
+    },
+    {
+      "jobId": "t1-gaennae-first",
+      "portraitId": "w-37-michuhol-gaennae",
+      "tier": "1",
+      "status": "deferred",
+      "reason": "source_or_portrait_repair_required",
+      "sourcePath": "public/realm/awaken-hd/w-37-michuhol-gaennae.jpg",
+      "sourceSha256": "9caa76635cc1db712be12e5357ba79f1ef0614d98f4801ae54fd08de08f831ae",
+      "attemptId": null
+    },
+    {
+      "jobId": "t1-bulmae-first",
+      "portraitId": "w-38-sangdang-bulmae",
+      "tier": "1",
+      "status": "ready_in_live_queue",
+      "reason": "not_submitted",
+      "sourcePath": "public/realm/awaken-hd/w-38-sangdang-bulmae.jpg",
+      "sourceSha256": "d0807b25a0ceaf83f70b28413e86fd5ea1beb69297f5148f3bffa7590dbdcb04",
+      "attemptId": null
+    },
+    {
+      "jobId": "t1-budeul-first",
+      "portraitId": "w-32-golbeol-budeul",
+      "tier": "1",
+      "status": "deferred",
+      "reason": "source_or_portrait_repair_required",
+      "sourcePath": "public/realm/awaken-hd/w-32-golbeol-budeul.jpg",
+      "sourceSha256": "4c32eeefbcc8eb3e00115f25ef1b58cd23a644a7f3b4820b772b85419ebc7fb7",
+      "attemptId": null
+    },
+    {
+      "jobId": "t1-munui-first",
+      "portraitId": "w-40-mujin-munui",
+      "tier": "1",
+      "status": "deferred",
+      "reason": "source_or_portrait_repair_required",
+      "sourcePath": "public/realm/awaken-hd/w-40-mujin-munui.jpg",
+      "sourceSha256": "1caf71c361104855d00448925549f9a03e5fc3b1f092689b07b46fc150306799",
+      "attemptId": null
+    },
+    {
+      "jobId": "t1-sinae-first",
+      "portraitId": "w-61-iseo-sinae",
+      "tier": "1",
+      "status": "ready_in_live_queue",
+      "reason": "not_submitted",
+      "sourcePath": "public/realm/awaken-hd/w-61-iseo-sinae.jpg",
+      "sourceSha256": "b528241502e098efc76b1afe66c441e2bf36140e7aa4d3ee88cab52309a37897",
+      "attemptId": null
+    },
+    {
+      "jobId": "t1-dokmudeom-first",
+      "portraitId": "w-74-balla-dokmudeom",
+      "tier": "1",
+      "status": "deferred",
+      "reason": "source_or_portrait_repair_required",
+      "sourcePath": "public/realm/awaken-hd/w-74-balla-dokmudeom.jpg",
+      "sourceSha256": "b4f1883acb31d58818f98ba0d6fe2b2c6fc4be1dd2fc3075820fa297911509f6",
+      "attemptId": null
+    }
+  ],
+  "nextSafeQueue": [
+    {
+      "jobId": "t1-bulmae-first",
+      "portraitId": "w-38-sangdang-bulmae",
+      "promptPath": "docs/realm/production/veo-prompts/bulmae-t1.txt",
+      "sourcePath": "public/realm/awaken-hd/w-38-sangdang-bulmae.jpg",
+      "sourceSha256": "d0807b25a0ceaf83f70b28413e86fd5ea1beb69297f5148f3bffa7590dbdcb04"
+    },
+    {
+      "jobId": "t1-sinae-first",
+      "portraitId": "w-61-iseo-sinae",
+      "promptPath": "docs/realm/production/veo-prompts/sinae-t1.txt",
+      "sourcePath": "public/realm/awaken-hd/w-61-iseo-sinae.jpg",
+      "sourceSha256": "b528241502e098efc76b1afe66c441e2bf36140e7aa4d3ee88cab52309a37897"
+    }
+  ],
+  "portraitRepairs": {
+    "stage": "first-awakening",
+    "count": 25,
+    "releaseRule": "교정 결과를 실제 검수하고 승인 원본/해시를 갱신한 다음 개별 해제. 다운로드/체크박스만으로 자동 해제하지 않음.",
+    "items": [
+      {
+        "shortId": "g24",
+        "portraitId": "g-24-wansan-onsan",
+        "tier": "1",
+        "status": "deferred_until_reviewed_source",
+        "reason": "portrait_hand_or_weapon_repair_pending"
+      },
+      {
+        "shortId": "g29",
+        "portraitId": "g-29-yeonna-myeongsol",
+        "tier": "1",
+        "status": "deferred_until_reviewed_source",
+        "reason": "portrait_hand_or_weapon_repair_pending"
+      },
+      {
+        "shortId": "g38",
+        "portraitId": "g-38-chopal-palmae",
+        "tier": "1",
+        "status": "deferred_until_reviewed_source",
+        "reason": "portrait_hand_or_weapon_repair_pending"
+      },
+      {
+        "shortId": "g64",
+        "portraitId": "g-64-jumong",
+        "tier": "1",
+        "status": "deferred_until_reviewed_source",
+        "reason": "portrait_hand_or_weapon_repair_pending"
+      },
+      {
+        "shortId": "g80",
+        "portraitId": "g-80-saro-guryema",
+        "tier": "1",
+        "status": "deferred_until_reviewed_source",
+        "reason": "portrait_hand_or_weapon_repair_pending"
+      },
+      {
+        "shortId": "g87",
+        "portraitId": "g-87-wae-chief",
+        "tier": "1",
+        "status": "deferred_until_reviewed_source",
+        "reason": "portrait_hand_or_weapon_repair_pending"
+      },
+      {
+        "shortId": "g91",
+        "portraitId": "g-91-biryu-songyang",
+        "tier": "1",
+        "status": "deferred_until_reviewed_source",
+        "reason": "portrait_hand_or_weapon_repair_pending"
+      },
+      {
+        "shortId": "g93",
+        "portraitId": "g-93-jomun-solgae",
+        "tier": "1",
+        "status": "deferred_until_reviewed_source",
+        "reason": "portrait_hand_or_weapon_repair_pending"
+      },
+      {
+        "shortId": "g94",
+        "portraitId": "g-94-golpo-maenun",
+        "tier": "1",
+        "status": "deferred_until_reviewed_source",
+        "reason": "portrait_hand_or_weapon_repair_pending"
+      },
+      {
+        "shortId": "l3",
+        "portraitId": "l-L3-heo-hwangok",
+        "tier": "1",
+        "status": "deferred_until_reviewed_source",
+        "reason": "portrait_hand_or_weapon_repair_pending"
+      },
+      {
+        "shortId": "l4",
+        "portraitId": "l-L4-bari-gongju",
+        "tier": "1",
+        "status": "deferred_until_reviewed_source",
+        "reason": "portrait_hand_or_weapon_repair_pending"
+      },
+      {
+        "shortId": "l6",
+        "portraitId": "l-L6-jeonggyeon-moju",
+        "tier": "1",
+        "status": "deferred_until_reviewed_source",
+        "reason": "portrait_hand_or_weapon_repair_pending"
+      },
+      {
+        "shortId": "w10",
+        "portraitId": "w-10-pirate-captain",
+        "tier": "1",
+        "status": "deferred_until_reviewed_source",
+        "reason": "portrait_hand_or_weapon_repair_pending"
+      },
+      {
+        "shortId": "w40",
+        "portraitId": "w-40-mujin-munui",
+        "tier": "1",
+        "status": "deferred_until_reviewed_source",
+        "reason": "portrait_hand_or_weapon_repair_pending"
+      },
+      {
+        "shortId": "w47",
+        "portraitId": "w-47-gosaburi-baram",
+        "tier": "1",
+        "status": "deferred_until_reviewed_source",
+        "reason": "portrait_hand_or_weapon_repair_pending"
+      },
+      {
+        "shortId": "w54",
+        "portraitId": "w-54-maga-dalli",
+        "tier": "1",
+        "status": "deferred_until_reviewed_source",
+        "reason": "portrait_hand_or_weapon_repair_pending"
+      },
+      {
+        "shortId": "w57",
+        "portraitId": "w-57-bullae-bakdal",
+        "tier": "1",
+        "status": "deferred_until_reviewed_source",
+        "reason": "portrait_hand_or_weapon_repair_pending"
+      },
+      {
+        "shortId": "w62",
+        "portraitId": "w-62-byeokjin-byeol",
+        "tier": "1",
+        "status": "deferred_until_reviewed_source",
+        "reason": "portrait_hand_or_weapon_repair_pending"
+      },
+      {
+        "shortId": "w65",
+        "portraitId": "w-65-goguryeo-hwalmi",
+        "tier": "1",
+        "status": "deferred_until_reviewed_source",
+        "reason": "portrait_hand_or_weapon_repair_pending"
+      },
+      {
+        "shortId": "w66",
+        "portraitId": "w-66-saro-noeul",
+        "tier": "1",
+        "status": "deferred_until_reviewed_source",
+        "reason": "portrait_hand_or_weapon_repair_pending"
+      },
+      {
+        "shortId": "w74",
+        "portraitId": "w-74-balla-dokmudeom",
+        "tier": "1",
+        "status": "deferred_until_reviewed_source",
+        "reason": "portrait_hand_or_weapon_repair_pending"
+      },
+      {
+        "shortId": "w78",
+        "portraitId": "w-78-wansan-wan",
+        "tier": "1",
+        "status": "deferred_until_reviewed_source",
+        "reason": "portrait_hand_or_weapon_repair_pending"
+      },
+      {
+        "shortId": "w80",
+        "portraitId": "w-80-usan-gangchi",
+        "tier": "1",
+        "status": "deferred_until_reviewed_source",
+        "reason": "portrait_hand_or_weapon_repair_pending"
+      },
+      {
+        "shortId": "w82",
+        "portraitId": "w-82-ungcheon-gom",
+        "tier": "1",
+        "status": "deferred_until_reviewed_source",
+        "reason": "portrait_hand_or_weapon_repair_pending"
+      },
+      {
+        "shortId": "w101",
+        "portraitId": "w-101-garak-singwigan",
+        "tier": "1",
+        "status": "deferred_until_reviewed_source",
+        "reason": "portrait_hand_or_weapon_repair_pending"
+      }
+    ]
+  },
+  "handoffRule": "Observe live owner, queue, state, claims, Gemini pending chats, and file hashes. Explicitly transfer ownership before another agent submits. Never treat this snapshot as the live queue."
+}

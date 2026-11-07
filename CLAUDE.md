@@ -6,6 +6,7 @@
 
 ## 먼저 읽을 것
 
+- **`HANDOFF.md`** — Claude/Codex 공통 최신 상태·현재 실행 소유자·검수/배포·다음 행동. 제작은 `docs/realm/production/README.md`, Steam은 `docs/realm/STEAM-RELEASE.md`. 과거 진행표의 오래된 예약/한도를 그대로 재실행하지 않는다.
 - **`docs/realm/README.md`** — 새 게임의 설계 묶음. 무엇을(VISION) · 어디서(WORLD) · 어떻게(SYSTEMS · BATTLE · SNIPE) · 짓기(BUILD).
 - `docs/GDD.md` — 기존 신궁(활터)의 설계. 2장의 **빨간 바 계약**은 새 게임의 저격에서도 그대로 산다. 1장 C1~C6(공부 곁의 제약)은 새 게임에 걸리지 않는다.
 - `docs/ARCHITECTURE.md` — 기술 정관. **어떻게 만드는가**. A1 결정론이 가장 중요하다.
