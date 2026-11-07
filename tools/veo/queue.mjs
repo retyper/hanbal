@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /** Local-only Veo submission ledger. Paths are relative to the invoking cwd.
- * node tools/veo/queue.mjs status|peek|claim|submitted|downloaded|review [jobId]
+ * node tools/veo/queue.mjs status|peek|claim|submitted|downloaded|review|cooldown [jobId]
  * --queue outputs/veo-production-queue.json --state outputs/veo-production-state.json
  * Never removes stale claims/locks, retries submissions, or operates a browser.
  */
@@ -21,7 +21,7 @@ function parse(args) {
   for (let i = 0; i < args.length; i++) {
     if (!args[i].startsWith('--')) { pos.push(args[i]); continue }
     const key = args[i].slice(2)
-    check(['queue', 'state', 'chat', 'file', 'verdict', 'note', 'account'].includes(key), `Unknown option: --${key}`)
+    check(['queue', 'state', 'chat', 'file', 'verdict', 'note', 'account', 'until'].includes(key), `Unknown option: --${key}`)
     check(!Object.hasOwn(opts, key) && args[i + 1] && !args[i + 1].startsWith('--'), `Missing/duplicate --${key}`)
     opts[key] = args[++i]
   }
@@ -56,6 +56,7 @@ function loadState(path) {
   }
   for (const [jobId, id] of Object.entries(s.claims)) check(s.attempts.some(a => a.id === id && a.jobId === jobId && !terminal.has(a.status)), `Orphan claim: ${jobId}`)
   for (const until of Object.values(s.accountCooldown)) check(typeof until === 'string' && Number.isFinite(Date.parse(until)), 'Unknown cooldown; manual reconciliation required')
+  check(s.accountCooldownObservations === undefined || Array.isArray(s.accountCooldownObservations), 'Unknown cooldown observations; manual reconciliation required')
   return s
 }
 function fingerprints(job, attempt) {
@@ -90,7 +91,7 @@ function atomicSave(path, state) {
 }
 export function run(args) {
   const { opts, command, jobId } = parse(args)
-  check(['status', 'peek', 'claim', 'submitted', 'downloaded', 'review'].includes(command), `Unknown command: ${command}`)
+  check(['status', 'peek', 'claim', 'submitted', 'downloaded', 'review', 'cooldown'].includes(command), `Unknown command: ${command}`)
   const queuePath = resolve(opts.queue ?? 'outputs/veo-production-queue.json')
   const statePath = resolve(opts.state ?? 'outputs/veo-production-state.json')
   check(queuePath !== statePath, 'Queue and state paths must differ')
@@ -103,6 +104,20 @@ export function run(args) {
       catch (e) { if (e.code === 'EEXIST') throw new Error(`Ledger locked: ${lockPath}; reconcile manually, never auto-unlock`); throw e }
     }
     const jobs = loadQueue(queuePath); const state = loadState(statePath)
+    if (command === 'cooldown') {
+      check(jobId === undefined, 'cooldown does not accept a jobId')
+      check(typeof opts.account === 'string' && /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,79}$/.test(opts.account), 'Valid --account required')
+      check(typeof opts.until === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(opts.until)
+        && Number.isFinite(Date.parse(opts.until)) && Date.parse(opts.until) > Date.now(), 'Future ISO --until required')
+      check(typeof opts.note === 'string' && opts.note.trim().length > 0, '--note required')
+      const until = new Date(opts.until).toISOString()
+      const observation = { accountId: opts.account, until, note: opts.note.trim(), observedAt: new Date().toISOString() }
+      state.accountCooldown[opts.account] = until
+      state.accountCooldownObservations ??= []
+      state.accountCooldownObservations.push(observation)
+      atomicSave(statePath, state)
+      return { cooldown: observation }
+    }
     if (command === 'status') {
       const counts = Object.fromEntries([...phases].map(phase => [phase, state.attempts.filter(a => a.status === phase).length]))
       const active = state.attempts.filter(a => !terminal.has(a.status)).map(a => ({

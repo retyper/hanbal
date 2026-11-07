@@ -226,6 +226,10 @@ export const AWAKEN_LOOP_SQ: ReadonlySet<string> = new Set<string>(['w-35-jomun-
 export const loopFile = (id: string): string => `awaken-loop/${id}${AWAKEN_LOOP_SQ.has(id) ? '.sq' : ''}.mp4`
 
 export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
+  'w-01-silla-princess', // 11-07 고은 · 부채 든 손 교정본 · 기존 세로 영상 회수
+  'w-19-buyeo-fur-princess', // 11-07 가온 · 수정꽃을 바라보며 호흡
+  'w-62-byeokjin-byeol', // 11-07 별 · 쇠를 살피는 연속 동작
+  'w-63-us-haesol', // 11-07 해솔 · 소나무 가지에 축복
   'g-13-baekje-general', // 11-05 오간 — 옛 튜토리얼 각성 장수 (11-05 저녁부터 튜토리얼 각성은 말갈기 · 그 영상은 다음 Veo 첫 차례)
   'l-L2-soseono', // 11-05 1장 소서노 · v2: 숨 따라 가슴·옷이 오르내린다 (형: "개쩐다")
   'w-95-michuhol-haebi', // 11-05 해비 — 튜토리얼 · 정사각 판으로 다시 · 굿판 뒤 숨 고르기로 한 단계 더 세게 (형: "해비 더 세게")

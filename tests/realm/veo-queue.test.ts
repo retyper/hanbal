@@ -25,6 +25,45 @@ function fixture() {
   return { dir, job, queue, state, saveQueue, call, read, cleanup: () => rmSync(dir, { recursive: true, force: true }) }
 }
 
+it('Veo CLI records an observed account cooldown and blocks peek/claim without disturbing attempts', () => {
+  const f = fixture()
+  try {
+    const until = new Date(Date.now() + 3_600_000).toISOString()
+    const result = f.call('cooldown', '--account', 'jay-u4', '--until', until, '--note', 'Gemini UI observed quota')
+    assert.equal(result.code, 0)
+    assert.equal(result.data.cooldown.until, until)
+    assert.equal(f.call('status').data.accountCooldown['jay-u4'], until)
+    const peek = f.call('peek', '--account', 'jay-u4')
+    assert.equal(peek.data.job, null)
+    assert.match(peek.data.blocked[0].reason, /Account cooldown/)
+    assert.match(f.call('claim', f.job.id, '--account', 'jay-u4').error, /Account cooldown/)
+    assert.equal(f.call('claim', f.job.id, '--account', 'other-account').code, 0)
+    const before = f.read()
+    assert.equal(f.call('cooldown', '--account', 'jay-u4', '--until', until, '--note', 'UI rechecked').code, 0)
+    assert.deepEqual(f.read().attempts, before.attempts)
+    assert.deepEqual(f.read().claims, before.claims)
+    assert.equal(f.read().accountCooldownObservations.length, 2)
+  } finally { f.cleanup() }
+})
+
+it('Veo CLI rejects invalid cooldown arguments without mutating the ledger', () => {
+  const f = fixture()
+  try {
+    f.call('claim', f.job.id)
+    const before = readFileSync(f.state, 'utf8')
+    const future = new Date(Date.now() + 3_600_000).toISOString()
+    for (const until of ['tomorrow', '2000-01-01T00:00:00Z', '2999-01-01']) {
+      assert.match(f.call('cooldown', '--account', 'jay-u4', '--until', until, '--note', 'observed').error, /Future ISO/)
+      assert.equal(readFileSync(f.state, 'utf8'), before)
+    }
+    assert.equal(f.call('cooldown', '--account', '__proto__', '--until', future, '--note', 'observed').code, 1)
+    assert.equal(f.call('cooldown', '--account', 'jay-u4', '--until', future, '--note', ' ').code, 1)
+    assert.equal(f.call('cooldown', f.job.id, '--account', 'jay-u4', '--until', future, '--note', 'observed').code, 1)
+    assert.equal(readFileSync(f.state, 'utf8'), before)
+    assert.equal(existsSync(`${f.state}.lock`), false)
+  } finally { f.cleanup() }
+})
+
 it('Veo CLI completes a locally recorded lifecycle and blocks repeat/replacement without explicit provenance', () => {
   const f = fixture()
   try {
