@@ -1,0 +1,10 @@
+{
+  "status": "complete",
+  "appliedPortraits": 33,
+  "retainedOriginal": [
+    "base/g43"
+  ],
+  "remainingRepairTasks": [],
+  "historicalCatalog": "portrait-repair-catalog-original-20261107.json",
+  "note": "Video-specific hand/weapon/framing preflight remains separate; no automatic regeneration."
+}

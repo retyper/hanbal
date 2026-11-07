@@ -1,0 +1,922 @@
+{
+  "purpose": "Historical repair instructions for replaced sources; not an active generation queue. New poses must not be reverted from these old prompts.",
+  "catalog": [
+    {
+      "shortId": "g24",
+      "portraitId": "g-24-wansan-onsan",
+      "stage": "base",
+      "sourcePath": "public/realm/bust-hd/g-24-wansan-onsan.jpg",
+      "name": "온산",
+      "originalPrompt": "Create a square 1:1 image. Semi-realistic painterly game character portrait, upper-body bust framed from just above the head down to the solar plexus (mid-chest), both shoulders and upper arms visible, facing the viewer slightly turned. Plain very dark slate-blue studio background (#1c2129) with a soft warm glow behind the head, dramatic soft rim light, high detail, like a premium Korean historical strategy game hero card. Subject: Onsan, the gentle young chieftain of Wansan in ancient Korea, about 28, handsome refined face, long straight black hair falling loose with a thin blue cord, a pale blue hemp jeogori, a strand of blue glass beads. Pose: playing a short bamboo flute (danso) held to his lips, eyes closed, a few strands of hair lifted by the wind. No scenery, no text, no watermark, no sun symbol, no Japanese or Chinese style clothing, no Chinese hairpins or court robes.",
+      "originalProvenance": "Exact head + descriptor + tail in public/_tmp/busts20.json, key g-24-wansan-onsan",
+      "observations": "긴 검은 머리와 푸른 끈, 연청색 삼베옷, 푸른 구슬, 눈 감고 입술에 단소를 댄 구도. 두 손이 단소 구멍 위에서 겹치며 손가락 경계가 복잡함.",
+      "issueKo": "단소를 잡은 손가락 수가 비정상적이라는 사용자 지적. 가려진 손가락은 억지로 드러내지 말고 실제 보이는 수와 연결만 바로잡아야 함.",
+      "repairPrompt": "Edit image 1, the supplied original portrait, as a localized repair. Preserve the same person and face, apparent age, expression, hair, costume, body shape, pose, camera, square framing, dark slate-blue background, warm rim light and semi-realistic painterly Korean historical game-card finish. Do not redesign, awaken, glamorize, increase exposure, add equipment, or change the outfit. Keep all unaffected pixels and details as close to image 1 as possible. Repair only the hands on the short bamboo flute. Trace each existing wrist into one anatomically continuous hand with one thumb and four fingers; remove any duplicate or detached digit. Let fingers naturally overlap and hide behind the flute rather than spreading them all toward the camera. Preserve the existing relaxed playing grip, flute length, mouth contact and finger-hole placement. Do not move the face or flute or change his closed eyes.",
+      "checklist": [
+        "양손 각각 손목에서 이어지는 엄지 1개·나머지 손가락 최대 4개",
+        "가려진 손가락을 억지로 펼치지 않음",
+        "단소가 입술과 손가락 구멍에 자연스럽게 닿음",
+        "얼굴·의상·배경·구도 유지"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "101909a4d65044b686036373d961bc00a84f9c65b1c695c7beadef281b28525e",
+      "newAppliedCanonicalSha256": "c238534ef4671f9d2cc3f984b52a585fe8f41d3ab3d4465f8aa244edae553cf9"
+    },
+    {
+      "shortId": "g43",
+      "portraitId": "g-43-hwanna-amnok",
+      "stage": "base",
+      "sourcePath": "public/realm/bust-hd/g-43-hwanna-amnok.jpg",
+      "name": "압록",
+      "originalPrompt": null,
+      "originalProvenance": "Exact base-stage creation prompt not found in public/_tmp/busts20.json or busts27.json. Focused search of matching portrait IDs in Claude JSONL found cast/asset references and awakening-stage prompt tables, not the base-stage prompt; those were not substituted. Identity cross-checked against the original image and docs/realm/cast where available.",
+      "observations": "젊은 뱃사공 압록의 맑은 미소, 물기 있는 상투와 머리띠, 청록 점무늬 옷, 어깨 밧줄, 대나무 삿대. 같은 시리즈 g41~g48 중 얼굴과 피부가 유독 매끈한 애니메이션풍.",
+      "issueKo": "타 초상 대비 피부·얼굴·옷의 렌더링이 만화풍으로 튀는 그림체 불일치.",
+      "repairPrompt": "Edit image 1, the supplied original portrait, as a localized repair. Preserve the same person and face, apparent age, expression, hair, costume, body shape, pose, camera, square framing, dark slate-blue background, warm rim light and semi-realistic painterly Korean historical game-card finish. Do not redesign, awaken, glamorize, increase exposure, add equipment, or change the outfit. Keep all unaffected pixels and details as close to image 1 as possible. Image 2 is only a STYLE REFERENCE for the established series finish: natural facial planes and skin texture, subtly imperfect painterly brushwork, fabric and rope material detail, and restrained warm rim light. Re-render image 1 in that finish while preserving the identity and exact facial proportions of image 1 only. Keep his teal dotted robe, wet topknot and headband, coiled rope and upright bamboo pole from image 1. Do not borrow image 2’s person, age, facial features, hair, fur, animal, clothing, props or pose. Reduce the anime-smooth facial rendering without making him older, harsher or a different man.",
+      "styleReferencePath": "D:\\flutter\\arrow_game_one\\public\\realm\\bust-hd\\g-47-guga-sanyanggae.jpg",
+      "checklist": [
+        "압록 얼굴·나이·미소·머리띠 유지",
+        "청록 점무늬 옷·밧줄·삿대 유지",
+        "g47의 사실적 붓질·재질감만 참조",
+        "g47 인물·늑대·털옷이 유입되지 않음"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-retained-original"
+    },
+    {
+      "shortId": "w9",
+      "portraitId": "w-09-byeonhan-smith",
+      "stage": "base",
+      "sourcePath": "public/realm/bust-hd/w-09-byeonhan-smith.jpg",
+      "name": "단비",
+      "originalPrompt": "Create a square 1:1 image. Semi-realistic painterly game character portrait, upper-body bust framed from just above the head down to the solar plexus (mid-chest), both shoulders and upper arms visible, facing the viewer slightly turned. Plain very dark slate-blue studio background (#1c2129) with a soft warm glow behind the head, dramatic soft rim light, high detail, like a premium Korean historical strategy game hero card. Subject: Danbi, a cheerful smith and farm woman wanderer of Byeonhan in ancient Korea, mid-twenties, pretty with soft freckles, a smudge of soot on her cheek and a tipsy crooked grin, black hair in a loose bun with stray strands, a sleeveless cream hemp top under a battered leather smith's apron, leather gloves, a small gourd of rice wine hanging from her belt, holding iron tongs over her shoulder. No scenery, no text, no watermark, no sun symbol, no Japanese or Chinese style clothing, no Chinese hairpins or court robes.",
+      "originalProvenance": "Exact head + descriptor + tail in public/_tmp/busts27.json, key w-09-byeonhan-smith",
+      "observations": "주근깨와 그을음, 비뚤어진 밝은 웃음, 헐거운 상투, 민소매 상의와 낡은 가죽 앞치마, 어깨의 집게, 허리 술병. 화면 왼쪽 집게 쥔 장갑의 마디가 뭉쳐 손가락이 과다하게 읽힘.",
+      "issueKo": "집게를 쥔 가죽장갑 손이 여섯 손가락처럼 보임.",
+      "repairPrompt": "Edit image 1, the supplied original portrait, as a localized repair. Preserve the same person and face, apparent age, expression, hair, costume, body shape, pose, camera, square framing, dark slate-blue background, warm rim light and semi-realistic painterly Korean historical game-card finish. Do not redesign, awaken, glamorize, increase exposure, add equipment, or change the outfit. Keep all unaffected pixels and details as close to image 1 as possible. Repair only the thick leather glove gripping the iron tongs over her shoulder, on image-left. Give that single gloved hand one anatomically placed thumb and four fingers at most. The bulky glove may hide some fingers under others or behind the iron handle; do not fan out five visible fingers plus a thumb. Each visible finger must emerge from the same palm and curl around the existing tongs handle. Keep the tongs resting on the same shoulder and preserve the other glove, freckles, soot, grin, apron and gourds exactly.",
+      "checklist": [
+        "집게 쥔 장갑 한 손·엄지 1개와 손가락 4개 이하",
+        "집게 손잡이 파지 유지",
+        "다른 손·집게·술병·복장 변화 없음",
+        "얼굴·웃음·주근깨 유지"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "59402eba635ad68c673ff525497f507055989aa042247a2b0ddfd81b91f62070",
+      "newAppliedCanonicalSha256": "d2bfb8fe34b74483c99bee120343cd689765e7a66ead0fc65b93934c57145815"
+    },
+    {
+      "shortId": "w40",
+      "portraitId": "w-40-mujin-munui",
+      "stage": "base",
+      "sourcePath": "public/realm/bust-hd/w-40-mujin-munui.jpg",
+      "name": "무늬",
+      "originalPrompt": null,
+      "originalProvenance": "Exact base-stage creation prompt not found in public/_tmp/busts20.json or busts27.json. Focused search of matching portrait IDs in Claude JSONL found cast/asset references and awakening-stage prompt tables, not the base-stage prompt; those were not substituted. Identity cross-checked against the original image and docs/realm/cast where available.",
+      "observations": "두 팔의 푸른 소용돌이 문신, 깃털과 구슬 머리장식, 흰 천과 오색 띠, 양손 방울 다발. 화면 오른쪽 위로 치켜든 손의 엄지 위치가 새끼손가락 쪽으로 뒤집혀 보임.",
+      "issueKo": "올린 손의 엄지·새끼손가락 방향이 팔의 실제 좌우 해부학과 맞지 않음.",
+      "repairPrompt": "Edit image 1, the supplied original portrait, as a localized repair. Preserve the same person and face, apparent age, expression, hair, costume, body shape, pose, camera, square framing, dark slate-blue background, warm rim light and semi-realistic painterly Korean historical game-card finish. Do not redesign, awaken, glamorize, increase exposure, add equipment, or change the outfit. Keep all unaffected pixels and details as close to image 1 as possible. Repair only the raised hand near the upper-right bells. Follow its existing forearm and wrist anatomically into the palm; place the thumb on the correct inner side of that same hand and the little finger on the opposite outer edge. Do not mirror the entire arm or swap it with the lower arm. Let most fingers naturally curl around the bell cord and partially occlude one another; the exact visible count need not be five. Preserve both bell bunches, blue spiral tattoos, jewelry, colored streamers and dance gesture. No extra wrist, finger or hand.",
+      "checklist": [
+        "위로 든 손 엄지가 해당 팔의 안쪽에 위치",
+        "손목·팔·손바닥 연결과 방울 다발 파지",
+        "반대 손으로 바꾸거나 팔 전체 반전하지 않음",
+        "문신·오색 띠·얼굴·구도 유지"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "0d96432d519b3bf60d8e50ab85ecec87a5b8d5db4a1fce213a38053d3943f147",
+      "newAppliedCanonicalSha256": "b52521bce57eb1cb3f278156c0bdc2e7c9e23d92c8c33f595efd823548250fb9"
+    },
+    {
+      "shortId": "w65",
+      "portraitId": "w-65-goguryeo-hwalmi",
+      "stage": "base",
+      "sourcePath": "public/realm/bust-hd/w-65-goguryeo-hwalmi.jpg",
+      "name": "활미",
+      "originalPrompt": null,
+      "originalProvenance": "Exact base-stage creation prompt not found in public/_tmp/busts20.json or busts27.json. Focused search of matching portrait IDs in Claude JSONL found cast/asset references and awakening-stage prompt tables, not the base-stage prompt; those were not substituted. Identity cross-checked against the original image and docs/realm/cast where available.",
+      "observations": "붉은 머리띠와 깃털 둘, 흰 검은 점무늬 옷, 붉은 띠, 활을 세워 쥐고 화살을 옆에 든 쉬는 자세. 이마 가운데 붉은 점. 활 끝/시위와 화살깃·촉의 연결이 불완전하거나 뒤섞여 보임.",
+      "issueKo": "이마 점 삭제, 미완성 활과 화살 구조 교정. 현재는 만작이 아니라 쉬는 자세임.",
+      "repairPrompt": "Edit image 1, the supplied original portrait, as a localized repair. Preserve the same person and face, apparent age, expression, hair, costume, body shape, pose, camera, square framing, dark slate-blue background, warm rim light and semi-realistic painterly Korean historical game-card finish. Do not redesign, awaken, glamorize, increase exposure, add equipment, or change the outfit. Keep all unaffected pixels and details as close to image 1 as possible. Remove only the small red dot at the center of her forehead and reconstruct natural skin beneath it; preserve the red headband and cheek makeup. Repair the existing held bow and arrow as separate coherent objects. This is a RESTING upright-bow pose, not a drawn shot: the bow has a continuous recurved wooden stave and one relaxed string attached between its two actual limb tips (where tips are visible within the framing). The separate arrow has one continuous straight shaft, one pointed head at the front and fletching only at the nock/tail, with her existing hand grip preserved. No arrow floating through the bow, no extra arrow, no forced full draw. Make the smallest local adjustments to keep the existing crop and face.",
+      "checklist": [
+        "이마 중앙의 붉은 점만 제거",
+        "활 몸통과 시위가 보이는 양 끝에서 연속",
+        "쉬는 자세 유지, 불필요한 만작 포즈로 변경 없음",
+        "화살 촉은 앞·깃은 뒤 한 벌",
+        "깃털 머리장식·의상·표정 유지"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "0326794c64f963389e2d5300a2560896684390b95efb118f60d84a5468aa8b31",
+      "newAppliedCanonicalSha256": "a674b93cd5b68cc33f3237c90326ff205b7221f266381c8860804cb2ed7fa690"
+    },
+    {
+      "shortId": "w84",
+      "portraitId": "w-84-salhae-dallae",
+      "stage": "base",
+      "sourcePath": "public/realm/bust-hd/w-84-salhae-dallae.jpg",
+      "name": "달래",
+      "originalPrompt": "Create a square 1:1 image. Semi-realistic painterly game character portrait, upper-body bust framed from just above the head down to the solar plexus (mid-chest), both shoulders and upper arms visible, facing the viewer slightly turned. Plain very dark slate-blue studio background (#1c2129) with a soft warm glow behind the head, dramatic soft rim light, high detail, like a premium Korean historical strategy game hero card. Subject: Dallae, a sword-dancer wanderer of ancient Korea, mid-twenties, strikingly beautiful with confident teasing eyes and a slight smirk, a high black ponytail tied with a faded red cloth, a fitted dark-brown leather lamellar vest over a sleeveless hemp top, bronze bracers, slim athletic figure, holding two short bronze swords crossed low before her in a dancer's pose. No scenery, no text, no watermark, no sun symbol, no Japanese or Chinese style clothing, no Chinese hairpins or court robes.",
+      "originalProvenance": "Exact head + descriptor + tail in public/_tmp/busts20.json, key w-84-salhae-dallae",
+      "observations": "붉은 천으로 묶은 높은 포니테일, 갈색 가죽 미늘 갑옷과 청동 팔토시, 살짝 웃는 얼굴, 짧은 청동검 두 자루를 낮게 교차. 두 손과 검 손잡이·날밑 연결이 불명확함.",
+      "issueKo": "두 검의 파지가 어색하고 검 손잡이가 손에서 미끄러져 보임.",
+      "repairPrompt": "Edit image 1, the supplied original portrait, as a localized repair. Preserve the same person and face, apparent age, expression, hair, costume, body shape, pose, camera, square framing, dark slate-blue background, warm rim light and semi-realistic painterly Korean historical game-card finish. Do not redesign, awaken, glamorize, increase exposure, add equipment, or change the outfit. Keep all unaffected pixels and details as close to image 1 as possible. Repair only the two sword grips at the bottom of the portrait. Each of her two existing hands must wrap naturally around one distinct short sword handle, below its guard; each handle continues into exactly one blade. Keep the two bronze blades crossed low in the same dancer-like pose, with no blade entering a palm, no floating hilt, no extra fingers or swapped sword. Some fingers may be hidden behind the grips. Keep the original guard shapes, bronze bracers, leather lamellar vest, red hair tie and teasing expression.",
+      "checklist": [
+        "각 손이 각 검 손잡이 하나씩 쥠",
+        "날밑 아래 파지·손잡이와 날 연속",
+        "손바닥 관통/떠 있는 칼자루 없음",
+        "낮게 교차한 두 검·표정·복장 유지"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "78e244daf660ef7aacd62eb750203075ee9da8728bc017618a59fb15e5b38d0f",
+      "newAppliedCanonicalSha256": "1b6dbe9b71824693413dd4c7d29e6c494c0e133da73e0a6e7f10134f818215c0"
+    },
+    {
+      "shortId": "w90",
+      "portraitId": "w-90-saro-danbi",
+      "stage": "base",
+      "sourcePath": "public/realm/bust-hd/w-90-saro-danbi.jpg",
+      "name": "단비",
+      "originalPrompt": null,
+      "originalProvenance": "Exact base-stage creation prompt not found in public/_tmp/busts20.json or busts27.json. Focused search of matching portrait IDs in Claude JSONL found cast/asset references and awakening-stage prompt tables, not the base-stage prompt; those were not substituted. Identity cross-checked against the original image and docs/realm/cast where available.",
+      "observations": "흰 끈으로 높게 묶은 머리, 흰색/연녹색 옷, 집중한 표정, 화면 오른쪽의 활을 왼손으로 잡고 오른손은 화살 꼬리를 입가까지 당김. 현재 시위가 화살 끝과 손을 만나지 않고 얼굴 앞에서 따로 세로로 내려감.",
+      "issueKo": "만작 시위가 당기는 손·화살 꽁무니와 연결되지 않음.",
+      "repairPrompt": "Edit image 1, the supplied original portrait, as a localized repair. Preserve the same person and face, apparent age, expression, hair, costume, body shape, pose, camera, square framing, dark slate-blue background, warm rim light and semi-realistic painterly Korean historical game-card finish. Do not redesign, awaken, glamorize, increase exposure, add equipment, or change the outfit. Keep all unaffected pixels and details as close to image 1 as possible. Repair only the geometry of the already fully drawn bow, bowstring and nocked arrow. The bow remains in her outstretched left hand on image-right; her right draw hand stays near her cheek. A SINGLE taut bowstring must run as two visible straight segments: upper bow-tip to the exact nock at her draw fingers, then that same nock to the lower bow-tip. The arrow tail/nock seats exactly at that shared junction in her draw hand; the straight shaft runs forward toward screen-right and its metal head is only at the front. Remove the stray near-vertical string line that does not meet the nock. Keep facial features, intense expression, costume, quiver, hand positions, and the bow curvature as close to the original as possible. If a limb tip is beyond the crop, show the segment continuing logically to that tip without inventing another bow.",
+      "checklist": [
+        "시위 위 끝→당긴 손의 nock→아래 끝 두 선분이 한 점에서 만남",
+        "화살 nock가 그 접점, 촉은 전방",
+        "얼굴 앞 별도 떠 있는 세로줄 제거",
+        "당김 자세·얼굴·복장 유지"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "21e7c25b00321aa0f65d59f6102a7a38a363e7abbe9ebf31265ae988908a4d21",
+      "newAppliedCanonicalSha256": "6c0fd728880c95768567b5a31b2994ceea64ca65266bf4897179dfe811f401e4"
+    },
+    {
+      "shortId": "w92",
+      "portraitId": "w-92-saro-dallae",
+      "stage": "base",
+      "sourcePath": "public/realm/bust-hd/w-92-saro-dallae.jpg",
+      "name": "달래",
+      "originalPrompt": null,
+      "originalProvenance": "Exact base-stage creation prompt not found in public/_tmp/busts20.json or busts27.json. Focused search of matching portrait IDs in Claude JSONL found cast/asset references and awakening-stage prompt tables, not the base-stage prompt; those were not substituted. Identity cross-checked against the original image and docs/realm/cast where available.",
+      "observations": "검은 굵은 땋은 머리에 작은 들꽃, 잿빛 눈과 점, 털깃 붉은 옷과 한쪽 갑옷. 입가에 화살깃을 가볍게 댄 장난스러운 쉬는 자세. 입가 화살이 짧고 꺾여 연속된 몸통·촉이 보이지 않음.",
+      "issueKo": "깨문 화살이 너무 짧고 형태가 부러진 듯함.",
+      "repairPrompt": "Edit image 1, the supplied original portrait, as a localized repair. Preserve the same person and face, apparent age, expression, hair, costume, body shape, pose, camera, square framing, dark slate-blue background, warm rim light and semi-realistic painterly Korean historical game-card finish. Do not redesign, awaken, glamorize, increase exposure, add equipment, or change the outfit. Keep all unaffected pixels and details as close to image 1 as possible. Repair the one arrow she playfully touches to her lips. Keep the feathered NOCK/TAIL by her mouth as in the original character concept. Extend a single straight, unbroken shaft diagonally down-left through her existing fingers, long enough to read as a real complete arrow, ending in one small pointed metal head toward the lower-left within the existing square frame. Her fingers loosely hold the shaft, not the point. Fletching belongs only at the mouth-side tail; no feather at the head. Make the whole arrow visible rather than hiding a broken end behind a crop or hand. Keep the bow behind her, braid flowers, beauty mark, fur collar, red outfit, shoulder armor and amused expression unchanged. She is not drawing the bow.",
+      "checklist": [
+        "입술 쪽은 깃과 nock, 반대쪽은 촉",
+        "입가에서 손을 지나 촉까지 길고 곧은 한 화살대",
+        "잘린 끝을 크롭이나 손으로 숨기지 않음",
+        "활은 쉬는 자세·얼굴·복장 유지"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "574b98b252022e446116395a1fc6a17361dc3503e37851eacd17e57158011e62",
+      "newAppliedCanonicalSha256": "61b0d73fbd7f1d3fa88efc5278e1d61cc4ed9741193608bdd6c81d7ff5199b82"
+    },
+    {
+      "shortId": "w97",
+      "portraitId": "w-97-goguryeo-mir",
+      "stage": "base",
+      "sourcePath": "public/realm/bust-hd/w-97-goguryeo-mir.jpg",
+      "name": "미르",
+      "originalPrompt": null,
+      "originalProvenance": "Exact base-stage creation prompt not found in public/_tmp/busts20.json or busts27.json. Focused search of matching portrait IDs in Claude JSONL found cast/asset references and awakening-stage prompt tables, not the base-stage prompt; those were not substituted. Identity cross-checked against the original image and docs/realm/cast where available.",
+      "observations": "검은 머리띠와 높은 묶음머리, 남색 점무늬 옷과 붉은 깃, 갈색 가죽 팔토시, 등에 맥궁. 한 손에 기울여 든 화살의 앞쪽 금속 촉 가까이에도 깃 모양이 붙어 보임.",
+      "issueKo": "화살촉 쪽에 불필요한 깃이 있어 앞뒤 구조가 틀림.",
+      "repairPrompt": "Edit image 1, the supplied original portrait, as a localized repair. Preserve the same person and face, apparent age, expression, hair, costume, body shape, pose, camera, square framing, dark slate-blue background, warm rim light and semi-realistic painterly Korean historical game-card finish. Do not redesign, awaken, glamorize, increase exposure, add equipment, or change the outfit. Keep all unaffected pixels and details as close to image 1 as possible. Repair only the single arrow held beside her face. Keep the existing long straight shaft and relaxed finger pose. The rear tail/nock at the upper-left end may carry the fletching; the opposite forward end at the lower-right must terminate in a clean narrow pointed metal arrowhead with NO feathers, vanes or plumes beside that head. Remove only the erroneous extra feather-like forms at the arrowhead and restore continuous wood shaft underneath. Distinguish this held arrow from the separate feather on her head and the bow behind her shoulder; preserve those accessories unchanged. Keep the same face, slight smile, dark dotted blue clothing, red trim and background.",
+      "checklist": [
+        "손에 든 화살 한 대",
+        "뒤쪽 nock에만 깃, 앞쪽 촉에는 깃 없음",
+        "화살대가 손과 촉까지 끊기지 않음",
+        "머리 깃과 등에 맨 활은 유지"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "f8e2765e3a454b3a8fccdbdf5cee35891ab74a8ee606f10fc22f5ff987188787",
+      "newAppliedCanonicalSha256": "83ccce269a026ac5c378637dd367fcdc0f573ffb4bf6e67bfb16984835e2a4ed"
+    },
+    {
+      "shortId": "g24",
+      "portraitId": "g-24-wansan-onsan",
+      "name": "읍차 온산",
+      "observations": [
+        "실제 JPEG: 긴 검은 머리, 눈감고 옆으로 대금을 부는 자세, 남색·금색 복식과 금빛 소리 기운.",
+        "입 가까운 화면 오른쪽 손은 인물의 해부학적 왼손, 대금 끝 쪽 화면 왼쪽 손은 해부학적 오른손으로 읽힌다.",
+        "왼손의 겹친 손가락 실루엣에서 무명지의 독립된 관절/연결이 불명확하다. 가려진 손가락을 무조건 결손으로 세지 않고 사용자가 지적한 부위를 교정 대상으로 지정."
+      ],
+      "issueKo": "입 가까운 해부학적 왼손(화면 오른쪽)의 무명지/운지 구조 교정.",
+      "stage": "awaken",
+      "sourcePath": "public/realm/awaken-hd/g-24-wansan-onsan.jpg",
+      "originalPrompt": "This is an original character from my own Korean historical fantasy strategy game. The attached portrait is an AI-generated illustration of a fictional adult man in his mid-twenties, not a real person. Create a square 1:1 image of the SAME character in his awakened form, the moment he reaches his full power.\n\nIdentity: keep the exact same face, age, ethnicity, hairstyle, facial hair, body build and color palette, so he is instantly recognizable as the same hero.\n\nFraming: upper-body shot from just above the head to around the waist. The pose must be dynamic and asymmetric, not a frontal symmetrical bust: playing a long daegeum flute held out to the side, eyes closed, his waist-length black hair lifted by a wind that carries glowing ripples of sound. The face does not need to be centered, and one shoulder may turn away from the viewer. No open palm pushed toward the viewer.\n\nStyle: semi-realistic painterly splash art, the quality of a premium Korean MMORPG male class illustration, dramatic soft rim light, high detail. Plain very dark slate-blue studio background (#1c2129) with a stronger warm glow behind the shoulders. No scenery, landscape, buildings or sky.\n\nCostume (the main focus): a high-fashion warrior design, dashing and heroic, neither fully covered in armor nor bare. A strong, broad-shouldered silhouette true to his build: a pale indigo silk robe layered over white hemp, blue cords and beads woven through his long hair, a slim gilt-bronze belt with jade pendants, a sword hanging at his side. Gilt-bronze ornaments, small iron lamellar plates edged in gold, comma-shaped jade (gogok) beads, silk and fur. Ancient Korean Samhan / Three Kingdoms motifs, reimagined boldly and ornately. Confident, majestic, powerful.\n\nExpression: the same personality as the reference, but more intense and resolved, a fierce or serene inner fire in the eyes. The irises may glow faintly.\n\nPower: an aura of light rising like heat haze, with small individual sparks and light motes drawn one by one, not a single blob. If he holds a weapon, it gleams with the same light.\n\nDo NOT draw: a halo or disc behind the head, sun rays, any red circle or sun symbol, Japanese or Chinese style armor or clothing, ninja masks, katana, shuriken, horns, demonic features, any text, letters, banner, caption, watermark or frame.",
+      "originalProvenance": {
+        "path": "docs/realm/awaken-prompts-men.html",
+        "section": "const H: [g-24-wansan-onsan] + function prompt / agePhrase / tone",
+        "cardId": "g-24-wansan-onsan",
+        "status": "source_card_template_reconstructed; not independently verified against historical chat submission",
+        "sourcePriority": "current public/realm/awaken-hd JPEG wins when card text differs"
+      },
+      "repairPrompt": "Edit only the attached EXISTING FIRST-AWAKENING portrait, as a local anatomy/prop correction. This is not a new awakening, not a second awakening, not an evolution or stronger redesign. Treat the attached source image as authoritative wherever an older text description differs. Preserve exactly the recognizable face, apparent age, expression, gaze, hair, body build, costume silhouette/materials/patterns, jewelry, the existing aura colors and shapes, all existing animal-shaped magical effects if present, the dark background, light direction and painterly rendering. Keep the original square canvas, crop, camera angle, scale and distinctive body pose. Do not add or remove a character, weapon, animal or signature object. Change only the faulty hand/object contacts or bow/sling geometry described below. A tiny local wrist/forearm adjustment is allowed only if required for a physically possible grip; do not reposition the torso or replace the pose. Each human hand has one thumb and four fingers with coherent knuckles, joints and wrist attachment. Natural overlap/occlusion is welcome; do not spread every finger merely to show five. \n\nCorrect the flute hand nearest his mouth: his anatomical LEFT hand, on the RIGHT side of the image. Restore a believable ring finger and the full five-digit hand structure, letting a fingertip naturally overlap the flute or another finger. Keep the other hand at the farther end of the same flute. His fingers cover/rest near the same flute holes, wrists remain relaxed and the flute stays one unbroken instrument at his lips. Preserve the closed eyes, flowing long hair, gilt navy robe and golden sound ribbons; do not replace the flute with a sword or change the performance pose. Preserve correct regions rather than repainting them. No added text, labels, watermark, inset, arrows or comparison collage. Return one corrected portrait at the same stage and framing.",
+      "checklist": [
+        "1차 각성 원본과 얼굴·머리·복식·표정·기운 동일; 신규2차/강화진화 아님",
+        "원래 정사각 구도·크롭·인물 크기 유지; 다른 자세/소품으로 우회하지 않음",
+        "각 손 엄지1+네 손가락의 해부학적 구조, 자연 가림 허용·다섯 손가락 강제 펼침 금지",
+        "최종 원본/교정본을 직접 비교해 이상 부위 해결과 비대상 영역 보존 확인",
+        "왼손 무명지가 손바닥과 정상 연결; 두 손 모두 총 다섯 손가락 구조이며 가림 허용",
+        "대금 한 개·기존 운지 위치·입과 대금 접촉 유지"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "19c2c829ef7c0f1710dc015e88b51c9da892c6fced11fe7e6f63ceb2dad5bb9f",
+      "newAppliedCanonicalSha256": "03960ef456897cd60c42316d6ebcabb2404f9f4484ca077543a6f95a05a601af"
+    },
+    {
+      "shortId": "g29",
+      "portraitId": "g-29-yeonna-myeongsol",
+      "name": "우태 명솔",
+      "observations": [
+        "실제 JPEG: 털망토·남색 금장 갑옷의 중년 장수가 화면 왼쪽 아래에서 검자루를 쥔다. 죽간을 들고 수염을 쓰다듬는 그림이 아니다.",
+        "검을 쥔 화면 왼쪽 손은 팔/어깨 연결상 해부학적 오른손이다. 뭉친 주먹과 손가락 경계가 모호하며 사용자 지적은 여섯 손가락/잘못된 검 파지.",
+        "문서 카드의 죽간·수염 동작과 실제 소품이 불일치한다. 교정에는 현재 JPEG의 검을 우선한다."
+      ],
+      "issueKo": "검 쥔 오른손(화면 왼쪽)의 여섯 손가락 인상과 검자루 파지 교정. 과거 죽간 문안으로 되돌리지 않기.",
+      "stage": "awaken",
+      "sourcePath": "public/realm/awaken-hd/g-29-yeonna-myeongsol.jpg",
+      "originalPrompt": "This is an original character from my own Korean historical fantasy strategy game. The attached portrait is an AI-generated illustration of a fictional adult man in his fifties, not a real person. Create a square 1:1 image of the SAME character in his awakened form, the moment he reaches his full power.\n\nIdentity: keep the exact same face, age, ethnicity, hairstyle, facial hair, body build and color palette, so he is instantly recognizable as the same hero.\n\nFraming: upper-body shot from just above the head to around the waist. The pose must be dynamic and asymmetric, not a frontal symmetrical bust: peering over a half-opened bundle of bamboo slips held close to his face, one eyebrow raised in suspicion, the other hand stroking his long grey beard. The face does not need to be centered, and one shoulder may turn away from the viewer. No open palm pushed toward the viewer.\n\nStyle: semi-realistic painterly splash art, the quality of a premium Korean MMORPG male class illustration, dramatic soft rim light, high detail. Plain very dark slate-blue studio background (#1c2129) with a stronger warm glow behind the shoulders. No scenery, landscape, buildings or sky.\n\nCostume (the main focus): a high-fashion warrior design, dignified and commanding, neither fully covered in armor nor bare. A strong, broad-shouldered silhouette true to his build: a navy spotted silk durumagi with a thick fur collar, a black Goguryeo hat with pheasant feathers, a gilt-bronze belt with hanging ornaments. Gilt-bronze ornaments, small iron lamellar plates edged in gold, comma-shaped jade (gogok) beads, silk and fur. Ancient Korean Samhan / Three Kingdoms motifs, reimagined boldly and ornately. Confident, majestic, powerful.\n\nExpression: the same personality as the reference, but more intense and resolved, a fierce or serene inner fire in the eyes. The irises may glow faintly.\n\nPower: an aura of light rising like heat haze, with small individual sparks and light motes drawn one by one, not a single blob. If he holds a weapon, it gleams with the same light.\n\nDo NOT draw: a halo or disc behind the head, sun rays, any red circle or sun symbol, Japanese or Chinese style armor or clothing, ninja masks, katana, shuriken, horns, demonic features, any text, letters, banner, caption, watermark or frame.",
+      "originalProvenance": {
+        "path": "docs/realm/awaken-prompts-men.html",
+        "section": "const H: [g-29-yeonna-myeongsol] + function prompt / agePhrase / tone",
+        "cardId": "g-29-yeonna-myeongsol",
+        "status": "source_card_template_reconstructed; not independently verified against historical chat submission",
+        "sourcePriority": "current public/realm/awaken-hd JPEG wins when card text differs"
+      },
+      "repairPrompt": "Edit only the attached EXISTING FIRST-AWAKENING portrait, as a local anatomy/prop correction. This is not a new awakening, not a second awakening, not an evolution or stronger redesign. Treat the attached source image as authoritative wherever an older text description differs. Preserve exactly the recognizable face, apparent age, expression, gaze, hair, body build, costume silhouette/materials/patterns, jewelry, the existing aura colors and shapes, all existing animal-shaped magical effects if present, the dark background, light direction and painterly rendering. Keep the original square canvas, crop, camera angle, scale and distinctive body pose. Do not add or remove a character, weapon, animal or signature object. Change only the faulty hand/object contacts or bow/sling geometry described below. A tiny local wrist/forearm adjustment is allowed only if required for a physically possible grip; do not reposition the torso or replace the pose. Each human hand has one thumb and four fingers with coherent knuckles, joints and wrist attachment. Natural overlap/occlusion is welcome; do not spread every finger merely to show five. \n\nRepair only the sword-gripping fist low on the LEFT side of the image, his anatomical RIGHT hand. Make a single thumb opposing four curled fingers around the existing handle, with a clear but naturally occluded ring/little-finger structure. Remove the extra finger-like ridge; keep the hilt outside the palm and all fingers wrapped around the same solid handle. Preserve the actual sword, fur mantle, feathered cap, beard, navy-gold armor and confident pose. The archival text mentions bamboo slips and beard stroking: do not restore those obsolete props or gestures. Preserve correct regions rather than repainting them. No added text, labels, watermark, inset, arrows or comparison collage. Return one corrected portrait at the same stage and framing.",
+      "checklist": [
+        "1차 각성 원본과 얼굴·머리·복식·표정·기운 동일; 신규2차/강화진화 아님",
+        "원래 정사각 구도·크롭·인물 크기 유지; 다른 자세/소품으로 우회하지 않음",
+        "각 손 엄지1+네 손가락의 해부학적 구조, 자연 가림 허용·다섯 손가락 강제 펼침 금지",
+        "최종 원본/교정본을 직접 비교해 이상 부위 해결과 비대상 영역 보존 확인",
+        "오른손 엄지1+네 손가락, 여섯 번째 마디/손가락 없음",
+        "같은 검자루를 쥐고 검·금장·털망토 유지, 죽간 추가 금지"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "78a0760ca0a291f53ba77dd1d5a4083d186b6906919fd84c56a2cc1871973c07",
+      "newAppliedCanonicalSha256": "e50c84449c9c4e2d90ec666d58536f0701c67df8183fc456d593fde21c5512f7"
+    },
+    {
+      "shortId": "g38",
+      "portraitId": "g-38-chopal-palmae",
+      "name": "읍차 팔매",
+      "observations": [
+        "실제 JPEG: 머리 위의 화면 왼쪽 주먹으로 같은 갈색 꼰 가죽/밧줄 투석구를 쥐며, 오른쪽 위에 돌이 든 주머니가 보인다.",
+        "올린 화면 왼쪽 손은 해부학적 오른손으로 읽히며 손가락·끈·손목 감개 경계가 뭉쳐 있다.",
+        "원문은 braided leather sling, 현재 그림도 꼰 투석구. 채찍·사슬이나 활이 아니다."
+      ],
+      "issueKo": "투석줄 쥔 오른손(화면 왼쪽 위) 해부학 및 같은 투석구 두 줄의 연속 파지 교정.",
+      "stage": "awaken",
+      "sourcePath": "public/realm/awaken-hd/g-38-chopal-palmae.jpg",
+      "originalPrompt": "This is an original character from my own Korean historical fantasy strategy game. The attached portrait is an AI-generated illustration of a fictional adult man in his early thirties, not a real person. Create a square 1:1 image of the SAME character in his awakened form, the moment he reaches his full power.\n\nIdentity: keep the exact same face, age, ethnicity, hairstyle, facial hair, body build and color palette, so he is instantly recognizable as the same hero.\n\nFraming: upper-body shot from just above the head to around the waist. The pose must be dynamic and asymmetric, not a frontal symmetrical bust: whirling a braided leather sling overhead with a stone about to fly, body coiled to the side, cold narrowed eyes. The face does not need to be centered, and one shoulder may turn away from the viewer. No open palm pushed toward the viewer.\n\nStyle: semi-realistic painterly splash art, the quality of a premium Korean MMORPG male class illustration, dramatic soft rim light, high detail. Plain very dark slate-blue studio background (#1c2129) with a stronger warm glow behind the shoulders. No scenery, landscape, buildings or sky.\n\nCostume (the main focus): a high-fashion warrior design, powerful and battle-worn, neither fully covered in armor nor bare. A strong, broad-shouldered silhouette true to his build: a rough hemp tunic under a fitted leather vest with gilt-bronze buckles, a pouch of river stones at his hip, low-tied black hair, a short beard. Gilt-bronze ornaments, small iron lamellar plates edged in gold, comma-shaped jade (gogok) beads, silk and fur. Ancient Korean Samhan / Three Kingdoms motifs, reimagined boldly and ornately. Confident, majestic, powerful.\n\nExpression: the same personality as the reference, but more intense and resolved, a fierce or serene inner fire in the eyes. The irises may glow faintly.\n\nPower: an aura of light rising like heat haze, with small individual sparks and light motes drawn one by one, not a single blob. If he holds a weapon, it gleams with the same light.\n\nDo NOT draw: a halo or disc behind the head, sun rays, any red circle or sun symbol, Japanese or Chinese style armor or clothing, ninja masks, katana, shuriken, horns, demonic features, any text, letters, banner, caption, watermark or frame.",
+      "originalProvenance": {
+        "path": "docs/realm/awaken-prompts-men.html",
+        "section": "const H: [g-38-chopal-palmae] + function prompt / agePhrase / tone",
+        "cardId": "g-38-chopal-palmae",
+        "status": "source_card_template_reconstructed; not independently verified against historical chat submission",
+        "sourcePriority": "current public/realm/awaken-hd JPEG wins when card text differs"
+      },
+      "repairPrompt": "Edit only the attached EXISTING FIRST-AWAKENING portrait, as a local anatomy/prop correction. This is not a new awakening, not a second awakening, not an evolution or stronger redesign. Treat the attached source image as authoritative wherever an older text description differs. Preserve exactly the recognizable face, apparent age, expression, gaze, hair, body build, costume silhouette/materials/patterns, jewelry, the existing aura colors and shapes, all existing animal-shaped magical effects if present, the dark background, light direction and painterly rendering. Keep the original square canvas, crop, camera angle, scale and distinctive body pose. Do not add or remove a character, weapon, animal or signature object. Change only the faulty hand/object contacts or bow/sling geometry described below. A tiny local wrist/forearm adjustment is allowed only if required for a physically possible grip; do not reposition the torso or replace the pose. Each human hand has one thumb and four fingers with coherent knuckles, joints and wrist attachment. Natural overlap/occlusion is welcome; do not spread every finger merely to show five. \n\nRepair the raised anatomical RIGHT hand at the UPPER LEFT, keeping his overhead sling pose. Build one normal five-digit hand with four curled fingers and one opposing thumb. Preserve the SAME braided leather/rope sling, its existing stone pouch at the upper right and its single stone. Trace its two continuous cords from that pouch back to this same hand: a believable retention end secured to a finger and a release end controlled between thumb/index, with natural overlap. Remove merged flesh/rope shapes and impossible strands through fingers. Do not cut the rope, add an extra loop/pouch/stone, change it into a whip, or replace the bracer with skin. Preserve the fur/leather costume, facial expression, coiled torso and gold aura. Preserve correct regions rather than repainting them. No added text, labels, watermark, inset, arrows or comparison collage. Return one corrected portrait at the same stage and framing.",
+      "checklist": [
+        "1차 각성 원본과 얼굴·머리·복식·표정·기운 동일; 신규2차/강화진화 아님",
+        "원래 정사각 구도·크롭·인물 크기 유지; 다른 자세/소품으로 우회하지 않음",
+        "각 손 엄지1+네 손가락의 해부학적 구조, 자연 가림 허용·다섯 손가락 강제 펼침 금지",
+        "최종 원본/교정본을 직접 비교해 이상 부위 해결과 비대상 영역 보존 확인",
+        "오른손 다섯 손가락의 뼈대·손목 연결 자연스러움",
+        "기존 투석구 동일성: 돌주머니1+돌1+연속된 두 줄, 주먹에 정상 연결",
+        "손목 감개/투석줄/피부 분리; 끈이 손가락을 관통하지 않음"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "7e565b79b9fd0ebbe512a342ba46f99c6faa5d3bb59c056bcf3cfc644bda4840",
+      "newAppliedCanonicalSha256": "fd923865ec2f665d6d9dcf5e7237c7b5695e17270a14132c1c6d619b7f26a858"
+    },
+    {
+      "shortId": "g64",
+      "portraitId": "g-64-jumong",
+      "name": "주몽",
+      "observations": [
+        "실제 JPEG: 붉은 점무늬 옷·털깃·금장 갑옷·깃털 관모, 위로 겨눈 불꽃 화살.",
+        "화면 오른쪽 위 활을 쥔 손은 해부학적 왼손, 화면 왼쪽 얼굴 옆 당김손은 오른손.",
+        "시위가 가슴 앞을 불필요하게 가로지르며 실제 당김점과 활 끝 사이의 단일 연결을 읽기 어렵다."
+      ],
+      "issueKo": "주몽의 위로 겨눈 활시위를 실제 노크/오른손 당김점에 연결.",
+      "stage": "awaken",
+      "sourcePath": "public/realm/awaken-hd/g-64-jumong.jpg",
+      "originalPrompt": "This is an original character from my own Korean historical fantasy strategy game. The attached portrait is an AI-generated illustration of a fictional adult man in his early twenties, not a real person. Create a square 1:1 image of the SAME character in his awakened form, the moment he reaches his full power.\n\nIdentity: keep the exact same face, age, ethnicity, hairstyle, facial hair, body build and color palette, so he is instantly recognizable as the same hero.\n\nFraming: upper-body shot from just above the head to around the waist. The pose must be dynamic and asymmetric, not a frontal symmetrical bust: drawing his maekgung toward the sky in a sweeping upward arc, head thrown back, the arrow blazing like a falling star. The face does not need to be centered, and one shoulder may turn away from the viewer. No open palm pushed toward the viewer.\n\nStyle: semi-realistic painterly splash art, the quality of a premium Korean MMORPG male class illustration, dramatic soft rim light, high detail. Plain very dark slate-blue studio background (#1c2129) with a stronger warm glow behind the shoulders. No scenery, landscape, buildings or sky.\n\nCostume (the main focus): a high-fashion warrior design, dashing and heroic, neither fully covered in armor nor bare. A strong, broad-shouldered silhouette true to his build: a red spotted Goguryeo robe with a fur collar over gold-edged lamellar, a patterned hat with tall feathers, a gilt-bronze belt. Gilt-bronze ornaments, small iron lamellar plates edged in gold, comma-shaped jade (gogok) beads, silk and fur. Ancient Korean Samhan / Three Kingdoms motifs, reimagined boldly and ornately. Confident, majestic, powerful.\n\nExpression: the same personality as the reference, but more intense and resolved, a fierce or serene inner fire in the eyes. The irises may glow faintly.\n\nPower: an aura of light rising like heat haze, with small individual sparks and light motes drawn one by one, not a single blob. If he holds a weapon, it gleams with the same light.\n\nDo NOT draw: a halo or disc behind the head, sun rays, any red circle or sun symbol, Japanese or Chinese style armor or clothing, ninja masks, katana, shuriken, horns, demonic features, any text, letters, banner, caption, watermark or frame.",
+      "originalProvenance": {
+        "path": "docs/realm/awaken-prompts-men.html",
+        "section": "const H: [g-64-jumong] + function prompt / agePhrase / tone",
+        "cardId": "g-64-jumong",
+        "status": "source_card_template_reconstructed; not independently verified against historical chat submission",
+        "sourcePriority": "current public/realm/awaken-hd JPEG wins when card text differs"
+      },
+      "repairPrompt": "Edit only the attached EXISTING FIRST-AWAKENING portrait, as a local anatomy/prop correction. This is not a new awakening, not a second awakening, not an evolution or stronger redesign. Treat the attached source image as authoritative wherever an older text description differs. Preserve exactly the recognizable face, apparent age, expression, gaze, hair, body build, costume silhouette/materials/patterns, jewelry, the existing aura colors and shapes, all existing animal-shaped magical effects if present, the dark background, light direction and painterly rendering. Keep the original square canvas, crop, camera angle, scale and distinctive body pose. Do not add or remove a character, weapon, animal or signature object. Change only the faulty hand/object contacts or bow/sling geometry described below. A tiny local wrist/forearm adjustment is allowed only if required for a physically possible grip; do not reposition the torso or replace the pose. Each human hand has one thumb and four fingers with coherent knuckles, joints and wrist attachment. Natural overlap/occlusion is welcome; do not spread every finger merely to show five. \n\nRebuild ONE complete, coherent two-limbed bow with one continuous riser/grip; retain its original material, ornament, curvature and orientation. There is ONE physical bowstring, composed at this draw state of exactly two taut straight segments: tip A -> the arrow-nock/draw-hand anchor -> tip B. Both segments terminate at the actual bow tips, not at the grip, wrist, chest, arrow point or floating decoration. The arrow nock touches that same string anchor; a single straight shaft passes the bow grip/rest and ends in one arrowhead facing the original aim direction, with fletching beside the draw hand. Remove only erroneous duplicate/crossing strings and detached stubs; do not mistake aura trails or quiver arrows for extra bowstrings. Keep hand-to-grip and finger-to-string contact anatomically possible, with no shaft/string passing through skin. Where the source crop already hides a bow tip, continue the limb and string consistently beyond that same edge instead of inventing an in-frame floating endpoint or zooming out. For Jumong, preserve the upward aim, blazing star-like arrow and the red feathered royal-warrior silhouette. Anatomical LEFT hand holds the bow at upper RIGHT; anatomical RIGHT hand at LEFT beside the face anchors the arrow nock. Make both string segments meet exactly there, without extra diagonals across his chest. Keep the burning arrow effect and expression unchanged. Preserve correct regions rather than repainting them. No added text, labels, watermark, inset, arrows or comparison collage. Return one corrected portrait at the same stage and framing.",
+      "checklist": [
+        "1차 각성 원본과 얼굴·머리·복식·표정·기운 동일; 신규2차/강화진화 아님",
+        "원래 정사각 구도·크롭·인물 크기 유지; 다른 자세/소품으로 우회하지 않음",
+        "각 손 엄지1+네 손가락의 해부학적 구조, 자연 가림 허용·다섯 손가락 강제 펼침 금지",
+        "최종 원본/교정본을 직접 비교해 이상 부위 해결과 비대상 영역 보존 확인",
+        "위쪽 조준·불꽃화살 유지",
+        "tipA→오른손/화살노크 당김점→tipB 두 시위 구간이 같은 한 줄로 연결"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "a5f6225e815be2f347baf2144f23a428ca93f8d101b6395d59999bce6a8aa2e3",
+      "newAppliedCanonicalSha256": "9c5b4dc6bb21a3cf0efa9d07abf80ed2c1053e092529766914ce3c2acf570ac1"
+    },
+    {
+      "shortId": "g80",
+      "portraitId": "g-80-saro-guryema",
+      "name": "촌장 구례마",
+      "observations": [
+        "실제 JPEG: 늑대털 후드/망토, 어두운 금장 갑옷과 초록 곡옥, 허리 높이에서 비스듬히 든 활과 화살.",
+        "화면 오른쪽 아래 활 파지손은 해부학적 왼손, 화면 왼쪽 가슴 아래 화살깃 쪽은 오른손.",
+        "원문은 half-drawn이며 현재 저각의 준비 자세를 유지해야 한다. 시위는 아래쪽 한 가닥만 명확하고 활의 양쪽 가지 구조가 모호하다."
+      ],
+      "issueKo": "한쪽 시위만 보이는 활의 양쪽 가지/팁과 반당김 연결 완성.",
+      "stage": "awaken",
+      "sourcePath": "public/realm/awaken-hd/g-80-saro-guryema.jpg",
+      "originalPrompt": "This is an original character from my own Korean historical fantasy strategy game. The attached portrait is an AI-generated illustration of a fictional adult man in his early thirties, not a real person. Create a square 1:1 image of the SAME character in his awakened form, the moment he reaches his full power.\n\nIdentity: keep the exact same face, age, ethnicity, hairstyle, facial hair, body build and color palette, so he is instantly recognizable as the same hero.\n\nFraming: upper-body shot from just above the head to around the waist. The pose must be dynamic and asymmetric, not a frontal symmetrical bust: emerging from shadow with his bow half-drawn, only one side of his face lit, amber eyes glowing. The face does not need to be centered, and one shoulder may turn away from the viewer. No open palm pushed toward the viewer.\n\nStyle: semi-realistic painterly splash art, the quality of a premium Korean MMORPG male class illustration, dramatic soft rim light, high detail. Plain very dark slate-blue studio background (#1c2129) with a stronger warm glow behind the shoulders. No scenery, landscape, buildings or sky.\n\nCostume (the main focus): a high-fashion warrior design, powerful and battle-worn, neither fully covered in armor nor bare. A strong, broad-shouldered silhouette true to his build: a wolf-fur hood with feathers, a dark coat, leather bracers, a quiver on his back. Gilt-bronze ornaments, small iron lamellar plates edged in gold, comma-shaped jade (gogok) beads, silk and fur. Ancient Korean Samhan / Three Kingdoms motifs, reimagined boldly and ornately. Confident, majestic, powerful.\n\nExpression: the same personality as the reference, but more intense and resolved, a fierce or serene inner fire in the eyes. The irises may glow faintly.\n\nPower: an aura of light rising like heat haze, with small individual sparks and light motes drawn one by one, not a single blob. If he holds a weapon, it gleams with the same light.\n\nDo NOT draw: a halo or disc behind the head, sun rays, any red circle or sun symbol, Japanese or Chinese style armor or clothing, ninja masks, katana, shuriken, horns, demonic features, any text, letters, banner, caption, watermark or frame.",
+      "originalProvenance": {
+        "path": "docs/realm/awaken-prompts-men.html",
+        "section": "const H: [g-80-saro-guryema] + function prompt / agePhrase / tone",
+        "cardId": "g-80-saro-guryema",
+        "status": "source_card_template_reconstructed; not independently verified against historical chat submission",
+        "sourcePriority": "current public/realm/awaken-hd JPEG wins when card text differs"
+      },
+      "repairPrompt": "Edit only the attached EXISTING FIRST-AWAKENING portrait, as a local anatomy/prop correction. This is not a new awakening, not a second awakening, not an evolution or stronger redesign. Treat the attached source image as authoritative wherever an older text description differs. Preserve exactly the recognizable face, apparent age, expression, gaze, hair, body build, costume silhouette/materials/patterns, jewelry, the existing aura colors and shapes, all existing animal-shaped magical effects if present, the dark background, light direction and painterly rendering. Keep the original square canvas, crop, camera angle, scale and distinctive body pose. Do not add or remove a character, weapon, animal or signature object. Change only the faulty hand/object contacts or bow/sling geometry described below. A tiny local wrist/forearm adjustment is allowed only if required for a physically possible grip; do not reposition the torso or replace the pose. Each human hand has one thumb and four fingers with coherent knuckles, joints and wrist attachment. Natural overlap/occlusion is welcome; do not spread every finger merely to show five. \n\nRebuild ONE complete, coherent two-limbed bow with one continuous riser/grip; retain its original material, ornament, curvature and orientation. There is ONE physical bowstring, composed at this draw state of exactly two taut straight segments: tip A -> the arrow-nock/draw-hand anchor -> tip B. Both segments terminate at the actual bow tips, not at the grip, wrist, chest, arrow point or floating decoration. The arrow nock touches that same string anchor; a single straight shaft passes the bow grip/rest and ends in one arrowhead facing the original aim direction, with fletching beside the draw hand. Remove only erroneous duplicate/crossing strings and detached stubs; do not mistake aura trails or quiver arrows for extra bowstrings. Keep hand-to-grip and finger-to-string contact anatomically possible, with no shaft/string passing through skin. Where the source crop already hides a bow tip, continue the limb and string consistently beyond that same edge instead of inventing an in-frame floating endpoint or zooming out. For Guryema, keep the bow held LOW and diagonally across the lower foreground, the existing partial/half draw and the draw hand near his lower chest. Do not convert it to a face-level full draw. Anatomical LEFT hand remains at lower RIGHT on the grip; anatomical RIGHT at LEFT controls the same nock beside the feathers. Preserve the wolf-fur hood, amber gaze, quiver, jade ornaments and gold rim aura. Reconstruct both existing bow limbs coherently instead of leaving one decorative curved branch and one isolated string. Preserve correct regions rather than repainting them. No added text, labels, watermark, inset, arrows or comparison collage. Return one corrected portrait at the same stage and framing.",
+      "checklist": [
+        "1차 각성 원본과 얼굴·머리·복식·표정·기운 동일; 신규2차/강화진화 아님",
+        "원래 정사각 구도·크롭·인물 크기 유지; 다른 자세/소품으로 우회하지 않음",
+        "각 손 엄지1+네 손가락의 해부학적 구조, 자연 가림 허용·다섯 손가락 강제 펼침 금지",
+        "최종 원본/교정본을 직접 비교해 이상 부위 해결과 비대상 영역 보존 확인",
+        "낮은 반당김 자세 유지, 얼굴 옆 만작으로 변경 금지",
+        "활몸 양 가지·팁·시위 두 구간과 화살노크 정상 연결"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "cee86ea3e103ae40421862e65b8baeaac71b761bc7075138c57a86176ae19627",
+      "newAppliedCanonicalSha256": "311f5495605937618a909bbdc7380439c348517f95a1ea81422cb384c21c26bd"
+    },
+    {
+      "shortId": "g87",
+      "portraitId": "g-87-wae-chief",
+      "name": "왜인 우두머리",
+      "observations": [
+        "실제 JPEG: 비늘 문신·헝클어진 머리·이빨 목걸이·가죽/갑옷 복식, 머리 위로 넓은 직선 검을 양손으로 든 자세.",
+        "두 손은 화면 오른쪽 위 검자루에서 앞뒤로 겹친다. 교차한 팔 때문에 해부학적 좌우를 손 위치만으로 확정하지 않고 검날 쪽 앞손/자루끝 쪽 뒷손으로 지정한다.",
+        "각 손의 엄지/손가락 경계와 양손-손목의 독립된 연결이 모호하다."
+      ],
+      "issueKo": "머리 위 양손 검 파지 교정: 앞손/뒷손의 분리된 손목과 다섯 손가락 구조.",
+      "stage": "awaken",
+      "sourcePath": "public/realm/awaken-hd/g-87-wae-chief.jpg",
+      "originalPrompt": "This is an original character from my own Korean historical fantasy strategy game. The attached portrait is an AI-generated illustration of a fictional adult man in his late thirties, not a real person. Create a square 1:1 image of the SAME character in his awakened form, the moment he reaches his full power.\n\nIdentity: keep the exact same face, age, ethnicity, hairstyle, facial hair, body build and color palette, so he is instantly recognizable as the same hero.\n\nFraming: upper-body shot from just above the head to around the waist. The pose must be dynamic and asymmetric, not a frontal symmetrical bust: leaping in with his broad blade raised two-handed overhead, teeth bared in a savage grin. The face does not need to be centered, and one shoulder may turn away from the viewer. No open palm pushed toward the viewer.\n\nStyle: semi-realistic painterly splash art, the quality of a premium Korean MMORPG male class illustration, dramatic soft rim light, high detail. Plain very dark slate-blue studio background (#1c2129) with a stronger warm glow behind the shoulders. No scenery, landscape, buildings or sky.\n\nCostume (the main focus): a high-fashion warrior design, powerful and battle-worn, neither fully covered in armor nor bare. A strong, broad-shouldered silhouette true to his build: a sharkskin shoulder cape, fish-scale tattoos on his face and arms, a tooth necklace, rough leather straps. Gilt-bronze ornaments, small iron lamellar plates edged in gold, comma-shaped jade (gogok) beads, silk and fur. Ancient Korean Samhan / Three Kingdoms motifs, reimagined boldly and ornately. Confident, majestic, powerful.\n\nExpression: the same personality as the reference, but more intense and resolved, a fierce or serene inner fire in the eyes. The irises may glow faintly.\n\nPower: an aura of light rising like heat haze, with small individual sparks and light motes drawn one by one, not a single blob. If he holds a weapon, it gleams with the same light.\n\nDo NOT draw: a halo or disc behind the head, sun rays, any red circle or sun symbol, Japanese or Chinese style armor or clothing, ninja masks, katana, shuriken, horns, demonic features, any text, letters, banner, caption, watermark or frame.",
+      "originalProvenance": {
+        "path": "docs/realm/awaken-prompts-men.html",
+        "section": "const H: [g-87-wae-chief] + function prompt / agePhrase / tone",
+        "cardId": "g-87-wae-chief",
+        "status": "source_card_template_reconstructed; not independently verified against historical chat submission",
+        "sourcePriority": "current public/realm/awaken-hd JPEG wins when card text differs"
+      },
+      "repairPrompt": "Edit only the attached EXISTING FIRST-AWAKENING portrait, as a local anatomy/prop correction. This is not a new awakening, not a second awakening, not an evolution or stronger redesign. Treat the attached source image as authoritative wherever an older text description differs. Preserve exactly the recognizable face, apparent age, expression, gaze, hair, body build, costume silhouette/materials/patterns, jewelry, the existing aura colors and shapes, all existing animal-shaped magical effects if present, the dark background, light direction and painterly rendering. Keep the original square canvas, crop, camera angle, scale and distinctive body pose. Do not add or remove a character, weapon, animal or signature object. Change only the faulty hand/object contacts or bow/sling geometry described below. A tiny local wrist/forearm adjustment is allowed only if required for a physically possible grip; do not reposition the torso or replace the pose. Each human hand has one thumb and four fingers with coherent knuckles, joints and wrist attachment. Natural overlap/occlusion is welcome; do not spread every finger merely to show five. \n\nRepair BOTH hands around the single existing sword handle at the UPPER RIGHT. Refer to the blade-side leading hand and the pommel-side trailing hand, rather than guessing a mirrored anatomical left/right assignment from the crossed arms. Trace each hand to its own existing forearm; each has one opposing thumb and four naturally curled fingers. Separate fused knuckles and overlapping wrists while keeping a safe gap between the grips on the SAME straight handle. Tiny wrist adjustment only; keep the overhead two-handed strike, broad blade, snarl, scale tattoos, tooth necklace, costume and gold aura. Do not add a third hand or change the blade to a curved katana. Preserve correct regions rather than repainting them. No added text, labels, watermark, inset, arrows or comparison collage. Return one corrected portrait at the same stage and framing.",
+      "checklist": [
+        "1차 각성 원본과 얼굴·머리·복식·표정·기운 동일; 신규2차/강화진화 아님",
+        "원래 정사각 구도·크롭·인물 크기 유지; 다른 자세/소품으로 우회하지 않음",
+        "각 손 엄지1+네 손가락의 해부학적 구조, 자연 가림 허용·다섯 손가락 강제 펼침 금지",
+        "최종 원본/교정본을 직접 비교해 이상 부위 해결과 비대상 영역 보존 확인",
+        "앞손/뒷손 각각 한 팔·한 손목에 연결",
+        "각 손 엄지1+네 손가락, 칼자루 관통/합쳐진 손 없음",
+        "한 개의 기존 넓은 곧은 검·머리 위 양손 자세 유지"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "9dcd874c8a48cd3bc9e503fd05d7ef5c87e94c2404464b5bd9f2438e83678bf7",
+      "newAppliedCanonicalSha256": "524276cd5addbb7aad44b9a54dabd2a7e69e460f8c0e294bcd229ed01cae408f"
+    },
+    {
+      "shortId": "g91",
+      "portraitId": "g-91-biryu-songyang",
+      "name": "송양",
+      "observations": [
+        "실제 JPEG: 남색 금장 복식과 깃털 모자, 화면 오른쪽에 활을 지팡이처럼 세운 왕의 자세.",
+        "화면 오른쪽 활 파지손은 해부학적 왼손. 만작 중이 아니며 당김손·쏠 화살을 새로 만들면 안 된다.",
+        "활 위끝에서 아래로 내려오는 한 가닥 시위가 허리 부근에서 미완성처럼 끊긴다. 하부는 원래 캔버스 밖으로 이어진다."
+      ],
+      "issueKo": "송양의 세워 둔 활에 미완성 시위를 완전한 팁간 연결로 교정.",
+      "stage": "awaken",
+      "sourcePath": "public/realm/awaken-hd/g-91-biryu-songyang.jpg",
+      "originalPrompt": "This is an original character from my own Korean historical fantasy strategy game. The attached portrait is an AI-generated illustration of a fictional adult man in his fifties, not a real person. Create a square 1:1 image of the SAME character in his awakened form, the moment he reaches his full power.\n\nIdentity: keep the exact same face, age, ethnicity, hairstyle, facial hair, body build and color palette, so he is instantly recognizable as the same hero.\n\nFraming: upper-body shot from just above the head to around the waist. The pose must be dynamic and asymmetric, not a frontal symmetrical bust: holding his maekgung upright beside him like a scepter, chin lifted proudly, eyes cold. The face does not need to be centered, and one shoulder may turn away from the viewer. No open palm pushed toward the viewer.\n\nStyle: semi-realistic painterly splash art, the quality of a premium Korean MMORPG male class illustration, dramatic soft rim light, high detail. Plain very dark slate-blue studio background (#1c2129) with a stronger warm glow behind the shoulders. No scenery, landscape, buildings or sky.\n\nCostume (the main focus): a high-fashion warrior design, dignified and commanding, neither fully covered in armor nor bare. A strong, broad-shouldered silhouette true to his build: a spotted navy durumagi, a pointed feathered cap, gold belt pendants, a greying goatee. Gilt-bronze ornaments, small iron lamellar plates edged in gold, comma-shaped jade (gogok) beads, silk and fur. Ancient Korean Samhan / Three Kingdoms motifs, reimagined boldly and ornately. Confident, majestic, powerful.\n\nExpression: the same personality as the reference, but more intense and resolved, a fierce or serene inner fire in the eyes. The irises may glow faintly.\n\nPower: an aura of light rising like heat haze, with small individual sparks and light motes drawn one by one, not a single blob. If he holds a weapon, it gleams with the same light.\n\nDo NOT draw: a halo or disc behind the head, sun rays, any red circle or sun symbol, Japanese or Chinese style armor or clothing, ninja masks, katana, shuriken, horns, demonic features, any text, letters, banner, caption, watermark or frame.",
+      "originalProvenance": {
+        "path": "docs/realm/awaken-prompts-men.html",
+        "section": "const H: [g-91-biryu-songyang] + function prompt / agePhrase / tone",
+        "cardId": "g-91-biryu-songyang",
+        "status": "source_card_template_reconstructed; not independently verified against historical chat submission",
+        "sourcePriority": "current public/realm/awaken-hd JPEG wins when card text differs"
+      },
+      "repairPrompt": "Edit only the attached EXISTING FIRST-AWAKENING portrait, as a local anatomy/prop correction. This is not a new awakening, not a second awakening, not an evolution or stronger redesign. Treat the attached source image as authoritative wherever an older text description differs. Preserve exactly the recognizable face, apparent age, expression, gaze, hair, body build, costume silhouette/materials/patterns, jewelry, the existing aura colors and shapes, all existing animal-shaped magical effects if present, the dark background, light direction and painterly rendering. Keep the original square canvas, crop, camera angle, scale and distinctive body pose. Do not add or remove a character, weapon, animal or signature object. Change only the faulty hand/object contacts or bow/sling geometry described below. A tiny local wrist/forearm adjustment is allowed only if required for a physically possible grip; do not reposition the torso or replace the pose. Each human hand has one thumb and four fingers with coherent knuckles, joints and wrist attachment. Natural overlap/occlusion is welcome; do not spread every finger merely to show five. \n\nComplete ONE physically coherent two-limbed bow and one string connected to its two actual tips. This is the existing lowered/resting pose, so do not invent a full-draw gesture or move a hand to the face. At rest the single string is straight tip A -> the undrawn nocking point -> tip B (the two segments are collinear), not a dangling half-string. If the existing arrow is lightly nocked, its nock touches that point; preserve its existing aim and do not add another arrow. Preserve the bow ornament/curvature/grip and the original hand position. Keep hidden continuations consistent at the existing image edge, not floating within the image. For Songyang retain the upright scepter-like bow at image RIGHT in his anatomical LEFT hand, his raised chin and proud kingly expression. The upper tip is visible; continue its string to the actual lower tip, consistently beyond the existing lower crop if needed. The nocking point is undrawn, so the two conceptual string segments stay collinear. Do not add an arrow or a draw hand, and do not turn this portrait into an aiming pose. Preserve the pointed feathered cap, gilt navy armor/robe, fur and jade. Preserve correct regions rather than repainting them. No added text, labels, watermark, inset, arrows or comparison collage. Return one corrected portrait at the same stage and framing.",
+      "checklist": [
+        "1차 각성 원본과 얼굴·머리·복식·표정·기운 동일; 신규2차/강화진화 아님",
+        "원래 정사각 구도·크롭·인물 크기 유지; 다른 자세/소품으로 우회하지 않음",
+        "각 손 엄지1+네 손가락의 해부학적 구조, 자연 가림 허용·다섯 손가락 강제 펼침 금지",
+        "최종 원본/교정본을 직접 비교해 이상 부위 해결과 비대상 영역 보존 확인",
+        "활 세운 왕의 자세 유지, 신규 조준/화살 추가 금지",
+        "위 팁에서 하부 팁까지 시위 완성, 중간 공중 종료 없음",
+        "아래 캔버스 밖 이어짐은 같은 활 구조에 정합"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "e1d3c8e8523e15abc661db2b3b6764ca0fc9b814bd3b0b6439738a93e26a9927",
+      "newAppliedCanonicalSha256": "416f6bf133221fd0a38517b8fc1fb3e0a9d7bc694f7628bb94dae2f4c7430ab4"
+    },
+    {
+      "shortId": "g93",
+      "portraitId": "g-93-jomun-solgae",
+      "name": "살해 솔개",
+      "observations": [
+        "실제 JPEG: 매 깃털 상투·어두운 털망토와 금장 갑옷, 아래쪽 전경의 비스듬한 활.",
+        "활 쥔 손이 하단 경계에 가까워 손/팔의 해부학적 좌우를 선명하게 확정하기 어렵다. 화면 아래쪽 활 파지 위치를 기준으로 지정한다.",
+        "원문도 bow lowered. 활 오른쪽 가지와 따로 보이는 대각선 한 가닥의 연속 연결이 미완성이다."
+      ],
+      "issueKo": "내려 든 활의 시위 연결 완성; 현재 포즈와 하단 파지 유지.",
+      "stage": "awaken",
+      "sourcePath": "public/realm/awaken-hd/g-93-jomun-solgae.jpg",
+      "originalPrompt": "This is an original character from my own Korean historical fantasy strategy game. The attached portrait is an AI-generated illustration of a fictional adult man in his late thirties, not a real person. Create a square 1:1 image of the SAME character in his awakened form, the moment he reaches his full power.\n\nIdentity: keep the exact same face, age, ethnicity, hairstyle, facial hair, body build and color palette, so he is instantly recognizable as the same hero.\n\nFraming: upper-body shot from just above the head to around the waist. The pose must be dynamic and asymmetric, not a frontal symmetrical bust: looking down from a high perch with his bow lowered, one corner of his mouth raised in a cold sneer, hawk feathers fluttering. The face does not need to be centered, and one shoulder may turn away from the viewer. No open palm pushed toward the viewer.\n\nStyle: semi-realistic painterly splash art, the quality of a premium Korean MMORPG male class illustration, dramatic soft rim light, high detail. Plain very dark slate-blue studio background (#1c2129) with a stronger warm glow behind the shoulders. No scenery, landscape, buildings or sky.\n\nCostume (the main focus): a high-fashion warrior design, powerful and battle-worn, neither fully covered in armor nor bare. A strong, broad-shouldered silhouette true to his build: a worn leather coat with gilt trim, hawk feathers in his topknot, a quiver, a mustache and beard. Gilt-bronze ornaments, small iron lamellar plates edged in gold, comma-shaped jade (gogok) beads, silk and fur. Ancient Korean Samhan / Three Kingdoms motifs, reimagined boldly and ornately. Confident, majestic, powerful.\n\nExpression: the same personality as the reference, but more intense and resolved, a fierce or serene inner fire in the eyes. The irises may glow faintly.\n\nPower: an aura of light rising like heat haze, with small individual sparks and light motes drawn one by one, not a single blob. If he holds a weapon, it gleams with the same light.\n\nDo NOT draw: a halo or disc behind the head, sun rays, any red circle or sun symbol, Japanese or Chinese style armor or clothing, ninja masks, katana, shuriken, horns, demonic features, any text, letters, banner, caption, watermark or frame.",
+      "originalProvenance": {
+        "path": "docs/realm/awaken-prompts-men.html",
+        "section": "const H: [g-93-jomun-solgae] + function prompt / agePhrase / tone",
+        "cardId": "g-93-jomun-solgae",
+        "status": "source_card_template_reconstructed; not independently verified against historical chat submission",
+        "sourcePriority": "current public/realm/awaken-hd JPEG wins when card text differs"
+      },
+      "repairPrompt": "Edit only the attached EXISTING FIRST-AWAKENING portrait, as a local anatomy/prop correction. This is not a new awakening, not a second awakening, not an evolution or stronger redesign. Treat the attached source image as authoritative wherever an older text description differs. Preserve exactly the recognizable face, apparent age, expression, gaze, hair, body build, costume silhouette/materials/patterns, jewelry, the existing aura colors and shapes, all existing animal-shaped magical effects if present, the dark background, light direction and painterly rendering. Keep the original square canvas, crop, camera angle, scale and distinctive body pose. Do not add or remove a character, weapon, animal or signature object. Change only the faulty hand/object contacts or bow/sling geometry described below. A tiny local wrist/forearm adjustment is allowed only if required for a physically possible grip; do not reposition the torso or replace the pose. Each human hand has one thumb and four fingers with coherent knuckles, joints and wrist attachment. Natural overlap/occlusion is welcome; do not spread every finger merely to show five. \n\nComplete ONE physically coherent two-limbed bow and one string connected to its two actual tips. This is the existing lowered/resting pose, so do not invent a full-draw gesture or move a hand to the face. At rest the single string is straight tip A -> the undrawn nocking point -> tip B (the two segments are collinear), not a dangling half-string. If the existing arrow is lightly nocked, its nock touches that point; preserve its existing aim and do not add another arrow. Preserve the bow ornament/curvature/grip and the original hand position. Keep hidden continuations consistent at the existing image edge, not floating within the image. For Solgae preserve the lowered diagonal bow across the BOTTOM foreground and his sharp sideways gaze. Keep the grip at the existing lower edge; do not invent a newly raised draw hand when its anatomical side is obscured by the crop. The upper/right visible limb and the opposite limb are one bow: connect one straight undrawn string between their genuine tips, with consistent off-canvas continuation where already cropped. Do not substitute a glowing free-floating diagonal for a physical string. Preserve his hawk feathers, quiver, fur, gilt armor, mustache and the existing gold sparks. Preserve correct regions rather than repainting them. No added text, labels, watermark, inset, arrows or comparison collage. Return one corrected portrait at the same stage and framing.",
+      "checklist": [
+        "1차 각성 원본과 얼굴·머리·복식·표정·기운 동일; 신규2차/강화진화 아님",
+        "원래 정사각 구도·크롭·인물 크기 유지; 다른 자세/소품으로 우회하지 않음",
+        "각 손 엄지1+네 손가락의 해부학적 구조, 자연 가림 허용·다섯 손가락 강제 펼침 금지",
+        "최종 원본/교정본을 직접 비교해 이상 부위 해결과 비대상 영역 보존 확인",
+        "내려 든 활/기존 하단 파지 유지",
+        "활가지와 시위가 실제 팁에 연결, 공중 한 가닥/미완 시위 없음"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "43c9b5a9db665a81c77c59f1d9f53b50f730aec7cc9d613755b9dccebee7127b",
+      "newAppliedCanonicalSha256": "32d1f4aadf1f26bbcb38e2adb239761b3b5d323e67174a40b168d78ab1ec84bd"
+    },
+    {
+      "shortId": "g94",
+      "portraitId": "g-94-golpo-maenun",
+      "name": "매눈",
+      "observations": [
+        "실제 JPEG: 거친 회색/갈색 금장 갑옷·깃털 상투, 아래 전경의 짧은 뿔활과 가볍게 건 화살.",
+        "화면 오른쪽 아래 활 파지손은 해부학적 왼손, 화면 왼쪽 아래 화살깃/노크 쪽은 오른손.",
+        "활몸 곡선과 시위/화살이 겹쳐 두 가지 활 끝과 하나의 노크 연결이 불명확하다. 내려 든 준비 자세이지 얼굴 옆 만작이 아니다."
+      ],
+      "issueKo": "매눈의 낮게 든 뿔활 양 가지와 가볍게 건 화살의 시위/노크 연결 교정.",
+      "stage": "awaken",
+      "sourcePath": "public/realm/awaken-hd/g-94-golpo-maenun.jpg",
+      "originalPrompt": "This is an original character from my own Korean historical fantasy strategy game. The attached portrait is an AI-generated illustration of a fictional adult man in his early thirties, not a real person. Create a square 1:1 image of the SAME character in his awakened form, the moment he reaches his full power.\n\nIdentity: keep the exact same face, age, ethnicity, hairstyle, facial hair, body build and color palette, so he is instantly recognizable as the same hero.\n\nFraming: upper-body shot from just above the head to around the waist. The pose must be dynamic and asymmetric, not a frontal symmetrical bust: holding his short horn bow lowered with an arrow nocked, turning his head sharply toward an unseen target with narrowed hawk-like eyes, the arrow tip gleaming. The face does not need to be centered, and one shoulder may turn away from the viewer. No open palm pushed toward the viewer.\n\nStyle: semi-realistic painterly splash art, the quality of a premium Korean MMORPG male class illustration, dramatic soft rim light, high detail. Plain very dark slate-blue studio background (#1c2129) with a stronger warm glow behind the shoulders. No scenery, landscape, buildings or sky.\n\nCostume (the main focus): a high-fashion warrior design, powerful and battle-worn, neither fully covered in armor nor bare. A strong, broad-shouldered silhouette true to his build: rust-dark iron scale lamellar over a worn grey robe, leather straps, a quiver at his hip, a single feather in his topknot, a short beard. Gilt-bronze ornaments, small iron lamellar plates edged in gold, comma-shaped jade (gogok) beads, silk and fur. Ancient Korean Samhan / Three Kingdoms motifs, reimagined boldly and ornately. Confident, majestic, powerful.\n\nExpression: the same personality as the reference, but more intense and resolved, a fierce or serene inner fire in the eyes. The irises may glow faintly.\n\nPower: an aura of light rising like heat haze, with small individual sparks and light motes drawn one by one, not a single blob. If he holds a weapon, it gleams with the same light.\n\nDo NOT draw: a halo or disc behind the head, sun rays, any red circle or sun symbol, Japanese or Chinese style armor or clothing, ninja masks, katana, shuriken, horns, demonic features, any animal or animal spirit, any text, letters, banner, caption, watermark or frame.",
+      "originalProvenance": {
+        "path": "docs/realm/awaken-next-men.html",
+        "section": "const H: [g-94-golpo-maenun] + function prompt / agePhrase / tone",
+        "cardId": "g-94-golpo-maenun",
+        "status": "source_card_template_reconstructed; not independently verified against historical chat submission",
+        "sourcePriority": "current public/realm/awaken-hd JPEG wins when card text differs"
+      },
+      "repairPrompt": "Edit only the attached EXISTING FIRST-AWAKENING portrait, as a local anatomy/prop correction. This is not a new awakening, not a second awakening, not an evolution or stronger redesign. Treat the attached source image as authoritative wherever an older text description differs. Preserve exactly the recognizable face, apparent age, expression, gaze, hair, body build, costume silhouette/materials/patterns, jewelry, the existing aura colors and shapes, all existing animal-shaped magical effects if present, the dark background, light direction and painterly rendering. Keep the original square canvas, crop, camera angle, scale and distinctive body pose. Do not add or remove a character, weapon, animal or signature object. Change only the faulty hand/object contacts or bow/sling geometry described below. A tiny local wrist/forearm adjustment is allowed only if required for a physically possible grip; do not reposition the torso or replace the pose. Each human hand has one thumb and four fingers with coherent knuckles, joints and wrist attachment. Natural overlap/occlusion is welcome; do not spread every finger merely to show five. \n\nRebuild ONE complete, coherent two-limbed bow with one continuous riser/grip; retain its original material, ornament, curvature and orientation. There is ONE physical bowstring, composed at this draw state of exactly two taut straight segments: tip A -> the arrow-nock/draw-hand anchor -> tip B. Both segments terminate at the actual bow tips, not at the grip, wrist, chest, arrow point or floating decoration. The arrow nock touches that same string anchor; a single straight shaft passes the bow grip/rest and ends in one arrowhead facing the original aim direction, with fletching beside the draw hand. Remove only erroneous duplicate/crossing strings and detached stubs; do not mistake aura trails or quiver arrows for extra bowstrings. Keep hand-to-grip and finger-to-string contact anatomically possible, with no shaft/string passing through skin. Where the source crop already hides a bow tip, continue the limb and string consistently beyond that same edge instead of inventing an in-frame floating endpoint or zooming out. For Maenun keep the SHORT HORN BOW LOW, nearly horizontal in the foreground, and only the slight preparatory tension already shown. Anatomical LEFT hand remains at lower RIGHT on the grip, anatomical RIGHT at lower LEFT touches the existing arrow nock beside the fletching. Keep one arrow pointing right. Do not raise the bow to eye level or change the character into a full-draw pose. Preserve the weathered armor, grey robe, leather straps, short beard, topknot feather and subtle warm aura; do not create a larger ornate weapon. Preserve correct regions rather than repainting them. No added text, labels, watermark, inset, arrows or comparison collage. Return one corrected portrait at the same stage and framing.",
+      "checklist": [
+        "1차 각성 원본과 얼굴·머리·복식·표정·기운 동일; 신규2차/강화진화 아님",
+        "원래 정사각 구도·크롭·인물 크기 유지; 다른 자세/소품으로 우회하지 않음",
+        "각 손 엄지1+네 손가락의 해부학적 구조, 자연 가림 허용·다섯 손가락 강제 펼침 금지",
+        "최종 원본/교정본을 직접 비교해 이상 부위 해결과 비대상 영역 보존 확인",
+        "낮은 짧은 뿔활·기존 조준방향/준비 자세 유지",
+        "활몸 두 가지 연속, 시위 tipA→기존 약한 당김/노크→tipB",
+        "노크·화살깃·화살촉 각1과 파지손 정상"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "036f0b56336dc9a2f28ca34fa692871602e23493cbd7d18e61bd82199fe02c2b",
+      "newAppliedCanonicalSha256": "dbbfd4c3af6483f74b09e978e216fde49941ed53ab97a5a6e1d85a7eca4d44db"
+    },
+    {
+      "shortId": "w66",
+      "portraitId": "w-66-saro-noeul",
+      "name": "번예 노을",
+      "observations": [
+        "사용자 정정 확정: g66가 아니라 w66 사로 노을이 대상. g-66-buyeo-geumha의 거울·지팡이 그림은 수정 대상에서 제외.",
+        "실제 JPEG: 웃는 얼굴, 주황색 복식·붉은 소매·초록 곡옥·금장 활과 화살통, 화면 오른쪽으로 겨누는 자세.",
+        "화면 오른쪽 활 파지손은 해부학적 왼손, 화면 왼쪽 얼굴 아래 화살깃/노크를 잡은 손은 오른손.",
+        "위 시위가 당김점에서 벗어나 화살깃/머리 주위로 지나가고 아래 구간이 장신구 쪽으로 갈라져 거미줄처럼 읽힌다. 원문은 nocking이지만 현재 실제 조준 자세를 우선한다."
+      ],
+      "issueKo": "사용자 확정 w66: 잘못된 당김점과 거미줄처럼 갈라진 활시위를 노크에 모이는 한 줄로 교정.",
+      "stage": "awaken",
+      "sourcePath": "public/realm/awaken-hd/w-66-saro-noeul.jpg",
+      "originalPrompt": "This is an original character from my own Korean historical fantasy strategy game. The attached portrait is an AI-generated illustration of a fictional adult woman in her early twenties, not a real person. Create a square 1:1 image of the SAME character in her awakened form, the moment she reaches her full power.\n\nIdentity: keep the exact same face, age, ethnicity, hairstyle and color palette, so she is instantly recognizable as the same hero.\n\nFraming: three-quarter shot from just above the head down to mid-thigh (thighs visible, so a vertical video still reaches the hips after the bottom is trimmed). The pose must be dynamic and asymmetric, not a frontal symmetrical bust: turned three-quarters, nocking an arrow while glancing back at the viewer with smiling eyes, sunset glow on one side of her face. The face does not need to be centered, and one shoulder may turn away from the viewer. No open palm pushed toward the viewer.\n\nStyle: semi-realistic painterly splash art, the quality of a premium Korean MMORPG female class illustration, dramatic soft rim light, high detail. Plain very dark slate-blue studio background (#1c2129) with a stronger warm glow behind the shoulders. No scenery, landscape, buildings or sky.\n\nCostume (the main focus): a high-fashion warrior design, elegant and alluring, neither fully covered in armor nor bare. A tailored silhouette that follows her figure: a fitted orange hemp top with bare shoulders, a quiver strap across her body, many gogok beads. Gilt-bronze ornaments, small iron lamellar plates edged in gold, comma-shaped jade (gogok) beads, silk and fur. Ancient Korean Samhan / Three Kingdoms motifs, reimagined boldly and ornately. Confident, glamorous, powerful.\n\nExpression: the same personality as the reference, but more intense and resolved, a fierce or serene inner fire in the eyes. The irises may glow faintly.\n\nPower: an aura of light rising like heat haze, with small individual sparks and light motes drawn one by one, not a single blob. If she holds a weapon, it gleams with the same light.\n\nDo NOT draw: a halo or disc behind the head, sun rays, any red circle or sun symbol, Japanese or Chinese style armor or clothing, ninja masks, katana, shuriken, horns, demonic features, any text, letters, banner, caption, watermark or frame.",
+      "originalProvenance": {
+        "path": "docs/realm/awaken-prompts.html",
+        "section": "const H: [w-66-saro-noeul] + function prompt / agePhrase / tone",
+        "cardId": "w-66-saro-noeul",
+        "status": "source_card_template_reconstructed; not independently verified against historical chat submission",
+        "sourcePriority": "current public/realm/awaken-hd JPEG wins when card text differs",
+        "userCorrection": "사용자 확인: g66는 오기이며 w-66-saro-noeul가 교정 대상. g66 금하의 거울/지팡이는 제외."
+      },
+      "repairPrompt": "Edit only the attached EXISTING FIRST-AWAKENING portrait, as a local anatomy/prop correction. This is not a new awakening, not a second awakening, not an evolution or stronger redesign. Treat the attached source image as authoritative wherever an older text description differs. Preserve exactly the recognizable face, apparent age, expression, gaze, hair, body build, costume silhouette/materials/patterns, jewelry, the existing aura colors and shapes, all existing animal-shaped magical effects if present, the dark background, light direction and painterly rendering. Keep the original square canvas, crop, camera angle, scale and distinctive body pose. Do not add or remove a character, weapon, animal or signature object. Change only the faulty hand/object contacts or bow/sling geometry described below. A tiny local wrist/forearm adjustment is allowed only if required for a physically possible grip; do not reposition the torso or replace the pose. Each human hand has one thumb and four fingers with coherent knuckles, joints and wrist attachment. Natural overlap/occlusion is welcome; do not spread every finger merely to show five. \n\nRebuild ONE complete, coherent two-limbed bow with one continuous riser/grip; retain its original material, ornament, curvature and orientation. There is ONE physical bowstring, composed at this draw state of exactly two taut straight segments: tip A -> the arrow-nock/draw-hand anchor -> tip B. Both segments terminate at the actual bow tips, not at the grip, wrist, chest, arrow point or floating decoration. The arrow nock touches that same string anchor; a single straight shaft passes the bow grip/rest and ends in one arrowhead facing the original aim direction, with fletching beside the draw hand. Remove only erroneous duplicate/crossing strings and detached stubs; do not mistake aura trails or quiver arrows for extra bowstrings. Keep hand-to-grip and finger-to-string contact anatomically possible, with no shaft/string passing through skin. Where the source crop already hides a bow tip, continue the limb and string consistently beyond that same edge instead of inventing an in-frame floating endpoint or zooming out. For Noeul preserve her smiling face, orange top, red sleeve fabric, jade bead necklaces, gold-ornamented bow, quiver and present three-quarter aim to image RIGHT. Anatomical LEFT hand holds the grip at RIGHT; anatomical RIGHT hand near the feathers at LEFT is the one true draw anchor, immediately at the rear nock of the existing arrow. Both string segments must meet there, not on the front of the arrow, in her hair, on her necklace or the bow-holding wrist. Remove the web-like duplicate lines while preserving the jade necklace cords and aura. No change to her smile or costume and no stronger awakening effects. Preserve correct regions rather than repainting them. No added text, labels, watermark, inset, arrows or comparison collage. Return one corrected portrait at the same stage and framing.",
+      "checklist": [
+        "1차 각성 원본과 얼굴·머리·복식·표정·기운 동일; 신규2차/강화진화 아님",
+        "원래 정사각 구도·크롭·인물 크기 유지; 다른 자세/소품으로 우회하지 않음",
+        "각 손 엄지1+네 손가락의 해부학적 구조, 자연 가림 허용·다섯 손가락 강제 펼침 금지",
+        "최종 원본/교정본을 직접 비교해 이상 부위 해결과 비대상 영역 보존 확인",
+        "사용자 정정 w66 대상 확인, g66 그림 미사용",
+        "tipA→오른손과 화살뒤노크의 단일 당김점→tipB, 거미줄/제3시위 없음",
+        "기존 오른쪽 조준·웃는 얼굴·의상/곡옥/오라 유지"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "821a4e9392b199fdd3b526994e72123d302af933d6375c8b86ef57571d294a51",
+      "newAppliedCanonicalSha256": "fc8ac80191f13db2f913a0e79ad56072660779b77c95f3f5f8c7645f2d8a115e"
+    },
+    {
+      "shortId": "l3",
+      "portraitId": "l-L3-heo-hwangok",
+      "name": "허황옥",
+      "observations": [
+        "실제 JPEG: 감청·금색/주황색 복식, 금빛 물고기 두 마리와 물방울/빛의 고리, 허리에 놓인 손과 화면 왼쪽으로 뻗은 손.",
+        "뻗은 화면 왼쪽 손은 팔/어깨 연결상 해부학적 오른손. 펼친 손의 손가락/관절이 중복되어 여섯 손가락처럼 읽힌다.",
+        "과거 누락팔 재생성 기록과 달리 현재 두 팔은 존재한다. 기존 두 금빛 물고기는 이 각성의 표지이며 제거/다른 동물 교체 금지."
+      ],
+      "issueKo": "화면 왼쪽으로 뻗은 오른손의 여섯 손가락/관절 중복 교정.",
+      "stage": "awaken",
+      "sourcePath": "public/realm/awaken-hd/l-L3-heo-hwangok.jpg",
+      "originalPrompt": "This is an original character from my own Korean historical fantasy strategy game. The attached portrait is an AI-generated illustration of a fictional adult woman <나이 말>, not a real person. Create a square 1:1 image of the SAME character in her awakened form, the moment she reaches her full power. Identity: keep the exact same face, age, hairstyle and color palette so she is instantly recognizable. Framing: three-quarter shot from just above the head down to mid-thigh (the thighs are visible), dynamic asymmetric pose: <자세>. Style: premium gacha-game splash art in the style of NIKKE and Honkai Star Rail character illustrations, semi-realistic painterly, dramatic soft rim light, very high detail, plain very dark slate-blue studio background (#1c2129) with a warm glow behind her. Costume (the main focus): a glamorous, daring, high-fashion modernized hanbok battle dress, very attractive and eye-catching: <옷 — 짧은 저고리·깊은 목선·드러난 어깨 / 비치는 오간자 소매 / 금동 판 코르셋으로 드러난 허리 / 높은 트임의 치마 / 그 사람의 색과 표지>. Sexy and elegant like a top-tier gacha character, but tasteful (no nudity). Korean Samhan / Three Kingdoms motifs. Power: <기운 빛> aura rising like heat haze with individual sparks and light motes. Do NOT draw: a halo or disc behind the head, sun rays, any red circle or sun symbol, Japanese or Chinese style clothing, any text or watermark.",
+      "originalProvenance": {
+        "path": "docs/realm/awaken-v2-prompts.md",
+        "section": "## 1차 각성 2판 (소서노 l2 로 시험 · 형 확인 전)",
+        "cardId": "l-L3-heo-hwangok",
+        "status": "first-awakening shared template only; exact individualized historical submission NOT recovered; placeholders intentionally retained",
+        "sourcePriority": "current first-awakening JPEG is authoritative; do not apply second-awakening template or generic aura prohibitions to existing fish/feather/lotus effects",
+        "stageEvidence": "same file: ## 받은 것 / l-L3-heo-hwangok 허황옥 — 1차; ## 11-03 검토 에이전트로 걷은 것 / 1차 다시(두 팔 · 검토 PASS). 2차 bullet is separate and unused."
+      },
+      "repairPrompt": "Edit only the attached EXISTING FIRST-AWAKENING portrait, as a local anatomy/prop correction. This is not a new awakening, not a second awakening, not an evolution or stronger redesign. Treat the attached source image as authoritative wherever an older text description differs. Preserve exactly the recognizable face, apparent age, expression, gaze, hair, body build, costume silhouette/materials/patterns, jewelry, the existing aura colors and shapes, all existing animal-shaped magical effects if present, the dark background, light direction and painterly rendering. Keep the original square canvas, crop, camera angle, scale and distinctive body pose. Do not add or remove a character, weapon, animal or signature object. Change only the faulty hand/object contacts or bow/sling geometry described below. A tiny local wrist/forearm adjustment is allowed only if required for a physically possible grip; do not reposition the torso or replace the pose. Each human hand has one thumb and four fingers with coherent knuckles, joints and wrist attachment. Natural overlap/occlusion is welcome; do not spread every finger merely to show five. \n\nRepair only the extended anatomical RIGHT hand on the LEFT side of the image. Remove the duplicated digit/knuckle and give her one thumb and four anatomically distinct fingers flowing naturally from one palm and wrist. Keep the same inviting palm-up gesture and foreshortening; a finger may be partly hidden rather than fanning all five flat. Leave the other hand on her hip. Preserve BOTH existing GOLDEN FISH and their water-droplet/ribbon aura exactly as this portrait identity, not generic sparkles or a dragon. Keep the navy-gold/orange costume, face, jewelry, expression and original pose. Do not recreate the old missing-arm version. Preserve correct regions rather than repainting them. No added text, labels, watermark, inset, arrows or comparison collage. Return one corrected portrait at the same stage and framing.",
+      "checklist": [
+        "1차 각성 원본과 얼굴·머리·복식·표정·기운 동일; 신규2차/강화진화 아님",
+        "원래 정사각 구도·크롭·인물 크기 유지; 다른 자세/소품으로 우회하지 않음",
+        "각 손 엄지1+네 손가락의 해부학적 구조, 자연 가림 허용·다섯 손가락 강제 펼침 금지",
+        "최종 원본/교정본을 직접 비교해 이상 부위 해결과 비대상 영역 보존 확인",
+        "뻗은 오른손 엄지1+네 손가락, 중복마디 없음",
+        "두 팔과 허리 위 반대 손 유지",
+        "금빛 물고기 두 마리·물방울 기운과 원래 복식 그대로"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "2ef13c4116d58e0c16ec2f7e83b5123c3e4d5120e554101c81ab548fbbf143f8",
+      "newAppliedCanonicalSha256": "d1677f18af9903990ed37b32faa2e52de12e15907e94c50e1c7b4c2377cfccb1"
+    },
+    {
+      "shortId": "l4",
+      "portraitId": "l-L4-bari-gongju",
+      "name": "바리공주",
+      "observations": [
+        "실제 JPEG: 붉음/파랑/노랑의 오방색 리본과 청백색 기운, 화면 왼쪽 뻗은 손 위 푸른 연꽃, 화면 오른쪽 위 손의 방울 장신구.",
+        "화면 왼쪽 뻗은 손은 해부학적 오른손, 오른쪽 위 방울 든 손은 왼손.",
+        "뻗은 오른손에서 손가락 수와 손바닥의 연결이 네 개처럼 읽힌다. 연꽃은 손이 아니므로 꽃잎을 손가락으로 세거나 꽃을 지우지 않는다."
+      ],
+      "issueKo": "연꽃 아래 뻗은 오른손(화면 왼쪽)의 네 손가락 인상을 정상 다섯 손가락 구조로 교정.",
+      "stage": "awaken",
+      "sourcePath": "public/realm/awaken-hd/l-L4-bari-gongju.jpg",
+      "originalPrompt": "This is an original character from my own Korean historical fantasy strategy game. The attached portrait is an AI-generated illustration of a fictional adult woman <나이 말>, not a real person. Create a square 1:1 image of the SAME character in her awakened form, the moment she reaches her full power. Identity: keep the exact same face, age, hairstyle and color palette so she is instantly recognizable. Framing: three-quarter shot from just above the head down to mid-thigh (the thighs are visible), dynamic asymmetric pose: <자세>. Style: premium gacha-game splash art in the style of NIKKE and Honkai Star Rail character illustrations, semi-realistic painterly, dramatic soft rim light, very high detail, plain very dark slate-blue studio background (#1c2129) with a warm glow behind her. Costume (the main focus): a glamorous, daring, high-fashion modernized hanbok battle dress, very attractive and eye-catching: <옷 — 짧은 저고리·깊은 목선·드러난 어깨 / 비치는 오간자 소매 / 금동 판 코르셋으로 드러난 허리 / 높은 트임의 치마 / 그 사람의 색과 표지>. Sexy and elegant like a top-tier gacha character, but tasteful (no nudity). Korean Samhan / Three Kingdoms motifs. Power: <기운 빛> aura rising like heat haze with individual sparks and light motes. Do NOT draw: a halo or disc behind the head, sun rays, any red circle or sun symbol, Japanese or Chinese style clothing, any text or watermark.",
+      "originalProvenance": {
+        "path": "docs/realm/awaken-v2-prompts.md",
+        "section": "## 1차 각성 2판 (소서노 l2 로 시험 · 형 확인 전)",
+        "cardId": "l-L4-bari-gongju",
+        "status": "first-awakening shared template only; exact individualized historical submission NOT recovered; placeholders intentionally retained",
+        "sourcePriority": "current first-awakening JPEG is authoritative; do not apply second-awakening template or generic aura prohibitions to existing fish/feather/lotus effects",
+        "relatedCard": "docs/realm/awaken-women-next.html: ROWS [l-L4-bari-gongju] (pose/outfit empty) and function first(). Its separate WAKE2/second() is NOT used."
+      },
+      "repairPrompt": "Edit only the attached EXISTING FIRST-AWAKENING portrait, as a local anatomy/prop correction. This is not a new awakening, not a second awakening, not an evolution or stronger redesign. Treat the attached source image as authoritative wherever an older text description differs. Preserve exactly the recognizable face, apparent age, expression, gaze, hair, body build, costume silhouette/materials/patterns, jewelry, the existing aura colors and shapes, all existing animal-shaped magical effects if present, the dark background, light direction and painterly rendering. Keep the original square canvas, crop, camera angle, scale and distinctive body pose. Do not add or remove a character, weapon, animal or signature object. Change only the faulty hand/object contacts or bow/sling geometry described below. A tiny local wrist/forearm adjustment is allowed only if required for a physically possible grip; do not reposition the torso or replace the pose. Each human hand has one thumb and four fingers with coherent knuckles, joints and wrist attachment. Natural overlap/occlusion is welcome; do not spread every finger merely to show five. \n\nRepair the extended anatomical RIGHT hand at image LEFT beneath the BLUE LOTUS. Restore the missing/merged digit as a normal hand with one thumb and four fingers, with realistic palm thickness, joints and wrist. Keep the same palm-up offering gesture, perspective and relaxed curved fingers; not all five need to be fully spread or equally visible. Preserve the blue lotus floating above the palm, the raised anatomical LEFT hand and its existing bells at upper RIGHT, all multicolored ribbons and blue-white spirit effects. Do not add a weapon, replace the lotus with another object, or change her face, hairstyle, jewelry or outfit. Preserve correct regions rather than repainting them. No added text, labels, watermark, inset, arrows or comparison collage. Return one corrected portrait at the same stage and framing.",
+      "checklist": [
+        "1차 각성 원본과 얼굴·머리·복식·표정·기운 동일; 신규2차/강화진화 아님",
+        "원래 정사각 구도·크롭·인물 크기 유지; 다른 자세/소품으로 우회하지 않음",
+        "각 손 엄지1+네 손가락의 해부학적 구조, 자연 가림 허용·다섯 손가락 강제 펼침 금지",
+        "최종 원본/교정본을 직접 비교해 이상 부위 해결과 비대상 영역 보존 확인",
+        "연꽃 아래 오른손 엄지1+네 손가락의 자연스러운 구조",
+        "푸른 연꽃·상단 왼손 방울·오방색 리본 유지",
+        "꽃잎/리본을 손가락으로 오판하거나 제거하지 않음"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "ee9a915681567d7e55258dd735b219442b71e65a4ef8be075ce6dc8bc743b12c",
+      "newAppliedCanonicalSha256": "4db6c3741cb0baf8806c3e0b4d00c576be2c55424f6026eca0b9ca8e3653144b"
+    },
+    {
+      "shortId": "l6",
+      "portraitId": "l-L6-jeonggyeon-moju",
+      "name": "정견모주",
+      "observations": [
+        "실제 JPEG: 짙은 초록·금색 복식과 공작깃 장식, 초록/금색의 실·입자 형태 기운, 화면 왼쪽으로 손바닥을 위로 뻗은 자세.",
+        "뻗은 화면 왼쪽 손은 팔 연결상 해부학적 오른손으로 읽힌다.",
+        "손바닥 옆에 여분 손가락처럼 이어지는 작은 살색 형상이 있어 사용자 지적의 여섯 손가락 교정 대상. 공작깃은 의상 장식이며 새 살아 있는 공작을 넣지 않는다."
+      ],
+      "issueKo": "화면 왼쪽으로 뻗은 오른손의 여분 손가락/겹침 교정.",
+      "stage": "awaken",
+      "sourcePath": "public/realm/awaken-hd/l-L6-jeonggyeon-moju.jpg",
+      "originalPrompt": "This is an original character from my own Korean historical fantasy strategy game. The attached portrait is an AI-generated illustration of a fictional adult woman <나이 말>, not a real person. Create a square 1:1 image of the SAME character in her awakened form, the moment she reaches her full power. Identity: keep the exact same face, age, hairstyle and color palette so she is instantly recognizable. Framing: three-quarter shot from just above the head down to mid-thigh (the thighs are visible), dynamic asymmetric pose: <자세>. Style: premium gacha-game splash art in the style of NIKKE and Honkai Star Rail character illustrations, semi-realistic painterly, dramatic soft rim light, very high detail, plain very dark slate-blue studio background (#1c2129) with a warm glow behind her. Costume (the main focus): a glamorous, daring, high-fashion modernized hanbok battle dress, very attractive and eye-catching: <옷 — 짧은 저고리·깊은 목선·드러난 어깨 / 비치는 오간자 소매 / 금동 판 코르셋으로 드러난 허리 / 높은 트임의 치마 / 그 사람의 색과 표지>. Sexy and elegant like a top-tier gacha character, but tasteful (no nudity). Korean Samhan / Three Kingdoms motifs. Power: <기운 빛> aura rising like heat haze with individual sparks and light motes. Do NOT draw: a halo or disc behind the head, sun rays, any red circle or sun symbol, Japanese or Chinese style clothing, any text or watermark.",
+      "originalProvenance": {
+        "path": "docs/realm/awaken-v2-prompts.md",
+        "section": "## 1차 각성 2판 (소서노 l2 로 시험 · 형 확인 전)",
+        "cardId": "l-L6-jeonggyeon-moju",
+        "status": "first-awakening shared template only; exact individualized historical submission NOT recovered; placeholders intentionally retained",
+        "sourcePriority": "current first-awakening JPEG is authoritative; do not apply second-awakening template or generic aura prohibitions to existing fish/feather/lotus effects",
+        "relatedCard": "docs/realm/awaken-women-next.html: ROWS [l-L6-jeonggyeon-moju] (pose/outfit empty) and function first(). Its separate WAKE2/second() is NOT used."
+      },
+      "repairPrompt": "Edit only the attached EXISTING FIRST-AWAKENING portrait, as a local anatomy/prop correction. This is not a new awakening, not a second awakening, not an evolution or stronger redesign. Treat the attached source image as authoritative wherever an older text description differs. Preserve exactly the recognizable face, apparent age, expression, gaze, hair, body build, costume silhouette/materials/patterns, jewelry, the existing aura colors and shapes, all existing animal-shaped magical effects if present, the dark background, light direction and painterly rendering. Keep the original square canvas, crop, camera angle, scale and distinctive body pose. Do not add or remove a character, weapon, animal or signature object. Change only the faulty hand/object contacts or bow/sling geometry described below. A tiny local wrist/forearm adjustment is allowed only if required for a physically possible grip; do not reposition the torso or replace the pose. Each human hand has one thumb and four fingers with coherent knuckles, joints and wrist attachment. Natural overlap/occlusion is welcome; do not spread every finger merely to show five. \n\nRepair only the palm-up extended anatomical RIGHT hand on the LEFT side of the image. Remove the extra flesh-colored finger-like branch and reconstruct one thumb plus four naturally curved fingers with clean attachment to the palm and wrist. Maintain the exact foreshortened welcoming gesture and the existing forearm direction; slight wrist adjustment only if necessary. Keep natural occlusion instead of spreading all digits toward the camera. Preserve her dark green and gold costume, PEACOCK-FEATHER garment decorations and the existing green-gold filament aura, her face, hair, gaze and calm expression. Do not turn the feather decorations into a new animal, wings, or a different aura. Preserve correct regions rather than repainting them. No added text, labels, watermark, inset, arrows or comparison collage. Return one corrected portrait at the same stage and framing.",
+      "checklist": [
+        "1차 각성 원본과 얼굴·머리·복식·표정·기운 동일; 신규2차/강화진화 아님",
+        "원래 정사각 구도·크롭·인물 크기 유지; 다른 자세/소품으로 우회하지 않음",
+        "각 손 엄지1+네 손가락의 해부학적 구조, 자연 가림 허용·다섯 손가락 강제 펼침 금지",
+        "최종 원본/교정본을 직접 비교해 이상 부위 해결과 비대상 영역 보존 확인",
+        "뻗은 오른손 엄지1+네 손가락, 여분 살색 가지 없음",
+        "기존 공작깃 의상 장식·초록/금 기운 유지",
+        "손목/팔 방향·표정·독특한 비대칭 자세 유지"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "f4ce7c888187e2a9444faf66eaee47b6128b5410e44d11c14bed34b54a76b840",
+      "newAppliedCanonicalSha256": "4eb5bb08362e77e50e4294c2f66b3f16f687ae2caec6442b9a3aa2cb6fea3d76"
+    },
+    {
+      "shortId": "w10",
+      "portraitId": "w-10-pirate-captain",
+      "stage": "awaken",
+      "sourcePath": "public/realm/awaken-hd/w-10-pirate-captain.jpg",
+      "name": "살해 너울",
+      "originalPrompt": "This is an original character from my own Korean historical fantasy strategy game. The attached portrait is an AI-generated illustration of a fictional adult woman in her early thirties, not a real person. Create a square 1:1 image of the SAME character in her awakened form, the moment she reaches her full power.\n\nIdentity: keep the exact same face, age, ethnicity, hairstyle and color palette, so she is instantly recognizable as the same hero.\n\nFraming: three-quarter shot from just above the head down to mid-thigh (thighs visible, so a vertical video still reaches the hips after the bottom is trimmed). The pose must be dynamic and asymmetric, not a frontal symmetrical bust: leaning against an unseen mast, the harpoon-spear slung behind her neck with both wrists draped over it, smirking down at the viewer. The face does not need to be centered, and one shoulder may turn away from the viewer. No open palm pushed toward the viewer.\n\nStyle: semi-realistic painterly splash art, the quality of a premium Korean MMORPG female class illustration, dramatic soft rim light, high detail. Plain very dark slate-blue studio background (#1c2129) with a stronger warm glow behind the shoulders. No scenery, landscape, buildings or sky.\n\nCostume (the main focus): a high-fashion warrior design, elegant and alluring, neither fully covered in armor nor bare. A tailored silhouette that follows her figure: an open leopard-fur vest over a deep V-neck wrapped silk top, fitted at the waist with a wide red sash, tooth necklace, a gold hoop at one ear. Gilt-bronze ornaments, small iron lamellar plates edged in gold, comma-shaped jade (gogok) beads, silk and fur. Ancient Korean Samhan / Three Kingdoms motifs, reimagined boldly and ornately. Confident, glamorous, powerful.\n\nExpression: the same personality as the reference, but more intense and resolved, a fierce or serene inner fire in the eyes. The irises may glow faintly.\n\nPower: an aura of light rising like heat haze, with small individual sparks and light motes drawn one by one, not a single blob. If she holds a weapon, it gleams with the same light.\n\nDo NOT draw: a halo or disc behind the head, sun rays, any red circle or sun symbol, Japanese or Chinese style armor or clothing, ninja masks, katana, shuriken, horns, demonic features, any text, letters, banner, caption, watermark or frame.",
+      "originalProvenance": "docs/realm/awaken-prompts.html:89 카드 행 + 같은 파일 prompt() 렌더러(189행)로 재구성. docs/realm/awaken-v2-prompts.md:109는 1차 2판 제작 기록. 문서의 카드 행과 렌더링 함수로 재구성한 1차 문안. 실제 생성 시 제출한 최종 문자열과 동일한지는 미확인.",
+      "observations": "화면 왼쪽 위 손이 머리 위 가로 창자루를 쥐고, 화면 오른쪽 손은 창이 아니라 세로 밧줄을 붙든다. 창끝은 화면 오른쪽 위, 표범털 조끼·검은 상의·붉은 허리띠·바다 기운이 보인다.",
+      "issueKo": "창 파지 손가락 형태와 손바닥·창자루 가림 관계 오류. 밧줄을 쥔 반대 손까지 창 파지로 바꾸면 안 됨.",
+      "repairPrompt": "Edit the attached EXISTING FIRST-AWAKENING image of this adult fictional woman. This is a localized anatomy and prop repair, not a new awakening or a redesign. Preserve her exact face, apparent age, beauty, expression, hairstyle, body silhouette, outfit, neckline and amount of skin shown, strength, aura, palette, lighting, background, painterly finish, pose, crop and composition. Preserve every correct visible detail. Repaint only the defective region and the smallest adjacent area needed for consistent anatomy, lighting and occlusion. Do not add extra limbs, fingers, props, text or a watermark. At the upper screen-left hand, redraw one anatomically continuous shoulder-to-wrist-to-hand chain and one believable five-digit grip around the existing horizontal harpoon shaft. The palm and curled fingers must wrap the same solid shaft; let the palm occlude its near contour and let the far contour reappear beyond the hand. Keep the shaft straight and continuous outside the grip, with the existing spearhead toward the upper screen-right. Preserve the separate screen-right hand gripping the vertical rope; do not turn it into a second spear hand. Keep both arms, rope, leopard fur, red sash, sea atmosphere and sly expression in their present places.",
+      "checklist": [
+        "머리 위 창은 한 자루이고 손에만 가려지며 팔·몸을 관통하지 않음",
+        "화면 왼쪽 위 손은 자연스러운 다섯 손가락으로 창을 감쌈",
+        "화면 오른쪽 손은 원본처럼 세로 밧줄을 쥠",
+        "얼굴·의상·노출·바다 배경과 구도 유지"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "788d2aaef42af962be86e5d18f727ae6e9b11e4fb1f3484454190aad15a265aa",
+      "newAppliedCanonicalSha256": "e2bd23a29a73d662276e46d6b13d461a0a08574ca05cfd41977b2eeeee7d0668"
+    },
+    {
+      "shortId": "w40",
+      "portraitId": "w-40-mujin-munui",
+      "stage": "awaken",
+      "sourcePath": "public/realm/awaken-hd/w-40-mujin-munui.jpg",
+      "name": "읍차 무늬",
+      "originalPrompt": "This is an original character from my own Korean historical fantasy strategy game. The attached portrait is an AI-generated illustration of a fictional adult woman in her early twenties, not a real person. Create a square 1:1 image of the SAME character in her awakened form, the moment she reaches her full power. Identity: keep the exact same face, age, hairstyle and color palette so she is instantly recognizable. Framing: upper-body shot from just above the head to the hips, dynamic asymmetric pose: bent backward in ecstatic dance, face turned up, eyes closed, bell clusters raised in both hands, five-color ribbons spiraling around her. Style: premium gacha-game splash art in the style of NIKKE and Honkai Star Rail character illustrations, semi-realistic painterly, dramatic soft rim light, very high detail, plain very dark slate-blue studio background (#1c2129) with a warm glow behind her. Costume (the main focus): a glamorous, daring, high-fashion modernized hanbok battle dress, very attractive and eye-catching: a short cropped jeogori with a deep neckline and bare shoulders, sheer organza sleeves, a fitted gilt-bronze plate corset leaving the waist bare, a high-slit layered skirt, all in her own colors and keeping her signature details: a fitted bodice with bare shoulders showing the blue spiral tattoos, layered five-color sashes, feathers and beads in her hair. Sexy and elegant like a top-tier gacha character, but tasteful (no nudity). Korean Samhan / Three Kingdoms motifs. Power: an aura in her signature color rising like heat haze with individual sparks and light motes. No animals or animal spirits (fur trim or animal-pattern fabric is fine). Do NOT draw: a halo or disc behind the head, sun rays, any red circle or sun symbol, Japanese or Chinese style clothing, any text or watermark.",
+      "originalProvenance": "docs/realm/awaken-women-next.html:108 REDO1 카드 행 + first() 렌더러(186행)로 재구성. docs/realm/awaken-v2-prompts.md:11-15 공통 1차 2판 틀 참조. docs/realm/awaken-prompts.html:117 선행 카드도 같은 캐릭터 pose/outfit 설명. 문서의 카드 행과 렌더링 함수로 재구성한 1차 문안. 실제 생성 시 제출한 최종 문자열과 동일한지는 미확인.",
+      "observations": "화면 오른쪽 위로 든 손이 방울뭉치를 잡고, 반대쪽 아래 손도 별도 방울을 잡는다. 오른쪽 위 손의 엄지가 손바닥 반대쪽으로 붙은 듯 보인다. 푸른 팔 문신과 오방색 띠가 핵심.",
+      "issueKo": "올린 손의 엄지 위치와 손가락 방향이 뒤집힌 듯한 손 해부학 오류.",
+      "repairPrompt": "Edit the attached EXISTING FIRST-AWAKENING image of this adult fictional woman. This is a localized anatomy and prop repair, not a new awakening or a redesign. Preserve her exact face, apparent age, beauty, expression, hairstyle, body silhouette, outfit, neckline and amount of skin shown, strength, aura, palette, lighting, background, painterly finish, pose, crop and composition. Preserve every correct visible detail. Repaint only the defective region and the smallest adjacent area needed for consistent anatomy, lighting and occlusion. Do not add extra limbs, fingers, props, text or a watermark. Repair only the raised hand at the upper screen-right. Maintain its existing wrist angle, arm, bell-cluster position and dancing gesture, but place the thumb on the anatomically opposed side of the palm relative to the four fingers. Make the fingers curl naturally around the bell handle with correct overlap and joint transitions; five digits total, with normal occlusion rather than a forced splayed hand. Rebuild the incorrectly handed palm as the correct anatomical hand for this same forearm; do not mirror the whole figure, swap arms or move the bells. Preserve the other hand and its separate bell cluster, blue spiral arm tattoos, five-color ribbons, tilted head, closed eyes and original joyful dance silhouette.",
+      "checklist": [
+        "오른쪽 위 손 엄지가 네 손가락에 대립하는 자연스러운 쪽에 위치",
+        "손목에서 손바닥·방울 손잡이까지 연결",
+        "양쪽 방울과 푸른 팔 문신·오방색 띠 유지",
+        "자세·얼굴·의상·구도 유지"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "1caf71c361104855d00448925549f9a03e5fc3b1f092689b07b46fc150306799",
+      "newAppliedCanonicalSha256": "3359af2f8286e1df6b4a45ba151c588eb49def046c4f402ca9da88f7f0a23402"
+    },
+    {
+      "shortId": "w47",
+      "portraitId": "w-47-gosaburi-baram",
+      "stage": "awaken",
+      "sourcePath": "public/realm/awaken-hd/w-47-gosaburi-baram.jpg",
+      "name": "읍차 바람",
+      "originalPrompt": "This is an original character from my own Korean historical fantasy strategy game. The attached portrait is an AI-generated illustration of a fictional adult woman in her late twenties, not a real person. Create a square 1:1 image of the SAME character in her awakened form, the moment she reaches her full power. Identity: keep the exact same face, age, hairstyle and color palette so she is instantly recognizable. Framing: upper-body shot from just above the head to the hips, dynamic asymmetric pose: turned sideways into the wind, scarf streaming, releasing the carved wooden bird which takes flight in light, a knowing smile. Style: premium gacha-game splash art in the style of NIKKE and Honkai Star Rail character illustrations, semi-realistic painterly, dramatic soft rim light, very high detail, plain very dark slate-blue studio background (#1c2129) with a warm glow behind her. Costume (the main focus): a glamorous, daring, high-fashion modernized hanbok battle dress, very attractive and eye-catching: a short cropped jeogori with a deep neckline and bare shoulders, sheer organza sleeves, a fitted gilt-bronze plate corset leaving the waist bare, a high-slit layered skirt, all in her own colors and keeping her signature details: a deep teal silk robe crossed in a deep V, cinched by a jade-beaded belt that carries her sword, a long white scarf. Sexy and elegant like a top-tier gacha character, but tasteful (no nudity). Korean Samhan / Three Kingdoms motifs. Power: an aura in her signature color rising like heat haze with individual sparks and light motes. No animals or animal spirits (fur trim or animal-pattern fabric is fine). Do NOT draw: a halo or disc behind the head, sun rays, any red circle or sun symbol, Japanese or Chinese style clothing, any text or watermark.",
+      "originalProvenance": "docs/realm/awaken-women-next.html:115 REDO1 카드 행 + first() 렌더러(186행)로 재구성. docs/realm/awaken-v2-prompts.md:11-15 공통 1차 2판 틀 참조. docs/realm/awaken-prompts.html:124 선행 카드도 같은 캐릭터 pose/outfit 설명. 문서의 카드 행과 렌더링 함수로 재구성한 1차 문안. 실제 생성 시 제출한 최종 문자열과 동일한지는 미확인.",
+      "observations": "화면 왼쪽 아래로 뻗은 가까운 손이 원근 때문에 크게 보이고 손가락이 여섯처럼 읽힌다. 오른쪽에는 날아오르는 나무 새, 흰 목도리와 청록 옷, 허리 검자루가 있다.",
+      "issueKo": "원근이 강조된 뻗은 손에 여분 손가락이 보임.",
+      "repairPrompt": "Edit the attached EXISTING FIRST-AWAKENING image of this adult fictional woman. This is a localized anatomy and prop repair, not a new awakening or a redesign. Preserve her exact face, apparent age, beauty, expression, hairstyle, body silhouette, outfit, neckline and amount of skin shown, strength, aura, palette, lighting, background, painterly finish, pose, crop and composition. Preserve every correct visible detail. Repaint only the defective region and the smallest adjacent area needed for consistent anatomy, lighting and occlusion. Do not add extra limbs, fingers, props, text or a watermark. At the outstretched near hand in the lower screen-left, remove the extra digit and resolve the hand into one thumb and four fingers, some naturally overlapping in the existing foreshortened perspective. Trace a plausible anatomical line from the original sleeve and forearm through the wrist into that palm. Keep the reaching/releasing gesture, palm angle and hand size in perspective. Do not flatten the hand into a front-facing five-finger display. Preserve the carved wooden bird in flight on the screen-right, streaming white scarf, teal robe, jade belt, sword hilt, face and wind aura exactly as shown.",
+      "checklist": [
+        "뻗은 손 한 손에 엄지 하나·손가락 네 개 이하로 자연 가림",
+        "소매→팔목→손바닥 이어짐",
+        "나무 새·목도리·허리 검 위치 유지",
+        "얼굴·청록 복장·구도 유지"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "35a394d8998a143dc65850457daee30c77c1f2b252263bf641eb262cb8795280",
+      "newAppliedCanonicalSha256": "f6f48452eb99006925dee16f99c1c5dcb84853d5a3d8889929c6a5c3fd142377"
+    },
+    {
+      "shortId": "w54",
+      "portraitId": "w-54-maga-dalli",
+      "stage": "awaken",
+      "sourcePath": "public/realm/awaken-hd/w-54-maga-dalli.jpg",
+      "name": "마가 달리",
+      "originalPrompt": "This is an original character from my own Korean historical fantasy strategy game. The attached portrait is an AI-generated illustration of a fictional adult woman in her late twenties, not a real person. Create a square 1:1 image of the SAME character in her awakened form, the moment she reaches her full power. Identity: keep the exact same face, age, hairstyle and color palette so she is instantly recognizable. Framing: upper-body shot from just above the head to the hips, dynamic asymmetric pose: twisted around in the saddle, drawing her horn bow back over her shoulder to shoot behind her, laughing. Style: premium gacha-game splash art in the style of NIKKE and Honkai Star Rail character illustrations, semi-realistic painterly, dramatic soft rim light, very high detail, plain very dark slate-blue studio background (#1c2129) with a warm glow behind her. Costume (the main focus): a glamorous, daring, high-fashion modernized hanbok battle dress, very attractive and eye-catching: a short cropped jeogori with a deep neckline and bare shoulders, sheer organza sleeves, a fitted gilt-bronze plate corset leaving the waist bare, a high-slit layered skirt, all in her own colors and keeping her signature details: a grey fur vest leaving the shoulders bare over a fitted leather bodice with bronze studs, horsetail ornaments. Sexy and elegant like a top-tier gacha character, but tasteful (no nudity). Korean Samhan / Three Kingdoms motifs. Power: an aura in her signature color rising like heat haze with individual sparks and light motes. No animals or animal spirits (fur trim or animal-pattern fabric is fine). Do NOT draw: a halo or disc behind the head, sun rays, any red circle or sun symbol, Japanese or Chinese style clothing, any text or watermark.",
+      "originalProvenance": "docs/realm/awaken-women-next.html:122 REDO1 카드 행 + first() 렌더러(186행)로 재구성. docs/realm/awaken-v2-prompts.md:11-15 공통 1차 2판 틀 참조. docs/realm/awaken-prompts.html:131 선행 카드도 같은 캐릭터 pose/outfit 설명. 문서의 카드 행과 렌더링 함수로 재구성한 1차 문안. 실제 생성 시 제출한 최종 문자열과 동일한지는 미확인.",
+      "observations": "화면 오른쪽 손이 활 몸체를 잡고 왼쪽 손이 시위를 당기는 기마 궁수 자세다. 화살은 가슴 앞에서 화면 오른쪽을 향하지만 시위·화살 뒤끝 연결점이 어긋나 있다. 웃는 얼굴, 털 조끼, 깃 장식이 뚜렷하다.",
+      "issueKo": "당긴 활시위와 화살 뒤끝의 접점 불일치 및 활 양끝까지 이어지는 시위 기하 오류.",
+      "repairPrompt": "Edit the attached EXISTING FIRST-AWAKENING image of this adult fictional woman. This is a localized anatomy and prop repair, not a new awakening or a redesign. Preserve her exact face, apparent age, beauty, expression, hairstyle, body silhouette, outfit, neckline and amount of skin shown, strength, aura, palette, lighting, background, painterly finish, pose, crop and composition. Preserve every correct visible detail. Repaint only the defective region and the smallest adjacent area needed for consistent anatomy, lighting and occlusion. Do not add extra limbs, fingers, props, text or a watermark. Repair the existing fully drawn horn bow without changing her pose. One real bowstring must consist of exactly two taut straight segments: upper bow tip to the draw-hand nock anchor, then that same anchor to the lower bow tip. Both ends attach to the actual bow limb tips. The single arrow tail and nock sit precisely at the shared anchor in her drawing fingers; its fletching remains behind that hand and its arrowhead points forward toward screen-right along the existing shaft. Keep the bow-holding hand wrapped around the grip, with string and arrow separated from her face and torso by clear occlusion. No loose third string, floating arrow, extra hand or second shot. Retain her broad grin, feathered hair, fur vest and original composition.",
+      "checklist": [
+        "상단 활끝→당기는 손의 화살 시위고리→하단 활끝 두 직선만",
+        "화살 뒤끝이 두 시위선 교점에 결합",
+        "깃은 손 뒤, 촉은 화면 오른쪽 앞",
+        "활 파지 손·웃는 얼굴·복장·구도 유지"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "3754cb1216abaab8a5e81e070235512fc9ea2c550f1481cea5a5d949842deafd",
+      "newAppliedCanonicalSha256": "b428601f85a8b80fdf3f47e97b07a05c7d9dcf2111dc121058be557be34b0c37"
+    },
+    {
+      "shortId": "w57",
+      "portraitId": "w-57-bullae-bakdal",
+      "stage": "awaken",
+      "sourcePath": "public/realm/awaken-hd/w-57-bullae-bakdal.jpg",
+      "name": "삼로 박달",
+      "originalPrompt": "This is an original character from my own Korean historical fantasy strategy game. The attached portrait is an AI-generated illustration of a fictional adult woman in her late twenties, not a real person. Create a square 1:1 image of the SAME character in her awakened form, the moment she reaches her full power. Identity: keep the exact same face, age, hairstyle and color palette so she is instantly recognizable. Framing: upper-body shot from just above the head to the hips, dynamic asymmetric pose: standing guard with the horn bow held upright in front of her, gaze fixed past the viewer, a calm smile, seen from a slightly low angle. Style: premium gacha-game splash art in the style of NIKKE and Honkai Star Rail character illustrations, semi-realistic painterly, dramatic soft rim light, very high detail, plain very dark slate-blue studio background (#1c2129) with a warm glow behind her. Costume (the main focus): a glamorous, daring, high-fashion modernized hanbok battle dress, very attractive and eye-catching: a short cropped jeogori with a deep neckline and bare shoulders, sheer organza sleeves, a fitted gilt-bronze plate corset leaving the waist bare, a high-slit layered skirt, all in her own colors and keeping her signature details: a lamellar corset with gold edges over a fitted ochre top, a tiger pelt over one shoulder, a tooth necklace. Sexy and elegant like a top-tier gacha character, but tasteful (no nudity). Korean Samhan / Three Kingdoms motifs. Power: an aura in her signature color rising like heat haze with individual sparks and light motes. No animals or animal spirits (fur trim or animal-pattern fabric is fine). Do NOT draw: a halo or disc behind the head, sun rays, any red circle or sun symbol, Japanese or Chinese style clothing, any text or watermark.",
+      "originalProvenance": "docs/realm/awaken-women-next.html:125 REDO1 카드 행 + first() 렌더러(186행)로 재구성. docs/realm/awaken-v2-prompts.md:11-15 공통 1차 2판 틀 참조. docs/realm/awaken-prompts.html:134 선행 카드도 같은 캐릭터 pose/outfit 설명. 문서의 카드 행과 렌더링 함수로 재구성한 1차 문안. 실제 생성 시 제출한 최종 문자열과 동일한지는 미확인.",
+      "observations": "활을 몸 앞에서 세워 들고 경계하는 자세이며 화살을 끼우거나 시위를 당기지 않는다. 활몸체와 호피 어깨털은 보이지만 아래 활끝까지 닿는 시위가 불완전하다.",
+      "issueKo": "세워 든 비조준 활의 시위가 중간에서 끊기거나 한쪽 활끝에 닿지 않음.",
+      "repairPrompt": "Edit the attached EXISTING FIRST-AWAKENING image of this adult fictional woman. This is a localized anatomy and prop repair, not a new awakening or a redesign. Preserve her exact face, apparent age, beauty, expression, hairstyle, body silhouette, outfit, neckline and amount of skin shown, strength, aura, palette, lighting, background, painterly finish, pose, crop and composition. Preserve every correct visible detail. Repaint only the defective region and the smallest adjacent area needed for consistent anatomy, lighting and occlusion. Do not add extra limbs, fingers, props, text or a watermark. Keep her upright, undrawn guard pose. Complete a single continuous, slim, tensioned bowstring from the visible upper horn-bow tip to the lower horn-bow tip, attached at both actual limb-tip notches. Because she is not drawing or aiming in this portrait, the string must remain at its natural braced position instead of forming a drawn V. Keep its overlap with the bow grip and clothing physically legible. Do not add an arrow, a drawing hand or a firing pose. Preserve the existing hand holding the bow upright, calm smile, ochre top, gilt lamellar corset, tiger pelt, tooth necklace and framing.",
+      "checklist": [
+        "활시위 한 줄이 위·아래 실제 활끝에 각각 붙음",
+        "당기지 않은 경계 자세 그대로, 화살 추가 없음",
+        "활을 쥔 손·호피·옷 유지",
+        "얼굴·구도와 노출 유지"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "c2daa1e52a09faba4ec5709a93cb65508821f01621f1b54881b26b2ce6d48912",
+      "newAppliedCanonicalSha256": "1494d3aeb09baa047358d8ee881552f9c826f3464ef88b3d32364f60e84fc9c8"
+    },
+    {
+      "shortId": "w62",
+      "portraitId": "w-62-byeokjin-byeol",
+      "stage": "awaken",
+      "sourcePath": "public/realm/awaken-hd/w-62-byeokjin-byeol.jpg",
+      "name": "읍차 별",
+      "originalPrompt": "This is an original character from my own Korean historical fantasy strategy game. The attached portrait is an AI-generated illustration of a fictional adult woman in her mid-twenties, not a real person. Create a square 1:1 image of the SAME character in her awakened form, the moment she reaches her full power. Identity: keep the exact same face, age, hairstyle and color palette so she is instantly recognizable. Framing: upper-body shot from just above the head to the hips, dynamic asymmetric pose: holding the glowing tongs close to her face to inspect a red-hot blade, sparks lighting her face, a cheerful focused look. Style: premium gacha-game splash art in the style of NIKKE and Honkai Star Rail character illustrations, semi-realistic painterly, dramatic soft rim light, very high detail, plain very dark slate-blue studio background (#1c2129) with a warm glow behind her. Costume (the main focus): a glamorous, daring, high-fashion modernized hanbok battle dress, very attractive and eye-catching: a short cropped jeogori with a deep neckline and bare shoulders, sheer organza sleeves, a fitted gilt-bronze plate corset leaving the waist bare, a high-slit layered skirt, all in her own colors and keeping her signature details: a white jeogori slipping off one shoulder under a fitted leather apron, rolled sleeves, leather gloves. Sexy and elegant like a top-tier gacha character, but tasteful (no nudity). Korean Samhan / Three Kingdoms motifs. Power: an aura in her signature color rising like heat haze with individual sparks and light motes. No animals or animal spirits (fur trim or animal-pattern fabric is fine). Do NOT draw: a halo or disc behind the head, sun rays, any red circle or sun symbol, Japanese or Chinese style clothing, any text or watermark.",
+      "originalProvenance": "docs/realm/awaken-women-next.html:130 REDO1 카드 행 + first() 렌더러(186행)로 재구성. docs/realm/awaken-v2-prompts.md:11-15 공통 1차 2판 틀 참조. docs/realm/awaken-prompts.html:139 선행 카드도 같은 캐릭터 pose/outfit 설명. 문서의 카드 행과 렌더링 함수로 재구성한 1차 문안. 실제 생성 시 제출한 최종 문자열과 동일한지는 미확인.",
+      "observations": "화면 중앙 장갑 낀 한 손이 금속 집게 손잡이를 잡고, 금속의 고리형 손잡이·중앙 관절·끝 집게턱이 달군 쇠를 물고 있다. 다른 손은 보이지 않는다. 뺨 그을음, 땋은 머리, 흰 저고리, 가죽 앞치마가 보인다.",
+      "issueKo": "뜨거운 쇠를 잡는 집게의 손잡이·관절·집게턱 연결과 장갑 낀 손의 파지가 불안정해 보임.",
+      "repairPrompt": "Edit the attached EXISTING FIRST-AWAKENING image of this adult fictional woman. This is a localized anatomy and prop repair, not a new awakening or a redesign. Preserve her exact face, apparent age, beauty, expression, hairstyle, body silhouette, outfit, neckline and amount of skin shown, strength, aura, palette, lighting, background, painterly finish, pose, crop and composition. Preserve every correct visible detail. Repaint only the defective region and the smallest adjacent area needed for consistent anatomy, lighting and occlusion. Do not add extra limbs, fingers, props, text or a watermark. Repair the forge tongs as one physically continuous hinged tool. Preserve the existing loop-shaped handle behind the gloved hand; both metal arms should run from that handle through one clear pivot to two matching jaws that firmly clamp the same glowing hot iron. The single visible gloved hand closes around the cool handle with plausible thumb opposition and curled fingers; it does not touch the glowing metal or the hot jaws. Keep the metal tool separated from skin and clothing and maintain the existing spacing that keeps heat safely away from her hand. Do not invent a second hand, extra tong arm, new hammer or different weapon. Preserve her soot-smudged cheek, braid, white cross-collar, leather apron, shoulder plate, focused smile and sparks.",
+      "checklist": [
+        "손잡이→하나의 관절→두 집게턱이 같은 도구로 이어짐",
+        "집게턱이 달군 쇠를 실제로 압착",
+        "장갑 손은 열원 아닌 손잡이를 안정적으로 파지",
+        "추가 손·도구 없이 얼굴·복장·구도 유지"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "b793b7bb89b5dde287028009cd05262a407f1690df684e7bbeffdf20af82ee49",
+      "newAppliedCanonicalSha256": "9236ae149a7192218826c76e63074082bf434d9dc03b69d9c75352da1d1358e2"
+    },
+    {
+      "shortId": "w65",
+      "portraitId": "w-65-goguryeo-hwalmi",
+      "stage": "awaken",
+      "sourcePath": "public/realm/awaken-hd/w-65-goguryeo-hwalmi.jpg",
+      "name": "조의 활미",
+      "originalPrompt": "This is an original character from my own Korean historical fantasy strategy game. The attached portrait is an AI-generated illustration of a fictional adult woman in her mid-twenties, not a real person. Create a square 1:1 image of the SAME character in her awakened form, the moment she reaches her full power. Identity: keep the exact same face, age, hairstyle and color palette so she is instantly recognizable. Framing: upper-body shot from just above the head to the hips, dynamic asymmetric pose: standing in profile, aiming an arrow straight up at the sky, back arched, hair streaming. Style: premium gacha-game splash art in the style of NIKKE and Honkai Star Rail character illustrations, semi-realistic painterly, dramatic soft rim light, very high detail, plain very dark slate-blue studio background (#1c2129) with a warm glow behind her. Costume (the main focus): a glamorous, daring, high-fashion modernized hanbok battle dress, very attractive and eye-catching: a short cropped jeogori with a deep neckline and bare shoulders, sheer organza sleeves, a fitted gilt-bronze plate corset leaving the waist bare, a high-slit layered skirt, all in her own colors and keeping her signature details: a fitted white robe with black spots in a deep V, a wide red belt cinching her waist, two feathers in her hair. Sexy and elegant like a top-tier gacha character, but tasteful (no nudity). Korean Samhan / Three Kingdoms motifs. Power: an aura in her signature color rising like heat haze with individual sparks and light motes. No animals or animal spirits (fur trim or animal-pattern fabric is fine). Do NOT draw: a halo or disc behind the head, sun rays, any red circle or sun symbol, Japanese or Chinese style clothing, any text or watermark.",
+      "originalProvenance": "docs/realm/awaken-women-next.html:133 REDO1 카드 행 + first() 렌더러(186행)로 재구성. docs/realm/awaken-v2-prompts.md:11-15 공통 1차 2판 틀 참조. docs/realm/awaken-prompts.html:142 선행 카드도 같은 캐릭터 pose/outfit 설명. 문서의 카드 행과 렌더링 함수로 재구성한 1차 문안. 실제 생성 시 제출한 최종 문자열과 동일한지는 미확인.",
+      "observations": "흰 바탕 검은 점무늬 옷과 붉은 허리띠, 깃털 두 개를 한 궁수가 위쪽을 겨냥하며 시위를 당긴다. 이마 중앙에 붉은 점이 있고 당기는 손을 향하는 한 선만 두드러져 시위의 다른 구간이 불명확하다.",
+      "issueKo": "이마 붉은 점 삭제, 당긴 활의 상·하단 시위 두 구간과 화살 시위고리의 정확한 결합 필요.",
+      "repairPrompt": "Edit the attached EXISTING FIRST-AWAKENING image of this adult fictional woman. This is a localized anatomy and prop repair, not a new awakening or a redesign. Preserve her exact face, apparent age, beauty, expression, hairstyle, body silhouette, outfit, neckline and amount of skin shown, strength, aura, palette, lighting, background, painterly finish, pose, crop and composition. Preserve every correct visible detail. Repaint only the defective region and the smallest adjacent area needed for consistent anatomy, lighting and occlusion. Do not add extra limbs, fingers, props, text or a watermark. Remove only the small red dot on the center of her forehead; restore natural skin texture there without changing her face. Repair the existing fully drawn bow geometry: one taut upper straight segment from the upper bow tip to the nock anchor in her drawing hand and one taut lower straight segment from the same anchor to the lower bow tip. The single arrow tail/nock touches that exact junction, with feathers behind the drawing hand and its arrowhead pointing in her existing upward aiming direction. Both bow tips and string ends must be visible or unambiguously continue to their real attachments; no dangling half-string, third segment, duplicate arrow or shaft passing through her face. Preserve her profile, two hair feathers, spotted white outfit, red sash and original dynamic crop.",
+      "checklist": [
+        "이마 붉은 점만 삭제하고 얼굴 동일",
+        "활끝 두 곳에서 당기는 손 한 교점으로 오는 시위 두 직선",
+        "화살 뒤끝·깃·촉 방향이 시위와 물리적으로 일치",
+        "흰 점무늬 복장·붉은 띠·깃털 둘 유지"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "39059a339be2af3016011805ee75b2889ec83a34e60e6cde2b0065f2ebab3705",
+      "newAppliedCanonicalSha256": "8d21860efbf51ca1dfdeb8e9e08796b2044a33abf26cb3700d49a1573ba30d76"
+    },
+    {
+      "shortId": "w74",
+      "portraitId": "w-74-balla-dokmudeom",
+      "stage": "awaken",
+      "sourcePath": "public/realm/awaken-hd/w-74-balla-dokmudeom.jpg",
+      "name": "살해 독무덤",
+      "originalPrompt": "This is an original character from my own Korean historical fantasy strategy game. The attached portrait is an AI-generated illustration of a fictional adult woman in her mid-twenties, not a real person. Create a square 1:1 image of the SAME character in her awakened form, the moment she reaches her full power. Identity: keep the exact same face, age, hairstyle and color palette so she is instantly recognizable. Framing: upper-body shot from just above the head to the hips, dynamic asymmetric pose: head tilted down, very long hair falling around her face, eyes staring up eerily, one hand on the great burial jar glowing from inside. Style: premium gacha-game splash art in the style of NIKKE and Honkai Star Rail character illustrations, semi-realistic painterly, dramatic soft rim light, very high detail, plain very dark slate-blue studio background (#1c2129) with a warm glow behind her. Costume (the main focus): a glamorous, daring, high-fashion modernized hanbok battle dress, very attractive and eye-catching: a short cropped jeogori with a deep neckline and bare shoulders, sheer organza sleeves, a fitted gilt-bronze plate corset leaving the waist bare, a high-slit layered skirt, all in her own colors and keeping her signature details: a fur mantle slipping off her shoulders over a fitted dark red bodice, blue beads and the bronze mirror. Sexy and elegant like a top-tier gacha character, but tasteful (no nudity). Korean Samhan / Three Kingdoms motifs. Power: an aura in her signature color rising like heat haze with individual sparks and light motes. No animals or animal spirits (fur trim or animal-pattern fabric is fine). Do NOT draw: a halo or disc behind the head, sun rays, any red circle or sun symbol, Japanese or Chinese style clothing, any text or watermark.",
+      "originalProvenance": "docs/realm/awaken-women-next.html:142 REDO1 카드 행 + first() 렌더러(186행)로 재구성. docs/realm/awaken-v2-prompts.md:11-15 공통 1차 2판 틀 참조. docs/realm/awaken-prompts.html:151 선행 카드도 같은 캐릭터 pose/outfit 설명. 문서의 카드 행과 렌더링 함수로 재구성한 1차 문안. 실제 생성 시 제출한 최종 문자열과 동일한지는 미확인.",
+      "observations": "화면 왼쪽 손이 큰 옹관 가장자리에 얹혀 있는데 손가락 수·겹침이 비정상적으로 읽힌다. 청동거울은 손에 든 것이 아니라 가슴에 매달려 있다. 긴 머리와 푸른 구슬, 검붉은 옷이 특징이다.",
+      "issueKo": "옹관 위 손의 손가락 오류와 손·항아리 가장자리 접촉 오류.",
+      "repairPrompt": "Edit the attached EXISTING FIRST-AWAKENING image of this adult fictional woman. This is a localized anatomy and prop repair, not a new awakening or a redesign. Preserve her exact face, apparent age, beauty, expression, hairstyle, body silhouette, outfit, neckline and amount of skin shown, strength, aura, palette, lighting, background, painterly finish, pose, crop and composition. Preserve every correct visible detail. Repaint only the defective region and the smallest adjacent area needed for consistent anatomy, lighting and occlusion. Do not add extra limbs, fingers, props, text or a watermark. Repair only the hand resting on the great burial jar at lower screen-left. Give it one thumb and four anatomically plausible fingers, with natural partial occlusion where fingers curl over or rest against the clay rim. The wrist must connect continuously to the existing arm, the palm must bear on the rim rather than hover, and no digit should pass through the clay. Preserve the jar shape, inner blue glow and hand placement. Keep the bronze mirror hanging at her chest on its cord; do not put it into this hand. Preserve her downward-tilted face and eerie upward gaze, long hair, fur mantle, dark red bodice, blue beads and original composition.",
+      "checklist": [
+        "옹관 위 손은 다섯 손가락 이하 자연 가림",
+        "손바닥·손가락과 항아리 테두리의 접촉/가림 정확",
+        "청동거울은 가슴에 매달린 상태",
+        "얼굴·긴 머리·푸른 빛·복장 유지"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "b4f1883acb31d58818f98ba0d6fe2b2c6fc4be1dd2fc3075820fa297911509f6",
+      "newAppliedCanonicalSha256": "a905069174ab1365b8ba3f37880cbc8e691bd90186a16e9694a28bcf8977986f"
+    },
+    {
+      "shortId": "w78",
+      "portraitId": "w-78-wansan-wan",
+      "stage": "awaken",
+      "sourcePath": "public/realm/awaken-hd/w-78-wansan-wan.jpg",
+      "name": "살해 완",
+      "originalPrompt": "This is an original character from my own Korean historical fantasy strategy game. The attached portrait is an AI-generated illustration of a fictional adult woman in her mid-twenties, not a real person. Create a square 1:1 image of the SAME character in her awakened form, the moment she reaches her full power. Identity: keep the exact same face, age, hairstyle and color palette so she is instantly recognizable. Framing: upper-body shot from just above the head to the hips, dynamic asymmetric pose: holding an arrow up at eye level, sighting along the shaft with one eye closed, a quiet smirk. Style: premium gacha-game splash art in the style of NIKKE and Honkai Star Rail character illustrations, semi-realistic painterly, dramatic soft rim light, very high detail, plain very dark slate-blue studio background (#1c2129) with a warm glow behind her. Costume (the main focus): a glamorous, daring, high-fashion modernized hanbok battle dress, very attractive and eye-catching: a short cropped jeogori with a deep neckline and bare shoulders, sheer organza sleeves, a fitted gilt-bronze plate corset leaving the waist bare, a high-slit layered skirt, all in her own colors and keeping her signature details: a fitted green hemp robe in a deep V with a brown collar, a leather belt with the quiver. Sexy and elegant like a top-tier gacha character, but tasteful (no nudity). Korean Samhan / Three Kingdoms motifs. Power: an aura in her signature color rising like heat haze with individual sparks and light motes. No animals or animal spirits (fur trim or animal-pattern fabric is fine). Do NOT draw: a halo or disc behind the head, sun rays, any red circle or sun symbol, Japanese or Chinese style clothing, any text or watermark.",
+      "originalProvenance": "docs/realm/awaken-women-next.html:146 REDO1 카드 행 + first() 렌더러(186행)로 재구성. docs/realm/awaken-v2-prompts.md:11-15 공통 1차 2판 틀 참조. docs/realm/awaken-prompts.html:155 선행 카드도 같은 캐릭터 pose/outfit 설명. 문서의 카드 행과 렌더링 함수로 재구성한 1차 문안. 실제 생성 시 제출한 최종 문자열과 동일한지는 미확인.",
+      "observations": "화면 오른쪽 손이 활을 잡고 왼쪽 손은 화살과 시위를 얼굴 높이까지 당긴다. 화살 뒤쪽 깃은 왼쪽, 촉은 화면 오른쪽을 향하지만 당긴 시위가 한 점에 모이지 않는다. 한쪽 눈을 감고 미소 짓는 표정이다.",
+      "issueKo": "화살 뒤끝 시위고리가 당기는 손과 시위 두 구간의 교점에 정확히 연결되지 않음.",
+      "repairPrompt": "Edit the attached EXISTING FIRST-AWAKENING image of this adult fictional woman. This is a localized anatomy and prop repair, not a new awakening or a redesign. Preserve her exact face, apparent age, beauty, expression, hairstyle, body silhouette, outfit, neckline and amount of skin shown, strength, aura, palette, lighting, background, painterly finish, pose, crop and composition. Preserve every correct visible detail. Repaint only the defective region and the smallest adjacent area needed for consistent anatomy, lighting and occlusion. Do not add extra limbs, fingers, props, text or a watermark. Keep her precise eye-level archery pose and one-eyed smirk. Make the fully drawn bow mechanically complete: a single upper string segment runs straight from the upper bow tip to one draw-hand nock anchor, and a single lower segment runs straight from that same anchor to the lower bow tip. The one arrow tail and nock meet the two segments exactly inside the drawing fingers. Its fletching is behind the anchor on screen-left, its shaft passes cleanly forward past the bow and its arrowhead aims screen-right. Keep the other hand wrapped around the bow grip; do not make string, shaft or fingers merge into her mouth or neck. Preserve the green and brown robe, pale feather, quiver, face and original crop.",
+      "checklist": [
+        "위 활끝→당기는 손 교점→아래 활끝 두 시위 직선",
+        "화살 뒤끝이 교점에 걸리고 깃은 뒤/촉은 앞",
+        "입·목·손을 화살이나 시위가 관통하지 않음",
+        "한쪽 눈 감은 표정·녹색 옷·구도 유지"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "50ca33bbc54eaec5c3e4e0d2c1965b02fab6746509d4d4daf7dc84c8c7052502",
+      "newAppliedCanonicalSha256": "8343dcda9fe0a96555ef3d26a9e4d684b710ea2bd24b349913b8f5356261cf5a"
+    },
+    {
+      "shortId": "w80",
+      "portraitId": "w-80-usan-gangchi",
+      "stage": "awaken",
+      "sourcePath": "public/realm/awaken-hd/w-80-usan-gangchi.jpg",
+      "name": "장수 강치",
+      "originalPrompt": "This is an original character from my own Korean historical fantasy strategy game. The attached portrait is an AI-generated illustration of a fictional adult woman in her mid-twenties, not a real person. Create a square 1:1 image of the SAME character in her awakened form, the moment she reaches her full power. Identity: keep the exact same face, age, hairstyle and color palette so she is instantly recognizable. Framing: upper-body shot from just above the head to the hips, dynamic asymmetric pose: thrusting the barbed harpoon downward as if spearing from a rock, leaning over, wet hair flying, a wild grin. Style: premium gacha-game splash art in the style of NIKKE and Honkai Star Rail character illustrations, semi-realistic painterly, dramatic soft rim light, very high detail, plain very dark slate-blue studio background (#1c2129) with a warm glow behind her. Costume (the main focus): a glamorous, daring, high-fashion modernized hanbok battle dress, very attractive and eye-catching: a short cropped jeogori with a deep neckline and bare shoulders, sheer organza sleeves, a fitted gilt-bronze plate corset leaving the waist bare, a high-slit layered skirt, all in her own colors and keeping her signature details: a sleeveless black sea-lion leather vest molded to her torso, a tooth necklace. Sexy and elegant like a top-tier gacha character, but tasteful (no nudity). Korean Samhan / Three Kingdoms motifs. Power: an aura in her signature color rising like heat haze with individual sparks and light motes. No animals or animal spirits (fur trim or animal-pattern fabric is fine). Do NOT draw: a halo or disc behind the head, sun rays, any red circle or sun symbol, Japanese or Chinese style clothing, any text or watermark.",
+      "originalProvenance": "docs/realm/awaken-women-next.html:148 REDO1 카드 행 + first() 렌더러(186행)로 재구성. docs/realm/awaken-v2-prompts.md:11-15 공통 1차 2판 틀 참조. docs/realm/awaken-prompts.html:157 선행 카드도 같은 캐릭터 pose/outfit 설명. 문서의 카드 행과 렌더링 함수로 재구성한 1차 문안. 실제 생성 시 제출한 최종 문자열과 동일한지는 미확인.",
+      "observations": "화면 왼쪽 위에서 내려오는 작살 자루를 왼쪽 손이 어깨 근처에서 잡으며 촉은 아래쪽을 향한다. 손·팔·자루가 한 덩어리로 겹쳐 팔/몸을 관통하는 듯하다. 반대 팔은 화면 오른쪽 아래로 뻗는다.",
+      "issueKo": "작살 자루가 파지한 팔 또는 몸을 관통해 보이는 가림·팔 연결 오류.",
+      "repairPrompt": "Edit the attached EXISTING FIRST-AWAKENING image of this adult fictional woman. This is a localized anatomy and prop repair, not a new awakening or a redesign. Preserve her exact face, apparent age, beauty, expression, hairstyle, body silhouette, outfit, neckline and amount of skin shown, strength, aura, palette, lighting, background, painterly finish, pose, crop and composition. Preserve every correct visible detail. Repaint only the defective region and the smallest adjacent area needed for consistent anatomy, lighting and occlusion. Do not add extra limbs, fingers, props, text or a watermark. Repair the screen-left weapon arm and the single diagonal harpoon as distinct objects. Trace a plausible continuous shoulder, upper arm, elbow, forearm, wrist and palm; the palm grips the existing straight shaft, with the near-side fingers curling in front of it and its far contour reappearing beyond the hand. Keep the shaft one uninterrupted rigid line outside the actual palm occlusion, from upper screen-left toward its existing lower spearhead. It must pass beside, not through, the forearm, shoulder or torso. Retain the screen-right free arm in its original position. Preserve her wet high-tied hair, wild grin, black sleeveless sea-leather vest, tooth necklace, downward-thrust energy, face and framing.",
+      "checklist": [
+        "어깨→팔꿈치→손목→손바닥 해부학 연속",
+        "작살 한 자루가 손에만 가려지고 팔·몸을 관통하지 않음",
+        "손가락이 창자루를 감싸는 앞뒤 가림 정확",
+        "반대팔·웃는 얼굴·복장·구도 유지"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "08fc5f59f32f85489ded3ac5f9987a07c2971a9d6ba52d7789229f57aeddfe9a",
+      "newAppliedCanonicalSha256": "90c5362755ea15cd52ba27e503d42aa292c180aa849fd06f0056f9ef3d5d143a"
+    },
+    {
+      "shortId": "w82",
+      "portraitId": "w-82-ungcheon-gom",
+      "stage": "awaken",
+      "sourcePath": "public/realm/awaken-hd/w-82-ungcheon-gom.jpg",
+      "name": "살해 곰",
+      "originalPrompt": "This is an original character from my own Korean historical fantasy strategy game. The attached portrait is an AI-generated illustration of a fictional adult woman in her mid-twenties, not a real person. Create a square 1:1 image of the SAME character in her awakened form, the moment she reaches her full power. Identity: keep the exact same face, age, hairstyle and color palette so she is instantly recognizable. Framing: upper-body shot from just above the head to the hips, dynamic asymmetric pose: swinging the giant club over her shoulder in a full arc, the bear-head hood flapping, a roaring laugh. Style: premium gacha-game splash art in the style of NIKKE and Honkai Star Rail character illustrations, semi-realistic painterly, dramatic soft rim light, very high detail, plain very dark slate-blue studio background (#1c2129) with a warm glow behind her. Costume (the main focus): a glamorous, daring, high-fashion modernized hanbok battle dress, very attractive and eye-catching: a short cropped jeogori with a deep neckline and bare shoulders, sheer organza sleeves, a fitted gilt-bronze plate corset leaving the waist bare, a high-slit layered skirt, all in her own colors and keeping her signature details: the bear pelt worn off both shoulders like a cape over a fitted leather top. Sexy and elegant like a top-tier gacha character, but tasteful (no nudity). Korean Samhan / Three Kingdoms motifs. Power: an aura in her signature color rising like heat haze with individual sparks and light motes. No animals or animal spirits (fur trim or animal-pattern fabric is fine). Do NOT draw: a halo or disc behind the head, sun rays, any red circle or sun symbol, Japanese or Chinese style clothing, any text or watermark.",
+      "originalProvenance": "docs/realm/awaken-women-next.html:150 REDO1 카드 행 + first() 렌더러(186행)로 재구성. docs/realm/awaken-v2-prompts.md:11-15 공통 1차 2판 틀 참조. docs/realm/awaken-prompts.html:159 선행 카드도 같은 캐릭터 pose/outfit 설명. 문서의 카드 행과 렌더링 함수로 재구성한 1차 문안. 실제 생성 시 제출한 최종 문자열과 동일한지는 미확인.",
+      "observations": "화면 왼쪽 손이 어깨 뒤로 간 거대한 쇠테 몽둥이 자루를 잡고, 몽둥이 머리는 화면 오른쪽 위에 있다. 주먹·팔목·팔뚝 연결이 모호하다. 원본은 크게 웃고 곰머리 털가죽을 어깨에 두른다.",
+      "issueKo": "몽둥이를 잡은 손과 팔 연결/파지 오류.",
+      "repairPrompt": "Edit the attached EXISTING FIRST-AWAKENING image of this adult fictional woman. This is a localized anatomy and prop repair, not a new awakening or a redesign. Preserve her exact face, apparent age, beauty, expression, hairstyle, body silhouette, outfit, neckline and amount of skin shown, strength, aura, palette, lighting, background, painterly finish, pose, crop and composition. Preserve every correct visible detail. Repaint only the defective region and the smallest adjacent area needed for consistent anatomy, lighting and occlusion. Do not add extra limbs, fingers, props, text or a watermark. Repair only the screen-left club-gripping arm and its contact with the existing club. Make one continuous anatomical path from shoulder to upper arm, elbow, forearm, wrist and a five-digit hand gripping the SAME club shaft behind her shoulders. Let the palm and curled fingers wrap the shaft with convincing front/back occlusion; the shaft should continue to the iron-studded club head at upper screen-right and must not pass through her neck or arm. Keep the club weight and over-shoulder silhouette. Do not move the other arm or invent another club. Preserve her broad open-mouthed laugh, braided hair, bear-head pelt at screen-right shoulder, leather top, powerful figure, aura and framing.",
+      "checklist": [
+        "잡는 팔 어깨부터 손목까지 자연스럽게 연결",
+        "다섯 손가락 손이 같은 몽둥이 자루를 감쌈",
+        "몽둥이 머리·곰머리 털가죽·웃는 얼굴 유지",
+        "자루가 팔/목을 관통하지 않음"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "54e183ca5aa8238ea25857570fd4af99ee05aa5ea1dbd4dec6aca885df0c9c99",
+      "newAppliedCanonicalSha256": "20d088be586ef5284978b32fa238c52b29a3030c6db004bfd7af808a9e4d3951"
+    },
+    {
+      "shortId": "w101",
+      "portraitId": "w-101-garak-singwigan",
+      "stage": "awaken",
+      "sourcePath": "public/realm/awaken-hd/w-101-garak-singwigan.jpg",
+      "name": "신귀간",
+      "originalPrompt": null,
+      "originalProvenance": "정확한 1차 제출 문안은 지정 문서에서 미발견. docs/realm/awaken-women-next.html:168 카드 행은 pose/outfit 공란이며 WAKE2 목록의 2차 대상. docs/realm/awaken-v2-prompts.md:41에 11-03 1차 제작 기록만 있음. 2차 문안은 사용하지 않음.",
+      "observations": "화면 오른쪽 아래 허리에 얹은 손이 여섯 손가락처럼 보인다. 반대쪽 위 손은 빛나는 진주를 떠받친다. 미소, 긴 땋은 머리, 청백색 물결 의상, 진주 장식과 뒤편 물결이 보인다.",
+      "issueKo": "허리에 얹은 손의 여분 손가락/손가락 연결 오류.",
+      "repairPrompt": "Edit the attached EXISTING FIRST-AWAKENING image of this adult fictional woman. This is a localized anatomy and prop repair, not a new awakening or a redesign. Preserve her exact face, apparent age, beauty, expression, hairstyle, body silhouette, outfit, neckline and amount of skin shown, strength, aura, palette, lighting, background, painterly finish, pose, crop and composition. Preserve every correct visible detail. Repaint only the defective region and the smallest adjacent area needed for consistent anatomy, lighting and occlusion. Do not add extra limbs, fingers, props, text or a watermark. At the hand resting on her waist in the lower screen-right, remove the extra finger and rebuild a single natural hand with one thumb and four fingers, allowing ordinary overlap against the belt and blue-white fabric. Connect the wrist cleanly to its existing forearm and keep the hand planted against the waist, neither floating nor sinking into the costume. Do not force the digits to fan outward merely to show a count. Preserve her other raised hand supporting the luminous pearl, smile, long braid, pearl ornaments, flowing blue-white water costume, wave aura, figure, crop and composition.",
+      "checklist": [
+        "허리손 엄지 하나·네 손가락, 자연 가림",
+        "팔목과 손·허리 의상 접촉 정확",
+        "진주 든 반대손과 진주 그대로",
+        "얼굴·복장·물결 기운·구도 유지"
+      ],
+      "activeRepairTask": false,
+      "currentDecision": "user-correction-applied",
+      "referenceSha256BeforeReplacement": "f4d505c82b29c0a2d3606bc41bd64f126e8b120a9c3d2d5cce31717a799f684c",
+      "newAppliedCanonicalSha256": "798f3c64ae8dd028d6df70c4e49f5af193b24858a0024b3a427e95684678b1c2"
+    }
+  ]
+}

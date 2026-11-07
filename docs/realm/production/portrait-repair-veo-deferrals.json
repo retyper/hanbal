@@ -1,0 +1,266 @@
+{
+  "createdDate": "2026-11-07",
+  "stage": "first-awakening",
+  "releaseRule": "정지 초상 25장 적용 완료. 나머지 23장은 영상 전용 개별 사전 검수 후 해제. 기존 제출 결과 HOLD를 교정 완료만으로 자동 재시도하지 않는다.",
+  "portraits": [
+    {
+      "shortId": "g24",
+      "portraitId": "g-24-wansan-onsan",
+      "tier": "1",
+      "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+      "incomingStatus": "applied-static-portrait-video-preflight-pending",
+      "approvedCanonicalSha256": "03960ef456897cd60c42316d6ebcabb2404f9f4484ca077543a6f95a05a601af"
+    },
+    {
+      "shortId": "g29",
+      "portraitId": "g-29-yeonna-myeongsol",
+      "tier": "1",
+      "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+      "incomingStatus": "applied-static-portrait-video-preflight-pending",
+      "approvedCanonicalSha256": "e50c84449c9c4e2d90ec666d58536f0701c67df8183fc456d593fde21c5512f7"
+    },
+    {
+      "shortId": "g38",
+      "portraitId": "g-38-chopal-palmae",
+      "tier": "1",
+      "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+      "incomingStatus": "applied-static-portrait-video-preflight-pending",
+      "approvedCanonicalSha256": "fd923865ec2f665d6d9dcf5e7237c7b5695e17270a14132c1c6d619b7f26a858"
+    },
+    {
+      "shortId": "g64",
+      "portraitId": "g-64-jumong",
+      "tier": "1",
+      "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+      "incomingStatus": "applied-static-portrait-video-preflight-pending",
+      "approvedCanonicalSha256": "9c5b4dc6bb21a3cf0efa9d07abf80ed2c1053e092529766914ce3c2acf570ac1"
+    },
+    {
+      "shortId": "g80",
+      "portraitId": "g-80-saro-guryema",
+      "tier": "1",
+      "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+      "incomingStatus": "applied-static-portrait-video-preflight-pending",
+      "approvedCanonicalSha256": "311f5495605937618a909bbdc7380439c348517f95a1ea81422cb384c21c26bd"
+    },
+    {
+      "shortId": "g87",
+      "portraitId": "g-87-wae-chief",
+      "tier": "1",
+      "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+      "incomingStatus": "applied-static-portrait-video-preflight-pending",
+      "approvedCanonicalSha256": "524276cd5addbb7aad44b9a54dabd2a7e69e460f8c0e294bcd229ed01cae408f"
+    },
+    {
+      "shortId": "g91",
+      "portraitId": "g-91-biryu-songyang",
+      "tier": "1",
+      "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+      "incomingStatus": "applied-static-portrait-video-preflight-pending",
+      "approvedCanonicalSha256": "416f6bf133221fd0a38517b8fc1fb3e0a9d7bc694f7628bb94dae2f4c7430ab4"
+    },
+    {
+      "shortId": "g93",
+      "portraitId": "g-93-jomun-solgae",
+      "tier": "1",
+      "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+      "incomingStatus": "applied-static-portrait-video-preflight-pending",
+      "approvedCanonicalSha256": "32d1f4aadf1f26bbcb38e2adb239761b3b5d323e67174a40b168d78ab1ec84bd"
+    },
+    {
+      "shortId": "g94",
+      "portraitId": "g-94-golpo-maenun",
+      "tier": "1",
+      "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+      "incomingStatus": "applied-static-portrait-video-preflight-pending",
+      "approvedCanonicalSha256": "dbbfd4c3af6483f74b09e978e216fde49941ed53ab97a5a6e1d85a7eca4d44db"
+    },
+    {
+      "shortId": "l3",
+      "portraitId": "l-L3-heo-hwangok",
+      "tier": "1",
+      "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+      "incomingStatus": "applied-static-portrait-video-preflight-pending",
+      "approvedCanonicalSha256": "d1677f18af9903990ed37b32faa2e52de12e15907e94c50e1c7b4c2377cfccb1"
+    },
+    {
+      "shortId": "l4",
+      "portraitId": "l-L4-bari-gongju",
+      "tier": "1",
+      "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+      "incomingStatus": "applied-static-portrait-video-preflight-pending",
+      "approvedCanonicalSha256": "4db6c3741cb0baf8806c3e0b4d00c576be2c55424f6026eca0b9ca8e3653144b"
+    },
+    {
+      "shortId": "l6",
+      "portraitId": "l-L6-jeonggyeon-moju",
+      "tier": "1",
+      "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+      "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/l6awrere.png",
+      "incomingSourceSha256": "320f010cc7fe506e509730dbdaeffe78439dc12643dc88502f5b23831bd09d40",
+      "incomingStatus": "applied-static-portrait-video-preflight-pending",
+      "poseChangedByUser": false,
+      "approvedCanonicalSha256": "4eb5bb08362e77e50e4294c2f66b3f16f687ae2caec6442b9a3aa2cb6fea3d76"
+    },
+    {
+      "shortId": "w10",
+      "portraitId": "w-10-pirate-captain",
+      "tier": "1",
+      "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+      "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/w10awrere.png",
+      "incomingSourceSha256": "8a0cbe24543396c2262cd69586c5d2a13dd68922fbdd082a36c42b1a33e89b18",
+      "incomingStatus": "applied-static-portrait-video-preflight-pending",
+      "poseChangedByUser": false,
+      "approvedCanonicalSha256": "e2bd23a29a73d662276e46d6b13d461a0a08574ca05cfd41977b2eeeee7d0668"
+    },
+    {
+      "shortId": "w40",
+      "portraitId": "w-40-mujin-munui",
+      "tier": "1",
+      "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+      "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/w40awrere.png",
+      "incomingSourceSha256": "5d4f945d079eb0efe3b3603c9fd01d71eb42e8a1fd86d8fb1fbb2acbd6cd68f8",
+      "incomingStatus": "applied-static-portrait-video-preflight-pending",
+      "poseChangedByUser": false,
+      "approvedCanonicalSha256": "3359af2f8286e1df6b4a45ba151c588eb49def046c4f402ca9da88f7f0a23402"
+    },
+    {
+      "shortId": "w47",
+      "portraitId": "w-47-gosaburi-baram",
+      "tier": "1",
+      "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+      "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/w47awrere.png",
+      "incomingSourceSha256": "f884576e77a75854e2e6e61b95acd23b8359ac57dbf34520c7008ab7a6e40dbc",
+      "incomingStatus": "applied-static-portrait-video-preflight-pending",
+      "poseChangedByUser": false,
+      "promptRebuildRequired": false,
+      "approvedCanonicalSha256": "f6f48452eb99006925dee16f99c1c5dcb84853d5a3d8889929c6a5c3fd142377"
+    },
+    {
+      "shortId": "w54",
+      "portraitId": "w-54-maga-dalli",
+      "tier": "1",
+      "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+      "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/w54awrere.png",
+      "incomingSourceSha256": "6700259826adb809d735cedae6edd6473a0321af1e0b29c7ce9e2f82263511fd",
+      "incomingStatus": "applied-static-portrait-video-preflight-pending",
+      "poseChangedByUser": true,
+      "promptRebuildRequired": true,
+      "approvedCanonicalSha256": "b428601f85a8b80fdf3f47e97b07a05c7d9dcf2111dc121058be557be34b0c37"
+    },
+    {
+      "shortId": "w62",
+      "portraitId": "w-62-byeokjin-byeol",
+      "tier": "1",
+      "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+      "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/w62awrere.png",
+      "incomingSourceSha256": "27e9d692ed481e477b5c1d8b2eb0d33c30c46f5208789751ac795c335067933a",
+      "incomingStatus": "applied-static-portrait-video-preflight-pending",
+      "poseChangedByUser": true,
+      "promptRebuildRequired": true,
+      "approvedCanonicalSha256": "9236ae149a7192218826c76e63074082bf434d9dc03b69d9c75352da1d1358e2"
+    },
+    {
+      "shortId": "w66",
+      "portraitId": "w-66-saro-noeul",
+      "tier": "1",
+      "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+      "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/w66awrere.png",
+      "incomingSourceSha256": "1ec9e1880c0e9dcf8836872021009e969472cdcdc82dc070d8d6293347616eb1",
+      "incomingStatus": "applied-static-portrait-video-preflight-pending",
+      "poseChangedByUser": false,
+      "promptRebuildRequired": false,
+      "approvedCanonicalSha256": "fc8ac80191f13db2f913a0e79ad56072660779b77c95f3f5f8c7645f2d8a115e"
+    },
+    {
+      "shortId": "w74",
+      "portraitId": "w-74-balla-dokmudeom",
+      "tier": "1",
+      "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+      "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/w74awrere.png",
+      "incomingSourceSha256": "b7226322766c72d3b8af620cfa5fa36ddc10353af28b9157647fd55418b0ed8e",
+      "incomingStatus": "applied-static-portrait-video-preflight-pending",
+      "poseChangedByUser": false,
+      "promptRebuildRequired": false,
+      "approvedCanonicalSha256": "a905069174ab1365b8ba3f37880cbc8e691bd90186a16e9694a28bcf8977986f"
+    },
+    {
+      "shortId": "w78",
+      "portraitId": "w-78-wansan-wan",
+      "tier": "1",
+      "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+      "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/w78awrere.png",
+      "incomingSourceSha256": "b56f1197ce74b808286a20bb255158bb8fb37cf8f5653c47c9c06489da02bed1",
+      "incomingStatus": "applied-static-portrait-video-preflight-pending",
+      "poseChangedByUser": false,
+      "promptRebuildRequired": false,
+      "approvedCanonicalSha256": "8343dcda9fe0a96555ef3d26a9e4d684b710ea2bd24b349913b8f5356261cf5a"
+    },
+    {
+      "shortId": "w80",
+      "portraitId": "w-80-usan-gangchi",
+      "tier": "1",
+      "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+      "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/w80awrere.png",
+      "incomingSourceSha256": "9cf4cf8f50116f4194a740bbf5dfe6666291b4c09ac1ac90a68d2f075918ee96",
+      "incomingStatus": "applied-static-portrait-video-preflight-pending",
+      "poseChangedByUser": false,
+      "promptRebuildRequired": false,
+      "approvedCanonicalSha256": "90c5362755ea15cd52ba27e503d42aa292c180aa849fd06f0056f9ef3d5d143a"
+    },
+    {
+      "shortId": "w82",
+      "portraitId": "w-82-ungcheon-gom",
+      "tier": "1",
+      "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+      "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/w82awrere.png",
+      "incomingSourceSha256": "36eaff95defecdede14a321ab6500455ec45d147527b916164503ef9e8d60caf",
+      "incomingStatus": "applied-static-portrait-video-preflight-pending",
+      "poseChangedByUser": false,
+      "promptRebuildRequired": false,
+      "approvedCanonicalSha256": "20d088be586ef5284978b32fa238c52b29a3030c6db004bfd7af808a9e4d3951"
+    },
+    {
+      "shortId": "w101",
+      "portraitId": "w-101-garak-singwigan",
+      "tier": "1",
+      "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+      "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/w101awrere.png",
+      "incomingSourceSha256": "321136205d7d5d7a14b8c3b38e4cd37f0748d0391d40a84f9ea9c71aaa296a14",
+      "incomingStatus": "applied-static-portrait-video-preflight-pending",
+      "poseChangedByUser": false,
+      "promptRebuildRequired": false,
+      "approvedCanonicalSha256": "798f3c64ae8dd028d6df70c4e49f5af193b24858a0024b3a427e95684678b1c2"
+    }
+  ],
+  "released": [
+    {
+      "shortId": "w57",
+      "portraitId": "w-57-bullae-bakdal",
+      "tier": "1",
+      "reason": "교정 원본 적용·개별 사전 검수 후 1회 생성 완료. 결과는 사용자 평가로 HOLD(박달: 정적 / 활미: 먼 시선). 자동 재시도 금지.",
+      "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/w57awrere.png",
+      "incomingSourceSha256": "f63889bcab6206f3f6264c0b2726a2503ff2785c3dd9687078ca5afb9de324bc",
+      "incomingStatus": "applied-and-source-preflight-reviewed",
+      "poseChangedByUser": true,
+      "promptRebuildRequired": true,
+      "releasedAtKst": "2026-11-07T23:24:11+09:00",
+      "approvedCanonicalSha256": "1494d3aeb09baa047358d8ee881552f9c826f3464ef88b3d32364f60e84fc9c8",
+      "review": "portrait-repair-qa-prior-aw14-20261107.md"
+    },
+    {
+      "shortId": "w65",
+      "portraitId": "w-65-goguryeo-hwalmi",
+      "tier": "1",
+      "reason": "교정 원본 적용·개별 사전 검수 후 1회 생성 완료. 결과는 사용자 평가로 HOLD(박달: 정적 / 활미: 먼 시선). 자동 재시도 금지.",
+      "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/w65awrere.png",
+      "incomingSourceSha256": "4486f2639379024d2741ad65e2d5a136b26d7750d0a4e158eda10b316f5b1c27",
+      "incomingStatus": "applied-and-source-preflight-reviewed",
+      "poseChangedByUser": true,
+      "promptRebuildRequired": true,
+      "releasedAtKst": "2026-11-07T23:24:11+09:00",
+      "approvedCanonicalSha256": "8d21860efbf51ca1dfdeb8e9e08796b2044a33abf26cb3700d49a1573ba30d76",
+      "review": "portrait-repair-qa-prior-aw14-20261107.md"
+    }
+  ]
+}

@@ -1,190 +1,160 @@
 {
-  "schemaVersion": 1,
-  "purpose": "read-only portable snapshot; never submit or claim from this file",
-  "capturedDateKst": "2026-11-07",
+  "schemaVersion": 2,
+  "purpose": "Portable read-only handoff; NOT an executable queue",
+  "capturedAtKst": "2026-11-08T00:10:44+09:00",
   "sourceOfTruth": {
-    "owner": "Codex Windows",
+    "owner": "Claude-ready; Codex submission finished",
     "automation": "veo-1",
-    "nextCheckKst": "2026-11-07 22:54",
+    "automationStatus": "PAUSED",
+    "nextCheckKst": null,
+    "actualProviderResetKst": "2026-11-08T03:54:00+09:00",
+    "nextCheckNote": "Actual Gemini u4 UI; no Codex restart scheduled",
     "liveQueueWindowsPath": "C:\\Users\\my\\Documents\\Codex\\2026-11-06\\windows-pc-claude-code-claude-code\\outputs\\veo-production-queue.json",
-    "liveStateWindowsPath": "C:\\Users\\my\\Documents\\Codex\\2026-11-06\\windows-pc-claude-code-claude-code\\outputs\\veo-production-state.json",
-    "liveQueueRepoPath": null,
-    "nextCheckNote": "Actual Gemini u4 quota-reset Nov7 22:54 KST, observed after Neoul generation;veo-1 updated"
+    "liveStateWindowsPath": "C:\\Users\\my\\Documents\\Codex\\2026-11-06\\windows-pc-claude-code-claude-code\\outputs\\veo-production-state.json"
   },
   "counts": {
+    "accepted": 7,
+    "held": 9,
     "active": 0,
-    "accepted": 5,
-    "held": 6,
-    "claims": 0
-  },
-  "legacyAttempt": {
-    "attemptId": "legacy-maehwa-t1-v1",
-    "portraitId": "w-03-goguryeo-archer",
-    "tier": "1",
-    "status": "held",
-    "reason": "blurred_bands_from_square_input",
-    "sourceSha256": "cdbb370fa4d50a281d18559b335f5ad86969a2121b56ddc7fcdd7d5e86d9c674"
+    "claims": 0,
+    "attempts": 16,
+    "queueJobs": 20
   },
   "jobs": [
     {
       "jobId": "t1-maehwa-portrait-replacement",
-      "portraitId": "w-03-goguryeo-archer",
+      "heroId": "w-03-goguryeo-archer",
       "tier": "1",
       "status": "held",
-      "reason": "User reports abrupt mid-clip frame/pose discontinuity like a splice. 720x1280 framing and visible identity are improved, but do not integrate this version. Keep source unchanged. Audio not directly verified; Gemini auxiliary review reported one laugh and later breath, lip sync unconfirmed. No regeneration authorized by this report.",
-      "sourcePath": "public/realm/awaken-hd/w-03-goguryeo-archer.jpg",
-      "sourceSha256": "6bd25e222780b5e918f214b88dee24636428e1c833b431842c55fe158b952f91",
-      "attemptId": "t1-maehwa-portrait-replacement:2",
+      "inputSha256": "6bd25e222780b5e918f214b88dee24636428e1c833b431842c55fe158b952f91",
       "promptSha256": "7e5f99ca65546d379e1ab35083098e6750572acaad2340cf3a4f27ee12a89a6a",
+      "id": "t1-maehwa-portrait-replacement:2",
       "chatUrl": "https://gemini.google.com/u/4/app/49b88ff164d1e0b1?hl=ko",
-      "resultSha256": "f0da33bc6bc44aff8449f43f5b42654edffdd90af260de987e6b8b51dca3589b"
+      "fileSha256": "f0da33bc6bc44aff8449f43f5b42654edffdd90af260de987e6b8b51dca3589b",
+      "reviewNote": "User reports abrupt mid-clip frame/pose discontinuity like a splice. 720x1280 framing and visible identity are improved, but do not integrate this version. Keep source unchanged. Audio not directly verified; Gemini auxiliary review reported one laugh and later breath, lip sync unconfirmed. No regeneration authorized by this report."
     },
     {
       "jobId": "t1-haesol-first",
-      "portraitId": "w-63-us-haesol",
+      "heroId": "w-63-us-haesol",
       "tier": "1",
       "status": "accepted",
-      "reason": "Visual review: full 720x1280 head-to-pelvis portrait, consistent face/costume and pine-branch grip, one natural blessing gesture, no square inset. Inspected 12 samples and adjacent frames flagged by continuity scan; no large internal pose/face jump found in those pairs. Loop seam imperfect and tolerated per user. Audio track present but direct listening/lip sync not verified; this acceptance is for visual game integration.",
-      "sourcePath": "public/realm/awaken-hd/w-63-us-haesol.jpg",
-      "sourceSha256": "3912def4d672b416aa5ba8b8f7343bb97d5ccb08204a402737155bea38665a78",
-      "attemptId": "t1-haesol-first:3",
+      "inputSha256": "3912def4d672b416aa5ba8b8f7343bb97d5ccb08204a402737155bea38665a78",
       "promptSha256": "8c73ee97795b4a9a886a4790459c175b1c122cc21448b82eae5ce05e0f226e28",
+      "id": "t1-haesol-first:3",
       "chatUrl": "https://gemini.google.com/u/4/app/289e088e766b26d1?hl=ko",
-      "resultSha256": "8231b09f1bdb62f1199bb5f64850a643344addbb51a37940080bdac7e1402def"
+      "fileSha256": "8231b09f1bdb62f1199bb5f64850a643344addbb51a37940080bdac7e1402def",
+      "reviewNote": "Visual review: full 720x1280 head-to-pelvis portrait, consistent face/costume and pine-branch grip, one natural blessing gesture, no square inset. Inspected 12 samples and adjacent frames flagged by continuity scan; no large internal pose/face jump found in those pairs. Loop seam imperfect and tolerated per user. Audio track present but direct listening/lip sync not verified; this acceptance is for visual game integration."
     },
     {
       "jobId": "t1-byeol-first",
-      "portraitId": "w-62-byeokjin-byeol",
+      "heroId": "w-62-byeokjin-byeol",
       "tier": "1",
       "status": "accepted",
-      "reason": "Visual integration accepted:720x1280/24fps/10s, face/braid/soot/clothes remain consistent, purposeful inspection and visible arm/torso movement. Sampled12times plus adjacent-frame continuity candidates: no obvious internal splice seen. Tool/metal stay connected; supporting hand enters naturally. End pose differs substantially from start, so loop seam remains visible and is not claimed perfect. Direct audio listening not available.",
-      "sourcePath": "public/realm/awaken-hd/w-62-byeokjin-byeol.jpg",
-      "sourceSha256": "b793b7bb89b5dde287028009cd05262a407f1690df684e7bbeffdf20af82ee49",
-      "attemptId": "t1-byeol-first:4",
+      "inputSha256": "b793b7bb89b5dde287028009cd05262a407f1690df684e7bbeffdf20af82ee49",
       "promptSha256": "5c06574b2ad7cf1c6c7bcf700eacda9ea41630f36a0379e34af58b2e6d595b0c",
+      "id": "t1-byeol-first:4",
       "chatUrl": "https://gemini.google.com/u/4/app/3ca1aff7f5766074?hl=ko",
-      "resultSha256": "17b2f1b7c232b234a95e01ff9e62bad6b739fae96186daf44f204bb8561627ae"
+      "fileSha256": "17b2f1b7c232b234a95e01ff9e62bad6b739fae96186daf44f204bb8561627ae",
+      "reviewNote": "Visual integration accepted:720x1280/24fps/10s, face/braid/soot/clothes remain consistent, purposeful inspection and visible arm/torso movement. Sampled12times plus adjacent-frame continuity candidates: no obvious internal splice seen. Tool/metal stay connected; supporting hand enters naturally. End pose differs substantially from start, so loop seam remains visible and is not claimed perfect. Direct audio listening not available."
     },
     {
       "jobId": "t1-bitna-source-review",
-      "portraitId": "w-25-bihwa-priestess",
+      "heroId": "w-25-bihwa-priestess",
       "tier": "1",
-      "status": "deferred",
-      "reason": "source_or_portrait_repair_required",
-      "sourcePath": "public/realm/awaken-hd/w-25-bihwa-priestess.jpg",
-      "sourceSha256": "230216f878827aeaa63f44fbae5971f074b4ee8cb2c3c0725c4d6588abda42fe",
-      "attemptId": null,
+      "status": "unsubmitted-requires-current-preflight",
+      "inputSha256": "230216f878827aeaa63f44fbae5971f074b4ee8cb2c3c0725c4d6588abda42fe",
       "promptSha256": "8937122eb5a04d92f4d8da6ae351024b915a3fbdda00e0244e37d3b3b0a01e45"
     },
     {
       "jobId": "t1-dalli-first",
-      "portraitId": "w-54-maga-dalli",
+      "heroId": "w-54-maga-dalli",
       "tier": "1",
       "status": "held",
-      "reason": "User rejected gemini_generated_video_fdedb0ce as very unnatural and poor. Do not integrate or regenerate without specific authorization; continue to other characters. Reference bow-at-full-draw pose was constrained but output must be diagnosed against the original.",
-      "sourcePath": "public/realm/awaken-hd/w-54-maga-dalli.jpg",
-      "sourceSha256": "3754cb1216abaab8a5e81e070235512fc9ea2c550f1481cea5a5d949842deafd",
-      "attemptId": "t1-dalli-first:5",
+      "inputSha256": "3754cb1216abaab8a5e81e070235512fc9ea2c550f1481cea5a5d949842deafd",
       "promptSha256": "ec280b79db30e81ef8253b38667e2162002dd052ecdb1ca0f03d55ee3bd378f4",
+      "id": "t1-dalli-first:5",
       "chatUrl": "https://gemini.google.com/u/4/app/768dbf1e386f4c46?hl=ko",
-      "resultSha256": "3b473620df60a50636710a59cac2f340e86d967f92c33e81ed1765ad9b973c86"
+      "fileSha256": "3b473620df60a50636710a59cac2f340e86d967f92c33e81ed1765ad9b973c86",
+      "reviewNote": "User rejected gemini_generated_video_fdedb0ce as very unnatural and poor. Do not integrate or regenerate without specific authorization; continue to other characters. Reference bow-at-full-draw pose was constrained but output must be diagnosed against the original."
     },
     {
       "jobId": "t1-gaennae-first",
-      "portraitId": "w-37-michuhol-gaennae",
+      "heroId": "w-37-michuhol-gaennae",
       "tier": "1",
-      "status": "deferred",
-      "reason": "source_or_portrait_repair_required",
-      "sourcePath": "public/realm/awaken-hd/w-37-michuhol-gaennae.jpg",
-      "sourceSha256": "9caa76635cc1db712be12e5357ba79f1ef0614d98f4801ae54fd08de08f831ae",
-      "attemptId": null,
+      "status": "unsubmitted-requires-current-preflight",
+      "inputSha256": "9caa76635cc1db712be12e5357ba79f1ef0614d98f4801ae54fd08de08f831ae",
       "promptSha256": "71588a4e4417d463977b526ecae20a774a7e275f02be786b6a0e04f24df67877"
     },
     {
       "jobId": "t1-bulmae-first",
-      "portraitId": "w-38-sangdang-bulmae",
+      "heroId": "w-38-sangdang-bulmae",
       "tier": "1",
       "status": "held",
-      "reason": "Visual HOLD: 1.3-4s new gray axe head appears above original glowing lower object; source/tool relationship was incorrectly assumed in prompt. User clarified scene context: smiling blacksmith hammering heated iron. No resubmission or game integration. Portrait framing720x1280 PASS; hard cut not confirmed at6.58s; direct audio unverified.",
-      "sourcePath": "public/realm/awaken-hd/w-38-sangdang-bulmae.jpg",
-      "sourceSha256": "d0807b25a0ceaf83f70b28413e86fd5ea1beb69297f5148f3bffa7590dbdcb04",
-      "attemptId": "t1-bulmae-first:6",
+      "inputSha256": "d0807b25a0ceaf83f70b28413e86fd5ea1beb69297f5148f3bffa7590dbdcb04",
       "promptSha256": "43d6766e07fedc2d09de5b33fb31d1671c61c5866d40600dfc0f726a9566c7ab",
+      "id": "t1-bulmae-first:6",
       "chatUrl": "https://gemini.google.com/u/4/app/b648e21336861630?hl=ko",
-      "resultSha256": "c45d33e69bcb3a749d5d727346f8db956216d4aadbd22a965bc05e7a048151af",
-      "reviewAddendum": "User scene context: smiling blacksmith hammering heated iron. Retract original glowing hammer-head assumption. At2.5/3.5s workpiece fuses with shaft and lifts above anvil; HOLD remains for tool/workpiece separation failure. See veo-rules.md."
+      "fileSha256": "c45d33e69bcb3a749d5d727346f8db956216d4aadbd22a965bc05e7a048151af",
+      "reviewNote": "Visual HOLD: 1.3-4s new gray axe head appears above original glowing lower object; source/tool relationship was incorrectly assumed in prompt. User clarified scene context: smiling blacksmith hammering heated iron. No resubmission or game integration. Portrait framing720x1280 PASS; hard cut not confirmed at6.58s; direct audio unverified."
     },
     {
       "jobId": "t1-budeul-first",
-      "portraitId": "w-32-golbeol-budeul",
+      "heroId": "w-32-golbeol-budeul",
       "tier": "1",
-      "status": "deferred",
-      "reason": "source_or_portrait_repair_required",
-      "sourcePath": "public/realm/awaken-hd/w-32-golbeol-budeul.jpg",
-      "sourceSha256": "4c32eeefbcc8eb3e00115f25ef1b58cd23a644a7f3b4820b772b85419ebc7fb7",
-      "attemptId": null,
+      "status": "unsubmitted-requires-current-preflight",
+      "inputSha256": "4c32eeefbcc8eb3e00115f25ef1b58cd23a644a7f3b4820b772b85419ebc7fb7",
       "promptSha256": "612dc59173fc95b53a64072840f7265a4a507cddeb7de96c75f2aef859f265f2"
     },
     {
       "jobId": "t1-munui-first",
-      "portraitId": "w-40-mujin-munui",
+      "heroId": "w-40-mujin-munui",
       "tier": "1",
-      "status": "deferred",
-      "reason": "source_or_portrait_repair_required",
-      "sourcePath": "public/realm/awaken-hd/w-40-mujin-munui.jpg",
-      "sourceSha256": "1caf71c361104855d00448925549f9a03e5fc3b1f092689b07b46fc150306799",
-      "attemptId": null,
+      "status": "unsubmitted-requires-current-preflight",
+      "inputSha256": "1caf71c361104855d00448925549f9a03e5fc3b1f092689b07b46fc150306799",
       "promptSha256": "ad03cd6c1c8c8eb62485967e0ef6786ad77afadb48c8fbe5d83f5510b60a2132"
     },
     {
       "jobId": "t1-sinae-first",
-      "portraitId": "w-61-iseo-sinae",
+      "heroId": "w-61-iseo-sinae",
       "tier": "1",
       "status": "held",
-      "reason": "Gemini returned unusually high traffic / full capacity; no video produced. Chat08c38722177e8200. Not a quota-reset timestamp. Do not resubmit same job automatically. Inspect existing chat on next check; credit consumption unknown.",
-      "sourcePath": "public/realm/awaken-hd/w-61-iseo-sinae.jpg",
-      "sourceSha256": "b528241502e098efc76b1afe66c441e2bf36140e7aa4d3ee88cab52309a37897",
-      "attemptId": "t1-sinae-first:7",
+      "inputSha256": "b528241502e098efc76b1afe66c441e2bf36140e7aa4d3ee88cab52309a37897",
       "promptSha256": "a5e7d2185dab40c4d4b4738c97b8579891ed485bd7428262d66c115d84ca0ec0",
-      "chatUrl": "https://gemini.google.com/u/4/app/08c38722177e8200?hl=ko"
+      "id": "t1-sinae-first:7",
+      "chatUrl": "https://gemini.google.com/u/4/app/08c38722177e8200?hl=ko",
+      "reviewNote": "Gemini returned unusually high traffic / full capacity; no video produced. Chat08c38722177e8200. Not a quota-reset timestamp. Do not resubmit same job automatically. Inspect existing chat on next check; credit consumption unknown."
     },
     {
       "jobId": "t1-dokmudeom-first",
-      "portraitId": "w-74-balla-dokmudeom",
+      "heroId": "w-74-balla-dokmudeom",
       "tier": "1",
-      "status": "deferred",
-      "reason": "source_or_portrait_repair_required",
-      "sourcePath": "public/realm/awaken-hd/w-74-balla-dokmudeom.jpg",
-      "sourceSha256": "b4f1883acb31d58818f98ba0d6fe2b2c6fc4be1dd2fc3075820fa297911509f6",
-      "attemptId": null,
+      "status": "unsubmitted-requires-current-preflight",
+      "inputSha256": "b4f1883acb31d58818f98ba0d6fe2b2c6fc4be1dd2fc3075820fa297911509f6",
       "promptSha256": "e8b43673377955f7073dc4a6be7b01bca18cc8a6de95c25e1a3315f1195a9e8e"
     },
     {
       "jobId": "t1-soenun-first",
-      "portraitId": "w-42-gwanna-soenun",
+      "heroId": "w-42-gwanna-soenun",
       "tier": "1",
       "status": "accepted",
-      "reason": "Visual PASS by root and independent reviewer:720x1280/24fps10s; face/armor/helmet stable; both hands maintain helmet contact, small fit adjustment, blinking and breathing/cloth motion. No1:1 inset/bars; no obvious internal hard cut at3.917/7/9.333s. Breathing restrained; perfect loop not required; direct audio/lip-sync unverified.",
-      "sourcePath": "public/realm/awaken-hd/w-42-gwanna-soenun.jpg",
-      "sourceSha256": "d1567d4e2de99e1a8a9e6f204c031923c585dade777c164651fb71286d2db5d3",
-      "attemptId": "t1-soenun-first:9",
+      "inputSha256": "d1567d4e2de99e1a8a9e6f204c031923c585dade777c164651fb71286d2db5d3",
       "promptSha256": "b46477afa854ccebad42061481d27672f476e191019b84669a102446a8eb9520",
+      "id": "t1-soenun-first:9",
       "chatUrl": "https://gemini.google.com/u/4/app/cbef2010f4d4450e?hl=ko",
-      "resultSha256": "9be17c67b3c254af063afe26da910210de145fd299e5cfd1e60214c98f2b70e9"
+      "fileSha256": "9be17c67b3c254af063afe26da910210de145fd299e5cfd1e60214c98f2b70e9",
+      "reviewNote": "Visual PASS by root and independent reviewer:720x1280/24fps10s; face/armor/helmet stable; both hands maintain helmet contact, small fit adjustment, blinking and breathing/cloth motion. No1:1 inset/bars; no obvious internal hard cut at3.917/7/9.333s. Breathing restrained; perfect loop not required; direct audio/lip-sync unverified."
     },
     {
       "jobId": "t1-beom-first",
-      "portraitId": "w-60-golbeol-beom",
+      "heroId": "w-60-golbeol-beom",
       "tier": "1",
       "status": "accepted",
-      "reason": "User explicitly approved current Beom on2026-11-07, accepting cropped forward hand and praising natural idle. Adopt SAME artifact; no regeneration. Visual independent review limits retained:hand partly cropped, direct audio/lip-sync unverified. Future videos should show slightly more natural torso/chest/garment breathing and idle weight motion.",
-      "sourcePath": "public/realm/awaken-hd/w-60-golbeol-beom.jpg",
-      "sourceSha256": "dbd045f4daa3c2e6dbee2f00f6d0f2b5fa8a6ffad6428cc3f9e1153ec44c1342",
-      "attemptId": "t1-beom-first:10",
+      "inputSha256": "dbd045f4daa3c2e6dbee2f00f6d0f2b5fa8a6ffad6428cc3f9e1153ec44c1342",
       "promptSha256": "0b4fd0fd78a488499406ede2270481a59024262779ce44639b82819c9d09600f",
+      "id": "t1-beom-first:10",
       "chatUrl": "https://gemini.google.com/u/4/app/12a9c05cfd49d0f9?hl=ko",
-      "resultSha256": "8fc0343e958293add976b87994dec77ee507a63aff4796f1d63c22ce975f0f96",
-      "acceptanceKind": "user-approved-framing-deviation",
+      "fileSha256": "8fc0343e958293add976b87994dec77ee507a63aff4796f1d63c22ce975f0f96",
+      "reviewNote": "User explicitly approved current Beom on2026-11-07, accepting cropped forward hand and praising natural idle. Adopt SAME artifact; no regeneration. Visual independent review limits retained:hand partly cropped, direct audio/lip-sync unverified. Future videos should show slightly more natural torso/chest/garment breathing and idle weight motion.",
       "reviewHistory": [
         {
           "at": "2026-11-07T09:59:07.611Z",
@@ -197,284 +167,379 @@
           "source": "explicit-user-approval",
           "note": "User explicitly approved current Beom on2026-11-07, accepting cropped forward hand and praising natural idle. Adopt SAME artifact; no regeneration. Visual independent review limits retained:hand partly cropped, direct audio/lip-sync unverified. Future videos should show slightly more natural torso/chest/garment breathing and idle weight motion."
         }
-      ]
+      ],
+      "acceptanceKind": "user-approved-framing-deviation"
     },
     {
       "jobId": "t1-sinae-newchat-v2",
-      "portraitId": "w-61-iseo-sinae",
+      "heroId": "w-61-iseo-sinae",
       "tier": "1",
       "status": "held",
-      "reason": "User-authorized one new-chat retry. Gemini replied cannot depict some public figures; no video produced. Provider classification only; real identity/cause unverified. Do not reword/change accounts to evade this response or auto-retry. Chat1bbf124fa78c8fe4. Credits unknown.",
-      "sourcePath": "public/realm/awaken-hd/w-61-iseo-sinae.jpg",
-      "sourceSha256": "b528241502e098efc76b1afe66c441e2bf36140e7aa4d3ee88cab52309a37897",
+      "inputSha256": "b528241502e098efc76b1afe66c441e2bf36140e7aa4d3ee88cab52309a37897",
       "promptSha256": "69fe2afbcf648bc491943e6cfe4634fae082fdee23bee6e7352b254d41a2b411",
-      "attemptId": "t1-sinae-newchat-v2:8",
-      "replacesAttemptId": "t1-sinae-first:7",
-      "chatUrl": "https://gemini.google.com/u/4/app/1bbf124fa78c8fe4?hl=ko"
+      "id": "t1-sinae-newchat-v2:8",
+      "chatUrl": "https://gemini.google.com/u/4/app/1bbf124fa78c8fe4?hl=ko",
+      "reviewNote": "User-authorized one new-chat retry. Gemini replied cannot depict some public figures; no video produced. Provider classification only; real identity/cause unverified. Do not reword/change accounts to evade this response or auto-retry. Chat1bbf124fa78c8fe4. Credits unknown."
     },
     {
       "jobId": "t1-sinji-neoul-first",
-      "portraitId": "w-85-sinji-neoul",
+      "heroId": "w-85-sinji-neoul",
       "tier": "1",
       "status": "accepted",
-      "reason": "Visual PASS root+independent:720x1280/24fps10s, face/outfit/tools stable; full hip hand and original behind-head hand occlusion preserved; readable subtle weight/ribcage/garment/expression movement, no obvious internal cuts3.875/6.667/8s. Background gradually brightens0-3s, no one-frame lighting reset. Perfect loop and precise motion-phase/audio/lip-sync not verified.",
-      "sourcePath": "public/realm/awaken-hd/w-85-sinji-neoul.jpg",
-      "sourceSha256": "364a0fbafae6d2a9f0a1d5af58722ba12105e74092aa0cc07c95a6a3f31e8f9a",
-      "attemptId": "t1-sinji-neoul-first:11",
+      "inputSha256": "364a0fbafae6d2a9f0a1d5af58722ba12105e74092aa0cc07c95a6a3f31e8f9a",
       "promptSha256": "964396335875be1d0846ec52d4a3802cd47774676b0a3796a559cbadbab045c8",
+      "id": "t1-sinji-neoul-first:11",
       "chatUrl": "https://gemini.google.com/u/4/app/f9ec244bd6e663d4?hl=ko",
-      "resultSha256": "c1eb0a06d0eab5d2b2ede91521578995c785ff9330efb24dbb9eecc9d8f8dd36"
+      "fileSha256": "c1eb0a06d0eab5d2b2ede91521578995c785ff9330efb24dbb9eecc9d8f8dd36",
+      "reviewNote": "Visual PASS root+independent:720x1280/24fps10s, face/outfit/tools stable; full hip hand and original behind-head hand occlusion preserved; readable subtle weight/ribcage/garment/expression movement, no obvious internal cuts3.875/6.667/8s. Background gradually brightens0-3s, no one-frame lighting reset. Perfect loop and precise motion-phase/audio/lip-sync not verified."
     },
     {
       "jobId": "t1-mulsae-first",
-      "portraitId": "w-17-mahan-pearl-diver",
+      "heroId": "w-17-mahan-pearl-diver",
       "tier": "1",
-      "status": "prepared-unsubmitted",
-      "reason": "Root+independent source preflight. Original hands not visible; do not reveal new hands. Laugh once, then readable breathing. Gemini Mulsae search returned no results during this2026-11-07 session; local no tier1/2 video. Recheck live pending requests before claim.",
-      "sourcePath": "public/realm/awaken-hd/w-17-mahan-pearl-diver.jpg",
-      "sourceSha256": "7c4c44f0ceecd7ee0dfe6e45b18d45ea630f4591554bc39af487711840222ebd",
-      "promptSha256": "a25b11ef5f19c1e2f4f0bc00461bf83160e931af692759e0bed0831c6e89c2fe"
-    },
-    {
-      "jobId": "t1-eomni-first",
-      "portraitId": "w-69-jeoga-eomni",
-      "tier": "1",
-      "status": "prepared-unsubmitted",
-      "reason": "Root+independent source/prompt preflight PASS. Entire single foreground grip inside portrait; leave margin below fingers. Existing game video is tier2 only, not tier1. Gemini Eomni search found no matching character chat during this2026-11-07 session; search is not proof of exhaustive absence. Recheck live pending requests before claim.",
-      "sourcePath": "public/realm/awaken-hd/w-69-jeoga-eomni.jpg",
-      "sourceSha256": "6a64a9e69264cf29f6806aef330e53d1e988e51c4f8a4f0ed8dba98a1d70d50d",
-      "promptSha256": "7ba6db6911cef378164e4a9a97ff92fee96b4171f7742f1ae95cf9776022dcd8"
-    }
-  ],
-  "nextSafeQueue": [
-    {
-      "jobId": "t1-mulsae-first",
-      "portraitId": "w-17-mahan-pearl-diver",
-      "tier": "1",
-      "promptPath": "docs/realm/production/veo-prompts/mulsae-t1.txt",
+      "status": "held",
+      "inputSha256": "7c4c44f0ceecd7ee0dfe6e45b18d45ea630f4591554bc39af487711840222ebd",
       "promptSha256": "a25b11ef5f19c1e2f4f0bc00461bf83160e931af692759e0bed0831c6e89c2fe",
-      "sourcePath": "public/realm/awaken-hd/w-17-mahan-pearl-diver.jpg",
-      "sourceSha256": "7c4c44f0ceecd7ee0dfe6e45b18d45ea630f4591554bc39af487711840222ebd",
-      "note": "Prepared, not submitted. Recheck real UI quota and pending requests first."
+      "id": "t1-mulsae-first:12",
+      "chatUrl": "https://gemini.google.com/u/4/app/780cb7509c45431d?hl=ko",
+      "reviewNote": "Gemini responded: I cannot make videos of real people in situations like that. No video/download. Provider classification only, exact cause and credit consumption unknown. Preserve source/prompt, do not retry via rewording or another account. Proof outputs/mulsae-veo-provider-refusal-20261107.jpg."
     },
     {
       "jobId": "t1-eomni-first",
-      "portraitId": "w-69-jeoga-eomni",
+      "heroId": "w-69-jeoga-eomni",
       "tier": "1",
-      "promptPath": "docs/realm/production/veo-prompts/eomni-t1.txt",
+      "status": "accepted",
+      "inputSha256": "6a64a9e69264cf29f6806aef330e53d1e988e51c4f8a4f0ed8dba98a1d70d50d",
       "promptSha256": "7ba6db6911cef378164e4a9a97ff92fee96b4171f7742f1ae95cf9776022dcd8",
-      "sourcePath": "public/realm/awaken-hd/w-69-jeoga-eomni.jpg",
-      "sourceSha256": "6a64a9e69264cf29f6806aef330e53d1e988e51c4f8a4f0ed8dba98a1d70d50d",
-      "note": "Prepared, not submitted. Recheck real UI quota and pending requests first."
+      "id": "t1-eomni-first:13",
+      "chatUrl": "https://gemini.google.com/u/4/app/5a7cd1c7d0c27f30?hl=ko",
+      "fileSha256": "1cc902f881a3c734d03222ee19906d9440501f51415f60548b5cea9c0007a3ef",
+      "reviewNote": "User: gemini_generated_video_fc094928 is good; continue next clips. Accepted unchanged exact file per this evaluation/application scope. Prior technical HOLD for bottom fingertip crop remains in reviewHistory; not retroactive complete-hand PASS. Direct audio/perfect loop unverified.",
+      "reviewHistory": [
+        {
+          "status": "held",
+          "note": "Independent visual HOLD: visible gripping fingertips touch/crop at bottom y1279 in0,0.25,0.5,9,9.958s samples; at1s entire hand inside. Face/two braids/tusk necklace/pole continuity stable; no clear internal cut at2.583/7/7.167. Audio listening/perfect loop unverified. Preserve fc094928 candidate; do not regenerate or integrate without user approval. See outputs/eomni-first-veo-continuity* and work/eomni-finalqa-bottom-samples.jpg.",
+          "at": "2026-11-07T14:22:09.598Z"
+        },
+        {
+          "status": "accepted",
+          "note": "User explicitly praised this exact fc094928 result and asked to keep producing next clips. Adopt same video; preserve technical bottom-fingertip crop finding.",
+          "at": "2026-11-07T14:41:56.589Z"
+        }
+      ],
+      "acceptanceKind": "user-approved-current-result-with-recorded-framing-limitation"
+    },
+    {
+      "jobId": "t1-haedal-first",
+      "heroId": "w-67-buyeo-haedal",
+      "tier": "1",
+      "status": "accepted",
+      "inputSha256": "d4d15b8e289338ce0176464540c6b3f5a028b5346ce3cd97c29d25acdbb9f8b5",
+      "promptSha256": "6436c4e71497d2a68a22fde2f19d15ca0954f8557573db7267eceefbbcea9200",
+      "id": "t1-haedal-first:14",
+      "chatUrl": "https://gemini.google.com/u/4/app/5a860dd58d1eac31?hl=ko",
+      "fileSha256": "14af9c922bc1417f59c866bcce31764e308bee27a3f738beb2380090bd83b5a9",
+      "reviewNote": "Root+independent visual review:720x1280/24fps10s, face/costume/braid and hip hand contacts/back bow and quiver consistent. Visible fingertips remain inside; outer hip-palm/wrist meets right frame edge, so not a full-hand-margin PASS. Accepted for natural portrait quality with this framing limitation. No obvious internal cut at1.333/8/9.333s. Audio direct listening and perfect loop unverified."
+    },
+    {
+      "jobId": "t1-bakdal-repaired-first",
+      "heroId": "w-57-bullae-bakdal",
+      "tier": "1",
+      "status": "held",
+      "inputSha256": "1494d3aeb09baa047358d8ee881552f9c826f3464ef88b3d32364f60e84fc9c8",
+      "promptSha256": "bdcf9c1c3eec4d963a25b0773e6862b9b996139b7a89a61b7984c6c274c4a0f6",
+      "id": "t1-bakdal-repaired-first:15",
+      "chatUrl": "https://gemini.google.com/u/4/app/0e44cdbfdfed6fe0?hl=ko",
+      "fileSha256": "f8d9c8b5691e2552b7a1f08a995401dd6f575ac93441ef6e96aa29ad21120a6d",
+      "reviewNote": "User reviewed exact ba87e32d: visually nice but too bland/static. Mark for later remake, do not integrate or retry in current quota batch. Preserve current source/prompt/video. Future remake should have clearly readable purposeful posture/weight change and breathing/soft cloth response without spins or repeated laughs."
+    },
+    {
+      "jobId": "t1-hwalmi-repaired-first",
+      "heroId": "w-65-goguryeo-hwalmi",
+      "tier": "1",
+      "status": "held",
+      "inputSha256": "8d21860efbf51ca1dfdeb8e9e08796b2044a33abf26cb3700d49a1573ba30d76",
+      "promptSha256": "b12d0d54304a59ee68e7dd198a64968116588f72aa19b0e52228572eff318e37",
+      "id": "t1-hwalmi-repaired-first:16",
+      "chatUrl": "https://gemini.google.com/u/4/app/af46ed9558a57d8e?hl=ko",
+      "fileSha256": "cf429c2cd69a4f77018ee73a30962086022bcfc84bd50f1b6cd10ba92108ab03",
+      "reviewNote": "User reviewed exact gemini_generated_video_921590fb: otherwise good, but distant gaze. Mark for later remake with continuous eye contact toward player/owner. Do not integrate or retry in current window. Original submitted prompt/hash preserved."
     }
   ],
   "portraitRepairs": {
+    "createdDate": "2026-11-07",
     "stage": "first-awakening",
-    "count": 25,
-    "releaseRule": "교정 결과를 실제 검수하고 승인 원본/해시를 갱신한 다음 개별 해제. 다운로드/체크박스만으로 자동 해제하지 않음.",
-    "items": [
+    "releaseRule": "정지 초상 25장 적용 완료. 나머지 23장은 영상 전용 개별 사전 검수 후 해제. 기존 제출 결과 HOLD를 교정 완료만으로 자동 재시도하지 않는다.",
+    "portraits": [
       {
         "shortId": "g24",
         "portraitId": "g-24-wansan-onsan",
         "tier": "1",
-        "status": "deferred_until_reviewed_source",
-        "reason": "portrait_hand_or_weapon_repair_pending"
+        "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+        "incomingStatus": "applied-static-portrait-video-preflight-pending",
+        "approvedCanonicalSha256": "03960ef456897cd60c42316d6ebcabb2404f9f4484ca077543a6f95a05a601af"
       },
       {
         "shortId": "g29",
         "portraitId": "g-29-yeonna-myeongsol",
         "tier": "1",
-        "status": "deferred_until_reviewed_source",
-        "reason": "portrait_hand_or_weapon_repair_pending"
+        "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+        "incomingStatus": "applied-static-portrait-video-preflight-pending",
+        "approvedCanonicalSha256": "e50c84449c9c4e2d90ec666d58536f0701c67df8183fc456d593fde21c5512f7"
       },
       {
         "shortId": "g38",
         "portraitId": "g-38-chopal-palmae",
         "tier": "1",
-        "status": "deferred_until_reviewed_source",
-        "reason": "portrait_hand_or_weapon_repair_pending"
+        "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+        "incomingStatus": "applied-static-portrait-video-preflight-pending",
+        "approvedCanonicalSha256": "fd923865ec2f665d6d9dcf5e7237c7b5695e17270a14132c1c6d619b7f26a858"
       },
       {
         "shortId": "g64",
         "portraitId": "g-64-jumong",
         "tier": "1",
-        "status": "deferred_until_reviewed_source",
-        "reason": "portrait_hand_or_weapon_repair_pending"
+        "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+        "incomingStatus": "applied-static-portrait-video-preflight-pending",
+        "approvedCanonicalSha256": "9c5b4dc6bb21a3cf0efa9d07abf80ed2c1053e092529766914ce3c2acf570ac1"
       },
       {
         "shortId": "g80",
         "portraitId": "g-80-saro-guryema",
         "tier": "1",
-        "status": "deferred_until_reviewed_source",
-        "reason": "portrait_hand_or_weapon_repair_pending"
+        "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+        "incomingStatus": "applied-static-portrait-video-preflight-pending",
+        "approvedCanonicalSha256": "311f5495605937618a909bbdc7380439c348517f95a1ea81422cb384c21c26bd"
       },
       {
         "shortId": "g87",
         "portraitId": "g-87-wae-chief",
         "tier": "1",
-        "status": "deferred_until_reviewed_source",
-        "reason": "portrait_hand_or_weapon_repair_pending"
+        "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+        "incomingStatus": "applied-static-portrait-video-preflight-pending",
+        "approvedCanonicalSha256": "524276cd5addbb7aad44b9a54dabd2a7e69e460f8c0e294bcd229ed01cae408f"
       },
       {
         "shortId": "g91",
         "portraitId": "g-91-biryu-songyang",
         "tier": "1",
-        "status": "deferred_until_reviewed_source",
-        "reason": "portrait_hand_or_weapon_repair_pending"
+        "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+        "incomingStatus": "applied-static-portrait-video-preflight-pending",
+        "approvedCanonicalSha256": "416f6bf133221fd0a38517b8fc1fb3e0a9d7bc694f7628bb94dae2f4c7430ab4"
       },
       {
         "shortId": "g93",
         "portraitId": "g-93-jomun-solgae",
         "tier": "1",
-        "status": "deferred_until_reviewed_source",
-        "reason": "portrait_hand_or_weapon_repair_pending"
+        "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+        "incomingStatus": "applied-static-portrait-video-preflight-pending",
+        "approvedCanonicalSha256": "32d1f4aadf1f26bbcb38e2adb239761b3b5d323e67174a40b168d78ab1ec84bd"
       },
       {
         "shortId": "g94",
         "portraitId": "g-94-golpo-maenun",
         "tier": "1",
-        "status": "deferred_until_reviewed_source",
-        "reason": "portrait_hand_or_weapon_repair_pending"
+        "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+        "incomingStatus": "applied-static-portrait-video-preflight-pending",
+        "approvedCanonicalSha256": "dbbfd4c3af6483f74b09e978e216fde49941ed53ab97a5a6e1d85a7eca4d44db"
       },
       {
         "shortId": "l3",
         "portraitId": "l-L3-heo-hwangok",
         "tier": "1",
-        "status": "deferred_until_reviewed_source",
-        "reason": "portrait_hand_or_weapon_repair_pending"
+        "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+        "incomingStatus": "applied-static-portrait-video-preflight-pending",
+        "approvedCanonicalSha256": "d1677f18af9903990ed37b32faa2e52de12e15907e94c50e1c7b4c2377cfccb1"
       },
       {
         "shortId": "l4",
         "portraitId": "l-L4-bari-gongju",
         "tier": "1",
-        "status": "deferred_until_reviewed_source",
-        "reason": "portrait_hand_or_weapon_repair_pending"
+        "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+        "incomingStatus": "applied-static-portrait-video-preflight-pending",
+        "approvedCanonicalSha256": "4db6c3741cb0baf8806c3e0b4d00c576be2c55424f6026eca0b9ca8e3653144b"
       },
       {
         "shortId": "l6",
         "portraitId": "l-L6-jeonggyeon-moju",
         "tier": "1",
-        "status": "deferred_until_reviewed_source",
-        "reason": "portrait_hand_or_weapon_repair_pending"
+        "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+        "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/l6awrere.png",
+        "incomingSourceSha256": "320f010cc7fe506e509730dbdaeffe78439dc12643dc88502f5b23831bd09d40",
+        "incomingStatus": "applied-static-portrait-video-preflight-pending",
+        "poseChangedByUser": false,
+        "approvedCanonicalSha256": "4eb5bb08362e77e50e4294c2f66b3f16f687ae2caec6442b9a3aa2cb6fea3d76"
       },
       {
         "shortId": "w10",
         "portraitId": "w-10-pirate-captain",
         "tier": "1",
-        "status": "deferred_until_reviewed_source",
-        "reason": "portrait_hand_or_weapon_repair_pending"
+        "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+        "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/w10awrere.png",
+        "incomingSourceSha256": "8a0cbe24543396c2262cd69586c5d2a13dd68922fbdd082a36c42b1a33e89b18",
+        "incomingStatus": "applied-static-portrait-video-preflight-pending",
+        "poseChangedByUser": false,
+        "approvedCanonicalSha256": "e2bd23a29a73d662276e46d6b13d461a0a08574ca05cfd41977b2eeeee7d0668"
       },
       {
         "shortId": "w40",
         "portraitId": "w-40-mujin-munui",
         "tier": "1",
-        "status": "deferred_until_reviewed_source",
-        "reason": "portrait_hand_or_weapon_repair_pending"
+        "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+        "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/w40awrere.png",
+        "incomingSourceSha256": "5d4f945d079eb0efe3b3603c9fd01d71eb42e8a1fd86d8fb1fbb2acbd6cd68f8",
+        "incomingStatus": "applied-static-portrait-video-preflight-pending",
+        "poseChangedByUser": false,
+        "approvedCanonicalSha256": "3359af2f8286e1df6b4a45ba151c588eb49def046c4f402ca9da88f7f0a23402"
       },
       {
         "shortId": "w47",
         "portraitId": "w-47-gosaburi-baram",
         "tier": "1",
-        "status": "deferred_until_reviewed_source",
-        "reason": "portrait_hand_or_weapon_repair_pending"
+        "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+        "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/w47awrere.png",
+        "incomingSourceSha256": "f884576e77a75854e2e6e61b95acd23b8359ac57dbf34520c7008ab7a6e40dbc",
+        "incomingStatus": "applied-static-portrait-video-preflight-pending",
+        "poseChangedByUser": false,
+        "promptRebuildRequired": false,
+        "approvedCanonicalSha256": "f6f48452eb99006925dee16f99c1c5dcb84853d5a3d8889929c6a5c3fd142377"
       },
       {
         "shortId": "w54",
         "portraitId": "w-54-maga-dalli",
         "tier": "1",
-        "status": "deferred_until_reviewed_source",
-        "reason": "portrait_hand_or_weapon_repair_pending"
-      },
-      {
-        "shortId": "w57",
-        "portraitId": "w-57-bullae-bakdal",
-        "tier": "1",
-        "status": "deferred_until_reviewed_source",
-        "reason": "portrait_hand_or_weapon_repair_pending"
+        "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+        "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/w54awrere.png",
+        "incomingSourceSha256": "6700259826adb809d735cedae6edd6473a0321af1e0b29c7ce9e2f82263511fd",
+        "incomingStatus": "applied-static-portrait-video-preflight-pending",
+        "poseChangedByUser": true,
+        "promptRebuildRequired": true,
+        "approvedCanonicalSha256": "b428601f85a8b80fdf3f47e97b07a05c7d9dcf2111dc121058be557be34b0c37"
       },
       {
         "shortId": "w62",
         "portraitId": "w-62-byeokjin-byeol",
         "tier": "1",
-        "status": "deferred_until_reviewed_source",
-        "reason": "portrait_hand_or_weapon_repair_pending"
-      },
-      {
-        "shortId": "w65",
-        "portraitId": "w-65-goguryeo-hwalmi",
-        "tier": "1",
-        "status": "deferred_until_reviewed_source",
-        "reason": "portrait_hand_or_weapon_repair_pending"
+        "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+        "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/w62awrere.png",
+        "incomingSourceSha256": "27e9d692ed481e477b5c1d8b2eb0d33c30c46f5208789751ac795c335067933a",
+        "incomingStatus": "applied-static-portrait-video-preflight-pending",
+        "poseChangedByUser": true,
+        "promptRebuildRequired": true,
+        "approvedCanonicalSha256": "9236ae149a7192218826c76e63074082bf434d9dc03b69d9c75352da1d1358e2"
       },
       {
         "shortId": "w66",
         "portraitId": "w-66-saro-noeul",
         "tier": "1",
-        "status": "deferred_until_reviewed_source",
-        "reason": "portrait_hand_or_weapon_repair_pending"
+        "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+        "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/w66awrere.png",
+        "incomingSourceSha256": "1ec9e1880c0e9dcf8836872021009e969472cdcdc82dc070d8d6293347616eb1",
+        "incomingStatus": "applied-static-portrait-video-preflight-pending",
+        "poseChangedByUser": false,
+        "promptRebuildRequired": false,
+        "approvedCanonicalSha256": "fc8ac80191f13db2f913a0e79ad56072660779b77c95f3f5f8c7645f2d8a115e"
       },
       {
         "shortId": "w74",
         "portraitId": "w-74-balla-dokmudeom",
         "tier": "1",
-        "status": "deferred_until_reviewed_source",
-        "reason": "portrait_hand_or_weapon_repair_pending"
+        "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+        "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/w74awrere.png",
+        "incomingSourceSha256": "b7226322766c72d3b8af620cfa5fa36ddc10353af28b9157647fd55418b0ed8e",
+        "incomingStatus": "applied-static-portrait-video-preflight-pending",
+        "poseChangedByUser": false,
+        "promptRebuildRequired": false,
+        "approvedCanonicalSha256": "a905069174ab1365b8ba3f37880cbc8e691bd90186a16e9694a28bcf8977986f"
       },
       {
         "shortId": "w78",
         "portraitId": "w-78-wansan-wan",
         "tier": "1",
-        "status": "deferred_until_reviewed_source",
-        "reason": "portrait_hand_or_weapon_repair_pending"
+        "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+        "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/w78awrere.png",
+        "incomingSourceSha256": "b56f1197ce74b808286a20bb255158bb8fb37cf8f5653c47c9c06489da02bed1",
+        "incomingStatus": "applied-static-portrait-video-preflight-pending",
+        "poseChangedByUser": false,
+        "promptRebuildRequired": false,
+        "approvedCanonicalSha256": "8343dcda9fe0a96555ef3d26a9e4d684b710ea2bd24b349913b8f5356261cf5a"
       },
       {
         "shortId": "w80",
         "portraitId": "w-80-usan-gangchi",
         "tier": "1",
-        "status": "deferred_until_reviewed_source",
-        "reason": "portrait_hand_or_weapon_repair_pending"
+        "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+        "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/w80awrere.png",
+        "incomingSourceSha256": "9cf4cf8f50116f4194a740bbf5dfe6666291b4c09ac1ac90a68d2f075918ee96",
+        "incomingStatus": "applied-static-portrait-video-preflight-pending",
+        "poseChangedByUser": false,
+        "promptRebuildRequired": false,
+        "approvedCanonicalSha256": "90c5362755ea15cd52ba27e503d42aa292c180aa849fd06f0056f9ef3d5d143a"
       },
       {
         "shortId": "w82",
         "portraitId": "w-82-ungcheon-gom",
         "tier": "1",
-        "status": "deferred_until_reviewed_source",
-        "reason": "portrait_hand_or_weapon_repair_pending"
+        "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+        "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/w82awrere.png",
+        "incomingSourceSha256": "36eaff95defecdede14a321ab6500455ec45d147527b916164503ef9e8d60caf",
+        "incomingStatus": "applied-static-portrait-video-preflight-pending",
+        "poseChangedByUser": false,
+        "promptRebuildRequired": false,
+        "approvedCanonicalSha256": "20d088be586ef5284978b32fa238c52b29a3030c6db004bfd7af808a9e4d3951"
       },
       {
         "shortId": "w101",
         "portraitId": "w-101-garak-singwigan",
         "tier": "1",
-        "status": "deferred_until_reviewed_source",
-        "reason": "portrait_hand_or_weapon_repair_pending"
+        "reason": "사용자 수동 교정 및 정지 초상 적용 완료. 영상 전용 손/무기/9:16 구도·플레이어 눈맞춤 사전 검수 대기이며 사용자 재그리기 대기가 아님.",
+        "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/w101awrere.png",
+        "incomingSourceSha256": "321136205d7d5d7a14b8c3b38e4cd37f0748d0391d40a84f9ea9c71aaa296a14",
+        "incomingStatus": "applied-static-portrait-video-preflight-pending",
+        "poseChangedByUser": false,
+        "promptRebuildRequired": false,
+        "approvedCanonicalSha256": "798f3c64ae8dd028d6df70c4e49f5af193b24858a0024b3a427e95684678b1c2"
+      }
+    ],
+    "released": [
+      {
+        "shortId": "w57",
+        "portraitId": "w-57-bullae-bakdal",
+        "tier": "1",
+        "reason": "교정 원본 적용·개별 사전 검수 후 1회 생성 완료. 결과는 사용자 평가로 HOLD(박달: 정적 / 활미: 먼 시선). 자동 재시도 금지.",
+        "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/w57awrere.png",
+        "incomingSourceSha256": "f63889bcab6206f3f6264c0b2726a2503ff2785c3dd9687078ca5afb9de324bc",
+        "incomingStatus": "applied-and-source-preflight-reviewed",
+        "poseChangedByUser": true,
+        "promptRebuildRequired": true,
+        "releasedAtKst": "2026-11-07T23:24:11+09:00",
+        "approvedCanonicalSha256": "1494d3aeb09baa047358d8ee881552f9c826f3464ef88b3d32364f60e84fc9c8",
+        "review": "portrait-repair-qa-prior-aw14-20261107.md"
+      },
+      {
+        "shortId": "w65",
+        "portraitId": "w-65-goguryeo-hwalmi",
+        "tier": "1",
+        "reason": "교정 원본 적용·개별 사전 검수 후 1회 생성 완료. 결과는 사용자 평가로 HOLD(박달: 정적 / 활미: 먼 시선). 자동 재시도 금지.",
+        "incomingSourcePath": "D:/flutter/arrow_game_one/public/realm/w65awrere.png",
+        "incomingSourceSha256": "4486f2639379024d2741ad65e2d5a136b26d7750d0a4e158eda10b316f5b1c27",
+        "incomingStatus": "applied-and-source-preflight-reviewed",
+        "poseChangedByUser": true,
+        "promptRebuildRequired": true,
+        "releasedAtKst": "2026-11-07T23:24:11+09:00",
+        "approvedCanonicalSha256": "8d21860efbf51ca1dfdeb8e9e08796b2044a33abf26cb3700d49a1573ba30d76",
+        "review": "portrait-repair-qa-prior-aw14-20261107.md"
       }
     ]
   },
-  "handoffRule": "Observe live owner, queue, state, claims, Gemini pending chats, and file hashes. Explicitly transfer ownership before another agent submits. Never treat this snapshot as the live queue.",
-  "capturedAtKst": "2026-11-07T20:13:43+09:00",
   "incomingPortraitCorrections": {
-    "receivedAtKst": "2026-11-07T21:59:50+09:00",
-    "count": 19,
+    "count": 33,
+    "applied": 33,
     "base": 8,
-    "firstAwakening": 11,
-    "gameApplied": false,
-    "veoReleased": false,
-    "source": "public/realm/*rere.png",
-    "poseChangedIds": [
-      "w-54-maga-dalli",
-      "w-57-bullae-bakdal",
-      "w-62-byeokjin-byeol",
-      "w-65-goguryeo-hwalmi"
-    ],
-    "excludedByUser": [
-      {
-        "stage": "base",
-        "shortId": "g43",
-        "portraitId": "g-43-hwanna-amnok",
-        "decision": "retain-existing",
-        "reason": "User says existing image does not need repair."
-      }
-    ],
-    "policy": "Receipt only. Review, canonical source/hash update and changed-pose prompt reconstruction before any individual deferral release. Keep old accepted-video audit records."
-  }
+    "awaken": 25,
+    "remainingUserRedraw": 0,
+    "g43": "existing retained"
+  },
+  "nextSafeQueue": [],
+  "handoffRule": "Live ledger + browser first; held/submitted jobs must not be replayed. All unsubmitted drafts require latest player-gaze preflight."
 }

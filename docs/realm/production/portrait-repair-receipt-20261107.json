@@ -1,6 +1,6 @@
 {
-  "receivedAtKst": "2026-11-07T21:59:50+09:00",
-  "note": "User-supplied correction images received; files preserved. Receipt is not approval or game integration. Never reuse old pose prompts for four user-reposed first-awakening sources.",
+  "receivedAtKst": "2026-11-07T23:37:34+09:00",
+  "note": "33 user-supplied corrections applied to 66 canonical JPGs; g43 excluded at user request. Basic visual QA is not an anatomical guarantee. Raw PNGs preserved; see raw archive manifest. Video-specific preflight remains separate.",
   "images": [
     {
       "fileName": "g24rere.png",
@@ -14,11 +14,16 @@
         1254
       ],
       "canonicalPath": "public/realm/bust-hd/g-24-wansan-onsan.jpg",
-      "canonicalSha256": "101909a4d65044b686036373d961bc00a84f9c65b1c695c7beadef281b28525e",
+      "canonicalSha256": "c238534ef4671f9d2cc3f984b52a585fe8f41d3ab3d4465f8aa244edae553cf9",
       "poseChangedByUser": false,
-      "status": "received-pending-visual-review",
-      "gameApplied": false,
-      "veoReleased": false
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "101909a4d65044b686036373d961bc00a84f9c65b1c695c7beadef281b28525e",
+      "smallPath": "public/realm/bust/g-24-wansan-onsan.jpg",
+      "smallSha256": "58e654e9cb1fcb69aaf451cc1014f29dc3e5d06bec3586b2270111f7b9400a04",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
     },
     {
       "fileName": "w101awrere.png",
@@ -32,11 +37,16 @@
         1254
       ],
       "canonicalPath": "public/realm/awaken-hd/w-101-garak-singwigan.jpg",
-      "canonicalSha256": "f4d505c82b29c0a2d3606bc41bd64f126e8b120a9c3d2d5cce31717a799f684c",
+      "canonicalSha256": "798f3c64ae8dd028d6df70c4e49f5af193b24858a0024b3a427e95684678b1c2",
       "poseChangedByUser": false,
-      "status": "received-pending-visual-review",
-      "gameApplied": false,
-      "veoReleased": false
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "f4d505c82b29c0a2d3606bc41bd64f126e8b120a9c3d2d5cce31717a799f684c",
+      "smallPath": "public/realm/awaken/w-101-garak-singwigan.jpg",
+      "smallSha256": "e50c0d5c7482ce8327652882daf6633f8d9fef36a75e46e64a3e4d71643dfed8",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
     },
     {
       "fileName": "w40rere.png",
@@ -50,11 +60,16 @@
         1254
       ],
       "canonicalPath": "public/realm/bust-hd/w-40-mujin-munui.jpg",
-      "canonicalSha256": "0d96432d519b3bf60d8e50ab85ecec87a5b8d5db4a1fce213a38053d3943f147",
+      "canonicalSha256": "b52521bce57eb1cb3f278156c0bdc2e7c9e23d92c8c33f595efd823548250fb9",
       "poseChangedByUser": false,
-      "status": "received-pending-visual-review",
-      "gameApplied": false,
-      "veoReleased": false
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "0d96432d519b3bf60d8e50ab85ecec87a5b8d5db4a1fce213a38053d3943f147",
+      "smallPath": "public/realm/bust/w-40-mujin-munui.jpg",
+      "smallSha256": "7e559f8579a47f5e5db51b741c3bdc799d97b7aeb9e3e40cf395d4bfe9a2b31c",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
     },
     {
       "fileName": "w47awrere.png",
@@ -68,11 +83,16 @@
         1254
       ],
       "canonicalPath": "public/realm/awaken-hd/w-47-gosaburi-baram.jpg",
-      "canonicalSha256": "35a394d8998a143dc65850457daee30c77c1f2b252263bf641eb262cb8795280",
+      "canonicalSha256": "f6f48452eb99006925dee16f99c1c5dcb84853d5a3d8889929c6a5c3fd142377",
       "poseChangedByUser": false,
-      "status": "received-pending-visual-review",
-      "gameApplied": false,
-      "veoReleased": false
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "35a394d8998a143dc65850457daee30c77c1f2b252263bf641eb262cb8795280",
+      "smallPath": "public/realm/awaken/w-47-gosaburi-baram.jpg",
+      "smallSha256": "83c7b5132bdd5a2e0a23632198a999f0cf9c2655ba27ab311765163bd02d41bd",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
     },
     {
       "fileName": "w54awrere.png",
@@ -86,11 +106,16 @@
         1254
       ],
       "canonicalPath": "public/realm/awaken-hd/w-54-maga-dalli.jpg",
-      "canonicalSha256": "3754cb1216abaab8a5e81e070235512fc9ea2c550f1481cea5a5d949842deafd",
+      "canonicalSha256": "b428601f85a8b80fdf3f47e97b07a05c7d9dcf2111dc121058be557be34b0c37",
       "poseChangedByUser": true,
-      "status": "received-pending-visual-review",
-      "gameApplied": false,
-      "veoReleased": false
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "3754cb1216abaab8a5e81e070235512fc9ea2c550f1481cea5a5d949842deafd",
+      "smallPath": "public/realm/awaken/w-54-maga-dalli.jpg",
+      "smallSha256": "ebb7ee7804db0853cca5684d1d17f20afc1a28e65e3218aec84fda90b486559c",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
     },
     {
       "fileName": "w57awrere.png",
@@ -104,11 +129,17 @@
         1254
       ],
       "canonicalPath": "public/realm/awaken-hd/w-57-bullae-bakdal.jpg",
-      "canonicalSha256": "c2daa1e52a09faba4ec5709a93cb65508821f01621f1b54881b26b2ce6d48912",
+      "canonicalSha256": "1494d3aeb09baa047358d8ee881552f9c826f3464ef88b3d32364f60e84fc9c8",
       "poseChangedByUser": true,
-      "status": "received-pending-visual-review",
-      "gameApplied": false,
-      "veoReleased": false
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": true,
+      "previousCanonicalSha256": "c2daa1e52a09faba4ec5709a93cb65508821f01621f1b54881b26b2ce6d48912",
+      "smallPath": "public/realm/awaken/w-57-bullae-bakdal.jpg",
+      "smallSha256": "43daf0ff6a3a94b1760b8354407448d2ce6b5ade438a6f46eff28d1a9cd0870c",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee",
+      "veoApprovedSourceSha256": "1494d3aeb09baa047358d8ee881552f9c826f3464ef88b3d32364f60e84fc9c8"
     },
     {
       "fileName": "w62awrere.png",
@@ -122,11 +153,16 @@
         1254
       ],
       "canonicalPath": "public/realm/awaken-hd/w-62-byeokjin-byeol.jpg",
-      "canonicalSha256": "b793b7bb89b5dde287028009cd05262a407f1690df684e7bbeffdf20af82ee49",
+      "canonicalSha256": "9236ae149a7192218826c76e63074082bf434d9dc03b69d9c75352da1d1358e2",
       "poseChangedByUser": true,
-      "status": "received-pending-visual-review",
-      "gameApplied": false,
-      "veoReleased": false
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "b793b7bb89b5dde287028009cd05262a407f1690df684e7bbeffdf20af82ee49",
+      "smallPath": "public/realm/awaken/w-62-byeokjin-byeol.jpg",
+      "smallSha256": "2dcd69bf45e3cd786723ef80be70278c82a3995d79ab214c882f6684ea764433",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
     },
     {
       "fileName": "w65awrere.png",
@@ -140,11 +176,17 @@
         1254
       ],
       "canonicalPath": "public/realm/awaken-hd/w-65-goguryeo-hwalmi.jpg",
-      "canonicalSha256": "39059a339be2af3016011805ee75b2889ec83a34e60e6cde2b0065f2ebab3705",
+      "canonicalSha256": "8d21860efbf51ca1dfdeb8e9e08796b2044a33abf26cb3700d49a1573ba30d76",
       "poseChangedByUser": true,
-      "status": "received-pending-visual-review",
-      "gameApplied": false,
-      "veoReleased": false
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": true,
+      "previousCanonicalSha256": "39059a339be2af3016011805ee75b2889ec83a34e60e6cde2b0065f2ebab3705",
+      "smallPath": "public/realm/awaken/w-65-goguryeo-hwalmi.jpg",
+      "smallSha256": "8ae6a7fd88e6f387b0696692d34fea978872d3fcae044da5e9e4cbe2c3ab2352",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee",
+      "veoApprovedSourceSha256": "8d21860efbf51ca1dfdeb8e9e08796b2044a33abf26cb3700d49a1573ba30d76"
     },
     {
       "fileName": "w65rere.png",
@@ -158,11 +200,16 @@
         1254
       ],
       "canonicalPath": "public/realm/bust-hd/w-65-goguryeo-hwalmi.jpg",
-      "canonicalSha256": "0326794c64f963389e2d5300a2560896684390b95efb118f60d84a5468aa8b31",
+      "canonicalSha256": "a674b93cd5b68cc33f3237c90326ff205b7221f266381c8860804cb2ed7fa690",
       "poseChangedByUser": false,
-      "status": "received-pending-visual-review",
-      "gameApplied": false,
-      "veoReleased": false
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "0326794c64f963389e2d5300a2560896684390b95efb118f60d84a5468aa8b31",
+      "smallPath": "public/realm/bust/w-65-goguryeo-hwalmi.jpg",
+      "smallSha256": "4b60330ce5033a7d9c8fd4265b4775eee89709b197dbd8a878828288d5fc1e53",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
     },
     {
       "fileName": "w66awrere.png",
@@ -176,11 +223,16 @@
         1254
       ],
       "canonicalPath": "public/realm/awaken-hd/w-66-saro-noeul.jpg",
-      "canonicalSha256": "821a4e9392b199fdd3b526994e72123d302af933d6375c8b86ef57571d294a51",
+      "canonicalSha256": "fc8ac80191f13db2f913a0e79ad56072660779b77c95f3f5f8c7645f2d8a115e",
       "poseChangedByUser": false,
-      "status": "received-pending-visual-review",
-      "gameApplied": false,
-      "veoReleased": false
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "821a4e9392b199fdd3b526994e72123d302af933d6375c8b86ef57571d294a51",
+      "smallPath": "public/realm/awaken/w-66-saro-noeul.jpg",
+      "smallSha256": "4f668ca2e27a73aa3e776cbf5fd71f804e012c102d4e046f43245ba32d946e65",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
     },
     {
       "fileName": "w74awrere.png",
@@ -194,11 +246,16 @@
         1254
       ],
       "canonicalPath": "public/realm/awaken-hd/w-74-balla-dokmudeom.jpg",
-      "canonicalSha256": "b4f1883acb31d58818f98ba0d6fe2b2c6fc4be1dd2fc3075820fa297911509f6",
+      "canonicalSha256": "a905069174ab1365b8ba3f37880cbc8e691bd90186a16e9694a28bcf8977986f",
       "poseChangedByUser": false,
-      "status": "received-pending-visual-review",
-      "gameApplied": false,
-      "veoReleased": false
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "b4f1883acb31d58818f98ba0d6fe2b2c6fc4be1dd2fc3075820fa297911509f6",
+      "smallPath": "public/realm/awaken/w-74-balla-dokmudeom.jpg",
+      "smallSha256": "f37d191705c3b65782cbc617c7b63b944fa401724b10e2fe3c478936d85c2cce",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
     },
     {
       "fileName": "w78awrere.png",
@@ -212,11 +269,16 @@
         1254
       ],
       "canonicalPath": "public/realm/awaken-hd/w-78-wansan-wan.jpg",
-      "canonicalSha256": "50ca33bbc54eaec5c3e4e0d2c1965b02fab6746509d4d4daf7dc84c8c7052502",
+      "canonicalSha256": "8343dcda9fe0a96555ef3d26a9e4d684b710ea2bd24b349913b8f5356261cf5a",
       "poseChangedByUser": false,
-      "status": "received-pending-visual-review",
-      "gameApplied": false,
-      "veoReleased": false
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "50ca33bbc54eaec5c3e4e0d2c1965b02fab6746509d4d4daf7dc84c8c7052502",
+      "smallPath": "public/realm/awaken/w-78-wansan-wan.jpg",
+      "smallSha256": "27a6cc1af9a6f42b2cc700e50917705fd14caad6a97958ffcf17c08de1a8e865",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
     },
     {
       "fileName": "w80awrere.png",
@@ -230,11 +292,16 @@
         1254
       ],
       "canonicalPath": "public/realm/awaken-hd/w-80-usan-gangchi.jpg",
-      "canonicalSha256": "08fc5f59f32f85489ded3ac5f9987a07c2971a9d6ba52d7789229f57aeddfe9a",
+      "canonicalSha256": "90c5362755ea15cd52ba27e503d42aa292c180aa849fd06f0056f9ef3d5d143a",
       "poseChangedByUser": false,
-      "status": "received-pending-visual-review",
-      "gameApplied": false,
-      "veoReleased": false
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "08fc5f59f32f85489ded3ac5f9987a07c2971a9d6ba52d7789229f57aeddfe9a",
+      "smallPath": "public/realm/awaken/w-80-usan-gangchi.jpg",
+      "smallSha256": "50932238b8a26a2de6b7756663432f892f2b767f84b009e1c8683be95ace767e",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
     },
     {
       "fileName": "w82awrere.png",
@@ -248,11 +315,16 @@
         1254
       ],
       "canonicalPath": "public/realm/awaken-hd/w-82-ungcheon-gom.jpg",
-      "canonicalSha256": "54e183ca5aa8238ea25857570fd4af99ee05aa5ea1dbd4dec6aca885df0c9c99",
+      "canonicalSha256": "20d088be586ef5284978b32fa238c52b29a3030c6db004bfd7af808a9e4d3951",
       "poseChangedByUser": false,
-      "status": "received-pending-visual-review",
-      "gameApplied": false,
-      "veoReleased": false
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "54e183ca5aa8238ea25857570fd4af99ee05aa5ea1dbd4dec6aca885df0c9c99",
+      "smallPath": "public/realm/awaken/w-82-ungcheon-gom.jpg",
+      "smallSha256": "060e2bdee47aa1d91842afb95a54b6c3118b71b25d5e652360440075eb3bf459",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
     },
     {
       "fileName": "w84rere.png",
@@ -266,11 +338,16 @@
         1254
       ],
       "canonicalPath": "public/realm/bust-hd/w-84-salhae-dallae.jpg",
-      "canonicalSha256": "78e244daf660ef7aacd62eb750203075ee9da8728bc017618a59fb15e5b38d0f",
+      "canonicalSha256": "1b6dbe9b71824693413dd4c7d29e6c494c0e133da73e0a6e7f10134f818215c0",
       "poseChangedByUser": false,
-      "status": "received-pending-visual-review",
-      "gameApplied": false,
-      "veoReleased": false
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "78e244daf660ef7aacd62eb750203075ee9da8728bc017618a59fb15e5b38d0f",
+      "smallPath": "public/realm/bust/w-84-salhae-dallae.jpg",
+      "smallSha256": "e592a9196539989f65f370288712e9729915693313464cbc981d93ba0d7e607a",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
     },
     {
       "fileName": "w90rere.png",
@@ -284,11 +361,16 @@
         1254
       ],
       "canonicalPath": "public/realm/bust-hd/w-90-saro-danbi.jpg",
-      "canonicalSha256": "21e7c25b00321aa0f65d59f6102a7a38a363e7abbe9ebf31265ae988908a4d21",
+      "canonicalSha256": "6c0fd728880c95768567b5a31b2994ceea64ca65266bf4897179dfe811f401e4",
       "poseChangedByUser": false,
-      "status": "received-pending-visual-review",
-      "gameApplied": false,
-      "veoReleased": false
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "21e7c25b00321aa0f65d59f6102a7a38a363e7abbe9ebf31265ae988908a4d21",
+      "smallPath": "public/realm/bust/w-90-saro-danbi.jpg",
+      "smallSha256": "07e5ee71b7dd111d5f9b5e027f0e406a7893d36917a0f14884a27b05cbf084ef",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
     },
     {
       "fileName": "w92rere.png",
@@ -302,11 +384,16 @@
         1254
       ],
       "canonicalPath": "public/realm/bust-hd/w-92-saro-dallae.jpg",
-      "canonicalSha256": "574b98b252022e446116395a1fc6a17361dc3503e37851eacd17e57158011e62",
+      "canonicalSha256": "61b0d73fbd7f1d3fa88efc5278e1d61cc4ed9741193608bdd6c81d7ff5199b82",
       "poseChangedByUser": false,
-      "status": "received-pending-visual-review",
-      "gameApplied": false,
-      "veoReleased": false
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "574b98b252022e446116395a1fc6a17361dc3503e37851eacd17e57158011e62",
+      "smallPath": "public/realm/bust/w-92-saro-dallae.jpg",
+      "smallSha256": "0ed6beaf3fd238782b7de4d34c9f8ff43616c767e5292555d0a6530af82e9618",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
     },
     {
       "fileName": "w97rere.png",
@@ -320,11 +407,16 @@
         1254
       ],
       "canonicalPath": "public/realm/bust-hd/w-97-goguryeo-mir.jpg",
-      "canonicalSha256": "f8e2765e3a454b3a8fccdbdf5cee35891ab74a8ee606f10fc22f5ff987188787",
+      "canonicalSha256": "83ccce269a026ac5c378637dd367fcdc0f573ffb4bf6e67bfb16984835e2a4ed",
       "poseChangedByUser": false,
-      "status": "received-pending-visual-review",
-      "gameApplied": false,
-      "veoReleased": false
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "f8e2765e3a454b3a8fccdbdf5cee35891ab74a8ee606f10fc22f5ff987188787",
+      "smallPath": "public/realm/bust/w-97-goguryeo-mir.jpg",
+      "smallSha256": "c2d96dfd6c47244e81484423b44c560c2097a708b433d2779e180c93c55533ca",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
     },
     {
       "fileName": "w9rere.png",
@@ -338,11 +430,342 @@
         1254
       ],
       "canonicalPath": "public/realm/bust-hd/w-09-byeonhan-smith.jpg",
-      "canonicalSha256": "59402eba635ad68c673ff525497f507055989aa042247a2b0ddfd81b91f62070",
+      "canonicalSha256": "d2bfb8fe34b74483c99bee120343cd689765e7a66ead0fc65b93934c57145815",
       "poseChangedByUser": false,
-      "status": "received-pending-visual-review",
-      "gameApplied": false,
-      "veoReleased": false
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "59402eba635ad68c673ff525497f507055989aa042247a2b0ddfd81b91f62070",
+      "smallPath": "public/realm/bust/w-09-byeonhan-smith.jpg",
+      "smallSha256": "e9453779f277a35bd017380c235c4113eb8baf47a184b5cdce29d3f2e7a5e011",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
+    },
+    {
+      "fileName": "l6awrere.png",
+      "path": "public/realm/l6awrere.png",
+      "shortId": "l6",
+      "portraitId": "l-L6-jeonggyeon-moju",
+      "stage": "awaken",
+      "sha256": "320f010cc7fe506e509730dbdaeffe78439dc12643dc88502f5b23831bd09d40",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/awaken-hd/l-L6-jeonggyeon-moju.jpg",
+      "canonicalSha256": "4eb5bb08362e77e50e4294c2f66b3f16f687ae2caec6442b9a3aa2cb6fea3d76",
+      "poseChangedByUser": false,
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "f4ce7c888187e2a9444faf66eaee47b6128b5410e44d11c14bed34b54a76b840",
+      "smallPath": "public/realm/awaken/l-L6-jeonggyeon-moju.jpg",
+      "smallSha256": "a693fc652bebd615335a4edee3c1a1a2fc9c955f930cc8c207f37d0298b1b895",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
+    },
+    {
+      "fileName": "w10awrere.png",
+      "path": "public/realm/w10awrere.png",
+      "shortId": "w10",
+      "portraitId": "w-10-pirate-captain",
+      "stage": "awaken",
+      "sha256": "8a0cbe24543396c2262cd69586c5d2a13dd68922fbdd082a36c42b1a33e89b18",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/awaken-hd/w-10-pirate-captain.jpg",
+      "canonicalSha256": "e2bd23a29a73d662276e46d6b13d461a0a08574ca05cfd41977b2eeeee7d0668",
+      "poseChangedByUser": false,
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "788d2aaef42af962be86e5d18f727ae6e9b11e4fb1f3484454190aad15a265aa",
+      "smallPath": "public/realm/awaken/w-10-pirate-captain.jpg",
+      "smallSha256": "27e06fa9858d289e62a26334ce71b0c9d3580021ac343477783b62816fe1ae89",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
+    },
+    {
+      "fileName": "w40awrere.png",
+      "path": "public/realm/w40awrere.png",
+      "shortId": "w40",
+      "portraitId": "w-40-mujin-munui",
+      "stage": "awaken",
+      "sha256": "5d4f945d079eb0efe3b3603c9fd01d71eb42e8a1fd86d8fb1fbb2acbd6cd68f8",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/awaken-hd/w-40-mujin-munui.jpg",
+      "canonicalSha256": "3359af2f8286e1df6b4a45ba151c588eb49def046c4f402ca9da88f7f0a23402",
+      "poseChangedByUser": false,
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "1caf71c361104855d00448925549f9a03e5fc3b1f092689b07b46fc150306799",
+      "smallPath": "public/realm/awaken/w-40-mujin-munui.jpg",
+      "smallSha256": "ec711f155badbf1d56f9832aee4719fccbdad73a28cb0eda29913597bb26bbb3",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
+    },
+    {
+      "fileName": "g87awrere.png",
+      "path": "public/realm/g87awrere.png",
+      "shortId": "g87",
+      "portraitId": "g-87-wae-chief",
+      "stage": "awaken",
+      "sha256": "2710b22a3b18946cf281669f6cfd4caeadb0281621769e53f922cf89e5355026",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/awaken-hd/g-87-wae-chief.jpg",
+      "canonicalSha256": "524276cd5addbb7aad44b9a54dabd2a7e69e460f8c0e294bcd229ed01cae408f",
+      "poseChangedByUser": false,
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "9dcd874c8a48cd3bc9e503fd05d7ef5c87e94c2404464b5bd9f2438e83678bf7",
+      "smallPath": "public/realm/awaken/g-87-wae-chief.jpg",
+      "smallSha256": "7d2238f6ef45269ced781384e6976093c14ad91cb3664c491fca390b10e60908",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
+    },
+    {
+      "fileName": "g91awrere.png",
+      "path": "public/realm/g91awrere.png",
+      "shortId": "g91",
+      "portraitId": "g-91-biryu-songyang",
+      "stage": "awaken",
+      "sha256": "d644bdc0834e885c804cacd863bb3336ab27cdd506f6f863bd778346ccb532e5",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/awaken-hd/g-91-biryu-songyang.jpg",
+      "canonicalSha256": "416f6bf133221fd0a38517b8fc1fb3e0a9d7bc694f7628bb94dae2f4c7430ab4",
+      "poseChangedByUser": false,
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "e1d3c8e8523e15abc661db2b3b6764ca0fc9b814bd3b0b6439738a93e26a9927",
+      "smallPath": "public/realm/awaken/g-91-biryu-songyang.jpg",
+      "smallSha256": "3c60dab01ac7ab706f5cb7f94bbcf6ad4ef57487fa78efe155d52c344f5a2a7b",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
+    },
+    {
+      "fileName": "g93awrere.png",
+      "path": "public/realm/g93awrere.png",
+      "shortId": "g93",
+      "portraitId": "g-93-jomun-solgae",
+      "stage": "awaken",
+      "sha256": "f82940d9205431fb2bdf5dffcdd4ea1eca4cc1fa6e0b8c23d060520b26e58c1f",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/awaken-hd/g-93-jomun-solgae.jpg",
+      "canonicalSha256": "32d1f4aadf1f26bbcb38e2adb239761b3b5d323e67174a40b168d78ab1ec84bd",
+      "poseChangedByUser": false,
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "43c9b5a9db665a81c77c59f1d9f53b50f730aec7cc9d613755b9dccebee7127b",
+      "smallPath": "public/realm/awaken/g-93-jomun-solgae.jpg",
+      "smallSha256": "aaf0b1417de3f341e3fb6d1ccb86acbc9fdb4b1540313b5f5a91e67e744f3f36",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
+    },
+    {
+      "fileName": "g94awrere.png",
+      "path": "public/realm/g94awrere.png",
+      "shortId": "g94",
+      "portraitId": "g-94-golpo-maenun",
+      "stage": "awaken",
+      "sha256": "f26e9e9c2420911dfbcd95672ad43a0970324d281a6f4afdfedc8ec6466b380b",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/awaken-hd/g-94-golpo-maenun.jpg",
+      "canonicalSha256": "dbbfd4c3af6483f74b09e978e216fde49941ed53ab97a5a6e1d85a7eca4d44db",
+      "poseChangedByUser": false,
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "036f0b56336dc9a2f28ca34fa692871602e23493cbd7d18e61bd82199fe02c2b",
+      "smallPath": "public/realm/awaken/g-94-golpo-maenun.jpg",
+      "smallSha256": "af86c5392e66cf918f070a411b96cac4dfd10c92d0ef035565a1e27924e3c3c8",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee",
+      "poseChangedObserved": true,
+      "qaDecision": "Root reviewed supplied new resting bow pose: arrow held separately, not at full draw. Applied as new composition under user instruction to apply six supplied images; not a same-pose localized repair PASS."
+    },
+    {
+      "fileName": "l3awrere.png",
+      "path": "public/realm/l3awrere.png",
+      "shortId": "l3",
+      "portraitId": "l-L3-heo-hwangok",
+      "stage": "awaken",
+      "sha256": "3038d6d3cd1e036fa1f55958e8cfe1c7447915e9adad08c5bce1bba36e1d5d13",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/awaken-hd/l-L3-heo-hwangok.jpg",
+      "canonicalSha256": "d1677f18af9903990ed37b32faa2e52de12e15907e94c50e1c7b4c2377cfccb1",
+      "poseChangedByUser": false,
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "2ef13c4116d58e0c16ec2f7e83b5123c3e4d5120e554101c81ab548fbbf143f8",
+      "smallPath": "public/realm/awaken/l-L3-heo-hwangok.jpg",
+      "smallSha256": "6bdb025b03642f2f7741f9d0cc7c578a1d0c1216442e7a25fdc8df364e540665",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
+    },
+    {
+      "fileName": "l4awrere.png",
+      "path": "public/realm/l4awrere.png",
+      "shortId": "l4",
+      "portraitId": "l-L4-bari-gongju",
+      "stage": "awaken",
+      "sha256": "ab05b1223941fec23e3f7ef00f1b61849998db0f4755ab300ea1d4f91ca9f38d",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/awaken-hd/l-L4-bari-gongju.jpg",
+      "canonicalSha256": "4db6c3741cb0baf8806c3e0b4d00c576be2c55424f6026eca0b9ca8e3653144b",
+      "poseChangedByUser": false,
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "ee9a915681567d7e55258dd735b219442b71e65a4ef8be075ce6dc8bc743b12c",
+      "smallPath": "public/realm/awaken/l-L4-bari-gongju.jpg",
+      "smallSha256": "fae9416735238fa00f076b446dbd5e8dc0237f9c5a0ec0f44c83362abfe6de02",
+      "appliedAtKst": "2026-11-07T23:22:09+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
+    },
+    {
+      "fileName": "g24awrere.png",
+      "path": "public/realm/g24awrere.png",
+      "shortId": "g24",
+      "portraitId": "g-24-wansan-onsan",
+      "stage": "awaken",
+      "sha256": "3dfb04d304bd0cd00a4c53cbfd304f95dc0c03d62315e960a69b9fc05ba51982",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/awaken-hd/g-24-wansan-onsan.jpg",
+      "canonicalSha256": "03960ef456897cd60c42316d6ebcabb2404f9f4484ca077543a6f95a05a601af",
+      "poseChangedByUser": false,
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "19c2c829ef7c0f1710dc015e88b51c9da892c6fced11fe7e6f63ceb2dad5bb9f",
+      "smallPath": "public/realm/awaken/g-24-wansan-onsan.jpg",
+      "smallSha256": "dc3a4a391620cd780a8313545d9c86934591267d2a581197c8434adcce430613",
+      "appliedAtKst": "2026-11-07T23:43:05+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
+    },
+    {
+      "fileName": "g29awrere.png",
+      "path": "public/realm/g29awrere.png",
+      "shortId": "g29",
+      "portraitId": "g-29-yeonna-myeongsol",
+      "stage": "awaken",
+      "sha256": "31a718deb5af60d040ef1f6c3b463fe52498e016934a386546c324f892846633",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/awaken-hd/g-29-yeonna-myeongsol.jpg",
+      "canonicalSha256": "e50c84449c9c4e2d90ec666d58536f0701c67df8183fc456d593fde21c5512f7",
+      "poseChangedByUser": false,
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "78a0760ca0a291f53ba77dd1d5a4083d186b6906919fd84c56a2cc1871973c07",
+      "smallPath": "public/realm/awaken/g-29-yeonna-myeongsol.jpg",
+      "smallSha256": "9ac19ae59d8c965645b224fcde5214ce837f6cd9a6c9e19e4164cd6b9f5dade0",
+      "appliedAtKst": "2026-11-07T23:43:05+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
+    },
+    {
+      "fileName": "g38awrere.png",
+      "path": "public/realm/g38awrere.png",
+      "shortId": "g38",
+      "portraitId": "g-38-chopal-palmae",
+      "stage": "awaken",
+      "sha256": "b836aae2da3ecadb9dd5b974e7e0c9b69d2ea357ddf5278507733d3b3e70fb16",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/awaken-hd/g-38-chopal-palmae.jpg",
+      "canonicalSha256": "fd923865ec2f665d6d9dcf5e7237c7b5695e17270a14132c1c6d619b7f26a858",
+      "poseChangedByUser": false,
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "7e565b79b9fd0ebbe512a342ba46f99c6faa5d3bb59c056bcf3cfc644bda4840",
+      "smallPath": "public/realm/awaken/g-38-chopal-palmae.jpg",
+      "smallSha256": "c9e2cf1bd2090abcf17bf74e03bf733182d7a1774b94202986df03bcd6de2a2b",
+      "appliedAtKst": "2026-11-07T23:43:05+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
+    },
+    {
+      "fileName": "g64awrere.png",
+      "path": "public/realm/g64awrere.png",
+      "shortId": "g64",
+      "portraitId": "g-64-jumong",
+      "stage": "awaken",
+      "sha256": "c6ed2ad9638d51bca859dba54a13c0ef313f0850551df73f3df1e2d5987b8da0",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/awaken-hd/g-64-jumong.jpg",
+      "canonicalSha256": "9c5b4dc6bb21a3cf0efa9d07abf80ed2c1053e092529766914ce3c2acf570ac1",
+      "poseChangedByUser": false,
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "a5f6225e815be2f347baf2144f23a428ca93f8d101b6395d59999bce6a8aa2e3",
+      "smallPath": "public/realm/awaken/g-64-jumong.jpg",
+      "smallSha256": "3bb9e8ab04563445d5ec8c8d935e12dde9b514c1fefbd090b5b02525f3731ec0",
+      "appliedAtKst": "2026-11-07T23:43:05+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee"
+    },
+    {
+      "fileName": "g80awrere.png",
+      "path": "public/realm/g80awrere.png",
+      "shortId": "g80",
+      "portraitId": "g-80-saro-guryema",
+      "stage": "awaken",
+      "sha256": "635b3f8e1e53aac09634ce8853ec861dedc5b1891c642d9b81c860f46b4e7718",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/awaken-hd/g-80-saro-guryema.jpg",
+      "canonicalSha256": "311f5495605937618a909bbdc7380439c348517f95a1ea81422cb384c21c26bd",
+      "poseChangedByUser": false,
+      "status": "applied-user-correction-basic-visual-reviewed",
+      "gameApplied": true,
+      "veoReleased": false,
+      "previousCanonicalSha256": "cee86ea3e103ae40421862e65b8baeaac71b761bc7075138c57a86176ae19627",
+      "smallPath": "public/realm/awaken/g-80-saro-guryema.jpg",
+      "smallSha256": "a5819b23edc13139b37175c3cf2898c173f36164aeca1222e955f2ca6949b3d7",
+      "appliedAtKst": "2026-11-07T23:43:05+09:00",
+      "qaLevel": "basic identity/pose/visible hand-and-weapon comparison; not an anatomical guarantee",
+      "poseChangedObserved": true,
+      "qaDecision": "Reviewer flagged mismatch with old fully-drawn/nocked-arrow requirement. Root viewed new full source as low-ready undrawn bow with arrow held separately; adopted supplied new static composition under user request to apply final five. Not a drawn-firing-geometry PASS; keep video preflight deferred."
     }
   ],
   "excludedByUser": [
@@ -354,5 +777,10 @@
       "reason": "User says existing image does not need repair."
     }
   ],
-  "purpose": "Read-only receipt. Incoming PNGs remain Windows-local user untracked files and are not included in this documentation commit."
+  "appliedAtKst": "2026-11-07T23:43:05+09:00",
+  "backupRootWindows": "C:/Users/my/Documents/Codex/2026-11-06/windows-pc-claude-code-claude-code/work/portrait-backup-20261107-232204",
+  "backupRootsWindows": [
+    "C:/Users/my/Documents/Codex/2026-11-06/windows-pc-claude-code-claude-code/work/portrait-backup-20261107-232204",
+    "C:/Users/my/Documents/Codex/2026-11-06/windows-pc-claude-code-claude-code/work/portrait-backup-20261107-234304"
+  ]
 }
