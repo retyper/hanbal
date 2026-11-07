@@ -5,15 +5,15 @@
   "sourceOfTruth": {
     "owner": "Codex Windows",
     "automation": "veo-1",
-    "nextCheckKst": "2026-11-07 19:10",
+    "nextCheckKst": "2026-11-07 22:54",
     "liveQueueWindowsPath": "C:\\Users\\my\\Documents\\Codex\\2026-11-06\\windows-pc-claude-code-claude-code\\outputs\\veo-production-queue.json",
     "liveStateWindowsPath": "C:\\Users\\my\\Documents\\Codex\\2026-11-06\\windows-pc-claude-code-claude-code\\outputs\\veo-production-state.json",
     "liveQueueRepoPath": null,
-    "nextCheckNote": "19:10 capacity-backoff check, NOT a confirmed quota-reset time;17:54 resumed"
+    "nextCheckNote": "Actual Gemini u4 quota-reset Nov7 22:54 KST, observed after Neoul generation;veo-1 updated"
   },
   "counts": {
     "active": 0,
-    "accepted": 2,
+    "accepted": 5,
     "held": 6,
     "claims": 0
   },
@@ -163,23 +163,41 @@
       "jobId": "t1-soenun-first",
       "portraitId": "w-42-gwanna-soenun",
       "tier": "1",
-      "status": "ready",
-      "reason": "source/framing local preflight pass; verify Gemini existing requests before claim",
+      "status": "accepted",
+      "reason": "Visual PASS by root and independent reviewer:720x1280/24fps10s; face/armor/helmet stable; both hands maintain helmet contact, small fit adjustment, blinking and breathing/cloth motion. No1:1 inset/bars; no obvious internal hard cut at3.917/7/9.333s. Breathing restrained; perfect loop not required; direct audio/lip-sync unverified.",
       "sourcePath": "public/realm/awaken-hd/w-42-gwanna-soenun.jpg",
       "sourceSha256": "d1567d4e2de99e1a8a9e6f204c031923c585dade777c164651fb71286d2db5d3",
-      "attemptId": null,
-      "promptSha256": "b46477afa854ccebad42061481d27672f476e191019b84669a102446a8eb9520"
+      "attemptId": "t1-soenun-first:9",
+      "promptSha256": "b46477afa854ccebad42061481d27672f476e191019b84669a102446a8eb9520",
+      "chatUrl": "https://gemini.google.com/u/4/app/cbef2010f4d4450e?hl=ko",
+      "resultSha256": "9be17c67b3c254af063afe26da910210de145fd299e5cfd1e60214c98f2b70e9"
     },
     {
       "jobId": "t1-beom-first",
       "portraitId": "w-60-golbeol-beom",
       "tier": "1",
-      "status": "ready",
-      "reason": "source/framing local preflight pass; verify Gemini existing requests before claim",
+      "status": "accepted",
+      "reason": "User explicitly approved current Beom on2026-11-07, accepting cropped forward hand and praising natural idle. Adopt SAME artifact; no regeneration. Visual independent review limits retained:hand partly cropped, direct audio/lip-sync unverified. Future videos should show slightly more natural torso/chest/garment breathing and idle weight motion.",
       "sourcePath": "public/realm/awaken-hd/w-60-golbeol-beom.jpg",
       "sourceSha256": "dbd045f4daa3c2e6dbee2f00f6d0f2b5fa8a6ffad6428cc3f9e1153ec44c1342",
-      "attemptId": null,
-      "promptSha256": "0b4fd0fd78a488499406ede2270481a59024262779ce44639b82819c9d09600f"
+      "attemptId": "t1-beom-first:10",
+      "promptSha256": "0b4fd0fd78a488499406ede2270481a59024262779ce44639b82819c9d09600f",
+      "chatUrl": "https://gemini.google.com/u/4/app/12a9c05cfd49d0f9?hl=ko",
+      "resultSha256": "8fc0343e958293add976b87994dec77ee507a63aff4796f1d63c22ce975f0f96",
+      "acceptanceKind": "user-approved-framing-deviation",
+      "reviewHistory": [
+        {
+          "at": "2026-11-07T09:59:07.611Z",
+          "status": "held",
+          "note": "Visual HOLD:720x1280/24fps10s fullframe and natural expression, stable visible costume/stripes/nails, no clear cut at7.833/8/9.333s. However forward RIGHT palm/some fingers are cropped at left border throughout samples incl0/4s, so entire hand/all fingertips preservation fails. Keep candidate, no auto-regeneration or integration. Direct audio/lip-sync unverified."
+        },
+        {
+          "at": "2026-11-07T10:03:48.433068Z",
+          "status": "accepted",
+          "source": "explicit-user-approval",
+          "note": "User explicitly approved current Beom on2026-11-07, accepting cropped forward hand and praising natural idle. Adopt SAME artifact; no regeneration. Visual independent review limits retained:hand partly cropped, direct audio/lip-sync unverified. Future videos should show slightly more natural torso/chest/garment breathing and idle weight motion."
+        }
+      ]
     },
     {
       "jobId": "t1-sinae-newchat-v2",
@@ -193,6 +211,19 @@
       "attemptId": "t1-sinae-newchat-v2:8",
       "replacesAttemptId": "t1-sinae-first:7",
       "chatUrl": "https://gemini.google.com/u/4/app/1bbf124fa78c8fe4?hl=ko"
+    },
+    {
+      "jobId": "t1-sinji-neoul-first",
+      "portraitId": "w-85-sinji-neoul",
+      "tier": "1",
+      "status": "accepted",
+      "reason": "Visual PASS root+independent:720x1280/24fps10s, face/outfit/tools stable; full hip hand and original behind-head hand occlusion preserved; readable subtle weight/ribcage/garment/expression movement, no obvious internal cuts3.875/6.667/8s. Background gradually brightens0-3s, no one-frame lighting reset. Perfect loop and precise motion-phase/audio/lip-sync not verified.",
+      "sourcePath": "public/realm/awaken-hd/w-85-sinji-neoul.jpg",
+      "sourceSha256": "364a0fbafae6d2a9f0a1d5af58722ba12105e74092aa0cc07c95a6a3f31e8f9a",
+      "attemptId": "t1-sinji-neoul-first:11",
+      "promptSha256": "964396335875be1d0846ec52d4a3802cd47774676b0a3796a559cbadbab045c8",
+      "chatUrl": "https://gemini.google.com/u/4/app/f9ec244bd6e663d4?hl=ko",
+      "resultSha256": "c1eb0a06d0eab5d2b2ede91521578995c785ff9330efb24dbb9eecc9d8f8dd36"
     }
   ],
   "nextSafeQueue": [
@@ -410,5 +441,5 @@
     ]
   },
   "handoffRule": "Observe live owner, queue, state, claims, Gemini pending chats, and file hashes. Explicitly transfer ownership before another agent submits. Never treat this snapshot as the live queue.",
-  "capturedAtKst": "2026-11-07T17:02:28+09:00"
+  "capturedAtKst": "2026-11-07T19:32:48.979224+09:00"
 }
