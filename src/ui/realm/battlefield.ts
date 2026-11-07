@@ -21,7 +21,7 @@ import { heroArt } from '../../realm/heroes.ts'
 import type { Act, Approach, Art, Clock, Cmd, Dusk, DuskAsk, DuskLog, Grp, Hero, Look, Order, Pending, Realm, RoundLog, RoundOrder, Tactic } from '../../realm/types.ts'
 import type { GuardWhy } from '../../realm/council.ts'
 import { P } from '../../tune/params.ts'
-import { playBattleStrikes } from './battle-strikes.ts'
+import { captureAttempts, playBattleStrikes } from './battle-strikes.ts'
 import { BATTLE_SPEEDS, battlePlayback, battleSpeed, type BattleSpeed } from './battle-playback.ts'
 import { snd } from './sound.ts'
 import { artVoicePath, autoVoicePath, voiceGate, voicePath } from './voice.ts'
@@ -1397,7 +1397,15 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   const ourF = weAtk ? atkF : l.defender
   const foeF = weAtk ? l.defender : atkF
   // 원군과 함께 닿은 장수가 지휘를 맡았으면 그 합부터 그가 총대장 (형 11-03 · tactics arrive)
-  const heroOf = (i: 0 | 1): string | null => st?.heroes[i] ?? (l.rounds ?? []).slice(0, shown).find((rd) => rd.relief?.side === (i === 0 ? 'a' : 'd') && rd.relief.chief !== undefined)?.relief?.chief ?? null
+  const heroOf = (i: 0 | 1): string | null => {
+    const side = i === 0 ? 'a' : 'd'
+    let chief = st?.heroes[i] ?? null
+    for (const [index, rd] of (l.rounds ?? []).slice(0, shown).entries()) {
+      if (rd.relief?.side === side && rd.relief.chief !== undefined) chief = rd.relief.chief
+      if (index < shown - 1 && rd.lostHero?.side === side && rd.lostHero.chief !== undefined) chief = rd.lostHero.chief
+    }
+    return chief
+  }
   const ourHero = heroOf(weAtk ? 0 : 1)
   const foeHero = heroOf(weAtk ? 1 : 0)
   const hname = (id: string | null, f: string | undefined): string => (id !== null ? (prev.heroes[id]?.name ?? after.heroes[id]?.name ?? '?') : `${fname(f)} 군`)
@@ -1525,6 +1533,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const sea = warGround(prev, l) === 'sea'
     const pd = l.pending
     const play = anim && last !== undefined
+    const captures = last === undefined ? [] : captureAttempts(last)
     /**
      * 싸움터의 땅 — 규칙이 전장에 보이게 (형: 규칙은 지도에 보이게 · 10-25 전장에도).
      * 지키는 쪽 진 앞: 목책(도읍·산성은 성문) · 해자 물 · 고갯길이면 옆구리 돌무더기. 공격이 이기면 목책이 부서져 있다.
@@ -1583,14 +1592,22 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       const men = all.reduce((s, [, v]) => s + v, 0)
       const fc = f !== undefined ? (FACTION_ART[f]?.color ?? '#888') : '#888'
       const em = flagIcon(f)
-      // 장수 — 사령관 하나만 진 맨 뒤에 그림으로 선다(부장은 비기 깃발로만 · 형 10-30: "장수가 여럿이면 사령관 대표 유닛만"). 얼굴 동그라미는 머리 위, 깃대는 등 뒤.
+      // 사령관은 진 뒤에 선다. 사로잡기 표적이 부장이면 해당 합에만 따로 그린다.
       // 결은 장수에서 (art.ts generalSprite: 명궁 활 · 통솔 말 · 여인 창 · 무예 언월도 · 그 밖 환두대도). 사로잡히거나 쓰러지면 그 합에 쓰러지고 다음 합부터 누워 있다
-      const gh = hero !== null ? (prev.heroes[hero] ?? after.heroes[hero]) : undefined
-      const ga = genArtOf(generalSprite(gh, P.realm.tacArtMinStat))
-      const gDown = hero !== null && rounds.some((rd) => rd.lostHero?.hero === hero)
-      const gNow = gDown && anim && last?.lostHero?.hero === hero
-      const gCls = ` gsp g-${ga.kind}${ga.bow === true ? ' gbw' : ''}${ga.kind === 'mount' ? ' gmt' : ''}${gNow ? ' gfall' : gDown ? ' gdown' : ''}`
-      const gen = gh === undefined ? '' : `<span class="wgen${gCls}" style="--fc:${fc};--gar:${ga.ar.toFixed(3)};--gb:${ga.body.toFixed(3)}"><i class="wpole">${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}</i><i class="gbody"><b class="gspf" style="background-image:url('${art}anim2/gen-${ga.kind}.png')"></b></i>${face(hero, art, 'unit-general')}</span>`
+      const capture = captures.find((c) => c.side === (i === 0 ? 'd' : 'a'))
+      const knownTarget = capture?.target
+      const target = knownTarget !== undefined && (prev.heroes[knownTarget] ?? after.heroes[knownTarget]) !== undefined ? knownTarget : hero
+      const genOf = (id: string | null, aide = false): string => {
+        const gh = id !== null ? (prev.heroes[id] ?? after.heroes[id]) : undefined
+        if (id === null || gh === undefined) return ''
+        const ga = genArtOf(generalSprite(gh, P.realm.tacArtMinStat))
+        const caught = capture?.succeeded === true && target === id
+        const gDown = caught || rounds.some((rd) => rd.lostHero?.hero === id)
+        const gNow = anim && (caught || last?.lostHero?.hero === id)
+        const gCls = ` gsp g-${ga.kind}${ga.bow === true ? ' gbw' : ''}${ga.kind === 'mount' ? ' gmt' : ''}${gNow ? ' gfall' : gDown ? ' gdown' : ''}${aide ? ' gcap-aide' : ''}`
+        return `<span class="wgen${gCls}" data-hero="${esc(id)}" style="--fc:${fc};--gar:${ga.ar.toFixed(3)};--gb:${ga.body.toFixed(3)}"><i class="wpole">${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}</i><i class="gbody"><b class="gspf" style="background-image:url('${art}anim2/gen-${ga.kind}.png')"></b></i>${face(id, art, 'unit-general')}</span>`
+      }
+      const gen = genOf(hero) + (play && target !== hero ? genOf(target, true) : '')
       const cues = '<i class="wq q-charge"><b>돌격</b></i><i class="wq q-hold"></i><i class="wq q-shoot"></i><i class="wq q-ride"></i><i class="wq q-cap"><b>사로잡으러</b></i><i class="wq q-back"><b>물러난다</b></i>'
       if (men <= 0) return `<div class="wf2s ${cls}"${formAttrs(o)}>${terrainProps(cls)}${gen}${cues}</div>`
       // 병사 그림 — 어느 싸움이든 한 잣대: 작은 병사 10명 · 큰 병사(2배) 100명 · 깃발 병사 1000명 (troops.ts · 형 11-01: "보기만 해도 몇명인지").
@@ -1731,7 +1748,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     // 잣대 — 작은 병사 10 · 큰 병사 100 (· 깃발 병사 1000 은 그런 병사가 섰을 때만). 읽지 않아도 크기 차이로 보이게 그림 셋을 크기대로
     const used = [0, 1, 2].filter((t) => t === 0 || [kindMen(0), kindMen(1)].some((ks) => ks.some((v) => (tierCounts(v, prec)[t] ?? 0) > 0)))
     const legend = `<div class="wleg" aria-label="병사 하나 10명 · 큰 병사 100명">${used.map((t) => `<span class="l${t}"><img src="${art}icon/sol-spear.png" alt="">${TIER_MEN[t]!.toLocaleString('ko-KR')}</span>`).join('')}</div>`
-    return `<div class="wfield${play ? ' play' : ''}${enter}${endCls}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--bd:${tAt(2)}s;--rv:${rv.toFixed(2)}s"><i class="wf-ground"></i>${midTerr}${side(ourI, 'us', ordUs, ourHero, ourF)}${side(foeI, 'foe', ordFoe, foeHero, foeF)}${legend}<i class="wf-mid">⚔</i><b class="wf-who us">${roleChip(weAtk)}우리 ${esc(ourName)}</b><b class="wf-who foe">${roleChip(!weAtk)}적 ${esc(foeName)}</b>${hit}${omen}${mu !== null ? muHtml(art, mu) : ''}</div>`
+    return `<div class="wfield${play ? ' play' : ''}${captures.length > 0 ? ' capture-round' : ''}${enter}${endCls}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--bd:${tAt(2)}s;--rv:${rv.toFixed(2)}s"><i class="wf-ground"></i>${midTerr}${side(ourI, 'us', ordUs, ourHero, ourF)}${side(foeI, 'foe', ordFoe, foeHero, foeF)}${legend}<i class="wf-mid">⚔</i><b class="wf-who us">${roleChip(weAtk)}우리 ${esc(ourName)}</b><b class="wf-who foe">${roleChip(!weAtk)}적 ${esc(foeName)}</b>${hit}${omen}${mu !== null ? muHtml(art, mu) : ''}</div>`
   }
 
   // 싸움터 배경 (땅마다) · 위 카드는 굴려도 그 자리에 (형: "싸우는로그가 스크롤로 보이더라도 상단에 캐릭터랑 체력바 있는 그 카드는 고정")
@@ -2249,6 +2266,7 @@ export const WAR_CSS = `
 /* 장수 그림 (형 10-30: "전투할 때 장수 유닛도") — public/realm/anim2/gen-<결>.png · 병사 v2 띠와 같은 20컷(서기 0~3 · 걷기 4~11 · 공격 12~17 · 맞음 18 · 쓰러짐 19).
    발이 땅(60%)에 · 몸은 병사의 1.3배쯤(--gb = 서 있는 몸 / 띠 높이) · 얼굴 동그라미는 머리 위 · 깃대는 등 뒤 */
 .ap .wf2s .wgen.gsp { left: calc(9% + var(--gdx, 0%)); width: auto; height: calc(clamp(44px, 12.4cqw, 80px) / var(--gb, 1)); aspect-ratio: var(--gar, 1); transform: translate(-50%, -100%); }
+.ap .wf2s .wgen.gsp.gcap-aide { left: 16%; top: 72%; }
 .ap .wf2s .wgen.gsp.gmt { height: calc(clamp(56px, 15.6cqw, 100px) / var(--gb, 1)); }
 .ap .wf2s .wgen.gsp .gbody { position: absolute; inset: 0; z-index: 1; filter: drop-shadow(0 0 2px #7cc4ff) drop-shadow(0 2px 2px #000c); }
 .ap .wf2s.foe .wgen.gsp .gbody { filter: drop-shadow(0 0 2px #ff6a5a) drop-shadow(0 2px 2px #000c); }
@@ -2259,13 +2277,13 @@ export const WAR_CSS = `
 .ap .wf2s .wgen.gsp .wpole { left: 30%; bottom: 30%; height: 175%; z-index: 0; }
 /* 장수의 깃발(비기·겨루기·사로잡기·북)이 오른 합엔 맞부딪기 앞부터 칼질(활 장수는 쏘기). */
 .ap .wfield.enter .wgen.gsp .gspf { animation: spidle 2.6s steps(4) infinite, spwalk calc(var(--entry-time) / 3) steps(8) var(--entry-delay) 3; }
-.ap .wfield.play .wf2s:is([data-l="art"], [data-l="duel"], [data-l="capture"], [data-l="drum"]) .wgen.gsp:not(.gdown):not(.gfall) .gspf { animation: spidle 2.6s steps(4) infinite, gatk .9s steps(1) calc(var(--hd) - 1.2s) 3; }
-.ap .wfield.play .wf2s:is([data-l="art"], [data-l="duel"], [data-l="capture"], [data-l="drum"]) .wgen.gsp.gbw:not(.gdown):not(.gfall) .gspf { animation: spidle 2.6s steps(4) infinite, spshot 1.1s steps(1) calc(var(--hd) - 1.2s) 3; }
+.ap .wfield.play:not(.capture-round) .wf2s:is([data-l="art"], [data-l="duel"], [data-l="drum"]) .wgen.gsp:not(.gdown):not(.gfall) .gspf { animation: spidle 2.6s steps(4) infinite, gatk .9s steps(1) calc(var(--hd) - 1.2s) 3; }
+.ap .wfield.play:not(.capture-round) .wf2s:is([data-l="art"], [data-l="duel"], [data-l="drum"]) .wgen.gsp.gbw:not(.gdown):not(.gfall) .gspf { animation: spidle 2.6s steps(4) infinite, spshot 1.1s steps(1) calc(var(--hd) - 1.2s) 3; }
 /* 합마다 장수도 칼질한다 — 자기 깃발이 아닌 합엔 진 맨 뒤에 서 있기만 해서 "장수 유닛은 왜 안 움직이냐 · 공격·기술이 하나도 안 보임"(형 11-04) ·
    맞부딪는 때에 한 번 · 자기 깃발(비기·겨루기·사로잡기·북) 합엔 앞으로 뛰어들어 세 번(아래 gdash) */
-.ap .wfield.play:not(.enter) .wf2s:not(:is([data-l="art"], [data-l="duel"], [data-l="capture"], [data-l="drum"])) .wgen.gsp:not(.gdown):not(.gfall) .gspf { animation: spidle 2.6s steps(4) infinite, gatk .9s steps(1) calc(var(--hd) - .5s) 1; }
-.ap .wfield.play:not(.enter) .wf2s:not(:is([data-l="art"], [data-l="duel"], [data-l="capture"], [data-l="drum"])) .wgen.gsp.gbw:not(.gdown):not(.gfall) .gspf { animation: spidle 2.6s steps(4) infinite, spshot 1.1s steps(1) calc(var(--hd) - .6s) 1; }
-.ap .wfield.play:not(.enter) .wf2s:is([data-l="art"], [data-l="duel"], [data-l="capture"], [data-l="drum"]) .wgen.gsp:not(.gdown):not(.gfall):not(.gbw) { animation: gdash 3.4s cubic-bezier(.3, 0, .2, 1) calc(var(--hd) - 1.3s) 1 both; }
+.ap .wfield.play:not(.enter, .capture-round) .wf2s:not(:is([data-l="art"], [data-l="duel"], [data-l="capture"], [data-l="drum"])) .wgen.gsp:not(.gdown):not(.gfall) .gspf { animation: spidle 2.6s steps(4) infinite, gatk .9s steps(1) calc(var(--hd) - .5s) 1; }
+.ap .wfield.play:not(.enter, .capture-round) .wf2s:not(:is([data-l="art"], [data-l="duel"], [data-l="capture"], [data-l="drum"])) .wgen.gsp.gbw:not(.gdown):not(.gfall) .gspf { animation: spidle 2.6s steps(4) infinite, spshot 1.1s steps(1) calc(var(--hd) - .6s) 1; }
+.ap .wfield.play:not(.enter, .capture-round) .wf2s:is([data-l="art"], [data-l="duel"], [data-l="drum"]) .wgen.gsp:not(.gdown):not(.gfall):not(.gbw) { animation: gdash 3.4s cubic-bezier(.3, 0, .2, 1) calc(var(--hd) - 1.3s) 1 both; }
 @keyframes gdash { 0% { translate: 0 0; } 25%, 75% { translate: clamp(40px, 16cqw, 120px) 0; } 100% { translate: 0 0; } }
 @media (prefers-reduced-motion: reduce) { .ap .wfield.play .wgen.gsp { animation: none !important; } }
 @keyframes gatk { 0% { background-position-x: 63.1579%; } 10% { background-position-x: 68.4211%; } 26% { background-position-x: 73.6842%; } 40% { background-position-x: 78.9474%; } 66% { background-position-x: 84.2105%; } 84%, 100% { background-position-x: 89.4737%; } }

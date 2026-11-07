@@ -40,6 +40,52 @@ test('duel pairs leaders and blocked ranged attack does not trigger a hit', () =
   assert.equal(strikes.find((s) => s.source === bow)?.hit, false)
 })
 
+test('successful capture sends the acting chief to the selected aide from either viewpoint', () => {
+  const chief = { ...unit('a', 'lead', 30), hero: 'attacker', ranged: true }
+  const rival = { ...unit('d', 'lead', 30), hero: 'defender' }
+  const aide = { ...unit('d', 'lead', 50, true), hero: 'aide', aide: true }
+  const front = unit('d', 'front', 45)
+  const captured: RoundLog = { ...round, ev: 'capture-ok', by: 'a', acts: [
+    { s: 'a', g: 'lead', c: 'capture', n: 10, tg: 'lead', res: 'ok', hero: aide.hero },
+  ] }
+  for (const weAtk of [true, false]) {
+    const strikes = planBattleStrikes([chief, rival, aide, front], captured, [], 3, weAtk)
+    assert.equal(strikes.length, 1)
+    assert.equal(strikes[0]?.source, chief)
+    assert.equal(strikes[0]?.target, aide)
+    assert.equal(strikes[0]?.capture, true)
+    assert.equal(strikes[0]?.flight, 0)
+    assert.equal(strikes[0]?.hit, true)
+  }
+})
+
+test('failed capture keeps the defending chief as the initiator and allows troop clashes', () => {
+  const attacker = unit('a', 'lead', 30)
+  const defender = unit('d', 'lead', 30)
+  const frontA = unit('a', 'front', 50)
+  const frontD = unit('d', 'front', 50)
+  const units = [attacker, defender, frontA, frontD]
+  for (const acts of [undefined, [{ s: 'd', g: 'lead', c: 'capture', n: 10, res: 'fail' }] as const]) {
+    const strikes = planBattleStrikes(units, { ...round, ev: 'capture-fail', by: 'd', ...(acts === undefined ? {} : { acts }) }, [], 3, true)
+    assert.equal(strikes.find((s) => s.capture)?.source, defender)
+    assert.equal(strikes.find((s) => s.capture)?.target, attacker)
+    assert.equal(strikes.find((s) => s.capture)?.hit, false)
+    assert.ok(strikes.some((s) => s.source === frontA && s.target === frontD))
+    assert.ok(!strikes.some((s) => s.source === attacker))
+  }
+})
+
+test('both logged capture attempts preserve their own initiator even when one is captured', () => {
+  const a = { ...unit('a', 'lead', 30, true), hero: 'a' }
+  const d = { ...unit('d', 'lead', 30), hero: 'd' }
+  const strikes = planBattleStrikes([a, d], { ...round, ev: 'capture-ok', by: 'd', acts: [
+    { s: 'a', g: 'lead', c: 'capture', n: 10, res: 'fail', hero: 'd' },
+    { s: 'd', g: 'lead', c: 'capture', n: 10, res: 'ok', hero: 'a' },
+  ] }, [], 4, true)
+  assert.deepEqual(strikes.map((s) => [s.source.hero, s.target.hero, s.hit]), [['a', 'd', false], ['d', 'a', true]])
+  assert.ok(strikes[0]!.impact < strikes[1]!.start)
+})
+
 test('arrow reaches the target and follows the tangent in both directions', () => {
   for (const targetX of [-100, 100]) {
     const from = { x: 0, y: 30 }

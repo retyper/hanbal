@@ -11,6 +11,8 @@ interface Unit {
   falling: boolean
   x: number
   y: number
+  hero?: string | undefined
+  aide?: boolean
 }
 interface Strike<U extends Unit> {
   source: U
@@ -21,17 +23,43 @@ interface Strike<U extends Unit> {
   windup: number
   hit: boolean
   fire: boolean
+  capture?: boolean
 }
 type Beat = { ours: boolean; c: Act['c']; at: number }
+
+export function captureAttempts(round: RoundLog): { side: Side; target: string | undefined; succeeded: boolean }[] {
+  const targetOf = (side: Side): string | undefined => (side === 'a' ? round.oa : round.od)?.target
+  const attempts = (round.acts ?? []).filter((act) => act.c === 'capture' && (act.res === 'ok' || act.res === 'fail'))
+  if (attempts.length > 0) return attempts.map((act) => ({
+    side: act.s, target: act.hero ?? targetOf(act.s), succeeded: act.res === 'ok',
+  }))
+  if ((round.ev !== 'capture-ok' && round.ev !== 'capture-fail') || round.by === undefined) return []
+  const succeeded = round.ev === 'capture-ok'
+  const target = succeeded && round.lostHero?.how === 'taken' ? round.lostHero.hero : targetOf(round.by)
+  return [{ side: round.by, target, succeeded }]
+}
 
 /** Displayed soldiers are tokens, so pair tokens within the logged opposing group. */
 export function planBattleStrikes<U extends Unit>(units: readonly U[], round: RoundLog, beats: readonly Beat[], clash: number, weAtk: boolean): Strike<U>[] {
   if (round.ev === 'retreat' || round.ev === 'retreat-fail') return []
   const R = P.realm
   const ours = weAtk ? 'a' : 'd'
+  const captures = captureAttempts(round)
+  const captureWindup = R.warStrikeWindupS + R.warStrikeWalkInS
+  const captureInterval = captureWindup + .2 + R.warStrikeWalkBackS
+  const captureStrikes = captures.flatMap(({ side, target: id, succeeded }, i): Strike<U>[] => {
+    const source = units.find((u) => u.side === side && u.group === 'lead' && !u.aide)
+    const rivals = units.filter((u) => u.side !== side && u.group === 'lead')
+    const target = rivals.find((u) => id !== undefined && u.hero === id) ?? rivals.find((u) => !u.aide)
+    if (source === undefined || target === undefined) return []
+    const impact = Math.max(captureWindup, clash - (captures.length - 1 - i) * captureInterval)
+    return [{ source, target, start: impact - captureWindup, impact, flight: 0, windup: captureWindup, hit: succeeded, fire: false, capture: true }]
+  })
+  // A successful capture ends the round before the ordinary unit clashes.
+  if (captures.some((c) => c.succeeded)) return captureStrikes
   const groupIndex = new Map<string, number>()
   const meleeIndex = { a: 0, d: 0 }
-  const intents = units.filter((u) => !u.falling).flatMap((source) => {
+  const intents = units.filter((u) => !u.falling && !u.aide).flatMap((source) => {
     const actions = round.acts?.filter((a) => a.s === source.side && a.g === source.group)
     const acts = actions?.filter((a) => a.tg !== undefined && a.c !== 'rocks' && a.c !== 'guard' && a.c !== 'capture' && a.res !== 'wasted' && a.res !== 'fail')
     const physical = acts?.filter((a) => a.tg !== 'lead' || source.group === 'lead') ?? []
@@ -41,7 +69,7 @@ export function planBattleStrikes<U extends Unit>(units: readonly U[], round: Ro
     const action = physical.length === 0 ? undefined : physical[i % physical.length]
     const duel = source.group === 'lead' && round.ev?.startsWith('duel') === true
     // Guarding cavalry and failed/wasted orders don't get an unrelated attack.
-    if (action === undefined && !duel && (actions?.length ?? 0) > 0) return []
+    if (action === undefined && !duel && ((actions?.length ?? 0) > 0 || (source.group === 'lead' && captures.length > 0))) return []
     const beat = beats.find((b) => b.ours === (source.side === ours) && b.c === action?.c)
     const flight = source.ranged ? R.warArrowFlightS : 0
     const windup = source.group === 'horse' ? R.warStrikeHorseWindupS : R.warStrikeWindupS + (flight === 0 ? R.warStrikeWalkInS : 0)
@@ -53,8 +81,8 @@ export function planBattleStrikes<U extends Unit>(units: readonly U[], round: Ro
 
   const fallen = new Set<U>()
   const claimedAt = new Map<U, number>()
-  return intents.flatMap(({ source, action, duel, start, impact, flight, windup }) => {
-    const targets = units.filter((u) => u.side !== source.side && !fallen.has(u))
+  return captureStrikes.concat(intents.flatMap(({ source, action, duel, start, impact, flight, windup }) => {
+    const targets = units.filter((u) => u.side !== source.side && !u.aide && !fallen.has(u))
     const group = duel ? 'lead' : action?.tg
     const preferred = targets.filter((u) => group === undefined
       ? u.group === (source.group === 'lead' ? 'lead' : 'front')
@@ -71,7 +99,7 @@ export function planBattleStrikes<U extends Unit>(units: readonly U[], round: Ro
     claimedAt.set(target, impact)
     if (hit && target.falling) fallen.add(target)
     return [{ source, target, start, impact, flight, windup, hit, fire: action?.c === 'fire' }]
-  })
+  }))
 }
 
 interface Point { x: number; y: number }
@@ -141,13 +169,14 @@ export function playBattleStrikes(field: HTMLElement, round: RoundLog, beats: re
       const skin = frame.style.backgroundImage.match(/\/([^/]+)\.png/)?.[1]?.replace(/-practice-hit$/, '') ?? ''
       const ranged = group === 'bows' || node.classList.contains('gbw')
       const rect = node.getBoundingClientRect()
-      actors.push({ node, frame, group, skin, side, direction, ranged, falling: node.matches('.tkf, .gfall'), x: rect.x, y: rect.bottom, frames: node.matches('.v2, .gsp') ? 20 : 8 })
+      actors.push({ node, frame, group, skin, side, direction, ranged, hero: node.dataset['hero'], aide: node.classList.contains('gcap-aide'), falling: node.matches('.tkf, .gfall'), x: rect.x, y: rect.bottom, frames: node.matches('.v2, .gsp') ? 20 : 8 })
     }
   }
   if (actors.length === 0) return () => {}
   const strikes = planBattleStrikes(actors, round, beats, clash, weAtk)
   const images = new Set(['strike-burst.svg', 'strike-puncture.svg', 'strike-shards.svg'])
   for (const strike of strikes) {
+    if (strike.capture) continue
     if (strike.flight === 0) images.add(`strike-${swingArt(strike.source.skin)}.svg`)
     if (HEAVY_SWINGS.has(strike.source.skin)) images.add('dust.png')
   }
@@ -161,7 +190,7 @@ export function playBattleStrikes(field: HTMLElement, round: RoundLog, beats: re
   const lunges = new Map<Actor, Animation>()
   const actionPoses = new Map<Actor, Animation>()
   const returns = new Map<Actor, number>()
-  const melee = new Map(strikes.filter((strike) => strike.flight === 0).map((strike) => [strike.source, strike]))
+  const melee = new Map(strikes.filter((strike) => strike.flight === 0 && !strike.capture).map((strike) => [strike.source, strike]))
   for (const strike of strikes) {
     if (strike.flight === 0) returns.set(strike.source, Math.max(returns.get(strike.source) ?? 0, strike.impact + .2))
     if (strike.hit) returns.set(strike.target, Math.max(returns.get(strike.target) ?? 0, strike.impact + R.warStrikeHitS))
@@ -186,7 +215,7 @@ export function playBattleStrikes(field: HTMLElement, round: RoundLog, beats: re
     ], R.warStrikeFallS * 1000)
     anim.onfinish = () => { animations.delete(anim); u.node.classList.add('strike-gone') }
   }
-  const land = (u: Actor): void => {
+  const land = (u: Actor, captured = false): void => {
     if (down.has(u)) return
     hold(u)
     cancel(actionPoses.get(u))
@@ -194,11 +223,11 @@ export function playBattleStrikes(field: HTMLElement, round: RoundLog, beats: re
     const hit = pose(u, u.frames === 20 ? 18 : 6)
     const reaction = play(u.frame, [{ backgroundPositionX: hit }, { backgroundPositionX: hit }], R.warStrikeHitS * 1000)
     reactions.set(u, reaction)
-    if (u.falling) down.add(u)
+    if (u.falling || captured) down.add(u)
     reaction.onfinish = () => {
       animations.delete(reaction)
       reactions.delete(u)
-      if (u.falling) fall(u)
+      if (u.falling || captured) fall(u)
     }
   }
   const draw = (u: Actor): [number, number, number] => u.frames === 8 ? [4, .85, .36] : RELEASE[u.skin] ?? [14, .87, .35]
@@ -277,8 +306,21 @@ export function playBattleStrikes(field: HTMLElement, round: RoundLog, beats: re
     const gap = reach(source, strike.target)
     meeting.set(source, { x: gap.x * .5, y: gap.y * .5 })
   }
-  const windup = ({ source, target, flight, windup }: Strike<Actor>, lateMs: number): void => {
+  const windup = ({ source, target, flight, windup, capture }: Strike<Actor>, lateMs: number): void => {
     if (reactions.has(source) || down.has(source)) return
+    if (capture) {
+      const from = offset(source)
+      const near = body(source)
+      const to = body(target)
+      const rect = source.frame.getBoundingClientRect()
+      const scale = frameScale(source, rect)
+      const gap = (to.x - near.x) * source.direction
+      walk(source, {
+        x: from.x + Math.max(0, gap - rect.width * .3) / scale.x,
+        y: from.y + (to.y - near.y) / scale.y,
+      }, windup * 1000, false, lateMs)
+      return
+    }
     if (flight === 0) {
       const from = offset(source)
       const gap = reach(source, target)
@@ -340,7 +382,7 @@ export function playBattleStrikes(field: HTMLElement, round: RoundLog, beats: re
   const flights: { strike: Strike<Actor>; arrow: HTMLImageElement; from: Point; last?: Point }[] = []
   const queue = strikes.flatMap((strike) => [
     { at: strike.start, act: 'windup' as const, strike },
-    ...(strike.flight === 0 ? [{ at: strike.impact - .13, act: 'swing' as const, strike }] : []),
+    ...(strike.flight === 0 && !strike.capture ? [{ at: strike.impact - .13, act: 'swing' as const, strike }] : []),
     { at: strike.impact - strike.flight, act: strike.flight > 0 ? 'launch' as const : 'land' as const, strike },
   ]).sort((a, b) => a.at - b.at)
   const origin = playback.now()
@@ -389,8 +431,8 @@ export function playBattleStrikes(field: HTMLElement, round: RoundLog, beats: re
         ], 230)
       }
       else if (act === 'land') {
-        impactFx(strike, point(body(target), box ??= field.getBoundingClientRect()), directionTo(source, target))
-        if (strike.hit) land(target)
+        if (!strike.capture) impactFx(strike, point(body(target), box ??= field.getBoundingClientRect()), directionTo(source, target))
+        if (strike.hit) land(target, strike.capture)
       }
       else {
         const [, x, y] = draw(source)

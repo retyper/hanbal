@@ -1344,7 +1344,7 @@ function resolveRound(
     const lostSquad = cap.squad * R.tacCapFailLoss
     const fromHorse = Math.min(lostSquad, men(x, 'horse'))
     const sl = hurt(x, 'horse', fromHorse) + hurt(x, 'front', lostSquad - fromHorse)
-    acts.push({ s: x, g: 'lead', c: 'capture', n: cap.squad, tg: 'lead', sl, res: 'fail', guard: cap.escort })
+    acts.push({ s: x, g: 'lead', c: 'capture', n: cap.squad, tg: 'lead', sl, res: 'fail', guard: cap.escort, hero: tgt.id })
   }
 
   // ── 각성기 — 한 판에 한 번 · 불꽃 하나를 태운다(부른 쪽 heroes.burnWake). 기운마다 그 합의 규칙 하나를 꺾는다 (위원회 11-04 던파 ① · DESIRE §13-3)
