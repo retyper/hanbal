@@ -226,6 +226,8 @@ export const AWAKEN_LOOP_SQ: ReadonlySet<string> = new Set<string>(['w-35-jomun-
 export const loopFile = (id: string): string => `awaken-loop/${id}${AWAKEN_LOOP_SQ.has(id) ? '.sq' : ''}.mp4`
 
 export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
+  'w-42-gwanna-soenun', // 11-07 쇠눈 · 출전 전 투구를 바로잡는 연속 동작
+  'w-60-golbeol-beom', // 11-07 범 · 사용자 승인, 전방 손의 화면 경계 잘림 허용
   'w-01-silla-princess', // 11-07 고은 · 부채 든 손 교정본 · 기존 세로 영상 회수
   'w-19-buyeo-fur-princess', // 11-07 가온 · 수정꽃을 바라보며 호흡
   'w-62-byeokjin-byeol', // 11-07 별 · 쇠를 살피는 연속 동작
