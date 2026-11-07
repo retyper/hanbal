@@ -146,10 +146,11 @@ const CONTACT: Readonly<Record<string, [number, number, number]>> = {
   'gen-soseono': [14, .98, .43],
   'gen-gaennae': [14, 249 / 264, 47 / 160],
   'gen-budeul': [14, 266 / 280, 51 / 160],
+  'gen-sogeumbi': [14, 225 / 280, 103 / 160],
 }
 
 const HEAVY_SWINGS = new Set(['axe', 'gen-soebi', 'gen-haebi', 'gen-gamsil'])
-const BLADE_SWINGS = new Set(['gen-ara', 'gen-g-sword', 'gen-hyeokgeose', 'gen-eureum', 'gen-hyeopbo', 'gen-onjo', 'gen-mount'])
+const BLADE_SWINGS = new Set(['gen-sogeumbi', 'gen-ara', 'gen-g-sword', 'gen-hyeokgeose', 'gen-eureum', 'gen-hyeopbo', 'gen-onjo', 'gen-mount'])
 const swingArt = (skin: string): 'heavy' | 'sweep' | 'thrust' =>
   HEAVY_SWINGS.has(skin) ? 'heavy' : BLADE_SWINGS.has(skin) ? 'sweep' : 'thrust'
 

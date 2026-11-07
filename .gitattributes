@@ -1,0 +1,2 @@
+# Keep production prompt fingerprints identical on Windows and macOS.
+docs/realm/production/veo-prompts/*.txt text eol=lf

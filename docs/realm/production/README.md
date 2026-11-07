@@ -11,6 +11,7 @@
 | 불매 w-38 | HOLD | 보행 하체 후보는 있으나 오른손 망치의 실제 접촉 자세가 무기·자루 중복 또는 파지 단절로 실패. 최종 20셀 없음. 임의로 접촉 프레임을 채워 적용하지 않는다. |
 | 활미 w-65 | HOLD | 전신 보행 시트와 반대발 단독 생성이 앞발 교대·장비 일관성 기준을 통과하지 못했다. 정지 후보가 있어도 완성 모션으로 보지 않는다. |
 | 범발 w-68 | HOLD · 독립 검수 정정 | 기존 idle 통과 기록과 달리 실제 원초상의 범가죽 쪽 뺨 줄무늬를 반대 뺨으로 옮겼다. 신규 동작 시트도 같은 문제. idle/동작 각1회 한정 교정이 실패해 중단했다. 무기/범가죽 위치가 정상이라 전체 반전으로 고치지 않는다. 공통 하체 조립과 준비/찌르기/피격 후보는 Windows work에만 있으며 게임 미적용. |
+| 소금비 w-44 | 20셀 게임 연결 · 배포 확인 중 | `gen-sogeumbi.png` 5600×160/160272바이트, SHA256 `331bfa5475464ff001e7e923e44a0f25c0176a7abb3325dfa1b3fbb092732a5b`. 원6시트의 손 바뀐 ML/BR은 보류. TR 위검→원래 MR 복귀를 짧은 내려베기 접촉으로 재해석, TL 하체/발 고정. 별도 낙검 컷은 두 손을 놓고 바닥에 같은 검1개를 떨어뜨림. 독립 검수·테스트19·빌드/예산 통과. [규격/출처](../SPRITE-SOGEUMBI.md), 실제 서버 버전/해시로 배포 여부 확인. |
 
 세부 검수·실패 원인은 Windows Codex 산출물 `outputs/sprite-young-generals-20261107-status.md`에 있다. 전투 스프라이트와 Veo 각성 idle 영상은 서로 다른 제작물이다.
 
@@ -18,11 +19,12 @@
 
 - **현재 제출 담당:** Windows Codex의 `veo-1` 예약 작업. 2026-11-07 17:54 KST에 Gemini 사용 가능 여부를 확인하도록 예약된 기록이다. 실제 해제·진행 여부는 그때 브라우저와 원장으로 확인해야 한다. Mac/Claude가 이 시각에 별도 제출하지 않는다.
 - `u/0`~`u/5`는 이 Windows 브라우저의 계정 순서다. Mac이나 다른 프로필의 동일 번호가 같은 계정이라는 보장은 없으므로 계정 표시와 기존 대화를 확인한다.
+- Windows에서 유지한 `39d1717d94fd67e8` 탭은 **완료된 범발 진각성 대화의 한도 안내 참고용**이다. 다음 인물은 해당 job의 원본·문안으로 새 채팅에서 만들며, 이 옛 대화에 다시 제출하지 않는다.
 - **실행 큐:** `C:\Users\my\Documents\Codex\2026-11-06\windows-pc-claude-code-claude-code\outputs\veo-production-queue.json`
 - **실행 원장:** `C:\Users\my\Documents\Codex\2026-11-06\windows-pc-claude-code-claude-code\outputs\veo-production-state.json`
 - **큐 도구:** `D:/flutter/arrow_game_one/tools/veo/queue.mjs`; Windows 산출물 `outputs/veo-queue-runbook.md`에 claim→submitted→downloaded→review 순서와 복구 절차가 있다.
 - **기록 당시:** active 0, claim 0, accepted 2(해솔·별), held 3(매화 2건·달리 1건). `veo-status.snapshot.json`은 이 시점의 복제본이다. 원본이나 크레딧 상태가 바뀌면 즉시 오래된 기록이 된다.
-- **다음 안전 후보:** 불매 `t1-bulmae-first` 다음 시내 `t1-sinae-first`. 문안은 `veo-prompts/bulmae-t1.txt`, `veo-prompts/sinae-t1.txt`; 입력 그림은 각각 `public/realm/awaken-hd/w-38-sangdang-bulmae.jpg`, `public/realm/awaken-hd/w-61-iseo-sinae.jpg`. 두 문안은 Windows 원문과 SHA-256이 같게 복사했다. 후보 순서도 실제 원장·Gemini 대기·크레딧 재확인 뒤에만 유효하다.
+- **다음 안전 후보:** 불매 `t1-bulmae-first` → 시내 `t1-sinae-first` → 쇠눈 `t1-soenun-first` → 범 `t1-beom-first`. 문안은 `veo-prompts/bulmae-t1.txt`, `veo-prompts/sinae-t1.txt`; 입력 그림은 각각 `public/realm/awaken-hd/w-38-sangdang-bulmae.jpg`, `public/realm/awaken-hd/w-61-iseo-sinae.jpg`. 두 문안은 Windows 원문과 SHA-256이 같게 복사했다. 추가 문안은 `veo-prompts/soenun-t1.txt`, `veo-prompts/beom-t1.txt`, 원본은 각각 `public/realm/awaken-hd/w-42-gwanna-soenun.jpg`, `public/realm/awaken-hd/w-60-golbeol-beom.jpg`다. 양손 투구 접촉/전방 발톱 손이 가까이 모여 있어 루트도 직접 원본 구도를 확인했다. 후보 순서도 실제 원장·Gemini 대기·크레딧 재확인 뒤에만 유효하다.
 - **초상 교정 대기 25명:** `veo-status.snapshot.json`의 `portraitRepairs`에 목록이 있다. `w66` 포함. 사용자가 교정 이미지를 실제 검수하고 원본/해시를 갱신하기 전에는 자동 해제하지 않는다. 별은 예전 영상이 시각적으로 accepted였으나 현재 초상 교정 대기 목록에도 있으므로 그 승인과 신규 제출 가능성을 혼동하지 않는다.
 
 ## 품질·재시도 기준
@@ -32,6 +34,10 @@
 Veo는 각성 idle에만 쓰고 장수별로 하나씩 제작한다. 먼저 9:16 머리~골반 구도에서 원본 얼굴·복장·손·무기 연결을 확인한다. 캐릭터 특성에 맞는 한 동작, 자연스러운 호흡·상체 움직임, 표정과 소리의 어울림, 시작·끝 연결을 살핀다. 몸 관통·갑작스러운 회전/점프·중간 장면 전환·정사각 영상과 흐린 띠·불필요한 웃음 반복은 보류한다. 매화 교체본은 중간 포즈가 끊겨 사용자 HOLD, 달리는 부자연스러워 사용자 HOLD다. 해솔·별은 시각 통과했지만 완전한 루프와 직접 청음/립싱크를 검증했다고 주장하지 않는다. 자세한 기준은 Windows `outputs/veo-production-rules.md`에 있다.
 
 한도가 풀리면 한 편을 제출하고 시각·소리·연속성을 검수한 뒤 다음 편을 진행한다. 실패한 동일 문안을 자동 반복하지 않는다. 20셀 스프라이트의 여러 슬롯은 실제 포즈의 hold를 포함할 수 있으며, 20개의 독립 AI 생성 그림이라는 뜻은 아니다. 앞발 교대·무기 파지·투명 배경·워터마크·셀 잘림을 검수한다.
+
+## 과거 영상 식별 근거
+
+`https://gemini.google.com/u/4/app/39d1717d94fd67e8`의 Night-Panther는 업로드 라이트박스 파일명 `w-68-maek-beombal_2c9880.jpg`와 실제 `public/realm/awaken2-hd/w-68-maek-beombal.jpg` 이미지 대조로 **범발 w68 진각성**임을 Windows 브라우저에서 확인했다. 범 w60의 신규 1차각성 후보와 구분한다. 범의 제출 직전에는 Tiger/Claw/Beom 등 현재 Gemini 대화도 확인한다. 같은 대화에서 17:54 KST 한도 안내를 재확인했으며 새 영상은 제출하지 않았다.
 
 ## Claude/Mac으로 맡길 때
 

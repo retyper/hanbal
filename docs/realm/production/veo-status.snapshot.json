@@ -134,6 +134,26 @@
       "sourcePath": "public/realm/awaken-hd/w-74-balla-dokmudeom.jpg",
       "sourceSha256": "b4f1883acb31d58818f98ba0d6fe2b2c6fc4be1dd2fc3075820fa297911509f6",
       "attemptId": null
+    },
+    {
+      "jobId": "t1-soenun-first",
+      "portraitId": "w-42-gwanna-soenun",
+      "tier": "1",
+      "status": "ready",
+      "reason": "source/framing local preflight pass; verify Gemini existing requests before claim",
+      "sourcePath": "public/realm/awaken-hd/w-42-gwanna-soenun.jpg",
+      "sourceSha256": "d1567d4e2de99e1a8a9e6f204c031923c585dade777c164651fb71286d2db5d3",
+      "attemptId": null
+    },
+    {
+      "jobId": "t1-beom-first",
+      "portraitId": "w-60-golbeol-beom",
+      "tier": "1",
+      "status": "ready",
+      "reason": "source/framing local preflight pass; verify Gemini existing requests before claim",
+      "sourcePath": "public/realm/awaken-hd/w-60-golbeol-beom.jpg",
+      "sourceSha256": "dbd045f4daa3c2e6dbee2f00f6d0f2b5fa8a6ffad6428cc3f9e1153ec44c1342",
+      "attemptId": null
     }
   ],
   "nextSafeQueue": [
@@ -150,6 +170,22 @@
       "promptPath": "docs/realm/production/veo-prompts/sinae-t1.txt",
       "sourcePath": "public/realm/awaken-hd/w-61-iseo-sinae.jpg",
       "sourceSha256": "b528241502e098efc76b1afe66c441e2bf36140e7aa4d3ee88cab52309a37897"
+    },
+    {
+      "jobId": "t1-soenun-first",
+      "portraitId": "w-42-gwanna-soenun",
+      "sourcePath": "public/realm/awaken-hd/w-42-gwanna-soenun.jpg",
+      "sourceSha256": "d1567d4e2de99e1a8a9e6f204c031923c585dade777c164651fb71286d2db5d3",
+      "promptPath": "docs/realm/production/veo-prompts/soenun-t1.txt",
+      "promptSha256": "78b88a9861044d91b7423488774e205b34e165ea29dc4c40f428ed43aa17d4ec"
+    },
+    {
+      "jobId": "t1-beom-first",
+      "portraitId": "w-60-golbeol-beom",
+      "sourcePath": "public/realm/awaken-hd/w-60-golbeol-beom.jpg",
+      "sourceSha256": "dbd045f4daa3c2e6dbee2f00f6d0f2b5fa8a6ffad6428cc3f9e1153ec44c1342",
+      "promptPath": "docs/realm/production/veo-prompts/beom-t1.txt",
+      "promptSha256": "bc5ea83c580f677701a5726b355424ee8c8d60925436db37f53820fe94cd4a99"
     }
   ],
   "portraitRepairs": {
@@ -334,5 +370,6 @@
       }
     ]
   },
-  "handoffRule": "Observe live owner, queue, state, claims, Gemini pending chats, and file hashes. Explicitly transfer ownership before another agent submits. Never treat this snapshot as the live queue."
+  "handoffRule": "Observe live owner, queue, state, claims, Gemini pending chats, and file hashes. Explicitly transfer ownership before another agent submits. Never treat this snapshot as the live queue.",
+  "capturedAtKst": "2026-11-07T17:02:28+09:00"
 }
