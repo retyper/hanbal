@@ -26,3 +26,37 @@
 2026-11-08 기존3개의 공식 README/SKILL도 재확인했다. sprite-gen은 기존 이미지/그리드 추출·후처리/검사 경로를,2dimg2motion은 기본14프레임과 고정 기준/키포즈를, pixelfx는 코드 기반 픽셀 효과/스프라이트시트 사용을 문서화한다. 위 기존 판단은 유지하되, 공급자/생성 경로와 우리20칸·실제 타격점 계약의 호환은 후속1장수 시험에서 확인한다. 이 검토로 어떤 스킬도 설치하거나 실행하지 않았다.
 
 달리 실패 원인을 재현해 해결할 수 있는지 먼저 본다. 전체 캐릭터를 새로 만들거나 성공한 기존 에셋을 일괄 교체하는 작업은 시작하지 않았다.
+
+## 11-08 추가 조사 (Claude 에이전트 · 설치 0 · 공식 문서 기준 · [미확인]은 출처로 못 박지 못한 것)
+
+전제: GTX 1050 Ti 4GB · Ryzen 5 1600 · Python 3.9 · Node 20 · 유료 API 없음.
+
+핵심 넷:
+1. **Gemini API 이미지 모델은 무료 티어가 없다**(gemini-2.5-flash-image·3.1-flash-image·nano-banana 등 전부 Free tier "Not available"). AI Studio 웹 UI 사용만 무료. 스크립트 자동화 무료 경로는 없고 브라우저 UI 가 유일.
+2. **Hugging Face ZeroGPU 무료 하루 5분**(24시간 리셋). 포즈 이식·보간 모델을 4GB 대신 여기서 돌리는 게 현실적.
+3. **4GB 에서 도는 것은 사실상 셋**: Meta Animated Drawings(CPU 뼈대 퍼펫) · SD1.5+ControlNet(2GB) · rtmlib/DWPose(CPU 포즈 추정). MimicMotion·MusePose·Moore-AnimateAnyone(16GB)·UniAnimate(12~26GB)·ToonCrafter(26GB)·Wan2.2 5B(8GB)·FramePack(6GB)·AnimateDiff(6~8GB) 전부 불가.
+4. **라이선스**: MimicMotion·MusePose 가중치는 비상업 연구용 → 유료 게임 최종 아트에 못 씀. Qwen-Image-Edit·Animated Drawings(MIT)·CMU 모캡·Mixamo(로열티 무료·원본 재배포 금지)는 됨.
+
+| 순위 | 도구 | 무엇 | 4GB/무료 | 20셀에 맞추는 법 | 장수 1명 | 위험 |
+|---|---|---|---|---|---|---|
+| 1 | Meta Animated Drawings (MIT · 2025-09 아카이브) | PNG + 16관절 yaml → BVH 모캡을 2D 퍼펫으로 · 투명 GIF | CPU 됨 | 걷기 BVH 는 cgspeed CMU 클립 · 공격은 Mixamo FBX→Blender→BVH · 측면 투영 sagittal/pca | 첫 1일, 이후 1~2h [추정] | 윈도 빌드 이슈(#239 scikit-learn) · 종이인형 느낌 |
+| 2 | Qwen-Image-Edit-2511 AnyPose HF Space (linoyts) | 그림 A 사람에 그림 B 포즈 이식, 정체성 유지 | 무료 ZeroGPU 5분/일 | idle + 포즈 참조 → 키프레임 14장 · rembg 키잉 | 하루 1장수 [미확인] | 비공식 Space 소멸 가능 · 손/무기 일관성은 모델 재량 |
+| 3 | ToonCrafter / Framer Space | 키프레임 2장 → 16프레임 보간(Framer 는 점 궤적 지정) | 무료 ZeroGPU | 접지 포즈 2장 사이 보간 → 8칸 추출 | 하루 1~2장수 [추정] | 회화풍 번짐 |
+| 4 | rtmlib (DWPose · onnxruntime CPU) | 133점 키포인트 | CPU · Python 3.11 venv | **QA 자동화**: 발목 y 로 접지·교대 판정 · 손목 분산으로 파지 점수 | 수 초 | 160px 정확도 [미확인] → 512px 원본에 |
+| 5 | COA Tools 2 (Blender 애드온 GPL) | 컷아웃 리깅 · 액션 재사용 | 무료 CPU | idle 을 팔다리 레이어로 잘라 리그 → 걷기/공격 액션을 70명에 재사용 | 첫 4~5h, 이후 2~3h [추정] | 관절 티 · Blender 학습 |
+| 6 | Kaggle T4 + Moore-AnimateAnyone | 참조+포즈 영상→애니 | 무료 GPU | 참조·타이밍용 | 환경 1일 | 가중치 라이선스 [미확인] |
+| 7 | SD1.5 + ControlNet OpenPose + IP-Adapter | 골격대로 새 포즈 | 4GB 가능(느림) | rtmlib 골격 · img2img 저노이즈 | 1~2h+리롤 | 한복·맥궁 약함 · 손 깨짐 |
+| 8 | Pixelorama 1.2.4 · rembg isnet-anime · Wan2GP | 보정/키잉/저VRAM 허브 | 무료 | 보조 | - | Wan2GP 4GB 모델 [미확인] |
+
+기부자(다리 공여) 후보: OGA 「wizard character (animated)」(ruberboy · CC0 · 손그림 회화풍 · walk/run/idle/attack/damage/die · PSD·DragonBones 동봉) 1순위 · Mixamo(측면 직교 렌더 = 포즈 참조) · CMU BVH. 한국풍 CC0 회화 스프라이트는 없음 → 다리 교대만 빌리고 그림은 우리 것.
+
+파일럿 권장: **A안 Animated Drawings 를 1장수로 하루 안에 시험**(교대·파지를 구조적으로 보장하는지) → 그림 품질이 모자라면 그 결과를 **B안 Qwen AnyPose 의 포즈 참조**로 넣어 회화풍을 다시 입히는 결합. C안(COA Tools)은 둘 다 티 날 때.
+
+```
+git clone https://github.com/facebookresearch/AnimatedDrawings.git && cd AnimatedDrawings
+py -3.9 -m venv .venv && .venv\Scripts\activate && pip install -e .
+python -c "from animated_drawings import render; render.start('./my/walk_mvc.yaml')"
+py -3.11 -m venv qa && qa\Scripts\activate && pip install rtmlib onnxruntime opencv-python "rembg[cpu,cli]"
+```
+
+출처: aistudio.google.com/docs/pricing · huggingface.co/docs/hub/spaces-zerogpu · github.com/facebookresearch/AnimatedDrawings · huggingface.co/spaces/linoyts/Qwen-Image-Edit-2511-AnyPose · huggingface.co/spaces/wwen1997/Framer · huggingface.co/spaces/Doubiiu/tooncrafter · github.com/Tau-J/rtmlib · github.com/Aodaruma/coa_tools2 · opengameart.org/content/wizard-characteranimated · huggingface.co/tencent/MimicMotion/blob/main/NOTICE

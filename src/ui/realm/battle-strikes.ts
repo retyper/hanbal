@@ -148,6 +148,7 @@ const CONTACT: Readonly<Record<string, [number, number, number]>> = {
   'gen-budeul': [14, 266 / 280, 51 / 160],
   'gen-sogeumbi': [14, 225 / 280, 103 / 160],
   'gen-sori': [14, 243 / 280, 42 / 160],
+  'gen-beombal': [14, 248 / 280, 51 / 160],
 }
 
 const HEAVY_SWINGS = new Set(['axe', 'gen-soebi', 'gen-haebi', 'gen-gamsil'])
