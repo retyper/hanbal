@@ -1511,7 +1511,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const fr = `--bt:${R.ascendFrameTop};--bs:${R.ascendFrameSide};--bb:${R.ascendFrameBot}`
     const title = `<div class="axtitle"><img class="axbrush" src="${FX}brush.png" alt=""><img class="axword" src="${FX}word.png" alt="각성"></div>`
     const result = `${title}<b class="axname">${esc(h.name)}</b><div class="axstats">${stats}</div>`
-    const finalVideo = loopOk ? `<div class="axpost"><div class="axmedia">${after.replace('<video ', '<video data-quiet="1" ')}${awakeningGemHtml(e, ART)}</div>${result}</div>` : ''
+    const finalVideo = loopOk ? `<div class="axpost"><div class="axmedia awakening-frame">${after.replace('<video ', '<video data-quiet="1" ')}${awakeningGemHtml(e, ART)}</div>${result}</div>` : ''
     el.innerHTML = `<div class="axveil"></div><img class="axwall" src="${FX}wall.png" alt=""><canvas class="axground"></canvas>`
       + `<img class="axbeast" src="${FX}beast-${E.beast}.png" alt="" onerror="this.classList.add('gone')">${gatherHtml(e, phone ? R.ascendGatherPhone : R.ascendGather, sd, ART, { sec: R.ascendStreakSec, spread: R.ascendStreakSpreadSec, stagger: R.ascendStreakStaggerSec })}<div class="axembers">${embers}</div>`
       + `<div class="axstage"><div class="axcard">${tongues}<div class="axwin">${before}<i class="axsil"></i>${loopOk ? '' : after}</div><canvas class="axburn" style="${fr}"></canvas><img class="axframe" src="${FX}frame0.png" alt=""><img class="axglow" src="${FX}frame0.png" alt="">${vortexHtml(e, phone ? R.ascendOrbitPhone : R.ascendOrbit, sd, ART)}</div><div class="axslots">${slots}</div>${loopOk ? '' : result}</div>${finalVideo}${ringsHtml(e, ART)}<div class="axflash"></div>`
@@ -4456,10 +4456,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const hloop = woke2 && loop2 !== null ? loop2 : x.ascended === true && bo !== undefined && AWAKEN_LOOP.has(bo) && !lowQ ? `${ART}${loopFile(bo)}` : null
     const hpost = woke2 ? `${ART}awaken2-hd/${bo}.jpg` : `${ART}awaken-hd/${bo}.jpg`
     const e = elemOf(x)
-    const hpic = hloop !== null ? `<span class="vthumb"><video class="big vloop${sqCls(hloop)}" src="${hloop}" poster="${hpost}" autoplay muted loop playsinline preload="auto" data-act="bust-view" data-src="${hpost}" data-loop="${hloop}" data-elem="${e}"></video>${awakeningGemHtml(e, ART)}</span>`
+    const hpic = hloop !== null ? `<span class="vthumb awakening-frame"><video class="big vloop${sqCls(hloop)}" src="${hloop}" poster="${hpost}" autoplay muted loop playsinline preload="auto" data-act="bust-view" data-src="${hpost}" data-loop="${hloop}" data-elem="${e}"></video>${awakeningGemHtml(e, ART)}</span>`
       : woke2 ? `<img class="big" src="${hpost}" alt="" data-act="bust-view" data-src="${hpost}">`
       : file !== undefined ? `<img class="big" src="${ART}bust/${file}.jpg" alt="" data-act="bust-view" data-src="${ART}bust/${file}.jpg">` : bust(x, 'face')
-    h += `<div class="hpic">${hpic}${annal !== undefined ? `<button class="annb" data-act="annal" data-id="${x.id}" aria-label="사서에 남은 이야기">📜<b>?</b></button>` : ''}${flamesHtml(x)}</div>`
+    h += `<div class="hpic${hloop !== null ? ' framed' : ''}">${hpic}${annal !== undefined ? `<button class="annb" data-act="annal" data-id="${x.id}" aria-label="사서에 남은 이야기">📜<b>?</b></button>` : ''}${flamesHtml(x)}</div>`
     if (tw) h += trueWakeCard(x, bo!, woke2, loop2)
     // 판 밖 단련을 들고 온 장수 — 「단련 n」 (HERO-GROWTH ★ §A)
     h += `<div class="hn">${nameHtml(x.name)}${x.drill !== undefined && x.drill.lv > 0 && x.faction === me() ? ` <span class="dlv">단련 ${x.drill.lv}</span>` : ''}${x.faction === me() ? relicChips(ART, esc, x.relics, x.relicLv ?? {}) : ''}</div><div class="mute">${emblem(x.faction)}${esc(r.factions[x.faction]?.name ?? '떠돌이')}${isRuler(r, x.id) ? ' 군주' : ''} · ${esc(roleLine(r, x))}</div>`

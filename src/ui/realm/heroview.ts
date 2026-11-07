@@ -185,6 +185,10 @@ export const HERO_CSS = `
 .ap .bview .vfull { position: relative; display: block; height: min(88dvh, calc(96vw * 16 / 9)); aspect-ratio: 9 / 16; box-shadow: 0 0 40px #000; }
 .ap .bview .vfull video.vloop { display: block; width: 100%; height: 100%; max-width: none; max-height: none; border: 0; border-radius: 0; box-shadow: none; }
 .ap .vthumb { position: relative; display: inline-block; max-width: 100%; }
+.ap .hcard .hpic.framed { --awakening-frame-outset: 12px; padding: var(--awakening-frame-outset); }
+.ap .hpic.framed .vthumb { display: block; }
+.ap .hpic.framed .flms { bottom: calc(var(--awakening-frame-outset) + 4px); z-index: 6; }
+.ap .hpic.framed .annb { z-index: 6; }
 .ap .hcard .vthumb video.big.vloop { width: 150px; height: auto; border: 0; border-radius: 0; display: block; }
 /* 720×1280 영상의 표식 중심 (600, 1160)에 육각 보석의 중심을 맞춘다. */
 .ap .vmark { position: absolute; right: 16.6667%; bottom: 9.375%; transform: translate(50%, 50%); width: 10%; aspect-ratio: 1;

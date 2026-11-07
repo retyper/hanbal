@@ -171,7 +171,8 @@ export const ASCEND_CSS = `
 .ap .ascfx.portrait-video .axmedia { position: relative; flex: none; width: min(34.875dvh, calc((100dvh - 230px) * .5625), calc(100vw - 48px)); min-width: 120px; aspect-ratio: 9 / 16; background: #100b0a; box-shadow: 0 0 40px #e8aa5b55; }
 .ap .ascfx.portrait-video .axmedia video.axnew { position: relative; display: block; width: 100%; height: 100%; opacity: 1; animation: none; object-fit: contain; object-position: center; }
 /* 기존 각성 청동 액자를 세로 9분할로 이어 붙인다. 가운데는 비워 영상 전체를 보인다. */
-.ap .ascfx.portrait-video .axmedia::after { content: ''; position: absolute; inset: -17px; z-index: 4; pointer-events: none; border: 19px solid transparent; border-image: url(__ART__fx/awaken/frame0.png) 112 / 19px / 0 stretch; filter: drop-shadow(0 0 7px #f0a65a88); }
+.ap .awakening-frame::after { --edge: calc(var(--awakening-frame-outset, 17px) + 2px); content: ''; position: absolute; inset: calc(-1 * var(--awakening-frame-outset, 17px)); z-index: 4; pointer-events: none;
+  border: var(--edge) solid transparent; border-image: url(__ART__fx/awaken/frame0.png) 112 / var(--edge) / 0 stretch; filter: drop-shadow(0 0 7px #f0a65a88); }
 .ap .ascfx.portrait-video .axmedia .vmark { z-index: 5; }
 .ap .ascfx.portrait-video .axpost .axtitle { width: min(32vw, 160px); margin-top: 3px; }
 .ap .ascfx.portrait-video .axpost .axname { margin-top: -15px; padding: 0 16px; }
