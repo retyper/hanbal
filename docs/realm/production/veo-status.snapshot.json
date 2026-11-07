@@ -14,7 +14,7 @@
   "counts": {
     "active": 0,
     "accepted": 2,
-    "held": 5,
+    "held": 6,
     "claims": 0
   },
   "legacyAttempt": {
@@ -180,6 +180,19 @@
       "sourceSha256": "dbd045f4daa3c2e6dbee2f00f6d0f2b5fa8a6ffad6428cc3f9e1153ec44c1342",
       "attemptId": null,
       "promptSha256": "0b4fd0fd78a488499406ede2270481a59024262779ce44639b82819c9d09600f"
+    },
+    {
+      "jobId": "t1-sinae-newchat-v2",
+      "portraitId": "w-61-iseo-sinae",
+      "tier": "1",
+      "status": "held",
+      "reason": "User-authorized one new-chat retry. Gemini replied cannot depict some public figures; no video produced. Provider classification only; real identity/cause unverified. Do not reword/change accounts to evade this response or auto-retry. Chat1bbf124fa78c8fe4. Credits unknown.",
+      "sourcePath": "public/realm/awaken-hd/w-61-iseo-sinae.jpg",
+      "sourceSha256": "b528241502e098efc76b1afe66c441e2bf36140e7aa4d3ee88cab52309a37897",
+      "promptSha256": "69fe2afbcf648bc491943e6cfe4634fae082fdee23bee6e7352b254d41a2b411",
+      "attemptId": "t1-sinae-newchat-v2:8",
+      "replacesAttemptId": "t1-sinae-first:7",
+      "chatUrl": "https://gemini.google.com/u/4/app/1bbf124fa78c8fe4?hl=ko"
     }
   ],
   "nextSafeQueue": [

@@ -26,7 +26,7 @@
 - **실행 큐:** `C:\Users\my\Documents\Codex\2026-11-06\windows-pc-claude-code-claude-code\outputs\veo-production-queue.json`
 - **실행 원장:** `C:\Users\my\Documents\Codex\2026-11-06\windows-pc-claude-code-claude-code\outputs\veo-production-state.json`
 - **큐 도구:** `D:/flutter/arrow_game_one/tools/veo/queue.mjs`; Windows 산출물 `outputs/veo-queue-runbook.md`에 claim→submitted→downloaded→review 순서와 복구 절차가 있다.
-- **기록 당시(18:10 KST):** active0, claim0, accepted2(해솔·별), held5(기존3+불매 품질1+시내 서버오류1). 개인 한도 해제 시각/서버오류의 크레딧 차감은 미확인이다. 스냅샷은 실행 큐가 아니다.
+- **기록 당시(18:24 KST):** 큐14개, active0, claim0, accepted2(해솔·별), held6(기존3+불매 품질1+시내 실패2). 개인 한도 해제 시각/서버오류의 크레딧 차감은 미확인이다. 스냅샷은 실행 큐가 아니다.
 - **다음 미시도 후보:** 쇠눈 `t1-soenun-first` → 범 `t1-beom-first`. 상대경로 `veo-prompts/soenun-t1.txt`, `veo-prompts/beom-t1.txt`; 입력은 `public/realm/awaken-hd/w-42-gwanna-soenun.jpg`, `w-60-golbeol-beom.jpg`. 원본/문안 해시는 스냅샷과 라이브 큐로 대조한다. 불매/시내는 재제출하지 않는다. 준비 문안에는 장면 목적과 손/도구 관계를 보강했다.
 - **초상 교정 대기 25명:** `veo-status.snapshot.json`의 `portraitRepairs`에 목록이 있다. `w66` 포함. 사용자가 교정 이미지를 실제 검수하고 원본/해시를 갱신하기 전에는 자동 해제하지 않는다. 별은 예전 영상이 시각적으로 accepted였으나 현재 초상 교정 대기 목록에도 있으므로 그 승인과 신규 제출 가능성을 혼동하지 않는다.
 
@@ -55,3 +55,7 @@ Veo는 각성 idle에만 쓰고 장수별로 하나씩 제작한다. 먼저 9:16
 불매 `t1-bulmae-first:6`은 [실제 대화](https://gemini.google.com/u/4/app/b648e21336861630?hl=ko)에서09e720ef/720×1280/24fps/10초로 완성됐으나 2.5·3.5초 달궈진 작업물이 자루에 융합되어 모루 위에서 함께 들려 HOLD다. 사용자 설명은 미소 지으며 달궈진 쇠를 망치질하는 대장장이이며 최초 ‘붉은 망치머리’ 해석은 철회했다. 종료된 최초 검수 원장을 덮어쓰지 않고 이 정정과 [제작 기준](veo-rules.md)을 함께 읽는다. 결과 SHA256 `c45d33e69bcb3a749d5d727346f8db956216d4aadbd22a965bc05e7a048151af`, 게임 미적용.
 
 시내 `t1-sinae-first:7`은 장면 맥락을 보강해9:16으로1회 제출했지만 [실제 대화](https://gemini.google.com/u/4/app/08c38722177e8200?hl=ko)에서 unusually high traffic/full capacity 오류를 반환했다. 영상 없음·같은 요청 재제출 금지. 다음 확인에서는 기존 대화에 뒤늦은 결과가 있는지 먼저 관찰한다. 19:10은 혼잡 후 확인이며 확정 재개 시각이 아니다.
+
+## 18:24 시내 새 채팅 사용자 승인 재시도
+
+기존 시내 대화의 최종 응답이 `Can't generate your video. Try another prompt.`로 바뀐 것을 직접 확인했다. 사용자가 새 채팅 재시도를 명시 요청하여 `t1-sinae-newchat-v2:8`을 이전 `t1-sinae-first:7`의 교체 시도로1회 제출했다. [새 대화](https://gemini.google.com/u/4/app/1bbf124fa78c8fe4?hl=ko)는 일부 공적 인물은 묘사할 수 없다는 응답으로 거절했다. 영상 없음/HOLD, 실제 인물 여부·구체 원인·차감은 미확인. 문구/계정 변경으로 이 응답을 회피하는 추가 제출은 하지 않는다. 새 문안 `veo-prompts/sinae-t1-newchat-v2.txt`, SHA256 `69fe2afbcf648bc491943e6cfe4634fae082fdee23bee6e7352b254d41a2b411`. 기존 문안·실패 기록은 보존했다. 다음 확인19:10/독립 미시도 쇠눈→범은 유지한다.
