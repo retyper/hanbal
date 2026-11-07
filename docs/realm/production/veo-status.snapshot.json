@@ -451,5 +451,30 @@
     ]
   },
   "handoffRule": "Observe live owner, queue, state, claims, Gemini pending chats, and file hashes. Explicitly transfer ownership before another agent submits. Never treat this snapshot as the live queue.",
-  "capturedAtKst": "2026-11-07T20:13:43+09:00"
+  "capturedAtKst": "2026-11-07T20:13:43+09:00",
+  "incomingPortraitCorrections": {
+    "receivedAtKst": "2026-11-07T21:59:50+09:00",
+    "count": 19,
+    "base": 8,
+    "firstAwakening": 11,
+    "gameApplied": false,
+    "veoReleased": false,
+    "source": "public/realm/*rere.png",
+    "poseChangedIds": [
+      "w-54-maga-dalli",
+      "w-57-bullae-bakdal",
+      "w-62-byeokjin-byeol",
+      "w-65-goguryeo-hwalmi"
+    ],
+    "excludedByUser": [
+      {
+        "stage": "base",
+        "shortId": "g43",
+        "portraitId": "g-43-hwanna-amnok",
+        "decision": "retain-existing",
+        "reason": "User says existing image does not need repair."
+      }
+    ],
+    "policy": "Receipt only. Review, canonical source/hash update and changed-pose prompt reconstruction before any individual deferral release. Keep old accepted-video audit records."
+  }
 }

@@ -1,0 +1,358 @@
+{
+  "receivedAtKst": "2026-11-07T21:59:50+09:00",
+  "note": "User-supplied correction images received; files preserved. Receipt is not approval or game integration. Never reuse old pose prompts for four user-reposed first-awakening sources.",
+  "images": [
+    {
+      "fileName": "g24rere.png",
+      "path": "public/realm/g24rere.png",
+      "shortId": "g24",
+      "portraitId": "g-24-wansan-onsan",
+      "stage": "base",
+      "sha256": "52a7d845a040e56c4aec7db9ce96f61981fd7f4efaaac5215f59331fbbcd376f",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/bust-hd/g-24-wansan-onsan.jpg",
+      "canonicalSha256": "101909a4d65044b686036373d961bc00a84f9c65b1c695c7beadef281b28525e",
+      "poseChangedByUser": false,
+      "status": "received-pending-visual-review",
+      "gameApplied": false,
+      "veoReleased": false
+    },
+    {
+      "fileName": "w101awrere.png",
+      "path": "public/realm/w101awrere.png",
+      "shortId": "w101",
+      "portraitId": "w-101-garak-singwigan",
+      "stage": "awaken",
+      "sha256": "321136205d7d5d7a14b8c3b38e4cd37f0748d0391d40a84f9ea9c71aaa296a14",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/awaken-hd/w-101-garak-singwigan.jpg",
+      "canonicalSha256": "f4d505c82b29c0a2d3606bc41bd64f126e8b120a9c3d2d5cce31717a799f684c",
+      "poseChangedByUser": false,
+      "status": "received-pending-visual-review",
+      "gameApplied": false,
+      "veoReleased": false
+    },
+    {
+      "fileName": "w40rere.png",
+      "path": "public/realm/w40rere.png",
+      "shortId": "w40",
+      "portraitId": "w-40-mujin-munui",
+      "stage": "base",
+      "sha256": "096796f02beba8c65fb500f60442791d7f7879dfbedbc7b62777176a8d30b404",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/bust-hd/w-40-mujin-munui.jpg",
+      "canonicalSha256": "0d96432d519b3bf60d8e50ab85ecec87a5b8d5db4a1fce213a38053d3943f147",
+      "poseChangedByUser": false,
+      "status": "received-pending-visual-review",
+      "gameApplied": false,
+      "veoReleased": false
+    },
+    {
+      "fileName": "w47awrere.png",
+      "path": "public/realm/w47awrere.png",
+      "shortId": "w47",
+      "portraitId": "w-47-gosaburi-baram",
+      "stage": "awaken",
+      "sha256": "f884576e77a75854e2e6e61b95acd23b8359ac57dbf34520c7008ab7a6e40dbc",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/awaken-hd/w-47-gosaburi-baram.jpg",
+      "canonicalSha256": "35a394d8998a143dc65850457daee30c77c1f2b252263bf641eb262cb8795280",
+      "poseChangedByUser": false,
+      "status": "received-pending-visual-review",
+      "gameApplied": false,
+      "veoReleased": false
+    },
+    {
+      "fileName": "w54awrere.png",
+      "path": "public/realm/w54awrere.png",
+      "shortId": "w54",
+      "portraitId": "w-54-maga-dalli",
+      "stage": "awaken",
+      "sha256": "6700259826adb809d735cedae6edd6473a0321af1e0b29c7ce9e2f82263511fd",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/awaken-hd/w-54-maga-dalli.jpg",
+      "canonicalSha256": "3754cb1216abaab8a5e81e070235512fc9ea2c550f1481cea5a5d949842deafd",
+      "poseChangedByUser": true,
+      "status": "received-pending-visual-review",
+      "gameApplied": false,
+      "veoReleased": false
+    },
+    {
+      "fileName": "w57awrere.png",
+      "path": "public/realm/w57awrere.png",
+      "shortId": "w57",
+      "portraitId": "w-57-bullae-bakdal",
+      "stage": "awaken",
+      "sha256": "f63889bcab6206f3f6264c0b2726a2503ff2785c3dd9687078ca5afb9de324bc",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/awaken-hd/w-57-bullae-bakdal.jpg",
+      "canonicalSha256": "c2daa1e52a09faba4ec5709a93cb65508821f01621f1b54881b26b2ce6d48912",
+      "poseChangedByUser": true,
+      "status": "received-pending-visual-review",
+      "gameApplied": false,
+      "veoReleased": false
+    },
+    {
+      "fileName": "w62awrere.png",
+      "path": "public/realm/w62awrere.png",
+      "shortId": "w62",
+      "portraitId": "w-62-byeokjin-byeol",
+      "stage": "awaken",
+      "sha256": "27e9d692ed481e477b5c1d8b2eb0d33c30c46f5208789751ac795c335067933a",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/awaken-hd/w-62-byeokjin-byeol.jpg",
+      "canonicalSha256": "b793b7bb89b5dde287028009cd05262a407f1690df684e7bbeffdf20af82ee49",
+      "poseChangedByUser": true,
+      "status": "received-pending-visual-review",
+      "gameApplied": false,
+      "veoReleased": false
+    },
+    {
+      "fileName": "w65awrere.png",
+      "path": "public/realm/w65awrere.png",
+      "shortId": "w65",
+      "portraitId": "w-65-goguryeo-hwalmi",
+      "stage": "awaken",
+      "sha256": "4486f2639379024d2741ad65e2d5a136b26d7750d0a4e158eda10b316f5b1c27",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/awaken-hd/w-65-goguryeo-hwalmi.jpg",
+      "canonicalSha256": "39059a339be2af3016011805ee75b2889ec83a34e60e6cde2b0065f2ebab3705",
+      "poseChangedByUser": true,
+      "status": "received-pending-visual-review",
+      "gameApplied": false,
+      "veoReleased": false
+    },
+    {
+      "fileName": "w65rere.png",
+      "path": "public/realm/w65rere.png",
+      "shortId": "w65",
+      "portraitId": "w-65-goguryeo-hwalmi",
+      "stage": "base",
+      "sha256": "59cd45408355e4d937377645a5400096e712110079b73956d16c3bd97a607dcd",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/bust-hd/w-65-goguryeo-hwalmi.jpg",
+      "canonicalSha256": "0326794c64f963389e2d5300a2560896684390b95efb118f60d84a5468aa8b31",
+      "poseChangedByUser": false,
+      "status": "received-pending-visual-review",
+      "gameApplied": false,
+      "veoReleased": false
+    },
+    {
+      "fileName": "w66awrere.png",
+      "path": "public/realm/w66awrere.png",
+      "shortId": "w66",
+      "portraitId": "w-66-saro-noeul",
+      "stage": "awaken",
+      "sha256": "1ec9e1880c0e9dcf8836872021009e969472cdcdc82dc070d8d6293347616eb1",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/awaken-hd/w-66-saro-noeul.jpg",
+      "canonicalSha256": "821a4e9392b199fdd3b526994e72123d302af933d6375c8b86ef57571d294a51",
+      "poseChangedByUser": false,
+      "status": "received-pending-visual-review",
+      "gameApplied": false,
+      "veoReleased": false
+    },
+    {
+      "fileName": "w74awrere.png",
+      "path": "public/realm/w74awrere.png",
+      "shortId": "w74",
+      "portraitId": "w-74-balla-dokmudeom",
+      "stage": "awaken",
+      "sha256": "b7226322766c72d3b8af620cfa5fa36ddc10353af28b9157647fd55418b0ed8e",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/awaken-hd/w-74-balla-dokmudeom.jpg",
+      "canonicalSha256": "b4f1883acb31d58818f98ba0d6fe2b2c6fc4be1dd2fc3075820fa297911509f6",
+      "poseChangedByUser": false,
+      "status": "received-pending-visual-review",
+      "gameApplied": false,
+      "veoReleased": false
+    },
+    {
+      "fileName": "w78awrere.png",
+      "path": "public/realm/w78awrere.png",
+      "shortId": "w78",
+      "portraitId": "w-78-wansan-wan",
+      "stage": "awaken",
+      "sha256": "b56f1197ce74b808286a20bb255158bb8fb37cf8f5653c47c9c06489da02bed1",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/awaken-hd/w-78-wansan-wan.jpg",
+      "canonicalSha256": "50ca33bbc54eaec5c3e4e0d2c1965b02fab6746509d4d4daf7dc84c8c7052502",
+      "poseChangedByUser": false,
+      "status": "received-pending-visual-review",
+      "gameApplied": false,
+      "veoReleased": false
+    },
+    {
+      "fileName": "w80awrere.png",
+      "path": "public/realm/w80awrere.png",
+      "shortId": "w80",
+      "portraitId": "w-80-usan-gangchi",
+      "stage": "awaken",
+      "sha256": "9cf4cf8f50116f4194a740bbf5dfe6666291b4c09ac1ac90a68d2f075918ee96",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/awaken-hd/w-80-usan-gangchi.jpg",
+      "canonicalSha256": "08fc5f59f32f85489ded3ac5f9987a07c2971a9d6ba52d7789229f57aeddfe9a",
+      "poseChangedByUser": false,
+      "status": "received-pending-visual-review",
+      "gameApplied": false,
+      "veoReleased": false
+    },
+    {
+      "fileName": "w82awrere.png",
+      "path": "public/realm/w82awrere.png",
+      "shortId": "w82",
+      "portraitId": "w-82-ungcheon-gom",
+      "stage": "awaken",
+      "sha256": "36eaff95defecdede14a321ab6500455ec45d147527b916164503ef9e8d60caf",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/awaken-hd/w-82-ungcheon-gom.jpg",
+      "canonicalSha256": "54e183ca5aa8238ea25857570fd4af99ee05aa5ea1dbd4dec6aca885df0c9c99",
+      "poseChangedByUser": false,
+      "status": "received-pending-visual-review",
+      "gameApplied": false,
+      "veoReleased": false
+    },
+    {
+      "fileName": "w84rere.png",
+      "path": "public/realm/w84rere.png",
+      "shortId": "w84",
+      "portraitId": "w-84-salhae-dallae",
+      "stage": "base",
+      "sha256": "9a88e2c4b499ee60c58bb4d4b1964f769e01a15269e994d9ae584f1611352d24",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/bust-hd/w-84-salhae-dallae.jpg",
+      "canonicalSha256": "78e244daf660ef7aacd62eb750203075ee9da8728bc017618a59fb15e5b38d0f",
+      "poseChangedByUser": false,
+      "status": "received-pending-visual-review",
+      "gameApplied": false,
+      "veoReleased": false
+    },
+    {
+      "fileName": "w90rere.png",
+      "path": "public/realm/w90rere.png",
+      "shortId": "w90",
+      "portraitId": "w-90-saro-danbi",
+      "stage": "base",
+      "sha256": "01c012e7661fd6277d52994082b9ed336065b1334fcc56a23fae918cfdff0dbc",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/bust-hd/w-90-saro-danbi.jpg",
+      "canonicalSha256": "21e7c25b00321aa0f65d59f6102a7a38a363e7abbe9ebf31265ae988908a4d21",
+      "poseChangedByUser": false,
+      "status": "received-pending-visual-review",
+      "gameApplied": false,
+      "veoReleased": false
+    },
+    {
+      "fileName": "w92rere.png",
+      "path": "public/realm/w92rere.png",
+      "shortId": "w92",
+      "portraitId": "w-92-saro-dallae",
+      "stage": "base",
+      "sha256": "5a088ee4c4159180f9bd08e13f5fc631b6cae0cc25de24a5002606fc59688834",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/bust-hd/w-92-saro-dallae.jpg",
+      "canonicalSha256": "574b98b252022e446116395a1fc6a17361dc3503e37851eacd17e57158011e62",
+      "poseChangedByUser": false,
+      "status": "received-pending-visual-review",
+      "gameApplied": false,
+      "veoReleased": false
+    },
+    {
+      "fileName": "w97rere.png",
+      "path": "public/realm/w97rere.png",
+      "shortId": "w97",
+      "portraitId": "w-97-goguryeo-mir",
+      "stage": "base",
+      "sha256": "695e62a9e612fa70a99c0f97d682fc23f54d9673561c9e991e36cbcbba411ea6",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/bust-hd/w-97-goguryeo-mir.jpg",
+      "canonicalSha256": "f8e2765e3a454b3a8fccdbdf5cee35891ab74a8ee606f10fc22f5ff987188787",
+      "poseChangedByUser": false,
+      "status": "received-pending-visual-review",
+      "gameApplied": false,
+      "veoReleased": false
+    },
+    {
+      "fileName": "w9rere.png",
+      "path": "public/realm/w9rere.png",
+      "shortId": "w9",
+      "portraitId": "w-09-byeonhan-smith",
+      "stage": "base",
+      "sha256": "0325c9ef223d8ba50c7bdb5033fbceb52318cfb7816effe49da50e4d15a2f59c",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "canonicalPath": "public/realm/bust-hd/w-09-byeonhan-smith.jpg",
+      "canonicalSha256": "59402eba635ad68c673ff525497f507055989aa042247a2b0ddfd81b91f62070",
+      "poseChangedByUser": false,
+      "status": "received-pending-visual-review",
+      "gameApplied": false,
+      "veoReleased": false
+    }
+  ],
+  "excludedByUser": [
+    {
+      "stage": "base",
+      "shortId": "g43",
+      "portraitId": "g-43-hwanna-amnok",
+      "decision": "retain-existing",
+      "reason": "User says existing image does not need repair."
+    }
+  ],
+  "purpose": "Read-only receipt. Incoming PNGs remain Windows-local user untracked files and are not included in this documentation commit."
+}
