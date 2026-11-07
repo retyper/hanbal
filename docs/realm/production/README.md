@@ -1,6 +1,6 @@
 # 삼한열전 제작 인수인계 — 2026-11-07 KST 스냅샷
 
-**19:31 최신:** 소리20셀 및쇠눈/범/신지너울1차영상게임연결·검수통과. 범은손잘림사용자명시승인으로같은파일채택. accepted5/held6/active0, 다음실제u4한도/예약22:54KST. 첫배포866620df는서버검사통과/Pages동기화실패취소확인,공개1f942bbccd여서현재새너울영상포함새빌드복구중. 아래이전시점기록보다이항목과HANDOFF/실시간원장을우선한다.
+**19:40 최신:** 소리20셀 및쇠눈/범/신지너울1차영상공개적용완료. run42364470090 SUCCESS,공개b429115f60와네파일HTTP200/바이트/SHA256검수본일치. 범의손잘림은사용자명시승인. accepted5/held6/active0, 다음실제u4한도/예약22:54KST. 아래이전시점기록보다HANDOFF/실시간원장을우선한다.
 이 폴더는 Windows Codex 작업의 **휴대용 읽기 전용 기록**이다. Claude Code 또는 Mac Codex가 읽어도 된다. 여기의 `veo-status.snapshot.json`은 실행 큐가 아니며, JSON의 상태는 작성 시점 이후 바뀔 수 있다. Gemini에 새 요청을 보내기 전에 반드시 Windows 실시간 원장과 브라우저를 대조한다.
 
 ## 전투 애니메이션 현황
@@ -15,20 +15,22 @@
 | 활미 w-65 | HOLD | 전신 보행 시트와 반대발 단독 생성이 앞발 교대·장비 일관성 기준을 통과하지 못했다. 정지 후보가 있어도 완성 모션으로 보지 않는다. |
 | 범발 w-68 | HOLD · 독립 검수 정정 | 기존 idle 통과 기록과 달리 실제 원초상의 범가죽 쪽 뺨 줄무늬를 반대 뺨으로 옮겼다. 신규 동작 시트도 같은 문제. idle/동작 각1회 한정 교정이 실패해 중단했다. 무기/범가죽 위치가 정상이라 전체 반전으로 고치지 않는다. 공통 하체 조립과 준비/찌르기/피격 후보는 Windows work에만 있으며 게임 미적용. |
 | 소금비 w-44 | 완료·공개 | `gen-sogeumbi.png` 5600×160/160272바이트, SHA256 `331bfa5475464ff001e7e923e44a0f25c0176a7abb3325dfa1b3fbb092732a5b`. 원6시트 손 바뀐 ML/BR 제외, TR→MR 상체를 짧은 내려베기로 재해석, 대기 하체/발 고정. 별도 낙검. 독립 검수·테스트19·빌드/예산·실제 배속/접촉/복귀 검수, 공개 버전946b28462a/PNG일치. [규격/출처](../SPRITE-SOGEUMBI.md). |
+| 소리 w-11 | 완료·공개 | gen-sori.png 146148바이트/SHA256 e008d43e… 검수본일치. 기본복장·RIGHT단검·등활 유지, 네실보행/고정발공격/낙검19 및 실제배속/접촉 확인. [규격](../SPRITE-SORI.md). |
+| 쇠뫼 w-75 | 보행 HOLD | 최초4하체의밑창잘림·반대발불확실. 한정교정1회는밑창만개선하고기존TL/BR위상을반복해반대발미확보. 최초1+교정1상한에서중단,게임미적용. 공격/피격/쓰러짐미제출. |
 | 구름 w-49 | 보행 HOLD | u5 기존대화에서 최초1+한 컷 교정1. 두 결과 모두 같은 앞발 반주기, 교정도4컷 반복. 컵/복식은 유지됐지만 게임 미적용. 추가 동일 생성 금지. |
 
 세부 검수·실패 원인은 Windows Codex 산출물 `outputs/sprite-young-generals-20261107-status.md`에 있다. 전투 스프라이트와 Veo 각성 idle 영상은 서로 다른 제작물이다.
 
 ## Veo 소유권과 실시간 원장
 
-- **현재 제출 담당:** Windows Codex `veo-1`. 다음 확인 2026-11-07 19:10 KST ACTIVE. 서버 혼잡 후 확인 시각이며 Google이 보장한 한도 해제 시각이 아니다. Mac/Claude는 소유권 이관 전 별도 제출하지 않는다.
+- **현재 제출 담당:** Windows Codex `veo-1`. 다음 재개 2026-11-07 22:54 KST ACTIVE. 신지너울 완료 후 실제 UI 안내이며 20:06에도 동일 안내·제출도구 비활성화를 확인했다. Mac/Claude는 소유권 이관 전 별도 제출하지 않는다.
 - `u/0`~`u/5`는 이 Windows 브라우저의 계정 순서다. Mac이나 다른 프로필의 동일 번호가 같은 계정이라는 보장은 없으므로 계정 표시와 기존 대화를 확인한다.
 - Windows에서 유지한 `39d1717d94fd67e8` 탭은 **완료된 범발 진각성 대화의 한도 안내 참고용**이다. 다음 인물은 해당 job의 원본·문안으로 새 채팅에서 만들며, 이 옛 대화에 다시 제출하지 않는다.
 - **실행 큐:** `C:\Users\my\Documents\Codex\2026-11-06\windows-pc-claude-code-claude-code\outputs\veo-production-queue.json`
 - **실행 원장:** `C:\Users\my\Documents\Codex\2026-11-06\windows-pc-claude-code-claude-code\outputs\veo-production-state.json`
 - **큐 도구:** `D:/flutter/arrow_game_one/tools/veo/queue.mjs`; Windows 산출물 `outputs/veo-queue-runbook.md`에 claim→submitted→downloaded→review 순서와 복구 절차가 있다.
-- **기록 당시(18:24 KST):** 큐14개, active0, claim0, accepted2(해솔·별), held6(기존3+불매 품질1+시내 실패2). 개인 한도 해제 시각/서버오류의 크레딧 차감은 미확인이다. 스냅샷은 실행 큐가 아니다.
-- **다음 미시도 후보:** 쇠눈 `t1-soenun-first` → 범 `t1-beom-first`. 상대경로 `veo-prompts/soenun-t1.txt`, `veo-prompts/beom-t1.txt`; 입력은 `public/realm/awaken-hd/w-42-gwanna-soenun.jpg`, `w-60-golbeol-beom.jpg`. 원본/문안 해시는 스냅샷과 라이브 큐로 대조한다. 불매/시내는 재제출하지 않는다. 준비 문안에는 장면 목적과 손/도구 관계를 보강했다.
+- **현재(20:06 KST):** 큐17개, active0, claim0, accepted5(해솔·별·쇠눈·범·신지너울), held6. 실제 u4 재개 안내22:54이며 서버오류의 크레딧 차감은 미확인이다. 스냅샷은 실행 큐가 아니다.
+- **이미 생성·적용:** 쇠눈 `t1-soenun-first`·범 `t1-beom-first`·신지너울 `t1-sinji-neoul-first`. 다음 미시도 대상은 번예 물새w17(20세)→견사 엄니w69(33세)다. 원본·손 구도/문안의root+독립검수를마쳤고veo-prompts/mulsae-t1.txt와eomni-t1.txt로준비했다. 아직제출0회이며22:54실제한도/대기요청재확인후각1회만진행한다. 기존 HOLD 초안을 억지 제출하지 않는다. 불매/시내 및 이미 채택된 영상은 재제출하지 않는다.
 - **초상 교정 대기 25명:** `veo-status.snapshot.json`의 `portraitRepairs`에 목록이 있다. `w66` 포함. 사용자가 교정 이미지를 실제 검수하고 원본/해시를 갱신하기 전에는 자동 해제하지 않는다. 별은 예전 영상이 시각적으로 accepted였으나 현재 초상 교정 대기 목록에도 있으므로 그 승인과 신규 제출 가능성을 혼동하지 않는다.
 
 ## 품질·재시도 기준
@@ -60,3 +62,7 @@ Veo는 각성 idle에만 쓰고 장수별로 하나씩 제작한다. 먼저 9:16
 ## 18:24 시내 새 채팅 사용자 승인 재시도
 
 기존 시내 대화의 최종 응답이 `Can't generate your video. Try another prompt.`로 바뀐 것을 직접 확인했다. 사용자가 새 채팅 재시도를 명시 요청하여 `t1-sinae-newchat-v2:8`을 이전 `t1-sinae-first:7`의 교체 시도로1회 제출했다. [새 대화](https://gemini.google.com/u/4/app/1bbf124fa78c8fe4?hl=ko)는 일부 공적 인물은 묘사할 수 없다는 응답으로 거절했다. 영상 없음/HOLD, 실제 인물 여부·구체 원인·차감은 미확인. 문구/계정 변경으로 이 응답을 회피하는 추가 제출은 하지 않는다. 새 문안 `veo-prompts/sinae-t1-newchat-v2.txt`, SHA256 `69fe2afbcf648bc491943e6cfe4634fae082fdee23bee6e7352b254d41a2b411`. 기존 문안·실패 기록은 보존했다. 다음 확인19:10/독립 미시도 쇠눈→범은 유지한다.
+
+## 19:40 공개 확인 완료
+
+첫866620df는배포10분시간초과후취소확인,너울추가와실제검수기록을포함한b429115f새빌드run42364470090은성공했다. version.txt=b429115f60,소리146148B/쇠눈7254025B/범6327749B/신지너울5755271B 모두HTTP200와상기SHA256일치. 기존미배포/복구중기록은과거시점이다.

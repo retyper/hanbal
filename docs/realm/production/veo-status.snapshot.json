@@ -224,38 +224,48 @@
       "promptSha256": "964396335875be1d0846ec52d4a3802cd47774676b0a3796a559cbadbab045c8",
       "chatUrl": "https://gemini.google.com/u/4/app/f9ec244bd6e663d4?hl=ko",
       "resultSha256": "c1eb0a06d0eab5d2b2ede91521578995c785ff9330efb24dbb9eecc9d8f8dd36"
+    },
+    {
+      "jobId": "t1-mulsae-first",
+      "portraitId": "w-17-mahan-pearl-diver",
+      "tier": "1",
+      "status": "prepared-unsubmitted",
+      "reason": "Root+independent source preflight. Original hands not visible; do not reveal new hands. Laugh once, then readable breathing. Gemini Mulsae search returned no results during this2026-11-07 session; local no tier1/2 video. Recheck live pending requests before claim.",
+      "sourcePath": "public/realm/awaken-hd/w-17-mahan-pearl-diver.jpg",
+      "sourceSha256": "7c4c44f0ceecd7ee0dfe6e45b18d45ea630f4591554bc39af487711840222ebd",
+      "promptSha256": "a25b11ef5f19c1e2f4f0bc00461bf83160e931af692759e0bed0831c6e89c2fe"
+    },
+    {
+      "jobId": "t1-eomni-first",
+      "portraitId": "w-69-jeoga-eomni",
+      "tier": "1",
+      "status": "prepared-unsubmitted",
+      "reason": "Root+independent source/prompt preflight PASS. Entire single foreground grip inside portrait; leave margin below fingers. Existing game video is tier2 only, not tier1. Gemini Eomni search found no matching character chat during this2026-11-07 session; search is not proof of exhaustive absence. Recheck live pending requests before claim.",
+      "sourcePath": "public/realm/awaken-hd/w-69-jeoga-eomni.jpg",
+      "sourceSha256": "6a64a9e69264cf29f6806aef330e53d1e988e51c4f8a4f0ed8dba98a1d70d50d",
+      "promptSha256": "7ba6db6911cef378164e4a9a97ff92fee96b4171f7742f1ae95cf9776022dcd8"
     }
   ],
   "nextSafeQueue": [
     {
-      "jobId": "t1-bulmae-first",
-      "portraitId": "w-38-sangdang-bulmae",
-      "promptPath": "docs/realm/production/veo-prompts/bulmae-t1.txt",
-      "sourcePath": "public/realm/awaken-hd/w-38-sangdang-bulmae.jpg",
-      "sourceSha256": "d0807b25a0ceaf83f70b28413e86fd5ea1beb69297f5148f3bffa7590dbdcb04"
+      "jobId": "t1-mulsae-first",
+      "portraitId": "w-17-mahan-pearl-diver",
+      "tier": "1",
+      "promptPath": "docs/realm/production/veo-prompts/mulsae-t1.txt",
+      "promptSha256": "a25b11ef5f19c1e2f4f0bc00461bf83160e931af692759e0bed0831c6e89c2fe",
+      "sourcePath": "public/realm/awaken-hd/w-17-mahan-pearl-diver.jpg",
+      "sourceSha256": "7c4c44f0ceecd7ee0dfe6e45b18d45ea630f4591554bc39af487711840222ebd",
+      "note": "Prepared, not submitted. Recheck real UI quota and pending requests first."
     },
     {
-      "jobId": "t1-sinae-first",
-      "portraitId": "w-61-iseo-sinae",
-      "promptPath": "docs/realm/production/veo-prompts/sinae-t1.txt",
-      "sourcePath": "public/realm/awaken-hd/w-61-iseo-sinae.jpg",
-      "sourceSha256": "b528241502e098efc76b1afe66c441e2bf36140e7aa4d3ee88cab52309a37897"
-    },
-    {
-      "jobId": "t1-soenun-first",
-      "portraitId": "w-42-gwanna-soenun",
-      "sourcePath": "public/realm/awaken-hd/w-42-gwanna-soenun.jpg",
-      "sourceSha256": "d1567d4e2de99e1a8a9e6f204c031923c585dade777c164651fb71286d2db5d3",
-      "promptPath": "docs/realm/production/veo-prompts/soenun-t1.txt",
-      "promptSha256": "78b88a9861044d91b7423488774e205b34e165ea29dc4c40f428ed43aa17d4ec"
-    },
-    {
-      "jobId": "t1-beom-first",
-      "portraitId": "w-60-golbeol-beom",
-      "sourcePath": "public/realm/awaken-hd/w-60-golbeol-beom.jpg",
-      "sourceSha256": "dbd045f4daa3c2e6dbee2f00f6d0f2b5fa8a6ffad6428cc3f9e1153ec44c1342",
-      "promptPath": "docs/realm/production/veo-prompts/beom-t1.txt",
-      "promptSha256": "bc5ea83c580f677701a5726b355424ee8c8d60925436db37f53820fe94cd4a99"
+      "jobId": "t1-eomni-first",
+      "portraitId": "w-69-jeoga-eomni",
+      "tier": "1",
+      "promptPath": "docs/realm/production/veo-prompts/eomni-t1.txt",
+      "promptSha256": "7ba6db6911cef378164e4a9a97ff92fee96b4171f7742f1ae95cf9776022dcd8",
+      "sourcePath": "public/realm/awaken-hd/w-69-jeoga-eomni.jpg",
+      "sourceSha256": "6a64a9e69264cf29f6806aef330e53d1e988e51c4f8a4f0ed8dba98a1d70d50d",
+      "note": "Prepared, not submitted. Recheck real UI quota and pending requests first."
     }
   ],
   "portraitRepairs": {
@@ -441,5 +451,5 @@
     ]
   },
   "handoffRule": "Observe live owner, queue, state, claims, Gemini pending chats, and file hashes. Explicitly transfer ownership before another agent submits. Never treat this snapshot as the live queue.",
-  "capturedAtKst": "2026-11-07T19:32:48.979224+09:00"
+  "capturedAtKst": "2026-11-07T20:13:43+09:00"
 }
