@@ -20,12 +20,12 @@
 import { P } from '../../tune/params.ts'
 import { MIGRANT_ANIM } from '../../realm/data/art.ts'
 
-/** 바탕 그림의 터 넷 — 가운데 x · 돌 테두리 아랫단 y · 폭 (그림 비율 · town/ground-field.png 에서 잼) · 차례: 왼위 · 오른위 · 왼아래 · 오른아래 */
+/** 터 넷 — 가운데 x · 터 아랫단 y · 폭 (그림 비율) · 차례: 왼위 · 오른위 · 왼아래 · 오른아래. 11-08 바탕을 울타리 친 빈 마을(town/ground-field.png)로 바꾸며 광장의 빈 땅에 맞춰 다시 잼 · 터는 바탕에 그려져 있지 않고 town/lot.png 를 터마다 얹는다 (형 11-08: "만들지 못하는 공간들에 구역이 또 있고 성의 없어 보인다") */
 const LOTS: ReadonlyArray<{ readonly x: number; readonly y: number; readonly w: number }> = [
-  { x: 440 / 1376, y: 352 / 768, w: 404 / 1376 },
-  { x: 939 / 1376, y: 356 / 768, w: 402 / 1376 },
-  { x: 411 / 1376, y: 612 / 768, w: 432 / 1376 },
-  { x: 968 / 1376, y: 612 / 768, w: 430 / 1376 },
+  { x: 525 / 1376, y: 358 / 768, w: 300 / 1376 },
+  { x: 850 / 1376, y: 358 / 768, w: 300 / 1376 },
+  { x: 470 / 1376, y: 565 / 768, w: 340 / 1376 },
+  { x: 890 / 1376, y: 565 / 768, w: 340 / 1376 },
 ]
 
 /** 빈 터에 지을 수 있는 일터 하나 (이 땅에 맞는 것 · 잠긴 것도 까닭과 함께) */
@@ -102,7 +102,7 @@ export function townHands(hh: number): number {
 function lotHtml(t: TownViewIn, s: TownSlot, i: number, sel: boolean): string {
   const L = LOTS[i]!
   const pos = `left:${pct(L.x)};top:${pct(L.y)};width:${pct(L.w)}`
-  const open = (cls: string, tip: string): string => `<button class="tvlot2 ${cls}${sel ? ' sel' : ''}" data-act="town-lot" data-i="${i}"${tip !== '' ? ` data-tip="${esc(tip)}"` : ''} style="${pos}">`
+  const open = (cls: string, tip: string): string => `<button class="tvlot2 ${cls}${sel ? ' sel' : ''}" data-act="town-lot" data-i="${i}"${tip !== '' ? ` data-tip="${esc(tip)}"` : ''} style="${pos}"><img class="tvlotbg" src="${t.art}town/lot.png" alt="">`
   if (s.k === 'work') {
     const up = s.going !== null
     const pic = s.sprite !== null ? `<img class="tvsp" src="${s.sprite}" alt="">` : ic(t.art, s.icon, 'tvic')
@@ -197,8 +197,8 @@ export function townViewHtml(t: TownViewIn): string {
   const walkers = n - workers
   const ROADS = ['h', 'v', 'ring'] as const
   // 길마다 몇이 서나 — 가로 길이 가장 길어 많이, 둘레 길·세로 길 순
-  const share = [Math.round(walkers * 0.4), Math.round(walkers * 0.25), 0] as [number, number, number]
-  share[2] = Math.max(0, walkers - share[0] - share[1])
+  const share = [Math.round(walkers * 0.6), 0, 0] as [number, number, number] // 11-08 울타리 마을 바탕엔 안쪽 둘레 길이 없다 — 둘레 몫은 0 (울타리 위에 서던 사람들)
+  share[1] = Math.max(0, walkers - share[0])
   let folk = ''
   let w = 0
   for (let i = 0; i < n; i++) {
@@ -223,11 +223,11 @@ export function townViewHtml(t: TownViewIn): string {
     const u = (k + 0.5 + (a - 0.5) * 0.5) / Math.max(1, m) // 0~1 · 등분 + 살짝 흔듦
     const delay = `--d:${(-b * 9).toFixed(1)}s`
     if (road === 'h') {
-      // 가로 길(y≈0.47) — 왼쪽 문에서 오른쪽 문까지 고루 · 짧게 오간다
+      // 가로 길(y≈0.48) — 울타리 안 광장을 가로지르는 길 · 짧게 오간다
       const y = 0.45 + c * 0.05
-      const x0 = 0.08 + u * 0.7
+      const x0 = 0.22 + u * 0.5 // 울타리 안쪽(가로 0.17~0.85)에서만
       const sc = 0.82 + (y - 0.4) * 1.2
-      folk += `<i class="tvf walk" style="left:${pct(x0)};top:${pct(y)};--dx:${(8 + c * 8).toFixed(1)}cqw;--sc:${sc.toFixed(2)};--dur:${(7 + c * 5).toFixed(1)}s;${delay}"><u></u></i>`
+      folk += `<i class="tvf walk" style="left:${pct(x0)};top:${pct(y)};--dx:${(6 + c * 6).toFixed(1)}cqw;--sc:${sc.toFixed(2)};--dur:${(7 + c * 5).toFixed(1)}s;${delay}"><u></u></i>`
     } else if (road === 'v') {
       // 세로 길(x≈0.5) — 위 문에서 아래 문까지 고루 · 멀수록(위) 작게
       const x0 = 0.48 + c * 0.04
@@ -320,6 +320,7 @@ export const TOWN_CSS = `
 .ap .tvbg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 /* 터 — 아랫단(돌 테두리 아래)에 맞춰 선다 · 그림은 터 폭 그대로 · 누르면 고른다 */
 .ap .tvlot2 { position: absolute; z-index: 4; translate: -50% -100%; display: grid; justify-items: center; align-items: end; padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.ap .tvlot2 .tvlotbg { grid-area: 1 / 1; width: 100%; height: auto; display: block; align-self: end; pointer-events: none; }
 .ap .tvlot2 .tvsp { grid-area: 1 / 1; width: 100%; height: auto; display: block; }
 .ap .tvlot2 .tvic { grid-area: 1 / 1; width: 34%; height: auto; margin-bottom: 14%; filter: drop-shadow(0 4px 6px #000a); }
 .ap .tvlot2 .tvsc2 { grid-area: 1 / 1; width: 70%; margin-bottom: 8%; opacity: .95; }
@@ -330,7 +331,7 @@ export const TOWN_CSS = `
 .ap .tvlot2.going .tvsp:not([src$="build.png"]) { opacity: .55; }
 .ap .tvlot2 .ghost { opacity: .55; animation: tvplan 1.4s ease-in-out infinite alternate; }
 @keyframes tvplan { from { opacity: .4; } to { opacity: .8; } }
-.ap .tvlot2.empty, .ap .tvlot2.locked { aspect-ratio: 2.1; }
+
 .ap .tvlot2.empty .tvl { background: #1c1610b0; color: #e8dcc0; }
 .ap .tvlot2.locked { opacity: .9; } .ap .tvlot2.locked .tvl { background: #0b0906c0; border-color: #6a5a3a; }
 /* 고른 터 — 금빛 고리가 숨 쉰다 (지금 할 것) */
