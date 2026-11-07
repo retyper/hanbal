@@ -88,6 +88,19 @@ if (kind === 'pincer') {
     break
   }
 }
-const quiet = kind === 'captive' || kind === 'woo' || kind === 'woo0' || kind === 'pincer' // 보고 없이 판 위에서 연다
+// 마을 안 — 도읍에 선 일터 둘(논 2단 · 장정 마을 1단)과 짓는 중인 장터 하나, 곳간은 넉넉히 (townview 폰 폭 확인 · 11-08)
+//   TOWN=done — 지난 달 막 완공된 것으로 (보고 줄을 남긴다 · 「완공!」 도장을 찍는다)
+if (kind === 'town') {
+  const cap = next.factions[next.player]!.capital
+  const n = next.nodes[cap]!
+  next.nodes[cap] = { ...n, lots: { paddy: 2, yard: 1 } }
+  const mode = process.env.TOWN ?? 'build' // build — 장터 짓는 중 · idle — 아무것도 안 짓는 중(빈 터 타일) · done — 지난 달 논 2단 완공(보고 줄 · 도장)
+  if (mode === 'build') next.works = [{ faction: next.player, node: cap, what: 'market', done: next.season + 1 }]
+  if (mode === 'done') (report.lines as ReportLine[]).push({ kind: 'work', faction: next.player, node: cap, what: 'paddy', done: true, lv: 2 })
+  const st = next.stock[next.player]!
+  st.grain = Math.max(st.grain, 400); st.wood = Math.max(st.wood ?? 0, 60); st.iron = Math.max(st.iron, 40); st.salt = Math.max(st.salt ?? 0, 40)
+  console.log('town', cap)
+}
+const quiet = kind === 'captive' || kind === 'woo' || kind === 'woo0' || kind === 'pincer' || (kind === 'town' && process.env.TOWN !== 'done') // 보고 없이 판 위에서 연다
 writeFileSync(out, JSON.stringify({ v: 2, nation: process.env.NATION ?? 'us', seed, log: [], realm: next, before: quiet ? null : r0, report: quiet ? null : report }))
 console.log('ok', kind, g.name, w.name)

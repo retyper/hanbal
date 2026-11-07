@@ -56,7 +56,7 @@ import type { Approach, Army, BuildWhat, EdgeKind, EnvoyAsk, ExpDest, Good, Hand
 import { P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, noReachWhy, visibleNodes, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
 import { LEGACY_CSS, bringHtml, clearBring, toggleBring } from './legacy.ts'
-import { TOWN_CSS, townVeilHtml, townViewHtml } from './townview.ts'
+import { TOWN_CSS, townCheer, townVeilHtml, townViewHtml, type TownSlot } from './townview.ts'
 import { TOWN_GROUND, townSprite } from '../../realm/data/town-art.ts'
 import { RISE_CSS, riseGraphHtml } from './risegraph.ts'
 import { BOOK_CSS, bookHtml, shelfHtml, type Book } from './bookshelf.ts'
@@ -859,6 +859,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 마을 안 (TOWN.md) — 열린 고을 · 처음 그리면 밝아지며 */
   let townIn: string | null = null
   let townFresh = false
+  /** 마을 안에서 고른 터와(빈 터면) 지을 일터 — 화면 고르기일 뿐 판은 「work」 명령으로만 바뀐다 (TOWN.md 11-08) */
+  let townPick: { lot: number; what: WorkWhat | null } | null = null
+  /** 「완공!」 도장을 찍은 보고 — `${고을}|${계절}` (한 번만) */
+  const townStamped = new Set<string>()
   /** 이번에 새로 새긴 단련 공 — 끝 화면이 처음 그려질 때 (drill.engraveRun). 단련터의 막대가 이만큼 차오른다 */
   let drillGain: Record<string, number> = {}
   /** 판이 끝났으면 공을 새긴다 — 몇 번 불러도 한 번만 든다 (무한 모드로 이어 둔 몫만 더) */
@@ -6620,7 +6624,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
   }
 
-  /** 마을 안 (TOWN.md 1단계) — 열린 고을이 있으면 덮개에 그린다 · 우리 고을이 아니게 됐으면 걷는다 */
+  /**
+   * 마을 안 (TOWN.md 1단계 · 11-08 폰 UX) — 열린 고을이 있으면 덮개에 그린다 · 우리 고을이 아니게 됐으면 걷는다.
+   * 터마다 무엇이 서나(선 일터 · 짓는 중 · 빈 터 · 잠긴 터)를 townview 에 넘긴다 — 값·까닭은 workCardHtml 과 같은 셈 (workCost · workBlocked · shortOf)
+   */
   function townPaint(): void {
     let ov = root.querySelector<HTMLElement>('.townov')
     const r = realm
@@ -6628,25 +6635,90 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (r === null || n === undefined || n.owner !== me() || warOn || front !== null) {
       if (ov !== null && !ov.classList.contains('out')) ov.remove()
       townIn = null
+      townPick = null
       return
     }
+    const R = P.realm
     // 바탕 — 물가 · 숲 · 들판 (비스듬히 내려다본 빈 터 · town-art.ts)
     const bg = isCoast(r, n.id) || isRiverside(r, n.id) ? TOWN_GROUND.water : isWoody(r, n.id) ? TOWN_GROUND.wood : TOWN_GROUND.field
     const going = (r.works ?? []).find((w) => w.node === n.id)
-    const html = townViewHtml({
-      id: n.id, name: esc(n.name), hh: n.hh, bg, art: ART, fresh: townFresh,
-      works: worksOf(n).map(([w, lv]) => { const sp = townSprite(w, lv); return { icon: WORKS[w].icon, name: WORKS[w].name, lv, max: Math.round(P.realm.workLvMax), sprite: sp !== null ? `${ART}${sp}` : null } }),
-      lots: lotCap(n), fresh2: going !== undefined && lvOf(n, going.what) === 0,
-      going: going !== undefined ? { icon: WORKS[going.what].icon, name: WORKS[going.what].name, left: `${turnsLabel(r, Math.max(1, going.done - r.season + 1))} 남음` } : null,
-      card: workCardHtml(r, n.id),
-      plan: (() => { const q = musters.find((o): o is Extract<Order, { kind: 'work' }> => o.kind === 'work' && o.node === n.id); return q !== undefined ? { icon: WORKS[q.what].icon, name: WORKS[q.what].name, sprite: ((sp) => (sp !== null ? `${ART}${sp}` : null))(townSprite(q.what, lvOf(n, q.what) + 1)) } : null })(),
+    const queued = musters.find((o): o is Extract<Order, { kind: 'work' }> => o.kind === 'work' && o.node === n.id)
+    const max = Math.round(R.workLvMax)
+    const sp = (w: WorkWhat, lv: number): string | null => { const s = townSprite(w, lv); return s !== null ? `${ART}${s}` : null }
+    const turnsOf = (lv: number): number => Math.max(1, Math.round(R.workTurns * (lv > 1 ? R.workLvTurnsMul : 1)))
+    const goingOf = (w: typeof going): { left: string; prog: number } | null => {
+      if (w === undefined) return null
+      const left = Math.max(1, w.done - r.season + 1)
+      const total = turnsOf(w.lv ?? 1)
+      return { left: turnsLabel(r, left), prog: Math.max(0, Math.min(1, 1 - left / total)) }
+    }
+    /** 못 하는 까닭 — 이번 달 다른 것을 골랐으면 그것 · 잠김 · 모자람 */
+    const whyOf = (w: WorkWhat, lv: number): string | null => {
+      if (queued !== undefined && queued.what !== w) return '이번 달엔 이 고을에서 다른 일을 고르셨습니다 (한 번에 하나)'
+      const lock = workBlocked(r, me(), n.id, w)
+      if (lock !== null) return lock
+      const short = shortOf(workCost(w, lv) as Partial<Record<Good, number>>)
+      return short !== '' ? short : null
+    }
+    const slots: TownSlot[] = worksOf(n).map(([w, lv]) => {
+      const d = WORKS[w]
+      const up = going?.what === w ? goingOf(going) : null
+      const next = lv < max ? { sprite: sp(w, lv + 1), cost: costHtml(workCost(w, lv + 1)), when: turnsLabel(r, turnsOf(lv + 1)), gain: `${Math.round((lvGain(lv + 1) / lvGain(lv)) * 10) / 10}배`, why: whyOf(w, lv + 1), on: queued?.what === w } : null
+      const tip = `${d.name} ${lv}단 · ${d.does}${next !== null ? ` · ${lv + 1}단: ${Object.entries(workCost(w, lv + 1)).map(([g, v]) => `${GOOD_NAME[g as Good]} ${v}`).join(' ')} · ${turnsLabel(r, turnsOf(lv + 1))} · 효과 ${next.gain}` : ' · 다 올렸다'}`
+      return { k: 'work', what: w, name: d.name, icon: d.icon, sprite: sp(w, lv), lv, max, does: d.does, next, going: up, tip }
     })
+    if (going !== undefined && lvOf(n, going.what) === 0) {
+      const g = goingOf(going)!
+      slots.push({ k: 'going', what: going.what, name: WORKS[going.what].name, icon: WORKS[going.what].icon, left: g.left, prog: g.prog, tip: `${WORKS[going.what].name} 짓는 중 · ${g.left} 남음` })
+    }
+    const cap = lotCap(n)
+    const opts = workOptions(r, n.id).filter((w) => lvOf(n, w) === 0 && going?.what !== w)
+    while (slots.length < Math.min(cap, 4)) {
+      const first = slots.every((s) => s.k !== 'empty')
+      slots.push({
+        k: 'empty', when: turnsLabel(r, turnsOf(1)),
+        tip: `빈 터 · 이 땅에 맞는 일터 ${opts.length}가지 · 터 ${slots.length + 1}/${cap}`,
+        // 타일은 첫 빈 터에만 — 둘째 빈 터부터는 같은 고름이라 첫 터로 보낸다 (한 고을 한 달 하나)
+        options: first ? opts.map((w) => ({ what: w, name: WORKS[w].name, icon: WORKS[w].icon, sprite: sp(w, 1), cost: costHtml(workCost(w)), does: WORKS[w].does, why: whyOf(w, 1), on: queued?.what === w })) : [],
+      })
+    }
+    while (slots.length < 4) slots.push({ k: 'locked', why: `땅이 작아 터가 ${cap}곳뿐입니다` })
+    // 고른 터 — 없으면 지금 할 것: 이번 달 고른 것 > 빈 터 > 올릴 수 있는 것 > 짓는 중 > 첫 터
+    if (townPick === null || townPick.lot >= slots.length) {
+      const at = (f: (s: TownSlot) => boolean): number => slots.findIndex(f)
+      const lot = [
+        at((s) => (s.k === 'work' && s.next?.on === true) || (s.k === 'empty' && s.options.some((o) => o.on))),
+        at((s) => s.k === 'empty' && s.options.some((o) => o.why === null)),
+        at((s) => s.k === 'work' && s.next !== null && s.next.why === null && s.going === null),
+        at((s) => s.k === 'going' || (s.k === 'work' && s.going !== null)),
+        0,
+      ].find((i) => i >= 0)!
+      townPick = { lot, what: null }
+    }
+    // 지난 달 완공 — 보고에 이 고을 줄이 있으면 한 번 「완공!」 (report 는 지난 달 것)
+    const doneLine = report !== null && report.lines.find((l): l is Extract<ReportLine, { kind: 'work' }> => l.kind === 'work' && l.done && l.node === n.id && l.faction === me())
+    const stampKey = `${n.id}|${r.season}`
+    const stamp = doneLine !== false && doneLine !== undefined && !townStamped.has(stampKey) ? { icon: WORKS[doneLine.what].icon, name: `${WORKS[doneLine.what].name}${doneLine.lv !== undefined ? ` ${doneLine.lv}단` : ''}` } : null
+    const html = townViewHtml({ id: n.id, name: n.name, hh: n.hh, bg, art: ART, fresh: townFresh, slots, lots: cap, pick: townPick, stamp })
     if (ov === null) {
       root.insertAdjacentHTML('beforeend', `<div class="townov" style="--tf:${P.realm.townFadeMs}ms;--bf:${P.realm.townBoardFrom}"></div>`)
       ov = root.querySelector<HTMLElement>('.townov')!
     }
     ov.innerHTML = html
     townFresh = false
+    if (stamp !== null) {
+      townStamped.add(stampKey)
+      ding(snd('war_drum'), 0.6)
+      buzz([12, 40, 24])
+      window.setTimeout(() => townStampOut(), R.townStampMs)
+    }
+  }
+  /** 「완공!」 도장을 걷는다 — 저절로든 눌러서든 (메모리 notices-must-dismiss) */
+  function townStampOut(): void {
+    const el = root.querySelector<HTMLElement>('.tvdone')
+    if (el === null || el.classList.contains('out')) return
+    el.classList.add('out')
+    el.addEventListener('animationend', () => el.remove(), { once: true })
   }
 
   /** 처음 한 번 알림 (firsts.ts) — 본 것 · 떠 있는 것 */
@@ -8392,6 +8464,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const el = root.querySelector<HTMLElement>(`.nd[data-node="${id}"]`)
         const b = el?.getBoundingClientRect()
         root.querySelector('.tvveil')?.remove()
+        root.querySelector('.loadcov')?.remove() // 걷히는 중인 가림막(z 9998)이 마을 안 위로 비쳤다 (11-08 스크린샷의 옛 기록 글)
         if (b !== undefined) root.insertAdjacentHTML('beforeend', townVeilHtml(b.x + b.width / 2, b.y + b.height / 2))
         const veil = root.querySelector<HTMLElement>('.tvveil')
         veil?.style.setProperty('--tz', `${P.realm.townZoomMs}ms`)
@@ -8399,6 +8472,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         window.setTimeout(() => {
           townIn = id
           townFresh = true
+          townPick = null
           ring = ''
           paint()
           // 막은 마을 안이 밝아진 뒤 걷는다 (그 사이 지도가 비치지 않게) · 늘린 지도도 그때 제 크기로
@@ -8425,8 +8499,22 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const had = musters.some((o) => o.kind === 'work' && o.node === node && o.what === what)
         musters = musters.filter((o) => !(o.kind === 'work' && o.node === node))
         if (!had) musters = [...musters, { kind: 'work', faction: me(), node, what }]
+        // 마을 안의 큰 단추 — 고르면 북 · 거두면 툭 (WWE · 메모리 wwe-overreaction-ux)
+        if (townIn === node) { ding(snd(had ? 'tap_cancel' : 'tap_drum'), had ? 0.4 : 0.6); buzz(had ? [20] : [12, 40, 24]) }
         break
       }
+      // 마을 안 — 터 고르기 · 빈 터에 지을 것 고르기 (화면 고르기일 뿐 · 판은 「work」 로만)
+      case 'town-lot': {
+        const i = Number(d['i'])
+        const lot = t.closest<HTMLElement>('.tvlot2')
+        const board = t.closest<HTMLElement>('.tvboard')
+        // 짓는 터를 다시 누르면(톡톡) 일꾼들이 신이 난다 — 다시 그리지 않는다 (고리·칸은 그대로)
+        if (townPick?.lot === i && lot?.classList.contains('going') && board !== null) { townCheer(board, lot); ding(snd('tap_drum'), 0.45, 1.1); buzz([8]); return }
+        townPick = { lot: i, what: null }
+        break
+      }
+      case 'town-what': townPick = { lot: townPick?.lot ?? 0, what: d['what'] as WorkWhat }; break
+      case 'town-stamp-x': townStampOut(); return
       case 'dmode': diploMode = d['v'] as 'envoy' | 'plot' | 'scout'; break
       case 'plot-open':
         // 한 번 더 누르면 접는다 · 펼친 칸이 화면 밖이면 끌어온다 (형 10-26: "선택한거 바로 밑에 보낼 장수가 뜨지 않고 너무 아래 멀리있어")

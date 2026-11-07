@@ -76,6 +76,7 @@ export const TRUE_WAKE: ReadonlySet<string> = new Set([
   'jeoga-1', // 저가 엄니 (11-05 밤 · roqkfeke12 · 사람마다 다른 옷 틀 · 멧돼지 씨족 겨울 노장)
   // 11-07 새로 받은 진각성 초상 — 원본/900px/320px를 함께 확인해 연결.
   'usisan-1', // 살해 쇠물 g-01
+  'goja-1', // 살해 바다쇠 g-03 (11-08 챗지피티 애플 계정 · 밧줄을 당기는 뱃사람)
   'wander-18', // 신지 고은 w-01
   'wander-02', // 살해 매화 w-03
   'wander-09', // 신지 별하 w-05
