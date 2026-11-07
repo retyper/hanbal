@@ -25,6 +25,24 @@ function fixture() {
   return { dir, job, queue, state, saveQueue, call, read, cleanup: () => rmSync(dir, { recursive: true, force: true }) }
 }
 
+it('Veo CLI defers repaired-source identities, including newly added jobs, without blocking another tier', () => {
+  const f = fixture()
+  try {
+    const future = { ...f.job, id: 'future-job' }
+    writeFileSync(f.queue, JSON.stringify({ jobs: [f.job, future], sourceRepairDeferrals: [
+      { portraitId: f.job.heroId, tier: f.job.tier, reason: 'User requested corrected fingers first' },
+    ] }))
+    assert.equal(f.call('peek').data.job, null)
+    assert.equal(f.call('peek').data.blocked.length, 2)
+    assert.match(f.call('claim', future.id).error, /Source portrait repair pending/)
+    assert.equal(existsSync(f.state), false)
+    writeFileSync(f.queue, JSON.stringify({ jobs: [future], sourceRepairDeferrals: [
+      { portraitId: f.job.heroId, tier: 'different-tier', reason: 'Another image stage' },
+    ] }))
+    assert.equal(f.call('claim', future.id).code, 0)
+  } finally { f.cleanup() }
+})
+
 it('Veo CLI records an observed account cooldown and blocks peek/claim without disturbing attempts', () => {
   const f = fixture()
   try {

@@ -31,6 +31,8 @@ function parse(args) {
 function loadQueue(path) {
   const data = JSON.parse(readFileSync(path, 'utf8')); const jobs = Array.isArray(data) ? data : data.jobs
   check(Array.isArray(jobs), 'Queue must contain jobs[]')
+  const deferrals = Array.isArray(data) ? [] : data.sourceRepairDeferrals ?? []
+  check(Array.isArray(deferrals) && deferrals.every(d => d && typeof d.portraitId === 'string' && typeof d.tier === 'string' && typeof d.reason === 'string'), 'Invalid source repair deferrals')
   const ids = new Set()
   for (const j of jobs) {
     check(j && ['id', 'heroId', 'tier', 'inputPath', 'inputSha256', 'promptPath'].every(k => typeof j[k] === 'string' && j[k].length > 0), 'Invalid queue job')
@@ -41,7 +43,8 @@ function loadQueue(path) {
     check(j.aspectRatio === '9:16', `Portrait 9:16 framing required: ${j.id}`)
     check(j.replacesAttemptId == null || typeof j.replacesAttemptId === 'string', `Invalid replacement: ${j.id}`)
   }
-  return jobs
+  return jobs.map(job => ({ ...job, sourceRepairRequired: job.sourceRepairRequired === true
+    || deferrals.some(d => d.portraitId === job.heroId && d.tier === job.tier) }))
 }
 function loadState(path) {
   if (!existsSync(path)) return { version: 1, attempts: [], claims: {}, accountCooldown: {} }
@@ -67,6 +70,7 @@ function fingerprints(job, attempt) {
   return { inputSha256, promptSha256 }
 }
 function eligible(job, state, account) {
+  check(job.sourceRepairRequired !== true, `Source portrait repair pending: ${job.heroId}/${job.tier}`)
   check(job.authorized === true, `Not authorized: ${job.id}`)
   check(!state.attempts.some(a => a.jobId === job.id), `Job already attempted: ${job.id}; create an explicit replacement job`)
   const previous = state.attempts.filter(a => a.heroId === job.heroId && a.tier === job.tier)
