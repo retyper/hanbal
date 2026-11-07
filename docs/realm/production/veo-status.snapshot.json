@@ -5,15 +5,16 @@
   "sourceOfTruth": {
     "owner": "Codex Windows",
     "automation": "veo-1",
-    "nextCheckKst": "2026-11-07 17:54",
+    "nextCheckKst": "2026-11-07 19:10",
     "liveQueueWindowsPath": "C:\\Users\\my\\Documents\\Codex\\2026-11-06\\windows-pc-claude-code-claude-code\\outputs\\veo-production-queue.json",
     "liveStateWindowsPath": "C:\\Users\\my\\Documents\\Codex\\2026-11-06\\windows-pc-claude-code-claude-code\\outputs\\veo-production-state.json",
-    "liveQueueRepoPath": null
+    "liveQueueRepoPath": null,
+    "nextCheckNote": "19:10 capacity-backoff check, NOT a confirmed quota-reset time;17:54 resumed"
   },
   "counts": {
     "active": 0,
     "accepted": 2,
-    "held": 3,
+    "held": 5,
     "claims": 0
   },
   "legacyAttempt": {
@@ -30,30 +31,39 @@
       "portraitId": "w-03-goguryeo-archer",
       "tier": "1",
       "status": "held",
-      "reason": "mid_clip_pose_discontinuity",
+      "reason": "User reports abrupt mid-clip frame/pose discontinuity like a splice. 720x1280 framing and visible identity are improved, but do not integrate this version. Keep source unchanged. Audio not directly verified; Gemini auxiliary review reported one laugh and later breath, lip sync unconfirmed. No regeneration authorized by this report.",
       "sourcePath": "public/realm/awaken-hd/w-03-goguryeo-archer.jpg",
       "sourceSha256": "6bd25e222780b5e918f214b88dee24636428e1c833b431842c55fe158b952f91",
-      "attemptId": "t1-maehwa-portrait-replacement:2"
+      "attemptId": "t1-maehwa-portrait-replacement:2",
+      "promptSha256": "7e5f99ca65546d379e1ab35083098e6750572acaad2340cf3a4f27ee12a89a6a",
+      "chatUrl": "https://gemini.google.com/u/4/app/49b88ff164d1e0b1?hl=ko",
+      "resultSha256": "f0da33bc6bc44aff8449f43f5b42654edffdd90af260de987e6b8b51dca3589b"
     },
     {
       "jobId": "t1-haesol-first",
       "portraitId": "w-63-us-haesol",
       "tier": "1",
       "status": "accepted",
-      "reason": "visual_review_accepted_loop_and_audio_not_fully_verified",
+      "reason": "Visual review: full 720x1280 head-to-pelvis portrait, consistent face/costume and pine-branch grip, one natural blessing gesture, no square inset. Inspected 12 samples and adjacent frames flagged by continuity scan; no large internal pose/face jump found in those pairs. Loop seam imperfect and tolerated per user. Audio track present but direct listening/lip sync not verified; this acceptance is for visual game integration.",
       "sourcePath": "public/realm/awaken-hd/w-63-us-haesol.jpg",
       "sourceSha256": "3912def4d672b416aa5ba8b8f7343bb97d5ccb08204a402737155bea38665a78",
-      "attemptId": "t1-haesol-first:3"
+      "attemptId": "t1-haesol-first:3",
+      "promptSha256": "8c73ee97795b4a9a886a4790459c175b1c122cc21448b82eae5ce05e0f226e28",
+      "chatUrl": "https://gemini.google.com/u/4/app/289e088e766b26d1?hl=ko",
+      "resultSha256": "8231b09f1bdb62f1199bb5f64850a643344addbb51a37940080bdac7e1402def"
     },
     {
       "jobId": "t1-byeol-first",
       "portraitId": "w-62-byeokjin-byeol",
       "tier": "1",
       "status": "accepted",
-      "reason": "visual_review_accepted_loop_and_audio_not_fully_verified",
+      "reason": "Visual integration accepted:720x1280/24fps/10s, face/braid/soot/clothes remain consistent, purposeful inspection and visible arm/torso movement. Sampled12times plus adjacent-frame continuity candidates: no obvious internal splice seen. Tool/metal stay connected; supporting hand enters naturally. End pose differs substantially from start, so loop seam remains visible and is not claimed perfect. Direct audio listening not available.",
       "sourcePath": "public/realm/awaken-hd/w-62-byeokjin-byeol.jpg",
       "sourceSha256": "b793b7bb89b5dde287028009cd05262a407f1690df684e7bbeffdf20af82ee49",
-      "attemptId": "t1-byeol-first:4"
+      "attemptId": "t1-byeol-first:4",
+      "promptSha256": "5c06574b2ad7cf1c6c7bcf700eacda9ea41630f36a0379e34af58b2e6d595b0c",
+      "chatUrl": "https://gemini.google.com/u/4/app/3ca1aff7f5766074?hl=ko",
+      "resultSha256": "17b2f1b7c232b234a95e01ff9e62bad6b739fae96186daf44f204bb8561627ae"
     },
     {
       "jobId": "t1-bitna-source-review",
@@ -63,17 +73,21 @@
       "reason": "source_or_portrait_repair_required",
       "sourcePath": "public/realm/awaken-hd/w-25-bihwa-priestess.jpg",
       "sourceSha256": "230216f878827aeaa63f44fbae5971f074b4ee8cb2c3c0725c4d6588abda42fe",
-      "attemptId": null
+      "attemptId": null,
+      "promptSha256": "8937122eb5a04d92f4d8da6ae351024b915a3fbdda00e0244e37d3b3b0a01e45"
     },
     {
       "jobId": "t1-dalli-first",
       "portraitId": "w-54-maga-dalli",
       "tier": "1",
       "status": "held",
-      "reason": "user_rejected_unnatural_motion",
+      "reason": "User rejected gemini_generated_video_fdedb0ce as very unnatural and poor. Do not integrate or regenerate without specific authorization; continue to other characters. Reference bow-at-full-draw pose was constrained but output must be diagnosed against the original.",
       "sourcePath": "public/realm/awaken-hd/w-54-maga-dalli.jpg",
       "sourceSha256": "3754cb1216abaab8a5e81e070235512fc9ea2c550f1481cea5a5d949842deafd",
-      "attemptId": "t1-dalli-first:5"
+      "attemptId": "t1-dalli-first:5",
+      "promptSha256": "ec280b79db30e81ef8253b38667e2162002dd052ecdb1ca0f03d55ee3bd378f4",
+      "chatUrl": "https://gemini.google.com/u/4/app/768dbf1e386f4c46?hl=ko",
+      "resultSha256": "3b473620df60a50636710a59cac2f340e86d967f92c33e81ed1765ad9b973c86"
     },
     {
       "jobId": "t1-gaennae-first",
@@ -83,17 +97,22 @@
       "reason": "source_or_portrait_repair_required",
       "sourcePath": "public/realm/awaken-hd/w-37-michuhol-gaennae.jpg",
       "sourceSha256": "9caa76635cc1db712be12e5357ba79f1ef0614d98f4801ae54fd08de08f831ae",
-      "attemptId": null
+      "attemptId": null,
+      "promptSha256": "71588a4e4417d463977b526ecae20a774a7e275f02be786b6a0e04f24df67877"
     },
     {
       "jobId": "t1-bulmae-first",
       "portraitId": "w-38-sangdang-bulmae",
       "tier": "1",
-      "status": "ready_in_live_queue",
-      "reason": "not_submitted",
+      "status": "held",
+      "reason": "Visual HOLD: 1.3-4s new gray axe head appears above original glowing lower object; source/tool relationship was incorrectly assumed in prompt. User clarified scene context: smiling blacksmith hammering heated iron. No resubmission or game integration. Portrait framing720x1280 PASS; hard cut not confirmed at6.58s; direct audio unverified.",
       "sourcePath": "public/realm/awaken-hd/w-38-sangdang-bulmae.jpg",
       "sourceSha256": "d0807b25a0ceaf83f70b28413e86fd5ea1beb69297f5148f3bffa7590dbdcb04",
-      "attemptId": null
+      "attemptId": "t1-bulmae-first:6",
+      "promptSha256": "43d6766e07fedc2d09de5b33fb31d1671c61c5866d40600dfc0f726a9566c7ab",
+      "chatUrl": "https://gemini.google.com/u/4/app/b648e21336861630?hl=ko",
+      "resultSha256": "c45d33e69bcb3a749d5d727346f8db956216d4aadbd22a965bc05e7a048151af",
+      "reviewAddendum": "User scene context: smiling blacksmith hammering heated iron. Retract original glowing hammer-head assumption. At2.5/3.5s workpiece fuses with shaft and lifts above anvil; HOLD remains for tool/workpiece separation failure. See veo-rules.md."
     },
     {
       "jobId": "t1-budeul-first",
@@ -103,7 +122,8 @@
       "reason": "source_or_portrait_repair_required",
       "sourcePath": "public/realm/awaken-hd/w-32-golbeol-budeul.jpg",
       "sourceSha256": "4c32eeefbcc8eb3e00115f25ef1b58cd23a644a7f3b4820b772b85419ebc7fb7",
-      "attemptId": null
+      "attemptId": null,
+      "promptSha256": "612dc59173fc95b53a64072840f7265a4a507cddeb7de96c75f2aef859f265f2"
     },
     {
       "jobId": "t1-munui-first",
@@ -113,17 +133,20 @@
       "reason": "source_or_portrait_repair_required",
       "sourcePath": "public/realm/awaken-hd/w-40-mujin-munui.jpg",
       "sourceSha256": "1caf71c361104855d00448925549f9a03e5fc3b1f092689b07b46fc150306799",
-      "attemptId": null
+      "attemptId": null,
+      "promptSha256": "ad03cd6c1c8c8eb62485967e0ef6786ad77afadb48c8fbe5d83f5510b60a2132"
     },
     {
       "jobId": "t1-sinae-first",
       "portraitId": "w-61-iseo-sinae",
       "tier": "1",
-      "status": "ready_in_live_queue",
-      "reason": "not_submitted",
+      "status": "held",
+      "reason": "Gemini returned unusually high traffic / full capacity; no video produced. Chat08c38722177e8200. Not a quota-reset timestamp. Do not resubmit same job automatically. Inspect existing chat on next check; credit consumption unknown.",
       "sourcePath": "public/realm/awaken-hd/w-61-iseo-sinae.jpg",
       "sourceSha256": "b528241502e098efc76b1afe66c441e2bf36140e7aa4d3ee88cab52309a37897",
-      "attemptId": null
+      "attemptId": "t1-sinae-first:7",
+      "promptSha256": "a5e7d2185dab40c4d4b4738c97b8579891ed485bd7428262d66c115d84ca0ec0",
+      "chatUrl": "https://gemini.google.com/u/4/app/08c38722177e8200?hl=ko"
     },
     {
       "jobId": "t1-dokmudeom-first",
@@ -133,7 +156,8 @@
       "reason": "source_or_portrait_repair_required",
       "sourcePath": "public/realm/awaken-hd/w-74-balla-dokmudeom.jpg",
       "sourceSha256": "b4f1883acb31d58818f98ba0d6fe2b2c6fc4be1dd2fc3075820fa297911509f6",
-      "attemptId": null
+      "attemptId": null,
+      "promptSha256": "e8b43673377955f7073dc4a6be7b01bca18cc8a6de95c25e1a3315f1195a9e8e"
     },
     {
       "jobId": "t1-soenun-first",
@@ -143,7 +167,8 @@
       "reason": "source/framing local preflight pass; verify Gemini existing requests before claim",
       "sourcePath": "public/realm/awaken-hd/w-42-gwanna-soenun.jpg",
       "sourceSha256": "d1567d4e2de99e1a8a9e6f204c031923c585dade777c164651fb71286d2db5d3",
-      "attemptId": null
+      "attemptId": null,
+      "promptSha256": "b46477afa854ccebad42061481d27672f476e191019b84669a102446a8eb9520"
     },
     {
       "jobId": "t1-beom-first",
@@ -153,7 +178,8 @@
       "reason": "source/framing local preflight pass; verify Gemini existing requests before claim",
       "sourcePath": "public/realm/awaken-hd/w-60-golbeol-beom.jpg",
       "sourceSha256": "dbd045f4daa3c2e6dbee2f00f6d0f2b5fa8a6ffad6428cc3f9e1153ec44c1342",
-      "attemptId": null
+      "attemptId": null,
+      "promptSha256": "0b4fd0fd78a488499406ede2270481a59024262779ce44639b82819c9d09600f"
     }
   ],
   "nextSafeQueue": [

@@ -13,20 +13,21 @@
 | 불매 w-38 | HOLD | 보행 하체 후보는 있으나 오른손 망치의 실제 접촉 자세가 무기·자루 중복 또는 파지 단절로 실패. 최종 20셀 없음. 임의로 접촉 프레임을 채워 적용하지 않는다. |
 | 활미 w-65 | HOLD | 전신 보행 시트와 반대발 단독 생성이 앞발 교대·장비 일관성 기준을 통과하지 못했다. 정지 후보가 있어도 완성 모션으로 보지 않는다. |
 | 범발 w-68 | HOLD · 독립 검수 정정 | 기존 idle 통과 기록과 달리 실제 원초상의 범가죽 쪽 뺨 줄무늬를 반대 뺨으로 옮겼다. 신규 동작 시트도 같은 문제. idle/동작 각1회 한정 교정이 실패해 중단했다. 무기/범가죽 위치가 정상이라 전체 반전으로 고치지 않는다. 공통 하체 조립과 준비/찌르기/피격 후보는 Windows work에만 있으며 게임 미적용. |
-| 소금비 w-44 | 20셀 게임 연결 · 배포 확인 중 | `gen-sogeumbi.png` 5600×160/160272바이트, SHA256 `331bfa5475464ff001e7e923e44a0f25c0176a7abb3325dfa1b3fbb092732a5b`. 원6시트의 손 바뀐 ML/BR은 보류. TR 위검→원래 MR 복귀를 짧은 내려베기 접촉으로 재해석, TL 하체/발 고정. 별도 낙검 컷은 두 손을 놓고 바닥에 같은 검1개를 떨어뜨림. 독립 검수·테스트19·빌드/예산 통과. [규격/출처](../SPRITE-SOGEUMBI.md), 실제 서버 버전/해시로 배포 여부 확인. |
+| 소금비 w-44 | 완료·공개 | `gen-sogeumbi.png` 5600×160/160272바이트, SHA256 `331bfa5475464ff001e7e923e44a0f25c0176a7abb3325dfa1b3fbb092732a5b`. 원6시트 손 바뀐 ML/BR 제외, TR→MR 상체를 짧은 내려베기로 재해석, 대기 하체/발 고정. 별도 낙검. 독립 검수·테스트19·빌드/예산·실제 배속/접촉/복귀 검수, 공개 버전946b28462a/PNG일치. [규격/출처](../SPRITE-SOGEUMBI.md). |
+| 구름 w-49 | 보행 HOLD | u5 기존대화에서 최초1+한 컷 교정1. 두 결과 모두 같은 앞발 반주기, 교정도4컷 반복. 컵/복식은 유지됐지만 게임 미적용. 추가 동일 생성 금지. |
 
 세부 검수·실패 원인은 Windows Codex 산출물 `outputs/sprite-young-generals-20261107-status.md`에 있다. 전투 스프라이트와 Veo 각성 idle 영상은 서로 다른 제작물이다.
 
 ## Veo 소유권과 실시간 원장
 
-- **현재 제출 담당:** Windows Codex의 `veo-1` 예약 작업. 2026-11-07 17:54 KST에 Gemini 사용 가능 여부를 확인하도록 예약된 기록이다. 실제 해제·진행 여부는 그때 브라우저와 원장으로 확인해야 한다. Mac/Claude가 이 시각에 별도 제출하지 않는다.
+- **현재 제출 담당:** Windows Codex `veo-1`. 다음 확인 2026-11-07 19:10 KST ACTIVE. 서버 혼잡 후 확인 시각이며 Google이 보장한 한도 해제 시각이 아니다. Mac/Claude는 소유권 이관 전 별도 제출하지 않는다.
 - `u/0`~`u/5`는 이 Windows 브라우저의 계정 순서다. Mac이나 다른 프로필의 동일 번호가 같은 계정이라는 보장은 없으므로 계정 표시와 기존 대화를 확인한다.
 - Windows에서 유지한 `39d1717d94fd67e8` 탭은 **완료된 범발 진각성 대화의 한도 안내 참고용**이다. 다음 인물은 해당 job의 원본·문안으로 새 채팅에서 만들며, 이 옛 대화에 다시 제출하지 않는다.
 - **실행 큐:** `C:\Users\my\Documents\Codex\2026-11-06\windows-pc-claude-code-claude-code\outputs\veo-production-queue.json`
 - **실행 원장:** `C:\Users\my\Documents\Codex\2026-11-06\windows-pc-claude-code-claude-code\outputs\veo-production-state.json`
 - **큐 도구:** `D:/flutter/arrow_game_one/tools/veo/queue.mjs`; Windows 산출물 `outputs/veo-queue-runbook.md`에 claim→submitted→downloaded→review 순서와 복구 절차가 있다.
-- **기록 당시:** active 0, claim 0, accepted 2(해솔·별), held 3(매화 2건·달리 1건). `veo-status.snapshot.json`은 이 시점의 복제본이다. 원본이나 크레딧 상태가 바뀌면 즉시 오래된 기록이 된다.
-- **다음 안전 후보:** 불매 `t1-bulmae-first` → 시내 `t1-sinae-first` → 쇠눈 `t1-soenun-first` → 범 `t1-beom-first`. 문안은 `veo-prompts/bulmae-t1.txt`, `veo-prompts/sinae-t1.txt`; 입력 그림은 각각 `public/realm/awaken-hd/w-38-sangdang-bulmae.jpg`, `public/realm/awaken-hd/w-61-iseo-sinae.jpg`. 두 문안은 Windows 원문과 SHA-256이 같게 복사했다. 추가 문안은 `veo-prompts/soenun-t1.txt`, `veo-prompts/beom-t1.txt`, 원본은 각각 `public/realm/awaken-hd/w-42-gwanna-soenun.jpg`, `public/realm/awaken-hd/w-60-golbeol-beom.jpg`다. 양손 투구 접촉/전방 발톱 손이 가까이 모여 있어 루트도 직접 원본 구도를 확인했다. 후보 순서도 실제 원장·Gemini 대기·크레딧 재확인 뒤에만 유효하다.
+- **기록 당시(18:10 KST):** active0, claim0, accepted2(해솔·별), held5(기존3+불매 품질1+시내 서버오류1). 개인 한도 해제 시각/서버오류의 크레딧 차감은 미확인이다. 스냅샷은 실행 큐가 아니다.
+- **다음 미시도 후보:** 쇠눈 `t1-soenun-first` → 범 `t1-beom-first`. 상대경로 `veo-prompts/soenun-t1.txt`, `veo-prompts/beom-t1.txt`; 입력은 `public/realm/awaken-hd/w-42-gwanna-soenun.jpg`, `w-60-golbeol-beom.jpg`. 원본/문안 해시는 스냅샷과 라이브 큐로 대조한다. 불매/시내는 재제출하지 않는다. 준비 문안에는 장면 목적과 손/도구 관계를 보강했다.
 - **초상 교정 대기 25명:** `veo-status.snapshot.json`의 `portraitRepairs`에 목록이 있다. `w66` 포함. 사용자가 교정 이미지를 실제 검수하고 원본/해시를 갱신하기 전에는 자동 해제하지 않는다. 별은 예전 영상이 시각적으로 accepted였으나 현재 초상 교정 대기 목록에도 있으므로 그 승인과 신규 제출 가능성을 혼동하지 않는다.
 
 ## 품질·재시도 기준
@@ -48,3 +49,9 @@ Veo는 각성 idle에만 쓰고 장수별로 하나씩 제작한다. 먼저 9:16
 3. **재개:** 실시간 원장 절차대로 제출 직전에 claim하고, 대화 URL/결과 파일/검수 결과를 기록한다. 불명확한 claim이나 이미 제출된 job을 임의로 삭제·재제출하지 않는다. 교정 대기/held 작업은 새 원본과 별도 승인이 없으면 실행하지 않는다.
 
 이 폴더에 영상이나 고해상 원본은 복사하지 않았다. 경로와 SHA-256으로 현재 게임 자산 및 Windows 원장을 대조한다.
+
+## 17:54 재개 실행 결과
+
+불매 `t1-bulmae-first:6`은 [실제 대화](https://gemini.google.com/u/4/app/b648e21336861630?hl=ko)에서09e720ef/720×1280/24fps/10초로 완성됐으나 2.5·3.5초 달궈진 작업물이 자루에 융합되어 모루 위에서 함께 들려 HOLD다. 사용자 설명은 미소 지으며 달궈진 쇠를 망치질하는 대장장이이며 최초 ‘붉은 망치머리’ 해석은 철회했다. 종료된 최초 검수 원장을 덮어쓰지 않고 이 정정과 [제작 기준](veo-rules.md)을 함께 읽는다. 결과 SHA256 `c45d33e69bcb3a749d5d727346f8db956216d4aadbd22a965bc05e7a048151af`, 게임 미적용.
+
+시내 `t1-sinae-first:7`은 장면 맥락을 보강해9:16으로1회 제출했지만 [실제 대화](https://gemini.google.com/u/4/app/08c38722177e8200?hl=ko)에서 unusually high traffic/full capacity 오류를 반환했다. 영상 없음·같은 요청 재제출 금지. 다음 확인에서는 기존 대화에 뒤늦은 결과가 있는지 먼저 관찰한다. 19:10은 혼잡 후 확인이며 확정 재개 시각이 아니다.
