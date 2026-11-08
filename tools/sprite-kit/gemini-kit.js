@@ -44,10 +44,11 @@
       return `Great. Now make a SECOND image with EXACTLY the same wide 16:9 4x2 layout, cell size, character scale, foot line and EXACTLY the same person and outfit as the walking sheet you just made (the person of IMAGE 2, NOT the person of IMAGE 1), strict side view facing RIGHT in every frame, every figure and the whole ${w} fully inside its cell. Exactly ONE ${w} in every frame. 8 frames in order: ${ACT[h.weapon] || ACT.heavy}6 hit recoil, torso jerked backward, head thrown back, pained face, still facing right, 7 falling backward off the feet, 8 lying on the back on the ground with the ${w} beside. The weapon never points backward. ${TAIL}`
     },
     async setup(tag = 'u') {
-      await W(1500)
+      await W(2500)
       document.querySelector('button[aria-label="업로드 및 도구"]')?.click()
       await W(800)
-      ;[...document.querySelectorAll('*')].filter((e) => e.children.length < 3 && /^이미지 만들기/.test(e.innerText || '')).at(-1)?.click()
+      // 보이는 메뉴 칸만 (숨은 말풍선·사이드바 글자를 누르면 안 켜진다)
+      ;[...document.querySelectorAll('[role=menuitem],[role=option],button,a,li')].find((e) => e.offsetParent && /^이미지 만들기/.test((e.innerText || '').trim()))?.click()
       await W(1000)
       btnText(/가로세로 비율/)?.click()
       await W(800)
