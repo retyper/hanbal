@@ -92,7 +92,7 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'sr-jita': 'g-81-saro-jita', 'sr-hojin': 'g-82-saro-hojin', 'sr-yangsan-1': 'w-91-saro-mulsae', 'sr-goya-1': 'w-92-saro-dallae',
   'sr-jinji-1': 'w-93-saro-beomi', 'sr-wae-ruler': 'g-87-wae-chief',
   // 캠페인 4장 — 수로 · 허황옥(전설 명치판) · 가락의 장수 · 아홉 간 · 탈해 (gujibong.ts). 있는 명치판을 나눠 쓴다 · 새 얼굴은 ART-QUEUE 「4·5장 초상」
-  'gj-suro': 'g-96-garak-suro', 'gj-heo': 'l-L3-heo-hwangok', 'gj-musoe': 'g-11-gaya-iron-general', 'gj-dana': 'w-102-garak-dana',
+  'gj-suro': 'g-96-garak-suro', 'gj-heo': 'l-L3-heo-hwangok', 'gj-musoe': 'g-107-garak-musoe', 'gj-dana': 'w-102-garak-dana',
   'gj-adogan': 'g-101-garak-adogan', 'gj-yeodogan': 'g-102-garak-yeodogan', 'gj-pidogan': 'g-103-garak-pidogan', 'gj-odogan': 'g-104-garak-odogan',
   'gj-yusugan': 'g-105-garak-yusugan', 'gj-yucheongan': 'w-99-garak-yucheongan', 'gj-sincheongan': 'w-100-garak-sincheongan', 'gj-ocheongan': 'g-106-garak-ocheongan',
   'gj-singwigan': 'w-101-garak-singwigan', 'gj-tahae': 'g-97-tahae', 'gj-tahae-1': 'w-10-pirate-captain',
