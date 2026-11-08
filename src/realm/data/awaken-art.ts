@@ -217,6 +217,7 @@ export const AWAKEN_ART: ReadonlySet<string> = new Set([
   'w-104-buyeo-darae', // 11-08 부여 다래 · 흰 여우털 모자·맥궁·비치는 소매 (챗지피티 retyper)
   'g-60-golbeol-golgae', // 11-08 골벌 골개 · 붉은 띠 쇠 미늘·불티 (챗지피티 retyper)
   'g-61-apdok-ap', // 11-08 압독 압 · 털 망토 겹 미늘·붉은 띠·큰 도끼 불티
+  'g-62-gammun-gamnamu', // 11-08 감문 감나무 · 주황 머리띠 미늘 갑옷·불티 바람
 ])
 
 /**
