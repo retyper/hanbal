@@ -17,7 +17,7 @@ import { startYeongnam } from '../../src/realm/data/regions/yeongnam.ts'
 import { josa } from '../../src/realm/data/prose.ts'
 import { checkOutcome } from '../../src/realm/season.ts'
 import type { RegionId } from '../../src/realm/types.ts'
-import { BOARDS, PROLOGUE_STEPS, boardHtml, endingHtml, prologueHtml, titleHtml, winNeed, type FrontKit } from '../../src/ui/realm/front.ts'
+import { BOARDS, PROLOGUE_STEPS, boardHtml, chronicleOf, endingHtml, prologueHtml, titleHtml, winNeed, type FrontKit } from '../../src/ui/realm/front.ts'
 
 const KIT: FrontKit = {
   art: '/', esc: (s) => s, icon: (n) => `[${n}]`, emblem: (f) => `{${f}}`, face: (f) => `(${f})`,
@@ -75,5 +75,30 @@ describe('판의 앞과 끝', () => {
     assert.ok(/class="btn pri" data-act="fr-new"/.test(btns) && !/class="btn pri" data-act="fr-endless"/.test(btns), '눈에 띄는 단추는 새 게임')
     assert.ok(!h.includes('x를 쥐었다'), '남이 쥔 것은 우리 연대기에 없다')
     assert.ok(h.includes('으로 다시') && !/국로 다시/.test(h), '「○○국으로 다시」 — 「골포국로」가 아니다')
+  })
+  it('본기 — 싸움은 서로 몇 명으로 붙어 몇 명 남았나 · 들인 장수는 누가 어디서 어떻게 (형 11-08)', () => {
+    const r = startYeongnam(1, 'saro')
+    const cap = r.factions['guya']!.capital
+    const ours = Object.values(r.heroes).find((h) => h.faction === 'saro')!
+    const theirs = Object.values(r.heroes).find((h) => h.faction === 'guya')!
+    const battle = {
+      kind: 'battle', node: cap, attacker: 'a1', allies: [], pincer: false, defender: 'guya', ambush: 'none', p: 0.7, outcome: 'rout',
+      captured: theirs.id, killed: null, militia: 0, atkFaction: 'saro',
+      start: { men: [3000, 2500], morale: [70, 60], heroes: [ours.id, theirs.id] },
+      rounds: [{ na: 0.9, nd: 0.5 }, { na: 0.8, nd: 0.1 }],
+    }
+    const lost = { ...battle, node: r.factions['saro']!.capital, atkFaction: 'guya', defender: 'saro', outcome: 'win', captured: null, start: { men: [4000, 1200], morale: [70, 60], heroes: [theirs.id, ours.id] }, rounds: [{ na: 0.9, nd: 0.3 }] }
+    const ch = chronicleOf(KIT, r, [
+      { s: 2, lines: [battle as never] },
+      { s: 3, lines: [{ kind: 'recruit', hero: theirs.id, faction: 'saro', how: 'persuade', by: ours.id, talk: true }] },
+      { s: 4, lines: [lost as never] },
+    ])
+    const [won, rec, loss] = ch.events
+    const guya = r.factions['guya']!.name
+    assert.ok(won!.d!.includes('3,000명') && won!.d!.includes('2,500명'), '서로 몇 명으로 붙었나')
+    assert.ok(won!.d!.includes('2,400명') && won!.d!.includes('250명'), '끝났을 때 서로 몇 명 남았나')
+    assert.ok(won!.d!.includes(theirs.name) && won!.d!.includes('사로잡았다'), '누구를 사로잡았나')
+    assert.ok(rec!.t.includes(`사로잡은 ${guya} 장수`) && rec!.d!.includes('옥중에서') && rec!.d!.includes(ours.name), '누가 어디서 어떻게 우리 편이 됐나')
+    assert.ok(loss!.lose === true && loss!.d!.includes('4,000명') && ch.lost === 1, '진 싸움도 본기에 (끝 화면 필름엔 안 건다)')
   })
 })

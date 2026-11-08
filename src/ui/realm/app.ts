@@ -59,7 +59,7 @@ import { LEGACY_CSS, bringHtml, clearBring, toggleBring } from './legacy.ts'
 import { TOWN_CSS, townCheer, townVeilHtml, townViewHtml, type TownSlot } from './townview.ts'
 import { TOWN_GROUND, townSprite } from '../../realm/data/town-art.ts'
 import { RISE_CSS, riseGraphHtml } from './risegraph.ts'
-import { BOOK_CSS, bookHtml, shelfHtml, type Book } from './bookshelf.ts'
+import { BOOK_CSS, bookHtml, bookSwipe, bookTurn, shelfHtml, type Book } from './bookshelf.ts'
 import { DEX_CSS, clanHeroes, dexHtml, dexToastHtml, loadDex, recordDex, toggleDexAwake, type DexBoard } from './dex.ts'
 import { DEX_SERVED, dexCatalog } from '../../realm/dex.ts'
 import { DRILL_CSS, drillLevel, engraveRun, hasDrill, loadDrill, raiseHero, yardHtml, yardStripHtml, type DrillKit } from './drill.ts'
@@ -5043,7 +5043,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const [result, word] = res(g)
       const ch = r0 !== null ? chronicleOf(KIT, r0, hist) : null
       const clocked = { clock: g.clock }
-      const lines = (ch?.events ?? []).slice().sort((a, b) => a.s - b.s).map((e) => ({ when: seasonLabel({ season: e.s, ...clocked }, e.s), t: e.t, big: e.big }))
+      const lines = (ch?.events ?? []).slice().sort((a, b) => a.s - b.s).map((e) => ({ when: seasonLabel({ season: e.s, ...clocked }, e.s), t: e.t, big: e.big, img: e.img, ...(e.d !== undefined ? { d: e.d } : {}), ...(e.lose === true ? { lose: true } : {}) }))
       const stats = ch !== null ? `<div class="stats"><span><b>${ch.won}</b>이긴 싸움</span><span><b>${ch.lost}</b>진 싸움</span>${ch.takes > 0 ? `<span><b>${ch.takes}</b>쥔 고을</span>` : ''}${ch.heroes > 0 ? `<span><b>${ch.heroes}</b>얻은 장수</span>` : ''}</div>` : ''
       const graph = r0 !== null ? riseGraphHtml(hist, { me: r0.player, mine: '#2f8cff', colorOf: (f) => nationKit(f).c, nameOf: (f) => r0!.factions[f]?.name ?? f, esc, dateOf: (s) => dateLabel({ season: s, clock: g.clock }, s) }) : ''
       h += bookHtml({ title: titleOfG(g), sub: subOf(g), word, result, emblem: emblem(g.nation, 'bkem'), color: nationKit(g.nation).c, lines, stats, graph }, esc)
@@ -7509,7 +7509,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     switch (d['act']) {
       case 'continue': front = null; paint(); coverMap(); return
       case 'annals-open': bookSeed = null; front = { kind: 'annals' }; paint(); return
-      case 'book-open': bookSeed = Number(d['seed']); paint(); return
+      case 'book-open': bookSeed = Number(d['seed']); paint(); bookSwipe(root); return
+      // 책 넘기기 — 판을 다시 그리지 않고 그 쪽만 (형 11-08: "책처럼 넘기게")
+      case 'bk-next': bookTurn(root, 1); return
+      case 'bk-prev': bookTurn(root, -1); return
       case 'book-close': bookSeed = null; paint(); return
       case 'slot-go': {
         // 고른 판으로 — 하던 판은 선반에 (realm-main.onResume). 옮겼으면 바로 그 판으로 들어간다

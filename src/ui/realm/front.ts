@@ -502,13 +502,23 @@ const FILM = (k: FrontKit, name: string): string => `${k.art}film/${name}.jpg`
  * 화면 전체를 덮고, 마지막 장에서 「승리」가 쾅 박히며 불티가 튄다 (형 10-23: "창이 화면 전체로 · 승리면 승리라고 제대로").
  * 다 돌고 나면 ‹ › 로 지나간 장면을 다시 넘겨 본다 (형: "방금 지나간 역사 슬라이드들도 버튼 눌러서 샥샥").
  */
-/** 판의 큰일 — 이긴 싸움 · 쥔 고을 · 동맹 · 들인 장수 (끝 화면 필름·연대기와 「나의 역사」 책이 같이 쓴다) */
-export function chronicleOf(k: FrontKit, r: Realm, history: History): { events: Array<{ s: number; t: string; big: boolean; img: string; em?: string }>; won: number; lost: number; found: number; heroes: number; takes: number } {
+/**
+ * 판의 큰일 — 싸움(이긴 것 · 진 것) · 쥔 고을 · 동맹 · 들인 장수 (끝 화면 필름·연대기와 「나의 역사」 책이 같이 쓴다).
+ * t 는 한 줄 머리(필름 자막) · d 는 책에 적을 자세한 말 (형 11-08: "크게 이겼다만 쓰지 말고 우리군 몇 적군 몇 · 이겼을 때 서로 몇 명 남았다 ·
+ * 우리 장수가 됐다 하면 뭔 소린지 알아듣겠냐 · 정확히 누가 어떻게 됐다를"). lose 는 우리가 진 싸움 — 끝 화면 필름엔 안 건다.
+ */
+export function chronicleOf(k: FrontKit, r: Realm, history: History): { events: Array<{ s: number; t: string; d?: string; big: boolean; img: string; em?: string; lose?: boolean }>; won: number; lost: number; found: number; heroes: number; takes: number } {
   const me = r.player
   const name = (f: string): string => r.factions[f]?.name ?? ''
   const node = (id: string): string => r.nodes[id]?.name ?? ''
+  const hero = (id: string | null | undefined): string | undefined => (id != null ? r.heroes[id]?.name : undefined)
+  const men = (n: number): string => `${Math.round(n).toLocaleString('ko-KR')}명`
   const capOf = new Map(Object.values(r.factions).map((f) => [f.capital, f.id]))
-  const events: Array<{ s: number; t: string; big: boolean; img: string; em?: string }> = []
+  const events: Array<{ s: number; t: string; d?: string; big: boolean; img: string; em?: string; lose?: boolean }> = []
+  /** 사로잡은 장수 — 어느 싸움에서 · 어느 나라 사람이었나 (들인 장수의 말에 쓴다) */
+  const caughtIn = new Map<string, { battle: string; from: string }>()
+  /** 고을마다 마지막으로 그 고을을 지키던 나라 (쥔 고을의 말에 쓴다) */
+  const heldBy = new Map<string, string>()
   let won = 0
   let lost = 0
   let found = 0
@@ -519,39 +529,92 @@ export function chronicleOf(k: FrontKit, r: Realm, history: History): { events: 
       if (l.kind === 'battle') {
         const atkWon = l.outcome === 'rout' || l.outcome === 'win'
         const defWon = l.outcome === 'lose' || l.outcome === 'routed'
-        const ourWin = (l.atkFaction === me && atkWon) || (l.defender === me && defWon)
-        if (l.atkFaction === me) { if (atkWon) won++; else if (defWon) lost++ }
-        else if (l.defender === me) { if (defWon) won++; else if (atkWon) lost++ }
-        // 이긴 싸움은 그 이름으로 연대기에 (형: "황산벌전투 옥포해전 … 그지역들을따서") — 크게 이겼거나 적장을 잡았으면 큰일
-        if (ourWin && r.nodes[l.node] !== undefined) {
-          const caught = l.captured !== null ? r.heroes[l.captured] : undefined
-          const big = l.outcome === 'rout' || l.outcome === 'routed' || caught !== undefined
-          const sneak = l.atkFaction === me && l.ambush === 'success'
-          const img = caught !== undefined ? `${k.art}event/event-capture.jpg`
+        const weAtk = l.atkFaction === me
+        const mine = weAtk || l.defender === me
+        if (l.defender !== '') heldBy.set(l.node, l.defender)
+        if (!mine || r.nodes[l.node] === undefined) continue
+        const ourWin = (weAtk && atkWon) || (!weAtk && defWon)
+        const ourLoss = (weAtk && defWon) || (!weAtk && atkWon)
+        if (ourWin) won++
+        else if (ourLoss) lost++
+        else continue
+        const foe = weAtk ? l.defender : l.atkFaction
+        const foeName = foe !== undefined && name(foe) !== '' ? name(foe) : '적'
+        const bn = battleName(r, l)
+        const big = l.outcome === 'rout' || l.outcome === 'routed'
+        // 사로잡힌 이 — 우리가 이겼으면 적장, 졌으면 우리 장수 (우리 장수는 안 죽는다 · 다쳐 눕는다)
+        const caps = [...new Set([...(l.captives ?? []), ...(l.captured !== null ? [l.captured] : [])])]
+        if (ourWin) for (const id of caps) caughtIn.set(id, { battle: bn, from: foeName })
+        const caught = ourWin ? caps.map((id) => hero(id)).filter((x): x is string => x !== undefined) : []
+        // 자세한 말 — 누가 이끈 몇 명이 누구의 몇 명과 맞붙어, 끝났을 때 서로 몇 명이 남았나 · 사로잡힌 이 · 항복해 든 군사
+        const st = l.start
+        let d = ''
+        if (st !== undefined) {
+          const mi = weAtk ? 0 : 1
+          const fi = weAtk ? 1 : 0
+          const rs = l.rounds ?? []
+          const last = rs[rs.length - 1]
+          const left = (i: 0 | 1): number | undefined => (last === undefined ? undefined : st.men[i] * (i === 0 ? last.na : last.nd))
+          const ourCmd = hero(st.heroes[mi])
+          const foeCmd = hero(st.heroes[fi])
+          d += `${ourCmd !== undefined ? `${josa(ourCmd, '이', '가')} 이끈 ` : ''}우리 군사 ${josa(men(st.men[mi]), '과', '와')} ${foeCmd !== undefined ? `${josa(foeCmd, '이', '가')} 이끈 ` : ''}${foeName} 군사 ${josa(men(st.men[fi]), '이', '가')} 맞붙었다.`
+          const lm = left(mi)
+          const lf = left(fi)
+          if (lm !== undefined && lf !== undefined) d += ` 싸움이 끝났을 때 우리는 ${men(lm)}, ${josa(foeName, '은', '는')} ${men(lf)} 남았다.`
+        }
+        d += ` ${ourWin ? (big ? `${josa(foeName, '을', '를')} 크게 무찔렀다.` : `${josa(foeName, '을', '를')} 물리쳤다.`) : (big ? `${foeName}에게 크게 졌다.` : `${foeName}에게 밀려 물러났다.`)}`
+        if (caught.length > 0) d += ` ${foeName} 장수 ${josa(caught.join('·'), '을', '를')} 사로잡았다.`
+        if (ourLoss) {
+          const ours = caps.map((id) => hero(id)).filter((x): x is string => x !== undefined)
+          if (ours.length > 0) d += ` 우리 장수 ${josa(ours.join('·'), '이', '가')} 붙잡혔다.`
+        }
+        const y = l.yielded
+        if (y !== undefined && ourWin && y.n > 0) d += ` 무기를 버린 ${foeName} 군사 ${men(y.n)} 가운데 ${josa(men(y.join), '이', '가')} 우리 군에 들었다.`
+        if (ourWin) {
+          const sneak = weAtk && l.ambush === 'success'
+          const img = caught.length > 0 ? `${k.art}event/event-capture.jpg`
             : l.via === 'sea' || r.nodes[l.node]?.kind === 'port' ? FILM(k, 'film-win-sea')
             : sneak && l.approach === 'night' ? FILM(k, 'film-win-night')
             : l.via === 'ford' || l.via === 'reeds' || l.via === 'mudflat' ? FILM(k, 'film-win-ford')
             : seasonOf(r, s) === 'winter' ? FILM(k, 'film-win-winter')
-            : l.defender === me ? FILM(k, 'film-win-defend')
-            : l.outcome === 'rout' || l.outcome === 'routed' ? FILM(k, 'film-win-rout')
+            : !weAtk ? FILM(k, 'film-win-defend')
+            : big ? FILM(k, 'film-win-rout')
             : FILM(k, 'film-win-field')
-          const t = `${battleName(r, l)}: ${big ? '크게 이겼다' : '이겼다'}${caught !== undefined ? ` · ${josa(caught.name, '을', '를')} 사로잡았다` : ''}`
-          const foe = l.atkFaction === me ? l.defender : l.atkFaction
-          events.push({ s, t, big, img, ...(foe !== undefined ? { em: foe } : {}) })
+          const t = `${bn}: ${big ? '크게 이겼다' : '이겼다'}${caught.length > 0 ? ` · ${josa(caught.join('·'), '을', '를')} 사로잡았다` : ''}`
+          events.push({ s, t, d: d.trim(), big: big || caught.length > 0, img, ...(foe !== undefined ? { em: foe } : {}) })
+        } else {
+          events.push({ s, t: `${bn}: ${big ? '크게 졌다' : '졌다'}`, d: d.trim(), big, img: `${k.art}end/end-lose.jpg`, lose: true, ...(foe !== undefined ? { em: foe } : {}) })
         }
       } else if (l.kind === 'take' && l.faction === me) {
         const was = capOf.get(l.node)
+        const from = heldBy.get(l.node)
         // 도읍이면 큰 성문으로 들어가는 군대, 여느 고을이면 깃발을 꽂고 마을 사람들이 따르는 장면
         const img = FILM(k, was !== undefined ? 'film-take-capital' : r.nodes[l.node]?.kind === 'port' ? 'film-take-port' : 'film-take-town')
         takes++
-        events.push({ s, t: `${josa(node(l.node), "을", "를")} 쥐었다`, big: was !== undefined, img, ...(was !== undefined && was !== me ? { em: was } : {}) })
+        const whose = from !== undefined && from !== me && name(from) !== '' ? `${name(from)}의 ${was === from && !node(l.node).includes('도읍') ? '도읍 ' : ''}` : ''
+        events.push({ s, t: `${josa(node(l.node), '을', '를')} 쥐었다`, d: `${whose}${josa(node(l.node), '을', '를')} 쥐었다. 이제 그곳에 우리 깃발이 선다.`, big: was !== undefined, img, ...(was !== undefined && was !== me ? { em: was } : {}) })
       } else if (l.kind === 'relation' && (l.a === me || l.b === me) && (l.state === 'ally' || l.state === 'truce')) {
         const other = l.a === me ? l.b : l.a
         const img = FILM(k, l.state === 'ally' ? 'film-ally' : 'film-truce')
-        events.push({ s, t: `${josa(name(other), '과', '와')} ${l.state === 'ally' ? '동맹을 맺었다' : '화친했다'}`, big: l.state === 'ally', img, em: other })
+        const t = `${josa(name(other), '과', '와')} ${l.state === 'ally' ? '동맹을 맺었다' : '화친했다'}`
+        events.push({ s, t, d: l.state === 'ally' ? `${josa(name(other), '과', '와')} 동맹을 맺었다. 함께 싸우기로 했다.` : `${josa(name(other), '과', '와')} 화친했다. 서로 치지 않기로 했다.`, big: l.state === 'ally', img, em: other })
       } else if (l.kind === 'recruit' && l.faction === me) {
         heroes++
-        events.push({ s, t: `${josa(r.heroes[l.hero]?.name ?? '장수', '이', '가')} 우리 장수가 됐다`, big: false, img: k.bust?.(l.hero) ?? `${k.art}event/event-wanderer-arrives.jpg` })
+        const nm = hero(l.hero) ?? '장수'
+        const by = hero(l.by ?? null)
+        const c = caughtIn.get(l.hero)
+        let t: string
+        let d: string
+        if (l.how === 'persuade') {
+          t = `${c !== undefined ? `사로잡은 ${c.from} 장수 ` : ''}${josa(nm, '이', '가')} 우리 편이 됐다`
+          const where = c !== undefined ? `${c.battle}에서 사로잡은 ${c.from} 장수 ${nm}.` : `사로잡혀 있던 ${nm}.`
+          const how = l.talk === true && by !== undefined ? `옥중에서 ${josa(by, '과', '와')} 담판을 지은 끝에` : by !== undefined ? `${josa(by, '이', '가')} 거듭 달랜 끝에` : '거듭 달랜 끝에'
+          d = `${where} ${how} 무릎을 꿇고 우리 장수가 됐다.`
+        } else {
+          t = `떠돌던 ${josa(nm, '이', '가')} 우리를 찾아왔다`
+          d = `나라 없이 떠돌던 ${josa(nm, '이', '가')} 우리를 찾아와 장수가 됐다.`
+        }
+        events.push({ s, t, d, big: false, img: k.bust?.(l.hero) ?? `${k.art}event/event-wanderer-arrives.jpg` })
       } else if (l.kind === 'discover' && l.faction === me) {
         found++
       }
@@ -566,7 +629,8 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = '', f
   const region = r.region ?? 'byeonhan-mini'
   const me = r.player
   const name = (f: string): string => r.factions[f]?.name ?? ''
-  const { events, won, lost, found, heroes } = chronicleOf(k, r, history)
+  const { events: allEvents, won, lost, found, heroes } = chronicleOf(k, r, history)
+  const events = allEvents.filter((e) => e.lose !== true)
   // 큰일 먼저 — 도읍과 동맹, 그다음 나머지. 계절 순으로
   const ranked = [...events.filter((e) => e.big), ...events.filter((e) => !e.big)]
   const pickd = ranked.slice(0, 9).sort((a, b) => a.s - b.s)
