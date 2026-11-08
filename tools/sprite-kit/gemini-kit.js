@@ -73,6 +73,51 @@
       document.querySelector('button[aria-label="메시지 보내기"], button.send-button').click()
       return { sent: true, att }
     },
+    // Veo: 새 대화에서 동영상 만들기 · 세로 9:16 · 파일 칸 이름표 (사진 1장 + 문안 파일은 pickText 로)
+    async veoSetup(tag = 'v') {
+      await W(2500)
+      document.querySelector('button[aria-label="업로드 및 도구"]')?.click()
+      await W(800)
+      ;[...document.querySelectorAll('[role=menuitem],[role=option],button,a,li')].find((e) => e.offsetParent && /^동영상 만들기/.test((e.innerText || '').trim()))?.click()
+      await W(1200)
+      btnText(/^(가로|세로)/)?.click()
+      await W(800)
+      ;[...document.querySelectorAll('[role=menuitem],[role=option],[role=menuitemradio],button')].find((e) => e.offsetParent && /세로 모드/.test(e.innerText))?.click()
+      await W(800)
+      for (let t = 0; t < 4 && !document.querySelectorAll('input[type=file]').length; t++) {
+        document.querySelector('button[aria-label="업로드 및 도구"]')?.click()
+        await W(900)
+      }
+      document.querySelectorAll('input[type=file]').forEach((e, i) => e.setAttribute('aria-label', tag + 'file' + i))
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+      // 문안 파일을 받을 내 칸 (Gemini 칸과 따로 · 내용이 채팅 도구 호출로 지나가지 않게)
+      if (!document.getElementById('skittxt')) {
+        const i = document.createElement('input')
+        i.type = 'file'
+        i.id = 'skittxt'
+        i.setAttribute('aria-label', 'skit-text')
+        i.style.cssText = 'position:fixed;top:0;left:0;z-index:99999'
+        document.body.appendChild(i)
+      }
+      return { inputs: document.querySelectorAll('input[type=file]').length, tall: !!btnText(/^세로/) }
+    },
+    // 내 칸에 올린 문안 파일을 넣고 보냄 · 사진 1장·세로가 아니면 안 보냄
+    async sendVeo() {
+      const f = document.getElementById('skittxt')?.files?.[0]
+      if (!f) return { sent: false, why: 'no text file' }
+      const text = await f.text()
+      document.getElementById('skittxt').remove()
+      await W(1000)
+      const att = document.querySelectorAll('uploader-file-preview').length
+      if (att !== 1 || !btnText(/^세로/)) return { sent: false, att, tall: !!btnText(/^세로/) }
+      const ed = document.querySelector('.ql-editor')
+      ed.focus()
+      document.execCommand('insertText', false, text)
+      await W(700)
+      document.querySelector('button[aria-label="메시지 보내기"], button.send-button').click()
+      await W(4000)
+      return { sent: true, att, chars: text.length, url: location.href, refused: /지금은 동영상을 생성할 수 없습니다/.test(document.body.innerText) }
+    },
     send(kind, key) {
       return kit.say(kit.prompt(kind, key), kind === 'walk' ? 2 : 0)
     },
