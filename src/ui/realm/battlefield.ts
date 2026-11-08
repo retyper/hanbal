@@ -1604,7 +1604,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
         const caught = capture?.succeeded === true && target === id
         const gDown = caught || rounds.some((rd) => rd.lostHero?.hero === id)
         const gNow = anim && (caught || last?.lostHero?.hero === id)
-        const gCls = ` gsp g-${ga.kind}${ga.bow === true ? ' gbw' : ''}${ga.kind === 'mount' ? ' gmt' : ''}${gNow ? ' gfall' : gDown ? ' gdown' : ''}${aide ? ' gcap-aide' : ''}`
+        const gCls = ` gsp g-${ga.kind}${ga.bow === true ? ' gbw' : ''}${ga.mount === true ? ' gmt' : ''}${gNow ? ' gfall' : gDown ? ' gdown' : ''}${aide ? ' gcap-aide' : ''}`
         return `<span class="wgen${gCls}" data-hero="${esc(id)}" style="--fc:${fc};--gar:${ga.ar.toFixed(3)};--gb:${ga.body.toFixed(3)}"><i class="wpole">${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}</i><i class="gbody"><b class="gspf" style="background-image:url('${art}anim2/gen-${ga.kind}.png')"></b></i>${face(id, art, 'unit-general')}</span>`
       }
       const gen = genOf(hero) + (play && target !== hero ? genOf(target, true) : '')

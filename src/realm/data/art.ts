@@ -464,13 +464,13 @@ export const SOL_ANIM_AR: Readonly<Record<string, number>> = { militia: 168 / 16
  * 결 여섯은 장수마다 그리기 전의 원형이다 — 이름난 장수의 제 그림은 docs/realm/GENERAL-SPRITES.md 의 차례대로 GEN_OWN 에 더한다.
  */
 export type GenSprite = 'g-sword' | 'g-bow' | 'g-spear' | 'w-spear' | 'w-bow' | 'mount'
-export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: number; bow?: true }>>> = {
+export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: number; bow?: true; mount?: true }>>> = {
   'g-sword': { ar: 150 / 160, body: 0.948 }, // 11-03 걷기가 한 자세라 20컷 통째로 다시 (제미나이 4 Argon · tools/assemble-gen20.mjs)
   'g-bow': { ar: 149 / 160, body: 0.948, bow: true }, // 11-03 20컷 다시 (걷기가 한 자세였다)
   'g-spear': { ar: 189 / 160, body: 0.914 }, // 11-03 20컷 다시 (걷기가 한 자세였다)
   'w-spear': { ar: 180 / 160, body: 0.934 }, // 11-04 우하단 두 컷(걷기 8 · 쓰러짐)을 별표 없는 장으로 갈아 끼움
   'w-bow': { ar: 140 / 160, body: 0.968 }, // 11-04 우하단 두 컷(걷기 8 · 쓰러짐)을 별표 없는 장으로 갈아 끼움
-  mount: { ar: 246 / 160, body: 0.968 },
+  mount: { ar: 246 / 160, body: 0.968, mount: true },
   // 제 그림 (GEN_OWN) — 글 주문만으로 받은 장수 (docs/realm/GENERAL-SPRITES.md)
   jumong: { ar: 140 / 160, body: 0.900, bow: true }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2)
   onjo: { ar: 157 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2)
@@ -496,6 +496,10 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   gamsil: { ar: 157 / 160, body: 0.906 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 어깨 내린 주황 겉옷·짧은 치마 (형: 전투 옷은 더 드러나게)
   irang: { ar: 164 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 문신 팔·구슬 목걸이·가죽 조끼 · 청동 단검 찌르기
   gureum: { ar: 162 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 흰 삼베 짧은 윗옷·트임 치마 (형: 전투 옷은 더 드러나게)
+  biryu: { ar: 168 / 160, body: 0.963, mount: true }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 말 탄 장수 · 상투·붉은 민소매·큰 망치 내려치기
+  geumha: { ar: 175 / 160, body: 0.844, mount: true }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 말 탄 장수 · 흰 털 금테 관·땋은 수염·털 망토·말머리 지팡이 내려치기
+  geota: { ar: 1, body: 0.9, mount: true },
+  soebo: { ar: 1, body: 0.9, mount: true },
   sori: { ar: 280 / 160, body: 0.9375 }, // normal portrait, right-hand dagger, shared four-pose walk
   sogeumbi: { ar: 280 / 160, body: 0.9375 }, // same-hand short downcut, shared four-pose walk
   budeul: { ar: 280 / 160, body: 0.9375 }, // 11-07 original Budeul upper body/knife + shared 4-pose trousers
@@ -506,7 +510,7 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   soenun: { ar: 280 / 160, body: 0.9375 }, // 11-08 쇠눈 · 제미나이 u/2 2×2(겨눔·찌르기·거둠·피격) + 새 대화 쓰러짐 · 갯내 4실보행 하체(짙은 바지 · 걷는 동안 쇠 정강이받이는 장화로 보인다) · 창 자루는 걷기에도 남긴다
 }
 /** 제 그림이 있는 장수 (장수 id → gen-<이름>.png 의 이름) */
-export const GEN_OWN: Readonly<Record<string, string>> = { 'gwanna-2': 'soenun', 'haseulla-ruler': 'dangung', 'goguryeo-2': 'hwalmi', 'maek-1': 'beombal', 'wander-04': 'sori', 'dongokjeo-2': 'sogeumbi', 'golbeol-2': 'budeul', 'michuhol-2': 'gaennae', 'jm-jumong': 'jumong', 'mh-onjo': 'onjo', 'tut-onjo': 'onjo', 'mh-soseono': 'soseono', 'sr-aryeong': 'aryeong', 'jm-haedal': 'haedal', 'buyeo-1': 'haedal', 'jm-songbi': 'songbi', 'biryuna-ruler': 'songbi', 'sr-hyeokgeose': 'hyeokgeose', 'jm-oi': 'oi', 'jm-mari': 'mari', 'jm-daeso': 'daeso', 'mh-eureum': 'eureum', 'mh-ogan': 'ogan', 'tut-ogan': 'ogan', 'goguryeo-ruler': 'damul', 'jm-songyang': 'songyang', chief: 'maenun', 'jm-hyeopbo': 'hyeopbo', 'tut-malgalgi': 'malgalgi', 'sabeol-1': 'malgalgi', 'tut-haebi': 'haebi', 'guya-3': 'soebi', 'anya-1': 'ara', 'gj-dana': 'ara', 'gj-heo': 'heo', 'gammun-2': 'gamsil', 'jomun-ruler': 'irang', 'goryong-ruler': 'gureum' }
+export const GEN_OWN: Readonly<Record<string, string>> = { 'gwanna-2': 'soenun', 'haseulla-ruler': 'dangung', 'goguryeo-2': 'hwalmi', 'maek-1': 'beombal', 'wander-04': 'sori', 'dongokjeo-2': 'sogeumbi', 'golbeol-2': 'budeul', 'michuhol-2': 'gaennae', 'jm-jumong': 'jumong', 'mh-onjo': 'onjo', 'tut-onjo': 'onjo', 'mh-soseono': 'soseono', 'sr-aryeong': 'aryeong', 'jm-haedal': 'haedal', 'buyeo-1': 'haedal', 'jm-songbi': 'songbi', 'biryuna-ruler': 'songbi', 'sr-hyeokgeose': 'hyeokgeose', 'jm-oi': 'oi', 'jm-mari': 'mari', 'jm-daeso': 'daeso', 'mh-eureum': 'eureum', 'mh-ogan': 'ogan', 'tut-ogan': 'ogan', 'goguryeo-ruler': 'damul', 'jm-songyang': 'songyang', chief: 'maenun', 'jm-hyeopbo': 'hyeopbo', 'tut-malgalgi': 'malgalgi', 'sabeol-1': 'malgalgi', 'tut-haebi': 'haebi', 'guya-3': 'soebi', 'anya-1': 'ara', 'gj-dana': 'ara', 'gj-heo': 'heo', 'gammun-2': 'gamsil', 'jomun-ruler': 'irang', 'goryong-ruler': 'gureum', 'tut-biryu': 'biryu', 'buyeo-ruler': 'geumha' }
 type GenLook = { readonly id?: string; readonly look: 'g' | 'w'; readonly traits: readonly string[]; readonly mu: number; readonly tong: number; readonly ryak: number; readonly chi: number; readonly deok: number }
 /**
  * 장수 → 싸움터에 설 그림 (순수). 제 그림이 있으면 그것 · 명궁이면 활 · 통솔이 가장 높고 비기가 날 만큼(tacArtMinStat) 높은 남자는 말 탄 장수 ·
@@ -524,7 +528,7 @@ export function generalSprite(h: GenLook | null | undefined, minStat = 7): strin
   return h.mu === top ? 'g-spear' : 'g-sword'
 }
 /** 그림이 아직 없는 결은 가까운 결로 (다 구우면 그대로 돌아간다) · bow 면 공격 컷이 활 쏘기(싸움터가 spshot 박자로 돌린다) */
-export function genArtOf(kind: string): { kind: string; ar: number; body: number; bow?: true } {
+export function genArtOf(kind: string): { kind: string; ar: number; body: number; bow?: true; mount?: true } {
   for (const k of [kind, kind.startsWith('w-') ? 'w-spear' : 'g-sword', 'g-sword']) {
     const a = GEN_ANIM[k]
     if (a !== undefined) return { kind: k, ...a }

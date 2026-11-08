@@ -144,6 +144,7 @@ const CONTACT: Readonly<Record<string, [number, number, number]>> = {
   'gen-hyeopbo': [14, .93, .21], 'gen-malgalgi': [14, 0.88, 0.28], 'gen-mari': [14, .98, .47],
   'gen-oi': [14, .98, .48], 'gen-onjo': [14, 0.83, 0.93], 'gen-soebi': [14, 0.80, 0.95],
   'gen-soseono': [14, 0.92, 0.31], 'gen-irang': [14, 0.86, 0.30], 'gen-gureum': [14, 0.98, 0.42],
+  'gen-biryu': [14, 0.90, 0.35], 'gen-geumha': [14, 0.94, 0.61], 'gen-geota': [14, .9, .3], 'gen-soebo': [14, .9, .3],
   'gen-gaennae': [14, 249 / 264, 47 / 160],
   'gen-budeul': [14, 266 / 280, 51 / 160],
   'gen-sogeumbi': [14, 225 / 280, 103 / 160],
@@ -154,8 +155,8 @@ const CONTACT: Readonly<Record<string, [number, number, number]>> = {
   'gen-soenun': [14, 267 / 280, 54 / 160],
 }
 
-const HEAVY_SWINGS = new Set(['axe', 'gen-soebi', 'gen-haebi', 'gen-gamsil'])
-const BLADE_SWINGS = new Set(['gen-sogeumbi', 'gen-ara', 'gen-g-sword', 'gen-hyeokgeose', 'gen-eureum', 'gen-hyeopbo', 'gen-onjo', 'gen-mount'])
+const HEAVY_SWINGS = new Set(['axe', 'gen-soebi', 'gen-haebi', 'gen-gamsil', 'gen-biryu', 'gen-geumha', 'gen-soebo'])
+const BLADE_SWINGS = new Set(['gen-sogeumbi', 'gen-ara', 'gen-g-sword', 'gen-hyeokgeose', 'gen-eureum', 'gen-hyeopbo', 'gen-onjo', 'gen-mount', 'gen-geota'])
 const swingArt = (skin: string): 'heavy' | 'sweep' | 'thrust' =>
   HEAVY_SWINGS.has(skin) ? 'heavy' : BLADE_SWINGS.has(skin) ? 'sweep' : 'thrust'
 
