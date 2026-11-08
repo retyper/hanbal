@@ -221,7 +221,7 @@ export const AWAKEN_ART: ReadonlySet<string> = new Set([
  * 숨 쉬는 영상을 정사각 판으로 만든 초상 — 그림을 9:16 가운데에 통째로 두고 위아래를 흐리게 채워 넣었다(tools/veo/pad.sh).
  * 파일은 `<id>.sq.mp4` · 화면은 가운데 정사각만 오려 원본 전체가 움직인다 (형 11-05: "넣은 이미지 전체가 안 나오고 세로로 길게 나와 아쉽다")
  */
-export const AWAKEN_LOOP_SQ: ReadonlySet<string> = new Set<string>(['w-35-jomun-odi', 'w-95-michuhol-haebi'])
+export const AWAKEN_LOOP_SQ: ReadonlySet<string> = new Set<string>(['w-95-michuhol-haebi'])
 /** 숨 쉬는 영상 파일 — public/realm 아래 */
 export const loopFile = (id: string): string => `awaken-loop/${id}${AWAKEN_LOOP_SQ.has(id) ? '.sq' : ''}.mp4`
 
@@ -233,7 +233,7 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'w-85-sinji-neoul', // 11-07 신지 너울 · 잠수 뒤 숨 고르기, 손 위치 유지
   'w-01-silla-princess', // 11-07 고은 · 부채 든 손 교정본 · 기존 세로 영상 회수
   'w-19-buyeo-fur-princess', // 11-07 가온 · 수정꽃을 바라보며 호흡
-  'w-78-wansan-wan', // 11-08 낮 완 v2 · 만작한 채 표적을 따라 몸을 틀고 윙크 (형: 역동성 더) · 잠깐 물러났다 돌아온다
+  'w-66-saro-noeul', // 11-08 낮 노을 v2 · 시위를 늦췄다 다시 만작 · 쏘고 다시 거는 동작 (형: 넣어 · 화살은 쏘니 없어지는 게 맞다) · 완 v2 는 눈이 번갈아 감겨 뺐다 (형)
   'w-37-michuhol-gaennae', // 11-08 낮 갯내 v2 · 무릎을 굽혀 몸을 흔드는 견제 후 단검을 던져 받는다 (형: 첫 판은 부자연스럽고 더 움직였으면)
   'w-62-byeokjin-byeol', // 11-08 별 · 새 집게 자세로 다시 (형: 좋음) · 옛 자세 MP4 는 assets_src/realm/retired/awaken-loop
   'w-32-golbeol-budeul', // 11-08 부들 · 갈대 속 경쟁자를 보고 몸을 기울인다 (형: 괜찮다)
@@ -245,7 +245,7 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'w-95-michuhol-haebi', // 11-05 해비 — 튜토리얼 · 정사각 판으로 다시 · 굿판 뒤 숨 고르기로 한 단계 더 세게 (형: "해비 더 세게")
   'w-30-guya-soebi', // 11-05 쇠비 — 형의 최애 · 숨을 더 세게(가슴이 또렷이 출렁)
   'w-33-gammun-gamsil', // 11-05 감실 — 형의 최애 · 출렁임을 걸면 제미나이가 거절해(그림이 드러나서) 잔잔한 숨으로
-  'w-35-jomun-odi', // 11-05 오디 — 형의 최애 · 정사각 판(그림 전체가 움직인다) · 웃으며 숨 · 누에고치가 손 위에서 돈다
+  'w-35-jomun-odi', // 11-08 낮 오디 v2 · 세로 근접 · 웃으며 발돋움하고 누에고치를 띄운다 (형: 넣어) · 옛 정사각 판은 assets_src/realm/retired/awaken-loop
   'w-77-sabeol-malgalgi', // 11-05 밤 말갈기 — 튜토리얼 각성 장수 · 판 없이 세로로 가까이 (쇠비처럼 · 형: "세로로 더 가까이가 훨씬 낫다")
 ])
 
