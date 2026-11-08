@@ -117,7 +117,7 @@ import { worldMapReady } from './worldmap.ts'
 import { loadBar } from './loadbar.ts'
 import { WORKS, clearBlocked, clearCost, lotCap, lvGain, lvOf, workBlocked, workCost, workEffect, workOptions, worksOf, type WorkWhat } from '../../realm/works.ts'
 import { postGain } from '../../realm/postgain.ts'
-import { hasScale, marketIn, marketOf, scaleBuyPrice, scaleLimit, scaleRoom, scaleSellPrice, sellLimit, sellPrice, wishReady, type Offer } from '../../realm/merchant.ts'
+import { hasScale, marketIn, marketOf, scaleBuyPrice, scaleLimit, scaleRoom, scaleSellPrice, sellLimit, sellPrice, wishReady, WISH_GRADE_NAME, type Offer } from '../../realm/merchant.ts'
 import { QUALITY_CSS, gfxRowHtml, setGfxPref, startQuality } from './quality.ts'
 import { HOWWIN_CSS, bannerHtml, closeHowWin, howWinDue, howWinMark, lessons, lossOf, openLessons, showBanner, syncPin, type HowKit, type LessonGo, type Loss } from './howwin.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
@@ -2096,10 +2096,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const lit = Math.max(0, Math.min(cells, Math.floor((have / n) * cells)))
       return `<span class="wishg${have >= n ? ' ok' : ''}">${icon(GOOD_ICON[g], 'wki')}<b>${Math.min(have, n)}/${n}</b><i>${'■'.repeat(lit)}${'□'.repeat(cells - lit)}</i></span>`
     }).join('')
-    const prize = w.reward === 'hero' ? `${icon('unit-general', 'wki')}떠도는 장수 하나 (값 없이)` : `${icon('route-caravan', 'wki')}먼 나라의 소문`
+    // 주문의 크기 — 작은·큰·왕의 주문 (위원회 11-08 · 나라가 클수록 크게 오고 크게 갚는다) · 왕관 그림 수로 한눈에
+    const grade = w.grade ?? 1
+    const prize = w.reward === 'famed' ? `${icon('unit-general', 'wki')}이름난 장수 (값 없이)${grade === 3 ? ` · ${icon('route-caravan', 'wki')}먼 나라의 소문` : ''}` : w.reward === 'hero' ? `${icon('unit-general', 'wki')}떠도는 장수 하나 (값 없이)` : `${icon('route-caravan', 'wki')}먼 나라의 소문`
     const ready = wishReady(p, me()) // 이번 달 팔기로 고른 몫까지 빼고 본다 (검토 11-04)
     const queued = musters.some((o) => o.kind === 'wish')
-    let h = `<h3>${icon('good-tribute-bell', 'wki')} 상단의 주문</h3><div class="wishc${ready ? ' ready' : ''}"><div class="wishgs">${rows}</div><div class="wishp">갚음 · ${prize}</div>`
+    let h = `<h3>${icon('good-tribute-bell', 'wki')} 상단의 ${WISH_GRADE_NAME[grade]}${grade > 1 ? ` <span class="wishgr">${icon('emblem-crown', 'wki').repeat(grade - 1)}</span>` : ''}</h3><div class="wishc g${grade}${ready ? ' ready' : ''}"><div class="wishgs">${rows}</div><div class="wishp">갚음 · ${prize}</div>`
     if (marketOf(r, me()) !== null) h += `<div class="btns"><button class="btn pri${queued ? ' on' : ''}" data-act="wish"${ready || queued ? '' : noBtn('아직 다 모으지 못했습니다')}>${queued ? '주문을 맞바꾼다 · 누르면 거둔다' : '주문을 맞바꾼다'}</button></div>`
     else h += `<p class="mute">다음 상단이 오기 전에 모아 두세요</p>`
     return h + '</div>'

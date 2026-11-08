@@ -10,6 +10,7 @@
  *
  * 플레이어 나라만 상단을 맞는다 (AI 는 곳간을 제 셈으로 쓴다). 굴림은 roll(시드) 뿐 (A1).
  */
+import { realmScale } from './scale.ts'
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { addGood, goodOf, isCoast, nodeYield, stockOf, worthOf } from './economy.ts'
@@ -234,8 +235,28 @@ export function applyScale(r: Realm, o: Extract<Order, { kind: 'scale' }>, lines
 // ───────── 상단의 주문 (위원회 11-04 림월드 ②) — 떠날 때 쪽지 하나: 다음에 올 때 이것을 모아 두면 돈으로 못 사는 것을 갚는다
 // 물건은 우리 땅이 낼 수 있는 것만(곡식 빼고) · 걸려 있는 것은 늘 하나 · 기한도 벌도 없다 (못 맞추면 그냥 남는다)
 
-export type WishReward = 'hero' | 'news'
-export interface Wish { readonly goods: Partial<Record<Good, number>>; readonly reward: WishReward }
+/** 갚음 — hero 떠도는 장수(값 없이) · news 먼 나라 소문 · famed 남은 장수 가운데 가장 이름난 이(큰·왕의 주문) */
+export type WishReward = 'hero' | 'news' | 'famed'
+/**
+ * 쪽지 — grade 는 주문의 크기 (1 작은 주문 · 2 큰 주문 · 3 왕의 주문 · 옛 쪽지엔 없다 = 1). 나라가 클수록 큰 주문이 오고 갚음도 크다 (위원회 11-08)
+ * 왕의 주문은 이름난 장수에 먼 나라 소문까지 함께 갚는다
+ */
+export interface Wish { readonly goods: Partial<Record<Good, number>>; readonly reward: WishReward; readonly grade?: 1 | 2 | 3 }
+
+/** 주문의 크기 — 나라의 그릇(scale.ts)으로 */
+export function wishGrade(r: Realm, faction: string): 1 | 2 | 3 {
+  const s = realmScale(r, faction)
+  return s >= P.realm.wishRoyalAt ? 3 : s >= P.realm.wishBigAt ? 2 : 1
+}
+export const WISH_GRADE_NAME = ['', '작은 주문', '큰 주문', '왕의 주문'] as const
+
+/** 남은 장수 가운데 가장 이름난 이 — 다섯 재주의 합이 가장 큰 (같으면 id 순) */
+function famedOf(r: Realm): string | undefined {
+  const free = new Set(freePool(r))
+  const xs = HERO_POOL.filter((h) => free.has(h.id)).map((h) => ({ id: h.id, v: h.mu + h.tong + h.ryak + h.chi + h.deok }))
+  xs.sort((a, b) => b.v - a.v || (a.id < b.id ? -1 : 1))
+  return xs[0]?.id
+}
 
 /** 아직 이름을 모르는 나라 — 소문으로 알려 줄 수 있는 */
 function unknownNations(r: Realm, faction: string): string[] {
@@ -249,21 +270,32 @@ function freePool(r: Realm): string[] {
   return HERO_POOL.filter((h) => !taken.has(h.id)).map((h) => h.id).sort()
 }
 
-/** 쪽지를 쓴다 — 우리 고을들이 내는 특산 가운데 둘(값어치로 곡식 wishWorth 어치씩) · 갚음은 떠돌 장수 아니면 먼 나라 소문 */
+/**
+ * 쪽지를 쓴다 — 우리 고을들이 내는 특산 가운데 둘. 모을 양은 「우리 땅이 그것을 wishSeasons 계절 내는 만큼」(주문이 클수록 더) —
+ * 전엔 곡식 wishWorth 어치로 판 내내 그대로라 초반엔 15계절치, 후반엔 창고 하나로 스무 번을 냈다 (위원회 11-08 balance §3).
+ * 처음 모을 양이 아주 작으면 wishWorth 어치까지는 채운다 (옛 맛 · 값어치의 바닥). 갚음은 주문 크기대로.
+ */
 function makeWish(r: Realm, faction: string): Wish | null {
-  const can = new Set<Good>()
-  for (const n of Object.values(r.nodes)) if (n.owner === faction) for (const [g, v] of Object.entries(nodeYield(r, n.id)) as Array<[Good, number]>) if (g !== 'grain' && v > 0) can.add(g) // 실제로 나는 것만 (0 은 빼고)
-  const goods = [...can].sort()
+  const R = P.realm
+  const per: Partial<Record<Good, number>> = {}
+  for (const n of Object.values(r.nodes)) if (n.owner === faction) for (const [g, v] of Object.entries(nodeYield(r, n.id)) as Array<[Good, number]>) if (g !== 'grain' && v > 0) per[g] = (per[g] ?? 0) + v // 실제로 나는 것만 (0 은 빼고)
+  const goods = (Object.keys(per) as Good[]).sort()
   if (goods.length === 0) return null
   const k = (i: number): number => roll(r.seed, r.season, `mwish:${faction}:${i}`)
   const pick = goods.map((g, i) => ({ g, w: k(i) })).sort((a, b) => a.w - b.w).slice(0, Math.min(2, goods.length))
+  const grade = wishGrade(r, faction)
+  const mul = grade === 3 ? R.wishRoyalMul : grade === 2 ? R.wishBigMul : 1
   const want: Partial<Record<Good, number>> = {}
-  for (const { g } of pick) want[g] = Math.max(5, Math.round(P.realm.wishWorth / Math.max(0.01, worthOf(g)) / 5) * 5)
+  for (const { g } of pick) {
+    const byYield = R.wishSeasons * mul * (per[g] ?? 0)
+    const floor = R.wishWorth / Math.max(0.01, worthOf(g))
+    want[g] = Math.max(5, Math.round(Math.max(byYield, floor) / 5) * 5)
+  }
   const hero = freePool(r).length > 0
   const news = unknownNations(r, faction).length > 0
   if (!hero && !news) return null
-  const reward: WishReward = hero && news ? (k(9) < 0.5 ? 'hero' : 'news') : hero ? 'hero' : 'news'
-  return { goods: want, reward }
+  const reward: WishReward = grade >= 2 && hero ? 'famed' : hero && news ? (k(9) < 0.5 ? 'hero' : 'news') : hero ? 'hero' : 'news'
+  return { goods: want, reward, grade }
 }
 
 /**
@@ -272,11 +304,12 @@ function makeWish(r: Realm, faction: string): Wish | null {
  */
 function wishPayout(r: Realm, faction: string, w: Wish): { kind: WishReward; id: string } | null {
   const pickOf = (kind: WishReward): { kind: WishReward; id: string } | null => {
+    if (kind === 'famed') { const id = famedOf(r); return id !== undefined ? { kind, id } : null }
     const xs = kind === 'hero' ? freePool(r) : unknownNations(r, faction)
     const id = xs[Math.floor(roll(r.seed, r.season, `mwish-${kind}:${faction}`) * xs.length)]
     return id !== undefined ? { kind, id } : null
   }
-  return pickOf(w.reward) ?? pickOf(w.reward === 'hero' ? 'news' : 'hero')
+  return pickOf(w.reward) ?? pickOf(w.reward === 'news' ? 'hero' : 'news')
 }
 
 /** 지금 맞바꿀 수 있나 — 상단이 머물고 · 쪽지가 있고 · 물건을 다 모았고 · 갚을 것이 남았다 */
@@ -294,12 +327,15 @@ export function applyWish(r: Realm, o: Extract<Order, { kind: 'wish' }>, lines: 
   const pay = wishPayout(r, o.faction, w)!
   for (const [g, n] of Object.entries(w.goods) as Array<[Good, number]>) addGood(r, o.faction, g, -n)
   delete r.marketWish![o.faction]
-  if (pay.kind === 'hero') {
+  if (pay.kind === 'hero' || pay.kind === 'famed') {
     const who = HERO_POOL.find((h) => h.id === pay.id)!
     ;(r.poolUsed ??= []).push(who.id)
     // 상단이 소개한 이 — 값 없이 들일 수 있다 (상단이 선 고을에 · 보통 떠돌이처럼 머물다 떠난다)
     ;(r.wanderers ??= []).push({ hero: structuredClone(who), node: m.at, until: r.season + seasons(r, P.realm.wandererStay), price: 0 })
-    lines.push({ kind: 'wish', faction: o.faction, reward: 'hero', who: who.id })
+    lines.push({ kind: 'wish', faction: o.faction, reward: pay.kind, who: who.id })
+    // 왕의 주문 — 먼 나라 소문까지 함께
+    const extra = w.grade === 3 ? unknownNations(r, o.faction)[0] : undefined
+    if (extra !== undefined) { discover(r, o.faction, extra, 'market', lines); lines.push({ kind: 'wish', faction: o.faction, reward: 'news', who: extra }) }
     return
   }
   discover(r, o.faction, pay.id, 'market', lines)

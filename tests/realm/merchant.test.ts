@@ -9,7 +9,8 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
-import { marketOf, sellLimit, wishReady } from '../../src/realm/merchant.ts'
+import { marketOf, sellLimit, wishGrade, wishReady } from '../../src/realm/merchant.ts'
+import { realmScale } from '../../src/realm/scale.ts'
 import { goodOf } from '../../src/realm/economy.ts'
 import { knownOf } from '../../src/realm/discovery.ts'
 import { advance } from '../../src/realm/season.ts'
@@ -144,5 +145,18 @@ describe('상단의 주문 — 갚을 것이 바닥나면 (sim-lens 11-04)', () 
     } else {
       assert.equal(report.lines.filter((l) => l.kind === 'wish').length, 1)
     }
+  })
+  it('나라의 그릇이 커지면 주문도 커진다 — 작은·큰·왕의 주문 (위원회 11-08)', () => {
+    const r = byeonhanMini(1)
+    assert.ok(realmScale(r, r.player) >= 1 && realmScale(r, r.player) < P.realm.wishBigAt, '처음엔 1 남짓')
+    assert.equal(wishGrade(r, r.player), 1, '처음엔 작은 주문')
+    const mine = Object.values(r.nodes).filter((n) => n.owner === r.player)
+    const grow = (hh: number): void => { for (const n of mine) n.hh = hh / mine.length }
+    grow(P.realm.scaleRefHH * Math.pow(P.realm.wishBigAt, 1 / P.realm.scaleExp) * 1.05)
+    assert.equal(wishGrade(r, r.player), 2, '그릇이 wishBigAt 을 넘으면 큰 주문')
+    grow(P.realm.scaleRefHH * Math.pow(P.realm.wishRoyalAt, 1 / P.realm.scaleExp) * 1.05)
+    assert.equal(wishGrade(r, r.player), 3, '그릇이 wishRoyalAt 을 넘으면 왕의 주문')
+    grow(1e9)
+    assert.equal(realmScale(r, r.player), P.realm.scaleMax, '위 끝')
   })
 })
