@@ -60,6 +60,7 @@ import { TOWN_CSS, townCheer, townVeilHtml, townViewHtml, type TownSlot } from '
 import { TOWN_GROUND, townSprite } from '../../realm/data/town-art.ts'
 import { RISE_CSS, riseGraphHtml } from './risegraph.ts'
 import { BOOK_CSS, bookHtml, bookSwipe, bookTurn, shelfHtml, type Book } from './bookshelf.ts'
+import { CROWN_CSS, crownRowHtml, flyCrowns, newCrowns } from './crowns.ts'
 import { DEX_CSS, clanHeroes, dexHtml, dexToastHtml, loadDex, recordDex, toggleDexAwake, type DexBoard } from './dex.ts'
 import { DEX_SERVED, dexCatalog } from '../../realm/dex.ts'
 import { DRILL_CSS, drillLevel, engraveRun, hasDrill, loadDrill, raiseHero, yardHtml, yardStripHtml, type DrillKit } from './drill.ts'
@@ -673,7 +674,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS.replaceAll('__ART__', ART) + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + VOLUME_CSS + MEM_CSS + ASCEND_CSS.replaceAll('__ART__', ART) + HILITE_CSS + TOWN_CSS.replaceAll('__ART__', ART) + RISE_CSS + BOOK_CSS
+  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS.replaceAll('__ART__', ART) + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + VOLUME_CSS + MEM_CSS + ASCEND_CSS.replaceAll('__ART__', ART) + HILITE_CSS + TOWN_CSS.replaceAll('__ART__', ART) + RISE_CSS + BOOK_CSS + CROWN_CSS
   document.head.appendChild(style)
   root.classList.add('ap')
   // 그래픽 단계 저사양 · 보통 · 고사양 (quality.ts · 형 10-29: 폰 절전 모드에서 그림이 다 깨졌다)
@@ -858,6 +859,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function pinChime(): void {
     P.realm.pinChimeRates.forEach((rate, i) => window.setTimeout(() => ding(snd('tap_bell'), P.realm.pinChimeVol, rate), i * P.realm.pinChimeGapMs))
   }
+  /** 이번 계절에 새로 쥔 도읍 — 다음 그림에서 왕관이 날아간다 (crowns.ts) */
+  let crownQueue: string[] = []
   /** 나의 역사에서 펼친 책 (그 판의 시드) */
   let bookSeed: number | null = null
   /** 마을 안 (TOWN.md) — 열린 고을 · 처음 그리면 밝아지며 */
@@ -6985,8 +6988,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     $('.layers').innerHTML = layersOpen ? layersHtml() : ''
     // 답할 청이 남았으면 깃발 줄 끝에 사신 알림 — 누르면 외교 판
     const waiting = openAsks(realm, me()).filter((a) => answers[a.id] === undefined).length
-    morph($('.legend'), legendHtml(r) + (waiting > 0 ? `<button class="askpill" data-act="tab" data-tab="diplo">${icon('good-tribute-bell')}사신 ${waiting}</button>` : ''))
+    // 결승선 왕관 줄 — 깃발 줄 맨 앞 (위원회 11-08 · crowns.ts) · 이번 계절에 쥔 도읍이 있으면 그 고을에서 왕관이 날아와 박힌다
+    morph($('.legend'), crownRowHtml(r, me(), ART) + legendHtml(r) + (waiting > 0 ? `<button class="askpill" data-act="tab" data-tab="diplo">${icon('good-tribute-bell')}사신 ${waiting}</button>` : ''))
     $('.next').innerHTML = `${nextPreview(r)}다음 ${turnWord(r)} <span>›</span>`
+    if (crownQueue.length > 0) { const q = crownQueue; crownQueue = []; setTimeout(() => flyCrowns(root, q, ART), P.realm.crownFlyDelayMs) }
     scheduleWinAhead(r)
     morph($('.todo'), todoHtml(r))
     morph($('.goalb'), goalBandHtml(r, esc, goalFolded()) + contestHtml(r)) // 캠페인의 장이면 이 장의 목표 — 접을 수 있다
@@ -7182,6 +7187,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     engraveNow(res.next) // 판이 끝났다 — 이기든 지든 장수마다 공을 판 밖 단련 공으로 (drill.ts)
     backToast(backNotes(prev, res.next, mine))
     nearWinToast(prev, res.next)
+    crownQueue = newCrowns(prev, res.next, me())
     diploToast(prev, res.next)
     queueAscend(res.next, res.report.lines)
     if (isSeasonStart(res.next)) seasonFx(res.next) // 계절이 바뀔 때만 (달 시계면 계절의 첫 달)

@@ -29,6 +29,7 @@ import { inkOn, kitVars, nationKit } from './kitcolor.ts'
 import { worldMapFallback, worldMapUrl } from './worldmap.ts'
 import { WORKS, worksOf } from '../../realm/works.ts'
 import { marketOf } from '../../realm/merchant.ts'
+import { crownTargets } from './crowns.ts'
 
 /** 미리 받아 둔 다음 계절 지도 그림 — 붙잡아 두어야 브라우저가 풀어 둔 그림을 버리지 않는다 */
 const warm = new Map<string, HTMLImageElement>()
@@ -930,6 +931,8 @@ export function mapHtml(
   const lord = rulerOf(r, me)
   if (capOf != null && lord !== null) govOf.set(capOf, lord)
   const lordAway = capOf != null && lord !== null && postHero(r, capOf)?.id !== lord.id
+  // 결승선 — 이기는 데 남은 도읍마다 왕관이 떠 있다 (위원회 11-08 loop L4 · 정복이 반을 넘으면)
+  const crowns = crownTargets(r, me)
   for (const n of Object.values(r.nodes).sort((x, y) => (x.id < y.id ? -1 : 1))) {
     if (!seen(n.id)) continue
     const p = pos(n.id)
@@ -1032,7 +1035,7 @@ export function mapHtml(
     // 주인 없이 사람만 사는 고을 — 군대가 닿으면 철광·포구는 쌓인 것을 거두고(편입은 개척단 · 형 11-05) 그 밖은 싸움 없이 우리 땅 (season.walkIn · 형 10-31: "문명6 촌락처럼")
     const freeTake = owner === null && n.kind !== 'wild' && n.kind !== 'sodo' && n.hh > 0 && !Object.values(r.armies).some((a) => a.at === n.id && a.march === null)
       ? `<span class="frtb" title="주인 없는 터: 군사가 닿으면 쌓인 것을 거두고, 머무는 동안 달마다 거둡니다 · 우리 땅으로는 개척단">${nodeSpecials(r, n.id).slice(0, 2).map((g) => `<i class="frtp"><img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}"></i>`).join('')}<i class="frts"><img src="${art}icon/unit-spear.png" alt=""></i></span>` : ''
-    nodes += `${holy}<span class="base"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${holyFront}<span class="ring"></span>${selected === n.id ? GEM : ''}${sct}${taken.has(n.id) ? `<img class="burnsm won" src="${art}fx/smoke.png" alt=""><span class="plant"><i class="pole"></i><i class="cloth" style="--fc:${FACTION_ART[me]?.color ?? '#c9a45a'}"><img src="${art}icon/${FACTION_ART[me]?.emblem ?? 'emblem-shell'}.png" alt=""></i></span><i class="wonring"></i><span class="wonchip">점령</span>` : burning.has(n.id) ? `<img class="burnsm" src="${art}fx/smoke.png" alt=""><img class="burnfx" src="${art}fx/fire.png" alt="">` : lived ? '<i class="smk"></i>' : ''}${held.has(n.id) ? '<span class="heldchip">🛡 지켜 냈다</span>' : ''}${hauled.has(n.id) ? `<span class="haulchip">${(Object.entries(hauled.get(n.id)!) as Array<[Good, number]>).map(([g, v]) => `<b>+${v}</b><img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}">`).join('')}</span>` : ''}${mist}${ice}${gface}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${poisedAt.has(n.id) ? '<span class="strk"><i>⚔</i>다음 달 친다</span>' : ''}${tg !== undefined ? (tg.chip !== '' ? `<span class="tchip">${tg.chip}</span>` : '') : settleable.has(n.id) ? (settling.has(n.id) ? '' : '<span class="stl">개척단 필요</span>') : freeTake !== '' ? freeTake : crowd}</div>`
+    nodes += `${crowns.has(n.id) ? `<i class="crownm"><img src="${art}icon/crown-gold.png" alt=""></i>` : ''}${holy}<span class="base"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${holyFront}<span class="ring"></span>${selected === n.id ? GEM : ''}${sct}${taken.has(n.id) ? `<img class="burnsm won" src="${art}fx/smoke.png" alt=""><span class="plant"><i class="pole"></i><i class="cloth" style="--fc:${FACTION_ART[me]?.color ?? '#c9a45a'}"><img src="${art}icon/${FACTION_ART[me]?.emblem ?? 'emblem-shell'}.png" alt=""></i></span><i class="wonring"></i><span class="wonchip">점령</span>` : burning.has(n.id) ? `<img class="burnsm" src="${art}fx/smoke.png" alt=""><img class="burnfx" src="${art}fx/fire.png" alt="">` : lived ? '<i class="smk"></i>' : ''}${held.has(n.id) ? '<span class="heldchip">🛡 지켜 냈다</span>' : ''}${hauled.has(n.id) ? `<span class="haulchip">${(Object.entries(hauled.get(n.id)!) as Array<[Good, number]>).map(([g, v]) => `<b>+${v}</b><img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}">`).join('')}</span>` : ''}${mist}${ice}${gface}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${poisedAt.has(n.id) ? '<span class="strk"><i>⚔</i>다음 달 친다</span>' : ''}${tg !== undefined ? (tg.chip !== '' ? `<span class="tchip">${tg.chip}</span>` : '') : settleable.has(n.id) ? (settling.has(n.id) ? '' : '<span class="stl">개척단 필요</span>') : freeTake !== '' ? freeTake : crowd}</div>`
   }
   // 우리 군대의 말 — 고을 밑에 나란히. 누르면 고르고, 갈 곳이 지도에 밝아진다
   const byNode = new Map<string, MapToken[]>()
