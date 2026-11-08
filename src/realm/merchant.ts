@@ -271,7 +271,7 @@ export function wishGrade(r: Realm, faction: string): 1 | 2 | 3 {
 export const WISH_GRADE_NAME = ['', '작은 주문', '큰 주문', '왕의 주문'] as const
 
 /** 남은 장수 가운데 가장 이름난 이 — 다섯 재주의 합이 가장 큰 (같으면 id 순) */
-function famedOf(r: Realm): string | undefined {
+export function famedOf(r: Realm): string | undefined {
   const free = new Set(freePool(r))
   const xs = HERO_POOL.filter((h) => free.has(h.id)).map((h) => ({ id: h.id, v: h.mu + h.tong + h.ryak + h.chi + h.deok }))
   xs.sort((a, b) => b.v - a.v || (a.id < b.id ? -1 : 1))

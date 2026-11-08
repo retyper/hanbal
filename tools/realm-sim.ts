@@ -121,6 +121,15 @@ interface Run {
   coalOff: number
   offAfter: number
   lostAfter: number
+  /** 곳간을 부을 곳 (wonders.ts · 위원회 11-08 ⑦) — 마지막 20계절에 큰 공사·큰 잔치로 부은 곡식(돌려받은 것 빼고) · 판 끝 곳간 · 우리가 지은 공사 · 남이 지은 공사 · 잔치 수 · 이름난 손님 */
+  sinkLate: number
+  grainEnd: number
+  ironEnd: number
+  wonders: number
+  wondersAi: number
+  feasts: number
+  guests: number
+  firstWonder: number
 }
 
 function play(bot: Brain, as: string, seed: number): Run {
@@ -128,7 +137,8 @@ function play(bot: Brain, as: string, seed: number): Run {
   applyTier(r, TIER) // 난세 단계 (--tier 3)
   const own = (x: Realm): number => Object.values(x.nodes).filter((n) => n.owner === as).length
   const lead = Object.values(r.heroes).filter((h) => h.faction === as).sort((a, b) => (a.id < b.id ? -1 : 1))[0]?.id
-  const run: Run = { bot, as, seed, start: own(r), nodes: 0, nodesEarly: -1, win: false, lose: false, battles: 0, wins: 0, captured: 0, lostHero: false, settled: 0, wildHeld: 0, ambush: 0, ambushOk: 0, rites: 0, worldAmbush: 0, asks: 0, pacts: 0, fieldFights: 0, plots: 0, plotsOk: 0, plotsAtUs: 0, worldPlots: 0, heroes: 0, persuaded: 0, hired: 0, allies: 0, pledgeKept: 0, pledgeBroken: 0, gifts: 0, arms: 0, lent: 0, hh: 0, offensives: 0, warned: 0, byMonth: [0, 0, 0], worldBattles: 0, scatters: 0, wipes: 0, rests: 0, losePath: '', refought: 0, refoughtWave: 0, refoughtSame: 0, refoughtLate: 0, refoughtUs: 0, refoughtAny: 0, coal: 0, coalFirst: -1, coalSize: 0, coalEnds: {}, coalOff: 0, offAfter: 0, lostAfter: 0 }
+  const run: Run = { bot, as, seed, start: own(r), nodes: 0, nodesEarly: -1, win: false, lose: false, battles: 0, wins: 0, captured: 0, lostHero: false, settled: 0, wildHeld: 0, ambush: 0, ambushOk: 0, rites: 0, worldAmbush: 0, asks: 0, pacts: 0, fieldFights: 0, plots: 0, plotsOk: 0, plotsAtUs: 0, worldPlots: 0, heroes: 0, persuaded: 0, hired: 0, allies: 0, pledgeKept: 0, pledgeBroken: 0, gifts: 0, arms: 0, lent: 0, hh: 0, offensives: 0, warned: 0, byMonth: [0, 0, 0], worldBattles: 0, scatters: 0, wipes: 0, rests: 0, losePath: '', refought: 0, refoughtWave: 0, refoughtSame: 0, refoughtLate: 0, refoughtUs: 0, refoughtAny: 0, coal: 0, coalFirst: -1, coalSize: 0, coalEnds: {}, coalOff: 0, offAfter: 0, lostAfter: 0, sinkLate: 0, grainEnd: 0, ironEnd: 0, wonders: 0, wondersAi: 0, feasts: 0, guests: 0, firstWonder: -1 }
+  const sinkBy: number[] = []
   // 계절 수로 돌린다 — 달 시계 판이면 계절마다 석 턴 (calendar.perSeason)
   const per = perSeason(r)
   // 우리 싸움의 고을 → 그 턴 · 친 나라 · 지킨 나라 (다시 싸운 고을)
@@ -141,6 +151,9 @@ function play(bot: Brain, as: string, seed: number): Run {
     const { next, report } = advance(r, orders)
     for (const l of report.lines) {
       if (l.kind === 'settle' && l.faction === as) run.settled++
+      if (l.kind === 'wonder' && l.faction === as && (l.ev === 'pour' || l.ev === 'beaten')) { const k = Math.floor(s / per); sinkBy[k] = (sinkBy[k] ?? 0) + (l.ev === 'pour' ? (l.grain ?? 0) : -(l.grain ?? 0)) }
+      if (l.kind === 'feast' && l.faction === as) { const k = Math.floor(s / per); sinkBy[k] = (sinkBy[k] ?? 0) + l.grain; run.feasts++; if (l.got === 'guest') run.guests++ }
+      if (l.kind === 'wonder' && l.ev === 'done') { if (l.faction === as) { run.wonders++; if (run.firstWonder < 0) run.firstWonder = Math.floor(s / per) } else run.wondersAi++ }
       if (l.kind === 'rite' && l.faction === as) run.rites++
       if (l.kind === 'recruit' && l.faction === as) l.how === 'persuade' ? run.persuaded++ : run.hired++
       if (l.kind === 'ask' && l.ask.to === as) run.asks++
@@ -216,6 +229,12 @@ function play(bot: Brain, as: string, seed: number): Run {
     }
     r = next
     if (r.outcome !== null) break
+  }
+  {
+    const last = Math.ceil(r.season / per)
+    for (let k = Math.max(0, last - 20); k <= last; k++) run.sinkLate += sinkBy[k] ?? 0
+    run.grainEnd = Math.round(r.stock[as]?.grain ?? 0)
+    run.ironEnd = Math.round(r.stock[as]?.iron ?? 0)
   }
   if (run.nodesEarly < 0) run.nodesEarly = own(r) // EARLY 전에 판이 끝났다
   run.nodes = own(r)
@@ -322,4 +341,17 @@ if (OUT !== '') {
   const body = runs.map((x) => [x.as, x.bot, x.seed, x.nodesEarly, x.nodes, x.win ? 1 : 0, x.lose ? 1 : 0, x.battles, x.wins, x.captured, x.lostHero ? 1 : 0].join(','))
   writeFileSync(OUT, [head, ...body].join('\n') + '\n')
   console.log(`\n→ ${OUT}`)
+}
+
+// 곳간을 부을 곳 (wonders.ts · 위원회 11-08 ⑦) — 마지막 20계절에 큰 공사·큰 잔치로 부은 곡식 · 판 끝 곳간 · 부은 몫 = 부은 것 ÷ (부은 것 + 판 끝 곳간) ·
+// 우리가 지은 공사/판 · 남이 지은 공사/판 · 첫 공사(중간 계절) · 잔치/판 · 이름난 손님/판 · 판 끝 철
+console.log(`\n나라    봇          뒤20 부은 곡식  판 끝 곳간  부은 몫   우리 공사  남 공사  첫 공사  잔치/판  손님/판  판 끝 철`)
+for (const as of AS) {
+  for (const bot of BOTS) {
+    const rs = runs.filter((x) => x.bot === bot && x.as === as)
+    const sink = mean(rs.map((x) => x.sinkLate))
+    const end = mean(rs.map((x) => x.grainEnd))
+    const fw = rs.map((x) => x.firstWonder).filter((v) => v >= 0).sort((a, b) => a - b)
+    console.log(`${as.padEnd(7)} ${bot.padEnd(9)} ${sink.toFixed(0).padStart(13)}  ${end.toFixed(0).padStart(10)}  ${pct(sink + end > 0 ? sink / (sink + end) : 0).padStart(7)}  ${mean(rs.map((x) => x.wonders)).toFixed(2).padStart(8)}  ${mean(rs.map((x) => x.wondersAi)).toFixed(2).padStart(6)}  ${(fw.length === 0 ? '-' : String(fw[Math.floor(fw.length / 2)])).padStart(6)}  ${mean(rs.map((x) => x.feasts)).toFixed(2).padStart(6)}  ${mean(rs.map((x) => x.guests)).toFixed(2).padStart(6)}  ${mean(rs.map((x) => x.ironEnd)).toFixed(0).padStart(8)}`)
+  }
 }

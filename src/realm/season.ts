@@ -40,6 +40,7 @@ import { scoutCap, watchBorders } from './scouts.ts'
 import { stepSuzerain, suzerainEnd } from './suzerain.ts'
 import { pathsEnd, stepPaths } from './paths.ts'
 import { stepCoalition } from './coalition.ts'
+import { applyFeast, applyWonder, stepWonders, wonderFort, wonderMorale } from './wonders.ts'
 import { sendExpeditions, stepExpeditions } from './expedition.ts'
 import { goalReach, goalSteps } from './goal.ts'
 import { resolveCard, stepCards } from './events.ts'
@@ -227,6 +228,7 @@ export function fortMul(node: RNode, season: SeasonOfYear): number {
   if (node.tags.includes('high')) t *= R.fortHigh
   if (node.tags.includes('moat') && season !== 'winter') t *= R.fortMoat
   if (node.tags.includes('earthwall')) t *= R.fortEarth // 달벌 흙성 (다벌 — data/customs.ts)
+  t *= wonderFort(node) // 고인돌 큰 무덤이 선 고을 (wonders.ts)
   return t
 }
 
@@ -765,6 +767,8 @@ function applyArmyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]
     else if (o.kind === 'build') applyBuild(r, o, lines)
     else if (o.kind === 'work') applyWork(r, o, lines)
     else if (o.kind === 'clearLot') applyClearLot(r, o, lines)
+    else if (o.kind === 'wonder') applyWonder(r, o, lines)
+    else if (o.kind === 'feast') applyFeast(r, o, lines)
     else if (o.kind === 'buy') applyBuy(r, o, lines)
     else if (o.kind === 'sell') applySell(r, o, lines)
     else if (o.kind === 'scale') applyScale(r, o, lines)
@@ -1068,14 +1072,16 @@ export function sideOf(
   const terrain: Terrain = { ...(o.terrain ?? {}), ...(o.water && boats ? { ram: true } : {}), ...(o.flank ? { height: true } : {}) }
   // 쉬움(촌장) — 판 내내 우리 쪽이 세다 (형 10-26: "촌장급은 진짜 뭘 해도 승리할 정도로")
   const easy = (r.tier ?? 1) < 1 && r.region !== 'tutorial' && r.factions[faction]?.mind === 'player'
-  const mb = (o.moraleBonus ?? 0) + (easy ? P.realm.easyMorale : 0)
+  // 소도 큰 제단 — 그 공사를 쥔 나라는 모든 싸움에서 사기가 높다 (wonders.ts)
+  const altar = wonderMorale(r, faction)
+  const mb = (o.moraleBonus ?? 0) + (easy ? P.realm.easyMorale : 0) + altar
   // 말머리 뿔잔 — 지닌 장수가 있는 쪽은 호궤 곡식이 덜 든다 (relics.ts)
   const feast = Math.max(1, Math.round(feastCost(n) * Math.min(1, ...hs.map((x) => relicMul(x, 'feast')))))
   return {
     F: easy ? F * P.realm.easyPower : F, mix: f.mix, morale: f.morale, hero: h === null ? null : asSide(h),
     ...(hs.length > 1 ? { aides: hs.slice(1).map(asSide) } : {}),
     hungry: hungryOf(armies), specials, terrain, water: o.water, player: r.factions[faction]?.mind === 'player', seen: o.seen,
-    ...(o.moraleBonus !== undefined || easy ? { moraleBonus: mb } : {}),
+    ...(o.moraleBonus !== undefined || easy || altar > 0 ? { moraleBonus: mb } : {}),
     ...((o.captureBonus ?? 0) + (easy ? P.realm.easyCapture : 0) > 0 ? { captureBonus: (o.captureBonus ?? 0) + (easy ? P.realm.easyCapture : 0) } : {}),
     ...(easy ? { easy: true } : {}),
     // 배우는 판 — 우리 쪽 사로잡기는 반드시 되고, 상대는 우리 장수를 잡지 않는다 (형: "튜토리얼급이니 100% 성공하도록")
@@ -1936,6 +1942,7 @@ export function advance(
   stepBuilds(r, lines) // 9 — 다 지은 목책·해자가 선다
   stepWorks(r, lines) // 다 지은 고을 일터가 선다 (works.ts)
   stepClears(r, lines) // 다 닦은 터가 열린다 (works.ts · 터 닦기)
+  stepWonders(r, lines) // 큰 공사의 단이 오르고 · 다 지으면 선다 · 늦은 나라는 몫을 돌려받는다 (wonders.ts · 위원회 11-08 ⑦)
   stepMarket(r, lines) // 떠돌이 상단이 오고 간다 (merchant.ts)
   stepCustoms(r, lines) // 9 — 풍습의 걸음: 다시 일어남 · 쇠 실은 배 · 말 치는 들 · 거른 봄 제사 (hooks.ts)
   refreshSpies(r) // 9 — 첩자가 본다

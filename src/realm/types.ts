@@ -43,6 +43,8 @@ export interface RNode {
   readonly lots?: Readonly<Partial<Record<import('./works.ts').WorkWhat, number>>>
   /** 공사로 더 닦은 터 수 (works.lotCap 에 더한다 · 형 11-08: "자물쇠 걸어놨으면 열 수도 있다는 거 아님?") */
   readonly lotsOpen?: number
+  /** 다 지은 큰 공사 (wonders.ts) — 고을과 함께 넘어간다 · 그 고을을 쥔 나라가 힘을 갖는다. 옛 저장에는 없다 */
+  readonly wonder?: import('./wonders.ts').WonderId
   readonly kind: NodeKind
   readonly tags: readonly Tag[]
   /** 다스리는 세력 id. 무주지는 null */
@@ -980,6 +982,10 @@ export interface Realm {
   works?: Array<{ readonly faction: string; readonly node: string; readonly what: import('./works.ts').WorkWhat; readonly done: number; readonly lv?: number }>
   /** 닦는 중인 터 (works.ts · 터 닦기) */
   clears?: Array<{ readonly faction: string; readonly node: string; readonly done: number }>
+  /** 짓는 중인 큰 공사 (wonders.ts · 위원회 11-08 ⑦) — 나라마다 하나. 옛 저장에는 없다 */
+  wonderWorks?: import('./wonders.ts').WonderWork[]
+  /** 나라마다 마지막 큰 잔치를 연 턴 (wonders.ts). 옛 저장에는 없다 */
+  feastAt?: Record<string, number>
   /** 머무는 떠돌이 상단 — 나라마다 (merchant.ts) */
   markets?: Record<string, import('./merchant.ts').Market>
   /** 장터 저울을 이번 달 쓴 곡식 몫 — 나라마다 (merchant.scaleRoom) */
@@ -1127,6 +1133,9 @@ export type Order =
   | { readonly kind: 'build'; readonly faction: string; readonly node: string; readonly what: BuildWhat }
   /** 터 닦기 — 잠긴 터 하나를 연다 (works.ts) */
   | { readonly kind: 'clearLot'; readonly faction: string; readonly node: string }
+  /** 큰 공사에 한 단을 붓는다 (wonders.ts) · 큰 잔치를 연다 */
+  | { readonly kind: 'wonder'; readonly faction: string; readonly what: import('./wonders.ts').WonderId }
+  | { readonly kind: 'feast'; readonly faction: string }
   /** 고을 일터 짓기 (works.ts) */
   | { readonly kind: 'work'; readonly faction: string; readonly node: string; readonly what: import('./works.ts').WorkWhat }
   /** 상단에서 사기 · 팔기 (merchant.ts) */
@@ -1316,6 +1325,10 @@ export type ReportLine =
   | { readonly kind: 'build'; readonly faction: string; readonly node: string; readonly what: BuildWhat; readonly done: boolean }
   | { readonly kind: 'work'; readonly faction: string; readonly node: string; readonly what: import('./works.ts').WorkWhat; readonly done: boolean; readonly lv?: number }
   | { readonly kind: 'clearLot'; readonly faction: string; readonly node: string; readonly done: boolean }
+  /** 큰 공사 (wonders.ts) — pour 한 단을 부었다 · stage 한 단이 다 섰다 · done 다 지었다 · beaten 남이 먼저 지어 몫을 돌려받았다 · lost 고을을 잃어 무너졌다 */
+  | { readonly kind: 'wonder'; readonly faction: string; readonly what: import('./wonders.ts').WonderId; readonly node: string; readonly ev: 'pour' | 'stage' | 'done' | 'beaten' | 'lost'; readonly stage: number; readonly grain?: number; readonly by?: string }
+  /** 큰 잔치 (wonders.ts) — 부은 곡식 · 나온 갈래 · 온 장수나 나라 · 그 갈래의 확률 (판 기록에 실제 숫자) */
+  | { readonly kind: 'feast'; readonly faction: string; readonly grain: number; readonly got: import('./wonders.ts').FeastGot; readonly who?: string; readonly p: number }
   | { readonly kind: 'merchant'; readonly faction: string; readonly node: string; readonly come: boolean }
   | { readonly kind: 'buy'; readonly faction: string; readonly what: import('./merchant.ts').OfferWhat; readonly n: number; readonly price: number; readonly good?: Good; readonly unit?: import('./battle.ts').UnitKind }
   | { readonly kind: 'sell'; readonly faction: string; readonly good: Good; readonly n: number; readonly grain: number }

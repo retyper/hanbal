@@ -16,6 +16,7 @@ import { P } from '../tune/params.ts'
 import { wealthThreat } from './scale.ts'
 import { coalFocusOf, coalStriking, coalitionOf } from './coalition.ts'
 import { WORKS, canWork, targetLv, workCost, workOptions } from './works.ts'
+import { WONDER_ORDER, canWonder, feastBlocked, feastFloor, greatOpen, wonderStageCost, wonderWorkOf } from './wonders.ts'
 import { ageSeasons, isSeasonEnd, monthly, seasonIdx } from './calendar.ts'
 import {
   allyFoe, bigTwo, canEscort, envoyOptions, favorOf, friendly, jointTargets, lentStep, nationPower, openAsks, pledgedNodes, powerRange, relationOf, tradeOffer,
@@ -619,6 +620,30 @@ function builds(r: Realm, faction: string): Order[] {
 }
 
 /**
+ * 곳간을 부을 곳 (wonders.ts · 위원회 11-08 ⑦) — 짓던 큰 공사가 쉬고 있으면 다음 단을, 없으면 아직 안 선 것 하나를 시작한다.
+ * 군량 aiDraftReserve 계절치를 남기고 · 남의 나라는 한 단 값의 wonderAiSpare 배가 남아야 붓는다 (군사를 먼저 챙긴다).
+ * 플레이어 자리의 봇은 큰 잔치도 연다 (남의 나라는 열지 않는다 — 이름난 손님은 플레이어의 몫).
+ */
+function greatWorks(r: Realm, faction: string): Order[] {
+  if (!greatOpen(r, faction)) return []
+  const out: Order[] = []
+  const spare = stockOf(r, faction).grain - P.realm.aiDraftReserve * upkeepOf(r, faction, true)
+  const need = faction === r.player ? 1 : P.realm.wonderAiSpare
+  const w = wonderWorkOf(r, faction)
+  // 남의 나라는 제 이름으로 고른다 (같은 것에 다 몰리지 않게) · 플레이어 자리의 봇은 차례대로
+  const k = faction === r.player ? 0 : Math.floor(roll(r.seed, 0, `wonder-pick:${faction}`) * WONDER_ORDER.length)
+  const order = [...WONDER_ORDER.slice(k), ...WONDER_ORDER.slice(0, k)]
+  const what = w !== null ? w.what : order.find((x) => canWonder(r, faction, x))
+  if (what !== undefined && canWonder(r, faction, what) && wonderStageCost(r, faction, what).grain * need <= spare) out.push({ kind: 'wonder', faction, what })
+  if (faction === r.player) {
+    const left = spare - (out.length > 0 ? wonderStageCost(r, faction, what!).grain : 0)
+    const s = stockOf(r, faction).grain - (out.length > 0 ? wonderStageCost(r, faction, what!).grain : 0)
+    if (feastBlocked(r, faction) === null && Math.floor(s * P.realm.feastShare) >= feastFloor(r, faction) && Math.floor(s * P.realm.feastShare) <= left) out.push({ kind: 'feast', faction })
+  }
+  return out
+}
+
+/**
  * 곳간 열기 — 군량 여유가 aiCallSpare 를 넘으면 품이 가장 넉넉한 고을로 유민을 부른다 (위원회 11-04 림월드 ① · 쌓이기만 하던 곡식이 사람이 된다).
  * 짓기와 따로 — 짓기가 계절마다 하나라 늘 일터가 먼저 먹었다
  */
@@ -798,6 +823,8 @@ function decideNow(r: Realm, faction: string, brain: Brain): Order[] {
   const talk = brain === 'random' ? [] : [...answers(r, faction), ...(end ? [...breaks(r, faction), ...envoys(r, faction)] : [])]
   const bs = brain === 'random' || !end ? [] : builds(r, faction)
   const cs = brain === 'random' || brain === 'reckless' || !end ? [] : calls(upTo([...first, ...gs, ...bs]), faction)
+  // 곳간을 부을 곳 — 큰 공사·큰 잔치 (wonders.ts · 위원회 11-08 ⑦) · 짓기·곳간 열기 뒤의 곡식으로
+  const gw = brain === 'random' || !end ? [] : greatWorks(upTo([...first, ...gs, ...bs, ...cs]), faction)
   // 공작은 징병·개척·제사·경계로 곡식을 쓴 뒤의 창고로 셈한다 (판정도 그 뒤다 — 2단계)
   const ps = brain === 'random' || !end ? [] : plots(upTo([...first, ...gs]), faction, brain)
   const hs = brain === 'random' ? [] : heroCare(r, faction)
@@ -807,7 +834,7 @@ function decideNow(r: Realm, faction: string, brain: Brain): Order[] {
   // 출정은 aiMarchEvery 턴마다 정한다 — 달 시계에서 달마다 정하면 싸움의 박자가 세 배가 된다 (길은 달로 가도 군장은 계절마다 출정을 정한다)
   // 연달아 진 AI 나라는 몇 계절 새 출정을 쉰다 (달 시계 · rout.ts · FOCUS C)
   const go = aiMarchTurn(r, faction) && !beatenResting(r, faction)
-  return [...talk, ...first, ...gs, ...ps, ...bw, ...hs, ...as, ...bs, ...cs, ...lentMoves(r, faction), ...(!go ? [] : brain === 'planner' ? plan(r, faction) : moves(r, faction, brain))]
+  return [...talk, ...first, ...gs, ...ps, ...bw, ...hs, ...as, ...bs, ...cs, ...gw, ...lentMoves(r, faction), ...(!go ? [] : brain === 'planner' ? plan(r, faction) : moves(r, faction, brain))]
 }
 
 /**

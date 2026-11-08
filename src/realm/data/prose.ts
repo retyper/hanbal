@@ -13,6 +13,9 @@ import type { ConcealWhy } from '../season.ts'
 import { TRAIT } from './traits.ts'
 import { RELIC } from './relics.ts'
 import { WORKS } from '../works.ts'
+import { WONDERS, wonderEffect } from '../wonders.ts'
+import { knows } from '../discovery.ts'
+import { HERO_POOL } from './heroes-pool.ts'
 
 export const SEASON_NAME: Record<SeasonOfYear, string> = {
   spring: '봄', summer: '여름', autumn: '가을', winter: '겨울',
@@ -869,6 +872,29 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       return line.done
         ? (line.lv !== undefined ? `${node(line.node)}의 ${WORKS[line.what].name}, ${line.lv}단으로 올랐다. ${WORKS[line.what].does}.` : `${node(line.node)}에 ${josa(WORKS[line.what].name, '이', '가')} 섰다. ${WORKS[line.what].does}.`)
         : (line.lv !== undefined ? `${node(line.node)}의 ${WORKS[line.what].name}, ${line.lv}단으로 올리기 시작했다.` : `${node(line.node)}에 ${josa(WORKS[line.what].name, '을', '를')} 짓기 시작했다.`)
+    case 'wonder': {
+      // 큰 공사 (wonders.ts · 위원회 11-08 ⑦) — 우리 것은 단마다 · 남의 것은 다 지었을 때만 (아는 나라)
+      const wn = WONDERS[line.what].name
+      if (line.faction !== viewer) {
+        if (line.ev !== 'done' || !knows(after, viewer, line.faction)) return null
+        return `소문. ${josa(fname(line.faction), '이', '가')} ${node(line.node)}에 ${josa(wn, '을', '를')} 다 지었다. ${wonderEffect(line.what)}.`
+      }
+      switch (line.ev) {
+        case 'pour': return `${node(line.node)}의 ${wn}, ${line.stage}단째를 쌓기 시작했다. 곡식 ${line.grain ?? 0}섬을 부었다.`
+        case 'stage': return `${node(line.node)}의 ${wn}, ${line.stage}단이 섰다.`
+        case 'done': return `${node(line.node)}에 ${josa(wn, '이', '가')} 섰다! ${wonderEffect(line.what)}.`
+        case 'beaten': return `${josa(fname(line.by ?? ''), '이', '가')} ${josa(wn, '을', '를')} 먼저 지었다. 부은 곡식 가운데 ${line.grain ?? 0}섬을 돌려받았다.`
+        case 'lost': return `${josa(node(line.node), '을', '를')} 잃어 ${wn} 비계가 무너졌다.`
+      }
+      return null
+    }
+    case 'feast': {
+      if (line.faction !== viewer) return null
+      const odds = `(${Math.round(line.p * 100)}%)`
+      if (line.got === 'guest') return `큰 잔치에 곡식 ${line.grain}섬을 부었다. 이름난 ${josa((HERO_POOL.find((h) => h.id === line.who)?.name ?? '손님'), '이', '가')} 손님으로 왔다. 값 없이 들일 수 있다. ${odds}`
+      if (line.got === 'king') return `큰 잔치에 곡식 ${line.grain}섬을 부었다. ${fname(line.who ?? '')} 왕이 찾아와 사이가 가까워졌다. ${odds}`
+      return `큰 잔치에 곡식 ${line.grain}섬을 부었다. 군사의 사기가 오르고 장수들이 공을 쌓았다. ${odds}`
+    }
     case 'clearLot':
       if (line.faction !== viewer) return null
       return line.done ? `${node(line.node)}에 새 터를 닦았다. 일터를 하나 더 세울 수 있다.` : `${node(line.node)}에서 새 터를 닦기 시작했다.`

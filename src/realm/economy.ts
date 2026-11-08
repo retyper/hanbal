@@ -21,6 +21,7 @@ import { guardOptions } from './council.ts'
 import { relicSum } from './relics.ts'
 import type { Equip, UnitKind } from './battle.ts'
 import { TIERS, kitOf, lowestTier, nextTier, upgradeKind } from './kit.ts'
+import { wonderHarvestMul, wonderIronMul } from './wonders.ts'
 import type { Army, BuildWhat, Good, Goods, Order, ReportLine, Realm, RNode, SeasonOfYear, Stock } from './types.ts'
 import { bestWorkLv, canClear, canWork, clearCost, cutMul, lotCap, lvOf, targetLv, withWork, workCost, workMulAt, worksOf } from './works.ts'
 
@@ -240,6 +241,8 @@ export function nodeYield(r: Realm, node: string, season = seasonOf(r)): Partial
   else if (lvOf(n, 'ranch') > 0) out.horse = Math.round(R.horsePerPasture * w * R.ranchPlainShare)
   // 일터 — 그 고을 특산 곱 (works.ts · 소금밭·쇠부리터·목수 마을·말 목장)
   for (const g of ['salt', 'iron', 'wood', 'horse'] as const) if (out[g] !== undefined) out[g] = Math.round(out[g]! * workMulAt(r, node, g))
+  // 큰 쇠부리 가마 — 그 공사를 쥔 나라는 모든 고을의 쇠가 더 난다 (wonders.ts)
+  if (out.iron !== undefined && out.iron > 0) out.iron = Math.round(out.iron * wonderIronMul(r, n.owner))
   return out
 }
 
@@ -1156,7 +1159,7 @@ export function grainAtSeasonEnd(r: Realm, f: string): number {
     let sown = 0
     for (const n of nodes) sown += n.sown * fieldMul(r, n.id)
     const tm = tierMul(r.tier ?? 1)
-    const base = Math.round(sown * R.harvestPerHH * (f !== r.player ? tm.income : tm.ours) * harvestModOf(r, f))
+    const base = Math.round(sown * R.harvestPerHH * (f !== r.player ? tm.income : tm.ours) * harvestModOf(r, f) * wonderHarvestMul(r, f))
     g += base + (r.blessed?.[f] === yearOf(r) ? Math.round(base * R.riteHarvest * riteMul(r, f)) : 0)
   }
   return g - upkeepOf(r, f, sname === 'winter')
@@ -1189,7 +1192,7 @@ export function stepEconomy(r: Realm, season: number, fought: ReadonlySet<string
       for (const n of nodes) sown += n.sown * fieldMul(r, n.id)
       // 난세 단계 — 이웃 나라는 단계만큼 더 거둔다 (tier.ts) · 그해의 사건(가뭄·풍년·메뚜기 — events.ts)
       const tm = tierMul(r.tier ?? 1)
-      const base = Math.round(sown * R.harvestPerHH * (f !== r.player ? tm.income : tm.ours) * harvestModOf(r, f))
+      const base = Math.round(sown * R.harvestPerHH * (f !== r.player ? tm.income : tm.ours) * harvestModOf(r, f) * wonderHarvestMul(r, f))
       // 봄 제사를 지낸 해면 더 든다
       const blessed = r.blessed?.[f] === yearOf(r) ? Math.round(base * R.riteHarvest * riteMul(r, f)) : 0
       const grain = base + blessed
