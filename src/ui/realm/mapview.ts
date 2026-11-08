@@ -155,6 +155,9 @@ const ARROW = {
  * 글씨·기호 크기는 지도 높이(cqh)를 따른다.
  */
 export const MAP_CSS = `
+/* 화면 밖 — zoom.ts cull 이 단다 · 숨기고 움직임을 꺼 그래픽 층을 내준다 (형 11-08) */
+.map .cull { visibility: hidden !important; }
+.map .cull, .map .cull * { animation: none !important; }
 /* --aw: 출정 화살 굵기 — 지도 배율(--z)만큼 부풀지 않고 배율의 제곱근만큼만 (고을 그림·글씨와 같은 결 · 형 10-26: "가까이볼때 군사화살표가 너무 확대") */
 .map { --aw: calc(var(--zs, 1) / var(--z, 1)); position: relative; height: 100%; aspect-ratio: ${W} / ${H}; margin: 0 auto; background: #2a261f center / cover no-repeat;
   user-select: none; -webkit-user-select: none; container-type: size;

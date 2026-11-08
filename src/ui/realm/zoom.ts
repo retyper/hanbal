@@ -104,12 +104,46 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     const byDense: Zl = sp >= h(R.mapLodNearPx, 'near') ? 'near' : sp >= h(R.mapLodMidPx, 'mid') ? 'mid' : 'far'
     return ZL_RANK[byZoom] <= ZL_RANK[byDense] ? byZoom : byDense
   }
+
+  /**
+   * 화면 밖은 그리지 않는다 (형 11-08: "유저 화면에 보이는 것들만 확실하게 렌더링 · 카메라 벗어나는 것들은 덜 그리면서" · "맵 조금만 커지니까 마을 에셋들이 안 보이는 경우")
+   * 고을마다 멈추지 않는 움직임(연기·불·깃발·배)이 있어 화면 밖 것까지 그래픽 층을 차지했다 — 폰 그래픽 한도를 넘으면 일부가 통째로 안 그려진다.
+   * 보이는 칸에서 둘레로 mapCullPad 화면만큼까지만 두고, 그 밖은 .cull (숨김 + 움직임 끔). 미는 동안엔 mapCullMs 마다 한 번만 잰다.
+   */
+  const CULL_SEL = '.nd[data-node], .toks, .lb, .nnm, .fogc, .rumor'
+  let cullAt = -Infinity
+  function cull(force = false): void {
+    const now = performance.now()
+    if (!force && now - cullAt < P.realm.mapCullMs) return
+    cullAt = now
+    const m = map()
+    if (m === null) return
+    const mw = m.offsetWidth
+    const mh = m.offsetHeight
+    if (mw <= 0 || mh <= 0) return
+    const [ox, oy] = off()
+    const px = (wrap.clientWidth * P.realm.mapCullPad) / mw
+    const py = (wrap.clientHeight * P.realm.mapCullPad) / mh
+    const x0 = (wrap.scrollLeft - ox) / mw - px
+    const y0 = (wrap.scrollTop - oy) / mh - py
+    const x1 = x0 + wrap.clientWidth / mw + 2 * px
+    const y1 = y0 + wrap.clientHeight / mh + 2 * py
+    for (const el of m.querySelectorAll<HTMLElement>(CULL_SEL)) {
+      const x = parseFloat(el.style.left) / 100
+      const y = parseFloat(el.style.top) / 100
+      if (Number.isNaN(x) || Number.isNaN(y)) continue
+      const out = x < x0 || x > x1 || y < y0 || y > y1
+      if (el.classList.contains('cull') !== out) el.classList.toggle('cull', out)
+    }
+  }
+
   /** 단계만 다시 — 밀어서 보이는 고을이 바뀌었을 때 (배율은 그대로) */
   function retier(): void {
     const m = map()
     if (m === null) return
     const zl = tierOf(m)
     if (m.dataset['zl'] !== zl) { m.dataset['zl'] = zl; declutterSoon(wrap) }
+    cull(true)
   }
 
   function paintZ(): void {
@@ -127,6 +161,7 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     // (FOCUS G · 형: "이름표가 줌과 상관없이 고정 → 멀리서 이름표만 보임" · mapview MAP_CSS 의 data-zl 규칙)
     const zl = tierOf(m)
     if (m.dataset['zl'] !== zl) m.dataset['zl'] = zl
+    cull(true)
     declutterSoon(wrap) // 배율이 바뀌면 글씨가 말·숫자와 겹칠 수 있다 — 그린 뒤 비킨다
   }
 
@@ -188,6 +223,7 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
   // 미는 동안 — 「미는 중」 표시 (튜토리얼이 보고 흐르는 점선만 멈춘다). 예전엔 이걸로 고을 움직임 전부를 멈췄다 (형 10-25: "슬라이드 하다보면 마을들이 눈에 안보이는 버그") —
   // 그 까닭이던 메인 스레드 움직임(box-shadow·background-position)은 10-31 에 모두 GPU 움직임으로 바꿨다
   wrap.addEventListener('scroll', () => {
+    cull()
     wrap.classList.add('panning')
     window.clearTimeout(panT)
     panT = window.setTimeout(() => { wrap.classList.remove('panning'); retier() }, P.realm.mapPanRestMs) // 다 밀고 나면 보이는 고을 수로 단계를 다시
