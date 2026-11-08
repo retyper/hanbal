@@ -22,7 +22,7 @@ import { SEORA_NATIONS } from '../../realm/data/regions/seorabeol.ts'
 import { GUJI_NATIONS } from '../../realm/data/regions/gujibong.ts'
 import { DAEMUSIN_NATIONS } from '../../realm/data/regions/daemusin.ts'
 import { chapterOfRegion, chapterTag } from '../../realm/data/campaign.ts'
-import { knownOf, met } from '../../realm/discovery.ts'
+import { knownOf, knows, met } from '../../realm/discovery.ts'
 import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
 import { CARDS, cardFallback, cardInfo } from '../../realm/data/cards.ts'
 import { cardPreview, pirateMission, type CardFx } from '../../realm/events.ts'
@@ -61,6 +61,7 @@ import { TOWN_GROUND, townSprite } from '../../realm/data/town-art.ts'
 import { RISE_CSS, riseGraphHtml } from './risegraph.ts'
 import { BOOK_CSS, bookHtml, bookSwipe, bookTurn, shelfHtml, type Book } from './bookshelf.ts'
 import { CROWN_CSS, crownRowHtml, flyCrowns, newCrowns } from './crowns.ts'
+import { WONDER_CSS } from './wondermap.ts'
 import { LEAGUE_CSS, leagueChipHtml, leagueToastHtml } from './league.ts'
 import { DEX_CSS, clanHeroes, dexHtml, dexToastHtml, loadDex, recordDex, toggleDexAwake, type DexBoard } from './dex.ts'
 import { DEX_SERVED, dexCatalog } from '../../realm/dex.ts'
@@ -118,6 +119,7 @@ import { loadTip, tipHtml, tipReadMs } from './loadtips.ts'
 import { worldMapReady } from './worldmap.ts'
 import { loadBar } from './loadbar.ts'
 import { WORKS, clearBlocked, clearCost, lotCap, lvGain, lvOf, workBlocked, workCost, workEffect, workOptions, worksOf, type WorkWhat } from '../../realm/works.ts'
+import { WONDERS, WONDER_ORDER, canWonder, feastBlocked, feastNext, feastOdds, feastPour, greatOpen, rivalWonders, wonderBlocked, wonderEffect, wonderNode, wonderStageCost, wonderWorkOf, type FeastGot, type WonderId } from '../../realm/wonders.ts'
 import { postGain } from '../../realm/postgain.ts'
 import { hasScale, marketIn, marketOf, scaleBuyPrice, scaleLimit, scaleRoom, scaleSellPrice, sellCap, sellLimit, sellPrice, wishReady, WISH_GRADE_NAME, type Offer } from '../../realm/merchant.ts'
 import { QUALITY_CSS, gfxRowHtml, setGfxPref, startQuality } from './quality.ts'
@@ -675,7 +677,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS.replaceAll('__ART__', ART) + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + VOLUME_CSS + MEM_CSS + ASCEND_CSS.replaceAll('__ART__', ART) + HILITE_CSS + TOWN_CSS.replaceAll('__ART__', ART) + RISE_CSS + BOOK_CSS + CROWN_CSS + LEAGUE_CSS
+  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS.replaceAll('__ART__', ART) + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + VOLUME_CSS + MEM_CSS + ASCEND_CSS.replaceAll('__ART__', ART) + HILITE_CSS + TOWN_CSS.replaceAll('__ART__', ART) + RISE_CSS + BOOK_CSS + CROWN_CSS + LEAGUE_CSS + WONDER_CSS
   document.head.appendChild(style)
   root.classList.add('ap')
   // 그래픽 단계 저사양 · 보통 · 고사양 (quality.ts · 형 10-29: 폰 절전 모드에서 그림이 다 깨졌다)
@@ -1052,7 +1054,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const key = JSON.stringify([realm!.season, armyOrders, settles, heroOrders, musters, guards, guardAp, rite, plots, envoys])
     if (leftCache !== null && leftCache.key === key) return leftCache.st
     const p = planned(realm!, [
-      ...armyOrders, ...settles, ...musters.filter((o) => o.kind !== 'disband'),
+      // 큰 잔치는 굴림이 든 일이라 미리 해 보지 않는다 — 부을 곡식만 아래에서 뺀다 (결과가 먼저 보이지 않게)
+      ...armyOrders, ...settles, ...musters.filter((o) => o.kind !== 'disband' && o.kind !== 'feast'),
       ...guards.map(guardOrder),
       ...heroOrders.filter((o) => o.kind === 'hire' || o.kind === 'assign' || o.kind === 'lead'),
     ])
@@ -1063,6 +1066,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (rite) pay(riteCost(realm!, me()))
     for (const o of plots) if (o.kind === 'plot') pay(plotCost(o.op, o.agent ?? null))
     if (musters.some((o) => o.kind === 'bowUp')) pay(bowUpCost(realm!, me()))
+    if (musters.some((o) => o.kind === 'feast')) st.grain -= feastPour(p, me())
     for (const e of Object.values(envoys)) for (const g of GOODS) st[g] -= e.give[g] ?? 0
     // 원정 길 양식 — 계절을 넘길 때 징병·등용 뒤에 치른다. 여기서 안 빼면 「보낼 수 있다」고 해 놓고 말없이 빠진다 (형 10-24)
     for (const o of heroOrders) if (o.kind === 'expedition') st.grain -= P.realm.expGrainPer * EXP_SEASONS[o.len]
@@ -4846,6 +4850,62 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   // ───────── 나라
+  /**
+   * 곳간을 부을 곳 (wonders.ts · 위원회 11-08 ⑦) — 나라가 커지면 나라 판에 큰 공사 넷과 큰 잔치.
+   * 공사마다 그림 · 힘 칩 · 단 구슬(쌓은 만큼 금빛) · 짓는 동안은 그림에 비계 · 남이 지으면 그 나라 깃발과 단의 범위 · 다 서면 금빛 테.
+   * 단추는 눌린 채(금빛+✓) · 못 하면 까닭 (꾹 누르면) · 글은 짧게 (형: 글 많은 화면 싫다)
+   */
+  function greatHtml(r: Realm): string {
+    const mine = wonderWorkOf(r, me())
+    const built = WONDER_ORDER.some((w) => wonderNode(r, w) !== null)
+    if (!greatOpen(r, me()) && mine === null && !built) return ''
+    const p = leftPlan()
+    const stages = Math.round(P.realm.wonderStages)
+    const rivals = rivalWonders(r, me())
+    const pips = (n: number, go: boolean): string => `<i class="wpips">${Array.from({ length: stages }, (_, i) => `<u class="${i < n ? 'on' : i === n && go ? 'go' : ''}"></u>`).join('')}</i>`
+    let h = `<h3>${icon('treasure-silla-crown', 'wki')} 큰 공사</h3><div class="wgrid">`
+    for (const what of WONDER_ORDER) {
+      const d = WONDERS[what]
+      const at = wonderNode(r, what)
+      const queued = musters.some((o) => o.kind === 'wonder' && o.what === what)
+      const w = mine !== null && mine.what === what ? mine : null
+      const rv = rivals.filter((x) => x.what === what)
+      let cls = 'wcard'
+      let foot = ''
+      if (at !== null) {
+        // 다 섰다 — 우리 것이면 금빛 테 · 남의 것이면 그 나라 깃발
+        const ours = at.owner === me()
+        cls += ours ? ' ours' : ' theirs'
+        foot = ours ? `<span class="wdone">✓ ${esc(at.name)}</span>` : at.owner !== null && knows(r, me(), at.owner) ? `<span class="wby">${emblem(at.owner, 'wem')}${esc(r.factions[at.owner]?.name ?? '')}</span>` : `<span class="wby">먼 나라</span>`
+      } else {
+        const stage = w?.stage ?? 0
+        const busy = w?.busy !== undefined
+        if (w !== null) cls += ' building'
+        const c = wonderStageCost(r, me(), what)
+        const why = queued ? null : wonderBlocked(p, me(), what) ?? (canWonder(p, me(), what) ? null : shortOf({ grain: c.grain, [c.good]: c.n }))
+        const label = busy ? `쌓는 중 · ${turnsLabel(r, Math.max(1, (w!.busy ?? r.season) - r.season + 1))}` : w !== null ? `${stage + 1}단 쌓기` : '짓기 시작'
+        foot = pips(stage, busy || queued)
+          + (busy ? `<span class="wbusy">${label}</span>` : `<button class="btn${queued ? ' on' : ''}" data-act="wonder" data-what="${what}"${why === null ? '' : noBtn(why)}>${label}${costHtml({ grain: c.grain, [c.good]: c.n })}</button>`)
+        if (rv.length > 0) foot += `<span class="wgrv">${rv.map((x) => `<b data-tip="${esc(josa(r.factions[x.faction]?.name ?? '', '이', '가'))} 짓는 중 · ${x.lo}~${x.hi}단 쯤">${emblem(x.faction, 'wem')}${x.lo}~${x.hi}</b>`).join('')}</span>`
+      }
+      h += `<div class="${cls}"><div class="wpic">${icon(d.icon, 'wimg')}${w !== null && at === null ? `<img class="wscaf" src="${ART}town/build.png" alt="">` : ''}</div><b class="wname">${esc(d.name)}</b><span class="wgfx">${esc(wonderEffect(what))}</span>${foot}</div>`
+    }
+    h += '</div>'
+    // 큰 잔치 — 곳간의 몫을 붓고 굴림 하나 · 갈래마다 그림과 % (우리 것은 숫자 · ODDS.md)
+    if (greatOpen(r, me())) {
+      const queued = musters.some((o) => o.kind === 'feast')
+      const odds = feastOdds(r, me())
+      const pour = feastPour(r, me())
+      const why = queued ? null : r.season < feastNext(r, me()) ? `${turnsLabel(r, feastNext(r, me()) - r.season)} 뒤에 다시 열 수 있습니다` : feastBlocked(r, me())
+      const chip = (ic: string, pp: number, tip: string): string => pp <= 0 ? '' : `<b class="fodd" data-tip="${esc(tip)}">${icon(ic, 'cgi')}${Math.round(pp * 100)}%</b>`
+      h += `<h3>${icon('status-feast', 'wki')} 큰 잔치</h3><div class="wfeast${queued ? ' on' : ''}"><div class="fodds">`
+        + chip('unit-general', odds.guest, '이름난 장수가 손님으로 온다 (값 없이 들인다)')
+        + chip('good-tribute-bell', odds.king, `이웃 왕이 찾아온다 (그 나라 호감 +${P.realm.feastFavor})`)
+        + chip('unit-drummers', odds.joy, `좋은 잔치 (군대 사기 +${Math.round(P.realm.feastMorale * 100)} · 장수 공)`) + '</div>'
+        + `<button class="btn pri${queued ? ' on' : ''}" data-act="feast"${why === null ? "" : noBtn(why)}>잔치 연다${costHtml({ grain: pour })}</button></div>`
+    }
+    return h
+  }
   function nationSheet(r: Realm): string {
     const info = nationsOf(r.region ?? 'byeonhan-mini').find((x) => x.id === me())
     const mine = Object.values(r.nodes).filter((n) => n.owner === me())
@@ -4871,6 +4931,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<div>${icon('good-hemp')}<b>${Math.floor(mine.reduce((s, n) => s + n.hh, 0))}</b><span>집</span></div>`
     h += `<div>${icon('good-rice')}<b>${Math.floor(st.grain)}</b><span>곡식</span></div>`
     h += `<div>${icon('treasure-iron-ingots')}<b>${Math.floor(st.iron)}</b><span>철</span></div></div>`
+    h += greatHtml(r) // 곳간을 부을 곳 — 큰 공사·큰 잔치 (위원회 11-08 ⑦)
     const caps2 = Object.values(r.heroes).filter((x) => x.status === 'captive' && x.captor === me())
     if (caps2.length > 0) {
       h += `<h4>사로잡은 장수</h4><div class="caps">`
@@ -5017,6 +5078,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (!out.has('heroes') && wanderersFor(r, me()).length > 0) out.set('heroes', '데려올 수 있는 떠돌이 장수가 있다')
     // 개척 — 임자 없는 빈땅에 지금 개척단을 보낼 수 있으면 (우리 마을에 품이 남은 것은 빈땅이 아니다 · 형 10-29: "개척할 빈땅이 없는데 백성에 추천")
     if (settleRec(r) !== null) out.set('people', '개척할 빈땅이 있다')
+    // 곳간을 부을 곳 — 짓던 큰 공사의 다음 단을 쌓을 수 있거나 큰 잔치를 열 수 있으면 (wonders.ts · 위원회 11-08 ⑦)
+    const ww = wonderWorkOf(r, me())
+    if (!musters.some((o) => o.kind === 'wonder' || o.kind === 'feast') && ((ww !== null && canWonder(r, me(), ww.what)) || (greatOpen(r, me()) && feastBlocked(r, me()) === null))) out.set('nation', '큰 공사·큰 잔치에 곳간을 부을 수 있다')
     for (const k of [...out.keys()]) if (sheet?.kind === k) out.delete(k)
     return new Map([...out].slice(0, P.realm.recTabMax))
   }
@@ -7223,7 +7287,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   // ───────── 얻은 것 — 고을을 차지하거나 새 마을이 서면 크게 (형 11-01: "이로운 게 생기면 크고 확실하게 · 슈퍼마리오에도 있다")
   // 보고·장면·싸움이 다 걷혀 지도로 돌아온 그때 — 가운데에서 튀어 오르고 엽전 소리 · 위 띠의 그 생산품이 함께 뛴다. 스스로 걷힌다
-  interface Gain { readonly node: string; readonly how: 'take' | 'settle'; readonly n?: number }
+  interface Gain { readonly node: string; readonly how: 'take' | 'settle' | 'wonder' | 'feast'; readonly n?: number; readonly what?: WonderId; readonly got?: FeastGot; readonly who?: string; readonly p?: number }
   let gainPending = -1
   /**
    * 각성 연출은 싸움판·사로잡은 장면이 걷힌 뒤에 — 넘기는 순간 띄우면 실시간 전장 뒤에 깔려 아무도 못 봤다 (배우는 판 11-01).
@@ -7246,6 +7310,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (const l of rep.lines) {
       if (l.kind === 'take' && l.faction === me() && next.nodes[l.node]?.owner === me()) gains.push({ node: l.node, how: 'take' })
       else if (l.kind === 'settle' && l.faction === me() && next.nodes[l.to]?.owner === me()) gains.push({ node: l.to, how: 'settle', n: l.n })
+      // 곳간을 부을 곳 — 큰 공사가 섰다 · 큰 잔치의 굴림 (wonders.ts · 위원회 11-08 ⑦)
+      else if (l.kind === 'wonder' && l.ev === 'done' && l.faction === me()) gains.push({ node: l.node, how: 'wonder', what: l.what })
+      else if (l.kind === 'feast' && l.faction === me()) gains.push({ node: next.factions[me()]?.capital ?? '', how: 'feast', got: l.got, ...(l.who !== undefined ? { who: l.who } : {}), p: l.p })
     }
     if (gains.length === 0) return
     const season = next.season
@@ -7266,6 +7333,18 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const n = r.nodes[g.node]
       if (n === undefined) return ''
       const chip = (ic: string, t: string): string => `<b class="gnc" style="--k:${k++}">${icon(ic)}${t}</b>`
+      if (g.how === 'wonder' && g.what !== undefined) {
+        const d = WONDERS[g.what]
+        return `<div class="gnrow" style="--i:${i}"><img class="gnnd" src="${ART}icon/${d.icon}.png" alt=""><div><b class="gnt">${esc(d.name)}</b><small>${esc(n.name)}에 섰습니다</small><span class="gncs">${chip('treasure-silla-crown', wonderEffect(g.what))}</span></div></div>`
+      }
+      if (g.how === 'feast') {
+        // 굴림의 결과 — 나온 갈래 그림 · 그 갈래의 확률 (판 기록에 실제 숫자 · ODDS.md)
+        const pc = `${Math.round((g.p ?? 0) * 100)}%`
+        const got = g.got === 'guest' ? chip('unit-general', HERO_POOL.find((x) => x.id === g.who)?.name ?? '손님')
+          : g.got === 'king' ? chip('good-tribute-bell', `${r.factions[g.who ?? '']?.name ?? ''} 호감 +${P.realm.feastFavor}`)
+            : chip('unit-drummers', `사기 +${Math.round(P.realm.feastMorale * 100)}`)
+        return `<div class="gnrow" style="--i:${i}"><img class="gnnd" src="${ART}icon/status-feast.png" alt=""><div><b class="gnt">큰 잔치</b><small>${g.got === 'guest' ? '이름난 손님이 왔습니다' : g.got === 'king' ? '이웃 왕이 찾아왔습니다' : '좋은 잔치였습니다'} · ${pc}</small><span class="gncs">${got}</span></div></div>`
+      }
       const chips = [...(g.how === 'settle' && g.n !== undefined ? [chip('unit-porters', `+${g.n}가구`)] : []), ...nodeSpecials(r, g.node).map((x) => chip(GOOD_ICON[x], `+${GOOD_NAME[x]}`))]
       return `<div class="gnrow" style="--i:${i}"><img class="gnnd" src="${ART}icon/${nodeIcon(n)}.png" alt=""><div><b class="gnt">${esc(n.name)}</b><small>${g.how === 'take' ? '우리 땅이 되었습니다' : '새 마을이 섰습니다'}</small><span class="gncs">${chips.join('')}</span></div></div>`
     }).join('')
@@ -7282,7 +7361,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     buzz([20, 30, 20, 30, 50])
     for (let i = 0; i < Math.min(k, 4); i++) window.setTimeout(() => { if (el.isConnected) ding(snd('tap_coin'), 0.35, 1 + i * 0.12) }, P.realm.gainChipMs * (i + 1))
     // 위 띠의 그 생산품 칸이 함께 뛴다 — 무엇이 늘었는지 눈이 따라가게
-    const goods = new Set(gains.flatMap((g) => nodeSpecials(r, g.node)))
+    const goods = new Set(gains.filter((g) => g.how === 'take' || g.how === 'settle').flatMap((g) => nodeSpecials(r, g.node)))
     for (const s of root.querySelectorAll<HTMLElement>('.stat[data-g]')) if (goods.has(s.dataset['g'] as Good)) { s.classList.remove('gnpulse'); void s.offsetWidth; s.classList.add('gnpulse') }
     window.setTimeout(() => el.remove(), life)
   }
@@ -8511,6 +8590,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'market': openSheet({ kind: 'market' }); break
       case 'wish': musters = musters.some((o) => o.kind === 'wish') ? musters.filter((o) => o.kind !== 'wish') : [...musters, { kind: 'wish', faction: me() }]; break
+      // 큰 공사 한 단 · 큰 잔치 (wonders.ts) — 한 번에 하나 · 다시 누르면 거둔다
+      case 'wonder': {
+        const what = (d['what'] ?? '') as WonderId
+        const had = musters.some((o) => o.kind === 'wonder' && o.what === what)
+        musters = musters.filter((o) => o.kind !== 'wonder')
+        if (!had && WONDERS[what] !== undefined) musters = [...musters, { kind: 'wonder', faction: me(), what }]
+        break
+      }
+      case 'feast': musters = musters.some((o) => o.kind === 'feast') ? musters.filter((o) => o.kind !== 'feast') : [...musters, { kind: 'feast', faction: me() }]; break
       case 'scale': {
         const n = Number(d['n']); const g = d['good'] as Good
         if (n > 0) musters = [...musters, { kind: 'scale', faction: me(), good: g, n, buy: d['v'] === 'buy' }]

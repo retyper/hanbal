@@ -1008,6 +1008,39 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .wishg i { font-style: normal; letter-spacing: 1px; color: #8a7a5a; font-size: 11px; } .ap .wishg.ok i { color: #e8c15a; }
 .ap .wishp { margin-top: 6px; font-size: 13px; color: #ffe2a0; display: flex; align-items: center; gap: 4px; }
 .ap .wishc .wki, .ap h3 .wki { width: 26px; height: 26px; object-fit: contain; flex: none; }
+/* 곳간을 부을 곳 (wonders.ts · 위원회 11-08 ⑦) — 큰 공사 넷은 두 줄 격자 · 그림 위 비계 · 단 구슬 · 다 서면 금빛 테 · 큰 잔치는 갈래마다 그림과 % */
+.ap .wgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 4px 0 10px; }
+.ap .wcard { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 6px; border-radius: 12px; border: 1px solid #5a4630; background: #1f1810; text-align: center; min-width: 0; }
+.ap .wcard.building { border-color: #c9a45a; background: #261d12; }
+.ap .wcard.ours { border-color: #e8c15a; box-shadow: 0 0 0 1px #e8c15a55 inset, 0 0 12px #e8c15a44; background: #2c2212; }
+.ap .wcard.theirs { opacity: .62; filter: saturate(.6); }
+.ap .wcard .wpic { position: relative; width: 64px; height: 64px; }
+.ap .wcard .wimg { width: 64px; height: 64px; object-fit: contain; }
+.ap .wcard:not(.ours):not(.building) .wimg { filter: grayscale(.7) brightness(.8); }
+.ap .wcard .wscaf { position: absolute; inset: -4px; width: 72px; height: 72px; object-fit: contain; opacity: .85; pointer-events: none; }
+.ap .wcard .wname { font-size: 13.5px; color: #f3e6c8; line-height: 1.2; }
+.ap .wcard .wgfx { font-size: 12px; color: #9fd18b; }
+.ap .wcard .wpips { display: inline-flex; gap: 4px; margin: 2px 0; font-style: normal; }
+.ap .wcard .wpips u { width: 10px; height: 10px; border-radius: 50%; border: 1px solid #c9a45a99; background: #2a2016; text-decoration: none; }
+.ap .wcard .wpips u.on { background: #e8c15a; border-color: #ffe08a; box-shadow: 0 0 6px #e8c15a88; }
+.ap .wcard .wpips u.go { background: #6a5420; animation: wgpulse 1.2s ease-in-out infinite alternate; }
+@keyframes wgpulse { from { opacity: .45; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ap .wcard .wpips u.go { animation: none; } }
+.ap .wcard .btn { width: 100%; min-height: 40px; font-size: 13px; padding: 4px 6px; display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2px 4px; }
+.ap .wcard .btn .cost { display: inline-flex; flex-wrap: nowrap; gap: 2px; }
+.ap .wcard .btn .cost .cg { font-size: 12px; padding: 0 4px; }
+.ap .wcard .btn .cost .cgi { width: 16px; height: 16px; }
+.ap .wcard .wbusy { font-size: 12.5px; color: #ffe2a0; }
+.ap .wcard .wdone { font-size: 13px; color: #ffe08a; font-weight: 700; }
+.ap .wcard .wby, .ap .wcard .wgrv b { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; color: #f3e6c8; font-weight: 400; }
+.ap .wcard .wgrv { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
+.ap .wcard .wem { width: 18px; height: 18px; object-fit: contain; }
+.ap .wfeast { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 10px; padding: 8px 10px; border-radius: 12px; border: 1px dashed #c9a45a88; background: #221a12; }
+.ap .wfeast.on { border-style: solid; border-color: #e8c15a; box-shadow: 0 0 12px #e8c15a44; }
+.ap .wfeast .fodds { display: flex; gap: 8px; justify-content: space-around; }
+.ap .wfeast .fodd { display: inline-flex; align-items: center; gap: 4px; font-size: 16px; color: #ffe2a0; }
+.ap .wfeast .fodd .cgi { width: 30px; height: 30px; object-fit: contain; }
+.ap .wfeast .btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .ap .limwhy[aria-disabled="true"] { opacity: 1; cursor: pointer; }
 .ap .limwhy { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; margin-left: 4px; padding: 0; border-radius: 50%; border: 1px solid #c8503a99; background: #3a1410d0; vertical-align: middle; } .ap .limwhy .cgi { width: 18px; height: 18px; object-fit: contain; }
 .ap .hback { margin: 0 0 6px; }

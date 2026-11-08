@@ -101,6 +101,25 @@ if (kind === 'town') {
   st.grain = Math.max(st.grain, 400); st.wood = Math.max(st.wood ?? 0, 60); st.iron = Math.max(st.iron, 40); st.salt = Math.max(st.salt ?? 0, 40)
   console.log('town', cap)
 }
-const quiet = kind === 'captive' || kind === 'woo' || kind === 'woo0' || kind === 'pincer' || (kind === 'town' && process.env.TOWN !== 'done') // 보고 없이 판 위에서 연다
+// 곳간을 부을 곳 (wonders.ts · 위원회 11-08 ⑦) — 도읍을 키워 큰 공사가 열린 판: 우리가 솟대 숲 2단 · 구야가 큰 쇠부리 가마 짓는 중 · 고인돌 큰 무덤은 남이 다 지음 · 곳간 넉넉
+//   GREAT=done — 지난 달 솟대 숲이 섰고 큰 잔치에 손님이 왔다 (보고 줄 · 획득 팝)
+if (kind === 'great') {
+  const cap = next.factions[next.player]!.capital
+  next.nodes[cap]!.hh = 9000
+  const other2 = Object.keys(next.factions).filter((f) => f !== next.player)
+  const st = next.stock[next.player]!
+  st.grain = 30000; st.wood = 900; st.iron = 600
+  if (process.env.GREAT === 'done') {
+    next.nodes[cap] = { ...next.nodes[cap]!, wonder: 'sotdae' }
+    ;(report.lines as ReportLine[]).push({ kind: 'wonder', faction: next.player, what: 'sotdae', node: cap, ev: 'done', stage: 4 })
+    ;(report.lines as ReportLine[]).push({ kind: 'feast', faction: next.player, grain: 9000, got: 'guest', who: HERO_POOL[0]!.id, p: 0.35 })
+  } else next.wonderWorks = [{ faction: next.player, node: cap, what: 'sotdae', stage: process.env.GREAT === 'next' ? 3 : 2, ...(process.env.GREAT === 'next' ? { busy: next.season } : {}), poured: { grain: 4000, good: 100 } }] // GREAT=next — 이번 달 끝에 다 선다 (다음 달을 누르면 획득 팝)
+  if (next.known?.[next.player] !== undefined && !next.known[next.player]!.includes(other2[0]!)) next.known[next.player]!.push(other2[0]!) // 짓는 나라를 알아야 범위가 보인다
+  next.wonderWorks = [...(next.wonderWorks ?? []), { faction: other2[0]!, node: next.factions[other2[0]!]!.capital, what: 'furnace', stage: 1, busy: next.season + 1, poured: { grain: 900, good: 30 } }]
+  const o2 = next.factions[other2[1]!]!.capital
+  next.nodes[o2] = { ...next.nodes[o2]!, wonder: 'dolmen' }
+  console.log('great', cap)
+}
+const quiet = kind === 'captive' || kind === 'woo' || kind === 'woo0' || kind === 'pincer' || (kind === 'town' && process.env.TOWN !== 'done') || (kind === 'great' && process.env.GREAT !== 'done') // 보고 없이 판 위에서 연다
 writeFileSync(out, JSON.stringify({ v: 2, nation: process.env.NATION ?? 'us', seed, log: [], realm: next, before: quiet ? null : r0, report: quiet ? null : report }))
 console.log('ok', kind, g.name, w.name)
