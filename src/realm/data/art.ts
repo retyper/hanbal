@@ -473,7 +473,7 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   mount: { ar: 246 / 160, body: 0.968 },
   // 제 그림 (GEN_OWN) — 글 주문만으로 받은 장수 (docs/realm/GENERAL-SPRITES.md)
   jumong: { ar: 156 / 160, body: 0.961, bow: true }, // 11-03 20컷 다시 (걷기가 한 자세였다 · 우하단 칸은 비워 받음)
-  onjo: { ar: 152 / 160, body: 0.928 }, // 11-03 20컷 다시 (걷기가 한 자세였다 · 우하단 별표 칸은 따로 받아 끼움) // 첫 판은 불꽃 금관이라 버리고 쇠투구로 다시 (형 10-30: "금관은 왕의 것이지, 장수의 것이 아니야")
+  onjo: { ar: 157 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2)
   soseono: { ar: 156 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 전투 옷은 더 드러나게 (형 11-08)
   aryeong: { ar: 157 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 전투 옷은 더 드러나게 (형 11-08)
   haedal: { ar: 149 / 160, body: 0.900, bow: true }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 전투 옷은 더 드러나게 (형 11-08)
