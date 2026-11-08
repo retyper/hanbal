@@ -223,7 +223,18 @@ export const AWAKEN_ART: ReadonlySet<string> = new Set([
  */
 export const AWAKEN_LOOP_SQ: ReadonlySet<string> = new Set<string>(['w-95-michuhol-haebi'])
 /** 숨 쉬는 영상 파일 — public/realm 아래 */
+/**
+ * 숨 쉬는 영상 파일 — 이름 규칙 (형 11-08: "이름 규칙들은 니가 관리 편한대로"):
+ *   1차 각성  awaken-loop/<그림 id>.mp4   · 정사각 판 <id>.sq.mp4 · 둘째 판 <id>.2.mp4 · 셋째 <id>.3.mp4 …
+ *   2차 각성  awaken2-loop/<그림 id>.mp4  · 같은 규칙 (옛 .t2 꼬리는 걷었다)
+ * 판이 여럿이면 번갈아 돈다 — 한 판이 끝나면 다음 판으로 (형 11-08: "견지쇠비 2차랑 소서노 1차 루프들은 두 종류 다 나쁘지 않으니 두 개가 번갈아")
+ * 영상은 귀하다 — 다시 구워도 옛 판은 결격이 확실하지 않으면 버리지 않고 판을 하나 더 단다 (형 11-08)
+ */
 export const loopFile = (id: string): string => `awaken-loop/${id}${AWAKEN_LOOP_SQ.has(id) ? '.sq' : ''}.mp4`
+/** 1차 각성 영상의 판 수 (없으면 1) — 번갈아 돈다 */
+export const AWAKEN_TAKES: Readonly<Record<string, number>> = { 'l-L2-soseono': 2 }
+/** 1차 각성 영상의 모든 판 — 첫 판이 기본 */
+export const loopTakes = (id: string): string[] => [loopFile(id), ...Array.from({ length: Math.max(0, (AWAKEN_TAKES[id] ?? 1) - 1) }, (_, i) => `awaken-loop/${id}.${i + 2}.mp4`)]
 
 export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'w-69-jeoga-eomni', // 11-07 엄니 · fc094928 사용자 채택, 원본 프레임 경계 한계 기록
@@ -234,6 +245,11 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'w-01-silla-princess', // 11-07 고은 · 부채 든 손 교정본 · 기존 세로 영상 회수
   'w-19-buyeo-fur-princess', // 11-07 가온 · 수정꽃을 바라보며 호흡
   'w-66-saro-noeul', // 11-08 낮 노을 v2 · 시위를 늦췄다 다시 만작 · 쏘고 다시 거는 동작 (형: 넣어 · 화살은 쏘니 없어지는 게 맞다) · 완 v2 는 눈이 번갈아 감겨 뺐다 (형)
+  'l-L3-heo-hwangok', // 11-08 형이 모아 둔 판 (옛 -aw) · 허황옥
+  'l-L4-bari-gongju', // 11-08 형이 모아 둔 판 · 바리공주
+  'w-03-goguryeo-archer', // 11-08 형이 모아 둔 판 · 고구려 궁수
+  'w-57-bullae-bakdal', // 11-08 형이 모아 둔 판 · 박달
+  'w-65-goguryeo-hwalmi', // 11-08 형이 모아 둔 판 · 혜미
   'w-37-michuhol-gaennae', // 11-08 낮 갯내 v2 · 무릎을 굽혀 몸을 흔드는 견제 후 단검을 던져 받는다 (형: 첫 판은 부자연스럽고 더 움직였으면)
   'w-62-byeokjin-byeol', // 11-08 별 · 새 집게 자세로 다시 (형: 좋음) · 옛 자세 MP4 는 assets_src/realm/retired/awaken-loop
   'w-32-golbeol-budeul', // 11-08 부들 · 갈대 속 경쟁자를 보고 몸을 기울인다 (형: 괜찮다)
@@ -254,6 +270,13 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
  * 그 판에서 진각성한 장수는 장수 판의 초상이 이 영상으로 바뀌고, 아직이면 장수 판의 「진각성」 칸에서 미리 본다 (형 11-05: "테스트하면서 진각성 영상을 보고 싶어")
  */
 export const AWAKEN2_LOOP: ReadonlySet<string> = new Set([
+  'w-04-gaya-swordswoman', // 11-08 형이 모아 둔 판 (옛 -aw2) · 아라
+  'w-47-gosaburi-baram', // 11-08 형이 모아 둔 판 · 바람
+  'w-55-guga-nuri', // 11-08 형이 모아 둔 판 · 누리
+  'w-58-tamna-halla', // 11-08 형이 모아 둔 판 · 한라
+  'w-73-samul-sagong', // 11-08 형이 모아 둔 판 · 사공
+  'w-82-ungcheon-gom', // 11-08 형이 모아 둔 판 · 곰
+  'w-95-michuhol-haebi', // 11-08 형이 모아 둔 판 · 해비
   'w-97-goguryeo-mir', // 11-05 미르 — 번개 속에 활을 당긴 채 숨
   'l-L7-aryeong', // 11-05 알영 — 볏단과 푸른 용
   'w-67-buyeo-haedal', // 11-06 새벽 해달 다시 — 쏘고 웃고 한 바퀴 돌아 다시 당긴다 (형: 옛 판은 거의 정지 화면)
@@ -268,4 +291,8 @@ export const AWAKEN2_LOOP: ReadonlySet<string> = new Set([
 ])
 /** 정사각 판으로 구운 진각성 영상 (11-05 낮의 둘) — 나머지는 판 없이 세로 `<id>.t2.mp4` */
 export const AWAKEN2_LOOP_SQ: ReadonlySet<string> = new Set(['w-97-goguryeo-mir', 'l-L7-aryeong'])
-export const loopFile2 = (id: string): string => `awaken-loop/${id}.t2${AWAKEN2_LOOP_SQ.has(id) ? '.sq' : ''}.mp4`
+export const loopFile2 = (id: string): string => `awaken2-loop/${id}${AWAKEN2_LOOP_SQ.has(id) ? '.sq' : ''}.mp4`
+/** 2차 각성 영상의 판 수 (없으면 1) — 번갈아 돈다 */
+export const AWAKEN2_TAKES: Readonly<Record<string, number>> = { 'w-30-guya-soebi': 2 }
+/** 2차 각성 영상의 모든 판 — 첫 판이 기본 */
+export const loopTakes2 = (id: string): string[] => [loopFile2(id), ...Array.from({ length: Math.max(0, (AWAKEN2_TAKES[id] ?? 1) - 1) }, (_, i) => `awaken2-loop/${id}.${i + 2}.mp4`)]
