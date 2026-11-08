@@ -53,8 +53,10 @@
       await W(800)
       btnText(/^16:9$/)?.click()
       await W(600)
-      document.querySelector('button[aria-label="업로드 및 도구"]')?.click()
-      await W(800)
+      for (let t = 0; t < 4 && !document.querySelectorAll('input[type=file]').length; t++) {
+        document.querySelector('button[aria-label="업로드 및 도구"]')?.click()
+        await W(900)
+      }
       document.querySelectorAll('input[type=file]').forEach((e, i) => e.setAttribute('aria-label', tag + 'file' + i))
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
       return { inputs: document.querySelectorAll('input[type=file]').length, wide: !!btnText(/^16:9$/) }
