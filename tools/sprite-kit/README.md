@@ -42,3 +42,11 @@
 - 받기: 대화를 열고 `LOAD; await skit.grabVideo(<대화 id 앞 8자>)` → scratchpad veoget.sh 처럼 `~/Downloads/veo_*.mp4` 를 outputs 로 옮기고 downloaded · `tools/veo/motion.py` 로 얼음·튐 검사
 - 「동영상 만들기」가 흐리게 잠기면(aria-disabled) 한도 → 잡아 둔 일은 `veo-next.sh held` + 같은 문안으로 새 job · `queue.mjs cooldown`
 - **동영상 화면의 + 자리(658,352)를 누르면 템플릿 카드가 눌린다** → 다른 그림이 붙으면 보내지 말고 새 대화
+
+## 챗지피티 (사람 그림 · 무료 계정만 · roqkfeke12·Jay 금지)
+
+- `gpt-kit.js` + `heroes/gpt-1108.json`(초상 둘 + 비기 전신 열둘 문안) — 설치는 위와 같이 임시 file input 으로 `localStorage.gkit`·`gkitSpec`
+- 한 장: 새 대화 → find 「사진 첨부」 → file_upload(명세의 ref) → `gkit.send(key)` → `gkit.wait()` → `gkit.grab(id)` → 초상이면 `sh tools/sprite-kit/install-bust.sh <id> <나이> <장수 키> "<설명>"`
+- **함정: 새 대화 입력칸에 지난 문안 초안이 남아 있다** → `gkit.say` 가 먼저 비우고 길이를 잰 뒤에만 보낸다 (11-08 두 문안이 붙어 나가 한 장을 날림)
+- 「보내기」 단추는 첨부가 올라가는 동안 없다 → 나타날 때까지 기다린다
+- 무료 한도는 하루 두세 장일 때도 있다 · 한도 문구의 시각을 ART-QUEUE 맨 위 장부에 그 자리에서 적는다
