@@ -1,9 +1,9 @@
 // gemini-kit.js — 제미나이 탭에서 스프라이트 시트를 굽는 브라우저 쪽 도구 (게임과 무관 · 다른 게임에도 그대로)
 //
-// 설치 (탭마다가 아니라 gemini.google.com 출처에 한 번):
-//   localStorage.skit = await (await fetch('https://raw.githubusercontent.com/retyper/hanbal/master/tools/sprite-kit/gemini-kit.js')).text()
+// 설치 (탭마다가 아니라 gemini.google.com 출처에 한 번 · 이 페이지는 바깥 fetch 가 CSP 로 막힌다 → 코드를 직접 넣는다):
+//   localStorage.skit = `<이 파일 전체>`; localStorage.skitSpec = '<heroes/*.json 내용>'  (명세를 고치면 skitSpec 만 다시)
 // 쓸 때 (페이지를 새로 열었으면 매번 첫 줄):
-//   eval(localStorage.skit); await skit.load('<spec json raw url>')   // 캐릭터 명세 (heroes/*.json)
+//   eval(localStorage.skit)        // skit.spec 은 localStorage.skitSpec 에서
 //   await skit.setup('u0')        새 대화에서: 이미지 만들기 · 16:9 · 파일 input 에 aria-label u0file0.. (find 로 찾아 file_upload)
 //   await skit.send('walk', key)  걷기 시트 문안을 넣고 보냄 (첨부 2장 · 16:9 확인 못 하면 안 보냄)
 //   await skit.send('act', key)   같은 대화에 동작 시트
@@ -25,9 +25,10 @@
   }
   const WORD = { bow: 'bow', spear: 'spear', sword: 'sword', dagger: 'dagger', heavy: 'weapon' }
   const kit = {
-    spec: [],
+    spec: JSON.parse(localStorage.skitSpec || '[]'),
     async load(url) {
-      kit.spec = await (await fetch(url, { cache: 'no-store' })).json()
+      kit.spec = typeof url === 'string' ? await (await fetch(url, { cache: 'no-store' })).json() : url
+      localStorage.skitSpec = JSON.stringify(kit.spec)
       return kit.spec.length
     },
     get(key) {

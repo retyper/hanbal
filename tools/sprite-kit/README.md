@@ -6,12 +6,13 @@
 ## 한 사람 굽는 길 (Claude 가 쓰는 호출 수를 최소로)
 
 1. 명세: `heroes/<묶음>.json` 에 한 줄 — `key · heroId · bust · weapon(bow|spear|sword|dagger|heavy) · desc · hold · stride` (+ 남자면 `sex: "man"`, 노출 문구를 바꾸려면 `extra`).
-   제미나이가 raw 로 읽으니 **명세를 고치면 먼저 푸시**한다.
+   명세를 고치면 아래 설치를 다시 해 skitSpec 을 바꾼다.
 2. 제미나이 탭 (Jay u/4 는 Veo 전용 · 공유 단추 금지):
-   - 한 번만: `localStorage.skit = await (await fetch('https://raw.githubusercontent.com/retyper/hanbal/master/tools/sprite-kit/gemini-kit.js')).text()`
-   - 새 대화: `eval(localStorage.skit); await skit.setup('u0')` → find `u0file0` → file_upload [참고 걷기 시트, `public/realm/bust-hd/<bust>.jpg`]
-   - `eval(localStorage.skit); await skit.load(SPEC_RAW); await skit.send('walk', key)`
-   - 받기: `sh tools/sprite-kit/cut.sh mark` → `eval(localStorage.skit); await skit.grab(key+'w')` → `sh tools/sprite-kit/cut.sh <key> walk`
+   - 한 번만 (gemini.google.com 출처 · 이 페이지는 바깥 fetch 가 CSP 로 막힌다): 페이지에 임시 `<input type=file id=skitin aria-label=skit-installer>` 를 만들어 find → file_upload [gemini-kit.js, heroes/<묶음>.json] → `for (const f of skitin.files) { const t = await f.text(); if (f.name.endsWith(".js")) localStorage.skit = t; else localStorage.skitSpec = JSON.stringify(JSON.parse(t)) }` (내용이 채팅으로 안 지나가 크레딧이 안 든다)
+   - 불러오기 (페이지를 새로 열 때마다 · Trusted Types 때문에 정책을 거친다): `const p = window.__skitP || (window.__skitP = trustedTypes.createPolicy("skit" + Date.now(), { createScript: (s) => s })); eval(p.createScript(localStorage.skit))` — 아래에서 `LOAD` 라 부른다
+   - 새 대화: `LOAD; await skit.setup('u0')` → find `u0file0` → file_upload [참고 걷기 시트, `public/realm/bust-hd/<bust>.jpg`]
+   - `LOAD; await skit.send('walk', key)`
+   - 받기: `sh tools/sprite-kit/cut.sh mark` → `LOAD; await skit.grab(key + 'w')` → `sh tools/sprite-kit/cut.sh <key> walk`
    - 같은 대화에 `skit.send('act', key)` → grab → `cut.sh <key> act`
 3. 넣기: `sh tools/sprite-kit/register-realm.sh <key> "<한글 설명>"` — 자리줄·매핑·맞는 점·합치기·typecheck·시험·커밋·푸시까지.
 

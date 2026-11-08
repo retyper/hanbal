@@ -11,6 +11,7 @@ P=${SKIT_PREV:-${TMPDIR:-/tmp}/skit}
 G=${SKIT_OUT:-assets_src/realm/gemini/generals2}
 K=$(dirname "$0")
 mkdir -p "$P" "$G"
+PW=$(cygpath -w "$P" 2>/dev/null || echo "$P")
 if [ "$1" = mark ]; then touch "$M"; echo marked; exit 0; fi
 name=$1; kind=$2; map=${3:-}
 if [ -z "$map" ]; then
@@ -26,5 +27,5 @@ if [ -n "$map" ]; then node tools/strip-frames.mjs "$G/$name-$kind-key.png" 4 2 
 else node tools/strip-frames.mjs "$G/$name-$kind-key.png" 4 2 "$G/$name-$kind-strip.png" 160 | tail -1; fi
 py -3 -c "
 from PIL import Image
-im=Image.open(r'$G/$name-$kind-strip.png');bg=Image.new('RGBA',im.size,(60,80,50,255));bg.alpha_composite(im);bg.convert('RGB').save(r'$P/prev-$name-$kind.jpg')"
-echo "preview $(cygpath -w "$P/prev-$name-$kind.jpg" 2>/dev/null || echo "$P/prev-$name-$kind.jpg")"
+im=Image.open(r'$G/$name-$kind-strip.png');bg=Image.new('RGBA',im.size,(60,80,50,255));bg.alpha_composite(im);bg.convert('RGB').save(r'$PW/prev-$name-$kind.jpg')"
+echo "preview $PW/prev-$name-$kind.jpg"
