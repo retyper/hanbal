@@ -52,6 +52,12 @@
     },
     async wait(maxS = 240) {
       for (let t = 0; t < maxS / 3; t++) {
+        // 무료 계정이 붐비면 「평소보다 오래 · 나중에 생성」 → 무료 예약을 누르고 대화 주소를 돌려준다 (몇 분 뒤 그 대화를 열어 grab)
+        const later = [...document.querySelectorAll('button')].find((b) => /^나중에 생성$/.test(b.innerText.trim()))
+        if (later) {
+          later.click()
+          return { queued: true, url: location.href }
+        }
         const busy = !!document.querySelector('[data-testid=stop-button]')
         if (/한도|limit|제한에 도달|이미지 생성.*(기다|후에)/i.test(last()) && !busy) return { limit: last().slice(0, 300) }
         if (!busy && big().length > (kit._before ?? 0)) {
