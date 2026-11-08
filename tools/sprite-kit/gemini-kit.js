@@ -118,6 +118,20 @@
       await W(4000)
       return { sent: true, att, chars: text.length, url: location.href, refused: /지금은 동영상을 생성할 수 없습니다/.test(document.body.innerText) }
     },
+    // 다 된 Veo 영상을 받는다 (「동영상 다운로드」 단추는 첫 번째 뒤로 자주 안 먹는다 → 영상 주소를 fetch 해 저장)
+    async grabVideo(name) {
+      for (let t = 0; t < 15 && !document.querySelector('video')?.currentSrc; t++) await W(1000)
+      const v = document.querySelector('video')
+      if (!v) return { ok: false, text: [...document.querySelectorAll('model-response')].at(-1)?.innerText.slice(0, 200) }
+      const res = await fetch(v.currentSrc || v.src, { credentials: 'include' })
+      const b = await res.blob()
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(b)
+      a.download = 'veo_' + name + '.mp4'
+      document.body.appendChild(a)
+      a.click()
+      return { ok: res.ok, size: b.size, dur: v.duration }
+    },
     send(kind, key) {
       return kit.say(kit.prompt(kind, key), kind === 'walk' ? 2 : 0)
     },

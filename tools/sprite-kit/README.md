@@ -39,5 +39,6 @@
 - 탭: 새 대화 → **진짜 클릭**으로 + (658,352) → 「동영상 만들기」(720,524) (JS 클릭은 이 메뉴에서 자주 헛돈다 · 첫 클릭이 안 먹으면 한 번 더) → `가로` 단추 → 「세로 모드」 → 동영상 화면의 + (659,597) 로 파일 칸을 만들고 이름표 `vfile0` · 내 칸 `skit-text`
 - file_upload: `vfile0` ← 사진, `skit-text` ← `tools/out/veo-prompt.txt` → `LOAD; await skit.sendVeo()` (사진 1장·세로가 아니면 안 보냄)
 - 주소가 `/app/<id>` 로 바뀌면 `veo-next.sh done <job> <url>`
+- 받기: 대화를 열고 `LOAD; await skit.grabVideo(<대화 id 앞 8자>)` → scratchpad veoget.sh 처럼 `~/Downloads/veo_*.mp4` 를 outputs 로 옮기고 downloaded · `tools/veo/motion.py` 로 얼음·튐 검사
 - 「동영상 만들기」가 흐리게 잠기면(aria-disabled) 한도 → 잡아 둔 일은 `veo-next.sh held` + 같은 문안으로 새 job · `queue.mjs cooldown`
 - **동영상 화면의 + 자리(658,352)를 누르면 템플릿 카드가 눌린다** → 다른 그림이 붙으면 보내지 말고 새 대화
