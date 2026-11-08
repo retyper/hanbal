@@ -221,7 +221,7 @@ export const AWAKEN_ART: ReadonlySet<string> = new Set([
  * 숨 쉬는 영상을 정사각 판으로 만든 초상 — 그림을 9:16 가운데에 통째로 두고 위아래를 흐리게 채워 넣었다(tools/veo/pad.sh).
  * 파일은 `<id>.sq.mp4` · 화면은 가운데 정사각만 오려 원본 전체가 움직인다 (형 11-05: "넣은 이미지 전체가 안 나오고 세로로 길게 나와 아쉽다")
  */
-export const AWAKEN_LOOP_SQ: ReadonlySet<string> = new Set<string>(['w-95-michuhol-haebi'])
+export const AWAKEN_LOOP_SQ: ReadonlySet<string> = new Set<string>() // 11-08 형: 정사각으로 억지로 만든 영상은 안 쓴다 (지움)
 /** 숨 쉬는 영상 파일 — public/realm 아래 */
 /**
  * 숨 쉬는 영상 파일 — 이름 규칙 (형 11-08: "이름 규칙들은 니가 관리 편한대로"):
@@ -258,7 +258,7 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'w-63-us-haesol', // 11-07 해솔 · 소나무 가지에 축복
   'g-13-baekje-general', // 11-05 오간 — 옛 튜토리얼 각성 장수 (11-05 저녁부터 튜토리얼 각성은 말갈기 · 그 영상은 다음 Veo 첫 차례)
   'l-L2-soseono', // 11-05 1장 소서노 · v2: 숨 따라 가슴·옷이 오르내린다 (형: "개쩐다")
-  'w-95-michuhol-haebi', // 11-05 해비 — 튜토리얼 · 정사각 판으로 다시 · 굿판 뒤 숨 고르기로 한 단계 더 세게 (형: "해비 더 세게")
+  'w-95-michuhol-haebi', // 11-08 해비 · 세로 판 (형이 모아 둔 판 · 옛 정사각 판은 지움 — 형: 정사각으로 억지로 만든 영상은 안 쓴다)
   'w-30-guya-soebi', // 11-05 쇠비 — 형의 최애 · 숨을 더 세게(가슴이 또렷이 출렁)
   'w-33-gammun-gamsil', // 11-05 감실 — 형의 최애 · 출렁임을 걸면 제미나이가 거절해(그림이 드러나서) 잔잔한 숨으로
   'w-35-jomun-odi', // 11-08 낮 오디 v2 · 세로 근접 · 웃으며 발돋움하고 누에고치를 띄운다 (형: 넣어) · 옛 정사각 판은 assets_src/realm/retired/awaken-loop
@@ -277,8 +277,6 @@ export const AWAKEN2_LOOP: ReadonlySet<string> = new Set([
   'w-73-samul-sagong', // 11-08 형이 모아 둔 판 · 사공
   'w-82-ungcheon-gom', // 11-08 형이 모아 둔 판 · 곰
   'w-95-michuhol-haebi', // 11-08 형이 모아 둔 판 · 해비
-  'w-97-goguryeo-mir', // 11-05 미르 — 번개 속에 활을 당긴 채 숨
-  'l-L7-aryeong', // 11-05 알영 — 볏단과 푸른 용
   'w-67-buyeo-haedal', // 11-06 새벽 해달 다시 — 쏘고 웃고 한 바퀴 돌아 다시 당긴다 (형: 옛 판은 거의 정지 화면)
   'w-52-biryuna-songbi', // 11-05 밤 송비 — 판 없이 세로 · 손 위 단풍이 돈다
   'w-30-guya-soebi', // 11-06 새벽 쇠비 다시 — 망치를 휘두르고 젖혀 웃는다 · 출렁임 낱말은 오류라 숨·무게로
@@ -290,7 +288,7 @@ export const AWAKEN2_LOOP: ReadonlySet<string> = new Set([
   'w-68-maek-beombal', // 11-06 아침 범발 — 비스듬히 웃으며 단검을 돌려 쥐고 다시 웅크림
 ])
 /** 정사각 판으로 구운 진각성 영상 (11-05 낮의 둘) — 나머지는 판 없이 세로 `<id>.t2.mp4` */
-export const AWAKEN2_LOOP_SQ: ReadonlySet<string> = new Set(['w-97-goguryeo-mir', 'l-L7-aryeong'])
+export const AWAKEN2_LOOP_SQ: ReadonlySet<string> = new Set<string>() // 11-08 형: 정사각 영상은 안 쓴다 (미르·알영 2차는 다시 굽기 차례)
 export const loopFile2 = (id: string): string => `awaken2-loop/${id}${AWAKEN2_LOOP_SQ.has(id) ? '.sq' : ''}.mp4`
 /** 2차 각성 영상의 판 수 (없으면 1) — 번갈아 돈다 */
 export const AWAKEN2_TAKES: Readonly<Record<string, number>> = { 'w-30-guya-soebi': 2 }
