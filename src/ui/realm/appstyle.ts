@@ -779,10 +779,11 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .cnspk { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0; animation: cnpop .45s cubic-bezier(.2,.9,.3,1.2) both; }
 /* 액자 없이 크게 — 가장자리는 군막에 녹는다 (형 11-05: 창세기전처럼 화면 가운데서 말한다) · 양옆과 위아래를 따로 흐려 겹친다(민무늬 판의 네모가 안 보이게) · 움직이지 않는 가림이라 폰 그래픽 한도에 안 걸린다 */
 .ap .cnspk .cnbig { display: block; width: min(86vw, 420px, 50vh); aspect-ratio: 1; height: auto; object-fit: cover; object-position: top;
-  --cn-fade: linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent), linear-gradient(transparent, #000 10%, #000 72%, transparent var(--cn-fade-end, 100%));
-  -webkit-mask-image: var(--cn-fade); -webkit-mask-composite: source-in; mask-image: var(--cn-fade); mask-composite: intersect; }
+  /* 가림은 구운 그림 한 장(fx/mask-council*.png · 부드러운 곡선 + 잔 떨림) — CSS 그라디언트 둘을 겹친 가림은 폰에서 영상 위에 낮은 해상도로 그려져 아래가 층층이 계단졌다 (형 11-08: "부채처럼 층층이") */
+  --cn-mask: url(__ART__fx/mask-council.png);
+  -webkit-mask: var(--cn-mask) center / 100% 100% no-repeat; mask: var(--cn-mask) center / 100% 100% no-repeat; }
 /* 세로 영상도 군막에 녹이고 아래 구석은 더 일찍 가린다. .sq는 가운데 원본 정사각 영역을 쓴다. */
-.ap .cnspk video.cnbig:not(.sq) { width: min(62vw, 320px, calc(50vh * 9 / 16)); aspect-ratio: 9 / 16; object-fit: contain; --cn-fade-end: 92%; }
+.ap .cnspk video.cnbig:not(.sq) { width: min(62vw, 320px, calc(50vh * 9 / 16)); aspect-ratio: 9 / 16; object-fit: contain; --cn-mask: url(__ART__fx/mask-council-tall.png); }
 .ap .cnspk video.cnbig.sq { aspect-ratio: 1; object-fit: cover; object-position: center; }
 /* 낮은 가로 화면(폰 눕힘) — 얼굴은 왼쪽, 말은 오른쪽 (세로로 쌓으면 머리 위가 잘렸다) */
 @media (max-height: 520px) and (min-aspect-ratio: 4/3) {
