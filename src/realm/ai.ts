@@ -14,6 +14,7 @@
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { wealthThreat } from './scale.ts'
+import { coalFocusOf, coalStriking, coalitionOf } from './coalition.ts'
 import { WORKS, canWork, targetLv, workCost, workOptions } from './works.ts'
 import { ageSeasons, isSeasonEnd, monthly, seasonIdx } from './calendar.ts'
 import {
@@ -90,7 +91,9 @@ function focus(r: Realm, faction: string, to: string): number {
   const block = owner === null || owner === faction || tn === undefined ? 0
     : (near[`iron:${owner}`] === true && (tn.kind === 'ironMine' || tn.kind === 'port') ? P.realm.aiPathBlockFocus : 0)
       + (near[`rite:${owner}`] === true && neighbors(r, to).some((x) => r.nodes[x]?.kind === 'sodo') ? P.realm.aiPathBlockFocus : 0)
-  return pledged + lead + tier + rich + lure + block + (allyFoe(r, faction, owner) ? P.realm.aiAllyFocus : 0)
+  // 합종 — 연합 나라는 함께 치는 출정 동안 우리 고을을 더 노린다 (coalition.ts · 위원회 11-08 ⑤)
+  const league = coalFocusOf(r, faction, owner)
+  return pledged + lead + tier + rich + league + lure + block + (allyFoe(r, faction, owner) ? P.realm.aiAllyFocus : 0)
 }
 
 /** 소도 제사 — 허락되고 군량 aiDraftReserve 계절치를 남기고도 제사 곡식이 남으면 */
@@ -1021,19 +1024,25 @@ function approach(r: Realm, faction: string, decided: readonly Order[]): Order[]
   const mine = sorted(Object.values(r.armies)).filter((a) => a.faction === faction && a.lent === undefined)
   const idle = mine.filter((a) => a.march === null && !busy.has(a.id))
   const edges = Object.values(r.edges).sort((a, b) => (a.id < b.id ? -1 : 1))
+  // 합종 — 연합 나라는 모이는 동안부터 우리 땅 쪽으로 다가가고(연합 동맹의 땅도 지나간다), 출정 동안엔 도읍의 마지막 군대도 나선다 (coalition.ts)
+  const league = coalitionOf(r)
+  const leagued = league != null && league.members.includes(faction) && r.season < league.endAt
+  const leagueGo = leagued && coalStriking(r)
   const passable = (id: string): boolean => {
     const n = r.nodes[id]
-    return n !== undefined && n.kind !== 'sodo' && (n.owner === faction || (n.owner === null && (n.kind === 'wild' || duel))) // 1:1 판은 빈 옛 고을도 지나간다
+    return n !== undefined && n.kind !== 'sodo' && (n.owner === faction || (n.owner === null && (n.kind === 'wild' || duel)) // 1:1 판은 빈 옛 고을도 지나간다
+      || (leagued && n.owner !== null && league.members.includes(n.owner) && relationOf(r, faction, n.owner).state === 'ally'))
   }
   const goal = (id: string): boolean => {
     const n = r.nodes[id]
     // 1:1 판은 빈 옛 고을을 줍고 다니지 말고 맞수에게 (긴급 위원회 11-04 · 빈 고을만 돌다 48달 동안 못 만났다)
+    if (leagued) return n !== undefined && n.kind !== 'sodo' && n.owner === league.against && !spared(r, faction, id)
     return n !== undefined && n.kind !== 'sodo' && n.owner !== faction && !(n.owner === null && (n.kind === 'wild' || duel)) && !spared(r, faction, id)
   }
   const out: Order[] = []
   let atCap = cap === undefined ? 0 : mine.filter((a) => a.at === cap && a.march === null).length
   for (const a of idle) {
-    if (a.at === cap && atCap <= 1 && (mine.length > 1 || seasonIdx(r) < (duel ? R.aiApproachDuel : R.aiApproachSolo))) continue
+    if (a.at === cap && atCap <= 1 && !leagueGo && (mine.length > 1 || seasonIdx(r) < (duel ? R.aiApproachDuel : R.aiApproachSolo))) continue
     // 너비 우선 — 처음 디딘 길을 기억한다 (같은 판이면 같은 길: 길 id 순)
     const first = new Map<string, string>([[a.at, '']])
     let queue = [a.at]

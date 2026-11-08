@@ -191,8 +191,8 @@ export type Good = 'grain' | 'iron' | 'salt' | 'wood' | 'horse'
  * 사이가 바뀐 까닭 — attack 땅에 군대를 들였다 · betray 화친·동맹을 깨고 쳤다 · distrust 남의 배신을 보고 등 돌렸다 ·
  * plot 공작이 드러났다 · sow 이간에 넘어갔다 · tribute 조공 요구를 거절당했다 · demand 요구를 거절당했다 · break 약조를 깼다 · expire 기한이 끝났다 · envoy 사신이 맺었다
  */
-/** council — 여섯 마을에 묻고 싸움을 정했다(사로) · rescue — 손잡은 나라의 도읍을 에워 구하러 왔다(이서 도읍 에우기) (data/customs.ts) */
-export type RelationWhy = 'attack' | 'betray' | 'distrust' | 'plot' | 'sow' | 'tribute' | 'demand' | 'break' | 'expire' | 'envoy' | 'council' | 'rescue'
+/** council — 여섯 마을에 묻고 싸움을 정했다(사로) · rescue — 손잡은 나라의 도읍을 에워 구하러 왔다(이서 도읍 에우기) (data/customs.ts) · league — 합종(앞서가는 나라를 함께 치는 연합)에 들어 칼을 뽑았다 (coalition.ts) */
+export type RelationWhy = 'attack' | 'betray' | 'distrust' | 'plot' | 'sow' | 'tribute' | 'demand' | 'break' | 'expire' | 'envoy' | 'council' | 'rescue' | 'league'
 
 /** 판 — 변한 6국 축소판 · 영남 판 (형: "사료대로 키우고 땅도 넓힘" — 2026-10-18) */
 /** 판 — tutorial 은 배우는 1:1 판 (변한 축소판의 지도를 빌린다) */
@@ -941,6 +941,12 @@ export interface Realm {
   riteChain?: Record<string, number>
   /** 소문을 이미 낸 길 — "iron:<나라>" · "rite:<나라>" (같은 소문을 되풀이하지 않게) */
   pathNear?: Record<string, true>
+  /**
+   * 합종 — 앞서가는 플레이어를 겁낸 나라들의 연합 (coalition.ts · 위원회 11-08 ⑤). 쉬움(촌장)엔 없다.
+   * 옛 저장에는 없다 = 연합 없음. coalRest 는 지난 연합이 끝난 뒤 새 연합이 설 수 있는 턴
+   */
+  coalition?: Coalition | null
+  coalRest?: number
   /** 나라마다 심어 둔 첩자 (plots.ts spy). 옛 저장에는 없다 */
   spies?: Record<string, Spy[]>
   /** 나라마다 자객의 활 단계 0..3 (plots.assassinBow). 옛 저장에는 없다 — 0 */
@@ -1270,6 +1276,15 @@ export type ReportLine =
   | { readonly kind: 'ironMarket'; readonly from: string; readonly to: string; readonly iron: number; readonly grain: number }
   /** 맹약 — `faction` 과 손잡은 나라 `have` / 필요한 `need` · 내리 `streak` 계절 (suzerain.ts — 우리 것이면 맹약의 해, 남의 것이면 소문) */
   | { readonly kind: 'suzerain'; readonly faction: string; readonly have: number; readonly need: number; readonly streak: number }
+  /**
+   * 합종 (coalition.ts) — form 연합이 섰다(at 턴에 함께 친다) · strike 함께 칼을 뽑았다 · leave 한 나라가 빠졌다(who · why) ·
+   * broken 출정을 막아 냈다(연합이 흩어진다) · spent 우리 고을 took 곳을 앗고 흩어졌다 · scatter 남은 나라가 모자라 흩어졌다 · fade 두려움이 걷혔다
+   */
+  | {
+      readonly kind: 'coalition'; readonly ev: 'form' | 'strike' | 'leave' | 'broken' | 'spent' | 'scatter' | 'fade'
+      readonly against: string; readonly members: readonly string[]; readonly head?: string; readonly at?: number
+      readonly who?: string; readonly why?: CoalLeave; readonly took?: number
+    }
   /** 전쟁 중인 나라에 사신으로 간 장수가 붙잡혔다 */
   | { readonly kind: 'envoyHeld'; readonly from: string; readonly to: string; readonly hero: string }
   /** 우리 고을에 맞닿은 길 위의 남의 군대 — 행군은 보인다 (FLOW §7 #2) */
@@ -1397,4 +1412,26 @@ export type ReportLine =
 export interface Report {
   readonly season: number
   readonly lines: readonly ReportLine[]
+}
+
+/** 합종에서 빠진 까닭 — fall 무너짐 · truce 우리와 화친·동맹 · beaten 우리에게 잇달아 짐 · sow 이간으로 동맹이 깨짐 */
+export type CoalLeave = 'fall' | 'truce' | 'beaten' | 'sow'
+
+/**
+ * 합종 하나 (coalition.ts) — `against` 를 함께 친다. strikeAt 턴부터 endAt 턴 앞까지가 출정 (그 사이 노릴 값이 크다).
+ * bound 는 연합이 맺어 준 동맹(pairKey) — 연합이 흩어지면 화친으로 내려간다. defeats 는 나라마다 우리에게 진 싸움 · took 은 앗은 우리 고을 수
+ */
+export interface Coalition {
+  readonly against: string
+  members: string[]
+  readonly head: string
+  readonly formed: number
+  readonly strikeAt: number
+  readonly endAt: number
+  bound: string[]
+  /** 설 때 이미 우리와 화친이던 나라 — 칠 때 화친을 깨고 온다 (그 화친으로는 빠지지 않는다 · 새로 맺은 화친이면 빠진다) */
+  peace?: string[]
+  defeats: Record<string, number>
+  took: number
+  marched?: boolean
 }

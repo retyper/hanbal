@@ -84,6 +84,26 @@ export function makeTruce(r: Realm, a: string, b: string): void {
 }
 
 /**
+ * 합종이 묶는다 (coalition.ts) — 싸우던 사이는 화친, 중립·화친은 동맹으로. 보고는 연합 줄 하나가 대신한다 (사이 줄을 늘어놓지 않는다).
+ * 동맹으로 올렸으면 true (연합이 흩어질 때 그 동맹만 화친으로 내린다 — unbindLeague)
+ */
+export function bindLeague(r: Realm, a: string, b: string): boolean {
+  const s = relationOf(r, a, b).state
+  if (a === b || s === 'ally' || r.factions[a] === undefined || r.factions[b] === undefined) return false
+  if (s === 'war') {
+    setRelation(r, a, b, 'truce', r.season + seasons(r, P.realm.truceSeasons), [], { why: 'league' })
+    return false
+  }
+  setRelation(r, a, b, 'ally', null, [], { why: 'league' })
+  return true
+}
+
+/** 합종이 흩어진다 — 연합이 맺어 준 동맹이 아직 남았으면 화친으로 물러난다 */
+export function unbindLeague(r: Realm, a: string, b: string): void {
+  if (relationOf(r, a, b).state === 'ally') setRelation(r, a, b, 'truce', r.season + seasons(r, P.realm.truceSeasons), [], { why: 'league' })
+}
+
+/**
  * 가장 센 두 나라 — `f` 를 빼고, 고을이 있는 나라 가운데 (참값 · 줄타기의 셈). 같으면 id 순서
  */
 export function bigTwo(r: Realm, f: string): string[] {
@@ -549,6 +569,9 @@ function chanceAt(
   p += envoyBonus(r, from, ask, hero) // 군주 매력 + 따라간 장수의 매력 · 매혹 · 장사꾼 (heroes.ts)
   p += R.envoyFavor * favorOf(r, from, to) // 호감
   p += customsChance(r, from, to, ask) // 풍습 (data/customs.ts)
+  // 합종 — 연합에 든 나라는 그 과녁과 쉽게 손잡지 않는다 (흩을 수는 있다 · coalition.ts)
+  const lg = r.coalition
+  if ((ask === 'truce' || ask === 'alliance') && lg != null && lg.against === from && lg.members.includes(to)) p += R.envoyLeague
   if (rel === 'war') p += R.envoyWar
   else if (rel === 'truce' || rel === 'ally') p += R.envoyFriend
   return Math.min(R.envoyMax, Math.max(R.envoyMin, p))

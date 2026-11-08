@@ -39,6 +39,7 @@ import { limitHands } from './hands.ts'
 import { scoutCap, watchBorders } from './scouts.ts'
 import { stepSuzerain, suzerainEnd } from './suzerain.ts'
 import { pathsEnd, stepPaths } from './paths.ts'
+import { stepCoalition } from './coalition.ts'
 import { sendExpeditions, stepExpeditions } from './expedition.ts'
 import { goalReach, goalSteps } from './goal.ts'
 import { resolveCard, stepCards } from './events.ts'
@@ -1946,6 +1947,7 @@ export function advance(
     stepSuzerain(r, lines) // 9 — 맹약 시계 (맹주의 길)
     stepPaths(r, lines) // 9 — 교역 장부 · 제사 사슬 (철과 뱃길 · 큰 제사)
   }
+  stepCoalition(r, lines, end) // 9 — 합종: 앞서가는 우리를 겁낸 나라들이 묶이고 · 함께 치고 · 흩어진다 (쉬움 빼고 · 위원회 11-08 ⑤)
   if (r.player !== undefined) {
     for (const a of seenMarches(r, r.player)) {
       const line = { kind: 'sighted', faction: a.faction, army: a.id, from: a.march!.from, to: a.march!.to } as const

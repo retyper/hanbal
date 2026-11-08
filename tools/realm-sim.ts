@@ -113,6 +113,14 @@ interface Run {
   refoughtUs: number
   /** 우리 싸움 가운데 같은 고을에서 누구든(남끼리 포함) REFIGHT 턴 안에 싸운 것 */
   refoughtAny: number
+  /** 합종 (coalition.ts · 위원회 11-08 ⑤) — 선 수 · 첫 연합이 선 계절(없으면 -1) · 연합 나라 수 합 · 끝의 갈래 · 출정 동안 맞은 적 공세 · 첫 연합 뒤 맞은 적 공세 · 첫 연합 뒤 잃은 고을 */
+  coal: number
+  coalFirst: number
+  coalSize: number
+  coalEnds: Record<string, number>
+  coalOff: number
+  offAfter: number
+  lostAfter: number
 }
 
 function play(bot: Brain, as: string, seed: number): Run {
@@ -120,7 +128,7 @@ function play(bot: Brain, as: string, seed: number): Run {
   applyTier(r, TIER) // 난세 단계 (--tier 3)
   const own = (x: Realm): number => Object.values(x.nodes).filter((n) => n.owner === as).length
   const lead = Object.values(r.heroes).filter((h) => h.faction === as).sort((a, b) => (a.id < b.id ? -1 : 1))[0]?.id
-  const run: Run = { bot, as, seed, start: own(r), nodes: 0, nodesEarly: -1, win: false, lose: false, battles: 0, wins: 0, captured: 0, lostHero: false, settled: 0, wildHeld: 0, ambush: 0, ambushOk: 0, rites: 0, worldAmbush: 0, asks: 0, pacts: 0, fieldFights: 0, plots: 0, plotsOk: 0, plotsAtUs: 0, worldPlots: 0, heroes: 0, persuaded: 0, hired: 0, allies: 0, pledgeKept: 0, pledgeBroken: 0, gifts: 0, arms: 0, lent: 0, hh: 0, offensives: 0, warned: 0, byMonth: [0, 0, 0], worldBattles: 0, scatters: 0, wipes: 0, rests: 0, losePath: '', refought: 0, refoughtWave: 0, refoughtSame: 0, refoughtLate: 0, refoughtUs: 0, refoughtAny: 0 }
+  const run: Run = { bot, as, seed, start: own(r), nodes: 0, nodesEarly: -1, win: false, lose: false, battles: 0, wins: 0, captured: 0, lostHero: false, settled: 0, wildHeld: 0, ambush: 0, ambushOk: 0, rites: 0, worldAmbush: 0, asks: 0, pacts: 0, fieldFights: 0, plots: 0, plotsOk: 0, plotsAtUs: 0, worldPlots: 0, heroes: 0, persuaded: 0, hired: 0, allies: 0, pledgeKept: 0, pledgeBroken: 0, gifts: 0, arms: 0, lent: 0, hh: 0, offensives: 0, warned: 0, byMonth: [0, 0, 0], worldBattles: 0, scatters: 0, wipes: 0, rests: 0, losePath: '', refought: 0, refoughtWave: 0, refoughtSame: 0, refoughtLate: 0, refoughtUs: 0, refoughtAny: 0, coal: 0, coalFirst: -1, coalSize: 0, coalEnds: {}, coalOff: 0, offAfter: 0, lostAfter: 0 }
   // 계절 수로 돌린다 — 달 시계 판이면 계절마다 석 턴 (calendar.perSeason)
   const per = perSeason(r)
   // 우리 싸움의 고을 → 그 턴 · 친 나라 · 지킨 나라 (다시 싸운 고을)
@@ -163,6 +171,14 @@ function play(bot: Brain, as: string, seed: number): Run {
         if (l.wiped) run.wipes++
       }
       if (l.kind === 'beaten') run.rests++
+      if (l.kind === 'coalition') {
+        if (l.ev === 'form') {
+          run.coal++
+          run.coalSize += l.members.length
+          if (run.coalFirst < 0) run.coalFirst = Math.floor(s / per)
+        } else if (l.ev !== 'strike' && l.ev !== 'leave') run.coalEnds[l.ev] = (run.coalEnds[l.ev] ?? 0) + 1
+      }
+      if (l.kind === 'take' && run.coalFirst >= 0 && r.nodes[l.node]?.owner === as && l.faction !== as) run.lostAfter++
       if (l.kind !== 'battle') continue
       run.worldBattles++
       // 나눈 별동대도 우리 군대다 — 넘기기 전 판에서 주인을 본다
@@ -170,6 +186,9 @@ function play(bot: Brain, as: string, seed: number): Run {
       const weDefend = l.defender === as
       if (weDefend && !weAttack && (l.atkFaction ?? r.armies[l.attacker]?.faction) !== as) {
         run.offensives++
+        if (run.coalFirst >= 0) run.offAfter++
+        const cc = r.coalition
+        if (cc != null && r.season >= cc.strikeAt && r.season < cc.endAt && cc.members.includes(l.atkFaction ?? '')) run.coalOff++
         const pre = r.armies[l.attacker]
         if (pre !== undefined && ((pre.march !== null && pre.march.to === l.node) || (pre.strike?.at === r.season && pre.strike.node === l.node))) run.warned++
         run.byMonth[((r.season % per) + per) % per]! += 1
@@ -284,6 +303,20 @@ for (const as of AS) {
   }
 }
 
+
+// 합종 (coalition.ts · 위원회 11-08 ⑤) — 연합이 선 판 · 판당 선 수 · 첫 연합 계절(중간값) · 연합 크기 · 끝의 갈래(막아 냄 · 앗고 흩어짐 · 모자라 흩어짐 · 두려움 걷힘) ·
+// 연합 출정 동안 맞은 적 공세 · 첫 연합 뒤 맞은 적 공세 · 첫 연합 뒤 잃은 고을
+console.log(`\n나라    봇          연합 선 판  연합/판  첫 연합(중간)  크기   막아 냄  앗고 흩어짐  모자라 흩어짐  걷힘   출정 중 공세/판  첫 연합 뒤 공세/판  뒤 잃은 고을/판`)
+for (const as of AS) {
+  for (const bot of BOTS) {
+    const rs = runs.filter((x) => x.bot === bot && x.as === as)
+    const firsts = rs.map((x) => x.coalFirst).filter((v) => v >= 0).sort((a, b) => a - b)
+    const med = firsts.length === 0 ? '-' : String(firsts[Math.floor(firsts.length / 2)])
+    const coal = rs.reduce((a, x) => a + x.coal, 0)
+    const ends = (k: string): string => mean(rs.map((x) => x.coalEnds[k] ?? 0)).toFixed(2).padStart(6)
+    console.log(`${as.padEnd(7)} ${bot.padEnd(9)} ${pct(firsts.length / Math.max(1, rs.length)).padStart(9)}  ${mean(rs.map((x) => x.coal)).toFixed(2).padStart(6)}  ${med.padStart(12)}  ${(coal > 0 ? rs.reduce((a, x) => a + x.coalSize, 0) / coal : 0).toFixed(1).padStart(4)}  ${ends('broken')}  ${ends('spent').padStart(10)}  ${ends('scatter').padStart(12)}  ${ends('fade')}  ${mean(rs.map((x) => x.coalOff)).toFixed(2).padStart(14)}  ${mean(rs.map((x) => x.offAfter)).toFixed(2).padStart(17)}  ${mean(rs.map((x) => x.lostAfter)).toFixed(2).padStart(14)}`)
+  }
+}
 if (OUT !== '') {
   const head = 'as,bot,seed,nodesEarly,nodes,win,lose,battles,wins,captured,lostHero'
   const body = runs.map((x) => [x.as, x.bot, x.seed, x.nodesEarly, x.nodes, x.win ? 1 : 0, x.lose ? 1 : 0, x.battles, x.wins, x.captured, x.lostHero ? 1 : 0].join(','))
