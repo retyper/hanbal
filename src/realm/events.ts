@@ -216,8 +216,7 @@ const grainCost = (r: Realm, have: number, share: number): number => {
   return Math.max(R.cardGrainMin, Math.round(have * share * swing))
 }
 
-export function setHarvest(r: Realm, f: string, mul: number): void {
-  const year = yearOf(r)
+export function setHarvest(r: Realm, f: string, mul: number, year: number = yearOf(r)): void {
   const had = r.harvestMod?.[f]
   ;(r.harvestMod ??= {})[f] = { year, mul: had !== undefined && had.year === year ? had.mul * mul : mul }
 }

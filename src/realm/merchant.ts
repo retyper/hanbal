@@ -18,7 +18,7 @@ import { setHarvest } from './events.ts'
 import { addFavor } from './diplomacy.ts'
 import { discover, knownOf } from './discovery.ts'
 import { HERO_POOL } from './data/heroes-pool.ts'
-import { seasons } from './calendar.ts'
+import { seasonOf, seasons, yearOf } from './calendar.ts'
 import type { UnitKind } from './battle.ts'
 import type { Good, Hero, Order, Realm, ReportLine } from './types.ts'
 
@@ -85,7 +85,8 @@ function stockFor(r: Realm, faction: string): Offer[] {
     { what: 'ingot', good: 'wood', n: 80, price: Math.round(80 * worthOf('wood') * mk * 0.75), many: 1 },
     // 판의 다른 자리에 닿는 것 — 다친 장수 · 가을걷이 · 이웃의 마음 (형 11-04: "살 게 더 다양하고 많았으면")
     ...(hurtHeroes(r, faction).length > 0 ? [{ what: 'heal' as const, n: 1, price: R.healGrain, many: 1 }] : []),
-    { what: 'seed', n: 1, price: R.seedGrain, many: 1 },
+    // 좋은 씨앗은 씨 뿌리기 전(겨울·봄)에만 판다 — 8월에 사자마자 그해 걷이가 느는 게 이상했다 (형 11-08)
+    ...(seedSeason(r) ? [{ what: 'seed' as const, n: 1, price: R.seedGrain, many: 1 }] : []),
     ...(knownOf(r, faction).some((x) => x !== faction) ? [{ what: 'silk' as const, n: 1, price: R.silkGrain, many: 1 }] : []),
   ]
   const slots = Math.max(1, Math.round(R.merchantSlots + bestWorkLv(r, faction, 'market')))
@@ -95,6 +96,11 @@ function stockFor(r: Realm, faction: string): Offer[] {
     return { ...rest, id: `o${i}`, left: many }
   })
 }
+
+/** 좋은 씨앗을 파는 철 — 씨 뿌리기 전인 겨울·봄 */
+export const seedSeason = (r: Realm): boolean => { const s = seasonOf(r); return s === 'winter' || s === 'spring' }
+/** 좋은 씨앗이 붙는 해 — 해는 봄에 바뀌므로 봄에 사면 그해, 그 밖(겨울 · 옛 판에 남은 여름·가을 상단)은 다음 해 가을걷이 */
+export const seedYear = (r: Realm): number => yearOf(r) + (seasonOf(r) === 'spring' ? 0 : 1)
 
 /** 그 나라에 지금 머무는 상단 */
 export function marketOf(r: Realm, faction: string): Market | null {
@@ -145,7 +151,7 @@ export function applyBuy(r: Realm, o: Extract<Order, { kind: 'buy' }>, lines: Re
   else if (of.what === 'heal') {
     // 약초 — 다쳐 누운 우리 장수가 바로 일어난다
     for (const h of hurtHeroes(r, o.faction)) delete h.woundedUntil
-  } else if (of.what === 'seed') setHarvest(r, o.faction, 1 + P.realm.seedHarvest)
+  } else if (of.what === 'seed') setHarvest(r, o.faction, 1 + P.realm.seedHarvest, seedYear(r))
   else if (of.what === 'silk') {
     // 비단 선물 — 아는 나라마다 마음이 조금씩
     for (const x of knownOf(r, o.faction)) if (x !== o.faction) addFavor(r, o.faction, x, P.realm.silkFavor)

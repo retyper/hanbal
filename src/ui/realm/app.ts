@@ -2058,7 +2058,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   const offerDoes = (o: Offer): string => o.what === 'merc' ? '상단이 선 고을에 바로 군대가 선다'
     : o.what === 'drum' ? `모든 우리 군대 사기 +${Math.round(P.realm.drumMorale * 100)}`
       : o.what === 'heal' ? '다쳐 누운 우리 장수가 모두 바로 일어난다'
-        : o.what === 'seed' ? `올해 가을걷이 +${Math.round(P.realm.seedHarvest * 100)}%`
+        : o.what === 'seed' ? `다가오는 가을걷이 +${Math.round(P.realm.seedHarvest * 100)}%`
           : o.what === 'silk' ? `아는 나라마다 호감 +${P.realm.silkFavor}`
             : o.what === 'ingot' ? '큰 묶음 · 낱개보다 싸다' : '곳간에 바로 든다'
   const offerIcon = (o: Offer): string => o.what === 'merc' && o.unit !== undefined ? UNIT_ICON[o.unit] : o.what === 'drum' ? 'unit-drummers'
