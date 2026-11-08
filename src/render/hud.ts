@@ -74,6 +74,11 @@ export interface HudState {
    * 기본 살이면 빈 문자열을 넣어 아무것도 그리지 않는다 (효과가 없는 걸 알릴 이유가 없다).
    */
   arrow: string
+  /**
+   * 글자 판을 비운다 — 판이 제 DOM 머리띠를 쓰는 작은 판(바다도적 막기)이 켠다. 왼쪽 위(남은 적·화살)·오른쪽 위(엽전·바람)를 안 그린다.
+   * 빨간 바와 조준 표식은 그대로 (빨간 바 계약). 없으면 늘 그린다
+   */
+  bare?: boolean
 }
 
 /**
@@ -601,6 +606,7 @@ export function drawHud(
   //        너라면 과녁이 사람이랑 같겠냐?" 맞는 말이다. 11판부터는 판에 선 게 사람인데
   //        화면은 계속 '과녁 4'라고 말하고 있었다 — 화면이 세계를 부정하고 있었던 것이다.
   //   화약 상자(barrel)는 어느 쪽에도 안 센다 — 과녁도 사람도 아니고, 클리어 조건도 아니다.
+  if (hud.bare !== true) {
   let foes = 0
   let marks = 0
   // 사냥감(look ≥ 20)은 과녁도 적도 아니다 — 같은 규칙으로 따로 센다 (2026-09-20).
@@ -757,6 +763,7 @@ export function drawHud(
     ctx.fillStyle = THEME.accent
     ctx.fillText(hud.arrow, M.padX, arrowRowY)
   }
+  }
 
   // ── 스태미나 — 활 옆. **당길 때만** 뜨고, 놓으면 2초 머문 뒤 사라진다 (형) ──
   if (barSeen > w.elapsed) barSeen = -1e9 // 판이 바뀌어 시계가 되감겼다
@@ -882,6 +889,7 @@ export function drawHud(
   //
   // 2026-09-11, 형: **"재화를 '훈련'으로 하니까 전혀 돈버는 기분이 아니야."**
   // '훈련 12' 였던 자리가 이제 **엽전 하나 + 12냥**이다 (game/money.ts).
+  if (hud.bare !== true) {
   const training = hud.training | 0
   if (training !== cache.training) {
     cache.training = training
@@ -929,6 +937,7 @@ export function drawHud(
     ctx.font = M.fSub
     ctx.fillStyle = THEME.hudDim
     ctx.fillText('소리 잠김 · 화면을 한 번 누르면 켜짐', cam.w - M.padX, rightY)
+  }
   }
 
   drawStageCard(ctx, cam, w, t)

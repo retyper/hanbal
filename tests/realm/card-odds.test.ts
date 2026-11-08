@@ -17,7 +17,7 @@ type CardLine = Extract<ReportLine, { kind: 'card' }>
 
 const ourNode = (r: Realm): string => Object.values(r.nodes).filter((n) => n.owner === r.player && n.kind !== 'sodo').sort((a, b) => (a.id < b.id ? -1 : 1))[0]!.id
 
-function play(seed: number, card: (r: Realm) => Card, pick: 0 | 1): { r: Realm; pv: NonNullable<ReturnType<typeof cardPreview>>; line: CardLine } {
+function play(seed: number, card: (r: Realm) => Card, pick: 0 | 1 | 2): { r: Realm; pv: NonNullable<ReturnType<typeof cardPreview>>; line: CardLine } {
   const r = byeonhanMini(seed)
   r.stock[r.player]!.grain = 400 + seed * 7
   r.stock[r.player]!.iron = 30 + seed
@@ -30,10 +30,10 @@ function play(seed: number, card: (r: Realm) => Card, pick: 0 | 1): { r: Realm; 
 }
 
 describe('사건 카드 — 굴리는 답의 %', () => {
-  const rolled: Array<{ kind: Card['kind']; pick: 0 | 1; die: string; want: number }> = [
+  const rolled: Array<{ kind: Card['kind']; pick: 0 | 1 | 2; die: string; want: number }> = [
     { kind: 'locust', pick: 1, die: 'wait', want: P.realm.cardLocustOk },
     { kind: 'plague', pick: 1, die: 'spread', want: P.realm.cardPlagueOk },
-    { kind: 'pirates', pick: 1, die: 'fight', want: P.realm.cardPirateOk },
+    { kind: 'pirates', pick: 2, die: 'fight', want: P.realm.cardPirateOk },
   ]
   for (const x of rolled) {
     it(`${x.kind} — 미리 본 % 가 판정 문턱이고, 여러 판이면 그 비율로 이룬다`, () => {
@@ -85,11 +85,11 @@ describe('사건 카드 — 미리 본 수 = 실제로 걸린 수', () => {
     }
   })
 
-  it('바다 도적에 맞서면 — 이기면 미리 본 쇠, 지면 미리 본 집과 곡식', () => {
+  it('바다 도적을 장수에게 맡기면 — 이기면 미리 본 쇠, 지면 미리 본 집과 곡식', () => {
     let won = 0
     let lost = 0
     for (let seed = 1; seed <= 40; seed++) {
-      const { pv, line } = play(seed, (r) => ({ kind: 'pirates', season: r.season, node: ourNode(r) }), 1)
+      const { pv, line } = play(seed, (r) => ({ kind: 'pirates', season: r.season, node: ourNode(r) }), 2)
       if (line.good === true) {
         won++
         assert.equal(line.iron, pv.win!.iron)

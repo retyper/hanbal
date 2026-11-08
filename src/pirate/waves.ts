@@ -1,0 +1,89 @@
+/**
+ * 바다도적 막기 — 물결 표 (docs/realm/SNIPE.md §0-9).
+ *
+ * 판의 배치는 전부 여기서 굽는다: 시드·세기 → 물결 셋의 「언제 무엇이 어디서」.
+ * 손이 쏜 결과만 바깥(sim.ts)에서 들어온다 — 같은 시드면 같은 물결이다 (A1).
+ * DOM·시계 없음. 숫자는 P.pirate.
+ */
+import { makeRng } from '../core/rng.ts'
+import { P } from '../tune/params.ts'
+import type { ArrowKindId } from '../sim/types.ts'
+
+/** 물결 하나에서 나오는 것 하나 — at 은 그 물결이 열린 뒤의 초 */
+export type Spawn =
+  | { readonly at: number; readonly what: 'sword'; readonly x: number; readonly speed: number }
+  | { readonly at: number; readonly what: 'archer'; readonly x: number; readonly delay: number }
+  | { readonly at: number; readonly what: 'captain'; readonly x: number }
+  | { readonly at: number; readonly what: 'barrel'; readonly x: number; readonly arrow: ArrowKindId }
+
+export interface Wave {
+  readonly spawns: readonly Spawn[]
+}
+
+/** 궤짝에 드는 살 — 유엽전(basic)은 늘 쥐고 있으니 뺀다 */
+export const BARREL_ARROWS: readonly ArrowKindId[] = ['pierce', 'burst', 'split', 'homing', 'chain', 'heavy', 'scatter', 'rapid']
+
+export const WAVE_COUNT = 3
+
+/** 세기 1 작은 무리 · 2 보통 · 3 큰 무리 — 칼잡이 수가 ±sevCount 만큼 */
+export function swordCount(wave: number, sev: number): number {
+  const R = P.pirate
+  const base = wave === 0 ? R.count1 : wave === 1 ? R.count2 : R.count3
+  const s = Math.max(1, Math.min(3, Math.round(sev))) - 2
+  return Math.max(1, Math.round(base * (1 + s * R.sevCount)))
+}
+
+/** 물결 셋 — 시드 하나에서 (같은 시드 = 같은 판) */
+export function bakeWaves(seed: number, sev: number): Wave[] {
+  const R = P.pirate
+  const rng = makeRng((seed ^ 0x5a17e) >>> 0)
+  const out: Wave[] = []
+  for (let k = 0; k < WAVE_COUNT; k++) {
+    const spawns: Spawn[] = []
+    const n = swordCount(k, sev)
+    const gap = R.gap * Math.pow(R.gapMul, k)
+    const v = R.speed + R.speedStep * k
+    let t = 0
+    let made = 0
+    while (made < n) {
+      const pair = made + 1 < n && rng.chance(R.pairChance)
+      const sp = (): number => v * (1 + (rng.next() * 2 - 1) * R.speedJitter)
+      spawns.push({ at: t, what: 'sword', x: R.spawnX, speed: sp() })
+      made++
+      if (pair) {
+        spawns.push({ at: t, what: 'sword', x: R.spawnX + R.pairGap, speed: sp() })
+        made++
+      }
+      t += gap * (0.8 + rng.next() * 0.4)
+    }
+    const span = t
+    // 배 위 궁수 — 둘째·셋째 물결이 열리자마자 배에 선다
+    const na = k === 1 ? R.archers2 : k === 2 ? R.archers3 : 0
+    for (let i = 0; i < na; i++) spawns.push({ at: 0, what: 'archer', x: R.boatX + i * R.archerSpread, delay: i * R.archerStagger })
+    // 두목 — 셋째 물결 가운데쯤
+    if (k === 2) spawns.push({ at: span * R.captainAt, what: 'captain', x: R.spawnX })
+    // 궤짝 — 물결 안에 고루, 무엇이 들었나는 시드로 (같은 물결에 같은 살이 겹치지 않게)
+    const bag = [...BARREL_ARROWS]
+    for (let i = 0; i < R.barrels; i++) {
+      const j = Math.floor(rng.next() * bag.length)
+      const arrow = bag.splice(j, 1)[0] ?? 'pierce'
+      const at = span * ((i + 0.3 + rng.next() * 0.4) / Math.max(1, R.barrels))
+      spawns.push({ at, what: 'barrel', x: R.spawnX + 1, arrow })
+    }
+    spawns.sort((a, b) => a.at - b.at)
+    out.push({ spawns })
+  }
+  return out
+}
+
+/** 포구를 맡은 장수의 무예 → 궁수 근력 레벨 (당김이 빨라진다) · 다른 스탯은 바탕 */
+export function archerStr(mu: number): number {
+  const R = P.pirate
+  return Math.max(0, R.stat + Math.max(0, mu - R.muBase) * R.muStat)
+}
+
+/** 포구 경계(0~1) → 목책 수 */
+export function palisadeLives(alert: number): number {
+  const R = P.pirate
+  return Math.round(R.lives) + (alert >= R.watchLife ? 1 : 0)
+}

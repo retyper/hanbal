@@ -29,6 +29,23 @@ import { drawHud } from './hud.ts'
 import type { HudState } from './hud.ts'
 
 /**
+ * 장면의 갈고리 — 활터 장면을 빌려 쓰는 작은 판(바다도적 막기 · src/pirate/draw.ts)이 제 그림을 끼우는 자리.
+ * 활터·밤 판·겨루기는 부르지 않으므로 그대로다. 갈고리도 **읽기만** 한다 (A1).
+ */
+export interface SceneHooks {
+  /** 하늘·능선 대신 — 그렸으면 true */
+  backdrop?(ctx: CanvasRenderingContext2D, cam: Camera, w: World): boolean
+  /** 땅을 그린 뒤, 과녁보다 먼저 (물가·목책) */
+  ground?(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void
+  /** 과녁 하나를 대신 그린다 — 그렸으면 true (기본 그림을 건너뛴다) */
+  target?(ctx: CanvasRenderingContext2D, cam: Camera, w: World, t: Target, x: number, y: number, rx: number, ry: number): boolean
+}
+let sceneHooks: SceneHooks | null = null
+export function setSceneHooks(h: SceneHooks | null): void {
+  sceneHooks = h
+}
+
+/**
  * 능선 높이 테이블. valueNoise는 호출마다 클로저를 만들어서(core/math.ts) 매 프레임 90번 부르면
  * 프레임당 힙 할당 0이 깨진다 (A5). 생성 시 한 번만 굽고, 그릴 땐 인덱싱+보간만 한다.
  */
@@ -580,6 +597,10 @@ function drawTargets(
     const sq = targetSquash(fx, t.id)
     const rx = r * sq.sx
     const ry = r * sq.sy
+    if (sceneHooks?.target !== undefined && sceneHooks.target(ctx, cam, w, t, x, y, rx, ry)) {
+      ctx.globalAlpha = 1
+      continue
+    }
 
     // 맞아서 떨어지는 중인 과녁은 이미 죽은 것이다. 아직 살아 있는 것과 헷갈리면 안 된다.
     if (t.falling) ctx.globalAlpha = 0.55
@@ -2315,7 +2336,9 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       // 하늘은 능선보다 먼저. 별이 산 위로 뜨면 산이 유리가 된다.
       // ★ 배경은 **그림**이다 (2026-09-20) — 그 시각의 그림이 있으면 하늘·구름·능선·안개·솔을 통째로 대신한다.
       //   없거나 아직 안 왔으면 예전 벡터 풍경이 선다.
-      if (!drawBackdrop(c, cam, sky)) {
+      if (sceneHooks?.backdrop?.(c, cam, w) === true) {
+        // 판이 제 그림을 깔았다 (setSceneHooks)
+      } else if (!drawBackdrop(c, cam, sky)) {
         drawSky(c, cam, r.stars, w.elapsed, sky)
         drawClouds(c, cam, r.clouds, w.elapsed, sky)
         drawRidge(c, cam, r.faint, BG.faintParallax, sky.ridgeFaint)
@@ -2328,6 +2351,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       // ── 땅 — 평지면 한 줄, 언덕이 있으면 꺾은선을 따라 (sim/terrain.ts) ──
       // 그림 땅에는 풀이 이미 그려져 있다 — 선으로 그은 풀포기는 그림이 없을 때만.
       if (!drawGround(c, cam, w, sky)) drawTufts(c, cam, w, r.tufts)
+      sceneHooks?.ground?.(c, cam, w)
 
       // ── 그림자 — 가장 싼 입체감 (docs/MEGAHIT.md §4-2, 렌즈 ⑥ "전부 떠 있다") ──
       // 지면 위·과녁 아래. 색을 새로 만들지 않고 지면색을 알파로 겹칠 뿐이다 (GDD 8장).

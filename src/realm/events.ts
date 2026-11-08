@@ -269,13 +269,32 @@ export interface CardPlan {
   readonly lose?: CardFx
   /** 보고 줄에 남길 장수 — 다툼에서 편든 이 · 들어온 망명자 */
   readonly hero?: string
+  /**
+   * 손으로 쏘는 답이다 (바다도적 막기 · SNIPE §0-9) — 아직 안 쐈으면 win(다 막으면)·lose(첫 물결에서 지면)만 보인다.
+   * 쏜 뒤(held 를 넘기면)에는 sure 에 그 결과가 들고 good 이 정해진다. 굴림이 없다
+   */
+  readonly hand?: true
+  readonly good?: boolean
+}
+
+/** 바다도적 막기 — 다 막으면 도적의 쇠 × cardPirateWinMul · 못 막으면 막은 물결마다 잃는 몫이 cardPirateHoldCut 씩 준다 */
+export function pirateLossMul(held: number): number {
+  return Math.max(0, 1 - Math.max(0, Math.floor(held)) * P.realm.cardPirateHoldCut)
+}
+
+/** 바다도적 막기에 넘길 것 — 시드(계절·포구) · 포구 장수의 무예 · 포구 경계 · 세기 (판 쪽 src/pirate/waves.ts 가 목책·근력으로 바꾼다) */
+export function pirateMission(r: Realm, c: Card): { seed: number; mu: number; watch: number; sev: number } {
+  const node = c.node ?? ''
+  let seed = (r.seed ^ Math.imul(c.season + 1, 2654435761) ^ 0x9e3779b9) >>> 0
+  for (const ch of node) seed = Math.imul(seed ^ ch.charCodeAt(0), 16777619) >>> 0
+  return { seed, mu: postHero(r, node)?.mu ?? 0, watch: r.watch[node]?.alert ?? 0, sev: c.sev ?? 2 }
 }
 
 /**
  * 이 답을 고르면 무엇이 되나 — 화면은 이것을 아이콘·숫자로, 엔진은 이것을 그대로 건다 (어긋날 수 없게 한 셈).
  * have — 카드가 걸릴 때의 창고 (화면은 이번 계절 명령을 뺀 남은 것을 넘긴다 · 카드는 명령 뒤에 걸린다)
  */
-export function cardPreview(r: Realm, c: Card, pick: 0 | 1 | 2, have?: { readonly grain: number; readonly iron: number }): CardPlan | null {
+export function cardPreview(r: Realm, c: Card, pick: 0 | 1 | 2, have?: { readonly grain: number; readonly iron: number }, held?: number): CardPlan | null {
   const f = r.player
   if (f === undefined) return null
   const R = P.realm
@@ -331,7 +350,14 @@ export function cardPreview(r: Realm, c: Card, pick: 0 | 1 | 2, have?: { readonl
       }
     case 'pirates':
       if (pick === 0) return { sure: { grain: cost(R.cardPirateRansom * m) } }
-      // 맞선다 — 포구를 맡은 장수와 경계가 이길 가망을 올린다 (위원회 11-04 F10 · 통제 원칙)
+      // 맞선다 — 바다도적 막기 판에서 직접 쏜다 (SNIPE §0-9 · 형 11-08). 굴림 없이 막은 물결 수로 정해진다
+      if (pick === 1) {
+        const win: CardFx = { iron: Math.round(R.cardPirateIron * m * R.cardPirateWinMul) }
+        const lose = (h: number): CardFx => ({ hurt: hurt([c.node!], R.cardPirateHit * pirateLossMul(h)), grain: cost(R.cardPirateLoss * pirateLossMul(h)) })
+        if (held === undefined) return { sure: {}, hand: true, win, lose: lose(0) }
+        return held >= 3 ? { sure: win, good: true } : { sure: lose(held), good: false }
+      }
+      // 장수에게 맡긴다 — 옛 굴림 그대로: 포구를 맡은 장수와 경계가 이길 가망을 올린다 (위원회 11-04 F10 · 통제 원칙)
       return { sure: {}, chance: Math.min(R.cardPirateMax, ok(R.cardPirateOk) + (postHero(r, c.node!) !== null ? R.cardPirateChief : 0) + (r.watch[c.node!]?.alert ?? 0) * R.cardPirateWatch), die: 'fight', win: { iron: Math.round(R.cardPirateIron * m) }, lose: { hurt: hurt([c.node!], R.cardPirateHit), grain: cost(R.cardPirateLoss) } }
     case 'exile': {
       // 돌려보낸다 — 쫓아낸 나라가 우리를 좋게 본다 · 받으면 그 나라가 노한다 (위원회 11-04 F5 · 돌려보내기가 아무 일 없어 늘 밀렸다)
@@ -473,11 +499,14 @@ export function resolveCard(r: Realm, orders: readonly Order[], lines: ReportLin
   const o = orders.find((x): x is Extract<Order, { kind: 'card' }> => x.kind === 'card' && x.faction === f)
   // 고르지 않으면 첫째 — 다만 망명자는 돌려보낸다 (가만히 있는데 장수가 느는 일이 없게 · 받으려면 눌러서) · 장수 다툼은 침묵
   const n = CARDS[c.kind].opts.length
-  const pick: 0 | 1 | 2 = o !== undefined && o.pick < n ? o.pick : o !== undefined ? 0 : cardFallback(c.kind)
-  const plan = cardPreview(r, c, pick)!
+  let pick: 0 | 1 | 2 = o !== undefined && o.pick < n ? o.pick : o !== undefined ? 0 : cardFallback(c.kind)
+  // 손으로 쏘는 답(바다도적 막기)을 골랐는데 판을 안 쐈으면(옛 초안 · 쏘지 않고 닫음) 장수에게 맡긴다 (굴림)
+  const held = o !== undefined && typeof o.held === 'number' && Number.isFinite(o.held) ? Math.max(0, Math.min(3, Math.floor(o.held))) : undefined
+  if (held === undefined && cardPreview(r, c, pick)?.hand === true) pick = 2
+  const plan = cardPreview(r, c, pick, undefined, held)!
   const tally = { grain: 0, iron: 0, hh: 0 }
   applyFx(r, f, plan.sure, tally, lines)
-  let good: boolean | undefined
+  let good: boolean | undefined = plan.good
   if (plan.chance !== undefined) {
     good = roll(r.seed, r.season, `card-res:${c.kind}:${plan.die}`) < plan.chance
     const fx = good ? plan.win : plan.lose
@@ -487,6 +516,7 @@ export function resolveCard(r: Realm, orders: readonly Order[], lines: ReportLin
   const hero = plan.hero
   lines.push({
     kind: 'card', faction: f, card: c.kind, pick, ...(c.why !== undefined ? { why: c.why } : {}),
+    ...(plan.good !== undefined && held !== undefined ? { held } : {}),
     ...(grain !== 0 ? { grain } : {}), ...(iron !== 0 ? { iron } : {}), ...(hh !== 0 ? { hh } : {}),
     ...(good !== undefined ? { good } : {}), ...(hero !== undefined ? { hero } : {}), ...(c.node !== undefined ? { node: c.node } : {}),
   })

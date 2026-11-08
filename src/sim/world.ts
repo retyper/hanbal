@@ -494,6 +494,25 @@ export function sandboxAdd(w: World, spec: TargetSpec): void {
 }
 
 /**
+ * 판 도중에 과녁/적을 세운다 — 물결로 몰려오는 판(바다도적 막기 · src/pirate/sim.ts)이 쓴다.
+ * 빈 자리를 다시 쓰고, 자리 번호(id)는 **그 자리의 번호**를 지킨다 (sandboxAdd 는 0번 자리를 끝 번호로 덮어 겹쳤다).
+ * 빈 자리가 없을 때만 늘린다 — 부르는 쪽이 판 머리에 넉넉히 늘려 두면 핫 루프 할당이 없다 (A5).
+ */
+export function spawnTarget(w: World, spec: TargetSpec): Target {
+  let i = 0
+  while (i < w.targets.length && w.targets[i]!.alive) i++
+  if (i === w.targets.length) w.targets.push(newTarget())
+  const slot = w.targets[i]!
+  loadTarget(slot, i, spec, w.stage)
+  return slot
+}
+
+/** 과녁 자리를 미리 늘려 둔다 (spawnTarget 이 판 도중에 할당하지 않게) */
+export function reserveTargets(w: World, n: number): void {
+  growTargets(w, n)
+}
+
+/**
  * 판 재시작. **새 World 를 만들지 않는다.**
  * R 키 연타로 매번 객체를 새로 만들면 GC 가 프레임을 끊어먹는다 (A5).
  */

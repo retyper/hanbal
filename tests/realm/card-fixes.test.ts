@@ -41,13 +41,13 @@ describe('사건 카드 고침', () => {
     const p = cardPreview(r0(), card('mentor', { hero: 'chief', hero2: 'us-1' }), 1)!
     assert.deepEqual(p.sure.ties, [['chief', 'us-1', P.realm.cardMentorTie]])
   })
-  it('F10 바다 도적 · 맞선다 — 포구를 맡은 장수가 있으면 가망이 오른다', () => {
+  it('F10 바다 도적 · 장수에게 맡긴다 — 포구를 맡은 장수가 있으면 가망이 오른다', () => {
     const r = r0()
     const port = 'our-north'
-    const a = cardPreview(r, card('pirates', { node: port }), 1)!.chance!
+    const a = cardPreview(r, card('pirates', { node: port }), 2)!.chance!
     r.heroes['us-1']!.post = port
     r.heroes['us-1']!.at = port
-    const b = cardPreview(r, card('pirates', { node: port }), 1)!.chance!
+    const b = cardPreview(r, card('pirates', { node: port }), 2)!.chance!
     assert.ok(b > a, `${a} → ${b}`)
   })
   it('F11 사신의 선물 · 크게 답례 — 나가는 곡식은 곳간을 넘지 않는다', () => {
