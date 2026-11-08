@@ -233,6 +233,7 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'w-85-sinji-neoul', // 11-07 신지 너울 · 잠수 뒤 숨 고르기, 손 위치 유지
   'w-01-silla-princess', // 11-07 고은 · 부채 든 손 교정본 · 기존 세로 영상 회수
   'w-19-buyeo-fur-princess', // 11-07 가온 · 수정꽃을 바라보며 호흡
+  'w-37-michuhol-gaennae', // 11-08 낮 갯내 v2 · 무릎을 굽혀 몸을 흔드는 견제 후 단검을 던져 받는다 (형: 첫 판은 부자연스럽고 더 움직였으면)
   'w-62-byeokjin-byeol', // 11-08 별 · 새 집게 자세로 다시 (형: 좋음) · 옛 자세 MP4 는 assets_src/realm/retired/awaken-loop
   'w-32-golbeol-budeul', // 11-08 부들 · 갈대 속 경쟁자를 보고 몸을 기울인다 (형: 괜찮다)
   'w-54-maga-dalli', // 11-08 달리 · 등의 활을 고쳐 메며 웃는다 (형: 좋음)
