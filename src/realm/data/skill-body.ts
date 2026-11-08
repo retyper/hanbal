@@ -12,4 +12,5 @@ export const SKILL_BODY: ReadonlySet<string> = new Set<string>([
   'g-71-baekje-onjo', // 온조 · 고리자루 칼로 비스듬히 크게 벤다 (챗지피티 edu)
   'g-74-saro-hyeokgeose', // 혁거세 · 흰빛이 흐르는 칼을 높이 치켜든 내려베기 (챗지피티 edu)
   'w-33-gammun-gamsil', // 감실 · 방울 지팡이를 높이 흔드는 굿 · 청동 거울이 번쩍 (챗지피티 edu)
+  'w-77-sabeol-malgalgi', // 말갈기 · 뛰어올라 창 찌르기 (챗지피티 retyper)
 ])
