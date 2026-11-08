@@ -307,8 +307,10 @@ export function skillCutHtml(art: string, id: SkillId, bust: string | null, hero
   h += `<div class="wsk-ttl" style="animation:wsk-slideR ${end}ms cubic-bezier(.2,1.2,.4,1) ${ms(140)} both${shake}">${brush}<b class="${[...skillName].length > 5 ? 'long' : ''}">${esc(skillName)}</b><span>${esc(heroName)}</span></div>`
   // 기술의 몸짓 — 그림 낱낱
   let z = 10
+  // 헛치면 맞는 순간 무렵부터의 「먹힌 그림」(꽂힘 번쩍 · 흰 깃발 · 솟는 말뚝 · 걸린 밧줄)은 안 나온다 — 화살은 스쳐 지나가고 남는 건 갈라진 먹
+  const payoff = seq.hit !== null && res === 'miss' ? seq.hit - P.realm.warSkMissCutMs : Infinity
   for (const s of seq.sprites) {
-    if (!READY.has(s.src)) continue
+    if (!READY.has(s.src) || s.t >= payoff) continue
     const n = s.n ?? 1
     for (let i = 0; i < n; i++) {
       const rot = s.rot !== undefined ? (n > 1 ? -s.rot + (2 * s.rot * i) / (n - 1) : s.rot) : 0
