@@ -35,7 +35,7 @@ const ART = {
   /** 칼잡이 — 수군 20컷 띠 (서기 0~3 · 걷기 4~11 · 공격 12~17) · 칸 가로/세로 */
   sword: { file: 'anim2/pirate-sword.png', ar: 153 / 160, walk0: 4, walkN: 8, hit0: 12, hitN: 6, tallM: 1.9 }, // 11-08 제미나이 칼 든 바다도적 20컷 (서기·달리기·칼질·맞음·쓰러짐 · assets_src/realm/gemini/pirate)
   /** 두목 — 칼 든 장수 띠 */
-  captain: { file: 'anim2/gen-g-sword.png', ar: 150 / 160, walk0: 4, walkN: 8, hit0: 12, hitN: 6, tallM: 2.25 },
+  captain: { file: 'anim2/pirate-captain.png', ar: 143 / 160, walk0: 4, walkN: 8, hit0: 12, hitN: 6, tallM: 2.25 },
   /** 배 · 떠 오는 궤짝 그림 (제미나이 11-08 · assets_src/realm/gemini/pirate) — 못 읽으면 코드로 그린 꼴 */
   boat: 'pirate/boat.png',
   crate: 'pirate/crate.png',
