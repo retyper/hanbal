@@ -223,6 +223,7 @@ export const AWAKEN_ART: ReadonlySet<string> = new Set([
   'g-65-sangdang-soemangchi', // 11-08 상당 쇠망치 · 겹 미늘·붉은 띠·큰 쇠망치 불티
   'g-66-geonma-malbalgup', // 11-08 건마 말발굽 · 붉은 깃 투구·털 망토 미늘·칼 불티
   'g-67-gosaburi-buri', // 11-08 고사부리 부리 · 깃털 상투 남빛 미늘·맥궁 불티
+  'g-68-mujin-bitgoeul', // 11-08 무진 빛고을 · 금 머리띠 구슬 남빛 금장 예복·칼 빛 물결
 ])
 
 /**
