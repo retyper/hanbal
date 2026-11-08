@@ -98,7 +98,7 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'gj-singwigan': 'w-101-garak-singwigan', 'gj-tahae': 'g-97-tahae', 'gj-tahae-1': 'w-103-tahae-neoul',
   // 캠페인 5장 — 대무신왕 · 괴유 · 마로 · 미르 / 대소(2장과 같은 얼굴) · 부여 장수 (daemusin.ts). 있는 명치판을 나눠 쓴다
   'dm-daemusin': 'g-95-goguryeo-daemusin', 'dm-gwaeyu': 'g-98-goguryeo-gwaeyu', 'dm-maro': 'g-99-goguryeo-maro', 'dm-mir': 'w-97-goguryeo-mir',
-  'dm-daeso': 'g-100-buyeo-old-daeso', 'dm-buyeo-1': 'g-10-buyeo-horse-lord', 'dm-buyeo-2': 'w-06-buyeo-huntress',
+  'dm-daeso': 'g-100-buyeo-old-daeso', 'dm-buyeo-1': 'g-10-buyeo-horse-lord', 'dm-buyeo-2': 'w-104-buyeo-darae',
   'tut-onjo': 'g-71-baekje-onjo', 'tut-biryu': 'g-28-goguryeo-damul', 'tut-ogan': 'g-13-baekje-general', 'tut-malgalgi': 'w-77-sabeol-malgalgi', 'tut-maryeo': 'g-89-baekje-maryeo', 'tut-haebi': 'w-95-michuhol-haebi',
   'baekje-ruler': 'g-68-baekje-onnuri', 'mokji-ruler': 'w-27-mokji-jinha', 'michuhol-ruler': 'w-28-michuhol-bira',
   'ungcheon-ruler': 'g-22-ungcheon-gomnae', 'sangdang-ruler': 'g-23-sangdang-soedal', 'geonma-ruler': 'w-46-geonma-maru',
