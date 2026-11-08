@@ -10,6 +10,7 @@
  * 움직임은 작은 그림 하나하나의 transform·opacity 뿐 (폰 그래픽 한도) · 어두워지는 막은 opacity 한 번.
  */
 import { P } from '../../tune/params.ts'
+import { SKILL_BODY } from '../../realm/data/skill-body.ts'
 
 /** 장면이 있는 기술 — 비기 아홉 + 장수의 명령 셋 */
 export type SkillId = 'snipe' | 'rite' | 'sway' | 'stand' | 'ambush' | 'vanguard' | 'feint' | 'order' | 'shout' | 'duel' | 'capture' | 'retreat'
@@ -296,11 +297,13 @@ export function skillCutHtml(art: string, id: SkillId, bust: string | null, hero
   if (READY.has(C.band)) h += `<i class="wsk-sp" style="left:50%;top:31%;width:120cqw;z-index:3"><img class="wsk-b mv-slideR" src="${img(C.band)}" alt="" style="animation-duration:${end}ms;animation-delay:0ms"></i>`
   // 초상 — 왼쪽에서 미끄러져 든다 · 맞는 순간 떤다
   const shake = seq.hit !== null ? `,wsk-hs ${R.warSkHitMs}ms steps(2) ${ms(seq.hit)} 2` : ''
-  const face = bust !== null ? `<img class="wsk-face" src="${art}bust/${bust}.jpg" alt="">` : `<img class="wsk-face unit" src="${art}icon/unit-general.png" alt="">`
+  // 비기 전신 그림이 있으면 초상 대신 전신 (src/realm/data/skill-body.ts · 형 11-08)
+  const body = bust !== null && SKILL_BODY.has(bust)
+  const face = body ? `<img class="wsk-face" src="${art}skill-body/${bust}.jpg" alt="">` : bust !== null ? `<img class="wsk-face" src="${art}bust/${bust}.jpg" alt="">` : `<img class="wsk-face unit" src="${art}icon/unit-general.png" alt="">`
   // 헛치면 맞는 순간 초상이 잿빛 막에 덮여 식는다 (filter 없이 opacity 한 번 · 폰 그래픽 한도)
   const at = seq.hit ?? Math.round(R.warSkEndMs * 0.55)
   const ash = res === 'miss' ? `<i class="wsk-ash" style="animation-delay:${ms(at)}"></i>` : ''
-  h += `<div class="wsk-bust" style="animation:wsk-${foe ? 'slideR' : 'slideL'} ${end}ms cubic-bezier(.2,1.2,.4,1) 60ms both${shake}">${face}${ash}</div>`
+  h += `<div class="wsk-bust${body ? ' body' : ''}" style="animation:wsk-${foe ? 'slideR' : 'slideL'} ${end}ms cubic-bezier(.2,1.2,.4,1) 60ms both${shake}">${face}${ash}</div>`
   // 기술 이름 — 붓 자국 위에 큰 글씨 · 그 밑에 장수 이름
   // 헛치면 붉은 붓 자국 위로 갈라진 먹이 덮여 깨진다 — 글씨 밑 층이라 기술 이름은 그대로 읽힌다
   const crack = res === 'miss' && READY.has(C.crack) ? `<img class="wsk-crack" src="${img(C.crack)}" alt="" style="animation-delay:${ms(at)}">` : ''
@@ -349,6 +352,9 @@ export const SKFX_CSS = `
 .ap .wsk-bust { position: absolute; left: 3%; top: 31%; translate: 0 -50%; width: min(44cqw, 300px); aspect-ratio: 1; z-index: 4; pointer-events: none; }
 .ap .wsk-face { width: 100%; height: 100%; object-fit: cover; object-position: top; -webkit-mask: url(__ART__fx/mask-bust.png) center / 100% 100% no-repeat; mask: url(__ART__fx/mask-bust.png) center / 100% 100% no-repeat; }
 .ap .wsk-ash { position: absolute; inset: 0; background: #12151bd9; -webkit-mask: url(__ART__fx/mask-bust.png) center / 100% 100% no-repeat; mask: url(__ART__fx/mask-bust.png) center / 100% 100% no-repeat; opacity: 0; animation: wsk-ash 260ms ease-out both; }
+/* 비기 전신 — 세로 2:3 · 남색 판의 네 귀를 둥글게 지워 싸움터에 녹인다 (그림 마스크 대신 그라디언트 하나) */
+.ap .wsk-bust.body { top: 47%; width: min(40cqw, 270px); aspect-ratio: 2 / 3; }
+.ap .wsk-bust.body .wsk-face, .ap .wsk-bust.body .wsk-ash { object-position: center; -webkit-mask: radial-gradient(closest-side, #000 72%, transparent) center / 100% 100% no-repeat; mask: radial-gradient(closest-side, #000 72%, transparent) center / 100% 100% no-repeat; }
 @keyframes wsk-ash { to { opacity: 1; } }
 .ap .wsk-m.mv-roar { animation-name: wsk-roar; animation-timing-function: cubic-bezier(.2, 1.1, .4, 1); } @keyframes wsk-roar { 0% { opacity: 0; transform: translateX(-14cqw) scale(.7); } 22% { opacity: 1; transform: translateX(0) scale(1.08); } 32% { transform: scale(1); } 74% { opacity: 1; transform: scale(1.02); } 100% { opacity: 0; transform: translateX(4cqw) scale(1.06); } }
 .ap .wsk-m.mv-stamp { animation-name: wsk-stamp; animation-timing-function: cubic-bezier(.5, 0, .9, .4); } @keyframes wsk-stamp { 0% { opacity: 0; transform: scale(2.6); } 12% { opacity: 1; transform: scale(.9); } 18% { transform: scale(1.06); } 24% { transform: scale(1); } 100% { opacity: 1; transform: scale(1); } }

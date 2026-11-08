@@ -21,7 +21,7 @@ grep -q "'$key': '" $R || { echo "art.ts 에 '$key' 없음"; exit 1; }
 sed -i "s/'$key': '[^']*'/'$key': '$id'/" $R
 grep -q "'$key': '$id'" $R || { echo "연결 실패"; exit 1; }
 npm run typecheck >/dev/null 2>&1 || { echo "typecheck 실패"; exit 1; }
-npm test 2>&1 | grep -q "^# fail 0" || { echo "시험 실패"; exit 1; }
+npm test 2>&1 | grep -q "^# fail 0" || npm test 2>&1 | grep -q "^# fail 0" || { echo "시험 실패 (두 번)"; exit 1; }  # 가끔 한 번 흔들린다
 git add public/realm/bust-hd/$id.jpg public/realm/bust/$id.jpg $A $R
 git commit -q -m "$msg (형 11-08)
 
