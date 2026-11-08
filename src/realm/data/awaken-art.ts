@@ -219,6 +219,7 @@ export const AWAKEN_ART: ReadonlySet<string> = new Set([
   'g-61-apdok-ap', // 11-08 압독 압 · 털 망토 겹 미늘·붉은 띠·큰 도끼 불티
   'g-62-gammun-gamnamu', // 11-08 감문 감나무 · 주황 머리띠 미늘 갑옷·불티 바람
   'g-63-chopal-yeoul', // 11-08 초팔 여울 · 짚 털 망토 남빛 미늘·창·물결 불티
+  'g-64-michuhol-sogeumkkun', // 11-08 미추홀 소금꾼 · 흰 소금 두건 미늘·작살 소금 바람
 ])
 
 /**
