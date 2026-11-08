@@ -103,4 +103,5 @@ export const TRUE_WAKE: ReadonlySet<string> = new Set([
   'usan-1', // 우산 강치 w-80
   'byeokjin-1', // 벽진 별빛 w-81
   'saro-2', // 11-08 사로 노을 · 형이 만든 진각성 (팔 올린 기댄 자세·붉은 비단·불티)
+  'mujin-ruler', // 11-08 무진 무등 · 깃털 창·털 어깨 비치는 옷·머리 쓸어 올린 자세
 ])
