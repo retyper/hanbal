@@ -36,6 +36,9 @@ const ART = {
   sword: { file: 'anim2/pirate-sword.png', ar: 153 / 160, walk0: 4, walkN: 8, hit0: 12, hitN: 6, tallM: 1.9 }, // 11-08 제미나이 칼 든 바다도적 20컷 (서기·달리기·칼질·맞음·쓰러짐 · assets_src/realm/gemini/pirate)
   /** 두목 — 칼 든 장수 띠 */
   captain: { file: 'anim2/gen-g-sword.png', ar: 150 / 160, walk0: 4, walkN: 8, hit0: 12, hitN: 6, tallM: 2.25 },
+  /** 배 · 떠 오는 궤짝 그림 (제미나이 11-08 · assets_src/realm/gemini/pirate) — 못 읽으면 코드로 그린 꼴 */
+  boat: 'pirate/boat.png',
+  crate: 'pirate/crate.png',
   /** 걸음 한 바퀴(컷 여덟)가 디디는 거리 (m) */
   strideM: 1.6,
   /** 공격 컷이 넘어가는 빠르기 (컷/초) */
@@ -158,6 +161,14 @@ function drawBoat(ctx: CanvasRenderingContext2D, cam: Camera, x: number): void {
   const gy = worldToScreenY(cam, 0)
   const deck = worldToScreenY(cam, R.boatDeck)
   const half = 1.3 * s
+  const pic = img(ART.boat)
+  if (pic !== null) {
+    // 배 그림 — 물에 잠긴 줄(gy)이 배 밑 1/6 쯤에 오게 · 갑판 높이(deck)까지 뱃전이 닿는다
+    const dw = half * 2.6
+    const dh = dw * pic.naturalHeight / pic.naturalWidth
+    ctx.drawImage(pic, x - dw / 2, gy + dh * 0.16 - dh, dw, dh)
+    return
+  }
   ctx.fillStyle = COL.hull
   ctx.beginPath()
   ctx.moveTo(x - half * 1.25, deck)
@@ -178,13 +189,21 @@ function drawCask(ctx: CanvasRenderingContext2D, run: PirateRun, t: Target, x: n
   ctx.arc(x, y, r * 1.45, 0, Math.PI * 2)
   ctx.fill()
   ctx.globalAlpha = 1
-  ctx.fillStyle = COL.barrel
-  ctx.beginPath()
-  ctx.ellipse(x, y, r * 0.78, r, 0, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.fillStyle = COL.barrelBand
-  ctx.fillRect(x - r * 0.78, y - r * 0.5, r * 1.56, Math.max(2, r * 0.12))
-  ctx.fillRect(x - r * 0.78, y + r * 0.38, r * 1.56, Math.max(2, r * 0.12))
+  const pic = img(ART.crate)
+  if (pic !== null) {
+    // 궤짝 그림 — 화살 묶음이 비죽한 나무 궤 · 맞는 둥근 자리(r)에 몸통을 맞춘다
+    const dh = r * 2.3
+    const dw = dh * pic.naturalWidth / pic.naturalHeight
+    ctx.drawImage(pic, x - dw / 2, y - dh * 0.58, dw, dh)
+  } else {
+    ctx.fillStyle = COL.barrel
+    ctx.beginPath()
+    ctx.ellipse(x, y, r * 0.78, r, 0, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillStyle = COL.barrelBand
+    ctx.fillRect(x - r * 0.78, y - r * 0.5, r * 1.56, Math.max(2, r * 0.12))
+    ctx.fillRect(x - r * 0.78, y + r * 0.38, r * 1.56, Math.max(2, r * 0.12))
+  }
   // 무엇이 들었나 — 그 살의 그림을 궤짝 위에 크게
   const kind = run.barrelArrow[t.id] ?? 'pierce'
   const im = sprite(`arrow-${kind}`)
