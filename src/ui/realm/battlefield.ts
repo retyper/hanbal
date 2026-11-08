@@ -3719,6 +3719,25 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         if (hh !== undefined) cutVoice = ak !== undefined ? artVoicePath(hh, ak, isRulerHero(hh)) : isMe(hh) ? null : voicePath(hh, 'tap', isRulerHero(hh))
       }
     }
+    // 적 장수의 비기·각성기 — 우리가 장수를 내세우지 않은 합에 적이 쓰면 오른쪽에서 핏빛 막으로 (11-08 형: "비기 연출도 더 고민" · 무엇에 당했는지 보이게)
+    if (anim && cutLead === null) {
+      const rd = (l.rounds ?? [])[shown - 1]
+      const weAtk = l.atkFaction === host.me
+      const fa = rd?.acts?.find((x) => x.g === 'lead' && x.s === (weAtk ? 'd' : 'a') && (x.c === 'art' || x.c === 'wake'))
+      const kind: SkillId | undefined = fa === undefined ? undefined : fa.c === 'wake' ? (fa.wake !== undefined ? WAKE_CUT[fa.wake] : undefined) : fa.art
+      const actor = fa?.hero ?? l.start?.heroes[weAtk ? 1 : 0] ?? null
+      if (fa !== undefined && kind !== undefined && actor !== null) {
+        const el = document.createElement('div')
+        const title = fa.c === 'wake' && fa.wake !== undefined ? WAKE_NAME[fa.wake] : fa.art !== undefined ? ART_NAME[fa.art] : ''
+        el.innerHTML = skillCutHtml(host.art, kind, faceFile(actor) ?? null, heroById(actor)?.name ?? '', title, skillRes(fa.res), true)
+        const cut = el.firstElementChild as HTMLElement
+        cut.addEventListener('animationend', (e) => { if (e.target === cut) cut.remove() })
+        cut.addEventListener('click', (e) => { e.stopPropagation(); cut.remove() })
+        ov.querySelector('.wsk')?.remove()
+        ov.appendChild(cut)
+        cutSfx = skillCues(kind)
+      }
+    }
     cutLead = null
     sound(anim ? (l.rounds ?? [])[shown - 1] : undefined, l.atkFaction === host.me, (anim || endNow) && l.pending === undefined && !more ? l : null)
     if (cutSfx !== null) { for (const [s, k] of cutSfx) at(s, SK_SFX[k], 0.5); cutSfx = null } // 장수 기술 장면의 소리 — sound() 가 앞의 것을 걷은 뒤에
