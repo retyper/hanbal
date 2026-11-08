@@ -143,7 +143,7 @@ const CONTACT: Readonly<Record<string, [number, number, number]>> = {
   'gen-haebi': [14, 0.87, 0.53], 'gen-heo': [14, 0.94, 0.46], 'gen-hyeokgeose': [14, 0.83, 0.94],
   'gen-hyeopbo': [14, .93, .21], 'gen-malgalgi': [14, 0.88, 0.28], 'gen-mari': [14, .98, .47],
   'gen-oi': [14, .98, .48], 'gen-onjo': [14, 0.83, 0.93], 'gen-soebi': [14, 0.80, 0.95],
-  'gen-soseono': [14, 0.92, 0.31], 'gen-goeun': [14, 0.95, 0.66], 'gen-byeol': [14, 0.76, 0.96], 'gen-sinneoul': [14, 0.94, 0.33], 'gen-haesol': [14, 0.94, 0.34], 'gen-odi': [14, 0.91, 0.39], 'gen-irang': [14, 0.86, 0.30], 'gen-dalli': [14, 0.89, 0.32], 'gen-bakdal': [14, 0.94, 0.27], 'gen-noeul': [14, 0.88, 0.27], 'gen-maehwa': [14, 0.90, 0.31], 'gen-gaon': [14, 0.98, 0.41], 'gen-eomni': [14, 0.96, 0.42], 'gen-nuri': [14, 0.98, 0.34], 'gen-bira': [14, 0.88, 0.33], 'gen-gureum': [14, 0.98, 0.42],
+  'gen-soseono': [14, 0.92, 0.31], 'gen-baram': [14, 0.96, 0.24], 'gen-goeun': [14, 0.95, 0.66], 'gen-byeol': [14, 0.76, 0.96], 'gen-sinneoul': [14, 0.94, 0.33], 'gen-haesol': [14, 0.94, 0.34], 'gen-odi': [14, 0.91, 0.39], 'gen-irang': [14, 0.86, 0.30], 'gen-dalli': [14, 0.89, 0.32], 'gen-bakdal': [14, 0.94, 0.27], 'gen-noeul': [14, 0.88, 0.27], 'gen-maehwa': [14, 0.90, 0.31], 'gen-gaon': [14, 0.98, 0.41], 'gen-eomni': [14, 0.96, 0.42], 'gen-nuri': [14, 0.98, 0.34], 'gen-bira': [14, 0.88, 0.33], 'gen-gureum': [14, 0.98, 0.42],
   'gen-biryu': [14, 0.90, 0.35], 'gen-geumha': [14, 0.94, 0.61], 'gen-geota': [14, 0.86, 0.47], 'gen-soebo': [14, 0.87, 0.57],
   'gen-gaennae': [14, 249 / 264, 47 / 160],
   'gen-budeul': [14, 266 / 280, 51 / 160],
