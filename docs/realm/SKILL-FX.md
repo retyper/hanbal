@@ -145,3 +145,35 @@
 
 이미 있는 그림을 함께 쓴다: `fx/dust.png` · `fx/spear.png` · `fx/arrow.png` · `fx/shield.png` · `fx/rope.png` · 초상 `bust/*.jpg` · 얼굴 가림막 `fx/mask-bust.png`.
 (목록은 tests/realm/skillfx.test.ts 가 skillfx.ts 와 맞는지 본다.)
+
+## 4. ★ 11-08 다음 단계 (형: "캐릭터 에셋 다 만들었으면 비기나 기술 연출도 더 고민해봐 · 챗지피티 써도 된다")
+
+지금 빈 곳 (11-08 훑어봄):
+- 비기는 **컷인뿐**이다. 컷인이 걷히면 전장에 아무 흔적이 없다 (`art`·`wake` 는 박자표에서 빠짐 · battlefield `cmdFxHtml` 에 자리 없음).
+- **적 비기는 컷인이 없다** (깃발 칩과 글 한 줄뿐). 무엇에 당했는지 눈에 안 들어온다.
+- **먹혔든 헛쳤든 같은 장면**이다 (항복 권유가 안 먹혀도, 거짓 퇴각이 간파당해도).
+- 큰 외침은 제 그림이 없고(공용 울림만), 각성 다섯은 남의 장면을 빌려 쓴다.
+- 북·호궤는 컷인이 없다.
+
+할 차례 (작게 잘라 하나씩):
+1. **먹혔다/헛쳤다 갈림** — 맞는 순간 먹히면 붉은 **네모** 도장이 쾅(둥근 붉은 해 꼴 금지) + 금빛 불티, 헛치면 붓 자국이 먹으로 갈라지고 초상이 잿빛으로 식는다. 글 없이 그림으로.
+2. **적 비기 컷인** — 오른쪽에서 붉은 먹 띠로 짧게(우리 것보다 빠르게) · "저게 온다"가 보이게.
+3. **전장 위 여운** (컷인이 걷힌 뒤 1~2초, 실제로 바뀐 자리에):
+   명궁 = 적장 머리 위로 화살이 꽂히고 휘청 · 굿 = 우리 줄 위로 혼불이 오른다 · 항복 권유 = 넘어온 적 줄 위로 흰 깃발이 하나씩 팝 ·
+   버텨라·다잡기 = 우리 앞줄 앞에 방패벽 빛 줄 · 샛길 기습 = 적 활 줄 밑에서 갈대가 갈라지고 먼지 · 선봉 = 우리 앞줄에서 창끝 돌진 줄 ·
+   거짓 퇴각 = 적 앞줄 발밑에 말뚝이 솟는다 · 큰 외침 = 우리 장수에서 동그란 울림 파문.
+4. **제 그림 굽기** (제미나이 · 물건 하나 = 새 대화 · 초록 바탕): 큰 외침 먹 범 머리 포효 · 각성 다섯 (흙 바위 솟음 · 바람 회오리 · 불기둥 · 물 용오름 · 벼락) · 도장 · 먹 갈라짐.
+5. **장수 전신 컷** (챗지피티 · 사람 그림): 이름난 장수는 초상 대신 "비기 자세" 전신 한 장 (활 만작 · 창 찌르기 · 방울 흔들기) · 남색 민무늬 판 · 한 사람마다 새 대화.
+6. 북·호궤 컷인.
+7. 헛쳤을 때는 「먹혔을 때만 보일 그림」(항복 권유의 흰 깃발 · 명궁의 꽂힘 번쩍)을 빼거나 바꾼다 — 지금은 갈라진 먹·잿빛 초상만 더해진다.
+
+### 11-08 구운 것 — 먹혔다/헛쳤다 · 큰 외침의 범
+
+| 파일 | 크기 | 바탕 | 프롬프트 |
+|---|---|---|---|
+| skill/common/seal-stamp.png | 384x380 | #ff00ff | `a square Korean cinnabar-red seal stamp impression (dojang) … thick square border with rough worn ink edges … abstract carved pattern of interlocking cloud scrolls and a stylized bow-and-arrow motif (NO letters) … square shape only (absolutely not round, no circle)` · 먹혔을 때 기술 이름 옆에 쾅 |
+| skill/common/ink-crack.png | 768x219 | #ff00ff | `one bold horizontal brush stroke of black sumi ink that has CRACKED and SHATTERED apart in the middle … flakes and dry ink dust falling down, dull grey-black, lifeless and spent` · 헛쳤을 때 이름 위에 · 받은 원본에 같은 그림이 둘 그려져 아래 것만 잘라 씀 |
+| skill/shout/roar-tiger.png | 768x432 | #000 | `the head of a roaring tiger made of glowing light-painted brush strokes … white-hot core strokes fading to pale gold and amber, side profile facing right, jaws wide open … a blast of light spraying forward out of the mouth` · 먹으로 그린 범(마젠타 바탕)은 어두운 장면에서 안 보이고 마젠타가 번져 버림 |
+
+헛침의 초상: 맞는 순간 초상 위에 잿빛 막(`.wsk-ash` · 초상 가림막과 같은 꼴)이 opacity 로 덮인다 (filter 애니 금지 · 폰 그래픽 한도).
+갈림은 battlefield `skillRes(act.res)` — hit·won·ok 는 도장 · wasted·fail·blocked·lost 는 갈라진 먹 · 비김(even)·버팀(stall)은 갈림 없이.

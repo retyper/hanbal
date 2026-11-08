@@ -19,6 +19,7 @@ export type SkSfx = 'whoosh' | 'draw' | 'release' | 'impact' | 'drum' | 'bell' |
 /** 움직임 — 아래 CSS 의 키프레임 (wsk-<이름>) */
 type Mv = 'fade' | 'pop' | 'flash' | 'slideL' | 'slideR' | 'streak' | 'flyR' | 'drop' | 'rise' | 'slam' | 'drawshoot' | 'jingle' | 'wave' | 'spray' | 'puff'
   | 'deflect' | 'partL' | 'leap' | 'slash' | 'thrust' | 'trailL' | 'spring' | 'beat' | 'snap' | 'clash' | 'lasso' | 'burst' | 'flagup'
+  | 'roar' | 'stamp' | 'crack'
 
 /**
  * 그림 한 장(또는 n 장) — t·d 는 장면 처음부터 ms · x·y 는 화면 가운데 자리(%) · w 는 너비(화면 너비의 %) · n 장이면 dx·dy 만큼 벌리고 dt 만큼 늦춘다.
@@ -33,6 +34,8 @@ const C = {
   speed: 'skill/common/speedlines.png', band: 'skill/common/ink-band.png', brush: 'skill/common/title-brush.png',
   flash: 'skill/common/flash.png', ink: 'skill/common/ink-burst.png', spark: 'skill/common/spark.png', wave: 'skill/common/shout-wave.png',
   slash: 'skill/common/slash.png',
+  // 먹혔다 · 헛쳤다 (11-08 형: "비기 연출도 더 고민해봐") — 네모 붉은 도장 · 갈라진 먹 붓
+  seal: 'skill/common/seal-stamp.png', crack: 'skill/common/ink-crack.png',
   // 이미 있는 그림
   dust: 'dust.png', spear: 'spear.png', arrow: 'arrow.png', shield: 'shield.png', rope: 'rope.png',
 } as const
@@ -134,6 +137,8 @@ export const SKILL_SEQ: Readonly<Record<SkillId, Seq>> = {
   // 큰 외침 — 초상에서 큰 울림이 거듭 퍼지고 불티가 튀며, 앞의 흙먼지가 적 쪽으로 밀려난다
   shout: {
     sprites: [
+      // 빛으로 그린 범이 장수 곁에서 튀어나와 오른쪽으로 포효한다 (제미나이 11-08 · 검은 바탕 빛)
+      { src: 'skill/shout/roar-tiger.png', t: 300, d: 960, x: 50, y: 64, w: 84, mv: 'roar' },
       { src: C.wave, t: 380, d: 640, x: 26, y: 40, w: 72, mv: 'wave', n: 4, dt: 110 },
       sparks(420, 26, 40, 10),
       { src: C.dust, t: 600, d: 700, x: 46, y: 74, w: 22, mv: 'puff', n: 4, dx: 10, dt: 50 },
@@ -178,7 +183,7 @@ const FRAME = [C.speed, C.band, C.brush] as const
 export function skillAssets(): string[] {
   const s = new Set<string>(FRAME)
   for (const q of Object.values(SKILL_SEQ)) for (const x of q.sprites) s.add(x.src)
-  for (const x of [C.flash, C.ink, C.spark]) s.add(x)
+  for (const x of [C.flash, C.ink, C.spark, C.seal, C.crack]) s.add(x)
   return [...s]
 }
 
@@ -211,7 +216,7 @@ export function skillCues(id: SkillId): Array<readonly [number, SkSfx]> {
  * 장면 한 판의 HTML — 초상(bust · 없으면 장수 그림) · 기술 이름 · 장수 이름 · 기술의 몸짓.
  * 바깥 상자가 끝까지 도는 애니메이션(wsk-end)이 끝나면 부르는 쪽이 걷는다 · 누르면 바로 걷는다.
  */
-export function skillCutHtml(art: string, id: SkillId, bust: string | null, heroName: string, skillName: string): string {
+export function skillCutHtml(art: string, id: SkillId, bust: string | null, heroName: string, skillName: string, res: 'hit' | 'miss' | null = null): string {
   const R = P.realm
   const sp = R.warSkSpeed
   const end = Math.round(R.warSkEndMs * sp)
@@ -226,9 +231,14 @@ export function skillCutHtml(art: string, id: SkillId, bust: string | null, hero
   // 초상 — 왼쪽에서 미끄러져 든다 · 맞는 순간 떤다
   const shake = seq.hit !== null ? `,wsk-hs ${R.warSkHitMs}ms steps(2) ${ms(seq.hit)} 2` : ''
   const face = bust !== null ? `<img class="wsk-face" src="${art}bust/${bust}.jpg" alt="">` : `<img class="wsk-face unit" src="${art}icon/unit-general.png" alt="">`
-  h += `<div class="wsk-bust" style="animation:wsk-slideL ${end}ms cubic-bezier(.2,1.2,.4,1) 60ms both${shake}">${face}</div>`
+  // 헛치면 맞는 순간 초상이 잿빛 막에 덮여 식는다 (filter 없이 opacity 한 번 · 폰 그래픽 한도)
+  const at = seq.hit ?? Math.round(R.warSkEndMs * 0.55)
+  const ash = res === 'miss' ? `<i class="wsk-ash" style="animation-delay:${ms(at)}"></i>` : ''
+  h += `<div class="wsk-bust" style="animation:wsk-slideL ${end}ms cubic-bezier(.2,1.2,.4,1) 60ms both${shake}">${face}${ash}</div>`
   // 기술 이름 — 붓 자국 위에 큰 글씨 · 그 밑에 장수 이름
-  const brush = READY.has(C.brush) ? `<img class="wsk-brush" src="${img(C.brush)}" alt="">` : ''
+  // 헛치면 붉은 붓 자국 위로 갈라진 먹이 덮여 깨진다 — 글씨 밑 층이라 기술 이름은 그대로 읽힌다
+  const crack = res === 'miss' && READY.has(C.crack) ? `<img class="wsk-crack" src="${img(C.crack)}" alt="" style="animation-delay:${ms(at)}">` : ''
+  const brush = (READY.has(C.brush) ? `<img class="wsk-brush" src="${img(C.brush)}" alt="">` : '') + crack
   h += `<div class="wsk-ttl" style="animation:wsk-slideR ${end}ms cubic-bezier(.2,1.2,.4,1) ${ms(140)} both${shake}">${brush}<b class="${[...skillName].length > 5 ? 'long' : ''}">${esc(skillName)}</b><span>${esc(heroName)}</span></div>`
   // 기술의 몸짓 — 그림 낱낱
   let z = 10
@@ -241,6 +251,9 @@ export function skillCutHtml(art: string, id: SkillId, bust: string | null, hero
       h += `<i class="wsk-sp${n > 1 ? ' wsk-n' : ''}" style="${wrap}"><img class="wsk-m mv-${s.mv}" src="${img(s.src)}" alt="" style="animation-duration:${ms(s.d)};animation-delay:${ms(s.t + (s.dt ?? 0) * i)}"></i>`
     }
   }
+  // 먹혔다 — 기술 이름 옆에 붉은 네모 도장이 쾅 · 헛쳤다 — 이름의 붓 자국이 먹으로 갈라져 떨어진다 (글 없이 그림으로)
+  const left = R.warSkEndMs - at
+  if (res === 'hit' && READY.has(C.seal)) h += `<i class="wsk-sp" style="left:86%;top:20%;width:22cqw;z-index:${z++};rotate:-8deg"><img class="wsk-m mv-stamp" src="${img(C.seal)}" alt="" style="animation-duration:${ms(left)};animation-delay:${ms(at)}"></i>`
   return h + '</div>'
 }
 
@@ -261,6 +274,11 @@ export const SKFX_CSS = `
 .ap .wsk-sp > .wsk-b { animation-name: wsk-slideR; }
 .ap .wsk-bust { position: absolute; left: 3%; top: 31%; translate: 0 -50%; width: min(44cqw, 300px); aspect-ratio: 1; z-index: 4; pointer-events: none; }
 .ap .wsk-face { width: 100%; height: 100%; object-fit: cover; object-position: top; -webkit-mask: url(__ART__fx/mask-bust.png) center / 100% 100% no-repeat; mask: url(__ART__fx/mask-bust.png) center / 100% 100% no-repeat; }
+.ap .wsk-ash { position: absolute; inset: 0; background: #12151bd9; -webkit-mask: url(__ART__fx/mask-bust.png) center / 100% 100% no-repeat; mask: url(__ART__fx/mask-bust.png) center / 100% 100% no-repeat; opacity: 0; animation: wsk-ash 260ms ease-out both; }
+@keyframes wsk-ash { to { opacity: 1; } }
+.ap .wsk-m.mv-roar { animation-name: wsk-roar; animation-timing-function: cubic-bezier(.2, 1.1, .4, 1); } @keyframes wsk-roar { 0% { opacity: 0; transform: translateX(-14cqw) scale(.7); } 22% { opacity: 1; transform: translateX(0) scale(1.08); } 32% { transform: scale(1); } 74% { opacity: 1; transform: scale(1.02); } 100% { opacity: 0; transform: translateX(4cqw) scale(1.06); } }
+.ap .wsk-m.mv-stamp { animation-name: wsk-stamp; animation-timing-function: cubic-bezier(.5, 0, .9, .4); } @keyframes wsk-stamp { 0% { opacity: 0; transform: scale(2.6); } 12% { opacity: 1; transform: scale(.9); } 18% { transform: scale(1.06); } 24% { transform: scale(1); } 100% { opacity: 1; transform: scale(1); } }
+.ap .wsk-crack { position: absolute; left: -6%; top: 50%; width: 112%; height: auto; translate: 0 -58%; z-index: -1; opacity: 0; animation: wsk-crack 520ms ease-in both; } @keyframes wsk-crack { 0% { opacity: 0; transform: scale(1.12); } 10% { opacity: 1; transform: scale(1); } 60% { opacity: 1; transform: translateY(1cqh); } 100% { opacity: .9; transform: translateY(3cqh); } }
 .ap .wsk-face.unit { object-fit: contain; -webkit-mask: none; mask: none; }
 .ap .wsk-ttl { position: absolute; left: 46%; right: 3%; top: 31%; translate: 0 -50%; z-index: 5; display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none; }
 .ap .wsk-brush { position: absolute; left: -8%; top: 50%; width: 116%; height: auto; translate: 0 -62%; z-index: -1; }

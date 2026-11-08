@@ -1119,6 +1119,9 @@ const FIELD_CMD: ReadonlySet<string> = new Set(['charge', 'hold', 'open', 'volle
 const CUT_OF: Readonly<Partial<Record<Cmd, SkillId>>> = { duel: 'duel', capture: 'capture', retreat: 'retreat' }
 /** 각성기의 장면 뼈대 — 땅은 버텨라(방패) · 바람은 거짓 퇴각(휘감김) · 불은 선봉(돌진) · 물·번개는 아직 안 켰다(realm/elem WAKE_ON) */
 const WAKE_CUT: Readonly<Record<Elem, SkillId>> = { earth: 'stand', wind: 'feint', fire: 'vanguard', water: 'rite', bolt: 'snipe' }
+/** 장면 끝의 갈림 — 먹혔으면 도장, 헛쳤으면 갈라진 먹 (11-08 · 비기 연출 더 고민 · 비김·버팀은 갈림 없이) */
+const skillRes = (r: Act['res'] | undefined): 'hit' | 'miss' | null =>
+  r === 'hit' || r === 'won' || r === 'ok' ? 'hit' : r === 'wasted' || r === 'fail' || r === 'blocked' || r === 'lost' ? 'miss' : null
 /** 장면의 소리 — 장면이 부르는 이름을 싸움 소리로 */
 const SK_SFX: Readonly<Record<SkSfx, string>> = {
   whoosh: BATTLE_SFX.art, draw: snd('tap_arms'), release: BATTLE_SFX.counter, impact: BATTLE_SFX.crit, drum: BATTLE_SFX.drum, bell: snd('tap_bell'), rite: snd('tap_rite'),
@@ -3702,7 +3705,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         // 진각성 — 2차 초상 · 이름 앞에 「진」 · 짐승이 둘 (DESIRE §17 · 한 판에 한 번이라 크게)
         const tru = act?.true === true
         const b2 = tru ? bustOf(actor) ?? null : null
-        el.innerHTML = skillCutHtml(host.art, kind, b2 !== null ? `../awaken2-hd/${b2}` : faceFile(actor) ?? null, name, wk !== undefined ? `${tru ? '진 · ' : ''}${WAKE_NAME[wk]}` : ak !== undefined ? ART_NAME[ak] : CMD_NAME[c])
+        el.innerHTML = skillCutHtml(host.art, kind, b2 !== null ? `../awaken2-hd/${b2}` : faceFile(actor) ?? null, name, wk !== undefined ? `${tru ? '진 · ' : ''}${WAKE_NAME[wk]}` : ak !== undefined ? ART_NAME[ak] : CMD_NAME[c], skillRes(act?.res))
         const cut = el.firstElementChild as HTMLElement
         if (wk !== undefined) cut.insertAdjacentHTML('beforeend', `<img class="wsk-beast" src="${host.art}fx/awaken/beast-${ELEM[wk].beast}.png" alt="">${tru ? `<img class="wsk-beast b2" src="${host.art}fx/awaken/beast-${ELEM[wk].beast}.png" alt="">` : ''}`)
         if (tru) cut.classList.add('wsk-true')
