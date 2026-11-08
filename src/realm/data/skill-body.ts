@@ -7,4 +7,5 @@ export const SKILL_BODY: ReadonlySet<string> = new Set<string>([
   'g-64-jumong', // 11-08 주몽 · 큰 각궁 만작 · 빛나는 화살 (챗지피티 edu)
   'w-52-biryuna-songbi', // 송비 · 단풍이 휘도는 만작 (챗지피티 edu)
   'w-67-buyeo-haedal', // 해달 · 한쪽 무릎 꿇고 만작 · 달빛 화살 (챗지피티 edu)
+  'l-L2-soseono', // 소서노 · 망토를 휘날리며 창 찌르기 (챗지피티 edu · 오른쪽을 보게 뒤집음)
 ])
