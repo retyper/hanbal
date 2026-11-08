@@ -563,7 +563,7 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   yeodogan: { ar: 172 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 가락 여도간 동작 다시 · 단검 대신 낫 (형 11-08)
   pidogan: { ar: 148 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 가락 피도간 · 털 조끼·발톱 목걸이·손도끼
   odogan: { ar: 153 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 가락 오도간 · 지그재그 깃 옷·작은 저울·짧은 칼
-  yusugan: { ar: 162 / 160, body: 0.894 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 가락 유수간 · 고기 바구니 멘 어부·작살창
+  yusugan: { ar: 162 / 160, body: 0.894 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 가락 유수간 동작 칸 다시 고름 · 창끝이 뒤로 가던 3·5번 칸 뺌
   ocheongan: { ar: 162 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 가락 오천간 · 흰 머리띠 뱃사공·밧줄·노
   tahae: { ar: 151 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 탈해 · 깃털 꽂은 바다 떠돌이·푸른 민소매·곧은 칼
   daemusin: { ar: 149 / 160, body: 0.894, bow: true }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 고구려 대무신왕 · 새 날개 관·금빛 미늘·맥궁
