@@ -26,7 +26,7 @@ import {
   shareIntel, stationFriction, stepLent,
 } from './diplomacy.ts'
 import {
-  addGood, applyArm, applyBuild, applyGuard, applyWork, stepWorks, draftIronCost, foundCost, draftLimit, draftNeeds, draftPay, militiaMen, onTake, resolveRites, settleCost, settleLimit, stepBuilds, stepEconomy,
+  addGood, applyArm, applyBuild, applyGuard, applyWork, applyClearLot, stepWorks, stepClears, draftIronCost, foundCost, draftLimit, draftNeeds, draftPay, militiaMen, onTake, resolveRites, settleCost, settleLimit, stepBuilds, stepEconomy,
   applyCall, freeSite, haulAt, stepSites, migrateHouses, placeHouses, setMigrateAuto, spentThisSeason, stepInbound, stepMigration, stockOf,
 } from './economy.ts'
 import { hasCustom, noteCustom, noteOnce } from './data/customs.ts'
@@ -763,6 +763,7 @@ function applyArmyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]
     else if (o.kind === 'arm') applyArm(r, o, lines)
     else if (o.kind === 'build') applyBuild(r, o, lines)
     else if (o.kind === 'work') applyWork(r, o, lines)
+    else if (o.kind === 'clearLot') applyClearLot(r, o, lines)
     else if (o.kind === 'buy') applyBuy(r, o, lines)
     else if (o.kind === 'sell') applySell(r, o, lines)
     else if (o.kind === 'scale') applyScale(r, o, lines)
@@ -1933,6 +1934,7 @@ export function advance(
   shareIntel(r) // 9 — 동맹은 본 것을 나눈다
   stepBuilds(r, lines) // 9 — 다 지은 목책·해자가 선다
   stepWorks(r, lines) // 다 지은 고을 일터가 선다 (works.ts)
+  stepClears(r, lines) // 다 닦은 터가 열린다 (works.ts · 터 닦기)
   stepMarket(r, lines) // 떠돌이 상단이 오고 간다 (merchant.ts)
   stepCustoms(r, lines) // 9 — 풍습의 걸음: 다시 일어남 · 쇠 실은 배 · 말 치는 들 · 거른 봄 제사 (hooks.ts)
   refreshSpies(r) // 9 — 첩자가 본다

@@ -22,7 +22,7 @@ import { relicSum } from './relics.ts'
 import type { Equip, UnitKind } from './battle.ts'
 import { TIERS, kitOf, lowestTier, nextTier, upgradeKind } from './kit.ts'
 import type { Army, BuildWhat, Good, Goods, Order, ReportLine, Realm, RNode, SeasonOfYear, Stock } from './types.ts'
-import { bestWorkLv, canWork, cutMul, lotCap, lvOf, targetLv, withWork, workCost, workMulAt, worksOf } from './works.ts'
+import { bestWorkLv, canClear, canWork, clearCost, cutMul, lotCap, lvOf, targetLv, withWork, workCost, workMulAt, worksOf } from './works.ts'
 
 function menIn(mix: Readonly<Partial<Record<string, number>>>): number {
   let n = 0
@@ -475,6 +475,29 @@ export function stepBuilds(r: Realm, lines: ReportLine[]): void {
     if (b.what === 'earthwall') noteCustom(r, lines, b.faction, 'dalbeol', { node: b.node })
   }
   r.builds = keep
+}
+
+/** 터 닦기를 시작한다 — 값을 치르고 workClearTurns 턴 뒤 터가 하나 는다 (works.ts) */
+export function applyClearLot(r: Realm, o: Extract<Order, { kind: 'clearLot' }>, lines: ReportLine[]): void {
+  if (!canClear(r, o.faction, o.node)) return
+  const c = clearCost(r.nodes[o.node])
+  stockOf(r, o.faction).grain -= c.grain
+  addGood(r, o.faction, 'wood', -c.wood)
+  ;(r.clears ??= []).push({ faction: o.faction, node: o.node, done: r.season + Math.max(1, Math.round(P.realm.workClearTurns)) - 1 })
+  lines.push({ kind: 'clearLot', faction: o.faction, node: o.node, done: false })
+}
+
+/** 다 닦은 터가 열린다 — 그 사이 고을을 잃었으면 없던 일 */
+export function stepClears(r: Realm, lines: ReportLine[]): void {
+  const keep: NonNullable<Realm['clears']> = []
+  for (const c of r.clears ?? []) {
+    if (c.done > r.season) { keep.push(c); continue }
+    const n = r.nodes[c.node]
+    if (n === undefined || n.owner !== c.faction) continue
+    r.nodes[c.node] = { ...n, lotsOpen: (n.lotsOpen ?? 0) + 1 }
+    lines.push({ kind: 'clearLot', faction: c.faction, node: c.node, done: true })
+  }
+  r.clears = keep
 }
 
 /** 고을 일터 짓기를 시작한다 — 값을 치르고 workTurns 턴 뒤 선다 (works.ts · stepWorks) */

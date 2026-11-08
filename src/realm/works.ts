@@ -86,8 +86,38 @@ export function worksOf(n: RNode | undefined): Array<[WorkWhat, number]> {
 export function lotCap(n: RNode | undefined): number {
   if (n === undefined || n.kind === 'sodo') return 0
   const R = P.realm
-  const v = n.kind === 'capital' ? R.workLotCapital : n.kind === 'village' || n.kind === 'port' ? R.workLotTown : n.kind === 'fort' || n.kind === 'ironMine' ? R.workLotSmall : 1 + ((n.room ?? 0) >= R.workLotWildRoom ? 1 : 0)
-  return Math.max(1, Math.round(v))
+  const v0 = n.kind === 'capital' ? R.workLotCapital : n.kind === 'village' || n.kind === 'port' ? R.workLotTown : n.kind === 'fort' || n.kind === 'ironMine' ? R.workLotSmall : 1 + ((n.room ?? 0) >= R.workLotWildRoom ? 1 : 0)
+  const base = Math.max(1, Math.round(v0))
+  return Math.min(Math.max(base, Math.round(R.workLotOpenMax)), base + (n.lotsOpen ?? 0))
+}
+
+/** 공사로 닦기 전 이 땅의 터 수 */
+export function lotBase(n: RNode | undefined): number {
+  return n === undefined ? 0 : lotCap({ ...n, lotsOpen: 0 })
+}
+
+/** 터 닦기 값 — 닦을수록 비싸진다 (몇째 닦기인가) */
+export function clearCost(n: RNode | undefined): { grain: number; wood: number } {
+  const R = P.realm
+  const k = 1 + (n?.lotsOpen ?? 0) * R.workClearStep
+  return { grain: Math.round(R.workClearGrain * k), wood: Math.round(R.workClearWood * k) }
+}
+
+/** 터를 닦을 수 없는 까닭 — 되면 null (값은 따로) */
+export function clearBlocked(r: Realm, faction: string, node: string): string | null {
+  const n = r.nodes[node]
+  if (n === undefined || n.owner !== faction) return '우리 고을이 아니다'
+  if (n.kind === 'sodo') return '소도에는 터를 닦지 않는다'
+  if (lotCap(n) >= Math.round(P.realm.workLotOpenMax)) return '더 닦을 땅이 없다'
+  if ((r.builds ?? []).some((b) => b.node === node) || (r.works ?? []).some((w) => w.node === node) || (r.clears ?? []).some((c) => c.node === node)) return '짓는 중이다'
+  return null
+}
+
+export function canClear(r: Realm, faction: string, node: string): boolean {
+  if (clearBlocked(r, faction, node) !== null) return false
+  const c = clearCost(r.nodes[node])
+  const s = stockOf(r, faction)
+  return s.grain >= c.grain && goodOf(s, 'wood') >= c.wood
 }
 
 /** 일터를 세운다 (단까지) — 옛 n.work·workLv 를 터로 옮겨 적는다 */
@@ -112,6 +142,27 @@ const upMul = (base: number, lv: number): number => 1 + (base - 1) * lvGain(lv)
 /** 줄이는 곱 base(<1)를 단에 맞춰 — 1 − (1−base)·몫, 바닥 workCutFloor */
 export const cutMul = (base: number, lv: number): number => Math.max(P.realm.workCutFloor, 1 - (1 - base) * lvGain(lv))
 
+/**
+ * 그 단의 효과를 숫자로 — 화면이 「가을걷이 +30%」처럼 보인다 (형 11-08: "뭘 보고 짓냐 · 수확 15% 이런 거처럼 보기 좋게")
+ * 엔진이 쓰는 곱(workMulAt · cutMul · 상단 틈)과 같은 셈이다
+ */
+export function workEffect(what: WorkWhat, lv: number): string {
+  const R = P.realm
+  const up = (base: number): string => `+${Math.round((upMul(base, lv) - 1) * 100)}%`
+  const cut = (base: number): string => `−${Math.round((1 - cutMul(base, lv)) * 100)}%`
+  switch (what) {
+    case 'paddy': return `가을걷이 ${up(R.workPaddyMul)}`
+    case 'saltpan': return `소금 ${up(R.workGoodMul)}`
+    case 'smelter': return `쇠 ${up(R.workSmelterMul)}`
+    case 'lumber': return `나무 ${up(R.workGoodMul)}`
+    case 'ranch': return `말 ${up(R.workGoodMul)}`
+    case 'yard': return `징병 ${up(R.workYardMul)}`
+    case 'market': return `상단 ${Math.round((1 - Math.pow(R.workMarketEvery, lv)) * 100)}% 더 자주 · 물건 +${lv}`
+    case 'smithy': return `무장 올리는 쇠 ${cut(R.workSmithyArm)}`
+    case 'jeotgal': return `원정 소금 ${cut(R.workJeotgalSalt2)}`
+  }
+}
+
 /** 그 나라가 가진 이 일터 가운데 가장 높은 단 (없으면 0) */
 export function bestWorkLv(r: Realm, faction: string, what: WorkWhat): number {
   let best = 0
@@ -132,7 +183,7 @@ export function workBlocked(r: Realm, faction: string, node: string, what: WorkW
   const lv = lvOf(n, what)
   if (lv === 0 && worksOf(n).length >= lotCap(n)) return `터가 다 찼다 (${n.kind === 'capital' ? '도읍' : '이 고을'} 터 ${lotCap(n)}곳)`
   if (lv >= Math.round(P.realm.workLvMax)) return '다 올렸다'
-  if ((r.builds ?? []).some((b) => b.node === node) || (r.works ?? []).some((w) => w.node === node)) return '짓는 중이다'
+  if ((r.builds ?? []).some((b) => b.node === node) || (r.works ?? []).some((w) => w.node === node) || (r.clears ?? []).some((c) => c.node === node)) return '짓는 중이다'
   if (!d.land(r, n)) return '이 땅에 맞지 않는다'
   if (lv === 0 && d.needs !== undefined && !hasWork(r, faction, d.needs)) return `${josa(WORKS[d.needs].name, '이', '가')} 먼저 있어야 한다`
   return null

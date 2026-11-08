@@ -92,3 +92,23 @@ describe('터 — 땅 크기대로 여러 일터 (형 11-05)', () => {
     assert.deepEqual(worksOf(n), [['paddy', 2]])
   })
 })
+
+describe('터 닦기 (형 11-08: 자물쇠 건 터는 공사로 연다)', () => {
+  it('마을(터 셋)에서 닦으면 workClearTurns 뒤 터가 넷 · 값이 들고 · 더는 못 닦는다', async () => {
+    const { clearBlocked, clearCost, canClear } = await import('../../src/realm/works.ts')
+    let r = byeonhanMini(1)
+    r.nodes['our-cap'] = { ...r.nodes['our-cap']!, kind: 'village' }
+    assert.equal(lotCap(r.nodes['our-cap']), Math.round(P.realm.workLotTown))
+    const c = clearCost(r.nodes['our-cap'])
+    r.stock[r.player]!.grain = 100000
+    ;(r.stock[r.player] as unknown as Record<string, number>)['wood'] = 1000
+    assert.equal(canClear(r, r.player, 'our-cap'), true)
+    const g0 = r.stock[r.player]!.grain
+    r = advance(r, [{ kind: 'clearLot', faction: r.player, node: 'our-cap' }]).next
+    assert.ok(r.stock[r.player]!.grain <= g0 - c.grain, '곡식이 든다')
+    assert.equal(clearBlocked(r, r.player, 'our-cap'), '짓는 중이다')
+    for (let i = 0; i < 12 && (r.clears ?? []).length > 0; i++) { r.stock[r.player]!.grain = 100000; r = advance(r, []).next }
+    assert.equal(lotCap(r.nodes['our-cap']), Math.round(P.realm.workLotTown) + 1)
+    assert.equal(clearBlocked(r, r.player, 'our-cap'), '더 닦을 땅이 없다')
+  })
+})

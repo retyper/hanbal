@@ -41,6 +41,8 @@ export interface RNode {
   readonly workLv?: number
   /** 터마다 일터 — 일터 → 단 (고을 종류만큼 터 · works.lotCap) · 고을과 함께 넘어간다 (형 11-05: 논을 지으면 다른 걸 못 짓는 게 말이 안 된다) */
   readonly lots?: Readonly<Partial<Record<import('./works.ts').WorkWhat, number>>>
+  /** 공사로 더 닦은 터 수 (works.lotCap 에 더한다 · 형 11-08: "자물쇠 걸어놨으면 열 수도 있다는 거 아님?") */
+  readonly lotsOpen?: number
   readonly kind: NodeKind
   readonly tags: readonly Tag[]
   /** 다스리는 세력 id. 무주지는 null */
@@ -970,6 +972,8 @@ export interface Realm {
   builds?: Array<{ readonly faction: string; readonly node: string; readonly what: BuildWhat; readonly done: number }>
   /** 짓는 중인 고을 일터 (works.ts) — 목책 줄과 따로 */
   works?: Array<{ readonly faction: string; readonly node: string; readonly what: import('./works.ts').WorkWhat; readonly done: number; readonly lv?: number }>
+  /** 닦는 중인 터 (works.ts · 터 닦기) */
+  clears?: Array<{ readonly faction: string; readonly node: string; readonly done: number }>
   /** 머무는 떠돌이 상단 — 나라마다 (merchant.ts) */
   markets?: Record<string, import('./merchant.ts').Market>
   /** 장터 저울을 이번 달 쓴 곡식 몫 — 나라마다 (merchant.scaleRoom) */
@@ -1081,7 +1085,8 @@ export type Order =
   /** 떠돌이 인재를 들인다 — 그 인재가 머문 고을의 주인만, 곡식 price */
   | { readonly kind: 'hire'; readonly faction: string; readonly hero: string }
   /** 사건 카드의 답 — 고르지 않으면 0 (장수 다툼은 2 침묵) (events.resolveCard) */
-  | { readonly kind: 'card'; readonly faction: string; readonly pick: 0 | 1 | 2 }
+  /** held — 바다도적 막기(pirate.html)에서 손으로 막은 물결 수 0~3 · 있으면 굴림 대신 이것 (SNIPE §0-9) */
+  | { readonly kind: 'card'; readonly faction: string; readonly pick: 0 | 1 | 2; readonly held?: number }
   /** 장수를 지도 바깥 먼 땅으로 원정 보낸다 — len 0 짧게 · 1 보통 · 2 길게 (expedition.ts) */
   | { readonly kind: 'expedition'; readonly faction: string; readonly hero: string; readonly dest: ExpDest; readonly len: 0 | 1 | 2 }
   /** 우리 장수 둘(남녀)을 혼인시킨다 — 잔치 곡식이 들고, 몇 계절 뒤 자식 장수가 나선다 (SYSTEMS §5-10 · 팰 교배) */
@@ -1114,6 +1119,8 @@ export type Order =
   | { readonly kind: 'arm'; readonly army: string; readonly unit?: UnitKind }
   /** 짓기 (나무의 쓰임) — 제 고을에 목책 또는 (목책이 있으면) 해자. 나무·곡식이 들고 다음 계절부터 선다 (economy.buildCost) */
   | { readonly kind: 'build'; readonly faction: string; readonly node: string; readonly what: BuildWhat }
+  /** 터 닦기 — 잠긴 터 하나를 연다 (works.ts) */
+  | { readonly kind: 'clearLot'; readonly faction: string; readonly node: string }
   /** 고을 일터 짓기 (works.ts) */
   | { readonly kind: 'work'; readonly faction: string; readonly node: string; readonly what: import('./works.ts').WorkWhat }
   /** 상단에서 사기 · 팔기 (merchant.ts) */
@@ -1293,6 +1300,7 @@ export type ReportLine =
   /** 짓기 — 시작했다(done false) · 섰다(done true) */
   | { readonly kind: 'build'; readonly faction: string; readonly node: string; readonly what: BuildWhat; readonly done: boolean }
   | { readonly kind: 'work'; readonly faction: string; readonly node: string; readonly what: import('./works.ts').WorkWhat; readonly done: boolean; readonly lv?: number }
+  | { readonly kind: 'clearLot'; readonly faction: string; readonly node: string; readonly done: boolean }
   | { readonly kind: 'merchant'; readonly faction: string; readonly node: string; readonly come: boolean }
   | { readonly kind: 'buy'; readonly faction: string; readonly what: import('./merchant.ts').OfferWhat; readonly n: number; readonly price: number; readonly good?: Good; readonly unit?: import('./battle.ts').UnitKind }
   | { readonly kind: 'sell'; readonly faction: string; readonly good: Good; readonly n: number; readonly grain: number }
@@ -1361,6 +1369,8 @@ export type ReportLine =
   | {
       readonly kind: 'card'; readonly faction: string; readonly card: CardKind; readonly pick: 0 | 1 | 2; readonly why?: QuarrelWhy
       readonly grain?: number; readonly iron?: number; readonly hh?: number; readonly good?: boolean; readonly hero?: string; readonly node?: string
+      /** 바다도적 막기에서 막은 물결 수 (손으로 쏜 판) */
+      readonly held?: number
     }
   /** 점괘 — 다음 계절 카드를 엿봤다 (card null 이면 조용한 계절). right 는 맞았나 — 화면에는 안 보인다 */
   | { readonly kind: 'omen'; readonly faction: string; readonly card: CardKind | null; readonly right: boolean; readonly shaman: boolean }

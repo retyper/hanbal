@@ -763,8 +763,8 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       const bits: string[] = []
       if (line.card === 'quarrel' && line.good !== undefined) bits.push(line.good ? '둘이 스스로 풀고 술잔을 나눴다' : '앙금이 남았다: 둘 다 서운해한다')
       else if (line.card === 'romance' && line.good !== undefined) bits.push(line.good ? '둘의 마음이 깊어졌다' : '소문은 잠잠해졌다')
-      else if (line.good === true) bits.push(line.card === 'pirates' ? '도적을 물리쳤다' : line.card === 'gogak' ? '고각을 가져왔다: 송양이 감히 다투지 못한다' : '다행히 그냥 지나갔다')
-      else if (line.good === false) bits.push(line.card === 'pirates' ? '도적에게 당했다' : line.card === 'gogak' ? '들켰다: 송양이 크게 노했다' : '운이 나빴다')
+      else if (line.good === true) bits.push(line.card === 'pirates' ? (line.held !== undefined ? '물결 셋을 다 막았다: 도적을 물리쳤다' : '도적을 물리쳤다') : line.card === 'gogak' ? '고각을 가져왔다: 송양이 감히 다투지 못한다' : '다행히 그냥 지나갔다')
+      else if (line.good === false) bits.push(line.card === 'pirates' ? (line.held !== undefined ? `${['첫', '둘째', '셋째'][line.held] ?? '셋째'} 물결에 목책이 뚫렸다` : '도적에게 당했다') : line.card === 'gogak' ? '들켰다: 송양이 크게 노했다' : '운이 나빴다')
       if (line.card === 'fishbridge' && line.pick === 0) bits.push('쫓아오던 동부여 군사들이 물가에서 발을 구른다')
       if (line.card === 'exile' && line.hero !== undefined) bits.push(`${josa(who, '이', '가')} 우리 장수가 됐다`)
       if (line.grain !== undefined) bits.push(`곡식 ${line.grain > 0 ? '+' : ''}${line.grain}`)
@@ -868,6 +868,9 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       return line.done
         ? (line.lv !== undefined ? `${node(line.node)}의 ${WORKS[line.what].name}, ${line.lv}단으로 올랐다. ${WORKS[line.what].does}.` : `${node(line.node)}에 ${josa(WORKS[line.what].name, '이', '가')} 섰다. ${WORKS[line.what].does}.`)
         : (line.lv !== undefined ? `${node(line.node)}의 ${WORKS[line.what].name}, ${line.lv}단으로 올리기 시작했다.` : `${node(line.node)}에 ${josa(WORKS[line.what].name, '을', '를')} 짓기 시작했다.`)
+    case 'clearLot':
+      if (line.faction !== viewer) return null
+      return line.done ? `${node(line.node)}에 새 터를 닦았다. 일터를 하나 더 세울 수 있다.` : `${node(line.node)}에서 새 터를 닦기 시작했다.`
     case 'spoil':
       return line.faction === viewer ? `겨울 동안 곡식 ${line.grain}섬이 썩었다. 소금이 모자랐다.` : null
     case 'discover':

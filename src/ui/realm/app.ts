@@ -25,7 +25,7 @@ import { chapterOfRegion, chapterTag } from '../../realm/data/campaign.ts'
 import { knownOf, met } from '../../realm/discovery.ts'
 import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
 import { CARDS, cardFallback, cardInfo } from '../../realm/data/cards.ts'
-import { cardPreview, type CardFx } from '../../realm/events.ts'
+import { cardPreview, pirateMission, type CardFx } from '../../realm/events.ts'
 import {
   ASK_KIND_NAME, ASK_NAME, deedText, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME, askLine, arriveWhen, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, dateLabel, spanLabel, turnsLabel, turnText, turnWord, TURN, whyLine, NODE_NOW, BUILD_NAME, BOW_NAME, CONCEAL_LINE, GOOD_NAME, GOOD_USE, MEET_HOW, tagNow,
 } from '../../realm/data/prose.ts'
@@ -115,7 +115,7 @@ import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
 import { loadTip, tipHtml, tipReadMs } from './loadtips.ts'
 import { worldMapReady } from './worldmap.ts'
 import { loadBar } from './loadbar.ts'
-import { WORKS, lotCap, lvGain, lvOf, workBlocked, workCost, workOptions, worksOf, type WorkWhat } from '../../realm/works.ts'
+import { WORKS, clearBlocked, clearCost, lotCap, lvGain, lvOf, workBlocked, workCost, workEffect, workOptions, worksOf, type WorkWhat } from '../../realm/works.ts'
 import { postGain } from '../../realm/postgain.ts'
 import { hasScale, marketIn, marketOf, scaleBuyPrice, scaleLimit, scaleRoom, scaleSellPrice, sellLimit, sellPrice, wishReady, type Offer } from '../../realm/merchant.ts'
 import { QUALITY_CSS, gfxRowHtml, setGfxPref, startQuality } from './quality.ts'
@@ -324,6 +324,8 @@ const PRACTICE_READY = true
 const NIGHT: string = (import.meta.env?.BASE_URL ?? '/') + 'night.html'
 /** 2장 송양의 활쏘기 겨루기 — 낮의 과녁판 (형 10-25: "암살 스테이지면 안 되는 거 아님??") */
 const CONTEST: string = (import.meta.env?.BASE_URL ?? '/') + 'contest.html'
+/** 사건 카드 「바다 도적」의 맞선다 — 바다도적 막기 판 (docs/realm/SNIPE.md §0-9 · 형 11-08) */
+const PIRATE: string = (import.meta.env?.BASE_URL ?? '/') + 'pirate.html'
 /** 보고판이 쌓이는 빠르기 (초) — 소식 한 줄 · 무너진 나라 한 장. 계절 띠(seasonFx)가 걷힌 뒤 시작한다 (CSS .modal.late) */
 const LINE_S = 0.6
 /** 계절 종이 울린 뒤 그 계절 장면의 소리가 나기까지 (ms) */
@@ -791,6 +793,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let tokTapped = ((): boolean => { try { return localStorage.getItem(TOK_KEY) === '1' } catch { return false } })()
   /** 사건 카드의 자막 몇째 장 — 열쇠는 card:계절 (화면의 일 · 판은 모른다) */
   const cardBeat: Record<string, number> = {}
+  /** 바다도적 막기에서 막은 물결 수 — 열쇠는 card:계절 (pirate.html 의 결과 · 있으면 「맞선다」가 굳는다 · SNIPE §0-9) */
+  const cardHeld: Record<string, number> = {}
   /** 경계를 강화할 우리 고을 */
   let guards: string[] = []
   /** 경계 강화한 고을에서 몸소 고른 지킬 길 — 없으면 지키는 장수에게 맡긴다 (council.guardPick · 형 11-01 「길이 빗겨나감」) */
@@ -1082,6 +1086,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     scouts = realm === null ? [] : scoutKeep.filter((id) => scoutable(realm!).includes(id)).slice(0, scoutCap(realm, me()))
     rite = false
     for (const k of Object.keys(answers)) delete answers[k]
+    for (const k of Object.keys(cardHeld)) delete cardHeld[k]
     guards = []
     guardAp = {}
     for (const k of Object.keys(envoys)) delete envoys[k]
@@ -1386,7 +1391,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (const [ask, yes] of Object.entries(answers)) {
       if (ask === 'contest:archery') out.push({ kind: 'contest', faction: me(), id: 'archery', won: yes })
       else if (ask.startsWith('hush:')) continue
-      else if (ask.startsWith('card:')) { if (ask === `card:${realm?.season ?? -1}`) out.push({ kind: 'card', faction: me(), pick: answers[`hush:${realm?.season ?? -1}`] === true ? 2 : yes ? 0 : 1 }) } else out.push({ kind: 'answer', ask, yes })
+      else if (ask.startsWith('card:')) {
+        if (ask === `card:${realm?.season ?? -1}`) {
+          const pk = answers[`hush:${realm?.season ?? -1}`] === true ? 2 : yes ? 0 : 1
+          const held = cardHeld[ask]
+          out.push({ kind: 'card', faction: me(), pick: pk, ...(pk === 1 && held !== undefined ? { held } : {}) })
+        }
+      } else out.push({ kind: 'answer', ask, yes })
     }
     for (const node of guards) out.push(guardOrder(node))
     for (const to of Object.keys(envoys).sort()) out.push(envoys[to]!)
@@ -3319,11 +3330,17 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const who = ia >= 0 && (ib < 0 || ia < ib) ? c.hero : ib >= 0 ? c.hero2 : undefined
       const face = who != null && r.heroes[who] !== undefined ? bust(r.heroes[who], 'cof') : guest !== undefined && i === 0 ? bust(guest, 'cof') : ''
       // 얻고 잃는 것 — 아이콘·숫자로. 굴리는 답이면 % 와 「이루면 · 어긋나면」 (ODDS: 사건 카드의 답은 % + 갈래마다 아이콘·숫자)
-      const pv = cardPreview(r, c, i === 2 ? 2 : i === 0 ? 0 : 1, left())
+      // 바다도적 막기 — 쏜 뒤에는 그 결과(막은 물결 수)를 그대로 보이고, 다른 답은 잠긴다 (SNIPE §0-9)
+      const held = cardHeld[`card:${c.season}`]
+      const pv = cardPreview(r, c, i === 2 ? 2 : i === 0 ? 0 : 1, left(), i === 1 ? held : undefined)
       let fx = ''
       if (pv !== null) {
         const sure = fxHtml(r, pv.sure)
-        if (pv.chance === undefined) fx = `<span class="cfx">${sure}</span>`
+        if (pv.hand === true) {
+          // 직접 쏜다 — 확률이 아니라 활 · 다 막으면 · 첫 물결에 뚫리면 (오래 버틸수록 덜 잃는다)
+          fx = `<span class="codd">🏹</span><span class="cfx"><small>다 막으면</small>${fxHtml(r, pv.win ?? {})}</span><span class="cfx"><small>뚫리면</small>${fxHtml(r, pv.lose ?? {})}</span>`
+        } else if (pv.good !== undefined && held !== undefined && i === 1) fx = `<span class="codd">🏹 ${held}/3</span><span class="cfx">${sure}</span>`
+        else if (pv.chance === undefined) fx = `<span class="cfx">${sure}</span>`
         else {
           if (!sure.includes('cnone')) fx += `<span class="cfx">${sure}</span>`
           fx += `<span class="codd">${chanceFeel(pv.chance)}</span>`
@@ -3331,7 +3348,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         }
       }
       // 답은 이름 한 마디 + 얻고 잃는 그림 — 긴 뜻은 길게 누르면 (data-tip)
-      h += `<button class="copt${pick === i ? ' on' : ''}${face !== '' ? ' hasf' : ''}" data-act="card-pick" data-v="${i}" data-tip="${esc(sub(o.does))}">${face}<span class="cot"><b>${esc(sub(o.name))}</b>${fx}${i === fallback && pick === null ? '<i>고르지 않으면 이것</i>' : ''}</span></button>`
+      const locked = held !== undefined && i !== 1 ? noBtn('이미 활을 쏘아 맞섰습니다') : ''
+      h += `<button class="copt${pick === i ? ' on' : ''}${face !== '' ? ' hasf' : ''}" data-act="card-pick" data-v="${i}" data-tip="${esc(sub(o.does))}"${locked}>${face}<span class="cot"><b>${esc(sub(o.name))}</b>${fx}${i === fallback && pick === null ? '<i>고르지 않으면 이것</i>' : ''}</span></button>`
     })
     return h + `</div></div></div>`
   }
@@ -4153,6 +4171,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (got !== undefined) return `<div class="gcontest done${got ? ' won' : ''}">🏹 ${got ? '과녁을 맞혔다' : '빗맞혔다'}<small>${josa(turnWord(r), '이', '가')} 넘어가면 송양이 안다</small></div>`
     return `<button class="gcontest" data-act="contest">🏹 송양이 활 솜씨를 겨루자 한다<small>직접 쏜다. 이기면 송양의 마음이 크게 기운다</small></button>`
   }
+  /** 바다 도적 · 맞선다 — 포구의 낮 판을 지도 위 틀로. 끝나면 막은 물결 수가 이 계절의 답이 된다 (아래 message 받이) */
+  function openPirate(): void {
+    const c = realm?.card
+    if (realm === null || c === undefined || c === null || c.kind !== 'pirates') return
+    const m = pirateMission(realm, c)
+    const bow = assassinBow(realm, me())
+    openFrame(`${PIRATE}?seed=${m.seed}&sev=${m.sev}&mu=${m.mu}&watch=${m.watch}&bow=${bow}&id=card-pirates-${c.season}&back=about:blank`, '바다 도적 막기')
+  }
+
   function openContest(): void {
     if (realm === null) return
     const bow = assassinBow(realm, me())
@@ -4186,6 +4213,20 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 세로 폰에서 밤 판이 통째로 눕는다 — 바깥 「닫기」도 같이 눕혀 판의 오른쪽 위에 둔다 (night-main.ts layoutStage)
     if (m?.type === 'hanbal.night.rotated') {
       root.querySelector('.nightov')?.classList.toggle('rot', m.rot === true)
+      return
+    }
+    // 바다도적 막기 — 막은 물결 수가 「맞선다」의 답이 된다 · 쏘지 않고 나오면(skip) 아무것도 안 고른 채 틀을 닫는다
+    const pm = ev.data as { type?: string; id?: string; held?: unknown; skip?: boolean }
+    if (pm?.type === 'hanbal.pirate.result' && typeof pm.id === 'string' && realm?.card != null && pm.id === `card-pirates-${realm.card.season}`) {
+      const s = realm.card.season
+      if (pm.skip === true) root.querySelector('.nightov')?.remove()
+      else if (typeof pm.held === 'number' && Number.isFinite(pm.held)) {
+        cardHeld[`card:${s}`] = Math.max(0, Math.min(3, Math.floor(pm.held)))
+        answers[`card:${s}`] = false
+        delete answers[`hush:${s}`]
+      }
+      saveDraft()
+      paint()
       return
     }
     // 송양과의 겨루기 — 맞히면(쓰러뜨리거나 다치게) 이긴다. 건너뛰면 안 겨룬 것
@@ -6231,7 +6272,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function saveDraft(): void {
     if (realm === null) return
     // hireShown — 등용 장면을 이미 띄운 떠돌이. 초안과 함께 남겨야 앱이 다시 열려도(새 빌드 · 껐다 켬) 계절 끝에 또 뜨지 않는다 (형 10-25: "마파람 등용 한번 떴었는데 왜 또 뜨지")
-    const d = { seed: realm.seed, season: realm.season, player: realm.player, armyOrders, musters, settles, pick, goalStop, landSeen: [...landSeen], scouts, rite, answers, guards, guardAp, envoys, plots, heroOrders, councils, persuadeBy, wooDone, hands, hireShown: [...hireShown], autoIdle: realm.autoIdle, manual: realm.manual?.[me()] }
+    const d = { seed: realm.seed, season: realm.season, player: realm.player, armyOrders, musters, settles, pick, goalStop, landSeen: [...landSeen], scouts, rite, answers, cardHeld, guards, guardAp, envoys, plots, heroOrders, councils, persuadeBy, wooDone, hands, hireShown: [...hireShown], autoIdle: realm.autoIdle, manual: realm.manual?.[me()] }
     try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)) } catch { /* 저장 못 하는 곳 */ }
   }
 
@@ -6255,6 +6296,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     Object.assign(pick, rec<{ edge: string; ambush: boolean; ration?: Ration }>('pick'))
     for (const p of Object.values(pick)) if (p !== undefined && typeof p.ration === 'string') p.ration = rationExtra(p.ration) ?? P.realm.rationReserve
     Object.assign(answers, rec<boolean>('answers'))
+    for (const [k, v] of Object.entries(rec<number>('cardHeld'))) if (typeof v === 'number' && Number.isFinite(v)) cardHeld[k] = v
     if (Array.isArray(d['hireShown'])) for (const id of d['hireShown'] as unknown[]) if (typeof id === 'string') hireShown.add(id)
     if (Array.isArray(d['goalStop'])) goalStop = (d['goalStop'] as unknown[]).filter((x): x is string => typeof x === 'string')
     if (Array.isArray(d['landSeen'])) for (const k of d['landSeen'] as unknown[]) if (typeof k === 'string') landSeen.add(k)
@@ -6655,6 +6697,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     /** 못 하는 까닭 — 이번 달 다른 것을 골랐으면 그것 · 잠김 · 모자람 */
     const whyOf = (w: WorkWhat, lv: number): string | null => {
       if (queued !== undefined && queued.what !== w) return '이번 달엔 이 고을에서 다른 일을 고르셨습니다 (한 번에 하나)'
+      if (musters.some((o) => o.kind === 'clearLot' && o.node === n.id)) return '이번 달엔 터 닦기를 고르셨습니다 (한 번에 하나)'
       const lock = workBlocked(r, me(), n.id, w)
       if (lock !== null) return lock
       const short = shortOf(workCost(w, lv) as Partial<Record<Good, number>>)
@@ -6663,9 +6706,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const slots: TownSlot[] = worksOf(n).map(([w, lv]) => {
       const d = WORKS[w]
       const up = going?.what === w ? goingOf(going) : null
-      const next = lv < max ? { sprite: sp(w, lv + 1), cost: costHtml(workCost(w, lv + 1)), when: turnsLabel(r, turnsOf(lv + 1)), gain: `${Math.round((lvGain(lv + 1) / lvGain(lv)) * 10) / 10}배`, why: whyOf(w, lv + 1), on: queued?.what === w } : null
+      const next = lv < max ? { sprite: sp(w, lv + 1), cost: costHtml(workCost(w, lv + 1)), when: turnsLabel(r, turnsOf(lv + 1)), gain: workEffect(w, lv + 1), why: whyOf(w, lv + 1), on: queued?.what === w } : null
       const tip = `${d.name} ${lv}단 · ${d.does}${next !== null ? ` · ${lv + 1}단: ${Object.entries(workCost(w, lv + 1)).map(([g, v]) => `${GOOD_NAME[g as Good]} ${v}`).join(' ')} · ${turnsLabel(r, turnsOf(lv + 1))} · 효과 ${next.gain}` : ' · 다 올렸다'}`
-      return { k: 'work', what: w, name: d.name, icon: d.icon, sprite: sp(w, lv), lv, max, does: d.does, next, going: up, tip }
+      return { k: 'work', what: w, name: d.name, icon: d.icon, sprite: sp(w, lv), lv, max, does: d.does, eff: workEffect(w, lv), next, going: up, tip }
     })
     if (going !== undefined && lvOf(n, going.what) === 0) {
       const g = goingOf(going)!
@@ -6674,15 +6717,31 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const cap = lotCap(n)
     const opts = workOptions(r, n.id).filter((w) => lvOf(n, w) === 0 && going?.what !== w)
     while (slots.length < Math.min(cap, 4)) {
-      const first = slots.every((s) => s.k !== 'empty')
       slots.push({
         k: 'empty', when: turnsLabel(r, turnsOf(1)),
         tip: `빈 터 · 이 땅에 맞는 일터 ${opts.length}가지 · 터 ${slots.length + 1}/${cap}`,
-        // 타일은 첫 빈 터에만 — 둘째 빈 터부터는 같은 고름이라 첫 터로 보낸다 (한 고을 한 달 하나)
-        options: first ? opts.map((w) => ({ what: w, name: WORKS[w].name, icon: WORKS[w].icon, sprite: sp(w, 1), cost: costHtml(workCost(w)), does: WORKS[w].does, why: whyOf(w, 1), on: queued?.what === w })) : [],
+        // 빈 터마다 같은 타일 — 둘째 빈 터를 눌러도 「맞는 일터가 없다」고 하지 않게 (11-08 · 한 고을 한 달 하나는 whyOf 가 막는다)
+        options: opts.map((w) => ({ what: w, name: WORKS[w].name, icon: WORKS[w].icon, sprite: sp(w, 1), cost: costHtml(workCost(w)), eff: workEffect(w, 1), does: WORKS[w].does, why: whyOf(w, 1), on: queued?.what === w })),
       })
     }
-    while (slots.length < 4) slots.push({ k: 'locked', why: `땅이 작아 터가 ${cap}곳뿐입니다` })
+    // 잠긴 터 — 맨 앞 하나는 닦을 수 있다 (형 11-08: "공사를 해서 더 만들 수 있게") · 닦는 중이면 그 터에 비계
+    const clearing = (r.clears ?? []).find((c) => c.node === n.id)
+    const queuedClear = musters.some((o) => o.kind === 'clearLot' && o.node === n.id)
+    let firstLock = true
+    while (slots.length < 4) {
+      const why = `땅이 작아 터가 ${cap}곳뿐입니다`
+      if (firstLock && clearing !== undefined) {
+        const left = Math.max(1, clearing.done - r.season + 1)
+        const total = Math.max(1, Math.round(R.workClearTurns))
+        slots.push({ k: 'locked', why, clear: null, going: { left: turnsLabel(r, left), prog: Math.max(0, Math.min(1, 1 - left / total)) } })
+      } else if (firstLock && clearBlocked(r, me(), n.id) === null || firstLock && queuedClear) {
+        const c = clearCost(n)
+        const short = shortOf({ grain: c.grain, wood: c.wood } as Partial<Record<Good, number>>)
+        const busy = queued !== undefined ? '이번 달엔 이 고을에서 다른 일을 고르셨습니다 (한 번에 하나)' : null
+        slots.push({ k: 'locked', why, going: null, clear: { cost: costHtml({ grain: c.grain, wood: c.wood }), when: turnsLabel(r, Math.max(1, Math.round(R.workClearTurns))), why: queuedClear ? null : busy ?? (short !== '' ? short : null), on: queuedClear } })
+      } else slots.push({ k: 'locked', why: firstLock ? why : '앞의 잠긴 터를 먼저 닦아야 합니다', clear: null, going: null })
+      firstLock = false
+    }
     // 고른 터 — 없으면 지금 할 것: 이번 달 고른 것 > 빈 터 > 올릴 수 있는 것 > 짓는 중 > 첫 터
     if (townPick === null || townPick.lot >= slots.length) {
       const at = (f: (s: TownSlot) => boolean): number => slots.findIndex(f)
@@ -7547,7 +7606,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         break
       }
       case 'unexp': heroOrders = heroOrders.filter((o) => !(o.kind === 'expedition' && o.hero === d['id'])); break
-      case 'card-pick': if (realm?.card) { const s = realm.card.season; answers[`card:${s}`] = d['v'] === '0'; if (d['v'] === '2') answers[`hush:${s}`] = true; else delete answers[`hush:${s}`]; fastNext = true } break
+      case 'card-pick': if (realm?.card) { const s = realm.card.season; if (realm.card.kind === 'pirates' && d['v'] === '1' && cardHeld[`card:${s}`] === undefined) { openPirate(); return } answers[`card:${s}`] = d['v'] === '0'; if (d['v'] === '2') answers[`hush:${s}`] = true; else delete answers[`hush:${s}`]; fastNext = true } break
       case 'card-beat': if (realm?.card) { const k = `card:${realm.card.season}`; cardBeat[k] = (cardBeat[k] ?? 0) + 1 } break
       case 'card-skip': if (realm?.card) cardBeat[`card:${realm.card.season}`] = 99; break
       case 'practice-open': openPractice(); break
@@ -8500,6 +8559,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         musters = musters.filter((o) => !(o.kind === 'work' && o.node === node))
         if (!had) musters = [...musters, { kind: 'work', faction: me(), node, what }]
         // 마을 안의 큰 단추 — 고르면 북 · 거두면 툭 (WWE · 메모리 wwe-overreaction-ux)
+        if (townIn === node) { ding(snd(had ? 'tap_cancel' : 'tap_drum'), had ? 0.4 : 0.6); buzz(had ? [20] : [12, 40, 24]) }
+        break
+      }
+      case 'clear-lot': {
+        // 터 닦기 — 한 고을 한 달 하나 · 다시 누르면 거둔다
+        const node = d['node']!
+        const had = musters.some((o) => o.kind === 'clearLot' && o.node === node)
+        musters = musters.filter((o) => !(o.kind === 'clearLot' && o.node === node))
+        if (!had) musters = [...musters, { kind: 'clearLot', faction: me(), node }]
         if (townIn === node) { ding(snd(had ? 'tap_cancel' : 'tap_drum'), had ? 0.4 : 0.6); buzz(had ? [20] : [12, 40, 24]) }
         break
       }

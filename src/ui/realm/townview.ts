@@ -38,6 +38,8 @@ export interface TownOption {
   readonly sprite: string | null
   /** 값 칩 HTML (app.costHtml) */
   readonly cost: string
+  /** 1단 효과 숫자 (works.workEffect) */
+  readonly eff: string
   readonly does: string
   /** 못 고르는 까닭 — 되면 null */
   readonly why: string | null
@@ -49,6 +51,8 @@ export interface TownOption {
 export type TownSlot =
   | {
       readonly k: 'work'; readonly what: string; readonly name: string; readonly icon: string; readonly sprite: string | null; readonly lv: number; readonly max: number; readonly does: string
+      /** 지금 단 효과 숫자 (works.workEffect) */
+      readonly eff: string
       /** 다음 단 (다 올렸으면 null) */
       readonly next: { readonly sprite: string | null; readonly cost: string; readonly when: string; readonly gain: string; readonly why: string | null; readonly on: boolean } | null
       /** 지금 이 터를 올리는 중 */
@@ -58,7 +62,12 @@ export type TownSlot =
     }
   | { readonly k: 'going'; readonly what: string; readonly name: string; readonly icon: string; readonly left: string; readonly prog: number; readonly tip: string }
   | { readonly k: 'empty'; readonly options: readonly TownOption[]; readonly when: string; readonly tip: string }
-  | { readonly k: 'locked'; readonly why: string }
+  | {
+      readonly k: 'locked'; readonly why: string
+      /** 터 닦기 — 맨 앞 잠긴 터에만 (없으면 null) · 닦는 중이면 going */
+      readonly clear: { readonly cost: string; readonly when: string; readonly why: string | null; readonly on: boolean } | null
+      readonly going: { readonly left: string; readonly prog: number } | null
+    }
 
 export interface TownViewIn {
   readonly id: string
@@ -77,6 +86,8 @@ export interface TownViewIn {
   /** 지난 달 완공 — 「완공!」 도장 (없으면 null) */
   readonly stamp: { readonly icon: string; readonly name: string } | null
 }
+/** 앞뒤 — 발(아랫단)이 아래일수록 앞에 (터·사람 모두 · 형 11-08: "사람은 무조건 땅보다 위에") */
+const zOf = (y: number): number => 10 + Math.round(y * 1000)
 /** 고을 id 로 정하는 0~1 (다시 그려도 같은 자리) */
 function hash01(s: string, i: number): number {
   let h = 2166136261 ^ i
@@ -116,7 +127,7 @@ function lotHtml(t: TownViewIn, s: TownSlot, i: number, sel: boolean): string {
 
 function lotInner(t: TownViewIn, s: TownSlot, i: number, sel: boolean): string {
   const L = LOTS[i]!
-  const pos = `left:${pct(L.x)};top:${pct(L.y)};width:${pct(L.w)}`
+  const pos = `left:${pct(L.x)};top:${pct(L.y)};width:${pct(L.w)};z-index:${zOf(L.y)}`
   const open = (cls: string, tip: string): string => `<button class="tvlot2 ${cls}${sel ? ' sel' : ''}" data-act="town-lot" data-i="${i}"${tip !== '' ? ` data-tip="${esc(tip)}"` : ''} style="${pos}"><img class="tvlotbg" src="${t.art}town/lot.png" alt="">`
   if (s.k === 'work') {
     const up = s.going !== null
@@ -134,6 +145,8 @@ function lotInner(t: TownViewIn, s: TownSlot, i: number, sel: boolean): string {
     }
     return open('empty', s.tip) + `<b class="tvl">빈 터</b></button>`
   }
+  if (s.going !== null) return open('going clearing', s.why) + `<img class="tvsp" src="${t.art}town/build.png" alt=""><b class="tvl">터 닦는 중 · ${esc(s.going.left)}${prog(s.going.prog)}</b></button>`
+  if (s.clear !== null) return open(`locked canclear${s.clear.on ? ' plan' : ''}`, s.why) + `<b class="tvl">${s.clear.on ? '✓ 다음 달 터 닦기' : '🔨 터 닦기'}</b></button>`
   return open('locked', s.why) + `<b class="tvl">🔒</b></button>`
 }
 
@@ -142,6 +155,24 @@ function dockHtml(t: TownViewIn, s: TownSlot | undefined): { dock: string; bar: 
   const R = P.realm
   const node = t.id
   const busyWhy = '한 번에 하나만 짓습니다 · 다 서면 다음 것을 고를 수 있습니다'
+  if (s !== undefined && s.k === 'locked' && s.going !== null) {
+    return {
+      dock: `<div class="tvfh"><b>🔨 터 닦는 중</b><span class="tveff">▲ 터 +1</span></div>`
+        + `<div class="tvgoing"><img src="${t.art}town/build.png" alt=""><div class="tvprog"><i style="--p:${Math.round(s.going.prog * 100)}%"></i></div><b>${esc(s.going.left)} 남았습니다</b></div>`,
+      bar: `<button class="tvgo"${deny(busyWhy)}>🔨 터 닦는 중 · ${esc(s.going.left)}</button>`,
+    }
+  }
+  if (s !== undefined && s.k === 'locked' && s.clear !== null) {
+    const c = s.clear
+    return {
+      dock: `<div class="tvfh"><b>잠긴 터</b><span class="tveff">▲ 터 +1</span></div>`
+        + `<div class="tvup one tvclr"><img src="${t.art}town/lot.png" alt=""></div>`
+        + `<p class="tvdoes">땅을 고르고 돌 테두리를 쌓아 일터 하나를 더 세울 터를 닦습니다</p>`,
+      bar: c.on
+        ? `<button class="tvgo on" data-act="clear-lot" data-node="${node}">✓ 다음 달 터 닦기를 시작합니다<small>다시 누르면 거둡니다</small></button>`
+        : `<button class="tvgo" data-act="clear-lot" data-node="${node}"${deny(c.why)}>🔨 터 닦기 ${c.cost}<span class="whenc"><b>⏳${esc(c.when)}</b></span></button>`,
+    }
+  }
   if (s === undefined || s.k === 'locked') {
     const why = s?.why ?? '터를 고르세요'
     return {
@@ -157,7 +188,7 @@ function dockHtml(t: TownViewIn, s: TownSlot | undefined): { dock: string; bar: 
     }
   }
   if (s.k === 'work') {
-    const head = `<div class="tvfh">${ic(t.art, s.icon)}<b>${esc(s.name)}</b><i>${stars(s.lv, s.max)}</i><span>${esc(s.does)}</span></div>`
+    const head = `<div class="tvfh">${ic(t.art, s.icon)}<b>${esc(s.name)}</b><i>${stars(s.lv, s.max)}</i><span class="tveff">▲ ${esc(s.eff)}</span></div>`
     if (s.going !== null) {
       return {
         dock: head + `<div class="tvgoing"><img src="${t.art}town/build.png" alt=""><div class="tvprog"><i style="--p:${Math.round(s.going.prog * 100)}%"></i></div><b>${s.lv + 1}단으로 · ${esc(s.going.left)} 남았습니다</b></div>`,
@@ -166,7 +197,7 @@ function dockHtml(t: TownViewIn, s: TownSlot | undefined): { dock: string; bar: 
     }
     if (s.next === null) {
       return {
-        dock: head + `<div class="tvup one">${s.sprite !== null ? `<img src="${s.sprite}" alt="">` : ic(t.art, s.icon, 'tvbig')}</div><p class="tvdoes">가장 높은 단입니다 · 효과 ${esc(fmtGain(R.workLv3Gain))}</p>`,
+        dock: head + `<div class="tvup one">${s.sprite !== null ? `<img src="${s.sprite}" alt="">` : ic(t.art, s.icon, 'tvbig')}</div><p class="tvdoes">가장 높은 단입니다 · <b class="tveff">▲ ${esc(s.eff)}</b></p>`,
         bar: `<button class="tvgo"${deny('다 올렸습니다 · 더 올릴 단이 없습니다')}>★ 다 올렸습니다</button>`,
       }
     }
@@ -175,7 +206,7 @@ function dockHtml(t: TownViewIn, s: TownSlot | undefined): { dock: string; bar: 
     const nxt = n.sprite !== null ? `<img src="${n.sprite}" alt="">` : ic(t.art, s.icon, 'tvbig')
     return {
       dock: head + `<div class="tvup"><div class="tvcur">${cur}<b>${s.lv}단</b></div><i class="tvarrow">➜</i><div class="tvnxt">${nxt}<b>${s.lv + 1}단</b></div></div>`
-        + `<div class="tvchips">${n.cost}<span class="whenc"><b>⏳${esc(n.when)}</b></span><span class="tvgain"><b>▲ 효과 ${esc(n.gain)}</b></span></div>`,
+        + `<div class="tvchips">${n.cost}<span class="whenc"><b>⏳${esc(n.when)}</b></span><span class="tvgain"><b>▲ ${esc(s.eff)} → ${esc(n.gain.replace(/^[^+−]*/, ''))}</b></span></div>`,
       bar: n.on
         ? `<button class="tvgo on" data-act="work" data-node="${node}" data-what="${s.what}">✓ ${esc(s.name)} ${s.lv + 1}단 · 다음 달 시작합니다<small>다시 누르면 거둡니다</small></button>`
         : `<button class="tvgo" data-act="work" data-node="${node}" data-what="${s.what}"${deny(n.why)}>${ic(t.art, s.icon)}${esc(s.name)} ${s.lv + 1}단으로 올리기 ${n.cost}<span class="whenc"><b>⏳${esc(n.when)}</b></span></button>`,
@@ -185,11 +216,11 @@ function dockHtml(t: TownViewIn, s: TownSlot | undefined): { dock: string; bar: 
   const picked = s.options.find((o) => o.on) ?? s.options.find((o) => o.what === t.pick.what) ?? null
   const tiles = s.options.map((o) => {
     const on = picked?.what === o.what
-    return `<button class="tvtile${on ? ' on' : ''}${o.why !== null ? ' lk' : ''}" data-act="town-what" data-what="${o.what}"${deny(o.why)}>${ic(t.art, o.icon, 'tvti')}<b>${esc(o.name)}</b><small>${o.why !== null ? '🔒' : o.cost}</small></button>`
+    return `<button class="tvtile${on ? ' on' : ''}${o.why !== null ? ' lk' : ''}" data-act="town-what" data-what="${o.what}"${deny(o.why)}>${ic(t.art, o.icon, 'tvti')}<b>${esc(o.name)}</b><em class="tveff">▲ ${esc(o.eff)}</em><small>${o.why !== null ? '🔒' : o.cost}</small></button>`
   }).join('')
   const dock = `<div class="tvfh"><b>빈 터</b><span>${s.options.length > 0 ? '무엇을 세울까요 · ' + esc(s.when) + ' 걸려 섭니다' : '이 땅에 맞는 일터가 없습니다'}</span></div>`
     + `<div class="tvtiles">${tiles}</div>`
-    + `<p class="tvdoes">${picked !== null ? `${esc(picked.name)}: ${esc(picked.does)}${picked.why !== null ? ` · 🔒 ${esc(picked.why)}` : ''}` : '타일을 누르면 설명이 보입니다'}</p>`
+    + `<p class="tvdoes">${picked !== null ? `<b class="tveff">▲ ${esc(picked.eff)}</b> ${esc(picked.does)}${picked.why !== null ? ` · 🔒 ${esc(picked.why)}` : ''}` : '타일을 누르면 설명이 보입니다'}</p>`
   const bar = picked === null
     ? `<button class="tvgo"${deny(s.options.length > 0 ? '위 타일에서 지을 것을 먼저 고르세요' : '이 땅에 맞는 일터가 없습니다')}>지을 것을 고르세요</button>`
     : picked.on
@@ -197,7 +228,6 @@ function dockHtml(t: TownViewIn, s: TownSlot | undefined): { dock: string; bar: 
       : `<button class="tvgo" data-act="work" data-node="${node}" data-what="${picked.what}"${deny(picked.why)}>${ic(t.art, picked.icon)}${esc(picked.name)} 짓기 시작 ${picked.cost}<span class="whenc"><b>⏳${esc(s.when)}</b></span></button>`
   return { dock, bar }
 }
-const fmtGain = (x: number): string => `${Math.round(x * 10) / 10}배`
 
 export function townViewHtml(t: TownViewIn): string {
   const slots = t.slots.slice(0, LOTS.length)
@@ -226,7 +256,7 @@ export function townViewHtml(t: TownViewIn): string {
       const ang = Math.PI * (0.15 + 0.7 * (i + 0.5) / workers)
       const x = L.x + Math.cos(ang) * L.w * 0.4
       const y = L.y - L.w * 0.14 + Math.sin(ang) * L.w * 0.1
-      folk += `<i class="tvf work" style="left:${pct(x)};top:${pct(y)};--d:${(-c * 1.2).toFixed(2)}s;${x > L.x ? '--fl:-1;' : ''}"><u></u><s></s></i>`
+      folk += `<i class="tvf work" style="left:${pct(x)};top:${pct(y)};z-index:${zOf(y) + 1};--d:${(-c * 1.2).toFixed(2)}s;${x > L.x ? '--fl:-1;' : ''}"><u></u><s></s></i>`
       continue
     }
     // 몇째 길의 몇째 사람인가
@@ -242,20 +272,20 @@ export function townViewHtml(t: TownViewIn): string {
       const y = 0.45 + c * 0.05
       const x0 = 0.22 + u * 0.5 // 울타리 안쪽(가로 0.17~0.85)에서만
       const sc = 0.82 + (y - 0.4) * 1.2
-      folk += `<i class="tvf walk" style="left:${pct(x0)};top:${pct(y)};--dx:${(6 + c * 6).toFixed(1)}cqw;--sc:${sc.toFixed(2)};--dur:${(7 + c * 5).toFixed(1)}s;${delay}"><u></u></i>`
+      folk += `<i class="tvf walk" style="left:${pct(x0)};top:${pct(y)};z-index:${zOf(y) + 1};--dx:${(6 + c * 6).toFixed(1)}cqw;--sc:${sc.toFixed(2)};--dur:${(7 + c * 5).toFixed(1)}s;${delay}"><u></u></i>`
     } else if (road === 'v') {
       // 세로 길(x≈0.5) — 위 문에서 아래 문까지 고루 · 멀수록(위) 작게
       const x0 = 0.48 + c * 0.04
       const y0 = 0.12 + u * 0.62
       const sc = 0.66 + y0 * 0.6
-      folk += `<i class="tvf walkv" style="left:${pct(x0)};top:${pct(y0)};--dy:${(8 + c * 8).toFixed(1)}cqh;--sc:${sc.toFixed(2)};--dur:${(7 + c * 5).toFixed(1)}s;${delay}"><u></u></i>`
+      folk += `<i class="tvf walkv" style="left:${pct(x0)};top:${pct(y0)};z-index:${zOf(y0) + 1};--dy:${(8 + c * 8).toFixed(1)}cqh;--sc:${sc.toFixed(2)};--dur:${(7 + c * 5).toFixed(1)}s;${delay}"><u></u></i>`
     } else {
       // 둘레 길 — 타원 길의 위·아래 호에 고루(양끝은 폰에서 잘린다) · 제자리 가까이를 가로로 오간다
       const ang = u < 0.5 ? Math.PI * (0.2 + 0.6 * u * 2) : Math.PI * (1.2 + 0.6 * (u - 0.5) * 2)
       const x0 = 0.5 + Math.cos(ang) * 0.42
       const y0 = 0.5 + Math.sin(ang) * 0.38
       const sc = 0.66 + y0 * 0.6
-      folk += `<i class="tvf walk" style="left:${pct(x0)};top:${pct(y0)};--dx:${(4 + c * 5).toFixed(1)}cqw;--sc:${sc.toFixed(2)};--dur:${(6 + c * 5).toFixed(1)}s;${delay}"><u></u></i>`
+      folk += `<i class="tvf walk" style="left:${pct(x0)};top:${pct(y0)};z-index:${zOf(y0) + 1};--dx:${(4 + c * 5).toFixed(1)}cqw;--sc:${sc.toFixed(2)};--dur:${(6 + c * 5).toFixed(1)}s;${delay}"><u></u></i>`
     }
   }
   const built = slots.filter((s) => s.k === 'work').length
@@ -331,7 +361,7 @@ export const TOWN_CSS = `
 .ap .tvx { width: 38px; height: 38px; flex: none; border-radius: 50%; border: 1px solid #c9a45a; background: #1c1610e0; color: #f3e6c8; font-size: 18px; cursor: pointer; }
 /* ② 판 — 바탕 그림 한 장(1376×768)을 폭에 꽉 차게 · 양옆 풀밭(터는 가로 14~86%)을 잘라 크게 · 세로가 모자라면 위아래를 24% 까지 잘라 맞추고, 세로가 남으면(가로 화면 기둥) 위아래에 띠를 둔다 */
 .ap .tvstage { grid-area: stage; position: relative; overflow: hidden; background: #2c3a1e; min-height: 0; container-type: size; height: min(calc(100vw * 0.7344), 46dvh); }
-.ap .tvboard { --bw: min(100cqw / 0.76, 100cqh * 1376 / 768 / 0.76); position: absolute; left: 50%; top: 50%; width: var(--bw); aspect-ratio: 1376 / 768; margin-left: calc(var(--bw) / -2); margin-top: calc(var(--bw) * 768 / 1376 / -2); }
+.ap .tvboard { isolation: isolate; --bw: min(100cqw / 0.76, 100cqh * 1376 / 768 / 0.76); position: absolute; left: 50%; top: 50%; width: var(--bw); aspect-ratio: 1376 / 768; margin-left: calc(var(--bw) / -2); margin-top: calc(var(--bw) * 768 / 1376 / -2); }
 .ap .tvbg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 /* 터 — 아랫단(돌 테두리 아래)에 맞춰 선다 · 그림은 터 폭 그대로 · 누르면 고른다 */
 .ap .tvlot2 { position: absolute; z-index: 4; translate: -50% -100%; display: grid; justify-items: center; align-items: end; padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
@@ -348,13 +378,12 @@ export const TOWN_CSS = `
 @keyframes tvplan { from { opacity: .4; } to { opacity: .8; } }
 
 .ap .tvlot2.empty .tvl { background: #1c1610b0; color: #e8dcc0; }
-.ap .tvlot2.locked { opacity: .9; } .ap .tvlot2.locked .tvl { background: #0b0906c0; border-color: #6a5a3a; }
+.ap .tvlot2.locked { opacity: .9; } .ap .tvlot2.canclear { opacity: 1; } .ap .tvlot2.canclear:not(.sel) .tvart { opacity: .5; } .ap .tvlot2.canclear .tvl { border-color: #e0bd78; color: #ffe2a0; } .ap .tvclr img { opacity: .85; } .ap .tvlot2.locked .tvl { background: #0b0906c0; border-color: #6a5a3a; }
 /* 고른 터 — 메가히트 게임처럼 (형 11-08: "css 동그라미 성의없다 · 제대로 선택된 느낌")
    ① 건물이 톡 튀며 떠오른 채로 남는다 ② 그림 테두리를 따라 금빛 윤곽 (drop-shadow 는 폰에서도 그려진다 · 움직이지 않는 거르개)
    ③ 바닥엔 터 모양 마름모 — 테두리가 흐르고 네 모서리 꺾쇠가 숨 쉰다 (움직임은 transform·opacity·stroke 만) */
 .ap .tvlot2 .tvart { grid-area: 1 / 1; position: relative; z-index: 1; display: grid; justify-items: center; align-items: end; width: 100%; }
 .ap .tvlot2 .tvart > * { grid-area: 1 / 1; }
-.ap .tvlot2.sel { z-index: 6; }
 .ap .tvlot2.sel .tvart { transform: translateY(-5%); animation: tvpop .46s cubic-bezier(.2, 1.7, .45, 1) both;
   filter: drop-shadow(2px 0 0 #ffe08a) drop-shadow(-2px 0 0 #ffe08a) drop-shadow(0 2px 0 #ffe08a) drop-shadow(0 -2px 0 #ffe08a) drop-shadow(0 0 7px #ffc84acc); }
 @keyframes tvpop { 0% { transform: translateY(0) scale(1); } 45% { transform: translateY(-10%) scale(1.08); } 100% { transform: translateY(-5%) scale(1); } }
@@ -433,6 +462,10 @@ export const TOWN_CSS = `
 .ap .tvtile b { font-size: 13px; white-space: nowrap; }
 .ap .tvtile small { font-size: 11px; color: #d9ccb0; display: flex; gap: 2px; }
 .ap .tvtile small .cost { font-size: 11px; } .ap .tvtile small .cgi { width: 14px; height: 14px; }
+.ap .tveff { font-style: normal; font-weight: 700; color: #9be37a; text-shadow: 0 1px 0 #000a; white-space: nowrap; }
+.ap .tvfh .tveff { margin-left: 4px; padding: 2px 8px; border-radius: 999px; background: #1f3a18cc; border: 1px solid #6fbf55; font-size: 14px; }
+.ap .tvtile .tveff { font-size: 11px; line-height: 1.15; white-space: normal; text-align: center; }
+.ap .tvdoes .tveff { font-size: 15px; }
 .ap .tvtile.on { border-color: #e0bd78; background: #4a3718; box-shadow: 0 0 0 2px #e0bd78 inset, 0 0 12px #e0bd7866; color: #ffe2a0; }
 .ap .tvtile.on::after { content: '✓'; position: absolute; top: 3px; right: 7px; color: #ffe2a0; font-weight: 700; }
 .ap .tvtile.lk { opacity: .55; } .ap .tvtile.lk .tvti { filter: grayscale(1); }
