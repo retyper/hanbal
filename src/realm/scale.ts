@@ -21,3 +21,13 @@ export function realmScale(r: Realm, faction: string): number {
   const x = Math.pow(Math.max(0, hhOf(r, faction)) / Math.max(1, R.scaleRefHH), R.scaleExp)
   return Math.max(1, Math.min(R.scaleMax, x))
 }
+
+/**
+ * 재물이 부르는 위협 (림월드 이야기꾼처럼 · 형 11-08: "쉬운 난이도 빼고는 좀 조정 · 재산에 따른 난이도 조절은 림월드 참고") —
+ * 플레이어 나라의 그릇을 log2 로 (처음 0 · 그릇 3.4 에 1.8 · 10 에 3.3). 쉬움(촌장)은 늘 0 — 쉬움은 이야기를 따라가는 판이라 그대로 둔다.
+ * 재해·도적이 잦고 세지며(events) · 이웃이 우리 고을을 더 노리고(ai.focus) · 살림으로 앞서도 「앞서가는 나라」가 된다(stance)
+ */
+export function wealthThreat(r: Realm): number {
+  if ((r.tier ?? 1) < 1 || r.region === 'tutorial' || r.factions[r.player] === undefined) return 0
+  return Math.log2(realmScale(r, r.player))
+}

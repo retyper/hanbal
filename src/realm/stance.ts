@@ -10,6 +10,7 @@
  * 셈은 참값이다 (AI 의 머리). 다만 까닭이 쓰는 것은 대개 누구나 아는 것이다 — 전쟁, 땅의 주인, 앗긴 땅, 도읍.
  */
 import { P } from '../tune/params.ts'
+import { hhOf, wealthThreat } from './scale.ts'
 import { seasons } from './calendar.ts'
 import { stockOf, upkeepOf } from './economy.ts'
 import { favorOf, nationPower, noteDeed, pairKey, powerRange, relationOf } from './diplomacy.ts'
@@ -66,11 +67,14 @@ function leaderNow(r: Realm, viewer: string): string | null {
   const near = r.pathNear ?? {}
   const racing = fs.filter((f) => f !== viewer && (near[`rite:${f}`] === true || near[`iron:${f}`] === true)).sort((a, b) => pw.get(b)! - pw.get(a)! || (a < b ? -1 : 1))
   if (racing.length > 0) return racing[0]!
+  // 살림으로 앞선 플레이어 — 군세는 남보다 적어도 집이 그 판의 몫을 넘으면 앞서가는 나라로 본다 (쉬움 빼고 · 위원회 11-08: 형은 군사가 가장 센 남보다 적은 채 살림으로 이겼다)
+  const hhTot = fs.reduce((s, f) => s + hhOf(r, f), 0)
+  const richLead = (f: string): boolean => f === r.player && wealthThreat(r) > 0 && hhTot > 0 && hhOf(r, f) / hhTot >= shareNeed
   let best: { f: string; caps: number; p: number } | null = null
   for (const f of fs) {
     const caps = capitalsHeld(r, f)
     const p = pw.get(f)!
-    if (caps < capsNeed && (total <= 0 || p / total < shareNeed)) continue
+    if (caps < capsNeed && (total <= 0 || p / total < shareNeed) && !richLead(f)) continue
     if (best === null || caps > best.caps || (caps === best.caps && p > best.p)) best = { f, caps, p }
   }
   return best?.f ?? null

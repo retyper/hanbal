@@ -11,6 +11,7 @@
 import { roll } from '../core/rng.ts'
 import { monthly, perSeason, seasonIdx, seasonNo, seasons, yearOf } from './calendar.ts'
 import { P } from '../tune/params.ts'
+import { realmScale, wealthThreat } from './scale.ts'
 import { CARDS, CARD_KINDS, QUARREL_WHYS, SEV_KINDS, cardFallback, type CardKind, type QuarrelWhy } from './data/cards.ts'
 import { isRiverside } from './economy.ts'
 import { HERO_POOL } from './data/heroes-pool.ts'
@@ -52,11 +53,13 @@ function candidates(r: Realm, f: string, season: number): Array<{ card: Card; w:
   const port = portOf(r, f)
   const big = bigNodes(r, f)
   const heroes = freeHeroes(r, f)
-  const badMul = (r.tier ?? 1) < 1 ? P.realm.easyBad : 1 + P.realm.cardTierBad * (Math.max(1, r.tier ?? 1) - 1)
+  // 재물이 부르는 재해 — 우리가 커질수록 나쁜 일이 잦다 (쉬움 빼고 · 림월드 · 위원회 11-08)
+  const threat = wealthThreat(r)
+  const badMul = ((r.tier ?? 1) < 1 ? P.realm.easyBad : 1 + P.realm.cardTierBad * (Math.max(1, r.tier ?? 1) - 1)) * (1 + P.realm.wealthBad * threat)
   const add = (kind: CardKind, w: number, more: Partial<Card> = {}): void => {
     // 재해는 세기를 굴린다 — 작게 · 보통 · 크게 (난세가 높을수록 크게가 잦다 · 형 11-05)
     const R = P.realm
-    const strong = R.cardSevStrong + R.cardSevStrongTier * Math.max(0, (r.tier ?? 1) - 1)
+    const strong = Math.min(0.8, R.cardSevStrong + R.cardSevStrongTier * Math.max(0, (r.tier ?? 1) - 1) + R.wealthSevStrong * threat)
     const u = roll(r.seed, season, `card-sev:${kind}`)
     const sev: 1 | 2 | 3 | undefined = SEV_KINDS.has(kind) ? (u < R.cardSevWeak ? 1 : u > 1 - strong ? 3 : 2) : undefined
     const card: Card = { kind, season, ...(sev !== undefined ? { sev } : {}), ...more }
@@ -352,13 +355,13 @@ export function cardPreview(r: Realm, c: Card, pick: 0 | 1 | 2, have?: { readonl
       if (pick === 0) return { sure: { grain: cost(R.cardPirateRansom * m) } }
       // 맞선다 — 바다도적 막기 판에서 직접 쏜다 (SNIPE §0-9 · 형 11-08). 굴림 없이 막은 물결 수로 정해진다
       if (pick === 1) {
-        const win: CardFx = { iron: Math.round(R.cardPirateIron * m * R.cardPirateWinMul) }
+        const win: CardFx = { iron: Math.round(R.cardPirateIron * m * R.cardPirateWinMul * realmScale(r, f)) }
         const lose = (h: number): CardFx => ({ hurt: hurt([c.node!], R.cardPirateHit * pirateLossMul(h)), grain: cost(R.cardPirateLoss * pirateLossMul(h)) })
         if (held === undefined) return { sure: {}, hand: true, win, lose: lose(0) }
         return held >= 3 ? { sure: win, good: true } : { sure: lose(held), good: false }
       }
       // 장수에게 맡긴다 — 옛 굴림 그대로: 포구를 맡은 장수와 경계가 이길 가망을 올린다 (위원회 11-04 F10 · 통제 원칙)
-      return { sure: {}, chance: Math.min(R.cardPirateMax, ok(R.cardPirateOk) + (postHero(r, c.node!) !== null ? R.cardPirateChief : 0) + (r.watch[c.node!]?.alert ?? 0) * R.cardPirateWatch), die: 'fight', win: { iron: Math.round(R.cardPirateIron * m) }, lose: { hurt: hurt([c.node!], R.cardPirateHit), grain: cost(R.cardPirateLoss) } }
+      return { sure: {}, chance: Math.min(R.cardPirateMax, ok(R.cardPirateOk) + (postHero(r, c.node!) !== null ? R.cardPirateChief : 0) + (r.watch[c.node!]?.alert ?? 0) * R.cardPirateWatch), die: 'fight', win: { iron: Math.round(R.cardPirateIron * m * realmScale(r, f)) }, lose: { hurt: hurt([c.node!], R.cardPirateHit), grain: cost(R.cardPirateLoss) } }
     case 'exile': {
       // 돌려보낸다 — 쫓아낸 나라가 우리를 좋게 본다 · 받으면 그 나라가 노한다 (위원회 11-04 F5 · 돌려보내기가 아무 일 없어 늘 밀렸다)
       if (pick === 1) return { sure: c.from !== undefined ? { favor: [{ to: [c.from], d: R.cardExileReturnFavor }] } : {} }
