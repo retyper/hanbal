@@ -70,6 +70,13 @@ function leaderNow(r: Realm, viewer: string): string | null {
   // 살림으로 앞선 플레이어 — 군세는 남보다 적어도 집이 그 판의 몫을 넘으면 앞서가는 나라로 본다 (쉬움 빼고 · 위원회 11-08: 형은 군사가 가장 센 남보다 적은 채 살림으로 이겼다)
   const hhTot = fs.reduce((s, f) => s + hhOf(r, f), 0)
   const richLead = (f: string): boolean => f === r.player && wealthThreat(r) > 0 && hhTot > 0 && hhOf(r, f) / hhTot >= shareNeed
+  // 남의 눈에만 — 살림 1등(집)이고 도읍이 누구보다 적지 않은 플레이어를 먼저 세운다. 순서가 도읍 → 힘이라 군세 2등 부자는 뽑히지 않았다
+  // (balance 자리: 위협 2 넘고 힘 1등이 아닐 때 우리를 보는 비율 17.6% → 80.3% · 플레이어 제 눈에 걸면 봇 판단이 바뀌어 안 건다 · 위원회 11-08b Q3)
+  if (viewer !== r.player && P.realm.leaderRichFirst > 0 && fs.includes(r.player) && richLead(r.player)) {
+    const myHH = hhOf(r, r.player)
+    const myCaps = capitalsHeld(r, r.player)
+    if (fs.every((f) => f === r.player || (hhOf(r, f) < myHH && capitalsHeld(r, f) <= myCaps))) return r.player
+  }
   let best: { f: string; caps: number; p: number } | null = null
   for (const f of fs) {
     const caps = capitalsHeld(r, f)

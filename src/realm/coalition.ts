@@ -15,7 +15,7 @@
  */
 import { P } from '../tune/params.ts'
 import { monthly, seasonEndTurn, seasons } from './calendar.ts'
-import { addFavor, bindLeague, declareWar, friendly, nationPower, pairKey, relationOf, unbindLeague } from './diplomacy.ts'
+import { addFavor, bindLeague, declareWar, friendly, leaguePeace, nationPower, pairKey, relationOf, unbindLeague } from './diplomacy.ts'
 import { knows } from './discovery.ts'
 import { wealthThreat } from './scale.ts'
 import { borders, leaderOf, tookRecently } from './stance.ts'
@@ -132,6 +132,8 @@ function end(r: Realm, c: Coalition, lines: ReportLine[], ev: 'broken' | 'spent'
   if (ev === 'broken') {
     for (const m of c.members) {
       addFavor(r, m, c.against, R.coalBrokenFavor)
+      // 막아 냈으면 싸움이 저절로 그친다 — 전엔 깬 뒤에도 남은 나라와 전쟁이 남아 12계절 안에 고을 1.9 개를 또 잃었다 (balance 자리 · 위원회 11-08b Q2)
+      if (R.coalBrokenPeace > 0) leaguePeace(r, c.against, m, lines)
       // 출정을 막아 냈다 — 연합 나라들이 군사를 거두고 숨을 고른다 (달 시계 · rout.beatenResting 이 읽는다)
       const f = r.factions[m]
       if (f !== undefined && monthly(r) && R.coalBrokenRest > 0) {

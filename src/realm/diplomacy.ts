@@ -77,6 +77,30 @@ export function declareWar(r: Realm, by: string, to: string, lines: ReportLine[]
   setRelation(r, by, to, 'war', null, lines, { by, why })
 }
 
+/**
+ * 합종을 깬 뒤의 화친 (위원회 11-08b Q2) — 출정을 막아 낸 쪽(winner)과 진 연합 나라(loser)가 싸움을 그친다.
+ * 여느 화친은 서로 잡은 장수를 다 돌려주지만, 여기선 진 쪽만 돌려준다 — 깨고도 사로잡은 적장을 잃지 않게 (design 자리가 짚은 함정)
+ */
+export function leaguePeace(r: Realm, winner: string, loser: string, lines: ReportLine[]): void {
+  if (winner === loser || r.factions[winner] === undefined || r.factions[loser] === undefined || relationOf(r, winner, loser).state !== 'war') return
+  // 우리가 잡아 둔 적장 — setRelation 이 돌려보내기 전에 적어 두었다가 되돌린다
+  const kept = Object.values(r.heroes).filter((h) => h.status === 'captive' && h.captor === winner && h.faction === loser)
+    .map((h) => ({ h, snap: { status: h.status, captor: h.captor, post: h.post, at: h.at, persuade: h.persuade } }))
+  setRelation(r, winner, loser, 'truce', r.season + seasons(r, P.realm.truceSeasons), lines, { by: loser, why: 'league' })
+  for (const { h, snap } of kept) {
+    h.status = snap.status
+    h.captor = snap.captor
+    h.post = snap.post
+    h.at = snap.at
+    if (snap.persuade !== undefined) h.persuade = snap.persuade
+  }
+  // 돌려보냈다고 적힌 줄은 지운다 (우리가 쥐고 있다)
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const l = lines[i]!
+    if (l.kind === 'freed' && l.from === winner && kept.some((k) => k.h.id === l.hero)) lines.splice(i, 1)
+  }
+}
+
 /** 판을 열 때 화친으로 시작한다 (바닷가 여덟 나라 — hooks.startCustoms). 보고 없이 · 화친은 truceSeasons 뒤에 끝난다 */
 export function makeTruce(r: Realm, a: string, b: string): void {
   if (a === b || r.factions[a] === undefined || r.factions[b] === undefined) return

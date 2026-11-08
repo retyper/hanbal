@@ -11,7 +11,7 @@ import { startRegion } from '../../src/realm/data/regions/index.ts'
 import { applyTier } from '../../src/realm/tier.ts'
 import { advance } from '../../src/realm/season.ts'
 import { coalCandidates, coalFocusOf, coalMinOf, stepCoalition } from '../../src/realm/coalition.ts'
-import { pairKey, relationOf } from '../../src/realm/diplomacy.ts'
+import { leaguePeace, pairKey, relationOf } from '../../src/realm/diplomacy.ts'
 import { wealthThreat } from '../../src/realm/scale.ts'
 import { P } from '../../src/tune/params.ts'
 import type { Realm, ReportLine } from '../../src/realm/types.ts'
@@ -175,5 +175,22 @@ describe('합종', () => {
     const ra = advance(a, []).next
     const rb = advance(b, []).next
     assert.deepEqual(ra.coalition ?? null, rb.coalition ?? null)
+  })
+  it('합종을 깬 뒤의 화친 — 진 쪽만 우리 장수를 돌려주고 우리가 잡은 적장은 우리가 쥔다 (위원회 11-08b Q2)', () => {
+    const r = bigUs(1)
+    const me = r.player
+    const foe = Object.keys(r.factions).find((f) => f !== me)!
+    r.relations = { ...(r.relations ?? {}), [pairKey(me, foe)]: { state: 'war', until: null } }
+    const theirs = Object.values(r.heroes).find((h) => h.faction === foe)!
+    const ours = Object.values(r.heroes).find((h) => h.faction === me && h.id !== r.factions[me]!.ruler)!
+    theirs.status = 'captive'; theirs.captor = me
+    ours.status = 'captive'; ours.captor = foe
+    const lines: ReportLine[] = []
+    leaguePeace(r, me, foe, lines)
+    assert.equal(relationOf(r, me, foe).state, 'truce', '싸움이 그친다')
+    assert.equal(theirs.status, 'captive', '우리가 잡은 적장은 그대로')
+    assert.equal(theirs.captor, me)
+    assert.equal(ours.status, 'free', '우리 장수는 돌아온다')
+    assert.ok(!lines.some((l) => l.kind === 'freed' && l.hero === theirs.id), '적장을 돌려보냈다는 줄이 없다')
   })
 })
