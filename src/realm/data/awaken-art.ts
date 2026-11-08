@@ -237,6 +237,7 @@ export const AWAKEN_TAKES: Readonly<Record<string, number>> = { 'l-L2-soseono': 
 export const loopTakes = (id: string): string[] => [loopFile(id), ...Array.from({ length: Math.max(0, (AWAKEN_TAKES[id] ?? 1) - 1) }, (_, i) => `awaken-loop/${id}.${i + 2}.mp4`)]
 
 export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
+  'w-78-wansan-wan', // 11-08 저녁 완 v3 · 10초 구성 · 만작한 채 윙크 (형: 그래도 봐줄 만하다 · 적용)
   'w-69-jeoga-eomni', // 11-07 엄니 · fc094928 사용자 채택, 원본 프레임 경계 한계 기록
   'w-67-buyeo-haedal', // 11-07 해달 · 머리/허리 손 접촉을 유지하는 세로 idle
   'w-42-gwanna-soenun', // 11-07 쇠눈 · 출전 전 투구를 바로잡는 연속 동작
