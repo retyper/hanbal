@@ -441,6 +441,7 @@ export const FACE_AGE: Readonly<Record<string, CastAge>> = {
   'w-95-michuhol-haebi': { age: 22, grey: false },
   'w-96-haengin-neoul': { age: 24, grey: false },
   'w-97-goguryeo-mir': { age: 20, grey: false },
+  'w-102-garak-dana': { age: 22, grey: false },
   'w-98-byeonhan-danbi': { age: 20, grey: false },
   'w-99-garak-yucheongan': { age: 52, grey: false },
   'y-g-01': { age: 19, grey: false },
