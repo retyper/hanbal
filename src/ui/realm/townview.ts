@@ -18,7 +18,7 @@
  * 움직이는 건 작은 사람 칸·작은 도장뿐이고, 밝아지기는 opacity 로.
  */
 import { P } from '../../tune/params.ts'
-import { MIGRANT_ANIM } from '../../realm/data/art.ts'
+import { VILLAGER_ANIM } from '../../realm/data/art.ts'
 
 /** 터 넷 — 가운데 x · 터 아랫단 y · 폭 (그림 비율) · 차례: 왼위 · 오른위 · 왼아래 · 오른아래. 11-08 바탕을 울타리 친 빈 마을(town/ground-field.png)로 바꾸며 광장의 빈 땅에 맞춰 다시 잼 · 터는 바탕에 그려져 있지 않고 town/lot.png 를 터마다 얹는다 (형 11-08: "만들지 못하는 공간들에 구역이 또 있고 성의 없어 보인다") */
 const LOTS: ReadonlyArray<{ readonly x: number; readonly y: number; readonly w: number }> = [
@@ -244,6 +244,8 @@ export function townViewHtml(t: TownViewIn): string {
   // 길마다 몇이 서나 — 가로 길이 가장 길어 많이, 둘레 길·세로 길 순
   const share = [Math.round(walkers * 0.6), 0, 0] as [number, number, number] // 11-08 울타리 마을 바탕엔 안쪽 둘레 길이 없다 — 둘레 몫은 0 (울타리 위에 서던 사람들)
   share[1] = Math.max(0, walkers - share[0])
+  /** 사람마다 셋 가운데 하나 — 고을 id 로 정해 다시 그려도 같은 사람 */
+  const vOf = (i: number): number => Math.floor(hash01(t.id, i + 307) * VILLAGER_ANIM.length) % VILLAGER_ANIM.length
   let folk = ''
   let w = 0
   for (let i = 0; i < n; i++) {
@@ -256,7 +258,7 @@ export function townViewHtml(t: TownViewIn): string {
       const ang = Math.PI * (0.15 + 0.7 * (i + 0.5) / workers)
       const x = L.x + Math.cos(ang) * L.w * 0.4
       const y = L.y - L.w * 0.14 + Math.sin(ang) * L.w * 0.1
-      folk += `<i class="tvf work" style="left:${pct(x)};top:${pct(y)};z-index:${zOf(y) + 1};--d:${(-c * 1.2).toFixed(2)}s;${x > L.x ? '--fl:-1;' : ''}"><u></u><s></s></i>`
+      folk += `<i class="tvf work v1" style="left:${pct(x)};top:${pct(y)};z-index:${zOf(y) + 1};--d:${(-c * 1.2).toFixed(2)}s;${x > L.x ? '--fl:-1;' : ''}"><u></u><s></s></i>`
       continue
     }
     // 몇째 길의 몇째 사람인가
@@ -272,20 +274,20 @@ export function townViewHtml(t: TownViewIn): string {
       const y = 0.45 + c * 0.05
       const x0 = 0.22 + u * 0.5 // 울타리 안쪽(가로 0.17~0.85)에서만
       const sc = 0.82 + (y - 0.4) * 1.2
-      folk += `<i class="tvf walk" style="left:${pct(x0)};top:${pct(y)};z-index:${zOf(y) + 1};--dx:${(6 + c * 6).toFixed(1)}cqw;--sc:${sc.toFixed(2)};--dur:${(7 + c * 5).toFixed(1)}s;${delay}"><u></u></i>`
+      folk += `<i class="tvf walk v${vOf(i)}" style="left:${pct(x0)};top:${pct(y)};z-index:${zOf(y) + 1};--dx:${(6 + c * 6).toFixed(1)}cqw;--sc:${sc.toFixed(2)};--dur:${(7 + c * 5).toFixed(1)}s;${delay}"><u></u></i>`
     } else if (road === 'v') {
       // 세로 길(x≈0.5) — 위 문에서 아래 문까지 고루 · 멀수록(위) 작게
       const x0 = 0.48 + c * 0.04
       const y0 = 0.12 + u * 0.62
       const sc = 0.66 + y0 * 0.6
-      folk += `<i class="tvf walkv" style="left:${pct(x0)};top:${pct(y0)};z-index:${zOf(y0) + 1};--dy:${(8 + c * 8).toFixed(1)}cqh;--sc:${sc.toFixed(2)};--dur:${(7 + c * 5).toFixed(1)}s;${delay}"><u></u></i>`
+      folk += `<i class="tvf walkv v${vOf(i)}" style="left:${pct(x0)};top:${pct(y0)};z-index:${zOf(y0) + 1};--dy:${(8 + c * 8).toFixed(1)}cqh;--sc:${sc.toFixed(2)};--dur:${(7 + c * 5).toFixed(1)}s;${delay}"><u></u></i>`
     } else {
       // 둘레 길 — 타원 길의 위·아래 호에 고루(양끝은 폰에서 잘린다) · 제자리 가까이를 가로로 오간다
       const ang = u < 0.5 ? Math.PI * (0.2 + 0.6 * u * 2) : Math.PI * (1.2 + 0.6 * (u - 0.5) * 2)
       const x0 = 0.5 + Math.cos(ang) * 0.42
       const y0 = 0.5 + Math.sin(ang) * 0.38
       const sc = 0.66 + y0 * 0.6
-      folk += `<i class="tvf walk" style="left:${pct(x0)};top:${pct(y0)};z-index:${zOf(y0) + 1};--dx:${(4 + c * 5).toFixed(1)}cqw;--sc:${sc.toFixed(2)};--dur:${(6 + c * 5).toFixed(1)}s;${delay}"><u></u></i>`
+      folk += `<i class="tvf walk v${vOf(i)}" style="left:${pct(x0)};top:${pct(y0)};z-index:${zOf(y0) + 1};--dx:${(4 + c * 5).toFixed(1)}cqw;--sc:${sc.toFixed(2)};--dur:${(6 + c * 5).toFixed(1)}s;${delay}"><u></u></i>`
     }
   }
   const built = slots.filter((s) => s.k === 'work').length
@@ -400,14 +402,15 @@ export const TOWN_CSS = `
 @keyframes tvcorner { to { transform: var(--o); opacity: .55; } }
 .ap .tvlot2:active .tvart { translate: 0 2px; }
 /* 마을 사람 — 유민 걷기 8컷 띠 · 크기는 판 폭에 따라(폰에선 집보다 작게) · 오가는 이는 가로로 오가며 돌아선다 · 일하는 이는 제자리에서 까딱 */
-.ap .tvf { --pw: clamp(14px, 5cqw, 30px); position: absolute; width: var(--pw); height: calc(var(--pw) / ${MIGRANT_ANIM.ar.toFixed(4)}); margin: calc(var(--pw) / -${MIGRANT_ANIM.ar.toFixed(4)}) 0 0 calc(var(--pw) / -2); z-index: 3; pointer-events: none; }
-.ap .tvf u { position: absolute; inset: 0; background: url('__ART__${MIGRANT_ANIM.file}') 0 0 / ${MIGRANT_ANIM.nf * 100}% 100% no-repeat; }
+.ap .tvf { --ph: calc(clamp(14px, 5cqw, 30px) / 0.6375); --ar: ${VILLAGER_ANIM[0].ar.toFixed(4)}; position: absolute; width: calc(var(--ph) * var(--ar)); height: var(--ph); margin: calc(var(--ph) * -1) 0 0 calc(var(--ph) * var(--ar) / -2); z-index: 3; pointer-events: none; }
+.ap .tvf u { position: absolute; inset: 0; background: url('__ART__${VILLAGER_ANIM[0].file}') 0 0 / 800% 100% no-repeat; }
+${VILLAGER_ANIM.map((v, k) => `.ap .tvf.v${k} { --ar: ${v.ar.toFixed(4)}; } .ap .tvf.v${k} u { background-image: url('__ART__${v.file}'); }`).join('\n')}
 .ap .tvf.walk { scale: var(--sc, 1); animation: tvwalk var(--dur, 9s) linear var(--d, 0s) infinite; }
-.ap .tvf.walk u { animation: tvstep .8s steps(${MIGRANT_ANIM.nf - 1}) infinite; }
+.ap .tvf.walk u { animation: tvstep .8s steps(7) infinite; }
 @keyframes tvstep { to { background-position-x: 100%; } }
 @keyframes tvwalk { 0% { translate: 0 0; transform: scaleX(1); } 49.9% { translate: var(--dx) 0; transform: scaleX(1); } 50% { translate: var(--dx) 0; transform: scaleX(-1); } 100% { translate: 0 0; transform: scaleX(-1); } }
 .ap .tvf.walkv { scale: var(--sc, 1); animation: tvwalkv var(--dur, 9s) linear var(--d, 0s) infinite; }
-.ap .tvf.walkv u { animation: tvstep .8s steps(${MIGRANT_ANIM.nf - 1}) infinite; }
+.ap .tvf.walkv u { animation: tvstep .8s steps(7) infinite; }
 @keyframes tvwalkv { 0% { translate: 0 0; transform: scaleX(1); } 49.9% { translate: 0 var(--dy); transform: scaleX(1); } 50% { translate: 0 var(--dy); transform: scaleX(-1); } 100% { translate: 0 0; transform: scaleX(-1); } }
 .ap .tvf.work { z-index: 5; transform: scaleX(var(--fl, 1)); }
 .ap .tvf.work u { animation: tvbob .55s ease-in-out var(--d, 0s) infinite alternate; }
