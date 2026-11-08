@@ -13,6 +13,7 @@ import { P } from '../../tune/params.ts'
 
 /** 장면이 있는 기술 — 비기 아홉 + 장수의 명령 셋 */
 export type SkillId = 'snipe' | 'rite' | 'sway' | 'stand' | 'ambush' | 'vanguard' | 'feint' | 'order' | 'shout' | 'duel' | 'capture' | 'retreat'
+  | 'w-earth' | 'w-wind' | 'w-fire' | 'w-water' | 'w-bolt'
 /** 장면의 소리 — battlefield 가 제 소리로 바꾼다 */
 export type SkSfx = 'whoosh' | 'draw' | 'release' | 'impact' | 'drum' | 'bell' | 'rite' | 'cry' | 'shield' | 'clatter' | 'slash' | 'charge' | 'retreat' | 'capture' | 'gong'
 
@@ -44,6 +45,12 @@ const sparks = (t: number, x: number, y: number, n = 8): Spr => ({ src: C.spark,
 const hitFx = (t: number, x: number, y: number): Spr[] => [
   { src: C.flash, t, d: 320, x, y, w: 52, mv: 'flash' },
   { src: C.ink, t: t + 20, d: 360, x, y, w: 40, mv: 'burst' },
+  sparks(t + 10, x, y),
+]
+
+/** 각성기의 맞음 — 먹 튐 없이 번쩍과 불티만 (기운 그림이 주인공) */
+const glowHit = (t: number, x: number, y: number): Spr[] => [
+  { src: C.flash, t, d: 320, x, y, w: 40, mv: 'flash' },
   sparks(t + 10, x, y),
 ]
 
@@ -174,6 +181,64 @@ export const SKILL_SEQ: Readonly<Record<SkillId, Seq>> = {
     hit: null,
     cues: [[260, 'whoosh'], [380, 'gong'], [560, 'retreat']],
   },
+  // ── 각성기 다섯 — 전엔 남의 장면(버텨라·거짓 퇴각·선봉·굿·명궁)을 빌렸다 (11-08 형: "비기 연출도 더 고민해봐").
+  //    장수 곁에서 기운의 고리가 모이고(charge) → 적진 한가운데서 기운이 솟는다 · 짐승은 battlefield 가 위에 얹는다
+  // 땅 — 바위 송곳이 땅을 찢고 솟는다
+  'w-earth': {
+    sprites: [
+      { src: 'awaken/ring-earth.png', t: 280, d: 520, x: 26, y: 40, w: 40, mv: 'wave' },
+      { src: 'skill/wake/rock-spikes.png', t: 560, d: 900, x: 68, y: 74, w: 40, mv: 'spring' },
+      { src: C.dust, t: 600, d: 760, x: 56, y: 82, w: 22, mv: 'puff', n: 5, dx: 7, dt: 40 },
+      ...glowHit(620, 68, 72),
+    ],
+    hit: 620,
+    cues: [[260, 'whoosh'], [300, 'charge'], [580, 'impact'], [640, 'shield']],
+  },
+  // 바람 — 비취빛 회오리가 적진을 휘감는다
+  'w-wind': {
+    sprites: [
+      { src: 'awaken/ring-wind.png', t: 280, d: 520, x: 26, y: 40, w: 40, mv: 'wave' },
+      { src: 'skill/wake/tornado.png', t: 460, d: 1000, x: 68, y: 66, w: 14, mv: 'spring' },
+      { src: C.slash, t: 640, d: 360, x: 66, y: 68, w: 30, mv: 'slash', n: 3, dy: 6, dt: 70 },
+      sparks(700, 68, 68, 10),
+    ],
+    hit: 700,
+    cues: [[260, 'whoosh'], [300, 'charge'], [480, 'whoosh'], [700, 'slash']],
+  },
+  // 불 — 불기둥이 적진 한가운데서 치솟고 불티가 오른다
+  'w-fire': {
+    sprites: [
+      { src: 'awaken/ring-fire.png', t: 280, d: 520, x: 26, y: 40, w: 40, mv: 'wave' },
+      { src: 'skill/wake/fire-pillar.png', t: 460, d: 1000, x: 68, y: 66, w: 15, mv: 'spring' },
+      { src: 'awaken/ember.png', t: 560, d: 800, x: 60, y: 74, w: 4, mv: 'rise', n: 10, dx: 2, dt: 40 },
+      ...glowHit(600, 68, 72),
+    ],
+    hit: 600,
+    cues: [[260, 'whoosh'], [300, 'charge'], [600, 'impact']],
+  },
+  // 물 — 물기둥이 용처럼 휘감아 오르고 물방울이 튄다
+  'w-water': {
+    sprites: [
+      { src: 'awaken/ring-water.png', t: 280, d: 520, x: 26, y: 40, w: 40, mv: 'wave' },
+      { src: 'skill/wake/water-spout.png', t: 460, d: 1000, x: 68, y: 66, w: 18, mv: 'spring' },
+      { src: 'awaken/p-drop1.png', t: 640, d: 520, x: 68, y: 66, w: 5, mv: 'spray', n: 8, rot: 170 },
+      ...glowHit(660, 68, 72),
+    ],
+    hit: 660,
+    cues: [[260, 'whoosh'], [300, 'charge'], [660, 'impact']],
+  },
+  // 번개 — 벼락이 적진에 잇달아 내리꽂힌다
+  'w-bolt': {
+    sprites: [
+      { src: 'awaken/ring-bolt.png', t: 280, d: 520, x: 26, y: 40, w: 40, mv: 'wave' },
+      { src: 'awaken/bolt-1.png', t: 520, d: 420, x: 58, y: 66, w: 6, mv: 'flash' },
+      { src: 'awaken/bolt-3.png', t: 600, d: 420, x: 71, y: 64, w: 7, mv: 'flash' },
+      { src: 'awaken/bolt-2.png', t: 680, d: 420, x: 84, y: 66, w: 6, mv: 'flash' },
+      ...glowHit(600, 70, 72),
+    ],
+    hit: 600,
+    cues: [[260, 'whoosh'], [300, 'charge'], [520, 'impact'], [680, 'impact']],
+  },
 }
 
 /** 뼈대 그림 — 모든 장면에 */
@@ -253,7 +318,7 @@ export function skillCutHtml(art: string, id: SkillId, bust: string | null, hero
   }
   // 먹혔다 — 기술 이름 옆에 붉은 네모 도장이 쾅 · 헛쳤다 — 이름의 붓 자국이 먹으로 갈라져 떨어진다 (글 없이 그림으로)
   const left = R.warSkEndMs - at
-  if (res === 'hit' && READY.has(C.seal)) h += `<i class="wsk-sp" style="left:86%;top:20%;width:22cqw;z-index:${z++};rotate:-8deg"><img class="wsk-m mv-stamp" src="${img(C.seal)}" alt="" style="animation-duration:${ms(left)};animation-delay:${ms(at)}"></i>`
+  if (res === 'hit' && READY.has(C.seal)) h += `<i class="wsk-sp" style="left:91%;top:17%;width:17cqw;z-index:${z++};rotate:-8deg"><img class="wsk-m mv-stamp" src="${img(C.seal)}" alt="" style="animation-duration:${ms(left)};animation-delay:${ms(at)}"></i>`
   return h + '</div>'
 }
 

@@ -1118,7 +1118,7 @@ const FIELD_CMD: ReadonlySet<string> = new Set(['charge', 'hold', 'open', 'volle
 /** 장면이 뜨는 장수의 명령 — 비기는 비기마다 (skillfx.ts). 격려는 흔해 장면을 띄우지 않는다 — 합마다 2초씩 전장을 가렸다 (형 10-25 · 전장의 격려 고리로 보인다) */
 const CUT_OF: Readonly<Partial<Record<Cmd, SkillId>>> = { duel: 'duel', capture: 'capture', retreat: 'retreat' }
 /** 각성기의 장면 뼈대 — 땅은 버텨라(방패) · 바람은 거짓 퇴각(휘감김) · 불은 선봉(돌진) · 물·번개는 아직 안 켰다(realm/elem WAKE_ON) */
-const WAKE_CUT: Readonly<Record<Elem, SkillId>> = { earth: 'stand', wind: 'feint', fire: 'vanguard', water: 'rite', bolt: 'snipe' }
+const WAKE_CUT: Readonly<Record<Elem, SkillId>> = { earth: 'w-earth', wind: 'w-wind', fire: 'w-fire', water: 'w-water', bolt: 'w-bolt' } // 11-08 제 장면 (전엔 버텨라·거짓 퇴각·선봉·굿·명궁을 빌림)
 /** 장면 끝의 갈림 — 먹혔으면 도장, 헛쳤으면 갈라진 먹 (11-08 · 비기 연출 더 고민 · 비김·버팀은 갈림 없이) */
 const skillRes = (r: Act['res'] | undefined): 'hit' | 'miss' | null =>
   r === 'hit' || r === 'won' || r === 'ok' ? 'hit' : r === 'wasted' || r === 'fail' || r === 'blocked' || r === 'lost' ? 'miss' : null

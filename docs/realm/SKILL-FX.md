@@ -177,3 +177,16 @@
 
 헛침의 초상: 맞는 순간 초상 위에 잿빛 막(`.wsk-ash` · 초상 가림막과 같은 꼴)이 opacity 로 덮인다 (filter 애니 금지 · 폰 그래픽 한도).
 갈림은 battlefield `skillRes(act.res)` — hit·won·ok 는 도장 · wasted·fail·blocked·lost 는 갈라진 먹 · 비김(even)·버팀(stall)은 갈림 없이.
+
+### 11-08 각성기 다섯의 제 장면 (`w-earth` · `w-wind` · `w-fire` · `w-water` · `w-bolt`)
+
+장수 곁에 기운의 고리(`fx/awaken/ring-*.png`)가 모였다가 → 적진 한가운데서 기운이 솟는다(spring · 땅에서 위로) · 짐승은 battlefield 가 그대로 위에 얹는다. 번개는 이미 있던 `awaken/bolt-*.png` 세 줄기.
+
+| 파일 | 크기 | 바탕 | 프롬프트 |
+|---|---|---|---|
+| skill/wake/rock-spikes.png | 768x447 | #ff00ff | `a cluster of huge jagged rock spikes violently erupting upward out of cracked ground … glowing molten amber light in the cracks … chunks of rock, pebbles and dust flying up` · 먼지에 마젠타가 배어 흙빛으로 다시 칠함 |
+| skill/wake/tornado.png | 372x640 | #000 | `a huge spiraling tornado of wind … glowing pale jade-green and white light streaks swirling upward, narrow at the bottom and wide at the top` |
+| skill/wake/fire-pillar.png | 402x640 | #000 | `a towering pillar of fire erupting straight up from the ground … white-hot core fading to yellow, orange and deep red` |
+| skill/wake/water-spout.png | 495x640 | #000 | `a towering column of water erupting upward from the ground and twisting like a rising water dragon spout, glowing white-blue foam and translucent turquoise water` |
+
+빌려 쓰는 각성 그림 (이미 있음): `fx/awaken/ring-earth.png` · `fx/awaken/ring-wind.png` · `fx/awaken/ring-fire.png` · `fx/awaken/ring-water.png` · `fx/awaken/ring-bolt.png` · `fx/awaken/ember.png` · `fx/awaken/p-drop1.png` · `fx/awaken/bolt-1.png` · `fx/awaken/bolt-2.png` · `fx/awaken/bolt-3.png`
