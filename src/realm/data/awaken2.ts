@@ -62,7 +62,7 @@ export const TRUE_WAKE: ReadonlySet<string> = new Set([
   'iseo-ruler', // 이서 신애 (11-05 밤 · retyper92 · 사람마다 다른 옷 틀 · 별 셈 책사 산가지)
   'byeokjin-ruler', // 벽진 별 (11-05 밤 · retyper92 · 사람마다 다른 옷 틀 · 대장간 처녀)
   'us-ruler', // 우시산 해솔 (11-05 밤 · retyper92 · 사람마다 다른 옷 틀 · 바닷가 소나무 · 치마 끝 물결 무늬는 청해파 꼴 — 형 판정 기다림)
-  'goguryeo-2', // 고구려 활미 (11-05 밤 · retyper92 · 사람마다 다른 옷 틀 · 고분벽화 점무늬 사냥 궁수)
+  'goguryeo-2', // 고구려 혜미(옛 활미) (11-05 밤 · retyper92 · 사람마다 다른 옷 틀 · 고분벽화 점무늬 사냥 궁수)
   'balla-1', // 반라 독무덤 (11-05 밤 · retyper92 · 사람마다 다른 옷 틀 · 옹관 무덤지기 혼불)
   'bukokjeo-1', 'jm-okjeo-1', // 북옥저 물범 (11-05 밤 · retyper92 · 사람마다 다른 옷 틀 · 얼음 바다 작살 사냥꾼)
   'yeonna-1', // 연나 너울 (11-05 밤 · roqkfeke12 · 사람마다 다른 옷 틀 · 산안개 길잡이)

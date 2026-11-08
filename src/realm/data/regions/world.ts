@@ -232,7 +232,7 @@ const NEW_HEROES: Hero[] = [
   h('bullae-ruler', '삼로 박달', 'bullae', 'w', [6, 5, 6, 4, 6, 8], ['archer'], 'd-bullae-cap'), // 단궁 — 박달나무 활
   h('tamna-ruler', '군장 한라', 'tamna', 'w', [4, 5, 6, 5, 7, 8], ['shaman'], 't-tamna-cap'),
   h('goguryeo-1', '대가 소나', 'goguryeo', 'g', [8, 6, 5, 4, 4, 7], ['mountain']),
-  h('goguryeo-2', '조의 활미', 'goguryeo', 'w', [6, 5, 6, 4, 5, 7], ['archer']),
+  h('goguryeo-2', '조의 혜미', 'goguryeo', 'w', [6, 5, 6, 4, 5, 7], ['archer']),
   h('biryuna-1', '선인 물결', 'biryuna', 'g', [6, 5, 4, 4, 4, 6], ['river']),
   h('yeonna-1', '선인 너울', 'yeonna', 'w', [5, 5, 5, 4, 4, 6], ['mountain']),
   h('hwanna-1', '선인 압록', 'hwanna', 'g', [6, 5, 4, 4, 4, 6], ['river']),
