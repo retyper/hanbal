@@ -477,4 +477,5 @@ export const FACE_AGE: Readonly<Record<string, CastAge>> = {
   'y-w-16': { age: 19, grey: false },
   'y-w-17': { age: 20, grey: false },
   'g-107-garak-musoe': { age: 38, grey: false },
+  'w-103-tahae-neoul': { age: 30, grey: false },
 }
