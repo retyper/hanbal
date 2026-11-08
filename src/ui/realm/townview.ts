@@ -18,7 +18,7 @@
  * 움직이는 건 작은 사람 칸·작은 도장뿐이고, 밝아지기는 opacity 로.
  */
 import { P } from '../../tune/params.ts'
-import { VILLAGER_ANIM } from '../../realm/data/art.ts'
+import { BUILDER_ANIM, VILLAGER_ANIM } from '../../realm/data/art.ts'
 
 /** 터 넷 — 가운데 x · 터 아랫단 y · 폭 (그림 비율) · 차례: 왼위 · 오른위 · 왼아래 · 오른아래. 11-08 바탕을 울타리 친 빈 마을(town/ground-field.png)로 바꾸며 광장의 빈 땅에 맞춰 다시 잼 · 터는 바탕에 그려져 있지 않고 town/lot.png 를 터마다 얹는다 (형 11-08: "만들지 못하는 공간들에 구역이 또 있고 성의 없어 보인다") */
 const LOTS: ReadonlyArray<{ readonly x: number; readonly y: number; readonly w: number }> = [
@@ -253,12 +253,13 @@ export function townViewHtml(t: TownViewIn): string {
     const b = hash01(t.id, i + 101)
     const c = hash01(t.id, i + 211)
     if (i < workers) {
-      // 일터 앞 — 돌 테두리 앞줄을 따라 선다
+      // 공사판 안 — 돌 테두리 안쪽 마당에 둥글게 서서 말뚝을 박는다. 터 그림(z = zOf(L.y))보다 위에 그린다:
+      // 전엔 발 자리(y)로 z 를 매겨 터 그림 뒤에 깔려 하나도 안 보였다 (11-09 폰 스크린샷)
       const L = LOTS[busyAt]!
       const ang = Math.PI * (0.15 + 0.7 * (i + 0.5) / workers)
-      const x = L.x + Math.cos(ang) * L.w * 0.4
-      const y = L.y - L.w * 0.14 + Math.sin(ang) * L.w * 0.1
-      folk += `<i class="tvf work v1" style="left:${pct(x)};top:${pct(y)};z-index:${zOf(y) + 1};--d:${(-c * 1.2).toFixed(2)}s;${x > L.x ? '--fl:-1;' : ''}"><u></u><s></s></i>`
+      const x = L.x + Math.cos(ang) * L.w * 0.3
+      const y = L.y - L.w * 0.3 + Math.sin(ang) * L.w * 0.1
+      folk += `<i class="tvf work" style="left:${pct(x)};top:${pct(y)};z-index:${zOf(L.y) + 1 + Math.round(Math.sin(ang) * 5)};--d:${(-c * 1.2).toFixed(2)}s;${x > L.x ? '--fl:-1;' : ''}"><u></u><s></s></i>`
       continue
     }
     // 몇째 길의 몇째 사람인가
@@ -412,15 +413,14 @@ ${VILLAGER_ANIM.map((v, k) => `.ap .tvf.v${k} { --ar: ${v.ar.toFixed(4)}; } .ap 
 .ap .tvf.walkv { scale: var(--sc, 1); animation: tvwalkv var(--dur, 9s) linear var(--d, 0s) infinite; }
 .ap .tvf.walkv u { animation: tvstep .8s steps(7) infinite; }
 @keyframes tvwalkv { 0% { translate: 0 0; transform: scaleX(1); } 49.9% { translate: 0 var(--dy); transform: scaleX(1); } 50% { translate: 0 var(--dy); transform: scaleX(-1); } 100% { translate: 0 0; transform: scaleX(-1); } }
-.ap .tvf.work { z-index: 5; transform: scaleX(var(--fl, 1)); }
-.ap .tvf.work u { animation: tvbob .55s ease-in-out var(--d, 0s) infinite alternate; }
-@keyframes tvbob { to { translate: 0 3px; } }
-/* 일하는 곳의 흙먼지 — 작은 점 하나가 피었다 사라진다 */
-.ap .tvf.work s { position: absolute; left: 60%; bottom: -2px; width: 10px; height: 10px; border-radius: 50%; background: #d8c09088; animation: tvdust 1.1s ease-out var(--d, 0s) infinite; }
-@keyframes tvdust { from { transform: scale(.3); opacity: .9; } to { transform: scale(1.8) translateY(-6px); opacity: 0; } }
+/* 짓는 터 앞 일꾼 — 나무 메로 말뚝을 박는 8컷 (11-09 · 전엔 걷는 사람이 위아래로 흔들렸다) */
+.ap .tvf.work { --ar: ${BUILDER_ANIM.ar.toFixed(4)}; z-index: 5; transform: scaleX(var(--fl, 1)); }
+.ap .tvf.work u { background-image: url('__ART__${BUILDER_ANIM.file}'); animation: tvstep var(--hm, .9s) steps(${BUILDER_ANIM.nf}, jump-none) var(--d, 0s) infinite; }
+/* 일하는 곳의 흙먼지 — 메가 말뚝을 치는 컷에 맞춰 말뚝 밑에서 작은 점 하나가 피었다 사라진다 */
+.ap .tvf.work s { position: absolute; left: 78%; bottom: -2px; width: 10px; height: 10px; border-radius: 50%; background: #d8c09088; opacity: 0; animation: tvdust var(--hm, .9s) ease-out var(--d, 0s) infinite; }
+@keyframes tvdust { 0%, ${(BUILDER_ANIM.hitAt * 100 - 0.1).toFixed(1)}% { transform: scale(.3); opacity: 0; } ${(BUILDER_ANIM.hitAt * 100).toFixed(1)}% { transform: scale(.3); opacity: .9; } 100% { transform: scale(1.8) translateY(-6px); opacity: 0; } }
 /* 톡톡 — 일꾼이 잠깐 더 빨리 · 비계가 들썩 · 흙먼지 낱낱이 */
-.ap .tvboard.cheer .tvf.work u { animation-duration: .2s; }
-.ap .tvboard.cheer .tvf.work s { animation-duration: .45s; }
+.ap .tvboard.cheer .tvf.work { --hm: .45s; }
 .ap .tvboard.cheer .tvlot2.going .tvsc2, .ap .tvboard.cheer .tvlot2.going .tvsp[src$="build.png"] { animation: tvknock .16s ease-in-out 0s 4 alternate; }
 @keyframes tvknock { to { translate: 0 -3px; } }
 .ap .tvpuff { position: absolute; z-index: 6; width: 14px; height: 14px; border-radius: 50%; background: #d8c090aa; translate: -50% -50%; pointer-events: none; animation: tvpuff .6s ease-out forwards; }

@@ -451,6 +451,8 @@ export const SOL_ANIM2: Readonly<Record<string, number>> = { militia: 168 / 160,
 /** 지도 길 위의 이주민 — 지게 진 사람 걷기 8컷 띠 (제미나이 11-03 · assets_src/realm/gemini/migrant · tools/strip-frames.mjs 4x2) · 칸 가로/세로 */
 export const MIGRANT_ANIM = { file: 'anim2/migrant.png', nf: 8, ar: 102 / 160 } as const
 /** 마을 안 사람 — 걷기 8컷 띠 셋 (광주리 인 아낙 · 괭이 멘 농부 · 물동이 진 아낙 · 제미나이 11-08 · assets_src/realm/gemini/villager · 개척단 띠를 빌리지 않는다 · 형 11-08) */
+/** 마을 짓는 터 앞 일꾼 — 나무 메로 말뚝 박기 8컷 (6번째 컷이 내리침 · 제미나이 11-09 · assets_src/realm/gemini/villager/villager-builder-act.png) */
+export const BUILDER_ANIM = { file: 'anim2/villager-builder.png', nf: 8, ar: 110 / 160, hitAt: 5 / 8 } as const
 export const VILLAGER_ANIM = [
   { file: 'anim2/villager-woman.png', nf: 8, ar: 79 / 160 },
   { file: 'anim2/villager-farmer.png', nf: 8, ar: 125 / 160 },
