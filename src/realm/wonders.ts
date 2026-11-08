@@ -36,10 +36,10 @@ export interface WonderDef {
 }
 
 export const WONDERS: Readonly<Record<WonderId, WonderDef>> = {
-  sotdae: { name: '솟대 숲', icon: 'route-sotdae', good: 'wood' },
-  furnace: { name: '큰 쇠부리 가마', icon: 'settle-forge', good: 'wood' },
-  dolmen: { name: '고인돌 큰 무덤', icon: 'emblem-dolmen', good: 'iron' },
-  altar: { name: '소도 큰 제단', icon: 'settle-sodo-grove', good: 'iron' },
+  sotdae: { name: '솟대 숲', icon: 'wonder-sotdae', good: 'wood' },
+  furnace: { name: '큰 쇠부리 가마', icon: 'wonder-furnace', good: 'wood' },
+  dolmen: { name: '고인돌 큰 무덤', icon: 'wonder-dolmen', good: 'iron' },
+  altar: { name: '소도 큰 제단', icon: 'wonder-altar', good: 'iron' },
 }
 
 /** 짓는 중인 큰 공사 — stage 는 다 쌓은 단 · busy 는 지금 쌓는 단이 끝나는 턴 (없으면 쉬는 중) · poured 는 부은 것 (늦으면 몫을 돌려받는다) */

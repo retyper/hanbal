@@ -4898,7 +4898,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const pour = feastPour(r, me())
       const why = queued ? null : r.season < feastNext(r, me()) ? `${turnsLabel(r, feastNext(r, me()) - r.season)} 뒤에 다시 열 수 있습니다` : feastBlocked(r, me())
       const chip = (ic: string, pp: number, tip: string): string => pp <= 0 ? '' : `<b class="fodd" data-tip="${esc(tip)}">${icon(ic, 'cgi')}${Math.round(pp * 100)}%</b>`
-      h += `<h3>${icon('status-feast', 'wki')} 큰 잔치</h3><div class="wfeast${queued ? ' on' : ''}"><div class="fodds">`
+      h += `<h3>${icon('wonder-feast', 'wki')} 큰 잔치</h3><div class="wfeast${queued ? ' on' : ''}"><div class="fodds">`
         + chip('unit-general', odds.guest, '이름난 장수가 손님으로 온다 (값 없이 들인다)')
         + chip('good-tribute-bell', odds.king, `이웃 왕이 찾아온다 (그 나라 호감 +${P.realm.feastFavor})`)
         + chip('unit-drummers', odds.joy, `좋은 잔치 (군대 사기 +${Math.round(P.realm.feastMorale * 100)} · 장수 공)`) + '</div>'
@@ -7343,7 +7343,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const got = g.got === 'guest' ? chip('unit-general', HERO_POOL.find((x) => x.id === g.who)?.name ?? '손님')
           : g.got === 'king' ? chip('good-tribute-bell', `${r.factions[g.who ?? '']?.name ?? ''} 호감 +${P.realm.feastFavor}`)
             : chip('unit-drummers', `사기 +${Math.round(P.realm.feastMorale * 100)}`)
-        return `<div class="gnrow" style="--i:${i}"><img class="gnnd" src="${ART}icon/status-feast.png" alt=""><div><b class="gnt">큰 잔치</b><small>${g.got === 'guest' ? '이름난 손님이 왔습니다' : g.got === 'king' ? '이웃 왕이 찾아왔습니다' : '좋은 잔치였습니다'} · ${pc}</small><span class="gncs">${got}</span></div></div>`
+        return `<div class="gnrow" style="--i:${i}"><img class="gnnd" src="${ART}icon/wonder-feast.png" alt=""><div><b class="gnt">큰 잔치</b><small>${g.got === 'guest' ? '이름난 손님이 왔습니다' : g.got === 'king' ? '이웃 왕이 찾아왔습니다' : '좋은 잔치였습니다'} · ${pc}</small><span class="gncs">${got}</span></div></div>`
       }
       const chips = [...(g.how === 'settle' && g.n !== undefined ? [chip('unit-porters', `+${g.n}가구`)] : []), ...nodeSpecials(r, g.node).map((x) => chip(GOOD_ICON[x], `+${GOOD_NAME[x]}`))]
       return `<div class="gnrow" style="--i:${i}"><img class="gnnd" src="${ART}icon/${nodeIcon(n)}.png" alt=""><div><b class="gnt">${esc(n.name)}</b><small>${g.how === 'take' ? '우리 땅이 되었습니다' : '새 마을이 섰습니다'}</small><span class="gncs">${chips.join('')}</span></div></div>`
