@@ -281,14 +281,15 @@ export function skillCues(id: SkillId): Array<readonly [number, SkSfx]> {
  * 장면 한 판의 HTML — 초상(bust · 없으면 장수 그림) · 기술 이름 · 장수 이름 · 기술의 몸짓.
  * 바깥 상자가 끝까지 도는 애니메이션(wsk-end)이 끝나면 부르는 쪽이 걷는다 · 누르면 바로 걷는다.
  */
-export function skillCutHtml(art: string, id: SkillId, bust: string | null, heroName: string, skillName: string, res: 'hit' | 'miss' | null = null): string {
+export function skillCutHtml(art: string, id: SkillId, bust: string | null, heroName: string, skillName: string, res: 'hit' | 'miss' | null = null, foe = false): string {
   const R = P.realm
   const sp = R.warSkSpeed
   const end = Math.round(R.warSkEndMs * sp)
   const ms = (x: number): string => `${Math.round(x * sp)}ms`
   const seq = SKILL_SEQ[id]
   const img = (src: string): string => `${art}fx/${src}`
-  let h = `<div class="wsk k-${id}" style="--end:${end}ms;--dim:${R.warSkDim}">`
+  // 적의 기술(foe) — 초상이 오른쪽에서, 이름이 왼쪽에서 · 몸짓은 통째로 좌우 뒤집어 적진에서 우리 쪽으로 · 막은 핏빛 (11-08)
+  let h = `<div class="wsk k-${id}${foe ? ' foe' : ''}" style="--end:${end}ms;--dim:${R.warSkDim}">`
   h += `<i class="wsk-dim"></i>`
   // 바람 줄기 · 먹 띠 — 위 띠 자리를 가로지른다
   if (READY.has(C.speed)) h += `<i class="wsk-sp" style="left:50%;top:31%;width:150cqw;z-index:2"><img class="wsk-m mv-streak" src="${img(C.speed)}" alt="" style="animation-duration:${ms(640)};animation-delay:0ms"></i>`
@@ -299,14 +300,15 @@ export function skillCutHtml(art: string, id: SkillId, bust: string | null, hero
   // 헛치면 맞는 순간 초상이 잿빛 막에 덮여 식는다 (filter 없이 opacity 한 번 · 폰 그래픽 한도)
   const at = seq.hit ?? Math.round(R.warSkEndMs * 0.55)
   const ash = res === 'miss' ? `<i class="wsk-ash" style="animation-delay:${ms(at)}"></i>` : ''
-  h += `<div class="wsk-bust" style="animation:wsk-slideL ${end}ms cubic-bezier(.2,1.2,.4,1) 60ms both${shake}">${face}${ash}</div>`
+  h += `<div class="wsk-bust" style="animation:wsk-${foe ? 'slideR' : 'slideL'} ${end}ms cubic-bezier(.2,1.2,.4,1) 60ms both${shake}">${face}${ash}</div>`
   // 기술 이름 — 붓 자국 위에 큰 글씨 · 그 밑에 장수 이름
   // 헛치면 붉은 붓 자국 위로 갈라진 먹이 덮여 깨진다 — 글씨 밑 층이라 기술 이름은 그대로 읽힌다
   const crack = res === 'miss' && READY.has(C.crack) ? `<img class="wsk-crack" src="${img(C.crack)}" alt="" style="animation-delay:${ms(at)}">` : ''
   const brush = (READY.has(C.brush) ? `<img class="wsk-brush" src="${img(C.brush)}" alt="">` : '') + crack
-  h += `<div class="wsk-ttl" style="animation:wsk-slideR ${end}ms cubic-bezier(.2,1.2,.4,1) ${ms(140)} both${shake}">${brush}<b class="${[...skillName].length > 5 ? 'long' : ''}">${esc(skillName)}</b><span>${esc(heroName)}</span></div>`
+  h += `<div class="wsk-ttl" style="animation:wsk-${foe ? 'slideL' : 'slideR'} ${end}ms cubic-bezier(.2,1.2,.4,1) ${ms(140)} both${shake}">${brush}<b class="${[...skillName].length > 5 ? 'long' : ''}">${esc(skillName)}</b><span>${esc(heroName)}</span></div>`
   // 기술의 몸짓 — 그림 낱낱
   let z = 10
+  h += '<div class="wsk-fx">'
   // 헛치면 맞는 순간 무렵부터의 「먹힌 그림」(꽂힘 번쩍 · 흰 깃발 · 솟는 말뚝 · 걸린 밧줄)은 안 나온다 — 화살은 스쳐 지나가고 남는 건 갈라진 먹
   const payoff = seq.hit !== null && res === 'miss' ? seq.hit - P.realm.warSkMissCutMs : Infinity
   for (const s of seq.sprites) {
@@ -320,8 +322,8 @@ export function skillCutHtml(art: string, id: SkillId, bust: string | null, hero
   }
   // 먹혔다 — 기술 이름 옆에 붉은 네모 도장이 쾅 · 헛쳤다 — 이름의 붓 자국이 먹으로 갈라져 떨어진다 (글 없이 그림으로)
   const left = R.warSkEndMs - at
-  if (res === 'hit' && READY.has(C.seal)) h += `<i class="wsk-sp" style="left:91%;top:17%;width:17cqw;z-index:${z++};rotate:-8deg"><img class="wsk-m mv-stamp" src="${img(C.seal)}" alt="" style="animation-duration:${ms(left)};animation-delay:${ms(at)}"></i>`
-  return h + '</div>'
+  if (res === 'hit' && !foe && READY.has(C.seal)) h += `<i class="wsk-sp" style="left:91%;top:17%;width:17cqw;z-index:${z++};rotate:-8deg"><img class="wsk-m mv-stamp" src="${img(C.seal)}" alt="" style="animation-duration:${ms(left)};animation-delay:${ms(at)}"></i>`
+  return h + '</div></div>'
 }
 
 /** 장면의 모양 — 키프레임마다 transform·opacity 만 (폰 그래픽 한도) · 크기 단위 cqw·cqh 는 장면 상자(.wsk) 기준 */
@@ -337,6 +339,11 @@ export const SKFX_CSS = `
 .ap .wsk.wsk-true .wsk-dim { background: radial-gradient(ellipse at 50% 46%, #ffd27a33, #000c 70%); }
 @keyframes wsk-beast { 0% { opacity: 0; transform: translate(-50%, -40%) scale(.7); } 22% { opacity: .95; transform: translate(-50%, -52%) scale(1); } 62% { opacity: .85; transform: translate(-50%, -54%) scale(1.06); } 100% { opacity: 0; transform: translate(-50%, -58%) scale(1.18); } }
 .ap .wsk-sp { position: absolute; display: block; translate: -50% -50%; pointer-events: none; }
+.ap .wsk-fx { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
+.ap .wsk.foe .wsk-fx { scale: -1 1; }
+.ap .wsk.foe .wsk-bust { left: auto; right: 3%; }
+.ap .wsk.foe .wsk-ttl { left: 3%; right: 46%; }
+.ap .wsk.foe .wsk-dim { background: #1c0406; }
 .ap .wsk-sp > img { display: block; width: 100%; height: auto; opacity: 0; animation-timing-function: cubic-bezier(.2, .9, .3, 1); animation-fill-mode: both; }
 .ap .wsk-sp > .wsk-b { animation-name: wsk-slideR; }
 .ap .wsk-bust { position: absolute; left: 3%; top: 31%; translate: 0 -50%; width: min(44cqw, 300px); aspect-ratio: 1; z-index: 4; pointer-events: none; }
