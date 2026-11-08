@@ -213,6 +213,7 @@ export const AWAKEN_ART: ReadonlySet<string> = new Set([
   'g-93-jomun-solgae',
   'w-102-garak-dana', // 11-08 가락 다나 · 붉은 끈 말총머리·비치는 소매·꿩깃 화살통 · 불티 (챗지피티 retyper)
   'g-107-garak-musoe', // 11-08 가락 무쇠 · 큰 망치·쇠 미늘·그을린 머리띠 · 불티 (챗지피티 retyper)
+  'w-103-tahae-neoul', // 11-08 탈해 무리 뱃사람 너울 · 밧줄 타래·조개 상어 이빨 목걸이·비치는 겉감 (챗지피티 retyper)
 ])
 
 /**
