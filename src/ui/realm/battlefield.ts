@@ -22,6 +22,7 @@ import type { Act, Approach, Art, Clock, Cmd, Dusk, DuskAsk, DuskLog, Grp, Hero,
 import type { GuardWhy } from '../../realm/council.ts'
 import { P } from '../../tune/params.ts'
 import { captureAttempts, playBattleStrikes } from './battle-strikes.ts'
+import { captureCast, carryEnd, caughtIn, playCapture, withoutCapture } from './battle-capture.ts'
 import { BATTLE_SPEEDS, battlePlayback, battleSpeed, type BattleSpeed } from './battle-playback.ts'
 import { snd } from './sound.ts'
 import { artVoicePath, autoVoicePath, voiceGate, voicePath } from './voice.ts'
@@ -1345,7 +1346,9 @@ function roundPlan(rd: RoundLog, weAtk: boolean): { beats: Beat[]; clash: number
   const clash = at + R.warClashGap
   const lastContact = clash + 3 * R.warStrikeStaggerS + R.warStrikeReplyS
   const story = Math.max(clash + R.warStoryGap, lastContact + R.warStrikeHitS)
-  const result = Math.max(clash + R.warResultGap, story, lastContact + R.warStrikeHitS + Math.max(R.warStrikeFallS, R.warStrikeWalkBackS))
+  // 사로잡은 합은 적장을 이고 돌아와 내려놓을 때까지 (battle-capture.ts)
+  const carried = caughtIn(rd) !== undefined ? carryEnd(clash) : 0
+  const result = Math.max(clash + R.warResultGap, story, carried, lastContact + R.warStrikeHitS + Math.max(R.warStrikeFallS, R.warStrikeWalkBackS))
   return { beats, clash, story, result }
 }
 
@@ -1646,19 +1649,34 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       const capture = captures.find((c) => c.side === (i === 0 ? 'd' : 'a'))
       const knownTarget = capture?.target
       const target = knownTarget !== undefined && (prev.heroes[knownTarget] ?? after.heroes[knownTarget]) !== undefined ? knownTarget : hero
+      // 사로잡힌 장수는 제 진에 눕지 않는다 — 잡힌 합에는 제자리에서 쓰러지고(gtaken) 잡은 장수가 이고 가서, 그 뒤로는 잡은 쪽 진 땅바닥에 누워 있다 (형 11-08 · battle-capture.ts)
+      const takenIds = new Set(rounds.flatMap((rd) => { const c = caughtIn(rd); return c !== undefined ? [c.target] : [] }))
       const genOf = (id: string | null, aide = false): string => {
         const gh = id !== null ? (prev.heroes[id] ?? after.heroes[id]) : undefined
         if (id === null || gh === undefined) return ''
         const ga = genArtOf(generalSprite(gh, P.realm.tacArtMinStat))
         const caught = capture?.succeeded === true && target === id
+        const takenNow = play && caught
+        if (takenIds.has(id) && !takenNow) return ''
         const gDown = caught || rounds.some((rd) => rd.lostHero?.hero === id)
         const gNow = anim && (caught || last?.lostHero?.hero === id)
-        const gCls = ` gsp g-${ga.kind}${ga.bow === true ? ' gbw' : ''}${ga.mount === true ? ' gmt' : ''}${gNow ? ' gfall' : gDown ? ' gdown' : ''}${aide ? ' gcap-aide' : ''}`
+        const gCls = ` gsp g-${ga.kind}${ga.bow === true ? ' gbw' : ''}${ga.mount === true ? ' gmt' : ''}${gNow ? ' gfall' : gDown ? ' gdown' : ''}${takenNow ? ' gtaken' : ''}${aide ? ' gcap-aide' : ''}`
         return `<span class="wgen${gCls}" data-hero="${esc(id)}" style="--fc:${fc};--gar:${ga.ar.toFixed(3)};--gb:${ga.body.toFixed(3)}"><i class="wpole">${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}</i><i class="gbody"><b class="gspf" style="background-image:url('${art}anim2/gen-${ga.kind}.png')"></b></i>${face(id, art, 'unit-general')}</span>`
       }
-      const gen = genOf(hero) + (play && target !== hero ? genOf(target, true) : '')
+      // 우리가(이 진이) 사로잡은 적장들 — 장수 발치 땅바닥에 쓰러진 채 (쓰러짐 컷 19). 이번 합에 잡은 이는 이고 올 때까지 숨어 있다(.late)
+      const mySide: 'a' | 'd' = i === 0 ? 'a' : 'd'
+      const captives = rounds.flatMap((rd) => { const c = caughtIn(rd); return c !== undefined && c.side === mySide ? [{ id: c.target, late: play && rd === last }] : [] })
+      const captiveHtml = captives.map(({ id, late }, k) => {
+        const gh = prev.heroes[id] ?? after.heroes[id]
+        if (gh === undefined) return ''
+        const ga = genArtOf(generalSprite(gh, P.realm.tacArtMinStat))
+        return `<i class="wcapt${late ? ' late' : ''}" data-hero="${esc(id)}" style="--ci:${k};--gar:${ga.ar.toFixed(3)};--gb:${ga.body.toFixed(3)}"><b class="wcaptf" style="background-image:url('${art}anim2/gen-${ga.kind}.png')"></b></i>`
+      }).join('')
+      const gen = genOf(hero) + (play && target !== hero ? genOf(target, true) : '') + captiveHtml
+      // 이번 합에 잡으러 나간 쪽 진은 맞은편 진 위에 그린다 — 적진 한가운데로 뛰어든 장수가 적 병사 그림 밑에 묻혀 안 보였다
+      const capBy = captives.some((x) => x.late) ? ' wcapby' : ''
       const cues = '<i class="wq q-charge"><b>돌격</b></i><i class="wq q-hold"></i><i class="wq q-shoot"></i><i class="wq q-ride"></i><i class="wq q-cap"><b>사로잡으러</b></i><i class="wq q-back"><b>물러난다</b></i>'
-      if (men <= 0) return `<div class="wf2s ${cls}"${formAttrs(o)}>${terrainProps(cls)}${gen}${cues}</div>`
+      if (men <= 0) return `<div class="wf2s ${cls}${capBy}"${formAttrs(o)}>${terrainProps(cls)}${gen}${cues}</div>`
       // 병사 그림 — 어느 싸움이든 한 잣대: 작은 병사 10명 · 큰 병사(2배) 100명 · 깃발 병사 1000명 (troops.ts · 형 11-01: "보기만 해도 몇명인지").
       // 전엔 큰 쪽 군대에 맞춘 로그 눈금(백 명 8 · 천 명 13)이라 920 명과 340 명이 13 대 5 로 보였다 — 판마다 잣대가 달라 셀 수가 없었다
       const RG: readonly Grp[] = ['front', 'bows', 'horse']
@@ -1767,7 +1785,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       const chipAt: Readonly<Record<Grp, string>> = { front: 'left:37%;top:calc(60% + 27%)', bows: `left:${bowX}%;top:calc(60% + 27%)`, horse: 'left:24%;top:27%' }
       const gChips = RG.filter((g) => rows[RG.indexOf(g)]!.some((tk) => tk.s2 !== 'tkh'))
         .map((g) => `<b class="wgct${gLeft(g) <= 0 ? ' none' : ''}" style="${chipAt[g]}"><img src="${art}icon/${GROUP_ICON[g]}.png" alt="">${cnt(gWas(g), gLeft(g))}</b>`).join('')
-      return `<div class="wf2s ${cls}${waver}"${formAttrs(o)}${tempo}>${terr}${gen}${cues}${bows}${horse}${front}${stuck}${gChips}</div>`
+      return `<div class="wf2s ${cls}${waver}${capBy}"${formAttrs(o)}${tempo}>${terr}${gen}${cues}${bows}${horse}${front}${stuck}${gChips}</div>`
     }
     // 이 합에 낸 명령 (풀릴 때) · 고르는 중엔 우리는 고른 것, 적은 낌새
     const ordUs: RoundOrder | undefined = play ? (weAtk ? last!.oa : last!.od) : pd !== undefined ? sel : undefined
@@ -1797,7 +1815,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     // 잣대 — 작은 병사 10 · 큰 병사 100 (· 깃발 병사 1000 은 그런 병사가 섰을 때만). 읽지 않아도 크기 차이로 보이게 그림 셋을 크기대로
     const used = [0, 1, 2].filter((t) => t === 0 || [kindMen(0), kindMen(1)].some((ks) => ks.some((v) => (tierCounts(v, prec)[t] ?? 0) > 0)))
     const legend = `<div class="wleg" aria-label="병사 하나 10명 · 큰 병사 100명">${used.map((t) => `<span class="l${t}"><img src="${art}icon/sol-spear.png" alt="">${TIER_MEN[t]!.toLocaleString('ko-KR')}</span>`).join('')}</div>`
-    return `<div class="wfield${play ? ' play' : ''}${captures.length > 0 ? ' capture-round' : ''}${enter}${endCls}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--bd:${tAt(2)}s;--rv:${rv.toFixed(2)}s"><i class="wf-ground"></i>${midTerr}${side(ourI, 'us', ordUs, ourHero, ourF)}${side(foeI, 'foe', ordFoe, foeHero, foeF)}${legend}<i class="wf-mid">⚔</i><b class="wf-who us">${roleChip(weAtk)}우리 ${esc(ourName)}</b><b class="wf-who foe">${roleChip(!weAtk)}적 ${esc(foeName)}</b>${hit}${omen}${mu !== null ? muHtml(art, mu) : ''}</div>`
+    return `<div class="wfield${play ? ' play' : ''}${captures.length > 0 ? ' capture-round' : ''}${enter}${endCls}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--bd:${tAt(2)}s;--rv:${rv.toFixed(2)}s;--ce:${(plan?.result ?? 0).toFixed(2)}s"><i class="wf-ground"></i>${midTerr}${side(ourI, 'us', ordUs, ourHero, ourF)}${side(foeI, 'foe', ordFoe, foeHero, foeF)}${legend}<i class="wf-mid">⚔</i><b class="wf-who us">${roleChip(weAtk)}우리 ${esc(ourName)}</b><b class="wf-who foe">${roleChip(!weAtk)}적 ${esc(foeName)}</b>${hit}${omen}${mu !== null ? muHtml(art, mu) : ''}</div>`
   }
 
   // 싸움터 배경 (땅마다) · 위 카드는 굴려도 그 자리에 (형: "싸우는로그가 스크롤로 보이더라도 상단에 캐릭터랑 체력바 있는 그 카드는 고정")
@@ -2289,7 +2307,7 @@ export const WAR_CSS = `
 .ap .wfield i.wf-tw, .ap .wfield i.wf-pre, .ap .wfield i.wf-post { position: absolute; inset: 0; pointer-events: none; }
 .ap .wfield .wf-pre { animation: wfpre .5s ease-out var(--rv, 0s) forwards; } @keyframes wfpre { to { opacity: 0; visibility: hidden; } }
 .ap .wfield .wf-post { animation: wfpost .5s ease-out var(--rv, 0s) both; } @keyframes wfpost { from { opacity: 0; } to { opacity: 1; } }
-.ap .wr.fast .wfield { --rv: 0s !important; }
+.ap .wr.fast .wfield { --rv: 0s !important; --ce: 0s !important; }
 /* 물 한 줄기 (waterSvg) — 땅 위 · 병사 밑. 위쪽은 지평선으로 스러진다 */
 .ap .wfield .wrv { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; filter: drop-shadow(0 0 3px #0006); }
 .ap .wfield .wrv-rip { opacity: 0; animation: wrvflow 3.6s linear calc(var(--i) * -.6s) infinite; }
@@ -2346,6 +2364,15 @@ export const WAR_CSS = `
 .ap .wf2s .wgen.gsp.gdown .gspf { animation: none; background-position-x: 100%; }
 .ap .wf2s .wgen.gsp.gdown .wpole { rotate: -70deg; } .ap .wf2s .wgen.gsp .wpole { transform-origin: 50% 100%; }
 .ap .wf2s .wgen.gsp.gdown .wf { top: 58%; opacity: .7; }
+/* 사로잡힌 적장 — 잡은 쪽 진, 장수 발치 땅바닥에 쓰러진 채 (쓰러짐 컷 19 · 형 11-08). 제 진(거울)에서 쓰러진 모습 그대로라 칸을 뒤집는다.
+   이번 합에 잡힌 이(.late)는 장수가 이고 와서 내려놓을 때 나타난다 (battle-capture.ts 가 쥔다) · 연출을 못 돌리면 그 합이 끝날 때(--ce) 바뀐다 */
+.ap .wf2s .wcapt { position: absolute; left: calc(11% + var(--ci, 0) * 7%); top: calc(69% + var(--ci, 0) * 4%); height: calc(clamp(44px, 12.4cqw, 80px) / var(--gb, 1)); aspect-ratio: var(--gar, 1); transform: translate(-50%, -100%); z-index: 130; pointer-events: none; }
+.ap .wf2s .wcapt .wcaptf { position: absolute; inset: 0; background: 100% 0 / 2000% 100% no-repeat; scale: -1 1; }
+.ap .wfield.play .wf2s .wcapt.late { animation: wcaplate .01s steps(1) var(--ce, 0s) both; } @keyframes wcaplate { from { opacity: 0; } to { opacity: 1; } }
+.ap .wfield.play .wf2s .wgen.gsp.gtaken { animation: wcapgone .01s steps(1) var(--ce, 0s) both; } @keyframes wcapgone { from { opacity: 1; } to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .ap .wfield.play .wf2s .wgen.gsp.gtaken { visibility: hidden; } }
+/* 잡으러 나간 장수는 적진 병사들 위로 (진 하나가 통째로 맞은편 진 위에 · 그 합에만) */
+.ap .wfield.play .wf2s.wcapby { z-index: 3; } .ap .wfield.play .wf2s.wcapby .wgen.gsp:not(.gcap-aide) { z-index: 160; } .ap .wfield.play .wf2s.wcapby .wcapt.late { z-index: 161; }
 @media (pointer: coarse) {
   .ap .wf2s .wgen.gsp .gbody, .ap .wf2s.foe .wgen.gsp .gbody { filter: none; }
   .ap .wf2s .wgen.gsp .gbody::before { left: 22%; right: 22%; bottom: -5%; height: 13%; background: radial-gradient(closest-side, #000a, #0008 48%, #7cc4ffd0 72%, #7cc4ff00); }
@@ -3694,7 +3721,12 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         if (field === null) return
         let lastSound = -Infinity
         let hitCount = 0
-        stopStrikes = playBattleStrikes(field, strikeRound, plan.beats, plan.clash, plan.result, weAtk, host.art, playback, (kind) => {
+        // 사로잡기가 먹힌 합 — 다른 무리는 여느 합처럼 맞붙고, 그 사이 잡는 장수가 뛰어나가 적장을 이고 온다 (battle-capture.ts · 형 11-08).
+        // 맞부딪힘 연출은 .wgen.gsp:not(.gdown) 을 배우로 고르므로, 고르는 그 순간에만 두 장수에 gdown 을 걸어 다른 무리의 칼끝에서 뺀다
+        const cast = captureCast(field, strikeRound, weAtk)
+        const spared = cast === null ? [] : [cast.capturer, cast.target]
+        for (const n of spared) n.classList.add('gdown')
+        const stopFight = playBattleStrikes(field, cast === null ? strikeRound : withoutCapture(strikeRound), plan.beats, plan.clash, plan.result, weAtk, host.art, playback, (kind) => {
           const now = playback.now()
           if (now - lastSound < 95) return
           lastSound = now
@@ -3702,6 +3734,9 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
           const sound = kind === 'heavy' ? BATTLE_SFX.clash : MELEE[hitCount++ % MELEE.length]!
           host.ding(sound, kind === 'heavy' ? .32 : kind === 'melee' ? .24 : .14, rate, .26 / rate)
         })
+        for (const n of spared) n.classList.remove('gdown')
+        const stopCarry = cast === null ? undefined : playCapture(field, cast, plan.clash, playback)
+        stopStrikes = () => { stopFight(); stopCarry?.() }
       })
     }
     // 싸움이 끝났다 — 이겼으면 「승리」가 쾅, 졌으면 「패배」가 내려앉는다 (형: "승리했다는 이펙트가 더 확실히")
