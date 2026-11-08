@@ -10,6 +10,7 @@ import { goodOf } from '../../src/realm/economy.ts'
 import { hasScale, scaleLimit, scaleRoom, scaleSellPrice } from '../../src/realm/merchant.ts'
 import { advance, planned } from '../../src/realm/season.ts'
 import { P } from '../../src/tune/params.ts'
+import { realmScale } from '../../src/realm/scale.ts'
 import type { Realm } from '../../src/realm/types.ts'
 
 function withMarket(): Realm {
@@ -29,7 +30,7 @@ describe('장터 저울', () => {
 
   it('팔면 곡식이 들어오고 이번 달 몫이 준다 · 한도를 넘으면 아무 일 없다', () => {
     const r = withMarket()
-    assert.equal(scaleRoom(r, 'us'), Math.round(P.realm.scaleCap))
+    assert.equal(scaleRoom(r, 'us'), Math.round(P.realm.scaleCap * realmScale(r, 'us'))) // 나라의 그릇만큼 (위원회 11-08)
     const lim = scaleLimit(r, 'us', 'salt', false)
     assert.ok(lim > 0)
     const plain = advance(r, []).next

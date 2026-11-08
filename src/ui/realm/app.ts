@@ -117,7 +117,7 @@ import { worldMapReady } from './worldmap.ts'
 import { loadBar } from './loadbar.ts'
 import { WORKS, clearBlocked, clearCost, lotCap, lvGain, lvOf, workBlocked, workCost, workEffect, workOptions, worksOf, type WorkWhat } from '../../realm/works.ts'
 import { postGain } from '../../realm/postgain.ts'
-import { hasScale, marketIn, marketOf, scaleBuyPrice, scaleLimit, scaleRoom, scaleSellPrice, sellLimit, sellPrice, wishReady, WISH_GRADE_NAME, type Offer } from '../../realm/merchant.ts'
+import { hasScale, marketIn, marketOf, scaleBuyPrice, scaleLimit, scaleRoom, scaleSellPrice, sellCap, sellLimit, sellPrice, wishReady, WISH_GRADE_NAME, type Offer } from '../../realm/merchant.ts'
 import { QUALITY_CSS, gfxRowHtml, setGfxPref, startQuality } from './quality.ts'
 import { HOWWIN_CSS, bannerHtml, closeHowWin, howWinDue, howWinMark, lessons, lossOf, openLessons, showBanner, syncPin, type HowKit, type LessonGo, type Loss } from './howwin.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
@@ -2142,7 +2142,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         + `${bought > 0 ? `<button class="btn ghost" data-act="buyx" data-offer="${o.id}">−</button>` : ''}</div>`
     }
     const ps = pendingSell()
-    const room = Math.max(0, P.realm.merchantSellCap - m.sold - ps.grain)
+    const room = Math.max(0, sellCap(r, me()) - m.sold - ps.grain)
     h += `</div><h3>우리 것 팔기</h3><p class="mute">이번 상단에 더 받을 수 있는 곡식 ${room}</p><div class="mkls">`
     for (const g of ['salt', 'iron', 'wood', 'horse'] as const) {
       const have = Math.floor(goodOf(r.stock[me()], g)) - (ps.by[g] ?? 0)

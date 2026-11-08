@@ -10,7 +10,7 @@
  *
  * 플레이어 나라만 상단을 맞는다 (AI 는 곳간을 제 셈으로 쓴다). 굴림은 roll(시드) 뿐 (A1).
  */
-import { realmScale } from './scale.ts'
+import { hhOf, realmScale } from './scale.ts'
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { addGood, goodOf, isCoast, nodeYield, stockOf, worthOf } from './economy.ts'
@@ -65,30 +65,45 @@ function every(r: Realm, faction: string): number {
   return Math.max(2, Math.round(P.realm.merchantEvery * Math.pow(P.realm.workMarketEvery, bestWorkLv(r, faction, 'market'))))
 }
 
-/** 물건 고르기 — 시드로 섞어 slots 가지 */
+/**
+ * 물건 고르기 — 시드로 섞어 slots 가지.
+ * 나라가 클수록(나라의 그릇 s · scale.ts) 묶음·용병은 크게(낱값은 그대로) · 북·약초·비단은 값을 s 만큼(효과는 나라 크기를 저절로 따라간다) ·
+ * 좋은 씨앗은 그해 걷이의 몫으로 — 초반엔 손해, 후반엔 15배 남던 거꾸로 된 값을 바로잡는다 (위원회 11-08 balance §3)
+ */
 function stockFor(r: Realm, faction: string): Offer[] {
   const R = P.realm
   const mk = R.merchantMarkup
+  const s = realmScale(r, faction)
+  const big = (n: number): number => Math.max(1, Math.round((n * s) / 5) * 5)
+  const bundle = (what: 'good' | 'ingot', good: Good, n0: number, off: number, many: number): Omit<Offer, 'id' | 'left'> & { many: number } => {
+    const n = big(n0)
+    return { what, good, n, price: Math.round(n * worthOf(good) * mk * off), many }
+  }
+  const merc = (unit: UnitKind, share: number, mul: number): Omit<Offer, 'id' | 'left'> & { many: number } => {
+    const n = Math.round(R.mercMen * share * s)
+    return { what: 'merc', unit, n, price: Math.round(n * R.mercGrainPer * mul), many: 1 }
+  }
+  const seedPrice = Math.max(R.seedGrain, Math.round(R.seedShare * hhOf(r, faction) * R.harvestPerHH))
   const pool: Array<Omit<Offer, 'id' | 'left'> & { many: number }> = [
-    { what: 'good', good: 'iron', n: 20, price: Math.round(20 * worthOf('iron') * mk), many: 3 },
-    { what: 'good', good: 'salt', n: 25, price: Math.round(25 * worthOf('salt') * mk), many: 3 },
-    { what: 'good', good: 'horse', n: 10, price: Math.round(10 * worthOf('horse') * mk), many: 3 },
-    { what: 'good', good: 'wood', n: 25, price: Math.round(25 * worthOf('wood') * mk), many: 3 },
-    { what: 'merc', unit: 'spear', n: R.mercMen, price: Math.round(R.mercMen * R.mercGrainPer), many: 1 },
-    { what: 'merc', unit: 'bow', n: Math.round(R.mercMen * 0.7), price: Math.round(R.mercMen * 0.7 * R.mercGrainPer * 1.3), many: 1 },
-    { what: 'merc', unit: 'shield', n: Math.round(R.mercMen * 0.8), price: Math.round(R.mercMen * 0.8 * R.mercGrainPer * 1.2), many: 1 },
-    { what: 'merc', unit: 'horse', n: Math.round(R.mercMen * 0.4), price: Math.round(R.mercMen * 0.4 * R.mercGrainPer * 2.2), many: 1 },
-    { what: 'drum', n: 1, price: R.drumGrain, many: 1 },
+    bundle('good', 'iron', 20, 1, 3),
+    bundle('good', 'salt', 25, 1, 3),
+    bundle('good', 'horse', 10, 1, 3),
+    bundle('good', 'wood', 25, 1, 3),
+    merc('spear', 1, 1),
+    merc('bow', 0.7, 1.3),
+    merc('shield', 0.8, 1.2),
+    merc('horse', 0.4, 2.2),
+    { what: 'drum', n: 1, price: Math.round(R.drumGrain * s), many: 1 },
     // 큰 묶음 — 낱개보다 싸다 (쇠 · 소금 · 말 · 나무)
-    { what: 'ingot', good: 'iron', n: 60, price: Math.round(60 * worthOf('iron') * mk * 0.75), many: 1 },
-    { what: 'ingot', good: 'salt', n: 80, price: Math.round(80 * worthOf('salt') * mk * 0.75), many: 1 },
-    { what: 'ingot', good: 'horse', n: 30, price: Math.round(30 * worthOf('horse') * mk * 0.75), many: 1 },
-    { what: 'ingot', good: 'wood', n: 80, price: Math.round(80 * worthOf('wood') * mk * 0.75), many: 1 },
+    bundle('ingot', 'iron', 60, 0.75, 1),
+    bundle('ingot', 'salt', 80, 0.75, 1),
+    bundle('ingot', 'horse', 30, 0.75, 1),
+    bundle('ingot', 'wood', 80, 0.75, 1),
     // 판의 다른 자리에 닿는 것 — 다친 장수 · 가을걷이 · 이웃의 마음 (형 11-04: "살 게 더 다양하고 많았으면")
-    ...(hurtHeroes(r, faction).length > 0 ? [{ what: 'heal' as const, n: 1, price: R.healGrain, many: 1 }] : []),
+    ...(hurtHeroes(r, faction).length > 0 ? [{ what: 'heal' as const, n: 1, price: Math.round(R.healGrain * s), many: 1 }] : []),
     // 좋은 씨앗은 씨 뿌리기 전(겨울·봄)에만 판다 — 8월에 사자마자 그해 걷이가 느는 게 이상했다 (형 11-08)
-    ...(seedSeason(r) ? [{ what: 'seed' as const, n: 1, price: R.seedGrain, many: 1 }] : []),
-    ...(knownOf(r, faction).some((x) => x !== faction) ? [{ what: 'silk' as const, n: 1, price: R.silkGrain, many: 1 }] : []),
+    ...(seedSeason(r) ? [{ what: 'seed' as const, n: 1, price: seedPrice, many: 1 }] : []),
+    ...(knownOf(r, faction).some((x) => x !== faction) ? [{ what: 'silk' as const, n: 1, price: Math.round(R.silkGrain * s), many: 1 }] : []),
   ]
   const slots = Math.max(1, Math.round(R.merchantSlots + bestWorkLv(r, faction, 'market')))
   const keyed = pool.map((p, i) => ({ p, i, k: roll(r.seed, r.season, `merchant:${faction}:${i}`) })).sort((a, b) => a.k - b.k || a.i - b.i)
@@ -168,12 +183,17 @@ export function applyBuy(r: Realm, o: Extract<Order, { kind: 'buy' }>, lines: Re
 }
 
 /** 팔 수 있는 개수 — 곳간에 있고 · 이번 상단이 받을 곡식 한도 안 */
+/** 한 번 들를 때 팔 수 있는 곡식 — 나라가 클수록 크게 (위원회 11-08) */
+export function sellCap(r: Realm, faction: string): number {
+  return Math.round(P.realm.merchantSellCap * realmScale(r, faction))
+}
+
 export function sellLimit(r: Realm, faction: string, good: Good): number {
   const m = marketOf(r, faction)
   if (m === null || good === 'grain') return 0
   const per = worthOf(good) * P.realm.merchantSellRate
   if (per <= 0) return 0
-  const room = Math.floor((P.realm.merchantSellCap - m.sold) / per)
+  const room = Math.floor((sellCap(r, faction) - m.sold) / per)
   return Math.max(0, Math.min(Math.floor(goodOf(stockOf(r, faction), good)), room))
 }
 
@@ -204,7 +224,7 @@ export function scaleRoom(r: Realm, faction: string): number {
   if (!hasScale(r, faction)) return 0
   const used = r.scaleUsed?.[faction]
   const spent = used !== undefined && used.season === r.season ? used.grain : 0
-  return Math.max(0, Math.round(P.realm.scaleCap * bestWorkLv(r, faction, 'market')) - spent)
+  return Math.max(0, Math.round(P.realm.scaleCap * realmScale(r, faction) * bestWorkLv(r, faction, 'market')) - spent)
 }
 
 /** 저울 값 — 팔면 받는 곡식 · 사면 내는 곡식 */

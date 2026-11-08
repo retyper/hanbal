@@ -9,7 +9,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
-import { marketOf, sellLimit, wishGrade, wishReady } from '../../src/realm/merchant.ts'
+import { marketOf, sellCap, sellLimit, wishGrade, wishReady } from '../../src/realm/merchant.ts'
 import { realmScale } from '../../src/realm/scale.ts'
 import { goodOf } from '../../src/realm/economy.ts'
 import { knownOf } from '../../src/realm/discovery.ts'
@@ -61,7 +61,7 @@ describe('떠돌이 상단', () => {
     assert.equal(report.lines.filter((l) => l.kind === 'sell').length, 0) // 한도 넘으면 아무 일도
     const ok = advance(r, [{ kind: 'sell', faction: r.player, good: 'salt', n: lim }])
     const sold = ok.report.lines.find((l) => l.kind === 'sell')
-    assert.ok(sold !== undefined && sold.kind === 'sell' && sold.grain <= P.realm.merchantSellCap)
+    assert.ok(sold !== undefined && sold.kind === 'sell' && sold.grain <= sellCap(r, r.player))
   })
 
   it('같은 판이면 같은 물건', () => {
