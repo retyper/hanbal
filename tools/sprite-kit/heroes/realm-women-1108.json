@@ -1,182 +1,326 @@
 [
  {
- "key": "dalli",
- "heroId": "maga-ruler",
- "bust": "w-54-maga-dalli",
- "weapon": "bow",
- "desc": "the lean, tough young huntress from IMAGE 2: same face, long dark hair with a white feather, a sleeveless grey wolf-fur vest that bares her toned arms and midriff, a short leather skirt with a slit over fitted dark leggings, leather bracers, fur-trimmed boots, a quiver on her back",
- "hold": "ONE long dark recurved bow in her left hand at her side",
- "stride": "light prowling stride"
+  "key": "dalli",
+  "heroId": "maga-ruler",
+  "bust": "w-54-maga-dalli",
+  "weapon": "bow",
+  "desc": "the lean, tough young huntress from IMAGE 2: same face, long dark hair with a white feather, a sleeveless grey wolf-fur vest that bares her toned arms and midriff, a short leather skirt with a slit over fitted dark leggings, leather bracers, fur-trimmed boots, a quiver on her back",
+  "hold": "ONE long dark recurved bow in her left hand at her side",
+  "stride": "light prowling stride"
  },
  {
- "key": "noeul",
- "heroId": "saro-2",
- "bust": "w-66-saro-noeul",
- "weapon": "bow",
- "desc": "the cheerful young archer from IMAGE 2: same smiling face, long dark braid over her shoulder, a short orange-red silk top with a deep neckline and bare shoulders, a short orange skirt with a slit over fitted dark leggings, brown leather straps, jade bead necklace, a quiver of white-fletched arrows on her back",
- "hold": "ONE ornate recurved bow in her left hand at her side",
- "stride": "bouncy confident stride"
+  "key": "noeul",
+  "heroId": "saro-2",
+  "bust": "w-66-saro-noeul",
+  "weapon": "bow",
+  "desc": "the cheerful young archer from IMAGE 2: same smiling face, long dark braid over her shoulder, a short orange-red silk top with a deep neckline and bare shoulders, a short orange skirt with a slit over fitted dark leggings, brown leather straps, jade bead necklace, a quiver of white-fletched arrows on her back",
+  "hold": "ONE ornate recurved bow in her left hand at her side",
+  "stride": "bouncy confident stride"
  },
  {
- "key": "bakdal",
- "heroId": "bullae-ruler",
- "bust": "w-57-bullae-bakdal",
- "weapon": "bow",
- "desc": "the strong mountain huntress from IMAGE 2: same face, long dark braid, a short tiger-fur cape over a cropped ochre top that bares her midriff, a short fur-trimmed skirt over leggings, bone bead necklace, a quiver of arrows on her back",
- "hold": "ONE big recurved bow in her left hand at her side",
- "stride": "powerful stride"
+  "key": "bakdal",
+  "heroId": "bullae-ruler",
+  "bust": "w-57-bullae-bakdal",
+  "weapon": "bow",
+  "desc": "the strong mountain huntress from IMAGE 2: same face, long dark braid, a short tiger-fur cape over a cropped ochre top that bares her midriff, a short fur-trimmed skirt over leggings, bone bead necklace, a quiver of arrows on her back",
+  "hold": "ONE big recurved bow in her left hand at her side",
+  "stride": "powerful stride"
  },
  {
- "key": "maehwa",
- "heroId": "wander-02",
- "bust": "w-03-goguryeo-archer",
- "weapon": "bow",
- "desc": "the playful young archer from IMAGE 2: same smiling face, long dark hair with a feathered headband, a short dark red jacket open over a cropped top that bares her midriff, a short skirt with a slit over fitted leggings, leather bracers, a quiver of pheasant-fletched arrows on her back",
- "hold": "ONE recurved bow in her left hand at her side",
- "stride": "lively stride"
+  "key": "maehwa",
+  "heroId": "wander-02",
+  "bust": "w-03-goguryeo-archer",
+  "weapon": "bow",
+  "desc": "the playful young archer from IMAGE 2: same smiling face, long dark hair with a feathered headband, a short dark red jacket open over a cropped top that bares her midriff, a short skirt with a slit over fitted leggings, leather bracers, a quiver of pheasant-fletched arrows on her back",
+  "hold": "ONE recurved bow in her left hand at her side",
+  "stride": "lively stride"
  },
  {
- "key": "eomni",
- "heroId": "jeoga-1",
- "bust": "w-69-jeoga-eomni",
- "weapon": "spear",
- "desc": "the fierce hunter woman from IMAGE 2: same stern face, long dark braids, a short black bear-fur cape over a cropped white top that bares her midriff, a fang necklace, a short leather skirt over leggings, fur boots",
- "hold": "ONE long iron-headed spear resting on her right shoulder, held the same way in every frame",
- "stride": "heavy determined stride"
+  "key": "eomni",
+  "heroId": "jeoga-1",
+  "bust": "w-69-jeoga-eomni",
+  "weapon": "spear",
+  "desc": "the fierce hunter woman from IMAGE 2: same stern face, long dark braids, a short black bear-fur cape over a cropped white top that bares her midriff, a fang necklace, a short leather skirt over leggings, fur boots",
+  "hold": "ONE long iron-headed spear resting on her right shoulder, held the same way in every frame",
+  "stride": "heavy determined stride"
  },
  {
- "key": "gaon",
- "heroId": "wander-07",
- "bust": "w-19-buyeo-fur-princess",
- "weapon": "spear",
- "desc": "the snow princess from IMAGE 2: same gentle face, the same white fur hat, long dark braids, a short white fur-trimmed coat open over a fitted white silk top that bares her midriff, a short white skirt with a slit over white leggings, gold ornaments, white fur boots",
- "hold": "ONE long slender spear with a white tassel resting on her right shoulder, held the same way in every frame",
- "stride": "graceful stride"
+  "key": "gaon",
+  "heroId": "wander-07",
+  "bust": "w-19-buyeo-fur-princess",
+  "weapon": "spear",
+  "desc": "the snow princess from IMAGE 2: same gentle face, the same white fur hat, long dark braids, a short white fur-trimmed coat open over a fitted white silk top that bares her midriff, a short white skirt with a slit over white leggings, gold ornaments, white fur boots",
+  "hold": "ONE long slender spear with a white tassel resting on her right shoulder, held the same way in every frame",
+  "stride": "graceful stride"
  },
  {
- "key": "nuri",
- "heroId": "guga-ruler",
- "bust": "w-55-guga-nuri",
- "weapon": "spear",
- "desc": "the sweet fur-clad maiden from IMAGE 2: same smiling face, long dark hair, a short white fur shoulder cape over a fitted cream silk top with bare shoulders, a short skirt with a slit over fitted leggings, gold necklace, fur boots",
- "hold": "ONE long spear resting on her right shoulder, held the same way in every frame",
- "stride": "light happy stride"
+  "key": "nuri",
+  "heroId": "guga-ruler",
+  "bust": "w-55-guga-nuri",
+  "weapon": "spear",
+  "desc": "the sweet fur-clad maiden from IMAGE 2: same smiling face, long dark hair, a short white fur shoulder cape over a fitted cream silk top with bare shoulders, a short skirt with a slit over fitted leggings, gold necklace, fur boots",
+  "hold": "ONE long spear resting on her right shoulder, held the same way in every frame",
+  "stride": "light happy stride"
  },
  {
- "key": "odi",
- "heroId": "jomun-2",
- "bust": "w-35-jomun-odi",
- "weapon": "spear",
- "desc": "the joyful silk-keeper woman from IMAGE 2: same laughing face, dark hair up with flowers and beads, a white and purple silk robe slipping off both shoulders over a short wrap top, a purple sash with a jade pendant, a short slit skirt over fitted leggings, a small woven basket of white cocoons at her hip",
- "hold": "ONE long spear with a purple tassel resting on her right shoulder, held the same way in every frame",
- "stride": "bouncy happy stride"
+  "key": "odi",
+  "heroId": "jomun-2",
+  "bust": "w-35-jomun-odi",
+  "weapon": "spear",
+  "desc": "the joyful silk-keeper woman from IMAGE 2: same laughing face, dark hair up with flowers and beads, a white and purple silk robe slipping off both shoulders over a short wrap top, a purple sash with a jade pendant, a short slit skirt over fitted leggings, a small woven basket of white cocoons at her hip",
+  "hold": "ONE long spear with a purple tassel resting on her right shoulder, held the same way in every frame",
+  "stride": "bouncy happy stride"
  },
  {
- "key": "bira",
- "heroId": "michuhol-ruler",
- "bust": "w-28-michuhol-bira",
- "weapon": "spear",
- "desc": "the bold sea-trader woman from IMAGE 2: same grinning face, dark hair with a feathered blue headband, a short blue vest open over a white top with bare shoulders and midriff, a coil of rope over her shoulder, a shell necklace, short pants with leg wraps",
- "hold": "ONE long harpoon-spear resting on her right shoulder, held the same way in every frame",
- "stride": "swaggering stride"
+  "key": "bira",
+  "heroId": "michuhol-ruler",
+  "bust": "w-28-michuhol-bira",
+  "weapon": "spear",
+  "desc": "the bold sea-trader woman from IMAGE 2: same grinning face, dark hair with a feathered blue headband, a short blue vest open over a white top with bare shoulders and midriff, a coil of rope over her shoulder, a shell necklace, short pants with leg wraps",
+  "hold": "ONE long harpoon-spear resting on her right shoulder, held the same way in every frame",
+  "stride": "swaggering stride"
  },
  {
- "key": "haesol",
- "heroId": "us-ruler",
- "bust": "w-63-us-haesol",
- "weapon": "spear",
- "desc": "the serene pine-forest priestess from IMAGE 2: same gentle smile, long black hair with a small pine sprig, a short white robe with a green collar open at the shoulders, a green sash, blue bead necklaces, a short slit skirt over white leggings",
- "hold": "ONE long slender spear with green ribbons resting on her right shoulder, held the same way in every frame",
- "stride": "calm graceful stride"
+  "key": "haesol",
+  "heroId": "us-ruler",
+  "bust": "w-63-us-haesol",
+  "weapon": "spear",
+  "desc": "the serene pine-forest priestess from IMAGE 2: same gentle smile, long black hair with a small pine sprig, a short white robe with a green collar open at the shoulders, a green sash, blue bead necklaces, a short slit skirt over white leggings",
+  "hold": "ONE long slender spear with green ribbons resting on her right shoulder, held the same way in every frame",
+  "stride": "calm graceful stride"
  },
  {
- "key": "sinneoul",
- "heroId": "wander-22",
- "bust": "w-85-sinji-neoul",
- "weapon": "spear",
- "desc": "the sea diver woman from IMAGE 2: same face, long wet dark hair, a short white hemp top tied at the front baring her midriff and shoulders, short diving shorts, a net bag at her hip, jade necklace, bare feet with leg wraps",
- "hold": "ONE long fishing harpoon with a hooked tip resting on her right shoulder, held the same way in every frame",
- "stride": "springy barefoot stride"
+  "key": "sinneoul",
+  "heroId": "wander-22",
+  "bust": "w-85-sinji-neoul",
+  "weapon": "spear",
+  "desc": "the sea diver woman from IMAGE 2: same face, long wet dark hair, a short white hemp top tied at the front baring her midriff and shoulders, short diving shorts, a net bag at her hip, jade necklace, bare feet with leg wraps",
+  "hold": "ONE long fishing harpoon with a hooked tip resting on her right shoulder, held the same way in every frame",
+  "stride": "springy barefoot stride"
  },
  {
- "key": "goeun",
- "heroId": "wander-18",
- "bust": "w-01-silla-princess",
- "weapon": "sword",
- "desc": "the elegant princess from IMAGE 2: same lovely face, long dark hair with a red ribbon, a short dark red silk top with a navy collar and a deep neckline, a short red skirt with a high slit over fitted leggings, jade necklace, gold bracelets, soft boots",
- "hold": "ONE straight short ring-pommel sword (NOT curved, NOT a katana) in her right hand",
- "stride": "graceful stride"
+  "key": "goeun",
+  "heroId": "wander-18",
+  "bust": "w-01-silla-princess",
+  "weapon": "sword",
+  "desc": "the elegant princess from IMAGE 2: same lovely face, long dark hair with a red ribbon, a short dark red silk top with a navy collar and a deep neckline, a short red skirt with a high slit over fitted leggings, jade necklace, gold bracelets, soft boots",
+  "hold": "ONE straight short ring-pommel sword (NOT curved, NOT a katana) in her right hand",
+  "stride": "graceful stride"
  },
  {
- "key": "byeol",
- "heroId": "byeokjin-ruler",
- "bust": "w-62-byeokjin-byeol",
- "weapon": "sword",
- "desc": "the young blacksmith woman from IMAGE 2: same smiling face, dark braid, a short white sleeveless top under a leather blacksmith apron that bares her shoulders and arms, short pants with leg wraps, heavy leather gloves",
- "hold": "ONE straight sword with a glowing red-hot blade (NOT curved) in her right hand",
- "stride": "brisk stride"
+  "key": "byeol",
+  "heroId": "byeokjin-ruler",
+  "bust": "w-62-byeokjin-byeol",
+  "weapon": "sword",
+  "desc": "the young blacksmith woman from IMAGE 2: same smiling face, dark braid, a short white sleeveless top under a leather blacksmith apron that bares her shoulders and arms, short pants with leg wraps, heavy leather gloves",
+  "hold": "ONE straight sword with a glowing red-hot blade (NOT curved) in her right hand",
+  "stride": "brisk stride"
  },
  {
- "key": "baram",
- "heroId": "gosaburi-ruler",
- "bust": "w-47-gosaburi-baram",
- "weapon": "dagger",
- "desc": "the wind-swift scout woman from IMAGE 2: same face, long dark hair blowing, a long cream scarf trailing, a short dark blue wrap top that bares her midriff, a short skirt with slits over fitted dark leggings, bead necklaces, soft boots",
- "hold": "ONE leaf-shaped bronze dagger in her right hand, blade forward",
- "stride": "swift stride"
+  "key": "baram",
+  "heroId": "gosaburi-ruler",
+  "bust": "w-47-gosaburi-baram",
+  "weapon": "dagger",
+  "desc": "the wind-swift scout woman from IMAGE 2: same face, long dark hair blowing, a long cream scarf trailing, a short dark blue wrap top that bares her midriff, a short skirt with slits over fitted dark leggings, bead necklaces, soft boots",
+  "hold": "ONE leaf-shaped bronze dagger in her right hand, blade forward",
+  "stride": "swift stride"
  },
  {
- "key": "beom",
- "heroId": "golbeol-ruler",
- "bust": "w-60-golbeol-beom",
- "weapon": "dagger",
- "desc": "the wild tiger-woman from IMAGE 2: same fierce grinning face, wild dark hair, a tiger-fur shoulder cape over a short dark leather top that bares her midriff, tiger-claw bracelets, a short fur skirt over leggings, fur boots",
- "hold": "ONE curved claw-like bronze dagger in her right hand",
- "stride": "low predatory stride"
+  "key": "beom",
+  "heroId": "golbeol-ruler",
+  "bust": "w-60-golbeol-beom",
+  "weapon": "dagger",
+  "desc": "the wild tiger-woman from IMAGE 2: same fierce grinning face, wild dark hair, a tiger-fur shoulder cape over a short dark leather top that bares her midriff, tiger-claw bracelets, a short fur skirt over leggings, fur boots",
+  "hold": "ONE curved claw-like bronze dagger in her right hand",
+  "stride": "low predatory stride"
  },
  {
- "key": "dokmudeom",
- "heroId": "balla-1",
- "bust": "w-74-balla-dokmudeom",
- "weapon": "dagger",
- "desc": "the eerie poison-witch woman from IMAGE 2: same pale face with dark lips and a dark headband, long black hair, a short dark fur cape over a fitted black top with bare shoulders, a small clay poison jar at her hip, blue bead necklaces, a short dark slit skirt over black leggings",
- "hold": "ONE thin black bronze dagger in her right hand",
- "stride": "slow eerie stride"
+  "key": "dokmudeom",
+  "heroId": "balla-1",
+  "bust": "w-74-balla-dokmudeom",
+  "weapon": "dagger",
+  "desc": "the eerie poison-witch woman from IMAGE 2: same pale face with dark lips and a dark headband, long black hair, a short dark fur cape over a fitted black top with bare shoulders, a small clay poison jar at her hip, blue bead necklaces, a short dark slit skirt over black leggings",
+  "hold": "ONE thin black bronze dagger in her right hand",
+  "stride": "slow eerie stride"
  },
  {
- "key": "areum",
- "heroId": "wander-16",
- "bust": "w-20-gaya-smith-daughter",
- "weapon": "heavy",
- "desc": "the muscular smith's daughter from IMAGE 2: same grinning face, short messy dark hair, a short leather work vest that bares her strong arms and midriff, a leather apron skirt over short pants, leg wraps, boots",
- "hold": "ONE big iron forge hammer resting on her right shoulder",
- "stride": "strong confident stride"
+  "key": "areum",
+  "heroId": "wander-16",
+  "bust": "w-20-gaya-smith-daughter",
+  "weapon": "heavy",
+  "desc": "the muscular smith's daughter from IMAGE 2: same grinning face, short messy dark hair, a short leather work vest that bares her strong arms and midriff, a leather apron skirt over short pants, leg wraps, boots",
+  "hold": "ONE big iron forge hammer resting on her right shoulder",
+  "stride": "strong confident stride"
  },
  {
- "key": "halla",
- "heroId": "tamna-ruler",
- "bust": "w-58-tamna-halla",
- "weapon": "heavy",
- "desc": "the island shaman woman from IMAGE 2: same face, long wavy dark hair with red flowers, a red vest open over a white top with bare shoulders, many bead necklaces, a bronze mirror at her hip, a short red skirt with a slit over leggings",
- "hold": "ONE tall wooden shaman staff with bronze bells at the top in her right hand",
- "stride": "swaying ritual stride"
+  "key": "halla",
+  "heroId": "tamna-ruler",
+  "bust": "w-58-tamna-halla",
+  "weapon": "heavy",
+  "desc": "the island shaman woman from IMAGE 2: same face, long wavy dark hair with red flowers, a red vest open over a white top with bare shoulders, many bead necklaces, a bronze mirror at her hip, a short red skirt with a slit over leggings",
+  "hold": "ONE tall wooden shaman staff with bronze bells at the top in her right hand",
+  "stride": "swaying ritual stride"
  },
  {
- "key": "sagong",
- "heroId": "samul-1",
- "bust": "w-73-samul-sagong",
- "weapon": "heavy",
- "desc": "the cheerful boatwoman from IMAGE 2: same grinning face, dark hair tied with a blue cloth, a short blue vest over a white top with bare shoulders and midriff, a coil of rope, a shell necklace, short pants with leg wraps",
- "hold": "ONE long wooden boat oar resting on her right shoulder",
- "stride": "rolling sailor stride"
+  "key": "sagong",
+  "heroId": "samul-1",
+  "bust": "w-73-samul-sagong",
+  "weapon": "heavy",
+  "desc": "the cheerful boatwoman from IMAGE 2: same grinning face, dark hair tied with a blue cloth, a short blue vest over a white top with bare shoulders and midriff, a coil of rope, a shell necklace, short pants with leg wraps",
+  "hold": "ONE long wooden boat oar resting on her right shoulder",
+  "stride": "rolling sailor stride"
  },
  {
- "key": "gom",
- "heroId": "ungcheon-1",
- "bust": "w-82-ungcheon-gom",
- "weapon": "heavy",
- "desc": "the big bear-hunter woman from IMAGE 2: same laughing face, long dark braids, a short brown bear-fur cape over a cropped leather top that bares her midriff, a short fur skirt over leggings, fur boots",
- "hold": "ONE huge wooden war club resting on her right shoulder",
- "stride": "heavy powerful stride"
+  "key": "gom",
+  "heroId": "ungcheon-1",
+  "bust": "w-82-ungcheon-gom",
+  "weapon": "heavy",
+  "desc": "the big bear-hunter woman from IMAGE 2: same laughing face, long dark braids, a short brown bear-fur cape over a cropped leather top that bares her midriff, a short fur skirt over leggings, fur boots",
+  "hold": "ONE huge wooden war club resting on her right shoulder",
+  "stride": "heavy powerful stride"
+ },
+ {
+  "key": "irang",
+  "heroId": "jomun-ruler",
+  "bust": "w-59-jomun-irang",
+  "weapon": "dagger",
+  "desc": "the cool, expressionless young warrior woman from IMAGE 2: same face, long dark hair tied high with red cord, tattooed bare arms, many bead necklaces, a short black leather vest laced over her chest that bares her midriff, a short dark skirt with a slit over fitted leggings, leg wraps",
+  "hold": "ONE bronze dagger in her right hand, blade forward",
+  "stride": "silent gliding stride"
+ },
+ {
+  "key": "gureum",
+  "heroId": "goryong-ruler",
+  "bust": "w-49-goryong-gureum",
+  "weapon": "spear",
+  "desc": "the young woman from IMAGE 2: same face and hair, a short white hemp top that bares her shoulders and midriff, a short white skirt with a high slit over fitted leggings, simple bead necklace",
+  "hold": "ONE long spear resting on her right shoulder, held the same way in every frame",
+  "stride": "light airy stride"
+ },
+ {
+  "key": "wan",
+  "heroId": "wansan-1",
+  "bust": "w-78-wansan-wan",
+  "weapon": "bow",
+  "desc": "the graceful young archer from IMAGE 2: same face, long black ponytail with a white feather and green ribbon, a short moss-green wrap top that bares her shoulders and midriff, a short green skirt with a slit over fitted dark leggings, leather bracers, a quiver of white-fletched arrows on her back",
+  "hold": "ONE long recurved bow in her left hand at her side",
+  "stride": "light graceful stride"
+ },
+ {
+  "key": "hneoul",
+  "heroId": "jm-haengin-1",
+  "bust": "w-96-haengin-neoul",
+  "weapon": "bow",
+  "desc": "the pale wanderer archer from IMAGE 2: same face, many thin braids, a short white fur shoulder cape over a dark green cropped top that bares her midriff, a short dark skirt over leggings, leather straps, a quiver on her back",
+  "hold": "ONE recurved bow in her left hand at her side",
+  "stride": "quiet steady stride"
+ },
+ {
+  "key": "mulbeom",
+  "heroId": "jm-okjeo-1",
+  "bust": "w-70-bukokjeo-mulbeom",
+  "weapon": "spear",
+  "desc": "the northern sea-hunter woman from IMAGE 2: same face, long braids, a short spotted seal-fur hooded cape over a dark blue cropped top that bares her midriff, a coil of rope, short fur skirt over leggings, fur boots",
+  "hold": "ONE long harpoon-spear resting on her right shoulder, held the same way in every frame",
+  "stride": "sturdy stride"
+ },
+ {
+  "key": "mdallae",
+  "heroId": "mh-mahan-2",
+  "bust": "w-94-mokji-dallae",
+  "weapon": "spear",
+  "desc": "the bold hunter woman from IMAGE 2: same face, a cloth headband, a long braid, a short brown fur cape over a short leather top that bares her midriff, jade pendant, short skirt over leggings",
+  "hold": "ONE long spear resting on her right shoulder, held the same way in every frame",
+  "stride": "confident stride"
+ },
+ {
+  "key": "danbi",
+  "heroId": "sr-danbi",
+  "bust": "w-90-saro-danbi",
+  "weapon": "bow",
+  "desc": "the cheerful young archer from IMAGE 2: same face, high ponytail tied with a white ribbon, a short white top with green trim that bares her shoulders and midriff, a short green-trimmed skirt with a slit over fitted leggings, a quiver on her back",
+  "hold": "ONE recurved bow in her left hand at her side",
+  "stride": "bouncy stride"
+ },
+ {
+  "key": "mulsae",
+  "heroId": "sr-yangsan-1",
+  "bust": "w-91-saro-mulsae",
+  "weapon": "spear",
+  "desc": "the smiling young woman from IMAGE 2: same face, hair tied up, a sleeveless light-blue top with a deep neckline, a short white skirt with a slit, bead necklace, sandals with leg wraps",
+  "hold": "ONE long spear resting on her right shoulder, held the same way in every frame",
+  "stride": "light happy stride"
+ },
+ {
+  "key": "sdallae",
+  "heroId": "sr-goya-1",
+  "bust": "w-92-saro-dallae",
+  "weapon": "bow",
+  "desc": "the fierce archer woman from IMAGE 2: same face, long braid, a short crimson top that bares her midriff under a fur shoulder cape and one leather pauldron, short dark skirt over leggings, a quiver on her back",
+  "hold": "ONE long bow in her left hand at her side",
+  "stride": "bold stride"
+ },
+ {
+  "key": "beomi",
+  "heroId": "sr-jinji-1",
+  "bust": "w-93-saro-beomi",
+  "weapon": "spear",
+  "desc": "the wild tiger-hunter woman from IMAGE 2: same grinning face, short wild hair with a headband, a short tiger-fur top that bares her strong arms and midriff, short tiger-fur skirt, leather bracers",
+  "hold": "ONE spear with a broad iron head resting on her right shoulder, held the same way in every frame",
+  "stride": "prowling stride"
+ },
+ {
+  "key": "yucheongan",
+  "heroId": "gj-yucheongan",
+  "bust": "w-99-garak-yucheongan",
+  "weapon": "heavy",
+  "desc": "the warm middle-aged village elder woman from IMAGE 2: same kind face, hair tied back, a blue wrap jacket over a cream robe, a red sash, a bundle of herbs",
+  "hold": "ONE wooden walking staff in her right hand",
+  "stride": "calm unhurried stride"
+ },
+ {
+  "key": "sincheongan",
+  "heroId": "gj-sincheongan",
+  "bust": "w-100-garak-sincheongan",
+  "weapon": "heavy",
+  "desc": "the serene priestess from IMAGE 2: same face, long black hair with a thin headband, a white robe open at the shoulders over a patterned top, jade necklace",
+  "hold": "ONE tall bronze bell staff in her right hand",
+  "stride": "calm ritual stride"
+ },
+ {
+  "key": "singwigan",
+  "heroId": "gj-singwigan",
+  "bust": "w-101-garak-singwigan",
+  "weapon": "dagger",
+  "desc": "the cheerful shell-diver woman from IMAGE 2: same smiling face, long braid, a short cream wrap top with a teal sash that bares her shoulders and midriff, a net bag of shells at her hip, short skirt over leggings",
+  "hold": "ONE short bronze knife in her right hand, blade forward",
+  "stride": "light springy stride"
+ },
+ {
+  "key": "tneoul",
+  "heroId": "gj-tahae-1",
+  "bust": "w-103-tahae-neoul",
+  "weapon": "heavy",
+  "desc": "the sun-tanned sailor woman from IMAGE 2: same face, wavy hair tied with rope, a tight sleeveless hemp top belted at the waist, shell and shark-tooth necklace, wave tattoo on her shoulder, short hemp skirt over leggings, a coil of rope",
+  "hold": "ONE wooden boat oar resting on her right shoulder",
+  "stride": "rolling sailor stride"
+ },
+ {
+  "key": "mir",
+  "heroId": "dm-mir",
+  "bust": "w-97-goguryeo-mir",
+  "weapon": "bow",
+  "desc": "the playful Goguryeo archer from IMAGE 2: same face, high ponytail with a pheasant feather, a short indigo dotted jacket open over a cropped top that bares her midriff, a red sash, a short skirt over fitted leggings, leather bracers, a quiver on her back",
+  "hold": "ONE recurved bow in her left hand at her side",
+  "stride": "lively stride"
+ },
+ {
+  "key": "darae",
+  "heroId": "dm-buyeo-2",
+  "bust": "w-104-buyeo-darae",
+  "weapon": "bow",
+  "desc": "the cool falconer woman from IMAGE 2: same face, white fox-fur hat, long braid, a short fur-trimmed deerskin coat open over a cropped top that bares her midriff, a short fur skirt over leggings, fur boots, a quiver on her back",
+  "hold": "ONE recurved bow in her left hand at her side",
+  "stride": "cool steady stride"
  }
 ]
