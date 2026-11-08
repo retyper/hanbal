@@ -12,5 +12,5 @@ export const TOWN_WORK_ART: ReadonlySet<WorkWhat> = new Set<WorkWhat>(['paddy', 
 export const townSprite = (what: WorkWhat, lv: number): string | null =>
   TOWN_WORK_ART.has(what) && lv >= 1 ? `town/work-${what}-${Math.min(3, lv)}.png` : null
 
-/** 바탕 — 들판 · 물가 · 숲 (지금은 들판 한 장 · 물가·숲은 굽는 대로) */
-export const TOWN_GROUND = { field: 'town/ground-field.png', water: 'town/ground-field.png', wood: 'town/ground-field.png' } as const
+/** 바탕 — 들판 · 물가 · 숲 (11-08 셋 다 · 울타리 안은 같은 자리라 터 넷 좌표를 함께 쓴다) */
+export const TOWN_GROUND = { field: 'town/ground-field.png', water: 'town/ground-water.png', wood: 'town/ground-wood.png' } as const
