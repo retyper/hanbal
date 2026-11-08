@@ -214,6 +214,7 @@ let waterKey = -1
 
 export function pirateHooks(run: () => PirateRun | null): SceneHooks {
   return {
+    noThreat: true,
     backdrop(ctx, cam): boolean {
       const im = img(ART.sea)
       if (im === null) return false

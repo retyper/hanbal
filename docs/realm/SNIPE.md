@@ -126,6 +126,7 @@
 - **한 번만**: 판에서 한 발이라도 쏘면 답이 「맞선다」로 굳는다(다른 답이 잠긴다). 쏘기 전에 나오면 아무것도 고르지 않은 것.
 - 숫자는 `P.pirate`(판) · `P.realm.cardPirateWinMul`·`cardPirateHoldCut`(값). 지은 자리: `pirate.html` · `src/pirate-main.ts` · `src/pirate/waves.ts`(물결 표) ·
   `src/pirate/sim.ts`(목책·궤짝·물결 넘김) · `src/pirate/draw.ts`(바다·목책·도적 그림 · 장면의 갈고리 `setSceneHooks`).
+- **세로 폰은 판을 눕힌다** (형 11-08: "가로로 보게 해야지 활쏘기는. 세로는 너무 작잖아") — 밤 판과 같은 90° 눕힘, 활터 입력(`input/pointer.ts setRotated`)도 같이 돌려 푼다. 도적마다 궁수로 긋던 붉은 위협선은 이 판에서 끈다(`SceneHooks.noThreat`).
 - 받을 그림은 `ART-QUEUE.md` 맨 위 — 지금은 수군(`anim2/marine`)·장수(`anim2/gen-g-sword`) 띠를 빌려 쓴다.
 
 ## 1. 적장이라는 과녁

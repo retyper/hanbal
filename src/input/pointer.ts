@@ -35,6 +35,11 @@ export interface InputSource {
    * sim 은 상승 에지만 보므로(ArcherState.parryHeld) 눌린 채로 있어도 한 번만 휘두른다.
    */
   setParry(on: boolean): void
+  /**
+   * 판을 통째로 90° 눕혀 그렸다 (세로 폰에서 가로로 쏘는 판 · pirate-main.ts layoutStage — 밤 판 night/input.ts 와 같은 풀이).
+   * 판 점 (x, y) → 화면 (rectW − y, x) 로 그렸으니, 손가락의 화면 자리를 거꾸로 돌려 판 위 자리로 푼다. 활터는 부르지 않는다
+   */
+  setRotated(on: boolean): void
   dispose(): void
 }
 
@@ -74,10 +79,13 @@ export function createInput(canvas: HTMLCanvasElement, cam: Camera): InputSource
   // 조준 중에는 pointermove가 초당 100번 넘게 오므로 여기서 캐시한다 (A5 할당 0).
   let rectL = 0
   let rectT = 0
+  let rectW = 0
+  let rotated = false
   const syncRect = (): void => {
     const r = canvas.getBoundingClientRect()
     rectL = r.left
     rectT = r.top
+    rectW = r.width
   }
   syncRect()
 
@@ -123,8 +131,8 @@ export function createInput(canvas: HTMLCanvasElement, cam: Camera): InputSource
   }
 
   const moveTo = (e: PointerEvent): void => {
-    sx = e.clientX - rectL
-    sy = e.clientY - rectT
+    sx = rotated ? e.clientY - rectT : e.clientX - rectL
+    sy = rotated ? rectW - (e.clientX - rectL) : e.clientY - rectT
     syncAim()
   }
 
@@ -284,6 +292,11 @@ export function createInput(canvas: HTMLCanvasElement, cam: Camera): InputSource
     setSteady(on: boolean): void {
       uiHeld = on
       syncSteady()
+    },
+
+    setRotated(on: boolean): void {
+      rotated = on
+      syncRect()
     },
 
     setParry(on: boolean): void {

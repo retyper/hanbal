@@ -258,8 +258,34 @@ function wake(): void {
   }
 }
 document.addEventListener('visibilitychange', wake)
-addEventListener('resize', () => renderer.resize(), { passive: true })
-addEventListener('orientationchange', () => renderer.resize(), { passive: true })
+// ── 세로 폰은 판을 통째로 눕힌다 (형 11-08: "가로로 보게 해야지 활쏘기는. 세로는 너무 작잖아") ──
+// 밤 판(night-main.ts layoutStage)과 같은 길: 판 점 (x, y) → 화면 (innerWidth − y, x) · 오른쪽으로 90°. 폰을 왼쪽으로 눕혀 쥔다.
+// 활터 입력(input/pointer.ts)도 같이 돌려 푼다 (setRotated). 틀 안이면 칠십팔국에 알려 바깥 「닫기」도 같이 눕힌다.
+const stageEl = document.getElementById('stage') as HTMLDivElement
+const ROTATED_MSG = 'hanbal.night.rotated'
+let rotatedNow: boolean | null = null
+function layoutStage(): void {
+  const rot = innerHeight > innerWidth
+  const st = stageEl.style
+  if (rot) {
+    st.width = `${innerHeight}px`
+    st.height = `${innerWidth}px`
+    st.transform = `translate(${innerWidth}px, 0) rotate(90deg)`
+  } else {
+    st.width = '100%'
+    st.height = '100%'
+    st.transform = ''
+  }
+  if (rot !== rotatedNow) {
+    rotatedNow = rot
+    input.setRotated(rot)
+  }
+  if (window.parent !== window) window.parent.postMessage({ type: ROTATED_MSG, rot }, location.origin)
+  renderer.resize()
+}
+addEventListener('resize', layoutStage, { passive: true })
+addEventListener('orientationchange', layoutStage, { passive: true })
+layoutStage()
 
 showIntro()
 wake()

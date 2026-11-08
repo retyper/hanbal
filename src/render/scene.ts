@@ -39,6 +39,8 @@ export interface SceneHooks {
   ground?(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void
   /** 과녁 하나를 대신 그린다 — 그렸으면 true (기본 그림을 건너뛴다) */
   target?(ctx: CanvasRenderingContext2D, cam: Camera, w: World, t: Target, x: number, y: number, rx: number, ry: number): boolean
+  /** 돌진·보스에서 궁수로 긋는 붉은 위협선을 끈다 (몰려오는 판에서는 줄이 화면을 덮는다) */
+  readonly noThreat?: boolean
 }
 let sceneHooks: SceneHooks | null = null
 export function setSceneHooks(h: SceneHooks | null): void {
@@ -587,7 +589,7 @@ function drawTargets(
     if (!t.falling) {
       drawRail(ctx, cam, t)
       if (t.kind === 'static' || t.kind === 'pierceable') drawPost(ctx, cam, w, x, y, t.x, wy, r)
-      if (t.kind === 'charger' || t.kind === 'boss') drawThreatLine(ctx, cam, w, t, x, y)
+      if ((t.kind === 'charger' || t.kind === 'boss') && sceneHooks?.noThreat !== true) drawThreatLine(ctx, cam, w, t, x, y)
     }
 
     // 맞은 순간 눌렸다 부푼다 (HOOK ★6-2). 즉사한 과녁은 여기 안 오므로(alive false)
