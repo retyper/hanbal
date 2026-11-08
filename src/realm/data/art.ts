@@ -558,7 +558,7 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   suro: { ar: 153 / 160, body: 0.894 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 가락 수로왕 · 흰 금빛 비단옷·붉은 머리띠·곧은 칼
   musoe: { ar: 147 / 160, body: 0.894 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 가락 쇠둑 지기 무쇠 · 가죽 앞치마·쇠망치
   adogan: { ar: 139 / 160, body: 0.894 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 가락 아도간 · 흰 수염·지그재그 깃 옷·짧은 지팡이
-  yeodogan: { ar: 165 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 가락 여도간 · 볏단 멘 농부 우두머리·낫
+  yeodogan: { ar: 172 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 가락 여도간 동작 다시 · 단검 대신 낫 (형 11-08)
   pidogan: { ar: 148 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 가락 피도간 · 털 조끼·발톱 목걸이·손도끼
   odogan: { ar: 153 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 가락 오도간 · 지그재그 깃 옷·작은 저울·짧은 칼
   yusugan: { ar: 162 / 160, body: 0.894 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 가락 유수간 · 고기 바구니 멘 어부·작살창
