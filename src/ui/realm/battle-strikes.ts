@@ -129,7 +129,7 @@ const RELEASE: Readonly<Record<string, [number, number, number]>> = {
   'gen-g-bow': [14, .82, .35], 'gen-w-bow': [13, .87, .31],
   'gen-jumong': [14, .87, .35], 'gen-maenun': [14, .88, .34],
   'gen-ogan': [14, .87, .32], 'gen-haedal': [14, 0.91, 0.26],
-  'gen-songbi': [14, .86, .34], 'gen-damul': [14, .86, .34],
+  'gen-songbi': [14, 0.91, 0.24], 'gen-damul': [14, .86, .34],
   'gen-songyang': [14, .86, .34],
 }
 // Extended weapon position in the contact cell, in each strip's native coordinate system.
