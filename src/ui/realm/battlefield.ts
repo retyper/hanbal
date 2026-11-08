@@ -1263,6 +1263,52 @@ export function cmdFxHtml(art: string, c: Cmd, dir: 'r' | 'l', at: number, end: 
 }
 
 /**
+ * 장수 기술의 여운 (11-08 형: "비기 연출도 더 고민해봐") — 컷인이 걷힌 뒤 전장 제자리에 1~2초. 먹힌 기술만 (헛친 것은 컷인의 갈라진 먹으로 끝).
+ * dir 'r' 은 왼쪽(우리 쪽)에서 쓴 기술 — 'l' 이면 판째 뒤집힌다(.wfx-cmd.l). 자리: 우리 진 x 3~35% · 적 진 x 60~90% · 장수 줄 y 12~26%.
+ */
+export function artFieldFxHtml(art: string, k: Art | Elem | undefined, dir: 'r' | 'l', at: number): string {
+  if (k === undefined) return ''
+  let s = (dir === 'r' ? 7 : 19) + k.length * 37
+  const rnd = (): number => (s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff
+  const one = (cls: string, f: string, x: number, y: number, z: number, dt: number, more = ''): string =>
+    `<i class="${cls}" style="--x:${x.toFixed(1)}%;--y:${y.toFixed(1)}%;--z:${z.toFixed(2)};--t:${(at + dt).toFixed(2)}s${cls.startsWith('pop') && !cls.includes('fl') ? `;--du:${P.realm.warArtPopS}s` : ''}${more}"><b style="background-image:url('${art}fx/${f}.png')"></b></i>`
+  let h = ''
+  switch (k) {
+    case 'snipe': // 적장 머리 위로 번쩍 · 먹 튐
+      h += one('pop fl', 'skill/common/flash', 74, 12, 0.8, 0) + one('pop', 'skill/common/ink-burst', 75, 14, 0.7, 0.05)
+      break
+    case 'rite': // 우리 진 위로 혼불이 하나씩 피어오른다
+      for (let i = 0; i < 6; i++) h += one('pop', 'skill/rite/spirit-flame', 4 + i * 5.5 + rnd() * 3, 56 + rnd() * 18, 0.45 + rnd() * 0.3, i * 0.09)
+      break
+    case 'sway': // 넘어온 적 줄 위로 흰 깃발이 하나씩
+      for (let i = 0; i < 3; i++) h += one('pop', 'skill/sway/white-flag', 62 + i * 9 + rnd() * 3, 48 + rnd() * 14, 0.8, i * 0.18)
+      break
+    case 'stand': case 'order': // 우리 앞줄 앞에 방패가 쿵 쿵 내려앉는다
+      for (let i = 0; i < 5; i++) h += one('sh', 'shield', 18 + i * 6, 58 + (i % 2) * 3, 0.85, i * 0.07)
+      break
+    case 'ambush': // 적 활 줄 밑에서 갈대가 갈라지고 흙먼지
+      h += one('pop', 'skill/ambush/reeds', 72, 60, 1.3, 0)
+      for (let i = 0; i < 3; i++) h += one('pf', 'smoke', 68 + i * 7 + rnd() * 3, 66 + rnd() * 8, 0.7 + rnd() * 0.4, 0.15 + i * 0.1)
+      break
+    case 'vanguard': // 우리 앞줄에서 창끝이 쏟아져 나간다
+      for (let i = 0; i < 4; i++) h += one('sp', 'spear', -4, 50 + rnd() * 26, 0.8 + rnd() * 0.4, i * 0.07, `;--dx:${(42 + rnd() * 14).toFixed(1)}vw`)
+      break
+    case 'feint': // 적 앞줄 발밑에서 말뚝이 솟는다
+      h += one('pop', 'skill/feint/trap-stakes', 54, 64, 1.4, 0)
+      break
+    case 'shout': // 우리 장수에서 금빛 울림이 퍼진다
+      for (let i = 0; i < 3; i++) h += `<i class="rg" style="--t:${(at + i * 0.22).toFixed(2)}s"></i>`
+      break
+    case 'earth': h += one('pop', 'skill/wake/rock-spikes', 58, 50, 2.4, 0); break
+    case 'wind': h += one('pop', 'skill/wake/tornado', 64, 30, 2.2, 0); break
+    case 'fire': for (let i = 0; i < 4; i++) h += one('pop fr', 'fire', 58 + rnd() * 26, 56 + rnd() * 16, 0.7 + rnd() * 0.5, i * 0.08); break
+    case 'water': h += one('pop', 'skill/wake/water-spout', 62, 30, 2.2, 0); break
+    case 'bolt': for (let i = 0; i < 3; i++) h += one('pop fl', `awaken/bolt-${i + 1}`, 58 + i * 12, 28, 0.9, i * 0.12); break
+  }
+  return h === '' ? '' : `<div class="wfx-cmd ${dir}" style="--k:1;--end:${(at + P.realm.warArtFxS).toFixed(2)}s">${h}</div>`
+}
+
+/**
  * 한 합의 시계 하나 (feel-lens 검토 10-24 — 전엔 그림·소리·결과가 시계 셋으로 따로 놀아 "맞는 순간"이 두 번이었다).
  * 깃발: 우리 것 먼저 그다음 적 것 · 쪽마다 warBeatMax 까지 (장수 기술은 장면이 맡아 빼고) → 맞부딪힘(clash) → 이야기(story) → 밀림·잃은 수·막대(result).
  * warHtml 의 CSS 지연과 openWar 의 소리가 둘 다 이것만 읽는다
@@ -1772,6 +1818,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       // 불화살 — 불붙은 화살이 날아가고(fx/fire-arrow · 한 개짜리를 여럿으로) 적 앞줄에 불길이 솟는다 (형 10-26: "불화살은 별도로 이미지가 없었지")
       if (!SHOOT_CMD.has(b.c) || b.c === 'fire') h += cmdFxHtml(art, b.c, b.dir, b.at, end)
     }
+    // 장수 기술의 여운 — 컷인이 걷힌 뒤 전장 제자리에 (우리 것 · 적 것 · 먹힌 것만 · 11-08)
+    for (const x of last.acts ?? []) if (x.g === 'lead' && (x.c === 'art' || x.c === 'wake') && skillRes(x.res) !== 'miss') h += artFieldFxHtml(art, x.c === 'wake' ? x.wake : x.art, x.s === (weAtk ? 'a' : 'd') ? 'r' : 'l', (P.realm.warSkEndMs * P.realm.warSkSpeed) / 1000)
   }
   h += `</div><div class="wrbox">`
   // 위 카드는 그 싸움터를 무대로 — 길·성문·물가·눈밭·밤 (형 10-23: "길에서 마주치거나 수성하거나 공성할 때는 그 위치에 맞게 배경")
