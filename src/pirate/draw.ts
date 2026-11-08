@@ -33,7 +33,7 @@ const ART = {
   /** 바닷가 그림에서 모래가 시작되는 줄 (0~1) — 이 줄을 궁수가 딛는 땅에 맞춘다 */
   seaSandV: 0.56,
   /** 칼잡이 — 수군 20컷 띠 (서기 0~3 · 걷기 4~11 · 공격 12~17) · 칸 가로/세로 */
-  sword: { file: 'anim2/marine.png', ar: 372 / 160, walk0: 4, walkN: 8, hit0: 12, hitN: 6, tallM: 1.9 },
+  sword: { file: 'anim2/pirate-sword.png', ar: 153 / 160, walk0: 4, walkN: 8, hit0: 12, hitN: 6, tallM: 1.9 }, // 11-08 제미나이 칼 든 바다도적 20컷 (서기·달리기·칼질·맞음·쓰러짐 · assets_src/realm/gemini/pirate)
   /** 두목 — 칼 든 장수 띠 */
   captain: { file: 'anim2/gen-g-sword.png', ar: 150 / 160, walk0: 4, walkN: 8, hit0: 12, hitN: 6, tallM: 2.25 },
   /** 걸음 한 바퀴(컷 여덟)가 디디는 거리 (m) */
