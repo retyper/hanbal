@@ -102,4 +102,5 @@ export const TRUE_WAKE: ReadonlySet<string> = new Set([
   'sabeol-1', 'tut-malgalgi', // 말갈기 w-77
   'usan-1', // 우산 강치 w-80
   'byeokjin-1', // 벽진 별빛 w-81
+  'saro-2', // 11-08 사로 노을 · 형이 만든 진각성 (팔 올린 기댄 자세·붉은 비단·불티)
 ])
