@@ -280,15 +280,16 @@ export const AWAKEN2_LOOP: ReadonlySet<string> = new Set([
   'w-67-buyeo-haedal', // 11-06 새벽 해달 다시 — 쏘고 웃고 한 바퀴 돌아 다시 당긴다 (형: 옛 판은 거의 정지 화면)
   'w-52-biryuna-songbi', // 11-05 밤 송비 — 판 없이 세로 · 손 위 단풍이 돈다
   'w-30-guya-soebi', // 11-06 새벽 쇠비 다시 — 망치를 휘두르고 젖혀 웃는다 · 출렁임 낱말은 오류라 숨·무게로
-  'w-28-michuhol-bira', // 11-06 새벽 비라 — 수정 덩이를 던져 받고 웃으며 한 바퀴 춤
+  'w-28-michuhol-bira', // 11-08 저녁 비라 v2 (10초 구성 · 옛 판은 끝에서 얼어 .2 로 보관만) · 11-06 새벽 비라 — 수정 덩이를 던져 받고 웃으며 한 바퀴 춤
   'w-20-gaya-smith-daughter', // 11-06 새벽 아름 — 망치를 내리쳐 불꽃 · 웃으며 다시 어깨에
   'w-51-haseulla-dangung', // 11-06 아침 단궁 — 웃지 않고 매섭게 쏘고 다시 당긴다 (성격대로)
-  'w-59-jomun-irang', // 11-06 아침 이랑 — 무표정으로 단검을 돌려 쥐고 몸을 틀어 베고 다시 막는다
+  'w-59-jomun-irang', // 11-08 저녁 이랑 v2 (10초 구성 · 옛 판은 끝에서 얼어 .2 로 보관만) · 11-06 아침 이랑 — 무표정으로 단검을 돌려 쥐고 몸을 틀어 베고 다시 막는다
   'w-69-jeoga-eomni', // 11-06 아침 엄니 — 입 다문 채 창을 땅에 꽂고 입김 · 다시 겨눔 (중간에 화면이 전신으로 물러났다 돌아온다)
-  'w-68-maek-beombal', // 11-06 아침 범발 — 비스듬히 웃으며 단검을 돌려 쥐고 다시 웅크림
+  'w-68-maek-beombal', // 11-08 저녁 범발 v2 (10초 구성 · 옛 판은 끝에서 얼어 .2 로 보관만) · 11-06 아침 범발 — 비스듬히 웃으며 단검을 돌려 쥐고 다시 웅크림
+  'l-L7-aryeong', // 11-08 저녁 알영 2차 v2 · 세로 · 벼 이삭을 들어 올리고 용을 쓰다듬는다 (옛 정사각 판은 지움)
 ])
 /** 정사각 판으로 구운 진각성 영상 (11-05 낮의 둘) — 나머지는 판 없이 세로 `<id>.t2.mp4` */
-export const AWAKEN2_LOOP_SQ: ReadonlySet<string> = new Set<string>() // 11-08 형: 정사각 영상은 안 쓴다 (미르·알영 2차는 다시 굽기 차례)
+export const AWAKEN2_LOOP_SQ: ReadonlySet<string> = new Set<string>() // 11-08 형: 정사각 영상은 안 쓴다 (알영 2차는 11-08 저녁 세로 v2 · 미르 2차는 다시 굽기 차례)
 export const loopFile2 = (id: string): string => `awaken2-loop/${id}${AWAKEN2_LOOP_SQ.has(id) ? '.sq' : ''}.mp4`
 /** 2차 각성 영상의 판 수 (없으면 1) — 번갈아 돈다 */
 export const AWAKEN2_TAKES: Readonly<Record<string, number>> = { 'w-30-guya-soebi': 2 }
