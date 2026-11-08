@@ -61,6 +61,7 @@ import { TOWN_GROUND, townSprite } from '../../realm/data/town-art.ts'
 import { RISE_CSS, riseGraphHtml } from './risegraph.ts'
 import { BOOK_CSS, bookHtml, bookSwipe, bookTurn, shelfHtml, type Book } from './bookshelf.ts'
 import { CROWN_CSS, crownRowHtml, flyCrowns, newCrowns } from './crowns.ts'
+import { LEAGUE_CSS, leagueChipHtml, leagueToastHtml } from './league.ts'
 import { DEX_CSS, clanHeroes, dexHtml, dexToastHtml, loadDex, recordDex, toggleDexAwake, type DexBoard } from './dex.ts'
 import { DEX_SERVED, dexCatalog } from '../../realm/dex.ts'
 import { DRILL_CSS, drillLevel, engraveRun, hasDrill, loadDrill, raiseHero, yardHtml, yardStripHtml, type DrillKit } from './drill.ts'
@@ -674,7 +675,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS.replaceAll('__ART__', ART) + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + VOLUME_CSS + MEM_CSS + ASCEND_CSS.replaceAll('__ART__', ART) + HILITE_CSS + TOWN_CSS.replaceAll('__ART__', ART) + RISE_CSS + BOOK_CSS + CROWN_CSS
+  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS.replaceAll('__ART__', ART) + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + VOLUME_CSS + MEM_CSS + ASCEND_CSS.replaceAll('__ART__', ART) + HILITE_CSS + TOWN_CSS.replaceAll('__ART__', ART) + RISE_CSS + BOOK_CSS + CROWN_CSS + LEAGUE_CSS
   document.head.appendChild(style)
   root.classList.add('ap')
   // 그래픽 단계 저사양 · 보통 · 고사양 (quality.ts · 형 10-29: 폰 절전 모드에서 그림이 다 깨졌다)
@@ -1563,6 +1564,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     at(t(R.ascendFlashMs), () => { if (typeof navigator.vibrate === 'function') navigator.vibrate([40, 40, 80, 40, 120]) })
     at(t(R.ascendFlashMs) + 1100, () => { if (h.status === 'free' && !isRuler(r, h.id)) ding(voicePath(h, 'tap', false), 0.9) })
   }
+  /** 합종 알림 — 섰을 때 깃발들이 끌려와 묶이고, 깼을 때 줄이 끊긴다 (league.ts · 위원회 11-08 ⑤) */
+  function leagueToast(next: Realm, lines: readonly ReportLine[]): void {
+    if (next.outcome != null) return
+    const t = leagueToastHtml(next, me(), lines, (f) => emblem(f, 'fem'))
+    if (t !== null) goToast(t.html, t.big ? 'big' : '')
+  }
   /** 승리가 가깝다 — 넷 가운데 하나가 이번 계절에 문턱(pathAlertShare)을 넘으면 크게 한 번 (형 10-26: "승리 목표 달성의 80%가 되면 한번 알림") */
   function nearWinToast(prev: Realm, next: Realm): void {
     if (next.outcome != null) return
@@ -1670,6 +1677,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if ((r.builds ?? []).some((b) => b.faction === me() && b.done <= r.season)) out.push(`<i class="nxp">${icon('settle-palisade')}</i>`)
     if (isSeasonEnd(r)) out.push(`<i class="nxp">${icon(SEASON_ICON[seasonOf(r, r.season + 1)])}</i>`)
     if (win !== '') out.unshift(win)
+    // 합종 — 묶인 깃발과 칠 때까지 남은 달 (출정이면 붉게 ⚔ · league.ts) · 승리 다음 자리
+    const lg = leagueChipHtml(r, me(), (f) => emblem(f, 'em'))
+    if (lg !== '') out.splice(win !== '' ? 1 : 0, 0, lg)
     return out.length === 0 ? '' : `<span class="nxps">${out.slice(0, 4).join('')}</span>`
   }
   /**
@@ -5942,6 +5952,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'arm': ic = 'treasure-iron-ingots'; break
       case 'bowUp': ic = 'unit-archer'; break
       case 'suzerain': ic = 'treasure-silla-crown'; break
+      case 'coalition': ic = l.ev === 'broken' || l.ev === 'scatter' || l.ev === 'fade' ? 'status-alliance' : 'treasure-ring-sword'; break
       case 'grow': case 'bond': case 'awaken': case 'kindle': case 'ascend': ic = 'status-morale-up'; break
       case 'fade': ic = 'status-morale-down'; break
       case 'wed': ic = 'status-alliance'; break
@@ -5979,6 +5990,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     else if (l.kind === 'take' && isF(l.faction)) flow = `${fchip(l.faction)}<i class="ar">➜</i>${nchip(l.node)}`
     else if (isF(L['faction']) && L['faction'] !== me()) flow = fchip(L['faction'] as string)
     else if (isN(L['node'])) flow = nchip(L['node'] as string)
+    // 합종 — 묶인 깃발들 (빠진 나라는 그 깃발 하나)
+    if (l.kind === 'coalition') flow = l.ev === 'leave' && l.who !== undefined && isF(l.who) ? fchip(l.who) : l.members.filter(isF).map(fchip).join('<i class="ar">+</i>')
     // 회유 — 달랜 우리 장수의 얼굴 (WOO §1-4 · 「송양의 벽 −1.7 (협보)」)
     if ((l.kind === 'persuade' || l.kind === 'recruit') && l.by != null && r.heroes[l.by] !== undefined) flow = bust(r.heroes[l.by], 'rface sm')
     // 수가 핵심인 줄은 크게
@@ -7186,6 +7199,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     dexToast(recordDex(res.next))
     engraveNow(res.next) // 판이 끝났다 — 이기든 지든 장수마다 공을 판 밖 단련 공으로 (drill.ts)
     backToast(backNotes(prev, res.next, mine))
+    leagueToast(res.next, res.report.lines) // 합종이 섰다·칼을 뽑았다·깼다 (승리가 가깝다는 알림이 있으면 그것이 덮는다)
     nearWinToast(prev, res.next)
     crownQueue = newCrowns(prev, res.next, me())
     diploToast(prev, res.next)

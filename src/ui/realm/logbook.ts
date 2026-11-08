@@ -17,7 +17,7 @@ export const LOG_FILTERS: ReadonlyArray<readonly [LogFilter, string]> = [
 ]
 
 const KINDS: Readonly<Record<Exclude<LogFilter, 'all'>, ReadonlySet<string>>> = {
-  rel: new Set(['relation', 'suzerain', 'end']),
+  rel: new Set(['relation', 'suzerain', 'coalition', 'end']),
   envoy: new Set(['envoy', 'ask', 'answered', 'recall', 'pledge', 'lent', 'envoyHeld']),
   war: new Set(['battle', 'take', 'sighted', 'blocked', 'relicSave']),
   plot: new Set(['plot', 'mystery', 'confess', 'rumor']),

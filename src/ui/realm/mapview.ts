@@ -30,6 +30,7 @@ import { worldMapFallback, worldMapUrl } from './worldmap.ts'
 import { WORKS, worksOf } from '../../realm/works.ts'
 import { marketOf } from '../../realm/merchant.ts'
 import { crownTargets } from './crowns.ts'
+import { leagueRopeSvg } from './league.ts'
 
 /** 미리 받아 둔 다음 계절 지도 그림 — 붙잡아 두어야 브라우저가 풀어 둔 그림을 버리지 않는다 */
 const warm = new Map<string, HTMLImageElement>()
@@ -808,6 +809,8 @@ export function mapHtml(
     }
   }
   svg += `</g>`
+  // 합종 — 연합 나라 도읍을 붉은 새끼줄로 잇는다 (길 위 · 화살 밑 · league.ts)
+  svg += leagueRopeSvg(r, me, px, seen, lw)
   // 출정 화살은 따로 떼어 고을·말·이름표보다 위의 막에 그린다 (형 10-31: "화살표는 다른 어떤 오브젝트보다도 위에 · 적국에서 올 때도 잘 안 보임")
   const arrowAt = svg.length
   svg += `<g class="ly-marches">` // 출정 화살
