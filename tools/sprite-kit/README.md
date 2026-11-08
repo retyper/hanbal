@@ -49,5 +49,6 @@
 - `gpt-kit.js` + `heroes/gpt-1108.json`(초상 둘 + 비기 전신 열둘 문안) — 설치는 위와 같이 임시 file input 으로 `localStorage.gkit`·`gkitSpec`
 - 한 장: 새 대화 → find 「사진 첨부」 → file_upload(명세의 ref) → `gkit.send(key)` → `gkit.wait()` → `gkit.grab(id)` → 초상이면 `sh tools/sprite-kit/install-bust.sh <id> <나이> <장수 키> "<설명>"`
 - **함정: 새 대화 입력칸에 지난 문안 초안이 남아 있다** → `gkit.say` 가 먼저 비우고 길이를 잰 뒤에만 보낸다 (11-08 두 문안이 붙어 나가 한 장을 날림)
+- **함정: 새 대화를 열자마자 find 한 「사진 첨부」 ref 는 페이지가 다시 그려지며 사라진다** → file_upload 가 실패한 채 문안만 나가 엉뚱한 사람을 그린다(11-08 밤 감나무). `gkit.send` 는 입력칸에 사진이 없으면 안 보낸다 — 실패하면 find 를 다시 해서 올린다
 - 「보내기」 단추는 첨부가 올라가는 동안 없다 → 나타날 때까지 기다린다
 - 무료 한도는 하루 두세 장일 때도 있다 · 한도 문구의 시각을 ART-QUEUE 맨 위 장부에 그 자리에서 적는다

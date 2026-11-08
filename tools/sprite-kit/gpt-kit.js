@@ -40,8 +40,15 @@
       await W(2500)
       return { sent: true, url: location.href }
     },
-    send(key) {
+    // 첨부 사진이 입력칸에 없으면 보내지 않는다 (11-08 밤: find 의 ref 가 페이지 다시 그리기에 사라져 사진 없이 문안만 나감)
+    async send(key, needImg = 1) {
+      for (let t = 0; t < 10 && kit.attached() < needImg; t++) await W(1000)
+      if (kit.attached() < needImg) return { sent: false, why: 'no attachment', attached: kit.attached() }
       return kit.say(kit.get(key).prompt)
+    },
+    attached() {
+      const f = ed()?.closest('form')
+      return f ? f.querySelectorAll('img').length : 0
     },
     async wait(maxS = 240) {
       for (let t = 0; t < maxS / 3; t++) {
