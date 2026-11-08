@@ -492,7 +492,7 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   haebi: { ar: 152 / 160, body: 0.906 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 전투 옷은 더 드러나게 (형 11-08)
   soebi: { ar: 156 / 160, body: 0.906 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 쇠 덩이 묶음 대신 큰 쇠망치
   ara: { ar: 157 / 160, body: 0.906 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2)
-  heo: { ar: 150 / 160, body: 0.941 }, // 11-05 밤 제 띠 (제미나이 edu Flash · 진주·산호 꿴 물결머리·푸른·샛노란 비단 위 미늘·붉은 띠·긴 창 · B 의 서기가 걷는 자세라 C 에서 서기·맞음·쓰러짐 셋을 따로 받아 갈아 끼움 · 휘두르기 초록 자국 지움)
+  heo: { ar: 145 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 갑옷 대신 보석 윗옷·트임 치마 (형: 전투 옷은 더 드러나게)
   gamsil: { ar: 156 / 160, body: 0.901 }, // 11-05 밤 제 띠 (제미나이 edu Flash · 주홍 무늬 겉옷·청동 거울·방울 지팡이 · 쓰러짐 장은 옷이 딴사람으로 나와 버리고 맞음 컷을 눕혀 씀(tools/laydown.ps1))
   sori: { ar: 280 / 160, body: 0.9375 }, // normal portrait, right-hand dagger, shared four-pose walk
   sogeumbi: { ar: 280 / 160, body: 0.9375 }, // same-hand short downcut, shared four-pose walk
