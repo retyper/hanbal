@@ -211,7 +211,9 @@ describe('진각성 (DESIRE §17 · 한 판에 한 번 · 큰 싸움에서만)',
     const h = r.heroes['chief']!
     h.faction = r.player
     ;(h as Hero).ascended = true
-    assert.equal(trueWakeOf(r, h), false) // 2차 초상이 없는 장수
+    // 2차 초상이 없는 장수 — 실제 id 를 쓰면 그 장수 진각성 그림이 생길 때 깨진다 (11-08 골포 매눈 = chief)
+    r.heroes['no-true-wake'] = { ...h, id: 'no-true-wake' }
+    assert.equal(trueWakeOf(r, r.heroes['no-true-wake']!), false)
     r.heroes['sr-aryeong'] = { ...h, id: 'sr-aryeong' }
     assert.equal(trueWakeOf(r, r.heroes['sr-aryeong']!), true)
     r.trueWoke = ['sr-aryeong']

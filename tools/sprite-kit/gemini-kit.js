@@ -50,11 +50,14 @@
     },
     async setup(tag = 'u') {
       await W(2500)
-      document.querySelector('button[aria-label="업로드 및 도구"]')?.click()
-      await W(800)
-      // 보이는 메뉴 칸만 (숨은 말풍선·사이드바 글자를 누르면 안 켜진다)
-      ;[...document.querySelectorAll('[role=menuitem],[role=option],button,a,li')].find((e) => e.offsetParent && /^이미지 만들기/.test((e.innerText || '').trim()))?.click()
-      await W(1000)
+      // 진짜 클릭으로 이미 이미지 모드면(비율 단추가 보이면) 메뉴를 다시 누르지 않는다 — 다시 누르면 꺼진다 (11-08 밤 u/0)
+      if (!btnText(/가로세로 비율|^16:9$/)) {
+        document.querySelector('button[aria-label="업로드 및 도구"]')?.click()
+        await W(800)
+        // 보이는 메뉴 칸만 (숨은 말풍선·사이드바 글자를 누르면 안 켜진다)
+        ;[...document.querySelectorAll('[role=menuitem],[role=option],button,a,li')].find((e) => e.offsetParent && /^이미지 만들기/.test((e.innerText || '').trim()))?.click()
+        await W(1000)
+      }
       btnText(/가로세로 비율/)?.click()
       await W(800)
       btnText(/^16:9$/)?.click()
