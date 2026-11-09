@@ -11,7 +11,7 @@
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { seasons } from './calendar.ts'
-import { bondOf, deokOf, hasTrait, isKin, isRuler, persuadeDropOf, recruitChance, resistOf } from './heroes.ts'
+import { bondOf, deokOf, hasTrait, isKin, isRuler, persuadeDropOf, recruitChance, resistOf, turnCaptive } from './heroes.ts'
 import type { Hero, Order, Realm, ReportLine, WooApproach, WooReact } from './types.ts'
 
 export const WOO_APPROACHES: readonly WooApproach[] = ['soothe', 'cause', 'gain', 'fear']
@@ -288,6 +288,13 @@ export function applyTalks(r: Realm, orders: readonly Order[], lines: ReportLine
     }
     lines.push({ kind: 'persuade', hero: h.id, faction: h.captor, step: 'talk', by: o.by, d: t.resist - t.from, reacts: t.beats.map((b) => b.react), broke: t.end === 'broke' })
     if (t.hand !== null && !t.hand.ok) lines.push({ kind: 'persuade', hero: h.id, faction: h.captor, step: 'refuse' })
+    // 내민 손을 잡았다 — 바로 이 턴에 넘어온다 (전엔 달 시계면 계절 끝까지 기다렸다 · 형 11-09) · 이번 몫과 이익으로 건 곡식은 지금 치른다
+    if (t.hand?.ok === true) {
+      const st = r.stock[h.captor]!
+      st.grain -= R.persuadeGrain + Math.min(Math.max(0, st.grain - R.persuadeGrain), pz.talkGrain ?? 0)
+      delete pz.talkGrain
+      turnCaptive(r, h, true, lines)
+    }
   }
 }
 

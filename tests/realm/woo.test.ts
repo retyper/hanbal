@@ -10,6 +10,8 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
+import { monthClock } from '../../src/realm/data/regions/index.ts'
+import { isSeasonEnd } from '../../src/realm/calendar.ts'
 import { recruitChance, resistOf } from '../../src/realm/heroes.ts'
 import { advance, planned } from '../../src/realm/season.ts'
 import type { Realm, WooApproach } from '../../src/realm/types.ts'
@@ -30,6 +32,19 @@ function jail(seed = 1): Realm {
 const TALK: readonly WooApproach[] = ['soothe', 'cause', 'gain']
 
 describe('옥중 담판', () => {
+  it('달 시계 — 담판에서 내민 손을 잡으면 계절 끝을 기다리지 않고 그 달에 넘어온다 (형 11-09)', () => {
+    const r = monthClock(jail(1))
+    assert.equal(isSeasonEnd(r), false, '계절 끝이 아닌 달이어야 시험이 뜻이 있다')
+    const talk: WooApproach[] = ['soothe', 'soothe', 'gain']
+    assert.equal(talkRun(r, 'guya-2', 'us-ruler', talk).hand?.ok, true, '이 시드·이 말이면 손을 잡는다')
+    const out = advance(r, [{ kind: 'persuade', hero: 'guya-2', by: 'us-ruler', talk }])
+    const h = out.next.heroes['guya-2']!
+    assert.equal(h.faction, 'us')
+    assert.equal(h.status, 'free')
+    assert.ok(out.report.lines.some((l) => l.kind === 'recruit' && l.hero === 'guya-2' && l.talk === true))
+    assert.ok(out.next.stock['us']!.grain < 1000, '회유 곡식을 치렀다')
+  })
+
   it('같은 시드 같은 말이면 같은 결과 · 미리 보기가 계절을 넘긴 판과 같다', () => {
     const r = jail(3)
     const pre = talkRun(r, 'guya-2', 'us-ruler', TALK)

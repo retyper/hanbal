@@ -463,6 +463,32 @@ export function releaseCaptives(r: Realm, captor: string, of: string, why: 'peac
   }
 }
 
+/**
+ * 회유가 먹혔다 — 사로잡힌 장수가 우리 사람이 된다. 계절 끝 굴림(stepHeroes)과, 담판에서 내민 손을 잡은 그 턴(woo.applyTalks)이 함께 쓴다
+ * (형 11-09: "회유를 이미 성공한 거 같은데 계절이 바뀌어야 합류하도록 해 놨나?" — 달 시계면 계절 끝까지 두 달을 더 기다렸다)
+ */
+export function turnCaptive(r: Realm, h: Hero, byTalk: boolean, lines: ReportLine[]): void {
+  const R = P.realm
+  const to = h.captor
+  if (to === null || h.persuade === undefined) return
+  const by = h.persuade.by
+  delete h.persuade
+  if (h.faction === r.player) addVow(r, h.id, 'turned') // 우리 장수가 넘어갔다 — 의리가 내린다 (UIRI)
+  h.born ??= h.faction // 처음 섬긴 나라 (담판의 「같은 고향」 · woo.ts)
+  h.faction = to
+  h.status = 'free'
+  h.captor = null
+  h.post = null
+  h.at = homeOf(r, to)
+  // 새 주인과는 낯설다 — 정은 처음부터 다시
+  // 담판으로 넘어오면 정이 더 높게 · 원한이 있으면 낮게 (WOO §2-4 · 형 대신 정함 10-29)
+  h.bond = Math.max(0, R.bondPersuaded + (byTalk ? R.wooBondTalk : 0) - ((h.grudge ?? 0) > 0 ? R.wooGrudgeBond : 0))
+  h.served = 0
+  lines.push({ kind: 'recruit', hero: h.id, faction: to, how: 'persuade', by, ...(byTalk ? { talk: true } : {}) })
+  const pb = by !== null ? r.heroes[by] : undefined
+  if (pb !== undefined) gainXp(pb, 'deok', R.xpPersuade, lines)
+}
+
 function startPersuade(r: Realm, o: Extract<Order, { kind: 'persuade' }>): void {
   const h = r.heroes[o.hero]
   if (h === undefined || h.status !== 'captive' || h.captor === null) return
@@ -690,24 +716,7 @@ export function stepHeroes(r: Realm, lines: ReportLine[]): void {
         continue
       }
     }
-    const to = h.captor
-    const by = h.persuade.by
-    const byTalk = h.persuade.handAt !== undefined && seasonIdx(r, h.persuade.handAt) === seasonIdx(r)
-    delete h.persuade
-    if (h.faction === r.player) addVow(r, h.id, 'turned') // 우리 장수가 넘어갔다 — 의리가 내린다 (UIRI)
-    h.born ??= h.faction // 처음 섬긴 나라 (담판의 「같은 고향」 · woo.ts)
-    h.faction = to
-    h.status = 'free'
-    h.captor = null
-    h.post = null
-    h.at = homeOf(r, to)
-    // 새 주인과는 낯설다 — 정은 처음부터 다시
-    // 담판으로 넘어오면 정이 더 높게 · 원한이 있으면 낮게 (WOO §2-4 · 형 대신 정함 10-29)
-    h.bond = Math.max(0, R.bondPersuaded + (byTalk ? R.wooBondTalk : 0) - ((h.grudge ?? 0) > 0 ? R.wooGrudgeBond : 0))
-    h.served = 0
-    lines.push({ kind: 'recruit', hero: h.id, faction: to, how: 'persuade', by, ...(byTalk ? { talk: true } : {}) })
-    const pb = by !== null ? r.heroes[by] : undefined
-    if (pb !== undefined) gainXp(pb, 'deok', R.xpPersuade, lines)
+    turnCaptive(r, h, h.persuade.handAt !== undefined && seasonIdx(r, h.persuade.handAt) === seasonIdx(r), lines)
   }
   // 혼인의 열매 — 때가 된 아이가 나선다
   stepBirths(r, lines)
