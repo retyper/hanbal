@@ -39,6 +39,8 @@ export interface DuelEvent {
   readonly x?: number
   readonly y?: number
   readonly heavy?: boolean
+  /** 누른 때 − 고리가 닿는 때 (틱 · 음수 = 빨랐다 · 못 누름은 막는 폭 끝) */
+  readonly off?: number
   readonly dmgMe: number
   readonly dmgFoe: number
 }
@@ -88,10 +90,10 @@ export function createDuel(opts: DuelOpts): Duel {
   }
 }
 
-function ev(d: Duel, kind: EvKind, dmgMe: number, dmgFoe: number, at?: { x: number; y: number }, heavy?: boolean): void {
+function ev(d: Duel, kind: EvKind, dmgMe: number, dmgFoe: number, at?: { x: number; y: number }, heavy?: boolean, off?: number): void {
   d.me.hp = Math.max(0, d.me.hp - dmgMe)
   d.foe.hp = Math.max(0, d.foe.hp - dmgFoe)
-  d.events.push({ t: d.t, kind, dmgMe, dmgFoe, ...(at !== undefined ? { x: at.x, y: at.y } : {}), ...(heavy === true ? { heavy } : {}) })
+  d.events.push({ t: d.t, kind, dmgMe, dmgFoe, ...(at !== undefined ? { x: at.x, y: at.y } : {}), ...(heavy === true ? { heavy } : {}), ...(off !== undefined ? { off } : {}) })
 }
 
 /** 적장 무예가 고리를 빠르게 하는 배수 */
@@ -152,25 +154,25 @@ function toPause(d: Duel): void {
   d.cues = []
 }
 
-function judgeCue(d: Duel, c: Cue, j: Judge): void {
+function judgeCue(d: Duel, c: Cue, j: Judge, off: number): void {
   const R = D()
   c.done = j
   const at = { x: c.x, y: c.y }
   if (j === 'miss') {
     d.stats.miss++
-    ev(d, 'miss', Math.round((c.heavy ? R.heavyDmg : R.hitDmg) * hurtOf(d.opts.muFoe)), 0, at, c.heavy)
+    ev(d, 'miss', Math.round((c.heavy ? R.heavyDmg : R.hitDmg) * hurtOf(d.opts.muFoe)), 0, at, c.heavy, off)
     return
   }
   if (j === 'good') {
     d.stats.good++
     d.foe.posture = Math.min(R.posture, d.foe.posture + R.goodPosture * tireOf(d.opts.muFoe))
-    ev(d, 'good', 0, 0, at, c.heavy)
+    ev(d, 'good', 0, 0, at, c.heavy, off)
   } else {
     // 정확히 받으면 그 자리에서 치명공격 (엘든링 패링처럼) · 체간도 크게 찬다 · 붉은 큰 공격이면 더 크게
     d.stats.perfect++
     d.stats.crit++
     d.foe.posture = Math.min(R.posture, d.foe.posture + R.perfectPosture * tireOf(d.opts.muFoe))
-    ev(d, 'perfect', 0, 0, at, c.heavy)
+    ev(d, 'perfect', 0, 0, at, c.heavy, off)
     ev(d, 'crit', 0, Math.round(R.critDmg * (c.heavy ? R.critHeavy : 1)), at, c.heavy)
     if (d.foe.hp > 0 && d.foe.posture >= R.posture && d.cues.every((x) => x.done !== null)) { startRush(d); return }
     d.phase = 'crit'
@@ -222,14 +224,14 @@ export function stepDuel(d: Duel, tap?: Tap): void {
       if (best !== null) {
         const w = widthOf(d.opts.muMe)
         const dt = d.t - best.hitAt
-        if (dt < -Math.round(R.good * w)) judgeCue(d, best, 'miss') // 너무 일찍 — 헛손에 맞는다
-        else if (Math.abs(dt) <= Math.round(R.perfect * w)) judgeCue(d, best, 'perfect')
-        else judgeCue(d, best, 'good')
+        if (dt < -Math.round(R.good * w)) judgeCue(d, best, 'miss', dt) // 너무 일찍 — 헛손에 맞는다
+        else if (Math.abs(dt) <= Math.round(R.perfect * w)) judgeCue(d, best, 'perfect', dt)
+        else judgeCue(d, best, 'good', dt)
       }
     }
     if (d.phase === 'guard') {
       const lateW = Math.round(R.good * widthOf(d.opts.muMe)) + R.late // 닿은 뒤로도 막는 폭만큼 + 손가락 늦음
-      for (const c of d.cues) if (c.done === null && d.t > c.hitAt + lateW) judgeCue(d, c, 'miss')
+      for (const c of d.cues) if (c.done === null && d.t > c.hitAt + lateW) judgeCue(d, c, 'miss', lateW)
       d.foe.posture = Math.max(0, d.foe.posture - R.postureRecover)
     }
   }
@@ -240,6 +242,9 @@ export function stepDuel(d: Duel, tap?: Tap): void {
     d.over = diff > R.drawBand ? 'win' : diff < -R.drawBand ? 'lose' : 'draw'
   }
 }
+
+/** 막는 폭이 닿은 뒤로 얼마나 가나 (틱) — 그리기가 고리를 안으로 줄이는 길이 */
+export const lateWindow = (muMe: number): number => Math.round(D().good * widthOf(muMe)) + D().late
 
 /** 맡겼을 때 이길 몫 — 본편 겨루기와 같은 셈 (tactics.ts · tacDuelPerMu) */
 export const autoWinChance = (muMe: number, muFoe: number): number =>

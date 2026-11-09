@@ -7,7 +7,7 @@
  * 장수 겨루기는 항상 쓸 수 있는 깃발 · 시행될 때 화면 가운데로 확대 및 fade out 연출 · QTE 로 적이 공격 들어올 위치에 큰 원이 모임".
  * 소리는 누른 순간의 반응으로만 — 박자는 눈(고리)으로 잰다.
  */
-import { autoWinChance, createDuel, stepDuel, type Cue, type Duel, type DuelEvent, type Tap } from './duel/sim.ts'
+import { autoWinChance, createDuel, lateWindow, stepDuel, type Cue, type Duel, type DuelEvent, type Tap } from './duel/sim.ts'
 import { GEN_OWN, HERO_BUST } from './realm/data/art.ts'
 import { P } from './tune/params.ts'
 
@@ -94,14 +94,17 @@ let acc = 0
 let last = 0
 let shake = 0
 let flash: { rgb: string; t0: number; ms: number; a: number } | null = null
-interface Pop { x: number; y: number; text: string; color: string; t0: number; size: number }
+interface Pop { x: number; y: number; vx: number; vy: number; text: string; color: string; t0: number; size: number }
 interface Spark { x: number; y: number; vx: number; vy: number; t0: number; life: number; color: string }
 interface Slash { x: number; y: number; ang: number; len: number; t0: number; ms: number; color: string; w: number }
 const pops: Pop[] = []
 const sparks: Spark[] = []
 const slashes: Slash[] = []
-const marks: { x: number; y: number; t0: number; kind: 'perfect' | 'good' | 'miss' }[] = []
+/** off = 누른 때 − 닿는 때 (틱) — 빨랐나 늦었나를 남은 고리로 보인다 */
+const marks: { x: number; y: number; t0: number; kind: 'perfect' | 'good' | 'miss'; off: number }[] = []
 let critAt = -1e9
+/** 판정 막대 — 누른 때가 닿는 때보다 얼마나 빨랐나 늦었나 (osu! 의 히트 에러 막대처럼 · 버릇이 보인다) */
+const errs: { off: number; t0: number; kind: 'perfect' | 'good' | 'miss' }[] = []
 let hurtAt = -1e9
 let foeHurtAt = -1e9
 /** 아래 들판 장수들이 하는 짓 — 그리기만 */
@@ -117,7 +120,7 @@ function resize(): void {
 }
 addEventListener('resize', resize)
 resize()
-const hudTop = (): number => 64
+const hudTop = (): number => 84
 const fieldTop = (): number => H * 0.8
 /** 고리가 서는 칸 — 위 띠와 아래 들판 사이 전부 */
 const play = (): { x: number; y: number; w: number; h: number } => ({ x: 0, y: hudTop(), w: W, h: fieldTop() - hudTop() })
@@ -141,7 +144,7 @@ flagBtn.addEventListener('click', () => {
 function begin(): void {
   duel = createDuel({ seed, muMe, muFoe })
   seen = 0; queued = null
-  pops.length = 0; sparks.length = 0; slashes.length = 0; marks.length = 0
+  pops.length = 0; sparks.length = 0; slashes.length = 0; marks.length = 0; errs.length = 0
   mode = 'duel'; modeAt = performance.now()
   over.classList.add('hide')
 }
@@ -158,7 +161,7 @@ function showEnd(): void {
   over.classList.remove('hide')
   over.innerHTML = `<div class="card"><div class="big" style="color:${r.col}">${r.word}</div>
     <div class="sub">체력 ${Math.round(d.me.hp)} 대 ${Math.round(d.foe.hp)} · ${Math.round(d.t / P.duel.hz)}초</div>
-    <div class="stats"><span>⚡ 치명 ${s.crit}</span><span>🛡 막음 ${s.good}</span><span>💥 맞음 ${s.miss}</span><span>⚔ 연타 ${s.rushHit}</span><span>✦ 튕김 ${s.deflect}</span></div>
+    <div class="stats"><span>⚡ 치명 ${s.crit}</span><span>🛡 막음 ${s.good}</span><span>💥 맞음 ${s.miss}</span><span>⚔ 연타 ${s.rushHit}</span><span>✦ 막힌 칼 ${s.deflect}</span></div>
     <div class="auto">맡겼다면 이길 몫 ${Math.round(autoWinChance(muMe, muFoe) * 100)}% (무예 ${muMe} 대 ${muFoe})</div>
     <button id="again">한 판 더</button></div>`
   ;(document.getElementById('again') as HTMLButtonElement).onclick = () => { seed = (seed + 1) >>> 0; begin() }
@@ -175,22 +178,30 @@ function burst(x: number, y: number, n: number, color: string, speed: number, no
 function onEvent(e: DuelEvent, now: number): void {
   const R = P.duel
   const [x, y] = e.x !== undefined && e.y !== undefined ? toPx(e.x, e.y) : [W / 2, play().y + play().h * 0.45]
-  const pop = (text: string, color: string, size: number, px = x, py = y): void => { pops.push({ x: px, y: py, text, color, t0: now, size }) }
+  // 숫자는 빠르고 멀리 — 위쪽 부채꼴로 튄다 (형 11-09)
+  const pop = (text: string, color: string, size: number, px = x, py = y): void => {
+    const a = -Math.PI / 2 + (((e.t * 47 + pops.length * 13) % 100) / 100 - 0.5) * 1.6
+    const dist = Math.min(W, H) * (0.22 + size / 400)
+    pops.push({ x: px, y: py, vx: Math.cos(a) * dist, vy: Math.sin(a) * dist, text, color, t0: now, size })
+  }
   switch (e.kind) {
     case 'cue': foeAnim = { kind: 'windup', t0: now }; break
     case 'perfect':
+      errs.push({ off: e.off ?? 0, t0: now, kind: 'perfect' })
       SFX.perfect(); freezeUntil = now + R.hitStopPerfect
-      marks.push({ x, y, t0: now, kind: 'perfect' }); burst(x, y, 22, '#fff1c0', 9, now)
+      marks.push({ x, y, t0: now, kind: 'perfect', off: e.off ?? 0 }); burst(x, y, 22, '#fff1c0', 9, now)
       meAnim = { kind: 'guard', t0: now }; foeAnim = { kind: 'attack', t0: now }
       break
     case 'good':
-      SFX.good(); marks.push({ x, y, t0: now, kind: 'good' }); burst(x, y, 10, '#cfe6ff', 5, now); shake = R.shake * 0.3
+      errs.push({ off: e.off ?? 0, t0: now, kind: 'good' })
+      SFX.good(); marks.push({ x, y, t0: now, kind: 'good', off: e.off ?? 0 }); burst(x, y, 10, '#cfe6ff', 5, now); shake = R.shake * 0.3
       meAnim = { kind: 'guard', t0: now }; foeAnim = { kind: 'attack', t0: now }
       break
     case 'miss':
+      errs.push({ off: e.off ?? 0, t0: now, kind: 'miss' })
       SFX.miss(); freezeUntil = now + R.hitStopHit; shake = R.shake; hurtAt = now
       flash = { rgb: '190,20,10', t0: now, ms: 220, a: 0.4 }
-      marks.push({ x, y, t0: now, kind: 'miss' })
+      marks.push({ x, y, t0: now, kind: 'miss', off: e.off ?? 0 })
       slashes.push({ x, y, ang: -0.7 + ((e.t * 13) % 10) / 20, len: Math.min(W, H) * 0.45, t0: now, ms: 260, color: '255,60,40', w: 10 })
       pop(`−${e.dmgMe}`, '#ff7a6a', 34, 80, fieldTop() - 30)
       meAnim = { kind: 'hit', t0: now }; foeAnim = { kind: 'attack', t0: now }
@@ -215,8 +226,8 @@ function onEvent(e: DuelEvent, now: number): void {
       meAnim = { kind: 'attack', t0: now }
       break
     case 'deflect':
-      SFX.deflect(); burst(x, y, 8, '#9fd8ff', 6, now)
-      pop('튕김', '#9fd8ff', 20)
+      // 챙 — 튕겨 나가는 빛과 소리 (글자 없이)
+      SFX.deflect(); marks.push({ x, y, t0: now, kind: 'good', off: 0 }); burst(x, y, 12, '#cfe6ff', 8, now); shake = R.shake * 0.25
       break
     case 'rushEnd': foeAnim = { kind: 'idle', t0: now }; break
     default: break
@@ -282,10 +293,94 @@ function drawField(now: number, k: number): void {
   }
 }
 
+/** 에셋 — public/realm/duel/<이름>.png · 없으면 null (그리기가 대신 선으로) */
+const ARTS = new Map<string, HTMLImageElement | null>()
+function art(name: string): HTMLImageElement | null {
+  let im = ARTS.get(name)
+  if (im === undefined) {
+    const i = new Image()
+    ARTS.set(name, null)
+    i.onload = () => ARTS.set(name, i)
+    i.src = `realm/duel/${name}.png`
+    return null
+  }
+  return im
+}
+for (const n of ['panel-frame', 'hud-bar', 'hud-posture', 'hud-timer', 'fx-clang', 'fx-slash', 'fx-ring']) art(n)
+function roundRect(x: number, y: number, w: number, h: number, r: number): void {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath()
+}
+/** 초상 판 — 위 띠와 체간 사이 가운데 정사각 */
+function panel(): { x: number; y: number; s: number } {
+  const p = play()
+  const s = Math.min(W - 24, p.h - 36)
+  return { x: (W - s) / 2, y: p.y + (p.h - 36 - s) / 2 + 4, s }
+}
+/** 고리 반지름 — 닿기 전엔 바깥에서 모여들고, 닿은 뒤엔 원 안으로 계속 줄어든다 (형 11-09: 늦은 걸 보기만 해도 알게) */
+function ringR(r: number, off: number, lead = P.duel.lead): number {
+  if (off <= 0) return r * (1 + 3.2 * Math.min(1, -off / Math.max(1, lead)))
+  return r * Math.max(0.08, 1 - 0.92 * off / Math.max(1, lateWindow(muMe)))
+}
+/** 챙 — 튕겨 나가는 빛 (에셋이 있으면 그것 · hue 0 = 금빛 · 0.6 = 흰 푸른빛) */
+function clang(x: number, y: number, size: number, alpha: number, cool: number, now: number): void {
+  const im = art('fx-clang')
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.max(0, alpha)
+  ctx.translate(x, y); ctx.rotate((now / 900) % (Math.PI * 2))
+  if (im !== null) {
+    ctx.drawImage(im, -size / 2, -size / 2, size, size)
+    if (cool > 0) { ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = `rgba(150,200,255,${cool * 0.5})`; ctx.fillRect(-size / 2, -size / 2, size, size) }
+  } else {
+    const col = cool > 0 ? '200,230,255' : '255,236,170'
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2, l = size * (i % 2 === 0 ? 0.5 : 0.28)
+      ctx.strokeStyle = `rgba(${col},1)`; ctx.lineWidth = i % 2 === 0 ? 4 : 2
+      ctx.beginPath(); ctx.moveTo(Math.cos(a) * size * 0.06, Math.sin(a) * size * 0.06); ctx.lineTo(Math.cos(a) * l, Math.sin(a) * l); ctx.stroke()
+    }
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 0.3); g.addColorStop(0, `rgba(${col},1)`); g.addColorStop(1, `rgba(${col},0)`)
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, size * 0.3, 0, Math.PI * 2); ctx.fill()
+  }
+  ctx.restore()
+}
+function drawSlash(s: Slash, k: number): void {
+  const im = art('fx-slash')
+  const grow = Math.min(1, k * 4)
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 1 - k
+  ctx.translate(s.x, s.y); ctx.rotate(s.ang)
+  if (im !== null) {
+    const h = s.w * 6
+    ctx.drawImage(im, -s.len / 2, -h / 2, s.len * grow, h)
+    if (s.color !== '255,255,255') { ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = `rgba(${s.color},.6)`; ctx.fillRect(-s.len / 2, -h / 2, s.len, h) }
+  } else {
+    ctx.strokeStyle = `rgba(${s.color},1)`; ctx.lineCap = 'round'; ctx.lineWidth = s.w * (1 - k * 0.6)
+    ctx.beginPath(); ctx.moveTo(-s.len / 2 * grow, 0); ctx.lineTo(s.len / 2 * grow, 0); ctx.stroke()
+    ctx.lineWidth = s.w * 3; ctx.globalAlpha = 0.2 * (1 - k); ctx.stroke()
+  }
+  ctx.restore()
+}
+/** 막대 — 에셋 테두리가 있으면 그 안에 채운다 · from = 차오르는 쪽 */
+function bar(x: number, y: number, w: number, h: number, v: number, col: string, from: 'left' | 'right' | 'center', frame: string): void {
+  const k = Math.max(0, Math.min(1, v))
+  ctx.fillStyle = 'rgba(0,0,0,.65)'; ctx.fillRect(x, y, w, h)
+  const fw = w * k
+  const fx = from === 'left' ? x : from === 'right' ? x + w - fw : x + (w - fw) / 2
+  const g = ctx.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,.35)')
+  ctx.fillStyle = col; ctx.fillRect(fx, y, fw, h); ctx.fillStyle = g; ctx.globalAlpha = 0.5; ctx.fillRect(fx, y, fw, h); ctx.globalAlpha = 1
+  const im = art(frame)
+  if (im !== null) {
+    ctx.save()
+    if (from === 'right') { ctx.translate(x + w / 2, 0); ctx.scale(-1, 1); ctx.translate(-(x + w / 2), 0) }
+    const padX = w * 0.04, padY = h * 0.9
+    ctx.drawImage(im, x - padX, y - padY, w + padX * 2, h + padY * 2)
+    ctx.restore()
+  } else { ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(214,170,90,.9)'; ctx.strokeRect(x - 1, y - 1, w + 2, h + 2) }
+}
+
 function drawCue(c: Cue, t: number): void {
   const [x, y] = toPx(c.x, c.y)
   const r = cueR()
-  const k = Math.min(1, Math.max(0, (t - c.t0) / Math.max(1, c.hitAt - c.t0)))
+  const lead = Math.max(1, c.hitAt - c.t0)
+  const off = t - c.hitAt
+  const k = Math.min(1, Math.max(0, (t - c.t0) / lead))
   const rgb = c.heavy ? '255,70,50' : '255,244,214'
   // 과녁 원 — 고리가 다가올수록 밝아진다
   ctx.globalCompositeOperation = 'lighter'
@@ -293,11 +388,14 @@ function drawCue(c: Cue, t: number): void {
   g.addColorStop(0, `rgba(${rgb},${0.1 + 0.4 * k})`); g.addColorStop(1, `rgba(${rgb},0)`)
   ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * 1.6, 0, Math.PI * 2); ctx.fill()
   ctx.globalCompositeOperation = 'source-over'
-  ctx.lineWidth = 4; ctx.strokeStyle = `rgba(${rgb},${0.55 + 0.45 * k})`
-  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke()
-  // 모여드는 고리
-  const rr = r * (1 + 3.2 * (1 - k))
-  ctx.lineWidth = 3 + 3 * k; ctx.strokeStyle = `rgba(${rgb},${0.35 + 0.65 * k})`
+  const ringArt = art('fx-ring')
+  if (ringArt !== null) { ctx.globalAlpha = 0.6 + 0.4 * k; ctx.drawImage(ringArt, x - r * 1.15, y - r * 1.15, r * 2.3, r * 2.3); ctx.globalAlpha = 1 }
+  else { ctx.lineWidth = 4; ctx.strokeStyle = `rgba(${rgb},${0.55 + 0.45 * k})`; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke() }
+  // 모여드는 고리 — 원을 지나면 안으로 계속 줄어든다
+  const rr = ringR(r, off, lead)
+  const past = off > 0
+  ctx.lineWidth = past ? 4 : 3 + 3 * k
+  ctx.strokeStyle = past ? `rgba(255,150,60,${Math.max(0.2, 1 - off / 20)})` : `rgba(${rgb},${0.35 + 0.65 * k})`
   ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI * 2); ctx.stroke()
   if (c.heavy) {
     ctx.fillStyle = `rgba(255,90,70,${0.7 + 0.3 * k})`; ctx.font = `800 ${Math.round(r * 0.9)}px "Gowun Batang", serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
@@ -308,62 +406,64 @@ function drawCue(c: Cue, t: number): void {
 function drawDuel(now: number, fadeIn: number): void {
   const d = duel
   const R = P.duel
-  const p = play()
-  // 바탕 — 어두운 들판
+  const ft = fieldTop()
+  // 바탕 — 전장이 살아 있게 (조금만 어둡게)
   cover(bg, 0, 0, W, H)
-  ctx.fillStyle = 'rgba(6,4,3,.78)'; ctx.fillRect(0, 0, W, H)
-  // 적장 초상 — 크게. 맞으면 흔들리고 붉게, 비틀거리면 기운다
+  ctx.fillStyle = 'rgba(8,5,3,.5)'; ctx.fillRect(0, 0, W, H)
+  // 초상 판 — 모서리 둥근 정사각 · 초상은 살짝 비친다. 맞으면 흔들리고 붉게, 비틀거리면 기운다
+  const pn = panel()
+  const sinceCrit = now - critAt
+  const sway = d.phase === 'rush' ? Math.sin(now / 160) * 0.03 : 0
+  const kick = sinceCrit < 400 ? Math.sin(sinceCrit / 30) * (1 - sinceCrit / 400) * 12 : 0
+  ctx.save()
+  ctx.translate(pn.x + pn.s / 2 + kick, pn.y + pn.s / 2); ctx.rotate(sway)
+  const zoom = 1 + (sinceCrit < 500 ? 0.05 * (1 - sinceCrit / 500) : 0)
+  ctx.scale(zoom, zoom)
+  roundRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s, pn.s * 0.06)
+  ctx.save(); ctx.clip()
+  ctx.fillStyle = 'rgba(10,7,5,.55)'; ctx.fillRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s)
   if (foeArt !== null && foeArt.complete && foeArt.naturalWidth > 0) {
-    const s = W > p.h ? p.h * 1.08 : Math.max(W, p.h * 0.98) // 가로 화면은 높이에 맞추고 양옆을 어둡게
-    const sinceCrit = now - critAt
-    const sway = d.phase === 'rush' ? Math.sin(now / 160) * 0.04 : 0
-    const kick = sinceCrit < 400 ? Math.sin(sinceCrit / 30) * (1 - sinceCrit / 400) * 14 : 0
-    ctx.save()
-    ctx.globalAlpha = fadeIn
-    ctx.translate(W / 2 + kick, p.y + p.h * 0.5); ctx.rotate(sway)
-    const zoom = 1 + (sinceCrit < 500 ? 0.06 * (1 - sinceCrit / 500) : 0)
-    ctx.scale(zoom, zoom)
-    ctx.drawImage(foeArt, -s / 2, -s / 2, s, s)
-    if (now - foeHurtAt < 180) { ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = 'rgba(255,40,30,.25)'; ctx.fillRect(-s / 2, -s / 2, s, s) }
-    ctx.restore()
-    // 가장자리를 어둡게 — 초상이 판에 녹아들게 (위아래 · 양옆)
-    const cy = p.y + p.h * 0.5, top = cy - s / 2, bot = cy + s / 2
-    const fadeV = (y0: number, y1: number): void => { const g = ctx.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, 'rgba(6,4,3,1)'); g.addColorStop(1, 'rgba(6,4,3,0)'); ctx.fillStyle = g; ctx.fillRect(0, Math.min(y0, y1), W, Math.abs(y1 - y0)) }
-    ctx.fillStyle = 'rgba(6,4,3,1)'; ctx.fillRect(0, 0, W, Math.max(0, top)); ctx.fillRect(0, bot, W, H - bot)
-    fadeV(top, top + s * 0.18); fadeV(bot, bot - s * 0.2)
-    if (s < W) { const l = (W - s) / 2; for (const [x0, x1] of [[l, l + s * 0.12], [W - l, W - l - s * 0.12]] as const) { const g = ctx.createLinearGradient(x0, 0, x1, 0); g.addColorStop(0, 'rgba(6,4,3,1)'); g.addColorStop(1, 'rgba(6,4,3,0)'); ctx.fillStyle = g; ctx.fillRect(Math.min(x0, x1), 0, Math.abs(x1 - x0), H); ctx.fillStyle = 'rgba(6,4,3,1)'; ctx.fillRect(x0 < W / 2 ? 0 : W - l, 0, l, H) } }
+    ctx.globalAlpha = 0.9 * fadeIn
+    ctx.drawImage(foeArt, -pn.s / 2, -pn.s / 2, pn.s, pn.s)
+    ctx.globalAlpha = 1
   }
+  if (now - foeHurtAt < 180) { ctx.fillStyle = 'rgba(255,40,30,.22)'; ctx.fillRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s) }
+  ctx.restore()
+  const fr = art('panel-frame')
+  if (fr !== null) ctx.drawImage(fr, -pn.s / 2 - pn.s * 0.04, -pn.s / 2 - pn.s * 0.04, pn.s * 1.08, pn.s * 1.08)
+  else { ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(214,170,90,.85)'; roundRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s, pn.s * 0.06); ctx.stroke() }
+  ctx.restore()
   if (d.phase === 'rush') {
-    // 비틀거림 — 테두리가 금빛으로 맥박 · 남은 시간 띠
-    const a = 0.35 + 0.25 * Math.sin(now / 90)
-    ctx.strokeStyle = `rgba(255,200,90,${a})`; ctx.lineWidth = 10; ctx.strokeRect(5, 5, W - 10, H - 10)
-    const left = Math.max(0, (d.phaseUntil - d.t) / R.rushTicks)
-    ctx.fillStyle = 'rgba(255,214,120,.9)'; ctx.fillRect(W * 0.2, fieldTop() - 16, W * 0.6 * left, 6)
+    // 비틀거림 — 판 둘레가 금빛으로 맥박
+    const a = 0.4 + 0.3 * Math.sin(now / 90)
+    ctx.save(); ctx.shadowColor = `rgba(255,200,90,${a})`; ctx.shadowBlur = 30; ctx.lineWidth = 6; ctx.strokeStyle = `rgba(255,210,110,${a})`
+    roundRect(pn.x, pn.y, pn.s, pn.s, pn.s * 0.06); ctx.stroke(); ctx.restore()
   }
   // 고리
   for (const c of d.cues) if (c.done === null && d.t >= c.t0) drawCue(c, d.t)
-  // 판정 자국
+  // 판정 자국 — 챙! 빛 (정확·막음) · 붉은 자국 (맞음) · 빨랐다/늦었다는 남은 고리 크기로
   for (let i = marks.length - 1; i >= 0; i--) {
     const m = marks[i] as (typeof marks)[number]; const age = now - m.t0
-    if (age > 420) { marks.splice(i, 1); continue }
-    const k = age / 420, r = cueR() * (1 + k * 1.4)
-    ctx.lineWidth = m.kind === 'perfect' ? 8 : 4
-    ctx.strokeStyle = m.kind === 'perfect' ? `rgba(255,230,140,${1 - k})` : m.kind === 'good' ? `rgba(180,220,255,${1 - k})` : `rgba(255,70,50,${1 - k})`
-    ctx.beginPath(); ctx.arc(m.x, m.y, r, 0, Math.PI * 2); ctx.stroke()
+    const life = m.kind === 'perfect' ? 420 : 520
+    if (age > life) { marks.splice(i, 1); continue }
+    const k = age / life
+    if (m.kind !== 'perfect') {
+      // 누른 순간의 고리를 그 자리에 얼려 보인다 — 바깥에 남았으면 빨랐다, 안으로 들어갔으면 늦었다
+      const r0 = cueR(), rr = ringR(r0, m.off)
+      ctx.lineWidth = 4; ctx.strokeStyle = m.off < 0 ? `rgba(120,200,255,${1 - k})` : `rgba(255,150,60,${1 - k})`
+      ctx.setLineDash([8, 6]); ctx.beginPath(); ctx.arc(m.x, m.y, r0, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([])
+      ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(m.x, m.y, rr, 0, Math.PI * 2); ctx.stroke()
+      if (m.kind === 'miss') { ctx.lineWidth = 5; ctx.strokeStyle = `rgba(255,60,40,${1 - k})`; ctx.beginPath(); ctx.moveTo(m.x - r0 * 0.6, m.y - r0 * 0.6); ctx.lineTo(m.x + r0 * 0.6, m.y + r0 * 0.6); ctx.moveTo(m.x + r0 * 0.6, m.y - r0 * 0.6); ctx.lineTo(m.x - r0 * 0.6, m.y + r0 * 0.6); ctx.stroke() }
+      if (m.kind === 'miss') continue
+    }
+    clang(m.x, m.y, cueR() * (m.kind === 'perfect' ? 3.2 : 2) * (0.6 + 0.6 * Math.min(1, k * 3)), 1 - k, m.kind === 'perfect' ? 0 : 0.6, now)
   }
   // 베기 자국
   for (let i = slashes.length - 1; i >= 0; i--) {
     const s = slashes[i] as Slash; const age = now - s.t0
     if (age < 0) continue
     if (age > s.ms) { slashes.splice(i, 1); continue }
-    const k = age / s.ms, grow = Math.min(1, k * 4)
-    const dx = Math.cos(s.ang) * s.len / 2, dy = Math.sin(s.ang) * s.len / 2
-    ctx.globalCompositeOperation = 'lighter'
-    ctx.strokeStyle = `rgba(${s.color},${1 - k})`; ctx.lineCap = 'round'
-    ctx.lineWidth = s.w * (1 - k * 0.6)
-    ctx.beginPath(); ctx.moveTo(s.x - dx * grow, s.y - dy * grow); ctx.lineTo(s.x + dx * grow, s.y + dy * grow); ctx.stroke()
-    ctx.lineWidth = s.w * 3; ctx.strokeStyle = `rgba(${s.color},${0.2 * (1 - k)})`; ctx.stroke()
-    ctx.globalCompositeOperation = 'source-over'
+    drawSlash(s, age / s.ms)
   }
   // 불꽃
   for (let i = sparks.length - 1; i >= 0; i--) {
@@ -375,51 +475,69 @@ function drawDuel(now: number, fadeIn: number): void {
   }
   ctx.globalAlpha = 1
   // 아래 들판 띠 — 작은 두 장수가 따라 싸운다
-  const ft = fieldTop()
   ctx.save(); ctx.beginPath(); ctx.rect(0, ft, W, H - ft); ctx.clip()
   cover(bg, 0, ft - H * 0.35, W, H * 0.9)
-  ctx.fillStyle = 'rgba(8,5,3,.35)'; ctx.fillRect(0, ft, W, H - ft)
+  ctx.fillStyle = 'rgba(8,5,3,.3)'; ctx.fillRect(0, ft, W, H - ft)
   const fh = (H - ft) * 0.82
   fieldFighters(now, H - 6, fh, Math.min(W * 0.34, fh * 1.6), W / 2)
   ctx.restore()
-  ctx.strokeStyle = 'rgba(240,214,160,.35)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, ft); ctx.lineTo(W, ft); ctx.stroke()
-  // 위 띠 — 적장 이름 · 체력 · 체간 / 시간
-  const bw = W * 0.62, bx = (W - bw) / 2
-  ctx.textAlign = 'center'; ctx.fillStyle = '#f3e3c0'; ctx.font = '700 17px "Gowun Batang", serif'
-  ctx.fillText(`${NAMES[foeKey] ?? foeKey} · 무예 ${muFoe}`, W / 2, 20)
-  ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(bx, 28, bw, 10)
-  ctx.fillStyle = '#e76f51'; ctx.fillRect(bx, 28, bw * (d.foe.hp / R.hp), 10)
-  // 체간 — 가운데서 양쪽으로 차오른다 (세키로처럼)
+  // 체간 — 판 아래 가운데, 가운데서 양쪽으로 차오른다 (세키로처럼)
   const pk = d.phase === 'rush' ? 1 : d.foe.posture / R.posture
-  ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(bx, 42, bw, 7)
-  ctx.fillStyle = pk > 0.8 ? '#ffb347' : '#e9c46a'; ctx.fillRect(W / 2 - (bw / 2) * pk, 42, bw * pk, 7)
-  const sec = Math.max(0, Math.ceil((d.end - d.t) / R.hz))
-  ctx.textAlign = 'right'; ctx.font = '800 20px "Gowun Batang", serif'; ctx.fillStyle = sec <= 10 ? '#ff8a7a' : '#f3e3c0'
-  ctx.fillText(String(sec), W - 12, 48)
-  // 우리 체력 — 들판 띠 위
-  const mb = W * 0.44
-  if (meFace !== null && meFace.complete && meFace.naturalWidth > 0) {
-    ctx.save(); ctx.beginPath(); ctx.arc(30, ft - 22, 18, 0, Math.PI * 2); ctx.clip(); ctx.drawImage(meFace, 12, ft - 40, 36, 36); ctx.restore()
+  const pw = Math.min(W * 0.7, pn.s * 0.9), px = (W - pw) / 2, py = Math.min(ft - 22, pn.y + pn.s + 10)
+  bar(px, py, pw, 12, pk, pk > 0.8 ? '#ffb347' : '#e9c46a', 'center', 'hud-posture')
+  // 판정 막대 — 가운데가 딱 맞음 · 왼쪽 = 빨랐다 · 오른쪽 = 늦었다
+  {
+    const lw = lateWindow(muMe), mw = Math.min(W * 0.5, 220), mx = W / 2, my = py + 22
+    if (my < ft - 2) {
+      ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(mx - mw / 2, my - 3, mw, 6)
+      const pf = (P.duel.perfect / lw) * (mw / 2)
+      ctx.fillStyle = 'rgba(255,214,120,.55)'; ctx.fillRect(mx - pf, my - 3, pf * 2, 6)
+      ctx.fillStyle = '#fff'; ctx.fillRect(mx - 1, my - 7, 2, 14)
+      while (errs.length > 12) errs.shift()
+      for (const er of errs) {
+        const a = Math.max(0, 1 - (now - er.t0) / 6000)
+        if (a <= 0) continue
+        const ex = mx + Math.max(-1, Math.min(1, er.off / lw)) * (mw / 2)
+        ctx.globalAlpha = a; ctx.fillStyle = er.kind === 'perfect' ? '#ffd98a' : er.kind === 'good' ? (er.off < 0 ? '#8fd0ff' : '#ffb070') : '#ff5a4a'
+        ctx.fillRect(ex - 2, my - 8, 4, 16)
+      }
+      ctx.globalAlpha = 1
+    }
   }
-  ctx.textAlign = 'left'; ctx.font = '700 15px "Gowun Batang", serif'; ctx.fillStyle = '#f3e3c0'
-  ctx.fillText(`${NAMES[meKey] ?? meKey} · 무예 ${muMe}`, 56, ft - 28)
-  ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(56, ft - 20, mb, 9)
-  ctx.fillStyle = now - hurtAt < 200 ? '#ff5a4a' : '#e9c46a'; ctx.fillRect(56, ft - 20, mb * (d.me.hp / R.hp), 9)
-  // 숫자
-  ctx.textAlign = 'center'
+  // 위 — 격투 게임처럼: 우리(왼쪽) · 시간(가운데 크게) · 적장(오른쪽)
+  const tw = Math.min(110, W * 0.24)
+  const bw = (W - tw) / 2 - 16, by = 34
+  bar(10, by, bw, 16, d.me.hp / R.hp, now - hurtAt < 200 ? '#ff5a4a' : '#e9c46a', 'left', 'hud-bar')
+  bar(W - 10 - bw, by, bw, 16, d.foe.hp / R.hp, now - foeHurtAt < 200 ? '#ffffff' : '#e76f51', 'right', 'hud-bar')
+  ctx.font = '700 15px "Gowun Batang", serif'; ctx.fillStyle = '#f3e3c0'
+  ctx.textAlign = 'left'; ctx.fillText(`${NAMES[meKey] ?? meKey} · 무예 ${muMe}`, meFace !== null ? 46 : 12, 24)
+  ctx.textAlign = 'right'; ctx.fillText(`${NAMES[foeKey] ?? foeKey} · 무예 ${muFoe}`, W - 12, 24)
+  if (meFace !== null && meFace.complete && meFace.naturalWidth > 0) { ctx.save(); ctx.beginPath(); ctx.arc(26, 18, 15, 0, Math.PI * 2); ctx.clip(); ctx.drawImage(meFace, 11, 3, 30, 30); ctx.restore() }
+  const sec = Math.max(0, Math.ceil((d.end - d.t) / R.hz))
+  const plate = art('hud-timer')
+  const tcx = W / 2, tcy = 40
+  if (plate !== null) ctx.drawImage(plate, tcx - tw * 0.62, tcy - tw * 0.5, tw * 1.24, tw)
+  else { ctx.fillStyle = 'rgba(20,12,6,.85)'; ctx.beginPath(); ctx.arc(tcx, tcy, tw * 0.42, 0, Math.PI * 2); ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#c99a4a'; ctx.stroke() }
+  const low = sec <= 10
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+  ctx.font = `900 ${Math.round(tw * 0.52 * (low ? 1 + 0.08 * Math.max(0, Math.sin(now / 80)) : 1))}px "Gowun Batang", serif`
+  ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(0,0,0,.85)'; ctx.strokeText(String(sec), tcx, tcy + 2)
+  ctx.fillStyle = low ? '#ff6a5a' : '#ffe2a0'; ctx.fillText(String(sec), tcx, tcy + 2)
+  ctx.textBaseline = 'alphabetic'
+  // 숫자 — 빠르고 멀리 튄다
   for (let i = pops.length - 1; i >= 0; i--) {
     const pp = pops[i] as Pop; const age = now - pp.t0
-    if (age > 900) { pops.splice(i, 1); continue }
-    const k = age / 900
-    ctx.globalAlpha = 1 - k * k; ctx.fillStyle = pp.color
-    ctx.font = `800 ${Math.round(pp.size * (1 + 0.5 * Math.max(0, 1 - age / 120)))}px "Gowun Batang", serif`
-    ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,.75)'
-    ctx.strokeText(pp.text, pp.x, pp.y - 46 * k); ctx.fillText(pp.text, pp.x, pp.y - 46 * k)
+    if (age > 620) { pops.splice(i, 1); continue }
+    const k = age / 620, e = 1 - (1 - Math.min(1, age / 260)) ** 3
+    const x = pp.x + pp.vx * e, y = pp.y + pp.vy * e + 60 * Math.max(0, k - 0.4) ** 2
+    ctx.globalAlpha = k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4; ctx.fillStyle = pp.color
+    ctx.font = `900 ${Math.round(pp.size * (1 + 0.7 * Math.max(0, 1 - age / 90)))}px "Gowun Batang", serif`
+    ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(0,0,0,.8)'
+    ctx.strokeText(pp.text, x, y); ctx.fillText(pp.text, x, y)
   }
   ctx.globalAlpha = 1
   // 치명 — 잠깐 어두워졌다가 흰 베기
-  const sc = now - critAt
-  if (sc < 160) { ctx.fillStyle = `rgba(0,0,0,${0.55 * (1 - sc / 160)})`; ctx.fillRect(0, 0, W, H) }
+  if (sinceCrit < 160) { ctx.fillStyle = `rgba(0,0,0,${0.55 * (1 - sinceCrit / 160)})`; ctx.fillRect(0, 0, W, H) }
 }
 
 // ── 돌리기 (탭이 숨으면 멈춘다 · 절대 규칙 4)
