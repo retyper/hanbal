@@ -262,6 +262,9 @@ export const MAP_CSS = `
 .map .lb.k-free { background: #f3e6c8; border-color: #8a6a3e; border-left-color: #8a6a3e; border-left-width: .2em; box-shadow: none; font-weight: 600; font-style: italic; color: #4a3a28; } /* 비침 없이 또렷하게 (형 10-28: "소도랑 들은 이름택에 opacity · 잘 안 보이니까") */
 /* 우리 고을 — 두 빛 바깥에 금빛 테 (남의 나라 옷과 섞여도 우리 것이 먼저 보인다) */
 .map .lb.me { box-shadow: 0 0 0 1px #1a120a, 0 0 0 2.6px #ffd27a, 0 0 7px #ffd27acc; }
+/* 소도 — 신성한 숲의 이름표는 한지 바탕에 오방색 천 띠 (형 11-09: "소도 이름표를 특별하게") */
+.map .lb.k-sodo { background: linear-gradient(#fffaf0, #f3ead2); color: #6a1c12; border-color: #6b4a2a; border-left-width: .13em; padding-left: .3em; box-shadow: 0 0 0 1px #1a120ad0, 0 0 8px #fff3c8, 0 1px 3px #0006; }
+.map .lb.k-sodo::before { content: ""; flex: none; width: .5em; height: 1.05em; margin-right: .12em; border-radius: .08em; background: linear-gradient(#2f6fb5 0 20%, #d23a2a 20% 40%, #f0c23a 40% 60%, #f8f4e8 60% 80%, #2a2420 80%); box-shadow: 0 0 0 1px #0006; }
 .ap.hide-flags .map .lb .lbe { display: none; } .ap.hide-force .map .lb .lbf { display: none; }
 .map .lb .star { font-style: normal; color: #b8860b; margin-right: 2px; text-shadow: 0 0 2px #fff8d0, 0 0 3px #fff8d0; } /* 도읍 (형: "수도같은건 별표해야하지 않나?") */
 /* 지금 땅이름 줄은 가까이 볼 때만 (멀리서는 배너가 한 줄로 작게) */
@@ -304,11 +307,11 @@ export const MAP_CSS = `
 .map .nd.k-sodo .sp { position: absolute; left: 50%; top: 84%; width: 150%; aspect-ratio: 2.4; border-radius: 50%; border: 2px solid #fff3c8; pointer-events: none; z-index: 0; opacity: 0; animation: holyp 4.8s ease-out infinite; }
 .map .nd.k-sodo .sp + .sp { animation-delay: 2.4s; }
 /* 한지 띠 — 바람에 하나씩 날아오른다 (낱낱이 · 메모리 effects-individual-particles) */
-.map .nd.k-sodo .sc { position: absolute; top: 74%; width: 7%; pointer-events: none; z-index: 2; opacity: 0; animation: holym 6s ease-in infinite; }
-.map .nd.k-sodo .sc.c1 { left: 14%; } .map .nd.k-sodo .sc.c2 { left: 78%; animation-delay: 2s; } .map .nd.k-sodo .sc.c3 { left: 46%; animation-delay: 4s; }
+.map .nd.k-sodo .sc { position: absolute; top: 70%; width: 15%; pointer-events: none; z-index: 2; opacity: 0; animation: holym 6s ease-in infinite; }
+.map .nd.k-sodo .sc.c1 { left: 6%; } .map .nd.k-sodo .sc.c2 { left: 74%; animation-delay: 2s; } .map .nd.k-sodo .sc.c3 { left: 40%; animation-delay: 4s; }
 @keyframes holyb { from { opacity: .45; } to { opacity: .85; } }
 @keyframes holyp { 0% { transform: translate(-50%, -50%) scale(.4); opacity: .9; } 100% { transform: translate(-50%, -50%) scale(1.1); opacity: 0; } }
-@keyframes holym { 0% { transform: translate(0, 0) rotate(-8deg); opacity: 0; } 15% { opacity: .95; } 100% { transform: translate(120%, -700%) rotate(24deg); opacity: 0; } }
+@keyframes holym { 0% { transform: translate(0, 0) rotate(-8deg) scale(.8); opacity: 0; } 15% { opacity: .95; } 100% { transform: translate(90%, -520%) rotate(24deg) scale(1.15); opacity: 0; } }
 .map .nd.k-sodo img.st { position: relative; z-index: 1; }
 @media (prefers-reduced-motion: reduce) { .map .nd.k-sodo .sg { animation: none; } .map .nd.k-sodo .sp, .map .nd.k-sodo .sc { display: none; } }
 /* 척후를 보낸 고을 — 작은 표 하나 (움직이지 않는다) */
