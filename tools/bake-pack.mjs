@@ -35,6 +35,8 @@ for (const x of spec) {
   add('gpt', ++n, x.id, [x.ref], x.prompt, `gpt_aw2-${x.id}.png`)
 }
 // ①-2 다시 굽기 (형이 짚은 것) — 1차 각성은 gpt_aw1-<id>.png 로 받아 install-awaken.sh 1 (지금 그림을 덮어쓴다)
+// 15세 기준 (형 11-10) — 새로 굽는 1차 각성 문안의 「비치는 겉감」은 팔·다리·치마 겹에만, 가슴 쪽은 불투명
+const OPAQUE15 = ' Teen (15+) rating: any sheer fabric is only on the sleeves, legs or skirt layers; the top over the chest is fully opaque, and no nipples or nipple outline show through the clothes.'
 const REDO1 = [
   // 11-10 형: "가슴 모양이 이상해서 아예 그냥 거유로 각성 이미지 다시 만들어야 할 듯"
   ['w-104-buyeo-darae', ' Her figure: a naturally very large, full, round bust with a natural shape and soft weight (not stiff, not oddly shaped), clearly visible under the outfit.'],
@@ -42,7 +44,18 @@ const REDO1 = [
 for (const [id, extra] of REDO1) {
   const x = spec.find((y) => y.tier === 1 && y.id === id)
   if (x === undefined || !existsSync(x.ref) || !existsSync(`public/realm/awaken-hd/${id}.jpg`)) continue
-  add('gpt', ++n, `${id} · 1차 다시`, [x.ref, `public/realm/awaken-hd/${id}.jpg`], x.prompt + extra, `gpt_aw1-${id}.png`, '첫 그림(초상)만 붙이세요 · 둘째는 지금 1차 각성(비교용)')
+  add('gpt', ++n, `${id} · 1차 다시`, [x.ref, `public/realm/awaken-hd/${id}.jpg`], x.prompt + extra + OPAQUE15, `gpt_aw1-${id}.png`, '첫 그림(초상)만 붙이세요 · 둘째는 지금 1차 각성(비교용)')
+}
+// ①-3 15세 판 (형 11-10: Steam 15세로 · 지금 것은 assets_r19 에 보관 · 테스트 동안은 지금 것) — gpt15_aw<단>-<id>.png → assets_15/ 에만 모은다(게임엔 아직 안 넣음)
+// 새로 그리면 느낌이 바뀐다 — 지금 그림을 붙이고 비침만 고친다 (영상도 그 그림으로 다시 구우니 같은 그림이어야 한다)
+const EDIT15 = 'This is an AI-generated illustration of a fictional adult woman from my own Korean historical fantasy strategy game (an original character, not a real person). Edit this exact image only slightly for a teen (15+) age rating: make every piece of her clothing fully opaque (no sheer or see-through fabric anywhere) and remove any nipple or nipple outline showing through the clothes. Keep EVERYTHING else exactly the same: same face, expression, pose, composition, colors, outfit design, jewelry, cleavage, aura, lighting, background and square image size.'
+const R15 = [[1, 'w-18-jinhan-salt-widow'], [1, 'w-91-saro-mulsae'], [1, 'w-98-byeonhan-danbi'], [1, 'w-103-tahae-neoul'], [2, 'w-103-tahae-neoul']]
+for (const [tier, id] of R15) {
+  const hd = tier === 1 ? 'awaken-hd' : 'awaken2-hd'
+  if (existsSync(`assets_15/realm/${hd}/${id}.jpg`)) continue
+  const now = `public/realm/${hd}/${id}.jpg`
+  if (!existsSync(now)) continue
+  add('gpt', ++n, `${id} · ${tier}차 15세 판 (지금 그림 고치기)`, [now], EDIT15, `gpt15_aw${tier}-${id}.png`, '지금 그림을 붙이고 문안 · 받은 건 바로 게임에 안 넣고 assets_15 에 모아 둠')
 }
 
 // ② Veo — 원장에서 낼 수 있는 일 (queue.mjs peek 와 같은 거름 · 쿨다운은 보지 않는다 · 높은 차례부터)

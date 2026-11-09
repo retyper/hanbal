@@ -72,6 +72,18 @@ for f in $(ls $DL/gpt_aw1-*.png 2>/dev/null || true); do
   BATCH=1 sh tools/sprite-kit/install-awaken.sh 1 "$id" "형이 다시 구움 (굽기 꾸러미)" || { echo "실패 $id"; continue; }
   changed="$changed public/realm/awaken-hd/$id.jpg public/realm/awaken/$id.jpg src/realm/data/awaken-art.ts"
 done
+# ①-3 15세 판 (gpt15_aw<단>-<id>.png) — 게임엔 아직 안 넣고 assets_15/realm/awaken(2)-hd·awaken(2) 에만 (출시 전에 한 번에 바꾼다 · assets_r19 README)
+for f in $(ls $DL/gpt15_aw[12]-*.png 2>/dev/null || true); do
+  b=$(basename "$f" .png); t=${b#gpt15_aw}; t=${t%%-*}; id=${b#gpt15_aw$t-}
+  hd=awaken-hd; sm=awaken; [ "$t" = 2 ] && { hd=awaken2-hd; sm=awaken2; }
+  mkdir -p assets_15/realm/$hd assets_15/realm/$sm assets_15/src
+  py -3 -c "
+from PIL import Image
+im=Image.open(r'$(cygpath -w "$f" 2>/dev/null || echo "$f")').convert('RGB')
+im.resize((900,900),Image.LANCZOS).save('assets_15/realm/$hd/$id.jpg',quality=88)
+im.resize((320,320),Image.LANCZOS).save('assets_15/realm/$sm/$id.jpg',quality=88)" && mv "$f" "assets_15/src/$b.png" && echo "15세 판 $t차 $id -> assets_15/realm/$hd"
+  changed="$changed assets_15/realm/$hd/$id.jpg assets_15/realm/$sm/$id.jpg"
+done
 # ② Veo
 for f in $veo; do
   J=$(basename "$f" .mp4); J=${J#veo_}
