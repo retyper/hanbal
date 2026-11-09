@@ -330,14 +330,32 @@ function ringR(r: number, off: number, lead = P.duel.lead): number {
   if (off <= 0) return r * (1 + 3.2 * Math.min(1, -off / Math.max(1, lead)))
   return r * Math.max(0.08, 1 - 0.92 * off / Math.max(1, lateWindow(muMe, tier)))
 }
+/**
+ * 그림을 한 빛으로 물들인 판 — 그림 모양에만 색이 든다 (화면에 바로 source-atop 을 칠하면 네모가 통째로 물든다 · 형 11-09).
+ * 색마다 한 번 만들어 둔다.
+ */
+const TINTED = new Map<string, HTMLCanvasElement>()
+function tinted(im: HTMLImageElement, color: string): HTMLCanvasElement {
+  const key = `${im.src}|${color}`
+  let cv = TINTED.get(key)
+  if (cv === undefined) {
+    cv = document.createElement('canvas')
+    cv.width = im.naturalWidth; cv.height = im.naturalHeight
+    const c = cv.getContext('2d') as CanvasRenderingContext2D
+    c.drawImage(im, 0, 0)
+    c.globalCompositeOperation = 'source-atop'; c.fillStyle = color; c.fillRect(0, 0, cv.width, cv.height)
+    TINTED.set(key, cv)
+  }
+  return cv
+}
 /** 챙 — 튕겨 나가는 빛 (에셋이 있으면 그것 · hue 0 = 금빛 · 0.6 = 흰 푸른빛) */
 function clang(x: number, y: number, size: number, alpha: number, cool: number, now: number): void {
   const im = art('fx-clang')
   ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.max(0, alpha)
   ctx.translate(x, y); ctx.rotate((now / 900) % (Math.PI * 2))
   if (im !== null) {
-    ctx.drawImage(im, -size / 2, -size / 2, size, size)
-    if (cool > 0) { ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = `rgba(150,200,255,${cool * 0.5})`; ctx.fillRect(-size / 2, -size / 2, size, size) }
+    // 막음은 흰 푸른빛 · 정확은 금빛 (그림 모양에만 물든다)
+    ctx.drawImage(cool > 0 ? tinted(im, 'rgba(150,200,255,.5)') : im, -size / 2, -size / 2, size, size)
   } else {
     const col = cool > 0 ? '200,230,255' : '255,236,170'
     for (let i = 0; i < 8; i++) {
@@ -371,8 +389,8 @@ function drawSlash(s: Slash, k: number): void {
   if (im !== null) {
     const h = s.w * 6
     // 그림의 왼쪽부터 grow 만큼만 — 칼이 시작점에서 끝점으로 지나간다
-    ctx.drawImage(im, 0, 0, im.naturalWidth * grow, im.naturalHeight, x0, -h / 2, s.len * grow, h)
-    if (s.color !== '255,255,255') { ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = `rgba(${s.color},.6)`; ctx.fillRect(x0, -h / 2, s.len, h) }
+    const src = s.color === '255,255,255' ? im : tinted(im, `rgba(${s.color},.6)`)
+    ctx.drawImage(src, 0, 0, im.naturalWidth * grow, im.naturalHeight, x0, -h / 2, s.len * grow, h)
   } else {
     ctx.strokeStyle = `rgba(${s.color},1)`; ctx.lineCap = 'round'; ctx.lineWidth = s.w * (1 - k * 0.6)
     ctx.beginPath(); ctx.moveTo(x0, 0); ctx.lineTo(x0 + s.len * grow, 0); ctx.stroke()
@@ -447,8 +465,7 @@ function drawCue(c: Cue, t: number): void {
     // 과녁 고리 에셋 — 띠 한가운데가 r 에 오게 (띠 중심 = 그림 폭의 0.46)
     const sz = r / 0.92 // 그림 반폭 · 띠 중심 = 반폭의 0.92
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.55 + 0.45 * k
-    ctx.drawImage(ringArt, x - sz, y - sz, sz * 2, sz * 2)
-    if (c.heavy) { ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = 'rgba(255,60,40,.55)'; ctx.fillRect(x - sz, y - sz, sz * 2, sz * 2) }
+    ctx.drawImage(c.heavy ? tinted(ringArt, 'rgba(255,60,40,.6)') : ringArt, x - sz, y - sz, sz * 2, sz * 2)
     ctx.restore()
   }
   else { ctx.lineWidth = 4; ctx.strokeStyle = `rgba(${rgb},${0.55 + 0.45 * k})`; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke() }
