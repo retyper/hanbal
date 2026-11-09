@@ -558,6 +558,13 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .scouthd .scgrow b { display: inline; font-size: 12.5px; color: #f0e0b8; }
 .ap .scask { margin: 8px 0; padding: 8px 10px; border-radius: 10px; border: 1px solid #e8c15a; background: #2a2218; }
 .ap .scask p { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin: 0 0 6px; font-size: 13px; }
+/* 다 나갔을 때 어디서 눌렀든 가운데에 뜨는 교체 상자 (형 11-09 · 바깥을 누르면 닫힘) */
+.ap .scaskpop { position: absolute; inset: 0; z-index: 90; display: grid; place-items: center; background: #0008; }
+.ap .scaskpop .scask { width: min(92vw, 420px); margin: 0; padding: 14px 16px; box-shadow: 0 10px 30px #000c; animation: scaskin .28s cubic-bezier(.2, 1.5, .4, 1) both; }
+.ap .scaskpop .scask p { font-size: 15px; }
+.ap .scaskpop .scask .btns { display: flex; flex-direction: column; gap: 6px; }
+.ap .scaskpop .scask .btn { width: 100%; min-height: 44px; font-size: 15px; }
+@keyframes scaskin { from { opacity: 0; transform: scale(.85); } }
 .ap .sslot.on { border-style: solid; border-color: #8ab07a; background: #1c2a1c; color: #d8f0c8; cursor: pointer; } .ap .sslot.on i { font-style: normal; flex: none; opacity: .7; }
 .ap .sslot.lock { opacity: .55; } .ap .sslot.lock .ssic { filter: grayscale(1); } .ap .sslot:not(.on) .ssic { opacity: .6; }
 .ap .scoutbox .ssic { width: 20px; height: 20px; vertical-align: -5px; object-fit: contain; }

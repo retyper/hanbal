@@ -1746,6 +1746,24 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     setKeep([...scoutKeep.filter((x) => x !== out && x !== node), node])
   }
 
+  /**
+   * 다 나갔을 때 묻는 상자를 화면 가운데에 — 지도 고리의 「정찰」을 누르면 전엔 고을 판 안에만 상자가 생겨 아무 일도 없는 것 같았다
+   * (형 11-09: "정찰 다 보내 놨어도 원클릭으로 교체 가능해져야 함") · 고을 판·정찰 판이 이미 상자를 품고 있으면 띄우지 않는다
+   */
+  function scoutAskPaint(): void {
+    const r = realm
+    const inSheet = sheet !== null && ((sheet.kind === 'node' && sheet.id === scoutAsk) || sheet.kind === 'scout')
+    let el = root.querySelector<HTMLElement>('.scaskpop')
+    if (r === null || scoutAsk === null || scouts.includes(scoutAsk) || inSheet || warOn || front !== null) { el?.remove(); return }
+    if (el === null) {
+      el = document.createElement('div')
+      el.className = 'scaskpop'
+      el.addEventListener('click', (e) => { if (e.target === el) { scoutAsk = null; paint() } }) // 바깥을 누르면 그대로 둔다
+      root.append(el)
+    }
+    el.innerHTML = scoutAskHtml(r, scoutAsk)
+  }
+
   /** 다 나갔을 때 묻는 상자 — 나가 있는 정찰꾼마다 「여기를 거두고 보낸다」 단추 */
   function scoutAskHtml(r: Realm, node: string): string {
     let h = `<div class="scask"><p>${icon('unit-scouts', 'ssic')}정찰꾼 ${scouts.length}명이 다 나가 있습니다. 어디를 거두고 <b>${esc(josa(r.nodes[node]?.name ?? '', '으로', '로'))}</b> 보낼까요?</p><div class="btns">`
@@ -6756,6 +6774,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       stratPaint() // 전략 회의 화면 — 열려 있으면 다시 그린다
       wooPaint() // 회유할 사람 고르기 상자
       townPaint() // 마을 안 — 열려 있으면 다시 그린다 (일터를 고르면 바로 바뀐다)
+      scoutAskPaint() // 정찰꾼이 다 나갔는데 새 곳을 누르면 — 어디서 눌렀든 가운데에 「어디를 거둘까」
       marquee(root) // 말줄임으로 잘린 한 줄 글은 지하철 안내판처럼 흐른다 (형 10-29)
       firstsAfterPaint()
     } catch (e) {
