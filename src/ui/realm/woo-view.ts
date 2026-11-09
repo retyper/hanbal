@@ -209,10 +209,12 @@ const say = (k: WooKit, h: Hero, line: string, cls = ''): string =>
 const oldHalf = (k: WooKit, h: Hero, line: string, cls = ''): string =>
   `<span class="dp-oh${cls}">${k.bust(h, 'dp-of')}<i>${k.esc(line)}</i></span>`
 
-/** 조각 — 벽이 깎이면 낱낱이 튄다 (메모리: 이펙트는 낱낱이) */
-const pieces = (n: number, at: number): string => Array.from({ length: n }, (_, i) => {
-  const a = (i / n) * Math.PI * 2 + 0.4
-  return `<i class="dp-pc" style="left:${at.toFixed(1)}%;--x:${Math.round(Math.cos(a) * (40 + (i % 3) * 22))}px;--y:${Math.round(Math.sin(a) * (26 + (i % 4) * 10) - 18)}px;--r:${(i * 67) % 360}deg;--d:${((i % 5) * 0.04).toFixed(2)}s"></i>`
+/** 나뭇조각·먼지 — 문을 두드리면 문 가운데서 낱낱이 튄다 (메모리: 이펙트는 낱낱이) · 자리는 마디 수로 정해 다시 그려도 같다 */
+const splinters = (n: number, seed: number): string => Array.from({ length: n }, (_, i) => {
+  const a = -Math.PI / 2 + ((i / n) - 0.5) * Math.PI * 1.6 + seed * 0.37
+  const dist = 30 + ((i * 37 + seed * 11) % 40)
+  const dust = i % 3 === 2
+  return `<i class="dp-sp${dust ? ' dust' : ''}" style="--x:${Math.round(Math.cos(a) * dist * 1.6)}px;--y:${Math.round(Math.sin(a) * dist)}px;--r:${(i * 83 + seed * 29) % 360}deg;--d:${((i % 4) * 0.03).toFixed(2)}s"></i>`
 }).join('')
 
 /** 담판 상자 한 장 — 굴리지 않는다 · 아래 붙박이 띠 */
@@ -267,8 +269,16 @@ export function talkBoxHtml(k: WooKit, L: TalkLines, r: Realm, s: TalkState): st
   const w = Math.max(0, Math.min(100, (t.resist / full) * 100))
   const cut = last !== undefined && (last.react === 'big' || last.react === 'sway') && !s.hand
   const d = t.resist - t.from
+  // 마음의 벽 = 옥문 그림 (형 11-10: "실제 벽이나 문 이미지를 쿵쿵 두드리는 느낌 · css 로 대충 만들어 보기 나쁨") — 형이 구운 fx/woo-gate-0·1·2.
+  // 깎인 만큼 금 간 문(1)이 비치고 · 말이 먹힌 마디엔 문이 쿵 흔들리며 나뭇조각·먼지가 낱낱이 튀고 · 노여움이면 쇠띠가 붉게 달아오르고 · 무너지면 부서진 문(2)이 쾅
+  const broke = won || t.resist <= 0
+  const crack = Math.max(0, Math.min(1, 1 - w / 100))
+  const hitK = cut ? (n % 2 === 0 ? ' hita' : ' hitb') : '' // 마디마다 이름을 바꿔야 흔들림이 다시 돈다
+  const gate = `<div class="dp-gate${hitK}${rage ? ' rage' : ''}${broke ? ' broke' : ''}" style="--crack:${crack.toFixed(2)}">`
+    + [0, 1, 2].map((i) => `<img class="g${i}" src="${k.art}fx/woo-gate-${i}.png" alt="">`).join('')
+    + (cut || broke ? splinters(broke ? 14 : last!.react === 'big' ? 10 : 6, n) : '') + '</div>'
   h += `<div class="dp-tw${rage ? ' up' : ''}"><div class="dp-wh"><b>마음의 벽</b><span>${t.resist <= 0 ? '무너졌다' : n1(t.resist)}${Math.abs(d) >= 0.05 ? ` <small class="${d < 0 ? 'dn' : 'upn'}">${d < 0 ? '−' : '+'}${n1(Math.abs(d))}</small>` : ''}</span></div>`
-    + `<div class="dp-bar big${won ? ' gone' : ''}"><i style="width:${w.toFixed(1)}%"></i>${cut ? pieces(last!.react === 'big' ? 10 : 5, w) : ''}${won ? pieces(16, 50) : ''}</div>`
+    + gate + `<div class="dp-bar thin${won ? ' gone' : ''}"><i style="width:${w.toFixed(1)}%"></i></div>`
   // 칩 — 됨됨이의 사실 (단서)
   const chips: string[] = [`의리 ${x.uiri}`]
   const fallen = !Object.values(r.nodes).some((n) => n.owner === x.faction)
@@ -346,6 +356,25 @@ export const TALK_CSS = `
 .ap .dp-tw { position: relative; flex: none; display: flex; flex-direction: column; gap: 4px; padding: 7px 10px; border-radius: 10px; background: #1c150ee6; border: 1px solid #5a4630; }
 .ap .dp-tw .dp-wh small.dn { color: #8fd08f; } .ap .dp-tw .dp-wh small.upn { color: #ff8a70; }
 .ap .dp-bar.big { height: 14px; overflow: visible; }
+/* 옥문 — 마음의 벽 (fx/woo-gate-0 멀쩡 · 1 금 감 · 2 부서짐 · 같은 틀) · 그림 칸이 작아 흔들림·조각은 transform 으로 짧게 (폰 그래픽 한도) */
+.ap .dp-gate { position: relative; width: min(100%, 300px); max-height: 22dvh; aspect-ratio: 1264 / 717; margin: 2px auto 0; }
+.ap .dp-gate img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+.ap .dp-gate .g1 { opacity: var(--crack, 0); transition: opacity .5s ease; }
+.ap .dp-gate .g2 { opacity: 0; }
+.ap .dp-gate.broke .g0, .ap .dp-gate.broke .g1 { opacity: 0; }
+.ap .dp-gate.broke .g2 { opacity: 1; animation: dpgbreak .5s cubic-bezier(.2, 1.6, .4, 1) both; }
+@keyframes dpgbreak { 0% { transform: scale(1.12); } 40% { transform: scale(.94) translateY(3px); } 100% { transform: none; } }
+.ap .dp-gate.hita { animation: dpghita .38s ease-out; } .ap .dp-gate.hitb { animation: dpghitb .38s ease-out; }
+@keyframes dpghita { 0% { transform: scale(1.04); } 25% { transform: translateX(-5px) rotate(-.8deg); } 50% { transform: translateX(4px) rotate(.6deg); } 75% { transform: translateX(-2px); } 100% { transform: none; } }
+@keyframes dpghitb { 0% { transform: scale(1.04); } 25% { transform: translateX(5px) rotate(.8deg); } 50% { transform: translateX(-4px) rotate(-.6deg); } 75% { transform: translateX(2px); } 100% { transform: none; } }
+/* 노여움 — 쇠띠가 달아오른다: 붉은 빛이 문 위에서 숨쉬듯 (흐리게 겹친 판 · filter 없이) */
+.ap .dp-gate.rage::after { content: ''; position: absolute; inset: 6% 8%; border-radius: 8px; background: radial-gradient(closest-side, #ff4a1a55, #ff2a0a22 60%, #ff2a0a00); mix-blend-mode: screen; animation: dpgrage 1s ease-in-out infinite alternate; pointer-events: none; }
+@keyframes dpgrage { from { opacity: .35; } to { opacity: 1; } }
+.ap .dp-sp { position: absolute; left: 50%; top: 55%; width: 9px; height: 4px; margin: -2px 0 0 -4px; border-radius: 1px; background: #8a6440; box-shadow: 0 0 0 1px #2a1a0c; animation: dpspl .7s var(--d) cubic-bezier(.2, .7, .4, 1) both; pointer-events: none; z-index: 2; }
+.ap .dp-sp.dust { width: 12px; height: 12px; border-radius: 50%; background: #b8a07a66; box-shadow: none; }
+@keyframes dpspl { from { transform: translate(0, 0) rotate(0); opacity: 1; } to { transform: translate(var(--x), var(--y)) rotate(var(--r)); opacity: 0; } }
+.ap .dp-bar.thin { height: 5px; margin-top: 2px; }
+@media (prefers-reduced-motion: reduce) { .ap .dp-gate, .ap .dp-gate .g2, .ap .dp-gate::after, .ap .dp-sp { animation: none !important; } .ap .dp-sp { display: none; } }
 .ap .dp-bar.big > i { border-radius: 6px; }
 .ap .dp-tw.up .dp-bar > i { background: repeating-linear-gradient(90deg, #c0392b 0 10px, #8a2a1e 10px 12px); animation: dpthick .5s ease-out; } @keyframes dpthick { from { transform: scaleY(1.8); } }
 .ap .dp-bar.gone > i { animation: dpgone .4s .2s both; } @keyframes dpgone { to { opacity: 0; } }

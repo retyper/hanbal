@@ -66,6 +66,12 @@ sheet.save('tools/out/intake-gpt.jpg', quality=82); print('접촉 시트 tools/o
   done
   changed="$changed src/realm/data/awaken2.ts"
 fi
+# ①-2 1차 각성 다시 굽기 (gpt_aw1-<id>.png · 지금 그림을 덮어쓴다 · 옛 것은 git 기록에 남는다)
+for f in $(ls $DL/gpt_aw1-*.png 2>/dev/null || true); do
+  id=$(basename "$f" .png); id=${id#gpt_aw1-}
+  BATCH=1 sh tools/sprite-kit/install-awaken.sh 1 "$id" "형이 다시 구움 (굽기 꾸러미)" || { echo "실패 $id"; continue; }
+  changed="$changed public/realm/awaken-hd/$id.jpg public/realm/awaken/$id.jpg src/realm/data/awaken-art.ts"
+done
 # ② Veo
 for f in $veo; do
   J=$(basename "$f" .mp4); J=${J#veo_}

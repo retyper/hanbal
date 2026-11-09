@@ -34,6 +34,16 @@ for (const x of spec) {
   if (!existsSync(x.ref)) continue
   add('gpt', ++n, x.id, [x.ref], x.prompt, `gpt_aw2-${x.id}.png`)
 }
+// ①-2 다시 굽기 (형이 짚은 것) — 1차 각성은 gpt_aw1-<id>.png 로 받아 install-awaken.sh 1 (지금 그림을 덮어쓴다)
+const REDO1 = [
+  // 11-10 형: "가슴 모양이 이상해서 아예 그냥 거유로 각성 이미지 다시 만들어야 할 듯"
+  ['w-104-buyeo-darae', ' Her figure: a naturally very large, full, round bust with a natural shape and soft weight (not stiff, not oddly shaped), clearly visible under the outfit.'],
+]
+for (const [id, extra] of REDO1) {
+  const x = spec.find((y) => y.tier === 1 && y.id === id)
+  if (x === undefined || !existsSync(x.ref) || !existsSync(`public/realm/awaken-hd/${id}.jpg`)) continue
+  add('gpt', ++n, `${id} · 1차 다시`, [x.ref, `public/realm/awaken-hd/${id}.jpg`], x.prompt + extra, `gpt_aw1-${id}.png`, '첫 그림(초상)만 붙이세요 · 둘째는 지금 1차 각성(비교용)')
+}
 
 // ② Veo — 원장에서 낼 수 있는 일 (queue.mjs peek 와 같은 거름 · 쿨다운은 보지 않는다 · 높은 차례부터)
 const q = JSON.parse(readFileSync(`${LEDGER}/outputs/veo-production-queue.json`, 'utf8')).jobs
@@ -55,7 +65,7 @@ const GEMINI = [
   ['옥문 3/3 · 같은 대화에 이어서', 'Same gate, same framing, same size and same magenta background, now smashed open: both doors broken inward and hanging off, the crossbar snapped in two, flying splinters, the dark doorway visible behind.', 'woo-gate-2.png'],
 ]
 n = 0
-for (const [title, p, save] of GEMINI) add('gem', ++n, title, [], p, save, '받으면 「원본 크기 다운로드」 · 이름만 바꿔 Downloads 에')
+for (const [title, p, save] of GEMINI) if (!existsSync('public/realm/fx/' + save)) add('gem', ++n, title, [], p, save, '받으면 「원본 크기 다운로드」 · 이름만 바꿔 Downloads 에')
 
 // ④ 전투 띠 동작 시트 다시 뽑기 (HANDOFF 「전투 띠 검수」 1·3번) — 그림 둘(IMAGE 1 걷기 시트 · IMAGE 2 초상) · 문안은 gemini-kit 의 act 틀 + ao 바꿈 + 무기 절
 const KIT_TAIL = 'Pure flat #00FF00 background, no grid lines, no shadow, no ground line, no text, no motion streaks, nothing in the bottom-right corner.'
@@ -70,8 +80,9 @@ const CLAUSE = {
   dagger: 'IMPORTANT for the four attack cells: she keeps the SAME dagger from IMAGE 1 gripped tightly in her front hand, the steel blade clearly visible and pointing forward beyond her fist in every attack cell, the whole dagger fully inside each cell. Never an empty fist, never a hidden or missing blade.',
 }
 const STRIPS = [
-  ['realm-women-1108', ['haesol', 'bira', 'mulsae', 'nuri', 'sinneoul', 'mdallae', 'mulbeom', 'dokmudeom', 'singwigan']],
-  ['realm-men-1108', ['jita', 'odogan']],
+  // 11-10 형이 구운 열하나 중 아홉은 넣음 · 물새는 찌르기 칸이 또 빈 주먹 · 지타는 칸이 어긋나 작은 사람이 옆 칸에 끼었다 → 다시
+  ['realm-women-1108', ['mulsae']],
+  ['realm-men-1108', ['jita']],
 ]
 n = 0
 for (const [file, keys] of STRIPS) {
