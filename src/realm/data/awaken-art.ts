@@ -252,6 +252,14 @@ export const AWAKEN_TAKES: Readonly<Record<string, number>> = { 'l-L2-soseono': 
 export const loopTakes = (id: string): string[] => [loopFile(id), ...Array.from({ length: Math.max(0, (AWAKEN_TAKES[id] ?? 1) - 1) }, (_, i) => `awaken-loop/${id}.${i + 2}.mp4`)]
 
 export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
+  // 11-09 Veo 세로 10초 · 형: ok (벌은 "매우 자연스러움")
+  'w-24-apdok-queen', // 압독 누리
+  'w-04-gaya-swordswoman', // 아라
+  'w-47-gosaburi-baram', // 바람
+  'l-L7-aryeong', // 알영
+  'w-20-gaya-smith-daughter', // 아름
+  'w-80-usan-gangchi', // 강치
+  'w-72-eumjeup-beol', // 벌
   'w-78-wansan-wan', // 11-08 저녁 완 v3 · 10초 구성 · 만작한 채 윙크 (형: 그래도 봐줄 만하다 · 적용)
   'w-69-jeoga-eomni', // 11-07 엄니 · fc094928 사용자 채택, 원본 프레임 경계 한계 기록
   'w-67-buyeo-haedal', // 11-07 해달 · 머리/허리 손 접촉을 유지하는 세로 idle
@@ -286,6 +294,7 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
  * 그 판에서 진각성한 장수는 장수 판의 초상이 이 영상으로 바뀌고, 아직이면 장수 판의 「진각성」 칸에서 미리 본다 (형 11-05: "테스트하면서 진각성 영상을 보고 싶어")
  */
 export const AWAKEN2_LOOP: ReadonlySet<string> = new Set([
+  'w-97-goguryeo-mir', // 11-09 미르 2차 · Veo 세로 10초 (형: ok)
   'w-04-gaya-swordswoman', // 11-08 형이 모아 둔 판 (옛 -aw2) · 아라
   'w-47-gosaburi-baram', // 11-08 형이 모아 둔 판 · 바람
   'w-55-guga-nuri', // 11-08 형이 모아 둔 판 · 누리
