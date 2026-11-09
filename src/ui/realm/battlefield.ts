@@ -2113,6 +2113,12 @@ export const WAR_CSS = `
 /* 기록 단추는 처음부터 늘 같은 자리에 · 합이 없으면 흐리게 (형 10-30: "시작할 때는 없다가 전투하는 도중에 생김") */
 .ap .wrh .wlogb.off { opacity: .45; cursor: default; }
 .ap .wrh .wsgb { margin-left: 0; } /* 「기록」과 같은 모양 · 왼쪽 (형 10-29) */
+/* PC 넓은 화면 — 상성·기록·빠르기 단추가 판 크기에 비해 너무 작았다 (형 11-09) · 폰은 그대로 */
+@media (pointer: fine) and (min-width: 1000px) {
+  .ap .wrh .wlogb, .ap .wrh .wsgb { padding: 6px 18px; border-radius: 16px; font-size: 17px; border-width: 2px; }
+  .ap .wspeed { padding: 3px; border-radius: 13px; border-width: 2px; }
+  .ap .wspeed button { min-width: 54px; min-height: 42px; font-size: 16px; border-radius: 10px; }
+}
 .ap .wr .wrh .whelp { display: none; } /* 설명은 누르고 있으면 뜨는 창 · 판세는 깃발 판 밑에 (형 10-28: 자세히 버튼은 필요 없다) */
 .ap .wr .wend { position: sticky; bottom: calc(8px + env(safe-area-inset-bottom)); z-index: 6; box-shadow: 0 -6px 24px #000c; }
 /* 새 전투 시험 (.wr.b0) — 손가락 · 고른 깃발이 크게 · 숫자 표는 「자세히」 안으로 */
@@ -2423,6 +2429,8 @@ export const WAR_CSS = `
 @keyframes wride { 0% { translate: 0 0; } 70% { translate: 14cqw 9cqw; } 100% { translate: 12cqw 10cqw; } } /* 옆구리로 파고들어 적 진 가장자리에서 엉긴다 */
 .ap .wfield:not(.paired-strikes) .tk.tkf { animation: wtkfall .55s ease-in calc(var(--hd) + .2s + var(--j) * .05s) forwards !important; }
 @keyframes wtkfall { 0% { translate: 3cqw 0; } 100% { translate: 2cqw 0; rotate: -78deg; opacity: .16; filter: grayscale(1); } }
+/* 쓰러질 때 몸이 78도 눕는데 발밑 그림자(::before)도 같이 돌아 세로로 떠 보였다 (형 11-09: 그림자가 유닛과 떨어짐) → 눕기 시작하면 그림자는 걷힌다 */
+.ap .wfield:not(.paired-strikes) .tk.tkf::before { animation: wtkshade .25s ease-in calc(var(--hd) + .2s + var(--j) * .05s) forwards !important; } @keyframes wtkshade { to { opacity: 0; } }
 .ap .wfield .wf-mid { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%); font-style: normal; font-size: 22px; color: #f0d090; text-shadow: 0 0 8px #000; opacity: 0; z-index: 80; }
 /* 판의 끝 — 진 쪽은 등을 돌려(거울) 뒤로 달아나며 흩어지고, 이긴 쪽 장수 깃발이 솟는다. 맞부딪힘이 끝난 뒤(--hd + .9s) */
 .ap .wfield.fin .tk.tku { --flee-time: 1.6s; --flee-delay: calc(var(--rv, 0s) + var(--j, 0) * .07s); }
@@ -2443,8 +2451,8 @@ export const WAR_CSS = `
 /* 끝나면 진의 기세 표시(방패벽·화살 활꼴·기병 길·돌격 글자·격려 고리)를 걷는다 — 승패만 남게 */
 .ap .wfield.fin .wq { animation: wqoff .4s ease-out var(--rv, 0s) forwards !important; } @keyframes wqoff { to { opacity: 0; visibility: hidden; } }
 .ap .wfield.play .wf-mid { animation: wmid2 .6s ease-out var(--hd) both; } @keyframes wmid2 { 0% { opacity: 0; scale: .4; } 40% { opacity: 1; scale: 1.8; color: #fff; } 100% { opacity: 0; scale: 1.2; } }
-/* 숨 쉬는 병사 — 서 있는 말이 저마다 조금씩 들썩인다 */
-.ap .wf2s .tk.tku { animation: tkidle 1.8s ease-in-out calc(var(--j) * -.31s) infinite alternate; } @keyframes tkidle { to { translate: 0 -2px; } }
+/* 서 있는 병사는 땅에 붙어 있다 — 옛 숨쉬기 들썩임(translate -2px)은 둥실 떠 보였다 (형 11-09) · 숨은 띠의 서 있기 칸(spidle)이 맡는다 */
+
 /* 들어오기 — 싸움이 처음 열리면 두 군대가 대열을 지어 걸어 들어온다 (적은 거울이라 오른쪽에서) */
 .ap .wfield.enter :is(.tk, .wgen) { --entry-time: .95s; --entry-delay: calc(.15s + var(--j, 0) * .06s); animation: tkin var(--entry-time) linear var(--entry-delay) both; }
 @keyframes tkin { from { translate: -28cqw 0; opacity: 0; } 60% { opacity: 1; } to { translate: 0 0; opacity: 1; } }
