@@ -41,7 +41,7 @@ export default defineConfig(({ command }) => ({
     // 칠십팔국 시험판(realm.html)은 활터와 번들을 나눈다 — 시험판이 활터의 첫 화면을 건드리지 않게
     // 밤의 암살판(night.html)도 따로 — 활 손맛만 빌려 쓰는 작은 모드 (docs/realm/SNIPE.md §0)
     // 바다도적 막기(pirate.html)도 — 사건 카드의 「맞선다」 (docs/realm/SNIPE.md §0-9)
-    rollupOptions: { input: { main: 'index.html', realm: 'realm.html', night: 'night.html', contest: 'contest.html', pirate: 'pirate.html' } },
+    rollupOptions: { input: { main: 'index.html', realm: 'realm.html', night: 'night.html', contest: 'contest.html', pirate: 'pirate.html', duel: 'duel.html' } },
     // esbuild 압축이 151KB로 예산(150KB)을 넘겨 terser로 바꿨다 (2026-08-24).
     // terser는 devDependency다 — 런타임 의존성 0(A6)은 그대로다.
     minify: 'terser',
