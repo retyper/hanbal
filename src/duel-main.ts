@@ -204,7 +204,7 @@ function onEvent(e: DuelEvent, now: number): void {
       flash = { rgb: '190,20,10', t0: now, ms: 220, a: 0.4 }
       marks.push({ x, y, t0: now, kind: 'miss', off: e.off ?? 0 })
       slashes.push({ x, y, ang: -0.7 + ((e.t * 13) % 10) / 20, len: Math.min(W, H) * 0.45, t0: now, ms: 260, color: '255,60,40', w: 10 })
-      pop(`−${e.dmgMe}`, '#ff7a6a', 34, 80, fieldTop() - 30)
+      pop(`−${e.dmgMe}`, '#ff7a6a', 38)
       meAnim = { kind: 'hit', t0: now }; foeAnim = { kind: 'attack', t0: now }
       break
     case 'crit':
@@ -362,9 +362,10 @@ function drawSlash(s: Slash, k: number): void {
  * 막대 테두리 에셋의 안쪽 창 자리 (잘라 낸 그림의 몫) — public/realm/duel/<이름>.png 을 재서 적는다.
  * 왼쪽 머리·오른쪽 끝은 그대로 두고 가운데만 늘린다 (세 조각).
  */
-const BAR_GEO: Readonly<Record<string, { x0: number; x1: number; y0: number; y1: number; capL: number; capR: number }>> = {
+const BAR_GEO: Readonly<Record<string, { x0: number; x1: number; y0: number; y1: number; capL: number; capR: number; mid?: readonly [number, number] }>> = {
   'hud-bar': { x0: 0.143, x1: 0.926, y0: 0.377, y1: 0.623, capL: 0.16, capR: 0.9 },
-  'hud-posture': { x0: 0.06, x1: 0.94, y0: 0.38, y1: 0.62, capL: 0.12, capR: 0.88 },
+  // 체간 — 가운데 장식은 늘리지 않는다 (다섯 조각)
+  'hud-posture': { x0: 0.079, x1: 0.92, y0: 0.326, y1: 0.841, capL: 0.1, capR: 0.9, mid: [0.44, 0.56] },
 }
 /** 막대 — (x, y) 부터 바깥 폭 ow · 채움 높이 h · from = 차오르는 쪽 (right 면 통째로 뒤집는다) */
 function bar(x: number, y: number, ow: number, h: number, v: number, col: string, from: 'left' | 'right' | 'center', frame: string): { cx: number; cy: number; r: number } | null {
@@ -392,7 +393,12 @@ function bar(x: number, y: number, ow: number, h: number, v: number, col: string
     const lw = geo.capL * iw, rw = (1 - geo.capR) * iw
     ctx.drawImage(im, 0, 0, lw, ih, x, dy, lw * sc, dh)
     ctx.drawImage(im, geo.capR * iw, 0, rw, ih, x + ow - rw * sc, dy, rw * sc, dh)
-    ctx.drawImage(im, lw, 0, geo.capR * iw - lw, ih, x + lw * sc, dy, ow - (lw + rw) * sc, dh)
+    if (geo.mid !== undefined) {
+      const m0 = geo.mid[0] * iw, m1 = geo.mid[1] * iw, mw = (m1 - m0) * sc, cx = x + ow / 2
+      ctx.drawImage(im, m0, 0, m1 - m0, ih, cx - mw / 2, dy, mw, dh)
+      ctx.drawImage(im, lw, 0, m0 - lw, ih, x + lw * sc, dy, cx - mw / 2 - (x + lw * sc), dh)
+      ctx.drawImage(im, m1, 0, geo.capR * iw - m1, ih, cx + mw / 2, dy, x + ow - rw * sc - (cx + mw / 2), dh)
+    } else ctx.drawImage(im, lw, 0, geo.capR * iw - lw, ih, x + lw * sc, dy, ow - (lw + rw) * sc, dh)
   } else { ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(214,170,90,.9)'; ctx.strokeRect(fx0 - 1, y - 1, fw + 2, h + 2) }
   ctx.restore()
   if (im === null || geo === undefined) return null
@@ -415,7 +421,14 @@ function drawCue(c: Cue, t: number): void {
   ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * 1.6, 0, Math.PI * 2); ctx.fill()
   ctx.globalCompositeOperation = 'source-over'
   const ringArt = art('fx-ring')
-  if (ringArt !== null) { ctx.globalAlpha = 0.6 + 0.4 * k; ctx.drawImage(ringArt, x - r * 1.15, y - r * 1.15, r * 2.3, r * 2.3); ctx.globalAlpha = 1 }
+  if (ringArt !== null) {
+    // 과녁 고리 에셋 — 띠 한가운데가 r 에 오게 (띠 중심 = 그림 폭의 0.46)
+    const sz = r / 0.92 // 그림 반폭 · 띠 중심 = 반폭의 0.92
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.55 + 0.45 * k
+    ctx.drawImage(ringArt, x - sz, y - sz, sz * 2, sz * 2)
+    if (c.heavy) { ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = 'rgba(255,60,40,.55)'; ctx.fillRect(x - sz, y - sz, sz * 2, sz * 2) }
+    ctx.restore()
+  }
   else { ctx.lineWidth = 4; ctx.strokeStyle = `rgba(${rgb},${0.55 + 0.45 * k})`; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke() }
   // 모여드는 고리 — 원을 지나면 안으로 계속 줄어든다
   const rr = ringR(r, off, lead)
@@ -510,7 +523,7 @@ function drawDuel(now: number, fadeIn: number): void {
   // 체간 — 판 아래 가운데, 가운데서 양쪽으로 차오른다 (세키로처럼)
   const pk = d.phase === 'rush' ? 1 : d.foe.posture / R.posture
   const pw = Math.min(W * 0.7, pn.s * 0.9), px = (W - pw) / 2, py = Math.min(ft - 22, pn.y + pn.s + 10)
-  bar(px, py, pw, 12, pk, pk > 0.8 ? '#ffb347' : '#e9c46a', 'center', 'hud-posture')
+  bar(px, py, pw, 10, pk, pk > 0.8 ? '#ffb347' : '#e9c46a', 'center', 'hud-posture')
   // 판정 막대 — 가운데가 딱 맞음 · 왼쪽 = 빨랐다 · 오른쪽 = 늦었다
   {
     const lw = lateWindow(muMe), mw = Math.min(W * 0.5, 220), mx = W / 2, my = py + 22
