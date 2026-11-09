@@ -261,6 +261,15 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'w-80-usan-gangchi', // 강치
   'w-72-eumjeup-beol', // 벌
   'w-05-baekje-queen', // 별하 (11-09 오후 -b 판 · 형: 적용 안 된 듯 → 넣음)
+  // 11-09 오후·저녁 Veo · 형: 「영상들은 전부 ok」
+  'w-10-pirate-captain', // 너울(바다도적)
+  'w-28-michuhol-bira', // 비라
+  'w-31-dabeol-dalbit', // 달빛
+  'w-68-maek-beombal', // 범발
+  'w-81-byeokjin-byeolbit', // 별빛
+  'w-84-salhae-dallae', // 살해 달래
+  'w-92-saro-dallae', // 명활 달래
+  'w-93-saro-beomi', // 범이
   'w-78-wansan-wan', // 11-08 저녁 완 v3 · 10초 구성 · 만작한 채 윙크 (형: 그래도 봐줄 만하다 · 적용)
   'w-69-jeoga-eomni', // 11-07 엄니 · fc094928 사용자 채택, 원본 프레임 경계 한계 기록
   'w-67-buyeo-haedal', // 11-07 해달 · 머리/허리 손 접촉을 유지하는 세로 idle
