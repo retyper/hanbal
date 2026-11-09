@@ -279,7 +279,7 @@ export function talkBoxHtml(k: WooKit, L: TalkLines, r: Realm, s: TalkState): st
   h += `<div class="dp-chips">${chips.map((c) => `<i class="dp-chip">${k.esc(c)}</i>`).join('')}${(x.grudge ?? 0) > 0 ? `<i class="dp-chip bad">원한 ${x.grudge}</i>` : ''}</div></div>`
   // 가운데 — 말할 거리 단추 · 끝났으면 결과
   if (won) {
-    h += `<div class="dp-end won"><b class="dp-big">${k.esc(L.won(r, by, x, said, reacts))}</b><small>다음 계절에 옥문을 열고 우리 장수로 맞습니다.</small></div>`
+    h += `<div class="dp-end won"><b class="dp-big">${k.esc(L.won(r, by, x, said, reacts))}</b><small>${monthly(r) ? '이번 달이' : '이번 계절이'} 넘어가면 바로 옥문을 열고 우리 장수로 맞습니다.</small></div>`
   } else if (lost) {
     const pc = Math.round(t.hand!.p * 100)
     h += `<div class="dp-end"><b>${pc >= 50 ? `아깝다! ${pc}%였다` : `넘어올 가망 ${pc}%, 이번엔 고개를 저었다`}</b><small>마음의 벽은 무너진 채로 남습니다. 맡겨 두면 계절마다 다시 굴립니다.</small></div>`
