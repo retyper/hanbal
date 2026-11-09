@@ -14,10 +14,10 @@ import { basename, join } from 'node:path'
 const OUT = 'tools/out/bake-pack'
 const LEDGER = 'C:/Users/my/Documents/Codex/2026-11-06/windows-pc-claude-code-claude-code'
 rmSync(OUT, { recursive: true, force: true })
-for (const d of ['gpt', 'veo', 'gem']) mkdirSync(join(OUT, d), { recursive: true })
+for (const d of ['gpt', 'veo', 'gem', 'strip']) mkdirSync(join(OUT, d), { recursive: true })
 
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
-const cards = { gpt: [], veo: [], gem: [] }
+const cards = { gpt: [], veo: [], gem: [], strip: [] }
 const add = (kind, n, title, imgs, prompt, save, note = '') => {
   const files = imgs.map((src, i) => { const f = `${kind}/${String(n).padStart(2, '0')}-${i}-${basename(src)}`; copyFileSync(src, join(OUT, f)); return f })
   cards[kind].push({ n, title, files, prompt, save, note })
@@ -57,6 +57,38 @@ const GEMINI = [
 n = 0
 for (const [title, p, save] of GEMINI) add('gem', ++n, title, [], p, save, '받으면 「원본 크기 다운로드」 · 이름만 바꿔 Downloads 에')
 
+// ④ 전투 띠 동작 시트 다시 뽑기 (HANDOFF 「전투 띠 검수」 1·3번) — 그림 둘(IMAGE 1 걷기 시트 · IMAGE 2 초상) · 문안은 gemini-kit 의 act 틀 + ao 바꿈 + 무기 절
+const KIT_TAIL = 'Pure flat #00FF00 background, no grid lines, no shadow, no ground line, no text, no motion streaks, nothing in the bottom-right corner.'
+const KIT_ACT = {
+  spear: '1 battle-ready stance holding the spear in both hands at waist height, tip pointing forward-right, 2 pulling the spear back to wind up, 3 lunging forward with the long spear fully extended to the right, its tip far in front of her, 4 thrust follow-through, tip still forward, 5 recovering to stance, ',
+  dagger: '1 low crouched fighting stance with the dagger held forward in her front hand, 2 drawing the dagger hand back beside her hip, 3 lunging forward and stabbing to the right, arm fully extended with the blade in front of her fist, 4 stab follow-through, dagger still in front, 5 recovering to stance, ',
+}
+const CLAUSE = {
+  // 11-09 오디로 시험해 먹힌 절 (창 가운데를 두 손 · 20도 아래 · 창 전체가 칸 안)
+  spear: 'IMPORTANT for the four attack cells: she keeps the SAME long spear from IMAGE 1 (with its metal spearhead blade and its own decorations) and grips the MIDDLE of the shaft firmly with BOTH hands, then thrusts it forward in the direction she faces and slightly downward (about 20 degrees); the spearhead blade points forward and is clearly visible, and the WHOLE spear, from butt to blade tip, stays fully inside each cell. Never empty-handed, never a bare stick without a blade, never the spear pointing backward, no loose feathers or scraps floating around.',
+  // 검수 3번: 단검이 사라진 맨주먹 찌르기
+  dagger: 'IMPORTANT for the four attack cells: she keeps the SAME dagger from IMAGE 1 gripped tightly in her front hand, the steel blade clearly visible and pointing forward beyond her fist in every attack cell, the whole dagger fully inside each cell. Never an empty fist, never a hidden or missing blade.',
+}
+const STRIPS = [
+  ['realm-women-1108', ['haesol', 'bira', 'mulsae', 'nuri', 'sinneoul', 'mdallae', 'mulbeom', 'dokmudeom', 'singwigan']],
+  ['realm-men-1108', ['jita', 'odogan']],
+]
+n = 0
+for (const [file, keys] of STRIPS) {
+  const sp = JSON.parse(readFileSync(`tools/sprite-kit/heroes/${file}.json`, 'utf8'))
+  for (const key of keys) {
+    const h = sp.find((x) => x.key === key)
+    const walk = `assets_src/realm/gemini/generals2/${key}-walk.png`
+    const bust = `public/realm/bust-hd/${h?.bust}.jpg`
+    if (h === undefined || !existsSync(walk) || !existsSync(bust) || CLAUSE[h.weapon] === undefined) continue
+    const man = h.sex === 'man'
+    const w = h.weapon
+    let p = `IMAGE 1 is the walking sprite sheet of my character, ${man ? 'the man of IMAGE 2 (his portrait)' : 'the woman of IMAGE 2 (her portrait)'}. Make a NEW image with EXACTLY the same wide 16:9 4x2 layout, cell size, character scale (the WHOLE body from head to feet visible in every cell, same size as in IMAGE 1), foot line and EXACTLY the same person and outfit as IMAGE 1, strict side view facing RIGHT in every frame, every figure and the whole ${w} fully inside its cell. ${CLAUSE[w]} Exactly ONE ${w} in every frame. 8 frames in order: ${KIT_ACT[w]}6 hit recoil, torso jerked backward, head thrown back, pained face, still facing right, 7 falling backward off the feet, 8 lying on the back on the ground with the ${w} beside. The weapon never points backward. ${KIT_TAIL}`
+    if (man) p = p.replace(/\bher\b/g, 'his').replace(/\bshe\b/g, 'he')
+    add('strip', ++n, `${key} · ${h.bust} · ${w === 'spear' ? '창 찌르기' : '단검 찌르기'}`, [walk, bust], p, `act_${key}.png`, '그림 둘을 순서대로(걷기 시트가 IMAGE 1) · 이미지 만들기 · 16:9')
+  }
+}
+
 const sec = (kind, head, how) => {
   const cs = cards[kind]
   if (cs.length === 0) return ''
@@ -87,8 +119,9 @@ button.ok { background: #2e6b33; } code { color: var(--gold); } small { color: v
 </style></head><body><main>
 <h1>굽기 꾸러미</h1>
 <p class="how">그림은 끌어다 챗지피티·제미나이 입력칸에 놓으면 붙습니다 (안 되면 그림을 눌러 연 뒤 저장해서 첨부). 받은 결과는 <b>저장 이름</b> 그대로 <code>Downloads</code> 에 두세요. 다 두면 Claude 에게 「꾸러미 넣어」 한마디면 됩니다 (<code>sh tools/bake-intake.sh</code>). 「다 함」 표시는 이 컴퓨터에만 남습니다.</p>
-<nav><a href="#gem">제미나이 ${cards.gem.length}</a><a href="#gpt">챗지피티 진각성 ${cards.gpt.length}</a><a href="#veo">Veo ${cards.veo.length}</a></nav>
+<nav><a href="#gem">제미나이 ${cards.gem.length}</a><a href="#strip">전투 띠 ${cards.strip.length}</a><a href="#gpt">챗지피티 진각성 ${cards.gpt.length}</a><a href="#veo">Veo ${cards.veo.length}</a></nav>
 ${sec('gem', '제미나이 그림', '「이미지 만들기」 · 16:9 · 옥문 셋은 한 대화에서 차례로 (같은 틀이어야 겹쳐 쓸 수 있습니다)')}
+${sec('strip', '전투 띠 동작 시트 (제미나이)', '새 대화마다 한 사람 · 「이미지 만들기」 · 16:9 · 그림 둘을 차례로 붙이고(걷기 시트 먼저) 문안 · 초록 바탕 그대로 받기')}
 ${sec('gpt', '챗지피티 진각성', '새 대화마다 한 사람 · 그림 하나 붙이고 문안 · 정사각 1:1 · 무료 계정 한도가 뜨면 그 시각을 알려 주세요')}
 ${sec('veo', 'Veo 숨쉬기 영상 (Jay u/4)', '「동영상 만들기」 · 세로 모드 · 사진 하나 + 문안 · 받으면 저장 이름대로 (거절되면 「다 함」 대신 비워 두고 알려 주세요)')}
 </main><script>
@@ -106,4 +139,4 @@ document.addEventListener('click', async (e) => {
 })
 </script></body></html>`
 writeFileSync(join(OUT, 'index.html'), html)
-console.log(`꾸러미: 제미나이 ${cards.gem.length} · 챗지피티 ${cards.gpt.length} · Veo ${cards.veo.length} → ${OUT}/index.html`)
+console.log(`꾸러미: 제미나이 ${cards.gem.length} · 전투 띠 ${cards.strip.length} · 챗지피티 ${cards.gpt.length} · Veo ${cards.veo.length} → ${OUT}/index.html`)
