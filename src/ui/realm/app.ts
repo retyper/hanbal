@@ -5056,7 +5056,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (r.region === 'tutorial' || r.outcome || sheet !== null) return ''
     // 떠돌이 상단이 머물면 늘 — 누구에게나 (배우는 사람만이 아니라)
     const mk = marketOf(r, me())
-    if (mk !== null) return `<button class="todochip mkchip" data-act="market">${icon('route-caravan', 'wki')} 떠돌이 상단이 ${esc(r.nodes[mk.at]?.name ?? '')}에 왔다 · ${turnsLabel(r, mk.until - r.season + 1)} 머문다${wishReady(r, me()) ? ' · 주문 ✦' : ''}</button>`
+    if (mk !== null) return `<button class="todochip mkchip" data-act="market">${icon('route-caravan', 'wki')} 떠돌이 상단 · ${esc(r.nodes[mk.at]?.name ?? '')} · ${turnsLabel(r, mk.until - r.season + 1)}${wishReady(r, me()) ? '<i class="mkwish">주문 ✦</i>' : ''}</button>`
     // 장수가 알아서 일하는 것은 알림 거리가 아니다 — 늘 그렇다 (형 10-26: "원래 자동으로 다 알아서 하지만") · 장수 판 맨 위에 누가 어디로 가는지
     if (!novice()) return ''
     const drafted = musters.some((o) => o.kind === 'draft')
@@ -6813,12 +6813,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     const cap = lotCap(n)
     const opts = workOptions(r, n.id).filter((w) => lvOf(n, w) === 0 && going?.what !== w)
+    // 이번 달 새로 지을 일터는 터 하나에만 비친다 — 고른 터가 빈 터면 거기, 아니면 첫 빈 터 (형 11-09: 모든 터에 그 그림이 깜빡거림)
+    const firstEmpty = slots.length
+    const planLot = townPick !== null && townPick.lot >= firstEmpty && townPick.lot < Math.min(cap, 4) ? townPick.lot : firstEmpty
     while (slots.length < Math.min(cap, 4)) {
+      const here = slots.length === planLot
       slots.push({
         k: 'empty', when: turnsLabel(r, turnsOf(1)),
         tip: `빈 터 · 이 땅에 맞는 일터 ${opts.length}가지 · 터 ${slots.length + 1}/${cap}`,
         // 빈 터마다 같은 타일 — 둘째 빈 터를 눌러도 「맞는 일터가 없다」고 하지 않게 (11-08 · 한 고을 한 달 하나는 whyOf 가 막는다)
-        options: opts.map((w) => ({ what: w, name: WORKS[w].name, icon: WORKS[w].icon, sprite: sp(w, 1), cost: costHtml(workCost(w)), eff: workEffect(w, 1), does: WORKS[w].does, why: whyOf(w, 1), on: queued?.what === w })),
+        options: opts.map((w) => ({ what: w, name: WORKS[w].name, icon: WORKS[w].icon, sprite: sp(w, 1), cost: costHtml(workCost(w)), eff: workEffect(w, 1), does: WORKS[w].does, why: whyOf(w, 1), on: here && queued?.what === w })),
       })
     }
     // 잠긴 터 — 맨 앞 하나는 닦을 수 있다 (형 11-08: "공사를 해서 더 만들 수 있게") · 닦는 중이면 그 터에 비계
@@ -6855,7 +6859,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const doneLine = report !== null && report.lines.find((l): l is Extract<ReportLine, { kind: 'work' }> => l.kind === 'work' && l.done && l.node === n.id && l.faction === me())
     const stampKey = `${n.id}|${r.season}`
     const stamp = doneLine !== false && doneLine !== undefined && !townStamped.has(stampKey) ? { icon: WORKS[doneLine.what].icon, name: `${WORKS[doneLine.what].name}${doneLine.lv !== undefined ? ` ${doneLine.lv}단` : ''}` } : null
-    const html = townViewHtml({ id: n.id, name: n.name, hh: n.hh, bg, art: ART, fresh: townFresh, slots, lots: cap, pick: townPick, stamp })
+    const have = left()
+    const stock = GOODS.map((g) => `<span class="${have[g] < 1 ? 'no' : ''}" data-tip="${esc(GOOD_NAME[g])} ${Math.floor(have[g])}">${icon(GOOD_ICON[g])}${Math.floor(have[g])}</span>`).join('')
+    const html = townViewHtml({ id: n.id, name: n.name, hh: n.hh, bg, art: ART, fresh: townFresh, slots, lots: cap, pick: townPick, stamp, stock })
     if (ov === null) {
       root.insertAdjacentHTML('beforeend', `<div class="townov" style="--tf:${P.realm.townFadeMs}ms;--bf:${P.realm.townBoardFrom}"></div>`)
       ov = root.querySelector<HTMLElement>('.townov')!

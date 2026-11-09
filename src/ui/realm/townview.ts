@@ -83,6 +83,8 @@ export interface TownViewIn {
   readonly pick: { readonly lot: number; readonly what: string | null }
   /** 처음 여는 그림이면 밝아지며 */
   readonly fresh: boolean
+  /** 지금 가진 것 — 이번 달 고른 것을 뺀 몫 (그림표+숫자 HTML · 형 11-09: "지을 때 내 재산이 얼마 있는지 안 보임") */
+  readonly stock: string
   /** 지난 달 완공 — 「완공!」 도장 (없으면 null) */
   readonly stamp: { readonly icon: string; readonly name: string } | null
 }
@@ -110,8 +112,8 @@ export function townHands(hh: number): number {
 }
 
 /** 판 위의 터 하나 */
-/** 고른 터의 바닥 표지 — 터 모양 그대로 마름모 · 흐르는 금빛 테두리 · 네 모서리 꺾쇠 */
-const SEL_MARK = '<i class="tvmark"><svg viewBox="0 0 200 100" preserveAspectRatio="none"><polygon points="100,4 196,50 100,96 4,50"/></svg><u class="n"></u><u class="e"></u><u class="s"></u><u class="w"></u></i>'
+/** 고른 터의 바닥 표지 — 터 모양 그대로 마름모 · 흐르는 금빛 테두리 (네 모서리 꺾쇠가 왔다 갔다 해 거슬렸다 · 형 11-09 뺌) */
+const SEL_MARK = '<i class="tvmark"><svg viewBox="0 0 200 100" preserveAspectRatio="none"><polygon points="100,4 196,50 100,96 4,50"/></svg></i>'
 
 /** 터 하나의 그림들을 한 덩어리로 — 고르면 덩어리 테두리를 따라 금빛 윤곽 (이름표는 밖에 둔다) */
 function wrapArt(html: string, sel: boolean): string {
@@ -303,7 +305,7 @@ export function townViewHtml(t: TownViewIn): string {
     + `<span class="tvst" data-tip="터 ${built}/${t.lots} · 터마다 다른 일터 하나를 짓고 단을 올립니다">${ic(t.art, 'settle-clearing')}${built}/${t.lots}</span>`
     + `<button class="tvx" data-act="town-out" aria-label="마을에서 나가기">✕</button></div>`
     + `<div class="tvstage"><div class="tvboard"><img class="tvbg" src="${t.art}${t.bg}" alt="">${lotsHtml}${folk}</div>${stamp}</div>`
-    + `<div class="tvdock">${dock}</div><div class="tvbar">${bar}</div></div>`
+    + `<div class="tvdock">${dock}</div><div class="tvbar"><div class="tvhave">${t.stock}</div>${bar}</div></div>`
 }
 
 /**
@@ -395,12 +397,6 @@ export const TOWN_CSS = `
 .ap .tvmark svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .ap .tvmark polygon { fill: #ffd76a2e; stroke: #ffe08a; stroke-width: 3.5; stroke-dasharray: 16 9; vector-effect: non-scaling-stroke; animation: tvdash 1.1s linear infinite; }
 @keyframes tvdash { to { stroke-dashoffset: -25; } }
-.ap .tvmark u { position: absolute; width: 13%; aspect-ratio: 1; border: 0 solid #fff1c2; animation: tvcorner .8s ease-in-out infinite alternate; }
-.ap .tvmark u.n { left: 50%; top: -6%; border-width: 3px 0 0 3px; transform: translate(-50%, 0) rotate(45deg); --o: translate(-50%, -40%) rotate(45deg); }
-.ap .tvmark u.s { left: 50%; bottom: -6%; border-width: 0 3px 3px 0; transform: translate(-50%, 0) rotate(45deg); --o: translate(-50%, 40%) rotate(45deg); }
-.ap .tvmark u.e { right: -3%; top: 50%; height: auto; width: 7%; border-width: 3px 3px 0 0; transform: translate(0, -50%) rotate(45deg); --o: translate(60%, -50%) rotate(45deg); }
-.ap .tvmark u.w { left: -3%; top: 50%; height: auto; width: 7%; border-width: 0 0 3px 3px; transform: translate(0, -50%) rotate(45deg); --o: translate(-60%, -50%) rotate(45deg); }
-@keyframes tvcorner { to { transform: var(--o); opacity: .55; } }
 .ap .tvlot2:active .tvart { translate: 0 2px; }
 /* 마을 사람 — 유민 걷기 8컷 띠 · 크기는 판 폭에 따라(폰에선 집보다 작게) · 오가는 이는 가로로 오가며 돌아선다 · 일하는 이는 제자리에서 까딱 */
 .ap .tvf { --ph: calc(clamp(14px, 5cqw, 30px) / 0.6375); --ar: ${VILLAGER_ANIM[0].ar.toFixed(4)}; position: absolute; width: calc(var(--ph) * var(--ar)); height: var(--ph); margin: calc(var(--ph) * -1) 0 0 calc(var(--ph) * var(--ar) / -2); z-index: 3; pointer-events: none; }
@@ -476,6 +472,10 @@ ${VILLAGER_ANIM.map((v, k) => `.ap .tvf.v${k} { --ar: ${v.ar.toFixed(4)}; } .ap 
 .ap .tvdoes { margin: 0; font-size: 13px; color: #d9ccb0; text-align: center; min-height: 1.4em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .ap .tvlock { flex: 1; display: grid; place-content: center; text-align: center; gap: 6px; } .ap .tvlock p { margin: 0; font-size: 14px; }
 /* ④ 맨 아래 큰 단추 하나 — 고르면 금빛 눌린 채 ✓ (메모리 confirm-bar-bottom · wwe-overreaction-ux) */
+.ap .tvhave { display: flex; justify-content: center; gap: 12px; margin-bottom: 6px; font-size: 14px; font-weight: 700; color: #f3e6c8; }
+.ap .tvhave span { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+.ap .tvhave span.no { color: #8f8470; }
+.ap .tvhave img { width: 22px; height: 22px; object-fit: contain; }
 .ap .tvbar { grid-area: bar; padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px)); background: #1c1610; border-top: 1px solid #3a2c1e; }
 .ap .tvgo { width: 100%; min-height: 58px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px 8px; padding: 8px 12px; border-radius: 14px; border: 2px solid #e0bd78; background: #8d6626; color: #fff4dc; font: inherit; font-size: 17px; font-weight: 700; cursor: pointer; box-shadow: 0 3px 0 #4a3718, 0 6px 14px #000a; -webkit-tap-highlight-color: transparent; }
 .ap .tvgo:active { translate: 0 2px; box-shadow: 0 1px 0 #4a3718; }
@@ -489,6 +489,9 @@ ${VILLAGER_ANIM.map((v, k) => `.ap .tvf.v${k} { --ar: ${v.ar.toFixed(4)}; } .ap 
   .ap .tvstage { height: auto; }
   .ap .tvdock { border-top: 0; border-left: 2px solid #c9a45a; }
   .ap .tvtop { border-right: 1px solid #3a2c1e; }
+  .ap .tvx { position: fixed; top: 12px; right: 14px; z-index: 70; width: auto; height: 44px; padding: 0 18px 0 14px; border-radius: 22px; border-width: 2px; font-size: 16px; font-weight: 700; box-shadow: 0 4px 14px #000c; }
+  .ap .tvx::after { content: ' 나가기'; }
+  .ap .tvdock { padding-top: 64px; }
 }
 @media (prefers-reduced-motion: reduce) { .ap .tvf, .ap .tvf u, .ap .tvf s, .ap .tvveil, .ap .map.tvdive, .ap .map.tvrise, .ap .townv.fresh, .ap .townv.fresh .tvboard, .ap .townov.out .tvboard, .ap .tvarrow, .ap .tvlot2.sel .tvart, .ap .tvmark, .ap .tvmark polygon, .ap .tvmark u, .ap .tvstamp, .ap .tvpuff { animation: none !important; } }
 .ap.q-low .tvf u, .ap.q-low .tvf s, .ap.q-low .tvf.walk, .ap.q-low .tvf.walkv { animation-play-state: paused; }

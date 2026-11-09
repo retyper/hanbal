@@ -1456,6 +1456,9 @@ export const UI_CSS = `
 .ap .mkrow .mkt small { font-size: 11.5px; }
 .ap .mkrow .btn { flex: none; padding: 6px 10px; min-height: 0; }
 .ap .mkchip img.wki { width: 22px !important; height: 22px !important; vertical-align: middle; }
+/* 주문을 다 모았다 — 줄을 늘리지 않게 단추 귀퉁이에 금빛 표 (형 11-09: 「주문 ★」 때문에 줄바꿈) */
+.ap .mkchip { white-space: nowrap; position: relative; }
+.ap .mkchip .mkwish { position: absolute; top: -9px; right: -6px; padding: 1px 7px; border-radius: 999px; background: #ffd27a; color: #2a1a06; font-size: 11px; font-style: normal; font-weight: 800; box-shadow: 0 2px 6px #000a; }
 .ap .mkrow img.wki { width: 38px !important; height: 38px !important; flex: none; object-fit: contain; }
 .ap h3 img.wki { width: 30px !important; height: 30px !important; vertical-align: middle; display: inline-block; }
 .ap .gnpop { position: fixed; left: 50%; top: 40%; z-index: 110; transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; animation: gnlife var(--life, 2.6s) linear both; }
