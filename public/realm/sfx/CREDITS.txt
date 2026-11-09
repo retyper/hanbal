@@ -309,3 +309,12 @@ duel/break_c.ogg  Freesound · ID 640204 (https://freesound.org/s/640204/) · He
 duel/intro_a.ogg  Freesound · ID 541029 (https://freesound.org/s/541029/) · Very low frequency impact · AudioPapkin · CC0
 duel/intro_b.ogg  Freesound · ID 755054 (https://freesound.org/s/755054/) · Impact SFX PS 017 · AudioPapkin · CC0
 duel/intro_c.ogg  Freesound · ID 645898 (https://freesound.org/s/645898/) · Impact sfx 027 · AudioPapkin · CC0
+# 장수 겨루기 — 형이 직접 받아 준 소리 (2026-11-09 · 형 PC 다운로드 폴더 · 출처는 형이 안다)
+duel/good_h.mp3  형 · 「막음」
+duel/perfect_h.mp3  형 · 「정확」
+duel/deflect_h.mp3  형 · 「연타튕김」
+duel/rushHit_h1.mp3 · rushHit_h2.mp3 · rushHit_h3.mp3  형 · 「연타맞음1~3」 (셋을 번갈아)
+duel/hurt_h.mp3  형 · 「내가맞음」
+duel/break_h.mp3  형 · 「체간무너짐」 (앞 3.5초만 씀)
+duel/intro_h.wav  형 · 「겨루기시작_바라_타격음_강」
+# 형이 고른 후보: 치명공격 베기 = crit_a · 적장 휘두름 = swing_b

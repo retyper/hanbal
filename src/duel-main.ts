@@ -76,31 +76,59 @@ function noise(dur: number, vol: number, lp: number, delay = 0): void {
   s.connect(f).connect(g).connect(a.destination); s.start(a.currentTime + delay)
 }
 /**
- * 진짜 효과음 — public/realm/sfx/duel/<자리>_<a|b|c>.ogg (Freesound CC0 · 출처 sfx/CREDITS.txt · 고르는 곳 realm/duel-sounds.html).
- * 형이 고르기 전에는 a. 주소의 ?sfx=good:b,crit:c 로 바꿔 듣는다. 못 받으면 합성 소리로 대신한다.
+ * 진짜 효과음 — public/realm/sfx/duel/ (출처 sfx/CREDITS.txt · 고르는 곳 realm/duel-sounds.html).
+ * 형 11-09 고름: 막음·정확·연타 튕김·연타 맞음 셋·내가 맞음·체간 무너짐·겨루기 시작 = 형이 받아 준 것(_h) · 치명 베기 = crit_a · 적장 휘두름 = swing_b.
+ * 연타 맞음은 셋을 번갈아 (같은 소리가 연달아 나지 않게 · 촥촥촥이 다르게). 주소의 ?sfx=good:b 로 후보(a·b·c)를 바꿔 듣는다.
  */
 type SndSlot = 'good' | 'perfect' | 'crit' | 'rushHit' | 'deflect' | 'hurt' | 'swing' | 'break' | 'intro'
-const SND_PICK: Record<SndSlot, string> = { good: 'a', perfect: 'a', crit: 'a', rushHit: 'a', deflect: 'a', hurt: 'a', swing: 'a', break: 'a', intro: 'a' }
-for (const kv of (params.get('sfx') ?? '').split(',')) { const [k, v] = kv.split(':'); if (k !== undefined && v !== undefined && k in SND_PICK) SND_PICK[k as SndSlot] = v }
-const SND_BUF = new Map<SndSlot, AudioBuffer>()
+const SND_FILES: Record<SndSlot, readonly string[]> = {
+  good: ['good_h.mp3'], perfect: ['perfect_h.mp3'], crit: ['crit_a.ogg'], rushHit: ['rushHit_h1.mp3', 'rushHit_h2.mp3', 'rushHit_h3.mp3'],
+  deflect: ['deflect_h.mp3'], hurt: ['hurt_h.mp3'], swing: ['swing_b.ogg'], break: ['break_h.mp3'], intro: ['intro_h.wav'],
+}
+/** 앞부분만 쓰는 소리 (초) — 체간 무너짐은 16초짜리라 앞 3.5초의 묵직한 울림만, 끝은 부드럽게 줄인다 */
+const SND_CUT: Partial<Record<SndSlot, number>> = { break: 3.5 }
+for (const kv of (params.get('sfx') ?? '').split(',')) { const [k, v] = kv.split(':'); if (k !== undefined && v !== undefined && k in SND_FILES) SND_FILES[k as SndSlot] = [`${k}_${v}.ogg`] }
+const SND_BUF = new Map<SndSlot, AudioBuffer[]>()
 let sndLoading = false
 function loadSounds(): void {
   const a = audio()
   if (a === null || sndLoading) return
   sndLoading = true
-  for (const slot of Object.keys(SND_PICK) as SndSlot[]) {
-    void fetch(`realm/sfx/duel/${slot}_${SND_PICK[slot]}.ogg`).then((r) => r.arrayBuffer()).then((b) => a.decodeAudioData(b)).then((buf) => { SND_BUF.set(slot, buf) }).catch(() => undefined)
+  for (const slot of Object.keys(SND_FILES) as SndSlot[]) {
+    void Promise.all(SND_FILES[slot].map((f) => fetch(`realm/sfx/duel/${f}`).then((r) => r.arrayBuffer()).then((b) => a.decodeAudioData(b))))
+      .then((bufs) => { SND_BUF.set(slot, bufs) }).catch(() => undefined)
   }
 }
+let rushTurn = 0, rushLast = -1
 /** 받은 소리를 낸다 — 없으면 false (합성으로 대신) */
 function snd(slot: SndSlot, vol = 1, delay = 0): boolean {
-  const a = audio(), buf = SND_BUF.get(slot)
-  if (a === null || buf === undefined) return false
-  const s = a.createBufferSource(); s.buffer = buf
+  const a = audio(), bufs = SND_BUF.get(slot)
+  if (a === null || bufs === undefined || bufs.length === 0) return false
+  let i = 0
+  if (bufs.length > 1) { // 셋을 섞어 돌린다 — 바로 앞 소리는 피한다
+    rushTurn = (rushTurn * 1103515245 + 12345) >>> 0
+    i = (rushTurn >>> 16) % bufs.length
+    if (i === rushLast) i = (i + 1) % bufs.length
+    rushLast = i
+  }
+  const buf = bufs[i] as AudioBuffer
+  const src = a.createBufferSource(); src.buffer = buf
   const g = a.createGain(); g.gain.value = vol
-  s.connect(g).connect(a.destination); s.start(a.currentTime + delay)
+  src.connect(g).connect(a.destination)
+  const t = a.currentTime + delay, cut = SND_CUT[slot]
+  if (cut !== undefined && buf.duration > cut) {
+    g.gain.setValueAtTime(vol, t + cut * 0.6); g.gain.linearRampToValueAtTime(0.0001, t + cut)
+    src.start(t, 0, cut)
+  } else src.start(t)
   return true
 }
+/** 싸움 음악 — 본편 싸움판과 같은 곡 (sound.ts 의 bgm_war c7v · 크기 0.3). 겨루기 화면이 떠도 끊기지 않는다 (형 11-09) */
+const bgm = new Audio('realm/sfx/bgm_war_c7v.ogg')
+bgm.loop = true
+bgm.volume = 0.3
+function startBgm(): void { if (bgm.paused) void bgm.play().catch(() => undefined) }
+document.addEventListener('visibilitychange', () => { if (document.hidden) bgm.pause(); else if (mode !== 'field' || bgmStarted) startBgm() })
+let bgmStarted = false
 const SFX = {
   perfect: () => { if (!snd('perfect')) { tone(2600, 0.6, 'triangle', 0.22); tone(1950, 0.5, 'sine', 0.18); noise(0.06, 0.5, 9000) } },
   good: () => { snd('swing', 0.5); if (!snd('good')) { tone(1150, 0.2, 'triangle', 0.2); noise(0.05, 0.3, 6000) } },
@@ -109,7 +137,7 @@ const SFX = {
   break: () => { if (!snd('break')) { tone(400, 0.5, 'sawtooth', 0.12, 0.4); noise(0.3, 0.4, 900) } },
   rushHit: () => { if (!snd('rushHit', 0.8)) { noise(0.08, 0.45, 2200); tone(260, 0.07, 'square', 0.08, 0.6) } },
   deflect: () => { if (!snd('deflect', 0.8)) { tone(1700, 0.12, 'triangle', 0.16); noise(0.03, 0.2, 7000) } },
-  flag: () => { if (!snd('intro')) { tone(220, 0.5, 'sawtooth', 0.12, 2); noise(0.6, 0.25, 900) } },
+  flag: () => { bgmStarted = true; startBgm(); if (!snd('intro')) { tone(220, 0.5, 'sawtooth', 0.12, 2); noise(0.6, 0.25, 900) } },
 }
 loadSounds() // 처음부터 받아 둔다 (소리판은 첫 손짓에 깨어난다)
 
