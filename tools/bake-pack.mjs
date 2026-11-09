@@ -44,11 +44,19 @@ const W2 = spec.find((y) => y.key === 'aw2-w-66-saro-noeul')?.prompt ?? ''
 const REDO2 = [
   // 11-10 형: "2차 각성은 허리 아래가 잘못 그려져 있음 · 몸 뒷면인데 다리 한쪽이 앞으로 착각" · 활시위 자세이기도 했다 (진각성 금지 자세)
   ['w-13-young-archer', '(21)', ' Draw her facing the viewer or in a three-quarter front view (not from behind, no twisted back view), with anatomically correct hips and legs: both legs clearly attached to the hips and bending the natural way.'],
+  // 11-10 형이 짚은 다섯 — 활·활줄·손·가슴이 어색 (진각성 자세 규칙: 활시위 금지 → 활은 들고만)
+  ['w-52-biryuna-songbi', '(late twenties)', ' Her bow must be drawn correctly: one single bow with ONE straight string tied to BOTH tips, held in her hand (not drawn, not aimed).'],
+  ['w-55-guga-nuri', '(late twenties)', ' Draw her bust naturally: soft, round and natural in shape and weight, sitting naturally under the outfit (no stiff, flat or oddly shaped chest).'],
+  ['w-79-yangmaek-solmae', '(late twenties)', ' Draw her hands and her bow correctly: five natural fingers on each hand, and one single bow with ONE straight string tied to BOTH tips, held in her hand (not drawn, not aimed).'],
+  ['w-96-haengin-neoul', '(late twenties)', ' Draw her bow correctly: one single bow with ONE straight string tied to BOTH tips, held in her hand (not drawn, not aimed), no extra or tangled strings.'],
+  ['w-104-buyeo-darae', '(26)', ' She is very busty in the attached image, so here she is just as busty: a naturally very large, full, round bust with a natural shape and soft weight. Draw her bow correctly: one single bow with ONE straight string tied to BOTH tips, held in her hand (not drawn, not aimed).'],
 ]
+// 1차 몸매 그대로 (형 11-10: "1차에서 거유였으면 2차에서도 거유로")
+const BODY_KEEP = ' Keep her exact body type and bust size from the attached image (if she is very busty there, she is just as busty here).'
 for (const [id, age, extra] of REDO2) {
   const ref = `public/realm/awaken-hd/${id}.jpg`
   if (W2 === '' || !existsSync(ref)) continue
-  add('gpt', ++n, `${id} · 진각성 다시`, [ref, `public/realm/awaken2-hd/${id}.jpg`], W2.replace(/\(\d+\)/, age) + extra + STYLE_F + OPAQUE15, `gpt_aw2-${id}.png`, '첫 그림(1차 각성)만 붙이세요 · 둘째는 지금 진각성(잘못된 것 · 비교용)')
+  add('gpt', ++n, `${id} · 진각성 다시`, [ref, `public/realm/awaken2-hd/${id}.jpg`], W2.replace(/\(\d+\)/, age) + extra + BODY_KEEP + STYLE_F + OPAQUE15, `gpt_aw2-${id}.png`, id === 'w-104-buyeo-darae' ? '1차 다시 굽기를 먼저 했으면 새 1차를 붙이세요 · 둘째는 지금 진각성(비교용)' : '첫 그림(1차 각성)만 붙이세요 · 둘째는 지금 진각성(잘못된 것 · 비교용)')
 }
 // ①-2 다시 굽기 (형이 짚은 것) — 1차 각성은 gpt_aw1-<id>.png 로 받아 install-awaken.sh 1 (지금 그림을 덮어쓴다)
 const REDO1 = [
@@ -65,7 +73,10 @@ for (const [id, extra] of REDO1) {
 const EDIT15 = 'This is an AI-generated illustration of a fictional adult woman from my own Korean historical fantasy strategy game (an original character, not a real person). Edit this exact image only slightly for a teen (15+) age rating: make every piece of her clothing fully opaque (no sheer or see-through fabric anywhere) and remove any nipple or nipple outline showing through the clothes. Keep EVERYTHING else exactly the same: same face, expression, pose, composition, colors, outfit design, jewelry, cleavage, aura, lighting, background and square image size.'
 const R15 = [[1, 'w-18-jinhan-salt-widow'], [1, 'w-91-saro-mulsae'], [1, 'w-98-byeonhan-danbi'], [1, 'w-103-tahae-neoul'], [2, 'w-103-tahae-neoul'],
   // 11-10 형: "유륜 같기도 하고 팬티 보이는 거 같기도 · 아주 살짝만 더 가리면"
-  [2, 'w-29-golpo-janmul', ' Specifically: slightly raise and thicken the fabric over her chest so nothing there could look like an areola, and lengthen or close the skirt slit a little so no underwear is visible. Change only these small areas.']]
+  [2, 'w-29-golpo-janmul', ' Specifically: slightly raise and thicken the fabric over her chest so nothing there could look like an areola, and lengthen or close the skirt slit a little so no underwear is visible. Change only these small areas.'],
+  // 11-10 형: "왼쪽 가슴 유륜 나옴 · 아깝다" · "살짝 팬티랑 오른쪽 유륜 위험"
+  [2, 'w-85-sinji-neoul', ' Specifically: cover her left breast a little more so no areola shows (raise or widen the fabric there). Change only this small area.'],
+  [2, 'w-101-garak-singwigan', ' Specifically: cover her right breast a little more so nothing could look like an areola, and close the skirt a little so no underwear is visible. Change only these small areas.']]
 for (const [tier, id, extra] of R15) {
   const hd = tier === 1 ? 'awaken-hd' : 'awaken2-hd'
   if (existsSync(`assets_15/realm/${hd}/${id}.jpg`)) continue
