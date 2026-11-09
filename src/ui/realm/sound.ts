@@ -23,7 +23,7 @@ export const PICK = {
   bgm_map: 'k1', bgm_war: 'c7v',
   // 이기고 진 뒤의 음악 — 이김은 국악 팡파르: 북 쿵·쿵 → 징 쾅 → 태평소 → 북·징으로 맺음, 한 번만 울린다
   // (형 10-29: "국악식 빵빠레 같은 빠바밤 · 지금 노래는 말 타며 달리기 막 시작하는 노래 같음" — 옛 a 는 형이 받은 추격풍) · g1~g3 은 태평소독주 시그널음악(한국저작권위원회 · CC BY)에 공유마당 북·징을 얹어 구움
-  bgm_win: 'h1', bgm_lose: 'c3',
+  bgm_win: 'h2', bgm_lose: 'c3',
   // 첫 화면(로그인·이어 하기) 음악 — 웅장한 것 (형 10-23: "로그인 화면 메인은 웅장한 bgm 따로")
   bgm_title: 'c6',
   // 누를 때 나는 소리 — 누른 것의 바탕(쇠·엽전·붓·말굽·방울·북·바둑돌·딱따기)대로 (형 10-23: "탭할 때 나는 sfx 도 소재에 맞게 다양한 소리")
@@ -32,7 +32,7 @@ export const PICK = {
   // 맞부딪힘 — 한 합마다 · 필살(상성에서 이긴 합)은 더 무겁게. 쇠 한 번 "팅"이 아니라 여럿이 칼·창·방패로 엉겨 붙는 소리 (형 10-23: "진짜 전투하는 효과음")
   battle_clash: 'g3', battle_crit: 'g3',
   // 판이 끝났을 때(이겼다·졌다 화면) — 싸움 하나 이긴·진 음악과 따로 (형 10-23: "게임 승리했을 때나 패배했을 때 사운드는 없어?")
-  bgm_end_win: 'w5', bgm_end_lose: 'c6',
+  bgm_end_win: 'h1', bgm_end_lose: 'c6',
   // 신방 — 장수 판의 「신방을 살펴본다」 장면 (형 10-24) · c9 = 국악연주곡 반우반계 반엽 「남하여」(한국저작권위원회 · 형이 소리 고르기 판에서 고름 10-24)
   bgm_bridal: 'c9',
   // 혼례 장면의 배경 음악 — 꼭두각시 01~04 를 빈틈없이 이은 한 곡(30초 · -18 LUFS · 국립국악원 디지털 이음 · 공공누리 1유형) (형 10-29)
@@ -66,8 +66,8 @@ const EXT: Readonly<Partial<Record<string, string>>> = {
   hire_go_g1: 'mp3', hire_go_g2: 'mp3', hire_go_g3: 'mp3', relic_open_g1: 'mp3', relic_open_g2: 'mp3', relic_open_g3: 'mp3',
   ...Object.fromEntries(['bgm_title', 'bgm_war', 'bgm_lose'].flatMap((s) => ['g1', 'g2', 'g3'].map((g) => [`${s}_${g}`, 'mp3']))),
   war_cry_g1: 'wav', war_cry_g2: 'wav', war_cry_g3: 'wav',
-  // 11-09 형이 받아 온 것: 싸움 첫 함성 · 이긴 뒤 음악(maksymmalko 「Victory Nomination」 · Pixabay) · 마을 잔치 · 공작 소리는 sfx/plot/
-  war_cry_h1: 'mp3', bgm_win_h1: 'mp3', feast_h1: 'mp3',
+  // 11-09 형이 받아 온 것: 싸움 첫 함성 · 판을 다 이긴 음악(maksymmalko 「Victory Nomination」) · 싸움 이긴 팡파르(studiokolomna 「Steps of Victory」) · 마을 잔치 · 공작 소리는 sfx/plot/ (모두 Pixabay)
+  war_cry_h1: 'mp3', bgm_end_win_h1: 'mp3', bgm_win_h2: 'mp3', feast_h1: 'mp3',
   cmd_hold_h1: 'mp3', // 방진 — 형이 받아 온 「탱탱」 쇠판 소리 (10-24)
   ...Object.fromEntries(['battle_clash', 'battle_crit'].flatMap((s) => ['g1', 'g2', 'g3'].map((g) => [`${s}_${g}`, 'mp3']))),
   // 제사 — 힐 하는 소리로 (형 11-03: "향피리 소리 별로 · 힐 하는 소리 같은 거") · g7~g10 공유마당
@@ -108,7 +108,7 @@ const TRACK_GAIN: Readonly<Partial<Record<string, number>>> = {
   // 싸움 음악(사물놀이)은 꽹과리가 앞에 나서 깃발 소리를 덮는다 — 지도 음악보다 한참 낮게 (형 10-23: "꽹과리 소리 너무 많이 시끄러운데")
   bgm_war_c7: 0.3, bgm_war_c8: 0.5, bgm_war_c7v: 0.3, bgm_war_c8v: 0.5, bgm_title_c6: 0.72, bgm_end_lose_c6: 0.87,
   // 형의 이긴 뒤 음악은 -12dB 언저리로 옛 국악 팡파르(-24)보다 한참 크다
-  bgm_win_h1: 0.45,
+  bgm_end_win_h1: 0.45, bgm_win_h2: 0.6,
 }
 const gainOf = (slot: Slot, pick: string = PICK[slot]): number => TRACK_GAIN[`${slot}_${pick}`] ?? 1
 

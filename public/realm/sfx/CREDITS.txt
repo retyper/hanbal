@@ -323,7 +323,8 @@ duel/riser_h.mp3  형 · 「riser」 (겨루기 고리가 줄어드는 동안 ·
 
 # 11-09 밤 형이 받아 온 것 (형 플레이 테스트 · 출처는 형이 받은 곳)
 war_cry_h1.mp3  형 · 「전투시작함성」
-bgm_win_h1.mp3  형 · maksymmalko 「Victory Nomination Winner Champion Music」 (Pixabay 544991 · Pixabay Content License)
+bgm_end_win_h1.mp3  형 · maksymmalko 「Victory Nomination Winner Champion Music」 (Pixabay 544991 · Pixabay Content License) — 판을 다 이겼을 때
+bgm_win_h2.mp3  형 · studiokolomna 「Steps of Victory Fanfare Awards」 (Pixabay 358350 · Pixabay Content License) — 싸움 하나 이겼을 때
 feast_h1.mp3  형 · 「잔치sfx」 (마을 잔치 장면 · 옛 꼭두각시 대신)
 plot/burn_h.mp3  형 · 「방화」 (60초에서 앞 5초만 잘라 씀)
 plot/rumor_h.mp3  형 · 「소문」
