@@ -41,6 +41,8 @@ export interface RNode {
   readonly workLv?: number
   /** 터마다 일터 — 일터 → 단 (고을 종류만큼 터 · works.lotCap) · 고을과 함께 넘어간다 (형 11-05: 논을 지으면 다른 걸 못 짓는 게 말이 안 된다) */
   readonly lots?: Readonly<Partial<Record<import('./works.ts').WorkWhat, number>>>
+  /** 터마다 일터와 단 — 터 차례대로 · 같은 일터가 여럿일 수 있다 (형 11-09: 논 넷도 된다) · 없으면 옛 lots 를 읽는다 (works.sitesOf) */
+  readonly sites?: ReadonlyArray<import('./works.ts').Site>
   /** 공사로 더 닦은 터 수 (works.lotCap 에 더한다 · 형 11-08: "자물쇠 걸어놨으면 열 수도 있다는 거 아님?") */
   readonly lotsOpen?: number
   /** 다 지은 큰 공사 (wonders.ts) — 고을과 함께 넘어간다 · 그 고을을 쥔 나라가 힘을 갖는다. 옛 저장에는 없다 */
@@ -981,7 +983,7 @@ export interface Realm {
   /** 짓는 중 — 이 계절 끝에 그 고을 꼬리표가 된다 (economy.applyBuild · stepBuilds) */
   builds?: Array<{ readonly faction: string; readonly node: string; readonly what: BuildWhat; readonly done: number }>
   /** 짓는 중인 고을 일터 (works.ts) — 목책 줄과 따로 */
-  works?: Array<{ readonly faction: string; readonly node: string; readonly what: import('./works.ts').WorkWhat; readonly done: number; readonly lv?: number }>
+  works?: Array<{ readonly faction: string; readonly node: string; readonly what: import('./works.ts').WorkWhat; readonly done: number; readonly lv?: number; readonly lot?: number }>
   /** 닦는 중인 터 (works.ts · 터 닦기) */
   clears?: Array<{ readonly faction: string; readonly node: string; readonly done: number }>
   /** 짓는 중인 큰 공사 (wonders.ts · 위원회 11-08 ⑦) — 나라마다 하나. 옛 저장에는 없다 */
@@ -1139,7 +1141,7 @@ export type Order =
   | { readonly kind: 'wonder'; readonly faction: string; readonly what: import('./wonders.ts').WonderId }
   | { readonly kind: 'feast'; readonly faction: string }
   /** 고을 일터 짓기 (works.ts) */
-  | { readonly kind: 'work'; readonly faction: string; readonly node: string; readonly what: import('./works.ts').WorkWhat }
+  | { readonly kind: 'work'; readonly faction: string; readonly node: string; readonly what: import('./works.ts').WorkWhat; /** 손댈 터 (빈 터 차례면 새 터) · 없으면 같은 일터의 첫 터 */ readonly lot?: number }
   /** 상단에서 사기 · 팔기 (merchant.ts) */
   | { readonly kind: 'buy'; readonly faction: string; readonly offer: string }
   | { readonly kind: 'sell'; readonly faction: string; readonly good: Good; readonly n: number }

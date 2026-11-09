@@ -210,8 +210,8 @@ function dockHtml(t: TownViewIn, s: TownSlot | undefined): { dock: string; bar: 
       dock: head + `<div class="tvup"><div class="tvcur">${cur}<b>${s.lv}단</b></div><i class="tvarrow">➜</i><div class="tvnxt">${nxt}<b>${s.lv + 1}단</b></div></div>`
         + `<div class="tvchips">${n.cost}<span class="whenc"><b>⏳${esc(n.when)}</b></span><span class="tvgain"><b>▲ ${esc(s.eff)} → ${esc(n.gain.replace(/^[^+−]*/, ''))}</b></span></div>`,
       bar: n.on
-        ? `<button class="tvgo on" data-act="work" data-node="${node}" data-what="${s.what}">✓ ${esc(s.name)} ${s.lv + 1}단 · 다음 달 시작합니다<small>다시 누르면 거둡니다</small></button>`
-        : `<button class="tvgo" data-act="work" data-node="${node}" data-what="${s.what}"${deny(n.why)}>${ic(t.art, s.icon)}${esc(s.name)} ${s.lv + 1}단으로 올리기 ${n.cost}<span class="whenc"><b>⏳${esc(n.when)}</b></span></button>`,
+        ? `<button class="tvgo on" data-act="work" data-node="${node}" data-lot="${Math.max(0, Math.min(t.slots.length - 1, t.pick.lot))}" data-what="${s.what}">✓ ${esc(s.name)} ${s.lv + 1}단 · 다음 달 시작합니다<small>다시 누르면 거둡니다</small></button>`
+        : `<button class="tvgo" data-act="work" data-node="${node}" data-lot="${Math.max(0, Math.min(t.slots.length - 1, t.pick.lot))}" data-what="${s.what}"${deny(n.why)}>${ic(t.art, s.icon)}${esc(s.name)} ${s.lv + 1}단으로 올리기 ${n.cost}<span class="whenc"><b>⏳${esc(n.when)}</b></span></button>`,
     }
   }
   // 빈 터 — 이 땅에 맞는 일터 타일
@@ -226,8 +226,8 @@ function dockHtml(t: TownViewIn, s: TownSlot | undefined): { dock: string; bar: 
   const bar = picked === null
     ? `<button class="tvgo"${deny(s.options.length > 0 ? '위 타일에서 지을 것을 먼저 고르세요' : '이 땅에 맞는 일터가 없습니다')}>지을 것을 고르세요</button>`
     : picked.on
-      ? `<button class="tvgo on" data-act="work" data-node="${node}" data-what="${picked.what}">✓ ${esc(picked.name)} · 다음 달 짓기 시작합니다<small>다시 누르면 거둡니다</small></button>`
-      : `<button class="tvgo" data-act="work" data-node="${node}" data-what="${picked.what}"${deny(picked.why)}>${ic(t.art, picked.icon)}${esc(picked.name)} 짓기 시작 ${picked.cost}<span class="whenc"><b>⏳${esc(s.when)}</b></span></button>`
+      ? `<button class="tvgo on" data-act="work" data-node="${node}" data-lot="${Math.max(0, Math.min(t.slots.length - 1, t.pick.lot))}" data-what="${picked.what}">✓ ${esc(picked.name)} · 다음 달 짓기 시작합니다<small>다시 누르면 거둡니다</small></button>`
+      : `<button class="tvgo" data-act="work" data-node="${node}" data-lot="${Math.max(0, Math.min(t.slots.length - 1, t.pick.lot))}" data-what="${picked.what}"${deny(picked.why)}>${ic(t.art, picked.icon)}${esc(picked.name)} 짓기 시작 ${picked.cost}<span class="whenc"><b>⏳${esc(s.when)}</b></span></button>`
   return { dock, bar }
 }
 
@@ -302,7 +302,7 @@ export function townViewHtml(t: TownViewIn): string {
     + `<div class="tvtop"><b>${esc(t.name)}</b>`
     + `<span class="tvst" data-tip="집 ${t.hh}채 · 집이 늘면 일손도 늡니다">${ic(t.art, 'settle-hamlet')}${t.hh}</span>`
     + `<span class="tvst" data-tip="일손 ${n} · 집 ${Math.round(P.realm.townHHPerWalker)}채에 하나씩 저절로 일합니다">${ic(t.art, 'unit-porters')}${n}</span>`
-    + `<span class="tvst" data-tip="터 ${built}/${t.lots} · 터마다 다른 일터 하나를 짓고 단을 올립니다">${ic(t.art, 'settle-clearing')}${built}/${t.lots}</span>`
+    + `<span class="tvst" data-tip="터 ${built}/${t.lots} · 터마다 일터 하나를 짓고 단을 올립니다 · 같은 일터를 여러 터에 지으면 몫이 더해집니다">${ic(t.art, 'settle-clearing')}${built}/${t.lots}</span>`
     + `<button class="tvx" data-act="town-out" aria-label="마을에서 나가기">✕</button></div>`
     + `<div class="tvstage"><div class="tvboard"><img class="tvbg" src="${t.art}${t.bg}" alt="">${lotsHtml}${folk}</div>${stamp}</div>`
     + `<div class="tvdock">${dock}</div><div class="tvbar"><div class="tvhave">${t.stock}</div>${bar}</div></div>`

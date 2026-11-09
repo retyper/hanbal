@@ -118,7 +118,7 @@ import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
 import { loadTip, tipHtml, tipReadMs } from './loadtips.ts'
 import { worldMapReady } from './worldmap.ts'
 import { loadBar } from './loadbar.ts'
-import { WORKS, clearBlocked, clearCost, lotCap, lvGain, lvOf, workBlocked, workCost, workEffect, workOptions, worksOf, type WorkWhat } from '../../realm/works.ts'
+import { WORKS, clearBlocked, clearCost, lotCap, lotOf, lvGain, lvOf, sitesOf, workBlocked, workCost, workEffect, workOptions, worksOf, type WorkWhat } from '../../realm/works.ts'
 import { WONDERS, WONDER_ORDER, canWonder, feastBlocked, feastNext, feastOdds, feastPour, greatOpen, rivalWonders, wonderBlocked, wonderEffect, wonderNode, wonderStageCost, wonderWorkOf, type FeastGot, type WonderId } from '../../realm/wonders.ts'
 import { postGain } from '../../realm/postgain.ts'
 import { hasScale, marketIn, marketOf, scaleBuyPrice, scaleLimit, scaleRoom, scaleSellPrice, sellCap, sellLimit, sellPrice, wishReady, WISH_GRADE_NAME, type Offer } from '../../realm/merchant.ts'
@@ -6791,28 +6791,33 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const total = turnsOf(w.lv ?? 1)
       return { left: turnsLabel(r, left), prog: Math.max(0, Math.min(1, 1 - left / total)) }
     }
+    // 터마다 일터 — 같은 일터가 여러 터일 수 있어 터 차례(lot)로 짚는다 (형 11-09: 논 넷도 된다) · 옛 주문·옛 짓기는 같은 일터의 첫 터
+    const sites = sitesOf(n)
+    const gLot = going !== undefined ? going.lot ?? lotOf(n, going.what) : -1
+    const qLot = queued !== undefined ? lotOf(n, queued.what, queued.lot) : -1
     /** 못 하는 까닭 — 이번 달 다른 것을 골랐으면 그것 · 잠김 · 모자람 */
-    const whyOf = (w: WorkWhat, lv: number): string | null => {
-      if (queued !== undefined && queued.what !== w) return '이번 달엔 이 고을에서 다른 일을 고르셨습니다 (한 번에 하나)'
+    const whyOf = (w: WorkWhat, lv: number, lot: number): string | null => {
+      if (queued !== undefined && (queued.what !== w || qLot !== Math.min(lot, sites.length))) return '이번 달엔 이 고을에서 다른 일을 고르셨습니다 (한 번에 하나)'
       if (musters.some((o) => o.kind === 'clearLot' && o.node === n.id)) return '이번 달엔 터 닦기를 고르셨습니다 (한 번에 하나)'
-      const lock = workBlocked(r, me(), n.id, w)
+      const lock = workBlocked(r, me(), n.id, w, lot)
       if (lock !== null) return lock
       const short = shortOf(workCost(w, lv) as Partial<Record<Good, number>>)
       return short !== '' ? short : null
     }
-    const slots: TownSlot[] = worksOf(n).map(([w, lv]) => {
+    const slots: TownSlot[] = sites.map(({ what: w, lv }, i) => {
       const d = WORKS[w]
-      const up = going?.what === w ? goingOf(going) : null
-      const next = lv < max ? { sprite: sp(w, lv + 1), cost: costHtml(workCost(w, lv + 1)), when: turnsLabel(r, turnsOf(lv + 1)), gain: workEffect(w, lv + 1), why: whyOf(w, lv + 1), on: queued?.what === w } : null
+      const up = gLot === i ? goingOf(going) : null
+      const next = lv < max ? { sprite: sp(w, lv + 1), cost: costHtml(workCost(w, lv + 1)), when: turnsLabel(r, turnsOf(lv + 1)), gain: workEffect(w, lv + 1), why: whyOf(w, lv + 1, i), on: queued?.what === w && qLot === i } : null
       const tip = `${d.name} ${lv}단 · ${d.does}${next !== null ? ` · ${lv + 1}단: ${Object.entries(workCost(w, lv + 1)).map(([g, v]) => `${GOOD_NAME[g as Good]} ${v}`).join(' ')} · ${turnsLabel(r, turnsOf(lv + 1))} · 효과 ${next.gain}` : ' · 다 올렸다'}`
       return { k: 'work', what: w, name: d.name, icon: d.icon, sprite: sp(w, lv), lv, max, does: d.does, eff: workEffect(w, lv), next, going: up, tip }
     })
-    if (going !== undefined && lvOf(n, going.what) === 0) {
+    if (going !== undefined && gLot >= sites.length) {
       const g = goingOf(going)!
       slots.push({ k: 'going', what: going.what, name: WORKS[going.what].name, icon: WORKS[going.what].icon, left: g.left, prog: g.prog, tip: `${WORKS[going.what].name} 짓는 중 · ${g.left} 남음` })
     }
     const cap = lotCap(n)
-    const opts = workOptions(r, n.id).filter((w) => lvOf(n, w) === 0 && going?.what !== w)
+    // 빈 터엔 이 땅에 맞는 일터 모두 — 이미 지은 것도 또 지을 수 있다
+    const opts = workOptions(r, n.id)
     // 이번 달 새로 지을 일터는 터 하나에만 비친다 — 고른 터가 빈 터면 거기, 아니면 첫 빈 터 (형 11-09: 모든 터에 그 그림이 깜빡거림)
     const firstEmpty = slots.length
     const planLot = townPick !== null && townPick.lot >= firstEmpty && townPick.lot < Math.min(cap, 4) ? townPick.lot : firstEmpty
@@ -6822,7 +6827,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         k: 'empty', when: turnsLabel(r, turnsOf(1)),
         tip: `빈 터 · 이 땅에 맞는 일터 ${opts.length}가지 · 터 ${slots.length + 1}/${cap}`,
         // 빈 터마다 같은 타일 — 둘째 빈 터를 눌러도 「맞는 일터가 없다」고 하지 않게 (11-08 · 한 고을 한 달 하나는 whyOf 가 막는다)
-        options: opts.map((w) => ({ what: w, name: WORKS[w].name, icon: WORKS[w].icon, sprite: sp(w, 1), cost: costHtml(workCost(w)), eff: workEffect(w, 1), does: WORKS[w].does, why: whyOf(w, 1), on: here && queued?.what === w })),
+        options: opts.map((w) => ({ what: w, name: WORKS[w].name, icon: WORKS[w].icon, sprite: sp(w, 1), cost: costHtml(workCost(w)), eff: workEffect(w, 1), does: WORKS[w].does, why: whyOf(w, 1, sites.length), on: here && queued?.what === w && qLot >= sites.length })),
       })
     }
     // 잠긴 터 — 맨 앞 하나는 닦을 수 있다 (형 11-08: "공사를 해서 더 만들 수 있게") · 닦는 중이면 그 터에 비계
@@ -8726,9 +8731,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         // 고을 일터 — 한 고을에 하나만 고른다 · 다시 누르면 거둔다
         const node = d['node']!
         const what = d['what'] as WorkWhat
-        const had = musters.some((o) => o.kind === 'work' && o.node === node && o.what === what)
+        // 마을 안에선 터 차례(lot)까지 — 같은 일터가 여러 터일 수 있다 (형 11-09) · 고을 판의 단추는 lot 없이 (같은 일터의 첫 터)
+        const lot = d['lot'] !== undefined ? Number(d['lot']) : undefined
+        const had = musters.some((o) => o.kind === 'work' && o.node === node && o.what === what && o.lot === lot)
         musters = musters.filter((o) => !(o.kind === 'work' && o.node === node))
-        if (!had) musters = [...musters, { kind: 'work', faction: me(), node, what }]
+        if (!had) musters = [...musters, { kind: 'work', faction: me(), node, what, ...(lot !== undefined ? { lot } : {}) }]
         // 마을 안의 큰 단추 — 고르면 북 · 거두면 툭 (WWE · 메모리 wwe-overreaction-ux)
         if (townIn === node) { ding(snd(had ? 'tap_cancel' : 'tap_drum'), had ? 0.4 : 0.6); buzz(had ? [20] : [12, 40, 24]) }
         break

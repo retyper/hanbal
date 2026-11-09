@@ -27,7 +27,7 @@ import { boardRoutes } from './roadlayout.ts'
 import { ZONES } from '../../realm/data/zones/index.ts'
 import { inkOn, kitVars, nationKit } from './kitcolor.ts'
 import { worldMapFallback, worldMapUrl } from './worldmap.ts'
-import { WORKS, worksOf } from '../../realm/works.ts'
+import { WORKS, worksOf, type WorkWhat } from '../../realm/works.ts'
 import { marketOf } from '../../realm/merchant.ts'
 import { crownTargets } from './crowns.ts'
 import { wonderMark } from './wondermap.ts'
@@ -205,6 +205,7 @@ export const MAP_CSS = `
 /* 우리와의 사이 칩 — 이름표 깃발 곁 */
 .map .lb .lbr { flex: none; font-style: normal; font-weight: 800; font-size: .78em; line-height: 1; padding: .18em .38em; border-radius: .5em; margin-right: .25em; border: 1px solid #0008; box-shadow: 0 1px 2px #0006; }
 .map .lb .lbr.war { position: relative; background: #b3261e; color: #fff; }
+.map .lb i.lbwn { font-style: normal; font-size: .72em; font-weight: 900; margin-left: -.15em; color: #3a2a10; }
 /* 붉은 숨 — 그림자를 움직이지 않고 ::after 의 고정 빛을 opacity 로만 (GPU 로 간다 · .stl 과 같은 까닭) */
 .map .lb .lbr.war::after { content: ''; position: absolute; inset: -1px; border-radius: inherit; box-shadow: 0 0 6px #ff4a3a; opacity: 0; pointer-events: none; animation: lbrwar 1.4s ease-in-out infinite alternate; }
 .map .lb .lbr.ally { background: #2e7d32; color: #fff; } .map .lb .lbr.tru { background: #4a90b8; color: #fff; }
@@ -1012,7 +1013,10 @@ export function mapHtml(
     // (형 10-24: "지역에서 생산되는 품목도 우상단 동그라미가 아니라 더 효과적이게" — 문명 6 도시 배너처럼 이름에 붙인다)
     // 고을 일터 — 이름표 칸 맨 앞에 금테 그림 하나 (works.ts · 규칙은 지도에 보이게)
     const mkt = marketOf(r, r.player)?.at === n.id ? `<img class="lbw" src="${art}icon/route-caravan.png" alt="상단" title="떠돌이 상단이 머문다">` : ''
-    const wk = worksOf(n).map(([w]) => `<img class="lbw" src="${art}icon/${WORKS[w].icon}.png" alt="${WORKS[w].name}" title="${WORKS[w].name}: ${WORKS[w].does}">`).join('')
+    // 같은 일터가 여러 터면 그림표 하나에 ×수 (형 11-09: 논 넷도 된다)
+    const wkN = new Map<WorkWhat, number>()
+    for (const [w] of worksOf(n)) wkN.set(w, (wkN.get(w) ?? 0) + 1)
+    const wk = [...wkN].map(([w, c]) => `<img class="lbw" src="${art}icon/${WORKS[w].icon}.png" alt="${WORKS[w].name}" title="${WORKS[w].name}${c > 1 ? ` ${c}곳` : ''}: ${WORKS[w].does}">${c > 1 ? `<i class="lbwn">×${c}</i>` : ''}`).join('')
     // 주인 없는 철광·포구에 쌓인 것 — 군대가 밟으면 그 나라가 거둔다 (형 11-05 · 규칙은 지도에 보이게)
     // 쌓인 것 — 1 이 안 돼도 보인다: 숫자 + 아래에 차오르는 띠 (형 11-05: "쌓이는 것도 안 보이고 · 유저는 이거 모른다고")
     const stash = freeSite(n) ? (Object.entries(n.stash ?? {}) as Array<[keyof typeof GOOD_NAME, number]>).filter(([, v]) => v > 0.01).map(([g, v]) => `<span class="lbst" title="쌓인 ${GOOD_NAME[g]} · 군사가 머물면 달마다 거둔다 · 우리 땅으로는 개척단" style="--f:${(v - Math.floor(v + 1e-9)).toFixed(2)}"><img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}">${Math.floor(v + 1e-9)}</span>`).join('') : ''

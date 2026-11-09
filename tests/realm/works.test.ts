@@ -14,13 +14,13 @@ import { canWork, lotCap, lvOf, workBlocked, workCost, workLv, workMulAt, worksO
 import { P } from '../../src/tune/params.ts'
 import type { Order, Realm } from '../../src/realm/types.ts'
 
-const work = (r: Realm, what: 'paddy' | 'yard'): Order => ({ kind: 'work', faction: r.player, node: 'our-cap', what })
+const work = (r: Realm, what: 'paddy' | 'yard', lot?: number): Order => ({ kind: 'work', faction: r.player, node: 'our-cap', what, ...(lot !== undefined ? { lot } : {}) })
 
 /** 일터 주문을 넣고 다 설 때까지 돌린다 */
-function build(r0: Realm, what: 'paddy' | 'yard'): Realm {
+function build(r0: Realm, what: 'paddy' | 'yard', lot?: number): Realm {
   let r = r0
   r.stock[r.player]!.grain = 100000
-  r = advance(r, [work(r, what)]).next
+  r = advance(r, [work(r, what, lot)]).next
   for (let i = 0; i < 12 && (r.works ?? []).length > 0; i++) {
     r.stock[r.player]!.grain = 100000
     r = advance(r, []).next
@@ -81,9 +81,26 @@ describe('터 — 땅 크기대로 여러 일터 (형 11-05)', () => {
     const village = Object.values(r.nodes).find((n) => n.kind === 'village' || n.kind === 'port')!
     assert.ok(lotCap(cap) > lotCap(village))
     // 터를 다 채우면 새 일터는 막힌다 (올리기는 된다)
-    r.nodes['our-cap'] = { ...cap, lots: { paddy: 1, yard: 1, market: 1, smithy: 1 } }
+    r.nodes['our-cap'] = { ...cap, sites: [{ what: 'paddy', lv: 1 }, { what: 'yard', lv: 1 }, { what: 'market', lv: 1 }, { what: 'smithy', lv: 1 }] }
     assert.match(workBlocked(r, r.player, 'our-cap', 'saltpan') ?? '', /터가 다 찼다|맞지 않는다/)
     assert.equal(workBlocked(r, r.player, 'our-cap', 'paddy'), null)
+  })
+  it('같은 일터를 여러 터에 — 논 둘이면 몫이 더해지고 · 터마다 따로 단을 올린다 (형 11-09)', () => {
+    let r = build(byeonhanMini(1), 'paddy')
+    const one = workMulAt(r, 'our-cap', 'harvest')
+    r = build(r, 'paddy', 1) // 둘째 터에 또 논
+    assert.deepEqual(worksOf(r.nodes['our-cap']).map(([w, lv]) => [w, lv]), [['paddy', 1], ['paddy', 1]])
+    const two = workMulAt(r, 'our-cap', 'harvest')
+    assert.ok(Math.abs((two - 1) - 2 * (one - 1)) < 1e-9, `논 둘 = 몫 두 배 (${one} → ${two})`)
+    r = build(r, 'paddy', 1) // 둘째 논만 2단으로
+    assert.deepEqual(worksOf(r.nodes['our-cap']).map(([, lv]) => lv), [1, 2])
+    assert.equal(lvOf(r.nodes['our-cap'], 'paddy'), 2)
+  })
+  it('옛 판의 터(lots: 일터 → 단)도 그대로 읽는다', () => {
+    const r = byeonhanMini(1)
+    r.nodes['our-cap'] = { ...r.nodes['our-cap']!, lots: { paddy: 2, yard: 1 } }
+    assert.deepEqual(worksOf(r.nodes['our-cap']), [['paddy', 2], ['yard', 1]])
+    assert.ok(workMulAt(r, 'our-cap', 'harvest') > 1)
   })
   it('옛 판의 일터 하나(work·workLv)도 그대로 읽는다', () => {
     const r = byeonhanMini(1)

@@ -23,7 +23,7 @@ import type { Equip, UnitKind } from './battle.ts'
 import { TIERS, kitOf, lowestTier, nextTier, upgradeKind } from './kit.ts'
 import { wonderHarvestMul, wonderIronMul } from './wonders.ts'
 import type { Army, BuildWhat, Good, Goods, Order, ReportLine, Realm, RNode, SeasonOfYear, Stock } from './types.ts'
-import { bestWorkLv, canClear, canWork, clearCost, cutMul, lotCap, lvOf, targetLv, withWork, workCost, workMulAt, worksOf } from './works.ts'
+import { bestWorkLv, canClear, canWork, clearCost, cutMul, lotCap, lotOf, lvOf, sitesOf, targetLv, withSite, workCost, workMulAt } from './works.ts'
 
 function menIn(mix: Readonly<Partial<Record<string, number>>>): number {
   let n = 0
@@ -505,13 +505,14 @@ export function stepClears(r: Realm, lines: ReportLine[]): void {
 
 /** 고을 일터 짓기를 시작한다 — 값을 치르고 workTurns 턴 뒤 선다 (works.ts · stepWorks) */
 export function applyWork(r: Realm, o: Extract<Order, { kind: 'work' }>, lines: ReportLine[]): void {
-  if (!canWork(r, o.faction, o.node, o.what) || (r.works ?? []).some((w) => w.node === o.node)) return
-  const lv = targetLv(r, o.node, o.what)
+  if (!canWork(r, o.faction, o.node, o.what, o.lot) || (r.works ?? []).some((w) => w.node === o.node)) return
+  const lv = targetLv(r, o.node, o.what, o.lot)
+  const lot = lotOf(r.nodes[o.node], o.what, o.lot)
   for (const [g, v] of Object.entries(workCost(o.what, lv)) as Array<[Good, number]>) {
     if (g === 'grain') stockOf(r, o.faction).grain -= v
     else addGood(r, o.faction, g, -v)
   }
-  ;(r.works ??= []).push({ faction: o.faction, node: o.node, what: o.what, done: r.season + Math.max(1, Math.round(P.realm.workTurns * (lv > 1 ? P.realm.workLvTurnsMul : 1))) - 1, ...(lv > 1 ? { lv } : {}) })
+  ;(r.works ??= []).push({ faction: o.faction, node: o.node, what: o.what, done: r.season + Math.max(1, Math.round(P.realm.workTurns * (lv > 1 ? P.realm.workLvTurnsMul : 1))) - 1, ...(lv > 1 ? { lv } : {}), lot })
   lines.push({ kind: 'work', faction: o.faction, node: o.node, what: o.what, done: false, ...(lv > 1 ? { lv } : {}) })
 }
 
@@ -523,9 +524,11 @@ export function stepWorks(r: Realm, lines: ReportLine[]): void {
     const n = r.nodes[w.node]
     const lv = w.lv ?? 1
     if (n === undefined || n.owner !== w.faction) continue
-    // 터마다 일터 — 바로 아랫단이어야 오르고, 새로 세우려면 빈 터가 있어야 한다
-    if (lvOf(n, w.what) !== lv - 1 || (lv === 1 && worksOf(n).length >= lotCap(n))) continue
-    r.nodes[w.node] = withWork(n, w.what, lv)
+    // 터마다 일터 — 그 터가 바로 아랫단이어야 오르고, 새로 세우려면 빈 터가 있어야 한다
+    const sites = sitesOf(n)
+    const i = lv === 1 ? sites.length : lotOf(n, w.what, w.lot)
+    if (lv === 1 ? sites.length >= lotCap(n) : sites[i]?.what !== w.what || sites[i]?.lv !== lv - 1) continue
+    r.nodes[w.node] = withSite(n, i, w.what, lv)
     lines.push({ kind: 'work', faction: w.faction, node: w.node, what: w.what, done: true, ...(lv > 1 ? { lv } : {}) })
   }
   r.works = keep
