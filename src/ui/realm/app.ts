@@ -4173,6 +4173,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const trait: Record<string, string> = { water: 'river', bolt: 'shaman', wind: 'archer', earth: 'mountain', fire: 'smith' }
       r.heroes[lead.id] = { ...lead, traits: [trait[wk] ?? 'river', ...(lead.traits ?? []).filter((x) => !Object.values(trait).includes(x))], ascended: true, flames: Math.round(P.realm.ascendWins) }
     }
+    // 개발판에서만 — 장수 겨루기를 바로 시험: window.__sparDuel = true (적장 있는 적군을 그 자리에 세우고, 우리 장수 무예를 나설 만큼)
+    if (import.meta.env.DEV && (window as unknown as Record<string, unknown>)['__sparDuel'] === true) {
+      const foeOwner = r.nodes[f.to]?.owner
+      const foeA = sorted(Object.values(r.armies)).find((x) => x.faction === foeOwner && x.hero !== null)
+      if (foeA !== undefined) foeA.at = f.to
+      const l2 = a.hero !== null ? r.heroes[a.hero] : undefined
+      if (l2 !== undefined && l2.mu < P.realm.tacDuelMu) r.heroes[l2.id] = { ...l2, mu: P.realm.tacDuelMu + 1 }
+    }
     const back = (): void => { warOn = false; front = { kind: 'title' }; paint() }
     try {
       if (openWar(root, r, aiOrders(r), { art: ART, me: r.player, ding, warm: warmSfx, music: (k) => { if (k === 'war') music.war(); else music.result(k) }, done: back })) { warOn = true; music.war(); music.primeResults(); return }

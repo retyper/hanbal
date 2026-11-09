@@ -515,6 +515,8 @@ export interface RoundOrder {
   readonly who?: string
   /** 사로잡을 적장 (없으면 적의 총대장) */
   readonly target?: string
+  /** 손으로 치른 장수 겨루기의 끝 (겨루기 시험판 · 형 11-09) — 있으면 굴림 대신 이것 · 비기면 없다(굴림) */
+  readonly duel?: 'win' | 'lose'
 }
 
 /**

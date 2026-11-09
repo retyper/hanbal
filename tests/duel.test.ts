@@ -70,3 +70,26 @@ test('판은 60초를 넘지 않는다', () => {
   const d = play(3, timed(7))
   assert.ok(d.t <= Math.round(P.duel.length))
 })
+
+// ── 본편 연결 — 손으로 치른 겨루기의 끝이 굴림을 대신한다 (tactics.ts · RoundOrder.duel)
+import { fightRounds, type Side } from '../src/realm/tactics.ts'
+const side = (player: boolean, mu: number): Side => ({
+  F: 300, mix: { spear: 1 }, morale: 1, hero: { id: player ? 'me' : 'foe', mu, ryak: 5, coward: false }, hungry: false, specials: [], water: false, player, seen: true, grain: 1000,
+})
+
+test('손으로 이긴 겨루기는 무예가 한참 낮아도 이긴다 · 진 겨루기는 진다', () => {
+  for (let s = 1; s <= 20; s++) {
+    // 첫 합의 우리 겨루기 결과 (뒤 합에 적장이 따로 겨루기를 걸 수 있어 판 전체의 duel 말고 첫 합을 본다)
+    const ours = (r: ReturnType<typeof fightRounds>): string | undefined => r.rounds?.[0]?.acts?.find((x) => x.s === 'a' && x.c === 'duel')?.res
+    assert.equal(ours(fightRounds(side(true, 6), side(false, 10), `t${s}`, s, 0, { cmds: [{ lead: 'duel', duel: 'win' }] })), 'won', `seed ${s} win`)
+    assert.equal(ours(fightRounds(side(true, 10), side(false, 6), `t${s}`, s, 0, { cmds: [{ lead: 'duel', duel: 'lose' }] })), 'lost', `seed ${s} lose`)
+  }
+})
+
+test('손 겨루기 결과가 없으면(비김) 예전 굴림 그대로', () => {
+  for (let s = 1; s <= 10; s++) {
+    const a = fightRounds(side(true, 7), side(false, 7), `u${s}`, s, 0, { cmds: [{ lead: 'duel' }] })
+    const b = fightRounds(side(true, 7), side(false, 7), `u${s}`, s, 0, { cmds: [{ lead: 'duel' }] })
+    assert.deepEqual(a.duel, b.duel)
+  }
+})

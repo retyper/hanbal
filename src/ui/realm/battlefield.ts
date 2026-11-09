@@ -28,6 +28,8 @@ import { snd } from './sound.ts'
 import { artVoicePath, autoVoicePath, voiceGate, voicePath } from './voice.ts'
 import { WIN_BUZZ, warmWinLogos, winFxHtml } from './winfx.ts'
 import { morph, morphInto } from './morph.ts'
+import { mountDuel, type DuelSide } from '../../duel/view.ts'
+import { clampTier } from '../../realm/tier.ts'
 import { holdBox } from './holdbox.ts'
 import { TIER_MEN, sideIdx, tierCounts, tierPrec, tierStanding, type Tier } from './troops.ts'
 import { preloadSkillFx, skillCues, skillCutHtml, type SkSfx, type SkillId } from './skillfx.ts'
@@ -4443,8 +4445,36 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     pop.style.left = `${Math.round(left)}px` // 줄인 판도 그 무리 밑 가운데 (폭은 CSS 가 정한다 · 좁은 폰에선 양옆 6px 과 같다)
     pop.style.top = `${Math.round(top)}px`
   }
-  /** 이 합을 고른 대로 싸운다 */
+  /**
+   * 장수 겨루기를 골랐으면 그 합이 풀리기 전에 손으로 겨룬다 (src/duel/view.ts · 형 11-09 「붙이자」).
+   * 끝(이김·짐)은 그 합의 명령에 적혀 판 기록에 남는다 — 다시 돌려도 같다. 비기면 적지 않아 예전처럼 무예로 굴린다.
+   * 겨루기는 전투판 위에 겹쳐 뜨고 저절로 닫힌다 — 싸움 음악은 그대로 흐른다.
+   */
   const fight = (key: string): void => {
+    const pd = t.line?.key === key ? t.line.pending : undefined
+    if (sel.lead === 'duel' && sel.duel === undefined && pd !== undefined) {
+      const mine = pd.heroes ?? []
+      const meId = sel.who ?? [...mine].sort((a, b) => b.mu - a.mu || (a.id < b.id ? -1 : 1))[0]?.id
+      const me = meId !== undefined ? prev.heroes[meId] : undefined
+      const foe = (pd.foeHeroes ?? []).map((h) => prev.heroes[h.id]).filter((h): h is Hero => h !== undefined)
+        .sort((a, b) => b.mu - a.mu || (a.id < b.id ? -1 : 1))[0]
+      if (me !== undefined && foe !== undefined) {
+        const side = (h: Hero): DuelSide => { const b = bustOf(h.id); return { name: h.name, mu: h.mu, sprite: generalSprite(h), ...(b !== undefined ? { portrait: b } : {}) } }
+        let seed = 0
+        for (const ch of `${key}:${pd.round}`) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0
+        const line = t.line
+        const bgUrl = line !== null ? warBg(host.art, warGround(prev, line), line.atkFaction !== host.me) : undefined
+        void mountDuel({ me: side(me), foe: side(foe), tier: clampTier(prev.tier ?? 1), seed, ...(bgUrl !== undefined ? { bg: bgUrl } : {}) }).then((res) => {
+          if (res !== undefined) sel.duel = res
+          fightNow(key)
+        })
+        return
+      }
+    }
+    fightNow(key)
+  }
+  /** 이 합을 고른 대로 싸운다 */
+  const fightNow = (key: string): void => {
     active = undefined
     gem.hidden = true // 합이 풀리는 동안엔 보석을 걷는다
     if (cur === null || cur.key !== key) cur = { key, cmds: [], dusk: [] }

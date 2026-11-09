@@ -652,7 +652,9 @@ function settle(me: Side, foe: Side, given: RoundOrder, ai: RoundOrder, used: Re
   // 누가 나서나 · 누구를 잡나 — 고른 것을 싣는다 (fightRounds 가 맞는지 본다)
   const who = given.who ?? ai.who
   const target = given.target ?? ai.target
-  return { ...out, ...(who !== undefined ? { who } : {}), ...(target !== undefined ? { target } : {}) }
+  // 손 겨루기의 끝은 겨루기를 건 합에만 따라간다 (다른 깃발로 바뀌면 버린다)
+  const duel = out.lead === 'duel' ? given.duel : undefined
+  return { ...out, ...(who !== undefined ? { who } : {}), ...(target !== undefined ? { target } : {}), ...(duel !== undefined ? { duel } : {}) }
 }
 
 /** 사로잡기 확률을 지금 판으로 셈하는 손 — mine 쪽이 적장을 잡으러 갈 때 (guard: 적 말이 장수를 지킨다) */
@@ -1296,7 +1298,10 @@ function resolveRound(
     const dD = duelist(def, od.lead === 'duel' ? od.who : undefined)
     const duelMu = (h: SideHero | undefined): number => (h?.mu ?? 1) + (h?.duel ?? 0) // 지닌 유물의 겨루기 무예 (relics.ts)
     const pA = clamp(0.5 + R.tacDuelPerMu * (duelMu(dA) - duelMu(dD)), 0.1, 0.9)
-    const aWins = rk(i, 'duel') < pA
+    // 손으로 치른 겨루기면 그 끝을 쓴다 (건 쪽의 명령에 적혀 있다 · 판 기록에 남아 다시 돌려도 같다) — 아니면 무예 굴림
+    const hand = (starter === 'a' ? oa : od).duel
+    const rolled = rk(i, 'duel') < pA
+    const aWins = hand !== undefined ? (hand === 'win') === (starter === 'a') : rolled
     const loser: 'a' | 'd' = aWins ? 'd' : 'a'
     const kill = rk(i, 'duel-kill') < R.tacDuelKill
     const wh = aWins ? dA : dD
