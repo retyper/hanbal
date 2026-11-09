@@ -6,7 +6,7 @@
  * 붙이자 · 시작이랑 종료시 뜨는 것도 말끔히 정리 · 실제 전투에서 필요한 것만 · 확인 버튼 계속 누르게 만드는 것도 귀찮게 하는 것".
  * 그래서 끝은 「승리 · 패배 · 비김」만 크게 떴다 저절로 닫힌다. 소리는 누른 순간의 반응으로만 — 박자는 눈(고리)으로 잰다.
  */
-import { createDuel, lateWindow, stepDuel, tierOf, type Cue, type Duel, type DuelEvent, type Outcome, type Tap } from './sim.ts'
+import { createDuel, judgeWindows, lateWindow, stepDuel, tierOf, type Cue, type Duel, type DuelEvent, type Outcome, type Tap } from './sim.ts'
 import { P } from '../tune/params.ts'
 
 export interface DuelSide {
@@ -229,6 +229,11 @@ const sparks: Spark[] = []
 const slashes: Slash[] = []
 /** off = 누른 때 − 닿는 때 (틱) — 빨랐나 늦었나를 남은 고리로 보인다 */
 const marks: { x: number; y: number; t0: number; kind: 'perfect' | 'good' | 'miss'; off: number }[] = []
+/**
+ * 판정 글 — 누른 자리 위에 크게 톡 튀어 (형 11-09: "동그라미 눌렀을 때 성공 실패가 비직관적이고 UI 가 어설픔") · 리듬 게임처럼
+ * 정확 = 금빛 「완벽!」 · 막음 = 은빛 「막음」 · 맞음 = 붉은 「맞음」 (흔들림) · 정확이 아니면 아래에 작게 빠름/늦음
+ */
+const judges: { x: number; y: number; t0: number; kind: 'perfect' | 'good' | 'miss'; when: '' | 'early' | 'late' }[] = []
 let critAt = -1e9
 /** 연타가 먹힌 때 — 액자가 아주 빠르게 좌우로 떤다 */
 let rushKickAt = -1e9
@@ -274,7 +279,7 @@ flagBtn?.addEventListener('click', () => {
 function begin(): void {
   duel = createDuel({ seed, muMe, muFoe, tier })
   seen = 0; queued = null
-  pops.length = 0; sparks.length = 0; slashes.length = 0; marks.length = 0
+  pops.length = 0; sparks.length = 0; slashes.length = 0; marks.length = 0; judges.length = 0
   mode = 'duel'; modeAt = performance.now(); endAt = 0
 }
 
@@ -350,16 +355,19 @@ function onEvent(e: DuelEvent, now: number): void {
     case 'perfect':
       SFX.perfect(); freezeUntil = now + R.hitStopPerfect
       marks.push({ x, y, t0: now, kind: 'perfect', off: e.off ?? 0 }); burst(x, y, 22, '#fff1c0', 9, now)
+      judges.push({ x, y, t0: now, kind: 'perfect', when: '' })
       meAnim = { kind: 'guard', t0: now }; foeAnim = { kind: 'attack', t0: now }
       break
     case 'good':
       SFX.good(); marks.push({ x, y, t0: now, kind: 'good', off: e.off ?? 0 }); burst(x, y, 10, '#cfe6ff', 5, now); shake = R.shake * 0.3
+      judges.push({ x, y, t0: now, kind: 'good', when: (e.off ?? 0) < 0 ? 'early' : 'late' })
       meAnim = { kind: 'guard', t0: now }; foeAnim = { kind: 'attack', t0: now }
       break
     case 'miss':
       SFX.miss(); freezeUntil = now + R.hitStopHit; shake = R.shake; hurtAt = now
       flash = { rgb: '190,20,10', t0: now, ms: 220, a: 0.4 }
       marks.push({ x, y, t0: now, kind: 'miss', off: e.off ?? 0 })
+      judges.push({ x, y, t0: now, kind: 'miss', when: (e.off ?? 0) < 0 ? 'early' : 'late' })
       slashes.push({ x, y, ang: -0.7 + ((e.t * 13) % 10) / 20, len: Math.min(W, H) * 0.45, t0: now, ms: 260, color: '255,60,40', w: 10 })
       pop(`−${e.dmgMe}`, '#ff7a6a', 38)
       meAnim = { kind: 'hit', t0: now }; foeAnim = { kind: 'attack', t0: now }
@@ -629,12 +637,26 @@ function drawCue(c: Cue, t: number): void {
     ctx.restore()
   }
   else { ctx.lineWidth = 4; ctx.strokeStyle = `rgba(${rgb},${0.55 + 0.45 * k})`; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke() }
-  // 모여드는 고리 — 원을 지나면 안으로 계속 줄어든다
+  // 막는 폭 — 고리가 이 띠 안에 있을 때 누르면 막는다 · 가운데 금줄에 맞으면 완벽 (판정과 같은 셈 · sim.judgeWindows)
+  const jw = judgeWindows(muMe, tier)
+  const bandOut = ringR(r, -jw.early, lead), bandIn = ringR(r, jw.late, lead)
+  ctx.save()
+  ctx.fillStyle = `rgba(${c.heavy ? '255,120,90' : '170,220,255'},${0.08 + 0.14 * k})`
+  ctx.beginPath(); ctx.arc(x, y, bandOut, 0, Math.PI * 2); ctx.arc(x, y, bandIn, 0, Math.PI * 2, true); ctx.fill('evenodd')
+  const pOut = ringR(r, -jw.perfect, lead), pIn = ringR(r, jw.perfect, lead)
+  ctx.fillStyle = `rgba(255,214,110,${0.18 + 0.32 * k})`
+  ctx.beginPath(); ctx.arc(x, y, pOut, 0, Math.PI * 2); ctx.arc(x, y, pIn, 0, Math.PI * 2, true); ctx.fill('evenodd')
+  ctx.restore()
+  // 모여드는 고리 — 원을 지나면 안으로 계속 줄어든다 · 막는 폭에 들면 금빛으로 굵게 (「지금!」을 눈으로)
   const rr = ringR(r, off, lead)
   const past = off > 0
-  ctx.lineWidth = past ? 4 : 3 + 3 * k
-  ctx.strokeStyle = past ? `rgba(255,150,60,${Math.max(0.2, 1 - off / 20)})` : `rgba(${rgb},${0.35 + 0.65 * k})`
+  const inWin = off >= -jw.early && off <= jw.late
+  const inPerfect = Math.abs(off) <= jw.perfect
+  ctx.lineWidth = inPerfect ? 9 : inWin ? 7 : past ? 4 : 3 + 3 * k
+  ctx.strokeStyle = inPerfect ? 'rgba(255,226,120,1)' : inWin ? 'rgba(255,214,110,.95)' : past ? `rgba(255,150,60,${Math.max(0.2, 1 - off / 20)})` : `rgba(${rgb},${0.35 + 0.65 * k})`
+  if (inWin) { ctx.save(); ctx.shadowColor = 'rgba(255,200,80,.9)'; ctx.shadowBlur = inPerfect ? 22 : 12 }
   ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI * 2); ctx.stroke()
+  if (inWin) ctx.restore()
   if (c.heavy) {
     ctx.fillStyle = `rgba(255,90,70,${0.7 + 0.3 * k})`; ctx.font = `800 ${Math.round(r * 0.9)}px "Gowun Batang", serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
     ctx.fillText('!', x, y + 1); ctx.textBaseline = 'alphabetic'
@@ -719,13 +741,41 @@ function drawDuel(now: number, fadeIn: number): void {
     if (m.kind !== 'perfect') {
       // 누른 순간의 고리를 그 자리에 얼려 보인다 — 바깥에 남았으면 빨랐다, 안으로 들어갔으면 늦었다
       const r0 = cueR(), rr = ringR(r0, m.off)
-      ctx.lineWidth = 4; ctx.strokeStyle = m.off < 0 ? `rgba(120,200,255,${1 - k})` : `rgba(255,150,60,${1 - k})`
-      ctx.setLineDash([8, 6]); ctx.beginPath(); ctx.arc(m.x, m.y, r0, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([])
-      ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(m.x, m.y, rr, 0, Math.PI * 2); ctx.stroke()
+      // 누른 순간의 고리를 결과 빛으로 얼려 — 막음은 은빛, 맞음은 붉게 (점선 둘은 무엇이 무엇인지 몰랐다 · 형 11-09)
+      ctx.lineWidth = 6; ctx.strokeStyle = m.kind === 'miss' ? `rgba(255,70,50,${1 - k})` : `rgba(220,236,255,${1 - k})`
+      ctx.beginPath(); ctx.arc(m.x, m.y, rr, 0, Math.PI * 2); ctx.stroke()
       if (m.kind === 'miss') { ctx.lineWidth = 5; ctx.strokeStyle = `rgba(255,60,40,${1 - k})`; ctx.beginPath(); ctx.moveTo(m.x - r0 * 0.6, m.y - r0 * 0.6); ctx.lineTo(m.x + r0 * 0.6, m.y + r0 * 0.6); ctx.moveTo(m.x + r0 * 0.6, m.y - r0 * 0.6); ctx.lineTo(m.x - r0 * 0.6, m.y + r0 * 0.6); ctx.stroke() }
       if (m.kind === 'miss') continue
     }
     clang(m.x, m.y, cueR() * (m.kind === 'perfect' ? 3.2 : 2) * (0.6 + 0.6 * Math.min(1, k * 3)), 1 - k, m.kind === 'perfect' ? 0 : 0.6, now)
+  }
+  // 판정 글 — 크게 톡 (0.12초 안에 1.35배 → 1배) · 0.7초에 걷힌다
+  for (let i = judges.length - 1; i >= 0; i--) {
+    const j = judges[i] as (typeof judges)[number]; const age = now - j.t0
+    if (age > 700) { judges.splice(i, 1); continue }
+    const pk = Math.min(1, age / 120)
+    const sc = pk < 1 ? 0.6 + 0.75 * pk : 1.35 - 0.35 * Math.min(1, (age - 120) / 140)
+    const fade = age < 520 ? 1 : 1 - (age - 520) / 180
+    const word = j.kind === 'perfect' ? '완벽!' : j.kind === 'good' ? '막음' : '맞음'
+    const fs = Math.round(cueR() * (j.kind === 'perfect' ? 1.25 : 1.0) * sc)
+    const jx = j.kind === 'miss' && age < 260 ? Math.sin(age / 18) * 6 : 0
+    const ty = j.y - cueR() * 1.9 - (age / 700) * cueR() * 0.5
+    ctx.save(); ctx.globalAlpha = Math.max(0, fade)
+    ctx.font = `900 ${fs}px "Gowun Batang", serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+    ctx.lineWidth = Math.max(5, fs * 0.16); ctx.strokeStyle = 'rgba(20,10,4,.92)'; ctx.strokeText(word, j.x + jx, ty)
+    const g = ctx.createLinearGradient(0, ty - fs / 2, 0, ty + fs / 2)
+    if (j.kind === 'perfect') { g.addColorStop(0, '#fff7d6'); g.addColorStop(1, '#ffb02e') }
+    else if (j.kind === 'good') { g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#a9c8ff') }
+    else { g.addColorStop(0, '#ffb3a6'); g.addColorStop(1, '#ff3a26') }
+    ctx.fillStyle = g; ctx.fillText(word, j.x + jx, ty)
+    if (j.when !== '') {
+      const fs2 = Math.round(fs * 0.42)
+      ctx.font = `800 ${fs2}px "Gowun Batang", serif`
+      const tw = j.when === 'early' ? '빠름' : '늦음'
+      ctx.lineWidth = Math.max(3, fs2 * 0.2); ctx.strokeText(tw, j.x + jx, ty + fs * 0.62)
+      ctx.fillStyle = j.when === 'early' ? '#8fd0ff' : '#ffb070'; ctx.fillText(tw, j.x + jx, ty + fs * 0.62)
+    }
+    ctx.textBaseline = 'alphabetic'; ctx.restore()
   }
   // 베기 자국
   for (let i = slashes.length - 1; i >= 0; i--) {

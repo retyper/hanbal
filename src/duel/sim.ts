@@ -259,6 +259,11 @@ export function stepDuel(d: Duel, tap?: Tap): void {
 
 /** 막는 폭이 닿은 뒤로 얼마나 가나 (틱) — 그리기가 고리를 안으로 줄이는 길이 */
 export const lateWindow = (muMe: number, tier = 1): number => Math.round(D().good * widthOf(muMe) * tierOf({ opts: { seed: 0, muMe, muFoe: 5, tier } }).good) + D().late
+/** 막는 폭 (틱) — 일찍은 early 까지 · 늦게는 late 까지 막음 · |off| ≤ perfect 면 정확. 화면이 고리 위에 그리는 폭과 판정(stepDuel)이 같은 셈이다 (형 11-09: 성공 실패가 비직관적) */
+export function judgeWindows(muMe: number, tier = 1): { early: number; perfect: number; late: number } {
+  const R = D(), w = widthOf(muMe), ti = tierOf({ opts: { seed: 0, muMe, muFoe: 5, tier } })
+  return { early: Math.round(R.good * w * ti.good), perfect: Math.max(1, Math.round(R.perfect * w * ti.perfect)), late: Math.round(R.good * w * ti.good) + R.late }
+}
 
 /** 맡겼을 때 이길 몫 — 본편 겨루기와 같은 셈 (tactics.ts · tacDuelPerMu) */
 export const autoWinChance = (muMe: number, muFoe: number): number =>
