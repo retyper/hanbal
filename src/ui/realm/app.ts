@@ -7230,6 +7230,33 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return out
   }
 
+  /**
+   * 완공 알림 — 달이 넘어가며 우리 고을에 일터·방비가 서거나 터를 닦았으면, 화면 오른쪽 위에 그림표와 「완공!」 한 장씩
+   * (형 11-09: "건물 완성되면 어디가 완성됐다 이런 거 달 넘어갈 때 알람 떠야 하는 거 아님?") · 누르면 그 마을 안으로 · 저절로 걷힌다
+   */
+  function doneToast(r: Realm, lines: readonly ReportLine[]): void {
+    root.querySelector('.wkdone')?.remove()
+    const items: Array<{ node: string; ic: string; text: string }> = []
+    for (const l of lines) {
+      if (!('faction' in l) || l.faction !== me() || !('done' in l) || l.done !== true) continue
+      const nm = r.nodes[l.node]?.name ?? ''
+      if (l.kind === 'work') items.push({ node: l.node, ic: WORKS[l.what].icon, text: `${nm} ${WORKS[l.what].name}${(l.lv ?? 1) > 1 ? ` ${l.lv}단` : ''}` })
+      else if (l.kind === 'build') items.push({ node: l.node, ic: l.what === 'moat' ? 'settle-moat' : 'settle-palisade', text: `${nm} ${BUILD_NAME[l.what]}` })
+      else if (l.kind === 'clearLot') items.push({ node: l.node, ic: 'settle-clearing', text: `${nm} 새 터` })
+    }
+    if (items.length === 0) return
+    const el = document.createElement('div')
+    el.className = 'wkdone'
+    el.innerHTML = items.slice(0, 4).map((x) => `<button class="wkd" data-act="town-in" data-node="${esc(x.node)}">${icon(x.ic, 'wkdi')}<span><b>완공!</b>${esc(x.text)}</span></button>`).join('')
+    const life = noticeMs(items.map((x) => x.text).join(' '), P.realm.noticeBigMs)
+    el.style.setProperty('--life', `${life}ms`)
+    el.addEventListener('animationend', (e) => { if (e.target === el) el.remove() })
+    window.setTimeout(() => el.remove(), life + 1000)
+    // 누르면 그 마을 안으로 (town-in 이 고을 판을 거치지 않고 바로 연다) · 알림은 걷힌다
+    el.addEventListener('click', () => window.setTimeout(() => el.remove(), 0))
+    window.setTimeout(() => { if (realm === r) root.append(el) }, P.realm.doneToastDelayMs)
+  }
+
   /** 돌아온 장수 알림 — 화면 위 왼쪽에 얼굴과 한 줄씩 · 누르면 그 장수 판 · 큰 장면이 떠 있는 동안엔 기다렸다 사라진다 */
   function backToast(items: ReadonlyArray<{ id: string; text: string }>): void {
     root.querySelector('.bktoast')?.remove()
@@ -7284,6 +7311,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     dexToast(recordDex(res.next))
     engraveNow(res.next) // 판이 끝났다 — 이기든 지든 장수마다 공을 판 밖 단련 공으로 (drill.ts)
     backToast(backNotes(prev, res.next, mine))
+    doneToast(res.next, res.report.lines)
     leagueToast(res.next, res.report.lines) // 합종이 섰다·칼을 뽑았다·깼다 (승리가 가깝다는 알림이 있으면 그것이 덮는다)
     nearWinToast(prev, res.next)
     crownQueue = newCrowns(prev, res.next, me())

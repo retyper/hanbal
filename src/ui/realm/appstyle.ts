@@ -199,6 +199,15 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .gotoast { position: absolute; left: 50%; top: calc(var(--toph) + var(--legh) + 14px); z-index: 80; transform: translateX(-50%); max-width: min(92vw, 520px); padding: 9px 16px; border-radius: 12px;
   background: #1f1710f2; border: 1px solid #c9a45a; color: #f0e2c0; font-size: 14px; text-align: center; box-shadow: 0 6px 18px #000a; cursor: pointer; animation: gotoast 2.8s ease-in-out both; }
 .ap .gotoast b { color: #ffd27a; }
+/* 완공 알림 — 오른쪽 위에 그림표 카드가 톡 튀어나와 머물다 걷힌다 (형 11-09) · 누르면 그 마을 안 */
+.ap .wkdone { position: absolute; right: 12px; top: calc(var(--toph) + var(--legh) + 14px); z-index: 81; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; pointer-events: none; animation: wkdone var(--life, 6s) ease-in-out both; }
+.ap .wkdone .wkd { pointer-events: auto; display: flex; align-items: center; gap: 8px; padding: 6px 14px 6px 6px; border-radius: 14px; border: 2px solid #ffd27a; background: #2a1f10f2; color: #f3e6c8; font: inherit; font-size: 14px; font-weight: 700; text-align: left; cursor: pointer; box-shadow: 0 6px 18px #000a, 0 0 14px #ffd27a66; animation: wkdpop .5s cubic-bezier(.2, 1.6, .4, 1) both; }
+.ap .wkdone .wkd:nth-child(2) { animation-delay: .12s; } .ap .wkdone .wkd:nth-child(3) { animation-delay: .24s; } .ap .wkdone .wkd:nth-child(4) { animation-delay: .36s; }
+.ap .wkdone .wkd span { display: flex; flex-direction: column; line-height: 1.2; } .ap .wkdone .wkd b { color: #ffd27a; font-size: 12px; letter-spacing: .08em; }
+.ap .wkdone img.wkdi { width: 40px !important; height: 40px !important; object-fit: contain; flex: none; }
+@keyframes wkdone { 0%, 88% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes wkdpop { from { opacity: 0; transform: translateX(40%) scale(.7); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .ap .wkdone .wkd { animation: none; } }
 /* 승리가 가깝다 — 더 크고 오래 (5초) · 금빛 테 */
 .ap .gotoast.big { top: calc(var(--toph) + var(--legh) + 40px); padding: 14px 22px; font-size: 16px; border: 2px solid #ffd27a; background: radial-gradient(ellipse at top, #4a3612f5, #1f1710f5); box-shadow: 0 0 28px #ffd27a66, 0 8px 22px #000b; animation-duration: 5.2s; }
 .ap .gotoast .gtk { display: block; margin-bottom: 4px; font-family: var(--display); font-size: 22px; color: #ffe08a; letter-spacing: 2px; text-shadow: 0 2px 0 #000; }

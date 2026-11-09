@@ -33,7 +33,8 @@ export interface WorkDef {
 const village = (n: RNode): boolean => n.kind !== 'sodo' && !(n.kind === 'wild' && n.hh <= 0)
 
 export const WORKS: Readonly<Record<WorkWhat, WorkDef>> = {
-  paddy: { name: '논', does: '이 고을 가을걷이가 는다', icon: 'settle-farm-village', land: (r, n) => village(n) && (isRiverside(r, n.id) || n.kind === 'village' || n.kind === 'capital') },
+  // 사람이 사는 들(개척한 wild)도 논은 풀 수 있다 — 전엔 개척 마을 57곳이 지을 일터가 하나도 없어 마을 안조차 못 열었다 (형 11-09: "웬만한 마을도 최소 건물 1개는")
+  paddy: { name: '논', does: '이 고을 가을걷이가 는다', icon: 'settle-farm-village', land: (r, n) => village(n) && (isRiverside(r, n.id) || n.kind === 'village' || n.kind === 'capital' || n.kind === 'wild') },
   saltpan: { name: '소금밭', does: '이 고을 소금이 곱절로 난다', icon: 'settle-salt-town', land: (r, n) => village(n) && isCoast(r, n.id) },
   smelter: { name: '쇠부리터', does: '이 고을 쇠가 더 난다', icon: 'treasure-iron-ingots', land: (_r, n) => village(n) && (n.kind === 'ironMine' || n.kind === 'port') },
   lumber: { name: '목수 마을', does: '이 고을 나무가 곱절로 난다', icon: 'good-wood', land: (r, n) => village(n) && isWoody(r, n.id) },
