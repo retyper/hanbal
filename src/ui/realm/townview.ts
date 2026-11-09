@@ -130,7 +130,7 @@ function lotHtml(t: TownViewIn, s: TownSlot, i: number, sel: boolean): string {
 function lotInner(t: TownViewIn, s: TownSlot, i: number, sel: boolean): string {
   const L = LOTS[i]!
   const pos = `left:${pct(L.x)};top:${pct(L.y)};width:${pct(L.w)};z-index:${zOf(L.y)}`
-  const open = (cls: string, tip: string): string => `<button class="tvlot2 ${cls}${sel ? ' sel' : ''}" data-act="town-lot" data-i="${i}"${tip !== '' ? ` data-tip="${esc(tip)}"` : ''} style="${pos}"><img class="tvlotbg" src="${t.art}town/lot.png" alt="">`
+  const open = (cls: string, tip: string): string => `<button class="tvlot2 ${cls}${sel ? ' sel' : ''}" data-act="town-lot" data-i="${i}"${tip !== '' ? ` data-tip="${esc(tip)}"` : ''} style="${pos}"><img class="tvlotbg" src="${t.art}town/${/^(locked|going clearing)/.test(cls) ? 'lot-rough' : 'lot'}.png" alt="">`
   if (s.k === 'work') {
     const up = s.going !== null
     const pic = s.sprite !== null ? `<img class="tvsp" src="${s.sprite}" alt="">` : ic(t.art, s.icon, 'tvic')

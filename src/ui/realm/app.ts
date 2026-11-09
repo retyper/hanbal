@@ -57,7 +57,7 @@ import { P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, noReachWhy, visibleNodes, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
 import { LEGACY_CSS, bringHtml, clearBring, toggleBring } from './legacy.ts'
 import { TOWN_CSS, townCheer, townVeilHtml, townViewHtml, type TownSlot } from './townview.ts'
-import { TOWN_GROUND, townSprite } from '../../realm/data/town-art.ts'
+import { townFort, townGround, townSprite } from '../../realm/data/town-art.ts'
 import { RISE_CSS, riseGraphHtml } from './risegraph.ts'
 import { BOOK_CSS, bookHtml, bookSwipe, bookTurn, shelfHtml, type Book } from './bookshelf.ts'
 import { CROWN_CSS, crownRowHtml, flyCrowns, newCrowns } from './crowns.ts'
@@ -6779,7 +6779,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     const R = P.realm
     // 바탕 — 물가 · 숲 · 들판 (비스듬히 내려다본 빈 터 · town-art.ts)
-    const bg = isCoast(r, n.id) || isRiverside(r, n.id) ? TOWN_GROUND.water : isWoody(r, n.id) ? TOWN_GROUND.wood : TOWN_GROUND.field
+    const bg = townGround(isCoast(r, n.id) || isRiverside(r, n.id) ? 'water' : isWoody(r, n.id) ? 'wood' : 'field', townFort(n.kind, n.tags))
     const going = (r.works ?? []).find((w) => w.node === n.id)
     const queued = musters.find((o): o is Extract<Order, { kind: 'work' }> => o.kind === 'work' && o.node === n.id)
     const max = Math.round(R.workLvMax)
