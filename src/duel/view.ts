@@ -106,10 +106,10 @@ function noise(dur: number, vol: number, lp: number, delay = 0): void {
  * 형 11-09 고름: 막음·정확·연타 튕김·연타 맞음 셋·내가 맞음·체간 무너짐·겨루기 시작 = 형이 받아 준 것(_h) · 치명 베기 = crit_a · 적장 휘두름 = swing_b.
  * 연타 맞음은 셋을 번갈아 (같은 소리가 연달아 나지 않게 · 촥촥촥이 다르게). 주소의 ?sfx=good:b 로 후보(a·b·c)를 바꿔 듣는다.
  */
-type SndSlot = 'good' | 'perfect' | 'crit' | 'rushHit' | 'deflect' | 'hurt' | 'swing' | 'break' | 'intro'
+type SndSlot = 'good' | 'perfect' | 'crit' | 'rushHit' | 'deflect' | 'hurt' | 'swing' | 'break' | 'intro' | 'riser'
 const SND_FILES: Record<SndSlot, readonly string[]> = {
   good: ['good_h.mp3'], perfect: ['perfect_h1.mp3', 'perfect_h2.mp3'], crit: ['crit_a.ogg'], rushHit: ['rushHit_h1.mp3', 'rushHit_h2.mp3', 'rushHit_h3.mp3'],
-  deflect: ['deflect_h.mp3'], hurt: ['hurt_h.mp3'], swing: ['swing_b.ogg'], break: ['break_h.mp3'], intro: ['intro_h.wav'],
+  deflect: ['deflect_h.mp3'], hurt: ['hurt_h.mp3'], swing: ['swing_b.ogg'], break: ['break_h.mp3'], intro: ['intro_h.wav'], riser: ['riser_h.mp3'],
 }
 /** 여럿을 한꺼번에 겹쳐 내는 자리 — 정확은 정확1·정확2 를 동시에 (형 11-09) */
 const SND_LAYER: ReadonlySet<SndSlot> = new Set<SndSlot>(['perfect'])
@@ -152,6 +152,43 @@ function play1(a: AudioContext, buf: AudioBuffer, slot: SndSlot, vol: number, de
     g.gain.setValueAtTime(vol, t + cut * 0.6); g.gain.linearRampToValueAtTime(0.0001, t + cut)
     src.start(t, 0, cut)
   } else src.start(t)
+}
+/**
+ * 고리마다 차오르는 소리 — 고리가 보이는 때 시작해 닿는 순간 가장 높은 음 (형 11-09: "눈 감고도 깰 수 있게").
+ * 고리가 빠르면 빠르게 돌리고(한도를 넘으면 앞을 건너뛴다) · 먼저 막으면 곧바로 끊는다.
+ */
+const risers = new Map<number, { src: AudioBufferSourceNode; g: GainNode }>()
+function riserStart(id: number, leadSec: number): void {
+  const a = audio(), buf = SND_BUF.get('riser')?.[0]
+  if (a === null || buf === undefined || leadSec <= 0.05) return
+  const R = P.duel
+  const rate = Math.min(R.riserRateMax, Math.max(R.riserRateMin, R.riserPeak / leadSec))
+  const from = Math.max(0, R.riserPeak - leadSec * rate)
+  const src = a.createBufferSource(); src.buffer = buf; src.playbackRate.value = rate
+  const g = a.createGain()
+  const t = a.currentTime, hit = t + (R.riserPeak - from) / rate
+  g.gain.setValueAtTime(R.riserVol, t); g.gain.setValueAtTime(R.riserVol, hit); g.gain.linearRampToValueAtTime(0.0001, hit + R.riserTail)
+  src.connect(g).connect(a.destination)
+  src.onended = () => { src.disconnect(); g.disconnect(); if (risers.get(id)?.src === src) risers.delete(id) }
+  src.start(t, from); src.stop(hit + R.riserTail + 0.02)
+  risers.set(id, { src, g })
+}
+/** 막았거나 사라진 고리의 소리는 짧게 줄여 끊는다 */
+function riserCut(id: number): void {
+  const r = risers.get(id), a = audio()
+  risers.delete(id)
+  if (r === undefined || a === null) return
+  const t = a.currentTime
+  r.g.gain.cancelScheduledValues(t); r.g.gain.setValueAtTime(r.g.gain.value, t); r.g.gain.linearRampToValueAtTime(0.0001, t + 0.05)
+  try { r.src.stop(t + 0.06) } catch { /* 이미 멈춤 */ }
+}
+const risenCues = new Set<number>()
+/** 한 틀마다 — 새로 보인 고리는 소리를 걸고, 끝난 고리는 끊는다 */
+function syncRisers(d: Duel): void {
+  for (const c of d.cues) {
+    if (c.done === null && d.t >= c.t0 && !risenCues.has(c.id)) { risenCues.add(c.id); riserStart(c.id, (c.hitAt - d.t) / P.duel.hz) }
+  }
+  for (const id of [...risers.keys()]) { const c = d.cues.find((x) => x.id === id); if (c === undefined || c.done !== null) riserCut(id) }
 }
 /** 싸움 음악 — 본편 싸움판과 같은 곡 (sound.ts 의 bgm_war c7v · 크기 0.3). 겨루기 화면이 떠도 끊기지 않는다 (형 11-09) */
 // 본편에선 전투판 음악이 그대로 흐른다 (겨루기는 그 위에 겹쳐 뜬다) — 시험판만 직접 튼다
@@ -790,7 +827,8 @@ function frame(now: number): void {
         while (seen < duel.events.length) onEvent(duel.events[seen++] as DuelEvent, now)
         if (now < freezeUntil) { acc = 0; break }
       }
-      if (duel.over !== null) { mode = 'end'; endAt = now }
+      syncRisers(duel)
+      if (duel.over !== null) { mode = 'end'; endAt = now; for (const id of [...risers.keys()]) riserCut(id) }
     } else acc = 0
     drawDuel(now, Math.min(1, (now - modeAt) / 450))
     if (mode === 'duel') drawIntro(now)

@@ -23,12 +23,12 @@ export const PICK = {
   bgm_map: 'k1', bgm_war: 'c7v',
   // 이기고 진 뒤의 음악 — 이김은 국악 팡파르: 북 쿵·쿵 → 징 쾅 → 태평소 → 북·징으로 맺음, 한 번만 울린다
   // (형 10-29: "국악식 빵빠레 같은 빠바밤 · 지금 노래는 말 타며 달리기 막 시작하는 노래 같음" — 옛 a 는 형이 받은 추격풍) · g1~g3 은 태평소독주 시그널음악(한국저작권위원회 · CC BY)에 공유마당 북·징을 얹어 구움
-  bgm_win: 'g1', bgm_lose: 'c3',
+  bgm_win: 'h1', bgm_lose: 'c3',
   // 첫 화면(로그인·이어 하기) 음악 — 웅장한 것 (형 10-23: "로그인 화면 메인은 웅장한 bgm 따로")
   bgm_title: 'c6',
   // 누를 때 나는 소리 — 누른 것의 바탕(쇠·엽전·붓·말굽·방울·북·바둑돌·딱따기)대로 (형 10-23: "탭할 때 나는 sfx 도 소재에 맞게 다양한 소리")
   // 싸움의 함성 — 싸움이 열릴 때 · 돌격·추격 합에 (형 10-23: "전투라면 함성소리가 있어야")
-  war_cry: 'c1',
+  war_cry: 'h1',
   // 맞부딪힘 — 한 합마다 · 필살(상성에서 이긴 합)은 더 무겁게. 쇠 한 번 "팅"이 아니라 여럿이 칼·창·방패로 엉겨 붙는 소리 (형 10-23: "진짜 전투하는 효과음")
   battle_clash: 'g3', battle_crit: 'g3',
   // 판이 끝났을 때(이겼다·졌다 화면) — 싸움 하나 이긴·진 음악과 따로 (형 10-23: "게임 승리했을 때나 패배했을 때 사운드는 없어?")
@@ -45,7 +45,7 @@ export const PICK = {
   tap_arms: 'g1', tap_coin: 'g2', tap_brush: 'g2', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'c', tap_rite: 'g14',
   // 각성 연출 제 소리 — 모임(차오름) · 번쩍(한 방) · 짐승 다섯의 울음 (형 11-03: "각성은 사운드도 제대로 새로") · 공유마당 후보 g1~g3, 형이 sound-picker.html 에서 고른다
   // 적 침공 알림 — 경종 「뎅뎅뎅」 시골 학교종 빠르게 (형 11-02: "침공은 차라리 경종 · 뎅뎅뎅뎅뎅") · 담판에서 마음의 벽이 무너질 때 — 맑은 방울·풍경
-  invade: 'g7', woo_break: 'g1',
+  invade: 'g7', woo_break: 'g1', feast: 'h1',
   // 나쁜 일 — 낮은 큰북 「둥」(작은 일: 거절·소문·위협) · 큰북 두 번에 처지는 대금(큰 일: 짐·장수 잃음·실패) · 좋은 일은 뿔나팔과 맑은 종 (형 11-03: "나발이 좋을 때도 안 좋을 때도 · 확실히 구분 · 쾡쾡쾡 말고")
   bad_small: 'g2', bad_big: 'g2',
   // 싸움 중 적장을 사로잡았다 — 사내들 환호 (형 11-02 고름 · 옛 「뚜룽」 jingleUnlock → 자물쇠 → 환호) · 옥문 닫힘은 쇠판 「챙」(cmd_hold) 그대로
@@ -66,6 +66,8 @@ const EXT: Readonly<Partial<Record<string, string>>> = {
   hire_go_g1: 'mp3', hire_go_g2: 'mp3', hire_go_g3: 'mp3', relic_open_g1: 'mp3', relic_open_g2: 'mp3', relic_open_g3: 'mp3',
   ...Object.fromEntries(['bgm_title', 'bgm_war', 'bgm_lose'].flatMap((s) => ['g1', 'g2', 'g3'].map((g) => [`${s}_${g}`, 'mp3']))),
   war_cry_g1: 'wav', war_cry_g2: 'wav', war_cry_g3: 'wav',
+  // 11-09 형이 받아 온 것: 싸움 첫 함성 · 이긴 뒤 음악(maksymmalko 「Victory Nomination」 · Pixabay) · 마을 잔치 · 공작 소리는 sfx/plot/
+  war_cry_h1: 'mp3', bgm_win_h1: 'mp3', feast_h1: 'mp3',
   cmd_hold_h1: 'mp3', // 방진 — 형이 받아 온 「탱탱」 쇠판 소리 (10-24)
   ...Object.fromEntries(['battle_clash', 'battle_crit'].flatMap((s) => ['g1', 'g2', 'g3'].map((g) => [`${s}_${g}`, 'mp3']))),
   // 제사 — 힐 하는 소리로 (형 11-03: "향피리 소리 별로 · 힐 하는 소리 같은 거") · g7~g10 공유마당
@@ -105,6 +107,8 @@ const FROM_TOP: ReadonlySet<Slot> = new Set<Slot>(['bgm_win', 'bgm_lose', 'bgm_e
 const TRACK_GAIN: Readonly<Partial<Record<string, number>>> = {
   // 싸움 음악(사물놀이)은 꽹과리가 앞에 나서 깃발 소리를 덮는다 — 지도 음악보다 한참 낮게 (형 10-23: "꽹과리 소리 너무 많이 시끄러운데")
   bgm_war_c7: 0.3, bgm_war_c8: 0.5, bgm_war_c7v: 0.3, bgm_war_c8v: 0.5, bgm_title_c6: 0.72, bgm_end_lose_c6: 0.87,
+  // 형의 이긴 뒤 음악은 -12dB 언저리로 옛 국악 팡파르(-24)보다 한참 크다
+  bgm_win_h1: 0.45,
 }
 const gainOf = (slot: Slot, pick: string = PICK[slot]): number => TRACK_GAIN[`${slot}_${pick}`] ?? 1
 
@@ -166,7 +170,7 @@ export const sndFile = (slot: Slot, pick: string = PICK[slot]): string => `${slo
 
 /** 장면 그림(event-*) → 그 장면의 소리. 없으면 소리 없이 */
 export const SCENE_SOUND: Readonly<Record<string, Slot>> = {
-  'event-festival': 'wed', 'event-egg-birth': 'birth', 'event-newborn': 'birth', 'event-dream': 'birth',
+  'event-festival': 'feast', 'event-egg-birth': 'birth', 'event-newborn': 'birth', 'event-dream': 'birth',
   'event-alliance-oath': 'envoy', 'event-outside-envoy': 'envoy', 'event-iron-trade': 'coins',
   'event-relief-cavalry': 'horses', 'event-captive-persuade': 'capture', 'event-wanderer-arrives': 'horses',
 }
@@ -443,8 +447,10 @@ export function makeMusic(base: string, muted: () => boolean, quiet: () => boole
     void audio()?.resume().catch(() => {})
     if (!off()) { bgm.resume(); amb.resume() }
   }, { capture: true })
+  let warPrimed = false
   return {
-    map(season) { mode = { bgm: 'bgm_map', amb: `amb_${season}` }; apply() },
+    // 지도에 처음 서면 싸움 음악도 미리 받아 둔다 — 첫 싸움에서 음악이 받아질 때까지 한참 조용했다 (형 11-09)
+    map(season) { mode = { bgm: 'bgm_map', amb: `amb_${season}` }; apply(); if (!warPrimed) { warPrimed = true; bgm.prime('bgm_war') } },
     war() { mode = { bgm: 'bgm_war', amb: null }; apply() },
     title() { mode = { bgm: LATER.has('bgm_title') ? null : 'bgm_title', amb: null }; apply() },
     primeResults() { bgm.prime('bgm_win'); bgm.prime('bgm_lose') },

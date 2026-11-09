@@ -319,3 +319,14 @@ duel/hurt_h.mp3  형 · 「내가맞음」
 duel/break_h.mp3  형 · 「체간무너짐」 (앞 3.5초만 씀)
 duel/intro_h.wav  형 · 「겨루기시작_바라_타격음_강」
 # 형이 고른 후보: 치명공격 베기 = crit_a · 적장 휘두름 = swing_b
+duel/riser_h.mp3  형 · 「riser」 (겨루기 고리가 줄어드는 동안 · 11-09)
+
+# 11-09 밤 형이 받아 온 것 (형 플레이 테스트 · 출처는 형이 받은 곳)
+war_cry_h1.mp3  형 · 「전투시작함성」
+bgm_win_h1.mp3  형 · maksymmalko 「Victory Nomination Winner Champion Music」 (Pixabay 544991 · Pixabay Content License)
+feast_h1.mp3  형 · 「잔치sfx」 (마을 잔치 장면 · 옛 꼭두각시 대신)
+plot/burn_h.mp3  형 · 「방화」 (60초에서 앞 5초만 잘라 씀)
+plot/rumor_h.mp3  형 · 「소문」
+plot/sow_h.mp3  형 · 「이간」
+plot/bribe_h.mp3  형 · 「매수」
+plot/night_h.mp3  형 · 「암살구출」 (암살·구출이 먹힌 장 · 밤 임무 끝)

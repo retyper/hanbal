@@ -28,6 +28,7 @@ import { sprite } from './render/sprites.ts'
 import { createSfx, pumpSfx, unlockSfx } from './audio/sfx.ts'
 import { createSynth, noiseBurst, resumeSynth, tone, type Synth } from './audio/synth.ts'
 import { P } from './tune/params.ts'
+import { playOnce, snd, soundVolume } from './ui/realm/sound.ts'
 import { BOW_NAME, createNight, stepNight, type Night, type NightResult } from './night/sim.ts'
 import { createView, drawNight, pumpView, shakeView } from './night/draw.ts'
 import { hitStopMs, pumpEvents, updateFx } from './render/effects.ts'
@@ -290,9 +291,17 @@ const RESCUE_LINES: Record<NightResult['result'], (r: NightResult) => string> = 
   cleared: () => `${josa(missionWho, '을', '를')} 데려 나왔다.`,
 }
 
+/** 임무가 끝난 한 번 — 해냈으면 형이 받은 암살·구출 소리, 놓쳤으면 칠십팔국의 큰 실패 북 (형 11-09) · 칠십팔국 음소거를 따른다 */
+function endSound(good: boolean): void {
+  try { if (localStorage.getItem('hanbal.realm.mute') === '1') return } catch { /* 저장이 막힌 창 */ }
+  const base: string = import.meta.env?.BASE_URL ?? '/'
+  playOnce(base + (good ? 'realm/sfx/plot/night_h.mp3' : snd('bad_big')), 0.6 * soundVolume('sfx'))
+}
+
 function showResult(n: Night): void {
   const r = n.result!
   const good = r.result === 'dead' || r.result === 'wounded' || r.result === 'cleared'
+  endSound(good)
   const line = (n.kind === 'rescue' ? RESCUE_LINES : LINES)[r.result](r)
   let h = `<div class="card">${rehearsal ? '<p class="mute">연습, 남지 않는다</p>' : ''}<h1 style="color:${good ? '#8fd07a' : '#e08a74'}">${esc(line)}</h1>`
   h += `<p class="mute">쏜 ${n.shots} · 맞힘 ${n.hits} · 머리 ${n.heads}${n.practice === null ? ` · 남은 화살 ${r.arrowsLeft}` : ''}</p>`

@@ -6095,7 +6095,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   /** 큰 화면 한 장 — 그림 · 깃발 · 제목 · 한두 줄 · 확인 하나 (땅의 바뀜 · 공작이 먹혔다) */
   /** tone — 시작 연출: good 흰 번쩍 · bad 어둠에서 밝아진다 · plain 그냥 보인다 (없으면 good 으로 가른다 · 형 10-26: "다 똑같이 흰 화면 반짝이면서 시작하면 안 됨") */
-  interface Big { key: string; art: string; good: boolean; tone?: 'good' | 'bad' | 'plain'; flags: string; title: string; sub: string; small: string; sfx: string; stage?: string; voice?: string }
+  interface Big { key: string; art: string; good: boolean; tone?: 'good' | 'bad' | 'plain'; flags: string; title: string; sub: string; small: string; sfx: string; sfxDur?: number; stage?: string; voice?: string }
 
   /**
    * 맺었다 · 틀어졌다 — 두 군장이 마주 보고 깃발이 부딪힌 뒤 저쪽 군장이 한마디 (형 10-25: 문명처럼)
@@ -6222,13 +6222,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       let title: string, sub: string, sfx: string
       if (l.ok) {
         switch (l.op) {
-          case 'rumor': title = `${fn}에 흉흉한 소문이 돈다`; sub = '군사들이 수군대며 기운이 꺾였다'; sfx = snd('bad_small'); break
-          case 'sow': title = `${josa(fn, '과', '와')} ${josa(on, '이', '가')} 등을 돌렸다`; sub = '두 나라 사이가 틀어졌다. 싸움이 붙을 수도 있다'; sfx = snd('tap_brush'); break
-          case 'bribe': title = `${nn} 장정들을 매수했다`; sub = `${spanLabel(r, P.realm.plotBribeSeasons)} 동안 싸우러 나오지 않는다`; sfx = snd('tap_coin'); break
-          case 'burn': title = `${fn}의 곳간이 불탄다`; sub = '쌓아 둔 곡식이 잿더미가 됐다'; sfx = 'realm/sfx/cmd_fire_c1.ogg'; break
+          case 'rumor': title = `${fn}에 흉흉한 소문이 돈다`; sub = '군사들이 수군대며 기운이 꺾였다'; sfx = 'realm/sfx/plot/rumor_h.mp3'; break
+          case 'sow': title = `${josa(fn, '과', '와')} ${josa(on, '이', '가')} 등을 돌렸다`; sub = '두 나라 사이가 틀어졌다. 싸움이 붙을 수도 있다'; sfx = 'realm/sfx/plot/sow_h.mp3'; break
+          case 'bribe': title = `${nn} 장정들을 매수했다`; sub = `${spanLabel(r, P.realm.plotBribeSeasons)} 동안 싸우러 나오지 않는다`; sfx = 'realm/sfx/plot/bribe_h.mp3'; break
+          case 'burn': title = `${fn}의 곳간이 불탄다`; sub = '쌓아 둔 곡식이 잿더미가 됐다'; sfx = 'realm/sfx/plot/burn_h.mp3'; break
           case 'spy': title = `${nn}에 첩자를 심었다`; sub = `${spanLabel(r, P.realm.plotSpySeasons)} 동안 그곳 군세가 훤히 보인다`; sfx = snd('tap_move'); break
-          case 'rescue': title = `${josa(hn, '을', '를')} 구해 냈다`; sub = '옥을 깨고 우리 도읍으로 돌아왔다'; sfx = snd('horn_victory'); break
-          default: title = l.result === 'kill' ? `${josa(hn, '이', '가')} 쓰러졌다` : `${josa(hn, '이', '가')} 화살을 맞았다`; sub = l.result === 'kill' ? `${fn}의 장수 하나가 사라졌다` : `${turnsLabel(r, monthly(r) ? P.realm.plotWoundMonths : 1)} 동안 군대를 이끌지 못한다`; sfx = 'realm/sfx/battle_final_c1.ogg'
+          case 'rescue': title = `${josa(hn, '을', '를')} 구해 냈다`; sub = '옥을 깨고 우리 도읍으로 돌아왔다'; sfx = 'realm/sfx/plot/night_h.mp3'; break
+          default: title = l.result === 'kill' ? `${josa(hn, '이', '가')} 쓰러졌다` : `${josa(hn, '이', '가')} 화살을 맞았다`; sub = l.result === 'kill' ? `${fn}의 장수 하나가 사라졌다` : `${turnsLabel(r, monthly(r) ? P.realm.plotWoundMonths : 1)} 동안 군대를 이끌지 못한다`; sfx = 'realm/sfx/plot/night_h.mp3'
         }
       } else {
         title = `${PLOT_NAME[l.op]}: 어긋났다`
@@ -6248,7 +6248,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         + `<div class="pagent">${face}<b>${esc(who)}</b><small>${esc(PLOT_NAME[l.op])}</small></div>`
         + `<img class="pstamp" src="${ART}fx/stamp-${l.ok ? 'ok' : 'fail'}.png" alt="${l.ok ? '성공' : '실패'}">`
         + `<div class="pinfo">${flags}<span class="pact2">${esc(act)}</span>${after.map((x) => `<span class="paft">${esc(x)}</span>`).join('')}</div></div>`
-      out.push({ key, art: plotArt(l.op), good: l.ok, flags: '', title, sub, small: PLOT_NAME[l.op], sfx, stage })
+      out.push({ key, art: plotArt(l.op), good: l.ok, flags: '', title, sub, small: PLOT_NAME[l.op], sfx, ...(l.ok && l.op === 'burn' ? { sfxDur: P.realm.plotBurnSfxSec } : {}), stage })
     }
     return out
   }
@@ -6262,7 +6262,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function bigCardHtml(r: Realm, x: Big, rest: number): string {
     if (!bigSounded.has(x.key)) {
       bigSounded.add(x.key)
-      window.setTimeout(() => ding(x.sfx, 0.55), 220)
+      window.setTimeout(() => ding(x.sfx, 0.55, 1, x.sfxDur ?? 0), 220)
       // 맺었다·틀어졌다 — 저쪽 군장이 한마디를 제 목소리로 (말이 찍히기 시작할 때)
       const v = x.voice
       if (v !== undefined) window.setTimeout(() => { if (document.querySelector('.ap .pact') !== null && voiceGate(performance.now())) ding(v, P.realm.voiceVol) }, P.realm.pactVoiceMs)
