@@ -32,6 +32,8 @@ const body=s.slice(st,e);const add=ids.filter(h=>!body.includes(\"'\"+h+\"'\"));
 if(add.length){s=s.slice(0,e)+'\n  '+add.map(h=>\"'\"+h+\"'\").join(', ')+', // 11-08 $note'+s.slice(e);fs.writeFileSync('$R',s)}
 console.log('TRUE_WAKE +',add.join(' '))"
 fi
+# BATCH=1 이면 여기까지만 (tools/bake-intake.sh 가 모아서 한 번에 시험·커밋)
+[ "${BATCH:-}" = 1 ] && { echo "넣음 $id"; exit 0; }
 npm run typecheck >/dev/null 2>&1 || { echo "typecheck 실패"; exit 1; }
 npm test 2>&1 | grep -q "^# fail 0" || npm test 2>&1 | grep -q "^# fail 0" || { echo "시험 실패 (두 번)"; exit 1; }
 git add public/realm/$hd/$id.jpg public/realm/$sm/$id.jpg $R
