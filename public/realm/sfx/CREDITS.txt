@@ -311,7 +311,8 @@ duel/intro_b.ogg  Freesound · ID 755054 (https://freesound.org/s/755054/) · Im
 duel/intro_c.ogg  Freesound · ID 645898 (https://freesound.org/s/645898/) · Impact sfx 027 · AudioPapkin · CC0
 # 장수 겨루기 — 형이 직접 받아 준 소리 (2026-11-09 · 형 PC 다운로드 폴더 · 출처는 형이 안다)
 duel/good_h.mp3  형 · 「막음」
-duel/perfect_h.mp3  형 · 「정확」
+duel/perfect_h.mp3  형 · 「정확」 (11-09 저녁 정확1·정확2 로 바뀜 · 안 씀)
+duel/perfect_h1.mp3 · perfect_h2.mp3  형 · 「정확1」「정확2」 (둘을 겹쳐 냄 · 휘두르는 소리)
 duel/deflect_h.mp3  형 · 「연타튕김」
 duel/rushHit_h1.mp3 · rushHit_h2.mp3 · rushHit_h3.mp3  형 · 「연타맞음1~3」 (셋을 번갈아)
 duel/hurt_h.mp3  형 · 「내가맞음」

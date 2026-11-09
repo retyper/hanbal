@@ -82,9 +82,11 @@ function noise(dur: number, vol: number, lp: number, delay = 0): void {
  */
 type SndSlot = 'good' | 'perfect' | 'crit' | 'rushHit' | 'deflect' | 'hurt' | 'swing' | 'break' | 'intro'
 const SND_FILES: Record<SndSlot, readonly string[]> = {
-  good: ['good_h.mp3'], perfect: ['perfect_h.mp3'], crit: ['crit_a.ogg'], rushHit: ['rushHit_h1.mp3', 'rushHit_h2.mp3', 'rushHit_h3.mp3'],
+  good: ['good_h.mp3'], perfect: ['perfect_h1.mp3', 'perfect_h2.mp3'], crit: ['crit_a.ogg'], rushHit: ['rushHit_h1.mp3', 'rushHit_h2.mp3', 'rushHit_h3.mp3'],
   deflect: ['deflect_h.mp3'], hurt: ['hurt_h.mp3'], swing: ['swing_b.ogg'], break: ['break_h.mp3'], intro: ['intro_h.wav'],
 }
+/** 여럿을 한꺼번에 겹쳐 내는 자리 — 정확은 정확1·정확2 를 동시에 (형 11-09) */
+const SND_LAYER: ReadonlySet<SndSlot> = new Set<SndSlot>(['perfect'])
 /** 앞부분만 쓰는 소리 (초) — 체간 무너짐은 16초짜리라 앞 3.5초의 묵직한 울림만, 끝은 부드럽게 줄인다 */
 const SND_CUT: Partial<Record<SndSlot, number>> = { break: 3.5 }
 for (const kv of (params.get('sfx') ?? '').split(',')) { const [k, v] = kv.split(':'); if (k !== undefined && v !== undefined && k in SND_FILES) SND_FILES[k as SndSlot] = [`${k}_${v}.ogg`] }
@@ -104,6 +106,7 @@ let rushTurn = 0, rushLast = -1
 function snd(slot: SndSlot, vol = 1, delay = 0): boolean {
   const a = audio(), bufs = SND_BUF.get(slot)
   if (a === null || bufs === undefined || bufs.length === 0) return false
+  if (SND_LAYER.has(slot)) { for (const b of bufs) play1(a, b, slot, vol, delay); return true }
   let i = 0
   if (bufs.length > 1) { // 셋을 섞어 돌린다 — 바로 앞 소리는 피한다
     rushTurn = (rushTurn * 1103515245 + 12345) >>> 0
@@ -111,7 +114,10 @@ function snd(slot: SndSlot, vol = 1, delay = 0): boolean {
     if (i === rushLast) i = (i + 1) % bufs.length
     rushLast = i
   }
-  const buf = bufs[i] as AudioBuffer
+  play1(a, bufs[i] as AudioBuffer, slot, vol, delay)
+  return true
+}
+function play1(a: AudioContext, buf: AudioBuffer, slot: SndSlot, vol: number, delay: number): void {
   const src = a.createBufferSource(); src.buffer = buf
   const g = a.createGain(); g.gain.value = vol
   src.connect(g).connect(a.destination)
@@ -120,7 +126,6 @@ function snd(slot: SndSlot, vol = 1, delay = 0): boolean {
     g.gain.setValueAtTime(vol, t + cut * 0.6); g.gain.linearRampToValueAtTime(0.0001, t + cut)
     src.start(t, 0, cut)
   } else src.start(t)
-  return true
 }
 /** 싸움 음악 — 본편 싸움판과 같은 곡 (sound.ts 의 bgm_war c7v · 크기 0.3). 겨루기 화면이 떠도 끊기지 않는다 (형 11-09) */
 const bgm = new Audio('realm/sfx/bgm_war_c7v.ogg')
@@ -162,6 +167,8 @@ const slashes: Slash[] = []
 /** off = 누른 때 − 닿는 때 (틱) — 빨랐나 늦었나를 남은 고리로 보인다 */
 const marks: { x: number; y: number; t0: number; kind: 'perfect' | 'good' | 'miss'; off: number }[] = []
 let critAt = -1e9
+/** 연타가 먹힌 때 — 액자가 아주 빠르게 좌우로 떤다 */
+let rushKickAt = -1e9
 let hurtAt = -1e9
 let foeHurtAt = -1e9
 /** 아래 들판 장수들이 하는 짓 — 그리기만 */
@@ -269,19 +276,20 @@ function onEvent(e: DuelEvent, now: number): void {
       meAnim = { kind: 'attack', t0: now }; foeAnim = { kind: 'hit', t0: now }
       break
     case 'break':
-      SFX.break(); shake = R.shake * 0.8
+      SFX.break()
       flash = { rgb: '255,200,90', t0: now, ms: 300, a: 0.35 }
       foeAnim = { kind: 'stagger', t0: now }
       break
     case 'rushHit':
-      SFX.rushHit(); foeHurtAt = now
+      SFX.rushHit(); foeHurtAt = now; rushKickAt = now
+      try { navigator.vibrate?.(18) } catch { /* 햅틱 없는 기기 */ }
       slashes.push({ x, y, ang: slashAngle(x, y, e.t), len: Math.min(W, H) * 0.32, t0: now, ms: 240, color: '255,255,255', w: 8 })
       pop(`−${e.dmgFoe}`, '#ffd98a', 26)
       meAnim = { kind: 'attack', t0: now }
       break
     case 'deflect':
-      // 챙 — 튕겨 나가는 빛과 소리 (글자 없이)
-      SFX.deflect(); marks.push({ x, y, t0: now, kind: 'good', off: 0 }); burst(x, y, 12, '#cfe6ff', 8, now); shake = R.shake * 0.25
+      // 막힌 칼 — 소리만 (형 11-09: "연타 막힐 경우는 애니메이션도 진동도 없게 · 시원하게 공격할 수 있어야")
+      SFX.deflect()
       break
     case 'rushEnd': foeAnim = { kind: 'idle', t0: now }; break
     default: break
@@ -575,8 +583,10 @@ function drawDuel(now: number, fadeIn: number): void {
   // 초상 판 — 모서리 둥근 정사각 · 초상은 살짝 비친다. 맞으면 흔들리고 붉게, 비틀거리면 기운다
   const pn = panel()
   const sinceCrit = now - critAt
-  const sway = d.phase === 'rush' ? Math.sin(now / 160) * 0.03 : 0
-  const kick = sinceCrit < 400 ? Math.sin(sinceCrit / 30) * (1 - sinceCrit / 400) * 12 : 0
+  const sway = 0 // 비틀거려도 액자는 기울이지 않는다 (형 11-09)
+  const sinceRush = now - rushKickAt
+  const kick = (sinceCrit < 400 ? Math.sin(sinceCrit / 30) * (1 - sinceCrit / 400) * 12 : 0)
+    + (sinceRush < 90 ? Math.sin(sinceRush / 7) * (1 - sinceRush / 90) * 9 : 0) // 연타가 먹히면 아주 빠른 좌우 떨림
   ctx.save()
   ctx.translate(pn.x + pn.s / 2 + kick, pn.y + pn.s / 2); ctx.rotate(sway)
   const zoom = 1 + (sinceCrit < 500 ? 0.05 * (1 - sinceCrit / 500) : 0)
