@@ -112,4 +112,5 @@ export const TRUE_WAKE: ReadonlySet<string> = new Set([
   'guya-ruler', // 11-08 구야 쇠보 · 망치 어깨에 멘 웃음·쇠 비늘 불티
   'anya-ruler', // 11-08 안야 아단 · 술잔 든 열린 깃 검금 미늘·금빛 불티
   'goja-ruler', // 11-08 고자 바우 진각성 — 쇠망치를 어깨에 걸친 여유 · 금빛 불티 · 찢긴 모피 망토
+  'dokro-ruler', // 11-08 독로 가람 진각성 — 청금석 구슬 · 푸른 비단 갑옷 · 허리에 손 얹은 여유 · 푸른·금빛 불티
 ])
