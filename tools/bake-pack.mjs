@@ -49,13 +49,15 @@ for (const [id, extra] of REDO1) {
 // ①-3 15세 판 (형 11-10: Steam 15세로 · 지금 것은 assets_r19 에 보관 · 테스트 동안은 지금 것) — gpt15_aw<단>-<id>.png → assets_15/ 에만 모은다(게임엔 아직 안 넣음)
 // 새로 그리면 느낌이 바뀐다 — 지금 그림을 붙이고 비침만 고친다 (영상도 그 그림으로 다시 구우니 같은 그림이어야 한다)
 const EDIT15 = 'This is an AI-generated illustration of a fictional adult woman from my own Korean historical fantasy strategy game (an original character, not a real person). Edit this exact image only slightly for a teen (15+) age rating: make every piece of her clothing fully opaque (no sheer or see-through fabric anywhere) and remove any nipple or nipple outline showing through the clothes. Keep EVERYTHING else exactly the same: same face, expression, pose, composition, colors, outfit design, jewelry, cleavage, aura, lighting, background and square image size.'
-const R15 = [[1, 'w-18-jinhan-salt-widow'], [1, 'w-91-saro-mulsae'], [1, 'w-98-byeonhan-danbi'], [1, 'w-103-tahae-neoul'], [2, 'w-103-tahae-neoul']]
-for (const [tier, id] of R15) {
+const R15 = [[1, 'w-18-jinhan-salt-widow'], [1, 'w-91-saro-mulsae'], [1, 'w-98-byeonhan-danbi'], [1, 'w-103-tahae-neoul'], [2, 'w-103-tahae-neoul'],
+  // 11-10 형: "유륜 같기도 하고 팬티 보이는 거 같기도 · 아주 살짝만 더 가리면"
+  [2, 'w-29-golpo-janmul', ' Specifically: slightly raise and thicken the fabric over her chest so nothing there could look like an areola, and lengthen or close the skirt slit a little so no underwear is visible. Change only these small areas.']]
+for (const [tier, id, extra] of R15) {
   const hd = tier === 1 ? 'awaken-hd' : 'awaken2-hd'
   if (existsSync(`assets_15/realm/${hd}/${id}.jpg`)) continue
   const now = `public/realm/${hd}/${id}.jpg`
   if (!existsSync(now)) continue
-  add('gpt', ++n, `${id} · ${tier}차 15세 판 (지금 그림 고치기)`, [now], EDIT15, `gpt15_aw${tier}-${id}.png`, '지금 그림을 붙이고 문안 · 받은 건 바로 게임에 안 넣고 assets_15 에 모아 둠')
+  add('gpt', ++n, `${id} · ${tier}차 15세 판 (지금 그림 고치기)`, [now], EDIT15 + (extra ?? ''), `gpt15_aw${tier}-${id}.png`, '지금 그림을 붙이고 문안 · 받은 건 바로 게임에 안 넣고 assets_15 에 모아 둠')
 }
 
 // ② Veo — 원장에서 낼 수 있는 일 (queue.mjs peek 와 같은 거름 · 쿨다운은 보지 않는다 · 높은 차례부터)
