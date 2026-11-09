@@ -1,240 +1,242 @@
 /**
- * 장수 겨루기 시험판의 셈 (duel.html · docs/realm/council/1109-battle.md).
+ * 장수 겨루기 시험판 2판의 셈 (duel.html · docs/realm/council/1109-battle.md).
  *
- * 형 11-09: "타이밍 탭 식 패링 · 준비동작 타격동작 마무리 동작 · 공격 방어 패링 회피를 실시간으로 ·
- * 타이밍 잘 맞출수록 공격력 강화 · 자동은 기존 시스템대로".
+ * 형 11-09: "화면에는 적장 이미지가 크게 · QTE 로 적이 공격 들어올 위치에 큰 원이 그 터치 영역으로 모임 ·
+ * 무예가 높으면 더 불특정하고 빠르게 · 전혀 못 맞추면 내 체력 깎임 · 적당하면 막아 낸 느낌으로 둘 다 그대로 ·
+ * 잘 막으면 적이 지쳐 내가 공격 (연타 3초 · 무예 따라 튕겨 냄 · 맞힐수록 덜 튕김) ·
+ * 세키로 체간 쌓듯이 · 정확한 타이밍이면 엘든링 패링처럼 바로 치명공격 ·
+ * 화면 내 어디든 발생 · 전체 60초 — 비기기도, 차이 있게 갈리기도, KO 승리도".
  *
- * 적장은 수 셋 가운데 하나를 준비한다 — 빠른 찌르기 · 크게 휘두르기 · 속임수(헛동작 뒤 진짜).
- * 우리는 셋 가운데 고른다 — 받아치기(타격 순간) · 피하기(물러섬 → 빈틈) · 치기(빈틈에 · 느린 준비를 먼저 끊음).
- * 고를 것이 있는 타이밍이다: 같은 낌새에도 받아칠지(크게 얻고 크게 잃음) 피할지(안전) 끊을지(읽었으면 가장 큼) 다르다.
+ *   막기 차례: 적장이 칠 자리(화면 어디든)에 원이 서고 큰 고리가 그 원으로 모인다. 닿는 순간 그 원을 누른다.
+ *     못 누름·때 틀림 → 우리 체력 − (적장은 안 지친다) · 막아 냄 → 그대로, 적장 체간 + · 정확 → 그 자리에서 치명공격 + 체간 크게.
+ *     형 11-09: "막기를 잘 했으면 적이 지치는 타이밍이 생기고, QTE 를 완벽하게 맞추는 유저가 되면 바로 치명공격".
+ *   체간이 가득 차면 → 적장이 비틀거린다 → 3초 연타 (무예만큼 튕겨 내고, 맞힐수록 덜 튕긴다).
+ *   끝: 체력이 바닥나면 KO · 60초가 다 되면 남은 체력 차로 판정 (작으면 비김).
  *
- * 결정론 (ARCHITECTURE A1): 틱 하나씩, 입력은 { 틱, 손 } 뿐 · 적장의 고름은 시드 난수. 같은 시드 + 같은 입력 = 같은 판.
- * DOM·시계 없음. 그리기(duel-main.ts)는 이 상태를 읽기만 한다.
+ * 결정론 (ARCHITECTURE A1): 틱 하나씩 · 입력은 { 틱, 누른 자리 } 뿐 · 적장의 수와 튕김은 시드 난수. DOM·시계 없음.
+ * 그리기(duel-main.ts)는 이 상태를 읽기만 한다.
  */
 import { makeRng, type Rng } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 
-export type Act = 'parry' | 'dodge' | 'strike'
-export type FoeMove = 'jab' | 'heavy' | 'feint'
-export type EvKind = 'perfect' | 'parry' | 'hit' | 'dodge' | 'counter' | 'interrupt' | 'clash' | 'blocked' | 'feint' | 'whiff' | 'windup'
-export interface DuelEvent { readonly t: number; readonly kind: EvKind; readonly move?: FoeMove; readonly dmgMe: number; readonly dmgFoe: number }
-
-export interface DuelOpts { readonly seed: number; readonly muMe: number; readonly muFoe: number }
-
-export interface FoeAttack {
-  readonly kind: FoeMove
+/** 누른 자리 — 놀이 칸 위 0~1 */
+export interface Tap { readonly x: number; readonly y: number }
+export type Phase = 'guard' | 'rush' | 'crit' | 'pause'
+export type Judge = 'perfect' | 'good' | 'miss'
+export interface Cue {
+  readonly id: number
+  readonly x: number
+  readonly y: number
   readonly t0: number
-  /** 속임수의 헛동작 틱 (없으면 undefined) */
-  readonly fakeAt?: number
-  readonly strikeAt: number
+  readonly hitAt: number
+  readonly heavy: boolean
+  done: Judge | null
 }
+export type EvKind = 'cue' | 'perfect' | 'good' | 'miss' | 'crit' | 'break' | 'rushHit' | 'deflect' | 'rushEnd'
+export interface DuelEvent {
+  readonly t: number
+  readonly kind: EvKind
+  readonly x?: number
+  readonly y?: number
+  readonly heavy?: boolean
+  readonly dmgMe: number
+  readonly dmgFoe: number
+}
+export interface DuelOpts { readonly seed: number; readonly muMe: number; readonly muFoe: number }
+export type Outcome = 'ko' | 'win' | 'draw' | 'lose' | 'kod'
 
 export interface Duel {
   readonly opts: DuelOpts
   t: number
   readonly end: number
-  me: {
-    poise: number
-    /** 이 틱까지 새 손을 못 낸다 */
-    lockUntil: number
-    /** 마지막으로 받아치기를 누른 틱 */
-    parryAt: number
-    dodgeAt: number
-    /** 우리 치기 — 칼이 닿는 틱 (없으면 −1) */
-    strikeLand: number
-    strikeAt: number
-    stunUntil: number
-  }
-  foe: {
-    poise: number
-    move: FoeAttack | null
-    nextAt: number
-    /** 이 틱까지 빈틈 (튕겨 냄·비킴·끊김 뒤) */
-    openUntil: number
-    stunUntil: number
-    /** 막 끝낸 수 — 그리기용 (마무리 동작) */
-    last: { kind: FoeMove; strikeAt: number; until: number } | null
-  }
+  phase: Phase
+  phaseUntil: number
+  me: { hp: number }
+  foe: { hp: number; posture: number }
+  cues: Cue[]
+  nextCueAt: number
+  nextId: number
+  rush: { hits: number; deflects: number; lastTap: number }
   events: DuelEvent[]
-  over: null | 'win' | 'lose' | 'draw'
-  stats: { perfect: number; parry: number; dodge: number; counter: number; interrupt: number; hit: number }
+  /** ko = 적장을 쓰러뜨림 · win = 판정승 · draw · lose = 판정패 · kod = 우리가 쓰러짐 */
+  over: null | Outcome
+  stats: { perfect: number; good: number; miss: number; crit: number; rushHit: number; deflect: number }
   rng: Rng
 }
 
 const D = (): typeof P.duel => P.duel
-
-/** 적장 무예가 준비동작을 줄이는 배수 */
-const speedOf = (mu: number): number => Math.max(0.6, 1 - D().muSpeed * (mu - 5))
-/** 우리 장수 무예가 받아치기 폭을 넓히는 배수 */
-const widthOf = (mu: number): number => Math.max(0.5, 1 + D().muWindow * (mu - 5))
+const clamp = (v: number, a: number, b: number): number => Math.min(b, Math.max(a, v))
 
 export function createDuel(opts: DuelOpts): Duel {
   const R = D()
-  const rng = makeRng((opts.seed ^ 0x6d75656c) >>> 0)
   return {
     opts,
     t: 0,
     end: Math.round(R.length),
-    me: { poise: R.poise, lockUntil: 0, parryAt: -999, dodgeAt: -999, strikeLand: -1, strikeAt: -999, stunUntil: 0 },
-    foe: { poise: R.poise, move: null, nextAt: 50, openUntil: 0, stunUntil: 0, last: null },
+    phase: 'pause',
+    phaseUntil: 40,
+    me: { hp: R.hp },
+    foe: { hp: R.hp, posture: 0 },
+    cues: [],
+    nextCueAt: 40,
+    nextId: 1,
+    rush: { hits: 0, deflects: 0, lastTap: -999 },
     events: [],
     over: null,
-    stats: { perfect: 0, parry: 0, dodge: 0, counter: 0, interrupt: 0, hit: 0 },
-    rng,
+    stats: { perfect: 0, good: 0, miss: 0, crit: 0, rushHit: 0, deflect: 0 },
+    rng: makeRng((opts.seed ^ 0x6475656c) >>> 0),
   }
 }
 
-const ev = (d: Duel, kind: EvKind, dmgMe: number, dmgFoe: number, move?: FoeMove): void => {
-  d.me.poise = Math.max(0, d.me.poise - dmgMe)
-  d.foe.poise = Math.max(0, d.foe.poise - dmgFoe)
-  d.events.push(move === undefined ? { t: d.t, kind, dmgMe, dmgFoe } : { t: d.t, kind, move, dmgMe, dmgFoe })
+function ev(d: Duel, kind: EvKind, dmgMe: number, dmgFoe: number, at?: { x: number; y: number }, heavy?: boolean): void {
+  d.me.hp = Math.max(0, d.me.hp - dmgMe)
+  d.foe.hp = Math.max(0, d.foe.hp - dmgFoe)
+  d.events.push({ t: d.t, kind, dmgMe, dmgFoe, ...(at !== undefined ? { x: at.x, y: at.y } : {}), ...(heavy === true ? { heavy } : {}) })
 }
 
-function pickMove(d: Duel): FoeMove {
+/** 적장 무예가 고리를 빠르게 하는 배수 */
+const leadOf = (mu: number): number => Math.max(0.45, 1 - D().leadPerMu * (mu - 5))
+/** 우리 장수 무예가 막는 폭을 넓히는 배수 */
+const widthOf = (mu: number): number => Math.max(0.5, 1 + D().goodPerMu * (mu - 5))
+const hurtOf = (mu: number): number => Math.max(0.5, 1 + D().hitPerMu * (mu - 5))
+/** 적장 무예가 높을수록 덜 지친다 */
+const tireOf = (mu: number): number => 1 / Math.max(0.5, 1 + D().postureMu * (mu - 5))
+
+function spawnCue(d: Duel, at: number, avoid?: Cue): Cue {
   const R = D()
-  const tot = R.wJab + R.wHeavy + R.wFeint
-  const x = d.rng.next() * tot
-  return x < R.wJab ? 'jab' : x < R.wJab + R.wHeavy ? 'heavy' : 'feint'
+  const mu = d.opts.muFoe
+  // 화면 어디든 — 무예가 높을수록 앞 원에서 멀리 튄다 (더 불특정)
+  const jump = clamp(R.spreadBase + R.spreadPerMu * (mu - 5), 0.05, 0.6)
+  let x = 0.12 + d.rng.next() * 0.76
+  let y = 0.12 + d.rng.next() * 0.76
+  const from = avoid ?? d.cues.at(-1)
+  if (from !== undefined) {
+    const a = d.rng.next() * Math.PI * 2
+    const r = 0.18 + jump * (0.5 + d.rng.next() * 0.5)
+    x = clamp(from.x + Math.cos(a) * r, 0.12, 0.88)
+    y = clamp(from.y + Math.sin(a) * r, 0.12, 0.88)
+  }
+  const heavy = d.rng.next() < R.heavyChance
+  const lead = Math.round(R.lead * leadOf(mu) * (heavy ? R.heavyLead : 1))
+  const c: Cue = { id: d.nextId++, x, y, t0: at - lead, hitAt: at, heavy, done: null }
+  d.cues.push(c)
+  return c
 }
 
-function startMove(d: Duel): void {
+/** 다음 공격(또는 이어치기 둘)을 건다 */
+function planAttack(d: Duel, prev: Cue | undefined): void {
   const R = D()
-  const sp = speedOf(d.opts.muFoe)
-  const kind = pickMove(d)
-  const t0 = d.t
-  if (kind === 'feint') {
-    const fakeAt = t0 + Math.round(R.feintWind * sp)
-    d.foe.move = { kind, t0, fakeAt, strikeAt: fakeAt + Math.round(R.feintReal * sp) }
+  const mu = d.opts.muFoe
+  const lead = Math.round(R.lead * leadOf(mu))
+  const first = spawnCue(d, d.t + lead, prev)
+  let lastAt = first.hitAt
+  if (mu >= R.comboMu && !first.heavy && d.rng.next() < R.comboChance * (mu - R.comboMu + 1)) {
+    lastAt = spawnCue(d, first.hitAt + Math.round(R.comboGap), first).hitAt
+  }
+  const gapMul = Math.max(0.4, 1 - R.gapPerMu * (mu - 5))
+  d.nextCueAt = lastAt + Math.round((R.gapMin + d.rng.next() * Math.max(0, R.gapMax - R.gapMin)) * gapMul)
+}
+
+function startRush(d: Duel): void {
+  const R = D()
+  d.phase = 'rush'
+  d.phaseUntil = d.t + Math.round(R.rushTicks)
+  d.cues = []
+  d.rush = { hits: 0, deflects: 0, lastTap: -999 }
+  ev(d, 'break', 0, 0)
+}
+
+function toPause(d: Duel): void {
+  d.phase = 'pause'
+  d.phaseUntil = d.t + Math.round(D().pauseTicks)
+  d.cues = []
+}
+
+function judgeCue(d: Duel, c: Cue, j: Judge): void {
+  const R = D()
+  c.done = j
+  const at = { x: c.x, y: c.y }
+  if (j === 'miss') {
+    d.stats.miss++
+    ev(d, 'miss', Math.round((c.heavy ? R.heavyDmg : R.hitDmg) * hurtOf(d.opts.muFoe)), 0, at, c.heavy)
+    return
+  }
+  if (j === 'good') {
+    d.stats.good++
+    d.foe.posture = Math.min(R.posture, d.foe.posture + R.goodPosture * tireOf(d.opts.muFoe))
+    ev(d, 'good', 0, 0, at, c.heavy)
   } else {
-    d.foe.move = { kind, t0, strikeAt: t0 + Math.round((kind === 'jab' ? R.jabWind : R.heavyWind) * sp) }
-  }
-  ev(d, 'windup', 0, 0, kind)
-}
-
-function endMove(d: Duel, recover: number): void {
-  const R = D()
-  const m = d.foe.move
-  if (m !== null) d.foe.last = { kind: m.kind, strikeAt: m.strikeAt, until: d.t + recover }
-  d.foe.move = null
-  d.foe.nextAt = d.t + recover + Math.round(R.gapMin + d.rng.next() * Math.max(0, R.gapMax - R.gapMin))
-}
-
-/** 적장의 타격이 닿는 틱 — 늦게 누른 손을 받아 주는 틈만큼 뒤에 판정한다 */
-function resolveStrike(d: Duel, m: FoeAttack): void {
-  const R = D()
-  const w = widthOf(d.opts.muMe)
-  const heavy = m.kind === 'heavy'
-  const good = Math.round((heavy ? R.heavyGood : R.parryGood) * w)
-  const perfect = Math.round(R.parryPerfect * w)
-  const dp = d.me.parryAt - m.strikeAt
-  const dd = m.strikeAt - d.me.dodgeAt
-  const recover = heavy ? R.heavyRecover : R.jabRecover
-  if (dd >= 0 && dd <= R.dodgeSafe) {
-    d.stats.dodge++
-    const open = Math.round(R.openTicks * (heavy ? R.dodgeOpenHeavy : R.dodgeOpenLight))
-    d.foe.openUntil = d.t + open
-    d.me.lockUntil = Math.min(d.me.lockUntil, d.t + 4) // 비켜 내면 곧 칠 수 있다
-    ev(d, 'dodge', 0, 0, m.kind)
-    endMove(d, recover + Math.round(open * 0.5))
+    // 정확히 받으면 그 자리에서 치명공격 (엘든링 패링처럼) · 체간도 크게 찬다 · 붉은 큰 공격이면 더 크게
+    d.stats.perfect++
+    d.stats.crit++
+    d.foe.posture = Math.min(R.posture, d.foe.posture + R.perfectPosture * tireOf(d.opts.muFoe))
+    ev(d, 'perfect', 0, 0, at, c.heavy)
+    ev(d, 'crit', 0, Math.round(R.critDmg * (c.heavy ? R.critHeavy : 1)), at, c.heavy)
+    if (d.foe.hp > 0 && d.foe.posture >= R.posture && d.cues.every((x) => x.done !== null)) { startRush(d); return }
+    d.phase = 'crit'
+    d.phaseUntil = d.t + Math.round(R.critTicks)
+    d.cues = d.cues.filter((x) => x.done === null && x.hitAt > d.phaseUntil + 10)
     return
   }
-  if (dp >= -good && dp <= R.parryLate) {
-    d.me.lockUntil = d.t // 막아 내면 곧 풀린다 — 헛누름만 묶인다
-    if (Math.abs(dp) <= perfect) {
-      d.stats.perfect++
-      d.foe.openUntil = d.t + Math.round(R.openTicks)
-      d.foe.stunUntil = d.t + Math.round(R.stunTicks)
-      ev(d, 'perfect', 0, Math.round(R.perfect * (heavy ? R.perfectHeavy : 1)), m.kind)
-      endMove(d, recover + Math.round(R.openTicks * 0.5))
-    } else {
-      d.stats.parry++
-      ev(d, 'parry', heavy ? R.heavyChip : 0, R.good, m.kind)
-      endMove(d, recover)
-    }
-    return
-  }
-  d.stats.hit++
-  d.me.stunUntil = d.t + Math.round(R.stunTicks)
-  d.me.lockUntil = Math.max(d.me.lockUntil, d.me.stunUntil)
-  d.me.strikeLand = -1 // 맞으면 내던 칼이 흩어진다
-  ev(d, 'hit', heavy ? R.hitHeavy : R.hitJab, 0, m.kind)
-  endMove(d, recover)
+  if (d.foe.posture >= R.posture && d.cues.every((x) => x.done !== null)) startRush(d)
 }
 
-/** 우리 칼이 닿는 틱 */
-function landStrike(d: Duel): void {
-  const R = D()
-  d.me.strikeLand = -1
-  const m = d.foe.move
-  if (d.t < d.foe.openUntil || d.t < d.foe.stunUntil) {
-    d.stats.counter++
-    d.foe.stunUntil = d.t + Math.round(R.stunTicks)
-    ev(d, 'counter', 0, R.counter)
-    return
-  }
-  if (m !== null && d.t < m.strikeAt) {
-    // 크게 휘두르기·속임수는 칼을 다 들어 올리면(준비의 armor 몫 뒤) 버틴다 — 늦게 끊으면 우리 칼이 튕긴다
-    const upTo = m.fakeAt ?? m.strikeAt
-    const armored = m.kind !== 'jab' && (m.fakeAt === undefined || d.t < m.fakeAt) && d.t >= m.t0 + Math.round(R.armor * (upTo - m.t0))
-    if (armored) {
-      d.me.stunUntil = d.t + Math.round(R.stunTicks)
-      d.me.lockUntil = Math.max(d.me.lockUntil, d.me.stunUntil)
-      ev(d, 'blocked', R.blockedChip, 0, m.kind)
-      return
-    }
-    if (m.kind === 'jab' || (m.fakeAt !== undefined && d.t >= m.fakeAt)) {
-      // 빠른 찌르기와는 맞부딪힌다 — 둘 다 조금씩
-      ev(d, 'clash', R.clash, R.clash, m.kind)
-      endMove(d, R.jabRecover)
-      return
-    }
-    d.stats.interrupt++
-    d.foe.stunUntil = d.t + Math.round(R.stunTicks)
-    d.foe.openUntil = d.t + Math.round(R.openTicks * 0.5)
-    ev(d, 'interrupt', 0, R.interrupt, m.kind)
-    endMove(d, R.heavyRecover)
-    return
-  }
-  // 서 있는 적장을 치면 막히고 칼이 튕긴다 — 비틀거리는 사이 적장이 곧바로 되친다 (마구 누르기 막기)
-  d.me.stunUntil = d.t + Math.round(R.stunTicks)
-  d.me.lockUntil = Math.max(d.me.lockUntil, d.me.stunUntil)
-  if (d.foe.move === null) d.foe.nextAt = Math.min(d.foe.nextAt, d.t + 2)
-  ev(d, 'blocked', R.blockedChip, 0)
-}
-
-/** 한 틱. input 은 이 틱에 누른 손 (없으면 undefined) */
-export function stepDuel(d: Duel, input?: Act): void {
+/** 한 틱. tap 은 이 틱에 누른 자리 (없으면 undefined) */
+export function stepDuel(d: Duel, tap?: Tap): void {
   if (d.over !== null) return
   const R = D()
   d.t++
-  // ── 우리 손
-  if (input !== undefined && d.t >= d.me.lockUntil) {
-    if (input === 'parry') {
-      d.me.parryAt = d.t
-      d.me.lockUntil = d.t + Math.round(R.parryLock)
-    } else if (input === 'dodge') {
-      d.me.dodgeAt = d.t
-      d.me.lockUntil = d.t + Math.round(R.dodgeLen)
-    } else {
-      d.me.strikeAt = d.t
-      d.me.strikeLand = d.t + Math.round(R.strikeWind)
-      d.me.lockUntil = d.t + Math.round(R.strikeWind + R.strikeRecover)
+  if (d.phase === 'pause' || d.phase === 'crit') {
+    if (d.t >= d.phaseUntil) {
+      d.phase = 'guard'
+      d.nextCueAt = d.t + 10
+    }
+  } else if (d.phase === 'rush') {
+    if (tap !== undefined && d.t - d.rush.lastTap >= R.tapGap) {
+      d.rush.lastTap = d.t
+      const p = clamp(R.deflectBase + R.deflectPerMu * (d.opts.muFoe - 5) - R.deflectPerHit * d.rush.hits, R.deflectMin, R.deflectMax)
+      if (d.rng.next() < p) { d.rush.deflects++; d.stats.deflect++; ev(d, 'deflect', 0, 0, tap) }
+      else { d.rush.hits++; d.stats.rushHit++; ev(d, 'rushHit', 0, Math.round(R.tapDmg), tap) }
+    }
+    if (d.t >= d.phaseUntil) {
+      d.foe.posture = 0
+      ev(d, 'rushEnd', 0, 0)
+      toPause(d)
+    }
+  } else {
+    // 막기 차례
+    if (d.t >= d.nextCueAt && d.cues.every((c) => c.done !== null)) {
+      const prev = d.cues.at(-1)
+      d.cues = []
+      planAttack(d, prev)
+      ev(d, 'cue', 0, 0)
+    }
+    if (tap !== undefined) {
+      const reach = R.radius * R.touchSlop
+      let best: Cue | null = null
+      for (const c of d.cues) {
+        if (c.done !== null || d.t < c.t0) continue
+        if (Math.hypot(tap.x - c.x, tap.y - c.y) > reach) continue
+        if (best === null || Math.abs(d.t - c.hitAt) < Math.abs(d.t - best.hitAt)) best = c
+      }
+      if (best !== null) {
+        const w = widthOf(d.opts.muMe)
+        const dt = d.t - best.hitAt
+        if (dt < -Math.round(R.good * w)) judgeCue(d, best, 'miss') // 너무 일찍 — 헛손에 맞는다
+        else if (Math.abs(dt) <= Math.round(R.perfect * w)) judgeCue(d, best, 'perfect')
+        else judgeCue(d, best, 'good')
+      }
+    }
+    if (d.phase === 'guard') {
+      const lateW = Math.round(R.good * widthOf(d.opts.muMe)) + R.late // 닿은 뒤로도 막는 폭만큼 + 손가락 늦음
+      for (const c of d.cues) if (c.done === null && d.t > c.hitAt + lateW) judgeCue(d, c, 'miss')
+      d.foe.posture = Math.max(0, d.foe.posture - R.postureRecover)
     }
   }
-  if (d.me.strikeLand === d.t) landStrike(d)
-  // ── 적장
-  const m = d.foe.move
-  if (m !== null) {
-    if (m.fakeAt === d.t) ev(d, 'feint', 0, 0, m.kind)
-    if (d.t === m.strikeAt + Math.round(R.parryLate)) resolveStrike(d, m)
-  } else if (d.t >= d.foe.nextAt && d.t >= d.foe.stunUntil && d.t >= d.foe.openUntil) {
-    startMove(d)
-  }
-  // ── 끝
-  if (d.foe.poise <= 0) d.over = 'win'
-  else if (d.me.poise <= 0) d.over = 'lose'
+  if (d.foe.hp <= 0) d.over = 'ko'
+  else if (d.me.hp <= 0) d.over = 'kod'
   else if (d.t >= d.end) {
-    const diff = d.me.poise - d.foe.poise
+    const diff = d.me.hp - d.foe.hp
     d.over = diff > R.drawBand ? 'win' : diff < -R.drawBand ? 'lose' : 'draw'
   }
 }
@@ -242,20 +244,3 @@ export function stepDuel(d: Duel, input?: Act): void {
 /** 맡겼을 때 이길 몫 — 본편 겨루기와 같은 셈 (tactics.ts · tacDuelPerMu) */
 export const autoWinChance = (muMe: number, muFoe: number): number =>
   Math.min(0.9, Math.max(0.1, 0.5 + P.realm.tacDuelPerMu * (muMe - muFoe)))
-
-/** 그리기용: 적장이 지금 어느 단계인가 */
-export type FoePhase = 'idle' | 'windup' | 'fake' | 'strike' | 'recover' | 'stun'
-export function foePhase(d: Duel): { phase: FoePhase; k: number; kind?: FoeMove } {
-  const m = d.foe.move
-  if (d.t < d.foe.stunUntil) return { phase: 'stun', k: 0 }
-  if (m !== null) {
-    if (m.fakeAt !== undefined && d.t < m.fakeAt) return { phase: 'windup', k: (d.t - m.t0) / (m.fakeAt - m.t0), kind: m.kind }
-    if (m.fakeAt !== undefined && d.t < m.fakeAt + 8) return { phase: 'fake', k: (d.t - m.fakeAt) / 8, kind: m.kind }
-    const from = m.fakeAt !== undefined ? m.fakeAt + 8 : m.t0
-    if (d.t < m.strikeAt) return { phase: 'windup', k: (d.t - from) / Math.max(1, m.strikeAt - from), kind: m.kind }
-    return { phase: 'strike', k: 1, kind: m.kind }
-  }
-  const l = d.foe.last
-  if (l !== null && d.t < l.until) return { phase: 'recover', k: (d.t - l.strikeAt) / Math.max(1, l.until - l.strikeAt), kind: l.kind }
-  return { phase: 'idle', k: 0 }
-}

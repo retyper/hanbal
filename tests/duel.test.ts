@@ -1,38 +1,31 @@
 /**
- * 장수 겨루기 시험판의 셈 (src/duel/sim.ts) — 결정론 · 손이 값을 갖는지 · 아무것도 안 하면 지는지.
+ * 장수 겨루기 시험판 2판의 셈 (src/duel/sim.ts) — 결정론 · 손이 값을 갖는지 · 못 막으면 지는지.
  */
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { createDuel, stepDuel, type Act, type Duel } from '../src/duel/sim.ts'
+import { createDuel, stepDuel, type Duel, type Tap } from '../src/duel/sim.ts'
 import { P } from '../src/tune/params.ts'
 
-type Bot = (d: Duel) => Act | undefined
+type Bot = (d: Duel) => Tap | undefined
 
-function play(seed: number, bot: Bot, muMe = 5, muFoe = 5): Duel {
+export function play(seed: number, bot: Bot, muMe = 5, muFoe = 5): Duel {
   const d = createDuel({ seed, muMe, muFoe })
   while (d.over === null) stepDuel(d, bot(d))
   return d
 }
 
-/** 다 읽는 손 — 크게 휘두르기는 먼저 끊고, 나머지는 타격 순간에 받아치고, 빈틈에 친다 */
-const master: Bot = (d) => {
-  const m = d.foe.move
-  if (m !== null) {
-    if (m.kind === 'heavy' && d.t === m.t0 + 2) return 'strike'
-    if (d.t === m.strikeAt) return 'parry'
-    return undefined
-  }
-  if (d.t < d.foe.openUntil && d.t >= d.me.lockUntil) return 'strike'
-  return undefined
+/** 고리가 닿는 순간 그 원을 누르는 손 (off = 늦게 누르는 틱) · 연타는 tapGap 마다 */
+const timed = (off: number): Bot => (d) => {
+  if (d.phase === 'rush') return d.t % Math.round(P.duel.tapGap) === 0 ? { x: 0.5, y: 0.5 } : undefined
+  const c = d.cues.find((x) => x.done === null && d.t === x.hitAt + off)
+  return c === undefined ? undefined : { x: c.x, y: c.y }
 }
-/** 늘 피하기만 — 안전하지만 크게 못 얻는다 */
-const coward: Bot = (d) => (d.foe.move !== null && d.t === d.foe.move.strikeAt - 6 ? 'dodge' : d.t < d.foe.openUntil && d.t >= d.me.lockUntil ? 'strike' : undefined)
-/** 마구 누르기 */
-const masher: Bot = (d) => (['parry', 'strike', 'dodge'] as const)[d.t % 3]
 const idle: Bot = () => undefined
+/** 화면 아무 데나 마구 누르기 */
+const masher: Bot = (d) => ({ x: ((d.t * 37) % 100) / 100, y: ((d.t * 61) % 100) / 100 })
 
 test('같은 시드 + 같은 손 = 같은 판 (결정론)', () => {
-  for (const bot of [master, coward, masher, idle]) {
+  for (const bot of [timed(0), timed(7), masher, idle]) {
     const a = play(7, bot)
     const b = play(7, bot)
     assert.deepEqual(a.events, b.events)
@@ -40,32 +33,40 @@ test('같은 시드 + 같은 손 = 같은 판 (결정론)', () => {
   }
 })
 
-test('아무것도 안 하면 진다', () => {
-  for (let s = 1; s <= 20; s++) assert.equal(play(s, idle).over, 'lose', `seed ${s}`)
-})
-
-test('다 읽는 손은 같은 무예의 적장을 이긴다', () => {
-  let win = 0
-  for (let s = 1; s <= 50; s++) if (play(s, master).over === 'win') win++
-  assert.ok(win >= 45, `master won ${win}/50`)
-})
-
-test('마구 누르기는 다 읽는 손보다 못하다', () => {
-  let mash = 0
-  let mas = 0
-  for (let s = 1; s <= 50; s++) {
-    if (play(s, masher).over === 'win') mash++
-    if (play(s, master).over === 'win') mas++
+test('못 막으면 맞다가 진다 — 적장은 지치지도 않는다', () => {
+  for (let s = 1; s <= 20; s++) {
+    const d = play(s, idle)
+    assert.equal(d.over, 'kod', `seed ${s}`)
+    assert.equal(d.stats.rushHit + d.stats.crit, 0)
   }
-  assert.ok(mash < mas - 15, `masher ${mash} vs master ${mas}`)
 })
 
-test('피하기만 하면 지지는 않아도 다 읽는 손만큼 못 얻는다', () => {
-  const sum = (bot: Bot): number => { let x = 0; for (let s = 1; s <= 30; s++) { const d = play(s, bot); x += d.me.poise - d.foe.poise } return x }
-  assert.ok(sum(master) > sum(coward), 'master margin should exceed coward margin')
+test('완벽히 맞추는 손은 치명공격으로 KO 를 낸다', () => {
+  let ko = 0
+  for (let s = 1; s <= 30; s++) if (play(s, timed(0)).over === 'ko') ko++
+  assert.ok(ko >= 28, `ko ${ko}/30`)
 })
 
-test('판 길이가 넘지 않는다', () => {
-  const d = play(3, coward)
+test('막기만 하는 손(정확은 못 함)도 적장을 지치게 해 연타로 친다', () => {
+  const d = play(3, timed(7))
+  assert.ok(d.stats.good > 0)
+  assert.equal(d.stats.crit, 0)
+  assert.ok(d.stats.rushHit > 0, 'rush should happen from good blocks')
+})
+
+test('마구 누르기는 막는 손보다 못하다', () => {
+  let mash = 0
+  let good = 0
+  for (let s = 1; s <= 30; s++) {
+    const a = play(s, masher)
+    const b = play(s, timed(7))
+    mash += a.me.hp - a.foe.hp
+    good += b.me.hp - b.foe.hp
+  }
+  assert.ok(mash < good - 30 * 20, `masher ${mash} vs blocker ${good}`)
+})
+
+test('판은 60초를 넘지 않는다', () => {
+  const d = play(3, timed(7))
   assert.ok(d.t <= Math.round(P.duel.length))
 })
