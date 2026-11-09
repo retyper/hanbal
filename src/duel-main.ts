@@ -75,16 +75,43 @@ function noise(dur: number, vol: number, lp: number, delay = 0): void {
   const g = a.createGain(); g.gain.value = vol
   s.connect(f).connect(g).connect(a.destination); s.start(a.currentTime + delay)
 }
-const SFX = {
-  perfect: () => { tone(2600, 0.6, 'triangle', 0.22); tone(1950, 0.5, 'sine', 0.18); noise(0.06, 0.5, 9000) },
-  good: () => { tone(1150, 0.2, 'triangle', 0.2); noise(0.05, 0.3, 6000) },
-  miss: () => { noise(0.25, 0.75, 650); tone(110, 0.25, 'sine', 0.45, 0.5) },
-  crit: () => { noise(0.35, 0.9, 1200, 0.05); tone(70, 0.6, 'sine', 0.6, 0.6, 0.05); tone(3200, 0.9, 'sine', 0.12, 0.98, 0.1) },
-  break: () => { tone(400, 0.5, 'sawtooth', 0.12, 0.4); noise(0.3, 0.4, 900) },
-  rushHit: () => { noise(0.08, 0.45, 2200); tone(260, 0.07, 'square', 0.08, 0.6) },
-  deflect: () => { tone(1700, 0.12, 'triangle', 0.16); noise(0.03, 0.2, 7000) },
-  flag: () => { tone(220, 0.5, 'sawtooth', 0.12, 2); noise(0.6, 0.25, 900) },
+/**
+ * 진짜 효과음 — public/realm/sfx/duel/<자리>_<a|b|c>.ogg (Freesound CC0 · 출처 sfx/CREDITS.txt · 고르는 곳 realm/duel-sounds.html).
+ * 형이 고르기 전에는 a. 주소의 ?sfx=good:b,crit:c 로 바꿔 듣는다. 못 받으면 합성 소리로 대신한다.
+ */
+type SndSlot = 'good' | 'perfect' | 'crit' | 'rushHit' | 'deflect' | 'hurt' | 'swing' | 'break' | 'intro'
+const SND_PICK: Record<SndSlot, string> = { good: 'a', perfect: 'a', crit: 'a', rushHit: 'a', deflect: 'a', hurt: 'a', swing: 'a', break: 'a', intro: 'a' }
+for (const kv of (params.get('sfx') ?? '').split(',')) { const [k, v] = kv.split(':'); if (k !== undefined && v !== undefined && k in SND_PICK) SND_PICK[k as SndSlot] = v }
+const SND_BUF = new Map<SndSlot, AudioBuffer>()
+let sndLoading = false
+function loadSounds(): void {
+  const a = audio()
+  if (a === null || sndLoading) return
+  sndLoading = true
+  for (const slot of Object.keys(SND_PICK) as SndSlot[]) {
+    void fetch(`realm/sfx/duel/${slot}_${SND_PICK[slot]}.ogg`).then((r) => r.arrayBuffer()).then((b) => a.decodeAudioData(b)).then((buf) => { SND_BUF.set(slot, buf) }).catch(() => undefined)
+  }
 }
+/** 받은 소리를 낸다 — 없으면 false (합성으로 대신) */
+function snd(slot: SndSlot, vol = 1, delay = 0): boolean {
+  const a = audio(), buf = SND_BUF.get(slot)
+  if (a === null || buf === undefined) return false
+  const s = a.createBufferSource(); s.buffer = buf
+  const g = a.createGain(); g.gain.value = vol
+  s.connect(g).connect(a.destination); s.start(a.currentTime + delay)
+  return true
+}
+const SFX = {
+  perfect: () => { if (!snd('perfect')) { tone(2600, 0.6, 'triangle', 0.22); tone(1950, 0.5, 'sine', 0.18); noise(0.06, 0.5, 9000) } },
+  good: () => { snd('swing', 0.5); if (!snd('good')) { tone(1150, 0.2, 'triangle', 0.2); noise(0.05, 0.3, 6000) } },
+  miss: () => { snd('swing', 0.6); if (!snd('hurt')) { noise(0.25, 0.75, 650); tone(110, 0.25, 'sine', 0.45, 0.5) } },
+  crit: () => { if (!snd('crit', 1, 0.05)) { noise(0.35, 0.9, 1200, 0.05); tone(70, 0.6, 'sine', 0.6, 0.6, 0.05); tone(3200, 0.9, 'sine', 0.12, 0.98, 0.1) } },
+  break: () => { if (!snd('break')) { tone(400, 0.5, 'sawtooth', 0.12, 0.4); noise(0.3, 0.4, 900) } },
+  rushHit: () => { if (!snd('rushHit', 0.8)) { noise(0.08, 0.45, 2200); tone(260, 0.07, 'square', 0.08, 0.6) } },
+  deflect: () => { if (!snd('deflect', 0.8)) { tone(1700, 0.12, 'triangle', 0.16); noise(0.03, 0.2, 7000) } },
+  flag: () => { if (!snd('intro')) { tone(220, 0.5, 'sawtooth', 0.12, 2); noise(0.6, 0.25, 900) } },
+}
+loadSounds() // 처음부터 받아 둔다 (소리판은 첫 손짓에 깨어난다)
 
 // ── 판
 type Mode = 'field' | 'zoom' | 'duel' | 'end'

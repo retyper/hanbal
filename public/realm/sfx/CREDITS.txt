@@ -280,3 +280,32 @@ capt_lock_g3.mp3  공유마당 · 「foleychainrattle04」 · 김용배 · CC BY
 tap_rite_g14.wav  공유마당 · 「국악 효과음 #651」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387641 · 잘라 냄
 invade_g7.wav  공유마당 · 「시골 학교종(빨리)」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254040 · 잘라 냄
 capt_lock_g4.wav  공유마당 · 「기쁨_승리의_강의실_남성(20명)_멀다(300cm)_KM184_ST_192」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13288167 · 잘라 냄
+
+# 장수 겨루기 시험판 후보 (2026-11-09 · 형: "해외 어디든 무료 sfx 면 다 괜찮으니까 모아와봐") — sfx/duel/
+duel/good_a.ogg  Freesound · ID 334169 (https://freesound.org/s/334169/) · Sword Clash · loudernoises · CC0
+duel/good_b.ogg  Freesound · ID 326868 (https://freesound.org/s/326868/) · Sword_Clash (7) · JohnBuhr · CC0
+duel/good_c.ogg  Freesound · ID 470175 (https://freesound.org/s/470175/) · Espada Clavandose (Sword Clash) · Atrius1 · CC0
+duel/perfect_a.ogg  Freesound · ID 760636 (https://freesound.org/s/760636/) · Metal Sword Parry Impact Hit 4 · chungkury · CC0
+duel/perfect_b.ogg  Freesound · ID 616493 (https://freesound.org/s/616493/) · block3 · Empiremonkey · CC0
+duel/perfect_c.ogg  Freesound · ID 844258 (https://freesound.org/s/844258/) · Sword Tap · Foxfire- · CC0
+duel/crit_a.ogg  Freesound · ID 370204 (https://freesound.org/s/370204/) · samurai slash · nekoninja · CC0
+duel/crit_b.ogg  Freesound · ID 574821 (https://freesound.org/s/574821/) · Slash1 · Wenpire · CC0
+duel/crit_c.ogg  Freesound · ID 420674 (https://freesound.org/s/420674/) · Deep Cut / Slash / Gash · SypherZent · CC0
+duel/rushHit_a.ogg  Freesound · ID 442903 (https://freesound.org/s/442903/) · Slash · qubodup · CC0
+duel/rushHit_b.ogg  Freesound · ID 442769 (https://freesound.org/s/442769/) · Sword Hit · qubodup · CC0
+duel/rushHit_c.ogg  Freesound · ID 504615 (https://freesound.org/s/504615/) · Slicing through flesh · NeoSpica · CC0
+duel/deflect_a.ogg  Freesound · ID 220179 (https://freesound.org/s/220179/) · Click Metal Ting · GameAudio · CC0
+duel/deflect_b.ogg  Freesound · ID 640881 (https://freesound.org/s/640881/) · sword · CaptainYulef · CC0
+duel/deflect_c.ogg  Freesound · ID 784206 (https://freesound.org/s/784206/) · Anime metal clang · modusmogulus · CC0
+duel/hurt_a.ogg  Freesound · ID 276600 (https://freesound.org/s/276600/) · body_hit · insanity54 · CC0
+duel/hurt_b.ogg  Freesound · ID 411122 (https://freesound.org/s/411122/) · Sword hits the body · vdovitsky · CC0
+duel/hurt_c.ogg  Freesound · ID 399183 (https://freesound.org/s/399183/) · Major punch · janbezouska · CC0
+duel/swing_a.ogg  Freesound · ID 240640 (https://freesound.org/s/240640/) · Metallic Whoosh · MissCellany · CC0
+duel/swing_b.ogg  Freesound · ID 60024 (https://freesound.org/s/60024/) · swosh swinging sword 37 · qubodup · CC0
+duel/swing_c.ogg  Freesound · ID 389590 (https://freesound.org/s/389590/) · Swing Woosh · Jofae · CC0
+duel/break_a.ogg  Freesound · ID 244983 (https://freesound.org/s/244983/) · ANI Big Pipe Hit · ani_music · CC0
+duel/break_b.ogg  Freesound · ID 435681 (https://freesound.org/s/435681/) · Metallic Clang · eben-frostey · CC0
+duel/break_c.ogg  Freesound · ID 640204 (https://freesound.org/s/640204/) · Heavy Metal Thud on Ground · 7of9Designs · CC0
+duel/intro_a.ogg  Freesound · ID 541029 (https://freesound.org/s/541029/) · Very low frequency impact · AudioPapkin · CC0
+duel/intro_b.ogg  Freesound · ID 755054 (https://freesound.org/s/755054/) · Impact SFX PS 017 · AudioPapkin · CC0
+duel/intro_c.ogg  Freesound · ID 645898 (https://freesound.org/s/645898/) · Impact sfx 027 · AudioPapkin · CC0
