@@ -1086,6 +1086,8 @@ export function sideOf(
     ...(easy ? { easy: true } : {}),
     // 배우는 판 — 우리 쪽 사로잡기는 반드시 되고, 상대는 우리 장수를 잡지 않는다 (형: "튜토리얼급이니 100% 성공하도록")
     ...(r.region === 'tutorial' ? { capture: r.factions[faction]?.mind === 'player' ? 'sure' as const : 'never' as const } : {}),
+    // 배우는 판 — 장수 깃발은 겨루기 → 사로잡기 하나씩 (tactics.leadOptions · 형 11-09)
+    ...(r.region === 'tutorial' && r.factions[faction]?.mind === 'player' ? { lesson: true as const } : {}),
     // 호궤 — 플레이어 쪽만, 곳간에 그만큼 있을 때 (곡식은 싸움이 끝나고 payFeast 가 뺀다)
     ...(r.factions[faction]?.mind === 'player' && (r.stock[faction]?.grain ?? 0) >= feast ? { feast } : {}),
     // 곳간 — 마지막 때에 「한 합 더」를 고르면 여기서 낸다 (호궤를 했으면 그만큼 뺀 뒤 · payPress)

@@ -81,6 +81,11 @@ export interface Side {
   /** 배우는 판 — sure 면 이쪽 사로잡기는 반드시 되고, never 면 아예 못 한다 */
   readonly capture?: 'sure' | 'never'
   /**
+   * 배우는 판의 우리 쪽 — 장수 깃발을 차례로 하나씩만 준다: 첫 합 「장수 겨루기」(무예 조건 없이) → 다음 합 「적장 사로잡기」(반드시 됨).
+   * 겨루기에 져도 장수는 쓰러지지 않는다(사기만 꺾인다) — 지면 다음 합에 사로잡기를 못 해서 (형 11-09: 튜토리얼에서 제대로 보여 줘야)
+   */
+  readonly lesson?: true
+  /**
    * 호궤 — 곳간의 곡식을 풀어 군사를 먹일 수 있다. 값은 드는 곡식(곳간에 그만큼 있을 때만 · 없으면 못 한다).
    * 한 판에 한 번 · 사기가 크게 오른다 (형 10-25: "군량 소모해서 사기 회복시키는 건 어때?")
    */
@@ -478,6 +483,11 @@ export function groupOptions(me: Side, foe: Side, g: Grp, used: ReadonlySet<Cmd>
 
 /** 장수의 명령 */
 export function leadOptions(me: Side, foe: Side, used: ReadonlySet<Cmd>, foeHeroGone: boolean, arts: ReadonlySet<string> = NO_ARTS, shaken = false): Cmd[] {
+  // 배우는 판 — 겨루기 다음 사로잡기, 하나씩만
+  if (me.lesson === true && foe.hero !== null && !foeHeroGone) {
+    if (!used.has('duel')) return ['duel']
+    if (!used.has('capture')) return ['capture']
+  }
   // 총대장을 잃은 다음 합 — 지휘가 흔들려 북과 물러나기뿐
   if (shaken) return ['drum', 'retreat']
   const out: Cmd[] = ['drum']
@@ -559,7 +569,9 @@ function aiOrder(c: Ctx, me: Side, foe: Side, mine: 'a' | 'd', st: State, cap: n
     : atk ? edge < (coward ? 0.35 : 0.22) && myN < 0.75 : edge < 0.12 && myN < 0.5
   // 맡긴 우리 싸움 — 각성 장수는 밀리는 합에 각성기를 터뜨린다 (적은 각성기가 없다 · SideHero.wake)
   const wakeHere = me.player === true && lopts.includes('wake') && (edge < R.wakeAiEdge || myN < R.wakeAiMen)
-  if (wakeHere) lead = 'wake'
+  // 배우는 판 — 맡겨도 차례대로 (겨루기 → 사로잡기)
+  if (me.lesson === true && lopts.length === 1 && (lopts[0] === 'duel' || lopts[0] === 'capture')) lead = lopts[0]
+  else if (wakeHere) lead = 'wake'
   else if (lopts.includes('capture') && cap >= R.tacAiCapture) lead = 'capture'
   // 물러날 가망이 너무 낮으면 등을 보이느니 끝까지 싸운다 (말이 있으면 호위시킬 셈으로 잰다)
   else if (!stay && giveUp && retreatOdds(c, st, mine, groups.includes('horse'), dark) >= R.tacAiRetreatOdds) lead = 'retreat'
@@ -953,8 +965,10 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
     // 금강의 기개(땅의 각성기) — 이 싸움 그 쪽은 무너지지 않는다
     const dA0 = downOf(c, st, 'a', baseA)
     const dD0 = downOf(c, st, 'd', baseD)
-    const dA = st.wardA === true ? { down: false, men: false } : dA0
-    const dD = st.wardD === true ? { down: false, men: false } : dD0
+    // 배우는 판 — 사로잡기(둘째 합)를 보여 주기 전엔 아무도 무너지지 않는다 (형 11-09: 겨루기 → 사로잡기를 꼭 보이게)
+    const hold = (atk.lesson === true || def.lesson === true) && i < 1
+    const dA = st.wardA === true || hold ? { down: false, men: false } : dA0
+    const dD = st.wardD === true || hold ? { down: false, men: false } : dD0
     if (dA.down || dD.down) {
       const s = shareOf(c, st)
       broke = dA.down && dD.down ? (s >= 0.5 ? 'd' : 'a') : dA.down ? 'a' : 'd'
@@ -1303,13 +1317,15 @@ function resolveRound(
     const rolled = rk(i, 'duel') < pA
     const aWins = hand !== undefined ? (hand === 'win') === (starter === 'a') : rolled
     const loser: 'a' | 'd' = aWins ? 'd' : 'a'
-    const kill = rk(i, 'duel-kill') < R.tacDuelKill
+    const kill = rk(i, 'duel-kill') < R.tacDuelKill && atk.lesson !== true && def.lesson !== true
     const wh = aWins ? dA : dD
     duelRes = { loser, kill, ...(wh !== undefined ? { winner: wh.id } : {}) }
     const lh = loser === 'a' ? dA : dD
     // 홀로 선 장수가 졌으면 옛 길 — 장수 잃은 군대로 싸운다. 장수가 여럿이면 그 장수만 물러나고 다른 장수가 이끈다 (fightRounds)
-    if (heroesOf(loser === 'a' ? atk : def).length <= 1) { if (loser === 'a') { st.lostA = true; st.hurtA = !kill } else { st.lostD = true; st.hurtD = !kill } }
-    if (lh !== undefined) lost.push({ side: loser, hero: lh.id, how: 'fell', kill })
+    // 배우는 판의 겨루기는 아무도 쓰러뜨리지 않는다 — 사기만 오간다 (지면 우리 장수가 없어, 이기면 잡을 적장이 없어 다음 합 사로잡기를 못 한다)
+    const spared = atk.lesson === true || def.lesson === true
+    if (!spared && heroesOf(loser === 'a' ? atk : def).length <= 1) { if (loser === 'a') { st.lostA = true; st.hurtA = !kill } else { st.lostD = true; st.hurtD = !kill } }
+    if (!spared && lh !== undefined) lost.push({ side: loser, hero: lh.id, how: 'fell', kill })
     st.ma += aWins ? R.tacDuelWin : -R.tacDuelLose
     st.md += aWins ? -R.tacDuelLose : R.tacDuelWin
     ev = aWins === (starter === 'a') ? 'duel-win' : 'duel-lose'

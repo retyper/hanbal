@@ -44,7 +44,7 @@ describe('배우는 판', () => {
     assert.equal(captureChance(foe, me, 0.2, 0.2, 0.2, 0.9, true), 0)
   })
 
-  it('출정해서 첫 합에 사로잡기를 고르면 시드가 달라도 여인 장수가 잡힌다', () => {
+  it('출정해서 첫 합에 장수 겨루기, 다음 합에 사로잡기를 고르면 시드가 달라도 여인 장수가 잡힌다 (형 11-09: 튜토리얼은 겨루기 → 사로잡기 하나씩)', () => {
     for (let seed = 1; seed <= 12; seed++) {
       const r = startTutorial(seed)
       const march: Order = { kind: 'march', army: 'a-us', edge: 't01', ambush: false }
@@ -54,7 +54,7 @@ describe('배우는 판', () => {
         // 싸움의 열쇠는 엔진이 정한다 — 한 번 시험 돌려 찾고, 그 싸움에 사로잡기를 건다
         const tactics: Order[] = []
         const probe = advance(x, aiOrders(x))
-        for (const l of probe.report.lines) if (l.kind === 'battle' && l.key !== undefined) tactics.push({ kind: 'command', key: l.key, cmds: ['capture', 'capture', 'capture'] as Tactic['cmds'] })
+        for (const l of probe.report.lines) if (l.kind === 'battle' && l.key !== undefined) tactics.push({ kind: 'command', key: l.key, cmds: [{ lead: 'duel' }, 'capture', 'capture'] as Tactic['cmds'] })
         x = advance(x, [...tactics, ...aiOrders(x)]).next
       }
       assert.equal(x.heroes['tut-haebi']!.status, 'captive', `시드 ${seed}`)

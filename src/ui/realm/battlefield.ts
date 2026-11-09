@@ -4464,7 +4464,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         for (const ch of `${key}:${pd.round}`) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0
         const line = t.line
         const bgUrl = line !== null ? warBg(host.art, warGround(prev, line), line.atkFaction !== host.me) : undefined
-        void mountDuel({ me: side(me), foe: side(foe), tier: clampTier(prev.tier ?? 1), seed, ...(bgUrl !== undefined ? { bg: bgUrl } : {}) }).then((res) => {
+        void mountDuel({ me: side(me), foe: side(foe), tier: prev.region === 'tutorial' ? 0 : clampTier(prev.tier ?? 1), seed, ...(bgUrl !== undefined ? { bg: bgUrl } : {}) }).then((res) => {
           if (res !== undefined) sel.duel = res
           fightNow(key)
         })

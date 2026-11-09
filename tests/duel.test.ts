@@ -93,3 +93,24 @@ test('손 겨루기 결과가 없으면(비김) 예전 굴림 그대로', () => 
     assert.deepEqual(a.duel, b.duel)
   }
 })
+
+// ── 배우는 판 — 장수 깃발은 겨루기 → 사로잡기 하나씩 · 겨루기에 져도 장수는 안 쓰러진다 (형 11-09)
+import { leadOptions } from '../src/realm/tactics.ts'
+test('배우는 판: 첫 합은 겨루기 하나 · 다음 합은 사로잡기 하나 (무예 조건 없이)', () => {
+  const me = { ...side(true, 3), lesson: true as const, capture: 'sure' as const }
+  const foe = side(false, 8)
+  assert.deepEqual(leadOptions(me, foe, new Set(), false), ['duel'])
+  assert.deepEqual(leadOptions(me, foe, new Set(['duel']), false), ['capture'])
+})
+test('배우는 판: 겨루기는 아무도 쓰러뜨리지 않고 다음 합에 사로잡기가 된다', () => {
+  const me = { ...side(true, 3), lesson: true as const, capture: 'sure' as const }
+  const r = fightRounds(me, side(false, 8), 'lesson', 1, 0, { cmds: [{ lead: 'duel', duel: 'lose' }, { lead: 'capture' }] })
+  assert.equal(r.captured, 'd')
+})
+test('배우는 판: 겨루기에 이겨도 적장이 쓰러지지 않아 다음 합에 잡힌다', () => {
+  const me = { ...side(true, 3), lesson: true as const, capture: 'sure' as const }
+  for (let s = 1; s <= 10; s++) {
+    const r = fightRounds(me, side(false, 8), `lw${s}`, s, 0, { cmds: [{ lead: 'duel', duel: 'win' }, { lead: 'capture' }] })
+    assert.equal(r.captured, 'd', `seed ${s}`)
+  }
+})
