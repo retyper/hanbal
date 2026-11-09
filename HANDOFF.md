@@ -144,3 +144,4 @@ Steam은 `docs/realm/STEAM-RELEASE.md`의 조사/체크리스트까지다. 가�
 - 출시 직전 `LOCKED_TRUE_WAKE_PREVIEW` 개발용 미해금 미리보기 해제를 별도 확인한다.
 - 제작 세부는 `docs/realm/production/README.md` → 관련 기록만 읽는다. 이전 공개판/배포 장애/Steam 맥락은 `docs/realm/production/history/handoff-before-final-20261108.md`에 보존했다. 이 문서가 과거 예약보다 우선한다.
 - 최종 적용/배포 검증 결과는 production의 `release-validation-20261108.md`를 확인한다. 배포 성공 전에는 공개 반영으로 간주하지 않는다.
+- **11-10 00:2x 챗지피티 retyper(hephaestosian) 진각성 aw2:** 한결(다시)·신라 젊은이·무당 사내·번예 하늘·험측 버금·서늘·우레·사로 이사금·대가야 왕·다벌 달구 열 장 넣음 · 다음은 **g-19-sabeol-veteran 부터** (문안: 어깨 무기·옷깃 손·손바닥 내밀기 금지 · 챗지피티 탭 localStorage 에 새 문안 올라가 있음) · 한도 문구는 아직 못 봄
