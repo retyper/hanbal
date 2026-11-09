@@ -6,7 +6,7 @@
 #   → typecheck · npm test → 그 파일들만 커밋·푸시 (npm test 는 한 번 흔들리면 다시)
 set -e
 t=$1; id=$2; note=$3
-f=~/Downloads/gpt_aw$t-$id.png
+f=${BAKE_DL:-$HOME/Downloads}/gpt_aw$t-$id.png
 [ -s "$f" ] || { echo "받은 그림 없음 $f"; exit 1; }
 if [ "$t" = 1 ]; then src=awaken; hd=awaken-hd; sm=awaken; else src=awaken2; hd=awaken2-hd; sm=awaken2; fi
 mkdir -p assets_src/realm/$src public/realm/$hd public/realm/$sm

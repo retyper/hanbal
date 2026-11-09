@@ -8,7 +8,7 @@
 # - act_<key>.png          → 전투 띠 동작 시트: 옛 시트는 assets_src/realm/retired/act-redo 로 · 초록 빼고 8컷 띠 · 미리보기 tools/out/intake-strips.jpg 까지만
 #                            (칸이 어긋난 사람은 고를 칸을 정해) sh tools/bake-intake.sh register <key> [1,2,3,3,5,6,7,8]  → 띠 다시 자르고 register-realm (커밋·푸시)
 set -e
-DL=~/Downloads
+DL=${BAKE_DL:-$HOME/Downloads}
 L=C:/Users/my/Documents/Codex/2026-11-06/windows-pc-claude-code-claude-code
 Q=D:/flutter/arrow_game_one/tools/veo/queue.mjs
 G=assets_src/realm/gemini/generals2
@@ -69,7 +69,7 @@ fi
 # ② Veo
 for f in $veo; do
   J=$(basename "$f" .mp4); J=${J#veo_}
-  ( cd "$L" && node $Q claim "$J" >/dev/null && node $Q submitted "$J" --chat "manual:hyung" >/dev/null && mkdir -p outputs/veo && mv "$f" "outputs/veo/$J.mp4" \
+  ( cd "$L" && { node $Q claim "$J" >/dev/null 2>&1 || true; } && node $Q submitted "$J" --chat "https://gemini.google.com/app/manual-hyung" >/dev/null && mkdir -p outputs/veo && mv "$f" "outputs/veo/$J.mp4" \
     && node $Q downloaded "$J" --file "outputs/veo/$J.mp4" | grep -m1 '"status"' ) || { echo "원장 실패 $J"; continue; }
   py -3 -X utf8 tools/veo/motion.py "$L/outputs/veo/$J.mp4" 2>&1 | tail -1
   set -- $(cd "$L" && node -e "const j=JSON.parse(require('fs').readFileSync('outputs/veo-production-queue.json','utf8')).jobs.find(x=>x.id==='$J');console.log(j.heroId,j.tier)")

@@ -270,6 +270,10 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'w-84-salhae-dallae', // 살해 달래
   'w-92-saro-dallae', // 명활 달래
   'w-93-saro-beomi', // 범이
+  // 11-10 형이 손으로 구움 (Veo · 굽기 꾸러미) · 형: "영상들 다 반영 · 변한 단비 너무 최고"
+  'w-18-jinhan-salt-widow', // 다솜
+  'w-94-mokji-dallae', // 원산 달래 (다시 구운 판)
+  'w-98-byeonhan-danbi', // 변한 단비
   'w-78-wansan-wan', // 11-08 저녁 완 v3 · 10초 구성 · 만작한 채 윙크 (형: 그래도 봐줄 만하다 · 적용)
   'w-69-jeoga-eomni', // 11-07 엄니 · fc094928 사용자 채택, 원본 프레임 경계 한계 기록
   'w-67-buyeo-haedal', // 11-07 해달 · 머리/허리 손 접촉을 유지하는 세로 idle
