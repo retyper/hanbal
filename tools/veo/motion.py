@@ -8,6 +8,7 @@
   얼어감  7.5초 뒤 움직임의 중간값 / 가운데의 중간값 < FADE   (끝에서 움직임이 죽는다 · 숨쉬기도 없이 멈춤)
   튐      마지막 2초의 가장 큰 한 프레임 변화 / 가운데의 95분위 > SNAP  (원본 자세로 순간이동)
   멈춤    가운데 움직임의 20% 밑이 STILL 초 넘게 이어짐
+  바뀜    어디서든 한 프레임 변화가 앞뒤 다섯 프레임 중간값의 CUT 배 넘음 (한 프레임 만에 다른 사람·옷·자세로 · 형 11-09 버들: "절대 못 쓰는 영상") — 번개 번쩍임은 4배 남짓
 불·이펙트·활쏘기처럼 빠른 동작은 「튐」으로 잡힐 수 있으니 눈으로 확인할 거리 — 영상은 귀하니 이 검사로 버리지 않는다 (메모리 veo-takes-precious).
 """
 import sys
@@ -19,6 +20,7 @@ import numpy as np
 FADE = 0.3
 SNAP = 2.5
 STILL = 1.0
+CUT = 8.0
 SIZE = (90, 160)
 
 
@@ -34,7 +36,7 @@ def frames(path: Path):
     return out, fps
 
 
-def measure(path: Path) -> tuple[float, float, float]:
+def measure(path: Path) -> tuple[float, float, float, float]:
     fs, fps = frames(path)
     d = np.array([float(np.mean(np.abs(fs[i + 1] - fs[i]))) for i in range(len(fs) - 1)])
     t = np.arange(len(d)) / fps
@@ -48,7 +50,10 @@ def measure(path: Path) -> tuple[float, float, float]:
     for v in d:
         run = run + 1 if v < thr else 0
         best = max(best, run)
-    return fade, snap, best / fps
+    i = int(d.argmax())
+    nb = float(np.median(np.r_[d[max(0, i - 5):i], d[i + 1:i + 6]]))
+    cut = float(d[i] / max(1e-6, nb))
+    return fade, snap, best / fps, cut
 
 
 def main() -> None:
@@ -57,11 +62,11 @@ def main() -> None:
     for a in args:
         p = Path(a)
         paths += sorted(p.glob('*.mp4')) if p.is_dir() else [p]
-    print('영상 · 끝/가운데 움직임 · 끝 튐 · 가장 긴 멈춤(초) · 판정')
+    print('영상 · 끝/가운데 움직임 · 끝 튐 · 가장 긴 멈춤(초) · 한 프레임 바뀜 · 판정')
     for p in paths:
-        fade, snap, still = measure(p)
-        flags = [x for x, on in (('얼어감', fade < FADE), ('튐', snap > SNAP), ('멈춤', still >= STILL)) if on]
-        print(f'{p.parent.name}/{p.name:42s} {fade:5.2f} {snap:5.2f} {still:4.1f}  {" ".join(flags) or "좋음"}')
+        fade, snap, still, cut = measure(p)
+        flags = [x for x, on in (('얼어감', fade < FADE), ('튐', snap > SNAP), ('멈춤', still >= STILL), ('바뀜', cut > CUT)) if on]
+        print(f'{p.parent.name}/{p.name:42s} {fade:5.2f} {snap:5.2f} {still:4.1f} {cut:5.1f}  {" ".join(flags) or "좋음"}')
 
 
 if __name__ == '__main__':
