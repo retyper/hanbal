@@ -44,7 +44,8 @@ export interface DuelEvent {
   readonly dmgMe: number
   readonly dmgFoe: number
 }
-export interface DuelOpts { readonly seed: number; readonly muMe: number; readonly muFoe: number }
+/** tier = 판의 세기 (0 촌장 ~ 6 천손 · src/realm/tier.ts) · 없으면 1(군장 · 보통) */
+export interface DuelOpts { readonly seed: number; readonly muMe: number; readonly muFoe: number; readonly tier?: number }
 export type Outcome = 'ko' | 'win' | 'draw' | 'lose' | 'kod'
 
 export interface Duel {
@@ -55,6 +56,8 @@ export interface Duel {
   phaseUntil: number
   me: { hp: number }
   foe: { hp: number; posture: number }
+  /** 적장 체력 처음 값 (난이도에 따라 다르다 · 막대 그리기용) */
+  foeHp0?: number
   cues: Cue[]
   nextCueAt: number
   nextId: number
@@ -67,6 +70,16 @@ export interface Duel {
 }
 
 const D = (): typeof P.duel => P.duel
+/** 난이도 — 촌장(0) 값과 천손(6) 값 사이를 고르게 */
+const tierK = (d: { opts: DuelOpts }): number => Math.max(0, Math.min(6, d.opts.tier ?? 1)) / 6
+const lerp = (a: number, b: number, k: number): number => a + (b - a) * k
+export const tierOf = (d: { opts: DuelOpts }) => {
+  const R = D(), k = tierK(d)
+  return {
+    lead: lerp(R.tierLead0, R.tierLead6, k), good: lerp(R.tierGood0, R.tierGood6, k), perfect: lerp(R.tierPerfect0, R.tierPerfect6, k),
+    foeHp: lerp(R.tierFoeHp0, R.tierFoeHp6, k), hurt: lerp(R.tierHurt0, R.tierHurt6, k), tire: lerp(R.tierTire0, R.tierTire6, k), deflect: lerp(R.tierDeflect0, R.tierDeflect6, k),
+  }
+}
 const clamp = (v: number, a: number, b: number): number => Math.min(b, Math.max(a, v))
 
 export function createDuel(opts: DuelOpts): Duel {
@@ -78,7 +91,7 @@ export function createDuel(opts: DuelOpts): Duel {
     phase: 'pause',
     phaseUntil: 40,
     me: { hp: R.hp },
-    foe: { hp: R.hp, posture: 0 },
+    foe: { hp: Math.round(R.hp * tierOf({ opts }).foeHp), posture: 0 },
     cues: [],
     nextCueAt: 40,
     nextId: 1,
@@ -119,7 +132,7 @@ function spawnCue(d: Duel, at: number, avoid?: Cue): Cue {
     y = clamp(from.y + Math.sin(a) * r, 0.12, 0.88)
   }
   const heavy = d.rng.next() < R.heavyChance
-  const lead = Math.round(R.lead * leadOf(mu) * (heavy ? R.heavyLead : 1))
+  const lead = Math.round(R.lead * leadOf(mu) * tierOf(d).lead * (heavy ? R.heavyLead : 1))
   const c: Cue = { id: d.nextId++, x, y, t0: at - lead, hitAt: at, heavy, done: null }
   d.cues.push(c)
   return c
@@ -129,7 +142,7 @@ function spawnCue(d: Duel, at: number, avoid?: Cue): Cue {
 function planAttack(d: Duel, prev: Cue | undefined): void {
   const R = D()
   const mu = d.opts.muFoe
-  const lead = Math.round(R.lead * leadOf(mu))
+  const lead = Math.round(R.lead * leadOf(mu) * tierOf(d).lead)
   const first = spawnCue(d, d.t + lead, prev)
   let lastAt = first.hitAt
   if (mu >= R.comboMu && !first.heavy && d.rng.next() < R.comboChance * (mu - R.comboMu + 1)) {
@@ -160,18 +173,18 @@ function judgeCue(d: Duel, c: Cue, j: Judge, off: number): void {
   const at = { x: c.x, y: c.y }
   if (j === 'miss') {
     d.stats.miss++
-    ev(d, 'miss', Math.round((c.heavy ? R.heavyDmg : R.hitDmg) * hurtOf(d.opts.muFoe)), 0, at, c.heavy, off)
+    ev(d, 'miss', Math.round((c.heavy ? R.heavyDmg : R.hitDmg) * hurtOf(d.opts.muFoe) * tierOf(d).hurt), 0, at, c.heavy, off)
     return
   }
   if (j === 'good') {
     d.stats.good++
-    d.foe.posture = Math.min(R.posture, d.foe.posture + R.goodPosture * tireOf(d.opts.muFoe))
+    d.foe.posture = Math.min(R.posture, d.foe.posture + R.goodPosture * tireOf(d.opts.muFoe) * tierOf(d).tire)
     ev(d, 'good', 0, 0, at, c.heavy, off)
   } else {
     // 정확히 받으면 그 자리에서 치명공격 (엘든링 패링처럼) · 체간도 크게 찬다 · 붉은 큰 공격이면 더 크게
     d.stats.perfect++
     d.stats.crit++
-    d.foe.posture = Math.min(R.posture, d.foe.posture + R.perfectPosture * tireOf(d.opts.muFoe))
+    d.foe.posture = Math.min(R.posture, d.foe.posture + R.perfectPosture * tireOf(d.opts.muFoe) * tierOf(d).tire)
     ev(d, 'perfect', 0, 0, at, c.heavy, off)
     ev(d, 'crit', 0, Math.round(R.critDmg * (c.heavy ? R.critHeavy : 1)), at, c.heavy)
     if (d.foe.hp > 0 && d.foe.posture >= R.posture && d.cues.every((x) => x.done !== null)) { startRush(d); return }
@@ -196,7 +209,7 @@ export function stepDuel(d: Duel, tap?: Tap): void {
   } else if (d.phase === 'rush') {
     if (tap !== undefined && d.t - d.rush.lastTap >= R.tapGap) {
       d.rush.lastTap = d.t
-      const p = clamp(R.deflectBase + R.deflectPerMu * (d.opts.muFoe - 5) - R.deflectPerHit * d.rush.hits, R.deflectMin, R.deflectMax)
+      const p = clamp(R.deflectBase + tierOf(d).deflect + R.deflectPerMu * (d.opts.muFoe - 5) - R.deflectPerHit * d.rush.hits, R.deflectMin, R.deflectMax)
       if (d.rng.next() < p) { d.rush.deflects++; d.stats.deflect++; ev(d, 'deflect', 0, 0, tap) }
       else { d.rush.hits++; d.stats.rushHit++; ev(d, 'rushHit', 0, Math.round(R.tapDmg), tap) }
     }
@@ -222,15 +235,15 @@ export function stepDuel(d: Duel, tap?: Tap): void {
         if (best === null || Math.abs(d.t - c.hitAt) < Math.abs(d.t - best.hitAt)) best = c
       }
       if (best !== null) {
-        const w = widthOf(d.opts.muMe)
+        const w = widthOf(d.opts.muMe), ti = tierOf(d)
         const dt = d.t - best.hitAt
-        if (dt < -Math.round(R.good * w)) judgeCue(d, best, 'miss', dt) // 너무 일찍 — 헛손에 맞는다
-        else if (Math.abs(dt) <= Math.round(R.perfect * w)) judgeCue(d, best, 'perfect', dt)
+        if (dt < -Math.round(R.good * w * ti.good)) judgeCue(d, best, 'miss', dt) // 너무 일찍 — 헛손에 맞는다
+        else if (Math.abs(dt) <= Math.max(1, Math.round(R.perfect * w * ti.perfect))) judgeCue(d, best, 'perfect', dt)
         else judgeCue(d, best, 'good', dt)
       }
     }
     if (d.phase === 'guard') {
-      const lateW = Math.round(R.good * widthOf(d.opts.muMe)) + R.late // 닿은 뒤로도 막는 폭만큼 + 손가락 늦음
+      const lateW = Math.round(R.good * widthOf(d.opts.muMe) * tierOf(d).good) + R.late // 닿은 뒤로도 막는 폭만큼 + 손가락 늦음
       for (const c of d.cues) if (c.done === null && d.t > c.hitAt + lateW) judgeCue(d, c, 'miss', lateW)
       d.foe.posture = Math.max(0, d.foe.posture - R.postureRecover)
     }
@@ -238,13 +251,14 @@ export function stepDuel(d: Duel, tap?: Tap): void {
   if (d.foe.hp <= 0) d.over = 'ko'
   else if (d.me.hp <= 0) d.over = 'kod'
   else if (d.t >= d.end) {
-    const diff = d.me.hp - d.foe.hp
+    const foe0 = Math.round(R.hp * tierOf(d).foeHp)
+    const diff = (d.me.hp / R.hp - d.foe.hp / foe0) * 100 // 남은 몫의 차 (%)
     d.over = diff > R.drawBand ? 'win' : diff < -R.drawBand ? 'lose' : 'draw'
   }
 }
 
 /** 막는 폭이 닿은 뒤로 얼마나 가나 (틱) — 그리기가 고리를 안으로 줄이는 길이 */
-export const lateWindow = (muMe: number): number => Math.round(D().good * widthOf(muMe)) + D().late
+export const lateWindow = (muMe: number, tier = 1): number => Math.round(D().good * widthOf(muMe) * tierOf({ opts: { seed: 0, muMe, muFoe: 5, tier } }).good) + D().late
 
 /** 맡겼을 때 이길 몫 — 본편 겨루기와 같은 셈 (tactics.ts · tacDuelPerMu) */
 export const autoWinChance = (muMe: number, muFoe: number): number =>

@@ -7,7 +7,8 @@
  * 장수 겨루기는 항상 쓸 수 있는 깃발 · 시행될 때 화면 가운데로 확대 및 fade out 연출 · QTE 로 적이 공격 들어올 위치에 큰 원이 모임".
  * 소리는 누른 순간의 반응으로만 — 박자는 눈(고리)으로 잰다.
  */
-import { autoWinChance, createDuel, lateWindow, stepDuel, type Cue, type Duel, type DuelEvent, type Tap } from './duel/sim.ts'
+import { autoWinChance, createDuel, lateWindow, stepDuel, tierOf, type Cue, type Duel, type DuelEvent, type Tap } from './duel/sim.ts'
+import { LEVEL_NAME } from './realm/tier.ts'
 import { GEN_OWN, HERO_BUST } from './realm/data/art.ts'
 import { P } from './tune/params.ts'
 
@@ -22,6 +23,8 @@ const foeKey = params.get('foe') ?? 'haebi'
 const muMe = num('muMe', 5)
 const muFoe = num('muFoe', 5)
 let seed = num('seed', 1) >>> 0
+/** 판의 세기 — 0 촌장 ~ 6 천손 (주소 ?tier=) */
+const tier = Math.max(0, Math.min(6, Math.round(num('tier', 1))))
 /** 띠 이름 → 초상 id (본편 표 그대로) */
 const portraitOf = (key: string): string | undefined => {
   for (const [rid, k] of Object.entries(GEN_OWN)) if (k === key && HERO_BUST[rid] !== undefined) return HERO_BUST[rid]
@@ -87,7 +90,7 @@ const SFX = {
 type Mode = 'field' | 'zoom' | 'duel' | 'end'
 let mode: Mode = 'field'
 let modeAt = 0
-let duel: Duel = createDuel({ seed, muMe, muFoe })
+let duel: Duel = createDuel({ seed, muMe, muFoe, tier })
 let seen = 0
 let queued: Tap | null = null
 let freezeUntil = 0
@@ -104,8 +107,6 @@ const slashes: Slash[] = []
 /** off = 누른 때 − 닿는 때 (틱) — 빨랐나 늦었나를 남은 고리로 보인다 */
 const marks: { x: number; y: number; t0: number; kind: 'perfect' | 'good' | 'miss'; off: number }[] = []
 let critAt = -1e9
-/** 판정 막대 — 누른 때가 닿는 때보다 얼마나 빨랐나 늦었나 (osu! 의 히트 에러 막대처럼 · 버릇이 보인다) */
-const errs: { off: number; t0: number; kind: 'perfect' | 'good' | 'miss' }[] = []
 let hurtAt = -1e9
 let foeHurtAt = -1e9
 /** 아래 들판 장수들이 하는 짓 — 그리기만 */
@@ -143,9 +144,9 @@ flagBtn.addEventListener('click', () => {
 })
 
 function begin(): void {
-  duel = createDuel({ seed, muMe, muFoe })
+  duel = createDuel({ seed, muMe, muFoe, tier })
   seen = 0; queued = null
-  pops.length = 0; sparks.length = 0; slashes.length = 0; marks.length = 0; errs.length = 0
+  pops.length = 0; sparks.length = 0; slashes.length = 0; marks.length = 0
   mode = 'duel'; modeAt = performance.now()
   over.classList.add('hide')
 }
@@ -163,7 +164,7 @@ function showEnd(): void {
   over.innerHTML = `<div class="card"><div class="big" style="color:${r.col}">${r.word}</div>
     <div class="sub">체력 ${Math.round(d.me.hp)} 대 ${Math.round(d.foe.hp)} · ${Math.round(d.t / P.duel.hz)}초</div>
     <div class="stats"><span>⚡ 치명 ${s.crit}</span><span>🛡 막음 ${s.good}</span><span>💥 맞음 ${s.miss}</span><span>⚔ 연타 ${s.rushHit}</span><span>✦ 막힌 칼 ${s.deflect}</span></div>
-    <div class="auto">맡겼다면 이길 몫 ${Math.round(autoWinChance(muMe, muFoe) * 100)}% (무예 ${muMe} 대 ${muFoe})</div>
+    <div class="auto">${LEVEL_NAME[tier] ?? ''} · 맡겼다면 이길 몫 ${Math.round(autoWinChance(muMe, muFoe) * 100)}% (무예 ${muMe} 대 ${muFoe})</div>
     <button id="again">한 판 더</button></div>`
   ;(document.getElementById('again') as HTMLButtonElement).onclick = () => { seed = (seed + 1) >>> 0; begin() }
 }
@@ -188,18 +189,15 @@ function onEvent(e: DuelEvent, now: number): void {
   switch (e.kind) {
     case 'cue': foeAnim = { kind: 'windup', t0: now }; break
     case 'perfect':
-      errs.push({ off: e.off ?? 0, t0: now, kind: 'perfect' })
       SFX.perfect(); freezeUntil = now + R.hitStopPerfect
       marks.push({ x, y, t0: now, kind: 'perfect', off: e.off ?? 0 }); burst(x, y, 22, '#fff1c0', 9, now)
       meAnim = { kind: 'guard', t0: now }; foeAnim = { kind: 'attack', t0: now }
       break
     case 'good':
-      errs.push({ off: e.off ?? 0, t0: now, kind: 'good' })
       SFX.good(); marks.push({ x, y, t0: now, kind: 'good', off: e.off ?? 0 }); burst(x, y, 10, '#cfe6ff', 5, now); shake = R.shake * 0.3
       meAnim = { kind: 'guard', t0: now }; foeAnim = { kind: 'attack', t0: now }
       break
     case 'miss':
-      errs.push({ off: e.off ?? 0, t0: now, kind: 'miss' })
       SFX.miss(); freezeUntil = now + R.hitStopHit; shake = R.shake; hurtAt = now
       flash = { rgb: '190,20,10', t0: now, ms: 220, a: 0.4 }
       marks.push({ x, y, t0: now, kind: 'miss', off: e.off ?? 0 })
@@ -210,7 +208,7 @@ function onEvent(e: DuelEvent, now: number): void {
     case 'crit':
       SFX.crit(); critAt = now; foeHurtAt = now; freezeUntil = now + R.hitStopCrit; shake = R.shake * 1.6
       flash = { rgb: '255,250,235', t0: now, ms: 260, a: 0.75 }
-      slashes.push({ x: W / 2, y: play().y + play().h * 0.42, ang: -0.62, len: Math.hypot(W, H) * 0.9, t0: now + 60, ms: 520, color: '255,255,255', w: 22 })
+      slashes.push({ x: (x + panel().x + panel().s / 2) / 2, y: (y + panel().y + panel().s / 2) / 2, ang: slashAngle(x, y, e.t), len: Math.hypot(W, H) * 0.85, t0: now + 60, ms: 520, color: '255,255,255', w: 22 })
       burst(W / 2, play().y + play().h * 0.42, 34, '#ffd98a', 12, now)
       pop(`−${e.dmgFoe}`, '#ffd98a', 64, W / 2, play().y + play().h * 0.3)
       meAnim = { kind: 'attack', t0: now }; foeAnim = { kind: 'hit', t0: now }
@@ -222,7 +220,7 @@ function onEvent(e: DuelEvent, now: number): void {
       break
     case 'rushHit':
       SFX.rushHit(); foeHurtAt = now
-      slashes.push({ x, y, ang: -1.2 + ((e.t * 29) % 24) / 10, len: Math.min(W, H) * 0.22, t0: now, ms: 200, color: '255,240,210', w: 6 })
+      slashes.push({ x, y, ang: slashAngle(x, y, e.t), len: Math.min(W, H) * 0.32, t0: now, ms: 240, color: '255,255,255', w: 8 })
       pop(`−${e.dmgFoe}`, '#ffd98a', 26)
       meAnim = { kind: 'attack', t0: now }
       break
@@ -245,10 +243,20 @@ function sprite(im: HTMLImageElement, frame: number, x: number, base: number, h:
   if (!im.complete || im.naturalWidth === 0) return
   const cw = im.naturalWidth / 20, ch = im.naturalHeight, w = h * (cw / ch)
   ctx.save(); ctx.translate(x, base); if (flip) ctx.scale(-1, 1)
-  ctx.drawImage(im, frame * cw, 0, cw, ch, -w / 2, -h, w, h)
-  if (tint !== null) { ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = tint; ctx.fillRect(-w / 2, -h, w, h) }
+  if (tint === null) ctx.drawImage(im, frame * cw, 0, cw, ch, -w / 2, -h, w, h)
+  else {
+    // 번쩍임은 장수 모양에만 — 따로 그린 판에서 물들여 옮긴다 (판 위에 바로 칠하면 칸 네모가 통째로 물든다)
+    const tw = Math.ceil(cw), th = Math.ceil(ch)
+    if (tintCv.width < tw || tintCv.height < th) { tintCv.width = tw; tintCv.height = th }
+    tintCx.clearRect(0, 0, tintCv.width, tintCv.height)
+    tintCx.globalCompositeOperation = 'source-over'; tintCx.drawImage(im, frame * cw, 0, cw, ch, 0, 0, cw, ch)
+    tintCx.globalCompositeOperation = 'source-atop'; tintCx.fillStyle = tint; tintCx.fillRect(0, 0, cw, ch)
+    ctx.drawImage(tintCv, 0, 0, cw, ch, -w / 2, -h, w, h)
+  }
   ctx.restore()
 }
+const tintCv = document.createElement('canvas')
+const tintCx = tintCv.getContext('2d') as CanvasRenderingContext2D
 /** 아래 들판의 작은 두 장수 (서기 0-3 · 걷기 4-11 · 공격 12-17 · 맞음 18 · 쓰러짐 19) */
 function fieldFighters(now: number, base: number, h: number, gapPx: number, cx: number): void {
   const d = duel
@@ -271,8 +279,8 @@ function fieldFighters(now: number, base: number, h: number, gapPx: number, cx: 
   else if (foeAnim.kind === 'hit' && fa < 500) { ff = 18; fdx = gapPx * 0.1 }
   ctx.fillStyle = 'rgba(0,0,0,.35)'
   for (const x of [meX, foeX]) { ctx.beginPath(); ctx.ellipse(x, base + 2, h * 0.22, h * 0.05, 0, 0, Math.PI * 2); ctx.fill() }
-  sprite(sprMe, mf, meX + mdx, base, h, false, now - hurtAt < 160 ? 'rgba(255,40,20,.35)' : null)
-  sprite(sprFoe, ff, foeX + fdx, base, h, true, now - foeHurtAt < 160 ? 'rgba(255,255,255,.45)' : null)
+  sprite(sprMe, mf, meX + mdx, base, h, false, now - hurtAt < 140 ? 'rgba(255,215,205,.75)' : null)
+  sprite(sprFoe, ff, foeX + fdx, base, h, true, now - foeHurtAt < 140 ? 'rgba(255,255,255,.8)' : null)
 }
 
 function drawField(now: number, k: number): void {
@@ -307,7 +315,7 @@ function art(name: string): HTMLImageElement | null {
   }
   return im
 }
-for (const n of ['panel-frame', 'hud-bar', 'hud-posture', 'hud-timer', 'fx-clang', 'fx-slash', 'fx-ring']) art(n)
+for (const n of ['panel-frame', 'hud-bar', 'hud-posture', 'hud-timer', 'fx-clang', 'fx-slash', 'fx-ring', 'rush-tap-a', 'rush-tap-b']) art(n)
 function roundRect(x: number, y: number, w: number, h: number, r: number): void {
   ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath()
 }
@@ -320,7 +328,7 @@ function panel(): { x: number; y: number; s: number } {
 /** 고리 반지름 — 닿기 전엔 바깥에서 모여들고, 닿은 뒤엔 원 안으로 계속 줄어든다 (형 11-09: 늦은 걸 보기만 해도 알게) */
 function ringR(r: number, off: number, lead = P.duel.lead): number {
   if (off <= 0) return r * (1 + 3.2 * Math.min(1, -off / Math.max(1, lead)))
-  return r * Math.max(0.08, 1 - 0.92 * off / Math.max(1, lateWindow(muMe)))
+  return r * Math.max(0.08, 1 - 0.92 * off / Math.max(1, lateWindow(muMe, tier)))
 }
 /** 챙 — 튕겨 나가는 빛 (에셋이 있으면 그것 · hue 0 = 금빛 · 0.6 = 흰 푸른빛) */
 function clang(x: number, y: number, size: number, alpha: number, cool: number, now: number): void {
@@ -342,18 +350,32 @@ function clang(x: number, y: number, size: number, alpha: number, cool: number, 
   }
   ctx.restore()
 }
+/**
+ * 베는 방향 — 누른 자리가 판 가운데의 어느 쪽인가로 (형 11-09):
+ * 좌하단 → 우상단으로 올려베기 · 좌상단 → 우하단으로 내려베기 · 우상단 → 좌하단으로 내려베기 · 우하단 → 좌상단으로 올려베기.
+ * 돌려주는 각은 시작점 → 끝점 방향 (화면은 y 가 아래로). 같은 사분면이라도 조금씩 다르게 흔든다.
+ */
+function slashAngle(x: number, y: number, salt: number): number {
+  const pn = panel()
+  const left = x < pn.x + pn.s / 2, top = y < pn.y + pn.s / 2
+  const base = left ? (top ? Math.PI / 4 : -Math.PI / 4) : (top ? (3 * Math.PI) / 4 : (-3 * Math.PI) / 4)
+  return base + ((((salt * 7919) % 100) / 100) - 0.5) * 0.35
+}
+
 function drawSlash(s: Slash, k: number): void {
   const im = art('fx-slash')
-  const grow = Math.min(1, k * 4)
-  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 1 - k
+  const grow = Math.min(1, k * 3.5)
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = k < 0.5 ? 1 : 1 - (k - 0.5) / 0.5
   ctx.translate(s.x, s.y); ctx.rotate(s.ang)
+  const x0 = -s.len / 2
   if (im !== null) {
     const h = s.w * 6
-    ctx.drawImage(im, -s.len / 2, -h / 2, s.len * grow, h)
-    if (s.color !== '255,255,255') { ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = `rgba(${s.color},.6)`; ctx.fillRect(-s.len / 2, -h / 2, s.len, h) }
+    // 그림의 왼쪽부터 grow 만큼만 — 칼이 시작점에서 끝점으로 지나간다
+    ctx.drawImage(im, 0, 0, im.naturalWidth * grow, im.naturalHeight, x0, -h / 2, s.len * grow, h)
+    if (s.color !== '255,255,255') { ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = `rgba(${s.color},.6)`; ctx.fillRect(x0, -h / 2, s.len, h) }
   } else {
     ctx.strokeStyle = `rgba(${s.color},1)`; ctx.lineCap = 'round'; ctx.lineWidth = s.w * (1 - k * 0.6)
-    ctx.beginPath(); ctx.moveTo(-s.len / 2 * grow, 0); ctx.lineTo(s.len / 2 * grow, 0); ctx.stroke()
+    ctx.beginPath(); ctx.moveTo(x0, 0); ctx.lineTo(x0 + s.len * grow, 0); ctx.stroke()
     ctx.lineWidth = s.w * 3; ctx.globalAlpha = 0.2 * (1 - k); ctx.stroke()
   }
   ctx.restore()
@@ -442,13 +464,42 @@ function drawCue(c: Cue, t: number): void {
   }
 }
 
+/** 연타 신호 — 「연타!」 + 단추를 누르는 손 그림 두 장이 파바박 번갈아 (형 11-09) · 남은 시간 띠 */
+function rushCue(now: number, d: Duel): void {
+  const pn = panel()
+  const cx = W / 2, cy = pn.y + pn.s * 0.78
+  const beat = Math.floor(now / 90) % 2
+  const im = art(beat === 0 ? 'rush-tap-a' : 'rush-tap-b')
+  const sz = Math.min(W, pn.s) * 0.34 * (beat === 1 ? 0.92 : 1.04)
+  ctx.save()
+  if (im !== null) ctx.drawImage(im, cx - sz / 2, cy - sz / 2, sz, sz)
+  else { ctx.fillStyle = beat === 1 ? '#ffd27a' : '#fff1c0'; ctx.beginPath(); ctx.arc(cx, cy, sz * 0.32, 0, Math.PI * 2); ctx.fill() }
+  // 「연타!」 — 크게 흔들리며
+  const fs = Math.round(Math.min(W, pn.s) * 0.16 * (1 + 0.06 * Math.sin(now / 45)))
+  ctx.font = `900 ${fs}px "Gowun Batang", serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+  const ty = cy - sz * 0.62, jx = Math.sin(now / 33) * 3
+  ctx.lineWidth = Math.max(6, fs * 0.14); ctx.strokeStyle = 'rgba(40,10,0,.9)'; ctx.strokeText('연타!', cx + jx, ty)
+  const g = ctx.createLinearGradient(0, ty - fs / 2, 0, ty + fs / 2); g.addColorStop(0, '#fff6d0'); g.addColorStop(1, '#ffb03a')
+  ctx.fillStyle = g; ctx.fillText('연타!', cx + jx, ty)
+  ctx.textBaseline = 'alphabetic'
+  // 남은 시간 — 판 아래 금빛 띠가 줄어든다
+  const left = Math.max(0, (d.phaseUntil - d.t) / P.duel.rushTicks)
+  const bw = pn.s * 0.8
+  ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(cx - bw / 2, pn.y + pn.s + 12, bw, 8)
+  ctx.fillStyle = '#ffd27a'; ctx.fillRect(cx - bw / 2, pn.y + pn.s + 12, bw * left, 8)
+  ctx.restore()
+}
+
 function drawDuel(now: number, fadeIn: number): void {
   const d = duel
   const R = P.duel
   const ft = fieldTop()
-  // 바탕 — 전장이 살아 있게 (조금만 어둡게)
+  // 바탕 — 전장 그림 한 장 (형 11-09: 배경은 하나 · 아래서 싸우는 장수도 같은 배경 위)
+  // 위는 어둡게(띠·숫자가 읽히게) · 아래 땅은 밝게(장수들이 보이게)
   cover(bg, 0, 0, W, H)
-  ctx.fillStyle = 'rgba(8,5,3,.5)'; ctx.fillRect(0, 0, W, H)
+  const shade = ctx.createLinearGradient(0, 0, 0, H)
+  shade.addColorStop(0, 'rgba(8,5,3,.7)'); shade.addColorStop(0.55, 'rgba(8,5,3,.5)'); shade.addColorStop(0.82, 'rgba(8,5,3,.2)'); shade.addColorStop(1, 'rgba(8,5,3,.35)')
+  ctx.fillStyle = shade; ctx.fillRect(0, 0, W, H)
   // 초상 판 — 모서리 둥근 정사각 · 초상은 살짝 비친다. 맞으면 흔들리고 붉게, 비틀거리면 기운다
   const pn = panel()
   const sinceCrit = now - critAt
@@ -466,7 +517,7 @@ function drawDuel(now: number, fadeIn: number): void {
     ctx.drawImage(foeArt, -pn.s / 2, -pn.s / 2, pn.s, pn.s)
     ctx.globalAlpha = 1
   }
-  if (now - foeHurtAt < 180) { ctx.fillStyle = 'rgba(255,40,30,.22)'; ctx.fillRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s) }
+  if (now - foeHurtAt < 120) { ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(255,240,220,${0.28 * (1 - (now - foeHurtAt) / 120)})`; ctx.fillRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s); ctx.globalCompositeOperation = 'source-over' } // 맞으면 초상이 잠깐 하얗게 번쩍
   ctx.restore()
   const fr = art('panel-frame')
   if (fr !== null) { const F = pn.s / 0.89, Fh = pn.s / 0.877; ctx.drawImage(fr, -pn.s / 2 - 0.055 * F, -pn.s / 2 - 0.061 * Fh, F, Fh) } // 테두리 안쪽 창 = 그림의 5.5~94.5% · 6.1~93.8%
@@ -513,42 +564,20 @@ function drawDuel(now: number, fadeIn: number): void {
     ctx.beginPath(); ctx.moveTo(s.x + s.vx * k, s.y + s.vy * k + 0.05 * k * k); ctx.lineTo(s.x + s.vx * (k + 2.2), s.y + s.vy * (k + 2.2) + 0.05 * (k + 2.2) ** 2); ctx.stroke()
   }
   ctx.globalAlpha = 1
-  // 아래 들판 띠 — 작은 두 장수가 따라 싸운다
-  ctx.save(); ctx.beginPath(); ctx.rect(0, ft, W, H - ft); ctx.clip()
-  cover(bg, 0, ft - H * 0.35, W, H * 0.9)
-  ctx.fillStyle = 'rgba(8,5,3,.3)'; ctx.fillRect(0, ft, W, H - ft)
+  // 아래 — 같은 전장 위에서 작은 두 장수가 따라 싸운다 (따로 깐 배경 없음)
   const fh = (H - ft) * 0.82
   fieldFighters(now, H - 6, fh, Math.min(W * 0.34, fh * 1.6), W / 2)
-  ctx.restore()
   // 체간 — 판 아래 가운데, 가운데서 양쪽으로 차오른다 (세키로처럼)
   const pk = d.phase === 'rush' ? 1 : d.foe.posture / R.posture
   const pw = Math.min(W * 0.7, pn.s * 0.9), px = (W - pw) / 2, py = Math.min(ft - 22, pn.y + pn.s + 10)
-  bar(px, py, pw, 10, pk, pk > 0.8 ? '#ffb347' : '#e9c46a', 'center', 'hud-posture')
-  // 판정 막대 — 가운데가 딱 맞음 · 왼쪽 = 빨랐다 · 오른쪽 = 늦었다
-  {
-    const lw = lateWindow(muMe), mw = Math.min(W * 0.5, 220), mx = W / 2, my = py + 22
-    if (my < ft - 2) {
-      ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(mx - mw / 2, my - 3, mw, 6)
-      const pf = (P.duel.perfect / lw) * (mw / 2)
-      ctx.fillStyle = 'rgba(255,214,120,.55)'; ctx.fillRect(mx - pf, my - 3, pf * 2, 6)
-      ctx.fillStyle = '#fff'; ctx.fillRect(mx - 1, my - 7, 2, 14)
-      while (errs.length > 12) errs.shift()
-      for (const er of errs) {
-        const a = Math.max(0, 1 - (now - er.t0) / 6000)
-        if (a <= 0) continue
-        const ex = mx + Math.max(-1, Math.min(1, er.off / lw)) * (mw / 2)
-        ctx.globalAlpha = a; ctx.fillStyle = er.kind === 'perfect' ? '#ffd98a' : er.kind === 'good' ? (er.off < 0 ? '#8fd0ff' : '#ffb070') : '#ff5a4a'
-        ctx.fillRect(ex - 2, my - 8, 4, 16)
-      }
-      ctx.globalAlpha = 1
-    }
-  }
+  if (d.phase !== 'rush') bar(px, py, pw, 10, pk, pk > 0.8 ? '#ffb347' : '#e9c46a', 'center', 'hud-posture')
+  else rushCue(now, d)
   // 위 — 격투 게임처럼: 우리(왼쪽) · 시간(가운데 크게) · 적장(오른쪽)
   const tw = Math.min(104, W * 0.24)
   const plateW = tw * 0.98 * 1.32
   const bw = (W - plateW) / 2 - 6, by = 36
   const capMe = bar(4, by, bw, 10, d.me.hp / R.hp, now - hurtAt < 200 ? '#ff5a4a' : '#e9c46a', 'left', 'hud-bar')
-  const capFoe = bar(W - 4 - bw, by, bw, 10, d.foe.hp / R.hp, now - foeHurtAt < 200 ? '#ffffff' : '#e76f51', 'right', 'hud-bar')
+  const capFoe = bar(W - 4 - bw, by, bw, 10, d.foe.hp / Math.round(R.hp * tierOf(d).foeHp), now - foeHurtAt < 200 ? '#ffffff' : '#e76f51', 'right', 'hud-bar')
   // 둥근 머리 안에 얼굴
   for (const [cap, face] of [[capMe, meFace], [capFoe, foeFace]] as const) {
     if (cap === null || face === null || !face.complete || face.naturalWidth === 0) continue
@@ -571,6 +600,7 @@ function drawDuel(now: number, fadeIn: number): void {
   ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(0,0,0,.85)'; ctx.strokeText(String(sec), tcx, tcy + 2)
   ctx.fillStyle = low ? '#ff6a5a' : '#ffe2a0'; ctx.fillText(String(sec), tcx, tcy + 2)
   ctx.textBaseline = 'alphabetic'
+  ctx.font = '700 13px "Gowun Batang", serif'; ctx.fillStyle = 'rgba(243,227,192,.85)'; ctx.fillText(LEVEL_NAME[tier] ?? '', tcx, tcy + tw * 0.62)
   // 숫자 — 빠르고 멀리 튄다
   for (let i = pops.length - 1; i >= 0; i--) {
     const pp = pops[i] as Pop; const age = now - pp.t0
