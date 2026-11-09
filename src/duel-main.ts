@@ -47,6 +47,7 @@ const foePid = portraitOf(foeKey)
 const mePid = portraitOf(meKey)
 const foeArt = foePid !== undefined ? img(`realm/awaken-hd/${foePid}.jpg`, `realm/bust-hd/${foePid}.jpg`) : null
 const meFace = mePid !== undefined ? img(`realm/bust/${mePid}.jpg`) : null
+const foeFace = foePid !== undefined ? img(`realm/bust/${foePid}.jpg`) : null
 
 // ── 소리 (합성 · 누른 순간 반응만)
 let ac: AudioContext | null = null
@@ -313,7 +314,7 @@ function roundRect(x: number, y: number, w: number, h: number, r: number): void 
 /** 초상 판 — 위 띠와 체간 사이 가운데 정사각 */
 function panel(): { x: number; y: number; s: number } {
   const p = play()
-  const s = Math.min(W - 24, p.h - 36)
+  const s = Math.min(W - 60, p.h - 56) // 테두리 장식이 화면 밖으로 넘치지 않게
   return { x: (W - s) / 2, y: p.y + (p.h - 36 - s) / 2 + 4, s }
 }
 /** 고리 반지름 — 닿기 전엔 바깥에서 모여들고, 닿은 뒤엔 원 안으로 계속 줄어든다 (형 11-09: 늦은 걸 보기만 해도 알게) */
@@ -357,22 +358,47 @@ function drawSlash(s: Slash, k: number): void {
   }
   ctx.restore()
 }
-/** 막대 — 에셋 테두리가 있으면 그 안에 채운다 · from = 차오르는 쪽 */
-function bar(x: number, y: number, w: number, h: number, v: number, col: string, from: 'left' | 'right' | 'center', frame: string): void {
+/**
+ * 막대 테두리 에셋의 안쪽 창 자리 (잘라 낸 그림의 몫) — public/realm/duel/<이름>.png 을 재서 적는다.
+ * 왼쪽 머리·오른쪽 끝은 그대로 두고 가운데만 늘린다 (세 조각).
+ */
+const BAR_GEO: Readonly<Record<string, { x0: number; x1: number; y0: number; y1: number; capL: number; capR: number }>> = {
+  'hud-bar': { x0: 0.143, x1: 0.926, y0: 0.377, y1: 0.623, capL: 0.16, capR: 0.9 },
+  'hud-posture': { x0: 0.06, x1: 0.94, y0: 0.38, y1: 0.62, capL: 0.12, capR: 0.88 },
+}
+/** 막대 — (x, y) 부터 바깥 폭 ow · 채움 높이 h · from = 차오르는 쪽 (right 면 통째로 뒤집는다) */
+function bar(x: number, y: number, ow: number, h: number, v: number, col: string, from: 'left' | 'right' | 'center', frame: string): { cx: number; cy: number; r: number } | null {
   const k = Math.max(0, Math.min(1, v))
-  ctx.fillStyle = 'rgba(0,0,0,.65)'; ctx.fillRect(x, y, w, h)
-  const fw = w * k
-  const fx = from === 'left' ? x : from === 'right' ? x + w - fw : x + (w - fw) / 2
-  const g = ctx.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,.35)')
-  ctx.fillStyle = col; ctx.fillRect(fx, y, fw, h); ctx.fillStyle = g; ctx.globalAlpha = 0.5; ctx.fillRect(fx, y, fw, h); ctx.globalAlpha = 1
   const im = art(frame)
-  if (im !== null) {
-    ctx.save()
-    if (from === 'right') { ctx.translate(x + w / 2, 0); ctx.scale(-1, 1); ctx.translate(-(x + w / 2), 0) }
-    const padX = w * 0.04, padY = h * 0.9
-    ctx.drawImage(im, x - padX, y - padY, w + padX * 2, h + padY * 2)
-    ctx.restore()
-  } else { ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(214,170,90,.9)'; ctx.strokeRect(x - 1, y - 1, w + 2, h + 2) }
+  const geo = BAR_GEO[frame]
+  ctx.save()
+  if (from === 'right') { ctx.translate(x + ow / 2, 0); ctx.scale(-1, 1); ctx.translate(-(x + ow / 2), 0) }
+  let fx0 = x, fx1 = x + ow, sc = 0
+  if (im !== null && geo !== undefined) {
+    sc = h / ((geo.y1 - geo.y0) * im.naturalHeight)
+    fx0 = x + geo.x0 * im.naturalWidth * sc
+    fx1 = x + ow - (1 - geo.x1) * im.naturalWidth * sc
+  }
+  const fw = fx1 - fx0
+  ctx.fillStyle = 'rgba(0,0,0,.7)'; ctx.fillRect(fx0, y, fw, h)
+  const w = fw * k
+  const wx = from === 'center' ? fx0 + (fw - w) / 2 : fx0
+  ctx.fillStyle = col; ctx.fillRect(wx, y, w, h)
+  const g = ctx.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, 'rgba(255,255,255,.35)'); g.addColorStop(0.5, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(0,0,0,.35)')
+  ctx.fillStyle = g; ctx.fillRect(wx, y, w, h)
+  if (im !== null && geo !== undefined) {
+    const iw = im.naturalWidth, ih = im.naturalHeight
+    const dy = y - geo.y0 * ih * sc, dh = ih * sc
+    const lw = geo.capL * iw, rw = (1 - geo.capR) * iw
+    ctx.drawImage(im, 0, 0, lw, ih, x, dy, lw * sc, dh)
+    ctx.drawImage(im, geo.capR * iw, 0, rw, ih, x + ow - rw * sc, dy, rw * sc, dh)
+    ctx.drawImage(im, lw, 0, geo.capR * iw - lw, ih, x + lw * sc, dy, ow - (lw + rw) * sc, dh)
+  } else { ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(214,170,90,.9)'; ctx.strokeRect(fx0 - 1, y - 1, fw + 2, h + 2) }
+  ctx.restore()
+  if (im === null || geo === undefined) return null
+  // 왼쪽 둥근 머리 — 얼굴을 넣을 자리 (뒤집힌 막대면 오른쪽)
+  const r = 0.062 * im.naturalWidth * sc, cxl = x + 0.072 * im.naturalWidth * sc, cy = y + h / 2
+  return { cx: from === 'right' ? x + ow - (cxl - x) : cxl, cy, r }
 }
 
 function drawCue(c: Cue, t: number): void {
@@ -430,7 +456,7 @@ function drawDuel(now: number, fadeIn: number): void {
   if (now - foeHurtAt < 180) { ctx.fillStyle = 'rgba(255,40,30,.22)'; ctx.fillRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s) }
   ctx.restore()
   const fr = art('panel-frame')
-  if (fr !== null) ctx.drawImage(fr, -pn.s / 2 - pn.s * 0.04, -pn.s / 2 - pn.s * 0.04, pn.s * 1.08, pn.s * 1.08)
+  if (fr !== null) { const F = pn.s / 0.89, Fh = pn.s / 0.877; ctx.drawImage(fr, -pn.s / 2 - 0.055 * F, -pn.s / 2 - 0.061 * Fh, F, Fh) } // 테두리 안쪽 창 = 그림의 5.5~94.5% · 6.1~93.8%
   else { ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(214,170,90,.85)'; roundRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s, pn.s * 0.06); ctx.stroke() }
   ctx.restore()
   if (d.phase === 'rush') {
@@ -505,18 +531,26 @@ function drawDuel(now: number, fadeIn: number): void {
     }
   }
   // 위 — 격투 게임처럼: 우리(왼쪽) · 시간(가운데 크게) · 적장(오른쪽)
-  const tw = Math.min(110, W * 0.24)
-  const bw = (W - tw) / 2 - 16, by = 34
-  bar(10, by, bw, 16, d.me.hp / R.hp, now - hurtAt < 200 ? '#ff5a4a' : '#e9c46a', 'left', 'hud-bar')
-  bar(W - 10 - bw, by, bw, 16, d.foe.hp / R.hp, now - foeHurtAt < 200 ? '#ffffff' : '#e76f51', 'right', 'hud-bar')
-  ctx.font = '700 15px "Gowun Batang", serif'; ctx.fillStyle = '#f3e3c0'
-  ctx.textAlign = 'left'; ctx.fillText(`${NAMES[meKey] ?? meKey} · 무예 ${muMe}`, meFace !== null ? 46 : 12, 24)
-  ctx.textAlign = 'right'; ctx.fillText(`${NAMES[foeKey] ?? foeKey} · 무예 ${muFoe}`, W - 12, 24)
-  if (meFace !== null && meFace.complete && meFace.naturalWidth > 0) { ctx.save(); ctx.beginPath(); ctx.arc(26, 18, 15, 0, Math.PI * 2); ctx.clip(); ctx.drawImage(meFace, 11, 3, 30, 30); ctx.restore() }
+  const tw = Math.min(104, W * 0.24)
+  const plateW = tw * 0.98 * 1.32
+  const bw = (W - plateW) / 2 - 6, by = 36
+  const capMe = bar(4, by, bw, 10, d.me.hp / R.hp, now - hurtAt < 200 ? '#ff5a4a' : '#e9c46a', 'left', 'hud-bar')
+  const capFoe = bar(W - 4 - bw, by, bw, 10, d.foe.hp / R.hp, now - foeHurtAt < 200 ? '#ffffff' : '#e76f51', 'right', 'hud-bar')
+  // 둥근 머리 안에 얼굴
+  for (const [cap, face] of [[capMe, meFace], [capFoe, foeFace]] as const) {
+    if (cap === null || face === null || !face.complete || face.naturalWidth === 0) continue
+    ctx.save(); ctx.beginPath(); ctx.arc(cap.cx, cap.cy, cap.r, 0, Math.PI * 2); ctx.clip()
+    ctx.drawImage(face, cap.cx - cap.r * 1.15, cap.cy - cap.r * 1.0, cap.r * 2.3, cap.r * 2.3); ctx.restore()
+  }
+  ctx.font = '700 14px "Gowun Batang", serif'; ctx.fillStyle = '#f3e3c0'
+  ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.7)'
+  const nameY = by + 30
+  ctx.textAlign = 'left'; ctx.strokeText(`${NAMES[meKey] ?? meKey} · 무예 ${muMe}`, 8 + (capMe?.r ?? 0) * 2.2, nameY); ctx.fillText(`${NAMES[meKey] ?? meKey} · 무예 ${muMe}`, 8 + (capMe?.r ?? 0) * 2.2, nameY)
+  ctx.textAlign = 'right'; ctx.strokeText(`${NAMES[foeKey] ?? foeKey} · 무예 ${muFoe}`, W - 8 - (capFoe?.r ?? 0) * 2.2, nameY); ctx.fillText(`${NAMES[foeKey] ?? foeKey} · 무예 ${muFoe}`, W - 8 - (capFoe?.r ?? 0) * 2.2, nameY)
   const sec = Math.max(0, Math.ceil((d.end - d.t) / R.hz))
   const plate = art('hud-timer')
   const tcx = W / 2, tcy = 40
-  if (plate !== null) ctx.drawImage(plate, tcx - tw * 0.62, tcy - tw * 0.5, tw * 1.24, tw)
+  if (plate !== null) { const ph2 = tw * 0.98, pw2 = ph2 * (plate.naturalWidth / plate.naturalHeight); ctx.drawImage(plate, tcx - pw2 / 2, tcy - ph2 / 2, pw2, ph2) }
   else { ctx.fillStyle = 'rgba(20,12,6,.85)'; ctx.beginPath(); ctx.arc(tcx, tcy, tw * 0.42, 0, Math.PI * 2); ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#c99a4a'; ctx.stroke() }
   const low = sec <= 10
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
