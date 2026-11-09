@@ -23,8 +23,8 @@ export type TownFort = 'bare' | 'palisade' | 'earth' | 'moat'
  */
 const TOWN_GROUND_FORT: Readonly<Record<keyof typeof TOWN_GROUND, Partial<Record<TownFort, string>>>> = {
   field: { bare: 'town/ground-field-bare.png', moat: 'town/ground-field-moat.png', earth: 'town/ground-field-earth.png' },
-  water: { bare: 'town/ground-water-bare.png', moat: 'town/ground-water-moat.png' },
-  wood: { bare: 'town/ground-wood-bare.png', moat: 'town/ground-wood-moat.png' },
+  water: { bare: 'town/ground-water-bare.png', moat: 'town/ground-water-moat.png', earth: 'town/ground-water-earth.png' },
+  wood: { bare: 'town/ground-wood-bare.png', moat: 'town/ground-wood-moat.png', earth: 'town/ground-wood-earth.png' },
 }
 /** 고을의 방비 → 그림 꼴 — 해자 > 토성 > 목책(도읍·성은 처음부터) > 없음. 겹쳐 지었으면 가장 센 것 하나 */
 export function townFort(kind: string, tags: readonly string[]): TownFort {
