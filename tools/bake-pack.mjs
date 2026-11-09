@@ -27,16 +27,30 @@ const add = (kind, n, title, imgs, prompt, save, note = '') => {
 const spec = JSON.parse(readFileSync('tools/sprite-kit/heroes/gpt-awaken.json', 'utf8'))
 const seen = new Set()
 let n = 0
+// 15세 기준 (형 11-10) — 새로 굽는 여장수 문안의 「비치는 겉감」은 팔·다리·치마 겹에만, 가슴 쪽은 불투명
+const OPAQUE15 = ' Teen (15+) rating: any sheer fabric is only on the sleeves, legs or skirt layers; the top over the chest is fully opaque, and no nipples or nipple outline show through the clothes.'
+// 감실(w-33)·변한 단비(w-98) 결 — 형 11-10: "감실이랑 단비가 지금 최고 섹시하고 너무 좋은데" → 여장수 문안의 기준
+const STYLE_F = ' Style reference (the two most loved splash arts in this game): a camera slightly below her for a powerful, dynamic look; a full hourglass figure with a large, full bust and deep cleavage, bare shoulders and bare midriff, a high leg slit; long flowing silk ribbons and sashes in her own colors swirling around her body; a strong, vivid expression (a sultry half-lidded smile or a big open laugh) and a bold pose full of energy (an arm raised behind her head, swinging her signature item, caught mid-laugh).'
+const isWoman = (p) => /\b(woman|her)\b/.test(p)
 for (const x of spec) {
   if (x.tier !== 2 || seen.has(x.id)) continue
   seen.add(x.id)
   if (existsSync(`public/realm/awaken2-hd/${x.id}.jpg`)) continue
   if (!existsSync(x.ref)) continue
-  add('gpt', ++n, x.id, [x.ref], x.prompt, `gpt_aw2-${x.id}.png`)
+  add('gpt', ++n, x.id, [x.ref], x.prompt + (isWoman(x.prompt) ? STYLE_F + OPAQUE15 : ''), `gpt_aw2-${x.id}.png`)
+}
+// ①-1b 진각성 다시 (형이 짚은 것 · 명세에 없는 사람은 여장수 진각성 틀로) — gpt_aw2-<id>.png → 지금 그림을 덮어쓴다
+const W2 = spec.find((y) => y.key === 'aw2-w-66-saro-noeul')?.prompt ?? ''
+const REDO2 = [
+  // 11-10 형: "2차 각성은 허리 아래가 잘못 그려져 있음 · 몸 뒷면인데 다리 한쪽이 앞으로 착각" · 활시위 자세이기도 했다 (진각성 금지 자세)
+  ['w-13-young-archer', '(21)', ' Draw her facing the viewer or in a three-quarter front view (not from behind, no twisted back view), with anatomically correct hips and legs: both legs clearly attached to the hips and bending the natural way.'],
+]
+for (const [id, age, extra] of REDO2) {
+  const ref = `public/realm/awaken-hd/${id}.jpg`
+  if (W2 === '' || !existsSync(ref)) continue
+  add('gpt', ++n, `${id} · 진각성 다시`, [ref, `public/realm/awaken2-hd/${id}.jpg`], W2.replace(/\(\d+\)/, age) + extra + STYLE_F + OPAQUE15, `gpt_aw2-${id}.png`, '첫 그림(1차 각성)만 붙이세요 · 둘째는 지금 진각성(잘못된 것 · 비교용)')
 }
 // ①-2 다시 굽기 (형이 짚은 것) — 1차 각성은 gpt_aw1-<id>.png 로 받아 install-awaken.sh 1 (지금 그림을 덮어쓴다)
-// 15세 기준 (형 11-10) — 새로 굽는 1차 각성 문안의 「비치는 겉감」은 팔·다리·치마 겹에만, 가슴 쪽은 불투명
-const OPAQUE15 = ' Teen (15+) rating: any sheer fabric is only on the sleeves, legs or skirt layers; the top over the chest is fully opaque, and no nipples or nipple outline show through the clothes.'
 const REDO1 = [
   // 11-10 형: "가슴 모양이 이상해서 아예 그냥 거유로 각성 이미지 다시 만들어야 할 듯"
   ['w-104-buyeo-darae', ' Her figure: a naturally very large, full, round bust with a natural shape and soft weight (not stiff, not oddly shaped), clearly visible under the outfit.'],
@@ -44,7 +58,7 @@ const REDO1 = [
 for (const [id, extra] of REDO1) {
   const x = spec.find((y) => y.tier === 1 && y.id === id)
   if (x === undefined || !existsSync(x.ref) || !existsSync(`public/realm/awaken-hd/${id}.jpg`)) continue
-  add('gpt', ++n, `${id} · 1차 다시`, [x.ref, `public/realm/awaken-hd/${id}.jpg`], x.prompt + extra + OPAQUE15, `gpt_aw1-${id}.png`, '첫 그림(초상)만 붙이세요 · 둘째는 지금 1차 각성(비교용)')
+  add('gpt', ++n, `${id} · 1차 다시`, [x.ref, `public/realm/awaken-hd/${id}.jpg`], x.prompt + extra + STYLE_F + OPAQUE15, `gpt_aw1-${id}.png`, '첫 그림(초상)만 붙이세요 · 둘째는 지금 1차 각성(비교용)')
 }
 // ①-3 15세 판 (형 11-10: Steam 15세로 · 지금 것은 assets_r19 에 보관 · 테스트 동안은 지금 것) — gpt15_aw<단>-<id>.png → assets_15/ 에만 모은다(게임엔 아직 안 넣음)
 // 새로 그리면 느낌이 바뀐다 — 지금 그림을 붙이고 비침만 고친다 (영상도 그 그림으로 다시 구우니 같은 그림이어야 한다)
