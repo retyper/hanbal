@@ -264,7 +264,8 @@ export function talkBoxHtml(k: WooKit, L: TalkLines, r: Realm, s: TalkState): st
     fold(n - 1)
     rows.push(say(k, by, pitch(n - 1)), say(k, x, react(n - 1), ` r-${reacts[n - 1]} now`))
   }
-  h += `<div class="dp-talk">${rows.join('')}</div>`
+  // 말은 아래 단추 바로 위에 (형 11-10: "대사를 아래쪽에 가게" · 슬라이드 없이 어느 기기에서도) — 넘치면 오래된 줄부터 위로 잘린다
+  const talkBox = `<div class="dp-talk">${rows.join('')}</div>`
   // 벽 — 막대와 조각 · 노여움이면 붉게 두꺼워진다
   const w = Math.max(0, Math.min(100, (t.resist / full) * 100))
   const cut = last !== undefined && (last.react === 'big' || last.react === 'sway') && !s.hand
@@ -309,6 +310,7 @@ export function talkBoxHtml(k: WooKit, L: TalkLines, r: Realm, s: TalkState): st
     }
     h += `</div>`
   }
+  h += talkBox
   // 아래 붙박이 띠 (메모리 confirm-bar-bottom)
   h += `<div class="dp-go">`
   if (won || lost || (over && t.hand === null)) h += `<button class="btn pri" data-act="dp-ok">확인</button>`
@@ -318,18 +320,18 @@ export function talkBoxHtml(k: WooKit, L: TalkLines, r: Realm, s: TalkState): st
 }
 
 export const TALK_CSS = `
-.ap .dp-tk { position: relative; width: 100%; max-width: 430px; height: 100%; max-height: 760px; display: flex; flex-direction: column; gap: 8px; padding: 10px 12px 0; box-sizing: border-box; overflow: hidden;
+.ap .dp-tk { position: relative; width: 100%; max-width: 430px; height: 100%; max-height: 760px; display: flex; flex-direction: column; gap: clamp(4px, 1dvh, 8px); padding: clamp(6px, 1.2dvh, 10px) 12px 0; box-sizing: border-box; overflow: hidden;
   background: radial-gradient(ellipse at 50% 30%, #0a070588, #0a0705ee 75%), var(--bg) center / cover no-repeat, #120d08; border: 1px solid #6a5236; border-radius: 14px; }
 .ap .dp-tk.rage { animation: dpshake .45s ease-out; } @keyframes dpshake { 20% { transform: translateX(-7px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(2px); } }
 .ap .dp-th { flex: none; display: flex; align-items: center; gap: 8px; } .ap .dp-th > b { font-size: 15px; color: #e0bd78; letter-spacing: .05em; } .ap .dp-th > span { margin-left: auto; font-size: 12px; color: var(--mute); }
 .ap .dp-dots { display: flex; gap: 4px; } .ap .dp-dots b { width: 9px; height: 9px; border-radius: 2px; border: 1px solid #8a6a3a; background: #2a1f14; } .ap .dp-dots b.ok { background: #e0bd78; } .ap .dp-dots b.no { background: #6a6a6a; } .ap .dp-dots b.bad { background: #c0392b; border-color: #ff7a60; }
 .ap .dp-fr { flex: none; display: flex; align-items: flex-start; justify-content: space-between; padding: 0 6px; }
 .ap .dp-fx { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; width: 124px; } .ap .dp-fx small { font-size: 12.5px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #f3e3c0; }
-.ap .dp-ff { width: 78px; height: 78px; border-radius: 10px; object-fit: cover; object-position: top; display: block; box-sizing: border-box; }
+.ap .dp-ff { width: var(--dpf); height: var(--dpf); border-radius: 10px; object-fit: cover; object-position: top; display: block; box-sizing: border-box; }
 /* 얼굴 칸 둘레에 옥문 틀이 30% 씩 나온다 (틀 그림의 빈 칸 62.5% · 사로잡기 장면 appstyle .cere.capt .jail 과 같은 셈) */
-.ap .dp-cell { position: relative; width: 78px; height: 78px; margin: 20px 0 16px; }
+.ap .dp-tk { --dpf: clamp(44px, 9dvh, 78px); } .ap .dp-tk.deep { --dpf: clamp(40px, 7.5dvh, 62px); }
+.ap .dp-cell { position: relative; width: var(--dpf); height: var(--dpf); margin: calc(var(--dpf) * .26) 0 calc(var(--dpf) * .2); }
 .ap .dp-cell .dp-ff { border-radius: 2px; box-shadow: 0 6px 14px #000c; }
-.ap .dp-tk.deep .dp-cell, .ap .dp-tk.deep .dp-ff { width: 62px; height: 62px; } .ap .dp-tk.deep .dp-cell { margin: 13px 0 11px; }
 .ap .dp-bars { position: absolute; inset: 0; z-index: 2; overflow: hidden; pointer-events: none; }
 .ap .dp-bars b { position: absolute; inset: 0; background: url(__ART__fx/jail-bars.png) center / 100% 100% no-repeat; filter: drop-shadow(2px 3px 3px #000c); }
 .ap .dp-jail { position: absolute; left: -30%; top: -30%; width: 160%; height: 160%; z-index: 3; pointer-events: none; background: url(__ART__fx/jail-frame.png) center / 100% 100% no-repeat; filter: drop-shadow(0 6px 12px #000d); }
@@ -339,8 +341,9 @@ export const TALK_CSS = `
 .ap .dp-vs { align-self: center; font-size: 18px; color: #8a6a3a; }
 /* 넘어와도 옥에 그대로 있다 · 창살 너머에서 고개를 숙인다 (풀려나는 것은 다음 계절 등용 장면) */
 .ap .dp-tk.won .dp-fx.jail .dp-ff { animation: dpbow .6s .6s ease-out both; } @keyframes dpbow { to { transform: translateY(5px); filter: brightness(1.15); } }
-.ap .dp-talk { flex: none; display: flex; flex-direction: column; gap: 6px; min-height: 120px; }
-.ap .dp-say { display: flex; align-items: center; gap: 10px; padding: 7px 10px 7px 7px; border-radius: 10px; background: #1c150ee6; border: 1px solid #4a3826; animation: dpin .3s ease-out both; }
+.ap .dp-talk { flex: 0 1 auto; min-height: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; gap: clamp(3px, .7dvh, 6px); }
+.ap .dp-talk > * { flex: none; }
+.ap .dp-say { display: flex; align-items: center; gap: 10px; padding: clamp(4px, .8dvh, 7px) 10px clamp(4px, .8dvh, 7px) 7px; border-radius: 10px; background: #1c150ee6; border: 1px solid #4a3826; animation: dpin .3s ease-out both; }
 .ap .dp-say.pre { border-style: dashed; border-color: #e0bd78; background: #2a1f14e6; } .ap .dp-say.lord .dp-line { color: #d9c69a; font-size: 13px; }
 .ap .dp-say.r-big { border-color: #e0bd78; } .ap .dp-say.hire { border-color: #f2c94c; background: #3a2a10e6; animation-delay: 1.5s; } .ap .dp-say.hire .dp-sf { border-color: #f2c94c; } .ap .dp-say.r-rage { border-color: #c0392b; background: #2a0f0ae6; }
 @keyframes dpin { from { opacity: 0; transform: translateY(6px); } }
@@ -351,13 +354,13 @@ export const TALK_CSS = `
 .ap .dp-of { flex: none; width: 20px; height: 20px; border-radius: 50%; object-fit: cover; object-position: top; border: 1px solid #c9a45a; box-sizing: border-box; }
 .ap .dp-say.now { box-shadow: 0 0 0 1px #e0bd7866, 0 0 12px #e0bd7833; }
 .ap .dp-who2 { flex: none; width: 50px; display: flex; flex-direction: column; align-items: center; gap: 2px; } .ap .dp-who2 small { max-width: 52px; font-size: 10.5px; line-height: 1.15; color: #e8cf94; text-align: center; word-break: keep-all; }
-.ap .dp-sf { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; object-position: top; box-sizing: border-box; border: 2px solid #c9a45a; }
-.ap .dp-line { flex: 1; min-width: 0; font-size: 14px; line-height: 1.4; color: #f3e3c0; word-break: keep-all; overflow-wrap: anywhere; }
-.ap .dp-tw { position: relative; flex: none; display: flex; flex-direction: column; gap: 4px; padding: 7px 10px; border-radius: 10px; background: #1c150ee6; border: 1px solid #5a4630; }
+.ap .dp-sf { width: clamp(30px, 5dvh, 40px); height: clamp(30px, 5dvh, 40px); border-radius: 50%; object-fit: cover; object-position: top; box-sizing: border-box; border: 2px solid #c9a45a; }
+.ap .dp-line { flex: 1; min-width: 0; font-size: clamp(12px, 1.85dvh, 14px); line-height: 1.35; color: #f3e3c0; word-break: keep-all; overflow-wrap: anywhere; }
+.ap .dp-tw { position: relative; flex: 1 1 0; min-height: clamp(96px, 19dvh, 190px); display: flex; flex-direction: column; gap: 4px; padding: clamp(4px, .8dvh, 7px) 10px; border-radius: 10px; background: #1c150ee6; border: 1px solid #5a4630; }
 .ap .dp-tw .dp-wh small.dn { color: #8fd08f; } .ap .dp-tw .dp-wh small.upn { color: #ff8a70; }
 .ap .dp-bar.big { height: 14px; overflow: visible; }
 /* 옥문 — 마음의 벽 (fx/woo-gate-0 멀쩡 · 1 금 감 · 2 부서짐 · 같은 틀) · 그림 칸이 작아 흔들림·조각은 transform 으로 짧게 (폰 그래픽 한도) */
-.ap .dp-gate { position: relative; width: min(100%, 300px); max-height: 22dvh; aspect-ratio: 1264 / 717; margin: 2px auto 0; }
+.ap .dp-gate { position: relative; flex: 1 1 0; min-height: 24px; width: 100%; max-width: 420px; margin: 0 auto; }
 .ap .dp-gate img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
 .ap .dp-gate .g1 { opacity: var(--crack, 0); transition: opacity .5s ease; }
 .ap .dp-gate .g2 { opacity: 0; }
@@ -382,17 +385,17 @@ export const TALK_CSS = `
 @keyframes dpfly { from { transform: translate(0, 0) rotate(0); opacity: 1; } to { transform: translate(var(--x), var(--y)) rotate(var(--r)); opacity: 0; } }
 .ap .dp-stamp { display: inline-block; margin-bottom: 10px; padding: 4px 10px; border: 4px solid #c0392b; color: #e0402b; background: #2a0a06cc; font-style: normal; font-size: 30px; font-weight: 900; letter-spacing: .1em; transform: rotate(-12deg); animation: dpstamp .35s .25s cubic-bezier(.3, 1.6, .5, 1) both; pointer-events: none; }
 @keyframes dpstamp { from { transform: rotate(-12deg) scale(2.6); opacity: 0; } }
-.ap .dp-apps { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: minmax(54px, auto); align-content: start; gap: 6px; }
-.ap .dp-ap { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 6px 4px; border-radius: 10px; border: 1px solid #6a5236; background: #241a10ee; color: #f3e3c0; cursor: pointer; min-width: 0; }
-.ap .dp-ap b { font-size: 15px; } .ap .dp-ap .dp-p { font-size: 15px; font-weight: 800; color: #f3d38a; } .ap .dp-ap small { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--mute); }
+.ap .dp-apps { flex: none; display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: auto; align-content: start; gap: clamp(4px, .8dvh, 6px); }
+.ap .dp-ap { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; padding: clamp(3px, .7dvh, 6px) 4px; line-height: 1.2; border-radius: 10px; border: 1px solid #6a5236; background: #241a10ee; color: #f3e3c0; cursor: pointer; min-width: 0; }
+.ap .dp-ap b { font-size: clamp(12.5px, 1.9dvh, 15px); } .ap .dp-ap .dp-p { font-size: clamp(12.5px, 1.9dvh, 15px); font-weight: 800; color: #f3d38a; } .ap .dp-ap small { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--mute); }
 .ap .dp-ap.on { border-color: #e0bd78; box-shadow: 0 0 0 2px #e0bd78, 0 0 12px #e0bd7866; background: #3a2a16; }
 .ap .dp-ap.gold { grid-column: 1 / -1; border-color: #f2c94c; background: #3a2a10ee; } .ap .dp-ap.gold b { color: #ffe08a; }
 .ap .dp-ap:disabled { opacity: .4; cursor: default; }
-.ap .dp-end { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center; padding: 6px; } .ap .dp-end > b { font-size: 17px; color: #f3e3c0; } .ap .dp-end small { font-size: 12.5px; color: #d9c69a; word-break: keep-all; }
+.ap .dp-end { flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center; padding: 6px; } .ap .dp-end > b { font-size: 17px; color: #f3e3c0; } .ap .dp-end small { font-size: 12.5px; color: #d9c69a; word-break: keep-all; }
 .ap .dp-end.bad > b { color: #ff8a70; } .ap .dp-end.hand > b { color: #ffe08a; }
 .ap .dp-end.won .dp-big { font-size: 19px; line-height: 1.35; color: #ffe08a; text-shadow: 0 2px 8px #000; word-break: keep-all; animation: dpbig .6s 2.1s cubic-bezier(.3, 1.5, .5, 1) both; } .ap .dp-end.won small { animation: dpin .4s 2.7s both; }
 @keyframes dpbig { from { opacity: 0; transform: scale(.6); } }
-.ap .dp-go { flex: none; margin: 0 -12px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); display: flex; gap: 8px; background: #120d08f2; border-top: 1px solid #6a5236; }
-.ap .dp-go .btn { flex: 1; min-height: 48px; font-size: 16px; } .ap .dp-go .btn.ghost { flex: 0 0 34%; }
+.ap .dp-go { flex: none; margin: 0 -12px; padding: clamp(6px, 1.2dvh, 10px) 12px calc(clamp(6px, 1.2dvh, 10px) + env(safe-area-inset-bottom)); display: flex; gap: 8px; background: #120d08f2; border-top: 1px solid #6a5236; }
+.ap .dp-go .btn { flex: 1; min-height: clamp(40px, 6dvh, 48px); font-size: clamp(14px, 2dvh, 16px); } .ap .dp-go .btn.ghost { flex: 0 0 34%; }
 .ap .dpov.talk { padding: 0; align-items: stretch; } @media (min-height: 780px) { .ap .dpov.talk { align-items: center; padding: 10px; } }
 `
