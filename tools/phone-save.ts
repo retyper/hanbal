@@ -120,6 +120,27 @@ if (kind === 'great') {
   next.nodes[o2] = { ...next.nodes[o2]!, wonder: 'dolmen' }
   console.log('great', cap)
 }
-const quiet = kind === 'captive' || kind === 'woo' || kind === 'woo0' || kind === 'pincer' || (kind === 'town' && process.env.TOWN !== 'done') || (kind === 'great' && process.env.GREAT !== 'done') // 보고 없이 판 위에서 연다
+// 도읍 궁궐·조정 (palace.ts · CAPITAL §2) — PALACE=1 처음(1단) · 2 큰 마루 집 + 재상 앉음 · build 3단 쌓는 중(비계) · 4 토성 궁성 + 세 자리 + 대신 뽑기 · done 지난 달 막 3단 완공(보고 줄 · 도장)
+if (kind === 'palace') {
+  const cap = next.factions[next.player]!.capital
+  next.nodes[cap]!.hh = 9000
+  const st = next.stock[next.player]!
+  st.grain = 60000; st.wood = 3000; st.iron = 2000
+  const fac = next.factions[next.player]!
+  const mode = process.env.PALACE ?? '2'
+  const mine = Object.values(next.heroes).filter((h) => h.faction === next.player && h.status === 'free' && h.id !== fac.ruler && !Object.values(next.armies).some((a) => a.hero === h.id))
+  // 앉힐 장수가 넉넉하게 남의 장수를 데려온다
+  const foes = Object.values(next.heroes).filter((h) => h.faction !== next.player && h.status === 'free' && !h.id.endsWith('-ruler')).sort((a, b) => (a.id < b.id ? -1 : 1))
+  for (const x of foes.slice(0, 6)) { x.faction = next.player; x.at = cap; for (const a of Object.values(next.armies)) if (a.hero === x.id) a.hero = null; mine.push(x) }
+  const tier = mode === '4' ? 4 : mode === 'build' || mode === 'done' ? 3 : mode === '2' ? 2 : 1
+  if (tier > 1 || mode === 'build') fac.palace = { tier: tier as 1 | 2 | 3 | 4, stage: mode === 'build' ? 2 : 0, ...(mode === 'build' ? { busy: next.season + 1 } : {}) }
+  if (tier === 4) next.nodes[cap] = { ...next.nodes[cap]!, walled: true }
+  const pick = [...mine].sort((a, b) => (a.id < b.id ? -1 : 1))
+  if (tier >= 2) fac.seats = { chancellor: pick[0]!.id }
+  if (tier === 4) { fac.seats = { chancellor: pick[0]!.id, general: pick[1]!.id, priest: pick[2]!.id }; fac.autoDraft = true }
+  if (mode === 'done') (report.lines as ReportLine[]).push({ kind: 'palace', faction: next.player, ev: 'done', tier: 3, stage: 0 })
+  console.log('palace', mode, cap, pick.map((h) => h.id).join(','))
+}
+const quiet = kind === 'captive' || kind === 'woo' || kind === 'woo0' || kind === 'pincer' || (kind === 'town' && process.env.TOWN !== 'done') || (kind === 'great' && process.env.GREAT !== 'done') || (kind === 'palace' && process.env.PALACE !== 'done') // 보고 없이 판 위에서 연다
 writeFileSync(out, JSON.stringify({ v: 2, nation: process.env.NATION ?? 'us', seed, log: [], realm: next, before: quiet ? null : r0, report: quiet ? null : report }))
 console.log('ok', kind, g.name, w.name)

@@ -122,6 +122,7 @@ import { loadTip, tipHtml, tipReadMs } from './loadtips.ts'
 import { worldMapReady } from './worldmap.ts'
 import { loadBar } from './loadbar.ts'
 import { WORKS, clearBlocked, clearCost, lotCap, lotOf, lvGain, lvOf, sitesOf, workBlocked, workCost, workEffect, workOptions, worksOf, type WorkWhat } from '../../realm/works.ts'
+import { PALACE_NAME, SEATS, SEAT_DEFS, autoDraftOn, canPalace, heroSeat, palaceBlocked, palaceCost, palaceTier, seatBlocked, seatDraftMul, seatFx, seatHero, seatOpen, type PalaceTier, type Seat } from '../../realm/palace.ts'
 import { WONDERS, WONDER_ORDER, canWonder, feastBlocked, feastNext, feastOdds, feastPour, greatOpen, rivalWonders, wonderBlocked, wonderEffect, wonderNode, wonderStageCost, wonderWorkOf, type FeastGot, type WonderId } from '../../realm/wonders.ts'
 import { postGain } from '../../realm/postgain.ts'
 import { hasScale, marketIn, marketOf, scaleBuyPrice, scaleLimit, scaleRoom, scaleSellPrice, sellCap, sellLimit, sellPrice, wishReady, WISH_GRADE_NAME, type Offer } from '../../realm/merchant.ts'
@@ -890,6 +891,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let townFresh = false
   /** 도읍(궁전) 판을 펼쳤나 — 큰 공사·큰 잔치가 선다 */
   let palaceOn = false
+  /** 도읍 판의 쪽 — 궁궐·조정 / 큰 공사·큰 잔치 (한 쪽이 한 화면 · 구르지 않는다) */
+  let palaceSub: 'hall' | 'works' = 'hall'
+  /** 앉힐 장수를 고르는 떴다 사라지는 상자 — 어느 자리 (없으면 닫힘) */
+  let seatPick: Seat | null = null
   /** 마을 안에서 고른 터와(빈 터면) 지을 일터 — 화면 고르기일 뿐 판은 「work」 명령으로만 바뀐다 (TOWN.md 11-08) */
   let townPick: { lot: number; what: WorkWhat | null } | null = null
   /** 「완공!」 도장을 찍은 보고 — `${고을}|${계절}` (한 번만) */
@@ -1144,6 +1149,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (ex !== undefined) { const n = Math.max(1, ex.back - r.season + 1); return [`원정 중 · ${turnsLabel(r, n)} 뒤 돌아온다`, `원정 중 · ${turnsLabel(r, n)} 뒤`] }
     if (h.woundedUntil !== undefined && h.woundedUntil > r.season) { const n = h.woundedUntil - r.season; return [`다쳐 누웠다 · ${turnsLabel(r, n)}`, `다쳐 쉬는 중 · ${turnsLabel(r, n)}`] }
     if (h.awayUntil !== undefined && h.awayUntil >= r.season) return ['자리를 비웠다', '길에 있는 중']
+    const seat = heroSeat(r, id)
+    if (seat !== null) return [`조정에 앉아 있다 (${SEAT_DEFS[seat].name})`, `${SEAT_DEFS[seat].name} 자리에 앉은 몸`]
     const pl = plots.find((o): o is Extract<Order, { kind: 'plot' }> => o.kind === 'plot' && o.agent === id)
     if (pl !== undefined) return NIGHT_OPS.has(pl.op) ? [`이번 ${turnWord(r)} 자객으로 간다`, '자객으로 가는 중'] : [`이번 ${turnWord(r)} ${PLOT_NAME[pl.op]} 공작을 하러 간다`, `${PLOT_NAME[pl.op]} 공작 가는 중`]
     const ev = Object.values(envoys).find((e) => e.hero === id)
@@ -1290,7 +1297,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       for (const k of ['hero', 'agent', 'by', 'a', 'b'] as const) { const v = (o as Record<string, unknown>)[k]; if (typeof v === 'string') busy.add(v) }
     }
     for (const e of Object.values(envoys)) if (e.hero !== undefined) busy.add(e.hero)
-    const idle = sorted(Object.values(p.heroes)).filter((h) => h.faction === me() && h.status === 'free' && !isRuler(p, h.id) && h.at !== null && h.post == null
+    const idle = sorted(Object.values(p.heroes)).filter((h) => h.faction === me() && h.status === 'free' && !isRuler(p, h.id) && h.at !== null && h.post == null && heroSeat(p, h.id) === null
       && !Object.values(p.armies).some((a) => a.hero === h.id) && !busy.has(h.id)
       && !(h.awayUntil !== undefined && h.awayUntil >= p.season) && !(h.woundedUntil !== undefined && h.woundedUntil > p.season)
       && !(p.expeditions ?? []).some((x) => x.hero === h.id))
@@ -4914,6 +4921,80 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   // ───────── 나라
+  // ───────── 도읍 — 궁궐 네 단 · 조정 세 자리 (palace.ts · docs/realm/CAPITAL.md §2)
+  /** 단 구슬 — 이번 단을 올리려 쌓은 번수 (쌓는 중이면 다음 구슬이 숨 쉰다) */
+  function palacePips(p: Realm): string {
+    const stages = Math.max(1, Math.round(P.realm.palaceStages))
+    const st = p.factions[me()]?.palace
+    const stage = st?.stage ?? 0
+    const go = st?.busy !== undefined
+    return `<i class="palpips">${Array.from({ length: stages }, (_, i) => `<u class="${i < stage ? 'on' : i === stage && go ? 'go' : ''}"></u>`).join('')}</i>`
+  }
+  /** 도읍 판의 쪽 고르기 + 그 쪽 */
+  function palaceBodyHtml(hall: string, great: string): string {
+    const sub = hall === '' ? 'works' : palaceSub
+    const tabs = hall !== '' && great !== ''
+      ? `<div class="palsub"><button class="${sub === 'hall' ? 'on' : ''}" data-act="palace-sub" data-v="hall">${icon('treasure-silla-crown', 'wki')}궁궐 · 조정</button><button class="${sub === 'works' ? 'on' : ''}" data-act="palace-sub" data-v="works">${icon('wonder-feast', 'wki')}큰 공사 · 큰 잔치</button></div>`
+      : ''
+    return tabs + (sub === 'hall' ? hall : great !== '' ? great : `<p class="mute">${icon('treasure-silla-crown', 'wki')} 나라가 더 커지면 큰 공사와 큰 잔치가 열립니다</p>`)
+  }
+  /** 궁궐 띠 + 조정 세 칸 + 대신 뽑기 — 배우는 판에는 없다 */
+  function palaceHtml(r: Realm): string {
+    const f = r.factions[me()]
+    if (f === undefined || r.region === 'tutorial') return ''
+    const p = leftPlan()
+    const tier = palaceTier(p, me())
+    const queued = musters.some((o) => o.kind === 'palace')
+    const st = p.factions[me()]?.palace
+    const busy = st?.busy !== undefined
+    const to = Math.min(4, tier + 1) as PalaceTier
+    const c = palaceCost(p, me(), to)
+    const why = queued ? null : palaceBlocked(p, me()) ?? (canPalace(p, me()) ? null : shortOf({ grain: c.grain, wood: c.wood, iron: c.iron }))
+    const label = tier >= 4 ? '가장 높은 궁궐' : busy ? `쌓는 중 · ${turnsLabel(r, Math.max(1, (st!.busy ?? r.season) - r.season + 1))}` : (st?.stage ?? 0) > 0 ? `${(st?.stage ?? 0) + 1}번째 쌓기` : `${josa(PALACE_NAME[to], '으로', '로')} 높이기`
+    const opens: Record<number, string> = { 2: '📜 🪓 조정 두 자리', 3: '🔔 조정 셋째 자리', 4: '🛡 도읍 방비 · 왕' }
+    let h = `<div class="palstrip${queued || busy ? ' building' : ''}"><div class="palnow">${icon('treasure-silla-crown', 'wki')}<div><b>${esc(PALACE_NAME[tier])}</b><small>${tier}단${tier < 4 ? ` ➜ ${esc(PALACE_NAME[to])}` : ''}</small></div></div>`
+    if (tier < 4) {
+      h += `<div class="palgo">${palacePips(p)}`
+      h += busy && !queued ? `<span class="wbusy">${label}</span>` : `<button class="btn${queued ? ' on' : ''}" data-act="palace"${why === null ? '' : noBtn(why)}>${label}${costHtml({ grain: c.grain, wood: c.wood, iron: c.iron })}</button>`
+      h += `<small class="palopen">${opens[to] ?? ''}</small></div>`
+    } else h += `<span class="wdone">✓ ${tier}단 모두 올랐습니다</span>${f.ruler !== undefined && r.heroes[f.ruler] !== undefined ? `<span class="palking">${bust(r.heroes[f.ruler], 'cjface')}<b>왕 ${esc(r.heroes[f.ruler]!.name)}</b></span>` : ''}`
+    h += `</div><div class="cjgrid">`
+    for (const s of SEATS) {
+      const d = SEAT_DEFS[s]
+      const open = seatOpen(p, me(), s)
+      const hero = seatHero(p, me(), s)
+      const chosen = musters.some((o) => o.kind === 'seat' && o.seat === s)
+      if (!open) {
+        h += `<button class="cjseat lock" data-act="seat-open" data-seat="${s}"${noBtn(`궁궐 ${d.tier}단부터 앉힙니다`)}><span class="cjic">🔒</span><b>${d.name}</b><small>${d.tier}단</small></button>`
+        continue
+      }
+      h += `<button class="cjseat${hero !== null ? ' has' : ' empty'}${chosen ? ' chosen' : ''}${seatPick === s ? ' open' : ''}" data-act="seat-open" data-seat="${s}">${hero !== null ? bust(hero, 'cjface') : `<span class="cjic">${d.emoji}</span>`}<b>${d.name}</b><small>${hero !== null ? esc(hero.name) : '비어 있음'}</small>${hero !== null ? `<i class="cjfx">${esc(seatFx(s, hero)[0] ?? '')}</i>` : ''}${chosen ? '<em class="cjok">✓</em>' : ''}</button>`
+    }
+    h += `</div>`
+    // 대장군의 대신 뽑기 — 켜면 계절마다 「알아서 뽑기」와 같은 셈으로 징병 (봄은 쉰다) · 대장군이 있어야
+    const on = autoDraftOn(p, me())
+    const general = seatHero(p, me(), 'general')
+    const pend = musters.some((o) => o.kind === 'autoDraft')
+    h += `<button class="cjauto${on ? ' on' : ''}" data-act="autodraft"${general === null ? noBtn(seatOpen(p, me(), 'general') ? '대장군을 앉혀야 합니다' : `궁궐 ${SEAT_DEFS.general.tier}단부터 대장군을 앉힙니다`) : ''} data-tip="켜 두면 계절마다 알아서 군사를 뽑습니다 · 가을과 겨울에 뽑고 군량은 남깁니다">⚡ 대신 뽑기 <b>${on ? '켜짐 ✓' : '꺼짐'}</b>${pend ? '<em class="cjok">✓</em>' : ''}</button>`
+    return h
+  }
+  /** 앉힐 장수 고르기 — 떴다 사라지는 상자 (바깥을 누르면 닫힌다) · 능력치 크게 · 걸릴 힘 미리보기 · 비우기 */
+  function seatPickHtml(p: Realm): string {
+    if (seatPick === null || realm === null) return ''
+    const s = seatPick
+    const d = SEAT_DEFS[s]
+    const cur = seatHero(p, me(), s)
+    const heroes = sorted(Object.values(p.heroes)).filter((x) => x.faction === me() && x.status === 'free' && !isRuler(p, x.id))
+      .sort((a, b) => b[d.stat] - a[d.stat] || (a.id < b.id ? -1 : 1))
+    const cards = heroes.slice(0, 9).map((x) => {
+      const why = x.id === cur?.id ? null : seatBlocked(p, me(), s, x.id) ?? (heroSeat(p, x.id) !== null ? null : heroBusy(p, x.id))
+      const here = heroSeat(p, x.id)
+      const tag = x.id === cur?.id ? '<i class="cjtag">앉은 중</i>' : here !== null && here !== s ? `<i class="cjtag">${SEAT_DEFS[here].name}에서 옮김</i>` : ''
+      return `<button class="cjpk${x.id === cur?.id ? ' on' : ''}${why !== null && x.id !== cur?.id ? ' off' : ''}" data-act="seat-set" data-seat="${s}" data-id="${x.id}"${why !== null && x.id !== cur?.id ? noBtn(why) : ''}>${bust(x, 'cjpf')}<b>${nameHtml(x.name)}</b><span class="cjnum">${STAT_NAME[d.stat]} <s>${x[d.stat]}</s></span>${why !== null && x.id !== cur?.id ? `<i class="cjwhy">${esc(why)}</i>` : seatFx(s, x).map((t) => `<i class="cjfx">${esc(t)}</i>`).join('')}${tag}</button>`
+    }).join('')
+    return `<div class="cjov" data-act="seat-x"><div class="cjbox"><div class="cjhd"><span class="cjic">${d.emoji}</span><b>${d.name}</b><small>${josa(STAT_NAME[d.stat], "이", "가")} 높을수록 힘이 큽니다</small><button class="tvx" data-act="seat-x" aria-label="닫기">✕</button></div>${cards !== '' ? `<div class="cjlist">${cards}</div>` : '<p class="mute">앉힐 장수가 없습니다</p>'}${cur !== null ? `<button class="btn ghost" data-act="seat-clear" data-seat="${s}">자리 비우기</button>` : ''}</div></div>`
+  }
+
   /**
    * 곳간을 부을 곳 (wonders.ts · 위원회 11-08 ⑦) — 나라가 커지면 나라 판에 큰 공사 넷과 큰 잔치.
    * 공사마다 그림 · 힘 칩 · 단 구슬(쌓은 만큼 금빛) · 짓는 동안은 그림에 비계 · 남이 지으면 그 나라 깃발과 단의 범위 · 다 서면 금빛 테.
@@ -4997,7 +5078,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<div>${icon('good-hemp')}<b>${Math.floor(mine.reduce((s, n) => s + n.hh, 0))}</b><span>집</span></div>`
     h += `<div>${icon('good-rice')}<b>${Math.floor(st.grain)}</b><span>곡식</span></div>`
     h += `<div>${icon('treasure-iron-ingots')}<b>${Math.floor(st.iron)}</b><span>철</span></div></div>`
-    if (greatHtml(r) !== '') h += `<button class="palrow" data-act="palace-go">${icon('treasure-silla-crown', 'wki')}<span>큰 공사·큰 잔치는 도읍에서</span><b>도읍 열기</b></button>` // 곳간을 부을 곳은 도읍 판으로 옮겼다 (형 11-10)
+    if (palaceHtml(r) !== '' || greatHtml(r) !== '') h += `<button class="palrow" data-act="palace-go">${icon('treasure-silla-crown', 'wki')}<span>궁궐 · 조정 · 큰 공사 · 큰 잔치는 도읍에서</span><b>도읍 열기</b></button>` // 곳간을 부을 곳은 도읍 판으로 옮겼다 (형 11-10)
     const caps2 = Object.values(r.heroes).filter((x) => x.status === 'captive' && x.captor === me())
     if (caps2.length > 0) {
       h += `<h4>사로잡은 장수</h4><div class="caps">`
@@ -6915,13 +6996,20 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     // 지난 달 완공 — 보고에 이 고을 줄이 있으면 한 번 「완공!」 (report 는 지난 달 것)
     const doneLine = report !== null && report.lines.find((l): l is Extract<ReportLine, { kind: 'work' }> => l.kind === 'work' && l.done && l.node === n.id && l.faction === me())
-    const stampKey = `${n.id}|${r.season}`
-    const stamp = doneLine !== false && doneLine !== undefined && !townStamped.has(stampKey) ? { icon: WORKS[doneLine.what].icon, name: `${WORKS[doneLine.what].name}${doneLine.lv !== undefined ? ` ${doneLine.lv}단` : ''}` } : null
+    const palDone = r.factions[me()]?.capital === n.id && report !== null ? report.lines.find((l): l is Extract<ReportLine, { kind: 'palace' }> => l.kind === 'palace' && l.ev === 'done' && l.faction === me()) : undefined
+    const stampKey = `${n.id}|${r.season}${palDone !== undefined ? '|palace' : ''}`
+    const stamp = palDone !== undefined && !townStamped.has(stampKey) ? { icon: 'treasure-silla-crown', name: PALACE_NAME[Math.max(1, Math.min(4, palDone.tier)) as PalaceTier] }
+      : doneLine !== false && doneLine !== undefined && !townStamped.has(stampKey) ? { icon: WORKS[doneLine.what].icon, name: `${WORKS[doneLine.what].name}${doneLine.lv !== undefined ? ` ${doneLine.lv}단` : ''}` } : null
     const have = left()
     const stock = GOODS.map((g) => `<span class="${have[g] < 1 ? 'no' : ''}" data-tip="${esc(GOOD_NAME[g])} ${Math.floor(have[g])}">${icon(GOOD_ICON[g])}${Math.floor(have[g])}</span>`).join('')
     // 도읍이면 궁전 띠 — 큰 공사·큰 잔치가 여기 산다 (형 11-10: 나라 탭에 묻혀 있는 줄도 몰랐다)
-    const greatH = r.factions[me()]?.capital === n.id ? greatHtml(r) : ''
-    const palace = greatH !== '' ? { on: palaceOn, html: greatH } : undefined
+    const isCap = r.factions[me()]?.capital === n.id
+    const hallH = isCap ? palaceHtml(r) : ''
+    const greatH = isCap ? greatHtml(r) : ''
+    const pp = leftPlan().factions[me()]?.palace
+    const palace = hallH !== '' || greatH !== ''
+      ? { on: palaceOn, html: palaceBodyHtml(hallH, greatH), tier: palaceTier(leftPlan(), me()), building: pp?.busy !== undefined || musters.some((o) => o.kind === 'palace'), pips: palacePips(leftPlan()), seatBox: seatPickHtml(leftPlan()) }
+      : undefined
     const html = townViewHtml({ id: n.id, name: n.name, hh: n.hh, bg, art: ART, fresh: townFresh, slots, lots: cap, pick: townPick, stamp, stock, ...(palace !== undefined ? { palace } : {}) })
     if (ov === null) {
       root.insertAdjacentHTML('beforeend', `<div class="townov" style="--tf:${P.realm.townFadeMs}ms;--bf:${P.realm.townBoardFrom}"></div>`)
@@ -8603,9 +8691,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           const sum = units.reduce((s, u) => s + w(u), 0)
           const take = (unit: UnitKind, want: number): void => {
             let k = Math.min(want, room(unit), room())
-            while (k > 0 && draftCost(k).grain > grain) k = Math.floor(k * 0.8)
+            while (k > 0 && draftCost(k, seatDraftMul(plan(), me())).grain > grain) k = Math.floor(k * 0.8)
             if (k <= 0) return
-            grain -= draftCost(k).grain
+            grain -= draftCost(k, seatDraftMul(plan(), me())).grain
             const same = musters.findIndex((o) => o.kind === 'draft' && o.node === n.id && o.unit === unit && o.iron !== true)
             const prevN = same >= 0 ? (musters[same] as Extract<Order, { kind: 'draft' }>).n : 0
             musters = same >= 0 ? musters.map((o, i) => (i === same ? { ...(o as Extract<Order, { kind: 'draft' }>), n: prevN + k } : o)) : [...musters, { kind: 'draft', faction: me(), node: n.id, unit, n: k }]
@@ -8824,7 +8912,36 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         townPick = { lot: i, what: null }
         break
       }
-      case 'palace-tab': palaceOn = d['v'] === '1'; break
+      case 'palace-tab': palaceOn = d['v'] === '1'; seatPick = null; break
+      case 'palace-sub': palaceSub = d['v'] === 'works' ? 'works' : 'hall'; seatPick = null; break
+      // 궁궐 한 번 붓기 — 한 번에 하나 · 다시 누르면 거둔다 (큰 공사와 같은 꼴)
+      case 'palace': musters = musters.some((o) => o.kind === 'palace') ? musters.filter((o) => o.kind !== 'palace') : [...musters, { kind: 'palace', faction: me() }]; break
+      case 'seat-open': seatPick = seatPick === d['seat'] ? null : (d['seat'] as Seat); break
+      case 'seat-x': seatPick = null; break
+      case 'seat-set': {
+        const seat = d['seat'] as Seat
+        const id = d['id']!
+        // 앉히는 명령은 앞에 — 대신 뽑기 켜기(대장군이 있어야 한다)보다 먼저 적용된다
+        musters = musters.filter((o) => !(o.kind === 'seat' && (o.seat === seat || o.hero === id)))
+        const has = realm?.factions[me()]?.seats ?? {}
+        if (has[seat] !== id) musters = [{ kind: 'seat', faction: me(), seat, hero: id }, ...musters]
+        seatPick = null
+        bark(id)
+        break
+      }
+      case 'seat-clear': {
+        const seat = d['seat'] as Seat
+        musters = musters.filter((o) => !(o.kind === 'seat' && o.seat === seat))
+        if (realm?.factions[me()]?.seats?.[seat] !== undefined) musters = [{ kind: 'seat', faction: me(), seat, hero: null }, ...musters]
+        seatPick = null
+        break
+      }
+      case 'autodraft': {
+        const now = autoDraftOn(leftPlan(), me())
+        musters = musters.filter((o) => o.kind !== 'autoDraft')
+        if ((!now) !== autoDraftOn(realm!, me())) musters = [...musters, { kind: 'autoDraft', faction: me(), on: !now }]
+        break
+      }
       case 'palace-go': {
         const cap = realm?.factions[me()]?.capital
         if (cap === undefined || realm?.nodes[cap]?.owner !== me()) return

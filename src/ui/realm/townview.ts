@@ -88,7 +88,17 @@ export interface TownViewIn {
   /** 지난 달 완공 — 「완공!」 도장 (없으면 null) */
   readonly stamp: { readonly icon: string; readonly name: string } | null
   /** 도읍(궁전) — 있으면 위 띠 밑에 「궁전」 띠가 서고 · on 이면 판 자리에 큰 공사·큰 잔치(html)가 선다 */
-  readonly palace?: { readonly on: boolean; readonly html: string }
+  readonly palace?: {
+    readonly on: boolean; readonly html: string
+    /** 궁궐 단 (1~4) — 머리 그림이 단마다 바뀐다 (town/palace-hall-<단>.jpg · 없으면 palace-hall.jpg) */
+    readonly tier: number
+    /** 쌓는 중 — 머리 그림에 비계 (어둡게 + 단 구슬) */
+    readonly building: boolean
+    /** 단 구슬 HTML */
+    readonly pips: string
+    /** 앉힐 장수 고르기 상자 (열려 있으면) */
+    readonly seatBox: string
+  }
 }
 /** 앞뒤 — 발(아랫단)이 아래일수록 앞에 (터·사람 모두 · 형 11-08: "사람은 무조건 땅보다 위에") */
 const zOf = (y: number): number => 10 + Math.round(y * 1000)
@@ -304,10 +314,10 @@ export function townViewHtml(t: TownViewIn): string {
   if (pal?.on === true) {
     return `<div class="townv pal" role="dialog" aria-label="${esc(t.name)} 도읍">`
       + `<div class="tvtop"><b>궁전</b><button class="tvx" data-act="town-out" aria-label="나가기">✕</button></div>`
-      + `<div class="tvpal"><div class="tvhall"><b>도읍 · ${esc(t.name)}</b></div><div class="tvpbody">${pal.html}</div></div>`
-      + `<div class="tvbar"><div class="tvhave">${t.stock}</div><button class="tvgo" data-act="palace-tab" data-v="0">${ic(t.art, 'settle-hamlet')}마을 안 보기</button></div></div>`
+      + `<div class="tvpal"><div class="tvhall${pal.building ? ' building' : ''}" style="--hall:url(${t.art}town/palace-hall-${Math.max(1, Math.min(4, pal.tier))}.jpg)"><b>도읍 · ${esc(t.name)}</b><small>${pal.tier}단</small>${pal.building ? pal.pips : ''}</div><div class="tvpbody">${pal.html}</div></div>`
+      + `<div class="tvbar"><div class="tvhave">${t.stock}</div><button class="tvgo" data-act="palace-tab" data-v="0">${ic(t.art, 'settle-hamlet')}마을 안 보기</button></div>${pal.seatBox}${stamp}</div>`
   }
-  const palBand = pal !== undefined ? `<button class="tvpband" data-act="palace-tab" data-v="1">${ic(t.art, 'treasure-silla-crown')}<b>궁전</b><span>큰 공사 · 큰 잔치</span><i>➜</i></button>` : ''
+  const palBand = pal !== undefined ? `<button class="tvpband" data-act="palace-tab" data-v="1">${ic(t.art, 'treasure-silla-crown')}<b>궁전</b><span>궁궐 · 조정 · 큰 공사 · 큰 잔치</span><i>➜</i></button>` : ''
   return `<div class="townv${t.fresh ? ' fresh' : ''}${pal !== undefined ? ' hascap' : ''}" role="dialog" aria-label="${esc(t.name)} 마을 안">`
     + `<div class="tvtop"><b>${esc(t.name)}</b>`
     + `<span class="tvst" data-tip="집 ${t.hh}채 · 집이 늘면 일손도 늡니다">${ic(t.art, 'settle-hamlet')}${t.hh}</span>`
@@ -382,7 +392,69 @@ export const TOWN_CSS = `
 .ap .tvpband span { font-size: 13px; color: #f3e6c8; margin-right: auto; }
 .ap .townv.pal { grid-template-areas: "top" "pal" "bar"; grid-template-rows: auto 1fr auto; }
 .ap .tvpal { grid-area: pal; min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: #1c1610; }
-.ap .tvhall { flex: none; height: min(26vw, 14dvh); display: flex; align-items: flex-end; padding: 8px 12px; background: linear-gradient(0deg, #1c1610cc, transparent 60%), url(__ART__town/palace-hall.jpg) center/cover, #2a1f14; color: #f3d48a; font-size: 20px; text-shadow: 0 2px 6px #000; }
+.ap .tvhall { position: relative; flex: none; height: min(26vw, 14dvh); display: flex; align-items: flex-end; gap: 8px; padding: 8px 12px; background: linear-gradient(0deg, #1c1610cc, transparent 60%), var(--hall, none) center/cover, url(__ART__town/palace-hall.jpg) center/cover, #2a1f14; color: #f3d48a; font-size: 20px; text-shadow: 0 2px 6px #000; }
+.ap .tvhall small { font-size: 13px; padding: 1px 8px; border-radius: 10px; border: 1px solid #c9a45a; background: #1c1610cc; color: #ffe2a0; margin-bottom: 3px; }
+/* 쌓는 중 — 머리 그림이 어두워지고 비계 줄이 선다 (정지 그림 위 겹침 · 필터 애니 없음) */
+.ap .tvhall.building::before { content: ''; position: absolute; inset: 0; background: linear-gradient(#0008, #000a), repeating-linear-gradient(135deg, #0000 0 14px, #c9a45a55 14px 17px), repeating-linear-gradient(45deg, #0000 0 14px, #c9a45a33 14px 16px); pointer-events: none; }
+.ap .tvhall.building > * { position: relative; }
+.ap .tvhall .palpips { margin-left: auto; margin-bottom: 4px; }
+/* 궁궐 띠 · 조정 세 칸 · 대신 뽑기 (CAPITAL §2) */
+.ap .palsub { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 4px 0 6px; }
+.ap .palsub button { display: flex; align-items: center; justify-content: center; gap: 5px; min-height: 40px; padding: 4px 6px; border-radius: 10px; border: 1px solid #5a4630; background: #1f1810; color: #c9b99a; font: inherit; font-size: 14px; cursor: pointer; }
+.ap .palsub button.on { border-color: #e8c15a; background: #3a2c12; color: #ffe08a; box-shadow: 0 0 0 1px #e8c15a55 inset; }
+.ap .palsub .wki { width: 22px; height: 22px; object-fit: contain; }
+.ap .palstrip { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; margin: 2px 0 8px; border-radius: 12px; border: 1px solid #c9a45a; background: #261d12; }
+.ap .palstrip.building { border-style: dashed; }
+.ap .palnow { display: flex; align-items: center; gap: 8px; }
+.ap .palnow .wki { width: 38px; height: 38px; object-fit: contain; flex: none; }
+.ap .palnow b { display: block; font-size: 17px; color: #ffe2a0; }
+.ap .palnow small { font-size: 12.5px; color: #c9b99a; }
+.ap .palgo { display: grid; grid-template-columns: auto 1fr; grid-template-areas: "pips btn" "open open"; align-items: center; gap: 4px 10px; }
+.ap .palgo .palpips { grid-area: pips; }
+.ap .palgo .btn, .ap .palgo .wbusy { grid-area: btn; min-height: 44px; display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2px 6px; font-size: 14px; padding: 4px 8px; }
+.ap .palgo .wbusy { color: #ffe2a0; font-size: 14px; }
+.ap .palgo .btn .cost { display: inline-flex; flex-wrap: wrap; gap: 2px; }
+.ap .palgo .palopen { grid-area: open; font-size: 12.5px; color: #9fd18b; }
+.ap .palking { display: flex; align-items: center; gap: 8px; color: #ffe2a0; font-size: 15px; }
+.ap .palking .cjface { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 2px solid #e8c15a; }
+.ap .palpips { display: inline-flex; gap: 5px; font-style: normal; }
+.ap .palpips u { width: 12px; height: 12px; border-radius: 50%; border: 1px solid #c9a45a99; background: #2a2016; text-decoration: none; }
+.ap .palpips u.on { background: #e8c15a; border-color: #ffe08a; box-shadow: 0 0 6px #e8c15a88; }
+.ap .palpips u.go { background: #6a5420; animation: wgpulse 1.2s ease-in-out infinite alternate; }
+.ap .cjgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0 0 6px; }
+.ap .cjseat { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 104px; padding: 6px 4px; border-radius: 12px; border: 1px dashed #5a4630; background: #1f1810; color: #f3e6c8; font: inherit; cursor: pointer; text-align: center; min-width: 0; -webkit-tap-highlight-color: transparent; }
+.ap .cjseat.has { border-style: solid; border-color: #c9a45a; background: #261d12; }
+.ap .cjseat.lock { opacity: .6; cursor: default; }
+.ap .cjseat.chosen, .ap .cjseat.open { border-style: solid; border-color: #e8c15a; background: #3a2c12; box-shadow: 0 0 0 1px #e8c15a66 inset, 0 0 10px #e8c15a44; }
+.ap .cjseat b { font-size: 14px; color: #ffe2a0; }
+.ap .cjseat small { font-size: 12px; color: #c9b99a; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ap .cjic { font-size: 30px; line-height: 1; }
+.ap .cjseat .cjface { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 2px solid #c9a45a; }
+.ap .cjfx { font-style: normal; font-size: 11.5px; color: #9fd18b; line-height: 1.2; }
+.ap .cjok { position: absolute; top: 4px; right: 6px; font-style: normal; font-weight: 700; color: #ffe08a; }
+.ap .cjauto { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 44px; margin: 0 0 6px; padding: 4px 10px; border-radius: 12px; border: 1px solid #5a4630; background: #1f1810; color: #f3e6c8; font: inherit; font-size: 14px; cursor: pointer; }
+.ap .cjauto.on { border-color: #e8c15a; background: #3a2c12; color: #ffe08a; box-shadow: 0 0 0 1px #e8c15a55 inset; }
+.ap .cjauto .cjok { position: static; }
+/* 앉힐 장수 고르기 — 떴다 사라지는 상자 (바깥을 누르면 닫힌다) */
+.ap .cjov { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 12px; background: #000b; animation: cjin .16s ease-out both; }
+@keyframes cjin { from { opacity: 0; } to { opacity: 1; } }
+.ap .cjbox { width: min(100%, 440px); max-height: 100%; display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 14px; border: 2px solid #c9a45a; background: #1c1610; box-shadow: 0 8px 30px #000c; animation: cjpop .22s cubic-bezier(.2, 1.4, .4, 1) both; }
+@keyframes cjpop { from { transform: scale(.88); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.ap .cjbox > .btn { justify-content: center; text-align: center; width: 100%; }
+.ap .cjhd { display: flex; align-items: center; gap: 8px; }
+.ap .cjhd b { font-size: 18px; color: #ffe2a0; }
+.ap .cjhd small { flex: 1; font-size: 12.5px; color: #c9b99a; }
+.ap .cjlist { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.ap .cjpk { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 120px; padding: 6px 3px; border-radius: 12px; border: 1px solid #5a4630; background: #1f1810; color: #f3e6c8; font: inherit; cursor: pointer; text-align: center; min-width: 0; }
+.ap .cjpk.on { border-color: #e8c15a; background: #3a2c12; box-shadow: 0 0 0 1px #e8c15a66 inset; }
+.ap .cjpk.off { opacity: .55; }
+.ap .cjpk .cjpf { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid #c9a45a; }
+.ap .cjpk b { font-size: 13px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ap .cjnum { font-size: 12px; color: #c9b99a; }
+.ap .cjnum s { text-decoration: none; font-size: 20px; font-weight: 700; color: #ffe08a; }
+.ap .cjwhy { font-style: normal; font-size: 11px; color: #e8a08a; line-height: 1.2; }
+.ap .cjtag { font-style: normal; font-size: 11px; color: #ffe08a; }
+@media (prefers-reduced-motion: reduce) { .ap .cjov, .ap .cjbox, .ap .palpips u.go { animation: none !important; } }
 .ap .tvpbody { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 12px 8px; }
 .ap .tvpbody h3 { margin: 4px 0; font-size: 15px; display: flex; align-items: center; gap: 6px; }
 .ap .tvpbody .wgrid { gap: 6px; margin: 2px 0 6px; }
