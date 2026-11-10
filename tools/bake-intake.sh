@@ -17,7 +17,7 @@ if [ "${1:-}" = register ]; then
   key=$2; map=${3:-}
   [ -s "$G/$key-act-key.png" ] || { echo "시트 없음 $key"; exit 1; }
   if [ -n "$map" ]; then node tools/strip-frames.mjs "$G/$key-act-key.png" 4 2 "$G/$key-act-strip.png" 160 0.02 "$map" | tail -1; fi
-  SPEC=$(specOf "$key") sh tools/sprite-kit/register-realm.sh "$key" "$key 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)"
+  SPEC=${SPEC:-$(specOf "$key")} sh tools/sprite-kit/register-realm.sh "$key" "$key 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)"
   exit 0
 fi
 dry=${1:-}
