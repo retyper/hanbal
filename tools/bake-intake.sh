@@ -87,7 +87,7 @@ done
 # ② Veo
 for f in $veo; do
   J=$(basename "$f" .mp4); J=${J#veo_}
-  ( cd "$L" && { node $Q claim "$J" >/dev/null 2>&1 || true; } && node $Q submitted "$J" --chat "https://gemini.google.com/app/manual-hyung" >/dev/null && mkdir -p outputs/veo && mv "$f" "outputs/veo/$J.mp4" \
+  ( cd "$L" && { node $Q claim "$J" --account manual-hyung >/dev/null 2>&1 || true; } && node $Q submitted "$J" --chat "https://gemini.google.com/app/manual-hyung" >/dev/null && mkdir -p outputs/veo && mv "$f" "outputs/veo/$J.mp4" \
     && node $Q downloaded "$J" --file "outputs/veo/$J.mp4" | grep -m1 '"status"' ) || { echo "원장 실패 $J"; continue; }
   py -3 -X utf8 tools/veo/motion.py "$L/outputs/veo/$J.mp4" 2>&1 | tail -1
   set -- $(cd "$L" && node -e "const j=JSON.parse(require('fs').readFileSync('outputs/veo-production-queue.json','utf8')).jobs.find(x=>x.id==='$J');console.log(j.heroId,j.tier)")

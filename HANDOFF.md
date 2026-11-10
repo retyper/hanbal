@@ -157,4 +157,5 @@ Steam은 `docs/realm/STEAM-RELEASE.md`의 조사/체크리스트까지다. 가�
 - **11-10 Flow 다섯째 (digimon-sin · u/5):** 한라 1차(-b) 「Google 정책을 위반할 수 있습니다」 거절(환불) → held · 다시 안 냄. Gemini 가비 거절과 같은 결 — 드러난 그림은 15세 판 뒤에.
 - **11-10 Flow 여섯째 (digimon-sin):** 허황옥 1차 Omni 10초 — 화면 꽉 · 얼굴 그대로 · 「좋음」 → l-L3-heo-hwangok.2.mp4 (판정 기다림). 정책 거절은 환불돼 같은 계정에서 한 편 더 됐다.
 - **11-10 형 판정 곰 v2(손으로 구움):** 너무 빵 터짐 · 얼굴 못생겨짐 · 곰머리 또 어깨 → held. **남은 Veo 문안 38개에 얼굴·그림체 고정**(tools/veo/face-lock.mjs · 원본 문안은 두고 `-f.txt`) · 곰은 잔잔한 동작으로 `t1-gom-v3-20261110`. 꾸러미 다시 만듦.
+- **11-10 16시 곰 v3(형 손 · 얼굴·그림체 고정 문안):** 곰머리가 안 튀어나옴 · 크게 웃던 입이 점점 다물어지는 미소로 · 그래도 첫 장면부터 원본보다 크게 잡혔다(1.3배 지시가 덜 먹음) → awaken-loop/w-82-ungcheon-gom.mp4 (형 판정 기다림). **Jay u/4 이틀 잠김 — 11-12 13:54** (원장 cooldown). bake-intake 의 claim 은 이제 `--account manual-hyung`(u/4 잠김에 안 걸리게).
 - **11-10 형: 당궁(w-51) 1차 각성 무기 없이·더 섹시하게 다시 · 2차는 더 과하게 섹시하게 다시 · 영상 둘 다 다시.** 꾸러미에 카드 둘(1차 다시 → 진각성 다시 순서). Veo: t1-dangung 은 held(받은 영상은 원장 outputs/veo 에만 · public 에서 뺌) · t2-dangung 은 sourceRepairRequired. **새 그림이 들어오면 그 그림대로 문안을 새로 써서 t1/t2 새 job**(옛 문안은 활·화살을 적는다).
