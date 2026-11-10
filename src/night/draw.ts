@@ -100,10 +100,16 @@ export interface NightView {
   /** 화면 흔들림 — 활터 카메라와 같은 규칙 (render/camera.ts updateCamera: 진폭 P.hit.shakeAmp · 감쇠 · 컷오프) */
   shakeAmp: number
   shakeAge: number
+  /** 불빛의 따뜻한 색 — 어둠처럼 낮은 해상도로 그려 더하기로 한 번 얹는다 */
+  glow: HTMLCanvasElement | null
+  /** 하늘(별·달·능선)은 화면에 붙어 안 바뀐다 — 한 번 구워 둔다 (크기·시드가 바뀔 때만 다시) */
+  sky: { key: string; c: HTMLCanvasElement } | null
+  /** 가벼운 그림 — 폰이 버거우면 돌림(night-main)이 켠다: 어둠·불빛 층을 더 낮게 (형 11-10: "아직도 엄청 버벅") */
+  low: boolean
 }
 
 export function createView(cam: Camera): NightView {
-  return { cam, dark: null, pops: [], flashAt: -1e9, rings: [], fx: createFx(), shakeAmp: 0, shakeAge: 0 }
+  return { cam, dark: null, pops: [], flashAt: -1e9, rings: [], fx: createFx(), shakeAmp: 0, shakeAge: 0, glow: null, sky: null, low: false }
 }
 
 /** 활터 카메라의 흔들림 배수 (render/camera.ts VIEW.foeShakeMul · headShakeMul · shakeFreq — 거기는 밖으로 안 낸다) */
@@ -149,6 +155,22 @@ const X = (cam: Camera, x: number): number => worldToScreenX(cam, x)
 const Y = (cam: Camera, y: number): number => worldToScreenY(cam, y)
 
 // ───────────────────────── 하늘·배경 ─────────────────────────
+
+function drawSkyCached(ctx: CanvasRenderingContext2D, v: NightView, seed: number): void {
+  const cam = v.cam
+  const key = `${cam.w}x${cam.h}@${cam.dpr}:${seed}`
+  if (v.sky === null || v.sky.key !== key) {
+    const c = v.sky?.c ?? document.createElement('canvas')
+    c.width = Math.max(1, Math.round(cam.w * cam.dpr))
+    c.height = Math.max(1, Math.round(cam.h * cam.dpr))
+    const sc = c.getContext('2d', { alpha: false })
+    if (sc === null) { drawSky(ctx, cam, seed); return }
+    sc.setTransform(cam.dpr, 0, 0, cam.dpr, 0, 0)
+    drawSky(sc, cam, seed)
+    v.sky = { key, c }
+  }
+  ctx.drawImage(v.sky.c, 0, 0, cam.w, cam.h)
+}
 
 function drawSky(ctx: CanvasRenderingContext2D, cam: Camera, seed: number): void {
   const grad = ctx.createLinearGradient(0, 0, 0, cam.h)
@@ -584,7 +606,7 @@ function drawFlying(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void 
 function drawDarkness(ctx: CanvasRenderingContext2D, v: NightView, n: Night): void {
   const cam = v.cam
   // 어둠은 부드러운 그라디언트뿐 — 낮은 해상도로 그려 늘린다 (형 11-10: 폰에서 구출이 엄청 느려 활을 못 쏜다 · 화면 전체 네 번 칠하던 것)
-  const q = Math.min(cam.dpr, P.night.darkScale)
+  const q = Math.min(cam.dpr, P.night.darkScale * (v.low ? P.night.lowDarkMul : 1))
   const bw = Math.max(1, Math.round(cam.w * q))
   const bh = Math.max(1, Math.round(cam.h * q))
   if (v.dark === null) v.dark = document.createElement('canvas')
@@ -623,21 +645,30 @@ function drawDarkness(ctx: CanvasRenderingContext2D, v: NightView, n: Night): vo
     dc.fill()
   }
   ctx.drawImage(d, 0, 0, cam.w, cam.h)
-  // 불빛의 따뜻한 색 — 더하기로 얹는다
-  ctx.globalCompositeOperation = 'lighter'
+  // 불빛의 따뜻한 색 — 낮은 해상도 판에 그려 더하기로 한 번 얹는다 (화면 해상도로 불마다 섞던 것)
+  if (v.glow === null) v.glow = document.createElement('canvas')
+  const gc = v.glow
+  if (gc.width !== bw) gc.width = bw
+  if (gc.height !== bh) gc.height = bh
+  const g2 = gc.getContext('2d')
+  if (g2 === null) return
+  g2.setTransform(q, 0, 0, q, 0, 0)
+  g2.globalCompositeOperation = 'source-over'
+  g2.clearRect(0, 0, cam.w, cam.h)
+  g2.globalCompositeOperation = 'lighter'
   for (const l of n.scene.lights) {
     if (!l.lit || l.kind === 'candle') continue
     const r = lightRadius(l) * cam.scale * 0.7
     const x = X(cam, l.x)
     const y = Y(cam, l.y)
-    const gr = ctx.createRadialGradient(x, y, 0, x, y, r)
+    const gr = g2.createRadialGradient(x, y, 0, x, y, r)
     gr.addColorStop(0, `rgba(255,140,50,${0.22 * flicker(l, n.tick)})`)
     gr.addColorStop(1, 'rgba(255,140,50,0)')
-    ctx.fillStyle = gr
-    ctx.beginPath()
-    ctx.arc(x, y, r, 0, Math.PI * 2)
-    ctx.fill()
+    g2.fillStyle = gr
+    g2.fillRect(x - r, y - r, r * 2, r * 2)
   }
+  ctx.globalCompositeOperation = 'lighter'
+  ctx.drawImage(gc, 0, 0, cam.w, cam.h)
   ctx.globalCompositeOperation = 'source-over'
 }
 
@@ -1101,7 +1132,7 @@ export function drawNight(ctx: CanvasRenderingContext2D, v: NightView, n: Night,
   frameCamera(cam, n)
   const sc = n.scene
   const g = sc.ground
-  drawSky(ctx, cam, n.seed)
+  drawSkyCached(ctx, v, n.seed)
   for (const d of sc.decor) drawDecor(ctx, cam, d, g)
   drawGroundAndRoof(ctx, cam, g)
   const rise = chiefRise(n)

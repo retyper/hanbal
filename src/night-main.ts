@@ -488,7 +488,8 @@ function frame(now: number): void {
   if (last !== 0 && now - last < 1000 / P.night.maxFps - 1) return
   const realDt = last === 0 ? 0 : (now - last) / 1000
   last = now
-  resizeCamera(cam, canvas, P.night.dprCap)
+  watchLoad(realDt)
+  resizeCamera(cam, canvas, view.low ? P.night.lowDprCap : P.night.dprCap)
   const n = night
   if (n !== null) {
     const step = 1 / P.sim.hz
@@ -535,6 +536,24 @@ function frame(now: number): void {
     raf = 0
   }
 }
+
+/**
+ * 폰이 버거우면 가벼운 그림으로 (형 11-10: "구출 암살 활쏘기 아직도 엄청 버벅 · 그럴 만한 게 없는데") — 프레임 간격 60개의 가운데값이
+ * lowFrameMs 를 넘으면 한 번 내린다 (DPR 1 · 어둠·불빛 층 더 낮게). 칠십팔국이 저사양·보통으로 돌고 있으면 처음부터 가볍게.
+ */
+const gaps: number[] = []
+function watchLoad(dt: number): void {
+  if (view.low || dt <= 0 || dt > 0.5 || night === null) return
+  gaps.push(dt * 1000)
+  if (gaps.length < 60) return
+  const mid = [...gaps].sort((a, b) => a - b)[30]!
+  gaps.length = 0
+  if (mid > P.night.lowFrameMs) view.low = true
+}
+try {
+  const ap = window.parent !== window ? window.parent.document.querySelector('.ap') : null
+  if (ap !== null && (ap.classList.contains('q-low') || ap.classList.contains('q-mid'))) view.low = true
+} catch { /* 다른 곳에서 띄웠다 */ }
 
 function wake(): void {
   if (raf === 0 && !document.hidden) {
