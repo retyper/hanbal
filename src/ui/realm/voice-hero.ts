@@ -142,7 +142,7 @@ export const HERO_VOICE: Readonly<Record<string, HeroVoice>> = {
     obey: ['맡겨 두시옵소서. 바람은 제 편이옵니다.', '물길은 제가 열겠사옵니다.', '걱정 붙들어 매시옵소서.'],
     auto: ['제 삿대 맛을 보여 드리겠사옵니다!', '노를 저어라! 꾸물대지 마라!', '갈대숲에 배를 숨겨라!', '<laugh> 그것 보시옵소서. 제 말이 맞았사옵니다.', '물때를 잘못 읽었사옵니다. 다음엔 놓치지 않겠사옵니다.'],
     art: ['ambush', '갈대숲의 배들아, 나와라! 뱃전을 들이받아라!'],
-    recorded: false,
+    recorded: true, // 11-10 밤 젊게 바꿔 다시 녹음 · AI 스튜디오 Callirrhoe 13줄 (옛 녹음 assets_src/realm/retired/voice/hero)
   },
   // 장수 소금 · 34세 · 11-10 형 「할머니 말고 유니크하고 참신한 섹시함」으로 바꿈: 동해 소금길을 쥔 서늘한 「소금의 여왕」, 깐깐하고 공정 ("값은 값대로")
   'dongokjeo-ruler': {
@@ -152,7 +152,7 @@ export const HERO_VOICE: Readonly<Record<string, HeroVoice>> = {
     obey: ['값은 값대로 받아 오겠사옵니다.', '손해 볼 일은 없사옵니다.', '셈은 이미 끝났사옵니다.'],
     auto: ['이 싸움, 남는 장사로 만들겠사옵니다!', '물러나는 척해라! 끌어들여라!', '서두르지 마라! 값은 저들이 치른다!', '값은 값대로 받아 냈사옵니다.', '밑진 장사였사옵니다. 되갚겠사옵니다.'],
     art: ['feint', '물러나라! 미끼를 물면 그때 값을 받는다!'],
-    recorded: false,
+    recorded: true, // 11-10 밤 젊게 바꿔 다시 녹음 · AI 스튜디오 Despina 13줄 (옛 녹음 assets_src/realm/retired/voice/hero)
   },
   // 원산 지기 달래 · 28세 · 산성을 지켜 온 듬직하고 충직한 문지기 · 초상: 입을 다문 채 엷게 웃는 믿음직한 얼굴
   'mh-mahan-2': {
