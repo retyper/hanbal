@@ -50,21 +50,26 @@ const REDO2 = [
   ['w-79-yangmaek-solmae', '(late twenties)', ' Draw her hands and her bow correctly: five natural fingers on each hand, and one single bow with ONE straight string tied to BOTH tips, held in her hand (not drawn, not aimed).'],
   ['w-96-haengin-neoul', '(late twenties)', ' Draw her bow correctly: one single bow with ONE straight string tied to BOTH tips, held in her hand (not drawn, not aimed), no extra or tangled strings.'],
   ['w-104-buyeo-darae', '(26)', ' She is very busty in the attached image, so here she is just as busty: a naturally very large, full, round bust with a natural shape and soft weight. Draw her bow correctly: one single bow with ONE straight string tied to BOTH tips, held in her hand (not drawn, not aimed).'],
+  // 11-10 형: "1차 각성 무기 없이 · 더 섹시하게 · 그에 따라 2차 각성도 더 과도하게 섹시하게" (지금 2차는 활시위 자세 — 진각성 금지 자세)
+  ['w-51-haseulla-dangung', '(late twenties)', ' She is the leopard-hunter archer of Haseulla: keep her long thick braid wrapped with leopard fur and her crimson and leopard-fur colors. NO weapon at all: no bow, no arrows, no quiver, no blade; both hands are free. Make her as alluring and glamorous as the rating allows: a bold, confident, seductive pose (one hand running up through her braid behind her head, hips cocked to the side, body turned to show her curves), a teasing sultry smile and half-lidded eyes looking straight at the viewer, a very revealing crimson-and-leopard-fur battle outfit with a deep plunging neckline, bare shoulders, bare toned midriff, a very high leg slit showing her whole thigh, a leopard-fur mantle slipping off her shoulders, gold and jade jewelry, red silk ribbons swirling.'],
 ]
 // 1차 몸매 그대로 (형 11-10: "1차에서 거유였으면 2차에서도 거유로")
 const BODY_KEEP = ' Keep her exact body type and bust size from the attached image (if she is very busty there, she is just as busty here).'
 for (const [id, age, extra] of REDO2) {
   const ref = `public/realm/awaken-hd/${id}.jpg`
   if (W2 === '' || !existsSync(ref)) continue
-  add('gpt', ++n, `${id} · 진각성 다시`, [ref, `public/realm/awaken2-hd/${id}.jpg`], W2.replace(/\(\d+\)/, age) + extra + BODY_KEEP + STYLE_F + OPAQUE15, `gpt_aw2-${id}.png`, id === 'w-104-buyeo-darae' ? '1차 다시 굽기를 먼저 했으면 새 1차를 붙이세요 · 둘째는 지금 진각성(비교용)' : '첫 그림(1차 각성)만 붙이세요 · 둘째는 지금 진각성(잘못된 것 · 비교용)')
+  add('gpt', ++n, `${id} · 진각성 다시`, [ref, `public/realm/awaken2-hd/${id}.jpg`], W2.replace(/\(\d+\)/, age) + extra + BODY_KEEP + STYLE_F + OPAQUE15, `gpt_aw2-${id}.png`, ['w-104-buyeo-darae', 'w-51-haseulla-dangung'].includes(id) ? '1차 다시 굽기를 먼저 했으면 새 1차를 붙이세요 · 둘째는 지금 진각성(비교용)' : '첫 그림(1차 각성)만 붙이세요 · 둘째는 지금 진각성(잘못된 것 · 비교용)')
 }
 // ①-2 다시 굽기 (형이 짚은 것) — 1차 각성은 gpt_aw1-<id>.png 로 받아 install-awaken.sh 1 (지금 그림을 덮어쓴다)
 const REDO1 = [
   // 11-10 형: "가슴 모양이 이상해서 아예 그냥 거유로 각성 이미지 다시 만들어야 할 듯"
   ['w-104-buyeo-darae', ' Her figure: a naturally very large, full, round bust with a natural shape and soft weight (not stiff, not oddly shaped), clearly visible under the outfit.'],
+  // 11-10 형: "1차 각성 원본 무기 없이 고쳐야 함 · 영상도 다시 · 더 섹시하게" (명세에 없는 사람 — 다래의 1차 틀로)
+  ['w-51-haseulla-dangung', ' Override for this character: she holds NO weapon at all (no bow, no arrows, no quiver, no blade anywhere in the image); both hands are free and empty. Pose: a bold, seductive, confident pose instead of a weapon pose (one hand lifting her long leopard-fur-wrapped braid, the other on her hip, hips cocked, body turned to show her curves), a teasing sultry smile and half-lidded eyes looking straight at the viewer. Make her outfit sexier than the portrait: crimson and leopard-fur, a deep plunging neckline with a full, large bust and deep cleavage, bare shoulders, bare toned midriff, a high leg slit, a leopard-fur mantle slipping off one shoulder.', '(late twenties)'],
 ]
-for (const [id, extra] of REDO1) {
-  const x = spec.find((y) => y.tier === 1 && y.id === id)
+const T1 = spec.find((y) => y.tier === 1 && y.id === 'w-104-buyeo-darae')
+for (const [id, extra, age] of REDO1) {
+  const x = spec.find((y) => y.tier === 1 && y.id === id) ?? (T1 !== undefined && age !== undefined ? { ref: `public/realm/bust-hd/${id}.jpg`, prompt: T1.prompt.replace(/\(\d+\)/, age).replace(', and keep her signature weapon and items from the portrait', '').replace(' with her weapon', '') } : undefined)
   if (x === undefined || !existsSync(x.ref) || !existsSync(`public/realm/awaken-hd/${id}.jpg`)) continue
   add('gpt', ++n, `${id} · 1차 다시`, [x.ref, `public/realm/awaken-hd/${id}.jpg`], x.prompt + extra + STYLE_F + OPAQUE15, `gpt_aw1-${id}.png`, '첫 그림(초상)만 붙이세요 · 둘째는 지금 1차 각성(비교용)')
 }
