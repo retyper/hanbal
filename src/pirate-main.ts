@@ -10,9 +10,10 @@ import { startGfxSafe } from './ui/gfxsafe.ts'
 // 갤럭시 크롬의 그러데이션 깨짐 — 그림판을 만들기 전에 켠다 (contest-main 과 같다)
 startGfxSafe()
 import { isSettled } from './sim/world.ts'
-import { createInput } from './input/pointer.ts'
+import { createNightInput } from './night/input.ts'
+import { drawPull } from './night/draw.ts'
 import { setAlwaysPreview } from './render/stickman.ts'
-import { createRenderer, getCamera, getHitStopMs, setSceneHooks } from './render/scene.ts'
+import { createRenderer, getHitStopMs, setSceneHooks } from './render/scene.ts'
 import type { HudState } from './render/hud.ts'
 import { createSfx, playUi, pumpSfx, unlockSfx, updateSfx } from './audio/sfx.ts'
 import { tierBow, tierOf } from './night/sim.ts'
@@ -47,7 +48,9 @@ const opts = {
 const RESULT = 'hanbal.pirate.result'
 
 const renderer = createRenderer(canvas)
-const input = createInput(canvas, getCamera(renderer))
+// 밤 판과 같은 당겨 쏘기 — 아무 데나 누르고 뒤로 끌어 반대로 겨눈다 (형 11-11: 암살 때와 정반대라 짜증났음)
+const input = createNightInput(canvas)
+const ctx2 = canvas.getContext('2d')!
 const sfx = createSfx()
 const hud: HudState = { training: 0, canLevelUp: false, muted: false, silent: false, toast: '', arrow: '', stars: -1, endReason: '', arrowRule: false, time: 0, bestTime: 0, record: false, bare: true }
 
@@ -277,6 +280,7 @@ function frame(now: number): void {
     if (!frozen) acc += realDt < maxFrame ? realDt : maxFrame
     let steps = 0
     while (acc >= w.dt && steps < P.sim.maxCatchUpSteps) {
+      input.syncAim(w.archer.x, w.archer.y)
       stepPirate(run, input.frame)
       input.endStep()
       acc -= w.dt
@@ -295,6 +299,7 @@ function frame(now: number): void {
   }
   try {
     renderer.draw(w, live ? acc / w.dt : 0, realDt, hud)
+    if (live) drawPull(ctx2, input.pull) // 당김 고리·호 (renderer 가 dpr 변환을 걸어 둔 채라 CSS px 로 그린다)
   } finally {
     w.events.length = 0
   }

@@ -11,6 +11,7 @@
 import { P } from '../tune/params.ts'
 import { armArrow, armBow, cancelDraw, createWorld, reserveTargets, spawnTarget, step } from '../sim/world.ts'
 import type { ArrowKindId, BowMods, InputFrame, StageDef, World } from '../sim/types.ts'
+import { drawTimeFor } from '../night/sim.ts'
 import { archerStr, bakeWaves, palisadeLives, WAVE_COUNT, type Mode, type Spawn, type Wave } from './waves.ts'
 
 export type Role = 'none' | 'anchor' | 'sword' | 'shield' | 'captain' | 'archer' | 'barrel'
@@ -222,7 +223,7 @@ export function pickBoon(run: PirateRun, id: PickId): void {
 }
 
 /** 판의 한 고정 스텝 — 활터 step 하나와 이 판의 규칙 */
-export function stepPirate(run: PirateRun, input: InputFrame): void {
+export function stepPirate(run: PirateRun, input: InputFrame & { readonly cap?: number; readonly cancel?: boolean }): void {
   if (run.phase === 'end') return
   const w = run.w
   const R = P.pirate
@@ -278,6 +279,17 @@ export function stepPirate(run: PirateRun, input: InputFrame): void {
     }
   }
 
+  // 당겨 쏘기(night/input.ts · 형 11-11: 디펜스 때 쏘는 방식이 암살 때와 정반대라 짜증) — 끈 몫(cap)이 당김의 상한 · 고리 안에서 놓으면 그만둔다 (night/sim.ts shootStep 과 같은 셈)
+  {
+    const a = w.archer
+    if (input.cancel === true) cancelDraw(w)
+    const cap = input.cap
+    if (cap !== undefined && cap < 1 && (a.phase === 'drawing' || a.phase === 'full')) {
+      const lim = drawTimeFor(w, cap) - w.dt
+      if (a.phase === 'full') { a.phase = 'drawing'; a.holdTime = 0 }
+      if (a.drawTime > lim) a.drawTime = lim > 0 ? lim : 0
+    }
+  }
   const evStart = w.events.length
   step(w, input)
 

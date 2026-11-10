@@ -568,7 +568,8 @@ function nextStage(n: Night): void {
 }
 
 /** 당김이 `f`(만작 한계에 대한 몫)에 닿는 drawTime — bow.ts 의 당김 곡선(스무스스텝 → drawEase)을 거꾸로 푼다 */
-function drawTimeFor(w: World, f: number): number {
+/** 당김 몫 f 에 닿는 당김 시간 — 바다도적·산적 판도 같은 당겨 쏘기를 쓴다 (pirate/sim.ts) */
+export function drawTimeFor(w: World, f: number): number {
   const full = P.bow.drawTime * effectiveStats(w.stats).drawTimeMul * w.bow.drawTimeMul * flowDrawMul(w)
   const p = 1 - Math.pow(1 - clamp01(f), 1 / P.bow.drawEase)
   // 스무스스텝 p = 3t² − 2t³ 의 역 (0..1 에서 하나뿐인 근)

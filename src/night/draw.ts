@@ -1035,7 +1035,8 @@ function drawExposed(ctx: CanvasRenderingContext2D, cam: Camera, n: Night, now: 
  * 당겨 쏘기의 손잡이 (night/input.ts) — 누른 자리의 고리 · 끝까지의 테 · 끈 줄 · 손가락.
  * 고리 안이면 회색으로 "그만" — 놓으면 쏘지 않는다. 끝까지 끌면 테가 금빛으로 찬다.
  */
-function drawPull(ctx: CanvasRenderingContext2D, p: Pull): void {
+/** 당겨 쏘기의 고리·호 — 밤 판과 바다도적·산적 판이 같이 쓴다 (pirate-main.ts) */
+export function drawPull(ctx: CanvasRenderingContext2D, p: Pull): void {
   if (!p.active) return
   const dead = P.night.pullDead
   const max = p.max
