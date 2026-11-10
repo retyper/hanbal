@@ -182,7 +182,7 @@ for (const [file, keys] of STRIPS) {
     const man = h.sex === 'man'
     const w = h.weapon
     let p = `IMAGE 1 is the walking sprite sheet of my character, ${man ? 'the man of IMAGE 2 (his portrait)' : 'the woman of IMAGE 2 (her portrait)'}. Make a NEW image with EXACTLY the same wide 16:9 4x2 layout, cell size, character scale (the WHOLE body from head to feet visible in every cell, same size as in IMAGE 1), foot line and EXACTLY the same person and outfit as IMAGE 1, strict side view facing RIGHT in every frame, every figure and the whole ${w} fully inside its cell. ${CLAUSE[w]} Exactly ONE ${w} in every frame. 8 frames in order: ${KIT_ACT[w]}6 hit recoil, torso jerked backward, head thrown back, pained face, still facing right, 7 falling backward off the feet, 8 lying on the back on the ground with the ${w} beside. The weapon never points backward. ${KIT_TAIL}`
-    if (man) p = p.replace(/\b(of|beside|behind) her\b/g, '$1 him').replace(/\bher\b/g, 'his').replace(/\bshe\b/g, 'he')
+    if (man) p = p.replace(/\b(of|beside|behind) her\b(?! (back|body|hip|cheek|fist|front|head))/g, '$1 him').replace(/\bher\b/g, 'his').replace(/\bshe\b/g, 'he')
     add('strip', ++n, `${key} · ${h.bust} · ${{ spear: '창 찌르기', dagger: '단검 찌르기', sword: '칼 베기', axe: '도끼 찍기' }[w]}`, [walk, bust], p, `act_${key}.png`, '그림 둘을 순서대로(걷기 시트가 IMAGE 1) · 이미지 만들기 · 16:9')
   }
 }
