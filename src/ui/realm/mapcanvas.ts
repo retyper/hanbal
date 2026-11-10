@@ -302,3 +302,8 @@ export function paintMapCanvas(wrap: HTMLElement): void {
     || cssW / d.cssW > ratio || d.cssW / cssW > ratio
   if (stale) drawMapCanvas(cv, data, v)
 }
+
+/** 붙어 있는 지도 캔버스를 모두 다시 그린다 — 늦게 구운 안쪽 띠(mapview.bandCanvas lazy)가 제자리에서 바뀐 뒤 */
+export function redrawMapCanvases(): void {
+  for (const cv of live) { if (cv.isConnected) repaint(cv); else live.delete(cv) }
+}

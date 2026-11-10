@@ -8,6 +8,9 @@
 import type { WorldGeo } from '../../realm/data/regions/geoframe.ts'
 import { worldGeoOf } from '../../realm/data/regions/index.ts'
 import type { RegionId, SeasonOfYear } from '../../realm/types.ts'
+import { tintPixels } from './seasontint.ts'
+
+export { tintPixels }
 
 /** 조각 눈금 — 1024px 이 경도 2.9°, 765px 이 위도 2.0° (판의 scale 배로 잇는다) */
 const PX0 = 1024 / 2.9
@@ -45,36 +48,6 @@ export function seasonTint(season: SeasonOfYear, r: number, g: number, b: number
   }
 }
 
-/**
- * seasonTint 를 그림 전체에 — 점마다 배열을 만들고 풀지 않고 제자리에서 센다 (같은 식 · 시험이 seasonTint 와 맞춰 본다).
- * 4배 느린 폰에서 세계판 한 장이 0.6초 긴 작업이었다 (카드 C · 형 11-11)
- */
-export function tintPixels(d: Uint8ClampedArray, season: SeasonOfYear): void {
-  const n = d.length
-  switch (season) {
-    case 'spring': return
-    case 'summer':
-      for (let i = 0; i < n; i += 4) { d[i] = d[i]! * 0.86; d[i + 1] = d[i + 1]! * 0.95; d[i + 2] = d[i + 2]! * 0.88 }
-      return
-    case 'autumn':
-      for (let i = 0; i < n; i += 4) {
-        const r = d[i]!, g = d[i + 1]!, b = d[i + 2]!
-        const leaf = g > r && g > b ? Math.min(1, (g - Math.max(r, b)) / 40) : 0
-        d[i] = r + (g - r) * 0.85 * leaf + 10
-        d[i + 1] = g * (1 - 0.12 * leaf)
-        d[i + 2] = b * (1 - 0.35 * leaf)
-      }
-      return
-    case 'winter':
-      for (let i = 0; i < n; i += 4) {
-        const r = d[i]!, g = d[i + 1]!, b = d[i + 2]!
-        const w = Math.min(255, (0.3 * r + 0.59 * g + 0.11 * b) * 1.12 + 26)
-        d[i] = w * 0.95 * 0.7 + r * 0.3 * 0.95
-        d[i + 1] = w * 0.98 * 0.7 + g * 0.3
-        d[i + 2] = Math.min(255, w * 1.04) * 0.7 + b * 0.3
-      }
-  }
-}
 
 async function load(src: string): Promise<HTMLImageElement> {
   const im = new Image()
@@ -155,8 +128,33 @@ function buildBase(art: string, region: RegionId, geo: WorldGeo): Promise<HTMLCa
   return made
 }
 
+/** 계절 바탕을 일꾼에게 맡긴다 — 메인 스레드는 비트맵을 넘기고 JPEG 를 받기만 한다. 못 하는 브라우저·실패면 null (옛 길로) */
+let tintJobs: Worker | null | undefined
+let tintJobId = 0
+const tintWaits = new Map<number, (b: Blob | null) => void>()
+async function buildInWorker(src: HTMLCanvasElement, season: SeasonOfYear): Promise<Blob | null> {
+  if (typeof Worker === 'undefined' || typeof OffscreenCanvas === 'undefined' || typeof createImageBitmap === 'undefined') return null
+  try {
+    if (tintJobs === undefined) {
+      tintJobs = new Worker(new URL('./tintworker.ts', import.meta.url), { type: 'module' })
+      tintJobs.onmessage = (e: MessageEvent<{ id: number; blob: Blob | null }>): void => { tintWaits.get(e.data.id)?.(e.data.blob); tintWaits.delete(e.data.id) }
+      tintJobs.onerror = (): void => { for (const w of tintWaits.values()) w(null); tintWaits.clear(); tintJobs = null }
+    }
+    const w = tintJobs
+    if (w === null) return null
+    const bmp = await createImageBitmap(src)
+    const id = ++tintJobId
+    const done = new Promise<Blob | null>((res) => { tintWaits.set(id, res) })
+    w.postMessage({ id, bmp, season, q: JPEG_Q }, [bmp])
+    return await done
+  } catch { return null }
+}
+const JPEG_Q = 0.86
+
 async function build(art: string, season: SeasonOfYear, region: RegionId, geo: WorldGeo): Promise<string> {
   const src = await buildBase(art, region, geo)
+  const viaWorker = await buildInWorker(src, season)
+  if (viaWorker !== null) return URL.createObjectURL(viaWorker)
   const c = document.createElement('canvas')
   c.width = src.width
   c.height = src.height

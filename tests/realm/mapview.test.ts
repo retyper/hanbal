@@ -146,3 +146,16 @@ describe('지도 겉모습', () => {
     assert.deepEqual(reversed.filter((x) => !x.startsWith('y22 ')), [])
   })
 })
+
+describe('지도 다시 그리기 — 같은 판이면 같은 글 (카드 C2 · 띠 굽기를 미뤄도 글은 같다)', () => {
+  it('같은 판을 두 번 그리면 한 글자도 다르지 않다 · 주인이 바뀌면 달라진다', () => {
+    const r = startYeongnam(1, 'saro')
+    const a = mapHtml(r, 'saro', '/', [], '')
+    const b = mapHtml(r, 'saro', '/', [], '')
+    assert.equal(a, b)
+    const id = Object.keys(r.nodes)[0]!
+    const other = Object.keys(r.factions).find((f) => f !== r.nodes[id]!.owner)!
+    const r2 = { ...r, nodes: { ...r.nodes, [id]: { ...r.nodes[id]!, owner: other } } }
+    assert.notEqual(mapHtml(r2, 'saro', '/', [], ''), a)
+  })
+})

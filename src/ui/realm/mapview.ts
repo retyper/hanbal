@@ -32,7 +32,7 @@ import { marketOf } from '../../realm/merchant.ts'
 import { crownTargets } from './crowns.ts'
 import { wonderMark } from './wondermap.ts'
 import { leagueRopeSvg } from './league.ts'
-import { registerMapCanvas, type CloudSpec, type MapCanvasData, type RoadOp } from './mapcanvas.ts'
+import { redrawMapCanvases, registerMapCanvas, type CloudSpec, type MapCanvasData, type RoadOp } from './mapcanvas.ts'
 
 /** 미리 받아 둔 다음 계절 지도 그림 — 붙잡아 두어야 브라우저가 풀어 둔 그림을 버리지 않는다 */
 const warm = new Map<string, HTMLImageElement>()
@@ -1480,14 +1480,49 @@ function boxPass(src: Float32Array, dst: Float32Array, w: number, h: number, rr:
 }
 let bandCv: HTMLCanvasElement | null = null
 let bandOutFor: HTMLCanvasElement | null = null
-function bandCanvas(items: readonly BandItem[], W: number, H: number, blur: number): HTMLCanvasElement | null {
+let bandWant = ''
+let bandTimer = 0
+/**
+ * lazy — 지난번 띠가 있고 크기가 같으면 지금은 그것을 그대로 두고, 새 띠는 그린 뒤 한숨 돌려 구워 같은 그림판 위에 덮어 쓴다
+ * (다음 달 한 번에 0.3초(4배 느린 폰 · 세계판)가 같은 긴 작업 안에 얹혀 있었다 — 카드 C2). 처음·크기가 바뀔 때는 곧바로 구워 돌려준다
+ */
+function bandCanvas(items: readonly BandItem[], W: number, H: number, blur: number, lazy = false): HTMLCanvasElement | null {
   if (typeof document === 'undefined' || items.length === 0) return null
   const key = `${W}|${H}|${items.map((x) => `${x.col}${x.w}${x.a}${x.rim}${x.own}`).join('|')}`
-  if (key === bandKey) return bandCv
+  if (key === bandKey) { bandWant = ''; return bandCv }
+  const s = P.realm.mapBandBakeScale
+  const w = Math.max(8, Math.round(W * s))
+  const h = Math.max(8, Math.round(H * s))
+  if (lazy && bandCv !== null && bandCv.width === w && bandCv.height === h) {
+    if (bandWant === key) return bandCv // 이미 구우려 기다리는 중
+    bandWant = key
+    window.clearTimeout(bandTimer)
+    bandTimer = window.setTimeout(() => {
+      if (bandWant !== key || bandCv === null) return
+      const nv = bakeBand(items, W, H, blur, w, h)
+      if (nv === null || bandWant !== key || bandCv === null) return
+      const g = bandCv.getContext('2d')
+      if (g === null) return
+      g.clearRect(0, 0, w, h)
+      g.drawImage(nv, 0, 0)
+      bandKey = key
+      bandOut = null
+      bandWant = ''
+      redrawMapCanvases()
+    }, P.realm.mapBandLazyMs)
+    return bandCv
+  }
+  bandWant = ''
+  window.clearTimeout(bandTimer)
+  const cv = bakeBand(items, W, H, blur, w, h)
+  if (cv === null) return null
+  bandKey = key
+  bandCv = cv
+  return cv
+}
+function bakeBand(items: readonly BandItem[], W: number, H: number, blur: number, w: number, h: number): HTMLCanvasElement | null {
+  const s = P.realm.mapBandBakeScale
   try {
-    const s = P.realm.mapBandBakeScale
-    const w = Math.max(8, Math.round(W * s))
-    const h = Math.max(8, Math.round(H * s))
     const cv = document.createElement('canvas')
     cv.width = w
     cv.height = h
@@ -1519,8 +1554,6 @@ function bandCanvas(items: readonly BandItem[], W: number, H: number, blur: numb
       if (al > 0.001) { d[i * 4] = Math.round(c[i * 4]! / al); d[i * 4 + 1] = Math.round(c[i * 4 + 1]! / al); d[i * 4 + 2] = Math.round(c[i * 4 + 2]! / al) }
     }
     g.putImageData(img, 0, 0)
-    bandKey = key
-    bandCv = cv
     return cv
   } catch { return null }
 }
@@ -1658,7 +1691,7 @@ function provincesSvg(
   if (inkDim !== '') lines += `<path d="${inkDim}" stroke="#1a120a" stroke-width="${T.mapBorderInkPx}" ${NS} opacity=".1"/>`
   // 띠를 미리 구운 그림으로 — 흐림 거르개는 확대·축소 때마다 다시 그려 무거웠다 (형 10-29) · 구울 수 없는 곳(시험)만 옛 거르개
   if (cv) {
-    provCv = { key, fills: cvFills, band: bandCanvas(bake, W, H, 3 * k), rims: cvRims, towns: cvTowns,
+    provCv = { key, fills: cvFills, band: bandCanvas(bake, W, H, 3 * k, true), rims: cvRims, towns: cvTowns,
       inks: [...(ink !== '' ? [{ d: ink, a: 0.7 }] : []), ...(inkDim !== '' ? [{ d: inkDim, a: 0.1 }] : [])], gold }
     provKey = key
     provOut = ''
