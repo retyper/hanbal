@@ -43,6 +43,14 @@
 - 받기: 대화를 열고 `LOAD; await skit.grabVideo(<대화 id 앞 8자>)` → scratchpad veoget.sh 처럼 `~/Downloads/veo_*.mp4` 를 outputs 로 옮기고 downloaded · `tools/veo/motion.py` 로 얼음·튐 검사
 - 「동영상 만들기」가 흐리게 잠기면(aria-disabled) 한도 → 잡아 둔 일은 `veo-next.sh held` + 같은 문안으로 새 job · `queue.mjs cooldown`
 - **동영상 화면의 + 자리(658,352)를 누르면 템플릿 카드가 눌린다** → 다른 그림이 붙으면 보내지 말고 새 대화
+- Argon 은 보낸 뒤 대화 주소가 1~4분 늦게 뜬다 — **다시 보내지 말 것** (겹쳐 나간다 · 11-10 가비)
+
+## Veo 둘째 길 — Google Flow (형 계정 roqkfeke12 · 크레딧 · Gemini 한도와 따로) · 11-10 첫 시험
+- 프로젝트: https://flow.google.com/project/252c3f46-4e13-4c10-a4ba-cef09167cfa6 · 오른쪽 에이전트 채팅에 시킨다
+- 에이전트 설정(입력칸 조절 아이콘): 동영상 9:16 · x1 · 「생성 전에 확인: 항상」 (크레딧을 보고 승인). **Veo 3.1 은 8초까지** → 10초 문안은 **Omni 1.2 Flash** (한 편 30 크레딧 · 720×1280 · 24fps · 워터마크 안 보임)
+- 그림 붙이기: + → 「미디어 업로드」는 파일 창이 뜬다 → 먼저 JS 로 `HTMLInputElement.prototype.click` 을 가로채 file 칸을 화면에 붙이고(aria-label `flowfile`) file_upload → 처음 한 번 「이 이미지를 사용할 권리」 동의(형이 함) → 「프롬프트에 추가」
+- 문안: 내 칸 `skit-text` 로 파일을 올려 `[contenteditable=true]` 에 insertText (앞에 "Make ONE image-to-video clip … Omni 1.2 Flash, 10 s, 9:16, 1 output … use this prompt exactly") → 보내기 → 크레딧 승인 → 몇 분
+- 받기: 결과 칸을 열고 오른쪽 위 다운로드 → 720p 원본 → `~/Downloads/<제목>_<8자>.mp4` · 원장은 `--account flow-roqkfeke12` 로 claim (u/4 쿨다운에 안 걸린다) · submitted 의 주소는 Gemini 꼴만 받아 `https://gemini.google.com/app/flow-<결과 id 앞 8자>`
 
 ## 챗지피티 (사람 그림 · 무료 계정만 · roqkfeke12·Jay 금지)
 
