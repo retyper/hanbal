@@ -154,4 +154,5 @@ Steam은 `docs/realm/STEAM-RELEASE.md`의 조사/체크리스트까지다. 가�
 - **11-10 Flow 둘째:** 누리 1차를 Veo 3.1 Fast 8초로 — 정사각 그림을 9:16 가운데에 두고 위아래 검은 띠 · Veo 워터마크 · 얼굴이 바뀜 → held · `t1-guga-nuri-v1-20261108b` 로 다시. 이 판에 **Flow 크레딧 소진** 알림 — 갱신 뒤 Omni 1.2 Flash 로만.
 - **11-10 Flow 셋째 (retyper92 · u/1):** 누리 1차 Omni 1.2 Flash 10초 다시 — 화면 꽉 · 얼굴 그대로 · 「좋음」 → awaken-loop/w-55-guga-nuri.mp4 (판정 기다림). 둘째 편 구름은 「사용량 한도에 도달」 → `t1-gureum-v1-20261108b`. 계정마다 한 편쯤.
 - **11-10 Flow 넷째 (hepastosian · u/2):** 구름 1차 Omni 10초 — 화면 꽉 · 얼굴 그대로 · 「좋음」 → awaken-loop/w-49-goryong-gureum.mp4 (판정 기다림). 둘째 편 한라는 한도 → `t1-halla-v1-20261108b`.
+- **11-10 Flow 다섯째 (digimon-sin · u/5):** 한라 1차(-b) 「Google 정책을 위반할 수 있습니다」 거절(환불) → held · 다시 안 냄. Gemini 가비 거절과 같은 결 — 드러난 그림은 15세 판 뒤에.
 - **11-10 형: 당궁(w-51) 1차 각성 무기 없이·더 섹시하게 다시 · 2차는 더 과하게 섹시하게 다시 · 영상 둘 다 다시.** 꾸러미에 카드 둘(1차 다시 → 진각성 다시 순서). Veo: t1-dangung 은 held(받은 영상은 원장 outputs/veo 에만 · public 에서 뺌) · t2-dangung 은 sourceRepairRequired. **새 그림이 들어오면 그 그림대로 문안을 새로 써서 t1/t2 새 job**(옛 문안은 활·화살을 적는다).
