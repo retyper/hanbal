@@ -32,6 +32,8 @@ export interface MapZoom {
 
 /** 끈 뒤 이만큼 안의 click 만 끌기의 끝으로 본다 (ms) — 화면의 손짓이라 params 가 아니라 여기 */
 const DRAG_HOLD_MS = 500
+/** 손가락 화면(폰) — 화면 밖 둘레를 좁게 둔다 */
+const TOUCH = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches
 /** 휠이 이만큼 쉬면 늘린 그림을 진짜 배율로 굳힌다 (ms) */
 const COMMIT_MS = 220
 /** ＋/－ 단추의 부드러운 늘림 (ms) — 한 번에 툭 바뀌던 것을 GPU 늘림으로 잇는다 (형 10-26: "확대 축소할 땐 너무 버벅거리지 않게 자연스럽게") */
@@ -122,8 +124,9 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     const mh = m.offsetHeight
     if (mw <= 0 || mh <= 0) return
     const [ox, oy] = off()
-    const px = (wrap.clientWidth * P.realm.mapCullPad) / mw
-    const py = (wrap.clientHeight * P.realm.mapCullPad) / mh
+    const pad = TOUCH ? P.realm.mapCullPadTouch : P.realm.mapCullPad
+    const px = (wrap.clientWidth * pad) / mw
+    const py = (wrap.clientHeight * pad) / mh
     const x0 = (wrap.scrollLeft - ox) / mw - px
     const y0 = (wrap.scrollTop - oy) / mh - py
     const x1 = x0 + wrap.clientWidth / mw + 2 * px

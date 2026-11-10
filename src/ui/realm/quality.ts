@@ -382,6 +382,13 @@ export function startQuality(root: HTMLElement, toast: (html: string) => void): 
     if (performance.now() - lastStep >= P.realm.gfxStepGapS * 1000) { checkBattery(); later(probe) }
   })
   for (const ev of ['pointerdown', 'pointermove', 'keydown', 'wheel']) window.addEventListener(ev, wake, { passive: true, capture: true })
+  // 지도를 미는·늘리는 동안에도 잰다 — 가만히 있는 지도는 매끄러워 늘 고사양에 머물렀고, 밝힌 땅이 넓어지면 밀 때만 버벅이며 고을이 통째로 빠졌다 (형 11-10)
+  root.addEventListener('scroll', (ev) => {
+    const t = ev.target as HTMLElement | null
+    if (t === null || !t.classList?.contains('mapwrap')) return
+    if (performance.now() - lastStep < P.realm.gfxStepGapS * 1000) return
+    probe()
+  }, { passive: true, capture: true })
   wake()
 }
 
