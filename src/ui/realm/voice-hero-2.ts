@@ -280,7 +280,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['길을 앞서 열겠사옵니다.', '따라오소서.', '다녀오겠사옵니다.'],
     auto: ['길은 제가 아옵니다!', '산길로 돌아라! 소리 내지 마라!', '내 뒤만 따라와라!', '길이 맞았사옵니다.', '길이 막혔사옵니다. 돌아가겠사옵니다.'],
     art: ['ambush', '산길로 돌아라! 적의 등 뒤를 친다!'],
-    recorded: false,
+    recorded: true, // 11-11 Daro 13줄
     male: true,
   },
   // 궁수 미르 · 23세 · 졸본 옛 도읍을 지키는 밝고 날랜 여궁수 · 맑고 청량한 젊은 Laomedeia
