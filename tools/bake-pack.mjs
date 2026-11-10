@@ -162,8 +162,7 @@ const CLAUSE = {
 }
 const STRIPS = [
   // 11-10 형이 구운 열하나 중 아홉은 넣음 · 물새는 찌르기 칸이 또 빈 주먹 · 지타는 칸이 어긋나 작은 사람이 옆 칸에 끼었다 → 다시
-  ['realm-women-1108', ['mulsae']],
-  ['realm-men-1108', ['jita']],
+  // 11-10 저녁 물새·지타는 Claude 가 제미나이 u/0 로 다시 구워 넣음 (지타는 한 번 고쳐 달라 하고 2번 칸은 1번으로) — 다음 사람을 여기에
 ]
 n = 0
 for (const [file, keys] of STRIPS) {
