@@ -87,6 +87,8 @@ export interface TownViewIn {
   readonly stock: string
   /** 지난 달 완공 — 「완공!」 도장 (없으면 null) */
   readonly stamp: { readonly icon: string; readonly name: string } | null
+  /** 도읍(궁전) — 있으면 위 띠 밑에 「궁전」 띠가 서고 · on 이면 판 자리에 큰 공사·큰 잔치(html)가 선다 */
+  readonly palace?: { readonly on: boolean; readonly html: string }
 }
 /** 앞뒤 — 발(아랫단)이 아래일수록 앞에 (터·사람 모두 · 형 11-08: "사람은 무조건 땅보다 위에") */
 const zOf = (y: number): number => 10 + Math.round(y * 1000)
@@ -298,12 +300,21 @@ export function townViewHtml(t: TownViewIn): string {
   const stamp = t.stamp !== null
     ? `<div class="tvdone" data-act="town-stamp-x"><i class="tvflash"></i><div class="tvstamp"><b>완공!</b><span>${ic(t.art, t.stamp.icon)}${esc(t.stamp.name)}</span></div></div>`
     : ''
-  return `<div class="townv${t.fresh ? ' fresh' : ''}" role="dialog" aria-label="${esc(t.name)} 마을 안">`
+  const pal = t.palace
+  if (pal?.on === true) {
+    return `<div class="townv pal" role="dialog" aria-label="${esc(t.name)} 도읍">`
+      + `<div class="tvtop"><b>궁전</b><button class="tvx" data-act="town-out" aria-label="나가기">✕</button></div>`
+      + `<div class="tvpal"><div class="tvhall"><b>도읍 · ${esc(t.name)}</b></div><div class="tvpbody">${pal.html}</div></div>`
+      + `<div class="tvbar"><div class="tvhave">${t.stock}</div><button class="tvgo" data-act="palace-tab" data-v="0">${ic(t.art, 'settle-hamlet')}마을 안 보기</button></div></div>`
+  }
+  const palBand = pal !== undefined ? `<button class="tvpband" data-act="palace-tab" data-v="1">${ic(t.art, 'treasure-silla-crown')}<b>궁전</b><span>큰 공사 · 큰 잔치</span><i>➜</i></button>` : ''
+  return `<div class="townv${t.fresh ? ' fresh' : ''}${pal !== undefined ? ' hascap' : ''}" role="dialog" aria-label="${esc(t.name)} 마을 안">`
     + `<div class="tvtop"><b>${esc(t.name)}</b>`
     + `<span class="tvst" data-tip="집 ${t.hh}채 · 집이 늘면 일손도 늡니다">${ic(t.art, 'settle-hamlet')}${t.hh}</span>`
     + `<span class="tvst" data-tip="일손 ${n} · 집 ${Math.round(P.realm.townHHPerWalker)}채에 하나씩 저절로 일합니다">${ic(t.art, 'unit-porters')}${n}</span>`
     + `<span class="tvst" data-tip="터 ${built}/${t.lots} · 터마다 일터 하나를 짓고 단을 올립니다 · 같은 일터를 여러 터에 지으면 몫이 더해집니다">${ic(t.art, 'settle-clearing')}${built}/${t.lots}</span>`
     + `<button class="tvx" data-act="town-out" aria-label="마을에서 나가기">✕</button></div>`
+    + palBand
     + `<div class="tvstage"><div class="tvboard"><img class="tvbg" src="${t.art}${t.bg}" alt="">${lotsHtml}${folk}</div>${stamp}</div>`
     + `<div class="tvdock">${dock}</div><div class="tvbar"><div class="tvhave">${t.stock}</div>${bar}</div></div>`
 }
@@ -364,6 +375,24 @@ export const TOWN_CSS = `
 .ap .tvst { display: inline-flex; align-items: center; gap: 3px; font-size: 14px; font-weight: 700; white-space: nowrap; }
 .ap .tvst img { width: 22px; height: 22px; object-fit: contain; }
 .ap .tvx { width: 38px; height: 38px; flex: none; border-radius: 50%; border: 1px solid #c9a45a; background: #1c1610e0; color: #f3e6c8; font-size: 18px; cursor: pointer; }
+/* 궁전 띠 · 궁전 판 (도읍 · 큰 공사 넷 + 큰 잔치 · 한 화면 · 구르지 않는다) */
+.ap .townv.hascap { grid-template-areas: "top" "band" "stage" "dock" "bar"; grid-template-rows: auto auto auto 1fr auto; }
+.ap .tvpband { grid-area: band; display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 4px 12px; border: 0; border-bottom: 1px solid #c9a45a; background: url(__ART__town/palace-hall.jpg) center/cover, #2a1f14; color: #ffe2a0; font: inherit; font-size: 16px; cursor: pointer; text-shadow: 0 1px 3px #000; -webkit-tap-highlight-color: transparent; }
+.ap .tvpband img { width: 30px; height: 30px; object-fit: contain; }
+.ap .tvpband span { font-size: 13px; color: #f3e6c8; margin-right: auto; }
+.ap .townv.pal { grid-template-areas: "top" "pal" "bar"; grid-template-rows: auto 1fr auto; }
+.ap .tvpal { grid-area: pal; min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: #1c1610; }
+.ap .tvhall { flex: none; height: min(26vw, 14dvh); display: flex; align-items: flex-end; padding: 8px 12px; background: linear-gradient(0deg, #1c1610cc, transparent 60%), url(__ART__town/palace-hall.jpg) center/cover, #2a1f14; color: #f3d48a; font-size: 20px; text-shadow: 0 2px 6px #000; }
+.ap .tvpbody { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 12px 8px; }
+.ap .tvpbody h3 { margin: 4px 0; font-size: 15px; display: flex; align-items: center; gap: 6px; }
+.ap .tvpbody .wgrid { gap: 6px; margin: 2px 0 6px; }
+.ap .tvpbody .wcard { padding: 5px 4px; gap: 2px; }
+.ap .tvpbody .wcard .wpic, .ap .tvpbody .wcard .wimg { width: 44px; height: 44px; }
+.ap .tvpbody .wcard .wname { font-size: 13px; }
+.ap .tvpbody .wcard .wgfx { font-size: 11.5px; }
+.ap .tvpbody .wcard .btn { min-height: 36px; }
+.ap .tvpbody .wfeast { margin: 2px 0 4px; padding: 6px 8px; gap: 6px; }
+.ap .tvpbody .wfeast .btn { min-height: 44px; }
 /* ② 판 — 바탕 그림 한 장(1376×768)을 폭에 꽉 차게 · 양옆 풀밭(터는 가로 14~86%)을 잘라 크게 · 세로가 모자라면 위아래를 24% 까지 잘라 맞추고, 세로가 남으면(가로 화면 기둥) 위아래에 띠를 둔다 */
 .ap .tvstage { grid-area: stage; position: relative; overflow: hidden; background: #2c3a1e; min-height: 0; container-type: size; height: min(calc(100vw * 0.7344), 46dvh); }
 .ap .tvboard { isolation: isolate; --bw: min(100cqw / 0.76, 100cqh * 1376 / 768 / 0.76); position: absolute; left: 50%; top: 50%; width: var(--bw); aspect-ratio: 1376 / 768; margin-left: calc(var(--bw) / -2); margin-top: calc(var(--bw) * 768 / 1376 / -2); }

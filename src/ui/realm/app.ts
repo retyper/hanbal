@@ -875,6 +875,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 마을 안 (TOWN.md) — 열린 고을 · 처음 그리면 밝아지며 */
   let townIn: string | null = null
   let townFresh = false
+  /** 도읍(궁전) 판을 펼쳤나 — 큰 공사·큰 잔치가 선다 */
+  let palaceOn = false
   /** 마을 안에서 고른 터와(빈 터면) 지을 일터 — 화면 고르기일 뿐 판은 「work」 명령으로만 바뀐다 (TOWN.md 11-08) */
   let townPick: { lot: number; what: WorkWhat | null } | null = null
   /** 「완공!」 도장을 찍은 보고 — `${고을}|${계절}` (한 번만) */
@@ -4974,7 +4976,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<div>${icon('good-hemp')}<b>${Math.floor(mine.reduce((s, n) => s + n.hh, 0))}</b><span>집</span></div>`
     h += `<div>${icon('good-rice')}<b>${Math.floor(st.grain)}</b><span>곡식</span></div>`
     h += `<div>${icon('treasure-iron-ingots')}<b>${Math.floor(st.iron)}</b><span>철</span></div></div>`
-    h += greatHtml(r) // 곳간을 부을 곳 — 큰 공사·큰 잔치 (위원회 11-08 ⑦)
+    if (greatHtml(r) !== '') h += `<button class="palrow" data-act="palace-go">${icon('treasure-silla-crown', 'wki')}<span>큰 공사·큰 잔치는 도읍에서</span><b>도읍 열기</b></button>` // 곳간을 부을 곳은 도읍 판으로 옮겼다 (형 11-10)
     const caps2 = Object.values(r.heroes).filter((x) => x.status === 'captive' && x.captor === me())
     if (caps2.length > 0) {
       h += `<h4>사로잡은 장수</h4><div class="caps">`
@@ -6895,7 +6897,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const stamp = doneLine !== false && doneLine !== undefined && !townStamped.has(stampKey) ? { icon: WORKS[doneLine.what].icon, name: `${WORKS[doneLine.what].name}${doneLine.lv !== undefined ? ` ${doneLine.lv}단` : ''}` } : null
     const have = left()
     const stock = GOODS.map((g) => `<span class="${have[g] < 1 ? 'no' : ''}" data-tip="${esc(GOOD_NAME[g])} ${Math.floor(have[g])}">${icon(GOOD_ICON[g])}${Math.floor(have[g])}</span>`).join('')
-    const html = townViewHtml({ id: n.id, name: n.name, hh: n.hh, bg, art: ART, fresh: townFresh, slots, lots: cap, pick: townPick, stamp, stock })
+    // 도읍이면 궁전 띠 — 큰 공사·큰 잔치가 여기 산다 (형 11-10: 나라 탭에 묻혀 있는 줄도 몰랐다)
+    const greatH = r.factions[me()]?.capital === n.id ? greatHtml(r) : ''
+    const palace = greatH !== '' ? { on: palaceOn, html: greatH } : undefined
+    const html = townViewHtml({ id: n.id, name: n.name, hh: n.hh, bg, art: ART, fresh: townFresh, slots, lots: cap, pick: townPick, stamp, stock, ...(palace !== undefined ? { palace } : {}) })
     if (ov === null) {
       root.insertAdjacentHTML('beforeend', `<div class="townov" style="--tf:${P.realm.townFadeMs}ms;--bf:${P.realm.townBoardFrom}"></div>`)
       ov = root.querySelector<HTMLElement>('.townov')!
@@ -8739,6 +8744,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const dive = townCam(el, 'tvdive')
         window.setTimeout(() => {
           townIn = id
+          palaceOn = false
           townFresh = true
           townPick = null
           ring = ''
@@ -8790,6 +8796,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         // 짓는 터를 다시 누르면(톡톡) 일꾼들이 신이 난다 — 다시 그리지 않는다 (고리·칸은 그대로)
         if (townPick?.lot === i && lot?.classList.contains('going') && board !== null) { townCheer(board, lot); ding(snd('tap_drum'), 0.45, 1.1); buzz([8]); return }
         townPick = { lot: i, what: null }
+        break
+      }
+      case 'palace-tab': palaceOn = d['v'] === '1'; break
+      case 'palace-go': {
+        const cap = realm?.factions[me()]?.capital
+        if (cap === undefined || realm?.nodes[cap]?.owner !== me()) return
+        townIn = cap; palaceOn = true; townFresh = true; townPick = null; ring = ''
         break
       }
       case 'town-what': townPick = { lot: townPick?.lot ?? 0, what: d['what'] as WorkWhat }; break

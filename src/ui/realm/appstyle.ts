@@ -1029,6 +1029,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .wishp { margin-top: 6px; font-size: 13px; color: #ffe2a0; display: flex; align-items: center; gap: 4px; }
 .ap .wishc .wki, .ap h3 .wki { width: 26px; height: 26px; object-fit: contain; flex: none; }
 /* 곳간을 부을 곳 (wonders.ts · 위원회 11-08 ⑦) — 큰 공사 넷은 두 줄 격자 · 그림 위 비계 · 단 구슬 · 다 서면 금빛 테 · 큰 잔치는 갈래마다 그림과 % */
+.ap .palrow { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 48px; margin: 6px 0; padding: 6px 10px; border-radius: 12px; border: 1px solid #c9a45a; background: #261d12; color: #f3e6c8; font: inherit; font-size: 14px; cursor: pointer; }
+.ap .palrow .wki { width: 32px; height: 32px; object-fit: contain; flex: none; }
+.ap .palrow span { flex: 1; text-align: left; }
+.ap .palrow b { padding: 6px 10px; border-radius: 10px; background: #8d6626; color: #fff4dc; }
 .ap .wgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 4px 0 10px; }
 .ap .wcard { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 6px; border-radius: 12px; border: 1px solid #5a4630; background: #1f1810; text-align: center; min-width: 0; }
 .ap .wcard.building { border-color: #c9a45a; background: #261d12; }
