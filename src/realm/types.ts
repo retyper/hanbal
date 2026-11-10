@@ -1257,7 +1257,7 @@ export type ReportLine =
   | { readonly kind: 'place'; readonly faction: string; readonly n: number; readonly to: readonly string[] }
   | { readonly kind: 'call'; readonly faction: string; readonly node: string; readonly n: number; readonly grain: number }
   | { readonly kind: 'scale'; readonly faction: string; readonly good: Good; readonly n: number; readonly grain: number; readonly buy: boolean }
-  | { readonly kind: 'wish'; readonly faction: string; readonly reward: 'hero' | 'news' | 'famed'; readonly who: string }
+  | { readonly kind: 'wish'; readonly faction: string; readonly reward: 'hero' | 'news' | 'famed'; readonly who: string; /** 후반 큰 주문의 덤 — 곡식으로 돌려받은 양 */ readonly back?: number }
   | { readonly kind: 'cohabit'; readonly faction: string; readonly hero: string; readonly with: string; readonly to: string }
   | { readonly kind: 'hunger'; readonly faction: string }
   | { readonly kind: 'envoy'; readonly from: string; readonly to: string; readonly ask: EnvoyAsk; readonly accepted: boolean; readonly why?: Why; readonly about?: string; readonly hero?: string; readonly node?: string }

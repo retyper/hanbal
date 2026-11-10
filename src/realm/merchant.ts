@@ -268,6 +268,10 @@ export function wishGrade(r: Realm, faction: string): 1 | 2 | 3 {
   const s = realmScale(r, faction)
   return s >= P.realm.wishRoyalAt ? 3 : s >= P.realm.wishBigAt ? 2 : 1
 }
+/** 왕의 주문 위로 나라가 더 크면 모을 양이 한 단(log2)마다 wishLateGrow 만큼 더 — 후반 곳간이 수십 배라 같은 배수면 한 번에 채워진다 */
+export function lateMul(scale: number): number {
+  return 1 + P.realm.wishLateGrow * Math.max(0, Math.log2(Math.max(1, scale) / Math.max(1, P.realm.wishRoyalAt)))
+}
 export const WISH_GRADE_NAME = ['', '작은 주문', '큰 주문', '왕의 주문'] as const
 
 /** 남은 장수 가운데 가장 이름난 이 — 다섯 재주의 합이 가장 큰 (같으면 id 순) */
@@ -304,7 +308,7 @@ function makeWish(r: Realm, faction: string): Wish | null {
   const k = (i: number): number => roll(r.seed, r.season, `mwish:${faction}:${i}`)
   const pick = goods.map((g, i) => ({ g, w: k(i) })).sort((a, b) => a.w - b.w).slice(0, Math.min(2, goods.length))
   const grade = wishGrade(r, faction)
-  const mul = grade === 3 ? R.wishRoyalMul : grade === 2 ? R.wishBigMul : 1
+  const mul = (grade === 3 ? R.wishRoyalMul : grade === 2 ? R.wishBigMul : 1) * lateMul(realmScale(r, faction))
   const want: Partial<Record<Good, number>> = {}
   for (const { g } of pick) {
     const byYield = R.wishSeasons * mul * (per[g] ?? 0)
@@ -345,19 +349,23 @@ export function applyWish(r: Realm, o: Extract<Order, { kind: 'wish' }>, lines: 
   const w = r.marketWish![o.faction]!
   const m = marketOf(r, o.faction)!
   const pay = wishPayout(r, o.faction, w)!
-  for (const [g, n] of Object.entries(w.goods) as Array<[Good, number]>) addGood(r, o.faction, g, -n)
+  let worth = 0
+  for (const [g, n] of Object.entries(w.goods) as Array<[Good, number]>) { addGood(r, o.faction, g, -n); worth += n * worthOf(g) }
+  // 큰 주문 이상은 곡식 덤 — 장수 한 명만으로는 후반에 갚음이 약했다
+  const back = (w.grade ?? 1) >= 2 ? Math.round(worth * P.realm.wishBack) : 0
+  if (back > 0) addGood(r, o.faction, 'grain', back)
   delete r.marketWish![o.faction]
   if (pay.kind === 'hero' || pay.kind === 'famed') {
     const who = HERO_POOL.find((h) => h.id === pay.id)!
     ;(r.poolUsed ??= []).push(who.id)
     // 상단이 소개한 이 — 값 없이 들일 수 있다 (상단이 선 고을에 · 보통 떠돌이처럼 머물다 떠난다)
     ;(r.wanderers ??= []).push({ hero: structuredClone(who), node: m.at, until: r.season + seasons(r, P.realm.wandererStay), price: 0 })
-    lines.push({ kind: 'wish', faction: o.faction, reward: pay.kind, who: who.id })
+    lines.push({ kind: 'wish', faction: o.faction, reward: pay.kind, who: who.id, ...(back > 0 ? { back } : {}) })
     // 왕의 주문 — 먼 나라 소문까지 함께
     const extra = w.grade === 3 ? unknownNations(r, o.faction)[0] : undefined
     if (extra !== undefined) { discover(r, o.faction, extra, 'market', lines); lines.push({ kind: 'wish', faction: o.faction, reward: 'news', who: extra }) }
     return
   }
   discover(r, o.faction, pay.id, 'market', lines)
-  lines.push({ kind: 'wish', faction: o.faction, reward: 'news', who: pay.id })
+  lines.push({ kind: 'wish', faction: o.faction, reward: 'news', who: pay.id, ...(back > 0 ? { back } : {}) })
 }
