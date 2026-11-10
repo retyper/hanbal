@@ -171,4 +171,4 @@ scratchpad `proc.sh <이름> walk 1,2,3,4,1,2,3,4` · `proc.sh <이름> act` →
 - 끝낸 것: 쇠비·아라·해비·말갈기·해달·송비·알영·소서노·혁거세·대소·온조·주몽·다물·송양·허황옥·감실 · 새로 구름(`goryong-ruler`)·이랑(`jomun-ruler`)
 - 혜미 띠의 자홍 번짐은 자홍 픽셀을 나무 갈색으로 바꿔 지움
 - 옛 띠는 `assets_src/realm/retired/gen-<이름>@20261108-*.png`
-- 남은 것: 말 탄 넷(비류·금하·거타·쇠보)
+- 말 탄 넷(비류·금하·거타·쇠보) ✔ 11-08 · 기준 IMAGE 1 은 `assets_src/realm/gemini/generals/mount-a.png`(4×3 이라 모델이 4×3 으로 돌려줄 때가 많다 → `ROWS=3 proc.sh` 후 `strip-frames … 1,2,4,…` 로 여덟 컷 골라 자름) · GEN_ANIM 에 `mount: true` 를 달면 말 걸음(gmt)

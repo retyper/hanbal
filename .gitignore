@@ -10,3 +10,16 @@ assets_src/
 public/bg/_src.png
 
 .claude/settings.local.json
+
+# 11-10 검토용 변형 영상·카톡 원본은 올리지 않는다 (형이 보는 곳에만 둠)
+public/realm/awaken-loop/*.x-*.mp4
+public/realm/KakaoTalk_*
+public/KakaoTalk_*
+du.exe.stackdump
+.claude/skills/quality-budget/
+.claude/skills/kitchen/
+.claude/skills/mobile-ui-rules/
+.claude/skills/review-lenses/
+.claude/skills/ai-art-kitchen/
+.claude/skills/sprite-sheet-qa/
+.claude/skills/claude-memory/
