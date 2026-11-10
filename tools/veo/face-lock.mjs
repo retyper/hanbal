@@ -13,7 +13,7 @@ const sp = `${L}/outputs/veo-production-state.json`
 const dry = process.argv.includes('--dry')
 
 export const FRAME_OLD = /Fill the 9:16 frame with an unbroken close portrait from ([^.]*?), face large\./
-export const lockText = (p) => `FACE AND STYLE LOCK (most important; it overrides anything above): ${p.sub} face stays exactly the face in the image for the whole take: the same eyes, eyelids, nose, lips, jaw, face shape and proportions. ${p.Sub} expression stays the expression in the image; at most the smile grows a little or ${p.sub2} gives one wink. Never a bigger laugh than in the image, never a wider-open mouth, never squeezed-shut eyes, never a grimace or exaggerated face. Keep the soft painterly illustration style and smooth, flawless airbrushed skin of the image: no photoreal skin texture, no pores, no freckles or blush patches that are not in the image, no added wrinkles or lines. Do not zoom in on the face; the face is never redrawn larger or sharper than in the image. Any animal head, pelt or ornament on the costume stays exactly where it is in the image and never slides or pops into view.`
+export const lockText = (p) => `FACE AND STYLE LOCK (most important; it overrides anything above): ${p.sub} face stays exactly the face in the image for the whole take: the same eyes, eyelids, nose, lips, jaw, face shape and proportions. ${p.Sub} expression stays true to the expression in the image: if ${p.sub2} is smiling or laughing broadly there, ${p.sub2} may keep laughing naturally and warmly the whole take, with the face still the same face; if not, at most the smile grows a little or ${p.sub2} gives one wink. Never a mocking, sneering or explosive cackle, never a grotesquely wide-open mouth, never squeezed-shut eyes, never a grimace or exaggerated, distorted face. Keep the soft painterly illustration style and smooth, flawless airbrushed skin of the image: no photoreal skin texture, no pores, no freckles or blush patches that are not in the image, no added wrinkles or lines. Do not zoom in on the face; the face is never redrawn larger or sharper than in the image. Any animal head, pelt or ornament on the costume stays exactly where it is in the image and never slides or pops into view.`
 
 export function lock(t) {
   const he = /\b(he|him|his)\b/.test(t.slice(0, 600)) && !/\b(she|her)\b/.test(t.slice(0, 600))
@@ -31,13 +31,15 @@ if (process.argv[1]?.endsWith('face-lock.mjs')) {
   let n = 0
   for (const j of jobs) {
     if (s.attempts.some((a) => a.jobId === j.id)) continue
-    if (/FACE AND STYLE LOCK/.test(readFileSync(j.promptPath, 'utf8'))) continue
-    const src = readFileSync(j.promptPath, 'utf8')
+    const base = j.promptPath.replace(/-f\.txt$/, '.txt')
+    if (!existsSync(base)) { console.log('원본 없음', j.id); continue }
+    const src = readFileSync(base, 'utf8')
+    if (/FACE AND STYLE LOCK/.test(src)) continue
     if (!FRAME_OLD.test(src)) { console.log('틀 문장 없음', j.id); continue }
-    const dst = j.promptPath.replace(/\.txt$/, '-f.txt')
+    const dst = base.replace(/\.txt$/, '-f.txt')
     const out = lock(src)
     if (!dry) {
-      if (!existsSync(dst)) writeFileSync(dst, out)
+      writeFileSync(dst, out)
       j.promptPath = dst
       j.promptSha256 = createHash('sha256').update(readFileSync(dst)).digest('hex')
     }
