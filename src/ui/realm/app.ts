@@ -85,6 +85,7 @@ import { UPDATE_CSS } from './update.ts'
 import { scrollInside } from './scroll.ts'
 import { retainMaxOf } from '../../realm/legacy.ts'
 import { morph } from './morph.ts'
+import { declutter } from './declutter.ts'
 import { rehearse, type BattleLine } from '../../realm/warroom.ts'
 import { BATTLE_CSS, battleCard } from './battlecard.ts'
 import { AP_CHIP, APPROACH_DOES, APPROACH_NAME, B0_KEY, HARD_LINE, WAR_CSS, b0On, openWar } from './battlefield.ts'
@@ -7074,7 +7075,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (mh !== lastMap || first) {
       // 줌 단계는 새 지도로 이어 간다 — 다시 깔 때마다 'mid' 에서 다시 재 경계 근처 이름표가 깜빡였다 (검토 11-04)
       const zl0 = wrap.querySelector<HTMLElement>('.map')?.dataset['zl']
-      wrap.innerHTML = mh
+      // 처음만 통째로 · 그 뒤(군대 고르기·풀기 따위)는 바뀐 곳만 — 통째로 갈면 그림·안개 판·SVG 가 새로 만들어지고 움직임이 처음부터 돌아 지도가 깜빡였다 (형 11-10: 유닛 선택 해제할 때도 깜빡)
+      if (first) wrap.innerHTML = mh
+      else morph(wrap, mh, true)
       if (zl0 !== undefined) { const m1 = wrap.querySelector<HTMLElement>('.map'); if (m1 !== null) m1.dataset['zl'] = zl0 }
       lastMap = mh
       // 다음 계절 바탕을 미리 — 계절이 넘어갈 때 새 그림을 그제야 받느라 깜빡였다 (형 10-23). 그린 뒤 한숨 돌리고
@@ -7099,6 +7102,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     lastRing = rh
     lastRingId = ring
     zoom.apply()
+    // 이름표 비키기를 다음 프레임으로 미루면 한 프레임은 겹친 채 보였다가 튄다 — 곧바로
+    { const m2 = wrap.querySelector<HTMLElement>('.map'); if (m2 !== null) declutter(m2) }
     if (first) {
       // 처음엔 우리 국읍이 가운데 오게
       const cap = realm.factions[me()]?.capital

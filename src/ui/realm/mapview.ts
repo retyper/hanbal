@@ -190,8 +190,8 @@ export const MAP_CSS = `
 @keyframes pbob { from { transform: translateY(0) rotate(-.6deg); } to { transform: translateY(-1.6%) rotate(.6deg); } }
 .map .clsh { position: absolute; inset: -12%; pointer-events: none; z-index: 0; opacity: .55;
   background: radial-gradient(ellipse 14% 9% at 20% 30%, #1a160e2e, #1a160e00), radial-gradient(ellipse 18% 11% at 62% 58%, #1a160e26, #1a160e00),
-    radial-gradient(ellipse 12% 8% at 85% 20%, #1a160e24, #1a160e00), radial-gradient(ellipse 16% 10% at 38% 85%, #1a160e22, #1a160e00);
-  animation: clsh 110s linear infinite alternate; }
+    radial-gradient(ellipse 12% 8% at 85% 20%, #1a160e24, #1a160e00), radial-gradient(ellipse 16% 10% at 38% 85%, #1a160e22, #1a160e00); }
+/* 구름 그림자는 멈춰 둔다 — 지도보다 큰 층(124%)이 늘 움직이면 15배까지 당긴 지도에서 폰 GPU 가 버거웠다 (형 11-10 · 메모리: 넓은 칸 transform 금지) */
 @keyframes clsh { from { transform: translate(-6%, -2%); } to { transform: translate(6%, 2%); } }
 /* 지난 계절 넘어간 고을 — 불과 연기 */
 .map .nd .burnfx { position: absolute; left: 22%; bottom: 18%; width: 62%; pointer-events: none; z-index: 2; transform-origin: 50% 100%; animation: bflick 1.2s ease-in-out infinite alternate; }
@@ -557,6 +557,8 @@ export const MAP_CSS = `
 /* 흐르는 점선(stroke-dashoffset)은 GPU 로 못 가는 유일한 지도 움직임 — 미는·늘리는 동안만 멈춘다. 이 둘만 고르는 좁은 선택자라
    손짓 시작·끝에 다시 셈할 칸이 몇 개뿐이다 (예전의 「.nd *」 는 2500칸 · 형 10-31 "확대 축소 버벅" · tools/realm-zoomperf.ts) */
 .mapwrap.panning .map svg .mvflow, .mapwrap.panning .map svg .mvglow { animation-play-state: paused; }
+/* 미는·늘리는 동안 지도의 다른 움직임도 멈춘다 — 잘린(clip) SVG 안의 투명도 움직임·안개 구름·포구 배는 매 프레임 다시 칠해 폰에서 밀기를 버벅이게 했다 (형 11-10 · 검토) */
+.mapwrap.panning .map :is(svg .mine-edge, svg .arw, svg .thrarrow, .fogc, .nd.k-port img.st) { animation-play-state: paused; }
 /* 멀리 볼 때도 흐름은 멈춘다 (점선은 그대로 보인다) — 점선 하나가 흐르는 것만으로 지도의 GPU 움직임 백여 개까지 매 프레임 메인 스레드에서
    다시 셈해, 폰 4배 느림에서 메인 스레드가 96% 바빴다 → 1% (형 10-31 "멀리 보면 버벅"). 가까이 당기면 다시 흐른다 */
 .map:not([data-zl="near"]) svg .mvflow { animation-play-state: paused; }
