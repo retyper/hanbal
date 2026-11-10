@@ -247,7 +247,7 @@ export const AWAKEN_LOOP_SQ: ReadonlySet<string> = new Set<string>() // 11-08 �
  */
 export const loopFile = (id: string): string => `awaken-loop/${id}${AWAKEN_LOOP_SQ.has(id) ? '.sq' : ''}.mp4`
 /** 1차 각성 영상의 판 수 (없으면 1) — 번갈아 돈다 */
-export const AWAKEN_TAKES: Readonly<Record<string, number>> = { 'l-L2-soseono': 2, 'l-L4-bari-gongju': 2, 'w-95-michuhol-haebi': 2 } // 바리·해비 .2 = 11-09 Veo (형: 둘 다 괜찮으니 둘 다 쓰자)
+export const AWAKEN_TAKES: Readonly<Record<string, number>> = { 'l-L2-soseono': 2, 'l-L4-bari-gongju': 2, 'w-95-michuhol-haebi': 2, 'l-L3-heo-hwangok': 2 } // 바리·해비 .2 = 11-09 Veo (형: 둘 다 괜찮으니 둘 다 쓰자) · 허황옥 .2 = 11-10 Flow Omni (형: 만든 김에 둘 다)
 /** 1차 각성 영상의 모든 판 — 첫 판이 기본 */
 export const loopTakes = (id: string): string[] => [loopFile(id), ...Array.from({ length: Math.max(0, (AWAKEN_TAKES[id] ?? 1) - 1) }, (_, i) => `awaken-loop/${id}.${i + 2}.mp4`)]
 
