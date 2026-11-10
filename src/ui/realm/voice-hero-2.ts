@@ -226,7 +226,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['말 위에서 해내겠사옵니다.', '바람처럼 다녀오겠사옵니다.', '맡겨 주소서!'],
     auto: ['말머리가 향하는 곳이 싸움터이옵니다!', '말을 몰아라! 앞서 달려라!', '짓밟고 지나가라!', '이겼사옵니다. 말에게 먹이를 주겠사옵니다.', '말이 지쳤사옵니다. 다시 달리겠사옵니다.'],
     art: ['vanguard', '말을 몰아라! 부여의 마가가 앞서 달린다!'],
-    recorded: false,
+    recorded: true, // 11-11 Brio 13줄
     male: true,
   },
   // 사냥꾼 다래 · 23세 · 숲에서 자란 밝고 날랜 부여 사냥꾼 · 맑고 시원한 Lora
@@ -237,7 +237,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['짐승 잡듯 해내겠사옵니다.', '사냥이라면 맡겨 주소서.', '곧 다녀오겠사옵니다.'],
     auto: ['사냥은 제가 맡겠사옵니다!', '쫓아라! 사슴 몰듯 몰아라!', '겨누어라! 놓치지 마라!', '잡았사옵니다! 큰 사냥이었사옵니다.', '놓쳤사옵니다. 다시 쫓겠사옵니다.'],
     art: ['snipe', '큰 짐승을 잡듯 쏜다! 적장을 겨누어라!'],
-    recorded: false,
+    recorded: true, // 11-11 Lora 13줄
   },
   // 대무신왕 · 19세 · 수수께끼를 받아치던 아이가 자라 직접 군사를 이끄는 슬기롭고 대담한 젊은 왕 · 맑고 젊은 Sadachbia
   'dm-daemusin': {
@@ -247,7 +247,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['길을 먼저 보고 하겠소.', '맡겨 주시오. 해내겠소.', '뜻을 받들겠소.'],
     auto: ['이 싸움은 내가 맡겠소!', '길을 먼저 보라! 그리고 나아간다!', '물러서지 마라! 고구려의 이름으로!', '이겼소. 길이 열렸소.', '졌소. 길을 다시 보겠소.'],
     art: ['sway', '칼을 거두어라! 길을 먼저 보고, 나와 함께 가자!'],
-    recorded: false,
+    recorded: true, // 11-11 Sadachbia 13줄
     male: true,
   },
   // 대소 · 일흔 넘음 · 아직도 고구려를 아래로 보는 오만하고 의심 많은 늙은 왕 · 위엄 있는 Charon
@@ -258,7 +258,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['내가 직접 해 주겠네.', '지켜보게. 부여의 왕이 어떤 것인지.', '그리하겠네.'],
     auto: ['이 싸움은 내가 맡겠네!', '부여의 군사들아! 앞으로!', '감히 누구 앞에서! 밀어라!', '당연하네. 내가 이겼네.', '이럴 리가 없네! 물러난다!'],
     art: ['vanguard', '길을 열어라! 늙었어도 부여의 왕이다, 내가 앞선다!'],
-    recorded: false,
+    recorded: true, // 11-11 Charon 13줄
     male: true,
   },
   // 괴유 · 30세 · 아홉 자 거인, 우직하고 두려움을 모른다 · 크고 우렁찬 Bodi
@@ -269,7 +269,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['베고 오겠사옵니다!', '머리를 가져오라 하시면 가져오겠사옵니다.', '맡겨 주소서!'],
     auto: ['제가 가겠사옵니다!', '두려워 마라! 내 뒤에 서라!', '베어라! 앞을 막으면 다 벤다!', '베었사옵니다!', '쓰러뜨리지 못했사옵니다. 다시 가겠사옵니다!'],
     art: ['vanguard', '환두대도가 간다! 길을 열어라!'],
-    recorded: false,
+    recorded: true, // 11-11 Bodi 13줄
     male: true,
   },
   // 마로 · 34세 · 말수 적고 길눈 밝은 산사람, 적곡에서 와 길잡이가 된다 · 투박하고 낮은 Daro
