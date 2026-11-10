@@ -364,6 +364,7 @@ function start(): void {
       : createNight({ seed: missionSeed, bowTier, guard: missionGuard, arrows: missionArrows, kind: missionKind })
   hud()
   acc = 0
+  wake()
 }
 
 ui.addEventListener('click', (ev) => {
@@ -483,9 +484,11 @@ function frame(now: number): void {
   raf = 0
   if (document.hidden) return
   raf = requestAnimationFrame(frame)
+  // 그리기 상한 — 90·120Hz 폰에서 두 배로 그리지 않는다. last 를 안 고치니 건너뛴 시간은 다음 dt 에 쌓인다 (결정론 그대로 · 형 11-10: 폰에서 구출이 엄청 느림)
+  if (last !== 0 && now - last < 1000 / P.night.maxFps - 1) return
   const realDt = last === 0 ? 0 : (now - last) / 1000
   last = now
-  resizeCamera(cam, canvas)
+  resizeCamera(cam, canvas, P.night.dprCap)
   const n = night
   if (n !== null) {
     const step = 1 / P.sim.hz
@@ -527,6 +530,9 @@ function frame(now: number): void {
     ctx.setTransform(cam.dpr, 0, 0, cam.dpr, 0, 0)
     ctx.fillStyle = '#04060b'
     ctx.fillRect(0, 0, cam.w, cam.h)
+    // 첫 화면 카드 뒤 — 한 번 칠하고 쉰다 (판이 서거나 화면이 바뀌면 wake)
+    cancelAnimationFrame(raf)
+    raf = 0
   }
 }
 
@@ -539,6 +545,7 @@ function wake(): void {
 document.addEventListener('visibilitychange', wake)
 addEventListener('resize', () => {
   layoutStage()
+  wake()
   if (night !== null && night.result === null) hud()
 })
 

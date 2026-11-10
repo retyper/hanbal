@@ -583,26 +583,30 @@ function drawFlying(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void 
 
 function drawDarkness(ctx: CanvasRenderingContext2D, v: NightView, n: Night): void {
   const cam = v.cam
-  const bw = Math.round(cam.w * cam.dpr)
-  const bh = Math.round(cam.h * cam.dpr)
+  // 어둠은 부드러운 그라디언트뿐 — 낮은 해상도로 그려 늘린다 (형 11-10: 폰에서 구출이 엄청 느려 활을 못 쏜다 · 화면 전체 네 번 칠하던 것)
+  const q = Math.min(cam.dpr, P.night.darkScale)
+  const bw = Math.max(1, Math.round(cam.w * q))
+  const bh = Math.max(1, Math.round(cam.h * q))
   if (v.dark === null) v.dark = document.createElement('canvas')
   const d = v.dark
   if (d.width !== bw) d.width = bw
   if (d.height !== bh) d.height = bh
   const dc = d.getContext('2d')
   if (dc === null) return
-  dc.setTransform(cam.dpr, 0, 0, cam.dpr, 0, 0)
-  dc.globalCompositeOperation = 'source-over'
-  dc.clearRect(0, 0, cam.w, cam.h)
+  dc.setTransform(q, 0, 0, q, 0, 0)
+  dc.globalCompositeOperation = 'copy'
   dc.fillStyle = 'rgba(3,5,10,0.88)'
   dc.fillRect(0, 0, cam.w, cam.h)
   // 지붕 위 자객 곁은 달빛 — 조금만 밝게 (자기 손은 보여야 한다)
   dc.globalCompositeOperation = 'destination-out'
-  const moon = dc.createRadialGradient(X(cam, 0), Y(cam, 1), 0, X(cam, 0), Y(cam, 1), 3.2 * cam.scale)
+  const mr = 3.2 * cam.scale
+  const mx = X(cam, 0)
+  const my = Y(cam, 1)
+  const moon = dc.createRadialGradient(mx, my, 0, mx, my, mr)
   moon.addColorStop(0, 'rgba(0,0,0,0.75)')
   moon.addColorStop(1, 'rgba(0,0,0,0)')
   dc.fillStyle = moon
-  dc.fillRect(0, 0, cam.w, cam.h)
+  dc.fillRect(mx - mr, my - mr, mr * 2, mr * 2)
   for (const l of n.scene.lights) {
     if (!l.lit) continue
     const r = lightRadius(l) * cam.scale
@@ -766,6 +770,47 @@ function drawGoal(ctx: CanvasRenderingContext2D, cam: Camera, n: Night): void {
   lines.forEach((l, i) => ctx.fillText(l, cam.w / 2, top + 4 + lh / 2 + i * lh))
 }
 
+/**
+ * 화살 눈금 — 한 번 구워 두고 수·붉음·DPR 이 바뀔 때만 다시 굽는다 (매 프레임 shadowBlur 그림 열몇 장이 폰 GPU 에서 가장 비쌌다 · 11-10).
+ * 빛 테두리는 굽는 때에만 한 번 (render 는 상태를 읽기만 한다 — 이 캐시는 그림일 뿐)
+ */
+let quiver: { key: string; c: HTMLCanvasElement } | null = null
+function drawQuiver(ctx: CanvasRenderingContext2D, cam: Camera, x0: number, count: number, low: boolean): void {
+  const glyph = 36
+  const step = 11
+  const pad = 6
+  // 가운데 위 발각 게이지(폭 min(220, 34%))에 닿지 않게 — 좁은 화면이면 눈금을 줄인다 (숫자는 그대로 다 보인다)
+  const room = cam.w / 2 - Math.min(110, cam.w * 0.17) - 10 - x0
+  count = Math.min(count, Math.floor(room / step))
+  if (count <= 0) return
+  const w = (count - 1) * step + pad * 2 + 4
+  const h = glyph + pad * 2
+  const key = `${count}:${low ? 1 : 0}:${cam.dpr}`
+  if (quiver === null || quiver.key !== key) {
+    const c = quiver?.c ?? document.createElement('canvas')
+    c.width = Math.ceil(w * cam.dpr)
+    c.height = Math.ceil(h * cam.dpr)
+    const q = c.getContext('2d')
+    if (q === null) return
+    q.setTransform(cam.dpr, 0, 0, cam.dpr, 0, 0)
+    q.clearRect(0, 0, w, h)
+    q.shadowColor = low ? COL.alarm : '#e8d6a8'
+    q.shadowBlur = 5
+    let art = true
+    for (let i = 0; i < count; i++) {
+      const cx = pad + 2 + i * step
+      if (!drawArrowArt(q, 'basic', cx, pad + glyph, cx, pad, 2)) {
+        art = false
+        q.fillStyle = low ? COL.alarm : '#e8d6a8'
+        q.fillRect(cx - 1, pad, 2, glyph)
+      }
+    }
+    // 화살 그림이 아직 안 왔으면 선으로 그려 두고 다음 프레임에 다시 굽는다
+    quiver = { key: art ? key : '', c }
+  }
+  ctx.drawImage(quiver.c, x0 - pad, 6 - pad, w, h)
+}
+
 /** 할 일 줄이 비켜 가는 양옆 폭 (CSS px) — 왼쪽 '그만'·'건너뛰기' 단추, 오른쪽 화살 눈금 */
 const GOAL_SIDE = 185
 
@@ -779,44 +824,36 @@ function drawHud(ctx: CanvasRenderingContext2D, v: NightView, n: Night, now: num
   ctx.fillStyle = COL.hud
   ctx.textAlign = 'left'
   const head = n.practice !== null ? `연습장 · ${n.scene.title}` : `${n.stage + 1} / 3 · ${n.scene.title}`
-  ctx.fillText(head, 14, 22)
-  // 경비 — 머리줄 바로 옆 (밑은 "그만" 단추 자리)
+  // 판 이름·경비는 오른쪽 위 — 왼쪽 위는 남은 화살 (형 11-10: "화살 개수는 왼쪽 상단에")
+  ctx.textAlign = 'right'
+  ctx.fillText(head, cam.w - 14, 22)
   const hw = ctx.measureText(head).width
   ctx.font = '700 12px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
   ctx.fillStyle = n.guard === 2 ? '#ff9a7a' : n.guard === 0 ? '#9fd08a' : COL.hudDim
-  ctx.fillText(`경비 ${GUARD_NAME[n.guard]}`, 14 + hw + 10, 22)
+  ctx.fillText(`경비 ${GUARD_NAME[n.guard]}`, cam.w - 14, 44)
+  void hw
   ctx.font = '600 15px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
   // 든 활 — 단계가 오르면 이름이 바뀐다 (형: "계단적 성장"). 왼쪽 아래는 "그만" 단추 자리라 오른쪽 화살 밑에
   ctx.fillStyle = n.bowTier > 0 ? '#ffd27a' : COL.hudDim
   ctx.font = '700 13px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
   ctx.textAlign = 'right'
-  ctx.fillText(`활 · ${BOW_NAME[n.bowTier] ?? BOW_NAME[0]}`, cam.w - 14, 98)
+  ctx.fillText(`활 · ${BOW_NAME[n.bowTier] ?? BOW_NAME[0]}`, cam.w - 14, 64)
   ctx.textAlign = 'left'
   ctx.font = '600 15px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
   ctx.fillStyle = COL.hud
-  // 남은 화살 — 활터 HUD 처럼 큰 숫자 + 그림 화살 눈금 (형: "화살 발수도 제대로 안보이는데"). 마지막 한 발은 붉다
-  ctx.textAlign = 'right'
+  // 남은 화살 — 왼쪽 위 큰 숫자 + 그림 화살 눈금 (형: "화살 발수도 제대로 안보이는데" · 11-10 "왼쪽 상단에"). 마지막 한 발은 붉다
+  ctx.textAlign = 'left'
   const inf = n.practice?.infinite === true
   const low = !inf && w.arrowsLeft <= 1
   ctx.font = '800 30px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
   ctx.fillStyle = low ? COL.alarm : '#f3e6c8'
-  ctx.fillText(inf ? '∞' : String(w.arrowsLeft), cam.w - 38, 26)
+  const num = inf ? '∞' : String(w.arrowsLeft)
+  ctx.fillText(num, 14, 24)
+  const nw = ctx.measureText(num).width
   ctx.font = '700 14px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
   ctx.fillStyle = COL.hudDim
-  ctx.fillText('발', cam.w - 14, 32)
-  if (!inf) {
-    const glyph = 36
-    for (let i = 0; i < Math.min(w.arrowsLeft, 12); i++) {
-      const cx = cam.w - 22 - i * 13
-      ctx.shadowColor = low ? COL.alarm : '#e8d6a8'
-      ctx.shadowBlur = 6
-      if (!drawArrowArt(ctx, 'basic', cx, 62 + glyph / 2, cx, 62 - glyph / 2, 2)) {
-        ctx.fillStyle = low ? COL.alarm : '#e8d6a8'
-        ctx.fillRect(cx - 1, 62 - glyph / 2, 2, glyph)
-      }
-      ctx.shadowBlur = 0
-    }
-  }
+  ctx.fillText('발', 14 + nw + 3, 30)
+  if (!inf) drawQuiver(ctx, cam, 14 + nw + 24, Math.min(w.arrowsLeft, 20), low)
   ctx.font = '600 15px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
   ctx.fillStyle = COL.hud
   // 발각 게이지 — 가운데 위

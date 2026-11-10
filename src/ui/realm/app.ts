@@ -4243,6 +4243,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     ov.innerHTML = `<iframe src="${src}" title="${title}"></iframe><button class="btn" data-close>닫기</button>`
     root.appendChild(ov)
     music.refresh()
+    // 밑에서 돌던 각성 영상도 쉰다 — 틀이 어느 길로 닫히든(remove) 다시 튼다
+    const held = [...root.querySelectorAll('video')].filter((v) => !v.paused)
+    for (const v of held) v.pause()
+    const back = new MutationObserver(() => {
+      if (ov.isConnected) return
+      back.disconnect()
+      for (const v of held) if (v.isConnected) void v.play().catch(() => undefined)
+    })
+    back.observe(root, { childList: true })
     const close = (): void => { ov.remove(); music.refresh() }
     ov.querySelector('[data-close]')!.addEventListener('click', close)
     // "돌아가기"는 틀을 about:blank 로 보낸다 — 그때만 닫는다 (결과판의 '연습장'처럼 틀 안에서 옮겨 가는 건 그대로 둔다)

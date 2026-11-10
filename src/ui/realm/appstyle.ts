@@ -529,6 +529,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .sortiebar .go { flex: 1; font-size: 15px; } .ap .sortiebar .btn { margin: 0; }
 .ap .nightov { position: absolute; inset: 0; z-index: 40; background: #000; }
 .ap .nightov iframe { width: 100%; height: 100%; border: 0; display: block; }
+/* 밤 판이 떠 있는 동안 밑의 칠십팔국은 쉰다 — 안 보이는 맥박·불꽃 애니가 폰 GPU 를 같이 먹었다 (형 11-10: 구출이 엄청 느림) */
+/* 바탕 층(지도·위 띠·옆 단추)만 — 틀 위에 뜨는 알림·상자(z 40 넘음)는 그대로 둔다 */
+.ap:has(> .nightov) > :is(.top, .mapwrap, .seasonp, .legend, .zbtns, .layers, .next, .todo, .selbar, .roadkey, .tutband, .goalb) { visibility: hidden; }
+.ap:has(> .nightov) > :is(.top, .mapwrap, .legend, .todo, .selbar, .tutband, .goalb) * { animation-play-state: paused !important; }
 .ap .nightov [data-close] { position: absolute; right: 10px; top: 10px; z-index: 1; font-size: 13px; padding: 4px 10px; }
 /* 눕힌 밤 판의 위는 화면 오른쪽 — 판의 오른쪽 위 = 화면 오른쪽 아래. 단추를 아래 오른쪽 모서리를 축으로 90° 돌려 그 자리에 */
 .ap .nightov.rot [data-close] { top: auto; bottom: 10px; transform-origin: 100% 100%; transform: rotate(90deg) translateY(100%); }

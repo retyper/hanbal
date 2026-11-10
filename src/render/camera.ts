@@ -204,8 +204,8 @@ export function createCamera(): Camera {
   return c
 }
 
-export function resizeCamera(cam: Camera, canvas: HTMLCanvasElement): void {
-  const dpr = clamp(globalThis.devicePixelRatio || 1, 1, VIEW.dprCap)
+export function resizeCamera(cam: Camera, canvas: HTMLCanvasElement, dprCap: number = VIEW.dprCap): void {
+  const dpr = clamp(globalThis.devicePixelRatio || 1, 1, dprCap)
   // 레이아웃 전이면 client 크기가 0이다. 0으로 나누면 이후 전 좌표가 NaN이 된다.
   const cw = canvas.clientWidth > 0 ? canvas.clientWidth : canvas.width
   const ch = canvas.clientHeight > 0 ? canvas.clientHeight : canvas.height
