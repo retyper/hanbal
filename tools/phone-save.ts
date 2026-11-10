@@ -8,6 +8,7 @@ import { writeFileSync } from 'node:fs'
 import { startRegion } from '../src/realm/data/regions/index.ts'
 import { HERO_POOL } from '../src/realm/data/heroes-pool.ts'
 import { advance } from '../src/realm/season.ts'
+import { festCard } from '../src/realm/festival.ts'
 import type { Card, ReportLine } from '../src/realm/types.ts'
 
 const out = process.argv[2]!
@@ -141,6 +142,24 @@ if (kind === 'palace') {
   if (mode === 'done') (report.lines as ReportLine[]).push({ kind: 'palace', faction: next.player, ev: 'done', tier: 3, stage: 0 })
   console.log('palace', mode, cap, pick.map((h) => h.id).join(','))
 }
-const quiet = kind === 'captive' || kind === 'woo' || kind === 'woo0' || kind === 'pincer' || (kind === 'town' && process.env.TOWN !== 'done') || (kind === 'great' && process.env.GREAT !== 'done') || (kind === 'palace' && process.env.PALACE !== 'done') // 보고 없이 판 위에서 연다
+// 제천 대회 (festival.ts · CAPITAL §1-3) — 궁궐 3단 + 천군 앉음 · FEST=card 카드 화면(보고에서) · now 도읍 판의 금빛 띠(카드가 떠 있다) · soon 「다음 제천 대회: N달 뒤」 띠 (ADV=1 로 시월이 되게 · soon 은 ADV 없이)
+if (kind === 'fest') {
+  const cap = next.factions[next.player]!.capital
+  next.nodes[cap]!.hh = 9000
+  const st = next.stock[next.player]!
+  st.grain = 60000; st.wood = 3000; st.iron = 2000
+  const fac = next.factions[next.player]!
+  fac.palace = { tier: 3, stage: 0 }
+  const foes = Object.values(next.heroes).filter((h) => h.faction !== next.player && h.status === 'free' && !h.id.endsWith('-ruler')).sort((a, b) => (a.id < b.id ? -1 : 1))
+  const mine = Object.values(next.heroes).filter((h) => h.faction === next.player && h.status === 'free' && h.id !== fac.ruler && !Object.values(next.armies).some((a) => a.hero === h.id))
+  if (mine.length < 2) for (const x of foes.slice(0, 2)) { x.faction = next.player; x.at = cap; for (const a of Object.values(next.armies)) if (a.hero === x.id) a.hero = null; mine.push(x) }
+  mine.sort((a, b) => (a.id < b.id ? -1 : 1))
+  fac.seats = { priest: mine[mine.length - 1]!.id }
+  mine[mine.length - 1]!.deok = 8
+  const mode = process.env.FEST ?? 'card'
+  if (mode !== 'soon') next.card = festCard(next, next.player, next.season)
+  console.log('fest', mode, next.season, next.card?.hero, next.card?.hero2, next.card?.guest)
+}
+const quiet = kind === 'fest' && process.env.FEST !== 'card' || kind === 'captive' || kind === 'woo' || kind === 'woo0' || kind === 'pincer' || (kind === 'town' && process.env.TOWN !== 'done') || (kind === 'great' && process.env.GREAT !== 'done') || (kind === 'palace' && process.env.PALACE !== 'done') // 보고 없이 판 위에서 연다
 writeFileSync(out, JSON.stringify({ v: 2, nation: process.env.NATION ?? 'us', seed, log: [], realm: next, before: quiet ? null : r0, report: quiet ? null : report }))
 console.log('ok', kind, g.name, w.name)

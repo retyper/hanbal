@@ -152,6 +152,7 @@ export const LEGACY_CSS = `
 .ap .cardc .copt.hasf { gap: 6px; }
 .ap .cardc .copt .cof { width: 44px; height: 44px; flex: none; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #8a7040; }
 .ap .cardc .copt.on .cof { border-color: var(--gold); }
+.ap .cardc .copt .cofi { border: 0; border-radius: 0; object-fit: contain; width: 40px; height: 40px; filter: drop-shadow(0 2px 3px #000a); }
 .ap .cardc .copt .cot { display: flex; flex-direction: column; gap: 1px; font-size: inherit; color: inherit; min-width: 0; }
 .ap .cardc .copt { display: flex; flex-direction: column; gap: 4px; padding: 7px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; text-align: center; align-items: center; justify-content: flex-start; cursor: pointer; } .ap .cardc .copt .cot { align-items: center; } .ap .cardc .copt:disabled { opacity: .55; cursor: default; }
 .ap .cardc .copt.on { border-color: var(--gold); background: #2c2618; } .ap .cardc .copt span { font-size: 12.5px; color: #cfc6b4; } .ap .cardc .copt i { font-style: normal; font-size: 11px; color: var(--mute); }

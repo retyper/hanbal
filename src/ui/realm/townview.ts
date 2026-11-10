@@ -432,6 +432,13 @@ export const TOWN_CSS = `
 .ap .cjseat .cjface { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 2px solid #c9a45a; }
 .ap .cjfx { font-style: normal; font-size: 11.5px; color: #9fd18b; line-height: 1.2; }
 .ap .cjok { position: absolute; top: 4px; right: 6px; font-style: normal; font-weight: 700; color: #ffe08a; }
+.ap .festband { box-sizing: border-box; display: flex; align-items: center; gap: 10px; width: 100%; min-height: 52px; margin: 0 0 6px; padding: 6px 12px; border-radius: 12px; border: 1px solid #7a6238; background: #1f1810; color: #f3e6c8; font: inherit; font-size: 14px; text-align: left; -webkit-tap-highlight-color: transparent; }
+.ap .festband .wki { width: 34px; height: 34px; object-fit: contain; flex: none; }
+.ap .festband span { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; } .ap .festband b { font-size: 15px; color: #ffe2a0; } .ap .festband small { font-size: 12px; color: #c9b99a; } .ap .festband i { font-style: normal; font-size: 18px; color: #ffe2a0; }
+.ap .festband.now { cursor: pointer; border-color: #e8c15a; background: linear-gradient(90deg, #4a3612, #2c2210); box-shadow: 0 0 10px #e8c15a55; animation: festBreath 1.8s ease-in-out infinite; }
+.ap .festband.now:active { transform: scale(.97); }
+@keyframes festBreath { 50% { box-shadow: 0 0 20px #f2c14ecc; border-color: #ffe08a; } }
+@media (prefers-reduced-motion: reduce) { .ap .festband.now { animation: none; } }
 .ap .cjauto { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 44px; margin: 0 0 6px; padding: 4px 10px; border-radius: 12px; border: 1px solid #5a4630; background: #1f1810; color: #f3e6c8; font: inherit; font-size: 14px; cursor: pointer; }
 .ap .cjauto.on { border-color: #e8c15a; background: #3a2c12; color: #ffe08a; box-shadow: 0 0 0 1px #e8c15a55 inset; }
 .ap .cjauto .cjok { position: static; }
