@@ -73,6 +73,21 @@ function keyedChildren(a: Node, b: Node): void {
   for (; i < an.length; i++) a.removeChild(an[i]!)
 }
 
+/** 지난번에 이 요소에 준 style 글 · 그 속성 이름들 — 글이 같으면 건드리지 않고, 다르면 바뀐 속성만 고친다 (코드가 따로 단 속성은 둔다) */
+const styleSeen = new WeakMap<Element, { text: string; props: string[] }>()
+function mergeStyle(xe: HTMLElement, ye: HTMLElement): void {
+  const text = ye.getAttribute('style') ?? ''
+  const prev = styleSeen.get(xe)
+  if (prev?.text === text) return
+  const props = [...ye.style]
+  for (const p of prev?.props ?? []) if (!props.includes(p)) xe.style.removeProperty(p)
+  for (const p of props) {
+    const v = ye.style.getPropertyValue(p)
+    if (xe.style.getPropertyValue(p) !== v) xe.style.setProperty(p, v, ye.style.getPropertyPriority(p))
+  }
+  styleSeen.set(xe, { text, props })
+}
+
 function one(parent: Node, x: Node, y: Node, keyed: boolean): void {
   if (x.nodeType !== y.nodeType || x.nodeName !== y.nodeName) { parent.replaceChild(y, x); return }
   if (x.nodeType !== Node.ELEMENT_NODE) { if (x.nodeValue !== y.nodeValue) x.nodeValue = y.nodeValue; return }
@@ -80,8 +95,13 @@ function one(parent: Node, x: Node, y: Node, keyed: boolean): void {
   const ye = y as Element
   // 캔버스의 width·height 는 그림판 크기를 코드가 정한다 — 지우면 그린 그림이 날아간다 (mapcanvas.ts)
   const keepSize = xe instanceof HTMLCanvasElement
-  for (const at of [...xe.attributes]) if (!ye.hasAttribute(at.name) && !(keepSize && (at.name === 'width' || at.name === 'height'))) xe.removeAttribute(at.name)
-  for (const at of [...ye.attributes]) if (xe.getAttribute(at.name) !== at.value) xe.setAttribute(at.name, at.value)
+  // data-live="style data-zl" — 코드가 살아서 바꾸는 속성 (지도 칸의 배율·높이·--z · 줌 단계). 지우고 다시 쓰면 그때마다 아래 모든 요소의 스타일을 다시 셈한다 (카드 C)
+  const live = ye.getAttribute('data-live')?.split(' ') ?? []
+  for (const at of [...xe.attributes]) if (!ye.hasAttribute(at.name) && !live.includes(at.name) && !(keepSize && (at.name === 'width' || at.name === 'height'))) xe.removeAttribute(at.name)
+  for (const at of [...ye.attributes]) {
+    if (at.name === 'style' && live.includes('style')) { mergeStyle(xe as HTMLElement, ye as HTMLElement); continue }
+    if (xe.getAttribute(at.name) !== at.value) xe.setAttribute(at.name, at.value)
+  }
   if (xe instanceof HTMLInputElement && ye instanceof HTMLInputElement && xe.value !== ye.value && document.activeElement !== xe) xe.value = ye.value
   children(xe, ye, keyed)
 }

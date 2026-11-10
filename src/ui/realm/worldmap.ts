@@ -45,6 +45,37 @@ export function seasonTint(season: SeasonOfYear, r: number, g: number, b: number
   }
 }
 
+/**
+ * seasonTint 를 그림 전체에 — 점마다 배열을 만들고 풀지 않고 제자리에서 센다 (같은 식 · 시험이 seasonTint 와 맞춰 본다).
+ * 4배 느린 폰에서 세계판 한 장이 0.6초 긴 작업이었다 (카드 C · 형 11-11)
+ */
+export function tintPixels(d: Uint8ClampedArray, season: SeasonOfYear): void {
+  const n = d.length
+  switch (season) {
+    case 'spring': return
+    case 'summer':
+      for (let i = 0; i < n; i += 4) { d[i] = d[i]! * 0.86; d[i + 1] = d[i + 1]! * 0.95; d[i + 2] = d[i + 2]! * 0.88 }
+      return
+    case 'autumn':
+      for (let i = 0; i < n; i += 4) {
+        const r = d[i]!, g = d[i + 1]!, b = d[i + 2]!
+        const leaf = g > r && g > b ? Math.min(1, (g - Math.max(r, b)) / 40) : 0
+        d[i] = r + (g - r) * 0.85 * leaf + 10
+        d[i + 1] = g * (1 - 0.12 * leaf)
+        d[i + 2] = b * (1 - 0.35 * leaf)
+      }
+      return
+    case 'winter':
+      for (let i = 0; i < n; i += 4) {
+        const r = d[i]!, g = d[i + 1]!, b = d[i + 2]!
+        const w = Math.min(255, (0.3 * r + 0.59 * g + 0.11 * b) * 1.12 + 26)
+        d[i] = w * 0.95 * 0.7 + r * 0.3 * 0.95
+        d[i + 1] = w * 0.98 * 0.7 + g * 0.3
+        d[i + 2] = Math.min(255, w * 1.04) * 0.7 + b * 0.3
+      }
+  }
+}
+
 async function load(src: string): Promise<HTMLImageElement> {
   const im = new Image()
   im.src = src
@@ -133,13 +164,7 @@ async function build(art: string, season: SeasonOfYear, region: RegionId, geo: W
   g.drawImage(src, 0, 0)
   if (season !== 'spring') {
     const img = g.getImageData(0, 0, c.width, c.height)
-    const d = img.data
-    for (let i = 0; i < d.length; i += 4) {
-      const [r, gg, b] = seasonTint(season, d[i]!, d[i + 1]!, d[i + 2]!)
-      d[i] = r
-      d[i + 1] = gg
-      d[i + 2] = b
-    }
+    tintPixels(img.data, season)
     g.putImageData(img, 0, 0)
   }
   const blob = await new Promise<Blob | null>((res) => c.toBlob(res, 'image/jpeg', 0.86))

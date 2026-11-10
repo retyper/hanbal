@@ -1205,7 +1205,7 @@ export function mapHtml(
     cvTag = `<canvas class="mapcv" aria-hidden="true" data-cvkey="${key}"></canvas>`
   }
   const fogWordsHtml = (fog ?? fogCv)?.words ?? ''
-  return `<div class="map" data-seen="${seenBox}" data-region="${region}"${cvMode ? ' data-cv' : ''}${CROWDED.has(region) ? ' data-dense' : ''}${world ? ` data-world="${season}"` : ''} data-aspect="${W / H}" data-zmax="${RA.zmax}" style="${bg}aspect-ratio:${W} / ${H};--ns:${RA.nodeScale};--ls:${RA.labelScale}">${cvTag}${svg}${cvMode ? '' : '<div class="clsh"></div>'}${fogWordsHtml}${nodes}${walkSvg}${toks}${placeLabels(labels, byNode, W, H, RA.nodeScale, RA.labelScale)}${names}${arrowSvg}</div>`
+  return `<div class="map" data-live="style data-zl" data-seen="${seenBox}" data-region="${region}"${cvMode ? ' data-cv' : ''}${CROWDED.has(region) ? ' data-dense' : ''}${world ? ` data-world="${season}"` : ''} data-aspect="${W / H}" data-zmax="${RA.zmax}" style="${bg}aspect-ratio:${W} / ${H};--ns:${RA.nodeScale};--ls:${RA.labelScale}">${cvTag}${svg}${cvMode ? '' : '<div class="clsh"></div>'}${fogWordsHtml}${nodes}${walkSvg}${toks}${placeLabels(labels, byNode, W, H, RA.nodeScale, RA.labelScale)}${names}${arrowSvg}</div>`
 }
 
 /** 지도 위 우리 군대의 말 — 머무는 군대 하나에 하나 */
@@ -1434,6 +1434,45 @@ function bandImage(items: readonly BandItem[], W: number, H: number, blur: numbe
   if (bandOut === null || bandOutFor !== cv) { bandOut = cv.toDataURL('image/png'); bandOutFor = cv }
   return bandOut
 }
+/**
+ * 상자 흐림 한 방향 — 가장자리는 끝 값을 이어 붙이고, 창을 한 칸씩 미끄러뜨려 한 점에 값 둘만 만진다 (반지름과 무관).
+ * 옛 이중 반복은 4배 느린 폰에서 한 계절에 7초를 먹었다 — 결과는 같다 (카드 C · 형 11-11)
+ */
+function boxPass(src: Float32Array, dst: Float32Array, w: number, h: number, rr: number, horiz: boolean): void {
+  const div = rr * 2 + 1
+  // 점마다 네 값(R·G·B·A 를 알파 곱해 늘어놓은 것)이 이어 붙어 있다
+  if (horiz) {
+    const last = (w - 1) * 4
+    for (let y = 0; y < h; y++) {
+      const base = y * w * 4
+      let s0 = 0
+      let s1 = 0
+      let s2 = 0
+      let s3 = 0
+      for (let k = -rr; k <= rr; k++) { const o = base + Math.min(w - 1, Math.max(0, k)) * 4; s0 += src[o]!; s1 += src[o + 1]!; s2 += src[o + 2]!; s3 += src[o + 3]! }
+      dst[base] = s0 / div; dst[base + 1] = s1 / div; dst[base + 2] = s2 / div; dst[base + 3] = s3 / div
+      for (let x = 1; x < w; x++) {
+        const a = base + Math.min(last, (x + rr) * 4)
+        const b = base + Math.max(0, (x - rr - 1) * 4)
+        s0 += src[a]! - src[b]!; s1 += src[a + 1]! - src[b + 1]!; s2 += src[a + 2]! - src[b + 2]!; s3 += src[a + 3]! - src[b + 3]!
+        const o = base + x * 4
+        dst[o] = s0 / div; dst[o + 1] = s1 / div; dst[o + 2] = s2 / div; dst[o + 3] = s3 / div
+      }
+    }
+    return
+  }
+  // 세로는 줄(행) 단위로 훑는다 — 열 따라 건너뛰면 캐시를 계속 놓친다
+  const n = w * 4
+  const col = new Float64Array(n)
+  for (let k = -rr; k <= rr; k++) { const o = Math.min(h - 1, Math.max(0, k)) * n; for (let i = 0; i < n; i++) col[i] = col[i]! + src[o + i]! }
+  for (let i = 0; i < n; i++) dst[i] = col[i]! / div
+  for (let y = 1; y < h; y++) {
+    const add = Math.min(h - 1, y + rr) * n
+    const sub = Math.max(0, y - rr - 1) * n
+    const o = y * n
+    for (let i = 0; i < n; i++) { const v = col[i]! + src[add + i]! - src[sub + i]!; col[i] = v; dst[o + i] = v / div }
+  }
+}
 let bandCv: HTMLCanvasElement | null = null
 let bandOutFor: HTMLCanvasElement | null = null
 function bandCanvas(items: readonly BandItem[], W: number, H: number, blur: number): HTMLCanvasElement | null {
@@ -1464,20 +1503,15 @@ function bandCanvas(items: readonly BandItem[], W: number, H: number, blur: numb
     // 흐림 — 알파를 곱한 채로 상자 흐림 두 번 (가장자리가 검게 번지지 않게)
     const img = g.getImageData(0, 0, w, h)
     const d = img.data
-    const ch = [new Float32Array(w * h), new Float32Array(w * h), new Float32Array(w * h), new Float32Array(w * h)]
-    for (let i = 0; i < w * h; i++) { const al = d[i * 4 + 3]! / 255; ch[0]![i] = d[i * 4]! * al; ch[1]![i] = d[i * 4 + 1]! * al; ch[2]![i] = d[i * 4 + 2]! * al; ch[3]![i] = al }
+    const c = new Float32Array(w * h * 4) // 점마다 R·G·B(알파 곱함)·A
+    for (let i = 0; i < w * h; i++) { const al = d[i * 4 + 3]! / 255; c[i * 4] = d[i * 4]! * al; c[i * 4 + 1] = d[i * 4 + 1]! * al; c[i * 4 + 2] = d[i * 4 + 2]! * al; c[i * 4 + 3] = al }
     const rr = Math.max(1, Math.round(blur * s))
-    const tmp = new Float32Array(w * h)
-    for (const c of ch) {
-      for (let pass = 0; pass < 2; pass++) {
-        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { let sum = 0; for (let k = -rr; k <= rr; k++) sum += c[y * w + Math.min(w - 1, Math.max(0, x + k))]!; tmp[y * w + x] = sum / (rr * 2 + 1) }
-        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { let sum = 0; for (let k = -rr; k <= rr; k++) sum += tmp[Math.min(h - 1, Math.max(0, y + k)) * w + x]!; c[y * w + x] = sum / (rr * 2 + 1) }
-      }
-    }
+    const tmp = new Float32Array(w * h * 4)
+    for (let pass = 0; pass < 2; pass++) { boxPass(c, tmp, w, h, rr, true); boxPass(tmp, c, w, h, rr, false) }
     for (let i = 0; i < w * h; i++) {
-      const al = ch[3]![i]!
+      const al = c[i * 4 + 3]!
       d[i * 4 + 3] = Math.round(al * 255)
-      if (al > 0.001) { d[i * 4] = Math.round(ch[0]![i]! / al); d[i * 4 + 1] = Math.round(ch[1]![i]! / al); d[i * 4 + 2] = Math.round(ch[2]![i]! / al) }
+      if (al > 0.001) { d[i * 4] = Math.round(c[i * 4]! / al); d[i * 4 + 1] = Math.round(c[i * 4 + 1]! / al); d[i * 4 + 2] = Math.round(c[i * 4 + 2]! / al) }
     }
     g.putImageData(img, 0, 0)
     bandKey = key

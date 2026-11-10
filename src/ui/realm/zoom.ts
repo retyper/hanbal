@@ -114,23 +114,24 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
    */
   const CULL_SEL = '.nd[data-node], .toks, .lb, .nnm, .fogc, .rumor'
   let cullAt = -Infinity
-  function cull(force = false): void {
+  /** 칸·굴린 자리 재기 — 한 번에 읽는다. 단계 속성을 쓰기 전에 재 두고 cull 에 넘기면, 쓴 뒤 읽느라 배치를 또 하지 않는다 (카드 C) */
+  const gauge = (m: HTMLElement): { mw: number; mh: number; ox: number; oy: number; cw: number; ch: number; sl: number; st: number } =>
+    ({ mw: m.offsetWidth, mh: m.offsetHeight, ox: m.offsetLeft, oy: m.offsetTop, cw: wrap.clientWidth, ch: wrap.clientHeight, sl: wrap.scrollLeft, st: wrap.scrollTop })
+  function cull(force = false, g?: ReturnType<typeof gauge>): void {
     const now = performance.now()
     if (!force && now - cullAt < P.realm.mapCullMs) return
     cullAt = now
     const m = map()
     if (m === null) return
-    const mw = m.offsetWidth
-    const mh = m.offsetHeight
+    const { mw, mh, ox, oy, cw, ch, sl, st } = g ?? gauge(m)
     if (mw <= 0 || mh <= 0) return
-    const [ox, oy] = off()
     const pad = TOUCH ? P.realm.mapCullPadTouch : P.realm.mapCullPad
-    const px = (wrap.clientWidth * pad) / mw
-    const py = (wrap.clientHeight * pad) / mh
-    const x0 = (wrap.scrollLeft - ox) / mw - px
-    const y0 = (wrap.scrollTop - oy) / mh - py
-    const x1 = x0 + wrap.clientWidth / mw + 2 * px
-    const y1 = y0 + wrap.clientHeight / mh + 2 * py
+    const px = (cw * pad) / mw
+    const py = (ch * pad) / mh
+    const x0 = (sl - ox) / mw - px
+    const y0 = (st - oy) / mh - py
+    const x1 = x0 + cw / mw + 2 * px
+    const y1 = y0 + ch / mh + 2 * py
     for (const el of m.querySelectorAll<HTMLElement>(CULL_SEL)) {
       const x = parseFloat(el.style.left) / 100
       const y = parseFloat(el.style.top) / 100
@@ -145,8 +146,9 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     const m = map()
     if (m === null) return
     const zl = tierOf(m)
+    const g = gauge(m) // 단계 속성을 쓰기 전에 — 쓴 뒤 재면 배치를 또 한다
     if (m.dataset['zl'] !== zl) { m.dataset['zl'] = zl; declutterSoon(wrap); wrap.dispatchEvent(new CustomEvent('mapzoomed')) }
-    cull(true)
+    cull(true, g)
   }
 
   function paintZ(keep?: readonly [number, number]): void {
@@ -165,8 +167,9 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     // 다시 그린 직후엔 칸이 잠깐 줄었다 늘어 굴린 자리가 틀어져 있다 — 그대로 재면 보이는 고을 수가 엉터리라 「가까이」로 번쩍였다가 밀기가 멈출 때 돌아왔다 (형 11-11: 누를 때마다 깜빡 · 이름표·아이콘이 한꺼번에 떴다 사라짐)
     if (keep !== undefined) { wrap.scrollLeft = keep[0]; wrap.scrollTop = keep[1] }
     const zl = tierOf(m)
+    const g = gauge(m) // 단계 속성을 쓰기 전에 — 쓴 뒤 재면 배치를 또 한다
     if (m.dataset['zl'] !== zl) m.dataset['zl'] = zl
-    cull(true)
+    cull(true, g)
     declutterSoon(wrap) // 배율이 바뀌면 글씨가 말·숫자와 겹칠 수 있다 — 그린 뒤 비킨다
     wrap.dispatchEvent(new CustomEvent('mapzoomed')) // 땅·길 캔버스가 굳은 배율에 맞춰 다시 그린다 (mapcanvas.ts · 잠깐 기다린 뒤 한 번)
   }
