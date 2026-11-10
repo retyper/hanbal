@@ -75,6 +75,10 @@ const img = (src: string, fallback?: string): HTMLImageElement => {
   return i
 }
 const bg = img(cfg.bg ?? 'realm/battle/battle-field.jpg')
+/** 겨루기 마당 — 군중이 둥글게 둘러싼 그림 (형 11-11: 아래가 비어 보임). 본편 전장 그림 이름으로 고른다 · 파일이 없으면 지금 바탕 그대로 */
+const arenaKind = (name: string): 'sea' | 'fort' | 'field' =>
+  /sea|port|beach/.test(name) ? 'sea' : /fort|wall|gate|castle/.test(name) ? 'fort' : 'field'
+const arena = img(`realm/duel/arena-${arenaKind(cfg.bg ?? 'battle-field')}.jpg`)
 const sprMe = img(`realm/anim2/gen-${cfg.me.sprite}.png`)
 const sprFoe = img(`realm/anim2/gen-${cfg.foe.sprite}.png`)
 const foePid = cfg.foe.portrait
@@ -361,7 +365,8 @@ let bgBaked: HTMLCanvasElement | null = null
 let bgKey = ''
 function bakedBg(): HTMLCanvasElement | null {
   if (!bg.complete || bg.naturalWidth === 0) return null
-  const key = `${W}x${H}@${dpr}`
+  const arenaOk = arena.complete && arena.naturalWidth > 0
+  const key = `${W}x${H}@${dpr}${arenaOk ? 'a' : ''}`
   if (bgBaked !== null && bgKey === key) return bgBaked
   const cv = bgBaked ?? document.createElement('canvas')
   if (cv.parentNode === null) host.insertBefore(cv, canvas) // 바탕은 밑 판에 — 위 판은 투명으로 비워 두고 매 프레임 바탕을 다시 그리지 않는다
@@ -370,6 +375,19 @@ function bakedBg(): HTMLCanvasElement | null {
   c.setTransform(dpr, 0, 0, dpr, 0, 0)
   const s = Math.max(W / bg.naturalWidth, H / bg.naturalHeight)
   c.drawImage(bg, (W - bg.naturalWidth * s) / 2, (H - bg.naturalHeight * s) / 2, bg.naturalWidth * s, bg.naturalHeight * s)
+  if (arenaOk) { // 마당 그림을 위에 덮는다 — 군중 고리가 장수 띠 뒤·옆에, 가운데 빈 마당에 장수가 선다
+    const a = Math.max(W / arena.naturalWidth, H / arena.naturalHeight)
+    const aw = arena.naturalWidth * a, ah = arena.naturalHeight * a
+    const dy = H * P.duel.arenaDrop // 그림을 아래로 내려 빈 마당이 장수 띠 자리에 오게 — 윗머리는 비는 만큼 부드럽게 녹인다
+    const ac = document.createElement('canvas'); ac.width = Math.round(W * dpr); ac.height = Math.round(H * dpr)
+    const x = ac.getContext('2d') as CanvasRenderingContext2D
+    x.setTransform(dpr, 0, 0, dpr, 0, 0)
+    x.drawImage(arena, (W - aw) / 2, H - ah + dy, aw, ah)
+    const fade = x.createLinearGradient(0, dy, 0, dy + H * P.duel.arenaFade)
+    fade.addColorStop(0, 'rgba(0,0,0,0)'); fade.addColorStop(1, 'rgba(0,0,0,1)')
+    x.globalCompositeOperation = 'destination-in'; x.fillStyle = fade; x.fillRect(0, 0, W, H)
+    c.drawImage(ac, 0, 0, W, H)
+  }
   const shade = c.createLinearGradient(0, 0, 0, H)
   shade.addColorStop(0, 'rgba(8,5,3,.7)'); shade.addColorStop(0.55, 'rgba(8,5,3,.5)'); shade.addColorStop(0.82, 'rgba(8,5,3,.2)'); shade.addColorStop(1, 'rgba(8,5,3,.35)')
   c.fillStyle = shade; c.fillRect(0, 0, W, H)
