@@ -13,6 +13,7 @@
  * 판 상태만 읽고 쓴다 (A1) — 짓는 동안은 r.builds 에 목책과 같은 줄로 선다 (economy.stepBuilds 가 세운다).
  */
 import { P } from '../tune/params.ts'
+import { seatWorkMul } from './palace.ts'
 import { goodOf, isCoast, isRiverside, isWoody, stockOf } from './economy.ts'
 import type { Good, Realm, RNode } from './types.ts'
 import { josa } from './data/prose.ts'
@@ -249,11 +250,13 @@ export function workMulAt(r: Realm, node: string, what: 'harvest' | 'draft' | Go
   if (n === undefined) return 1
   const R = P.realm
   // 터마다 일터 — 그 효과를 내는 일터들의 몫을 더해서 (같은 일터 여러 터면 더해진다 · 없으면 1)
-  if (what === 'harvest') return upMulG(R.workPaddyMul, gainOf(n, 'paddy'))
+  // 재상이 앉았으면 일터 소출이 더 난다 (palace.ts · 징병 일터는 빼고)
+  const seat = what === 'draft' ? 1 : seatWorkMul(r, n.owner)
+  if (what === 'harvest') return upMulG(R.workPaddyMul, gainOf(n, 'paddy')) * seat
   if (what === 'draft') return upMulG(R.workYardMul, gainOf(n, 'yard'))
-  if (what === 'salt') return upMulG(R.workGoodMul, gainOf(n, 'saltpan'))
-  if (what === 'iron') return upMulG(R.workSmelterMul, gainOf(n, 'smelter'))
-  if (what === 'wood') return upMulG(R.workGoodMul, gainOf(n, 'lumber'))
-  if (what === 'horse') return upMulG(R.workGoodMul, gainOf(n, 'ranch'))
+  if (what === 'salt') return upMulG(R.workGoodMul, gainOf(n, 'saltpan')) * seat
+  if (what === 'iron') return upMulG(R.workSmelterMul, gainOf(n, 'smelter')) * seat
+  if (what === 'wood') return upMulG(R.workGoodMul, gainOf(n, 'lumber')) * seat
+  if (what === 'horse') return upMulG(R.workGoodMul, gainOf(n, 'ranch')) * seat
   return 1
 }

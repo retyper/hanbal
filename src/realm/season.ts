@@ -26,7 +26,7 @@ import {
   shareIntel, stationFriction, stepLent,
 } from './diplomacy.ts'
 import {
-  addGood, applyArm, applyBuild, applyGuard, applyWork, applyClearLot, stepWorks, stepClears, draftIronCost, foundCost, draftLimit, draftNeeds, draftPay, militiaMen, onTake, resolveRites, settleCost, settleLimit, stepBuilds, stepEconomy,
+  addGood, applyArm, applyBuild, applyGuard, applyWork, applyClearLot, stepWorks, stepClears, draftIronCost, foundCost, draftLimit, draftNeeds, draftPay, upkeepOf, militiaMen, onTake, resolveRites, settleCost, settleLimit, stepBuilds, stepEconomy,
   applyCall, freeSite, haulAt, stepSites, migrateHouses, placeHouses, setMigrateAuto, spentThisSeason, stepInbound, stepMigration, stockOf,
 } from './economy.ts'
 import { hasCustom, noteCustom, noteOnce } from './data/customs.ts'
@@ -41,6 +41,7 @@ import { stepSuzerain, suzerainEnd } from './suzerain.ts'
 import { pathsEnd, stepPaths } from './paths.ts'
 import { stepCoalition } from './coalition.ts'
 import { applyFeast, applyWonder, stepWonders, wonderFort, wonderMorale } from './wonders.ts'
+import { applyAutoDraft, applyPalace, applySeat, autoDraftOn, palaceWall, seatMorale, stepPalace } from './palace.ts'
 import { sendExpeditions, stepExpeditions } from './expedition.ts'
 import { goalReach, goalSteps } from './goal.ts'
 import { resolveCard, stepCards } from './events.ts'
@@ -229,6 +230,7 @@ export function fortMul(node: RNode, season: SeasonOfYear): number {
   if (node.tags.includes('moat') && season !== 'winter') t *= R.fortMoat
   if (node.tags.includes('earthwall')) t *= R.fortEarth // 달벌 흙성 (다벌 — data/customs.ts)
   t *= wonderFort(node) // 고인돌 큰 무덤이 선 고을 (wonders.ts)
+  t *= palaceWall(node) // 4단 궁궐이 선 도읍 (palace.ts)
   return t
 }
 
@@ -664,7 +666,7 @@ function draftArmy(r: Realm, o: Extract<Order, { kind: 'draft' }>, lines: Report
   const had = headcount(forceOf(r, army))
   if (up !== null) stockOf(r, o.faction).iron -= up.iron
   addMen(army, o.unit, o.n, tier)
-  army.morale = (army.morale * had + o.n) / (had + o.n) // 새로 든 사람은 사기 1
+  army.morale = Math.min(P.realm.moraleMax, (army.morale * had + o.n * (1 + seatMorale(r, o.faction))) / (had + o.n)) // 새로 든 사람은 사기 1 (대장군이 앉았으면 더 · palace.ts)
   const gone = Math.round(o.n * P.realm.draftHHPerMan)
   node.hh -= gone // 집이 사라지는 게 아니라 일손이 빠진다
   if (monthly(r)) { const was = spentThisSeason(r, node.drafted); node.drafted = { season: r.season, n: was + o.n, hh: (was > 0 ? node.drafted!.hh : 0) + gone } } // 계절 한도 장부
@@ -676,6 +678,38 @@ function draftArmy(r: Realm, o: Extract<Order, { kind: 'draft' }>, lines: Report
   if (pay.iron > 0) noteOnce(r, lines, o.faction, 'deongisoe', { node: node.id, n: pay.iron, m: o.n })
   if (o.unit === 'crossbow') noteCustom(r, lines, o.faction, 'sonoe', { node: node.id, n: o.n })
   if (o.unit === 'boat' && hasCustom(r, o.faction, 'landPort')) noteOnce(r, lines, o.faction, 'landPort', { node: node.id, n: o.n })
+}
+
+/**
+ * 대신 뽑기 (palace.ts · CAPITAL §1-2 대장군) — 켜 둔 나라는 계절마다 「알아서 뽑기」와 같은 셈으로 징병한다:
+ * 고을마다(id 순) 뽑을 수 있는 병종에 몫(draftMix*)대로, 군량 autoDraftReserve 계절치는 남기고, 모자란 몫은 창병·방패병·궁병 차례로.
+ * 봄 징병은 농사를 깎으므로 봄엔 쉰다 (AI 와 같다). 한 번에 몇 명을 뽑을지는 draftLimit 이 정한다 — 판 규칙 안에서만
+ */
+function applyAutoDrafts(r: Realm, lines: ReportLine[]): void {
+  const R = P.realm
+  if (seasonOf(r) === 'spring') return
+  const MIX: Partial<Record<UnitKind, number>> = { spear: R.draftMixSpear, bow: R.draftMixBow, shield: R.draftMixShield, horse: R.draftMixHorse, boat: R.draftMixBoat, crossbow: R.draftMixBow }
+  for (const f of Object.keys(r.factions).sort()) {
+    if (!autoDraftOn(r, f)) continue
+    let grain = stockOf(r, f).grain - R.autoDraftReserve * upkeepOf(r, f, true)
+    for (const n of byId(Object.values(r.nodes)).filter((x) => x.owner === f)) {
+      const lim = draftLimit(r, f, n.id)
+      if (lim <= 0) continue
+      const units = draftable(n, r, f).filter((u) => draftLimit(r, f, n.id, u) > 0)
+      const w = (u: UnitKind): number => MIX[u] ?? 0
+      const sum = units.reduce((s, u) => s + w(u), 0)
+      const take = (unit: UnitKind, want: number): void => {
+        let k = Math.min(want, draftLimit(r, f, n.id, unit), draftLimit(r, f, n.id))
+        while (k > 0 && draftPay(r, f, k).grain > grain) k = Math.floor(k * 0.8)
+        if (k <= 0) return
+        const had = stockOf(r, f).grain
+        draftArmy(r, { kind: 'draft', faction: f, node: n.id, unit, n: k }, lines)
+        grain -= had - stockOf(r, f).grain
+      }
+      if (sum > 0) for (const u of [...units].sort((a, b) => w(b) - w(a))) take(u, Math.floor((lim * w(u)) / sum))
+      for (const u of ['spear', 'shield', 'bow'] as const) if (units.includes(u)) take(u, draftLimit(r, f, n.id, u))
+    }
+  }
 }
 
 /** 해산 — 제 땅에 쉬는 군대를 집으로. 사람은 그 고을 가호로 돌아간다. 장수는 남는다 */
@@ -768,6 +802,9 @@ function applyArmyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]
     else if (o.kind === 'work') applyWork(r, o, lines)
     else if (o.kind === 'clearLot') applyClearLot(r, o, lines)
     else if (o.kind === 'wonder') applyWonder(r, o, lines)
+    else if (o.kind === 'palace') applyPalace(r, o, lines)
+    else if (o.kind === 'seat') applySeat(r, o, lines)
+    else if (o.kind === 'autoDraft') applyAutoDraft(r, o)
     else if (o.kind === 'feast') applyFeast(r, o, lines)
     else if (o.kind === 'buy') applyBuy(r, o, lines)
     else if (o.kind === 'sell') applySell(r, o, lines)
@@ -787,6 +824,7 @@ function applyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]): v
   // 칠 채비 — 이번 턴이 칠 턴이었던 채비는 걷는다 (AI 가 이번 턴 출정으로 냈거나 거뒀다). 옛 판엔 채비가 없다
   for (const a of Object.values(r.armies)) if (a.strike !== undefined && a.strike.at <= r.season) delete a.strike
   applyArmyOrders(r, orders, lines)
+  applyAutoDrafts(r, lines) // 대장군의 대신 뽑기 — 우리 징병 명령 뒤에 (palace.ts)
   // 서 있는 고을을 친다 — 그 고을이 남의 땅이고 싸울 사이(동맹·화친이 아님)일 때만. 들어온 길로 한 계절에 닿은 것으로 친다
   for (const o of orders) {
     if (o.kind !== 'assault') continue
@@ -1953,6 +1991,7 @@ export function advance(
   stepBuilds(r, lines) // 9 — 다 지은 목책·해자가 선다
   stepWorks(r, lines) // 다 지은 고을 일터가 선다 (works.ts)
   stepClears(r, lines) // 다 닦은 터가 열린다 (works.ts · 터 닦기)
+  stepPalace(r, lines, end) // 궁궐이 오르고 · 조정이 정리되고 · 앉은 장수와 정이 쌓인다 (palace.ts)
   stepWonders(r, lines) // 큰 공사의 단이 오르고 · 다 지으면 선다 · 늦은 나라는 몫을 돌려받는다 (wonders.ts · 위원회 11-08 ⑦)
   stepMarket(r, lines) // 떠돌이 상단이 오고 간다 (merchant.ts)
   stepCustoms(r, lines) // 9 — 풍습의 걸음: 다시 일어남 · 쇠 실은 배 · 말 치는 들 · 거른 봄 제사 (hooks.ts)

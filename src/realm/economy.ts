@@ -23,6 +23,7 @@ import { relicSum } from './relics.ts'
 import type { Equip, UnitKind } from './battle.ts'
 import { TIERS, kitOf, lowestTier, nextTier, scaleMen, upgradeKind } from './kit.ts'
 import { wonderHarvestMul, wonderIronMul } from './wonders.ts'
+import { seatDraftMul } from './palace.ts'
 import type { Army, BuildWhat, Good, Goods, Order, ReportLine, Realm, RNode, SeasonOfYear, Stock } from './types.ts'
 import { bestWorkLv, canClear, canWork, clearCost, cutMul, lotCap, lotOf, lvOf, sitesOf, targetLv, withSite, workCost, workMulAt } from './works.ts'
 
@@ -289,8 +290,8 @@ export function militiaMen(r: Realm, node: string): number {
   return Math.round(n.hh * R.militiaPerHH * (n.kind === 'fort' ? R.militiaFortMul : 1) * (capital ? R.militiaCapitalMul : 1) * militiaMul(r, node) * sea)
 }
 
-export function draftCost(n: number): { grain: number } {
-  return { grain: Math.ceil(n * P.realm.draftGrain) }
+export function draftCost(n: number, mul = 1): { grain: number } {
+  return { grain: Math.ceil(n * P.realm.draftGrain * mul) }
 }
 
 /**
@@ -330,7 +331,7 @@ export function draftLimit(r: Realm, faction: string, node: string, unit?: UnitK
   const capShare = R.draftCap + draftCapBonus(r, faction) + aiCapBonus(r, faction) - (hasCustom(r, faction, 'dalcheon') ? R.dalcheonCap : 0)
   const cap = Math.floor(capShare * (hhOf(r, faction) + men)) - men
   // 채비 곡식 — 덩이쇠(변한)는 모자란 몫을 쇠로 낸다
-  const grain = (R.draftGrain > 0 ? Math.floor(stockOf(r, faction).grain / R.draftGrain) : Infinity) + deongiMen(r, faction)
+  const grain = (R.draftGrain > 0 ? Math.floor(stockOf(r, faction).grain / (R.draftGrain * seatDraftMul(r, faction))) : Infinity) + deongiMen(r, faction)
   // 배와 말 — 수군은 나무로 배를 짓고, 기병은 말이 있어야 한다 · 쇠뇌는 틀과 쇠가 있어야 한다
   const s = stockOf(r, faction)
   const need = draftNeeds(unit ?? 'spear', 1, r, faction)
@@ -348,7 +349,7 @@ export function draftWhy(r: Realm, faction: string, node: string, unit?: UnitKin
   if (unit !== undefined && unit !== 'spear' && lim < draftLimit(r, faction, node)) return 'goods'
   const men = menOf(r, faction)
   const cap = Math.floor((R.draftCap + draftCapBonus(r, faction) + aiCapBonus(r, faction) - (hasCustom(r, faction, 'dalcheon') ? R.dalcheonCap : 0)) * (hhOf(r, faction) + men)) - men
-  const grain = (R.draftGrain > 0 ? Math.floor(stockOf(r, faction).grain / R.draftGrain) : Infinity) + deongiMen(r, faction)
+  const grain = (R.draftGrain > 0 ? Math.floor(stockOf(r, faction).grain / (R.draftGrain * seatDraftMul(r, faction))) : Infinity) + deongiMen(r, faction)
   if (lim >= grain) return 'grain'
   if (lim >= cap) return 'cap'
   return 'season'
@@ -366,10 +367,10 @@ export function deongiMen(r: Realm, faction: string): number {
  *   ② 나머지는 곡식으로, 곡식이 모자라면 그 몫도 쇠로
  */
 export function draftPay(r: Realm, faction: string, n: number, ironHeld = 0): { grain: number; iron: number } {
-  if (!hasCustom(r, faction, 'deongisoe') || P.realm.draftGrain <= 0 || P.realm.deongiIron <= 0) return { grain: draftCost(n).grain, iron: 0 }
+  if (!hasCustom(r, faction, 'deongisoe') || P.realm.draftGrain <= 0 || P.realm.deongiIron <= 0) return { grain: draftCost(n, seatDraftMul(r, faction)).grain, iron: 0 }
   const s = stockOf(r, faction)
   const split = deongiSplit(Math.max(0, s.grain), Math.max(0, s.iron - ironHeld), n)
-  return { grain: draftCost(split.grainMen).grain, iron: Math.ceil(split.ironMen * P.realm.deongiIron) }
+  return { grain: draftCost(split.grainMen, seatDraftMul(r, faction)).grain, iron: Math.ceil(split.ironMen * P.realm.deongiIron) }
 }
 
 /** 덩이쇠의 나눔 — 곡식 grain · 쇠 iron 이 있을 때 n 명 가운데 몇을 쇠로, 몇을 곡식으로 내나 (AI 의 셈과 판정이 같은 함수) */

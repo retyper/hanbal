@@ -47,6 +47,8 @@ export interface RNode {
   readonly lotsOpen?: number
   /** 다 지은 큰 공사 (wonders.ts) — 고을과 함께 넘어간다 · 그 고을을 쥔 나라가 힘을 갖는다. 옛 저장에는 없다 */
   readonly wonder?: import('./wonders.ts').WonderId
+  /** 토성 궁성 (palace.ts) — 4단 궁궐이 선 도읍은 지킴이 한 단 더 든든하다 */
+  walled?: true
   readonly kind: NodeKind
   readonly tags: readonly Tag[]
   /** 다스리는 세력 id. 무주지는 null */
@@ -118,6 +120,12 @@ export interface Faction {
   beaten?: { n: number; until?: number }
   /** 싸움에서 잃은 사람 장부 (달 시계 · AI 징병 상한에서 뺀다 · 계절마다 warDeadHeal 몫씩 아문다 · rout.ts). 옛 판에는 없다 */
   warDead?: number
+  /** 궁궐 (palace.ts · CAPITAL §1-1) — tier 단 · stage 다음 단까지 쌓은 몫 · busy 지금 쌓는 몫이 끝나는 턴 · lost 도읍을 잃어 한 단 내려왔다. 없으면 1단 · 옛 저장에는 없다 */
+  palace?: { tier: 1 | 2 | 3 | 4; stage: number; busy?: number; lost?: true }
+  /** 조정 — 자리 → 앉은 장수 id (palace.ts · CAPITAL §1-2). 옛 저장에는 없다 */
+  seats?: Partial<Record<import('./palace.ts').Seat, string>>
+  /** 대장군이 앉아 있으면 계절마다 알아서 뽑는다 (season.autoDraftOrders). 없으면 끔 */
+  autoDraft?: boolean
 }
 
 /** 나라 사이 관계 (FLOW §4) — 판은 중립에서 시작한다. 화친은 `until` 계절에 끝난다 */
@@ -1140,6 +1148,10 @@ export type Order =
   /** 큰 공사에 한 단을 붓는다 (wonders.ts) · 큰 잔치를 연다 */
   | { readonly kind: 'wonder'; readonly faction: string; readonly what: import('./wonders.ts').WonderId }
   | { readonly kind: 'feast'; readonly faction: string }
+  /** 궁궐에 한 번 붓는다 (palace.ts) · 조정 자리에 장수를 앉힌다(hero null 이면 비운다) · 대장군의 대신 뽑기를 켜고 끈다 */
+  | { readonly kind: 'palace'; readonly faction: string }
+  | { readonly kind: 'seat'; readonly faction: string; readonly seat: import('./palace.ts').Seat; readonly hero: string | null }
+  | { readonly kind: 'autoDraft'; readonly faction: string; readonly on: boolean }
   /** 고을 일터 짓기 (works.ts) */
   | { readonly kind: 'work'; readonly faction: string; readonly node: string; readonly what: import('./works.ts').WorkWhat; /** 손댈 터 (빈 터 차례면 새 터) · 없으면 같은 일터의 첫 터 */ readonly lot?: number }
   /** 상단에서 사기 · 팔기 (merchant.ts) */
@@ -1331,6 +1343,10 @@ export type ReportLine =
   | { readonly kind: 'clearLot'; readonly faction: string; readonly node: string; readonly done: boolean }
   /** 큰 공사 (wonders.ts) — pour 한 단을 부었다 · stage 한 단이 다 섰다 · done 다 지었다 · beaten 남이 먼저 지어 몫을 돌려받았다 · lost 고을을 잃어 무너졌다 */
   | { readonly kind: 'wonder'; readonly faction: string; readonly what: import('./wonders.ts').WonderId; readonly node: string; readonly ev: 'pour' | 'stage' | 'done' | 'beaten' | 'lost'; readonly stage: number; readonly grain?: number; readonly by?: string }
+  /** 궁궐 (palace.ts) — pour 한 번 부었다 · stage 한 번이 다 섰다 · done 한 단이 다 올랐다(tier) · fall 도읍을 잃어 한 단 내려왔다 */
+  | { readonly kind: 'palace'; readonly faction: string; readonly ev: 'pour' | 'stage' | 'done' | 'fall'; readonly tier: number; readonly stage: number; readonly grain?: number }
+  /** 조정 (palace.ts) — 장수가 자리에 앉았다 · 비웠다(hero 없음) */
+  | { readonly kind: 'seat'; readonly faction: string; readonly seat: import('./palace.ts').Seat; readonly hero?: string; readonly left?: string }
   /** 큰 잔치 (wonders.ts) — 부은 곡식 · 나온 갈래 · 온 장수나 나라 · 그 갈래의 확률 (판 기록에 실제 숫자) */
   | { readonly kind: 'feast'; readonly faction: string; readonly grain: number; readonly got: import('./wonders.ts').FeastGot; readonly who?: string; readonly p: number }
   | { readonly kind: 'merchant'; readonly faction: string; readonly node: string; readonly come: boolean }

@@ -11,6 +11,7 @@
 import { roll } from '../core/rng.ts'
 import { monthly, perSeason, seasonIdx, seasonNo, seasons, yearOf } from './calendar.ts'
 import { P } from '../tune/params.ts'
+import { seatOmenMul } from './palace.ts'
 import { realmScale, wealthThreat } from './scale.ts'
 import { CARDS, CARD_KINDS, QUARREL_WHYS, SEV_KINDS, cardFallback, type CardKind, type QuarrelWhy } from './data/cards.ts'
 import { isRiverside } from './economy.ts'
@@ -71,7 +72,7 @@ function candidates(r: Realm, f: string, season: number): Array<{ card: Card; w:
     const card: Card = { kind, season, ...(sev !== undefined ? { sev } : {}), ...more }
     const seen = r.cardSeen?.[cardKey(card)]
     const fresh = seen === undefined || season - seen >= seasons(r, P.realm.cardSeenSeasons)
-    out.push({ card, w: w * (CARDS[kind].bad ? badMul : 1) * (fresh ? 1 : P.realm.cardSeenMul) })
+    out.push({ card, w: w * (CARDS[kind].bad ? badMul * seatOmenMul(r, f) : 1) * (fresh ? 1 : P.realm.cardSeenMul) })
   }
   if (y === 0 || y === 1) { add('drought', 1); add('bounty', 0.8) }
   if (y === 1) add('locust', 0.6)

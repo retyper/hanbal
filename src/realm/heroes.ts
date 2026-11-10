@@ -9,6 +9,7 @@
 import { roll } from '../core/rng.ts'
 import { addVow } from './drill.ts'
 import { P } from '../tune/params.ts'
+import { heroSeat, seatRiteMul } from './palace.ts'
 import { seasonIdx, seasonNo, seasons } from './calendar.ts'
 import { HERO_POOL } from './data/heroes-pool.ts'
 import { TRAITS, TRAIT, type TraitGrade } from './data/traits.ts'
@@ -242,7 +243,7 @@ export function gluttonMen(r: Realm, faction: string): number {
 /** 제사의 효과 배수 — 그 나라에 무당 핏줄이 있으면 두 배 · 금동대향로를 지닌 장수가 있어도 같다 (겹치지 않는다 · relics.ts) */
 export function riteMul(r: Realm, faction: string): number {
   const shaman = Object.values(r.heroes).some((h) => h.faction === faction && h.status === 'free' && hasTrait(h, 'shaman')) ? 2 : 1
-  return Math.max(shaman, relicBest(r, faction, 'blessing'))
+  return Math.max(shaman, relicBest(r, faction, 'blessing')) * seatRiteMul(r, faction) // 천군이 앉았으면 더 (palace.ts)
 }
 
 // ───────── 본 장수 (정보의 계약, HEROES §5)
@@ -287,6 +288,7 @@ function assignHero(r: Realm, o: Extract<Order, { kind: 'assign' }>, lines: Repo
     return
   }
   if (isRuler(r, h.id)) return
+  if (heroSeat(r, h.id) !== null) return // 조정에 앉은 장수는 도읍에 머문다 (palace.ts)
   if (r.factions[h.faction]?.capital === o.node) return // 도읍은 군주의 자리
   const node = r.nodes[o.node]
   if (node === undefined || node.owner !== h.faction || node.kind === 'sodo') return
@@ -315,7 +317,7 @@ function leadArmy(r: Realm, o: Extract<Order, { kind: 'lead' }>, lines: ReportLi
   // 군주도 친히 이끈다(친정) — 도읍을 비우는 동안 다스림이 준다 (rulerReach)
   if (h === undefined || a === undefined || h.status !== 'free') return
   if (a.faction !== h.faction || a.hero !== null || a.march !== null) return
-  if (armyOfHero(r, h.id) !== null || h.at === null) return
+  if (armyOfHero(r, h.id) !== null || h.at === null || heroSeat(r, h.id) !== null) return
   // 멀리 서 있는 우리 군대 — 우리 땅으로 이어져 있으면 그리로 가서 이끈다 (그 계절은 길에 있다 · 맡기기의 멀리 가기와 같다)
   if (h.at !== a.at) {
     if ((h.awayUntil !== undefined && h.awayUntil >= r.season) || r.nodes[a.at]?.owner !== h.faction || migratePath(r, h.faction, h.at, a.at) === null) return
@@ -354,7 +356,7 @@ export function idleHeroOrders(r: Realm, faction: string, skip: ReadonlySet<stri
   const rest: Hero[] = []
   for (const h of byId(Object.values(r.heroes))) {
     if (h.faction !== faction || h.status !== 'free' || skip.has(h.id)) continue
-    if (h.at === null || isRuler(r, h.id) || armyOfHero(r, h.id) !== null) continue
+    if (h.at === null || isRuler(r, h.id) || armyOfHero(r, h.id) !== null || heroSeat(r, h.id) !== null) continue
     if (far && ((h.awayUntil !== undefined && h.awayUntil >= r.season) || (h.woundedUntil !== undefined && h.woundedUntil > r.season) || h.post != null)) continue
     const army = leaderless.find((a) => a.at === h.at && !taken.has(a.id))
     if (army !== undefined && h.mu + h.tong >= h.chi + h.deok) {
@@ -536,7 +538,7 @@ export function oneJobPerHero(r: Realm, orders: readonly Order[]): Order[] {
     if (id === null) return true
     const h = r.heroes[id]
     if (h === undefined) return true
-    const away = isAway(r, id)
+    const away = isAway(r, id) || heroSeat(r, id) !== null // 조정에 앉은 장수는 다른 일에 안 나간다
     if (away || seen.has(id)) return false
     seen.add(id)
     return true

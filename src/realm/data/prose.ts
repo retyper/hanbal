@@ -14,6 +14,7 @@ import { TRAIT } from './traits.ts'
 import { RELIC } from './relics.ts'
 import { WORKS } from '../works.ts'
 import { WONDERS, wonderEffect } from '../wonders.ts'
+import { PALACE_NAME, SEAT_DEFS, type PalaceTier } from '../palace.ts'
 import { knows } from '../discovery.ts'
 import { HERO_POOL } from './heroes-pool.ts'
 
@@ -889,6 +890,24 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
         case 'lost': return `${josa(node(line.node), '을', '를')} 잃어 ${wn} 비계가 무너졌다.`
       }
       return null
+    }
+    case 'palace': {
+      // 궁궐 (palace.ts · CAPITAL §1-1) — 우리 것만
+      if (line.faction !== viewer) return null
+      const pn = PALACE_NAME[Math.max(1, Math.min(4, line.tier)) as PalaceTier]
+      switch (line.ev) {
+        case 'pour': return `궁궐을 ${josa(pn, '으로', '로')} 높이는 일, ${line.stage}번째를 쌓기 시작했다. 곡식 ${line.grain ?? 0}섬을 부었다.`
+        case 'stage': return `궁궐 ${line.stage}번째가 섰다.`
+        case 'done': return `궁궐이 ${josa(pn, '이', '가')} 되었다!`
+        case 'fall': return `도읍을 잃어 궁궐이 ${josa(pn, '으로', '로')} 내려앉았다.`
+      }
+      return null
+    }
+    case 'seat': {
+      if (line.faction !== viewer) return null
+      const sn = SEAT_DEFS[line.seat].name
+      if (line.hero !== undefined) return `${josa(after.heroes[line.hero]?.name ?? '?', '이', '가')} ${sn} 자리에 앉았다.`
+      return `${sn} 자리가 비었다.`
     }
     case 'feast': {
       if (line.faction !== viewer) return null
