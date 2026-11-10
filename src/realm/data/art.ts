@@ -480,7 +480,7 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   aryeong: { ar: 208 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · aryeong 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
   haedal: { ar: 149 / 160, body: 0.900, bow: true }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 전투 옷은 더 드러나게 (형 11-08)
   songbi: { ar: 150 / 160, body: 0.900, bow: true }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 전투 옷은 더 드러나게 (형 11-08)
-  hyeokgeose: { ar: 153 / 160, body: 0.906 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2)
+  hyeokgeose: { ar: 158 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · hyeokgeose 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
   oi: { ar: 159 / 160, body: 0.961 }, // 11-04 제 띠 (u/0 · 깃털 다발 쇠투구·붉은 테 미늘·짧은 수염 · 창)
   mari: { ar: 161 / 160, body: 0.968 }, // 11-04 제 띠 (u/0 · 상투·머리띠·콧등 칼자국·밧줄 타래·푸른 삼베 · 맞음 컷은 창을 둘 쥐고 나와 막기 컷으로 · 찌르기 창끝이 조금 잘림)
   daeso: { ar: 172 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2)
