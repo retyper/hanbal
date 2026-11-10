@@ -9,6 +9,7 @@
  * 견본·판정은 목소리 도감 아티팩트 (메모리 voice-book-cast).
  */
 import type { Art } from '../../realm/types.ts'
+import { HERO_VOICE_2 } from './voice-hero-2.ts'
 
 export const BASE_STYLE = '한국 애니메이션·게임 더빙 전문 성우의 녹음실 연기. 발음이 또박또박 맑고, 목소리에 울림과 힘이 있으며, 캐릭터가 분명하다. 문장 중간에 일부러 끊거나 뜸을 들이지 않고 한 호흡으로 이어 읽는다. 연극 배우나 일상 대화 말투가 아니다.'
 export const SHOUT_STYLE = '전장에서 수백 군사에게 외치는 함성. 흥분하고 격앙되어 가슴에서 터져 나오는 큰 소리. 가성이 아니다.'
@@ -40,7 +41,7 @@ export interface HeroVoice {
   readonly shoutStyle?: string
 }
 
-export const HERO_VOICE: Readonly<Record<string, HeroVoice>> = {
+export const HERO_VOICE_1: Readonly<Record<string, HeroVoice>> = {
   // 소서노 — 온조의 어머니 · 31세 · 나라를 세우는 사람. 형: "고귀한 느낌의 귀족, 하지만 건방지진 않은 우아한 이미지" · 도감에서 Kore (11-02)
   'mh-soseono': {
     voice: 'Kore',
@@ -1195,3 +1196,6 @@ export function heroVoiceDir(id: string): string | null {
   const v = heroVoiceId(id)
   return HERO_VOICE[v]?.recorded === true ? `realm/voice/hero/${v}/` : null
 }
+
+/** 전용 성우가 있는 장수 전부 — 앞 묶음(주요 인물)과 뒤 묶음(voice-hero-2.ts) */
+export const HERO_VOICE: Readonly<Record<string, HeroVoice>> = { ...HERO_VOICE_1, ...HERO_VOICE_2 }
