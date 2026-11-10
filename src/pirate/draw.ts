@@ -38,6 +38,11 @@ const ART = {
   captain: { file: 'anim2/pirate-captain.png', ar: 143 / 160, walk0: 4, walkN: 8, hit0: 12, hitN: 6, tallM: 2.25 },
   /** 배 · 떠 오는 궤짝 그림 (제미나이 11-08 · assets_src/realm/gemini/pirate) — 못 읽으면 코드로 그린 꼴 */
   boat: 'pirate/boat.png',
+  /** 목책 한 칸 — 멀쩡 · 부서짐 (제미나이 11-10 · 같은 틀 · 버팀목이 궁수 쪽) · 형: "개짜치게 만든 나무방패는 제미나이 이미지로" */
+  palisade: ['pirate/palisade-0.png', 'pirate/palisade-1.png'],
+  /** 목책 그림 높이 (m) · 그림 가로/세로 */
+  palisadeTallM: 1.6,
+  palisadeAr: 479 / 300,
   crate: 'pirate/crate.png',
   /** 걸음 한 바퀴(컷 여덟)가 디디는 거리 (m) */
   strideM: 1.6,
@@ -82,6 +87,20 @@ function drawPalisade(ctx: CanvasRenderingContext2D, cam: Camera, run: PirateRun
   const n = run.livesMax
   const gy = worldToScreenY(cam, 0)
   const s = cam.scale
+  const pic0 = img(ART.palisade[0])
+  const pic1 = img(ART.palisade[1])
+  if (pic0 !== null && pic1 !== null) {
+    // 그림 목책 한 채 — 칸마다 그리면 0.66m 사이로 겹쳐 통나무 더미가 된다. 맞을 때마다 흔들리고, 절반 넘게 부서지면 부서진 그림
+    const dh = ART.palisadeTallM * s
+    const dw = dh * ART.palisadeAr
+    let lost = 0
+    let since = 99
+    for (let k = 0; k < n; k++) if (run.brokeAt[k]! >= 0) { lost++; since = Math.min(since, time - run.brokeAt[k]!) }
+    const shake = since < 0.35 ? Math.sin(since * 80) * 4 : 0
+    const cx = worldToScreenX(cam, R.palisadeX - 0.05 - (n - 1) * 0.33) + shake
+    ctx.drawImage(lost * 2 > n ? pic1 : pic0, cx - dw / 2, gy - dh * 0.97, dw, dh)
+    return
+  }
   const logW = 0.2 * s
   const tall = 1.55 * s
   // 칸마다 통나무 셋 — 앞(오른쪽)부터 부서진다
