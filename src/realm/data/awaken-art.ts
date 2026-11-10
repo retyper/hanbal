@@ -287,6 +287,7 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'l-L8-nangnang-princess', // 11-10 낙랑공주 1차 (Flow Jay · 우는 결) · 형: 일단 오케이
   'w-12-court-dancer', // 11-10 나리 1차 (Flow Jay) · 형: 아주 좋음
   'w-96-haengin-neoul', // 11-10 산지기 너울 1차 (Flow Jay) · 형: 나쁘지 않음
+  'w-71-yeonna-neoul', // 11-10 연나 너울 1차 (Flow Jay) · 형: 나쁘지 않음 (가슴 움직임 약함)
   'w-78-wansan-wan', // 11-08 저녁 완 v3 · 10초 구성 · 만작한 채 윙크 (형: 그래도 봐줄 만하다 · 적용)
   'w-69-jeoga-eomni', // 11-07 엄니 · fc094928 사용자 채택, 원본 프레임 경계 한계 기록
   'w-67-buyeo-haedal', // 11-07 해달 · 머리/허리 손 접촉을 유지하는 세로 idle

@@ -15,7 +15,7 @@ const dry = process.argv.includes('--dry')
 export const FRAME_OLD = /Fill the 9:16 frame with an unbroken close portrait from ([^.]*?), face large\./
 export const lockText = (p) => `FACE AND STYLE LOCK (most important; it overrides anything above): ${p.sub} face stays exactly the face in the image for the whole take: the same eyes, eyelids, nose, lips, jaw, face shape and proportions. ${p.Sub} expression stays true to the expression in the image: if ${p.sub2} is smiling or laughing broadly there, ${p.sub2} may keep laughing naturally and warmly the whole take, with the face still the same face; if not, at most the smile grows a little or ${p.sub2} gives one wink. Never a mocking, sneering or explosive cackle, never a grotesquely wide-open mouth, never squeezed-shut eyes, never a grimace or exaggerated, distorted face. Keep the soft painterly illustration style and smooth, flawless airbrushed skin of the image: no photoreal skin texture, no pores, no freckles or blush patches that are not in the image, no added wrinkles or lines. Do not zoom in on the face; the face is never redrawn larger or sharper than in the image. Any animal head, pelt or ornament on the costume stays exactly where it is in the image and never slides or pops into view.`
 
-export const BODY_MOTION = 'BODY MOTION (the body is NOT locked, only the face): her full bust moves clearly and naturally the whole take with soft, weighty physics: it lifts and settles with every breath, sways with every turn of her torso and bounces softly with every step, hop, laugh or arm swing, settling a beat after each move. The livelier her action and the fuller her figure, the more visible this soft bounce is. Clothing stays in place and fully covers her; tasteful, never exaggerated or cartoonish.'
+export const BODY_MOTION = 'BUST MOTION (important, keep it visible from the first second to the last): her full bust moves the whole take with soft, heavy, jiggly physics: a clear lift and drop with every breath, a visible sway with every turn of her torso, and a soft bounce with every step, hop, laugh or arm swing that keeps jiggling and settles a beat later. Keep this motion going all the way through, including the last seconds; it never fades out or stops. The livelier her action and the fuller her figure, the bigger and more visible the bounce. Clothing stays in place and fully covers her.'
 
 export function lock(t) {
   const he = /\b(he|him|his)\b/.test(t.slice(0, 600)) && !/\b(she|her)\b/.test(t.slice(0, 600))
@@ -23,7 +23,8 @@ export function lock(t) {
   let out = t.replace(FRAME_OLD, (_m, span) => `Fill the 9:16 frame with an unbroken portrait from ${span}, at about the same scale as the image (zoom in no more than 1.3 times); the face stays about the size it is in the image.`)
   out = out.replace(/Make (her|him) lively, not a still pose\./, (m, w) => `${m} All the life is in ${w === 'him' ? 'his' : 'her'} body, hair, cloth, props and breath; the face stays the same face.`)
   // 11-10 형: "활발하거나 가슴 큰 장수들은 바스트 모핑 좀 더" — 여자만 · 얼굴 고정과 따로 (몸은 묶지 않는다)
-  if (!he) out = out.replace(/\s*$/, '') + '\n\n' + BODY_MOTION
+  // 끝이 아니라 「Make her lively」 문단 끝(동작 문단 뒤)에 — 끝에 두니 약하게 먹혔다 (형 11-10: "점점 바스트 모핑 없어지는 느낌")
+  if (!he) out = out.replace(/(Make her lively[^\n]*)/, (m) => m + ' ' + BODY_MOTION)
   out = out.replace(/\s*$/, '') + '\n\n' + lockText(p) + '\n'
   return out
 }
