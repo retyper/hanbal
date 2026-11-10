@@ -192,9 +192,7 @@ const VOICE_OF: Readonly<Record<string, VoiceKind>> = {
  * 11-01 — 떠돌이 스물다섯(서늘 wander-25 만 그대로)의 등용 대사를 성격대로 새로 썼다 (형: "이건 목소리도 필요 없는데 말투 고쳐 줘")
  */
 export const HIRE_UNRECORDED: ReadonlySet<string> = new Set<string>([
-  'wander-01', 'wander-02', 'wander-03', 'wander-04', 'wander-05', 'wander-06', 'wander-07', 'wander-08', 'wander-09', 'wander-10',
-  'wander-11', 'wander-12', 'wander-13', 'wander-14', 'wander-15', 'wander-16', 'wander-17', 'wander-18', 'wander-19', 'wander-20',
-  'wander-21', 'wander-22', 'wander-23', 'wander-24', 'wander-26',
+  // 11-10 밤 떠돌이 스물다섯 줄은 새 글로 다시 녹음함 (AI 스튜디오 Jay · 두 목소리씩 한 번에 · 원본 assets_src/realm/voice/wander-hire-*-20261110.wav)
   'gj-yucheongan', // 11-10 30대로 바꿈 · 전용 성우(voice-hero.ts)로 녹음하면 hero/gj-yucheongan/hire.ogg 가 먼저 난다
 ])
 
@@ -222,12 +220,12 @@ export const LOW_CHIEF: Readonly<Record<string, { readonly cast: 'a' | 'b'; read
 }
 /** 등용 첫마디가 175Hz 아래인 여장수 — 다시 녹음할 때까지 갈아 끼운 목소리의 짧은 대답으로 (낮은 차례) */
 export const HIRE_LOW: ReadonlySet<string> = new Set<string>([
-  'wander-20', 'dongokjeo-ruler', 'wander-16', 'maga-ruler', 'miri-ruler', 'jm-songbi', 'wander-08', 'dabeol-2', 'guga-ruler', 'mh-jinwang', 'saro-2',
-  'biryuna-ruler', 'iseo-1', 'us-ruler', 'geonma-ruler', 'dokro-1', 'daegaya-1', 'sabeol-1', 'wander-13', 'mh-soseono', 'apdok-ruler',
-  'gosaburi-ruler', 'jeoga-1', 'wander-18', 'yangmaek-1', 'jm-haengin-1', 'michuhol-2', 'uga-2', 'wander-03', 'bullae-ruler', 'golbeol-ruler',
-  'goryong-ruler', 'haseulla-ruler', 'mh-mahan-2', 'wander-22', 'sr-aryeong', 'bukokjeo-1', 'goguryeo-2', 'guya-3', 'jm-okjeo-1', 'maek-1', 'samul-1',
-  'ungcheon-1', 'wander-09', 'buyeo-1', 'chopal-2', 'goja-2', 'gosaburi-2', 'mokji-ruler', 'usan-1', 'wander-07', 'wander-21', 'yeonna-1', 'eumjeup-1',
-  'tamna-ruler', 'usisan-ruler', 'wander-10', 'sr-goya-1', 'byeokjin-1', 'gampyeong-1', 'iseo-ruler', 'hwanna-ruler', 'mujin-ruler', 'siljik-ruler',
+  'dongokjeo-ruler', 'maga-ruler', 'miri-ruler', 'jm-songbi', 'dabeol-2', 'guga-ruler', 'mh-jinwang', 'saro-2',
+  'biryuna-ruler', 'iseo-1', 'us-ruler', 'geonma-ruler', 'dokro-1', 'daegaya-1', 'sabeol-1', 'mh-soseono', 'apdok-ruler',
+  'gosaburi-ruler', 'jeoga-1', 'yangmaek-1', 'jm-haengin-1', 'michuhol-2', 'uga-2', 'bullae-ruler', 'golbeol-ruler',
+  'goryong-ruler', 'haseulla-ruler', 'mh-mahan-2', 'sr-aryeong', 'bukokjeo-1', 'goguryeo-2', 'guya-3', 'jm-okjeo-1', 'maek-1', 'samul-1',
+  'ungcheon-1', 'buyeo-1', 'chopal-2', 'goja-2', 'gosaburi-2', 'mokji-ruler', 'usan-1', 'yeonna-1', 'eumjeup-1',
+  'tamna-ruler', 'usisan-ruler', 'sr-goya-1', 'byeokjin-1', 'gampyeong-1', 'iseo-ruler', 'hwanna-ruler', 'mujin-ruler', 'siljik-ruler',
   'sr-danbi',
 ])
 
