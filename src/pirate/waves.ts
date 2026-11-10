@@ -12,6 +12,7 @@ import type { ArrowKindId } from '../sim/types.ts'
 /** 물결 하나에서 나오는 것 하나 — at 은 그 물결이 열린 뒤의 초 */
 export type Spawn =
   | { readonly at: number; readonly what: 'sword'; readonly x: number; readonly speed: number }
+  | { readonly at: number; readonly what: 'shield'; readonly x: number; readonly speed: number }
   | { readonly at: number; readonly what: 'archer'; readonly x: number; readonly delay: number }
   | { readonly at: number; readonly what: 'captain'; readonly x: number }
   | { readonly at: number; readonly what: 'barrel'; readonly x: number; readonly arrow: ArrowKindId }
@@ -25,6 +26,23 @@ export const BARREL_ARROWS: readonly ArrowKindId[] = ['pierce', 'burst', 'split'
 
 export const WAVE_COUNT = 3
 
+/** 판의 갈래 — 바다 도적(물·배) · 산적(고갯길·능선) */
+export type Mode = 'pirate' | 'bandit'
+
+/** 방패 든 도적 수 — 둘째 물결부터, 칼잡이처럼 세기로 흔들린다 */
+export function shieldCount(wave: number, sev: number): number {
+  const R = P.pirate
+  const base = wave === 1 ? R.shield2 : wave === 2 ? R.shield3 : 0
+  const s = Math.max(1, Math.min(3, Math.round(sev))) - 2
+  return base === 0 ? 0 : Math.max(0, Math.round(base * (1 + s * R.sevCount)))
+}
+
+/** 배 위(바다) · 능선(산적) 궁수의 자리 */
+export function archerX(mode: Mode, i: number): number {
+  const R = P.pirate
+  return mode === 'bandit' ? R.spawnX - R.ridgeX - i * R.archerSpread : R.boatX + i * R.archerSpread
+}
+
 /** 세기 1 작은 무리 · 2 보통 · 3 큰 무리 — 칼잡이 수가 ±sevCount 만큼 */
 export function swordCount(wave: number, sev: number): number {
   const R = P.pirate
@@ -34,7 +52,7 @@ export function swordCount(wave: number, sev: number): number {
 }
 
 /** 물결 셋 — 시드 하나에서 (같은 시드 = 같은 판) */
-export function bakeWaves(seed: number, sev: number): Wave[] {
+export function bakeWaves(seed: number, sev: number, mode: Mode = 'pirate'): Wave[] {
   const R = P.pirate
   const rng = makeRng((seed ^ 0x5a17e) >>> 0)
   const out: Wave[] = []
@@ -59,7 +77,10 @@ export function bakeWaves(seed: number, sev: number): Wave[] {
     const span = t
     // 배 위 궁수 — 둘째·셋째 물결이 열리자마자 배에 선다
     const na = k === 1 ? R.archers2 : k === 2 ? R.archers3 : 0
-    for (let i = 0; i < na; i++) spawns.push({ at: 0, what: 'archer', x: R.boatX + i * R.archerSpread, delay: i * R.archerStagger })
+    for (let i = 0; i < na; i++) spawns.push({ at: 0, what: 'archer', x: archerX(mode, i), delay: i * R.archerStagger })
+    // 방패 든 도적 — 칼잡이 사이사이 (칼잡이 수는 그대로, 방패는 더 온다)
+    const ns = shieldCount(k, sev)
+    for (let i = 0; i < ns; i++) spawns.push({ at: span * ((i + 0.5) / ns), what: 'shield', x: R.spawnX, speed: v * R.shieldSpeedMul })
     // 두목 — 셋째 물결 가운데쯤
     if (k === 2) spawns.push({ at: span * R.captainAt, what: 'captain', x: R.spawnX })
     // 궤짝 — 물결 안에 고루, 무엇이 들었나는 시드로 (같은 물결에 같은 살이 겹치지 않게)

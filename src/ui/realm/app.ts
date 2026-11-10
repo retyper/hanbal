@@ -805,6 +805,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   const cardBeat: Record<string, number> = {}
   /** 바다도적 막기에서 막은 물결 수 — 열쇠는 card:계절 (pirate.html 의 결과 · 있으면 「맞선다」가 굳는다 · SNIPE §0-9) */
   const cardHeld: Record<string, number> = {}
+  /** 흠 없이 막은 판 — 열쇠는 card:계절 (두목을 사로잡았다 · 쇠 곱절) */
+  const cardPerfect: Record<string, boolean> = {}
   /** 경계를 강화할 우리 고을 */
   let guards: string[] = []
   /** 경계 강화한 고을에서 몸소 고른 지킬 길 — 없으면 지키는 장수에게 맡긴다 (council.guardPick · 형 11-01 「길이 빗겨나감」) */
@@ -1101,6 +1103,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     rite = false
     for (const k of Object.keys(answers)) delete answers[k]
     for (const k of Object.keys(cardHeld)) delete cardHeld[k]
+    for (const k of Object.keys(cardPerfect)) delete cardPerfect[k]
     guards = []
     guardAp = {}
     for (const k of Object.keys(envoys)) delete envoys[k]
@@ -1409,7 +1412,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (ask === `card:${realm?.season ?? -1}`) {
           const pk = answers[`hush:${realm?.season ?? -1}`] === true ? 2 : yes ? 0 : 1
           const held = cardHeld[ask]
-          out.push({ kind: 'card', faction: me(), pick: pk, ...(pk === 1 && held !== undefined ? { held } : {}) })
+          out.push({ kind: 'card', faction: me(), pick: pk, ...(pk === 1 && held !== undefined ? { held } : {}), ...(pk === 1 && held === 3 && cardPerfect[ask] === true ? { perfect: true } : {}) })
         }
       } else out.push({ kind: 'answer', ask, yes })
     }
@@ -3375,7 +3378,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       // 얻고 잃는 것 — 아이콘·숫자로. 굴리는 답이면 % 와 「이루면 · 어긋나면」 (ODDS: 사건 카드의 답은 % + 갈래마다 아이콘·숫자)
       // 바다도적 막기 — 쏜 뒤에는 그 결과(막은 물결 수)를 그대로 보이고, 다른 답은 잠긴다 (SNIPE §0-9)
       const held = cardHeld[`card:${c.season}`]
-      const pv = cardPreview(r, c, i === 2 ? 2 : i === 0 ? 0 : 1, left(), i === 1 ? held : undefined)
+      const pv = cardPreview(r, c, i === 2 ? 2 : i === 0 ? 0 : 1, left(), i === 1 ? held : undefined, cardPerfect[`card:${c.season}`] === true)
       let fx = ''
       if (pv !== null) {
         const sure = fxHtml(r, pv.sure)
@@ -4225,10 +4228,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 바다 도적 · 맞선다 — 포구의 낮 판을 지도 위 틀로. 끝나면 막은 물결 수가 이 계절의 답이 된다 (아래 message 받이) */
   function openPirate(): void {
     const c = realm?.card
-    if (realm === null || c === undefined || c === null || c.kind !== 'pirates') return
+    if (realm === null || c === undefined || c === null || (c.kind !== 'pirates' && c.kind !== 'bandits')) return
     const m = pirateMission(realm, c)
     const bow = assassinBow(realm, me())
-    openFrame(`${PIRATE}?seed=${m.seed}&sev=${m.sev}&mu=${m.mu}&watch=${m.watch}&bow=${bow}&id=card-pirates-${c.season}&back=about:blank`, '바다 도적 막기')
+    const by = c.kind === 'bandits'
+    openFrame(`${PIRATE}?seed=${m.seed}&sev=${m.sev}&mu=${m.mu}&watch=${m.watch}&bow=${bow}${by ? '&mode=bandit' : ''}&id=card-${c.kind}-${c.season}&back=about:blank`, by ? '산적 막기' : '바다 도적 막기')
   }
 
   function openContest(): void {
@@ -4276,12 +4280,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       return
     }
     // 바다도적 막기 — 막은 물결 수가 「맞선다」의 답이 된다 · 쏘지 않고 나오면(skip) 아무것도 안 고른 채 틀을 닫는다
-    const pm = ev.data as { type?: string; id?: string; held?: unknown; skip?: boolean }
-    if (pm?.type === 'hanbal.pirate.result' && typeof pm.id === 'string' && realm?.card != null && pm.id === `card-pirates-${realm.card.season}`) {
+    const pm = ev.data as { type?: string; id?: string; held?: unknown; skip?: boolean; perfect?: boolean }
+    if (pm?.type === 'hanbal.pirate.result' && typeof pm.id === 'string' && realm?.card != null && pm.id === `card-${realm.card.kind}-${realm.card.season}`) {
       const s = realm.card.season
       if (pm.skip === true) root.querySelector('.nightov')?.remove()
       else if (typeof pm.held === 'number' && Number.isFinite(pm.held)) {
         cardHeld[`card:${s}`] = Math.max(0, Math.min(3, Math.floor(pm.held)))
+        cardPerfect[`card:${s}`] = pm.perfect === true && pm.held >= 3
         answers[`card:${s}`] = false
         delete answers[`hush:${s}`]
       }
@@ -6397,7 +6402,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function saveDraft(): void {
     if (realm === null) return
     // hireShown — 등용 장면을 이미 띄운 떠돌이. 초안과 함께 남겨야 앱이 다시 열려도(새 빌드 · 껐다 켬) 계절 끝에 또 뜨지 않는다 (형 10-25: "마파람 등용 한번 떴었는데 왜 또 뜨지")
-    const d = { seed: realm.seed, season: realm.season, player: realm.player, armyOrders, musters, settles, pick, goalStop, landSeen: [...landSeen], scouts, rite, answers, cardHeld, guards, guardAp, envoys, plots, heroOrders, councils, persuadeBy, wooDone, hands, hireShown: [...hireShown], autoIdle: realm.autoIdle, manual: realm.manual?.[me()] }
+    const d = { seed: realm.seed, season: realm.season, player: realm.player, armyOrders, musters, settles, pick, goalStop, landSeen: [...landSeen], scouts, rite, answers, cardHeld, cardPerfect, guards, guardAp, envoys, plots, heroOrders, councils, persuadeBy, wooDone, hands, hireShown: [...hireShown], autoIdle: realm.autoIdle, manual: realm.manual?.[me()] }
     try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)) } catch { /* 저장 못 하는 곳 */ }
   }
 
@@ -6422,6 +6427,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (const p of Object.values(pick)) if (p !== undefined && typeof p.ration === 'string') p.ration = rationExtra(p.ration) ?? P.realm.rationReserve
     Object.assign(answers, rec<boolean>('answers'))
     for (const [k, v] of Object.entries(rec<number>('cardHeld'))) if (typeof v === 'number' && Number.isFinite(v)) cardHeld[k] = v
+    for (const [k, v] of Object.entries(rec<boolean>('cardPerfect'))) if (v === true) cardPerfect[k] = true
     if (Array.isArray(d['hireShown'])) for (const id of d['hireShown'] as unknown[]) if (typeof id === 'string') hireShown.add(id)
     if (Array.isArray(d['goalStop'])) goalStop = (d['goalStop'] as unknown[]).filter((x): x is string => typeof x === 'string')
     if (Array.isArray(d['landSeen'])) for (const k of d['landSeen'] as unknown[]) if (typeof k === 'string') landSeen.add(k)
@@ -7806,7 +7812,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         break
       }
       case 'unexp': heroOrders = heroOrders.filter((o) => !(o.kind === 'expedition' && o.hero === d['id'])); break
-      case 'card-pick': if (realm?.card) { const s = realm.card.season; if (realm.card.kind === 'pirates' && d['v'] === '1' && cardHeld[`card:${s}`] === undefined) { openPirate(); return } answers[`card:${s}`] = d['v'] === '0'; if (d['v'] === '2') answers[`hush:${s}`] = true; else delete answers[`hush:${s}`]; fastNext = true } break
+      case 'card-pick': if (realm?.card) { const s = realm.card.season; if ((realm.card.kind === 'pirates' || realm.card.kind === 'bandits') && d['v'] === '1' && cardHeld[`card:${s}`] === undefined) { openPirate(); return } answers[`card:${s}`] = d['v'] === '0'; if (d['v'] === '2') answers[`hush:${s}`] = true; else delete answers[`hush:${s}`]; fastNext = true } break
       case 'card-beat': if (realm?.card) { const k = `card:${realm.card.season}`; cardBeat[k] = (cardBeat[k] ?? 0) + 1 } break
       case 'card-skip': if (realm?.card) cardBeat[`card:${realm.card.season}`] = 99; break
       case 'practice-open': openPractice(); break

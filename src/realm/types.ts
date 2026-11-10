@@ -1102,7 +1102,7 @@ export type Order =
   | { readonly kind: 'hire'; readonly faction: string; readonly hero: string }
   /** 사건 카드의 답 — 고르지 않으면 0 (장수 다툼은 2 침묵) (events.resolveCard) */
   /** held — 바다도적 막기(pirate.html)에서 손으로 막은 물결 수 0~3 · 있으면 굴림 대신 이것 (SNIPE §0-9) */
-  | { readonly kind: 'card'; readonly faction: string; readonly pick: 0 | 1 | 2; readonly held?: number }
+  | { readonly kind: 'card'; readonly faction: string; readonly pick: 0 | 1 | 2; readonly held?: number; readonly perfect?: boolean }
   /** 장수를 지도 바깥 먼 땅으로 원정 보낸다 — len 0 짧게 · 1 보통 · 2 길게 (expedition.ts) */
   | { readonly kind: 'expedition'; readonly faction: string; readonly hero: string; readonly dest: ExpDest; readonly len: 0 | 1 | 2 }
   /** 우리 장수 둘(남녀)을 혼인시킨다 — 잔치 곡식이 들고, 몇 계절 뒤 자식 장수가 나선다 (SYSTEMS §5-10 · 팰 교배) */
@@ -1403,6 +1403,8 @@ export type ReportLine =
       readonly grain?: number; readonly iron?: number; readonly hh?: number; readonly good?: boolean; readonly hero?: string; readonly node?: string
       /** 바다도적 막기에서 막은 물결 수 (손으로 쏜 판) */
       readonly held?: number
+      /** 물결 셋을 흠 없이 막아 두목을 사로잡았다 (쇠 곱절) */
+      readonly perfect?: boolean
     }
   /** 점괘 — 다음 계절 카드를 엿봤다 (card null 이면 조용한 계절). right 는 맞았나 — 화면에는 안 보인다 */
   | { readonly kind: 'omen'; readonly faction: string; readonly card: CardKind | null; readonly right: boolean; readonly shaman: boolean }

@@ -9,11 +9,17 @@
  * 과녁 하나 · 아무 살도 닿지 않는다)으로 막는다. 판의 끝은 여기서 정한다(result).
  */
 import { P } from '../tune/params.ts'
-import { armArrow, cancelDraw, createWorld, reserveTargets, spawnTarget, step } from '../sim/world.ts'
+import { armArrow, armBow, cancelDraw, createWorld, reserveTargets, spawnTarget, step } from '../sim/world.ts'
 import type { ArrowKindId, BowMods, InputFrame, StageDef, World } from '../sim/types.ts'
-import { archerStr, bakeWaves, palisadeLives, WAVE_COUNT, type Spawn, type Wave } from './waves.ts'
+import { archerStr, bakeWaves, palisadeLives, WAVE_COUNT, type Mode, type Spawn, type Wave } from './waves.ts'
 
-export type Role = 'none' | 'anchor' | 'sword' | 'captain' | 'archer' | 'barrel'
+export type Role = 'none' | 'anchor' | 'sword' | 'shield' | 'captain' | 'archer' | 'barrel'
+
+/** 물결 사이에 고르는 것 — 늘 이 셋 (난수 없음) */
+export type PickId = 'fire' | 'repair' | 'draw'
+export const PICKS: readonly PickId[] = ['fire', 'repair', 'draw']
+/** 화전 한 물결의 살 (궤짝의 화전과 같다) */
+const FIRE: ArrowKindId = 'burst'
 
 /** 판이 내는 사건 — 화면·소리가 읽고 비운다 */
 export type PirateEv =
@@ -22,8 +28,11 @@ export type PirateEv =
   | { readonly t: 'break'; readonly x: number; readonly left: number; readonly n: number }
   | { readonly t: 'arm'; readonly arrow: ArrowKindId; readonly x: number; readonly y: number }
   | { readonly t: 'unarm' }
+  | { readonly t: 'pick' }
+  | { readonly t: 'picked'; readonly id: PickId }
+  | { readonly t: 'shield_break'; readonly x: number; readonly y: number }
   | { readonly t: 'flinch' }
-  | { readonly t: 'end'; readonly won: boolean; readonly held: number }
+  | { readonly t: 'end'; readonly won: boolean; readonly held: number; readonly perfect: boolean }
 
 export interface PirateOpts {
   readonly seed: number
@@ -37,14 +46,17 @@ export interface PirateOpts {
   readonly bow?: BowMods
   /** 활 한 단계마다 스탯 덤 (밤 판과 같은 몫) */
   readonly bowStat?: number
+  /** 판의 갈래 — 없으면 바다 도적 */
+  readonly mode?: Mode
 }
 
 export interface PirateRun {
   readonly w: World
+  readonly mode: Mode
   readonly waves: readonly Wave[]
   /** 지금 물결 (0~2) · 첫 물결 전에는 −1 */
   wave: number
-  phase: 'pause' | 'fight' | 'end'
+  phase: 'pause' | 'fight' | 'pick' | 'end'
   /** 물결이 열린 뒤 흐른 초 */
   waveT: number
   /** 이 물결에서 다음에 나올 것의 차례 */
@@ -52,7 +64,20 @@ export interface PirateRun {
   /** 쉬는 시간이 남은 초 */
   pauseLeft: number
   lives: number
-  readonly livesMax: number
+  livesMax: number
+  /** 목책 바탕 수 — 고쳐서 늘어도 이 +1 까지 */
+  readonly livesBase: number
+  /** 물결 사이 고르기 — 남은 초 · 고른 것들 (판 기록) */
+  pickLeft: number
+  readonly picks: PickId[]
+  /** 이 물결 내내 화전 (화전 한 물결을 골랐다) */
+  fireWave: boolean
+  /** 몸통을 더 맞아도 되는 수가 남은 방패 (자리마다) */
+  readonly shieldLeft: number[]
+  /** 부서진 목책 수 (고쳐도 줄지 않는다 · 흠 없이 막았나) */
+  broken: number
+  /** 물결 셋을 다 막고 목책이 한 칸도 안 부서졌다 — 두목을 사로잡는다 */
+  perfect: boolean
   /** 지금 쥔 궤짝 살 — basic 이면 없다 */
   special: ArrowKindId
   specialLeft: number
@@ -101,18 +126,25 @@ export function createPirate(o: PirateOpts): PirateRun {
       { kind: 'static', x: R.palisadeX, y: 0.5, r: 0.5 },
     ],
   }
+  const mode: Mode = o.mode ?? 'pirate'
   const role: Role[] = Array.from({ length: w.targets.length }, () => 'none')
   role[0] = 'anchor'
   const lives = palisadeLives(o.watch)
   return {
-    w, waves: bakeWaves(o.seed >>> 0, o.sev), wave: -1, phase: 'pause', waveT: 0, next: 0, pauseLeft: R.startDelay,
-    lives, livesMax: lives, special: 'basic', specialLeft: 0,
+    w, mode, waves: bakeWaves(o.seed >>> 0, o.sev, mode), wave: -1, phase: 'pause', waveT: 0, next: 0, pauseLeft: R.startDelay,
+    lives, livesMax: lives, livesBase: lives, pickLeft: 0, picks: [], fireWave: false, shieldLeft: role.map(() => 0), broken: 0, perfect: false,
+    special: 'basic', specialLeft: 0,
     role, barrelArrow: role.map(() => 'basic'), barrelBorn: role.map(() => 0),
     held: 0, shots: 0, brokeAt: Array.from({ length: lives }, () => -1), result: null, events: [],
   }
 }
 
 const now = (w: World): number => w.tick * w.dt
+
+function shieldAt(run: PirateRun, id: number, n: number): void {
+  while (run.shieldLeft.length <= id) run.shieldLeft.push(0)
+  run.shieldLeft[id] = n
+}
 
 function put(run: PirateRun, s: Spawn): void {
   const w = run.w
@@ -122,8 +154,17 @@ function put(run: PirateRun, s: Spawn): void {
   if (s.what === 'sword') {
     t = spawnTarget(w, { kind: 'charger', x: s.x, y: 0, speed: s.speed })
     role = 'sword'
+  } else if (s.what === 'shield') {
+    // 방패 든 도적 — 두목처럼 걷는 사람(archer 꼴) · 방패가 몸통을 막는다. 몸통 shieldHits 번에 방패가 깨지고 머리는 한 발
+    t = spawnTarget(w, { kind: 'archer', x: s.x, y: R.shieldR, r: R.shieldR, hp: 1, armored: true, fireDelay: 1e9, firePeriod: 1e9 })
+    t.armorHp = 1e6 // 방패는 맞은 수로만 깨진다 (아래 stepPirate)
+    t.armorMax = 1e6
+    t.speed = s.speed
+    role = 'shield'
+    shieldAt(run, t.id, R.shieldHits)
   } else if (s.what === 'archer') {
-    t = spawnTarget(w, { kind: 'archer', x: s.x, y: R.boatDeck + R.archerUp, r: R.archerR, firePeriod: R.archerEvery, fireDelay: now(w) + R.archerDelay + s.delay })
+    const deck = run.mode === 'bandit' ? R.ridgeDeck : R.boatDeck
+    t = spawnTarget(w, { kind: 'archer', x: s.x, y: deck + R.archerUp, r: R.archerR, firePeriod: R.archerEvery, fireDelay: now(w) + R.archerDelay + s.delay })
     role = 'archer'
   } else if (s.what === 'captain') {
     // 두목 — 쏘지 않는 사람(첫 발을 판 끝 너머로 미룬다) · 몸통 여러 발, 머리는 한 발
@@ -146,7 +187,7 @@ function foesLeft(run: PirateRun): boolean {
     const t = ts[i]!
     if (!t.alive) continue
     const r = run.role[i]
-    if (r === 'sword' || r === 'captain' || r === 'archer') return true
+    if (r === 'sword' || r === 'shield' || r === 'captain' || r === 'archer') return true
   }
   return false
 }
@@ -154,8 +195,30 @@ function foesLeft(run: PirateRun): boolean {
 function finish(run: PirateRun, won: boolean): void {
   run.phase = 'end'
   run.result = { won, held: run.held }
-  run.events.push({ t: 'end', won, held: run.held })
+  run.perfect = won && run.held >= WAVE_COUNT && run.broken === 0
+  run.events.push({ t: 'end', won, held: run.held, perfect: run.perfect })
   cancelDraw(run.w)
+}
+
+/** 목책 하나 고친다 — 부서진 것이 있으면 그것을, 없으면 바탕 +1 까지 한 칸 더 */
+function addLife(run: PirateRun): void {
+  if (run.lives >= run.livesBase + 1) return
+  if (run.lives < run.livesMax) run.brokeAt[run.livesMax - run.lives - 1] = -1
+  else { run.livesMax++; run.brokeAt.push(-1) }
+  run.lives++
+}
+
+/** 물결 사이 고르기 — 화면이 누르거나 (고르는 중에만) 시간이 다 되어 저절로 부른다 */
+export function pickBoon(run: PirateRun, id: PickId): void {
+  if (run.phase !== 'pick') return
+  const R = P.pirate
+  run.picks.push(id)
+  if (id === 'fire') run.fireWave = true
+  else if (id === 'repair') for (let i = 0; i < Math.round(R.pickLife); i++) addLife(run)
+  else armBow(run.w, { ...run.w.bow, drawTimeMul: run.w.bow.drawTimeMul * R.pickDrawMul })
+  run.events.push({ t: 'picked', id })
+  run.phase = 'pause'
+  run.pauseLeft = R.pause
 }
 
 /** 판의 한 고정 스텝 — 활터 step 하나와 이 판의 규칙 */
@@ -164,6 +227,18 @@ export function stepPirate(run: PirateRun, input: InputFrame): void {
   const w = run.w
   const R = P.pirate
   const dt = w.dt
+
+  // ── 물결 사이 고르기 — 판이 멈춘다 (시간만 흐른다 · 다 되면 첫째) ──
+  if (run.phase === 'pick') {
+    run.pickLeft -= dt
+    // 궤짝 살의 시간은 고르는 동안에도 흐른다 (쉬는 틈이 살을 늘려 주지 않는다)
+    if (run.special !== 'basic') {
+      run.specialLeft -= dt
+      if (run.specialLeft <= 0) { run.special = 'basic'; run.specialLeft = 0; armArrow(w, 'basic'); run.events.push({ t: 'unarm' }) }
+    }
+    if (run.pickLeft <= 0) pickBoon(run, PICKS[0]!)
+    return
+  }
 
   // ── 물결 ──
   if (run.phase === 'pause') {
@@ -174,6 +249,7 @@ export function stepPirate(run: PirateRun, input: InputFrame): void {
       run.waveT = 0
       run.next = 0
       run.events.push({ t: 'wave', k: run.wave })
+      if (run.fireWave) { run.special = FIRE; run.specialLeft = R.specialSec; armArrow(w, FIRE); run.events.push({ t: 'arm', arrow: FIRE, x: R.palisadeX, y: 1 }) }
     }
   }
   if (run.phase === 'fight') {
@@ -191,10 +267,13 @@ export function stepPirate(run: PirateRun, input: InputFrame): void {
     if (r === 'captain') {
       t.x -= R.captainSpeed * dt
       t.baseX = t.x
+    } else if (r === 'shield') {
+      t.x -= t.speed * dt
+      t.baseX = t.x
     } else if (r === 'barrel') {
       if (t.x > R.shoreX + R.barrelR) t.x -= R.barrelSpeed * dt
       t.baseX = t.x
-      t.y = t.baseY + Math.sin((time + i) * R.barrelBobHz * Math.PI * 2) * R.barrelBob
+      t.y = t.baseY + (run.mode === 'bandit' ? 0 : 1) * Math.sin((time + i) * R.barrelBobHz * Math.PI * 2) * R.barrelBob
       if (time - run.barrelBorn[i]! > R.barrelLife) t.alive = false
     }
   }
@@ -209,6 +288,20 @@ export function stepPirate(run: PirateRun, input: InputFrame): void {
   for (let i = evStart; i < w.events.length; i++) {
     const e = w.events[i]!
     if (e.t === 'release') run.shots++
+    else if (e.t === 'hit' && run.role[e.targetId] === 'shield' && !e.head) {
+      // 몸통은 방패가 받는다 — 정해진 수만큼 맞으면 방패가 깨지고, 그 뒤엔 몸통도 통한다
+      const id = e.targetId
+      const left = (run.shieldLeft[id] ?? 0) - 1
+      run.shieldLeft[id] = left
+      const t = w.targets[id]!
+      if (left <= 0 && t.alive && t.armored) {
+        t.armored = false
+        t.armorHp = 0
+        t.armorMax = 0
+        w.events.push({ t: 'armor_break', x: t.x, y: t.y })
+        run.events.push({ t: 'shield_break', x: t.x, y: t.y })
+      }
+    }
     else if (e.t === 'player_hit') {
       cancelDraw(w)
       run.events.push({ t: 'flinch' })
@@ -226,12 +319,15 @@ export function stepPirate(run: PirateRun, input: InputFrame): void {
 
   // ── 궤짝 살의 시간 ──
   if (run.special !== 'basic') {
-    run.specialLeft -= dt
+    // 화전 한 물결 — 이 물결 내내 화전이 이어진다 (궤짝 살을 쥐고 있던 틈이 지나면 다시 화전)
+    if (run.fireWave && run.special === FIRE) run.specialLeft = R.specialSec
+    else run.specialLeft -= dt
     if (run.specialLeft <= 0) {
-      run.special = 'basic'
-      run.specialLeft = 0
-      armArrow(w, 'basic')
-      run.events.push({ t: 'unarm' })
+      const back: ArrowKindId = run.fireWave ? FIRE : 'basic'
+      run.special = back
+      run.specialLeft = back === 'basic' ? 0 : R.specialSec
+      armArrow(w, back)
+      run.events.push(back === 'basic' ? { t: 'unarm' } : { t: 'arm', arrow: back, x: R.palisadeX, y: 1 })
     }
   }
 
@@ -239,13 +335,14 @@ export function stepPirate(run: PirateRun, input: InputFrame): void {
   for (let i = 0; i < w.targets.length; i++) {
     const t = w.targets[i]!
     const r = run.role[i]
-    if (!t.alive || (r !== 'sword' && r !== 'captain')) continue
+    if (!t.alive || (r !== 'sword' && r !== 'shield' && r !== 'captain')) continue
     if (t.x > R.palisadeX) continue
     t.alive = false
     run.role[i] = 'none'
     const n = Math.min(run.lives, r === 'captain' ? Math.round(R.captainBreak) : 1)
     for (let k = 0; k < n; k++) run.brokeAt[run.livesMax - run.lives + k] = time
     run.lives -= n
+    run.broken += n
     run.events.push({ t: 'break', x: R.palisadeX, left: run.lives, n })
     if (run.lives <= 0) {
       finish(run, false)
@@ -259,8 +356,12 @@ export function stepPirate(run: PirateRun, input: InputFrame): void {
     run.events.push({ t: 'clear', k: run.wave })
     if (run.held >= WAVE_COUNT) finish(run, true)
     else {
-      run.phase = 'pause'
-      run.pauseLeft = R.pause
+      // 화전 한 물결은 끝났다 · 판이 멈추고 셋 가운데 하나를 고른다
+      if (run.fireWave) { run.fireWave = false; run.special = 'basic'; run.specialLeft = 0; armArrow(w, 'basic'); run.events.push({ t: 'unarm' }) }
+      cancelDraw(w)
+      run.phase = 'pick'
+      run.pickLeft = R.pickAutoS
+      run.events.push({ t: 'pick' })
     }
   }
 }

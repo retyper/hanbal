@@ -18,7 +18,7 @@ import { createSfx, playUi, pumpSfx, unlockSfx, updateSfx } from './audio/sfx.ts
 import { tierBow, tierOf } from './night/sim.ts'
 import { arrowIcon } from './ui/arrowicons.ts'
 import { ARROW_KINDS } from './game/arrows.ts'
-import { createPirate, stepPirate, type PirateRun } from './pirate/sim.ts'
+import { createPirate, pickBoon, stepPirate, type PickId, type PirateRun } from './pirate/sim.ts'
 import { pirateHooks } from './pirate/draw.ts'
 import { WAVE_COUNT } from './pirate/waves.ts'
 import { P } from './tune/params.ts'
@@ -31,7 +31,8 @@ const num = (k: string, d: number): number => {
   const v = Number(params.get(k))
   return params.get(k) !== null && Number.isFinite(v) ? v : d
 }
-const missionId = params.get('id') ?? 'card-pirates'
+const bandit = params.get('mode') === 'bandit'
+const missionId = params.get('id') ?? (bandit ? 'card-bandits' : 'card-pirates')
 const back = params.get('back') ?? 'realm.html'
 const tier = tierOf(num('bow', 0))
 const opts = {
@@ -41,6 +42,7 @@ const opts = {
   watch: num('watch', 0),
   bow: tierBow(tier),
   bowStat: P.night.tierStat * tier,
+  mode: bandit ? ('bandit' as const) : ('pirate' as const),
 }
 const RESULT = 'hanbal.pirate.result'
 
@@ -55,7 +57,7 @@ setSceneHooks(pirateHooks(() => run))
 let live = false
 let sent = false
 
-function send(m: { held: number; won: boolean } | { skip: true }): void {
+function send(m: { held: number; won: boolean; perfect: boolean } | { skip: true }): void {
   if (sent) return
   sent = true
   if (window.parent !== window) window.parent.postMessage({ type: RESULT, id: missionId, ...m }, location.origin)
@@ -96,6 +98,19 @@ const CSS = `
 #night-ui .banner { position: absolute; left: 0; right: 0; top: 30%; text-align: center; font-family: 'Gowun Batang', serif; font-size: clamp(30px, 9vw, 56px);
   font-weight: 800; color: #fff4dc; text-shadow: 0 3px 0 #000, 0 0 24px #000; animation: pir-banner 1.6s ease-out forwards; }
 #night-ui .banner.red { color: #ff7a5c; }
+#night-ui .picks { pointer-events: auto; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(94%, 560px); text-align: center; }
+#night-ui .picks h2 { font-family: 'Gowun Batang', serif; font-size: 24px; margin: 0 0 10px; color: #fff4dc; text-shadow: 0 2px 0 #000, 0 0 16px #000; }
+#night-ui .picks .row { display: flex; gap: 8px; justify-content: center; }
+#night-ui .picks button.pk { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 6px; background: #14202af0; border: 2px solid #5f8aa0; border-radius: 14px; animation: pir-pick 0.28s ease-out backwards; }
+#night-ui .picks button.pk:nth-child(2) { animation-delay: 0.06s }
+#night-ui .picks button.pk:nth-child(3) { animation-delay: 0.12s }
+#night-ui .picks button.pk b { font-size: 17px; color: #f0c86a; }
+#night-ui .picks button.pk small { font-size: 12.5px; color: #d8ccb2; line-height: 1.35; }
+#night-ui .picks button.pk.on { background: linear-gradient(#c98f3a, #8a5a1f); border-color: #f0c86a; transform: scale(1.06); }
+#night-ui .picks .ico { font-size: 34px; line-height: 1; }
+#night-ui .picks .auto { margin-top: 10px; height: 6px; border-radius: 3px; background: #ffffff25; overflow: hidden; }
+#night-ui .picks .auto i { display: block; height: 100%; background: #f0c86a; }
+@keyframes pir-pick { from { transform: translateY(26px) scale(0.85); opacity: 0 } to { transform: none; opacity: 1 } }
 #night-ui .flash { position: absolute; inset: 0; box-shadow: inset 0 0 80px 30px #ff2a1a; animation: pir-fade 0.5s ease-out forwards; }
 @keyframes pir-blink { from { opacity: 0.45 } to { opacity: 1 } }
 @keyframes pir-pop { 0% { transform: translateX(-50%) scale(1.6) } 100% { transform: translateX(-50%) scale(1) } }
@@ -111,9 +126,9 @@ const STAKE = '<svg viewBox="0 0 22 26"><path d="M3 26V7l3-5 3 5v19zM9.5 26V5l3-
 function showIntro(): void {
   live = false
   const lives = run.livesMax
-  card(`<h1>바다 도적이 몰려온다</h1><p>모래밭에 목책을 세웠다. 물결 셋을 막아 내면 도적의 쇠를 빼앗는다.</p>`
-    + `<div class="rules"><div><b>🌊×${WAVE_COUNT}</b>물결</div><div><b>${STAKE.replace('<svg', '<svg width="22" height="26"')}×${lives}</b>목책</div><div><b>${arrowIcon('burst', 26)}</b>궤짝을 쏘면 살이 바뀝니다</div></div>`
-    + `<p style="font-size:13px;color:#a9b8c2">누르고 있으면 당기고, 놓으면 쏩니다. 화살은 끝이 없습니다.</p>`
+  card(`<h1>${bandit ? '산적이 고개를 넘어온다' : '바다 도적이 몰려온다'}</h1><p>${bandit ? '고갯길에 목책을 세웠다. 물결 셋을 막아 내면 산적의 쇠를 빼앗는다.' : '모래밭에 목책을 세웠다. 물결 셋을 막아 내면 도적의 쇠를 빼앗는다.'}</p>`
+    + `<div class="rules"><div><b>🌊×${WAVE_COUNT}</b>물결</div><div><b>${STAKE.replace('<svg', '<svg width="22" height="26"')}×${lives}</b>목책</div><div><b>${arrowIcon('burst', 26)}</b>${bandit ? '노획 수레' : '궤짝'}을 쏘면 살이 바뀝니다</div></div>`
+    + `<p style="font-size:13px;color:#a9b8c2">누르고 있으면 당기고, 놓으면 쏩니다. 화살은 끝이 없습니다. 방패를 든 자는 몸통을 두 번 맞혀야 방패가 깨지고, 머리는 한 발입니다.</p>`
     + `<div class="btns"><button data-act="back">물러난다</button><button class="on" data-act="go">막는다</button></div>`)
 }
 
@@ -126,7 +141,7 @@ function playHud(force = false): void {
   if (!force && key === lastHud) return
   const armChanged = !lastHud.endsWith(`|${run.special}`)
   lastHud = key
-  const keep = [...ui.querySelectorAll('.banner, .flash')]
+  const keep = [...ui.querySelectorAll('.banner, .flash, .picks')]
   ui.innerHTML = '<button class="quit" data-act="quit">그만</button>'
     + `<div class="top"><div class="waves">${waves}</div><div class="lives">${lives}</div></div>`
     + (run.special !== 'basic' ? `<div class="arm${armChanged ? ' pop' : ''}">${arrowIcon(run.special, 40)}<span><b>${ARROW_KINDS.find((k) => k.id === run.special)?.name ?? ''}</b><span class="bar"><i></i></span></span></div>` : '')
@@ -155,9 +170,42 @@ function flash(): void {
   ui.appendChild(el)
 }
 
+const PICK_UI: ReadonlyArray<{ id: PickId; ico: string; name: string; does: string }> = [
+  { id: 'fire', ico: '🔥', name: '화전 한 물결', does: '다음 물결 내내 불화살' },
+  { id: 'repair', ico: '🪵', name: '목책 고치기', does: '목책이 하나 늘거나 되살아납니다' },
+  { id: 'draw', ico: '💪', name: '당김 빨라짐', does: '이제부터 활이 빨리 당겨집니다' },
+]
+let picking = false
+function showPick(): void {
+  picking = true
+  ui.querySelector('.picks')?.remove()
+  const el = document.createElement('div')
+  el.className = 'picks'
+  el.innerHTML = '<h2>다음 물결에 앞서</h2><div class="row">'
+    + PICK_UI.map((p) => `<button class="pk" data-pick="${p.id}"><span class="ico">${p.ico}</span><b>${p.name}</b><small>${p.does}</small></button>`).join('')
+    + '</div><div class="auto"><i></i></div>'
+  ui.appendChild(el)
+}
+function pickBar(): void {
+  if (!picking) return
+  const bar = ui.querySelector<HTMLElement>('.picks .auto i')
+  if (bar !== null) bar.style.width = `${Math.max(0, (run.pickLeft / P.pirate.pickAutoS) * 100).toFixed(1)}%`
+}
+function donePick(id: PickId): void {
+  picking = false
+  const el = ui.querySelector('.picks')
+  el?.querySelector(`[data-pick="${id}"]`)?.classList.add('on')
+  setTimeout(() => el?.remove(), 380)
+  banner(PICK_UI.find((p) => p.id === id)?.name ?? '')
+  playUi(sfx, 'unlock')
+  playHud(true)
+}
+
 function start(): void {
   run = createPirate(opts)
   live = true
+  picking = false
+  ui.querySelector('.picks')?.remove()
   acc = 0
   lastHud = ''
   playHud(true)
@@ -165,14 +213,16 @@ function start(): void {
 
 function showEnd(won: boolean, held: number): void {
   live = false
-  if (run.shots > 0) send({ held, won })
+  if (run.shots > 0) send({ held, won, perfect: run.perfect })
   else send({ skip: true })
   card(won
-    ? `<h1>물결 셋을 다 막았다</h1><p>도적들이 배를 버리고 달아난다. 남기고 간 쇠를 거둔다.</p><div class="btns"><button class="on" data-act="back">돌아가기</button></div>`
-    : `<h1>${NTH[Math.min(2, held)]} 물결에 목책이 뚫렸다</h1><p>${held > 0 ? `${['', '물결 하나를', '물결 둘을'][held]} 막아 낸 만큼 잃는 것이 줄었다.` : '도적들이 포구로 쏟아져 들어온다.'}</p><div class="btns"><button class="on" data-act="back">돌아가기</button></div>`)
+    ? `<h1>${run.perfect ? '두목을 사로잡았다' : '물결 셋을 다 막았다'}</h1><p>${run.perfect ? '목책이 한 칸도 부서지지 않았다. 두목을 묶어 두고 쇠를 곱절로 거둔다.' : bandit ? '산적들이 산으로 달아난다. 남기고 간 쇠를 거둔다.' : '도적들이 배를 버리고 달아난다. 남기고 간 쇠를 거둔다.'}</p><div class="btns"><button class="on" data-act="back">돌아가기</button></div>`
+    : `<h1>${NTH[Math.min(2, held)]} 물결에 목책이 뚫렸다</h1><p>${held > 0 ? `${['', '물결 하나를', '물결 둘을'][held]} 막아 낸 만큼 잃는 것이 줄었다.` : bandit ? '산적들이 마을로 쏟아져 들어온다.' : '도적들이 포구로 쏟아져 들어온다.'}</p><div class="btns"><button class="on" data-act="back">돌아가기</button></div>`)
 }
 
 ui.addEventListener('click', (ev) => {
+  const pk = (ev.target as HTMLElement).closest<HTMLElement>('[data-pick]')
+  if (pk !== null) { unlock(); if (run.phase === 'pick') pickBoon(run, pk.dataset['pick'] as PickId); return }
   const t = (ev.target as HTMLElement).closest<HTMLElement>('[data-act]')
   if (t === null) return
   unlock()
@@ -198,6 +248,8 @@ function pumpRun(): void {
   for (const e of run.events) {
     if (e.t === 'wave') { banner(`${NTH[e.k]} 물결`); playHud(true) }
     else if (e.t === 'clear' && e.k < WAVE_COUNT - 1) { banner('막았다!'); playUi(sfx, 'levelup'); playHud(true) }
+    else if (e.t === 'pick') showPick()
+    else if (e.t === 'picked') donePick(e.id)
     else if (e.t === 'break') { flash(); playHud(true) }
     else if (e.t === 'arm') { playUi(sfx, 'unlock'); playHud(true) }
     else if (e.t === 'unarm') playHud(true)
@@ -233,6 +285,7 @@ function frame(now: number): void {
     if (steps >= P.sim.maxCatchUpSteps) acc = 0
     pumpRun()
     armBar()
+    pickBar()
   }
   try {
     pumpSfx(sfx, w)
