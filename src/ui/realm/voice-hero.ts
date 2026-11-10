@@ -1187,7 +1187,7 @@ export const HERO_VOICE_1: Readonly<Record<string, HeroVoice>> = {
 }
 
 /** 같은 얼굴의 다른 판 장수 — 같은 사람이라 같은 목소리를 쓴다 (튜토리얼 오간 · 주몽 판 옥저 군장) */
-const SAME_VOICE: Readonly<Record<string, string>> = { 'tut-ogan': 'mh-ogan', 'tut-malgalgi': 'sabeol-1', 'jm-okjeo-ruler': 'bukokjeo-ruler' }
+const SAME_VOICE: Readonly<Record<string, string>> = { 'tut-ogan': 'mh-ogan', 'tut-malgalgi': 'sabeol-1', 'jm-okjeo-ruler': 'bukokjeo-ruler', 'tut-onjo': 'mh-onjo' } // 온조는 1장과 3장이 같은 사람 (11-11)
 /** 목소리를 찾을 장수 id — 같은 얼굴이면 그 사람 것 */
 export const heroVoiceId = (id: string): string => SAME_VOICE[id] ?? id
 
