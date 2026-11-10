@@ -309,6 +309,7 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'w-55-guga-nuri', // 11-10 구가 누리 1차 (Flow) · 형: 굿
   'w-49-goryong-gureum', // 11-10 구름 1차 (Flow) · 형: 나이스
   'w-34-chopal-deulme', // 11-10 들메 1차 (Flow) · 형: 중간에 얼굴이 조금 덜 예뻐지지만 나이스
+  'w-25-bihwa-priestess', // 11-10 빛나 1차 (Flow Jay) · 방울 춤 제자리 뛰기 · 형: 좋아좋아
   'w-41-hwanna-beodeul', // 11-10 버들 1차 (Flow Jay) · 형: 시위가 혼자 당겨져서 소리째 거꾸로 돌림 (앞으로 돈 원본은 assets_src/realm/retired/awaken-loop)
   'w-78-wansan-wan', // 11-08 저녁 완 v3 · 10초 구성 · 만작한 채 윙크 (형: 그래도 봐줄 만하다 · 적용)
   'w-69-jeoga-eomni', // 11-07 엄니 · fc094928 사용자 채택, 원본 프레임 경계 한계 기록
