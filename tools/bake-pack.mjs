@@ -66,6 +66,8 @@ for (const [id, age, extra] of REDO2) {
 const REDO1 = [
   // 11-10 형: "가슴 모양이 이상해서 아예 그냥 거유로 각성 이미지 다시 만들어야 할 듯"
   ['w-104-buyeo-darae', ' Her figure: a naturally very large, full, round bust with a natural shape and soft weight (not stiff, not oddly shaped), clearly visible under the outfit.'],
+  // 11-10 형: "w-97 미르 1차 각성 이미지 무기 없이 다시 · 영상도 다시"
+  ['w-97-goguryeo-mir', ' Override for this character: she holds NO weapon at all (no bow, no arrows, no quiver, no blade anywhere in the image); both hands are free and empty. Keep her face, hair, outfit colors and jewelry from the portrait. Pose: a confident, alluring pose instead of a weapon pose (one hand lifting her hair, the other on her hip, body turned to show her curves), a warm smile looking straight at the viewer.', '(early twenties)'],
   // 11-10 형: "w39 도 무기 없이 1차 2차 원본 이미지 다시 만들어야" (명세에 없는 사람 — 다래의 1차 틀로)
   ['w-39-gosaburi-galmae', ' Override for this character: she holds NO weapon at all (no bow, no arrows, no quiver, no blade anywhere in the image); both hands are free and empty. Keep her wild dark hair full of white feathers, her big joyful open laugh, her tied linen top with deep cleavage, jade pendants and feather trims. Pose: a lively, playful, confident pose instead of a weapon pose (both arms raised, fingers running through her feathered hair, or one hand on her hip while she laughs toward the viewer), body turned to show her curves, bare toned midriff.', '(late twenties)'],
   // 11-10 형: "1차 각성 원본 무기 없이 고쳐야 함 · 영상도 다시 · 더 섹시하게" (명세에 없는 사람 — 다래의 1차 틀로)
