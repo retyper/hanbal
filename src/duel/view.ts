@@ -245,8 +245,38 @@ let foeAnim: { kind: 'idle' | 'windup' | 'attack' | 'hit' | 'stagger'; t0: numbe
 
 // ── 크기 · 자리
 let W = 0, H = 0, dpr = 1
+/** 폰(손가락 화면)은 DPR 1.5 에서 시작 · 프레임 간격 가운데값이 22ms 를 넘으면 0.5 씩 1 까지 (형 11-10: 폰으로 겨루기할 때 렉이 엄청 · render/scene watchLoad 와 같은 셈) */
+let dprCap = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches ? 1.5 : 2
+const gaps: number[] = []
+function watchLoad(dt: number): void {
+  if (dprCap <= 1 || dt <= 0 || dt > 500) return
+  gaps.push(dt)
+  if (gaps.length < 60) return
+  const mid = gaps.sort((a, b) => a - b)[30]!
+  gaps.length = 0
+  if (mid > 22) { dprCap = Math.max(1, dprCap - 0.5); resize() }
+}
+/** 바탕(전장 그림 + 어둡게 덮는 그라디언트)은 크기가 바뀔 때만 한 번 굽는다 — 화면 가득 큰 그림을 매 프레임 늘려 그리던 것 */
+let bgBaked: HTMLCanvasElement | null = null
+let bgKey = ''
+function bakedBg(): HTMLCanvasElement | null {
+  if (!bg.complete || bg.naturalWidth === 0) return null
+  const key = `${W}x${H}@${dpr}`
+  if (bgBaked !== null && bgKey === key) return bgBaked
+  const cv = bgBaked ?? document.createElement('canvas')
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr)
+  const c = cv.getContext('2d') as CanvasRenderingContext2D
+  c.setTransform(dpr, 0, 0, dpr, 0, 0)
+  const s = Math.max(W / bg.naturalWidth, H / bg.naturalHeight)
+  c.drawImage(bg, (W - bg.naturalWidth * s) / 2, (H - bg.naturalHeight * s) / 2, bg.naturalWidth * s, bg.naturalHeight * s)
+  const shade = c.createLinearGradient(0, 0, 0, H)
+  shade.addColorStop(0, 'rgba(8,5,3,.7)'); shade.addColorStop(0.55, 'rgba(8,5,3,.5)'); shade.addColorStop(0.82, 'rgba(8,5,3,.2)'); shade.addColorStop(1, 'rgba(8,5,3,.35)')
+  c.fillStyle = shade; c.fillRect(0, 0, W, H)
+  bgBaked = cv; bgKey = key
+  return cv
+}
 function resize(): void {
-  dpr = Math.min(2, devicePixelRatio || 1)
+  dpr = Math.min(dprCap, devicePixelRatio || 1)
   W = innerWidth; H = innerHeight
   canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr)
 }
@@ -654,9 +684,16 @@ function drawCue(c: Cue, t: number): void {
   const inPerfect = Math.abs(off) <= jw.perfect
   ctx.lineWidth = inPerfect ? 9 : inWin ? 7 : past ? 4 : 3 + 3 * k
   ctx.strokeStyle = inPerfect ? 'rgba(255,226,120,1)' : inWin ? 'rgba(255,214,110,.95)' : past ? `rgba(255,150,60,${Math.max(0.2, 1 - off / 20)})` : `rgba(${rgb},${0.35 + 0.65 * k})`
-  if (inWin) { ctx.save(); ctx.shadowColor = 'rgba(255,200,80,.9)'; ctx.shadowBlur = inPerfect ? 22 : 12 }
+  if (inWin) {
+    // 빛 번짐은 shadowBlur 대신 굵고 옅은 선을 겹쳐서
+    const lw = ctx.lineWidth, ss = ctx.strokeStyle
+    ctx.strokeStyle = 'rgba(255,200,80,.18)'; ctx.lineWidth = lw + (inPerfect ? 18 : 10)
+    ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI * 2); ctx.stroke()
+    ctx.strokeStyle = 'rgba(255,200,80,.32)'; ctx.lineWidth = lw + (inPerfect ? 9 : 5)
+    ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI * 2); ctx.stroke()
+    ctx.lineWidth = lw; ctx.strokeStyle = ss
+  }
   ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI * 2); ctx.stroke()
-  if (inWin) ctx.restore()
   if (c.heavy) {
     ctx.fillStyle = `rgba(255,90,70,${0.7 + 0.3 * k})`; ctx.font = `800 ${Math.round(r * 0.9)}px "Gowun Batang", serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
     ctx.fillText('!', x, y + 1); ctx.textBaseline = 'alphabetic'
@@ -695,10 +732,8 @@ function drawDuel(now: number, fadeIn: number): void {
   const ft = fieldTop()
   // 바탕 — 전장 그림 한 장 (형 11-09: 배경은 하나 · 아래서 싸우는 장수도 같은 배경 위)
   // 위는 어둡게(띠·숫자가 읽히게) · 아래 땅은 밝게(장수들이 보이게)
-  cover(bg, 0, 0, W, H)
-  const shade = ctx.createLinearGradient(0, 0, 0, H)
-  shade.addColorStop(0, 'rgba(8,5,3,.7)'); shade.addColorStop(0.55, 'rgba(8,5,3,.5)'); shade.addColorStop(0.82, 'rgba(8,5,3,.2)'); shade.addColorStop(1, 'rgba(8,5,3,.35)')
-  ctx.fillStyle = shade; ctx.fillRect(0, 0, W, H)
+  const baked = bakedBg()
+  if (baked !== null) ctx.drawImage(baked, 0, 0, W, H)
   // 초상 판 — 모서리 둥근 정사각 · 초상은 살짝 비친다. 맞으면 흔들리고 붉게, 비틀거리면 기운다
   const pn = panel()
   const sinceCrit = now - critAt
@@ -727,8 +762,9 @@ function drawDuel(now: number, fadeIn: number): void {
   if (d.phase === 'rush') {
     // 비틀거림 — 판 둘레가 금빛으로 맥박
     const a = 0.4 + 0.3 * Math.sin(now / 90)
-    ctx.save(); ctx.shadowColor = `rgba(255,200,90,${a})`; ctx.shadowBlur = 30; ctx.lineWidth = 6; ctx.strokeStyle = `rgba(255,210,110,${a})`
-    roundRect(pn.x, pn.y, pn.s, pn.s, pn.s * 0.06); ctx.stroke(); ctx.restore()
+    ctx.save()
+    ctx.lineWidth = 22; ctx.strokeStyle = `rgba(255,200,90,${a * 0.2})`; roundRect(pn.x, pn.y, pn.s, pn.s, pn.s * 0.06); ctx.stroke()
+    ctx.lineWidth = 6; ctx.strokeStyle = `rgba(255,210,110,${a})`; roundRect(pn.x, pn.y, pn.s, pn.s, pn.s * 0.06); ctx.stroke(); ctx.restore()
   }
   // 고리
   for (const c of d.cues) if (c.done === null && d.t >= c.t0) drawCue(c, d.t)
@@ -856,6 +892,7 @@ function frame(now: number): void {
   if (document.hidden) return
   const dt = last === 0 ? 0 : Math.min(100, now - last)
   last = now
+  watchLoad(dt)
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   const sx = shake > 0 ? (((now * 7) % 13) / 13 - 0.5) * shake : 0
   const sy = shake > 0 ? (((now * 11) % 17) / 17 - 0.5) * shake : 0
