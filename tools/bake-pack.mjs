@@ -152,17 +152,24 @@ for (const [title, p, save] of GEMINI) if (!existsSync('public/realm/fx/' + save
 const KIT_TAIL = 'Pure flat #00FF00 background, no grid lines, no shadow, no ground line, no text, no motion streaks, nothing in the bottom-right corner.'
 const KIT_ACT = {
   spear: '1 battle-ready stance holding the spear in both hands at waist height, tip pointing forward-right, 2 pulling the spear back to wind up, 3 lunging forward with the long spear fully extended to the right, its tip far in front of her, 4 thrust follow-through, tip still forward, 5 recovering to stance, ',
+  sword: '1 battle-ready stance with the sword held up in front of her, blade pointing forward-right, 2 raising the sword high above her head to strike, 3 lunging forward and slashing the sword down and forward to the right, the blade far in front of her, 4 slash follow-through with the blade low in front of her, still pointing forward, 5 recovering to stance, ',
+  axe: '1 battle-ready stance holding the axe in both hands in front of her, axe head forward, 2 raising the axe high over her head, 3 stepping forward and chopping the axe down hard in front of her to the right, 4 follow-through with the axe head low in front of her, 5 recovering to stance, ',
   dagger: '1 low crouched fighting stance with the dagger held forward in her front hand, 2 drawing the dagger hand back beside her hip, 3 lunging forward and stabbing to the right, arm fully extended with the blade in front of her fist, 4 stab follow-through, dagger still in front, 5 recovering to stance, ',
 }
 const CLAUSE = {
   // 11-09 오디로 시험해 먹힌 절 (창 가운데를 두 손 · 20도 아래 · 창 전체가 칸 안)
   spear: 'IMPORTANT for the four attack cells: she keeps the SAME long spear from IMAGE 1 (with its metal spearhead blade and its own decorations) and grips the MIDDLE of the shaft firmly with BOTH hands, then thrusts it forward in the direction she faces and slightly downward (about 20 degrees); the spearhead blade points forward and is clearly visible, and the WHOLE spear, from butt to blade tip, stays fully inside each cell. Never empty-handed, never a bare stick without a blade, never the spear pointing backward, no loose feathers or scraps floating around.',
+  // 11-10 검수 2번: 공격 칸이 서기와 같거나 무기가 등 뒤로 (칼·도끼)
+  sword: 'IMPORTANT for the four attack cells: she keeps the SAME sword from IMAGE 1 and swings it FORWARD in the direction she faces, with a big lunge step; in frames 3 and 4 the steel blade is clearly visible IN FRONT of her body, pointing forward-right, never held behind her back, never hanging down beside her leg, and the whole sword stays fully inside each cell. Frames 3 and 4 must look clearly different from frame 1.',
+  axe: 'IMPORTANT for the four attack cells: she keeps the SAME axe from IMAGE 1 gripped in both hands and chops FORWARD in the direction she faces, with a big lunge step; in frames 3 and 4 the axe head is clearly visible IN FRONT of her body, never behind her back, and the whole axe stays fully inside each cell. Frames 3 and 4 must look clearly different from frame 1.',
   // 검수 3번: 단검이 사라진 맨주먹 찌르기
   dagger: 'IMPORTANT for the four attack cells: she keeps the SAME dagger from IMAGE 1 gripped tightly in her front hand, the steel blade clearly visible and pointing forward beyond her fist in every attack cell, the whole dagger fully inside each cell. Never an empty fist, never a hidden or missing blade.',
 }
 const STRIPS = [
   // 11-10 형이 구운 열하나 중 아홉은 넣음 · 물새는 찌르기 칸이 또 빈 주먹 · 지타는 칸이 어긋나 작은 사람이 옆 칸에 끼었다 → 다시
   // 11-10 저녁 물새·지타는 Claude 가 제미나이 u/0 로 다시 구워 넣음 (지타는 한 번 고쳐 달라 하고 2번 칸은 1번으로) — 다음 사람을 여기에
+  // 11-10 밤 검수 2번(공격 칸이 서기와 같음 · 칼·도끼는 등 뒤로): 해비 도끼 · 소서노·알영 창 · 아라·혁거세 칼
+  ['realm-redo-1110', ['haebi', 'soseono', 'aryeong', 'ara', 'hyeokgeose']],
 ]
 n = 0
 for (const [file, keys] of STRIPS) {
@@ -175,8 +182,8 @@ for (const [file, keys] of STRIPS) {
     const man = h.sex === 'man'
     const w = h.weapon
     let p = `IMAGE 1 is the walking sprite sheet of my character, ${man ? 'the man of IMAGE 2 (his portrait)' : 'the woman of IMAGE 2 (her portrait)'}. Make a NEW image with EXACTLY the same wide 16:9 4x2 layout, cell size, character scale (the WHOLE body from head to feet visible in every cell, same size as in IMAGE 1), foot line and EXACTLY the same person and outfit as IMAGE 1, strict side view facing RIGHT in every frame, every figure and the whole ${w} fully inside its cell. ${CLAUSE[w]} Exactly ONE ${w} in every frame. 8 frames in order: ${KIT_ACT[w]}6 hit recoil, torso jerked backward, head thrown back, pained face, still facing right, 7 falling backward off the feet, 8 lying on the back on the ground with the ${w} beside. The weapon never points backward. ${KIT_TAIL}`
-    if (man) p = p.replace(/\bher\b/g, 'his').replace(/\bshe\b/g, 'he')
-    add('strip', ++n, `${key} · ${h.bust} · ${w === 'spear' ? '창 찌르기' : '단검 찌르기'}`, [walk, bust], p, `act_${key}.png`, '그림 둘을 순서대로(걷기 시트가 IMAGE 1) · 이미지 만들기 · 16:9')
+    if (man) p = p.replace(/\b(of|beside|behind) her\b/g, '$1 him').replace(/\bher\b/g, 'his').replace(/\bshe\b/g, 'he')
+    add('strip', ++n, `${key} · ${h.bust} · ${{ spear: '창 찌르기', dagger: '단검 찌르기', sword: '칼 베기', axe: '도끼 찍기' }[w]}`, [walk, bust], p, `act_${key}.png`, '그림 둘을 순서대로(걷기 시트가 IMAGE 1) · 이미지 만들기 · 16:9')
   }
 }
 

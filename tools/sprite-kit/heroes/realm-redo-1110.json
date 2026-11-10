@@ -1,0 +1,7 @@
+[
+  { "key": "haebi", "heroId": "tut-haebi", "bust": "w-95-michuhol-haebi", "weapon": "axe", "sex": "woman" },
+  { "key": "soseono", "heroId": "mh-soseono", "bust": "l-L2-soseono", "weapon": "spear", "sex": "woman" },
+  { "key": "aryeong", "heroId": "sr-aryeong", "bust": "l-L7-aryeong", "weapon": "spear", "sex": "woman" },
+  { "key": "ara", "heroId": "anya-1", "bust": "w-04-gaya-swordswoman", "weapon": "sword", "sex": "woman" },
+  { "key": "hyeokgeose", "heroId": "sr-hyeokgeose", "bust": "g-74-saro-hyeokgeose", "weapon": "sword", "sex": "man" }
+]
