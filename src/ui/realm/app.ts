@@ -4941,7 +4941,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           + (busy ? `<span class="wbusy">${label}</span>` : `<button class="btn${queued ? ' on' : ''}" data-act="wonder" data-what="${what}"${why === null ? '' : noBtn(why)}>${label}${costHtml({ grain: c.grain, [c.good]: c.n })}</button>`)
         if (rv.length > 0) foot += `<span class="wgrv">${rv.map((x) => `<b data-tip="${esc(josa(r.factions[x.faction]?.name ?? '', '이', '가'))} 짓는 중 · ${x.lo}~${x.hi}단 쯤">${emblem(x.faction, 'wem')}${x.lo}~${x.hi}</b>`).join('')}</span>`
       }
-      h += `<div class="${cls}"><div class="wpic">${w !== null && at === null ? icon(`${d.icon}-build`, 'wimg') : icon(d.icon, 'wimg')}</div><b class="wname">${esc(d.name)}</b><span class="wgfx">${esc(wonderEffect(what))}</span>${foot}</div>`
+      h += `<div class="${cls}"><div class="wpic">${w !== null && at === null ? icon(`${d.icon}-s${Math.min(3, 1 + Math.floor(((w.stage ?? 0) * 3) / Math.max(1, stages)))}`, 'wimg') : icon(d.icon, 'wimg')}</div><b class="wname">${esc(d.name)}</b><span class="wgfx">${esc(wonderEffect(what))}</span>${foot}</div>`
     }
     h += '</div>'
     // 큰 잔치 — 곳간의 몫을 붓고 굴림 하나 · 갈래마다 그림과 % (우리 것은 숫자 · ODDS.md)
