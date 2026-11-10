@@ -297,6 +297,7 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'w-09-byeonhan-smith', // 11-10 변한 대장장이 1차 (Flow Jay) · 형: 훌륭함
   'w-75-daegaya-soemoe', // 11-10 쇠뫼 1차 (Flow Jay) · 형: 낫배드
   'w-44-okjeo-sogeumbi', // 11-10 소금비 1차 (Flow Jay) · 형: 낫배드 (시선이 먼 산만 봄)
+  'w-79-yangmaek-solmae', // 11-10 솔매 1차 (Flow Jay) · 형: 나쁘지 않음
   'w-78-wansan-wan', // 11-08 저녁 완 v3 · 10초 구성 · 만작한 채 윙크 (형: 그래도 봐줄 만하다 · 적용)
   'w-69-jeoga-eomni', // 11-07 엄니 · fc094928 사용자 채택, 원본 프레임 경계 한계 기록
   'w-67-buyeo-haedal', // 11-07 해달 · 머리/허리 손 접촉을 유지하는 세로 idle
