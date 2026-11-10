@@ -842,7 +842,11 @@ export const FRONT_CSS = `
 .ap .front .wonb img { width: 40px; height: 40px; object-fit: contain; filter: drop-shadow(0 2px 3px #000a); }
 .ap .front .wonb small { margin-top: 1px; font-size: 11px; font-weight: 700; color: #e8c070; white-space: nowrap; }
 .ap .front .wonc { margin-left: auto; font-size: 13px; color: #e8c070; }
-.ap .front.choose .ncards { max-width: 980px; margin: 8px auto; padding: 0 14px 24px; }
+/* 나라 고르기: 머리는 붙박이(sticky 아님) · 목록만 굴린다 — 폰에서 머리 위로 카드가 올라와 보였다 (형 11-11 "상단 이상") */
+.ap .front.choose { display: flex; flex-direction: column; overflow: hidden; }
+.ap .front.choose .fhead { position: static; flex: none; }
+.ap .front.choose .fhead h2 { font-size: clamp(15px, 4.6vw, 20px); }
+.ap .front.choose .ncards { flex: 1 1 auto; min-height: 0; overflow-y: auto; width: 100%; max-width: 980px; margin: 0 auto; padding: 8px 14px 24px; box-sizing: border-box; }
 /* 자세히 */
 .ap .front .dcard { display: flex; gap: 16px; max-width: 760px; margin: 10px auto; padding: 0 14px 24px; flex-wrap: wrap; }
 .ap .front .dface { width: min(260px, 70vw); aspect-ratio: 1; object-fit: cover; object-position: top; border-radius: 18px; border: 1px solid var(--line); animation: tv .9s ease-out both; }
