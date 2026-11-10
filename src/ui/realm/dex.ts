@@ -12,6 +12,7 @@ import { josa } from '../../realm/data/prose.ts'
 import { elemOf } from '../../realm/elem.ts'
 import type { Hero, Realm, RegionId } from '../../realm/types.ts'
 import { heroRadar, nameHtml, traitChips } from './heroview.ts'
+import { bondTotals, loadBonds, recordBonds, rosterHtml } from './bonds.ts'
 
 const KEY = 'hanbal.realm.dex'
 
@@ -39,9 +40,11 @@ function saveDex(d: Dex): void {
  * 들음만 켜진 것은 알리지 않는다 (새 나라를 알면 그 나라 장수가 한꺼번에 들어온다).
  */
 export function recordDex(r: Realm): Array<{ id: string; lv: 2 | 3 | 4 }> {
+  loadBonds() // 새 인연 기록을 먼저 만든다 — 옛 도감에서 옮긴 뒤에야 새로 켠 칸이 몫으로 붙는다
   const { dex, fresh } = scanDex(loadDex(), r)
   if (fresh.length > 0) saveDex(dex)
   recordClan(r)
+  recordBonds(r, fresh)
   const out: Array<{ id: string; lv: 2 | 3 | 4 }> = []
   for (const x of fresh) {
     const lv = dexLevel(x.now)
@@ -113,12 +116,12 @@ function clanHtml(k: DexKit): string {
   return h + `</div>`
 }
 
-export type DexBoard = RegionId | 'wander' | 'all' | 'clan'
+export type DexBoard = RegionId | 'wander' | 'all' | 'clan' | 'bond'
 
 const BOARD_NAME: Readonly<Record<RegionId | 'wander', string>> = {
   tutorial: '배우는 판', mahan: '온조 장', jumong: '주몽 장', seorabeol: '혁거세 장', gujibong: '수로 장', daemusin: '대무신왕 장', 'byeonhan-mini': '작은 판', yeongnam: '큰 판', south: '삼한 남부', world: '삼한과 북녘', wander: '떠돌이',
 }
-const TABS: readonly Exclude<DexBoard, 'clan'>[] = ['all', 'mahan', 'jumong', 'seorabeol', 'gujibong', 'daemusin', 'byeonhan-mini', 'yeongnam', 'south', 'world', 'wander']
+const TABS: readonly Exclude<DexBoard, 'clan' | 'bond'>[] = ['all', 'mahan', 'jumong', 'seorabeol', 'gujibong', 'daemusin', 'byeonhan-mini', 'yeongnam', 'south', 'world', 'wander']
 export const LV_NAME = ['모른다', '들음', '만남', '사로잡음', '거느림'] as const
 
 interface DexKit {
@@ -207,6 +210,8 @@ export function dexHtml(k: DexKit, board: DexBoard, sel: string | null, back: st
     h += `<button class="${t === board ? 'on' : ''}" data-act="dex-board" data-v="${t}">${t === 'all' ? '모두' : BOARD_NAME[t]}<small>${got}/${xs.length}</small></button>`
   }
   h += `<button class="${board === 'clan' ? 'on' : ''}" data-act="dex-board" data-v="clan">가문<small>${Object.keys(loadClan()).length}</small></button>`
+  h += `<button class="${board === 'bond' ? 'on' : ''}" data-act="dex-board" data-v="bond">명부<small>${Object.keys(bondTotals()).length}</small></button>`
+  if (board === 'bond') return h + `</div>${rosterHtml(k, sel === 'more')}</div>`
   if (board === 'clan') return h + `</div>${clanHtml(k)}</div>`
   h += `</div><div class="dxgrid">`
   const xs = board === 'all' ? all : all.filter((x) => x.board === board)

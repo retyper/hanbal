@@ -736,6 +736,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
     case 'bond': {
       const h = after.heroes[line.hero]
       if (h === undefined || h.faction !== viewer) return null
+      if (line.tier === 'sworn') return `${josa(h.name, '이', '가')} 우리와 한마음이 됐다. 이끄는 군대의 사기가 크게 오르고, 공도 갑절로 쌓인다.`
       return `${josa(h.name, '이', '가')} 우리를 믿게 됐다. 이끄는 군대의 사기가 오르고, 꾀어도 잘 안 넘어간다.`
     }
     case 'awaken': {

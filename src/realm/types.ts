@@ -1383,7 +1383,7 @@ export type ReportLine =
   /** 장수가 자랐다 — 능력치 하나가 한 단계 (HEROES §6) */
   | { readonly kind: 'grow'; readonly hero: string; readonly stat: GrowStat }
   /** 정이 문턱을 넘었다 — 믿는 장수가 됐다 */
-  | { readonly kind: 'bond'; readonly hero: string; readonly tier: 'trust' }
+  | { readonly kind: 'bond'; readonly hero: string; readonly tier: 'trust' | 'sworn' }
   /** 정이 다 차서 특성 하나에 눈떴다 */
   | { readonly kind: 'awaken'; readonly hero: string; readonly trait: string }
   /** 각성 불꽃이 하나 켜졌다 (n / ascendWins) · 각성했다 — 능력치가 모두 오른다 (형 10-31) */
