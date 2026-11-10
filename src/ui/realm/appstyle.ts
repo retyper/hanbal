@@ -531,8 +531,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .nightov iframe { width: 100%; height: 100%; border: 0; display: block; }
 /* 밤 판이 떠 있는 동안 밑의 칠십팔국은 쉰다 — 안 보이는 맥박·불꽃 애니가 폰 GPU 를 같이 먹었다 (형 11-10: 구출이 엄청 느림) */
 /* 바탕 층(지도·위 띠·옆 단추)만 — 틀 위에 뜨는 알림·상자(z 40 넘음)는 그대로 둔다 */
-.ap:has(> .nightov) > :is(.top, .mapwrap, .seasonp, .legend, .zbtns, .layers, .next, .todo, .selbar, .roadkey, .tutband, .goalb) { visibility: hidden; }
-.ap:has(> .nightov) > :is(.top, .mapwrap, .legend, .todo, .selbar, .tutband, .goalb) * { animation-play-state: paused !important; }
+/* 11-11 형: "맵이 어느 정도 커지면 뭘 해도 프레임 드랍 · 전투·승리/패배 결과·등용 장면이 특히" — 전투(.wr)·장면(.cere)·전략회의(.stov)·마을 판(.townov)·담판(.dpov)도
+   지도 위에 통째로 뜨는데 밑의 지도(고을마다 연기·깃발·배·안개 움직임)가 가려진 채 계속 돌고 있었다. 밤 판처럼 밑을 숨기고 멈춘다 */
+.ap:has(> :is(.nightov, .wr, .cere, .stov, .townov, .dpov)) > :is(.top, .mapwrap, .seasonp, .legend, .zbtns, .layers, .next, .todo, .selbar, .roadkey, .tutband, .goalb) { visibility: hidden; }
+.ap:has(> :is(.nightov, .wr, .cere, .stov, .townov, .dpov)) > :is(.top, .mapwrap, .legend, .todo, .selbar, .tutband, .goalb) * { animation-play-state: paused !important; }
 /* 장수 겨루기(.duelx · body 에 고정)가 떠 있는 동안은 나라 판·전투판을 통째로 숨기고 멈춘다 — 폰에서 밑이 같이 그려져 겨루기가 버벅였다 (형 11-11) */
 html.duel-open .ap > * { visibility: hidden; }
 html.duel-open .ap * { animation-play-state: paused !important; }
