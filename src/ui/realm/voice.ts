@@ -195,6 +195,7 @@ export const HIRE_UNRECORDED: ReadonlySet<string> = new Set<string>([
   'wander-01', 'wander-02', 'wander-03', 'wander-04', 'wander-05', 'wander-06', 'wander-07', 'wander-08', 'wander-09', 'wander-10',
   'wander-11', 'wander-12', 'wander-13', 'wander-14', 'wander-15', 'wander-16', 'wander-17', 'wander-18', 'wander-19', 'wander-20',
   'wander-21', 'wander-22', 'wander-23', 'wander-24', 'wander-26',
+  'gj-yucheongan', // 11-10 30대로 바꿈 · 전용 성우(voice-hero.ts)로 녹음하면 hero/gj-yucheongan/hire.ogg 가 먼저 난다
 ])
 
 /**
@@ -240,7 +241,7 @@ const VOICE_OF_FACE: Readonly<Record<string, VoiceKind>> = {
   'g-19-sabeol-veteran': 'm-elder', 'g-99-goguryeo-maro': 'm-young', 'g-29-yeonna-myeongsol': 'm-elder', 'g-50-bullae-gwaha': 'm-elder', 'g-54-mokji-mahan': 'm-elder',
   'g-69-goryong-yong': 'm-elder', 'g-77-saro-sobeol': 'm-elder', 'g-90-haengin-gomok': 'm-elder',
   // 젊은 얼굴 — 군주여도 젊은 소리
-  'g-02-goguryeo-archer-prince': 'm-knight', 'g-94-golpo-maenun': 'm-knight', 'w-101-garak-singwigan': 'w-bright', 'w-100-garak-sincheongan': 'w-shaman', 'w-99-garak-yucheongan': 'w-matron', 'g-105-garak-yusugan': 'm-young', 'g-104-garak-odogan': 'm-charm', 'g-101-garak-adogan': 'm-elder', 'g-95-goguryeo-daemusin': 'm-knight', 'g-12-silla-youth': 'm-young', 'g-43-hwanna-amnok': 'm-young', 'g-56-haseulla-gwahama': 'm-young',
+  'g-02-goguryeo-archer-prince': 'm-knight', 'g-94-golpo-maenun': 'm-knight', 'w-101-garak-singwigan': 'w-bright', 'w-100-garak-sincheongan': 'w-shaman', 'w-99-garak-yucheongan': 'w-cool', 'g-105-garak-yusugan': 'm-young', 'g-104-garak-odogan': 'm-charm', 'g-101-garak-adogan': 'm-elder', 'g-95-goguryeo-daemusin': 'm-knight', 'g-12-silla-youth': 'm-young', 'g-43-hwanna-amnok': 'm-young', 'g-56-haseulla-gwahama': 'm-young',
   'g-64-jumong': 'm-young', 'g-71-baekje-onjo': 'm-knight', 'g-28-goguryeo-damul': 'm-young',
   // 고운 얼굴 — 매혹
   'g-24-wansan-onsan': 'm-charm', 'g-51-biryuna-mulgyeol': 'm-charm', 'g-62-beonye-hanul': 'm-charm', 'g-74-saro-hyeokgeose': 'm-charm',
