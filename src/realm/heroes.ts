@@ -792,7 +792,8 @@ export function bondTier(r: Realm, h: Hero): 'new' | 'warm' | 'trust' | 'sworn' 
 export function bondMoraleOf(r: Realm, h: Hero | null): number {
   if (h === null) return 0
   const b = bondOf(r, h)
-  return b !== null && b >= P.realm.bondTrust ? P.realm.bondMorale : 0
+  if (b === null || b < P.realm.bondTrust) return 0
+  return b >= 100 ? P.realm.bondMorale * P.realm.bondMoraleSworn : P.realm.bondMorale
 }
 
 /** 이 능력치를 한 단계 올리는 데 드는 공 */
@@ -808,6 +809,7 @@ export function addBond(r: Realm, h: Hero, d: number, lines: ReportLine[]): void
   const now = Math.max(0, Math.min(100, was + d))
   h.bond = now
   if (was < P.realm.bondTrust && now >= P.realm.bondTrust) lines.push({ kind: 'bond', hero: h.id, tier: 'trust' })
+  if (was < 100 && now >= 100) lines.push({ kind: 'bond', hero: h.id, tier: 'sworn' })
   if (was < 100 && now >= 100 && h.faction === r.player) addVow(r, h.id, 'heart') // 정이 가득 — 의리가 오른다 (UIRI)
   // 옛 판의 장수는 특성 줄이 없다 (형의 9년 가을 막힘 — "reading 'length'") — 없으면 빈 줄로 친다
   const traits = h.traits ?? []
@@ -825,9 +827,16 @@ export function addBond(r: Realm, h: Hero, d: number, lines: ReportLine[]): void
   }
 }
 
-/** 공을 쌓는다 — 차면 그 능력치가 한 단계 (10 까지) */
+/** 정이 깊을수록 공이 빨리 찬다 — 오래 데리고 다닌 장수가 가장 빨리 큰다 (정이 없는 군주·낯선 장수는 1) */
+function bondXpMul(h: Hero): number {
+  const b = h.bond ?? 0
+  return b >= 100 ? P.realm.bondXpSworn : b >= P.realm.bondTrust ? P.realm.bondXpTrust : b >= 30 ? P.realm.bondXpWarm : 1
+}
+
+/** 공을 쌓는다 — 차면 그 능력치가 한 단계 (10 까지). 정이 깊으면 공이 더 붙는다 */
 export function gainXp(h: Hero, stat: GrowStat, n: number, lines: ReportLine[]): void {
   if (n <= 0 || h.status !== 'free') return
+  n *= bondXpMul(h)
   const xp = (h.xp ??= {})
   xp[stat] = (xp[stat] ?? 0) + n
   // 상한 10 은 바탕으로 — 각성 몫(ascendBonus)은 빼고 센다 (각성 중에 9→10 이 막히고 공이 지워졌다 · sim-lens 11-04)
