@@ -139,15 +139,18 @@ function candidates(r: Realm, f: string, season: number): Array<{ card: Card; w:
     add('fugitive', 0.5, from !== null ? { from } : {})
   }
   // 연정 소문 — 혼인 안 한 우리 남녀 장수 둘 (핏줄·부부 아님)
-  const pairs: Array<readonly [string, string]> = []
-  for (const x of heroes) for (const y of heroes) if (x.look === 'g' && y.look === 'w' && canWed(r, f, x.id, y.id)) pairs.push([x.id, y.id])
+  // 정이 tieCrush 만큼은 쌓인 둘에게만 — 아무나 엮지 않는다 (형 11-11: "정 쌓이기도 전에 난다") · 가장 가까운 둘 · 가까울수록 소문이 잘 난다
+  const pairs: Array<readonly [string, string, number]> = []
+  for (const x of heroes) for (const y of heroes) if (x.look === 'g' && y.look === 'w' && canWed(r, f, x.id, y.id)) {
+    const tie = tieOf(r, x.id, y.id)
+    if (tie >= P.realm.tieCrush) pairs.push([x.id, y.id, tie])
+  }
   if (pairs.length > 0) {
-    // 서로 아끼는 둘(친밀 tieLove 넘음)이 있으면 그 가운데 가장 가까운 둘 · 없으면 아무나 (형 10-31)
-    const close = pairs.filter(([a, b]) => tieOf(r, a, b) >= P.realm.tieLove).sort(([a, b], [c, d]) => tieOf(r, c, d) - tieOf(r, a, b))
-    const [a, b] = close[0] ?? pairs[Math.floor(roll(r.seed, season, 'card-love') * pairs.length)]!
+    pairs.sort((p, q) => q[2] - p[2] || (p[0] < q[0] ? -1 : 1))
+    const [a, b, tie] = pairs[0]!
     // 먼저 나오는 이를 반반으로 — 늘 사내가 앞이지 않게
     const swap = roll(r.seed, season, 'card-love-swap') < 0.5
-    add('romance', P.realm.cardRomanceW, { hero: swap ? b : a, hero2: swap ? a : b })
+    add('romance', P.realm.cardRomanceW * Math.min(2, tie / P.realm.tieLove + 0.5), { hero: swap ? b : a, hero2: swap ? a : b })
   }
   return out
 }

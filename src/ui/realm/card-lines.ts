@@ -12,6 +12,8 @@
 import { seasonOf } from '../../realm/calendar.ts'
 import type { QuarrelWhy } from '../../realm/data/cards.ts'
 import { isOld } from '../../realm/age.ts'
+import { tieOf } from '../../realm/heroes.ts'
+import { P } from '../../tune/params.ts'
 import { josa } from '../../realm/data/prose.ts'
 import type { Card, Hero, Realm } from '../../realm/types.ts'
 import { voiceKind, type VoiceKind } from './voice.ts'
@@ -287,43 +289,48 @@ const LOVE_AT: Readonly<Record<'spring' | 'summer' | 'autumn' | 'winter', string
   spring: '강가 버드나무 아래', summer: '밤 냇가', autumn: '달 밝은 타작마당', winter: '화톳불 곁',
 }
 /** 소문을 들은 장수의 말 (결마다) */
+// 말은 사극체 · 오늘 말투("에이 아니야")는 쓰지 않는다 (형 11-11: 대사가 별로고 시대가 안 맞는다)
 const LOVE_SAY: Readonly<Record<VoiceKind, string>> = {
-  'm-gruff': '그, 그런 거 아니다! 누가 그런 소리를 해!',
-  'm-young': '소문이 벌써 거기까지 갔습니까…?',
-  'm-sage': '사람 입은 막을 수 없는 법이오.',
-  'm-elder': '허허, 이런 일이 내게도 생기는구려.',
-  'm-charm': '소문이 사실이면 어쩌겠소?',
-  'w-bright': '에이, 아니야! …조금은 맞나?',
-  'w-cool': '쓸데없는 소리. …귀가 왜 뜨겁지.',
-  'w-sly': '소문이란 원래 반쯤은 참말이죠.',
-  'w-shaman': '신령께서 맺어 주신 인연이오.',
-  'm-knight': '…그런 말은 삼가 주십시오.',
-  'w-knight': '허튼소리입니다. …정말 그리 보였습니까?',
-  'm-veteran': '싸움터만 알던 몸에 그런 소문이라니, 허허.',
-  'w-matron': '남부끄럽게 무슨 소문이오. …싫지는 않구려.',
+  'm-gruff': '그런 일 없소! 어느 입에서 나온 소리요!',
+  'm-young': '소문이 벌써 군장의 귀에까지 닿았습니까…',
+  'm-sage': '사람의 입은 성문으로도 막지 못하는 법이지요.',
+  'm-elder': '허허, 바람이 그리 불었나 보오.',
+  'm-charm': '소문이 참이라 한들, 군장께서 말리시겠소?',
+  'w-bright': '그런 것 아니옵니다! …아주 조금은, 맞을지도요.',
+  'w-cool': '부질없는 소리. …어째 귀가 뜨거운지.',
+  'w-sly': '소문이란 본디 반은 참말이라 하지요.',
+  'w-shaman': '신령께서 이미 실을 매어 두셨나 봅니다.',
+  'm-knight': '…그런 말씀은 거두어 주십시오.',
+  'w-knight': '터무니없는 말입니다. …정말 그리 보였습니까?',
+  'm-veteran': '창칼만 알던 몸에 그런 소문이라니, 허허.',
+  'w-matron': '남세스럽게 무슨 소문이오. …싫지는 않소만.',
 }
 /** 늙은 장수(age.isOld)가 소문을 들었을 때 · 그 결이면서 정말 늙었을 때만 */
 const OLD_LOVE_SAY: Readonly<Partial<Record<VoiceKind, string>>> = {
-  'm-elder': '늘그막에 이런 일이 생길 줄이야.',
+  'm-elder': '늘그막에 이런 일이 생길 줄은 몰랐소.',
   'm-veteran': '이 나이에 그런 소문이라니, 허허.',
-  'w-matron': '다 늙어 무슨 소문이오. …싫지는 않구려.',
+  'w-matron': '다 늙어 무슨 소문이오. …싫지는 않소만.',
 }
 const loveSayOf = (h: Hero): string => (isOld(h) ? OLD_LOVE_SAY[voiceKind(h)] : undefined) ?? LOVE_SAY[voiceKind(h)]
 
+/** 둘이 어떻게 가까워졌나 — 쌓인 정(tieOf)에 따라 · 소문은 tieCrush 를 넘은 둘에게만 난다 (events.ts) */
 export function romanceBeats(r: Realm, _c: Card, a: Hero, b: Hero): string[] {
   const ka = voiceKind(a)
   const kb = voiceKind(b)
   // 같은 결이면 둘째는 다른 말로 — 같은 말을 두 번 하지 않게
   const sb = kb === ka ? '…부디 모르는 척해 주십시오.' : loveSayOf(b)
   const place = a.at !== null && a.at === b.at ? r.nodes[a.at]?.name : undefined
+  const tie = tieOf(r, a.id, b.id)
+  const deep = tie >= P.realm.tieLove
+  const names = `${josa(a.name, '과', '와')} ${b.name}`
   return [
-    place !== undefined ? `${josa(a.name, '과', '와')} ${b.name}, 둘은 ${place}에서 같은 계절을 나며 자주 마주쳤다.` : `${josa(a.name, '과', '와')} ${b.name}, 둘은 같은 깃발 아래에서 여러 계절을 함께 보냈다.`,
-    '처음엔 서로 말도 섞지 않던 사이였다.',
-    `그런데 요즘 ${LOVE_AT[seasonOf(r)]}에서 둘이 함께 있는 것을 본 사람이 여럿이다.`,
-    '소문은 금세 군중에 퍼졌다.',
+    place !== undefined ? `${names}, 둘은 ${place}에서 여러 계절을 함께 났다.` : `${names}, 둘은 같은 깃발 아래 싸움터를 함께 누볐다.`,
+    deep ? '진영에서 서로를 가장 믿는 사이라는 것은 모두가 안다.' : '죽을 고비를 같이 넘기며 말수가 늘었다.',
+    `그런데 요즘 ${LOVE_AT[seasonOf(r)]}에서 둘이 함께 있는 것을 본 이가 여럿이다.`,
+    '소문은 금세 진영에 퍼졌다.',
     q(a, loveSayOf(a)),
     q(b, sb),
-    '혼례를 올리면 곡식이 들지만, 둘 사이에서 난 아이는 언젠가 장수가 될 것이다.',
+    '혼례를 올리면 잔치에 곡식이 들지만, 둘 사이에서 난 아이는 언젠가 장수로 자랄 것이다.',
     '한편 군기가 흐트러진다며 못마땅해하는 장수들도 있다.',
     '장수들이 군장의 뜻을 기다린다.',
   ]

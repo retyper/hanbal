@@ -50,6 +50,10 @@ export function mountDuel(cfg: DuelSetup, root: HTMLElement = document.body): Pr
   host.className = 'duelx'
   host.innerHTML = '<canvas></canvas>' + (cfg.standalone === true ? '<button class="dflag">⚔ 장수 겨루기</button>' : '')
   root.appendChild(host)
+  // 겨루기가 뜨면 밑(나라 판·전투판)은 숨기고 멈춘다 — 폰에서 밑이 같이 그려져 버벅였다 (형 11-11 · appstyle 의 html.duel-open)
+  document.documentElement.classList.add('duel-open')
+  const heldVideos = [...document.querySelectorAll('video')].filter((v) => !v.paused && !host.contains(v))
+  for (const v of heldVideos) v.pause()
   const canvas = host.querySelector('canvas') as HTMLCanvasElement
   const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
   const flagBtn = host.querySelector<HTMLButtonElement>('.dflag')
@@ -403,7 +407,8 @@ function onEvent(e: DuelEvent, now: number): void {
       meAnim = { kind: 'hit', t0: now }; foeAnim = { kind: 'attack', t0: now }
       break
     case 'crit':
-      SFX.crit(); critAt = now; foeHurtAt = now; freezeUntil = now + R.hitStopCrit; shake = R.shake * 1.6
+      // 적이 맞는 건 화면이 아니라 적장 액자(critAt 의 kick·zoom)와 적 체력 막대가 흔들린다 (형 11-11)
+      SFX.crit(); critAt = now; foeHurtAt = now; freezeUntil = now + R.hitStopCrit
       flash = { rgb: '255,250,235', t0: now, ms: 260, a: 0.75 }
       slashes.push({ x: (x + panel().x + panel().s / 2) / 2, y: (y + panel().y + panel().s / 2) / 2, ang: slashAngle(x, y, e.t), len: Math.hypot(W, H) * 0.85, t0: now + 60, ms: 520, color: '255,255,255', w: 22 })
       burst(W / 2, play().y + play().h * 0.42, 34, '#ffd98a', 12, now)
@@ -843,8 +848,16 @@ function drawDuel(now: number, fadeIn: number): void {
   const bh = Math.round(Math.max(10, Math.min(20, tw * 0.13))), hudS = tw / 100
   const plateW = tw * 0.98 * 1.32
   const bw = Math.min((W - plateW) / 2 - 6, W * 0.36), by = Math.round(tw * 0.36)
-  const capMe = bar(W / 2 - plateW / 2 - 6 - bw, by, bw, bh, d.me.hp / R.hp, now - hurtAt < 200 ? '#ff5a4a' : '#e9c46a', 'left', 'hud-bar')
-  const capFoe = bar(W / 2 + plateW / 2 + 6, by, bw, bh, d.foe.hp / Math.round(R.hp * tierOf(d).foeHp), now - foeHurtAt < 200 ? '#ffffff' : '#e76f51', 'right', 'hud-bar')
+  // 맞은 쪽 막대만 떨린다 — 화면 전체(우리가 맞음)·적장 액자(적이 맞음)와 따로 (형 11-11)
+  const jolt = (t0: number): readonly [number, number] => {
+    const s = now - t0
+    if (s < 0 || s >= R.barJoltMs) return [0, 0]
+    const a = (1 - s / R.barJoltMs) * R.barJolt
+    return [Math.sin(s / 9) * a, Math.cos(s / 13) * a * 0.6]
+  }
+  const [jmx, jmy] = jolt(hurtAt), [jfx, jfy] = jolt(foeHurtAt)
+  const capMe = bar(W / 2 - plateW / 2 - 6 - bw + jmx, by + jmy, bw, bh, d.me.hp / R.hp, now - hurtAt < 200 ? '#ff5a4a' : '#e9c46a', 'left', 'hud-bar')
+  const capFoe = bar(W / 2 + plateW / 2 + 6 + jfx, by + jfy, bw, bh, d.foe.hp / Math.round(R.hp * tierOf(d).foeHp), now - foeHurtAt < 200 ? '#ffffff' : '#e76f51', 'right', 'hud-bar')
   // 둥근 머리 안에 얼굴
   for (const [cap, face] of [[capMe, meFace], [capFoe, foeFace]] as const) {
     if (cap === null || face === null || !face.complete || face.naturalWidth === 0) continue
@@ -940,6 +953,8 @@ function close(): void {
   for (const c of cleanups.splice(0)) c()
   bgm?.pause()
   host.remove()
+  document.documentElement.classList.remove('duel-open')
+  for (const v of heldVideos) if (v.isConnected) void v.play().catch(() => undefined)
   resolveDone(resultOf(duel.over))
 }
 if (mode === 'duel') begin()

@@ -533,6 +533,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 /* 바탕 층(지도·위 띠·옆 단추)만 — 틀 위에 뜨는 알림·상자(z 40 넘음)는 그대로 둔다 */
 .ap:has(> .nightov) > :is(.top, .mapwrap, .seasonp, .legend, .zbtns, .layers, .next, .todo, .selbar, .roadkey, .tutband, .goalb) { visibility: hidden; }
 .ap:has(> .nightov) > :is(.top, .mapwrap, .legend, .todo, .selbar, .tutband, .goalb) * { animation-play-state: paused !important; }
+/* 장수 겨루기(.duelx · body 에 고정)가 떠 있는 동안은 나라 판·전투판을 통째로 숨기고 멈춘다 — 폰에서 밑이 같이 그려져 겨루기가 버벅였다 (형 11-11) */
+html.duel-open .ap > * { visibility: hidden; }
+html.duel-open .ap * { animation-play-state: paused !important; }
 .ap .nightov [data-close] { position: absolute; right: 10px; top: 10px; z-index: 1; font-size: 13px; padding: 4px 10px; }
 /* 눕힌 밤 판의 위는 화면 오른쪽 — 판의 오른쪽 위 = 화면 오른쪽 아래. 단추를 아래 오른쪽 모서리를 축으로 90° 돌려 그 자리에 */
 .ap .nightov.rot [data-close] { top: auto; bottom: 10px; transform-origin: 100% 100%; transform: rotate(90deg) translateY(100%); }
@@ -1232,7 +1235,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 export const SEASONP_CSS = `
 .ap .seasonp { position: absolute; left: 0; right: 0; top: calc(var(--toph) + var(--legh)); bottom: var(--tabh); pointer-events: none; overflow: hidden; z-index: 5; /* 지도 속 가장 높은 것(이름표 5)보다 뒤에 와 그 위로 — 눈이 도읍 뒤에 가려지지 않게 (형 10-23) · 첫 화면은 지도 층 안에 있어 묶으면 안 된다 */
   --sz: 22px; --sp: 1s; --op: .8; }
-.ap.choosing .seasonp, .ap.war-open .seasonp, .ap:has(.nightov) .seasonp { display: none; } /* 밤 판·싸움 창 밑에서는 쉬게 — 화면 일을 나눠 쓴다 */
+.ap.choosing .seasonp, .ap.war-open .seasonp, .ap:has(.nightov) .seasonp, html.duel-open .ap .seasonp { display: none; } /* 밤 판·싸움 창 밑에서는 쉬게 — 화면 일을 나눠 쓴다 */
 /* 입자 하나하나 — 자리 --x · 크기 --z · 빠르기 --d · 시작 --t · 흔들림 --w · 띠의 칸 --c 는 app.ts(seasonParticles)가 준다.
    그림은 덩어리에서 낱낱이 잘라 낸 여덟 칸 띠 (tools/particle-strip.mjs — 형: "뭉탱이로 내리고 … 개별적으로 흩날려야") */
 .ap .seasonp i { position: absolute; top: -48px; left: var(--x); width: calc(var(--z) * var(--sz)); aspect-ratio: 1; opacity: var(--op);
