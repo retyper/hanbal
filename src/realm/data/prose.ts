@@ -2,7 +2,7 @@
  * 나라의 글 — 이름·문장은 코드가 아니라 데이터에 둔다 (docs/realm/BUILD.md §1-6)
  * 고증 검토(lore-lens)가 코드를 안 읽고 이 파일만 본다. 숫자는 여기 없다 (P.realm).
  */
-import { CARDS } from './cards.ts'
+import { CARDS, GRAND_FEST } from './cards.ts'
 import { DESTS } from './dests.ts'
 import { P } from '../../tune/params.ts'
 import type { Equip, Outcome, UnitKind } from '../battle.ts'
@@ -763,12 +763,13 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
     // 사건 카드 · 점괘 (SYSTEMS §9) — 우리 것만
     case 'card': {
       if (line.faction !== viewer) return null
-      const c = CARDS[line.card]
+      const c = line.grand === true ? GRAND_FEST : CARDS[line.card]
       const who = line.hero !== undefined ? (after.heroes[line.hero]?.name ?? '?') : ''
       const what = line.card === 'quarrel' ? (line.pick === 2 ? '두 장수의 다툼에 침묵했다' : `${who} 편을 들었다`) : (c.opts[line.pick]?.name ?? '')
       const bits: string[] = []
       if (line.card === 'quarrel' && line.good !== undefined) bits.push(line.good ? '둘이 스스로 풀고 술잔을 나눴다' : '앙금이 남았다: 둘 다 서운해한다')
       else if (line.card === 'romance' && line.good !== undefined) bits.push(line.good ? '둘의 마음이 깊어졌다' : '소문은 잠잠해졌다')
+      else if (line.grand === true && line.good !== undefined) bits.push(line.pick === 0 ? (line.good ? '과녁을 맞혔다: 이름난 궁수가 도읍을 찾아왔다' : '화살이 빗나갔다') : (line.good ? '겨루기를 이겼다: 그 장수의 마음이 우리 쪽으로 기울었다' : '겨루기에 졌다'))
       else if (line.good === true) bits.push(line.card === 'pirates' || line.card === 'bandits' ? (line.held !== undefined ? '물결 셋을 다 막았다: 도적을 물리쳤다' : '도적을 물리쳤다') : line.card === 'gogak' ? '고각을 가져왔다: 송양이 감히 다투지 못한다' : '다행히 그냥 지나갔다')
       else if (line.good === false) bits.push(line.card === 'pirates' || line.card === 'bandits' ? (line.held !== undefined ? `${['첫', '둘째', '셋째'][line.held] ?? '셋째'} 물결에 목책이 뚫렸다` : '도적에게 당했다') : line.card === 'gogak' ? '들켰다: 송양이 크게 노했다' : '운이 나빴다')
       if (line.perfect === true) bits.push('두목을 사로잡았다')

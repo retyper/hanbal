@@ -300,6 +300,8 @@ export interface Hero {
   born?: string
   /** 원한 — 담판에서 노엽게 한 겹 (넘어올 확률이 깎이고, 넘어와도 정이 낮다) */
   grudge?: number
+  /** 마음이 기욺 — 제천 대회 장수 겨루기에서 졌다. 마음의 벽(resistOf)이 이만큼 낮다 (festival.ts) */
+  lean?: number
   /** 다친 장수 — 이 계절까지 군대를 이끌지 못한다 (암살이 먹혔다, plots.ts) */
   woundedUntil?: number
   /** 사신을 따라 나갔다 — 이 계절까지 자리를 비운다 (맡은 고을에 손이 안 간다) */
@@ -414,6 +416,8 @@ export interface Card {
   readonly from?: string
   /** 재해의 세기 — 1 작은 · 2 보통 · 3 큰 (형 11-05: "더 강한 전염병 · 더 약한 왜구 · 재해 강도를 표시하면서 variation") · 없으면 보통(옛 저장) */
   readonly sev?: 1 | 2 | 3
+  /** 제천 대회 — 궁궐 3단 이상의 하늘 제사 (festival.ts). hero 우리 겨룰 장수 · hero2 이웃의 이름난 장수 · guest 찾아올 명궁 */
+  readonly grand?: true
 }
 
 /** 원정 한 번 — back 계절에 돌아와 got 을 푼다 */
@@ -972,6 +976,8 @@ export interface Realm {
   hiddenAgents?: Record<string, { readonly from: string; readonly to: string }>
   /** 지금 떠도는 인재 (heroes.ts) · 이미 나온 명단 id */
   wanderers?: Wanderer[]
+  /** 제천 대회를 연 해(festival.ts) — 같은 해에 또 열리지 않는다. 옛 저장에는 없다 */
+  festYear?: number
   poolUsed?: string[]
   /** 나라마다 능력치를 본 남의 장수 — 싸워 봤거나 정찰·첩자로 봤다 (heroes.heroSeen) */
   met?: Record<string, string[]>
@@ -1415,7 +1421,7 @@ export type ReportLine =
   | { readonly kind: 'custom'; readonly faction: string; readonly id: CustomId; readonly node?: string; readonly other?: string; readonly with?: string; readonly n?: number; readonly m?: number; readonly first?: boolean }
   /** 사건 카드의 결과 — 무엇이 얼마나 오갔나 · good 은 운에 맡긴 쪽이 잘됐나 */
   | {
-      readonly kind: 'card'; readonly faction: string; readonly card: CardKind; readonly pick: 0 | 1 | 2; readonly why?: QuarrelWhy
+      readonly kind: 'card'; readonly faction: string; readonly card: CardKind; readonly pick: 0 | 1 | 2; readonly grand?: true; readonly why?: QuarrelWhy
       readonly grain?: number; readonly iron?: number; readonly hh?: number; readonly good?: boolean; readonly hero?: string; readonly node?: string
       /** 바다도적 막기에서 막은 물결 수 (손으로 쏜 판) */
       readonly held?: number

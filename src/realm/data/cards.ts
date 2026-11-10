@@ -9,7 +9,7 @@ export type CardKind = 'drought' | 'bounty' | 'locust' | 'plague' | 'flood' | 'h
   | 'sowfest' | 'skyfest' | 'mentor' | 'smith' | 'homenews' | 'song' | 'spring' | 'gift' | 'hunt' | 'rival'
   | 'mhscold' | 'mhhunt' | 'opengate' | 'redsail' | 'selfpot'
 
-export interface CardOpt { readonly name: string; readonly does: string }
+export interface CardOpt { readonly name: string; readonly does: string; /** 고름 곁의 그림 (public/realm/icon) */ readonly icon?: string }
 
 export interface CardInfo {
   readonly name: string
@@ -426,7 +426,8 @@ const FUGITIVE_FROM: Pick<CardInfo, 'line' | 'ask' | 'opts'> = {
 }
 
 /** 이 카드의 글·그림 — 장수 다툼은 까닭(why)에 따라 (없으면 덩이쇠 몫) · 소도의 도망자는 내놓으라는 나라가 있으면 */
-export function cardInfo(c: { readonly kind: CardKind; readonly why?: QuarrelWhy; readonly from?: string; readonly sev?: 1 | 2 | 3 }): CardInfo {
+export function cardInfo(c: { readonly kind: CardKind; readonly why?: QuarrelWhy; readonly from?: string; readonly sev?: 1 | 2 | 3; readonly grand?: true }): CardInfo {
+  if (c.kind === 'skyfest' && c.grand === true) return GRAND_FEST
   if (c.kind === 'quarrel') return { ...CARDS.quarrel, ...QUARREL_WHY[c.why ?? 'spoils'] }
   if (c.kind === 'fugitive' && c.from !== undefined) return { ...CARDS.fugitive, ...FUGITIVE_FROM }
   const base = CARDS[c.kind]
@@ -450,4 +451,17 @@ const SEV: Partial<Record<CardKind, { readonly name: readonly [string, string]; 
 export const SEV_KINDS: ReadonlySet<CardKind> = new Set(Object.keys(SEV) as CardKind[])
 
 /** 고르지 않으면 걸리는 답 — 장수 다툼은 침묵 · 망명자는 돌려보낸다 · 연정 소문은 모른 척 · 나머지는 첫째 */
-export const cardFallback = (kind: CardKind): 0 | 1 | 2 => (kind === 'quarrel' ? 2 : kind === 'exile' || kind === 'romance' ? 1 : 0)
+export const cardFallback = (kind: CardKind, grand?: boolean): 0 | 1 | 2 => (kind === 'quarrel' || (kind === 'skyfest' && grand === true) ? 2 : kind === 'exile' || kind === 'romance' ? 1 : 0)
+
+/** 제천 대회 — 궁궐 3단 이상의 하늘 제사 (festival.ts · CAPITAL §1-3). 옛 skyfest 를 키운 것: 고름 셋 · 놀이는 활쏘기·장수 겨루기 · 노래와 춤은 놀이 없이 (놀이를 끄고 나와도 노래와 춤) */
+export const GRAND_FEST: CardInfo = {
+  name: '제천 대회', kind: 'sky', bad: false, icon: 'status-good-omen', art: 'event-skyfest',
+  line: '도읍 궁궐 앞마당에 온 나라가 모여 하늘에 제사를 지낸다.',
+  beats: ['궁궐 앞마당에 모닥불이 높이 올랐다.', '온 나라가 모여 하늘에 제사를 지낸다.', '이웃의 손님들도 구경하러 왔다.'],
+  ask: '하늘 아래 무엇으로 겨룰까?',
+  opts: [
+    { name: '활쏘기 겨루기', does: '직접 쏩니다. 맞히면 이름난 궁수가 도읍을 찾아오고 이웃 나라가 우리를 좋게 봅니다', icon: 'unit-archer' },
+    { name: '장수 겨루기', does: '우리 장수가 이웃의 이름난 장수와 겨룹니다. 이기면 그 장수의 마음이 우리 쪽으로 기울고 군대 사기가 오릅니다', icon: 'treasure-ring-sword' },
+    { name: '노래와 춤', does: '놀이 없이 하늘에 노래와 춤을 바칩니다. 도읍에 사람이 늘고 장수들 정이 오릅니다', icon: 'status-feast' },
+  ],
+}

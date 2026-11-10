@@ -414,8 +414,8 @@ export function resistOf(r: Realm, hero: string): number {
   const him = r.heroes[hero]
   if (him === undefined) return 0
   const loyal = (bondOf(r, him) ?? 0) >= R.bondTrust ? R.resistLoyal : 0
-  return R.resistBase + Math.max(0, him.uiri - 5) * R.resistPerUiri + loyal + (isRuler(r, hero) ? R.resistRuler : 0)
-    + (hasTrait(him, 'steadfast') ? R.resistSteadfast : 0)
+  return Math.max(0, R.resistBase + Math.max(0, him.uiri - 5) * R.resistPerUiri + loyal + (isRuler(r, hero) ? R.resistRuler : 0)
+    + (hasTrait(him, 'steadfast') ? R.resistSteadfast : 0) - (him.lean ?? 0)) // 마음이 기욺 — 제천 대회 장수 겨루기 (festival.ts)
 }
 
 /** 한 계절에 깎는 벽의 평균 — 회유하는 이의 매력·매혹 (없으면 매력 3) */
@@ -666,7 +666,7 @@ export function sweepHeroes(r: Realm, lines: ReportLine[]): void {
 
 // ───────── 계절 끝 (9 자리)
 
-function poolPrice(h: Hero): number {
+export function poolPrice(h: Hero): number {
   return (h.mu + h.tong + h.ryak + h.chi + h.deok + h.uiri) * P.realm.wandererPricePer
 }
 

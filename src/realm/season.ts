@@ -45,6 +45,7 @@ import { applyAutoDraft, applyPalace, applySeat, autoDraftOn, palaceWall, seatMo
 import { sendExpeditions, stepExpeditions } from './expedition.ts'
 import { goalReach, goalSteps } from './goal.ts'
 import { resolveCard, stepCards } from './events.ts'
+import { stepFestival } from './festival.ts'
 import { guardAdjust, guardPick, pathKey } from './council.ts'
 import { PEOPLE_SCALE, migrate } from './migrate.ts'
 import { spreadRumors } from './rumor.ts'
@@ -2037,6 +2038,7 @@ export function advance(
   r.season += 1 // 11
   // 11 끝 — 새 계절의 사건 카드를 펴고 다음 카드를 뽑아 둔다 · 점괘 (events.ts). 달 시계면 계절의 첫 달에만 (카드는 계절마다 한 장)
   if (isSeasonStart(r)) stepCards(r, lines)
+  stepFestival(r) // 11 끝 — 제천 달이면 이번 턴에 제천 대회 카드 (궁궐 3단부터 · 해마다 한 번 · festival.ts)
   watchBorders(r) // 11 끝 — 우리 고을 이웃은 늘 보인다: 새 턴의 군세를 범위로 (scouts.ts · FOCUS D)
   stepMeet(r, lines, report.season) // 11 끝 — 새 나라는 한 계절에 하나씩 화면에 (discovery.ts · 판의 셈은 그대로)
   return { next: r, report }

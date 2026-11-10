@@ -12,13 +12,14 @@ import { roll } from '../core/rng.ts'
 import { monthly, perSeason, seasonIdx, seasonNo, seasons, yearOf } from './calendar.ts'
 import { P } from '../tune/params.ts'
 import { seatOmenMul } from './palace.ts'
+import { festOpen, festSeatMul } from './festival.ts'
 import { realmScale, wealthThreat } from './scale.ts'
 import { CARDS, CARD_KINDS, QUARREL_WHYS, SEV_KINDS, cardFallback, type CardKind, type QuarrelWhy } from './data/cards.ts'
 import { isRiverside } from './economy.ts'
 import { HERO_POOL } from './data/heroes-pool.ts'
 import { addFavor } from './diplomacy.ts'
 import { knownOf } from './discovery.ts'
-import { addBond, addTie, canWed, hasTrait, homeOf, isRuler, postHero, tieOf, wed, wedCost } from './heroes.ts'
+import { addBond, addTie, canWed, hasTrait, homeOf, isRuler, poolPrice, postHero, tieOf, wed, wedCost } from './heroes.ts'
 import { rivalOf } from './memory.ts'
 import type { Card, GrowStat, Hero, Order, Realm, ReportLine } from './types.ts'
 
@@ -97,7 +98,7 @@ function candidates(r: Realm, f: string, season: number): Array<{ card: Card; w:
   const G = P.realm.cardGoodW
   const pickOf = <T>(xs: readonly T[], key: string): T | undefined => (xs.length > 0 ? xs[Math.floor(roll(r.seed, season, key) * xs.length)] : undefined)
   if (y === 1) add('sowfest', P.realm.cardFestW) // 씨 뿌린 뒤 — 마한의 5월 제사
-  if (y === 2) add('skyfest', P.realm.cardFestW) // 가을걷이 뒤 — 고구려 동맹 · 동예 무천 (10월)
+  if (y === 2 && !festOpen(r, f)) add('skyfest', P.realm.cardFestW) // 가을걷이 뒤 — 고구려 동맹 · 동예 무천 (10월) · 궁궐 3단부터는 제천 대회가 달에 맞춰 대신 온다 (festival.ts)
   if (y === 3 && heroes.length >= 2) add('hunt', G)
   // 스승과 제자 — 무예가 cardMentorGap 넘게 앞선 장수가 뒤진 장수를
   const pairsM: Array<readonly [Hero, Hero]> = []
@@ -203,7 +204,7 @@ export function cardValid(r: Realm, c: Card): boolean {
   const f = r.player
   if (f === undefined) return false
   // 맞수는 둘째가 남의 장수 — 그 나라에서 아직 살아 있어야 한다 (위원회 11-04 역사 ①)
-  for (const h of c.kind === 'rival' ? [c.hero] : [c.hero, c.hero2]) {
+  for (const h of c.kind === 'rival' ? [c.hero] : c.grand === true ? [] : [c.hero, c.hero2]) {
     if (h === undefined) continue
     const x = r.heroes[h]
     if (x === undefined || x.faction !== f || x.status !== 'free') return false
@@ -271,6 +272,10 @@ export interface CardFx {
   readonly soothe?: string
   /** 두 장수 사이의 친밀 ± (heroes.ties · 스승과 제자 · 다툼의 앙금 · 위원회 11-04 F7·F12) */
   readonly ties?: ReadonlyArray<readonly [a: string, b: string, d: number]>
+  /** 이름난 궁수가 떠돌이로 도읍을 찾아온다 (제천 대회 활쏘기) — 떠돌이 명단의 그 사람 */
+  readonly wander?: string
+  /** 남의 장수의 마음이 기운다 — 마음의 벽(resistOf)이 깎인다 (제천 대회 장수 겨루기) */
+  readonly lean?: readonly [hero: string, n: number]
 }
 
 export interface CardPlan {
@@ -408,6 +413,7 @@ export function cardPreview(r: Realm, c: Card, pick: 0 | 1 | 2, have?: { readonl
     case 'sowfest':
       return { sure: pick === 0 ? cheer : { harvest: R.cardSowMul } }
     case 'skyfest':
+      if (c.grand === true) return grandFest(r, f, c, pick, held)
       // 이웃을 부른다 — 잔치를 여니 곡식이 든다 (위원회 11-04 F4 · 공짜였다)
       return { sure: pick === 0 ? { grain: cost(R.cardFeastGrain), favor: [{ to: knownOf(r, f).filter((x) => x !== f), d: R.cardSkyGuestFavor }] } : { morale: R.cardSkyMorale } }
     case 'hunt':
@@ -467,6 +473,31 @@ export function cardPreview(r: Realm, c: Card, pick: 0 | 1 | 2, have?: { readonl
   }
 }
 
+/** 제천 대회의 답 — 활쏘기(0)·장수 겨루기(1)는 놀이 결과(held 1 이김 · 0 짐)로 · 노래와 춤(2)은 놀이 없이. 천군이 앉았으면 몫이 커진다 */
+function grandFest(r: Realm, f: string, c: Card, pick: 0 | 1 | 2, held?: number): CardPlan {
+  const R = P.realm
+  const mul = festSeatMul(r, f)
+  const cap = r.factions[f]?.capital
+  const song: CardFx = { bond: Math.round(R.festSongBond * mul), ...(cap !== undefined && r.nodes[cap] !== undefined ? { gain: [[cap, Math.max(R.cardHomeMin, Math.round(r.nodes[cap]!.hh * R.festSongGain * mul))]] } : {}) }
+  const me = c.hero !== undefined ? r.heroes[c.hero] : undefined
+  const foe = c.hero2 !== undefined ? r.heroes[c.hero2] : undefined
+  const duelOk = me !== undefined && me.faction === f && me.status === 'free' && foe !== undefined && foe.faction !== f && foe.status === 'free'
+  if (pick === 0) {
+    const favor = (d: number): Array<{ readonly to: readonly string[]; readonly d: number }> => (c.from !== undefined ? [{ to: [c.from], d: Math.round(d * mul) }] : [])
+    const win: CardFx = { ...(c.guest !== undefined ? { wander: c.guest } : {}), favor: favor(R.festArcherFavor) }
+    const lose: CardFx = { favor: favor(R.festArcherFavor / 2) }
+    if (held === undefined) return { sure: {}, hand: true, win, lose }
+    return held >= 1 ? { sure: win, good: true } : { sure: lose, good: false }
+  }
+  if (pick === 1 && duelOk) {
+    const win: CardFx = { lean: [c.hero2!, R.festDuelLean * mul], morale: R.festDuelMorale * mul }
+    const lose: CardFx = { morale: -R.festDuelLoseMorale }
+    if (held === undefined) return { sure: {}, hand: true, win, lose }
+    return held >= 1 ? { sure: win, good: true } : { sure: lose, good: false }
+  }
+  return { sure: song }
+}
+
 /** 한 갈래의 일을 판에 건다 — 실제로 오간 곡식·쇠·집을 tally 에 */
 function applyFx(r: Realm, f: string, fx: CardFx, tally: { grain: number; iron: number; hh: number }, lines: ReportLine[]): void {
   const R = P.realm
@@ -497,6 +528,15 @@ function applyFx(r: Realm, f: string, fx: CardFx, tally: { grain: number; iron: 
     if (wed(r, { kind: 'wed', faction: f, a: fx.wed[0], b: fx.wed[1] }, lines)) tally.grain += st.grain - g0
   }
   if (fx.foe !== undefined) for (const a of Object.values(r.armies)) if (a.faction === fx.foe.faction) a.morale = Math.max(R.cardFishFloor, a.morale - fx.foe.d)
+  if (fx.wander !== undefined) {
+    const p = HERO_POOL.find((h) => h.id === fx.wander)
+    const at = r.factions[f]?.capital
+    if (p !== undefined && at !== undefined && r.heroes[p.id] === undefined && !(r.wanderers ?? []).some((w) => w.hero.id === p.id)) {
+      ;(r.wanderers ??= []).push({ hero: structuredClone(p), node: at, until: r.season + seasons(r, R.wandererStay * R.festArcherStayMul), price: Math.round(poolPrice(p) * R.festArcherPriceMul) })
+      ;(r.poolUsed ??= []).push(p.id)
+    }
+  }
+  if (fx.lean !== undefined) { const y = r.heroes[fx.lean[0]]; if (y !== undefined) y.lean = (y.lean ?? 0) + fx.lean[1] }
   if (fx.join !== undefined) {
     const p = HERO_POOL.find((h) => h.id === fx.join)
     const at = homeOf(r, f)
@@ -516,7 +556,8 @@ export function resolveCard(r: Realm, orders: readonly Order[], lines: ReportLin
   const o = orders.find((x): x is Extract<Order, { kind: 'card' }> => x.kind === 'card' && x.faction === f)
   // 고르지 않으면 첫째 — 다만 망명자는 돌려보낸다 (가만히 있는데 장수가 느는 일이 없게 · 받으려면 눌러서) · 장수 다툼은 침묵
   const n = CARDS[c.kind].opts.length
-  let pick: 0 | 1 | 2 = o !== undefined && o.pick < n ? o.pick : o !== undefined ? 0 : cardFallback(c.kind)
+  const grand = c.kind === 'skyfest' && c.grand === true
+  let pick: 0 | 1 | 2 = o !== undefined && o.pick < (grand ? 3 : n) ? o.pick : o !== undefined ? 0 : cardFallback(c.kind, grand)
   // 손으로 쏘는 답(바다도적 막기)을 골랐는데 판을 안 쐈으면(옛 초안 · 쏘지 않고 닫음) 장수에게 맡긴다 (굴림)
   const perfect = o?.perfect === true
   const held = o !== undefined && typeof o.held === 'number' && Number.isFinite(o.held) ? Math.max(0, Math.min(3, Math.floor(o.held))) : undefined
@@ -533,7 +574,7 @@ export function resolveCard(r: Realm, orders: readonly Order[], lines: ReportLin
   const { grain, iron, hh } = tally
   const hero = plan.hero
   lines.push({
-    kind: 'card', faction: f, card: c.kind, pick, ...(c.why !== undefined ? { why: c.why } : {}),
+    kind: 'card', faction: f, card: c.kind, pick, ...(grand ? { grand: true as const } : {}), ...(c.why !== undefined ? { why: c.why } : {}),
     ...(plan.good !== undefined && held !== undefined ? { held } : {}),
     ...(plan.good === true && perfect && held === 3 ? { perfect: true } : {}),
     ...(grain !== 0 ? { grain } : {}), ...(iron !== 0 ? { iron } : {}), ...(hh !== 0 ? { hh } : {}),
