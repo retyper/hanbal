@@ -145,7 +145,7 @@ const VOICE_OF: Readonly<Record<string, VoiceKind>> = {
   'hwanna-ruler': 'w-sly', // 패자 가비 (그림대로 · 군주 결 대신)
   'maga-ruler': 'w-bright', // 마가 달리 (그림대로 · 군주 결 대신)
   'guga-ruler': 'w-bright', // 구가 누리
-  'dongokjeo-ruler': 'w-matron', // 장수 소금 (그림대로 · 군주 결 대신)
+  'dongokjeo-ruler': 'w-sly', // 장수 소금 · 11-10 34세 소금의 여왕으로 바꿈 (w-matron → 요염한 결)
   'bullae-ruler': 'w-knight', // 삼로 박달
   'jomun-ruler': 'w-knight', // 살해 이랑
   'golbeol-ruler': 'w-sly', // 살해 범
@@ -163,7 +163,7 @@ const VOICE_OF: Readonly<Record<string, VoiceKind>> = {
   'eumjeup-1': 'w-cool', // 살해 벌
   'balla-1': 'w-shaman', // 살해 독무덤
   'daegaya-1': 'w-cool', // 견지 쇠뫼
-  'gampyeong-1': 'w-matron', // 살해 뱃사공
+  'gampyeong-1': 'w-bright', // 살해 뱃사공 · 11-10 31세 뱃사람 선장으로 바꿈 (w-matron → 당찬 결)
   'wansan-1': 'w-knight', // 살해 완
   'yangmaek-1': 'w-knight', // 장수 솔매
   'wander-22': 'w-knight', // 신지 너울 — 스물둘. 젊은 여장수 결이 서른 넘게 들려(형 10-30: "이미지는 21살인데 목소리는 35살") 잠시 당찬 여무사로 갔다가, 젊은 여장수 A 를 Leda 로 바꿔 되돌림 (형 10-30: "Leda 가 제일 젊네")
@@ -193,6 +193,7 @@ const VOICE_OF: Readonly<Record<string, VoiceKind>> = {
  */
 export const HIRE_UNRECORDED: ReadonlySet<string> = new Set<string>([
   // 11-10 밤 떠돌이 스물다섯 줄은 새 글로 다시 녹음함 (AI 스튜디오 Jay · 두 목소리씩 한 번에 · 원본 assets_src/realm/voice/wander-hire-*-20261110.wav)
+  'gampyeong-1', 'dongokjeo-ruler', // 11-10 젊게 바꿈 · 전용 성우로 다시 녹음하면 hero/<id>/hire.ogg 가 먼저 난다
   'gj-yucheongan', // 11-10 30대로 바꿈 · 전용 성우(voice-hero.ts)로 녹음하면 hero/gj-yucheongan/hire.ogg 가 먼저 난다
 ])
 
@@ -220,12 +221,12 @@ export const LOW_CHIEF: Readonly<Record<string, { readonly cast: 'a' | 'b'; read
 }
 /** 등용 첫마디가 175Hz 아래인 여장수 — 다시 녹음할 때까지 갈아 끼운 목소리의 짧은 대답으로 (낮은 차례) */
 export const HIRE_LOW: ReadonlySet<string> = new Set<string>([
-  'dongokjeo-ruler', 'maga-ruler', 'miri-ruler', 'jm-songbi', 'dabeol-2', 'guga-ruler', 'mh-jinwang', 'saro-2',
+  'maga-ruler', 'miri-ruler', 'jm-songbi', 'dabeol-2', 'guga-ruler', 'mh-jinwang', 'saro-2',
   'biryuna-ruler', 'iseo-1', 'us-ruler', 'geonma-ruler', 'dokro-1', 'daegaya-1', 'sabeol-1', 'mh-soseono', 'apdok-ruler',
   'gosaburi-ruler', 'jeoga-1', 'yangmaek-1', 'jm-haengin-1', 'michuhol-2', 'uga-2', 'bullae-ruler', 'golbeol-ruler',
   'goryong-ruler', 'haseulla-ruler', 'mh-mahan-2', 'sr-aryeong', 'bukokjeo-1', 'goguryeo-2', 'guya-3', 'jm-okjeo-1', 'maek-1', 'samul-1',
   'ungcheon-1', 'buyeo-1', 'chopal-2', 'goja-2', 'gosaburi-2', 'mokji-ruler', 'usan-1', 'yeonna-1', 'eumjeup-1',
-  'tamna-ruler', 'usisan-ruler', 'sr-goya-1', 'byeokjin-1', 'gampyeong-1', 'iseo-ruler', 'hwanna-ruler', 'mujin-ruler', 'siljik-ruler',
+  'tamna-ruler', 'usisan-ruler', 'sr-goya-1', 'byeokjin-1', 'iseo-ruler', 'hwanna-ruler', 'mujin-ruler', 'siljik-ruler',
   'sr-danbi',
 ])
 
