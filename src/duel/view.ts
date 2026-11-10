@@ -71,6 +71,7 @@ const img = (src: string, fallback?: string): HTMLImageElement => {
   const i = new Image()
   if (fallback !== undefined) i.onerror = () => { i.onerror = null; i.src = fallback }
   i.src = src
+  void i.decode().catch(() => undefined)
   return i
 }
 const bg = img(cfg.bg ?? 'realm/battle/battle-field.jpg')
@@ -250,6 +251,101 @@ let foeAnim: { kind: 'idle' | 'windup' | 'attack' | 'hit' | 'stagger'; t0: numbe
 // ── 크기 · 자리
 let W = 0, H = 0, dpr = 1
 /** 폰(손가락 화면)은 DPR 1.5 에서 시작 · 프레임 간격 가운데값이 22ms 를 넘으면 0.5 씩 1 까지 (형 11-10: 폰으로 겨루기할 때 렉이 엄청 · render/scene watchLoad 와 같은 셈) */
+/** ?prof=1 일 때만 도는 구간 재기 — 기본 길엔 비용이 없다 */
+const PROF = params.get('prof') === '1'
+const prof: Record<string, number> = {}
+let pt = 0
+const pm = (k: string): void => { if (!PROF) return; if (params.get('sync') === '1') ctx.getImageData(0, 0, 1, 1); const t = performance.now(); prof[k] = (prof[k] ?? 0) + t - pt; pt = t }
+const profGaps: number[] = []
+let profAt = 0, profFrames = 0
+/**
+ * 큰 그림을 쓰는 크기로 한 번만 줄여 둔 판 — 900px 그림을 매 프레임 300px 로 줄여 그리던 것 (폰에서 가장 무거웠다 · 형 11-11)
+ * 크기·DPR 이 바뀌면 새 키로 다시 굽는다.
+ */
+const SCALED = new Map<string, HTMLCanvasElement>()
+function scaled(im: HTMLImageElement, w: number, h: number, tint: string | null = null): HTMLCanvasElement {
+  const pw = Math.max(1, Math.round(w * dpr)), ph = Math.max(1, Math.round(h * dpr))
+  const key = `${im.src}|${pw}x${ph}|${tint ?? ''}`
+  let cv = SCALED.get(key)
+  if (cv === undefined) {
+    cv = document.createElement('canvas'); cv.width = pw; cv.height = ph
+    const c = cv.getContext('2d') as CanvasRenderingContext2D
+    c.imageSmoothingQuality = 'high'
+    c.drawImage(im, 0, 0, pw, ph)
+    if (tint !== null) { c.globalCompositeOperation = 'source-atop'; c.fillStyle = tint; c.fillRect(0, 0, pw, ph) }
+    SCALED.set(key, cv)
+  }
+  return cv
+}
+const BAR_CV = new Map<string, { cv: HTMLCanvasElement; dh: number }>()
+/** 번지는 빛 — 한 번 구운 동그란 그라디언트 (세기는 globalAlpha 로) */
+const GLOWS = new Map<string, HTMLCanvasElement>()
+function glow(rgb: string, r: number): HTMLCanvasElement {
+  const pr = Math.max(2, Math.round(r * dpr))
+  const key = `${rgb}|${pr}`
+  let cv = GLOWS.get(key)
+  if (cv === undefined) {
+    cv = document.createElement('canvas'); cv.width = pr * 2; cv.height = pr * 2
+    const c = cv.getContext('2d') as CanvasRenderingContext2D
+    const g = c.createRadialGradient(pr, pr, 0, pr, pr, pr); g.addColorStop(0, `rgba(${rgb},1)`); g.addColorStop(1, `rgba(${rgb},0)`)
+    c.fillStyle = g; c.fillRect(0, 0, pr * 2, pr * 2)
+    GLOWS.set(key, cv)
+  }
+  return cv
+}
+/** 초상 판 — 어두운 바탕 + 적장 초상을 둥근 모서리로 오려 한 번 구운 것 (매 프레임 clip + 900px 그림 줄이기를 없앤다) */
+let panelCv: HTMLCanvasElement | null = null
+let panelKey = ''
+function panelBake(s: number): HTMLCanvasElement | null {
+  if (foeArt === null || !foeArt.complete || foeArt.naturalWidth === 0) return null
+  const ps = Math.round(s * dpr)
+  const key = `${ps}`
+  if (panelCv !== null && panelKey === key) return panelCv
+  const cv = panelCv ?? document.createElement('canvas')
+  cv.width = ps; cv.height = ps
+  const c = cv.getContext('2d') as CanvasRenderingContext2D
+  c.imageSmoothingQuality = 'high'
+  const r = ps * 0.06
+  c.beginPath(); c.moveTo(r, 0); c.arcTo(ps, 0, ps, ps, r); c.arcTo(ps, ps, 0, ps, r); c.arcTo(0, ps, 0, 0, r); c.arcTo(0, 0, ps, 0, r); c.closePath(); c.clip()
+  c.fillStyle = 'rgba(10,7,5,.55)'; c.fillRect(0, 0, ps, ps)
+  c.globalAlpha = 0.9; c.drawImage(foeArt, 0, 0, ps, ps)
+  panelCv = cv; panelKey = key
+  return cv
+}
+/**
+ * 글자를 바뀔 때만 작은 판에 굽는다 — strokeText 는 글자 윤곽을 매번 선으로 다시 그려 폰에서 무거웠다 (형 11-11).
+ * 그릴 땐 drawImage 한 번 · 크기 변화(톡 튀는 효과)는 배율로.
+ */
+interface TextSprite { cv: HTMLCanvasElement; w: number; h: number; tw: number; pad: number; by: number }
+const TXT = new Map<string, TextSprite>()
+function textSprite(text: string, px: number, weight: number, top: string, bottom: string | null, stroke: string, lw: number, mid: boolean): TextSprite {
+  px = Math.max(4, Math.round(px))
+  const key = `${text}|${px}|${weight}|${top}|${bottom ?? ''}|${stroke}|${lw}|${mid ? 1 : 0}|${dpr}`
+  let t = TXT.get(key)
+  if (t === undefined) {
+    const font = `${weight} ${px}px "Gowun Batang", serif`
+    txtCx.font = font
+    const tw = Math.ceil(txtCx.measureText(text).width)
+    const pad = Math.ceil(lw) + 2, w = tw + pad * 2, h = Math.ceil(px * 1.5) + pad * 2
+    const cv = document.createElement('canvas'); cv.width = Math.ceil(w * dpr); cv.height = Math.ceil(h * dpr)
+    const c = cv.getContext('2d') as CanvasRenderingContext2D
+    c.setTransform(cv.width / w, 0, 0, cv.height / h, 0, 0)
+    c.font = font; c.textAlign = 'left'; c.textBaseline = mid ? 'middle' : 'alphabetic'
+    const by = mid ? h / 2 : pad + px * 1.1
+    c.lineWidth = lw; c.strokeStyle = stroke; c.strokeText(text, pad, by)
+    if (bottom !== null) { const g = c.createLinearGradient(0, by - px / 2, 0, by + px / 2); g.addColorStop(0, top); g.addColorStop(1, bottom); c.fillStyle = g } else c.fillStyle = top
+    c.fillText(text, pad, by)
+    t = { cv, w, h, tw, pad, by }
+    TXT.set(key, t)
+  }
+  return t
+}
+const txtCx = document.createElement('canvas').getContext('2d') as CanvasRenderingContext2D
+/** 구운 글자를 (x, y) 에 — y 는 글자 기준선(또는 middle 이면 가운데) · align 은 x 가 글자의 어느 쪽인가 */
+function putText(t: TextSprite, x: number, y: number, align: 'left' | 'center' | 'right', sc = 1): void {
+  const ox = align === 'left' ? -t.pad : align === 'right' ? -(t.tw + t.pad) : -t.w / 2
+  ctx.drawImage(t.cv, x + ox * sc, y - t.by * sc, t.w * sc, t.h * sc)
+}
 let dprCap = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches ? 1.5 : 2
 const gaps: number[] = []
 function watchLoad(dt: number): void {
@@ -268,6 +364,7 @@ function bakedBg(): HTMLCanvasElement | null {
   const key = `${W}x${H}@${dpr}`
   if (bgBaked !== null && bgKey === key) return bgBaked
   const cv = bgBaked ?? document.createElement('canvas')
+  if (cv.parentNode === null) host.insertBefore(cv, canvas) // 바탕은 밑 판에 — 위 판은 투명으로 비워 두고 매 프레임 바탕을 다시 그리지 않는다
   cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr)
   const c = cv.getContext('2d') as CanvasRenderingContext2D
   c.setTransform(dpr, 0, 0, dpr, 0, 0)
@@ -280,6 +377,7 @@ function bakedBg(): HTMLCanvasElement | null {
   return cv
 }
 function resize(): void {
+  TXT.clear(); SCALED.clear(); GLOWS.clear(); BAR_CV.clear(); panelCv = null
   dpr = Math.min(dprCap, devicePixelRatio || 1)
   W = innerWidth; H = innerHeight
   canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr)
@@ -514,11 +612,13 @@ function art(name: string): HTMLImageElement | null {
     ARTS.set(name, null)
     i.onload = () => ARTS.set(name, i)
     i.src = `realm/duel/${name}.png`
+    void i.decode().catch(() => undefined)
     return null
   }
   return im
 }
-for (const n of ['panel-frame', 'hud-bar', 'hud-posture', 'hud-timer', 'fx-clang', 'fx-slash', 'fx-ring', 'rush-tap-a', 'rush-tap-b']) art(n)
+const ART_NAMES = ['panel-frame', 'hud-bar', 'hud-posture', 'hud-timer', 'fx-clang', 'fx-slash', 'fx-ring', 'rush-tap-a', 'rush-tap-b']
+for (const n of ART_NAMES) art(n)
 function roundRect(x: number, y: number, w: number, h: number, r: number): void {
   ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath()
 }
@@ -533,24 +633,6 @@ function ringR(r: number, off: number, lead = P.duel.lead): number {
   if (off <= 0) return r * (1 + 3.2 * Math.min(1, -off / Math.max(1, lead)))
   return r * Math.max(0.08, 1 - 0.92 * off / Math.max(1, lateWindow(muMe, tier)))
 }
-/**
- * 그림을 한 빛으로 물들인 판 — 그림 모양에만 색이 든다 (화면에 바로 source-atop 을 칠하면 네모가 통째로 물든다 · 형 11-09).
- * 색마다 한 번 만들어 둔다.
- */
-const TINTED = new Map<string, HTMLCanvasElement>()
-function tinted(im: HTMLImageElement, color: string): HTMLCanvasElement {
-  const key = `${im.src}|${color}`
-  let cv = TINTED.get(key)
-  if (cv === undefined) {
-    cv = document.createElement('canvas')
-    cv.width = im.naturalWidth; cv.height = im.naturalHeight
-    const c = cv.getContext('2d') as CanvasRenderingContext2D
-    c.drawImage(im, 0, 0)
-    c.globalCompositeOperation = 'source-atop'; c.fillStyle = color; c.fillRect(0, 0, cv.width, cv.height)
-    TINTED.set(key, cv)
-  }
-  return cv
-}
 /** 챙 — 튕겨 나가는 빛 (에셋이 있으면 그것 · hue 0 = 금빛 · 0.6 = 흰 푸른빛) */
 function clang(x: number, y: number, size: number, alpha: number, cool: number, now: number): void {
   const im = art('fx-clang')
@@ -558,7 +640,8 @@ function clang(x: number, y: number, size: number, alpha: number, cool: number, 
   ctx.translate(x, y); ctx.rotate((now / 900) % (Math.PI * 2))
   if (im !== null) {
     // 막음은 흰 푸른빛 · 정확은 금빛 (그림 모양에만 물든다)
-    ctx.drawImage(cool > 0 ? tinted(im, 'rgba(150,200,255,.5)') : im, -size / 2, -size / 2, size, size)
+    const mx = Math.round(cueR() * 3.9)
+    ctx.drawImage(scaled(im, mx, mx, cool > 0 ? 'rgba(150,200,255,.5)' : null), -size / 2, -size / 2, size, size)
   } else {
     const col = cool > 0 ? '200,230,255' : '255,236,170'
     for (let i = 0; i < 8; i++) {
@@ -583,6 +666,20 @@ function slashAngle(x: number, y: number, salt: number): number {
   return base + ((((salt * 7919) % 100) / 100) - 0.5) * 0.35
 }
 
+const judgeMax = (kind: 'perfect' | 'good' | 'miss'): number => Math.round(cueR() * (kind === 'perfect' ? 1.25 : 1.0) * 1.35)
+function judgeSprite(kind: 'perfect' | 'good' | 'miss', word: string): TextSprite {
+  const fsMax = judgeMax(kind)
+  const [c0, c1] = kind === 'perfect' ? ['#fff7d6', '#ffb02e'] : kind === 'good' ? ['#ffffff', '#a9c8ff'] : ['#ffb3a6', '#ff3a26']
+  return textSprite(word, fsMax, 900, c0, c1, 'rgba(20,10,4,.92)', Math.max(5, fsMax * 0.16), true)
+}
+function whenSprite(when: 'early' | 'late'): TextSprite {
+  const fs2 = Math.round(judgeMax('good') * 0.42)
+  return textSprite(when === 'early' ? '빠름' : '늦음', fs2, 800, when === 'early' ? '#8fd0ff' : '#ffb070', null, 'rgba(20,10,4,.92)', Math.max(3, fs2 * 0.2), true)
+}
+function slashSrc(im: HTMLImageElement, len: number, color: string): HTMLCanvasElement {
+  const bw = Math.min(512, Math.ceil(len))
+  return scaled(im, bw, bw * im.naturalHeight / im.naturalWidth, color === '255,255,255' ? null : `rgba(${color},.6)`)
+}
 function drawSlash(s: Slash, k: number): void {
   const im = art('fx-slash')
   const grow = Math.min(1, k * 3.5)
@@ -592,8 +689,8 @@ function drawSlash(s: Slash, k: number): void {
   if (im !== null) {
     const h = s.w * 6
     // 그림의 왼쪽부터 grow 만큼만 — 칼이 시작점에서 끝점으로 지나간다
-    const src = s.color === '255,255,255' ? im : tinted(im, `rgba(${s.color},.6)`)
-    ctx.drawImage(src, 0, 0, im.naturalWidth * grow, im.naturalHeight, x0, -h / 2, s.len * grow, h)
+    const src = slashSrc(im, s.len, s.color)
+    ctx.drawImage(src, 0, 0, src.width * grow, src.height, x0, -h / 2, s.len * grow, h)
   } else {
     ctx.strokeStyle = `rgba(${s.color},1)`; ctx.lineCap = 'round'; ctx.lineWidth = s.w * (1 - k * 0.6)
     ctx.beginPath(); ctx.moveTo(x0, 0); ctx.lineTo(x0 + s.len * grow, 0); ctx.stroke()
@@ -609,6 +706,31 @@ const BAR_GEO: Readonly<Record<string, { x0: number; x1: number; y0: number; y1:
   'hud-bar': { x0: 0.143, x1: 0.926, y0: 0.377, y1: 0.623, capL: 0.16, capR: 0.9 },
   // 체간 — 가운데 장식은 늘리지 않는다 (다섯 조각)
   'hud-posture': { x0: 0.079, x1: 0.92, y0: 0.326, y1: 0.841, capL: 0.1, capR: 0.9, mid: [0.44, 0.56] },
+}
+/** 막대 테두리를 이 크기로 한 번 이어 붙여 구운 판 (머리·끝·가운데를 매번 일곱 번 그리던 것) */
+
+function barFrame(im: HTMLImageElement, geo: { capL: number; capR: number; y0: number; y1: number; mid?: readonly [number, number] }, frame: string, ow: number, h: number): { cv: HTMLCanvasElement; dh: number } {
+  const key = `${frame}|${Math.round(ow * dpr)}|${Math.round(h * dpr)}|${im.naturalWidth}`
+  let b = BAR_CV.get(key)
+  if (b === undefined) {
+    const iw = im.naturalWidth, ih = im.naturalHeight, sc = h / ((geo.y1 - geo.y0) * ih), dh = ih * sc
+    const cv = document.createElement('canvas'); cv.width = Math.round(ow * dpr); cv.height = Math.max(1, Math.round(dh * dpr))
+    const c = cv.getContext('2d') as CanvasRenderingContext2D
+    c.imageSmoothingQuality = 'high'; c.setTransform(cv.width / ow, 0, 0, cv.height / dh, 0, 0)
+    const x = 0, dy = 0
+    const lw = geo.capL * iw, rw = (1 - geo.capR) * iw
+    c.drawImage(im, 0, 0, lw, ih, x, dy, lw * sc, dh)
+    c.drawImage(im, geo.capR * iw, 0, rw, ih, x + ow - rw * sc, dy, rw * sc, dh)
+    if (geo.mid !== undefined) {
+      const m0 = geo.mid[0] * iw, m1 = geo.mid[1] * iw, mw = (m1 - m0) * sc, cx = x + ow / 2
+      c.drawImage(im, m0, 0, m1 - m0, ih, cx - mw / 2, dy, mw, dh)
+      c.drawImage(im, lw, 0, m0 - lw, ih, x + lw * sc, dy, cx - mw / 2 - (x + lw * sc), dh)
+      c.drawImage(im, m1, 0, geo.capR * iw - m1, ih, cx + mw / 2, dy, x + ow - rw * sc - (cx + mw / 2), dh)
+    } else c.drawImage(im, lw, 0, geo.capR * iw - lw, ih, x + lw * sc, dy, ow - (lw + rw) * sc, dh)
+    b = { cv, dh }
+    BAR_CV.set(key, b)
+  }
+  return b
 }
 /** 막대 — (x, y) 부터 바깥 폭 ow · 채움 높이 h · from = 차오르는 쪽 (right 면 통째로 뒤집는다) */
 function bar(x: number, y: number, ow: number, h: number, v: number, col: string, from: 'left' | 'right' | 'center', frame: string): { cx: number; cy: number; r: number } | null {
@@ -631,17 +753,8 @@ function bar(x: number, y: number, ow: number, h: number, v: number, col: string
   const g = ctx.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, 'rgba(255,255,255,.35)'); g.addColorStop(0.5, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(0,0,0,.35)')
   ctx.fillStyle = g; ctx.fillRect(wx, y, w, h)
   if (im !== null && geo !== undefined) {
-    const iw = im.naturalWidth, ih = im.naturalHeight
-    const dy = y - geo.y0 * ih * sc, dh = ih * sc
-    const lw = geo.capL * iw, rw = (1 - geo.capR) * iw
-    ctx.drawImage(im, 0, 0, lw, ih, x, dy, lw * sc, dh)
-    ctx.drawImage(im, geo.capR * iw, 0, rw, ih, x + ow - rw * sc, dy, rw * sc, dh)
-    if (geo.mid !== undefined) {
-      const m0 = geo.mid[0] * iw, m1 = geo.mid[1] * iw, mw = (m1 - m0) * sc, cx = x + ow / 2
-      ctx.drawImage(im, m0, 0, m1 - m0, ih, cx - mw / 2, dy, mw, dh)
-      ctx.drawImage(im, lw, 0, m0 - lw, ih, x + lw * sc, dy, cx - mw / 2 - (x + lw * sc), dh)
-      ctx.drawImage(im, m1, 0, geo.capR * iw - m1, ih, cx + mw / 2, dy, x + ow - rw * sc - (cx + mw / 2), dh)
-    } else ctx.drawImage(im, lw, 0, geo.capR * iw - lw, ih, x + lw * sc, dy, ow - (lw + rw) * sc, dh)
+    const bf = barFrame(im, geo, frame, ow, h)
+    ctx.drawImage(bf.cv, x, y - geo.y0 * im.naturalHeight * sc, ow, bf.dh)
   } else { ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(214,170,90,.9)'; ctx.strokeRect(fx0 - 1, y - 1, fw + 2, h + 2) }
   ctx.restore()
   if (im === null || geo === undefined) return null
@@ -659,16 +772,15 @@ function drawCue(c: Cue, t: number): void {
   const rgb = c.heavy ? '255,70,50' : '255,244,214'
   // 과녁 원 — 고리가 다가올수록 밝아진다
   ctx.globalCompositeOperation = 'lighter'
-  const g = ctx.createRadialGradient(x, y, 0, x, y, r * 1.6)
-  g.addColorStop(0, `rgba(${rgb},${0.1 + 0.4 * k})`); g.addColorStop(1, `rgba(${rgb},0)`)
-  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * 1.6, 0, Math.PI * 2); ctx.fill()
-  ctx.globalCompositeOperation = 'source-over'
+  ctx.globalAlpha = 0.1 + 0.4 * k
+  ctx.drawImage(glow(rgb, r * 1.6), x - r * 1.6, y - r * 1.6, r * 3.2, r * 3.2)
+  ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'
   const ringArt = art('fx-ring')
   if (ringArt !== null) {
     // 과녁 고리 에셋 — 띠 한가운데가 r 에 오게 (띠 중심 = 그림 폭의 0.46)
     const sz = r / 0.92 // 그림 반폭 · 띠 중심 = 반폭의 0.92
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.55 + 0.45 * k
-    ctx.drawImage(c.heavy ? tinted(ringArt, 'rgba(255,60,40,.6)') : ringArt, x - sz, y - sz, sz * 2, sz * 2)
+    ctx.drawImage(scaled(ringArt, sz * 2, sz * 2, c.heavy ? 'rgba(255,60,40,.6)' : null), x - sz, y - sz, sz * 2, sz * 2)
     ctx.restore()
   }
   else { ctx.lineWidth = 4; ctx.strokeStyle = `rgba(${rgb},${0.55 + 0.45 * k})`; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke() }
@@ -713,16 +825,12 @@ function rushCue(now: number, d: Duel): void {
   const im = art(beat === 0 ? 'rush-tap-a' : 'rush-tap-b')
   const sz = Math.min(W, pn.s) * 0.34 * (beat === 1 ? 0.92 : 1.04)
   ctx.save()
-  if (im !== null) ctx.drawImage(im, cx - sz / 2, cy - sz / 2, sz, sz)
+  if (im !== null) ctx.drawImage(scaled(im, Math.round(Math.min(W, pn.s) * 0.36), Math.round(Math.min(W, pn.s) * 0.36)), cx - sz / 2, cy - sz / 2, sz, sz)
   else { ctx.fillStyle = beat === 1 ? '#ffd27a' : '#fff1c0'; ctx.beginPath(); ctx.arc(cx, cy, sz * 0.32, 0, Math.PI * 2); ctx.fill() }
   // 「연타!」 — 크게 흔들리며
-  const fs = Math.round(Math.min(W, pn.s) * 0.16 * (1 + 0.06 * Math.sin(now / 45)))
-  ctx.font = `900 ${fs}px "Gowun Batang", serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+  const fs0 = Math.round(Math.min(W, pn.s) * 0.16)
   const ty = cy - sz * 0.62, jx = Math.sin(now / 33) * 3
-  ctx.lineWidth = Math.max(6, fs * 0.14); ctx.strokeStyle = 'rgba(40,10,0,.9)'; ctx.strokeText('연타!', cx + jx, ty)
-  const g = ctx.createLinearGradient(0, ty - fs / 2, 0, ty + fs / 2); g.addColorStop(0, '#fff6d0'); g.addColorStop(1, '#ffb03a')
-  ctx.fillStyle = g; ctx.fillText('연타!', cx + jx, ty)
-  ctx.textBaseline = 'alphabetic'
+  putText(textSprite('연타!', fs0 * 1.06, 900, '#fff6d0', '#ffb03a', 'rgba(40,10,0,.9)', Math.max(6, fs0 * 0.14), true), cx + jx, ty, 'center', (1 + 0.06 * Math.sin(now / 45)) / 1.06)
   // 남은 시간 — 판 아래 금빛 띠가 줄어든다
   const left = Math.max(0, (d.phaseUntil - d.t) / P.duel.rushTicks)
   const bw = pn.s * 0.8
@@ -737,8 +845,9 @@ function drawDuel(now: number, fadeIn: number): void {
   const ft = fieldTop()
   // 바탕 — 전장 그림 한 장 (형 11-09: 배경은 하나 · 아래서 싸우는 장수도 같은 배경 위)
   // 위는 어둡게(띠·숫자가 읽히게) · 아래 땅은 밝게(장수들이 보이게)
-  const baked = bakedBg()
-  if (baked !== null) ctx.drawImage(baked, 0, 0, W, H)
+  pm('pre')
+  bakedBg()
+  pm('bg')
   // 초상 판 — 모서리 둥근 정사각 · 초상은 살짝 비친다. 맞으면 흔들리고 붉게, 비틀거리면 기운다
   const pn = panel()
   const sinceCrit = now - critAt
@@ -750,20 +859,15 @@ function drawDuel(now: number, fadeIn: number): void {
   ctx.translate(pn.x + pn.s / 2 + kick, pn.y + pn.s / 2); ctx.rotate(sway)
   const zoom = 1 + (sinceCrit < 500 ? 0.05 * (1 - sinceCrit / 500) : 0)
   ctx.scale(zoom, zoom)
-  roundRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s, pn.s * 0.06)
-  ctx.save(); ctx.clip()
-  ctx.fillStyle = 'rgba(10,7,5,.55)'; ctx.fillRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s)
-  if (foeArt !== null && foeArt.complete && foeArt.naturalWidth > 0) {
-    ctx.globalAlpha = 0.9 * fadeIn
-    ctx.drawImage(foeArt, -pn.s / 2, -pn.s / 2, pn.s, pn.s)
-    ctx.globalAlpha = 1
-  }
-  if (now - foeHurtAt < 120) { ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(255,240,220,${0.28 * (1 - (now - foeHurtAt) / 120)})`; ctx.fillRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s); ctx.globalCompositeOperation = 'source-over' } // 맞으면 초상이 잠깐 하얗게 번쩍
-  ctx.restore()
+  const pb = panelBake(pn.s)
+  if (pb !== null) { ctx.globalAlpha = fadeIn; ctx.drawImage(pb, -pn.s / 2, -pn.s / 2, pn.s, pn.s); ctx.globalAlpha = 1 }
+  else { roundRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s, pn.s * 0.06); ctx.fillStyle = 'rgba(10,7,5,.55)'; ctx.fill() }
+  if (now - foeHurtAt < 120) { roundRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s, pn.s * 0.06); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(255,240,220,${0.28 * (1 - (now - foeHurtAt) / 120)})`; ctx.fill(); ctx.globalCompositeOperation = 'source-over' } // 맞으면 초상이 잠깐 하얗게 번쩍
   const fr = art('panel-frame')
-  if (fr !== null) { const F = pn.s / 0.89, Fh = pn.s / 0.877; ctx.drawImage(fr, -pn.s / 2 - 0.055 * F, -pn.s / 2 - 0.061 * Fh, F, Fh) } // 테두리 안쪽 창 = 그림의 5.5~94.5% · 6.1~93.8%
+  if (fr !== null) { const F = pn.s / 0.89, Fh = pn.s / 0.877; ctx.drawImage(scaled(fr, F, Fh), -pn.s / 2 - 0.055 * F, -pn.s / 2 - 0.061 * Fh, F, Fh) } // 테두리 안쪽 창 = 그림의 5.5~94.5% · 6.1~93.8%
   else { ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(214,170,90,.85)'; roundRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s, pn.s * 0.06); ctx.stroke() }
   ctx.restore()
+  pm('panel')
   if (d.phase === 'rush') {
     // 비틀거림 — 판 둘레가 금빛으로 맥박
     const a = 0.4 + 0.3 * Math.sin(now / 90)
@@ -771,8 +875,10 @@ function drawDuel(now: number, fadeIn: number): void {
     ctx.lineWidth = 22; ctx.strokeStyle = `rgba(255,200,90,${a * 0.2})`; roundRect(pn.x, pn.y, pn.s, pn.s, pn.s * 0.06); ctx.stroke()
     ctx.lineWidth = 6; ctx.strokeStyle = `rgba(255,210,110,${a})`; roundRect(pn.x, pn.y, pn.s, pn.s, pn.s * 0.06); ctx.stroke(); ctx.restore()
   }
+  pm('rushring')
   // 고리
   for (const c of d.cues) if (c.done === null && d.t >= c.t0) drawCue(c, d.t)
+  pm('cues')
   // 판정 자국 — 챙! 빛 (정확·막음) · 붉은 자국 (맞음) · 빨랐다/늦었다는 남은 고리 크기로
   for (let i = marks.length - 1; i >= 0; i--) {
     const m = marks[i] as (typeof marks)[number]; const age = now - m.t0
@@ -790,6 +896,7 @@ function drawDuel(now: number, fadeIn: number): void {
     }
     clang(m.x, m.y, cueR() * (m.kind === 'perfect' ? 3.2 : 2) * (0.6 + 0.6 * Math.min(1, k * 3)), 1 - k, m.kind === 'perfect' ? 0 : 0.6, now)
   }
+  pm('marks')
   // 판정 글 — 크게 톡 (0.12초 안에 1.35배 → 1배) · 0.7초에 걷힌다
   for (let i = judges.length - 1; i >= 0; i--) {
     const j = judges[i] as (typeof judges)[number]; const age = now - j.t0
@@ -801,23 +908,13 @@ function drawDuel(now: number, fadeIn: number): void {
     const fs = Math.round(cueR() * (j.kind === 'perfect' ? 1.25 : 1.0) * sc)
     const jx = j.kind === 'miss' && age < 260 ? Math.sin(age / 18) * 6 : 0
     const ty = j.y - cueR() * 1.9 - (age / 700) * cueR() * 0.5
-    ctx.save(); ctx.globalAlpha = Math.max(0, fade)
-    ctx.font = `900 ${fs}px "Gowun Batang", serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-    ctx.lineWidth = Math.max(5, fs * 0.16); ctx.strokeStyle = 'rgba(20,10,4,.92)'; ctx.strokeText(word, j.x + jx, ty)
-    const g = ctx.createLinearGradient(0, ty - fs / 2, 0, ty + fs / 2)
-    if (j.kind === 'perfect') { g.addColorStop(0, '#fff7d6'); g.addColorStop(1, '#ffb02e') }
-    else if (j.kind === 'good') { g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#a9c8ff') }
-    else { g.addColorStop(0, '#ffb3a6'); g.addColorStop(1, '#ff3a26') }
-    ctx.fillStyle = g; ctx.fillText(word, j.x + jx, ty)
-    if (j.when !== '') {
-      const fs2 = Math.round(fs * 0.42)
-      ctx.font = `800 ${fs2}px "Gowun Batang", serif`
-      const tw = j.when === 'early' ? '빠름' : '늦음'
-      ctx.lineWidth = Math.max(3, fs2 * 0.2); ctx.strokeText(tw, j.x + jx, ty + fs * 0.62)
-      ctx.fillStyle = j.when === 'early' ? '#8fd0ff' : '#ffb070'; ctx.fillText(tw, j.x + jx, ty + fs * 0.62)
-    }
-    ctx.textBaseline = 'alphabetic'; ctx.restore()
+    ctx.globalAlpha = Math.max(0, fade)
+    const fsMax = judgeMax(j.kind)
+    putText(judgeSprite(j.kind, word), j.x + jx, ty, 'center', fs / fsMax)
+    if (j.when !== '') putText(whenSprite(j.when), j.x + jx, ty + fs * 0.62, 'center', fs / fsMax)
+    ctx.globalAlpha = 1
   }
+  pm('judge')
   // 베기 자국
   for (let i = slashes.length - 1; i >= 0; i--) {
     const s = slashes[i] as Slash; const age = now - s.t0
@@ -825,6 +922,7 @@ function drawDuel(now: number, fadeIn: number): void {
     if (age > s.ms) { slashes.splice(i, 1); continue }
     drawSlash(s, age / s.ms)
   }
+  pm('slash')
   // 불꽃
   for (let i = sparks.length - 1; i >= 0; i--) {
     const s = sparks[i] as Spark; const age = now - s.t0
@@ -834,14 +932,17 @@ function drawDuel(now: number, fadeIn: number): void {
     ctx.beginPath(); ctx.moveTo(s.x + s.vx * k, s.y + s.vy * k + 0.05 * k * k); ctx.lineTo(s.x + s.vx * (k + 2.2), s.y + s.vy * (k + 2.2) + 0.05 * (k + 2.2) ** 2); ctx.stroke()
   }
   ctx.globalAlpha = 1
+  pm('spark')
   // 아래 — 같은 전장 위에서 작은 두 장수가 따라 싸운다 (따로 깐 배경 없음)
   const fh = (H - ft) * 0.82
   fieldFighters(now, H - 6, fh, Math.min(W * 0.34, fh * 1.6), W / 2)
+  pm('fighters')
   // 체간 — 판 아래 가운데, 가운데서 양쪽으로 차오른다 (세키로처럼)
   const pk = d.phase === 'rush' ? 1 : d.foe.posture / R.posture
   const pw = Math.min(W * 0.7, pn.s * 0.9), px = (W - pw) / 2, py = Math.min(ft - 22, pn.y + pn.s + 10)
   if (d.phase !== 'rush') bar(px, py, pw, 10, pk, pk > 0.8 ? '#ffb347' : '#e9c46a', 'center', 'hud-posture')
   else rushCue(now, d)
+  pm('posture')
   // 위 — 격투 게임처럼: 우리(왼쪽) · 시간(가운데 크게) · 적장(오른쪽)
   // 위 띠 크기 — 폰은 그대로, 넓은 화면은 키운다 (PC 에서 너무 가늘고 작았다)
   const tw = hudTw()
@@ -858,55 +959,78 @@ function drawDuel(now: number, fadeIn: number): void {
   const [jmx, jmy] = jolt(hurtAt), [jfx, jfy] = jolt(foeHurtAt)
   const capMe = bar(W / 2 - plateW / 2 - 6 - bw + jmx, by + jmy, bw, bh, d.me.hp / R.hp, now - hurtAt < 200 ? '#ff5a4a' : '#e9c46a', 'left', 'hud-bar')
   const capFoe = bar(W / 2 + plateW / 2 + 6 + jfx, by + jfy, bw, bh, d.foe.hp / Math.round(R.hp * tierOf(d).foeHp), now - foeHurtAt < 200 ? '#ffffff' : '#e76f51', 'right', 'hud-bar')
+  pm('bars')
   // 둥근 머리 안에 얼굴
   for (const [cap, face] of [[capMe, meFace], [capFoe, foeFace]] as const) {
     if (cap === null || face === null || !face.complete || face.naturalWidth === 0) continue
     ctx.save(); ctx.beginPath(); ctx.arc(cap.cx, cap.cy, cap.r, 0, Math.PI * 2); ctx.clip()
     ctx.drawImage(face, cap.cx - cap.r * 1.15, cap.cy - cap.r * 1.0, cap.r * 2.3, cap.r * 2.3); ctx.restore()
   }
-  ctx.font = `700 ${Math.round(14 * Math.max(1, hudS))}px "Gowun Batang", serif`; ctx.fillStyle = '#f3e3c0'
-  ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.7)'
+  const namePx = Math.round(14 * Math.max(1, hudS))
   const nameY = by + bh + Math.round(18 * Math.max(1, hudS))
   // 이름은 얼굴(둥근 머리) 옆 아래
   const nxMe = capMe !== null ? capMe.cx + capMe.r * 1.25 : 12, nxFoe = capFoe !== null ? capFoe.cx - capFoe.r * 1.25 : W - 12
-  ctx.textAlign = 'left'; ctx.strokeText(cfg.me.name, nxMe, nameY); ctx.fillText(cfg.me.name, nxMe, nameY)
-  ctx.textAlign = 'right'; ctx.strokeText(cfg.foe.name, nxFoe, nameY); ctx.fillText(cfg.foe.name, nxFoe, nameY)
+  putText(textSprite(cfg.me.name, namePx, 700, '#f3e3c0', null, 'rgba(0,0,0,.7)', 4, false), nxMe, nameY, 'left')
+  putText(textSprite(cfg.foe.name, namePx, 700, '#f3e3c0', null, 'rgba(0,0,0,.7)', 4, false), nxFoe, nameY, 'right')
+  pm('faces+names')
   const sec = Math.max(0, Math.ceil((d.end - d.t) / R.hz))
   const plate = art('hud-timer')
   const tcx = W / 2, tcy = Math.round(tw * 0.42)
-  if (plate !== null) { const ph2 = tw * 0.98, pw2 = ph2 * (plate.naturalWidth / plate.naturalHeight); ctx.drawImage(plate, tcx - pw2 / 2, tcy - ph2 / 2, pw2, ph2) }
+  if (plate !== null) { const ph2 = tw * 0.98, pw2 = ph2 * (plate.naturalWidth / plate.naturalHeight); ctx.drawImage(scaled(plate, pw2, ph2), tcx - pw2 / 2, tcy - ph2 / 2, pw2, ph2) }
   else { ctx.fillStyle = 'rgba(20,12,6,.85)'; ctx.beginPath(); ctx.arc(tcx, tcy, tw * 0.42, 0, Math.PI * 2); ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#c99a4a'; ctx.stroke() }
   const low = sec <= 10
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-  ctx.font = `900 ${Math.round(tw * 0.52 * (low ? 1 + 0.08 * Math.max(0, Math.sin(now / 80)) : 1))}px "Gowun Batang", serif`
-  ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(0,0,0,.85)'; ctx.strokeText(String(sec), tcx, tcy + 2)
-  ctx.fillStyle = low ? '#ff6a5a' : '#ffe2a0'; ctx.fillText(String(sec), tcx, tcy + 2)
-  ctx.textBaseline = 'alphabetic'
+  putText(textSprite(String(sec), tw * 0.52 * 1.08, 900, low ? '#ff6a5a' : '#ffe2a0', null, 'rgba(0,0,0,.85)', 6, true), tcx, tcy + 2, 'center', (low ? 1 + 0.08 * Math.max(0, Math.sin(now / 80)) : 1) / 1.08)
+  pm('timer')
   // 숫자 — 빠르고 멀리 튄다
   for (let i = pops.length - 1; i >= 0; i--) {
     const pp = pops[i] as Pop; const age = now - pp.t0
     if (age > 620) { pops.splice(i, 1); continue }
     const k = age / 620, e = 1 - (1 - Math.min(1, age / 260)) ** 3
     const x = pp.x + pp.vx * e, y = pp.y + pp.vy * e + 60 * Math.max(0, k - 0.4) ** 2
-    ctx.globalAlpha = k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4; ctx.fillStyle = pp.color
-    ctx.font = `900 ${Math.round(pp.size * (1 + 0.7 * Math.max(0, 1 - age / 90)))}px "Gowun Batang", serif`
-    ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(0,0,0,.8)'
-    ctx.strokeText(pp.text, x, y); ctx.fillText(pp.text, x, y)
+    ctx.globalAlpha = k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4
+    putText(textSprite(pp.text, pp.size * 1.7, 900, pp.color, null, 'rgba(0,0,0,.8)', 6, false), x, y, 'center', (1 + 0.7 * Math.max(0, 1 - age / 90)) / 1.7)
   }
   ctx.globalAlpha = 1
+  pm('pops')
   // 치명 — 잠깐 어두워졌다가 흰 베기
   if (sinceCrit < 160) { ctx.fillStyle = `rgba(0,0,0,${0.55 * (1 - sinceCrit / 160)})`; ctx.fillRect(0, 0, W, H) }
 }
 
 // ── 돌리기 (탭이 숨으면 멈춘다 · 절대 규칙 4)
 let raf = 0
+/**
+ * 처음 쓰는 그림의 풀기·줄이기·굽기를 싸움 밖에서 한 번에 — 처음 베기·챙·고리가 뜰 때마다 끊기던 것 (그림 풀기는 처음 그릴 때 일어난다).
+ * 그림이 다 오면(또는 4초 지나면) 첫 프레임 머리에서 한 번 · 이 프레임은 바로 위에 덮어 그리거나 비운다.
+ */
+let warmed = false, warmTries = 0
+function warmNow(now: number): void {
+  if (warmed) return
+  const imgsOk = [bg, sprMe, sprFoe, ...(foeArt !== null ? [foeArt] : [])].every((i) => i.complete && i.naturalWidth > 0)
+  const artOk = ART_NAMES.every((n) => art(n) !== null)
+  if (!(imgsOk && artOk) && ++warmTries < 240) return
+  warmed = true
+  const R = cueR(), pn = panel()
+  drawDuel(now, 1)
+  for (const rgb of ['255,244,214', '255,70,50']) glow(rgb, R * 1.6)
+  const ring = art('fx-ring'), clg = art('fx-clang'), sl = art('fx-slash')
+  if (ring !== null) { const sz = R / 0.92; scaled(ring, sz * 2, sz * 2); scaled(ring, sz * 2, sz * 2, 'rgba(255,60,40,.6)') }
+  if (clg !== null) { const mx = Math.round(R * 3.9); scaled(clg, mx, mx); scaled(clg, mx, mx, 'rgba(150,200,255,.5)') }
+  if (sl !== null) { slashSrc(sl, Math.min(W, H) * 0.45, '255,60,40'); slashSrc(sl, Math.hypot(W, H) * 0.85, '255,255,255'); slashSrc(sl, Math.min(W, H) * 0.32, '255,255,255') }
+  for (const n of ['rush-tap-a', 'rush-tap-b']) { const im = art(n); if (im !== null) { const z = Math.round(Math.min(W, pn.s) * 0.36); scaled(im, z, z) } }
+  for (const [kind, word] of [['perfect', '완벽!'], ['good', '막음'], ['miss', '맞음']] as const) judgeSprite(kind, word)
+  whenSprite('early'); whenSprite('late')
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H)
+}
 function frame(now: number): void {
   raf = 0
   if (document.hidden) return
   const dt = last === 0 ? 0 : Math.min(100, now - last)
   last = now
-  watchLoad(dt)
+  if (!(PROF && params.get('nowatch') === '1')) watchLoad(dt)
+  warmNow(now)
+  if (PROF) pt = performance.now()
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  if (mode === 'duel' || mode === 'end') ctx.clearRect(0, 0, W, H)
   const sx = shake > 0 ? (((now * 7) % 13) / 13 - 0.5) * shake : 0
   const sy = shake > 0 ? (((now * 11) % 17) / 17 - 0.5) * shake : 0
   shake = Math.max(0, shake - 0.7)
@@ -940,6 +1064,15 @@ function frame(now: number): void {
     const a = flash.a * Math.max(0, 1 - (now - flash.t0) / flash.ms)
     ctx.fillStyle = `rgba(${flash.rgb},${a})`; ctx.fillRect(0, 0, W, H)
     if (now - flash.t0 > flash.ms) flash = null
+  }
+  if (PROF) {
+    pt = performance.now()
+    if (params.get('sync') === '1') { ctx.getImageData(0, 0, 1, 1); pm('flush') }
+    profFrames++; if (dt > 0) profGaps.push(dt)
+    if (now - profAt > 1000) {
+      if (profAt > 0) { const g = profGaps.slice().sort((a, b) => a - b); console.log('PROF ' + JSON.stringify({ n: profFrames, med: g[g.length >> 1], p95: g[Math.floor(g.length * 0.95)], over33: g.filter((x) => x > 33).length, len: g.length, dpr, mode, ms: Object.fromEntries(Object.entries(prof).map(([k, v]) => [k, +(v / Math.max(1, profFrames)).toFixed(2)])) })) }
+      profAt = now; profFrames = 0; profGaps.length = 0; for (const k of Object.keys(prof)) prof[k] = 0
+    }
   }
   raf = requestAnimationFrame(frame)
 }
