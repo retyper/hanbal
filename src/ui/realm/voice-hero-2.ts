@@ -464,7 +464,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['받아들이겠소.', '하늘이 정한 대로 하겠소.', '그리하겠소.'],
     auto: ['이 싸움은 내가 맡겠소!', '하늘이 보고 계시오! 나아가라!', '다투지 말고 맞서라! 흔들리지 마라!', '이겼소. 하늘이 도우셨소.', '졌소. 바다는 다시 차오르는 법이오.'],
     art: ['sway', '칼을 거두어라! 하늘이 낸 사람이 부른다, 함께 가자!'],
-    recorded: false,
+    recorded: true, // 11-11 Elio 13줄
     male: true,
   },
   // 탈해 · 25세 · 꾀 많고 자신만만하되 지면 깨끗이 엎드리는 젊은 장수, 비꼬듯 웃는다 · 매서운 청년 Achird
@@ -476,7 +476,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['둔갑으로 겨뤄 보겠소?', '꾀로 이기고 오겠소.', '맡겨 보시오. 후회는 없을 것이오.'],
     auto: ['이 싸움은 내가 맡겠소!', '꾀로 돌려라! 정면은 내가 연다!', '날뛰어라! 저들이 당황할 때까지!', '이겼소. 꾀가 힘을 이겼소.', '졌소. 깨끗이 엎드리고 다른 길로 가겠소.'],
     art: ['vanguard', '숫돌에 갈린 칼이다! 내 뒤를 따라 단숨에 뚫어라!'],
-    recorded: false,
+    recorded: true, // 11-11 Achird 13줄
     male: true,
   },
   // 뱃사람 너울 · 30세 · 탈해의 배를 모는 거칠어도 의리 있는 여 뱃사람 · 맑고 힘 있는 Callirrhoe
@@ -487,7 +487,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['의리는 지키옵니다. 맡겨 주소서.', '키를 잡고 해내겠사옵니다.', '배를 몰아 다녀오겠사옵니다.'],
     auto: ['이 싸움은 제가 맡겠사옵니다!', '배를 붙여라! 의리로 뛰어올라라!', '돛을 올려라! 뒤처지는 놈 없이 가자!', '이겼사옵니다. 모두 배에 오르소서.', '배가 기울었사옵니다. 다시 띄우겠사옵니다.'],
     art: ['ambush', '돛을 내리고 숨어라! 가까이 오면 뛰어올라 덮쳐라!'],
-    recorded: false,
+    recorded: true, // 11-11 Callirrhoe 13줄
   },
   // 여도간 · 48세 · 곡식 셈부터 꺼내는 수더분한 농사꾼 · 투박하고 정겨운 Sadaltager
   'gj-yeodogan': {
@@ -497,7 +497,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['곡식 셈부터 해 놓고 하겠사옵니다.', '수더분하게 해 보겠사옵니다.', '맡겨 주소서.'],
     auto: ['이 싸움은 제가 맡겠사옵니다!', '쟁기를 들었던 손이다! 밀어붙여라!', '곡식을 지켜라! 한 줌도 내주지 마라!', '이겼사옵니다. 곡식 셈을 해 보겠사옵니다.', '졌사옵니다. 올해 곡식이 아깝사옵니다.'],
     art: ['order', '곡식을 지켜라! 줄을 맞춰 한 걸음씩 밀어라!'],
-    recorded: false,
+    recorded: true, // 11-11 Sadaltager 13줄
     male: true,
   },
   // 유수간 · 37세 · 말을 아끼는 무뚝뚝한 강사람 · 젊은데 낮은 Daro
@@ -508,7 +508,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['받들겠사옵니다.', '강을 따라 다녀오겠사옵니다.', '맡겨 주소서.'],
     auto: ['강물이 맡겠사옵니다!', '물을 타라! 소리 없이 다가가라!', '놓치지 마라!', '끝났사옵니다.', '물이 막혔사옵니다. 다시 돌아가겠사옵니다.'],
     art: ['ambush', '강물을 타고 숨어들어라! 물가에서 덮쳐라!'],
-    recorded: false,
+    recorded: true, // 11-11 Daro 13줄
     male: true,
   },
   // 대가 소나 · 47세 · 귀족이지만 앞장서 도끼를 드는 위압감 있는 무장 · 위엄 있고 힘찬 Brio
@@ -519,7 +519,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['귀족의 이름을 걸고 해내겠사옵니다.', '맡겨 주소서. 앞서겠사옵니다.', '명을 받들겠사옵니다.'],
     auto: ['이 싸움은 제가 맡겠사옵니다!', '도끼를 들어라! 귀족이 앞선다!', '밀어붙여라! 한 치도 물러서지 마라!', '이겼사옵니다. 당연한 일이옵니다.', '물러나옵니다. 이 빚은 갚겠사옵니다.'],
     art: ['ambush', '숲에 숨어라! 내 도끼가 오르면 한꺼번에 덮쳐라!'],
-    recorded: false,
+    recorded: true, // 11-11 Brio 13줄
     male: true,
   },
   // 대왕 다물 · 50세 · 한 나라를 호령하던 위엄 있고 엄격한 대왕, 쉽게 고개 숙이지 않는다 · 울림 있는 Charon
