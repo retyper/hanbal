@@ -16,11 +16,12 @@ import { P } from '../tune/params.ts'
 import { blockedWhy, monthly, perSeason, seasonEndTurn, seasonIdx, seasonOf, seasons, yearOf, type ClockKind } from './calendar.ts'
 import { tierMul } from './tier.ts'
 import { hasCustom, noteCustom, noteOnce } from './data/customs.ts'
+import { aiCapBonus } from './scale.ts'
 import { draftCapBonus, gluttonMen, growMul, harvestMul, militiaMul, postHero, riteMul } from './heroes.ts'
 import { guardOptions } from './council.ts'
 import { relicSum } from './relics.ts'
 import type { Equip, UnitKind } from './battle.ts'
-import { TIERS, kitOf, lowestTier, nextTier, upgradeKind } from './kit.ts'
+import { TIERS, kitOf, lowestTier, nextTier, scaleMen, upgradeKind } from './kit.ts'
 import { wonderHarvestMul, wonderIronMul } from './wonders.ts'
 import type { Army, BuildWhat, Good, Goods, Order, ReportLine, Realm, RNode, SeasonOfYear, Stock } from './types.ts'
 import { bestWorkLv, canClear, canWork, clearCost, cutMul, lotCap, lotOf, lvOf, sitesOf, targetLv, withSite, workCost, workMulAt } from './works.ts'
@@ -326,7 +327,7 @@ export function draftLimit(r: Realm, faction: string, node: string, unit?: UnitK
   const back = sent > 0 ? n.drafted!.hh : 0 // 뽑느라 빠진 가호
   const per = Math.floor((n.hh + back) * R.draftPerSeason * shareOpen(r) * workMulAt(r, node, 'draft')) - sent // 장정 마을 (works.ts)
   const men = menOf(r, faction)
-  const capShare = R.draftCap + draftCapBonus(r, faction) - (hasCustom(r, faction, 'dalcheon') ? R.dalcheonCap : 0)
+  const capShare = R.draftCap + draftCapBonus(r, faction) + aiCapBonus(r, faction) - (hasCustom(r, faction, 'dalcheon') ? R.dalcheonCap : 0)
   const cap = Math.floor(capShare * (hhOf(r, faction) + men)) - men
   // 채비 곡식 — 덩이쇠(변한)는 모자란 몫을 쇠로 낸다
   const grain = (R.draftGrain > 0 ? Math.floor(stockOf(r, faction).grain / R.draftGrain) : Infinity) + deongiMen(r, faction)
@@ -346,7 +347,7 @@ export function draftWhy(r: Realm, faction: string, node: string, unit?: UnitKin
   // 병종 탓(말·나무·쇠)이면 그것 — 창병으로 셈한 한도보다 작다
   if (unit !== undefined && unit !== 'spear' && lim < draftLimit(r, faction, node)) return 'goods'
   const men = menOf(r, faction)
-  const cap = Math.floor((R.draftCap + draftCapBonus(r, faction) - (hasCustom(r, faction, 'dalcheon') ? R.dalcheonCap : 0)) * (hhOf(r, faction) + men)) - men
+  const cap = Math.floor((R.draftCap + draftCapBonus(r, faction) + aiCapBonus(r, faction) - (hasCustom(r, faction, 'dalcheon') ? R.dalcheonCap : 0)) * (hhOf(r, faction) + men)) - men
   const grain = (R.draftGrain > 0 ? Math.floor(stockOf(r, faction).grain / R.draftGrain) : Infinity) + deongiMen(r, faction)
   if (lim >= grain) return 'grain'
   if (lim >= cap) return 'cap'
@@ -1227,7 +1228,15 @@ export function stepEconomy(r: Realm, season: number, fought: ReadonlySet<string
       }
     }
     if (hungry) {
-      lines.push({ kind: 'hunger', faction: f })
+      // 굶은 군대는 흩어진다 — 사기만 깎여서는 곡식이 0 으로 떨어져도 벌이 안 보였다 (건마 201턴 기록 · 카드 A 11-11)
+      let fled = 0
+      for (const a of Object.values(r.armies)) {
+        const n0 = menIn(a.mix)
+        if (a.faction !== f || n0 < R.hungerFleeMin) continue
+        scaleMen(a, 1 - R.hungerFlee)
+        fled += n0 - menIn(a.mix)
+      }
+      lines.push(fled > 0 ? { kind: 'hunger', faction: f, fled } : { kind: 'hunger', faction: f })
       for (const a of Object.values(r.armies)) {
         if (a.faction === f) a.morale = Math.max(R.moraleFloor, a.morale - R.hungerMorale)
       }

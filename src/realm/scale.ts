@@ -31,3 +31,16 @@ export function wealthThreat(r: Realm): number {
   if ((r.tier ?? 1) < 1 || r.region === 'tutorial' || r.factions[r.player] === undefined) return 0
   return Math.log2(realmScale(r, r.player))
 }
+
+/**
+ * 이웃이 따라오는 몫 — 우리가 앞서 위협이 커지면 AI 나라의 군사 상한(draftCap)이 위협 한 단마다 aiCatchCap 만큼 오르고,
+ * 연합에 든 나라는 aiCoalCap 만큼 더 (플레이어 가호 3만에 이웃 한 고을짜리로 남던 것 · 카드 A 11-11). 쉬움은 wealthThreat 가 0 이라 그대로.
+ * 플레이어에게는 걸리지 않는다. 판 상태만 읽는다 (결정론).
+ */
+export function aiCapBonus(r: Realm, faction: string): number {
+  if (faction === r.player) return 0
+  const t = wealthThreat(r)
+  if (t <= 0) return 0
+  const inCoal = r.coalition?.members.includes(faction) === true
+  return P.realm.aiCatchCap * t + (inCoal ? P.realm.aiCoalCap : 0)
+}

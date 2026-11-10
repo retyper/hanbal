@@ -1259,7 +1259,7 @@ export type ReportLine =
   | { readonly kind: 'scale'; readonly faction: string; readonly good: Good; readonly n: number; readonly grain: number; readonly buy: boolean }
   | { readonly kind: 'wish'; readonly faction: string; readonly reward: 'hero' | 'news' | 'famed'; readonly who: string; /** 후반 큰 주문의 덤 — 곡식으로 돌려받은 양 */ readonly back?: number }
   | { readonly kind: 'cohabit'; readonly faction: string; readonly hero: string; readonly with: string; readonly to: string }
-  | { readonly kind: 'hunger'; readonly faction: string }
+  | { readonly kind: 'hunger'; readonly faction: string; /** 굶어 흩어진 군사 수 */ readonly fled?: number }
   | { readonly kind: 'envoy'; readonly from: string; readonly to: string; readonly ask: EnvoyAsk; readonly accepted: boolean; readonly why?: Why; readonly about?: string; readonly hero?: string; readonly node?: string }
   /** 화친·동맹을 맺어 상대 땅으로 가던 군대가 발길을 돌렸다 — `node` 는 가려던 고을 */
   /** 동맹·화친 땅에 약속 없이 머무는 우리 군대를 그 나라가 언짢아한다 (호감 −) */

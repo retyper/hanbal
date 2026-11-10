@@ -13,7 +13,7 @@
  */
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
-import { wealthThreat } from './scale.ts'
+import { aiCapBonus, wealthThreat } from './scale.ts'
 import { coalFocusOf, coalStriking, coalitionOf } from './coalition.ts'
 import { WORKS, canWork, targetLv, workCost, workOptions } from './works.ts'
 import { WONDER_ORDER, canWonder, feastBlocked, feastFloor, greatOpen, wonderStageCost, wonderWorkOf } from './wonders.ts'
@@ -278,7 +278,7 @@ function drafts(r: Realm, faction: string): Order[] {
   const out: Order[] = []
   // 나라 상한 — 뽑으면 가호가 줄고 군사가 늘어 (가호+군사)는 그대로라, 이번 계절에 뽑은 몫만 빼면 된다
   // 달 시계 — 싸움에서 잃은 사람이 아물 때까지 그만큼 덜 뽑는다 (rout.ts · 잃은 만큼 곧바로 다시 뽑아 같은 크기 군대가 또 오지 않게)
-  let room = Math.floor(R.draftCap * (hhOf(r, faction) + men)) - men - warDeadRoom(r, faction)
+  let room = Math.floor((R.draftCap + aiCapBonus(r, faction)) * (hhOf(r, faction) + men)) - men - warDeadRoom(r, faction)
   let took = 0
   for (const node of [...new Set(places)]) {
     const nd = r.nodes[node]

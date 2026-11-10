@@ -5848,7 +5848,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       } else if (l.kind === 'birth' && l.faction === pl) {
         c = [l.surprise !== undefined ? 0.95 : 0.8, { ev: 'event-newborn', hero: null, line: `${after.heroes[l.a]?.name ?? ''}·${after.heroes[l.b]?.name ?? ''}의 아이 ${josa(after.heroes[l.hero]?.name ?? '', '이', '가')} 나섰다` }]
       } else if (l.kind === 'hunger' && l.faction === pl) {
-        c = [0.75, { ev: 'event-sky-drought', hero: null, line: '곡식이 바닥났다' }]
+        c = [0.75, { ev: 'event-sky-drought', hero: null, line: l.fled !== undefined ? `곡식이 바닥나 군사 ${l.fled}명이 흩어졌다` : '곡식이 바닥났다' }]
       } else if (l.kind === 'settle' && l.faction === pl) {
         c = [0.5, { ev: 'event-expedition-return', hero: null, line: `${josa(after.nodes[l.to]?.name ?? '', "을", "를")} 일구러 떠났다` }]
       } else if (l.kind === 'blocked' && l.why === 'summerFord' && b.armies[l.army]?.faction === pl) {
