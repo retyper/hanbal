@@ -75,10 +75,9 @@ const img = (src: string, fallback?: string): HTMLImageElement => {
   return i
 }
 const bg = img(cfg.bg ?? 'realm/battle/battle-field.jpg')
-/** 겨루기 마당 — 군중이 둥글게 둘러싼 그림 (형 11-11: 아래가 비어 보임). 본편 전장 그림 이름으로 고른다 · 파일이 없으면 지금 바탕 그대로 */
-const arenaKind = (name: string): 'sea' | 'fort' | 'field' =>
-  /sea|port|beach/.test(name) ? 'sea' : /fort|wall|gate|castle/.test(name) ? 'fort' : 'field'
-const arena = img(`realm/duel/arena-${arenaKind(cfg.bg ?? 'battle-field')}.jpg`)
+/** 흥분한 군사 줄 (형 11-11: 전쟁통 한가운데니 군중은 군사 · 누끼로 바탕 위에) — 뒤쪽은 카메라를 보는 줄 · 앞줄은 등을 보이는 줄 */
+const crowdBack = img('realm/duel/crowd-back.png')
+const crowdFront = img('realm/duel/crowd-front.png')
 const sprMe = img(`realm/anim2/gen-${cfg.me.sprite}.png`)
 const sprFoe = img(`realm/anim2/gen-${cfg.foe.sprite}.png`)
 const foePid = cfg.foe.portrait
@@ -360,13 +359,31 @@ function watchLoad(dt: number): void {
   gaps.length = 0
   if (mid > 22) { dprCap = Math.max(1, dprCap - 0.5); resize() }
 }
+/** 군사 줄 한 장을 폭 w · 높이 h 에 맞춰 이어 붙인다 — 한 그림이 폭에 모자라니 좌우를 뒤집어 가며 깐다 (한 번 굽고 매 프레임은 drawImage 하나) */
+const ROWS = new Map<string, HTMLCanvasElement>()
+function crowdRow(im: HTMLImageElement, w: number, h: number): HTMLCanvasElement {
+  const key = `${im.src}|${Math.round(w)}x${Math.round(h)}@${dpr}`
+  let cv = ROWS.get(key)
+  if (cv === undefined) {
+    cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(w * dpr)); cv.height = Math.max(1, Math.round(h * dpr))
+    const c = cv.getContext('2d') as CanvasRenderingContext2D
+    c.imageSmoothingQuality = 'high'
+    const tw = h * im.naturalWidth / im.naturalHeight
+    const tile = scaled(im, tw, h)
+    for (let i = 0, x = 0; x < w; i++, x += tw - 2) { // 이음매가 겹치게 살짝 당긴다
+      c.save(); c.translate((x + (i % 2 === 1 ? tw : 0)) * dpr, 0); c.scale(i % 2 === 1 ? -1 : 1, 1)
+      c.drawImage(tile, 0, 0); c.restore()
+    }
+    ROWS.set(key, cv)
+  }
+  return cv
+}
 /** 바탕(전장 그림 + 어둡게 덮는 그라디언트)은 크기가 바뀔 때만 한 번 굽는다 — 화면 가득 큰 그림을 매 프레임 늘려 그리던 것 */
 let bgBaked: HTMLCanvasElement | null = null
 let bgKey = ''
 function bakedBg(): HTMLCanvasElement | null {
   if (!bg.complete || bg.naturalWidth === 0) return null
-  const arenaOk = arena.complete && arena.naturalWidth > 0
-  const key = `${W}x${H}@${dpr}${arenaOk ? 'a' : ''}`
+  const key = `${W}x${H}@${dpr}${crowdBack.complete && crowdBack.naturalWidth > 0 ? 'c' : ''}`
   if (bgBaked !== null && bgKey === key) return bgBaked
   const cv = bgBaked ?? document.createElement('canvas')
   if (cv.parentNode === null) host.insertBefore(cv, canvas) // 바탕은 밑 판에 — 위 판은 투명으로 비워 두고 매 프레임 바탕을 다시 그리지 않는다
@@ -375,18 +392,11 @@ function bakedBg(): HTMLCanvasElement | null {
   c.setTransform(dpr, 0, 0, dpr, 0, 0)
   const s = Math.max(W / bg.naturalWidth, H / bg.naturalHeight)
   c.drawImage(bg, (W - bg.naturalWidth * s) / 2, (H - bg.naturalHeight * s) / 2, bg.naturalWidth * s, bg.naturalHeight * s)
-  if (arenaOk) { // 마당 그림을 위에 덮는다 — 군중 고리가 장수 띠 뒤·옆에, 가운데 빈 마당에 장수가 선다
-    const a = Math.max(W / arena.naturalWidth, H / arena.naturalHeight)
-    const aw = arena.naturalWidth * a, ah = arena.naturalHeight * a
-    const dy = H * P.duel.arenaDrop // 그림을 아래로 내려 빈 마당이 장수 띠 자리에 오게 — 윗머리는 비는 만큼 부드럽게 녹인다
-    const ac = document.createElement('canvas'); ac.width = Math.round(W * dpr); ac.height = Math.round(H * dpr)
-    const x = ac.getContext('2d') as CanvasRenderingContext2D
-    x.setTransform(dpr, 0, 0, dpr, 0, 0)
-    x.drawImage(arena, (W - aw) / 2, H - ah + dy, aw, ah)
-    const fade = x.createLinearGradient(0, dy, 0, dy + H * P.duel.arenaFade)
-    fade.addColorStop(0, 'rgba(0,0,0,0)'); fade.addColorStop(1, 'rgba(0,0,0,1)')
-    x.globalCompositeOperation = 'destination-in'; x.fillStyle = fade; x.fillRect(0, 0, W, H)
-    c.drawImage(ac, 0, 0, W, H)
+  if (crowdBack.complete && crowdBack.naturalWidth > 0) { // 장수 띠 바로 뒤 — 카메라를 보는 군사들이 소리친다
+    const h = H * P.duel.crowdBackH
+    c.globalAlpha = P.duel.crowdBackAlpha
+    c.drawImage(crowdRow(crowdBack, W, h), 0, fieldTop() - h * P.duel.crowdBackSink, W, h)
+    c.globalAlpha = 1
   }
   const shade = c.createLinearGradient(0, 0, 0, H)
   shade.addColorStop(0, 'rgba(8,5,3,.7)'); shade.addColorStop(0.55, 'rgba(8,5,3,.5)'); shade.addColorStop(0.82, 'rgba(8,5,3,.2)'); shade.addColorStop(1, 'rgba(8,5,3,.35)')
@@ -963,6 +973,13 @@ function drawDuel(now: number, fadeIn: number): void {
   const fh = (H - ft) * 0.82
   fieldFighters(now, H - 6, fh, Math.min(W * 0.34, fh * 1.6), W / 2)
   pm('fighters')
+  // 앞줄 — 등을 보이는 군사들이 장수 앞 맨 아래에서 함성 (치명엔 들썩임 두 배)
+  if (crowdFront.complete && crowdFront.naturalWidth > 0) {
+    const cw = W * P.duel.crowdFrontW, chh = H * P.duel.crowdFrontH
+    const bob = Math.sin(now / 180) * R.crowdBob * (now - critAt < 400 ? 2 : 1)
+    ctx.drawImage(crowdRow(crowdFront, cw, chh), (W - cw) / 2, H - chh * (1 - R.crowdFrontDrop) + bob, cw, chh)
+  }
+  pm('crowd')
   // 체간 — 판 아래 가운데, 가운데서 양쪽으로 차오른다 (세키로처럼)
   const pk = d.phase === 'rush' ? 1 : d.foe.posture / R.posture
   const pw = Math.min(W * 0.7, pn.s * 0.9), px = (W - pw) / 2, py = Math.min(ft - 22, pn.y + pn.s + 10)
