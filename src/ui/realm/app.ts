@@ -7673,7 +7673,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 고을 이름표를 누르면 그 고을을 누른 것 (말이 고을 그림을 덮고 있어도 · 형 11-04)
     // 단 그 자리 밑에 말의 얼굴·수가 있으면 말이 먼저 (이름표가 얼굴을 살짝 덮을 때)
     const lb0 = (ev.target as HTMLElement).closest<HTMLElement>('.lbs .lb[data-n]')
-    const face = lb0 !== null && ev instanceof MouseEvent ? document.elementsFromPoint(ev.clientX, ev.clientY).find((e) => e.matches('.tok > img, .tok > b'))?.closest<HTMLElement>('[data-act]') ?? null : null
+    // 무엇을 고른 채(selbar 떠 있음)면 이름표가 곧 고을 — 말이 덮고 있어도 고을을 겨눈다 (형 11-11: 부대가 이름표와 겹쳐 경산에 군사를 못 보냄)
+    const face = lb0 !== null && !root.classList.contains('sel-open') && ev instanceof MouseEvent ? document.elementsFromPoint(ev.clientX, ev.clientY).find((e) => e.matches('.tok > img, .tok > b'))?.closest<HTMLElement>('[data-act]') ?? null : null
     const lb = face === null ? lb0 : null
     const t = face ?? (lb !== null ? root.querySelector<HTMLElement>(`.nd[data-node="${lb.dataset['n']}"]`) : (ev.target as HTMLElement).closest<HTMLElement>('[data-act], .nd'))
     if (t === null || !root.contains(t)) return

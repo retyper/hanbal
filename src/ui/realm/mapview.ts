@@ -881,7 +881,9 @@ export function mapHtml(
   for (const m of marches) {
     // 모르는 땅 앞에서 끊는다 (첫 걸음은 두 끝을 다 봐야 그린다)
     const all = [m.from, m.to, ...(m.then ?? [])]
-    const cut = all.findIndex((id) => !seen(id))
+    // 자리가 없거나 지도 밖으로 투영되는 고을(세계 지도의 먼 곳) 앞에서도 끊는다 — 그 점까지 곧은 줄이 지도 밖까지 뻗었다 (형 11-11 환나부 직선)
+    const onMap = (id: string): boolean => { const p = pos(id); return p !== undefined && p[0] >= -0.02 && p[0] <= 1.02 && p[1] >= -0.02 && p[1] <= 1.02 }
+    const cut = all.findIndex((id) => !seen(id) || !onMap(id))
     const nodes = cut < 0 ? all : all.slice(0, cut)
     if (nodes.length < 2) continue
     const amb = m.ambush === true && m.foe !== true

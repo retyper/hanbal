@@ -15,7 +15,7 @@ import { P } from '../../tune/params.ts'
 /** 지도 바탕 그림의 가로:세로 (mapview 의 W / H) */
 const ASPECT = 1264 / 848
 /** cover 배율에 곱해 가장 크게 · 한 단추에 키우는 몫 · 끌기로 치는 거리(px) */
-const MAX_OVER_COVER = 2.2
+const MAX_OVER_COVER = 2.2 // PC · 폰은 P.realm.mapZoomMaxTouch (형 11-11: 폰에서 확대가 더 안 돼 부대가 이름표와 겹쳐 못 누른다)
 const STEP = 1.35
 const DRAG_PX = 6
 /** 밝혀진 땅 둘레에 두는 여백 (지도 너비·높이의 몫) */
@@ -49,7 +49,7 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
 
   // 판마다 지도 비율·가장 큰 배율이 다르다 (영남 판은 고을이 빽빽해 더 크게 본다) — mapview 가 data-aspect · data-zmax 로 단다
   const aspect = (): number => Number(map()?.dataset["aspect"]) || ASPECT
-  const maxOver = (): number => Number(map()?.dataset["zmax"]) || MAX_OVER_COVER
+  const maxOver = (): number => Number(map()?.dataset["zmax"]) || (TOUCH ? P.realm.mapZoomMaxTouch : MAX_OVER_COVER)
   const cover = (): number => Math.max(1, wrap.clientWidth / (wrap.clientHeight * aspect()))
   /**
    * 가장 작게 볼 배율 — 밝혀진 땅(mapview 의 data-seen)이 칸을 채우는 데까지만 줄인다

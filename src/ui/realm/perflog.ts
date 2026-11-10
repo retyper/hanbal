@@ -35,14 +35,17 @@ function save(): void {
 export function startPerfLog(root: HTMLElement, where: () => string): void {
   if (typeof PerformanceObserver === 'undefined') return
   try {
+    // DOM 칸 수는 5초에 한 번만 센다 — 싸움에서 긴 작업이 잦을 때 세는 것 자체가 0.1초를 먹었다 (war-perf 11-11)
+    let nodes = 0, nodesAt = -Infinity
     const po = new PerformanceObserver((list) => {
       let added = false
       for (const e of list.getEntries()) {
         if (e.duration < LONG_MS) continue
+        if (e.startTime - nodesAt > 5000) { nodes = root.getElementsByTagName('*').length; nodesAt = e.startTime }
         hits.push({
           t: Date.now(), ms: Math.round(e.duration), where: where(),
           tier: [...root.classList].filter((c) => /^q-/.test(c)).join(' '),
-          nodes: root.getElementsByTagName('*').length, dpr: Math.round(devicePixelRatio * 10) / 10, w: innerWidth, h: innerHeight,
+          nodes, dpr: Math.round(devicePixelRatio * 10) / 10, w: innerWidth, h: innerHeight,
         })
         added = true
       }

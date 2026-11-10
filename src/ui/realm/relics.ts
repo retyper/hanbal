@@ -352,6 +352,19 @@ export const RELIC_CSS = `
 .ap .tbstrip .tbsr { width: 56px; height: 56px; object-fit: contain; flex: none; }
 @keyframes tbbob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 .ap .front.tomb { text-align: center; }
+/* 한 화면에 셋 — 굴리지 않는다 (형 11-11: "유물 상자 열 때 슬라이드 빼") · 폰에서는 세 칸이 나란히 서고 상자가 화면 폭에 맞춰 작아진다 · 단추는 맨 아래 붙박이 */
+.ap .front.tomb { display: flex; flex-direction: column; overflow: hidden; }
+.ap .front.tomb .tbrow { flex: 1 1 auto; min-height: 0; flex-wrap: nowrap; align-items: center; gap: clamp(6px, 2vw, 14px); padding: 6px clamp(6px, 2vw, 14px); }
+.ap .front.tomb .tbx { flex: 1 1 0; min-width: 0; min-height: 0; padding: 8px 4px 10px; }
+.ap .front.tomb .tbx.open { flex: 1.6 1 0; }
+.ap .front.tomb .tbx .tbc { width: min(170px, 24vw); height: auto; aspect-ratio: 1; }
+.ap .front.tomb .tbx.open .tbloot { width: min(220px, 36vw); height: auto; aspect-ratio: 1; }
+.ap .front.tomb .tbx.open .tbr { width: min(140px, 24vw); height: auto; aspect-ratio: 1; }
+.ap .front.tomb .tbx.miss .tbr { width: min(96px, 14vw); height: auto; aspect-ratio: 1; }
+.ap .front.tomb .tbx .tbt { font-size: clamp(11px, 3vw, 13px); }
+.ap .front.tomb .tbx.open .tbn { font-size: clamp(13px, 4vw, 18px); } .ap .front.tomb .tbx .tbfx { font-size: clamp(11px, 3.2vw, 13px); }
+.ap .front.tomb .tbx .tbribbon { font-size: clamp(9px, 2.6vw, 12px); padding: 1px 6px; white-space: nowrap; }
+.ap .front.tomb .tbgo { margin: auto 0 0; padding: 8px 10px calc(10px + env(safe-area-inset-bottom)); }
 .ap .front.tomb .tblead { max-width: 640px; margin: 2px auto 10px; padding: 0 14px; color: #cbbf9f; font-size: 13.5px; }
 .ap .tbrow { display: flex; justify-content: center; align-items: flex-end; flex-wrap: wrap; gap: 14px; max-width: 900px; margin: 0 auto; padding: 18px 14px 8px; }
 .ap .tbx { position: relative; flex: 0 1 220px; min-height: 260px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; padding: 10px 8px 12px; border-radius: 16px; border: 1px solid #5a4a30; background: radial-gradient(ellipse at 50% 80%, #2c2214, #120d08); color: inherit; font: inherit; }

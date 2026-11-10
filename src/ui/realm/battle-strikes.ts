@@ -249,13 +249,22 @@ export function playBattleStrikes(field: HTMLElement, round: RoundLog, beats: re
     const [x, y] = getComputedStyle(u.frame).translate.split(' ')
     return { x: parseFloat(x ?? '') || 0, y: parseFloat(y ?? '') || 0 }
   }
+  // 한 틀 안에서는 같은 몸의 자리를 한 번만 잰다 — 화살 하나마다 getBoundingClientRect·getComputedStyle 을 불러 틀마다 레이아웃을 수십 번 다시 셈했다
+  // (11-11 tools/war-perf.ts: offset 1.8초 · getBoundingClientRect 0.8초 · Layout 225번 · 형 "전투할 때 프레임 드랍")
+  const bodyCache = new Map<Actor, Point>()
   const body = (u: Actor): Point => {
+    const hit = bodyCache.get(u)
+    if (hit !== undefined) return hit
     const rect = u.node.getBoundingClientRect()
     const pos = { x: rect.x + rect.width / 2, y: rect.y + rect.height * .43 }
     const o = offset(u)
-    if (o.x === 0 && o.y === 0) return pos
-    const s = frameScale(u, u.frame.getBoundingClientRect())
-    return { x: pos.x + o.x * s.x * u.direction, y: pos.y + o.y * s.y }
+    let out = pos
+    if (o.x !== 0 || o.y !== 0) {
+      const s = frameScale(u, u.frame.getBoundingClientRect())
+      out = { x: pos.x + o.x * s.x * u.direction, y: pos.y + o.y * s.y }
+    }
+    bodyCache.set(u, out)
+    return out
   }
   const reach = (source: Actor, target: Actor): Point => {
     const to = body(target)
@@ -413,6 +422,7 @@ export function playBattleStrikes(field: HTMLElement, round: RoundLog, beats: re
   const tick = (now: number): void => {
     if (document.hidden || !field.isConnected || !field.classList.contains('play') || field.closest('.fast') !== null) { stop(); return }
     const elapsed = (playback.now(now) - origin) / 1000
+    bodyCache.clear()
     let box: DOMRect | undefined
     while (next < queue.length && queue[next]!.at <= elapsed) {
       const { at, act, strike } = queue[next++]!
@@ -460,11 +470,13 @@ export function playBattleStrikes(field: HTMLElement, round: RoundLog, beats: re
       returns.delete(actor)
       if (!down.has(actor)) walk(actor, { x: 0, y: 0 }, R.warStrikeWalkBackS * 1000, true)
     }
+    // 읽기(과녁 자리)를 먼저 다 하고 쓰기(화살 transform)를 한다 — 섞으면 화살마다 레이아웃을 다시 셈한다 (war-perf 11-11)
+    const tos = flights.map((f) => point(body(f.strike.target), box ??= field.getBoundingClientRect()))
     for (let i = flights.length - 1; i >= 0; i--) {
       const f = flights[i]!
       const { impact, flight, target, hit } = f.strike
       const t = Math.max(0, Math.min(1, (elapsed - impact + flight) / flight))
-      const to = point(body(target), box ??= field.getBoundingClientRect())
+      const to = tos[i]!
       const lift = Math.abs(to.x - f.from.x) * R.warArrowLift
       const p = arrowPose(f.from, to, lift, t)
       const angle = f.last !== undefined && (p.x !== f.last.x || p.y !== f.last.y)
