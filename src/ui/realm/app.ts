@@ -2444,6 +2444,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (edge === '') continue
       const m = movesOf(r, me(), a).find((x) => x.edge.id === edge)
       if (m === undefined || !m.hostile) continue
+      // 판세를 알고(정찰이 오래되지 않았고) 최악이라도 councilSkipWin 넘게 이기면 군막을 열지 않는다 (형 11-11: 농민군 100 에 1153 보내는데 군사회의가 열린다)
+      if (m.win !== null && m.win[0] >= P.realm.councilSkipWin && m.age <= P.realm.councilSkipAge) continue
       // 뜻이 갈리는 안건이 있을 때만 연다 — 군량만 갈리면 저절로 열지 않는다 (위원회: 판돈이 클 때만 · 형 10-29: 안건 여럿)
       if (!agendasFor(r, a, a, m, c?.ration).some((x) => x.id !== 'ration')) continue
       return { army: a.id, edge, ...(goal !== undefined ? { goal } : {}) }
