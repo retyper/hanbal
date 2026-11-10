@@ -152,4 +152,5 @@ Steam은 `docs/realm/STEAM-RELEASE.md`의 조사/체크리스트까지다. 가�
 - **11-10 형 판정:** 고개(w-26) 합격 → AWAKEN_LOOP. 곰(w-82)은 「어깨에 곰머리가 갑자기 튀어나옴」 → held · 곰머리 자리 고정 문안 `t1-gom-v2-20261110`. 갈매(w-39)는 1차·2차 그림을 무기 없이 다시(꾸러미 카드 둘) → 영상은 새 그림 뒤 새 문안. Veo 풀림은 u/4 화면 문구 **15:54** → 15:59 한 번 확인 예약.
 - **11-10 Flow 첫 시험:** 형 계정 Google Flow 에서 고운 1차(`t1-goun-v1-20261108b`) 를 Omni 1.2 Flash 10초로 구움 — 30 크레딧 · 720×1280 · 「좋음」 · awaken-loop/w-02-goguryeo-lady.mp4 (판정 기다림). 절차 tools/sprite-kit/README.md 「Veo 둘째 길」. Veo 3.1 은 Flow 에서 8초까지.
 - **11-10 Flow 둘째:** 누리 1차를 Veo 3.1 Fast 8초로 — 정사각 그림을 9:16 가운데에 두고 위아래 검은 띠 · Veo 워터마크 · 얼굴이 바뀜 → held · `t1-guga-nuri-v1-20261108b` 로 다시. 이 판에 **Flow 크레딧 소진** 알림 — 갱신 뒤 Omni 1.2 Flash 로만.
+- **11-10 Flow 셋째 (retyper92 · u/1):** 누리 1차 Omni 1.2 Flash 10초 다시 — 화면 꽉 · 얼굴 그대로 · 「좋음」 → awaken-loop/w-55-guga-nuri.mp4 (판정 기다림). 둘째 편 구름은 「사용량 한도에 도달」 → `t1-gureum-v1-20261108b`. 계정마다 한 편쯤.
 - **11-10 형: 당궁(w-51) 1차 각성 무기 없이·더 섹시하게 다시 · 2차는 더 과하게 섹시하게 다시 · 영상 둘 다 다시.** 꾸러미에 카드 둘(1차 다시 → 진각성 다시 순서). Veo: t1-dangung 은 held(받은 영상은 원장 outputs/veo 에만 · public 에서 뺌) · t2-dangung 은 sourceRepairRequired. **새 그림이 들어오면 그 그림대로 문안을 새로 써서 t1/t2 새 job**(옛 문안은 활·화살을 적는다).
