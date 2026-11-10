@@ -777,7 +777,7 @@ export const HERO_VOICE: Readonly<Record<string, HeroVoice>> = {
     obey: ['명대로 하겠사옵니다.', '한 살로 꿰어 보이겠사옵니다.', '맡겨 주소서. 빗나가지 않사옵니다.'],
     auto: ['이 싸움은 제 활에 맡기소서!', '하늘이 우리 편이다! 앞으로!', '겨누어라! 한 살도 헛되이 쏘지 마라!', '하늘이 도우셨사옵니다.', '활시위를 다시 매겠사옵니다.'],
     art: ['snipe', '저 깃발 아래 장수를 꿰겠다! 숨을 멈춰라!'],
-    recorded: false,
+    recorded: true, // 11-10 밤 AI 스튜디오 Iapetus 한 번에 13줄 (원본 assets_src/realm/voice/jm-jumong-20261110.wav)
     male: true,
   },
   // 온조 · 22세 · 새 나라를 세우는 젊은 왕재, 의젓하고 말이 곧고 짧다
@@ -788,7 +788,7 @@ export const HERO_VOICE: Readonly<Record<string, HeroVoice>> = {
     obey: ['그리하겠사옵니다.', '뜻대로 하겠사옵니다.', '반드시 해내겠사옵니다.'],
     auto: ['이 싸움은 제가 맡겠사옵니다!', '물러서지 마라! 새 나라가 여기서 선다!', '함께 간다! 앞으로!', '이겼사옵니다. 백성부터 살피겠사옵니다.', '송구하옵니다. 다시 세우겠사옵니다.'],
     art: ['sway', '칼을 거두어라! 우리와 함께 새 나라를 세우자!'],
-    recorded: false,
+    recorded: true, // 11-10 밤 AI 스튜디오 Orus 한 번에 13줄 (원본 assets_src/realm/voice/mh-onjo-20261110.wav)
     male: true,
   },
   // 혁거세 · 18세 · 알에서 났다는 소년 왕, 맑고 너그럽고 신성하다
@@ -854,7 +854,7 @@ export const HERO_VOICE: Readonly<Record<string, HeroVoice>> = {
     obey: ['서두르지 않되 지지 않겠사옵니다.', '헤아려 두겠사옵니다.', '그 수, 받겠사옵니다.'],
     auto: ['이 판은 제게 맡기소서!', '서두르지 마라! 저들이 먼저 무너진다!', '물러나는 척하라! 그리고 돌아서라!', '수를 읽은 대로였사옵니다.', '한 수가 모자랐사옵니다. 다시 두겠사옵니다.'],
     art: ['feint', '물러나라! 저들이 쫓아오면 그때 돌아서 친다!'],
-    recorded: false,
+    recorded: true, // 11-10 밤 AI 스튜디오 Alnilam 한 번에 13줄 (원본 assets_src/realm/voice/jm-hyeopbo-20261110.wav)
     male: true,
   },
   // 오간 · 42세 · 흔들리지 않는 중년 궁장, 차분하고 단정하다
