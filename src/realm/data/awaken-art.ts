@@ -292,6 +292,7 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'l-L10-pyeonggang', // 11-10 평강공주 1차 (Flow Jay) · 형: 최고 중 하나 (화살로 가슴골을 쓸어내리며 제자리 뛰기)
   'w-73-samul-sagong', // 11-10 사공 1차 (Flow Jay) · 형: 무난함
   'w-06-buyeo-huntress', // 11-10 새벽 1차 (Flow Jay) · 형: 무난함
+  'w-14-feast-spy', // 11-10 살해 노을 1차 (Flow Jay) · 형: 낫배드 (고개 돌리기가 있었으면)
   'w-78-wansan-wan', // 11-08 저녁 완 v3 · 10초 구성 · 만작한 채 윙크 (형: 그래도 봐줄 만하다 · 적용)
   'w-69-jeoga-eomni', // 11-07 엄니 · fc094928 사용자 채택, 원본 프레임 경계 한계 기록
   'w-67-buyeo-haedal', // 11-07 해달 · 머리/허리 손 접촉을 유지하는 세로 idle
