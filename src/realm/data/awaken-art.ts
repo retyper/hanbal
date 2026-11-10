@@ -305,6 +305,10 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'l-L9-ungnyeo', // 11-10 웅녀 1차 (Flow Jay) · 형: 좋음 (연출 굿 · 쑥이 한국 같아 좋음)
   'l-L1-yuhwa', // 11-10 유화 1차 (Flow Jay) · 형: 낫배드
   'l-L6-jeonggyeon-moju', // 11-10 정견모주 1차 (Flow Jay) · 형: 낫배드
+  'w-02-goguryeo-lady', // 11-10 고운 1차 (Flow) · 형: 낫배드
+  'w-55-guga-nuri', // 11-10 구가 누리 1차 (Flow) · 형: 굿
+  'w-49-goryong-gureum', // 11-10 구름 1차 (Flow) · 형: 나이스
+  'w-34-chopal-deulme', // 11-10 들메 1차 (Flow) · 형: 중간에 얼굴이 조금 덜 예뻐지지만 나이스
   'w-41-hwanna-beodeul', // 11-10 버들 1차 (Flow Jay) · 형: 시위가 혼자 당겨져서 소리째 거꾸로 돌림 (앞으로 돈 원본은 assets_src/realm/retired/awaken-loop)
   'w-78-wansan-wan', // 11-08 저녁 완 v3 · 10초 구성 · 만작한 채 윙크 (형: 그래도 봐줄 만하다 · 적용)
   'w-69-jeoga-eomni', // 11-07 엄니 · fc094928 사용자 채택, 원본 프레임 경계 한계 기록
