@@ -278,6 +278,7 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'w-82-ungcheon-gom', // 11-10 곰 v3 (형 손굽기 · 얼굴·그림체 고정 문안) · 형: 지금 것 쓴다
   'w-59-jomun-irang', // 11-10 이랑 1차 (Flow Jay · Omni 1.2 Flash) · 형: 일단 오케이 · 5초쯤 잠깐 멈춤
   'w-08-mahan-warrior', // 11-10 이슬 1차 (Flow Jay · Omni) · 형: 나쁘지 않음
+  'w-27-mokji-jinha', // 11-10 신지 진하 1차 (Flow Jay · Omni · 무당 춤) · 형: 나이스
   'w-78-wansan-wan', // 11-08 저녁 완 v3 · 10초 구성 · 만작한 채 윙크 (형: 그래도 봐줄 만하다 · 적용)
   'w-69-jeoga-eomni', // 11-07 엄니 · fc094928 사용자 채택, 원본 프레임 경계 한계 기록
   'w-67-buyeo-haedal', // 11-07 해달 · 머리/허리 손 접촉을 유지하는 세로 idle
