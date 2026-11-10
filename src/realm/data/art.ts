@@ -491,7 +491,7 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   maenun: { ar: 146 / 160, body: 0.955, bow: true }, // 11-04 제 띠 (u/0 · 꿩깃 검은 두건·붉은 두루마기·가죽 미늘·맥궁 · 골포국 살해 매눈)
   hyeopbo: { ar: 163 / 160, body: 0.887 }, // 11-04 제 띠 (u/0 · 검은 머리띠 상투·가는 콧수염·무늬 검은 도포·가죽 갑옷 · 곧은 고리자루 칼 — 첫 판은 휜 칼이라 버림)
   malgalgi: { ar: 165 / 160, body: 0.906 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 전투 옷은 더 드러나게 (형 11-08)
-  haebi: { ar: 152 / 160, body: 0.906 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 전투 옷은 더 드러나게 (형 11-08)
+  haebi: { ar: 148 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · haebi 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
   soebi: { ar: 156 / 160, body: 0.906 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 쇠 덩이 묶음 대신 큰 쇠망치
   ara: { ar: 157 / 160, body: 0.906 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2)
   heo: { ar: 145 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 갑옷 대신 보석 윗옷·트임 치마 (형: 전투 옷은 더 드러나게)
