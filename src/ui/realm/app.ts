@@ -86,6 +86,7 @@ import { UPDATE_CSS } from './update.ts'
 import { scrollInside } from './scroll.ts'
 import { retainMaxOf } from '../../realm/legacy.ts'
 import { morph } from './morph.ts'
+import { paintMapCanvas } from './mapcanvas.ts'
 import { declutter } from './declutter.ts'
 import { rehearse, type BattleLine } from '../../realm/warroom.ts'
 import { BATTLE_CSS, battleCard } from './battlecard.ts'
@@ -2268,6 +2269,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   function applyLayers(): void {
     for (const l of LAYERS) root.classList.toggle(`hide-${l.id}`, hiddenLayers.has(l.id))
+    const mw = root.querySelector<HTMLElement>(".mapwrap"); if (mw !== null) paintMapCanvas(mw) // 땅·길 보기를 끄고 켜면 캔버스도
   }
 
   /**
@@ -7114,6 +7116,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     lastRing = rh
     lastRingId = ring
     zoom.apply()
+    paintMapCanvas(wrap) // 땅·길·안개 캔버스 — 판이 바뀌었을 때만 다시 그린다
     // 이름표 비키기를 다음 프레임으로 미루면 한 프레임은 겹친 채 보였다가 튄다 — 곧바로
     { const m2 = wrap.querySelector<HTMLElement>('.map'); if (m2 !== null) declutter(m2) }
     if (first) {
