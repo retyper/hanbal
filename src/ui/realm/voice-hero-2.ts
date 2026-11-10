@@ -139,7 +139,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['받들겠사옵니다.', '놓치지 않겠사옵니다.', '명대로 하겠사옵니다.'],
     auto: ['제 활에 맡기소서!', '어둠이 와도 보인다! 겨누어라!', '한 살도 헛되이 쏘지 마라!', '끝났사옵니다.', '물러서겠사옵니다. 다음엔 놓치지 않사옵니다.'],
     art: ['snipe', '밤이 깊어도 보인다! 적장을 쏜다!'],
-    recorded: false,
+    recorded: true, // 11-11 Knox 13줄
     male: true,
   },
   // 살해 여울 · 32세 · 물길을 읽고 소리 없이 건너는 날카로운 척후 · 젊고 무뚝뚝한 Knox
@@ -150,7 +150,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['소리 없이 다녀오겠사옵니다.', '건너가 보겠사옵니다.', '받들겠사옵니다.'],
     auto: ['제가 앞서 건너겠사옵니다!', '물소리에 숨어라! 소리 내지 마라!', '여울을 건너 뒤를 쳐라!', '돌아왔사옵니다. 이겼사옵니다.', '물이 불었사옵니다. 다시 건너겠사옵니다.'],
     art: ['ambush', '물소리에 숨어 건너라! 등 뒤에서 덮쳐라!'],
-    recorded: false,
+    recorded: true, // 11-11 Knox 13줄
     male: true,
   },
   // 살해 들메 · 25세 · 싸우러 온 사람, 말보다 창이 먼저인 사나운 창잡이 · 맑고 힘 있는 Nika
@@ -161,7 +161,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['창이 먼저 가겠사옵니다.', '찔러서 길을 열겠사옵니다.', '맡겨 주소서!'],
     auto: ['창이 맡겠사옵니다!', '앞을 찔러라! 멈추지 마라!', '이름 대신 창으로 말해라!', '이겼사옵니다. 창끝이 말했사옵니다.', '창이 부러졌사옵니다. 다시 깎아 오겠사옵니다.'],
     art: ['ambush', '풀숲에서 창을 세워라! 지나가는 자를 찔러라!'],
-    recorded: false,
+    recorded: true, // 11-11 Nika 13줄
   },
   // 읍차 팔매 · 31세 · 이길 판만 고르는 신중하고 냉정한 돌팔매꾼 · 차분한 Arlo
   'chopal-ruler': {
