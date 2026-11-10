@@ -1,0 +1,24 @@
+[
+  {
+    "key": "bandit-club",
+    "heroId": "bandit",
+    "bust": "",
+    "weapon": "heavy",
+    "sex": "man",
+    "desc": "a rough Korean mountain bandit of the Samhan era (1st century): a lean, sun-browned man in his thirties with a scruffy beard, a dark cloth headband, a short hemp jacket with a tattered fur vest, baggy trousers tied at the ankles, straw sandals, a rope belt with a small pouch",
+    "armor": "NO metal armor, NO helmet, NO mask (no ninja look).",
+    "hold": "ONE heavy wooden club with an iron-banded head in his right hand",
+    "stride": "loping, aggressive stride"
+  },
+  {
+    "key": "bandit-chief",
+    "heroId": "bandit-chief",
+    "bust": "",
+    "weapon": "heavy",
+    "sex": "man",
+    "desc": "the burly Korean mountain-bandit chief of the Samhan era: a big barrel-chested man with a wild black beard and topknot, a bear-fur cloak over a bare chest, a wide leather belt with bronze plates, baggy trousers, leather boots",
+    "armor": "NO helmet, NO mask, NO Chinese or Japanese armor.",
+    "hold": "ONE huge two-handed iron battle axe",
+    "stride": "heavy, stomping stride"
+  }
+]
