@@ -78,7 +78,9 @@ function one(parent: Node, x: Node, y: Node, keyed: boolean): void {
   if (x.nodeType !== Node.ELEMENT_NODE) { if (x.nodeValue !== y.nodeValue) x.nodeValue = y.nodeValue; return }
   const xe = x as Element
   const ye = y as Element
-  for (const at of [...xe.attributes]) if (!ye.hasAttribute(at.name)) xe.removeAttribute(at.name)
+  // 캔버스의 width·height 는 그림판 크기를 코드가 정한다 — 지우면 그린 그림이 날아간다 (mapcanvas.ts)
+  const keepSize = xe instanceof HTMLCanvasElement
+  for (const at of [...xe.attributes]) if (!ye.hasAttribute(at.name) && !(keepSize && (at.name === 'width' || at.name === 'height'))) xe.removeAttribute(at.name)
   for (const at of [...ye.attributes]) if (xe.getAttribute(at.name) !== at.value) xe.setAttribute(at.name, at.value)
   if (xe instanceof HTMLInputElement && ye instanceof HTMLInputElement && xe.value !== ye.value && document.activeElement !== xe) xe.value = ye.value
   children(xe, ye, keyed)

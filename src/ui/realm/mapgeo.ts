@@ -197,6 +197,20 @@ const RIVER_INK_OP = 0.5
  * 예전엔 같은 굵기 파란 띠에 크림빛 테두리라 갈래가 만나는 곳이 덩어리처럼 겹쳤다. 이제 먹선 테두리에 옅은 물빛 · 갈래는 가는 끝으로 본줄기에 스민다.
  * 굵기 마디를 겹쳐 그려도 진해지지 않게 무리 전체에 진하기를 준다
  */
+/** 강 한 마디 — 캔버스 판이 같은 모양을 그린다 (ink: 먹선 굵기 · wash: 물빛 굵기, 지도 좌표) */
+export interface RiverSeg { readonly d: string; readonly ink: number; readonly wash: number }
+export const RIVER_PAINT = { ink: RIVER_INK, wash: RIVER_WASH, inkOp: RIVER_INK_OP, washOp: RIVER_OP } as const
+export function riversData(region: RegionId, W: number, H: number): RiverSeg[] {
+  const out: RiverSeg[] = []
+  for (const r of riverLines(region, W, H)) {
+    for (let i = 0; i < RIVER_STEPS; i++) {
+      const w = r.w * (RIVER_SRC + (1 - RIVER_SRC) * ((i + 1) / RIVER_STEPS))
+      out.push({ d: smoothPath(trimPolyline(r.pts, i / RIVER_STEPS, 1)), ink: Number(f1(w + 1.4)), wash: Number(f1(w)) })
+    }
+  }
+  return out
+}
+
 export function riversSvg(region: RegionId, W: number, H: number): string {
   const lines = riverLines(region, W, H)
   if (lines.length === 0) return ''
@@ -216,6 +230,23 @@ export function riversSvg(region: RegionId, W: number, H: number): string {
 
 // ───────── 뭍
 /** 영남 판의 뭍 (땅빛을 뭍 안에 가둔다) — SVG clipPath 안에 넣을 다각형들 */
+/** 뭍 다각형들을 한 패스(M·L·Z)로 — 캔버스 판이 Path2D 로 자르는 틀 (없으면 '') */
+export function landClipD(region: RegionId, W: number, H: number): string {
+  const g = worldGeoOf(region)
+  if (region !== 'yeongnam' && g === null) return ''
+  const pos = g !== null ? g.pos : yeongnamPos
+  // 다각형마다 감긴 방향을 같게 — SVG clipPath 는 도형들의 합집합인데, 한 패스로 합치면 반대로 감긴 겹침은 구멍이 된다
+  const ring = (ll: readonly Pt[]): string => {
+    const q = ll.map(([lon, lat]) => { const [x, y] = pos(lon, lat); return [x * W, y * H] as const })
+    let area = 0
+    for (let i = 0; i < q.length; i++) { const a = q[i]!; const b = q[(i + 1) % q.length]!; area += a[0] * b[1] - b[0] * a[1] }
+    if (area < 0) q.reverse()
+    return `M${q.map(([x, y]) => `${f1(x)} ${f1(y)}`).join('L')}Z`
+  }
+  if (g !== null) return [...g.lands, ...g.isles].map(ring).join('')
+  return [LAND, ...ISLES].map(ring).join('')
+}
+
 export function landClipSvg(region: RegionId, W: number, H: number): string {
   const g = worldGeoOf(region)
   if (region !== 'yeongnam' && g === null) return ''

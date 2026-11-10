@@ -22,7 +22,7 @@ import { customMarks } from '../../realm/hooks.ts'
 import { blockedWhy, forceOf, seasonOf } from '../../realm/season.ts'
 import type { EdgeKind, Good, NodeKind, Realm, REdge, RegionId, SeasonOfYear } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
-import { curvePts, ferryAt, landClipSvg, midOf, riversSvg, smoothPath, tidyEnds, trimPolyline, type Pt } from './mapgeo.ts'
+import { curvePts, ferryAt, landClipD, landClipSvg, midOf, riversData, riversSvg, RIVER_PAINT, smoothPath, tidyEnds, trimPolyline, type Pt } from './mapgeo.ts'
 import { boardRoutes } from './roadlayout.ts'
 import { ZONES } from '../../realm/data/zones/index.ts'
 import { inkOn, kitVars, nationKit } from './kitcolor.ts'
@@ -32,6 +32,7 @@ import { marketOf } from '../../realm/merchant.ts'
 import { crownTargets } from './crowns.ts'
 import { wonderMark } from './wondermap.ts'
 import { leagueRopeSvg } from './league.ts'
+import { registerMapCanvas, type CloudSpec, type MapCanvasData, type RoadOp } from './mapcanvas.ts'
 
 /** 미리 받아 둔 다음 계절 지도 그림 — 붙잡아 두어야 브라우저가 풀어 둔 그림을 버리지 않는다 */
 const warm = new Map<string, HTMLImageElement>()
@@ -128,6 +129,24 @@ export function roadSvg(d: string, kind: EdgeKind, k: number, op = 1, title = ''
   return s
 }
 
+/** roadSvg 와 같은 획을 캔버스용 낱개로 — 두 곳이 어긋나지 않게 같은 차례·같은 굵기·같은 진하기 */
+export function roadStrokes(d: string, kind: EdgeKind, k: number, op = 1): RoadOp[] {
+  const L = ROAD_LOOK[kind]
+  const dashOf = (x: string | undefined): number[] | null => (x === undefined ? null : x.split(' ').map((v) => Number(v) * k))
+  const out: RoadOp[] = []
+  const line = (c: string, wd: number, a: number, dash: number[] | null = null, cap: 'round' | 'butt' = 'round', off = 0): void => {
+    out.push({ d, c, w: Number((wd * k).toFixed(1)), a: Number((a * op).toFixed(2)), dash, cap, off: off * k })
+  }
+  line(L.sh, L.shW * 1.55, 0.2)
+  line(L.sh, L.shW, 0.36)
+  if (L.edge !== undefined) line(L.edge, L.bedW + 2.2, 0.75, dashOf(L.bedDash))
+  line(L.bed, L.bedW, 0.95, dashOf(L.bedDash))
+  if (L.rut !== undefined) { line(L.rut, L.bedW * 0.78, 0.65); line(L.bed, L.bedW * 0.5, 1) }
+  for (const t of L.tex ?? []) line(t.c, t.w, t.op, dashOf(t.dash), t.cap ?? 'round', t.off ?? 0)
+  if (L.mid !== undefined) line(L.mid, L.midW ?? 1.5, L.midOp ?? 0.85, dashOf(L.midDash))
+  return out
+}
+
 /**
  * 출정 화살의 꼴 (지도 좌표 · 화면의 생김새라 params 가 아니라 여기 둔다).
  * 흐르는 점선은 모두 한 마디(period) — keyframes 가 꼭 한 마디만큼 돌아 이음매에서 튀지 않는다 (형 10-30: "툭툭 끊어지고").
@@ -167,6 +186,9 @@ export const MAP_CSS = `
   /* 가장자리 고을 이름·말이 밖으로 삐져나가 굴릴 자리를 늘리지 않게 — 지도 바깥 빈 바탕까지 끌려 나갔다 (형 10-23: "맵에서 지도 바깥으로 막 나가지지 않게") */
   overflow: clip; }
 .map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* 바뀌지 않는 땅·강·안개·길·구름을 한 장에 (mapcanvas.ts) — 고을·군대·글씨보다 밑 */
+.map canvas.mapcv { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.map[data-cv] svg .rsign { filter: none; }
 .map svg.marr { z-index: 6; pointer-events: none; }
 .map .nd { position: absolute; transform: translate(-50%, -62%); width: calc(8.5% * var(--s, 1) * var(--ns, 1) * var(--cs, 1)); text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 /* 나라가 많은 판 — 당기면 고을 그림이 지도만큼 커지지 않아 서로 벌어진다 (형 10-25: "낙동강 스물한 나라는 마을 이미지가 너무 커서 텍스트가 밀려난다") */
@@ -730,15 +752,25 @@ export function mapHtml(
   const corridors = r.known === undefined ? [] : Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))
     .filter((ed) => seen(ed.a) && seen(ed.b))
     .map((ed) => smoothPath(route(ed)))
-  const fog = r.known !== undefined ? fogSvg(r, me, region, W, H, TERRITORY_R, vis, isFresh, corridors, art) : null
-  const landClip = landClipSvg(region, W, H)
+  // 바뀌지 않는 꾸밈(땅빛·강·안개·길·구름)은 캔버스 한 장에 (mapcanvas.ts) — ?mapsvg=1 이거나 DOM 이 없으면(시험) 옛 SVG 로
+  const cvMode = typeof document !== 'undefined' && !(typeof location !== 'undefined' && /[?&]mapsvg=1/.test(location.search))
+  const fogCv = cvMode && r.known !== undefined ? fogCanvas(r, me, region, W, H, TERRITORY_R, vis, corridors, art) : null
+  const fog = !cvMode && r.known !== undefined ? fogSvg(r, me, region, W, H, TERRITORY_R, vis, isFresh, corridors, art) : null
+  const landD = landClipD(region, W, H)
+  const landClip = cvMode ? '' : landClipSvg(region, W, H)
   svg += `${landClip}${fog?.defs ?? ''}</defs>`
-  // 땅빛 — 구워 둔 고을 구역(realm/data/zones)을 주인 색으로
-  svg += provincesSvg(r, W, H, dim, focus, seen, me, landClip !== '')
-  // 강 — 또렷하게 (영남 판)
-  svg += riversSvg(region, W, H)
-  // 모르는 땅 — 강·땅빛 위, 길 밑 (아는 고을 사이의 길은 늘 보인다)
-  svg += fog?.body ?? ''
+  const roadOps: RoadOp[] = []
+  let roadKey = ''
+  if (cvMode) {
+    provincesSvg(r, W, H, dim, focus, seen, me, landD !== '', true)
+  } else {
+    // 땅빛 — 구워 둔 고을 구역(realm/data/zones)을 주인 색으로
+    svg += provincesSvg(r, W, H, dim, focus, seen, me, landClip !== '')
+    // 강 — 또렷하게 (영남 판)
+    svg += riversSvg(region, W, H)
+    // 모르는 땅 — 강·땅빛 위, 길 밑 (아는 고을 사이의 길은 늘 보인다)
+    svg += fog?.body ?? ''
+  }
   // 길 — 골짜기·바닷가를 따라 휜다 (형: "직선경로만 있는게 이상하지 않냐?"). 막힌 길은 흐리고 가운데 ✕
   const sw = RA.nodeScale < 1 ? 0.6 : 1
   /** 길 기호의 크기 — 고을 그림의 3/4 쯤 (10-30 물건 하나짜리 실루엣이 되어 디오라마보다 덜 차서 키웠다) */
@@ -752,7 +784,8 @@ export function mapHtml(
     const shut = blockedWhy(ed, r) !== null
     // 길가는 옅은 흙빛 어깨로 바탕과 떼어 본다 (형: "지도랑 색이 비슷해서 길 색이 잘 안보이는건" · "길같지가 않고 오브젝트같아")
     const d = smoothPath(pts)
-    svg += roadSvg(d, ed.kind, sw, shut ? 0.35 : 1, EDGE_NAME[ed.kind])
+    if (cvMode) { roadOps.push(...roadStrokes(d, ed.kind, sw, shut ? 0.35 : 1)); roadKey += `${ed.id}${shut ? 'x' : ''},` }
+    else svg += roadSvg(d, ed.kind, sw, shut ? 0.35 : 1, EDGE_NAME[ed.kind])
     // 길 기호 — 나루는 나루터에, 다른 길은 고을 그림 사이 드러난 길의 가운데에서 조금 비켜 (행군 화살의 "n계절" 글씨를 안 가린다).
     // 고을이 가까워 드러난 길이 짧으면 기호를 줄이고, 그래도 모자라면 길 옆으로 비켜 단다 (형: "너무 가까운 마을사이 낑긴 도로이미지 안보이는데")
     const fr = ed.kind === 'ford' ? ferryAt(region, ed, W, H) : null
@@ -791,8 +824,10 @@ export function mapHtml(
       if (seen(ed.a) === seen(ed.b)) continue
       const pts = seen(ed.a) ? route(ed) : [...route(ed)].reverse()
       const sure = RR.mapRoadStub * RR.mapRoadStubFade
-      svg += `<g class="rstub">${roadSvg(smoothPath(trimPolyline(pts, 0, sure)), ed.kind, sw, RR.mapRoadStubOp)}`
-        + `${roadSvg(smoothPath(trimPolyline(pts, sure * 0.9, RR.mapRoadStub)), ed.kind, sw, RR.mapRoadStubOp / 2)}</g>`
+      const d0 = smoothPath(trimPolyline(pts, 0, sure))
+      const d1 = smoothPath(trimPolyline(pts, sure * 0.9, RR.mapRoadStub))
+      if (cvMode) { roadOps.push(...roadStrokes(d0, ed.kind, sw, RR.mapRoadStubOp), ...roadStrokes(d1, ed.kind, sw, RR.mapRoadStubOp / 2)); roadKey += `${ed.id}s,` }
+      else svg += `<g class="rstub">${roadSvg(d0, ed.kind, sw, RR.mapRoadStubOp)}${roadSvg(d1, ed.kind, sw, RR.mapRoadStubOp / 2)}</g>`
     }
   }
   if (ranging) {
@@ -1149,7 +1184,26 @@ export function mapHtml(
     return `<span class="nnm${s.o === me ? ' me' : ''}${dim(s.o) ? ' dim' : ''}" data-w="${(s.o === me ? 2 : s.a).toFixed(5)}" style="left:${(s.x * 100).toFixed(2)}%;top:${(s.y * 100).toFixed(2)}%;--nc:${col};--no:${inkOn(col)}">${name}</span>`
   }).join('')
   const names = `<div class="nnms" style="--nnpx:${P.realm.mapNationNamePx}px">${nn}</div>`
-  return `<div class="map" data-seen="${seenBox}" data-region="${region}"${CROWDED.has(region) ? ' data-dense' : ''}${world ? ` data-world="${season}"` : ''} data-aspect="${W / H}" data-zmax="${RA.zmax}" style="${bg}aspect-ratio:${W} / ${H};--ns:${RA.nodeScale};--ls:${RA.labelScale}">${svg}<div class="clsh"></div>${fog?.words ?? ''}${nodes}${walkSvg}${toks}${placeLabels(labels, byNode, W, H, RA.nodeScale, RA.labelScale)}${names}${arrowSvg}</div>`
+  // 캔버스 판 — 그릴 것을 모아 맡기고 <canvas> 자리만 낸다 (app 이 깐 뒤 paintMapCanvas)
+  let cvTag = ''
+  if (cvMode) {
+    const pv = provCv
+    const T = P.realm
+    let rk = `${roadKey}|`
+    let lastD = ''
+    for (const o of roadOps) if (o.d !== lastD) { lastD = o.d; rk += `${o.d.length}.${hashStr(o.d)},` }
+    const key = hashStr(`${region}|${W}|${H}|${art}|${pv?.key ?? ''}|${rk}|${fogCv?.key ?? ''}|${landD.length}`)
+    const st = cvStatic(region, W, H)
+    registerMapCanvas({
+      key, W, H, land: landD, fills: pv?.fills ?? [], band: pv?.band ?? null, rims: pv?.rims ?? [], towns: pv?.towns ?? [], inks: pv?.inks ?? [],
+      gold: pv?.gold ?? '', myLand: MY_LAND, myDark: MY_EDGE_DARK, myCore: MY_EDGE_CORE,
+      rivers: st.rivers, riverPaint: RIVER_PAINT, fog: fogCv?.fog ?? null, roads: roadOps, clouds: fogCv?.clouds ?? [],
+      px: { border: T.mapBorderPx, ink: T.mapBorderInkPx, town: T.mapTownLinePx, townDash: T.mapTownDashPx, myEdge: T.mapMyEdgePx },
+    })
+    cvTag = `<canvas class="mapcv" aria-hidden="true" data-cvkey="${key}"></canvas>`
+  }
+  const fogWordsHtml = (fog ?? fogCv)?.words ?? ''
+  return `<div class="map" data-seen="${seenBox}" data-region="${region}"${cvMode ? ' data-cv' : ''}${CROWDED.has(region) ? ' data-dense' : ''}${world ? ` data-world="${season}"` : ''} data-aspect="${W / H}" data-zmax="${RA.zmax}" style="${bg}aspect-ratio:${W} / ${H};--ns:${RA.nodeScale};--ls:${RA.labelScale}">${cvTag}${svg}${cvMode ? '' : '<div class="clsh"></div>'}${fogWordsHtml}${nodes}${walkSvg}${toks}${placeLabels(labels, byNode, W, H, RA.nodeScale, RA.labelScale)}${names}${arrowSvg}</div>`
 }
 
 /** 지도 위 우리 군대의 말 — 머무는 군대 하나에 하나 */
@@ -1373,9 +1427,17 @@ let bandOut: string | null = null
  * 작게 구워 늘린다 — 늘리면 저절로 부드럽고, 확대·축소 때 다시 그리지 않는다. DOM 이 없으면(시험) null
  */
 function bandImage(items: readonly BandItem[], W: number, H: number, blur: number): string | null {
+  const cv = bandCanvas(items, W, H, blur)
+  if (cv === null) return null
+  if (bandOut === null || bandOutFor !== cv) { bandOut = cv.toDataURL('image/png'); bandOutFor = cv }
+  return bandOut
+}
+let bandCv: HTMLCanvasElement | null = null
+let bandOutFor: HTMLCanvasElement | null = null
+function bandCanvas(items: readonly BandItem[], W: number, H: number, blur: number): HTMLCanvasElement | null {
   if (typeof document === 'undefined' || items.length === 0) return null
   const key = `${W}|${H}|${items.map((x) => `${x.col}${x.w}${x.a}${x.rim}${x.own}`).join('|')}`
-  if (key === bandKey) return bandOut
+  if (key === bandKey) return bandCv
   try {
     const s = P.realm.mapBandBakeScale
     const w = Math.max(8, Math.round(W * s))
@@ -1417,8 +1479,8 @@ function bandImage(items: readonly BandItem[], W: number, H: number, blur: numbe
     }
     g.putImageData(img, 0, 0)
     bandKey = key
-    bandOut = cv.toDataURL('image/png')
-    return bandOut
+    bandCv = cv
+    return cv
   } catch { return null }
 }
 
@@ -1440,16 +1502,46 @@ const MY_EDGE_CORE = '#eaf4ff'
  */
 let provKey = ''
 let provOut = ''
+/** 캔버스 판이 쓸 땅빛 그림감 — provincesSvg(…, cv=true) 가 채운다 */
+interface ProvCv { key: string; fills: MapCanvasData['fills']; band: HTMLCanvasElement | null; rims: MapCanvasData['rims']; towns: MapCanvasData['towns']; inks: MapCanvasData['inks']; gold: string }
+let provCv: ProvCv | null = null
+/** 짧은 지문 — 캔버스 키용 (FNV-1a) */
+function hashStr(s: string): string {
+  let h = 2166136261
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619)
+  return `${(h >>> 0).toString(36)}${s.length.toString(36)}`
+}
+/** 판마다 한 번 — 강 */
+const cvStaticCache = new Map<string, { rivers: ReturnType<typeof riversData> }>()
+function cvStatic(region: RegionId, W: number, H: number): { rivers: ReturnType<typeof riversData> } {
+  const key = `${region}|${W}|${H}`
+  let v = cvStaticCache.get(key)
+  if (v === undefined) { v = { rivers: riversData(region, W, H) }; cvStaticCache.set(key, v) }
+  return v
+}
+/** 두 빛을 섞는다 (color-mix in srgb 와 같다 · t 가 첫 빛의 몫) — 해석 못 하면 첫 빛 */
+function mixHex(a: string, b: string, t: number): string {
+  const rgb = (c: string): number[] | null => {
+    const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(c)
+    if (m === null) return null
+    const h = m[1]!.length === 3 ? m[1]!.replace(/./g, (x) => x + x) : m[1]!
+    return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16))
+  }
+  const x = rgb(a)
+  const y = rgb(b)
+  if (x === null || y === null) return a
+  return `#${x.map((v, i) => Math.round(v * t + y[i]! * (1 - t)).toString(16).padStart(2, '0')).join('')}`
+}
 function provincesSvg(
   r: Realm, W: number, H: number,
-  dim: (owner: string | null) => boolean, focus: string | null, seen: (id: string) => boolean, me: string, clipped: boolean,
+  dim: (owner: string | null) => boolean, focus: string | null, seen: (id: string) => boolean, me: string, clipped: boolean, cv = false,
 ): string {
   const region = r.region ?? 'byeonhan-mini'
   const z = ZONES[region]
-  if (z === undefined) return ''
+  if (z === undefined) { if (cv) provCv = null; return '' }
   const ids = Object.keys(r.nodes).sort()
   const ownerOf = (id: string): string | null => (id === '' ? null : r.nodes[id]?.owner ?? null)
-  const key = `${region}|${W}|${me}|${focus ?? ''}|${clipped ? 1 : 0}|${P.realm.mapBorderPx},${P.realm.mapBorderInkPx},${P.realm.mapTownLinePx},${P.realm.mapTownDashPx},${P.realm.mapMyEdgePx}|${ids.map((id) => `${ownerOf(id) ?? ''}${seen(id) ? '' : '?'}`).join(',')}`
+  const key = `${cv ? 'c' : 's'}|${region}|${W}|${me}|${focus ?? ''}|${clipped ? 1 : 0}|${P.realm.mapBorderPx},${P.realm.mapBorderInkPx},${P.realm.mapTownLinePx},${P.realm.mapTownDashPx},${P.realm.mapMyEdgePx}|${ids.map((id) => `${ownerOf(id) ?? ''}${seen(id) ? '' : '?'}`).join(',')}`
   if (key === provKey) return provOut
   const clip = clipped ? ' clip-path="url(#rm-land)"' : ''
   const k = Math.max(1, W / 1100) // 안쪽 띠 굵기 — 그림 폭에 맞춘다 (띠는 땅빛의 일부라 지도와 함께 커진다)
@@ -1488,12 +1580,23 @@ function provincesSvg(
   let crisp = ''
   let band = ''
   const bake: BandItem[] = []
+  const cvFills: Array<{ d: string; col: string; a: number }> = []
+  const cvRims: Array<{ own: string; rim: string; col: string }> = []
+  const cvTowns: Array<{ d: string; col: string; a: number }> = []
   for (const [o, d] of [...area].sort((x, y) => (x[0] < y[0] ? -1 : 1))) {
     // 안은 옅게 — 나라는 둘레로 읽힌다. 한 나라의 고을들을 한 패스로 칠해 고을 사이에 이음매가 안 진다
-    fill += `<path d="${d}" fill="${o === me ? MY_LAND : FACTION_ART[o]?.color ?? '#ccc'}" opacity="${dim(o) ? 0.05 : focus === o ? 0.34 : o === me ? 0.3 : 0.17}"/>`
+    const fillA = dim(o) ? 0.05 : focus === o ? 0.34 : o === me ? 0.3 : 0.17
+    const fillCol = o === me ? MY_LAND : FACTION_ART[o]?.color ?? '#ccc'
+    if (cv) cvFills.push({ d, col: fillCol, a: fillA })
+    else fill += `<path d="${d}" fill="${fillCol}" opacity="${fillA}"/>`
     const rd = rim.get(o)
     if (rd === undefined) continue
     const col = o === me ? MY_LAND : nationKit(o).c
+    if (cv) {
+      cvRims.push({ own: d, rim: rd, col })
+      bake.push({ own: d, rim: rd, col, w: (o === me ? 24 : 18) * k, a: o === me ? 0.45 : 0.36 })
+      continue
+    }
     cps += `<clipPath id="rm-own-${o}"><path d="${d}"/></clipPath>`
     // 둘레 안쪽의 번진 제 색 띠 하나 + 또렷한 제 색 선 하나 — 이웃과 맞닿으면 두 색이 나란히 선다 (문명 6 국경).
     // 둘째 빛 띠·먹빛 테는 걷었다 — 비슷한 빛의 이웃은 이름표의 두 색(kitcolor)으로 가른다 (형 10-26: "몇 줄씩 테두리")
@@ -1507,11 +1610,19 @@ function provincesSvg(
   let lines = ''
   for (const [o, d] of [...town].sort((x, y) => (x[0] < y[0] ? -1 : 1))) {
     const col = o === me ? MY_LAND : FACTION_ART[o]?.color ?? '#ccc'
+    cvTowns.push({ d, col: mixHex(col, '#2a1d10', 0.45), a: dim(o) ? 0.05 : 0.5 })
     lines += `<path class="tw" d="${d}" stroke="color-mix(in srgb, ${col} 45%, #2a1d10)" stroke-width="${T.mapTownLinePx}" stroke-dasharray="${T.mapTownDashPx} ${(T.mapTownDashPx * 0.8).toFixed(1)}" ${NS} opacity="${dim(o) ? 0.05 : 0.5}"/>`
   }
   if (ink !== '') lines += `<path d="${ink}" stroke="#1a120a" stroke-width="${T.mapBorderInkPx}" ${NS} opacity=".7"/>`
   if (inkDim !== '') lines += `<path d="${inkDim}" stroke="#1a120a" stroke-width="${T.mapBorderInkPx}" ${NS} opacity=".1"/>`
   // 띠를 미리 구운 그림으로 — 흐림 거르개는 확대·축소 때마다 다시 그려 무거웠다 (형 10-29) · 구울 수 없는 곳(시험)만 옛 거르개
+  if (cv) {
+    provCv = { key, fills: cvFills, band: bandCanvas(bake, W, H, 3 * k), rims: cvRims, towns: cvTowns,
+      inks: [...(ink !== '' ? [{ d: ink, a: 0.7 }] : []), ...(inkDim !== '' ? [{ d: inkDim, a: 0.1 }] : [])], gold }
+    provKey = key
+    provOut = ''
+    return ''
+  }
   const baked = bandImage(bake, W, H, 3 * k)
   let h = `<defs>${baked === null ? `<filter id="rm-band" x="-2%" y="-2%" width="104%" height="104%"><feGaussianBlur stdDeviation="${(3 * k).toFixed(1)}"/></filter>` : ''}${cps}</defs>`
   // 둘레는 고을 사이 금(조각)을 이어 그린다 — 끝을 둥글게 해야 꺾인 모서리에서 제 색 선이 끊기지 않는다 (형 10-26: "가까이서 보면 각진 곳에 국경 색이 끊어져 있음")
@@ -1708,14 +1819,42 @@ function fogSvg(
   return { defs, body, words: fogWords(r, me, region, W, H, terrR, vis, art) }
 }
 
+/** 캔버스 판의 안개 — SVG 문자열 없이 가림막 그림판·한지·구름 자리만. 가림막을 못 그리는 곳(시험)이면 null */
+function fogCanvas(
+  r: Realm, me: string, region: RegionId, W: number, H: number, terrR: number, vis: ReadonlySet<string>,
+  corridors: readonly string[], art: string,
+): { fog: MapCanvasData['fog']; clouds: CloudSpec[]; words: string; key: string } | null {
+  const zone = ZONES[region]?.fill ?? {}
+  const ids = Object.keys(r.nodes).sort().filter((id) => vis.has(id))
+  const mask = fogMaskCanvas(`${region}|${ids.join(',')}`, ids.map((id) => {
+    const p = nodePos(region, id)
+    return { d: zone[id] ?? '', dot: p !== undefined ? [p[0] * W, p[1] * H] as const : undefined }
+  }), corridors, W, H, terrR, Math.round(terrR * 0.3))
+  if (mask === null) return null
+  const clouds = cloudsOf(region, W, H, terrR, vis).map((c): CloudSpec => ({ src: `${art}map-world/cloud-${c.n}.webp`, x: c.x, y: c.y, w: c.w / 100, flip: c.flip }))
+  return {
+    fog: { mask, hanji: `${art}map-world/hanji.webp`, tile: Math.round(Math.min(W, H) * 0.42) },
+    clouds, words: fogWords(r, me, region, W, H, terrR, vis, art, false),
+    key: `${ids.join(',')}|${corridors.length}|${clouds.length}|${fogMaskKey}`,
+  }
+}
+
 /** 갤럭시 호환 모드의 안개 가림막 — 본 땅을 검게 뚫은 흰 판을 작게 그려 흐린다 (같은 판이면 다시 그리지 않는다) */
 let fogMaskKey = ''
 let fogMaskOut = ''
+let fogMaskCv: HTMLCanvasElement | null = null
+let fogMaskOutFor: HTMLCanvasElement | null = null
 function fogMaskUrl(seenKey: string, holes: ReadonlyArray<{ d: string; dot: readonly [number, number] | undefined }>, corridors: readonly string[], W: number, H: number, terrR: number, blur: number): string | null {
+  const cv = fogMaskCanvas(seenKey, holes, corridors, W, H, terrR, blur)
+  if (cv === null) return null
+  if (fogMaskOutFor !== cv) { fogMaskOut = cv.toDataURL('image/png'); fogMaskOutFor = cv }
+  return fogMaskOut
+}
+function fogMaskCanvas(seenKey: string, holes: ReadonlyArray<{ d: string; dot: readonly [number, number] | undefined }>, corridors: readonly string[], W: number, H: number, terrR: number, blur: number): HTMLCanvasElement | null {
   if (typeof document === 'undefined') return null
   // 구역은 구워 둔 것이라 본 고을 id 만 같으면 같은 구멍이다 (패스 수백 KB 를 잇대어 견주지 않는다)
   const key = `${W}|${H}|${terrR}|${seenKey}|${corridors.join('')}`
-  if (key === fogMaskKey) return fogMaskOut
+  if (key === fogMaskKey) return fogMaskCv
   const s = P.realm.mapFogSafeScale
   const w = Math.max(8, Math.round(W * s))
   const h = Math.max(8, Math.round(H * s))
@@ -1777,13 +1916,14 @@ function fogMaskUrl(seenKey: string, holes: ReadonlyArray<{ d: string; dot: read
   }
   g.putImageData(img, 0, 0)
   fogMaskKey = key
-  fogMaskOut = cv.toDataURL('image/png')
-  return fogMaskOut
+  fogMaskCv = cv
+  return cv
 }
 
-function fogWords(r: Realm, me: string, region: RegionId, W: number, H: number, terrR: number, vis: ReadonlySet<string>, art: string): string {
-  // 구름무늬 — 고른 눈금 위, 본 고을에서 먼 자리 (나라 자리를 흘리지 않게 눈금으로)
-  let words = ''
+/** 구름 하나 — 자리 (0~1) · 너비(.map 너비의 %) · 떠다니는 박자 · 뒤집기 */
+interface CloudAt { n: number; x: number; y: number; w: number; d: number; flip: boolean }
+function cloudsOf(region: RegionId, W: number, H: number, terrR: number, vis: ReadonlySet<string>): CloudAt[] {
+  const out: CloudAt[] = []
   const seenPts = [...vis].map((id) => nodePos(region, id)).filter((p) => p !== undefined)
   const cols = W < H ? 3 : 5
   const rows = Math.max(3, Math.round((cols * H) / W * 0.9))
@@ -1794,10 +1934,17 @@ function fogWords(r: Realm, me: string, region: RegionId, W: number, H: number, 
       const x = (gx + 0.5 + (gy % 2) * 0.3 + (jit(key) - 0.5) * 0.4) / cols
       const y = (gy + 0.5 + (jit(key + 'y') - 0.5) * 0.5) / rows
       if (seenPts.some((p) => Math.hypot((p[0] - x) * W, (p[1] - y) * H) < terrR * 3.2)) continue
-      const n = 1 + Math.floor(jit(key + 'n') * 8)
-      const flip = jit(key + 'f') < 0.5 ? ' scaleX(-1)' : ''
-      words += `<img class="fogc" src="${art}map-world/cloud-${n}.webp" alt="" style="left:${(x * 100).toFixed(1)}%;top:${(y * 100).toFixed(1)}%;width:${(cw * (0.8 + jit(key + 's') * 0.5)).toFixed(1)}%;--d:${Math.round(30 + jit(key + 'd') * 30)}s${flip ? ';rotate:y 180deg' : ''}">`
+      out.push({ n: 1 + Math.floor(jit(key + 'n') * 8), x, y, w: cw * (0.8 + jit(key + 's') * 0.5), d: Math.round(30 + jit(key + 'd') * 30), flip: jit(key + 'f') < 0.5 })
     }
+  }
+  return out
+}
+
+/** 이름만 들은 나라의 먹점과 이름 (DOM) — 구름은 withClouds 일 때만 <img> 로 (캔버스 판은 구름을 직접 그린다) */
+function fogWords(r: Realm, me: string, region: RegionId, W: number, H: number, terrR: number, vis: ReadonlySet<string>, art: string, withClouds = true): string {
+  let words = ''
+  if (withClouds) for (const c of cloudsOf(region, W, H, terrR, vis)) {
+    words += `<img class="fogc" src="${art}map-world/cloud-${c.n}.webp" alt="" style="left:${(c.x * 100).toFixed(1)}%;top:${(c.y * 100).toFixed(1)}%;width:${c.w.toFixed(1)}%;--d:${c.d}s${c.flip ? ';rotate:y 180deg' : ''}">`
   }
   // 이름만 들은 나라 — 도읍 자리 언저리에 먹점과 이름
   for (const f of Object.keys(r.factions).sort()) {

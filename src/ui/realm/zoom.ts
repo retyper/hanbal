@@ -145,7 +145,7 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     const m = map()
     if (m === null) return
     const zl = tierOf(m)
-    if (m.dataset['zl'] !== zl) { m.dataset['zl'] = zl; declutterSoon(wrap) }
+    if (m.dataset['zl'] !== zl) { m.dataset['zl'] = zl; declutterSoon(wrap); wrap.dispatchEvent(new CustomEvent('mapzoomed')) }
     cull(true)
   }
 
@@ -166,6 +166,7 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     if (m.dataset['zl'] !== zl) m.dataset['zl'] = zl
     cull(true)
     declutterSoon(wrap) // 배율이 바뀌면 글씨가 말·숫자와 겹칠 수 있다 — 그린 뒤 비킨다
+    wrap.dispatchEvent(new CustomEvent('mapzoomed')) // 땅·길 캔버스가 굳은 배율에 맞춰 다시 그린다 (mapcanvas.ts · 잠깐 기다린 뒤 한 번)
   }
 
   /** (cx, cy) 칸 안의 점을 축으로 배율을 바꾼다 — 그 점 아래 땅이 손가락 밑에 남는다 */
