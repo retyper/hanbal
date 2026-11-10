@@ -428,7 +428,7 @@ export const TOWN_CSS = `
 .ap .cjseat.chosen, .ap .cjseat.open { border-style: solid; border-color: #e8c15a; background: #3a2c12; box-shadow: 0 0 0 1px #e8c15a66 inset, 0 0 10px #e8c15a44; }
 .ap .cjseat b { font-size: 14px; color: #ffe2a0; }
 .ap .cjseat small { font-size: 12px; color: #c9b99a; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ap .cjic { font-size: 30px; line-height: 1; }
+.ap .cjic { font-size: 30px; line-height: 1; } .ap .cjic img { width: 44px; height: 44px; object-fit: contain; display: block; filter: drop-shadow(0 2px 3px #000a); } .ap .cjseat.empty .cjic img { opacity: .75; } /* 조정 자리 아이콘 (제미나이 11-11) */
 .ap .cjseat .cjface { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 2px solid #c9a45a; }
 .ap .cjfx { font-style: normal; font-size: 11.5px; color: #9fd18b; line-height: 1.2; }
 .ap .cjok { position: absolute; top: 4px; right: 6px; font-style: normal; font-weight: 700; color: #ffe08a; }

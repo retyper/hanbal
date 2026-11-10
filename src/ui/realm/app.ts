@@ -1150,7 +1150,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (h.woundedUntil !== undefined && h.woundedUntil > r.season) { const n = h.woundedUntil - r.season; return [`다쳐 누웠다 · ${turnsLabel(r, n)}`, `다쳐 쉬는 중 · ${turnsLabel(r, n)}`] }
     if (h.awayUntil !== undefined && h.awayUntil >= r.season) return ['자리를 비웠다', '길에 있는 중']
     const seat = heroSeat(r, id)
-    if (seat !== null) return [`조정에 앉아 있다 (${SEAT_DEFS[seat].name})`, `${SEAT_DEFS[seat].name} 자리에 앉은 몸`]
+    if (seat !== null) return [`조정에 앉아 있습니다 (${SEAT_DEFS[seat].name})`, `${SEAT_DEFS[seat].name} 자리에 앉은 몸`]
     const pl = plots.find((o): o is Extract<Order, { kind: 'plot' }> => o.kind === 'plot' && o.agent === id)
     if (pl !== undefined) return NIGHT_OPS.has(pl.op) ? [`이번 ${turnWord(r)} 자객으로 간다`, '자객으로 가는 중'] : [`이번 ${turnWord(r)} ${PLOT_NAME[pl.op]} 공작을 하러 간다`, `${PLOT_NAME[pl.op]} 공작 가는 중`]
     const ev = Object.values(envoys).find((e) => e.hero === id)
@@ -4968,7 +4968,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         h += `<button class="cjseat lock" data-act="seat-open" data-seat="${s}"${noBtn(`궁궐 ${d.tier}단부터 앉힙니다`)}><span class="cjic">🔒</span><b>${d.name}</b><small>${d.tier}단</small></button>`
         continue
       }
-      h += `<button class="cjseat${hero !== null ? ' has' : ' empty'}${chosen ? ' chosen' : ''}${seatPick === s ? ' open' : ''}" data-act="seat-open" data-seat="${s}">${hero !== null ? bust(hero, 'cjface') : `<span class="cjic">${d.emoji}</span>`}<b>${d.name}</b><small>${hero !== null ? esc(hero.name) : '비어 있음'}</small>${hero !== null ? `<i class="cjfx">${esc(seatFx(s, hero)[0] ?? '')}</i>` : ''}${chosen ? '<em class="cjok">✓</em>' : ''}</button>`
+      h += `<button class="cjseat${hero !== null ? ' has' : ' empty'}${chosen ? ' chosen' : ''}${seatPick === s ? ' open' : ''}" data-act="seat-open" data-seat="${s}">${hero !== null ? bust(hero, 'cjface') : `<span class="cjic"><img src="${ART}icon/${d.icon}.png" alt=""></span>`}<b>${d.name}</b><small>${hero !== null ? esc(hero.name) : '비어 있음'}</small>${hero !== null ? `<i class="cjfx">${esc(seatFx(s, hero)[0] ?? '')}</i>` : ''}${chosen ? '<em class="cjok">✓</em>' : ''}</button>`
     }
     h += `</div>`
     // 대장군의 대신 뽑기 — 켜면 계절마다 「알아서 뽑기」와 같은 셈으로 징병 (봄은 쉰다) · 대장군이 있어야
@@ -4992,7 +4992,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const tag = x.id === cur?.id ? '<i class="cjtag">앉은 중</i>' : here !== null && here !== s ? `<i class="cjtag">${SEAT_DEFS[here].name}에서 옮김</i>` : ''
       return `<button class="cjpk${x.id === cur?.id ? ' on' : ''}${why !== null && x.id !== cur?.id ? ' off' : ''}" data-act="seat-set" data-seat="${s}" data-id="${x.id}"${why !== null && x.id !== cur?.id ? noBtn(why) : ''}>${bust(x, 'cjpf')}<b>${nameHtml(x.name)}</b><span class="cjnum">${STAT_NAME[d.stat]} <s>${x[d.stat]}</s></span>${why !== null && x.id !== cur?.id ? `<i class="cjwhy">${esc(why)}</i>` : seatFx(s, x).map((t) => `<i class="cjfx">${esc(t)}</i>`).join('')}${tag}</button>`
     }).join('')
-    return `<div class="cjov" data-act="seat-x"><div class="cjbox"><div class="cjhd"><span class="cjic">${d.emoji}</span><b>${d.name}</b><small>${josa(STAT_NAME[d.stat], "이", "가")} 높을수록 힘이 큽니다</small><button class="tvx" data-act="seat-x" aria-label="닫기">✕</button></div>${cards !== '' ? `<div class="cjlist">${cards}</div>` : '<p class="mute">앉힐 장수가 없습니다</p>'}${cur !== null ? `<button class="btn ghost" data-act="seat-clear" data-seat="${s}">자리 비우기</button>` : ''}</div></div>`
+    return `<div class="cjov" data-act="seat-x"><div class="cjbox"><div class="cjhd"><span class="cjic"><img src="${ART}icon/${d.icon}.png" alt=""></span><b>${d.name}</b><small>${josa(STAT_NAME[d.stat], "이", "가")} 높을수록 힘이 큽니다</small><button class="tvx" data-act="seat-x" aria-label="닫기">✕</button></div>${cards !== '' ? `<div class="cjlist">${cards}</div>` : '<p class="mute">앉힐 장수가 없습니다</p>'}${cur !== null ? `<button class="btn ghost" data-act="seat-clear" data-seat="${s}">자리 비우기</button>` : ''}</div></div>`
   }
 
   /**
