@@ -1,0 +1,29 @@
+[
+  {
+    "key": "dallae2",
+    "heroId": "wander-21",
+    "bust": "w-84-salhae-dallae",
+    "weapon": "dagger",
+    "desc": "the playful dual-blade swordswoman from IMAGE 2: same pretty face and sly smile, long dark hair in a high ponytail tied with a red ribbon, a fitted dark leather vest over a light top, red sash, leather bracers, dark fitted trousers and boots",
+    "hold": "a pair of short single-edged swords, one in each hand (count them as ONE weapon set)",
+    "stride": "light, springy, cat-like stride"
+  },
+  {
+    "key": "bdanbi",
+    "heroId": "wander-15",
+    "bust": "w-98-byeonhan-danbi",
+    "weapon": "heavy",
+    "desc": "the cheerful farm girl from IMAGE 2: same round laughing face, a cream headscarf over her hair, a cream hemp jacket with rolled sleeves tied with a yellow sash, a short wrap skirt over leggings and straw sandals",
+    "hold": "ONE iron farm sickle with a wooden handle in her right hand",
+    "stride": "bouncy, cheerful stride"
+  },
+  {
+    "key": "yucheongan",
+    "heroId": "gj-yucheongan",
+    "weapon": "heavy",
+    "bust": "w-99-garak-yucheongan",
+    "desc": "the glamorous granary keeper in her mid-thirties from IMAGE 2: same beautiful face and confident smile, glossy black hair in a loose low knot with a gold grain-ear hairpin, a navy and cream off-shoulder wrap jacket with a zigzag collar band, a wide red sash, a layered navy skirt with a slit, amber beads",
+    "hold": "ONE long wooden granary pole (a threshing flail handle) in her right hand",
+    "stride": "confident, swaying stride"
+  }
+]
