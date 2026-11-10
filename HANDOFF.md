@@ -174,3 +174,10 @@ Steam은 `docs/realm/STEAM-RELEASE.md`의 조사/체크리스트까지다. 가�
 - **11-10 16시 곰 v3(형 손 · 얼굴·그림체 고정 문안):** 곰머리가 안 튀어나옴 · 크게 웃던 입이 점점 다물어지는 미소로 · 그래도 첫 장면부터 원본보다 크게 잡혔다(1.3배 지시가 덜 먹음) → awaken-loop/w-82-ungcheon-gom.mp4 (형 판정 기다림). **Jay u/4 이틀 잠김 — 11-12 13:54** (원장 cooldown). bake-intake 의 claim 은 이제 `--account manual-hyung`(u/4 잠김에 안 걸리게).
 - **11-10 17~19시 Flow Jay(u/4 · PRO · 1,050 크레딧 → 150 남음 · 11-28 갱신) 로 대기열 1차를 다 구움:** Omni 1.2 Flash 10초 · 프로젝트 9802fffc · `--account flow-jay`. 게임에 넣음(형 판정): 이랑·이슬·진하·마루·매나·물범·물결·물새·낙랑·나리·산지기 너울·연나 너울·오름비·평강(최고)·사공·새벽·살해 노을·신천간·대장장이·쇠뫼·소금비·솔매·솔미·송비·소리·우가 누리·웅녀. 받았고 판정 기다림: 정견·유화. **정책 거절(환불 · held · 15세 판 그림 뒤에):** 잔물·물가·선녀·신귀간·소금 여왕·연이·엄니 2차. 미르 1차는 무기 없이 다시(꾸러미). 손에 남은 것: 갈매·당궁·미르 그림 다시 → 새 문안. 자동화는 scratchpad flow-next.sh / flow-post.sh + 페이지의 `fl` 도우미(open·attach·prep) — tools/sprite-kit/README.md 「Veo 둘째 길」에 옮겨 적을 것.
 - **11-10 형: 당궁(w-51) 1차 각성 무기 없이·더 섹시하게 다시 · 2차는 더 과하게 섹시하게 다시 · 영상 둘 다 다시.** 꾸러미에 카드 둘(1차 다시 → 진각성 다시 순서). Veo: t1-dangung 은 held(받은 영상은 원장 outputs/veo 에만 · public 에서 뺌) · t2-dangung 은 sourceRepairRequired. **새 그림이 들어오면 그 그림대로 문안을 새로 써서 t1/t2 새 job**(옛 문안은 활·화살을 적는다).
+
+
+## 11-11 도읍 판 그림 (제미나이 u/2)
+- 큰 공사 짓는 단계 그림 12장 `public/realm/icon/wonder-<sotdae|furnace|dolmen|altar>-s1~s3.png` · app.ts greatHtml 이 쌓은 단 수(stage*3/wonderStages)로 s1~s3 고름 (옛 -build 대신)
+- 큰 잔치 장면 `public/realm/event/event-great-feast.jpg` · 큰 공사 완공 장면 `event-wonder-sotdae|furnace|dolmen|altar.jpg` — 그림만 넣음, 연출 코드는 아직 (쓸 자리: 큰 잔치 결과 · 공사 완공)
+- 궁전 판 바탕 palace-hall.jpg 는 이미 좋아 그대로 둠
+- 원본: assets_src/realm/gemini/wonders/*-s?.png · assets_src/realm/event16/ (assets_src 는 gitignore)
