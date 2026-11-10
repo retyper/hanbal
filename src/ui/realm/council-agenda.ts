@@ -280,7 +280,10 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
         : { hero: null, label: '이간 공작', line: `${josa(foe, '과', '와')} ${allyName} 사이를 갈라놓는다`, opt })
     }
     const hot = counter(mine)
-    if (hot !== undefined && bold(hot)) voices.push({ hero: hot, label: '그래도 친다', move: 'allyGo', line: line(hot, 'allyGo'), opt: { k: 'go' } })
+    // 「그래도 친다」는 늘 — 거친 이가 없으면 군주의 뜻(얼굴 없는 카드)으로 (형 11-10: "치지 않는다·때를 기다린다·이간밖에 없어 강행할 수가 없음")
+    voices.push(hot !== undefined && bold(hot)
+      ? { hero: hot, label: '그래도 친다', move: 'allyGo', line: line(hot, 'allyGo'), opt: { k: 'go' } }
+      : { hero: null, label: '그래도 친다', line: `${josa(allyName, '이', '가')} 끼어들어도 이번에 친다`, opt: { k: 'go' } })
     // 장수가 아무도 말하지 않으면 회의가 아니다
     if (voices.some((x2) => x2.hero !== null)) {
       out.push({ id: 'ally', title: `${josa(allyName, '과', '와')} 손잡은 ${josa(foe, '을', '를')} 칠까`, voices })
