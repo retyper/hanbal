@@ -53,6 +53,73 @@ describe('원군', () => {
     for (const g of ['front', 'bows', 'horse'] as const) assert.ok((res.ga[g] ?? 0) <= 1 + 1e-9 && (res.ga[g] ?? 0) >= 0, `${g} ${res.ga[g]}`)
   })
 
+  it('장수를 이끈 원군이 오는 중이면 홀로 선 총대장이 잡혀도 싸움이 이어지고, 원군의 장수가 지휘를 맡는다 (형 11-10: "원군 오기 전에 1합 때 잡혀 버림")', () => {
+    let early = 0
+    for (let seed = 1; seed <= 60; seed++) {
+      const weak = { id: 'me', mu: 1, ryak: 1, coward: false }
+      const late = { id: 'late', mu: 6, ryak: 6, coward: false }
+      const boss = { id: 'boss', mu: 10, ryak: 10, coward: false }
+      const atk = side({ spear: 500 }, { hero: weak, relief: { mix: { spear: 300 }, at: P.realm.reliefRound, heroes: [late] } })
+      const res = fightRounds(atk, side({ spear: 400 }, { hero: boss }), 'cap' + seed, seed, 0)
+      if (!res.taken.some((t) => t.hero === 'me')) continue
+      const at = res.rounds.findIndex((x) => x.lostHero?.hero === 'me')
+      if (at < 0 || at >= P.realm.reliefRound) continue
+      early++
+      assert.notEqual(res.captured, 'a', `seed ${seed}: 원군이 오는 중이라 사로잡힘으로 끝나지 않는다`)
+      if (res.rounds.length > P.realm.reliefRound) assert.equal(res.rounds[P.realm.reliefRound]!.relief?.chief, 'late', `seed ${seed}`)
+    }
+    assert.ok(early > 0, '원군 전에 잡히는 판이 한 번은 나야 한다')
+  })
+
+  it('닿기 전에 싸움이 끝나면 원군 몫은 쫓기지 않는다 — unarrivedA 로 알리고 그 몫은 다 남는다', () => {
+    const atk = side({ spear: 40, horse: 300 }, { relief: { mix: { horse: 300 }, at: 6 } })
+    const def = side({ spear: 1500 })
+    const res = fightRounds(atk, def, 'k', 2, 0)
+    assert.ok(res.unarrivedA !== undefined, '원군이 닿기 전에 끝났다')
+    assert.ok(res.ga.horse >= res.unarrivedA!.horse - 1e-9, `기병(원군) 몫이 남는다 ${res.ga.horse} / ${res.unarrivedA!.horse}`)
+    assert.equal(res.unarrivedD, undefined)
+  })
+
+  it('닿기 전에 싸움이 끝난 원군 군대는 장수와 함께 그대로 돌아간다 (형 11-10: "원군이 장수랑 통째로 증발")', () => {
+    const keep = P.realm.reliefRound
+    P.realm.reliefRound = 6
+    let found = false
+    try {
+      for (let seed = 1; seed <= 30 && !found; seed++) {
+        const r: Realm = byeonhanMini(seed)
+        const cap = 'anya-cap'
+        const way = Object.values(r.edges).find((e) => otherEnd(e, cap) !== null && marchSeasons(e.kind, seasonOf(r)) === 1)
+        if (way === undefined) continue
+        const main = Object.values(r.armies).find((a) => a.faction === r.player && a.hero !== null)
+        if (main === undefined) continue
+        main.at = otherEnd(way, cap)!
+        main.mix = { spear: 60 * S }
+        main.march = null
+        const hero = Object.values(r.heroes).find((h) => h.faction === r.player && h.status === 'free' && h.id !== main.hero && !Object.values(r.armies).some((a) => a.hero === h.id))
+        if (hero === undefined) continue
+        r.armies['a-late'] = { ...structuredClone(main), id: 'a-late', hero: hero.id, mix: { spear: 200 * S } }
+        for (const a of Object.values(r.armies)) if (a.id !== main.id && a.id !== 'a-late' && a.at === main.at) a.at = cap
+        const foe = Object.values(r.armies).find((a) => a.at === cap)
+        if (foe === undefined) continue
+        foe.mix = { spear: 3000 * S }
+        r.nodes[main.at]!.owner = r.player
+        const before = r.armies['a-late']!.mix.spear ?? 0
+        const { report, next } = advance(r, [
+          { kind: 'march', army: main.id, edge: way.id, ambush: false },
+          { kind: 'march', army: 'a-late', edge: way.id, ambush: false, follow: true },
+        ])
+        const b = report.lines.find((l): l is Extract<ReportLine, { kind: 'battle' }> => l.kind === 'battle' && l.node === cap)
+        if (b === undefined || b.outcome === 'win' || b.outcome === 'rout' || (b.rounds ?? []).some((x) => x.relief !== undefined)) continue
+        const late = next.armies['a-late']
+        assert.ok(late !== undefined, '원군 군대가 사라지지 않는다')
+        assert.equal(late.hero, hero.id, '장수도 그대로 이끈다')
+        assert.equal(late.mix.spear, before, '싸우지 않았으니 잃지 않는다')
+        found = true
+      }
+    } finally { P.realm.reliefRound = keep }
+    assert.ok(found, '원군이 닿기 전에 진 싸움이 한 번은 나야 한다')
+  })
+
   it('다른 길 둘로 들어간 협공 — 작은 쪽이 늦게 닿는 원군으로 기록된다', () => {
     let found = false
     for (let seed = 1; seed <= 30 && !found; seed++) {

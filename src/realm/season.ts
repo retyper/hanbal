@@ -1562,10 +1562,19 @@ function fight(
   const menOfMix = (m: Army['mix']): number => Object.values(m).reduce((t: number, v) => t + (v ?? 0), 0)
   const menA0 = legs.reduce((s, l) => s + menOfMix(l.army.mix), 0)
   const menD0 = defenders.reduce((s, d) => s + menOfMix(d.mix), 0) + militiaN // 장정까지 (빠뜨려 튜토리얼 오간이 갯골을 이기고도 각성하지 못했다 · 긴급 위원회 11-04 기록원)
-  for (const l of legs) scaleByGroups(l.army, res.ga)
-  for (const d of defenders) scaleByGroups(d, res.gd)
-  shiftMorale(atks, res.dma)
-  shiftMorale(defenders, res.dmd)
+  // 닿기 전에 싸움이 끝난 원군은 싸우지 않았다 — 손실은 와 있던 군대만 나눠 진다 (형 11-10: "원군이 장수랑 통째로 증발")
+  const idle = new Set([...(res.unarrivedA !== undefined ? lateA : []), ...(res.unarrivedD !== undefined ? lateD : [])].map((x) => x.id))
+  const fought = (g: Readonly<Record<'front' | 'bows' | 'horse', number>>, away: Readonly<Record<'front' | 'bows' | 'horse', number>> | undefined): Record<'front' | 'bows' | 'horse', number> => {
+    const out = { ...g }
+    if (away !== undefined) for (const k of ['front', 'bows', 'horse'] as const) out[k] = away[k] < 1 ? Math.min(1, Math.max(0, (g[k] - away[k]) / (1 - away[k]))) : 1
+    return out
+  }
+  const keepA = fought(res.ga, res.unarrivedA)
+  const keepD = fought(res.gd, res.unarrivedD)
+  for (const l of legs) if (!idle.has(l.army.id)) scaleByGroups(l.army, keepA)
+  for (const d of defenders) if (!idle.has(d.id)) scaleByGroups(d, keepD)
+  shiftMorale(atks.filter((x) => !idle.has(x.id)), res.dma)
+  shiftMorale(defenders.filter((x) => !idle.has(x.id)), res.dmd)
   // 막아냈다 — 지킨 쪽은 사기가 오르고(성벽 안이면 더) 물러난 쪽은 꺾인다 (형 10-31: "몇 번이고 외적을 막아낸 고을에서 사기가 늘어야")
   if (outcome !== 'rout' && outcome !== 'win') {
     shiftMorale(defenders, R.holdMorale + (fortMul(node, seasonOf(r)) > 1 ? R.wallHoldMorale : 0))
@@ -1596,7 +1605,7 @@ function fight(
   const scattered: ReportLine[] = []
   if (atkWon) {
     // 물러날 곳이 없으면 흩어진다 (달 시계: 섬멸)
-    for (const d of defenders) fallBack(r, d, retreatTo(r, d, node.id, null), scatterShare(true, outcome === 'rout'), a.faction, node.id, key, scattered)
+    for (const d of defenders) fallBack(r, d, retreatTo(r, d, node.id, null), idle.has(d.id) ? 0 : scatterShare(true, outcome === 'rout'), a.faction, node.id, key, scattered)
     for (const x of atks) x.at = node.id
     // 주인 없는 철광·포구는 이겨도 쥐지 못한다 — 쌓인 것만 거둔다 (형 11-05)
     if (freeSite(node)) haulAt(r, a.faction, node.id, lines)
@@ -1619,7 +1628,7 @@ function fight(
     // 지거나 교착 — 떠나온 고을로. 그새 남이 쥐었으면 이웃의 제 땅으로, 그것도 없으면 흩어진다 (졌으면 도망병도 · 교착이면 그냥 물러난다)
     for (const x of atks) {
       const home = from.get(x.id)!
-      fallBack(r, x, retreatTo(r, x, home, home), scatterShare(atkLost, outcome === 'routed'), defFaction, node.id, key, scattered)
+      fallBack(r, x, retreatTo(r, x, home, home), idle.has(x.id) ? 0 : scatterShare(atkLost, outcome === 'routed'), defFaction, node.id, key, scattered)
     }
   }
   // 항복한 군사를 이긴 쪽이 거둔다 (takeYielded) — 자리를 정한 뒤에 (이긴 군대가 선 고을에 집이 든다)

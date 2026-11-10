@@ -185,6 +185,12 @@ export interface FightResult {
   readonly trueA?: string
   readonly trueD?: string
   readonly wokeD?: string
+  /**
+   * 닿기 전에 싸움이 끝난 원군의 몫 (병종별 · 처음 사람에 대한 몫) — 그 군대는 싸우지도 쫓기지도 않았다.
+   * season 이 이 몫을 빼고 손실을 나누고, 그 군대는 흩어지지 않고 돌아간다 (형 11-10: "원군 오기 전에 1합에 잡혀 버림 · 원군이 장수랑 통째로 증발")
+   */
+  readonly unarrivedA?: Readonly<Record<Grp, number>>
+  readonly unarrivedD?: Readonly<Record<Grp, number>>
 }
 
 /** 싸움의 때 — night: 기습·야습(밤 싸움) · edge: 먹힌 기습이라 치는 쪽이 첫 때에 세다 */
@@ -953,8 +959,21 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
       rounds[rounds.length - 1] = { ...last, lostHero: { side: L.side, hero: L.hero, how: L.how, ...(wasChief && ns.hero !== null ? { chief: ns.hero.id } : {}) } }
     }
     if (res.captured !== null) {
-      captured = res.captured
-      break
+      // 장수를 이끈 원군이 아직 오는 중이면 싸움은 끝나지 않는다 — 장수 잃은 군대가 버티다 원군의 장수가 닿아 지휘를 맡는다
+      // (형 11-10: "원군 오기 전에 1합 때 적장한테 잡혀 버림 · 원군이 장수랑 통째로 증발")
+      const cs = res.captured
+      const s = cs === 'a' ? atk : def
+      const coming = (s.relief?.heroes ?? []).length > 0 && (cs === 'a' ? baseA : baseD) < 1
+      if (!coming) {
+        captured = cs
+        break
+      }
+      const lone = s.hero
+      const ns: Side = { ...s, hero: null, aides: [] }
+      if (cs === 'a') { atk = ns; st.shakenA = true } else { def = ns; st.shakenD = true }
+      c = { ...c, atk, def }
+      const last = rounds[rounds.length - 1]!
+      if (lone !== null && last.lostHero === undefined) rounds[rounds.length - 1] = { ...last, lostHero: { side: cs, hero: lone.id, how: 'taken' } }
     }
     if (res.duel !== null) duel = res.duel
     if (res.retreat !== null) {
@@ -977,11 +996,16 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
     }
   }
 
-  // 싸움이 원군이 닿기 전에 끝났다 — 원군은 다치지 않고 뒤늦게 닿는다
-  for (const g of GRPS) {
-    if (baseA < 1) st.fa[g] += awayA[g]
-    if (baseD < 1) st.fd[g] += awayD[g]
+  // 싸움이 원군이 닿기 전에 끝났다 — 원군은 다치지 않고 뒤늦게 닿는다 (쫓기기도 와 있던 이들만)
+  const lateA = baseA < 1
+  const lateD = baseD < 1
+  const unarrive = (sign: number): void => {
+    for (const g of GRPS) {
+      if (lateA) st.fa[g] += sign * awayA[g]
+      if (lateD) st.fd[g] += sign * awayD[g]
+    }
   }
+  unarrive(1)
   const s = shareOf(c, st)
   let outcome: Outcome
   if (captured === 'd' || broke === 'd' || retreat === 'd') outcome = s >= R.tacRoutShare || captured === 'd' ? 'rout' : 'win'
@@ -990,12 +1014,14 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
   else outcome = s >= R.tacWinShare ? 'win' : s <= 1 - R.tacWinShare ? 'lose' : 'draw'
   // 무너진 쪽은 쫓기며 더 잃는다 (물러난 쪽은 아니다 — 물러나기의 값이다)
   const chase = (f: Record<Grp, number>, k = 1): void => { for (const g of GRPS) f[g] = Math.max(0, f[g] - R.tacChase * k) }
+  unarrive(-1)
   // 대승까지는 아니어도 무너진 쪽은 쫓긴다 — 안 그러면 버티다 무너지는 것이 물러나는 것보다 쌌다 (형 10-31: "사기 떨어져서 돌아갈 때 피해가 너무 적다")
   if (outcome === 'rout' && retreat !== 'd') chase(st.fd)
   else if (broke === 'd' && retreat === null && captured === null) chase(st.fd, R.tacBreakChase)
   if (outcome === 'routed' && retreat !== 'a') chase(st.fa)
   else if (broke === 'a' && retreat === null && captured === null) chase(st.fa, R.tacBreakChase)
   if (outcome === 'rout' || outcome === 'routed') broke ??= outcome === 'rout' ? 'd' : 'a'
+  unarrive(1)
   if (retreat !== null) broke = null
   const endWhy: EndWhy = captured !== null ? 'captured' : retreat !== null ? (withdrew ? 'withdraw' : 'retreat') : brokeBy !== null ? brokeBy : outcome === 'draw' ? 'draw' : 'share'
 
@@ -1009,6 +1035,7 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
     ...(memo.pending !== undefined ? { pending: memo.pending } : {}),
     ...(st.wokeA !== undefined ? { wokeA: st.wokeA } : {}), ...(st.wokeD !== undefined ? { wokeD: st.wokeD } : {}),
     ...(st.trueA !== undefined ? { trueA: st.trueA } : {}), ...(st.trueD !== undefined ? { trueD: st.trueD } : {}),
+    ...(lateA ? { unarrivedA: { ...awayA } } : {}), ...(lateD ? { unarrivedD: { ...awayD } } : {}),
   }
 }
 
