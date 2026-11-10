@@ -2571,6 +2571,9 @@ export const WAR_CSS = `
 /* 궁수 — 쏘는 박자에 시위를 당겼다(4) 놓는다(5) · 기병 — 제 박자에 달린다(걷기 컷) */
 .ap .wfield.play .wf2s[data-b] .tk.wsp.r1:not(.tkd) .spf { animation: spdraw calc(.75s * var(--spdraws, 1)) steps(var(--spatkn, 2), jump-none) calc(var(--sa) - .45s) forwards, spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--sa) + .5s) - var(--k, .5) * 1.6s) infinite; }
 @keyframes spdraw { from { background-position-x: var(--a0, 57.1429%); } to { background-position-x: var(--al, 71.4286%); } }
+/* 진·길이 바뀌어 자리를 옮기는 .5초(.wf2s.mv · left 전환과 같은 길이) — 걷기 칸을 돌린다 (형 11-11: 선 채로 날아다님) */
+.ap .wf2s.mv .tk.wsp .spf { animation: spwalk .5s steps(var(--spwalkn, 2)) 0s 1 !important; }
+.ap .wf2s.mv .wgen.gsp .gspf { animation: spwalk .5s steps(8) 0s 1 !important; }
 /* 새 띠(v2)의 궁수·쇠뇌 — 1.1초 박자로 살 메기기(12) 당기기(13) 다 당겨 겨누기(14 · 오래) 놓기(15 · 살이 떠난다) 내리기(16·17).
    놓는 때(박자의 반)가 화살(.wf-arw)이 뜨는 때와 같고, 화살과 같은 수(--bn)만큼 되풀이한다 (형 10-30: "창병은 공격 모션이 보이는데 다른 유닛들은 공격하는 게 안 보임" — 전엔 여섯 컷을 고르게 넘겨 다 당긴 컷이 0.2초씩만 비쳤고 화살은 한 번만 났다).
    끝없는 움직임이 아니라 횟수가 있어 저사양에서도 멈추지 않는다 (quality.ts 는 infinite 만 멈춘다) */
@@ -3709,7 +3712,15 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const fxf = document.createDocumentFragment()
     fxf.append(...tpl.content.querySelectorAll('.wfx'))
     morphInto(fxEl, fxf, true)
+    // 진(data-f)·고른 길(data-l)이 바뀌면 병사·장수가 left 전환으로 미끄러진다 — 그 .5초 동안 걷기 칸을 돌린다 (형 11-11: "선 채로 날아다님")
+    const formBefore = new Map([...sc.querySelectorAll<HTMLElement>('.wf2s')].map((e) => [e, `${e.dataset['f'] ?? ''}|${e.dataset['l'] ?? ''}`] as const))
     morphInto(sc, tpl.content, true)
+    for (const e of sc.querySelectorAll<HTMLElement>('.wf2s')) {
+      const was = formBefore.get(e)
+      if (was === undefined || was === `${e.dataset['f'] ?? ''}|${e.dataset['l'] ?? ''}`) continue
+      e.classList.add('mv')
+      window.setTimeout(() => e.classList.remove('mv'), 600)
+    }
     // 살려 둔 요소의 연출(막대·흔들림·진·다음 합 판)은 새 합이 풀릴 때만 처음부터 다시 — 그 연출만 되감는다.
     // 전엔 통째로 animation:none 을 걸었다 풀어 수백 개가 한꺼번에 다시 돌았다: 늘 도는 불티·먼지·물결·숨쉬기까지 처음으로 튀고
     // (불티는 투명에서 다시 떠 낱낱이 깜빡) · 연출 없이 다시 그릴 때도 병사가 다시 걸어 들어왔다 (형 10-31: 합이 풀릴 때·끝날 때 낱낱이 깜빡)

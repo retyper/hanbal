@@ -1236,6 +1236,12 @@ export const SEASONP_CSS = `
 .ap .seasonp { position: absolute; left: 0; right: 0; top: calc(var(--toph) + var(--legh)); bottom: var(--tabh); pointer-events: none; overflow: hidden; z-index: 5; /* 지도 속 가장 높은 것(이름표 5)보다 뒤에 와 그 위로 — 눈이 도읍 뒤에 가려지지 않게 (형 10-23) · 첫 화면은 지도 층 안에 있어 묶으면 안 된다 */
   --sz: 22px; --sp: 1s; --op: .8; }
 .ap.choosing .seasonp, .ap.war-open .seasonp, .ap:has(.nightov) .seasonp, html.duel-open .ap .seasonp { display: none; } /* 밤 판·싸움 창 밑에서는 쉬게 — 화면 일을 나눠 쓴다 */
+/* 폰(손가락 화면): 입자 36개 × 움직임 셋이 그래픽 층을 36장 먹는다 — 셋에 하나만, 돌기는 빼고, 그래픽이 보통 아래로 내려가면 아예 끈다 (형 11-11: "눈 비 꽃잎이 렉을 만드나? 프레임드랍 너무 싫다") */
+@media (pointer: coarse) {
+  .ap .seasonp i:not(:nth-child(3n)) { display: none; }
+  .ap .seasonp i { animation: spfall calc(var(--d) * var(--sp)) linear calc(var(--t) * var(--sp)) infinite, spsway calc(var(--d) * var(--sp) * .22) ease-in-out calc(var(--t) * var(--sp)) infinite alternate; will-change: translate; }
+  .ap.q-mid .seasonp, .ap.q-low .seasonp { display: none; }
+}
 /* 입자 하나하나 — 자리 --x · 크기 --z · 빠르기 --d · 시작 --t · 흔들림 --w · 띠의 칸 --c 는 app.ts(seasonParticles)가 준다.
    그림은 덩어리에서 낱낱이 잘라 낸 여덟 칸 띠 (tools/particle-strip.mjs — 형: "뭉탱이로 내리고 … 개별적으로 흩날려야") */
 .ap .seasonp i { position: absolute; top: -48px; left: var(--x); width: calc(var(--z) * var(--sz)); aspect-ratio: 1; opacity: var(--op);
