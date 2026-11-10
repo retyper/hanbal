@@ -3446,12 +3446,28 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   /** 그 차례의 시계 (소리 시계와 따로 — 합마다 소리가 앞의 것을 걷는다) */
   const chain: Array<() => void> = []
   const stopChain = (): void => { for (const cancel of chain.splice(0)) cancel() }
+  /** 장면을 누름 — 그 자리 밑에 배속 단추가 있으면 장면은 두고 배속을 바꾼다 (장면이 화면 전체를 덮어 배속 단추를 삼켰다 · 형 11-10) */
+  const cutTap = (e: MouseEvent, cut: HTMLElement): void => {
+    e.stopPropagation()
+    const sb = document.elementsFromPoint(e.clientX, e.clientY).find((x): x is HTMLElement => x instanceof HTMLElement && x.dataset['war'] === 'speed')
+    if (sb !== undefined) { sb.click(); return }
+    cut.remove()
+  }
   let speed: BattleSpeed = 1
   try { speed = battleSpeed(Number(localStorage.getItem(SPEED_KEY))) } catch { /* use the default */ }
   const playback = battlePlayback(P.realm.warPlaybackRate * speed)
   let t = rehearse(prev, orders, done, null, host.me)
   if (t.line === null) return false
   preloadSkillFx(host.art) // 기술 장면 그림을 미리 — 안 구운 그림은 장면에서 빠진다 (skillfx.ts)
+  // 각성 장면의 짐승·진각성 초상도 미리 (형 11-10: 각성 연출이 되게 늦게 뜸)
+  for (const rd of t.line.rounds ?? []) for (const x of rd.acts ?? []) {
+    if (x.c !== 'wake' || x.wake === undefined) continue
+    new Image().src = `${host.art}fx/awaken/beast-${ELEM[x.wake].beast}.png`
+    const b2 = x.true === true && x.hero !== undefined ? bustOf(x.hero) : undefined
+    if (b2 !== undefined && b2 !== null) new Image().src = `${host.art}awaken2-hd/${b2}`
+    const f = x.hero !== undefined ? faceFile(x.hero) : undefined
+    if (f !== undefined && f !== null) new Image().src = `${host.art}${f}`
+  }
   // 싸움 소리도 미리 — 처음 내는 소리는 받기·풀기를 기다려 늦었다: 방진의 쾅이 방패가 내려앉은 뒤에 났다 (형 11-01)
   host.warm?.([...new Set([...Object.values(BATTLE_SFX), ...Object.values(SK_SFX), ...MELEE, ...Object.values(LAYERS).flatMap((ly) => (ly ?? []).map(([f]) => f))])])
   /** 처음 우리 싸움 수 — 머리의 "몇 판" */
@@ -3803,7 +3819,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         if (wk !== undefined) cut.insertAdjacentHTML('beforeend', `<img class="wsk-beast" src="${host.art}fx/awaken/beast-${ELEM[wk].beast}.png" alt="">${tru ? `<img class="wsk-beast b2" src="${host.art}fx/awaken/beast-${ELEM[wk].beast}.png" alt="">` : ''}`)
         if (tru) cut.classList.add('wsk-true')
         cut.addEventListener('animationend', (e) => { if (e.target === cut) cut.remove() })
-        cut.addEventListener('click', (e) => { e.stopPropagation(); cut.remove() })
+        cut.addEventListener('click', (e) => cutTap(e, cut))
         ov.querySelector('.wsk')?.remove()
         ov.appendChild(cut)
         cutSfx = skillCues(kind)
@@ -3816,16 +3832,23 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     if (anim && cutLead === null) {
       const rd = (l.rounds ?? [])[shown - 1]
       const weAtk = l.atkFaction === host.me
-      const fa = rd?.acts?.find((x) => x.g === 'lead' && x.s === (weAtk ? 'd' : 'a') && (x.c === 'art' || x.c === 'wake'))
+      // 우리 장수의 각성·비기가 먼저 (맡긴 싸움에선 cutLead 가 없어 우리 각성 장면이 아예 안 떴다 · 형 11-10)
+      const ours = rd?.acts?.find((x) => x.g === 'lead' && x.s === (weAtk ? 'a' : 'd') && (x.c === 'wake' || x.c === 'art') && skillRes(x.res) !== 'miss')
+      const fa = ours ?? rd?.acts?.find((x) => x.g === 'lead' && x.s === (weAtk ? 'd' : 'a') && (x.c === 'art' || x.c === 'wake'))
+      const foeSide = ours === undefined
       const kind: SkillId | undefined = fa === undefined ? undefined : fa.c === 'wake' ? (fa.wake !== undefined ? WAKE_CUT[fa.wake] : undefined) : fa.art
-      const actor = fa?.hero ?? l.start?.heroes[weAtk ? 1 : 0] ?? null
+      const actor = fa?.hero ?? l.start?.heroes[foeSide === (weAtk) ? 1 : 0] ?? null
       if (fa !== undefined && kind !== undefined && actor !== null) {
         const el = document.createElement('div')
-        const title = fa.c === 'wake' && fa.wake !== undefined ? WAKE_NAME[fa.wake] : fa.art !== undefined ? ART_NAME[fa.art] : ''
-        el.innerHTML = skillCutHtml(host.art, kind, faceFile(actor) ?? null, heroById(actor)?.name ?? '', title, skillRes(fa.res), true)
+        const tru = !foeSide && fa.c === 'wake' && fa.true === true
+        const b2 = tru ? bustOf(actor) ?? null : null
+        const title = fa.c === 'wake' && fa.wake !== undefined ? `${tru ? '진 · ' : ''}${WAKE_NAME[fa.wake]}` : fa.art !== undefined ? ART_NAME[fa.art] : ''
+        el.innerHTML = skillCutHtml(host.art, kind, b2 !== null ? `../awaken2-hd/${b2}` : faceFile(actor) ?? null, heroById(actor)?.name ?? '', title, skillRes(fa.res), foeSide)
         const cut = el.firstElementChild as HTMLElement
+        if (!foeSide && fa.c === 'wake' && fa.wake !== undefined) cut.insertAdjacentHTML('beforeend', `<img class="wsk-beast" src="${host.art}fx/awaken/beast-${ELEM[fa.wake].beast}.png" alt="">`)
+        if (tru) cut.classList.add('wsk-true')
         cut.addEventListener('animationend', (e) => { if (e.target === cut) cut.remove() })
-        cut.addEventListener('click', (e) => { e.stopPropagation(); cut.remove() })
+        cut.addEventListener('click', (e) => cutTap(e, cut))
         ov.querySelector('.wsk')?.remove()
         ov.appendChild(cut)
         cutSfx = skillCues(kind)
@@ -4637,6 +4660,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       return
     }
     const b = tg.closest<HTMLElement>('[data-war]')
+    // 위 단추 줄(상성·기록·배속)의 틈·테두리를 누른 것은 건너뛰기가 아니다 — 폰에서 배속 단추를 살짝 비껴 누르면 싸움이 통째로 끝까지 넘어가 멈춘 듯하다가 대승이 떴다 (형 11-10)
+    if (b === null && tg.closest('.wrbt, .wrh') !== null) return
     if (b === null) {
       // 맡긴 싸움을 풀어 보이는 중이면 끝까지 건너뛴다
       if (chain.length > 0) {
