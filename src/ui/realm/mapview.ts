@@ -180,6 +180,11 @@ export const MAP_CSS = `
 /* 화면 밖 — zoom.ts cull 이 단다 · 숨기고 움직임을 꺼 그래픽 층을 내준다 (형 11-08) */
 .map .cull { visibility: hidden !important; }
 .map .cull, .map .cull * { animation: none !important; }
+/* 폰 · 「멀리」 단계: 고을 꾸밈 움직임(연기·포구 배 들썩·소도 기운·안개 숨·말 들썩)은 너무 작아 안 보이는데 밀 때마다 스타일을 다시 셈했다 (11-11 map-perf: 밀기 Style 1초가 도는 애니 96개) · 위협 고리·출정 화살 같은 알림은 그대로 */
+@media (pointer: coarse) {
+  .map[data-zl="far"] :is(.nd .smk, .nd.k-port img.st, .nd.k-sodo .sc, .nd.k-sodo .sp, .nd .plant, .nd .burnsm, .tok.idle) { animation: none !important; }
+  .map[data-zl="far"] .nd .smk::before, .map[data-zl="far"] .nd .smk::after, .map[data-zl="far"] .tok .flag::after { animation: none !important; }
+}
 /* --aw: 출정 화살 굵기 — 지도 배율(--z)만큼 부풀지 않고 배율의 제곱근만큼만 (고을 그림·글씨와 같은 결 · 형 10-26: "가까이볼때 군사화살표가 너무 확대") */
 .map { --aw: calc(var(--zs, 1) / var(--z, 1)); position: relative; height: 100%; aspect-ratio: ${W} / ${H}; margin: 0 auto; background: #2a261f center / cover no-repeat;
   user-select: none; -webkit-user-select: none; container-type: size;
