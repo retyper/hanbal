@@ -24,12 +24,13 @@ const tall = (seed: number): number => 140 + (Math.abs(seed * 2654435761) % 30)
 
 export function shelfHtml(books: readonly Book[], esc: (s: string) => string): string {
   if (books.length === 0) return `<p class="mute">아직 둔 판이 없습니다. 판을 두면 여기 한 권씩 꽂힙니다.</p>`
+  // 책마다 선반 한 칸(.bk-cell · 높이 고정) — 줄이 넘어가도 줄마다 선반 널이 깔린다 (형 11-11: "한 칸 넘어가면 선반 또 만들어 줘야 · 2, 3층이 공중에 떠 있음")
   let h = `<div class="shelf"><div class="shelf-row">`
   for (const b of books) {
-    h += `<button class="book ${b.result}" data-act="book-open" data-seed="${b.seed}" style="--bc:${b.color};--bw:${thick(b.seasons)}px;--bh:${tall(b.seed)}px" data-tip="${esc(`${b.title} · ${b.word}`)}">`
-      + `<span class="bk-em">${b.emblem}</span><b class="bk-t">${esc(b.title)}</b><i class="bk-r">${esc(b.word)}</i></button>`
+    h += `<span class="bk-cell"><button class="book ${b.result}" data-act="book-open" data-seed="${b.seed}" style="--bc:${b.color};--bw:${thick(b.seasons)}px;--bh:${tall(b.seed)}px" data-tip="${esc(`${b.title} · ${b.word}`)}">`
+      + `<span class="bk-em">${b.emblem}</span><b class="bk-t">${esc(b.title)}</b><i class="bk-r">${esc(b.word)}</i></button></span>`
   }
-  return h + `</div><i class="shelf-board"></i></div>`
+  return h + `</div></div>`
 }
 
 export interface BookPage {
@@ -129,8 +130,9 @@ export function bookSwipe(root: HTMLElement): void {
 export const BOOK_CSS = `
 /* 책장 — 나무 선반 위에 책등이 선다 (부드러운 linear-gradient 금지 · 폰 한도: 단색과 radial 만) */
 .ap .shelf { position: relative; margin: 10px auto 0; max-width: 980px; padding: 0 12px; }
-.ap .shelf .shelf-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 3px; min-height: 180px; padding: 0 6px; }
-.ap .shelf .shelf-board { display: block; height: 14px; background: #5a3a1c; border-top: 3px solid #8a5a2c; box-shadow: 0 6px 12px #000a; }
+.ap .shelf .shelf-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0; min-height: 190px; padding: 0 6px; background: repeating-linear-gradient(to top, #5a3a1c 0 14px, #8a5a2c 14px 17px, transparent 17px 190px); } /* 190px 줄마다 선반 널 */
+.ap .shelf .bk-cell { display: flex; align-items: flex-end; height: 190px; padding: 0 1.5px 14px; box-sizing: border-box; }
+.ap .shelf .shelf-board { display: none; }
 .ap .book { position: relative; width: var(--bw, 40px); height: var(--bh, 150px); padding: 8px 2px 10px; border: 0; border-radius: 3px 3px 1px 1px; cursor: pointer;
   background: var(--bc, #6a4a2a); box-shadow: inset 4px 0 0 #ffffff22, inset -5px 0 0 #00000055, 0 2px 4px #000a; color: #fff6e0; display: flex; flex-direction: column; align-items: center; gap: 6px; overflow: hidden; font: inherit; transition: translate .15s; }
 .ap .book::before, .ap .book::after { content: ''; position: absolute; left: 0; right: 0; height: 3px; background: #e8c070cc; }
