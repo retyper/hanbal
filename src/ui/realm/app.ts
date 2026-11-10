@@ -3418,7 +3418,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (pv.hand === true) {
           // 직접 쏜다 — 확률이 아니라 활 · 다 막으면 · 첫 물결에 뚫리면 (오래 버틸수록 덜 잃는다)
           fx = grand
-            ? `<span class="cfx"><small>${i === 0 ? '맞히면' : '이기면'}</small>${fxHtml(r, pv.win ?? {})}</span><span class="cfx"><small>${i === 0 ? '빗나가면' : '지면'}</small>${fxHtml(r, pv.lose ?? {})}</span>`
+            ? `<span class="cfx"><small>${i === 0 ? '맞히면' : '이기면'}</small>${fxHtml(r, pv.win ?? {})}</span>${((lz) => lz.includes('class="cnone"') ? '' : `<span class="cfx"><small>${i === 0 ? '빗나가면' : '지면'}</small>${lz}</span>`)(fxHtml(r, pv.lose ?? {}))}`
             : `<span class="codd">🏹</span><span class="cfx"><small>다 막으면</small>${fxHtml(r, pv.win ?? {})}</span><span class="cfx"><small>뚫리면</small>${fxHtml(r, pv.lose ?? {})}</span>`
         } else if (grand && pv.good !== undefined && heldFor !== undefined) fx = `<span class="codd">${i === 0 ? (pv.good ? '🎯 맞혔다' : '🎯 빗나갔다') : (pv.good ? '⚔ 이겼다' : '⚔ 졌다')}</span><span class="cfx">${sure}</span>`
         else if (pv.good !== undefined && held !== undefined && i === 1) fx = `<span class="codd">🏹 ${held}/3</span><span class="cfx">${sure}</span>`
