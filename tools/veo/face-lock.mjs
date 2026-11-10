@@ -24,7 +24,8 @@ export function lock(t) {
   out = out.replace(/Make (her|him) lively, not a still pose\./, (m, w) => `${m} All the life is in ${w === 'him' ? 'his' : 'her'} body, hair, cloth, props and breath; the face stays the same face.`)
   // 11-10 형: "활발하거나 가슴 큰 장수들은 바스트 모핑 좀 더" — 여자만 · 얼굴 고정과 따로 (몸은 묶지 않는다)
   // 끝이 아니라 「Make her lively」 문단 끝(동작 문단 뒤)에 — 끝에 두니 약하게 먹혔다 (형 11-10: "점점 바스트 모핑 없어지는 느낌")
-  if (!he) out = out.replace(/(Make her lively[^\n]*)/, (m) => m + ' ' + BODY_MOTION)
+  // 11-10 저녁: 따로 붙인 가슴 움직임 절이 Flow 정책 거절을 부른다(옷 다 입은 뱃사공도 거절 → 빼니 통과). 움직임은 동작(제자리 뛰기·말 위 들썩임·시위 반동)으로 만든다
+  if (!he && process.env.BODY_MOTION === '1') out = out.replace(/(Make her lively[^\n]*)/, (m) => m + ' ' + BODY_MOTION)
   out = out.replace(/\s*$/, '') + '\n\n' + lockText(p) + '\n'
   return out
 }
