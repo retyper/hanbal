@@ -393,6 +393,16 @@ export const TOWN_CSS = `
 .ap .tvpbody .wcard .btn { min-height: 36px; }
 .ap .tvpbody .wfeast { margin: 2px 0 4px; padding: 6px 8px; gap: 6px; }
 .ap .tvpbody .wfeast .btn { min-height: 44px; }
+/* 낮은 폰(640 높이)에서도 큰 공사 넷이 한 화면에 — 머리 그림·그림·설명 줄을 줄인다 (슬라이드 금지) */
+@media (max-height: 720px) {
+  .ap .tvhall { height: min(18vw, 9dvh); font-size: 16px; padding: 4px 10px; }
+  .ap .tvpbody { padding: 2px 8px 4px; } .ap .tvpbody h3 { margin: 2px 0; font-size: 13px; }
+  .ap .tvpbody .wgrid { gap: 4px; } .ap .tvpbody .wcard { padding: 3px 3px; }
+  .ap .tvpbody .wcard .wpic, .ap .tvpbody .wcard .wimg { width: 30px; height: 30px; }
+  .ap .tvpbody .wcard .wgfx { display: none; } .ap .tvpbody .wcard .wname { font-size: 12px; }
+  .ap .tvpbody .wcard .btn { min-height: 30px; font-size: 12px; padding: 2px 4px; }
+  .ap .tvpbody .wfeast { padding: 4px 6px; } .ap .tvpbody .wfeast .btn { min-height: 36px; }
+}
 /* ② 판 — 바탕 그림 한 장(1376×768)을 폭에 꽉 차게 · 양옆 풀밭(터는 가로 14~86%)을 잘라 크게 · 세로가 모자라면 위아래를 24% 까지 잘라 맞추고, 세로가 남으면(가로 화면 기둥) 위아래에 띠를 둔다 */
 .ap .tvstage { grid-area: stage; position: relative; overflow: hidden; background: #2c3a1e; min-height: 0; container-type: size; height: min(calc(100vw * 0.7344), 46dvh); }
 .ap .tvboard { isolation: isolate; --bw: min(100cqw / 0.76, 100cqh * 1376 / 768 / 0.76); position: absolute; left: 50%; top: 50%; width: var(--bw); aspect-ratio: 1376 / 768; margin-left: calc(var(--bw) / -2); margin-top: calc(var(--bw) * 768 / 1376 / -2); }
