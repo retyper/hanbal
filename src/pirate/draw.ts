@@ -142,7 +142,7 @@ function drawRunner(ctx: CanvasRenderingContext2D, cam: Camera, w: World, t: Tar
     ? a.hit0 + (Math.floor((w.elapsed + t.id * 0.37) * ART.hitFps) % a.hitN)
     : a.walk0 + (Math.floor((R.spawnX + 4 - t.x) / (ART.strideM / a.walkN) + t.id) % a.walkN)
   const soleY = worldToScreenY(cam, 0)
-  drawStrip(ctx, im, a.ar, frame, x, soleY, a.tallM * cam.scale, true)
+  drawStrip(ctx, im, a.ar, frame, x, soleY, a.tallM * cam.scale, false) // 두 띠 다 왼쪽(궁수)을 보고 그렸다 · 뒤집으면 뒷걸음질로 달려온다 (형 11-10)
   if (captain && t.hpMax > 0) {
     // 두목의 남은 몸 — 머리 위 한 줄
     const bw = Math.max(36, t.r * 1.6 * cam.scale)

@@ -10,7 +10,7 @@ import { groundAt, hasHills } from '../sim/terrain.ts'
 import { TRAIL_POINTS } from '../sim/types.ts'
 import type { Target, World } from '../sim/types.ts'
 import {
-  THEME, createCamera, resizeCamera, updateCamera, worldToScreenX, worldToScreenY, screenToWorldX,
+  THEME, VIEW, createCamera, resizeCamera, updateCamera, worldToScreenX, worldToScreenY, screenToWorldX,
 } from './camera.ts'
 import type { Camera } from './camera.ts'
 import { drawArcher } from './stickman.ts'
@@ -279,6 +279,10 @@ export interface Renderer {
 
 interface RendererX extends Renderer {
   canvas: HTMLCanvasElement
+  /** 지금 DPR 상한 — 폰이면 낮게 시작하고, 느리면 한 단계씩 내린다 (형 11-10: 컴퓨터는 매끄러운데 폰은 늘 버벅) */
+  dprCap: number
+  /** 프레임 간격(ms) 모음 · 60개마다 가운데값을 본다 */
+  gaps: number[]
   ctx: CanvasRenderingContext2D
   cam: Camera
   fx: Fx
@@ -2276,6 +2280,18 @@ function drawBackdrop(ctx: CanvasRenderingContext2D, cam: Camera, sky: SkyPalett
   return true
 }
 
+/** 폰이 버거우면 DPR 을 한 단계씩 내린다 (night-main watchLoad 와 같은 셈 · 바닥 VIEW.dprFloor) */
+function watchLoad(r: RendererX, dt: number): void {
+  if (r.dprCap <= VIEW.dprFloor || dt <= 0 || dt > 0.5) return
+  r.gaps.push(dt * 1000)
+  if (r.gaps.length < 60) return
+  const mid = r.gaps.sort((a, b) => a - b)[30]!
+  r.gaps.length = 0
+  if (mid <= VIEW.slowFrameMs) return
+  r.dprCap = Math.max(VIEW.dprFloor, r.dprCap - VIEW.dprStep)
+  r.resize()
+}
+
 export function createRenderer(canvas: HTMLCanvasElement): Renderer {
   const ctx = canvas.getContext('2d', { alpha: false })
   if (ctx === null) throw new Error('Canvas2D 컨텍스트를 얻지 못했다')
@@ -2298,9 +2314,11 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     gradH: -1,
     gradSky: "",
     dead: false,
+    dprCap: typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches ? VIEW.touchDprCap : VIEW.dprCap,
+    gaps: [],
 
     resize(): void {
-      resizeCamera(r.cam, r.canvas)
+      resizeCamera(r.cam, r.canvas, r.dprCap)
       // 그라디언트 객체는 크기가 바뀔 때만 다시 만든다 (프레임당 할당 0)
       r.grad = null
       r.gradH = -1
@@ -2332,15 +2350,15 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
         r.grad = g
         r.gradH = cam.h
       }
-      c.fillStyle = r.grad
-      c.fillRect(0, 0, cam.w, cam.h)
+      watchLoad(r, dtReal)
 
       // 하늘은 능선보다 먼저. 별이 산 위로 뜨면 산이 유리가 된다.
       // ★ 배경은 **그림**이다 (2026-09-20) — 그 시각의 그림이 있으면 하늘·구름·능선·안개·솔을 통째로 대신한다.
       //   없거나 아직 안 왔으면 예전 벡터 풍경이 선다.
+      // 판의 그림이 화면을 다 덮으면 그 아래 하늘 칠은 헛일이다 — 폰에서 한 화면을 두 번 칠하던 것 (형 11-10)
       if (sceneHooks?.backdrop?.(c, cam, w) === true) {
         // 판이 제 그림을 깔았다 (setSceneHooks)
-      } else if (!drawBackdrop(c, cam, sky)) {
+      } else if ((c.fillStyle = r.grad, c.fillRect(0, 0, cam.w, cam.h), !drawBackdrop(c, cam, sky))) {
         drawSky(c, cam, r.stars, w.elapsed, sky)
         drawClouds(c, cam, r.clouds, w.elapsed, sky)
         drawRidge(c, cam, r.faint, BG.faintParallax, sky.ridgeFaint)

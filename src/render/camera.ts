@@ -96,7 +96,7 @@ export const THEME = {
  * 화면 구도 상수 (픽셀·화면 비율 — params.ts는 m/s/rad만 담기로 한 규약이라 여기 둔다).
  * 손맛에 직결되는 값은 전부 P에서 읽는다.
  */
-const VIEW = {
+export const VIEW = {
   /** 화면 가장자리 여백 비율 */
   margin: 0.12,
 
@@ -176,6 +176,13 @@ const VIEW = {
   chainZoomDecay: 2.2,
   /** 레티나에서 4배 픽셀을 칠하면 A5 예산을 넘는다 */
   dprCap: 2,
+  /** 폰(손가락 화면)은 처음부터 이만큼만 — 활터·겨루기·바다도적이 폰에서만 버벅였다 (형 11-10) */
+  touchDprCap: 1.5,
+  /** 프레임 간격 가운데값이 이보다 길면 DPR 을 한 단계 내린다 (night-main watchLoad 와 같은 셈) */
+  slowFrameMs: 22,
+  /** 한 번에 내리는 DPR 폭 · 바닥 */
+  dprStep: 0.5,
+  dprFloor: 1,
 } as const
 
 /** 공개 계약에 없는 연출 상태. createCamera가 항상 이 형태로 만들므로 캐스팅이 안전하다. */
