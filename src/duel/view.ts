@@ -8,6 +8,7 @@
  */
 import { createDuel, judgeWindows, lateWindow, stepDuel, tierOf, type Cue, type Duel, type DuelEvent, type Outcome, type Tap } from './sim.ts'
 import { P } from '../tune/params.ts'
+import { makeRng } from '../core/rng.ts'
 
 export interface DuelSide {
   readonly name: string
@@ -76,8 +77,9 @@ const img = (src: string, fallback?: string): HTMLImageElement => {
 }
 const bg = img(cfg.bg ?? 'realm/battle/battle-field.jpg')
 /** 흥분한 군사 줄 (형 11-11: 전쟁통 한가운데니 군중은 군사 · 누끼로 바탕 위에) — 뒤쪽은 카메라를 보는 줄 · 앞줄은 등을 보이는 줄 */
-const crowdBack = img('realm/duel/crowd-back.png')
-const crowdFront = img('realm/duel/crowd-front.png')
+const crowdBack = [1, 2, 3, 4, 5, 6].map((i) => img(`realm/duel/crowd/f${i}.png`)) // 정면(소리치는) 군사 낱장
+const crowdFront = [1, 2, 3, 4, 5, 6].map((i) => img(`realm/duel/crowd/b${i}.png`)) // 등을 보이는 군사 낱장
+const crowdReady = (set: HTMLImageElement[]): boolean => set.every((im) => im.complete && im.naturalWidth > 0)
 const sprMe = img(`realm/anim2/gen-${cfg.me.sprite}.png`)
 const sprFoe = img(`realm/anim2/gen-${cfg.foe.sprite}.png`)
 const foePid = cfg.foe.portrait
@@ -359,20 +361,37 @@ function watchLoad(dt: number): void {
   gaps.length = 0
   if (mid > 22) { dprCap = Math.max(1, dprCap - 0.5); resize() }
 }
-/** 군사 줄 한 장을 폭 w · 높이 h 에 맞춰 이어 붙인다 — 한 그림이 폭에 모자라니 좌우를 뒤집어 가며 깐다 (한 번 굽고 매 프레임은 drawImage 하나) */
+/**
+ * 군사 한 줄 — 낱장 군사(누끼)를 시드 고정 난수로 한 명씩 세운다 (형 11-11: 통짜 그림은 몸이 붙고 목이 돌아갔다).
+ * 칸마다 그림·좌우 뒤집기·크기·간격·세로 들쭉날쭉을 정해 한 번 굽고, 매 프레임은 drawImage 하나.
+ * 반환 캔버스는 폭 w · 높이 soldierH * P.duel.crowdRowRoom — 군사 발은 맨 아래선에 닿는다.
+ */
 const ROWS = new Map<string, HTMLCanvasElement>()
-function crowdRow(im: HTMLImageElement, w: number, h: number): HTMLCanvasElement {
-  const key = `${im.src}|${Math.round(w)}x${Math.round(h)}@${dpr}`
+function crowdRow(set: HTMLImageElement[], w: number, soldierH: number, salt: number): HTMLCanvasElement {
+  const rowH = soldierH * P.duel.crowdRowRoom
+  const key = `${salt}|${Math.round(w)}x${Math.round(soldierH)}@${dpr}`
   let cv = ROWS.get(key)
   if (cv === undefined) {
-    cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(w * dpr)); cv.height = Math.max(1, Math.round(h * dpr))
+    cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(w * dpr)); cv.height = Math.max(1, Math.round(rowH * dpr))
     const c = cv.getContext('2d') as CanvasRenderingContext2D
     c.imageSmoothingQuality = 'high'
-    const tw = h * im.naturalWidth / im.naturalHeight
-    const tile = scaled(im, tw, h)
-    for (let i = 0, x = 0; x < w; i++, x += tw - 2) { // 이음매가 겹치게 살짝 당긴다
-      c.save(); c.translate((x + (i % 2 === 1 ? tw : 0)) * dpr, 0); c.scale(i % 2 === 1 ? -1 : 1, 1)
-      c.drawImage(tile, 0, 0); c.restore()
+    const rng = makeRng((cfg.seed ^ Math.imul(salt, 0x9e3779b1)) >>> 0)
+    let prev = -1
+    for (let x = -soldierH * 0.15; x < w; ) {
+      let i = rng.int(0, set.length - 1)
+      if (i === prev) i = (i + 1) % set.length
+      prev = i
+      const im = set[i] as HTMLImageElement
+      const dh = soldierH * rng.range(P.duel.crowdScaleMin, P.duel.crowdScaleMax)
+      const dw = dh * im.naturalWidth / im.naturalHeight
+      const y = rowH - dh - rng.range(0, soldierH * P.duel.crowdJitterY)
+      const flip = rng.chance(0.5)
+      const tile = scaled(im, dw, dh)
+      c.save()
+      c.translate((flip ? x + dw : x) * dpr, y * dpr); c.scale(flip ? -1 : 1, 1)
+      c.drawImage(tile, 0, 0)
+      c.restore()
+      x += dw * rng.range(P.duel.crowdStepMin, P.duel.crowdStepMax)
     }
     ROWS.set(key, cv)
   }
@@ -383,7 +402,7 @@ let bgBaked: HTMLCanvasElement | null = null
 let bgKey = ''
 function bakedBg(): HTMLCanvasElement | null {
   if (!bg.complete || bg.naturalWidth === 0) return null
-  const key = `${W}x${H}@${dpr}${crowdBack.complete && crowdBack.naturalWidth > 0 ? 'c' : ''}`
+  const key = `${W}x${H}@${dpr}${crowdReady(crowdBack) ? 'c' : ''}`
   if (bgBaked !== null && bgKey === key) return bgBaked
   const cv = bgBaked ?? document.createElement('canvas')
   if (cv.parentNode === null) host.insertBefore(cv, canvas) // 바탕은 밑 판에 — 위 판은 투명으로 비워 두고 매 프레임 바탕을 다시 그리지 않는다
@@ -392,10 +411,11 @@ function bakedBg(): HTMLCanvasElement | null {
   c.setTransform(dpr, 0, 0, dpr, 0, 0)
   const s = Math.max(W / bg.naturalWidth, H / bg.naturalHeight)
   c.drawImage(bg, (W - bg.naturalWidth * s) / 2, (H - bg.naturalHeight * s) / 2, bg.naturalWidth * s, bg.naturalHeight * s)
-  if (crowdBack.complete && crowdBack.naturalWidth > 0) { // 장수 띠 바로 뒤 — 카메라를 보는 군사들이 소리친다
-    const h = H * P.duel.crowdBackH
+  if (crowdReady(crowdBack)) { // 장수 띠 바로 뒤 — 카메라를 보는 군사들이 소리친다
+    const sh = H * P.duel.crowdBackH
     c.globalAlpha = P.duel.crowdBackAlpha
-    c.drawImage(crowdRow(crowdBack, W, h), 0, fieldTop() - h * P.duel.crowdBackSink, W, h)
+    const row = crowdRow(crowdBack, W, sh, 1)
+    c.drawImage(row, 0, fieldTop() + H * P.duel.crowdBackFeet - row.height / dpr, W, row.height / dpr)
     c.globalAlpha = 1
   }
   const shade = c.createLinearGradient(0, 0, 0, H)
@@ -423,7 +443,7 @@ const safeTop = (): number => safeProbe.offsetHeight
 const narrowHud = (): boolean => W < 560
 const hudBarH = (): number => Math.round(Math.max(10, Math.min(20, hudTw() * 0.13)))
 const hudTop = (): number => Math.round(safeTop() + hudTw() * 0.92 + 22 + (narrowHud() ? hudBarH() + 26 : 0))
-const fieldTop = (): number => H * 0.8
+const fieldTop = (): number => H * P.duel.fieldTop
 /** 고리가 서는 칸 — 위 띠와 아래 들판 사이 전부 */
 const play = (): { x: number; y: number; w: number; h: number } => ({ x: 0, y: hudTop(), w: W, h: fieldTop() - hudTop() })
 const toPx = (x: number, y: number): [number, number] => { const p = play(); return [p.x + x * p.w, p.y + y * p.h] }
@@ -974,10 +994,11 @@ function drawDuel(now: number, fadeIn: number): void {
   fieldFighters(now, H - 6, fh, Math.min(W * 0.34, fh * 1.6), W / 2)
   pm('fighters')
   // 앞줄 — 등을 보이는 군사들이 장수 앞 맨 아래에서 함성 (치명엔 들썩임 두 배)
-  if (crowdFront.complete && crowdFront.naturalWidth > 0) {
-    const cw = W * P.duel.crowdFrontW, chh = H * P.duel.crowdFrontH
+  if (crowdReady(crowdFront)) {
+    const cw = W * P.duel.crowdFrontW, sh = H * P.duel.crowdFrontH
     const bob = Math.sin(now / 180) * R.crowdBob * (now - critAt < 400 ? 2 : 1)
-    ctx.drawImage(crowdRow(crowdFront, cw, chh), (W - cw) / 2, H - chh * (1 - R.crowdFrontDrop) + bob, cw, chh)
+    const row = crowdRow(crowdFront, cw, sh, 2), rh = row.height / dpr
+    ctx.drawImage(row, (W - cw) / 2, H + sh * R.crowdFrontDrop - rh + bob, cw, rh)
   }
   pm('crowd')
   // 체간 — 판 아래 가운데, 가운데서 양쪽으로 차오른다 (세키로처럼)
