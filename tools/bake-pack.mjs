@@ -8,7 +8,7 @@
  *
  * 묶음: ① 챗지피티 진각성 aw2 (아직 안 넣은 사람) ② Veo 숨쉬기 (원장에서 낼 수 있는 일 · 높은 차례부터) ③ 제미나이 그림 (옥문 셋 등 · 아래 GEMINI)
  */
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 
 const OUT = 'tools/out/bake-pack'
@@ -72,6 +72,8 @@ const REDO1 = [
   ['w-39-gosaburi-galmae', ' Override for this character: she holds NO weapon at all (no bow, no arrows, no quiver, no blade anywhere in the image); both hands are free and empty. Keep her wild dark hair full of white feathers, her big joyful open laugh, her tied linen top with deep cleavage, jade pendants and feather trims. Pose: a lively, playful, confident pose instead of a weapon pose (both arms raised, fingers running through her feathered hair, or one hand on her hip while she laughs toward the viewer), body turned to show her curves, bare toned midriff.', '(late twenties)'],
   // 11-10 형: "1차 각성 원본 무기 없이 고쳐야 함 · 영상도 다시 · 더 섹시하게" (명세에 없는 사람 — 다래의 1차 틀로)
   ['w-51-haseulla-dangung', ' Override for this character: she holds NO weapon at all (no bow, no arrows, no quiver, no blade anywhere in the image); both hands are free and empty. Pose: a bold, seductive, confident pose instead of a weapon pose (one hand lifting her long leopard-fur-wrapped braid, the other on her hip, hips cocked, body turned to show her curves), a teasing sultry smile and half-lidded eyes looking straight at the viewer. Make her outfit sexier than the portrait: crimson and leopard-fur, a deep plunging neckline with a full, large bust and deep cleavage, bare shoulders, bare toned midriff, a high leg slit, a leopard-fur mantle slipping off one shoulder.', '(late twenties)'],
+  // 11-10 형: "버들은 어쩔 수 없이 1차 각성 이미지도 다시 · 영상도 다시" — 시위를 당긴 채라 영상에서 시위가 혼자 당겨졌다 (활은 들고만)
+  ['w-41-hwanna-beodeul', ' Override for this character: keep her black headband with two white feathers, her confident smirk and her dark navy and red armored jacket with gold trim. Her bow is NOT drawn and NOT aimed: she holds one single recurve bow (ONE straight string tied to BOTH tips) loosely in one hand, resting on her shoulder or lowered at her side, with no arrow nocked. Pose: a bold, alluring, confident pose (the other hand on her hip or brushing her hair back, body turned to show her curves), a deep neckline and full bust, bare toned midriff.', '(26)'],
 ]
 const T1 = spec.find((y) => y.tier === 1 && y.id === 'w-104-buyeo-darae')
 for (const [id, extra, age] of REDO1) {
@@ -88,6 +90,24 @@ for (const [id, fix] of FIX1) {
   const ref = `public/realm/awaken-hd/${id}.jpg`
   if (!existsSync(ref)) continue
   add('gpt', ++n, `${id} · 1차 한 곳만 고침`, [ref], `This is an AI-generated illustration of a fictional adult character from my own Korean historical fantasy strategy game (an original character, not a real person). Edit this exact image only slightly: ${fix} Keep EVERYTHING else exactly the same: same face, expression, pose, composition, colors, outfit, jewelry, bamboo pole, aura, lighting, background and square image size.`, `gpt_aw1-${id}.png`, '지금 1차 각성 한 장만 붙이세요')
+}
+// ①-2c 콘셉트째 바꿈 — 초상(비각성) → 1차 → 2차 차례로. 앞 단계를 새로 넣어야(파일이 NEW_FROM 보다 새것) 다음 카드가 나온다
+//   초상: gpt_bust-<id>.png → bake-intake.sh 가 install-bust.sh 로 · 1차: gpt_aw1 · 2차: gpt_aw2 (옛 그림은 git 기록에)
+const NEW_FROM = Date.parse('2026-11-10T18:00:00+09:00')
+const fresh = (p) => existsSync(p) && statSync(p).mtimeMs > NEW_FROM
+const BUST_HEAD = 'Generate one image: premium Korean MMORPG character illustration, bold clean ink outlines, cel shading with soft painterly lighting, beautiful detailed face. Upper-body bust portrait framed from just above the head down to the solar plexus (mid-chest), both shoulders and upper arms visible, facing the viewer, slightly turned. Plain very dark navy-blue background (#1c2129) with a soft warm glow behind the head. Square 1:1. No text, no border, no scenery.'
+const RECAST = [
+  // 11-10 형: "너무 할머니라서 콘셉트 자체를 바꿔야겠어 · 비각성·1차·2차 다 · 30대 중반"
+  { id: 'w-99-garak-yucheongan', age: '(35)',
+    bust: ' She is an original character: Yucheongan, a fictional adult woman of 35, the keeper of the granaries of a Gaya river clan in ancient Korea (Samhan era), warm-hearted and generous, the big sister of her village. A beautiful, mature, glamorous woman in her mid-thirties (not old, no grey hair, no wrinkles): soft warm eyes, a generous confident smile, full lips, glossy black hair in a loose low knot with a few strands falling at her cheek, a carved wooden hairpin with a small gold grain-ear ornament. Outfit: a deep navy and cream Samhan wrap jacket with a woven zigzag collar band, worn loosely to bare one shoulder, with a deep neckline and full bust (opaque cloth over the chest), a wide red sash, gold earrings and a string of amber beads. She hugs a small bronze grain jar against her hip with ears of golden millet in it. Korean, not Chinese, not Japanese.',
+    aw1: ' Override for this character: she is the warm, glamorous granary keeper of a Gaya river clan, 35, mature and beautiful (no grey hair, no wrinkles). Her signature item is one small bronze grain jar pouring a glittering stream of golden grain; there is only one jar. Outfit: an upgraded navy, cream and gold version of her portrait outfit, an off-shoulder wrap top with a deep neckline and a full bust, a wide red and gold sash, a layered skirt with a high slit, amber and gold jewelry, golden grain motes swirling around her.',
+    aw2: ' She is the warm, glamorous granary keeper of a Gaya river clan, 35, mature and beautiful (no grey hair, no wrinkles): keep the face, hair and colors of the attached first awakening. Her true awakening is the goddess of the harvest: a radiant navy-and-gold harvest robe, a crown-like wreath of golden millet ears in her hair, golden grain and seed-light streaming around her like a river of stars, holding the bronze grain jar high.' },
+]
+for (const r of RECAST) {
+  const bust = `public/realm/bust-hd/${r.id}.jpg`, aw1 = `public/realm/awaken-hd/${r.id}.jpg`
+  if (!fresh(bust)) { add('gpt', ++n, `${r.id} · 새 초상 (콘셉트 바꿈)`, [], BUST_HEAD + r.bust + ' Avoid: grey hair, wrinkles, an elderly look, any text or watermark.', `gpt_bust-${r.id}.png`, '그림 없이 · 새 대화 · 받으면 넣고 꾸러미를 다시 만들면 1차 카드가 나옵니다'); continue }
+  if (!fresh(aw1)) { if (T1 !== undefined) add('gpt', ++n, `${r.id} · 1차 (새 콘셉트)`, [bust], T1.prompt.replace(/\(\d+\)/, r.age).replace(', and keep her signature weapon and items from the portrait', '').replace(' with her weapon', ' with her grain jar') + r.aw1 + STYLE_F + OPAQUE15, `gpt_aw1-${r.id}.png`, '새 초상만 붙이세요'); continue }
+  if (W2 !== '') add('gpt', ++n, `${r.id} · 진각성 (새 콘셉트)`, [aw1], W2.replace(/\(\d+\)/, r.age) + r.aw2 + BODY_KEEP + STYLE_F + OPAQUE15, `gpt_aw2-${r.id}.png`, '새 1차 각성만 붙이세요')
 }
 // ①-3 15세 판 (형 11-10: Steam 15세로 · 지금 것은 assets_r19 에 보관 · 테스트 동안은 지금 것) — gpt15_aw<단>-<id>.png → assets_15/ 에만 모은다(게임엔 아직 안 넣음)
 // 새로 그리면 느낌이 바뀐다 — 지금 그림을 붙이고 비침만 고친다 (영상도 그 그림으로 다시 구우니 같은 그림이어야 한다)

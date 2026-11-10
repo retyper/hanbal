@@ -443,7 +443,7 @@ export const FACE_AGE: Readonly<Record<string, CastAge>> = {
   'w-97-goguryeo-mir': { age: 20, grey: false },
   'w-102-garak-dana': { age: 22, grey: false },
   'w-98-byeonhan-danbi': { age: 20, grey: false },
-  'w-99-garak-yucheongan': { age: 52, grey: false },
+  'w-99-garak-yucheongan': { age: 35, grey: false }, // 11-10 형: 너무 할머니라 콘셉트째 30대 중반으로 (초상·1차·2차 다시)
   'y-g-01': { age: 19, grey: false },
   'y-g-02': { age: 19, grey: false },
   'y-g-03': { age: 20, grey: false },

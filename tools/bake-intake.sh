@@ -66,6 +66,13 @@ sheet.save('tools/out/intake-gpt.jpg', quality=82); print('접촉 시트 tools/o
   done
   changed="$changed src/realm/data/awaken2.ts"
 fi
+# ①-0 콘셉트째 바꾼 초상 (gpt_bust-<id>.png · 지금 초상을 덮어쓴다 · install-bust.sh 가 따로 커밋·푸시 · 나이는 ages.ts 에 이미)
+for f in $(ls $DL/gpt_bust-*.png 2>/dev/null || true); do
+  id=$(basename "$f" .png); id=${id#gpt_bust-}
+  key=$(grep -o "'[a-z0-9-]*': '$id'" src/realm/data/art.ts | head -1 | cut -d"'" -f2)
+  [ -n "$key" ] || { echo "art.ts 에 $id 없음"; continue; }
+  mv "$f" "assets_src/realm/bust/$id-gpt.png" && sh tools/sprite-kit/install-bust.sh "$id" 0 "$key" "초상 콘셉트 바꿈: $id — 형이 구움 (굽기 꾸러미)" || echo "실패 $id"
+done
 # ①-2 1차 각성 다시 굽기 (gpt_aw1-<id>.png · 지금 그림을 덮어쓴다 · 옛 것은 git 기록에 남는다)
 for f in $(ls $DL/gpt_aw1-*.png 2>/dev/null || true); do
   id=$(basename "$f" .png); id=${id#gpt_aw1-}

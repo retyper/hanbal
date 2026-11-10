@@ -44,7 +44,7 @@
 | 피도간 | `gj-pidogan` | `g-61-heomcheuk-bawi` | 40 · 남 | 산사람 · 고집, 짧게 끊는다 | `m-gruff` |
 | 오도간 | `gj-odogan` | `g-03-sea-trader` | 44 · 남 | 장사꾼 · 셈 빠름, 웃으며 값을 부른다 | `m-charm` |
 | 유수간 | `gj-yusugan` | `g-57-bihwa-neup` | 37 · 남 | 강사람 · 무뚝뚝 | `m-young` |
-| 유천간 | `gj-yucheongan` | `w-16-clan-matriarch` | 52 · 여 | 마을 어머니 · 너그러움, 사람을 먼저 챙긴다 | `w-matron` |
+| 유천간 | `gj-yucheongan` | `w-99-garak-yucheongan` | 35 · 여 | 곳간지기 · 마을의 큰언니 — 너그럽고 시원시원, 사람을 먼저 챙긴다 (11-10 형: 할머니 말고 30대 중반으로) | `w-matron` |
 | 신천간 | `gj-sincheongan` | `w-25-bihwa-priestess` | 33 · 여 | 하늘에 제를 올리는 무녀 간 · 신비 | `w-shaman` |
 | 오천간 | `gj-ocheongan` | `g-63-heomcheuk-beogeum` | 45 · 남 | 강굽이 뱃사람 · 거칠다 | `m-veteran` |
 | 신귀간 | `gj-singwigan` | `w-17-mahan-pearl-diver` | 29 · 여 | 바닷가 물질하는 간 · 시원시원 | `w-bright` |
