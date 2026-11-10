@@ -4278,7 +4278,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (realm === null || c === undefined || c === null || c.grand !== true) return
     const bow = assassinBow(realm, me())
     const seed = (realm.seed ^ Math.imul(c.season + 1, 2654435761) ^ 0x7e57) >>> 0
-    openFrame(`${CONTEST}?seed=${seed}&bow=${bow}&id=fest-archery-${c.season}&back=about:blank`, '제천 대회 활쏘기')
+    // 송양 글 대신 제천 대회 글 · 맞수는 이웃의 이름난 장수(없으면 「이웃 나라 궁수」)
+    const foe = c.hero2 !== undefined ? realm.heroes[c.hero2]?.name : undefined
+    openFrame(`${CONTEST}?seed=${seed}&bow=${bow}&mode=fest${foe !== undefined ? `&foe=${encodeURIComponent(foe)}` : ''}&id=fest-archery-${c.season}&back=about:blank`, '제천 대회 활쏘기')
   }
   /** 제천 대회 · 장수 겨루기 — 우리 무예 높은 장수와 이웃의 이름난 장수 (duel/view.ts). 끝나면 이김=1 · 짐=0 이 카드 답이 된다 · 비기면 무예가 앞선 쪽 */
   function openFestDuel(): void {

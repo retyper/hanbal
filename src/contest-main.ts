@@ -21,6 +21,7 @@ import type { HudState } from './render/hud.ts'
 import { createSfx, pumpSfx, unlockSfx, updateSfx } from './audio/sfx.ts'
 import { BOW_NAME, tierBow, tierOf } from './night/sim.ts'
 import { P } from './tune/params.ts'
+import { josa } from './realm/data/prose.ts'
 
 const canvas = document.getElementById('night') as HTMLCanvasElement
 const ui = document.getElementById('night-ui') as HTMLDivElement
@@ -31,6 +32,11 @@ const back = params.get('back') ?? 'realm.html'
 const tier = tierOf(Number(params.get('bow') ?? 0) || 0)
 const seed = Number(params.get('seed') ?? 1) >>> 0
 const RESULT = 'hanbal.night.result'
+/** 제천 대회(&mode=fest) — 송양 대신 이웃 나라 궁수(&foe=이름) · 궁궐 앞마당 (docs/realm/CAPITAL §1-3) */
+const FEST = params.get('mode') === 'fest'
+const FOE = (params.get('foe') ?? '').trim() || (FEST ? '이웃 나라 궁수' : '송양')
+const foeI = josa(FOE, '이', '가')
+const foeN = josa(FOE, '은', '는')
 
 const renderer = createRenderer(canvas)
 const input = createInput(canvas, getCamera(renderer))
@@ -45,9 +51,9 @@ const hud: HudState = { training: 0, canLevelUp: false, muted: false, silent: fa
  * 판마다 송양이 먼저 쏘고(맞힌 수가 글로 뜬다) 우리는 다 맞혀야 다음 판. 하늘은 판 id 의 장 번호로 — 3장 「안개 아침」이 가장 밝다
  */
 const ROUNDS = [
-  { title: '백 보 과녁', line: '송양이 백 보 안팎에 과녁 셋을 세웠다.', foe: '송양은 셋 중 둘을 맞혔다. 셋 다 맞히면 앞선다.', won: '세 과녁 한가운데' },
-  { title: '흔들리는 사슴', line: '송양이 사슴 그린 과녁 둘을 줄에 매달아 흔든다.', foe: '송양은 둘 중 하나를 맞혔다.', won: '흔들리는 사슴을 둘 다' },
-  { title: '옥가락지', line: '송양이 옥가락지 둘을 높이 매달았다. 깨뜨리면 이긴다.', foe: '송양의 화살은 가락지 곁을 스쳤다.', won: '' },
+  { title: '백 보 과녁', line: `${foeI} 백 보 안팎에 과녁 셋을 세웠다.`, foe: `${foeN} 셋 중 둘을 맞혔다. 셋 다 맞히면 앞선다.`, won: '세 과녁 한가운데' },
+  { title: '흔들리는 사슴', line: `${foeI} 사슴 그린 과녁 둘을 줄에 매달아 흔든다.`, foe: `${foeN} 둘 중 하나를 맞혔다.`, won: '흔들리는 사슴을 둘 다' },
+  { title: '옥가락지', line: `${foeI} 옥가락지 둘을 높이 매달았다. 깨뜨리면 이긴다.`, foe: `${FOE}의 화살은 가락지 곁을 스쳤다.`, won: '' },
 ] as const
 
 function roundTargets(i: number): TargetSpec[] {
@@ -105,7 +111,7 @@ const card = (h: string): void => { ui.innerHTML = `<div class="card">${h}</div>
 
 function showIntro(): void {
   live = false
-  card(`<h1>송양과의 활쏘기 겨루기</h1><p>비류수 가 언덕, 아침 안개가 걷힌다. 활은 ${BOW_NAME[tier]}.</p>`
+  card((FEST ? `<h1>제천 대회 활쏘기</h1><p>궁궐 앞마당에 모닥불이 오르고 구경꾼이 둘러섰다. 맞수는 ${FOE}. 활은 ${BOW_NAME[tier]}.</p>` : `<h1>송양과의 활쏘기 겨루기</h1><p>비류수 가 언덕, 아침 안개가 걷힌다. 활은 ${BOW_NAME[tier]}.</p>`)
     + `<p class="mute">세 판을 겨룬다. 백 보 과녁 셋 · 흔들리는 사슴 과녁 둘 · 매단 옥가락지 둘. 판마다 과녁을 다 맞혀야 다음 판으로 간다. 화살은 과녁 수보다 ${P.realm.contestArrows + P.night.tierArrows * tier}발 넉넉하다.</p>`
     + `<p class="mute">누르고 있으면 당기고, 놓으면 쏜다. 당기는 동안 점선이 화살이 날아갈 길을 보여 준다.</p>`
     + `<div class="btns"><button data-act="back">물러난다</button><button class="on" data-act="go">겨룬다</button></div>`)
@@ -133,8 +139,8 @@ function showEnd(won: boolean): void {
   live = false
   send(won ? 'dead' : 'fled')
   card(won
-    ? `<h1>옥가락지가 깨졌다</h1><p>송양이 활을 내려놓는다. 겨루기를 이겼다.</p><div class="btns"><button class="on" data-act="back">돌아가기</button></div>`
-    : `<h1>겨루기를 졌다</h1><p>${['과녁 셋을 다 맞히지 못했다.', '흔들리는 사슴을 다 맞히지 못했다.', '옥가락지를 다 깨뜨리지 못했다.'][round]} 송양이 웃는다.</p><div class="btns"><button class="on" data-act="back">돌아가기</button></div>`)
+    ? `<h1>옥가락지가 깨졌다</h1><p>${foeI} 활을 내려놓는다. 겨루기를 이겼다.</p><div class="btns"><button class="on" data-act="back">돌아가기</button></div>`
+    : `<h1>겨루기를 졌다</h1><p>${['과녁 셋을 다 맞히지 못했다.', '흔들리는 사슴을 다 맞히지 못했다.', '옥가락지를 다 깨뜨리지 못했다.'][round]} ${foeI} 웃는다.</p><div class="btns"><button class="on" data-act="back">돌아가기</button></div>`)
 }
 
 ui.addEventListener('click', (ev) => {
