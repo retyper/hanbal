@@ -4941,7 +4941,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           + (busy ? `<span class="wbusy">${label}</span>` : `<button class="btn${queued ? ' on' : ''}" data-act="wonder" data-what="${what}"${why === null ? '' : noBtn(why)}>${label}${costHtml({ grain: c.grain, [c.good]: c.n })}</button>`)
         if (rv.length > 0) foot += `<span class="wgrv">${rv.map((x) => `<b data-tip="${esc(josa(r.factions[x.faction]?.name ?? '', '이', '가'))} 짓는 중 · ${x.lo}~${x.hi}단 쯤">${emblem(x.faction, 'wem')}${x.lo}~${x.hi}</b>`).join('')}</span>`
       }
-      h += `<div class="${cls}"><div class="wpic">${w !== null && at === null ? icon(`${d.icon}-s${Math.min(3, 1 + Math.floor(((w.stage ?? 0) * 3) / Math.max(1, stages)))}`, 'wimg') : icon(d.icon, 'wimg')}</div><b class="wname">${esc(d.name)}</b><span class="wgfx">${esc(wonderEffect(what))}</span>${foot}</div>`
+      // 다 선 우리 공사는 완공 장면(event/event-wonder-<id>.jpg · 제미나이 11-11)을 카드 뒤에 깐다
+      const scene = at !== null && at.owner === me() ? ` style="--wsc:url(${ART}event/event-wonder-${what}.jpg)"` : ''
+      h += `<div class="${cls}"${scene}><div class="wpic">${w !== null && at === null ? icon(`${d.icon}-s${Math.min(3, 1 + Math.floor(((w.stage ?? 0) * 3) / Math.max(1, stages)))}`, 'wimg') : icon(d.icon, 'wimg')}</div><b class="wname">${esc(d.name)}</b><span class="wgfx">${esc(wonderEffect(what))}</span>${foot}</div>`
     }
     h += '</div>'
     // 큰 잔치 — 곳간의 몫을 붓고 굴림 하나 · 갈래마다 그림과 % (우리 것은 숫자 · ODDS.md)
@@ -4951,7 +4953,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const pour = feastPour(r, me())
       const why = queued ? null : r.season < feastNext(r, me()) ? `${turnsLabel(r, feastNext(r, me()) - r.season)} 뒤에 다시 열 수 있습니다` : feastBlocked(r, me())
       const chip = (ic: string, pp: number, tip: string): string => pp <= 0 ? '' : `<b class="fodd" data-tip="${esc(tip)}">${icon(ic, 'cgi')}${Math.round(pp * 100)}%</b>`
-      h += `<h3>${icon('wonder-feast', 'wki')} 큰 잔치</h3><div class="wfeast${queued ? ' on' : ''}"><div class="fodds">`
+      h += `<h3>${icon('wonder-feast', 'wki')} 큰 잔치</h3><div class="wfeast${queued ? ' on' : ''}" style="--wsc:url(${ART}event/event-great-feast.jpg)"><div class="fodds">`
         + chip('unit-general', odds.guest, '이름난 장수가 손님으로 온다 (값 없이 들인다)')
         + chip('good-tribute-bell', odds.king, `이웃 왕이 찾아온다 (그 나라 호감 +${P.realm.feastFavor})`)
         + chip('unit-drummers', odds.joy, `좋은 잔치 (군대 사기 +${Math.round(P.realm.feastMorale * 100)} · 장수 공)`) + '</div>'
@@ -7437,7 +7439,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const chip = (ic: string, t: string): string => `<b class="gnc" style="--k:${k++}">${icon(ic)}${t}</b>`
       if (g.how === 'wonder' && g.what !== undefined) {
         const d = WONDERS[g.what]
-        return `<div class="gnrow" style="--i:${i}"><img class="gnnd" src="${ART}icon/${d.icon}.png" alt=""><div><b class="gnt">${esc(d.name)}</b><small>${esc(n.name)}에 섰습니다</small><span class="gncs">${chip('treasure-silla-crown', wonderEffect(g.what))}</span></div></div>`
+        return `<div class="gnrow gnsc" style="--i:${i};--wsc:url(${ART}event/event-wonder-${g.what}.jpg)"><img class="gnnd" src="${ART}icon/${d.icon}.png" alt=""><div><b class="gnt">${esc(d.name)}</b><small>${esc(n.name)}에 섰습니다</small><span class="gncs">${chip('treasure-silla-crown', wonderEffect(g.what))}</span></div></div>`
       }
       if (g.how === 'feast') {
         // 굴림의 결과 — 나온 갈래 그림 · 그 갈래의 확률 (판 기록에 실제 숫자 · ODDS.md)
@@ -7445,7 +7447,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const got = g.got === 'guest' ? chip('unit-general', HERO_POOL.find((x) => x.id === g.who)?.name ?? '손님')
           : g.got === 'king' ? chip('good-tribute-bell', `${r.factions[g.who ?? '']?.name ?? ''} 호감 +${P.realm.feastFavor}`)
             : chip('unit-drummers', `사기 +${Math.round(P.realm.feastMorale * 100)}`)
-        return `<div class="gnrow" style="--i:${i}"><img class="gnnd" src="${ART}icon/wonder-feast.png" alt=""><div><b class="gnt">큰 잔치</b><small>${g.got === 'guest' ? '이름난 손님이 왔습니다' : g.got === 'king' ? '이웃 왕이 찾아왔습니다' : '좋은 잔치였습니다'} · ${pc}</small><span class="gncs">${got}</span></div></div>`
+        return `<div class="gnrow gnsc" style="--i:${i};--wsc:url(${ART}event/event-great-feast.jpg)"><img class="gnnd" src="${ART}icon/wonder-feast.png" alt=""><div><b class="gnt">큰 잔치</b><small>${g.got === 'guest' ? '이름난 손님이 왔습니다' : g.got === 'king' ? '이웃 왕이 찾아왔습니다' : '좋은 잔치였습니다'} · ${pc}</small><span class="gncs">${got}</span></div></div>`
       }
       const chips = [...(g.how === 'settle' && g.n !== undefined ? [chip('unit-porters', `+${g.n}가구`)] : []), ...nodeSpecials(r, g.node).map((x) => chip(GOOD_ICON[x], `+${GOOD_NAME[x]}`))]
       return `<div class="gnrow" style="--i:${i}"><img class="gnnd" src="${ART}icon/${nodeIcon(n)}.png" alt=""><div><b class="gnt">${esc(n.name)}</b><small>${g.how === 'take' ? '우리 땅이 되었습니다' : '새 마을이 섰습니다'}</small><span class="gncs">${chips.join('')}</span></div></div>`

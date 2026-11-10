@@ -1039,7 +1039,7 @@ html.duel-open .ap * { animation-play-state: paused !important; }
 .ap .wgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 4px 0 10px; }
 .ap .wcard { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 6px; border-radius: 12px; border: 1px solid #5a4630; background: #1f1810; text-align: center; min-width: 0; }
 .ap .wcard.building { border-color: #c9a45a; background: #261d12; }
-.ap .wcard.ours { border-color: #e8c15a; box-shadow: 0 0 0 1px #e8c15a55 inset, 0 0 12px #e8c15a44; background: #2c2212; }
+.ap .wcard.ours { border-color: #e8c15a; box-shadow: 0 0 0 1px #e8c15a55 inset, 0 0 12px #e8c15a44; background: linear-gradient(#2c2212b8, #2c2212e6), var(--wsc, none) center/cover, #2c2212; } /* 완공 장면이 뒤에 비친다 (11-11) */
 .ap .wcard.theirs { opacity: .62; filter: saturate(.6); }
 .ap .wcard .wpic { position: relative; width: 64px; height: 64px; }
 .ap .wcard .wimg { width: 64px; height: 64px; object-fit: contain; }
@@ -1062,7 +1062,7 @@ html.duel-open .ap * { animation-play-state: paused !important; }
 .ap .wcard .wby, .ap .wcard .wgrv b { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; color: #f3e6c8; font-weight: 400; }
 .ap .wcard .wgrv { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
 .ap .wcard .wem { width: 18px; height: 18px; object-fit: contain; }
-.ap .wfeast { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 10px; padding: 8px 10px; border-radius: 12px; border: 1px dashed #c9a45a88; background: #221a12; }
+.ap .wfeast { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 10px; padding: 8px 10px; border-radius: 12px; border: 1px dashed #c9a45a88; background: linear-gradient(#221a12c8, #221a12ee), var(--wsc, none) center/cover, #221a12; } /* 잔치 마당 장면이 뒤에 (11-11) */
 .ap .wfeast.on { border-style: solid; border-color: #e8c15a; box-shadow: 0 0 12px #e8c15a44; }
 .ap .wfeast .fodds { display: flex; gap: 8px; justify-content: space-around; }
 .ap .wfeast .fodd { display: inline-flex; align-items: center; gap: 4px; font-size: 16px; color: #ffe2a0; }
@@ -1492,6 +1492,7 @@ export const UI_CSS = `
 .ap .gnbox { position: relative; min-width: min(86vw, 320px); max-width: min(92vw, 440px); padding: 16px 22px 18px; border-radius: 16px; background: linear-gradient(#2c2112f5, #1a130af5); border: 2px solid #f0c860; box-shadow: 0 0 0 4px #f0c86033, 0 10px 30px #000c; color: #f8ecd0; animation: gnin .42s cubic-bezier(.3, 1.7, .5, 1) both; }
 .ap .gnh { display: block; text-align: center; font-family: var(--display); font-weight: 400; font-size: clamp(44px, 11vw, 64px); line-height: 1.05; color: #ffd76a; text-shadow: 0 3px 0 #4a3010, 0 0 18px #ffc04088; margin-bottom: 8px; }
 .ap .gnrow { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid #f0c86033; animation: gnrow .35s ease-out both; animation-delay: calc(.18s + var(--i) * .12s); }
+.ap .gnrow.gnsc { padding: 8px 10px; border-radius: 10px; border-top: 0; margin-top: 4px; background: linear-gradient(90deg, #1b1410f2 38%, #1b141099), var(--wsc, none) center/cover, #1b1410; } /* 큰 공사 완공·큰 잔치 줄은 장면 그림 위에 (11-11) */
 .ap .gnnd { width: 84px; height: 84px; object-fit: contain; flex: none; }
 .ap .gnt { display: block; font-size: 22px; color: #fff3d6; } .ap .gnrow small { display: block; font-size: 14px; color: #e8d8b0; }
 .ap .gncs { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
