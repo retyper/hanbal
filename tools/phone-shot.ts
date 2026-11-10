@@ -68,5 +68,6 @@ try {
 } finally {
   chrome.kill()
   await sleep(500)
-  try { rmSync(prof, { recursive: true, force: true }) } catch { /* 크롬이 아직 잡고 있다 */ }
+  // 크롬이 꺼지며 잠깐 파일을 쥐고 있다 — 곧바로 지우면 실패해 판마다 100~200MB 가 쌓였다 (11-11 C 드라이브가 꽉 참) · 몇 번 기다려 다시
+  for (let i = 0; i < 12 && existsSync(prof); i++) { try { rmSync(prof, { recursive: true, force: true }) } catch { await new Promise((r) => setTimeout(r, 400)) } }
 }
