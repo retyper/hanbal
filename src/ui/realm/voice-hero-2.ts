@@ -345,7 +345,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['익을 때까지 기다리면 되옵니다.', '서두르지 않고 해내겠사옵니다.', '맡겨 주소서.'],
     auto: ['제가 맡겠사옵니다!', '서두르지 마라! 때가 올 때까지 버텨라!', '자리를 지켜라! 흔들리지 마라!', '익었사옵니다. 이겼사옵니다.', '덜 익었사옵니다. 다시 기다리겠사옵니다.'],
     art: ['order', '버텨라! 때가 무르익을 때까지 한 발도 물러서지 마라!'],
-    recorded: false,
+    recorded: true, // 11-11 Riko 13줄
     male: true,
   },
   // 읍차 갯벌 · 43세 · 진흙 속에서도 길을 찾는 소탈하고 밝은 사람, 물때 이야기 · 정겹고 푸근한 Algieba
@@ -356,7 +356,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['진흙 속에서도 길은 찾사옵니다.', '허허, 맡겨 주소서.', '물때 맞춰 해내겠사옵니다.'],
     auto: ['이 싸움은 제가 맡겠사옵니다!', '갯벌로 끌어들여라! 발이 빠지면 친다!', '물때를 놓치지 마라! 밀어붙여라!', '허허, 이겼사옵니다. 물때가 좋았사옵니다.', '허허, 졌사옵니다. 물이 들면 또 길이 나오옵니다.'],
     art: ['ambush', '갯벌로 끌어들여라! 발이 빠진 놈들을 한꺼번에 덮쳐라!'],
-    recorded: false,
+    recorded: true, // 11-11 Algieba 13줄
     male: true,
   },
   // 살해 말발굽 · 42세 · 늘 선봉에 서고 싶어 하는 성급하고 용맹한 기병 · 기세 센 Algenib
@@ -367,7 +367,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['선봉은 제가 서겠사옵니다!', '달려가 먼저 닿겠사옵니다.', '기다릴 수 없사옵니다. 바로 가겠사옵니다!'],
     auto: ['선봉은 제 몫이옵니다!', '말발굽 소리가 곧 북이다! 달려라!', '앞서 달려라! 짓밟고 지나가라!', '가장 먼저 닿았사옵니다!', '너무 앞서 나갔사옵니다. 다시 달리겠사옵니다.'],
     art: ['vanguard', '말발굽이 북이다! 내 뒤를 따라 단숨에 달려라!'],
-    recorded: false,
+    recorded: true, // 11-11 Algenib 13줄
     male: true,
   },
   // 신지 마루 · 32세 · 백성을 굶기지 않는 것이 첫째인 어질고 포근한 우두머리 · 부드럽고 단정한 Callirrhoe
@@ -378,7 +378,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['백성이 굶지 않게 하겠사옵니다.', '정성껏 해내겠사옵니다.', '염려 마소서. 맡겨 주소서.'],
     auto: ['이 싸움은 제가 맡겠사옵니다!', '백성의 곳간을 지켜라! 물러서지 마라!', '힘을 내라! 함께 돌아가자!', '모두 무사하니 다행이옵니다.', '송구하옵니다. 다시 곳간부터 채우겠사옵니다.'],
     art: ['shout', '굶는 이 없게 하리라! 함께 힘을 내라, 함성을 올려라!'],
-    recorded: false,
+    recorded: true, // 11-11 Callirrhoe 13줄
   },
   // 아도간 · 56세 · 노래하자고 앞장선 신중한 맏이, 느린 하오체 · 느긋한 노인 Enzo
   'gj-adogan': {
@@ -388,7 +388,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['신중히 해 보겠소.', '모두와 뜻을 모아 하겠소.', '그리하겠소이다.'],
     auto: ['이 싸움은 내가 맡겠소!', '노래하라! 소리를 모아 나아가라!', '다 함께다! 흩어지지 마라!', '허허, 이겼소. 노래를 부릅시다.', '졌소이다. 뜻을 다시 모읍시다.'],
     art: ['shout', '목청을 모아라! 구지의 노래로 함성을 올려라!'],
-    recorded: false,
+    recorded: true, // 11-11 Enzo 13줄
     male: true,
   },
   // 쇠둑 지기 무쇠 · 38세 · 쇠를 캐던 대장장이 우두머리, 말보다 망치 · 단단하고 투박한 Cruz
