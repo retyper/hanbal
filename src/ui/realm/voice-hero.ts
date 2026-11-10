@@ -1172,7 +1172,7 @@ export const HERO_VOICE: Readonly<Record<string, HeroVoice>> = {
   },
 
   // 유천간 · 35세 · 가락 아홉 간 · 곳간지기, 마을의 큰언니 · 너그럽고 시원시원, 사람을 먼저 챙긴다 (11-10 형: "너무 할머니 · 목소리랑 대사도 30대 결로")
-  // 녹음 전엔 결 묶음 w-cool (옛 w-matron 은 40~55 결) · 기술은 heroArt 로 feint (지략 7 · 매력 7 중 지략이 앞)
+  // 결 묶음은 w-cool (옛 w-matron 은 40~55 결) · 기술은 heroArt 로 feint (지략 7 · 매력 7 중 지략이 앞)
   'gj-yucheongan': {
     voice: 'Aoede',
     style: '서른다섯의 너그럽고 시원시원한 곳간지기, 마을의 큰언니. 밝고 따뜻한 30대 여인의 목소리로, 웃음기를 머금고 시원스럽게 말한다. 늙거나 쉰 목소리가 아니다.',
@@ -1180,7 +1180,7 @@ export const HERO_VOICE: Readonly<Record<string, HeroVoice>> = {
     obey: ['걱정 마시옵소서. 제가 다 챙기겠사옵니다.', '맡겨 두시옵소서. 넉넉히 해 두겠사옵니다.', '금방 다녀오겠사옵니다.'],
     auto: ['이 싸움, 제가 맡겠사옵니다!', '곳간을 지켜라! 한 톨도 내주지 마라!', '뒤에 마을이 있다! 물러서지 마라!', '이겼사옵니다! 오늘 밤은 다들 배불리 먹이겠사옵니다.', '송구하옵니다. 다시 일으켜 세우겠사옵니다.'],
     art: ['feint', '곳간이 비었다고 소문을 내라! 배고픈 적이 몰려들 때 친다!'],
-    recorded: false,
+    recorded: true, // 11-10 저녁 AI 스튜디오 Aoede 한 번에 13줄 (원본 assets_src/realm/voice/gj-yucheongan-20261110.wav)
   },
 
 }
