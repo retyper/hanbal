@@ -19,7 +19,7 @@ export function lock(t) {
   const he = /\b(he|him|his)\b/.test(t.slice(0, 600)) && !/\b(she|her)\b/.test(t.slice(0, 600))
   const p = he ? { sub: 'His', Sub: 'His', sub2: 'he' } : { sub: 'Her', Sub: 'Her', sub2: 'she' }
   let out = t.replace(FRAME_OLD, (_m, span) => `Fill the 9:16 frame with an unbroken portrait from ${span}, at about the same scale as the image (zoom in no more than 1.3 times); the face stays about the size it is in the image.`)
-  out = out.replace(/Make (her|him) lively, not a still pose\./, (m, w) => `${m} All the life is in ${w === 'him' ? 'his' : 'her'} body, hair, cloth, props and breath; the face stays calm and the same.`)
+  out = out.replace(/Make (her|him) lively, not a still pose\./, (m, w) => `${m} All the life is in ${w === 'him' ? 'his' : 'her'} body, hair, cloth, props and breath; the face stays the same face.`)
   out = out.replace(/\s*$/, '') + '\n\n' + lockText(p) + '\n'
   return out
 }
