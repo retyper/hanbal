@@ -79,6 +79,16 @@ for (const [id, extra, age] of REDO1) {
   if (x === undefined || !existsSync(x.ref) || !existsSync(`public/realm/awaken-hd/${id}.jpg`)) continue
   add('gpt', ++n, `${id} · 1차 다시`, [x.ref, `public/realm/awaken-hd/${id}.jpg`], x.prompt + extra + STYLE_F + OPAQUE15, `gpt_aw1-${id}.png`, '첫 그림(초상)만 붙이세요 · 둘째는 지금 1차 각성(비교용)')
 }
+// ①-2b 지금 1차 그림을 붙여 한 곳만 고친다 — gpt_aw1-<id>.png → install-awaken.sh 1
+const FIX1 = [
+  // 11-10 형: "저 시대에 호루라기는 없었지? 1차 각성 이미지만 호루라기 없이 · 영상은 안 만들어도 될 듯 (할머니니까)"
+  ['w-76-gampyeong-baetsagong', 'Remove both metal whistles: the small whistle at her lips and the whistle hanging from her necklace (replace that pendant with a small carved jade pendant like the others). Her right hand no longer holds anything at her mouth: it rests on the fur collar at her chest, fingers relaxed. Her lips close into the same wry, confident grin.'],
+]
+for (const [id, fix] of FIX1) {
+  const ref = `public/realm/awaken-hd/${id}.jpg`
+  if (!existsSync(ref)) continue
+  add('gpt', ++n, `${id} · 1차 한 곳만 고침`, [ref], `This is an AI-generated illustration of a fictional adult character from my own Korean historical fantasy strategy game (an original character, not a real person). Edit this exact image only slightly: ${fix} Keep EVERYTHING else exactly the same: same face, expression, pose, composition, colors, outfit, jewelry, bamboo pole, aura, lighting, background and square image size.`, `gpt_aw1-${id}.png`, '지금 1차 각성 한 장만 붙이세요')
+}
 // ①-3 15세 판 (형 11-10: Steam 15세로 · 지금 것은 assets_r19 에 보관 · 테스트 동안은 지금 것) — gpt15_aw<단>-<id>.png → assets_15/ 에만 모은다(게임엔 아직 안 넣음)
 // 새로 그리면 느낌이 바뀐다 — 지금 그림을 붙이고 비침만 고친다 (영상도 그 그림으로 다시 구우니 같은 그림이어야 한다)
 const EDIT15 = 'This is an AI-generated illustration of a fictional adult woman from my own Korean historical fantasy strategy game (an original character, not a real person). Edit this exact image only slightly for a teen (15+) age rating: make every piece of her clothing fully opaque (no sheer or see-through fabric anywhere) and remove any nipple or nipple outline showing through the clothes. Keep EVERYTHING else exactly the same: same face, expression, pose, composition, colors, outfit design, jewelry, cleavage, aura, lighting, background and square image size.'

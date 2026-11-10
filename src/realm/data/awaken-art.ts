@@ -305,6 +305,7 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'l-L9-ungnyeo', // 11-10 웅녀 1차 (Flow Jay) · 형: 좋음 (연출 굿 · 쑥이 한국 같아 좋음)
   'l-L1-yuhwa', // 11-10 유화 1차 (Flow Jay) · 형: 낫배드
   'l-L6-jeonggyeon-moju', // 11-10 정견모주 1차 (Flow Jay) · 형: 낫배드
+  'w-41-hwanna-beodeul', // 11-10 버들 1차 (Flow Jay) · 형: 시위가 혼자 당겨져서 소리째 거꾸로 돌림 (앞으로 돈 원본은 assets_src/realm/retired/awaken-loop)
   'w-78-wansan-wan', // 11-08 저녁 완 v3 · 10초 구성 · 만작한 채 윙크 (형: 그래도 봐줄 만하다 · 적용)
   'w-69-jeoga-eomni', // 11-07 엄니 · fc094928 사용자 채택, 원본 프레임 경계 한계 기록
   'w-67-buyeo-haedal', // 11-07 해달 · 머리/허리 손 접촉을 유지하는 세로 idle
