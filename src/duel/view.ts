@@ -386,7 +386,15 @@ on('resize', resize)
 resize()
 /** 위 띠(시간 판) 크기 — 폰은 그대로, 넓은 화면은 키운다 (PC 에서 너무 가늘고 작았다) */
 const hudTw = (): number => Math.min(150, Math.max(90, Math.min(W * 0.24, H * 0.16)))
-const hudTop = (): number => Math.round(hudTw() * 0.92 + 22)
+/** 폰 노치(카메라) 높이 — env(safe-area-inset-top) 을 한 번 재 둔다 (형 11-11: 시간 판이 카메라에 걸림) */
+const safeProbe = document.createElement('div')
+safeProbe.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:env(safe-area-inset-top, 0px);pointer-events:none;visibility:hidden'
+host.appendChild(safeProbe)
+const safeTop = (): number => safeProbe.offsetHeight
+/** 폰(좁은 화면)은 체력 막대를 시간 판 아래 한 줄에 길게 — 시간 판 옆에 두면 너무 짧았다 (형 11-11) */
+const narrowHud = (): boolean => W < 560
+const hudBarH = (): number => Math.round(Math.max(10, Math.min(20, hudTw() * 0.13)))
+const hudTop = (): number => Math.round(safeTop() + hudTw() * 0.92 + 22 + (narrowHud() ? hudBarH() + 26 : 0))
 const fieldTop = (): number => H * 0.8
 /** 고리가 서는 칸 — 위 띠와 아래 들판 사이 전부 */
 const play = (): { x: number; y: number; w: number; h: number } => ({ x: 0, y: hudTop(), w: W, h: fieldTop() - hudTop() })
@@ -946,9 +954,13 @@ function drawDuel(now: number, fadeIn: number): void {
   // 위 — 격투 게임처럼: 우리(왼쪽) · 시간(가운데 크게) · 적장(오른쪽)
   // 위 띠 크기 — 폰은 그대로, 넓은 화면은 키운다 (PC 에서 너무 가늘고 작았다)
   const tw = hudTw()
-  const bh = Math.round(Math.max(10, Math.min(20, tw * 0.13))), hudS = tw / 100
+  const bh = hudBarH(), hudS = tw / 100
   const plateW = tw * 0.98 * 1.32
-  const bw = Math.min((W - plateW) / 2 - 6, W * 0.36), by = Math.round(tw * 0.36)
+  const top = safeTop(), narrow = narrowHud()
+  // 넓은 화면: 시간 판 양옆 · 폰: 시간 판 아래 한 줄에 둘이 길게 (가운데 틈 12px)
+  const bw = narrow ? Math.round(W / 2 - 6 - 6) : Math.min((W - plateW) / 2 - 6, W * 0.36)
+  const by = Math.round(top + (narrow ? tw * 0.98 + 10 : tw * 0.36))
+  const bxMe = narrow ? 6 : W / 2 - plateW / 2 - 6 - bw, bxFoe = narrow ? W - 6 - bw : W / 2 + plateW / 2 + 6
   // 맞은 쪽 막대만 떨린다 — 화면 전체(우리가 맞음)·적장 액자(적이 맞음)와 따로 (형 11-11)
   const jolt = (t0: number): readonly [number, number] => {
     const s = now - t0
@@ -957,8 +969,8 @@ function drawDuel(now: number, fadeIn: number): void {
     return [Math.sin(s / 9) * a, Math.cos(s / 13) * a * 0.6]
   }
   const [jmx, jmy] = jolt(hurtAt), [jfx, jfy] = jolt(foeHurtAt)
-  const capMe = bar(W / 2 - plateW / 2 - 6 - bw + jmx, by + jmy, bw, bh, d.me.hp / R.hp, now - hurtAt < 200 ? '#ff5a4a' : '#e9c46a', 'left', 'hud-bar')
-  const capFoe = bar(W / 2 + plateW / 2 + 6 + jfx, by + jfy, bw, bh, d.foe.hp / Math.round(R.hp * tierOf(d).foeHp), now - foeHurtAt < 200 ? '#ffffff' : '#e76f51', 'right', 'hud-bar')
+  const capMe = bar(bxMe + jmx, by + jmy, bw, bh, d.me.hp / R.hp, now - hurtAt < 200 ? '#ff5a4a' : '#e9c46a', 'left', 'hud-bar')
+  const capFoe = bar(bxFoe + jfx, by + jfy, bw, bh, d.foe.hp / Math.round(R.hp * tierOf(d).foeHp), now - foeHurtAt < 200 ? '#ffffff' : '#e76f51', 'right', 'hud-bar')
   pm('bars')
   // 둥근 머리 안에 얼굴
   for (const [cap, face] of [[capMe, meFace], [capFoe, foeFace]] as const) {
@@ -975,7 +987,7 @@ function drawDuel(now: number, fadeIn: number): void {
   pm('faces+names')
   const sec = Math.max(0, Math.ceil((d.end - d.t) / R.hz))
   const plate = art('hud-timer')
-  const tcx = W / 2, tcy = Math.round(tw * 0.42)
+  const tcx = W / 2, tcy = Math.round(top + tw * 0.42)
   if (plate !== null) { const ph2 = tw * 0.98, pw2 = ph2 * (plate.naturalWidth / plate.naturalHeight); ctx.drawImage(scaled(plate, pw2, ph2), tcx - pw2 / 2, tcy - ph2 / 2, pw2, ph2) }
   else { ctx.fillStyle = 'rgba(20,12,6,.85)'; ctx.beginPath(); ctx.arc(tcx, tcy, tw * 0.42, 0, Math.PI * 2); ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#c99a4a'; ctx.stroke() }
   const low = sec <= 10
