@@ -22,8 +22,8 @@ const DRAG_PX = 6
 const SEEN_PAD = 0.07
 
 export interface MapZoom {
-  /** 다시 그린 지도에 지금 배율을 입힌다 */
-  apply(): void
+  /** 다시 그린 지도에 지금 배율을 입힌다 — keep 이 있으면 단계를 재기 전에 그 굴린 자리로 먼저 돌려 놓는다 */
+  apply(keep?: readonly [number, number]): void
   /** ＋/－ — 칸 가운데를 축으로 */
   step(dir: 1 | -1): void
   /** 방금 끌었으면 참 — 그 손짓의 click 은 고을 누르기가 아니다 */
@@ -149,7 +149,7 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     cull(true)
   }
 
-  function paintZ(): void {
+  function paintZ(keep?: readonly [number, number]): void {
     const m = map()
     if (m === null) return
     m.style.height = `${z * 100}%`
@@ -162,6 +162,8 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     m.style.setProperty('--zs', String(Math.sqrt(z)))
     // 줌 단계 — 멀리(나라 이름만) · 중간(도읍·우리 고을 · 꾸밈 칩 없이) · 가까이(전부). 이름표를 보이고 감추는 건 CSS 가 이 값 하나로 한다
     // (FOCUS G · 형: "이름표가 줌과 상관없이 고정 → 멀리서 이름표만 보임" · mapview MAP_CSS 의 data-zl 규칙)
+    // 다시 그린 직후엔 칸이 잠깐 줄었다 늘어 굴린 자리가 틀어져 있다 — 그대로 재면 보이는 고을 수가 엉터리라 「가까이」로 번쩍였다가 밀기가 멈출 때 돌아왔다 (형 11-11: 누를 때마다 깜빡 · 이름표·아이콘이 한꺼번에 떴다 사라짐)
+    if (keep !== undefined) { wrap.scrollLeft = keep[0]; wrap.scrollTop = keep[1] }
     const zl = tierOf(m)
     if (m.dataset['zl'] !== zl) m.dataset['zl'] = zl
     cull(true)
@@ -299,14 +301,14 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
   wrap.addEventListener('pointerleave', end)
 
   return {
-    apply() {
+    apply(keep) {
       // 손짓 도중 지도를 다시 그렸으면 늘리던 것은 버린다 (새 지도엔 transform 이 없다)
       if (live !== null) { window.clearTimeout(commitTimer); live = null }
       const region = map()?.dataset["region"] ?? ''
       if (z === 0 || region !== zFor) z = Math.max(cover(), minZ())
       zFor = region
       z = clamp(z)
-      paintZ()
+      paintZ(keep)
     },
     step(dir) {
       commit()

@@ -126,6 +126,7 @@ import { WONDERS, WONDER_ORDER, canWonder, feastBlocked, feastNext, feastOdds, f
 import { postGain } from '../../realm/postgain.ts'
 import { hasScale, marketIn, marketOf, scaleBuyPrice, scaleLimit, scaleRoom, scaleSellPrice, sellCap, sellLimit, sellPrice, wishReady, WISH_GRADE_NAME, type Offer } from '../../realm/merchant.ts'
 import { QUALITY_CSS, gfxRowHtml, setGfxPref, startQuality } from './quality.ts'
+import { perfClear, perfRowHtml, perfText, startPerfLog } from './perflog.ts'
 import { HOWWIN_CSS, bannerHtml, closeHowWin, howWinDue, howWinMark, lessons, lossOf, openLessons, showBanner, syncPin, type HowKit, type LessonGo, type Loss } from './howwin.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
 import { FEEL_CSS, alertFeel, ambushRangeFeel, chanceFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
@@ -690,6 +691,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   root.classList.add('ap')
   // 그래픽 단계 저사양 · 보통 · 고사양 (quality.ts · 형 10-29: 폰 절전 모드에서 그림이 다 깨졌다)
   startQuality(root, (h) => goToast(h))
+  // 끊김 기록 — 긴 작업이 난 순간 맨 위에 뜬 화면 (perflog.ts · 형 11-11 "어떤 상황에서 프레임 드랍 되는지")
+  startPerfLog(root, () => {
+    if (document.documentElement.classList.contains('duel-open')) return '겨루기'
+    const top = root.querySelector<HTMLElement>(':scope > :is(.nightov, .wr, .cere, .stov, .townov, .dpov, .bview)')
+    const size = realm !== null ? ` · 고을${Object.values(realm.nodes).filter((n) => n.owner === realm!.player).length}/${Object.keys(realm.nodes).length} · 계절${realm.season}` : ''
+    if (top !== null) return `${top.className.split(' ').slice(0, 3).join('.')}${top.classList.contains('wr') && top.querySelector('.wfield.fin, .winfx') !== null ? '(결과)' : ''}${size}`
+    return `지도${sheet !== null ? ':' + sheet.kind : ''}${root.classList.contains('modal-open') ? ':상자' : ''}${size}`
+  })
   installTips(root)
   // 숨 쉬는 각성 영상 — 탭이 숨으면 멈추고 돌아오면 다시 (절대 규칙 4 · 배터리)
   document.addEventListener('visibilitychange', () => {
@@ -5002,7 +5011,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<button class="btn ghost" data-act="mute">${muted() ? '소리 켜기' : '소리 끄기'}</button><button class="btn ghost" data-act="export" data-tip="지금까지 둔 판 ${host.gameCount()}개의 기록을 파일로 받는다">기록 내보내기</button>`
     h += `<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}" data-tip="활쏘기 모드 (신궁)">활터</a>${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
     h += `<button class="btn ghost" data-act="newgame" data-tip="판 고르기로, 새 게임을 시작하기 전까지 지금 판은 그대로다">새 게임</button><button class="btn ghost" data-act="lobby" data-tip="이 판은 저장돼 있어 「이어 하기」로 돌아온다">⌂ 첫 화면으로</button></div>`
-    return h + gfxRowHtml() + volumeRowsHtml() + acctHtml() + resetHtml()
+    return h + gfxRowHtml() + perfRowHtml() + volumeRowsHtml() + acctHtml() + resetHtml()
   }
 
   // ───────── 계정 (docs/realm/SERVER.md) — 나라 판 맨 아래 · 첫 화면 한 줄 · 갈라진 판 고르기
@@ -7119,7 +7128,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     lastMapRing = mh
     lastRing = rh
     lastRingId = ring
-    zoom.apply()
+    zoom.apply(first ? undefined : keep)
     paintMapCanvas(wrap) // 땅·길·안개 캔버스 — 판이 바뀌었을 때만 다시 그린다
     // 이름표 비키기를 다음 프레임으로 미루면 한 프레임은 겹친 채 보였다가 튄다 — 곧바로
     { const m2 = wrap.querySelector<HTMLElement>('.map'); if (m2 !== null) declutter(m2) }
@@ -7947,6 +7956,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'export': host.onExport(); return
       case 'fmore-x': fmoreOpen = false; root.querySelector<HTMLDetailsElement>('.fmore')?.removeAttribute('open'); return
       case 'gfx': if (front !== null) fmoreOpen = true; setGfxPref(d['v']); paint(); return
+      case 'perf-copy': { const t = perfText(); void navigator.clipboard?.writeText(t).then(() => goToast('끊김 기록을 복사했습니다. 붙여 넣어 보내 주세요.'), () => goToast('복사가 막혔습니다')); return }
+      case 'perf-clear': perfClear(); paint(); return
       case 'b0-toggle': fmoreOpen = true; try { localStorage.setItem(B0_KEY, b0On() ? '0' : '1') } catch { /* 저장이 막히면 못 켠다 */ } paint(); return
       case 'acct-in': host.cloud?.signIn(); return
       case 'acct-out': host.cloud?.signOut(); acctArmed = false; paint(); return
