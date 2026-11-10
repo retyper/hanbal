@@ -26,6 +26,11 @@ const byId = <T extends { id: string }>(xs: Iterable<T>): T[] => [...xs].sort((a
 /** 우리 장수 가운데 다툴 수 있는 이 — 자유롭고 군주가 아니고 자리에 있는 이 */
 const freeHeroes = (r: Realm, f: string): Hero[] =>
   byId(Object.values(r.heroes)).filter((h) => h.faction === f && h.status === 'free' && !isRuler(r, h.id) && !(h.awayUntil !== undefined && h.awayUntil >= r.season))
+/** 산골 마을 — 산적이 노리는 우리 고을 (솔숲·높은 땅 표지가 있는 마을을 먼저 · 없으면 바다 아닌 아무 마을) */
+const hillOf = (r: Realm, f: string): string | null => {
+  const own = byId(Object.values(r.nodes)).filter((n) => n.owner === f && (n.kind === 'village' || n.kind === 'fort' || n.kind === 'ironMine'))
+  return (own.find((n) => n.tags.includes('pines') || n.tags.includes('high')) ?? own[0])?.id ?? null
+}
 const portOf = (r: Realm, f: string): string | null => byId(Object.values(r.nodes)).find((n) => n.owner === f && n.kind === 'port')?.id ?? null
 const bigNodes = (r: Realm, f: string): string[] =>
   byId(Object.values(r.nodes)).filter((n) => n.owner === f && n.kind !== 'sodo').sort((a, b) => b.hh - a.hh || (a.id < b.id ? -1 : 1)).map((n) => n.id)
@@ -51,6 +56,7 @@ function candidates(r: Realm, f: string, season: number): Array<{ card: Card; w:
   const y = seasonNo(r, season)
   const out: Array<{ card: Card; w: number }> = []
   const port = portOf(r, f)
+  const hill = hillOf(r, f)
   const big = bigNodes(r, f)
   const heroes = freeHeroes(r, f)
   // 재물이 부르는 재해 — 우리가 커질수록 나쁜 일이 잦다 (쉬움 빼고 · 림월드 · 위원회 11-08)
@@ -117,6 +123,7 @@ function candidates(r: Realm, f: string, season: number): Array<{ card: Card; w:
     add('pirates', 0.6, { node: port })
     if (y === 0 || y === 3) add('whale', 0.4, { node: port })
   }
+  if (hill !== null) add('bandits', 0.6, { node: hill })
   // 망명자 — 떠돌이처럼 장수가 모자란 나라로 (형 10-24: "32년 넘기기만 했는데 장수가 17명" — 늘어난 장수의 7할이 이 카드였다)
   if (poolFree(r).length > 0) {
     const towns = Object.values(r.nodes).filter((n) => n.owner === f && n.kind !== 'sodo').length
@@ -288,7 +295,7 @@ export function pirateLossMul(held: number): number {
 /** 바다도적 막기에 넘길 것 — 시드(계절·포구) · 포구 장수의 무예 · 포구 경계 · 세기 (판 쪽 src/pirate/waves.ts 가 목책·근력으로 바꾼다) */
 export function pirateMission(r: Realm, c: Card): { seed: number; mu: number; watch: number; sev: number } {
   const node = c.node ?? ''
-  let seed = (r.seed ^ Math.imul(c.season + 1, 2654435761) ^ 0x9e3779b9) >>> 0
+  let seed = (r.seed ^ Math.imul(c.season + 1, 2654435761) ^ (c.kind === 'bandits' ? 0x51ed270b : 0x9e3779b9)) >>> 0
   for (const ch of node) seed = Math.imul(seed ^ ch.charCodeAt(0), 16777619) >>> 0
   return { seed, mu: postHero(r, node)?.mu ?? 0, watch: r.watch[node]?.alert ?? 0, sev: c.sev ?? 2 }
 }
@@ -297,7 +304,7 @@ export function pirateMission(r: Realm, c: Card): { seed: number; mu: number; wa
  * 이 답을 고르면 무엇이 되나 — 화면은 이것을 아이콘·숫자로, 엔진은 이것을 그대로 건다 (어긋날 수 없게 한 셈).
  * have — 카드가 걸릴 때의 창고 (화면은 이번 계절 명령을 뺀 남은 것을 넘긴다 · 카드는 명령 뒤에 걸린다)
  */
-export function cardPreview(r: Realm, c: Card, pick: 0 | 1 | 2, have?: { readonly grain: number; readonly iron: number }, held?: number): CardPlan | null {
+export function cardPreview(r: Realm, c: Card, pick: 0 | 1 | 2, have?: { readonly grain: number; readonly iron: number }, held?: number, perfect?: boolean): CardPlan | null {
   const f = r.player
   if (f === undefined) return null
   const R = P.realm
@@ -352,13 +359,16 @@ export function cardPreview(r: Realm, c: Card, pick: 0 | 1 | 2, have?: { readonl
         return { sure: { grain: -g, iron: Math.round(g / R.cardIronBuy) } }
       }
     case 'pirates':
+    case 'bandits':
       if (pick === 0) return { sure: { grain: cost(R.cardPirateRansom * m) } }
       // 맞선다 — 바다도적 막기 판에서 직접 쏜다 (SNIPE §0-9 · 형 11-08). 굴림 없이 막은 물결 수로 정해진다
       if (pick === 1) {
         const win: CardFx = { iron: Math.round(R.cardPirateIron * m * R.cardPirateWinMul * realmScale(r, f)) }
+        // 흠 없이 막으면 두목을 사로잡는다 — 보통 배수 대신 곱절 (cardPiratePerfectMul)
+        const grand: CardFx = { iron: Math.round(R.cardPirateIron * m * R.cardPiratePerfectMul * realmScale(r, f)) }
         const lose = (h: number): CardFx => ({ hurt: hurt([c.node!], R.cardPirateHit * pirateLossMul(h)), grain: cost(R.cardPirateLoss * pirateLossMul(h)) })
         if (held === undefined) return { sure: {}, hand: true, win, lose: lose(0) }
-        return held >= 3 ? { sure: win, good: true } : { sure: lose(held), good: false }
+        return held >= 3 ? { sure: perfect === true ? grand : win, good: true } : { sure: lose(held), good: false }
       }
       // 장수에게 맡긴다 — 옛 굴림 그대로: 포구를 맡은 장수와 경계가 이길 가망을 올린다 (위원회 11-04 F10 · 통제 원칙)
       return { sure: {}, chance: Math.min(R.cardPirateMax, ok(R.cardPirateOk) + (postHero(r, c.node!) !== null ? R.cardPirateChief : 0) + (r.watch[c.node!]?.alert ?? 0) * R.cardPirateWatch), die: 'fight', win: { iron: Math.round(R.cardPirateIron * m * realmScale(r, f)) }, lose: { hurt: hurt([c.node!], R.cardPirateHit), grain: cost(R.cardPirateLoss) } }
@@ -504,9 +514,10 @@ export function resolveCard(r: Realm, orders: readonly Order[], lines: ReportLin
   const n = CARDS[c.kind].opts.length
   let pick: 0 | 1 | 2 = o !== undefined && o.pick < n ? o.pick : o !== undefined ? 0 : cardFallback(c.kind)
   // 손으로 쏘는 답(바다도적 막기)을 골랐는데 판을 안 쐈으면(옛 초안 · 쏘지 않고 닫음) 장수에게 맡긴다 (굴림)
+  const perfect = o?.perfect === true
   const held = o !== undefined && typeof o.held === 'number' && Number.isFinite(o.held) ? Math.max(0, Math.min(3, Math.floor(o.held))) : undefined
   if (held === undefined && cardPreview(r, c, pick)?.hand === true) pick = 2
-  const plan = cardPreview(r, c, pick, undefined, held)!
+  const plan = cardPreview(r, c, pick, undefined, held, perfect)!
   const tally = { grain: 0, iron: 0, hh: 0 }
   applyFx(r, f, plan.sure, tally, lines)
   let good: boolean | undefined = plan.good
@@ -520,6 +531,7 @@ export function resolveCard(r: Realm, orders: readonly Order[], lines: ReportLin
   lines.push({
     kind: 'card', faction: f, card: c.kind, pick, ...(c.why !== undefined ? { why: c.why } : {}),
     ...(plan.good !== undefined && held !== undefined ? { held } : {}),
+    ...(plan.good === true && perfect && held === 3 ? { perfect: true } : {}),
     ...(grain !== 0 ? { grain } : {}), ...(iron !== 0 ? { iron } : {}), ...(hh !== 0 ? { hh } : {}),
     ...(good !== undefined ? { good } : {}), ...(hero !== undefined ? { hero } : {}), ...(c.node !== undefined ? { node: c.node } : {}),
   })

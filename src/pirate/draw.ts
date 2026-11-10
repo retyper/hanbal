@@ -16,15 +16,27 @@ import type { PirateRun } from './sim.ts'
 
 const BASE = (import.meta.env?.BASE_URL ?? '/') + 'realm/'
 const imgs = new Map<string, HTMLImageElement>()
+/** 못 읽은 그림 — 없는 파일은 한 번 알면 다시 안 묻는다 */
+const failed = new Set<string>()
 function img(path: string): HTMLImageElement | null {
   if (typeof Image === 'undefined') return null
   let im = imgs.get(path)
   if (im === undefined) {
     im = new Image()
+    im.onerror = () => { failed.add(path) }
     im.src = BASE + path
     imgs.set(path, im)
   }
   return im.complete && im.naturalWidth > 0 ? im : null
+}
+/** 후보 가운데 처음으로 읽힌 그림 — 앞의 것이 아직 오는 중이면 기다리고(null), 없는 파일이면 다음으로 (그림이 나중에 와도 따로 고칠 것 없다) */
+function imgFirst(paths: readonly string[]): { im: HTMLImageElement; path: string } | null {
+  for (const p of paths) {
+    const im = img(p)
+    if (im !== null) return { im, path: p }
+    if (!failed.has(p)) return null
+  }
+  return null
 }
 
 /** 그림 한 장 한 장의 좌표 — 손맛 노브가 아니다 (render/foeart.ts 머리말과 같은 규칙) */
@@ -34,6 +46,16 @@ const ART = {
   seaSandV: 0.56,
   /** 칼잡이 — 수군 20컷 띠 (서기 0~3 · 걷기 4~11 · 공격 12~17) · 칸 가로/세로 */
   sword: { file: 'anim2/pirate-sword.png', ar: 153 / 160, walk0: 4, walkN: 8, hit0: 12, hitN: 6, tallM: 1.9 }, // 11-08 제미나이 칼 든 바다도적 20컷 (서기·달리기·칼질·맞음·쓰러짐 · assets_src/realm/gemini/pirate)
+  /** 산적 판의 띠 — 산적 그림이 오기 전엔 도적 띠를 빌린다 (imgFirst) */
+  banditSword: ['anim2/bandit-club.png', 'anim2/pirate-sword.png'],
+  banditChief: ['anim2/bandit-chief.png', 'anim2/pirate-captain.png'],
+  /** 산적 띠는 오른쪽을 본다 (도적 띠는 왼쪽) — 칸 가로/세로 · 20컷 차례는 같다 */
+  banditAr: { 'anim2/bandit-club.png': 159 / 160, 'anim2/bandit-chief.png': 145 / 160 } as Record<string, number>,
+  /** 방패 든 도적 — 방패 든 병사 20컷 띠 (방패가 깨지면 칼잡이 띠로) */
+  shield: { file: 'anim2/shield.png', ar: 317 / 160, walk0: 4, walkN: 8, hit0: 12, hitN: 4 },
+  /** 산적 판 바탕 — 고갯길 · 땅이 시작되는 줄 (0~1) */
+  pass: 'battle/battle-pass.jpg',
+  passGroundV: 0.66,
   /** 두목 — 칼 든 장수 띠 */
   captain: { file: 'anim2/pirate-captain.png', ar: 143 / 160, walk0: 4, walkN: 8, hit0: 12, hitN: 6, tallM: 2.25 },
   /** 배 · 떠 오는 궤짝 그림 (제미나이 11-08 · assets_src/realm/gemini/pirate) — 못 읽으면 코드로 그린 꼴 */
@@ -67,16 +89,17 @@ const COL = {
   barrelBand: '#2e2418',
   glow: 'rgba(255, 214, 120, 0.55)',
   ring: '#f0c86a',
+  ledge: '#6a5d4a',
+  ledgeTop: '#8f8068',
   hp: '#e2493a',
   hpBack: 'rgba(0,0,0,0.55)',
 } as const
 
 /** 바닷가 그림을 모래 줄이 땅에 오게 덮어 그리는 자리 (화면 꽉 · 찌그러짐 없이) */
-function seaRect(cam: Camera, im: HTMLImageElement): { x: number; y: number; w: number; h: number } {
+function seaRect(cam: Camera, im: HTMLImageElement, v: number = ART.seaSandV): { x: number; y: number; w: number; h: number } {
   const gy = worldToScreenY(cam, 0)
   const iw = im.naturalWidth
   const ih = im.naturalHeight
-  const v = ART.seaSandV
   const s = Math.max(cam.w / iw, gy / (v * ih), (cam.h - gy) / ((1 - v) * ih))
   const w = iw * s
   return { x: (cam.w - w) / 2, y: gy - v * ih * s, w, h: ih * s }
@@ -151,17 +174,30 @@ function drawStrip(ctx: CanvasRenderingContext2D, im: HTMLImageElement, ar: numb
   ctx.restore()
 }
 
-function drawRunner(ctx: CanvasRenderingContext2D, cam: Camera, w: World, t: Target, x: number, captain: boolean): boolean {
-  const a = captain ? ART.captain : ART.sword
-  const im = img(a.file)
+function drawRunner(ctx: CanvasRenderingContext2D, cam: Camera, w: World, t: Target, x: number, captain: boolean, bandit: boolean, shielded = false): boolean {
+  let a: { readonly ar: number; readonly walk0: number; readonly walkN: number; readonly hit0: number; readonly hitN: number; readonly tallM: number } = captain ? ART.captain : ART.sword
+  let im: HTMLImageElement | null
+  let flip = false // 오른쪽을 보는 띠는 뒤집어야 궁수 쪽으로 달려온다
+  const broken = !shielded && !captain && t.kind === 'archer' // 방패가 깨진 도적 — 칼잡이 띠로
+  if (shielded) {
+    im = img(ART.shield.file)
+    a = { ...ART.shield, tallM: P.pirate.shieldTallM }
+    flip = true
+  } else if (bandit) {
+    const got = imgFirst(captain ? ART.banditChief : ART.banditSword)
+    im = got === null ? null : got.im
+    const ar = got === null ? undefined : ART.banditAr[got.path]
+    if (ar !== undefined) { a = { ...a, ar }; flip = true }
+  } else im = img(captain ? ART.captain.file : ART.sword.file)
   if (im === null) return false
+  if (broken) a = { ...a, tallM: P.pirate.shieldTallM }
   const R = P.pirate
   const near = t.x - R.palisadeX < ART.swingM
   const frame = near
     ? a.hit0 + (Math.floor((w.elapsed + t.id * 0.37) * ART.hitFps) % a.hitN)
     : a.walk0 + (Math.floor((R.spawnX + 4 - t.x) / (ART.strideM / a.walkN) + t.id) % a.walkN)
   const soleY = worldToScreenY(cam, 0)
-  drawStrip(ctx, im, a.ar, frame, x, soleY, a.tallM * cam.scale, false) // 두 띠 다 왼쪽(궁수)을 보고 그렸다 · 뒤집으면 뒷걸음질로 달려온다 (형 11-10)
+  drawStrip(ctx, im, a.ar, frame, x, soleY, a.tallM * cam.scale, flip) // 도적 띠는 왼쪽(궁수)을 보고 그렸다 · 산적·방패 띠는 오른쪽이라 뒤집는다 (형 11-10)
   if (captain && t.hpMax > 0) {
     // 두목의 남은 몸 — 머리 위 한 줄
     const bw = Math.max(36, t.r * 1.6 * cam.scale)
@@ -172,6 +208,26 @@ function drawRunner(ctx: CanvasRenderingContext2D, cam: Camera, w: World, t: Tar
     ctx.fillRect(x - bw / 2, by, bw * Math.max(0, t.hp / t.hpMax), 5)
   }
   return true
+}
+
+/** 산적 능선 — 궁수 밑의 바위 턱 (배 대신) */
+function drawLedge(ctx: CanvasRenderingContext2D, cam: Camera, x: number): void {
+  const R = P.pirate
+  const s = cam.scale
+  const gy = worldToScreenY(cam, 0)
+  const top = worldToScreenY(cam, R.ridgeDeck)
+  const half = 1.1 * s
+  ctx.fillStyle = COL.ledge
+  ctx.beginPath()
+  ctx.moveTo(x - half * 1.2, gy)
+  ctx.lineTo(x - half * 0.9, top + 0.12 * s)
+  ctx.lineTo(x - half * 0.3, top)
+  ctx.lineTo(x + half * 0.7, top + 0.05 * s)
+  ctx.lineTo(x + half * 1.1, gy)
+  ctx.closePath()
+  ctx.fill()
+  ctx.fillStyle = COL.ledgeTop
+  ctx.fillRect(x - half * 0.4, top - 0.03 * s, half * 1.2, 0.07 * s)
 }
 
 function drawBoat(ctx: CanvasRenderingContext2D, cam: Camera, x: number): void {
@@ -251,12 +307,14 @@ let waterGrad: CanvasGradient | null = null
 let waterKey = -1
 
 export function pirateHooks(run: () => PirateRun | null): SceneHooks {
+  const bandit = (): boolean => run()?.mode === 'bandit'
   return {
     noThreat: true,
     backdrop(ctx, cam): boolean {
-      const im = img(ART.sea)
+      const b = bandit()
+      const im = img(b ? ART.pass : ART.sea)
       if (im === null) return false
-      const q = seaRect(cam, im)
+      const q = seaRect(cam, im, b ? ART.passGroundV : ART.seaSandV)
       ctx.drawImage(im, q.x, q.y, q.w, q.h)
       return true
     },
@@ -264,9 +322,10 @@ export function pirateHooks(run: () => PirateRun | null): SceneHooks {
       const p = run()
       const gy = worldToScreenY(cam, 0)
       // 활터의 풀밭을 모래로 덮는다 — 같은 그림의 아랫단
-      const im = img(ART.sea)
+      const b = bandit()
+      const im = img(b ? ART.pass : ART.sea)
       if (im !== null) {
-        const q = seaRect(cam, im)
+        const q = seaRect(cam, im, b ? ART.passGroundV : ART.seaSandV)
         const top = gy - 3
         const sy = ((top - q.y) / q.h) * im.naturalHeight
         ctx.drawImage(im, 0, sy, im.naturalWidth, im.naturalHeight - sy, q.x, top, q.w, q.y + q.h - top)
@@ -274,7 +333,7 @@ export function pirateHooks(run: () => PirateRun | null): SceneHooks {
       // 물가 너머는 물 — 도적이 물에서 걸어 나온다
       const R = P.pirate
       const sx = worldToScreenX(cam, R.shoreX)
-      if (sx < cam.w) {
+      if (sx < cam.w && !b) {
         // 물은 땅 줄 아래 얕은 띠 — 아래로 갈수록 그림(젖은 모래)이 비친다
         const deep = 0.9 * cam.scale
         if (waterGrad === null || waterKey !== gy * 10000 + deep) {
@@ -298,7 +357,7 @@ export function pirateHooks(run: () => PirateRun | null): SceneHooks {
       }
       // 땅 줄 — 발이 디딜 자리
       ctx.fillStyle = 'rgba(40, 30, 20, 0.35)'
-      ctx.fillRect(0, gy - 1, Math.min(cam.w, sx), 2)
+      ctx.fillRect(0, gy - 1, b ? cam.w : Math.min(cam.w, sx), 2)
       if (p !== null) drawPalisade(ctx, cam, p, w.tick * w.dt)
     },
     target(ctx, cam, w, t, x, y, rx): boolean {
@@ -306,10 +365,12 @@ export function pirateHooks(run: () => PirateRun | null): SceneHooks {
       if (p === null) return false
       const role = p.role[t.id]
       if (role === 'anchor') return true
-      if (role === 'sword') return drawRunner(ctx, cam, w, t, x, false)
-      if (role === 'captain') return drawRunner(ctx, cam, w, t, x, true)
+      const b = p.mode === 'bandit'
+      if (role === 'sword') return drawRunner(ctx, cam, w, t, x, false, b)
+      if (role === 'shield') return drawRunner(ctx, cam, w, t, x, false, b, t.armored)
+      if (role === 'captain') return drawRunner(ctx, cam, w, t, x, true, b)
       if (role === 'barrel') { drawCask(ctx, p, t, x, y, rx); return true }
-      if (role === 'archer') drawBoat(ctx, cam, x)
+      if (role === 'archer') { if (b) drawLedge(ctx, cam, x); else drawBoat(ctx, cam, x) }
       return false
     },
   }

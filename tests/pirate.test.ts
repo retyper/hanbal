@@ -11,7 +11,7 @@ import assert from 'node:assert/strict'
 
 import { P } from '../src/tune/params.ts'
 import { archerStr, bakeWaves, palisadeLives, swordCount, WAVE_COUNT } from '../src/pirate/waves.ts'
-import { createPirate, stepPirate, type PirateRun } from '../src/pirate/sim.ts'
+import { createPirate, pickBoon, stepPirate, type PirateRun } from '../src/pirate/sim.ts'
 import type { InputFrame } from '../src/sim/types.ts'
 import { byeonhanMini } from '../src/realm/data/regions/byeonhan-mini.ts'
 import { cardPreview, pirateLossMul, pirateMission, resolveCard } from '../src/realm/events.ts'
@@ -27,7 +27,7 @@ function run(seed: number, perfect: boolean, maxSec = 300): PirateRun {
     stepPirate(p, idle)
     if (perfect) for (let j = 0; j < p.w.targets.length; j++) {
       const r = p.role[j]
-      if (r === 'sword' || r === 'captain' || r === 'archer') p.w.targets[j]!.alive = false
+      if (r === 'sword' || r === 'shield' || r === 'captain' || r === 'archer') p.w.targets[j]!.alive = false
     }
   }
   return p
@@ -168,10 +168,147 @@ describe('바다도적 막기 — 궤짝', () => {
     assert.equal(p.w.arrowKind, want)
     for (let i = 0; i < Math.ceil((P.pirate.specialSec + 0.1) / p.w.dt); i++) {
       stepPirate(p, idle)
-      for (let j = 0; j < p.w.targets.length; j++) if (p.role[j] === 'sword' || p.role[j] === 'captain' || p.role[j] === 'archer') p.w.targets[j]!.alive = false
+      for (let j = 0; j < p.w.targets.length; j++) if (p.role[j] === 'sword' || p.role[j] === 'shield' || p.role[j] === 'captain' || p.role[j] === 'archer') p.w.targets[j]!.alive = false
     }
     assert.equal(p.result, null)
     assert.equal(p.w.arrowKind, 'basic')
     assert.equal(p.special, 'basic')
+  })
+})
+
+describe('바다도적 막기 — 방패 · 고르기 · 산적', () => {
+  async function shieldBed(): Promise<{ p: PirateRun; id: number }> {
+    const p = createPirate({ seed: 3, sev: 2, mu: 5, watch: 0 })
+    // 방패 든 도적 하나를 직접 세운다 (둘째 물결의 표를 이 한 명으로 바꿔서)
+    p.wave = 1
+    p.phase = 'fight'
+    p.waveT = 0
+    ;(p.waves[1] as { spawns: unknown[] }).spawns.splice(0, p.waves[1]!.spawns.length, { at: 0, what: 'shield', x: 10, speed: 0 })
+    p.next = 0
+    stepPirate(p, idle)
+    const id = p.role.indexOf('shield')
+    assert.ok(id >= 0)
+    return { p, id }
+  }
+  /** 화살 하나를 방패 도적의 몸통(or 머리)에 맞춘다 */
+  async function shoot(p: PirateRun, id: number, head: boolean): Promise<void> {
+    const { spawnArrow } = await import('../src/sim/ballistics.ts')
+    const a = spawnArrow(p.w, 0, 1)!
+    const t = p.w.targets[id]!
+    t.speed = 0
+    // 목책 앞에서 맞는다 (목책을 넘으면 도적이 사라지므로) · 살이 나는 높이를 따라 머리(or 몸통) 줄에 세운다
+    for (let i = 0; i < 40 && a.alive; i++) {
+      t.x = Math.max(a.x + 0.6, P.pirate.palisadeX + 0.4)
+      t.baseX = t.x
+      t.y = head ? a.y - P.enemy.archerHeadUp * t.r : a.y
+      t.baseY = t.y
+      stepPirate(p, idle)
+    }
+  }
+  it('방패 든 도적은 몸통 두 발을 튕기고, 방패가 깨진 뒤 몸통 한 발에 쓰러진다', async () => {
+    const { p, id } = await shieldBed()
+    assert.equal(P.pirate.shieldHits, 2)
+    await shoot(p, id, false)
+    assert.ok(p.w.targets[id]!.alive && p.w.targets[id]!.armored)
+    await shoot(p, id, false)
+    assert.ok(p.w.targets[id]!.alive)
+    assert.equal(p.w.targets[id]!.armored, false)
+    await shoot(p, id, false)
+    assert.equal(p.w.targets[id]!.alive, false)
+  })
+  it('머리는 방패가 있어도 한 발', async () => {
+    const { p, id } = await shieldBed()
+    await shoot(p, id, true)
+    assert.equal(p.w.targets[id]!.alive, false)
+  })
+  it('둘째 물결부터 방패 도적이 나온다', () => {
+    const ws = bakeWaves(3, 2)
+    const n = (k: number): number => ws[k]!.spawns.filter((s) => s.what === 'shield').length
+    assert.equal(n(0), 0)
+    assert.equal(n(1), P.pirate.shield2)
+    assert.equal(n(2), P.pirate.shield3)
+  })
+  function toPick(seed: number): PirateRun {
+    const p = createPirate({ seed, sev: 2, mu: 5, watch: 0 })
+    let guard = 0
+    while (p.phase !== 'pick' && guard++ < 60 * 100) {
+      stepPirate(p, idle)
+      for (let j = 0; j < p.w.targets.length; j++) {
+        const r = p.role[j]
+        if (r === 'sword' || r === 'shield' || r === 'captain' || r === 'archer') p.w.targets[j]!.alive = false
+      }
+    }
+    return p
+  }
+  it('물결을 다 막으면 판이 멈추고 셋을 고른다 · 목책 고치기는 바탕 +1 까지', () => {
+    const p = toPick(4)
+    assert.equal(p.phase, 'pick')
+    const tick = p.w.tick
+    stepPirate(p, idle)
+    assert.equal(p.w.tick, tick, '고르는 동안 판은 서 있다')
+    assert.equal(p.lives, p.livesBase)
+    pickBoon(p, 'repair')
+    assert.equal(p.lives, p.livesBase + 1)
+    assert.equal(p.livesMax, p.livesBase + 1)
+    assert.deepEqual(p.picks, ['repair'])
+    p.phase = 'pick'
+    pickBoon(p, 'repair')
+    assert.equal(p.lives, p.livesBase + 1)
+  })
+  it('안 고르면 시간이 다 되어 화전 한 물결로 간다', () => {
+    const p = toPick(4)
+    for (let i = 0; i < Math.ceil((P.pirate.pickAutoS + 0.1) / p.w.dt) && p.phase === 'pick'; i++) stepPirate(p, idle)
+    assert.deepEqual(p.picks, ['fire'])
+    for (let i = 0; i < Math.ceil((P.pirate.pause + P.pirate.specialSec + 1) / p.w.dt); i++) stepPirate(p, idle)
+    assert.equal(p.w.arrowKind, 'burst')
+  })
+  it('산적 판: 궁수는 배 자리가 아니라 능선 위 땅에 선다', () => {
+    const archers = bakeWaves(3, 2, 'bandit').flatMap((w) => w.spawns.filter((s) => s.what === 'archer'))
+    assert.ok(archers.length > 0)
+    for (const a of archers) assert.ok(a.x <= P.pirate.spawnX - P.pirate.ridgeX && a.x !== P.pirate.boatX)
+    for (const a of bakeWaves(3, 2).flatMap((w) => w.spawns.filter((s) => s.what === 'archer'))) assert.ok(a.x >= P.pirate.boatX)
+    const p = createPirate({ seed: 3, sev: 2, mu: 5, watch: 0, mode: 'bandit' })
+    p.wave = 1
+    p.phase = 'fight'
+    p.waveT = 99
+    p.next = 0
+    stepPirate(p, idle)
+    const i = p.role.indexOf('archer')
+    assert.ok(i >= 0)
+    assert.equal(p.w.targets[i]!.y, P.pirate.ridgeDeck + P.pirate.archerUp)
+    assert.ok(p.w.targets[i]!.x < P.pirate.boatX)
+  })
+  it('흠 없이 다 막으면 perfect', () => {
+    const a = createPirate({ seed: 5, sev: 2, mu: 5, watch: 0 })
+    let g = 0
+    while (a.result === null && g++ < 60 * 400) {
+      stepPirate(a, idle)
+      if (a.phase === 'pick') pickBoon(a, 'draw')
+      for (let j = 0; j < a.w.targets.length; j++) {
+        const r = a.role[j]
+        if (r === 'sword' || r === 'shield' || r === 'captain' || r === 'archer') a.w.targets[j]!.alive = false
+      }
+    }
+    assert.equal(a.result?.won, true)
+    assert.equal(a.perfect, true)
+  })
+})
+
+describe('바다도적 막기 — 두목 보상', () => {
+  it('흠 없이 막으면 쇠가 cardPiratePerfectMul 배수로 · 못 막았으면 소용없다', () => {
+    const r = byeonhanMini(4)
+    const n = Object.values(r.nodes).filter((x) => x.owner === r.player && x.kind !== 'sodo').sort((x, y) => (x.id < y.id ? -1 : 1))[0]!.id
+    const c: Card = { kind: 'pirates', season: r.season, node: n }
+    r.card = c
+    const normal = cardPreview(r, c, 1, undefined, 3)!
+    const grand = cardPreview(r, c, 1, undefined, 3, true)!
+    const ratio = (grand.sure.iron ?? 0) / (normal.sure.iron ?? 1)
+    assert.ok(Math.abs(ratio - P.realm.cardPiratePerfectMul / P.realm.cardPirateWinMul) < 0.1, `${ratio}`)
+    assert.deepEqual(cardPreview(r, c, 1, undefined, 2, true)!.sure, cardPreview(r, c, 1, undefined, 2)!.sure)
+    const out: ReportLine[] = []
+    resolveCard(r, [{ kind: 'card', faction: r.player, pick: 1, held: 3, perfect: true }], out)
+    const line = out.find((l): l is Extract<ReportLine, { kind: 'card' }> => l.kind === 'card')!
+    assert.equal(line.perfect, true)
+    assert.equal(line.iron, grand.sure.iron)
   })
 })

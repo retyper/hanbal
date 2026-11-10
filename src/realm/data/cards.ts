@@ -5,7 +5,7 @@
  * 그림은 이미 받아 둔 사건 삽화 (public/realm/event/). 글은 쉬운 말로 (메모리 realm-plain-words).
  */
 
-export type CardKind = 'drought' | 'bounty' | 'locust' | 'plague' | 'flood' | 'halo' | 'quarrel' | 'waship' | 'pirates' | 'exile' | 'fugitive' | 'whale' | 'fishbridge' | 'gogak' | 'romance'
+export type CardKind = 'drought' | 'bounty' | 'locust' | 'plague' | 'flood' | 'halo' | 'quarrel' | 'waship' | 'pirates' | 'bandits' | 'exile' | 'fugitive' | 'whale' | 'fishbridge' | 'gogak' | 'romance'
   | 'sowfest' | 'skyfest' | 'mentor' | 'smith' | 'homenews' | 'song' | 'spring' | 'gift' | 'hunt' | 'rival'
   | 'mhscold' | 'mhhunt' | 'opengate' | 'redsail' | 'selfpot'
 
@@ -149,6 +149,18 @@ export const CARDS: Readonly<Record<CardKind, CardInfo>> = {
       { name: '몸값을 준다', does: '곡식이 든다 · 아무도 다치지 않는다' },
       { name: '맞선다', does: '직접 활을 쏘아 도적 물결 셋을 막는다 · 다 막으면 도적의 쇠를 넉넉히 빼앗고, 뚫리면 집과 곡식을 잃는다(오래 버틸수록 덜 잃는다) · 포구 장수의 무예가 당김을, 경계가 목책을 늘린다' },
       { name: '장수에게 맡긴다', does: '이기면 도적의 쇠를 빼앗고, 지면 집과 곡식을 잃는다 · 포구를 맡은 장수와 경계가 이길 가망을 올린다' },
+    ],
+  },
+  // 산적 — 바다 도적의 뭍 짝 (형 11-10: "해적만 오는데 산적도 오게") · 산골 마을을 노린다 · 맞선다는 pirate.html?mode=bandit
+  bandits: {
+    name: '산적', kind: 'outside', bad: true, icon: 'status-bad-omen', art: 'event-night-raid',
+    line: '산적 떼가 {n} 마을을 노린다.',
+    beats: ['산적 떼가 고개를 넘어왔다.', '{n} 마을을 노린다!'],
+    ask: '산적을 어찌할까?',
+    opts: [
+      { name: '길값을 준다', does: '곡식이 든다 · 아무도 다치지 않는다' },
+      { name: '맞선다', does: '직접 활을 쏘아 산적 물결 셋을 막는다 · 방패 든 자는 몸통을 두 번 맞혀야 방패가 깨진다 · 다 막으면 산적의 쇠를 넉넉히 빼앗고, 목책이 한 칸도 안 부서졌으면 두목을 사로잡아 곱절로 빼앗는다 · 뚫리면 집과 곡식을 잃는다(오래 버틸수록 덜 잃는다) · 마을을 맡은 장수의 무예가 당김을, 경계가 목책을 늘린다' },
+      { name: '장수에게 맡긴다', does: '이기면 산적의 쇠를 빼앗고, 지면 집과 곡식을 잃는다 · 마을을 맡은 장수와 경계가 이길 가망을 올린다' },
     ],
   },
   // 누가 오는지는 카드를 뽑을 때 정한다(Card.guest) — 받기 전에 얼굴·재주를 보고 고른다 · 자막은 화면(card-lines.exileBeats)이 그 사람에 맞춰
@@ -431,6 +443,7 @@ const SEV: Partial<Record<CardKind, { readonly name: readonly [string, string]; 
   locust: { name: ['메뚜기 몇 무리', '하늘을 덮은 메뚜기'], beat: ['무리가 크지는 않다.', '해가 가려질 만큼 끝없이 몰려온다!'] },
   plague: { name: ['가벼운 돌림병', '큰 돌림병'], beat: ['앓는 이가 아직 많지는 않다.', '마을마다 곡소리가 끊이지 않는다!'] },
   pirates: { name: ['좀도둑 배 몇 척', '바다 도적 큰 무리'], beat: ['배 몇 척뿐인 좀도둑이다.', '수평선을 메운 큰 무리다!'] },
+  bandits: { name: ['좀도둑 몇 놈', '산적 큰 무리'], beat: ['몇 놈뿐인 좀도둑이다.', '고개를 메운 큰 무리다!'] },
   flood: { name: ['작은 물난리', '큰 홍수'], beat: ['물은 무릎께에서 멎었다.', '지붕까지 물이 찬다. 몇십 년 만의 큰물이다!'] },
 }
 /** 세기를 굴리는 재해 */
