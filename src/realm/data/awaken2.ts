@@ -178,4 +178,5 @@ export const TRUE_WAKE: ReadonlySet<string> = new Set([
   'baekje-ruler', // 11-08 형이 구움 (굽기 꾸러미)
   'ungcheon-ruler', // 11-08 형이 구움 (굽기 꾸러미)
   'sangdang-ruler', // 11-08 형이 구움 (굽기 꾸러미)
+  'wansan-ruler', // 11-08 형이 구움 (굽기 꾸러미)
 ])
