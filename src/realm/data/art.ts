@@ -546,7 +546,7 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   tneoul: { ar: 157 / 160, body: 0.906 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 탈해 무리 뱃사람 너울 · 베 겉옷·밧줄·맨발·노
   hneoul: { ar: 150 / 160, body: 0.900, bow: true }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 행인 너울 · 흰 털 어깨·검푸른 옷·활
   gomok: { ar: 153 / 160, body: 0.894 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 행인 고목 · 털 망토·방울 지팡이 무당 우두머리
-  duman: { ar: 160 / 160, body: 0.894 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 북옥저 두만 · 털모자·털 외투·창
+  duman: { ar: 252 / 160, body: 0.894 }, // 11-11 동작 8컷만 새로(창 전체가 칸 안 · 제미나이 edu Pro) · 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 북옥저 두만 · 털모자·털 외투·창
   jinha: { ar: 173 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 목지 진하(진왕) · 붉은 예복·구슬 머리장식·방울 지팡이
   keundol: { ar: 146 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 목지 큰돌 · 쇠 미늘·구슬 목걸이·큰 쇠망치
   geumbawi: { ar: 164 / 160, body: 0.906 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 목지 금바위 · 갈색 겉옷·옥 고리·나무 몽둥이
