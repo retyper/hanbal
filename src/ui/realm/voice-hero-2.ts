@@ -866,7 +866,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['바람을 타고 다녀오겠사옵니다!', '돛만 올리면 어디든 가옵니다.', '맡겨 주소서!'],
     auto: ['바람이 우리 편이다! 제가 맡겠사옵니다!', '돛을 올려라! 앞으로 내질러라!', '기세다! 기세로 밀어라!', '이겼사옵니다! 바람이 도왔사옵니다.', '바람이 돌았사옵니다. 다시 돛을 올리겠사옵니다.'],
     art: ['ambush', '돛을 내리고 곶 뒤에 숨어라! 바람이 불면 뛰쳐나가 들이쳐라!'],
-    recorded: false,
+    recorded: true, // 11-11 Sadachbia 13줄
     male: true,
   },
   // 살해 쇠망치 · 42세 · 웃기보다 두드리는 무뚝뚝하고 힘센 대장장이 · 투박하고 짧은 Schedar
@@ -877,7 +877,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['두들겨 놓겠사옵니다.', '맡겨 주소서.', '날이 서도록 하겠사옵니다.'],
     auto: ['망치가 맡겠사옵니다!', '두들겨라! 앞을 펴 버려라!', '밀어붙여라! 한 번에 내리쳐라!', '잘 두들겼사옵니다.', '날이 나가 버렸사옵니다. 다시 달구겠사옵니다.'],
     art: ['vanguard', '망치를 들어라! 내리쳐서 길을 연다!'],
-    recorded: false,
+    recorded: true, // 11-11 Schedar 13줄
     male: true,
   },
   // 읍차 쇠달 · 50세 · 칼날 하나도 그냥 넘기지 않는 깐깐하고 무뚝뚝한 장인 · 담담하고 퉁명스러운 Sadaltager
@@ -888,7 +888,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['날 하나도 허투루 넘기지 않겠사옵니다.', '흠, 맡겨 보소서.', '제대로 해 놓겠사옵니다.'],
     auto: ['제가 맡겠사옵니다!', '날을 세워라! 무딘 칼은 버려라!', '한 치도 어긋나지 마라! 정확히 가라!', '흠, 날이 잘 들었사옵니다.', '흠, 날이 무뎠사옵니다. 다시 갈겠사옵니다.'],
     art: ['order', '날을 맞추어라! 한 치 어긋남 없이 진을 서라!'],
-    recorded: false,
+    recorded: true, // 11-11 Sadaltager 13줄
     male: true,
   },
   // 신지 아로 · 42세 · 칼보다 웃음으로 사람을 얻는 너그럽고 재치 있는 임금, 떡·잔치에 빗대어 농을 섞는다 · 부드럽고 품위 있는 Milo
@@ -900,7 +900,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['잔치 준비하듯 해 놓겠사옵니다.', '웃으며 맡겠사옵니다.', '허허, 맡겨 주소서.'],
     auto: ['이 싸움은 제가 맡겠사옵니다!', '잔칫상을 지켜라! 한 놈도 못 들인다!', '웃으며 나아가라! 우리가 이긴다!', '허허, 이겼사옵니다. 떡을 돌리시지요.', '허허, 졌사옵니다. 잔치는 다시 열면 되옵니다.'],
     art: ['sway', '칼을 거두어라! 잔치에 오라, 우리와 함께 가자!'],
-    recorded: false,
+    recorded: true, // 11-11 Milo 13줄
     male: true,
   },
   // 살해 파도 · 45세 · 지치지 않고 되밀려오는 끈기 있고 묵묵한 사람 · 투박하고 담담한 Rasalgethi
@@ -911,7 +911,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['지치지 않고 해내겠사옵니다.', '밀려가고 또 밀려오겠사옵니다.', '맡겨 주소서.'],
     auto: ['제가 맡겠사옵니다!', '밀려라! 물러나도 다시 밀려라!', '지치지 마라! 한 번 더다!', '끝났사옵니다. 물이 빠지듯 물러가옵니다.', '밀려났사옵니다. 다시 밀려오겠사옵니다.'],
     art: ['ambush', '파도 뒤에 숨었다가 되밀려오듯 한꺼번에 덮쳐라!'],
-    recorded: false,
+    recorded: true, // 11-11 Rasalgethi 13줄
     male: true,
   },
   // 읍차 물가 · 42세 · 값을 먼저 따지지만 약속한 셈은 어기지 않는 노련하고 담백한 우두머리, 「셈은 셈이옵고」 · 차분한 중년 Tova
@@ -922,7 +922,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['셈은 셈이옵고, 약속은 지키겠사옵니다.', '값만큼은 해내겠사옵니다.', '맡겨 주소서.'],
     auto: ['이 싸움은 제가 맡겠사옵니다!', '셈이 서 있다! 계획대로 나아가라!', '밑지는 짓은 하지 마라! 한 번에 끝낸다!', '셈이 맞았사옵니다. 이겼사옵니다.', '셈이 틀렸사옵니다. 값은 치르겠사옵니다.'],
     art: ['order', '셈은 끝났다! 흐트러짐 없이 계획대로 나아간다!'],
-    recorded: false,
+    recorded: true, // 11-11 Tova 13줄
   },
   // 촌장 구례마 · 34세 · 어둠 속에서 먼저 보는 과묵하고 예민한 밤 사냥꾼 · 낮고 차분한 Arlo
   'sr-guryema': {
@@ -932,7 +932,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['어둠 속에서 해내겠사옵니다.', '먼저 보고 오겠사옵니다.', '맡겨 주소서.'],
     auto: ['제가 맡겠사옵니다!', '어둠에 숨어라! 소리 내지 마라!', '먼저 본 쪽이 이긴다! 숨죽여라!', '끝났사옵니다. 어둠으로 돌아가겠사옵니다.', '들켰사옵니다. 다시 숨겠사옵니다.'],
     art: ['ambush', '불을 꺼라! 어둠에서 먼저 보고 먼저 쳐라!'],
-    recorded: false,
+    recorded: true, // 11-11 Arlo 13줄
     male: true,
   },
   // 촌장 지백호 · 42세 · 범을 잡은 손으로 마을을 지키는 사납고 자존심 센 산사람 · 굵고 짧은 Bodi
