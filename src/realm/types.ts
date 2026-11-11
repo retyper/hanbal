@@ -1023,6 +1023,8 @@ export interface Realm {
   known?: Record<string, string[]>
   /** 캠페인의 장 (scenario.ts) — 있으면 이 장의 목표로 이긴다. 자유 판 · 옛 저장에는 없다 */
   scenario?: Scenario
+  /** 1장 첫 싸움의 「겨루기 → 사로잡기」 안내를 마쳤다 (season.lessonOn · 첫 30분 깔때기 · docs/realm/FIRST-HOUR.md 11-11) */
+  lessonDone?: true
   /** 나라마다 처음 걸린 풍습·나라 고리 — 처음 터지는 순간만 크게 (customs-rules.ts · 「custom」 보고의 first). 옛 저장에는 없다 */
   customSeen?: Record<string, CustomId[]>
   /** 다시 일어남(압독·실직) — 도읍을 빼앗긴 계절, 또는 들고일어나 다 쓴 것('done'). 옛 저장에는 없다 */

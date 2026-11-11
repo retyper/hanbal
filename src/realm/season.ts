@@ -1106,6 +1106,19 @@ function styleOf(h: Hero): { style?: BattleStyle } {
   return s !== undefined ? { style: s } : {}
 }
 
+/**
+ * 장수 깃발을 「겨루기 → 사로잡기」 하나씩만 보이는 안내 싸움인가 — 배우는 판은 늘, 1장(마한)은 장수끼리 맞선 첫 싸움 한 번만
+ * (첫 30분 깔때기 · docs/realm/FIRST-HOUR.md 지연 3 · 11-11: 1장에선 첫 겨루기를 23턴에야 썼다)
+ */
+function lessonOn(r: Realm, faction: string): boolean {
+  if (r.factions[faction]?.mind !== 'player') return false
+  return r.region === 'tutorial' || (r.scenario?.id === 'mahan' && r.lessonDone !== true)
+}
+/** 1장의 안내 싸움이 열렸다 — 장수끼리 맞섰으면 다음부터는 깃발을 다 보인다 */
+function markLesson(r: Realm, a: Side, d: Side): void {
+  if (r.region !== 'tutorial' && (a.lesson === true || d.lesson === true) && a.hero !== null && d.hero !== null) r.lessonDone = true
+}
+
 export function sideOf(
   r: Realm, armies: readonly Army[], f: Force, F: number, faction: string,
   o: { water: boolean; edge?: EdgeKind; fire: boolean; flank: boolean; seen: boolean; moraleBonus?: number; captureBonus?: number; terrain?: Terrain },
@@ -1147,7 +1160,7 @@ export function sideOf(
     // 배우는 판 — 우리 쪽 사로잡기는 반드시 되고, 상대는 우리 장수를 잡지 않는다 (형: "튜토리얼급이니 100% 성공하도록")
     ...(r.region === 'tutorial' ? { capture: r.factions[faction]?.mind === 'player' ? 'sure' as const : 'never' as const } : {}),
     // 배우는 판 — 장수 깃발은 겨루기 → 사로잡기 하나씩 (tactics.leadOptions · 형 11-09)
-    ...(r.region === 'tutorial' && r.factions[faction]?.mind === 'player' ? { lesson: true as const } : {}),
+    ...(lessonOn(r, faction) ? { lesson: true as const } : {}),
     // 호궤 — 플레이어 쪽만, 곳간에 그만큼 있을 때 (곡식은 싸움이 끝나고 payFeast 가 뺀다)
     ...(r.factions[faction]?.mind === 'player' && (r.stock[faction]?.grain ?? 0) >= feast ? { feast } : {}),
     // 곳간 — 마지막 때에 「한 합 더」를 고르면 여기서 낸다 (호궤를 했으면 그만큼 뺀 뒤 · payPress)
@@ -1342,6 +1355,7 @@ function fieldBattles(r: Realm, tactics: Readonly<Record<string, Tactic>>, lines
       const defTerrain: Terrain = { ...(ed.kind === 'pass' || ed.kind === 'forest' ? { height: true } : {}), ...(ed.kind === 'ford' || ed.kind === 'reeds' ? { ford: true } : {}), ...(ed.kind === 'pass' ? { rocks: true } : {}) }
       const sa = knowFoe(sideOf(r, atks, atkF, fa, lead.faction, { ...common, seen: true }), knewA)
       const sd = knowFoe(sideOf(r, defs, defF, fd, defs[0]!.faction, { ...common, seen: true, terrain: defTerrain }), knewD)
+      markLesson(r, sa, sd)
       const res = fightRounds(sa, sd, key, r.seed, r.season, tacticFor(tactics, key))
       payFeast(r, sa, res.fedA, lead.faction)
       payFeast(r, sd, res.fedD, defs[0]!.faction)
@@ -1610,6 +1624,7 @@ function fight(
     captureBonus: playerIsAtk ? 0 : capShot, terrain: defTerrain,
   }), ...reliefD }, lateD), knewD)
   // 해시계 — 기습·야습으로 닿았으면 밤 싸움 (한밤 → 새벽). 먹힌 기습이면 치는 쪽이 첫 때에 세다 (형 10-26: "야습이나 야간전투 같은건 어떻게함?")
+  markLesson(r, sa, sd)
   const res = fightRounds(sa, sd, key, r.seed, r.season, tacticFor(tactics, key), { night: ambush !== 'none', edge: ambush === 'success' })
   payFeast(r, sa, res.fedA, a.faction)
   payFeast(r, sd, res.fedD, defFaction)
