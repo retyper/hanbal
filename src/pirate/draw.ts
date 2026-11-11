@@ -71,10 +71,6 @@ const ART = {
   crate: 'pirate/crate.png',
   /** 걸음 한 바퀴(컷 여덟)가 디디는 거리 (m) */
   strideM: 1.6,
-  /** 산적 띠의 허리 높이(위에서 0~1) · 몸 가운데 가로(0~1) · 걸음마다 솟는 몫 (키 대비) */
-  hipV: 0.6,
-  hipX: 0.5,
-  bobV: 0.035,
   /** 공격 컷이 넘어가는 빠르기 (컷/초) */
   hitFps: 10,
   /** 목책에 이만큼 다가오면 칼을 휘두른다 (m) */
@@ -180,29 +176,6 @@ function drawStrip(ctx: CanvasRenderingContext2D, im: HTMLImageElement, ar: numb
   ctx.restore()
 }
 
-/** 걸음 한 걸음 — 허리 위는 그대로(걸음마다 살짝 솟는다), 허리 아래는 가로로 cos 만큼 좌우로 뒤집혀 두 다리가 교대한다 */
-function drawScissor(ctx: CanvasRenderingContext2D, im: HTMLImageElement, ar: number, frame: number, cx: number, soleY: number, tallPx: number, faceLeft: boolean, phase: number): void {
-  const ch = im.naturalHeight
-  const cw = ch * ar
-  const dh = tallPx
-  const dw = dh * ar
-  const hip = ART.hipV
-  const c = Math.cos(phase * Math.PI * 2)
-  const lift = (1 - Math.abs(c)) * ART.bobV * dh
-  const sy = hip * ch
-  ctx.imageSmoothingQuality = 'high'
-  ctx.save()
-  ctx.translate(cx, soleY)
-  if (faceLeft) ctx.scale(-1, 1)
-  // 허리 위
-  ctx.drawImage(im, frame * cw, 0, cw, sy, -dw / 2, -dh - lift, dw, hip * dh)
-  // 허리 아래 — 가운데 축을 기준으로 가로 배율 c (1 → 0 → −1). 발은 땅에 붙고 허리 쪽이 lift 만큼 늘어난다
-  ctx.translate(ART.hipX * dw - dw / 2, 0)
-  ctx.scale(Math.abs(c) < 0.06 ? (c < 0 ? -0.06 : 0.06) : c, 1)
-  ctx.drawImage(im, frame * cw, sy, cw, ch - sy, -ART.hipX * dw, -(1 - hip) * dh - lift, dw, (1 - hip) * dh + lift)
-  ctx.restore()
-}
-
 function drawRunner(ctx: CanvasRenderingContext2D, cam: Camera, w: World, t: Target, x: number, captain: boolean, bandit: boolean, shielded = false, p: PirateRun | null = null): boolean {
   let a: { readonly ar: number; readonly walk0: number; readonly walkN: number; readonly hit0: number; readonly hitN: number; readonly tallM: number } = captain ? ART.captain : ART.sword
   let im: HTMLImageElement | null
@@ -227,11 +200,7 @@ function drawRunner(ctx: CanvasRenderingContext2D, cam: Camera, w: World, t: Tar
     : a.walk0 + (Math.floor((R.spawnX + 4 - t.x) / (ART.strideM / a.walkN) + t.id) % a.walkN)
   const lane: Lane = bandit ? (p?.lane[t.id] ?? 0) : 0
   const soleY = worldToScreenY(cam, bandit ? footY(lane, t.x) : 0)
-  if (bandit && !near && !shielded && !broken) {
-    // 산적 띠는 걷기 칸이 다 같은 자세(한 다리만 앞)라 그대로 돌리면 한쪽 다리로 콩콩 뛴다 (11-12 진단 · 칸 4~11 이 거의 같은 그림).
-    // 한 칸만 쓰고 허리 아래를 좌우로 뒤집었다 펴서 두 다리가 번갈아 앞서는 걸음으로 — 새 띠가 올 때까지의 대용
-    drawScissor(ctx, im, a.ar, a.walk0 + 2, x, soleY, a.tallM * cam.scale, flip, ((R.spawnX + 4 - t.x) / ART.strideM + t.id * 0.37) % 1)
-  } else drawStrip(ctx, im, a.ar, frame, x, soleY, a.tallM * cam.scale, flip) // 도적 띠는 왼쪽(궁수)을 보고 그렸다 · 산적·방패 띠는 오른쪽이라 뒤집는다 (형 11-10)
+  drawStrip(ctx, im, a.ar, frame, x, soleY, a.tallM * cam.scale, flip) // 도적 띠는 왼쪽(궁수)을 보고 그렸다 · 산적·방패 띠는 오른쪽이라 뒤집는다 (형 11-10)
   if (captain && t.hpMax > 0) {
     // 두목의 남은 몸 — 머리 위 한 줄
     const bw = Math.max(36, t.r * 1.6 * cam.scale)
