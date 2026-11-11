@@ -42,6 +42,8 @@ import { P } from './tune/params.ts'
 import { loadTip, tipHtml, tipReadMs } from './ui/realm/loadtips.ts'
 import { worldMapReady } from './ui/realm/worldmap.ts'
 import { loadBar } from './ui/realm/loadbar.ts'
+import { showBoot } from './ui/realm/boot.ts'
+import { openCredits } from './ui/realm/credits.ts'
 import { GEN_ANIM, MIGRANT_ANIM, SOL_ANIM2, nodeIcon } from './realm/data/art.ts'
 
 const KEY = 'hanbal.realm.v2'
@@ -434,6 +436,8 @@ function hideSplashWhenReady(): void {
     setTimeout(gone, Math.max(0, minMs - (performance.now() - t0)))
   })
 }
+if (new URLSearchParams(location.search).get('credits') === '1') void openCredits(import.meta.env.BASE_URL)
+else showBoot(import.meta.env.BASE_URL)
 hideSplashWhenReady()
 
 const app = mountRealmApp(root, {
