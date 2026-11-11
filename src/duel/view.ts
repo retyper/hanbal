@@ -10,6 +10,7 @@ import { createDuel, judgeWindows, lateWindow, stepDuel, tierOf, type Cue, type 
 import { P } from '../tune/params.ts'
 import { makeRng } from '../core/rng.ts'
 import { AWAKEN_ART, AWAKEN_LOOP, loopFile } from '../realm/data/awaken-art.ts'
+import { SPRITE_PX } from '../realm/data/spritePx.ts'
 
 export interface DuelSide {
   readonly name: string
@@ -29,7 +30,7 @@ export interface DuelSetup {
   readonly bg?: string
   /** 시험판 — 들판과 깃발부터 · 싸움 음악을 직접 튼다 · 끝나면 눌러서 한 판 더 */
   readonly standalone?: boolean
-  /** 도트 시험 — public/realm/anim-px/gen-<sprite>.png 가 있으면 그걸 정수 배율로 또렷이 그린다 (없으면 옛 띠 · 주소 px=1 도 같다) */
+  /** 도트 띠 — 기본 켜짐: public/realm/anim-px/gen-<sprite>.png (tools/sprite-normalize.mjs 규격)를 정수 배율로 또렷이 그린다 (없으면 옛 anim2 띠) · false 나 주소 ?px=0 이면 옛 띠 */
   readonly px?: boolean
 }
 /** 본편으로 넘기는 끝 — 이김 · 짐 · 비김(undefined → 본편이 무예로 굴린다) */
@@ -83,8 +84,8 @@ const bg = img(cfg.bg ?? 'realm/battle/battle-field.jpg')
 const crowdBack = [1, 2, 3, 4, 5, 6].map((i) => img(`realm/duel/crowd/f${i}.png`)) // 정면(소리치는) 군사 낱장
 const crowdFront = [1, 2, 3, 4, 5, 6].map((i) => img(`realm/duel/crowd/b${i}.png`)) // 등을 보이는 군사 낱장
 const crowdReady = (set: HTMLImageElement[]): boolean => set.every((im) => im.complete && im.naturalWidth > 0)
-const pxMode = cfg.px === true || params.get('px') === '1'
-/** 띠 그림 — 도트 시험이면 anim-px 먼저, 없으면 옛 띠로 (img 의 onerror 가 갈아 끼운다) */
+const pxMode = cfg.px !== false && params.get('px') !== '0'
+/** 띠 그림 — 기본은 anim-px(도트 규격) 먼저, 없으면 옛 띠로 (img 의 onerror 가 갈아 끼운다) */
 const strip = (s: string): HTMLImageElement => pxMode ? img(`realm/anim-px/gen-${s}.png`, `realm/anim2/gen-${s}.png`) : img(`realm/anim2/gen-${s}.png`)
 const sprMe = strip(cfg.me.sprite)
 const sprFoe = strip(cfg.foe.sprite)
@@ -637,14 +638,18 @@ function cover(im: HTMLImageElement, x: number, y: number, w: number, h: number)
   const s = Math.max(w / im.naturalWidth, h / im.naturalHeight)
   ctx.drawImage(im, x + (w - im.naturalWidth * s) / 2, y + (h - im.naturalHeight * s) / 2, im.naturalWidth * s, im.naturalHeight * s)
 }
+const PX_NAME = /\/(gen-[^/]+)\.png/
 function sprite(im: HTMLImageElement, frame: number, x: number, base: number, h: number, flip: boolean, tint: string | null): void {
   if (!im.complete || im.naturalWidth === 0) return
   const isPx = im.src.includes('/anim-px/')
   const cw = im.naturalWidth / 20, ch = im.naturalHeight
-  // 도트는 정수 배율 · 정수 자리 — 점이 네모로 또렷하게 (옛 띠는 매끄럽게 늘린다)
+  // 도트는 정수 배율 · 정수 자리 — 점이 네모로 또렷하게 (옛 띠는 매끄럽게 늘린다) · 발 줄(manifest)이 base 에 닿게 칸을 그만큼 내린다
   const sc = isPx ? Math.max(1, Math.round(h * P.duel.pxFill / ch)) : 0
   const w = isPx ? cw * sc : h * (cw / ch)
-  if (isPx) { h = ch * sc; x = Math.round(x); base = Math.round(base) }
+  if (isPx) {
+    const m = SPRITE_PX[(PX_NAME.exec(im.src) ?? [])[1] ?? '']
+    h = ch * sc; x = Math.round(x); base = Math.round(base) + (m !== undefined ? (ch - m.feet) * sc : 0)
+  }
   ctx.save(); ctx.translate(x, base); if (flip) ctx.scale(-1, 1)
   ctx.imageSmoothingEnabled = !isPx
   if (tint === null) ctx.drawImage(im, frame * cw, 0, cw, ch, -w / 2, -h, w, h)

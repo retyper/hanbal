@@ -9,6 +9,7 @@ import type { Good, NodeKind, RegionId, RNode } from '../types.ts'
 import type { CustomId } from './customs.ts'
 import { GEO as YEONGNAM_GEO, yeongnamPos } from './regions/yeongnam.ts'
 import { placeOf, worldGeoOf } from './regions/index.ts'
+import { SPRITE_PX } from './spritePx.ts'
 
 /**
  * 판마다 지도 그림 — 폴더 · 확장자 · 그림 크기(SVG 좌표계) · 고을 기호·글씨 크기 배수 · 가장 큰 배율(cover 의 몇 배, zoom.ts) · 땅빛 둘레 (mapview.ts)
@@ -596,12 +597,16 @@ export function generalSprite(h: GenLook | null | undefined, minStat = 7): strin
   return h.mu === top ? 'g-spear' : 'g-sword'
 }
 /** 그림이 아직 없는 결은 가까운 결로 (다 구우면 그대로 돌아간다) · bow 면 공격 컷이 활 쏘기(싸움터가 spshot 박자로 돌린다) */
-export function genArtOf(kind: string): { kind: string; ar: number; body: number; bow?: true; mount?: true } {
+export function genArtOf(kind: string): { kind: string; ar: number; body: number; file: string; bow?: true; mount?: true } {
   for (const k of [kind, kind.startsWith('w-') ? 'w-spear' : 'g-sword', 'g-sword']) {
     const a = GEN_ANIM[k]
-    if (a !== undefined) return { kind: k, ...a }
+    if (a === undefined) continue
+    // 도트 규격 띠(anim-px · tools/sprite-normalize.mjs)가 있으면 그 칸 비와 몸 비를 쓴다 — 모든 장수의 몸 키가 같아진다 (SPRITE-AUDIT.md)
+    const px = SPRITE_PX[`gen-${k}`]
+    if (px !== undefined) return { kind: k, ...a, ar: px.cell[0] / px.cell[1], body: px.bodyPx / px.cell[1], file: `anim-px/gen-${k}.png` }
+    return { kind: k, ...a, file: `anim2/gen-${k}.png` }
   }
-  return { kind: 'g-sword', ar: 1, body: 1 }
+  return { kind: 'g-sword', ar: 1, body: 1, file: 'anim2/gen-g-sword.png' }
 }
 
 /** 계절 → 아이콘 */

@@ -1665,7 +1665,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
         const gDown = caught || rounds.some((rd) => rd.lostHero?.hero === id)
         const gNow = anim && (caught || last?.lostHero?.hero === id)
         const gCls = ` gsp g-${ga.kind}${ga.bow === true ? ' gbw' : ''}${ga.mount === true ? ' gmt' : ''}${gNow ? ' gfall' : gDown ? ' gdown' : ''}${takenNow ? ' gtaken' : ''}${aide ? ' gcap-aide' : ''}`
-        return `<span class="wgen${gCls}" data-hero="${esc(id)}" style="--fc:${fc};--gar:${ga.ar.toFixed(3)};--gb:${ga.body.toFixed(3)}"><i class="wpole">${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}</i><i class="gbody"><b class="gspf" style="background-image:url('${art}anim2/gen-${ga.kind}.png')"></b></i>${face(id, art, 'unit-general')}</span>`
+        return `<span class="wgen${gCls}" data-hero="${esc(id)}" style="--fc:${fc};--gar:${ga.ar.toFixed(3)};--gb:${ga.body.toFixed(3)}"><i class="wpole">${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}</i><i class="gbody"><b class="gspf" style="background-image:url('${art}${ga.file}')"></b></i>${face(id, art, 'unit-general')}</span>`
       }
       // 우리가(이 진이) 사로잡은 적장들 — 장수 발치 땅바닥에 쓰러진 채 (쓰러짐 컷 19). 이번 합에 잡은 이는 이고 올 때까지 숨어 있다(.late)
       const mySide: 'a' | 'd' = i === 0 ? 'a' : 'd'
@@ -1674,7 +1674,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
         const gh = prev.heroes[id] ?? after.heroes[id]
         if (gh === undefined) return ''
         const ga = genArtOf(generalSprite(gh, P.realm.tacArtMinStat))
-        return `<i class="wcapt${late ? ' late' : ''}" data-hero="${esc(id)}" style="--ci:${k};--gar:${ga.ar.toFixed(3)};--gb:${ga.body.toFixed(3)}"><b class="wcaptf" style="background-image:url('${art}anim2/gen-${ga.kind}.png')"></b></i>`
+        return `<i class="wcapt${late ? ' late' : ''}" data-hero="${esc(id)}" style="--ci:${k};--gar:${ga.ar.toFixed(3)};--gb:${ga.body.toFixed(3)}"><b class="wcaptf" style="background-image:url('${art}${ga.file}')"></b></i>`
       }).join('')
       const gen = genOf(hero) + (play && target !== hero ? genOf(target, true) : '') + captiveHtml
       // 이번 합에 잡으러 나간 쪽 진은 맞은편 진 위에 그린다 — 적진 한가운데로 뛰어든 장수가 적 병사 그림 밑에 묻혀 안 보였다
@@ -1741,7 +1741,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
         const ar = ANIM_SOL[k]
         // 새 20컷 띠가 있으면 그것 — 말의 자리·크기는 옛 비(--ar), 안의 그림만 --r 배 넓다
         const a2 = SOL_ANIM2[k]
-        if (ar !== undefined && a2 !== undefined) return `<i class="tk wsp v2 k-${k} r${r}${tb}${hl}${mil} ${s2}" style="${pos};--ar:${ar.toFixed(3)};--r:${(a2 / ar).toFixed(3)}"><b class="spf" style="background-image:url('${art}anim2/${k}.png')"></b>${ban}</i>`
+        if (ar !== undefined && a2 !== undefined) return `<i class="tk wsp v2 k-${k} r${r}${tb}${hl}${mil} ${s2}" style="${pos};--ar:${ar.toFixed(3)};--r:${(a2 / ar).toFixed(3)}"><b class="spf" style="background-image:url('${art}anim-px/${k}.png')"></b>${ban}</i>`
         if (ar !== undefined) return `<i class="tk wsp k-${k} r${r}${tb}${hl}${mil} ${s2}" style="${pos};--ar:${ar.toFixed(3)}"><b class="spf" style="background-image:url('${art}anim/${k}.png')"></b>${ban}</i>`
         return `<img class="tk r${r}${tb}${hl}${mil} ${s2}" src="${art}icon/sol-${SOL.has(k) ? k : 'spear'}.png" alt="" style="${pos}">`
       }

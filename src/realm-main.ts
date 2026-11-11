@@ -44,7 +44,7 @@ import { worldMapReady } from './ui/realm/worldmap.ts'
 import { loadBar } from './ui/realm/loadbar.ts'
 import { showBoot } from './ui/realm/boot.ts'
 import { openCredits } from './ui/realm/credits.ts'
-import { GEN_ANIM, MIGRANT_ANIM, SOL_ANIM2, nodeIcon } from './realm/data/art.ts'
+import { GEN_ANIM, MIGRANT_ANIM, SOL_ANIM2, genArtOf, nodeIcon } from './realm/data/art.ts'
 
 const KEY = 'hanbal.realm.v2'
 /** 한 계절 앞의 저장 — 지금 것이 깨졌으면 이걸로 되살린다 */
@@ -404,8 +404,8 @@ function hideSplashWhenReady(): void {
   const r = state?.realm ?? null
   const game: string[] = r === null ? [] : [
     ...new Set(Object.values(r.nodes).map((n) => `${art}icon/${nodeIcon(n)}.png`)),
-    ...Object.keys(SOL_ANIM2).map((k) => `${art}anim2/${k}.png`),
-    ...Object.keys(GEN_ANIM).map((k) => `${art}anim2/gen-${k}.png`),
+    ...Object.keys(SOL_ANIM2).map((k) => `${art}anim-px/${k}.png`),
+    ...Object.keys(GEN_ANIM).map((k) => `${art}${genArtOf(k).file}`),
     `${art}${MIGRANT_ANIM.file}`,
   ]
   // 몫 — 지도 바탕이 있으면 그것이 loadBarMapShare, 나머지를 글꼴과 그림들이 똑같이 나눈다
