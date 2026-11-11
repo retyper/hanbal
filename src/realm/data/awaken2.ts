@@ -205,4 +205,5 @@ export const TRUE_WAKE: ReadonlySet<string> = new Set([
   'yangmaek-ruler', // 11-08 양맥 맥손 진각성
   'golbeol-1', // 11-08 골벌 골개 진각성
   'apdok-1', // 11-08 압독 압 진각성
+  'gammun-1', // 11-08 감문 감나무 진각성
 ])
