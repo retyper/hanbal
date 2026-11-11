@@ -58,6 +58,11 @@ const SCREENS: Screen[] = [
   { name: 'town', save: 'none', pre: `${CLICK} for (const n of document.querySelectorAll('.nd:not([data-act])')) { n.click(); await new Promise((r) => setTimeout(r, 900)); if (document.querySelector('[data-act="town-in"]')) break } await clk('[data-act="town-in"]', 4000)` },
   { name: 'report', save: 'none@8', pre: '' },
   { name: 'help', save: 'none', pre: `${TAB('nation')} await clk('[data-act="help"]', 1200)` },
+  { name: 'diplocompose', save: 'captive', pre: `${TAB('diplo')} await clk('.fhd[data-act="fopen"]', 1000); await clk('[data-act="compose"]', 1200)` },
+  { name: 'schemes', save: 'none@8', pre: `${TAB('diplo')} await clk('[data-act="dmode"][data-v="plot"]', 1200); for (const c of document.querySelectorAll('.pochip[data-act="plot-open"]')) { if (c.getAttribute('aria-disabled') === 'true') continue; c.click(); await new Promise((r) => setTimeout(r, 900)); break }` },
+  { name: 'node', save: 'none', pre: `${CLICK} for (const n of document.querySelectorAll('.nd:not([data-act])')) { n.click(); await new Promise((r) => setTimeout(r, 900)); if (document.querySelector('[data-act="town-in"]')) break }` },
+  { name: 'nodefoe', save: 'none', pre: `${CLICK} for (const n of document.querySelectorAll('.nd:not([data-act])')) { n.click(); await new Promise((r) => setTimeout(r, 900)); if (document.querySelector('.sheet') && !document.querySelector('[data-act="town-in"]')) break }` },
+  { name: 'hero', save: 'captive', pre: `${TAB('heroes')} await clk('[data-act="hero"]', 1200)` },
   { name: 'drill', ls: 'drill', pre: `${CLICK} await clk('[data-act="dy-title"]', 2500)` },
   { name: 'drillhero', ls: 'drill', pre: `${CLICK} await clk('[data-act="dy-title"]', 2500); await clk('.dyrow', 1200)` },
   { name: 'dex', pre: `${CLICK} await clk('[data-act="dex-open"]', 2500)` },
@@ -141,6 +146,7 @@ if (PART === undefined && JOBS > 1) {
   const n = Math.min(JOBS, names.length)
   const pass: string[] = []
   for (const k of ['lang', 'width', 'port']) if (opt(k) !== undefined) pass.push(`--${k}`, opt(k)!)
+  if (flag('text')) pass.push('--text')
   if (flag('ko')) pass.push('--ko')
   const kids = Array.from({ length: n }, (_, i) => {
     const mine = names.filter((_, j) => j % n === i)
