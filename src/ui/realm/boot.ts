@@ -62,13 +62,15 @@ export function showBoot(base: string): boolean {
   el.addEventListener('pointerdown', end)
   addEventListener('keydown', end, true)
 
+  // 한 장 = 들어옴(fade) + 또렷이 머묾(card) + 나감(fade) — 머무는 시간에 fade 를 안 섞는다 (형 11-11: "너무 빨리 지나가는데")
   const card = P.realm.bootCardMs
   const fade = P.realm.bootFadeMs
+  const span = card + fade * 2
   els.forEach((c, i) => {
-    const at = i * card
+    const at = i * span
     timers.push(window.setTimeout(() => c.classList.add('on'), at + 30))
-    timers.push(window.setTimeout(() => c.classList.remove('on'), at + card))
+    timers.push(window.setTimeout(() => c.classList.remove('on'), at + fade + card))
   })
-  timers.push(window.setTimeout(end, els.length * card + fade))
+  timers.push(window.setTimeout(end, els.length * span))
   return true
 }
