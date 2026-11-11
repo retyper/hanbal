@@ -39,7 +39,7 @@ npm test 2>&1 | grep -q "^# fail 0" || npm test 2>&1 | grep -q "^# fail 0" || { 
 git add public/realm/$hd/$id.jpg public/realm/$sm/$id.jpg $R
 git commit -q -m "$([ "$t" = 1 ] && echo 각성 || echo 진각성) 초상: $note (형 11-08)
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01TRiuNAG8xSjdmjCFpc8Rd5"
 git push -q origin master 2>&1 | tail -1
 git log --oneline -1 | cat

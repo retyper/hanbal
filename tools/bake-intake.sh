@@ -115,6 +115,6 @@ npm test 2>&1 | grep -q "^# fail 0" || npm test 2>&1 | grep -q "^# fail 0" || { 
 git add $changed
 git commit -q -m "굽기 꾸러미 넣음: 형이 구운 진각성·옥문 그림 (tools/bake-intake.sh)
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 git push -q origin master 2>&1 | tail -1
 git log --oneline -1 | cat
