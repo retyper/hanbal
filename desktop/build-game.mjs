@@ -16,4 +16,5 @@ for (const f of readdirSync(out)) if (/^KakaoTalk_/.test(f)) rmSync(join(out, f)
 const walk = (d) => { for (const f of readdirSync(d)) { const p = join(d, f); if (statSync(p).isDirectory()) walk(p); else if (/\.x-.*\.mp4$/.test(f)) rmSync(p) } }
 walk(out)
 if (!existsSync(join(out, 'realm.html'))) throw new Error('realm.html 이 없다')
+if (process.env.SHRINK !== '0') execSync('node "' + join(here, 'shrink-media.mjs') + '" "' + out + '"', { stdio: 'inherit' })
 console.log('game build ok →', out)

@@ -14,7 +14,7 @@ set TMP=D:\tmp-node & set TEMP=D:\tmp-node
 set ELECTRON_CACHE=D:\tmp-node\electron-cache & set electron_config_cache=D:\tmp-node\electron-cache
 set ELECTRON_BUILDER_CACHE=D:\tmp-node\electron-cache\builder
 cd desktop && npm install
-npm run build:game     # 웹판 → desktop/game (약 4분)
+npm run build:game     # 웹판 → desktop/game → 미디어 줄이기 (약 4분 + 줄이기 첫 회 약 10분, 캐시 뒤엔 해시 계산뿐)
 npm start              # 개발 실행   (루트에서는 npm run desktop)
 npm run pack           # dist/win-unpacked/삼한열전.exe
 node verify.mjs            # 개발 실행 검수
@@ -31,12 +31,18 @@ node verify.mjs --packed   # 포장본 검수
 5. 두 번 모두 종료 코드 0
 
 ## 크기
-- 게임 빌드(desktop/game): 약 1.8GB (public/realm 이 1.9GB 원본, 그중 awaken-loop 영상 784MB · awaken2-loop 177MB · sfx 193MB · voice 149MB)
-- 포장본 win-unpacked: 약 2.1GB (Electron 런타임 약 300MB + 게임). `compression: store` 로 영상 재압축은 안 한다
+- 용량 줄이기 (`shrink-media.mjs`, build-game.mjs 가 마지막에 부른다 · `SHRINK=0` 이면 건너뜀): **desktop/game 사본만** 다시 인코딩한다. public/ 원본은 그대로다.
+  - mp4 111개: H.264 CRF 28 · preset slow · 해상도(720x1280)·프레임률 그대로 · AAC 96k(영상 소리를 app.ts 가 켜서 쓰므로 남김) · +faststart. CRF 26/29/32 를 얼굴 확대 프레임으로 원본과 나란히 비교해 눈에 띄는 뭉개짐이 없는 28 로 골랐다(32 는 피부·진주가 살짝 무름). 영상 하나 약 10MB → 2.5~3MB
+  - mp3 400KB 이상 → 128k · ogg 300KB 이상 → Vorbis q4. 같은 형식·같은 파일 이름이라 코드가 부르는 경로는 그대로. 결과가 원본의 90% 미만일 때만 바꾼다
+  - 원본 내용 해시로 `D:/tmp-node/shrink-cache` 에 캐시(환경변수 SHRINK_CACHE · FFMPEG · SHRINK_JOBS). 설정을 바꾸면 RECIPES 의 tag 를 바꿔 캐시를 무효화
+  - png·jpg(약 560MB)·wav 는 알파·경로 때문에 손대지 않았다 (webp 변환은 코드 경로 수정이 필요해 보류)
+- 결과 (2026-11-11): 손댄 232개 1013MB → 307MB · 게임 빌드 desktop/game 1.8GB → 약 1.06GB · 포장본 win-unpacked 2.1GB → 약 1.33GB. 포장본 검수 8개 전부 통과(mp4 재생 포함)
+- 남은 큰 덩어리: png 340MB · jpg 220MB (각성 그림 awaken2·awaken2-hd 등). 다음 줄이기는 webp 변환 + 경로 매핑
+- `compression: store` 라 포장 단계 재압축은 없다
 - 참고: 루트 `dist/` 는 오래된 빌드라 기준이 아니다
 
 ## 알려진 위험
-- **용량**: 2GB 급은 Steam 에는 허용되나 다운로드 부담이 크다. 영상 재인코딩(CRF 올림)·미사용 파일 정리·DLC 분리 검토 필요
+- **용량**: 영상·소리는 줄였다(위 크기 항). 남은 1.3GB 는 대부분 그림(png·jpg). 미사용 파일은 코드 참조를 증명하지 못해 지우지 않았다(awaken-loop/*.2.mp4 등은 쓰는 것으로 보임)
 - **미검수**: 단일 실행 잠금·F11 전체화면·창 크기 복원은 코드만 있고 자동 검수 없음(숨긴 창 한계). 눈으로 한 번 확인 필요
 - **미서명**: exe 서명 없음 → SmartScreen 경고 가능 (Steam 배포본은 보통 무관)
 - 서비스 워커는 `app:` 에서 켜지지 않는다(https 에서만 등록). 웹판 자동 갱신 알림(update.ts)이 데스크톱에서 어떻게 보이는지 확인 안 함
