@@ -40,17 +40,17 @@ const dt = (file, size, y, t0, extra = '') =>
   `drawtext=fontfile=font.ttf:textfile=${file}:fontsize=${size}:fontcolor=0xFFF1D6:borderw=4:bordercolor=0x1A0E06:x=(w-text_w)/2:y=${y}:${fade(t0)}${extra}`
 // 위·아래는 딱딱한 띠 대신 위에서 아래로 옅어지는 그늘 (글자가 읽히고 그림은 덜 가린다)
 const shade = (h, top) => `color=c=black@1:s=1080x${h}:d=11,format=rgba,geq=r=0:g=0:b=0:a='${top ? `170*pow(1-Y/${h},1.3)` : `190*pow(Y/${h},1.3)`}'`
+// 위쪽 글(장수 이름·훅)은 형 11-11: "상단 텍스트들은 없애도 될듯" → 기본은 없음 · --top 1 이면 넣는다
+const top = arg('top', '0') === '1'
 const vf = [
   '[0:v]scale=1080:1920:flags=lanczos,setsar=1[base]',
-  `${shade(420, true)}[gt]`,
   `${shade(640, false)}[gb]`,
-  '[base][gt]overlay=0:0:shortest=1[b1]',
-  '[b1][gb]overlay=0:H-640:shortest=1[b2]',
+  '[base][gb]overlay=0:H-640:shortest=1[b1]',
+  ...(top ? [`${shade(420, true)}[gt]`, '[b1][gt]overlay=0:0:shortest=1[b2]'] : ['[b1]null[b2]']),
   '[1:v]scale=900:-1[logo]',
   "[b2][logo]overlay=x=(W-w)/2:y=H-440:enable='gte(t,1.0)'[b3]",
   `[b3]${[
-    dt('name.txt', 96, 90, 0.4),
-    dt('line.txt', 46, 222, 0.8),
+    ...(top ? [dt('name.txt', 96, 90, 0.4), dt('line.txt', 46, 222, 0.8)] : []),
     dt('cta.txt', 58, 'h-200', 1.2),
     ...(url !== '' ? [dt('url.txt', 34, 'h-118', 1.4)] : []),
   ].join(',')}[v]`,
