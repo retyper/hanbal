@@ -25,8 +25,7 @@ def bbox_h(c):
 
 rc, ac = cells(R), cells(A)
 run_h = float(np.median([bbox_h(c) for c in rc]))
-import os
-k = run_h / max(1, bbox_h(ac[0])) * float(os.environ.get('ACT_SHRINK', '1'))  # 활 윗끝이 머리 위로 솟는 띠는 0.92 쯤 (11-11 매눈)
+k = run_h / max(1, bbox_h(ac[0]))
 ac = [c.resize((max(1, round(c.width * k)), max(1, round(c.height * k))), Image.Resampling.LANCZOS) for c in ac]
 amap = [int(v) - 1 for v in (sys.argv[4] if len(sys.argv) > 4 and sys.argv[4] else "1,2,3,3,4,5,6,8").split(",")]
 order = [ac[amap[0]]] * 4 + rc + [ac[i] for i in amap]
