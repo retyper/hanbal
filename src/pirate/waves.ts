@@ -11,11 +11,24 @@ import type { ArrowKindId } from '../sim/types.ts'
 
 /** 물결 하나에서 나오는 것 하나 — at 은 그 물결이 열린 뒤의 초 */
 export type Spawn =
-  | { readonly at: number; readonly what: 'sword'; readonly x: number; readonly speed: number }
+  | { readonly at: number; readonly what: 'sword'; readonly x: number; readonly speed: number; readonly lane: Lane }
   | { readonly at: number; readonly what: 'shield'; readonly x: number; readonly speed: number }
   | { readonly at: number; readonly what: 'archer'; readonly x: number; readonly delay: number }
-  | { readonly at: number; readonly what: 'captain'; readonly x: number }
+  | { readonly at: number; readonly what: 'captain'; readonly x: number; readonly lane: Lane }
   | { readonly at: number; readonly what: 'barrel'; readonly x: number; readonly arrow: ArrowKindId }
+
+/** 산적 판의 세 길 — 0 아랫길(땅) · 1 가운뎃길(비탈 턱) · 2 윗길(능선) */
+export type Lane = 0 | 1 | 2
+
+const ramp = (x: number, x1: number, len: number): number => Math.max(0, Math.min(1, (x - (x1 - len)) / len))
+
+/** 길 위의 발 높이 (m) — x 는 궁수에서의 거리. 윗길은 비탈로 가운뎃길 높이까지, 가운뎃길은 비탈로 땅까지 (위치만의 함수 · 결정론) */
+export function footY(lane: Lane, x: number): number {
+  const R = P.pirate
+  if (lane === 0) return 0
+  const mid = ramp(x, R.midDropX, R.midDropLen) * R.midY
+  return lane === 1 ? mid : mid + ramp(x, R.ridgeDropX, R.ridgeDropLen) * (R.ridgeY - R.midY)
+}
 
 export interface Wave {
   readonly spawns: readonly Spawn[]
@@ -63,13 +76,23 @@ export function bakeWaves(seed: number, sev: number, mode: Mode = 'pirate'): Wav
     const v = R.speed + R.speedStep * k
     let t = 0
     let made = 0
+    // 산적 판 — 세 길을 섞어 보낸다 (셋 한 묶음마다 길 셋이 한 번씩 · 순서는 시드). 바다 도적은 늘 아랫길 (난수를 쓰지 않아 옛 물결 그대로)
+    let laneBag: Lane[] = []
+    const nextLane = (): Lane => {
+      if (mode !== 'bandit') return 0
+      if (laneBag.length === 0) {
+        laneBag = [0, 1, 2]
+        for (let i = 2; i > 0; i--) { const j = Math.floor(rng.next() * (i + 1)); const tmp = laneBag[i]!; laneBag[i] = laneBag[j]!; laneBag[j] = tmp }
+      }
+      return laneBag.pop()!
+    }
     while (made < n) {
       const pair = made + 1 < n && rng.chance(R.pairChance)
       const sp = (): number => v * (1 + (rng.next() * 2 - 1) * R.speedJitter)
-      spawns.push({ at: t, what: 'sword', x: R.spawnX, speed: sp() })
+      spawns.push({ at: t, what: 'sword', x: R.spawnX, speed: sp(), lane: nextLane() })
       made++
       if (pair) {
-        spawns.push({ at: t, what: 'sword', x: R.spawnX + R.pairGap, speed: sp() })
+        spawns.push({ at: t, what: 'sword', x: R.spawnX + R.pairGap, speed: sp(), lane: nextLane() })
         made++
       }
       t += gap * (0.8 + rng.next() * 0.4)
@@ -82,7 +105,7 @@ export function bakeWaves(seed: number, sev: number, mode: Mode = 'pirate'): Wav
     const ns = shieldCount(k, sev)
     for (let i = 0; i < ns; i++) spawns.push({ at: span * ((i + 0.5) / ns), what: 'shield', x: R.spawnX, speed: v * R.shieldSpeedMul })
     // 두목 — 셋째 물결 가운데쯤
-    if (k === 2) spawns.push({ at: span * R.captainAt, what: 'captain', x: R.spawnX })
+    if (k === 2) spawns.push({ at: span * R.captainAt, what: 'captain', x: R.spawnX, lane: mode === 'bandit' ? (Math.round(R.chiefLane) as Lane) : 0 })
     // 궤짝 — 물결 안에 고루, 무엇이 들었나는 시드로 (같은 물결에 같은 살이 겹치지 않게)
     const bag = [...BARREL_ARROWS]
     for (let i = 0; i < R.barrels; i++) {

@@ -15,6 +15,7 @@ import {
 import type { Camera } from './camera.ts'
 import { drawArcher } from './stickman.ts'
 import { skyOf, drawShadow } from './sky.ts'
+import { BOOST } from './boost.ts'
 import type { SkyPalette } from './sky.ts'
 import { drawFoeArcher, drawFoeGunner, drawFoeRusher, drawFoeSlinger } from './foe.ts'
 import { drawBuildings, drawBuildingFronts, windowOf } from './buildings.ts'
@@ -41,6 +42,10 @@ export interface SceneHooks {
   target?(ctx: CanvasRenderingContext2D, cam: Camera, w: World, t: Target, x: number, y: number, rx: number, ry: number): boolean
   /** 돌진·보스에서 궁수로 긋는 붉은 위협선을 끈다 (몰려오는 판에서는 줄이 화면을 덮는다) */
   readonly noThreat?: boolean
+  /** 땅·풀을 판이 제 그림으로 깔았다 — 활터의 땅 타일을 건너뛴다 (backdrop 이 땅까지 한 장으로 깐다) */
+  readonly ownGround?: boolean
+  /** 과녁이 딛고 선 높이(땅에서 더 올린 m) — 그림자가 그 발밑에 진다 */
+  lift?(w: World, t: Target): number
 }
 let sceneHooks: SceneHooks | null = null
 export function setSceneHooks(h: SceneHooks | null): void {
@@ -281,6 +286,8 @@ interface RendererX extends Renderer {
   canvas: HTMLCanvasElement
   /** 지금 DPR 상한 — 폰이면 낮게 시작하고, 느리면 한 단계씩 내린다 (형 11-10: 컴퓨터는 매끄러운데 폰은 늘 버벅) */
   dprCap: number
+  /** 이 가운데값(ms)보다 느리면 DPR 을 내린다 */
+  slowMs: number
   /** 프레임 간격(ms) 모음 · 60개마다 가운데값을 본다 */
   gaps: number[]
   ctx: CanvasRenderingContext2D
@@ -1864,6 +1871,22 @@ function drawArrows(ctx: CanvasRenderingContext2D, cam: Camera, w: World, alpha:
       ctx.globalAlpha = 1
     }
 
+    // 보이게 하기 — 어두운 테두리 + 뒤로 짧은 밝은 꼬리 (밝은 바탕에서 살이 묻히지 않게 · 산적·바다도적만)
+    if (BOOST.on) {
+      ctx.strokeStyle = 'rgba(0,0,0,0.55)'
+      ctx.lineWidth = 5
+      ctx.beginPath()
+      ctx.moveTo(backX, backY)
+      ctx.lineTo(tipX, tipY)
+      ctx.stroke()
+      ctx.strokeStyle = 'rgba(255,244,214,0.5)'
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(backX, backY)
+      ctx.lineTo(backX - sx * len * 1.3, backY - sy * len * 1.3)
+      ctx.stroke()
+    }
+
     // ★ 화살은 **그림**이다 (2026-09-20, render/foeart.ts) — 촉·대·깃이 있는 그 살. 공기 가르는 잔상은 위에서 그대로 그렸다.
     if (drawArrowArt(ctx, ar.kind, backX, backY, tipX, tipY)) continue
 
@@ -2287,12 +2310,18 @@ function watchLoad(r: RendererX, dt: number): void {
   if (r.gaps.length < 60) return
   const mid = r.gaps.sort((a, b) => a - b)[30]!
   r.gaps.length = 0
-  if (mid <= VIEW.slowFrameMs) return
+  if (mid <= r.slowMs) return
   r.dprCap = Math.max(VIEW.dprFloor, r.dprCap - VIEW.dprStep)
   r.resize()
 }
 
-export function createRenderer(canvas: HTMLCanvasElement): Renderer {
+/** 그림판 바깥에서 고르는 것 — 폰 DPR 상한과 DPR 을 내리는 프레임 간격 (산적·바다도적이 쓴다) */
+export interface RendererOpts {
+  readonly dprCap?: number
+  readonly slowMs?: number
+}
+
+export function createRenderer(canvas: HTMLCanvasElement, opts: RendererOpts = {}): Renderer {
   const ctx = canvas.getContext('2d', { alpha: false })
   if (ctx === null) throw new Error('Canvas2D 컨텍스트를 얻지 못했다')
   warmBossArt()
@@ -2314,7 +2343,8 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     gradH: -1,
     gradSky: "",
     dead: false,
-    dprCap: typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches ? VIEW.touchDprCap : VIEW.dprCap,
+    dprCap: opts.dprCap ?? (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches ? VIEW.touchDprCap : VIEW.dprCap),
+    slowMs: opts.slowMs ?? VIEW.slowFrameMs,
     gaps: [],
 
     resize(): void {
@@ -2370,7 +2400,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
 
       // ── 땅 — 평지면 한 줄, 언덕이 있으면 꺾은선을 따라 (sim/terrain.ts) ──
       // 그림 땅에는 풀이 이미 그려져 있다 — 선으로 그은 풀포기는 그림이 없을 때만.
-      if (!drawGround(c, cam, w, sky)) drawTufts(c, cam, w, r.tufts)
+      if (sceneHooks?.ownGround !== true && !drawGround(c, cam, w, sky)) drawTufts(c, cam, w, r.tufts)
       sceneHooks?.ground?.(c, cam, w)
 
       // ── 그림자 — 가장 싼 입체감 (docs/MEGAHIT.md §4-2, 렌즈 ⑥ "전부 떠 있다") ──
@@ -2384,7 +2414,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
         if (t.kind !== 'archer' && t.kind !== 'boss' && t.look >= ANIMAL_LOOK + 2) continue
         // 창가의 사수는 건물 안이라 땅에 그림자를 못 드리운다.
         if (t.kind === 'archer' && (t.look === 1 || t.look === 2)) continue
-        drawShadow(c, sky, worldToScreenX(cam, t.x), worldToScreenY(cam, groundAt(w.stage, t.x)), t.r * 2 * cam.scale)
+        drawShadow(c, sky, worldToScreenX(cam, t.x), worldToScreenY(cam, groundAt(w.stage, t.x) + (sceneHooks?.lift?.(w, t) ?? 0)), t.r * 2 * cam.scale)
       }
       // 궁수 — 키는 골반+다리라 몸 반경이 아니라 실제 화면 높이를 준다. 궁수의 발밑은 언제나 0이다.
       drawShadow(c, sky, worldToScreenX(cam, w.archer.x), worldToScreenY(cam, 0), 1.6 * cam.scale)

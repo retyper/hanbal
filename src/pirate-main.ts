@@ -10,9 +10,11 @@ import { startGfxSafe } from './ui/gfxsafe.ts'
 // 갤럭시 크롬의 그러데이션 깨짐 — 그림판을 만들기 전에 켠다 (contest-main 과 같다)
 startGfxSafe()
 import { isSettled } from './sim/world.ts'
+import type { World } from './sim/types.ts'
 import { createNightInput } from './night/input.ts'
 import { drawPull } from './night/draw.ts'
 import { setAlwaysPreview } from './render/stickman.ts'
+import { BOOST } from './render/boost.ts'
 import { createRenderer, getHitStopMs, setSceneHooks } from './render/scene.ts'
 import type { HudState } from './render/hud.ts'
 import { createSfx, playUi, pumpSfx, unlockSfx, updateSfx } from './audio/sfx.ts'
@@ -47,9 +49,10 @@ const opts = {
 }
 const RESULT = 'hanbal.pirate.result'
 
-const renderer = createRenderer(canvas)
+BOOST.on = true // 밝은 바탕에서도 점선·화살이 보이게
+const renderer = createRenderer(canvas, { dprCap: P.pirate.dprCap, slowMs: P.pirate.dprDropMs })
 // 밤 판과 같은 당겨 쏘기 — 아무 데나 누르고 뒤로 끌어 반대로 겨눈다 (형 11-11: 암살 때와 정반대라 짜증났음)
-const input = createNightInput(canvas)
+const input = createNightInput(canvas, { dead: P.pirate.pullDead })
 const ctx2 = canvas.getContext('2d')!
 const sfx = createSfx()
 const hud: HudState = { training: 0, canLevelUp: false, muted: false, silent: false, toast: '', arrow: '', stars: -1, endReason: '', arrowRule: false, time: 0, bestTime: 0, record: false, bare: true }
@@ -192,7 +195,7 @@ function showPick(): void {
 function pickBar(): void {
   if (!picking) return
   const bar = ui.querySelector<HTMLElement>('.picks .auto i')
-  if (bar !== null) bar.style.width = `${Math.max(0, (run.pickLeft / P.pirate.pickAutoS) * 100).toFixed(1)}%`
+  if (bar !== null) bar.style.width = `${Math.max(0, (run.pickLeft / P.pirate.pickSec) * 100).toFixed(1)}%`
 }
 function donePick(id: PickId): void {
   picking = false
@@ -244,7 +247,13 @@ function unlock(): void {
   unlocked = true
   unlockSfx(sfx)
 }
-canvas.addEventListener('pointerdown', unlock, { passive: true })
+// 폰 크롬은 손을 뗄 때(pointerup)에야 소리를 허락한다 — 누를 때와 뗄 때 모두 깨운다 (11-12 형: 소리가 맛이 안 난다)
+function wakeSound(): void {
+  unlocked = false
+  unlock()
+}
+canvas.addEventListener('pointerdown', wakeSound, { passive: true })
+canvas.addEventListener('pointerup', wakeSound, { passive: true })
 
 /** 판의 사건 → 띠·글자·소리 (WWE: 막으면 크게, 뚫리면 붉게) */
 function pumpRun(): void {
@@ -262,6 +271,19 @@ function pumpRun(): void {
 
 // ───────────────────────── 돌림 (활터 루프와 같다 · 숨은 탭에선 멈춘다) ─────────────────────────
 
+/** 쏘는 순간 화면이 뒤로 밀렸다 돌아온다 (캔버스를 옮긴다 · 물리와 무관) · 한 놈 쓰러지면 잠깐 멈칫 */
+let kickAt = -1e9
+let killUntil = 0
+const KICK_MS = 110
+function feelEvents(w: World, now: number): void {
+  for (const e of w.events) {
+    if (e.t === 'release') kickAt = now
+    else if (e.t === 'foe_down') killUntil = now + P.pirate.killStopMs
+  }
+  const k = (now - kickAt) / KICK_MS
+  canvas.style.transform = k >= 0 && k < 1 ? `translateX(${(-P.pirate.kickPx * (1 - k) * (1 - k)).toFixed(2)}px)` : ''
+}
+
 let raf = 0
 let last = 0
 let acc = 0
@@ -275,7 +297,7 @@ function frame(now: number): void {
   const w = run.w
   if (live) {
     const ph = w.archer.phase
-    const frozen = getHitStopMs(renderer) > 0 && ph !== 'drawing' && ph !== 'full'
+    const frozen = (getHitStopMs(renderer) > 0 || now < killUntil) && ph !== 'drawing' && ph !== 'full'
     const maxFrame = w.dt * P.sim.maxCatchUpSteps
     if (!frozen) acc += realDt < maxFrame ? realDt : maxFrame
     let steps = 0
@@ -291,6 +313,7 @@ function frame(now: number): void {
     armBar()
     pickBar()
   }
+  feelEvents(w, now)
   try {
     pumpSfx(sfx, w)
     updateSfx(sfx, w, realDt)

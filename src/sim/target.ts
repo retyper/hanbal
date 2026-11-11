@@ -155,7 +155,7 @@ export function stepTargets(w: World): void {
       tg.x -= tg.speed * dt
       // 다가오면서 살짝 위아래로 흔들린다. 일직선으로만 오면 물체가 아니라 슬라이더로 보인다.
       // 사람은 땅을 달린다 — 언덕이면 언덕을 오른다 (sim/terrain.ts). 발이 땅에 닿는 자리 = 반경.
-      tg.y = groundAt(w.stage, tg.x) + tg.r + Math.sin(time * P.target.chargeBobFreq * TAU) * P.target.chargeBob
+      tg.y = groundAt(w.stage, tg.x) + tg.r + tg.lift + Math.sin(time * P.target.chargeBobFreq * TAU) * P.target.chargeBob
       if (tg.x <= w.archer.x + P.target.chargeReach) {
         // 닿았다 — 몬스터다. 체력을 깎고 사라진다 (docs/RUN.md 6장 — "몬스터가 나를 공격").
         // 판이 안 깨지게 과녁 자체는 확실히 제거한다. 남겨두면 클리어가 영원히 안 된다.

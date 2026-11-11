@@ -129,6 +129,7 @@ function newTarget(): Target {
     r: FALLBACK_TARGET_R,
     baseX: 0,
     baseY: 0,
+    lift: 0,
     ampX: 0,
     ampY: 0,
     freq: 0,
@@ -287,6 +288,7 @@ function loadTarget(t: Target, id: number, spec: TargetSpec, stage: StageDef): v
   t.r = r
   t.baseX = spec.x
   t.baseY = y
+  t.lift = 0
   t.ampX = spec.ampX ?? 0
   t.ampY = spec.ampY ?? 0
   t.freq = spec.freq ?? 0

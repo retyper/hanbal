@@ -1110,7 +1110,7 @@ function drawExposed(ctx: CanvasRenderingContext2D, cam: Camera, n: Night, now: 
 /** 당겨 쏘기의 고리·호 — 밤 판과 바다도적·산적 판이 같이 쓴다 (pirate-main.ts) */
 export function drawPull(ctx: CanvasRenderingContext2D, p: Pull): void {
   if (!p.active) return
-  const dead = P.night.pullDead
+  const dead = p.dead
   const max = p.max
   ctx.save()
   ctx.lineCap = 'round'

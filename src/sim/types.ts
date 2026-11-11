@@ -281,6 +281,8 @@ export interface Target {
   /** 이동 과녁의 왕복 중심·진폭·주파수. moving이 아니면 무시. */
   baseX: number
   baseY: number
+  /** 돌진: 땅에서 더 띄운 높이 (m) — 언덕 길·능선 길을 달리는 판이 쓴다. 기본 0 */
+  lift: number
   ampX: number
   ampY: number
   freq: number

@@ -28,6 +28,7 @@
  * ARCHITECTURE A1: World는 읽기만 한다.
  */
 import { clamp, clamp01, lerp, smoothstep, TAU } from '../core/math.ts'
+import { BOOST } from './boost.ts'
 import { P } from '../tune/params.ts'
 import { effectiveStats, maxDrawOf } from '../sim/bow.ts'
 import type { World } from '../sim/types.ts'
@@ -1445,6 +1446,21 @@ export function drawArcher(
         distSinceDot += stepDist
         if (distSinceDot >= P.steady.previewDotGap) {
           distSinceDot -= P.steady.previewDotGap
+          if (BOOST.on) {
+            // 밝은 바탕 위에서도 읽히게 — 어두운 밑점 위에 크림색 점 (폰은 점도 크게)
+            const dr = Math.max(2.6, cam.scale * 0.07)
+            ctx.globalAlpha = 0.6 * pb
+            ctx.fillStyle = '#000'
+            ctx.beginPath()
+            ctx.arc(worldToScreenX(cam, px3), worldToScreenY(cam, py3), dr + 1.5, 0, TAU)
+            ctx.fill()
+            ctx.globalAlpha = 0.95 * pb
+            ctx.fillStyle = '#fff1c8'
+            ctx.beginPath()
+            ctx.arc(worldToScreenX(cam, px3), worldToScreenY(cam, py3), dr, 0, TAU)
+            ctx.fill()
+            continue
+          }
           ctx.beginPath()
           ctx.arc(worldToScreenX(cam, px3), worldToScreenY(cam, py3), 1.6, 0, TAU)
           ctx.fill()

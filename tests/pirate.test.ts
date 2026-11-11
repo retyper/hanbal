@@ -257,7 +257,7 @@ describe('바다도적 막기 — 방패 · 고르기 · 산적', () => {
   })
   it('안 고르면 시간이 다 되어 화전 한 물결로 간다', () => {
     const p = toPick(4)
-    for (let i = 0; i < Math.ceil((P.pirate.pickAutoS + 0.1) / p.w.dt) && p.phase === 'pick'; i++) stepPirate(p, idle)
+    for (let i = 0; i < Math.ceil((P.pirate.pickSec + 0.1) / p.w.dt) && p.phase === 'pick'; i++) stepPirate(p, idle)
     assert.deepEqual(p.picks, ['fire'])
     for (let i = 0; i < Math.ceil((P.pirate.pause + P.pirate.specialSec + 1) / p.w.dt); i++) stepPirate(p, idle)
     assert.equal(p.w.arrowKind, 'burst')
@@ -275,7 +275,7 @@ describe('바다도적 막기 — 방패 · 고르기 · 산적', () => {
     stepPirate(p, idle)
     const i = p.role.indexOf('archer')
     assert.ok(i >= 0)
-    assert.equal(p.w.targets[i]!.y, P.pirate.ridgeDeck + P.pirate.archerUp)
+    assert.equal(p.w.targets[i]!.y, P.pirate.midY + P.pirate.archerUp)
     assert.ok(p.w.targets[i]!.x < P.pirate.boatX)
   })
   it('흠 없이 다 막으면 perfect', () => {

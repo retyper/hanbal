@@ -14,6 +14,8 @@ import type { NightFrame } from './sim.ts'
 /** 그리기가 읽는 당김 — 화면 좌표(CSS px) */
 export interface Pull {
   active: boolean
+  /** 고리 반지름 (CSS px) — 판마다 다르다 */
+  dead: number
   /** 고리(누른 자리) */
   ax: number
   ay: number
@@ -47,9 +49,15 @@ export interface NightInput {
 /** 겨눔의 반지름 (월드 m) — 활터 sim 은 조준점의 방향만 쓴다 */
 const AIM_REACH = 10
 
-export function createNightInput(canvas: HTMLCanvasElement): NightInput {
+/** 판마다 고르는 것 — 그만두는 고리의 반지름 (없으면 P.night.pullDead) */
+export interface NightInputOpts {
+  readonly dead?: number
+}
+
+export function createNightInput(canvas: HTMLCanvasElement, opts: NightInputOpts = {}): NightInput {
+  const deadPx = opts.dead ?? P.night.pullDead
   const frame: NightFrame = { aimX: AIM_REACH, aimY: 0, drawing: false, steady: false, parry: false, cap: 1, cancel: false }
-  const pull: Pull = { active: false, ax: 0, ay: 0, x: 0, y: 0, frac: 0, max: P.night.pullMax, inDead: true }
+  const pull: Pull = { active: false, dead: deadPx, ax: 0, ay: 0, x: 0, y: 0, frac: 0, max: P.night.pullMax, inDead: true }
   // 겨눈 쪽 (월드: x 오른쪽, y 위) — 끈 쪽의 반대. 처음은 앞으로 조금 아래
   let dirX = 1
   let dirY = -0.2
@@ -100,7 +108,7 @@ export function createNightInput(canvas: HTMLCanvasElement): NightInput {
     const dx = pull.x - pull.ax
     const dy = pull.y - pull.ay
     const len = Math.hypot(dx, dy)
-    const dead = P.night.pullDead
+    const dead = deadPx
     pull.inDead = len <= dead
     const f = Math.max(0, Math.min(1, (len - dead) / Math.max(1, pull.max - dead)))
     pull.frac = f >= P.night.pullFullAt ? 1 : f
@@ -131,7 +139,7 @@ export function createNightInput(canvas: HTMLCanvasElement): NightInput {
     pull.ax = pull.x = localX(e)
     pull.ay = pull.y = localY(e)
     pull.frac = 0
-    pull.max = Math.max(P.night.pullDead * 2, Math.min(P.night.pullMax, P.night.pullMaxShare * Math.min(canvas.clientWidth, canvas.clientHeight)))
+    pull.max = Math.max(deadPx * 2, Math.min(P.night.pullMax, P.night.pullMaxShare * Math.min(canvas.clientWidth, canvas.clientHeight)))
     pull.inDead = true
     frame.cap = 0
   }

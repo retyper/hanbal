@@ -12,7 +12,7 @@ import { P } from '../tune/params.ts'
 import { armArrow, armBow, cancelDraw, createWorld, reserveTargets, spawnTarget, step } from '../sim/world.ts'
 import type { ArrowKindId, BowMods, InputFrame, StageDef, World } from '../sim/types.ts'
 import { drawTimeFor } from '../night/sim.ts'
-import { archerStr, bakeWaves, palisadeLives, WAVE_COUNT, type Mode, type Spawn, type Wave } from './waves.ts'
+import { archerStr, bakeWaves, footY, palisadeLives, WAVE_COUNT, type Lane, type Mode, type Spawn, type Wave } from './waves.ts'
 
 export type Role = 'none' | 'anchor' | 'sword' | 'shield' | 'captain' | 'archer' | 'barrel'
 
@@ -86,6 +86,8 @@ export interface PirateRun {
   readonly role: Role[]
   readonly barrelArrow: ArrowKindId[]
   readonly barrelBorn: number[]
+  /** 과녁 자리마다 — 달리는 길 (산적 판 · 아랫길 0 · 가운뎃길 1 · 윗길 2) */
+  readonly lane: Lane[]
   /** 다 막은 물결 수 */
   held: number
   /** 쏜 수 — 한 발이라도 쐈으면 답이 굳는다 */
@@ -123,7 +125,7 @@ export function createPirate(o: PirateOpts): PirateRun {
   w.stage = {
     ...def,
     targets: [
-      { kind: 'static', x: R.spawnX + 1, y: R.frameUp, r: 0.5 },
+      { kind: 'static', x: R.spawnX + 1, y: o.mode === 'bandit' ? R.banditFrameUp : R.frameUp, r: 0.5 },
       { kind: 'static', x: R.palisadeX, y: 0.5, r: 0.5 },
     ],
   }
@@ -135,7 +137,7 @@ export function createPirate(o: PirateOpts): PirateRun {
     w, mode, waves: bakeWaves(o.seed >>> 0, o.sev, mode), wave: -1, phase: 'pause', waveT: 0, next: 0, pauseLeft: R.startDelay,
     lives, livesMax: lives, livesBase: lives, pickLeft: 0, picks: [], fireWave: false, shieldLeft: role.map(() => 0), broken: 0, perfect: false,
     special: 'basic', specialLeft: 0,
-    role, barrelArrow: role.map(() => 'basic'), barrelBorn: role.map(() => 0),
+    role, barrelArrow: role.map(() => 'basic'), barrelBorn: role.map(() => 0), lane: role.map(() => 0),
     held: 0, shots: 0, brokeAt: Array.from({ length: lives }, () => -1), result: null, events: [],
   }
 }
@@ -152,9 +154,11 @@ function put(run: PirateRun, s: Spawn): void {
   const R = P.pirate
   let t
   let role: Role
+  let lane: Lane = 0
   if (s.what === 'sword') {
     t = spawnTarget(w, { kind: 'charger', x: s.x, y: 0, speed: s.speed })
     role = 'sword'
+    lane = s.lane
   } else if (s.what === 'shield') {
     // 방패 든 도적 — 두목처럼 걷는 사람(archer 꼴) · 방패가 몸통을 막는다. 몸통 shieldHits 번에 방패가 깨지고 머리는 한 발
     t = spawnTarget(w, { kind: 'archer', x: s.x, y: R.shieldR, r: R.shieldR, hp: 1, armored: true, fireDelay: 1e9, firePeriod: 1e9 })
@@ -164,21 +168,33 @@ function put(run: PirateRun, s: Spawn): void {
     role = 'shield'
     shieldAt(run, t.id, R.shieldHits)
   } else if (s.what === 'archer') {
-    const deck = run.mode === 'bandit' ? R.ridgeDeck : R.boatDeck
+    const deck = run.mode === 'bandit' ? R.midY : R.boatDeck
     t = spawnTarget(w, { kind: 'archer', x: s.x, y: deck + R.archerUp, r: R.archerR, firePeriod: R.archerEvery, fireDelay: now(w) + R.archerDelay + s.delay })
     role = 'archer'
   } else if (s.what === 'captain') {
     // 두목 — 쏘지 않는 사람(첫 발을 판 끝 너머로 미룬다) · 몸통 여러 발, 머리는 한 발
     t = spawnTarget(w, { kind: 'archer', x: s.x, y: R.captainR, r: R.captainR, hp: R.captainHp, fireDelay: 1e9, firePeriod: 1e9 })
     role = 'captain'
+    lane = s.lane
   } else {
     t = spawnTarget(w, { kind: 'bonus', x: s.x, y: R.barrelY, r: R.barrelR, give: 0 })
     role = 'barrel'
     run.barrelArrow[t.id] = s.arrow
     run.barrelBorn[t.id] = now(w)
   }
-  while (run.role.length <= t.id) { run.role.push('none'); run.barrelArrow.push('basic'); run.barrelBorn.push(0) }
+  while (run.role.length <= t.id) { run.role.push('none'); run.barrelArrow.push('basic'); run.barrelBorn.push(0); run.lane.push(0) }
   run.role[t.id] = role
+  run.lane[t.id] = lane
+  placeOnLane(run, t.id)
+}
+
+/** 길 위의 제 높이로 — 칼잡이는 땅 위로 띄우고(lift), 걷는 사람(방패·두목)은 몸 중심 자체를 올린다. 스텝 머리에서 불러야 이번 스텝 판정이 이 높이를 본다 */
+function placeOnLane(run: PirateRun, id: number): void {
+  const t = run.w.targets[id]!
+  const r = run.role[id]
+  const f = footY(run.lane[id] ?? 0, t.x)
+  if (r === 'sword') t.lift = f
+  else if (r === 'shield' || r === 'captain') { t.y = f + t.r; t.baseY = t.y }
 }
 
 /** 이 물결의 적이 아직 남았나 (칼잡이·두목·배 궁수) */
@@ -268,9 +284,12 @@ export function stepPirate(run: PirateRun, input: InputFrame & { readonly cap?: 
     if (r === 'captain') {
       t.x -= R.captainSpeed * dt
       t.baseX = t.x
+      placeOnLane(run, i)
     } else if (r === 'shield') {
       t.x -= t.speed * dt
       t.baseX = t.x
+    } else if (r === 'sword') {
+      placeOnLane(run, i)
     } else if (r === 'barrel') {
       if (t.x > R.shoreX + R.barrelR) t.x -= R.barrelSpeed * dt
       t.baseX = t.x
@@ -372,7 +391,7 @@ export function stepPirate(run: PirateRun, input: InputFrame & { readonly cap?: 
       if (run.fireWave) { run.fireWave = false; run.special = 'basic'; run.specialLeft = 0; armArrow(w, 'basic'); run.events.push({ t: 'unarm' }) }
       cancelDraw(w)
       run.phase = 'pick'
-      run.pickLeft = R.pickAutoS
+      run.pickLeft = R.pickSec
       run.events.push({ t: 'pick' })
     }
   }
