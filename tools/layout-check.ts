@@ -68,6 +68,8 @@ const SCREENS: Screen[] = [
   { name: 'drill', ls: 'drill', pre: `${CLICK} await clk('[data-act="dy-title"]', 2500)` },
   { name: 'drillhero', ls: 'drill', pre: `${CLICK} await clk('[data-act="dy-title"]', 2500); await clk('.dyrow', 1200)` },
   { name: 'dex', pre: `${CLICK} await clk('[data-act="dex-open"]', 2500)` },
+  { name: 'nationdetail', pre: `${CLICK} await clk('[data-act="fr-new"]', 1500); await clk('[data-act="fr-board"]', 2000); await clk('[data-act="fr-nation"]', 1500)` },
+  { name: 'frstart', pre: `${CLICK} await clk('[data-act="fr-new"]', 1500); await clk('[data-act="fr-board"]', 2000); await clk('[data-act="fr-nation"]', 1500); await clk('[data-act="fr-start"]', 2500)` },
   { name: 'saves', pre: `${CLICK} await clk('[data-act="save-open-title"]', 1500)` },
   { name: 'boarddetail', pre: `${CLICK} await clk('[data-act="fr-new"]', 1500); await clk('[data-act="fr-board"]', 2000)` },
   { name: 'quarrel', save: 'quarrel-town', pre: '' },

@@ -18,7 +18,8 @@ import { placeOf } from '../../realm/data/regions/index.ts'
 import { seasonOf, yearOf } from '../../realm/calendar.ts'
 import { t } from '../../i18n/index.ts'
 import { lang } from '../../i18n/lang.ts'
-import { UNIT_NAME, battleName, dateLabel, josa, seasonLabel } from '../../realm/data/prose.ts'
+import { UNIT_NAME as UNIT_NAME_KO, battleName, dateLabel, josa, seasonLabel } from '../../realm/data/prose.ts'
+import { nameTable } from '../../i18n/names.ts'
 import type { Realm, RegionId, ReportLine } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { winFxHtml } from './winfx.ts'
@@ -30,7 +31,8 @@ import { nationKit } from './kitcolor.ts'
 import { riseGraphHtml } from './risegraph.ts'
 
 /** 층의 이름 (CUSTOMS §8-1) — 결에 속한 모두 · 그 나라 이야기 · 그 나라 땅 */
-const TIER_LABEL: Readonly<Record<CustomTier, string>> = { kyeol: '결 풍습', nation: '나라 고리', land: '땅이 준 한 수' }
+const UNIT_NAME = nameTable('unit', UNIT_NAME_KO)
+const tierLabel = (tier: CustomTier): string => t(tier === 'kyeol' ? 'fr.tierKyeol' : tier === 'nation' ? 'fr.tierNation' : 'fr.tierLand')
 
 /**
  * 나라의 개성 카드 (CUSTOMS.md §7 · §8-1 층 셋) — 결의 사서 한 문장(동사로) · 걸린 풍습마다 무엇이 되나(+)와 무엇을 내주나(−),
@@ -55,7 +57,7 @@ export function customsHtml(k: Pick<FrontKit, 'esc'> & Partial<Pick<FrontKit, 'i
       const c = customDef(id)
       const tip = c.verb !== '' ? `${c.source}: ${c.verb}` : c.source
       const ic = CUSTOM_ICON[id] !== undefined && k.icon !== undefined ? k.icon(CUSTOM_ICON[id]!, 'cuic') : ''
-      const peek = `<small>${TIER_LABEL[c.tier]} · ${c.sure}</small><b>${k.esc(c.name)}</b><span class="pd">+ ${k.esc(c.does)}</span><span class="pc">− ${k.esc(c.cost)}</span>${tip !== '' ? `<span class="pp">${k.esc(tip)}</span>` : ''}`
+      const peek = `<small>${tierLabel(c.tier)} · ${c.sure}</small><b>${k.esc(c.name)}</b><span class="pd">+ ${k.esc(c.does)}</span><span class="pc">− ${k.esc(c.cost)}</span>${tip !== '' ? `<span class="pp">${k.esc(tip)}</span>` : ''}`
       h += `<div class="cust t-${c.tier}" data-peek>${ic}<b>${k.esc(c.name)}</b><span class="peek">${peek}</span></div>`
     }
     h += '</div>'
@@ -63,8 +65,8 @@ export function customsHtml(k: Pick<FrontKit, 'esc'> & Partial<Pick<FrontKit, 'i
   // 군대의 결 — 무엇을 많이 뽑나 (남의 나라도 이 비로 뽑는다) · 병종은 그림으로, 풀이는 누르면
   const src = NATION_MIX[nation]?.source ?? KYEOL_MIX[kyeol].source
   const shares = mix.filter(([, w]) => w > 0).map(([u, w]) => `<i>${k.icon !== undefined ? k.icon(UNIT_ICON[u], 'cmi') : ''}${k.esc(UNIT_NAME[u])} ${Math.round(w * 100)}%</i>`).join('')
-  const armyTip = [army, '이 나라 군사는 대개 이 비율로 짜입니다. 처음 군대도, 알아서 뽑을 때도', src].filter((s) => s !== '').join(' · ')
-  if (shares !== '') h += `<div class="carmy" data-tip="${k.esc(armyTip)}"><b>군대</b><span class="cmix">${shares}</span></div>`
+  const armyTip = [army, t('fr.armyTip'), src].filter((s) => s !== '').join(' · ')
+  if (shares !== '') h += `<div class="carmy" data-tip="${k.esc(armyTip)}"><b>${t('fr.army')}</b><span class="cmix">${shares}</span></div>`
   return h + '</div>'
 }
 
@@ -213,12 +215,12 @@ export function boardHtml(k: FrontKit, hasGame: boolean, unlocked?: ReadonlySet<
   const names = Object.fromEntries(BOARDS.map((b) => [b.id, b.name])) as Partial<Record<RegionId, string>>
   // 캠페인 — 사료의 사건 하나가 한 장 (CAMPAIGN.md · 형: "문명처럼 … 특수한 승리조건"). 장은 배우는 차례로 열린다
   const c0 = h.length
-  h += `<h3 class="bsec"><b>캠페인</b><span>삼국의 새벽, 사서에 남은 일을 그 사람이 되어</span></h3><div class="bcards chaps">`
+  h += `<h3 class="bsec"><b>${t('fr.campaign')}</b><span>${t('fr.campaignSub')}</span></h3><div class="bcards chaps">`
   CHAPTERS.forEach((c, i) => {
     const prev = CHAPTERS[i - 1]
     const ready = c.region !== null
     const open = ready && (unlocked === undefined || unlocked.has(c.region!))
-    const why = !ready ? '짓는 중: 곧 열린다' : prev !== undefined ? `앞 장 「${prev.name}」에서 이기면 열린다` : lockWhy(c.region!, names)
+    const why = !ready ? t('fr.wip') : prev !== undefined ? t('fr.prevWin', { name: prev.name }) : lockWhy(c.region!, names)
     const peek = `<span class="peek"><small>${chapterTag(c.n)} · ${k.esc(c.era)}</small><b>${k.esc(c.name)}</b><span class="ph">${k.esc(c.hook)}</span>`
       + `<span class="pp">${k.esc(c.hero)}: ${k.esc(c.goal)}</span></span>`
     h += `<button class="bcard chap${open ? '' : ' locked'}" ${open ? `data-act="fr-board" data-v="${c.region}"` : 'data-act="fr-locked"'} data-peek><span class="bth" style="background-image:url('${k.art}${c.art}')">`
@@ -226,28 +228,28 @@ export function boardHtml(k: FrontKit, hasGame: boolean, unlocked?: ReadonlySet<
     // 깬 장 — 금빛 도장 (형 10-24: "깬 캠페인은 깼다는 표시")
     const cleared = ready && (tierWon?.(c.region!) ?? 0) > 0
     const cr = badgeRank(tierWon?.(c.region!) ?? 0)
-    h += `<i class="bbadge${c.n === 0 ? " tut" : ""}">${chapterTag(c.n)}</i>${cleared ? `<img class="cleared" src="${k.art}ui/badge/won-${cr}.png" alt="깼다" title="깼다">` : ''}${open ? '' : ready ? '<i class="lock">🔒</i>' : '<i class="lock wip">🛠 짓는 중</i>'}<span class="btitle"><small>${k.esc(c.era)} · ${k.esc(c.hero)}</small><b>${k.esc(c.name)}</b>${open ? '' : `<em>${k.esc(why)}</em>`}</span></span>${peek}</button>`
+    h += `<i class="bbadge${c.n === 0 ? " tut" : ""}">${chapterTag(c.n)}</i>${cleared ? `<img class="cleared" src="${k.art}ui/badge/won-${cr}.png" alt="${t('fr.cleared')}" title="${t('fr.cleared')}">` : ''}${open ? '' : ready ? '<i class="lock">🔒</i>' : `<i class="lock wip">${t('fr.building')}</i>`}<span class="btitle"><small>${k.esc(c.era)} · ${k.esc(c.hero)}</small><b>${k.esc(c.name)}</b>${open ? '' : `<em>${k.esc(why)}</em>`}</span></span>${peek}</button>`
   })
   // 캠페인 칸과 자유 판 칸을 따로 모았다가 — 튜토리얼을 마치고 1:1 을 아직 안 이긴 사람에겐 자유 판이 위로 (형 11-04: "캠페인 대신 1:1 일반게임")
   const camp = h.slice(c0) + '</div>'
   h = h.slice(0, c0)
   const f0 = h.length
-  h += `<h3 class="bsec"><b>${t('boards.freeTitle')}</b><span>나라 하나를 골라 마음대로, 정복 · 맹주 · 철과 뱃길 · 큰 제사</span></h3><div class="bcards">`
+  h += `<h3 class="bsec"><b>${t('boards.freeTitle')}</b><span>${t('fr.freeSub')}</span></h3><div class="bcards">`
   for (const b of BOARDS) {
     if (CHAPTERS.some((c) => c.region === b.id)) continue // 장으로 올라간 판
     const open = unlocked === undefined || unlocked.has(b.id)
     // 카드는 그림 · 때 · 제목만 — 이야기와 작은 표는 펼침(길게 누르기 · 마우스 올리기 — tips.ts)으로
-    const goal = b.id === 'tutorial' ? '미추홀 도읍을 쥐면 끝' : `도읍 ${winNeed(b.id)}곳을 쥐면 이긴다`
+    const goal = b.id === 'tutorial' ? t('fr.goalTut') : t('fr.goalWin', { n: winNeed(b.id) })
     const lv = levelName(tierWon?.(b.id) ?? 1)
-    const won = b.id !== 'tutorial' && (tierWon?.(b.id) ?? 0) > 0 ? `<i>「${lv}」${josa(lv, '으로', '로').slice(lv.length)} 이겼다</i>` : ''
+    const won = b.id !== 'tutorial' && (tierWon?.(b.id) ?? 0) > 0 ? `<i>${t('fr.wonWith', { lv, suf: lang() === 'ko' ? josa(lv, '으로', '로').slice(lv.length) : '' })}</i>` : ''
     // 튜토리얼을 마친 사람은 캠페인보다 1:1 자유 판부터 (형 11-04: "캠페인 대신 1:1 일반게임을 시켜야 할 거 같은데" · 막내가 1장 3분 만에 접었다)
     const nextUp = b.id === 'byeonhan-mini' && open && unlocked !== undefined && (tierWon?.(b.id) ?? 0) === 0
-    const badge = nextUp ? '튜토리얼 다음은 여기' : b.badge
+    const badge = nextUp ? t('fr.upNext') : b.badge
     const nn = boardNations(b.id)
     const peek = `<span class="peek"><small>${k.esc(b.era)}</small><b>${k.esc(b.name)}</b><span class="ph">${k.esc(b.hook)}</span><span class="pp">${k.esc(b.play)}</span>`
-      + `<span class="pm"><i>나라 ${nn}</i><i>${goal}</i><i>한 판이 ${b.length}</i>${won}</span></span>`
+      + `<span class="pm"><i>${t('fr.nationsPm', { n: nn })}</i><i>${goal}</i><i>${t('fr.runLen', { len: b.length })}</i>${won}</span></span>`
     h += `<button class="bcard${open ? '' : ' locked'}" data-act="${open ? 'fr-board' : 'fr-locked'}" data-v="${b.id}" data-peek><span class="bth" style="background-image:url('${k.art}${b.art}')">`
-    h += `${badge !== undefined && open ?`<i class="bbadge${nextUp ? ' upnext' : ''}">${k.esc(badge)}</i>` : ''}<i class="bnum"><b>${nn}</b>나라${nn === 2 ? ' · 1:1' : ''}</i>${open ? '' : '<i class="lock">🔒</i>'}<span class="btitle"><small>${k.esc(b.era)}</small><b>${k.esc(b.name)}</b>${open ? '' : `<em>${k.esc(lockWhy(b.id, names))}</em>`}</span></span>${peek}</button>`
+    h += `${badge !== undefined && open ?`<i class="bbadge${nextUp ? ' upnext' : ''}">${k.esc(badge)}</i>` : ''}<i class="bnum"><b>${nn}</b>${t('fr.nationUnit')}${nn === 2 ? t('fr.oneOnOne') : ''}</i>${open ? '' : '<i class="lock">🔒</i>'}<span class="btitle"><small>${k.esc(b.era)}</small><b>${k.esc(b.name)}</b>${open ? '' : `<em>${k.esc(lockWhy(b.id, names))}</em>`}</span></span>${peek}</button>`
   }
   const free = h.slice(f0) + '</div>'
   h = h.slice(0, f0)
@@ -265,13 +267,13 @@ export function nationsHtml(k: FrontKit, region: RegionId, only?: string): strin
   const title = BOARDS.find((x) => x.id === region)?.name ?? CHAPTERS.find((c) => c.region === region)?.name ?? ''
   const all = k.nations(region).filter((n) => only === undefined || n.id === only)
   const wonN = all.filter((n) => (k.won?.(region, n.id) ?? 0) > 0).length
-  let h = `<div class="front choose"><div class="fhead"><button class="btn ghost" data-act="fr-new">‹ 이야기 고르기</button><h2>「${k.esc(title)}」: 어느 나라로</h2>`
-  if (wonN > 0) h += `<span class="wonc">휘장 ${wonN}/${all.length}</span>`
+  let h = `<div class="front choose"><div class="fhead"><button class="btn ghost" data-act="fr-new">${t('fr.backStories')}</button><h2>${t('fr.whichNation', { title: k.esc(title) })}</h2>`
+  if (wonN > 0) h += `<span class="wonc">${t('fr.crests', { a: wonN, b: all.length })}</span>`
   h += `</div><div class="ncards">`
   for (const n of all) {
     const w = k.won?.(region, n.id) ?? 0
     h += `<button class="ncard pick" data-act="fr-nation" data-id="${n.id}">${k.face(n.id, 'nface', k.boardRuler?.(region, n.id))}<div class="nb">`
-    h += `<div class="an">${k.emblem(n.id)}<b>${k.esc(n.name)}</b><span class="mute">${k.esc(n.place)}</span>${n.hard ? '<span class="hard">어려움</span>' : ''}${w > 0 ? `<span class="wonb"><img src="${k.art}ui/badge/won-${badgeRank(w)}.png" alt=""><small>난세 ${w}</small></span>` : ''}</div>`
+    h += `<div class="an">${k.emblem(n.id)}<b>${k.esc(n.name)}</b><span class="mute">${k.esc(n.place)}</span>${n.hard ? `<span class="hard">${t('fr.hardTag')}</span>` : ''}${w > 0 ? `<span class="wonb"><img src="${k.art}ui/badge/won-${badgeRank(w)}.png" alt=""><small>${t('fr.turmoil', { n: w })}</small></span>` : ''}</div>`
     h += `<p>${k.esc(n.blurb)}</p>${barsHtml(n)}</div></button>`
   }
   return h + `</div></div>`
@@ -279,7 +281,7 @@ export function nationsHtml(k: FrontKit, region: RegionId, only?: string): strin
 
 function barsHtml(n: NationInfo): string {
   let h = `<div class="bars">`
-  for (const [key, label] of [['army', '군사'], ['grain', '곡식'], ['militia', '장정'], ['terrain', '지형']] as const) {
+  for (const [key, label] of [['army', t('fr.barArmy')], ['grain', t('fr.barGrain')], ['militia', t('fr.barMilitia')], ['terrain', t('fr.barTerrain')]] as const) {
     const v = n.bars[key]
     h += `<span class="bar"><i>${label}</i>${'<b></b>'.repeat(v)}${'<s></s>'.repeat(5 - v)}</span>`
   }
@@ -289,10 +291,10 @@ function barsHtml(n: NationInfo): string {
 export function detailHtml(k: FrontKit, region: RegionId, id: string, carry = ''): string {
   const n = k.nations(region).find((x) => x.id === id)
   if (n === undefined) return nationsHtml(k, region)
-  let h = `<div class="front detail"><div class="fhead"><button class="btn ghost" data-act="fr-board" data-v="${region}">‹ 다른 나라</button></div>`
+  let h = `<div class="front detail"><div class="fhead"><button class="btn ghost" data-act="fr-board" data-v="${region}">${t('fr.otherNation')}</button></div>`
   h += `<div class="dcard">${k.face(id, 'dface', k.boardRuler?.(region, id))}<div class="db"><div class="dn">${k.emblem(id, 'dem')}<div><b>${k.esc(n.name)}</b><span>${k.esc(n.place)}</span></div></div>`
   h += `<p class="blurb">${k.esc(n.blurb)}</p>${customsHtml(k, id)}${barsHtml(n)}`
-  h += `<p class="src">${k.esc(n.source)}</p>${n.hard ? '<p class="hard">어려운 나라다. 처음이면 다른 나라를 권한다.</p>' : ''}`
+  h += `<p class="src">${k.esc(n.source)}</p>${n.hard ? `<p class="hard">${t('fr.hardWarn')}</p>` : ''}`
   // 시작 단추는 화면 아래 붙박이 — 잠긴 세기 칸을 지나 굴려야 보였다 (긴급 위원회 11-04 · 메모리 confirm-bar-bottom)
   h += `${carry}<div class="dstart"><button class="btn pri big" data-act="fr-start" data-id="${id}">${t('detail.start')}</button></div></div></div></div>`
   return h
@@ -382,7 +384,7 @@ function oldMapHtml(k: FrontKit, r: Realm, region: RegionId): string {
   // 이름표는 고리 바로 아래 — 고리 반지름을 상자 높이 몫으로
   const below = Math.min(44, ((ring / 0.625) * 100) / 2 + 2) + (rt - 50)
   return `<style>@keyframes ${key}{0%,18%{transform:${at(0.5, 0.5, 1)}}100%{transform:${at(cx, cy, z)}}}</style>`
-    + `<div class="pmap"><div class="pmw" style="animation-name:${key}"><img src="${k.art}map/oldmap.jpg" alt=""><b class="pold" style="left:40%;top:36%">옛 조선</b></div>`
+    + `<div class="pmap"><div class="pmw" style="animation-name:${key}"><img src="${k.art}map/oldmap.jpg" alt=""><b class="pold" style="left:40%;top:36%">${t('fr.oldJoseon')}</b></div>`
     + `<i class="pring" style="width:${(ring * 100).toFixed(1)}%;left:${rl.toFixed(1)}%;top:${rt.toFixed(1)}%"></i><b class="pmname" style="left:${rl.toFixed(1)}%;top:calc(50% + ${Math.min(92, below).toFixed(1)}%)">${k.esc(OLDMAP_NAME[region])}</b></div>`
 }
 
@@ -392,7 +394,7 @@ function carriedHtml(k: FrontKit, r: Realm): string {
   if (ids.length === 0) return ''
   const faces = ids.map((id) => { const src = k.bust?.(id) ?? null; return src !== null ? `<img src="${src}" alt="">` : '' }).join('')
   const names = ids.map((id) => r.heroes[id]?.name ?? '').filter((x) => x !== '')
-  return `<p class="carried">${faces}<span>영웅전에서 <b>${k.esc(josa(names.join(' · '), '이', '가'))}</b> 따라왔다</span></p>`
+  return `<p class="carried">${faces}<span>${t('fr.carried', { names: k.esc(names.join(' · ')) })}</span></p>`
 }
 
 export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
@@ -413,30 +415,30 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
         : ['기원후 2세기.', '옛 조선이 무너진 지 삼백 년, 왕이 하나가 아니던 때.']
     body = `<div class="pl pera">${oldMapHtml(k, r, region)}<p class="l1">${when}</p><p class="l2">${age}</p>`
       + `<p class="l3">${k.esc(ERA[region])}</p>`
-      + `<p class="l4">${r.known !== undefined ? '그러나 당신은 아직 이웃밖에 모릅니다. 지도는 아직 빈 한지입니다.' : '저마다 제 도읍을 지키며, 남의 도읍을 넘본다.'}</p></div>`
+      + `<p class="l4">${r.known !== undefined ? t('fr.knownOnly') : t('fr.eachOwn')}</p></div>`
   } else if (step === 1) {
     body = `<div class="pl pyou">${k.face(me, 'pface')}<div class="pt">${k.emblem(me, 'pem')}<b>${k.esc(f?.name ?? '')}</b>`
-      + `<span>${k.esc(n?.place ?? '')}</span>${ruler !== undefined ? `<p class="who">군장 <b>${k.esc(ruler.name)}</b></p>` : ''}`
+      + `<span>${k.esc(n?.place ?? '')}</span>${ruler !== undefined ? `<p class="who">${t('fr.ruler', { name: k.esc(ruler.name) })}</p>` : ''}`
       // 나라의 결과 풍습 — 고르기 판과 같은 카드 (형 10-26: "게임시작할때 2페이지에 그나라 군주나올때 국가 개성 정보들 다 알려줘야할듯")
       + `<p>${k.esc(n?.blurb ?? '')}</p>${customsHtml(k, me, f?.customs)}${carriedHtml(k, r)}</div></div>`
   } else {
     const need = winNeed(region)
     // 세 갈래 — 갈래마다 할 수 있는 일을 게임 속 그림과 함께 (형 10-25: "첩자가 아니라 공작 · 화친 동맹 교역 첩자 … 아이콘들과 함께 설명")
     const ways: Array<[string, string, string, ReadonlyArray<readonly [string, string]>]> = [
-      ['unit-spear', '군대', '장정을 뽑아 군대를 세우고, 이웃 고을을 쳐서 쥔다', [['unit-spear', '징병'], ['route-column', '출정'], ['war-surrender', '사로잡기']]],
-      ['good-tribute-bell', '사신', '적의 적은 벗이 된다', [['ask-truce', '화친'], ['ask-alliance', '동맹'], ['ask-trade', '교역'], ['ask-gift', '선물']]],
-      ['plot-schemes', '공작', '몰래 적을 흔든다', [['status-spy', '첩자'], ['status-morale-down', '소문'], ['unit-archer', '암살'], ['status-famine', '방화'],
-        ...(r.known !== undefined ? [['unit-scouts', '정찰'] as const] : [])]],
+      ['unit-spear', t('fr.g.army'), t('fr.g.armyLine'), [['unit-spear', t('fr.g.draft')], ['route-column', t('fr.g.march')], ['war-surrender', t('fr.g.capture')]]],
+      ['good-tribute-bell', t('fr.g.envoy'), t('fr.g.envoyLine'), [['ask-truce', t('fr.g.truce')], ['ask-alliance', t('fr.g.alliance')], ['ask-trade', t('fr.g.trade')], ['ask-gift', t('fr.g.gift')]]],
+      ['plot-schemes', t('fr.g.plot'), t('fr.g.plotLine'), [['status-spy', t('fr.g.spy')], ['status-morale-down', t('fr.g.rumor')], ['unit-archer', t('fr.g.assassin')], ['status-famine', t('fr.g.arson')],
+        ...(r.known !== undefined ? [['unit-scouts', t('fr.g.scout')] as const] : [])]],
     ]
     // 캠페인의 장이면 그 장의 목표를 (CAMPAIGN.md)
     const ch = chapterOfRegion(region)
     // 장(캠페인)·배우는 판은 목표가 하나 — 크게 한 줄 · 자유 판은 넷 가운데 하나 (app.pathShares 와 같은 넷)
     const free = ch === undefined && region !== 'tutorial'
-    const one = ch !== undefined ? k.esc(ch.goal) : region === 'tutorial' ? '미추홀 도읍을 쥐면 이깁니다' : `도읍 <b>${need}</b>곳을 쥔다`
-    const paths = free ? `<ol class="gpaths">${WIN_PATHS.map(([ic, name, what], i) => `<li style="--d:${(0.35 + i * 0.18).toFixed(2)}s">${k.icon(ic, 'gpi')}<b>${name}</b><span>${i === 0 ? `도읍 <b>${need}</b>곳을 쥔다` : what}</span></li>`).join('')}</ol>` : ''
-    const head = `<div class="gbox"><span class="gtag">승리 목표</span>${ch !== undefined ? `<small class="gch">${chapterTag(ch.n)} · ${k.esc(ch.name)}</small>` : ''}`
-      + (free ? `<p class="gone">넷 가운데 <b>하나만</b> 이루면 이깁니다</p>${paths}` : `<p class="gone big">${one}</p>`)
-      + `<p class="glose">우리 도읍을 잃으면 집니다</p></div>`
+    const one = ch !== undefined ? k.esc(ch.goal) : region === 'tutorial' ? t('fr.goalTutWin') : t('fr.goalHold', { n: need })
+    const paths = free ? `<ol class="gpaths">${winPaths().map(([ic, name, what], i) => `<li style="--d:${(0.35 + i * 0.18).toFixed(2)}s">${k.icon(ic, 'gpi')}<b>${name}</b><span>${i === 0 ? t('fr.goalHold', { n: need }) : what}</span></li>`).join('')}</ol>` : ''
+    const head = `<div class="gbox"><span class="gtag">${t('fr.goalTag')}</span>${ch !== undefined ? `<small class="gch">${chapterTag(ch.n)} · ${k.esc(ch.name)}</small>` : ''}`
+      + (free ? `<p class="gone">${t('fr.goalAny')}</p>${paths}` : `<p class="gone big">${one}</p>`)
+      + `<p class="glose">${t('fr.goalLose')}</p></div>`
     body = `<div class="pl pgoal">${head}<div class="ways">`
       + ways.map(([ic, t, d, subs]) => `<div class="way">${k.icon(ic, 'wic')}<b>${t}</b><span>${d}<span class="wsub">${subs.map(([si, sn]) => `<i>${k.icon(si, 'wsi')}${sn}</i>`).join('')}</span></span></div>`).join('')
       + `</div><p class="ptip">${r.clock === 'month' ? '한 달에 명령을 정하고 <b>다음 달</b>을 누르세요. 석 달이 한 계절입니다.' : '한 계절에 명령을 정하고 <b>다음 계절</b>을 누르세요.'} 모든 나라가 한꺼번에 움직입니다.</p></div>`
@@ -448,11 +450,11 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
 }
 
 /** 자유 판의 승리 길 넷 — 아이콘 · 이름 · 한 줄 (자세한 것은 판 위 「?」 · app GUIDE.paths) */
-const WIN_PATHS: ReadonlyArray<readonly [string, string, string]> = [
-  ['settle-capital', '정복', ''],
-  ['ask-alliance', '맹주', '아는 나라 절반 넘게를 속국과 동맹으로 묶고 네 계절을 버틴다'],
-  ['settle-iron-town', '철과 뱃길', '철광이나 포구를 쥐고 여러 나라와 철을 바꾼다'],
-  ['status-good-omen', '큰 제사', '소도 곁 고을에서 봄·가을 제사를 한 번도 거르지 않는다'],
+const winPaths = (): ReadonlyArray<readonly [string, string, string]> => [
+  ['settle-capital', t('fr.w.conquest'), ''],
+  ['ask-alliance', t('fr.w.suzerain'), t('fr.w.suzerainLine')],
+  ['settle-iron-town', t('fr.w.iron'), t('fr.w.ironLine')],
+  ['status-good-omen', t('fr.w.rite'), t('fr.w.riteLine')],
 ]
 
 // ───────── 끝 — 연대기
