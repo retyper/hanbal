@@ -56,7 +56,9 @@ const ART = {
   shield: { file: 'anim2/shield.png', ar: 317 / 160, walk0: 4, walkN: 8, hit0: 12, hitN: 4 },
   /** 산적 판 바탕 — 고갯길 · 땅이 시작되는 줄 (0~1) */
   pass: 'battle/battle-pass.jpg',
-  passGroundV: 0.66,
+  /** 세 길이 그림에 그려진 고갯길 (제미나이 11-12 · 아랫길 흙길 · 가운뎃길 벼랑 턱 · 윗길 능선) */
+  passLanes: 'battle/battle-pass-lanes.jpg',
+  passGroundV: 0.722,
   /** 두목 — 칼 든 장수 띠 */
   captain: { file: 'anim2/pirate-captain.png', ar: 143 / 160, walk0: 4, walkN: 8, hit0: 12, hitN: 6, tallM: 2.25 },
   /** 배 · 떠 오는 궤짝 그림 (제미나이 11-08 · assets_src/realm/gemini/pirate) — 못 읽으면 코드로 그린 꼴 */
@@ -324,9 +326,9 @@ let waterKey = -1
  */
 const BAKE = { margin: 16 } as const
 const PATH = {
-  /** 다짐길 — 배경 위에 얹는 반투명 어두운 흙 (곱하기 느낌) · 윗면 밝은 흙 얇게 · 벼랑 턱 아래만 그늘 */
-  earth: 'rgba(86, 56, 28, 0.5)', lip: 'rgba(240, 212, 160, 0.82)', shade: 'rgba(24, 16, 8, 0.4)', shadeDeep: 'rgba(24, 16, 8, 0.22)',
-  rut: 'rgba(52, 34, 16, 0.4)', grass: 'rgba(96, 108, 44, 0.8)', stone: 'rgba(150, 140, 124, 0.85)', stoneDark: 'rgba(60, 50, 40, 0.7)',
+  /** 길은 그림에 그려져 있다 — 코드는 발자국·그늘만 옅게 (알파 0.2 이하) · 다짐길 — 배경 위에 얹는 반투명 어두운 흙 (곱하기 느낌) · 윗면 밝은 흙 얇게 · 벼랑 턱 아래만 그늘 */
+  earth: 'rgba(86, 56, 28, 0.14)', lip: 'rgba(240, 212, 160, 0.12)', shade: 'rgba(24, 16, 8, 0.18)', shadeDeep: 'rgba(24, 16, 8, 0.1)',
+  rut: 'rgba(52, 34, 16, 0.18)', grass: 'rgba(96, 108, 44, 0.18)', stone: 'rgba(150, 140, 124, 0.18)', stoneDark: 'rgba(60, 50, 40, 0.18)',
   /** 길 흙 두께 · 윗단 두께 · 벼랑 그늘 깊이 (m) */
   thick: 0.36, lipH: 0.09, shadeH: 0.95, groundThick: 0.45,
 } as const
@@ -489,7 +491,7 @@ export function pirateHooks(run: () => PirateRun | null): SceneHooks {
     },
     backdrop(ctx, cam): boolean {
       const b = bandit()
-      const im = img(b ? ART.pass : ART.sea)
+      const im = img(b ? ART.passLanes : ART.sea)
       if (im === null) return false
       ctx.imageSmoothingEnabled = true
       ctx.imageSmoothingQuality = 'high'
