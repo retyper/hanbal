@@ -234,7 +234,7 @@ function dockHtml(t: TownViewIn, s: TownSlot | undefined): { dock: string; bar: 
   }).join('')
   const dock = `<div class="tvfh"><b>빈 터</b><span>${s.options.length > 0 ? '무엇을 세울까요 · ' + esc(s.when) + ' 걸려 섭니다' : '이 땅에 맞는 일터가 없습니다'}</span></div>`
     + `<div class="tvtiles">${tiles}</div>`
-    + `<p class="tvdoes">${picked !== null ? `<b class="tveff">▲ ${esc(picked.eff)}</b> ${esc(picked.does)}${picked.why !== null ? ` · 🔒 ${esc(picked.why)}` : ''}` : '타일을 누르면 설명이 보입니다'}</p>`
+    + `<p class="tvdoes${picked === null ? ' hint' : ''}">${picked !== null ? `<b class="tveff">▲ ${esc(picked.eff)}</b> ${esc(picked.does)}${picked.why !== null ? ` · 🔒 ${esc(picked.why)}` : ''}` : '타일을 누르면 설명이 보입니다'}</p>`
   const bar = picked === null
     ? `<button class="tvgo"${deny(s.options.length > 0 ? '위 타일에서 지을 것을 먼저 고르세요' : '이 땅에 맞는 일터가 없습니다')}>지을 것을 고르세요</button>`
     : picked.on
@@ -608,8 +608,25 @@ ${VILLAGER_ANIM.map((v, k) => `.ap .tvf.v${k} { --ar: ${v.ar.toFixed(4)}; } .ap 
 .ap .tvgo small { flex-basis: 100%; font-size: 12px; font-weight: 400; color: #e8dcc0; }
 .ap .tvgo.on { background: #4a3718; color: #ffe2a0; border-color: #ffe2a0; box-shadow: 0 0 0 2px #e0bd78, inset 0 3px 8px #000a; translate: 0 2px; }
 .ap .tvgo[aria-disabled="true"] { background: #2a2016; border-color: #6a5236; color: #a3957a; box-shadow: none; }
-/* 키가 작은 폰(360x640 쯤) — 판 그림을 줄여 아래 타일 칸에 자리를 준다 */
-@media (max-height: 700px) and (max-width: 759px) { .ap .tvstage { height: min(calc(100vw * 0.7344), 36dvh); } .ap .tvtile { min-height: 84px; } }
+/* 키가 작은 폰(360x640 쯤) — 판 그림을 줄이고 타일은 세 칸 · 이름만 · 누르면 아래에 설명이 떠서, 구르지 않고 여섯 개가 다 보인다 */
+@media (max-height: 700px) and (max-width: 759px) {
+  .ap .tvstage { height: min(calc(100vw * 0.7344), 33dvh); }
+  .ap .tvdock { overflow-y: hidden; gap: 5px; padding: 6px 12px; }
+  .ap .tvfh { min-height: 24px; } .ap .tvfh > b { font-size: 16px; }
+  .ap .tvtiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .ap .tvtile { min-height: 64px; padding: 4px 3px; gap: 2px; }
+  .ap .tvtile .tvti { width: 32px; height: 32px; }
+  .ap .tvtile .tveff, .ap .tvtile small { display: none; }
+  .ap .tvtile.lk::before { content: '🔒'; position: absolute; top: 2px; left: 5px; font-size: 11px; }
+  .ap .tvdoes { font-size: 12px; min-height: 0; }
+  .ap .tvdoes.hint { display: none; }
+  .ap .tvdoes .tveff { font-size: 13px; }
+  .ap .tvtop { min-height: 44px; padding-top: max(2px, env(safe-area-inset-top, 0px)); padding-bottom: 2px; }
+  .ap .tvpband { padding-top: 2px; padding-bottom: 2px; }
+  .ap .tvbar { padding: 4px 12px calc(4px + env(safe-area-inset-bottom, 0px)); }
+  .ap .tvhave { margin-bottom: 3px; }
+  .ap .tvgo { min-height: 48px; padding: 4px 12px; }
+}
 /* 넓은 가로 화면 — 아래 칸과 단추가 오른쪽 기둥으로 · 판이 세로를 다 쓴다 */
 @media (min-width: 760px) and (orientation: landscape) {
   .ap .townv { grid-template-areas: "top dock" "stage dock" "stage bar"; grid-template-columns: 1fr minmax(300px, 36%); grid-template-rows: auto 1fr auto; }
