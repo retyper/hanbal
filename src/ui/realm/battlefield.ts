@@ -12,7 +12,7 @@
  * 확률은 숫자로 안 보인다 — 사로잡기는 말과 색으로, 대신 사람 수(날랜 무리 · 호위)는 보인다 (realm-no-numbers).
  */
 import { faceFile } from './face.ts'
-import { FACTION_ART, SOL_ANIM2, bustOf, SOL_ANIM_AR, UNIT_ICON, flagIcon, genArtOf, generalSprite } from '../../realm/data/art.ts'
+import { FACTION_ART, SOL_ANIM2, bustOf, SOL_ANIM_AR, UNIT_ICON, flagIcon, genArtOf, generalSprite, PX_HERO } from '../../realm/data/art.ts'
 import { battleName, endStory, fieldName, groupLabel, josa, roundStory, storyCtx, TURN, turnWord, UNIT_NAME } from '../../realm/data/prose.ts'
 import { BATTLE_STYLES, groupMen, groupOf, lookRound, nightAt, type BattleStyle, type RoundAt } from '../../realm/tactics.ts'
 import { rehearse, type BattleLine } from '../../realm/warroom.ts'
@@ -616,6 +616,8 @@ function duskHtml(l: BattleLine, a: DuskAsk, weAtk: boolean, art: string, anim: 
 
 export interface WarHost {
   readonly art: string
+  /** 도트 시험(연습 싸움) — 겨루기 장수를 anim-px 도트 띠로 (없는 장수는 옛 띠) */
+  readonly px?: boolean
   readonly me: string
   ding(name: string, vol?: number, rate?: number, dur?: number): void
   /** 곧 낼 소리를 미리 받아 풀어 둔다 (ding 과 같은 이름) — 처음 한 번이 늦게 나지 않게 */
@@ -4501,12 +4503,12 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       const foe = (pd.foeHeroes ?? []).map((h) => prev.heroes[h.id]).filter((h): h is Hero => h !== undefined)
         .sort((a, b) => b.mu - a.mu || (a.id < b.id ? -1 : 1))[0]
       if (me !== undefined && foe !== undefined) {
-        const side = (h: Hero): DuelSide => { const b = bustOf(h.id); return { name: h.name, mu: h.mu, sprite: generalSprite(h), ...(b !== undefined ? { portrait: b } : {}) } }
+        const side = (h: Hero): DuelSide => { const b = bustOf(h.id); return { name: h.name, mu: h.mu, sprite: host.px === true ? (PX_HERO[h.id] ?? generalSprite(h)) : generalSprite(h), ...(b !== undefined ? { portrait: b } : {}) } }
         let seed = 0
         for (const ch of `${key}:${pd.round}`) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0
         const line = t.line
         const bgUrl = line !== null ? warBg(host.art, warGround(prev, line), line.atkFaction !== host.me) : undefined
-        void mountDuel({ me: side(me), foe: side(foe), tier: prev.region === 'tutorial' ? 0 : clampTier(prev.tier ?? 1), seed, ...(bgUrl !== undefined ? { bg: bgUrl } : {}) }).then((res) => {
+        void mountDuel({ me: side(me), foe: side(foe), tier: prev.region === 'tutorial' ? 0 : clampTier(prev.tier ?? 1), seed, ...(host.px === true ? { px: true } : {}), ...(bgUrl !== undefined ? { bg: bgUrl } : {}) }).then((res) => {
           if (res !== undefined) sel.duel = res
           fightNow(key)
         })

@@ -9,6 +9,7 @@
 import { createDuel, judgeWindows, lateWindow, stepDuel, tierOf, type Cue, type Duel, type DuelEvent, type Outcome, type Tap } from './sim.ts'
 import { P } from '../tune/params.ts'
 import { makeRng } from '../core/rng.ts'
+import { AWAKEN_ART, AWAKEN_LOOP, loopFile } from '../realm/data/awaken-art.ts'
 
 export interface DuelSide {
   readonly name: string
@@ -28,6 +29,8 @@ export interface DuelSetup {
   readonly bg?: string
   /** 시험판 — 들판과 깃발부터 · 싸움 음악을 직접 튼다 · 끝나면 눌러서 한 판 더 */
   readonly standalone?: boolean
+  /** 도트 시험 — public/realm/anim-px/gen-<sprite>.png 가 있으면 그걸 정수 배율로 또렷이 그린다 (없으면 옛 띠 · 주소 px=1 도 같다) */
+  readonly px?: boolean
 }
 /** 본편으로 넘기는 끝 — 이김 · 짐 · 비김(undefined → 본편이 무예로 굴린다) */
 export type DuelResult = 'win' | 'lose' | undefined
@@ -80,13 +83,49 @@ const bg = img(cfg.bg ?? 'realm/battle/battle-field.jpg')
 const crowdBack = [1, 2, 3, 4, 5, 6].map((i) => img(`realm/duel/crowd/f${i}.png`)) // 정면(소리치는) 군사 낱장
 const crowdFront = [1, 2, 3, 4, 5, 6].map((i) => img(`realm/duel/crowd/b${i}.png`)) // 등을 보이는 군사 낱장
 const crowdReady = (set: HTMLImageElement[]): boolean => set.every((im) => im.complete && im.naturalWidth > 0)
-const sprMe = img(`realm/anim2/gen-${cfg.me.sprite}.png`)
-const sprFoe = img(`realm/anim2/gen-${cfg.foe.sprite}.png`)
+const pxMode = cfg.px === true || params.get('px') === '1'
+/** 띠 그림 — 도트 시험이면 anim-px 먼저, 없으면 옛 띠로 (img 의 onerror 가 갈아 끼운다) */
+const strip = (s: string): HTMLImageElement => pxMode ? img(`realm/anim-px/gen-${s}.png`, `realm/anim2/gen-${s}.png`) : img(`realm/anim2/gen-${s}.png`)
+const sprMe = strip(cfg.me.sprite)
+const sprFoe = strip(cfg.foe.sprite)
 const foePid = cfg.foe.portrait
 const mePid = cfg.me.portrait
 const foeArt = foePid !== undefined ? img(`realm/awaken-hd/${foePid}.jpg`, `realm/bust-hd/${foePid}.jpg`) : null
 const meFace = mePid !== undefined ? img(`realm/bust/${mePid}.jpg`) : null
 const foeFace = foePid !== undefined ? img(`realm/bust/${foePid}.jpg`) : null
+/**
+ * 적장 1차 각성 영상 — 겨루기가 열릴 때 · 체간이 무너질 때 · 쓰러뜨릴 때만 잠깐 틀고, 고리가 도는 동안은 멈춘 그림 (형 11-11: "1차각성 동영상있는 장수라면 … 과하나?").
+ * 영상은 720×1280 세로 · 그림은 900×900 정사각이라 영상 위쪽에서 정사각을 오려(loopCropY) 같은 둥근 창에 넣고, 그림과 겹쳐 서서히 바꾼다(loopFadeMs).
+ * 테두리는 그 위에 그대로 덮인다. 영상이 안 풀리면(폰 절전 등) 그림만 남는다
+ */
+const foeLoop: HTMLVideoElement | null = (() => {
+  if (foePid === undefined || !AWAKEN_ART.has(foePid) || !AWAKEN_LOOP.has(foePid)) return null
+  const v = document.createElement('video')
+  v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto'
+  v.setAttribute('playsinline', ''); v.setAttribute('muted', '')
+  v.style.cssText = 'position:absolute;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none'
+  v.src = `realm/${loopFile(foePid)}`
+  host.appendChild(v)
+  cleanups.push(() => { v.pause(); v.removeAttribute('src'); v.load() })
+  onDoc('visibilitychange', () => { if (document.visibilityState !== 'visible') v.pause() })
+  return v
+})()
+/** 영상을 보여 줄 때 [시작, 끝] (performance.now) — 끝 뒤엔 그림으로 돌아가 멈춘다 */
+let loopWin: [number, number] = [0, 0]
+function loopShow(now: number, ms: number): void {
+  if (foeLoop === null || document.visibilityState !== 'visible') return
+  if (now > loopWin[1]) { try { foeLoop.currentTime = 0 } catch { /* 아직 안 받았다 */ } }
+  loopWin = [now > loopWin[1] ? now : loopWin[0], Math.max(loopWin[1], now + ms)]
+  void foeLoop.play().catch(() => undefined)
+}
+/** 지금 영상 짙기 0~1 — 들어올 때·나갈 때 loopFadeMs 동안 그림과 겹친다 */
+function loopAlpha(now: number): number {
+  if (foeLoop === null || foeLoop.readyState < 2) return 0
+  const f = Math.max(1, P.duel.loopFadeMs)
+  const a = Math.min(1, (now - loopWin[0]) / f, (loopWin[1] - now) / f)
+  if (a <= 0 && now > loopWin[1] && !foeLoop.paused) foeLoop.pause()
+  return Math.max(0, a)
+}
 
 // ── 소리 (합성 · 누른 순간 반응만)
 let ac: AudioContext | null = null
@@ -469,6 +508,7 @@ function begin(): void {
   seen = 0; queued = null
   pops.length = 0; sparks.length = 0; slashes.length = 0; marks.length = 0; judges.length = 0
   mode = 'duel'; modeAt = performance.now(); endAt = 0
+  loopShow(modeAt, P.duel.loopIntroMs) // 적장 등장 — 각성 영상이 있으면 잠깐 움직인다
 }
 
 /** 끝 — 「승리 · 패배 · 비김」만 크게 쾅 떴다가 저절로 닫힌다 (형 11-09: 체력·시간 숫자 · 확인 버튼 필요 없다) */
@@ -571,6 +611,7 @@ function onEvent(e: DuelEvent, now: number): void {
       break
     case 'break':
       SFX.break()
+      loopShow(now, P.duel.loopBreakMs) // 체간이 무너졌다 — 적장이 잠깐 움직인다
       flash = { rgb: '255,200,90', t0: now, ms: 300, a: 0.35 }
       foeAnim = { kind: 'stagger', t0: now }
       break
@@ -598,14 +639,21 @@ function cover(im: HTMLImageElement, x: number, y: number, w: number, h: number)
 }
 function sprite(im: HTMLImageElement, frame: number, x: number, base: number, h: number, flip: boolean, tint: string | null): void {
   if (!im.complete || im.naturalWidth === 0) return
-  const cw = im.naturalWidth / 20, ch = im.naturalHeight, w = h * (cw / ch)
+  const isPx = im.src.includes('/anim-px/')
+  const cw = im.naturalWidth / 20, ch = im.naturalHeight
+  // 도트는 정수 배율 · 정수 자리 — 점이 네모로 또렷하게 (옛 띠는 매끄럽게 늘린다)
+  const sc = isPx ? Math.max(1, Math.round(h * P.duel.pxFill / ch)) : 0
+  const w = isPx ? cw * sc : h * (cw / ch)
+  if (isPx) { h = ch * sc; x = Math.round(x); base = Math.round(base) }
   ctx.save(); ctx.translate(x, base); if (flip) ctx.scale(-1, 1)
+  ctx.imageSmoothingEnabled = !isPx
   if (tint === null) ctx.drawImage(im, frame * cw, 0, cw, ch, -w / 2, -h, w, h)
   else {
     // 번쩍임은 장수 모양에만 — 따로 그린 판에서 물들여 옮긴다 (판 위에 바로 칠하면 칸 네모가 통째로 물든다)
     const tw = Math.ceil(cw), th = Math.ceil(ch)
     if (tintCv.width < tw || tintCv.height < th) { tintCv.width = tw; tintCv.height = th }
     tintCx.clearRect(0, 0, tintCv.width, tintCv.height)
+    tintCx.imageSmoothingEnabled = !isPx
     tintCx.globalCompositeOperation = 'source-over'; tintCx.drawImage(im, frame * cw, 0, cw, ch, 0, 0, cw, ch)
     tintCx.globalCompositeOperation = 'source-atop'; tintCx.fillStyle = tint; tintCx.fillRect(0, 0, cw, ch)
     ctx.drawImage(tintCv, 0, 0, cw, ch, -w / 2, -h, w, h)
@@ -918,6 +966,17 @@ function drawDuel(now: number, fadeIn: number): void {
   const pb = panelBake(pn.s)
   if (pb !== null) { ctx.globalAlpha = fadeIn; ctx.drawImage(pb, -pn.s / 2, -pn.s / 2, pn.s, pn.s); ctx.globalAlpha = 1 }
   else { roundRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s, pn.s * 0.06); ctx.fillStyle = 'rgba(10,7,5,.55)'; ctx.fill() }
+  // 각성 영상 — 그림과 같은 둥근 창 안에 · 세로 영상 위쪽에서 정사각을 오린다 (테두리는 아래에서 그 위에)
+  const la = loopAlpha(now)
+  if (la > 0 && foeLoop !== null && foeLoop.videoWidth > 0) {
+    const vw = foeLoop.videoWidth, vh = foeLoop.videoHeight, side = Math.min(vw, vh)
+    const sy = Math.max(0, Math.min(vh - side, vh * P.duel.loopCropY))
+    ctx.save(); roundRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s, pn.s * 0.06); ctx.clip()
+    ctx.fillStyle = `rgba(10,7,5,${0.55 * la * fadeIn})`; ctx.fillRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s)
+    ctx.globalAlpha = 0.9 * la * fadeIn
+    ctx.drawImage(foeLoop, (vw - side) / 2, sy, side, side, -pn.s / 2, -pn.s / 2, pn.s, pn.s)
+    ctx.restore()
+  }
   if (now - foeHurtAt < 120) { roundRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s, pn.s * 0.06); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(255,240,220,${0.28 * (1 - (now - foeHurtAt) / 120)})`; ctx.fill(); ctx.globalCompositeOperation = 'source-over' } // 맞으면 초상이 잠깐 하얗게 번쩍
   const fr = art('panel-frame')
   if (fr !== null) { const F = pn.s / 0.89, Fh = pn.s / 0.877; ctx.drawImage(scaled(fr, F, Fh), -pn.s / 2 - 0.055 * F, -pn.s / 2 - 0.061 * Fh, F, Fh) } // 테두리 안쪽 창 = 그림의 5.5~94.5% · 6.1~93.8%
@@ -1120,7 +1179,7 @@ function frame(now: number): void {
         if (now < freezeUntil) { acc = 0; break }
       }
       syncRisers(duel)
-      if (duel.over !== null) { mode = 'end'; endAt = now; for (const id of [...risers.keys()]) riserCut(id) }
+      if (duel.over !== null) { mode = 'end'; endAt = now; for (const id of [...risers.keys()]) riserCut(id); loopShow(now, P.duel.loopEndMs) } // 결판 — 적장이 마지막으로 움직인다
     } else acc = 0
     drawDuel(now, Math.min(1, (now - modeAt) / 450))
     if (mode === 'duel') drawIntro(now)

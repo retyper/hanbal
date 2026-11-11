@@ -16,6 +16,8 @@ export function decodePng(file) {
   let depth = 0
   let type = 0
   const idat = []
+  let plte = null
+  let trns = null
   while (at < buf.length) {
     const len = buf.readUInt32BE(at)
     const kind = buf.toString('latin1', at + 4, at + 8)
@@ -26,14 +28,16 @@ export function decodePng(file) {
       depth = data[8]
       type = data[9]
       if (data[12] !== 0) throw new Error(`${file}: 인터레이스는 못 읽는다`)
-    } else if (kind === 'IDAT') idat.push(data)
+    } else if (kind === 'PLTE') plte = data
+    else if (kind === 'tRNS') trns = data
+    else if (kind === 'IDAT') idat.push(data)
     else if (kind === 'IEND') break
     at += 12 + len
   }
-  if (depth !== 8 || (type !== 2 && type !== 6)) throw new Error(`${file}: 8비트 RGB/RGBA 만 읽는다`)
-  const bpp = type === 6 ? 4 : 3
+  if ((type === 3 ? ![1, 2, 4, 8].includes(depth) : depth !== 8) || (type !== 2 && type !== 6 && type !== 3)) throw new Error(`${file}: 8비트 RGB/RGBA/팔레트 만 읽는다`)
+  const bpp = type === 6 ? 4 : type === 3 ? 1 : 3
   const raw = inflateSync(Buffer.concat(idat))
-  const stride = w * bpp
+  const stride = type === 3 ? Math.ceil((w * depth) / 8) : w * bpp
   const out = new Uint8Array(w * h * 4)
   const line = new Uint8Array(stride)
   const prev = new Uint8Array(stride)
@@ -63,6 +67,15 @@ export function decodePng(file) {
     for (let x = 0; x < w; x++) {
       const s = x * bpp
       const d = (y * w + x) * 4
+      if (type === 3) {
+        const bit = x * depth
+        const ix = (line[bit >> 3] >> (8 - depth - (bit & 7))) & ((1 << depth) - 1)
+        out[d] = plte[ix * 3]
+        out[d + 1] = plte[ix * 3 + 1]
+        out[d + 2] = plte[ix * 3 + 2]
+        out[d + 3] = trns !== null && ix < trns.length ? trns[ix] : 255
+        continue
+      }
       out[d] = line[s]
       out[d + 1] = line[s + 1]
       out[d + 2] = line[s + 2]

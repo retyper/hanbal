@@ -4242,7 +4242,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     const back = (): void => { warOn = false; front = { kind: 'title' }; paint() }
     try {
-      if (openWar(root, r, aiOrders(r), { art: ART, me: r.player, ding, warm: warmSfx, music: (k) => { if (k === 'war') music.war(); else music.result(k) }, done: back })) { warOn = true; music.war(); music.primeResults(); return }
+      if (openWar(root, r, aiOrders(r), { art: ART, px: true, me: r.player, ding, warm: warmSfx, music: (k) => { if (k === 'war') music.war(); else music.result(k) }, done: back })) { warOn = true; music.war(); music.primeResults(); return }
     } catch (e) { failNote(e) }
     goToast('이번엔 싸움이 열리지 않았습니다. 한 번 더 눌러 주세요')
   }
