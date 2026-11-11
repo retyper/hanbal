@@ -3,7 +3,8 @@
  * 그림은 CSS transform(확대·옆으로 흐름) 하나만 움직인다 — 화면 가득한 그림에 filter 애니는 폰 GPU 한도라 걸지 않는다.
  * 시계는 rAF 로 돌려서 숨은 탭에서는 저절로 멈춘다(규칙 4). 아무 데나 누르거나 키를 누르면 통째로 건너뛴다.
  * 내레이션: public/realm/voice/opening/<n>.ogg 가 있으면 깔고, 없으면 자막만으로 돈다.
- * TODO(음악): 지도 음악 가운데 가장 장엄한 곡을 앞 5초 낮게 → 6번에서 북 → 8번에서 한 번 크게 (OPENING.md 소리). music 은 app.ts 안에 있어 아직 잇지 않았다.
+ * 음악: 첫 화면 곡 가운데 가장 웅장한 것(bgm_title_g1)을 깔고 6번 장면부터 커졌다가 끝에서 잦아든다. 내레이션이 나오는 동안은 음악을 낮춘다(덕킹).
+ * 크기는 소리 설정의 배경음 슬라이더를 따르고, 무음이면 안 튼다. 지도·판 음악은 오프닝 동안 hush 로 끈다.
  */
 import { t, type Key } from '../../i18n/index.ts'
 import { lang } from '../../i18n/lang.ts'
@@ -11,7 +12,11 @@ import { AWAKEN_ART, AWAKEN_LOOP, loopFile } from '../../realm/data/awaken-art.t
 import { CHAPTERS } from '../../realm/data/campaign.ts'
 import { P } from '../../tune/params.ts'
 import { openCreditsRoll } from './credits.ts'
-import { soundVolume } from './sound.ts'
+import { sndFile, soundVolume } from './sound.ts'
+import { worldMapReady } from './worldmap.ts'
+import { WORLD_DATA, worldGeo } from '../../realm/data/regions/world.ts'
+import { WORLD_GEO } from '../../realm/data/regions/world-geo.ts'
+import { flagIcon } from '../../realm/data/art.ts'
 
 const SEEN_KEY = 'hanbal.opening.seen'
 
@@ -23,7 +28,7 @@ function markSeen(): void {
   try { localStorage.setItem(SEEN_KEY, '1') } catch { /* 못 남기면 다음에 또 보일 뿐 */ }
 }
 
-type Motion = 'in' | 'out' | 'panL' | 'panR' | 'rush'
+type Motion = 'in' | 'out' | 'panL' | 'panR' | 'rush' | 'drift'
 /** 움직임마다 [시작 transform, 끝 transform] — 늘 확대 1 이상이라 가장자리가 비지 않는다 */
 const MOTION: Readonly<Record<Motion, readonly [string, string]>> = {
   in: ['scale(1.02)', 'scale(1.2)'],
@@ -31,6 +36,7 @@ const MOTION: Readonly<Record<Motion, readonly [string, string]>> = {
   panL: ['scale(1.16) translate3d(3%,0,0)', 'scale(1.16) translate3d(-3%,0,0)'],
   panR: ['scale(1.16) translate3d(-3%,0,0)', 'scale(1.16) translate3d(3%,0,0)'],
   rush: ['scale(1.02)', 'scale(1.4)'],
+  drift: ['scale(1)', 'scale(1.07)'], // 지도는 가장자리까지 깃발이 있어 크게 밀지 않는다
 }
 type Extra = 'flags' | 'shake' | 'jitter' | 'awaken' | 'logo' | ''
 interface Scene {
@@ -43,7 +49,7 @@ interface Scene {
 const SCENES: readonly Scene[] = [
   { imgs: ['event/event-golden-egg.jpg'], motion: 'in', extra: '' },
   { imgs: ['event/event-egg-birth.jpg', 'keyart/gujibong.jpg'], motion: 'panR', extra: '' },
-  { imgs: ['map/spring.jpg'], motion: 'out', extra: 'flags' },
+  { imgs: [], motion: 'drift', extra: 'flags' },
   { imgs: ['event/event-bow-forge.jpg', 'event/event-iron-trade.jpg'], motion: 'panL', extra: '' },
   { imgs: ['event/event-invade-field.jpg', 'film/film-win-field.jpg'], motion: 'rush', extra: 'shake' },
   { imgs: ['event/event-capture.jpg', 'event/event-captive-persuade.jpg'], motion: 'in', extra: 'jitter' },
@@ -51,7 +57,37 @@ const SCENES: readonly Scene[] = [
   { imgs: [], motion: 'in', extra: 'logo' },
 ]
 const AWAKEN_PICK = ['w-30-guya-soebi', 'l-L2-soseono', 'w-102-garak-dana'] as const
-const FLAGS = 78
+/** 깃발이 서로 덮지 않게 겹친 쌍만 살살 밀어낸다(영남 쪽은 도읍이 빽빽하다) — 제자리에서 한 깃발 폭 안쪽으로만 움직인다 */
+function spreadOut(pts: ReadonlyArray<readonly [number, number]>, gap: number): Array<[number, number]> {
+  const q = pts.map((p): [number, number] => [p[0], p[1]])
+  for (let it = 0; it < 40; it++) {
+    for (let i = 0; i < q.length; i++) for (let j = i + 1; j < q.length; j++) {
+      const a = q[i]!, b = q[j]!
+      let dx = b[0] - a[0], dy = b[1] - a[1]
+      let d = Math.hypot(dx, dy)
+      if (d >= gap) continue
+      if (d < 0.01) { dx = 1; dy = 0; d = 1 }
+      const m = ((gap - d) / 2) / d
+      a[0] -= dx * m; a[1] -= dy * m; b[0] += dx * m; b[1] += dy * m
+    }
+  }
+  return q
+}
+/** 삼한과 북녘 판 바탕 그림 한 장의 세로/가로 — 조각 눈금(1024×765 = 경도 2.9° × 위도 2.0°)과 판의 틀(proj)에서 */
+const WORLD_ASPECT = ((WORLD_GEO.proj.lat1 - WORLD_GEO.proj.lat0) * (765 / 2.0)) / ((WORLD_GEO.proj.lon1 - WORLD_GEO.proj.lon0) * (1024 / 2.9))
+/** 깃발이 앉을 지도 위 비율 자리 — 나라마다 도읍 한 곳 · 남쪽(아래)부터 */
+interface Spot { readonly id: string; readonly x: number; readonly y: number }
+function flagSpots(): readonly Spot[] {
+  const out: Spot[] = []
+  for (const n of WORLD_DATA.STARTS) {
+    const ll = worldGeo(n.faction.capital)
+    const ic = flagIcon(n.faction.id)
+    if (ll === undefined || ic === undefined) continue
+    const [x, y] = WORLD_GEO.pos(ll[0], ll[1])
+    out.push({ id: ic, x, y })
+  }
+  return out.sort((a, b) => b.y - a.y || a.x - b.x)
+}
 
 const CSS = `
 #opening { position: fixed; inset: 0; z-index: 10050; background: #000; overflow: hidden; cursor: pointer; transition: opacity var(--opfade) ease; font-family: 'Gowun Batang', 'Apple SD Gothic Neo', 'Malgun Gothic', serif; }
@@ -70,9 +106,21 @@ const CSS = `
 @keyframes opshake { 0% { transform: translate3d(0,0,0); } 20% { transform: translate3d(-1.6%,.8%,0); } 40% { transform: translate3d(1.4%,-.8%,0); } 60% { transform: translate3d(-.8%,.5%,0); } 80% { transform: translate3d(.5%,-.3%,0); } 100% { transform: translate3d(0,0,0); } }
 #opening .opjit { animation: opjit .22s linear 1; }
 @keyframes opjit { 0% { transform: translate3d(0,0,0); } 30% { transform: translate3d(-.9%,0,0); } 70% { transform: translate3d(.9%,0,0); } 100% { transform: translate3d(0,0,0); } }
-#opening .opflag { position: absolute; width: 11px; height: 16px; background: #f0cc74; clip-path: polygon(0 0, 100% 28%, 0 56%, 0 100%, 14% 100%, 14% 56%); filter: drop-shadow(0 0 2px #3a2200); opacity: 0; transform: scale(.4); animation: opflag .6s ease forwards; animation-delay: var(--fd); }
-@keyframes opflag { to { opacity: 1; transform: scale(1); } }
-#opening .opflash { position: absolute; inset: 0; background: #f6e8c4; opacity: 0; pointer-events: none; z-index: 2; }
+#opening .opmapw { position: absolute; inset: 0; transform: var(--kf); transform-origin: 50% 42%; animation: opkb var(--opdur) linear forwards; will-change: transform; }
+#opening .opmap { position: absolute; background: #1a2326; }
+#opening .opmapbg { position: absolute; inset: 0; background: center / 100% 100% no-repeat; opacity: 0; transition: opacity 1.2s ease; }
+#opening .opmapbg.on { opacity: 1; }
+#opening .opmapshade { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 42%, #0a090600 38%, #0a0906b8 100%), #0a090640; pointer-events: none; }
+#opening .opmap::before, #opening .opmap::after { content: ''; position: absolute; left: -2%; right: -2%; height: 14%; pointer-events: none; }
+#opening .opmap::before { top: -1px; background: linear-gradient(#000, #0000); }
+#opening .opmap::after { bottom: -1px; background: linear-gradient(#0000, #000); }
+#opening .opfl { position: absolute; z-index: 1; width: var(--flpx); height: var(--flpx); margin: calc(var(--flpx) / -2) 0 0 calc(var(--flpx) / -2); opacity: 0; transform: scale(.3); animation: opflag .9s cubic-bezier(.2,.9,.3,1.2) forwards; animation-delay: var(--fd); }
+#opening .opfl::before { content: ''; position: absolute; inset: -12%; border-radius: 50%; background: radial-gradient(circle, #0b0a08ee 58%, #0b0a08a0 78%, #0b0a0800 100%); }
+#opening .opfl::after { content: ''; position: absolute; inset: -8%; border-radius: 50%; border: 2px solid #ffe29a; opacity: 0; transform: scale(.6); animation: opglow 1s ease-out forwards; animation-delay: var(--fd); }
+#opening .opfl img { position: relative; display: block; width: 100%; height: 100%; z-index: 1; }
+@keyframes opflag { 0% { opacity: 0; transform: scale(.3); } 45% { opacity: 1; transform: scale(1.45); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes opglow { 0% { opacity: .95; transform: scale(.7); } 100% { opacity: 0; transform: scale(2.3); } }
+#opening .opflash { position: absolute; inset: 0; background: #f6e8c4; opacity: 0; pointer-events: none; }
 #opening .opflash.go { animation: opflash .45s ease-out 1; }
 @keyframes opflash { 0% { opacity: .85; } 100% { opacity: 0; } }
 #opening .opvid { animation: none; transform: none; will-change: auto; }
@@ -147,6 +195,15 @@ function awakenBox(base: string, id: string, cls: string): HTMLElement {
   return box
 }
 
+/** 삼한과 북녘 판의 바탕 — 오프닝을 틀 때 미리 짓기 시작한다(이미 지은 적이 있으면 바로). 3번 장면이 이것을 깐다 */
+let worldBgUrl = ''
+/** 지도 바탕을 깔고 서서히 드러낸다 (아직 못 받았으면 어두운 바다 위에 깃발이 먼저 선다) */
+function showWorldBg(host: ParentNode): void {
+  host.querySelectorAll<HTMLElement>('.opmapbg').forEach((b) => {
+    b.style.backgroundImage = `url('${worldBgUrl}')`
+    requestAnimationFrame(() => b.classList.add('on'))
+  })
+}
 /** 장면 하나를 짓는다 */
 function buildScene(base: string, sc: Scene, n: number, dur: number): HTMLElement {
   const root = document.createElement('div')
@@ -167,33 +224,78 @@ function buildScene(base: string, sc: Scene, n: number, dur: number): HTMLElemen
     root.innerHTML = `<div class="oplogo"><div class="oplogobox"><img src="${src}" alt="${esc(t('boot.logoAlt'))}"><div class="opsweep" style="--logo:url('${src}');--sweepms:${P.realm.openingSweepMs}ms"><i></i></div></div></div><div class="opcap">${esc(t('opening.8'))}</div>`
     return root
   }
-  root.innerHTML = sc.imgs.map((p) => `<img class="opimg" src="${base}realm/${p}" alt="" decoding="async">`).join('') + cap
   if (sc.extra === 'flags') {
-    // 남에서 북으로 하나씩 켜지는 깃발 일흔여덟 — 자리는 정해진 셈으로, 장면 앞 4/5 안에
-    const span = dur * 0.8
-    root.querySelector('.opscrim')!.insertAdjacentHTML('beforebegin', Array.from({ length: FLAGS }, (_, i) => {
-      const x = 28 + ((i * 47) % 44) + ((i * 13) % 5)
-      const y = 82 - (i * 62) / FLAGS + ((i * 7) % 5)
-      return `<i class="opflag" style="left:${x}%;top:${y}%;--fd:${(0.6 + (i * span) / FLAGS).toFixed(2)}s"></i>`
-    }).join(''))
+    // 실제 삼한과 북녘 판의 땅 위에 나라 깃발이 남에서 북으로 물결처럼 켜진다 — 자리는 도읍의 경위도
+    const spots = flagSpots()
+    const x0 = Math.min(...spots.map((p) => p.x)), x1 = Math.max(...spots.map((p) => p.x))
+    const y0 = Math.min(...spots.map((p) => p.y)), y1 = Math.max(...spots.map((p) => p.y))
+    const vw = window.innerWidth, vh = window.innerHeight
+    const w = Math.min((vw * 0.9) / (x1 - x0), (vh * 0.76) / ((y1 - y0) * WORLD_ASPECT))
+    const h = w * WORLD_ASPECT
+    const left = vw / 2 - ((x0 + x1) / 2) * w
+    const top = vh * 0.44 - ((y0 + y1) / 2) * h
+    const pts = spreadOut(spots.map((p) => [p.x * w, p.y * h] as const), P.realm.openingFlagPx * 0.92)
+    const span = dur * P.realm.openingFlagSpan
+    const waves = P.realm.openingFlagWaves
+    const flags = spots.map((p0, i) => {
+      const p = { id: p0.id, x: pts[i]![0] / w, y: pts[i]![1] / h }
+      const wave = Math.floor((i * waves) / spots.length)
+      const at = 0.5 + (wave * span) / waves + ((i % 4) * 0.05)
+      return `<i class="opfl" style="left:${(p.x * 100).toFixed(2)}%;top:${(p.y * 100).toFixed(2)}%;--fd:${at.toFixed(2)}s"><img src="${base}realm/icon/${p.id}.png" alt=""></i>`
+    }).join('')
+    root.innerHTML = `<div class="opmapw"><div class="opmap" style="left:${left.toFixed(1)}px;top:${top.toFixed(1)}px;width:${w.toFixed(1)}px;height:${h.toFixed(1)}px;--flpx:${P.realm.openingFlagPx}px"><i class="opmapbg"></i>${flags}</div></div><div class="opmapshade"></div>${cap}`
+    if (worldBgUrl !== '') showWorldBg(root)
+    return root
   }
+  root.innerHTML = sc.imgs.map((p) => `<img class="opimg" src="${base}realm/${p}" alt="" decoding="async">`).join('') + cap
   return root
 }
+
+/** 앱이 건네는 것 — muted: 소리 끔 설정 · hush: 오프닝이 도는 동안 판 음악을 끈다(true) / 되돌린다(false) */
+export interface OpeningHooks { readonly muted?: () => boolean; readonly hush?: (on: boolean) => void }
+const clamp01 = (n: number): number => Math.max(0, Math.min(1, n))
 
 /**
  * 오프닝을 튼다. 숨은 탭이면 안 튼다(false). 첫 번이든 다시 보기든 같다.
  * onDone: 끝났거나 건너뛰었을 때
  */
-export function playOpening(base: string, onDone?: () => void): boolean {
+export function playOpening(base: string, onDone?: () => void, hooks?: OpeningHooks): boolean {
   if (document.hidden) return false
   markSeen()
+  hooks?.hush?.(true)
   const secs = P.realm.openingSceneSec
   const starts: number[] = []
   secs.reduce((a, s, i) => { starts[i] = a; return a + s }, 0)
   const total = secs.reduce((a, s) => a + s, 0)
   let raf = 0
   let audio: HTMLAudioElement | null = null
-  const stage = makeStage(() => { cancelAnimationFrame(raf); audio?.pause() }, () => onDone?.())
+  const silent = (): boolean => hooks?.muted?.() === true
+  // 깔리는 음악 — 소리 끔이거나 배경음 슬라이더가 0 이면 안 튼다
+  let bed: HTMLAudioElement | null = null
+  if (!silent() && soundVolume('bgm') > 0) {
+    bed = new Audio(`${base}realm/sfx/${sndFile('bgm_title', 'g1')}`)
+    bed.volume = 0
+    void bed.play().catch(() => { /* 손을 대기 전이면 조용히 */ })
+  }
+  const onHide = (): void => {
+    if (document.hidden) { bed?.pause(); audio?.pause() } else if (bed !== null && !bed.ended) void bed.play().catch(() => {})
+  }
+  document.addEventListener('visibilitychange', onHide)
+  const stage = makeStage(() => {
+    cancelAnimationFrame(raf)
+    audio?.pause()
+    document.removeEventListener('visibilitychange', onHide)
+    const b = bed
+    if (b !== null) { // 건너뛰어도 뚝 끊지 않고 덮개가 걷히는 동안 잦아든다
+      const v0 = b.volume
+      let n = 0
+      const iv = window.setInterval(() => { n++; b.volume = clamp01(v0 * (1 - n / 10)); if (n >= 10) { window.clearInterval(iv); b.pause() } }, 50)
+    }
+  }, () => { hooks?.hush?.(false); onDone?.() })
+  void worldMapReady(`${base}realm/`, 'spring', 'world').then((u) => {
+    worldBgUrl = u
+    if (u !== '') showWorldBg(stage.el)
+  })
   // 그림은 미리 받아 둔다 (첫 장면이 늦으면 시계가 그만큼 늦게 시작한다)
   const pre = SCENES.flatMap((s) => s.imgs).map((p) => { const im = new Image(); im.src = `${base}realm/${p}`; return im })
   const first = pre[0]!
@@ -214,7 +316,7 @@ export function playOpening(base: string, onDone?: () => void): boolean {
     audio?.pause()
     audio = null
     const vol = soundVolume('voice')
-    if (vol > 0) {
+    if (vol > 0 && !silent()) {
       const a = new Audio(`${base}realm/voice/opening/${String(i + 1).padStart(2, '0')}.ogg`)
       a.volume = vol
       void a.play().catch(() => { /* 아직 녹음 전 */ })
@@ -223,11 +325,21 @@ export function playOpening(base: string, onDone?: () => void): boolean {
   }
   let last = 0
   let clock = 0
+  let duck = 1
   const tick = (now: number): void => {
     const dt = last === 0 ? 0 : Math.min(0.25, (now - last) / 1000) // 숨었다 돌아와도 한 번에 건너뛰지 않는다
     last = now
     clock += dt
     if (clock >= total) { stage.end(); return }
+    if (bed !== null) {
+      // 음악 크기 = 처음 낮게 → 6번 장면부터 크게 · 첫 어둠에서 서서히 · 끝에서 잦아듦 · 내레이션이 나오면 낮춤
+      const swellAt = starts[P.realm.openingSwellScene] ?? total
+      const level = P.realm.openingBedVol + (P.realm.openingSwellVol - P.realm.openingBedVol) * clamp01((clock - swellAt) / P.realm.openingSwellSec)
+      const edge = Math.min(clamp01(clock / (P.realm.openingFirstFadeMs / 1000)), clamp01((total - clock) / P.realm.openingEndFadeSec))
+      const talking = audio !== null && !audio.paused && !audio.ended
+      duck += ((talking ? P.realm.openingDuck : 1) - duck) * Math.min(1, dt * P.realm.openingDuckPerSec)
+      bed.volume = clamp01(level * edge * duck * soundVolume('bgm'))
+    }
     let i = starts.findIndex((s, k) => clock >= s && clock < s + secs[k]!)
     if (i < 0) i = SCENES.length - 1
     if (i !== cur) enter(i)

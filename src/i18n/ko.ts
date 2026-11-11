@@ -43,7 +43,7 @@ export const ko = {
   'opening.5': '싸움의 북소리 또한 그치지 않았다.',
   'opening.6': '이긴 자는 적장을 베지 않았다. 사로잡았다.',
   'opening.7': '마음을 얻은 장수는 깨어나, 그대의 이름으로 싸우리라.',
-  'opening.8': '그대여, 일흔여덟 나라를 하나로 이으라.',
+  'opening.8': '일흔여덟 나라를 하나로 이으라.',
   'ending.watch': '끝맺음 보기',
   'ending.line.brothers': '형제는 한강 가에 첫 울타리를 세웠다.',
   'ending.line.mahan': '온조는 마한을 아울러 백제의 터를 넓혔다.',
