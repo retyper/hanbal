@@ -30,7 +30,7 @@ let n = 0
 // 15세 기준 (형 11-10) — 새로 굽는 여장수 문안의 「비치는 겉감」은 팔·다리·치마 겹에만, 가슴 쪽은 불투명
 const OPAQUE15 = ' Teen (15+) rating: any sheer fabric is only on the sleeves, legs or skirt layers; the top over the chest is fully opaque, and no nipples or nipple outline show through the clothes.'
 // 감실(w-33)·변한 단비(w-98) 결 — 형 11-10: "감실이랑 단비가 지금 최고 섹시하고 너무 좋은데" → 여장수 문안의 기준
-const STYLE_F = ' Style reference (the two most loved splash arts in this game): a camera slightly below her for a powerful, dynamic look; a full hourglass figure with a large, full bust and deep cleavage, bare shoulders and bare midriff, a high leg slit; long flowing silk ribbons and sashes in her own colors swirling around her body; a strong, vivid expression (a sultry half-lidded smile or a big open laugh) and a bold pose full of energy (an arm raised behind her head, swinging her signature item, caught mid-laugh).'
+const STYLE_F = ' Style reference (the two most loved splash arts in this game): a camera slightly below her for a powerful, dynamic look; a full hourglass figure with a large, full bust and deep cleavage, bare shoulders and bare midriff, a high leg slit; long flowing silk ribbons and sashes in her own colors swirling around her body; a strong, vivid expression (a sultry half-lidded smile or a big open laugh) and a bold pose full of energy that is HER OWN and different from every other hero: do NOT use the arm-raised-behind-the-head pose (already used by many); pick one that fits her weapon, job and personality, and keep her signature weapon and items clearly visible (a bow stays in frame, held, never drawn).'
 const isWoman = (p) => /\b(woman|her)\b/.test(p)
 for (const x of spec) {
   if (x.tier !== 2 || seen.has(x.id)) continue
