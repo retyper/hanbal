@@ -61,6 +61,8 @@ export const ko = {
   'boards.warn': '새 게임을 시작하면 지금 판은 끝난 판으로 기록된다.',
   'boards.freeTitle': '자유 판',
   'detail.start': '이 나라로 시작',
+  // 아래 탭 추천
+  'rec.jail': '옥에 가둔 적장 {n}명: 회유하면 우리 장수가 된다',
 } as const
 
 export type Key = keyof typeof ko

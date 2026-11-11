@@ -58,6 +58,7 @@ export const en: Partial<Record<Key, string>> = {
   'boards.warn': 'Starting a new game will record the current one as finished.',
   'boards.freeTitle': 'Free Play',
   'detail.start': 'Start with this realm',
+  'rec.jail': '{n|captive general|captive generals} in your jail: win them over to join you',
 }
 
 /** 아직 영어로 안 옮긴 키 — 일부러 비워 둔 것만 (한국어로 나간다) */

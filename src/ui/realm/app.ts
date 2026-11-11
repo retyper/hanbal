@@ -5282,7 +5282,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const idleHeroes = waitingHeroes(r).length
     const armyIdle = Object.values(r.armies).some((a) => a.faction === me() && a.march === null && pick[a.id] === undefined && goalOf(a) === undefined)
     if (asks > 0) out.set('diplo', `답을 기다리는 사신 ${asks}명`)
-    if (idleHeroes > 0) out.set('heroes', `쉬는 장수 ${idleHeroes}명: 일을 맡기면 좋다`)
+    // 사로잡은 적장 — 회유가 첫 시간에 늦었다 (FIRST-HOUR 지연 3 · 11-11) · 쉬는 장수보다 먼저
+    const jail = Object.values(r.heroes).filter((h) => h.status === 'captive' && h.captor === me() && h.persuade === undefined && wooable(r, h.id)).length
+    if (jail > 0) out.set('heroes', tr('rec.jail', { n: jail }))
+    if (idleHeroes > 0 && !out.has('heroes')) out.set('heroes', `쉬는 장수 ${idleHeroes}명: 일을 맡기면 좋다`)
     if (armyIdle && r.season >= 1) out.set('army', `이번 ${turnWord(r)} 할 일 없는 군대가 있다`)
     if (!drafted && canDraft) out.set('draft', '더 뽑을 수 있는 군사가 있다')
     // 우리 고을로 오는 적 — 군대 탭이 먼저 (막을 군대를 보낸다)
