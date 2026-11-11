@@ -101,4 +101,4 @@ Strategy · Turn-Based Strategy · Grand Strategy · Historical · Collectathon 
 
 - 제목 (한/영) — 후보와 의견은 대화 11-11 · 정해지면 로고 다시 굽기
 - 가격 · 얼리 액세스 여부 (첫 한 시간 시험 뒤)
-- 스튜디오(만든 이) 이름 — 시작 로고·크레딧·상점 「개발자」 칸
+- ~~스튜디오 이름~~ → **Hephaestosian** (형 11-11 · https://hephaestosian.github.io/)
