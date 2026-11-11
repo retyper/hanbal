@@ -103,21 +103,21 @@ export function goalSteps(r: Realm, orders: readonly Order[]): Order[] {
     const a = r.armies[o.army]
     if (a === undefined) continue
     set.add(a.id)
-    if (o.node === null || o.node === a.at || r.nodes[o.node] === undefined) delete a.goal
-    else a.goal = o.node
+    if (o.node === null || o.node === a.at || r.nodes[o.node] === undefined) { delete a.goal; delete a.rally }
+    else { a.goal = o.node; if (o.rally === true) a.rally = true; else delete a.rally }
   }
   const out: Order[] = []
   for (const a of Object.values(r.armies).sort((x, y) => (x.id < y.id ? -1 : 1))) {
-    if (a.goal === undefined) continue
-    if (a.goal === a.at) { delete a.goal; continue }
+    if (a.goal === undefined) { delete a.rally; continue }
+    if (a.goal === a.at) { delete a.goal; delete a.rally; continue }
     if (ordered(orders, a.id)) {
       // 이번 계절 직접 보냈다 — 갈 곳 명령을 같이 냈으면(첫 걸음) 그대로, 아니면 마음을 바꾼 것
-      if (!set.has(a.id)) delete a.goal
+      if (!set.has(a.id)) { delete a.goal; delete a.rally }
       continue
     }
     if (a.march !== null) continue
     const step = goalReach(r, a.faction, a.at).get(a.goal)
-    if (step === undefined) { delete a.goal; continue }
+    if (step === undefined) { delete a.goal; delete a.rally; continue }
     out.push({ kind: 'march', army: a.id, edge: step.edge, ambush: false })
   }
   return out

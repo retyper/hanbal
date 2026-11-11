@@ -781,6 +781,8 @@ export interface Army {
   lent?: { readonly to: string; readonly node: string; readonly until: number; readonly arrived?: boolean }
   /** 먼 갈 곳 — 닿을 때까지 계절마다 한 걸음씩 저절로 간다 (goal.ts). 없으면 그냥 선다 */
   goal?: string
+  /** 집결로 가는 길 — 갈 곳에 닿으면 그 고을의 장수 없는 군대끼리 하나로 합친다 (season.rallyMerge · 형 11-11) */
+  rally?: true
   /**
    * 칠 채비 (달 시계 · loop 리뷰 11-01: "치는 달이 늘 계절 첫 달이고 아무 낌새가 없다") — AI 가 플레이어 고을을 한 달 길로 치기 전에
    * 제 자리에서 한 달 모인다. `at` 턴에 `edge` 로 `node` 를 친다 · `est` 는 채비할 때 본 승률(가운데) — 그사이 크게 떨어지면 거둔다 (ai.ts strikes).
@@ -1039,7 +1041,7 @@ export interface Realm {
 export type Order =
   | { readonly kind: 'march'; readonly army: string; readonly edge: string; readonly ambush: boolean; readonly approach?: Approach; readonly ration?: Ration; readonly follow?: boolean; readonly adviser?: string }
   /** 먼 갈 곳을 둔다(node) · 지운다(null) — 그 계절의 첫 걸음은 함께 낸 march 가 간다 (goal.ts) */
-  | { readonly kind: 'goal'; readonly army: string; readonly node: string | null }
+  | { readonly kind: 'goal'; readonly army: string; readonly node: string | null; readonly rally?: boolean }
   /** 서 있는 고을을 친다 — 동맹을 깨는 등으로 그 땅이 싸울 땅이 됐을 때, 길을 나서지 않고 그 자리에서 (형 10-24) */
   | { readonly kind: 'assault'; readonly army: string }
   /** 칠 채비 — 이번 달엔 떠나지 않고 모여, 다음 달 이 길로 친다 (Army.strike · AI 만 낸다 · 달 시계) */

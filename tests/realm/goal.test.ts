@@ -82,6 +82,31 @@ describe('먼 곳으로 — 갈 곳', () => {
     }
   })
 
+  it('집결이 닿으면 그 고을의 장수 없는 군대끼리 하나로 합친다 (형 11-11)', () => {
+    for (const tier of [1, 2, 3, 4]) {
+      let r = structuredClone(byeonhanMini(tier))
+      const a = mine(r)
+      a.hero = null
+      const near = [...goalReach(r, r.player, a.at).entries()].find(([id, x]) => x.hops === 1 && r.nodes[id]!.owner === r.player)
+      if (near === undefined) continue
+      const b: Army = { ...structuredClone(a), id: 'rally-test-b', at: near[0], hero: null }
+      r.armies[b.id] = b
+      const men = (rr: Realm): number => Object.values(rr.armies).filter((x) => x.faction === rr.player && x.hero === null && x.at === a.at)
+        .reduce((s, x) => s + Object.values(x.mix).reduce((t, n) => t + (n ?? 0), 0), 0)
+      const step = goalReach(r, r.player, b.at).get(a.at)!
+      r = advance(r, [{ kind: 'march', army: b.id, edge: step.edge, ambush: false }, { kind: 'goal', army: b.id, node: a.at, rally: true }]).next
+      for (let i = 0; i < 6 && r.armies[b.id] !== undefined && r.armies[b.id]!.at !== a.at; i++) r = advance(r, []).next
+      if (r.nodes[a.at]!.owner !== r.player) continue // 싸움에 휩쓸렸다
+      const here = Object.values(r.armies).filter((x) => x.faction === r.player && x.hero === null && x.at === a.at && x.march === null)
+      assert.equal(here.length, 1, `${tier}: 장수 없는 군대는 하나여야 한다 (${here.map((x) => x.id).join(',')})`)
+      assert.equal([a.id, b.id].filter((id) => r.armies[id] !== undefined).length, 1, `${tier}: 둘 중 하나로 합쳐져야 한다`)
+      assert.ok(men(r) > 0)
+      assert.equal(here[0]!.rally, undefined)
+      return
+    }
+    assert.fail('집결을 시험할 시드가 없다')
+  })
+
   it('같은 판이면 같은 길', () => {
     const r = byeonhanMini(5)
     const a = mine(r)

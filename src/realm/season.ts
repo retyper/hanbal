@@ -574,6 +574,27 @@ function mergeArmy(r: Realm, o: Extract<Order, { kind: 'merge' }>, lines: Report
 }
 
 /**
+ * 집결이 닿았다 — 그 고을에 선 같은 나라의 장수 없는 군대를 가장 큰 군대 하나로 합친다 (형 11-11: "집결해서 모은 군사들은 되도록 하나로 · 장수없는 병사들끼리는 전부").
+ * 장수가 이끄는 군대는 그대로 둔다(장수 둘은 한 군대에 못 든다). 길 위 · 빌려준 · 칠 채비 · 다른 곳으로 가는 길인 군대는 빠진다.
+ */
+function rallyMerge(r: Realm, lines: ReportLine[]): void {
+  const spots = new Map<string, { faction: string; node: string }>()
+  for (const a of byId(Object.values(r.armies))) {
+    if (a.rally !== true || a.march !== null || a.goal !== a.at) continue
+    spots.set(`${a.faction}|${a.at}`, { faction: a.faction, node: a.at })
+    delete a.goal
+    delete a.rally
+  }
+  for (const { faction, node } of spots.values()) {
+    const free = byId(Object.values(r.armies)).filter((x) => x.faction === faction && x.at === node && x.march === null
+      && x.lent === undefined && x.strike === undefined && (x.goal === undefined || x.goal === node) && heroOf(r, x) === null)
+    if (free.length < 2) continue
+    const into = free.reduce((m, x) => (headcount(forceOf(r, x)) > headcount(forceOf(r, m)) ? x : m), free[0]!)
+    for (const x of free) if (x.id !== into.id) mergeArmy(r, { kind: 'merge', army: x.id, into: into.id }, lines)
+  }
+}
+
+/**
  * 먼저 해 볼 판의 사본 — 통째로 structuredClone 하면 영남 판에서 AI 셈의 절반이 복사에 든다 (2026-10-19 프로필: 46%).
  * applyArmyOrders 는 길·관계 같은 칸(PLAN_SHARED)을 건드리지 않고, 정보(intel)는 칸을 **새로 넣기만** 한다(revealAround 의 ??=).
  * 그래서 그 칸들은 같이 쓰고 정보는 두 겹만 얕게 베낀다 — 나머지는 깊이 베낀다. 옛 눈금의 판(migrate 가 정보를 고쳐 쓴다)은 통째로.
@@ -1956,6 +1977,7 @@ export function advance(
   for (const o of orders) if (o.kind === 'command' && led[o.key] === undefined) led[o.key] = { cmds: o.cmds, ...(o.dusk !== undefined ? { dusk: o.dusk } : {}) }
   const menBefore = menByFaction(r)
   resolveMarches(r, snipes, led, lines, fought) // 3 · 4 · 5
+  rallyMerge(r, lines) // 5 끝 — 집결이 닿은 고을의 장수 없는 군대를 하나로
   noteWarDead(r, menBefore) // 5 끝 — 달 시계: 싸움에서 잃은 사람 장부 (AI 징병 상한 · rout.ts)
   noteBeaten(r, lines) // 5 끝 — 달 시계: 연달아 진 AI 나라는 새 출정을 쉰다 (rout.ts)
   stepParties(r, lines) // 5 — 개척단이 한 턴 간다 · 빈땅에 닿으면 마을 · 적 곁이면 흩어진다

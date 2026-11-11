@@ -799,7 +799,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let armyOrders: Order[] = [] // 나누기·모으기 — 화면은 이걸 먼저 해 본 판을 보인다
   let musters: Order[] = [] // 징병·해산
   let settles: Order[] = [] // 개척 — 나누기처럼 먼저 해 본 판에 든다 (그래야 남은 몫·곡식이 맞게 보인다)
-  const pick: Record<string, { edge: string; ambush: boolean; approach?: Approach; ration?: Ration; goal?: string; follow?: boolean; adviser?: string } | undefined> = {}
+  const pick: Record<string, { edge: string; ambush: boolean; approach?: Approach; ration?: Ration; goal?: string; rally?: boolean; follow?: boolean; adviser?: string } | undefined> = {}
   /** 먼 갈 곳을 거둔 군대 — 이번 계절 「머문다」를 눌렀다 (형 10-25 · goal.ts) */
   let goalStop: string[] = []
   /** 이번 계절 큰 화면으로 본 땅의 바뀜 — `계절:고을` (확인을 눌렀다) */
@@ -1425,7 +1425,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (const [army, c] of Object.entries(pick)) {
       const a = p.armies[army]
       if (c !== undefined && a !== undefined && a.march === null) out.push({ kind: 'march', army, edge: c.edge, ambush: c.ambush, ...(c.approach !== undefined ? { approach: c.approach } : {}), ...(c.ration !== undefined ? { ration: c.ration } : {}), ...(c.follow === true ? { follow: true } : {}), ...(c.adviser !== undefined ? { adviser: c.adviser } : {}) })
-      if (c?.goal !== undefined && a !== undefined && a.march === null) out.push({ kind: 'goal', army, node: c.goal })
+      if (c?.goal !== undefined && a !== undefined && a.march === null) out.push({ kind: 'goal', army, node: c.goal, ...(c.rally === true ? { rally: true } : {}) })
     }
     for (const army of goalStop) out.push({ kind: 'goal', army, node: null })
     for (const node of scouts) out.push({ kind: 'scout', faction: me(), node, hero: null })
@@ -6898,14 +6898,21 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       if (hire) window.setTimeout(() => buzz([20, 40, 20, 40, 60]), P.realm.hirePopMs)
       // 얼굴이 다 드러나면 그 장수가 첫마디를 한다 — 이름 아래 「」 대사 그대로 (voice.ts · 소리를 못 받으면 조용히)
+      // 「확인」을 첫마디보다 먼저 눌러도 그 자리에서 말한다 · 다른 목소리 바로 뒤라도 거르지 않는다 (형 11-11: "등용대사는 어떤건 나오고 어떤건 안나오던데")
       const voiced = hire ? realm?.heroes[el.dataset['hid'] ?? ''] : undefined
-      if (voiced !== undefined) window.setTimeout(() => {
-        if (el.isConnected && realm !== null && voiceGate(performance.now())) ding(hireVoicePath(voiced, isRuler(realm, voiced.id)), P.realm.voiceVol)
-      }, P.realm.hireVoiceMs)
+      let spoke = voiced === undefined
+      const speak = (): void => {
+        if (spoke || realm === null || voiced === undefined) return
+        spoke = true
+        voiceGate(performance.now())
+        ding(hireVoicePath(voiced, isRuler(realm, voiced.id)), P.realm.voiceVol)
+      }
+      if (!spoke) window.setTimeout(speak, P.realm.hireVoiceMs)
       let gone = false
       const close = (): void => {
         if (gone) return
         gone = true
+        speak()
         el.classList.add('out')
         if (el.classList.contains('wed') && realm !== null) music.map(seasonOf(realm)) // 혼례 가락은 잦아들고 지도 음악으로
         window.setTimeout(() => { el.remove(); show(i + 1) }, 450)
@@ -8500,9 +8507,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           break
         }
         goalStop = goalStop.filter((id) => !plan.some((p) => p.army === id))
-        for (const p of plan) pick[p.army] = { edge: p.edge, ambush: false, goal: node }
+        for (const p of plan) pick[p.army] = { edge: p.edge, ambush: false, goal: node, rally: true }
         marchSfx()
-        goToast(`<b>${plan.length}</b>개 군대가 <b>${esc(josa(r.nodes[node]?.name ?? '', '으로', '로'))}</b> 모인다 · 늦어도 <b>${turnsLabel(r, plan.reduce((m, p) => Math.max(m, p.seasons), 0))}</b>`)
+        goToast(`<b>${plan.length}</b>개 군대가 <b>${esc(josa(r.nodes[node]?.name ?? '', '으로', '로'))}</b> 모인다 · 장수 없는 군대는 닿으면 하나로 · 늦어도 <b>${turnsLabel(r, plan.reduce((m, p) => Math.max(m, p.seasons), 0))}</b>`)
         break
       }
       case 'go': {
