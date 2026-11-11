@@ -498,7 +498,7 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   heo: { ar: 145 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 갑옷 대신 보석 윗옷·트임 치마 (형: 전투 옷은 더 드러나게)
   gamsil: { ar: 157 / 160, body: 0.906 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 어깨 내린 주황 겉옷·짧은 치마 (형: 전투 옷은 더 드러나게)
   irang: { ar: 164 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 문신 팔·구슬 목걸이·가죽 조끼 · 청동 단검 찌르기
-  gureum: { ar: 162 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 흰 삼베 짧은 윗옷·트임 치마 (형: 전투 옷은 더 드러나게)
+  gureum: { ar: 238 / 160, body: 0.900 }, // 11-11 동작 8컷만 새로(제미나이 u/1 · 초상만 · 창 전체가 칸 안, 걷기는 그대로) · 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 흰 삼베 짧은 윗옷·트임 치마 (형: 전투 옷은 더 드러나게)
   biryu: { ar: 168 / 160, body: 0.963, mount: true }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 말 탄 장수 · 상투·붉은 민소매·큰 망치 내려치기
   geumha: { ar: 175 / 160, body: 0.844, mount: true }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 말 탄 장수 · 흰 털 금테 관·땋은 수염·털 망토·말머리 지팡이 내려치기
   geota: { ar: 183 / 160, body: 0.856, mount: true }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 말 탄 장수 · 상투·높은 목가리개 쇠 미늘·곧은 고리자루 칼 베기
