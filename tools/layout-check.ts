@@ -1,7 +1,7 @@
 /**
  * 레이아웃 검사 — 화면 × 폭 × 말(ko·en)로 넘침·잘림·줄 늘어남을 자동으로 잡는다 (형 11-11: 영어로 옮기면 칸을 넘친다).
  *
- *   npx tsx tools/layout-check.ts [--lang en|ko] [--ko] [--screen 이름[,이름]] [--width 390] [--only-fail] [--dump] [--jobs 2] [--port 5174]
+ *   npx tsx tools/layout-check.ts [--lang en|ko] [--ko] [--screen 이름[,이름]] [--width 390] [--only-fail] [--dump] [--text] [--jobs 2] [--port 5174]
  *   기본은 영어만(한국어 기준은 D:/tmp-node/layout/ko-base-<화면>.json 에 남긴 걸 읽는다 · 없으면 둘 다) — --ko 를 주면 한국어도 다시 재서 기준을 새로 쓴다.
  *   한국어 기준이 낡으면(한국어 화면을 고쳤으면) --ko 로 한 번 돌린다. 크롬은 --jobs 개(기본 2)를 병렬로 — 3 이상은 가림막 기다림이 시간 초과로 번져 오히려 흔들린다.
  *   TMP='D:\tmp-node' TEMP='D:\tmp-node'  (크롬 임시 폴더가 C 드라이브에 쌓이지 않게)
@@ -36,7 +36,7 @@ const CDP_PORT = 9500 + Math.floor(Math.random() * 50)
 const CHROMES = ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe']
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))
 
-interface Screen { name: string; save?: string; pre: string; /** 저장 칸에 더 넣을 { 키: 값 } (tools/drill-seed.ts 가 만든다) */ ls?: 'drill' }
+interface Screen { name: string; /** realm.html 대신 여는 쪽 (night.html?practice=1 같은 — ?lang= 은 알아서 붙인다) */ url?: string; save?: string; pre: string; /** 저장 칸에 더 넣을 { 키: 값 } (tools/drill-seed.ts 가 만든다) */ ls?: 'drill' }
 
 // 글자로 단추를 찾아 누른다 — 이름이 말마다 달라 data-act 를 우선한다
 const CLICK = `const clk = async (sel, ms = 900) => { let e = document.querySelector(sel); for (let i = 0; !e && i < 90; i++) { await new Promise((r) => setTimeout(r, 200)); e = document.querySelector(sel) } if (!e) throw new Error('없음 ' + sel); e.click(); await new Promise((r) => setTimeout(r, ms)) };`
@@ -66,6 +66,12 @@ const SCREENS: Screen[] = [
   { name: 'quarrel', save: 'quarrel-town', pre: '' },
   { name: 'lost', save: 'lost', pre: '' },
   { name: 'captive', save: 'captive', pre: '' },
+  // 따로 열리는 쪽 (밤 판 · 겨루기) — 판 계산이 아니라 첫 화면·카드의 글을 잰다
+  { name: 'nightrange', url: 'night.html?practice=1', pre: '' },
+  { name: 'nightintro', url: 'night.html?seed=7&arrows=8&id=t', pre: '' },
+  { name: 'nightrescue', url: `night.html?seed=7&arrows=8&id=t&kind=rescue&who=${encodeURIComponent('소서노')}`, pre: '' },
+  { name: 'nightplay', url: 'night.html?seed=7&arrows=8&id=t', pre: `${CLICK} await clk('[data-act="go"]', 2500)` },
+  { name: 'duel', url: 'duel.html', pre: '' },
 ]
 
 const SPLASH_WAIT = `new Promise((res) => { const t0 = Date.now(); const f = () => { const sp = document.getElementById('splash'); if (!sp || sp.classList.contains('out') || getComputedStyle(sp).visibility === 'hidden' || Date.now() - t0 > 60000) setTimeout(res, 500); else setTimeout(f, 200) }; f() })`
@@ -97,6 +103,9 @@ const MEASURE = `(() => {
   }
   return out
 })()`
+
+/** 화면의 모든 글 — 보이는 글 · data-why/tip · aria-label (옮기기 전후 한국어가 한 글자도 안 달라졌는지 diff 로 본다) */
+const TEXT_DUMP = `(() => { const o = [document.body.innerText]; for (const e of document.querySelectorAll('[data-why],[data-tip],[aria-label],[title]')) o.push(['data-why', 'data-tip', 'aria-label', 'title'].map((a) => e.getAttribute(a) || '').join('|')); return o.join('\\n') })()`
 
 const exe = CHROMES.find((p) => existsSync(p))
 if (exe === undefined) throw new Error('크롬을 못 찾았다')
@@ -185,7 +194,7 @@ try {
         await ev(`localStorage.removeItem('hanbal.realm.drill'); localStorage.removeItem('hanbal.realm.dex')`).catch(() => 0) // 단련터 시험 기록이 다른 화면에 남지 않게
         if (s.save !== undefined) await ev(`localStorage.setItem('hanbal.realm.v2', ${JSON.stringify(ensureSave(s.save))})`).catch(() => 0)
         if (s.ls === 'drill') for (const [k, v] of Object.entries(JSON.parse(readFileSync(ensureLs(), 'utf8')) as Record<string, unknown>)) await ev(`localStorage.setItem(${JSON.stringify(k)}, ${JSON.stringify(JSON.stringify(v))})`).catch(() => 0)
-        await call('Page.navigate', { url: `${BASE}?lang=${lg}` })
+        await call('Page.navigate', { url: s.url !== undefined ? `http://localhost:${PORT_APP}/${s.url}${s.url.includes('?') ? '&' : '?'}lang=${lg}` : `${BASE}?lang=${lg}` })
         await sleep(400)
         // 스플래시가 걷힐 때까지 (최대 30초)
         await ev(SPLASH_WAIT)
@@ -202,6 +211,7 @@ try {
           await call('Emulation.setDeviceMetricsOverride', { width: w, height: H, deviceScaleFactor: 1, mobile: true })
           await sleep(300)
           if (flag('dump') && w === WIDTHS[0]) console.log(`[${lg} ${w} ${s.name}]`, JSON.stringify(await ev(`[...document.querySelectorAll('button, a.btn, summary')].filter((e) => e.getBoundingClientRect().width > 0).map((e) => (e.getAttribute('data-act') || e.tagName) + ':' + (e.textContent || '').trim().slice(0, 14)).slice(0, 40)`)))
+          if (flag('text') && w === WIDTHS[0]) writeFileSync(`${OUT_DIR}/text-${lg}-${s.name}.txt`, String(await ev(TEXT_DUMP))) // 글자 하나 안 바뀌었는지 옛/새를 비교하는 기록
           const m = await ev(MEASURE)
           row.a = m.a; row.b = m.b; row.d = m.d
           // 한국어에도 같은 칸이 잘리면 영어 탓이 아니다 — 따로 센다

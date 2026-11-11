@@ -49,7 +49,7 @@ for (const f of files) {
 
 const rows = Object.entries(perFile).sort((a, b) => b[1].lits - a[1].lits)
 console.log('순위  글 수   한글자  묶음  파일')
-rows.slice(0, 30).forEach(([f, v], i) => console.log(`${String(i + 1).padStart(3)}  ${String(v.lits).padStart(6)}  ${String(v.chars).padStart(7)}  ${v.group.padEnd(5)} ${f}`))
+rows.slice(0, Number(process.argv[process.argv.indexOf('--top') + 1]) || 30).forEach(([f, v], i) => console.log(`${String(i + 1).padStart(3)}  ${String(v.lits).padStart(6)}  ${String(v.chars).padStart(7)}  ${v.group.padEnd(5)} ${f}`))
 const totals: Record<string, { files: number; lits: number; chars: number }> = {}
 for (const [, v] of rows) {
   const t = (totals[v.group] ??= { files: 0, lits: 0, chars: 0 })

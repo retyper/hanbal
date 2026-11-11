@@ -8,6 +8,7 @@
  */
 import { createDuel, judgeWindows, lateWindow, stepDuel, tierOf, type Cue, type Duel, type DuelEvent, type Outcome, type Tap } from './sim.ts'
 import { P } from '../tune/params.ts'
+import { t as tr } from '../i18n/index.ts'
 import { makeRng } from '../core/rng.ts'
 import { AWAKEN_ART, AWAKEN_LOOP, loopFile } from '../realm/data/awaken-art.ts'
 import { SPRITE_PX } from '../realm/data/spritePx.ts'
@@ -53,7 +54,7 @@ export function mountDuel(cfg: DuelSetup, root: HTMLElement = document.body): Pr
   if (!cssIn) { const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st); cssIn = true }
   const host = document.createElement('div')
   host.className = 'duelx'
-  host.innerHTML = '<canvas></canvas>' + (cfg.standalone === true ? '<button class="dflag">⚔ 장수 겨루기</button>' : '')
+  host.innerHTML = '<canvas></canvas>' + (cfg.standalone === true ? '<button class="dflag">' + tr('duel.flag') + '</button>' : '')
   root.appendChild(host)
   // 겨루기가 뜨면 밑(나라 판·전투판)은 숨기고 멈춘다 — 폰에서 밑이 같이 그려져 버벅였다 (형 11-11 · appstyle 의 html.duel-open)
   document.documentElement.classList.add('duel-open')
@@ -515,8 +516,8 @@ function begin(): void {
 
 /** 끝 — 「승리 · 패배 · 비김」만 크게 쾅 떴다가 저절로 닫힌다 (형 11-09: 체력·시간 숫자 · 확인 버튼 필요 없다) */
 const RESULT: Record<string, { word: string; col: string }> = {
-  ko: { word: '승리', col: '#ffd98a' }, win: { word: '승리', col: '#ffd98a' }, draw: { word: '비김', col: '#e9e1cf' },
-  lose: { word: '패배', col: '#ff9a88' }, kod: { word: '패배', col: '#ff9a88' },
+  ko: { word: tr('duel.win'), col: '#ffd98a' }, win: { word: tr('duel.win'), col: '#ffd98a' }, draw: { word: tr('duel.draw'), col: '#e9e1cf' },
+  lose: { word: tr('duel.lose'), col: '#ff9a88' }, kod: { word: tr('duel.lose'), col: '#ff9a88' },
 }
 let endAt = 0
 const END_MS = 1500
@@ -784,7 +785,7 @@ function judgeSprite(kind: 'perfect' | 'good' | 'miss', word: string): TextSprit
 }
 function whenSprite(when: 'early' | 'late'): TextSprite {
   const fs2 = Math.round(judgeMax('good') * 0.42)
-  return textSprite(when === 'early' ? '빠름' : '늦음', fs2, 800, when === 'early' ? '#8fd0ff' : '#ffb070', null, 'rgba(20,10,4,.92)', Math.max(3, fs2 * 0.2), true)
+  return textSprite(tr(when === 'early' ? 'duel.early' : 'duel.late'), fs2, 800, when === 'early' ? '#8fd0ff' : '#ffb070', null, 'rgba(20,10,4,.92)', Math.max(3, fs2 * 0.2), true)
 }
 function slashSrc(im: HTMLImageElement, len: number, color: string): HTMLCanvasElement {
   const bw = Math.min(512, Math.ceil(len))
@@ -940,7 +941,7 @@ function rushCue(now: number, d: Duel): void {
   // 「연타!」 — 크게 흔들리며
   const fs0 = Math.round(Math.min(W, pn.s) * 0.16)
   const ty = cy - sz * 0.62, jx = Math.sin(now / 33) * 3
-  putText(textSprite('연타!', fs0 * 1.06, 900, '#fff6d0', '#ffb03a', 'rgba(40,10,0,.9)', Math.max(6, fs0 * 0.14), true), cx + jx, ty, 'center', (1 + 0.06 * Math.sin(now / 45)) / 1.06)
+  putText(textSprite(tr('duel.rush'), fs0 * 1.06, 900, '#fff6d0', '#ffb03a', 'rgba(40,10,0,.9)', Math.max(6, fs0 * 0.14), true), cx + jx, ty, 'center', (1 + 0.06 * Math.sin(now / 45)) / 1.06)
   // 남은 시간 — 판 아래 금빛 띠가 줄어든다
   const left = Math.max(0, (d.phaseUntil - d.t) / P.duel.rushTicks)
   const bw = pn.s * 0.8
@@ -1025,7 +1026,7 @@ function drawDuel(now: number, fadeIn: number): void {
     const pk = Math.min(1, age / 120)
     const sc = pk < 1 ? 0.6 + 0.75 * pk : 1.35 - 0.35 * Math.min(1, (age - 120) / 140)
     const fade = age < 520 ? 1 : 1 - (age - 520) / 180
-    const word = j.kind === 'perfect' ? '완벽!' : j.kind === 'good' ? '막음' : '맞음'
+    const word = tr(j.kind === 'perfect' ? 'duel.perfect' : j.kind === 'good' ? 'duel.block' : 'duel.hit')
     const fs = Math.round(cueR() * (j.kind === 'perfect' ? 1.25 : 1.0) * sc)
     const jx = j.kind === 'miss' && age < 260 ? Math.sin(age / 18) * 6 : 0
     const ty = j.y - cueR() * 1.9 - (age / 700) * cueR() * 0.5
@@ -1150,7 +1151,7 @@ function warmNow(now: number): void {
   if (clg !== null) { const mx = Math.round(R * 3.9); scaled(clg, mx, mx); scaled(clg, mx, mx, 'rgba(150,200,255,.5)') }
   if (sl !== null) { slashSrc(sl, Math.min(W, H) * 0.45, '255,60,40'); slashSrc(sl, Math.hypot(W, H) * 0.85, '255,255,255'); slashSrc(sl, Math.min(W, H) * 0.32, '255,255,255') }
   for (const n of ['rush-tap-a', 'rush-tap-b']) { const im = art(n); if (im !== null) { const z = Math.round(Math.min(W, pn.s) * 0.36); scaled(im, z, z) } }
-  for (const [kind, word] of [['perfect', '완벽!'], ['good', '막음'], ['miss', '맞음']] as const) judgeSprite(kind, word)
+  for (const [kind, word] of [['perfect', tr('duel.perfect')], ['good', tr('duel.block')], ['miss', tr('duel.hit')]] as const) judgeSprite(kind, word)
   whenSprite('early'); whenSprite('late')
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H)
 }

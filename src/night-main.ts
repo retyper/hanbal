@@ -32,9 +32,10 @@ import { playOnce, snd, soundVolume } from './ui/realm/sound.ts'
 import { BOW_NAME, createNight, stepNight, type Night, type NightResult } from './night/sim.ts'
 import { createView, drawNight, pumpView, shakeView } from './night/draw.ts'
 import { hitStopMs, pumpEvents, updateFx } from './render/effects.ts'
-import { GUARD_NAME, guardOf, kindOf, PRACTICE_STAGES, stageTitle, type Guard } from './night/layout.ts'
+import { guardName, stageName } from './night/names.ts'
+import { guardOf, kindOf, PRACTICE_STAGES, stageTitle, type Guard } from './night/layout.ts'
 import { rehearsalSeed, reportsResult, type NightMode } from './night/mission.ts'
-import { josa } from './realm/data/prose.ts'
+import { t as tr } from './i18n/index.ts'
 
 const RESULT_KEY = 'hanbal.night.result'
 /** 틀 안의 판이 눕혔는지 — 칠십팔국이 「닫기」를 같이 눕힌다 */
@@ -96,9 +97,9 @@ const missionGuard: Guard = guardOf(params.get('guard') ?? 1)
  */
 const missionKind = kindOf(params.get('kind'))
 const rescue = missionKind === 'rescue'
-const missionWho = (params.get('who') ?? '').slice(0, 24) || '우리 장수'
+const missionWho = (params.get('who') ?? '').slice(0, 24) || tr('night.ourHero')
 /** 건너뛰기 단추 — 구출이면 보낸 이에게 맡긴다 */
-const SKIP_LABEL = rescue ? '건너뛰기 · 보낸 이에게 맡긴다' : '건너뛰기 · 자객에게 맡긴다'
+const SKIP_LABEL = tr(rescue ? 'night.skipRescue' : 'night.skipAssassin')
 let practiceGuard: Guard = 1
 const mode = (): NightMode => (practiceMode ? 'practice' : rehearsal ? 'rehearsal' : 'mission')
 
@@ -206,16 +207,16 @@ function showPractice(): void {
   const runs = loadRuns()
   const last = runs[runs.length - 1]
   const all = runs.reduce((s, r) => ({ shots: s.shots + r.shots, hits: s.hits + r.hits, heads: s.heads + r.heads }), { shots: 0, hits: 0, heads: 0 })
-  let h = `<div class="card"><h1>궁술 연습장</h1><p class="mute">밤 지붕 위에서 쏴 본다. 화살은 끝이 없다.</p><div class="grid">`
+  let h = `<div class="card"><h1>${tr('night.practiceTitle')}</h1><p class="mute">${tr('night.practiceSub')}</p><div class="grid">`
   for (let i = 0; i < PRACTICE_STAGES; i++) {
-    h += `<button class="${i === practiceStage ? 'on' : ''}" data-act="stage" data-i="${i}">${esc(stageTitle(i))}</button>`
+    h += `<button class="${i === practiceStage ? 'on' : ''}" data-act="stage" data-i="${i}">${esc(stageName(stageTitle(i)))}</button>`
   }
-  h += `</div><div class="btns"><button class="${practiceAlarm ? 'on' : ''}" data-act="alarm">발각 게이지 ${practiceAlarm ? '켬' : '끔'}</button>`
-  h += `<button data-act="guard">경비 · ${GUARD_NAME[practiceGuard]}</button>`
-  h += `<button class="on" data-act="go">시작</button></div>`
-  if (last !== undefined) h += `<p class="mute">지난번 ${esc(stageTitle(last.stage))} · 쏜 ${last.shots} · 맞힘 ${last.hits} · 머리 ${last.heads}</p>`
-  if (all.shots > 0) h += `<p class="mute">모두 ${runs.length}판 · 쏜 ${all.shots} · 맞힘 ${all.hits} (${Math.round((all.hits / all.shots) * 100)}%) · 머리 ${all.heads}</p>`
-  h += `<div class="btns"><button data-act="back">돌아가기</button></div></div>`
+  h += `</div><div class="btns"><button class="${practiceAlarm ? 'on' : ''}" data-act="alarm">${tr(practiceAlarm ? 'night.alarmOn' : 'night.alarmOff')}</button>`
+  h += `<button data-act="guard">${tr('night.guardBtn', { guard: guardName(practiceGuard) })}</button>`
+  h += `<button class="on" data-act="go">${tr('night.start')}</button></div>`
+  if (last !== undefined) h += `<p class="mute">${tr('night.lastRun', { stage: esc(stageTitle(last.stage)), s: last.shots, h: last.hits, d: last.heads })}</p>`
+  if (all.shots > 0) h += `<p class="mute">${tr('night.allRuns', { runs: runs.length, s: all.shots, h: all.hits, pct: Math.round((all.hits / all.shots) * 100), d: all.heads })}</p>`
+  h += `<div class="btns"><button data-act="back">${tr('night.back')}</button></div></div>`
   ui.innerHTML = h
 }
 
@@ -224,29 +225,29 @@ function showMissionIntro(): void {
   night = null
   rehearsal = false
   const who = esc(missionWho)
-  ui.innerHTML = `<div class="card"><h1>${rescue ? '밤의 구출' : '밤의 암살'}</h1><p>기와지붕 위에 엎드렸다. 화살 ${missionArrows}발.</p>`
-    + `<p>경비 · <b>${GUARD_NAME[missionGuard]}</b>: ${GUARD_LINE[missionGuard]}</p>`
+  ui.innerHTML = `<div class="card"><h1>${tr(rescue ? 'night.titleRescue' : 'night.titleAssassin')}</h1><p>${tr('night.introArrows', { n: missionArrows })}</p>`
+    + `<p>${tr('night.guardIntro', { guard: `<b>${guardName(missionGuard)}</b>`, line: GUARD_LINE[missionGuard]! })}</p>`
     + (rescue
-      ? `<p class="mute">보초를 다 쓰러뜨리고 옥에 갇힌 ${esc(josa(missionWho, '을', '를'))} 데려 나온다. 셋째 판 마루 기둥에 묶여 있다. 묶인 이는 살이 비켜 간다. 빗나간 살은 소리를 낸다. 시체가 불빛 아래 있으면 들킨다.</p>`
-      : `<p class="mute">보초를 다 쓰러뜨리고 셋째 판의 창호지 뒤 그림자를 쏜다. 빗나간 살은 소리를 낸다. 시체가 불빛 아래 있으면 들킨다.</p>`)
-    + `<p class="mute">횃불·등불은 쏘면 꺼지고, 모닥불은 위에 매단 물동이를 쏘면 쏟아져 꺼진다. 불이 꺼지면 보초가 다시 붙이러 온다. 어둠 속에서, 불이 붙기 전에 쓰러뜨려라.</p>`
+      ? `<p class="mute">${tr('night.introRescue', { who })}</p>`
+      : `<p class="mute">${tr('night.introAssassin')}</p>`)
+    + `<p class="mute">${tr('night.introFire')}</p>`
     + (rescue
-      ? `<p class="mute">북이 울리면 ${who}의 옥문이 잠긴다. 들키지 않게 하나씩.</p>`
-      : `<p class="mute">그림자가 일어서면 창호지 위 촛불 게이지가 닳는다. 다 닳으면 촛불을 끄고 달아난다. 빗나가면 더 빨리 닳는다.</p>`)
-    + `<p class="mute">아무 데나 누르고 뒤로 끈다. 끈 쪽의 반대로 겨눈다 · 놓으면 쏜다 · 누른 자리로 돌아와 놓으면 그만둔다. 당기는 동안 점선이 화살이 날아갈 길을 보여 준다.</p>`
-    + `<div class="btns"><button data-act="rehearse">연습 먼저</button><button class="on" data-act="go">들어간다</button></div>`
-    + `<p class="mute">연습은 다른 지붕에서 같은 활·같은 화살로 쏜다. 몇 번이든 되고, 결과는 남지 않는다.</p>`
+      ? `<p class="mute">${tr('night.introDrum', { who })}</p>`
+      : `<p class="mute">${tr('night.introCandle')}</p>`)
+    + `<p class="mute">${tr('night.introPull')}</p>`
+    + `<div class="btns"><button data-act="rehearse">${tr('night.rehearseFirst')}</button><button class="on" data-act="go">${tr('night.enter')}</button></div>`
+    + `<p class="mute">${tr('night.introRehearse')}</p>`
     + `<div class="btns"><button data-act="skip0">${SKIP_LABEL}</button></div></div>`
 }
 
 function hud(): void {
   // 숨 참기 단추는 뺐다 — 당기는 동안 늘 사선이 보인다 (형 10-27: "숨참기 버튼 없애고 쏠 때마다 가이드라인")
-  ui.innerHTML = `<button class="quit" data-act="quit">그만</button>`
-    + (rehearsal ? `<div class="tag">연습</div>` : '')
+  ui.innerHTML = `<button class="quit" data-act="quit">${tr('night.quit')}</button>`
+    + (rehearsal ? `<div class="tag">${tr('night.tagRehearse')}</div>` : '')
     // 진짜 임무에서 첫 살을 쏘기 전까지만 건너뛸 수 있다 — 쏘고 나서 맡기는 길은 없다
-    + (!practiceMode && !rehearsal && (night?.shots ?? 0) === 0 ? `<button class="skip" data-act="skip">건너뛰기</button>` : '')
+    + (!practiceMode && !rehearsal && (night?.shots ?? 0) === 0 ? `<button class="skip" data-act="skip">${tr('night.skip')}</button>` : '')
     // 세로 폰 — 눕혀 그리는 중이면 '세로로 보기', 아니면 '가로로 눕히기' (회전 잠금을 켠 폰도 가로로 쏠 수 있게)
-    + (portraitScreen() ? `<button class="turn" data-act="turn">${rotatePref() ? '폰을 옆으로 눕혀 쏜다 · 세로로 보기' : '작게 보인다 · 가로로 눕히기'}</button>` : '')
+    + (portraitScreen() ? `<button class="turn" data-act="turn">${tr(rotatePref() ? 'night.turnBack' : 'night.turnSide')}</button>` : '')
   breathBtn = ui.querySelector<HTMLElement>('.steady')
   skipBtn = ui.querySelector<HTMLElement>('.skip')
   shownSt = -1
@@ -269,26 +270,26 @@ function syncBreath(n: Night): void {
 }
 
 const GUARD_LINE: readonly string[] = [
-  '보초가 적고, 꺼진 불을 느릿느릿 붙인다.',
-  '여느 밤이다.',
-  '보초가 많고 불도 많다. 불이 꺼지기만 해도 수상히 여기고, 금방 다시 붙인다.',
+  tr('night.guardLine0'),
+  tr('night.guardLine1'),
+  tr('night.guardLine2'),
 ]
 
 const LINES: Record<NightResult['result'], (r: NightResult) => string> = {
-  dead: () => '적장이 쓰러졌다.',
-  wounded: () => '적장이 크게 다쳤다. 한동안 군대를 못 이끈다.',
-  fled: (r) => (r.alarm ? '북이 울렸다. 적장이 달아났다.' : '촛불이 꺼졌다. 적장을 놓쳤다.'),
-  withdrew: () => '화살이 다했다. 조용히 물러났다.',
-  cleared: () => '다 쓰러뜨렸다.',
+  dead: () => tr('night.resDead'),
+  wounded: () => tr('night.resWounded'),
+  fled: (r) => tr(r.alarm ? 'night.resFledDrum' : 'night.resFledCandle'),
+  withdrew: () => tr('night.resWithdrew'),
+  cleared: () => tr('night.resCleared'),
 }
 
 /** 구출의 끝 — 데려 나왔나 · 북이 울려 물러났나 · 화살이 다했나 */
 const RESCUE_LINES: Record<NightResult['result'], (r: NightResult) => string> = {
   dead: () => '',
   wounded: () => '',
-  fled: () => `북이 울렸다. ${josa(missionWho, '을', '를')} 두고 지붕을 넘어 달아났다.`,
-  withdrew: () => `화살이 다했다. ${josa(missionWho, '을', '를')} 두고 조용히 물러났다.`,
-  cleared: () => `${josa(missionWho, '을', '를')} 데려 나왔다.`,
+  fled: () => tr('night.rescueFled', { who: missionWho }),
+  withdrew: () => tr('night.rescueWithdrew', { who: missionWho }),
+  cleared: () => tr('night.rescueCleared', { who: missionWho }),
 }
 
 /** 임무가 끝난 한 번 — 해냈으면 형이 받은 암살·구출 소리, 놓쳤으면 칠십팔국의 큰 실패 북 (형 11-09) · 칠십팔국 음소거를 따른다 */
@@ -303,21 +304,21 @@ function showResult(n: Night): void {
   const good = r.result === 'dead' || r.result === 'wounded' || r.result === 'cleared'
   endSound(good)
   const line = (n.kind === 'rescue' ? RESCUE_LINES : LINES)[r.result](r)
-  let h = `<div class="card">${rehearsal ? '<p class="mute">연습, 남지 않는다</p>' : ''}<h1 style="color:${good ? '#8fd07a' : '#e08a74'}">${esc(line)}</h1>`
-  h += `<p class="mute">쏜 ${n.shots} · 맞힘 ${n.hits} · 머리 ${n.heads}${n.practice === null ? ` · 남은 화살 ${r.arrowsLeft}` : ''}</p>`
+  let h = `<div class="card">${rehearsal ? `<p class="mute">${tr('night.rehearseNote')}</p>` : ''}<h1 style="color:${good ? '#8fd07a' : '#e08a74'}">${esc(line)}</h1>`
+  h += `<p class="mute">${tr('night.resStats', { s: n.shots, h: n.hits, d: n.heads })}${n.practice === null ? ` · ${tr('night.arrowsLeft', { n: r.arrowsLeft })}` : ''}</p>`
   // 촛불로 놓쳤으면 어떻게 잡는지 (형: "촛불이 꺼져서 도망치는건 대체뭔데. 어떻게잡으라는겨")
-  if (r.result === 'fled' && !r.alarm && n.chiefUp >= 0) h += `<p class="mute">그림자가 서면 창호지 위 촛불 게이지가 닳는다. 다 닳기 전에 그림자의 머리나 몸을 쏴야 한다. 빗나가면 게이지가 뭉텅 준다.</p>`
+  if (r.result === 'fled' && !r.alarm && n.chiefUp >= 0) h += `<p class="mute">${tr('night.fledHint')}</p>`
   h += `<div class="btns">`
   if (rehearsal) {
     // 연습 — 칠십팔국으로 안 보낸다. 다시 연습하거나 진짜로 들어간다
-    h += `<button data-act="rehearse">다시 연습</button><button class="on" data-act="go">진짜로 쏜다</button></div>`
+    h += `<button data-act="rehearse">${tr('night.rehearseAgain')}</button><button class="on" data-act="go">${tr('night.shootReal')}</button></div>`
     h += `<div class="btns"><button data-act="skip0">${SKIP_LABEL}</button>`
   } else if (n.practice !== null) {
     saveRun({ at: new Date().toISOString(), stage: n.stage, alarm: n.practice.alarm, shots: n.shots, hits: n.hits, heads: n.heads, result: r.result })
-    h += `<button class="on" data-act="go">다시</button><button data-act="menu">판 고르기</button>`
+    h += `<button class="on" data-act="go">${tr('night.again')}</button><button data-act="menu">${tr('night.pickStage')}</button>`
   } else {
     exportResult(n, r)
-    h += `<button class="on" data-act="back">돌아가기</button><button data-act="practice">연습장</button>`
+    h += `<button class="on" data-act="back">${tr('night.back')}</button><button data-act="practice">${tr('night.practiceBtn')}</button>`
   }
   ui.innerHTML = h + `</div></div>`
 }
@@ -350,9 +351,9 @@ function skipMission(seen: boolean): void {
   night = null
   if (window.parent !== window) window.parent.postMessage({ type: RESULT_KEY, ...out }, location.origin)
   ui.innerHTML = (rescue
-    ? `<div class="card"><h1>보낸 이에게 맡겼다</h1><p class="mute">보낸 이가 제 솜씨대로 옥을 깬다. 어찌 됐는지는 계절이 넘어갈 때 들려온다.</p>`
-    : `<div class="card"><h1>자객에게 맡겼다</h1><p class="mute">자객이 제 솜씨대로 해낸다. 어찌 됐는지는 계절이 넘어갈 때 들려온다.</p>`)
-    + `<div class="btns"><button class="on" data-act="back">돌아가기</button></div></div>`
+    ? `<div class="card"><h1>${tr('night.leftRescueTitle')}</h1><p class="mute">${tr('night.leftRescueBody')}</p>`
+    : `<div class="card"><h1>${tr('night.leftAssassinTitle')}</h1><p class="mute">${tr('night.leftAssassinBody')}</p>`)
+    + `<div class="btns"><button class="on" data-act="back">${tr('night.back')}</button></div></div>`
 }
 
 function start(): void {

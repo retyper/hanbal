@@ -9,6 +9,8 @@
  */
 import { TAU, clamp, clamp01, damp, lerp, valueNoise } from '../core/math.ts'
 import { P } from '../tune/params.ts'
+import { t as tr } from '../i18n/index.ts'
+import { bowName, guardName, stageName } from './names.ts'
 import { drawArcher, previewBlend } from '../render/stickman.ts'
 import { THEME, worldToScreenX, worldToScreenY, type Camera } from '../render/camera.ts'
 import { createFx, drawFx, type Fx } from '../render/effects.ts'
@@ -16,9 +18,9 @@ import { sprite } from '../render/sprites.ts'
 import type { World } from '../sim/types.ts'
 import { effectiveStats } from '../sim/bow.ts'
 import type { Pull } from './input.ts'
-import { GUARD_NAME, type Decor, type Figure, type Light } from './layout.ts'
+import { type Decor, type Figure, type Light } from './layout.ts'
 import {
-  BOW_NAME, CHEST, byGuard, chiefCandle, chiefRise, fallOf, flicker, lightAt, lightRadius, moveProgress, newParts, partsOf, tendProgress, walking,
+  CHEST, byGuard, chiefCandle, chiefRise, fallOf, flicker, lightAt, lightRadius, moveProgress, newParts, partsOf, tendProgress, walking,
   type Night, type NightEventKind, type Parts,
 } from './sim.ts'
 
@@ -537,7 +539,7 @@ function drawTend(ctx: CanvasRenderingContext2D, cam: Camera, n: Night): void {
     ctx.textBaseline = 'bottom'
     ctx.fillStyle = '#ffe2a8'
     const going = f.task?.step === 'go'
-    ctx.fillText(going ? '불 붙이러 간다' : '불 붙이는 중', cx, top - bh - 3)
+    ctx.fillText(tr(going ? 'night.lightGoing' : 'night.lightTending'), cx, top - bh - 3)
     if (!going) {
       ctx.fillStyle = '#3a3f48'
       ctx.fillRect(cx - bw / 2, top - bh, bw, bh)
@@ -782,7 +784,7 @@ function drawDoor(ctx: CanvasRenderingContext2D, cam: Camera, n: Night): void {
     ctx.textAlign = 'center'
     ctx.textBaseline = 'bottom'
     ctx.fillStyle = '#ffe2a8'
-    ctx.fillText(n.phase === 'rise' ? '그림자가 일어선다. 창호지 너머를 쏴라' : '촛불: 다 닳으면 달아난다', x + w / 2, gy - 0.06 * s)
+    ctx.fillText(tr(n.phase === 'rise' ? 'night.shadowRises' : 'night.candleLeft'), x + w / 2, gy - 0.06 * s)
     ctx.textBaseline = 'middle'
   }
   // 문살
@@ -815,20 +817,20 @@ export function goalLine(n: Night): string {
   const left = sc.figures.filter((f) => f.role === 'guard' && f.alive).length
   switch (sc.index) {
     case 0:
-      return '보초를 모두 쓰러뜨린다 · 머리를 맞히면 소리가 없다 · 횃불을 쏘면 꺼진다'
+      return tr('night.goal0')
     case 1: {
       const fire = sc.lights.find((l) => l.kind === 'fire')
       if (fire !== undefined && fire.lit) {
-        return '불 위에 매단 물동이를 쏘면 쏟아져 모닥불이 꺼진다 · 불빛 안에 쓰러진 보초는 들킨다'
+        return tr('night.goal1Fire')
       }
       const lantern = sc.lights.some((l) => l.kind === 'lantern' && l.lit && sc.figures[l.carrier]?.alive === true)
-      if (lantern) return '등불 든 보초는 등불부터 쏜다 · 다시 붙이는 동안 쓰러뜨린다'
-      return '불 붙이러 나온 보초를 어둠 속에서 쓰러뜨린다'
+      if (lantern) return tr('night.goal1Lantern')
+      return tr('night.goal1Dark')
     }
     case 2:
       // 구출 — 마루 기둥에 묶인 우리 장수 (살이 비켜 간다)
-      if (n.kind === 'rescue') return left > 0 ? `옥지기 ${left}명을 다 쓰러뜨리면 묶인 우리 장수를 데려 나온다 · 묶인 이는 살이 비켜 간다` : ''
-      return left > 0 ? `호위 ${left}명을 쓰러뜨리면 창호지 뒤 적장이 일어선다 · 그때 창호지를 쏜다` : ''
+      if (n.kind === 'rescue') return left > 0 ? tr('night.goal2Rescue', { n: left }) : ''
+      return left > 0 ? tr('night.goal2Chief', { n: left }) : ''
     default:
       return ''
   }
@@ -925,21 +927,21 @@ function drawHud(ctx: CanvasRenderingContext2D, v: NightView, n: Night, now: num
   // 판 — 연습장이면 판 이름만
   ctx.fillStyle = COL.hud
   ctx.textAlign = 'left'
-  const head = n.practice !== null ? `연습장 · ${n.scene.title}` : `${n.stage + 1} / 3 · ${n.scene.title}`
+  const head = n.practice !== null ? tr('night.headPractice', { title: stageName(n.scene.title) }) : `${n.stage + 1} / 3 · ${stageName(n.scene.title)}`
   // 판 이름·경비는 오른쪽 위 — 왼쪽 위는 남은 화살 (형 11-10: "화살 개수는 왼쪽 상단에")
   ctx.textAlign = 'right'
   ctx.fillText(head, cam.w - 14, 22)
   const hw = ctx.measureText(head).width
   ctx.font = '700 12px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
   ctx.fillStyle = n.guard === 2 ? '#ff9a7a' : n.guard === 0 ? '#9fd08a' : COL.hudDim
-  ctx.fillText(`경비 ${GUARD_NAME[n.guard]}`, cam.w - 14, 44)
+  ctx.fillText(tr('night.hudGuard', { guard: guardName(n.guard) }), cam.w - 14, 44)
   void hw
   ctx.font = '600 15px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
   // 든 활 — 단계가 오르면 이름이 바뀐다 (형: "계단적 성장"). 왼쪽 아래는 "그만" 단추 자리라 오른쪽 화살 밑에
   ctx.fillStyle = n.bowTier > 0 ? '#ffd27a' : COL.hudDim
   ctx.font = '700 13px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
   ctx.textAlign = 'right'
-  ctx.fillText(`활 · ${BOW_NAME[n.bowTier] ?? BOW_NAME[0]}`, cam.w - 14, 64)
+  ctx.fillText(tr('night.hudBow', { bow: bowName(n.bowTier) }), cam.w - 14, 64)
   ctx.textAlign = 'left'
   ctx.font = '600 15px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
   ctx.fillStyle = COL.hud
@@ -954,7 +956,7 @@ function drawHud(ctx: CanvasRenderingContext2D, v: NightView, n: Night, now: num
   const nw = ctx.measureText(num).width
   ctx.font = '700 14px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
   ctx.fillStyle = COL.hudDim
-  ctx.fillText('발', 14 + nw + 3, 30)
+  ctx.fillText(tr('night.hudArrow'), 14 + nw + 3, 30)
   if (!inf) drawQuiver(ctx, cam, 14 + nw + 24, Math.min(w.arrowsLeft, 20), low)
   else hideQuiver()
   ctx.font = '600 15px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
@@ -973,7 +975,7 @@ function drawHud(ctx: CanvasRenderingContext2D, v: NightView, n: Night, now: num
     ctx.textAlign = 'center'
     ctx.fillStyle = COL.hudDim
     ctx.font = '600 12px system-ui, sans-serif'
-    ctx.fillText('발각', cam.w / 2, 40)
+    ctx.fillText(tr('night.hudAlarm'), cam.w / 2, 40)
   }
   // 스태미나와 빨간 바 (GDD 2장 — 바 위에서 만작으로 놓으면 오차 0)
   const bw = 150
@@ -990,7 +992,7 @@ function drawHud(ctx: CanvasRenderingContext2D, v: NightView, n: Night, now: num
   ctx.textAlign = 'left'
   ctx.fillStyle = COL.hudDim
   ctx.font = '600 12px system-ui, sans-serif'
-  ctx.fillText('숨', bx + bw + 8, by + 5)
+  ctx.fillText(tr('night.hudBreath'), bx + bw + 8, by + 5)
   // 떠 있는 글자
   ctx.textAlign = 'center'
   ctx.font = '800 18px system-ui, sans-serif'
@@ -1019,13 +1021,13 @@ export function pumpView(v: NightView, n: Night, from: number, now: number): voi
       // 다음 지붕 — 지난 판의 박힌 살·남은 궤적을 거둔다
       case 'stage': v.fx = createFx(); break
       case 'notice': v.pops.push({ text: '?!', x: e.x, y: e.y, born: now, color: '#ffcf6a' }); break
-      case 'drum': v.flashAt = now; v.pops.push({ text: '경보!', x: 15, y: n.scene.ground + 3.5, born: now, color: COL.alarm }); break
+      case 'drum': v.flashAt = now; v.pops.push({ text: tr('night.popAlarm'), x: 15, y: n.scene.ground + 3.5, born: now, color: COL.alarm }); break
       // 머리 · 몸 · 다리 — 글자('헤드샷!')와 불꽃은 활터 effects 가 낸다. 여기서는 흔들림만
       case 'head': case 'body': case 'leg': v.shakeAmp = P.hit.shakeAmp * (e.t === 'head' ? SHAKE.head : SHAKE.foe); v.shakeAge = 0; break
-      case 'chief': v.shakeAmp = P.hit.shakeAmp * SHAKE.head; v.shakeAge = 0; v.pops.push({ text: '명중', x: e.x, y: e.y + 0.5, born: now, color: COL.good }); break
-      case 'flee': v.pops.push({ text: '촛불이 꺼졌다', x: 24.5, y: n.scene.ground + 3.2, born: now, color: COL.hud }); break
-      case 'startle': v.pops.push({ text: '촛불이 흔들린다', x: 24.5, y: n.scene.ground + 3.6, born: now, color: '#ff9a4a' }); break
-      case 'tend': v.pops.push({ text: '불이 꺼졌네?', x: e.x, y: e.y, born: now, color: '#e8d6a8' }); break
+      case 'chief': v.shakeAmp = P.hit.shakeAmp * SHAKE.head; v.shakeAge = 0; v.pops.push({ text: tr('night.popHit'), x: e.x, y: e.y + 0.5, born: now, color: COL.good }); break
+      case 'flee': v.pops.push({ text: tr('night.popCandleOut'), x: 24.5, y: n.scene.ground + 3.2, born: now, color: COL.hud }); break
+      case 'startle': v.pops.push({ text: tr('night.popCandleShake'), x: 24.5, y: n.scene.ground + 3.6, born: now, color: '#ff9a4a' }); break
+      case 'tend': v.pops.push({ text: tr('night.popFireOut'), x: e.x, y: e.y, born: now, color: '#e8d6a8' }); break
       default: break
     }
     heard(v, n, e.t, e.x, e.y, now)
@@ -1150,7 +1152,7 @@ export function drawPull(ctx: CanvasRenderingContext2D, p: Pull): void {
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillStyle = '#e9e2d4'
-  ctx.fillText(p.inDead ? '그만' : p.frac >= 1 ? '끝까지' : '', p.ax, p.ay - dead - 12)
+  ctx.fillText(p.inDead ? tr('night.pullQuit') : p.frac >= 1 ? tr('night.pullFull') : '', p.ax, p.ay - dead - 12)
   ctx.restore()
 }
 
