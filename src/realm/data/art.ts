@@ -470,7 +470,7 @@ export type GenSprite = 'g-sword' | 'g-bow' | 'g-spear' | 'w-spear' | 'w-bow' | 
 export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: number; bow?: true; mount?: true }>>> = {
   'g-sword': { ar: 150 / 160, body: 0.948 }, // 11-03 걷기가 한 자세라 20컷 통째로 다시 (제미나이 4 Argon · tools/assemble-gen20.mjs)
   'g-bow': { ar: 149 / 160, body: 0.948, bow: true }, // 11-03 20컷 다시 (걷기가 한 자세였다)
-  'g-spear': { ar: 189 / 160, body: 0.914 }, // 11-03 20컷 다시 (걷기가 한 자세였다)
+  'g-spear': { ar: 215 / 160, body: 0.925 }, // 11-03 20컷 다시 (걷기가 한 자세였다) · 11-11 동작 8컷만 새로(창끝이 칸 오른쪽 끝에 잘림)
   'w-spear': { ar: 180 / 160, body: 0.934 }, // 11-04 우하단 두 컷(걷기 8 · 쓰러짐)을 별표 없는 장으로 갈아 끼움
   'w-bow': { ar: 140 / 160, body: 0.968, bow: true }, // 11-10 bow 빠져 있어 여궁수가 적 코앞까지 달려가 쐈다(형: 활 쏘는 장수는 제자리에서) · 11-04 우하단 두 컷(걷기 8 · 쓰러짐)을 별표 없는 장으로 갈아 끼움
   mount: { ar: 246 / 160, body: 0.968, mount: true },
