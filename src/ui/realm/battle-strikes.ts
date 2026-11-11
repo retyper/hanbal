@@ -147,7 +147,7 @@ const CONTACT: Readonly<Record<string, [number, number, number]>> = {
   'gen-biryu': [14, 0.90, 0.35], 'gen-geumha': [14, 0.94, 0.61], 'gen-geota': [14, 0.86, 0.47], 'gen-soebo': [14, 0.87, 0.57],
   'gen-gaennae': [14, 249 / 264, 47 / 160],
   'gen-budeul': [14, 266 / 280, 51 / 160],
-  'gen-sogeumbi': [14, 225 / 280, 103 / 160],
+  'gen-sogeumbi': [14, .88, .70],
   'gen-sori': [14, 243 / 280, 42 / 160],
   'gen-beombal': [14, 248 / 280, 51 / 160],
   'gen-hwalmi': [14, 204 / 280, 50 / 160],

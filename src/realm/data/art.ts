@@ -504,7 +504,7 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   geota: { ar: 183 / 160, body: 0.856, mount: true }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 말 탄 장수 · 상투·높은 목가리개 쇠 미늘·곧은 고리자루 칼 베기
   soebo: { ar: 186 / 160, body: 0.831, mount: true }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 말 탄 장수 · 뾰족 금관 띠·숯 묻은 얼굴·가죽 앞치마·큰 쇠망치 내려치기
   sori: { ar: 280 / 160, body: 0.9375 }, // normal portrait, right-hand dagger, shared four-pose walk
-  sogeumbi: { ar: 280 / 160, body: 0.9375 }, // same-hand short downcut, shared four-pose walk
+  sogeumbi: { ar: 280 / 160, body: 0.9375 }, // 11-11 동작 8컷 새로(제미나이 edu Pro · 큰 베기/찌르기, 걷기는 그대로) · same-hand short downcut, shared four-pose walk
   budeul: { ar: 280 / 160, body: 0.9375 }, // 11-07 original Budeul upper body/knife + shared 4-pose trousers
   gaennae: { ar: 264 / 160, body: 0.9375 }, // 11-07 원초상 기준 · 하체 4실자세/고정 상체 · 공격 뒤발 고정 · 20칸
   beombal: { ar: 280 / 160, body: 0.9375 }, // 11-08 범발 · Codex 정규화 셀(대기·갯내 4실보행 하체·준비/찌르기/피격) + 아틀라스 우하단 쓰러짐 · 뺨 줄무늬는 오른쪽을 보는 몸의 왼뺨(원초상과 같은 쪽)
