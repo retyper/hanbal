@@ -82,7 +82,7 @@ describe('첫 화면 한국어 출력은 그대로', () => {
   it('영어로는 갈아입는다', () => {
     forceLang('en')
     const h = titleHtml(kit, null, null, '', true, '', '')
-    assert.ok(h.includes('New Game') && h.includes('alt="Samhan Chronicles"'))
+    assert.ok(h.includes('New Game') && h.includes('alt="First Realms"'))
     assert.ok(!/[가-힣]/.test(h))
   })
 })
