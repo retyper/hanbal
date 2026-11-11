@@ -43,6 +43,7 @@ import { loadTip, tipHtml, tipReadMs } from './ui/realm/loadtips.ts'
 import { worldMapReady } from './ui/realm/worldmap.ts'
 import { loadBar } from './ui/realm/loadbar.ts'
 import { showBoot } from './ui/realm/boot.ts'
+import { openingSeen, playOpening } from './ui/realm/opening.ts'
 import { openCredits } from './ui/realm/credits.ts'
 import { GEN_ANIM, MIGRANT_ANIM, SOL_ANIM2, genArtOf, nodeIcon } from './realm/data/art.ts'
 
@@ -466,6 +467,7 @@ const app = mountRealmApp(root, {
     saveGames(games)
     sync.dirty(true)
     app.show(state.realm, null, null, true) // 새 판 — 서막부터
+    if (!openingSeen()) playOpening(import.meta.env.BASE_URL) // 이 기기에서 처음 판을 여는 때 한 번 (끝나면 아래 서막이 그대로 보인다)
   },
   slots: () => loadSlots().filter((x) => x.seed !== state?.seed),
   onResume(seed) {

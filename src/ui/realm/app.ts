@@ -117,6 +117,7 @@ import { AUD_CSS, askSay, pactSay, typed, type PactKind } from './audience.ts'
 import { customDef, customsOf } from '../../realm/data/customs.ts'
 import { lang, setLang, t as tr, LANGS, type Lang } from '../../i18n/index.ts'
 import { openCredits } from './credits.ts'
+import { playEnding, playOpening } from './opening.ts'
 import { BOARDS, FRONT_CSS, PROLOGUE_STEPS, chronicleOf, customsHtml, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, slotsHtml, titleHtml, type FrontKit, type History, type SlotInfo } from './front.ts'
 import { SCENE_SOUND, VOLUME_CSS, makeMusic, playOnce, preRoll, setSoundVolume, snd, sndFile, soundVolume, tapSlot, volumeRowsHtml, warmOnce } from './sound.ts'
 import { exileArt, exileBeats, fugitiveBeats, quarrelArt, quarrelBeats, romanceBeats, romanceFlip, sayOfBeat } from './card-lines.ts'
@@ -6052,11 +6053,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const t = r.tier ?? 1
       const opened = r.outcome?.kind === 'win' && t >= 1 && t < TIER_MAX ? `<p class="tierup">「<b>${levelName(t + 1)}</b>」 세기가 열렸다. 이웃이 처음부터 더 센 판</p>` : ''
       // 휘장 — 이 나라로 이겼다는 표가 나라 고르기에 붙는다 (META §2-①)
+      const epi = r.outcome?.kind === 'win' && r.scenario !== undefined ? `<p class="retainnote"><button class="btn ghost sm" data-act="epilogue">${tr('ending.watch')}</button></p>` : ''
       const badge = r.outcome?.kind === 'win' && (r.region ?? 'byeonhan-mini') !== 'tutorial'
         ? `<p class="tierup">${esc(josa(r.factions[me()]?.name ?? '', '으로', '로'))} 이긴 <b>휘장</b>을 받았다. 나라 고르기에 붙는다</p>` : ''
       // 배우는 판은 세기·무덤·단련·데려가기를 말하지 않는다 — 처음 하는 사람에게 아직 없는 것들이다 (형 10-27: "튜토리얼에 아직도 장수 데려가기가 남아 있는 듯")
-      if ((r.region ?? 'byeonhan-mini') === 'tutorial') return endingHtml(KIT, r, host.history(), '', `<p class="retainnote"><button class="btn ghost sm" data-act="export">기록 내보내기</button></p>`)
-      return endingHtml(KIT, r, host.history(), opened + badge + endBondsHtml(DEX_KIT, r) + tombStripHtml(RELIC_KIT, r) + drillStrip(r), `<p class="mute retainnote">우리 장수로 부린 이는 영웅전에 남습니다. 다음 판을 열 때 영웅전에서 골라 데려갈 수 있습니다.</p><p class="retainnote"><button class="btn ghost sm" data-act="export">기록 내보내기</button></p>`)
+      if ((r.region ?? 'byeonhan-mini') === 'tutorial') return endingHtml(KIT, r, host.history(), '', `${epi}<p class="retainnote"><button class="btn ghost sm" data-act="export">기록 내보내기</button></p>`)
+      return endingHtml(KIT, r, host.history(), opened + badge + endBondsHtml(DEX_KIT, r) + tombStripHtml(RELIC_KIT, r) + drillStrip(r), `${epi}<p class="mute retainnote">우리 장수로 부린 이는 영웅전에 남습니다. 다음 판을 열 때 영웅전에서 골라 데려갈 수 있습니다.</p><p class="retainnote"><button class="btn ghost sm" data-act="export">기록 내보내기</button></p>`)
     }
     if (!showReport || before === null || report === null) return ''
     const season = seasonOf(r)
@@ -6544,6 +6546,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 활터·연습장·소리 출처·시험·기록·로그인은 「더 보기」 안에 접는다 — 늘어놓았더니 폰에서 화면 밑으로 넘쳤다 (형 10-28)
     const links = `<details class="fmore"${fmoreOpen ? ' open' : ''}><summary class="btn ghost">${tr('more.open')}</summary><button class="fmbg" data-act="fmore-x" aria-label="${tr('more.closeAria')}"></button><div class="fmpan"><b class="fmh">${tr('more.open')}</b>${document.documentElement.classList.contains('gfxsafe') ? `<small class="mute">${tr('more.gfxSafe')}</small>` : ''}${langRowHtml()}${gfxRowHtml()}${volumeRowsHtml()}${f.kind === 'title' ? acctLine() : ''}<p class="fine">${installed() ? '' : `<button class="btn ghost" data-act="inst-show">${tr('more.install')}</button>`}<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">${tr('more.archery')}</a> ${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
       // 소리의 출처 — 공공누리 제1유형·CC BY 는 출처를 밝혀야 쓸 수 있다 (형 10-23: "출처표기해야 상업적으로 사용가능하니까 주의")
+      + ` <button class="btn ghost" data-act="opening-open">${tr('more.opening')}</button>`
       + ` <button class="btn ghost" data-act="credits-open">${tr('more.credits')}</button>`
       // 새 전투 시험 (BATTLE-LIVE 0번) — 이 기기에서만 켜진다 · 형과 지인이 켜고 꺼 보며 견준다 (형 10-28)
       + ` <button class="btn ghost" data-act="spar-open" data-tip="${tr('more.sparTip')}">${tr('more.spar')}</button>`
@@ -8134,6 +8137,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'export': host.onExport(); return
       case 'lang-set': { const l = d['v'] as Lang; if (LANGS.includes(l) && l !== lang()) { setLang(l); const u = new URL(location.href); u.searchParams.delete('lang'); location.replace(u.toString()) } return }
       case 'credits-open': void openCredits(BASE); return
+      case 'opening-open': fmoreOpen = false; root.querySelector<HTMLDetailsElement>('.fmore')?.removeAttribute('open'); playOpening(BASE); return
+      case 'epilogue': if (realm?.scenario !== undefined) playEnding(BASE, realm.scenario.id); return
       case 'fmore-x': fmoreOpen = false; root.querySelector<HTMLDetailsElement>('.fmore')?.removeAttribute('open'); return
       case 'gfx': if (front !== null) fmoreOpen = true; setGfxPref(d['v']); paint(); return
       case 'perf-copy': { const t = perfText(); void navigator.clipboard?.writeText(t).then(() => goToast('끊김 기록을 복사했습니다. 붙여 넣어 보내 주세요.'), () => goToast('복사가 막혔습니다')); return }
