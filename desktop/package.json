@@ -1,0 +1,43 @@
+{
+  "name": "samhan-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "삼한열전 데스크톱 포장 시제품 (Electron)",
+  "main": "main.cjs",
+  "author": "retyper",
+  "scripts": {
+    "build:game": "node build-game.mjs",
+    "start": "electron .",
+    "verify": "node verify.mjs",
+    "pack": "electron-builder --win dir --x64"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "kr.samhan.yeoljeon",
+    "productName": "삼한열전",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "verify-main.cjs",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "game",
+        "to": "game"
+      }
+    ],
+    "compression": "store",
+    "asar": true,
+    "win": {
+      "target": "dir",
+      "signAndEditExecutable": false
+    }
+  }
+}

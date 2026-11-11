@@ -23,3 +23,8 @@ du.exe.stackdump
 .claude/skills/ai-art-kitchen/
 .claude/skills/sprite-sheet-qa/
 .claude/skills/claude-memory/
+
+# 데스크톱 포장 산출물 (desktop/)
+desktop/node_modules/
+desktop/game/
+desktop/dist/
