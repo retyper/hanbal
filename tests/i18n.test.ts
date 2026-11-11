@@ -119,3 +119,20 @@ describe('껍데기: 날짜 · 탭 · 배우는 판 · 처음 알림', () => {
     assert.ok(tutBandHtml(0, (x) => x).includes('1/14'))
   })
 })
+
+describe('이름표 표 (tn)', () => {
+  it('영어 이름표가 한국어 표의 키를 다 덮고, 한국어는 옛 표 그대로', async () => {
+    const P = await import('../src/realm/data/prose.ts')
+    const { nameTable, enName } = await import('../src/i18n/names.ts')
+    const B = await import('../src/ui/realm/battlefield.ts')
+    const sets = [['good', P.GOOD_NAME], ['build', P.BUILD_NAME], ['unit', P.UNIT_NAME], ['ask', P.ASK_NAME], ['askKind', P.ASK_KIND_NAME], ['plot', P.PLOT_NAME], ['approach', B.APPROACH_NAME]] as const
+    for (const [ns, tab] of sets) {
+      const tb = tab as Record<string, string>
+      for (const k of Object.keys(tb)) {
+        assert.ok(enName(ns, k), `${ns}.${k}`)
+        forceLang('ko'); assert.equal(nameTable(ns, tb)[k], tb[k])
+        forceLang('en'); assert.equal(nameTable(ns, tb)[k], enName(ns, k))
+      }
+    }
+  })
+})
