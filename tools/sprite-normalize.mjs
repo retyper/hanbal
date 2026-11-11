@@ -8,8 +8,10 @@ import { decodePng, encodePng } from './png.mjs'
 import { SPEC } from './sprite-spec.mjs'
 import { listStrips } from './sprite-audit.mjs'
 import { cleanStrip } from './sprite-clean.mjs'
+import { esrUpscale } from './sprite-esr.mjs'
 
-const OUT_DIR = 'public/realm/anim-px'
+const OUT_DIR = process.env.SPX_OUT ?? 'public/realm/anim-px'
+const ESR = process.env.SPX_ESR !== '0' // 장수 띠를 Real-ESRGAN x2 로 또렷하게 한 뒤 줄인다 (캐시 D:/tmp-node/esr-cache)
 const SHEET = process.env.SPX_SHEET ?? 'D:/tmp-node/spx'
 const MOUNT = new Set(['gen-mount', 'gen-biryu', 'gen-geumha', 'gen-geota', 'gen-soebo'])
 const audit = JSON.parse(readFileSync('docs/realm/sprite-audit.json', 'utf8'))
@@ -161,13 +163,17 @@ for (const [file, kind] of listStrips()) {
   const cw = img.w / a.cells
   let plan
   if (kind === 'general') {
-    const s = (MOUNT.has(name) ? SPEC.gen.mountBody : SPEC.gen.body) / a.bodyPx
+    const s0 = (MOUNT.has(name) ? SPEC.gen.mountBody : SPEC.gen.body) / a.bodyPx
     // 전 컷이 들어가는 가로 (칸 가운데 기준 좌우 최대)
     let half = 0
     for (let i = 0; i < a.cells; i++) {
       const x0 = Math.round(i * cw), x1 = Math.round((i + 1) * cw)
       for (let y = 0; y < img.h; y++) for (let x = x0; x < x1; x++) if (img.px[(y * img.w + x) * 4 + 3] > 40) half = Math.max(half, Math.abs(x - x0 + 0.5 - (x1 - x0) / 2))
     }
+    // 칼을 치켜든 컷까지 칸 위에 안 잘리게: 가장 높이 솟은 컷이 칸에 들어가는 배율을 넘지 않는다
+    let top = img.h
+    for (let y = 0; y < img.h && top === img.h; y++) for (let x = 0; x < img.w; x++) if (img.px[(y * img.w + x) * 4 + 3] > 40) { top = y; break }
+    const s = Math.min(s0, (SPEC.gen.h - SPEC.gen.pad) / (a.feet + 1 - top))
     const W = Math.max(SPEC.gen.minW, Math.ceil((half * 2 * s + SPEC.gen.margin * 2) / SPEC.gen.wRound) * SPEC.gen.wRound)
     plan = { cells: a.cells, cw, s, W, H: SPEC.gen.h, pad: SPEC.gen.pad, feetSrc: a.feet }
   } else if (kind === 'crowd') {
@@ -177,7 +183,12 @@ for (const [file, kind] of listStrips()) {
     const s = SPEC.sol.scale
     plan = { cells: a.cells, cw, s, W: Math.round(cw * s), H: Math.round(img.h * s), pad: SPEC.sol.pad, feetSrc: a.feet }
   }
-  const { sheet, W, colors } = convert(img, plan)
+  let src = img
+  if (ESR && kind === 'general') { // x2 로 키워 가장자리를 되살린 뒤 상자 평균으로 줄인다 (배율 반, 칸·발 줄은 두 배)
+    src = esrUpscale(img)
+    plan = { ...plan, s: plan.s / 2, cw: plan.cw * 2, feetSrc: (plan.feetSrc + 1) * 2 - 1 }
+  }
+  const { sheet, W, colors } = convert(src, plan)
   const outName = kind === 'crowd' ? `crowd/${name}.png` : `${name}.png`
   if (kind === 'crowd') mkdirSync(`${OUT_DIR}/crowd`, { recursive: true })
   const png = encodePng(W, plan.H, sheet)

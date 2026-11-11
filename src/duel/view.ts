@@ -644,7 +644,7 @@ function sprite(im: HTMLImageElement, frame: number, x: number, base: number, h:
   const isPx = im.src.includes('/anim-px/')
   const cw = im.naturalWidth / 20, ch = im.naturalHeight
   // 도트는 정수 배율 · 정수 자리 — 점이 네모로 또렷하게 (옛 띠는 매끄럽게 늘린다) · 발 줄(manifest)이 base 에 닿게 칸을 그만큼 내린다
-  const sc = isPx ? Math.max(1, Math.round(h * P.duel.pxFill / ch)) : 0
+  const sc = isPx ? Math.max(1, Math.round(Math.min(W, H) * P.duel.pxFill / ch)) : 0 // 화면 짧은 변 기준 (폰 390 → 1배 · 데스크톱 768 → 2배)
   const w = isPx ? cw * sc : h * (cw / ch)
   if (isPx) {
     const m = SPRITE_PX[(PX_NAME.exec(im.src) ?? [])[1] ?? '']
