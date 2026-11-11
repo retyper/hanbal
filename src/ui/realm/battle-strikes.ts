@@ -126,7 +126,7 @@ interface Actor extends Unit {
 // Bow grip in the drawn cell, measured in normalized sprite coordinates.
 const RELEASE: Readonly<Record<string, [number, number, number]>> = {
   bow: [14, .614, .34], crossbow: [14, .59, .22],
-  'gen-g-bow': [14, .82, .35], 'gen-w-bow': [13, .87, .31],
+  'gen-g-bow': [14, .82, .35], 'gen-w-bow': [14, .90, .34],
   'gen-jumong': [14, 0.97, 0.34], 'gen-maenun': [14, .88, .34],
   'gen-ogan': [14, .87, .32], 'gen-haedal': [14, 0.91, 0.26],
   'gen-songbi': [14, 0.91, 0.24], 'gen-damul': [14, 0.98, 0.33],
