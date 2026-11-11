@@ -343,6 +343,7 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'w-104-buyeo-darae', // 11-11 다래 1차 (Flow u/1) · 제자리 뜀·늑대털 모자 귀·목걸이 (형: 일단 ok)
   'w-102-garak-dana', // 11-11 다나 v2 (Flow u/5) · 제자리 두 번 뛰고 손끝으로 쇄골 금장식 · 윙크 (형: 훌륭해) · 옛 v1(보류)은 assets_src/realm/retired/awaken-loop
   'w-77-sabeol-malgalgi', // 11-05 밤 말갈기 — 튜토리얼 각성 장수 · 판 없이 세로로 가까이 (쇠비처럼 · 형: "세로로 더 가까이가 훨씬 낫다")
+  'w-90-saro-danbi', // 11-11 사로 단비 1차 (Flow 11-10 · 형: 오케이)
 ])
 
 /**
@@ -368,6 +369,7 @@ export const AWAKEN2_LOOP: ReadonlySet<string> = new Set([
   'w-69-jeoga-eomni', // 11-06 아침 엄니 — 입 다문 채 창을 땅에 꽂고 입김 · 다시 겨눔 (중간에 화면이 전신으로 물러났다 돌아온다)
   'w-68-maek-beombal', // 11-08 저녁 범발 v2 (10초 구성 · 옛 판은 끝에서 얼어 .2 로 보관만) · 11-06 아침 범발 — 비스듬히 웃으며 단검을 돌려 쥐고 다시 웅크림
   'l-L7-aryeong', // 11-08 저녁 알영 2차 v2 · 세로 · 벼 이삭을 들어 올리고 용을 쓰다듬는다 (옛 정사각 판은 지움)
+  'w-53-hwanna-gabi', // 11-11 가비 진각성 (Argon 11-10 · 형: ok)
 ])
 /** 정사각 판으로 구운 진각성 영상 (11-05 낮의 둘) — 나머지는 판 없이 세로 `<id>.t2.mp4` */
 export const AWAKEN2_LOOP_SQ: ReadonlySet<string> = new Set<string>() // 11-08 형: 정사각 영상은 안 쓴다 (알영 2차는 11-08 저녁 세로 v2 · 미르 2차는 다시 굽기 차례)
