@@ -5,7 +5,7 @@
  */
 export const ko = {
   // 첫 화면
-  'title.logoAlt': '삼한열전',
+  'title.logoAlt': '열국군웅전',
   'title.continue': '{name} 이어 하기',
   'title.progress': '도읍 {caps}/{need}',
   'title.known': '아는 나라 {n}/{total}',
@@ -208,7 +208,7 @@ export const ko = {
   'first.relic.text': '상자 하나를 고르세요. 겉빛이 귀할수록 좋은 유물이 듭니다. 얻은 유물은 단련터에서 장수에게 끼웁니다.',
   'first.more': '자세히 ›',
   'boot.presents': 'presents',
-  'boot.logoAlt': '삼한열전',
+  'boot.logoAlt': '열국군웅전',
   'credits.title': '크레딧',
   'credits.back': '‹ 돌아가기',
   'credits.loading': '불러오는 중입니다.',

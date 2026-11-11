@@ -65,7 +65,7 @@ describe('t()', () => {
 describe('첫 화면 한국어 출력은 그대로', () => {
   it('처음 켠 사람의 첫 화면', () => {
     const h = titleHtml(kit, null, null, '', true, '', '')
-    assert.ok(h.includes('<img class="ltitle" src="/a/logo/title.png" alt="삼한열전">'))
+    assert.ok(h.includes('<img class="ltitle" src="/a/logo/title.png" alt="열국군웅전">'))
     assert.ok(h.includes('<button class="btn pri big" data-act="fr-tutorial">처음이면, 배우는 판부터</button><button class="btn big" data-act="fr-new">새 게임</button></div>'))
   })
   it('불러온 판 목록', () => {

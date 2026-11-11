@@ -1,4 +1,4 @@
-// 삼한열전 데스크톱 껍데기 (Electron). 게임 본체는 건드리지 않고 빌드된 웹판을 app://game/ 으로 서빙한다.
+// 열국군웅전 데스크톱 껍데기 (Electron). 게임 본체는 건드리지 않고 빌드된 웹판을 app://game/ 으로 서빙한다.
 // file:// 대신 표준·보안 프로토콜을 쓰는 이유: 상대/절대 경로, fetch, mp4 Range, localStorage 가 웹과 똑같이 동작하고 판이 재실행 뒤에도 남는다.
 const { app, BrowserWindow, protocol, net, Menu, shell } = require('electron')
 const path = require('node:path')
@@ -44,7 +44,7 @@ function createWindow(opts = {}) {
     width: 1280, height: 800, minWidth: 960, minHeight: 600,
     show: opts.show !== false,
     backgroundColor: '#14181e',
-    title: '삼한열전',
+    title: '열국군웅전',
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),

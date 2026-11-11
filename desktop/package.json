@@ -2,7 +2,7 @@
   "name": "samhan-desktop",
   "version": "0.1.0",
   "private": true,
-  "description": "삼한열전 데스크톱 포장 시제품 (Electron)",
+  "description": "열국군웅전 데스크톱 포장 시제품 (Electron)",
   "main": "main.cjs",
   "author": "retyper",
   "scripts": {
@@ -17,7 +17,7 @@
   },
   "build": {
     "appId": "kr.samhan.yeoljeon",
-    "productName": "삼한열전",
+    "productName": "열국군웅전",
     "directories": {
       "output": "dist"
     },

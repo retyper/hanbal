@@ -90,8 +90,8 @@ const overlay = createOverlay()
   const back = document.createElement('a')
   back.className = 'hb-btn'
   back.href = `${import.meta.env.BASE_URL}realm.html`
-  back.innerHTML = '<span class="hb-lbl">‹ 삼한열전</span>'
-  back.setAttribute('aria-label', '삼한열전으로 돌아가기')
+  back.innerHTML = '<span class="hb-lbl">‹ 열국군웅전</span>'
+  back.setAttribute('aria-label', '열국군웅전으로 돌아가기')
   back.style.textDecoration = 'none'
   overlay.hud().prepend(back)
 }

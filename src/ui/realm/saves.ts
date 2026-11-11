@@ -93,7 +93,7 @@ export const serializeSave = (f: SaveFile): string => JSON.stringify(f)
 
 export type Parsed = { readonly ok: true; readonly file: SaveFile } | { readonly ok: false; readonly why: string }
 
-const BAD = '이 파일은 삼한열전 판으로 읽을 수 없습니다'
+const BAD = '이 파일은 열국군웅전 판으로 읽을 수 없습니다'
 
 const isObj = (x: unknown): x is Record<string, unknown> => x !== null && typeof x === 'object' && !Array.isArray(x)
 
@@ -147,10 +147,10 @@ export function metaOf(n: number, f: SaveFile): SaveMeta {
   return { n, label: f.label, nation: f.game.nation, name: r.factions[r.player]?.name ?? '', region: r.region ?? 'byeonhan-mini', season: r.season, ...(r.clock !== undefined ? { clock: r.clock } : {}), savedAt: f.savedAt }
 }
 
-/** 내려받을 파일 이름 — `삼한열전-비화가야-3년겨울.json` (파일 이름에 못 쓰는 글자는 뺀다) */
+/** 내려받을 파일 이름 — `열국군웅전-비화가야-3년겨울.json` (파일 이름에 못 쓰는 글자는 뺀다) */
 export function saveFileName(f: SaveFile): string {
   const r = f.game.realm
-  const raw = `삼한열전-${r.factions[r.player]?.name ?? f.game.nation}-${seasonLabel(r)}`
+  const raw = `열국군웅전-${r.factions[r.player]?.name ?? f.game.nation}-${seasonLabel(r)}`
   return `${raw.replace(/[\\/:*?"<>|\s]+/g, '')}.json`
 }
 

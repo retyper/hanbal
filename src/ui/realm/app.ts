@@ -5237,11 +5237,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     // 이미 깔려 있으면 설치 대신 아이콘으로 열라고 (설치 단추는 크롬이 주지 않는다)
     if (appOnDevice && installPrompt() === null) {
-      return `<div class="instc"><button class="instx" data-act="inst-ok" aria-label="닫기">✕</button><b>📲 이 기기에 이미 설치되어 있습니다</b><p>바탕화면·시작 메뉴·홈 화면의 <b>삼한열전</b> 아이콘으로 여세요. 주소창 없이 꽉 찬 화면으로 즐길 수 있습니다.</p>`
+      return `<div class="instc"><button class="instx" data-act="inst-ok" aria-label="닫기">✕</button><b>📲 이 기기에 이미 설치되어 있습니다</b><p>바탕화면·시작 메뉴·홈 화면의 <b>열국군웅전</b> 아이콘으로 여세요. 주소창 없이 꽉 찬 화면으로 즐길 수 있습니다.</p>`
         + `<div class="instr"><label class="chk"><input type="checkbox" class="insthide"> 다시 보지 않기</label><button class="btn sm" data-act="inst-ok">확인</button></div></div>`
     }
     const how = ios
-      ? '사파리 아래 <b>공유</b> 단추(네모에 위 화살표) → <b>「홈 화면에 추가」</b>. 홈 화면의 삼한열전 아이콘으로 열면 주소창 없이 꽉 찬 화면으로 즐길 수 있습니다.'
+      ? '사파리 아래 <b>공유</b> 단추(네모에 위 화살표) → <b>「홈 화면에 추가」</b>. 홈 화면의 열국군웅전 아이콘으로 열면 주소창 없이 꽉 찬 화면으로 즐길 수 있습니다.'
       : installPrompt() !== null ? '아래 단추를 누르면 바로 설치됩니다. 홈 화면·바탕화면의 아이콘으로 열면 주소창 없이 꽉 찬 화면으로 즐길 수 있습니다.'
         : '브라우저 메뉴(⋮) → <b>「앱 설치」</b> 또는 <b>「홈 화면에 추가」</b>를 누르세요. 아이콘으로 열면 주소창 없이 꽉 찬 화면으로 즐길 수 있습니다.'
     // 첫 화면 위쪽에 뜨는 알림 — ✕ 로 끈다 (형 10-28: "상단에 나오는 팝업으로 만들어서 끌 수 있게")
@@ -5389,7 +5389,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const f = t.classList.contains('svpick') ? t.files?.[0] : undefined
         if (f === undefined) return
         t.value = ''
-        if (f.size > P.realm.saveFileMaxMB * 1024 * 1024) { saveSay('파일이 너무 큽니다. 삼한열전 판으로 읽을 수 없습니다', true); return }
+        if (f.size > P.realm.saveFileMaxMB * 1024 * 1024) { saveSay('파일이 너무 큽니다. 열국군웅전 판으로 읽을 수 없습니다', true); return }
         void f.text().then((text) => saveOpened(host.saves?.loadFile(text) ?? null), () => saveSay('파일을 읽지 못했습니다', true))
       })
     }

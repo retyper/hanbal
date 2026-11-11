@@ -1,6 +1,6 @@
 # 스팀 상점 페이지 꾸러미 (초안 · 2026-11-11)
 
-> MEGAHIT.md 3단계 7. 형이 스팀웍스에 붙여 넣을 글·그림 목록. **제목은 아직 정하지 않았다** — 아래 `{TITLE}` 자리. 정해지면 한 번에 바꾼다.
+> MEGAHIT.md 3단계 7. 형이 스팀웍스에 붙여 넣을 글·그림 목록. **제목: 열국군웅전(列國群雄傳)** (형 11-11) · 부제/설명 첫 줄 「아사달에서 삼성혈까지」 · 영어 본제목은 미정(후보 Realmrise · First Realms · 부제 Egg-Born Kings).
 > 규칙: 지금 게임에 **있는 것만** 쓴다 (STEAM-RELEASE.md · 미래 기능을 현재처럼 쓰지 않는다). 화면 글 규칙(긴 줄표 금지)은 상점 글에도 지킨다.
 
 ## 0. 훅 한 문장
@@ -55,7 +55,7 @@ Strategy · Turn-Based Strategy · Grand Strategy · Historical · Collectathon 
 | 스크린샷 | 1920×1080 · 5장 이상 | 아래 §5 |
 
 - 사람 그림은 챗지피티(사람)·소품은 제미나이 (메모리 규칙). **15세 판 그림만** 쓴다 (노출 넘는 판은 assets_r19).
-- 제목이 정해져야 로고를 다시 굽는다 (지금 로고는 「삼한열전」 청동 글자).
+- 제목 로고 다시 굽기 (지금 그림은 「삼한열전」) — 문안은 아래 §4-1. 형이 챗지피티로 굽는다(전에 쓴 길: 청동 글자 + 뒤에 눕힌 비파형 동검 · 진짜 투명 바탕).
 
 ## 5. 스크린샷 목록 (데스크톱판 1920×1080 · 자동 촬영 도구로)
 
@@ -99,6 +99,15 @@ Strategy · Turn-Based Strategy · Grand Strategy · Historical · Collectathon 
 
 ## 10. 남은 결정 (형)
 
-- 제목 (한/영) — 후보와 의견은 대화 11-11 · 정해지면 로고 다시 굽기
+- ~~제목~~ → **열국군웅전** (11-11) · 영어 본제목만 남음
 - 가격 · 얼리 액세스 여부 (첫 한 시간 시험 뒤)
 - ~~스튜디오 이름~~ → **Hephaestosian** (형 11-11 · https://hephaestosian.github.io/)
+
+## 4-1. 제목 로고 문안 (열국군웅전 · 형이 굽는다)
+
+붙일 것: 지금 로고 `public/realm/logo/title.png`(화풍 참고) + 동검 사진 `public/realm/00db79af-897d-4ad4-8dbf-ecb32c544b74.webp`(실루엣 참고 · 박물관 사진이라 커밋 금지).
+
+> Game title logo, transparent background (real alpha, no checkerboard), 1600×480. The Korean title 「열국군웅전」 written as five large hand-brushed characters in cast bronze: dark green-brown patina with bright worn gold edges, the brush strokes thick and confident like an ancient Korean calligrapher's, with a subtle beveled metal depth. Behind the letters, laid horizontally, a single Liaoning-style bronze dagger (비파형 동검) from the attached photo: a blade without hilt or guard, the lower half swelling like a lute, one pair of small barbs near the middle, a short tang at the bottom; the dagger is one tone darker than the letters so the letters stay readable, with a thin dark edge around each character. The same style as the attached current logo. No red sun disc, no Japanese motifs, no other text, no watermark, nothing else.
+> 저장 이름: `logo-title-yeolguk.png` (받으면 `public/realm/logo/title.png` 로 · 옛 「삼한열전」 판은 assets_src/realm/retired/logo 로)
+
+영어 로고는 영어 본제목이 정해진 뒤 같은 틀로 한 장 더.
