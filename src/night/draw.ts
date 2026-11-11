@@ -12,7 +12,7 @@ import { P } from '../tune/params.ts'
 import { drawArcher, previewBlend } from '../render/stickman.ts'
 import { THEME, worldToScreenX, worldToScreenY, type Camera } from '../render/camera.ts'
 import { createFx, drawFx, type Fx } from '../render/effects.ts'
-import { drawArrowArt } from '../render/foeart.ts'
+import { sprite } from '../render/sprites.ts'
 import type { World } from '../sim/types.ts'
 import { effectiveStats } from '../sim/bow.ts'
 import type { Pull } from './input.ts'
@@ -578,6 +578,57 @@ function drawStuck(ctx: CanvasRenderingContext2D, cam: Camera, n: Night): void {
   }
 }
 
+/**
+ * 또렷한 화살 한 대 — 192px 그림을 30px 안팎으로 한 번에 줄이면 뭉개진다. 기기 화소 크기로 **반씩 줄여 한 번 구워** 두고 (길이별 하나)
+ * 프레임마다는 그걸 1:1 로 얹는다. 활터는 화살이 크게 그려져 티가 안 났다 (형 11-11: 화살 이미지도 너무 뿌얘).
+ */
+const arrowBakes = new Map<string, HTMLCanvasElement>()
+function crispArrow(ctx: CanvasRenderingContext2D, backX: number, backY: number, tipX: number, tipY: number, fat: number, dpr: number): boolean {
+  const im = sprite('fly-basic')
+  if (im === null) return false
+  const len = Math.hypot(tipX - backX, tipY - backY)
+  if (len < 1) return true
+  const h = Math.max(5 * fat, len * (im.naturalHeight / im.naturalWidth) * fat)
+  const tw = Math.max(2, Math.round(len * dpr))
+  const th = Math.max(2, Math.round(h * dpr))
+  const key = `${tw}x${th}`
+  let bake = arrowBakes.get(key)
+  if (bake === undefined) {
+    let cur: CanvasImageSource = im
+    let cw = im.naturalWidth
+    let ch = im.naturalHeight
+    while (cw / 2 >= tw) {
+      const nw = Math.ceil(cw / 2)
+      const nh = Math.max(th, Math.ceil(ch / 2))
+      const t = document.createElement('canvas')
+      t.width = nw
+      t.height = nh
+      const tc = t.getContext('2d')
+      if (tc === null) break
+      tc.imageSmoothingQuality = 'high'
+      tc.drawImage(cur, 0, 0, nw, nh)
+      cur = t
+      cw = nw
+      ch = nh
+    }
+    bake = document.createElement('canvas')
+    bake.width = tw
+    bake.height = th
+    const bc = bake.getContext('2d')
+    if (bc === null) return false
+    bc.imageSmoothingQuality = 'high'
+    bc.drawImage(cur, 0, 0, tw, th)
+    if (arrowBakes.size > 24) arrowBakes.clear()
+    arrowBakes.set(key, bake)
+  }
+  ctx.save()
+  ctx.translate(backX, backY)
+  ctx.rotate(Math.atan2(tipY - backY, tipX - backX))
+  ctx.drawImage(bake, 0, -h / 2, len, h)
+  ctx.restore()
+  return true
+}
+
 function drawFlying(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void {
   ctx.lineCap = 'round'
   for (const a of w.arrows) {
@@ -591,7 +642,7 @@ function drawFlying(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void 
     ctx.lineTo(X(cam, bx), Y(cam, by))
     ctx.stroke()
     // 날아가는 살도 활터의 그림 화살 (형: "암살부분은 왜 이전 신궁 UI랑 에셋 이런거 거의 안가져온거임?") — 그림이 아직 안 왔으면 선
-    if (drawArrowArt(ctx, 'basic', X(cam, bx), Y(cam, by), X(cam, a.x), Y(cam, a.y))) continue
+    if (crispArrow(ctx, X(cam, bx), Y(cam, by), X(cam, a.x), Y(cam, a.y), 1, cam.dpr)) continue
     ctx.strokeStyle = COL.arrow
     ctx.lineWidth = Math.max(1.4, cam.scale * 0.03)
     ctx.beginPath()
@@ -636,14 +687,17 @@ function drawDarkness(ctx: CanvasRenderingContext2D, v: NightView, n: Night): vo
     const y = Y(cam, l.y)
     const f = flicker(l, n.tick)
     const gr = dc.createRadialGradient(x, y, 0, x, y, r)
-    gr.addColorStop(0, `rgba(0,0,0,${0.95 * f})`)
-    gr.addColorStop(0.55, `rgba(0,0,0,${0.55 * f})`)
+    // 깜빡임은 색 띠가 아니라 globalAlpha 로 — 띠가 매 프레임 달라지면 폰 호환 모드(gfxsafe)가 그러데이션을 프레임마다 새로 굽는다 (형 11-11: 프레임 200ms)
+    gr.addColorStop(0, 'rgba(0,0,0,0.95)')
+    gr.addColorStop(0.55, 'rgba(0,0,0,0.55)')
     gr.addColorStop(1, 'rgba(0,0,0,0)')
+    dc.globalAlpha = f
     dc.fillStyle = gr
     dc.beginPath()
     dc.arc(x, y, r, 0, Math.PI * 2)
     dc.fill()
   }
+  dc.globalAlpha = 1
   ctx.drawImage(d, 0, 0, cam.w, cam.h)
   // 불빛의 따뜻한 색 — 낮은 해상도 판에 그려 더하기로 한 번 얹는다 (화면 해상도로 불마다 섞던 것)
   if (v.glow === null) v.glow = document.createElement('canvas')
@@ -662,11 +716,13 @@ function drawDarkness(ctx: CanvasRenderingContext2D, v: NightView, n: Night): vo
     const x = X(cam, l.x)
     const y = Y(cam, l.y)
     const gr = g2.createRadialGradient(x, y, 0, x, y, r)
-    gr.addColorStop(0, `rgba(255,140,50,${0.22 * flicker(l, n.tick)})`)
+    gr.addColorStop(0, 'rgba(255,140,50,0.22)')
     gr.addColorStop(1, 'rgba(255,140,50,0)')
+    g2.globalAlpha = flicker(l, n.tick)
     g2.fillStyle = gr
     g2.fillRect(x - r, y - r, r * 2, r * 2)
   }
+  g2.globalAlpha = 1
   ctx.globalCompositeOperation = 'lighter'
   ctx.drawImage(gc, 0, 0, cam.w, cam.h)
   ctx.globalCompositeOperation = 'source-over'
@@ -813,24 +869,29 @@ function drawQuiver(ctx: CanvasRenderingContext2D, cam: Camera, x0: number, coun
   // 가운데 위 발각 게이지(폭 min(220, 34%))에 닿지 않게 — 좁은 화면이면 눈금을 줄인다 (숫자는 그대로 다 보인다)
   const room = cam.w / 2 - Math.min(110, cam.w * 0.17) - 10 - x0
   count = Math.min(count, Math.floor(room / step))
-  if (count <= 0) return
+  if (count <= 0) { hideQuiver(); return }
   const w = (count - 1) * step + pad * 2 + 4
   const h = glyph + pad * 2
-  const key = `${count}:${low ? 1 : 0}:${cam.dpr}`
-  if (quiver === null || quiver.key !== key) {
+  // 화면 가득한 그림판은 DPR 을 낮춰 그리지만(폰 GPU), 화살 눈금은 작아서 **기기 화소 그대로** 구운 별도 판으로 얹는다 — 흐릿하던 것 (형 11-11)
+  const dpr = Math.min(globalThis.devicePixelRatio || 1, P.night.quiverDprCap)
+  const host = ctx.canvas.parentElement
+  if (host === null) return
+  const key = `${count}:${low ? 1 : 0}:${dpr}`
+  if (quiver === null || quiver.key !== key || quiver.c.parentElement !== host) {
     const c = quiver?.c ?? document.createElement('canvas')
-    c.width = Math.ceil(w * cam.dpr)
-    c.height = Math.ceil(h * cam.dpr)
+    c.width = Math.ceil(w * dpr)
+    c.height = Math.ceil(h * dpr)
+    c.style.cssText = 'position:absolute;pointer-events:none;'
     const q = c.getContext('2d')
     if (q === null) return
-    q.setTransform(cam.dpr, 0, 0, cam.dpr, 0, 0)
+    q.setTransform(dpr, 0, 0, dpr, 0, 0)
     q.clearRect(0, 0, w, h)
     q.shadowColor = low ? COL.alarm : '#e8d6a8'
     q.shadowBlur = 5
     let art = true
     for (let i = 0; i < count; i++) {
       const cx = pad + 2 + i * step
-      if (!drawArrowArt(q, 'basic', cx, pad + glyph, cx, pad, 2)) {
+      if (!crispArrow(q, cx, pad + glyph, cx, pad, 2, dpr)) {
         art = false
         q.fillStyle = low ? COL.alarm : '#e8d6a8'
         q.fillRect(cx - 1, pad, 2, glyph)
@@ -838,8 +899,18 @@ function drawQuiver(ctx: CanvasRenderingContext2D, cam: Camera, x0: number, coun
     }
     // 화살 그림이 아직 안 왔으면 선으로 그려 두고 다음 프레임에 다시 굽는다
     quiver = { key: art ? key : '', c }
+    if (c.parentElement !== host) host.insertBefore(c, ctx.canvas.nextSibling)
   }
-  ctx.drawImage(quiver.c, x0 - pad, 6 - pad, w, h)
+  const st = quiver.c.style
+  st.left = `${x0 - pad}px`
+  st.top = `${6 - pad}px`
+  st.width = `${w}px`
+  st.height = `${h}px`
+  st.display = 'block'
+}
+
+function hideQuiver(): void {
+  if (quiver !== null) quiver.c.style.display = 'none'
 }
 
 /** 할 일 줄이 비켜 가는 양옆 폭 (CSS px) — 왼쪽 '그만'·'건너뛰기' 단추, 오른쪽 화살 눈금 */
@@ -885,6 +956,7 @@ function drawHud(ctx: CanvasRenderingContext2D, v: NightView, n: Night, now: num
   ctx.fillStyle = COL.hudDim
   ctx.fillText('발', 14 + nw + 3, 30)
   if (!inf) drawQuiver(ctx, cam, 14 + nw + 24, Math.min(w.arrowsLeft, 20), low)
+  else hideQuiver()
   ctx.font = '600 15px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
   ctx.fillStyle = COL.hud
   // 발각 게이지 — 가운데 위

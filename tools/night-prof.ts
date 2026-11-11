@@ -36,11 +36,11 @@ try {
   await new Promise((r, j) => { ws.onopen = r; ws.onerror = j })
   let id = 0
   const waits = new Map<number, (v: any) => void>()
-  ws.onmessage = (ev) => { const m = JSON.parse(String(ev.data)); if (m.id !== undefined) { waits.get(m.id)?.(m.result ?? m.error); waits.delete(m.id) } }
+  ws.onmessage = (ev) => { const m = JSON.parse(String(ev.data)); if (m.method === 'Runtime.exceptionThrown') console.log('예외', m.params.exceptionDetails?.exception?.description?.slice(0, 300)); if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'error') console.log('콘솔', JSON.stringify(m.params.args?.[0]?.value ?? m.params.args?.[0]?.description).slice(0, 300)); if (m.id !== undefined) { waits.get(m.id)?.(m.result ?? m.error); waits.delete(m.id) } }
   const call = (method: string, params: object = {}): Promise<any> => new Promise((r) => { const k = ++id; waits.set(k, r); ws.send(JSON.stringify({ id: k, method, params })) })
   const ev = async (expression: string): Promise<any> => (await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true })).result?.value
   await call('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: DPR, mobile: true })
-  await call('Page.enable')
+  await call('Page.enable'); await call('Runtime.enable')
   const save = process.env['SAVE']
   // W 는 틀 안 창 — 칠십팔국 위에 띄웠으면 그 iframe 의 창
   let W0 = 'window'
@@ -60,8 +60,10 @@ try {
     await call('Page.navigate', { url: URL0 })
     await sleep(4000)
   }
+  for (let i = 0; i < 60; i++) { if (await ev(`!!${W0}.document.querySelector('[data-act=go]')`)) break; await sleep(500) }
   await ev(`${W0}.document.querySelector('[data-act=go]')?.click()`)
   await sleep(2500)
+  console.log('판', await ev(`!!${W0}.__night?.() + ' hidden=' + ${W0}.document.hidden + ' ui=' + ${W0}.document.getElementById('night-ui').innerText.slice(0,40)`))
   const stage = Number(process.env['STAGE'] ?? 0)
   if (stage > 0) await ev(`(() => { const n = ${W0}.__night?.(); if (n) { n.stage = ${stage} } })()`)
   await call('Emulation.setCPUThrottlingRate', { rate: RATE })

@@ -24,7 +24,16 @@ const NAMED: Readonly<Record<string, RGBA>> = { transparent: [0, 0, 0, 0], black
 let probe: CanvasRenderingContext2D | null | undefined
 
 /** 색 글자 → [r,g,b,a] · 모르는 색(var() 등)은 null */
+const colorMemo = new Map<string, RGBA | null>()
 export function parseColor(s0: string): RGBA | null {
+  const hit = colorMemo.get(s0)
+  if (hit !== undefined) return hit === null ? null : ([...hit] as RGBA)
+  const c = parseColorRaw(s0)
+  if (colorMemo.size > 500) colorMemo.clear()
+  colorMemo.set(s0, c === null ? null : ([...c] as RGBA))
+  return c
+}
+function parseColorRaw(s0: string): RGBA | null {
   const s = s0.trim().toLowerCase()
   if (NAMED[s] !== undefined) return [...NAMED[s]!] as RGBA
   let m = /^#([0-9a-f]{3,8})$/.exec(s)
@@ -438,6 +447,20 @@ function patchCanvasSmooth(P: CanvasRenderingContext2D): void {
     x.putImageData(img, 0, 0)
     return cv
   }
+  /**
+   * 구운 그림 판은 내용(색 띠 · 길이 · 안팎 반지름 비)이 같으면 다시 안 굽는다 — 밤 판처럼 불마다 프레임마다 그러데이션을 새로 만드는 곳이
+   * 그때마다 384×384 점을 셈해 폰에서 한 프레임이 200ms 였다 (형 11-11 · Xclipse 폰). 자리·크기는 무늬 변환으로 따로 준다.
+   */
+  const baked = new Map<string, HTMLCanvasElement | null>()
+  const bake = (key: string, w: number, h: number, t: (x: number, y: number) => number, st: Meta['stops']): HTMLCanvasElement | null => {
+    const hit = baked.get(key)
+    if (hit !== undefined) return hit
+    const cv = paint(w, h, t, st)
+    if (baked.size > 200) baked.clear()
+    baked.set(key, cv)
+    return cv
+  }
+  const stopKey = (st: Meta['stops']): string => st.map((p) => `${p.o}:${p.c.join(',')}`).join(';')
   const patternOf = (ctx: CanvasRenderingContext2D, g: CanvasGradient): CanvasPattern | null => {
     if (made.has(g)) return made.get(g)!
     let out: CanvasPattern | null = null
@@ -450,7 +473,7 @@ function patchCanvasSmooth(P: CanvasRenderingContext2D): void {
           const len = Math.hypot(x1 - x0, y1 - y0)
           if (len > 0.5 && len < 8192) {
             const w = Math.ceil(len) + PAD * 2
-            const cv = paint(w, 1, (x) => (x - PAD) / len, st)
+            const cv = bake(`L${Math.round(len)}|${stopKey(st)}`, w, 1, (x) => (x - PAD) / Math.round(len), st)
             const pat = cv !== null ? ctx.createPattern(cv, 'repeat-y') : null
             if (pat !== null) {
               pat.setTransform(new DOMMatrix().translateSelf(x0, y0).rotateSelf((Math.atan2(y1 - y0, x1 - x0) * 180) / Math.PI).translateSelf(-PAD, 0))
@@ -463,7 +486,8 @@ function patchCanvasSmooth(P: CanvasRenderingContext2D): void {
             const R = r1 * 3 // 바깥은 끝 색 — 넉넉히 덮는다
             const S = 384
             const k = (2 * R) / S
-            const cv = paint(S, S, (x, y) => (Math.hypot(x * k - R, y * k - R) - r0) / (r1 - r0), st)
+            const rr = Math.round((r0 / r1) * 100) / 100
+            const cv = bake(`R${rr}|${stopKey(st)}`, S, S, (x, y) => (Math.hypot(x - S / 2, y - S / 2) * (6 / S) - rr) / (1 - rr), st)
             const pat = cv !== null ? ctx.createPattern(cv, 'no-repeat') : null
             if (pat !== null) {
               pat.setTransform(new DOMMatrix().translateSelf(x0 - R, y0 - R).scaleSelf(k, k))
