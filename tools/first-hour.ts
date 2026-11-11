@@ -11,7 +11,7 @@
 import { aiOrders, decide, type Brain } from '../src/realm/ai.ts'
 import { startRegion } from '../src/realm/data/regions/index.ts'
 import { advance } from '../src/realm/season.ts'
-import { plotAgents, plotTargets } from '../src/realm/plots.ts'
+import { COSTS, MILES, NAMES, headFlags, noCounts, scanReport, turnSeconds, type Mile } from './first-hour-lib.ts'
 import { goalState } from '../src/realm/scenario.ts'
 import { P } from '../src/tune/params.ts'
 import type { Order, Realm, RegionId } from '../src/realm/types.ts'
@@ -32,24 +32,6 @@ for (const kv of opt('set', '').split(',').filter((x) => x !== '')) {
 }
 const PLAYER: Partial<Record<RegionId, string>> = { tutorial: 'baekje', mahan: 'baekje', 'byeonhan-mini': 'us' }
 
-/**
- * 비용 가정 (초) — 낮음/가운데/높음. 근거는 FIRST-HOUR.md. 「턴」은 새 사람이 한 달을 넘기는 데 드는 시간(지도 훑기 · 명령 · 알림 읽기),
- * 나머지는 그 턴에 일어난 일이 더하는 시간. 배우는 판은 안내 글을 읽느라 턴이 길다.
- */
-interface Cost { turn: number; tutTurn: number; battle: number; duel: number; capture: number; talk: number; ascend: number; card: number; discover: number; intro: number }
-const COSTS: Record<'lo' | 'mid' | 'hi', Cost> = {
-  lo: { turn: 10, tutTurn: 25, battle: 60, duel: 30, capture: 8, talk: 30, ascend: 10, card: 12, discover: 6, intro: 20 },
-  mid: { turn: 20, tutTurn: 40, battle: 120, duel: 60, capture: 12, talk: 60, ascend: 20, card: 25, discover: 10, intro: 40 },
-  hi: { turn: 35, tutTurn: 60, battle: 180, duel: 90, capture: 15, talk: 90, ascend: 30, card: 40, discover: 15, intro: 60 },
-}
-
-const MILES = ['battle', 'snipe', 'duelOffer', 'duel', 'capture', 'recruit', 'ascend', 'night', 'card', 'discover', 'goal'] as const
-type Mile = typeof MILES[number]
-const NAMES: Record<Mile, string> = {
-  battle: '첫 싸움', snipe: '첫 저격 제안', duelOffer: '첫 겨루기 제안', duel: '첫 겨루기(봇)', capture: '첫 생포', recruit: '첫 회유 등용', ascend: '첫 각성',
-  night: '첫 밤 작전 제안', card: '첫 사건 카드', discover: '첫 다른 나라 만남', goal: '첫 승리조건 진척',
-}
-
 interface Seen { turn: number; min: Record<'lo' | 'mid' | 'hi', number> }
 type Run = Partial<Record<Mile, Seen>> & { turns: number; won: boolean }
 
@@ -67,47 +49,26 @@ function play(board: RegionId, seed: number): Run {
   // 같은 턴에 일어난 일은 턴 끝의 누적으로 적는다 → 사건을 모아 두었다 한꺼번에 더하고 적는다
   for (let t = 0; t < TURNS; t++) {
     const flags = new Set<Mile>()
-    let battles = 0, duels = 0, captures = 0, recruits = 0, ascends = 0, cards = 0, discovers = 0
-    // 제안(턴 머리) — 사건 카드 · 밤 작전 · 저격(이번 달 열리는 우리 싸움)
-    if (r.card != null) { flags.add('card'); cards++ }
-    if (plotAgents(r, as).length > 0 && plotTargets(r, as, 'assassin').length > 0) flags.add('night')
+    const c = noCounts()
+    headFlags(r, as, flags, c)
     // 배우는 판의 안내는 사로잡은 적장을 곧바로 회유하라고 한다(tutorial.ts 5·6단계) — 봇이 곡식을 아끼다 안 하지 않게 안내를 흉내 낸다
     const guide: Order[] = []
     if (tut) for (const h of Object.values(r.heroes)) if (h.status === 'captive' && h.captor === as && h.persuade === undefined) guide.push({ kind: 'persuade', hero: h.id, by: 'tut-onjo' })
     const orders = [...decide(r, as, BOT), ...guide, ...aiOrders(r)]
     const { next, report } = advance(r, orders)
-    for (const l of report.lines) {
-      if (l.kind === 'battle') {
-        const weAtk = (l.atkFaction ?? r.armies[l.attacker]?.faction) === as
-        if (weAtk || l.defender === as) {
-          flags.add('battle'); flags.add('snipe'); battles++
-          const hs = l.start?.heroes; const aides = l.start?.aides
-          const mine = weAtk ? 0 : 1
-          const ours = [hs?.[mine] ?? null, ...(aides?.[mine] ?? [])].filter((x): x is string => x !== null)
-          if (hs?.[1 - mine] != null && ours.some((id) => (r.heroes[id]?.mu ?? 0) >= P.realm.tacDuelMu)) flags.add('duelOffer')
-          if ((l.rounds ?? []).some((x) => x.ev === 'duel-win' || x.ev === 'duel-lose')) { flags.add('duel'); duels++ }
-          if (l.captured !== null && next.heroes[l.captured]?.captor === as) { flags.add('capture'); captures++ }
-          if (l.defender !== as && r.nodes[l.node]?.owner !== as && next.nodes[l.node]?.owner === as && next.factions[l.defender]?.capital === l.node) flags.add('goal')
-        }
-      }
-      if (l.kind === 'recruit' && l.faction === as && l.how === 'persuade' && !tut) { flags.add('recruit'); recruits++ }
-      if (l.kind === 'ascend' && next.heroes[l.hero]?.faction === as) { flags.add('ascend'); ascends++ }
-      if (l.kind === 'discover' && l.faction === as && !startKnown.has(l.nation)) { flags.add('discover'); discovers++ }
-      if ((l.kind === 'pathRite' || l.kind === 'pathIron' || l.kind === 'suzerain') && l.faction === as) flags.add('goal')
-    }
+    scanReport(r, next, report.lines, as, tut, startKnown, flags, c)
+
     r = next
     if (r.scenario !== undefined && goalAt() > goal0) flags.add('goal')
     // 배우는 판 — 회유는 안내대로 사로잡은 바로 다음 달 담판으로 끝난다고 친다(봇은 담판 놀이를 못 해 몇 달 걸린다). 담판 시간을 더한다
     const scriptedRecruit = tut && pendingTalk
     pendingTalk = false
-    if (tut && captures > 0) pendingTalk = true
-    if (scriptedRecruit) { recruits++; flags.add('recruit') }
-    for (const k of ['lo', 'mid', 'hi'] as const) {
-      const c = COSTS[k]
-      cum[k] += (tut ? c.tutTurn : c.turn) + battles * c.battle + duels * c.duel + captures * c.capture + recruits * c.talk + ascends * c.ascend + cards * c.card + discovers * c.discover
-    }
+    if (tut && c.captures > 0) pendingTalk = true
+    if (scriptedRecruit) { c.recruits++; flags.add('recruit') }
+    for (const k of ['lo', 'mid', 'hi'] as const) cum[k] += turnSeconds(COSTS[k], tut, c)
     for (const m of flags) mark(m, t)
     run.turns = t + 1
+
     if (r.outcome != null) { run.won = r.outcome.kind === 'win'; break }
   }
   return run
