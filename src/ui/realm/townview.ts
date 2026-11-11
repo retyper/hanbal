@@ -473,7 +473,7 @@ export const TOWN_CSS = `
 .ap .tvpbody .wfeast { margin: 2px 0 4px; padding: 6px 8px; gap: 6px; }
 .ap .tvpbody .wfeast .btn { min-height: 44px; }
 /* 낮은 폰(640 높이)에서도 큰 공사 넷이 한 화면에 — 머리 그림·그림·설명 줄을 줄인다 (슬라이드 금지) */
-@media (max-height: 720px) {
+@media (max-height: 880px) {
   .ap .tvhall { height: min(18vw, 9dvh); font-size: 16px; padding: 4px 10px; }
   .ap .tvpbody { padding: 2px 8px 4px; } .ap .tvpbody h3 { margin: 2px 0; font-size: 13px; }
   .ap .tvpbody .wgrid { gap: 4px; } .ap .tvpbody .wcard { padding: 3px 3px; }
@@ -481,7 +481,12 @@ export const TOWN_CSS = `
   .ap .tvpbody .wcard .wgfx { display: none; } .ap .tvpbody .wcard .wname { font-size: 12px; }
   .ap .tvpbody .wcard .btn { min-height: 30px; font-size: 12px; padding: 2px 4px; }
   .ap .tvpbody .wfeast { padding: 4px 6px; } .ap .tvpbody .wfeast .btn { min-height: 36px; }
+  /* 값 칩이 글자와 한 줄에 들게 — 두 줄로 꺾여 단추가 61px 이 되고 큰 잔치가 밑으로 잘렸다 */
+  .ap .tvpbody .wcard .btn { flex-wrap: nowrap; gap: 2px 3px; } .ap .tvpbody .wcard .btn .cost { margin: 0; gap: 2px; } .ap .tvpbody .wcard .btn .cost .cg { padding: 0 3px 0 1px; font-size: 11px; } .ap .tvpbody .wcard .btn .cost .cg i { display: none; } .ap .tvpbody .wcard .btn .cost .cgi { width: 14px; height: 14px; }
+  .ap .tvpbody .wcard { gap: 1px; } .ap .tvpbody .wcard .wpips { margin: 0; }
+  .ap .palsub button { min-height: 36px; }
 }
+@media (max-height: 680px) { .ap .tvhall { height: min(13vw, 7dvh); } .ap .tvpbody .wcard .wname { line-height: 1.1; } .ap .tvpbody .wfeast { margin: 0; } .ap .tvpbody .wcard .btn { min-height: 28px; } }
 /* ② 판 — 바탕 그림 한 장(1376×768)을 폭에 꽉 차게 · 양옆 풀밭(터는 가로 14~86%)을 잘라 크게 · 세로가 모자라면 위아래를 24% 까지 잘라 맞추고, 세로가 남으면(가로 화면 기둥) 위아래에 띠를 둔다 */
 .ap .tvstage { grid-area: stage; position: relative; overflow: hidden; background: #2c3a1e; min-height: 0; container-type: size; height: min(calc(100vw * 0.7344), 46dvh); }
 .ap .tvboard { isolation: isolate; --bw: min(100cqw / 0.76, 100cqh * 1376 / 768 / 0.76); position: absolute; left: 50%; top: 50%; width: var(--bw); aspect-ratio: 1376 / 768; margin-left: calc(var(--bw) / -2); margin-top: calc(var(--bw) * 768 / 1376 / -2); }
@@ -550,14 +555,16 @@ ${VILLAGER_ANIM.map((v, k) => `.ap .tvf.v${k} { --ar: ${v.ar.toFixed(4)}; } .ap 
 @keyframes tvstamp { 0% { opacity: 0; transform: scale(3) rotate(-14deg); } 70% { opacity: 1; transform: scale(.94) rotate(-4deg); } 100% { opacity: 1; transform: scale(1) rotate(-5deg); } }
 .ap .tvdone.out { animation: tvout .3s ease-in forwards; }
 /* ③ 아래 칸 — 고른 터 하나 · 구르지 않는다 (넘치면 그림이 줄어든다) */
-.ap .tvdock { grid-area: dock; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 8px; padding: 8px 12px; background: #1c1610; border-top: 2px solid #c9a45a; }
+.ap .tvdock { grid-area: dock; min-height: 0; overflow-x: hidden; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 8px 12px; background: #1c1610; border-top: 2px solid #c9a45a; }
 .ap .tvi { width: 28px; height: 28px; object-fit: contain; flex: none; }
 .ap .tvfh { display: flex; align-items: center; gap: 8px; min-height: 30px; }
 .ap .tvfh > b { font-size: 18px; color: #f3d48a; white-space: nowrap; }
 .ap .tvfh > i { font-style: normal; color: #f3d48a; letter-spacing: 1px; white-space: nowrap; }
 .ap .tvfh > span { font-size: 13px; color: #d9ccb0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ap .tvup { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; justify-items: center; gap: 6px; }
-.ap .tvup.one { grid-template-columns: 1fr; }
+.ap .tvup { overflow: hidden; }
+.ap .tvup.one { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+.ap .tvup.one > img:not(.tvbig) { width: 100%; height: 100%; min-height: 0; max-height: none; object-fit: contain; } /* 큰 그림이 정해진 칸보다 커서 아래 설명 글자를 덮었다 */
 .ap .tvup img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block; }
 .ap .tvup .tvbig { width: 40%; }
 .ap .tvcur, .ap .tvnxt { display: grid; justify-items: center; gap: 4px; min-height: 0; width: 100%; }
@@ -573,12 +580,12 @@ ${VILLAGER_ANIM.map((v, k) => `.ap .tvf.v${k} { --ar: ${v.ar.toFixed(4)}; } .ap 
 .ap .tvgoing b { color: #ffe2a0; font-size: 15px; }
 .ap .tvprog { width: min(100%, 320px); height: 12px; border-radius: 7px; background: #000a; border: 1px solid #6a5236; overflow: hidden; }
 .ap .tvprog i { display: block; height: 100%; width: var(--p); background: #f3d48a; border-radius: 7px; }
-.ap .tvtiles { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: minmax(96px, 150px); align-content: start; gap: 8px; flex: 1; min-height: 0; }
-.ap .tvtile { position: relative; display: grid; justify-items: center; align-content: center; gap: 4px; padding: 8px 4px 6px; border-radius: 12px; border: 1px solid #6a5236; background: #2a2016; color: #f3e6c8; font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.ap .tvtile .tvti { width: clamp(40px, 13vw, 60px); height: clamp(40px, 13vw, 60px); object-fit: contain; }
-.ap .tvtile b { font-size: 13px; white-space: nowrap; }
-.ap .tvtile small { font-size: 11px; color: #d9ccb0; display: flex; gap: 2px; }
-.ap .tvtile small .cost { font-size: 11px; } .ap .tvtile small .cgi { width: 14px; height: 14px; }
+.ap .tvtiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: auto; align-content: start; gap: 8px; flex: none; } /* 줄 높이는 안 내용만큼 — 정해 둔 높이에 가두니 값 칩이 타일 밖으로 흘렀다 */
+.ap .tvtile { position: relative; display: grid; justify-items: center; align-content: center; gap: 3px; min-width: 0; min-height: 96px; padding: 8px 3px 6px; border-radius: 12px; border: 1px solid #6a5236; background: #2a2016; color: #f3e6c8; font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.ap .tvtile .tvti { width: clamp(36px, 11vw, 56px); height: clamp(36px, 11vw, 56px); object-fit: contain; }
+.ap .tvtile b { max-width: 100%; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ap .tvtile small { max-width: 100%; font-size: 11px; color: #d9ccb0; display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; }
+.ap .tvtile small .cost { margin: 0; gap: 2px; justify-content: center; font-size: 11px; } .ap .tvtile small .cgi { width: 14px; height: 14px; } .ap .tvtile small .cost .cg { padding: 0 4px 0 2px; font-size: 11px; } .ap .tvtile small .cost .cg i { display: none; }
 .ap .tveff { font-style: normal; font-weight: 700; color: #9be37a; text-shadow: 0 1px 0 #000a; white-space: nowrap; }
 .ap .tvfh .tveff { margin-left: 4px; padding: 2px 8px; border-radius: 999px; background: #1f3a18cc; border: 1px solid #6fbf55; font-size: 14px; }
 .ap .tvtile .tveff { font-size: 11px; line-height: 1.15; white-space: normal; text-align: center; }
@@ -601,6 +608,8 @@ ${VILLAGER_ANIM.map((v, k) => `.ap .tvf.v${k} { --ar: ${v.ar.toFixed(4)}; } .ap 
 .ap .tvgo small { flex-basis: 100%; font-size: 12px; font-weight: 400; color: #e8dcc0; }
 .ap .tvgo.on { background: #4a3718; color: #ffe2a0; border-color: #ffe2a0; box-shadow: 0 0 0 2px #e0bd78, inset 0 3px 8px #000a; translate: 0 2px; }
 .ap .tvgo[aria-disabled="true"] { background: #2a2016; border-color: #6a5236; color: #a3957a; box-shadow: none; }
+/* 키가 작은 폰(360x640 쯤) — 판 그림을 줄여 아래 타일 칸에 자리를 준다 */
+@media (max-height: 700px) and (max-width: 759px) { .ap .tvstage { height: min(calc(100vw * 0.7344), 36dvh); } .ap .tvtile { min-height: 84px; } }
 /* 넓은 가로 화면 — 아래 칸과 단추가 오른쪽 기둥으로 · 판이 세로를 다 쓴다 */
 @media (min-width: 760px) and (orientation: landscape) {
   .ap .townv { grid-template-areas: "top dock" "stage dock" "stage bar"; grid-template-columns: 1fr minmax(300px, 36%); grid-template-rows: auto 1fr auto; }

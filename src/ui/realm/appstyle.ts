@@ -633,8 +633,8 @@ html.duel-open .ap * { animation-play-state: paused !important; }
 .ap .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 8px 0; }
 .ap .grid4 > div { display: flex; flex-direction: column; align-items: center; padding: 8px 2px; border-radius: 12px; background: var(--card); }
 .ap .grid4 b { font-size: 18px; } .ap .grid4 span { font-size: 12px; color: var(--mute); }
-.ap .goal { padding: 10px 12px; border-radius: 12px; background: #2d2716; color: #f3dca4; margin: 8px 0; }
-.ap .goal b { float: right; }
+.ap .goal { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 10px 12px; border-radius: 12px; background: #2d2716; color: #f3dca4; margin: 8px 0; word-break: keep-all; overflow-wrap: anywhere; }
+.ap .goal b { flex: none; margin-left: auto; } /* 글이 두 줄이 돼도 「1 / 2」 가 상자 밖으로 안 삐져나오게 (float 이던 것) */
 .ap .nhead { display: flex; gap: 12px; align-items: center; } .ap .nhead h3 { margin: 0; }
 .ap .rface { flex: none; width: 52px; height: 52px; border-radius: 50%; object-fit: cover; border: 2px solid #6a5a3a; display: block; }
 .ap .fn { display: flex; flex-direction: column; min-width: 0; } .ap .fn b { display: flex; align-items: center; gap: 4px; }
@@ -1545,4 +1545,9 @@ export const UI_CSS = `
 .ap .map .nring .nrhold > span:first-child { display: inline-flex; align-items: center; gap: 4px; } .ap .map .nring .nrhold img { width: 20px; height: 20px; vertical-align: middle; }
 .ap .map .nring .nrwhy small { display: block; font-weight: 400; font-size: 11.5px; color: #d8c8a8; }
 @media (prefers-reduced-motion: reduce) { .ap .map .nring.pop, .ap .map .nring.pop .nrb { animation: none; } }
+/* i18n layout (11-11) — 영어는 같은 뜻이 더 길다. 말은 <html data-lang> 으로 가른다 (src/i18n/lang.ts) · tools/layout-check.ts 가 넘침을 잰다 */
+html[data-lang="en"] .ap h2, html[data-lang="en"] .ap h3, html[data-lang="en"] .ap .fmh { text-wrap: balance; }
+html[data-lang="en"] .ap .btn, html[data-lang="en"] .ap .tabs button span { overflow-wrap: anywhere; }
+html[data-lang="en"] .ap .menu3 { grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); }
+html[data-lang="en"] .ap .menu3 .btn { white-space: normal; text-overflow: clip; line-height: 1.15; font-size: clamp(11px, 3.2vw, 13px); }
 `
