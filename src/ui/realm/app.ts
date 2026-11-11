@@ -5145,35 +5145,35 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const rh = rul !== undefined ? r.heroes[rul] : undefined
     if (rh !== undefined && rh.status === 'captive' && rh.captor !== null) {
       const by = r.factions[rh.captor]?.name ?? ''
-      h += `<div class="banner bad">${tx(`⛓ 군주 ${josa(rh.name, '이', '가')} ${by}에 사로잡혀 있다. ${josa(by, '과', '와')} 화친을 맺거나 ${by}의 도읍을 빼앗으면 돌아온다. 그동안 군주의 다스림이 걸리지 않는다.`)}</div>`
+      h += `<div class="banner bad">${tx(tr('nation.captive', { lord: rh.name, by }))}</div>`
     }
     h += customsHtml({ esc, icon }, me(), customsOf(r, me()))
     const need = winNeed(r.region ?? 'byeonhan-mini')
     const held = Object.values(r.factions).filter((x) => r.nodes[x.capital]?.owner === me()).length
     h += cardHtml(realm!) // 미리 적용한 판(r)에선 카드가 이미 답해져 사라졌다 — 실제 판으로
-    if (r.scenario === undefined) h += `<div class="goal">목표 · 도읍 ${need}곳을 차지한다 (우리 도읍 포함) <b>${held} / ${need}</b>${(r.tier ?? 1) !== 1 ? ` <span class="tierc">${levelName(r.tier ?? 1)}</span>` : ''}</div>`
+    if (r.scenario === undefined) h += `<div class="goal">${tr('nation.goal', { need })} <b>${held} / ${need}</b>${(r.tier ?? 1) !== 1 ? ` <span class="tierc">${levelName(r.tier ?? 1)}</span>` : ''}</div>`
     h += exileHtml(r)
     // 캠페인의 장은 그 장의 목표가 승리 조건 — 모두 이루면 이기고 다음 장이 열린다 (넷 가운데 하나인 일반 판의 길은 안 쓴다) (형 10-23: "좌상단 체크 깨는 거는 그걸 깨야 다음 게임이 열려서 그런 거지?")
-    if (r.scenario !== undefined) h += `<div class="paths chapg"><h4>이 장의 승리 조건 <small>모두 이루면 이긴다 · 이기면 다음 장이 열린다</small></h4>${goalRowsHtml(r, esc)}</div>`
+    if (r.scenario !== undefined) h += `<div class="paths chapg"><h4>${tr('nation.chapGoal')} <small>${tr('nation.chapGoalSub')}</small></h4>${goalRowsHtml(r, esc)}</div>`
     else h += pathsHtml(r, held, need)
-    h += `<div class="grid4"><div>${icon('settle-farm-village')}<b>${mine.length}</b><span>고을</span></div>`
-    h += `<div>${icon('good-hemp')}<b>${Math.floor(mine.reduce((s, n) => s + n.hh, 0))}</b><span>집</span></div>`
-    h += `<div>${icon('good-rice')}<b>${Math.floor(st.grain)}</b><span>곡식</span></div>`
-    h += `<div>${icon('treasure-iron-ingots')}<b>${Math.floor(st.iron)}</b><span>철</span></div></div>`
-    if (palaceHtml(r) !== '' || greatHtml(r) !== '') h += `<button class="palrow" data-act="palace-go">${icon('treasure-silla-crown', 'wki')}<span>궁궐 · 조정 · 큰 공사 · 큰 잔치는 도읍에서</span><b>도읍 열기</b></button>` // 곳간을 부을 곳은 도읍 판으로 옮겼다 (형 11-10)
+    h += `<div class="grid4"><div>${icon('settle-farm-village')}<b>${mine.length}</b><span>${tr('nation.towns')}</span></div>`
+    h += `<div>${icon('good-hemp')}<b>${Math.floor(mine.reduce((s, n) => s + n.hh, 0))}</b><span>${tr('nation.houses')}</span></div>`
+    h += `<div>${icon('good-rice')}<b>${Math.floor(st.grain)}</b><span>${tr('good.grain')}</span></div>`
+    h += `<div>${icon('treasure-iron-ingots')}<b>${Math.floor(st.iron)}</b><span>${tr('good.iron')}</span></div></div>`
+    if (palaceHtml(r) !== '' || greatHtml(r) !== '') h += `<button class="palrow" data-act="palace-go">${icon('treasure-silla-crown', 'wki')}<span>${tr('nation.palrow')}</span><b>${tr('nation.palrowGo')}</b></button>` // 곳간을 부을 곳은 도읍 판으로 옮겼다 (형 11-10)
     const caps2 = Object.values(r.heroes).filter((x) => x.status === 'captive' && x.captor === me())
     if (caps2.length > 0) {
-      h += `<h4>사로잡은 장수</h4><div class="caps">`
+      h += `<h4>${tr('nation.capsHead')}</h4><div class="caps">`
       for (const x of caps2) h += `<div class="cap">${bust(x, 'cface')}<b>${nameHtml(x.name)}</b><span class="mute">${STAT_NAME.mu} ${x.mu} · ${STAT_NAME.ryak} ${x.ryak} · ${STAT_NAME.chi} ${x.chi} · ${STAT_NAME.deok} ${x.deok}</span></div>`
       h += `</div>`
     }
     // 차림 — 세 칸 격자로 줄을 맞춘다: 보기 · 설정과 다른 놀이 · 판 (형: "버튼들이 너무 질서없이")
-    h += `<div class="menu3"><button class="btn" data-act="help">도움말</button><button class="btn" data-act="log-open">지난 기록</button><button class="btn" data-act="dex-open">영웅전</button>`
-    if (!installed() && installPrompt() !== null) h += `<button class="btn ghost" data-act="install">앱으로 설치, 바 없는 전체 화면</button>`
-    if (host.saves !== undefined) h += `<button class="btn" data-act="save-open" data-tip="판을 저장 칸에 남기거나 불러온다 · 파일로 내려받기">저장 · 불러오기</button>`
-    h += `<button class="btn ghost" data-act="mute">${muted() ? '소리 켜기' : '소리 끄기'}</button><button class="btn ghost" data-act="export" data-tip="${tr('more.exportTip', { n: host.gameCount() })}">${tr('more.export')}</button>`
-    h += `<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}" data-tip="활쏘기 모드 (신궁)">활터</a>${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">${tr('more.practice')}</button>` : ''}`
-    h += `<button class="btn ghost" data-act="newgame" data-tip="판 고르기로, 새 게임을 시작하기 전까지 지금 판은 그대로다">새 게임</button><button class="btn ghost" data-act="lobby" data-tip="이 판은 저장돼 있어 「이어 하기」로 돌아온다">⌂ 첫 화면으로</button></div>`
+    h += `<div class="menu3"><button class="btn" data-act="help">${tr('nation.help')}</button><button class="btn" data-act="log-open">${tr('nation.log')}</button><button class="btn" data-act="dex-open">${tr('title.heroes')}</button>`
+    if (!installed() && installPrompt() !== null) h += `<button class="btn ghost" data-act="install">${tr('nation.install')}</button>`
+    if (host.saves !== undefined) h += `<button class="btn" data-act="save-open" data-tip="${tr('nation.saveTip')}">${tr('nation.save')}</button>`
+    h += `<button class="btn ghost" data-act="mute">${tr(muted() ? 'nation.soundOn' : 'nation.soundOff')}</button><button class="btn ghost" data-act="export" data-tip="${tr('more.exportTip', { n: host.gameCount() })}">${tr('more.export')}</button>`
+    h += `<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}" data-tip="${tr('nation.archeryTip')}">${tr('more.archery')}</a>${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">${tr('more.practice')}</button>` : ''}`
+    h += `<button class="btn ghost" data-act="newgame" data-tip="${tr('nation.newTip')}">${tr('title.new')}</button><button class="btn ghost" data-act="lobby" data-tip="${tr('nation.lobbyTip')}">${tr('nation.lobby')}</button></div>`
     return h + gfxRowHtml() + perfRowHtml() + volumeRowsHtml() + acctHtml() + resetHtml()
   }
 
@@ -5194,34 +5194,34 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let resetArmed = false
   function syncWord(s: SyncState): string {
     switch (s.kind) {
-      case 'off': return '클라우드 저장 꺼짐'
-      case 'busy': return '클라우드에 저장하는 중…'
-      case 'choose': return '두 기기의 판이 갈라졌습니다. 하나를 골라 주세요'
-      case 'error': return `클라우드 저장 못 함. ${s.msg}`
-      case 'idle': return s.at !== null ? `최근 클라우드 저장 ${new Date(s.at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}` : '클라우드 저장 준비됨'
+      case 'off': return tr('acct.syncOff')
+      case 'busy': return tr('acct.syncBusy')
+      case 'choose': return tr('acct.syncChoose')
+      case 'error': return tr('acct.syncError', { msg: s.msg })
+      case 'idle': return s.at !== null ? tr('acct.syncLast', { time: new Date(s.at).toLocaleTimeString(lang() === 'en' ? 'en-US' : 'ko-KR', { hour: '2-digit', minute: '2-digit' }) }) : tr('acct.syncReady')
     }
   }
   /** 플레이 기록 지우기 — 계정과 설정은 남긴다. 두 번 눌러야 (형 10-24: "계정으로 플레이한 데이터 초기화하는 버튼") */
   function resetHtml(): string {
     if (host.resetPlay === undefined) return ''
     const cloud = host.cloud?.who() != null
-    return `<h3>기록 지우기</h3><div class="acct"><p class="mute">지금 판 · 저장 칸 · 영웅전 · 해금한 판 · 연대기 · 데려갈 장수 · 단련 · 유물 · 배우는 판 · 궁술 연습 기록을 모두 지우고 처음부터 합니다.${cloud ? ' 계정에 저장된 같은 기록도 함께 지웁니다.' : ''} 계정과 소리·그래픽 같은 설정은 남습니다. 되돌릴 수 없습니다.</p>`
-      + `<div class="btns"><button class="btn ghost danger" data-act="reset-play">${resetArmed ? '한 번 더 누르면 지웁니다. 되돌릴 수 없습니다' : '플레이 기록 모두 지우기'}</button></div></div>`
+    return `<h3>${tr('acct.resetTitle')}</h3><div class="acct"><p class="mute">${tr('acct.resetBody')}${cloud ? ` ${tr('acct.resetCloud')}` : ''} ${tr('acct.resetKeep')}</p>`
+      + `<div class="btns"><button class="btn ghost danger" data-act="reset-play">${tr(resetArmed ? 'acct.resetArmed' : 'acct.resetBtn')}</button></div></div>`
   }
 
   function acctHtml(): string {
     const c = host.cloud
     if (c === undefined) return ''
-    let h = `<h3>계정</h3><div class="acct">`
-    if (!c.available()) return h + `<p class="mute">이 브라우저에서는 로그인·클라우드 저장이 안 된다 (너무 옛 브라우저). 이 기기에서는 그대로 이어 한다.</p></div>`
+    let h = `<h3>${tr('acct.title')}</h3><div class="acct">`
+    if (!c.available()) return h + `<p class="mute">${tr('acct.noCloud')}</p></div>`
     const who = c.who()
     if (who === null) {
-      h += `<p class="mute">구글로 로그인하면 판이 클라우드에 저장돼 폰·피시 어디서든 이어 한다. 로그인하지 않아도 이 기기에는 저장된다.</p>`
-      return h + `<div class="btns"><button class="btn pri" data-act="acct-in">구글 로그인</button></div></div>`
+      h += `<p class="mute">${tr('acct.signInHint')}</p>`
+      return h + `<div class="btns"><button class="btn pri" data-act="acct-in">${tr('more.login')}</button></div></div>`
     }
     h += `<p><b>${esc(who.name !== '' ? who.name : who.email)}</b> <span class="mute">${esc(who.email)}</span></p><p class="mute">${esc(syncWord(c.state()))}</p>`
-    h += `<div class="btns"><button class="btn" data-act="acct-sync">지금 클라우드 저장</button><button class="btn ghost" data-act="acct-out">로그아웃</button>`
-    h += `<button class="btn ghost danger" data-act="acct-del">${acctArmed ? '한 번 더 누르면 삭제: 클라우드의 판·영웅전·기록이 다 지워진다' : '계정 삭제'}</button></div></div>`
+    h += `<div class="btns"><button class="btn" data-act="acct-sync">${tr('acct.syncNow')}</button><button class="btn ghost" data-act="acct-out">${tr('acct.signOut')}</button>`
+    h += `<button class="btn ghost danger" data-act="acct-del">${tr(acctArmed ? 'acct.delArmed' : 'acct.del')}</button></div></div>`
     return h
   }
   /** 첫 화면 한 줄 — 새 기기에서 판을 시작하기 전에 들어와야 저쪽 판을 받는다 */
@@ -5245,21 +5245,21 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     // 카카오톡 안의 브라우저는 설치를 못 한다 — 바깥 브라우저(크롬·사파리)로 여는 단추 (지인들은 카톡으로 받은 주소를 연다)
     if (/KAKAOTALK/i.test(navigator.userAgent)) {
-      return `<div class="instc"><button class="instx" data-act="inst-ok" aria-label="닫기">✕</button><b>📲 앱으로 설치하면 더 편리합니다</b><p>카카오톡 안에서는 설치할 수 없습니다. 아래 단추로 ${ios ? '사파리' : '크롬'}에서 연 뒤 설치해 주세요.</p>`
-        + `<div class="instr"><a class="btn pri sm" href="kakaotalk://web/openExternal?url=${encodeURIComponent(location.href)}">${ios ? '사파리로' : '크롬으로'} 열기</a><label class="chk"><input type="checkbox" class="insthide"> 다시 보지 않기</label><button class="btn sm" data-act="inst-ok">확인</button></div></div>`
+      return `<div class="instc"><button class="instx" data-act="inst-ok" aria-label="${tr('more.closeAria')}">✕</button><b>${tr('inst.title')}</b><p>${tr('inst.kakao', { browser: tr(ios ? 'inst.safari' : 'inst.chrome') })}</p>`
+        + `<div class="instr"><a class="btn pri sm" href="kakaotalk://web/openExternal?url=${encodeURIComponent(location.href)}">${tr(ios ? 'inst.openSafari' : 'inst.openChrome')}</a><label class="chk"><input type="checkbox" class="insthide"> ${tr('inst.dontShow')}</label><button class="btn sm" data-act="inst-ok">${tr('inst.ok')}</button></div></div>`
     }
     // 이미 깔려 있으면 설치 대신 아이콘으로 열라고 (설치 단추는 크롬이 주지 않는다)
     if (appOnDevice && installPrompt() === null) {
-      return `<div class="instc"><button class="instx" data-act="inst-ok" aria-label="닫기">✕</button><b>📲 이 기기에 이미 설치되어 있습니다</b><p>바탕화면·시작 메뉴·홈 화면의 <b>열국군웅전</b> 아이콘으로 여세요. 주소창 없이 꽉 찬 화면으로 즐길 수 있습니다.</p>`
-        + `<div class="instr"><label class="chk"><input type="checkbox" class="insthide"> 다시 보지 않기</label><button class="btn sm" data-act="inst-ok">확인</button></div></div>`
+      return `<div class="instc"><button class="instx" data-act="inst-ok" aria-label="${tr('more.closeAria')}">✕</button><b>${tr('inst.already')}</b><p>${tr('inst.alreadyBody')}</p>`
+        + `<div class="instr"><label class="chk"><input type="checkbox" class="insthide"> ${tr('inst.dontShow')}</label><button class="btn sm" data-act="inst-ok">${tr('inst.ok')}</button></div></div>`
     }
     const how = ios
-      ? '사파리 아래 <b>공유</b> 단추(네모에 위 화살표) → <b>「홈 화면에 추가」</b>. 홈 화면의 열국군웅전 아이콘으로 열면 주소창 없이 꽉 찬 화면으로 즐길 수 있습니다.'
-      : installPrompt() !== null ? '아래 단추를 누르면 바로 설치됩니다. 홈 화면·바탕화면의 아이콘으로 열면 주소창 없이 꽉 찬 화면으로 즐길 수 있습니다.'
-        : '브라우저 메뉴(⋮) → <b>「앱 설치」</b> 또는 <b>「홈 화면에 추가」</b>를 누르세요. 아이콘으로 열면 주소창 없이 꽉 찬 화면으로 즐길 수 있습니다.'
+      ? tr('inst.howIos')
+      : installPrompt() !== null ? tr('inst.howPrompt')
+        : tr('inst.howMenu')
     // 첫 화면 위쪽에 뜨는 알림 — ✕ 로 끈다 (형 10-28: "상단에 나오는 팝업으로 만들어서 끌 수 있게")
-    return `<div class="instc"><button class="instx" data-act="inst-ok" aria-label="닫기">✕</button><b>📲 앱으로 설치하면 더 편리합니다</b><p>${how}</p>`
-      + `<div class="instr">${!ios && installPrompt() !== null ? '<button class="btn pri sm" data-act="install">앱으로 설치</button>' : ''}<label class="chk"><input type="checkbox" class="insthide"> 다시 보지 않기</label><button class="btn sm" data-act="inst-ok">확인</button></div></div>`
+    return `<div class="instc"><button class="instx" data-act="inst-ok" aria-label="${tr('more.closeAria')}">✕</button><b>${tr('inst.title')}</b><p>${how}</p>`
+      + `<div class="instr">${!ios && installPrompt() !== null ? '<button class="btn pri sm" data-act="install">' + tr('inst.install') + '</button>' : ''}<label class="chk"><input type="checkbox" class="insthide"> ${tr('inst.dontShow')}</label><button class="btn sm" data-act="inst-ok">${tr('inst.ok')}</button></div></div>`
   }
 
   /**
@@ -6063,14 +6063,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (looking) return ''
       // 이겼으면 다음 난세 단계가 열렸다
       const t = r.tier ?? 1
-      const opened = r.outcome?.kind === 'win' && t >= 1 && t < TIER_MAX ? `<p class="tierup">「<b>${levelName(t + 1)}</b>」 세기가 열렸다. 이웃이 처음부터 더 센 판</p>` : ''
+      const opened = r.outcome?.kind === 'win' && t >= 1 && t < TIER_MAX ? `<p class="tierup">${tr('rep.tierOpened', { level: levelName(t + 1) })}</p>` : ''
       // 휘장 — 이 나라로 이겼다는 표가 나라 고르기에 붙는다 (META §2-①)
       const epi = r.outcome?.kind === 'win' && r.scenario !== undefined ? `<p class="retainnote"><button class="btn ghost sm" data-act="epilogue">${tr('ending.watch')}</button></p>` : ''
       const badge = r.outcome?.kind === 'win' && (r.region ?? 'byeonhan-mini') !== 'tutorial'
-        ? `<p class="tierup">${esc(josa(r.factions[me()]?.name ?? '', '으로', '로'))} 이긴 <b>휘장</b>을 받았다. 나라 고르기에 붙는다</p>` : ''
+        ? `<p class="tierup">${tr('rep.badge', { name: esc(r.factions[me()]?.name ?? '') })}</p>` : ''
       // 배우는 판은 세기·무덤·단련·데려가기를 말하지 않는다 — 처음 하는 사람에게 아직 없는 것들이다 (형 10-27: "튜토리얼에 아직도 장수 데려가기가 남아 있는 듯")
-      if ((r.region ?? 'byeonhan-mini') === 'tutorial') return endingHtml(KIT, r, host.history(), '', `${epi}<p class="retainnote"><button class="btn ghost sm" data-act="export">기록 내보내기</button></p>`)
-      return endingHtml(KIT, r, host.history(), opened + badge + endBondsHtml(DEX_KIT, r) + tombStripHtml(RELIC_KIT, r) + drillStrip(r), `${epi}<p class="mute retainnote">우리 장수로 부린 이는 영웅전에 남습니다. 다음 판을 열 때 영웅전에서 골라 데려갈 수 있습니다.</p><p class="retainnote"><button class="btn ghost sm" data-act="export">기록 내보내기</button></p>`)
+      if ((r.region ?? 'byeonhan-mini') === 'tutorial') return endingHtml(KIT, r, host.history(), '', `${epi}<p class="retainnote"><button class="btn ghost sm" data-act="export">${tr('more.export')}</button></p>`)
+      return endingHtml(KIT, r, host.history(), opened + badge + endBondsHtml(DEX_KIT, r) + tombStripHtml(RELIC_KIT, r) + drillStrip(r), `${epi}<p class="mute retainnote">${tr('rep.retain')}</p><p class="retainnote"><button class="btn ghost sm" data-act="export">${tr('more.export')}</button></p>`)
     }
     if (!showReport || before === null || report === null) return ''
     const season = seasonOf(r)
@@ -6102,8 +6102,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const first = rc != null && rc.season === realm!.season && answers[`card:${rc.season}`] === undefined ? cardHtml(realm!)
         : openAsks(realm!, me()).filter((a) => answers[a.id] === undefined).map((a) => audienceHtml(a))[0]
           ?? wandArrivals().filter((w) => answers[wandKey(w.hero.id)] === undefined).map(wandCard)[0] ?? ''
-      return `<div class="mcard fulld"><div class="mt">${icon(SEASON_ICON[season], 'sic')}<b>${esc(seasonLabel(r))}</b><span>정할 것 <b class="rdn">${todo}</b></span></div>`
-        + `<div class="rdecide full">${first}</div><p class="fdnote">${todo > 1 ? `고르면 다음 것이 이어진다 · 남은 ${todo - 1}` : `고르면 이 ${turnWord(r)}의 소식이 이어진다`}</p></div>`
+      return `<div class="mcard fulld"><div class="mt">${icon(SEASON_ICON[season], 'sic')}<b>${esc(seasonLabel(r))}</b><span>${tr('rep.todoLabel')} <b class="rdn">${todo}</b></span></div>`
+        + `<div class="rdecide full">${first}</div><p class="fdnote">${todo > 1 ? tr('rep.nextOne', { n: todo - 1 }) : tr('rep.nextNews', { turn: turnWord(r) })}</p></div>`
     }
     // 고을을 쥐었거나 잃었다 — 어디인지 큰 그림과 함께 하나씩, 확인만 누르고 넘어간다 (형 10-25)
     // 싸워서 쥔 고을은 뺀다 — 전장 끝 화면이 「차지했다」를 보였고 「획득!」이 또 뜬다 (긴급 위원회 11-04 · 싸움 하나에 걷을 것이 넷이었다)
@@ -6119,11 +6119,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 달 시계의 조용한 달 — 빈 보고 판을 띄우지 않고 지도 위 한 줄로 (FOCUS (I) 초반은 빨리 넘어가야 · 한 계절에 세 번 누르는데 빈 판을 세 번 닫게 하지 않는다)
     if (monthly(r) && decide === '' && cards.every((c) => c === '') && onUs.length === 0 && between.length === 0 && lines.length === 0 && fallen(before, r).length === 0 && sceneOf(before, r, report) === '') {
       showReport = false
-      window.setTimeout(() => goToast(`<b>${esc(seasonLabel(r))}</b> 조용한 달이었다`), 0)
+      window.setTimeout(() => goToast(`<b>${esc(seasonLabel(r))}</b> ${tr('rep.quietMonth')}`), 0)
       return ''
     }
     let h = `<div class="mcard" data-act="rep-fast"><div class="mt">${icon(SEASON_ICON[season], 'sic')}<b>${esc(seasonLabel(r))}</b><span>${esc(SEASON_LINE[season])}</span></div>`
-    if (decide !== '') h += `<div class="rdecide"><h4 class="rdh">이번 ${turnWord(r)} 정할 것 · 다 골랐다</h4>${decide}</div>`
+    if (decide !== '') h += `<div class="rdecide"><h4 class="rdh">${tr('rep.decideDone', { turn: turnWord(r) })}</h4>${decide}</div>`
     for (const l of onUs) {
       h += warCard(r, l, t)
       t += FALL_S
@@ -6152,17 +6152,17 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         t += LINE_S
       }
     }
-    h += `<div class="lines">${lines.length === 0 ? `<p class="mute rv" style="--t:${t}s">조용한 ${josa(turnWord(r), '이었다', '였다')}.</p>` : groupedRows(r, lines, t)}</div>`
+    h += `<div class="lines">${lines.length === 0 ? `<p class="mute rv" style="--t:${t}s">${tr('rep.quietLine', { turn: turnWord(r) })}</p>` : groupedRows(r, lines, t)}</div>`
     // 아직 길 위의 우리 군대 — 언제 닿나 (형: "그 턴이 다음턴인지 그다음인지 몰라가지고 헷갈림. 왜안오는거야")
     const going = sorted(Object.values(r.armies)).filter((a) => a.faction === me() && a.march !== null)
     if (going.length > 0) {
       h += `<div class="lines">${going.map((a, i) => `<div class="rrow rv" style="--t:${(t + (lines.length + i) * LINE_S).toFixed(2)}s">${icon('unit-spear', 'ri')}<span class="rflow"><span class="nchip">${esc(r.nodes[a.march!.from]?.name ?? '')}</span><i class="ar">➜</i><span class="nchip">${esc(r.nodes[a.march!.to]?.name ?? '')}</span></span>`
-        + `<span class="rtx">${tx(`${josa(armyName(r, a), '이', '가')} 가는 중: ${arriveWhen(r, a.march!.left)}`)}</span></div>`).join('')}</div>`
+        + `<span class="rtx">${tx(tr('rep.going', { army: armyName(r, a), when: arriveWhen(r, a.march!.left) }))}</span></div>`).join('')}</div>`
     }
     const tail = threatsHtml(r)
     if (tail !== '') h += `<div class="rv" style="--t:${(t + Math.max(1, lines.length) * LINE_S).toFixed(2)}s">${tail}</div>`
     // 확인은 늘 보이게(카드 아래 붙박이) · 정할 것을 다 골라야 눌린다
-    return h + `<div class="repfoot"><button class="btn pri wide" data-act="rep-close"${todo > 0 ? noBtn(`정할 것 ${todo}개를 먼저 고르세요`) : ''}>${todo > 0 ? `정할 것 ${todo}개를 먼저 고른다` : '확인'}</button></div></div>`
+    return h + `<div class="repfoot"><button class="btn pri wide" data-act="rep-close"${todo > 0 ? noBtn(tr('rep.needWhy', { n: todo })) : ''}>${todo > 0 ? tr('rep.needBtn', { n: todo }) : tr('rep.ok')}</button></div></div>`
   }
 
   /**
