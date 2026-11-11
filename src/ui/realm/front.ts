@@ -17,6 +17,7 @@ import { CHAPTERS, chapterOfRegion, chapterTag } from '../../realm/data/campaign
 import { placeOf } from '../../realm/data/regions/index.ts'
 import { seasonOf, yearOf } from '../../realm/calendar.ts'
 import { t } from '../../i18n/index.ts'
+import { lang } from '../../i18n/lang.ts'
 import { UNIT_NAME, battleName, dateLabel, josa, seasonLabel } from '../../realm/data/prose.ts'
 import type { Realm, RegionId, ReportLine } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
@@ -176,7 +177,7 @@ export function titleHtml(k: FrontKit, r: Realm | null, savedAt: string | null, 
   // 로비 — 산마루에서 내려다본 일흔여덟 나라의 땅 · 로고는 청동 거울과 맥궁의 문장 + 붓글씨 (형: "게임 로고랑 파비콘, 로비 배경은 좀 제대로")
   let h = `<div class="front title"><div class="kv" style="background-image:url('${k.art}title/title-lobby.jpg')"></div><div class="tv">`
   // 로고 밑엔 단추만 — 설명 글은 걷었다 (형 10-23: "로고 밑에 텍스트 설명 너무 많음. 다른 명작 게임들에서는 그런 거 없잖아")
-  h += `<div class="logo"><h1><img class="ltitle" src="${k.art}logo/title.png" alt="${t('title.logoAlt')}"></h1></div>`
+  h += `<div class="logo"><h1><img class="ltitle${lang() === 'en' ? ' en' : ''}" src="${k.art}logo/${lang() === 'en' ? 'title-en' : 'title'}.png" alt="${t('title.logoAlt')}"></h1></div>`
   h += `<div class="fbtns">`
   if (r !== null && (!r.outcome || (r.endless === true && r.outcome.kind === 'win'))) {
     const me = r.player
@@ -760,6 +761,8 @@ export const FRONT_CSS = `
 /* 로고 한 장 (10-24 형: "로고도 좀 더 멋지게") — 금관·청동 거울·맥궁·오색 띠 위에 금빛 이름 · 숨 쉬듯 빛난다 */
 .ap .front.title h1:has(.ltitle) { background: none; filter: none; margin: 0; line-height: 0; }
 .ap .front.title .ltitle { width: min(760px, 94vw); height: auto; filter: drop-shadow(0 6px 16px #000d); } /* 빛이 숨 쉬던 것(filter 애니)을 뺐다 — 폰에서 로고 칸 바탕이 검었다 투명했다 했다 (형 10-29) */
+.ap .front.title .ltitle.en { width: min(600px, 94vw); }
+/* 영문 로고는 가로가 짧아 같은 키가 되도록 폭을 줄인다 */
 @media (prefers-reduced-motion: reduce) { .ap .front.title .lemb, .ap .front.title .ltitle { animation: none; } }
 .ap .front.title .sub { margin: 2px 0 8px; color: #e8dcc0; font-size: 14px; letter-spacing: .08em; }
 .ap .front.title .hook { margin: 0 auto 16px; color: #cfc6b4; font-size: 13.5px; line-height: 1.6; max-width: 460px; }
