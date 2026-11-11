@@ -1,3 +1,4 @@
+- **11-11 17시 Flow u/4 도 씀(형 허락 · Flow 만):** 50 → 혁거세 1편(게임 반영) → 20 · **u/4 Flow 갱신 11-26 17:23**. 수로·탈해 문안·job 은 원장에 있음(flow-jay-u4 · 다른 계정으로 돌리려면 accountId 바꿔서).
 - **11-11 16시대 Flow 넷 다 씀:** u/0 roqkfeke12·u/1 retyper92·u/2 hepastosian·u/5 각 50 → 한 편씩(다나·다래·소금 형 합격 · 게임 반영 · 온조 g-71 은 awaken-loop 에 넣고 **형 판정 기다림**) → 다 20. 갱신(화면): u/0 14:33 · u/1 15:01 · u/2 15:14 · u/5 15:36 (11-12 추정). u/3 은 Workspace 라 Flow 막힘. **주몽 g-64 는 원장 sourceRepairDeferrals** — 각성 그림이 활시위 만작 자세라 영상 전에 그림부터(활시위 금지 규칙). 다음: 혁거세 g-74 · 수로 g-96 · 탈해 g-97 (문안 새로 · 제자리 뛰기 금지 · 메모리 veo-gaze-guide 동작 목록).
 
 - **11-11 16시 Flow u/5(Facts Gamble):** 크레딧 50 → 다나 v2 한 편(형 「훌륭해」 · 게임 반영 f11dcb1d) → 20 남음. **갱신 11-12 15:36 KST** (06:36 UTC). 다음: `t1-buyeo-darae` 새 job(같은 문안 buyeo-darae-t1-20261111-f.txt · 11-11 job 은 크레딧 부족 held) → `t1-dongokjeo-sogeum-v1-20261111`(원장에 있음) → 주몽 g-64 → 온조 g-71. u/5 프로젝트 13c00f87. 영상 없는 각성 그림 목록: `npx tsx tools/veo/missing-loops.ts`.
