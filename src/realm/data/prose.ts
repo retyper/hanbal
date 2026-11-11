@@ -10,6 +10,7 @@ import type { Art, Ask, BuildWhat, Deed, Cmd, DiscoverHow, EdgeKind, Good, Grp, 
 import { groupOf } from '../tactics.ts'
 import { monthly, monthOf, seasonOf, seasons, yearOf, type ClockKind, type Clocked } from '../calendar.ts'
 import type { ConcealWhy } from '../season.ts'
+import { t } from '../../i18n/index.ts'
 import { TRAIT } from './traits.ts'
 import { RELIC } from './relics.ts'
 import { WORKS } from '../works.ts'
@@ -84,19 +85,20 @@ export const BLOCKED_LINE = {
 } as const
 
 /** 그 턴의 이름 — 옛 판 0 = "1년 봄" · 달 시계 0 = "1년 3월 · 봄" (calendar.ts) */
-export function seasonLabel(c: Clocked, t: number = c.season): string {
-  const name = SEASON_NAME[seasonOf(c, t)]
-  return monthly(c) ? `${yearOf(c, t) + 1}년 ${monthOf(c, t)}월 · ${name}` : `${yearOf(c, t) + 1}년 ${name}`
+export function seasonLabel(c: Clocked, turn: number = c.season): string {
+  const s = t(`season.${seasonOf(c, turn)}`)
+  const y = yearOf(c, turn) + 1
+  return monthly(c) ? t('date.monthSeason', { y, m: monthOf(c, turn), s }) : t('date.seasonOnly', { y, s })
 }
 
 /** 위 띠의 날짜 — 달 시계는 「1년 3월」 (철은 곁의 그림이 말한다 · 형 11-01) · 옛 판은 seasonLabel 그대로 */
-export function dateLabel(c: Clocked, t: number = c.season): string {
-  return monthly(c) ? `${yearOf(c, t) + 1}년 ${monthOf(c, t)}월` : seasonLabel(c, t)
+export function dateLabel(c: Clocked, turn: number = c.season): string {
+  return monthly(c) ? t('date.month', { y: yearOf(c, turn) + 1, m: monthOf(c, turn) }) : seasonLabel(c, turn)
 }
 
 /** 턴 단위 이름 — 옛 판 「계절」 · 달 시계 「달」 */
 export function turnWord(c: ClockKind): string {
-  return monthly(c) ? '달' : '계절'
+  return t(monthly(c) ? 'turn.month' : 'turn.season')
 }
 
 /**
@@ -109,7 +111,7 @@ export function spanLabel(c: ClockKind, n: number): string {
 
 /** 턴 수를 화면 말로 — 옛 판 「n계절」 · 달 시계 「n달」 */
 export function turnsLabel(c: ClockKind, n: number): string {
-  return `${n}${turnWord(c)}`
+  return t(monthly(c) ? 'turns.month' : 'turns.season', { n })
 }
 
 /** 판 없이 쓰는 고정 글 속의 턴 말 자리 — `turnText` 가 그 판의 턴 이름으로 바꾼다 */

@@ -5,6 +5,8 @@
  * 본 것은 `hanbal.realm.firsts` 에 남는다 — 기록 지우기(wipe.ts)를 하면 다시 처음부터 알려 준다.
  * 자세한 것은 판마다 있는 「?」 설명(app GUIDE)으로 — 말풍선의 「자세히」가 그것을 연다.
  */
+import { t } from '../../i18n/index.ts'
+
 export interface First {
   readonly id: string
   /** 처음 보일 때 알릴 것 */
@@ -16,12 +18,12 @@ export interface First {
 }
 
 export const FIRSTS: readonly First[] = [
-  { id: 'chief', sel: '.nring [data-act="nr-chief"].empty', title: '고을지기', text: '장수에게 이 고을을 맡기면 가을걷이와 집 늘기가 좋아집니다.', guide: 'post' },
-  { id: 'guard', sel: '.grdap', title: '지킬 길', text: '적이 올 길을 하나 골라 지키세요. 그 길로 숨어 오는 적을 막습니다. 고르지 않으면 장수가 고릅니다.' },
-  { id: 'place', sel: '.sheet [data-act="pl-open"]', title: '백성 배치', text: '붐비는 고을의 집을 한산한 고을로 옮깁니다. 옮긴 집마다 곡식이 듭니다.', guide: 'place' },
-  { id: 'exp', sel: '.cmdc[data-job="exp"]:not(.off)', title: '원정', text: '장수를 먼 땅에 보내 좋은 것을 가져옵니다. 무엇이 나올지는 보낼 때 보이고, 잃는 것은 없습니다. 다녀오는 동안은 판에 없습니다.' },
-  { id: 'wed', sel: '.cmdc[data-job="wed"]:not(.off)', title: '혼인', text: '남녀 장수를 짝지으면 몇 달 뒤 아이가 우리 장수로 나섭니다. 잔치에 곡식이 듭니다.' },
-  { id: 'relic', sel: '[data-act="tomb-pick"]', title: '유물 상자', text: '상자 하나를 고르세요. 겉빛이 귀할수록 좋은 유물이 듭니다. 얻은 유물은 단련터에서 장수에게 끼웁니다.' },
+  { id: 'chief', sel: '.nring [data-act="nr-chief"].empty', get title() { return t('first.chief.title') }, get text() { return t('first.chief.text') }, guide: 'post' },
+  { id: 'guard', sel: '.grdap', get title() { return t('first.guard.title') }, get text() { return t('first.guard.text') } },
+  { id: 'place', sel: '.sheet [data-act="pl-open"]', get title() { return t('first.place.title') }, get text() { return t('first.place.text') }, guide: 'place' },
+  { id: 'exp', sel: '.cmdc[data-job="exp"]:not(.off)', get title() { return t('first.exp.title') }, get text() { return t('first.exp.text') } },
+  { id: 'wed', sel: '.cmdc[data-job="wed"]:not(.off)', get title() { return t('first.wed.title') }, get text() { return t('first.wed.text') } },
+  { id: 'relic', sel: '[data-act="tomb-pick"]', get title() { return t('first.relic.title') }, get text() { return t('first.relic.text') } },
 ]
 
 const KEY = 'hanbal.realm.firsts'

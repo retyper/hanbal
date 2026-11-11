@@ -4,6 +4,7 @@
  * 뿌리는 『삼국사기』·『삼국유사』가 먼저.
  */
 import type { RegionId, Scenario } from '../types.ts'
+import { t } from '../../i18n/index.ts'
 
 export interface Chapter {
   readonly id: string
@@ -123,4 +124,4 @@ export function chapterOfRegion(region: RegionId): Chapter | undefined {
 }
 
 /** 장의 꼬리표 — 0장은 「튜토리얼」로 밝힌다 (형 11-04: "0장을 튜토리얼로 명시해야겠음") · 나머지는 「n장」 */
-export const chapterTag = (n: number): string => n === 0 ? '튜토리얼' : `${n}장`
+export const chapterTag = (n: number): string => n === 0 ? t('chapter.tutorial') : t('chapter.n', { n })

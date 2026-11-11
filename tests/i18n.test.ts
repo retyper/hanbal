@@ -4,6 +4,11 @@ import assert from 'node:assert/strict'
 import { ko } from '../src/i18n/ko.ts'
 import { en, PENDING_EN } from '../src/i18n/en.ts'
 import { forceLang, pickLang, t, tIn } from '../src/i18n/index.ts'
+import { seasonLabel, turnsLabel, turnWord } from '../src/realm/data/prose.ts'
+import type { Clocked } from '../src/realm/calendar.ts'
+import { chapterTag } from '../src/realm/data/campaign.ts'
+import { TUT_STEPS, tutBandHtml, tutCss } from '../src/ui/realm/tutorial.ts'
+import { FIRSTS } from '../src/ui/realm/firsts.ts'
 import { BOARDS, boardHtml, slotsHtml, titleHtml, type FrontKit } from '../src/ui/realm/front.ts'
 
 const kit: FrontKit = {
@@ -79,5 +84,38 @@ describe('첫 화면 한국어 출력은 그대로', () => {
     const h = titleHtml(kit, null, null, '', true, '', '')
     assert.ok(h.includes('New Game') && h.includes('alt="Samhan Chronicles"'))
     assert.ok(!/[가-힣]/.test(h))
+  })
+})
+
+describe('껍데기: 날짜 · 탭 · 배우는 판 · 처음 알림', () => {
+  const mo = { season: 14, clock: 'month' } as unknown as Clocked
+  const old = { season: 5 } as unknown as Clocked
+  it('한국어 출력은 그대로', () => {
+    assert.equal(seasonLabel(old), '2년 여름')
+    assert.equal(turnsLabel(mo, 3), '3달')
+    assert.equal(turnsLabel(old, 3), '3계절')
+    assert.equal(turnWord(old), '계절')
+    assert.equal(chapterTag(2), '2장')
+    assert.equal(chapterTag(0), '튜토리얼')
+    assert.equal(TUT_STEPS[0]!.name, '우리 땅')
+    assert.equal(TUT_STEPS[1]!.text, '갈대울의 우리 군대 말(장수 얼굴)을 누르고, 밝아진 갯골 마을을 누르세요. 그리로 갑니다.')
+    assert.ok(tutBandHtml(99, (x) => x).includes('<b>다 배웠습니다</b>'))
+    assert.ok(tutCss().includes("content: '먼저 소식을 읽고 「확인」을 누르세요';"))
+    assert.equal(FIRSTS[0]!.title, '고을지기')
+    assert.equal(tIn('ko', 'tab.locked', { name: '외교', turns: '2달' }), '외교: 2달 뒤에 열립니다')
+    assert.equal(tIn('ko', 'legend.war', { name: '백제' }), '백제와 싸우는 중')
+    assert.equal(tIn('ko', 'legend.war', { name: '신라' }), '신라와 싸우는 중')
+  })
+  it('영어로는 갈아입는다', () => {
+    forceLang('en')
+    assert.equal(seasonLabel(old), 'Year 2, Summer')
+    assert.equal(turnsLabel(old, 1), '1 season')
+    assert.equal(turnsLabel(old, 3), '3 seasons')
+    assert.equal(chapterTag(2), 'Ch. 2')
+    assert.equal(TUT_STEPS[0]!.name, 'Our Land')
+    assert.equal(FIRSTS[0]!.title, 'Town Warden')
+    assert.equal(tIn('en', 'tab.locked', { name: 'Diplomacy', turns: '2 months' }), 'Diplomacy: opens in 2 months')
+    assert.equal(tIn('en', 'date.monthSeason', { y: 13, m: 3, s: 'Spring' }), 'Year 13, Month 3 · Spring')
+    assert.ok(tutBandHtml(0, (x) => x).includes('1/14'))
   })
 })

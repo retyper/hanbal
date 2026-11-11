@@ -8,6 +8,7 @@ import { josa } from '../../realm/data/prose.ts'
 import { goalState, seasonsLeft } from '../../realm/scenario.ts'
 import type { Goal, Realm } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
+import { t } from '../../i18n/index.ts'
 
 const NATIVE = ['', '한', '두', '세', '네', '다섯', '여섯', '일곱', '여덟', '아홉', '열'] as const
 
@@ -22,7 +23,7 @@ function goalLabel(r: Realm, g: Goal): string {
     }
     case 'fell': return `${josa(r.heroes[g.hero]?.name ?? g.hero, '을', '를')} 쓰러뜨리기`
     case 'event': return g.id
-    case 'survive': return `${g.seasons}계절 버티기`
+    case 'survive': return t('goal.survive', { n: g.seasons })
     case 'trade': return `한 해 안에 ${NATIVE[g.partners] ?? g.partners} 나라와 철 주고받기`
   }
 }
@@ -71,7 +72,7 @@ export function goalRowsHtml(r: Realm, esc: (s: string) => string): string {
   if (sc.id === 'daemusin' && !done) h += `<div class="gbr gleft warn" data-tip="부여 도읍 남쪽은 갈대 덮인 진흙 수렁이다. 장마(7·8월)엔 물이 불어 건너지 못하고, 갈대에 숨어 기습하기는 좋다. 서쪽 목장·송화강 마을로 돌아가는 들길도 있다"><span class="gck">≋</span><span>부여 남쪽 수렁: 장마엔 건너지 못한다</span></div>`
   if (sc.id === 'jumong' && !done && seasonIdx(r) < P.realm.pursuitSeasons) h += `<div class="gbr gleft warn" data-tip="대소의 추격대가 북쪽 동부여 진영에서 엄리 나루로 내려올 수 있다. 나루를 지키거나 군대를 모아 둔다"><span class="gck">⚠</span><span>동부여 추격군: ${P.realm.pursuitSeasons - seasonIdx(r)}계절 동안 쫓아온다</span></div>`
   const left = seasonsLeft({ ...r, scenario: sc })
-  if (left !== null && !done) h += `<div class="gbr gleft${left <= 2 ? ' warn' : ''}"><span class="gck">⏳</span><span>${left}계절 남았다</span></div>`
+  if (left !== null && !done) h += `<div class="gbr gleft${left <= 2 ? ' warn' : ''}"><span class="gck">⏳</span><span>${t('goal.left', { n: left })}</span></div>`
   return h
 }
 
