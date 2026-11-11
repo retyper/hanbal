@@ -337,6 +337,7 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'w-30-guya-soebi', // 11-05 쇠비 — 형의 최애 · 숨을 더 세게(가슴이 또렷이 출렁)
   'w-33-gammun-gamsil', // 11-05 감실 — 형의 최애 · 출렁임을 걸면 제미나이가 거절해(그림이 드러나서) 잔잔한 숨으로
   'w-35-jomun-odi', // 11-08 낮 오디 v2 · 세로 근접 · 웃으며 발돋움하고 누에고치를 띄운다 (형: 넣어) · 옛 정사각 판은 assets_src/realm/retired/awaken-loop
+  'g-74-saro-hyeokgeose', // 11-11 혁거세 1차 (Flow u/4 · 가슴에 손 얹어 맹세 · 이상 없음 · 형 규칙: 남장수는 비정상만 아니면 넣는다)
   'g-71-baekje-onjo', // 11-11 온조 1차 (Flow u/0 · 검을 가슴 앞에 세웠다 들어 올림 · 형: 나쁘지 않아)
   'w-56-dongokjeo-sogeum', // 11-11 소금 1차 (젊게 다시 그린 그림 · Flow · 소금 상자 튕겨 흩뿌림 · 형: 합격)
   'w-104-buyeo-darae', // 11-11 다래 1차 (Flow u/1) · 제자리 뜀·늑대털 모자 귀·목걸이 (형: 일단 ok)
