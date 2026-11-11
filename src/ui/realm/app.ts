@@ -7252,7 +7252,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const keep = [wrap.scrollLeft, wrap.scrollTop] as const
     const first = wrap.querySelector('.map') === null
     // 지도가 그대로면 다시 깔지 않는다 — 징병 수 ± 처럼 판만 바뀔 때마다 바탕 그림이 깜빡였다 (형: "뒷배경이 너무 깜빡거림")
-    if (armySel.length > 0 || partySel !== '' || sheet !== null || realm.nodes[ring] === undefined) ring = '' // 군대·개척단을 고르거나 판을 열면 둘레 단추는 접힌다
+    // 군대·개척단을 고르거나 판을 열면 둘레 단추는 접힌다 · 정할 것(사건 카드·사신의 청)이 화면 가득 떠도 접는다 (형 11-11: 달 넘길 때 마을을 누르면 단추가 카드 위에 떠 있었다)
+    if (armySel.length > 0 || partySel !== '' || sheet !== null || realm.nodes[ring] === undefined || (showReport && repTodo() > 0)) ring = ''
     const mh = mapPart(r)
     if (mh !== lastMap || first) {
       // 줌 단계는 새 지도로 이어 간다 — 다시 깔 때마다 'mid' 에서 다시 재 경계 근처 이름표가 깜빡였다 (검토 11-04)
@@ -7862,6 +7863,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       // 첫 누름은 둘레 단추 (z축 5·6단계) — 「자세히」 만 큰 판. 배우는 판도 같다 (형 11-01: 튜토리얼도 지금에 맞게) · 소도는 굿 판 하나뿐이라 곧바로
       const id = t.dataset['node']!
       if (realm === null || realm.nodes[id]?.kind === 'sodo') { openSheet({ kind: 'node', id }); return }
+      if (showReport && repTodo() > 0) return // 정할 것이 남은 동안은 둘레 단추를 열지 않는다 (형 11-11)
       const was = ring
       sheet = null
       ring = was === id ? '' : id
