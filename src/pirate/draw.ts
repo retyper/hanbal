@@ -324,10 +324,11 @@ let waterKey = -1
  */
 const BAKE = { margin: 16 } as const
 const PATH = {
-  /** 흙길 — 누런 풀밭·갈색 바위 위에서 읽히게 어둡고 붉은 흙 · 가장자리는 더 어둡게 · 윗단은 밝은 마른 흙 */
-  top: 'rgba(222, 184, 124, 0.92)', body: 'rgba(124, 86, 48, 0.9)', edge: 'rgba(52, 34, 18, 0.95)', stone: 'rgba(150, 140, 124, 0.9)', stoneDark: 'rgba(60, 50, 40, 0.8)',
-  /** 길 두께 (m) · 윗단 두께 (m) · 길 아래 그늘 깊이 (m) */
-  thick: 0.8, lip: 0.14, shade: 0.9,
+  /** 다짐길 — 배경 위에 얹는 반투명 어두운 흙 (곱하기 느낌) · 윗면 밝은 흙 얇게 · 벼랑 턱 아래만 그늘 */
+  earth: 'rgba(86, 56, 28, 0.5)', lip: 'rgba(240, 212, 160, 0.82)', shade: 'rgba(24, 16, 8, 0.4)', shadeDeep: 'rgba(24, 16, 8, 0.22)',
+  rut: 'rgba(52, 34, 16, 0.4)', grass: 'rgba(96, 108, 44, 0.8)', stone: 'rgba(150, 140, 124, 0.85)', stoneDark: 'rgba(60, 50, 40, 0.7)',
+  /** 길 흙 두께 · 윗단 두께 · 벼랑 그늘 깊이 (m) */
+  thick: 0.36, lipH: 0.09, shadeH: 0.95, groundThick: 0.45,
 } as const
 let bakeC: HTMLCanvasElement | null = null
 let bakeKey = ''
@@ -350,36 +351,48 @@ function bandFill(ctx: CanvasRenderingContext2D, cam: Camera, lane: Lane, x0: nu
   ctx.fill()
 }
 
-function dirtBand(ctx: CanvasRenderingContext2D, cam: Camera, lane: Lane, x0: number, x1: number): void {
-  // 길 아래 그늘 (벼랑 몸) — 길이 떠 있는 판자가 아니라 벼랑 턱으로 읽히게
-  bandFill(ctx, cam, lane, x0, x1, 0, -PATH.shade, 'rgba(30, 20, 10, 0.34)')
-  // 어두운 가장자리 → 흙 → 밝은 윗단
-  bandFill(ctx, cam, lane, x0, x1, 0.04, -PATH.thick - 0.07, PATH.edge)
-  bandFill(ctx, cam, lane, x0, x1, 0.02, -PATH.thick, PATH.body)
-  bandFill(ctx, cam, lane, x0, x1, 0.04, -PATH.lip, PATH.top)
-  // 흙 알갱이와 풀 — 밋밋한 띠가 아니라 밟아 다진 흙길로
-  for (let i = 0; i < 70; i++) {
-    const x = x0 + ((i * 0.6180339 + 0.13) % 1) * (x1 - x0)
-    const y = footY(lane, x) - PATH.lip - ((i * 0.3247) % 1) * (PATH.thick - PATH.lip)
-    ctx.fillStyle = i % 2 === 0 ? 'rgba(60, 40, 20, 0.35)' : 'rgba(236, 204, 150, 0.3)'
-    ctx.fillRect(worldToScreenX(cam, x), worldToScreenY(cam, y), 2 + (i % 3), 1.5)
+/** 길 한 줄 — 얹는 흙띠 + 풀 경계 + 바퀴자국·발자국 점 + 돌. ledge 면 아래에만 벼랑 그늘이 진다 */
+function dirtBand(ctx: CanvasRenderingContext2D, cam: Camera, lane: Lane, x0: number, x1: number, ledge: boolean): void {
+  const th = ledge ? PATH.thick : PATH.groundThick
+  if (ledge) {
+    bandFill(ctx, cam, lane, x0, x1, -0.04, -PATH.shadeH, PATH.shadeDeep)
+    bandFill(ctx, cam, lane, x0, x1, -0.04, -PATH.shadeH * 0.5, PATH.shade)
   }
-  ctx.strokeStyle = 'rgba(88, 100, 40, 0.85)'
-  ctx.lineWidth = 1.5
-  ctx.beginPath()
+  bandFill(ctx, cam, lane, x0, x1, 0.02, -th, PATH.earth)
+  bandFill(ctx, cam, lane, x0, x1, 0.04, -PATH.lipH, PATH.lip)
+  // 바퀴자국 둘 — 점선 (위치만의 함수)
+  for (let r = 0; r < 2; r++) {
+    ctx.fillStyle = PATH.rut
+    for (let x = x0 + (r * 0.37) % 0.7; x < x1; x += 0.7) {
+      ctx.fillRect(worldToScreenX(cam, x), worldToScreenY(cam, footY(lane, x) - th * (0.38 + r * 0.3)), 0.34 * cam.scale, 1.6)
+    }
+  }
+  // 발자국 점
+  ctx.fillStyle = PATH.rut
   for (let i = 0; i < 40; i++) {
-    const x = x0 + ((i * 0.7548776 + 0.31) % 1) * (x1 - x0)
+    const x = x0 + ((i * 0.6180339) % 1) * (x1 - x0)
+    const y = footY(lane, x) - th * (0.15 + ((i * 0.7548776) % 1) * 0.6)
+    ctx.beginPath()
+    ctx.ellipse(worldToScreenX(cam, x), worldToScreenY(cam, y), 2.2, 1.3, 0, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  // 풀 경계 — 아랫가장자리에 들쭉날쭉 풀 (배경과 섞이게)
+  ctx.strokeStyle = PATH.grass
+  ctx.lineWidth = 1.4
+  ctx.beginPath()
+  for (let x = x0; x < x1; x += 0.16) {
     const px = worldToScreenX(cam, x)
-    const py = worldToScreenY(cam, footY(lane, x) + 0.03)
+    const py = worldToScreenY(cam, footY(lane, x) - th + 0.02 + (Math.sin(x * 5.3) * 0.5 + Math.sin(x * 12.1 + 1) * 0.5) * 0.09)
+    const h = (2 + ((x * 37) % 3)) * (cam.scale / 40)
     ctx.moveTo(px, py)
-    ctx.lineTo(px + ((i % 3) - 1) * 2, py - (3 + (i % 4)) * cam.scale * 0.03)
+    ctx.lineTo(px + (((x * 53) % 2) - 1) * 2, py - h * 2)
   }
   ctx.stroke()
-  // 돌 몇 개 — 길 위치마다 정해진 자리 (난수 없음)
-  for (let i = 0; i < 18; i++) {
-    const x = x0 + ((i * 0.6180339) % 1) * (x1 - x0)
-    const y = footY(lane, x) - PATH.thick * (0.3 + ((i * 0.7548776) % 1) * 0.5)
-    const rr = (0.035 + ((i * 3) % 4) * 0.02) * cam.scale
+  // 돌 몇 개
+  for (let i = 0; i < 12; i++) {
+    const x = x0 + ((i * 0.6180339 + 0.2) % 1) * (x1 - x0)
+    const y = footY(lane, x) - th * (0.25 + ((i * 0.7548776) % 1) * 0.5)
+    const rr = (0.03 + ((i * 3) % 4) * 0.015) * cam.scale
     const px = worldToScreenX(cam, x)
     const py = worldToScreenY(cam, y)
     ctx.fillStyle = PATH.stoneDark
@@ -416,17 +429,12 @@ function bakeBandit(cam: Camera, im: HTMLImageElement): HTMLCanvasElement | null
   const xr = c0.x + (cam.w / 2 + m) / cam.scale
   const R = P.pirate
   const wide = cam.w + m * 2
-  // 아랫길 — 땅 위 흙길 (발이 디디는 줄이 길 윗단이다)
-  g.fillStyle = 'rgba(30, 20, 10, 0.30)'
-  g.fillRect(-m, gy + 0.1 * cam.scale, wide, 1.2 * cam.scale)
-  g.fillStyle = PATH.edge
-  g.fillRect(-m, gy, wide, 0.97 * cam.scale)
-  g.fillStyle = PATH.body
-  g.fillRect(-m, gy + 0.05 * cam.scale, wide, 0.85 * cam.scale)
-  g.fillStyle = PATH.top
-  g.fillRect(-m, gy, wide, 0.12 * cam.scale)
-  dirtBand(g, c0, 1, R.palisadeX, xr + 1)
-  dirtBand(g, c0, 2, R.midDropX, xr + 1)
+  // 아랫길 — 땅 줄에 얇게 얹은 다짐길 (화면 높이의 6% 이하)
+  dirtBand(g, c0, 0, c0.x - (cam.w / 2 + m) / cam.scale - 1, xr + 1, false)
+  dirtBand(g, c0, 1, R.palisadeX, xr + 1, true)
+  dirtBand(g, c0, 2, R.midDropX, xr + 1, true)
+  void wide
+  void gy
   // 목책 그늘
   g.fillStyle = 'rgba(20, 12, 4, 0.4)'
   g.beginPath()
