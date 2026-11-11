@@ -391,7 +391,8 @@ function putText(t: TextSprite, x: number, y: number, align: 'left' | 'center' |
   const ox = align === 'left' ? -t.pad : align === 'right' ? -(t.tw + t.pad) : -t.w / 2
   ctx.drawImage(t.cv, x + ox * sc, y - t.by * sc, t.w * sc, t.h * sc)
 }
-let dprCap = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches ? 1.5 : 2
+/** 기기 화소대로 시작(형 11-12: 빨라졌으니 해상도 올려 — 폰 1.5 에서 시작하면 도트가 뿌옇게 두 번 늘어난다) · 버거우면 0.5 씩 내린다 */
+let dprCap = P.duel.dprCap
 const gaps: number[] = []
 function watchLoad(dt: number): void {
   if (dprCap <= 1 || dt <= 0 || dt > 500) return
@@ -399,7 +400,7 @@ function watchLoad(dt: number): void {
   if (gaps.length < 60) return
   const mid = gaps.sort((a, b) => a - b)[30]!
   gaps.length = 0
-  if (mid > 22) { dprCap = Math.max(1, dprCap - 0.5); resize() }
+  if (mid > P.duel.dprDropMs) { dprCap = Math.max(1, dprCap - 0.5); resize() }
 }
 /**
  * 군사 한 줄 — 낱장 군사(누끼)를 시드 고정 난수로 한 명씩 세운다 (형 11-11: 통짜 그림은 몸이 붙고 목이 돌아갔다).

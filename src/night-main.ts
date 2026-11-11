@@ -552,7 +552,7 @@ function watchLoad(dt: number): void {
 }
 try {
   const ap = window.parent !== window ? window.parent.document.querySelector('.ap') : null
-  if (ap !== null && (ap.classList.contains('q-low') || ap.classList.contains('q-mid'))) view.low = true
+  if (ap !== null && ap.classList.contains('q-low')) view.low = true // 「보통」은 이제 제 화소로 (형 11-12: 빨라졌으니 해상도 올려)
 } catch { /* 다른 곳에서 띄웠다 */ }
 
 function wake(): void {
