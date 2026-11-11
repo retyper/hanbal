@@ -1110,7 +1110,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['물 흐르듯 해내겠사옵니다.', '다투지 않고 풀어 보겠사옵니다.', '맡겨 주소서.'],
     auto: ['이 싸움은 제가 맡겠사옵니다!', '물처럼 스며들어라! 막히면 돌아라!', '서두르지 마라! 흐름을 타라!', '이겼사옵니다. 물소리가 맑사옵니다.', '송구하옵니다. 물길을 다시 읽겠사옵니다.'],
     art: ['ambush', '물처럼 스며들어라! 물안개 속에서 일어나 뒤를 쳐라!'],
-    recorded: false,
+    recorded: true, // 11-11 Olin 13줄
     male: true,
   },
   // 군장 맥손 · 47세 · 활을 아무에게나 내주지 않는 과묵하고 자존심 강한 산골 나라의 군장 · 짧고 무뚝뚝한 Schedar
@@ -1121,7 +1121,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['활을 쥘 자격이 있는지 보여 드리겠사옵니다.', '받들겠사옵니다.', '그리하겠사옵니다.'],
     auto: ['제 활이 맡겠사옵니다!', '맥궁을 당겨라! 한 발도 헛되이 쏘지 마라!', '산골의 활이다! 물러서지 마라!', '끝났사옵니다. 활을 거두겠사옵니다.', '활이 모자랐사옵니다. 다시 깎겠사옵니다.'],
     art: ['snipe', '맥궁이 운다! 산골의 한 발로 적장을 꿰뚫어라!'],
-    recorded: false,
+    recorded: true, // 11-11 Schedar 13줄
     male: true,
   },
 }
