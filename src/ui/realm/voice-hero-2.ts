@@ -767,7 +767,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['말 달리듯 해내겠사옵니다.', '충심을 다하겠사옵니다.', '맡겨 주소서.'],
     auto: ['이 싸움은 제가 맡겠사옵니다!', '말을 달려라! 달리며 쏘아라!', '흩어지지 마라! 바람처럼 가자!', '이겼사옵니다. 말에게 물을 먹이겠사옵니다.', '송구하옵니다. 다시 말을 몰겠사옵니다.'],
     art: ['snipe', '달리며 겨누어라! 마가의 활이 적장을 노린다!'],
-    recorded: false,
+    recorded: true, // 11-11 Laomedeia 13줄
   },
   // 신지 큰돌 · 46세 · 이름처럼 큰 돌 같은 우직하고 힘센 과묵한 사내 · 짧고 묵직한 Brio
   'mh-mahan-1': {
