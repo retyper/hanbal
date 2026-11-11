@@ -5,7 +5,6 @@
  * 숨은 탭에서는 시작하지 않고, 도중에 숨으면 바로 걷는다 (규칙 4).
  */
 import { t } from '../../i18n/index.ts'
-import { lang } from '../../i18n/lang.ts'
 import { STUDIO_NAME } from '../../realm/studio.ts'
 import { P } from '../../tune/params.ts'
 
@@ -37,7 +36,7 @@ export function showBoot(base: string): boolean {
   try { sessionStorage.setItem(SEEN_KEY, '1') } catch { /* 못 남겨도 이 로드에서는 한 번뿐 */ }
   const cards: string[] = []
   if (STUDIO_NAME.trim() !== '') cards.push(`<div class="bc"><p class="bcname">${esc(STUDIO_NAME)}</p><p class="bcsub">${esc(t('boot.presents'))}</p></div>`)
-  cards.push(`<div class="bc"><img src="${base}realm/logo/${lang() === 'en' ? 'title-en' : 'title'}.png" alt="${esc(t('boot.logoAlt'))}" /></div>`)
+  cards.push(`<div class="bc"><img src="${base}realm/logo/title.png" alt="${esc(t('boot.logoAlt'))}" /></div>`)
 
   const el = document.createElement('div')
   el.id = 'bootcards'
