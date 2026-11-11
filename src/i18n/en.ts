@@ -6,7 +6,7 @@
 import type { Key } from './ko.ts'
 
 export const en: Partial<Record<Key, string>> = {
-  'title.logoAlt': 'Samhan Chronicles',
+  'title.logoAlt': 'First Realms',
   'title.continue': 'Continue as {name}',
   'title.progress': 'Capitals {caps}/{need}',
   'title.known': 'Known realms {n}/{total}',
@@ -196,7 +196,7 @@ export const en: Partial<Record<Key, string>> = {
   'first.relic.text': 'Pick one chest. The rarer its sheen, the better the relic inside. Equip relics to your heroes at the Training Ground.',
   'first.more': 'Details ›',
   'boot.presents': 'presents',
-  'boot.logoAlt': 'Samhan Chronicles',
+  'boot.logoAlt': 'First Realms',
   'credits.title': 'Credits',
   'credits.back': '‹ Back',
   'credits.loading': 'Loading...',
