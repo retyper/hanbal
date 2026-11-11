@@ -15,6 +15,7 @@ import { aiOrders, decide } from '../src/realm/ai.ts'
 import { startRegion } from '../src/realm/data/regions/index.ts'
 import { advance } from '../src/realm/season.ts'
 import type { Order, Realm, RegionId } from '../src/realm/types.ts'
+import { P } from '../src/tune/params.ts'
 import { COSTS, headFlags, noCounts, scanReport, turnSeconds, type Mile } from './first-hour-lib.ts'
 
 const args = process.argv.slice(2)
@@ -27,6 +28,11 @@ const BOARD = opt('board', 'mahan') as RegionId
 const MINUTES = Number(opt('minutes', '60'))
 const TURNS = Number(opt('turns', '120'))
 const OUT = opt('out', '')
+// --set aiGraceMahan=2,aiCautiousWin=0.5 : 고쳐 보면 어떻게 되나 (params.ts 는 안 고친다)
+for (const kv of opt('set', '').split(',').filter((x) => x !== '')) {
+  const [k, v] = kv.split('=')
+  ;(P.realm as unknown as Record<string, number>)[k!] = Number(v)
+}
 const QUIT_MIN = 30
 const AS = 'baekje'
 const STUCK_TURNS = 9
