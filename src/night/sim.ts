@@ -310,7 +310,22 @@ function zoneAt(f: Figure, x: number, y: number, rise: number): 'head' | 'body' 
 }
 
 /** 살 하나의 이번 틱 선분을 앞에서부터 훑는다. 무엇에 닿았으면 참 */
-function sweep(n: Night, ax: number, ay: number, bx: number, by: number, angle: number, tore: Set<number>, id: number): 'hit' | 'stop' | null {
+/**
+ * 살길 위의 불(pass) — 이 살이 창호지까지 갈 궤적인가. 지금 자리·속도에서 중력만으로 앞길을 셈해 창호지 네모(여유 passSlop)에 드는지 본다.
+ * 가면 불은 지나가고(옛 규칙 · 창호지 머리 쏘는 살을 안 막는다), 못 가면 그 불을 끈다 (형 11-12: "촛대 쏴도 안 맞고 통과 · 히트박스 어디 갔냐").
+ * 항력은 뺐다 — 실제 살은 이보다 조금 더 처지니 여유를 둔다.
+ */
+function towardDoor(sc: Scene, x: number, y: number, vx: number, vy: number): boolean {
+  const d = sc.door
+  if (d === null || vx <= 0 || x >= d.x0) return false
+  const s = P.night.passSlop, g = P.arrow.gravity
+  const yAt = (dx: number): number => { const t = (dx - x) / vx; return y + vy * t - 0.5 * g * t * t }
+  const y0 = yAt(d.x0), y1 = yAt(d.x1)
+  const inDoor = (yy: number): boolean => yy >= d.y0 - s && yy <= d.y1 + s
+  return inDoor(y0) || inDoor(y1) || (y0 > d.y1 && y1 < d.y0)
+}
+
+function sweep(n: Night, ax: number, ay: number, bx: number, by: number, vx: number, vy: number, angle: number, tore: Set<number>, id: number): 'hit' | 'stop' | null {
   const sc = n.scene
   const len = Math.hypot(bx - ax, by - ay)
   const steps = Math.max(1, Math.ceil(len / 0.05))
@@ -347,9 +362,10 @@ function sweep(n: Night, ax: number, ay: number, bx: number, by: number, angle: 
       }
       return 'hit'
     }
-    // 불 — 맞히면 꺼진다 (창호지 뒤 촛불은 문 너머라 안 닿는다)
+    // 불 — 맞히면 꺼진다 (창호지 뒤 촛불은 문 너머라 안 닿는다 · 살길 위의 불은 창호지로 가는 살만 지나간다)
     for (const l of sc.lights) {
-      if (!l.lit || l.kind === 'candle' || l.pass === true) continue
+      if (!l.lit || l.kind === 'candle') continue
+      if (l.pass === true && (x - l.x) ** 2 + (y - l.y) ** 2 <= (LAMP_R + P.night.hitSlop) ** 2 && towardDoor(sc, x, y, vx, vy)) continue
       if (l.kind === 'fire') {
         // 모닥불 — 위에 매단 물동이를 맞히면 쏟아져 꺼진다. 불길에 든 살은 타 버리고 불똥만 튄다 (살로 불을 끄진 못한다)
         if ((x - l.x) ** 2 + (y - (l.y + P.night.jarHeight)) ** 2 <= (P.night.jarRadius + P.night.hitSlop) ** 2) {
@@ -634,7 +650,7 @@ export function stepNight(n: Night, input: NightFrame): void {
     if (!a.alive && !landed) n.tore.delete(a.id) // 풀의 자리가 다시 쓰일 때 옛 살의 찢음이 남지 않게
     if (!landed && !(a.alive && a.outcome === 'flying')) continue
     const angle = Math.atan2(a.vy, a.vx)
-    const got = sweep(n, a.px, a.py, a.x, a.y, angle, n.tore, a.id)
+    const got = sweep(n, a.px, a.py, a.x, a.y, a.vx, a.vy, angle, n.tore, a.id)
     if (got !== null) {
       a.alive = false
       a.outcome = 'hit'

@@ -42,6 +42,22 @@ function angleFor(seed: number, zone: 'head' | 'body'): number {
 }
 
 describe('밤의 암살판', () => {
+  it('사랑채 앞 살길 위의 횃불: 거기서 끝날 살은 끄고, 창호지까지 갈 살은 지나간다 (형 11-12: 촛대 쏴도 안 맞고 통과)', () => {
+    let put = 0, passed = 0, blockedDoorShot = 0
+    for (let ang = -0.4; ang <= 0.9; ang += 0.01) {
+      const n = createNight({ seed: 3, practice: { stage: 2, alarm: true, infinite: true } })
+      const torch = n.scene.lights.find((l) => l.pass === true)!
+      assert.ok(torch.lit)
+      shoot(n, ang)
+      const reachedDoor = n.tore.size > 0 || n.scene.figures.some((f) => f.role === 'chief' && !f.alive)
+      if (!torch.lit) put++
+      if (reachedDoor) { passed++; if (!torch.lit) blockedDoorShot++ }
+    }
+    assert.ok(put > 0, '횃불대를 끄는 각이 하나는 있어야 한다')
+    assert.ok(passed > 0, '창호지에 닿는 각이 하나는 있어야 한다')
+    assert.equal(blockedDoorShot, 0, '창호지에 닿는 살이 횃불을 끄면 안 된다')
+  })
+
   it('같은 시드·같은 판이면 같은 배치, 시드가 다르면 다른 배치', () => {
     assert.deepEqual(bakeScene(5, 0), bakeScene(5, 0))
     assert.deepEqual(bakeScene(5, 2), bakeScene(5, 2))
