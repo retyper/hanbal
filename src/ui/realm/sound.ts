@@ -1,4 +1,5 @@
 import { P } from '../../tune/params.ts'
+import { t } from '../../i18n/index.ts'
 
 /**
  * 칠십팔국의 소리 — public/realm/sfx (CC0 · 출처는 sfx/CREDITS.txt)
@@ -181,7 +182,6 @@ const AMB_VOL = 0.1
 
 export type SoundChannel = 'bgm' | 'sfx' | 'voice'
 const VOLUME_KEY = 'hanbal.realm.volume.'
-const SOUND_NAME: Readonly<Record<SoundChannel, string>> = { bgm: '배경음', sfx: '효과음', voice: '사람 목소리' }
 /** 저장하지 않은 기기는 각 소리 100%. 전체 소리 끄기는 기존 설정을 따른다. */
 export function soundVolume(channel: SoundChannel): number {
   try {
@@ -198,9 +198,9 @@ export function setSoundVolume(channel: SoundChannel, value: number): void {
   try { localStorage.setItem(VOLUME_KEY + channel, String(Math.max(0, Math.min(1, value)))) } catch { /* 이번 판은 기본값 */ }
 }
 export function volumeRowsHtml(): string {
-  return `<div class="volumes"><b>소리 크기</b>${(['bgm', 'sfx', 'voice'] as const).map((c) => {
+  return `<div class="volumes"><b>${t('vol.title')}</b>${(['bgm', 'sfx', 'voice'] as const).map((c) => {
     const n = Math.round(soundVolume(c) * 100)
-    return `<label class="volrow"><span>${SOUND_NAME[c]}</span><input type="range" min="0" max="100" step="1" value="${n}" data-vol="${c}" aria-label="${SOUND_NAME[c]} 크기"><output>${n}%</output></label>`
+    return `<label class="volrow"><span>${t(`vol.${c}`)}</span><input type="range" min="0" max="100" step="1" value="${n}" data-vol="${c}" aria-label="${t('vol.aria', { name: t(`vol.${c}`) })}"><output>${n}%</output></label>`
   }).join('')}</div>`
 }
 

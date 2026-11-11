@@ -878,11 +878,20 @@ export function battleGrowth(r: Realm, won: readonly (string | null)[], lost: re
   each([...lost, ...drawn], (h) => { if (ours(h)) { const n = (h.flames ?? 0) - 1; if (n > 0) h.flames = n; else delete h.flames } })
 }
 
+/**
+ * 각성까지 내리 이겨야 하는 싸움 수 — 처음 깨어날 때만 firstAscendEase 만큼 덜 (첫 30분 깔때기 · docs/realm/FIRST-HOUR.md · 11-11).
+ * 깨어난 뒤 연료 칸 수(ascendWins)는 그대로다
+ */
+export function ascendNeed(h: Pick<Hero, 'ascents'>): number {
+  const R = P.realm
+  return Math.max(1, Math.round(R.ascendWins) - ((h.ascents ?? 0) === 0 ? Math.round(R.firstAscendEase) : 0))
+}
+
 /** 불꽃 하나 — 다 켜지면 각성: 능력치가 모두 ascendBonus 오른다 (10 을 넘을 수 있다 · 그 판에서만) */
 function kindle(h: Hero, lines: ReportLine[]): void {
   const R = P.realm
   const n = (h.flames ?? 0) + 1
-  if (n < R.ascendWins) {
+  if (n < ascendNeed(h)) {
     h.flames = n
     lines.push({ kind: 'kindle', hero: h.id, n })
     return

@@ -53,7 +53,7 @@ import { startRegion } from '../../realm/data/regions/index.ts'
 import { HIRE_BY_TRAIT, HIRE_LINE, HIRE_PLAIN } from '../../realm/data/hire-lines.ts'
 import { DESTS, DEST_IDS, EXP_SEASONS, destReachable, expAmount, expBlock, expOdds, onExpedition } from '../../realm/expedition.ts'
 import { foundable, joinable, partiesOf, partyCost, partyMoves, partyRoute, partySize } from '../../realm/parties.ts'
-import { canCohabit, canWed, heroJobOf, heroSeen, honeyLeft, idleHeroOrders, together, inheritOf, isRuler, postHero, rulerOf, tieOf, wanderersFor, wedCost, wooable } from '../../realm/heroes.ts'
+import { ascendNeed, canCohabit, canWed, heroJobOf, heroSeen, honeyLeft, idleHeroOrders, together, inheritOf, isRuler, postHero, rulerOf, tieOf, wanderersFor, wedCost, wooable } from '../../realm/heroes.ts'
 import { guardOptions } from '../../realm/council.ts'
 import type { Approach, Army, BuildWhat, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, Party, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic, WooApproach } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
@@ -115,6 +115,7 @@ import { diploTips, type DiploTip } from '../../realm/advice.ts'
 import { MOOD_CSS, MOOD_WORD, moodImg, moodOf } from './mood.ts'
 import { AUD_CSS, askSay, pactSay, typed, type PactKind } from './audience.ts'
 import { customDef, customsOf } from '../../realm/data/customs.ts'
+import { lang, setLang, t as tr, LANGS, type Lang } from '../../i18n/index.ts'
 import { BOARDS, FRONT_CSS, PROLOGUE_STEPS, chronicleOf, customsHtml, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, slotsHtml, titleHtml, type FrontKit, type History, type SlotInfo } from './front.ts'
 import { SCENE_SOUND, VOLUME_CSS, makeMusic, playOnce, preRoll, setSoundVolume, snd, sndFile, soundVolume, tapSlot, volumeRowsHtml, warmOnce } from './sound.ts'
 import { exileArt, exileBeats, fugitiveBeats, quarrelArt, quarrelBeats, romanceBeats, romanceFlip, sayOfBeat } from './card-lines.ts'
@@ -1503,12 +1504,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const n = x.flames ?? 0
     // 빈 칸·붙은 칸은 청동 불꽃 자리 그림 둘 (형 11-01: "빈 엠블럼 칸이랑 채워진 불 이미지 다 새로" · 제미나이 Argon)
     // 붙은 칸은 청동 자리는 가만히 · 그 안의 불만 일렁인다 (형 11-01: "촛대에 불 붙었을 때 촛대가 춤추는 거 봤냐? 불만 활활 타올라야지")
-    const cells = Array.from({ length: P.realm.ascendWins }, (_, i) => i < n
+    const cells = Array.from({ length: x.ascended === true ? P.realm.ascendWins : ascendNeed(x) }, (_, i) => i < n
       ? `<span class="flm lit"><img src="${ART}fx/awaken/slot-on.png" alt=""><i class="flmf"><img src="${ART}fx/awaken/flame.png" alt=""></i></span>`
       : `<img class="flm" src="${ART}fx/awaken/slot-off.png" alt="">`).join('')
     // 깨어난 뒤의 불꽃은 각성기의 연료 — 「각성」 붓글씨 곁에 남은 불꽃 (위원회 11-04 던파 ①)
     if (x.ascended === true) return `<span class="flms on" data-act="flm" data-why="각성했습니다. 불꽃 ${n}/${P.realm.ascendWins}. 싸움에서 불꽃 하나를 태워 각성기를 씁니다(마지막 하나는 남습니다). 이기면 하나 붙고, 지면 하나 꺼지고, 다 꺼지면 깨어남이 풀립니다"><img class="flmw" src="${ART}fx/awaken/word.png" alt="각성">${cells}</span>`
-    return `<span class="flms" data-act="flm" data-why="불꽃 ${n}/${P.realm.ascendWins}. 만만치 않은 적을 이기면 한 칸씩 붙고, 다 붙으면 각성해 능력치가 모두 오릅니다. 지면 한 칸 꺼집니다">${cells}</span>`
+    return `<span class="flms" data-act="flm" data-why="불꽃 ${n}/${ascendNeed(x)}. 만만치 않은 적을 이기면 한 칸씩 붙고, 다 붙으면 각성해 능력치가 모두 오릅니다. 지면 한 칸 꺼집니다">${cells}</span>`
   }
   /**
    * 각성 연출 — 우리 장수가 내리 이겨 각성하면 그 자리에서 크게 (형 10-31: 3연승 직후 각성 연출 · 메모리 WWE 오버액션).
@@ -5153,8 +5154,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<div class="menu3"><button class="btn" data-act="help">도움말</button><button class="btn" data-act="log-open">지난 기록</button><button class="btn" data-act="dex-open">영웅전</button>`
     if (!installed() && installPrompt() !== null) h += `<button class="btn ghost" data-act="install">앱으로 설치, 바 없는 전체 화면</button>`
     if (host.saves !== undefined) h += `<button class="btn" data-act="save-open" data-tip="판을 저장 칸에 남기거나 불러온다 · 파일로 내려받기">저장 · 불러오기</button>`
-    h += `<button class="btn ghost" data-act="mute">${muted() ? '소리 켜기' : '소리 끄기'}</button><button class="btn ghost" data-act="export" data-tip="지금까지 둔 판 ${host.gameCount()}개의 기록을 파일로 받는다">기록 내보내기</button>`
-    h += `<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}" data-tip="활쏘기 모드 (신궁)">활터</a>${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
+    h += `<button class="btn ghost" data-act="mute">${muted() ? '소리 켜기' : '소리 끄기'}</button><button class="btn ghost" data-act="export" data-tip="${tr('more.exportTip', { n: host.gameCount() })}">${tr('more.export')}</button>`
+    h += `<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}" data-tip="활쏘기 모드 (신궁)">활터</a>${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">${tr('more.practice')}</button>` : ''}`
     h += `<button class="btn ghost" data-act="newgame" data-tip="판 고르기로, 새 게임을 시작하기 전까지 지금 판은 그대로다">새 게임</button><button class="btn ghost" data-act="lobby" data-tip="이 판은 저장돼 있어 「이어 하기」로 돌아온다">⌂ 첫 화면으로</button></div>`
     return h + gfxRowHtml() + perfRowHtml() + volumeRowsHtml() + acctHtml() + resetHtml()
   }
@@ -5461,11 +5462,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     window.setTimeout(gone, TAB_TOAST_MS)
   }
 
+  /** 말 고르기 — 「더 보기」 맨 위. 바꾸면 다시 열어 모든 글이 갈아입는다 */
+  function langRowHtml(): string {
+    const b = (l: Lang): string => `<button class="${lang() === l ? 'on' : ''}" data-act="lang-set" data-v="${l}">${tr(`lang.${l}`)}</button>`
+    return `<div class="gfxq"><b>${tr('lang.title')}</b><span class="seg sm">${LANGS.map(b).join('')}</span></div>`
+  }
   function acctLine(): string {
     const c = host.cloud
     if (c === undefined || !c.available()) return ''
     const who = c.who()
-    if (who === null) return `<p class="fine acctl"><button class="btn ghost" data-act="acct-in" data-tip="다른 기기에서 하던 판을 이어 할 수 있습니다">구글 로그인</button></p>`
+    if (who === null) return `<p class="fine acctl"><button class="btn ghost" data-act="acct-in" data-tip="${tr('more.loginTip')}">${tr('more.login')}</button></p>`
     return `<p class="fine acctl mute">${esc(who.email)} · ${esc(syncWord(c.state()))}</p>`
   }
   /** 갈라진 판 고르기 — 카드 둘. 고르지 않은 쪽도 기기에 한 벌 남는다 (sync OTHER_KEY) */
@@ -6529,22 +6535,22 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   // ───────── 판 바깥 — 첫 화면 · 판 고르기 · 나라 고르기 (front.ts)
   function frontHtml(f: Front): string {
     // 활터·연습장·소리 출처·시험·기록·로그인은 「더 보기」 안에 접는다 — 늘어놓았더니 폰에서 화면 밑으로 넘쳤다 (형 10-28)
-    const links = `<details class="fmore"${fmoreOpen ? ' open' : ''}><summary class="btn ghost">더 보기</summary><button class="fmbg" data-act="fmore-x" aria-label="닫기"></button><div class="fmpan"><b class="fmh">더 보기</b>${document.documentElement.classList.contains('gfxsafe') ? '<small class="mute">그래픽 호환 모드 켜짐</small>' : ''}${gfxRowHtml()}${volumeRowsHtml()}${f.kind === 'title' ? acctLine() : ''}<p class="fine">${installed() ? '' : `<button class="btn ghost" data-act="inst-show">📲 앱으로 설치</button>`}<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">활터</a> ${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
+    const links = `<details class="fmore"${fmoreOpen ? ' open' : ''}><summary class="btn ghost">${tr('more.open')}</summary><button class="fmbg" data-act="fmore-x" aria-label="${tr('more.closeAria')}"></button><div class="fmpan"><b class="fmh">${tr('more.open')}</b>${document.documentElement.classList.contains('gfxsafe') ? `<small class="mute">${tr('more.gfxSafe')}</small>` : ''}${langRowHtml()}${gfxRowHtml()}${volumeRowsHtml()}${f.kind === 'title' ? acctLine() : ''}<p class="fine">${installed() ? '' : `<button class="btn ghost" data-act="inst-show">${tr('more.install')}</button>`}<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">${tr('more.archery')}</a> ${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
       // 소리의 출처 — 공공누리 제1유형·CC BY 는 출처를 밝혀야 쓸 수 있다 (형 10-23: "출처표기해야 상업적으로 사용가능하니까 주의")
-      + ` <a class="btn ghost" href="${BASE}realm/credits.html">소리 출처</a>`
+      + ` <a class="btn ghost" href="${BASE}realm/credits.html">${tr('more.credits')}</a>`
       // 새 전투 시험 (BATTLE-LIVE 0번) — 이 기기에서만 켜진다 · 형과 지인이 켜고 꺼 보며 견준다 (형 10-28)
-      + ` <button class="btn ghost" data-act="spar-open" data-tip="판을 거치지 않고 싸움 한 판을 바로 엽니다. 하던 판은 그대로입니다">⚔ 연습 싸움</button>`
+      + ` <button class="btn ghost" data-act="spar-open" data-tip="${tr('more.sparTip')}">${tr('more.spar')}</button>`
       // 판 기록 — 판 밖(첫 화면 · 끝 화면)에서도 받는다. 아래 「나라」 탭은 판 안에서만 보여 찾기 어려웠다 (형 10-26: "나라 탭이 어딨음??")
-      + (host.gameCount() > 0 ? ` <button class="btn ghost" data-act="export" data-tip="지금까지 둔 판 ${host.gameCount()}개의 기록을 파일로 받는다">기록 내보내기</button>` : '') + `</p><button class="btn fmx" data-act="fmore-x">닫기</button></div></details>`
+      + (host.gameCount() > 0 ? ` <button class="btn ghost" data-act="export" data-tip="지금까지 둔 판 ${host.gameCount()}개의 기록을 파일로 받는다">기록 내보내기</button>` : '') + `</p><button class="btn fmx" data-act="fmore-x">${tr('more.close')}</button></div></details>`
     switch (f.kind) {
       case 'title': {
         // 영웅전(도감) — 판을 넘어 남는 것 (VISION §5-4)
-        const dexBtn = `<button class="btn big" data-act="dex-open">영웅전</button>` // 형 10-25: 도감보다 즐거운 이름 · 숫자는 들어가면 보인다
-          + (hasDrill() ? `<button class="btn big" data-act="dy-title">단련터</button>` : '') // 남은 단련 공은 아무 때나 쓴다 (HERO-GROWTH ★ §C)
-          + ((host.pastGames?.() ?? []).length > 0 ? `<button class="btn big" data-act="annals-open">나의 역사</button>` : '')
+        const dexBtn = `<button class="btn big" data-act="dex-open">${tr('title.heroes')}</button>` // 형 10-25: 도감보다 즐거운 이름 · 숫자는 들어가면 보인다
+          + (hasDrill() ? `<button class="btn big" data-act="dy-title">${tr('title.drill')}</button>` : '') // 남은 단련 공은 아무 때나 쓴다 (HERO-GROWTH ★ §C)
+          + ((host.pastGames?.() ?? []).length > 0 ? `<button class="btn big" data-act="annals-open">${tr('title.annals')}</button>` : '')
         // 끝나지 않은 다른 판들은 불러오기 안에 (형 10-28: 첫 화면에 늘어놓으니 단추가 화면 밖으로) — 몇 판 있는지만 단추에
         const shelfN = (host.slots?.() ?? []).length
-        const loadBtn = host.saves !== undefined ? `<button class="btn big" data-act="save-open-title">불러오기${shelfN > 0 ? `<small class="ldn">끝나지 않은 판 ${shelfN}</small>` : ''}</button>` : ''
+        const loadBtn = host.saves !== undefined ? `<button class="btn big" data-act="save-open-title">${tr('title.load')}${shelfN > 0 ? `<small class="ldn">${tr('title.loadCount', { n: shelfN })}</small>` : ''}</button>` : ''
         return titleHtml(KIT, realm, host.savedAt(), installCard() + links, realm === null && !tutorialOver(), loadBtn + dexBtn, realm !== null && !realm.outcome ? contHook(realm) : '')
       }
       case 'dex': return dexHtml(DEX_KIT, f.board, f.sel, f.back === null ? '판으로' : '처음으로')
@@ -8119,6 +8125,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'help': openSheet({ kind: 'help' }); return
       case 'howwin': openHowWin(lastLoss); return
       case 'export': host.onExport(); return
+      case 'lang-set': { const l = d['v'] as Lang; if (LANGS.includes(l) && l !== lang()) { setLang(l); const u = new URL(location.href); u.searchParams.delete('lang'); location.replace(u.toString()) } return }
       case 'fmore-x': fmoreOpen = false; root.querySelector<HTMLDetailsElement>('.fmore')?.removeAttribute('open'); return
       case 'gfx': if (front !== null) fmoreOpen = true; setGfxPref(d['v']); paint(); return
       case 'perf-copy': { const t = perfText(); void navigator.clipboard?.writeText(t).then(() => goToast('끊김 기록을 복사했습니다. 붙여 넣어 보내 주세요.'), () => goToast('복사가 막혔습니다')); return }

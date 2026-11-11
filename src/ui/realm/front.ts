@@ -16,6 +16,7 @@ import { badgeRank, lockWhy } from './unlock.ts'
 import { CHAPTERS, chapterOfRegion, chapterTag } from '../../realm/data/campaign.ts'
 import { placeOf } from '../../realm/data/regions/index.ts'
 import { seasonOf, yearOf } from '../../realm/calendar.ts'
+import { t } from '../../i18n/index.ts'
 import { UNIT_NAME, battleName, dateLabel, josa, seasonLabel } from '../../realm/data/prose.ts'
 import type { Realm, RegionId, ReportLine } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
@@ -163,10 +164,10 @@ export function boardLabel(region: RegionId): string {
  */
 export function slotsHtml(k: FrontKit, slots: readonly SlotInfo[], armed: number | null): string {
   if (slots.length === 0) return ''
-  let h = `<div class="slots"><small class="slh">끝나지 않은 판</small>`
+  let h = `<div class="slots"><small class="slh">${t('title.unfinished')}</small>`
   for (const x of [...slots].sort((a, b) => (a.at < b.at ? 1 : -1))) {
     h += `<div class="slot"><button class="slotgo" data-act="slot-go" data-v="${x.seed}">${k.emblem(x.nation, 'cem')}<span><b>${k.esc(x.name)}</b><small>${k.esc(boardLabel(x.region))} · ${k.esc(seasonLabel(x))} · ${k.esc(agoText(x.at))}</small></span></button>`
-      + `<button class="slotx${armed === x.seed ? ' armed' : ''}" data-act="slot-drop" data-v="${x.seed}" aria-label="이 판 지우기">${armed === x.seed ? '한 번 더 누르면 지운다' : '✕'}</button></div>`
+      + `<button class="slotx${armed === x.seed ? ' armed' : ''}" data-act="slot-drop" data-v="${x.seed}" aria-label="${t('title.dropSlot')}">${armed === x.seed ? t('title.dropConfirm') : '✕'}</button></div>`
   }
   return h + `</div>`
 }
@@ -175,21 +176,21 @@ export function titleHtml(k: FrontKit, r: Realm | null, savedAt: string | null, 
   // 로비 — 산마루에서 내려다본 일흔여덟 나라의 땅 · 로고는 청동 거울과 맥궁의 문장 + 붓글씨 (형: "게임 로고랑 파비콘, 로비 배경은 좀 제대로")
   let h = `<div class="front title"><div class="kv" style="background-image:url('${k.art}title/title-lobby.jpg')"></div><div class="tv">`
   // 로고 밑엔 단추만 — 설명 글은 걷었다 (형 10-23: "로고 밑에 텍스트 설명 너무 많음. 다른 명작 게임들에서는 그런 거 없잖아")
-  h += `<div class="logo"><h1><img class="ltitle" src="${k.art}logo/title.png" alt="삼한열전"></h1></div>`
+  h += `<div class="logo"><h1><img class="ltitle" src="${k.art}logo/title.png" alt="${t('title.logoAlt')}"></h1></div>`
   h += `<div class="fbtns">`
   if (r !== null && (!r.outcome || (r.endless === true && r.outcome.kind === 'win'))) {
     const me = r.player
     const region = r.region ?? 'byeonhan-mini'
     const name = r.factions[me]?.name ?? ''
-    h += `<button class="cont" data-act="continue">${k.face(me, 'cface', r.factions[me]?.ruler ?? undefined)}<span class="ct"><b>${k.emblem(me, 'cem')}${k.esc(name)} 이어 하기</b>`
-    h += `<span>${k.esc(seasonLabel(r))} · 도읍 ${capsHeld(r, me)}/${winNeed(region)}${r.known !== undefined ? ` · 아는 나라 ${(r.known[me]?.length ?? 0) - (r.meet?.wait.length ?? 0) + 1}/${Object.keys(r.factions).length}` : ''}</span>`
+    h += `<button class="cont" data-act="continue">${k.face(me, 'cface', r.factions[me]?.ruler ?? undefined)}<span class="ct"><b>${k.emblem(me, 'cem')}${t('title.continue', { name: k.esc(name) })}</b>`
+    h += `<span>${k.esc(seasonLabel(r))} · ${t('title.progress', { caps: capsHeld(r, me), need: winNeed(region) })}${r.known !== undefined ? ` · ${t('title.known', { n: (r.known[me]?.length ?? 0) - (r.meet?.wait.length ?? 0) + 1, total: Object.keys(r.factions).length })}` : ''}</span>`
     // 걸려 있는 일 한 줄 — 다음에 열 까닭 (loop B7)
     if (hook !== '') h += `<em class="chook">${k.esc(hook)}</em>`
-    h += `${savedAt !== null ? `<small>최근 저장 · ${k.esc(agoText(savedAt))}</small>` : ''}</span></button>`
+    h += `${savedAt !== null ? `<small>${t('title.savedAgo', { ago: k.esc(agoText(savedAt)) })}</small>` : ''}</span></button>`
   }
   // 처음 켠 사람은 배우는 판으로 (형: "맨 위 첫번째 할 게임은 1:1수준으로 여러 기능 익혀가며 쉽게")
-  if (firstTime) h += `<button class="btn pri big" data-act="fr-tutorial">처음이면, 배우는 판부터</button><button class="btn big" data-act="fr-new">새 게임</button>${more}</div>`
-  else h += `<button class="btn pri big" data-act="fr-new">새 게임</button>${more}</div>`
+  if (firstTime) h += `<button class="btn pri big" data-act="fr-tutorial">${t('title.learnFirst')}</button><button class="btn big" data-act="fr-new">${t('title.new')}</button>${more}</div>`
+  else h += `<button class="btn pri big" data-act="fr-new">${t('title.new')}</button>${more}</div>`
   return h + `${links}</div></div>`
 }
 
@@ -197,7 +198,7 @@ function agoText(iso: string): string {
   const ms = Date.now() - Date.parse(iso)
   if (!Number.isFinite(ms) || ms < 0) return ''
   const m = Math.round(ms / 60000)
-  return m < 1 ? '방금' : m < 60 ? `${m}분 전` : m < 60 * 24 ? `${Math.round(m / 60)}시간 전` : `${Math.round(m / 1440)}일 전`
+  return m < 1 ? t('ago.now') : m < 60 ? t('ago.min', { n: m }) : m < 60 * 24 ? t('ago.hour', { n: Math.round(m / 60) }) : t('ago.day', { n: Math.round(m / 1440) })
 }
 
 // ───────── 판 고르기
@@ -207,7 +208,7 @@ function agoText(iso: string): string {
  * `unlocked` 가 없으면 다 열린 것으로 (시험)
  */
 export function boardHtml(k: FrontKit, hasGame: boolean, unlocked?: ReadonlySet<RegionId>, tierWon?: (r: RegionId) => number): string {
-  let h = `<div class="front boards"><div class="fhead"><button class="btn ghost" data-act="fr-back">‹ 처음으로</button><h2>어느 이야기로 시작할까</h2></div>`
+  let h = `<div class="front boards"><div class="fhead"><button class="btn ghost" data-act="fr-back">${t('boards.back')}</button><h2>${t('boards.title')}</h2></div>`
   const names = Object.fromEntries(BOARDS.map((b) => [b.id, b.name])) as Partial<Record<RegionId, string>>
   // 캠페인 — 사료의 사건 하나가 한 장 (CAMPAIGN.md · 형: "문명처럼 … 특수한 승리조건"). 장은 배우는 차례로 열린다
   const c0 = h.length
@@ -230,7 +231,7 @@ export function boardHtml(k: FrontKit, hasGame: boolean, unlocked?: ReadonlySet<
   const camp = h.slice(c0) + '</div>'
   h = h.slice(0, c0)
   const f0 = h.length
-  h += `<h3 class="bsec"><b>자유 판</b><span>나라 하나를 골라 마음대로, 정복 · 맹주 · 철과 뱃길 · 큰 제사</span></h3><div class="bcards">`
+  h += `<h3 class="bsec"><b>${t('boards.freeTitle')}</b><span>나라 하나를 골라 마음대로, 정복 · 맹주 · 철과 뱃길 · 큰 제사</span></h3><div class="bcards">`
   for (const b of BOARDS) {
     if (CHAPTERS.some((c) => c.region === b.id)) continue // 장으로 올라간 판
     const open = unlocked === undefined || unlocked.has(b.id)
@@ -251,7 +252,7 @@ export function boardHtml(k: FrontKit, hasGame: boolean, unlocked?: ReadonlySet<
   h = h.slice(0, f0)
   const freeFirst = unlocked !== undefined && unlocked.has('byeonhan-mini') && (tierWon?.('byeonhan-mini') ?? 0) === 0
   h += freeFirst ? free + camp : camp + free
-  h += `${hasGame ? '<p class="fine">새 게임을 시작하면 지금 판은 끝난 판으로 기록된다.</p>' : ''}</div>`
+  h += `${hasGame ? `<p class="fine">${t('boards.warn')}</p>` : ''}</div>`
   return h
 }
 
@@ -292,7 +293,7 @@ export function detailHtml(k: FrontKit, region: RegionId, id: string, carry = ''
   h += `<p class="blurb">${k.esc(n.blurb)}</p>${customsHtml(k, id)}${barsHtml(n)}`
   h += `<p class="src">${k.esc(n.source)}</p>${n.hard ? '<p class="hard">어려운 나라다. 처음이면 다른 나라를 권한다.</p>' : ''}`
   // 시작 단추는 화면 아래 붙박이 — 잠긴 세기 칸을 지나 굴려야 보였다 (긴급 위원회 11-04 · 메모리 confirm-bar-bottom)
-  h += `${carry}<div class="dstart"><button class="btn pri big" data-act="fr-start" data-id="${id}">이 나라로 시작</button></div></div></div></div>`
+  h += `${carry}<div class="dstart"><button class="btn pri big" data-act="fr-start" data-id="${id}">${t('detail.start')}</button></div></div></div></div>`
   return h
 }
 

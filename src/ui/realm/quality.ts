@@ -27,6 +27,7 @@
  * 손으로: 더 보기 · 나라 탭의 「그래픽: 자동 / 저사양 / 보통 / 고사양」 (localStorage hanbal.realm.gfx) · 시험엔 주소 ?gfx=low|mid|high.
  */
 import { P } from '../../tune/params.ts'
+import { t } from '../../i18n/index.ts'
 
 export type Tier = 'low' | 'mid' | 'high'
 export type GfxPref = 'auto' | Tier
@@ -395,8 +396,8 @@ export function startQuality(root: HTMLElement, toast: (html: string) => void): 
 /** 설정 한 줄: 그래픽 자동 / 저사양 / 보통 / 고사양 */
 export function gfxRowHtml(): string {
   const b = (v: GfxPref, w: string): string => `<button class="${pref === v ? 'on' : ''}" data-act="gfx" data-v="${v}">${w}</button>`
-  return `<div class="gfxq"><b>그래픽</b><span class="seg sm">${b('auto', '자동')}${b('low', TIER_NAME.low)}${b('mid', TIER_NAME.mid)}${b('high', TIER_NAME.high)}</span>`
-    + `${pref === 'auto' ? `<small class="mute">지금 ${TIER_NAME[tier]}</small>` : ''}</div>`
+  return `<div class="gfxq"><b>${t('gfx.title')}</b><span class="seg sm">${b('auto', t('gfx.auto'))}${b('low', t('gfx.low'))}${b('mid', t('gfx.mid'))}${b('high', t('gfx.high'))}</span>`
+    + `${pref === 'auto' ? `<small class="mute">${t('gfx.now', { tier: t(`gfx.${tier}`) })}</small>` : ''}</div>`
 }
 
 /** 입자 묶음: 저사양 넷에 하나 · 보통 반 */
