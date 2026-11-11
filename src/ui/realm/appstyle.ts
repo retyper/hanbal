@@ -1548,6 +1548,5 @@ export const UI_CSS = `
 /* i18n layout (11-11) — 영어는 같은 뜻이 더 길다. 말은 <html data-lang> 으로 가른다 (src/i18n/lang.ts) · tools/layout-check.ts 가 넘침을 잰다 */
 html[data-lang="en"] .ap h2, html[data-lang="en"] .ap h3, html[data-lang="en"] .ap .fmh { text-wrap: balance; }
 html[data-lang="en"] .ap .btn, html[data-lang="en"] .ap .tabs button span { overflow-wrap: anywhere; }
-html[data-lang="en"] .ap .menu3 { grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); }
-html[data-lang="en"] .ap .menu3 .btn { white-space: normal; text-overflow: clip; line-height: 1.15; font-size: clamp(11px, 3.2vw, 13px); }
+html[data-lang="en"] .ap .menu3 .btn { padding-inline: 4px; font-size: clamp(10.5px, 3vw, 13px); letter-spacing: -.01em; }
 `

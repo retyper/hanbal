@@ -33,8 +33,13 @@ function detect(): Lang {
   return pickLang(search, stored, nav)
 }
 
+/** 글자 길이가 말마다 달라 CSS 가 말로 갈린다 — <html lang data-lang> (레이아웃 검사 · docs/realm/I18N.md) */
+function mark(l: Lang): void {
+  try { const el = globalThis.document?.documentElement; if (el !== undefined) { el.setAttribute('lang', l); el.dataset['lang'] = l } } catch { /* DOM 없는 곳 */ }
+}
+
 export function lang(): Lang {
-  if (cur === null) cur = detect()
+  if (cur === null) { cur = detect(); mark(cur) }
   return cur
 }
 
@@ -42,7 +47,7 @@ export function lang(): Lang {
 export function setLang(l: Lang): void {
   cur = l
   try { globalThis.localStorage?.setItem(LANG_KEY, l) } catch { /* 저장 못 하는 곳 */ }
-  try { globalThis.document?.documentElement.setAttribute('lang', l) } catch { /* DOM 없는 곳 */ }
+  mark(l)
 }
 
 /** 시험용 — 고른 말을 직접 정한다(저장 안 함) */
