@@ -390,7 +390,7 @@ export const TOWN_CSS = `
 .ap .tvpband { grid-area: band; display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 4px 12px; border: 0; border-bottom: 1px solid #c9a45a; background: url(__ART__town/palace-hall.jpg) center/cover, #2a1f14; color: #ffe2a0; font: inherit; font-size: 16px; cursor: pointer; text-shadow: 0 1px 3px #000; -webkit-tap-highlight-color: transparent; }
 .ap .tvpband img { width: 30px; height: 30px; object-fit: contain; }
 .ap .tvpband span { font-size: 13px; color: #f3e6c8; margin-right: auto; }
-.ap .townv.pal { grid-template-areas: "top" "pal" "bar"; grid-template-rows: auto 1fr auto; }
+.ap .townv.pal { grid-template-areas: "top" "pal" "bar"; grid-template-rows: auto 1fr auto; grid-template-columns: 100%; /* 넓은 가로 화면의 두 기둥 틀이 새어 들어와 궁전이 왼쪽 64%에 몰렸다 (스팀 스크린샷 11-11) */ }
 .ap .tvpal { grid-area: pal; min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: #1c1610; }
 .ap .tvhall { position: relative; flex: none; height: min(26vw, 14dvh); display: flex; align-items: flex-end; gap: 8px; padding: 8px 12px; background: linear-gradient(0deg, #1c1610cc, transparent 60%), var(--hall, none) center/cover, url(__ART__town/palace-hall.jpg) center/cover, #2a1f14; color: #f3d48a; font-size: 20px; text-shadow: 0 2px 6px #000; }
 .ap .tvhall small { font-size: 13px; padding: 1px 8px; border-radius: 10px; border: 1px solid #c9a45a; background: #1c1610cc; color: #ffe2a0; margin-bottom: 3px; }
@@ -630,6 +630,7 @@ ${VILLAGER_ANIM.map((v, k) => `.ap .tvf.v${k} { --ar: ${v.ar.toFixed(4)}; } .ap 
 /* 넓은 가로 화면 — 아래 칸과 단추가 오른쪽 기둥으로 · 판이 세로를 다 쓴다 */
 @media (min-width: 760px) and (orientation: landscape) {
   .ap .townv { grid-template-areas: "top dock" "stage dock" "stage bar"; grid-template-columns: 1fr minmax(300px, 36%); grid-template-rows: auto 1fr auto; }
+  .ap .townv.hascap { grid-template-areas: "top dock" "band dock" "stage dock" "stage bar"; grid-template-rows: auto auto 1fr auto; } /* 도읍(궁전 띠가 있는 마을)도 같은 두 기둥으로 — 기본 hascap 틀이 이겨 밑으로 쌓였다 */
   .ap .tvstage { height: auto; }
   .ap .tvdock { border-top: 0; border-left: 2px solid #c9a45a; }
   .ap .tvtop { border-right: 1px solid #3a2c1e; }
