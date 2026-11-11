@@ -137,7 +137,7 @@ const CONTACT: Readonly<Record<string, [number, number, number]>> = {
   spear: [15, .99, .35], shield: [15, .99, .36], pike: [15, .99, .34],
   axe: [15, .89, .47], horse: [16, .98, .23], boat: [16, .88, .57],
   marine: [15, .99, .40], militia: [14, .98, .33],
-  'gen-g-spear': [15, .97, .35], 'gen-g-sword': [16, .99, .33], 'gen-w-spear': [14, .98, .56],
+  'gen-g-spear': [15, .97, .35], 'gen-g-sword': [16, .99, .67], 'gen-w-spear': [14, .98, .56],
   'gen-mount': [15, .98, .22], 'gen-ara': [14, 0.91, 0.65], 'gen-aryeong': [14, 0.99, 0.34],
   'gen-daeso': [14, 0.95, 0.34], 'gen-eureum': [14, .95, .13], 'gen-gamsil': [14, 0.94, 0.76],
   'gen-haebi': [14, 0.87, 0.73], 'gen-heo': [14, 0.94, 0.46], 'gen-hyeokgeose': [14, 0.83, 0.94],
