@@ -991,7 +991,7 @@ function drawDuel(now: number, fadeIn: number): void {
   pm('spark')
   // 아래 — 같은 전장 위에서 작은 두 장수가 따라 싸운다 (따로 깐 배경 없음)
   const fh = (H - ft) * 0.82
-  fieldFighters(now, H - 6, fh, Math.min(W * 0.34, fh * 1.6), W / 2)
+  fieldFighters(now, H - 6 - H * P.duel.fighterLift, fh, W * P.duel.fighterGapW, W / 2)
   pm('fighters')
   // 앞줄 — 등을 보이는 군사들이 장수 앞 맨 아래에서 함성 (치명엔 들썩임 두 배)
   if (crowdReady(crowdFront)) {
