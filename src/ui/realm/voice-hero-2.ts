@@ -777,7 +777,7 @@ export const HERO_VOICE_2: Readonly<Record<string, HeroVoice>> = {
     obey: ['맡겨 주소서.', '돌처럼 버티겠사옵니다.', '힘쓰는 일이라면 제가 하겠사옵니다.'],
     auto: ['제가 맡겠사옵니다!', '돌을 굴려라! 밀고 나가라!', '물러서지 마라! 바위처럼 서라!', '끝났사옵니다.', '무너졌사옵니다. 다시 쌓겠사옵니다.'],
     art: ['vanguard', '큰 돌이 굴러간다! 비켜서지 않으면 짓밟는다!'],
-    recorded: false,
+    recorded: true, // 11-11 Brio 13줄
     male: true,
   },
   // 읍차 금바위 · 48세 · 쉽게 믿지 않지만 한번 믿으면 바위처럼 서는 고집 센 사내 · 퉁명스러운 Zeno

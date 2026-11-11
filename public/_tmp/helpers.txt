@@ -1,0 +1,47 @@
+// AI 스튜디오 장수 녹음 손잡이 — 새 계정·새 탭마다 한 번 붙인다 (두 칸 대화: 1 차분한 줄 · 2 외침)
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+window.__setVoice = async (slot, name) => {
+  [...document.querySelectorAll('button[aria-label="패널 닫기"]')].forEach((b) => b.click()); await sleep(500);
+  const c = [...document.querySelectorAll('button[aria-label="Open voice settings"]')][slot - 1]; if (!c) return 'nocard'; c.click(); await sleep(1000);
+  const inp = document.querySelector('input[placeholder*="Search"]'); if (!inp) return 'noinput';
+  inp.focus(); inp.value = name; inp.dispatchEvent(new Event('input', { bubbles: true })); await sleep(1300);
+  const b = [...document.querySelectorAll('button.voice-card-content')].find((x) => x.innerText.trim().split('\n')[0] === name); if (!b) return 'norow';
+  b.click(); await sleep(900);
+  const cur = [...document.querySelectorAll('*')].filter((e) => /^Current voice\n/.test((e.innerText || '').trim())).sort((a, b) => a.innerText.length - b.innerText.length)[0]?.innerText.replace(/\n/g, ' ');
+  [...document.querySelectorAll('button[aria-label="패널 닫기"]')].forEach((x) => x.click()); await sleep(500);
+  return cur || 'nocur';
+};
+window.__key = () => { const x = document.querySelector('audio'); return x ? x.src.length + ':' + x.src.slice(-40) : ''; };
+window.__run = () => { window.__old = window.__key(); [...document.querySelectorAll('button')].find((x) => /^Run/.test(x.innerText.trim())).click(); return 'started'; };
+window.__wait = async () => { for (let i = 0; i < 38; i++) { await sleep(1000); if (/Quota limit reached/.test(document.body.innerText)) return 'QUOTA'; const x = document.querySelector('audio'); if (window.__key() !== window.__old && x && x.duration > 3) return 'ok ' + x.duration.toFixed(2); } return 'pending'; };
+const openBox = () => [...document.querySelectorAll('textarea,input')].filter((t) => /Describe the voice style/i.test(t.placeholder || '') && t.getBoundingClientRect().height > 0);
+window.__chips = () => { const all = [...document.querySelectorAll('button')].filter((b) => /arrow_drop_down/.test(b.innerText)); const sp = all.map((b, i) => (/Speaker \d/.test(b.innerText) ? i : -1)).filter((i) => i >= 0); return sp.flatMap((i) => [all[i], all[i + 1]]).map((b) => b.innerText.replace('arrow_drop_down', '').trim().slice(0, 30)); };
+window.__styleSet = async (slot, text) => {
+  for (const b of openBox()) { b.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true })); await sleep(400); }
+  const all = [...document.querySelectorAll('button')].filter((b) => /arrow_drop_down/.test(b.innerText));
+  const sp = all.map((b, i) => (/Speaker \d/.test(b.innerText) ? i : -1)).filter((i) => i >= 0);
+  const c = all[sp[slot - 1] + 1]; if (!c) return 'nochip';
+  c.click(); await sleep(800);
+  const tas = openBox(); const ta = tas[tas.length - 1]; if (!ta) return 'nobox';
+  ta.focus(); ta.select(); document.execCommand('insertText', false, text); await sleep(300);
+  ta.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true })); await sleep(500);
+  return 'ok';
+};
+window.__textSet = (i, text) => { const ta = [...document.querySelectorAll('textarea')].filter((t) => !/Describe the voice style/i.test(t.placeholder || '')); const t = ta[i]; if (!t) return 'notext'; t.focus(); t.select(); document.execCommand('insertText', false, text); return t.value === text ? 'ok' : 'mismatch'; };
+window.__prep = async (b) => {
+  const r = [];
+  r.push(await window.__setVoice(1, b.voice)); r.push(await window.__setVoice(2, b.voice));
+  r.push(window.__textSet(0, b.ct)); r.push(window.__textSet(1, b.st));
+  r.push(await window.__styleSet(1, b.cs)); r.push(await window.__styleSet(2, b.ss));
+  const ch = window.__chips();
+  const ok = r[0].endsWith(' ' + b.voice) && r[1].endsWith(' ' + b.voice) && r[2] === 'ok' && r[3] === 'ok' && ch[1].startsWith(b.cs.slice(0, 10)) && ch[3].startsWith(b.ss.slice(0, 10));
+  if (!ok) return 'SETUP FAIL ' + JSON.stringify([r, ch]);
+  window.__run(); return 'started ' + b.id;
+};
+window.__BASE = '한국 애니메이션·게임 더빙 전문 성우의 녹음실 연기. 발음이 또박또박 맑고, 목소리에 울림과 힘이 있으며, 캐릭터가 분명하다. 문장 중간에 일부러 끊거나 뜸을 들이지 않고 한 호흡으로 이어 읽는다. 연극 배우나 일상 대화 말투가 아니다.';
+window.__SHOUT = '전장에서 수백 군사에게 외치는 함성. 흥분하고 격앙되어 가슴에서 터져 나오는 큰 소리. 가성이 아니다.';
+window.__GAP = '빈 줄로 나뉜 대사는 따로따로 읽고 대사 사이에는 1초 쉰다.';
+const FEM = ' 여성성을 살린 곱고 맑은 여자 목소리. 남자처럼 낮게 깔거나 굵게 내지 않는다.';
+window.__go2 = (b) => window.__prep({ id: b.id, voice: b.v, ct: b.ct, st: b.st, cs: window.__BASE + ' 어여쁜 여인. ' + b.p + FEM + ' ' + window.__GAP, ss: window.__BASE + ' 어여쁜 여인. ' + b.p + FEM + ' ' + window.__SHOUT + ' ' + window.__GAP });
+'ready';
+(()=>{const m=()=>document.querySelectorAll('audio,video').forEach(a=>{a.muted=true;a.volume=0});m();if(!window.__muteObs){window.__muteObs=new MutationObserver(m);window.__muteObs.observe(document.documentElement,{childList:true,subtree:true});document.addEventListener('play',e=>{e.target.muted=true},true)}return 'muted'})();
