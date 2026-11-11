@@ -1110,7 +1110,7 @@ function styleOf(h: Hero): { style?: BattleStyle } {
  * 장수 깃발을 「겨루기 → 사로잡기」 하나씩만 보이는 안내 싸움인가 — 배우는 판은 늘, 1장(마한)은 장수끼리 맞선 첫 싸움 한 번만
  * (첫 30분 깔때기 · docs/realm/FIRST-HOUR.md 지연 3 · 11-11: 1장에선 첫 겨루기를 23턴에야 썼다)
  */
-function lessonOn(r: Realm, faction: string): boolean {
+export function lessonOn(r: Realm, faction: string): boolean {
   if (r.factions[faction]?.mind !== 'player') return false
   return r.region === 'tutorial' || (r.scenario?.id === 'mahan' && r.lessonDone !== true)
 }

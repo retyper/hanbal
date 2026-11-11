@@ -574,6 +574,15 @@ html.duel-open .ap * { animation-play-state: paused !important; }
 .ap .scaskpop .scask .btns { display: flex; flex-direction: column; gap: 6px; }
 .ap .scaskpop .scask .btn { width: 100%; min-height: 44px; font-size: 15px; }
 @keyframes scaskin { from { opacity: 0; transform: scale(.85); } }
+/* 승산 낮은 출정 확인 — 가운데 작은 상자 (PLAYTEST-1112 TOP 1) · 전략 회의(stov z80) 위 */
+.ap .warnpop { position: absolute; inset: 0; z-index: 95; display: grid; place-items: center; background: #000a; }
+.ap .warnbox { width: min(88vw, 360px); padding: 16px; border-radius: 12px; border: 2px solid #e8c15a; background: #2a2218; box-shadow: 0 10px 30px #000c; text-align: center; animation: scaskin .28s cubic-bezier(.2, 1.5, .4, 1) both; }
+.ap .warnbox .warnf { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid #e8c15a; display: block; margin: 0 auto 8px; }
+.ap .warnbox p { margin: 0 0 12px; font-size: 16px; line-height: 1.45; color: #ffe9c0; }
+.ap .warnbox .btns { display: flex; flex-direction: column; gap: 8px; }
+.ap .warnbox .btn { width: 100%; min-height: 46px; font-size: 16px; }
+.ap .warnbox .btn.prs { border-color: #e8c15a; color: #ffe08a; }
+.ap .warnbox .btn.prs::before { color: #ffe08a; }
 .ap .sslot.on { border-style: solid; border-color: #8ab07a; background: #1c2a1c; color: #d8f0c8; cursor: pointer; } .ap .sslot.on i { font-style: normal; flex: none; opacity: .7; }
 .ap .sslot.lock { opacity: .55; } .ap .sslot.lock .ssic { filter: grayscale(1); } .ap .sslot:not(.on) .ssic { opacity: .6; }
 .ap .scoutbox .ssic { width: 20px; height: 20px; vertical-align: -5px; object-fit: contain; }

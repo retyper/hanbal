@@ -914,6 +914,8 @@ export interface Realm {
   endless?: boolean
   /** 계속 둬서 도읍을 모두 쥔 계절 */
   unified?: number
+  /** 놀고 있는 계절 셈 (idle.ts · 추천 딱지). 옛 저장에는 없다 */
+  idle?: { seasons: number; army: Record<string, number> }
   /** 지난 판에서 따라온 장수 (계승 가신 — legacy.ts · VISION §5-4). 판을 열 때 한 번 정해진다. 옛 저장에는 없다 */
   retainers?: string[]
   /**

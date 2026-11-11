@@ -43,7 +43,7 @@ import { goalReach, goalRoute } from '../../realm/goal.ts'
 import { approachMoves, armyPower, jointWin, matchupHints, movesOf, type Move } from '../../realm/estimate.ts'
 import { kitLines } from '../../realm/kit.ts'
 import { alertRange, seenMix, visibleRange } from '../../realm/intel.ts'
-import { type ConcealWhy, advance, concealOf, draftable, forceOf, newArmyId, otherEnd, planned, rationCost, rationExtra, seasonOf, seenMarches, seenScoutedStationary } from '../../realm/season.ts'
+import { type ConcealWhy, advance, concealOf, draftable, forceOf, lessonOn, newArmyId, otherEnd, planned, rationCost, rationExtra, seasonOf, seenMarches, seenScoutedStationary } from '../../realm/season.ts'
 import { ageSeasons, isSeasonEnd, isSeasonStart, monthly, perSeason, seasonIdx, seasons, type ClockKind } from '../../realm/calendar.ts'
 import { draftScouts, parseScoutKeep, scoutCap, scoutTargets, townCount, watchedNodes } from '../../realm/scouts.ts'
 import { NIGHT_OPS, PLOT_OPS, exposeChance, assassinArrows, assassinBow, assassinGuard, bowUpCost, escapeChance, plotAgents, plotCap, plotChance, plotCost, plotTargets, rescueGuard } from '../../realm/plots.ts'
@@ -136,7 +136,8 @@ import { QUALITY_CSS, gfxRowHtml, setGfxPref, startQuality } from './quality.ts'
 import { perfClear, perfRowHtml, perfText, startPerfLog } from './perflog.ts'
 import { HOWWIN_CSS, bannerHtml, closeHowWin, howWinDue, howWinMark, lessons, lossOf, openLessons, showBanner, syncPin, type HowKit, type LessonGo, type Loss } from './howwin.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
-import { FEEL_CSS, alertFeel, ambushRangeFeel, chanceFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
+import { FEEL_CSS, alertFeel, ambushRangeFeel, chanceFeel, envoyFeel, favorFeel, fightFeel, pct5, pctText, plotFeel, unknownFeel } from './feel.ts'
+import { nextIdle } from '../../realm/idle.ts'
 import { adviseMarch } from './council-lines.ts'
 import { cmdPickId } from './cmdpick.ts'
 import { APPROACH_SHORT, COUNCIL_ART, councilAgendas, howOf, planChoice, planOrders, takeCount, type Agenda, type AgendaId, type CouncilPlan, type Voice } from './council-agenda.ts'
@@ -822,6 +823,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let scouts: string[] = []
   /** 정찰꾼이 다 나갔을 때 새로 고른 곳 — 어느 정찰꾼을 거둘지 묻는 동안 (형 11-04: "이미 풀배치면 기존 어디를 빼고 여기 배치하겠냐고 물어봐야") */
   let scoutAsk: string | null = null
+  /** 승산 낮은 출정 확인 상자 (PLAYTEST-1112 TOP 1) · warned — 이번 계절 같은 출정은 한 번만 묻는다 */
+  let warnAsk: { army: string; pct: string; hero: string | null } | null = null
+  const warned = new Set<string>()
   /** 정찰 고정 — 매 계절 저절로 그곳으로 (형 10-23: "정찰을 매 턴 보내야 하는데 지속 정찰로 고정 버튼") · 이 기기에 · 옛 글(고을 하나)도 읽는다 */
   const KEEP_KEY = 'hanbal.realm.scoutKeep'
   let scoutKeep = ((): string[] => { try { return parseScoutKeep(localStorage.getItem(KEEP_KEY)) } catch { return [] } })()
@@ -1811,6 +1815,36 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       root.append(el)
     }
     el.innerHTML = scoutAskHtml(r, scoutAsk)
+  }
+
+  /**
+   * 지금 고른 출정이 보여 주는 승률의 최악 — 길 방식마다 화면이 보이는 것과 같은 셈 (approachMoves). 모르거나 칠 곳이 아니면 null
+   */
+  function sortieWorst(r: Realm, a: Army): number | null {
+    const probe = sortieProbe(a)
+    const m = movesOf(r, me(), probe).find((x) => x.edge.id === sortieD.edge)
+    if (m === undefined || !m.hostile) return null
+    const mv = approachMoves(r, me(), probe, m).find((x) => x.ap === sortieD.approach)
+    if (mv === undefined) return null
+    if (mv.ap === 'road') return m.win?.[0] ?? null
+    const lows = (!mv.hide.free ? [mv.miss] : mv.hide.guarded ? [mv.hit] : [mv.hit, mv.miss]).flatMap((x) => (x !== null ? [x[0]] : []))
+    return lows.length > 0 ? Math.min(...lows) : null
+  }
+
+  /** 승산 낮은 출정 확인 — 가운데 작은 상자. 그래도 친다(눌린 채 ✓ 금빛 → 출정) · 그만둔다 */
+  function warnPaint(): void {
+    const r = realm
+    let el = root.querySelector<HTMLElement>('.warnpop')
+    if (r === null || warnAsk === null || warOn || front !== null) { el?.remove(); return }
+    if (el === null) {
+      el = document.createElement('div')
+      el.className = 'warnpop'
+      el.addEventListener('click', (e) => { if (e.target === el) { warnAsk = null; paint() } })
+      root.append(el)
+    }
+    const hero = warnAsk.hero !== null ? r.heroes[warnAsk.hero] : undefined
+    el.innerHTML = `<div class="warnbox">${hero !== undefined ? bust(hero, 'warnf') : ''}<p>${esc(tr('warn.line', { pct: warnAsk.pct }))}</p>`
+      + `<div class="btns"><button class="btn pri" data-act="warn-yes">${tr('warn.yes')}</button><button class="btn ghost" data-act="warn-no">${tr('warn.no')}</button></div></div>`
   }
 
   /** 다 나갔을 때 묻는 상자 — 나가 있는 정찰꾼마다 「여기를 거두고 보낸다」 단추 */
@@ -5313,8 +5347,48 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 곳간을 부을 곳 — 짓던 큰 공사의 다음 단을 쌓을 수 있거나 큰 잔치를 열 수 있으면 (wonders.ts · 위원회 11-08 ⑦)
     const ww = wonderWorkOf(r, me())
     if (!musters.some((o) => o.kind === 'wonder' || o.kind === 'feast') && ((ww !== null && canWonder(r, me(), ww.what)) || (greatOpen(r, me()) && feastBlocked(r, me()) === null))) out.set('nation', tr('rec.wonder'))
+    const idleRec = idleRecs(r)
+    for (const [tab, text] of idleRec) out.set(tab, text) // 구체적인 까닭이 "할 일 없는 군대가 있다" 같은 일반 말을 덮는다
     for (const k of [...out.keys()]) if (sheet?.kind === k) out.delete(k)
-    return new Map([...out].slice(0, P.realm.recTabMax))
+    return new Map([...out].slice(0, idleRec.length > 0 ? Math.max(3, P.realm.recTabMax) : P.realm.recTabMax))
+  }
+
+  /**
+   * 칠 곳이 없을 때 할 일 — 판을 바꾸는 명령 없이 idleRecSeasons 계절이 지나면 구체적인 길 셋 (PLAYTEST-1112 TOP 2).
+   * 큰 군대가 놀면 가장 승산 높은 이웃(없으면 정찰)을 가장 앞에 둔다. 탭 하나에 한 줄이라 군대 칸은 군대 말이 먼저
+   */
+  function idleRecs(r: Realm): Array<[string, string]> {
+    const out: Array<[string, string]> = []
+    if (r.region === 'tutorial' || r.outcome || (r.idle?.seasons ?? 0) < P.realm.idleRecSeasons) return out
+    const army = Object.values(r.armies).filter((a) => a.faction === me() && a.march === null && (r.idle?.army[a.id] ?? 0) >= P.realm.idleRecSeasons).sort((a, b) => headcount(forceOf(r, b)) - headcount(forceOf(r, a)))[0]
+    if (army !== undefined) {
+      const men = headcount(forceOf(r, army))
+      const k = r.idle?.army[army.id] ?? 0
+      let best: { to: string; w: number } | null = null
+      for (const m of movesOf(r, me(), army)) if (m.hostile && m.blocked === null && m.win !== null && (best === null || m.win[0] > best.w)) best = { to: m.to, w: m.win[0] }
+      out.push(['army', best !== null
+        ? tr('rec.idleArmyGo', { n: men, k, to: r.nodes[best.to]?.name ?? '', pct: pctText(best.w, best.w) })
+        : tr('rec.idleArmyHold', { n: men, k })])
+    }
+    const seen = r.intel[me()] ?? {}
+    const unseen = new Set<string>()
+    for (const e of Object.values(r.edges)) for (const [x, y] of [[e.a, e.b], [e.b, e.a]] as const) {
+      if (r.nodes[x]?.owner === me() && r.nodes[y]?.owner !== me() && seen[y] === undefined) unseen.add(y)
+    }
+    if (unseen.size > 0 && !out.some(([t]) => t === 'army')) out.push(['army', tr('rec.idleScout', { n: unseen.size })])
+    const have = left()
+    const maxDraft = Math.max(0, ...Object.values(r.nodes).filter((n) => n.owner === me()).map((n) => draftLimit(r, me(), n.id)))
+    if (maxDraft > 0 && have.grain > 0) out.push(['draft', tr('rec.idleDraft', { n: maxDraft, grain: Math.floor(have.grain) })])
+    const cap = r.factions[me()]?.capital
+    if (cap !== undefined) {
+      const cheap = workOptions(r, cap).filter((w) => workBlocked(r, me(), cap, w) === null)
+        .map((w) => ({ w, c: workCost(w, 1) })).filter((x) => (Object.entries(x.c) as Array<[Good, number]>).every(([g, n]) => have[g] >= n))
+        .sort((a, b) => (a.c.grain ?? 0) + (a.c.wood ?? 0) - (b.c.grain ?? 0) - (b.c.wood ?? 0))[0]
+      if (cheap !== undefined) out.push(['nation', tr('rec.idleBuild', { town: r.nodes[cap]?.name ?? '', work: WORKS[cheap.w].name, grain: cheap.c.grain ?? 0, wood: cheap.c.wood ?? 0 })])
+    }
+    const friend = diploTips(r, me()).find((t) => t.kind === 'met')
+    if (friend !== undefined) out.push(['diplo', tr('rec.idleDiplo', { name: r.factions[friend.to]?.name ?? friend.to })])
+    return out
   }
 
   /**
@@ -6988,6 +7062,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       stratPaint() // 전략 회의 화면 — 열려 있으면 다시 그린다
       wooPaint() // 회유할 사람 고르기 상자
       townPaint() // 마을 안 — 열려 있으면 다시 그린다 (일터를 고르면 바로 바뀐다)
+      warnPaint() // 승산이 낮은 출정이면 한 번 묻는다
       scoutAskPaint() // 정찰꾼이 다 나갔는데 새 곳을 누르면 — 어디서 눌렀든 가운데에 「어디를 거둘까」
       marquee(root) // 말줄임으로 잘린 한 줄 글은 지하철 안내판처럼 흐른다 (형 10-29)
       firstsAfterPaint()
@@ -7359,7 +7434,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const wait = tabWait(r, t.id)
       if (wait > 0) { tabs += `<button class="locked" data-act="locktab"${noBtn(tr('tab.locked', { name: t.name, turns: turnsLabel(r, wait) }))}>🔒<span>${t.name}</span></button>`; continue }
       const dot = dotKeys(r, t.id).some((k) => !seenKeys.has(k))
-      tabs += `<button class="${sheet?.kind === t.id ? 'on' : ''}${newTab === t.id ? ' fresh' : ''}" data-act="tab" data-tab="${t.id}" data-tip="${t.name}" data-more="${t.more}">${icon(t.icon, 'tic')}<span>${t.name}</span>${dot ? '<i class="dot"></i>' : ''}${rec.has(t.id) ? `<i class="rec" title="${esc(rec.get(t.id)!)}">${tr('rec.badge')}</i>` : ''}</button>`
+      tabs += `<button class="${sheet?.kind === t.id ? 'on' : ''}${newTab === t.id ? ' fresh' : ''}" data-act="tab" data-tab="${t.id}" data-tip="${t.name}" data-more="${t.more}">${icon(t.icon, 'tic')}<span>${t.name}</span>${dot ? '<i class="dot"></i>' : ''}${rec.has(t.id) ? `<i class="rec" title="${esc(rec.get(t.id)!)}" data-why="${esc(rec.get(t.id)!)}">${tr('rec.badge')}</i>` : ''}</button>`
     }
     noteNewTabs(r)
     morph($('.tabs'), tabs)
@@ -7561,6 +7636,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     report = res.report
     showReport = true
     realm = res.next
+    if (prev.region !== 'tutorial') res.next.idle = nextIdle(prev, mine, me(), prev.idle) // 놀고 있는 계절 셈 — 추천 딱지가 쓴다 (PLAYTEST-1112 TOP 2)
     fresh = new Set(knownOf(res.next, me()).filter((f) => met(res.next, me(), f) && !met(prev, me(), f))) // 소개된 나라만 (discovery.stepMeet)
     // 계속 둔 판 — 도읍을 모두 쥐면 한 번 더 끝 화면 (하나가 됐다)
     if (res.next.endless === true && res.next.unified === undefined && Object.values(res.next.factions).every((f) => res.next.nodes[f.capital]?.owner === me())) res.next.unified = res.report.season
@@ -8695,6 +8771,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'cn-skip': if (stratOpen !== null) stratOpen.beat = 99; break
       case 'cn-replay': if (stratOpen !== null) stratOpen.beat = 0; break
       case 'cn-goto': if (stratOpen !== null) { stratOpen.step = Number(d['i'] ?? 0); stratOpen.beat = 99 } break
+      case 'warn-no': warnAsk = null; break
+      case 'warn-yes': {
+        const b = root.querySelector<HTMLElement>('.warnpop [data-act="warn-yes"]')
+        b?.classList.add('prs')
+        window.setTimeout(() => { warnAsk = null; paint(); root.querySelector<HTMLElement>('.sortiebar [data-act="sortie-go"]')?.click() }, P.realm.warnYesMs)
+        return
+      }
       case 'sortie-cancel': delete pick[d['army']!]; openArmy = ''; break
       case 'sfollow': sortieD.follow = d['v'] === '1'; break
       case 'sortie-go': {
@@ -8710,6 +8793,17 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           openArmy = ''
           if (stratDone()) return
           break
+        }
+        // 승산이 낮으면 한 번 묻는다 — 배우는 판·첫 싸움 안내(lessonOn)는 제 안내를 따른다
+        if (sortieD.edge !== null && r!.region !== 'tutorial' && !lessonOn(r!, me())) {
+          const worst = sortieWorst(r!, a)
+          const wkey = `${r!.season}|${a.id}|${sortieD.edge}`
+          if (worst !== null && worst < P.realm.attackWarnWin && !warned.has(wkey)) {
+            warned.add(wkey)
+            const lead = sortieD.lead ?? (sortieAll(a) ? a.hero : null)
+            warnAsk = { army: a.id, pct: `${pct5(worst)}%`, hero: lead ?? null }
+            break
+          }
         }
         // 나서서 이끌겠다는 장수 — 그 장수에게 맡긴다 (전부면 이 군대를, 일부면 떼어 낸 무리를)
         const lead = sortieD.lead !== undefined && leadCands(r!, a).some((x) => x.id === sortieD.lead) ? sortieD.lead : undefined
