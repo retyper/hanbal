@@ -68,8 +68,8 @@ import { WONDER_CSS } from './wondermap.ts'
 import { LEAGUE_CSS, leagueChipHtml, leagueToastHtml } from './league.ts'
 import { BOND_CSS, endBondsHtml } from './bonds.ts'
 import { DEX_CSS, clanHeroes, dexHtml, dexToastHtml, loadDex, recordDex, toggleDexAwake, type DexBoard } from './dex.ts'
-import { DEX_SERVED, dexCatalog } from '../../realm/dex.ts'
-import { DRILL_CSS, drillLevel, engraveRun, hasDrill, loadDrill, raiseHero, yardHtml, yardStripHtml, type DrillKit } from './drill.ts'
+import { DEX_AWOKE, DEX_SERVED, dexCatalog } from '../../realm/dex.ts'
+import { DRILL_CSS, drillLevel, engraveRun, hasDrill, loadDrill, raiseHero, yardAct, yardAfterPaint, yardBack, yardHtml, yardReset, yardSearch, yardStripHtml, yardBeforePaint, type DrillKit } from './drill.ts'
 import { applyDrill, earnedOf } from '../../realm/drill.ts'
 import { RELIC_CSS, openRunTomb, pickRunRelic, putRelic, relicChips, takeOffRelic, tombHtml, tombRun, tombStripHtml, wornBy, type RelicKit } from './relics.ts'
 import { RELIC } from '../../realm/data/relics.ts'
@@ -647,7 +647,14 @@ const RELIC_KIT: RelicKit = { art: ART, esc, nameOf: (id: string): string => dri
 const DRILL_KIT: DrillKit = {
   esc,
   bust: (id: string): string | null => (faceFile(id) !== undefined ? `${ART}bust/${faceFile(id)}.jpg` : null),
+  bustHd: (id: string): string | null => (faceFile(id) !== undefined ? `${ART}bust-hd/${faceFile(id)}.jpg` : null),
   bodyOf: drillBody,
+  /** 단련터 목록의 거르기 갈래 — 나라 · 등급 · 각성 (영웅전 기록) */
+  meta: (id: string) => {
+    const x = dexCatalog().find((c) => c.id === id)
+    if (x === undefined) return { nation: tr('dy.kin'), grade: null, awake: false }
+    return { nation: x.board === 'wander' ? '떠돌이' : x.nationName, grade: x.grade, awake: ((loadDex()[id]?.f ?? 0) & DEX_AWOKE) !== 0 }
+  },
   relic: RELIC_KIT,
 }
 
@@ -735,8 +742,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (v !== null && v.loop) voiceLoop(v)
     }
   }).observe(root, { childList: true, subtree: true })
+  /** 오프닝이 도는 동안 판 음악은 쉰다 (오프닝이 제 음악을 깐다) */
+  let openingOn = false
   /** 배경 음악 · 계절 바람 — 싸움 창이 열려 있으면 싸움 음악 */
-  const music = makeMusic(BASE, muted, () => root.querySelector('.nightov') !== null, () => soundVolume('bgm')) // 밤 판이 떠 있으면 조용히 — 밤 판은 제 소리를 낸다
+  const music = makeMusic(BASE, muted, () => root.querySelector('.nightov') !== null || openingOn, () => soundVolume('bgm')) // 밤 판·오프닝이 떠 있으면 조용히 — 밤 판은 제 소리를 낸다
   let warOn = false
   /** 줄 서 있거나 떠 있는 장면(사로잡음·등용·혼례…) 수 — 각성 연출은 이것이 다 걷힌 뒤에 (playScenes) */
   let scenesLeft = 0
@@ -7247,7 +7256,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       // 도감은 장수를 누를 때마다 다시 그린다 — 내려 본 자리를 지킨다
       const keepSel = front?.kind === 'dex' ? '.front.dexp' : front?.kind === 'drill' && !front.anim ? '.front.dyard' : null
       const keepFront = keepSel !== null ? (root.querySelector(keepSel)?.scrollTop ?? 0) : 0
+      if (front?.kind === 'drill') yardBeforePaint(root)
       $('.mapwrap').innerHTML = frontHtml(front!)
+      if (front?.kind === 'drill') yardAfterPaint(root)
       if (keepSel !== null && keepFront > 0) { const fe = root.querySelector(keepSel); if (fe !== null) fe.scrollTop = keepFront }
       if (front?.kind === 'title') fitTitle()
       $('.top').innerHTML = ''
@@ -7729,7 +7740,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (front.kind === 'dex') {
         if (front.sel !== null) front = { ...front, sel: null }
         else front = front.back
-      } else if (front.kind === 'drill') { yardLeave(); return true }
+      } else if (front.kind === 'drill') { if (yardBack()) front = { ...front, slot: null }; else yardLeave(); return true }
       else if (front.kind === 'tomb') { front = null; fastNext = true }
       else if (front.kind === 'detail') front = { kind: 'nations', region: front.region }
       else if (front.kind === 'nations') front = { kind: 'boards' }
@@ -7821,6 +7832,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   root.addEventListener('input', (ev) => {
     const input = ev.target
     if (!(input instanceof HTMLInputElement)) return
+    if (input.classList.contains('dysearch')) { yardSearch(root, input.value); return } // 단련터 이름 찾기 — 다시 그리지 않는다
     const channel = input.dataset['vol']
     if (channel !== 'bgm' && channel !== 'sfx' && channel !== 'voice') return
     setSoundVolume(channel, Number(input.value) / 100)
@@ -8024,11 +8036,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'unwed': heroOrders = heroOrders.filter((o) => !(o.kind === 'wed' && (o.a === d['id'] || o.b === d['id']))); break
       case 'dex-open': root.querySelector('.dxtoast')?.remove(); front = { kind: 'dex', board: 'all', sel: null, back: front }; sheet = null; paint(); return
       // 단련터 — 끝 화면에서 · 첫 화면에서 (HERO-GROWTH ★ §C)
-      case 'dy-open': yardArmed = false; if (realm !== null) { engraveNow(realm); front = yardFromEnd(realm); sheet = null; $('.mapwrap').scrollTop = 0 } paint(); return
-      case 'dy-title': yardArmed = false; front = { kind: 'drill', from: 'title', ids: null, gain: {}, fell: [], anim: true, last: null }; sheet = null; paint(); return
+      case 'dy-hero': case 'dy-hback': case 'dy-tab': case 'dy-pop': case 'dy-fs': case 'dy-freset': {
+        if (front === null || front.kind !== 'drill') return
+        if (yardAct(root, d['act']!, d)) { front = { ...front, anim: false, gain: {}, last: null, slot: null }; paint() }
+        return
+      }
+      case 'dy-open': yardReset(); yardArmed = false; if (realm !== null) { engraveNow(realm); front = yardFromEnd(realm); sheet = null; $('.mapwrap').scrollTop = 0 } paint(); return
+      case 'dy-title': yardReset(); yardArmed = false; front = { kind: 'drill', from: 'title', ids: null, gain: {}, fell: [], anim: true, last: null }; sheet = null; paint(); return
       case 'dy-next': {
         // 쓸 공이 남았으면 한 번은 붙잡는다 — 빛나는 카드 · 한 번 더 누르면 나간다 (형 11-05)
-        if (!yardArmed && Number(d['usable'] ?? 0) > 0) { yardArmed = true; paint(); requestAnimationFrame(() => scrollInside(root.querySelector<HTMLElement>('.dyc.canup'), 'center')); return }
+        if (!yardArmed && Number(d['usable'] ?? 0) > 0) { yardArmed = true; paint(); requestAnimationFrame(() => scrollInside(root.querySelector<HTMLElement>('.dyrow.canup'), 'center')); return }
         yardArmed = false
         yardLeave(); return
       }
@@ -8137,7 +8154,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'export': host.onExport(); return
       case 'lang-set': { const l = d['v'] as Lang; if (LANGS.includes(l) && l !== lang()) { setLang(l); const u = new URL(location.href); u.searchParams.delete('lang'); location.replace(u.toString()) } return }
       case 'credits-open': void openCredits(BASE); return
-      case 'opening-open': fmoreOpen = false; root.querySelector<HTMLDetailsElement>('.fmore')?.removeAttribute('open'); playOpening(BASE); return
+      case 'opening-open': fmoreOpen = false; root.querySelector<HTMLDetailsElement>('.fmore')?.removeAttribute('open'); playOpening(BASE, undefined, { muted, hush: (on) => { openingOn = on; music.refresh() } }); return
       case 'epilogue': if (realm?.scenario !== undefined) playEnding(BASE, realm.scenario.id); return
       case 'fmore-x': fmoreOpen = false; root.querySelector<HTMLDetailsElement>('.fmore')?.removeAttribute('open'); return
       case 'gfx': if (front !== null) fmoreOpen = true; setGfxPref(d['v']); paint(); return

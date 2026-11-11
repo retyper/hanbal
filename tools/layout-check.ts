@@ -36,7 +36,7 @@ const CDP_PORT = 9500 + Math.floor(Math.random() * 50)
 const CHROMES = ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe']
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))
 
-interface Screen { name: string; save?: string; pre: string }
+interface Screen { name: string; save?: string; pre: string; /** 저장 칸에 더 넣을 { 키: 값 } (tools/drill-seed.ts 가 만든다) */ ls?: 'drill' }
 
 // 글자로 단추를 찾아 누른다 — 이름이 말마다 달라 data-act 를 우선한다
 const CLICK = `const clk = async (sel, ms = 900) => { let e = document.querySelector(sel); for (let i = 0; !e && i < 90; i++) { await new Promise((r) => setTimeout(r, 200)); e = document.querySelector(sel) } if (!e) throw new Error('없음 ' + sel); e.click(); await new Promise((r) => setTimeout(r, ms)) };`
@@ -58,6 +58,8 @@ const SCREENS: Screen[] = [
   { name: 'town', save: 'none', pre: `${CLICK} for (const n of document.querySelectorAll('.nd:not([data-act])')) { n.click(); await new Promise((r) => setTimeout(r, 900)); if (document.querySelector('[data-act="town-in"]')) break } await clk('[data-act="town-in"]', 4000)` },
   { name: 'report', save: 'none@8', pre: '' },
   { name: 'help', save: 'none', pre: `${TAB('nation')} await clk('[data-act="help"]', 1200)` },
+  { name: 'drill', ls: 'drill', pre: `${CLICK} await clk('[data-act="dy-title"]', 2500)` },
+  { name: 'drillhero', ls: 'drill', pre: `${CLICK} await clk('[data-act="dy-title"]', 2500); await clk('.dyrow', 1200)` },
   { name: 'dex', pre: `${CLICK} await clk('[data-act="dex-open"]', 2500)` },
   { name: 'saves', pre: `${CLICK} await clk('[data-act="save-open-title"]', 1500)` },
   { name: 'boarddetail', pre: `${CLICK} await clk('[data-act="fr-new"]', 1500); await clk('[data-act="fr-board"]', 2000)` },
@@ -100,6 +102,13 @@ const exe = CHROMES.find((p) => existsSync(p))
 if (exe === undefined) throw new Error('크롬을 못 찾았다')
 mkdirSync(OUT_DIR, { recursive: true })
 mkdirSync(SAVE_DIR, { recursive: true })
+
+/** 단련터 시험 기록이 없으면 tools/drill-seed.ts 로 만든다 */
+function ensureLs(): string {
+  const f = 'D:/tmp-node/layout-saves/drill-ls.json'
+  if (!existsSync(f)) spawnSync('node', ['--experimental-strip-types', 'tools/drill-seed.ts', f], { encoding: 'utf8' })
+  return f
+}
 
 /** 판 저장이 없으면 tools/phone-save.ts 로 만든다 */
 function ensureSave(kind: string): string {
@@ -173,7 +182,9 @@ try {
       try {
         await call('Emulation.setDeviceMetricsOverride', { width: WIDTHS[0]!, height: H, deviceScaleFactor: 1, mobile: true })
         await ev(`localStorage.removeItem('hanbal.realm.v2')`).catch(() => 0)
+        await ev(`localStorage.removeItem('hanbal.realm.drill'); localStorage.removeItem('hanbal.realm.dex')`).catch(() => 0) // 단련터 시험 기록이 다른 화면에 남지 않게
         if (s.save !== undefined) await ev(`localStorage.setItem('hanbal.realm.v2', ${JSON.stringify(ensureSave(s.save))})`).catch(() => 0)
+        if (s.ls === 'drill') for (const [k, v] of Object.entries(JSON.parse(readFileSync(ensureLs(), 'utf8')) as Record<string, unknown>)) await ev(`localStorage.setItem(${JSON.stringify(k)}, ${JSON.stringify(JSON.stringify(v))})`).catch(() => 0)
         await call('Page.navigate', { url: `${BASE}?lang=${lg}` })
         await sleep(400)
         // 스플래시가 걷힐 때까지 (최대 30초)
