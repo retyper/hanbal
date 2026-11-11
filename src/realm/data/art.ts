@@ -553,7 +553,7 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   hogong: { ar: 156 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 사로 호공 · 푸른 겉옷·표주박·단검
   alpyeong: { ar: 141 / 160, body: 0.894 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 사로 알평 · 흰 머리띠·옅은 푸른 겉옷·깃털 손도끼
   sobeol: { ar: 147 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 사로 소벌 · 흰 수염 촌장·조 이삭 매단 지팡이
-  jibaekho: { ar: 156 / 160, body: 0.894 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 사로 지백호 · 흰 범가죽 망토·창
+  jibaekho: { ar: 221 / 160, body: 0.894 }, // 11-11 동작 8컷만 새로(창 전체가 칸 안 · 제미나이 edu Pro) · 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 사로 지백호 · 흰 범가죽 망토·창
   guryema: { ar: 151 / 160, body: 0.900, bow: true }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 사로 구례마 · 늑대털 두건·검은 누비옷·활
   jita: { ar: 150 / 160, body: 0.887 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · jita 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
   hojin: { ar: 148 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 사로 호진 · 검은 털 망토·긴 도끼
