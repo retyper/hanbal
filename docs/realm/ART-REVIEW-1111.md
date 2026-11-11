@@ -136,3 +136,8 @@
 
 - 제단·제사 그림: `No Shinto shimenawa, no white zigzag shide streamers, no torii. Use plain rope with colored cloth strips and bronze bells.`
 - 장면 그림 바탕: `Leave the bottom-right corner empty (no logo, no star).` 그리고 잘라 낸 뒤 `tools` 의 모서리 지우개로 다시 확인.
+
+## 소도 제단 고침 (11-11)
+
+`event-wonder-altar.jpg` · `icon/wonder-altar.png` · `icon/wonder-altar-s2.png` · `icon/wonder-altar-s3.png` 네 장을 제미나이로 다시 구웠다.
+시데(하얀 지그재그 종이) · 도리이 꼴 문틀 · 바닥 판자 낙서를 빼고 오방색 천 · 청동 방울 · 민 통나무 비계로 바꿨다. (완공 아이콘의 시메나와는 검수 때 놓친 것이라 함께 고침)
