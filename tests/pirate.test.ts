@@ -312,3 +312,42 @@ describe('바다도적 막기 — 두목 보상', () => {
     assert.equal(line.iron, grand.sure.iron)
   })
 })
+
+describe('산적 판 세 길', () => {
+  it('물결마다 세 길이 다 나오고 같은 시드는 같은 길', () => {
+    const a = bakeWaves(7, 2, 'bandit')
+    const b = bakeWaves(7, 2, 'bandit')
+    assert.deepEqual(a, b)
+    for (const w of a) {
+      const lanes = new Set(w.spawns.flatMap((s) => (s.what === 'sword' ? [s.lane] : [])))
+      assert.equal(lanes.size, 3)
+    }
+    // 바다 도적은 늘 아랫길
+    for (const w of bakeWaves(7, 2)) for (const s of w.spawns) if (s.what === 'sword') assert.equal(s.lane, 0)
+  })
+  it('발 높이: 윗길 > 가운뎃길 > 아랫길 · 끝에서는 땅', async () => {
+    const { footY } = await import('../src/pirate/waves.ts')
+    const R = P.pirate
+    assert.equal(footY(2, R.spawnX), R.ridgeY)
+    assert.equal(footY(1, R.spawnX), R.midY)
+    assert.equal(footY(0, R.spawnX), 0)
+    assert.equal(footY(2, R.midDropX - R.midDropLen), 0)
+    assert.equal(footY(1, R.palisadeX + 1), 0)
+  })
+  it('윗길 칼잡이는 몸이 높이 뜬 채 달리다 땅으로 내려온다', () => {
+    const p = createPirate({ seed: 3, sev: 2, mu: 5, watch: 0, mode: 'bandit' })
+    p.phase = 'fight'
+    p.wave = 0
+    let topY = 0
+    let sawHigh = false
+    for (let i = 0; i < 60 * 40; i++) {
+      stepPirate(p, idle)
+      for (let j = 0; j < p.w.targets.length; j++) {
+        const t = p.w.targets[j]!
+        if (t.alive && p.role[j] === 'sword' && p.lane[j] === 2) { sawHigh = true; topY = Math.max(topY, t.y) }
+      }
+    }
+    assert.ok(sawHigh)
+    assert.ok(topY > P.pirate.ridgeY, `윗길 높이 ${topY}`)
+  })
+})

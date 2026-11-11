@@ -166,6 +166,7 @@ function drawPalisade(ctx: CanvasRenderingContext2D, cam: Camera, run: PirateRun
 
 /** 띠 한 컷을 발이 땅에 닿게 그린다 — 그림은 오른쪽을 본다 · 도적은 왼쪽(궁수)을 본다 */
 function drawStrip(ctx: CanvasRenderingContext2D, im: HTMLImageElement, ar: number, frame: number, cx: number, soleY: number, tallPx: number, faceLeft: boolean): void {
+  ctx.imageSmoothingQuality = 'high' // 줄여 그리는 몸 그림은 높은 품질로 (11-12 형: 유닛이 흐리다)
   const ch = im.naturalHeight
   const cw = ch * ar
   const dh = tallPx
@@ -187,6 +188,7 @@ function drawScissor(ctx: CanvasRenderingContext2D, im: HTMLImageElement, ar: nu
   const c = Math.cos(phase * Math.PI * 2)
   const lift = (1 - Math.abs(c)) * ART.bobV * dh
   const sy = hip * ch
+  ctx.imageSmoothingQuality = 'high'
   ctx.save()
   ctx.translate(cx, soleY)
   if (faceLeft) ctx.scale(-1, 1)

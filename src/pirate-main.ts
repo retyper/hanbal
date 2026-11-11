@@ -105,7 +105,8 @@ const CSS = `
   font-weight: 800; color: #fff4dc; text-shadow: 0 3px 0 #000, 0 0 24px #000; animation: pir-banner 1.6s ease-out forwards; }
 #night-ui .banner.red { color: #ff7a5c; }
 #night-ui .picks { pointer-events: auto; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(94%, 560px); text-align: center; }
-#night-ui .picks h2 { font-family: 'Gowun Batang', serif; font-size: 24px; margin: 0 0 10px; color: #fff4dc; text-shadow: 0 2px 0 #000, 0 0 16px #000; }
+#night-ui .picks h2 { font-family: 'Gowun Batang', serif; font-size: 26px; margin: 0 0 6px; color: #fff4dc; text-shadow: 0 2px 0 #000, 0 0 16px #000; }
+#night-ui .picks .sub { margin: 0 0 10px; font-size: 14px; color: #f0e4c8; text-shadow: 0 1px 0 #000, 0 0 10px #000; }
 #night-ui .picks .row { display: flex; gap: 8px; justify-content: center; }
 #night-ui .picks button.pk { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 6px; background: #14202af0; border: 2px solid #5f8aa0; border-radius: 14px; animation: pir-pick 0.28s ease-out backwards; }
 #night-ui .picks button.pk:nth-child(2) { animation-delay: 0.06s }
@@ -113,7 +114,15 @@ const CSS = `
 #night-ui .picks button.pk b { font-size: 17px; color: #f0c86a; }
 #night-ui .picks button.pk small { font-size: 12.5px; color: #d8ccb2; line-height: 1.35; }
 #night-ui .picks button.pk.on { background: linear-gradient(#c98f3a, #8a5a1f); border-color: #f0c86a; transform: scale(1.06); }
-#night-ui .picks .ico { font-size: 34px; line-height: 1; }
+#night-ui .picks .ico { font-size: 36px; line-height: 1; height: 42px; display: flex; align-items: center; }
+#night-ui .picks button.pk b { font-size: 18px; }
+#night-ui .picks button.pk small { font-size: 13.5px; }
+#night-ui .picks button.pk { position: relative; padding: 8px 8px 8px; }
+#night-ui .picks button.pk.on::after { content: '✓'; position: absolute; right: 8px; top: 6px; font-size: 20px; font-weight: 900; color: #fff4dc; text-shadow: 0 1px 0 #000; }
+#night-ui .picks .left { margin-top: 6px; font-size: 13px; color: #f0e4c8; text-shadow: 0 1px 0 #000; }
+#night-ui .pickbar { pointer-events: auto; position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 16px calc(12px + env(safe-area-inset-bottom)); display: flex; justify-content: center; background: linear-gradient(#0000, #000a 40%); }
+#night-ui .pickbar button { min-width: min(88%, 360px); min-height: 52px; font-size: 19px; font-weight: 800; }
+#night-ui .pickbar button:disabled { opacity: 0.55; background: #1d2c37; border-color: #4d6a7a; }
 #night-ui .picks .auto { margin-top: 10px; height: 6px; border-radius: 3px; background: #ffffff25; overflow: hidden; }
 #night-ui .picks .auto i { display: block; height: 100%; background: #f0c86a; }
 @keyframes pir-pick { from { transform: translateY(26px) scale(0.85); opacity: 0 } to { transform: none; opacity: 1 } }
@@ -147,7 +156,7 @@ function playHud(force = false): void {
   if (!force && key === lastHud) return
   const armChanged = !lastHud.endsWith(`|${run.special}`)
   lastHud = key
-  const keep = [...ui.querySelectorAll('.banner, .flash, .picks')]
+  const keep = [...ui.querySelectorAll('.banner, .flash, .picks, .pickbar')]
   ui.innerHTML = '<button class="quit" data-act="quit">그만</button>'
     + `<div class="top"><div class="waves">${waves}</div><div class="lives">${lives}</div></div>`
     + (run.special !== 'basic' ? `<div class="arm${armChanged ? ' pop' : ''}">${arrowIcon(run.special, 40)}<span><b>${ARROW_KINDS.find((k) => k.id === run.special)?.name ?? ''}</b><span class="bar"><i></i></span></span></div>` : '')
@@ -177,30 +186,52 @@ function flash(): void {
 }
 
 const PICK_UI: ReadonlyArray<{ id: PickId; ico: string; name: string; does: string }> = [
-  { id: 'fire', ico: '🔥', name: '화전 한 물결', does: '다음 물결 내내 불화살' },
-  { id: 'repair', ico: '🪵', name: '목책 고치기', does: '목책이 하나 늘거나 되살아납니다' },
-  { id: 'draw', ico: '💪', name: '당김 빨라짐', does: '이제부터 활이 빨리 당겨집니다' },
+  { id: 'fire', ico: '🔥', name: '화전', does: `다음 물결 내내 불화살을 씁니다. 맞은 자리가 터져 ${P.arrowkind.burstRadius}미터 안의 산적이 함께 다칩니다` },
+  { id: 'repair', ico: STAKE.replace('<svg', '<svg width="34" height="40"'), name: '목책 고치기', does: `부서진 목책 ${Math.round(P.pirate.pickLife)}칸을 고칩니다. 멀쩡하면 1칸 늘립니다` },
+  { id: 'draw', ico: '💪', name: '당김 빨라짐', does: `활이 만작까지 ${Math.round((1 - P.pirate.pickDrawMul) * 100)}퍼센트 빨리 당겨집니다. 이번 판 내내 이어집니다` },
 ]
 let picking = false
+/** 눌러 둔 카드 — 아래 「이걸로」를 눌러야 정해진다 */
+let chosen: PickId | null = null
 function showPick(): void {
   picking = true
+  chosen = null
   ui.querySelector('.picks')?.remove()
+  ui.querySelector('.pickbar')?.remove()
   const el = document.createElement('div')
   el.className = 'picks'
-  el.innerHTML = '<h2>다음 물결에 앞서</h2><div class="row">'
+  el.innerHTML = '<h2>고르세요</h2><div class="row">'
     + PICK_UI.map((p) => `<button class="pk" data-pick="${p.id}"><span class="ico">${p.ico}</span><b>${p.name}</b><small>${p.does}</small></button>`).join('')
-    + '</div><div class="auto"><i></i></div>'
+    + '</div><div class="auto"><i></i></div><div class="left"></div>'
   ui.appendChild(el)
+  const bar = document.createElement('div')
+  bar.className = 'pickbar'
+  bar.innerHTML = '<button class="on" data-ok="1" disabled>하나를 눌러 보세요</button>'
+  ui.appendChild(bar)
+}
+/** 카드를 눌렀다 — 금빛으로 눌린 채 · 아래 단추가 켜진다 */
+function chooseCard(id: PickId): void {
+  chosen = id
+  for (const b of ui.querySelectorAll<HTMLElement>('.picks .pk')) b.classList.toggle('on', b.dataset['pick'] === id)
+  const ok = ui.querySelector<HTMLButtonElement>('.pickbar button')
+  if (ok !== null) { ok.disabled = false; ok.textContent = `이걸로 · ${PICK_UI.find((p) => p.id === id)?.name ?? ''}` }
+  playUi(sfx, 'press')
 }
 function pickBar(): void {
   if (!picking) return
   const bar = ui.querySelector<HTMLElement>('.picks .auto i')
   if (bar !== null) bar.style.width = `${Math.max(0, (run.pickLeft / P.pirate.pickSec) * 100).toFixed(1)}%`
+  const left = ui.querySelector<HTMLElement>('.picks .left')
+  if (left !== null) left.textContent = `남은 시간 ${Math.ceil(Math.max(0, run.pickLeft))}초`
+  // 눌러 둔 것이 있는데 시간이 다 되면 그것으로 (안 눌렀으면 첫째)
+  if (chosen !== null && run.pickLeft < 0.1 && run.phase === 'pick') pickBoon(run, chosen)
 }
 function donePick(id: PickId): void {
   picking = false
   const el = ui.querySelector('.picks')
   el?.querySelector(`[data-pick="${id}"]`)?.classList.add('on')
+  ui.querySelector('.pickbar')?.remove()
+  chosen = null
   setTimeout(() => el?.remove(), 380)
   banner(PICK_UI.find((p) => p.id === id)?.name ?? '')
   playUi(sfx, 'unlock')
@@ -212,6 +243,7 @@ function start(): void {
   live = true
   picking = false
   ui.querySelector('.picks')?.remove()
+  ui.querySelector('.pickbar')?.remove()
   acc = 0
   lastHud = ''
   playHud(true)
@@ -228,7 +260,8 @@ function showEnd(won: boolean, held: number): void {
 
 ui.addEventListener('click', (ev) => {
   const pk = (ev.target as HTMLElement).closest<HTMLElement>('[data-pick]')
-  if (pk !== null) { unlock(); if (run.phase === 'pick') pickBoon(run, pk.dataset['pick'] as PickId); return }
+  if (pk !== null) { unlock(); if (run.phase === 'pick') chooseCard(pk.dataset['pick'] as PickId); return }
+  if ((ev.target as HTMLElement).closest('[data-ok]') !== null) { unlock(); if (run.phase === 'pick' && chosen !== null) pickBoon(run, chosen); return }
   const t = (ev.target as HTMLElement).closest<HTMLElement>('[data-act]')
   if (t === null) return
   unlock()
@@ -370,3 +403,6 @@ layoutStage()
 
 showIntro()
 wake()
+
+// 개발 서버에서만 — 헤드리스 시험이 판을 들여다보고 쏜다 (tools 의 화면 확인용 · 빌드에는 안 들어간다)
+if (import.meta.env.DEV) (window as unknown as { __pirate: unknown }).__pirate = { get run() { return run } }
