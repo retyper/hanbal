@@ -3466,6 +3466,17 @@ export const en: Partial<Record<Key, string>> = {
   'rg.aria': '{name} rise and fall graph',
   'rg.title': 'Rise and fall',
   'rg.more': 'and {n} more',
+  'bs.none': 'No games played yet. Each game you play will be shelved here as a book.',
+  'bs.hint': 'Turn the page to read the annals ›',
+  'bs.annals': 'Annals',
+  'bs.noBig': 'Nothing worth recording happened in this game.',
+  'bs.closeAria': 'Close the book',
+  'lc.title': 'Generals to bring',
+  'lc.alone': 'In this age you go alone.',
+  'lc.empty': 'Once a general you have commanded is entered in the Heroes book, you can bring them from here.',
+  'lc.note': 'Generals you have commanded in the Heroes book · they arrive with the body trained at the training ground.',
+  'lc.go': 'Bring',
+  'lc.stay': 'Stay',
 }
 
 /** 아직 영어로 안 옮긴 키 — 일부러 비워 둔 것만 (한국어로 나간다) */

@@ -5,6 +5,8 @@
  * 판을 읽기만 한다 (절대 규칙 2) — 이름은 그 판의 처음 모습(startRegion)에서 꺼내 온다.
  */
 
+import { t as tr } from '../../i18n/index.ts'
+
 export interface Book {
   readonly seed: number
   readonly title: string
@@ -23,7 +25,7 @@ const thick = (n: number): number => Math.round(Math.max(30, Math.min(70, 26 + M
 const tall = (seed: number): number => 140 + (Math.abs(seed * 2654435761) % 30)
 
 export function shelfHtml(books: readonly Book[], esc: (s: string) => string): string {
-  if (books.length === 0) return `<p class="mute">아직 둔 판이 없습니다. 판을 두면 여기 한 권씩 꽂힙니다.</p>`
+  if (books.length === 0) return `<p class="mute">${tr('bs.none')}</p>`
   // 책마다 선반 한 칸(.bk-cell · 높이 고정) — 줄이 넘어가도 줄마다 선반 널이 깔린다 (형 11-11: "한 칸 넘어가면 선반 또 만들어 줘야 · 2, 3층이 공중에 떠 있음")
   let h = `<div class="shelf"><div class="shelf-row">`
   for (const b of books) {
@@ -60,14 +62,14 @@ const weight = (l: BookPage['lines'][number]): number => Math.max(105, 34 + Math
  */
 export function bookHtml(p: BookPage, esc: (s: string) => string): string {
   const pages: string[] = []
-  pages.push(`<section class="bkpg bkcover ${p.result}"><span class="bkce">${p.emblem}</span><h3>${esc(p.title)}</h3><p>${esc(p.sub)}</p><b class="bkres">${esc(p.word)}</b>${p.stats}<i class="bkhint">넘겨서 본기를 읽는다 ›</i></section>`)
-  if (p.lines.length === 0) pages.push(`<section class="bkpg bkpage"><h4>본기</h4><p class="mute">이 판엔 적을 만한 큰일이 없었습니다.</p></section>`)
+  pages.push(`<section class="bkpg bkcover ${p.result}"><span class="bkce">${p.emblem}</span><h3>${esc(p.title)}</h3><p>${esc(p.sub)}</p><b class="bkres">${esc(p.word)}</b>${p.stats}<i class="bkhint">${tr('bs.hint')}</i></section>`)
+  if (p.lines.length === 0) pages.push(`<section class="bkpg bkpage"><h4>${tr('bs.annals')}</h4><p class="mute">${tr('bs.noBig')}</p></section>`)
   else {
     let cur: Array<BookPage['lines'][number]> = []
     let room = 0
     const flush = (): void => {
       if (cur.length === 0) return
-      pages.push(`<section class="bkpg bkpage"><h4>본기</h4>${cur.map((l) => `<article class="bkent${l.big ? ' big' : ''}${l.lose === true ? ' lose' : ''}">`
+      pages.push(`<section class="bkpg bkpage"><h4>${tr('bs.annals')}</h4>${cur.map((l) => `<article class="bkent${l.big ? ' big' : ''}${l.lose === true ? ' lose' : ''}">`
         + `${l.img !== undefined ? `<img class="bkimg" src="${l.img}" alt="" loading="lazy">` : ''}<div class="bktx"><i>${esc(l.when)}</i><b>${esc(l.t)}</b>${l.d !== undefined ? `<p>${esc(l.d)}</p>` : ''}</div></article>`).join('')}</section>`)
       cur = []
       room = 0
@@ -80,13 +82,13 @@ export function bookHtml(p: BookPage, esc: (s: string) => string): string {
     }
     flush()
   }
-  if (p.graph !== '') pages.push(`<section class="bkpg bkpage bkgraph"><h4>흥망</h4>${p.graph}</section>`)
+  if (p.graph !== '') pages.push(`<section class="bkpg bkpage bkgraph"><h4>${tr('rg.title')}</h4>${p.graph}</section>`)
   const n = pages.length
   let h = `<div class="bookov" role="dialog" aria-label="${esc(p.title)}"><div class="bookopen" style="--bc:${p.color}" data-pg="0" data-n="${n}">`
-  h += `<button class="bkx" data-act="book-close" aria-label="책 덮기">✕</button>`
+  h += `<button class="bkx" data-act="book-close" aria-label="${tr('bs.closeAria')}">✕</button>`
   h += `<div class="bkpages">${pages.map((x, i) => x.replace('<section class="bkpg', `<section data-i="${i}" class="bkpg${i === 0 ? ' on' : ''}`)).join('')}`
-  h += `<button class="bktap prev" data-act="bk-prev" aria-label="앞 장"></button><button class="bktap next" data-act="bk-next" aria-label="다음 장"></button></div>`
-  h += `<div class="bknav"><button class="bkb" data-act="bk-prev" aria-label="앞 장">‹</button><span class="bkpn">1 / ${n}</span><button class="bkb" data-act="bk-next" aria-label="다음 장">›</button></div>`
+  h += `<button class="bktap prev" data-act="bk-prev" aria-label="${tr('hw.prevAria')}"></button><button class="bktap next" data-act="bk-next" aria-label="${tr('hw.nextAria')}"></button></div>`
+  h += `<div class="bknav"><button class="bkb" data-act="bk-prev" aria-label="${tr('hw.prevAria')}">‹</button><span class="bkpn">1 / ${n}</span><button class="bkb" data-act="bk-next" aria-label="${tr('hw.nextAria')}">›</button></div>`
   return h + `</div></div>`
 }
 

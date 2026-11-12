@@ -9,6 +9,7 @@ import { retainMaxOf, snapshot } from '../../realm/legacy.ts'
 import type { Hero, RegionId } from '../../realm/types.ts'
 import { nameHtml } from './heroview.ts'
 import { STAT_NAME } from '../../realm/data/prose.ts'
+import { t as tr } from '../../i18n/index.ts'
 
 interface Kit {
   readonly esc: (s: string) => string
@@ -91,16 +92,16 @@ const drillLine = (h: Hero): string =>
 export function bringHtml(k: Kit, served: ReadonlyArray<{ id: string; name: string }>, max: number, drilled: (id: string) => Hero | null = () => null): string {
   const ids = loadBring().filter((id) => served.some((x) => x.id === id))
   const on = new Set(ids.slice(0, max))
-  let h = `<div class="retain carry"><h4>데려갈 장수 <small>${on.size}/${max}</small></h4>`
-  if (max === 0) return h + `<p class="mute">이 난세에서는 혼자 간다.</p></div>`
-  if (served.length === 0) return h + `<p class="mute">우리 장수로 부린 이가 영웅전에 오르면 여기서 데려간다.</p></div>`
-  h += `<p class="mute">영웅전에서 거느려 본 장수 · 단련터에서 단련한 몸으로 온다.</p><div class="rtl">`
+  let h = `<div class="retain carry"><h4>${tr('lc.title')} <small>${on.size}/${max}</small></h4>`
+  if (max === 0) return h + `<p class="mute">${tr('lc.alone')}</p></div>`
+  if (served.length === 0) return h + `<p class="mute">${tr('lc.empty')}</p></div>`
+  h += `<p class="mute">${tr('lc.note')}</p><div class="rtl">`
   for (const x of served) {
     const sel = on.has(x.id)
     const d = drilled(x.id)
     const lv = d?.drill?.lv ?? 0
     h += `<button class="rtc${sel ? ' on' : ''}${!sel && on.size >= max ? ' full' : ''}" data-act="bring" data-id="${x.id}" data-max="${max}">${face(k, x.id)}<b>${nameHtml(x.name)}</b>`
-      + `${d !== null && lv > 0 ? `<span class="dlv">단련 ${lv}</span>${drillLine(d)}` : ''}<i>${sel ? '데려간다' : '남는다'}</i></button>`
+      + `${d !== null && lv > 0 ? `<span class="dlv">${tr('dx.drill', { n: lv })}</span>${drillLine(d)}` : ''}<i>${sel ? tr('lc.go') : tr('lc.stay')}</i></button>`
   }
   return h + `</div></div>`
 }

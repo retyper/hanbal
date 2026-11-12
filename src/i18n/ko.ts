@@ -3478,6 +3478,17 @@ export const ko = {
   'rg.aria': '{name} 흥망 그래프',
   'rg.title': '흥망',
   'rg.more': '외 {n}나라',
+  'bs.none': '아직 둔 판이 없습니다. 판을 두면 여기 한 권씩 꽂힙니다.',
+  'bs.hint': '넘겨서 본기를 읽는다 ›',
+  'bs.annals': '본기',
+  'bs.noBig': '이 판엔 적을 만한 큰일이 없었습니다.',
+  'bs.closeAria': '책 덮기',
+  'lc.title': '데려갈 장수',
+  'lc.alone': '이 난세에서는 혼자 간다.',
+  'lc.empty': '우리 장수로 부린 이가 영웅전에 오르면 여기서 데려간다.',
+  'lc.note': '영웅전에서 거느려 본 장수 · 단련터에서 단련한 몸으로 온다.',
+  'lc.go': '데려간다',
+  'lc.stay': '남는다',
 } as const
 
 export type Key = keyof typeof ko
