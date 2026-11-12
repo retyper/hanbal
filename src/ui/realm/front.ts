@@ -633,11 +633,11 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = '', f
   let h = `<div class="mcard end front-end" data-act="rep-fast"><div class="clg film${win ? '' : ' lose'}" style="--n:${shots.length + 1}">`
   shots.forEach((e, i) => {
     // 홀수 장은 반대로 천천히 민다 (켄 번스)
-    h += `<figure class="cp${i % 2 === 1 ? ' odd' : ''}" style="--i:${i}"><img src="${e.img}" alt="">`
+    h += `<figure class="cp${i % 2 === 1 ? ' odd' : ''}" style="--i:${i}"><span class="cpband"><img src="${e.img}" alt=""></span>`
     h += `<figcaption>${e.em !== undefined ? k.emblem(e.em, 'cpem') : ''}<i>${k.esc(seasonLabel(r, e.s))}</i><span>${k.esc(e.t)}</span></figcaption></figure>`
   })
   // 마지막 장 — 잔치(이김) · 가뭄(짐) 위로 제목
-  h += `<figure class="cp last" style="--i:${shots.length}"><img src="${k.art}end/${lastArt}.jpg" alt=""><figcaption><b>${k.esc(title)}</b></figcaption></figure>`
+  h += `<figure class="cp last" style="--i:${shots.length}"><span class="cpband"><img src="${k.art}end/${lastArt}.jpg" alt=""></span><figcaption><b>${k.esc(title)}</b></figcaption></figure>`
   // 판을 이긴 그림은 싸움 승리와 따로 — 남색 군기 (형 11-04: "전투 승리랑 게임 승리는 다르게")
   // 이긴 길마다 군기 둘레가 다르다 (11-09 제미나이 · 같은 남색 군기 · 맹주 = 모인 여러 나라 깃발 · 쇠의 뱃길 = 배·노·덩이쇠 · 큰 제사 = 솟대·신단수·청동 거울) · 통일은 처음 군기
   const winLogo = path === 'suzerain' || path === 'ironsea' || path === 'rite' ? `game-win-${path}` : 'game-win-logo'
@@ -961,7 +961,9 @@ export const FRONT_CSS = `
   padding: 0 0 calc(24px + env(safe-area-inset-bottom)); }
 .ap .front-end .after { max-width: 640px; margin: 0 auto; padding: 0 16px; }
 .ap .front-end .btns .btn small { display: block; font-size: 11px; font-weight: 500; opacity: .85; }
-.ap .front-end .clg.film { --film: ${FILM_S}s; position: relative; height: 74dvh; min-height: 300px; margin: 0 0 8px; overflow: hidden; background: #000; }
+.ap .front-end .clg.film { --film: ${FILM_S}s; position: relative; height: 74dvh; min-height: 300px; margin: 0 0 8px; overflow: hidden; background: #000; container-type: size; }
+/* 영화관 띠 — 가로 그림을 16:9 띠 안에 통째로 · 세로 폰이면 위아래가 검고 자막은 아래 검은 띠에 (형 11-12) */
+.ap .front-end .cp .cpband { position: absolute; inset: 0; margin: auto; width: min(100cqw, calc(100cqh * 16 / 9)); height: min(100cqh, calc(100cqw * 9 / 16)); overflow: hidden; }
 @media (orientation: portrait) { .ap .front-end .clg.film { height: 62dvh; } }
 /* 다 돈 뒤에 ‹ › — 지나간 장면을 다시 넘긴다 */
 .ap .front-end .fnav { position: absolute; top: 50%; z-index: 6; width: 44px; height: 64px; margin-top: -32px; border: 1px solid #c9a45a88; border-radius: 12px; background: #0b0d10aa; color: #f3d48a;
