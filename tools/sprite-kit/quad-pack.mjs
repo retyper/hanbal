@@ -1,9 +1,17 @@
 // quad-pack.mjs <key> [key …] — 장수마다 2×2 네 칸 판 네 장 문안 → tools/sprite-kit/quad/<key>-r1..r4.txt (11-12 소서노 판이 「아주 좋다」 · 형)
-//   한 장수 = 새 대화 하나에 네 장: r1 1:1 걷기 1~4 (첨부 ref-r1 → 초상) · r2 1:1 걷기 5~8 (ref-r2) · r3 16:9 준비·당김·공격·맞음 (ref-r3) · r4 16:9 누움·서기·들숨·공격 뒤 (ref-r4)
+//   한 장수 = 새 대화 하나에 세 장: r1 1:1 걸음 1~4 (첨부 ref-walk4 또는 ref-run4 → 초상 · heroes/gait.json · mannequin.py) · r2 1:1 걷기 5~8 (ref-r2) · r3 16:9 준비·당김·공격·맞음 (ref-r3) · r4 16:9 누움·서기·들숨·공격 뒤 (ref-r4)
 //   네 칸 다 쓰고 4번 칸 사람은 왼쪽으로(우하단 귀 = 워터마크 자리 · 형: 자홍 네모 없어도 된다) · 받으면 <key>-r1..r4.png → py tools/sprite-kit/finish-quad.py <key>
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
 const H = 'tools/sprite-kit/heroes/'
 const spec = Object.fromEntries(readdirSync(H).filter((f) => f.endsWith('.json')).sort().flatMap((f) => JSON.parse(readFileSync(H + f, 'utf8'))).filter((x) => x.key).map((x) => [x.key, x]))
+const GAIT = JSON.parse(readFileSync(H + 'gait.json', 'utf8'))
+// 달리기 네 칸 (mannequin.py RUN 1~4 와 같은 자세) — 형 11-12: 활달하고 튼튼한 캐릭터는 달리기
+const RUNLEG = {
+  1: 'STRIKE: the NEAR leg (the one closer to the viewer) reaching forward with the foot landing under the knee, the far leg kicked up high behind with the knee sharply bent, torso leaning forward, arms bent at 90 degrees pumping',
+  2: 'DOWN: the weight on the bent near leg under the body, the far knee swinging forward low, the body at its lowest, arms bent',
+  3: 'PUSH-OFF: the near leg straightening far behind and pushing off the ground with the toes, the far knee driving forward and up, a long stride',
+  4: 'FLIGHT: both feet off the ground, legs split wide, the near leg trailing behind with the knee bent, the far leg reaching forward, the body at its highest',
+}
 const WORD = { bow: 'bow', spear: 'spear', sword: 'sword', dagger: 'dagger', heavy: 'weapon' }
 const CARRY = {
   spear: 'carried the same way in every cell, slanted with the tip up and forward, close to the body',
@@ -43,8 +51,10 @@ function pack(k) {
   const who = `${h.desc || 'the person of IMAGE 2'}. ${h.extra || (man ? 'Same outfit as in IMAGE 2.' : 'This battle outfit is sexier than the portrait.')} ${h.armor || 'NO armor, NO helmet.'} ${man ? 'He' : 'She'} holds ${hold}`
   const body = `Paint the real character in the hand-painted style of IMAGE 2 with EXACTLY the face of IMAGE 2 and slim, elegant adult proportions about 7 heads tall (long legs, small head), never stockier or rounder than IMAGE 2. Full body, head to toes, the same scale in every cell (head to toe about 80% of the cell height), feet on the same foot line. The four poses must be clearly DIFFERENT from each other; never repeat a pose. Nothing touches any cell edge, nothing crosses into another cell, and the very bottom-right corner of the whole image stays empty background. Pure flat #00FF00 background, no grid lines, no shadow, no ground line, no text, no numbers, no motion streaks.`
   const next = (aspect, intro, cells, extra = '') => `Great. Now make the NEXT ${aspect} sprite sheet of the SAME character: the same face, the same outfit, the same ${w}, the same 7-heads-tall proportions, the same scale and the same painting style as the sheet you just made. The image attached to THIS message is the POSE and LAYOUT reference only: ${quad(aspect)}. ${intro} Make a NEW ${aspect} sheet with EXACTLY this 2x2 layout. Cells: ${cells}. ${extra}Do NOT copy the look, colours, weapon or body shape of the reference figures; only their poses and placement. ${body}`
+  const run = (GAIT[k] ?? 'walk') === 'run'
+  const verb = run ? 'running' : 'walking'
   const P = {
-    r1: `IMAGE 1 is a POSE and LAYOUT reference only: ${quad('square 1:1')}; each cell shows one walking pose of a stick mannequin walking to the right. IMAGE 2 is the portrait of the character I need, an adult in ${her} twenties or older. Make a NEW square 1:1 sprite sheet with EXACTLY this 2x2 layout: in each cell the character walks to the right in strict side view, copying the leg and arm positions of the mannequin in the same cell: ${[1, 2, 3, 4].map((n) => c(n, LEG[n])).join('; ')}. The mannequin is only a guide for limb positions: do NOT copy its look, colours, body shape or pixel style. The character is ${who}, ${CARRY[h.weapon] || CARRY.heavy} and fully inside the cell. ${body}`,
+    r1: `IMAGE 1 is a POSE and LAYOUT reference only: ${quad('square 1:1')}; each cell shows one ${verb} pose of a colour-coded stick mannequin ${verb} to the right (the purple leg is the near leg, the blue leg the far leg, the red arm the near arm, the orange arm the far arm). IMAGE 2 is the portrait of the character I need, an adult in ${her} twenties or older. Make a NEW square 1:1 sprite sheet with EXACTLY this 2x2 layout: in each cell the character is ${verb} to the right in strict side view, copying EXACTLY the leg and arm positions of the mannequin in the same cell, so the four cells show four clearly different leg positions: ${[1, 2, 3, 4].map((n) => c(n, (run ? RUNLEG : LEG)[n])).join('; ')}. The mannequin is only a guide for limb positions: do NOT copy its look, colours, body shape or stick style. The character is ${who}, ${CARRY[h.weapon] || CARRY.heavy} and fully inside the cell. ${body}`,
     r2: next('square 1:1', `Each cell shows one walking pose of a stick mannequin walking to the right. These are the SECOND HALF of the same walk cycle: the other leg now leads, so these four poses are NOT copies of the previous sheet.`, [5, 6, 7, 8].map((n) => c(n, LEG[n])).join('; ') + `. ${man ? 'He' : 'She'} keeps walking to the right in strict side view, the ${w} carried exactly as before`),
     r3: next('wide 16:9', `In every cell the figure stands in the LEFT 40% of the cell and the rest is empty room for the weapon.`, [c(1, act[0]), c(2, act[1]), c(3, act[2]), c(4, `HIT: struck, staggering backward, torso jerked back, head thrown back, pained face, one arm flung out`)].join('; ') + '. Strict side view facing right. ', `The WHOLE ${w} is drawn at its full length in every cell and stays inside its cell with green margin; it is never shortened or cut off. `),
     r4: next('wide 16:9', `Cell 1 shows a figure lying on the ground; cells 2, 3 and 4 show standing figures in the LEFT part of their cells.`, [c(1, `DOWN: lying on ${her} back on the ground, eyes closed, the ${w} lying beside ${man ? 'him' : 'her'}, centred in the cell`), c(2, `IDLE: standing relaxed but alert at full height, feet apart, the ${w} held ready in front`), c(3, `IDLE BREATH: exactly the IDLE pose of cell 2, only the chest and shoulders slightly raised as ${she} breathes in`), c(4, act[3])].join('; ') + '. Strict side view facing right in cells 2 to 4. '),
@@ -53,4 +63,4 @@ function pack(k) {
   return Object.keys(P).length
 }
 const keys = process.argv.slice(2)
-for (const k of keys) console.log(k, pack(k), '장 · 초상', `public/realm/bust-hd/${spec[k].bust}.jpg`)
+for (const k of keys) console.log(k, pack(k), '장 · 초상', `public/realm/bust-hd/${spec[k].bust}.jpg`, '· 걸음', GAIT[k] ?? 'walk', '→ r1 참고', `tools/sprite-kit/quad/ref-${GAIT[k] === 'run' ? 'run' : 'walk'}4.png`)
