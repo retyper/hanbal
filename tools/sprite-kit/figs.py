@@ -187,6 +187,9 @@ wh = float(np.median([ink_h(x) for x in W]))
 roles = {r: env(r) for r in ('STAND', 'INHALE', 'READY', 'WIND', 'THRUST', 'FOLLOW', 'HIT', 'DOWN')}
 # 장마다 기준 키: 그 장에 STAND 나 READY(선 사람)가 있으면 그것 · 걷기 장은 걷기 가운데값
 base = {wsheet: wh}
+for v in (os.environ.get('SCALE') or '').split(','):  # SCALE=r4:2 — 그 장의 키 기준을 이 사람으로 (선 사람이 따로 없을 때 · 붙은 둘도 키는 같다)
+    if ':' in v:
+        base.setdefault(v.split(':')[0], ink_h(load(v)))
 for r in ('STAND', 'READY'):
     sh = roles[r].split(':')[0]
     base.setdefault(sh, ink_h(load(roles[r])))

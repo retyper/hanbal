@@ -481,7 +481,7 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   aryeong: { ar: 333 / 160, body: 0.894 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · aryeong 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
   haedal: { ar: 149 / 160, body: 0.900, bow: true }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 전투 옷은 더 드러나게 (형 11-08)
   songbi: { ar: 144 / 160, body: 0.863, bow: true }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 전투 옷은 더 드러나게 (형 11-08)
-  hyeokgeose: { ar: 158 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · hyeokgeose 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
+  hyeokgeose: { ar: 331 / 160, body: 0.963 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · hyeokgeose 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
   oi: { ar: 159 / 160, body: 0.961 }, // 11-04 제 띠 (u/0 · 깃털 다발 쇠투구·붉은 테 미늘·짧은 수염 · 창)
   mari: { ar: 161 / 160, body: 0.968 }, // 11-04 제 띠 (u/0 · 상투·머리띠·콧등 칼자국·밧줄 타래·푸른 삼베 · 맞음 컷은 창을 둘 쥐고 나와 막기 컷으로 · 찌르기 창끝이 조금 잘림)
   daeso: { ar: 172 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2)
@@ -516,12 +516,12 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   maehwa: { ar: 143 / 160, body: 0.894, bow: true }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 깃 머리띠·짙은 붉은 짧은 저고리·꿩깃 화살통·맥궁
   gaon: { ar: 151 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 가온 동작 띠 다시 — 창을 두 손으로 잡고 찌른다 (흰 깃털 조각 없앰 · 4번 칸은 창이 칸 밖이라 3번으로 · 검수 1번)
   eomni: { ar: 159 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 땋은 머리·검은 곰 털 망토·짧은 흰 윗옷·이빨 목걸이·쇠 창 찌르기 · 걷기는 창을 어깨에 멘 아랫줄만
-  nuri: { ar: 165 / 160, body: 0.894 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · nuri 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
+  nuri: { ar: 319 / 160, body: 0.919 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · nuri 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
   bira: { ar: 172 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · bira 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
   soenun: { ar: 280 / 160, body: 0.9375 }, // 11-08 쇠눈 · 제미나이 u/2 2×2(겨눔·찌르기·거둠·피격) + 새 대화 쓰러짐 · 갯내 4실보행 하체(짙은 바지 · 걷는 동안 쇠 정강이받이는 장화로 보인다) · 창 자루는 걷기에도 남긴다
   odi: { ar: 155 / 160, body: 0.906 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 오디 동작 띠 다시 — 창 가운데를 두 손으로 잡고 창날이 보이게 찌른다 (SPEAR 절 · 검수 1번)
   haesol: { ar: 158 / 160, body: 0.856 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · haesol 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
-  sinneoul: { ar: 170 / 160, body: 0.875 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · sinneoul 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
+  sinneoul: { ar: 319 / 160, body: 0.975 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · sinneoul 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
   byeol: { ar: 152 / 160, body: 0.887 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 벽진 별(땋은 머리·흰 민소매에 가죽 대장장이 앞치마·맨발·달군 쇠칼 내려치기)
   goeun: { ar: 142 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 신라 고은(붉은 끈 긴 머리·짙은 붉은 비단 짧은 저고리·높게 트인 치마·곧은 고리자루 칼 베기)
   baram: { ar: 173 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 고사부리 바람(바람에 날리는 긴 머리·크림빛 긴 목도리·짙은 남색 짧은 윗옷·트인 치마·청동 잎 단검 찌르기)
@@ -539,7 +539,7 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   beomi: { ar: 159 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 진지 범이(헝클어진 짧은 머리·범 가죽 짧은 윗옷과 치마·넓은 쇠 창 찌르기 · 맨발)
   mulbeom: { ar: 165 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · mulbeom 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
   mdallae: { ar: 170 / 160, body: 0.906 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · mdallae 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
-  singwigan: { ar: 188 / 160, body: 0.838 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · singwigan 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
+  singwigan: { ar: 207 / 160, body: 0.969 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · singwigan 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
   sincheongan: { ar: 152 / 160, body: 0.850 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 가락 신천간(머리띠·흰 겉옷·비취 목걸이·청동 방울 지팡이 내려치기)
   yucheongan: { ar: 153 / 160, body: 0.894 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · yucheongan 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
   sdallae: { ar: 160 / 160, body: 0.887, bow: true }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 사로 달래 · 붉은 저고리·털 망토·활
