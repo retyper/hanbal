@@ -58,6 +58,7 @@ function cellImage(x0, y0, w, h) {
     }
     comps.push(c)
   }
+  if (comps.length === 0) return { w, h, px } // 빈 칸 (11-12: act5 의 6번 = 자홍 네모를 덮은 칸)
   const main = comps.reduce((a, b) => (b.n > a.n ? b : a))
   const big = main.n
   const far = Math.max(w, h) * 0.06
@@ -104,16 +105,18 @@ for (let r = 0; r < rows; r++) {
         sw += a
       }
     }
-    if (sw === 0) throw new Error(`빈 칸: ${r},${c}`)
+    if (sw === 0) { cells.push(null); continue } // 빈 칸 · 고른 칸이면 아래에서 멈춘다
     cells.push({ img, bx0, bx1: bx1 + 1, by0, by1: by1 + 1, cx: sx / sw })
   }
 }
 // 컷 고르기 — 망친 칸을 이웃 칸으로
 if (mapS !== '') {
   const pick = mapS.split(',').map((s) => cells[Number(s) - 1])
+  if (pick.some((k) => k === null)) throw new Error('고른 칸이 비었다')
   if (pick.some((k) => k === undefined)) throw new Error('컷 번호가 칸 밖이다')
   cells.splice(0, cells.length, ...pick)
 }
+if (cells.some((k) => k === null)) throw new Error('빈 칸이 있다 — 컷 번호로 고를 것 (act5 는 1,2,3,4,5)')
 const tallest = Math.max(...cells.map((k) => k.by1 - k.by0))
 const scale = (H * 0.9) / tallest
 // 띠 칸 너비 — 무게중심에서 가장 멀리 뻗은 것(창끝)까지 다 들어가게

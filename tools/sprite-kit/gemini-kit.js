@@ -7,7 +7,8 @@
 //   await skit.setup('u0')        새 대화에서: 이미지 만들기 · 16:9 · 파일 input 에 aria-label u0file0.. (find 로 찾아 file_upload)
 //   await skit.send('walk', key)  걷기 시트 문안을 넣고 보냄 (첨부 2장 · 16:9 확인 못 하면 안 보냄)
 //   await skit.send('act', key)   같은 대화에 동작 시트 (옛 4×2)
-//   await skit.send('act6', key)  같은 대화에 동작 시트 3×2 (11-12 · 먼저 ref-act-3x2.png 를 첨부)
+//   await skit.send('act5', key)  같은 대화에 동작 시트 3×2 · 5컷 + 우하단 자홍 네모 (11-12 · 먼저 ref-act-3x2.png 첨부)
+//   await skit.send('act5solo', key)  새 대화에서 동작만 (첨부: ref-act-3x2.png · 초상 · [옷 참고])
 //   await skit.say(text)          고쳐 달라는 말
 //   skit.state()                  응답 그림 수 · 생성 중인지
 //   await skit.grab(name)         마지막 응답 그림을 캔버스로 받아 ~/Downloads/Gemini_Generated_Image_<name>.png
@@ -23,6 +24,13 @@
     sword: '1 battle-ready stance with the sword raised in front, 2 raising the sword high to strike, 3 slashing the sword down and forward to the right, 4 slash follow-through with the sword low in front, 5 recovering to stance, ',
     dagger: '1 low crouched fighting stance with the dagger held forward in her front hand, 2 drawing the dagger hand back beside her hip, 3 lunging forward and stabbing to the right, arm fully extended with the blade in front of her fist, 4 stab follow-through, dagger still in front, 5 recovering to stance, ',
     heavy: '1 battle-ready stance holding it in both hands, 2 raising it high overhead, 3 smashing it down hard forward to the right, 4 follow-through with it low in front, 5 recovering, resting it on her shoulder again, ',
+  }
+  const ACT3 = {
+    bow: ['standing upright at full height, relaxed but ready, the bow held low in the left hand', 'raising the bow, an arrow nocked, starting to draw', 'full draw aiming to the right, bow arm straight forward, string hand at the cheek'],
+    spear: ['standing upright at full height, battle-ready, the spear held in both hands at waist height, tip pointing forward-right', 'pulling the spear back to wind up, weight on the back foot', 'lunging forward with the spear thrust fully to the right, arms straight, the tip far in front'],
+    sword: ['standing upright at full height, battle-ready, the sword held in front', 'raising the sword high overhead to strike', 'slashing down and forward to the right, the sword extended low in front, arms straight'],
+    dagger: ['standing upright at full height, ready, the dagger in the front hand', 'drawing the dagger hand back beside the hip', 'lunging forward and stabbing to the right, arm fully extended, the blade in front of the fist'],
+    heavy: ['standing upright at full height, holding it in both hands', 'raising it high overhead', 'smashing it down hard forward to the right, arms extended'],
   }
   const WORD = { bow: 'bow', spear: 'spear', sword: 'sword', dagger: 'dagger', heavy: 'weapon' }
   const kit = {
@@ -47,15 +55,17 @@
       const w = WORD[h.weapon] || 'weapon'
       if (kind === 'walk')
         return `IMAGE 1 is a game sprite sheet: 4 columns x 2 rows = 8 frames of one ${h.sex || 'woman'} walking to the right (side view), each frame a different phase of the stride, hand-painted style, on pure flat green #00FF00, wide 16:9. IMAGE 2 is the portrait of the character I need, an adult in their twenties or older. Make a NEW wide 16:9 sprite sheet with EXACTLY the layout, cell size, character scale, foot line and painting style of IMAGE 1, but the character is ${h.desc}. ${h.extra || 'This battle outfit is sexier than the portrait.'} ${h.armor || 'NO armor, NO helmet.'} The character holds ${h.hold}. 8-frame WALKING cycle to the right, side view facing right in every frame (never turn the back to the viewer), ${h.stride}. All 8 frames show 8 clearly different leg positions (never repeat a pose): 1 right leg far forward, 2 right foot flat, 3 legs passing each other, 4 left leg swinging forward, 5 left leg far forward, 6 left foot flat, 7 legs passing, 8 right leg swinging forward; both feet stay on the same foot line, no kneeling, no jumping; arms swing opposite to the legs; the ${w} is held the same way in all 8 frames, in BOTH rows (do not copy the weapon or outfit of IMAGE 1, only its layout, scale and stride). Full body with feet in every cell, nothing touching the cell edges. ${TAIL}`
-      if (kind === 'act6solo') {
-        // 새 대화에서 동작만 (시험·다시 굽기): IMAGE 1 = 참고 시트 ref-act-3x2.png · IMAGE 2 = 초상 (첨부 2장)
-        const four = (ACT[h.weapon] || ACT.heavy).split(/,s*5 /)[0] + ', '
-        return `IMAGE 1 is a LAYOUT reference only: a wide 16:9 game sprite sheet of 3 columns x 2 rows = 6 cells, hand-painted style, on pure flat green #00FF00. In every cell the figure stands in the LEFT 40% of the cell and the RIGHT 60% is empty green room for the weapon, so the whole weapon is always inside its cell with green margin on every side. IMAGE 2 is the portrait of the character I need, an adult in their twenties or older. Make a NEW wide 16:9 sprite sheet with EXACTLY the 3x2 layout, cell size, character scale, foot line and painting style of IMAGE 1, but the character is ${h.desc} (NOT the woman of IMAGE 1). The character holds ${h.hold}. ${h.extra || 'This battle outfit is sexier than the portrait.'} ${h.armor || 'NO armor, NO helmet.'} Strict side view facing RIGHT in every cell. The ${w} is drawn at its FULL length in every cell, never shortened, never cut off, never crossing into the next cell; nothing touches any cell edge. Exactly ONE ${w} per cell. 6 cells in order, left to right, top row then bottom row: ${four}5 hit recoil, torso jerked backward, head thrown back, pained face, still facing right, 6 lying on the back on the ground with the ${w} beside. The weapon never points backward. ${TAIL}`
-      }
-      if (kind === 'act6') {
-        // 11-12 형: 「칸은 가로로 넓게 · 한 장에 적게 · 무기가 짧다」 — 3×2 가로 칸 · 사람은 칸 왼쪽 40% · 오른쪽은 무기 자리 (참고 시트 ref-act-3x2.png 를 이 메시지에 첨부)
-        const four = (ACT[h.weapon] || ACT.heavy).split(/,s*5 /)[0] + ', '
-        return `The image attached to THIS message is a LAYOUT reference only: a wide 16:9 game sprite sheet of 3 columns x 2 rows = 6 cells on pure flat green #00FF00. In every cell the figure stands in the LEFT 40% of the cell and the RIGHT 60% is empty green room for the weapon, so the whole weapon is always inside its cell with green margin on every side. Make a NEW wide 16:9 sprite sheet with EXACTLY this 3x2 layout, cell size, character scale and foot line, but with EXACTLY the same person and outfit as the walking sheet you just made (the person of IMAGE 2 of my first message; NOT the woman of this layout reference, NOT the person of IMAGE 1), holding ${h.hold}. Strict side view facing RIGHT in every cell. The ${w} is drawn at its FULL length in every cell, never shortened, never cut off, never crossing into the next cell; nothing touches any cell edge. Exactly ONE ${w} per cell. 6 cells in order, left to right, top row then bottom row: ${four}5 hit recoil, torso jerked backward, head thrown back, pained face, still facing right, 6 lying on the back on the ground with the ${w} beside. The weapon never points backward. ${TAIL}`
+      if (kind === 'act5' || kind === 'act5solo') {
+        // 11-12 형: 「프레임 몇 개·각각 어떤 모습 · 우하단은 워터마크용 자홍 네모」 — 3×2 가로 칸 · 5컷 + 자홍 네모
+        //   1 서기(대기 겸 · 걷기와 같은 키) 2 당김 3 최대로 뻗은 공격 4 맞음 5 누움 6 자홍 네모(워터마크 자리 · 그리지 않음)
+        //   게임 20컷: 서기 0~3 = 1 · 공격 12~17 = 1,2,3,3,3,1 · 맞음 18 = 4 · 쓰러짐 19 = 5 (compose20 NACT=5)
+        const three = ACT3[h.weapon] || ACT3.heavy
+        const hold = h.hold || (h.weapon === 'bow' ? 'ONE bow in the left hand' : 'ONE ' + w)
+        const who = kind === 'act5'
+          ? 'EXACTLY the same person and outfit as the walking sheet you just made (the person of IMAGE 2 of my first message), NOT the man of this layout reference'
+          : (h.desc || 'the person of IMAGE 2') + ' (the person of IMAGE 2, NOT the man of IMAGE 1). ' + (h.extra || '') + ' ' + (h.armor || 'NO armor, NO helmet.') + ' If a third image is attached, it shows this character in battle: copy that outfit, its colors and the weapon exactly'
+        const lead = kind === 'act5' ? 'The image attached to THIS message is a LAYOUT reference only' : 'IMAGE 1 is a LAYOUT reference only'
+        return `${lead}: a wide 16:9 game sprite sheet, 3 columns x 2 rows = 6 cells, hand-painted style, on pure flat green #00FF00. Cells 1 to 4 show the figure standing in the LEFT 40% of the cell with the RIGHT 60% left empty for the weapon; cell 5 shows the figure lying down; cell 6 (bottom-right) is a solid magenta #FF00FF square with NOTHING drawn in it. Make a NEW wide 16:9 sprite sheet with EXACTLY this 3x2 layout, the same cell size, character scale and foot line, and the same solid magenta #FF00FF square in the bottom-right cell with nothing in it. The character is ${who}, holding ${hold}. Strict side view facing RIGHT in cells 1 to 4. The ${w} is drawn at its FULL length in every cell, never shortened, never cut off, never crossing into another cell; nothing touches any cell edge. Exactly ONE ${w} per cell. Cells in order: 1 ${three[0]}, 2 ${three[1]}, 3 ${three[2]}, 4 hit recoil, torso jerked backward, head thrown back, pained face, still facing right, 5 lying on the back on the ground with the ${w} beside, 6 the empty magenta square. The weapon never points backward. Pure flat #00FF00 background everywhere except the magenta square, no grid lines, no shadow, no ground line, no text, no motion streaks.`
       }
       return `Great. Now make a SECOND image with EXACTLY the same wide 16:9 4x2 layout, cell size, character scale, foot line and EXACTLY the same person and outfit as the walking sheet you just made (the person of IMAGE 2, NOT the person of IMAGE 1), strict side view facing RIGHT in every frame, every figure and the whole ${w} fully inside its cell. Exactly ONE ${w} in every frame. 8 frames in order: ${ACT[h.weapon] || ACT.heavy}6 hit recoil, torso jerked backward, head thrown back, pained face, still facing right, 7 falling backward off the feet, 8 lying on the back on the ground with the ${w} beside. The weapon never points backward. ${TAIL}`
     },
@@ -152,7 +162,7 @@
       return { ok: res.ok, size: b.size, dur: v.duration }
     },
     send(kind, key) {
-      return kit.say(kit.prompt(kind, key), kind === 'walk' || kind === 'act6solo' ? 2 : kind === 'act6' ? 1 : 0)
+      return kit.say(kit.prompt(kind, key), kind === 'walk' || kind === 'act5solo' ? 2 : kind === 'act5' ? 1 : 0)
     },
     imgs() {
       return [...document.querySelectorAll('main img')].filter((i) => i.naturalWidth > 800 && i.closest('model-response, message-content, [class*=response]'))

@@ -20,9 +20,10 @@ grep -q "'$heroId': '$key'" $A || sed -i "s/^\(export const GEN_OWN[^{]*{.*\) }$
 grep -q "'gen-$key': \[" $B || sed -i "s/^\(  'gen-soseono': \[[^]]*\], \)/\1'gen-$key': [14, 0, 0], /" $B
 grep -q "'$heroId': '$key'" $A && grep -q "'gen-$key': \[" $B && grep -q "^  $key: { ar: " $A || { echo "등록 실패"; exit 1; }
 # 11-12 문: 키 뺀 시트의 칸 경계 걸침(무기 잘림) 0 이 아니면 등록하지 않는다 (형: 「한 번 만들 때 잘 만들었어야지」)
-if [ "${NACT:-}" = 6 ]; then py -3 -X utf8 tools/sprite-kit/check-strip.py "assets_src/realm/gemini/generals2/$key-act6-key.png" 3 2 || { echo "동작 시트 칸 경계에 무기가 걸쳤다 — 다시 굽는다"; exit 1; }
+if [ "${NACT:-}" = 5 ]; then py -3 -X utf8 tools/sprite-kit/check-strip.py "assets_src/realm/gemini/generals2/$key-act5-key.png" 3 2 --skip 6 || { echo "동작 시트 칸 경계에 무기가 걸쳤다 — 다시 굽는다"; exit 1; }
+elif [ "${NACT:-}" = 6 ]; then py -3 -X utf8 tools/sprite-kit/check-strip.py "assets_src/realm/gemini/generals2/$key-act6-key.png" 3 2 || { echo "동작 시트 칸 경계에 무기가 걸쳤다 — 다시 굽는다"; exit 1; }
 else py -3 -X utf8 tools/sprite-kit/check-strip.py "assets_src/realm/gemini/generals2/$key-act-key.png" 4 2 || { echo "동작 시트 칸 경계에 무기가 걸쳤다 — act6(3×2)로 다시 굽는다"; exit 1; }; fi
-py -3 -X utf8 tools/sprite-kit/realm-finish.py "$key" "11-08 처음 · $note" "${AMAP:-}" "${NACT:-}"   # 11-12: NACT=6 이면 <key>-act6-strip.png (3×2)
+py -3 -X utf8 tools/sprite-kit/realm-finish.py "$key" "11-08 처음 · $note" "${AMAP:-}" "${NACT:-}"   # 11-12: NACT=5 이면 <key>-act5-strip.png (3×2 · 5컷)
 # 군사 띠처럼 짙은 1px 테두리 (형 11-09: 장수 그림이 흐림) — 다시 구우면 .done 에서 빼야 다시 두른다
 sed -i "/^gen-$key.png$/d" assets_src/realm/retired/anim2-outline/.done 2>/dev/null
 py -3 -X utf8 tools/defringe-green.py "public/realm/anim2/gen-$key.png" >/dev/null 2>&1 || true

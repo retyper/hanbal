@@ -9,6 +9,9 @@ from PIL import Image
 f = sys.argv[1]
 im = Image.open(f).convert('RGBA')
 a = np.array(im)[..., 3] > 40
+skip = set()
+if '--skip' in sys.argv:
+    i = sys.argv.index('--skip'); skip = {int(x) for x in sys.argv[i + 1].split(',')}; del sys.argv[i:i + 2]
 args = [int(x) for x in sys.argv[2:]]
 if len(args) == 2:
     cols, rows = args
@@ -21,6 +24,7 @@ if len(args) == 2:
             y0, y1 = round(r * ch + ch * INSET), round((r + 1) * ch - ch * INSET)
             cell = a[y0:y1, x0:x1]
             k = r * cols + c + 1
+            if k in skip: continue
             if cell[0].any(): top.append(k)
             if cell[:, 0].any() or cell[:, -1].any(): side.append(k)
     print(f'{f}: {cols}x{rows} · 위 경계 걸침 {top or 0} · 옆 경계 걸침(무기 잘림) {side or 0}')

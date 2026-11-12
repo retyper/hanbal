@@ -10,7 +10,7 @@ S = 'tools/sprite-kit/'
 out = f'public/realm/anim2/gen-{name}.png'
 amapA = sys.argv[3] if len(sys.argv) > 3 else ''
 nact = sys.argv[4] if len(sys.argv) > 4 else ''  # 11-12: 3x2 동작 시트면 6
-act = G + (f'{name}-act6-strip.png' if nact == '6' else f'{name}-act-strip.png')
+act = G + (f'{name}-act{nact}-strip.png' if nact in ('5', '6') else f'{name}-act-strip.png')
 subprocess.run([sys.executable, S + 'compose20.py', G + f'{name}-walk-strip.png', act, out, amapA, nact], check=True)
 im = Image.open(out)
 cw = im.width // 20
