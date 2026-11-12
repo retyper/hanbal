@@ -494,7 +494,7 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   malgalgi: { ar: 165 / 160, body: 0.906 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 전투 옷은 더 드러나게 (형 11-08)
   haebi: { ar: 157 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · haebi 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
   soebi: { ar: 153 / 160, body: 0.887 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 쇠 덩이 묶음 대신 큰 쇠망치
-  ara: { ar: 158 / 160, body: 0.906 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · ara 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
+  ara: { ar: 265 / 160, body: 0.912 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · ara 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
   heo: { ar: 145 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 갑옷 대신 보석 윗옷·트임 치마 (형: 전투 옷은 더 드러나게)
   gamsil: { ar: 155 / 160, body: 0.894 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 어깨 내린 주황 겉옷·짧은 치마 (형: 전투 옷은 더 드러나게)
   irang: { ar: 164 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 문신 팔·구슬 목걸이·가죽 조끼 · 청동 단검 찌르기
@@ -553,12 +553,12 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   hogong: { ar: 156 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 사로 호공 · 푸른 겉옷·표주박·단검
   alpyeong: { ar: 141 / 160, body: 0.894 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 사로 알평 · 흰 머리띠·옅은 푸른 겉옷·깃털 손도끼
   sobeol: { ar: 147 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 사로 소벌 · 흰 수염 촌장·조 이삭 매단 지팡이
-  jibaekho: { ar: 156 / 160, body: 0.969 }, // 11-11 동작 8컷만 새로(창 전체가 칸 안 · 제미나이 edu Pro) · 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 사로 지백호 · 흰 범가죽 망토·창
+  jibaekho: { ar: 361 / 160, body: 0.919 }, // 11-11 동작 8컷만 새로(창 전체가 칸 안 · 제미나이 edu Pro) · 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 사로 지백호 · 흰 범가죽 망토·창
   guryema: { ar: 151 / 160, body: 0.900, bow: true }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 사로 구례마 · 늑대털 두건·검은 누비옷·활
   jita: { ar: 150 / 160, body: 0.887 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · jita 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
   hojin: { ar: 148 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 사로 호진 · 검은 털 망토·긴 도끼
   waechief: { ar: 151 / 160, body: 0.894 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 왜 우두머리 · 문신·잿빛 털 망토·곧은 넓은 칼
-  suro: { ar: 153 / 160, body: 0.894 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 가락 수로왕 · 흰 금빛 비단옷·붉은 머리띠·곧은 칼
+  suro: { ar: 320 / 160, body: 0.969 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 가락 수로왕 · 흰 금빛 비단옷·붉은 머리띠·곧은 칼
   musoe: { ar: 147 / 160, body: 0.894 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 가락 쇠둑 지기 무쇠 · 가죽 앞치마·쇠망치
   adogan: { ar: 139 / 160, body: 0.894 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 가락 아도간 · 흰 수염·지그재그 깃 옷·짧은 지팡이
   yeodogan: { ar: 164 / 160, body: 0.856 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 가락 여도간 동작 다시 · 단검 대신 낫 (형 11-08)
@@ -573,7 +573,7 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   olddaeso: { ar: 142 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 부여 늙은 대소왕 · 붉은 비단옷·관·금빛 홀
   horselord: { ar: 145 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 부여 말 주인 · 흰 털모자·흰 털 외투·곧은 칼
   maryeo: { ar: 151 / 160, body: 0.906 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 백제 마려 · 볏단 멘 농부·괭이
-  dallae2: { ar: 162 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · dallae2 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
+  dallae2: { ar: 232 / 160, body: 0.981 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · dallae2 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
   bdanbi: { ar: 151 / 160, body: 0.850 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · bdanbi 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
 }
 /** 제 그림이 있는 장수 (장수 id → gen-<이름>.png 의 이름) */
