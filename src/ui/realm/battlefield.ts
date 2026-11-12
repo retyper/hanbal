@@ -2165,6 +2165,7 @@ export const WAR_CSS = `
 .ap .wr.b0:not(.whelpon) .wgx, .ap .wr.b0:not(.whelpon) .wgff, .ap .wr.b0:not(.whelpon) .wgby, .ap .wr.b0:not(.whelpon) .wloss, .ap .wr.b0:not(.whelpon) .wodd, .ap .wr.b0:not(.whelpon) .wcap, .ap .wr.b0:not(.whelpon) .brkl { display: none; }
 .ap .wr.b0 .whelp { width: auto; padding: 0 10px; font-size: 0; } .ap .wr.b0 .whelp::after { content: '자세히'; font-size: 13px; }
 .ap .wr.b0.whelpon .whelp::after { content: '접기'; }
+html[data-lang="en"] .ap .wr.b0 .whelp::after { content: 'Details'; } html[data-lang="en"] .ap .wr.b0.whelpon .whelp::after { content: 'Hide'; } /* i18n (11-12) · CSS 안 글이라 t() 대신 */
 @media (prefers-reduced-motion: reduce) { .ap .wb0pop, .ap .wr.b0 .wcmd.rec::after, .ap .wr.b0 .wgo::after { animation-duration: .01s; } }
 .ap .tn.hard { color: #f0a08a; }
 /* 장수가 여럿 — 누가 나서나 · 누구를 잡나 (그 깃발을 골랐을 때만) */
