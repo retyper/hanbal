@@ -12,63 +12,47 @@
 import { favorOf, relationOf } from '../../realm/diplomacy.ts'
 import { borders, leaderOf, tookRecently } from '../../realm/stance.ts'
 import type { Realm } from '../../realm/types.ts'
+import { lazyTable, t as tr, type Key } from '../../i18n/index.ts'
 
 export type Mood = 'joy' | 'warm' | 'calm' | 'wary' | 'angry' | 'afraid'
 
-export const MOOD_WORD: Readonly<Record<Mood, string>> = {
-  joy: '기뻐한다', warm: '반가워한다', calm: '덤덤하다', wary: '경계한다', angry: '노했다', afraid: '두려워한다',
-}
+export const MOOD_WORD: Readonly<Record<Mood, string>> = lazyTable('moodWord', ['joy', 'warm', 'calm', 'wary', 'angry', 'afraid'])
 
 /** 땅 수 — 누구나 아는 크기 */
 const lands = (r: Realm, f: string): number => Object.values(r.nodes).filter((n) => n.owner === f).length
 
+/** 까닭의 이름 — 말은 mood.why.<이름> (까닭 한 줄) · mood.say.<이름> (신하의 짐작) */
+type WhyId = 'warBig' | 'tookLand' | 'atWar' | 'allyWarm' | 'ally' | 'truceWarm' | 'truce' | 'truceCold' | 'hate' | 'fond' | 'nearBig' | 'leads' | 'dislike' | 'none'
+
 /** `them` 의 군장이 `me` 를 보는 얼굴과 그 까닭 */
 export function moodOf(r: Realm, me: string, them: string): { mood: Mood; why: string; say: string } {
   const m = moodWhy(r, me, them)
-  return { ...m, say: SAY[m.why] ?? `${m.why} 싶습니다` }
+  return { mood: m.mood, why: tr(`mood.why.${m.why}` as Key), say: tr(`mood.say.${m.why}` as Key) }
 }
 
-/** 까닭 → 신하의 말 (짐작이라 "~듯합니다") */
-const SAY: Readonly<Record<string, string>> = {
-  '싸우는 중인데 우리가 훨씬 크다': '싸우고는 있지만 우리가 훨씬 크니 겁을 먹은 듯합니다.',
-  '우리가 그 땅을 빼앗았다': '우리가 땅을 빼앗았으니 이를 갈고 있을 겁니다.',
-  '우리와 싸우는 중이다': '싸우는 사이니 좋을 리가 없지요.',
-  '동맹이고 정이 두텁다': '오가는 사신마다 얼굴이 밝습니다. 정이 두텁습니다.',
-  '동맹이다': '동맹이라 우리를 반기는 눈치입니다.',
-  '화친했고 정이 두텁다': '화친한 뒤로 사이가 퍽 좋습니다.',
-  '화친한 사이다': '화친한 사이라 낯빛이 밝습니다.',
-  '화친은 했지만 정은 없다': '화친은 했지만 아직 서먹합니다.',
-  '우리를 몹시 미워한다': '사신을 보내도 문전박대입니다. 몹시 미워하는 듯합니다.',
-  '우리에게 마음이 있다': '선물이 오간 뒤로 우리를 좋게 보는 듯합니다.',
-  '곁에 붙은 우리가 훨씬 크다': '바로 곁의 우리가 훨씬 크니 겁을 먹은 듯합니다.',
-  '우리가 앞서간다고 본다': '우리가 앞서간다고 보고 눈여겨보는 듯합니다.',
-  '우리를 좋게 보지 않는다': '우리를 좋게 보지 않는 눈치입니다.',
-  '아직 아무 사이도 아니다': '아직 오간 일이 없어 속을 모르겠습니다.',
-}
-
-function moodWhy(r: Realm, me: string, them: string): { mood: Mood; why: string } {
+function moodWhy(r: Realm, me: string, them: string): { mood: Mood; why: WhyId } {
   const rel = relationOf(r, me, them)
   const fav = favorOf(r, me, them)
   const big = lands(r, me) >= Math.max(3, lands(r, them) * 2) // 우리가 훨씬 크다
   const near = borders(r, me, them)
   if (rel.state === 'war') {
-    if (big && near) return { mood: 'afraid', why: '싸우는 중인데 우리가 훨씬 크다' }
-    return { mood: 'angry', why: tookRecently(r, me, them) ? '우리가 그 땅을 빼앗았다' : '우리와 싸우는 중이다' }
+    if (big && near) return { mood: 'afraid', why: 'warBig' }
+    return { mood: 'angry', why: tookRecently(r, me, them) ? 'tookLand' : 'atWar' }
   }
-  if (rel.state === 'ally') return fav >= 40 ? { mood: 'joy', why: '동맹이고 정이 두텁다' } : { mood: 'warm', why: '동맹이다' }
+  if (rel.state === 'ally') return fav >= 40 ? { mood: 'joy', why: 'allyWarm' } : { mood: 'warm', why: 'ally' }
   if (rel.state === 'truce') {
-    if (fav >= 50) return { mood: 'joy', why: '화친했고 정이 두텁다' }
-    if (fav >= 0) return { mood: 'warm', why: '화친한 사이다' }
-    return { mood: 'calm', why: '화친은 했지만 정은 없다' }
+    if (fav >= 50) return { mood: 'joy', why: 'truceWarm' }
+    if (fav >= 0) return { mood: 'warm', why: 'truce' }
+    return { mood: 'calm', why: 'truceCold' }
   }
   // 중립
-  if (tookRecently(r, me, them)) return { mood: 'angry', why: '우리가 그 땅을 빼앗았다' }
-  if (fav <= -40) return { mood: 'angry', why: '우리를 몹시 미워한다' }
-  if (fav >= 40) return { mood: 'warm', why: '우리에게 마음이 있다' }
-  if (big && near) return { mood: 'afraid', why: '곁에 붙은 우리가 훨씬 크다' }
-  if (leaderOf(r, them) === me) return { mood: 'wary', why: '우리가 앞서간다고 본다' }
-  if (fav <= -10) return { mood: 'wary', why: '우리를 좋게 보지 않는다' }
-  return { mood: 'calm', why: '아직 아무 사이도 아니다' }
+  if (tookRecently(r, me, them)) return { mood: 'angry', why: 'tookLand' }
+  if (fav <= -40) return { mood: 'angry', why: 'hate' }
+  if (fav >= 40) return { mood: 'warm', why: 'fond' }
+  if (big && near) return { mood: 'afraid', why: 'nearBig' }
+  if (leaderOf(r, them) === me) return { mood: 'wary', why: 'leads' }
+  if (fav <= -10) return { mood: 'wary', why: 'dislike' }
+  return { mood: 'calm', why: 'none' }
 }
 
 /** 탈 그림 하나 — `cls` 로 크기 */
