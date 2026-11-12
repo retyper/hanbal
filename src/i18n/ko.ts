@@ -3457,6 +3457,16 @@ export const ko = {
   'sf.broken': '판이 깨져 있다: 불러오지 않았다',
   'sf.emptySlot': '빈 칸이다',
   'sf.slotBroken': '이 칸의 판이 깨져 있다. 불러오지 않았다',
+  'lgue.title': '합종',
+  'lgue.tipStrike': '합종군이 온다 · {span} 막아 내면 흩어진다',
+  'lgue.tipForm': '합종 · {span} 뒤 함께 친다',
+  'lgue.form': '{left} 뒤 함께 친다',
+  'lgue.strike': '합종군 출정',
+  'lgue.hold': '{left} 버티면 흩어진다',
+  'lgue.broken': '합종을 깼다',
+  'lgue.spent': '합종군이 물러갔다',
+  'lgue.lost': '고을 {n}곳을 잃었다',
+  'lgue.scattered': '합종이 흩어졌다',
 } as const
 
 export type Key = keyof typeof ko

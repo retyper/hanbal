@@ -8,6 +8,7 @@
 import { coalitionOf, coalStriking } from '../../realm/coalition.ts'
 import { turnsLabel } from '../../realm/data/prose.ts'
 import type { Realm, ReportLine } from '../../realm/types.ts'
+import { t as tr } from '../../i18n/index.ts'
 
 type Pt = readonly [number, number]
 
@@ -25,7 +26,7 @@ export function leagueRopeSvg(r: Realm, me: string, px: (id: string) => Pt, seen
   const ring = pts.slice().sort((a, b) => Math.atan2(a[1] - cy, a[0] - cx) - Math.atan2(b[1] - cy, b[0] - cx))
   const d = `M${ring.map((p) => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join('L')}${ring.length >= 3 ? 'Z' : ''}`
   const knots = ring.map((p) => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${(11 * lw).toFixed(1)}" fill="#7a1a10" stroke="#f3e6c8" stroke-width="${(3 * lw).toFixed(1)}"/>`).join('')
-  return `<g class="lgrope${coalStriking(r) ? ' on' : ''}"><title>합종</title>`
+  return `<g class="lgrope${coalStriking(r) ? ' on' : ''}"><title>${tr('lgue.title')}</title>`
     + `<path d="${d}" fill="none" stroke="#3a0a05" stroke-width="${(9 * lw).toFixed(1)}" stroke-linejoin="round" stroke-linecap="round" opacity=".55"/>`
     + `<path d="${d}" fill="none" stroke="#c8402a" stroke-width="${(5 * lw).toFixed(1)}" stroke-dasharray="${(12 * lw).toFixed(1)} ${(5 * lw).toFixed(1)}" stroke-linejoin="round" opacity=".95"/>`
     + `${knots}</g>`
@@ -37,7 +38,7 @@ export function leagueChipHtml(r: Realm, me: string, emblem: (f: string) => stri
   if (c === null || c.against !== me) return ''
   const on = coalStriking(r)
   const left = Math.max(1, (on ? c.endAt : c.strikeAt) - r.season)
-  const tip = on ? `합종군이 온다 · ${turnsLabel(r, left)} 막아 내면 흩어진다` : `합종 · ${turnsLabel(r, left)} 뒤 함께 친다`
+  const tip = tr(on ? 'lgue.tipStrike' : 'lgue.tipForm', { span: turnsLabel(r, left) })
   return `<i class="nxp lg${on ? ' on' : ''}" data-tip="${tip}">${c.members.slice(0, 3).map(emblem).join('')}<b>${on ? '⚔' : ''}${left}</b></i>`
 }
 
@@ -48,11 +49,11 @@ export function leagueToastHtml(r: Realm, me: string, lines: readonly ReportLine
   const flags = (cls: string): string => `<span class="lgfl ${cls}">${l.members.map((m, i) => `<span style="--i:${i}">${emblem(m)}</span>`).join('<i class="lgk"></i>')}</span>`
   const left = (at: number | undefined): string => turnsLabel(r, Math.max(1, (at ?? r.season) - r.season))
   switch (l.ev) {
-    case 'form': return { html: `<span class="gtk">합종</span>${flags('tie')}<b>${left(l.at)}</b> 뒤 함께 친다`, big: true }
-    case 'strike': return { html: `<span class="gtk">합종군 출정</span>${flags('tie')}⚔ <b>${left(l.at)}</b> 버티면 흩어진다`, big: true }
-    case 'broken': return { html: `<span class="gtk">합종을 깼다</span>${flags('cut')}`, big: true }
-    case 'spent': return { html: `<span class="gtk">합종군이 물러갔다</span>${flags('cut')}고을 <b>${l.took ?? 0}</b>곳을 잃었다`, big: false }
-    default: return { html: `<span class="gtk">합종이 흩어졌다</span>${flags('cut')}`, big: false }
+    case 'form': return { html: `<span class="gtk">${tr('lgue.title')}</span>${flags('tie')}${tr('lgue.form', { left: `<b>${left(l.at)}</b>` })}`, big: true }
+    case 'strike': return { html: `<span class="gtk">${tr('lgue.strike')}</span>${flags('tie')}⚔ ${tr('lgue.hold', { left: `<b>${left(l.at)}</b>` })}`, big: true }
+    case 'broken': return { html: `<span class="gtk">${tr('lgue.broken')}</span>${flags('cut')}`, big: true }
+    case 'spent': return { html: `<span class="gtk">${tr('lgue.spent')}</span>${flags('cut')}${tr('lgue.lost', { n: `<b>${l.took ?? 0}</b>` })}`, big: false }
+    default: return { html: `<span class="gtk">${tr('lgue.scattered')}</span>${flags('cut')}`, big: false }
   }
 }
 

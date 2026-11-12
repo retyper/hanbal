@@ -3445,6 +3445,16 @@ export const en: Partial<Record<Key, string>> = {
   'sf.broken': 'The game is corrupted: not loaded',
   'sf.emptySlot': 'Empty slot',
   'sf.slotBroken': 'The game in this slot is corrupted. Not loaded',
+  'lgue.title': 'League',
+  'lgue.tipStrike': 'The league army is coming · it scatters if you hold out {span}',
+  'lgue.tipForm': 'League · strikes together in {span}',
+  'lgue.form': 'strikes together in {left}',
+  'lgue.strike': 'League army marches',
+  'lgue.hold': 'scatters if you hold out {left}',
+  'lgue.broken': 'League broken',
+  'lgue.spent': 'League army withdrew',
+  'lgue.lost': 'lost {n|town|towns}',
+  'lgue.scattered': 'League scattered',
 }
 
 /** 아직 영어로 안 옮긴 키 — 일부러 비워 둔 것만 (한국어로 나간다) */
