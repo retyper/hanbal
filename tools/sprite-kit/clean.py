@@ -18,7 +18,8 @@ H, W = a.shape[:2]
 br = a[int(H * 0.7):int(H * 0.8), int(W * 0.8):int(W * 0.9)].reshape(-1, 3).mean(axis=0)  # 6번 칸 한가운데
 if br[0] > 180 and br[2] > 180 and br[1] < 110:  # 우하단이 자홍 → 3×2 의 6번 칸을 바탕으로
     bg = a[5, 5].copy()
-    a[H // 2:, (W * 2) // 3:] = bg
+    y0 = (H * 2) // 3 if abs(W / H - 1) < 0.15 else H // 2   # 3×3(1:1) 은 9번 칸 · 3×2(16:9) 는 6번 칸
+    a[y0:, (W * 2) // 3:] = bg
     Image.fromarray(a).save(src.replace('.png', '-prep.png'))
     keysrc = src.replace('.png', '-prep.png')
     magenta = True

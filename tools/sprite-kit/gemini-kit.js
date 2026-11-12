@@ -7,6 +7,7 @@
 //   await skit.setup('u0')        새 대화에서: 이미지 만들기 · 16:9 · 파일 input 에 aria-label u0file0.. (find 로 찾아 file_upload)
 //   await skit.send('walk', key)  걷기 시트 문안을 넣고 보냄 (첨부 2장 · 16:9 확인 못 하면 안 보냄)
 //   await skit.send('act', key)   같은 대화에 동작 시트 (옛 4×2)
+//   await skit.send('walk9', key)  새 대화 · 비율 1:1 · 걷기 3×3 (첨부: ref-walk-3x3.png · 초상) · 9번 자홍 네모
 //   await skit.send('act5', key)  같은 대화에 동작 시트 3×2 · 5컷 + 우하단 자홍 네모 (11-12 · 먼저 ref-act-3x2.png 첨부)
 //   await skit.send('act5solo', key)  새 대화에서 동작만 (첨부: ref-act-3x2.png · 초상 · [옷 참고])
 //   await skit.say(text)          고쳐 달라는 말
@@ -55,6 +56,12 @@
       const w = WORD[h.weapon] || 'weapon'
       if (kind === 'walk')
         return `IMAGE 1 is a game sprite sheet: 4 columns x 2 rows = 8 frames of one ${h.sex || 'woman'} walking to the right (side view), each frame a different phase of the stride, hand-painted style, on pure flat green #00FF00, wide 16:9. IMAGE 2 is the portrait of the character I need, an adult in their twenties or older. Make a NEW wide 16:9 sprite sheet with EXACTLY the layout, cell size, character scale, foot line and painting style of IMAGE 1, but the character is ${h.desc}. ${h.extra || 'This battle outfit is sexier than the portrait.'} ${h.armor || 'NO armor, NO helmet.'} The character holds ${h.hold}. 8-frame WALKING cycle to the right, side view facing right in every frame (never turn the back to the viewer), ${h.stride}. All 8 frames show 8 clearly different leg positions (never repeat a pose): 1 right leg far forward, 2 right foot flat, 3 legs passing each other, 4 left leg swinging forward, 5 left leg far forward, 6 left foot flat, 7 legs passing, 8 right leg swinging forward; both feet stay on the same foot line, no kneeling, no jumping; arms swing opposite to the legs; the ${w} is held the same way in all 8 frames, in BOTH rows (do not copy the weapon or outfit of IMAGE 1, only its layout, scale and stride). Full body with feet in every cell, nothing touching the cell edges. ${TAIL}`
+      if (kind === 'walk9') {
+        // 11-12 형: 「걷기 참고할 프레임 전달용 이미지는 웹에도 있다」 — CC0 8컷 걷기 견본(itch.io mostlydecent 「8 frame walk」)을 색 마네킹 3×3 으로 · 9번 자홍 네모
+        //   첨부: IMAGE 1 ref-walk-3x3.png · IMAGE 2 초상 · 비율 1:1
+        const hold = h.hold || (h.weapon === 'bow' ? 'ONE bow in the left hand' : 'ONE ' + w)
+        return `IMAGE 1 is a POSE and LAYOUT reference only: a square 1:1 sheet of 3 columns x 3 rows = 9 cells on pure flat green #00FF00. Cells 1 to 8 (left to right, top to bottom) show an 8-frame WALKING cycle of a colour-coded mannequin walking to the right: the purple leg and the blue leg are its two legs, the red arm is the near arm and the orange arm the far arm, so every cell has a different leg position. Cell 9 (bottom-right) is a solid magenta #FF00FF square with NOTHING drawn in it. IMAGE 2 is the portrait of the character I need, an adult in their twenties or older. Make a NEW square 1:1 sprite sheet with EXACTLY this 3x3 layout, cell size, character scale and foot line: in each of cells 1 to 8 the character walks to the right copying EXACTLY the leg and arm positions of the mannequin in the same cell, and cell 9 stays the same empty solid magenta #FF00FF square. Do NOT copy the mannequin's look, colours or blocky pixel style: paint the real character in the hand-painted style of IMAGE 2. The character is ${h.desc || 'the person of IMAGE 2'}. ${h.extra || 'This battle outfit is sexier than the portrait.'} ${h.armor || 'NO armor, NO helmet.'} The character holds ${hold}, held exactly the same way in all 8 cells, close to the body and fully inside the cell (a long weapon rests on the shoulder pointing up and back). Strict side view facing right in every cell, never turning the back to the viewer; full body with both feet on the same foot line in every cell; no kneeling, no jumping; nothing touches any cell edge. Pure flat #00FF00 background everywhere except the magenta square, no grid lines, no shadow, no ground line, no text, no motion streaks.`
+      }
       if (kind === 'act5' || kind === 'act5solo') {
         // 11-12 형: 「프레임 몇 개·각각 어떤 모습 · 우하단은 워터마크용 자홍 네모」 — 3×2 가로 칸 · 5컷 + 자홍 네모
         //   1 서기(대기 겸 · 걷기와 같은 키) 2 당김 3 최대로 뻗은 공격 4 맞음 5 누움 6 자홍 네모(워터마크 자리 · 그리지 않음)
@@ -162,7 +169,7 @@
       return { ok: res.ok, size: b.size, dur: v.duration }
     },
     send(kind, key) {
-      return kit.say(kit.prompt(kind, key), kind === 'walk' || kind === 'act5solo' ? 2 : kind === 'act5' ? 1 : 0)
+      return kit.say(kit.prompt(kind, key), kind === 'walk' || kind === 'walk9' || kind === 'act5solo' ? 2 : kind === 'act5' ? 1 : 0)
     },
     imgs() {
       return [...document.querySelectorAll('main img')].filter((i) => i.naturalWidth > 800 && i.closest('model-response, message-content, [class*=response]'))

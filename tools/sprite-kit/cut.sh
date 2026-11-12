@@ -15,7 +15,7 @@ PW=$(cygpath -w "$P" 2>/dev/null || echo "$P")
 if [ "$1" = mark ]; then touch "$M"; echo marked; exit 0; fi
 name=$1; kind=$2; map=${3:-}
 grid="4 2"; [ "$kind" = act6 ] && grid="3 2"   # 11-12: 3×2 가로 칸 동작 시트
-[ "$kind" = act5 ] && grid="3 2"; pick=$map; [ "$kind" = act5 ] && [ -z "$pick" ] && pick=1,2,3,4,5   # 11-12: 5컷 + 우하단 자홍 네모(버림)
+[ "$kind" = act5 ] && grid="3 2"; [ "$kind" = walk9 ] && grid="3 3"; pick=$map; [ "$kind" = act5 ] && [ -z "$pick" ] && pick=1,2,3,4,5; [ "$kind" = walk9 ] && [ -z "$pick" ] && pick=1,2,3,4,5,6,7,8   # 11-12: 5컷 + 우하단 자홍 네모(버림)
 if [ -z "$map" ]; then
   timeout 60 sh -c "until find ~/Downloads -maxdepth 1 -name 'Gemini_Generated_Image_*.png' -newer '$M' | grep -q .; do sleep 2; done"
   f=$(find ~/Downloads -maxdepth 1 -name 'Gemini_Generated_Image_*.png' -newer "$M" | head -1)
