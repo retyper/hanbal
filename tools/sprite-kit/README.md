@@ -34,7 +34,10 @@
 - 참고 시트 `ref-act-3x2.png` = 지백호 원본에서 덩어리째 떠서 만든 것(`mkref.py act jibaekho 1,2,3,6,8 … 3:1040:148`) · 몸속 구멍 메움 · 순수 초록 바탕. **참고 시트는 초록 옷 없는 사람 · 키 뺀 띠를 키우지 말 것**(첫 판은 흐리고 몸속이 초록이었다).
 - 받기: `cut.sh <key> act5` (clean.py 가 6번 칸 자홍을 알아보고 바탕으로 덮은 뒤 키를 뺀다 · 1~5 칸만 띠로) → `check-strip.py <key>-act5-key.png 3 2 --skip 6` 0·0 → `NACT=5 sh register-realm.sh <key> "…"` (검사 문이 들어 있다).
 - 문안: `skit.send('act5', key)`(걷기 다음 같은 대화 · 첨부 = 참고 시트) · `skit.send('act5solo', key)`(새 대화 · 첨부 = 참고 시트 · 초상 · 옛 걷기 1번 컷 옷 참고). 형 손 굽기 꾸러미 `node tools/sprite-kit/act-pack.mjs` → docs/realm/BAKE-ACT.md + docs/realm/bake/<key>.jpg(옷 참고) · 형이 inbox/ 에 `<key>-act5.png` 로 올리면 `sh tools/sprite-kit/inbox-intake.sh`.
-- **걷기 참고는 아직 좋은 게 없다**: 남은 원본 걷기 시트는 전부 줄마다 쥐는 법이 다르거나(아령·지백호) 무릎 꿇은 칸(노을)이 있다 → 걷기를 새로 구울 땐 Flow/Veo 로 걷는 영상 한 편을 찍어 한 걸음 8컷을 뽑아 3×3(1:1 · 9번 자홍 네모) 참고 시트를 만든다(`mkref.py walk`). 그 전엔 옛 걷기 그대로.
+- **걷기 참고 `ref-walk-3x3.png` (11-12 · 형: 「걷기 프레임 전달용 그림은 웹에도 있다」)**: 우리 원본 걷기는 전부 줄마다 쥐는 법이 다르거나(아령·지백호) 무릎 꿇은 칸(노을)이 있어 못 쓴다 → CC0 견본 itch.io mostlydecent 「8 frame walk」(https://mostlydecent.itch.io/8-frame-walk · CC0) 미리보기 8컷을 **색 마네킹**(다리 보라/파랑 · 팔 빨강/주황 · 몸통 회색)으로 1:1 3×3 에 앉히고 9번 칸은 자홍 네모. 색이 다리를 갈라 줘서 1·5번 다리 교대가 그림으로 전해진다.
+  - `skit.send('walk9', key)` · 새 대화 · **비율 1:1** · 첨부 = ref-walk-3x3.png · 초상 → `cut.sh <key> walk9` (3×3 에서 1~8 · clean.py 가 9번 자홍을 덮는다) → `<key>-walk9-strip.png` 를 `<key>-walk-strip.png` 로 쓰면 된다(compose 는 8컷 띠만 본다).
+  - 같은 대화에 이어 `skit.send('act5', key)` (첨부 = ref-act-3x2.png · 비율 16:9 로 바꿔서) — 걷기와 동작 옷이 같아진다.
+  - 아직 실제로 한 장도 안 구워 봤다 — 첫 장은 시험.
 - 받는 판 크기: 자동 `skit.grab` 은 화면 미리보기(1024 폭)를 캔버스로 떠서 작다 → 손으로 받을 땐 **원본 크기 다운로드**.
 
 ## 알아 둔 함정 (11-08)
