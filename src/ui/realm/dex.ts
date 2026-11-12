@@ -8,11 +8,11 @@
 import { DEX_AWOKE, DEX_CAUGHT, DEX_HEARD, DEX_MET, DEX_SERVED, dexCatalog, dexCounts, dexLevel, scanDex, type Dex, type DexHero } from '../../realm/dex.ts'
 import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
 import { noteKids } from '../../realm/data/art.ts'
-import { josa } from '../../realm/data/prose.ts'
 import { elemOf } from '../../realm/elem.ts'
 import type { Hero, Realm, RegionId } from '../../realm/types.ts'
 import { heroRadar, nameHtml, traitChips } from './heroview.ts'
 import { bondTotals, loadBonds, recordBonds, rosterHtml } from './bonds.ts'
+import { lazyList, lazyTable, t as tr } from '../../i18n/index.ts'
 
 const KEY = 'hanbal.realm.dex'
 
@@ -106,23 +106,21 @@ export function clanHeroes(): Array<{ id: string; name: string; hero: Hero }> {
 
 function clanHtml(k: DexKit): string {
   const kids = Object.values(loadClan())
-  if (kids.length === 0) return `<p class="mute dxclan">아직 아무도 없다. 장수 카드에서 우리 장수 둘을 혼인시키면, 몇 계절 뒤 난 아이가 여기 오른다.</p>`
+  if (kids.length === 0) return `<p class="mute dxclan">${tr('dx.noClan')}</p>`
   let h = `<div class="dxclan">`
   for (const [key, x] of Object.entries(loadClan())) {
     const chips = x.traits.map((t) => TRAIT[t]).filter((t) => t !== undefined).map((t) => `<span class="trait" style="--g:${GRADE_COLOR[t!.grade]}"><b>${k.esc(t!.name)}</b></span>`).join('')
     const pic = k.kid(key.split(':').slice(1).join(':'), x.look, x.traits)
-    h += `<div class="clk">${pic !== null ? `<img class="dxf" src="${pic}" alt="">` : `<span class="dxf none">${x.look === 'w' ? '여' : '남'}</span>`}<div><b>${nameHtml(x.name)}</b><span class="mute">${k.esc(x.parents.join(' · '))}의 아이 · ${k.esc(BOARD_NAME[x.board])} ${k.esc(x.nation)}</span><span class="tr3">${chips}</span></div></div>`
+    h += `<div class="clk">${pic !== null ? `<img class="dxf" src="${pic}" alt="">` : `<span class="dxf none">${x.look === 'w' ? tr('dx.fem') : tr('dx.masc')}</span>`}<div><b>${nameHtml(x.name)}</b><span class="mute">${tr('dx.kidOf', { parents: k.esc(x.parents.join(' · ')), board: k.esc(BOARD_NAME[x.board]), nation: k.esc(x.nation) })}</span><span class="tr3">${chips}</span></div></div>`
   }
   return h + `</div>`
 }
 
 export type DexBoard = RegionId | 'wander' | 'all' | 'clan' | 'bond'
 
-const BOARD_NAME: Readonly<Record<RegionId | 'wander', string>> = {
-  tutorial: '배우는 판', mahan: '온조 장', jumong: '주몽 장', seorabeol: '혁거세 장', gujibong: '수로 장', daemusin: '대무신왕 장', 'byeonhan-mini': '작은 판', yeongnam: '큰 판', south: '삼한 남부', world: '삼한과 북녘', wander: '떠돌이',
-}
+const BOARD_NAME: Readonly<Record<RegionId | 'wander', string>> = lazyTable('dxBoard', ['tutorial', 'mahan', 'jumong', 'seorabeol', 'gujibong', 'daemusin', 'byeonhan-mini', 'yeongnam', 'south', 'world', 'wander'])
 const TABS: readonly Exclude<DexBoard, 'clan' | 'bond'>[] = ['all', 'mahan', 'jumong', 'seorabeol', 'gujibong', 'daemusin', 'byeonhan-mini', 'yeongnam', 'south', 'world', 'wander']
-export const LV_NAME = ['모른다', '들음', '만남', '사로잡음', '거느림'] as const
+export const LV_NAME: readonly string[] = lazyList('dxLv', 5)
 
 interface DexKit {
   readonly esc: (s: string) => string
@@ -151,8 +149,8 @@ export function toggleDexAwake(): void {
 
 /** 모르는 장수의 귀띔 — 어디 가면 만나나 */
 function whereHint(x: DexHero): string {
-  if (x.board === 'wander') return '떠돌이: 봄에 어느 고을에 나타나 값을 부른다'
-  return `${BOARD_NAME[x.board]} · ${x.nationName}${x.ruler ? '의 군주' : '의 장수'}`
+  if (x.board === 'wander') return tr('dx.wander')
+  return tr(x.ruler ? 'dx.hintRuler' : 'dx.hintHero', { board: BOARD_NAME[x.board], nation: x.nationName })
 }
 
 function card(k: DexKit, x: DexHero, f: number, sel: boolean): string {
@@ -166,14 +164,14 @@ function card(k: DexKit, x: DexHero, f: number, sel: boolean): string {
   const pips = [DEX_HEARD, DEX_MET, DEX_CAUGHT, DEX_SERVED].map((b, i) => `<i class="${f & b ? 'on' : ''}" title="${LV_NAME[i + 1]}"></i>`).join('')
   const g = lv >= 2 ? ` style="--g:${GRADE_COLOR[x.grade]}"` : ''
   const gr = k.grow(x.id)
-  const grow = gr.lv > 0 || gr.relics !== '' ? `<span class="dxgr">${gr.lv > 0 ? `<b>단련 ${gr.lv}</b>` : ''}${gr.relics}</span>` : ''
-  return `<button class="dxc lv${lv}${lv >= 2 ? ' graded' : ''}${sel ? ' sel' : ''}" data-act="dex-sel" data-id="${x.id}"${g}>${face}${name}<span class="dxm">${k.esc(x.board === 'wander' ? '떠돌이' : x.nationName)}</span>${grow}${aw !== null && !awakeAll ? '<i class="dxawb">🔥</i>' : ''}<span class="pips">${pips}</span></button>`
+  const grow = gr.lv > 0 || gr.relics !== '' ? `<span class="dxgr">${gr.lv > 0 ? `<b>${tr('dx.drill', { n: gr.lv })}</b>` : ''}${gr.relics}</span>` : ''
+  return `<button class="dxc lv${lv}${lv >= 2 ? ' graded' : ''}${sel ? ' sel' : ''}" data-act="dex-sel" data-id="${x.id}"${g}>${face}${name}<span class="dxm">${k.esc(x.board === 'wander' ? BOARD_NAME.wander : x.nationName)}</span>${grow}${aw !== null && !awakeAll ? '<i class="dxawb">🔥</i>' : ''}<span class="pips">${pips}</span></button>`
 }
 
 /** 고른 장수 — 아래에 붙는 판 */
 function detail(k: DexKit, x: DexHero, f: number): string {
   const lv = dexLevel(f)
-  let h = `<div class="dxsel"><button class="x" data-act="dex-sel" aria-label="닫기">✕</button>`
+  let h = `<div class="dxsel"><button class="x" data-act="dex-sel" aria-label="${tr('more.closeAria')}">✕</button>`
   const aw = (f & DEX_AWOKE) !== 0 ? k.awake(x.id) : null
   const src = awakeAll ? aw : k.bust(x.id)
   // 각성 보기에 고리 영상이 있으면 숨 쉬는 초상 (형 11-05 · 저사양·동작 줄이기에선 첫 장면에 멈춘다)
@@ -186,11 +184,11 @@ function detail(k: DexKit, x: DexHero, f: number): string {
   h += `<span class="lvs">${[DEX_HEARD, DEX_MET, DEX_CAUGHT, DEX_SERVED].map((b, i) => `<i class="${f & b ? 'on' : ''}">${LV_NAME[i + 1]}</i>`).join('')}</span>`
   h += `</div></div>`
   const gr = k.grow(x.id)
-  const grown = gr.lv > 0 || gr.relics !== '' ? `<p class="dxgrl">${gr.lv > 0 ? `<b>단련 ${gr.lv}</b> 단련터에서 키운 몸으로 다음 판에 온다` : ''}${gr.relics !== '' ? `<span>지닌 유물 ${gr.relics}</span>` : ''}</p>` : ''
-  if (lv >= 2) h += `<div class="dxstat">${heroRadar(x.hero, true, (f & DEX_SERVED) !== 0, 150)}<div class="dxtr">${traitChips(x.hero, true)}<p class="mute">처음 나올 때의 솜씨다. 판에서 부리면 자란다.</p>${grown}</div></div>`
-  else if (lv === 1) h += `<p class="mute">이름만 들었다. 싸워 보거나 정찰·첩자로 보면 솜씨가 적힌다.</p>`
-  else h += `<p class="mute">아직 모른다. ${k.esc(x.board === 'wander' ? '떠돌이는 봄마다 한 명쯤 우리 땅에 나타난다.' : `${josa(x.nationName, '을', '를')} 알게 되면 이름이 들린다.`)}</p>`
-  if (lv >= 2 && (f & DEX_CAUGHT) === 0 && (f & DEX_SERVED) === 0) h += `<p class="mute">싸움에서 이기고 사로잡으면 포승줄 칸이 켜진다. 회유하면 거느린다.</p>`
+  const grown = gr.lv > 0 || gr.relics !== '' ? `<p class="dxgrl">${gr.lv > 0 ? `<b>${tr('dx.drill', { n: gr.lv })}</b> ${tr('dx.grownNote')}` : ''}${gr.relics !== '' ? `<span>${tr('dx.relicsHeld', { relics: gr.relics })}</span>` : ''}</p>` : ''
+  if (lv >= 2) h += `<div class="dxstat">${heroRadar(x.hero, true, (f & DEX_SERVED) !== 0, 150)}<div class="dxtr">${traitChips(x.hero, true)}<p class="mute">${tr('dx.baseStat')}</p>${grown}</div></div>`
+  else if (lv === 1) h += `<p class="mute">${tr('dx.heardOnly')}</p>`
+  else h += `<p class="mute">${tr('dx.unknown', { rest: k.esc(x.board === 'wander' ? tr('dx.unkWander') : tr('dx.unkNation', { nation: x.nationName })) })}</p>`
+  if (lv >= 2 && (f & DEX_CAUGHT) === 0 && (f & DEX_SERVED) === 0) h += `<p class="mute">${tr('dx.capHint')}</p>`
   return h + `</div>`
 }
 
@@ -199,18 +197,18 @@ export function dexHtml(k: DexKit, board: DexBoard, sel: string | null, back: st
   const dex = loadDex()
   const all = dexCatalog()
   const c = dexCounts(dex)
-  let h = `<div class="front dexp"><div class="fhead"><button class="btn ghost" data-act="dex-close">‹ ${k.esc(back)}</button><h2>영웅전</h2><button class="dxawall${awakeAll ? ' on' : ''}" data-act="dex-awake" aria-pressed="${awakeAll}" data-tip="각성 얼굴로 보기 · 각성을 못 본 장수는 물음표">🔥 각성</button></div>`
+  let h = `<div class="front dexp"><div class="fhead"><button class="btn ghost" data-act="dex-close">‹ ${k.esc(back)}</button><h2>${tr('title.heroes')}</h2><button class="dxawall${awakeAll ? ' on' : ''}" data-act="dex-awake" aria-pressed="${awakeAll}" data-tip="${tr('dx.awakeTip')}">${tr('dx.awake')}</button></div>`
   h += `<div class="dxsum"><div class="dxbar"><i class="s" style="width:${(c.served / c.total) * 100}%"></i><i class="c" style="width:${(c.caught / c.total) * 100}%"></i><i class="m" style="width:${(c.met / c.total) * 100}%"></i><i class="h" style="width:${(c.heard / c.total) * 100}%"></i></div>`
-  h += `<p><span><b>${c.served}</b>거느림</span><span><b>${c.caught}</b>사로잡음</span><span><b>${c.met}</b>만남</span><span><b>${c.heard}</b>들음</span><span class="mute">모두 ${c.total}</span></p>`
-  h += `<p class="mute">판이 끝나도, 져도 남는다. 사로잡고 거느린 장수가 쌓인다.</p></div>`
+  h += `<p><span><b>${c.served}</b>${LV_NAME[4]}</span><span><b>${c.caught}</b>${LV_NAME[3]}</span><span><b>${c.met}</b>${LV_NAME[2]}</span><span><b>${c.heard}</b>${LV_NAME[1]}</span><span class="mute">${tr('dx.all', { n: c.total })}</span></p>`
+  h += `<p class="mute">${tr('dx.keepNote')}</p></div>`
   h += `<div class="dxtabs">`
   for (const t of TABS) {
     const xs = t === 'all' ? all : all.filter((x) => x.board === t)
     const got = xs.filter((x) => dexLevel(dex[x.id]?.f ?? 0) >= 2).length
-    h += `<button class="${t === board ? 'on' : ''}" data-act="dex-board" data-v="${t}">${t === 'all' ? '모두' : BOARD_NAME[t]}<small>${got}/${xs.length}</small></button>`
+    h += `<button class="${t === board ? 'on' : ''}" data-act="dex-board" data-v="${t}">${t === 'all' ? tr('dx.allTab') : BOARD_NAME[t]}<small>${got}/${xs.length}</small></button>`
   }
-  h += `<button class="${board === 'clan' ? 'on' : ''}" data-act="dex-board" data-v="clan">가문<small>${Object.keys(loadClan()).length}</small></button>`
-  h += `<button class="${board === 'bond' ? 'on' : ''}" data-act="dex-board" data-v="bond">명부<small>${Object.keys(bondTotals()).length}</small></button>`
+  h += `<button class="${board === 'clan' ? 'on' : ''}" data-act="dex-board" data-v="clan">${tr('dx.clan')}<small>${Object.keys(loadClan()).length}</small></button>`
+  h += `<button class="${board === 'bond' ? 'on' : ''}" data-act="dex-board" data-v="bond">${tr('dx.roster')}<small>${Object.keys(bondTotals()).length}</small></button>`
   if (board === 'bond') return h + `</div>${rosterHtml(k, sel === 'more')}</div>`
   if (board === 'clan') return h + `</div>${clanHtml(k)}</div>`
   h += `</div><div class="dxgrid">`
@@ -232,9 +230,9 @@ export function dexToastHtml(k: DexKit, items: ReadonlyArray<{ id: string; lv: 2
     const x = cat.get(it.id)
     if (x === undefined) continue
     const src = k.bust(x.id)
-    h += `<div class="dxt lv${it.lv}">${src !== null ? `<img src="${src}" alt="">` : ''}<span><small>영웅전 · ${LV_NAME[it.lv]}</small><b>${nameHtml(x.name)}</b></span></div>`
+    h += `<div class="dxt lv${it.lv}">${src !== null ? `<img src="${src}" alt="">` : ''}<span><small>${tr('dx.toast', { lv: LV_NAME[it.lv]! })}</small><b>${nameHtml(x.name)}</b></span></div>`
   }
-  if (items.length > top.length) h += `<div class="dxt more">그 밖에 ${items.length - top.length}명</div>`
+  if (items.length > top.length) h += `<div class="dxt more">${tr('dx.more', { n: items.length - top.length })}</div>`
   return h + `</div>`
 }
 
