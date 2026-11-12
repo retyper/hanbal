@@ -175,8 +175,9 @@ export const HERO_CSS = `
   background: #000e; cursor: zoom-out; animation: bvin .2s ease-out; }
 .ap .bview img, .ap .bview video { max-width: min(96vw, 900px); max-height: 88dvh; object-fit: contain; border-radius: 14px; box-shadow: 0 0 40px #000; border: 2px solid #6a5a3a; }
 /* 각성 영상은 720×1280 전체를 보여 준다. 오른쪽 아래 표식만 작은 각성 문양으로 덮는다. */
-.ap video.vloop, .ap video.vloop.sq { aspect-ratio: 9 / 16; object-fit: contain; object-position: center; }
-.ap .bview .vfull { position: relative; display: block; height: min(88dvh, calc(96vw * 16 / 9)); aspect-ratio: 9 / 16; box-shadow: 0 0 40px #000; }
+.ap video.vloop { aspect-ratio: 720 / 1180; object-fit: cover; object-position: 50% 0; } /* 아래 워터마크 띠를 잘라 낸다 (형 11-12) */
+.ap video.vloop.sq { aspect-ratio: 9 / 16; object-fit: contain; object-position: center; }
+.ap .bview .vfull { position: relative; display: block; height: min(88dvh, calc(96vw * 1180 / 720)); aspect-ratio: 720 / 1180; box-shadow: 0 0 40px #000; }
 .ap .bview .vfull video.vloop { display: block; width: 100%; height: 100%; max-width: none; max-height: none; border: 0; border-radius: 0; box-shadow: none; }
 .ap .vthumb { position: relative; display: inline-block; max-width: 100%; }
 .ap .hcard .hpic.framed { --awakening-frame-outset: 12px; padding: var(--awakening-frame-outset); }

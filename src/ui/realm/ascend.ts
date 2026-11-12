@@ -168,8 +168,9 @@ export const ASCEND_CSS = `
 .ap .ascfx.portrait-video.revealed .axstage { opacity: 0; visibility: hidden; }
 .ap .ascfx.portrait-video .axpost { position: absolute; inset: 0; z-index: 5; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 12px calc(76px + env(safe-area-inset-bottom)); gap: 3px; opacity: 0; pointer-events: none; transition: opacity .3s ease-out; }
 .ap .ascfx.portrait-video.revealed .axpost { opacity: 1; }
-.ap .ascfx.portrait-video .axmedia { position: relative; flex: none; width: min(34.875dvh, calc((100dvh - 230px) * .5625), calc(100vw - 48px)); min-width: 120px; aspect-ratio: 9 / 16; background: #100b0a; box-shadow: 0 0 40px #e8aa5b55; }
-.ap .ascfx.portrait-video .axmedia video.axnew { position: relative; display: block; width: 100%; height: 100%; opacity: 1; animation: none; object-fit: contain; object-position: center; }
+.ap .ascfx.portrait-video .axmedia { position: relative; flex: none; width: min(34.875dvh, calc((100dvh - 230px) * .5625), calc(100vw - 48px)); min-width: 120px; aspect-ratio: 720 / 1180; background: #100b0a; box-shadow: 0 0 40px #e8aa5b55; }
+.ap .ascfx.portrait-video .axmedia video.axnew { position: relative; display: block; width: 100%; height: 100%; opacity: 1; animation: none; object-fit: cover; object-position: 50% 0; } /* 아래 워터마크 띠는 잘라 낸다 (형 11-12) */
+.ap .ascfx.portrait-video .axmedia video.axnew.sq { object-fit: contain; object-position: center; }
 /* 기존 각성 청동 액자를 세로 9분할로 이어 붙인다. 가운데는 비워 영상 전체를 보인다. */
 .ap .awakening-frame::after { --edge: calc(var(--awakening-frame-outset, 17px) + 2px); content: ''; position: absolute; inset: calc(-1 * var(--awakening-frame-outset, 17px)); z-index: 4; pointer-events: none;
   border: var(--edge) solid transparent; border-image: url(__ART__fx/awaken/frame0.png) 112 / var(--edge) / 0 stretch; filter: drop-shadow(0 0 7px #f0a65a88); }

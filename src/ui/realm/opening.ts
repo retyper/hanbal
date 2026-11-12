@@ -97,6 +97,7 @@ const CSS = `
 #opening .opsc.on { opacity: 1; }
 #opening .opimg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity var(--opfade) ease; transform: var(--kf); transform-origin: 50% 50%; animation: opkb var(--opdur) linear forwards; will-change: transform; }
 #opening .opimg.on { opacity: 1; }
+#opening .opband { position: absolute; inset: 0; margin: auto; width: 100%; height: min(100%, calc(100vw * 9 / 16)); overflow: hidden; } /* 영화관 띠 — 세로 폰이면 위아래가 검다 · 가로 화면은 꽉 */
 @keyframes opkb { from { transform: var(--kf); } to { transform: var(--kt); } }
 #opening .opscrim { position: absolute; left: 0; right: 0; bottom: 0; height: 38%; background: linear-gradient(transparent, #000000d0); pointer-events: none; }
 #opening .opcap { position: absolute; left: 0; right: 0; bottom: calc(9% + env(safe-area-inset-bottom)); padding: 0 7vw; text-align: center; color: #f3e6c4; font: 700 clamp(18px, 5.2vw, 30px)/1.5 'Gowun Batang', serif; letter-spacing: .04em; text-shadow: 0 2px 10px #000, 0 0 3px #000; word-break: keep-all; overflow-wrap: anywhere; opacity: 0; animation: opcap .8s ease .5s forwards; }
@@ -188,7 +189,7 @@ function awakenBox(base: string, id: string, cls: string): HTMLElement {
     v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto'
     v.poster = still
     v.src = `${base}realm/${loopFile(id)}`
-    v.style.cssText = 'width:100%;height:100%;object-fit:cover'
+    v.style.cssText = 'width:100%;height:108%;object-fit:cover;object-position:50% 0' // 아래 워터마크 띠는 칸 밖으로 (형 11-12)
     v.addEventListener('error', () => { v.remove(); asImg() })
     box.appendChild(v)
   } else asImg()
@@ -247,7 +248,7 @@ function buildScene(base: string, sc: Scene, n: number, dur: number): HTMLElemen
     if (worldBgUrl !== '') showWorldBg(root)
     return root
   }
-  root.innerHTML = sc.imgs.map((p) => `<img class="opimg" src="${base}realm/${p}" alt="" decoding="async">`).join('') + cap
+  root.innerHTML = `<div class="opband">${sc.imgs.map((p) => `<img class="opimg" src="${base}realm/${p}" alt="" decoding="async">`).join('')}</div>` + cap
   return root
 }
 

@@ -817,7 +817,7 @@ html.duel-open .ap * { animation-play-state: paused !important; }
   --cn-mask: url(__ART__fx/mask-council.png);
   -webkit-mask: var(--cn-mask) center / 100% 100% no-repeat; mask: var(--cn-mask) center / 100% 100% no-repeat; }
 /* 세로 영상도 군막에 녹이고 아래 구석은 더 일찍 가린다. .sq는 가운데 원본 정사각 영역을 쓴다. */
-.ap .cnspk video.cnbig:not(.sq) { width: min(62vw, 320px, calc(50vh * 9 / 16)); aspect-ratio: 9 / 16; object-fit: contain; --cn-mask: url(__ART__fx/mask-council-tall.png); }
+.ap .cnspk video.cnbig:not(.sq) { width: min(62vw, 320px, calc(50vh * 9 / 16)); aspect-ratio: 720 / 1180; object-fit: cover; object-position: 50% 0; --cn-mask: url(__ART__fx/mask-council-tall.png); }
 .ap .cnspk video.cnbig.sq { aspect-ratio: 1; object-fit: cover; object-position: center; }
 /* 낮은 가로 화면(폰 눕힘) — 얼굴은 왼쪽, 말은 오른쪽 (세로로 쌓으면 머리 위가 잘렸다) */
 @media (max-height: 520px) and (min-aspect-ratio: 4/3) {
