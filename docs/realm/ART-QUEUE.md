@@ -385,6 +385,15 @@ A2 주문은 2026-10-21 아침에 써서 넣어 봤다 (두 계정 다 한도) �
 | (옛 S1) | event-sky-drought.jpg (곡식이 바닥났다 · 도읍이 무너졌다 끝 그림) | 하늘 한가운데 **빨간 해 동그라미** | 2026-10-21 손으로 걷음 — 오른쪽 하늘 구름을 옮겨 덮음(원본은 git). 옷이 교령 도포처럼 보이는 것까지 고치려면 다시 받는다: 흙먼지 하늘, **해 없음**, 삼베 저고리·통 바지 |
 | S2 | 노을 넷 — eight-harbours · expedition-return · golden-egg · salt-makers | 지평선에 걸린 누런 노을 해 (빨간 동그라미는 아니다) | 형이 보고 걸리면 다시 받는다 |
 
+## ★ 동작 띠 3×2 다시 굽기 — 제미나이 (11-12 형: 「머리 잘림 · 창칼 짧음 · 칸 가로로 넓게 · 한 장에 적게」)
+
+새 틀은 tools/sprite-kit/README.md 「★ 11-12 새 틀」. 한 명 = 새 대화 · `skit.send('act6solo', key)` (IMAGE 1 `ref-act-3x2.png` · IMAGE 2 초상) → `cut.sh <key> act6` → `check-strip.py <key>-act6-key.png 3 2` 가 0·0 → `NACT=6 sh tools/sprite-kit/register-realm.sh <key> "…"`. 걷기는 그대로 둔다.
+독무덤(dokmudeom)은 11-12 첫 시험으로 끝남(f0992353). 우선순위 = 찌름 컷(3·4)에 무기가 칸 경계에 걸린 장수(옛 4×2 원본에서 센 것 · D:/tmp-node/weapon-crossing.txt) · 이름난 장수부터:
+
+- 1순위(주인공·시작 장수): soseono aryeong suro onjo haedal damul daeso jumong(5~8만) hyeokgeose(7·8만)
+- 2순위(찌름 컷 걸림 61): adogan alpyeong ara areum bakdal bandit-club baram bdanbi beomi bira byeol dallae2 dalli duman eomni gamsil gaon geumbawi goeun gom gomok gureum gwaeyu haebi haesol heo hneoul hogong hojin irang jibaekho jita keundol malgalgi maro maryeo mdallae mulbeom mulsae musoe nuri odi odogan pidogan sincheongan singwigan sinneoul sobeol soebi tahae waechief yeodogan yucheongan yusugan
+- 머리 잘린 채 원본 없는 옛 길 6띠(걷기까지 통째로): w-bow g-sword g-spear mount soenun sogeumbi
+
 ## 제미나이 (넓은 그림 — 챗지피티 한도가 다 찼을 때)
 
 | # | 무엇 | 왜 |
