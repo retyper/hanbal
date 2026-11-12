@@ -10,6 +10,7 @@
 import type { Order, Realm, Report } from '../../realm/types.ts'
 import { seasonLabel } from '../../realm/data/prose.ts'
 import { P } from '../../tune/params.ts'
+import { t as tr } from '../../i18n/index.ts'
 
 /** 자동 저장 한 판 — realm-main 의 `hanbal.realm.v2` 와 같은 모양 */
 export interface Saved {
@@ -93,7 +94,6 @@ export const serializeSave = (f: SaveFile): string => JSON.stringify(f)
 
 export type Parsed = { readonly ok: true; readonly file: SaveFile } | { readonly ok: false; readonly why: string }
 
-const BAD = '이 파일은 열국군웅전 판으로 읽을 수 없습니다'
 
 const isObj = (x: unknown): x is Record<string, unknown> => x !== null && typeof x === 'object' && !Array.isArray(x)
 
@@ -125,19 +125,19 @@ function fill(g: Saved): Saved {
  */
 export function parseSaveFile(text: string): Parsed {
   let o: unknown
-  try { o = JSON.parse(text) } catch { return { ok: false, why: BAD } }
-  if (!isObj(o)) return { ok: false, why: BAD }
+  try { o = JSON.parse(text) } catch { return { ok: false, why: tr('sf.bad') } }
+  if (!isObj(o)) return { ok: false, why: tr('sf.bad') }
   if (o['kind'] === SAVE_KIND) {
-    if (typeof o['fv'] !== 'number') return { ok: false, why: BAD }
-    if (o['fv'] > SAVE_FV) return { ok: false, why: '더 새 게임에서 만든 파일이다. 게임을 새로 고친 뒤 다시 불러온다' }
-    if (!gameOk(o['game'])) return { ok: false, why: '판이 깨져 있다: 불러오지 않았다' }
+    if (typeof o['fv'] !== 'number') return { ok: false, why: tr('sf.bad') }
+    if (o['fv'] > SAVE_FV) return { ok: false, why: tr('sf.newer') }
+    if (!gameOk(o['game'])) return { ok: false, why: tr('sf.broken') }
     const game = fill(o['game'])
     const label = typeof o['label'] === 'string' ? cleanLabel(o['label'], game.realm) : defaultLabel(game.realm)
     return { ok: true, file: { kind: SAVE_KIND, fv: SAVE_FV, label, savedAt: typeof o['savedAt'] === 'string' ? o['savedAt'] : (game.at ?? ''), game, draft: draftFor(game, o['draft']) } }
   }
   const g = o['v'] === 2 ? o : isObj(o['save']) ? o['save'] : null
-  if (g === null) return { ok: false, why: BAD }
-  if (!gameOk(g)) return { ok: false, why: '판이 깨져 있다: 불러오지 않았다' }
+  if (g === null) return { ok: false, why: tr('sf.bad') }
+  if (!gameOk(g)) return { ok: false, why: tr('sf.broken') }
   const game = fill(g)
   return { ok: true, file: { kind: SAVE_KIND, fv: SAVE_FV, label: defaultLabel(game.realm), savedAt: game.at ?? '', game, draft: draftFor(game, o['draft']) } }
 }
@@ -206,9 +206,9 @@ export function writeSave(kv: KV, n: number, f: SaveFile, count = saveSlotCount(
 export function readSave(kv: KV, n: number): Parsed {
   let raw: string | null = null
   try { raw = kv.getItem(saveKey(n)) } catch { raw = null }
-  if (raw === null) return { ok: false, why: '빈 칸이다' }
+  if (raw === null) return { ok: false, why: tr('sf.emptySlot') }
   const p = parseSaveFile(raw)
-  return p.ok ? p : { ok: false, why: '이 칸의 판이 깨져 있다. 불러오지 않았다' }
+  return p.ok ? p : { ok: false, why: tr('sf.slotBroken') }
 }
 
 /** 칸 n 을 비운다 — 목록에서 먼저 빼고 칸을 지운다. 목록을 못 쓰면 칸도 그대로 둔다 */

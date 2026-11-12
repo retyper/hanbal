@@ -3452,6 +3452,11 @@ export const ko = {
   'dy.runNote': '져도 남는다 · 단련터에서 쓴다',
   'dy.yard': '단련터 ›',
   'dy.spare': '쓸 공 {n}',
+  'sf.bad': '이 파일은 열국군웅전 판으로 읽을 수 없습니다',
+  'sf.newer': '더 새 게임에서 만든 파일이다. 게임을 새로 고친 뒤 다시 불러온다',
+  'sf.broken': '판이 깨져 있다: 불러오지 않았다',
+  'sf.emptySlot': '빈 칸이다',
+  'sf.slotBroken': '이 칸의 판이 깨져 있다. 불러오지 않았다',
 } as const
 
 export type Key = keyof typeof ko

@@ -3440,6 +3440,11 @@ export const en: Partial<Record<Key, string>> = {
   'dy.runNote': 'Kept even if you lose · spend it at the training ground',
   'dy.yard': 'Training ground ›',
   'dy.spare': 'Merit to spend {n}',
+  'sf.bad': 'This file cannot be read as a First Realms game',
+  'sf.newer': 'This file was made by a newer version of the game. Refresh the game and load it again',
+  'sf.broken': 'The game is corrupted: not loaded',
+  'sf.emptySlot': 'Empty slot',
+  'sf.slotBroken': 'The game in this slot is corrupted. Not loaded',
 }
 
 /** 아직 영어로 안 옮긴 키 — 일부러 비워 둔 것만 (한국어로 나간다) */
