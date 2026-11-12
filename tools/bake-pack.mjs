@@ -126,7 +126,11 @@ for (const r of RECAST) {
 // ①-3 15세 판 (형 11-10: Steam 15세로 · 지금 것은 assets_r19 에 보관 · 테스트 동안은 지금 것) — gpt15_aw<단>-<id>.png → assets_15/ 에만 모은다(게임엔 아직 안 넣음)
 // 새로 그리면 느낌이 바뀐다 — 지금 그림을 붙이고 비침만 고친다 (영상도 그 그림으로 다시 구우니 같은 그림이어야 한다)
 const EDIT15 = 'This is an AI-generated illustration of a fictional adult woman from my own Korean historical fantasy strategy game (an original character, not a real person). Edit this exact image only slightly for a teen (15+) age rating: make every piece of her clothing fully opaque (no sheer or see-through fabric anywhere) and remove any nipple or nipple outline showing through the clothes. Keep EVERYTHING else exactly the same: same face, expression, pose, composition, colors, outfit design, jewelry, cleavage, aura, lighting, background and square image size. Also make the whole image read unmistakably as a painted illustration rather than a photograph: give her a painterly anime/game-art face with slightly stylized features (a little larger eyes, cleaner line work, smooth flat airbrushed skin with no photographic pores or skin texture), while keeping her identity, hairstyle, expression, pose, outfit colours and framing recognizably the same.'
-const R15 = [[1, 'w-18-jinhan-salt-widow'], [1, 'w-91-saro-mulsae'], [1, 'w-98-byeonhan-danbi'], [1, 'w-103-tahae-neoul'], [2, 'w-103-tahae-neoul'],
+const R15 = [
+  // 11-13 형 「챗지피티도 만들 거 진행해」 — 영상이 「실제 사람 같다」로 거절된 여캐 1차 아홉 (EDIT15 끝 문장 = 얼굴도 그림체로) · 받아야 영상 job 을 다시 낼 수 있다
+  [1, 'w-101-garak-singwigan'], [1, 'w-21-baekje-court-dancer'], [1, 'w-17-mahan-pearl-diver'], [1, 'w-64-miri-dallae'], [1, 'l-L5-seonyeo'],
+  [1, 'w-40-mujin-munui'], [1, 'w-61-iseo-sinae'], [1, 'w-50-siljik-mulga'], [1, 'w-53-hwanna-gabi'],
+  [1, 'w-18-jinhan-salt-widow'], [1, 'w-91-saro-mulsae'], [1, 'w-98-byeonhan-danbi'], [1, 'w-103-tahae-neoul'], [2, 'w-103-tahae-neoul'],
   // 11-10 형: "유륜 같기도 하고 팬티 보이는 거 같기도 · 아주 살짝만 더 가리면"
   [2, 'w-29-golpo-janmul', ' Specifically: slightly raise and thicken the fabric over her chest so nothing there could look like an areola, and lengthen or close the skirt slit a little so no underwear is visible. Change only these small areas.'],
   // 11-10 형: "왼쪽 가슴 유륜 나옴 · 아깝다" · "살짝 팬티랑 오른쪽 유륜 위험"

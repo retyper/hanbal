@@ -4,7 +4,7 @@
 
 ## 준비 (한 번)
 - 꾸러미: `node tools/bake-pack.mjs` → `tools/out/bake-pack/index.html`. 카드 차례는 그 파일의 `<article data-k="gpt-<저장이름>">` 순서. **초상(gpt_bust-)·1차(gpt_aw1-) 카드가 2차(gpt_aw2-)보다 먼저.** 넣은 뒤엔 `node tools/bake-pack.mjs` 를 다시 돌려야 다음 단계 카드(RECAST)가 나온다.
-- 카드 하나 뽑기: `node C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/b4bb0375-cc38-434c-a2e1-ac1f74744a28/scratchpad/card.mjs <저장이름>` → 첫 줄 JSON = 첨부할 그림(윈도 경로) · 문안은 같은 폴더 `card.txt` 에 저장된다.
+- 카드 하나 뽑기: `node tools/sprite-kit/gpt-card.mjs <저장이름>` → 첫 줄 JSON = 첨부할 그림(윈도 경로) · 문안은 `tools/out/gpt-card.txt`.
 - 챗지피티 탭 id **640634232** (크롬 bcba6fe9). 다른 탭은 건드리지 않는다.
 
 ## 카드 한 장
@@ -14,7 +14,7 @@
    ```
    `object` 가 아니면 로그인 화면이다 → 멈추고 보고.
 2. 입력칸(화면 가운데, 대략 (900,375)) 클릭 → `ctrl+a` → `Delete` (지난 초안이 남아 있다).
-3. `find "사진 첨부 file input and gpt-text file input"` → `file_upload` 로 그림(들)을 「사진 첨부」 ref 에, `card.txt` 를 `gpt-text` ref 에 올린다. **ref 는 매번 새로 find** (페이지가 다시 그려지며 사라진다).
+3. `find "사진 첨부 file input and gpt-text file input"` → `file_upload` 로 그림(들)을 「사진 첨부」 ref 에, `tools/out/gpt-card.txt` 를 `gpt-text` ref 에 올린다. **ref 는 매번 새로 find** (페이지가 다시 그려지며 사라진다).
 4. 3초 기다림 → 「파일이 채팅에만 추가됨」 알림이 뜨면 ✕(대략 (932,290)) 클릭 → 입력칸 클릭 → JS:
    ```js
    const a = gkit.attached(); const t = (await document.getElementById('gtxt').files[0].text()).replace(/\s*\n\s*/g,' ').trim(); a < N ? 'ATTACHED ' + a : JSON.stringify(await gkit.say(t)) + ' att=' + a
