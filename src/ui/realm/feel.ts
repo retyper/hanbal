@@ -8,49 +8,51 @@
  * 말은 "~할 듯" 꼴을 버리고 한눈에 읽히는 낱말로 (형 10-23: "거의 된다 · 될 듯 · 안 될 듯 … 어휘 표현 좀 적절한 거 없나").
  */
 
+import { t as tr } from '../../i18n/index.ts'
+
 interface Tier { readonly at: number; readonly word: string; readonly color: string }
 
 /** 싸움 — 이길 확률 */
 const FIGHT: readonly Tier[] = [
-  { at: 0.85, word: '압도', color: '#3f8f3a' },
-  { at: 0.65, word: '우세', color: '#7aa83a' },
-  { at: 0.45, word: '팽팽', color: '#c9a23a' },
-  { at: 0.25, word: '불리', color: '#d0702f' },
-  { at: 0, word: '무모', color: '#b83a2a' },
+  { at: 0.85, get word() { return tr('feel.fight.0') }, color: '#3f8f3a' },
+  { at: 0.65, get word() { return tr('feel.fight.1') }, color: '#7aa83a' },
+  { at: 0.45, get word() { return tr('feel.fight.2') }, color: '#c9a23a' },
+  { at: 0.25, get word() { return tr('feel.fight.3') }, color: '#d0702f' },
+  { at: 0, get word() { return tr('feel.fight.4') }, color: '#b83a2a' },
 ]
 
 /** 사신 — 받아들일 확률 */
 const ENVOY: readonly Tier[] = [
-  { at: 0.7, word: '반긴다', color: '#3f8f3a' },
-  { at: 0.45, word: '솔깃', color: '#7aa83a' },
-  { at: 0.25, word: '망설인다', color: '#c9a23a' },
-  { at: 0.1, word: '시큰둥', color: '#d0702f' },
-  { at: 0, word: '퇴짜', color: '#b83a2a' },
+  { at: 0.7, get word() { return tr('feel.envoy.0') }, color: '#3f8f3a' },
+  { at: 0.45, get word() { return tr('feel.envoy.1') }, color: '#7aa83a' },
+  { at: 0.25, get word() { return tr('feel.envoy.2') }, color: '#c9a23a' },
+  { at: 0.1, get word() { return tr('feel.envoy.3') }, color: '#d0702f' },
+  { at: 0, get word() { return tr('feel.envoy.4') }, color: '#b83a2a' },
 ]
 
 /** 기습 — 안 들키고 닿을 확률 */
 const AMBUSH: readonly Tier[] = [
-  { at: 0.7, word: '감쪽같다', color: '#3f8f3a' },
-  { at: 0.45, word: '아슬아슬', color: '#7aa83a' },
-  { at: 0.25, word: '들킬라', color: '#d0702f' },
-  { at: 0, word: '빤히 보인다', color: '#b83a2a' },
+  { at: 0.7, get word() { return tr('feel.ambush.0') }, color: '#3f8f3a' },
+  { at: 0.45, get word() { return tr('feel.ambush.1') }, color: '#7aa83a' },
+  { at: 0.25, get word() { return tr('feel.ambush.2') }, color: '#d0702f' },
+  { at: 0, get word() { return tr('feel.ambush.3') }, color: '#b83a2a' },
 ]
 
 /** 공작 — 먹힐 확률 (사건 카드의 굴리는 답도 이 말을 쓴다) */
 const PLOT: readonly Tier[] = [
-  { at: 1, word: '확실', color: '#2f7f2a' },
-  { at: 0.7, word: '십중팔구', color: '#3f8f3a' },
-  { at: 0.45, word: '승산 있다', color: '#7aa83a' },
-  { at: 0.25, word: '해볼 만', color: '#c9a23a' },
-  { at: 0.1, word: '어렵다', color: '#d0702f' },
-  { at: 0, word: '가망 없다', color: '#b83a2a' },
+  { at: 1, get word() { return tr('feel.plot.0') }, color: '#2f7f2a' },
+  { at: 0.7, get word() { return tr('feel.plot.1') }, color: '#3f8f3a' },
+  { at: 0.45, get word() { return tr('feel.plot.2') }, color: '#7aa83a' },
+  { at: 0.25, get word() { return tr('feel.plot.3') }, color: '#c9a23a' },
+  { at: 0.1, get word() { return tr('feel.plot.4') }, color: '#d0702f' },
+  { at: 0, get word() { return tr('feel.plot.5') }, color: '#b83a2a' },
 ]
 
 /** 경계 — 높을수록 기습이 어렵다 */
 const ALERT: readonly Tier[] = [
-  { at: 0.6, word: '삼엄하다', color: '#b83a2a' },
-  { at: 0.3, word: '살핀다', color: '#c9a23a' },
-  { at: 0, word: '느슨하다', color: '#3f8f3a' },
+  { at: 0.6, get word() { return tr('feel.alert.0') }, color: '#b83a2a' },
+  { at: 0.3, get word() { return tr('feel.alert.1') }, color: '#c9a23a' },
+  { at: 0, get word() { return tr('feel.alert.2') }, color: '#3f8f3a' },
 ]
 
 /** 범위가 이보다 넓으면 "가늠이 덜 됐다" */
@@ -84,11 +86,11 @@ function chip(tiers: readonly Tier[], lo: number, hi: number, pct = false): stri
 export const fightFeel = (lo: number, hi: number): string => chip(FIGHT, lo, hi)
 /** 조공 요구 — 내놓으라는 청이라 반기고 솔깃할 일이 아니다 (형 10-23: "조공 요구에 솔깃은 좀 아니지 않나") */
 const TRIBUTE: readonly Tier[] = [
-  { at: 0.7, word: '고개 숙인다', color: '#3f8f3a' },
-  { at: 0.45, word: '흔들린다', color: '#7aa83a' },
-  { at: 0.25, word: '버틴다', color: '#c9a23a' },
-  { at: 0.1, word: '거세게 버틴다', color: '#d0702f' },
-  { at: 0, word: '콧방귀', color: '#b83a2a' },
+  { at: 0.7, get word() { return tr('feel.tribute.0') }, color: '#3f8f3a' },
+  { at: 0.45, get word() { return tr('feel.tribute.1') }, color: '#7aa83a' },
+  { at: 0.25, get word() { return tr('feel.tribute.2') }, color: '#c9a23a' },
+  { at: 0.1, get word() { return tr('feel.tribute.3') }, color: '#d0702f' },
+  { at: 0, get word() { return tr('feel.tribute.4') }, color: '#b83a2a' },
 ]
 /** 사신 — 남의 속이 섞여 범위 % (ODDS: 흥정 손잡이 · 몫을 바꾸면 바로 다시 셈) */
 export const envoyFeel = (lo: number, hi: number, ask?: string): string => chip(ask === 'tribute' ? TRIBUTE : ENVOY, lo, hi, true)
@@ -97,20 +99,20 @@ export const ambushFeel = (p: number): string => chip(AMBUSH, p, p)
 export const ambushRangeFeel = (lo: number, hi: number): string => chip(AMBUSH, lo, hi, true)
 /** 호감 −100..100 — 숫자 없이 사이의 온도로 */
 const FAVOR: readonly Tier[] = [
-  { at: 60, word: '매우 가깝다', color: '#3f8f3a' },
-  { at: 25, word: '가깝다', color: '#7aa83a' },
-  { at: -25, word: '데면데면', color: '#80706a' },
-  { at: -60, word: '껄끄럽다', color: '#d0702f' },
-  { at: -Infinity, word: '원수 같다', color: '#b83a2a' },
+  { at: 60, get word() { return tr('feel.favor.0') }, color: '#3f8f3a' },
+  { at: 25, get word() { return tr('feel.favor.1') }, color: '#7aa83a' },
+  { at: -25, get word() { return tr('feel.favor.2') }, color: '#80706a' },
+  { at: -60, get word() { return tr('feel.favor.3') }, color: '#d0702f' },
+  { at: -Infinity, get word() { return tr('feel.favor.4') }, color: '#b83a2a' },
 ]
-export const favorFeel = (v: number): string => `<span class="feel" style="background:${tierOf(FAVOR, v).color}">호감 · ${tierOf(FAVOR, v).word}</span>`
+export const favorFeel = (v: number): string => `<span class="feel" style="background:${tierOf(FAVOR, v).color}">${tr('feel.favor', { w: tierOf(FAVOR, v).word })}</span>`
 /** 공작 — 적 지략을 모르니 범위 % (ODDS · 첩자가 폭을 줄인다). pct=false 는 말만 — 들킴·탈출은 아직 적의 참 경계를 읽어서 (ODDS 고칠 것) */
 export const plotFeel = (lo: number, hi: number, pct = true): string => chip(PLOT, lo, hi, pct)
 /** 사건 카드의 굴리는 답 — 입력을 다 아는 한 번의 도박이라 % 하나 (ODDS) */
 export const chanceFeel = (p: number): string => chip(PLOT, p, p, true)
 export const alertFeel =(lo: number, hi: number): string => chip(ALERT, lo, hi)
 /** 모르는 싸움 — 본 적 없는 곳 */
-export const unknownFeel = (): string => `<span class="feel unknown">모른다</span>`
+export const unknownFeel = (): string => `<span class="feel unknown">${tr('feel.unknown')}</span>`
 
 export const FEEL_CSS = `
 .ap .feel { display: inline-block; padding: 2px 9px; border-radius: 11px; color: #fff; font-size: 12.5px; font-weight: 700; line-height: 1.5;
