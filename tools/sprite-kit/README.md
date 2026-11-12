@@ -60,6 +60,9 @@
 
 ## Veo (Jay u/4 · 하루 한도가 있다)
 
+> ★ **11-13 형: 모델을 Argon 으로 바꿔야 된다.** 새 대화의 모델 고르기(입력칸 옆 · Flash/Pro/Argon)에서 **Argon** 을 고른 뒤 「동영상 만들기」로 보낸다. 기본 모델로 보내면 「I'm having a hard time…」·「encountering an error」·「full capacity」로 거의 다 실패했다 — 그걸 그림 탓으로 오해해 15세+그림체 판을 새로 구운 것은 헛수고였다(원래 각성 그림으로 돌림). 영상은 **원래 각성 그림**으로.
+> 얼굴이 웃는 채 얼어 버리면 문안의 얼굴 고정이 너무 센 것 — 원장 문안 끝에 「FACE LIFE」 절(깜빡임·눈 움직임·숨 따라 풀렸다 돌아오는 미소)을 붙였다(-l.txt).
+
 - `sh tools/sprite-kit/veo-next.sh` → 다음 일을 claim · 문안을 `tools/out/veo-prompt.txt` 로 (브라우저 업로드는 작업 폴더 안 파일만 된다) · `IMG` 경로를 찍음
 - 탭: 새 대화 → **진짜 클릭**으로 + (658,352) → 「동영상 만들기」(720,524) (JS 클릭은 이 메뉴에서 자주 헛돈다 · 첫 클릭이 안 먹으면 한 번 더) → `가로` 단추 → 「세로 모드」 → 동영상 화면의 + (659,597) 로 파일 칸을 만들고 이름표 `vfile0` · 내 칸 `skit-text`
 - file_upload: `vfile0` ← 사진, `skit-text` ← `tools/out/veo-prompt.txt` → `LOAD; await skit.sendVeo()` (사진 1장·세로가 아니면 안 보냄)
