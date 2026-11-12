@@ -14,6 +14,7 @@ import { armyPower } from '../../realm/estimate.ts'
 import { PLOT_NAME, TIER_NAME } from '../../realm/data/prose.ts'
 import type { Army, Realm, Report, ReportLine } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
+import { lazyTable, t as tr } from '../../i18n/index.ts'
 
 export type LessonId = 'draft' | 'iron' | 'scout' | 'plot' | 'pincer' | 'ally' | 'flag' | 'hero' | 'few'
 /**
@@ -187,16 +188,13 @@ const BG: Readonly<Record<LessonId, string>> = {
   pincer: 'event-relief-cavalry', ally: 'event-alliance-oath', flag: 'event-war-council', hero: 'event-sniped-commander',
   few: 'event-invade-siege', // 목책 뒤 몇 사람과 밀려오는 대군
 }
-const TITLE: Readonly<Record<LessonId, string>> = {
-  draft: '군사 더 뽑기', iron: '쇠 무기 들리기', scout: '정찰 보내기', plot: '공작으로 흔들기',
-  pincer: '두 군대로 협공', ally: '동맹 부르기', flag: '깃발 상성', hero: '장수 붙이기', few: '적은 군사로 대군을',
-}
+const TITLE: Readonly<Record<LessonId, string>> = lazyTable('hwTitle', ['draft', 'iron', 'scout', 'plot', 'pincer', 'ally', 'flag', 'hero', 'few'])
 
 /** 위 띠 — 그림 · 「⚔ 이기는 법」 · 짚인 까닭 그림 (셋까지) */
 export function bannerHtml(k: HowKit, loss: Loss): string {
   const cs = loss.causes.map((c) => `<img class="lsn-bcz" src="${k.art}${CAUSE_IC[c]}.png" alt="">`).join('')
-  return `<div class="lsn-bn${loss.big ? ' big' : ''}" role="button" aria-label="이기는 법 보기"><img class="lsn-bni" src="${k.art}icon/war-broken-banner.png" alt="">`
-    + `<b>⚔ 이기는 법</b>${cs !== '' ? `<span class="lsn-bcs">${cs}</span>` : ''}<i class="lsn-bgo">▶</i></div>`
+  return `<div class="lsn-bn${loss.big ? ' big' : ''}" role="button" aria-label="${tr('hw.aria')}"><img class="lsn-bni" src="${k.art}icon/war-broken-banner.png" alt="">`
+    + `<b>⚔ ${tr('hw.banner')}</b>${cs !== '' ? `<span class="lsn-bcs">${cs}</span>` : ''}<i class="lsn-bgo">▶</i></div>`
 }
 
 export interface Lesson { readonly id: LessonId; readonly cause: boolean; readonly html: string }
@@ -214,8 +212,8 @@ function pageHtml(k: HowKit, id: LessonId, loss: Loss | null): string {
   // 위는 그림(구운 것 · 없으면 사건 그림) · 밑은 짠 그림(병사·깃발·숫자 — 이번 싸움의 숫자도 여기에)
   const src = HOWWIN_BAKED.has(id) ? `howwin/howwin-${id}.jpg` : `event/${BG[id]}.jpg`
   const pic = `<div class="lsn-pic" style="background-image:url('${k.art}${src}')"></div><div class="lsn-dg${id === 'few' ? ' few' : ''}">${picHtml(k, id, loss)}</div>`
-  const go = w > 0 ? `<button class="lsn-go" disabled>🔒 ${k.turns(w)} 뒤에 열립니다</button>` : `<button class="lsn-go" data-lsn="go" data-id="${id}">해 보기</button>`
-  return `<div class="lsn-pg" data-id="${id}">${loss !== null ? '<i class="lsn-why">이번 싸움</i>' : ''}${pic}<h4 class="lsn-h">${esc(TITLE[id])}</h4><p class="lsn-ln${loss !== null ? ' why' : ''}">${esc(lineOf(id, loss))}</p>${id === 'few' ? HIST : ''}${go}</div>`
+  const go = w > 0 ? `<button class="lsn-go" disabled>🔒 ${tr('hw.opensIn', { span: k.turns(w) })}</button>` : `<button class="lsn-go" data-lsn="go" data-id="${id}">${tr('hw.try')}</button>`
+  return `<div class="lsn-pg" data-id="${id}">${loss !== null ? `<i class="lsn-why">${tr('hw.thisBattle')}</i>` : ''}${pic}<h4 class="lsn-h">${esc(TITLE[id])}</h4><p class="lsn-ln${loss !== null ? ' why' : ''}">${esc(lineOf(id, loss))}</p>${id === 'few' ? histHtml() : ''}${go}</div>`
 }
 
 /**
@@ -224,21 +222,21 @@ function pageHtml(k: HowKit, id: LessonId, loss: Loss | null): string {
  * 『삼국사기』 고구려본기 신대왕 8년 · 명림답부 열전. 대군의 머릿수는 기록에 없어 적지 않는다 (「大兵」 · 「數千騎」만).
  * 후대에도 같은 길 — 을지문덕의 살수 싸움(612)도 지치게 하고 굶긴 뒤 물러날 때 쳤다.
  */
-const HIST = '<p class="lsn-hist"><b>좌원 싸움 (172) · 명림답부</b> 수천 기병이 굶주린 대군을 쫓아, 말 한 필도 돌아가지 못했습니다.<small>삼국사기 고구려본기 신대왕 8년</small></p>'
+const histHtml = (): string => `<p class="lsn-hist"><b>${tr('hw.histTitle')}</b> ${tr('hw.histBody')}<small>${tr('hw.histSrc')}</small></p>`
 
 /** 한 줄 — 까닭이면 방금 싸움의 숫자로, 아니면 늘 맞는 말로 (합니다체 · 메모리 system-text-honorific) */
 function lineOf(id: LessonId, loss: Loss | null): string {
   const R = P.realm
   switch (id) {
-    case 'draft': return loss?.men != null ? `적이 ${Math.round(loss.men[1] - loss.men[0])}명 더 많았습니다` : '머릿수가 많은 쪽이 이깁니다'
-    case 'iron': return loss !== null ? '적의 무장이 우리보다 좋았습니다' : `쇠 무장은 청동보다 ${pct(R.equipIron / R.equipBronze - 1)}% 셉니다`
-    case 'scout': return loss === null ? '적의 군사와 낌새가 미리 보입니다' : loss.def ? '적의 기습을 미리 몰랐습니다' : '적의 군사를 모르고 쳤습니다'
-    case 'plot': return loss !== null ? '적의 사기가 더 높았습니다' : `소문은 적의 사기를 ${pct(R.plotRumorMorale)}% 깎습니다`
-    case 'pincer': return loss !== null ? '한 군대로만 쳤습니다' : `두 길에서 한꺼번에 닿으면 ${pct(R.pincer - 1)}% 더 셉니다`
-    case 'ally': return loss !== null && loss.men !== null && loss.men[1] > loss.men[0] * 1.6 ? `적이 ${(loss.men[1] / Math.max(1, loss.men[0])).toFixed(1)}배나 많았습니다` : loss !== null ? '적이 두 길로 협공했습니다' : '함께 치자고 하거나 원군을 청합니다'
-    case 'flag': return loss !== null ? `깃발 상성에서 ${loss.flags[1]}번 밀렸습니다` : '적의 낌새를 보고 이기는 깃발을 고릅니다'
-    case 'hero': return loss !== null ? '장수 없이 싸웠습니다' : '장수가 이끌면 군대가 더 셉니다'
-    case 'few': return '버티고, 굶기고, 흔들릴 때 쫓습니다'
+    case 'draft': return loss?.men != null ? tr('hw.l.draftLoss', { n: Math.round(loss.men[1] - loss.men[0]) }) : tr('hw.l.draft')
+    case 'iron': return loss !== null ? tr('hw.l.ironLoss') : tr('hw.l.iron', { p: pct(R.equipIron / R.equipBronze - 1) })
+    case 'scout': return loss === null ? tr('hw.l.scout') : loss.def ? tr('hw.l.scoutDef') : tr('hw.l.scoutBlind')
+    case 'plot': return loss !== null ? tr('hw.l.plotLoss') : tr('hw.l.plot', { p: pct(R.plotRumorMorale) })
+    case 'pincer': return loss !== null ? tr('hw.l.pincerLoss') : tr('hw.l.pincer', { p: pct(R.pincer - 1) })
+    case 'ally': return loss !== null && loss.men !== null && loss.men[1] > loss.men[0] * 1.6 ? tr('hw.l.allyMany', { x: (loss.men[1] / Math.max(1, loss.men[0])).toFixed(1) }) : loss !== null ? tr('hw.l.allyPincer') : tr('hw.l.ally')
+    case 'flag': return loss !== null ? tr('hw.l.flagLoss', { n: loss.flags[1] }) : tr('hw.l.flag')
+    case 'hero': return loss !== null ? tr('hw.l.heroLoss') : tr('hw.l.hero')
+    case 'few': return tr('hw.l.few')
   }
 }
 
@@ -262,29 +260,29 @@ function picHtml(k: HowKit, id: LessonId, loss: Loss | null): string {
         const [o, t] = loss.men
         const top = Math.max(1, o, t)
         const n = (x: number): number => Math.max(1, Math.min(5, Math.round((5 * x) / top)))
-        return col(crowd(k, n(o), false), tag(`우리 ${Math.round(o)}`, 'bad'))
+        return col(crowd(k, n(o), false), tag(tr('hw.us', { n: Math.round(o) }), 'bad'))
           + '<i class="lsn-vs">⚔</i>'
-          + col(foeMark + crowd(k, n(t), true), tag(`적 ${Math.round(t)}`, 'foe'))
+          + col(foeMark + crowd(k, n(t), true), tag(tr('hw.foeN', { n: Math.round(t) }), 'foe'))
           + `<span class="lsn-plus">＋ ${crowd(k, 2, false)}</span>`
       }
-      return col(crowd(k, 5, false), tag('우리 ✓', 'good')) + '<i class="lsn-vs">⚔</i>' + col(crowd(k, 2, true), tag('적', 'foe'))
+      return col(crowd(k, 5, false), tag(tr('hw.usOk'), 'good')) + '<i class="lsn-vs">⚔</i>' + col(crowd(k, 2, true), tag(tr('hw.foe'), 'foe'))
     }
     case 'iron': {
       if (loss?.gear != null) {
         const [o, t] = loss.gear.map(tierOf) as [Equip, Equip]
-        return col(big(k, TIER_IC[o]), tag(`우리 ${TIER_NAME[o]}`, 'bad')) + '<i class="lsn-vs">⚔</i>' + col(big(k, TIER_IC[t], 'foe'), tag(`적 ${TIER_NAME[t]}`, 'foe'))
+        return col(big(k, TIER_IC[o]), tag(tr('hw.usTier', { name: TIER_NAME[o] }), 'bad')) + '<i class="lsn-vs">⚔</i>' + col(big(k, TIER_IC[t], 'foe'), tag(tr('hw.foeTier', { name: TIER_NAME[t] }), 'foe'))
       }
-      return col(big(k, 'treasure-mandolin-dagger'), tag(`청동 ×${R.equipBronze}`)) + '<i class="lsn-ar">▶</i>'
-        + col(big(k, 'treasure-iron-helmet') + big(k, 'treasure-iron-ingots', 'sm'), tag(`쇠 ×${R.equipIron}`, 'good'))
+      return col(big(k, 'treasure-mandolin-dagger'), tag(tr('hw.bronze', { n: R.equipBronze }))) + '<i class="lsn-ar">▶</i>'
+        + col(big(k, 'treasure-iron-helmet') + big(k, 'treasure-iron-ingots', 'sm'), tag(tr('hw.ironN', { n: R.equipIron }), 'good'))
     }
     case 'scout': {
       const seen = loss === null
-      return col(big(k, 'unit-scouts'), tag('정찰', 'good')) + '<i class="lsn-ar">▶</i>'
-        + col(`<span class="lsn-fog${seen ? ' clear' : ''}">${crowd(k, 3, true)}${seen ? '' : '<i class="lsn-q">?</i>'}</span>`, tag(seen ? '보인다 👁' : '못 봤다', seen ? 'good' : 'bad'))
+      return col(big(k, 'unit-scouts'), tag(tr('hw.scout'), 'good')) + '<i class="lsn-ar">▶</i>'
+        + col(`<span class="lsn-fog${seen ? ' clear' : ''}">${crowd(k, 3, true)}${seen ? '' : '<i class="lsn-q">?</i>'}</span>`, tag(tr(seen ? 'hw.seen' : 'hw.unseen'), seen ? 'good' : 'bad'))
     }
     case 'plot': {
       const ops = (['burn', 'rumor', 'sow'] as const).map((op) => col(big(k, `plot-${op}`, 'mid'), tag(PLOT_NAME[op])))
-      return `<span class="lsn-row3">${ops.join('')}</span><span class="lsn-sub">${tag(`곡식 −${pct(R.plotBurnShare)}%`, 'bad')}${tag(`사기 −${pct(R.plotRumorMorale)}%`, 'bad')}</span>`
+      return `<span class="lsn-row3">${ops.join('')}</span><span class="lsn-sub">${tag(tr('hw.grainDown', { p: pct(R.plotBurnShare) }), 'bad')}${tag(tr('hw.moraleDown', { p: pct(R.plotRumorMorale) }), 'bad')}</span>`
     }
     case 'pincer': {
       return col(crowd(k, 2, false), '<i class="lsn-arr r">➜</i>', 'side')
@@ -292,7 +290,7 @@ function picHtml(k: HowKit, id: LessonId, loss: Loss | null): string {
         + col(crowd(k, 2, false, 'sol-bow'), '<i class="lsn-arr l">➜</i>', 'side flip')
     }
     case 'ally': {
-      return col(big(k, 'ask-joint'), tag('함께 치자', 'good')) + '<i class="lsn-vs">＋</i>' + col(big(k, 'ask-troops'), tag('원군 청하기', 'good'))
+      return col(big(k, 'ask-joint'), tag(tr('hw.joint'), 'good')) + '<i class="lsn-vs">＋</i>' + col(big(k, 'ask-troops'), tag(tr('hw.askTroops'), 'good'))
     }
     case 'flag': {
       const f = (c: 'hold' | 'charge' | 'open', name: string, cls: string): string => `<span class="lsn-fl ${cls}"><img src="${k.art}flag/flag-${c}.png" alt=""><b>${name}</b></span>`
@@ -300,22 +298,22 @@ function picHtml(k: HowKit, id: LessonId, loss: Loss | null): string {
       const arrow = (d: string): string => `<path d="${d}" marker-end="url(#lsnHead)"/>`
       return `<span class="lsn-tri"><svg class="lsn-tsv" viewBox="0 0 230 176" aria-hidden="true"><defs><marker id="lsnHead" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0L10 5L0 10z" fill="#ffd27a"/></marker></defs>`
         + `${arrow('M146 42 Q182 52 192 88')}${arrow('M170 122 Q115 138 62 122')}${arrow('M38 88 Q48 52 84 42')}</svg>`
-        + `${f('hold', '방진', 't')}${f('charge', '돌격', 'r')}${f('open', '길 트기', 'l')}</span>`
+        + `${f('hold', tr('hw.fHold'), 't')}${f('charge', tr('hw.fCharge'), 'r')}${f('open', tr('hw.fOpen'), 'l')}</span>`
     }
     case 'hero': {
-      return col(big(k, 'unit-general'), tag('장수 ★', 'good')) + '<i class="lsn-ar">▶</i>' + col(crowd(k, 3, false), tag('더 세다', 'good'))
+      return col(big(k, 'unit-general'), tag(tr('hw.heroTag'), 'good')) + '<i class="lsn-ar">▶</i>' + col(crowd(k, 3, false), tag(tr('hw.stronger'), 'good'))
     }
     case 'few': {
       // 위: 성에 든 우리 몇 ⚔ 밀려오는 대군 · 아래: 버티기 ▶ 곡식에 불 ▶ 굶주려 사기 ▼ ▶ 흔들릴 때 추격
       const fl = (c: string): string => `<img class="lsn-big mid" src="${k.art}flag/flag-${c}.png" alt="">`
       const step = (pic: string, t: string, cls = ''): string => `<span class="lsn-stp">${pic}${tag(t, cls)}</span>`
       const ar = '<i class="lsn-sa">▶</i>'
-      return `<span class="lsn-few">${col(`<span class="lsn-fort">${big(k, 'settle-hill-fort', 'town')}${crowd(k, 2, false, 'sol-bow')}</span>`, tag('우리', 'good'))}`
-        + `<i class="lsn-vs">⚔</i>${col(crowd(k, 7, true), tag('대군', 'foe'))}</span>`
-        + `<span class="lsn-steps">${step(fl('hold'), '버티기')}${ar}`
-        + step(`<span class="lsn-burn">${big(k, 'good-rice', 'mid')}${big(k, 'plot-burn', 'sm')}</span>`, '적 곡식', 'bad') + ar
-        + step(big(k, 'status-morale-down', 'mid'), `사기 −${pct(R.tacHungry)}%`, 'bad') + ar
-        + step(fl('pursue'), `추격 ×${R.tacPursueMul}`, 'good') + '</span>'
+      return `<span class="lsn-few">${col(`<span class="lsn-fort">${big(k, 'settle-hill-fort', 'town')}${crowd(k, 2, false, 'sol-bow')}</span>`, tag(tr('hw.usShort'), 'good'))}`
+        + `<i class="lsn-vs">⚔</i>${col(crowd(k, 7, true), tag(tr('hw.horde'), 'foe'))}</span>`
+        + `<span class="lsn-steps">${step(fl('hold'), tr('hw.holdOn'))}${ar}`
+        + step(`<span class="lsn-burn">${big(k, 'good-rice', 'mid')}${big(k, 'plot-burn', 'sm')}</span>`, tr('hw.foeGrain'), 'bad') + ar
+        + step(big(k, 'status-morale-down', 'mid'), tr('hw.moraleDown', { p: pct(R.tacHungry) }), 'bad') + ar
+        + step(fl('pursue'), tr('hw.pursue', { n: R.tacPursueMul }), 'good') + '</span>'
     }
   }
 }
@@ -329,8 +327,8 @@ export function openLessons(root: HTMLElement, pages: readonly Lesson[], go: (g:
   if (pages.length === 0) return
   const box = document.createElement('div')
   box.className = 'lsn-box'
-  box.innerHTML = `<div class="lsn-card" role="dialog" aria-label="이기는 법"><button class="lsn-x" data-lsn="x" aria-label="닫기">✕</button><div class="lsn-view"></div>`
-    + `<div class="lsn-nav"><button class="lsn-pv" data-lsn="prev" aria-label="앞 장">‹</button><span class="lsn-dots">${pages.map((p, i) => `<i data-lsn="dot" data-i="${i}" class="${p.cause ? 'why' : ''}"></i>`).join('')}</span><button class="lsn-nx" data-lsn="next" aria-label="다음 장">›</button></div></div>`
+  box.innerHTML = `<div class="lsn-card" role="dialog" aria-label="${tr('hw.dlgAria')}"><button class="lsn-x" data-lsn="x" aria-label="${tr('more.closeAria')}">✕</button><div class="lsn-view"></div>`
+    + `<div class="lsn-nav"><button class="lsn-pv" data-lsn="prev" aria-label="${tr('hw.prevAria')}">‹</button><span class="lsn-dots">${pages.map((p, i) => `<i data-lsn="dot" data-i="${i}" class="${p.cause ? 'why' : ''}"></i>`).join('')}</span><button class="lsn-nx" data-lsn="next" aria-label="${tr('hw.nextAria')}">›</button></div></div>`
   root.append(box)
   const view = box.querySelector<HTMLElement>('.lsn-view')!
   let at = -1
@@ -413,7 +411,7 @@ export function syncPin(root: HTMLElement, on: boolean, art: string): void {
   const pin = root.querySelector('.lsn-pin')
   if (!on || root.querySelector('.lsn-bn:not(.out)') !== null) { pin?.remove(); return }
   if (pin !== null) return
-  root.insertAdjacentHTML('beforeend', `<button class="lsn-pin" data-act="howwin" aria-label="이기는 법 보기"><img src="${art}icon/war-broken-banner.png" alt=""><b>⚔ 이기는 법</b></button>`)
+  root.insertAdjacentHTML('beforeend', `<button class="lsn-pin" data-act="howwin" aria-label="${tr('hw.aria')}"><img src="${art}icon/war-broken-banner.png" alt=""><b>⚔ ${tr('hw.banner')}</b></button>`)
 }
 
 // 폰 그래픽 한도 (메모리 mobile-gpu-layer-limit): 부드러운 linear-gradient · filter 밝기 금지 — 둥근 그러데이션과 drop-shadow 만
