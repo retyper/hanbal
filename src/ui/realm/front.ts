@@ -16,7 +16,7 @@ import { badgeRank, lockWhy } from './unlock.ts'
 import { CHAPTERS, chapterOfRegion, chapterTag } from '../../realm/data/campaign.ts'
 import { placeOf } from '../../realm/data/regions/index.ts'
 import { seasonOf, yearOf } from '../../realm/calendar.ts'
-import { t } from '../../i18n/index.ts'
+import { lazyTable, t, t as tr, tk } from '../../i18n/index.ts'
 import { lang } from '../../i18n/lang.ts'
 import { UNIT_NAME as UNIT_NAME_KO, battleName, dateLabel, josa, seasonLabel } from '../../realm/data/prose.ts'
 import { nameTable } from '../../i18n/names.ts'
@@ -99,29 +99,50 @@ export type History = ReadonlyArray<{ readonly s: number; readonly lines: readon
  */
 export const BOARDS: ReadonlyArray<{ id: RegionId; name: string; era: string; hook: string; play: string; art: string; length: string; badge?: string }> = [
   {
-    id: 'tutorial', name: '형제의 강', era: '기원전 18년 · 한강', art: 'keyart/tutorial.jpg', length: '아주 짧다', badge: '처음이면 여기부터',
-    hook: '졸본을 떠나온 두 형제. 형은 바다로, 아우는 강으로: 한강의 주인은 하나다.',
-    play: '온조가 되어 형 비류의 미추홀을 아우른다. 징병부터 사로잡기까지 하나씩 배운다.',
+    id: 'tutorial',
+    get name() { return t('board.tutorial.name') },
+    get era() { return t('board.tutorial.era') },
+    art: 'keyart/tutorial.jpg',
+    get length() { return t('board.tutorial.length') },
+    get badge() { return t('board.tutorial.badge') },
+    get hook() { return t('board.tutorial.hook') },
+    get play() { return t('board.tutorial.play') },
   },
   {
-    id: 'byeonhan-mini', name: '쇠의 바다', era: '2세기 · 변한 남쪽 바닷가', art: 'keyart/byeonhan.jpg', length: '짧다',
-    hook: '덩이쇠 한 장이 곧 돈이던 바다. 쇠를 쥔 나라가 뱃길을 쥔다.',
-    play: `변한 바닷가의 한 나라로 시작한다. 맞설 나라 ${P.realm.miniRivals}곳, 나머지는 빈 땅이다.`,
+    id: 'byeonhan-mini',
+    get name() { return t('board.byeonhan-mini.name') },
+    get era() { return t('board.byeonhan-mini.era') },
+    art: 'keyart/byeonhan.jpg',
+    get length() { return t('board.byeonhan-mini.length') },
+    get hook() { return t('board.byeonhan-mini.hook') },
+    get play() { return t('board.byeonhan-mini.play', { n: P.realm.miniRivals }) },
   },
   {
-    id: 'yeongnam', name: '낙동강 스물한 나라', era: '2세기 · 낙동강', art: 'keyart/yeongnam.jpg', length: '보통',
-    hook: '훗날 신라가 될 사로도, 가야가 될 가락도 아직은 강가의 작은 나라였다.',
-    play: `낙동강 가 한 나라로 시작한다. 맞설 나라 ${P.realm.yeongnamRivals}곳, 나머지는 빈 땅이다.`,
+    id: 'yeongnam',
+    get name() { return t('board.yeongnam.name') },
+    get era() { return t('board.yeongnam.era') },
+    art: 'keyart/yeongnam.jpg',
+    get length() { return t('board.yeongnam.length') },
+    get hook() { return t('board.yeongnam.hook') },
+    get play() { return t('board.yeongnam.play', { n: P.realm.yeongnamRivals }) },
   },
   {
-    id: 'south', name: '삼한', era: '3세기 · 한강에서 영산강까지', art: 'keyart/south.jpg', length: '길다',
-    hook: '천군이 소도에서 하늘에 제사하던 땅. 마한·진한·변한 서른여섯 나라가 깃발을 올렸다.',
-    play: `처음엔 이웃만 안다. 맞설 나라 ${P.realm.southRivals}곳, 나머지는 빈 땅이다. 보고 다닌 만큼 지도가 칠해진다.`,
+    id: 'south',
+    get name() { return t('board.south.name') },
+    get era() { return t('board.south.era') },
+    art: 'keyart/south.jpg',
+    get length() { return t('board.south.length') },
+    get hook() { return t('board.south.hook') },
+    get play() { return t('board.south.play', { n: P.realm.southRivals }) },
   },
   {
-    id: 'world', name: '북녘의 바람', era: '3세기 · 탐라에서 부여의 들까지', art: 'keyart/world.jpg', length: '아주 길다',
-    hook: '압록 골짜기의 고구려 다섯 나부와 송화강 들의 부여 네 가가 남쪽을 내려다본다.',
-    play: `탐라에서 부여의 들까지. 맞설 나라 ${P.realm.worldRivals}곳, 나머지는 빈 땅이다. 가장 긴 판.`,
+    id: 'world',
+    get name() { return t('board.world.name') },
+    get era() { return t('board.world.era') },
+    art: 'keyart/world.jpg',
+    get length() { return t('board.world.length') },
+    get hook() { return t('board.world.hook') },
+    get play() { return t('board.world.play', { n: P.realm.worldRivals }) },
   },
 ]
 
@@ -302,18 +323,7 @@ export function detailHtml(k: FrontKit, region: RegionId, id: string, carry = ''
 
 // ───────── 서막 — 시대 · 우리 나라 · 할 일
 
-const ERA: Readonly<Record<RegionId, string>> = {
-  tutorial: '한강 아래. 졸본에서 내려온 형제 가운데 형 비류는 바닷가 미추홀에, 아우 온조는 하남 위례성에 자리 잡았다. 형제의 두 나라에서 군장의 일을 하나씩 배운다.',
-  mahan: '한강에서 차령까지. 위례에 선 백제는 아직 작고, 남쪽 목지국의 진왕은 쉰 남짓 마한 나라를 거느린다. 그러나 마한의 위아래 마음은 갈라졌다.',
-  seorabeol: '경주 골짜기. 진한 땅 여섯 마을의 촌장들이 알천 언덕에 모여 임금을 찾는다. 나정 곁 숲에서 흰 말이 울었다.',
-  gujibong: '김해 골. 낙동강 어귀에 아홉 간이 저마다 백성을 거느릴 뿐, 아직 나라 이름도 임금도 없다. 구지봉에서 노래가 울렸다.',
-  daemusin: '압록강 골짜기에서 송화강 들까지. 고구려가 국내로 도읍을 옮긴 지 스무 해 가까이, 북쪽 부여의 대소왕은 아직 고구려를 제 아래로 본다. 젊은 왕 무휼이 군사를 일으킨다.',
-  jumong: '혼강 골짜기. 동부여를 빠져나온 주몽이 엄리대수를 건너 졸본에 나라를 세웠다. 이웃 비류국의 송양은 제가 먼저 왕이었다고 한다.',
-  'byeonhan-mini': '변한의 남쪽 바닷가. 쇠를 캐고 배를 띄우는 여섯 나라가 서로를 엿본다.',
-  yeongnam: '낙동강 물길을 따라 스물한 나라. 훗날 신라가 될 사로도, 가야가 될 가락과 대가야도 아직은 이웃 읍락과 키를 잰다.',
-  south: '한강에서 영산강, 동해 바닷가까지. 마한·진한·변한의 서른여섯 나라가 저마다 깃발을 올렸다.',
-  world: '탐라에서 부여의 들까지. 압록강 골짜기에서는 고구려 다섯 나부가, 송화강 들에서는 부여의 네 가가 말을 달린다.',
-}
+const ERA: Readonly<Record<RegionId, string>> = lazyTable('era', ['tutorial', 'mahan', 'seorabeol', 'gujibong', 'daemusin', 'jumong', 'byeonhan-mini', 'yeongnam', 'south', 'world'])
 
 export const PROLOGUE_STEPS = 3
 
@@ -322,18 +332,7 @@ export const PROLOGUE_STEPS = 3
  * 온 땅에서 이 판의 땅으로 천천히 다가가 고리로 짚는다 (형 10-25: "스토리는 텍스트만주지말고 이미지도 … 고조선 옛지도를 보여주던지").
  * fx·fy 는 그 그림에서의 비율 자리, z 는 다가간 배율, name 은 고리 곁 이름
  */
-const OLDMAP_NAME: Readonly<Record<RegionId, string>> = {
-  tutorial: '한강 아래: 미추홀 · 위례',
-  mahan: '한강에서 차령까지. 위례 · 목지',
-  jumong: '혼강 골짜기: 졸본',
-  seorabeol: '경주 골짜기: 서라벌',
-  gujibong: '김해 골: 가락',
-  daemusin: '압록강에서 송화강까지: 국내 · 부여',
-  'byeonhan-mini': '변한의 바닷가',
-  yeongnam: '낙동강 물길',
-  south: '삼한의 남쪽',
-  world: '삼한과 북녘',
-}
+const OLDMAP_NAME: Readonly<Record<RegionId, string>> = lazyTable('oldmap', ['tutorial', 'mahan', 'jumong', 'seorabeol', 'gujibong', 'daemusin', 'byeonhan-mini', 'yeongnam', 'south', 'world'])
 /**
  * 옛 지도 그림의 틀 — 삼한과 북녘 판과 같은 경위도(world-geo.ts WORLD_PROJ · 같은 높이 자료로 그렸다). 경위도가 그림 위 비율로 곧장 간다
  * (형 10-25: "게임마다 정확한 위치대로 확대 · 원 쳐지고 강조") — 손으로 짚던 자리는 한강이 4% 어긋나 있었다
@@ -406,13 +405,8 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
   let body = ''
   if (step === 0) {
     // 배우는 판은 백제가 서던 해 — 『삼국사기』 온조왕 원년 (기원전 18)
-    const [when, age] = region === 'tutorial' ? ['기원전 18년.', '옛 조선이 무너진 지 아흔 해, 주몽이 졸본에 고구려를 세운 무렵.']
-      : region === 'mahan' ? ['기원후 8년.', '온조가 위례에 나라를 세운 지 스물여섯 해, 마한의 진왕이 아직 쉰 나라의 우두머리이던 때.']
-      : region === 'seorabeol' ? ['기원전 57년.', '옛 조선의 유민이 진한 골짜기마다 마을을 이루어 살던 때.']
-      : region === 'gujibong' ? ['기원후 42년.', '변한 땅 바닷가 마을마다 쇠를 캐어 이웃과 바꾸던 때.']
-      : region === 'daemusin' ? ['기원후 22년.', '주몽이 동부여를 빠져나온 지 예순 해 가까이, 그 손자가 부여를 치러 나서던 때.']
-      : region === 'jumong' ? ['기원전 37년.', '옛 조선이 무너진 지 일흔 해, 동부여의 왕자들이 활 잘 쏘는 사내를 시기하던 때.']
-        : ['기원후 2세기.', '옛 조선이 무너진 지 삼백 년, 왕이 하나가 아니던 때.']
+    const wk = (['tutorial', 'mahan', 'seorabeol', 'gujibong', 'daemusin', 'jumong'] as const).find((x) => x === region) ?? 'other'
+    const [when, age] = [tk(`pro.when.${wk}`), tk(`pro.age.${wk}`)]
     body = `<div class="pl pera">${oldMapHtml(k, r, region)}<p class="l1">${when}</p><p class="l2">${age}</p>`
       + `<p class="l3">${k.esc(ERA[region])}</p>`
       + `<p class="l4">${r.known !== undefined ? t('fr.knownOnly') : t('fr.eachOwn')}</p></div>`
@@ -441,12 +435,12 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
       + `<p class="glose">${t('fr.goalLose')}</p></div>`
     body = `<div class="pl pgoal">${head}<div class="ways">`
       + ways.map(([ic, t, d, subs]) => `<div class="way">${k.icon(ic, 'wic')}<b>${t}</b><span>${d}<span class="wsub">${subs.map(([si, sn]) => `<i>${k.icon(si, 'wsi')}${sn}</i>`).join('')}</span></span></div>`).join('')
-      + `</div><p class="ptip">${r.clock === 'month' ? '한 달에 명령을 정하고 <b>다음 달</b>을 누르세요. 석 달이 한 계절입니다.' : '한 계절에 명령을 정하고 <b>다음 계절</b>을 누르세요.'} 모든 나라가 한꺼번에 움직입니다.</p></div>`
+      + `</div><p class="ptip">${r.clock === 'month' ? t('pro.tipMonth') : t('pro.tipSeason')} ${t('pro.tipAll')}</p></div>`
   }
   const dots = Array.from({ length: PROLOGUE_STEPS }, (_, i) => `<i class="${i === step ? 'on' : ''}"></i>`).join('')
   const last = step >= PROLOGUE_STEPS - 1
   return `<div class="prologue s${step}"><div class="pin">${body}</div><div class="pnav"><span class="pdots">${dots}</span>`
-    + `<button class="btn ghost" data-act="pl-skip">넘기기</button><button class="btn pri big" data-act="pl-next">${last ? '첫 봄을 연다' : '다음'}</button></div></div>`
+    + `<button class="btn ghost" data-act="pl-skip">${t('pro.skip')}</button><button class="btn pri big" data-act="pl-next">${last ? t('pro.first') : t('pro.next')}</button></div></div>`
 }
 
 /** 자유 판의 승리 길 넷 — 아이콘 · 이름 · 한 줄 (자세한 것은 판 위 「?」 · app GUIDE.paths) */
@@ -459,32 +453,10 @@ const winPaths = (): ReadonlyArray<readonly [string, string, string]> => [
 
 // ───────── 끝 — 연대기
 
-const HEAD: Readonly<Record<RegionId, string>> = {
-  tutorial: '미추홀 도읍을 쥐었다. 군장의 일을 다 배웠다',
-  mahan: '목지와 원산·금현이 항복했다: 마한이 백제에 아울러졌다',
-  jumong: '송양이 따르고 행인·북옥저를 거느렸다. 고구려가 섰다',
-  seorabeol: '여섯 마을이 모두 따른다. 서라벌이 섰다',
-  gujibong: '아홉 간이 모두 따르고 쇠가 바다를 건넌다. 가락이 섰다',
-  daemusin: '대소왕이 쓰러지고 부여 도읍이 떨어졌다. 고구려가 북쪽을 얻었다',
-  'byeonhan-mini': '변한의 바닷가를 차지했다',
-  yeongnam: '낙동강의 나라들을 거느렸다',
-  south: '삼한의 남쪽에 이름을 떨쳤다',
-  world: '삼한과 북녘에 이름을 떨쳤다',
-}
+const HEAD: Readonly<Record<RegionId, string>> = lazyTable('head', ['tutorial', 'mahan', 'jumong', 'seorabeol', 'gujibong', 'daemusin', 'byeonhan-mini', 'yeongnam', 'south', 'world'])
 
 /** 이긴 뒤 계속 둬서 도읍을 모두 쥐었을 때 */
-const HEAD_ALL: Readonly<Record<RegionId, string>> = {
-  tutorial: '두 나라가 한 나라가 됐다',
-  mahan: '한강에서 차령까지 하나가 됐다',
-  jumong: '졸본에서 두만강까지 하나가 됐다',
-  seorabeol: '경주 골짜기가 한 나라가 됐다',
-  gujibong: '김해 골이 한 나라가 됐다',
-  daemusin: '압록강에서 송화강까지 하나가 됐다',
-  'byeonhan-mini': '변한의 바닷가가 한 나라가 됐다',
-  yeongnam: '낙동강의 나라들이 하나가 됐다',
-  south: '삼한의 남쪽이 하나가 됐다',
-  world: '삼한과 북녘이 하나가 됐다',
-}
+const HEAD_ALL: Readonly<Record<RegionId, string>> = lazyTable('headAll', ['tutorial', 'mahan', 'jumong', 'seorabeol', 'gujibong', 'daemusin', 'byeonhan-mini', 'yeongnam', 'south', 'world'])
 
 /** 끝 화면 필름에 거는 장면 수 (마지막 제목 장 빼고) */
 const SHOTS = 6
@@ -516,7 +488,7 @@ export function chronicleOf(k: FrontKit, r: Realm, history: History): { events: 
   const name = (f: string): string => r.factions[f]?.name ?? ''
   const node = (id: string): string => r.nodes[id]?.name ?? ''
   const hero = (id: string | null | undefined): string | undefined => (id != null ? r.heroes[id]?.name : undefined)
-  const men = (n: number): string => `${Math.round(n).toLocaleString('ko-KR')}명`
+  const men = (n: number): string => tr('chr.men', { n: Math.round(n).toLocaleString('ko-KR') })
   const capOf = new Map(Object.values(r.factions).map((f) => [f.capital, f.id]))
   const events: Array<{ s: number; t: string; d?: string; big: boolean; img: string; em?: string; lose?: boolean }> = []
   /** 사로잡은 장수 — 어느 싸움에서 · 어느 나라 사람이었나 (들인 장수의 말에 쓴다) */
@@ -543,7 +515,7 @@ export function chronicleOf(k: FrontKit, r: Realm, history: History): { events: 
         else if (ourLoss) lost++
         else continue
         const foe = weAtk ? l.defender : l.atkFaction
-        const foeName = foe !== undefined && name(foe) !== '' ? name(foe) : '적'
+        const foeName = foe !== undefined && name(foe) !== '' ? name(foe) : tr('chr.foe')
         const bn = battleName(r, l)
         const big = l.outcome === 'rout' || l.outcome === 'routed'
         // 사로잡힌 이 — 우리가 이겼으면 적장, 졌으면 우리 장수 (우리 장수는 안 죽는다 · 다쳐 눕는다)
@@ -561,19 +533,19 @@ export function chronicleOf(k: FrontKit, r: Realm, history: History): { events: 
           const left = (i: 0 | 1): number | undefined => (last === undefined ? undefined : st.men[i] * (i === 0 ? last.na : last.nd))
           const ourCmd = hero(st.heroes[mi])
           const foeCmd = hero(st.heroes[fi])
-          d += `${ourCmd !== undefined ? `${josa(ourCmd, '이', '가')} 이끈 ` : ''}우리 군사 ${josa(men(st.men[mi]), '과', '와')} ${foeCmd !== undefined ? `${josa(foeCmd, '이', '가')} 이끈 ` : ''}${foeName} 군사 ${josa(men(st.men[fi]), '이', '가')} 맞붙었다.`
+          d += tr(ourCmd !== undefined ? (foeCmd !== undefined ? 'chr.clash.both' : 'chr.clash.our') : (foeCmd !== undefined ? 'chr.clash.foe' : 'chr.clash.none'), { c1: ourCmd ?? '', c2: foeCmd ?? '', m1: men(st.men[mi]), m2: men(st.men[fi]), foe: foeName })
           const lm = left(mi)
           const lf = left(fi)
-          if (lm !== undefined && lf !== undefined) d += ` 싸움이 끝났을 때 우리는 ${men(lm)}, ${josa(foeName, '은', '는')} ${men(lf)} 남았다.`
+          if (lm !== undefined && lf !== undefined) d += ` ${tr('chr.left', { a: men(lm), b: men(lf), foe: foeName })}`
         }
-        d += ` ${ourWin ? (big ? `${josa(foeName, '을', '를')} 크게 무찔렀다.` : `${josa(foeName, '을', '를')} 물리쳤다.`) : (big ? `${foeName}에게 크게 졌다.` : `${foeName}에게 밀려 물러났다.`)}`
-        if (caught.length > 0) d += ` ${foeName} 장수 ${josa(caught.join('·'), '을', '를')} 사로잡았다.`
+        d += ` ${tr(ourWin ? (big ? 'chr.winBig' : 'chr.winSmall') : (big ? 'chr.loseBig' : 'chr.loseSmall'), { foe: foeName })}`
+        if (caught.length > 0) d += ` ${tr('chr.caught', { foe: foeName, who: caught.join('·') })}`
         if (ourLoss) {
           const ours = caps.map((id) => hero(id)).filter((x): x is string => x !== undefined)
-          if (ours.length > 0) d += ` 우리 장수 ${josa(ours.join('·'), '이', '가')} 붙잡혔다.`
+          if (ours.length > 0) d += ` ${tr('chr.ourCaught', { who: ours.join('·') })}`
         }
         const y = l.yielded
-        if (y !== undefined && ourWin && y.n > 0) d += ` 무기를 버린 ${foeName} 군사 ${men(y.n)} 가운데 ${josa(men(y.join), '이', '가')} 우리 군에 들었다.`
+        if (y !== undefined && ourWin && y.n > 0) d += ` ${tr('chr.yielded', { foe: foeName, n: men(y.n), j: men(y.join) })}`
         if (ourWin) {
           const sneak = weAtk && l.ambush === 'success'
           const img = caught.length > 0 ? `${k.art}event/event-capture.jpg`
@@ -584,10 +556,10 @@ export function chronicleOf(k: FrontKit, r: Realm, history: History): { events: 
             : !weAtk ? FILM(k, 'film-win-defend')
             : big ? FILM(k, 'film-win-rout')
             : FILM(k, 'film-win-field')
-          const t = `${bn}: ${big ? '크게 이겼다' : '이겼다'}${caught.length > 0 ? ` · ${josa(caught.join('·'), '을', '를')} 사로잡았다` : ''}`
+          const t = `${bn}: ${tr(big ? 'chr.resWinBig' : 'chr.resWin')}${caught.length > 0 ? tr('chr.resCap', { who: caught.join('·') }) : ''}`
           events.push({ s, t, d: d.trim(), big: big || caught.length > 0, img, ...(foe !== undefined ? { em: foe } : {}) })
         } else {
-          events.push({ s, t: `${bn}: ${big ? '크게 졌다' : '졌다'}`, d: d.trim(), big, img: `${k.art}end/end-lose.jpg`, lose: true, ...(foe !== undefined ? { em: foe } : {}) })
+          events.push({ s, t: `${bn}: ${tr(big ? 'chr.resLoseBig' : 'chr.resLose')}`, d: d.trim(), big, img: `${k.art}end/end-lose.jpg`, lose: true, ...(foe !== undefined ? { em: foe } : {}) })
         }
       } else if (l.kind === 'take' && l.faction === me) {
         const was = capOf.get(l.node)
@@ -595,28 +567,28 @@ export function chronicleOf(k: FrontKit, r: Realm, history: History): { events: 
         // 도읍이면 큰 성문으로 들어가는 군대, 여느 고을이면 깃발을 꽂고 마을 사람들이 따르는 장면
         const img = FILM(k, was !== undefined ? 'film-take-capital' : r.nodes[l.node]?.kind === 'port' ? 'film-take-port' : 'film-take-town')
         takes++
-        const whose = from !== undefined && from !== me && name(from) !== '' ? `${name(from)}의 ${was === from && !node(l.node).includes('도읍') ? '도읍 ' : ''}` : ''
-        events.push({ s, t: `${josa(node(l.node), '을', '를')} 쥐었다`, d: `${whose}${josa(node(l.node), '을', '를')} 쥐었다. 이제 그곳에 우리 깃발이 선다.`, big: was !== undefined, img, ...(was !== undefined && was !== me ? { em: was } : {}) })
+        const whose = from !== undefined && from !== me && name(from) !== '' ? tr('chr.whose', { from: name(from), cap: was === from && !node(l.node).includes('도읍') ? tr('chr.cap') : '' }) : ''
+        events.push({ s, t: tr('chr.take', { node: node(l.node) }), d: tr('chr.takeD', { whose, node: node(l.node) }), big: was !== undefined, img, ...(was !== undefined && was !== me ? { em: was } : {}) })
       } else if (l.kind === 'relation' && (l.a === me || l.b === me) && (l.state === 'ally' || l.state === 'truce')) {
         const other = l.a === me ? l.b : l.a
         const img = FILM(k, l.state === 'ally' ? 'film-ally' : 'film-truce')
-        const t = `${josa(name(other), '과', '와')} ${l.state === 'ally' ? '동맹을 맺었다' : '화친했다'}`
-        events.push({ s, t, d: l.state === 'ally' ? `${josa(name(other), '과', '와')} 동맹을 맺었다. 함께 싸우기로 했다.` : `${josa(name(other), '과', '와')} 화친했다. 서로 치지 않기로 했다.`, big: l.state === 'ally', img, em: other })
+        const t = tr(l.state === 'ally' ? 'chr.relAlly' : 'chr.relTruce', { o: name(other) })
+        events.push({ s, t, d: tr(l.state === 'ally' ? 'chr.relAllyD' : 'chr.relTruceD', { o: name(other) }), big: l.state === 'ally', img, em: other })
       } else if (l.kind === 'recruit' && l.faction === me) {
         heroes++
-        const nm = hero(l.hero) ?? '장수'
+        const nm = hero(l.hero) ?? tr('chr.hero')
         const by = hero(l.by ?? null)
         const c = caughtIn.get(l.hero)
         let t: string
         let d: string
         if (l.how === 'persuade') {
-          t = `${c !== undefined ? `사로잡은 ${c.from} 장수 ` : ''}${josa(nm, '이', '가')} 우리 편이 됐다`
-          const where = c !== undefined ? `${c.battle}에서 사로잡은 ${c.from} 장수 ${nm}.` : `사로잡혀 있던 ${nm}.`
-          const how = l.talk === true && by !== undefined ? `옥중에서 ${josa(by, '과', '와')} 담판을 지은 끝에` : by !== undefined ? `${josa(by, '이', '가')} 거듭 달랜 끝에` : '거듭 달랜 끝에'
-          d = `${where} ${how} 무릎을 꿇고 우리 장수가 됐다.`
+          t = c !== undefined ? tr('chr.joinedCap', { from: c.from, nm }) : tr('chr.joined', { nm })
+          const where = c !== undefined ? tr('chr.whereCap', { battle: c.battle, from: c.from, nm }) : tr('chr.whereJail', { nm })
+          const how = l.talk === true && by !== undefined ? tr('chr.howTalk', { by }) : by !== undefined ? tr('chr.howBy', { by }) : tr('chr.howNone')
+          d = `${where} ${how} ${tr('chr.kneel')}`
         } else {
-          t = `떠돌던 ${josa(nm, '이', '가')} 우리를 찾아왔다`
-          d = `나라 없이 떠돌던 ${josa(nm, '이', '가')} 우리를 찾아와 장수가 됐다.`
+          t = tr('chr.wander', { nm })
+          d = tr('chr.wanderD', { nm })
         }
         events.push({ s, t, d, big: false, img: k.bust?.(l.hero) ?? `${k.art}event/event-wanderer-arrives.jpg` })
       } else if (l.kind === 'discover' && l.faction === me) {
@@ -644,18 +616,18 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = '', f
   const path = r.outcome?.path
   const by = name(r.outcome?.by ?? '')
   const PATH_WIN: Partial<Record<string, string>> = {
-    suzerain: '진왕이 됐다: 여러 나라 군장이 우리를 받들었다',
-    ironsea: '변진의 쇠가 우리 뱃길로 흘렀다',
-    rite: '온 나라가 모여 하늘에 절했다',
+    suzerain: t('end.pw.suzerain'),
+    ironsea: t('end.pw.ironsea'),
+    rite: t('end.pw.rite'),
   }
   const PATH_LOSE: Partial<Record<string, string>> = {
-    suzerain: `${josa(by, '이', '가')} 진왕이 됐다`,
-    ironsea: `${by}의 뱃길로 변진의 쇠가 흘렀다`,
-    rite: `온 나라가 ${by}의 큰 제사에 절했다`,
+    suzerain: t('end.pl.suzerain', { by }),
+    ironsea: t('end.pl.ironsea', { by }),
+    rite: t('end.pl.rite', { by }),
   }
   const title = win
     ? (all ? HEAD_ALL[region] : (path !== undefined ? PATH_WIN[path] : undefined) ?? HEAD[region])
-    : (path !== undefined ? PATH_LOSE[path] : undefined) ?? '도읍이 무너졌다'
+    : (path !== undefined ? PATH_LOSE[path] : undefined) ?? t('end.fall')
   // 마지막 장 그림 — 이긴 길마다 한 장 (맹주·쇠의 바다·큰 제사·통일) · 지면 무너진 목책 (realm/end · 10-24 제미나이 Argon — 아래 30% 는 제목 자리로 어둡게)
   const lastArt = win ? `end-${path === 'suzerain' || path === 'ironsea' || path === 'rite' ? path : 'unify'}` : 'end-lose'
   let h = `<div class="mcard end front-end" data-act="rep-fast"><div class="clg film${win ? '' : ' lose'}" style="--n:${shots.length + 1}">`
@@ -669,22 +641,22 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = '', f
   // 판을 이긴 그림은 싸움 승리와 따로 — 남색 군기 (형 11-04: "전투 승리랑 게임 승리는 다르게")
   // 이긴 길마다 군기 둘레가 다르다 (11-09 제미나이 · 같은 남색 군기 · 맹주 = 모인 여러 나라 깃발 · 쇠의 뱃길 = 배·노·덩이쇠 · 큰 제사 = 솟대·신단수·청동 거울) · 통일은 처음 군기
   const winLogo = path === 'suzerain' || path === 'ironsea' || path === 'rite' ? `game-win-${path}` : 'game-win-logo'
-  h += winFxHtml(win ? '승리' : '패배', '', shots.length * (FILM_S - FILM_OVERLAP_S) + FILM_LEAD_S + 0.6, !win, false, false, `${k.art}ui/${winLogo}.png`)
-  h += `<span class="skip">누르면 넘긴다</span>`
-  h += `<button class="fnav fprev" data-act="film-prev" aria-label="앞 장면">‹</button><button class="fnav fnext" data-act="film-next" aria-label="다음 장면">›</button></div>`
+  h += winFxHtml(win ? t('end.win') : t('end.lose'), '', shots.length * (FILM_S - FILM_OVERLAP_S) + FILM_LEAD_S + 0.6, !win, false, false, `${k.art}ui/${winLogo}.png`)
+  h += `<span class="skip">${t('end.skip')}</span>`
+  h += `<button class="fnav fprev" data-act="film-prev" aria-label="${t('end.prevAria')}">‹</button><button class="fnav fnext" data-act="film-next" aria-label="${t('end.nextAria')}">›</button></div>`
   h += `<div class="after" style="--n:${shots.length + 1}">`
-  h += `<p class="mute">${k.emblem(me, 'cem')}${k.esc(name(me))} · ${k.esc(seasonLabel(r, r.outcome?.season ?? r.season))}${win ? '' : '여기까지였다'}</p>`
+  h += `<p class="mute">${k.emblem(me, 'cem')}${k.esc(name(me))} · ${k.esc(seasonLabel(r, r.outcome?.season ?? r.season))}${win ? '' : t('end.over')}</p>`
   // 칭호 도장 — 이긴 길마다 옛 임금 하나, 진 판은 비류 (회의 결정 META §7-1). 네모난 붉은 도장 — 둥근 것은 쓰지 않는다
   const tt = titleOf(r)
   if (tt !== null) h += `<div class="seal${win ? '' : ' lost'}"><b>${k.esc(tt.name)}</b><span>${k.esc(tt.line)}</span></div>`
-  h += `<div class="stats"><span><b>${years}</b>해</span><span><b>${capsHeld(r, me)}</b>도읍</span><span><b>${won}</b>이긴 싸움</span><span><b>${lost}</b>진 싸움</span>`
+  h += `<div class="stats"><span><b>${years}</b>${t('end.yearsU')}</span><span><b>${capsHeld(r, me)}</b>${t('end.capsU')}</span><span><b>${won}</b>${t('end.wonU')}</span><span><b>${lost}</b>${t('end.lostU')}</span>`
   // 0 은 안 보인다 — 꼭대기에서 「얻은 장수 0」이 바람을 뺐다 (긴급 위원회 11-04 · evidence c08-03)
-  h += `${r.known !== undefined && found > 0 ? `<span><b>${found}</b>새로 안 나라</span>` : ''}${heroes > 0 ? `<span><b>${heroes}</b>얻은 장수</span>` : ''}</div>`
+  h += `${r.known !== undefined && found > 0 ? `<span><b>${found}</b>${t('end.foundU')}</span>` : ''}${heroes > 0 ? `<span><b>${heroes}</b>${t('end.heroesU')}</span>` : ''}</div>`
   // 흥망 그래프 — 군사 · 고을 · 백성, 우리는 파랑 굵게 · 남은 나라 깃발 빛 (DESIRE §9 · 형 11-05: "그래프 하나도 없는데?")
   h += riseGraphHtml(history, { me, mine: '#2f8cff', colorOf: (f) => nationKit(f).c, nameOf: name, esc: k.esc, dateOf: (s) => dateLabel(r, s) })
   // 얻은 것(세기·휘장·무덤·단련) 먼저, 연대기는 접어서 — 늘어놓았더니 난잡했다 (형 10-28: "결과 보는 부분이랑 그 아래 버튼들이 정리가 안 돼 있음")
   if (keep !== '') h += `<div class="gains">${keep}</div>`
-  if (pickd.length > 0) h += `<details class="chron"><summary>연대기 <small>${pickd.length}</small></summary>${pickd.map((e) => `<p class="${e.big ? 'big' : ''}"><i>${k.esc(seasonLabel(r, e.s))}</i>${k.esc(e.t)}</p>`).join('')}</details>`
+  if (pickd.length > 0) h += `<details class="chron"><summary>${t('end.chron')} <small>${pickd.length}</small></summary>${pickd.map((e) => `<p class="${e.big ? 'big' : ''}"><i>${k.esc(seasonLabel(r, e.s))}</i>${k.esc(e.t)}</p>`).join('')}</details>`
   // 이야기 장을 이겼다 — 사서의 한 줄과 다음 장으로 가는 단추 (점검 10-25: 다음 장은 새 게임 → 판 고르기로만 갔다)
   const ch = chapterOfRegion(region)
   const nextCh = win && ch !== undefined ? CHAPTERS.find((c) => c.n === ch.n + 1 && c.region !== null) : undefined
@@ -692,12 +664,12 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = '', f
   // 단추 — 큰 것(다음 장 · 새 게임) 한 줄씩, 작은 것은 두 칸씩 · 기록 내보내기 같은 것은 맨 밑에 작게
   h += `<div class="btns endbtns"><div class="ebmain">`
   // 튜토리얼 다음은 캠페인 1장이 아니라 1:1 자유 판 (형 11-04: "캠페인 대신 1:1 일반게임을 시켜야 할 거 같은데")
-  if (win && region === 'tutorial') h += `<button class="btn pri nextch" data-act="fr-board" data-v="byeonhan-mini">다음: 1:1 「${k.esc(BOARDS.find((b) => b.id === 'byeonhan-mini')?.name ?? '')}」 ›</button>`
-  else if (nextCh !== undefined) h += `<button class="btn pri nextch" data-act="fr-board" data-v="${nextCh.region}">다음 장: ${chapterTag(nextCh.n)} ${k.esc(nextCh.name)} ›</button>`
+  if (win && region === 'tutorial') h += `<button class="btn pri nextch" data-act="fr-board" data-v="byeonhan-mini">${t('end.nextDuel', { name: k.esc(BOARDS.find((b) => b.id === 'byeonhan-mini')?.name ?? '') })}</button>`
+  else if (nextCh !== undefined) h += `<button class="btn pri nextch" data-act="fr-board" data-v="${nextCh.region}">${t('end.nextCh', { tag: chapterTag(nextCh.n), name: k.esc(nextCh.name) })}</button>`
   // 새 게임이 맨 앞 — 무한 모드는 하고 싶은 사람만 고르는 곁길 (형 10-24: "무한모드를 1번 선택하게 되면 안 돼")
-  h += `<button class="btn${nextCh !== undefined ? '' : ' pri'}" data-act="fr-new">새 게임</button></div><div class="ebsub">`
-  h += `<button class="btn" data-act="fr-again">${k.esc(josa(name(me), "으로", "로"))} 다시</button><button class="btn" data-act="fr-look">지도 둘러보기</button>`
-  if (win && !all) h += `<button class="btn wide2" data-act="fr-endless">계속하기 (무한 모드)<small>남은 나라까지 이어서 합니다</small></button>`
+  h += `<button class="btn${nextCh !== undefined ? '' : ' pri'}" data-act="fr-new">${t('title.new')}</button></div><div class="ebsub">`
+  h += `<button class="btn" data-act="fr-again">${k.esc(t('end.again', { me: name(me) }))}</button><button class="btn" data-act="fr-look">${t('end.look')}</button>`
+  if (win && !all) h += `<button class="btn wide2" data-act="fr-endless">${t('end.endless')}<small>${t('end.endlessSub')}</small></button>`
   return h + `</div></div>${foot !== '' ? `<div class="efoot">${foot}</div>` : ''}</div></div>`
 }
 

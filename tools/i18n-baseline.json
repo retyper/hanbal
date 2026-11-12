@@ -2,8 +2,8 @@
  "totals": {
   "i18n": {
    "files": 2,
-   "lits": 2556,
-   "chars": 25571
+   "lits": 2706,
+   "chars": 27607
   },
   "other": {
    "files": 29,
@@ -17,8 +17,8 @@
   },
   "ui": {
    "files": 74,
-   "lits": 7107,
-   "chars": 126498
+   "lits": 6896,
+   "chars": 124525
   },
   "sim": {
    "files": 17,
@@ -26,9 +26,9 @@
    "chars": 2058
   }
  },
- "total": 21155,
+ "total": 21094,
  "files": {
-  "src/i18n/ko.ts": 2549,
+  "src/i18n/ko.ts": 2699,
   "src/tune/params.ts": 2149,
   "src/realm/data/prose.ts": 2102,
   "src/ui/realm/voice-hero.ts": 1425,
@@ -47,7 +47,6 @@
   "src/ui/realm/card-lines.ts": 220,
   "src/realm/data/customs.ts": 218,
   "src/ui/realm/chief-lines-b.ts": 216,
-  "src/ui/realm/front.ts": 216,
   "src/realm/data/hire-lines.ts": 214,
   "src/ui/realm/voice-b.ts": 152,
   "src/ui/realm/council-agenda.ts": 142,
@@ -159,6 +158,7 @@
   "src/net/sync.ts": 5,
   "src/render/sky.ts": 5,
   "src/ui/quiver.ts": 5,
+  "src/ui/realm/front.ts": 5,
   "src/ui/realm/kitcolor.ts": 5,
   "src/ui/realm/unlock.ts": 5,
   "src/ui/realm/winfx.ts": 5,

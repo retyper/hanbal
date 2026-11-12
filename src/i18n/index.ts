@@ -35,3 +35,13 @@ export function tIn(l: Lang, key: Key, vars?: Vars): string {
 export function t(key: Key, vars?: Vars): string {
   return tIn(lang(), key, vars)
 }
+
+/** 표 하나의 글 — 읽을 때마다 그때의 말로 (표를 모듈 첫머리에서 굳히지 않는다). 키는 `ns.k` */
+export function lazyTable<K extends string>(ns: string, keys: readonly K[]): { readonly [P in K]: string } {
+  const o = {} as { [P in K]: string }
+  for (const k of keys) Object.defineProperty(o, k, { get: () => t(`${ns}.${k}` as Key), enumerable: true })
+  return o
+}
+
+/** 키가 글자로 만들어질 때(`pro.when.${region}`) — 없는 키는 시험이 잡는다 */
+export const tk = (key: string, vars?: Vars): string => t(key as Key, vars)
