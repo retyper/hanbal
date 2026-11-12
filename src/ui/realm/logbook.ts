@@ -6,14 +6,15 @@
  * 걸러 보기: 갈래(전쟁·화친 · 사신 · 싸움 · 공작 · 우리 살림)와 나라 하나. 최근 계절이 위.
  * 보고판에서는 받기·거절 칸이 대신하던 "남이 우리에게 건 청"(ask)과 싸움 카드도 여기서는 글 한 줄로 남긴다.
  */
-import { askLine, fieldName, josa, reportText, seasonLabel, turnWord } from '../../realm/data/prose.ts'
+import { askLine, fieldName, reportText, seasonLabel, turnWord } from '../../realm/data/prose.ts'
 import type { Realm, ReportLine } from '../../realm/types.ts'
 import type { History } from './front.ts'
+import { lazyMid, lazyPair, t as tr } from '../../i18n/index.ts'
 
 export type LogFilter = 'all' | 'rel' | 'envoy' | 'war' | 'plot' | 'home'
 
 export const LOG_FILTERS: ReadonlyArray<readonly [LogFilter, string]> = [
-  ['all', '전부'], ['rel', '전쟁·화친'], ['envoy', '사신'], ['war', '싸움'], ['plot', '공작'], ['home', '우리 살림'],
+  lazyPair<LogFilter>('all', 'lg.f.all'), lazyPair<LogFilter>('rel', 'lg.f.rel'), lazyPair<LogFilter>('envoy', 'lg.f.envoy'), lazyPair<LogFilter>('war', 'lg.f.war'), lazyPair<LogFilter>('plot', 'lg.f.plot'), lazyPair<LogFilter>('home', 'lg.f.home'),
 ]
 
 const KINDS: Readonly<Record<Exclude<LogFilter, 'all'>, ReadonlySet<string>>> = {
@@ -27,7 +28,8 @@ const KINDS: Readonly<Record<Exclude<LogFilter, 'all'>, ReadonlySet<string>>> = 
 /** 계절 소식의 갈래 묶음 — 보고판에서 갈래마다 머리를 달아 묶는다 (형 10-25: "계절 지나서 생기는 로그는 너무 복잡하고 많은데 카테고리별로 묶어야") */
 export type LogGroup = Exclude<LogFilter, 'all'> | 'etc'
 export const LOG_GROUPS: ReadonlyArray<readonly [LogGroup, string, string]> = [
-  ['war', '싸움', 'unit-spear'], ['rel', '전쟁·화친', 'status-alliance'], ['envoy', '사신', 'ask-truce'], ['plot', '공작', 'plot-schemes'], ['home', '우리 살림', 'settle-farm-village'], ['etc', '그 밖', 'settle-beacon'],
+  lazyMid<LogGroup, string>('war', 'lg.f.war', 'unit-spear'), lazyMid<LogGroup, string>('rel', 'lg.f.rel', 'status-alliance'), lazyMid<LogGroup, string>('envoy', 'lg.f.envoy', 'ask-truce'),
+  lazyMid<LogGroup, string>('plot', 'lg.f.plot', 'plot-schemes'), lazyMid<LogGroup, string>('home', 'lg.f.home', 'settle-farm-village'), lazyMid<LogGroup, string>('etc', 'lg.f.etc', 'settle-beacon'),
 ]
 export function logGroup(l: ReportLine): LogGroup {
   for (const [g, set] of Object.entries(KINDS) as Array<[Exclude<LogFilter, 'all'>, ReadonlySet<string>]>) if (set.has(l.kind)) return g
@@ -54,11 +56,11 @@ function battleText(r: Realm, l: Extract<ReportLine, { kind: 'battle' }>): strin
   const won = l.outcome === 'rout' || l.outcome === 'win'
   const lost = l.outcome === 'lose' || l.outcome === 'routed'
   let t = l.field === true
-    ? `${josa(atk, '과', '와')} ${josa(def, '이', '가')} ${place}에서 맞붙었다: `
-    : `${josa(atk, '이', '가')} ${def}의 ${josa(place, '을', '를')} 쳤다: `
-  t += won ? (l.outcome === 'rout' ? `${atk}의 크게 이김.` : `${atk}의 이김.`) : lost ? (l.outcome === 'routed' ? `${def}의 크게 이김.` : `${def}의 이김.`) : '승부가 나지 않았다.'
-  if (l.captured !== null) t += ` ${josa(r.heroes[l.captured]?.name ?? '장수', '이', '가')} 사로잡혔다.`
-  if (l.killed !== null) t += ` ${josa(r.heroes[l.killed]?.name ?? '장수', '이', '가')} 쓰러졌다.`
+    ? tr('lg.fieldFight', { atk, def, place })
+    : tr('lg.siege', { atk, def, place })
+  t += won ? tr(l.outcome === 'rout' ? 'lg.bigWin' : 'lg.win', { who: atk }) : lost ? tr(l.outcome === 'routed' ? 'lg.bigWin' : 'lg.win', { who: def }) : tr('lg.draw')
+  if (l.captured !== null) t += ` ${tr('lg.caught', { who: r.heroes[l.captured]?.name ?? tr('lg.hero') })}`
+  if (l.killed !== null) t += ` ${tr('lg.fell', { who: r.heroes[l.killed]?.name ?? tr('lg.hero') })}`
   return t
 }
 
@@ -67,7 +69,7 @@ export function logText(r: Realm, l: ReportLine, viewer: string): string | null 
   if (l.kind === 'ask') {
     if (l.ask.to !== viewer) return null
     const place = l.ask.node !== undefined ? (r.nodes[l.ask.node]?.name ?? '') : ''
-    return `사신이 왔다: ${askLine(l.ask, r.factions[l.ask.from]?.name ?? '', place, r)}`
+    return tr('lg.envoyCame', { line: askLine(l.ask, r.factions[l.ask.from]?.name ?? '', place, r) })
   }
   if (l.kind === 'battle') {
     const ours = l.atkFaction === viewer || l.defender === viewer
@@ -115,15 +117,15 @@ export interface LogKit {
 
 /** 기록 판 — 위에 걸러 보기 칩, 아래에 계절마다 묶은 그림 줄 */
 export function logbookHtml(k: LogKit, r: Realm, rows: readonly LogRow[], nations: readonly string[], filter: LogFilter, nation: string | null): string {
-  let h = `<h3>지난 기록</h3><div class="logf">`
+  let h = `<h3>${tr('lg.title')}</h3><div class="logf">`
   for (const [id, name] of LOG_FILTERS) h += `<button class="${filter === id ? 'on' : ''}" data-act="log-f" data-v="${id}">${k.esc(name)}</button>`
   h += `</div>`
   if (nations.length > 0) {
-    h += `<div class="logn"><button class="${nation === null ? 'on' : ''}" data-act="log-n" data-id="">모든 나라</button>`
+    h += `<div class="logn"><button class="${nation === null ? 'on' : ''}" data-act="log-n" data-id="">${tr('lg.allNations')}</button>`
     for (const f of nations) h += `<button class="${nation === f ? 'on' : ''}" data-act="log-n" data-id="${f}">${k.emblem(f, 'lem')}${k.esc(r.factions[f]?.name ?? '')}</button>`
     h += `</div>`
   }
-  if (rows.length === 0) return h + `<p class="mute">${filter === 'all' && nation === null ? `아직 남은 기록이 없다. ${josa(turnWord(r), '이', '가')} 지나면 여기 쌓인다.` : '고른 갈래에 남은 기록이 없다.'}</p>`
+  if (rows.length === 0) return h + `<p class="mute">${filter === 'all' && nation === null ? tr('lg.none', { turn: turnWord(r) }) : tr('lg.noneF')}</p>`
   let last = -1
   h += `<div class="lines logl">`
   for (const x of rows) {

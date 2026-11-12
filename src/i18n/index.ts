@@ -77,3 +77,17 @@ export function lazyList(ns: string, n: number): readonly string[] {
   for (let i = 0; i < n; i++) Object.defineProperty(arr, i, { get: () => tRaw(`${ns}.${i}`), enumerable: true })
   return arr
 }
+
+/** [그대로, 글] 한 쌍 — 둘째 칸만 읽을 때마다 지금 말로 (표를 모듈 첫머리에서 굳히지 않는다) */
+export function lazyPair<A>(first: A, key: Key): readonly [A, string] {
+  const p: [A, string] = [first, '']
+  Object.defineProperty(p, 1, { get: () => t(key), enumerable: true })
+  return p
+}
+
+/** [그대로, 글, 그대로] 세 칸 — 가운데만 읽을 때마다 지금 말로 */
+export function lazyMid<A, C>(first: A, key: Key, last: C): readonly [A, string, C] {
+  const p: [A, string, C] = [first, '', last]
+  Object.defineProperty(p, 1, { get: () => t(key), enumerable: true })
+  return p
+}
