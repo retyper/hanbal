@@ -66,6 +66,7 @@
 ## Veo (Jay u/4 · 하루 한도가 있다)
 
 > ★ **11-13 형: 모델을 Argon 으로 바꿔야 된다.** 새 대화의 모델 고르기(입력칸 옆 · Flash/Pro/Argon)에서 **Argon** 을 고른 뒤 「동영상 만들기」로 보낸다. 기본 모델로 보내면 「I'm having a hard time…」·「encountering an error」·「full capacity」로 거의 다 실패했다 — 그걸 그림 탓으로 오해해 15세+그림체 판을 새로 구운 것은 헛수고였다(원래 각성 그림으로 돌림). 영상은 **원래 각성 그림**으로.
+> ★ **11-13 형: 「Sorry, something went wrong」·「encountering an error」가 나오면 같은 대화에 한 번 되묻는다** — 형이 가비 대화에 「왜 안 돼? 비디오 못 만들어 너?」라고 치자 구워 줬다. 새 대화로 다시 내지 말고 그 대화에 짧게 한 번(「왜 안 돼? 비디오 만들어 줘」). 그래도 안 되면 그때 실패로 적는다. 「out of videos」 한도 띠가 떠 있으면 되묻지 않는다.
 > 얼굴이 웃는 채 얼어 버리면 문안의 얼굴 고정이 너무 센 것 — 원장 문안 끝에 「FACE LIFE」 절(깜빡임·눈 움직임·숨 따라 풀렸다 돌아오는 미소)을 붙였다(-l.txt).
 
 - `sh tools/sprite-kit/veo-next.sh` → 다음 일을 claim · 문안을 `tools/out/veo-prompt.txt` 로 (브라우저 업로드는 작업 폴더 안 파일만 된다) · `IMG` 경로를 찍음
