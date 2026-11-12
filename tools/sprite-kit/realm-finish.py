@@ -9,7 +9,9 @@ G = 'assets_src/realm/gemini/generals2/'
 S = 'tools/sprite-kit/'
 out = f'public/realm/anim2/gen-{name}.png'
 amapA = sys.argv[3] if len(sys.argv) > 3 else ''
-subprocess.run([sys.executable, S + 'compose20.py', G + f'{name}-walk-strip.png', G + f'{name}-act-strip.png', out, amapA], check=True)
+nact = sys.argv[4] if len(sys.argv) > 4 else ''  # 11-12: 3x2 동작 시트면 6
+act = G + (f'{name}-act6-strip.png' if nact == '6' else f'{name}-act-strip.png')
+subprocess.run([sys.executable, S + 'compose20.py', G + f'{name}-walk-strip.png', act, out, amapA, nact], check=True)
 im = Image.open(out)
 cw = im.width // 20
 a = np.array(im.crop((0, 0, cw, 160)))[..., 3]

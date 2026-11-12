@@ -19,7 +19,7 @@ fs.writeFileSync('$A',s.slice(0,i)+'  $key: { ar: 160 / 160, body: 0.900$bow },\
 grep -q "'$heroId': '$key'" $A || sed -i "s/^\(export const GEN_OWN[^{]*{.*\) }$/\1, '$heroId': '$key' }/" $A
 grep -q "'gen-$key': \[" $B || sed -i "s/^\(  'gen-soseono': \[[^]]*\], \)/\1'gen-$key': [14, 0, 0], /" $B
 grep -q "'$heroId': '$key'" $A && grep -q "'gen-$key': \[" $B && grep -q "^  $key: { ar: " $A || { echo "등록 실패"; exit 1; }
-py -3 -X utf8 tools/sprite-kit/realm-finish.py "$key" "11-08 처음 · $note"
+py -3 -X utf8 tools/sprite-kit/realm-finish.py "$key" "11-08 처음 · $note" "${AMAP:-}" "${NACT:-}"   # 11-12: NACT=6 이면 <key>-act6-strip.png (3×2)
 # 군사 띠처럼 짙은 1px 테두리 (형 11-09: 장수 그림이 흐림) — 다시 구우면 .done 에서 빼야 다시 두른다
 sed -i "/^gen-$key.png$/d" assets_src/realm/retired/anim2-outline/.done 2>/dev/null
 py -3 -X utf8 tools/defringe-green.py "public/realm/anim2/gen-$key.png" >/dev/null 2>&1 || true

@@ -6,7 +6,8 @@
 //   eval(localStorage.skit)        // skit.spec 은 localStorage.skitSpec 에서
 //   await skit.setup('u0')        새 대화에서: 이미지 만들기 · 16:9 · 파일 input 에 aria-label u0file0.. (find 로 찾아 file_upload)
 //   await skit.send('walk', key)  걷기 시트 문안을 넣고 보냄 (첨부 2장 · 16:9 확인 못 하면 안 보냄)
-//   await skit.send('act', key)   같은 대화에 동작 시트
+//   await skit.send('act', key)   같은 대화에 동작 시트 (옛 4×2)
+//   await skit.send('act6', key)  같은 대화에 동작 시트 3×2 (11-12 · 먼저 ref-act-3x2.png 를 첨부)
 //   await skit.say(text)          고쳐 달라는 말
 //   skit.state()                  응답 그림 수 · 생성 중인지
 //   await skit.grab(name)         마지막 응답 그림을 캔버스로 받아 ~/Downloads/Gemini_Generated_Image_<name>.png
@@ -46,6 +47,11 @@
       const w = WORD[h.weapon] || 'weapon'
       if (kind === 'walk')
         return `IMAGE 1 is a game sprite sheet: 4 columns x 2 rows = 8 frames of one ${h.sex || 'woman'} walking to the right (side view), each frame a different phase of the stride, hand-painted style, on pure flat green #00FF00, wide 16:9. IMAGE 2 is the portrait of the character I need, an adult in their twenties or older. Make a NEW wide 16:9 sprite sheet with EXACTLY the layout, cell size, character scale, foot line and painting style of IMAGE 1, but the character is ${h.desc}. ${h.extra || 'This battle outfit is sexier than the portrait.'} ${h.armor || 'NO armor, NO helmet.'} The character holds ${h.hold}. 8-frame WALKING cycle to the right, side view facing right in every frame (never turn the back to the viewer), ${h.stride}. All 8 frames show 8 clearly different leg positions (never repeat a pose): 1 right leg far forward, 2 right foot flat, 3 legs passing each other, 4 left leg swinging forward, 5 left leg far forward, 6 left foot flat, 7 legs passing, 8 right leg swinging forward; both feet stay on the same foot line, no kneeling, no jumping; arms swing opposite to the legs; the ${w} is held the same way in all 8 frames, in BOTH rows (do not copy the weapon or outfit of IMAGE 1, only its layout, scale and stride). Full body with feet in every cell, nothing touching the cell edges. ${TAIL}`
+      if (kind === 'act6') {
+        // 11-12 형: 「칸은 가로로 넓게 · 한 장에 적게 · 무기가 짧다」 — 3×2 가로 칸 · 사람은 칸 왼쪽 40% · 오른쪽은 무기 자리 (참고 시트 ref-act-3x2.png 를 이 메시지에 첨부)
+        const four = (ACT[h.weapon] || ACT.heavy).split(/,s*5 /)[0] + ', '
+        return `The image attached to THIS message is a LAYOUT reference only: a wide 16:9 game sprite sheet of 3 columns x 2 rows = 6 cells on pure flat green #00FF00. In every cell the figure stands in the LEFT 40% of the cell and the RIGHT 60% is empty green room for the weapon, so the whole weapon is always inside its cell with green margin on every side. Make a NEW wide 16:9 sprite sheet with EXACTLY this 3x2 layout, cell size, character scale and foot line, but with EXACTLY the same person and outfit as the walking sheet you just made (the person of IMAGE 2 of my first message; NOT the woman of this layout reference, NOT the person of IMAGE 1). Strict side view facing RIGHT in every cell. The ${w} is drawn at its FULL length in every cell, never shortened, never cut off, never crossing into the next cell; nothing touches any cell edge. Exactly ONE ${w} per cell. 6 cells in order, left to right, top row then bottom row: ${four}5 hit recoil, torso jerked backward, head thrown back, pained face, still facing right, 6 lying on the back on the ground with the ${w} beside. The weapon never points backward. ${TAIL}`
+      }
       return `Great. Now make a SECOND image with EXACTLY the same wide 16:9 4x2 layout, cell size, character scale, foot line and EXACTLY the same person and outfit as the walking sheet you just made (the person of IMAGE 2, NOT the person of IMAGE 1), strict side view facing RIGHT in every frame, every figure and the whole ${w} fully inside its cell. Exactly ONE ${w} in every frame. 8 frames in order: ${ACT[h.weapon] || ACT.heavy}6 hit recoil, torso jerked backward, head thrown back, pained face, still facing right, 7 falling backward off the feet, 8 lying on the back on the ground with the ${w} beside. The weapon never points backward. ${TAIL}`
     },
     async setup(tag = 'u') {
@@ -141,7 +147,7 @@
       return { ok: res.ok, size: b.size, dur: v.duration }
     },
     send(kind, key) {
-      return kit.say(kit.prompt(kind, key), kind === 'walk' ? 2 : 0)
+      return kit.say(kit.prompt(kind, key), kind === 'walk' ? 2 : kind === 'act6' ? 1 : 0)
     },
     imgs() {
       return [...document.querySelectorAll('main img')].filter((i) => i.naturalWidth > 800 && i.closest('model-response, message-content, [class*=response]'))

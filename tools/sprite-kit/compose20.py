@@ -1,5 +1,6 @@
 """Compose a 20-cell battle strip from a run strip (8 cells) and an action strip (8 cells).
-usage: compose20.py run.png act.png out.png [amap=1,2,3,3,4,5,6,8]
+usage: compose20.py run.png act.png out.png [amap=1,2,3,3,4,5,6,8] [act cells=8]
+11-12: 3x2 동작 시트(6컷: 준비·당김·찌름·마무리·맞음·누움)면 act cells=6 · amap 기본 1,2,3,3,4,1,5,6
 cells: idle 0-3 = act1 x4 · walk 4-11 = run 1..8 · attack 12-17 = act 1,2,3,3,4,5 · hit 18 = act6 · fall 19 = act8
 Scales the action strip so act frame 1's height matches the median run-frame height (both standing, feet aligned).
 11-12: then scales EVERYTHING down together so the tallest cell (raised weapon, jump) still fits under the top edge with
@@ -37,11 +38,12 @@ def scaled(c, k):
     return c if k == 1 else c.resize((max(1, round(c.width * k)), max(1, round(c.height * k))), Image.Resampling.LANCZOS)
 
 
-rc, ac = cells(R), cells(A)
+NACT = int(sys.argv[5]) if len(sys.argv) > 5 and sys.argv[5] else 8
+rc, ac = cells(R), cells(A, NACT)
 run_h = float(np.median([bbox_h(c) for c in rc]))
 k = run_h / max(1, bbox_h(ac[0]))
 ac = [scaled(c, k) for c in ac]
-amap = [int(v) - 1 for v in (sys.argv[4] if len(sys.argv) > 4 and sys.argv[4] else "1,2,3,3,4,5,6,8").split(",")]
+amap = [int(v) - 1 for v in (sys.argv[4] if len(sys.argv) > 4 and sys.argv[4] else ("1,2,3,3,4,1,5,6" if NACT == 6 else "1,2,3,3,4,5,6,8")).split(",")]
 order = [ac[amap[0]]] * 4 + rc + [ac[i] for i in amap]
 tallest = max(bbox_h(c) for c in order)
 fit = min(1.0, (H - TOP) / max(1, tallest))
