@@ -294,7 +294,7 @@ export function deedText(r: Realm, viewer: string, other: string, d: Deed): { te
         if (we && d.why === 'rescue') return { text: `우리가 동맹을 구하러 ${o}에 칼을 뽑았다`, tone: 'us' }
         if (d.by === other && d.why === 'council') return { text: `${josa(o, '이', '가')} 여섯 마을에 묻고 우리와 싸우기로 했다`, tone: 'bad' }
         if (d.by === other && d.why === 'rescue') return { text: `${josa(o, '이', '가')} 동맹을 구하러 우리에게 칼을 뽑았다`, tone: 'bad' }
-        if (d.by === other && d.why === 'league') return { text: `${josa(o, '이', '가')} 합종에 들어 우리에게 칼을 뽑았다`, tone: 'bad' }
+        if (d.by === other && d.why === 'league') return { text: `${josa(o, '이', '가')} 연맹에 들어 우리에게 칼을 뽑았다`, tone: 'bad' }
         if (we) return { text: d.why === 'betray' ? `우리가 약조를 깨고 ${josa(o, '을', '를')} 쳤다` : d.why === 'tribute' || d.why === 'demand' ? `${josa(o, '이', '가')} 우리 요구를 거절해 전쟁이 됐다` : `우리가 ${o} 땅에 군대를 들여 전쟁이 됐다`, tone: 'us' }
         if (d.by === other) return { text: d.why === 'betray' ? `${josa(o, '이', '가')} 약조를 깨고 쳐들어왔다` : d.why === 'attack' ? `${josa(o, '이', '가')} 우리 땅에 쳐들어왔다` : d.why === 'tribute' || d.why === 'demand' ? `우리가 그 요구를 거절하자 ${josa(o, '이', '가')} 칼을 뽑았다` : d.why === 'plot' ? `우리 공작이 드러나 ${josa(o, '이', '가')} 칼을 뽑았다` : `${josa(o, '이', '가')} 전쟁을 걸어왔다`, tone: 'bad' }
         return { text: `${josa(o, '과', '와')} 전쟁이 났다`, tone: 'plain' }
@@ -1075,17 +1075,17 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       const left = (at: number | undefined): string => turnsLabel(after, Math.max(1, (at ?? after.season) - after.season))
       const who = line.who !== undefined ? fname(line.who) : ''
       switch (line.ev) {
-        case 'form': return `합종: ${josa(names, '이', '가')} 우리를 막으려 손을 잡았다. ${left(line.at)} 뒤 함께 쳐들어온다.`
-        case 'strike': return `합종군이 움직인다: ${josa(names, '이', '가')} 함께 칼을 뽑았다. ${left(line.at)} 동안 막아 내면 흩어진다.`
+        case 'form': return `연맹: ${josa(names, '이', '가')} 우리를 막으려 손을 잡았다. ${left(line.at)} 뒤 함께 쳐들어온다.`
+        case 'strike': return `연맹군이 움직인다: ${josa(names, '이', '가')} 함께 칼을 뽑았다. ${left(line.at)} 동안 막아 내면 흩어진다.`
         case 'leave':
-          return line.why === 'truce' ? `${josa(who, '이', '가')} 우리와 손잡고 합종에서 빠졌다.`
-            : line.why === 'beaten' ? `${josa(who, '은', '는')} 잇단 싸움에 져 합종에서 물러났다.`
-              : line.why === 'sow' ? `${josa(who, '이', '가')} 동맹과 틀어져 합종에서 빠졌다.`
-                : `${josa(who, '이', '가')} 무너져 합종에서 사라졌다.`
-        case 'broken': return `합종을 깼다! ${josa(names, '이', '가')} 군사를 거두고 흩어진다.`
-        case 'spent': return `합종군이 우리 고을 ${line.took ?? 0}곳을 앗고 흩어졌다.`
-        case 'scatter': return '합종이 흩어졌다: 남은 나라가 모자라 더는 함께 치지 못한다.'
-        case 'fade': return '합종이 흩어졌다: 우리를 두려워하던 마음이 걷혔다.'
+          return line.why === 'truce' ? `${josa(who, '이', '가')} 우리와 손잡고 연맹에서 빠졌다.`
+            : line.why === 'beaten' ? `${josa(who, '은', '는')} 잇단 싸움에 져 연맹에서 물러났다.`
+              : line.why === 'sow' ? `${josa(who, '이', '가')} 동맹과 틀어져 연맹에서 빠졌다.`
+                : `${josa(who, '이', '가')} 무너져 연맹에서 사라졌다.`
+        case 'broken': return `연맹이 와해되었다! ${josa(names, '이', '가')} 군사를 거두고 흩어진다.`
+        case 'spent': return `연맹군이 우리 고을 ${line.took ?? 0}곳을 앗고 물러갔다.`
+        case 'scatter': return '연맹이 와해되었다: 남은 나라가 모자라 더는 함께 치지 못한다.'
+        case 'fade': return '연맹이 와해되었다: 우리를 두려워하던 마음이 걷혔다.'
       }
       return null
     }
