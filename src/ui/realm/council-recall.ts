@@ -10,24 +10,24 @@
  */
 import { isOld } from '../../realm/age.ts'
 import { seasonIdx, seasonOf, seasons, type Clocked } from '../../realm/calendar.ts'
-import { josa, SEASON_NAME } from '../../realm/data/prose.ts'
 import { bestRouteVs, councilRecord, heroBattlesVs, heroPlotVs, heroSplit, lastBattleVs, plotBeforeWin, splitLesson, worstRouteVs } from '../../realm/memory.ts'
 import type { Approach, Hero, Realm } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { voiceKind } from './voice.ts'
+import { lazyTable, t as tr, type Key } from '../../i18n/index.ts'
 
-const AP_NAME: Readonly<Record<Approach, string>> = { road: '대로', night: '밤길', ford: '여울', ridge: '산기슭', cliff: '절벽' }
+const AP_NAME: Readonly<Record<Approach, string>> = lazyTable('apName', ['road', 'night', 'ford', 'ridge', 'cliff'])
 const isAp = (x: string): x is Approach => x in AP_NAME
 
 /** 그 계절을 지금에서 본 말 — 「지난 봄」 · 「지난해 가을」 · 「두 해 전 겨울」 (`s` 는 그 일의 턴) */
 export function whenSaid(r: Clocked, s: number): string {
-  const name = SEASON_NAME[seasonOf(r, s)]
+  const name = tr(`season.${seasonOf(r, s)}` as Key)
   const d = seasonIdx(r) - seasonIdx(r, s)
-  if (d <= 0) return `이번 ${name}`
-  if (d < 4) return `지난 ${name}`
-  if (d < 8) return `지난해 ${name}`
+  if (d <= 0) return tr('rc.when.now', { name })
+  if (d < 4) return tr('rc.when.last', { name })
+  if (d < 8) return tr('rc.when.lastYear', { name })
   const y = Math.floor(d / 4)
-  return `${y === 2 ? '두' : y === 3 ? '세' : y === 4 ? '네' : String(y)} 해 전 ${name}`
+  return tr('rc.when.ago', { y: y >= 2 && y <= 4 ? tr(`agenda.count.${y}` as Key) : String(y), name })
 }
 
 const fresh = (r: Realm, s: number): boolean => r.season - s <= seasons(r, P.realm.cnMemAge)
@@ -49,10 +49,10 @@ export function heroRouteFact(r: Realm, hero: string, foe: string): RouteFact | 
   const x = xs[xs.length - 1]
   if (x === undefined) return null
   const ap = x.how as Approach
-  const where = `${whenSaid(r, x.s)} ${nodeName(r, x.at)} 싸움에서`
+  const v = { when: whenSaid(r, x.s), node: nodeName(r, x.at), ap: AP_NAME[ap] }
   return x.res === 'won'
-    ? { ap, won: true, own: true, line: `${where} ${josa(AP_NAME[ap], '으로', '로')} 가 이겼습니다.` }
-    : { ap, won: false, own: true, line: `${where} ${josa(AP_NAME[ap], '으로', '로')} 갔다가 크게 졌습니다.` }
+    ? { ap, won: true, own: true, line: tr('rc.hWon', v) }
+    : { ap, won: false, own: true, line: tr('rc.hLost', v) }
 }
 
 /** 나라의 장부 — 그 나라를 칠 때 이긴 길 · 진 길 */
@@ -69,8 +69,8 @@ export function nationRouteFacts(r: Realm, me: string, foe: string): { best: Rou
     if (how === undefined || !isAp(how)) return null
     const l = last(how, won ? 'won' : 'lost')
     if (l === null || !fresh(r, l.s)) return null
-    const where = `${whenSaid(r, l.s)} ${josa(nodeName(r, l.at), '을', '를')} 칠 때`
-    return { ap: how, won, own: false, line: won ? `${where} ${josa(AP_NAME[how], '으로', '로')} 가 이겼습니다.` : `${where} ${josa(AP_NAME[how], '으로', '로')} 갔다가 졌습니다.` }
+    const v = { when: whenSaid(r, l.s), node: nodeName(r, l.at), ap: AP_NAME[how] }
+    return { ap: how, won, own: false, line: tr(won ? 'rc.nWon' : 'rc.nLost', v) }
   }
   return { best: mk(bestRouteVs(r, me, foe)?.how, true), worst: mk(worstRouteVs(r, me, foe)?.how, false) }
 }
@@ -82,11 +82,14 @@ export interface SplitFact {
   readonly line: string
 }
 
+/** 떠난 사이 털린 일의 말 — 다 데려갔나 몇 할 남겼나 */
+const raidLine = (when: string, keep: number, node: string): string => (keep <= 0 ? tr('rc.raidAll', { when, node }) : tr('rc.raidPart', { when, n: Math.round(keep / 10), node }))
+
 /** 이 장수가 겪은 나눠 떠남 — 떠난 사이 고을이 털렸으면 「남기자」의 까닭 */
 export function heroSplitFact(r: Realm, hero: string): SplitFact | null {
   const x = heroSplit(r, hero)
   if (x === null || !x.raid || !fresh(r, x.s)) return null
-  return { side: 'keep', own: true, line: `${whenSaid(r, x.s)} ${x.keep <= 0 ? '군사를 다 데려갔다가' : `${Math.round(x.keep / 10)}할만 남기고 갔다가`} 빈 ${josa(nodeName(r, x.at), '이', '가')} 짓밟혔습니다.` }
+  return { side: 'keep', own: true, line: raidLine(whenSaid(r, x.s), x.keep, nodeName(r, x.at)) }
 }
 
 /** 나라의 장부 — 가장 최근의 나눠 떠남과 그 결과 */
@@ -95,10 +98,10 @@ export function nationSplitFact(r: Realm, me: string): SplitFact | null {
   if (x === null || !fresh(r, x.s)) return null
   const when = whenSaid(r, x.s)
   const foe = r.factions[x.foe]?.name ?? ''
-  if (x.raid) return { side: 'keep', own: false, line: `${when} ${x.keep <= 0 ? '군사를 다 데려갔다가' : `${Math.round(x.keep / 10)}할만 남기고 갔다가`} 빈 ${josa(nodeName(r, x.at), '이', '가')} 짓밟혔습니다.` }
-  if (x.res === 'lost' && x.keep > 0) return { side: 'all', own: false, line: `${when} 군사를 쪼개 갔다가 ${foe}에 졌습니다.` }
-  if (x.res === 'won' && x.keep <= 0) return { side: 'all', own: false, line: `${when} 군사를 다 데려가 ${foe}에 이겼습니다.` }
-  if (x.res === 'won' && x.keep > 0) return { side: 'keep', own: false, line: `${when} ${Math.round(x.keep / 10)}할을 남기고 가서도 ${foe}에 이겼습니다.` }
+  if (x.raid) return { side: 'keep', own: false, line: raidLine(when, x.keep, nodeName(r, x.at)) }
+  if (x.res === 'lost' && x.keep > 0) return { side: 'all', own: false, line: tr('rc.splitLost', { when, foe }) }
+  if (x.res === 'won' && x.keep <= 0) return { side: 'all', own: false, line: tr('rc.allWon', { when, foe }) }
+  if (x.res === 'won' && x.keep > 0) return { side: 'keep', own: false, line: tr('rc.keepWon', { when, n: Math.round(x.keep / 10), foe }) }
   return null
 }
 
@@ -106,9 +109,9 @@ export function nationSplitFact(r: Realm, me: string): SplitFact | null {
 export function plotFact(r: Realm, me: string, foe: string, hero: string | null): string {
   const name = r.factions[foe]?.name ?? ''
   const own = hero !== null ? heroPlotVs(r, hero, foe) : null
-  if (own !== null && fresh(r, own.s)) return `${whenSaid(r, own.s)} ${name}에 공작을 놓아 본 적이 있어 그 속을 압니다.`
+  if (own !== null && fresh(r, own.s)) return tr('rc.plotOwn', { when: whenSaid(r, own.s), name })
   const pb = plotBeforeWin(r, me, foe)
-  if (pb !== null && pb.won > 0 && pb.won > pb.lost) return `${name}에는 공작을 먼저 놓고 쳤을 때 이겼습니다.`
+  if (pb !== null && pb.won > 0 && pb.won > pb.lost) return tr('rc.plotWin', { name })
   return ''
 }
 
@@ -127,17 +130,17 @@ export function grainSeen(r: Realm, me: string, foe: string): { v: number; s: nu
 export function lostLast(r: Realm, me: string, foe: string): string {
   const b = lastBattleVs(r, { faction: me }, foe)
   if (b === null || b.on || b.res !== 'lost' || !fresh(r, b.s)) return ''
-  return `${whenSaid(r, b.s)} ${nodeName(r, b.at)} 싸움에서 저들에게 졌습니다.`
+  return tr('rc.lostLast', { when: whenSaid(r, b.s), node: nodeName(r, b.at) })
 }
 
 /** 장수가 스스로를 낮춰 부르는 말 · 「이 늙은이」는 쉰이 넘었거나 머리가 센 장수만 (형 10-30) */
 function selfWord(h: Hero): string {
   switch (voiceKind(h)) {
-    case 'm-sage': return '소신'
-    case 'w-shaman': return '소인'
-    case 'm-elder': return isOld(h) ? '이 늙은이' : '소장'
-    case 'w-matron': return '이 몸'
-    default: return '소장'
+    case 'm-sage': return tr('rc.self.sage')
+    case 'w-shaman': return tr('rc.self.shaman')
+    case 'm-elder': return isOld(h) ? tr('rc.self.old') : tr('rc.self.default')
+    case 'w-matron': return tr('rc.self.matron')
+    default: return tr('rc.self.default')
   }
 }
 
@@ -149,10 +152,10 @@ export function councilFact(r: Realm, h: Hero): { proven: boolean; line: string 
   const rec = councilRecord(r, h.id, r.season - seasons(r, P.realm.cnMemAge))
   if (rec === null || rec.res === 'draw') return null
   const me = selfWord(h)
-  if (rec.res === 'lost' || rec.res === 'fail') return { proven: false, line: `지난번에는 ${me}의 말이 빗나갔습니다. 부끄러우나 다시 말씀 올립니다.` }
-  const did = rec.how === 'wait' || rec.how === 'hold' ? (rec.res === 'won' ? '기다리시어 쳐들어온 적을 막았습니다' : '기다리시어 탈이 없었습니다')
-    : rec.how === 'burn' && rec.res === 'ok' ? '저들의 곳간을 태워 두었습니다'
-      : rec.how === 'sow' ? '저들의 맹약을 흔들어 놓았습니다'
-        : '하시어 이겼습니다'
-  return { proven: true, line: `지난번 ${me}의 말대로 ${did}.` }
+  if (rec.res === 'lost' || rec.res === 'fail') return { proven: false, line: tr('rc.missed', { me }) }
+  const did = rec.how === 'wait' || rec.how === 'hold' ? tr(rec.res === 'won' ? 'rc.did.waitWon' : 'rc.did.waitOk')
+    : rec.how === 'burn' && rec.res === 'ok' ? tr('rc.did.burn')
+      : rec.how === 'sow' ? tr('rc.did.sow')
+        : tr('rc.did.won')
+  return { proven: true, line: tr('rc.proven', { me, did }) }
 }
