@@ -45,6 +45,8 @@ for (const x of spec) {
 // ①-1b 진각성 다시 (형이 짚은 것 · 명세에 없는 사람은 여장수 진각성 틀로) — gpt_aw2-<id>.png → 지금 그림을 덮어쓴다
 const W2 = spec.find((y) => y.key === 'aw2-w-66-saro-noeul')?.prompt ?? ''
 const REDO2 = [
+  // 11-13 형: 「w-69 2차각성 손가락 잘못 → 다시 그려야 · 만들 바에 좀 더 노출도 올려」 (15세 선은 지킨다: 가슴 위 천은 불투명 · 비침·윤곽 없음)
+  ['w-69-jeoga-eomni', '(33)', ' Show noticeably more skin than her current second-awakening image: bare shoulders and arms, a bare toned midriff, a shorter, high-slit battle skirt showing her thighs, a tighter, lower-cut top; the fabric over her chest stays solid and opaque (teen 15+ rating), nothing see-through and no outline showing through over the chest. Every visible hand has exactly five fingers with a natural grip on her weapon.'],
   // 11-10 형: "2차 각성은 허리 아래가 잘못 그려져 있음 · 몸 뒷면인데 다리 한쪽이 앞으로 착각" · 활시위 자세이기도 했다 (진각성 금지 자세)
   ['w-13-young-archer', '(21)', ' Draw her facing the viewer or in a three-quarter front view (not from behind, no twisted back view), with anatomically correct hips and legs: both legs clearly attached to the hips and bending the natural way.'],
   // 11-10 형이 짚은 다섯 — 활·활줄·손·가슴이 어색 (진각성 자세 규칙: 활시위 금지 → 활은 들고만)
