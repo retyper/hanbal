@@ -232,8 +232,33 @@ function wake(): void {
   }
 }
 document.addEventListener('visibilitychange', wake)
-addEventListener('resize', () => renderer.resize(), { passive: true })
-addEventListener('orientationchange', () => renderer.resize(), { passive: true })
+// 세로 폰이면 판을 통째로 옆으로 눕힌다 — 활은 늘 가로로 쏜다 (형 11-12: 「제천대회 활쏘기가 세로로 과녁 맞히기 · 활쏘기는 다 가로로」)
+// 해적 판(pirate-main.ts layoutStage)·밤 판과 같은 길: 판 점 (x, y) → 화면 (innerWidth − y, x) · 오른쪽으로 90°. 폰을 왼쪽으로 눕혀 쥔다.
+const stageEl = document.getElementById('stage') as HTMLDivElement
+const ROTATED_MSG = 'hanbal.night.rotated'
+let rotatedNow: boolean | null = null
+function layoutStage(): void {
+  const rot = innerHeight > innerWidth
+  const st = stageEl.style
+  if (rot) {
+    st.width = `${innerHeight}px`
+    st.height = `${innerWidth}px`
+    st.transform = `translate(${innerWidth}px, 0) rotate(90deg)`
+  } else {
+    st.width = '100%'
+    st.height = '100%'
+    st.transform = ''
+  }
+  if (rot !== rotatedNow) {
+    rotatedNow = rot
+    input.setRotated(rot)
+  }
+  if (window.parent !== window) window.parent.postMessage({ type: ROTATED_MSG, rot }, location.origin)
+  renderer.resize()
+}
+addEventListener('resize', layoutStage, { passive: true })
+addEventListener('orientationchange', layoutStage, { passive: true })
+layoutStage()
 
 showIntro()
 wake()
