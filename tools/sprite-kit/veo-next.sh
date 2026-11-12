@@ -1,5 +1,6 @@
 #!/bin/sh
 # veo-next.sh — Veo 원장에서 다음 일을 claim 하고, 문안을 올릴 수 있는 자리(SKIT_VEO_TXT)로 복사, 넣을 사진 경로를 찍는다
+#   (계정 이름은 VEO_ACCOUNT · 기본 jay-u4 · 11-13 점검: flow-any 로 적혀 계정별 실패를 못 셌다)
 #   sh tools/sprite-kit/veo-next.sh              → "JOB <id>" · "IMG <윈도 경로>" · "TXT <윈도 경로>"
 #   sh tools/sprite-kit/veo-next.sh done <id> <chat url>   → submitted 기록
 #   sh tools/sprite-kit/veo-next.sh held <id> "<까닭>"     → 한도·거절로 닫기 (재시도 금지)
@@ -40,7 +41,7 @@ job=$(node $Q peek | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end"
 [ -z "$job" ] && { echo "NONE"; node $Q peek | grep -m3 reason; exit 1; }
 fi
 id=$(echo "$job" | cut -f1); img=$(echo "$job" | cut -f2); txt=$(echo "$job" | cut -f3)
-node $Q claim "$id" | grep -qE '"status": "claimed"' || { echo "claim 실패 $id"; exit 1; }
+node $Q claim "$id" --account "${VEO_ACCOUNT:-jay-u4}" | grep -qE '"status": "claimed"' || { echo "claim 실패 $id"; exit 1; }
 cp "$txt" "$T" || exit 1
 echo "JOB $id"
 echo "IMG $(cygpath -w "$img" 2>/dev/null || echo "$img")"
