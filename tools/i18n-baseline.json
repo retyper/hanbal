@@ -12,13 +12,13 @@
   },
   "i18n": {
    "files": 2,
-   "lits": 1632,
-   "chars": 17744
+   "lits": 1970,
+   "chars": 20448
   },
   "ui": {
    "files": 74,
-   "lits": 8334,
-   "chars": 134699
+   "lits": 7802,
+   "chars": 131887
   },
   "sim": {
    "files": 17,
@@ -26,11 +26,11 @@
    "chars": 2058
   }
  },
- "total": 21458,
+ "total": 21264,
  "files": {
   "src/tune/params.ts": 2149,
   "src/realm/data/prose.ts": 2102,
-  "src/i18n/ko.ts": 1625,
+  "src/i18n/ko.ts": 1963,
   "src/ui/realm/voice-hero.ts": 1425,
   "src/ui/realm/voice-hero-2.ts": 1353,
   "src/realm/data/woo-talk/byeonhan-mini.ts": 880,
@@ -40,7 +40,6 @@
   "src/realm/data/woo-talk/south.ts": 660,
   "src/realm/data/woo-talk/yeongnam.ts": 660,
   "src/realm/data/woo-talk/seorabeol.ts": 616,
-  "src/ui/realm/app.ts": 544,
   "src/realm/data/woo-talk/jumong.ts": 528,
   "src/ui/realm/council-says.ts": 504,
   "src/realm/data/cards.ts": 366,
@@ -133,6 +132,7 @@
   "src/game/rewards.ts": 12,
   "src/realm/economy.ts": 12,
   "src/ui/opening.ts": 12,
+  "src/ui/realm/app.ts": 12,
   "src/ui/realm/risegraph.ts": 12,
   "src/game/loop.ts": 11,
   "src/realm/expedition.ts": 11,
