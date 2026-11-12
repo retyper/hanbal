@@ -19,7 +19,7 @@
 ## 3. 형이 볼 것 (판정 기다림)
 
 - 진각성 시트: tools/out/intake-gpt.jpg(여섯) · intake-gpt-redo.jpg(너울·갈매·솔미) · intake-men-m2.jpg · intake-men-m2b.jpg · intake-men-m2c.jpg · D:/tmp-node/m2/maenun-sheet.jpg
-- 소서노 손(46c399b1 · D:/tmp-node/sos/cmp5.jpg) · 15세+그림체 넷(tools/out/intake-15b.jpg)
+- ~~소서노 손~~ ✔ 형 11-12 OK (390875b6 · 네 손가락 판) · 15세+그림체 넷(tools/out/intake-15b.jpg)
 - 오프닝 4·5장면 전용 그림(ea19ab0a · 영화 스틸 결 · 그림체로 다시 구울지) · 내레이션 소리
 - 폰: 디펜스(세 길·고갯길 그림·달리기) · 단련터 · 출정 확인창(승률 40% 미만) · 사신 꾸미기 화면(영어/한국어)
 
