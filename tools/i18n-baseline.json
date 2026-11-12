@@ -12,13 +12,13 @@
   },
   "ui": {
    "files": 74,
-   "lits": 8991,
-   "chars": 140536
+   "lits": 8678,
+   "chars": 136845
   },
   "i18n": {
    "files": 2,
-   "lits": 1149,
-   "chars": 12082
+   "lits": 1387,
+   "chars": 15741
   },
   "sim": {
    "files": 17,
@@ -26,14 +26,14 @@
    "chars": 2058
   }
  },
- "total": 21632,
+ "total": 21557,
  "files": {
   "src/tune/params.ts": 2149,
   "src/realm/data/prose.ts": 2102,
   "src/ui/realm/voice-hero.ts": 1425,
+  "src/i18n/ko.ts": 1380,
   "src/ui/realm/voice-hero-2.ts": 1353,
-  "src/ui/realm/app.ts": 1201,
-  "src/i18n/ko.ts": 1148,
+  "src/ui/realm/app.ts": 888,
   "src/realm/data/woo-talk/byeonhan-mini.ts": 880,
   "src/ui/realm/woo-lines.ts": 871,
   "src/realm/data/woo-talk/world.ts": 704,
@@ -150,6 +150,7 @@
   "src/ui/defense.ts": 8,
   "src/ui/realm/legacy.ts": 8,
   "src/ui/realm/perflog.ts": 8,
+  "src/i18n/en.ts": 7,
   "src/night/layout.ts": 7,
   "src/ui/realm/quality.ts": 7,
   "src/ui/realm/saves.ts": 7,
@@ -180,7 +181,6 @@
   "src/ui/realm/crowns.ts": 2,
   "src/ui/realm/lookword.ts": 2,
   "src/ui/realm/tutorial.ts": 2,
-  "src/i18n/en.ts": 1,
   "src/ui/mapart.ts": 1,
   "src/ui/realm/audience.ts": 1,
   "src/ui/realm/burn.ts": 1,
