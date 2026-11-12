@@ -21,11 +21,14 @@ H = 160
 TOP = 3
 
 
+R4 = os.environ.get('LAYOUT') == 'r'  # 11-12 네 칸 판: r1 걷기 1~4 · r2 걷기 5~8 · r3 준비·당김·찌름·맞음 · r4 누움·서기·들숨·찌른 뒤
+
+
 def cells(n):
-    a = np.array(Image.open(G + f'{key}-q{n}-key.png').convert('RGBA'))
+    a = np.array(Image.open(G + f'{key}-{"r" if R4 else "q"}{n}-key.png').convert('RGBA'))
     h, w = a.shape[:2]
     res = []
-    for j in range(3):
+    for j in range(4 if R4 else 3):
         r, c = divmod(j, 2)
         y0, y1, x0, x1 = round(r * h / 2), round((r + 1) * h / 2), round(c * w / 2), round((c + 1) * w / 2)
         sub = a[y0:y1, x0:x1].copy()
@@ -54,20 +57,20 @@ def ink_h(im):
     return ys.max() - ys.min() + 1
 
 
-q = {n: cells(n) for n in range(1, 6)}
-walk = q[1] + q[2] + q[3][:2]
+q = {n: cells(n) for n in range(1, 5 if R4 else 6)}
+walk = q[1] + q[2] if R4 else q[1] + q[2] + q[3][:2]
 wh = float(np.median([ink_h(c) for c in walk]))
 # 장마다 배율: 걷기 장은 그 장 걷기 키의 가운데값, 나머지는 선 컷
-ref = {1: np.median([ink_h(c) for c in q[1]]), 2: np.median([ink_h(c) for c in q[2]]), 3: ink_h(q[3][2]), 4: ink_h(q[4][0]), 5: ink_h(q[5][2])}
+ref = {1: np.median([ink_h(c) for c in q[1]]), 2: np.median([ink_h(c) for c in q[2]]), 3: ink_h(q[3][0]), 4: ink_h(q[4][1])} if R4 else {1: np.median([ink_h(c) for c in q[1]]), 2: np.median([ink_h(c) for c in q[2]]), 3: ink_h(q[3][2]), 4: ink_h(q[4][0]), 5: ink_h(q[5][2])}
 sc = {n: wh / ref[n] for n in q}
 S = lambda n, j: (q[n][j], sc[n])
 # 자리 바꾸기: MAP="STAND=3:3,READY=5:3,..." (장:칸 · 칸은 1부터) — 제미나이가 칸 자세를 안 따른 장을 살릴 때
-roles = {'STAND': (3, 3), 'INHALE': (5, 3), 'READY': (4, 1), 'WIND': (4, 2), 'THRUST': (4, 3), 'HIT': (5, 1), 'DOWN': (5, 2)}
+roles = {'STAND': (4, 2), 'INHALE': (4, 3), 'READY': (3, 1), 'WIND': (3, 2), 'THRUST': (3, 3), 'HIT': (3, 4), 'DOWN': (4, 1), 'FOLLOW': (4, 4)} if R4 else {'STAND': (3, 3), 'INHALE': (5, 3), 'READY': (4, 1), 'WIND': (4, 2), 'THRUST': (4, 3), 'HIT': (5, 1), 'DOWN': (5, 2), 'FOLLOW': (4, 3)}
 for kv in (os.environ.get('MAP') or '').split(','):
     if '=' in kv:
         r_, v_ = kv.split('='); a_, b_ = v_.split(':'); roles[r_] = (int(a_), int(b_))
-STAND, INHALE, READY, WIND, THRUST, HIT, DOWN = (S(roles[r][0], roles[r][1] - 1) for r in ('STAND', 'INHALE', 'READY', 'WIND', 'THRUST', 'HIT', 'DOWN'))
-W = [S(1, 0), S(1, 1), S(1, 2), S(2, 0), S(2, 1), S(2, 2), S(3, 0), S(3, 1)]
+STAND, INHALE, READY, WIND, THRUST, HIT, DOWN, FOLLOW = (S(roles[r][0], roles[r][1] - 1) for r in ('STAND', 'INHALE', 'READY', 'WIND', 'THRUST', 'HIT', 'DOWN', 'FOLLOW'))
+W = [S(1, j) for j in range(4)] + [S(2, j) for j in range(4)] if R4 else [S(1, 0), S(1, 1), S(1, 2), S(2, 0), S(2, 1), S(2, 2), S(3, 0), S(3, 1)]
 if os.environ.get('WALK') == 'auto':
     # 11-12 소서노: 같은 대화라 걷기 자세가 「벌림」·「모음」 둘로 굳었다 → 발 벌림(아래 12% 잉크 폭/키)으로 줄 세워 한 걸음처럼:
     #   가장 벌린 둘 = 1·5 (닿음) · 가장 모은 둘 = 3·7 (지나감) · 나머지 넷 = 2·4·6·8
@@ -81,7 +84,7 @@ if os.environ.get('WALK') == 'auto':
     narrow, mid, wide = sp[:2], sp[2:6], sp[6:]
     W = [wide[1], mid[2], narrow[0], mid[0], wide[0], mid[3], narrow[1], mid[1]]
     print('걷기 벌림', [round(spread(t[0]), 2) for t in W])
-order = [STAND, INHALE, STAND, INHALE] + W + [READY, WIND, THRUST, THRUST, THRUST, READY, HIT, DOWN]
+order = [STAND, INHALE, STAND, INHALE] + W + [READY, WIND, THRUST, THRUST, FOLLOW, READY, HIT, DOWN]
 order = [im.resize((max(1, round(im.width * k)), max(1, round(im.height * k))), Image.LANCZOS) for im, k in order]
 fit = min(1.0, (H - TOP) / max(ink_h(c) for c in order))
 order = [c.resize((max(1, round(c.width * fit)), max(1, round(c.height * fit))), Image.LANCZOS) for c in order]
