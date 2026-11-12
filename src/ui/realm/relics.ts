@@ -5,7 +5,6 @@
  *   단련터의 장수 카드마다 유물 칸 — 누르면 가진 유물 고르기. 맨 아래 유물 도감(가진 것은 빛깔, 못 찾은 것은 검은 그림자).
  * 기록은 이 기기에만 (`hanbal.realm.relics` · 단련처럼). 못 읽으면 빈 기록 — 지우지는 않는다.
  */
-import { josa } from '../../realm/data/prose.ts'
 import { RELIC, RELICS, TIER_CHEST, TIER_NAME, poolOf } from '../../realm/data/relics.ts'
 import {
   drawTomb, emptyRelics, equip, holderOf, openTomb, pickTomb, relicLevel, relicLevels, relicLine, relicTop, slotsFor, tombKey, unequip,
@@ -13,6 +12,7 @@ import {
 } from '../../realm/relics.ts'
 import type { Realm, RegionId } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
+import { t as tr, type Key } from '../../i18n/index.ts'
 
 const KEY = 'hanbal.realm.relics'
 
@@ -132,8 +132,7 @@ function upOf(t: RelicTomb): { was: number; now: number } | null {
   return { was: t.was, now: Math.min(relicTop(t.pick), t.was + 1) }
 }
 
-const COUNT_WORD = ['', '하나', '둘', '셋', '넷', '다섯', '여섯']
-const countWord = (n: number): string => COUNT_WORD[n] ?? String(n)
+const countWord = (n: number): string => (n === 0 ? '' : n >= 1 && n <= 6 ? tr(`rl.cw.${n}` as Key) : String(n))
 
 // ───────── 끝 화면 — 무덤 한 줄
 
@@ -145,13 +144,13 @@ export function tombStripHtml(k: RelicKit, r: Realm): string {
   if (t.pick !== null) {
     const d = RELIC[t.pick]!
     const up = upOf(t)
-    const head = up === null ? `${k.esc(josa(d.name, '을', '를'))} 얻었다` : `${k.esc(d.name)} <span class="rlup">강화</span> ${stars(d.id, up.now)}`
-    const sub = up === null ? `${k.esc(d.era)}: 단련터에서 장수에게 끼운다` : up.now > up.was ? k.esc(relicLine(d.id, up.now)) : '이미 가장 높은 단계입니다'
+    const head = up === null ? k.esc(tr('rl.got', { name: d.name })) : `${k.esc(d.name)} <span class="rlup">${tr('rl.upTag')}</span> ${stars(d.id, up.now)}`
+    const sub = up === null ? tr('rl.subGot', { era: k.esc(d.era) }) : up.now > up.was ? k.esc(relicLine(d.id, up.now)) : tr('rl.maxed')
     return `<div class="tbstrip got"><img class="tbsr" src="${img(k, d.id)}" alt=""><div><b>${head}</b><small>${sub}</small></div></div>`
   }
-  let h = `<div class="tbstrip"><h4>옛 무덤을 열었다 <small>껴묻거리 ${countWord(t.ids.length)} 가운데 하나</small></h4><div class="tbsl${t.ids.length > 3 ? ' n4' : ''}">`
+  let h = `<div class="tbstrip"><h4>${tr('rl.tombOpened')} <small>${tr('rl.chestsOf', { n: countWord(t.ids.length) })}</small></h4><div class="tbsl${t.ids.length > 3 ? ' n4' : ''}">`
   for (const id of t.ids) h += `<img class="tbsc t-${RELIC[id]!.tier}${id === t.rare ? ' rarebox' : ''}" src="${chestImg(k, id)}" alt="${TIER_NAME[RELIC[id]!.tier]}">`
-  return h + `</div><button class="btn pri big tbopen" data-act="tomb-open">상자를 고르러 ›</button></div>`
+  return h + `</div><button class="btn pri big tbopen" data-act="tomb-open">${tr('rl.pickChest')}</button></div>`
 }
 
 // ───────── 무덤 화면
@@ -161,26 +160,26 @@ export function tombHtml(k: RelicKit, r: Realm, fresh: boolean): string {
   const t = tombOf(r)
   const up = upOf(t)
   const lvNow = up?.now ?? 1
-  let h = `<div class="front tomb"><div class="fhead"><h2>옛 무덤을 열었다</h2></div>`
-  const lead = `${josa(`덧널 ${countWord(t.ids.length)}`, '이', '가')} 놓였다. 하나만 연다.${t.rare !== undefined ? ' 금빛이 도는 하나는 드문 상자다.' : ''} 겉빛이 귀함이고, 안은 열어야 안다.`
-  h += `<p class="tblead">${t.pick === null ? lead : up !== null ? '가진 유물이 또 나왔다. 한 단계 강해졌다.' : '껴묻거리를 얻었다. 장수가 몸에 지니고 다음 판에 들고 간다. 유물은 잃지 않는다.'}</p><div class="tbrow${t.ids.length > 3 ? ' n4' : ''}">`
+  let h = `<div class="front tomb"><div class="fhead"><h2>${tr('rl.tombOpened')}</h2></div>`
+  const lead = tr('rl.lead', { cw: countWord(t.ids.length), rare: t.rare !== undefined ? ` ${tr('rl.rareNote')}` : '' })
+  h += `<p class="tblead">${t.pick === null ? lead : up !== null ? tr('rl.again') : tr('rl.gotNew')}</p><div class="tbrow${t.ids.length > 3 ? ' n4' : ''}">`
   t.ids.forEach((id, i) => {
     const d = RELIC[id]!
     const tier = `t-${d.tier}${id === t.rare ? ' rarebox' : ''}`
-    const ribbon = id === t.rare ? '<span class="tbribbon">✦ 드문 상자</span>' : ''
+    const ribbon = id === t.rare ? `<span class="tbribbon">${tr('rl.rare')}</span>` : ''
     if (t.pick === null) {
       h += `<button class="tbx ${tier}" data-act="tomb-pick" data-id="${k.esc(id)}" style="--i:${i}">${ribbon}<img class="tbc" src="${chestImg(k, id)}" alt=""><span class="tbt">${TIER_NAME[d.tier]}</span></button>`
     } else if (id === t.pick) {
       h += `<div class="tbx ${tier} open${fresh ? ' fresh' : ''}"><img class="tbc" src="${chestImg(k, id)}" alt=""><img class="tbloot" src="${k.art}relic/loot.png" alt=""><img class="tbr" src="${img(k, id)}" alt="">`
-        + `<b class="tbn">${k.esc(d.name)} ${stars(id, lvNow)}</b><small class="tbe">${up !== null ? '<span class="rlup">강화</span> ' : ''}${TIER_NAME[d.tier]} · ${k.esc(d.era)}</small><span class="tbfx">${k.esc(relicLine(id, lvNow))}</span></div>`
+        + `<b class="tbn">${k.esc(d.name)} ${stars(id, lvNow)}</b><small class="tbe">${up !== null ? `<span class="rlup">${tr('rl.upTag')}</span> ` : ''}${TIER_NAME[d.tier]} · ${k.esc(d.era)}</small><span class="tbfx">${k.esc(relicLine(id, lvNow))}</span></div>`
     } else {
       // 안 고른 둘은 닫힌 채 — 안을 보여 주지 않는다 (형 10-29: "남은 2상자에 들어있던 거 보여 주는 건 말이 안 된다")
       h += `<div class="tbx ${tier} miss${fresh ? ' fresh' : ''}"><img class="tbc" src="${chestImg(k, id)}" alt=""></div>`
     }
   })
   h += `</div>`
-  if (t.pick !== null) h += `<div class="tbgo"><button class="btn pri big" data-act="dy-open">단련터에서 끼운다 ›</button><button class="btn ghost" data-act="tomb-back">끝 화면으로</button></div>`
-  else h += `<div class="tbgo"><button class="btn ghost" data-act="tomb-back">‹ 끝 화면으로 (나중에 고른다)</button></div>`
+  if (t.pick !== null) h += `<div class="tbgo"><button class="btn pri big" data-act="dy-open">${tr('rl.equip')}</button><button class="btn ghost" data-act="tomb-back">${tr('rl.toEnd')}</button></div>`
+  else h += `<div class="tbgo"><button class="btn ghost" data-act="tomb-back">${tr('rl.toEndLater')}</button></div>`
   if (t.pick !== null && fresh) h += revealHtml(k, t.pick, up)
   return h + `</div>`
 }
@@ -205,11 +204,11 @@ function revealHtml(k: RelicKit, id: string, up: { was: number; now: number } | 
   }
   return `<div class="tbrv t-${d.tier}" data-act="tomb-seen"><div class="tbfl"></div><div class="tbglow"></div>`
     + `<div class="tbst">${fx}<img class="tbrc" src="${chestImg(k, id)}" alt=""><img class="tbrr" src="${img(k, id)}" alt=""></div>`
-    + `<div class="tbrt">${up === null ? `<span class="tbtier">${TIER_NAME[d.tier]}</span>` : `<span class="tbtier tbgain">강화 ${stars(id, up.was)} › ${stars(id, up.now)}</span>`}<b>${k.esc(d.name)}</b><small>${k.esc(d.era)}</small>`
+    + `<div class="tbrt">${up === null ? `<span class="tbtier">${TIER_NAME[d.tier]}</span>` : `<span class="tbtier tbgain">${tr('rl.upGain', { a: stars(id, up.was), b: stars(id, up.now) })}</span>`}<b>${k.esc(d.name)}</b><small>${k.esc(d.era)}</small>`
     // 강화면 고르기 전 효과를 흐리게 긋고 그 밑에 오른 효과 (다 올랐으면 그대로라고)
-    + (up === null ? `<span class="tbrfx">${k.esc(relicLine(id))}</span>` : up.now > up.was ? `<s class="tbold">${k.esc(relicLine(id, up.was))}</s><span class="tbrfx">${k.esc(relicLine(id, up.now))}</span>` : `<span class="tbrfx">${k.esc(relicLine(id, up.now))}</span><small>이미 가장 높은 단계입니다</small>`)
+    + (up === null ? `<span class="tbrfx">${k.esc(relicLine(id))}</span>` : up.now > up.was ? `<s class="tbold">${k.esc(relicLine(id, up.was))}</s><span class="tbrfx">${k.esc(relicLine(id, up.now))}</span>` : `<span class="tbrfx">${k.esc(relicLine(id, up.now))}</span><small>${tr('rl.maxed')}</small>`)
     + `</div>`
-    + `<div class="tbgo"><button class="btn pri big" data-act="dy-open">단련터에서 끼운다 ›</button><button class="btn ghost" data-act="tomb-back">끝 화면으로</button></div></div>`
+    + `<div class="tbgo"><button class="btn pri big" data-act="dy-open">${tr('rl.equip')}</button><button class="btn ghost" data-act="tomb-back">${tr('rl.toEnd')}</button></div></div>`
 }
 
 // ───────── 단련터 — 유물 칸 · 고르기 · 도감
@@ -229,10 +228,10 @@ export function slotsHtml(k: RelicKit, hero: string, level: number, sel: number 
       const lv = relicLevel(s.own[id], id)
       h += `<button class="rlslot full${on}" data-act="rl-slot" data-id="${k.esc(hero)}" data-i="${i}" data-tip="${k.esc(tipOf(id, lv))}"><img src="${img(k, id)}" alt=""><span><b>${k.esc(RELIC[id]!.name)} ${stars(id, lv)}</b><small>${k.esc(relicLine(id, lv))}</small></span></button>`
     } else {
-      h += `<button class="rlslot${on}" data-act="rl-slot" data-id="${k.esc(hero)}" data-i="${i}"${available ? '' : ` disabled data-tip="${none ? '이긴 판의 옛 무덤에서 얻는다' : '다른 장수가 지닌 유물은 먼저 빼야 한다'}"`}><i>＋</i><span>${none ? '유물 칸: 이기면 옛 무덤에서' : available ? '유물 끼우기' : '낄 수 있는 유물 없음'}</span></button>`
+      h += `<button class="rlslot${on}" data-act="rl-slot" data-id="${k.esc(hero)}" data-i="${i}"${available ? '' : ` disabled data-tip="${none ? tr('rl.tipWin') : tr('rl.tipTaken')}"`}><i>＋</i><span>${none ? tr('rl.slotNone') : available ? tr('rl.slotPut') : tr('rl.slotNo')}</span></button>`
     }
   }
-  if (n < slotsFor(Number.MAX_SAFE_INTEGER)) h += `<small class="rlmore">단련 ${josa(String(slotsAt()), '이면', '면')} 한 칸 더</small>`
+  if (n < slotsFor(Number.MAX_SAFE_INTEGER)) h += `<small class="rlmore">${tr('rl.moreSlot', { lv: slotsAt() })}</small>`
   return h + `</div>`
 }
 
@@ -251,18 +250,18 @@ export function pickerHtml(k: RelicKit, hero: string, slot: number): string {
     const who = holderOf(s, d.id)
     return who === null || who === hero
   }).map((d) => d.id)
-  let h = `<div class="rlpick"><div class="rlph"><b>유물 고르기</b><button class="btn ghost sm" data-act="rl-close">닫기</button></div><div class="rlpl">`
+  let h = `<div class="rlpick"><div class="rlph"><b>${tr('rl.pickTitle')}</b><button class="btn ghost sm" data-act="rl-close">${tr('more.close')}</button></div><div class="rlpl">`
   for (const id of ids) {
     const d = RELIC[id]!
     const lv = relicLevel(s.own[id], id)
     const who = holderOf(s, id)
     const here = who === hero
-    const by = here ? '<i class="rlwho me">이 장수가 지녔다</i>' : ''
+    const by = here ? `<i class="rlwho me">${tr('rl.mine')}</i>` : ''
     h += `<button class="rlopt t-${d.tier}${id === cur ? ' cur' : ''}" data-act="rl-put" data-id="${k.esc(hero)}" data-i="${slot}" data-r="${k.esc(id)}"${id === cur ? ' disabled' : ''}>`
       + `<img src="${img(k, id)}" alt=""><span><b>${k.esc(d.name)} ${stars(id, lv)}</b><small>${TIER_NAME[d.tier]} · ${k.esc(d.era)}</small><em>${k.esc(relicLine(id, lv))}</em>${by}</span></button>`
   }
   h += `</div>`
-  if (cur !== undefined) h += `<button class="btn ghost sm rloff" data-act="rl-off" data-id="${k.esc(hero)}" data-i="${slot}">이 칸 비우기</button>`
+  if (cur !== undefined) h += `<button class="btn ghost sm rloff" data-act="rl-off" data-id="${k.esc(hero)}" data-i="${slot}">${tr('rl.clear')}</button>`
   return h + `</div>`
 }
 
@@ -273,16 +272,16 @@ export function relicDexHtml(k: RelicKit): string {
   // 별 — 다 모은 뒤에도 채울 것 (강화 · FOCUS F)
   const star = RELICS.reduce((a, d) => a + relicLevel(s.own[d.id], d.id), 0)
   const starAll = RELICS.reduce((a, d) => a + relicTop(d.id), 0)
-  let h = `<div class="rldex"><h3>유물 도감 <small>${got} / ${RELICS.length}</small>${starAll > RELICS.length ? `<small class="rlsum">★ ${star} / ${starAll}</small>` : ''}</h3><div class="rldl">`
+  let h = `<div class="rldex"><h3>${tr('rl.dex')} <small>${got} / ${RELICS.length}</small>${starAll > RELICS.length ? `<small class="rlsum">★ ${star} / ${starAll}</small>` : ''}</h3><div class="rldl">`
   for (const d of RELICS) {
     const o = s.own[d.id]
     if (o !== undefined) {
       const who = holderOf(s, d.id)
       const lv = relicLevel(o, d.id)
-      h += `<span class="rld t-${d.tier}" data-tip="${k.esc(tipOf(d.id, lv) + (who !== null ? ` · ${k.nameOf(who)} 지님` : ''))}"><img src="${img(k, d.id)}" alt=""><b>${k.esc(d.name)}</b>${stars(d.id, lv)}</span>`
+      h += `<span class="rld t-${d.tier}" data-tip="${k.esc(tipOf(d.id, lv) + (who !== null ? tr('rl.heldBy', { name: k.nameOf(who) }) : ''))}"><img src="${img(k, d.id)}" alt=""><b>${k.esc(d.name)}</b>${stars(d.id, lv)}</span>`
     } else {
       const where = BOARD_HINT.filter((b) => poolOf(b.id).some((x) => x.id === d.id)).map((b) => b.name).join(' · ')
-      h += `<span class="rld none" data-tip="${k.esc(`${TIER_NAME[d.tier]}: ${where !== '' ? `${where}에서 이기면 나올 수 있다` : '아직 나는 판이 없다'}`)}"><img src="${img(k, d.id)}" alt=""><b>?</b></span>`
+      h += `<span class="rld none" data-tip="${k.esc(`${TIER_NAME[d.tier]}: ${where !== '' ? tr('rl.dropsFrom', { where }) : tr('rl.dropsNone')}`)}"><img src="${img(k, d.id)}" alt=""><b>?</b></span>`
     }
   }
   return h + `</div></div>`
@@ -290,7 +289,8 @@ export function relicDexHtml(k: RelicKit): string {
 
 /** 도감의 귀띔 — 어느 판에서 나나 */
 const BOARD_HINT: ReadonlyArray<{ id: RegionId; name: string }> = [
-  { id: 'byeonhan-mini', name: '변한' }, { id: 'yeongnam', name: '영남' }, { id: 'south', name: '삼한' }, { id: 'world', name: '북녘' },
+  { id: 'byeonhan-mini', get name() { return tr('rl.b.mini') } }, { id: 'yeongnam', get name() { return tr('rl.b.yeongnam') } },
+  { id: 'south', get name() { return tr('rl.b.south') } }, { id: 'world', get name() { return tr('rl.b.world') } },
 ]
 
 // ───────── 판 안 — 장수 판의 유물
