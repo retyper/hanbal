@@ -4,13 +4,14 @@
  * 판을 읽기만 하고 HTML 을 돌려준다. 고르는 손짓(맡기기·이끌기·회유)은 app.ts 가 받는다.
  * **본 만큼만** (HEROES §5): 우리 장수 · 싸워 본 장수 · 정찰로 본 장수만 능력치와 특성이 보이고, 아니면 얼굴과 이름뿐.
  */
-import { STAT_NAME, josa, spanLabel, turnsLabel } from '../../realm/data/prose.ts'
+import { STAT_NAME, spanLabel, turnsLabel } from '../../realm/data/prose.ts'
 import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
 import { armyOfHero, bondOf, bondTier, growNeed, heroArt, honeyLeft, isRuler } from '../../realm/heroes.ts'
 import { ART_DOES, ART_ICON, ART_NAME } from './battlefield.ts'
 import type { GrowStat, Hero, Realm } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { radarSvg } from './radar.ts'
+import { lazyTable, t as tr } from '../../i18n/index.ts'
 
 const esc = (s: string): string =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
@@ -20,14 +21,7 @@ const esc = (s: string): string =>
  * 삼한·부여·고구려 사람은 성 없이 이름만 썼다 (성은 뒤 시대 · 왕실 몇). 그래서 판의 이름은 "칭호 + 이름"이다 — 칭호는 작게 떼어 보인다.
  * 변진의 우두머리 칭호 차례(삼국지 위서 동이전): 신지 · 험측 · 번예 · 살해 · 읍차.
  */
-export const TITLE_MEAN: Readonly<Record<string, string>> = {
-  신지: '삼한 큰 나라의 우두머리', 험측: '변진에서 신지 다음가는 우두머리', 번예: '변진의 셋째 우두머리', 살해: '변진의 넷째 우두머리', 읍차: '작은 나라·고을의 우두머리',
-  견지: '마한 우두머리의 칭호', 견사: '사신을 맡은 벼슬', 장수: '군대를 이끄는 이', 군장: '고을과 나라의 우두머리', 거수: '무리의 우두머리',
-  선인: '고구려의 낮은 벼슬', 패자: '고구려의 높은 벼슬', 조의: '고구려의 벼슬: 검은 옷을 입는다', 우태: '고구려의 벼슬', 대가: '큰 무리를 거느린 귀족',
-  진지렴: '진한의 우두머리 칭호', 삼로: '옥저·동예 읍락의 어른', 대사: '부여의 벼슬',
-  마가: '부여의 네 가: 말', 우가: '부여의 네 가: 소', 저가: '부여의 네 가: 돼지', 구가: '부여의 네 가: 개',
-  왕: '임금', 대왕: '임금', 우해왕: '우산국의 임금',
-}
+export const TITLE_MEAN: Readonly<Record<string, string>> = lazyTable('titleMean', ['신지', '험측', '번예', '살해', '읍차', '견지', '견사', '장수', '군장', '거수', '선인', '패자', '조의', '우태', '대가', '진지렴', '삼로', '대사', '마가', '우가', '저가', '구가', '왕', '대왕', '우해왕'])
 
 /** "읍차 가람" → 칭호 · 이름. 칭호가 없으면 이름만 */
 export function splitTitle(name: string): { title: string | null; given: string } {
@@ -54,9 +48,9 @@ export function heroRadar(h: Hero, seen: boolean, ours: boolean, size = 190): st
 
 /** 특성 칩 — 등급의 오방색 테 · 나쁜 것은 붉게 · 누르면 한 줄이 펼쳐진다(title) */
 export function traitChips(h: Hero, seen: boolean): string {
-  if (!seen) return '<span class="mute">특성은 아직 모른다</span>'
+  if (!seen) return `<span class="mute">${tr('hv.traitUnknown')}</span>`
   const ts = h.traits ?? []
-  if (ts.length === 0) return '<span class="mute">특성 없음</span>'
+  if (ts.length === 0) return `<span class="mute">${tr('hv.traitNone')}</span>`
   return ts.map((id) => {
     const t = TRAIT[id]
     if (t === undefined) return ''
@@ -72,31 +66,31 @@ export function traitChips(h: Hero, seen: boolean): string {
 export function artChip(h: Hero, seen: boolean, icon: (name: string, cls: string) => string): string {
   const art = seen ? heroArt(h) : undefined
   if (art === undefined) return ''
-  return `<span class="trait artc" data-peek>${icon(ART_ICON[art], 'tric')}<b>${esc(ART_NAME[art])}</b><i>비기</i><span class="peek"><b>비기 · ${esc(ART_NAME[art])}</b><span>${esc(ART_DOES[art])}</span></span></span>`
+  return `<span class="trait artc" data-peek>${icon(ART_ICON[art], 'tric')}<b>${esc(ART_NAME[art])}</b><i>${tr('hv.artTag')}</i><span class="peek"><b>${tr('hv.artTitle', { name: esc(ART_NAME[art]) })}</b><span>${esc(ART_DOES[art])}</span></span></span>`
 }
 
 /** 지금 하는 일 한 줄 */
 export function roleLine(r: Realm, h: Hero): string {
   const node = (id: string | null | undefined): string => (id != null ? (r.nodes[id]?.name ?? '?') : '?')
-  if (h.status === 'dead') return '죽었다'
-  if (h.status === 'captive') return `${r.factions[h.captor ?? '']?.name ?? '?'}에 사로잡혀 있다${h.persuade ? ` · 회유 중 · ${h.persuade.resist === undefined ? `${spanLabel(r, h.persuade.left)} 남음` : h.persuade.resist > 0 ? '아직 마음을 닫았다' : `마음이 흔들린다${(h.persuade.tries ?? 0) > 0 ? ` · ${h.persuade.tries}번 고개를 저었다` : ''}`}` : ''}`
+  if (h.status === 'dead') return tr('hv.dead')
+  if (h.status === 'captive') return `${tr('hv.captive', { f: r.factions[h.captor ?? '']?.name ?? '?' })}${h.persuade ? ` · ${tr('hv.persuading')} · ${h.persuade.resist === undefined ? tr('hv.left', { span: spanLabel(r, h.persuade.left) }) : h.persuade.resist > 0 ? tr('hv.closed') : `${tr('hv.wavering')}${(h.persuade.tries ?? 0) > 0 ? ` · ${tr('hv.shook', { n: h.persuade.tries! })}` : ''}`}` : ''}`
   if (isRuler(r, h.id)) {
     const ra = armyOfHero(r, h.id)
-    if (ra !== null) return `군주 · 친정: ${ra.march !== null ? `${josa(node(ra.march.to), '으로', '로')} 가는 중` : `${node(ra.at)}에서 군대를 이끈다`} · 도읍의 다스림이 준다`
-    return h.at === r.factions[h.faction]?.capital ? '군주 · 도읍을 다스린다' : `군주 · ${node(h.at)}에 있다 · 도읍의 다스림이 준다`
+    if (ra !== null) return ra.march !== null ? tr('hv.rulerMarch', { to: node(ra.march.to) }) : tr('hv.rulerLead', { at: node(ra.at) })
+    return h.at === r.factions[h.faction]?.capital ? tr('hv.rulerHome') : tr('hv.rulerAt', { at: node(h.at) })
   }
   const ex = (r.expeditions ?? []).find((x) => x.hero === h.id)
-  if (ex !== undefined) return `원정 중 · ${turnsLabel(r, Math.max(1, ex.back - r.season + 1))} 뒤 돌아온다`
+  if (ex !== undefined) return tr('hv.expedition', { span: turnsLabel(r, Math.max(1, ex.back - r.season + 1)) })
   const honey = honeyLeft(r, h.id)
-  const hurt = (h.woundedUntil !== undefined && h.woundedUntil > r.season ? ` · 다쳐 누웠다 (${turnsLabel(r, h.woundedUntil - r.season)})` : '') + (honey > 0 ? ` · 신혼 (${turnsLabel(r, honey)})` : '')
+  const hurt = (h.woundedUntil !== undefined && h.woundedUntil > r.season ? tr('hv.hurt', { span: turnsLabel(r, h.woundedUntil - r.season) }) : '') + (honey > 0 ? tr('hv.honey', { span: turnsLabel(r, honey) }) : '')
   const a = armyOfHero(r, h.id)
   if (a !== null) {
     let n = 0
     for (const v of Object.values(a.mix)) n += v ?? 0
-    return a.march !== null ? `군사 ${n}명을 이끌고 ${josa(node(a.march.to), '으로', '로')} 가는 중${hurt}` : `군사 ${n}명을 이끈다 · ${node(a.at)}${hurt}`
+    return a.march !== null ? tr('hv.armyGo', { n, to: node(a.march.to), hurt }) : tr('hv.armyHere', { n, at: node(a.at), hurt })
   }
-  if (h.post != null) return `${josa(node(h.post), '을', '를')} 맡았다${hurt}`
-  return `${node(h.at)}에서 쉰다${hurt}`
+  if (h.post != null) return tr('hv.post', { node: node(h.post), hurt })
+  return tr('hv.rest', { at: node(h.at), hurt })
 }
 
 export const HERO_CSS = `
@@ -250,20 +244,15 @@ export const HERO_CSS = `
 
 // ───────── 정과 성장 (HEROES §7, 형: "장수를 오래쓰면 친밀도? 호감도? 이런게 올라야 하지 않을까? 장수 키우는 맛도 있어야할듯")
 
-const BOND_WORD: Record<'new' | 'warm' | 'trust' | 'sworn', string> = { new: '낯설다', warm: '정이 들었다', trust: '믿는다', sworn: '한마음' }
-const BOND_GIVES: Record<'new' | 'warm' | 'trust' | 'sworn', string> = {
-  new: '함께 지내고 이기다 보면 정이 든다.',
-  warm: '더 깊어지면 이끄는 군대의 사기가 오르고, 꾀어도 잘 안 넘어간다.',
-  trust: '이끄는 군대의 사기가 오른다. 꾀어도 잘 안 넘어간다. 정이 끝까지 차면 새 특성에 눈뜬다.',
-  sworn: '목숨을 맡긴 사이다.',
-}
+const BOND_WORD: Record<'new' | 'warm' | 'trust' | 'sworn', string> = lazyTable('bondWord', ['new', 'warm', 'trust', 'sworn'])
+const BOND_GIVES: Record<'new' | 'warm' | 'trust' | 'sworn', string> = lazyTable('bondGives', ['new', 'warm', 'trust', 'sworn'])
 const GROW: readonly GrowStat[] = ['mu', 'tong', 'ryak', 'chi', 'deok']
-const GROW_HOW: Record<GrowStat, string> = { mu: '싸우면', tong: '싸우면', ryak: '공작에 성공하면', chi: '고을을 맡으면', deok: '고을을 맡거나 회유하면' }
+const GROW_HOW: Record<GrowStat, string> = lazyTable('growHow', ['mu', 'tong', 'ryak', 'chi', 'deok'])
 
 /** 정 띠 — 숫자 없이 길이와 말로 */
 export function bondChip(r: Realm, h: Hero): string {
   const t = bondTier(r, h)
-  return t === null ? '' : `<span class="bondc ${t}">정 · ${BOND_WORD[t]}</span>`
+  return t === null ? '' : `<span class="bondc ${t}">${tr('hv.bondChip', { w: BOND_WORD[t] })}</span>`
 }
 
 /** 우리 장수 카드의 정과 자람 — 무엇을 하면 무엇이 자라는지까지 */
@@ -272,17 +261,17 @@ export function growthHtml(r: Realm, h: Hero): string {
   let s = ''
   if (t !== null) {
     const b = bondOf(r, h) ?? 0
-    s += `<div class="bond"><div class="bl"><b>정</b><span>${BOND_WORD[t]}</span>${h.served !== undefined && h.served > 0 ? `<span class="mute">함께한 지 ${turnsLabel(r, h.served)}</span>` : ''}</div>`
+    s += `<div class="bond"><div class="bl"><b>${tr('hv.bond')}</b><span>${BOND_WORD[t]}</span>${h.served !== undefined && h.served > 0 ? `<span class="mute">${tr('hv.together', { span: turnsLabel(r, h.served) })}</span>` : ''}</div>`
     s += `<div class="bbar"><i style="width:${Math.max(3, Math.min(100, b))}%"></i><u style="left:${P.realm.bondTrust}%"></u></div><p class="mute">${BOND_GIVES[t]}</p></div>`
   }
-  s += `<div class="grow"><div class="bl"><b>성장</b><span class="mute">다음 단계까지</span></div>`
+  s += `<div class="grow"><div class="bl"><b>${tr('hv.grow')}</b><span class="mute">${tr('hv.nextStep')}</span></div>`
   for (const k of GROW) {
     const v = h[k]
     const max = v >= 10
     const p = max ? 100 : Math.min(100, ((h.xp?.[k] ?? 0) / growNeed(h, k)) * 100)
     const up = h.grown?.[k] ?? 0
     s += `<div class="gr"><span class="gn">${STAT_NAME[k]}</span><span class="gbar"><i style="width:${Math.max(2, p)}%"></i></span>`
-    s += `<span class="gx">${max ? '끝까지' : up > 0 ? `+${up}` : ''}</span><span class="mute gh">${GROW_HOW[k]}</span></div>`
+    s += `<span class="gx">${max ? tr('hv.maxed') : up > 0 ? `+${up}` : ''}</span><span class="mute gh">${GROW_HOW[k]}</span></div>`
   }
   return s + `</div>`
 }
