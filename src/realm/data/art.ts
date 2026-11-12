@@ -496,7 +496,7 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   soebi: { ar: 153 / 160, body: 0.887 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 쇠 덩이 묶음 대신 큰 쇠망치
   ara: { ar: 265 / 160, body: 0.912 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · ara 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
   heo: { ar: 145 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 갑옷 대신 보석 윗옷·트임 치마 (형: 전투 옷은 더 드러나게)
-  gamsil: { ar: 155 / 160, body: 0.894 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 어깨 내린 주황 겉옷·짧은 치마 (형: 전투 옷은 더 드러나게)
+  gamsil: { ar: 245 / 160, body: 0.956 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 어깨 내린 주황 겉옷·짧은 치마 (형: 전투 옷은 더 드러나게)
   irang: { ar: 164 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 문신 팔·구슬 목걸이·가죽 조끼 · 청동 단검 찌르기
   gureum: { ar: 162 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 흰 삼베 짧은 윗옷·트임 치마 (형: 전투 옷은 더 드러나게)
   biryu: { ar: 153 / 160, body: 0.887, mount: true }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 말 탄 장수 · 상투·붉은 민소매·큰 망치 내려치기
@@ -574,7 +574,7 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   horselord: { ar: 145 / 160, body: 0.900 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 부여 말 주인 · 흰 털모자·흰 털 외투·곧은 칼
   maryeo: { ar: 151 / 160, body: 0.906 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · 백제 마려 · 볏단 멘 농부·괭이
   dallae2: { ar: 232 / 160, body: 0.981 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · dallae2 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
-  bdanbi: { ar: 151 / 160, body: 0.850 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · bdanbi 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
+  bdanbi: { ar: 162 / 160, body: 0.931 }, // 11-08 초상대로 다시 (형: 「투구 쓰고 원본과 다르다」 · 제미나이 걷기 4×2 + 동작 4×2 → 20컷 · assets_src/realm/gemini/generals2) · 11-08 처음 · bdanbi 동작 띠 다시 — 형이 구움 (굽기 꾸러미 · 검수 1·3번)
 }
 /** 제 그림이 있는 장수 (장수 id → gen-<이름>.png 의 이름) */
 /** 도트 시험(연습 싸움) — 장수 id → anim-px 띠 이름 (GEN_OWN 에 없는 장수만 · 있는 장수는 같은 이름 띠가 있으면 쓴다) */

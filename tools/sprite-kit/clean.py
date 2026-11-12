@@ -29,7 +29,19 @@ if br[0] > 180 and br[2] > 180 and br[1] < 110:  # 우하단이 자홍 → 3×2 
     keysrc = src.replace('.png', '-prep.png')
     magenta = True
 else:
-    keysrc = src
+    # 키 빼기 전에 우하단 귀의 제미나이 ✦ (초록 위의 반투명 흰빛 = 초록이 세고 빨강·파랑도 조금 있는 픽셀) 를 바탕으로 덮는다 (11-12 단비: 별이 발치에 붙어 남았다)
+    bg = a[5, 5].astype(int)
+    y0, x0 = int(H * 0.72), int(W * 0.78)
+    sub = a[y0:, x0:].astype(int)
+    r_, g_, b_ = sub[..., 0], sub[..., 1], sub[..., 2]
+    star = (g_ > 150) & (r_ > bg[0] + 35) & (b_ > bg[2] + 35) & (g_ > r_ + 30) & (g_ > b_ + 30)
+    if star.any():
+        sub[star] = bg
+        a[y0:, x0:] = sub.astype(a.dtype)
+        Image.fromarray(a).save(src.replace('.png', '-prep.png'))
+        keysrc = src.replace('.png', '-prep.png')
+    else:
+        keysrc = src
     magenta = False
 subprocess.run(['node', 'tools/key-png.mjs', keysrc, out], check=True, capture_output=True)
 a = np.array(Image.open(out).convert('RGBA'))

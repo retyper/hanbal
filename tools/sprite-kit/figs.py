@@ -50,6 +50,11 @@ def figures(sheet):
         return []
     sl = ndimage.find_objects(lab)
     area = ndimage.sum(m, lab, range(1, n + 1))
+    # 우하단 귀(워터마크 ✦ 자리)의 작은 조각은 버린다 — 키 빼기에 남은 별 찌꺼기가 사람에 붙어 들어왔다 (11-12 단비)
+    for q in range(n):
+        if area[q] < area.max() * 0.01 and sl[q][1].start > w * 0.78 and sl[q][0].start > h * 0.72:
+            area[q] = 0
+            a[lab == q + 1, 3] = 0
     # 가까운 덩어리끼리 묶는다(한 사람이 키 빼기로 몇 조각으로 갈린 것 · 창끝) — 틈이 그림 크기의 1.2% 안
     par = list(range(n))
 
