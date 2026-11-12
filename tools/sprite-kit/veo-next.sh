@@ -31,8 +31,14 @@ if [ -n "$trip" ] && [ -z "$FORCE" ]; then
   echo "$trip"
   exit 3
 fi
+# veo-next.sh pick <job id>  → 그 일만 claim (11-13 형: 「아직 안 만든 것 중 시도 안 해 본 것」만 돌릴 때 · 실패한 장수는 형이 손으로)
+if [ "$1" = pick ]; then
+  job=$(node -e 'const q=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));const j=(q.jobs||q).find(j=>j.id===process.argv[2]);console.log(j?[j.id,j.inputPath,j.promptPath].join("\t"):"")' "$L/outputs/veo-production-queue.json" "$2")
+  [ -z "$job" ] && { echo "NOJOB $2"; exit 1; }
+else
 job=$(node $Q peek | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s).job;if(!j){console.log("");return}console.log([j.id,j.inputPath,j.promptPath].join("\t"))})')
 [ -z "$job" ] && { echo "NONE"; node $Q peek | grep -m3 reason; exit 1; }
+fi
 id=$(echo "$job" | cut -f1); img=$(echo "$job" | cut -f2); txt=$(echo "$job" | cut -f3)
 node $Q claim "$id" | grep -qE '"status": "claimed"' || { echo "claim 실패 $id"; exit 1; }
 cp "$txt" "$T" || exit 1
