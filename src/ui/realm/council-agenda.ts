@@ -16,7 +16,7 @@
  */
 import { guardAdjust, guardWeights, type GuardWhy } from '../../realm/council.ts'
 import { headcount } from '../../realm/battle.ts'
-import { josa, turnsLabel, turnWord } from '../../realm/data/prose.ts'
+import { turnsLabel, turnWord } from '../../realm/data/prose.ts'
 import { blockedWhy, isMonsoon, seasonOf, seasons } from '../../realm/calendar.ts'
 import { relationOf } from '../../realm/diplomacy.ts'
 import { met } from '../../realm/discovery.ts'
@@ -30,6 +30,7 @@ import { councilFact, grainSeen, heroRouteFact, heroSplitFact, lostLast, nationR
 import { schemeSay, type Scheme } from './council-schemes.ts'
 import { askOf, fill, pickIdx, sageuk, sayOf, VOLUNTEER, type Move as SayMove } from './council-says.ts'
 import { voiceKind } from './voice.ts'
+import { lazyList, lazyTable, lazyTree, t as tr, type Key } from '../../i18n/index.ts'
 
 /** 고르면 출정 판에 무엇이 걸리나 */
 export type Choice =
@@ -98,27 +99,21 @@ export function howOf(v: Voice): string {
   }
 }
 
-const AP_NAME: Readonly<Record<Approach, string>> = { road: '대로', night: '밤길', ford: '여울', ridge: '산기슭', cliff: '절벽' }
+const AP_NAME: Readonly<Record<Approach, string>> = lazyTable('apName', ['road', 'night', 'ford', 'ridge', 'cliff'])
 /** 결정 띠의 짧은 길 이름 */
 export const APPROACH_SHORT = AP_NAME
 /** 전략 회의의 바탕 그림 — 군막 안 (public/realm/event · 챗지피티 10-29) */
 export const COUNCIL_ART = 'event-war-council'
 /** 고른 안의 짧은 이름 */
-const AP_LABEL: Readonly<Record<Approach, string>> = { road: '대로로', night: '밤길로', ford: '여울로', ridge: '산기슭으로', cliff: '절벽으로' }
+const AP_LABEL: Readonly<Record<Approach, string>> = lazyTable('apLabel', ['road', 'night', 'ford', 'ridge', 'cliff'])
 /** 적이 지킬 길목을 읽은 말 */
-const GUARD_SAY: Readonly<Record<Approach, readonly string[]>> = {
-  road: ['적은 대로를 막고 성문 앞에 진을 칠 것입니다.', '적은 큰길에 군사를 모아 둘 것입니다.'],
-  night: ['적은 밤 경계를 겹겹이 세울 것입니다.', '적은 밤마다 횃불을 늘려 둘 것입니다.'],
-  ford: ['적은 여울목에 군사를 둘 것입니다.', '적은 물가를 지킬 것입니다.'],
-  ridge: ['적은 산기슭 길목을 지킬 것입니다.', '적은 산자락에 망을 세울 것입니다.'],
-  cliff: ['적은 절벽 위를 지킬 것입니다.', '적은 벼랑 위에 보초를 둘 것입니다.'],
-}
+const GUARD_SAY: Readonly<Record<Approach, readonly string[]>> = lazyTree('guard', { road: 2, night: 2, ford: 2, ridge: 2, cliff: 2 })
 /** 그 길목을 지킬 까닭 — 읽은 장수가 함께 말한다 */
 const WHY_SAY: Readonly<Record<GuardWhy, (foe: string, cmd: string | null) => string>> = {
-  repeat: () => '지난번에도 우리가 그 길로 들었으니 저들도 기억할 것입니다.',
-  trait: (_f, cmd) => (cmd !== null ? `저쪽을 지키는 ${josa(cmd, '은', '는')} 늘 그렇게 지키는 장수입니다.` : '저쪽 장수의 버릇이 그러합니다.'),
-  mind: (foe) => `${josa(foe, '은', '는')} 성향이 그러한 나라입니다.`,
-  land: () => '땅의 생김이 그곳을 지키게 되어 있습니다.',
+  repeat: () => tr('agenda.why.repeat'),
+  trait: (_f, cmd) => (cmd !== null ? tr('agenda.why.traitCmd', { cmd }) : tr('agenda.why.trait')),
+  mind: (foe) => tr('agenda.why.mind', { foe }),
+  land: () => tr('agenda.why.land'),
 }
 
 /** 지키는 쪽의 장수 — 그 고을에 선 적 군대 가운데 지략이 가장 높은 이 (council-lines 와 같은 셈) */
@@ -167,7 +162,7 @@ function threatsNear(r: Realm, me: string, node: string, skip: string | null = n
 }
 
 /** 머릿수를 말로 — 남의 군사는 대강 (ODDS: 남의 속은 범위·말) */
-const sizeWord = (theirs: number, ours: number): string => (theirs >= ours ? '우리보다 많은 군사' : theirs * 2 >= ours ? '만만치 않은 군사' : '얼마간의 군사')
+const sizeWord = (theirs: number, ours: number): string => tr(theirs >= ours ? 'agenda.size.more' : theirs * 2 >= ours ? 'agenda.size.even' : 'agenda.size.some')
 
 /** 이 몫으로 나누면 몇 명이 떠나나 — 화면(app.applyVoice)과 같은 셈 */
 export const takeCount = (a: Army, share: number): number => (Object.values(a.mix) as number[]).reduce((s, n) => s + (share >= 1 ? n : Math.round(n * share)), 0)
@@ -204,12 +199,12 @@ function pincerArmy(r: Realm, me: string, a: Army, m: Move, ctx: CouncilCtx): { 
 }
 
 /** 나라 수를 말로 — 두 나라 · 세 나라 */
-const countWord = (n: number): string => ['', '한', '두', '세', '네', '다섯'][n] ?? String(n)
+const countWord = (n: number): string => (n >= 1 && n <= 5 ? tr(`agenda.count.${n}` as Key) : String(n))
 
 /** 지난 길의 말을 맺는 한 마디 — 그 길로 이겼으니 이번에도 */
-const RECALL_ASK: readonly string[] = ['이번에도 {ap|으로} 가시지요.', '같은 길이 또 통할 것입니다. 이번에도 {ap|으로} {there}에 드시지요.']
+const RECALL_ASK: readonly string[] = lazyList('recallAsk', 2)
 /** 지난 떠남으로 남기자는 말 — 이웃에 보이는 적이 없어도 */
-const KEEP_RECALL: readonly string[] = ['이번에는 {stay|을} {here}에 남겨 두시고 {go}만 데려가시지요.', '{here|을} 비우면 같은 일을 또 겪습니다. {stay|은} 남겨 두시고 {go}만 데려가시지요.']
+const KEEP_RECALL: readonly string[] = lazyList('keepRecall', 2)
 /** 사실 한 마디를 말 앞에 — 사극 말투로 */
 const withWhy = (why: string, line: string): string => (why !== '' ? `${sageuk(why)} ${line}` : line)
 
@@ -238,7 +233,7 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
     if (h !== undefined) from.add(h.id)
     return h
   }
-  const base = { foe, here, there, turn: turnWord(r), seasons: turnsLabel(r, m.seasons), all: `${ours.toLocaleString('ko-KR')}명` }
+  const base = { foe, here, there, turn: turnWord(r), seasons: turnsLabel(r, m.seasons), all: tr('chr.men', { n: ours.toLocaleString('ko-KR') }) }
   // 맞서는 이 — 겁쟁이·신중한 이가 아니면 누구든, 거친 이가 먼저 (한 사람만 말하면 회의가 아니다 · 형 10-29: "대사가 한 줄밖에 안 뜬다")
   const counter = (from: Set<string> = used): Hero | undefined => pickSeat((h) => h.mu + (bold(h) ? 5 : 0), (h) => !timid(h), from)
   const say = (h: Hero, move: SayMove, v: Readonly<Record<string, string>> = {}): string => sayOf(h, move, { ...base, ...v }, r.season)
@@ -254,9 +249,9 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
     const ally = near[0] ?? allies[0]!
     const allyName = r.factions[ally]?.name ?? ''
     const v = { ...base, ally: allyName }
-    const why = burned ? `${whenSaid(r, lastB!.s)} ${josa(foe, '을', '를')} 칠 때 이웃 ${countWord(struck!)} 나라가 함께 막아 우리가 졌습니다.`
-      : near.length > 0 ? `${josa(allyName, '은', '는')} 우리와 땅을 맞댄 나라입니다.`
-        : `${josa(foe, '은', '는')} ${countWord(allies.length)} 나라와 손을 잡았습니다.`
+    const why = burned ? tr('agenda.why.burned', { when: whenSaid(r, lastB!.s), foe, n: countWord(struck!) })
+      : near.length > 0 ? tr('agenda.why.near', { ally: allyName })
+        : tr('agenda.why.allied', { foe, n: countWord(allies.length) })
     const mine = new Set<string>()
     const voices: Voice[] = []
     let said = false
@@ -264,29 +259,29 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
     // 세 카드(치지 않는다 · 때를 기다린다 · 이간)는 늘 — 그 편에 설 장수가 없으면 군주의 뜻(얼굴 없는 카드)으로. 거친 이가 남으면 「그래도 친다」
     const holder = pickSeat((h) => h.ryak + (calm(h) ? 3 : 0) + (timid(h) ? 2 : 0) - (bold(h) ? 4 : 0), (h) => !bold(h), mine)
     voices.push(holder !== undefined
-      ? { hero: holder, label: '치지 않는다', move: 'allyHold', line: line(holder, 'allyHold'), opt: { k: 'hold' } }
-      : { hero: null, label: '치지 않는다', line: '이번 출정을 거둔다', opt: { k: 'hold' } })
+      ? { hero: holder, label: tr('agenda.l.hold'), move: 'allyHold', line: line(holder, 'allyHold'), opt: { k: 'hold' } }
+      : { hero: null, label: tr('agenda.l.hold'), line: tr('agenda.s.hold'), opt: { k: 'hold' } })
     const waiter = pickSeat((h) => h.ryak + (calm(h) ? 2 : 0) - (bold(h) ? 3 : 0), (h) => !bold(h) || h.ryak >= P.realm.cnReadRyak, mine)
     voices.push(waiter !== undefined
-      ? { hero: waiter, label: '때를 기다린다', move: 'allyWait', line: line(waiter, 'allyWait'), opt: { k: 'wait' } }
-      : { hero: null, label: '때를 기다린다', line: `이번 ${josa(turnWord(r), '은', '는')} 머물고 때를 본다`, opt: { k: 'wait' } })
+      ? { hero: waiter, label: tr('agenda.l.wait'), move: 'allyWait', line: line(waiter, 'allyWait'), opt: { k: 'wait' } }
+      : { hero: null, label: tr('agenda.l.wait'), line: tr('agenda.s.wait', { turn: turnWord(r) }), opt: { k: 'wait' } })
     const [x, y] = def < ally ? [def, ally] : [ally, def]
     const hand = ctx.plotHand?.('sow', x, y) ?? null
     if (hand !== null) {
       const sower = pickSeat((h) => h.ryak + sly(h), (h) => h.ryak >= P.realm.cnReadRyak || sly(h) > 0, mine)
       const opt: Choice = { k: 'plot', op: 'sow', target: x, other: y, agent: hand.agent, grain: hand.grain }
       voices.push(sower !== undefined
-        ? { hero: sower, label: '이간 공작', move: 'allySow', line: line(sower, 'allySow'), opt }
-        : { hero: null, label: '이간 공작', line: `${josa(foe, '과', '와')} ${allyName} 사이를 갈라놓는다`, opt })
+        ? { hero: sower, label: tr('agenda.l.sow'), move: 'allySow', line: line(sower, 'allySow'), opt }
+        : { hero: null, label: tr('agenda.l.sow'), line: tr('agenda.s.sow', { foe, ally: allyName }), opt })
     }
     const hot = counter(mine)
     // 「그래도 친다」는 늘 — 거친 이가 없으면 군주의 뜻(얼굴 없는 카드)으로 (형 11-10: "치지 않는다·때를 기다린다·이간밖에 없어 강행할 수가 없음")
     voices.push(hot !== undefined && bold(hot)
-      ? { hero: hot, label: '그래도 친다', move: 'allyGo', line: line(hot, 'allyGo'), opt: { k: 'go' } }
-      : { hero: null, label: '그래도 친다', line: `${josa(allyName, '이', '가')} 끼어들어도 이번에 친다`, opt: { k: 'go' } })
+      ? { hero: hot, label: tr('agenda.l.go'), move: 'allyGo', line: line(hot, 'allyGo'), opt: { k: 'go' } }
+      : { hero: null, label: tr('agenda.l.go'), line: tr('agenda.s.go', { ally: allyName }), opt: { k: 'go' } })
     // 장수가 아무도 말하지 않으면 회의가 아니다
     if (voices.some((x2) => x2.hero !== null)) {
-      out.push({ id: 'ally', title: `${josa(allyName, '과', '와')} 손잡은 ${josa(foe, '을', '를')} 칠까`, voices })
+      out.push({ id: 'ally', title: tr('agenda.t.ally', { ally: allyName, foe }), voices })
     }
   }
 
@@ -304,13 +299,13 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
       if (plotter !== undefined) {
         mine.add(plotter.id)
         const own = plotFact(r, me, def, plotter.id)
-        const why = rich ? `${whenSaid(r, seen!.s)} 척후가 보니 ${foe}의 곳간에 곡식이 그득하였습니다.${own !== nationPlot ? ` ${own}` : ''}` : own
-        const voices: Voice[] = [{ hero: plotter, label: '먼저 곳간에 불을', move: 'plotAdvise', line: schemeSay(plotter, 'plotAdvise', base, r.season, why), opt: { k: 'plot', op: 'burn', target: def, agent: burnHand.agent, grain: burnHand.grain } }]
+        const why = rich ? `${tr('agenda.why.rich', { when: whenSaid(r, seen!.s), foe })}${own !== nationPlot ? ` ${own}` : ''}` : own
+        const voices: Voice[] = [{ hero: plotter, label: tr('agenda.l.burn'), move: 'plotAdvise', line: schemeSay(plotter, 'plotAdvise', base, r.season, why), opt: { k: 'plot', op: 'burn', target: def, agent: burnHand.agent, grain: burnHand.grain } }]
         const hot = counter(mine)
         voices.push(hot !== undefined
-          ? { hero: hot, label: '곧장 친다', move: 'plotAgainst', line: schemeSay(hot, 'plotAgainst', base, r.season), opt: { k: 'go' } }
-          : { hero: null, label: '곧장 친다', line: '불은 놓지 않는다: 곧장 친다', opt: { k: 'go' } })
-        out.push({ id: 'plot', title: '치기 전에 곳간을 태울까', voices })
+          ? { hero: hot, label: tr('agenda.l.strike'), move: 'plotAgainst', line: schemeSay(hot, 'plotAgainst', base, r.season), opt: { k: 'go' } }
+          : { hero: null, label: tr('agenda.l.strike'), line: tr('agenda.s.noFire'), opt: { k: 'go' } })
+        out.push({ id: 'plot', title: tr('agenda.t.burn'), voices })
       }
     }
   }
@@ -325,12 +320,12 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
   if (!out.some((x) => x.id === 'ally') && r.factions[def]?.mind === 'greedy' && foeMen >= ours * P.realm.cnWaitFoe) {
     const wise = pickSeat((h) => h.ryak + (calm(h) ? 2 : 0) - (bold(h) ? 2 : 0), (h) => h.ryak >= P.realm.cnReadRyak)
     if (wise !== undefined) {
-      const voices: Voice[] = [{ hero: wise, label: '기다린다', move: 'waitAdvise', line: say(wise, 'waitAdvise', { size: sizeWord(foeMen, ours) }), opt: { k: 'wait' } }]
+      const voices: Voice[] = [{ hero: wise, label: tr('agenda.l.waitS'), move: 'waitAdvise', line: say(wise, 'waitAdvise', { size: sizeWord(foeMen, ours) }), opt: { k: 'wait' } }]
       const hot = counter()
       voices.push(hot !== undefined
-        ? { hero: hot, label: '지금 친다', move: 'waitAgainst', line: say(hot, 'waitAgainst'), opt: { k: 'go' } }
-        : { hero: null, label: '지금 친다', line: `기다리지 않는다: 이번 ${turnWord(r)}에 친다`, opt: { k: 'go' } })
-      out.push({ id: 'wait', title: '지금 칠까, 기다릴까', voices })
+        ? { hero: hot, label: tr('agenda.l.now'), move: 'waitAgainst', line: say(hot, 'waitAgainst'), opt: { k: 'go' } }
+        : { hero: null, label: tr('agenda.l.now'), line: tr('agenda.s.noWait', { turn: turnWord(r) }), opt: { k: 'go' } })
+      out.push({ id: 'wait', title: tr('agenda.t.wait'), voices })
     }
   }
 
@@ -344,17 +339,17 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
     const mud = isMonsoon(r) && later < now
     const ice = !mud && node.tags.includes('moat') && seasonOf(r, r.season + now) !== 'winter' && seasonOf(r, t1 + later) === 'winter'
     if (mud || ice) {
-      const why = mud ? `장마에 떠나면 ${there}까지 ${turnsLabel(r, now - later)} 더 걸립니다.` : `${josa(there, '은', '는')} 해자를 둘렀습니다. 한 ${turnWord(r)} 늦게 떠나면 해자가 언 겨울에 닿습니다.`
+      const why = mud ? tr('agenda.why.mud', { there, span: turnsLabel(r, now - later) }) : tr('agenda.why.ice', { there, turn: turnWord(r) })
       const mine = new Set<string>()
       const sage = pickSeat((h) => h.ryak + (calm(h) ? 2 : 0) + (hasTrait(h, 'farmer') ? 2 : 0) - (bold(h) ? 3 : 0), (h) => !bold(h) || h.ryak >= P.realm.cnReadRyak, mine)
       if (sage !== undefined) {
         used.add(sage.id)
-        const voices: Voice[] = [{ hero: sage, label: mud ? '장마 뒤에' : '해자가 얼면', move: 'skyWait', line: schemeSay(sage, 'skyWait', base, r.season, why), opt: { k: 'wait' } }]
+        const voices: Voice[] = [{ hero: sage, label: tr(mud ? 'agenda.l.mud' : 'agenda.l.ice'), move: 'skyWait', line: schemeSay(sage, 'skyWait', base, r.season, why), opt: { k: 'wait' } }]
         const hot = counter(mine)
         voices.push(hot !== undefined
-          ? { hero: hot, label: '지금 친다', move: 'skyGo', line: schemeSay(hot, 'skyGo', base, r.season), opt: { k: 'go' } }
-          : { hero: null, label: '지금 친다', line: `기다리지 않는다: 이번 ${turnWord(r)}에 친다`, opt: { k: 'go' } })
-        out.push({ id: 'sky', title: mud ? '장마가 걷히길 기다릴까' : '해자가 얼길 기다릴까', voices })
+          ? { hero: hot, label: tr('agenda.l.now'), move: 'skyGo', line: schemeSay(hot, 'skyGo', base, r.season), opt: { k: 'go' } }
+          : { hero: null, label: tr('agenda.l.now'), line: tr('agenda.s.noWait', { turn: turnWord(r) }), opt: { k: 'go' } })
+        out.push({ id: 'sky', title: tr(mud ? 'agenda.t.mud' : 'agenda.t.ice'), voices })
       }
     }
   }
@@ -372,15 +367,15 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
       mine.add(adv.id)
       const aLead = a.hero !== null ? r.heroes[a.hero] : undefined
       const pv = fromB
-        ? { ...base, via: here, with: aLead !== undefined && aLead.id !== adv.id ? aLead.name : `${here}의 군대` }
-        : { ...base, via: r.nodes[pin.from]?.name ?? '', with: bLead?.name ?? `${r.nodes[pin.from]?.name ?? ''}의 군대` }
-      const why = lost !== '' ? lost : m.walled ? `${josa(there, '은', '는')} 성벽이 굳어 한쪽에서만 치면 오래 걸립니다.` : ''
-      const voices: Voice[] = [{ hero: adv, label: '두 갈래로', move: 'pincerAdvise', line: schemeSay(adv, 'pincerAdvise', pv, r.season, why), opt: { k: 'pincer', army: pin.army.id, edge: pin.edge, from: pin.from } }]
+        ? { ...base, via: here, with: aLead !== undefined && aLead.id !== adv.id ? aLead.name : tr('agenda.army', { name: here }) }
+        : { ...base, via: r.nodes[pin.from]?.name ?? '', with: bLead?.name ?? tr('agenda.army', { name: r.nodes[pin.from]?.name ?? '' }) }
+      const why = lost !== '' ? lost : m.walled ? tr('agenda.why.walled', { there }) : ''
+      const voices: Voice[] = [{ hero: adv, label: tr('agenda.l.pincer'), move: 'pincerAdvise', line: schemeSay(adv, 'pincerAdvise', pv, r.season, why), opt: { k: 'pincer', army: pin.army.id, edge: pin.edge, from: pin.from } }]
       const careful = pickSeat((h) => h.ryak + (calm(h) ? 3 : 0) - (bold(h) ? 4 : 0), (h) => !bold(h), mine)
       voices.push(careful !== undefined
-        ? { hero: careful, label: '한 길로', move: 'pincerAgainst', how: 'one', line: schemeSay(careful, 'pincerAgainst', base, r.season), opt: { k: 'go' } }
-        : { hero: null, label: '한 길로', how: 'one', line: '나누지 않는다: 한 길로만 간다', opt: { k: 'go' } })
-      out.push({ id: 'pincer', title: '두 갈래로 칠까', voices })
+        ? { hero: careful, label: tr('agenda.l.one'), move: 'pincerAgainst', how: 'one', line: schemeSay(careful, 'pincerAgainst', base, r.season), opt: { k: 'go' } }
+        : { hero: null, label: tr('agenda.l.one'), how: 'one', line: tr('agenda.s.noSplit'), opt: { k: 'go' } })
+      out.push({ id: 'pincer', title: tr('agenda.t.pincer'), voices })
     }
   }
 
@@ -399,18 +394,18 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
     if (wasThere !== undefined) used.add(wasThere.id)
     const careful = wasThere ?? pickSeat((h) => h.tong + (calm(h) ? 3 : 0) - (bold(h) ? 5 : 0) - (hasTrait(h, 'drinker') ? 3 : 0))
     if (careful !== undefined) {
-      const v = { tf: t !== undefined ? r.factions[t.faction]?.name ?? '' : '', tn: t !== undefined ? r.nodes[t.at]?.name ?? '' : '', size: t !== undefined ? sizeWord(t.men, ours) : '', go: `${go.toLocaleString('ko-KR')}명`, stay: `${(ours - go).toLocaleString('ko-KR')}명` }
+      const v = { tf: t !== undefined ? r.factions[t.faction]?.name ?? '' : '', tn: t !== undefined ? r.nodes[t.at]?.name ?? '' : '', size: t !== undefined ? sizeWord(t.men, ours) : '', go: tr('chr.men', { n: go.toLocaleString('ko-KR') }), stay: tr('chr.men', { n: (ours - go).toLocaleString('ko-KR') }) }
       const kline = t !== undefined ? say(careful, 'keepAdvise', v) : sageuk(fill(KEEP_RECALL[pickIdx(`${careful.id}:keepRecall:${r.season}`, KEEP_RECALL.length)]!, { ...base, ...v }))
-      const voices: Voice[] = [{ hero: careful, label: `${10 - keepPct}할만 데려간다`, move: 'keepAdvise', line: withWhy(keepWhy, kline), opt: { k: 'take', share: P.realm.cnKeepTake } }]
+      const voices: Voice[] = [{ hero: careful, label: tr('agenda.l.take', { n: 10 - keepPct }), move: 'keepAdvise', line: withWhy(keepWhy, kline), opt: { k: 'take', share: P.realm.cnKeepTake } }]
       // 맞서는 말 — 승산이 빠듯하면 「수비가 단단하니 다 데려가자」, 넉넉하면 「빨리 끝내고 돌아오자」 · 지난 떠남이 받치면 그 일을 든다
       const close = m.win === null || m.win[0] < P.realm.cnCloseOdds
       const hot = counter()
       const mv: SayMove = close ? 'keepAgainst' : 'keepAllSafe'
       const allWhy = nSplit?.side === 'all' ? nSplit.line : ''
       voices.push(hot !== undefined
-        ? { hero: hot, label: '모두 데려간다', move: mv, line: withWhy(allWhy, say(hot, mv)), opt: { k: 'take', share: 1 } }
-        : { hero: null, label: '모두 데려간다', line: '나누지 않는다: 군사를 모두 데려간다', opt: { k: 'take', share: 1 } })
-      out.push({ id: 'keep', title: '군사를 얼마나 데려갈까', voices })
+        ? { hero: hot, label: tr('agenda.l.all'), move: mv, line: withWhy(allWhy, say(hot, mv)), opt: { k: 'take', share: 1 } }
+        : { hero: null, label: tr('agenda.l.all'), line: tr('agenda.s.noKeep'), opt: { k: 'take', share: 1 } })
+      out.push({ id: 'keep', title: tr('agenda.t.keep'), voices })
     }
   }
 
@@ -462,7 +457,7 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
       if (!leads && !ctx.canLead(h.id)) continue
       const ask = askOf(h)[leads ? 'leads' : 'lead']
       const line = sageuk(`${vol.intro[pickIdx(`${h.id}:vol:${r.season}`, vol.intro.length)]} ${fill(ask[pickIdx(`${h.id}:ask:${r.season}`, ask.length)]!, { ap: AP_NAME[vol.ap], there })}`)
-      add({ hero: h, label: `${AP_LABEL[vol.ap]}${leads ? '' : ` · ${josa(h.name, '이', '가')} 이끈다`}`, move: 'volunteer', line, opt: { k: 'route', ap: vol.ap, ...(leads ? {} : { lead: h.id }) } }, vol.ap)
+      add({ hero: h, label: `${AP_LABEL[vol.ap]}${leads ? '' : tr('agenda.l.leads', { h: h.name })}`, move: 'volunteer', line, opt: { k: 'route', ap: vol.ap, ...(leads ? {} : { lead: h.id }) } }, vol.ap)
       break
     }
     for (const h of rseats) {
@@ -477,9 +472,9 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
       const strong = m.win !== null && m.win[0] >= 0.5
       if (bold(h) && has('road') && (strong || m.win === null)) {
         // 거친 이는 대로 — 판세를 알면 「우리가 세다」, 모르면 「모르니 정면」
-        add({ hero: h, label: '대로로', move: strong ? 'roadStrong' : 'roadBlind', line: say(h, strong ? 'roadStrong' : 'roadBlind'), opt: { k: 'route', ap: 'road' } }, 'road')
+        add({ hero: h, label: AP_LABEL.road, move: strong ? 'roadStrong' : 'roadBlind', line: say(h, strong ? 'roadStrong' : 'roadBlind'), opt: { k: 'route', ap: 'road' } }, 'road')
       } else if (!sneakOk) {
-        if (has('road')) add({ hero: h, label: '대로로', move: 'roadSafe', line: say(h, 'roadSafe', { read: rd.line }), opt: { k: 'route', ap: 'road' } }, 'road')
+        if (has('road')) add({ hero: h, label: AP_LABEL.road, move: 'roadSafe', line: say(h, 'roadSafe', { read: rd.line }), opt: { k: 'route', ap: 'road' } }, 'road')
       } else {
         const mv: SayMove = rd.ap === null ? 'sneakBlind' : rd.ap === sneak ? 'sneakSame' : 'sneakRead'
         add({ hero: h, label: AP_LABEL[sneak!], move: mv, line: say(h, mv, { read: rd.line, ap: AP_NAME[sneak!] }), opt: { k: 'route', ap: sneak! } }, sneak!)
@@ -501,11 +496,11 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
     }
     // 모두 한 길을 권하는데 진 길을 들었으면 — 군주가 그래도 그 길로 갈 수 있게 곁에 (진 일이 보여야 고를 거리가 된다)
     if (voices.length === 1 && citedLoss !== null && open(citedLoss) && voices[0]!.opt.k === 'route' && voices[0]!.opt.ap !== citedLoss) {
-      voices.push({ hero: null, label: AP_LABEL[citedLoss], line: `그래도 ${josa(AP_NAME[citedLoss], '으로', '로')} 간다`, opt: { k: 'route', ap: citedLoss } })
+      voices.push({ hero: null, label: AP_LABEL[citedLoss], line: tr('agenda.s.still', { ap: AP_NAME[citedLoss] }), opt: { k: 'route', ap: citedLoss } })
     }
     // 말이 하나뿐이고 숨는 길이면 — 군주의 대로를 곁에 (갈리지 않으면 회의가 아니다)
-    if (voices.length === 1 && voices[0]!.opt.k === 'route' && voices[0]!.opt.ap !== 'road' && has('road')) voices.push({ hero: null, label: '대로로', line: '숨지 않는다: 대로로 간다', opt: { k: 'route', ap: 'road' } })
-    if (voices.length >= 2) out.push({ id: 'route', title: '어느 길로 갈까', voices })
+    if (voices.length === 1 && voices[0]!.opt.k === 'route' && voices[0]!.opt.ap !== 'road' && has('road')) voices.push({ hero: null, label: AP_LABEL.road, line: tr('agenda.s.noHide'), opt: { k: 'route', ap: 'road' } })
+    if (voices.length >= 2) out.push({ id: 'route', title: tr('agenda.t.route'), voices })
   }
 
   // ④ 군량 — 성이 굳거나 길이 멀면 더 챙기자 · 국고가 빠듯하면 그대로
@@ -517,18 +512,18 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
     if (steward !== undefined) {
       const mv: SayMove = m.walled ? 'rationWall' : 'rationFar'
       const tight = ctx.grain - ctx.rationCost(more) < ctx.rationCost(more)
-      const rv = { rnow: `${turnsLabel(r, m.seasons + seasons(r, now))}치`, rmore: `${turnsLabel(r, m.seasons + seasons(r, more))}치`, rcost: `${Math.max(0, ctx.rationCost(more) - ctx.rationCost(now)).toLocaleString('ko-KR')}` }
+      const rv = { rnow: tr('agenda.worth', { span: turnsLabel(r, m.seasons + seasons(r, now)) }), rmore: tr('agenda.worth', { span: turnsLabel(r, m.seasons + seasons(r, more)) }), rcost: `${Math.max(0, ctx.rationCost(more) - ctx.rationCost(now)).toLocaleString('ko-KR')}` }
       used.add(steward.id)
-      const voices: Voice[] = [{ hero: steward, label: '군량을 더', move: mv, how: 'more', line: say(steward, mv, rv), opt: { k: 'ration', extra: more } }]
+      const voices: Voice[] = [{ hero: steward, label: tr('agenda.l.rationMore'), move: mv, how: 'more', line: say(steward, mv, rv), opt: { k: 'ration', extra: more } }]
       // 맞서는 말 — 국고가 빠듯하면 「곳간을 아끼자」, 아니면 「이 길이면 지금 것으로 넉넉하다」(아직 말하지 않은 이 먼저)
       const others = seats.filter((h) => h.id !== steward.id)
       const fresh = others.filter((h) => !used.has(h.id))
       const frugal = best(fresh.length > 0 ? fresh : others, (h) => h.chi + (hasTrait(h, 'farmer') || hasTrait(h, 'trader') ? 3 : 0))
       const fmv: SayMove = tight ? 'rationFrugal' : 'rationEnough'
       voices.push(frugal !== undefined
-        ? { hero: frugal, label: '군량은 그대로', move: fmv, how: 'same', line: say(frugal, fmv, rv), opt: { k: 'ration', extra: now } }
-        : { hero: null, label: '군량은 그대로', how: 'same', line: '지금 챙긴 만큼으로 간다', opt: { k: 'ration', extra: now } })
-      out.push({ id: 'ration', title: '군량을 얼마나 챙길까', voices })
+        ? { hero: frugal, label: tr('agenda.l.rationSame'), move: fmv, how: 'same', line: say(frugal, fmv, rv), opt: { k: 'ration', extra: now } }
+        : { hero: null, label: tr('agenda.l.rationSame'), how: 'same', line: tr('agenda.s.rationSame'), opt: { k: 'ration', extra: now } })
+      out.push({ id: 'ration', title: tr('agenda.t.ration'), voices })
     }
   }
   return recallCouncil(r, fewer(out))

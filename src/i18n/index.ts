@@ -70,3 +70,10 @@ export function lazyTree<S extends Shape>(ns: string, shape: S): Tree<S> {
   }
   return build(ns, shape) as Tree<S>
 }
+
+/** 말 몇 줄 — 키 `ns.0` `ns.1` … 읽을 때마다 지금 말로(자리표는 그대로 둔다) */
+export function lazyList(ns: string, n: number): readonly string[] {
+  const arr: string[] = new Array<string>(n).fill('')
+  for (let i = 0; i < n; i++) Object.defineProperty(arr, i, { get: () => tRaw(`${ns}.${i}`), enumerable: true })
+  return arr
+}
