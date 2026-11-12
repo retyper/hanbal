@@ -344,6 +344,7 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'w-102-garak-dana', // 11-11 다나 v2 (Flow u/5) · 제자리 두 번 뛰고 손끝으로 쇄골 금장식 · 윙크 (형: 훌륭해) · 옛 v1(보류)은 assets_src/realm/retired/awaken-loop
   'w-77-sabeol-malgalgi', // 11-05 밤 말갈기 — 튜토리얼 각성 장수 · 판 없이 세로로 가까이 (쇠비처럼 · 형: "세로로 더 가까이가 훨씬 낫다")
   'w-90-saro-danbi', // 11-11 사로 단비 1차 (Flow 11-10 · 형: 오케이)
+  'w-101-garak-singwigan', // 11-13 신귀간 1차 (Jay u/4 · Argon · 원래 그림) · 형: 나쁘지 않음
 ])
 
 /**
