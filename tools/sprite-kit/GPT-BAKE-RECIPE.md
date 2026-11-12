@@ -22,7 +22,9 @@
    N = 첨부 그림 수. `ATTACHED k` 면 그림이 덜 붙은 것 → 3번부터 다시(한 번만). `{"sent":false,"why":"length"}` 면 초안이 남은 것 → 2번부터.
 5. 기다림: JS `JSON.stringify(await gkit.wait(35))` → `{"done":true}` 까지(여러 번 불러도 된다). 그 뒤 5초 더 기다려 JS `JSON.stringify(await gkit.grab('<저장이름에서 gpt_ 뺀 것>'))` → `~/Downloads/<저장이름>` 이 생긴다. `{"limit":...}` 나 화면에 「이미지 생성 제한」이 보이면 **멈추고 풀리는 시각을 보고**(docs/realm/ART-QUEUE.md 맨 위 표에 적는다).
 6. 검수: 새 그림과 원본(1차는 `public/realm/bust-hd/<id>.jpg`, 2차는 `public/realm/awaken-hd/<id>.jpg`)을 나란히 400×400 으로 붙여 보고 **같은 사람인가 · 활시위 당기는 자세가 아닌가 · 손가락·무기가 멀쩡한가 · 가슴 천이 비치지 않는가(15세)** 를 본다. 어긋나면 넣지 말고 `~/Downloads/<저장이름>` 을 `assets_src/realm/gemini/generals2/try/` 로 옮기고 보류 목록에 까닭을 적는다.
-7. 넣기: `timeout 300 sh tools/bake-intake.sh` (커밋·푸시까지 한다). 그다음 `node tools/bake-pack.mjs`.
+7. 넣기: **방금 받은 그 파일 하나만** 따로 담아서 넣는다 — `mkdir -p tools/out/intake-one && mv ~/Downloads/<저장이름> tools/out/intake-one/ && BAKE_DL=tools/out/intake-one timeout 300 sh tools/bake-intake.sh` (커밋·푸시까지 한다). 그다음 `node tools/bake-pack.mjs`.
+   ⚠ **`BAKE_DL` 없이 그냥 돌리면 형 Downloads 전체를 훑는다** — 11-13 00:2x 옛 「gpt_aw2-*(1).png」 여섯 장이 딸려 들어가 지금 진각성 여섯 장을 갈아 끼웠다(옛 그림은 -b.jpg 로 남음). Downloads 의 다른 파일은 절대 건드리지 않는다(메모리 downloads-folder-hands-off).
+   · `gkit.grab` 이 이름을 `gpt_aw1-….png.png` 처럼 붙일 때가 있다 → 저장이름과 똑같게 바꾼 뒤 옮긴다.
 
 ## 보고
 - 넣은 카드 / 보류 카드(까닭) / 한도 문구와 시각 / 계정이 바뀐 흔적(새 대화가 다른 계정 이름으로 뜨면 그대로 쓰되 적는다).
