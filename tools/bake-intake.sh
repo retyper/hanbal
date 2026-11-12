@@ -8,6 +8,11 @@
 # - act_<key>.png          → 전투 띠 동작 시트: 옛 시트는 assets_src/realm/retired/act-redo 로 · 초록 빼고 8컷 띠 · 미리보기 tools/out/intake-strips.jpg 까지만
 #                            (칸이 어긋난 사람은 고를 칸을 정해) sh tools/bake-intake.sh register <key> [1,2,3,3,5,6,7,8]  → 띠 다시 자르고 register-realm (커밋·푸시)
 set -e
+# ★ 걸쇠 (11-13 점검): Downloads 통째로 훑다 옛 파일이 딸려 들어갔다 → BAKE_DL(한 파일만 둔 폴더) 없이는 --dry 만 된다
+#   형이 꾸러미대로 Downloads 에 모아 둔 것을 일부러 다 넣을 때만 DL_ALL=1
+if [ -z "${BAKE_DL:-}" ] && [ "${1:-}" != --dry ] && [ -z "${DL_ALL:-}" ]; then
+  echo "★ BAKE_DL 없음: Downloads 전체를 넣지 않는다 · BAKE_DL=tools/out/intake-one 처럼 넣을 파일만 둔 폴더를 준다 (일부러 전부면 DL_ALL=1)"; exit 2
+fi
 DL=${BAKE_DL:-$HOME/Downloads}
 L=C:/Users/my/Documents/Codex/2026-11-06/windows-pc-claude-code-claude-code
 Q=D:/flutter/arrow_game_one/tools/veo/queue.mjs
