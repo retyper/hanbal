@@ -18,6 +18,7 @@ done = 'assets_src/realm/retired/anim2-outline/.done'
 if os.path.exists(done):
     lines = open(done, encoding='utf-8').read().split('\n')
     open(done, 'w', encoding='utf-8', newline='\n').write('\n'.join(x for x in lines if x != f'gen-{key}.png'))
+subprocess.run(PY + ['tools/sprite-kit/idle-breath.py', out], check=True, capture_output=True)  # 서 있기 4칸 숨쉬기 (11-12)
 subprocess.run(PY + ['tools/defringe-green.py', out], capture_output=True)
 subprocess.run(PY + ['tools/gen-outline.py', out], check=True, capture_output=True)
 r = subprocess.run(PY + ['tools/sprite-kit/check-strip.py', out, '20'], capture_output=True, text=True)

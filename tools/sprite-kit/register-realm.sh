@@ -26,6 +26,7 @@ else py -3 -X utf8 tools/sprite-kit/check-strip.py "assets_src/realm/gemini/gene
 py -3 -X utf8 tools/sprite-kit/realm-finish.py "$key" "11-08 처음 · $note" "${AMAP:-}" "${NACT:-}"   # 11-12: NACT=5 이면 <key>-act5-strip.png (3×2 · 5컷)
 # 군사 띠처럼 짙은 1px 테두리 (형 11-09: 장수 그림이 흐림) — 다시 구우면 .done 에서 빼야 다시 두른다
 sed -i "/^gen-$key.png$/d" assets_src/realm/retired/anim2-outline/.done 2>/dev/null
+py -3 -X utf8 tools/sprite-kit/idle-breath.py "public/realm/anim2/gen-$key.png" >/dev/null   # 서 있기 4칸 숨쉬기 (11-12)
 py -3 -X utf8 tools/defringe-green.py "public/realm/anim2/gen-$key.png" >/dev/null 2>&1 || true
 py -3 -X utf8 tools/gen-outline.py "public/realm/anim2/gen-$key.png"
 # 11-12 문: 합친 20컷 띠에 머리·벽 닿은 컷이 있으면 등록하지 않는다

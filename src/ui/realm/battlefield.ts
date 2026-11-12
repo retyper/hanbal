@@ -39,6 +39,9 @@ import { cellColor, lookCells, lookNums, oneChance, pctText, signed, type LookCe
 import { t as tr, type Key } from '../../i18n/index.ts'
 import { nameTable } from '../../i18n/names.ts'
 
+/** 장수마다 숨쉬기 박자를 어긋나게 (0~1 · 이름에서 정해져 같은 장수는 늘 같다 · 형 11-12: 「다 동시에 움직인다」) */
+const idlePhase = (id: string): string => ([...id].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 997, 7) / 997).toFixed(2)
+
 /** 키 줄의 i 번째 글을 지금 말로 (표를 모듈 첫머리에서 굳히지 않는다: 말이 바뀌어도 읽는 때마다) */
 const nth = (keys: readonly Key[], i: number): string | undefined => (keys[i] === undefined ? undefined : tr(keys[i]!))
 /** [그대로, 글] 한 쌍 — 둘째 칸만 읽을 때마다 지금 말로 */
@@ -1684,7 +1687,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
         const gDown = caught || rounds.some((rd) => rd.lostHero?.hero === id)
         const gNow = anim && (caught || last?.lostHero?.hero === id)
         const gCls = ` gsp g-${ga.kind}${ga.bow === true ? ' gbw' : ''}${ga.mount === true ? ' gmt' : ''}${gNow ? ' gfall' : gDown ? ' gdown' : ''}${takenNow ? ' gtaken' : ''}${aide ? ' gcap-aide' : ''}`
-        return `<span class="wgen${gCls}" data-hero="${esc(id)}" style="--fc:${fc};--gar:${ga.ar.toFixed(3)};--gb:${ga.body.toFixed(3)}"><i class="wpole">${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}</i><i class="gbody"><b class="gspf" style="background-image:url('${art}${ga.file}')"></b></i>${face(id, art, 'unit-general')}</span>`
+        return `<span class="wgen${gCls}" data-hero="${esc(id)}" style="--fc:${fc};--gar:${ga.ar.toFixed(3)};--gb:${ga.body.toFixed(3)};--k:${idlePhase(id)}"><i class="wpole">${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}</i><i class="gbody"><b class="gspf" style="background-image:url('${art}${ga.file}')"></b></i>${face(id, art, 'unit-general')}</span>`
       }
       // 우리가(이 진이) 사로잡은 적장들 — 장수 발치 땅바닥에 쓰러진 채 (쓰러짐 컷 19). 이번 합에 잡은 이는 이고 올 때까지 숨어 있다(.late)
       const mySide: 'a' | 'd' = i === 0 ? 'a' : 'd'
@@ -2371,17 +2374,17 @@ html[data-lang="en"] .ap .wr.b0 .whelp::after { content: 'Details'; } html[data-
 .ap .wf2s.foe .wgen.gsp .gbody { filter: drop-shadow(0 0 2px #ff6a5a) drop-shadow(0 2px 2px #000c); }
 .ap .wf2s .wgen.gsp .gbody::before { content: ''; position: absolute; left: 30%; right: 30%; bottom: -3%; height: 9%; border-radius: 50%; background: radial-gradient(closest-side, #000b, #0000); z-index: -1; }
 .ap .wf2s .wgen.gsp .gspf { position: absolute; inset: 0; background: 0 0 / 2000% 100% no-repeat; --i0: 0%; --i1: 21.0526%; --w0: 21.0526%; --w1: 63.1579%;
-  animation: spidle 2.6s steps(4) calc(var(--k, .4) * -2s) infinite; }
+  animation: spidle calc(2.3s + var(--k, .4) * .7s) steps(4) calc(var(--k, .4) * -2.6s) infinite; }
 .ap .wf2s .wgen.gsp .wf { position: absolute; left: 50%; top: 0; width: clamp(16px, 4.2cqw, 26px); translate: -50% -92%; z-index: 2; }
 .ap .wf2s .wgen.gsp .wpole { left: 30%; bottom: 30%; height: 175%; z-index: 0; }
 /* 장수의 깃발(비기·겨루기·사로잡기·북)이 오른 합엔 맞부딪기 앞부터 칼질(활 장수는 쏘기). */
-.ap .wfield.enter .wgen.gsp .gspf { animation: spidle 2.6s steps(4) infinite, spwalk calc(var(--entry-time) / 3) steps(8) var(--entry-delay) 3; }
-.ap .wfield.play:not(.capture-round) .wf2s:is([data-l="art"], [data-l="duel"], [data-l="drum"]) .wgen.gsp:not(.gdown):not(.gfall) .gspf { animation: spidle 2.6s steps(4) infinite, gatk .9s steps(1) calc(var(--hd) - 1.2s) 3; }
-.ap .wfield.play:not(.capture-round) .wf2s:is([data-l="art"], [data-l="duel"], [data-l="drum"]) .wgen.gsp.gbw:not(.gdown):not(.gfall) .gspf { animation: spidle 2.6s steps(4) infinite, spshot 1.1s steps(1) calc(var(--hd) - 1.2s) 3; }
+.ap .wfield.enter .wgen.gsp .gspf { animation: spidle calc(2.3s + var(--k, .4) * .7s) steps(4) calc(var(--k, .4) * -2.6s) infinite, spwalk calc(var(--entry-time) / 3) steps(8) var(--entry-delay) 3; }
+.ap .wfield.play:not(.capture-round) .wf2s:is([data-l="art"], [data-l="duel"], [data-l="drum"]) .wgen.gsp:not(.gdown):not(.gfall) .gspf { animation: spidle calc(2.3s + var(--k, .4) * .7s) steps(4) calc(var(--k, .4) * -2.6s) infinite, gatk .9s steps(1) calc(var(--hd) - 1.2s) 3; }
+.ap .wfield.play:not(.capture-round) .wf2s:is([data-l="art"], [data-l="duel"], [data-l="drum"]) .wgen.gsp.gbw:not(.gdown):not(.gfall) .gspf { animation: spidle calc(2.3s + var(--k, .4) * .7s) steps(4) calc(var(--k, .4) * -2.6s) infinite, spshot 1.1s steps(1) calc(var(--hd) - 1.2s) 3; }
 /* 합마다 장수도 칼질한다 — 자기 깃발이 아닌 합엔 진 맨 뒤에 서 있기만 해서 "장수 유닛은 왜 안 움직이냐 · 공격·기술이 하나도 안 보임"(형 11-04) ·
    맞부딪는 때에 한 번 · 자기 깃발(비기·겨루기·사로잡기·북) 합엔 앞으로 뛰어들어 세 번(아래 gdash) */
-.ap .wfield.play:not(.enter, .capture-round) .wf2s:not(:is([data-l="art"], [data-l="duel"], [data-l="capture"], [data-l="drum"])) .wgen.gsp:not(.gdown):not(.gfall) .gspf { animation: spidle 2.6s steps(4) infinite, gatk .9s steps(1) calc(var(--hd) - .5s) 1; }
-.ap .wfield.play:not(.enter, .capture-round) .wf2s:not(:is([data-l="art"], [data-l="duel"], [data-l="capture"], [data-l="drum"])) .wgen.gsp.gbw:not(.gdown):not(.gfall) .gspf { animation: spidle 2.6s steps(4) infinite, spshot 1.1s steps(1) calc(var(--hd) - .6s) 1; }
+.ap .wfield.play:not(.enter, .capture-round) .wf2s:not(:is([data-l="art"], [data-l="duel"], [data-l="capture"], [data-l="drum"])) .wgen.gsp:not(.gdown):not(.gfall) .gspf { animation: spidle calc(2.3s + var(--k, .4) * .7s) steps(4) calc(var(--k, .4) * -2.6s) infinite, gatk .9s steps(1) calc(var(--hd) - .5s) 1; }
+.ap .wfield.play:not(.enter, .capture-round) .wf2s:not(:is([data-l="art"], [data-l="duel"], [data-l="capture"], [data-l="drum"])) .wgen.gsp.gbw:not(.gdown):not(.gfall) .gspf { animation: spidle calc(2.3s + var(--k, .4) * .7s) steps(4) calc(var(--k, .4) * -2.6s) infinite, spshot 1.1s steps(1) calc(var(--hd) - .6s) 1; }
 .ap .wfield.play:not(.enter, .capture-round) .wf2s:is([data-l="art"], [data-l="duel"], [data-l="drum"]) .wgen.gsp:not(.gdown):not(.gfall):not(.gbw) { animation: gdash 3.4s cubic-bezier(.3, 0, .2, 1) calc(var(--hd) - 1.3s) 1 both; }
 @keyframes gdash { 0% { translate: 0 0; } 25%, 75% { translate: clamp(40px, 16cqw, 120px) 0; } 100% { translate: 0 0; } }
 @media (prefers-reduced-motion: reduce) { .ap .wfield.play .wgen.gsp { animation: none !important; } }
@@ -2582,7 +2585,7 @@ html[data-lang="en"] .ap .wr.b0 .whelp::after { content: 'Details'; } html[data-
 @keyframes spidle { from { background-position-x: var(--i0, 0%); } to { background-position-x: var(--i1, 28.5714%); } }
 @keyframes spwalk { from { background-position-x: var(--w0, 28.5714%); } to { background-position-x: var(--w1, 57.1429%); } }
 @keyframes spatk { from { background-position-x: var(--a0, 57.1429%); } to { background-position-x: var(--a1, 85.7143%); } }
-.ap .wfield.enter .tk.wsp .spf { animation: spidle 2.6s steps(var(--spidlen, 2)) infinite, spwalk calc(var(--entry-time) / 3) steps(var(--spwalkn, 2)) var(--entry-delay) 3; }
+.ap .wfield.enter .tk.wsp .spf { animation: spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--j) * -.27s) - var(--k, .5) * 1.6s) infinite, spwalk calc(var(--entry-time) / 3) steps(var(--spwalkn, 2)) var(--entry-delay) 3; }
 .ap .wfield.play .wf2s .tk.wsp.r0:not(.tkd) .spf { animation: spwalk calc(.42s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) var(--fa, 0s) 2, spatk calc(calc(.3s + var(--j, 0) * .03s) * var(--spatks, 1)) steps(var(--spatkn, 2)) calc(var(--hd) - .32s + var(--j, 0) * .05s) 7, spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--hd) + 1.9s) - var(--k, .5) * 1.6s) infinite; }
 .ap .wfield.play .wf2s:not(:has(.tk.r0:not(.tkd))) .tk.wsp.r1:not(.tkd) .spf { animation: spwalk calc(.42s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) var(--fa, 0s) 2, spatk calc(calc(.3s + var(--j, 0) * .03s) * var(--spatks, 1)) steps(var(--spatkn, 2)) calc(var(--hd) - .32s + var(--j, 0) * .05s) 7, spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--hd) + 1.9s) - var(--k, .5) * 1.6s) infinite; }
 .ap .wfield.play .wf2s:not(:has(.tk:is(.r0, .r1):not(.tkd))) .tk.wsp.r2:not(.tkd) .spf { animation: spwalk calc(.42s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) var(--fa, 0s) 2, spatk calc(calc(.3s + var(--j, 0) * .03s) * var(--spatks, 1)) steps(var(--spatkn, 2)) calc(var(--hd) - .32s + var(--j, 0) * .05s) 7, spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--hd) + 1.9s) - var(--k, .5) * 1.6s) infinite; }
