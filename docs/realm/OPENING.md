@@ -4,7 +4,29 @@
 > 새 그림을 굽지 않고 **있는 그림을 천천히 움직여**(켄 번스: 느린 확대·옆으로 흐름) 만든다 — 메모리 「있는 그림 먼저」. 끝의 각성 장면만 숨 쉬는 영상.
 > 같은 장면을 헤드리스로 녹화하면 예고편·상점 영상의 앞부분이 된다 (STEAM-STORE §6).
 
-## 장면 (초 · 그림 · 내레이션 한/영)
+## ★ 대본 v2 초안 (11-12 · 형 판정 전 · 아직 ko.ts·녹음에 안 넣음)
+
+형 11-12: 「한강 아래 말고 하늘 아래 · 알 하나가 아니라 여러 개 · 삼국유사식으로 웅장하게」. 삼국유사 기이편처럼 **하늘이 열리는 데서** 시작해, 알과 땅에서 난 시조들을 차례로 부르고, 부제 「아사달에서 삼성혈까지」를 그대로 따라 내려온다. 사극 평서체 · 한 줄 한 호흡 · 긴 줄표 없음. 약 60초.
+
+| # | 초 | 내레이션 | 그림 (있음 ✔ · 구울 것 ✚) | 근거 |
+|---|---|---|---|---|
+| 1 | 0~6 | 아득한 옛날, 하늘이 열렸다. | ✚ 구름이 갈라지며 빛이 내리는 하늘 (영화관 띠 · 가로) | 개천 |
+| 2 | 6~12 | 하늘의 자손이 신단수 아래로 내려와, 아사달에 첫 나라를 열었다. | ✚ 산마루 큰 박달나무 아래 내려선 빛과 무리 (얼굴 안 보이게 뒷모습·실루엣) | 삼국유사 고조선(환웅·단군) |
+| 3 | 12~18 | 그 뒤로도 하늘은 땅을 잊지 않았다. 자줏빛 줄이 드리우고, 금빛 알 여섯이 내려왔다. | ✔ keyart/gujibong.jpg → event/event-golden-egg.jpg | 삼국유사 가락국기 |
+| 4 | 18~24 | 흰 말이 지키던 자줏빛 알에서, 강가의 여인이 품은 큰 알에서, 임금들이 태어났다. | ✔ keyart/seorabeol.jpg → keyart/jumong.jpg | 혁거세(나정) · 주몽(유화) |
+| 5 | 24~30 | 바다를 건너온 궤짝에서도, 땅을 가르고 솟은 세 신인에게서도. | ✔ event/event-egg-birth.jpg → ✚ 한라산 아래 땅 구멍 셋에서 솟는 세 사람(실루엣) | 탈해 · 탐라 삼성혈 |
+| 6 | 30~36 | 하늘 아래, 일흔여덟 나라가 일어섰다. | ✔ 깃발 지도 (지금 3번 장면 그대로) | 이 게임의 삼한 78국 |
+| 7 | 36~42 | 쇠 두드리는 소리와 싸움의 북소리는 그칠 날이 없었다. | ✔ event-bow-forge → event-invade-field (지금 4·5번을 한 장면으로) | |
+| 8 | 42~48 | 이긴 자는 적장을 베지 않았다. 사로잡았다. | ✔ 지금 6번 그대로 | |
+| 9 | 48~55 | 마음을 얻은 장수는 깨어나, 그대의 이름으로 싸우리라. | ✔ 각성 영상 넷 (아래 워터마크 띠 잘림) | |
+| 10 | 55~60 | 하늘 아래 일흔여덟 나라를, 하나로 이으라. | ✔ 제목 로고 | |
+
+- 「여러 알」은 3·4·5줄에 나눠 둔다: 가락 금알 여섯 → 혁거세 자줏빛 알 → 주몽의 큰 알 → 탈해의 궤짝 → 땅에서 난 삼성혈. 마지막이 「땅」이라 1줄의 「하늘」과 짝이 맞고, 부제 「아사달에서 삼성혈까지」를 그대로 걷는다.
+- 웅장함은 말보다 **박자**로: 1줄 앞 1.5초 완전한 검정 + 낮은 북 한 번 → 1줄 「열렸다」에 빛이 갈라짐 · 음악은 6줄(깃발)에서 처음 크게 오름(지금 생포 장면에서 오르던 것을 앞당김) · 10줄 앞 반 박자 무음.
+- 영어 자막(초안): 1 Long ago, the heavens opened. · 2 A son of Heaven came down beneath the sacred tree and founded the first kingdom at Asadal. · 3 Heaven did not forget the land. A purple cord came down, bearing six golden eggs. · 4 From a purple egg guarded by a white horse, from a great egg held by a river maiden, kings were born. · 5 From a chest that drifted across the sea, from three who rose out of the earth. · 6 Under heaven, seventy-eight kingdoms rose. · 7 The hammers on iron and the drums of war never fell silent. · 8 The victors did not slay the enemy's generals. They took them alive. · 9 Win their hearts, and they will awaken to fight in your name. · 10 Unite the seventy-eight kingdoms under heaven.
+- 형 OK 뒤 할 일: ko/en opening.1~10 · 장면 목록 10개 · 새 그림 셋(✚ · 영화관 가로 16:9 · 제미나이) · 내레이션 10줄 다시 녹음(Gacrux · tools/opening-voice-list.ts).
+
+## 장면 v1 (지금 게임에 든 것)
 
 | # | 초 | 그림 (public/realm/…) | 움직임 | 내레이션 (한) | 자막 (영) |
 |---|---|---|---|---|---|
