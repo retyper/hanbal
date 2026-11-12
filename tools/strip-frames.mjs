@@ -24,6 +24,7 @@ const cols = Number(colsS)
 const rows = Number(rowsS)
 const H = Number(hS)
 const INSET = Number(insetS)
+const NEAR = 0.015 // 벽에 닿은 조각이라도 몸과 이만큼(칸의 1.5%) 안에 붙어 있으면 제 무기로 본다
 const src = decodePng(file)
 const cw = src.w / cols
 const ch = src.h / rows
@@ -62,9 +63,11 @@ function cellImage(x0, y0, w, h) {
   const far = Math.max(w, h) * 0.06
   for (const c of comps) {
     if (c === main) continue
-    // 옆 칸에서 넘어온 조각 — 가장자리에 걸치고 작다 · 티끌 — 아주 작다 · 몸에서 멀리 떨어진 작은 것
+    // 옆 칸에서 넘어온 조각 — 가장자리에 걸치고 작고 **몸에서 떨어져** 있다 · 티끌 — 아주 작다 · 몸에서 멀리 떨어진 작은 것
+    // (11-12: 벽에 닿아도 몸(주먹)에 붙은 조각은 제 칼·창끝이다 — 옛 규칙이 독무덤 찌르기의 단검을 통째로 지웠다 · 형: 「창·칼이 짧다」)
     const gap = Math.max(main.x0 - c.x1, c.x0 - main.x1, main.y0 - c.y1, c.y0 - main.y1, 0)
-    if ((c.edge && c.n < big * 0.25) || c.n < big * 0.004 || (gap > far && c.n < big * 0.3)) for (const p of c.cells) px[p * 4 + 3] = 0
+    const near = gap <= Math.max(w, h) * NEAR
+    if ((c.edge && c.n < big * 0.25 && !near) || c.n < big * 0.004 || (gap > far && c.n < big * 0.3)) for (const p of c.cells) px[p * 4 + 3] = 0
   }
   // 반투명 가장자리(알파 < 40)는 덩어리에 안 들어갔다 — 둘레에 남은 것 중 지운 덩어리 곁의 것도 지운다
   for (let i = 0; i < w * h; i++) {
