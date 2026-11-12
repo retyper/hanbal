@@ -8,13 +8,14 @@
  *
  * 화면은 읽기만 한다 (규칙 2).
  */
-import { battleName, josa, seasonLabel } from '../../realm/data/prose.ts'
+import { battleName, seasonLabel } from '../../realm/data/prose.ts'
 import type { Approach, Hero, Mem, Realm } from '../../realm/types.ts'
+import { lazyTable, t as tr } from '../../i18n/index.ts'
 
-const ROUTE: Readonly<Record<string, string>> = { road: '대로', night: '밤길', ford: '여울', ridge: '산기슭', cliff: '절벽', field: '들판' }
-const PLOT: Readonly<Record<string, string>> = { rumor: '소문', sow: '이간', bribe: '매수', burn: '방화', spy: '첩자', assassin: '암살', rescue: '구출' }
-const WOO: Readonly<Record<string, string>> = { soothe: '달래기', cause: '명분', gain: '이익', fear: '겁주기', bond: '인연' }
-const FREED: Readonly<Record<string, string>> = { peace: '화친으로 풀려남', take: '도읍이 떨어져 풀려남', rescue: '구출됨' }
+const ROUTE: Readonly<Record<string, string>> = lazyTable('memRoute', ['road', 'night', 'ford', 'ridge', 'cliff', 'field'])
+const PLOT: Readonly<Record<string, string>> = lazyTable('memPlot', ['rumor', 'sow', 'bribe', 'burn', 'spy', 'assassin', 'rescue'])
+const WOO: Readonly<Record<string, string>> = lazyTable('memWoo', ['soothe', 'cause', 'gain', 'fear', 'bond'])
+const FREED: Readonly<Record<string, string>> = lazyTable('memFreed', ['peace', 'take', 'rescue'])
 
 type Tone = 'good' | 'bad' | 'even'
 
@@ -56,44 +57,44 @@ export function memLine(r: Realm, m: Mem, faction?: string): string {
   const parts: string[] = [when]
   switch (m.k) {
     case 'battle': {
-      parts.push(m.at !== undefined && r.nodes[m.at] !== undefined ? battleName(r, { node: m.at, field: m.how === 'field', ...(m.how !== undefined && m.how !== 'field' ? { approach: m.how as Approach } : {}) }) : '싸움')
+      parts.push(m.at !== undefined && r.nodes[m.at] !== undefined ? battleName(r, { node: m.at, field: m.how === 'field', ...(m.how !== undefined && m.how !== 'field' ? { approach: m.how as Approach } : {}) }) : tr('mem.battle'))
       const foe = facName(r, m.foe)
-      if (foe !== '') parts.push(m.on === 1 ? `${josa(foe, '이', '가')} 쳐들어옴` : `${josa(foe, '을', '를')} 침`)
+      if (foe !== '') parts.push(tr(m.on === 1 ? 'mem.invaded' : 'mem.struck', { foe }))
       if (m.how !== undefined && ROUTE[m.how] !== undefined && m.on !== 1) parts.push(ROUTE[m.how]!)
-      parts.push(m.res === 'won' ? '이김' : m.res === 'lost' ? '짐' : '비김')
+      parts.push(tr(m.res === 'won' ? 'mem.won' : m.res === 'lost' ? 'mem.lost' : 'mem.drew'))
       break
     }
     case 'duel': {
       const who = heroName(r, m.who)
-      parts.push(who !== '' ? `${josa(who, '과', '와')} 겨룸` : '장수 겨루기')
-      parts.push(m.res === 'won' ? '이김' : '짐')
+      parts.push(who !== '' ? tr('mem.duelWith', { who }) : tr('mem.duel'))
+      parts.push(tr(m.res === 'won' ? 'mem.won' : 'mem.lost'))
       break
     }
     case 'captured': {
       const foe = facName(r, m.foe)
-      parts.push(foe !== '' ? `${foe}에 사로잡힘` : '사로잡힘')
-      if (m.how === 'envoy') parts.push('사신으로 갔다가')
-      else if (m.how === 'plot') parts.push('공작을 하다 들킴')
+      parts.push(foe !== '' ? tr('mem.capBy', { foe }) : tr('mem.cap'))
+      if (m.how === 'envoy') parts.push(tr('mem.capEnvoy'))
+      else if (m.how === 'plot') parts.push(tr('mem.capPlot'))
       else if (m.at !== undefined) parts.push(nodeName(r, m.at))
       break
     }
     case 'freed':
-      if (m.how === 'turned') parts.push(`${facName(r, m.foe)} 장수가 됨`)
-      else parts.push(FREED[m.how ?? ''] ?? '풀려남')
+      if (m.how === 'turned') parts.push(tr('mem.turned', { foe: facName(r, m.foe) }))
+      else parts.push(FREED[m.how ?? ''] ?? tr('mem.freedDef'))
       break
     case 'plot': {
-      const op = PLOT[m.how ?? ''] ?? '공작'
+      const op = PLOT[m.how ?? ''] ?? tr('mem.plotDef')
       const foe = facName(r, m.foe)
-      if (m.on === 1) parts.push(foe !== '' ? `${foe}의 ${op}` : `누군가의 ${op}`, m.res === 'ok' ? '당함' : '피함')
-      else parts.push(foe !== '' ? `${foe}에 ${op}` : op, m.res === 'ok' ? '먹힘' : '어긋남')
+      if (m.on === 1) parts.push(foe !== '' ? tr('mem.plotOf', { foe, op }) : tr('mem.plotSome', { op }), tr(m.res === 'ok' ? 'mem.plotHit' : 'mem.plotDodge'))
+      else parts.push(foe !== '' ? tr('mem.plotOn', { foe, op }) : op, tr(m.res === 'ok' ? 'mem.plotOk' : 'mem.plotMiss'))
       break
     }
     case 'woo': {
       const who = heroName(r, m.who)
       const how = (m.how ?? '').split('+').map((x) => WOO[x]).filter((x): x is string => x !== undefined)
-      parts.push(m.on === 1 ? `${who}의 회유` : `${josa(who, '을', '를')} 회유`)
+      parts.push(tr(m.on === 1 ? 'mem.wooOf' : 'mem.wooOn', { who }))
       if (how.length > 0) parts.push(how.join(', '))
-      parts.push(m.res === 'ok' ? (m.on === 1 ? '마음이 무너짐' : '먹힘') : m.res === 'fail' ? '노여움' : '버팀')
+      parts.push(m.res === 'ok' ? (m.on === 1 ? tr('mem.wooBreak') : tr('mem.wooOk')) : m.res === 'fail' ? tr('mem.wooAngry') : tr('mem.wooHold'))
       break
     }
     case 'split': {
@@ -102,16 +103,18 @@ export function memLine(r: Realm, m: Mem, faction?: string): string {
       const home = m.at !== undefined && faction !== undefined && r.factions[faction]?.capital === m.at
       const at = home ? '' : nodeName(r, m.at)
       const foe = facName(r, m.foe)
-      const where = foe !== '' ? ` ${josa(foe, '으로', '로')}` : ' 출정'
-      parts.push(n <= 0 ? `${at !== '' ? `${at}에서 ` : ''}다 데리고${where}` : `${at !== '' ? `${at}에 ` : ''}${Math.max(1, Math.round(n / 10))}할 남기고${where}`)
-      parts.push(m.res === 'fail' ? (home ? '도읍이 털림' : '뒤가 털림') : home ? '도읍 무사' : '뒤 무사')
+      const tenth = Math.max(1, Math.round(n / 10))
+      parts.push(n <= 0
+        ? tr(foe !== '' ? (at !== '' ? 'mem.allFoeAt' : 'mem.allFoe') : (at !== '' ? 'mem.allGoAt' : 'mem.allGo'), { at, foe })
+        : tr(foe !== '' ? (at !== '' ? 'mem.keepFoeAt' : 'mem.keepFoe') : (at !== '' ? 'mem.keepGoAt' : 'mem.keepGo'), { at, foe, n: tenth }))
+      parts.push(m.res === 'fail' ? (home ? tr('mem.raidHome') : tr('mem.raidBack')) : home ? tr('mem.safeHome') : tr('mem.safeBack'))
       break
     }
     case 'council':
-      parts.push('회의에서 낸 안', m.res === 'ok' ? '받아들여짐' : '물리침')
+      parts.push(tr('mem.council'), tr(m.res === 'ok' ? 'mem.accepted' : 'mem.rejected'))
       break
     case 'betrayed':
-      parts.push(`${josa(facName(r, m.foe), '이', '가')} 등을 돌림`)
+      parts.push(tr('mem.betrayed', { foe: facName(r, m.foe) }))
       break
   }
   return parts.filter((x) => x !== '').join(' · ')
@@ -133,7 +136,7 @@ export function memRowHtml(r: Realm, h: Hero, viewer: string, art: string, esc: 
     const pic = ic !== null ? `<img src="${art}icon/${ic}.png" alt="">` : `<i class="mm-chain">⛓</i>`
     return `<span class="mm-i mm-${toneOf(m)}${m.keep === true ? ' mm-keep' : ''}" data-tip="${esc(memLine(r, m, h.faction))}">${pic}</span>`
   }).join('')
-  return `<div class="mm-row"><b class="mm-h">기억</b><div class="mm-tl">${cells}</div></div>`
+  return `<div class="mm-row"><b class="mm-h">${tr('mem.head')}</b><div class="mm-tl">${cells}</div></div>`
 }
 
 export const MEM_CSS = `
