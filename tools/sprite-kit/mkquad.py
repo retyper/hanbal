@@ -3,7 +3,7 @@
 한 장 = 3컷 + 우하단 자홍 네모(워터마크 자리). 걷기 마네킹은 CC0 itch.io 「8 frame walk」(늘씬하게 · 7등신), 동작은 지백호 원본에서 덩어리째.
   q1 1:1  걷기 1 2 3    q2 1:1  걷기 4 5 6    q3 1:1  걷기 7 8 · 서기
   q4 16:9 준비 · 당김 · 찌름                   q5 16:9 맞음 · 누움 · 숨 들이쉰 서기
-→ tools/sprite-kit/quad/ref-q1.png … ref-q5.png"""
+→ tools/sprite-kit/quad/ref-q1.png … ref-q5.png · ref-r1 … ref-r4 (네 칸 다 쓰는 판)"""
 import sys
 import numpy as np
 from PIL import Image, ImageSequence, ImageDraw
@@ -79,10 +79,11 @@ def sheet(W, H, cells, out, left):
         if im.width > CW * 0.94:
             kk = CW * 0.94 / im.width; im = im.resize((round(im.width * kk), round(im.height * kk)), Image.LANCZOS)
         r, c = divmod(j, 2)
-        ox = int(c * CW + (CW * 0.05 if lft else (CW - im.width) / 2)); oy = int(r * CH + CH * 0.95 - im.height)
+        ox = int(c * CW + (CW * 0.05 if lft or j == 3 else (CW - im.width) / 2)); oy = int(r * CH + CH * 0.95 - im.height)  # 4번 칸은 왼쪽 (우하단 귀 = 워터마크 자리)
         s.alpha_composite(im, (ox, oy))
     a = np.array(s); p = 0.05
-    a[int(CH + CH * p):int(2 * CH - CH * p * 0.5), int(CW + CW * p):int(2 * CW - CW * p * 0.5)] = MAG
+    if len(cells) == 3:
+        a[int(CH + CH * p):int(2 * CH - CH * p * 0.5), int(CW + CW * p):int(2 * CW - CW * p * 0.5)] = MAG
     Image.fromarray(a[..., :3]).save(OUT + out)
     print(out, W, H)
 
@@ -93,3 +94,10 @@ sheet(1024, 1024, [M(3), M(4), M(5)], 'ref-q2.png', False)
 sheet(1024, 1024, [M(6), M(7), J(1, False)], 'ref-q3.png', False)
 sheet(1376, 768, [J(1), J(2), J(3)], 'ref-q4.png', True)
 sheet(1376, 768, [J(6), J(8, False), J(1)], 'ref-q5.png', True)
+
+# 11-12 형: 「4×4(2×2 네 칸)로 · 우하단을 자홍으로 안 채워도 워터마크 거의 안 걸린다 · 네 칸 다 써라」
+#   r1 1:1 걷기 1 2 3 4 · r2 1:1 걷기 5 6 7 8 · r3 16:9 준비 · 당김 · 찌름 · 맞음 · r4 16:9 누움 · 서기 · 들숨 · 찌른 뒤
+sheet(1024, 1024, [M(0), M(1), M(2), M(3)], 'ref-r1.png', False)
+sheet(1024, 1024, [M(4), M(5), M(6), M(7)], 'ref-r2.png', False)
+sheet(1376, 768, [J(1), J(2), J(3), J(6)], 'ref-r3.png', True)
+sheet(1376, 768, [J(8, False), J(1), J(1), J(4)], 'ref-r4.png', True)
