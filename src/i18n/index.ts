@@ -45,3 +45,28 @@ export function lazyTable<K extends string>(ns: string, keys: readonly K[]): { r
 
 /** 키가 글자로 만들어질 때(`pro.when.${region}`) — 없는 키는 시험이 잡는다 */
 export const tk = (key: string, vars?: Vars): string => t(key as Key, vars)
+
+/** 자리표를 채우지 않은 글 그대로 — 그 글을 만드는 쪽이 제 방식으로 채울 때(회의 말의 {x|은}) */
+export function tRaw(key: string): string {
+  const k = key as Key
+  return (lang() === 'en' ? en[k] : undefined) ?? ko[k]
+}
+
+type Shape = { readonly [k: string]: Shape | number }
+type Tree<S> = { readonly [K in keyof S]: S[K] extends number ? readonly string[] : Tree<S[K]> }
+/** 칸마다 글 몇 줄인 표 — 키 `ns.칸.칸.번호`. 읽을 때마다 지금 말로(자리표는 그대로 둔다) */
+export function lazyTree<S extends Shape>(ns: string, shape: S): Tree<S> {
+  const build = (path: string, sh: Shape): object => {
+    const o: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(sh)) {
+      const p = `${path}.${k}`
+      if (typeof v === 'number') {
+        const arr: string[] = new Array<string>(v).fill('')
+        for (let i = 0; i < v; i++) Object.defineProperty(arr, i, { get: () => tRaw(`${p}.${i}`), enumerable: true })
+        o[k] = arr
+      } else o[k] = build(p, v)
+    }
+    return o
+  }
+  return build(ns, shape) as Tree<S>
+}
