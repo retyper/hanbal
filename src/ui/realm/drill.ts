@@ -15,6 +15,7 @@ import type { GrowStat, Hero, Realm, Vow } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { relicRoom, slotsFor } from '../../realm/relics.ts'
 import { nameHtml } from './heroview.ts'
+import { t as tr } from '../../i18n/index.ts'
 import { loadRelics, pickerHtml, relicChips, relicDexHtml, slotsHtml, wornBy, wornLv, type RelicKit } from './relics.ts'
 
 const KEY = 'hanbal.realm.drill'
@@ -444,12 +445,12 @@ function heroHtml(k: DrillKit, o: YardOpts, store: DrillStore, r: Row): string {
 /** 끝 화면의 단련 한 줄 — 이번 판에 공을 번 장수 얼굴과 「+공」, 그리고 단련터로 */
 export function yardStripHtml(k: DrillKit, rows: ReadonlyArray<{ id: string; name: string; earned: number }>, spare: number): string {
   if (rows.length === 0) return ''
-  let h = `<div class="dystrip"><h4>이번 판의 공 <small>져도 남는다 · 단련터에서 쓴다</small></h4><div class="dysl">`
+  let h = `<div class="dystrip"><h4>${tr('dy.runGongs')} <small>${tr('dy.runNote')}</small></h4><div class="dysl">`
   for (const x of rows.slice(0, 8)) {
     const src = k.bust(x.id)
     h += `<span class="dysf">${src !== null ? `<img src="${src}" alt="">` : '<span class="nof"></span>'}<b>${nameHtml(x.name)}</b><i>+${x.earned}</i></span>`
   }
-  h += `</div><button class="btn pri big dyopen" data-act="dy-open">단련터 ›${spare > 0 ? `<small>쓸 공 ${spare}</small>` : ''}</button></div>`
+  h += `</div><button class="btn pri big dyopen" data-act="dy-open">${tr('dy.yard')}${spare > 0 ? `<small>${tr('dy.spare', { n: spare })}</small>` : ''}</button></div>`
   return h
 }
 

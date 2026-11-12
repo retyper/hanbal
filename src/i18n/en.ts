@@ -3434,6 +3434,12 @@ export const en: Partial<Record<Key, string>> = {
   'svb.down': 'Download as a file',
   'svb.file': 'Load from a file',
   'svb.hint': 'A file survives even if the browser\'s storage is cleared. You can also use it to move to another device.',
+  'gfx.sayBattery': 'Battery is low, so graphics were lightened',
+  'gfx.sayLag': 'The screen was stuttering, so graphics were lightened. You can change this on the Realm tab.',
+  'dy.runGongs': 'Merit from this game',
+  'dy.runNote': 'Kept even if you lose · spend it at the training ground',
+  'dy.yard': 'Training ground ›',
+  'dy.spare': 'Merit to spend {n}',
 }
 
 /** 아직 영어로 안 옮긴 키 — 일부러 비워 둔 것만 (한국어로 나간다) */

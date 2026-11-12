@@ -3446,6 +3446,12 @@ export const ko = {
   'svb.down': '파일로 내려받기',
   'svb.file': '파일에서 불러오기',
   'svb.hint': '파일은 브라우저 저장이 지워져도 남습니다 · 다른 기기로 옮길 때도 쓸 수 있습니다',
+  'gfx.sayBattery': '배터리가 적어 그래픽을 가볍게 바꿨습니다',
+  'gfx.sayLag': '화면이 버벅여 그래픽을 가볍게 바꿨습니다 · 나라 탭에서 바꿀 수 있습니다',
+  'dy.runGongs': '이번 판의 공',
+  'dy.runNote': '져도 남는다 · 단련터에서 쓴다',
+  'dy.yard': '단련터 ›',
+  'dy.spare': '쓸 공 {n}',
 } as const
 
 export type Key = keyof typeof ko

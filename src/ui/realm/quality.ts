@@ -27,13 +27,13 @@
  * 손으로: 더 보기 · 나라 탭의 「그래픽: 자동 / 저사양 / 보통 / 고사양」 (localStorage hanbal.realm.gfx) · 시험엔 주소 ?gfx=low|mid|high.
  */
 import { P } from '../../tune/params.ts'
-import { t } from '../../i18n/index.ts'
+import { lazyTable, t } from '../../i18n/index.ts'
 
 export type Tier = 'low' | 'mid' | 'high'
 export type GfxPref = 'auto' | Tier
 
 const ORDER: readonly Tier[] = ['low', 'mid', 'high']
-export const TIER_NAME: Readonly<Record<Tier, string>> = { low: '저사양', mid: '보통', high: '고사양' }
+export const TIER_NAME: Readonly<Record<Tier, string>> = lazyTable('gfx', ['low', 'mid', 'high'])
 const PREF_KEY = 'hanbal.realm.gfx'
 /** 저사양에서도 멈추지 않는 끝없는 움직임: 긴 이름을 흘려 보여 주는 글 (fit.ts marquee) */
 const KEEP_RUNNING: ReadonlySet<string> = new Set(['mqgo'])
@@ -260,7 +260,7 @@ function stepDown(why: 'frames' | 'battery'): void {
   tier = ORDER[ORDER.indexOf(tier) - 1]!
   apply()
   // 절전 모드를 켰는지는 알 수 없다 · 본 것만 말한다 (형 10-30: "절전 상태 풀었는데 왜 절전 상태로 바꿨다고 뜨지?")
-  if (tier === 'low') say(why === 'battery' ? '배터리가 적어 그래픽을 가볍게 바꿨습니다' : '화면이 버벅여 그래픽을 가볍게 바꿨습니다 · 나라 탭에서 바꿀 수 있습니다')
+  if (tier === 'low') say(t(why === 'battery' ? 'gfx.sayBattery' : 'gfx.sayLag'))
 }
 
 /** 자동이 한 단계 올린다: 내린 뒤 gfxUpAfterS 가 지났고 지도가 아주 부드러울 때 · 출발점(baseTier 의 기기 몫)보다 위로는 안 간다 */
