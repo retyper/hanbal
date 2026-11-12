@@ -7,10 +7,11 @@
  * 카드를 누르면 바로 끝까지 보인다.
  */
 import { faceFile } from './face.ts'
-import { BATTLE_AMBUSH, BATTLE_APPROACH, BATTLE_CLASH, endStory, fieldName, josa, roundStory, storyCtx } from '../../realm/data/prose.ts'
+import { BATTLE_AMBUSH, BATTLE_APPROACH, BATTLE_CLASH, endStory, fieldName, roundStory, storyCtx } from '../../realm/data/prose.ts'
 import { flagIcon } from '../../realm/data/art.ts'
 import { CMD_NAME, actRows, flagSrc, reliefBanner, warName } from './battlefield.ts'
 import type { Army, Hero, Realm, ReportLine } from '../../realm/types.ts'
+import { t as tr } from '../../i18n/index.ts'
 
 type Battle = Extract<ReportLine, { kind: 'battle' }>
 
@@ -59,12 +60,12 @@ function battleSummary(after: Realm, l: Battle, weAtk: boolean, art: string, vie
     return id !== null ? (after.heroes[id] ?? null) : null
   }
   const fac = (i: number): string => (i === 0 ? (l.atkFaction ?? '') : l.defender)
-  const name = (i: number): string => heroOf(i)?.name ?? `${after.factions[i === 0 ? (l.atkFaction ?? '') : l.defender]?.name ?? ''} 군`
+  const name = (i: number): string => heroOf(i)?.name ?? tr('bc.army', { name: after.factions[i === 0 ? (l.atkFaction ?? '') : l.defender]?.name ?? '' })
   const n0 = (i: number): number => st.men[i] ?? 0
   const n1 = (i: number): number => Math.round((st.men[i] ?? 0) * (fr[i] ?? 1))
   let h = `<div class="bk sum"><div class="bkh"><span class="bkp">${esc(warName(after, l))}</span></div>`
-  h += `<div class="bkv"><div class="bks">${face(heroOf(ui), art, fac(ui))}<b>${esc(name(ui))}</b><span>우리 ${n0(ui).toLocaleString('ko-KR')} → ${n1(ui).toLocaleString('ko-KR')}</span></div><i>VS</i>`
-  h += `<div class="bks">${face(heroOf(fi), art, fac(fi))}<b>${esc(name(fi))}</b><span>적 ${n0(fi).toLocaleString('ko-KR')} → ${n1(fi).toLocaleString('ko-KR')}</span></div></div>`
+  h += `<div class="bkv"><div class="bks">${face(heroOf(ui), art, fac(ui))}<b>${esc(name(ui))}</b><span>${tr('bc.ours', { a: n0(ui).toLocaleString('ko-KR'), b: n1(ui).toLocaleString('ko-KR') })}</span></div><i>VS</i>`
+  h += `<div class="bks">${face(heroOf(fi), art, fac(fi))}<b>${esc(name(fi))}</b><span>${tr('bc.theirs', { a: n0(fi).toLocaleString('ko-KR'), b: n1(fi).toLocaleString('ko-KR') })}</span></div></div>`
   // 합마다 — 우리 명령 × 적 명령, 상성을 이겼나(○)·졌나(✕)
   h += `<div class="bkr3">`
   for (const rd of rds) {
@@ -85,8 +86,8 @@ function battleSummary(after: Realm, l: Battle, weAtk: boolean, art: string, vie
     })
     h += `<p class="bkl now bkwhy">${esc(endStory(l, ctx))}</p>`
   }
-  if (l.captured !== null) h += `<p class="bkl now">${esc(josa(after.heroes[l.captured]?.name ?? '?', '을', '를'))} 사로잡았다!</p>`
-  if (l.killed !== null) h += `<p class="bkl now">${esc(josa(after.heroes[l.killed]?.name ?? '?', '이', '가'))} 쓰러졌다.</p>`
+  if (l.captured !== null) h += `<p class="bkl now">${esc(tr('bc.caught', { who: after.heroes[l.captured]?.name ?? '?' }))}</p>`
+  if (l.killed !== null) h += `<p class="bkl now">${esc(tr('bc.fell', { who: after.heroes[l.killed]?.name ?? '?' }))}</p>`
   return h + `<div class="bkr now ${good ? 'good' : l.outcome === 'draw' ? '' : 'bad'}">${esc(result)}</div></div>`
 }
 
@@ -100,11 +101,11 @@ export function battleCard(before: Realm, after: Realm, l: Battle, viewer: strin
     const atkWonB = l.outcome === 'rout' || l.outcome === 'win'
     const goodB = weA === atkWonB && l.outcome !== 'draw'
     let res: string
-    if (fieldB) res = l.outcome === 'draw' ? '둘 다 물러났다' : goodB ? '적을 물리치고 길을 간다' : '밀려서 돌아왔다'
-    else if (l.outcome === 'draw') res = weA ? `${placeB}에서 물러났다` : `${josa(placeB, '을', '를')} 지켜 냈다`
-    else if (weA) res = atkWonB ? `${josa(placeB, '을', '를')} 차지했다` : `${placeB}에서 물러났다`
-    else res = atkWonB ? `${josa(placeB, '을', '를')} 빼앗겼다` : `${josa(placeB, '을', '를')} 지켜 냈다`
-    if (l.outcome === 'rout' || l.outcome === 'routed') res = `${goodB ? '대승' : '대패'}: ${res}`
+    if (fieldB) res = l.outcome === 'draw' ? tr('bc.bothBack') : goodB ? tr('bc.fieldWin') : tr('bc.fieldLose')
+    else if (l.outcome === 'draw') res = weA ? tr('bc.backFrom', { place: placeB }) : tr('bc.held', { place: placeB })
+    else if (weA) res = atkWonB ? tr('bc.took', { place: placeB }) : tr('bc.backFrom', { place: placeB })
+    else res = atkWonB ? tr('bc.lost', { place: placeB }) : tr('bc.held', { place: placeB })
+    if (l.outcome === 'rout' || l.outcome === 'routed') res = `${goodB ? tr('bc.routGood') : tr('bc.routBad')}: ${res}`
     return battleSummary(after, l, weA, art, viewer, res, goodB)
   }
   const lead = before.armies[l.attacker]
@@ -115,6 +116,7 @@ export function battleCard(before: Realm, after: Realm, l: Battle, viewer: strin
   const field = l.field === true && l.edge !== undefined
   const place = field ? fieldName(after, l.edge!) : (node?.name ?? l.node)
   const fname = (id: string): string => after.factions[id]?.name ?? '?'
+  const armyOf = (id: string): string => tr('bc.army', { name: fname(id) })
 
   const atkIds = [l.attacker, ...l.allies]
   // 들판이면 같은 길 위를 마주 오던 군대 (이번 계절에 떠났으면 아직 그 끝 고을에 있다)
@@ -133,9 +135,9 @@ export function battleCard(before: Realm, after: Realm, l: Battle, viewer: strin
   const defAfter = defArmies.reduce((s, a) => s + men(after.armies[a.id]), 0)
 
   const side = (hero: Hero | null, f: string, n: number, extra: string): string =>
-    `<div class="bks">${face(hero, art)}<b>${esc(hero?.name ?? `${fname(f)} 군`)}</b><span>${esc(fname(f))} · ${n}명${extra}</span></div>`
-  const atkSide = side(atkHero, lead.faction, atkBefore, l.allies.length > 0 ? ` · ${atkIds.length}군` : '')
-  const defSide = side(defHero, l.defender, defBefore, l.militia > 0 ? ` + 장정 ${l.militia}` : '')
+    `<div class="bks">${face(hero, art)}<b>${esc(hero?.name ?? armyOf(f))}</b><span>${esc(fname(f))} · ${tr('bc.nTroops', { n })}${extra}</span></div>`
+  const atkSide = side(atkHero, lead.faction, atkBefore, l.allies.length > 0 ? tr('bc.armiesN', { n: atkIds.length }) : '')
+  const defSide = side(defHero, l.defender, defBefore, l.militia > 0 ? tr('bc.plusMilitia', { n: l.militia }) : '')
 
   // 차례로 뜰 줄들
   const steps: string[] = []
@@ -143,27 +145,27 @@ export function battleCard(before: Realm, after: Realm, l: Battle, viewer: strin
   const edge = lead.march !== null
     ? before.edges[lead.march.edge]
     : Object.values(before.edges).find((e) => (e.a === lead.at && e.b === l.node) || (e.b === lead.at && e.a === l.node))
-  const who = josa(atkHero?.name ?? `${fname(lead.faction)} 군`, '이', '가')
+  const who = tr('bc.who', { who: atkHero?.name ?? armyOf(lead.faction) })
   if (edge !== undefined) steps.push(`${who} ${BATTLE_APPROACH[edge.kind]}`)
-  steps.push(field ? '길 한가운데서 두 군대가 마주쳤다. 성도 장정도 없다.' : BATTLE_AMBUSH[l.ambush])
-  if (l.ambush === 'success' && before.nodes[l.node]?.owner === l.defender) steps.push('장정이 모이지 못했다.')
-  else if (l.militia > 0) steps.push(`마을 장정 ${l.militia}명이 함께 막아선다.`)
-  if (l.pincer) steps.push('두 길에서 한꺼번에 들이친다.')
+  steps.push(field ? tr('bc.meet') : BATTLE_AMBUSH[l.ambush])
+  if (l.ambush === 'success' && before.nodes[l.node]?.owner === l.defender) steps.push(tr('bc.noLevy'))
+  else if (l.militia > 0) steps.push(tr('bc.levy', { n: l.militia }))
+  if (l.pincer) steps.push(tr('bc.pincer'))
   const [c1, c2] = BATTLE_CLASH[l.outcome]
   steps.push(c1, c2)
   const ours = weAtk ? [atkBefore, atkAfter] : [defBefore, defAfter]
   const theirs = weAtk ? [defBefore, defAfter] : [atkBefore, atkAfter]
-  steps.push(`우리 ${ours[0]}명 → ${ours[1]}명 · 적 ${theirs[0]}명 → ${theirs[1]}명`)
-  if (l.captured !== null) steps.push(`${josa(after.heroes[l.captured]?.name ?? '?', '을', '를')} 사로잡았다!`)
-  if (l.killed !== null) steps.push(`${josa(after.heroes[l.killed]?.name ?? '?', '이', '가')} 쓰러졌다.`)
+  steps.push(tr('bc.steps', { a: ours[0]!, b: ours[1]!, c: theirs[0]!, d: theirs[1]! }))
+  if (l.captured !== null) steps.push(tr('bc.caught', { who: after.heroes[l.captured]?.name ?? '?' }))
+  if (l.killed !== null) steps.push(tr('bc.fell', { who: after.heroes[l.killed]?.name ?? '?' }))
 
   const atkWon = l.outcome === 'rout' || l.outcome === 'win'
   const good = weAtk === atkWon && l.outcome !== 'draw'
   let result: string
-  if (field) result = l.outcome === 'draw' ? '둘 다 물러났다' : good ? '적을 물리치고 길을 간다' : '밀려서 돌아왔다'
-  else if (l.outcome === 'draw') result = weAtk ? `${place}에서 물러났다` : `${josa(place, '을', '를')} 지켜 냈다`
-  else if (weAtk) result = atkWon ? `${josa(place, '을', '를')} 차지했다` : `${place}에서 물러났다`
-  else result = atkWon ? `${josa(place, '을', '를')} 빼앗겼다` : `${josa(place, '을', '를')} 지켜 냈다`
+  if (field) result = l.outcome === 'draw' ? tr('bc.bothBack') : good ? tr('bc.fieldWin') : tr('bc.fieldLose')
+  else if (l.outcome === 'draw') result = weAtk ? tr('bc.backFrom', { place }) : tr('bc.held', { place })
+  else if (weAtk) result = atkWon ? tr('bc.took', { place }) : tr('bc.backFrom', { place })
+  else result = atkWon ? tr('bc.lost', { place }) : tr('bc.held', { place })
 
   // 기세 막대 — 우리 쪽이 왼쪽. 흔들리다 결과에 멈춘다
   const fin = weAtk ? FINAL[l.outcome] : 100 - FINAL[l.outcome]
@@ -173,7 +175,7 @@ export function battleCard(before: Realm, after: Realm, l: Battle, viewer: strin
   const keyf = `@keyframes ${anim}{0%{width:50%}30%{width:${50 + w1 * 18}%}55%{width:${50 + w2 * 22}%}80%{width:${(fin + 50 + w3 * 15) / 2}%}100%{width:${fin}%}}`
 
   let h = `<div class="bk" data-act="bk-fast"><style>${keyf}</style>`
-  h += `<div class="bkh"><span class="bkp">${esc(place)} 싸움</span></div>`
+  h += `<div class="bkh"><span class="bkp">${tr('bc.fight', { place: esc(place) })}</span></div>`
   h += `<div class="bkv">${weAtk ? atkSide : defSide}<i>VS</i>${weAtk ? defSide : atkSide}</div>`
   h += `<div class="bkbar"><i style="animation:${anim} ${total}s ease-in-out calc(var(--t0, 0s) + var(--t, 0s)) both"></i></div>`
   steps.forEach((s, i) => {
