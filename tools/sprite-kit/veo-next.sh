@@ -24,8 +24,7 @@ trip=$(node -e '
 const s=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));const since=process.argv[2]||"";
 const done=s.attempts.filter(a=>["held","downloaded","accepted"].includes(a.status)&&(a.updatedAt||"")>since).sort((a,b)=>(a.updatedAt||"").localeCompare(b.updatedAt||""));
 const last=done.slice(-3);
-if(last.length===3&&last.every(a=>a.status==="held"))console.log(last.map(a=>a.jobId+" — "+(a.reviewNote||"").slice(0,70)).join("
-"));
+if(last.length===3&&last.every(a=>a.status==="held"))console.log(last.map(a=>a.jobId+" — "+(a.reviewNote||"").slice(0,70)).join(" | "));
 ' "$L/outputs/veo-production-state.json" "$since")
 if [ -n "$trip" ] && [ -z "$FORCE" ]; then
   echo "★ 걸쇠: 마지막 세 편이 모두 실패했다 — 다음 일을 내주지 않는다. 원인부터 확인하고 'veo-next.sh reset \"원인\"'"
