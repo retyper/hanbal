@@ -3467,6 +3467,17 @@ export const ko = {
   'lgue.spent': '합종군이 물러갔다',
   'lgue.lost': '고을 {n}곳을 잃었다',
   'lgue.scattered': '합종이 흩어졌다',
+  'rg.men': '군사',
+  'rg.menU': '명',
+  'rg.nodes': '고을',
+  'rg.nodesU': '곳',
+  'rg.hh': '백성',
+  'rg.hhU': '집',
+  'rg.grain': '곡식',
+  'rg.iron': '철',
+  'rg.aria': '{name} 흥망 그래프',
+  'rg.title': '흥망',
+  'rg.more': '외 {n}나라',
 } as const
 
 export type Key = keyof typeof ko

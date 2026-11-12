@@ -3455,6 +3455,17 @@ export const en: Partial<Record<Key, string>> = {
   'lgue.spent': 'League army withdrew',
   'lgue.lost': 'lost {n|town|towns}',
   'lgue.scattered': 'League scattered',
+  'rg.men': 'Troops',
+  'rg.menU': '',
+  'rg.nodes': 'Towns',
+  'rg.nodesU': '',
+  'rg.hh': 'People',
+  'rg.hhU': ' households',
+  'rg.grain': 'Grain',
+  'rg.iron': 'Iron',
+  'rg.aria': '{name} rise and fall graph',
+  'rg.title': 'Rise and fall',
+  'rg.more': 'and {n} more',
 }
 
 /** 아직 영어로 안 옮긴 키 — 일부러 비워 둔 것만 (한국어로 나간다) */

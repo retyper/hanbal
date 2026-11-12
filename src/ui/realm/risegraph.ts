@@ -7,6 +7,7 @@
  * 옛 판 기록엔 모든 나라 값(all)이 없거나 앞의 셋뿐이다 — 없는 값은 그 줄을 비운다.
  */
 import type { History } from './front.ts'
+import { lang, t as tr } from '../../i18n/index.ts'
 
 const W = 300
 const H = 160
@@ -16,16 +17,16 @@ const TOP = 12
 const BOTTOM = 129
 /** all 의 칸 · me 의 이름 · 단위 */
 const METRICS = [
-  { i: 2, key: 'men', name: '군사', unit: '명' },
-  { i: 0, key: 'nodes', name: '고을', unit: '곳' },
-  { i: 1, key: 'hh', name: '백성', unit: '집' },
-  { i: 3, key: 'grain', name: '곡식', unit: '' },
-  { i: 4, key: 'iron', name: '철', unit: '' },
+  { i: 2, key: 'men', get name() { return tr('rg.men') }, get unit() { return tr('rg.menU') } },
+  { i: 0, key: 'nodes', get name() { return tr('rg.nodes') }, get unit() { return tr('rg.nodesU') } },
+  { i: 1, key: 'hh', get name() { return tr('rg.hh') }, get unit() { return tr('rg.hhU') } },
+  { i: 3, key: 'grain', get name() { return tr('rg.grain') }, unit: '' },
+  { i: 4, key: 'iron', get name() { return tr('rg.iron') }, unit: '' },
 ] as const
 type Metric = (typeof METRICS)[number]
 const axisNumber = (v: number): string => v >= 10000
-  ? new Intl.NumberFormat('ko-KR', { notation: 'compact', maximumFractionDigits: 1 }).format(v)
-  : Math.round(v).toLocaleString('ko-KR')
+  ? new Intl.NumberFormat(lang() === 'en' ? 'en-US' : 'ko-KR', { notation: 'compact', maximumFractionDigits: 1 }).format(v)
+  : Math.round(v).toLocaleString(lang() === 'en' ? 'en-US' : 'ko-KR')
 
 export interface RiseKit {
   readonly me: string
@@ -79,8 +80,8 @@ export function riseGraphHtml(h: History, k: RiseKit): string {
     const theirs = others.map((f) => ({ f, v: seriesOf(h, f, k.me, m) }))
     const max = Math.max(1, ...mine.map((v) => v ?? 0), ...theirs.flatMap((x) => x.v.map((v) => v ?? 0)))
     const last = [...mine].reverse().find((v) => v !== null) ?? 0
-    tabs += `<label for="${id}-${j}"><b>${m.name}</b><small>${Math.round(last).toLocaleString('ko-KR')}${m.unit}</small></label>`
-    let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${m.name} 흥망 그래프">`
+    tabs += `<label for="${id}-${j}"><b>${m.name}</b><small>${Math.round(last).toLocaleString(lang() === 'en' ? 'en-US' : 'ko-KR')}${m.unit}</small></label>`
+    let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${tr('rg.aria', { name: m.name })}">`
     for (const fraction of [0, .5, 1]) {
       const y = BOTTOM - fraction * (BOTTOM - TOP)
       const value = axisNumber(max * fraction)
@@ -105,9 +106,9 @@ export function riseGraphHtml(h: History, k: RiseKit): string {
     svg += `</svg>`
     figs += `<figure class="risec">${svg}</figure>`
   })
-  let out = `<div class="rise"><h4>흥망</h4>${radios}<div class="risetabs">${tabs}</div><div class="risefigs">${figs}</div>`
+  let out = `<div class="rise"><h4>${tr('rg.title')}</h4>${radios}<div class="risetabs">${tabs}</div><div class="risefigs">${figs}</div>`
   // 줄이 누구인가 — 우리 파랑 · 남은 나라는 깃발 빛 (많으면 여섯까지)
-  out += `<p class="risekey"><i style="background:${k.mine}"></i>${k.esc(k.nameOf(k.me))}${others.slice(0, 6).map((f) => `<i class="o" style="background:${k.colorOf(f)}"></i>${k.esc(k.nameOf(f))}`).join('')}${others.length > 6 ? ` 외 ${others.length - 6}나라` : ''}</p>`
+  out += `<p class="risekey"><i style="background:${k.mine}"></i>${k.esc(k.nameOf(k.me))}${others.slice(0, 6).map((f) => `<i class="o" style="background:${k.colorOf(f)}"></i>${k.esc(k.nameOf(f))}`).join('')}${others.length > 6 ? ` ${tr('rg.more', { n: others.length - 6 })}` : ''}</p>`
   return out + `</div>`
 }
 
