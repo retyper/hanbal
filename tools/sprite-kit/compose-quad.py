@@ -8,6 +8,7 @@
 걷기 키 가운데값에 맞춰 배율을 정한다. 그다음 20칸 전체를 한 배율로 줄여 제일 큰 컷도 위 3px 안에 들게 하고, 발(잉크 맨 아래)을 바닥에,
 가로는 몸통(잉크 무게중심)을 칸 가운데에 둔다(창끝 같은 가는 것은 무게가 거의 없다).
 키 뺀 그림은 G/<key>-qN-key.png (clean.py 로 만든다). 끝값 1 = 빈 칸."""
+import os
 import sys
 import numpy as np
 from PIL import Image
@@ -60,9 +61,26 @@ wh = float(np.median([ink_h(c) for c in walk]))
 ref = {1: np.median([ink_h(c) for c in q[1]]), 2: np.median([ink_h(c) for c in q[2]]), 3: ink_h(q[3][2]), 4: ink_h(q[4][0]), 5: ink_h(q[5][2])}
 sc = {n: wh / ref[n] for n in q}
 S = lambda n, j: (q[n][j], sc[n])
-STAND, INHALE = S(3, 2), S(5, 2)
+# 자리 바꾸기: MAP="STAND=3:3,READY=5:3,..." (장:칸 · 칸은 1부터) — 제미나이가 칸 자세를 안 따른 장을 살릴 때
+roles = {'STAND': (3, 3), 'INHALE': (5, 3), 'READY': (4, 1), 'WIND': (4, 2), 'THRUST': (4, 3), 'HIT': (5, 1), 'DOWN': (5, 2)}
+for kv in (os.environ.get('MAP') or '').split(','):
+    if '=' in kv:
+        r_, v_ = kv.split('='); a_, b_ = v_.split(':'); roles[r_] = (int(a_), int(b_))
+STAND, INHALE, READY, WIND, THRUST, HIT, DOWN = (S(roles[r][0], roles[r][1] - 1) for r in ('STAND', 'INHALE', 'READY', 'WIND', 'THRUST', 'HIT', 'DOWN'))
 W = [S(1, 0), S(1, 1), S(1, 2), S(2, 0), S(2, 1), S(2, 2), S(3, 0), S(3, 1)]
-READY, WIND, THRUST, HIT, DOWN = S(4, 0), S(4, 1), S(4, 2), S(5, 0), S(5, 1)
+if os.environ.get('WALK') == 'auto':
+    # 11-12 소서노: 같은 대화라 걷기 자세가 「벌림」·「모음」 둘로 굳었다 → 발 벌림(아래 12% 잉크 폭/키)으로 줄 세워 한 걸음처럼:
+    #   가장 벌린 둘 = 1·5 (닿음) · 가장 모은 둘 = 3·7 (지나감) · 나머지 넷 = 2·4·6·8
+    def spread(im):
+        a = np.array(im)[..., 3] > 40
+        ys = np.nonzero(a.any(axis=1))[0]; h_ = ys.max() - ys.min() + 1
+        low = a[ys.max() - int(h_ * 0.12):ys.max() + 1]
+        xs = np.nonzero(low.any(axis=0))[0]
+        return (xs.max() - xs.min() + 1) / h_
+    sp = sorted(W, key=lambda t: spread(t[0]))
+    narrow, mid, wide = sp[:2], sp[2:6], sp[6:]
+    W = [wide[1], mid[2], narrow[0], mid[0], wide[0], mid[3], narrow[1], mid[1]]
+    print('걷기 벌림', [round(spread(t[0]), 2) for t in W])
 order = [STAND, INHALE, STAND, INHALE] + W + [READY, WIND, THRUST, THRUST, THRUST, READY, HIT, DOWN]
 order = [im.resize((max(1, round(im.width * k)), max(1, round(im.height * k))), Image.LANCZOS) for im, k in order]
 fit = min(1.0, (H - TOP) / max(ink_h(c) for c in order))
