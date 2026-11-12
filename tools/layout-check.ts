@@ -12,6 +12,7 @@
  *   (c) 줄 — 단추·이름표 글이 3줄 이상이거나, 같은 칸의 한국어 높이의 1.6배를 넘음
  *   (d) 페이지 전체 가로 스크롤
  * 결과: D:/tmp-node/layout/<lang>-<w>-<screen>.png · layout-report.json · layout-report.md
+ * 화면: ... war(연습 싸움 · 전장)
  * 판 저장은 tools/phone-save.ts 로 D:/tmp-node/layout-saves/<kind>.json 을 만들어 둔다(없으면 이 도구가 만든다).
  * 런타임 의존성 없음 — 크롬 원격 디버깅(CDP)을 Node 내장 WebSocket 으로 (tools/phone-shot.ts 와 같은 길).
  */
@@ -46,6 +47,7 @@ const TAB = (id: string): string => `${CLICK} ${SHUT} await clk('[data-act="tab"
 const SCREENS: Screen[] = [
   { name: 'title', pre: '' },
   { name: 'more', pre: `${CLICK} await clk('.fmore summary', 1200); const fm = document.querySelector('.fmore'); if (fm && !fm.open) { fm.open = true; await new Promise((r) => setTimeout(r, 800)) }` },
+  { name: 'war', pre: `${CLICK} await clk('.fmore summary', 1200); const fm = document.querySelector('.fmore'); if (fm && !fm.open) { fm.open = true; await new Promise((r) => setTimeout(r, 800)) } await clk('[data-act="spar-open"]', 6000)` },
   { name: 'newgame', pre: `${CLICK} await clk('[data-act="fr-new"]', 1500)` },
   { name: 'credits', pre: `${CLICK} await clk('.fmore summary', 1000); const fm = document.querySelector('.fmore'); if (fm && !fm.open) fm.open = true; await clk('[data-act="credits-open"]', 1500)` },
   { name: 'tutorial', pre: `${CLICK} await clk('[data-act="fr-tutorial"]', 4500)` },

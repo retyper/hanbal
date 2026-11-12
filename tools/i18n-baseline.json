@@ -1,5 +1,10 @@
 {
  "totals": {
+  "i18n": {
+   "files": 2,
+   "lits": 2556,
+   "chars": 25571
+  },
   "other": {
    "files": 29,
    "lits": 2690,
@@ -10,15 +15,10 @@
    "lits": 8494,
    "chars": 195317
   },
-  "i18n": {
-   "files": 2,
-   "lits": 1970,
-   "chars": 20448
-  },
   "ui": {
    "files": 74,
-   "lits": 7802,
-   "chars": 131887
+   "lits": 7107,
+   "chars": 126498
   },
   "sim": {
    "files": 17,
@@ -26,17 +26,16 @@
    "chars": 2058
   }
  },
- "total": 21264,
+ "total": 21155,
  "files": {
+  "src/i18n/ko.ts": 2549,
   "src/tune/params.ts": 2149,
   "src/realm/data/prose.ts": 2102,
-  "src/i18n/ko.ts": 1963,
   "src/ui/realm/voice-hero.ts": 1425,
   "src/ui/realm/voice-hero-2.ts": 1353,
   "src/realm/data/woo-talk/byeonhan-mini.ts": 880,
   "src/ui/realm/woo-lines.ts": 871,
   "src/realm/data/woo-talk/world.ts": 704,
-  "src/ui/realm/battlefield.ts": 702,
   "src/realm/data/woo-talk/south.ts": 660,
   "src/realm/data/woo-talk/yeongnam.ts": 660,
   "src/realm/data/woo-talk/seorabeol.ts": 616,
@@ -152,6 +151,7 @@
   "src/ui/realm/perflog.ts": 8,
   "src/i18n/en.ts": 7,
   "src/night/layout.ts": 7,
+  "src/ui/realm/battlefield.ts": 7,
   "src/ui/realm/quality.ts": 7,
   "src/ui/realm/saves.ts": 7,
   "src/render/scene.ts": 6,

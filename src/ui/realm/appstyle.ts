@@ -1560,4 +1560,5 @@ html[data-lang="en"] .ap .btn, html[data-lang="en"] .ap .tabs button span { over
 html[data-lang="en"] .ap .menu3 .btn { padding-inline: 4px; font-size: clamp(10.5px, 3vw, 13px); letter-spacing: -.01em; }
 html[data-lang="en"] .ap .paths .path { grid-template-columns: 76px 1fr auto; } html[data-lang="en"] .ap .paths .path.sub, html[data-lang="en"] .ap .paths .path.rival { grid-template-columns: auto 1fr; }
 html[data-lang="en"] .ap .draftc .seg button { font-size: min(11.5px, 15cqw); gap: 1px; }
+html[data-lang="en"] .ap .wtop .ws .wnat { font-size: 10.5px; padding: 0 5px 0 3px; gap: 2px; }
 `
