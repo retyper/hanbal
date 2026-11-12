@@ -2308,7 +2308,8 @@ html[data-lang="en"] .ap .wr.b0 .whelp::after { content: 'Details'; } html[data-
   .ap .wtop .wf2s .tk { height: clamp(34px, 10cqw, 50px) !important; } .ap .wtop .wf2s .tk.wsp.k-horse, .ap .wtop .wf2s .tk.wsp.k-boat { height: clamp(44px, 13cqw, 66px) !important; }
 }
 /* 병사 발밑 그림자 — 땅에 서 있게 */
-.ap .wf2s .tk.wsp::before { content: ''; position: absolute; left: 18%; right: 18%; bottom: -4%; height: 12%; border-radius: 50%; background: radial-gradient(closest-side, #000b, #0000); z-index: -1; pointer-events: none; }
+.ap .wf2s .tk.wsp::before { content: ''; position: absolute; left: 18%; right: 18%; bottom: -4%; height: 12%; border-radius: 50%; background: radial-gradient(closest-side, #000b, #0000); z-index: -1; pointer-events: none;
+  rotate: calc(-1 * var(--rot, 0deg)); } /* 몸이 기울어도(돌격·활 들기 --rot) 발밑 그림자·진 빛 고리는 땅에 납작하게 (형 11-12) */
 .ap .wf2s .tk.wsp.tkd::before { opacity: .4; }
 /* 농민군 — 돌창 든 마을 사람: 작고 흐리게 · 발밑 고리는 흙빛 (filter 없이 · 폰 그래픽 한도) · 전용 그림은 그림 줄 「농민군 띠」 (형 11-03: "정찰 땐 200~300인데 창방패병 1000이면 당황") */
 .ap .wf2s .tk.tkm { scale: .9; }
