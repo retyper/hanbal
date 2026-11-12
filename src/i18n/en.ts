@@ -3477,6 +3477,20 @@ export const en: Partial<Record<Key, string>> = {
   'lc.note': 'Generals you have commanded in the Heroes book · they arrive with the body trained at the training ground.',
   'lc.go': 'Bring',
   'lc.stay': 'Stay',
+  'bd.tipStart': 'When you start a new game, the bond is {n} ahead',
+  'bd.chipStart': '💗 Bond +{n}',
+  'bd.tipTrait': 'The talent awakened in a past game is carried from the start of a new game',
+  'bd.tipWait': 'Once a game ends with a full bond that awakened a talent, it is carried into new games',
+  'bd.chipWait': '✨ Awaiting a remembered talent',
+  'bd.tipExtra': 'Joins you as a wanderer when you start a new game',
+  'bd.chipExtra': '🧭 Bonus companion',
+  'bd.empty': 'No one yet. Command a general in battle and the bond builds, and their name is entered here.',
+  'bd.strangers': 'Only know the name so far',
+  'bd.full': 'Complete',
+  'bd.more': 'Show more ({n})',
+  'bd.fold': 'Show less',
+  'bd.deepened': 'Bonds have deepened',
+  'bd.others': '{n} others also built bonds.',
 }
 
 /** 아직 영어로 안 옮긴 키 — 일부러 비워 둔 것만 (한국어로 나간다) */

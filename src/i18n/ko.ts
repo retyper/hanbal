@@ -3489,6 +3489,20 @@ export const ko = {
   'lc.note': '영웅전에서 거느려 본 장수 · 단련터에서 단련한 몸으로 온다.',
   'lc.go': '데려간다',
   'lc.stay': '남는다',
+  'bd.tipStart': '새 판을 열 때 정이 {n} 만큼 앞서 있습니다',
+  'bd.chipStart': '💗 정 +{n}',
+  'bd.tipTrait': '지난 판에 눈뜬 재주를 새 판 처음부터 지닙니다',
+  'bd.tipWait': '정이 가득 차 재주에 눈뜬 판이 있으면 새 판에 들고 옵니다',
+  'bd.chipWait': '✨ 재주 기억 대기',
+  'bd.tipExtra': '새 판을 열면 떠돌이로 찾아옵니다',
+  'bd.chipExtra': '🧭 덤 동행',
+  'bd.empty': '아직 아무도 없다. 장수를 거느려 싸우면 정이 쌓여 여기 이름이 오른다.',
+  'bd.strangers': '아직 이름만 아는 사이',
+  'bd.full': '다 채웠다',
+  'bd.more': '더 보기 ({n}명)',
+  'bd.fold': '접기',
+  'bd.deepened': '인연이 깊어졌습니다',
+  'bd.others': '그 밖에 {n}명도 인연이 쌓였습니다.',
 } as const
 
 export type Key = keyof typeof ko

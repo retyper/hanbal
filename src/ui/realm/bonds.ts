@@ -12,6 +12,7 @@ import { DEX_CAUGHT, DEX_SERVED, dexCatalog, type Dex } from '../../realm/dex.ts
 import type { Realm } from '../../realm/types.ts'
 import { TRAIT } from '../../realm/data/traits.ts'
 import { nameHtml } from './heroview.ts'
+import { t as tr } from '../../i18n/index.ts'
 
 const KEY = 'hanbal.realm.bonds'
 const KEEP_RUNS = 60
@@ -150,14 +151,14 @@ function pips(tier: number): string {
 /** 지금 걸린 단 효과 — 그림 한 칸 + 짧은 말. 판을 열 때 붙는 것만 (3단은 눈뜬 재주를 기억해 둔 뒤에) */
 function perks(k: BondKit, tier: number, keep: string | undefined): string {
   const chips: string[] = []
-  if (tier >= 2) chips.push(`<span class="bdfx" data-tip="새 판을 열 때 정이 ${P.realm.metaStartBond} 만큼 앞서 있습니다">💗 정 +${P.realm.metaStartBond}</span>`)
+  if (tier >= 2) chips.push(`<span class="bdfx" data-tip="${tr('bd.tipStart', { n: P.realm.metaStartBond })}">${tr('bd.chipStart', { n: P.realm.metaStartBond })}</span>`)
   if (tier >= 3) {
     const t = keep !== undefined ? TRAIT[keep] : undefined
     chips.push(t !== undefined
-      ? `<span class="bdfx" data-tip="지난 판에 눈뜬 재주를 새 판 처음부터 지닙니다">✨ ${k.esc(t.name)}</span>`
-      : `<span class="bdfx dim" data-tip="정이 가득 차 재주에 눈뜬 판이 있으면 새 판에 들고 옵니다">✨ 재주 기억 대기</span>`)
+      ? `<span class="bdfx" data-tip="${tr('bd.tipTrait')}">✨ ${k.esc(t.name)}</span>`
+      : `<span class="bdfx dim" data-tip="${tr('bd.tipWait')}">${tr('bd.chipWait')}</span>`)
   }
-  if (tier >= 5) chips.push(`<span class="bdfx" data-tip="새 판을 열면 떠돌이로 찾아옵니다">🧭 덤 동행</span>`)
+  if (tier >= 5) chips.push(`<span class="bdfx" data-tip="${tr('bd.tipExtra')}">${tr('bd.chipExtra')}</span>`)
   return chips.length > 0 ? `<span class="bdfxs">${chips.join('')}</span>` : ''
 }
 
@@ -169,18 +170,18 @@ export function rosterHtml(k: BondKit, expanded: boolean): string {
   const cat = new Map(dexCatalog().map((x) => [x.id, x]))
   const keeps = bondMemory()
   const rows = Object.entries(totals).filter(([id]) => cat.has(id)).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))
-  if (rows.length === 0) return `<p class="mute dxclan">아직 아무도 없다. 장수를 거느려 싸우면 정이 쌓여 여기 이름이 오른다.</p>`
+  if (rows.length === 0) return `<p class="mute dxclan">${tr('bd.empty')}</p>`
   const shown = expanded ? rows : rows.slice(0, ROSTER_SHOW)
   let h = '<div class="bdlist">'
   for (const [id, p] of shown) {
     const x = cat.get(id)!
     const t = bondTierOf(p)
     const next = t < 5 ? BOND_TIERS[t + 1]!.reward : ''
-    h += `<div class="bdrow t${t}" data-tip="${k.esc(t > 0 ? BOND_TIERS[t]!.name : '아직 이름만 아는 사이')}">${face(k, id)}<div class="bdm"><b>${nameHtml(x.name)}</b>${pips(t)}<span class="bdbar"><i style="width:${(bondFill(p) * 100).toFixed(0)}%"></i></span>${perks(k, t, keeps[id]?.keep)}</div><span class="bdn"><small>${k.esc(bondWord(p))}</small>${next !== '' ? `<em>${k.esc(next)}</em>` : '<em>다 채웠다</em>'}</span></div>`
+    h += `<div class="bdrow t${t}" data-tip="${k.esc(t > 0 ? BOND_TIERS[t]!.name : tr('bd.strangers'))}">${face(k, id)}<div class="bdm"><b>${nameHtml(x.name)}</b>${pips(t)}<span class="bdbar"><i style="width:${(bondFill(p) * 100).toFixed(0)}%"></i></span>${perks(k, t, keeps[id]?.keep)}</div><span class="bdn"><small>${k.esc(bondWord(p))}</small>${next !== '' ? `<em>${k.esc(next)}</em>` : `<em>${tr('bd.full')}</em>`}</span></div>`
   }
   h += '</div>'
-  if (rows.length > shown.length) h += `<p class="bdmore"><button class="btn ghost sm" data-act="dex-sel" data-id="more">더 보기 (${rows.length - shown.length}명)</button></p>`
-  else if (expanded && rows.length > ROSTER_SHOW) h += `<p class="bdmore"><button class="btn ghost sm" data-act="dex-sel" data-id="more">접기</button></p>`
+  if (rows.length > shown.length) h += `<p class="bdmore"><button class="btn ghost sm" data-act="dex-sel" data-id="more">${tr('bd.more', { n: rows.length - shown.length })}</button></p>`
+  else if (expanded && rows.length > ROSTER_SHOW) h += `<p class="bdmore"><button class="btn ghost sm" data-act="dex-sel" data-id="more">${tr('bd.fold')}</button></p>`
   return h
 }
 
@@ -195,7 +196,7 @@ export function endBondsHtml(k: BondKit, r: Realm): string {
     .filter(([id, n]) => n > 0 && r.heroes[id] !== undefined)
     .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))
   if (rows.length === 0) return ''
-  let h = '<div class="bdend"><p class="bdhd">인연이 깊어졌습니다</p>'
+  let h = `<div class="bdend"><p class="bdhd">${tr('bd.deepened')}</p>`
   rows.slice(0, END_SHOW).forEach(([id, n], i) => {
     const after = s.h[id]?.p ?? n
     const before = Math.max(0, after - n)
@@ -203,10 +204,10 @@ export function endBondsHtml(k: BondKit, r: Realm): string {
     const t1 = bondTierOf(after)
     const f0 = t0 < t1 ? 0 : bondFill(before)
     const delay = (0.15 + i * 0.35).toFixed(2)
-    const stamp = t1 > t0 ? `<b class="bdstamp" style="animation-delay:${(0.15 + i * 0.35 + 0.9).toFixed(2)}s">${k.esc(t1 >= 5 ? '한마음' : BOND_TIERS[t1]!.name)}</b>` : ''
+    const stamp = t1 > t0 ? `<b class="bdstamp" style="animation-delay:${(0.15 + i * 0.35 + 0.9).toFixed(2)}s">${k.esc(t1 >= 5 ? tr('bondWord.sworn') : BOND_TIERS[t1]!.name)}</b>` : ''
     h += `<div class="bdrow t${t1}">${face(k, id)}<div class="bdm"><b>${nameHtml(r.heroes[id]!.name)}</b>${pips(t1)}<span class="bdbar"><i class="old" style="width:${(f0 * 100).toFixed(0)}%"></i><i class="up" style="--to:${(bondFill(after) * 100).toFixed(0)}%;--from:${(f0 * 100).toFixed(0)}%;animation-delay:${delay}s"></i></span></div>${stamp}</div>`
   })
-  if (rows.length > END_SHOW) h += `<p class="mute bdlast">그 밖에 ${rows.length - END_SHOW}명도 인연이 쌓였습니다.</p>`
+  if (rows.length > END_SHOW) h += `<p class="mute bdlast">${tr('bd.others', { n: rows.length - END_SHOW })}</p>`
   return h + '</div>'
 }
 
