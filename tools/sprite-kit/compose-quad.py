@@ -32,6 +32,13 @@ def cells(n):
         r, c = divmod(j, 2)
         y0, y1, x0, x1 = round(r * h / 2), round((r + 1) * h / 2), round(c * w / 2), round((c + 1) * w / 2)
         sub = a[y0:y1, x0:x1].copy()
+        m0 = sub[..., 3] > 40
+        # 칸 나눔선(제미나이가 「no grid lines」를 어기고 그은 것 · 11-12 아령)을 걷는다 — 칸 폭·높이의 85% 넘게 이어진 줄·열
+        sub[m0.mean(axis=1) > 0.85, :, 3] = 0
+        sub[:, m0.mean(axis=0) > 0.85, 3] = 0
+        e = max(2, round(min(sub.shape[:2]) * 0.006))  # 칸 가장자리 몇 px 도 (선이 칸 끝에 걸쳐 반쯤 잘린 것)
+        for edge in (sub[:e], sub[-e:], sub[:, :e], sub[:, -e:]):
+            edge[..., 3] = 0
         m = sub[..., 3] > 40
         lab, k = ndimage.label(m, structure=np.ones((3, 3)))
         if k == 0:
@@ -57,7 +64,9 @@ def ink_h(im):
     return ys.max() - ys.min() + 1
 
 
-q = {n: cells(n) for n in range(1, 5 if R4 else 6)}
+q = {n: cells(n) for n in range(1, 5 if R4 else 6) if not (R4 and n == 2 and not os.path.exists(G + f'{key}-r2.png'))}
+if R4 and 2 not in q:
+    q[2] = q[1]  # 걷기 둘째 장 없이 (11-12)
 walk = q[1] + q[2] if R4 else q[1] + q[2] + q[3][:2]
 wh = float(np.median([ink_h(c) for c in walk]))
 # 장마다 배율: 걷기 장은 그 장 걷기 키의 가운데값, 나머지는 선 컷

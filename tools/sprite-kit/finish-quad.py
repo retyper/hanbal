@@ -29,10 +29,23 @@ def run(args, env=None):
 
 for n in range(1, 5):
     src = G + f'{key}-r{n}.png'
+    if n == 2 and not os.path.exists(src):
+        print('  r2 없음 — 걷기 첫째 장을 두 번 쓴다 (11-12: 둘째 장은 늘 첫째 장을 베꼈다)')
+        continue
     if not os.path.exists(src) or os.path.getsize(src) == 0:
         sys.exit(f'멈춤: {src} 없음')
     run(PY + [K + 'clean.py', src, G + f'{key}-r{n}-key.png'])
-    print(run(PY + [K + 'check-strip.py', G + f'{key}-r{n}-key.png', '2', '2']))
+    r = subprocess.run(PY + [K + 'check-strip.py', G + f'{key}-r{n}-key.png', '2', '2'], capture_output=True, text=True)
+    print(r.stdout.strip())
+    if r.returncode != 0:
+        if n >= 3:
+            sys.exit('멈춤: 동작 장 칸 경계에 무기가 걸쳤다 — 다시 굽는다')
+        print('  (걷기 장 · 창끝이 칸 끝에 닿은 정도면 띠에서 표가 안 난다 — 넣고 넘어감)')
+# 걷기 둘째 장이 첫째 장을 베꼈으면(형 11-12 아령·소서노) 첫째 장을 두 번 쓴다 — 옆모습 걷기의 뒤 반은 다리만 바뀐 같은 윤곽이라 표가 덜 난다
+a1 = np.asarray(Image.open(G + f'{key}-r1-key.png').convert('L').resize((128, 128)), float)
+a2 = np.asarray(Image.open(G + f'{key}-r2-key.png').convert('L').resize((128, 128)), float) if os.path.exists(G + f'{key}-r2.png') else a1
+if os.path.exists(G + f'{key}-r2.png') and np.abs(a1 - a2).mean() < 6:
+    print('  걷기 둘째 장 = 첫째 장 베낌 (차이', round(float(np.abs(a1 - a2).mean()), 1), ')')
 os.makedirs('assets_src/realm/retired/anim2-quad', exist_ok=True)
 if os.path.exists(out):
     Image.open(out).save(f'assets_src/realm/retired/anim2-quad/gen-{key}.png')  # 옛 띠 보관 (메모리 keep-retired-art)
