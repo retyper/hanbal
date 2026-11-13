@@ -345,6 +345,7 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'w-77-sabeol-malgalgi', // 11-05 밤 말갈기 — 튜토리얼 각성 장수 · 판 없이 세로로 가까이 (쇠비처럼 · 형: "세로로 더 가까이가 훨씬 낫다")
   'w-90-saro-danbi', // 11-11 사로 단비 1차 (Flow 11-10 · 형: 오케이)
   'w-101-garak-singwigan', // 11-13 신귀간 1차 (Jay u/4 · Argon · 원래 그림) · 형: 나쁘지 않음
+  'w-58-tamna-halla', // 11-13 한라 1차 (형이 손으로 · Argon · 짧은 「가상 인물」 문안 + 「계속해」 되묻기) · 형: 일단 적용 · 시키지 않은 대사가 들어가 나중에 다시
 ])
 
 /**
