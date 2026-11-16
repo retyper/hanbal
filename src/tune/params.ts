@@ -22,10 +22,18 @@ export const HAEBI_SOUND = {
   bgm: .2, swing: .3, hurt: .6, groan: .7, groanGap: .5,
   hit: .24, hitVoices: 4, die: .3, dieGap: 1.2, skill: .85, skillHit: .6, magic: .28, magicGap: .2, ui: .5, arrows: .4, cry: .55, roar: .8, end: .7, silence: .012,
 } as const
+/** 열전 손가락 조이스틱 (형 11-16: 「뱀서 컨텐츠 할 때는 조이스틱 생겨야 하는 거 아님?」) — 손가락 댄 자리에 생기는 떠다니는 막대.
+ *  radius 막대가 끝까지 가는 거리(화면 px) · dead 이보다 덜 밀면 멈춤 · follow 끝을 넘겨 끌면 받침이 따라오는 몫(0~1) */
+export const HAEBI_STICK = { radius: 54, dead: 7, follow: 1 } as const
 /** Haebi's independent ten-minute run. Combat tuning lives here, not in the renderer. */
 export const HAEBI_RUN = {
   /** 판 길이 · 두목 — 다이센카처럼 20분 (11-16 형 고름 · 예전 600/540 → 900/840 → 1200/1140) · 스테이지마다 length 를 곱한다 */
   duration: 1200, bossAt: 1140, health: 180, speed: 185, width: 1120, height: 720,
+  /** 맞은 적·장수 번쩍임 — 같은 그림을 빛으로 한 번 더 더하는 세기 (예전 brightness(1.7) 필터 대신 · 폰 프레임) */
+  flashAdd: .55,
+  /** 체력 깎임 토막 (본편 싸움 막대와 같은 롤 체력바 · 형 11-16) — 막대는 단번에 떨어지고, 잃은 토막이 희게→노랗게→붉게 번쩍(hpChunkFlash 초)한 뒤
+   *  마지막으로 맞고 hpChunkHold 초 지나면 처음엔 빠르게 끝 무렵엔 천천히(초마다 hpChunkRate 배로 좁아짐) 줄어든다 */
+  hpChunkFlash: .24, hpChunkHold: .32, hpChunkRate: 4.5,
   maxEnemies: 230, maxShots: 240, maxFx: 320, maxDrops: 160, maxLevel: 44, attackSlots: 3,
   xpBase: 8, xpPerLevel: 7, xpCurve: .8, levelHeal: 28, killHeal: .08, regen: .8,
   dashCooldown: 2.4, dashTime: .22, dashInv: .42, dashSpeed: 3.8,
@@ -91,11 +99,11 @@ export const HAEBI_STAGES = {
     tiers: [['dog', 'slinger'], ['runner', 'firearcher'], ['shield', 'archer'], ['berserker', 'shaman'], ['iron', 'dog']] },
   palisade: { name: '목책 돌파', length: 1, hp: 2.2, damage: 2.2, spawn: 1.4, bossHp: 2.8, gold: 3.2, bg: 'palisade.webp', boss: 'boss-palisade', bossName: '배신한 성주',
     tiers: [['shield', 'archer'], ['iron', 'slinger'], ['berserker', 'firearcher'], ['runner', 'shaman'], ['iron', 'berserker']] },
-  /** 11-16 H47·H50~H52: 설원 고개 — 범(멈칫 뒤 길게 덮침) · 반달곰(일어서서 내려침 · 아주 단단함) · 맥족 투창 사냥꾼(붉은 줄 뒤 창) · 두목은 산적 대두목이 다시 */
-  snow: { name: '설원 고개', length: 1, hp: 2.4, damage: 2.3, spawn: 1.45, bossHp: 3.6, gold: 4.5, bg: 'snow.webp', boss: 'bandit-warlord', bossName: '설원 대두목',
+  /** 11-16 H47·H50~H52: 설원 고개 — 범(멈칫 뒤 길게 덮침) · 반달곰(일어서서 내려침 · 아주 단단함) · 맥족 투창 사냥꾼(붉은 줄 뒤 창) · 두목 H54 설산 우두머리(쇠도리깨) */
+  snow: { name: '설원 고개', length: 1, hp: 2.4, damage: 2.3, spawn: 1.45, bossHp: 3.6, gold: 4.5, bg: 'snow.webp', boss: 'boss-snow', bossName: '설산 우두머리',
     tiers: [['dog', 'hunter'], ['runner', 'tiger'], ['bear', 'hunter'], ['berserker', 'tiger'], ['tiger', 'bear']] },
-  /** 11-16 H48·H53: 불타는 산성 — 횃불 방화꾼(지나간 자리에 불바닥 · 기름 단지) · 두목은 배신한 성주가 산성으로 물러나 다시 */
-  fortress: { name: '불타는 산성', length: 1, hp: 3.2, damage: 3, spawn: 1.6, bossHp: 4.6, gold: 6.5, bg: 'fortress.webp', boss: 'boss-palisade', bossName: '산성의 성주',
+  /** 11-16 H48·H53: 불타는 산성 — 횃불 방화꾼(지나간 자리에 불바닥 · 기름 단지) · 두목 H55 불의 반란 장군(달군 망치) */
+  fortress: { name: '불타는 산성', length: 1, hp: 3.2, damage: 3, spawn: 1.6, bossHp: 4.6, gold: 6.5, bg: 'fortress.webp', boss: 'boss-fortress', bossName: '불의 반란 장군',
     tiers: [['shield', 'torch'], ['berserker', 'firearcher'], ['iron', 'torch'], ['runner', 'shaman'], ['iron', 'torch']] },
   trial: { name: '각성 시련', length: .4, hp: 1, damage: 1, spawn: 1, bossHp: .3, gold: 0, bg: 'forest.webp', boss: 'bandit-warlord', bossName: '산적 대두목',
     tiers: [['club', 'archer'], ['runner', 'slinger'], ['shield', 'dog'], ['berserker', 'firearcher'], ['iron', 'shaman']] },

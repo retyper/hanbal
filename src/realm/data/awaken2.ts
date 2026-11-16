@@ -3,9 +3,12 @@
  * 판의 셈(sim)이 그림 파일을 보지 않게 이름으로 적는다. 그림을 더 받으면 여기에 더한다
  */
 /** 출시 전 테스트에서는 잠긴 진각성 그림을 미리 볼 수 있다. 출시 직전 false로 바꾸면 잠긴 칸은 눌러도 반응하지 않는다. */
+import { DLC } from '../dlc.ts'
+
 export const LOCKED_TRUE_WAKE_PREVIEW = true
 
-export const TRUE_WAKE: ReadonlySet<string> = new Set([
+/** 2차 초상이 있는 장수 전부 — 진각성 묶음(DLC)을 안 샀으면 TRUE_WAKE 는 비어 보인다 */
+export const TRUE_WAKE_ART: ReadonlySet<string> = new Set([
   'sr-aryeong', // 알영
   'gj-heo', // 허황옥
   'gj-dana', 'anya-1', // 가야 여검사 (같은 초상)
@@ -215,3 +218,6 @@ export const TRUE_WAKE: ReadonlySet<string> = new Set([
   'goryong-1', // 11-08 고룡 용 진각성
   'siljik-1', // 11-08 실직 파도 진각성
 ])
+
+/** 진각성할 수 있는 장수 — 진각성 묶음(realm/dlc.ts)이 켜져 있을 때만 · 모든 진각성 화면·셈이 이것 하나로 잠긴다 */
+export const TRUE_WAKE: Pick<ReadonlySet<string>, 'has'> = { has: (id: string) => DLC.trueWake && TRUE_WAKE_ART.has(id) }

@@ -153,3 +153,32 @@
   - 새 일은 JSON 에 직접 추가(replacesAttemptId 붙임 · 백업 `*.bak-20261113-*.json`)
 - `tools/sprite-kit/veo-next.sh` · `tools/veo/short-prompts.mjs` · `tools/veo/motion.py` · `tools/sprite-kit/gemini-kit.js`(skit) · `tools/sprite-kit/figs.py` · `finish-strip.py` · `hand-patch.py` · `tools/bake-intake.sh`(BAKE_DL 필수)
 - 장부: `docs/realm/ART-QUEUE.md`(한도 표 · 그림 줄) · 공통 상태판 `HANDOFF.md`
+
+## 11-16 오후 (Claude · 형 「veo 영상 계속 만들어」)
+
+- 제미나이 Jay(u/5 · jiiyea) · Argon · Videos · Portrait 9:16 · awaken-hd 한 장 + `tools/veo/prompt-for.ts` 문안(release-pack 과 같은 문안). 새 대화마다 한 편.
+- 보냄 3 · 성공 3 · 실패 0: g-28 다물(be62b41b66993cae · 움직임 「얼어감」 0.26/0.12) · g-29 명솔(007468ca9719df02 · 좋음) · g-30 쇠뫼(8a0c9bd57ea0e8d8 · 좋음 · 25% 지점에 손이 하나 더 보이는지 판정 때 확인).
+- 넣은 곳: `public/realm/awaken-loop/<id>.mp4` + `D:/에셋창고/veo_<id>_aw1_manual-20261116.mp4` (Downloads 원본은 그대로 · `tools/veo/take-in.sh`). 게임 등록(AWAKEN_LOOP)은 형 판정 뒤. 다섯 장 시트 `tools/out/veo-sheets/<id>.jpg`.
+- 네 번째(g-31 금하) 때 「Create video」 잠김(흐림). 첫 편 14:12 → 19:1x 풀림 예상, 19:17 에 한 번만 확인 예약(세션 안).
+- Flow: u/0·u/2 모두 크레딧 20(오후 3:3x·2:33 갱신) · Omni 1.2 Flash 720p 10초 = 30, 8초 = 24, 360p 8초 = 8 → 규격(720p 10초)으로는 못 만듦. 쓰지 않음.
+- 실수 한 번: 첫 화면이 덜 떴을 때 누른 자리가 제안 단추 「What's my heaviest meeting day this week?」 여서 질문이 한 번 보내짐 → 곧바로 멈춤. 이후 화면이 뜬 걸 확인하고 누름.
+
+## 11-16 저녁 · Flow 일곱 편 (Claude)
+
+- 형 「flow도 사용하고」 → Omni 1.1 Flash 720p 10초 9:16 = 15크레딧으로 g-31~g-37 일곱 편 (u/2·u/0·u/1·u/4 한 편씩, Jay u/5 세 편). Flow 크레딧은 오늘 다 씀 (무료 계정은 내일 오후 갱신 · Jay 는 11-28).
+- 움직임 검사: 금하 좋음 · 소두 **얼어감**(0.17) · 멧돌 좋음 · 두만 좋음 · 달구 좋음 · 감돌 좋음 · 즙 좋음. 잘린 장면 없음(차이 최고치가 몇 프레임 이어짐 = 빠른 카메라).
+- 형이 볼 것: 정사각 그림을 확대해 잘라서 Gemini 판보다 가깝다 · 얼굴이 사진 결로 가는 편(두만·소두) · 오른쪽 아래 ✦ 워터마크(못 끔). 등록은 판정 뒤.
+- 남은 남자 1차 영상 69편. Gemini Jay 는 19:15 무렵 풀림 → g-38 부터.
+
+## 11-16 저녁 · 코덱스 13장 넣음 (Claude)
+
+- 끝 필름 넷 다시(머리띠 없음 · 칸 사이 검은 줄 안쪽으로 잘라 1280×720) · 신방 d 가로·세로(기와집) · 1차 비기 전신 활 셋 g-13·g-80·g-95(skill-body/aw1 · 220명) · 진각성 초상 g-02·g-21·g-31(awaken2 · 이 초상을 쓰는 고정 장수는 없음 · 자라는 장수 얼굴 몫).
+- 열전 두목: 설원 고개 = boss-snow「설산 우두머리」(H54 쇠도리깨) · 불타는 산성 = boss-fortress「불의 반란 장군」(H55 달군 망치) · bake-raid-enemies.py BOSSES 에 더함 · 게임 화면에서 싸워 보지는 않음.
+- DLC 가게 그림 둘(dlc-truewake-key·vertical)은 에셋창고에 둠 · 「진각성」 로고 얹기는 DLC 낼 때(store-capsule 은 본편 로고만 안다). 네 여인 옷이 짧다 → 15세 가게 그림으로 괜찮은지 형 판정.
+- 새 줄: RM-icon-sun 상태 아이콘 둘(가뭄의 빨간 해 · 흉조의 햇살 일식) — 일장기 꼴 규칙.
+
+## 11-16 19시 · Gemini Jay 다시 (Claude)
+
+- 19:17 Create video 풀림 확인 → g-38 팔매: 첫 답 「encountering an error」 → 같은 대화에 한 번 되묻기 → 받음(좋음 · awaken-loop/g-38-chopal-palmae.mp4).
+  - 사고: 대화 목록 맨 위가 아닌 옛 대화(g-30 쇠뫼)를 열어 그 영상을 g-38 로 넣었다가 빼냄. take-in.sh 에 「이미 받은 영상과 같은 파일이면 멈춤」 걸쇠를 더함. 에셋창고의 veo_g-38-..._aw1_manual-20261116.mp4 는 진짜 g-38 로 덮였다.
+- g-40 아단: 「I encountered an error」 → 되묻기 보냄(대화 https://gemini.google.com/u/5/app/295e3ea88e2b7169) · 결과 보기 전에 19:37 윈도 크롬 연결이 끊김(맥만 붙어 있음) → 멈춤.

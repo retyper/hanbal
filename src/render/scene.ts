@@ -1872,15 +1872,16 @@ function drawArrows(ctx: CanvasRenderingContext2D, cam: Camera, w: World, alpha:
     }
 
     // 보이게 하기 — 어두운 테두리 + 뒤로 짧은 밝은 꼬리 (밝은 바탕에서 살이 묻히지 않게 · 산적·바다도적만)
+    // 테두리는 가늘게 — 5px 검은 띠 + 5px 그림이 20px 살을 「미사일」로 만들었다 (11-16 형: 「화살이 왜 미사일같이 커다란 이미지야」)
     if (BOOST.on) {
-      ctx.strokeStyle = 'rgba(0,0,0,0.55)'
-      ctx.lineWidth = 5
+      ctx.strokeStyle = 'rgba(0,0,0,0.45)'
+      ctx.lineWidth = BOOST.edgePx
       ctx.beginPath()
       ctx.moveTo(backX, backY)
       ctx.lineTo(tipX, tipY)
       ctx.stroke()
-      ctx.strokeStyle = 'rgba(255,244,214,0.5)'
-      ctx.lineWidth = 2
+      ctx.strokeStyle = 'rgba(255,244,214,0.45)'
+      ctx.lineWidth = BOOST.tailPx
       ctx.beginPath()
       ctx.moveTo(backX, backY)
       ctx.lineTo(backX - sx * len * 1.3, backY - sy * len * 1.3)
@@ -1888,7 +1889,7 @@ function drawArrows(ctx: CanvasRenderingContext2D, cam: Camera, w: World, alpha:
     }
 
     // ★ 화살은 **그림**이다 (2026-09-20, render/foeart.ts) — 촉·대·깃이 있는 그 살. 공기 가르는 잔상은 위에서 그대로 그렸다.
-    if (drawArrowArt(ctx, ar.kind, backX, backY, tipX, tipY)) continue
+    if (drawArrowArt(ctx, ar.kind, backX, backY, tipX, tipY, BOOST.on ? BOOST.arrowFat : 1)) continue
 
     ctx.strokeStyle = THEME.arrow
     ctx.lineWidth = DRAW.arrowWidthPx

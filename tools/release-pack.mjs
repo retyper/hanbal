@@ -135,11 +135,11 @@ console.log(`영상 할 일 ${count('todo')} · 판정 대기 ${count('judge')} 
 
 // ── 챗지피티(코덱스) 앱에 한마디로 맡기는 줄 (형 11-16: 「한마디만 한 다음에 계속 만들게」) ──
 //   tools/out/gpt-queue/QUEUE.md + refs/ · 아직 안 받은 그림만 · 영상(Veo)은 넣지 않는다
-const Q = 'tools/out/gpt-queue', ORDER = ['remake', 'raid', 'steam', 'r15', 'bust', 'cover', 'skill', 'skill1']
+const Q = 'tools/out/gpt-queue', ORDER = ['remake', 'raid', 'steam', 'r15', 'bust', 'cover', 'skill', 'skill1', 'dlc', 'skill2']
 mkdirSync(`${Q}/refs`, { recursive: true })
 const rank = (r) => ORDER.indexOf(r.group.startsWith('remake') ? 'remake' : r.group)
 const todo = raid.filter((r) => r.kind !== 'img-done').sort((a, b) => rank(a) - rank(b))  // 마을·배경 다시는 한 순위 (remake-jobs 의 배열 차례 그대로)
-const refFile = (u) => { const src = (u.startsWith('/assets_src/') ? '' : 'public') + u, name = u.replace(/^\//, '').replace(/\//g, '__'); if (existsSync(src)) writeFileSync(`${Q}/refs/${name}`, readFileSync(src)); return name }
+const refFile = (u) => { const src = u.startsWith('/assets_src/') ? u.slice(1) : 'public' + u, name = u.replace(/^\//, '').replace(/\//g, '__'); if (existsSync(src)) writeFileSync(`${Q}/refs/${name}`, readFileSync(src)); return name }
 const qmd = [`# 그림 만들기 줄 (${todo.length}장 · ${new Date().toISOString().slice(0, 10)})`, '',
   '규칙: 위에서부터 한 장씩. 장마다 참고 그림(refs/ 안)을 모두 보고 문안대로 이미지 생성. 결과는 **D:/에셋창고** 에 「저장 이름」 그대로 PNG 로 저장. 끝나면 묻지 말고 다음 장.',
   '투명 배경이라 한 것은 진짜 알파(체크무늬 그림 금지). 글자·워터마크 금지. 손가락·무기 개수가 틀리면 한 번만 다시. 한도에 막히면 거기서 멈추고 몇 장째인지 적어 둔다.',

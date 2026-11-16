@@ -221,6 +221,9 @@ export const SKILL_BODY_AW1: ReadonlySet<string> = new Set<string>([
   'g-99-goguryeo-maro',
   'g-68-baekje-onnuri',
   'g-68-mujin-bitgoeul',
+  'g-13-baekje-general',
+  'g-80-saro-guryema',
+  'g-95-goguryeo-daemusin',
 ])
 
 const AW1 = '../awaken-hd/'

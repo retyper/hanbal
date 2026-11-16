@@ -4385,13 +4385,27 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     ov.className = 'nightov'
     ov.innerHTML = `<iframe src="${src}" title="${title}"></iframe><button class="btn" data-close>${tr('frame.close')}</button>`
     root.appendChild(ov)
+    // 틀이 덮는 동안 밑의 본편은 그리지도 움직이지도 않는다 — 가려져도 지도·단풍·물결 애니메이션이 계속 합성돼
+    // 폰에서 틀 안 판(열전·바다 도적)이 20프레임으로 버벅였다 (형 11-16 · 갤럭시 플립7)
+    root.classList.add('frame-open')
     music.refresh()
     // 밑에서 돌던 각성 영상도 쉰다 — 틀이 어느 길로 닫히든(remove) 다시 튼다
     const held = [...root.querySelectorAll('video')].filter((v) => !v.paused)
     for (const v of held) v.pause()
+    // 틀이 열린 동안 밑에서 새로 트는 영상도 쉰다 — 열전이 금·기록을 저장하면 storage 사건으로 장수 판이 다시 그려지며
+    // 새 각성 영상이 소리를 내며 돌았다 (형 11-16: 「각성 영상에서 사운드 나오고 있잖아 · 전투할 땐 나오면 안 되지」)
+    const hush = (e: Event): void => {
+      const v = e.target
+      if (!(v instanceof HTMLVideoElement) || ov.contains(v) || !ov.isConnected) return
+      v.pause()
+      if (!held.includes(v)) held.push(v)
+    }
+    root.addEventListener('play', hush, true)
     const back = new MutationObserver(() => {
       if (ov.isConnected) return
       back.disconnect()
+      root.removeEventListener('play', hush, true)
+      if (root.querySelector(':scope > .nightov') === null) root.classList.remove('frame-open')
       for (const v of held) if (v.isConnected) void v.play().catch(() => undefined)
     })
     back.observe(root, { childList: true })

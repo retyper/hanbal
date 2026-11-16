@@ -8,15 +8,17 @@ const MOB_ART: Record<string, string> = { tiger: 'beast-tiger', bear: 'beast-bea
 export const imagePaths = [genArtOf('haebi').file, genArtOf('aw1-haebi').file, 'anim-px/bandit-club.png', 'anim-px/bandit-chief.png', 'anim-px/bandit-archer.png',
   ...['runner', 'slinger', 'shield', 'dog', 'berserker', 'firearcher', 'iron', 'shaman'].map(k => `anim-px/bandit-${k}.png`), ...['ford.webp', 'palisade.webp', 'digits.png', 'knife.png', 'soul.png', 'bell-ring.png', 'javelin.png','sword-wave.png','forest.webp','axe.png','impact-strip.png','slash-strip.png','death-strip.png','fire-strip.png','lightning-strip.png','talisman.png','wind-blade.png','arrow.png','hit.png','essence.png','essence-large.png',...['mark-slam','mark-ring','mark-move','mark-hero','mark-target','mark-arrow','bar-boss','plaque'].map(p=>`ui/${p}.png`)].map(p=>'raid/'+p), 'anim-px/bandit-warlord.png',
   // 11-16 H45~H53: 스테이지 두목 둘 · 설원·산성 적 넷 · 넷째·다섯째 바닥
-  ...['boss-ford', 'boss-palisade', ...Object.values(MOB_ART)].map(n => `anim-px/${n}.png`), 'raid/snow.webp', 'raid/fortress.webp']
+  ...['boss-ford', 'boss-palisade', 'boss-snow', 'boss-fortress', ...Object.values(MOB_ART)].map(n => `anim-px/${n}.png`), 'raid/snow.webp', 'raid/fortress.webp']
 /** bar-boss.png 의 투명한 홈 [x0,y0,x1,y1] — tools/raid-ui-kit.py 가 public/realm/raid/ui/kit.json 에 적는 값 */
 const BOSS_WIN = [104, 35, 626, 82] as const
 export function sprite(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, path: string, x: number, y: number, height: number, frame: number, face = 1, flash = false) {
   const img = images.get(path); if (!img) return
   const w = img.width / 20, h = img.height
   ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.scale(face, 1); ctx.imageSmoothingEnabled = false
-  if (flash) ctx.filter = 'brightness(1.7)'
-  ctx.drawImage(img, frame * w, 0, w, h, -height * w / h / 2, -height, height * w / h, height); ctx.restore()
+  ctx.drawImage(img, frame * w, 0, w, h, -height * w / h / 2, -height, height * w / h, height)
+  // 맞은 번쩍: 같은 그림을 한 번 더 빛으로 더한다 — ctx.filter 는 폰에서 그림마다 소프트웨어로 돌아 프레임을 크게 깎았다 (11-16 플립7 20프레임)
+  if (flash) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = C.flashAdd; ctx.drawImage(img, frame * w, 0, w, h, -height * w / h / 2, -height, height * w / h, height) }
+  ctx.restore()
 }
 /**
  * 회피 잔상 — 화면 쪽에서만 들고 있는 그림 기록(판 상태는 읽기만). 지나온 자리마다 장수 실루엣을 남겨

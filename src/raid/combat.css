@@ -157,3 +157,34 @@ h1,h2,.choices b,#power-tooltip>b{font-family:var(--serif)}
 .panel.result.won{background:linear-gradient(180deg,#0a120ecc,#0a120ef2 60%),url('/realm/raid/result-win.webp') center/cover}
 .panel.result.lost{background:linear-gradient(180deg,#070b10cc,#070b10f2 60%),url('/realm/raid/result-lose.webp') center/cover}
 .won-emblem{width:1.8em;height:1.8em;vertical-align:middle;margin-right:4px}
+/* 손가락 조이스틱 (11-16) — 닿은 자리에 생기는 받침 + 손잡이 · 끝을 넘기면 받침이 따라온다 */
+#stick{position:absolute;width:108px;height:108px;margin:-54px 0 0 -54px;border-radius:50%;border:2px solid #e8c57799;background:radial-gradient(circle,#0b141099 0 55%,#0b141055 70%,transparent 72%);box-shadow:0 0 0 1px #00000066 inset,0 2px 10px #0008;pointer-events:none;z-index:3}
+#stick i{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:radial-gradient(circle at 38% 34%,#f6dfa0,#c99a4a 55%,#7a5a28);border:2px solid #fff3c899;box-shadow:0 3px 8px #000a}
+/* 체력 깎임 토막 (11-16 · 본편 싸움 막대와 같은 롤 체력바) — 막대는 단번에 떨어지고 잃은 토막이 번쩍 뒤 줄어든다 · 움직임은 raid-main updateChunk */
+.bar.hp .hp-track{position:relative;display:block;height:100%}
+.bar.hp .hp-track #hp-fill{transition:none}
+#hp-chunk{position:absolute;top:0;bottom:0;left:100%;width:0;z-index:2;background:#c8160c;border-radius:0 3px 3px 0;pointer-events:none;transform-origin:left center}
+/* 레벨업 창 (11-16 형: 「상단 텍스트 다 없애고 레벨 업! 만」 · 조합은 글 대신 그림 셈) */
+.panel.upgrade h2.lvup{margin:0 0 10px;font-size:clamp(26px,3.4vw,40px);letter-spacing:.06em;color:#ffe3a0;text-shadow:0 0 14px #e8b45a88,0 2px 0 #2a1a08}
+#reroll:before{width:24px;height:24px;background-image:url('/realm/raid/shop-reroll.png')}
+.choices em{display:flex;flex-direction:column;align-items:center;gap:6px}
+.recipe{display:flex;align-items:center;justify-content:center;gap:3px}
+.recipe .need{position:relative;width:30px;height:30px;opacity:.55;filter:grayscale(.6)}
+.recipe .need.ok{opacity:1;filter:none}
+.recipe .need.me{opacity:1;filter:none;outline:1px solid #e8c57799;border-radius:5px}
+.recipe .need img{width:100%;height:100%;object-fit:contain}
+.recipe .need b{position:absolute;right:-5px;bottom:-5px;min-width:15px;height:15px;font:bold 11px/15px Georgia,serif;text-align:center;color:#ffe6a2;background:#11190f;border:1px solid #a18b5f;border-radius:8px}
+.recipe .op{font-style:normal;font-size:15px;color:#d8c48c;margin:0 2px}
+.recipe .combo{display:flex;flex-direction:column;align-items:center;gap:1px}
+.recipe .combo img{width:38px;height:38px;object-fit:contain;filter:drop-shadow(0 0 6px #ffcf6a88)}
+.recipe .combo small{font-size:9px;color:#e8d29a;white-space:nowrap}
+.recipe .combo.got img{filter:drop-shadow(0 0 9px #ffcf6a)}
+/* 결과 창 (11-16 형: 「같은 운으로 재도전? 뭔 말 · 눈에 안 들어온다」) — 큰 「다시 출전」 하나 + 작은 버튼 줄 · 조합은 그림 */
+.result-acts{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:14px}
+.result-acts>.primary{min-width:min(320px,70%);padding:14px 28px;font-size:clamp(17px,2.2vw,22px)}
+.result-acts>div{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.result-acts>div button{padding:8px 16px;font-size:13px}
+.result-combos b{display:inline-flex;align-items:center;gap:6px}
+.result-combos b img{width:28px;height:28px;object-fit:contain}
+/* 싸우는 동안 초상 옆 글을 걷는다 (11-16 형) — 메뉴에선 그대로 */
+#layout.in-run .portrait-title span,#layout.in-run #rank-title,#layout.in-run #reaction{display:none}

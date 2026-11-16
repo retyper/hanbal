@@ -6,6 +6,7 @@
 import { HAEBI_SHOP as SH, HAEBI_STAGES as ST } from '../tune/params.ts'
 import { NO_BONUS, type Bonus, type StageId } from './haebi.ts'
 import { META_KEY } from './link.ts'
+import { DLC } from '../realm/dlc.ts'
 
 export type ShopKey = keyof Bonus
 export const SHOP: readonly { key: ShopKey; name: string; glyph: string; desc: (lv: number) => string }[] = [
@@ -22,7 +23,8 @@ export const SHOP: readonly { key: ShopKey; name: string; glyph: string; desc: (
   { key: 'greed', name: '전리품', glyph: '金', desc: lv => `판이 끝나고 받는 금 +${Math.round(lv * SH.greed.step * 100)}%` },
   { key: 'luck', name: '급소', glyph: '運', desc: lv => `${Math.round(lv * SH.luck.step * 100)}% 확률로 두 배 피해` },
 ]
-export const STAGE_ORDER: readonly Exclude<StageId, 'trial'>[] = ['forest', 'ford', 'palisade', 'snow', 'fortress']
+/** 본편 스테이지 셋 + 진각성 묶음(DLC)의 둘 (realm/dlc.ts) */
+export const STAGE_ORDER: readonly Exclude<StageId, 'trial'>[] = ['forest', 'ford', 'palisade', ...(DLC.trueWake ? ['snow', 'fortress'] as const : [])]
 export interface RaidMeta { gold: number; spent: number; shop: Bonus; cleared: Partial<Record<StageId, boolean>>; best: Partial<Record<StageId, number>>; runs: number
   /** 장수마다 깬 스테이지 — 본편 진각성 자격 (link.ts SEAL_STAGE) */
   heroes: Record<string, StageId[]> }

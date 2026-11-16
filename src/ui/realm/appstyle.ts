@@ -528,6 +528,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .sortiebar { position: sticky; bottom: 0; z-index: 3; display: flex; gap: 6px; margin: 12px -14px -18px; padding: 10px 14px 12px; background: linear-gradient(#221b17ee, #221b17); border-top: 1px solid var(--line); box-shadow: 0 -6px 14px #0007; }
 .ap .sortiebar .go { flex: 1; font-size: 15px; } .ap .sortiebar .btn { margin: 0; }
 .ap .nightov { position: absolute; inset: 0; z-index: 40; background: #000; }
+/* 틀(열전·바다 도적·밤 판)이 덮는 동안 밑 화면은 그리지 않는다 (11-16 폰 프레임) */
+.ap.frame-open > :not(.nightov) { visibility: hidden !important; }
+.ap.frame-open > :not(.nightov), .ap.frame-open > :not(.nightov) * { animation-play-state: paused !important; }
 .ap .nightov iframe { width: 100%; height: 100%; border: 0; display: block; }
 /* 밤 판이 떠 있는 동안 밑의 칠십팔국은 쉰다 — 안 보이는 맥박·불꽃 애니가 폰 GPU 를 같이 먹었다 (형 11-10: 구출이 엄청 느림) */
 /* 바탕 층(지도·위 띠·옆 단추)만 — 틀 위에 뜨는 알림·상자(z 40 넘음)는 그대로 둔다 */

@@ -25,7 +25,7 @@ WALK = {1, 2, 3}
 NEW = {'H50': ('beast-tiger', 66), 'H51': ('beast-bear', 84), 'H52': ('snow-hunter', BODY), 'H53': ('torch-raider', BODY)}
 # 스테이지 두목 (H45 여울 물두령 · H46 목책 배신 성장) — bake-bandit-warlord.py 와 같은 160px · 같은 칸 차례 (13 = 내려찍기 준비)
 BOSS_ORDER = [0]*4 + [1, 3, 2, 3, 1, 3, 2, 3] + [0, 4, 5, 5, 6, 0, 7, 8]
-BOSSES = {'H45': 'boss-ford', 'H46': 'boss-palisade'}
+BOSSES = {'H45': 'boss-ford', 'H46': 'boss-palisade', 'H54': 'boss-snow', 'H55': 'boss-fortress'}  # 11-16 저녁 H54 설원 설산 우두머리(쇠도리깨) · H55 산성 반란 장군(달군 망치)
 
 
 def figures(path):

@@ -3,7 +3,8 @@
 //   refs 1번 = 지금 그림(무엇을 그리나) · 나머지 = 챗지피티 화풍 기준 · 앞 장 결과가 필요한 장은 문안 첫 줄에 「D:/에셋창고/<이름> 도 첨부」
 //   한 벌(일터 1·2·3단 · 궁궐 네 단 · 필름 넷)은 격자 한 장으로 받아 코드로 자른다 — 크레딧을 아끼고 서로 맞는다
 
-export const REMAKE_GROUPS = { 'remake-town': '마을 다시', 'remake-bg': '배경 다시' }
+import { existsSync, readFileSync } from 'node:fs'
+export const REMAKE_GROUPS = { 'remake-town': '마을 다시', 'remake-bg': '배경 다시', 'remake-icon': '아이콘 다시', 'remake-sprite': '전투 띠 얼굴 크기 다시', 'remake-cutin': '컷인 배경 판' }
 
 const RULES = 'Original early-Korean (Proto-Three-Kingdoms, Samhan) historical fantasy. Not Chinese imperial: no glazed-tile palace roofs, no stacked pagoda roofs or sharply upturned eaves, no dragon pillars, no hanfu robes. No Japanese motifs: no torii gates, no shimenawa ropes and no white zigzag paper streamers, no samurai armor, no katana, no knotted white hachimaki headbands. No red sun discs and no sun rays: no visible sun anywhere. No text, letters, numbers, pseudo-characters, logo, signature or watermark anywhere; banners, plaques and cloth are plain or carry simple geometric or animal shapes only.'
 const PAINT = 'Painting style: match the attached ChatGPT reference paintings exactly: rich hand-painted digital painting with fine ink detail, muted natural earth colors, soft hazy atmospheric light, cinematic but grounded. Not photographic, not a 3D render, not a flat cartoon, not anime.'
@@ -258,5 +259,75 @@ endJob('unify', '끝 · 통일', '제미나이 결(앞 필름과 다름)', ['/re
   'Scene: our banners raised all along a high rammed-earth fortress wall at dusk, soldiers cheering on the wall and a joyful crowd below, horsemen arriving, a wide river valley full of villages stretching beyond. Triumphant warm light from a cloudy sky, no visible sun.')
 endJob('lose', '끝 · 패배', '제미나이 결(앞 필름과 다름)', ['/realm/event/event-captured-ours.jpg', '/realm/film/film-win-winter.jpg'],
   'Scene: our village after defeat at grey dusk: a burned and broken log palisade, a collapsed watchtower, smoke drifting, crows on charred poles, a few survivors with bundles walking away along the muddy road. Somber, desaturated.')
+
+// 11-16 검수 반려 다시 (tools/out/remake-intake-20261116.json) — 같은 일에 고칠 점을 앞에 붙여 _r2 로
+const retry = (id, fix, edit = (p) => p) => {
+  const j = jobs.find((x) => x.id === id)
+  jobs.push({ ...j, id: id + '-r2', save: j.save.replace(/\.png$/, '_r2.png'), title: j.title + ' · 다시', now: fix.now, prompt: fix.text + '\n' + edit(j.prompt) })
+}
+const FILM_FIX = { now: '챗지피티 첫 판도 흰 매듭 머리띠가 그대로 · 결이 옛 제미나이 그대로라 보류',
+  text: 'ABSOLUTELY NO HEADBANDS: nobody wears any cloth band, tied cord, knotted strip or hachimaki around the head or forehead. Soldiers are bare-headed with a topknot, or wear iron or leather helmets. Paint in the darker, richer cinematic style of IMAGE 3 and IMAGE 4 (the newer film stills), not the flat style of IMAGE 1 and IMAGE 2.' }
+retry('RM-bg-film-4', FILM_FIX)
+const NOBLE = { now: '첫 판이 초가집으로 바뀜 · 형 10-24 「장수면 귀족인데 왜 평민 집」 · 옛 기와집 판을 지금 씀',
+  text: "THE HOUSE MUST STAY A NOBLE'S HOUSE: a roof of plain dark-grey clay roof tiles with gently curving eaves (NOT thatch, NOT straw), thick wooden pillars on stone bases, a dancheong-painted bracket band under the eaves, latticed paper doors, as in IMAGE 1. No stone lantern (that reads Japanese); a low earthen wall with a tiled coping instead." }
+retry('RM-bg-bridal-d', NOBLE)
+retry('RM-bg-bridal-d-v', NOBLE, (p) => p.replace("also('remake_bg_bridal-d.png')", '').replace('remake_bg_bridal-d.png', 'remake_bg_bridal-d_r2.png'))
+
+// 11-16 저녁 · 상태 아이콘 둘 — 제미나이 판에 빨간 해·햇살이 박혀 있다 (일장기 꼴 금지 규칙)
+jobs.push({ id: 'RM-icon-sun', group: 'remake-icon', save: 'remake_icon_status-sun.png', title: '상태 아이콘 둘 (가뭄 · 흉조)',
+  refs: ['/realm/icon/status-drought.png', '/realm/icon/status-bad-omen.png', '/realm/icon/status-famine.png', '/realm/icon/status-flood.png', '/realm/icon/status-plague.png'],
+  now: '가뭄 = 갈라진 땅 위 빨간 해와 불꽃 햇살 · 흉조 = 햇살 고리 두른 일식 앞 까마귀 (둘 다 해 동그라미·햇살)',
+  use: '2:1 투명 → node tools/slice-grid.mjs <받은 그림> 2 1 public/realm/icon/ status-drought,status-bad-omen 192 0.02 trim · 옛 것은 tools/retire-history.py 로 보관',
+  prompt: `Create ONE transparent PNG, landscape 2:1 (1536x768): two separate game status icons side by side, each centered in its half with at least 10% empty margin, no labels, no outlines. IMAGE 1 and IMAGE 2 are the old versions (content idea only). IMAGE 3, IMAGE 4 and IMAGE 5 are other status icons of the same set: match their size, painted style, outline and lighting exactly.
+1. left, DROUGHT: a cracked dry clay field tile with a withered rice plant and a dry, cracked onggi water jar lying on its side; heat shimmer suggested only by pale wavy air lines. Absolutely NO sun: no disc, no circle, no rays, no flames in the sky.
+2. right, BAD OMEN: a black crow perched on a dead branch under a dark stormy cloud with a thin crack of lightning. Absolutely NO sun, NO eclipse, NO ring of light, NO rays behind it.
+${ALPHA} ${RULES}` })
+
+// 11-16 밤 · 비기 컷인 배경 판 (형: 「스킬바디 연출은 전신 나오는 게 촌스러워 · 던파 따라 하고 연출 배경도 만들게」)
+//   액션 RPG 각성 컷인 문법(화면이 어두워지고 → 비스듬한 띠가 휙 → 띠 안에 장수 상반신·얼굴이 미끄러져 들고 → 기술 이름) 만 빌린다 · 남의 그림·로고는 쓰지 않는다
+//   띠 안의 장수는 이미 있는 각성 초상(awaken-hd·awaken2-hd)을 상반신으로 잘라 쓴다 → 새로 굽는 건 띠 뒤 배경 판뿐 (코드: src/ui/realm/skillfx.ts 를 받은 뒤 바꾼다)
+const CUT = 'Create ONE wide horizontal background plate, 3:1 landscape (2400x800), for an action-RPG "awakening cut-in": it fills a dramatic slanted band that sweeps across the battle screen for one second while a hero portrait slides in front of it. NO people, NO faces, NO weapons, NO creatures, NO text, letters, symbols or logo. Pure energy and atmosphere: strong horizontal motion streaks and speed lines rushing from left to right, the brightest burst of energy in the LEFT-CENTER third (where the hero\'s face will sit), fading to darker, calmer color toward the top, bottom and right edges so the band can be masked with torn ink edges. Rich hand-painted digital painting with ink brush texture and fine glowing particles, the same painterly finish as the attached awakening portraits (use them ONLY for color and rendering quality). Opaque, full-bleed, no border, no vignette frame. No red sun disc, no sun or sun rays anywhere.'
+const CUTS = [
+  ['fire', '불 (불 속성 비기 · w-fire)', '/realm/awaken2-hd/w-30-guya-soebi.jpg', 'Theme FIRE: roaring crimson and orange flame tongues and embers streaming sideways, dark charcoal smoke at the edges, a white-hot core.'],
+  ['water', '물 (w-water)', '/realm/awaken2-hd/w-58-tamna-halla.jpg', 'Theme WATER: a breaking ocean wave rushing sideways, deep teal and turquoise water, white spray and foam streaks, glints of moonlight on the water.'],
+  ['wind', '바람 (w-wind)', '/realm/awaken2-hd/w-64-miri-dallae.jpg', 'Theme WIND: pale jade and silver gale ribbons, swirling air currents, scattered leaves and petals whipping past, soft sky-blue haze.'],
+  ['bolt', '번개 (w-bolt)', '/realm/awaken2-hd/w-97-goguryeo-mir.jpg', 'Theme LIGHTNING: violet and electric-blue lightning bolts forking horizontally through dark storm clouds, crackling white arcs, rain streaks.'],
+  ['earth', '땅 (w-earth)', '/realm/awaken-hd/g-04-jinhan-giant.jpg', 'Theme EARTH: shattered amber and ochre rock slabs and dust bursting sideways from a cracking ground shockwave, flying gravel, warm golden dust light.'],
+  ['war', '전장 (진격·버팀·호령·함성 · vanguard·stand·order·shout)', '/realm/awaken2-hd/l-L2-soseono.jpg', 'Theme BATTLE FURY: crimson and gold war energy, slashing ink brush strokes, flying sparks and torn red cloth strips, smoke of a battlefield, a deep blood-red core.'],
+  ['spirit', '기도·제사 (rite · sway)', '/realm/awaken2-hd/l-L7-aryeong.jpg', 'Theme SPIRIT RITE: luminous jade and soft gold spirit mist, floating paper-lantern-like glowing motes (no lanterns), drifting bronze bell sound-ripples, sacred incense smoke streaming sideways.'],
+  ['shadow', '그림자 (매복·속임 · ambush·feint)', '/realm/awaken2-hd/w-95-michuhol-haebi.jpg', 'Theme SHADOW: deep indigo and black night mist streaking sideways, thin silver moonlit slash lines, drifting dark feathers and smoke, a cold pale glow at the core.'],
+  ['arrow', '한 발 (명궁 · snipe)', '/realm/awaken-hd/g-02-goguryeo-archer-prince.jpg', 'Theme ARCHER FOCUS: a single bright gold-white line of focus cutting horizontally through the middle, concentric wind rings around it, blurred golden speed lines and falling feathers, a calm dark blue-green field.'],
+]
+for (const [k, title, ref, body] of CUTS) jobs.push({ id: `CUT-${k}`, group: 'remake-cutin', save: `cutin_bg_${k}.png`, title: `컷인 배경 · ${title}`,
+  refs: [ref, '/realm/fx/skill/common/ink-band.png'], now: '비기 컷인이 전신 그림을 그대로 띄워 촌스럽다(형) · 띠 뒤 배경이 먹 띠 하나뿐',
+  use: '2400×800 → public/realm/fx/skill/bg/<이름>.webp · skillfx.ts 컷인: 비스듬한 띠(ink-band 가장자리로 가림) 안에 이 배경 + 각성 초상 상반신 미끄러짐',
+  prompt: `${CUT}\n${body}\nIMAGE 2 only shows the torn ink-band shape the plate will be masked into (do not copy it).` })
+
+// 11-16 밤 · 전투 띠 얼굴 크기 (형: 「등신비율 베이스라인 확실히 수치로 · 번예 갈매 얼굴이 너무 큼 · 머리카락은 상관없고 얼굴 자체가 크면 문제」
+//   + 「만드는 김에 이동 프레임 자연스럽게 별도로」) · 목록·수치 tools/sprite-kit/head-audit-20261116.json · 참고 그림 tools/sprite-kit/prop-refs.py
+//   장수마다 두 장: 동작 20자세(11-14 비율 교정과 같은 틀 · 넣는 도구가 그대로 읽는다) → 걷기 8칸(동작 판을 맨 뒤에 붙여 같은 사람·같은 비율로)
+const AUDIT = JSON.parse(readFileSync('tools/sprite-kit/head-audit-20261116.json', 'utf8'))
+const FACE = 'FACE SIZE RULE (measured on the approved characters in IMAGE 2: Soseono, Gamsil, Soebi, Onjo, all at the SAME standing height as this character): the standing height from the soles to the top of the SKULL is 4.5 heads (hair volume, buns, hats, crowns and feathers are NOT counted and may stay as big as in IMAGE 1). The FACE itself, from the eyebrows to the chin, is only 1/9 of the standing height; eye-to-chin is about 8% of the height; cheek-to-cheek face width is about 1/9 of the height. The CURRENT face in IMAGE 1 is about 40% too big, round and childlike: make the face clearly smaller, adult and slimmer-jawed, with a proper neck, while keeping the same body height.'
+const PIX = 'Sharp deliberate pixel-cluster outlines and shading exactly like IMAGE 2 (premium HD pixel art), detailed tiny eyes with sclera, iris and upper lash, small nose and mouth; no blur, no smooth illustration look.'
+const tier = (k) => (k in AUDIT.tierA_chin_ge38 ? 'A' : 'B')
+for (const k of [...Object.keys(AUDIT.tierA_chin_ge38), ...Object.keys(AUDIT.tierB_chin_37)]) {
+  const bust = k.startsWith('gen-base-') ? k.slice('gen-base-'.length) : null
+  const refs = [`/assets_src/realm/sprite-prop/${k}-now.png`, '/assets_src/realm/sprite-prop/ref-approved.png', ...(bust && existsSync(`public/realm/bust-hd/${bust}.jpg`) ? [`/realm/bust-hd/${bust}.jpg`] : [])]
+  const who = k.slice(4)
+  jobs.push({ id: `SP-${who}-act`, group: 'remake-sprite', save: `sprite_prop_${who}_act.png`, title: `${who} · 전투 띠 20자세 (얼굴 줄임 · ${tier(k)})`,
+    refs, now: `얼굴이 기준보다 큼 · 턱 위치 몸 키의 ${AUDIT.tierA_chin_ge38[k] ?? AUDIT.tierB_chin_37[k]}% (기준 31~33%)`,
+    use: `받으면 11-14 비율 교정과 같은 길로 띠에 넣음(anim-px/${k}.png · 걷기 칸은 다음 장으로 바꿈) · 옛 띠는 assets_src/realm/retired 로`,
+    prompt: `Redraw the SAME adult game character as IMAGE 1 (the current battle sprite sheet, 20 cells read left to right, top to bottom)${refs.length > 2 ? ' — IMAGE 3 is the character portrait for face identity' : ''}: all 20 poses in exactly FOUR columns x FIVE rows.
+${FACE}
+Keep this character's face identity, gender, age, hairstyle, colors, clothing layers, ornaments and weapon exactly from IMAGE 1. ${PIX}
+Every weapon complete and the same size and material in all 20 cells; spears stay a long WOODEN shaft with a SMALL metal head, never a sword. Keep every cell's action exactly as in the SAME cell of IMAGE 1 (same pose order: idles, walk, attack, guard and hit, lying defeated); only the face and head proportions, the pixel quality and any broken weapon change. If archer: the bow stays in all 20 poses, the release pose has an empty draw hand, and no knife or sword appears. All standing poses face RIGHT in 3/4 view with the same adult proportions and the same standing height.
+True transparent alpha background with 10% padding around every complete figure, weapon and feather in every cell. No grid lines, labels, text, effects, shadow or background. Exactly 20 distinct full-body figures.` })
+  jobs.push({ id: `SP-${who}-walk`, group: 'remake-sprite', save: `sprite_prop_${who}_walk.png`, title: `${who} · 걷기 8칸 (자연스러운 걸음)`,
+    refs, now: '걷기 칸이 거의 한 자세라 미끄러지듯 움직임',
+    use: `받으면 띠의 걷기 칸을 이 8칸으로 (1·5번 다리 반대 검사 · tools/sprite-kit/check-strip.py)`,
+    prompt: `[코덱스] D:/에셋창고/sprite_prop_${who}_act.png 도 맨 뒤에 첨부 (방금 만든 동작 판)
+Using the corrected character in the LAST attached image (the new action sheet) as the exact identity, outfit, weapon and proportions — NOT the old big-faced IMAGE 1 — draw ONE natural 8-frame walk cycle, facing RIGHT in 3/4 view, in a strict grid of FOUR columns x TWO rows, row-major order: 1 contact (right foot forward, heel down), 2 down (weight sinks), 3 passing (left leg passes the right), 4 up (body highest), 5 contact (LEFT foot forward), 6 down, 7 passing, 8 up. Frames 1 and 5 have opposite legs forward; arms swing opposite to the legs; the head bobs 1 to 2 pixels between down and up; hair, cloth and ornaments follow the motion a beat late. The weapon is carried relaxed in the same hand with the same grip and the same size in all 8 frames. ${FACE.split(':')[0]}: keep exactly the face and head size of the new action sheet.
+${PIX} Same standing height as the action sheet, feet on one shared baseline in every cell. True transparent alpha background with 10% padding, no grid lines, labels, text, shadow or background.` })
+}
 
 export const REMAKE_JOBS = jobs

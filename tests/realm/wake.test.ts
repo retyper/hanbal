@@ -223,6 +223,9 @@ describe('진각성 (DESIRE §17 · 한 판에 한 번 · 큰 싸움에서만)',
     assert.equal(trueWakeOf(r, r.heroes['sr-aryeong']!), false, '열전 마지막 스테이지를 이 장수로 깨야 자격')
     r.raidSeals = ['sr-aryeong']
     assert.equal(trueWakeOf(r, r.heroes['sr-aryeong']!), true)
+    const { DLC } = await import('../../src/realm/dlc.ts')
+    DLC.trueWake = false
+    try { assert.equal(trueWakeOf(r, r.heroes['sr-aryeong']!), false, '진각성 묶음(DLC)이 없으면 자격이 없다') } finally { DLC.trueWake = true }
     r.trueWoke = ['sr-aryeong']
     assert.equal(trueWakeOf(r, r.heroes['sr-aryeong']!), false)
   })

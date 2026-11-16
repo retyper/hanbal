@@ -3,4 +3,8 @@
  * 겨눔 점선에 어두운 밑줄·큰 점, 살에 검은 테두리와 짧은 밝은 꼬리를 얹는다 (형 11-12).
  * 활터의 밤·낮 판은 그대로 둔다 — 산적·바다도적(src/pirate-main.ts)만 켠다. render 가 읽기만 하는 한 칸짜리 스위치.
  */
-export const BOOST = { on: false }
+export const BOOST = {
+  on: false,
+  /** 나는 살의 검은 테두리 굵기(CSS px) · 밝은 꼬리 굵기 · 살 그림 굵기 배율 — 멀리서 본 판이라 살이 짧다 (11-16 형: 미사일 같다 → 5px·5px 에서 줄임) */
+  edgePx: 2.2, tailPx: 1.4, arrowFat: 0.5,
+}

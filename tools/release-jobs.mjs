@@ -1,11 +1,11 @@
 // release-jobs.mjs — 출시 전 그림 일 (11-15 감사: 그림 줄·코드의 빌린 그림 대조) · tools/release-pack.mjs 가 불러 카드로 만든다
 //   그룹: steam 스팀 캡슐 · r15 15세 판 · bust 고화질 초상 · cover 장 표지 · skill 비기 전신
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { CARDS as STORE } from './store-pack.mjs'
 import { bodyBase } from './haebi-repair-jobs.mjs'
 import { AWAKEN_ART } from '../src/realm/data/awaken-art.ts'
 
-export const GROUPS = { steam: '스팀 캡슐', r15: '15세 판', bust: '고화질 초상', cover: '장 표지', skill: '비기 전신', skill1: '각성 비기 전신' }
+export const GROUPS = { steam: '스팀 캡슐', r15: '15세 판', bust: '고화질 초상', cover: '장 표지', skill: '비기 전신', skill1: '각성 비기 전신', dlc: '진각성 묶음', skill2: '진각성 비기 전신' }
 const pub = (p) => '/' + p.replace(/^public\//, '')
 const jobs = []
 
@@ -180,14 +180,60 @@ EFFECT BUDGET: A few sharp controlled accents immediately beside the weapon or h
 const AW1_TAIL = `WEAPON LOCK: keep EXACTLY the weapon shown in Image 1 (same type, count and shape). If Image 1 shows no weapon, use the weapon of Image 3; if neither shows one, use the implement the costume suggests (staff, bells, fan) rather than inventing a sword.
 SIGNATURE ACTION: invent ONE signature ultimate-skill action that fits this character's weapon and personality as read from Image 1, at the instant of impact or release. It must be clearly different from a plain standing pose${'%DIFF%'}. State of mind shows in the face: fierce, cool or radiant, never blank.`
 const aw1Done = (id) => existsSync(`public/realm/skill-body/aw1/${id}.jpg`)
-const AW1_IDS = [...AWAKEN_ART].filter((id) => !aw1Done(id))
+// 11-16 검수 반려 — 활 꼴이 틀린 셋은 같은 문안에 활 바로잡기를 붙여 _r2 로 다시 · g-84 는 초상이 닌자 옷이라 뺌 (tools/out/skillbody-aw1-review-men.json)
+const AW1_SKIP = new Set(['g-84-wander-seoneul'])
+const BOW_FIX = `\nBOW FIX (the previous try was rejected): draw ONE recurved bow with BOTH limbs visible and ONE taut string running continuously from the upper tip to the lower tip. The draw hand GRIPS the string with the arrow nock between its fingers, pulled back to the jaw; the bow hand wraps the grip with the arrow resting on the knuckle. The arrow is one straight unbroken shaft from the nock in the draw hand to the head beyond the bow. If the pose is not a draw, the bow is held lowered with its string clearly attached at both tips.`
+const AW1_RETRY = { 'g-13-baekje-general': BOW_FIX, 'g-80-saro-guryema': BOW_FIX, 'g-95-goguryeo-daemusin': BOW_FIX }
+const AW1_IDS = [...AWAKEN_ART].filter((id) => !aw1Done(id) && !AW1_SKIP.has(id))
   .sort((a, b) => (/^[wl]-/.test(a) ? 0 : 1) - (/^[wl]-/.test(b) ? 0 : 1) || a.localeCompare(b, 'en', { numeric: true }))
 for (const id of AW1_IDS) {
   const base = existsSync(`public/realm/skill-body/${id}.jpg`)
-  jobs.push({ id: 'SB1-' + id, group: 'skill1', save: `skillbody_aw1_${id}.png`, title: `${id} · 1차 각성 비기 전신`,
+  const fix = AW1_RETRY[id] ?? ''
+  jobs.push({ id: 'SB1-' + id + (fix ? '-r2' : ''), group: 'skill1', save: `skillbody_aw1_${id}${fix ? '_r2' : ''}.png`, title: `${id} · 1차 각성 비기 전신${fix ? ' · 다시 (활 꼴)' : ''}`,
     refs: [`/realm/awaken-hd/${id}.jpg`, '/realm/skill-body/w-53-hwanna-gabi.jpg', ...(base ? [`/realm/skill-body/${id}.jpg`] : [])],
     now: '각성한 장수의 비기 컷인이 각성 초상(가슴 위)으로 나옴', use: '받으면 검수 → public/realm/skill-body/aw1/<id>.jpg (800×1200 · 남색 판) · src/realm/data/skill-body-aw1.ts 등록',
     prompt: AW1_HEAD.replace('%REF3%', base ? ' Image 3 is the same character BEFORE awakening in an approved skill pose: use it ONLY for weapon type and fighting style, never for costume, and make the new pose different and more powerful.' : '')
-      + `\nCHARACTER: ${id}\n` + AW1_TAIL.replace('%DIFF%', base ? ' and from the pose in Image 3' : '') })
+      + `\nCHARACTER: ${id}\n` + AW1_TAIL.replace('%DIFF%', base ? ' and from the pose in Image 3' : '') + fix })
+}
+
+// ── 열전 4·5 스테이지 전용 두목 (11-16 · 지금은 설원=대두목, 산성=배신한 성장을 다시 씀)
+jobs.push({ id: 'H54', group: 'raid', save: 'haebi-pack-v1-H54.png', title: '설원 두목 · 맥족 설산 우두머리 (3×3)', refs: BOSS_REFS, now: '설원 고개도 숲 산적 대두목을 그대로 씀',
+  use: '설원 스테이지 두목 · bake-raid-enemies.py BOSSES 에 더해 3×3 → anim-px/boss-snow.png · haebi.ts 스테이지 boss 를 snow 로',
+  prompt: BOSS('a MOUNTAIN CHIEFTAIN of the snowy pass: a huge broad adult man with a frost-whitened beard and wild hair tied with leather thongs, a white snow-tiger fur mantle over dark iron-studded leather armour, fur leggings and bound boots, breath steaming, wielding a heavy two-handed iron flail (a thick iron-banded haft with a spiked iron ball on a short chain).', BOSS_POSES('iron flail')) })
+jobs.push({ id: 'H55', group: 'raid', save: 'haebi-pack-v1-H55.png', title: '산성 두목 · 불의 반란 장군 (3×3)', refs: BOSS_REFS, now: '불타는 산성은 목책 성장을 다시 씀',
+  use: '산성 스테이지 두목(마지막) · anim-px/boss-fortress.png · 가장 크고 화려하게',
+  prompt: BOSS('the REBEL WARLORD who set the mountain fortress on fire, the final and most fearsome boss: a towering adult man in blackened iron lamellar armour with glowing ember-orange cracks, a soot-stained dark red cloak with burnt edges, a horned iron helmet with a cheek guard, smouldering embers drifting from his shoulders, wielding a huge two-handed iron war hammer whose head glows red-hot. Early Korean, not Chinese imperial, not samurai, no sun disc.', BOSS_POSES('war hammer')) })
+
+// ── 진각성 초상이 없는 남장수 셋 (진각성 묶음 · aw2 는 1차와 확 달라야 · 활시위 자세 금지 · 눈높이 카메라)
+const AW2M = (id, theme) => ({ id: 'AW2-' + id, group: 'dlc', save: `gpt_aw2-${id}.png`, title: `${id} · 진각성 초상`, refs: [`/realm/awaken-hd/${id}.jpg`, `/realm/bust-hd/${id}.jpg`],
+  now: '진각성 초상이 없어 진각성 칸이 비어 있음', use: '900×900 jpg → public/realm/awaken2-hd/<id>.jpg · 작은 판 awaken2/<id>.jpg (tools/bake-intake.sh 의 gpt_aw2 길) · data/awaken2.ts TRUE_WAKE_ART 에 장수 id',
+  prompt: `Generate one image: the SECOND, TRUE awakening of the same man shown in Image 1 (his first awakening; Image 2 is him before awakening). Square 1:1 portrait, waist-up to mid-thigh, eye-level camera, normal adult head size, premium Korean fantasy splash-art painting matching Image 1's rendering. Keep his face, age, ethnicity and weapon type exactly. ${theme} Do NOT use a bow-drawing pose. No text, no logo, no watermark, no Japanese motifs, no red sun discs, no gold crown, no jade, no Chinese imperial dragon robes.` + constText('STYLE_M') })
+jobs.push(AW2M('g-02-goguryeo-archer-prince', 'Theme: STORM HAWK. His true awakening calls the mountain storm: a cloak of dark storm-grey hawk feathers over new deep-teal lamellar, hair loosened and streaming in the wind, faint blue-white lightning crawling along his bow limbs, bow held LOWERED at his side while his other hand opens toward the viewer, rain and wind around him.'))
+jobs.push(AW2M('g-21-baekje-onnuri', 'Theme: MOONLIT TIDE. His true awakening rises from the western sea of Baekje: a long silver-grey sea-silk coat over dark navy armour edged with wave patterns, a pale moon behind him, sea spray and silver-blue water ribbons coiling around his sword arm, a falcon landing on his shoulder, hair loosened in the sea wind.'))
+jobs.push(AW2M('g-31-buyeo-geumha', 'Theme: MARSH KING OF BUYEO. His true awakening draws the power of the northern marsh where his line began: a heavy cloak of dark green reeds and bronze scale plates, mist and lotus pads drifting around him, deep green and bronze palette (no gold crown), a carved bronze staff or his own weapon from Image 1 planted in still water that ripples outward.'))
+
+// ── 진각성 묶음(DLC) 가게 그림 (스팀 DLC 칸 · 로고는 AI 가 그리지 않고 store-capsule 이 얹는다)
+const DLC_REFS = ['/realm/awaken2-hd/w-58-tamna-halla.jpg', '/realm/awaken2-hd/w-97-goguryeo-mir.jpg', '/realm/awaken2-hd/l-L2-soseono.jpg', '/realm/awaken2-hd/w-95-michuhol-haebi.jpg']
+const DLC_ART = 'Original early-Korean (Samhan) historical fantasy, premium painterly key art matching the attached true-awakening portraits exactly in face, costume and rendering; these are the SAME four adult heroines, each in her own true-awakening costume and colour. Opaque coverage (no see-through cloth, no nipple outline). No text, no logo, no letters, no watermark, no Japanese motifs, no red sun discs, no Chinese imperial style. '
+jobs.push({ id: 'DLC-key', group: 'dlc', save: 'dlc-truewake-key.png', title: '진각성 묶음 가로 그림 (머리 캡슐·큰 캡슐·작은 캡슐)', refs: DLC_REFS, now: '없음 · DLC 가게 칸이 비어 있음',
+  use: '16:9 → store-capsule 로 920×430 · 1232×706 · 462×174 (로고 「진각성」을 위 가운데에 얹음)',
+  prompt: 'Create one 16:9 landscape illustration (1536x864) for the store capsule of the "True Awakening" expansion: the four heroines of the attached images stand together mid-transformation on a windswept mountain ridge at dusk, each wreathed in her own awakening colour (ocean teal, frost blue, crimson, storm violet), the energies spiralling up and meeting in the sky above them. Keep the TOP 30% as sky with no faces or weapons there (a logo goes there). All four faces clearly visible, readable at small size. ' + DLC_ART })
+jobs.push({ id: 'DLC-vertical', group: 'dlc', save: 'dlc-truewake-vertical.png', title: '진각성 묶음 세로 그림 (세로 캡슐)', refs: DLC_REFS, now: '없음',
+  use: '2:3 → 748×896 세로 캡슐 (로고 위)',
+  prompt: '[코덱스] D:/에셋창고/dlc-truewake-key.png 도 맨 뒤에 첨부\nCreate one 2:3 portrait illustration (1024x1536): the same scene as the landscape store art attached last, recomposed tall: the four heroines stacked in depth, the front one large in the lower half, the energies rising into the top 25% which stays free for a logo. ' + DLC_ART })
+
+// ── 진각성 비기 전신 (진각성 묶음 · 진각성기를 쓰면 컷인이 진각성 옷 전신으로 · 코드는 aw1 처럼 skill-body/aw2/<id>.jpg 로 이을 것) — 맨 뒤 · 여인 먼저
+const AW2_IDS = readdirSync('public/realm/awaken2-hd').filter((f) => /^[wlg]-.*\.jpg$/.test(f)).map((f) => f.replace(/\.jpg$/, ''))
+  .filter((id) => !id.includes('.') && !AW1_SKIP.has(id) && !existsSync(`public/realm/skill-body/aw2/${id}.jpg`))
+  .sort((a, b) => (/^[wl]-/.test(a) ? 0 : 1) - (/^[wl]-/.test(b) ? 0 : 1) || a.localeCompare(b, 'en', { numeric: true }))
+// 11-16 형: 「진각성 스킬바디는 너무 많아서 아직 만들지 말라」 → 11-16 저녁 형 「만들게 시켜도 될거같다」 로 줄에 올림
+const SB2_ON = true
+for (const id of SB2_ON ? AW2_IDS : []) {
+  const aw1 = existsSync(`public/realm/skill-body/aw1/${id}.jpg`)
+  jobs.push({ id: 'SB2-' + id, group: 'skill2', save: `skillbody_aw2_${id}.png`, title: `${id} · 진각성 비기 전신`,
+    refs: [`/realm/awaken2-hd/${id}.jpg`, '/realm/skill-body/w-53-hwanna-gabi.jpg', ...(aw1 ? [`/realm/skill-body/aw1/${id}.jpg`] : [])],
+    now: '진각성기를 써도 컷인이 진각성 초상(가슴 위)으로 나옴', use: '받으면 검수 → public/realm/skill-body/aw2/<id>.jpg (800×1200 · 남색 판) · 진각성 컷인에 잇기 (aw1 과 같은 틀)',
+    prompt: AW1_HEAD.replaceAll('FIRST-AWAKENING', 'TRUE-AWAKENING (second awakening)').replace('%REF3%', aw1 ? ' Image 3 is the same character in her or his FIRST-awakening skill cut-in: use it ONLY for weapon type and fighting style, never for costume; the true-awakening action must be grander and clearly different.' : '')
+      + `\nCHARACTER: ${id}\n` + AW1_TAIL.replace('%DIFF%', aw1 ? ' and from the pose in Image 3' : '') })
 }
 export const RELEASE_JOBS = jobs

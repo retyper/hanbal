@@ -1,0 +1,32 @@
+{
+  "date": "2026-11-16",
+  "why": "형 11-16 「등신비율 베이스라인 확실히 수치로 · 번예 갈매 얼굴이 너무 큼 · 전수검수해서 잘못 만든 것 리스트업 → 챗지피티 다시」",
+  "method": "anim-px 장수 띠 227명 첫 칸(서 있기). 모든 장수 몸 키가 같은 픽셀(약 137px)로 맞춰져 있어 같은 배율로 머리만 4배 확대 + 몸 키 1% 눈금(tools/sprite-kit/head-ratio.py 와 scratch chin 시트). 그림 맨 위(가는 장식 뺌)에서 턱까지를 몸 키 % 로 눈으로 읽음(±2%). 살빛·실루엣 자동 측정은 도트 팔레트(금장·흰 털모자·목도리)에 흔들려 판정에 안 씀.",
+  "baseline": { "gen-soseono": 31, "gen-gamsil": 32, "gen-soebi": 33, "gen-aw1-soseono": 30, "gen-aw1-gamsil": 31, "note": "형이 맞다고 본 셋 · 머리(정수리~턱) ≈ 몸 키의 22~23% ≈ 4.4등신" },
+  "target": "정수리(머리카락 위, 상투·관·깃털 제외)~턱 = 서 있는 키의 22% (4.5등신) · 턱이 그림 맨 위에서 몸 키 31~33% 자리",
+  "tierA_chin_ge38": {
+    "gen-base-w-39-gosaburi-galmae": 40, "gen-base-w-36-baekje-maena": 40, "gen-base-w-40-mujin-munui": 40, "gen-base-w-81-byeokjin-byeolbit": 40,
+    "gen-base-g-49-goguryeo-sona": 40, "gen-base-g-59-yangmaek-maekson": 40, "gen-irang": 40, "gen-geumha": 40,
+    "gen-base-g-50-bullae-gwaha": 41,
+    "gen-base-w-27-mokji-jinha": 39, "gen-base-w-46-geonma-maru": 39, "gen-base-w-48-mujin-mudeung": 39, "gen-base-w-50-siljik-mulga": 39,
+    "gen-base-w-76-gampyeong-baetsagong": 39, "gen-base-w-18-jinhan-salt-widow": 39, "gen-daeso": 39, "gen-yucheongan": 39,
+    "gen-base-g-45-dabeol-deulgae": 38, "gen-base-g-46-uga-nureongso": 38, "gen-base-g-52-tamna-oreum": 38, "gen-base-g-57-bihwa-neup": 38,
+    "gen-base-g-66-geonma-malbalgup": 38, "gen-base-w-06-buyeo-huntress": 38, "gen-base-w-22-dongye-tiger-huntress": 38, "gen-base-w-29-golpo-janmul": 38,
+    "gen-base-w-34-chopal-deulme": 38, "gen-base-w-38-sangdang-bulmae": 38, "gen-base-w-53-hwanna-gabi": 38, "gen-base-w-61-iseo-sinae": 38,
+    "gen-base-w-75-daegaya-soemoe": 38, "gen-base-w-80-usan-gangchi": 38, "gen-base-w-83-gyeonji-beodeul": 38,
+    "gen-beom": 38, "gen-beombal": 38, "gen-budeul": 38, "gen-dallae2": 38, "gen-dalli": 38, "gen-damul": 38, "gen-darae": 38,
+    "gen-hneoul": 38, "gen-hyeokgeose": 38, "gen-maehwa": 38, "gen-singwigan": 38
+  },
+  "tierB_chin_37": {
+    "gen-base-g-01-master-smith": 37, "gen-base-g-29-yeonna-myeongsol": 37, "gen-base-g-33-jeoga-metdol": 37, "gen-base-g-37-eumjeup-jeup": 37,
+    "gen-base-g-44-maga-malgup": 37, "gen-base-g-54-mokji-mahan": 37, "gen-base-g-58-usan-uhae": 37, "gen-base-g-62-beonye-hanul": 37,
+    "gen-base-g-64-michuhol-sogeumkkun": 37, "gen-base-g-68-mujin-bitgoeul": 37, "gen-base-g-69-goryong-yong": 37, "gen-base-g-70-siljik-pado": 37,
+    "gen-base-g-84-wander-seoneul": 37, "gen-base-g-93-jomun-solgae": 37, "gen-base-w-05-baekje-queen": 37, "gen-base-w-10-pirate-captain": 37,
+    "gen-base-w-17-mahan-pearl-diver": 37, "gen-base-w-21-baekje-court-dancer": 37, "gen-base-w-23-usisan-whale-queen": 37, "gen-base-w-24-apdok-queen": 37,
+    "gen-base-w-26-iseo-tomboy-general": 37, "gen-base-w-41-hwanna-beodeul": 37, "gen-base-w-45-tamna-oreumbi": 37, "gen-base-w-56-dongokjeo-sogeum": 37,
+    "gen-beomi": 37, "gen-byeol": 37, "gen-daemusin": 37, "gen-dangung": 37, "gen-hojin": 37, "gen-hwalmi": 37, "gen-gaon": 37,
+    "gen-olddaeso": 37, "gen-sdallae": 37, "gen-songyang": 37, "gen-sori": 37, "gen-suro": 37, "gen-waechief": 37
+  },
+  "check_scale": { "gen-dalbit": "LPC 시험 그림 · 칸이 작아 머리만 큼 (다른 틀)", "gen-base-g-60-eupcha-hangyeol": "사람이 칸 아래로 작게 · 깃발이 키를 차지 (몸 키 정규화 어긋남)" },
+  "ok_note": "34~36% 는 사내 얼굴·수염 폭 차이 안이라 이번엔 둠 (형이 보고 더 넣으라면 넣음)"
+}
