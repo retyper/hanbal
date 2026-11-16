@@ -82,7 +82,7 @@ export function raidSound(female: boolean, kit: Kit) {
   const say = (slot: Voice, vol: number, gap = 0) => play(slot, any(VOICE[slot]), vol * volume('voice'), gap)
   /** 이미 소리를 낸 투사체·이펙트 (새로 생긴 것만 낸다) */
   const seen = new WeakSet<object>()
-  const prev = { attack: 0, hurt: 0, kills: 0, skillCd: 0, offers: 0, level: 1, barrage: 0, elites: 0, boss: false, state: 'playing' as HaebiRun['state'], run: null as HaebiRun | null }
+  const prev = { attack: 0, hurt: 0, kills: 0, skillCd: 0, offers: 0, level: 1, wakes: 0, barrage: 0, elites: 0, boss: false, state: 'playing' as HaebiRun['state'], run: null as HaebiRun | null }
   return {
     /** 첫 손길(출전 단추)에서 부른다 — 브라우저는 손길 뒤에만 소리를 연다. 여기서 전부 풀어 둔다 */
     unlock() {
@@ -96,7 +96,7 @@ export function raidSound(female: boolean, kit: Kit) {
       if (music) { music.volume = V.bgm * volume('bgm'); if (on && !s.offers.length) { if (music.paused) void music.play().catch(() => undefined) } else if (!music.paused) music.pause() }
       if (!live) { prev.run = null; return }
       // 판이 바뀐 것은 씨앗이 아니라 판 그 자체로 가린다 (씨앗이 NaN 이면 매 프레임 처음으로 돌아가 비기 외침·신음이 프레임마다 다시 났다 · 형 11-16)
-      if (prev.run !== s) Object.assign(prev, { attack: 0, hurt: 0, kills: s.kills, skillCd: 0, offers: 0, level: s.level, barrage: 0, elites: 0, boss: s.boss, state: 'playing', run: s })
+      if (prev.run !== s) Object.assign(prev, { attack: 0, hurt: 0, kills: s.kills, skillCd: 0, offers: 0, level: s.level, wakes: s.wakes, barrage: 0, elites: 0, boss: s.boss, state: 'playing', run: s })
       const barrage = s.shots.reduce((k, b) => k + Number(b.kind === 'barrage'), 0), elites = s.enemies.reduce((k, e) => k + Number(e.kind === 'elite'), 0)
       if (s.attack > prev.attack) { play('weapon', any(WEAPON[kit][0]), V.swing * volume('sfx'), 0, WEAPON[kit][1] * (.95 + (n % 5) * .025)) }  // 평타엔 목소리 없음 (형 11-16: 「기합은 스킬 쓸 때만」)
       if (s.hurt > prev.hurt) { sfx('hurt', V.hurt); say(ouch, V.groan, V.groanGap) }
@@ -107,13 +107,15 @@ export function raidSound(female: boolean, kit: Kit) {
       if (s.skillCd > prev.skillCd) { say(shout, V.skill); if (kit === 'sling') sfx('whirl', V.whirl) }
       for (const b of s.shots) if (!seen.has(b)) { seen.add(b); if (b.kind === 'ember') sfx('fire', V.magic, V.magicGap); else if (b.kind === 'gale' || b.kind === 'wave' || b.kind === 'knife') sfx('wind', V.magic, V.magicGap); else if (b.kind === 'soul') sfx('light', V.magic, V.magicGap); else if (b.kind === 'boulder') sfx('whirl', V.whirl * .7, V.magicGap, .8) }
       for (const e of s.fx) if (!seen.has(e)) { seen.add(e); if (e.kind === 'bolt') sfx('bolt', V.magic, V.magicGap); else if (e.kind === 'spike') sfx('earth', V.magic, V.magicGap); else if (e.kind === 'skill') sfx('skillHit', V.skillHit); else if (e.kind === 'thud' || e.kind === 'ult' && e.ult === 'sling') sfx('stone', V.stone, V.stoneGap, .9 + (n % 5) * .05) }
+      // 판 안 각성(투지) — 외침 + 터짐 (RAID-LINK §1)
+      if (s.wakes > prev.wakes) { say(shout, V.skill); sfx('skillHit', V.skillHit) }
       if (s.offers.length && !prev.offers) sfx('level', V.ui)
       if (!s.offers.length && prev.offers && s.level > prev.level) sfx('pick', V.ui)
       if (barrage < prev.barrage) sfx('arrows', V.arrows, .15)
       if (elites > prev.elites) sfx('elite', V.cry)
       if (s.boss && !prev.boss) say('roar', V.roar)
       if (s.state !== prev.state) sfx(s.state === 'won' ? 'win' : 'lose', V.end)
-      Object.assign(prev, { attack: s.attack, hurt: s.hurt, kills: s.kills, skillCd: s.skillCd, offers: s.offers.length, level: s.level, barrage, elites, boss: s.boss, state: s.state })
+      Object.assign(prev, { attack: s.attack, hurt: s.hurt, kills: s.kills, skillCd: s.skillCd, offers: s.offers.length, level: s.level, wakes: s.wakes, barrage, elites, boss: s.boss, state: s.state })
     },
   }
 }

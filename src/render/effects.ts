@@ -22,6 +22,7 @@ import { TRAIL_POINTS } from '../sim/types.ts'
 import type { World } from '../sim/types.ts'
 import { THEME, worldToScreenX, worldToScreenY } from './camera.ts'
 import { drawCorpseArt } from './foeart.ts'
+import { BOOST, drawPinBoost } from './boost.ts'
 import type { Camera } from './camera.ts'
 import { createPopups, drawPopups, pushPopup, updatePopups } from './popups.ts'
 import type { Popups } from './popups.ts'
@@ -262,6 +263,16 @@ export interface Fx {
   pDx: Float32Array
   pDy: Float32Array
   pA: Float32Array
+  /**
+   * 쓰러뜨린 살 — 막기 판(BOOST)만. 맞힌 그 스텝에 과녁이 죽으면 몸에 박을 데가 없어 살이 사라졌다 (11-16 형: 「화살이 제대로 꽂히지도 않잖아」).
+   * 'hit' 에서 적어 두었다가 바로 뒤의 'foe_down' 이 세운 시체에 박는다 (pId = CORPSE_PIN0 − 시체 칸).
+   */
+  kpOn: boolean
+  kpTx: number
+  kpDx: number
+  kpDy: number
+  kpR: number
+  kpA: number
   /** 남은 히트스톱 (s) */
   hitStop: number
   /**
@@ -330,6 +341,8 @@ export interface Fx {
 const BODY_PINS = 14
 /** pId에 이 값이면 궁수 몸에 박힌 적 화살이다. 과녁 id는 0 이상이라 충돌하지 않는다. */
 export const PLAYER_PIN = -2
+/** pId 가 이 값 이하면 시체에 박힌 살이다 — CORPSE_PIN0 − 시체 칸 */
+export const CORPSE_PIN0 = -100
 
 /**
  * 몸에 화살 하나를 박는다.
@@ -378,6 +391,7 @@ export function createFx(): Fx {
 
     head: 0,
     pHead: 0,
+    kpOn: false, kpTx: 0, kpDx: 0, kpDy: 0, kpR: 0, kpA: 0,
     pId: new Int32Array(BODY_PINS).fill(-1),
     pDx: new Float32Array(BODY_PINS),
     pDy: new Float32Array(BODY_PINS),
@@ -627,6 +641,16 @@ export function pumpEvents(fx: Fx, w: World): void {
         if (tg.alive && (tg.kind === 'boss' || tg.kind === 'archer')) {
           const ar = w.arrows[e.arrow]
           if (ar !== undefined) pinArrow(fx, tg.id, ar.x - tg.x, ar.y - tg.y, tg.r, ar.angle)
+        } else if (BOOST.on && !tg.alive && (tg.kind === 'charger' || tg.kind === 'archer')) {
+          const ar = w.arrows[e.arrow]
+          if (ar !== undefined) {
+            fx.kpOn = true
+            fx.kpTx = tg.x
+            fx.kpDx = ar.x - tg.x
+            fx.kpDy = ar.y - tg.y
+            fx.kpR = tg.r
+            fx.kpA = ar.angle
+          }
         }
         break
       }
@@ -791,7 +815,11 @@ export function pumpEvents(fx: Fx, w: World): void {
       // 적이 쓰러졌다 — 시체를 하나 세운다 (형: "죽었을때 없어져버리지 말고").
       // 세게 죽었으면 더 멀리 난다 + 흙먼지 한 줌 + 히트스톱. 몸이 날아가야 "제대로 맞혔다"가 온다.
       const hard = e.hard ? P.render.corpseHardMul : 1
+      const slot = fx.cHead
       spawnCorpse(fx, e.x, e.y, e.vx * hard, e.vy * hard, e.mass * hard, e.look, e.r, e.g)
+      // 막 쓰러뜨린 그 살을 시체에 박는다 (같은 자리에서 죽은 그 사람일 때만)
+      if (fx.kpOn && fx.kpTx === e.x) pinArrow(fx, CORPSE_PIN0 - slot, fx.kpDx, fx.kpDy, fx.kpR, fx.kpA)
+      fx.kpOn = false
       if (e.hard) {
         spawn(fx, e.x, e.y, FX.missBurst, KIND_MISS, FX.missSpeed * 1.5, FX.missTtl, 1.5)
         fx.hitStop += P.hit.stopMs * 0.001 * 0.6
@@ -864,6 +892,8 @@ function spawnCorpse(
 ): void {
   const i = f.cHead
   f.cHead = (f.cHead + 1) % CORPSES
+  // 이 칸을 쓰던 지난 시체에 박힌 살은 같이 치운다
+  for (let p = 0; p < f.pId.length; p++) if (f.pId[p] === CORPSE_PIN0 - i) f.pId[p] = -1
   const k = P.render.corpsePush * mass
   let cvx = vx * k
   let cvy = vy * k + P.render.corpseLift
@@ -964,7 +994,7 @@ function limb(
  *     이 한 줄이 "굳은 것"과 "늘어진 것"을 가른다.
  * 좌우 팔·다리의 위상과 목표 각을 일부러 어긋나게 둔다 — 대칭이면 인형이 된다.
  */
-function drawCorpses(ctx: CanvasRenderingContext2D, cam: Camera, f: Fx): void {
+function drawCorpses(ctx: CanvasRenderingContext2D, cam: Camera, f: Fx, art?: CorpseArt): void {
   const DOWN = Math.PI / 2
   for (let i = 0; i < CORPSES; i++) {
     const age = f.cAge[i] ?? -1
@@ -994,7 +1024,7 @@ function drawCorpses(ctx: CanvasRenderingContext2D, cam: Camera, f: Fx): void {
     ctx.lineJoin = 'round'
 
     // ★ 그림 적이 죽으면 그림이 눕는다 (render/foeart.ts). 막대 인간은 폴백이다. 보스(음수)는 제 죽은 모습이 있다.
-    if (drawCorpseArt(ctx, look, x, y, r, ang, settle)) {
+    if (art?.(ctx, look, f.cR[i] ?? 0.3, x, y, r, ang, settle, worldToScreenY(cam, f.cG[i] ?? 0)) === true || drawCorpseArt(ctx, look, x, y, r, ang, settle)) {
       ctx.restore()
       continue
     }
@@ -1383,9 +1413,33 @@ function drawVignette(ctx: CanvasRenderingContext2D, f: Fx, w: number, h: number
 }
 
 /** 쓰러진 적. 과녁·화살보다 **먼저** 그린다 — 시체가 살아 있는 것들을 가리면 안 된다. */
-export function drawCorpseLayer(ctx: CanvasRenderingContext2D, cam: Camera, fx?: Fx): void {
+/**
+ * 판이 제 그림으로 시체를 그린다 (막기 판의 도적 띠 · 그렸으면 true). x·y 화면 중심 · r 화면 반경 px · ang 구른 각 · settle 늘어짐 0..1 ·
+ * ground 쓰러진 자리의 땅 화면 y · rad 시체의 월드 반경 (어떤 사람인지 판이 가린다)
+ */
+export type CorpseArt = (ctx: CanvasRenderingContext2D, look: number, rad: number, x: number, y: number, r: number, ang: number, settle: number, ground: number) => boolean
+
+export function drawCorpseLayer(ctx: CanvasRenderingContext2D, cam: Camera, fx?: Fx, art?: CorpseArt): void {
   const f = fx ?? active
-  if (f !== null) drawCorpses(ctx, cam, f)
+  if (f !== null) drawCorpses(ctx, cam, f, art)
+}
+
+/** 시체 하나의 지금 자세 — 박힌 살이 따라 눕는다 (scene.ts drawBodyPins). 없거나 다 사라졌으면 null */
+const POSE = { x: 0, y: 0, ang: 0, settle: 0, fade: 1, r: 0, g: 0 }
+export function corpsePose(f: Fx, slot: number): typeof POSE | null {
+  const age = f.cAge[slot] ?? -1
+  if (age < 0) return null
+  const rest = f.cRest[slot] ?? -1
+  const fade = rest > P.render.corpseLinger ? 1 - (rest - P.render.corpseLinger) / P.render.corpseFade : 1
+  if (fade <= 0) return null
+  POSE.x = f.cX[slot] ?? 0
+  POSE.y = f.cY[slot] ?? 0
+  POSE.ang = f.cAng[slot] ?? 0
+  POSE.settle = rest >= 0 ? clamp01(rest / P.render.corpseLimp) : 0
+  POSE.fade = fade
+  POSE.r = f.cR[slot] ?? 0
+  POSE.g = f.cG[slot] ?? 0
+  return POSE
 }
 
 export function drawFx(ctx: CanvasRenderingContext2D, cam: Camera, fx?: Fx): void {
@@ -1396,7 +1450,20 @@ export function drawFx(ctx: CanvasRenderingContext2D, cam: Camera, fx?: Fx): voi
   // ── 땅에 박힌 화살 ───────────────────────────────────────────
   // 맨 아래에 그린다. 이건 배경이지 사건이 아니다 — 지난 발의 흔적일 뿐이라
   // 지금 날아가는 화살이나 이펙트를 덮으면 안 된다.
-  if (f.kN > 0) {
+  if (f.kN > 0 && BOOST.on) {
+    // 막기 판 — 땅에 박힌 살도 그림 살이다 (깃 쪽만 밖으로 · 몸에 박힌 살과 같은 그림). 물에 떨어진 살은 안 남는다 (11-16 형: 「화살이 제대로 꽂히지도 않잖아」)
+    for (let s = 0; s < f.kN; s++) {
+      const x = f.kX[s] ?? 0
+      if (x >= BOOST.waterX) continue
+      const y = f.kY[s] ?? 0
+      const a = f.kA[s] ?? 0
+      drawPinBoost(
+        ctx,
+        worldToScreenX(cam, x - Math.cos(a) * BOOST.pinLen), worldToScreenY(cam, y - Math.sin(a) * BOOST.pinLen),
+        worldToScreenX(cam, x), worldToScreenY(cam, y),
+      )
+    }
+  } else if (f.kN > 0) {
     ctx.globalAlpha = STUCK_ALPHA
     ctx.strokeStyle = THEME.arrow
     ctx.lineWidth = STUCK_W
@@ -1421,7 +1488,7 @@ export function drawFx(ctx: CanvasRenderingContext2D, cam: Camera, fx?: Fx): voi
   // ── 유령 궤적 ────────────────────────────────────────────────
   ctx.lineWidth = FX.trailWidthPx
   ctx.lineCap = 'round'
-  for (let s = 0; s < GHOSTS; s++) {
+  for (let s = 0; s < (BOOST.on ? 0 : GHOSTS); s++) { // 막기 판은 밤 판처럼 잔상 궤적 없이
     const n = f.gLen[s] ?? 0
     const life = f.gLife[s] ?? 0
     if (n < 2 || life <= 0) continue

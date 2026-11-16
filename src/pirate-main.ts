@@ -49,13 +49,22 @@ const opts = {
 }
 const RESULT = 'hanbal.pirate.result'
 
-BOOST.on = true // 밝은 바탕에서도 점선·화살이 보이게
-const renderer = createRenderer(canvas, { dprCap: P.pirate.dprCap, slowMs: P.pirate.dprDropMs })
+BOOST.on = true // 밤 판의 살·작은 점선·그림자 번짐 없음 (render/boost.ts)
+BOOST.waterX = bandit ? Infinity : P.pirate.shoreX
+// 폰(손가락 화면)은 DPR 상한을 낮게 시작하고, 느린 묶음이 잇달아야 한 단계씩 내린다 · 바닥 아래로는 안 내린다 (11-16 형: 「이미지도 엄청 흐림」)
+const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches
+const renderer = createRenderer(canvas, {
+  dprCap: coarse ? P.pirate.dprTouchCap : P.pirate.dprCap,
+  slowMs: P.pirate.dprDropMs,
+  dprFloor: P.pirate.dprFloor,
+  slowRuns: P.pirate.dprSlowRuns,
+})
 // 밤 판과 같은 당겨 쏘기 — 아무 데나 누르고 뒤로 끌어 반대로 겨눈다 (형 11-11: 암살 때와 정반대라 짜증났음)
-const input = createNightInput(canvas, { dead: P.pirate.pullDead })
+// 브라우저가 손가락을 빼앗아 가도(pointercancel) 끌어 둔 살은 쏜다 (11-16 형: 「당겨 쐈는데 안 쏴짐」)
+const input = createNightInput(canvas, { dead: P.pirate.pullDead, cancelShoots: true })
 const ctx2 = canvas.getContext('2d')!
 const sfx = createSfx()
-const hud: HudState = { training: 0, canLevelUp: false, muted: false, silent: false, toast: '', arrow: '', stars: -1, endReason: '', arrowRule: false, time: 0, bestTime: 0, record: false, bare: true }
+const hud: HudState = { training: 0, canLevelUp: false, muted: false, silent: false, toast: '', arrow: '', stars: -1, endReason: '', arrowRule: false, time: 0, bestTime: 0, record: false, bare: true, breathCorner: true }
 
 let run: PirateRun = createPirate(opts)
 setSceneHooks(pirateHooks(() => run))
@@ -85,19 +94,23 @@ const CSS = `
 #night-ui button { font: inherit; font-size: 16px; padding: 12px 20px; border-radius: 12px; border: 1px solid #4d6a7a; background: #1d2c37; color: #efe6d2; cursor: pointer; }
 #night-ui button.on { background: linear-gradient(#c98f3a, #8a5a1f); border-color: #f0c86a; color: #fff4dc; font-weight: 800; }
 #night-ui button:active { transform: scale(0.95); }
-#night-ui .top { position: absolute; left: 0; right: 0; top: max(8px, env(safe-area-inset-top)); display: flex; justify-content: center; align-items: center; gap: 14px; }
-#night-ui .waves { display: flex; gap: 6px; }
-#night-ui .waves i { width: 30px; height: 10px; border-radius: 6px; background: #ffffff30; border: 1px solid #ffffff55; }
-#night-ui .waves i.done { background: #f0c86a; border-color: #f0c86a; }
-#night-ui .waves i.now { background: #ffffffcc; animation: pir-blink 0.9s ease-in-out infinite alternate; }
+#night-ui .top { position: absolute; left: 50%; transform: translateX(-50%); top: max(8px, env(safe-area-inset-top)); display: flex; align-items: center; gap: 12px;
+  padding: 5px 12px; border-radius: 14px; background: #0b1218d9; border: 1px solid #f0c86a55; box-shadow: 0 2px 10px #0008; }
+#night-ui .waves { display: flex; gap: 5px; }
+#night-ui .waves i { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font: 800 13px/1 system-ui, sans-serif; font-style: normal;
+  color: #ffffff70; background: #ffffff10; border: 2px solid #ffffff40; box-sizing: border-box; }
+#night-ui .waves i.done { background: #f0c86a; border-color: #ffe3a0; color: #2a1a06; }
+#night-ui .waves i.now { background: #fff4dc; border-color: #fff; color: #2a1a06; animation: pir-blink 0.9s ease-in-out infinite alternate; }
+#night-ui .top .sep { width: 1px; height: 22px; background: #ffffff30; }
 #night-ui .lives { display: flex; gap: 3px; }
 #night-ui .lives svg { width: 22px; height: 26px; }
-#night-ui .lives .gone { opacity: 0.28; }
-#night-ui .quit { pointer-events: auto; position: absolute; left: max(10px, env(safe-area-inset-left)); top: max(8px, env(safe-area-inset-top)); padding: 5px 11px; font-size: 13px; background: #0c161eaa; }
-#night-ui .arm { position: absolute; left: 50%; transform: translateX(-50%); top: calc(max(8px, env(safe-area-inset-top)) + 40px); display: flex; align-items: center; gap: 8px;
-  padding: 4px 12px 4px 6px; border-radius: 14px; background: #0c161ecc; border: 2px solid #f0c86a; }
+#night-ui .lives .gone { opacity: 0.22; filter: grayscale(1); }
+#night-ui .quit { pointer-events: auto; position: absolute; left: max(10px, env(safe-area-inset-left)); top: max(8px, env(safe-area-inset-top)); padding: 6px 12px; font-size: 13px; background: #0b1218d9; border-color: #ffffff30; }
+#night-ui .arm { position: absolute; left: 50%; transform: translateX(-50%); top: calc(max(8px, env(safe-area-inset-top)) + 46px); display: flex; align-items: center; gap: 8px;
+  padding: 4px 12px 4px 6px; border-radius: 14px; background: #0b1218e6; border: 2px solid #f0c86a; box-shadow: 0 2px 10px #0008; }
 #night-ui .arm img { width: 40px; height: 40px; }
-#night-ui .arm .bar { width: 96px; height: 8px; border-radius: 4px; background: #ffffff25; overflow: hidden; }
+#night-ui .arm > span { display: flex; flex-direction: column; gap: 4px; }
+#night-ui .arm .bar { display: block; width: 96px; height: 8px; border-radius: 4px; background: #ffffff25; overflow: hidden; }
 #night-ui .arm .bar i { display: block; height: 100%; background: #f0c86a; }
 #night-ui .arm b { color: #fff4dc; font-size: 14px; }
 #night-ui .arm.pop { animation: pir-pop 0.35s ease-out; }
@@ -150,7 +163,7 @@ function showIntro(): void {
 /** 머리띠 — 물결 · 목책 · 쥔 궤짝 살 (글 없이 그림으로) */
 let lastHud = ''
 function playHud(force = false): void {
-  const waves = Array.from({ length: WAVE_COUNT }, (_, k) => `<i class="${k < run.held ? 'done' : k === run.wave && run.phase === 'fight' ? 'now' : ''}"></i>`).join('')
+  const waves = Array.from({ length: WAVE_COUNT }, (_, k) => `<i class="${k < run.held ? 'done' : k === run.wave && run.phase === 'fight' ? 'now' : ''}">${k < run.held ? '✓' : k + 1}</i>`).join('')
   const lives = Array.from({ length: run.livesMax }, (_, k) => (k < run.lives ? STAKE : STAKE.replace('<svg', '<svg class="gone"'))).join('')
   const key = `${waves}|${run.lives}|${run.special}`
   if (!force && key === lastHud) return
@@ -158,7 +171,7 @@ function playHud(force = false): void {
   lastHud = key
   const keep = [...ui.querySelectorAll('.banner, .flash, .picks, .pickbar')]
   ui.innerHTML = '<button class="quit" data-act="quit">그만</button>'
-    + `<div class="top"><div class="waves">${waves}</div><div class="lives">${lives}</div></div>`
+    + `<div class="top"><div class="waves">${waves}</div><span class="sep"></span><div class="lives">${lives}</div></div>`
     + (run.special !== 'basic' ? `<div class="arm${armChanged ? ' pop' : ''}">${arrowIcon(run.special, 40)}<span><b>${ARROW_KINDS.find((k) => k.id === run.special)?.name ?? ''}</b><span class="bar"><i></i></span></span></div>` : '')
   for (const el of keep) ui.appendChild(el)
 }
@@ -228,7 +241,8 @@ function pickBar(): void {
 }
 function donePick(id: PickId): void {
   picking = false
-  const el = ui.querySelector('.picks')
+  const el = ui.querySelector<HTMLElement>('.picks')
+  if (el !== null) el.style.pointerEvents = 'none' // 사라지는 동안 판 위 손가락을 먹지 않는다
   el?.querySelector(`[data-pick="${id}"]`)?.classList.add('on')
   ui.querySelector('.pickbar')?.remove()
   chosen = null
@@ -321,10 +335,22 @@ let raf = 0
 let last = 0
 let acc = 0
 
+/** 개발 서버에서만 — 프레임 안에서 쓴 시간 (tools/pirate-probe.ts 가 읽는다) */
+const perf = { frames: 0, workMs: 0, worstMs: 0 }
+/** 다음에 그릴 때 (ms) · 그 박자보다 이만큼 일찍 온 프레임은 그린다 (rAF 시각이 조금씩 흔들린다) */
+let nextAt = 0
+const FRAME_SLACK_MS = 2
+
 function frame(now: number): void {
   raf = 0
   if (document.hidden) return
   raf = requestAnimationFrame(frame)
+  // 그리기 상한 — 90·120Hz 폰(갤럭시 플립)에서 두 배로 그리지 않는다. 박자(nextAt)로 세어 90·75Hz 화면에서도 반토막(45·37fps)이 나지 않게 한다.
+  // last 를 안 고치니 건너뛴 시간은 다음 dt 에 쌓인다 (결정론 그대로)
+  const period = 1000 / P.pirate.maxFps
+  if (last !== 0 && now < nextAt - FRAME_SLACK_MS) return
+  nextAt = now - nextAt > period ? now + period : nextAt + period
+  const t0 = import.meta.env.DEV ? performance.now() : 0
   const realDt = last === 0 ? 0 : (now - last) / 1000
   last = now
   const w = run.w
@@ -362,6 +388,12 @@ function frame(now: number): void {
   // 마지막 살이 멎은 뒤에 끝 화면을 띄운다
   if (live && run.result !== null && isSettled(w)) {
     showEnd(run.result.won, run.result.held)
+  }
+  if (import.meta.env.DEV) {
+    const ms = performance.now() - t0
+    perf.frames++
+    perf.workMs += ms
+    if (ms > perf.worstMs) perf.worstMs = ms
   }
 }
 
@@ -405,4 +437,4 @@ showIntro()
 wake()
 
 // 개발 서버에서만 — 헤드리스 시험이 판을 들여다보고 쏜다 (tools 의 화면 확인용 · 빌드에는 안 들어간다)
-if (import.meta.env.DEV) (window as unknown as { __pirate: unknown }).__pirate = { get run() { return run } }
+if (import.meta.env.DEV) (window as unknown as { __pirate: unknown }).__pirate = { get run() { return run }, perf, renderer }

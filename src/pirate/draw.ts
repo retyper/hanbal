@@ -78,7 +78,6 @@ const ART = {
 } as const
 
 const COL = {
-  water: 'rgba(38, 92, 110, 0.78)',
   waterDeep: 'rgba(18, 52, 70, 0.9)',
   foam: 'rgba(235, 244, 240, 0.85)',
   log: '#6b4a2b',
@@ -92,8 +91,6 @@ const COL = {
   barrelBand: '#2e2418',
   glow: 'rgba(255, 214, 120, 0.55)',
   ring: '#f0c86a',
-  hp: '#e2493a',
-  hpBack: 'rgba(0,0,0,0.55)',
 } as const
 
 /** 바닷가 그림을 모래 줄이 땅에 오게 덮어 그리는 자리 (화면 꽉 · 찌그러짐 없이) */
@@ -162,6 +159,56 @@ function drawPalisade(ctx: CanvasRenderingContext2D, cam: Camera, run: PirateRun
   }
 }
 
+/**
+ * 밝은 바탕에서 사람이 읽히게 (11-16 형: 「캐릭터도 밝고 배경도 밝고 땅은 구분도 안 가고」) — 띠 그림에 **어두운 테를 한 번 구워** 둔다.
+ * 그림 알파를 여덟 방향으로 밀어 찍은 검은 실루엣 위에 원본을 얹는다. 그림마다 한 번 · 프레임마다는 이 판을 그대로 쓴다 (shadowBlur·filter 없음).
+ */
+const LOOK = {
+  /** 테 두께 (원본 px — 띠 한 칸이 160px 이라 화면에서 1px 안팎) · 테 색 */
+  edge: 3, edgeCol: 'rgba(22, 14, 8, 0.85)',
+  /** 몸을 아주 조금 눌러 모래와 떼어 낸다 (곱하기 아님 · 같은 색을 낮은 알파로 덮는다) */
+  dim: 'rgba(30, 20, 10, 0.12)',
+  /** 발밑 그늘 — 몸 키에 대한 가로 반지름 몫 · 세로 납작함 · 알파 */
+  shadowW: 0.24, shadowFlat: 0.22, shadowA: 0.42, shadowCol: '#1b130b',
+} as const
+const outlined = new Map<HTMLImageElement, HTMLCanvasElement>()
+function withEdge(im: HTMLImageElement): CanvasImageSource {
+  const got = outlined.get(im)
+  if (got !== undefined) return got
+  if (typeof document === 'undefined') return im
+  const e = LOOK.edge
+  const c = document.createElement('canvas')
+  c.width = im.naturalWidth + e * 2
+  c.height = im.naturalHeight + e * 2
+  const g = c.getContext('2d')
+  if (g === null) return im
+  for (let k = 0; k < 8; k++) {
+    const a = (k / 8) * Math.PI * 2
+    g.drawImage(im, e + Math.round(Math.cos(a) * e), e + Math.round(Math.sin(a) * e))
+  }
+  g.globalCompositeOperation = 'source-in'
+  g.fillStyle = LOOK.edgeCol
+  g.fillRect(0, 0, c.width, c.height)
+  g.globalCompositeOperation = 'source-over'
+  g.drawImage(im, e, e)
+  g.globalCompositeOperation = 'source-atop'
+  g.fillStyle = LOOK.dim
+  g.fillRect(0, 0, c.width, c.height)
+  g.globalCompositeOperation = 'source-over'
+  outlined.set(im, c)
+  return c
+}
+
+/** 발밑 그늘 — 모래 위에 사람이 선 자리 (몸 키 px) */
+function footShadow(ctx: CanvasRenderingContext2D, x: number, soleY: number, tallPx: number): void {
+  ctx.globalAlpha = LOOK.shadowA
+  ctx.fillStyle = LOOK.shadowCol
+  ctx.beginPath()
+  ctx.ellipse(x, soleY, tallPx * LOOK.shadowW, Math.max(2, tallPx * LOOK.shadowW * LOOK.shadowFlat), 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.globalAlpha = 1
+}
+
 /** 띠 한 컷을 발이 땅에 닿게 그린다 — 그림은 오른쪽을 본다 · 도적은 왼쪽(궁수)을 본다 */
 function drawStrip(ctx: CanvasRenderingContext2D, im: HTMLImageElement, ar: number, frame: number, cx: number, soleY: number, tallPx: number, faceLeft: boolean): void {
   ctx.imageSmoothingQuality = 'high' // 줄여 그리는 몸 그림은 높은 품질로 (11-12 형: 유닛이 흐리다)
@@ -169,11 +216,59 @@ function drawStrip(ctx: CanvasRenderingContext2D, im: HTMLImageElement, ar: numb
   const cw = ch * ar
   const dh = tallPx
   const dw = dh * ar
+  const src = withEdge(im)
+  const e = src === im ? 0 : LOOK.edge
+  const k = dh / ch
   ctx.save()
   ctx.translate(cx, soleY)
   if (faceLeft) ctx.scale(-1, 1)
-  ctx.drawImage(im, frame * cw, 0, cw, ch, -dw / 2, -dh, dw, dh)
+  // 테를 두른 판은 원본이 (e, e) 만큼 밀려 있다 — 칸 하나 + 둘레 테 e 만큼을 떠 온다
+  ctx.drawImage(src, frame * cw, 0, cw + e * 2, ch + e * 2, -dw / 2 - e * k, -dh - e * k, dw + e * 2 * k, dh + e * 2 * k)
   ctx.restore()
+}
+
+/** 띠의 쓰러짐 두 컷 — 맞아 휘청(18) · 누움(19). 띠 넷이 다 같은 차례다 */
+const FALL = { hit: 18, down: 19, spin: 0.6, lieAt: 0.7 } as const
+/**
+ * 쓰러진 도적 — 제 띠의 쓰러짐 컷으로 (11-16: 활터의 붉은 옷 시체가 나와 딴 사람이 죽은 것 같았다).
+ * 누가 죽었는지는 시체 반경으로 가린다 (칼잡이 foeMinR · 방패 shieldR · 두목 captainR — 배 궁수는 활터 그림 그대로).
+ */
+function drawFallen(ctx: CanvasRenderingContext2D, bandit: boolean, rad: number, x: number, y: number, ang: number, settle: number, ground: number, scale: number): boolean {
+  const R = P.pirate
+  const near = (v: number): boolean => Math.abs(rad - v) < 0.01
+  const captain = near(R.captainR)
+  const shield = near(R.shieldR)
+  if (!captain && !shield && !near(P.enemy.foeMinR)) return false
+  let im: HTMLImageElement | null
+  let ar: number = captain ? ART.captain.ar : ART.sword.ar
+  let tallM: number = captain ? ART.captain.tallM : ART.sword.tallM
+  let flip = false
+  if (shield) {
+    im = img(ART.shield.file)
+    ar = ART.shield.ar
+    tallM = R.shieldTallM
+    flip = true
+  } else if (bandit) {
+    const got = imgFirst(captain ? ART.banditChief : ART.banditSword)
+    im = got === null ? null : got.im
+    const a2 = got === null ? undefined : ART.banditAr[got.path]
+    if (a2 !== undefined) { ar = a2; flip = true }
+  } else im = img(captain ? ART.captain.file : ART.sword.file)
+  if (im === null) return false
+  const tall = tallM * scale
+  // 몸 중심이 땅에 거의 닿았으면 (누운 시체의 중심은 반경 절반 높이에 멎는다) 미끄러지는 동안에도 누운 컷
+  if (settle <= 0 && ground - y > rad * scale * FALL.lieAt) {
+    // 맞아 넘어가는 중 — 휘청 컷이 몸통을 축으로 돈다
+    ctx.save()
+    ctx.translate(x, y)
+    ctx.rotate(ang * FALL.spin)
+    drawStrip(ctx, im, ar, FALL.hit, 0, tall / 2, tall, flip)
+    ctx.restore()
+    return true
+  }
+  footShadow(ctx, x, ground, tall * 0.9)
+  drawStrip(ctx, im, ar, FALL.down, x, ground, tall, flip)
+  return true
 }
 
 function drawRunner(ctx: CanvasRenderingContext2D, cam: Camera, w: World, t: Target, x: number, captain: boolean, bandit: boolean, shielded = false, p: PirateRun | null = null): boolean {
@@ -200,17 +295,60 @@ function drawRunner(ctx: CanvasRenderingContext2D, cam: Camera, w: World, t: Tar
     : a.walk0 + (Math.floor((R.spawnX + 4 - t.x) / (ART.strideM / a.walkN) + t.id) % a.walkN)
   const lane: Lane = bandit ? (p?.lane[t.id] ?? 0) : 0
   const soleY = worldToScreenY(cam, bandit ? footY(lane, t.x) : 0)
+  footShadow(ctx, x, soleY, a.tallM * cam.scale)
   drawStrip(ctx, im, a.ar, frame, x, soleY, a.tallM * cam.scale, flip) // 도적 띠는 왼쪽(궁수)을 보고 그렸다 · 산적·방패 띠는 오른쪽이라 뒤집는다 (형 11-10)
+  const top = soleY - a.tallM * cam.scale - 8
   if (captain && t.hpMax > 0) {
-    // 두목의 남은 몸 — 머리 위 한 줄
-    const bw = Math.max(36, t.r * 1.6 * cam.scale)
-    const by = soleY - a.tallM * cam.scale - 10
-    ctx.fillStyle = COL.hpBack
-    ctx.fillRect(x - bw / 2 - 1, by - 1, bw + 2, 7)
-    ctx.fillStyle = COL.hp
-    ctx.fillRect(x - bw / 2, by, bw * Math.max(0, t.hp / t.hpMax), 5)
+    // 두목의 남은 몸 — 머리 위 테 두른 붉은 바 (열전 체력 바와 같은 틀 · 11-16 형: 「체력바도 색이 다르고 제대로 보이지도 않아」)
+    drawHpFrame(ctx, x, top - BAR.frameH / 2, Math.max(BAR.bossW, t.r * 2.2 * cam.scale), t.hp / t.hpMax)
+  } else if (shielded && p !== null) {
+    // 방패가 남은 수 — 같은 틀의 잿빛 칸 (몇 대 더 맞아야 깨지나)
+    const left = Math.max(0, p.shieldLeft[t.id] ?? 0)
+    drawBar(ctx, x, top, BAR.unitW, left / Math.max(1, Math.round(P.pirate.shieldHits)), BAR.shield, Math.round(P.pirate.shieldHits))
   }
   return true
+}
+
+/** 체력 바 — 막기 판의 바는 다 이 꼴 (어두운 테 · 붉은 몸 · 위쪽 밝은 줄). 밝은 모래 위에서도 읽힌다 */
+const BAR = {
+  h: 6, edge: 1.5, unitW: 34, bossW: 120, frameH: 12,
+  back: '#2a1712', edgeCol: 'rgba(10, 6, 4, 0.9)', hp: '#d4432f', hpHi: '#ff8a68', shield: '#b9c4cc', shieldHi: '#eef3f6',
+  /** 열전 체력 바 틀 (public/realm/raid/ui/bar-hp.png · kit.json 의 홈) */
+  frame: 'raid/ui/bar-hp.png', frameSize: [700, 68] as const, frameWin: [85, 16, 617, 53] as const,
+} as const
+function drawBar(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, ratio: number, col: string = BAR.hp, cells = 0): void {
+  const r = Math.max(0, Math.min(1, ratio))
+  const e = BAR.edge
+  ctx.fillStyle = BAR.edgeCol
+  ctx.fillRect(x - w / 2 - e, y - e, w + e * 2, BAR.h + e * 2)
+  ctx.fillStyle = BAR.back
+  ctx.fillRect(x - w / 2, y, w, BAR.h)
+  ctx.fillStyle = col
+  ctx.fillRect(x - w / 2, y, w * r, BAR.h)
+  ctx.fillStyle = col === BAR.hp ? BAR.hpHi : BAR.shieldHi
+  ctx.globalAlpha = 0.55
+  ctx.fillRect(x - w / 2, y, w * r, 2)
+  ctx.globalAlpha = 1
+  if (cells > 1) {
+    ctx.fillStyle = BAR.edgeCol
+    for (let i = 1; i < cells; i++) ctx.fillRect(x - w / 2 + (w * i) / cells - 0.75, y, 1.5, BAR.h)
+  }
+}
+/** 두목 바 — 열전 체력 바 틀을 두른다 (그림이 아직이면 drawBar) */
+function drawHpFrame(ctx: CanvasRenderingContext2D, x: number, cy: number, w: number, ratio: number): void {
+  const fr = img(BAR.frame)
+  if (fr === null) { drawBar(ctx, x, cy - BAR.h / 2, w, ratio); return }
+  const [fw, fh] = BAR.frameSize
+  const [wx0, wy0, wx1, wy1] = BAR.frameWin
+  const k = w / fw
+  const h = fh * k
+  const x0 = x - w / 2
+  const y0 = cy - h / 2
+  ctx.fillStyle = BAR.back
+  ctx.fillRect(x0 + wx0 * k, y0 + wy0 * k, (wx1 - wx0) * k, (wy1 - wy0) * k)
+  ctx.fillStyle = BAR.hp
+  ctx.fillRect(x0 + wx0 * k, y0 + wy0 * k, (wx1 - wx0) * k * Math.max(0, Math.min(1, ratio)), (wy1 - wy0) * k)
+  ctx.drawImage(fr, x0, y0, w, h)
 }
 
 function drawBoat(ctx: CanvasRenderingContext2D, cam: Camera, x: number): void {
@@ -285,9 +423,8 @@ function drawCask(ctx: CanvasRenderingContext2D, run: PirateRun, t: Target, x: n
 }
 
 /** 장면 갈고리 — run() 은 지금 판을 돌려준다 (판이 바뀌어도 같은 갈고리) */
-/** 물 그라디언트 — 물가의 화면 자리가 바뀔 때만 다시 굽는다 (프레임당 할당 0, A5) */
-let waterGrad: CanvasGradient | null = null
-let waterKey = -1
+/** 궁수 그림의 키 (m) — 발밑 그늘의 크기만 정한다 */
+const ARCHER_TALL_M = 1.7
 
 /**
  * 산적 판의 가만히 선 그림 한 장 — 고갯길 그림 + 세 길(흙길) + 목책 그늘 + 위아래 어둠.
@@ -396,6 +533,9 @@ function bakeBandit(cam: Camera, im: HTMLImageElement): HTMLCanvasElement | null
   g.fillRect(-m, -m, cam.w + m * 2, cam.h + m * 2)
   const q = seaRect(c0, im, ART.passGroundV)
   g.drawImage(im, q.x, q.y, q.w, q.h)
+  // 바탕을 한 겹 눌러 사람·길이 떠오르게 (11-16 형: 「배경도 밝고 땅은 구분도 안 가고」)
+  g.fillStyle = STAGE.dim
+  g.fillRect(-m, -m, cam.w + m * 2, cam.h + m * 2)
   const gy = worldToScreenY(c0, 0)
   const xr = c0.x + (cam.w / 2 + m) / cam.scale
   const R = P.pirate
@@ -427,6 +567,103 @@ function bakeBandit(cam: Camera, im: HTMLImageElement): HTMLCanvasElement | null
   return c
 }
 
+/**
+ * 판을 읽히게 하는 값 (11-16 형: 「캐릭터도 밝고 배경도 밝고 땅은 구분도 안 가고 · 바닥 좀 어떻게 하라니까」) — 그림 좌표·색이라 손맛 노브가 아니다.
+ * 바탕을 한 겹 누르고, 위(하늘)와 아래(앞 모래)는 더 눌러 가운데 싸움 줄이 무대처럼 떠오르게 한다.
+ * 사람이 딛는 줄에는 다진 모래 띠와 또렷한 발 줄을 긋는다. 전부 한 번 굽는다 (크기·구도가 바뀔 때만).
+ */
+const STAGE = {
+  dim: 'rgba(16, 12, 8, 0.26)',
+  topCol: 'rgba(10, 8, 6, 0.42)', topTo: 0.3,
+  /** 앞 모래 — 발 줄 아래 이만큼(m)부터 아래 끝까지 어두워진다 */
+  footFrom: 0.95, footCol: 'rgba(14, 10, 6, 0.6)',
+  /** 다진 모래 띠 — 발 줄 위 · 아래 (m) · 색 · 발 줄 */
+  laneUp: 0.18, laneDown: 1.1, laneCol: 'rgba(58, 38, 18, 0.72)', laneEdge: 'rgba(36, 22, 8, 0.75)', laneLip: 'rgba(255, 236, 200, 0.26)',
+  rut: 'rgba(36, 22, 8, 0.28)', ruts: 70,
+} as const
+let seaC: HTMLCanvasElement | null = null
+let seaKey = ''
+
+/** 바다도적 판의 가만히 선 그림 한 장 — 바닷가 그림 + 누름 + 싸움 줄 + 물 (프레임당 큰 그림 확대·그라디언트 0) */
+function bakeSea(cam: Camera, im: HTMLImageElement): HTMLCanvasElement | null {
+  if (typeof document === 'undefined') return null
+  const key = [cam.w, cam.h, cam.dpr, Math.round(cam.scale * 100), Math.round(cam.x * 100), Math.round(cam.y * 100)].join(',')
+  if (seaC !== null && key === seaKey) return seaC
+  const m = BAKE.margin
+  const c = seaC ?? document.createElement('canvas')
+  c.width = Math.round((cam.w + m * 2) * cam.dpr)
+  c.height = Math.round((cam.h + m * 2) * cam.dpr)
+  const g = c.getContext('2d')
+  if (g === null) return null
+  g.setTransform(cam.dpr, 0, 0, cam.dpr, m * cam.dpr, m * cam.dpr)
+  g.imageSmoothingEnabled = true
+  g.imageSmoothingQuality = 'high'
+  const c0: Camera = { ...cam, shakeX: 0, shakeY: 0 }
+  const L = -m
+  const W = cam.w + m * 2
+  g.fillStyle = '#3a3226'
+  g.fillRect(L, L, W, cam.h + m * 2)
+  const q = seaRect(c0, im, ART.seaSandV)
+  g.drawImage(im, q.x, q.y, q.w, q.h)
+  g.fillStyle = STAGE.dim
+  g.fillRect(L, L, W, cam.h + m * 2)
+  const gy = worldToScreenY(c0, 0)
+  const s = cam.scale
+  // 위 · 앞 모래 누름
+  const top = g.createLinearGradient(0, L, 0, cam.h * STAGE.topTo)
+  top.addColorStop(0, STAGE.topCol)
+  top.addColorStop(1, 'rgba(10, 8, 6, 0)')
+  g.fillStyle = top
+  g.fillRect(L, L, W, cam.h * STAGE.topTo - L)
+  const f0 = gy + STAGE.footFrom * s
+  if (f0 < cam.h + m) {
+    const bot = g.createLinearGradient(0, f0, 0, cam.h + m)
+    bot.addColorStop(0, 'rgba(14, 10, 6, 0)')
+    bot.addColorStop(1, STAGE.footCol)
+    g.fillStyle = bot
+    g.fillRect(L, f0, W, cam.h + m - f0)
+  }
+  // 싸움 줄 — 물가까지 다진 모래 띠 · 발 줄은 또렷하게 (밝은 입술 한 줄 + 어두운 줄)
+  const R = P.pirate
+  const sx = Math.min(cam.w + m, worldToScreenX(c0, R.shoreX))
+  // 다진 띠는 발 줄에서 가장 짙고 아래로 갈수록 풀린다 — 판때기 줄처럼 보이지 않게 아래 끝에는 선을 안 긋는다
+  const lane = g.createLinearGradient(0, gy - STAGE.laneUp * s, 0, gy + STAGE.laneDown * s)
+  lane.addColorStop(0, 'rgba(92, 64, 34, 0)')
+  lane.addColorStop(STAGE.laneUp / (STAGE.laneUp + STAGE.laneDown), STAGE.laneCol)
+  lane.addColorStop(1, 'rgba(92, 64, 34, 0)')
+  g.fillStyle = lane
+  g.fillRect(L, gy - STAGE.laneUp * s, sx - L, (STAGE.laneUp + STAGE.laneDown) * s)
+  // 다진 길의 결 — 발자국·바퀴자국 점 (위치만의 함수라 늘 같은 모양 · 산적 길 dirtBand 와 같은 길)
+  g.fillStyle = STAGE.rut
+  const x0 = c0.x - (cam.w / 2 + m) / s
+  const x1 = Math.min(R.shoreX, c0.x + (cam.w / 2 + m) / s)
+  for (let i = 0; i < STAGE.ruts; i++) {
+    const x = x0 + ((i * 0.6180339) % 1) * (x1 - x0)
+    const d = 0.08 + ((i * 0.7548776) % 1) * STAGE.laneDown * 0.7
+    g.beginPath()
+    g.ellipse(worldToScreenX(c0, x), gy + d * s, 0.07 * s, 0.022 * s + 0.6, 0, 0, Math.PI * 2)
+    g.fill()
+  }
+  g.fillStyle = STAGE.laneLip
+  g.fillRect(L, gy + 1, sx - L, 1)
+  g.fillStyle = STAGE.laneEdge
+  g.fillRect(L, gy - 1, sx - L, 2)
+  // 물가 너머는 물 — 도적이 물에서 걸어 나온다. 물은 땅 줄 아래 띠 · 아래로 갈수록 그림(젖은 모래)이 비친다
+  if (sx < cam.w + m) {
+    const deep = 0.9 * s
+    const wg = g.createLinearGradient(0, gy - 2, 0, gy + deep)
+    wg.addColorStop(0, COL.waterDeep)
+    wg.addColorStop(1, 'rgba(18, 52, 70, 0)')
+    g.fillStyle = wg
+    g.fillRect(sx, gy - 2, cam.w + m - sx, deep + 2)
+    g.fillStyle = 'rgba(8, 26, 36, 0.7)'
+    g.fillRect(sx, gy - 2, cam.w + m - sx, 2)
+  }
+  seaC = c
+  seaKey = key
+  return c
+}
+
 /** 목책 곁 횃불 둘 — 불꽃만 움직인다 (판의 시계로) */
 function drawTorches(ctx: CanvasRenderingContext2D, cam: Camera, t: number): void {
   const R = P.pirate
@@ -451,7 +688,11 @@ export function pirateHooks(run: () => PirateRun | null): SceneHooks {
   const bandit = (): boolean => run()?.mode === 'bandit'
   return {
     noThreat: true,
-    get ownGround(): boolean { return bandit() },
+    corpse(ctx, _look, rad, x, y, r, ang, settle, ground): boolean {
+      return drawFallen(ctx, bandit(), rad, x, y, ang, settle, ground, r / Math.max(0.01, rad))
+    },
+    // 바다도적 판도 땅까지 한 장으로 굽는다 (bakeSea) — 활터 풀밭을 깔고 그 위에 모래를 또 덮던 두 겹을 없앴다
+    get ownGround(): boolean { return bandit() || img(ART.sea) !== null },
     lift(_w, t): number {
       const p = run()
       if (p === null || p.mode !== 'bandit') return 0
@@ -462,15 +703,13 @@ export function pirateHooks(run: () => PirateRun | null): SceneHooks {
       const b = bandit()
       const im = img(b ? ART.passLanes : ART.sea)
       if (im === null) return false
+      const c = b ? bakeBandit(cam, im) : bakeSea(cam, im)
+      if (c !== null) {
+        ctx.drawImage(c, cam.shakeX - BAKE.margin, cam.shakeY - BAKE.margin, cam.w + BAKE.margin * 2, cam.h + BAKE.margin * 2)
+        return true
+      }
       ctx.imageSmoothingEnabled = true
       ctx.imageSmoothingQuality = 'high'
-      if (b) {
-        const c = bakeBandit(cam, im)
-        if (c !== null) {
-          ctx.drawImage(c, cam.shakeX - BAKE.margin, cam.shakeY - BAKE.margin, cam.w + BAKE.margin * 2, cam.h + BAKE.margin * 2)
-          return true
-        }
-      }
       const q = seaRect(cam, im, b ? ART.passGroundV : ART.seaSandV)
       ctx.drawImage(im, q.x, q.y, q.w, q.h)
       return true
@@ -480,43 +719,22 @@ export function pirateHooks(run: () => PirateRun | null): SceneHooks {
       const gy = worldToScreenY(cam, 0)
       const b = bandit()
       if (!b) {
-        // 활터의 풀밭을 모래로 덮는다 — 같은 그림의 아랫단
-        const im = img(ART.sea)
-        if (im !== null) {
-          const q = seaRect(cam, im, ART.seaSandV)
-          const top = gy - 3
-          const sy = ((top - q.y) / q.h) * im.naturalHeight
-          ctx.drawImage(im, 0, sy, im.naturalWidth, im.naturalHeight - sy, q.x, top, q.w, q.y + q.h - top)
-        }
-        // 물가 너머는 물 — 도적이 물에서 걸어 나온다
-        const R = P.pirate
-        const sx = worldToScreenX(cam, R.shoreX)
+        // 물결 거품 — 물가에서 밀려왔다 빠진다 (물 띠 자체는 bakeSea 에 구웠다)
+        const sx = worldToScreenX(cam, P.pirate.shoreX)
         if (sx < cam.w) {
-          // 물은 땅 줄 아래 얕은 띠 — 아래로 갈수록 그림(젖은 모래)이 비친다
-          const deep = 0.9 * cam.scale
-          if (waterGrad === null || waterKey !== gy * 10000 + deep) {
-            waterGrad = ctx.createLinearGradient(0, gy - 2, 0, gy + deep)
-            waterGrad.addColorStop(0, COL.water)
-            waterGrad.addColorStop(1, 'rgba(38, 92, 110, 0)')
-            waterKey = gy * 10000 + deep
-          }
-          ctx.fillStyle = waterGrad
-          ctx.fillRect(sx, gy - 2, cam.w - sx, deep + 2)
-          // 물결 거품 — 물가에서 밀려왔다 빠진다
           const surge = Math.sin(w.elapsed * 1.3) * 0.35 * cam.scale
           ctx.fillStyle = COL.foam
           ctx.fillRect(sx - 0.2 * cam.scale + surge, gy - 2, 0.5 * cam.scale, 3)
+          ctx.globalAlpha = 0.5
           for (let i = 0; i < 4; i++) {
             const fx = sx + ((i * 0.27 + w.elapsed * 0.06) % 1) * (cam.w - sx)
-            ctx.globalAlpha = 0.5
             ctx.fillRect(fx, gy + 3 + i * 4, 0.6 * cam.scale, 2)
           }
           ctx.globalAlpha = 1
         }
-        // 땅 줄 — 발이 디딜 자리
-        ctx.fillStyle = 'rgba(40, 30, 20, 0.35)'
-        ctx.fillRect(0, gy - 1, Math.min(cam.w, sx), 2)
       }
+      // 궁수 발밑 그늘 — 도적들과 같은 그늘 (밝은 모래에서 흰 옷이 떠 보이지 않게)
+      footShadow(ctx, worldToScreenX(cam, w.archer.x), gy, ARCHER_TALL_M * cam.scale)
       if (p !== null) drawPalisade(ctx, cam, p, w.tick * w.dt)
       if (b) drawTorches(ctx, cam, w.tick * w.dt)
     },

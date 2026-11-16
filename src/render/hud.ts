@@ -23,6 +23,7 @@ import type { Camera } from './camera.ts'
 import { bowHandScreenX, bowHandScreenY } from './stickman.ts'
 import { drawArrowArt } from './foeart.ts'
 import { coinText, drawCoin } from '../game/money.ts'
+import { t as tr } from '../i18n/index.ts'
 
 /**
  * HUD가 밖에서 받아야 하는 것들. 성장·오디오는 game/ui 레이어의 상태라
@@ -79,6 +80,11 @@ export interface HudState {
    * 빨간 바와 조준 표식은 그대로 (빨간 바 계약). 없으면 늘 그린다
    */
   bare?: boolean
+  /**
+   * 숨(스태미나)과 빨간 바를 발밑 대신 **왼쪽 아래 붙박이**로 — 밤 판(night/draw.ts drawHud)과 같은 자리·같은 꼴.
+   * 막기 판이 켠다 (11-16 형: 「궁수 곁에 떠 있는 바」가 모래 위에서 안 읽혔다)
+   */
+  breathCorner?: boolean
 }
 
 /**
@@ -769,7 +775,8 @@ export function drawHud(
   if (barSeen > w.elapsed) barSeen = -1e9 // 판이 바뀌어 시계가 되감겼다
   if (holding) barSeen = w.elapsed
   const gaugeA = holding ? 1 : clamp01(1 - (w.elapsed - barSeen - BAR_LINGER) / BAR_FADE)
-  if (gaugeA > 0) {
+  if (hud.breathCorner === true) drawBreathCorner(ctx, cam, w)
+  else if (gaugeA > 0) {
   ctx.globalAlpha = gaugeA
   const max = a.staminaMax > 0 ? a.staminaMax : 1
   const ratio = clamp01(a.stamina / max)
@@ -1150,6 +1157,30 @@ function drawStageCard(ctx: CanvasRenderingContext2D, cam: Camera, w: World, t: 
  * 그래서 이 선은 GDD 3장의 리듬("빠르게 당긴다 → 만작이 가장 정확하다 → 오래 끌면 벌받는다")을
  * 그대로 그린다: 흐릿함 → 탁 잠김 → 붉게 풀림.
  */
+/** 숨 바 — 왼쪽 아래 붙박이 (밤 판과 같은 자리 · 테 두른 바 · 빨간 바 눈금). 바 위면 청록, 아래면 붉다 */
+const BREATH = { x: 16, fromBottom: 28, w: 150, h: 10, edge: 2, labelGap: 8 } as const
+function drawBreathCorner(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void {
+  const a = w.archer
+  const max = a.staminaMax > 0 ? a.staminaMax : 1
+  const bx = BREATH.x
+  const by = cam.h - BREATH.fromBottom
+  const e = BREATH.edge
+  ctx.fillStyle = 'rgba(8, 6, 4, 0.85)'
+  ctx.fillRect(bx - e, by - e, BREATH.w + e * 2, BREATH.h + e * 2)
+  ctx.fillStyle = DANGER_BACK
+  ctx.fillRect(bx, by, BREATH.w, BREATH.h)
+  const above = a.stamina >= max * P.stamina.steadyZone
+  ctx.fillStyle = above ? THEME.gauge : THEME.gaugeWarn
+  ctx.fillRect(bx, by, BREATH.w * clamp01(a.stamina / max), BREATH.h)
+  ctx.fillStyle = '#ff3b2f'
+  ctx.fillRect(bx + BREATH.w * P.stamina.steadyZone - 1.25, by - 5, 2.5, BREATH.h + 10)
+  ctx.font = '700 13px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'middle'
+  ctx.fillStyle = '#f3e6c8' // 글자는 한 번만 — 겹글씨(그림자)는 프레임마다 비쌌다 (pirate-probe 프로파일)
+  ctx.fillText(tr('night.hudBreath'), bx + BREATH.w + BREATH.labelGap, by + BREATH.h / 2)
+}
+
 function drawSight(ctx: CanvasRenderingContext2D, cam: Camera, w: World, strain: number): void {
   const a = w.archer
   const locked = a.phase === 'full' && strain <= 0

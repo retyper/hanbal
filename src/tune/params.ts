@@ -68,24 +68,24 @@ export const HAEBI_RUN = {
   dropLife: 2.4, dropSpeed: 390, dropMagnet: 150, knockback: 14,
   // ── 무기 묶음 (11-15 각성 시련을 모든 장수로 · 도끼=해비 위 수치 그대로) ──
   // 활: 멀리서 꿰뚫는 속사 + 늦게 떨어지는 화살비
-  bowDamage: 24, bowRankDamage: 11, bowRange: 430, bowCooldown: .75, bowSpeed: 640, bowLife: 1.1, bowPierce: 1,
+  bowDamage: 30, bowRankDamage: 11, bowRange: 430, bowCooldown: .68, bowSpeed: 640, bowLife: 1.1, bowPierce: 1,
   rainDamage: 36, rainRankDamage: 16, rainCooldown: 2.6, rainRadius: 72, rainDelay: .45, rainSpread: 60,
   volleyInterval: 1.4, volleyArrows: 12, volleyDamage: 46,
   // 창: 길고 좁게 꿰는 찌르기 + 멀리 꿰는 투창
   spearDamage: 58, spearRankDamage: 20, spearLength: 165, spearRankLength: 15, spearWidth: 56, spearCooldown: .9,
   javelinDamage: 38, javelinRankDamage: 20, javelinSpeed: 520, javelinCooldown: 1.9, javelinLife: 1.3, javelinPierce: 5,
-  groveInterval: 1.1, groveSpikes: 6, groveRadius: 120, groveHit: 42, groveDamage: 72,
+  groveInterval: .9, groveSpikes: 6, groveRadius: 120, groveHit: 42, groveDamage: 90,
   // 칼: 빠르고 넓은 앞쪽 베기 + 멀리 나는 검기
   swordDamage: 38, swordRankDamage: 14, swordRange: 108, swordRankRange: 9, swordCooldown: .7, swordArc: .45,
   waveDamage: 30, waveRankDamage: 15, waveSpeed: 420, waveCooldown: 1.7, waveLife: 1.15, waveRadius: 34,
   tempestInterval: .5, tempestRadius: 135, tempestDamage: 58,
   splitDamage: .55, boomerangTurn: .5,
   // 단검 (11-16 형: 「단검도 있고 마법도 쓰는 거 같고」 · 단검·낫·맨손·채찍 장수): 짧고 아주 빠른 찌르기 + 부채꼴 비도
-  daggerDamage: 20, daggerRankDamage: 9, daggerRange: 86, daggerRankRange: 6, daggerCooldown: .42, daggerArc: .3,
+  daggerDamage: 23, daggerRankDamage: 9, daggerRange: 86, daggerRankRange: 6, daggerCooldown: .42, daggerArc: .3,
   knifeDamage: 22, knifeRankDamage: 11, knifeSpeed: 700, knifeCooldown: 1.3, knifeLife: .8, knifePierce: 1,
   shadowInterval: .7, shadowTargets: 3, shadowRange: 280, shadowDamage: 44, venomTime: 3, venomShare: .45,
   // 주술 (지팡이·방울·홀 장수): 둘레로 퍼지는 방울 파동 + 적을 쫓는 혼불
-  bellDamage: 34, bellRankDamage: 14, bellRadius: 130, bellRankRadius: 10, bellCooldown: .95,
+  bellDamage: 38, bellRankDamage: 14, bellRadius: 130, bellRankRadius: 10, bellCooldown: .95,
   soulDamage: 34, soulRankDamage: 16, soulSpeed: 300, soulCooldown: 1.8, soulLife: 2.6, soulTurn: 5, soulRadius: 44,
   riteInterval: 2.2, riteRadius: 230, riteDamage: 120, stormOrbs: 4, stormRadius: 110, stormDamage: 40, stormInterval: .25,
   // 돌팔매 (11-16 형: 「돌팔매는 슬링샷 사운드 같은 거 찾으면 만들 수 있지 않을까?」 · 초팔 팔매): 포물선으로 떨어져 둘레를 치는 돌 + 적 사이를 튀는 물수제비
@@ -118,14 +118,34 @@ export const HAEBI_ULT = {
   /** 줄 비기(도끼·활·칼)가 견줘 보는 방향 수 — 가까운 적 이만큼 쪽으로 줄을 대 보고 가장 많이 걸리는 쪽 */
   aimTries: 16,
 } as const
+/**
+ * 열전 기술 나무 (11-17 · docs/realm/RAID-LINK.md §2 디아블로식) — 조건이 찬 조합은 레벨업에 금테 카드로 나오고, 골라야 열린다.
+ * 연 조합은 다시 나와 max 단계까지 · 단계마다 조합 피해(어지럼은 멈춤 시간)가 rankStep 씩 붙는다.
+ * upgradeChance: 이미 연 조합이 레벨업 카드 하나로 다시 나올 몫 (새로 조건이 찬 조합은 늘 나온다 · 한 번에 조합 카드는 하나)
+ * 조합 하나를 max 단계로 올리면 3층 「비기 강화」 — 비기 피해 ×ultDamage · 범위 ×ultArea · 재사용 ×ultCooldown
+ */
+export const HAEBI_TREE = { max: 3, rankStep: .4, upgradeChance: .5, ultDamage: 1.4, ultArea: 1.25, ultCooldown: .8 } as const
+/**
+ * 판 안 각성 (11-17 · RAID-LINK §1 디지몬식) — 적을 잡으면 막대가 차고(잡졸 kill · 정예 elite · 두목 boss 점), 다 차면 sec 초 동안 각성.
+ * 막대 크기 = need × (1 + 각성한 수 × needGrowth) · 각성 동안 피해 ×power · 공격 속도 ×tempo · 이동 ×move · 비기 쿨이 ultRate 배로 돈다.
+ * 각성할 때 둘레 burstRadius 를 burstDamage(× 힘) 로 치고 밀어낸다 · 본편에서 각성 못 한 장수는 「투지」(grit*) — 모습은 그대로, 짧고 작게.
+ * 숲·여울·목책을 다 깬 장수(숙련)는 막대 mastery 몫을 채우고 시작한다.
+ */
+export const HAEBI_AWAKEN = {
+  need: 160, needGrowth: .5, kill: 1, elite: 30, boss: 0,
+  sec: 14, power: 1.35, tempo: 1.3, move: 1.15, ultRate: 2.5, burstRadius: 210, burstDamage: 90,
+  gritSec: 7, gritPower: 1.12, gritTempo: 1.12, gritMove: 1.08,
+  mastery: .5,
+} as const
 
 /**
  * 열전 스테이지 (형 11-16: 「스테이지를 다른 걸 줘서 적도 다르게 난이도도 어렵게 · 깨면 휘장」) — length 는 판 길이 배수.
  * tiers: 판을 다섯 토막으로 나눠 토막마다 나오는 적 둘 (앞 토막 적은 다음 토막에 안 나온다 · 「쉬운 적은 초반에만」).
+ * 숲 산길 damage .9 (11-17): 상점 없는 새 사람의 첫 판 — 봇 씨앗 1~10 에서 일곱 묶음 모두 7/10 이상 (docs/BALANCE.md 2026-11-17).
  * trial 은 본편 각성 시련: 숲 산길의 짧고 쉬운 판 (상점 강화 없이도 깰 수 있게 · 형 11-16 「따로 떼기」).
  */
 export const HAEBI_STAGES = {
-  forest: { name: '숲 산길', length: 1, hp: 1, damage: 1, spawn: 1, bossHp: 1, gold: 1, bg: 'forest.webp', boss: 'bandit-warlord', bossName: '산적 대두목',
+  forest: { name: '숲 산길', length: 1, hp: 1, damage: .9, spawn: 1, bossHp: 1, gold: 1, bg: 'forest.webp', boss: 'bandit-warlord', bossName: '산적 대두목',
     tiers: [['club', 'archer'], ['runner', 'slinger'], ['shield', 'dog'], ['berserker', 'firearcher'], ['iron', 'shaman']] },
   ford: { name: '물안개 여울', length: 1, hp: 1.7, damage: 1.8, spawn: 1.3, bossHp: 1.8, gold: 2, bg: 'ford.webp', boss: 'boss-ford', bossName: '여울 물두령',
     tiers: [['dog', 'slinger'], ['runner', 'firearcher'], ['shield', 'archer'], ['berserker', 'shaman'], ['iron', 'dog']] },

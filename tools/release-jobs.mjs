@@ -168,6 +168,76 @@ for (const r of skill) {
     use: '받으면 tools/skillbody-manual-intake.py → public/realm/skill-body · skill-body.ts 등록',
     prompt: bodyBase + actFor(r.weapon, hold) + '\nWEAPON IDENTITY from the existing base combat asset: ' + hold + '\nUse ONLY the attached base portrait for face and costume. Small accents near the weapon, not an awakening aura.' })
 }
+// 11-17 형 반려 — 비각성 비기 전신 다시 (지금 그림을 IMAGE 2 로 붙여 무엇이 틀렸나 말한다 · 저장 _r2)
+const HAND = 'HANDS: every hand has exactly one thumb and four fingers wrapped naturally around the grip; knuckles, wrist and forearm read clearly. '
+const SB_FIX = {
+  'g-06-strategist': HAND + 'The previous version (IMAGE 2) had broken fingers on the hand holding the sword — fix the sword hand.',
+  'g-12-silla-youth': HAND + 'The previous version (IMAGE 2) had broken fingers on the hand holding the sword — fix the sword hand.',
+  'g-07-drunk-warrior': HAND + 'The previous version (IMAGE 2) had a wrong, twisted arm stretched backward — both arms must be anatomically correct, elbows bending the natural way, shoulders connected.',
+  'g-18-daegaya-king': HAND + 'The previous version (IMAGE 2) had a wrong, twisted arm stretched backward — both arms must be anatomically correct, elbows bending the natural way, shoulders connected.',
+  'g-23-sangdang-soedal': HAND + 'The previous version (IMAGE 2) had a wrong, twisted arm stretched backward — both arms must be anatomically correct, elbows bending the natural way, shoulders connected.',
+  'g-29-yeonna-myeongsol': HAND + 'The previous version (IMAGE 2) had a wrong, twisted arm stretched backward — both arms must be anatomically correct, elbows bending the natural way, shoulders connected.',
+  'g-22-ungcheon-gomnae': 'The previous version (IMAGE 2) drew a blade that does not read as a sword. Draw a clear long straight single-edged iron sword (hwandudaedo style ring-pommel sword): narrow straight blade with a visible edge and tip, a short guard, a wrapped grip and a ring pommel, held firmly.',
+  'g-37-eumjeup-jeup': 'REDRAW FROM SCRATCH: the previous version (IMAGE 2) looked monstrous and held a rice sheaf like a weapon. Draw him as a believable adult human with normal proportions and the same friendly round face as the portrait, as a SHAMAN-STYLE RITUAL FIGHTER: he shakes a ritual gourd rattle (a dried calabash on a short wooden handle with small bronze bells and tassels, used like a shaman spirit bell) toward the right, the other palm open, soft golden grain-spirit motes around the rattle; a small rice-sheaf charm hangs from his belt (not held). ' + HAND,
+  'g-26-gampyeong-gaetbeol': 'The previous version (IMAGE 2) had the back leg\'s ankle twisted the wrong way. Both legs anatomically correct: knees and ankles bend naturally, both feet point in believable directions and touch the ground convincingly.',
+}
+// 11-17 형 비각성 비기 전신 검수 반려 42 + 위 9 — 옛 틀(bodyBase)의 뿌리 셋을 고친 v2 로 다시:
+//   ① 「clear large shapes · not a detailed painting」이 그림체를 초상과 다르게 · 여인을 어리게 만들었다 → 초상 그림체·나이를 잠근다 (ages.ts FACE_AGE)
+//   ② 「the free arm balancing behind」가 뒤로 뻗은 팔을 망가뜨렸다 → 빈손은 몸 앞(손바닥 펴서 앞으로)이나 무기 위로만
+//   ③ 손이 무기를 감싸는 모양을 못 그렸다 → 쥔 손은 옆에서 본 주먹 하나, 손가락 넷이 손잡이를 감싼다
+//   자세는 액션 RPG 각성 컷인처럼 감탄할 만하게 — 무기마다 한 벌 (낮은 카메라 · 대각선 · 무기 궤적 · 옷·머리 흩날림)
+const AGES = (() => { const s = readFileSync('src/realm/data/ages.ts', 'utf8'); const m = {}; for (const [, id, age] of s.matchAll(/'([glw]-[^']+)': \{ age: (\d+)/g)) m[id] ??= Number(age); return m })()
+const POSE_V2 = {
+  bow: 'POSE: a leaping backward archer shot — airborne for a heartbeat, body angled toward the viewer, drawing the bow to full draw toward the upper right; one knee raised, hair and sash whipping; the arrow tip glowing. Both bow limbs and one taut string visible, draw hand at the jaw.',
+  spear: 'POSE: a spiralling spear lunge — the body coiled low, one leg deep forward, the spear driven diagonally toward the upper right with a bright spiral trail along the shaft; both hands on the shaft, the rear hand near the butt, the front hand mid-shaft.',
+  sword: 'POSE: a rising crescent slash — low crouch springing upward, the sword carried in BOTH hands through a bright crescent arc that sweeps from lower left to upper right, coat and hair flaring; the blade fully visible at the end of the arc.',
+  dagger: 'POSE: a low dash strike — body almost parallel to the ground, dashing toward the right, the dagger in the leading hand pointed forward in a short bright streak, the other hand flat on the ground for balance in FRONT of the body, afterimage smear behind.',
+  axe: 'POSE: an overhead cleave — leaping, the axe raised high with BOTH hands on the haft, about to smash down toward the lower right, cracks and dust exploding from the impact point below; torso twisted toward the viewer.',
+  magic: 'POSE: a summoning stance — one foot forward, the ritual implement thrust toward the upper right in one hand, the other palm open in FRONT of the chest, a large circular spirit glyph of light blooming behind the implement, sleeves and ribbons lifting upward.',
+}
+const KIT_OF = (w) => ({ bow: 'bow', spear: 'spear', trident: 'spear', glaive: 'spear', sword: 'sword', greatsword: 'sword', dagger: 'dagger', sickle: 'dagger', fists: 'dagger', whip: 'dagger', staff: 'magic', scepter: 'magic', axe: 'axe', hammer: 'axe', club: 'axe', heavy: 'axe', oar: 'axe', hoe: 'axe' })[String(w)] ?? 'sword'
+const AUDITW = (() => { try { const d = JSON.parse(readFileSync('tools/sprite-kit/weapon-audit-20261116.json', 'utf8')); return Object.fromEntries((Array.isArray(d) ? d : d.rows).filter((r) => r.portrait).map((r) => [r.portrait, r])) } catch { return {} } })()
+const bodyV2 = (id, weaponText, kit) => {
+  const age = AGES[id], woman = id.startsWith('w-') || id.startsWith('l-')
+  return `Create ONE full-body ultimate-skill cut-in illustration for an original Korean historical-fantasy game, in the spectacular style of an action-RPG awakening cut-in.
+STYLE LOCK (most important): paint it in EXACTLY the same art style as IMAGE 1, the character's portrait — same rendering, same brushwork, same skin and face shading, same level of detail and lighting — as if the same artist painted both. Not simplified, not flat, not anime, not chibi.
+AGE LOCK: this ${woman ? 'woman' : 'man'} is ${age ?? 'the same age as in IMAGE 1'}${age ? ' years old' : ''}: keep the exact adult face from IMAGE 1 — same eye size, nose, jaw and cheek proportions${woman ? '; do NOT make her look younger, no childlike face, no enlarged eyes' : ''}. Adult body proportions, head about 1/7 of the height.
+${POSE_V2[kit] ?? POSE_V2.sword}
+CAMERA: slightly low angle, dynamic diagonal composition, mild foreshortening toward the viewer, motion lines and energy only around the weapon path.
+ANATOMY: exactly two arms and two legs, every joint bending the natural way. Each hand holding something is drawn as a clear fist with one thumb and four fingers wrapped around the grip. A free hand is never stretched behind the back: keep it in front of the body, open palm forward or on the weapon.
+WEAPON: ${weaponText}. Complete, solid, the same weapon as the portrait and the battle sprite.
+COSTUME: exactly the outfit of IMAGE 1 (non-awakened form), extended naturally below; Korean early-Three-Kingdoms identity, no Chinese imperial or wuxia redesign, no nudity.
+FORMAT: portrait 2:3 (1024x1536), one full figure on a flat dark navy #111827 background, facing and attacking toward screen RIGHT, everything (hair, weapon, feet, effects) inside with 8% margin. No text, logo or frame.`
+}
+const V2_REDO = {
+  hand: ['g-40-anya-adan', 'g-68-baekje-onnuri', 'g-96-garak-suro', 'g-102-garak-yeodogan', 'g-104-garak-odogan', 'w-11-assassin', 'w-18-jinhan-salt-widow', 'w-32-golbeol-budeul', 'w-53-hwanna-gabi', 'w-70-bukokjeo-mulbeom', 'w-72-eumjeup-beol', 'w-97-goguryeo-mir', 'w-102-garak-dana', 'w-103-tahae-neoul'],
+  arm: ['g-53-baekje-haeru', 'g-73-baekje-eureum', 'w-04-gaya-swordswoman', 'w-05-baekje-queen'],
+  style: ['l-L3-heo-hwangok', 'w-02-goguryeo-lady', 'w-06-buyeo-huntress', 'w-12-court-dancer', 'w-14-feast-spy', 'w-21-baekje-court-dancer', 'w-25-bihwa-priestess', 'w-31-dabeol-dalbit', 'w-34-chopal-deulme', 'w-36-baekje-maena', 'w-37-michuhol-gaennae', 'w-40-mujin-munui', 'w-41-hwanna-beodeul', 'w-42-gwanna-soenun', 'w-46-geonma-maru', 'w-55-guga-nuri', 'w-56-dongokjeo-sogeum', 'w-66-saro-noeul', 'w-71-yeonna-neoul', 'w-81-byeokjin-byeolbit', 'w-83-gyeonji-beodeul', 'w-96-haengin-neoul', 'w-101-garak-singwigan'],
+}
+const V2_WHY = { hand: '무기 쥔 손이 틀림', arm: '뒤로 뻗은 팔이 틀림', style: '인물 그림체가 초상과 달라짐(여인이 어려짐)' }
+const V2_TEST = ['w-36-baekje-maena', 'g-53-baekje-haeru']   // 먼저 두 장으로 새 틀 시험 (여인 그림체 · 사내 뒤 팔)
+const v2Jobs = []
+for (const [why, ids] of Object.entries(V2_REDO)) for (const id of ids) v2Jobs.push([id, V2_WHY[why]])
+for (const id of Object.keys(SB_FIX)) v2Jobs.push([id, '형 11-17 반려(앞 줄)'])
+for (const [id, why] of v2Jobs) {
+  const r = roster.find((x) => x.bust === id), a = AUDITW[id]
+  const weaponText = id === 'g-37-eumjeup-jeup' ? 'a ritual gourd rattle (dried calabash on a short wooden handle with small bronze bells and tassels), shaken like a shaman spirit bell; a small rice-sheaf charm hangs at the belt'
+    : a?.artWeapon ?? (r ? (r.hold || r.desc).replace(/ from IMAGE \d/g, '').replace(/,? ?held the same way in (every frame|all 8 frames)/gi, '') : 'the weapon in the portrait')
+  const kit = id === 'g-37-eumjeup-jeup' ? 'magic' : a?.fixedKit ?? a?.currentKit ?? KIT_OF(r?.weapon)
+  const extra = SB_FIX[id] ? '\nALSO FIX: ' + SB_FIX[id] : ''
+  jobs.push({ id: `SB-${id}-v2`, group: V2_TEST.includes(id) ? 'skilltest' : 'skill', save: `skillbody_${id}_v2.png`, title: `${id} · 비기 전신 새 틀 v2 (${why})${V2_TEST.includes(id) ? ' · ★ 시험 먼저' : ''}`,
+    refs: [`/realm/bust-hd/${id}.jpg`, `/realm/skill-body/${id}.jpg`], now: `형 11-17 반려: ${why}`,
+    use: '받으면 검수(손가락·팔·그림체·나이) → public/realm/skill-body/<id>.jpg 갈아 끼움 (옛 것 retired)',
+    prompt: bodyV2(id, weaponText, kit) + '\nIMAGE 2 is the rejected previous cut-in: do NOT copy its pose, style or mistakes.' + extra })
+}
+for (const [id, fix] of Object.entries(SB_FIX)) if (false) {
+  const r = roster.find((x) => x.bust === id)
+  const hold = r ? (r.hold || `the weapon and gear described here: ${r.desc.replace(/ from IMAGE \d/g, '')}`).replace(/,? ?held the same way in (every frame|all 8 frames)/gi, '') : 'the weapon in the portrait'
+  jobs.push({ id: 'SB-' + id + '-r2', group: 'skill', save: `skillbody_${id}_r2.png`, title: `${id} · 비기 전신 다시 (형 반려)`,
+    refs: [`/realm/bust-hd/${id}.jpg`, `/realm/skill-body/${id}.jpg`], now: '형 11-17 반려: ' + fix.split('—')[0].slice(0, 60),
+    use: '받으면 검수 → public/realm/skill-body/<id>.jpg 갈아 끼움 (옛 것 retired)',
+    prompt: 'FIX REQUEST (most important): ' + fix + '\nIMAGE 1 is the character portrait (face, costume, weapon identity). IMAGE 2 is the rejected previous skill cut-in: keep its overall pose idea, framing and painting quality but correct the problem above.\n' + bodyBase + (r ? actFor(r.weapon, hold) : '') + '\nWEAPON IDENTITY: ' + hold })
+}
 // 1차 각성 비기 전신 (11-16 · 코덱스가 시험 10장을 만든 틀 · Codex-aw1-skillbody-prompts-20261116.json 의 머리말 그대로)
 //   각성한 장수의 컷인이 각성 옷 전신으로 뜬다 (src/realm/data/skill-body-aw1.ts) · 여인 먼저 · 기본 비기 전신이 있으면 무기·싸움결 참고로
 const AW1_HEAD = `Create ONE production full-body FIRST-AWAKENING ultimate-skill cut-in illustration for an original early-Korean historical fantasy action game.

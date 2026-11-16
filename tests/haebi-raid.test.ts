@@ -10,7 +10,7 @@ test('same seed and inputs reproduce the run; choices freeze all combat and appl
   const a = createHaebi(23), b = createHaebi(23)
   for (let i = 0; i < 2400; i++) { const input = { x: Math.sin(i / 60), y: Math.cos(i / 60), skill: i % 100 === 0 }; stepHaebi(a, input, 1 / 120); stepHaebi(b, input, 1 / 120) }
   assert.deepEqual(a, b); reward(a); const snapshot = structuredClone(a); stepHaebi(a, { x: 1, y: 1, skill: true }, .05); assert.deepEqual(a, snapshot)
-  const pick = a.offers[0]!; assert.ok(choose(a, pick)); const rank = a.ranks[pick]; assert.equal(choose(a, pick), false); assert.equal(a.ranks[pick], rank)
+  const pick = a.offers[0] as Power; assert.ok(choose(a, pick)); const rank = a.ranks[pick]; assert.equal(choose(a, pick), false); assert.equal(a.ranks[pick], rank)
 })
 test('three attack slots force a route; maxed powers disappear and rerolls are limited', () => {
   const s = createHaebi(); s.ranks.gale = 1; s.ranks.ember = 1; s.ranks.axe = POWERS.axe.max; s.level = 5
@@ -18,10 +18,11 @@ test('three attack slots force a route; maxed powers disappear and rerolls are l
   for (let i = 0; i < 4; i++) { assert.ok(!s.offers.includes('thunder')); assert.ok(!s.offers.includes('axe')); assert.equal(new Set(s.offers).size, s.offers.length); assert.equal(reroll(s), i < 3) }
   assert.equal(s.rerolls, 0)
 })
-test('combination unlocks exactly once at the recipe threshold', () => {
-  const s = createHaebi(); s.level = 6; s.ranks.axe = 3; s.ranks.gale = 3; s.offers = ['axe']; s.xp = xpNeeded(s)
-  choose(s, 'axe'); assert.deepEqual(s.combos, ['cyclone']); assert.match(s.message, /도끼 폭풍/)
-  s.xp = xpNeeded(s); s.offers = ['axe']; choose(s, 'axe'); assert.deepEqual(s.combos, ['cyclone'])
+test('combination never auto-unlocks: the met recipe becomes a gold card that must be chosen', () => {
+  const s = createHaebi(); s.spawn = 99; s.level = 6; s.ranks.axe = 3; s.ranks.gale = 3; s.offers = ['axe']; s.xp = xpNeeded(s)
+  choose(s, 'axe'); assert.deepEqual(s.combos, [])
+  reward(s); assert.ok(s.offers.includes('cyclone')); assert.equal(s.offers.length, 3)
+  assert.ok(choose(s, 'cyclone')); assert.deepEqual(s.combos, ['cyclone']); assert.match(s.message, /도끼 폭풍/)
 })
 test('projectile split and lightning explosion are real damage mechanics, not visual-only', () => {
   const s = createHaebi(); s.spawn = 99; s.ranks.gale = 3; s.ranks.echo = 2; s.combos = ['torrent']; s.cool.axe = 99

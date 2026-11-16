@@ -1,6 +1,6 @@
 import { HAEBI_RUN as C, HAEBI_MOBS as M, HAEBI_STAGES as ST, HAEBI_ULT as U } from '../tune/params.ts'
 import { genArtOf } from '../realm/data/art.ts'
-import { areaScale, charge, slamRadius, slamWindup, type HaebiRun, type Kit, type Missile, type StageId } from './haebi.ts'
+import { areaScale, awakenedLook, charge, slamRadius, slamWindup, type HaebiRun, type Kit, type Missile, type StageId } from './haebi.ts'
 import { WALK_CYCLE } from './walk-cycle.ts'
 
 /** 돌팔매 묶음의 돌 · 바위 (전용 그림 H56~H58 이 오기 전엔 본편 바위 그림을 빌린다) */
@@ -59,7 +59,8 @@ function drawGhosts(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImage
 const heroArt = { base: genArtOf('haebi').file, awake: genArtOf('aw1-haebi').file, body: genArtOf('haebi').body }
 export function setHeroArt(baseKey: string, awakeKey?: string) { heroArt.base = genArtOf(baseKey).file; heroArt.awake = awakeKey ? genArtOf(awakeKey).file : heroArt.base; heroArt.body = genArtOf(baseKey).body }
 export const heroArtFiles = () => [...new Set([heroArt.base, heroArt.awake])]
-const heroSprite = (s: HaebiRun) => s.combos.length ? heroArt.awake : heroArt.base
+/** 판 안 각성(디지몬식) 동안만 각성 그림 — 조합을 열어도 모습은 그대로 (RAID-LINK §1) */
+const heroSprite = (s: HaebiRun) => awakenedLook(s) ? heroArt.awake : heroArt.base
 /** 걷기 위상(바퀴) — 화면 쪽 기억: 실제로 움직인 거리 ÷ 한 바퀴 보폭. 같은 판 같은 시각엔 한 번만 더하고, 새 판·순간 이동은 건너뛴다 */
 const walk = { x: 0, y: 0, t: -1, phase: 0 }
 function walkPhase(s: HaebiRun) {
@@ -230,7 +231,7 @@ function drawUlt(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageEle
 export function drawPortrait(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, menuTime = 0) {
   const { width: w, height: h } = ctx.canvas; ctx.clearRect(0, 0, w, h)
   const bg = ctx.createRadialGradient(w / 2, h * .46, 20, w / 2, h / 2, h * .65)
-  bg.addColorStop(0, s.combos.length ? '#6c5932' : '#394e46'); bg.addColorStop(1, '#111c20'); ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h)
+  bg.addColorStop(0, awakenedLook(s) ? '#6c5932' : '#394e46'); bg.addColorStop(1, '#111c20'); ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h)
   ctx.strokeStyle = '#d9bc6955'; ctx.lineWidth = 1
   for (const r of [90, 120, 145]) { ctx.beginPath(); ctx.arc(w / 2, h * .55, r, 0, Math.PI * 2); ctx.stroke() }
   sprite(ctx, images, heroSprite(s), w / 2, h - 24, h - 28, heroFrame(s, true, menuTime), 1, s.hurt > 0)
@@ -285,6 +286,8 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
     } else {
       if (!decal(ctx, images, 'mark-hero', s.x, s.y, 72, 32, .8)) { ctx.strokeStyle = '#f9d89788'; ctx.fillStyle = '#ffd97726'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(s.x, s.y, 29, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke() }
       trackGhosts(s, heroSprite(s)); drawGhosts(ctx, images, s, C.heroPx)
+      // 각성(금빛)·투지(붉은빛) 동안 발밑에 뛰는 빛 고리 — 그림 하나 더 없이 선 두 개
+      if (s.form !== 'normal') { const p = .5 + .5 * Math.sin(s.t * 9); ctx.save(); ctx.strokeStyle = s.form === 'awake' ? '#ffe08a' : '#ff9a52'; ctx.globalAlpha = .35 + .4 * p; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(s.x, s.y, 40 + 8 * p, 13 + 3 * p, 0, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha *= .5; ctx.beginPath(); ctx.ellipse(s.x, s.y, 56 + 10 * p, 18 + 4 * p, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore() }
       sprite(ctx, images, heroSprite(s), s.x, s.y, C.heroPx, heroFrame(s), s.face, s.hurt > 0)
     }
   }

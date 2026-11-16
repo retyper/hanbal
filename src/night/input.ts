@@ -52,6 +52,11 @@ const AIM_REACH = 10
 /** 판마다 고르는 것 — 그만두는 고리의 반지름 (없으면 P.night.pullDead) */
 export interface NightInputOpts {
   readonly dead?: number
+  /**
+   * 손가락을 브라우저가 빼앗아 가면(pointercancel · 캡처 잃음) 그만두지 않고 **쏜다** — 고리 밖까지 끌었으면.
+   * 몰려오는 판(산적·바다도적)은 당긴 살이 안 나가는 게 제일 나쁘다 (11-16 형: 「당겨 쐈는데 안 쏴짐」). 밤 판은 그대로 그만둔다
+   */
+  readonly cancelShoots?: boolean
 }
 
 export function createNightInput(canvas: HTMLCanvasElement, opts: NightInputOpts = {}): NightInput {
@@ -127,7 +132,13 @@ export function createNightInput(canvas: HTMLCanvasElement, opts: NightInputOpts
       syncSteady()
       return
     }
-    if (e.button !== 0 || pull.active) return
+    if (e.button !== 0) return
+    // 새 첫 손가락이 닿았는데 아직 당기는 중이면 지난 손가락의 뗌을 놓친 것이다 (iframe 밖에서 뗌 · 캡처 실패) —
+    // 그대로 두면 그 뒤로 영영 안 당겨진다. 지난 것을 끝내고 새로 잡는다. 둘째 손가락은 여전히 무시한다
+    if (pull.active) {
+      if (!e.isPrimary) return
+      finish(opts.cancelShoots !== true)
+    }
     try {
       canvas.setPointerCapture(e.pointerId)
     } catch {
@@ -188,7 +199,10 @@ export function createNightInput(canvas: HTMLCanvasElement, opts: NightInputOpts
     }
   }
 
-  const onCancel = (): void => finish(true)
+  const onCancel = (e: PointerEvent): void => {
+    if (e.pointerId !== pointerId) return
+    finish(opts.cancelShoots !== true)
+  }
   const onContext = (e: Event): void => e.preventDefault()
 
   const typing = (t: EventTarget | null): boolean => t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement

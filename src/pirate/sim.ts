@@ -9,7 +9,7 @@
  * 과녁 하나 · 아무 살도 닿지 않는다)으로 막는다. 판의 끝은 여기서 정한다(result).
  */
 import { P } from '../tune/params.ts'
-import { armArrow, armBow, cancelDraw, createWorld, reserveTargets, spawnTarget, step } from '../sim/world.ts'
+import { armArrow, armBow, cancelDraw, createWorld, isSettled, reserveTargets, spawnTarget, step } from '../sim/world.ts'
 import type { ArrowKindId, BowMods, InputFrame, StageDef, World } from '../sim/types.ts'
 import { drawTimeFor } from '../night/sim.ts'
 import { archerStr, bakeWaves, footY, palisadeLives, WAVE_COUNT, type Lane, type Mode, type Spawn, type Wave } from './waves.ts'
@@ -238,15 +238,36 @@ export function pickBoon(run: PirateRun, id: PickId): void {
   run.pauseLeft = R.pause
 }
 
+/** 판이 멈춘 동안(고르기 · 끝) 손은 놓은 채 — 날던 살만 마저 난다 */
+const HANDS_OFF: InputFrame = { aimX: 10, aimY: 0, drawing: false, steady: false, parry: false }
+
+/**
+ * 판이 멈춘 동안에도 **날던 살은 마저 난다** (11-16 형: 「화살 하나 공중에 떠 있는 상태로 멈춰 있음」).
+ * 전에는 끝·고르기에서 step 을 아예 안 불러 살이 허공에 얼었고, 끝 화면은 isSettled 를 기다리느라 영영 안 떴다.
+ * 살이 다 멎으면 더 돌리지 않는다 — 궤짝 시계·적은 그대로 멈춰 있다.
+ */
+function settleArrows(run: PirateRun): void {
+  const w = run.w
+  if (isSettled(w)) return
+  cancelDraw(w)
+  const evStart = w.events.length
+  step(w, HANDS_OFF)
+  w.arrowsLeft = ARROWS
+  w.hp = Math.floor(P.enemy.hpMax)
+  if (w.status !== 'playing') w.status = 'playing'
+  if (run.phase === 'pick') absorb(run, evStart)
+}
+
 /** 판의 한 고정 스텝 — 활터 step 하나와 이 판의 규칙 */
 export function stepPirate(run: PirateRun, input: InputFrame & { readonly cap?: number; readonly cancel?: boolean }): void {
-  if (run.phase === 'end') return
+  if (run.phase === 'end') { settleArrows(run); return }
   const w = run.w
   const R = P.pirate
   const dt = w.dt
 
   // ── 물결 사이 고르기 — 판이 멈춘다 (시간만 흐른다 · 다 되면 첫째) ──
   if (run.phase === 'pick') {
+    settleArrows(run)
     run.pickLeft -= dt
     // 궤짝 살의 시간은 고르는 동안에도 흐른다 (쉬는 틈이 살을 늘려 주지 않는다)
     if (run.special !== 'basic') {
@@ -310,12 +331,28 @@ export function stepPirate(run: PirateRun, input: InputFrame & { readonly cap?: 
     }
   }
   const evStart = w.events.length
+  // 밤의 숨 (night/sim.ts shootStep ③ 과 같은 셈) — 당기는 동안 깎인 스태미나의 (1 − staminaDrainMul) 를 돌려준다.
+  // 몰려오는 판이라 쥐고 기다리는 일이 잦다 — 활터 소모 그대로면 팔이 무너져 「당겨 쐈는데 안 쏴짐」이 된다
+  const a0 = w.archer
+  const before = a0.stamina
+  const wasDrawing = a0.phase === 'drawing' || a0.phase === 'full'
   step(w, input)
+  if (wasDrawing && a0.stamina > 0 && a0.stamina < before) a0.stamina += (before - a0.stamina) * (1 - P.night.staminaDrainMul)
 
   // 끝없는 살 · 적 화살은 목숨이 아니라 움찔 (목숨은 목책뿐이다)
   w.arrowsLeft = ARROWS
   w.hp = Math.floor(P.enemy.hpMax)
   if (w.status !== 'playing') w.status = 'playing'
+  absorb(run, evStart)
+  // 죽은 자리는 역할을 내려놓는다 (다시 쓰일 자리)
+  for (let i = 0; i < w.targets.length; i++) if (!w.targets[i]!.alive && run.role[i] !== 'none' && run.role[i] !== 'anchor') run.role[i] = 'none'
+  stepRest(run)
+}
+
+/** 이번 스텝의 활터 사건 → 이 판의 규칙 (방패 · 움찔 · 궤짝) */
+function absorb(run: PirateRun, evStart: number): void {
+  const w = run.w
+  const R = P.pirate
   for (let i = evStart; i < w.events.length; i++) {
     const e = w.events[i]!
     if (e.t === 'release') run.shots++
@@ -334,7 +371,10 @@ export function stepPirate(run: PirateRun, input: InputFrame & { readonly cap?: 
       }
     }
     else if (e.t === 'player_hit') {
+      // 움찔 — 당기던 것이 풀린다. 다만 손가락을 쥔 채면 **바로 다시 당겨진다** (idle 로 둔다):
+      // recovering 으로 두면 손을 한 번 떼야 다시 잡혀서, 쥔 채 놓은 그 한 발이 안 나갔다 (11-16 「당겨 쐈는데 안 쏴짐」)
       cancelDraw(w)
+      if (w.archer.phase === 'recovering') w.archer.phase = 'idle'
       run.events.push({ t: 'flinch' })
     } else if (e.t === 'hit' && run.role[e.targetId] === 'barrel') {
       const a = run.barrelArrow[e.targetId] ?? 'pierce'
@@ -345,8 +385,14 @@ export function stepPirate(run: PirateRun, input: InputFrame & { readonly cap?: 
       run.events.push({ t: 'arm', arrow: a, x: e.x, y: e.y })
     }
   }
-  // 죽은 자리는 역할을 내려놓는다 (다시 쓰일 자리)
-  for (let i = 0; i < w.targets.length; i++) if (!w.targets[i]!.alive && run.role[i] !== 'none' && run.role[i] !== 'anchor') run.role[i] = 'none'
+}
+
+/** 스텝의 나머지 — 궤짝 살의 시간 · 목책 · 물결 끝 */
+function stepRest(run: PirateRun): void {
+  const w = run.w
+  const R = P.pirate
+  const dt = w.dt
+  const time = now(w)
 
   // ── 궤짝 살의 시간 ──
   if (run.special !== 'basic') {

@@ -190,3 +190,52 @@ h1,h2,.choices b,#power-tooltip>b{font-family:var(--serif)}
 .result-combos b img{width:28px;height:28px;object-fit:contain}
 /* 싸우는 동안 초상 옆 글을 걷는다 (11-16 형) — 메뉴에선 그대로 */
 #layout.in-run .portrait-title span,#layout.in-run #rank-title,#layout.in-run #reaction{display:none}
+/* 판 안 각성 막대 (11-17 · RAID-LINK §1) — 체력 막대 밑 가는 띠 · 각성은 금빛, 투지는 붉은빛 · 각성(투지) 동안은 남은 시간이 줄어든다 */
+#wake-bar{height:6px;margin:2px calc(26px*85/68) 0;background:#0c1311d9;border:1px solid #6e5f3e;border-radius:3px;overflow:hidden}
+#wake-fill{display:block;height:100%;width:0;background:linear-gradient(90deg,#a87a26,#ffe08a)}
+#wake-bar.grit #wake-fill{background:linear-gradient(90deg,#8e3418,#ff9a52)}
+#wake-bar.on{border-color:#ffe08a;box-shadow:0 0 7px #ffd36aaa}
+#wake-bar.grit.on{border-color:#ff9a52;box-shadow:0 0 7px #ff8a3aaa}
+.campaign-vanguard #wake-bar{display:none}
+#skill-cutin.wake b{color:#fff3c8;border-left-color:#ffe08a}
+/* 기술 나무 (11-17 · RAID-LINK §2) — 레벨업 금테 조합 카드 · 「나무」 단추 · 나무 보기 */
+.choices button{position:relative}
+.choices button.combo-card{border:2px solid #f2c45a;border-image:none;border-radius:6px;background:linear-gradient(#3a2c10f5,#140f06fa);box-shadow:0 0 0 1px #6b4a14,inset 0 0 18px #f2c45a55,0 0 16px #f2c45a66}
+.choices button.combo-card b{color:#ffe7a8}
+.combo-card .ribbon{position:absolute;top:-2px;left:50%;transform:translateX(-50%);padding:1px 14px;font-style:normal;font-size:11px;font-weight:bold;letter-spacing:.2em;color:#2a1a06;background:linear-gradient(#ffe7a0,#d8a640);border-radius:0 0 8px 8px}
+.combo-card .rune img{filter:drop-shadow(0 0 8px #ffcf6a)}
+.combo-card .pips{display:flex;gap:6px}
+.combo-card .pips i{width:11px;height:11px;border-radius:50%;border:1px solid #a88d51;background:#1a1408}
+.combo-card .pips i.on{background:#f2c45a}
+.combo-card .pips i.new{background:#fff3c8;box-shadow:0 0 6px #ffd36a}
+.combo-card .ultup{display:flex;align-items:center;gap:6px;color:#ffe2a0;font-size:12px}
+.combo-card .ultup img{width:30px;height:30px;object-fit:contain}
+.panel{position:relative}
+.tree-btn{position:absolute;top:8px;right:8px;display:flex;align-items:center;gap:4px;padding:5px 10px;font-size:12px;z-index:1}
+.tree-btn img{width:20px;height:20px;object-fit:contain}
+.tree-btn:active{transform:scale(.93)}
+#tree-view{position:fixed;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;padding:10px;background:#050d13d9}
+#tree-view[hidden]{display:none}
+.tree-panel{background:linear-gradient(145deg,#29392d,#111e18);width:min(980px,100%);padding:12px 16px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.tree-panel h2{margin:0;font-size:clamp(16px,3.4vh,24px);color:#ffe3a0}
+.tree-panel .tree-close{margin:0;padding:7px 26px}
+svg.tree{width:100%;height:auto;max-height:calc(100dvh - 130px);display:block}
+svg.tree line{stroke:#4d564a;stroke-width:3}
+svg.tree line.on{stroke:#f2c45a}
+svg.tree .node .ring{fill:#0d1712;stroke:#3a4038;stroke-width:3}
+svg.tree .node.on .ring{fill:#3a2c10;stroke:#f2c45a}
+svg.tree .node.next .ring{stroke:#e8e2c8;stroke-dasharray:6 4}
+svg.tree .node.off image{opacity:.28}
+svg.tree .label{fill:#c5cbbd;font-size:13px;text-anchor:middle}
+svg.tree .node.on .label{fill:#ffe2a0}
+svg.tree .node.off .label{fill:#6c7468}
+svg.tree .badge circle{fill:#11190f;stroke:#a18b5f;stroke-width:1.5}
+svg.tree .badge text{fill:#ffe6a2;font:bold 12px Georgia,serif;text-anchor:middle}
+svg.tree .pip{fill:#1a221c;stroke:#7a6a40;stroke-width:1.5}
+svg.tree .pip.on{fill:#f2c45a}
+svg.tree .tag rect{fill:#0d1712;stroke:#4d564a;stroke-width:1.5}
+svg.tree .tag text{fill:#8f9a8a;font-size:11px;text-anchor:middle}
+svg.tree .tag.on rect{stroke:#f2c45a}
+svg.tree .tag.on text{fill:#ffe2a0}
+svg.tree .tier{fill:#dfc38d;font-size:13px;letter-spacing:.3em;text-anchor:middle}
+@media(orientation:landscape) and (max-height:600px){.tree-btn{top:4px;right:4px;padding:3px 7px;font-size:10px}.tree-btn img{width:16px;height:16px}.tree-panel{padding:6px 10px;gap:3px}svg.tree{max-height:calc(100dvh - 96px)}.tree-panel .tree-close{padding:5px 20px;font-size:12px}.combo-card .ribbon{font-size:9px;padding:0 10px}.combo-card .ultup img{width:22px;height:22px}.combo-card .pips i{width:9px;height:9px}}

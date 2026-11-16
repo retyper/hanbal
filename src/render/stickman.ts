@@ -1447,14 +1447,14 @@ export function drawArcher(
         if (distSinceDot >= P.steady.previewDotGap) {
           distSinceDot -= P.steady.previewDotGap
           if (BOOST.on) {
-            // 밝은 바탕 위에서도 읽히게 — 어두운 밑점 위에 크림색 점 (폰은 점도 크게)
-            const dr = Math.max(2.6, cam.scale * 0.07)
-            ctx.globalAlpha = 0.6 * pb
+            // 밝은 바탕 위에서도 읽히게 — 어두운 밑점 위에 크림색 점. 밤 판처럼 작게 (11-16 형: 큰 점이 화면을 덮었다)
+            const dr = BOOST.dotR
+            ctx.globalAlpha = 0.5 * pb
             ctx.fillStyle = '#000'
             ctx.beginPath()
-            ctx.arc(worldToScreenX(cam, px3), worldToScreenY(cam, py3), dr + 1.5, 0, TAU)
+            ctx.arc(worldToScreenX(cam, px3), worldToScreenY(cam, py3), dr + BOOST.dotEdge, 0, TAU)
             ctx.fill()
-            ctx.globalAlpha = 0.95 * pb
+            ctx.globalAlpha = BOOST.dotAlpha * pb
             ctx.fillStyle = '#fff1c8'
             ctx.beginPath()
             ctx.arc(worldToScreenX(cam, px3), worldToScreenY(cam, py3), dr, 0, TAU)
@@ -1484,7 +1484,7 @@ export function drawArcher(
       armorLast = w.armor
     }
     const hpA = holdingHp ? 1 : clamp(1 - (w.elapsed - hpSeen - HP_LINGER) / HP_FADE, 0, 1)
-    if (hpA > 0) {
+    if (hpA > 0 && !BOOST.on) { // 막기 판은 궁수 체력이 없다 (목숨은 목책) — 늘 가득 찬 바는 군더더기 (11-16 형: 「궁수 곁 청록 바」)
     ctx.globalAlpha = hpA
     const hpRatio = w.hp / Math.max(1, Math.floor(P.enemy.hpMax))
     const bx = worldToScreenX(cam, a.x)

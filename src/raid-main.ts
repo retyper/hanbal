@@ -1,9 +1,9 @@
 import { breakthroughText, isBreakthrough } from './realm/vanguard.ts'
-import { HAEBI_RUN as C, HAEBI_STICK as STICK } from './tune/params.ts'
-import { createHaebi, runDuration, stepHaebi, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, type Kit, type Power, type HaebiRun, type StageId } from './raid/haebi.ts'
+import { HAEBI_RUN as C, HAEBI_STICK as STICK, HAEBI_TREE as TREE } from './tune/params.ts'
+import { createHaebi, runDuration, stepHaebi, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, type Kit, type Power, type Pick, type HaebiRun, type StageId } from './raid/haebi.ts'
 import { loadMeta, saveMeta, buy, refund, record, shopCost, shopMax, stageOpen, stageName, SHOP, STAGE_ORDER, type ShopKey } from './raid/meta.ts'
 import { drawField, imagePaths, setHeroArt, heroArtFiles } from './raid/haebi-view.ts'
-import { powerIcon, installPowerHints } from './raid/power-ui.ts'
+import { powerIcon, installPowerHints, comboIcon, rankMark, treeSvg } from './raid/power-ui.ts'
 import { KIT_BY_SPRITE } from './raid/kit-table.ts'
 import { hasSkillBody } from './realm/data/skill-body.ts'
 import { josa } from './core/josa.ts'
@@ -33,26 +33,34 @@ const K = KITS[kit], weapon = K.weapon
 const heroId = query.get('hero') ?? DEFAULT_HERO
 /** 목소리 결 — 본편이 넘기면 그대로, 아니면 초상 이름의 앞 글자(w·l = 여인) */
 const sound = raidSound((query.get('sex') ?? (/^[wl]-/.test(HERO.bust) ? 'f' : 'm')) === 'f', kit)
-/** 조합 그림 (public/realm/ 아래) — 전용 그림은 raid/<id>.png · 돌팔매 둘은 H58 이 오기 전까지 본편 바위·별 그림을 빌린다 · 없으면 능력 아이콘 */
-const COMBO_ART: Record<string, string> = { ...Object.fromEntries(['cyclone', 'inferno', 'torrent', 'volley', 'meteor', 'grove', 'boomerang', 'tempest', 'splitwave', 'shadowdance', 'venom', 'rite', 'soulstorm'].map(id => [id, `raid/${id}.png`])), boulder: 'fx/rock.png', daze: 'raid/hit.png' }
 setHeroArt(sprite, HERO.awake)
 /** 판 밖 기록 (금·상점·휘장) — 독립 열전만 쓴다 */
 const meta = loadMeta()
+/**
+ * 판 안 각성 (RAID-LINK §1) — 각성 그림이 있는(본편이 awake 를 넘긴) 장수만 각성한다 · 시련은 아직 본편 각성 전이라 투지뿐.
+ * 숙련: 이 장수로 숲·여울·목책을 다 깼으면 막대 절반으로 시작.
+ */
+const canAwaken = mode !== 'trial' && !!HERO.awake
+const mastery = (['forest', 'ford', 'palisade'] as const).every(id => (meta.heroes[heroId] ?? []).includes(id))
 let stage: Exclude<StageId, 'trial'> = STAGE_ORDER.find(id => stageOpen(meta, id) && !meta.cleared[id]) ?? 'forest'
 const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`
-const newRun = (seed: number) => { const r = createHaebi(seed, mode, kit, mode === 'stage' ? { stage, bonus: meta.shop } : {}); if (r.message.endsWith('첫 조합을 향해')) { r.message = ''; r.messageTime = 0 }  /* 시작 군말 띠는 걷는다 (형 11-16) */ return r }
+const newRun = (seed: number) => { const r = createHaebi(seed, mode, kit, { ...mode === 'stage' ? { stage, bonus: meta.shop } : {}, awaken: canAwaken, mastery }); if (r.message.endsWith('첫 조합을 향해')) { r.message = ''; r.messageTime = 0 }  /* 시작 군말 띠는 걷는다 (형 11-16) */ return r }
 root.innerHTML = `<header><div><small>장수 열전 · 독립 모드</small><h1>${HERO.name} <em>${K.title}</em></h1></div><div class="head-actions"><button id="pause" disabled aria-label="일시정지">Ⅱ</button></div></header>
 <div id="layout"><aside id="character"><div id="portrait-media"><img id="hero-portrait" src="${import.meta.env.BASE_URL}realm/bust-hd/${HERO.bust}.jpg" alt="${HERO.name} 원화"><video id="hero-video" muted loop playsinline preload="none" hidden aria-label="각성 ${HERO.name} 영상"></video></div><div class="portrait-title"><span>${HERO.home}</span><b id="rank-title">${HERO.name}</b><button id="portrait-toggle" hidden>원화로 보기</button></div><div id="reaction">${weapon} 하나로 시작하는 열전</div><div id="combo-badges"></div><i class="frame-knots"></i></aside>
 <main><section id="menu"><span class="eyebrow">장수 열전</span><h2>${HERO.name}<em>${K.title}</em></h2><p>능력을 고르고 두 힘을 묶어, 15분 가까이 버틴 뒤 오는 두목을 쓰러뜨리세요.</p><div class="journey"><span><b>01</b> 붉은 고리를 피하고</span><span><b>02</b> 두 힘을 묶어</span><span><b>03</b> 두목을 잡습니다</span></div><button id="start" class="primary" disabled>그림을 불러오는 중…</button><p class="controls">이동 WASD·방향키·화면 누르기 · 회피 Shift · 비기 Space · 멈춤 Esc</p><p class="note">본편의 병력과 따로인 한 판입니다.</p></section>
-<section id="play" hidden><div id="arena"><canvas id="field" width="${C.width}" height="${C.height}" aria-label="${HERO.name} 토벌 전장. 클릭 또는 드래그로 이동"></canvas><div id="combat-hud"><div class="health-line"><b>${HERO.name}</b><span id="health">180 / 180</span></div><div class="bar hp"><span class="hp-track"><i id="hp-fill"></i><em id="hp-chunk"></em></span></div><div id="loadout" aria-label="획득한 전투 능력"></div></div><div id="hud"><small id="phase"></small><b id="clock"></b></div><div id="score"><b id="kills"></b><small>격파</small><b id="level"></b></div><div class="bar xp"><i id="xp-fill"></i></div><div id="announcement" aria-live="polite"></div><div id="streak"></div><footer><span id="hint">자동 공격 · 화면을 끌면 그쪽으로 이동 · 능력 아이콘을 누르고 있으면 설명</span><button id="dash">회피 Shift</button><button id="skill" class="primary" data-kit="${kit}">${K.skill} Space</button></footer><div id="stick" hidden aria-hidden="true"><i></i></div><i class="frame-knots"></i></div></section></main></div><div id="power-tooltip" role="tooltip" hidden></div><div id="overlay" hidden></div>`
+<section id="play" hidden><div id="arena"><canvas id="field" width="${C.width}" height="${C.height}" aria-label="${HERO.name} 토벌 전장. 클릭 또는 드래그로 이동"></canvas><div id="combat-hud"><div class="health-line"><b>${HERO.name}</b><span id="health">180 / 180</span></div><div class="bar hp"><span class="hp-track"><i id="hp-fill"></i><em id="hp-chunk"></em></span></div><div id="wake-bar" class="${canAwaken ? '' : 'grit'}" aria-label="${canAwaken ? '각성' : '투지'} 막대"><i id="wake-fill"></i></div><div id="loadout" aria-label="획득한 전투 능력"></div></div><div id="hud"><small id="phase"></small><b id="clock"></b></div><div id="score"><b id="kills"></b><small>격파</small><b id="level"></b></div><div class="bar xp"><i id="xp-fill"></i></div><div id="announcement" aria-live="polite"></div><div id="streak"></div><footer><span id="hint">자동 공격 · 화면을 끌면 그쪽으로 이동 · 능력 아이콘을 누르고 있으면 설명</span><button id="dash">회피 Shift</button><button id="skill" class="primary" data-kit="${kit}">${K.skill} Space</button></footer><div id="stick" hidden aria-hidden="true"><i></i></div><i class="frame-knots"></i></div></section></main></div><div id="power-tooltip" role="tooltip" hidden></div><div id="overlay" hidden></div>`
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T
 root.insertAdjacentHTML('beforeend', `<div id="rotate-guide" hidden><div><span style="font-size:44px">↻</span><h2>폰을 가로로 돌려 주세요</h2><p>확대 ${josa(HERO.name, '과', '와')} 전장을 함께 보며 싸웁니다.<br>회전하는 동안 전투는 멈춰 있습니다.</p></div></div>`)
 $('arena').insertAdjacentHTML('beforeend', `<div id="skill-cutin" hidden aria-hidden="true"><img alt=""><b>${K.skill}</b></div>`)
 let cutinUntil = 0
-function showSkillCutin() {
-  const id = HERO.bust, body = hasSkillBody(id)
-  const cut = $('skill-cutin'); cut.classList.toggle('full-body', body)
-  cut.querySelector('img')!.src = import.meta.env.BASE_URL + 'realm/' + (body ? 'skill-body' : run.combos.length ? 'awaken-hd' : 'bust-hd') + '/' + id + '.jpg'
+/** 비기 컷인 · 각성 컷인 (같은 결 · 각성은 각성 원화와 「각성」 글자) */
+function showSkillCutin(wake = false) {
+  const id = HERO.bust, body = !wake && hasSkillBody(id)
+  const cut = $('skill-cutin'); cut.classList.toggle('full-body', body); cut.classList.toggle('wake', wake)
+  cut.querySelector('img')!.src = import.meta.env.BASE_URL + 'realm/' + (body ? 'skill-body' : awakenedLook(run) ? 'awaken-hd' : 'bust-hd') + '/' + id + '.jpg'
+  cut.querySelector('b')!.innerHTML = wake ? `각성 · ${HERO.name}` : K.skill
+  // 같은 애니를 다시 틀려면 한 번 꺼야 한다
+  cut.style.animation = 'none'; void cut.offsetWidth; cut.style.animation = ''
   cut.style.animationDuration = C.skillCutin + 's'; cut.hidden = false; cutinUntil = run.t + C.skillCutin
 }
 $('pause').insertAdjacentHTML('beforebegin', '<button id="fullscreen">전체화면</button>')
@@ -130,8 +138,10 @@ heroVideo.muted = true; heroVideo.volume = 0
 let stillPortrait = matchMedia('(prefers-reduced-motion: reduce)').matches, mediaKey = '', videoFailed = false
 $('portrait-toggle').onclick = () => { stillPortrait = !stillPortrait; mediaKey = ''; updatePortrait() }
 heroVideo.onerror = () => { videoFailed = true; mediaKey = ''; updatePortrait() }
+// 각성 원화는 판 가운데 갑자기 바뀌니 미리 받아 둔다
+if (canAwaken) new Image().src = import.meta.env.BASE_URL + 'realm/awaken-hd/' + HERO.bust + '.jpg'
 function updatePortrait() {
-  const awake = run.combos.length > 0, animate = awake && HERO.video && !stillPortrait && !videoFailed
+  const awake = awakenedLook(run), animate = awake && HERO.video && !stillPortrait && !videoFailed
   const playing = animate && !paused && !run.offers.length && !document.hidden && !inspecting && (!live || run.state === 'playing')
   const key = [awake, animate, playing].join(':'); if (key === mediaKey) return; mediaKey = key
   heroPortrait.src = import.meta.env.BASE_URL + 'realm/' + (awake ? 'awaken-hd' : 'bust-hd') + '/' + HERO.bust + '.jpg'
@@ -170,7 +180,7 @@ $('skill').onclick = () => { if (!paused && !run.offers.length) skill = true; $(
 window.addEventListener('keydown', e => {
   if (!live) return
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) || e.key === ' ' && e.target === document.body) e.preventDefault()
-  if (e.key === 'Escape' && !e.repeat) { pause(); return }
+  if (e.key === 'Escape' && !e.repeat) { if (!treeView.hidden) closeTree(); else pause(); return }
   if (paused || inspecting || run.offers.length || run.state !== 'playing') return
   if (e.target instanceof HTMLButtonElement && (e.key === ' ' || e.key === 'Enter')) return
   keys.add(e.key.toLowerCase()); if (e.key === 'Shift' && !e.repeat) dash = true; if (e.key === ' ' && !e.repeat) skill = true
@@ -227,35 +237,52 @@ canvas.onpointermove = e => { if (!canvas.hasPointerCapture(e.pointerId)) return
 canvas.onpointerup = e => { if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId); if (stick && e.pointerId === stick.id) stickEnd() }
 canvas.onpointercancel = e => { destination = null; if (stick && e.pointerId === stick.id) stickEnd() }
 /** 조합 길 — 글 대신 그림 셈: [능력 그림 ×단계] + [능력 그림 ×단계] = [조합 그림] (형 11-16: 「텍스트로 하지 말고 아이콘3 + 아이콘3 = 아이콘」) · 이미 채운 단계는 밝게 */
-function routeHint(k: Power) {
-  const rows = kitCombos(kit).filter(c => k in c.needs).map(c => {
-    const parts = Object.entries(c.needs).map(([key, n]) => { const done = run.ranks[key as Power] >= n; return `<span class="need${done ? ' ok' : ''}${key === k ? ' me' : ''}">${powerIcon(key as Power)}<b>${n}</b></span>` }).join('<i class="op">+</i>')
-    const got = run.combos.includes(c.id)
-    return `<span class="recipe" aria-label="${c.name}: ${Object.entries(c.needs).map(([key, n]) => `${POWERS[key as Power].name} ${n}`).join(' + ')}">${parts}<i class="op">=</i><span class="combo${got ? ' got' : ''}"><img src="${import.meta.env.BASE_URL}realm/raid/${c.id}.png" alt=""><small>${c.name}</small></span></span>`
-  })
-  return rows.join('') || '모든 공격에 함께 효과'
+const recipe = (c: ReturnType<typeof kitCombos>[number], me?: Power) => {
+  const parts = Object.entries(c.needs).map(([key, n]) => { const done = run.ranks[key as Power] >= n; return `<span class="need${done ? ' ok' : ''}${key === me ? ' me' : ''}">${powerIcon(key as Power)}<b>${n}</b></span>` }).join('<i class="op">+</i>')
+  const r = comboRank(run, c.id)
+  return `<span class="recipe" aria-label="${c.name}: ${Object.entries(c.needs).map(([key, n]) => `${POWERS[key as Power].name} ${n}`).join(' + ')}">${parts}<i class="op">=</i><span class="combo${r ? ' got' : ''}">${comboIcon(c.id)}<small>${c.name}${r ? ' ' + rankMark(r) : ''}</small></span></span>`
 }
+function routeHint(k: Power) {
+  return kitCombos(kit).filter(c => k in c.needs).map(c => recipe(c, k)).join('') || '모든 공격에 함께 효과'
+}
+/** 레벨업 카드 — 능력 카드 · 금테 조합 카드(처음엔 열기 · 다시 나오면 단계 올리기 · 끝 단계는 비기 강화) */
+function card(k: Pick) {
+  if (!isCombo(k)) { const p = POWERS[k]; return `<button data-up="${k}" style="--accent:${p.color}"><span class="rune">${powerIcon(k)}</span><small>${run.ranks[k] ? '강화' : '새 능력'} · ${run.ranks[k] + 1}/${p.max}</small><b>${p.name}</b><span>${p.desc}</span><em>${routeHint(k)}</em></button>` }
+  const c = comboOf(k), r = comboRank(run, k), next = r + 1
+  const pips = Array.from({ length: TREE.max }, (_, i) => `<i class="${i < r ? 'on' : i === r ? 'new' : ''}"></i>`).join('')
+  const ult = next >= TREE.max ? `<span class="ultup"><img src="${import.meta.env.BASE_URL}realm/raid/power-skill.png" alt="">${K.skill} 강화</span>` : ''
+  return `<button data-up="${k}" class="combo-card" style="--accent:#f2c45a"><i class="ribbon">조합</i><span class="rune">${comboIcon(k)}</span><small>${r ? `조합 강화 · ${next}/${TREE.max}` : '조합 열기'}</small><b>${c.name}</b><span>${c.desc}</span><em><span class="pips" aria-label="${next}단계">${pips}</span>${ult || recipe(c)}</em></button>`
+}
+/** 기술 나무 보기 (레벨업 창 · 멈춤 창의 「나무」) — 판 위에 한 겹 더 · 누르면 닫힘 */
+const treeView = document.createElement('div'); treeView.id = 'tree-view'; treeView.hidden = true; treeView.setAttribute('role', 'dialog'); treeView.setAttribute('aria-label', '기술 나무')
+root.append(treeView)
+function openTree() { treeView.innerHTML = `<div class="panel tree-panel"><h2>${weapon} 기술 나무</h2>${treeSvg(run)}<button class="tree-close primary">닫기</button></div>`; treeView.hidden = false }
+function closeTree() { treeView.hidden = true }
+treeView.onclick = closeTree
+const treeButton = '<button id="tree-open" class="tree-btn" aria-label="기술 나무 보기"><img src="' + import.meta.env.BASE_URL + 'realm/raid/power-skill.png" alt="">나무</button>'
 function showOverlay() {
   const state = !live ? '' : run.state !== 'playing' ? run.state : run.offers.length ? 'upgrade:' + run.offers.join(',') : paused ? 'pause' : ''
-  if (!state) { shown = ''; $('overlay').hidden = true; return }
+  if (!state) { shown = ''; $('overlay').hidden = true; closeTree(); return }
   if (state === shown) return
-  hidePowerHint()
+  hidePowerHint(); closeTree()
   shown = state; const overlay = $('overlay'); overlay.hidden = !state; if (!state) return
   resetInput()
   if (state.startsWith('upgrade')) {
-    overlay.innerHTML = `<div class="panel upgrade"><h2 class="lvup">레벨 업!</h2><div class="choices">${run.offers.map(k => { const p = POWERS[k]; return `<button data-up="${k}" style="--accent:${p.color}"><span class="rune">${powerIcon(k)}</span><small>${run.ranks[k] ? '강화' : '새 능력'} · ${run.ranks[k] + 1}/${p.max}</small><b>${p.name}</b><span>${p.desc}</span><em>${routeHint(k)}</em></button>` }).join('')}</div><button id="reroll" ${run.rerolls ? '' : 'disabled'}>다른 선택지 · ${run.rerolls}회 남음</button></div>`
-    overlay.querySelectorAll<HTMLButtonElement>('[data-up]').forEach(b => b.onclick = () => { if (choose(run, b.dataset.up as Power)) { shown = ''; showOverlay(); updateHud() } })
+    overlay.innerHTML = `<div class="panel upgrade">${treeButton}<h2 class="lvup">레벨 업!</h2><div class="choices">${run.offers.map(card).join('')}</div><button id="reroll" ${run.rerolls ? '' : 'disabled'}>다른 선택지 · ${run.rerolls}회 남음</button></div>`
+    overlay.querySelectorAll<HTMLButtonElement>('[data-up]').forEach(b => b.onclick = () => { if (choose(run, b.dataset.up as Pick)) { shown = ''; showOverlay(); updateHud() } })
     if (run.level === 1) { $<HTMLButtonElement>('reroll').disabled = true; $('reroll').textContent = '첫 공격 능력을 골라 주세요' }
     $('reroll').onclick = () => { if (reroll(run)) { shown = ''; showOverlay() } }
+    $('tree-open').onclick = openTree
   } else if (state === 'pause') {
-    overlay.innerHTML = '<div class="panel"><small>장수 열전</small><h2>잠시 숨 고르기</h2><p>성장과 전투는 그대로 기다립니다.</p><button id="resume" class="primary">계속 싸우기</button><button id="quit">출전 화면으로</button></div>'
+    overlay.innerHTML = `<div class="panel">${treeButton}<small>장수 열전</small><h2>잠시 숨 고르기</h2><p>성장과 전투는 그대로 기다립니다.</p><button id="resume" class="primary">계속 싸우기</button><button id="quit">출전 화면으로</button></div>`
+    $('tree-open').onclick = openTree
     $('resume').onclick = () => { paused = false; shown = ''; last = 0; showOverlay() }; $('quit').onclick = menu
     if (vanguardToken) { $('quit').textContent = '지금 확보한 돌파로 귀환'; $('quit').onclick = withdraw }
     else if (mode === 'stage') { $('quit').textContent = '물러나기 · 버틴 만큼 금 받기'; $('quit').onclick = withdraw }
   } else {
     // 독립 열전: 판이 끝나면 한 번만 금을 주고 기록한다 (지면 버틴 만큼 · 깨면 휘장 + 깸 금)
     if (mode === 'stage' && rewarded !== run) { rewarded = run; const gold = runGold(run); reward = { gold, ...record(meta, run.stage, gold, run.state === 'won', run.t, heroId) }; saveMeta(meta) }
-    overlay.innerHTML = `<div class="panel result ${run.state}"><h2>${run.state === 'won' ? mode === 'stage' ? `${stageName(run.stage)} 토벌 완료` : '열전 완수' : run.hp <= 0 ? '도전 실패' : run.t < runDuration(run) ? '철수' : '시간 초과 · 두목 생존'}</h2><p>${Math.floor(run.t / 60)}분 ${Math.floor(run.t % 60)}초 · ${run.kills.toLocaleString()}명 격파 · Lv.${run.level}</p><div class="result-combos">${kitCombos(kit).filter(c => run.combos.includes(c.id)).map(c => `<b>${COMBO_ART[c.id] ? `<img src="${import.meta.env.BASE_URL}realm/${COMBO_ART[c.id]}" alt="">` : ''}${c.name}</b>`).join('')}</div>${mode === 'stage' ? `<p class="reward">금 <b>+${reward.gold.toLocaleString()}</b> · 보유 ${meta.gold.toLocaleString()}${reward.first ? ` · <strong><img class="won-emblem" src="${import.meta.env.BASE_URL}realm/raid/emblem-${run.stage}.png" alt="">${stageName(run.stage)} 휘장 획득</strong>` : ''}${reward.heroFirst && run.stage === SEAL_STAGE && TRUE_WAKE.has(heroId) ? ` · <strong class="tw-open">본편에서 ${josa(HERO.name, '이', '가')} 진각성할 수 있습니다</strong>` : ''}</p>` : ''}${mode === 'stage' ? '' : '<p>본편 병력 손실 없음</p>'}<div class="result-acts"><button id="new-run" class="primary">다시 출전</button><div>${mode === 'stage' ? '<button id="to-shop">상점</button>' : ''}<button id="quit">스테이지 고르기</button>${window.parent !== window ? '<button id="return">본편으로</button>' : ''}</div></div></div>`
+    overlay.innerHTML = `<div class="panel result ${run.state}"><h2>${run.state === 'won' ? mode === 'stage' ? `${stageName(run.stage)} 토벌 완료` : '열전 완수' : run.hp <= 0 ? '도전 실패' : run.t < runDuration(run) ? '철수' : '시간 초과 · 두목 생존'}</h2><p>${Math.floor(run.t / 60)}분 ${Math.floor(run.t % 60)}초 · ${run.kills.toLocaleString()}명 격파 · Lv.${run.level}</p><div class="result-combos">${kitCombos(kit).filter(c => run.combos.includes(c.id)).map(c => `<b>${comboIcon(c.id)}${c.name} ${rankMark(comboRank(run, c.id))}</b>`).join('')}</div>${mode === 'stage' ? `<p class="reward">금 <b>+${reward.gold.toLocaleString()}</b> · 보유 ${meta.gold.toLocaleString()}${reward.first ? ` · <strong><img class="won-emblem" src="${import.meta.env.BASE_URL}realm/raid/emblem-${run.stage}.png" alt="">${stageName(run.stage)} 휘장 획득</strong>` : ''}${reward.heroFirst && run.stage === SEAL_STAGE && TRUE_WAKE.has(heroId) ? ` · <strong class="tw-open">본편에서 ${josa(HERO.name, '이', '가')} 진각성할 수 있습니다</strong>` : ''}</p>` : ''}${mode === 'stage' ? '' : '<p>본편 병력 손실 없음</p>'}<div class="result-acts"><button id="new-run" class="primary">다시 출전</button><div>${mode === 'stage' ? '<button id="to-shop">상점</button>' : ''}<button id="quit">스테이지 고르기</button>${window.parent !== window ? '<button id="return">본편으로</button>' : ''}</div></div></div>`
     if (vanguardToken) {
       overlay.querySelector('h2')!.textContent = run.breaches === 3 ? '길은 열었다. 본대여, 진격하라!' : `${run.breaches}/3 돌파 확보 · 본대로 귀환`
       overlay.querySelector('.result-combos')!.textContent = isBreakthrough(run.breaches) ? breakthroughText(run.breaches) : ''
@@ -319,21 +346,23 @@ function updateHud() {
   if (mode === 'vanguard') setText('hint', `전위대장 ${run.breaches}/3 돌파 · 일시정지에서 성과를 갖고 귀환 가능`);  const remaining = Math.max(0, Math.ceil(runDuration(run) - run.t)); setText('clock', `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`)
   setText('kills', run.kills.toLocaleString()); setText('level', `Lv.${run.level}`)
   setWidth('xp-fill', run.level >= C.maxLevel ? 100 : Math.min(100, run.xp / xpNeeded(run) * 100))
-  setText('rank-title', run.combos.length ? `각성 · ${HERO.name}` : HERO.name)
-  setText('reaction', !live ? mode === 'vanguard' ? '내가 길을 열겠다. 뒤따라와!' : `${weapon} 하나로 시작하는 열전` : run.hurt > 0 ? '버텨낼 수 있어!' : run.attack > 0 ? '길을 열어라!' : run.combos.length ? '이제, 몰아칠 차례다.' : run.moving ? '내 뒤를 따라와.' : '빈틈을 기다리는 중')
-  setFlag('character', 'awakened', run.combos.length > 0); setFlag('character', 'hurt', run.hurt > 0)
+  // 각성 막대 — 차는 동안 · 각성(투지) 동안은 남은 시간이 줄어든다 (바뀔 때만 씀)
+  setWidth('wake-fill', gaugeRatio(run) * 100); setFlag('wake-bar', 'on', run.form !== 'normal')
+  setText('rank-title', awakenedLook(run) ? `각성 · ${HERO.name}` : HERO.name)
+  setText('reaction', !live ? mode === 'vanguard' ? '내가 길을 열겠다. 뒤따라와!' : `${weapon} 하나로 시작하는 열전` : run.hurt > 0 ? '버텨낼 수 있어!' : run.attack > 0 ? '길을 열어라!' : awakenedLook(run) ? '이제, 몰아칠 차례다.' : run.moving ? '내 뒤를 따라와.' : '빈틈을 기다리는 중')
+  setFlag('character', 'awakened', awakenedLook(run)); setFlag('character', 'hurt', run.hurt > 0)
   setFlag('layout', 'in-run', live)   // 싸우는 동안 초상 옆 글(고을·이름·한마디)은 걷는다 (형 11-16: 「백제의 장수 · 길을 열어라 같은 텍스트 다 없애」)
   setText('announcement', run.messageTime > 0 ? run.message : ''); setFlag('announcement', 'visible', run.messageTime > 0)
   setText('streak', run.comboKills >= 15 ? `${run.comboKills} 연속 격파` : '')
   for (const [id, cd, title] of [['dash', run.dashCd, '회피 Shift'], ['skill', run.skillCd, `${K.skill} Space`]] as const) {
     setText(id, cd > 0 ? `${title} · ${cd.toFixed(1)}초` : title); const off = cd > 0 || paused || !!run.offers.length || run.state !== 'playing'; if (hudLast.get(id + '.off') !== String(off)) { hudLast.set(id + '.off', String(off)); $<HTMLButtonElement>(id).disabled = off }
   }
-  const key = JSON.stringify(run.ranks) + run.combos.join(',')
+  const key = JSON.stringify(run.ranks) + JSON.stringify(run.comboRanks) + run.combos.join(',')
   if (key !== loadoutKey) {
     loadoutKey = key
     hidePowerHint()
     $('loadout').innerHTML = (Object.keys(POWERS) as Power[]).filter(k => run.ranks[k]).map(k => `<button class="power-slot" data-power="${k}" aria-label="${POWERS[k].name} ${run.ranks[k]}단계 / 최대 ${POWERS[k].max}단계" style="--accent:${POWERS[k].color}">${powerIcon(k)}<b>${run.ranks[k]}</b></button>`).join('')
-    $('combo-badges').innerHTML = kitCombos(kit).filter(c => run.combos.includes(c.id)).map(c => `<span>${COMBO_ART[c.id] ? `<img src="${import.meta.env.BASE_URL}realm/${COMBO_ART[c.id]}" alt="">` : powerIcon(Object.keys(c.needs)[0] as Power)}<b>${c.name}</b></span>`).join('')
+    $('combo-badges').innerHTML = kitCombos(kit).filter(c => run.combos.includes(c.id)).map(c => `<span>${comboIcon(c.id)}<b>${c.name} ${rankMark(comboRank(run, c.id))}</b></span>`).join('')
   }
 }
 function frame(now: number) {
@@ -347,9 +376,10 @@ function frame(now: number) {
       if (x || y) destination = null
       else if (sd) { x = sd.x; y = sd.y }
       else if (destination) { const dx = destination.x - run.x, dy = destination.y - run.y, len = Math.hypot(dx, dy); if (len < 5) destination = null; else { x = dx / len; y = dy / len } }
-      const skillBefore = run.skillCd
+      const skillBefore = run.skillCd, wakesBefore = run.wakes
       stepHaebi(run, { x, y, dash, skill }, 1 / 120)
-      if (run.skillCd > skillBefore) showSkillCutin()
+      if (run.wakes > wakesBefore && run.form === 'awake') showSkillCutin(true)
+      else if (run.skillCd > skillBefore) showSkillCutin()
       dash = false; skill = false; acc -= 1 / 120
       if (run.offers.length || run.state !== 'playing') { acc = 0; break }
     }

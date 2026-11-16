@@ -351,3 +351,74 @@ describe('산적 판 세 길', () => {
     assert.ok(topY > P.pirate.ridgeY, `윗길 높이 ${topY}`)
   })
 })
+
+describe('바다도적 막기 — 멈춘 판의 살 (11-16 형: 화살이 공중에 멈춤 · 당겨 쐈는데 안 쏴짐)', () => {
+  /** 하늘로 높이 쏜 살 하나 — 몇 초를 난다 */
+  async function loft(p: PirateRun): Promise<number> {
+    const { spawnArrow } = await import('../src/sim/ballistics.ts')
+    const a = spawnArrow(p.w, 1.2, 1)!
+    return p.w.arrows.indexOf(a)
+  }
+  it('목책이 다 부서진 그 순간 날던 살은 마저 날아 떨어진다 (판이 끝나도 허공에 얼지 않는다)', async () => {
+    const { isSettled } = await import('../src/sim/world.ts')
+    const p = createPirate({ seed: 11, sev: 2, mu: 5, watch: 0 })
+    // 마지막 목책이 부서지기 바로 전까지
+    let i = 0
+    for (; i < 60 * 300 && p.lives > 1; i++) stepPirate(p, idle)
+    let k = -1
+    for (; i < 60 * 300 && p.result === null; i++) {
+      if (k < 0) k = await loft(p)
+      stepPirate(p, idle)
+    }
+    assert.ok(p.result !== null && !p.result.won)
+    const a = p.w.arrows[k]!
+    assert.ok(a.alive, '끝난 순간에도 살은 날고 있어야 시험이 된다')
+    const x0 = a.x
+    stepPirate(p, idle)
+    assert.notEqual(a.x, x0, '판이 끝났다고 살이 멈추면 안 된다')
+    for (let j = 0; j < 12 / p.w.dt && !isSettled(p.w); j++) stepPirate(p, idle)
+    assert.ok(isSettled(p.w), '살이 다 떨어져야 끝 화면이 뜬다')
+  })
+  it('고르는 동안에도 날던 살은 떨어진다', async () => {
+    const { isSettled } = await import('../src/sim/world.ts')
+    const p = createPirate({ seed: 5, sev: 2, mu: 5, watch: 0 })
+    let k = -1
+    for (let i = 0; i < 60 * 200 && p.phase !== 'pick'; i++) {
+      stepPirate(p, idle)
+      if (k < 0 && p.wave === 0 && p.phase === 'fight') k = await loft(p)
+      for (let j = 0; j < p.w.targets.length; j++) if (p.role[j] === 'sword' || p.role[j] === 'shield' || p.role[j] === 'captain' || p.role[j] === 'archer') p.w.targets[j]!.alive = false
+    }
+    assert.equal(p.phase, 'pick')
+    if (!isSettled(p.w)) {
+      const live = p.w.arrows.find((a) => a.alive && a.outcome === 'flying')!
+      const x0 = live.x
+      stepPirate(p, idle)
+      assert.notEqual(live.x, x0)
+    }
+    for (let j = 0; j < 12 / p.w.dt; j++) stepPirate(p, idle)
+    assert.ok(isSettled(p.w))
+    assert.equal(p.phase, 'pick', '고르기는 그대로 기다린다')
+  })
+  it('적 화살에 움찔해도 손을 쥔 채면 다시 당겨지고, 놓으면 쏜다', () => {
+    const p = createPirate({ seed: 9, sev: 2, mu: 5, watch: 0 })
+    const hold: InputFrame = { aimX: 10, aimY: 1, drawing: true, steady: false, parry: false }
+    for (let i = 0; i < 20; i++) stepPirate(p, hold)
+    const a = p.w.archer
+    assert.ok(a.phase === 'drawing' || a.phase === 'full')
+    // 적 화살 하나를 궁수 코앞에서 몸으로 날린다
+    const sh = p.w.shots[0]!
+    Object.assign(sh, { alive: true, x: a.x + 0.6, y: a.y, px: a.x + 0.6, py: a.y, vx: -30, vy: 0, look: 0 })
+    let flinched = false
+    for (let i = 0; i < 5 && !flinched; i++) {
+      stepPirate(p, hold)
+      flinched = p.events.some((e) => e.t === 'flinch')
+    }
+    assert.ok(flinched, '움찔했다')
+    const shots0 = p.shots
+    for (let i = 0; i < 30; i++) stepPirate(p, hold)
+    assert.ok(a.phase === 'drawing' || a.phase === 'full', '쥔 채면 다시 당겨진다 (손을 뗐다 다시 눌러야 하면 놓아도 안 나간다)')
+    stepPirate(p, idle)
+    stepPirate(p, idle)
+    assert.equal(p.shots, shots0 + 1, '놓으면 나간다')
+  })
+})

@@ -1,4 +1,4 @@
-import { HAEBI_RUN as C, HAEBI_VANGUARD as V, HAEBI_STAGES as ST, HAEBI_MOBS as M, HAEBI_SHOP as SH, HAEBI_GOLD as G, HAEBI_ULT as U } from '../tune/params.ts'
+import { HAEBI_RUN as C, HAEBI_VANGUARD as V, HAEBI_STAGES as ST, HAEBI_MOBS as M, HAEBI_SHOP as SH, HAEBI_GOLD as G, HAEBI_ULT as U, HAEBI_TREE as T, HAEBI_AWAKEN as A } from '../tune/params.ts'
 import { makeRng } from '../core/rng.ts'
 
 /**
@@ -61,6 +61,11 @@ export const COMBOS = [
 ] as const
 export type Combo = typeof COMBOS[number]['id']
 export const kitCombos = (kit: Kit) => COMBOS.filter(c => c.kit === null || c.kit === kit)
+/** 레벨업 카드 하나 — 능력(1층) 또는 조합(2층 · 금테) */
+export type Pick = Power | Combo
+const COMBO_IDS = new Set<string>(COMBOS.map(c => c.id))
+export const isCombo = (k: string): k is Combo => COMBO_IDS.has(k)
+export const comboOf = (id: Combo) => COMBOS.find(c => c.id === id)!
 export type MobKind = 'club' | 'archer' | 'runner' | 'slinger' | 'shield' | 'dog' | 'berserker' | 'firearcher' | 'iron' | 'shaman' | 'tiger' | 'bear' | 'hunter' | 'torch' | 'elite' | 'boss'
 export type StageId = keyof typeof ST
 /** 판 밖 상점에서 산 단계 (HAEBI_SHOP 의 열둘) */
@@ -79,14 +84,18 @@ export interface HaebiRun {
   seed: number; t: number; x: number; y: number; hp: number; face: number; moving: boolean;
   attack: number; hurt: number; inv: number; dash: number; dashCd: number; skillCd: number;
   cool: Record<Cool, number>; ult: UltState | null;
-  ranks: Record<Power, number>; combos: Combo[]; xp: number; level: number; offers: Power[]; rerolls: number;
+  /** combos = 연 조합 (고른 차례) · comboRanks = 그 단계 1~T.max (없으면 1) */
+  ranks: Record<Power, number>; combos: Combo[]; comboRanks: Partial<Record<Combo, number>>; xp: number; level: number; offers: Pick[]; rerolls: number;
+  /** 판 안 각성 (RAID-LINK §1) — gauge 모은 점 · form 지금 모습(보통·각성·투지) · formT 남은 초 · wakes 각성(투지)한 수 · canAwaken 본편 각성 장수인가 */
+  gauge: number; form: 'normal' | 'awake' | 'grit'; formT: number; wakes: number; canAwaken: boolean;
   enemies: Mob[]; shots: Missile[]; fx: Effect[]; drops: Drop[];
   spawn: number; nextElite: number; nextBarrage: number; boss: boolean; next: number; kills: number; damage: number;
   state: 'playing' | 'won' | 'lost'; message: string; messageTime: number; comboKills: number; streakTime: number;
 }
 export interface RunInput { x: number; y: number; dash?: boolean; skill?: boolean }
 export function random(s: HaebiRun) { const rng = makeRng(s.seed); const n = rng.next(); s.seed = rng.state(); return n }
-export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit = 'axe', opts: { stage?: StageId; bonus?: Partial<Bonus> } = {}): HaebiRun {
+/** awaken: 본편에서 각성한(각성 그림이 있는) 장수 — 없으면 막대가 차도 투지뿐 · mastery: 숲·여울·목책을 다 깬 장수 (막대 절반으로 시작) */
+export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit = 'axe', opts: { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean } = {}): HaebiRun {
   const bonus = { ...NO_BONUS, ...opts.bonus }, maxHp = C.health + bonus.vigor * SH.vigor.step, stage: StageId = mode === 'trial' ? 'trial' : opts.stage ?? 'forest'
   const k = KITS[kit]
   const ranks = Object.fromEntries((Object.keys(POWERS) as Power[]).map(p => [p, 0])) as Record<Power, number>
@@ -94,7 +103,8 @@ export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit
   const s: HaebiRun = { mode, stage, bonus, maxHp, revives: bonus.revive, elites: 0, kit, breaches: 0, captains: 0, seed, t: 0, x: C.width / 2, y: C.height / 2, hp: maxHp, face: 1, moving: false,
     attack: 0, hurt: 0, inv: 0, dash: 0, dashCd: 0, skillCd: 0, ult: null,
     cool: { axe: 0, gale: 0, ember: 0, thunder: 0, orbit: 0, bow: 0, rain: 0, volley: 0, spear: 0, javelin: 0, grove: 0, sword: 0, wave: 0, tempest: 0, dagger: 0, knife: 0, shadow: 0, bell: 0, soul: 0, rite: 0, storm: 0, sling: 0, skip: 0, boulder: 0 },
-    ranks, combos: [],
+    ranks, combos: [], comboRanks: {},
+    gauge: opts.mastery ? A.need * A.mastery : 0, form: 'normal', formT: 0, wakes: 0, canAwaken: !!opts.awaken,
     xp: 0, level: 1, offers: [], rerolls: 3 + bonus.reroll, enemies: [], shots: [], fx: [], drops: [],
     spawn: 0, nextElite: C.eliteEvery * ST[stage].length, nextBarrage: C.barrageAt, boss: false, next: 1, kills: 0, damage: 0,
     state: 'playing', message: kit === 'axe' ? '해비의 출전 · 첫 조합을 향해' : '출전 · 첫 조합을 향해', messageTime: 4, comboKills: 0, streakTime: 0 }
@@ -126,12 +136,33 @@ const paced = (s: HaebiRun) => s.t * 600 / runDuration(s)
 export function phase(s: HaebiRun) { const u = paced(s); return s.mode === 'vanguard' ? `전위 돌파 ${s.breaches}/3` : u < 120 ? '첫 불씨' : u < 300 ? '힘의 결합' : u < 480 ? '폭풍의 진격' : s.t < bossTime(s) ? '압도' : '마지막 두목' }
 export function comboReady(s: HaebiRun, c: typeof COMBOS[number]) { return Object.entries(c.needs).every(([k, v]) => s.ranks[k as Power] >= v) }
 function announce(s: HaebiRun, text: string) { s.message = text; s.messageTime = 4 }
+// ── 기술 나무 (RAID-LINK §2) ──
+/** 조합 단계 — 열지 않았으면 0 · 연 조합은 1~T.max */
+export const comboRank = (s: HaebiRun, id: Combo) => s.combos.includes(id) ? Math.max(1, s.comboRanks[id] ?? 1) : 0
+/** 조합 단계가 그 효과에 곱하는 몫 (1단계 = 1) */
+const cp = (s: HaebiRun, id: Combo) => 1 + (comboRank(s, id) - 1) * T.rankStep
+/** 3층 비기 강화 — 이 묶음의 조합 하나라도 T.max 단계 */
+export const ultUpgraded = (s: HaebiRun) => kitCombos(s.kit).some(c => comboRank(s, c.id) >= T.max)
+/** 레벨업 카드로 나올 수 있는 조합 — 조건이 찼고 아직 T.max 아래 · fresh = 아직 안 연 것 */
+export function comboChoices(s: HaebiRun) {
+  const ready = kitCombos(s.kit).filter(c => comboReady(s, c) && comboRank(s, c.id) < T.max)
+  return { fresh: ready.filter(c => !comboRank(s, c.id)).map(c => c.id), more: ready.filter(c => comboRank(s, c.id) > 0).map(c => c.id) }
+}
 function offer(s: HaebiRun) {
   const attackKeys = attackPowers(s.kit)
   const slotsFull = attackKeys.filter(k => s.ranks[k] > 0).length >= C.attackSlots
   const pool = kitPowers(s.kit).filter(k => s.ranks[k] < POWERS[k].max && !(slotsFull && attackKeys.includes(k) && !s.ranks[k]))
-  if (!pool.length || s.level >= C.maxLevel) return
+  const { fresh, more } = comboChoices(s)
+  if (!pool.length && !fresh.length && !more.length || s.level >= C.maxLevel) return
   if (s.level === 1) { s.offers = [KITS[s.kit].secondary, 'ember', 'thunder']; return }
+  powerOffers(s, pool, attackKeys)
+  // 조합 카드는 한 번에 하나 · 맨 끝 자리 — 새로 조건이 찬 조합은 늘, 연 조합의 다음 단계는 upgradeChance 몫으로
+  const combo = fresh[0] ?? (more.length && random(s) < T.upgradeChance ? more[Math.floor(random(s) * more.length)] : undefined)
+  if (combo) { if (s.offers.length >= 3) s.offers[s.offers.length - 1] = combo; else s.offers.push(combo) }
+}
+function powerOffers(s: HaebiRun, pool: Power[], attackKeys: Power[]) {
+  s.offers = []
+  if (!pool.length) return
   // A developing attack is always offered; the remaining choices retain seeded variety.
   const attacks = pool.filter(k => attackKeys.includes(k))
   const developing = attacks.filter(k => s.ranks[k] > 0)
@@ -143,12 +174,47 @@ function offer(s: HaebiRun) {
   }
 }
 export function reroll(s: HaebiRun) { if (s.state !== 'playing' || s.level === 1 || !s.offers.length || s.rerolls <= 0) return false; s.rerolls--; offer(s); return true }
-export function choose(s: HaebiRun, key: Power) {
-  if (s.state !== 'playing' || !s.offers.includes(key) || s.ranks[key] >= POWERS[key].max) return false
-  s.xp -= xpNeeded(s); s.ranks[key]++; s.level++; s.offers = []; s.hp = Math.min(s.maxHp, s.hp + C.levelHeal)
-  for (const c of kitCombos(s.kit)) if (comboReady(s, c) && !s.combos.includes(c.id)) { s.combos.push(c.id); announce(s, `조합 완성 · ${c.name}`) }
+/** 카드 고르기 — 능력은 한 단계 · 조합은 처음이면 열고(금테) 다시 고르면 단계를 올린다 (자동 개방 없음) */
+export function choose(s: HaebiRun, key: Pick) {
+  if (s.state !== 'playing' || !s.offers.includes(key)) return false
+  if (isCombo(key)) {
+    const c = comboOf(key), rank = comboRank(s, key)
+    if (rank >= T.max || !kitCombos(s.kit).some(x => x.id === key) || !comboReady(s, c)) return false
+    if (!rank) s.combos.push(key)
+    s.comboRanks[key] = rank + 1
+    announce(s, rank + 1 >= T.max ? `비기 강화 · ${KITS[s.kit].skill}` : rank ? `조합 강화 · ${c.name} ${rank + 1}단계` : `조합 개방 · ${c.name}`)
+  } else {
+    if (s.ranks[key] >= POWERS[key].max) return false
+    s.ranks[key]++
+  }
+  s.xp -= xpNeeded(s); s.level++; s.offers = []; s.hp = Math.min(s.maxHp, s.hp + C.levelHeal)
   if (s.xp >= xpNeeded(s)) offer(s)
   return true
+}
+// ── 판 안 각성 (RAID-LINK §1) ──
+/** 다음 각성까지 모아야 하는 점 */
+export const gaugeNeed = (s: HaebiRun) => A.need * (1 + s.wakes * A.needGrowth)
+/** 막대 몫 0~1 — 각성(투지) 동안은 남은 시간 */
+export const gaugeRatio = (s: HaebiRun) => s.form !== 'normal' ? s.formT / (s.form === 'awake' ? A.sec : A.gritSec) : Math.min(1, s.gauge / gaugeNeed(s))
+/** 각성한 모습으로 그리는가 — 선봉은 본편 각성 장수가 처음부터 */
+export const awakenedLook = (s: HaebiRun) => s.form === 'awake' || s.mode === 'vanguard'
+/** 지금 모습이 곱하는 몫 */
+function formBoost(s: HaebiRun) {
+  return s.form === 'awake' ? { power: A.power, tempo: A.tempo, move: A.move, ult: A.ultRate } : s.form === 'grit' ? { power: A.gritPower, tempo: A.gritTempo, move: A.gritMove, ult: 1 } : { power: 1, tempo: 1, move: 1, ult: 1 }
+}
+/** 적을 잡아 막대를 채운다 — 다 차면 각성(본편 각성 장수) 또는 투지 */
+function fillGauge(s: HaebiRun, kind: MobKind) {
+  if (s.mode === 'vanguard' || s.form !== 'normal' || s.state !== 'playing') return
+  s.gauge += kind === 'boss' ? A.boss : kind === 'elite' ? A.elite : A.kill
+  if (s.gauge < gaugeNeed(s)) return
+  s.gauge = 0; s.wakes++
+  s.form = s.canAwaken ? 'awake' : 'grit'; s.formT = s.canAwaken ? A.sec : A.gritSec
+  if (!s.canAwaken) { announce(s, '투지 · 몸이 달아오른다'); fx(s, 'buff', s.x, s.y, 90, '#ffb35a'); return }
+  announce(s, '각성!'); s.inv = Math.max(s.inv, C.skillInv)
+  // 각성하는 순간 둘레를 치고 밀어낸다
+  const r = A.burstRadius * areaScale(s), damage = A.burstDamage * powerScale(s)
+  fx(s, 'ring', s.x, s.y, r, '#ffe08a')
+  for (const e of s.enemies) if (e.hp > 0 && Math.hypot(e.x - s.x, e.y - s.y) < r) hit(s, e, damage)
 }
 function fx(s: HaebiRun, kind: Effect['kind'], x: number, y: number, r = 18, color = '#ffdba0', angle = 0, x2 = x, y2 = y) {
   if (s.fx.length >= C.maxFx) s.fx.shift()
@@ -180,6 +246,7 @@ function hit(s: HaebiRun, e: Mob, amount: number, knock = true) {
     if (s.mode === 'vanguard') { s.breaches++; announce(s, `전위대장 격파 · ${s.breaches}/3 돌파 확보`) }
     if (s.mode !== 'vanguard' || s.breaches === 3) { s.state = 'won'; s.offers = []; announce(s, s.mode === 'vanguard' ? '전위 완전 돌파 · 본대가 진격한다' : '산길을 가른 폭풍 · 토벌 완료') }
   }
+  fillGauge(s, e.kind)
 }
 function blast(s: HaebiRun, x: number, y: number, radius: number, damage: number, color = '#ff995e') {
   fx(s, 'blast', x, y, radius, color)
@@ -359,19 +426,19 @@ function aura(s: HaebiRun, power: number, area: number) {
     s.cool.orbit = C.orbitInterval
     for (let i = 0; i < 3; i++) {
       const a = s.t * 2.8 + i * Math.PI * 2 / 3, x = s.x + Math.cos(a) * C.orbitRadius * area, y = s.y + Math.sin(a) * C.orbitRadius * area
-      for (const e of s.enemies) if (Math.hypot(e.x - x, e.y - y) < 65 * area) hit(s, e, C.orbitDamage * power)
+      for (const e of s.enemies) if (Math.hypot(e.x - x, e.y - y) < 65 * area) hit(s, e, C.orbitDamage * power * cp(s, 'cyclone'))
     }
   }
   if (s.combos.includes('volley') && !s.cool.volley) {
     s.cool.volley = C.volleyInterval
-    for (let i = 0; i < C.volleyArrows; i++) shoot(s, 'arrow', s.t + i * Math.PI * 2 / C.volleyArrows, C.volleyDamage * power)
+    for (let i = 0; i < C.volleyArrows; i++) shoot(s, 'arrow', s.t + i * Math.PI * 2 / C.volleyArrows, C.volleyDamage * power * cp(s, 'volley'))
   }
   if (s.combos.includes('grove') && !s.cool.grove) {
     s.cool.grove = C.groveInterval
     for (let i = 0; i < C.groveSpikes; i++) {
       const a = s.t * 1.3 + i * Math.PI * 2 / C.groveSpikes, x = s.x + Math.cos(a) * C.groveRadius * area, y = s.y + Math.sin(a) * C.groveRadius * area
       fx(s, 'spike', x, y, C.groveHit * area, '#e8eefc')
-      for (const e of s.enemies) if (Math.hypot(e.x - x, e.y - y) < C.groveHit * area) hit(s, e, C.groveDamage * power)
+      for (const e of s.enemies) if (Math.hypot(e.x - x, e.y - y) < C.groveHit * area) hit(s, e, C.groveDamage * power * cp(s, 'grove'))
     }
   }
   if (s.combos.includes('shadowdance') && !s.cool.shadow) {
@@ -379,31 +446,31 @@ function aura(s: HaebiRun, power: number, area: number) {
     s.cool.shadow = C.shadowInterval; const used: number[] = []
     for (let i = 0; i < C.shadowTargets + s.ranks.echo; i++) {
       const e = nearest(s, s.x, s.y, used, C.shadowRange * area); if (!e) break
-      used.push(e.id); fx(s, 'slash', e.x, e.y + C.heroShotHeight - 20, 46, '#b48cff', i * 2.1); hit(s, e, C.shadowDamage * power)
+      used.push(e.id); fx(s, 'slash', e.x, e.y + C.heroShotHeight - 20, 46, '#b48cff', i * 2.1); hit(s, e, C.shadowDamage * power * cp(s, 'shadowdance'))
     }
   }
   if (s.combos.includes('rite') && !s.cool.rite) {
     s.cool.rite = C.riteInterval; const r = C.riteRadius * area
     fx(s, 'ring', s.x, s.y, r, '#ffb35a')
-    for (const e of s.enemies) if (Math.hypot(e.x - s.x, e.y - s.y) < r) hit(s, e, C.riteDamage * power)
+    for (const e of s.enemies) if (Math.hypot(e.x - s.x, e.y - s.y) < r) hit(s, e, C.riteDamage * power * cp(s, 'rite'))
   }
   if (s.combos.includes('soulstorm') && !s.cool.storm) {
     s.cool.storm = C.stormInterval
     for (let i = 0; i < C.stormOrbs + s.ranks.echo; i++) {
       const a = s.t * 3.2 + i * Math.PI * 2 / (C.stormOrbs + s.ranks.echo), x = s.x + Math.cos(a) * C.stormRadius * area, y = s.y + Math.sin(a) * C.stormRadius * area
-      for (const e of s.enemies) if (Math.hypot(e.x - x, e.y - y) < 40 * area) hit(s, e, C.stormDamage * power, false)
+      for (const e of s.enemies) if (Math.hypot(e.x - x, e.y - y) < 40 * area) hit(s, e, C.stormDamage * power * cp(s, 'soulstorm'), false)
     }
   }
   if (s.combos.includes('boulder') && !s.cool.boulder) {
     // 굴러가는 바위: 가장 많이 걸리는 줄로 큰 바위가 굴러가며 모두 짓이기고 앞으로 밀어낸다
-    const r = C.boulderRadius * area, a = bestAim(s, C.boulderSpeed * C.boulderLife, r, C.boulderDamage * power)
-    if (s.enemies.length) { s.cool.boulder = C.boulderInterval; const b = shoot(s, 'boulder', a, C.boulderDamage * power); if (b) b.radius = r }
+    const r = C.boulderRadius * area, a = bestAim(s, C.boulderSpeed * C.boulderLife, r, C.boulderDamage * power * cp(s, 'boulder'))
+    if (s.enemies.length) { s.cool.boulder = C.boulderInterval; const b = shoot(s, 'boulder', a, C.boulderDamage * power * cp(s, 'boulder')); if (b) b.radius = r }
   }
   if (s.combos.includes('tempest') && !s.cool.tempest) {
     s.cool.tempest = C.tempestInterval
     const r = C.tempestRadius * area
     fx(s, 'slash', s.x, s.y, r, '#fff0c8', s.t * 6); fx(s, 'slash', s.x, s.y, r, '#fff0c8', s.t * 6 + Math.PI)
-    for (const e of s.enemies) if (Math.hypot(e.x - s.x, e.y - s.y) < r) hit(s, e, C.tempestDamage * power)
+    for (const e of s.enemies) if (Math.hypot(e.x - s.x, e.y - s.y) < r) hit(s, e, C.tempestDamage * power * cp(s, 'tempest'))
   }
 }
 // ── 비기 (형 11-16: 무기마다 꼴이 다르게 · 수치는 HAEBI_ULT · DPS 는 tools/raid-ult-dps.ts) ──
@@ -432,7 +499,7 @@ function bestAim(s: HaebiRun, length: number, width: number, damage: number, tow
   return best
 }
 function ultimate(s: HaebiRun, mx: number, my: number, power: number, area: number) {
-  s.skillCd = U[s.kit].cooldown; s.inv = Math.max(s.inv, C.skillInv); s.attack = .3
+  s.skillCd = U[s.kit].cooldown * (ultUpgraded(s) ? T.ultCooldown : 1); s.inv = Math.max(s.inv, C.skillInv); s.attack = .3
   s.shots = s.shots.filter(b => b.kind !== 'enemy' && b.kind !== 'hurl')
   const moveAim = s.moving && (mx || my) ? Math.atan2(my, mx) : null
   if (s.kit === 'axe' || s.kit === 'bow' || s.kit === 'sword') {
@@ -517,7 +584,11 @@ function ultTick(s: HaebiRun, dt: number, power: number, area: number) {
 export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
   if (s.state !== 'playing' || s.offers.length) return
   dt = Math.max(0, Math.min(.05, dt)); s.t += dt
-  for (const key of ['attack', 'hurt', 'inv', 'dash', 'dashCd', 'skillCd', 'messageTime', 'streakTime'] as const) s[key] = Math.max(0, s[key] - dt)
+  const boost = formBoost(s)
+  for (const key of ['attack', 'hurt', 'inv', 'dash', 'dashCd', 'messageTime', 'streakTime'] as const) s[key] = Math.max(0, s[key] - dt)
+  s.skillCd = Math.max(0, s.skillCd - dt * boost.ult)
+  // 각성(투지)이 풀리면 보통 모습으로 · 막대는 처음부터 다시
+  if (s.form !== 'normal') { s.formT = Math.max(0, s.formT - dt); if (!s.formT) { s.form = 'normal'; if (s.canAwaken) announce(s, '각성이 풀렸다 · 다시 모아라') } }
   if (!s.streakTime) s.comboKills = 0
   for (const key of Object.keys(s.cool) as Cool[]) s.cool[key] = Math.max(0, s.cool[key] - dt)
   s.hp = Math.min(s.maxHp, s.hp + (C.regen + s.bonus.regen * SH.regen.step) * dt)
@@ -527,11 +598,13 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
   if (dx) s.face = Math.sign(dx)
   if (input.dash && !s.dashCd) { s.dash = C.dashTime; s.dashCd = C.dashCooldown; s.inv = C.dashInv }
   if (s.dash && !len) dx = s.face
-  const speed = C.speed * (1 + s.bonus.swift * SH.swift.step) * (s.dash ? C.dashSpeed : 1)
+  const speed = C.speed * (1 + s.bonus.swift * SH.swift.step) * (s.dash ? C.dashSpeed : 1) * boost.move
   s.x = heroX(s.x + dx * speed * dt); s.y = heroY(s.y + dy * speed * dt)
-  const power = powerScale(s), area = areaScale(s), tempo = 1 + s.ranks.tempo * C.tempoStep + s.bonus.haste * SH.haste.step
-  if (input.skill && !s.skillCd) ultimate(s, dx, dy, power, area)
-  if (s.ult) ultTick(s, dt, power, area)
+  const power = powerScale(s) * boost.power, area = areaScale(s), tempo = (1 + s.ranks.tempo * C.tempoStep + s.bonus.haste * SH.haste.step) * boost.tempo
+  // 3층 비기 강화 (조합 하나를 끝 단계로)
+  const up = ultUpgraded(s), uPower = power * (up ? T.ultDamage : 1), uArea = area * (up ? T.ultArea : 1)
+  if (input.skill && !s.skillCd) ultimate(s, dx, dy, uPower, uArea)
+  if (s.ult) ultTick(s, dt, uPower, uArea)
   const target = nearest(s, s.x, s.y)
   if (target) {
     const angle = Math.atan2(target.y - s.y, target.x - s.x), dist = Math.hypot(target.x - s.x, target.y - s.y)
@@ -550,7 +623,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
         if (!e) break
         used.push(e.id); fx(s, 'bolt', x, y, 1, '#b8d5ff', 0, e.x, e.y); x = e.x; y = e.y
         hit(s, e, (C.thunderDamage + s.ranks.thunder * C.thunderRankDamage) * power, false)
-        if (s.combos.includes('inferno')) blast(s, x, y, C.emberRange * area, C.emberDamage * power)
+        if (s.combos.includes('inferno')) blast(s, x, y, C.emberRange * area, C.emberDamage * power * cp(s, 'inferno'))
       }
     }
   }
@@ -638,19 +711,19 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
     } else if (b.kind === 'rain') {
       if (b.life <= 0) {
         blast(s, b.x, b.y, C.rainRadius * area, b.damage, '#cfe3ff')
-        if (s.combos.includes('meteor')) for (let i = 0; i < 3; i++) shoot(s, 'shard', i * Math.PI * 2 / 3 + s.t, b.damage * C.splitDamage, b.x, b.y)
+        if (s.combos.includes('meteor')) for (let i = 0; i < 3; i++) shoot(s, 'shard', i * Math.PI * 2 / 3 + s.t, b.damage * C.splitDamage * cp(s, 'meteor'), b.x, b.y)
       }
     } else {
       if (b.kind === 'javelin' && !b.gen && s.combos.includes('boomerang') && b.life < C.javelinLife * C.boomerangTurn) {
         const a = Math.atan2(s.y - b.y, s.x - b.x), v = Math.hypot(b.vx, b.vy)
-        b.vx = Math.cos(a) * v; b.vy = Math.sin(a) * v; b.angle = a; b.hit = []; b.gen = 1
+        b.vx = Math.cos(a) * v; b.vy = Math.sin(a) * v; b.angle = a; b.hit = []; b.gen = 1; b.damage *= cp(s, 'boomerang')
       }
       if (b.kind === 'soul') {
         // 혼불: 가장 가까운 적 쪽으로 천천히 꺾는다
         const t = nearest(s, b.x, b.y)
         if (t) { const want = Math.atan2(t.y - b.y, t.x - b.x); let turn = want - b.angle; turn = Math.atan2(Math.sin(turn), Math.cos(turn)); b.angle += Math.max(-C.soulTurn * dt, Math.min(C.soulTurn * dt, turn)); b.vx = Math.cos(b.angle) * C.soulSpeed; b.vy = Math.sin(b.angle) * C.soulSpeed }
       }
-      if (b.kind === 'wave' && !b.gen && b.life <= 0 && s.combos.includes('splitwave')) for (const turn of [-.6, .6]) shoot(s, 'wave', b.angle + turn, b.damage * C.splitDamage, b.x, b.y, b.x, b.y, 1)
+      if (b.kind === 'wave' && !b.gen && b.life <= 0 && s.combos.includes('splitwave')) for (const turn of [-.6, .6]) shoot(s, 'wave', b.angle + turn, b.damage * C.splitDamage * cp(s, 'splitwave'), b.x, b.y, b.x, b.y, 1)
       for (const e of s.enemies) {
         if (e.hp <= 0 || b.hit.includes(e.id) || Math.hypot(b.x - e.x, b.y - e.y) > b.radius + 18) continue
         if (b.kind === 'soul') { blast(s, b.x, b.y, C.soulRadius * areaScale(s), b.damage, '#9fd8ff'); b.life = 0; break }
@@ -658,14 +731,14 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
         if (b.kind === 'boulder' && e.hp > 0 && !steady(e)) { const v = Math.hypot(b.vx, b.vy) || 1; e.x += b.vx / v * C.boulderKnock; e.y += b.vy / v * C.boulderKnock }
         if (b.kind === 'skip') {
           // 물수제비: 맞힌 적 곁의 다음 적으로 튄다 · 어지럼 돌이면 멈춰 세운다 (두목·정예·철갑·곰은 버틴다)
-          if (s.combos.includes('daze') && e.hp > 0 && !steady(e) && e.kind !== 'elite') e.daze = C.dazeTime
+          if (s.combos.includes('daze') && e.hp > 0 && !steady(e) && e.kind !== 'elite') e.daze = C.dazeTime * cp(s, 'daze')
           const n = b.hit.length < pierce(s, b) ? nearest(s, b.x, b.y, b.hit, C.skipRange * area) : undefined
           if (!n) { b.life = 0; break }
           const a = Math.atan2(n.y - b.y, n.x - b.x); b.vx = Math.cos(a) * C.skipSpeed; b.vy = Math.sin(a) * C.skipSpeed; b.angle = a; b.life = C.skipLife
           break
         }
-        if (b.kind === 'knife' && s.combos.includes('venom')) { e.poison = C.venomTime; e.pdps = Math.max(e.pdps, b.damage * C.venomShare) }
-        if (b.kind === 'gale' && s.combos.includes('torrent') && b.hit.length === 1) for (let i = 0; i < 3; i++) shoot(s, 'shard', i * Math.PI * 2 / 3 + b.angle, b.damage * .6, b.x, b.y)
+        if (b.kind === 'knife' && s.combos.includes('venom')) { e.poison = C.venomTime; e.pdps = Math.max(e.pdps, b.damage * C.venomShare * cp(s, 'venom')) }
+        if (b.kind === 'gale' && s.combos.includes('torrent') && b.hit.length === 1) for (let i = 0; i < 3; i++) shoot(s, 'shard', i * Math.PI * 2 / 3 + b.angle, b.damage * .6 * cp(s, 'torrent'), b.x, b.y)
         if (b.hit.length >= pierce(s, b)) { b.life = 0; break }
       }
     }

@@ -13,6 +13,7 @@
  * 아래 숫자는 손맛 노브가 아니라 **그림 한 장 한 장의 좌표**다. 재는 법: tools/preview (?hit=1).
  */
 import { sprite } from './sprites.ts'
+import { BOOST } from './boost.ts'
 
 interface FoeArt {
   /** 머리 중심 — 그림 안의 자리 (0~1). */
@@ -89,7 +90,7 @@ export function drawFoeArt(
   //   캔버스의 그림자는 그림의 알파를 따라 번지므로, 위협색 그림자를 오프셋 없이 주면 **실루엣을 두른 붉은 테**가 된다.
   ctx.save()
   ctx.shadowColor = RIM.color
-  ctx.shadowBlur = Math.max(RIM.minPx, dh * RIM.perHeight)
+  ctx.shadowBlur = BOOST.on ? 0 : Math.max(RIM.minPx, dh * RIM.perHeight) // 막기 판은 폰 GPU 가 그림자 번짐에서 가장 버벅였다 (11-16)
   const dir = faceRight ? -1 : 1
   ctx.translate(hx, hy)
   ctx.scale(dir, 1)
@@ -149,7 +150,7 @@ export function drawScoutArt(
   const dw = dh * (im.naturalWidth / im.naturalHeight)
   ctx.save()
   ctx.shadowColor = RIM.color
-  ctx.shadowBlur = Math.max(RIM.minPx, tall * RIM.perHeight)
+  ctx.shadowBlur = BOOST.on ? 0 : Math.max(RIM.minPx, tall * RIM.perHeight)
   ctx.translate(hx, soleY - f.air * tall)
   ctx.scale(faceLeft ? -1 : 1, 1)
   ctx.drawImage(im, -f.headU * dw, -dh, dw, dh)
@@ -532,6 +533,61 @@ export function drawArrowArt(
 }
 
 /**
+ * 또렷한 화살 한 대 (밤 판 night/draw.ts 에서 옮겨 왔다 · 형 11-11: 화살 이미지도 너무 뿌얘) — 192px 그림을 30px 안팎으로
+ * 한 번에 줄이면 뭉개진다. 기기 화소 크기로 **반씩 줄여 한 번 구워** 두고 (그림·길이별 하나) 프레임마다는 그걸 1:1 로 얹는다.
+ * 막기 판(산적·바다도적)도 이 살을 쓴다 (11-16 형: 「화살이 왜 미사일같이 커다란 이미지야 · 신궁에서 만든 걸 쓴 것도 아니고」).
+ */
+const arrowBakes = new Map<string, HTMLCanvasElement>()
+export function drawArrowCrisp(
+  ctx: CanvasRenderingContext2D, kind: string, backX: number, backY: number, tipX: number, tipY: number, fat: number, dpr: number,
+): boolean {
+  const name = (FLY as Record<string, string>)[kind] ?? FLY.basic
+  const im = sprite(name)
+  if (im === null) return false
+  const len = Math.hypot(tipX - backX, tipY - backY)
+  if (len < 1) return true
+  const h = Math.max(5 * fat, len * (im.naturalHeight / im.naturalWidth) * fat)
+  const tw = Math.max(2, Math.round(len * dpr))
+  const th = Math.max(2, Math.round(h * dpr))
+  const key = `${name}:${tw}x${th}`
+  let bake = arrowBakes.get(key)
+  if (bake === undefined) {
+    let cur: CanvasImageSource = im
+    let cw = im.naturalWidth
+    let ch = im.naturalHeight
+    while (cw / 2 >= tw) {
+      const nw = Math.ceil(cw / 2)
+      const nh = Math.max(th, Math.ceil(ch / 2))
+      const t = document.createElement('canvas')
+      t.width = nw
+      t.height = nh
+      const tc = t.getContext('2d')
+      if (tc === null) break
+      tc.imageSmoothingQuality = 'high'
+      tc.drawImage(cur, 0, 0, nw, nh)
+      cur = t
+      cw = nw
+      ch = nh
+    }
+    bake = document.createElement('canvas')
+    bake.width = tw
+    bake.height = th
+    const bc = bake.getContext('2d')
+    if (bc === null) return false
+    bc.imageSmoothingQuality = 'high'
+    bc.drawImage(cur, 0, 0, tw, th)
+    if (arrowBakes.size > 48) arrowBakes.clear()
+    arrowBakes.set(key, bake)
+  }
+  ctx.save()
+  ctx.translate(backX, backY)
+  ctx.rotate(Math.atan2(tipY - backY, tipX - backX))
+  ctx.drawImage(bake, 0, -h / 2, len, h)
+  ctx.restore()
+  return true
+}
+
+/**
  * 박힌 화살 — 몸·방패에 꽂혀 **깃 쪽만 밖으로 나온** 살. 그림의 뒤쪽 TAIL 만 잘라 쓴다 (촉은 속에 있다).
  * tail 은 깃 끝, entry 는 박힌 자리.
  */
@@ -577,7 +633,7 @@ export function drawShotArt(
   ctx.save()
   if (c.rim) {
     ctx.shadowColor = RIM.color
-    ctx.shadowBlur = 6
+    ctx.shadowBlur = BOOST.on ? 0 : 6
   }
   if (c.long) {
     const L = lenPx * c.len

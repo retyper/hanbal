@@ -15,14 +15,14 @@ import {
 import type { Camera } from './camera.ts'
 import { drawArcher } from './stickman.ts'
 import { skyOf, drawShadow } from './sky.ts'
-import { BOOST } from './boost.ts'
+import { BOOST, drawPinBoost } from './boost.ts'
 import type { SkyPalette } from './sky.ts'
 import { drawFoeArcher, drawFoeGunner, drawFoeRusher, drawFoeSlinger } from './foe.ts'
 import { drawBuildings, drawBuildingFronts, windowOf } from './buildings.ts'
-import { createFx, pumpEvents, updateFx, drawFx, drawFxFlash, drawCorpseLayer, hitStopMs, oneShotAmount, targetSquash, targetFlinch, PLAYER_PIN } from './effects.ts'
+import { createFx, pumpEvents, updateFx, drawFx, drawFxFlash, drawCorpseLayer, hitStopMs, oneShotAmount, targetSquash, targetFlinch, PLAYER_PIN, CORPSE_PIN0, corpsePose, type CorpseArt } from './effects.ts'
 import { drawNewBossBody, drawNewBossFace } from './bosses.ts'
 import { BOSS_EYES, drawBossArt, drawEyeArt, drawFoxArt, warmBossArt } from './bossart.ts'
-import { drawAnimalArt, drawArrowArt, drawArrowTailArt, drawLongArt, drawPondArt, drawPennantArt, drawStandArt, drawPoleArt, drawFalconArt, drawFoeArt, drawPropArt, drawShotArt, drawStoneArt, drawTargetArt, warmFoeArt } from './foeart.ts'
+import { drawAnimalArt, drawArrowArt, drawArrowCrisp, drawArrowTailArt, drawLongArt, drawPondArt, drawPennantArt, drawStandArt, drawPoleArt, drawFalconArt, drawFoeArt, drawPropArt, drawShotArt, drawStoneArt, drawTargetArt, warmFoeArt } from './foeart.ts'
 import { backdrop } from './sprites.ts'
 import { ANIMAL_LOOK, bossGrammar, bossWeakSpot, foeWeakSpot } from '../sim/target.ts'
 import type { Fx } from './effects.ts'
@@ -46,6 +46,8 @@ export interface SceneHooks {
   readonly ownGround?: boolean
   /** 과녁이 딛고 선 높이(땅에서 더 올린 m) — 그림자가 그 발밑에 진다 */
   lift?(w: World, t: Target): number
+  /** 쓰러진 사람을 판의 그림으로 (그렸으면 true · effects.ts CorpseArt) */
+  corpse?: CorpseArt
 }
 let sceneHooks: SceneHooks | null = null
 export function setSceneHooks(h: SceneHooks | null): void {
@@ -288,6 +290,10 @@ interface RendererX extends Renderer {
   dprCap: number
   /** 이 가운데값(ms)보다 느리면 DPR 을 내린다 */
   slowMs: number
+  /** DPR 을 이 아래로는 안 내린다 · 느린 묶음이 이만큼 잇달아야 내린다 (한 번 버벅인 것으로 흐려지지 않게) */
+  dprFloor: number
+  slowRuns: number
+  slowSeen: number
   /** 프레임 간격(ms) 모음 · 60개마다 가운데값을 본다 */
   gaps: number[]
   ctx: CanvasRenderingContext2D
@@ -1550,6 +1556,16 @@ function drawHpBar(
   ctx: CanvasRenderingContext2D, x: number, y: number, w: number, ratio: number,
 ): void {
   const h = 5
+  if (BOOST.on) {
+    // 막기 판 — 바다도적 두목·방패와 같은 꼴 (어두운 테 · 붉은 몸). 밝은 모래 위에서도 읽힌다 (11-16 형: 「체력바도 색이 다르고 제대로 보이지도 않아」)
+    ctx.fillStyle = 'rgba(10, 6, 4, 0.9)'
+    ctx.fillRect(x - w / 2 - 1.5, y - 1.5, w + 3, h + 4)
+    ctx.fillStyle = '#2a1712'
+    ctx.fillRect(x - w / 2, y, w, h + 1)
+    ctx.fillStyle = '#d4432f'
+    ctx.fillRect(x - w / 2, y, w * Math.max(0, Math.min(1, ratio)), h + 1)
+    return
+  }
   ctx.fillStyle = THEME.gaugeBack
   ctx.fillRect(x - w / 2, y, w, h)
   ctx.fillStyle = THEME.gaugeWarn
@@ -1560,6 +1576,10 @@ function drawHpBar(
  * 몸에 박힌 화살 (형: "맞으면 정확히 박힌 위치에 보여져야"). 과녁 상대좌표라
  * 보스가 움직여도 몸에 붙어 다닌다. 주인이 죽으면 함께 사라진다 — 시체는 안 그린다.
  */
+/** 누운 시체의 살이 박히는 가장 낮은 높이 (시체 반경 몫 · 땅 밑으로 꽂히지 않게) */
+const CORPSE_PIN_FLOOR = 0.25
+/** 시체 그림과 같은 값 — 누운 컷으로 바뀌는 높이(반경 몫) · 넘어가는 동안 도는 몫 (pirate/draw.ts FALL) */
+const CORPSE_LIE = { at: 0.7, spin: 0.6 } as const
 function drawBodyPins(ctx: CanvasRenderingContext2D, cam: Camera, w: World, fx: Fx): void {
   const n = fx.pId.length
   for (let i = 0; i < n; i++) {
@@ -1567,6 +1587,33 @@ function drawBodyPins(ctx: CanvasRenderingContext2D, cam: Camera, w: World, fx: 
     if (id === -1) continue
     let cx2 = 0
     let cy2 = 0
+    if (id <= CORPSE_PIN0) {
+      // 시체에 박힌 살 (막기 판) — 쓰러지는 몸을 따라 돈다. 누우면 몸 위로 깃이 비죽 선다
+      const pose = corpsePose(fx, CORPSE_PIN0 - id)
+      if (pose === null) {
+        fx.pId[i] = -1
+        continue
+      }
+      const dx0 = fx.pDx[i] ?? 0
+      const dy0 = fx.pDy[i] ?? 0
+      // 뒤로 넘어간다 (궁수 반대쪽) — 누운 몸에서 살은 위로 비스듬히. 몸 중심이 땅에 거의 닿으면 누운 것으로 (pirate/draw.ts drawFallen 과 같은 문턱)
+      const lying = pose.settle > 0 || pose.y - pose.g < pose.r * CORPSE_LIE.at
+      const rot = lying ? -Math.PI / 2 : pose.ang * CORPSE_LIE.spin
+      const c = Math.cos(rot)
+      const sn = Math.sin(rot)
+      const ax3 = pose.x + dx0 * c - dy0 * sn
+      const ay3 = Math.max(pose.g + pose.r * CORPSE_PIN_FLOOR, pose.y + dx0 * sn + dy0 * c)
+      const ang3 = (fx.pA[i] ?? 0) + rot
+      const L3 = BOOST.pinLen
+      ctx.globalAlpha = pose.fade
+      drawPinBoost(
+        ctx,
+        worldToScreenX(cam, ax3 - Math.cos(ang3) * L3), worldToScreenY(cam, ay3 - Math.sin(ang3) * L3),
+        worldToScreenX(cam, ax3), worldToScreenY(cam, ay3),
+      )
+      ctx.globalAlpha = 1
+      continue
+    }
     if (id === PLAYER_PIN) {
       cx2 = w.archer.x
       cy2 = w.archer.y
@@ -1592,6 +1639,10 @@ function drawBodyPins(ctx: CanvasRenderingContext2D, cam: Camera, w: World, fx: 
     const uy2 = Math.sin(ang)
     const L = DRAW.arrowLen * 0.55
     const isEnemy = id === PLAYER_PIN
+    if (BOOST.on && !isEnemy) {
+      drawPinBoost(ctx, worldToScreenX(cam, ax2 - ux2 * BOOST.pinLen), worldToScreenY(cam, ay2 - uy2 * BOOST.pinLen), worldToScreenX(cam, ax2), worldToScreenY(cam, ay2))
+      continue
+    }
     // 박힌 살도 그림이다 — 깃 쪽만 밖으로 나와 있다 (foeart.ts drawArrowTailArt).
     if (drawArrowTailArt(
       ctx, isEnemy ? 'enemy' : 'basic',
@@ -1852,6 +1903,18 @@ function drawArrows(ctx: CanvasRenderingContext2D, cam: Camera, w: World, alpha:
     const nx = -sy
     const ny = sx
 
+    // 막기 판(산적·바다도적) — 밤 판의 살 그대로 (night/draw.ts drawFlying): 옅은 짧은 꼬리 한 줄 + 구운 또렷한 살 한 대.
+    // 공기 타원·검은 테·밝은 꼬리를 얹으니 살이 「미사일」이 됐다 (11-16 형). 밝은 바탕이라 꼬리는 어두운 색으로
+    if (BOOST.on) {
+      ctx.strokeStyle = BOOST.streak
+      ctx.lineWidth = Math.max(1, cam.scale * 0.02)
+      ctx.beginPath()
+      ctx.moveTo(worldToScreenX(cam, lerp(ar.px, ar.x, alpha) - (ar.x - ar.px) * BOOST.streakSteps), worldToScreenY(cam, lerp(ar.py, ar.y, alpha) - (ar.y - ar.py) * BOOST.streakSteps))
+      ctx.lineTo(backX, backY)
+      ctx.stroke()
+      if (drawArrowCrisp(ctx, ar.kind, backX, backY, tipX, tipY, 1, cam.dpr)) continue
+    }
+
     // ── 공기 — 촉 앞에 눌린 타원 한 겹 (docs/MEGAHIT.md §4-3) ──
     // 제목이 '한 발'인데 화면에서 가장 수수한 게 화살이었다 (렌즈 ⑥).
     // 빠를수록 길고 옅게 눌린다. 색은 하늘색을 안 쓰고 화살색을 아주 낮은 알파로 —
@@ -1871,25 +1934,8 @@ function drawArrows(ctx: CanvasRenderingContext2D, cam: Camera, w: World, alpha:
       ctx.globalAlpha = 1
     }
 
-    // 보이게 하기 — 어두운 테두리 + 뒤로 짧은 밝은 꼬리 (밝은 바탕에서 살이 묻히지 않게 · 산적·바다도적만)
-    // 테두리는 가늘게 — 5px 검은 띠 + 5px 그림이 20px 살을 「미사일」로 만들었다 (11-16 형: 「화살이 왜 미사일같이 커다란 이미지야」)
-    if (BOOST.on) {
-      ctx.strokeStyle = 'rgba(0,0,0,0.45)'
-      ctx.lineWidth = BOOST.edgePx
-      ctx.beginPath()
-      ctx.moveTo(backX, backY)
-      ctx.lineTo(tipX, tipY)
-      ctx.stroke()
-      ctx.strokeStyle = 'rgba(255,244,214,0.45)'
-      ctx.lineWidth = BOOST.tailPx
-      ctx.beginPath()
-      ctx.moveTo(backX, backY)
-      ctx.lineTo(backX - sx * len * 1.3, backY - sy * len * 1.3)
-      ctx.stroke()
-    }
-
     // ★ 화살은 **그림**이다 (2026-09-20, render/foeart.ts) — 촉·대·깃이 있는 그 살. 공기 가르는 잔상은 위에서 그대로 그렸다.
-    if (drawArrowArt(ctx, ar.kind, backX, backY, tipX, tipY, BOOST.on ? BOOST.arrowFat : 1)) continue
+    if (drawArrowArt(ctx, ar.kind, backX, backY, tipX, tipY)) continue
 
     ctx.strokeStyle = THEME.arrow
     ctx.lineWidth = DRAW.arrowWidthPx
@@ -2306,13 +2352,16 @@ function drawBackdrop(ctx: CanvasRenderingContext2D, cam: Camera, sky: SkyPalett
 
 /** 폰이 버거우면 DPR 을 한 단계씩 내린다 (night-main watchLoad 와 같은 셈 · 바닥 VIEW.dprFloor) */
 function watchLoad(r: RendererX, dt: number): void {
-  if (r.dprCap <= VIEW.dprFloor || dt <= 0 || dt > 0.5) return
+  if (r.cam.dpr <= r.dprFloor || dt <= 0 || dt > 0.5) return
   r.gaps.push(dt * 1000)
   if (r.gaps.length < 60) return
   const mid = r.gaps.sort((a, b) => a - b)[30]!
   r.gaps.length = 0
-  if (mid <= r.slowMs) return
-  r.dprCap = Math.max(VIEW.dprFloor, r.dprCap - VIEW.dprStep)
+  if (mid <= r.slowMs) { r.slowSeen = 0; return }
+  if (++r.slowSeen < r.slowRuns) return
+  r.slowSeen = 0
+  // 지금 실제 DPR 에서 한 단계 — 상한이 3 이고 기기가 2.6 이면 3→2.5 는 아무것도 안 바꾸고 한 번을 버린다
+  r.dprCap = Math.max(r.dprFloor, Math.min(r.dprCap, r.cam.dpr) - VIEW.dprStep)
   r.resize()
 }
 
@@ -2320,6 +2369,9 @@ function watchLoad(r: RendererX, dt: number): void {
 export interface RendererOpts {
   readonly dprCap?: number
   readonly slowMs?: number
+  /** DPR 바닥 (없으면 VIEW.dprFloor) · 느린 묶음(60프레임)이 몇 번 잇달아야 내리나 (없으면 1) */
+  readonly dprFloor?: number
+  readonly slowRuns?: number
 }
 
 export function createRenderer(canvas: HTMLCanvasElement, opts: RendererOpts = {}): Renderer {
@@ -2346,6 +2398,9 @@ export function createRenderer(canvas: HTMLCanvasElement, opts: RendererOpts = {
     dead: false,
     dprCap: opts.dprCap ?? (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches ? VIEW.touchDprCap : VIEW.dprCap),
     slowMs: opts.slowMs ?? VIEW.slowFrameMs,
+    dprFloor: opts.dprFloor ?? VIEW.dprFloor,
+    slowRuns: opts.slowRuns ?? 1,
+    slowSeen: 0,
     gaps: [],
 
     resize(): void {
@@ -2440,7 +2495,7 @@ export function createRenderer(canvas: HTMLCanvasElement, opts: RendererOpts = {
       // 깃발은 과녁보다 먼저 — 과녁 위로 천이 지나가면 조준을 가린다 (C1).
       drawWindFlag(c, cam, w)
       // 쓰러진 적은 과녁·화살보다 **먼저** — 시체가 살아 있는 것들을 가리면 안 된다.
-      drawCorpseLayer(c, cam, r.fx)
+      drawCorpseLayer(c, cam, r.fx, sceneHooks?.corpse)
       drawTargets(c, cam, w, alpha, r.fx, false)
       // 패링 성공의 흰 번쩍임은 **궁수보다 먼저** 칠한다 — 뒤에 칠하면 그 순간의 칼을 덮는다
       // (2026-09-10 feel-lens). 빛이 뒤에서 터지고 그 앞에 사람과 칼이 서 있어야 맞다.
@@ -2449,7 +2504,7 @@ export function createRenderer(canvas: HTMLCanvasElement, opts: RendererOpts = {
       // 방패는 궁수보다 나중 — 앞에 세운 물건이니 앞에 그린다 (game/defense.ts).
       drawShield(c, cam, w)
       // 날아다니는 것이 **맨 위**다 — 내 화살도 적의 것도. 무엇에도 안 가려져야 피하고 읽는다.
-      drawTrails(c, cam, w)
+      if (!BOOST.on) drawTrails(c, cam, w) // 막기 판은 밤 판처럼 리본 궤적 없이 (drawArrows 가 짧은 꼬리를 긋는다)
       drawArrows(c, cam, w, alpha)
       drawEnemyShots(c, cam, w)
       drawBodyPins(c, cam, w, r.fx)

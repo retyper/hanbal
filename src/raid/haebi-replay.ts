@@ -1,9 +1,10 @@
 // Deterministic, ordinary-input bot for balance probes and the dev review page.
 import { HAEBI_RUN as C, HAEBI_MOBS as M } from '../tune/params.ts'
-import { createHaebi, choose, stepHaebi, KITS, type HaebiRun, type Kit, type Power, type RunInput } from './haebi.ts'
+import { createHaebi, choose, stepHaebi, isCombo, KITS, type HaebiRun, type Kit, type Pick, type Power, type RunInput } from './haebi.ts'
 export type Route = 'storm' | 'fire' | 'mixed'
-/** 길은 도끼 묶음 이름으로 적고(axe=주 무기 · gale=보조), 다른 묶음은 그 자리에 제 무기를 넣는다 */
-export function botChoice(s: HaebiRun, route: Route): Power {
+/** 길은 도끼 묶음 이름으로 적고(axe=주 무기 · gale=보조), 다른 묶음은 그 자리에 제 무기를 넣는다 · 조합 카드(금테)가 나오면 늘 그것부터 (기술 나무 2층 · 3층 비기 강화) */
+export function botChoice(s: HaebiRun, route: Route): Pick {
+  const combo = s.offers.find(isCombo); if (combo) return combo
   const k = KITS[s.kit], swap = (p: Power): Power => p === 'axe' ? k.primary : p === 'gale' ? k.secondary : p
   const priorities: Record<Route, Power[]> = { storm: ['gale', 'axe', 'echo', 'tempo', 'reach', 'thunder', 'ember'], fire: ['ember', 'thunder', 'tempo', 'echo', 'reach', 'gale', 'axe'], mixed: ['gale', 'ember', 'thunder', 'axe', 'echo', 'tempo', 'reach'] }
   const target: Partial<Record<Power, number>> = { axe: 4, gale: 3, ember: 3, thunder: 3, echo: 2, tempo: 3, reach: 3 }

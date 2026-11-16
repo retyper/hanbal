@@ -14,7 +14,7 @@ import { bowName, guardName, stageName } from './names.ts'
 import { drawArcher, previewBlend } from '../render/stickman.ts'
 import { THEME, worldToScreenX, worldToScreenY, type Camera } from '../render/camera.ts'
 import { createFx, drawFx, type Fx } from '../render/effects.ts'
-import { sprite } from '../render/sprites.ts'
+import { drawArrowCrisp } from '../render/foeart.ts'
 import type { World } from '../sim/types.ts'
 import { effectiveStats } from '../sim/bow.ts'
 import type { Pull } from './input.ts'
@@ -580,55 +580,9 @@ function drawStuck(ctx: CanvasRenderingContext2D, cam: Camera, n: Night): void {
   }
 }
 
-/**
- * 또렷한 화살 한 대 — 192px 그림을 30px 안팎으로 한 번에 줄이면 뭉개진다. 기기 화소 크기로 **반씩 줄여 한 번 구워** 두고 (길이별 하나)
- * 프레임마다는 그걸 1:1 로 얹는다. 활터는 화살이 크게 그려져 티가 안 났다 (형 11-11: 화살 이미지도 너무 뿌얘).
- */
-const arrowBakes = new Map<string, HTMLCanvasElement>()
+/** 또렷한 화살 한 대 — 구워 두고 1:1 로 얹는다 (render/foeart.ts drawArrowCrisp · 막기 판과 같은 살) */
 function crispArrow(ctx: CanvasRenderingContext2D, backX: number, backY: number, tipX: number, tipY: number, fat: number, dpr: number): boolean {
-  const im = sprite('fly-basic')
-  if (im === null) return false
-  const len = Math.hypot(tipX - backX, tipY - backY)
-  if (len < 1) return true
-  const h = Math.max(5 * fat, len * (im.naturalHeight / im.naturalWidth) * fat)
-  const tw = Math.max(2, Math.round(len * dpr))
-  const th = Math.max(2, Math.round(h * dpr))
-  const key = `${tw}x${th}`
-  let bake = arrowBakes.get(key)
-  if (bake === undefined) {
-    let cur: CanvasImageSource = im
-    let cw = im.naturalWidth
-    let ch = im.naturalHeight
-    while (cw / 2 >= tw) {
-      const nw = Math.ceil(cw / 2)
-      const nh = Math.max(th, Math.ceil(ch / 2))
-      const t = document.createElement('canvas')
-      t.width = nw
-      t.height = nh
-      const tc = t.getContext('2d')
-      if (tc === null) break
-      tc.imageSmoothingQuality = 'high'
-      tc.drawImage(cur, 0, 0, nw, nh)
-      cur = t
-      cw = nw
-      ch = nh
-    }
-    bake = document.createElement('canvas')
-    bake.width = tw
-    bake.height = th
-    const bc = bake.getContext('2d')
-    if (bc === null) return false
-    bc.imageSmoothingQuality = 'high'
-    bc.drawImage(cur, 0, 0, tw, th)
-    if (arrowBakes.size > 24) arrowBakes.clear()
-    arrowBakes.set(key, bake)
-  }
-  ctx.save()
-  ctx.translate(backX, backY)
-  ctx.rotate(Math.atan2(tipY - backY, tipX - backX))
-  ctx.drawImage(bake, 0, -h / 2, len, h)
-  ctx.restore()
-  return true
+  return drawArrowCrisp(ctx, 'basic', backX, backY, tipX, tipY, fat, dpr)
 }
 
 function drawFlying(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void {

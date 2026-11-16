@@ -824,7 +824,7 @@
  {
   "key": "base-g-37-eumjeup-jeup",
   "portrait": "g-37-eumjeup-jeup",
-  "artWeapon": "rice sheaf + gourd",
+  "artWeapon": "a ritual gourd rattle (a dried calabash on a short wooden handle with bronze bells and tassels, shaken like a shaman spirit bell) and a small rice-sheaf charm tied at his belt",
   "artKit": "magic",
   "queueWeapon": "sword",
   "currentKit": "sword",
@@ -837,7 +837,7 @@
    "queue≠art"
   ],
   "artConflict": false,
-  "note": "no weapon in any art"
+  "note": "no weapon in any art · 11-17 형: 주술이면 주술로 — 조롱박 방울을 흔드는 주술사로 통일"
  },
  {
   "key": "base-g-38-chopal-palmae",
