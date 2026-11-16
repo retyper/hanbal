@@ -84,7 +84,7 @@ const GROUPS = { raid: '해비 열전', ...REMAKE_GROUPS, ...RELEASE_GROUPS }
 raid.push(...REMAKE_JOBS, ...RELEASE_JOBS)
 const saveName = (r) => r.save ?? `haebi-pack-v1-${r.id}.png`
 const HOME = process.env.USERPROFILE ?? 'C:/Users/my'
-const SEEN = ['assets_src/realm/raid', 'assets_src/realm/steam', `${HOME}/Downloads`, 'D:/에셋창고']
+const SEEN = ['assets_src/realm/raid', 'assets_src/realm/steam', `${HOME}/Downloads`, 'D:/에셋창고', 'D:/에셋창고/Codex-production-next-20261117-candidates']   // 보류 후보도 받음 · Claude 가 채택하거나 v3 로 다시 줌
 const received = (r) => { const n = saveName(r), raw = n.replace(/^haebi-pack-v1-(H\d+)\.png$/, 'haebi-pack-v1-$1.png'); return SEEN.some((d) => existsSync(`${d}/${raw}`) || existsSync(`${d}/${raw}.png`)) }
 for (const r of raid) { r.group ??= 'raid'; r.kind = received(r) ? 'img-done' : r.group }
 const icount = (k) => raid.filter((r) => r.kind === k).length

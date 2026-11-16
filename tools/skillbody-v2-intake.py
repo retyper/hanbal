@@ -9,7 +9,7 @@ from pathlib import Path
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
-SRC = Path('D:/에셋창고')
+SRC = Path(sys.argv[sys.argv.index('--src') + 1]) if '--src' in sys.argv else Path('D:/에셋창고')   # --src: Claude 가 고른 Codex 보류 후보를 정식 이름으로 모아 둔 곳
 OUT = ROOT / 'public/realm/skill-body'
 RET = ROOT / 'assets_src/realm/retired/skill-body-v1'
 REC = ROOT / 'tools/out/skillbody-v2-intake.json'

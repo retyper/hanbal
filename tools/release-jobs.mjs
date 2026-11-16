@@ -349,14 +349,19 @@ for (const [form, dir, table, group] of [['aw1', 'awaken-hd', ANAT_AW1, 'skill1'
 }
 // 11-17 밤 Claude 핑퐁 반려 — 받은 각성 v2 가운데 다시: 저장 _v3 (tools/skillbody-aw-v2-intake.py 가 _v3 를 _v2 보다 나중에 덮는다)
 const BOWFIX3 = 'BOW: the string must run continuously from the upper bow tip to the lower bow tip and be pulled back by the draw hand at the jaw; the arrow nock sits in the string at the draw hand and the shaft rests on the bow hand. In the v2 the string stood straight and untouched behind the bow while the arrow floated.'
-const AW_REJECT = { 'aw2/w-65-goguryeo-hwalmi': BOWFIX3 }
+// 활미 v3 첫 시도는 「violence」 입력 거절 · 미리달래 aw1 v2 는 「sexual」 출력 거절 → 말을 순하게 (11-17 아침)
+const SOFT = (t) => t.replace(/COSTUME EXPOSURE:[^\n]*/, 'COSTUME: copy the outfit of IMAGE 1 exactly, same cut, same skin areas, same jewelry; opaque fabric.')
+  .replace(/\b(strike|striking|attack|attacking|slash|slashing|kill|lethal|blood)\w*/gi, 'move')
+const BOWFIX3S = 'ARCHERY FORM (most important): a graceful traditional archery stance like a sports archer at full draw; the bowstring runs continuously from the upper bow tip to the lower bow tip and is held by the drawing hand beside the jaw; the arrow rests on the string at that hand and lies across the bow grip. In the previous version the string stood straight behind the bow, untouched.'
+const AW_REJECT = { 'aw2/w-65-goguryeo-hwalmi': BOWFIX3S, 'aw1/w-64-miri-dallae': 'Dynamic graceful leap with the ritual staff from IMAGE 1, both hands natural on the staff.' }
 for (const [key, fix] of Object.entries(AW_REJECT)) {
+  { const [f, i] = key.split('/'), old = jobs.findIndex((j) => j.id === `SB${f.slice(2)}-${i}-v2`); if (old >= 0) jobs.splice(old, 1) }   // v3 가 v2 를 대신한다
   const [form, id] = key.split('/'), dir = form === 'aw1' ? 'awaken-hd' : 'awaken2-hd'
   const { weaponText, kit } = weaponOf(id, { rope: true })
   jobs.push({ id: `SB${form.slice(2)}-${id}-v3`, group: 'skilltest', save: `skillbody_${form}_${id}_v3.png`, title: `${id} · ${form === 'aw1' ? '1차 각성' : '진각성'} 비기 전신 v3 (Claude 검수 반려)`,
     refs: [`/realm/${dir}/${id}.jpg`, `/realm/skill-body/${form}/${id}.jpg`], now: 'v2 반려: ' + fix.slice(0, 50),
     use: '받으면 검수 → py -3 -I tools/skillbody-aw-v2-intake.py',
-    prompt: `FIX REQUEST (most important): ${fix}\nIMAGE 2 is the rejected v2: keep its good pose, outfit and exposure, fix only the problem.\n` + bodyV2(id, weaponText, kit, form) })
+    prompt: SOFT(`FIX REQUEST (most important): ${fix}\nIMAGE 2 is the previous version: keep its good pose and outfit, fix only the problem.\n` + bodyV2(id, weaponText, kit, form)) })
 }
 for (const [id, fix] of Object.entries(SB_FIX)) if (false) {
   const r = roster.find((x) => x.bust === id)
