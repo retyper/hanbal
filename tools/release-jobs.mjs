@@ -206,18 +206,31 @@ const POSE_V2 = {
 }
 const KIT_OF = (w) => ({ bow: 'bow', spear: 'spear', trident: 'spear', glaive: 'spear', sword: 'sword', greatsword: 'sword', dagger: 'dagger', sickle: 'dagger', fists: 'dagger', whip: 'dagger', staff: 'magic', scepter: 'magic', axe: 'axe', hammer: 'axe', club: 'axe', heavy: 'axe', oar: 'axe', hoe: 'axe' })[String(w)] ?? 'sword'
 const AUDITW = (() => { try { const d = JSON.parse(readFileSync('tools/sprite-kit/weapon-audit-20261116.json', 'utf8')); return Object.fromEntries((Array.isArray(d) ? d : d.rows).filter((r) => r.portrait).map((r) => [r.portrait, r])) } catch { return {} } })()
-const bodyV2 = (id, weaponText, kit) => {
-  const age = AGES[id], woman = id.startsWith('w-') || id.startsWith('l-')
-  return `Create ONE full-body ultimate-skill cut-in illustration for an original Korean historical-fantasy game, in the spectacular style of an action-RPG awakening cut-in.
-STYLE LOCK (most important): paint it in EXACTLY the same art style as IMAGE 1, the character's portrait — same rendering, same brushwork, same skin and face shading, same level of detail and lighting — as if the same artist painted both. Not simplified, not flat, not anime, not chibi.
+// 11-17 밤 해부 검수: 줄·채찍·팔매는 단검 자세 글(「dagger」)이 무기를 바꿔 버린다 → 줄 무기 자세 따로 (새 다시 그리기에만 씀 · 지금 v2 문안은 그대로)
+POSE_V2.rope = 'POSE: a whirling lash — wide low stance, the rope weapon whirled overhead in a big bright circle and cracking out toward the upper right; the cord is ONE continuous unbroken line from the gripping fist to its tip, the free palm open in FRONT of the chest.'
+POSE_ALT.rope = ['POSE: a leaping lash — airborne, knees tucked, the rope weapon snapping forward toward the right in a long bright S-curve, one continuous cord from the fist to the tip.', 'POSE: a spinning wrap — mid-spin on one foot, the cord spiralling around the body in a bright ring before it lashes out to the right, hair and sash whirling.']
+// form: 'base' (비각성 · bust-hd) · 'aw1' (1차 각성 · awaken-hd) · 'aw2' (진각성 · awaken2-hd) — IMAGE 1 이 그 초상 · base 문안은 11-17 v2 와 글자 하나 다르지 않게
+const FORM = {
+  aw1: { name: 'FIRST-AWAKENING', portrait: "first-awakening portrait", outfit: 'first-awakening' },
+  aw2: { name: 'TRUE-AWAKENING (second awakening)', portrait: "true-awakening portrait", outfit: 'true-awakening (second-awakening)' },
+}
+const bodyV2 = (id, weaponText, kit, form = 'base') => {
+  const age = AGES[id], woman = id.startsWith('w-') || id.startsWith('l-'), F = FORM[form]
+  const salt = F ? `${id}:${form}` : id   // 각성 컷은 비각성 v2 와 다른 자세가 나오게
+  return `Create ONE full-body ${F ? F.name + ' ' : ''}ultimate-skill cut-in illustration for an original Korean historical-fantasy game, in the spectacular style of an action-RPG awakening cut-in.
+STYLE LOCK (most important): paint it in EXACTLY the same art style as IMAGE 1, the character's ${F ? F.portrait : 'portrait'} — same rendering, same brushwork, same skin and face shading, same level of detail and lighting — as if the same artist painted both. Not simplified, not flat, not anime, not chibi.
 AGE LOCK: this ${woman ? 'woman' : 'man'} is ${age ?? 'the same age as in IMAGE 1'}${age ? ' years old' : ''}: keep the exact adult face from IMAGE 1 — same eye size, nose, jaw and cheek proportions${woman ? '; do NOT make her look younger, no childlike face, no enlarged eyes' : ''}. Adult body proportions, head about 1/7 of the height.
-${(() => { const all = [POSE_V2[kit] ?? POSE_V2.sword, ...(POSE_ALT[kit] ?? POSE_ALT.sword)]; let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0; return all[h % all.length] })()}
+${(() => { const all = [POSE_V2[kit] ?? POSE_V2.sword, ...(POSE_ALT[kit] ?? POSE_ALT.sword)]; let h = 0; for (const c of salt) h = (h * 31 + c.charCodeAt(0)) >>> 0; return all[h % all.length] })()}
 FRAMING: the figure fills at least 80% of the canvas height; no large empty margins.
 CAMERA: slightly low angle, dynamic diagonal composition, mild foreshortening toward the viewer, motion lines and energy only around the weapon path.
 ANATOMY: exactly two arms and two legs, every joint bending the natural way. Each hand holding something is drawn as a clear fist with one thumb and four fingers wrapped around the grip. A free hand is never stretched behind the back: keep it in front of the body, open palm forward or on the weapon.
-WEAPON: ${weaponText}. Complete, solid, the same weapon as the portrait and the battle sprite.
+` + (F ? `WEAPON: the weapon or implement held in IMAGE 1 (battle weapon: ${weaponText}), complete and solid, copying its exact shape, colour and ornaments from IMAGE 1. If a bow: both limbs visible, ONE taut string attached at both tips, one nocked arrow.
+COSTUME: exactly the ${F.outfit} outfit of IMAGE 1 — same colours, armour pieces, ornaments and accessories — extended naturally below into a matching battle skirt or trousers and boots; Korean early-Three-Kingdoms identity, no Chinese imperial or wuxia redesign, no Japanese clothing (no obi sash, no katana, no shuriken, no face mask), no red sun discs.
+${woman ? 'COSTUME EXPOSURE: keep the outfit exactly as revealing as IMAGE 1 — same bare shoulders, neckline/cleavage, midriff and leg exposure; do NOT add cloth, sleeves or cover-ups. The fabric stays opaque: no see-through cloth, no nipple outline.' : 'Opaque fabric, no nudity.'}
+AWAKENING POWER: the aura colour and element of IMAGE 1 appear as sharp effects along the weapon path and around the striking hand, never covering the face, hands or joints; no floating animal companion, no duplicated ghost figure.
+` : `WEAPON: ${weaponText}. Complete, solid, the same weapon as the portrait and the battle sprite.
 COSTUME: exactly the outfit of IMAGE 1 (non-awakened form), extended naturally below; Korean early-Three-Kingdoms identity, no Chinese imperial or wuxia redesign, no nudity.
-FORMAT: portrait 2:3 (1024x1536), one full figure on a flat dark navy #111827 background, facing and attacking toward screen RIGHT, everything (hair, weapon, feet, effects) inside with 8% margin. No text, logo or frame.`
+`) + `FORMAT: portrait 2:3 (1024x1536), one full figure on a flat dark navy #111827 background, facing and attacking toward screen RIGHT, everything (hair, weapon, feet, effects) inside with 8% margin. No text, logo or frame.`
 }
 const V2_REDO = {
   hand: ['g-40-anya-adan', 'g-68-baekje-onnuri', 'g-96-garak-suro', 'g-102-garak-yeodogan', 'g-104-garak-odogan', 'w-11-assassin', 'w-18-jinhan-salt-widow', 'w-32-golbeol-budeul', 'w-53-hwanna-gabi', 'w-70-bukokjeo-mulbeom', 'w-72-eumjeup-beol', 'w-97-goguryeo-mir', 'w-102-garak-dana', 'w-103-tahae-neoul'],
@@ -229,16 +242,110 @@ const V2_TEST = ['w-36-baekje-maena', 'g-53-baekje-haeru']   // 먼저 두 장�
 const v2Jobs = []
 for (const [why, ids] of Object.entries(V2_REDO)) for (const id of ids) v2Jobs.push([id, V2_WHY[why]])
 for (const id of Object.keys(SB_FIX)) v2Jobs.push([id, '형 11-17 반려(앞 줄)'])
-for (const [id, why] of v2Jobs) {
+// 장수의 무기 글·자세 갈래 (무기 감사 artWeapon 먼저) · rope: 줄·채찍·팔매를 줄 무기 자세로 (새 다시 그리기만)
+const weaponOf = (id, { rope = false } = {}) => {
   const r = roster.find((x) => x.bust === id), a = AUDITW[id]
   const weaponText = id === 'g-37-eumjeup-jeup' ? 'a ritual gourd rattle (dried calabash on a short wooden handle with small bronze bells and tassels), shaken like a shaman spirit bell; a small rice-sheaf charm hangs at the belt'
     : a?.artWeapon ?? (r ? (r.hold || r.desc).replace(/ from IMAGE \d/g, '').replace(/,? ?held the same way in (every frame|all 8 frames)/gi, '') : 'the weapon in the portrait')
-  const kit = id === 'g-37-eumjeup-jeup' ? 'magic' : a?.fixedKit ?? a?.currentKit ?? KIT_OF(r?.weapon)
-  const extra = SB_FIX[id] ? '\nALSO FIX: ' + SB_FIX[id] : ''
-  jobs.push({ id: `SB-${id}-v2`, group: V2_TEST.includes(id) ? 'skilltest' : 'skill', save: `skillbody_${id}_v2.png`, title: `${id} · 비기 전신 새 틀 v2 (${why})${V2_TEST.includes(id) ? ' · ★ 시험 먼저' : ''}`,
+  const kit = id === 'g-37-eumjeup-jeup' ? 'magic' : rope && /whip|sling|lasso|rope/i.test(weaponText) ? 'rope' : a?.fixedKit ?? a?.currentKit ?? KIT_OF(r?.weapon)
+  return { weaponText, kit }
+}
+const pushV2 = (id, why, fix, { rope = false, group = 'skill' } = {}) => {
+  const { weaponText, kit } = weaponOf(id, { rope })
+  jobs.push({ id: `SB-${id}-v2`, group: V2_TEST.includes(id) ? 'skilltest' : group, save: `skillbody_${id}_v2.png`, title: `${id} · 비기 전신 새 틀 v2 (${why})${V2_TEST.includes(id) ? ' · ★ 시험 먼저' : ''}`,
     refs: [`/realm/bust-hd/${id}.jpg`, `/realm/skill-body/${id}.jpg`], now: `형 11-17 반려: ${why}`,
     use: '받으면 검수(손가락·팔·그림체·나이) → public/realm/skill-body/<id>.jpg 갈아 끼움 (옛 것 retired)',
-    prompt: bodyV2(id, weaponText, kit) + '\nIMAGE 2 is the rejected previous cut-in: do NOT copy its pose, style or mistakes.' + extra })
+    prompt: bodyV2(id, weaponText, kit) + '\nIMAGE 2 is the rejected previous cut-in: do NOT copy its pose, style or mistakes.' + (fix ? '\nALSO FIX: ' + fix : '') })
+}
+for (const [id, why] of v2Jobs) pushV2(id, why, SB_FIX[id])
+// 11-17 밤 Claude 검수 반려 (핑퐁) — 받은 v2 가운데 다시: 저장 _v3 (tools/skillbody-v2-intake.py 가 _v3 를 _v2 보다 먼저 쓴다)
+const KATANA = 'The sword was drawn curved with a round guard like a Japanese katana — forbidden in this game. Draw a STRAIGHT Korean iron sword: a straight blade with a ring pommel (hwandudaedo), a small rectangular guard and a wrapped grip.'
+const V2_REJECT = {}   // g-23 쇠달 v3 받음(곧은 고리자루칼) · 11-17
+for (const [id, fix] of Object.entries(V2_REJECT)) {
+  const { weaponText, kit } = weaponOf(id)
+  jobs.push({ id: `SB-${id}-v3`, group: 'skilltest', save: `skillbody_${id}_v3.png`, title: `${id} · 비기 전신 v3 (Claude 검수 반려)`,
+    refs: [`/realm/bust-hd/${id}.jpg`, `/realm/skill-body/${id}.jpg`], now: 'v2 반려: ' + fix.slice(0, 50),
+    use: '받으면 검수 → public/realm/skill-body/<id>.jpg', prompt: 'FIX REQUEST (most important): ' + fix + '\nIMAGE 2 is the rejected v2: keep its good pose and energy, fix only the problem.\n' + bodyV2(id, weaponText, kit) })
+}
+
+// ── 11-17 밤 해부·그림체 검수 (Claude · 형 「알아서 해부학적으로 문제없는지도 검수해서 재생성」) · tools/out/skillbody-anatomy-audit-20261117.json · docs/realm/production/SKILLBODY-ANATOMY-20261117.md
+//   비각성: v2 에 없는 것만 v2 로 (ALSO FIX) · 각성·진각성: bodyV2 같은 틀(초상 그림체·나이 잠금 · 무기마다 움직이는 자세 · 노출은 초상만큼)로 _v2 · 받으면 tools/skillbody-aw-v2-intake.py
+const ANAT_BASE = {   // 비각성 184장 중 12 · 손·팔은 형이 이미 본 판이라 깨끗 · 무기가 초상(무기 감사 artWeapon)과 다른 것
+  "g-100-buyeo-old-daeso": "The weapon is wrong: he holds a golden scepter, but his portrait weapon is a gold-handled leather WHIP; draw the whip lashing as one continuous cord.",   // 금 홀 · 초상은 금손잡이 채찍
+  "g-38-chopal-palmae": "The weapon is wrong: he holds a spear, but his portrait shows a SLING (a rope cord with a leather pouch and a river stone); draw the sling whirling and releasing the stone, no spear.",   // 창을 듦 · 초상은 돌팔매
+  "g-45-dabeol-deulgae": "The weapon is wrong: he swings a wooden club, but his weapon is a long iron SWORD (as in his awakening art); no club and no food in his hands.",   // 몽둥이 · 칼이어야(각성과 같게)
+  "g-60-golbeol-golgae": "The weapon is wrong: he holds a short sword, but his weapon is a heavy iron WAR HAMMER gripped with both hands.",   // 짧은 칼 · 쇠망치여야
+  "g-65-goguryeo-damul": "The weapon is wrong: he draws a bow, but his portrait weapon is a SWORD; draw him striking with a long straight sword, no bow.",   // 활 · 칼이어야
+  "g-66-geonma-malbalgup": "The weapon is wrong: he thrusts a spear, but his weapon is a SWORD (as in his awakening art); no spear.",   // 창 · 칼이어야
+  "g-86-mokji-geumbawi": "The weapon is wrong: he swings a wooden club, but his portrait shows a SWORD at his waist; draw him cutting with that sword, no club.",   // 몽둥이 · 초상은 칼
+  "w-01-silla-princess": "The weapon is wrong: she holds a sword, but her weapon is a folding FAN (as in her awakening art); draw her striking with the open fan, no sword.",   // 칼 · 부채여야
+  "w-45-tamna-oreumbi": "The weapon is wrong: she holds a long wooden pole, but her weapon is a WHIP; draw the whip lashing as one continuous cord, no pole.",   // 막대 · 채찍이어야
+  "w-68-maek-beombal": "The weapon is wrong: she swings a hand axe, but her portrait shows a DAGGER; draw her striking with that dagger, no axe.",   // 손도끼 · 초상은 단검
+  "w-77-sabeol-malgalgi": "The weapon is wrong: she thrusts a spear, but her portrait weapon is a leather riding WHIP; draw the whip lashing as one continuous cord, no spear.",   // 창 · 초상은 채찍
+  "w-98-byeonhan-danbi": "The weapon is wrong: she swings a wooden pestle club (the sickle only hangs at her belt), but her weapon is a big iron SICKLE held in her hand; no club.",   // 절굿공이 · 낫이어야
+}
+const ANAT_AW1 = {   // 1차 각성 220장 중 23 · 밋밋한 선 자세 10 · 노출 줄어듦 11 · 무기 1 · 얼굴 1 · 그림체 1
+  "g-104-garak-odogan": "The figure stands upright simply presenting a balance scale and ingots with no attack motion; redraw him in a dynamic lunging or swinging action pose with a strong diagonal.",   // 저울·은괴 들고 똑바로 선 밋밋한 자세
+  "g-106-garak-ocheongan": "The oar just rests on his shoulder while the other fist sits at his waist in a casual walking stride; redraw him swinging the oar in a powerful sweeping strike with a dynamic diagonal pose.",   // 노를 어깨에 걸치고 걷는 밋밋한 자세
+  "g-24-wansan-onsan": "He stands upright calmly playing a flute with no action or impact; redraw a dynamic spinning or leaping pose with the flute raised mid-motion and strong body diagonal.",   // 피리 불며 똑바로 선 정적인 자세
+  "g-41-goja-bau": "He stands upright holding a sack and an ingot up like a merchant display with no action; redraw a dynamic throwing or lunging pose with a strong diagonal.",   // 자루·은괴 들고 선 밋밋한 자세
+  "g-51-biryuna-mulgyeol": "The oar has no flat paddle blade and reads as a wooden club, unlike the broad paddle oar in the awakening portrait; give it a clear wide flat oar blade.",   // 노에 넓은 노깃이 없어 몽둥이로 보임(원화는 넓은 노)
+  "g-61-heomcheuk-bawi": "He stands upright tearing a rice cake at chest height with no combat action; redraw a dynamic pose (low dash or overhead swing) with a strong diagonal.",   // 떡 찢으며 똑바로 선 밋밋한 자세
+  "g-65-goguryeo-damul": "He stands nearly upright with the sword simply held up vertically at his side and no swing or impact; redraw a dynamic slashing or lunging pose with a strong diagonal.",   // 칼을 세워 든 채 서 있는 밋밋한 자세
+  "g-66-buyeo-geumha": "He stands upright holding the horse-head staff and showing the bronze mirror with no action; redraw a dynamic ritual-strike pose (staff slamming or mirror thrust in a lunge) with a strong diagonal.",   // 말머리 지팡이·거울 들고 선 밋밋한 자세
+  "g-78-saro-alpyeong": "He stands upright holding a pebble up and the staff vertically at his side with no action; redraw a dynamic throwing or striking pose with a strong diagonal.",   // 돌·지팡이 들고 똑바로 선 밋밋한 자세
+  "l-L1-yuhwa": "Her outfit is more covered than the awakening portrait (midriff hidden by a corset, full skirt and leggings instead of the bare midriff and thigh slit), and the rendering is a flatter anime look than the portrait's glossy semi-realistic painting; restore the bare midriff and thigh slit and match the portrait's rendering.",   // 원화보다 덜 드러남(배·허벅지 가림) · 그림체가 더 애니풍
+  "l-L2-soseono": "She stands nearly upright with the spear held vertically at her side and one palm out, a static pose; redo as a dynamic spear lunge or sweeping thrust with a strong diagonal.",   // 창 세워 들고 거의 서 있는 밋밋한 자세
+  "w-04-gaya-swordswoman": "Her outfit is much more covered than the awakening portrait: the portrait shows deep cleavage and a bare midriff, but the cut-in has a closed dark top covering chest and stomach.",   // 초상은 가슴골·배 드러남, 컷인은 다 가림
+  "w-11-assassin": "The portrait shows a short crop top with bare midriff, but the cut-in adds a full wrap top and sash that cover her stomach.",   // 초상은 배꼽티, 컷인은 배를 감싼 윗옷
+  "w-19-buyeo-fur-princess": "The portrait shows bare shoulders and a bare midriff under the fur, but the cut-in wraps her in a fully closed long robe with sleeves.",   // 초상은 어깨·배 드러남, 컷인은 긴 도포로 다 가림
+  "w-22-dongye-tiger-huntress": "The portrait shows a crop top with bare midriff under the tiger-fur cape, but the cut-in covers her stomach with a full tunic.",   // 초상은 배 드러남, 컷인은 배를 가린 저고리
+  "w-24-apdok-queen": "The portrait is off-shoulder with bare shoulders and collarbones, but the cut-in adds sleeves and cloth over both shoulders.",   // 초상은 어깨 드러남, 컷인은 어깨를 소매로 덮음
+  "w-27-mokji-jinha": "Her outfit is more covered than the awakening portrait: the portrait shows bare shoulders and a bare midriff, but the cut-in closes the robe over her shoulders and stomach.",   // 초상은 어깨·배 드러남, 컷인은 겉옷이 다 덮음
+  "w-50-siljik-mulga": "The portrait shows an off-shoulder top with deep cleavage and bare midriff, but the cut-in has a closed robe with shoulder armor and a covered stomach.",   // 초상은 어깨·가슴골·배 드러남, 컷인은 닫힌 도포
+  "w-56-dongokjeo-sogeum": "Her outfit is more covered than the awakening portrait: the portrait shows a strapless top with bare shoulders, cleavage and a bare midriff, but the cut-in covers her midriff with a long robe.",   // 초상은 어깨·가슴골·배 드러남, 컷인은 배를 가린 긴 옷
+  "w-64-miri-dallae": "The portrait shows deep cleavage and a bare midriff, but the cut-in has a closed blouse with a corset covering chest and stomach.",   // 초상은 가슴골·배 드러남, 컷인은 블라우스로 가림
+  "w-75-daegaya-soemoe": "The face and body read as a man (male facial structure, flat chest) instead of the muscular woman in the awakening portrait.",   // 얼굴·몸이 남자로 보임 (초상은 근육질 여자)
+  "w-92-saro-dallae": "The portrait shows bare shoulders and a bare midriff, but the cut-in has a fully closed red coat that covers shoulders and stomach.",   // 초상은 어깨·배 드러남, 컷인은 붉은 겉옷으로 다 가림
+  "w-99-garak-yucheongan": "She stands upright holding the grain pot out with no strike or motion, a static presentation pose; redo with a dynamic action such as a spinning cast of golden grain with a strong diagonal.",   // 항아리 들고 서 있는 밋밋한 자세
+}
+const ANAT_AW2 = {   // 진각성 220장 중 24 · 노출 줄어듦 21 · 무기 3(시위 없는 활 · 카타나 · 끊긴 채찍) · 밋밋 1 · 그림체 1
+  "g-102-garak-yeodogan": "The figure just walks upright hugging the rice sheaf to his chest with no attack motion; give him a dynamic action pose such as swinging or hurling the sheaf in a wide arc with a strong diagonal lunge.",   // 볏단 끌어안고 걷기만 하는 평이한 자세
+  "g-67-gosaburi-buri": "The bow has no bowstring at all and is swung like a curved club; it must read as a strung bow with one continuous taut string between both tips.",   // 활에 시위가 없음, 몽둥이처럼 휘두름
+  "g-87-wae-chief": "The weapon is drawn as a Japanese katana (long curved single-edged blade, round tsuba guard, two-handed katana grip) instead of his broad machete-like sword; replace it with the broad chopping machete blade from his portrait.",   // 마체테 대신 카타나(둥근 쓰바·외날 곡도) 모양
+  "l-L1-yuhwa": "Her outfit is a full-length dress covering midriff and thighs while her true-awakening portrait shows a jeweled bikini top, bare midriff and bare thighs, and her face is rendered in a cleaner anime style than the painterly semi-realistic portrait; match the portrait outfit exposure and rendering.",   // 진각성 초상보다 많이 가림(배·허벅지 덮은 드레스) + 얼굴 그림체가 애니풍
+  "l-L4-bari-gongju": "Her outfit is a long sleeveless dress that covers her midriff and legs, while the true-awakening portrait shows a bikini-style top with a fully bare midriff; restore the bare midriff and the same revealing cut.",   // 초상은 배 드러난 비키니 상의인데 컷인은 배·다리 다 덮은 원피스
+  "l-L5-seonyeo": "The bodice extends down and covers her midriff, while the true-awakening portrait shows a cropped top with a bare midriff; restore the bare midriff.",   // 초상은 배 드러남, 컷인은 몸판이 배를 덮음
+  "l-L8-nangnang-princess": "The halter dress covers her whole midriff, while the true-awakening portrait shows a cropped top with a bare midriff; restore the bare midriff.",   // 초상은 배 드러남, 컷인은 홀터 원피스로 배를 덮음
+  "w-05-baekje-queen": "The bodice covers her midriff, while the true-awakening portrait shows a cropped top with a bare midriff; restore the bare midriff.",   // 초상은 배 드러남, 컷인은 몸판이 배를 덮음
+  "w-06-buyeo-huntress": "The dress covers her midriff, while the true-awakening portrait shows a cropped top with a bare midriff; restore the bare midriff.",   // 초상은 배 드러남, 컷인은 원피스가 배를 덮음
+  "w-19-buyeo-fur-princess": "She is wrapped in a closed fur coat over a full bodice that hides her shoulders, cleavage and midriff, while the true-awakening portrait shows bare shoulders, cleavage and midriff; open the outfit to the portrait's exposure.",   // 초상은 어깨·가슴골·배 드러남, 컷인은 털옷+몸판으로 다 덮음
+  "w-24-apdok-queen": "The dress covers her midriff, while the true-awakening portrait shows a cropped top with a bare midriff; restore the bare midriff.",   // 초상은 배 드러남, 컷인은 원피스가 배를 덮음
+  "w-31-dabeol-dalbit": "Her torso is fully covered by the garment, while the true-awakening portrait shows cleavage and a bare midriff; restore the portrait's exposure.",   // 초상은 가슴골·배 드러남, 컷인은 몸통 전부 덮음
+  "w-35-jomun-odi": "The wrap dress covers her midriff, while the true-awakening portrait shows a cropped top with a bare midriff; restore the bare midriff.",   // 초상은 배 드러남, 컷인은 여밈 원피스가 배를 덮음
+  "w-37-michuhol-gaennae": "A corset covers her midriff, while the true-awakening portrait shows a cropped top with a bare midriff; restore the bare midriff.",   // 초상은 배 드러남, 컷인은 코르셋이 배를 덮음
+  "w-50-siljik-mulga": "The blue robe is closed over her midriff and the skirt hides her legs, while the true-awakening portrait shows a cropped top with a bare midriff and a high thigh slit; restore the bare midriff and slit.",   // 초상은 배·허벅지 트임 드러남, 컷인은 겉옷이 배를 덮음
+  "w-53-hwanna-gabi": "A green wrap top covers her midriff, while the true-awakening portrait shows a halter crop top with deep side cleavage and a bare midriff; restore the halter top and bare midriff.",   // 초상은 홀터 상의에 배 드러남, 컷인은 여민 저고리가 배를 덮음
+  "w-62-byeokjin-byeol": "A long shirt and leather apron cover her midriff, while the true-awakening portrait shows a cropped vest with a bare midriff; restore the cropped vest and bare midriff.",   // 초상은 짧은 조끼에 배 드러남, 컷인은 셔츠·앞치마가 배를 덮음
+  "w-64-miri-dallae": "A white under-layer covers her midriff, while the true-awakening portrait shows a cropped top with a bare midriff; remove the under-layer to bare the midriff.",   // 초상은 배 드러남, 컷인은 흰 속옷이 배를 덮음
+  "w-65-goguryeo-hwalmi": "Her red top runs down to the sash and covers her midriff, while the true-awakening portrait shows a red crop top with a bare midriff; restore the bare midriff.",   // 초상은 빨간 짧은 상의에 배 드러남, 컷인은 상의가 배를 덮음
+  "w-66-saro-noeul": "A corset bodice covers her midriff, while the true-awakening portrait shows a bikini-style top with a bare midriff; restore the bare midriff.",   // 초상은 배 드러남, 컷인은 코르셋이 배를 덮음
+  "w-67-buyeo-haedal": "Her top extends down and covers her midriff, while the true-awakening portrait shows a cropped top with a bare midriff; restore the bare midriff.",   // 초상은 배 드러남, 컷인은 상의가 배를 덮음
+  "w-68-maek-beombal": "A full laced vest covers her chest and midriff, while the true-awakening portrait shows a crop top with cleavage and a bare midriff; restore the crop top and bare midriff.",   // 초상은 가슴골·배 드러남, 컷인은 조끼가 가슴·배를 덮음
+  "w-77-sabeol-malgalgi": "The whip is broken into two pieces: the braided lash loop floats behind her head unattached, and a separate short lash sticks out of the handle; also a corset covers her midriff while the true-awakening portrait shows a bare midriff.",   // 채찍 끈이 손잡이와 끊겨 머리 뒤에 따로 떠 있음 · 초상은 배 드러남, 컷인은 코르셋이 덮음
+  "w-92-saro-dallae": "A corset bodice covers her midriff, while the true-awakening portrait shows a cropped top with a bare midriff; restore the bare midriff.",   // 초상은 배 드러남, 컷인은 코르셋이 배를 덮음
+}
+for (const [id, fix] of Object.entries(ANAT_BASE)) if (!v2Jobs.some(([x]) => x === id)) pushV2(id, '해부 검수 11-17', fix, { rope: true })
+const womenFirst = (a, b) => (/^[wl]-/.test(a) ? 0 : 1) - (/^[wl]-/.test(b) ? 0 : 1) || a.localeCompare(b, 'en', { numeric: true })
+for (const [form, dir, table, group] of [['aw1', 'awaken-hd', ANAT_AW1, 'skill1'], ['aw2', 'awaken2-hd', ANAT_AW2, 'skill2']]) {
+  for (const id of Object.keys(table).sort(womenFirst)) {
+    const { weaponText, kit } = weaponOf(id, { rope: true })
+    const tag = form === 'aw1' ? '1차 각성' : '진각성'
+    jobs.push({ id: `SB${form.slice(2)}-${id}-v2`, group, save: `skillbody_${form}_${id}_v2.png`, title: `${id} · ${tag} 비기 전신 새 틀 v2 (해부·그림체 검수 11-17)`,
+      refs: [`/realm/${dir}/${id}.jpg`, `/realm/skill-body/${form}/${id}.jpg`], now: `검수 반려: ${table[id]}`,
+      use: `받으면 검수(손가락·팔·발·그림체·나이·노출) → py -3 -I tools/skillbody-aw-v2-intake.py → public/realm/skill-body/${form}/<id>.jpg (옛 것 retired)`,
+      prompt: `FIX REQUEST (most important): ${table[id]}\n` + bodyV2(id, weaponText, kit, form) + '\nIMAGE 2 is the rejected previous cut-in: do NOT copy its pose, style or mistakes.' })
+  }
 }
 for (const [id, fix] of Object.entries(SB_FIX)) if (false) {
   const r = roster.find((x) => x.bust === id)
@@ -297,6 +404,18 @@ jobs.push({ id: 'H58', group: 'raid', save: 'haebi-pack-v1-H58.png', title: '돌
   now: '조합은 본편 바위(fx/rock.png)·별(raid/hit.png), 비기 단추는 바위 솟음(fx/skill/wake/rock-spikes.png)을 빌려 씀', use: '받으면 raid/boulder.png · raid/daze.png · raid/stonefall.png → raid-main COMBO_ART · combat.css #skill[data-kit=sling]',
   prompt: `Create one transparent PNG, 1536x512, a 3x1 row of three combo emblems in the same set as the 3 attached emblems (same size, framing, brush, glow). One bold symbol per cell, wide margins, no cell lines. ${RAID_STYLE}
 1) Rolling boulder: a huge round mossy boulder rolling forward over cracked ground, dust and small stones flying from under it. 2) Dazing stone: a small stone striking with a burst of little golden stars circling, a dizzy spiral. 3) Stone storm: a rain of many grey stones falling diagonally from a dark sky onto one circular shadow on the ground, dust bursting where they land.` })
+
+// ── 열전 기술 나무 갈래 끝 (11-17 밤 · RAID-LINK §2 · 형: 「몇 개만 몰빵하거나 여러 개를 일단 찍거나」) · 지금은 가까운 투사체·능력 그림을 빛깔(tint)로 빌려 씀 (power-ui.ts KIT_ART)
+const CAP_SHEET = (cells) => `Create one transparent PNG, 1536x1024, a 3x2 grid of six skill-tree capstone emblems in the same set as the attached icons (same size, framing, brush, glow). One bold readable symbol per cell, wide margins, no cell lines. ${RAID_STYLE}\n${cells}`
+jobs.push({ id: 'H59', group: 'raid', save: 'haebi-pack-v1-H59.png', title: '갈래 끝 문양 여섯 · 도끼·활·창', refs: ['/realm/raid/power-axe.png', '/realm/raid/cyclone.png', '/realm/raid/volley.png'],
+  now: '땅 가르기=비기 문양 · 돌아오는 회오리=바람 칼날 · 꿰뚫는 일제=화살 · 폭우=화살비 · 삼지창=본편 창 · 솟는 창=투창 (빛깔만 다름)', use: '칸마다 잘라 raid/cap-axe-a.png … cap-spear-b.png → power-ui.ts KIT_ART',
+  prompt: CAP_SHEET('1) Ground split: a bronze axe head slamming down, a long glowing crack running straight forward through the earth. 2) Returning whirlwind: a spinning hand axe trailing a wind spiral that curves back on itself like a boomerang. 3) Piercing volley: five arrows in a tight fan flying through three shattered wooden shields in a row. 4) Downpour: a dense double rain of arrows falling from a cloud onto one circle on the ground, a second wave right behind the first. 5) Trident thrust: three spear points thrusting out in three directions from one shaft, motion lines. 6) Rising spears: a thrown spear stuck in the ground with a ring of spear blades bursting up around it.') })
+jobs.push({ id: 'H60', group: 'raid', save: 'haebi-pack-v1-H60.png', title: '갈래 끝 문양 여섯 · 칼·단검·방울', refs: ['/realm/raid/power-sword.png', '/realm/raid/tempest.png', '/realm/raid/soul.png'],
+  now: '칼바람 베기=검기 · 십자 검기=검기 능력 · 독 묻은 쌍검=쌍단검 · 터지는 비도=비도 · 신령 부르기=혼불 · 갈라지는 혼불=혼불 능력 (빛깔만 다름)', use: '칸마다 잘라 raid/cap-sword-a.png … cap-magic-b.png → power-ui.ts KIT_ART',
+  prompt: CAP_SHEET('1) Slash wind: a ring-pommel sword mid-swing with a pale crescent of wind flying off the blade. 2) Cross wave: two crescent sword-wind blades flying in opposite directions, back to back. 3) Poisoned twin daggers: two short daggers crossed, green venom dripping from the blades. 4) Bursting knife: one throwing knife striking a point and splintering into a star of small blades. 5) Spirit call: a bronze shaman bell ringing, small blue ghost flames rising out of it. 6) Splitting soulfire: one blue soul flame bursting and splitting into two smaller flames flying apart.') })
+jobs.push({ id: 'H61', group: 'raid', save: 'haebi-pack-v1-H61.png', title: '갈래 끝 둘(돌팔매) + 되받아치기 + 벼리기·숙련', refs: ['/realm/raid/power-tempo.png', '/realm/raid/shop-armor.png', '/realm/raid/meteor.png'],
+  now: '땅울림=본편 바위 · 끝없는 물수제비=징검돌 · 되받아치기=본편 방패 보랏빛 · 벼리기·숙련=주 무기·보조 그림 불빛·물빛', use: '칸마다 잘라 raid/cap-sling-a.png · cap-sling-b.png · node-counter.png · node-hone.png · node-drill.png → power-ui.ts icons·KIT_ART (6번 칸은 비움)',
+  prompt: CAP_SHEET('1) Earth tremor: a river stone hitting the ground with circular shock rings and little dizzy golden stars. 2) Endless skipping stone: one flat pebble bouncing many times along a long zig-zag of splashes, each splash bigger. 3) Counterstrike: a round bronze shield with a burst of golden light exploding outward from behind it. 4) Honing: a whetstone and a blade edge with bright orange sparks. 5) Mastery: a coiled rope and a feathered throwing weapon with a teal swirl of skill. 6) Leave the sixth cell EMPTY (fully transparent).') })
 
 // ── 진각성 초상이 없는 남장수 셋 (진각성 묶음 · aw2 는 1차와 확 달라야 · 활시위 자세 금지 · 눈높이 카메라)
 const AW2M = (id, theme) => ({ id: 'AW2-' + id, group: 'dlc', save: `gpt_aw2-${id}.png`, title: `${id} · 진각성 초상`, refs: [`/realm/awaken-hd/${id}.jpg`, `/realm/bust-hd/${id}.jpg`],

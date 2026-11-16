@@ -16,8 +16,11 @@ REC = ROOT / 'tools/out/skillbody-v2-intake.json'
 RET.mkdir(parents=True, exist_ok=True)
 rec = json.loads(REC.read_text(encoding='utf-8')) if REC.exists() else {}
 done = []
-for f in sorted(SRC.glob('skillbody_*_v2.png')):
-    ident = f.name[len('skillbody_'):-len('_v2.png')]
+_files = {}
+for f in sorted(SRC.glob('skillbody_*_v2.png')) + sorted(SRC.glob('skillbody_*_v3.png')):   # _v3(검수 반려 다시)가 _v2 를 덮는다
+    if f.name.startswith(('skillbody_aw1_', 'skillbody_aw2_')): continue
+    _files[f.name[len('skillbody_'):-len('_v2.png')]] = f
+for ident, f in _files.items():
     sha = hashlib.sha256(f.read_bytes()).hexdigest()
     if rec.get(ident) == sha:
         continue
