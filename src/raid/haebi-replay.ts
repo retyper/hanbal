@@ -25,7 +25,9 @@ export function botInput(s: HaebiRun, react = 0): RunInput {
   const ring = rx || ry
   if (ring && !danger) { x = rx; y = ry }
   // 창돌격꾼이 겨눈 줄에서 옆으로 비켜난다
-  const lane = s.enemies.find(e => e.kind === 'runner' && e.act > 0 && e.act <= M.runnerWind - react && Math.abs((s.x - e.x) * e.vy - (s.y - e.y) * e.vx) < 40 && (s.x - e.x) * e.vx + (s.y - e.y) * e.vy > 0)
+  // (범·투창 사냥꾼의 붉은 줄도 같다)
+  const laneWind = (k: string) => k === 'runner' ? M.runnerWind : k === 'tiger' ? M.tigerWind : k === 'hunter' ? M.hunterWind : 0
+  const lane = s.enemies.find(e => laneWind(e.kind) > 0 && e.act > 0 && e.act <= laneWind(e.kind) - react && Math.abs((s.x - e.x) * e.vy - (s.y - e.y) * e.vx) < 40 && (s.x - e.x) * e.vx + (s.y - e.y) * e.vy > 0)
   if (lane && !danger && !ring) { x = -lane.vy; y = lane.vx }
   const len = Math.hypot(x, y) || 1
   return { x: x / len, y: y / len, skill: s.skillCd === 0 && s.enemies.some(e => Math.hypot(e.x - s.x, e.y - s.y) < 230), dash: !!danger && s.dashCd === 0 }

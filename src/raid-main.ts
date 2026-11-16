@@ -73,8 +73,8 @@ if (mode === 'vanguard') {
 }
 root.insertAdjacentHTML('beforeend', '<div id="shop" hidden></div>')
 const startLabel = () => mode === 'vanguard' ? `각성 ${HERO.name} 출전 · 최대 3분` : mode === 'trial' ? `${HERO.name} 출전 · ${Math.round(runDuration(run) / 60)}분` : `${stageName(stage)} 출전 · ${Math.round(runDuration(run) / 60)}분`
-/** 독립 열전 출전 화면: 스테이지 셋(앞을 깨면 다음이 열림 · 깨면 휘장) + 금 + 상점 (형 11-16 다이센카식) */
-const STAGE_GLYPH: Record<string, string> = { forest: '林', ford: '灘', palisade: '柵' }
+/** 독립 열전 출전 화면: 스테이지 다섯(11-16 설원 고개·불타는 산성 더함 · 앞을 깨면 다음이 열림 · 깨면 휘장) + 금 + 상점 (형 11-16 다이센카식) */
+const STAGE_GLYPH: Record<string, string> = { forest: '林', ford: '灘', palisade: '柵', snow: '雪', fortress: '城' }
 function renderStageMenu() {
   if (mode !== 'stage') return
   const menu = $('menu')
@@ -82,7 +82,7 @@ function renderStageMenu() {
   const pick = menu.querySelector('.journey')!; pick.className = 'journey stage-pick'
   pick.innerHTML = STAGE_ORDER.map(id => {
     const open = stageOpen(meta, id), best = meta.best[id]
-    return `<button data-stage="${id}" class="${id === stage ? 'on' : ''}" ${open ? '' : 'disabled'} aria-pressed="${id === stage}"><img class="emblem ${meta.cleared[id] ? 'got' : ''}" src="${import.meta.env.BASE_URL}realm/raid/emblem-${id}.png" alt="${STAGE_GLYPH[id]}"><b>${stageName(id)}</b><small>${!open ? '앞 스테이지를 깨면 열립니다' : meta.cleared[id] ? '휘장 획득' : best ? `최고 ${clock(best)} 버팀` : '첫 도전'}</small></button>`
+    return `<button data-stage="${id}" class="${id === stage ? 'on' : ''}" ${open ? '' : 'disabled title="앞 스테이지를 깨면 열립니다"'} aria-pressed="${id === stage}"><img class="emblem ${meta.cleared[id] ? 'got' : ''}" src="${import.meta.env.BASE_URL}realm/raid/emblem-${id}.png" alt="${STAGE_GLYPH[id]}"><b>${stageName(id)}</b><small>${!open ? '앞을 깨면 열립니다' : meta.cleared[id] ? '휘장 획득' : best ? `최고 ${clock(best)} 버팀` : '첫 도전'}</small></button>`
   }).join('')
   pick.querySelectorAll<HTMLButtonElement>('[data-stage]').forEach(b => b.onclick = () => { stage = b.dataset.stage as typeof stage; run = newRun(7); renderStageMenu() })
   menu.querySelector('.note')!.innerHTML = `<span class="gold-line">금 <b>${meta.gold.toLocaleString()}</b></span><button id="open-shop">상점 · 영구 강화</button><button id="open-heroes">장수 바꾸기</button>`

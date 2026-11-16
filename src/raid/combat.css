@@ -100,14 +100,14 @@ h1,h2,.choices b,#power-tooltip>b{font-family:var(--serif)}
 /* 가운데로 내려앉은 판을 따라 오른쪽 위 단추도 내려온다 */
 @media(orientation:landscape),(min-width:701px){header{top:calc((100dvh - min(100dvh,(100vw - 12px)/1.995556 + 12px))/2 + 20px)}}
 /* 11-16 독립 열전: 스테이지 셋 · 금 · 상점 (다이센카식 판 밖 성장) */
-.stage-pick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(6px,1.2vw,14px);width:100%}
+.stage-pick{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:clamp(6px,1.2vw,14px);width:100%}
 .stage-pick button{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:clamp(6px,1.4vh,12px) 6px;background:#0d1a16cc;border:1px solid #5b5236;border-radius:8px;color:#e8dfc7;cursor:pointer;transition:transform .12s}
 .stage-pick button:active{transform:scale(.95)}
 .stage-pick button.on{background:linear-gradient(180deg,#5a4520,#2b2112);border-color:#e8c46a;box-shadow:0 0 0 2px #e8c46a66,0 0 18px #e8c46a44}
 .stage-pick button.on::after{content:'✓';position:absolute;top:4px;right:8px;color:#ffd977;font-weight:700}
 .stage-pick button:disabled{opacity:.45;cursor:not-allowed}
-.stage-pick b{font-family:var(--serif);font-size:clamp(12px,2.2vh,17px)}
-.stage-pick small{font-size:clamp(9px,1.5vh,11px);color:#b9ae92}
+.stage-pick b{font-family:var(--serif);font-size:clamp(12px,2.2vh,17px);word-break:keep-all;text-align:center;line-height:1.25}
+.stage-pick small{font-size:clamp(9px,1.5vh,11px);color:#b9ae92;word-break:keep-all;text-align:center}
 .stage-pick .emblem{width:clamp(36px,8vh,64px);height:clamp(36px,8vh,64px);border-radius:50%;display:grid;place-items:center;font-family:var(--serif);font-size:clamp(13px,2.4vh,20px);background:radial-gradient(circle at 35% 30%,#6b6250,#2a2620);color:#8d8370;border:2px solid #5a5242}
 .stage-pick .emblem.got{background:radial-gradient(circle at 35% 30%,#ffe7a0,#b07a2a 60%,#5a3a12);color:#3a2408;border-color:#ffd977;box-shadow:0 0 12px #ffcf6a88}
 #menu .note{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
@@ -150,6 +150,10 @@ h1,h2,.choices b,#power-tooltip>b{font-family:var(--serif)}
 .stage-pick img.emblem{object-fit:contain;padding:0;background:none;border:0;filter:grayscale(1) brightness(.55);box-shadow:none}
 .stage-pick img.emblem.got{filter:drop-shadow(0 0 8px #ffcf6a99);background:none;border:0}
 .stage-pick button:disabled img.emblem{filter:grayscale(1) brightness(.3)}
+/* 스테이지 다섯 (11-16): 좁은 화면에선 잠긴 칸의 까닭 줄 대신 「잠김」 띠 — 줄이 늘어 출전 화면이 넘치지 않게 */
+.stage-pick button:disabled::after{content:'잠김';position:absolute;top:clamp(14px,4vh,30px);left:50%;transform:translateX(-50%);font-size:10px;font-weight:700;color:#f0dfb0;background:#000a;border:1px solid #8a7550;padding:1px 6px;border-radius:4px;white-space:nowrap}
+@media(orientation:portrait) and (max-width:700px),(orientation:landscape) and (max-height:600px){.stage-pick button:disabled small{display:none}.stage-pick .emblem,.stage-pick img.emblem{width:clamp(30px,6.5vh,52px);height:clamp(30px,6.5vh,52px)}.stage-pick button{padding:5px 3px}}
+@media(orientation:landscape) and (max-height:420px){#menu .controls{display:none}.stage-pick .emblem,.stage-pick img.emblem{width:clamp(26px,8vh,34px);height:clamp(26px,8vh,34px)}.stage-pick button:disabled::after{top:8px}}
 .panel.result.won{background:linear-gradient(180deg,#0a120ecc,#0a120ef2 60%),url('/realm/raid/result-win.webp') center/cover}
 .panel.result.lost{background:linear-gradient(180deg,#070b10cc,#070b10f2 60%),url('/realm/raid/result-lose.webp') center/cover}
 .won-emblem{width:1.8em;height:1.8em;vertical-align:middle;margin-right:4px}

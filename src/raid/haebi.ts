@@ -56,14 +56,14 @@ export const COMBOS = [
 ] as const
 export type Combo = typeof COMBOS[number]['id']
 export const kitCombos = (kit: Kit) => COMBOS.filter(c => c.kit === null || c.kit === kit)
-export type MobKind = 'club' | 'archer' | 'runner' | 'slinger' | 'shield' | 'dog' | 'berserker' | 'firearcher' | 'iron' | 'shaman' | 'elite' | 'boss'
+export type MobKind = 'club' | 'archer' | 'runner' | 'slinger' | 'shield' | 'dog' | 'berserker' | 'firearcher' | 'iron' | 'shaman' | 'tiger' | 'bear' | 'hunter' | 'torch' | 'elite' | 'boss'
 export type StageId = keyof typeof ST
 /** 판 밖 상점에서 산 단계 (HAEBI_SHOP 의 열둘) */
 export type Bonus = Record<Exclude<keyof typeof SH, 'growth'>, number>
 export const NO_BONUS: Bonus = { might: 0, vigor: 0, armor: 0, regen: 0, haste: 0, swift: 0, magnet: 0, wisdom: 0, revive: 0, reroll: 0, greed: 0, luck: 0 }
-/** act: 창돌격꾼 예고(+)·돌진(−) 시간 · vx·vy: 돌진 방향 · buff: 무당이 북돋운 남은 시간 */
+/** act: 창돌격꾼·범 예고(+)·돌진(−) 시간 · 투창 사냥꾼 겨눔(+) · 방화꾼 다음 불바닥까지 · vx·vy: 돌진·던질 방향 · buff: 무당이 북돋운 남은 시간 */
 export interface Mob { id: number; x: number; y: number; hp: number; max: number; kind: MobKind; cd: number; flash: number; wind: number; aimX: number; aimY: number; act: number; vx: number; vy: number; buff: number; poison: number; pdps: number }
-export interface Missile { x: number; y: number; vx: number; vy: number; life: number; kind: 'gale' | 'ember' | 'shard' | 'enemy' | 'arrow' | 'rain' | 'javelin' | 'wave' | 'barrage' | 'stone' | 'flame' | 'knife' | 'soul'; damage: number; radius: number; hit: number[]; angle: number; tx: number; ty: number; gen?: number }
+export interface Missile { x: number; y: number; vx: number; vy: number; life: number; kind: 'gale' | 'ember' | 'shard' | 'enemy' | 'arrow' | 'rain' | 'javelin' | 'wave' | 'barrage' | 'stone' | 'flame' | 'knife' | 'soul' | 'hurl'; damage: number; radius: number; hit: number[]; angle: number; tx: number; ty: number; gen?: number }
 export interface Effect { x: number; y: number; x2: number; y2: number; r: number; angle: number; life: number; total: number; kind: 'hit' | 'slash' | 'blast' | 'bolt' | 'skill' | 'death' | 'spike' | 'thrust' | 'buff' | 'ring'; color: string; mob?: Mob['kind']; face?: number; n?: number; crit?: boolean }
 export interface Drop { x: number; y: number; value: number; age: number }
 type Cool = 'axe' | 'gale' | 'ember' | 'thunder' | 'orbit' | 'bow' | 'rain' | 'volley' | 'spear' | 'javelin' | 'grove' | 'sword' | 'wave' | 'tempest' | 'dagger' | 'knife' | 'shadow' | 'bell' | 'soul' | 'rite' | 'storm'
@@ -156,7 +156,7 @@ function hit(s: HaebiRun, e: Mob, amount: number, knock = true) {
   const crit = s.bonus.luck > 0 && random(s) < s.bonus.luck * SH.luck.step
   amount *= guard(e) * (crit ? 2 : 1)
   s.damage += Math.min(e.hp, amount); e.hp -= amount; e.flash = .12
-  if (knock && e.kind !== 'boss' && e.kind !== 'iron') { const d = Math.hypot(e.x - s.x, e.y - s.y) || 1; e.x += (e.x - s.x) / d * C.knockback; e.y += (e.y - s.y) / d * C.knockback }
+  if (knock && e.kind !== 'boss' && e.kind !== 'iron' && e.kind !== 'bear') { const d = Math.hypot(e.x - s.x, e.y - s.y) || 1; e.x += (e.x - s.x) / d * C.knockback; e.y += (e.y - s.y) / d * C.knockback }
   // 피해 숫자 (형 11-16: 「한방이라 강해지는지 모르겠다」) — 맞은 자리의 이펙트에 실어 화면이 띄운다
   if (e.hp > 0) { fx(s, 'hit', e.x, e.y - 22); Object.assign(s.fx[s.fx.length - 1]!, { n: amount, crit }); return }
   s.kills++; s.comboKills++; s.streakTime = 2; s.hp = Math.min(s.maxHp, s.hp + C.killHeal); if (e.kind === 'elite') s.elites++
@@ -179,15 +179,15 @@ function nearest(s: HaebiRun, x: number, y: number, excluded: number[] = [], rad
   for (const e of s.enemies) { if (e.hp <= 0 || excluded.includes(e.id)) continue; const n = Math.hypot(e.x - x, e.y - y); if (n < d) { d = n; best = e } }
   return best
 }
-const SPEED: Partial<Record<Missile['kind'], number>> = { enemy: C.enemyShotSpeed, arrow: C.bowSpeed, javelin: C.javelinSpeed, wave: C.waveSpeed, rain: 0, barrage: 0, stone: 0, flame: 0, knife: C.knifeSpeed, soul: C.soulSpeed }
-const LIFE: Partial<Record<Missile['kind'], number>> = { arrow: C.bowLife, javelin: C.javelinLife, wave: C.waveLife, rain: C.rainDelay, barrage: C.barrageDelay, stone: M.lobDelay, flame: M.flameLife, knife: C.knifeLife, soul: C.soulLife }
+const SPEED: Partial<Record<Missile['kind'], number>> = { enemy: C.enemyShotSpeed, arrow: C.bowSpeed, javelin: C.javelinSpeed, wave: C.waveSpeed, rain: 0, barrage: 0, stone: 0, flame: 0, knife: C.knifeSpeed, soul: C.soulSpeed, hurl: M.hunterSpeed }
+const LIFE: Partial<Record<Missile['kind'], number>> = { arrow: C.bowLife, javelin: C.javelinLife, wave: C.waveLife, rain: C.rainDelay, barrage: C.barrageDelay, stone: M.lobDelay, flame: M.flameLife, knife: C.knifeLife, soul: C.soulLife, hurl: M.hunterLife }
 const RADIUS: Partial<Record<Missile['kind'], number>> = { gale: 25, wave: C.waveRadius, javelin: 16, arrow: 10, barrage: C.barrageRadius, stone: M.lobRadius, flame: M.flameRadius, knife: 12, soul: 16 }
 function shoot(s: HaebiRun, kind: Missile['kind'], angle: number, damage: number, x = s.x, y = s.y, tx = x, ty = y, gen = 0) {
-  if (s.shots.length >= C.maxShots) return
+  if (s.shots.length >= C.maxShots) return undefined
   const speed = SPEED[kind] ?? C.galeSpeed
   const b: Missile = { x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: LIFE[kind] ?? C.galeLife, kind, damage, radius: RADIUS[kind] ?? 12, hit: [], angle, tx, ty }
   if (gen) b.gen = gen
-  s.shots.push(b)
+  s.shots.push(b); return b
 }
 /** 한 번 꿰뚫고 멈추는 수 — 도끼 묶음(gale·shard)은 예전 그대로 */
 function pierce(s: HaebiRun, b: Missile) {
@@ -207,6 +207,15 @@ export function spawnMob(s: HaebiRun, kind?: Mob['kind']) {
   for (let i = 0; i < pack; i++) s.enemies.push({ id: s.next++, x: (side === 0 ? 15 : side === 1 ? C.width - 15 : p * C.width) + i * 9, y: (side === 2 ? 24 : side === 3 ? C.height - 15 : 40 + p * (C.height - 55)) + (i % 2) * 14,
     hp, max: hp, kind, cd: 2, flash: 0, wind: 0, aimX: 0, aimY: 0, act: 0, vx: 0, vy: 0, buff: 0, poison: 0, pdps: 0 })
 }
+/** 겨눴다 곧게 내닫는 적 (창돌격꾼 · 범) — 예고·돌진 시간 · 돌진 배속 · 다시 겨누기까지 · 겨누는 거리 */
+const CHARGE = {
+  runner: { range: M.runnerRange, wind: M.runnerWind, dash: M.runnerDash, speed: M.runnerDashSpeed, cd: M.runnerCooldown },
+  tiger: { range: M.tigerRange, wind: M.tigerWind, dash: M.tigerDash, speed: M.tigerDashSpeed, cd: M.tigerCooldown },
+} as const
+export const charge = (kind: MobKind) => kind === 'runner' || kind === 'tiger' ? CHARGE[kind] : null
+/** 내려찍기(wind) 범위 · 준비 시간 — 두목·정예 · 반달곰 */
+export const slamRadius = (kind: MobKind) => kind === 'bear' ? M.bearRadius : C.bossRadius
+export const slamWindup = (kind: MobKind) => kind === 'bear' ? M.bearWind : C.bossWindup
 function hurt(s: HaebiRun, amount: number) { if (s.inv > 0) return; s.hp -= Math.max(1, amount * ST[s.stage].damage - s.bonus.armor * SH.armor.step); s.inv = C.hitInv; s.hurt = .3 }
 /** 시간이 갈수록 적 한 대가 아파진다 — 가만히 서서 고르기만 해도 깨지 않게 (형 11-15) */
 const threat = (s: HaebiRun) => 1 + s.t * C.threatTimeScale
@@ -381,7 +390,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
     s.skillCd = C.skillCooldown; s.inv = C.skillInv; s.attack = .3
     fx(s, 'skill', s.x, s.y, C.skillRange * area, '#ffdf8b')
     blast(s, s.x, s.y, C.skillRange * area, C.skillDamage * power)
-    s.shots = s.shots.filter(b => b.kind !== 'enemy')
+    s.shots = s.shots.filter(b => b.kind !== 'enemy' && b.kind !== 'hurl')
   }
   const target = nearest(s, s.x, s.y)
   if (target) {
@@ -430,16 +439,29 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
     const x = s.x - e.x, y = s.y - e.y, d = Math.hypot(x, y) || 1
     const kind = e.kind, m = kind === 'elite' || kind === 'boss' ? null : M[kind]
     const v = (C.mobSpeed + s.t * C.speedTimeScale) * (m?.speed ?? 1) * (e.buff > 0 ? M.shamanSpeed : 1) * (kind === 'berserker' && e.hp < e.max / 2 ? M.berserkSpeed : 1)
-    if (e.wind > 0) { e.wind -= dt; if (e.wind <= 0 && Math.hypot(s.x - e.aimX, s.y - e.aimY) < C.bossRadius) hurt(s, C.bossDamage) }
+    const ch = charge(kind)
+    if (e.wind > 0) { e.wind -= dt; if (e.wind <= 0 && Math.hypot(s.x - e.aimX, s.y - e.aimY) < slamRadius(kind)) hurt(s, kind === 'bear' ? M.bearDamage * threat(s) : C.bossDamage) }
     else if ((kind === 'boss' || kind === 'elite') && d < 180 && !e.cd) { e.wind = C.bossWindup; e.aimX = s.x; e.aimY = s.y; e.cd = C.bossCooldown }
-    else if (kind === 'runner' && e.act > 0) {
-      // 창돌격꾼: 예고(붉은 줄) 동안 멈춰 겨눈다 → 곧게 돌진
-      e.act -= dt; if (e.act <= 0) e.act = -M.runnerDash
-    } else if (kind === 'runner' && e.act < 0) {
-      e.act = Math.min(0, e.act + dt); e.x += e.vx * v * M.runnerDashSpeed * dt; e.y += e.vy * v * M.runnerDashSpeed * dt
-      e.x = Math.max(10, Math.min(C.width - 10, e.x)); e.y = Math.max(20, Math.min(C.height - 10, e.y)); if (!e.act) e.cd = M.runnerCooldown
-    } else if (kind === 'runner' && d < M.runnerRange && !e.cd) { e.act = M.runnerWind; e.vx = x / d; e.vy = y / d; e.aimX = e.x + e.vx * M.runnerRange * 1.4; e.aimY = e.y + e.vy * M.runnerRange * 1.4 }
-    else if (kind === 'archer' && d < C.archerRange) { if (!e.cd) { shoot(s, 'enemy', Math.atan2(y, x), C.enemyShotDamage * (1 + s.t * C.shotTimeScale), e.x, e.y); e.cd = C.archerCooldown } }
+    // 반달곰: 가까이 오면 일어서서(바닥 원) 내려친다
+    else if (kind === 'bear' && d < M.bearRange && !e.cd) { e.wind = M.bearWind; e.aimX = s.x; e.aimY = s.y; e.cd = M.bearCooldown }
+    else if (ch && e.act > 0) {
+      // 창돌격꾼·범: 예고(붉은 줄) 동안 멈춰 겨눈다 → 곧게 돌진(범은 길게 덮침)
+      e.act -= dt; if (e.act <= 0) e.act = -ch.dash
+    } else if (ch && e.act < 0) {
+      e.act = Math.min(0, e.act + dt); e.x += e.vx * v * ch.speed * dt; e.y += e.vy * v * ch.speed * dt
+      e.x = Math.max(10, Math.min(C.width - 10, e.x)); e.y = Math.max(20, Math.min(C.height - 10, e.y)); if (!e.act) e.cd = ch.cd
+    } else if (ch && d < ch.range && !e.cd) { e.act = ch.wind; e.vx = x / d; e.vy = y / d; e.aimX = e.x + e.vx * ch.range * 1.4; e.aimY = e.y + e.vy * ch.range * 1.4 }
+    else if (kind === 'hunter' && e.act > 0) {
+      // 맥족 투창: 붉은 줄로 겨눈 쪽으로 빠른 창 한 자루
+      e.act -= dt; if (e.act <= 0) { e.act = 0; shoot(s, 'hurl', Math.atan2(e.vy, e.vx), M.hunterDamage * threat(s), e.x, e.y); e.cd = M.hunterCooldown }
+    } else if (kind === 'hunter' && d < M.hunterRange && !e.cd) { e.act = M.hunterWind; e.vx = x / d; e.vy = y / d; e.aimX = e.x + e.vx * M.hunterRange * 1.3; e.aimY = e.y + e.vy * M.hunterRange * 1.3 }   // 다시 잴 동안은 다가온다 (멀리 쌓여 창비가 되지 않게)
+    else if (kind === 'torch') {
+      // 횃불 방화꾼: 달리며 지나간 자리에 짧은 불바닥 · 가까우면 기름 단지(불화살과 같은 고리)
+      e.act -= dt
+      if (e.act <= 0) { e.act = M.torchTrail; if (s.shots.filter(b => b.kind === 'flame').length < M.flameCap) { const f = shoot(s, 'flame', 0, M.flameDamage, e.x, e.y); if (f) f.life = M.torchTrailLife } }
+      if (d < M.torchRange && !e.cd) { shoot(s, 'stone', 0, M.lobDamage * threat(s), s.x, s.y, e.x, e.y, 1); e.cd = M.torchCooldown }
+      if (d > 23) { e.x += x / d * v * dt; e.y += y / d * v * dt }
+    } else if (kind === 'archer' && d < C.archerRange) { if (!e.cd) { shoot(s, 'enemy', Math.atan2(y, x), C.enemyShotDamage * (1 + s.t * C.shotTimeScale), e.x, e.y); e.cd = C.archerCooldown } }
     else if ((kind === 'slinger' || kind === 'firearcher') && d < M.lobRange) {
       // 투석꾼·불화살: 서 있는 자리에 고리 → 잠시 뒤 떨어짐 (불화살은 불바닥을 남김)
       if (!e.cd) { shoot(s, 'stone', 0, M.lobDamage * threat(s), s.x, s.y, e.x, e.y, kind === 'firearcher' ? 1 : 0); e.cd = M.lobCooldown }
@@ -452,7 +474,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
   for (const b of [...s.shots]) {
     b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt
     if (b.kind === 'gale' || b.kind === 'ember' || b.kind === 'shard' || b.kind === 'enemy') b.angle += dt * 10
-    if (b.kind === 'enemy') { if (Math.hypot(b.x - s.x, b.y - s.y) < 20) { hurt(s, b.damage); b.life = 0 } }
+    if (b.kind === 'enemy' || b.kind === 'hurl') { if (Math.hypot(b.x - s.x, b.y - s.y) < 20) { hurt(s, b.damage); b.life = 0 } }
     else if (b.kind === 'stone') {
       if (b.life <= 0) { fx(s, 'blast', b.x, b.y, b.radius, b.gen ? '#ff7a3a' : '#c9b08a'); if (Math.hypot(b.x - s.x, b.y - s.y) < b.radius) hurt(s, b.damage); if (b.gen) shoot(s, 'flame', 0, M.flameDamage, b.x, b.y) }
     } else if (b.kind === 'flame') { if (Math.hypot(b.x - s.x, b.y - s.y) < b.radius) hurt(s, b.damage) }
@@ -496,7 +518,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
   for (const f of s.fx) f.life -= dt
   s.fx = s.fx.filter(f => f.life > 0)
   // 되살아나기 (상점 「부활」) — 체력 반으로, 잠깐 무적, 날아오던 것을 지운다
-  if (s.hp <= 0 && s.revives > 0) { s.revives--; s.hp = s.maxHp / 2; s.inv = 2; s.shots = s.shots.filter(b => b.kind !== 'enemy' && b.kind !== 'stone' && b.kind !== 'flame' && b.kind !== 'barrage'); announce(s, '다시 일어선다 · 부활') }
+  if (s.hp <= 0 && s.revives > 0) { s.revives--; s.hp = s.maxHp / 2; s.inv = 2; s.shots = s.shots.filter(b => b.kind !== 'enemy' && b.kind !== 'hurl' && b.kind !== 'stone' && b.kind !== 'flame' && b.kind !== 'barrage'); announce(s, '다시 일어선다 · 부활') }
   if (s.hp <= 0 || s.t >= runDuration(s) && !won(s)) { s.hp = Math.max(0, s.hp); s.state = 'lost'; s.offers = [] }
   else if (s.state === 'playing' && s.xp >= xpNeeded(s)) offer(s)
 }

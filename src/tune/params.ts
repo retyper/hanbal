@@ -85,13 +85,19 @@ export const HAEBI_RUN = {
  * trial 은 본편 각성 시련: 숲 산길의 짧고 쉬운 판 (상점 강화 없이도 깰 수 있게 · 형 11-16 「따로 떼기」).
  */
 export const HAEBI_STAGES = {
-  forest: { name: '숲 산길', length: 1, hp: 1, damage: 1, spawn: 1, bossHp: 1, gold: 1, bg: 'forest.webp',
+  forest: { name: '숲 산길', length: 1, hp: 1, damage: 1, spawn: 1, bossHp: 1, gold: 1, bg: 'forest.webp', boss: 'bandit-warlord', bossName: '산적 대두목',
     tiers: [['club', 'archer'], ['runner', 'slinger'], ['shield', 'dog'], ['berserker', 'firearcher'], ['iron', 'shaman']] },
-  ford: { name: '물안개 여울', length: 1, hp: 1.7, damage: 1.8, spawn: 1.3, bossHp: 1.8, gold: 2, bg: 'ford.webp',
+  ford: { name: '물안개 여울', length: 1, hp: 1.7, damage: 1.8, spawn: 1.3, bossHp: 1.8, gold: 2, bg: 'ford.webp', boss: 'boss-ford', bossName: '여울 물두령',
     tiers: [['dog', 'slinger'], ['runner', 'firearcher'], ['shield', 'archer'], ['berserker', 'shaman'], ['iron', 'dog']] },
-  palisade: { name: '목책 돌파', length: 1, hp: 2.2, damage: 2.2, spawn: 1.4, bossHp: 2.8, gold: 3.2, bg: 'palisade.webp',
+  palisade: { name: '목책 돌파', length: 1, hp: 2.2, damage: 2.2, spawn: 1.4, bossHp: 2.8, gold: 3.2, bg: 'palisade.webp', boss: 'boss-palisade', bossName: '배신한 성주',
     tiers: [['shield', 'archer'], ['iron', 'slinger'], ['berserker', 'firearcher'], ['runner', 'shaman'], ['iron', 'berserker']] },
-  trial: { name: '각성 시련', length: .4, hp: 1, damage: 1, spawn: 1, bossHp: .3, gold: 0, bg: 'forest.webp',
+  /** 11-16 H47·H50~H52: 설원 고개 — 범(멈칫 뒤 길게 덮침) · 반달곰(일어서서 내려침 · 아주 단단함) · 맥족 투창 사냥꾼(붉은 줄 뒤 창) · 두목은 산적 대두목이 다시 */
+  snow: { name: '설원 고개', length: 1, hp: 2.4, damage: 2.3, spawn: 1.45, bossHp: 3.6, gold: 4.5, bg: 'snow.webp', boss: 'bandit-warlord', bossName: '설원 대두목',
+    tiers: [['dog', 'hunter'], ['runner', 'tiger'], ['bear', 'hunter'], ['berserker', 'tiger'], ['tiger', 'bear']] },
+  /** 11-16 H48·H53: 불타는 산성 — 횃불 방화꾼(지나간 자리에 불바닥 · 기름 단지) · 두목은 배신한 성주가 산성으로 물러나 다시 */
+  fortress: { name: '불타는 산성', length: 1, hp: 3.2, damage: 3, spawn: 1.6, bossHp: 4.6, gold: 6.5, bg: 'fortress.webp', boss: 'boss-palisade', bossName: '산성의 성주',
+    tiers: [['shield', 'torch'], ['berserker', 'firearcher'], ['iron', 'torch'], ['runner', 'shaman'], ['iron', 'torch']] },
+  trial: { name: '각성 시련', length: .4, hp: 1, damage: 1, spawn: 1, bossHp: .3, gold: 0, bg: 'forest.webp', boss: 'bandit-warlord', bossName: '산적 대두목',
     tiers: [['club', 'archer'], ['runner', 'slinger'], ['shield', 'dog'], ['berserker', 'firearcher'], ['iron', 'shaman']] },
 } as const
 /**
@@ -110,11 +116,23 @@ export const HAEBI_MOBS = {
   firearcher: { hp: .9, speed: 1, hit: 1, xp: 3, share: .2, height: 64 },
   iron: { hp: 3.2, speed: .65, hit: 1.8, xp: 4, share: 0, height: 76 },
   shaman: { hp: 1.5, speed: .9, hit: .8, xp: 5, share: .12, height: 66 },
+  // 11-16 설원 고개(H50~H52) · 불타는 산성(H53) 적 — 그 스테이지에만 나온다
+  tiger: { hp: 1.6, speed: 1.35, hit: 1.6, xp: 4, share: .3, height: 64 },
+  bear: { hp: 5, speed: .55, hit: 2.2, xp: 6, share: .25, height: 70 },
+  hunter: { hp: 1, speed: 1, hit: 1, xp: 3, share: .2, height: 64 },
+  torch: { hp: 1.2, speed: 1.15, hit: 1.2, xp: 3, share: .3, height: 64 },
   runnerRange: 260, runnerWind: .7, runnerDash: .55, runnerDashSpeed: 4.2, runnerCooldown: 3.5,
   lobRange: 380, lobCooldown: 4.5, lobDelay: 1.2, lobRadius: 38, lobDamage: 9,
   flameLife: 3, flameRadius: 44, flameDamage: 8,
   shieldBlock: .45, dogPack: 5, berserkSpeed: 1.9,
   shamanRange: 300, shamanEvery: 4, shamanRadius: 210, shamanBuff: 4, shamanSpeed: 1.4, shamanArmor: .35,
+  /** 범: 멈칫(웅크림) 뒤 길게 덮침 — 창돌격꾼보다 멀리서·빠르게 · 곰: 일어서서 내려침(바닥 원 · 안 밀림) */
+  tigerRange: 320, tigerWind: .55, tigerDash: .5, tigerDashSpeed: 5.4, tigerCooldown: 3.2,
+  bearRange: 95, bearWind: .9, bearRadius: 72, bearDamage: 16, bearCooldown: 3.2,
+  /** 맥족 투창: 멈춰 붉은 줄로 겨눔 → 빠른 창 한 자루 (사거리 안에선 서서 던짐) */
+  hunterRange: 430, hunterWind: .8, hunterCooldown: 4.5, hunterSpeed: 440, hunterLife: 1.4, hunterDamage: 5,
+  /** 횃불 방화꾼: 달리며 몇 초마다 불바닥을 떨어뜨림(짧게 탐 · 판 위 불바닥 수 상한) + 가까우면 기름 단지(불화살과 같은 고리) */
+  torchTrail: .7, torchTrailLife: 1.8, torchRange: 260, torchCooldown: 5, flameCap: 40,
 } as const
 /** 판 밖 상점 — 영구 강화 (형 11-16 · 다이센카처럼 언제든 되돌려 받기) · step 은 단계마다 더하는 값 · cost 는 첫 단계 값 */
 export const HAEBI_SHOP = {

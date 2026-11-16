@@ -78,3 +78,53 @@ test('본편 각성 시련: 실제 시련 판으로 이긴 기록을 본편이 �
   assert.ok(!trialWinValid(bossTime(s) - 30), '두목 전')
   assert.ok(!trialWinValid(runDuration(s) + 30) && !trialWinValid('x') && !trialWinValid(NaN))
 })
+
+test('스테이지 다섯 (11-16 설원 고개·불타는 산성): 차례대로 열리고 뒤로 갈수록 어렵다', async () => {
+  const { STAGE_ORDER } = await import('../src/raid/meta.ts')
+  const { HAEBI_STAGES: ST } = await import('../src/tune/params.ts')
+  assert.deepEqual([...STAGE_ORDER], ['forest', 'ford', 'palisade', 'snow', 'fortress'])
+  const m = loadMeta()
+  for (const id of ['ford', 'palisade', 'snow', 'fortress'] as const) assert.equal(stageOpen(m, id), false, id)
+  record(m, 'forest', 0, true, 1150); record(m, 'ford', 0, true, 1150)
+  assert.equal(stageOpen(m, 'snow'), false, '목책을 깨기 전엔 설원이 닫힘')
+  record(m, 'palisade', 0, true, 1150)
+  assert.equal(stageOpen(m, 'snow'), true); assert.equal(stageOpen(m, 'fortress'), false)
+  record(m, 'snow', 0, false, 600); assert.equal(stageOpen(m, 'fortress'), false, '지면 안 열림')
+  record(m, 'snow', 0, true, 1150); assert.equal(stageOpen(m, 'fortress'), true)
+  for (let i = 1; i < STAGE_ORDER.length; i++) {
+    const a = ST[STAGE_ORDER[i - 1]!], b = ST[STAGE_ORDER[i]!]
+    for (const k of ['hp', 'damage', 'spawn', 'bossHp', 'gold'] as const) assert.ok(b[k] > a[k], `${STAGE_ORDER[i]} ${k}`)
+  }
+})
+
+test('새 적: 범·곰·투창 사냥꾼은 설원에만, 횃불 방화꾼은 산성에만 나온다', async () => {
+  const { STAGE_ORDER } = await import('../src/raid/meta.ts')
+  const kinds = (stage: typeof STAGE_ORDER[number]) => {
+    const s = createHaebi(9, 'stage', 'axe', { stage }), seen = new Set<string>()
+    for (const t of [10, 300, 520, 760, 1000]) { s.t = t; s.enemies = []; for (let i = 0; i < 120; i++) spawnMob(s); for (const e of s.enemies) seen.add(e.kind) }
+    return seen
+  }
+  for (const id of STAGE_ORDER) {
+    const k = kinds(id)
+    for (const beast of ['tiger', 'bear', 'hunter']) assert.equal(k.has(beast), id === 'snow', `${id} ${beast}`)
+    assert.equal(k.has('torch'), id === 'fortress', `${id} torch`)
+  }
+  const trial = createHaebi(9, 'trial'); for (const t of [10, 200, 400]) { trial.t = t; for (let i = 0; i < 80; i++) spawnMob(trial) }
+  assert.ok(!trial.enemies.some(e => ['tiger', 'bear', 'hunter', 'torch'].includes(e.kind)), '본편 시련엔 안 나온다')
+})
+
+test('새 적 몸짓: 범은 겨눴다 덮치고 · 곰은 내려치고 · 사냥꾼은 창을 던지고 · 방화꾼은 불바닥을 깐다', () => {
+  const place = (stage: 'snow' | 'fortress', kind: 'tiger' | 'bear' | 'hunter' | 'torch', dx: number) => {
+    const s = createHaebi(4, 'stage', 'axe', { stage }); s.ranks.axe = 0; s.nextBarrage = 1e9; s.spawn = 1e9; s.nextElite = 1e9
+    spawnMob(s, kind); const e = s.enemies[0]!; e.x = s.x + dx; e.y = s.y; e.cd = 0; e.hp = e.max = 1e9
+    return { s, e }
+  }
+  { const { s, e } = place('snow', 'tiger', 250); stepHaebi(s, { x: 0, y: 0 }, .01); assert.ok(e.act > 0, '겨눔')
+    for (let i = 0; i < 60 && e.act >= 0; i++) stepHaebi(s, { x: 0, y: 0 }, .02); assert.ok(e.act < 0, '덮침') }
+  { const { s, e } = place('snow', 'bear', 60); stepHaebi(s, { x: 0, y: 0 }, .01); assert.ok(e.wind > 0, '일어섬')
+    const hp = s.hp; s.inv = 0; for (let i = 0; i < 60; i++) stepHaebi(s, { x: 0, y: 0 }, .02); assert.ok(s.hp < hp, '내려친 곳에 서 있으면 맞는다') }
+  { const { s, e } = place('snow', 'hunter', 380); for (let i = 0; i < 60 && !s.shots.some(b => b.kind === 'hurl'); i++) stepHaebi(s, { x: 0, y: 0 }, .02)
+    assert.ok(s.shots.some(b => b.kind === 'hurl'), '창을 던진다'); assert.ok(Math.abs(e.x - (s.x + 380)) < 1, '사거리 안에선 서서 던짐') }
+  { const { s } = place('fortress', 'torch', 500); for (let i = 0; i < 100; i++) stepHaebi(s, { x: 0, y: 0 }, .02)
+    assert.ok(s.shots.some(b => b.kind === 'flame'), '불바닥을 깐다') }
+})

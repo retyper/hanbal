@@ -1,10 +1,14 @@
 import { HAEBI_RUN as C, HAEBI_MOBS as M, HAEBI_STAGES as ST } from '../tune/params.ts'
 import { genArtOf } from '../realm/data/art.ts'
-import { areaScale, type HaebiRun, type Missile } from './haebi.ts'
+import { areaScale, charge, slamRadius, slamWindup, type HaebiRun, type Missile, type StageId } from './haebi.ts'
 import { WALK_CYCLE } from './walk-cycle.ts'
 
+/** bandit-<종류> 가 아닌 적 그림 (11-16 H50~H53 · tools/sprite-kit/bake-raid-enemies.py) */
+const MOB_ART: Record<string, string> = { tiger: 'beast-tiger', bear: 'beast-bear', hunter: 'snow-hunter', torch: 'torch-raider' }
 export const imagePaths = [genArtOf('haebi').file, genArtOf('aw1-haebi').file, 'anim-px/bandit-club.png', 'anim-px/bandit-chief.png', 'anim-px/bandit-archer.png',
-  ...['runner', 'slinger', 'shield', 'dog', 'berserker', 'firearcher', 'iron', 'shaman'].map(k => `anim-px/bandit-${k}.png`), ...['ford.webp', 'palisade.webp', 'digits.png', 'knife.png', 'soul.png', 'bell-ring.png', 'javelin.png','sword-wave.png','forest.webp','axe.png','impact-strip.png','slash-strip.png','death-strip.png','fire-strip.png','lightning-strip.png','talisman.png','wind-blade.png','arrow.png','hit.png','essence.png','essence-large.png',...['mark-slam','mark-ring','mark-move','mark-hero','mark-target','mark-arrow','bar-boss','plaque'].map(p=>`ui/${p}.png`)].map(p=>'raid/'+p), 'anim-px/bandit-warlord.png']
+  ...['runner', 'slinger', 'shield', 'dog', 'berserker', 'firearcher', 'iron', 'shaman'].map(k => `anim-px/bandit-${k}.png`), ...['ford.webp', 'palisade.webp', 'digits.png', 'knife.png', 'soul.png', 'bell-ring.png', 'javelin.png','sword-wave.png','forest.webp','axe.png','impact-strip.png','slash-strip.png','death-strip.png','fire-strip.png','lightning-strip.png','talisman.png','wind-blade.png','arrow.png','hit.png','essence.png','essence-large.png',...['mark-slam','mark-ring','mark-move','mark-hero','mark-target','mark-arrow','bar-boss','plaque'].map(p=>`ui/${p}.png`)].map(p=>'raid/'+p), 'anim-px/bandit-warlord.png',
+  // 11-16 H45~H53: 스테이지 두목 둘 · 설원·산성 적 넷 · 넷째·다섯째 바닥
+  ...['boss-ford', 'boss-palisade', ...Object.values(MOB_ART)].map(n => `anim-px/${n}.png`), 'raid/snow.webp', 'raid/fortress.webp']
 /** bar-boss.png 의 투명한 홈 [x0,y0,x1,y1] — tools/raid-ui-kit.py 가 public/realm/raid/ui/kit.json 에 적는 값 */
 const BOSS_WIN = [104, 35, 626, 82] as const
 export function sprite(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, path: string, x: number, y: number, height: number, frame: number, face = 1, flash = false) {
@@ -83,7 +87,8 @@ function decal(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageEleme
   const img = images.get('raid/ui/' + name + '.png'); if (!img) return false
   ctx.save(); ctx.globalAlpha *= alpha; ctx.drawImage(img, x - w / 2, y - h / 2, w, h); ctx.restore(); return true
 }
-const warlord = (mob: string) => 'anim-px/' + (mob === 'boss' ? 'bandit-warlord' : mob === 'elite' ? 'bandit-chief' : 'bandit-' + mob) + '.png'
+/** 적 그림 — 두목은 스테이지마다(HAEBI_STAGES.boss) · 정예는 산적 두령 · 나머지는 bandit-<종류> 또는 MOB_ART */
+const warlord = (mob: string, stage: StageId) => 'anim-px/' + (mob === 'boss' ? ST[stage].boss : mob === 'elite' ? 'bandit-chief' : MOB_ART[mob] ?? 'bandit-' + mob) + '.png'
 /** 산적 활잡이는 사거리 안에서 멈춰 서서 쏜다 — 메기기(13) → 당기기(14) → 놓기(16) · 걷는 그림으로 제자리걸음하지 않게 (H26) */
 function archerFrame(s: HaebiRun, e: HaebiRun['enemies'][number]) {
   const d = Math.hypot(s.x - e.x, s.y - e.y)
@@ -92,6 +97,11 @@ function archerFrame(s: HaebiRun, e: HaebiRun['enemies'][number]) {
   if (e.kind === 'runner') return e.act > 0 ? 12 : e.act < 0 ? 14 : null
   if (e.kind === 'slinger' || e.kind === 'firearcher') return d >= M.lobRange ? null : e.cd > M.lobCooldown - .4 ? 16 : e.cd < 1 ? 14 : 12
   if (e.kind === 'shaman') return d >= M.shamanRange ? null : e.cd > M.shamanEvery - .7 ? 14 : 12
+  // 설원·산성 (11-16 H50~H53): 범 웅크림 12 → 덮침 14 → 내려앉음 16 · 곰 일어섬은 wind(13) → 내려침 14 · 투창 겨눔 12 → 던짐 14 → 새 창 16 · 방화꾼 단지 던짐 14
+  if (e.kind === 'tiger') return e.act > 0 ? 12 : e.act < 0 ? 14 : e.cd > M.tigerCooldown - .3 ? 16 : null
+  if (e.kind === 'bear') return e.cd > M.bearCooldown - M.bearWind - .35 && e.cd <= M.bearCooldown - M.bearWind ? 14 : null
+  if (e.kind === 'hunter') return e.act > 0 ? 12 : e.cd > M.hunterCooldown - .35 ? 14 : e.cd > M.hunterCooldown - .8 ? 16 : null
+  if (e.kind === 'torch') return e.cd > M.torchCooldown - .4 ? 14 : null
   if (d < 34 && e.cd > .6) return 14
   return null
 }
@@ -108,7 +118,7 @@ export function impactFrame(age: number) { return Math.min(7, Math.max(0, Math.f
 /** Simulation positions are ground contacts; project missiles at hand/bow height. */
 export function projectileAnchor(b: Missile) {
   const release = b.kind === 'shard' ? 0 : Math.max(0,1-(C.galeLife-b.life)/C.shotReleaseTime)
-  return {x:b.x+Math.sign(b.vx)*C.shotHandLead*release,y:b.y-(b.kind==='enemy'?C.enemyShotHeight:C.heroShotHeight)}
+  return {x:b.x+Math.sign(b.vx)*C.shotHandLead*release,y:b.y-(b.kind==='enemy'||b.kind==='hurl'?C.enemyShotHeight:C.heroShotHeight)}
 }
 function impact(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, x: number, y: number, radius: number, age: number) {
   const img = images.get('raid/impact-strip.png'); if (!img) return
@@ -137,16 +147,16 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   ctx.fillStyle = '#11281b25'; ctx.fillRect(0, 0, W, H)
   for (const e of s.enemies) if (e.wind > 0) {
     // 내려찍기 경고: 금 간 땅 원(점점 진해짐) + 바깥까지 자라는 고리 = 맞는 범위 그대로 (지름 2r)
-    const r = C.bossRadius, k = 1 - e.wind / C.bossWindup
+    const r = slamRadius(e.kind), k = 1 - e.wind / slamWindup(e.kind)
     if (!decal(ctx, images, 'mark-slam', e.aimX, e.aimY, r * 2, r * 2, .55 + .45 * k) || !decal(ctx, images, 'mark-ring', e.aimX, e.aimY, r * 2 * k, r * 2 * k)) {
       ctx.fillStyle = '#df4c3455'; ctx.strokeStyle = '#ffc1a0'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(e.aimX, e.aimY, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke()
       ctx.beginPath(); ctx.arc(e.aimX, e.aimY, r * k, 0, Math.PI * 2); ctx.stroke()
     }
   }
-  // 창돌격꾼 돌진 예고: 겨눈 줄이 점점 진해진다
-  for (const e of s.enemies) if (e.kind === 'runner' && e.act > 0) {
-    const k = 1 - e.act / M.runnerWind
-    ctx.save(); ctx.globalAlpha = .25 + .55 * k; ctx.strokeStyle = '#ff4a3a'; ctx.lineWidth = 6 + 10 * k; ctx.lineCap = 'round'
+  // 창돌격꾼·범 돌진 · 투창 사냥꾼 겨눔 예고: 겨눈 줄이 점점 진해진다 (투창은 가늘게)
+  for (const e of s.enemies) if (e.act > 0 && (charge(e.kind) || e.kind === 'hunter')) {
+    const thin = e.kind === 'hunter', k = 1 - e.act / (thin ? M.hunterWind : charge(e.kind)!.wind)
+    ctx.save(); ctx.globalAlpha = .25 + .55 * k; ctx.strokeStyle = '#ff4a3a'; ctx.lineWidth = thin ? 3 + 4 * k : 6 + 10 * k; ctx.lineCap = 'round'
     ctx.beginPath(); ctx.moveTo(e.x, e.y); ctx.lineTo(e.aimX, e.aimY); ctx.stroke(); ctx.restore()
   }
   // 돌팔매·불화살 떨어질 자리 · 타는 불바닥
@@ -170,7 +180,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       // 무당이 북돋운 적 · 성난 광전사: 발밑 붉은 기운
       if (e.buff > 0 || e.kind === 'berserker' && e.hp < e.max / 2) { ctx.save(); ctx.globalAlpha = .45 + .25 * Math.sin(s.t * 12 + e.id); ctx.fillStyle = '#ff3b2f'; ctx.beginPath(); ctx.ellipse(e.x, e.y + 2, 22, 8, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore() }
       if (target) decal(ctx, images, 'mark-target', e.x, e.y, 100, 45)
-      sprite(ctx, images, warlord(e.kind), e.x, e.y, h, e.wind > 0 ? 13 : archerFrame(s, e) ?? 4 + Math.floor(s.t * 8 + e.id) % 8, s.x < e.x ? -1 : 1, e.flash > 0)
+      sprite(ctx, images, warlord(e.kind, s.stage), e.x, e.y, h, e.wind > 0 ? 13 : archerFrame(s, e) ?? 4 + Math.floor(s.t * 8 + e.id) % 8, s.x < e.x ? -1 : 1, e.flash > 0)
       if (target) decal(ctx, images, 'mark-arrow', e.x, e.y - h - 26 + Math.sin(s.t * 4) * 4, 22, 39)
       if (big) { ctx.fillStyle = '#111c'; ctx.fillRect(e.x - 28, e.y - h, 56, 5); ctx.fillStyle = '#ef9873'; ctx.fillRect(e.x - 28, e.y - h, 56 * e.hp / e.max, 5) }
     } else {
@@ -189,6 +199,9 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
     } else if (b.kind === 'javelin') {
       // 투창 전용 그림(H27)이 오기 전에는 화살 그림을 길게
       stamp(ctx, images, images.has('raid/javelin.png') ? 'raid/javelin.png' : 'raid/arrow.png', p.x, p.y, 76, Math.atan2(b.vy,b.vx))
+    } else if (b.kind === 'hurl') {
+      // 맥족 사냥꾼의 창 — 투창 그림 그대로
+      stamp(ctx, images, 'raid/javelin.png', p.x, p.y, 68, Math.atan2(b.vy, b.vx))
     } else if (b.kind === 'stone' || b.kind === 'flame') {
       // 돌팔매·불바닥은 위에서 땅 표식과 함께 따로 그린다
     } else if (b.kind === 'knife') {
@@ -247,7 +260,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       if (f.mob) {
         ctx.save(); ctx.translate(f.x, f.y + 20); ctx.rotate((f.face ?? 1) * Math.min(1,age * 2) * .65)
         ctx.globalAlpha *= Math.max(0, 1 - age * 1.3)
-        sprite(ctx, images, warlord(f.mob), 0, 0, mobHeight(f.mob), 18, f.face ?? 1)
+        sprite(ctx, images, warlord(f.mob, s.stage), 0, 0, mobHeight(f.mob), 18, f.face ?? 1)
         ctx.restore()
       }
       effectStrip(ctx,images,'death',f.x,f.y+12,f.r*1.6,age)
@@ -271,7 +284,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   const boss = s.enemies.find(e => e.kind === 'boss')
   if (boss) {
     // Upper-right lane beneath the clock, clear of the DOM health/loadout HUD.
-    const bx=W-440, by=128, name=s.mode==='vanguard'?`제${s.captains} 전위대장 · ${s.breaches}/3 돌파`:'산적 대두목'
+    const bx=W-440, by=128, name=s.mode==='vanguard'?`제${s.captains} 전위대장 · ${s.breaches}/3 돌파`:ST[s.stage].bossName
     const bar=images.get('raid/ui/bar-boss.png'), plate=images.get('raid/ui/plaque.png')
     if (bar && plate) {
       // H21 두목 게이지: 통째로 같은 배율(늘이지 않음) · 투명하게 뚫린 홈(BOSS_WIN) 밑에 채움을 먼저 칠한다 · 이름은 아래 이름판에
