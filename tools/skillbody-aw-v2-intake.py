@@ -24,6 +24,8 @@ for f in sorted(SRC.glob('skillbody_aw[12]_*_v2.png')) + sorted(SRC.glob('skillb
     if not m:
         continue
     form, ident = m.group(1), m.group(2)
+    if f.name.endswith('_v2.png') and (SRC / f.name.replace('_v2.png', '_v3.png')).exists():
+        continue   # v3 가 있으면 v2 는 보지 않는다 (번갈아 다시 넣지 않게)
     key = f'{form}/{ident}'
     if f.stat().st_size == 0:
         print('빈 파일 · 건너뜀', f.name); continue
