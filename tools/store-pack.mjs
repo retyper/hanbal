@@ -12,8 +12,7 @@ import { basename, join } from 'node:path'
 import { ASSETS } from './store-layout.mjs'
 
 const OUT = 'tools/out/store-pack'
-rmSync(OUT, { recursive: true, force: true })
-mkdirSync(join(OUT, 'ref'), { recursive: true })
+const MAIN = process.argv[1]?.replaceAll('\\', '/').endsWith('tools/store-pack.mjs')  // 출시 제작실(release-pack)이 CARDS 만 빌려 갈 때는 아무것도 쓰지 않는다
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
 
 const LOGO_KO = 'public/realm/logo/title.png'
@@ -26,7 +25,7 @@ const CAPTURE = 'public/realm/event/event-capture.jpg'
 const STYLE = ' Style: premium Korean historical-fantasy strategy game key art, hand-painted semi-realistic illustration matching the attached references, bold clean linework with painterly shading, rich warm cinematic lighting. Setting: ancient Korea in the Samhan era (Mahan, Jinhan, Byeonhan, Gaya, Baekje, Goguryeo; 1st to 3rd century): hemp and silk jeogori-style jackets and robes, lamellar and scale armor, bronze and iron ornaments, jade comma-shaped ornaments (gogok). Strictly Korean-centered: no Chinese palace motifs, no Japanese motifs, no ninja or masked figures. Absolutely no sun disc: no red circle, no rising-sun rays or sunburst, no banner or flag with a red circle anywhere (banners are plain solid colors or abstract patterns). Teen (15+) rating: all clothing fully opaque, no sheer fabric over the chest, no visible nipple outline, no nudity. No text, no letters, no logo, no watermark, no UI, no frame or border.'
 const LOGO_NOTE = ' IMAGE 3 is our game title logo, attached ONLY to show the mood and colors (dark bronze and gold). Do NOT draw it, do NOT draw any title or any other text: the logo will be placed there later by software, so that band must stay completely empty.'
 
-const CARDS = [
+export const CARDS = [
   {
     key: 'header', title: '헤더 캡슐 920×430 · 장수 둘 + 로고 자리', save: 'capsule_header.png',
     refs: [SOEBI, ONJO, LOGO_KO],
@@ -50,6 +49,9 @@ const CARDS = [
   },
 ]
 
+function build() {
+rmSync(OUT, { recursive: true, force: true })
+mkdirSync(join(OUT, "ref"), { recursive: true })
 const files = new Map()
 const refImg = (src) => {
   if (!existsSync(src)) return null
@@ -106,3 +108,5 @@ document.addEventListener('click', async (e) => {
 </script></body></html>`
 writeFileSync(join(OUT, 'index.html'), html)
 console.log(`스팀 캡슐 꾸러미: 굽는 것 ${CARDS.length}장 (굽지 않는 것 ${ASSETS.filter((a) => a.bake === null).length}) → ${OUT}/index.html`)
+}
+if (MAIN) build()

@@ -497,15 +497,18 @@ export const MAP_CSS = `
 .map .tok.unit .flag { left: -2%; top: -46%; height: 80%; }
 /* 병사 그림 말 — 사람 수(초록) 바로 밑에 사기 막대(노랑) · 숫자 칸에 가려 안 보였다 */
 .map .tok.unit .hp { position: relative; order: 9; left: auto; right: auto; top: auto; width: 46%; margin-top: 2px; box-shadow: 0 0 0 1px #201811, 0 1px 3px #000a; }
-/* 장수 얼굴 + 대표 병사 하나를 한 가로줄에 (형 10-31: "군사 유닛과 장수가 너무 동떨어져 있고 군사들끼리도 너무 멀어 보임 ·
-   대표 유닛 하나와 장수 얼굴을 같은 x축에"). 얼굴 | 병사 / 그 밑에 사람 수 · 막대가 두 칸에 걸친다. 병사 둘째·셋째는 숨긴다 */
-.map .tok.unit { --tw: clamp(26px, calc(4.2cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 46px); display: grid; grid-template-columns: var(--tw) calc(var(--tw) * .95); align-items: end; justify-items: center; column-gap: 0; width: auto; }
-.map .tok.unit > img { position: relative; left: auto; top: auto; width: calc(var(--tw) * .92); grid-column: 1; grid-row: 1; align-self: center; }
-.map .tok.unit .squad { grid-column: 2; grid-row: 1; width: 100%; aspect-ratio: auto; height: calc(var(--tw) * 1.45); }
-.map .tok.unit .sq { margin: 0; } .map .tok.unit .sq:nth-child(n+2) { display: none; }
+/* One unit per army. The narrow body hitbox leaves neighboring towns clickable. */
+.map .tok.unit { --tw: clamp(26px, calc(4.2cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 46px); display: flex; flex-direction: column; align-items: center; width: calc(var(--tw) * 1.15); }
+.map .tok.unit .squad { width: 100%; height: calc(var(--tw) * 1.8); aspect-ratio: auto; pointer-events: auto; }
+.map .tok.unit .sq { margin: 0; pointer-events: none; }
+.map .tok.unit .sq:nth-child(n+2) { display: none; }
+.map .tok.unit .squad::after { border-color: var(--tc, #9fd18b); box-shadow: 0 0 0 1px var(--tc2, #201811); }
+.map .tok.unit.sel .squad::after { border-color: #ffe099; box-shadow: 0 0 6px #ffd27a; }
+/* Selected generals use the same three attack cycles as soldiers; marching wins. */
+.map .tok.unit.sel.going .sq.general u::before, .map .toks.mv .tok.unit.sel .sq.general u::before { animation: mqwalk calc(.42s * var(--mqwalks, 1)) steps(var(--mqwalkn, 2)) infinite; }
 /* 모르는 적의 장수 칸 — 얼굴 자리에 큰 「?」 (척후를 보내면 얼굴·수가 보인다 · 형 11-02) · 누르면 아는 만큼 한 줄 */
 .map .tok .unk { position: absolute; left: 0; top: 0; width: 100%; aspect-ratio: 1; display: grid; place-items: center; border-radius: 50%; z-index: 4; font-style: normal; font-weight: 900; font-size: 1.4em; color: #ffd27a; background: #201811e6; box-shadow: inset 0 0 0 2px var(--tc, #c8402a); pointer-events: none; }
-.map .tok.unit > .unk { position: relative; grid-column: 1; grid-row: 1; align-self: center; width: calc(var(--tw) * .92); font-size: calc(var(--tw) * .62); }
+.map .tok.unit > .unk { position: absolute; left: auto; right: -10%; top: 0; width: calc(var(--tw) * .5); font-size: calc(var(--tw) * .4); }
 .map .tok.unit > b, .map .tok.unit .hp { grid-column: 1 / span 2; grid-row: auto; }
 .map .tok.unit .hp { width: 70%; }
 @media (prefers-reduced-motion: reduce) { .map .tok.unit .sq u::before { animation: none !important; translate: calc(var(--i0, 0%) * (1 - var(--nf, 8)) / var(--nf, 8)) 0; } .map .tok.unit.sel .squad::after { animation: none; } }
@@ -601,7 +604,8 @@ export const MAP_CSS = `
    멀리: 위 + 나라 이름 · 도읍과 지킬 곳(.lkeep) 이름만 · 군대 줄(사기 바) 없음 */
 .map:not([data-zl="near"]) .lb .lbg, .map:not([data-zl="near"]) .lb .lbf, .map:not([data-zl="near"]) svg .rsign, .map:not([data-zl="near"]) svg .tw { display: none; }
 .map:not([data-zl="near"]) .lb small:not(.nowi) { display: none !important; }
-.map:not([data-zl="near"]) .tok .squad, .map:not([data-zl="near"]) .tok .ask { display: none; }
+.map:not([data-zl="near"]) .tok .ask { display: none; }
+.map:not([data-zl="near"]) .tok.unit .sq u::before { animation: none; translate: 0 0; }
 .map:not([data-zl="near"]) .tok.unit { grid-template-columns: var(--tw); }
 .map:not([data-zl="near"]) .nd:not(.sel) .stl, .map:not([data-zl="near"]) .nd:not(.sel) .frtb { display: none; }
 .map[data-zl="mid"] .lb:not(.lkeep):not(.lmid) { display: none; }
@@ -1106,7 +1110,7 @@ export function mapHtml(
   const ours = (t: MapToken): boolean => t.foe === undefined && t.ally === undefined && t.party !== true
   const tokBtn = (t: MapToken, ang?: number): string =>
     `<button class="tok${t.squad !== undefined ? ' unit' : ''}${ours(t) && t.march === undefined && !t.going ? ' idle' : ''}${t.sel ? ' sel' : ''}${t.going ? ' going' : ''}${t.pin === true ? ' pin' : ''}${t.ally !== undefined ? ' ally' : ''}${t.party === true ? ' party' : ''}${t.foe !== undefined ? ` foe${t.sneak === true ? ' sneak' : ''}` : ''}" data-act="${t.foe !== undefined ? 'foetok' : t.party === true ? 'ptok' : 'tok'}" data-army="${t.army}" style="${tokKit(t)}">`
-    + `${t.sel ? GEM : ''}${ang !== undefined ? `<i class="dir" style="--a:${ang.toFixed(0)}deg"></i>` : ''}${ours(t) ? '<i class="flag"></i>' : ''}${t.wait === true ? `<i class="ask" style="--ae:${P.realm.mapAskEveryS}s;--ad:${(-(jit(t.army) * P.realm.mapAskEveryS)).toFixed(1)}s">명령?</i>` : ''}${t.squad !== undefined ? `<span class="squad">${t.squad.map((q, j) => `<i class="sq${q.r !== undefined ? ' v2' : ''}${q.m === true ? ' mg' : ''}" style="--ar:${q.ar.toFixed(3)};${q.r !== undefined ? `--r:${q.r.toFixed(3)};` : ''}--j:${j};--k:${((([...t.army].reduce((h, ch) => h * 31 + ch.charCodeAt(0), 7) + j * 53) % 97 + 97) % 97 / 97).toFixed(2)}"><u style="background-image:url('${q.src}')"></u></i>`).join('')}</span>` : ''}<img src="${t.img}" alt="">${t.foe !== undefined && t.known !== true ? '<i class="unk">?</i>' : ''}${t.foe !== undefined ? '' : t.morale !== undefined ? `<i class="hp mor${t.morale < P.realm.mapMoraleLow ? ' low' : ''}" style="--p:${Math.max(0.06, Math.min(1, t.morale / P.realm.moraleMax)).toFixed(2)}"></i>` : `<i class="hp" style="--p:${Math.max(0.08, t.men / topMen).toFixed(2)}"></i>`}<b>${t.foe !== undefined ? (t.known === true ? `적 ${t.men}` : '적') : `${t.ally !== undefined ? '도움 ' : t.party === true ? (t.prep !== undefined && t.prep > 0 ? `채비 ${t.prep}달 · ` : '개척 ') : ''}${t.men}`}</b></button>`
+    + `${t.sel && t.squad === undefined ? GEM : ''}${ang !== undefined ? `<i class="dir" style="--a:${ang.toFixed(0)}deg"></i>` : ''}${t.wait === true ? `<i class="ask" style="--ae:${P.realm.mapAskEveryS}s;--ad:${(-(jit(t.army) * P.realm.mapAskEveryS)).toFixed(1)}s">명령?</i>` : ''}${t.squad !== undefined ? `<span class="squad">${t.squad.map((q, j) => `<i class="sq${q.r !== undefined ? ' v2' : ''}${q.m === true ? ' mg' : ''}${q.general === true ? ' general' : ''}" style="--ar:${q.ar.toFixed(3)};${q.r !== undefined ? `--r:${q.r.toFixed(3)};` : ''}--j:${j};--k:${((([...t.army].reduce((h, ch) => h * 31 + ch.charCodeAt(0), 7) + j * 53) % 97 + 97) % 97 / 97).toFixed(2)}"><u style="background-image:url('${q.src}')"></u></i>`).join('')}</span>` : ''}${t.squad === undefined ? `<img src="${t.img}" alt="">` : ''}${t.foe !== undefined && t.known !== true ? '<i class="unk">?</i>' : ''}${t.foe !== undefined ? '' : t.morale !== undefined ? `<i class="hp mor${t.morale < P.realm.mapMoraleLow ? ' low' : ''}" style="--p:${Math.max(0.06, Math.min(1, t.morale / P.realm.moraleMax)).toFixed(2)}"></i>` : `<i class="hp" style="--p:${Math.max(0.08, t.men / topMen).toFixed(2)}"></i>`}<b>${t.foe !== undefined ? (t.known === true ? `적 ${t.men}` : '적') : `${t.ally !== undefined ? '도움 ' : t.party === true ? (t.prep !== undefined && t.prep > 0 ? `채비 ${t.prep}달 · ` : '개척 ') : ''}${t.men}`}</b></button>`
   let toks = ''
   // 길 위의 우리 군대 — 떠난 쪽에서 삼분의 일쯤 (가운데의 "n계절" 글씨를 안 가린다)
   for (const t of tokens) {
@@ -1244,7 +1248,7 @@ export interface MapToken {
   /** 땅에 선 병사 셋 — 그 군대에 많은 병종의 동작 그림 (형 10-28: "둥실 떠다니기만 하면 뭐하냐 · 유닛처럼") */
   /** 협공에 낄 수 있는 짝 — 반짝이는 테와 불티 (형 11-05) */
   readonly pin?: boolean
-  readonly squad?: ReadonlyArray<{ readonly src: string; readonly ar: number; readonly r?: number; /** 이주민 걷기 8컷 띠 (개척단) */ readonly m?: boolean }>
+  readonly squad?: ReadonlyArray<{ readonly src: string; readonly ar: number; readonly r?: number; /** 이주민 걷기 8컷 띠 (개척단) */ readonly m?: boolean; readonly general?: boolean }>
 }
 
 /** 고른 군대가 갈 수 있는 고을 — 칩은 판세(싸울 곳) 또는 걸리는 계절 */

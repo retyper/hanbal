@@ -1,3 +1,4 @@
+import { canVanguard } from './vanguard.ts'
 /**
  * 한 계절을 넘긴다 — advance(realm, orders, snipes) → { next, report } (docs/realm/SYSTEMS.md §12 · BUILD §1-2)
  *
@@ -1112,6 +1113,7 @@ function styleOf(h: Hero): { style?: BattleStyle } {
  */
 export function lessonOn(r: Realm, faction: string): boolean {
   if (r.factions[faction]?.mind !== 'player') return false
+  if (r.region === 'tutorial' && r.heroes['tut-haebi']?.faction === faction && canVanguard(r.heroes['tut-haebi']!)) return false
   return r.region === 'tutorial' || (r.scenario?.id === 'mahan' && r.lessonDone !== true)
 }
 /** 1장의 안내 싸움이 열렸다 — 장수끼리 맞섰으면 다음부터는 깃발을 다 보인다 */
@@ -1129,10 +1131,12 @@ export function sideOf(
     const duel = relicSum(x, 'duel') // 계림로 보검 · 비파형동검 — 겨루기에서만 (relics.ts)
     // 잔무늬거울 — 비기가 진중 굿이 되고 굿의 사기가 오른다 · 팔주령 — 지는 합에서 사기가 덜 꺾인다 (relics.ts)
     const chant = relicHas(x, 'chant')
-    const art = chant ? 'rite' : heroArt(x)
+    const breakthrough = x.faction === r.player && canVanguard(x)
+    const art = canVanguard(x) ? 'vanguard' : chant ? 'rite' : heroArt(x)
     const steady = relicMul(x, 'steady')
     const wake = wakeOf(r, x)
     return {
+      ...(breakthrough ? { breakthrough: true as const } : {}),
       id: x.id, mu: x.mu, ryak: x.ryak, coward: hasTrait(x, 'coward'), ...(art !== undefined ? { art } : {}), ...styleOf(x), ...(duel > 0 ? { duel } : {}),
       ...(chant ? { chant: relicMul(x, 'chant') } : {}), ...(steady !== 1 ? { steady } : {}), ...(wake !== null ? { wake } : {}), ...(wake !== null && trueWakeOf(r, x) ? { trueWake: true as const } : {}),
     }

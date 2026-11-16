@@ -4,6 +4,7 @@
  * 쓰는 법: node tools/sprite-normalize.mjs [이름...]   (이름 없으면 전부) · 점검 그림은 D:/tmp-node/spx/
  */
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { decodePng, encodePng } from './png.mjs'
 import { SPEC } from './sprite-spec.mjs'
 import { listStrips } from './sprite-audit.mjs'
@@ -16,6 +17,10 @@ const SHEET = process.env.SPX_SHEET ?? 'D:/tmp-node/spx'
 const MOUNT = new Set(['gen-mount', 'gen-biryu', 'gen-geumha', 'gen-geota', 'gen-soebo'])
 const audit = JSON.parse(readFileSync('docs/realm/sprite-audit.json', 'utf8'))
 const only = new Set(process.argv.slice(2))
+// Reviewed offline repairs must survive a later full rebake. Source sheets and
+// landmarks are retained; rebuild with tools/sprite-kit/repair-pilot.py first.
+const REPAIR_DIR = 'tools/sprite-kit/repairs/20261113'
+const repairs = existsSync(`${REPAIR_DIR}/repair-report.json`) ? JSON.parse(readFileSync(`${REPAIR_DIR}/repair-report.json`, 'utf8')) : {}
 
 /** 상자(넓이) 평균으로 줄인 RGBA(곱한 알파) 칸 — 원본 칸의 (sx0..) 영역을 배율 s 로, 도착 칸 W×H 의 (ox, oy) 에 놓는다 */
 function boxResample(img, cx0, cw, s, W, H, ox, oy) {
@@ -151,10 +156,41 @@ mkdirSync(SHEET, { recursive: true })
 const manifest = {}
 const cleanLog = {}
 let totalBytes = 0
-for (const [file, kind] of listStrips()) {
+const strips = listStrips()
+// Newly authored identities may have no legacy anim2 strip. Include reviewed
+// repair sheets directly so their ownership mapping never points at a missing PNG.
+const generalNames = new Set(strips.filter(([, kind]) => kind === 'general').map(([file]) => file.split('/').pop().replace('.png', '')))
+for (const key of Object.keys(repairs)) {
+  const name = `gen-${key}`
+  if (!generalNames.has(name)) strips.push([`${REPAIR_DIR}/${name}.png`, 'general'])
+}
+for (const [file, kind] of strips) {
   const name = file.split('/').pop().replace('.png', '')
   const key = kind === 'crowd' ? `crowd-${name}` : name
   if (only.size && !only.has(key) && !only.has(name)) continue
+  const repaired = repairs[name.replace(/^gen-/, '')]
+  if (kind === 'general' && repaired !== undefined) {
+    for (const [source, hash] of Object.entries(repaired.sources)) {
+      // Source sheets are intentionally local/ignored; baked repairs are tracked.
+      if (existsSync(source) && createHash('sha256').update(readFileSync(source)).digest('hex') !== hash) throw new Error(`Repair source changed: ${source}. Review landmarks and rebuild repair-pilot.py.`)
+    }
+    const file = `${REPAIR_DIR}/${name}.png`
+    const img = decodePng(file)
+    if (repaired.cells !== 20 || img.w !== repaired.cell[0] * 20 || img.h !== repaired.cell[1]) throw new Error(`Invalid repair: ${name}`)
+    const bytes = readFileSync(file)
+    writeFileSync(`${OUT_DIR}/${name}.png`, bytes)
+    if (repaired.duelCells !== undefined && OUT_DIR === 'public/realm/anim-px') {
+      const duelFile = `${REPAIR_DIR}/duel-${name.replace(/^gen-/, '')}.png`
+      const duelImage = decodePng(duelFile)
+      if (duelImage.w !== repaired.cell[0] * repaired.duelCells || duelImage.h !== repaired.cell[1]) throw new Error(`Invalid duel atlas: ${name}`)
+      mkdirSync('public/realm/duel/sprites', { recursive: true })
+      writeFileSync(`public/realm/duel/sprites/${name}.png`, readFileSync(duelFile))
+    }
+    totalBytes += bytes.length
+    manifest[key] = { cell: repaired.cell, feet: repaired.feet, bodyPx: repaired.bodyPx, cells: 20, kind }
+    contact(img.px, img.w, img.h, 20, repaired.cell[0], key, 3)
+    continue
+  }
   const a = audit.find((r) => r.name === name && r.kind === kind)
   // 누끼 정리 먼저: 옅은 후광 · fringe · 떠 있는 부스러기 (기록은 docs/realm/sprite-clean-log.json)
   const cleaned = cleanStrip(decodePng(file), a.cells)

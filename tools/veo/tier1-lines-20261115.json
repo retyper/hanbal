@@ -1,0 +1,566 @@
+{
+ "g-100-buyeo-old-daeso": {
+  "sex": "he",
+  "who": "He is a white-bearded elder lord of a northern plains clan.",
+  "motion": "He tightens his right hand on the braided whip handle and lifts it a hand-span, the long braided lash swaying behind; his long white hair and beard and fur mantle settle as he gives a slow stern nod and looks straight at the viewer.",
+  "note": "오른손에 땋은 채찍 자루(꼬리는 오른쪽 뒤로 늘어짐), 백발 긴 수염, 털 어깨, 옥 목걸이, 불씨"
+ },
+ "g-101-garak-adogan": {
+  "sex": "he",
+  "who": "He is a gray-bearded tribal elder with a carved staff.",
+  "motion": "He lifts his raised left hand's gnarled staff a hand-span and sets it down with a firm thump, jade curved beads and tassels swinging; his right hand presses the bronze disc on his chest as he settles his shoulders and looks straight at the viewer.",
+  "note": "왼손 높이 나무 지팡이(불빛 감김), 오른손 가슴 청동 원판, 곡옥, 상투"
+ },
+ "g-102-garak-yeodogan": {
+  "sex": "he",
+  "who": "He is a laughing farmer chief carrying a harvest.",
+  "motion": "He hefts the bundle of golden rice stalks on his right shoulder a hand-span higher and rolls his shoulder, the ears of grain swaying and fur trim settling; he gives a warm laugh, a small happy nod, and looks straight at the viewer.",
+  "note": "오른손으로 어깨 위 벼 다발 받침, 크게 웃음, 곡옥 목걸이, 불씨"
+ },
+ "g-103-garak-pidogan": {
+  "sex": "he",
+  "who": "He is a stern headbanded woodcutter warrior with a big axe.",
+  "motion": "He shifts his weight and lifts the axe resting on his right shoulder a hand-span, his left hand keeping the same grip on the haft; the claw necklace and fur mantle sway as he gives a short firm nod and looks straight at the viewer.",
+  "note": "왼손으로 어깨 위 큰 도끼 자루 쥠, 머리띠, 맹수 발톱 목걸이, 털 어깨"
+ },
+ "g-104-garak-odogan": {
+  "sex": "he",
+  "who": "He is a grinning iron-ingot merchant.",
+  "motion": "He raises the iron ingots in his left hand a hand-span and gives them a small tilt like showing goods, the right hand keeps holding the small balance scale, which sways gently; blue tassels and jade beads swing as he nods with a smile and looks straight at the viewer.",
+  "note": "왼손 쇠판 셋, 오른손 작은 저울, 조개 허리띠, 미소, 금빛 기운"
+ },
+ "g-105-garak-yusugan": {
+  "sex": "he",
+  "who": "He is a long-haired river fisherman hunter with a barbed spear.",
+  "motion": "He tightens his right-hand grip on the spear shaft and shifts his weight a little, the wicker basket on his back creaking, long hair and fur trim drifting after the movement; jade beads swing as he gives a slow nod and looks straight at the viewer.",
+  "note": "오른손 앞으로 뻗은 작살 자루(끝 촉 오른쪽), 등 뒤 대바구니, 긴 머리, 곡옥, 불씨"
+ },
+ "g-106-garak-ocheongan": {
+  "sex": "he",
+  "who": "He is a laughing tattooed boatman with a big oar.",
+  "motion": "He shrugs the oar resting on his left shoulder a hand-span higher, his left hand keeping the same grip; the headband tail, rope fringe and jade tassels sway as he rolls his shoulder with a hearty laugh and looks straight at the viewer.",
+  "note": "왼손으로 어깨 위 큰 노, 흰 머리띠, 팔뚝 물결 문신, 크게 웃음, 곡옥 술"
+ },
+ "g-107-garak-musoe": {
+  "sex": "he",
+  "who": "He is a soot-streaked blacksmith with a great hammer.",
+  "motion": "He lifts the big hammer on his right shoulder a hand-span and settles it back, his right hand keeping the same grip; the red headband tails, torn cloth and tassels flutter, his free left hand relaxing, then he nods slowly and looks straight at the viewer.",
+  "note": "오른손으로 어깨 위 큰 쇠망치, 빨간 머리띠, 쇠 팔찌, 갑옷, 불씨"
+ },
+ "g-12-silla-youth": {
+  "sex": "he",
+  "who": "He is a proud young long-haired noble warrior.",
+  "motion": "He rolls his shoulders once under the fur mantle and lifts his chin slightly, the long ponytail, hoop earring, jade beads and red tassel swinging after the movement; his gaze turns from the side to straight at the viewer with a small confident smile.",
+  "note": "손 소품 없음, 긴 머리 묶음·옥비녀·귀걸이, 털 어깨 갑옷, 붉은 망토, 시선 옆"
+ },
+ "g-15-shaman-man": {
+  "sex": "he",
+  "who": "He is a gray-haired shaman with red face paint and bead strands.",
+  "motion": "He draws a slow breath and lifts his chin from upward gaze, the braids, bells, beads and jade ornaments swaying and clinking softly; he gently rolls his shoulders under the fur mantle and lowers his eyes to look straight at the viewer.",
+  "note": "손 안 보임, 눈가 붉은 칠, 땋은 회색 머리, 방울·구슬·곡옥, 금빛 기운, 시선 위"
+ },
+ "g-16-goguryeo-gaema-commander": {
+  "sex": "he",
+  "who": "He is a helmeted commander with a red plume and a spear.",
+  "motion": "He squares his shoulders and gives a firm nod, the red pheasant plume on his helmet swaying and the fur mantle and red cloak settling; the spear stays upright behind his left shoulder, and he looks straight at the viewer.",
+  "note": "붉은 깃 투구, 비늘갑옷, 털·붉은 망토, 왼쪽 뒤 창대, 불씨"
+ },
+ "g-17-saro-isageum": {
+  "sex": "he",
+  "who": "He is a smiling gentle lord in a fur mantle and antler-like gold circlet.",
+  "motion": "He tightens the fist at his chest with a small firm pump, rolls his shoulders, and the fur mantle and jade beads settle; he gives a warm slow nod with his gentle smile and looks straight at the viewer.",
+  "note": "주먹 쥔 오른손 가슴 앞, 금관식 상투, 털 어깨, 곡옥 목걸이, 미소"
+ },
+ "g-18-daegaya-king": {
+  "sex": "he",
+  "who": "He is a white-bearded elder musician-lord holding a zither.",
+  "motion": "He lifts his chin from an upward gaze and his left hand's fingers lightly touch his chest; the right hand holds the zither at the same grip as he shifts it a hand-span, the long beard and jade beads swaying; he looks straight at the viewer.",
+  "note": "오른손으로 가야금 잡음, 왼손 가슴 앞, 금관, 흰 수염, 옥 구슬, 녹색 옷"
+ },
+ "g-19-sabeol-veteran": {
+  "sex": "he",
+  "who": "He is a scarred gray-bearded veteran warrior in a fur mantle.",
+  "motion": "He tightens his bottom hand's grip on the hilt at his waist and shifts his weight with a slow shoulder roll; the fur mantle and jade beads settle and the embers drift, then he gives a slow stern nod and looks straight at the viewer.",
+  "note": "아래 손에 자루(칼자루 추정), 흰 섞인 수염, 털 어깨, 곡옥, 불씨"
+ },
+ "g-20-samul-sea-lord": {
+  "sex": "he",
+  "who": "He is a grinning red-headband sea raider with a tattooed arm.",
+  "motion": "He rolls his tattooed shoulder and gives a bold grin, his left hand tightening on the hilt at his belt; the red headband tails and fur mantle flutter after the movement, then he turns his gaze from the side to straight at the viewer.",
+  "note": "왼손 아래 칼자루, 빨간 머리띠, 오른팔 문신, 옥 고리, 웃음, 시선 옆"
+ },
+ "g-21-baekje-onnuri": {
+  "sex": "he",
+  "who": "He is a feathered-cap falconer in red and black armor.",
+  "motion": "He lifts his left forearm with the falcon a hand-span higher and the bird settles its wings, the red tassels swinging; his right hand keeps the same grip on the hilt at his waist, feathers on his cap sway as he looks straight at the viewer.",
+  "note": "왼팔 가죽장갑에 매, 오른손 허리 자루, 깃 꽂은 모자, 붉은 술, 갑옷"
+ },
+ "g-22-ungcheon-gomnae": {
+  "sex": "he",
+  "who": "He is a bearded warrior with blue bead necklace and fur mantle.",
+  "motion": "He tightens his left-hand grip on the ornate staff handle at his waist and shifts his weight with a slow shoulder roll; the stone bead necklace and fur mantle settle, he lowers his chin from a proud upward gaze and looks straight at the viewer.",
+  "note": "왼손 아래 장식 자루(무기 일부), 푸른 돌 구슬·곡옥, 털 어깨, 시선 위"
+ },
+ "g-23-sangdang-soedal": {
+  "sex": "he",
+  "who": "He is a gray-streaked braided-topknot veteran in layered armor.",
+  "motion": "He tightens his hand on the ornate hilt at his waist and rolls his shoulders, the fur mantle and jade beads settling and embers drifting; he gives a slow stern nod, turns from a side glance, and looks straight at the viewer.",
+  "note": "오른손 앞 장식 자루, 땋은 상투, 흰 섞인 수염, 갑옷·털, 시선 옆"
+ },
+ "g-24-wansan-onsan": {
+  "sex": "he",
+  "who": "He is a long-haired young flute player in layered blue robes.",
+  "motion": "He plays a soft breath through the bamboo flute held in both hands, his fingers lightly lifting and pressing in the same grip; the long hair, sheer sleeves and blue beads sway, then he opens his eyes and looks straight at the viewer.",
+  "note": "양손 대나무 피리, 눈 감음, 긴 머리·파랑 구슬, 비치는 소매, 금빛 실"
+ },
+ "g-25-balla-keunmoe": {
+  "sex": "he",
+  "who": "He is a bearded ritual priest with a bronze bell staff.",
+  "motion": "He lifts the bronze bell staff in his right hand a hand-span and gives it a gentle shake, the little bells and tassels swinging; his open left hand drifts slightly, the red bead strands sway, and he lowers his gaze to look straight at the viewer.",
+  "note": "왼쪽 위로 든 방울 달린 청동 지팡이(한 손), 다른 손 펼침, 붉은 구슬 목걸이, 시선 위"
+ },
+ "g-26-gampyeong-gaetbeol": {
+  "sex": "he",
+  "who": "He is a laughing headbanded warrior in fur and blue armor.",
+  "motion": "He throws his head back in a hearty laugh, rolls his shoulders, and tightens the low hand gripping the haft at his lower left; the headband tails, fur mantle and jade pendants sway, then he looks straight at the viewer still grinning.",
+  "note": "왼손 아래 자루, 푸른 머리띠, 털 어깨, 곡옥, 크게 웃음, 시선 위"
+ },
+ "g-27-maek-maekdol": {
+  "sex": "he",
+  "who": "He is a wild-haired hunter-archer with a quiver of arrows.",
+  "motion": "He shifts his weight and tightens his right-hand grip on the bow grip in front of him without raising it, the long hair and fur mantle drifting, quiver arrows rattling; the fierce gaze eases as he gives a slow nod and looks straight at the viewer.",
+  "note": "오른손 앞 활 쥠(휘두르지 않음), 등 뒤 화살통, 긴 머리, 곡옥, 털 어깨, 불씨"
+ },
+ "g-28-goguryeo-damul": {
+  "sex": "he",
+  "who": "He is a roaring tiger-pelt warrior with a huge stone hammer.",
+  "motion": "He tightens both hands on the hammer haft and lifts the hammer a hand-span, then sets it down with a firm thump; the tiger pelt, red cloth tails and loose hair sway, embers lift, and he gives one firm nod looking straight at the viewer.",
+  "note": "양손 큰 돌 망치(아래), 호랑이 가죽 어깨, 뒤에 호랑이 그림자, 붉은 갑옷, 용암 불씨"
+ },
+ "g-29-yeonna-myeongsol": {
+  "sex": "he",
+  "who": "He is a gray-bearded feathered-cap officer in fur and blue armor.",
+  "motion": "He tightens his right hand's grip on the sword hilt at his waist and shifts weight with a slow shoulder roll; the cap feather sways, jade pendants swing, the thick fur mantle settles, and he gives a stern slow nod looking straight at the viewer.",
+  "note": "오른손 앞 칼자루, 깃 꽂은 모자, 회색 수염, 곡옥, 두꺼운 털 어깨"
+ },
+ "g-30-gwanna-soemoe": {
+  "sex": "he",
+  "who": "He is a heavy-browed bearded warrior in dark layered armor.",
+  "motion": "He tightens the fist held in front of his chest and rolls his shoulders, the fur mantle, jade crescents and armor plates settling; the stern brow relaxes slightly as he gives a slow nod and looks straight at the viewer.",
+  "note": "오른손 주먹 가슴 앞(자루 쥔 듯), 곡옥, 털 어깨, 옛 갑옷, 불씨"
+ },
+ "g-31-buyeo-geumha": {
+  "sex": "he",
+  "who": "He is a bearded chieftain in a white fur hat and amber beads.",
+  "motion": "He draws a slow breath and tightens his lower hand on the small handle at his waist, the fur mantle and amber-jade bead strand swaying; he gives a dignified nod with a slight lift of the chin and looks straight at the viewer.",
+  "note": "아래 손 자루, 흰 털 모자, 호박·옥 목걸이, 검은 털 외투, 시선 위쪽"
+ },
+ "g-32-uga-sodu": {
+  "sex": "he",
+  "who": "He is a smiling stout officer in armor and red cloak.",
+  "motion": "He tightens the left hand holding a haft at his lower left and gives a warm shoulder roll; the red cloak, jade discs and tassel swing and settle, and he nods slowly with his smile and looks straight at the viewer.",
+  "note": "왼손 아래 자루, 미소, 옥 고리 술, 붉은 망토, 갑옷, 불씨"
+ },
+ "g-33-jeoga-metdol": {
+  "sex": "he",
+  "who": "He is a roaring boar-hood berserker with a battle axe.",
+  "motion": "He lets out a big laugh and tightens his raised right hand on the axe haft, shifting the axe a hand-span as his shoulders roll; the boar-hood fur, tusk necklace and ragged cloth sway, then he calms and looks straight at the viewer.",
+  "note": "오른손 위로 든 도끼, 멧돼지 머리 모자, 어금니 목걸이, 크게 웃음"
+ },
+ "g-34-bukokjeo-duman": {
+  "sex": "he",
+  "who": "He is a snow-dusted northern warrior in a fur hat with a spear.",
+  "motion": "He plants the spear in his right hand with a firm thump of its butt, the spearhead tilting back upright, and shifts weight; snowflakes, fur mantle and jade beads settle as he gives a slow nod and looks straight at the viewer.",
+  "note": "왼쪽 위로 솟은 창(손은 아래), 털모자, 눈 쌓인 털옷, 눈 날림, 곡옥"
+ },
+ "g-35-dabeol-dalgu": {
+  "sex": "he",
+  "who": "He is a cheerful bearded elder with a gnarled wooden staff.",
+  "motion": "He lifts the gnarled staff in his left hand a hand-span and sets it down with a soft thump, while his open right hand gives a welcoming small wave outward; the fur mantle and jade beads sway as he gives a warm laugh and looks straight at the viewer.",
+  "note": "왼손 울퉁불퉁 나무 지팡이, 오른손 펼침, 환한 웃음, 털 어깨, 곡옥"
+ },
+ "g-36-gammun-gamdol": {
+  "sex": "he",
+  "who": "He is a long-haired ritual shaman with a bell rattle.",
+  "motion": "He lifts the bell rattle in his right hand a hand-span and gives it a gentle shake, the little bells, tassels and jade beads swinging and chiming; his long hair and sheer robes drift with the golden smoke as he looks straight at the viewer.",
+  "note": "오른손 위로 든 방울 흔들이(붉은 술), 긴 머리, 곡옥 목걸이 여러 줄, 금빛 연기"
+ },
+ "g-37-eumjeup-jeup": {
+  "sex": "he",
+  "who": "He is a jolly, round-bellied granary keeper.",
+  "motion": "He lifts the gourd in his raised hand a hand-span higher and gives it a little shake so its beads and tassels swing, his other arm hugging the rice sheaf close, the ears of grain swaying; he rocks his weight once and beams at the viewer.",
+  "note": "한 손 높이 표주박(구슬 술), 다른 팔에 벼 다발, 금빛 불씨"
+ },
+ "g-38-chopal-palmae": {
+  "sex": "he",
+  "who": "He is a lean sling-thrower of the steppe edge.",
+  "motion": "He shifts his weight onto his back foot and lets the braided sling in his raised hand sway gently overhead without swinging it, the stone pouch at his hip and the fur collar settling; his long hair trails after the shift as he turns his stern eyes straight to the viewer.",
+  "note": "한 손 높이 돌팔매줄(끝에 돌), 허리 돌주머니, 모피 깃. 휘두르지 않게 주의"
+ },
+ "g-40-anya-adan": {
+  "sex": "he",
+  "who": "He is a calm, wine-loving noble host.",
+  "motion": "He raises the ornate cup in his left-of-frame hand a hand-span and tilts it slightly so a thread of drink rises and drifts, while the small glass bead between the fingers of his other hand glints; the bead necklace and fur mantle settle as he gives a slow nod to the viewer.",
+  "note": "프레임 왼손 투조 술잔(술 방울 솟음), 오른쪽 손가락 사이 구슬, 모피 어깨"
+ },
+ "g-41-goja-bau": {
+  "sex": "he",
+  "who": "He is a shrewd, grinning merchant-trader.",
+  "motion": "He weighs the cloth sack in his left-of-frame hand and the dark ingot in his other hand like a scale, tipping each up a hand-span in turn, bead necklaces clinking and the fur collar settling; he then lifts his eyes from the goods and smirks at the viewer.",
+  "note": "프레임 왼손 자루, 오른손 철덩이(주괴), 구슬 목걸이, 귀고리, 모피 어깨"
+ },
+ "g-42-dokro-garam": {
+  "sex": "he",
+  "who": "He is a smug iron-ingot dealer.",
+  "motion": "He hugs the rope-bound stack of iron ingots in his lower arm and gives it a small hitch upward, while the other hand keeps tugging one end of his mustache; the blue beads swing and the fur collar and sleeves settle as he slowly nods at the viewer.",
+  "note": "아래 팔에 밧줄 묶은 철 판재 더미, 다른 손은 콧수염 만짐, 파란 구슬 목걸이, 모피 깃"
+ },
+ "g-43-hwanna-amnok": {
+  "sex": "he",
+  "who": "He is a young river boatman with a cheeky grin.",
+  "motion": "He gives the bamboo pole in his hands a small firm push, as if steadying a boat, sinking a touch with his knees and rising again; water droplets scatter softly, the tassels and rope shoulder-braids sway, and he turns his smiling face to the viewer.",
+  "note": "양손 대나무 장대(노), 물방울·물결 아래, 술 달린 비취, 밧줄 어깨"
+ },
+ "g-44-maga-malgup": {
+  "sex": "he",
+  "who": "He is a boisterous horse-herding chieftain.",
+  "motion": "He holds the braided whip handle in his raised hand and lets its long braided tail sway and settle in a slow arc behind him without cracking it, the fur hat, beaded braids and horse-emblem belt shifting; he laughs and settles his gaze on the viewer.",
+  "note": "한 손 높이 땋은 채찍(자루 쥠), 털모자, 말 문양 허리띠. 채찍 휘두르지 않게 주의"
+ },
+ "g-45-dabeol-deulgae": {
+  "sex": "he",
+  "who": "He is a roguish, scarred feast-loving brawler.",
+  "motion": "He tightens his grip on the sword raised behind his head and holds it steady, rolling his shoulders once so the big fur mantle ruffles and the red cloth and boar-tusk necklace sway; he chews the bone in his teeth and glares with a grin at the viewer.",
+  "note": "뒤로 올린 손에 칼 쥠, 입에 뼈 고기, 어금니 목걸이, 모피 망토, 붉은 천, 불씨. 칼 휘두르지 않게"
+ },
+ "g-46-uga-nureongso": {
+  "sex": "he",
+  "who": "He is a huge, good-natured bearded strongman.",
+  "motion": "He hefts the thick studded club in both hands a hand-span and sets it back down with a firm thump, the bronze bell on his chest ringing and swinging; the fur cloak and wild hair settle as he grins broadly at the viewer.",
+  "note": "양손 굵은 징박힌 몽둥이 가로로 쥠, 가슴 청동 방울, 털 망토, 불꽃 결"
+ },
+ "g-47-guga-sanyanggae": {
+  "sex": "he",
+  "who": "He is a young wolf-tamer hunter.",
+  "motion": "His hand rests on the wolf's head and strokes it once, slowly, the wolf's fur rippling; the bow over his shoulder and the jade pendants swing slightly, the fur mantle and braids settling as he lifts his eyes to the viewer with a faint smile.",
+  "note": "프레임 왼손을 늑대 머리에 얹음, 어깨 뒤 활과 화살통, 비취 곡옥, 모피 망토"
+ },
+ "g-48-gwanna-musoe": {
+  "sex": "he",
+  "who": "He is a soot-stained blacksmith.",
+  "motion": "He sets the big hammer resting on his shoulder with a small shrug and lifts the glowing tongs-held blade a hand-span out of the water, steam and sparks drifting; his apron tassels and fur mantle swing and settle as he glares at the viewer.",
+  "note": "한 손 어깨 위 큰 망치, 반대 손 집게로 달군 칼날(물에 담금), 물방울·불똥, 앞치마"
+ },
+ "g-49-goguryeo-sona": {
+  "sex": "he",
+  "who": "He is a fierce feather-helmed axe warrior.",
+  "motion": "He tightens his grip on the long axe raised overhead and eases it a hand-span upright without swinging, the helmet feathers and fur mantle ruffling; the open hand at the frame's bottom curls slightly as he squares his shoulders and glares at the viewer.",
+  "note": "한 손 머리 위 큰 도끼 자루 쥠, 깃털 투구, 모피 망토, 아래 열린 손, 불씨. 휘두르지 않게"
+ },
+ "g-50-bullae-gwaha": {
+  "sex": "he",
+  "who": "He is a kindly white-bearded old hunter.",
+  "motion": "He gives the fur mantle a small tug with the fist at his chest and lets his shoulders settle, the bow over his shoulder and the red tassels swaying; his white beard and fur trim move softly as he gives a slow, warm nod to the viewer.",
+  "note": "백발 노인, 주먹을 가슴께에 쥠(칼집/끈), 어깨 뒤 활, 붉은 술, 모피"
+ },
+ "g-51-biryuna-mulgyeol": {
+  "sex": "he",
+  "who": "He is a playful long-haired river rower.",
+  "motion": "He rolls the long oar on his shoulder a hand-span with his raised hand and settles it back, water droplets flying softly and his wet long hair and blue ribbons trailing after; he winks and smiles at the viewer.",
+  "note": "한 손 어깨 위 노(나무 자루), 물방울, 젖은 긴 머리·푸른 끈, 푸른 옷, 한쪽 눈 윙크"
+ },
+ "g-52-tamna-oreum": {
+  "sex": "he",
+  "who": "He is a cheerful island fisherman-warrior.",
+  "motion": "He thumps the butt of the rope-wrapped stone club into the ground with his raised fist, the straw fringe of his cloak and the black bead necklace swinging; he squares his shoulders, then gives a slow, broad grin to the viewer.",
+  "note": "한 손 밧줄 감은 돌 몽둥이 세워 쥠, 짚 망토, 검은 용암석 구슬, 비취 곡옥"
+ },
+ "g-53-baekje-haeru": {
+  "sex": "he",
+  "who": "He is a sly, cloaked strategist-diviner.",
+  "motion": "He holds up two fingers and the golden wooden slips float and drift slowly in a loose swirl around them, glowing motes trailing; his robe sleeves and jade pendants sway as he gives a slight nod with a knowing smirk at the viewer.",
+  "note": "한 손 두 손가락 세움, 주변에 떠도는 금빛 목간 여섯쯤, 남색 도포, 허리 칼자루"
+ },
+ "g-54-mokji-mahan": {
+  "sex": "he",
+  "who": "He is a grizzled old farmer-commander.",
+  "motion": "He grips the long staff with the rice ears tied at its tip in his raised hand and lifts it a hand-span, then thumps its butt down firmly, the grain ears swaying; the red bead necklace and fur collar settle as he draws a deep breath and fixes his eyes on the viewer.",
+  "note": "한 손 높이 벼이삭 묶은 긴 자루, 회색 수염 노인, 붉은 구슬 목걸이, 갑옷"
+ },
+ "g-55-saro-bakdal": {
+  "sex": "he",
+  "who": "He is a stoic shield-and-spear sentry.",
+  "motion": "He sets the large striped round shield firmly with a slight shift of weight, the spear in his other hand held steady, and the hood cloth and fur collar ripple and settle; he gives one slow nod and holds his eyes on the viewer.",
+  "note": "오른쪽 프레임 큰 둥근 방패(줄무늬), 왼쪽 프레임 손 창 자루, 두건·모피. 창 안 휘두름"
+ },
+ "g-56-haseulla-gwahama": {
+  "sex": "he",
+  "who": "He is a laughing horse-riding archer.",
+  "motion": "He lifts the bow in his raised hand a hand-span and sets it back, keeping it unstrung-still and pointed up, while his other hand pats the pony's neck; the arrows in the quiver and jade pendants sway, and he laughs and looks straight at the viewer.",
+  "note": "한 손 높이 활(든 채), 다른 팔로 조랑말 목 안음, 화살통, 웃음. 활시위 당기지 않게"
+ },
+ "g-57-bihwa-neup": {
+  "sex": "he",
+  "who": "He is a mud-streaked marsh hunter.",
+  "motion": "He lifts the three-pronged bamboo spear in his lower hand a hand-span and sets it back down quietly, the grass cloak and moss rustling and the little frog on his shoulder shifting; wet hair sways as he slowly raises his tired eyes to the viewer.",
+  "note": "아래쪽 손에 삼지창(대나무 자루), 풀·이끼 도롱이, 어깨 개구리, 진흙 얼굴"
+ },
+ "g-58-usan-uhae": {
+  "sex": "he",
+  "who": "He is a boisterous seaside fisher-warrior.",
+  "motion": "He rolls the seaweed-draped club on his shoulder a hand-span with his raised fist and settles it, sea water droplets scattering softly and the kelp fringe dripping; the tusk necklace and leopard-spotted cloak settle as he laughs and looks at the viewer.",
+  "note": "한 손 어깨 위 해초 감은 몽둥이, 물방울, 상어이빨·전복 목걸이, 표범무늬 망토"
+ },
+ "g-59-yangmaek-maekson": {
+  "sex": "he",
+  "who": "He is a stern feather-crested hunter-archer.",
+  "motion": "He lets the bow in his far hand ease down and steadies it upright, his other hand relaxing off the string, the crest feathers and fur mantle ruffling; the red tassels sway as he turns his head slowly and fixes a calm look on the viewer.",
+  "note": "활 당긴 자세(화살 메김) 그림이라 시위 푼 채 활 세우는 것으로 바꿈. 깃털 장식, 모피, 붉은 술. 확인 필요"
+ },
+ "g-60-eupcha-hangyeol": {
+  "sex": "he",
+  "who": "He is a steady-eyed banner bearer.",
+  "motion": "He lifts the banner pole in his raised hand a hand-span and sets it back firmly, the torn white banner cloth rippling and trailing; his headband tails and fur trim settle as he takes a deep breath and fixes his eyes on the viewer.",
+  "note": "한 손 높이 깃대와 찢어진 흰 깃발, 머리띠, 판갑. 해 모양 아님"
+ },
+ "g-60-golbeol-golgae": {
+  "sex": "he",
+  "who": "He is a grim, red-scarfed hammer warrior.",
+  "motion": "He tightens his grip on the large studded warhammer held low in his left-of-frame hand and gives its head a small hand-span lift before lowering it, red scarf and cloak flapping softly; the embers drift as he squares his shoulders and glares at the viewer.",
+  "note": "프레임 왼쪽 아래 큰 망치 자루 쥠, 다른 손은 펴서 늘어짐, 붉은 목도리·망토, 불씨"
+ },
+ "g-61-apdok-ap": {
+  "sex": "he",
+  "who": "He is a burly mustached axe champion.",
+  "motion": "He sets the long-handled axe resting on his shoulder with a small hitch of the gripping hand, the red cloth streamers fluttering; his free hand curls and relaxes at his side as he squares his shoulders and gives a slow nod to the viewer.",
+  "note": "한 손으로 어깨 걸친 큰 도끼 자루 쥠, 붉은 천, 모피 망토, 판갑, 올려다보는 구도"
+ },
+ "g-61-heomcheuk-bawi": {
+  "sex": "he",
+  "who": "He is a hearty rice-cake loving giant.",
+  "motion": "He stretches the sticky rice cake between his two hands a hand-span wider and eases it back, rice flecks floating softly; the wooden mallet on his back and jade pendants sway, his belly and robe settle, and he opens his happy eyes toward the viewer.",
+  "note": "양손으로 떡(찰밥) 늘림, 등 뒤 나무 메, 머리띠, 쌀알 반짝임"
+ },
+ "g-62-beonye-hanul": {
+  "sex": "he",
+  "who": "He is a bright-eyed young archer with a winking smile.",
+  "motion": "He lets the bow in his far hand ease down upright and relaxes his other hand off the string, golden light ribbons drifting; his topknot, hair strands and jade earring sway as he slowly opens both eyes and smiles at the viewer.",
+  "note": "활 당긴 자세(눈 한쪽 감음) 그림이라 시위 푼 채 활 세우는 것으로 바꿈. 금빛 결, 화살통. 확인 필요"
+ },
+ "g-62-gammun-gamnamu": {
+  "sex": "he",
+  "who": "He is a calm orange-sashed archer-commander.",
+  "motion": "He shifts his weight onto one foot with arms loose, the bow slung behind his shoulder and the sword at his hip staying put; the orange headband and sashes flutter and settle, embers drifting, and he lifts his chin to the viewer.",
+  "note": "활은 등 뒤, 화살통, 허리 칼, 두 팔 늘어뜨림, 주황 두건·띠, 불꽃 결"
+ },
+ "g-63-chopal-yeoul": {
+  "sex": "he",
+  "who": "He is a wet-haired spear warrior in a fur cloak.",
+  "motion": "He plants the spear's butt on the ground with a firm thump from his low gripping hand, the tall spearhead holding steady; his damp hair, fur mantle and dark cloak ripple and settle, and he lifts his eyes to the viewer.",
+  "note": "프레임 왼손 낮게 창 자루 쥠(창끝 위), 젖은 머리, 모피 망토, 남색 천, 불씨"
+ },
+ "g-63-heomcheuk-beogeum": {
+  "sex": "he",
+  "who": "He is a cocky young street brawler.",
+  "motion": "He shifts his weight from one foot to the other in a small playful bounce, arms loose and hands open, the headband tails and the rope sash fluttering; the jade necklace swings as he rises and grins straight at the viewer.",
+  "note": "맨손 낮은 자세, 두 손 펴짐, 흰 머리띠, 조끼 갑옷, 비취 목걸이. 무기 없음"
+ },
+ "g-64-jumong": {
+  "sex": "he",
+  "who": "He is a proud young feather-helmed archer.",
+  "motion": "He eases the bow and the glowing arrow down to a relaxed rest at his side, both hands keeping their grip, golden sparks drifting; the helmet feathers and red polka-dot sleeves sway and settle as he turns his gaze to the viewer.",
+  "note": "활 당겨 겨눈 자세(빛 화살) 그림이라 시위 푼 채로 바꿈. 깃털 투구, 붉은 점무늬 소매. 확인 필요"
+ },
+ "g-64-michuhol-sogeumkkun": {
+  "sex": "he",
+  "who": "He is a weathered salt-merchant spearman.",
+  "motion": "He sets the spear's butt down with a firm thump in his low gripping hand, the spearhead holding steady; the torn cream scarf and cloak ripple and trail, dust motes drifting, and he gives a slow nod and looks straight at the viewer.",
+  "note": "프레임 왼손 낮게 창 자루 쥠(창끝 위), 머리띠, 찢어진 흰 천 목도리, 판갑"
+ },
+ "g-65-goguryeo-damul": {
+  "sex": "he",
+  "who": "He is a stern bearded war chief in a leopard-fur mantle and a tall plumed black cap.",
+  "motion": "He presses both clasped hands down once on the pommel of the sword planted in front of him, the red-tipped feathers on his cap and the braided tassels swaying; his fur mantle settles as he lifts his chin and gives a slow, grave nod.",
+  "note": "두 손 깍지 낀 채 칼자루 위, 표범 털 망토, 깃털 달린 검은 관, 불꽃"
+ },
+ "g-65-sangdang-soemangchi": {
+  "sex": "he",
+  "who": "He is a battle-scarred hulking smith-soldier with a topknot and a stone war hammer.",
+  "motion": "He shifts his weight onto his back foot and lifts the stone hammer in his right hand a hand-span, then lets its head settle with a firm thump; the tattered cloak, tassels and embers trail after, his open left hand flexing, and he looks straight at the viewer.",
+  "note": "오른손(화면 왼쪽) 돌망치, 왼손 펴서 아래, 해진 망토, 불씨"
+ },
+ "g-66-buyeo-geumha": {
+  "sex": "he",
+  "who": "He is a grey-bearded tribal elder in a fur mantle and a feathered, jade-hung headband.",
+  "motion": "He lifts the horse-headed staff in his right hand a hand-span and sets it down with a soft thump, the jade drops and tassels swinging, while the bronze mirror disc in his raised left hand tilts slightly and catches the light; he gives a slow nod toward the viewer.",
+  "note": "오른손(화면 왼쪽) 말머리 지팡이, 왼손 높이 청동 거울, 옥 구슬 드리개, 금빛 불씨"
+ },
+ "g-66-geonma-malbalgup": {
+  "sex": "he",
+  "who": "He is a lean horse-clan swordsman in a bronze cap with a long red plume.",
+  "motion": "He rolls his shoulders once and rocks his weight forward, the sword in his right hand staying low at the same grip; the red plume hair, fur collar and ragged crimson cloth stream softly behind him, and he settles into a calm gaze at the viewer.",
+  "note": "오른손(화면 왼쪽) 칼 낮게, 왼손 내림, 붉은 깃 머리, 붉은 천, 불씨"
+ },
+ "g-67-buyeo-daeso": {
+  "sex": "he",
+  "who": "He is a long-haired nobleman in a white fur mantle and a gold ornamented headband.",
+  "motion": "He lowers the golden cup in his raised hand a hand-span from his lips, the gold drops hanging from his headband and the jade pendants swaying; his head tilts back to level, long dark hair and fur settling, and he meets the viewer's eyes with a slow smirk.",
+  "note": "한 손(화면 오른쪽) 금잔을 입 가까이, 흰 털 어깨, 금 장식관, 옥 장식, 낮은 앵글"
+ },
+ "g-67-gosaburi-buri": {
+  "sex": "he",
+  "who": "He is a sharp-eyed hunter-archer with a topknot and feathers in his hair.",
+  "motion": "He lets out a slow breath and rolls his shoulders, his left hand keeping its grip on the bow held low while his open right hand flexes; the hair feathers, tassels and dark cloak ripple after him, then he turns to look straight at the viewer.",
+  "note": "왼손(화면 오른쪽) 활 낮게, 오른손 펴서 내림, 화살통, 머리 깃털, 남색 망토, 불씨"
+ },
+ "g-68-baekje-onnuri": {
+  "sex": "he",
+  "who": "He is a composed court swordsman-scribe in a black cap and a navy fur-collared robe.",
+  "motion": "He tips the sword in his right hand a hand-span upward and eases it back down, same grip, as golden glow trails along the blade; the scroll in his left hand stays held, the robe and jade pendants swaying, and he gives a slow, confident nod to the viewer.",
+  "note": "오른손(화면 왼쪽) 칼, 왼손 두루마리, 옥 장식, 남색 비단옷, 금빛 기운"
+ },
+ "g-68-mujin-bitgoeul": {
+  "sex": "he",
+  "who": "He is a poised tribal envoy-warrior with a gold headband and long bead necklaces.",
+  "motion": "He shifts his weight and rolls one shoulder, the tasselled hilt in his right hand lifting a hand-span and settling back, the strings of beads clicking and sliding on his chest; the layered navy cloth trails after, and he looks straight at the viewer.",
+  "note": "오른손(화면 왼쪽) 술 달린 자루, 왼손 펴서 아래, 금 머리띠, 구슬 목걸이, 금빛 소용돌이"
+ },
+ "g-69-goryong-yong": {
+  "sex": "he",
+  "who": "He is a grizzled tattooed spear veteran with long grey-streaked hair.",
+  "motion": "He lifts the spear in his right hand a hand-span and plants its butt down with a firm thump, the rope bindings shaking; his long hair, fur collar and dark cloak settle, his shoulders square, and he gives the viewer a slow, hard nod.",
+  "note": "오른손(화면 왼쪽) 창 세움, 왼손 내림, 목 문신, 회색 섞인 머리, 불씨"
+ },
+ "g-69-guya-soebo": {
+  "sex": "he",
+  "who": "He is a roaring-laughing blacksmith-chief in a gold leaf crown and a leather apron.",
+  "motion": "He gives a small hop of delight and resettles the big hammer on his shoulder with a thump, his right hand keeping its grip on the haft; the leaf crown, bead necklace and embers shake and drift, and he grins straight at the viewer.",
+  "note": "오른손(화면 왼쪽) 망치 어깨에 걸침, 금 잎 관, 가죽 앞치마, 크게 웃음, 불꽃"
+ },
+ "g-70-siljik-pado": {
+  "sex": "he",
+  "who": "He is a weathered mountain tribesman in a shaggy fur mantle with a rope belt.",
+  "motion": "He lifts the barbed spear in his left hand a hand-span and sets its butt down with a firm thump, the rope bindings and tassels swinging; his open right hand flexes, the fur and loose hair settle, and he gives a slow nod at the viewer.",
+  "note": "왼손(화면 오른쪽) 갈래 창 세움, 오른손 펴서 내림, 털 망토, 새끼줄 허리띠, 불씨"
+ },
+ "g-73-baekje-eureum": {
+  "sex": "he",
+  "who": "He is a cunning scholar-strategist in a green-and-gold robe and a black cap with a hairpin.",
+  "motion": "He flicks his raised right fingers a hand-span forward and back in a small beckoning gesture, the bamboo-slip scroll in his left hand lifting slightly and settling; the jade pendants swing, purple lightning and the ghostly eagle behind drift softly, and he smirks at the viewer.",
+  "note": "오른손(화면 왼쪽) 손가락 펴 가리킴, 왼손 죽간 두루마리, 보라 번개, 뒤에 독수리 환영"
+ },
+ "g-75-saro-hogong": {
+  "sex": "he",
+  "who": "He is a cheerful old trader-sage with a topknot and gourds at his waist.",
+  "motion": "He winks and gives the wooden tablet in his raised hand a small lift and shake, his other hand resting on the gourd at his belt; the fur collar, bead strands and gourds sway, and golden sparks drift as he grins at the viewer.",
+  "note": "한 손 높이 나무패, 다른 손 허리 호리병, 윙크, 구슬 목걸이, 금빛 불씨"
+ },
+ "g-76-mokji-jinha": {
+  "sex": "she",
+  "who": "She is a graceful shaman-priestess with beaded hair and a red fur-trimmed robe.",
+  "motion": "She lifts the bronze mirror in her raised hand a hand-span and tilts it so it catches the light, her long bead strands, jade drops and earrings swinging; she rolls her shoulders, the red robe settling, and gives a slow, knowing look at the viewer.",
+  "note": "오른쪽 손 높이 청동 거울, 구슬 줄 머리·목걸이, 붉은 옷, 털 어깨, 금빛 불씨"
+ },
+ "g-77-saro-sobeol": {
+  "sex": "he",
+  "who": "He is a gentle white-bearded old farmer-sage with a gnarled staff hung with millet.",
+  "motion": "He sets the millet-hung staff in his right hand down with a soft thump, the golden grain ears swaying, while his open left hand lifts a hand-span in a welcoming gesture; his white beard and fur mantle settle, and he nods warmly at the viewer.",
+  "note": "오른손(화면 왼쪽) 조 이삭 달린 옹이 지팡이, 왼손 펴 들어 환영, 흰 수염, 금빛 가닥"
+ },
+ "g-78-saro-alpyeong": {
+  "sex": "he",
+  "who": "He is a watchful stone-reading diviner in a bark headband with a hairpin.",
+  "motion": "He lifts the small pebble held between his fingers a hand-span and turns it gently in the light; the feathers hanging from the staff beside him sway, the jade pendants and fur collar settle, and he ends with a slow nod at the viewer.",
+  "note": "한 손 작은 돌 집어 듦, 옆에 깃털 달린 지팡이, 허리춤 돌 주머니, 나무껍질 띠, 금빛 불씨"
+ },
+ "g-79-saro-jibaekho": {
+  "sex": "he",
+  "who": "He is a fierce bearded hunter in a white tiger-striped fur mantle and claw necklace.",
+  "motion": "He rolls his shoulders and shifts his weight slowly, his hands staying on the spear shaft in the same grip while the blade glints; the claw necklace, tiger-striped fur and loose hair settle, and he turns to give a steady look at the viewer.",
+  "note": "두 손 창대 비스듬히, 창날 오른쪽 아래, 호랑이 무늬 털, 발톱 목걸이, 불씨"
+ },
+ "g-80-saro-guryema": {
+  "sex": "he",
+  "who": "He is a hooded fur-clad hunter-archer with a quiver on his back.",
+  "motion": "He takes a slow breath and rolls his shoulders, the bow staying low in his left hand and the arrow in his right at the same grip; the hood feather, fur and jade pendants sway, ember sparks drift, and he lifts his gaze to the viewer.",
+  "note": "왼손(화면 오른쪽) 활, 오른손 화살 쥠, 털 두건에 깃, 화살통, 불씨 (시위 당기지 않게)"
+ },
+ "g-81-saro-jita": {
+  "sex": "he",
+  "who": "He is a jolly plump merchant in a red-and-gold robe covered in colorful beads.",
+  "motion": "He lifts the glowing blue bead pinched in his raised fingers a hand-span and turns it so it twinkles, the bead strands and bag at his belt swaying; his shoulders bounce in a small chuckle, and he winks at the viewer.",
+  "note": "오른손(화면 왼쪽) 파란 구슬 집어 듦, 구슬 목걸이, 쌀 주머니, 허리에 금괴, 웃음"
+ },
+ "g-82-saro-hojin": {
+  "sex": "he",
+  "who": "He is a grim bear-pelt axe warrior with a topknot and a braided rope coil on his shoulder.",
+  "motion": "He shifts his weight and eases the axe on his shoulder up a hand-span in the same grip, then settles it back with a thump; the bear pelt, rope coil and jade pendants shake, embers drift, and he narrows his eyes at the viewer.",
+  "note": "한 손 도끼 자루, 도끼날 왼쪽 위, 곰 가죽 두건, 새끼줄, 옥 목걸이, 불씨"
+ },
+ "g-84-wander-seoneul": {
+  "sex": "he",
+  "who": "He is a young, lean-muscled wandering swordsman in a fur-trimmed vest with red ribbons.",
+  "motion": "He rolls one bare shoulder and shifts his weight, his right hand keeping its low grip on the sword hilt; the long red ribbons, jade pendants and loose hair trail after, and he lifts his chin and looks straight at the viewer.",
+  "note": "오른손(화면 왼쪽 아래) 칼자루, 민소매 털 조끼, 붉은 리본, 귀걸이, 불씨"
+ },
+ "g-85-wander-ure": {
+  "sex": "he",
+  "who": "He is a laughing, bare-chested wanderer with a curved glaive and a drinking gourd.",
+  "motion": "He tips the gourd in his raised left hand a hand-span as a few drops splash, the tassels swinging, while his right hand keeps its grip on the glaive; his hair and fur settle and he laughs at the viewer.",
+  "note": "오른손(화면 왼쪽) 낫창, 왼손(화면 오른쪽) 호리병 기울여 물방울, 웃음, 가슴 풀어헤침"
+ },
+ "g-87-wae-chief": {
+  "sex": "he",
+  "who": "He is a grinning scale-armored sea raider with a long ponytail.",
+  "motion": "He tightens his two-handed grip on the raised sword without moving it, rolls his shoulders and shifts his weight; the scale cloak, ponytail and ember sparks ripple and settle, and he grins straight at the viewer.",
+  "note": "두 손 칼 머리 위로 든 채, 비늘 갑옷·비늘 무늬 팔, 포니테일, 웃음, 불꽃 (휘두르지 않게)"
+ },
+ "g-88-wander-soeul": {
+  "sex": "he",
+  "who": "He is a sweat-streaked forge-hand with a headband and a big wooden hammer.",
+  "motion": "He rolls his shoulder and hefts the hammer on his shoulder a hand-span higher in the same right-hand grip, then settles it back; the jade pendant, tassels and fur collar sway, embers drift, and he gives a slow, tired smirk at the viewer.",
+  "note": "오른손(화면 왼쪽) 큰 망치 어깨에, 두건 띠, 털 어깨, 허리에 짧은 칼, 불씨"
+ },
+ "g-90-haengin-gomok": {
+  "sex": "he",
+  "who": "He is a gruff old shaman-hunter with claw hairpins and a necklace of brass bells.",
+  "motion": "He plants the gnarled staff in his right hand down with a soft thump, the brass bells on his chest jingling and the hanging claw swinging; the shaggy fur and long grey beard settle, and he gives a slow stern nod at the viewer.",
+  "note": "오른손(화면 왼쪽) 옹이 지팡이, 방울 목걸이, 발톱 비녀, 털 망토, 회색 수염, 불씨"
+ },
+ "g-91-biryu-songyang": {
+  "sex": "he",
+  "who": "He is a dignified bearded archer in a navy robe and a feathered cap.",
+  "motion": "He plants the bow upright in his left hand with a soft tap, the carved grip and string trembling slightly; the cap feathers, gold tassels and fur trim settle as he squares his shoulders and gives a slow nod at the viewer.",
+  "note": "왼손(화면 오른쪽) 활 세워 쥠, 화살통, 깃 꽂은 관, 남색 비단옷, 금빛 가루"
+ },
+ "g-92-goguryeo-mari": {
+  "sex": "he",
+  "who": "He is a rugged spear fighter with a topknot and thick rope slung around him.",
+  "motion": "He rolls his shoulders and lifts the spear resting on his shoulder in his right hand a hand-span, then eases it back, the left hand keeping its grip on the rope coil; the rope, jade beads and loose hair swing and settle, and he looks at the viewer.",
+  "note": "오른손(화면 왼쪽) 창 어깨에 얹음, 왼손 굵은 밧줄 쥠, 옥 구슬, 불씨"
+ },
+ "g-93-jomun-solgae": {
+  "sex": "he",
+  "who": "He is a fierce feather-haired archer with a quiver and a fur-collared coat.",
+  "motion": "He rolls his shoulders slowly and lets his weight sink, the bow staying low in his hand at the same grip; the hair feathers, fur collar and flame-like sparks trail after, and he lifts his chin to stare at the viewer.",
+  "note": "활 낮게 아래(화면 오른쪽 아래), 화살통, 머리 깃털, 털 옷, 불씨 (시위 당기지 않게)"
+ },
+ "g-94-golpo-maenun": {
+  "sex": "he",
+  "who": "He is a stern scale-armored archer with a single feather in his topknot.",
+  "motion": "He rolls his shoulders and shifts his weight, the tall bow in his left hand and the arrow in his right keeping the same grip held low; the feather, jade pendants and tassels sway, and he gives a slow, level look at the viewer.",
+  "note": "왼손(화면 오른쪽) 활 세움, 오른손 화살 가로로 쥠, 갑옷, 옥 장식, 머리 깃털"
+ },
+ "g-95-goguryeo-daemusin": {
+  "sex": "he",
+  "who": "He is a young, sharp-eyed archer-scholar in a feathered cap and green-gold armor.",
+  "motion": "He lifts the scroll in his right hand a hand-span and lowers it again with a firm squeeze, the cap feathers and the red and green tassels swinging; fur cloak and golden wisps trail after, and he looks straight at the viewer.",
+  "note": "오른손(화면 왼쪽) 두루마리 쥠, 뒤에 활과 화살통, 깃 꽂은 투구, 초록·금 갑옷, 금빛 물결"
+ },
+ "g-99-goguryeo-maro": {
+  "sex": "he",
+  "who": "He is a friendly stubble-bearded rope-and-spear hunter in a brown fur mantle.",
+  "motion": "He lifts the bell-hung spear in his right hand a hand-span and sets it down with a firm thump, the little bell ringing, his left hand keeping its hold on the rope coil; the fur and jade beads settle, and he smiles at the viewer.",
+  "note": "오른손(화면 왼쪽) 방울 달린 창, 왼손 밧줄 쥠, 털 망토, 옥 목걸이, 웃음"
+ }
+}

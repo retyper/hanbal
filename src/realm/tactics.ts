@@ -1,3 +1,4 @@
+import { isBreakthrough, breakthroughReward } from './vanguard.ts'
 /**
  * 직접 지휘하는 싸움 — 전투 2판: 세 무리를 깃발마다 따로 부린다 (docs/realm/BATTLE.md §전투 2판 · 형 2026-10-19:
  * "포켓몬이나 가위바위보식 상성 · 포획시도는 유저가 직접 · 열세여도 잘 판단하면 이기고 우세여도 잘못 판단하면 진다" ·
@@ -102,6 +103,7 @@ export interface Side {
 
 /** 싸움에 선 장수 하나 */
 export interface SideHero {
+  readonly breakthrough?: true
   readonly id: string; readonly mu: number; readonly ryak: number; readonly coward: boolean; readonly art?: Art; readonly style?: BattleStyle
   /** 겨루기에서만 더하는 무예 — 지닌 유물 (계림로 보검 · 비파형동검 — relics.ts) */
   readonly duel?: number
@@ -672,7 +674,8 @@ function settle(me: Side, foe: Side, given: RoundOrder, ai: RoundOrder, used: Re
   const target = given.target ?? ai.target
   // 손 겨루기의 끝은 겨루기를 건 합에만 따라간다 (다른 깃발로 바뀌면 버린다)
   const duel = out.lead === 'duel' ? given.duel : undefined
-  return { ...out, ...(who !== undefined ? { who } : {}), ...(target !== undefined ? { target } : {}), ...(duel !== undefined ? { duel } : {}) }
+  const breakthrough = out.lead === 'art' && me.player && isBreakthrough(given.breakthrough) && heroesOf(me).some(h => h.id === who && h.breakthrough && h.art === 'vanguard' && !arts.has(h.id)) ? given.breakthrough : undefined
+  return { ...out, ...(breakthrough !== undefined ? { breakthrough } : {}), ...(who !== undefined ? { who } : {}), ...(target !== undefined ? { target } : {}), ...(duel !== undefined ? { duel } : {}) }
 }
 
 /** 사로잡기 확률을 지금 판으로 셈하는 손 — mine 쪽이 적장을 잡으러 갈 때 (guard: 적 말이 장수를 지킨다) */
@@ -709,7 +712,8 @@ function normOrder(o: RoundOrder & { lead: Cmd }, me: Side, foe: Side, arts: Set
     const h = artActor(me, foe, o.who, arts, foeGone)
     if (h === undefined) return { ...o, lead: 'drum' }
     arts.add(h.id)
-    return { ...o, who: h.id }
+    const { breakthrough, ...rest } = o
+    return { ...rest, who: h.id, ...(h.id === o.who && h.breakthrough && breakthrough !== undefined ? { breakthrough } : {}) }
   }
   if (o.lead === 'wake') { const h = wakeActor(me, o.who); return h !== undefined ? { ...o, who: h.id } : { ...o, lead: 'drum' } }
   if (o.lead === 'duel') { const h = duelist(me, o.who); return h !== undefined ? { ...o, who: h.id } : { ...o, lead: 'drum' } }
@@ -921,7 +925,7 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
           // 진각성할 장수가 각성기를 낼 수 있으면 — 큰 싸움이면 'big'(각성기를 쓰면 진각성) · 아니면 'small' (화면이 각성기 단추에 「진」을 띄운다 · 형 11-05: "진각성 방법도 자연스럽게")
           ...(wakeActor(me, undefined)?.trueWake === true && !used.has('wake') ? { trueWake: live(foe, 1, 1, false) >= P.realm.trueWakeBig * live(me, 1, 1, false) ? 'big' as const : 'small' as const } : {}),
           // 장수가 여럿이면 — 누가 나설지 · 누구를 잡을지 고른다 (형 10-25)
-          heroes: heroesOf(me).map((h) => ({ id: h.id, chief: h.id === me.hero?.id, mu: h.mu, ...(h.art !== undefined ? { art: h.art } : {}), artUsed: arts.has(h.id) })),
+          heroes: heroesOf(me).map((h) => ({ id: h.id, chief: h.id === me.hero?.id, mu: h.mu, ...(h.art !== undefined ? { art: h.art } : {}), artUsed: arts.has(h.id), ...(h.breakthrough ? { breakthrough: true as const } : {}) })),
           foeHeroes: gone ? [] : heroesOf(foe).map((h) => ({ id: h.id, chief: h.id === foe.hero?.id, p: capOf(mine, false, h).p })),
           ...(shaken ? { shaken: true } : {}),
         }
@@ -1298,6 +1302,19 @@ function resolveRound(
     }
   }
 
+  // 이미 직접 치른 선봉 난전은 본대의 명령보다 먼저 일어났다.
+  // 병력 차이 보정을 다시 곱하거나 이후 겨루기·포획·퇴각으로 성과를 취소하지 않는다.
+  const vanguard: Record<'a' | 'd', number> = { a: 1, d: 1 }
+  for (const x of ['a', 'd'] as const) {
+    const q = side(x), n = q.o.breakthrough
+    const actor = heroesOf(q.s).find(h => h.id === q.o.who)
+    if (q.o.lead !== 'art' || !q.s.player || !actor?.breakthrough || actor.art !== 'vanguard' || !isBreakthrough(n)) continue
+    const reward = breakthroughReward(n), y = other(x)
+    vanguard[x] = reward.power
+    const tl = hurt(y, 'front', men(y, 'front') * reward.loss, false)
+    acts.push({ s: x, g: 'lead', c: 'art', art: 'vanguard', hero: actor.id, n: 1, tg: 'front', tl, breakthrough: n, res: n ? 'hit' : 'wasted' })
+  }
+
   // ── 물러나기 — 시도다. 한쪽만 물러나면 가망을 굴린다: 따라잡히면 등을 보인 채 크게 잃고 사기가 꺾여 싸움이 이어진다 (형 10-27)
   if ((oa.lead === 'retreat') !== (od.lead === 'retreat')) {
     const x: 'a' | 'd' = oa.lead === 'retreat' ? 'a' : 'd'
@@ -1439,7 +1456,6 @@ function resolveRound(
   }
 
   // ── 장수의 비기 — 한 판에 한 번 (heroes.heroArt). 앞줄이 맞붙기 전에 건다
-  const vanguard: Record<'a' | 'd', number> = { a: 1, d: 1 }
   const feint: Record<'a' | 'd', boolean> = { a: false, d: false }
   const moraleOf = (x: 'a' | 'd'): number => (x === 'a' ? st.ma : st.md)
   const addMorale = (x: 'a' | 'd', v: number): void => { if (x === 'a') st.ma += v; else st.md += v }
@@ -1481,10 +1497,12 @@ function resolveRound(
         acts.push({ s: x, g: 'lead', c: 'art', art, hero, n: 1, tg, tl, res: tl > 0 ? 'hit' : 'wasted' })
         break
       }
-      case 'vanguard':
+      case 'vanguard': {
+        if (acts.some(a => a.s === x && a.breakthrough !== undefined)) break
         vanguard[x] = R.tacArtVanguard
         acts.push({ s: x, g: 'lead', c: 'art', art, hero, n: 1, res: 'ok' })
         break
+      }
       case 'feint':
         feint[x] = true // 맞붙음에서 — 적이 달려들었으면 꾀에 걸린다
         break

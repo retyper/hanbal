@@ -13,6 +13,12 @@ test('비기 컷인: 전신 그림이 있으면 초상 대신 전신', () => {
   const h = skillCutHtml('A/', 'snipe', id, '주몽', '활', 'hit')
   assert.ok(h.includes(`A/skill-body/${id}.jpg`))
   assert.ok(h.includes('wsk-bust body'))
-  const plain = skillCutHtml('A/', 'snipe', 'w-66-saro-noeul', '노을', '활', 'hit')
-  assert.ok(plain.includes('A/bust/w-66-saro-noeul.jpg'))
+  const plain = skillCutHtml('A/', 'snipe', 'test-no-skill-body', '노을', '활', 'hit')
+  assert.ok(plain.includes('A/bust/test-no-skill-body.jpg'))
+})
+
+test('해비는 새로 교정한 양팔 컷인을 사용한다', () => {
+  const html = skillCutHtml('A/', 'snipe', 'w-95-michuhol-haebi', '해비', '천지 가르기', 'hit')
+  assert.ok(html.includes('A/skill-body/w-95-michuhol-haebi.jpg'))
+  assert.ok(html.includes('wsk-bust body'))
 })

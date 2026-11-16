@@ -11,7 +11,7 @@ import assert from 'node:assert/strict'
 
 import { fightRounds, leadOptions, type Side } from '../../src/realm/tactics.ts'
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
-import { battleGrowth, burnWake, wakeOf } from '../../src/realm/heroes.ts'
+import { awardAwakening, battleGrowth, burnWake, wakeOf } from '../../src/realm/heroes.ts'
 import { elemOf } from '../../src/realm/elem.ts'
 import { P } from '../../src/tune/params.ts'
 import type { Hero, ReportLine, RoundOrder } from '../../src/realm/types.ts'
@@ -132,16 +132,19 @@ describe('각성기 — 둘째 판 (물 · 번개)', () => {
     for (const a of foeArts) assert.equal(a.res, 'wasted')
   })
 
-  it('다시 깨어나면 보고 줄에 again — 화면이 짧은 연출로', () => {
+  it('연패 뒤 재승리해도 각성 보상과 연출을 중복 지급하지 않는다', () => {
     const r = byeonhanMini(1)
     const h = Object.values(r.heroes).filter((x) => x.faction === r.player && x.status === 'free').sort((a, b) => (a.id < b.id ? -1 : 1)).at(-1)!
     const lines: ReportLine[] = []
-    for (let i = 0; i < P.realm.ascendWins; i++) battleGrowth(r, [h.id], [], [], lines)
+    wakeUp(r, h, lines)
     assert.ok(lines.some((l) => l.kind === 'ascend' && l.again === undefined))
-    for (let i = 0; i < P.realm.ascendWins; i++) battleGrowth(r, [], [h.id], [], lines) // 다 꺼져 풀린다
+    for (let i = 0; i < P.realm.ascendWins; i++) battleGrowth(r, [], [h.id], [], lines)
     const more: ReportLine[] = []
     for (let i = 0; i < P.realm.ascendWins; i++) battleGrowth(r, [h.id], [], [], more)
-    assert.ok(more.some((l) => l.kind === 'ascend' && l.again === true))
+    assert.ok(!more.some((l) => l.kind === 'ascend'))
+    assert.equal(h.ascended, true)
+    assert.equal(h.ascents, 1)
+    assert.equal(h.flames, P.realm.ascendWins)
   })
 })
 
@@ -155,7 +158,7 @@ describe('각성기 — 불꽃', () => {
   it('깨어나면 불꽃 셋이 연료 · 쓰면 하나를 태우고 마지막 하나는 남는다', () => {
     const { r, h } = setup()
     const lines: ReportLine[] = []
-    for (let i = 0; i < P.realm.ascendWins; i++) battleGrowth(r, [h.id], [], [], lines)
+    wakeUp(r, h, lines)
     assert.equal(h.ascended, true)
     assert.equal(h.flames, P.realm.ascendWins)
     burnWake(r, h.id, lines)
@@ -164,27 +167,29 @@ describe('각성기 — 불꽃', () => {
     assert.equal(h.flames, 1)
   })
 
-  it('깨어난 장수가 지면 하나 꺼지고, 다 꺼지면 깨어남이 풀리고 각성 몫이 빠진다', () => {
+  it('연패로 불꽃이 모두 꺼져도 각성과 능력치가 유지된다', () => {
     const { r, h } = setup()
     const lines: ReportLine[] = []
-    for (let i = 0; i < P.realm.ascendWins; i++) battleGrowth(r, [h.id], [], [], lines)
+    wakeUp(r, h, lines)
     const up = { mu: h.mu, tong: h.tong }
     battleGrowth(r, [], [h.id], [], lines)
     assert.equal(h.flames, P.realm.ascendWins - 1)
     assert.equal(h.ascended, true)
     for (let i = 0; i < P.realm.ascendWins; i++) battleGrowth(r, [], [h.id], [], lines)
-    assert.notEqual(h.ascended, true)
-    assert.equal(h.flames, undefined)
-    assert.ok(lines.some((l) => l.kind === 'fade' && l.hero === h.id))
-    // 지면 공(xp)이 조금 붙어 능력치가 오를 수도 있다 — 각성 몫만큼은 빠졌는지만 본다
-    assert.ok(h.mu <= up.mu - P.realm.ascendBonus + 1 && h.tong <= up.tong - P.realm.ascendBonus + 1)
+    assert.equal(h.ascended, true)
+    assert.equal(h.flames, 0)
+    assert.ok(!lines.some((l) => l.kind === 'fade' && l.hero === h.id))
+    assert.ok(h.mu >= up.mu && h.tong >= up.tong)
+    battleGrowth(r, [h.id], [], [], lines)
+    assert.equal(h.flames, 1)
+    assert.equal(h.ascents, 1)
   })
 
   it('각성기를 쥐는 것은 깨어난 우리 장수 · 불꽃 둘 이상 · 켠 기운만', () => {
     const { r, h } = setup()
     assert.equal(wakeOf(r, h), null)
     const lines: ReportLine[] = []
-    for (let i = 0; i < P.realm.ascendWins; i++) battleGrowth(r, [h.id], [], [], lines)
+    wakeUp(r, h, lines)
     const e = elemOf(h)
     assert.equal(wakeOf(r, h), e) // 다섯 기운 다 켰다 (둘째 판)
     h.flames = 1
@@ -215,8 +220,18 @@ describe('진각성 (DESIRE §17 · 한 판에 한 번 · 큰 싸움에서만)',
     r.heroes['no-true-wake'] = { ...h, id: 'no-true-wake' }
     assert.equal(trueWakeOf(r, r.heroes['no-true-wake']!), false)
     r.heroes['sr-aryeong'] = { ...h, id: 'sr-aryeong' }
+    assert.equal(trueWakeOf(r, r.heroes['sr-aryeong']!), false, '열전 마지막 스테이지를 이 장수로 깨야 자격')
+    r.raidSeals = ['sr-aryeong']
     assert.equal(trueWakeOf(r, r.heroes['sr-aryeong']!), true)
     r.trueWoke = ['sr-aryeong']
     assert.equal(trueWakeOf(r, r.heroes['sr-aryeong']!), false)
   })
 })
+
+/** 11-15 각성은 시련으로 — 이겨서 시련을 열고(trialReady), 열전 두목을 쓰러뜨린 셈으로 completeTrial 과 같은 보상을 준다 */
+function wakeUp(r: { player: string; heroes: Record<string, Hero> }, h: Hero, lines: ReportLine[]): void {
+  for (let i = 0; i < P.realm.ascendWins; i++) battleGrowth(r as never, [h.id], [], [], lines)
+  assert.equal(h.trialReady, true)
+  h.trialCleared = true
+  awardAwakening(h, lines)
+}

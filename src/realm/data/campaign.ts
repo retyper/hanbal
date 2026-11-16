@@ -84,7 +84,7 @@ export const CHAPTERS: readonly Chapter[] = [
     // 기한 열 해
     scenario: { id: 'daemusin', win: [{ kind: 'hold', nodes: ['dm-buyeo-cap'] }, { kind: 'fell', hero: 'dm-daeso' }], limit: 40 },
   },
-  // 아래는 아직 판이 없는 장 — 카드는 "짓는 중"으로 보인다 (형 10-23: "캠페인 수 너무 적음"). 그림은 표지가 오기 전까지 사건 그림을 빌린다
+  // 아래는 아직 판이 없는 장 — 카드는 "짓는 중"으로 보인다 (형 10-23: "캠페인 수 너무 적음"). 그림은 표지가 오기 전까지 사건 그림을 빌린다  (7·8장 표지는 11-15 왔다)
   {
     id: 'jamyeonggo', n: 6, region: null, nation: 'goguryeo', name: '자명고', era: '기원후 32년 · 낙랑', hero: '호동 왕자',
     hook: '적이 오면 스스로 우는 북. 낙랑 공주의 칼끝이 북을 찢어야 기습이 먹힌다. 대가가 따른다.',
@@ -97,7 +97,7 @@ export const CHAPTERS: readonly Chapter[] = [
     id: 'samseonghyeol', n: 7, region: null, nation: 'tamna', name: '삼성혈', era: '아득한 옛날 · 탐라', hero: '고을나',
     hook: '한라산 북쪽 땅에서 솟아난 세 신인. 바다 건너 벽랑국의 세 공주가 상자를 타고 온다.',
     goal: '섬의 마을을 다 모으고 벽랑국 공주와 혼인한다',
-    art: 'event/event-whale-hunt.jpg',
+    art: 'keyart/samseonghyeol.jpg',
     source: '『고려사』 지리지 탐라. 고·양·부 세 신인이 땅에서 솟아나 활을 쏘아 살 곳을 정했다.',
     scenario: { id: 'samseonghyeol', win: [] },
   },
@@ -105,7 +105,7 @@ export const CHAPTERS: readonly Chapter[] = [
     id: 'namusaja', n: 8, region: null, nation: 'saro', name: '나무 사자', era: '기원후 512년 · 우산국', hero: '이사부',
     hook: '배마다 나무 사자를 싣고 간다. "항복하지 않으면 이 짐승을 풀어 밟아 죽이겠다."',
     goal: '우산국이 싸우지 않고 항복한다',
-    art: 'event/event-eight-harbours.jpg',
+    art: 'keyart/namusaja.jpg',
     source: '『삼국사기』 신라본기 지증왕 13년, 이사부가 나무 사자로 우산국을 항복시켰다.',
     scenario: { id: 'namusaja', win: [] },
   },

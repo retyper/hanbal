@@ -10,6 +10,124 @@
  * 단위 규약: 거리 m, 시간 s, 각도 rad, 질량 kg. 화면 픽셀 단위는 여기 들어오지 않는다.
  */
 
+/** Awakened Haebi's optional campaign breakthrough. */
+export const HAEBI_VANGUARD = {
+  duration: 180, captainAt: [15, 65, 115], captainHp: [7000, 10000, 14000],
+  startLevel: 9, spawnEarly: 17, spawnLate: 29, mobHp: 100,
+  frontPower: [1, 1.35, 1.55, 1.75], frontLoss: [0, .04, .08, .12],
+} as const
+
+/** 열전 소리 크기(0~1)와 같은 소리가 겹치지 않게 두는 틈(초) — src/raid/sound.ts (형 11-15: 기합·신음) */
+export const HAEBI_SOUND = {
+  bgm: .2, swing: .3, hurt: .6, groan: .7, groanGap: .5,
+  hit: .24, hitVoices: 4, die: .3, dieGap: 1.2, skill: .85, skillHit: .6, magic: .28, magicGap: .2, ui: .5, arrows: .4, cry: .55, roar: .8, end: .7, silence: .012,
+} as const
+/** Haebi's independent ten-minute run. Combat tuning lives here, not in the renderer. */
+export const HAEBI_RUN = {
+  /** 판 길이 · 두목 — 다이센카처럼 20분 (11-16 형 고름 · 예전 600/540 → 900/840 → 1200/1140) · 스테이지마다 length 를 곱한다 */
+  duration: 1200, bossAt: 1140, health: 180, speed: 185, width: 1120, height: 720,
+  maxEnemies: 230, maxShots: 240, maxFx: 320, maxDrops: 160, maxLevel: 44, attackSlots: 3,
+  xpBase: 8, xpPerLevel: 7, xpCurve: .8, levelHeal: 28, killHeal: .08, regen: .8,
+  dashCooldown: 2.4, dashTime: .22, dashInv: .42, dashSpeed: 3.8,
+  /** 회피 잔상 (형 11-16: 「돌진 모션이 잔상처럼 여러 개 생기다 없어지게 · 사이버펑크처럼」) — 몇 초마다 하나 · 얼마나 남나 · 처음 진하기 · 색 갈라짐(px) */
+  ghostEvery: .045, ghostLife: .42, ghostAlpha: .7, ghostSplit: 4,
+  /** 장수 그림 키(px) · 걷기 한 바퀴(두 걸음)에 몸이 나아가는 거리 ÷ 몸 키 — 띠 227개의 그린 보폭을 잰 값(한 걸음 ≈ 몸 키의 0.39).
+   *  걷기 칸은 시간이 아니라 실제로 움직인 거리로 넘긴다: 발이 바닥에서 미끄러지지 않게 (형 11-16 「이동이 부자연스럽다」) */
+  heroPx: 94, walkStride: .78,
+  skillCooldown: 13, skillDamage: 160, skillRange: 290, skillInv: .7,
+  /** 비기 컷인이 화면에 머무는 시간(초) · 이름을 읽을 수 있게 (형 11-15: 「너무 빨라서 읽을 수조차 없음」 · 예전 .7) */
+  skillCutin: 1.8,
+  axeDamage: 38, axeRankDamage: 16, axeRange: 112, axeRankRange: 11, axeCooldown: 1,
+  galeDamage: 30, galeRankDamage: 16, galeSpeed: 350, galeCooldown: 2.3, galeLife: 2.1,
+  heroShotHeight: 46, enemyShotHeight: 34, shotHandLead: 14, shotReleaseTime: .12,
+  emberDamage: 54, emberRankDamage: 28, emberRange: 84, emberCooldown: 3.3,
+  thunderDamage: 45, thunderRankDamage: 23, thunderRange: 220, thunderCooldown: 2.9,
+  tempoStep: .14, reachStep: .12, levelPower: .045,
+  orbitRadius: 145, orbitDamage: 60, orbitInterval: .22,
+  /** 잡졸 체력 = mobHp × (1 + 초 × hpTimeScale + 분² × hpTimeCurve) — 처음 두세 대, 자라면 줄고, 시간이 다시 두껍게 (예전 42 · .0014 · 0 = 늘 한 방) */
+  mobHp: 75, hpTimeScale: .004, hpTimeCurve: .012, mobSpeed: 42, speedTimeScale: .035,
+  eliteHp: 1300, bossHp: 30000, eliteEvery: 150,
+  contactDamage: 9, enemyShotDamage: 10, hitInv: .65, enemyShotSpeed: 155,
+  /** 적 한 대의 아픔이 초마다 붙는 비율 · 산적 활잡이 비율(처음 + 초마다) · 활잡이 재장전 (형 11-15: 가만히 있어도 깬다) */
+  archerHunt: 480,
+  /** 산적 일제 사격 — 처음 뜨는 때 · 간격(처음→두목 무렵) · 경고 시간 · 반지름 · 피해(초마다 붙는 비율) · 두목 무렵 곁에 더 떨어지는 수 */
+  barrageAt: 40, barrageEvery: 9, barrageEveryLate: 4.5, barrageDelay: 1.25, barrageRadius: 58, barrageDamage: 22, barrageTimeScale: .0018, barrageExtra: 3, threatTimeScale: .0015, shotTimeScale: 0, archerShare: .08, archerTimeShare: 0, archerCooldown: 3, archerRange: 370,
+  bossDamage: 30, bossWindup: 1.15, bossRadius: 95, bossCooldown: 2.5,
+  spawnEarly: 1.5, spawnMid: 5, spawnLate: 13, spawnFeast: 23,
+  dropLife: 2.4, dropSpeed: 390, dropMagnet: 150, knockback: 14,
+  // ── 무기 묶음 (11-15 각성 시련을 모든 장수로 · 도끼=해비 위 수치 그대로) ──
+  // 활: 멀리서 꿰뚫는 속사 + 늦게 떨어지는 화살비
+  bowDamage: 24, bowRankDamage: 11, bowRange: 430, bowCooldown: .75, bowSpeed: 640, bowLife: 1.1, bowPierce: 1,
+  rainDamage: 36, rainRankDamage: 16, rainCooldown: 2.6, rainRadius: 72, rainDelay: .45, rainSpread: 60,
+  volleyInterval: 1.4, volleyArrows: 12, volleyDamage: 46,
+  // 창: 길고 좁게 꿰는 찌르기 + 멀리 꿰는 투창
+  spearDamage: 58, spearRankDamage: 20, spearLength: 165, spearRankLength: 15, spearWidth: 56, spearCooldown: .9,
+  javelinDamage: 38, javelinRankDamage: 20, javelinSpeed: 520, javelinCooldown: 1.9, javelinLife: 1.3, javelinPierce: 5,
+  groveInterval: 1.1, groveSpikes: 6, groveRadius: 120, groveHit: 42, groveDamage: 72,
+  // 칼: 빠르고 넓은 앞쪽 베기 + 멀리 나는 검기
+  swordDamage: 38, swordRankDamage: 14, swordRange: 108, swordRankRange: 9, swordCooldown: .7, swordArc: .45,
+  waveDamage: 30, waveRankDamage: 15, waveSpeed: 420, waveCooldown: 1.7, waveLife: 1.15, waveRadius: 34,
+  tempestInterval: .5, tempestRadius: 135, tempestDamage: 58,
+  splitDamage: .55, boomerangTurn: .5,
+  // 단검 (11-16 형: 「단검도 있고 마법도 쓰는 거 같고」 · 단검·낫·맨손·채찍 장수): 짧고 아주 빠른 찌르기 + 부채꼴 비도
+  daggerDamage: 20, daggerRankDamage: 9, daggerRange: 86, daggerRankRange: 6, daggerCooldown: .42, daggerArc: .3,
+  knifeDamage: 22, knifeRankDamage: 11, knifeSpeed: 700, knifeCooldown: 1.3, knifeLife: .8, knifePierce: 1,
+  shadowInterval: .7, shadowTargets: 3, shadowRange: 280, shadowDamage: 44, venomTime: 3, venomShare: .45,
+  // 주술 (지팡이·방울·홀 장수): 둘레로 퍼지는 방울 파동 + 적을 쫓는 혼불
+  bellDamage: 34, bellRankDamage: 14, bellRadius: 130, bellRankRadius: 10, bellCooldown: .95,
+  soulDamage: 34, soulRankDamage: 16, soulSpeed: 300, soulCooldown: 1.8, soulLife: 2.6, soulTurn: 5, soulRadius: 44,
+  riteInterval: 2.2, riteRadius: 230, riteDamage: 120, stormOrbs: 4, stormRadius: 110, stormDamage: 40, stormInterval: .25,
+} as const
+
+/**
+ * 열전 스테이지 (형 11-16: 「스테이지를 다른 걸 줘서 적도 다르게 난이도도 어렵게 · 깨면 휘장」) — length 는 판 길이 배수.
+ * tiers: 판을 다섯 토막으로 나눠 토막마다 나오는 적 둘 (앞 토막 적은 다음 토막에 안 나온다 · 「쉬운 적은 초반에만」).
+ * trial 은 본편 각성 시련: 숲 산길의 짧고 쉬운 판 (상점 강화 없이도 깰 수 있게 · 형 11-16 「따로 떼기」).
+ */
+export const HAEBI_STAGES = {
+  forest: { name: '숲 산길', length: 1, hp: 1, damage: 1, spawn: 1, bossHp: 1, gold: 1, bg: 'forest.webp',
+    tiers: [['club', 'archer'], ['runner', 'slinger'], ['shield', 'dog'], ['berserker', 'firearcher'], ['iron', 'shaman']] },
+  ford: { name: '물안개 여울', length: 1, hp: 1.7, damage: 1.8, spawn: 1.3, bossHp: 1.8, gold: 2, bg: 'ford.webp',
+    tiers: [['dog', 'slinger'], ['runner', 'firearcher'], ['shield', 'archer'], ['berserker', 'shaman'], ['iron', 'dog']] },
+  palisade: { name: '목책 돌파', length: 1, hp: 2.2, damage: 2.2, spawn: 1.4, bossHp: 2.8, gold: 3.2, bg: 'palisade.webp',
+    tiers: [['shield', 'archer'], ['iron', 'slinger'], ['berserker', 'firearcher'], ['runner', 'shaman'], ['iron', 'berserker']] },
+  trial: { name: '각성 시련', length: .4, hp: 1, damage: 1, spawn: 1, bossHp: .3, gold: 0, bg: 'forest.webp',
+    tiers: [['club', 'archer'], ['runner', 'slinger'], ['shield', 'dog'], ['berserker', 'firearcher'], ['iron', 'shaman']] },
+} as const
+/**
+ * 적 종류 — hp 는 그 시각 잡졸 체력의 배수 · share 는 토막 안에서 둘째 적이 나올 비율 · xp 는 떨어뜨리는 기세 · height 는 화면 키(px).
+ * 몸짓: 창돌격꾼은 붉은 줄로 예고하고 곧게 돌진 · 투석꾼·불화살은 떨어질 자리에 고리 · 방패는 투사체를 덜 받음 · 개는 떼로 ·
+ * 광전사는 반 아래면 빨라짐 · 철갑은 안 밀림 · 무당은 둘레 적을 북돋움 (빨라지고 덜 아픔)
+ */
+export const HAEBI_MOBS = {
+  club: { hp: 1, speed: 1, hit: 1, xp: 1, share: 0, height: 64 },
+  archer: { hp: .8, speed: 1, hit: 1, xp: 2, share: .2, height: 64 },
+  runner: { hp: .8, speed: 1.25, hit: 1.2, xp: 2, share: 0, height: 64 },
+  slinger: { hp: .7, speed: 1, hit: 1, xp: 2, share: .2, height: 62 },
+  shield: { hp: 2.4, speed: .7, hit: 1.4, xp: 3, share: 0, height: 72 },
+  dog: { hp: .45, speed: 2.1, hit: .8, xp: 1, share: .3, height: 46 },
+  berserker: { hp: 1.8, speed: .95, hit: 1.6, xp: 3, share: 0, height: 74 },
+  firearcher: { hp: .9, speed: 1, hit: 1, xp: 3, share: .2, height: 64 },
+  iron: { hp: 3.2, speed: .65, hit: 1.8, xp: 4, share: 0, height: 76 },
+  shaman: { hp: 1.5, speed: .9, hit: .8, xp: 5, share: .12, height: 66 },
+  runnerRange: 260, runnerWind: .7, runnerDash: .55, runnerDashSpeed: 4.2, runnerCooldown: 3.5,
+  lobRange: 380, lobCooldown: 4.5, lobDelay: 1.2, lobRadius: 38, lobDamage: 9,
+  flameLife: 3, flameRadius: 44, flameDamage: 8,
+  shieldBlock: .45, dogPack: 5, berserkSpeed: 1.9,
+  shamanRange: 300, shamanEvery: 4, shamanRadius: 210, shamanBuff: 4, shamanSpeed: 1.4, shamanArmor: .35,
+} as const
+/** 판 밖 상점 — 영구 강화 (형 11-16 · 다이센카처럼 언제든 되돌려 받기) · step 은 단계마다 더하는 값 · cost 는 첫 단계 값 */
+export const HAEBI_SHOP = {
+  might: { max: 10, step: .06, cost: 60 }, vigor: { max: 10, step: 15, cost: 50 }, armor: { max: 5, step: 1.5, cost: 90 },
+  regen: { max: 5, step: .3, cost: 80 }, haste: { max: 5, step: .04, cost: 120 }, swift: { max: 5, step: .04, cost: 70 },
+  magnet: { max: 5, step: .2, cost: 50 }, wisdom: { max: 5, step: .06, cost: 100 }, revive: { max: 2, step: 1, cost: 600 },
+  reroll: { max: 3, step: 1, cost: 150 }, greed: { max: 5, step: .1, cost: 120 }, luck: { max: 5, step: .03, cost: 110 },
+  /** 단계 값 = cost × (단계+1)^growth */
+  growth: 1.45,
+} as const
+/** 판이 끝나면 받는 금 — 지면 적게, 다 깨면 많이 (형 11-16) · 스테이지 gold 배수 · greed 강화를 곱한다 */
+export const HAEBI_GOLD = { perKill: .05, perElite: 12, perMinute: 6, clear: 400 } as const
+
 export interface Knob {
   readonly v: number
   readonly min: number
@@ -24,6 +142,26 @@ const k = (v: number, min: number, max: number, step: number, label: string, uni
   unit === undefined ? { v, min, max, step, label } : { v, min, max, step, label, unit }
 
 export const SPEC = {
+  raid: {
+    duration: k(90, 30, 300, 5, '토벌 제한 시간', 's'),
+    bossAt: k(55, 10, 240, 5, '토벌 두목 등장', 's'),
+    speed: k(155, 60, 300, 5, '토벌 이동 속도'),
+    health: k(100, 20, 300, 5, '토벌 장수 체력'),
+    spawnEvery: k(1.5, .2, 4, .1, '토벌 적 등장 간격', 's'),
+    killHeal: k(2, 0, 10, .5, '토벌 격파 회복량'),
+    axeRange: k(108, 50, 200, 2, '토벌 도끼 사거리'),
+    axeDamage: k(28, 5, 100, 1, '토벌 도끼 피해'),
+    axeCooldown: k(.85, .2, 2, .05, '토벌 도끼 공격 간격'),
+    bowRange: k(420, 100, 600, 10, '토벌 활 사거리'),
+    bowDamage: k(22, 5, 100, 1, '토벌 활 피해'),
+    bowCooldown: k(.6, .2, 2, .05, '토벌 활 공격 간격'),
+    spearRange: k(160, 80, 250, 5, '토벌 창 사거리'),
+    spearDamage: k(24, 5, 100, 1, '토벌 창 피해'),
+    spearCooldown: k(.65, .2, 2, .05, '토벌 창 공격 간격'),
+    maxEnemies: k(48, 10, 100, 1, '토벌 동시 적 상한'),
+    dashCooldown: k(2.8, .5, 10, .1, '토벌 회피 재사용', 's'),
+    skillCooldown: k(9, 2, 30, 1, '토벌 비기 재사용', 's'),
+  },
   /**
    * 연사(連射)와 몰기(沒技) — 능숙함을 속도로 환전하는 자리 (docs/MEGAHIT.md §1, sim/flow.ts)
    *
@@ -1523,13 +1661,22 @@ export const SPEC = {
    * 시간은 틱(초당 hz). 자리는 초상 위 0~1.
    */
   duel: {
+    fighterAttackMs: k(420, 200, 800, 10, '겨루기 공격 자세 길이', 'ms'),
+    fighterLungeMs: k(300, 100, 600, 10, '겨루기 전진 후 복귀 길이', 'ms'),
+    fighterLunge: k(0.32, 0, 0.5, 0.01, '겨루기 공격 전진 거리 / 장수 간격'),
+    fighterHitMs: k(240, 100, 500, 10, '겨루기 피격 후 비틀거림 복귀', 'ms'),
+    fighterRecoil: k(0.09, 0, 0.2, 0.01, '겨루기 피격 밀림 / 장수 간격'),
+    fighterJoltMs: k(14, 5, 40, 1, '겨루기 피격 떨림 박자', 'ms'),
+    fighterGuardMs: k(220, 100, 500, 10, '겨루기 방어 충격 후 준비 자세', 'ms'),
+    fighterBlockRecoil: k(0.035, 0, 0.1, 0.005, '겨루기 막을 때 밀림 / 장수 간격'),
+    fighterStaggerMs: k(420, 200, 800, 20, '겨루기 발 붙인 비틀거림 자세 간격', 'ms'),
+    fighterWindupMs: k(250, 100, 500, 10, '겨루기 공격 예비 자세 전환', 'ms'),
+    fighterIdleMs: k(180, 100, 400, 10, '겨루기 대기 프레임 간격', 'ms'),
     hz: k(60, 30, 120, 1, '겨루기: 초당 틱'),
     fieldTop: k(0.7, 0.6, 0.85, 0.01, '겨루기: 아래 들판(두 장수가 싸우는 띠)이 시작하는 높이 (화면 높이 비율 · 낮출수록 장수가 위로 · 형 11-11: 군사에 가림)'),
-    loopIntroMs: k(2600, 0, 8000, 100, '겨루기 적장 각성 영상: 겨루기가 열릴 때 트는 시간(ms) · 고리가 도는 동안은 멈춘 그림 (형 11-11)'),
-    loopBreakMs: k(2000, 0, 6000, 100, '겨루기 적장 각성 영상: 체간이 무너질 때 트는 시간(ms)'),
-    loopEndMs: k(4000, 0, 10000, 100, '겨루기 적장 각성 영상: 결판이 났을 때 트는 시간(ms)'),
-    loopFadeMs: k(320, 50, 1500, 10, '겨루기 적장 각성 영상: 그림과 영상이 겹쳐 바뀌는 시간(ms)'),
-    loopCropY: k(0.1, 0, 0.45, 0.01, '겨루기 적장 각성 영상: 세로 영상에서 정사각을 오리는 윗선 (영상 높이 비율 · 얼굴이 그림과 비슷한 자리에 오게)'),
+    loopIntroMs: k(10000, 0, 15000, 100, '겨루기 적장 등장 컷 길이(ms) · 10초 감상 후 자동 전투 · 탭하면 건너뛰기 · 전투 시간은 흐르지 않음'),
+    loopWaitMs: k(650, 0, 1500, 50, '겨루기 등장 영상이 준비되기를 기다리는 최대 시간(ms) · 넘으면 이번 등장은 그림으로 고정'),
+    loopFadeMs: k(220, 50, 1000, 10, '겨루기 등장 컷: 암전으로 전투에 넘기는 시간(ms)'),
     fighterGapW: k(0.5, 0.2, 0.8, 0.02, '겨루기 아래 두 장수: 사이 (화면 폭 비율 · 형 11-11: 너무 붙어 있다)'),
     pxFill: k(0.5, 0.2, 2, 0.05, '겨루기 도트 장수: 칸 키(160)를 화면 짧은 변의 몇 배로 맞출지 (정수 배율로 반올림 · 0.5 면 폰 390 폭은 1배 · 데스크톱 768 높이는 2배)'),
     /** 겨루기 캔버스 DPR 상한 — 11-12 폰 1.5·데스크톱 2 → 3 (렌더 굽기로 빨라진 뒤 형: "애들이 너무 뿌얘 · 해상도 올려") · 버거우면 dprDropMs 로 0.5 씩 내린다 */
@@ -1573,7 +1720,7 @@ export const SPEC = {
     riserVol: k(0.55, 0, 1, 0.05, '겨루기: riser 소리 크기'),
     riserTail: k(0.25, 0, 1, 0.05, '겨루기: 고리가 닿은 뒤 riser 가 잦아드는 시간(초) · 먼저 막으면 곧바로 끊긴다'),
     hp: k(100, 40, 200, 5, '겨루기: 체력 (둘 다)'),
-    posture: k(100, 40, 200, 5, '겨루기: 적장 체간 — 차면 지쳐 비틀거린다'),
+    posture: k(100, 40, 200, 5, '겨루기: 적장 빈틈 — 차면 연타 기회가 열린다'),
     // 적장의 공격 — 고리가 모여드는 시간이 곧 읽을 틈
     lead: k(66, 24, 120, 1, '겨루기: 고리가 나타나 원에 닿기까지 (틱 · 무예 5)'),
     leadPerMu: k(0.06, 0, 0.12, 0.005, '겨루기: 적장 무예 1마다 고리가 빨라지는 몫'),
@@ -1598,10 +1745,10 @@ export const SPEC = {
     hitDmg: k(12, 0, 50, 1, '겨루기: 못 막으면 우리 체력 −'),
     heavyDmg: k(24, 0, 60, 1, '겨루기: 붉은 큰 공격을 못 막으면 우리 체력 −'),
     hitPerMu: k(0.06, 0, 0.2, 0.01, '겨루기: 적장 무예 1마다 아픈 몫'),
-    goodPosture: k(9, 0, 40, 1, '겨루기: 막아 내면 적장 체간 +'),
-    perfectPosture: k(16, 0, 80, 1, '겨루기: 정확히 막으면 적장 체간 +'),
+    goodPosture: k(9, 0, 40, 1, '겨루기: 막아 내면 적장 빈틈 +'),
+    perfectPosture: k(16, 0, 80, 1, '겨루기: 정확히 막으면 적장 빈틈 +'),
     postureMu: k(0.1, 0, 0.3, 0.01, '겨루기: 적장 무예 1마다 덜 지치는 몫'),
-    postureRecover: k(0.03, 0, 1, 0.005, '겨루기: 적장 체간이 틱마다 풀리는 몫 (가만있으면 회복)'),
+    postureRecover: k(0.03, 0, 1, 0.005, '겨루기: 적장 빈틈이 틱마다 줄어드는 몫'),
     critDmg: k(8, 0, 60, 1, '겨루기: 정확히 받으면 치명공격 — 적장 체력 −'),
     critHeavy: k(1.6, 1, 3, 0.1, '겨루기: 붉은 큰 공격을 정확히 받은 치명공격 배수'),
     critTicks: k(50, 10, 120, 1, '겨루기: 치명공격 연출 동안 (틱 · 그동안 새 공격 없음)'),

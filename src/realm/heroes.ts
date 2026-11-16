@@ -1,3 +1,4 @@
+import { canVanguard } from './vanguard.ts'
 /**
  * 장수 첫판 — 자리 · 군주 · 특성의 효과 · 고을 맡기기 · 회유 · 떠돌이 인재 · 본 장수 (docs/realm/HEROES.md)
  *
@@ -7,6 +8,7 @@
  * 숫자는 P.realm.hero* · post* · trait* · ruler* · persuade* · wanderer*.
  */
 import { roll } from '../core/rng.ts'
+import { hasAwakeningTrial } from './trial-rules.ts'
 import { addVow } from './drill.ts'
 import { P } from '../tune/params.ts'
 import { heroSeat, seatRiteMul } from './palace.ts'
@@ -136,6 +138,7 @@ export function ambushTraitOf(h: Hero | null, kind: EdgeKind): number {
  * tacArtMinStat 이상일 때 (무예 선봉 · 지략 거짓 퇴각 · 통솔 진을 다잡는다 · 매력 큰 외침). 둘 다 아니면 비기가 없다 — 그냥 북을 친다.
  */
 export function heroArt(h: Hero): Art | undefined {
+  if (canVanguard(h)) return 'vanguard'
   if (hasTrait(h, 'archer')) return 'snipe'
   if (hasTrait(h, 'shaman')) return 'rite'
   if (hasTrait(h, 'charm')) return 'sway'
@@ -868,7 +871,7 @@ export function battleGrowth(r: Realm, won: readonly (string | null)[], lost: re
   // 각성 — 우리(플레이어) 장수만. 제 몫의 싸움(fair)을 이기면 불꽃 하나 · 지거나 비기면 하나 꺼진다 (위원회 11-04 던파 · 예전엔 지면 다 꺼졌다)
   const ours = (h: Hero): boolean => h.faction === r.player && h.ascended !== true
   each(won, (h) => { if (ours(h) && fair) kindle(h, lines) })
-  // 깨어난 장수의 불꽃은 각성기의 연료 (위원회 11-04 던파 ① · DESIRE §8) — 이기면 하나 붙고(셋까지), 지거나 비기면 하나 꺼지고, 다 꺼지면 깨어남이 풀린다
+  // 각성은 영구 유지. 불꽃은 각성기의 연료만 나타내며 승리로 회복한다.
   const woke = (h: Hero): boolean => h.faction === r.player && h.ascended === true
   each(won, (h) => { if (woke(h) && fair) h.flames = Math.min(Math.round(R.ascendWins), (h.flames ?? 0) + 1) }) // 연료도 제 몫의 싸움으로만
   each([...lost, ...drawn], (h) => { if (woke(h)) dimFlame(h, lines) })
@@ -889,7 +892,12 @@ export function ascendNeed(h: Pick<Hero, 'ascents'>): number {
 
 /** 불꽃 하나 — 다 켜지면 각성: 능력치가 모두 ascendBonus 오른다 (10 을 넘을 수 있다 · 그 판에서만) */
 function kindle(h: Hero, lines: ReportLine[]): void {
-  const R = P.realm
+  if (hasAwakeningTrial(h)) {
+    h.flames = Math.min(ascendNeed(h), (h.flames ?? 0) + 1)
+    if (h.flames >= ascendNeed(h)) h.trialReady = true
+    lines.push({ kind: 'kindle', hero: h.id, n: h.flames })
+    return
+  }
   const n = (h.flames ?? 0) + 1
   if (n < ascendNeed(h)) {
     h.flames = n
@@ -897,21 +905,24 @@ function kindle(h: Hero, lines: ReportLine[]): void {
     return
   }
   // 깨어나면 불꽃 셋이 그대로 연료가 된다 — 각성기 한 번에 하나씩 태운다 (burnWake)
+  awardAwakening(h, lines)
+}
+
+/** One-time permanent campaign awakening; existing awakened saves never gain the bonus twice. */
+export function awardAwakening(h: Hero, lines: ReportLine[]): boolean {
+  if (h.ascended === true) return false
+  const R = P.realm
   h.flames = Math.round(R.ascendWins)
   h.ascended = true
   h.ascents = (h.ascents ?? 0) + 1
   for (const s of GROW) h[s] += R.ascendBonus
   lines.push({ kind: 'ascend', hero: h.id, ...(h.ascents > 1 ? { again: true as const } : {}) })
+  return true
 }
 
-/** 깨어난 장수의 불꽃 하나가 꺼진다 — 다 꺼지면 깨어남이 풀리고 각성 몫이 빠진다 (얼굴은 face.ts 가 본래대로) */
-function dimFlame(h: Hero, lines: ReportLine[]): void {
-  const n = (h.flames ?? 0) - 1
-  if (n > 0) { h.flames = n; return }
-  delete h.flames
-  delete h.ascended
-  for (const s of GROW) h[s] -= P.realm.ascendBonus
-  lines.push({ kind: 'fade', hero: h.id })
+/** 패배는 연료만 소모한다. 각성 외형과 능력치 보상은 유지한다. */
+function dimFlame(h: Hero, _lines: ReportLine[]): void {
+  h.flames = Math.max(0, (h.flames ?? 0) - 1)
 }
 
 /**
@@ -924,9 +935,12 @@ export function wakeOf(r: Realm, h: Hero): Elem | null {
   return WAKE_ON.has(e) ? e : null
 }
 
-/** 진각성할 수 있나 — 2차 초상이 있고 깨어났고 이 판에서 아직 진각성하지 않았다 (DESIRE §17 · 던파처럼 한 판에 한 번) */
+/**
+ * 진각성할 수 있나 — 2차 초상이 있고 깨어났고 장수 열전에서 이 장수로 마지막 스테이지를 깼고(raidSeals) 이 판에서 아직 진각성하지 않았다
+ * (DESIRE §17 · 던파처럼 한 판에 한 번 · 열전 잇기는 형 11-16 「그렇게해」 · raid/link.ts)
+ */
 export function trueWakeOf(r: Realm, h: Hero): boolean {
-  return h.faction === r.player && h.ascended === true && TRUE_WAKE.has(h.id) && !(r.trueWoke ?? []).includes(h.id)
+  return h.faction === r.player && h.ascended === true && TRUE_WAKE.has(h.id) && (r.raidSeals ?? []).includes(h.id) && !(r.trueWoke ?? []).includes(h.id)
 }
 
 /** 각성기를 쓴 장수 — 불꽃 하나를 태운다. 마지막 불꽃은 태우지 않는다 (지면 꺼질 몫은 남는다) */

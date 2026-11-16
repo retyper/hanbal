@@ -252,6 +252,23 @@ export const AWAKEN_TAKES: Readonly<Record<string, number>> = { 'l-L2-soseono': 
 export const loopTakes = (id: string): string[] => [loopFile(id), ...Array.from({ length: Math.max(0, (AWAKEN_TAKES[id] ?? 1) - 1) }, (_, i) => `awaken-loop/${id}.${i + 2}.mp4`)]
 
 export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
+  // 11-15 형이 awaken-loop 폴더를 직접 정리(지울 것 지우고 보관은 이름 바꿈) → 남긴 영상은 쓴다
+  'g-12-silla-youth', 'g-15-shaman-man', 'g-16-goguryeo-gaema-commander', 'g-17-saro-isageum', 'g-18-daegaya-king', 'g-19-sabeol-veteran', 'g-20-samul-sea-lord', 'g-76-mokji-jinha', // 11-15 형이 손으로 (제작실 문안)
+  'g-21-baekje-onnuri', 'g-22-ungcheon-gomnae', 'g-23-sangdang-soedal', // 11-15 밤 형이 손으로
+  'g-02-goguryeo-archer-prince', 'g-04-jinhan-giant', 'g-06-strategist', 'g-08-veteran', 'g-09-farmer-conscript', 'g-10-buyeo-horse-lord', // 11-13 받아 둔 것 · 형 정리에서 남김
+  'w-76-gampyeong-baetsagong', 'g-01-master-smith', 'w-39-gosaburi-galmae', // 11-13 받아 둔 것 · 형 정리에서 남김
+  'w-83-gyeonji-beodeul', // 형 11-14 손수 받은 판(옛 「 2」) 하나만 · 옛 판은 형이 「보관」
+  'w-29-golpo-janmul', // 11-14 새 판 · 옛 판은 형이 「보관」 → assets_src/realm/retired/awaken-loop-20261115
+  'g-98-goguryeo-gwaeyu', // manual intake 2026-11-14
+  'g-89-baekje-maryeo', // manual intake 2026-11-14
+  'g-86-mokji-geumbawi', // manual intake 2026-11-14
+  'g-83-mokji-keundol', // manual intake 2026-11-14
+  'w-97-goguryeo-mir', // 11-14 user approved 7ef20eea; current hanbok/bow source
+  'w-51-haseulla-dangung', // 11-13 사용자 일단 통과 · 머리 줄 원본 교정 필요 기록
+  'w-38-sangdang-bulmae', // 11-13 Gemini Jay · 작업 후 회복/호흡판 사용자 통과
+  'w-23-usisan-whale-queen', // 11-13 Gemini Jay · 사용자 채택, 다음 편은 호흡/후행 강화
+  'w-17-mahan-pearl-diver', // 11-13 Flow hepastosian · 사용자: 역동성 부족하지만 나쁘지 않음
+  'w-64-miri-dallae', // 11-13 Flow Jay · 사용자: 적당히 일단 ok, 반영
   // 11-09 Veo 세로 10초 · 형: ok (벌은 "매우 자연스러움")
   'w-24-apdok-queen', // 압독 누리
   'w-04-gaya-swordswoman', // 아라
@@ -344,6 +361,9 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'w-102-garak-dana', // 11-11 다나 v2 (Flow u/5) · 제자리 두 번 뛰고 손끝으로 쇄골 금장식 · 윙크 (형: 훌륭해) · 옛 v1(보류)은 assets_src/realm/retired/awaken-loop
   'w-77-sabeol-malgalgi', // 11-05 밤 말갈기 — 튜토리얼 각성 장수 · 판 없이 세로로 가까이 (쇠비처럼 · 형: "세로로 더 가까이가 훨씬 낫다")
   'w-90-saro-danbi', // 11-11 사로 단비 1차 (Flow 11-10 · 형: 오케이)
+  'w-21-baekje-court-dancer', // 11-13 연이 1차 (Flow u/0 · Omni 1.2 Flash · 10초 세로) · 형: 아주 훌륭해
+  'w-48-mujin-mudeung', // 11-13 무등 1차 (Flow u/1 · 10초 세로) · 끝 움직임 감소 경고 보존 · 형: 넣어
+  'w-40-mujin-munui', // 11-13 무늬 1차 (Flow u/5 · 10초 세로) · 움직임 검사 좋음 · 형: 넣어
   'w-101-garak-singwigan', // 11-13 신귀간 1차 (Jay u/4 · Argon · 원래 그림) · 형: 나쁘지 않음
   'w-53-hwanna-gabi', // 11-13 가비 1차 (형이 손으로 · Argon · 「왜 안 돼?」 되묻기로 나옴) · 형: 오케이
   'w-58-tamna-halla', // 11-13 한라 1차 (형이 손으로 · Argon · 짧은 「가상 인물」 문안 + 「계속해」 되묻기) · 형: 일단 적용 · 시키지 않은 대사(깨어나소서 불길의 신령이여…)가 들리지만 그대로 둔다
@@ -354,6 +374,10 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
  * 그 판에서 진각성한 장수는 장수 판의 초상이 이 영상으로 바뀌고, 아직이면 장수 판의 「진각성」 칸에서 미리 본다 (형 11-05: "테스트하면서 진각성 영상을 보고 싶어")
  */
 export const AWAKEN2_LOOP: ReadonlySet<string> = new Set([
+  'w-33-gammun-gamsil', // manual intake 2026-11-14
+  'w-27-mokji-jinha', // manual intake 2026-11-14
+  'w-17-mahan-pearl-diver', // manual intake 2026-11-14
+  'l-L2-soseono', // manual intake 2026-11-14
   'w-97-goguryeo-mir', // 11-09 미르 2차 · Veo 세로 10초 (형: ok)
   'w-04-gaya-swordswoman', // 11-08 형이 모아 둔 판 (옛 -aw2) · 아라
   'w-47-gosaburi-baram', // 11-08 형이 모아 둔 판 · 바람

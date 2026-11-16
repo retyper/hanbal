@@ -12,6 +12,7 @@ import { t as tr } from '../i18n/index.ts'
 import { makeRng } from '../core/rng.ts'
 import { AWAKEN_ART, AWAKEN_LOOP, loopFile } from '../realm/data/awaken-art.ts'
 import { SPRITE_PX } from '../realm/data/spritePx.ts'
+import { DUEL_ATLASES, LEGACY_ATLAS, fighterMotion, type FighterAnim } from './fighter-motion.ts'
 
 export interface DuelSide {
   readonly name: string
@@ -45,6 +46,9 @@ const CSS = `
   border: 2px solid #f0c66a; background: linear-gradient(#5a2a14, #2c140a); color: #ffe7b0; font-family: 'Gowun Batang', serif; font-weight: 800; font-size: 21px;
   box-shadow: 0 0 24px rgba(240,180,80,.45); animation: dpulse 1.4s ease-in-out infinite; }
 .duelx .dflag.hide { display: none; }
+.duelx .dskip { position: absolute; right: 16px; top: calc(16px + env(safe-area-inset-top)); min-height: 44px; padding: 0 18px;
+  border: 1px solid #d9ba7c; border-radius: 24px; background: #17100de6; color: #ffedc7; font: 700 14px sans-serif; cursor: pointer; }
+.duelx .dskip[hidden] { display: none; }
 @keyframes dpulse { 50% { box-shadow: 0 0 40px rgba(255,200,100,.8); } }
 `
 let cssIn = false
@@ -54,7 +58,7 @@ export function mountDuel(cfg: DuelSetup, root: HTMLElement = document.body): Pr
   if (!cssIn) { const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st); cssIn = true }
   const host = document.createElement('div')
   host.className = 'duelx'
-  host.innerHTML = '<canvas></canvas>' + (cfg.standalone === true ? '<button class="dflag">' + tr('duel.flag') + '</button>' : '')
+  host.innerHTML = '<canvas></canvas><button class="dskip" hidden>' + tr('duel.skip') + '</button>' + (cfg.standalone === true ? '<button class="dflag">' + tr('duel.flag') + '</button>' : '')
   root.appendChild(host)
   // 겨루기가 뜨면 밑(나라 판·전투판)은 숨기고 멈춘다 — 폰에서 밑이 같이 그려져 버벅였다 (형 11-11 · appstyle 의 html.duel-open)
   document.documentElement.classList.add('duel-open')
@@ -63,6 +67,7 @@ export function mountDuel(cfg: DuelSetup, root: HTMLElement = document.body): Pr
   const canvas = host.querySelector('canvas') as HTMLCanvasElement
   const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
   const flagBtn = host.querySelector<HTMLButtonElement>('.dflag')
+  const skipBtn = host.querySelector<HTMLButtonElement>('.dskip') as HTMLButtonElement
   const params = new URLSearchParams(location.search)
   const muMe = cfg.me.mu, muFoe = cfg.foe.mu, tier = Math.max(0, Math.min(6, Math.round(cfg.tier)))
   let seed = cfg.seed >>> 0
@@ -87,7 +92,10 @@ const crowdFront = [1, 2, 3, 4, 5, 6].map((i) => img(`realm/duel/crowd/b${i}.png
 const crowdReady = (set: HTMLImageElement[]): boolean => set.every((im) => im.complete && im.naturalWidth > 0)
 const pxMode = cfg.px !== false && params.get('px') !== '0'
 /** 띠 그림 — 기본은 anim-px(도트 규격) 먼저, 없으면 옛 띠로 (img 의 onerror 가 갈아 끼운다) */
-const strip = (s: string): HTMLImageElement => pxMode ? img(`realm/anim-px/gen-${s}.png`, `realm/anim2/gen-${s}.png`) : img(`realm/anim2/gen-${s}.png`)
+const strip = (s: string): HTMLImageElement => pxMode
+  ? DUEL_ATLASES[s] !== undefined ? img(`realm/duel/sprites/gen-${s}.png`, `realm/anim-px/gen-${s}.png`)
+    : img(`realm/anim-px/gen-${s}.png`, `realm/anim2/gen-${s}.png`)
+  : img(`realm/anim2/gen-${s}.png`)
 const sprMe = strip(cfg.me.sprite)
 const sprFoe = strip(cfg.foe.sprite)
 const foePid = cfg.foe.portrait
@@ -96,9 +104,9 @@ const foeArt = foePid !== undefined ? img(`realm/awaken-hd/${foePid}.jpg`, `real
 const meFace = mePid !== undefined ? img(`realm/bust/${mePid}.jpg`) : null
 const foeFace = foePid !== undefined ? img(`realm/bust/${foePid}.jpg`) : null
 /**
- * 적장 1차 각성 영상 — 겨루기가 열릴 때 · 체간이 무너질 때 · 쓰러뜨릴 때만 잠깐 틀고, 고리가 도는 동안은 멈춘 그림 (형 11-11: "1차각성 동영상있는 장수라면 … 과하나?").
- * 영상은 720×1280 세로 · 그림은 900×900 정사각이라 영상 위쪽에서 정사각을 오려(loopCropY) 같은 둥근 창에 넣고, 그림과 겹쳐 서서히 바꾼다(loopFadeMs).
- * 테두리는 그 위에 그대로 덮인다. 영상이 안 풀리면(폰 절전 등) 그림만 남는다
+ * 각성 영상은 전투 전의 짧은 등장 컷에서만, 원래 화면비 그대로 쓴다.
+ * 정사각 초상에 세로 영상을 겹치면 얼굴이 두 겹으로 보이고 크기가 튄다.
+ * 체간 붕괴·결판에는 평상시 미소/춤 영상을 재생하지 않고 전투 자세와 타격 반응을 유지한다.
  */
 const foeLoop: HTMLVideoElement | null = (() => {
   if (foePid === undefined || !AWAKEN_ART.has(foePid) || !AWAKEN_LOOP.has(foePid)) return null
@@ -112,22 +120,6 @@ const foeLoop: HTMLVideoElement | null = (() => {
   onDoc('visibilitychange', () => { if (document.visibilityState !== 'visible') v.pause() })
   return v
 })()
-/** 영상을 보여 줄 때 [시작, 끝] (performance.now) — 끝 뒤엔 그림으로 돌아가 멈춘다 */
-let loopWin: [number, number] = [0, 0]
-function loopShow(now: number, ms: number): void {
-  if (foeLoop === null || document.visibilityState !== 'visible') return
-  if (now > loopWin[1]) { try { foeLoop.currentTime = 0 } catch { /* 아직 안 받았다 */ } }
-  loopWin = [now > loopWin[1] ? now : loopWin[0], Math.max(loopWin[1], now + ms)]
-  void foeLoop.play().catch(() => undefined)
-}
-/** 지금 영상 짙기 0~1 — 들어올 때·나갈 때 loopFadeMs 동안 그림과 겹친다 */
-function loopAlpha(now: number): number {
-  if (foeLoop === null || foeLoop.readyState < 2) return 0
-  const f = Math.max(1, P.duel.loopFadeMs)
-  const a = Math.min(1, (now - loopWin[0]) / f, (loopWin[1] - now) / f)
-  if (a <= 0 && now > loopWin[1] && !foeLoop.paused) foeLoop.pause()
-  return Math.max(0, a)
-}
 
 // ── 소리 (합성 · 누른 순간 반응만)
 let ac: AudioContext | null = null
@@ -261,9 +253,12 @@ const SFX = {
 loadSounds() // 처음부터 받아 둔다 (소리판은 첫 손짓에 깨어난다)
 
 // ── 판
-type Mode = 'field' | 'zoom' | 'duel' | 'end'
+type Mode = 'field' | 'zoom' | 'intro' | 'duel' | 'end'
 let mode: Mode = cfg.standalone === true ? 'field' : 'duel'
 let modeAt = 0
+let entranceSource: HTMLVideoElement | HTMLImageElement | null = null
+let entrancePending = false
+let entranceShade: CanvasGradient | null = null
 let duel: Duel = createDuel({ seed, muMe, muFoe, tier })
 let seen = 0
 let queued: Tap | null = null
@@ -292,7 +287,7 @@ let hurtAt = -1e9
 let foeHurtAt = -1e9
 /** 아래 들판 장수들이 하는 짓 — 그리기만 */
 let meAnim: { kind: 'idle' | 'guard' | 'hit' | 'attack'; t0: number } = { kind: 'idle', t0: 0 }
-let foeAnim: { kind: 'idle' | 'windup' | 'attack' | 'hit' | 'stagger'; t0: number } = { kind: 'idle', t0: 0 }
+let foeAnim: FighterAnim = { kind: 'idle', t0: 0 }
 
 // ── 크기 · 자리
 let W = 0, H = 0, dpr = 1
@@ -468,6 +463,7 @@ function bakedBg(): HTMLCanvasElement | null {
 }
 function resize(): void {
   TXT.clear(); SCALED.clear(); GLOWS.clear(); BAR_CV.clear(); panelCv = null
+  entranceShade = null
   dpr = Math.min(dprCap, devicePixelRatio || 1)
   W = innerWidth; H = innerHeight
   canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr)
@@ -494,6 +490,7 @@ const cueR = (): number => P.duel.radius * Math.min(W, play().h)
 // ── 손
 canvas.addEventListener('pointerdown', (e) => {
   e.preventDefault()
+  if (mode === 'intro') { fight(); return }
   if (mode === 'end' && cfg.standalone === true && performance.now() - endAt > 900) { seed = (seed + 1) >>> 0; begin(); return }
   if (mode !== 'duel' || duel.over !== null) return
   audio()
@@ -505,13 +502,72 @@ flagBtn?.addEventListener('click', () => {
   flagBtn.classList.add('hide')
   mode = 'zoom'; modeAt = performance.now()
 })
+skipBtn.addEventListener('click', fight)
 
 function begin(): void {
+  for (const id of [...risers.keys()]) riserCut(id)
+  risenCues.clear()
   duel = createDuel({ seed, muMe, muFoe, tier })
   seen = 0; queued = null
   pops.length = 0; sparks.length = 0; slashes.length = 0; marks.length = 0; judges.length = 0
-  mode = 'duel'; modeAt = performance.now(); endAt = 0
-  loopShow(modeAt, P.duel.loopIntroMs) // 적장 등장 — 각성 영상이 있으면 잠깐 움직인다
+  freezeUntil = 0; acc = 0; last = 0; shake = 0; flash = null
+  critAt = -1e9; rushKickAt = -1e9; hurtAt = -1e9; foeHurtAt = -1e9
+  meAnim = { kind: 'idle', t0: 0 }; foeAnim = { kind: 'idle', t0: 0 }
+  mode = 'intro'; modeAt = performance.now(); endAt = 0
+  entranceSource = foeLoop === null ? foeArt : null
+  entrancePending = foeLoop !== null
+  skipBtn.hidden = false
+  if (foeLoop !== null && document.visibilityState === 'visible') {
+    try { foeLoop.currentTime = 0 } catch { /* 아직 안 받았다 */ }
+    void foeLoop.play().catch(() => undefined)
+  }
+  if (P.duel.loopIntroMs <= 0) fight()
+}
+
+/** 등장 컷을 보는 동안에는 셈이 멈춘다. 넘기는 탭이 첫 공격 입력으로 새지 않는다. */
+function fight(): void {
+  if (mode !== 'intro') return
+  foeLoop?.pause()
+  skipBtn.hidden = true
+  queued = null; acc = 0; last = 0
+  mode = 'duel'; modeAt = performance.now()
+}
+
+/** 영상과 전투는 서로 다른 쇼트다. 세로 원본을 자르지 않고 암전으로 장면을 넘긴다. */
+function drawEntrance(now: number): void {
+  ctx.fillStyle = '#0b0806'; ctx.fillRect(0, 0, W, H)
+  // 이번 컷의 매체를 한 번만 고른다. 재생 준비가 늦어도 정사각 그림이 세로 영상으로 중간에 바뀌지 않는다.
+  if (entrancePending) {
+    if (foeLoop !== null && foeLoop.readyState >= 2 && foeLoop.videoWidth > 0) entranceSource = foeLoop
+    else if (now - modeAt < P.duel.loopWaitMs) return
+    else { entranceSource = foeArt; foeLoop?.pause() }
+    entrancePending = false; modeAt = now
+  }
+  const age = now - modeAt, fadeMs = P.duel.loopFadeMs, source = entranceSource
+  ctx.save()
+  ctx.globalAlpha = Math.max(0, Math.min(1, age / fadeMs, (P.duel.loopIntroMs - age) / fadeMs))
+  if (source !== null) {
+    const sw = source instanceof HTMLVideoElement ? source.videoWidth : source.naturalWidth
+    const sh = source instanceof HTMLVideoElement ? source.videoHeight : source.naturalHeight
+    if (sw > 0 && sh > 0) {
+      const scale = Math.min(W / sw, H / sh)
+      ctx.drawImage(source, (W - sw * scale) / 2, (H - sh * scale) / 2, sw * scale, sh * scale)
+    }
+  }
+  if (entranceShade === null) {
+    entranceShade = ctx.createLinearGradient(0, H * 0.48, 0, H)
+    entranceShade.addColorStop(0, 'rgba(11,8,6,0)'); entranceShade.addColorStop(0.55, 'rgba(11,8,6,.9)'); entranceShade.addColorStop(1, '#0b0806')
+  }
+  ctx.fillStyle = entranceShade; ctx.fillRect(0, H * 0.48, W, H * 0.52)
+  const fs = Math.round(Math.min(W * 0.052, 22))
+  putText(textSprite(tr('duel.challenger'), fs, 700, '#e3c394', null, '#1b100a', 3, false), W / 2, H * 0.68, 'center')
+  putText(textSprite(cfg.foe.name, fs * 2.1, 900, '#fff3ce', '#e6b258', '#1b100a', 5, false), W / 2, H * 0.75, 'center')
+  const guide = textSprite(tr('duel.guide'), fs, 800, '#fff0cb', null, '#1b100a', 3, false)
+  const detail = textSprite(tr('duel.guideHeavy'), fs * 0.78, 600, '#dbc9b2', null, '#1b100a', 3, false)
+  putText(guide, W / 2, H * 0.85, 'center', Math.min(1, (W - 30) / guide.w))
+  putText(detail, W / 2, H * 0.89, 'center', Math.min(1, (W - 30) / detail.w))
+  ctx.restore()
+  if (age >= P.duel.loopIntroMs) fight()
 }
 
 /** 끝 — 「승리 · 패배 · 비김」만 크게 쾅 떴다가 저절로 닫힌다 (형 11-09: 체력·시간 숫자 · 확인 버튼 필요 없다) */
@@ -614,7 +670,6 @@ function onEvent(e: DuelEvent, now: number): void {
       break
     case 'break':
       SFX.break()
-      loopShow(now, P.duel.loopBreakMs) // 체간이 무너졌다 — 적장이 잠깐 움직인다
       flash = { rgb: '255,200,90', t0: now, ms: 300, a: 0.35 }
       foeAnim = { kind: 'stagger', t0: now }
       break
@@ -623,11 +678,12 @@ function onEvent(e: DuelEvent, now: number): void {
       try { navigator.vibrate?.(18) } catch { /* 햅틱 없는 기기 */ }
       slashes.push({ x, y, ang: slashAngle(x, y, e.t), len: Math.min(W, H) * 0.32, t0: now, ms: 240, color: '255,255,255', w: 8 })
       pop(`−${e.dmgFoe}`, '#ffd98a', 26)
-      meAnim = { kind: 'attack', t0: now }
+      meAnim = { kind: 'attack', t0: now }; foeAnim = { kind: 'hit', t0: now }
       break
     case 'deflect':
-      // 막힌 칼 — 소리만 (형 11-09: "연타 막힐 경우는 애니메이션도 진동도 없게 · 시원하게 공격할 수 있어야")
+      // 막힌 공격도 무기를 들어 받아낸다. 피해 번쩍임/진동은 적중 때만.
       SFX.deflect()
+      meAnim = { kind: 'attack', t0: now }; foeAnim = { kind: 'guard', t0: now }
       break
     case 'rushEnd': foeAnim = { kind: 'idle', t0: now }; break
     default: break
@@ -641,10 +697,14 @@ function cover(im: HTMLImageElement, x: number, y: number, w: number, h: number)
   ctx.drawImage(im, x + (w - im.naturalWidth * s) / 2, y + (h - im.naturalHeight * s) / 2, im.naturalWidth * s, im.naturalHeight * s)
 }
 const PX_NAME = /\/(gen-[^/]+)\.png/
+function atlasOf(im: HTMLImageElement) {
+  const key = (PX_NAME.exec(im.src) ?? [])[1]?.slice(4) ?? ''
+  return im.src.includes('/duel/sprites/') ? DUEL_ATLASES[key] ?? LEGACY_ATLAS : LEGACY_ATLAS
+}
 function sprite(im: HTMLImageElement, frame: number, x: number, base: number, h: number, flip: boolean, tint: string | null): void {
   if (!im.complete || im.naturalWidth === 0) return
-  const isPx = im.src.includes('/anim-px/')
-  const cw = im.naturalWidth / 20, ch = im.naturalHeight
+  const isPx = im.src.includes('/anim-px/') || im.src.includes('/duel/sprites/')
+  const cw = im.naturalWidth / atlasOf(im).cells, ch = im.naturalHeight
   // 도트는 정수 배율 · 정수 자리 — 점이 네모로 또렷하게 (옛 띠는 매끄럽게 늘린다) · 발 줄(manifest)이 base 에 닿게 칸을 그만큼 내린다
   const sc = isPx ? Math.max(1, Math.round(Math.min(W, H) * P.duel.pxFill / ch)) : 0 // 화면 짧은 변 기준 (폰 390 → 1배 · 데스크톱 768 → 2배)
   const w = isPx ? cw * sc : h * (cw / ch)
@@ -673,22 +733,11 @@ const tintCx = tintCv.getContext('2d') as CanvasRenderingContext2D
 function fieldFighters(now: number, base: number, h: number, gapPx: number, cx: number): void {
   const d = duel
   const meX = cx - gapPx / 2, foeX = cx + gapPx / 2
-  const idleF = (o: number): number => Math.floor((now + o) / 180) % 4
-  // 우리
-  let mf = idleF(0), mdx = 0
-  const ma = now - meAnim.t0
-  if (mode === 'end' && (d.over === 'kod' || d.over === 'lose')) mf = d.over === 'kod' ? 19 : 18
-  else if (meAnim.kind === 'attack' && ma < 420) { mf = 12 + Math.min(5, Math.floor(ma / 70)); mdx = gapPx * 0.32 * Math.sin(Math.min(1, ma / 300) * Math.PI) }
-  else if (meAnim.kind === 'guard' && ma < 260) { mf = 12; mdx = -gapPx * 0.05 }
-  else if (meAnim.kind === 'hit' && ma < 380) { mf = 18; mdx = -gapPx * 0.12 }
-  // 적장
-  let ff = idleF(90), fdx = 0
-  const fa = now - foeAnim.t0
-  if (mode === 'end' && (d.over === 'ko' || d.over === 'win')) ff = d.over === 'ko' ? 19 : 18
-  else if (duel.phase === 'rush') { ff = 18; fdx = Math.sin(now / 90) * gapPx * 0.03 }
-  else if (foeAnim.kind === 'windup') { ff = fa < 250 ? 12 : 13 }
-  else if (foeAnim.kind === 'attack' && fa < 420) { ff = 14 + Math.min(3, Math.floor(fa / 100)); fdx = -gapPx * 0.3 * Math.sin(Math.min(1, fa / 280) * Math.PI) }
-  else if (foeAnim.kind === 'hit' && fa < 500) { ff = 18; fdx = gapPx * 0.1 }
+  const meEnd = mode === 'end' && (d.over === 'kod' || d.over === 'lose') ? (d.over === 'kod' ? 'dead' : 'hurt') : null
+  const foeEnd = mode === 'end' && (d.over === 'ko' || d.over === 'win') ? (d.over === 'ko' ? 'dead' : 'hurt') : null
+  const me = fighterMotion(atlasOf(sprMe), meAnim, now, false, meEnd)
+  const foe = fighterMotion(atlasOf(sprFoe), foeAnim, now, d.phase === 'rush', foeEnd)
+  const mf = me.frame, mdx = me.dx * gapPx, ff = foe.frame, fdx = -foe.dx * gapPx
   ctx.fillStyle = 'rgba(0,0,0,.35)'
   for (const x of [meX, foeX]) { ctx.beginPath(); ctx.ellipse(x, base + 2, h * 0.22, h * 0.05, 0, 0, Math.PI * 2); ctx.fill() }
   sprite(sprMe, mf, meX + mdx, base, h, false, now - hurtAt < 140 ? 'rgba(255,215,205,.75)' : null)
@@ -922,9 +971,15 @@ function drawCue(c: Cue, t: number): void {
     ctx.lineWidth = lw; ctx.strokeStyle = ss
   }
   ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI * 2); ctx.stroke()
-  if (c.heavy) {
-    ctx.fillStyle = `rgba(255,90,70,${0.7 + 0.3 * k})`; ctx.font = `800 ${Math.round(r * 0.9)}px "Gowun Batang", serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-    ctx.fillText('!', x, y + 1); ctx.textBaseline = 'alphabetic'
+  // 느낌표만으로는 피해야 하는지 알 수 없다. 강공격도 같은 고리에서 받아친다는 뜻을 쓴다.
+  if (c.heavy || inWin) {
+    const label = tr(inWin ? 'duel.tap' : 'duel.heavy')
+    const text = textSprite(label, r * 0.58, 900, inWin ? '#ffe7a1' : '#ffb2a0', null, '#240b05', 3, true)
+    putText(text, x, y, 'center', Math.min(1, r * 1.8 / text.w))
+  }
+  if (duel.cues.length > 1) {
+    const order = duel.cues.indexOf(c) + 1
+    putText(textSprite(String(order), r * 0.65, 900, '#fff3d5', null, '#21110a', 3, true), x, y - r * 1.55, 'center')
   }
 }
 
@@ -973,17 +1028,6 @@ function drawDuel(now: number, fadeIn: number): void {
   const pb = panelBake(pn.s)
   if (pb !== null) { ctx.globalAlpha = fadeIn; ctx.drawImage(pb, -pn.s / 2, -pn.s / 2, pn.s, pn.s); ctx.globalAlpha = 1 }
   else { roundRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s, pn.s * 0.06); ctx.fillStyle = 'rgba(10,7,5,.55)'; ctx.fill() }
-  // 각성 영상 — 그림과 같은 둥근 창 안에 · 세로 영상 위쪽에서 정사각을 오린다 (테두리는 아래에서 그 위에)
-  const la = loopAlpha(now)
-  if (la > 0 && foeLoop !== null && foeLoop.videoWidth > 0) {
-    const vw = foeLoop.videoWidth, vh = foeLoop.videoHeight, side = Math.min(vw, vh)
-    const sy = Math.max(0, Math.min(vh - side, vh * P.duel.loopCropY))
-    ctx.save(); roundRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s, pn.s * 0.06); ctx.clip()
-    ctx.fillStyle = `rgba(10,7,5,${0.55 * la * fadeIn})`; ctx.fillRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s)
-    ctx.globalAlpha = 0.9 * la * fadeIn
-    ctx.drawImage(foeLoop, (vw - side) / 2, sy, side, side, -pn.s / 2, -pn.s / 2, pn.s, pn.s)
-    ctx.restore()
-  }
   if (now - foeHurtAt < 120) { roundRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s, pn.s * 0.06); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(255,240,220,${0.28 * (1 - (now - foeHurtAt) / 120)})`; ctx.fill(); ctx.globalCompositeOperation = 'source-over' } // 맞으면 초상이 잠깐 하얗게 번쩍
   const fr = art('panel-frame')
   if (fr !== null) { const F = pn.s / 0.89, Fh = pn.s / 0.877; ctx.drawImage(scaled(fr, F, Fh), -pn.s / 2 - 0.055 * F, -pn.s / 2 - 0.061 * Fh, F, Fh) } // 테두리 안쪽 창 = 그림의 5.5~94.5% · 6.1~93.8%
@@ -999,7 +1043,7 @@ function drawDuel(now: number, fadeIn: number): void {
   }
   pm('rushring')
   // 고리
-  for (const c of d.cues) if (c.done === null && d.t >= c.t0) drawCue(c, d.t)
+  if (mode === 'duel') for (const c of d.cues) if (c.done === null && d.t >= c.t0) drawCue(c, d.t)
   pm('cues')
   // 판정 자국 — 챙! 빛 (정확·막음) · 붉은 자국 (맞음) · 빨랐다/늦었다는 남은 고리 크기로
   for (let i = marks.length - 1; i >= 0; i--) {
@@ -1072,6 +1116,17 @@ function drawDuel(now: number, fadeIn: number): void {
   const pw = Math.min(W * 0.7, pn.s * 0.9), px = (W - pw) / 2, py = Math.min(ft - 22, pn.y + pn.s + 10)
   if (d.phase !== 'rush') bar(px, py, pw, 10, pk, pk > 0.8 ? '#ffb347' : '#e9c46a', 'center', 'hud-posture')
   else rushCue(now, d)
+  if (mode === 'duel') {
+    let next: Cue | undefined
+    for (const c of d.cues) if (c.done === null && d.t >= c.t0) { next = c; break }
+    const key = d.phase === 'rush' ? 'duel.break' : d.phase === 'crit' ? 'duel.crit' : next?.heavy === true ? 'duel.heavyHint' : 'duel.guide'
+    const hint = textSprite(tr(key), Math.min(18, W * 0.038), 800, next?.heavy === true ? '#ffb2a0' : '#ffebbe', null, '#160c07', 4, false)
+    putText(hint, W / 2, play().y + 6, 'center', Math.min(1, (W - 24) / hint.w))
+    if (d.phase !== 'rush') {
+      const label = textSprite(tr('duel.posture'), Math.min(13, W * 0.03), 700, '#e9d3a9', null, '#160c07', 3, false)
+      putText(label, W / 2, py - 5, 'center')
+    }
+  }
   pm('posture')
   // 위 — 격투 게임처럼: 우리(왼쪽) · 시간(가운데 크게) · 적장(오른쪽)
   // 위 띠 크기 — 폰은 그대로, 넓은 화면은 키운다 (PC 에서 너무 가늘고 작았다)
@@ -1164,7 +1219,7 @@ function frame(now: number): void {
   warmNow(now)
   if (PROF) pt = performance.now()
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-  if (mode === 'duel' || mode === 'end') ctx.clearRect(0, 0, W, H)
+  if (mode === 'intro' || mode === 'duel' || mode === 'end') ctx.clearRect(0, 0, W, H)
   const sx = shake > 0 ? (((now * 7) % 13) / 13 - 0.5) * shake : 0
   const sy = shake > 0 ? (((now * 11) % 17) / 17 - 0.5) * shake : 0
   shake = Math.max(0, shake - 0.7)
@@ -1174,6 +1229,9 @@ function frame(now: number): void {
     const k = Math.min(1, (now - modeAt) / 700)
     drawField(now, k * k)
     if (k >= 1) begin()
+  } else if (mode === 'intro') {
+    acc = 0
+    drawEntrance(now)
   } else {
     if (mode === 'duel' && duel.over === null && now >= freezeUntil) {
       acc += dt
@@ -1186,7 +1244,7 @@ function frame(now: number): void {
         if (now < freezeUntil) { acc = 0; break }
       }
       syncRisers(duel)
-      if (duel.over !== null) { mode = 'end'; endAt = now; for (const id of [...risers.keys()]) riserCut(id); loopShow(now, P.duel.loopEndMs) } // 결판 — 적장이 마지막으로 움직인다
+      if (duel.over !== null) { mode = 'end'; endAt = now; for (const id of [...risers.keys()]) riserCut(id) }
     } else acc = 0
     drawDuel(now, Math.min(1, (now - modeAt) / 450))
     if (mode === 'duel') drawIntro(now)
@@ -1210,7 +1268,22 @@ function frame(now: number): void {
   }
   raf = requestAnimationFrame(frame)
 }
-function wake(): void { if (!document.hidden && raf === 0 && !closed) { last = 0; raf = requestAnimationFrame(frame) } }
+let entranceHiddenAt: number | null = null
+function wake(): void {
+  if (document.hidden) {
+    if (mode === 'intro' && entranceHiddenAt === null) entranceHiddenAt = performance.now()
+    return
+  }
+  if (entranceHiddenAt !== null) {
+    if (mode === 'intro') {
+      // Count the ten seconds that can actually be watched, not hidden-tab time.
+      modeAt += performance.now() - entranceHiddenAt
+      if (entranceSource === foeLoop || entrancePending) void foeLoop?.play().catch(() => undefined)
+    }
+    entranceHiddenAt = null
+  }
+  if (raf === 0 && !closed) { last = 0; raf = requestAnimationFrame(frame) }
+}
 onDoc('visibilitychange', wake)
 let closed = false
 function close(): void {

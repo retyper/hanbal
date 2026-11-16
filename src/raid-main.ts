@@ -1,0 +1,297 @@
+import { breakthroughText, isBreakthrough } from './realm/vanguard.ts'
+import { HAEBI_RUN as C } from './tune/params.ts'
+import { createHaebi, runDuration, stepHaebi, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, type Kit, type Power, type HaebiRun, type StageId } from './raid/haebi.ts'
+import { loadMeta, saveMeta, buy, refund, record, shopCost, shopMax, stageOpen, stageName, SHOP, STAGE_ORDER, type ShopKey } from './raid/meta.ts'
+import { drawField, imagePaths, setHeroArt, heroArtFiles } from './raid/haebi-view.ts'
+import { powerIcon, installPowerHints } from './raid/power-ui.ts'
+import { KIT_BY_SPRITE } from './raid/kit-table.ts'
+import { hasSkillBody } from './realm/data/skill-body.ts'
+import { josa } from './core/josa.ts'
+import { raidSound } from './raid/sound.ts'
+import { DEFAULT_HERO, SEAL_STAGE, loadRoster, type RosterHero } from './raid/link.ts'
+import { TRUE_WAKE } from './realm/data/awaken2.ts'
+import './raid/combat.css'
+
+const root = document.querySelector<HTMLDivElement>('#raid')!
+const query = new URLSearchParams(location.search)
+const vanguardToken = window.parent !== window ? query.get('vanguard') : null
+const trialToken = window.parent !== window ? new URLSearchParams(location.search).get('trial') : null
+/** 판: 본편 선봉 · 본편 각성 시련(짧고 쉬움) · 독립 열전(스테이지·상점·휘장 · 형 11-16 「따로 떼기」) */
+const mode = query.has('vanguard') ? 'vanguard' : trialToken ? 'trial' : 'stage'
+/**
+ * 열전에 서는 장수 — 본편(app.ts)이 주소로 넘긴다. 없으면 해비 (형 11-15: 각성 시련을 모든 장수로).
+ * 겉모습만 정하는 값이라 주소를 믿는다: 보상은 본편이 제 쪽 기록(토큰·장수 id)으로만 준다.
+ */
+const esc = (t: string) => t.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
+const sprite = query.get('sprite') ?? 'haebi'
+const askedKit = query.get('kit') as Kit | null
+const kit: Kit = askedKit && askedKit in KITS ? askedKit : KIT_BY_SPRITE[sprite] ?? 'sword'
+const HERO = { name: esc(query.get('name') ?? '해비'), bust: query.get('bust') ?? 'w-95-michuhol-haebi', home: esc(query.get('home') ?? '미추홀의 장수'),
+  awake: query.get('awake') ?? (sprite === 'haebi' ? 'aw1-haebi' : undefined), video: query.has('bust') ? query.get('video') === '1' : true }
+const K = KITS[kit], weapon = K.weapon
+/** 본편 장수 id — 열전 깸을 장수마다 적는다 (본편 진각성 자격 · raid/link.ts) */
+const heroId = query.get('hero') ?? DEFAULT_HERO
+/** 목소리 결 — 본편이 넘기면 그대로, 아니면 초상 이름의 앞 글자(w·l = 여인) */
+const sound = raidSound((query.get('sex') ?? (/^[wl]-/.test(HERO.bust) ? 'f' : 'm')) === 'f', kit)
+/** 전용 그림이 있는 조합 (public/realm/raid/<id>.png) — 나머지는 능력 아이콘을 빌린다 */
+const COMBO_ART = new Set(['cyclone', 'inferno', 'torrent', 'volley', 'meteor', 'grove', 'boomerang', 'tempest', 'splitwave', 'shadowdance', 'venom', 'rite', 'soulstorm'])
+setHeroArt(sprite, HERO.awake)
+/** 판 밖 기록 (금·상점·휘장) — 독립 열전만 쓴다 */
+const meta = loadMeta()
+let stage: Exclude<StageId, 'trial'> = STAGE_ORDER.find(id => stageOpen(meta, id) && !meta.cleared[id]) ?? 'forest'
+const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`
+const newRun = (seed: number) => { const r = createHaebi(seed, mode, kit, mode === 'stage' ? { stage, bonus: meta.shop } : {}); if (kit !== 'axe' && mode !== 'vanguard') r.message = `${HERO.name}의 출전 · 첫 조합을 향해`; return r }
+root.innerHTML = `<header><div><small>장수 열전 · 독립 모드</small><h1>${HERO.name} <em>${K.title}</em></h1></div><div class="head-actions"><button id="pause" disabled aria-label="일시정지">Ⅱ</button></div></header>
+<div id="layout"><aside id="character"><div id="portrait-media"><img id="hero-portrait" src="${import.meta.env.BASE_URL}realm/bust-hd/${HERO.bust}.jpg" alt="${HERO.name} 원화"><video id="hero-video" muted loop playsinline preload="none" hidden aria-label="각성 ${HERO.name} 영상"></video></div><div class="portrait-title"><span>${HERO.home}</span><b id="rank-title">${HERO.name}</b><button id="portrait-toggle" hidden>원화로 보기</button></div><div id="reaction">${weapon} 하나로 시작하는 열전</div><div id="combo-badges"></div><i class="frame-knots"></i></aside>
+<main><section id="menu"><span class="eyebrow">장수 열전</span><h2>${HERO.name}<em>${K.title}</em></h2><p>능력을 고르고 두 힘을 묶어, 15분 가까이 버틴 뒤 오는 두목을 쓰러뜨리세요.</p><div class="journey"><span><b>01</b> 붉은 고리를 피하고</span><span><b>02</b> 두 힘을 묶어</span><span><b>03</b> 두목을 잡습니다</span></div><button id="start" class="primary" disabled>그림을 불러오는 중…</button><p class="controls">이동 WASD·방향키·화면 누르기 · 회피 Shift · 비기 Space · 멈춤 Esc</p><p class="note">본편의 병력과 따로인 한 판입니다.</p></section>
+<section id="play" hidden><div id="arena"><canvas id="field" width="${C.width}" height="${C.height}" aria-label="${HERO.name} 토벌 전장. 클릭 또는 드래그로 이동"></canvas><div id="combat-hud"><div class="health-line"><b>${HERO.name}</b><span id="health">180 / 180</span></div><div class="bar hp"><i id="hp-fill"></i></div><div id="loadout" aria-label="획득한 전투 능력"></div></div><div id="hud"><small id="phase"></small><b id="clock"></b></div><div id="score"><b id="kills"></b><small>격파</small><b id="level"></b></div><div class="bar xp"><i id="xp-fill"></i></div><div id="announcement" aria-live="polite"></div><div id="streak"></div><footer><span id="hint">자동 공격 · 능력 아이콘을 누르고 있으면 설명</span><button id="dash">회피 Shift</button><button id="skill" class="primary">${K.skill} Space</button></footer><i class="frame-knots"></i></div></section></main></div><div id="power-tooltip" role="tooltip" hidden></div><div id="overlay" hidden></div>`
+const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T
+root.insertAdjacentHTML('beforeend', `<div id="rotate-guide" hidden><div><span style="font-size:44px">↻</span><h2>폰을 가로로 돌려 주세요</h2><p>확대 ${josa(HERO.name, '과', '와')} 전장을 함께 보며 싸웁니다.<br>회전하는 동안 전투는 멈춰 있습니다.</p></div></div>`)
+$('arena').insertAdjacentHTML('beforeend', `<div id="skill-cutin" hidden aria-hidden="true"><img alt=""><b>${K.skill}</b></div>`)
+let cutinUntil = 0
+function showSkillCutin() {
+  const id = HERO.bust, body = hasSkillBody(id)
+  const cut = $('skill-cutin'); cut.classList.toggle('full-body', body)
+  cut.querySelector('img')!.src = import.meta.env.BASE_URL + 'realm/' + (body ? 'skill-body' : run.combos.length ? 'awaken-hd' : 'bust-hd') + '/' + id + '.jpg'
+  cut.style.animationDuration = C.skillCutin + 's'; cut.hidden = false; cutinUntil = run.t + C.skillCutin
+}
+$('pause').insertAdjacentHTML('beforebegin', '<button id="fullscreen">전체화면</button>')
+$('fullscreen').textContent = '⛶'; $('fullscreen').setAttribute('aria-label', '전체화면');
+$('fullscreen').onclick = () => { if (document.fullscreenElement) void document.exitFullscreen?.(); else void document.documentElement.requestFullscreen?.().catch(() => undefined) }
+if (trialToken) {
+  document.body.classList.add('campaign-trial')
+  root.querySelector('header small')!.textContent = `본편 · ${HERO.name}의 각성 시련`
+  $('menu').querySelector('.note')!.textContent = `두목을 쓰러뜨리고 돌아가면 본편의 ${josa(HERO.name, '이', '가')} 각성합니다.`
+}
+if (mode === 'vanguard') {
+  document.body.classList.add('campaign-vanguard')
+  root.querySelector('header small')!.textContent = '본편 합전 · 선봉에 서기'
+  $('menu').querySelector('h2')!.innerHTML = '각성의 힘으로<br><em>본대가 나아갈 길을 열어라.</em>'
+  $('menu').querySelector('p')!.textContent = `${(([a, b]) => `${josa(a!, '과', '와')} ${josa(b!, '을', '를')}`)(kitCombos(kit).filter(c => c.kit === kit).map(c => c.name))} 갖추고 출전합니다. 최대 3분 동안 전위대장 셋을 격파하세요.`
+  $('menu').querySelector('.journey')!.innerHTML = '<span><b>1 돌파</b> 적 앞줄 −4% · 아군 힘 +35%</span><span><b>2 돌파</b> −8% · +55%</span><span><b>3 돌파</b> −12% · +75%</span>'
+  $('menu').querySelector('.note')!.textContent = '한 전투에 한 번. 돌파 후 이번 합의 앞줄 싸움에 반영됩니다. 중도 귀환·패배도 확보한 성과는 유지되며 각성은 풀리지 않습니다.'
+}
+root.insertAdjacentHTML('beforeend', '<div id="shop" hidden></div>')
+const startLabel = () => mode === 'vanguard' ? `각성 ${HERO.name} 출전 · 최대 3분` : mode === 'trial' ? `${HERO.name} 출전 · ${Math.round(runDuration(run) / 60)}분` : `${stageName(stage)} 출전 · ${Math.round(runDuration(run) / 60)}분`
+/** 독립 열전 출전 화면: 스테이지 셋(앞을 깨면 다음이 열림 · 깨면 휘장) + 금 + 상점 (형 11-16 다이센카식) */
+const STAGE_GLYPH: Record<string, string> = { forest: '林', ford: '灘', palisade: '柵' }
+function renderStageMenu() {
+  if (mode !== 'stage') return
+  const menu = $('menu')
+  menu.querySelector('p')!.textContent = '20분을 버티고 두목을 쓰러뜨리면 휘장과 많은 금을 받습니다. 쓰러져도 버틴 만큼 금을 받아 상점에서 영구 강화를 삽니다.'
+  const pick = menu.querySelector('.journey')!; pick.className = 'journey stage-pick'
+  pick.innerHTML = STAGE_ORDER.map(id => {
+    const open = stageOpen(meta, id), best = meta.best[id]
+    return `<button data-stage="${id}" class="${id === stage ? 'on' : ''}" ${open ? '' : 'disabled'} aria-pressed="${id === stage}"><img class="emblem ${meta.cleared[id] ? 'got' : ''}" src="${import.meta.env.BASE_URL}realm/raid/emblem-${id}.png" alt="${STAGE_GLYPH[id]}"><b>${stageName(id)}</b><small>${!open ? '앞 스테이지를 깨면 열립니다' : meta.cleared[id] ? '휘장 획득' : best ? `최고 ${clock(best)} 버팀` : '첫 도전'}</small></button>`
+  }).join('')
+  pick.querySelectorAll<HTMLButtonElement>('[data-stage]').forEach(b => b.onclick = () => { stage = b.dataset.stage as typeof stage; run = newRun(7); renderStageMenu() })
+  menu.querySelector('.note')!.innerHTML = `<span class="gold-line">금 <b>${meta.gold.toLocaleString()}</b></span><button id="open-shop">상점 · 영구 강화</button><button id="open-heroes">장수 바꾸기</button>`
+  $('open-shop').onclick = () => { renderShop(); $('shop').hidden = false }
+  $('open-heroes').onclick = () => { renderHeroes(); $('shop').hidden = false }
+  if (!$<HTMLButtonElement>('start').disabled) $('start').textContent = startLabel()
+}
+/**
+ * 데려갈 장수 — 본편에서 모은 우리 장수만 (본편이 raid/link.ts 에 적어 둔다 · 해비는 늘). 고르면 그 장수의 겉모습으로 열전을 다시 연다.
+ * 진각성 그림이 있는 장수는 이 장수로 마지막 스테이지를 깨면 본편에서 진각성할 수 있다 (금빛 「진」 · 깼으면 ✓)
+ */
+const HAEBI: RosterHero = { id: DEFAULT_HERO, name: '해비', home: '미추홀의 장수', bust: 'w-95-michuhol-haebi', sprite: 'haebi', awake: 'aw1-haebi', kit: 'axe', video: true }
+function renderHeroes() {
+  const list = [HAEBI, ...loadRoster().filter(h => h.id !== DEFAULT_HERO)]
+  const sealed = (id: string) => (meta.heroes[id] ?? []).includes(SEAL_STAGE)
+  $('shop').innerHTML = `<div class="panel shop heroes"><small>장수 열전 · 데려갈 장수</small><h2>${list.length}명</h2><p>본편에서 우리 장수가 되면 여기에 섭니다. <b class="tw">진</b> 장수는 ${josa(stageName(SEAL_STAGE), '을', '를')} 깨면 본편에서 진각성할 수 있습니다.</p><div class="hero-grid">${list.map(h =>
+    `<button data-hero="${esc(h.id)}" class="${h.id === heroId ? 'on' : ''}" aria-pressed="${h.id === heroId}"><img src="${import.meta.env.BASE_URL}realm/bust/${esc(h.bust)}.jpg" alt="" loading="lazy"><b>${esc(h.name)}</b><small>${KITS[h.kit]?.weapon ?? ''}</small>${TRUE_WAKE.has(h.id) ? `<i class="tw${sealed(h.id) ? ' ok' : ''}">${sealed(h.id) ? '진 ✓' : '진'}</i>` : ''}</button>`).join('')}</div><div class="shop-actions"><button id="close-shop" class="primary">닫기</button></div></div>`
+  $('shop').querySelectorAll<HTMLButtonElement>('[data-hero]').forEach(b => b.onclick = () => {
+    const h = list.find(x => x.id === b.dataset.hero); if (!h || h.id === heroId) { $('shop').hidden = true; return }
+    const q = new URLSearchParams({ hero: h.id, name: h.name, home: h.home, bust: h.bust, sprite: h.sprite, kit: h.kit, video: h.video ? '1' : '0' })
+    if (h.awake) q.set('awake', h.awake)
+    b.classList.add('bought'); location.replace(`${location.pathname}?${q}`)
+  })
+  $('close-shop').onclick = () => { $('shop').hidden = true }
+}
+function renderShop() {
+  $('shop').innerHTML = `<div class="panel shop"><small>장수 열전 · 판 밖 상점</small><h2>금 ${meta.gold.toLocaleString()}</h2><p>산 것은 다음 판부터 모든 장수에게 붙습니다. 언제든 전부 되돌려 받습니다.</p><div class="shop-grid">${SHOP.map(it => {
+    const lv = meta.shop[it.key], max = shopMax(it.key), full = lv >= max, cost = full ? 0 : shopCost(it.key, lv), poor = !full && meta.gold < cost
+    return `<button data-buy="${it.key}" class="${full ? 'maxed' : poor ? 'poor' : ''}" ${full || poor ? 'aria-disabled="true"' : ''}><img class="rune" src="${import.meta.env.BASE_URL}realm/raid/shop-${it.key}.png" alt="${it.glyph}"><b>${it.name} <i>${lv}/${max}</i></b><small>${it.desc(full ? lv : lv + 1)}</small><em>${full ? '다 올림' : poor ? `금 ${cost} · 모자람` : `금 ${cost}`}</em></button>`
+  }).join('')}</div><div class="shop-actions"><button id="refund" ${meta.spent ? '' : 'disabled'}>전부 되돌리기 · 금 ${meta.spent.toLocaleString()}</button><button id="close-shop" class="primary">닫기</button></div></div>`
+  $('shop').querySelectorAll<HTMLButtonElement>('[data-buy]').forEach(b => b.onclick = () => { if (buy(meta, b.dataset.buy as ShopKey)) { saveMeta(meta); run = newRun(7); renderShop(); renderStageMenu(); b.classList.add('bought') } })
+  $('refund').onclick = () => { refund(meta); saveMeta(meta); run = newRun(7); renderShop(); renderStageMenu() }
+  $('close-shop').onclick = () => { $('shop').hidden = true }
+}
+const canvas = $<HTMLCanvasElement>('field'), ctx = canvas.getContext('2d')!
+const images = new Map<string, HTMLImageElement>(), keys = new Set<string>()
+let run = newRun(7), live = false, paused = false, shown = '', loadoutKey = '', acc = 0, last = 0, raf = 0, dash = false, skill = false
+let destination: { x: number; y: number } | null = null
+let rotationBlocked = false, inspecting = false
+const hidePowerHint = installPowerHints($('loadout'), $('power-tooltip'), () => run, held => { inspecting = held; if (held) resetInput() })
+const heroVideo = $<HTMLVideoElement>('hero-video'), heroPortrait = $<HTMLImageElement>('hero-portrait')
+heroVideo.muted = true; heroVideo.volume = 0
+let stillPortrait = matchMedia('(prefers-reduced-motion: reduce)').matches, mediaKey = '', videoFailed = false
+$('portrait-toggle').onclick = () => { stillPortrait = !stillPortrait; mediaKey = ''; updatePortrait() }
+heroVideo.onerror = () => { videoFailed = true; mediaKey = ''; updatePortrait() }
+function updatePortrait() {
+  const awake = run.combos.length > 0, animate = awake && HERO.video && !stillPortrait && !videoFailed
+  const playing = animate && !paused && !run.offers.length && !document.hidden && !inspecting && (!live || run.state === 'playing')
+  const key = [awake, animate, playing].join(':'); if (key === mediaKey) return; mediaKey = key
+  heroPortrait.src = import.meta.env.BASE_URL + 'realm/' + (awake ? 'awaken-hd' : 'bust-hd') + '/' + HERO.bust + '.jpg'
+  heroVideo.poster = heroPortrait.src
+  heroVideo.hidden = !animate; heroPortrait.hidden = animate
+  $('portrait-toggle').hidden = !awake || videoFailed
+  $('portrait-toggle').textContent = stillPortrait ? '영상으로 보기' : '원화로 보기'
+  if (animate && !heroVideo.getAttribute('src')) heroVideo.src = import.meta.env.BASE_URL + 'realm/awaken-loop/' + HERO.bust + '.mp4'
+  if (playing) void heroVideo.play().catch(() => { stillPortrait = true; mediaKey = ''; updatePortrait() }); else heroVideo.pause()
+}
+function layoutTrial() {
+  rotationBlocked = live && run.state === 'playing' && innerWidth <= 700 && innerHeight > innerWidth
+  $('rotate-guide').hidden = !rotationBlocked
+  document.body.classList.toggle('raid-running', live)
+  if (rotationBlocked) { paused = true; resetInput(); shown = ''; showOverlay() }
+}
+window.addEventListener('resize', layoutTrial)
+let pendingSeed = vanguardToken ? Number(query.get('seed')) >>> 0 : crypto.getRandomValues(new Uint32Array(1))[0]!
+const notifyVanguardStart = () => { if (vanguardToken) window.parent.postMessage({ type: 'hanbal.haebi.vanguard-start', token: vanguardToken }, location.origin) }
+const base = import.meta.env.BASE_URL + 'realm/'
+Promise.all([...imagePaths, ...heroArtFiles()].map(path => new Promise<void>((resolve, reject) => { const img = new Image(); img.onload = () => { images.set(path, img); resolve() }; img.onerror = reject; img.src = base + path }))).then(() => { $<HTMLButtonElement>('start').disabled = false; $('start').textContent = startLabel(); renderStageMenu(); schedule() }).catch(() => { $('start').textContent = '그림을 불러오지 못했어요. 새로고침해 주세요.' })
+function resetInput() { keys.clear(); destination = null; dash = false; skill = false; acc = 0 }
+function begin(sameSeed = false) {
+  if (!sameSeed && !vanguardToken) pendingSeed = crypto.getRandomValues(new Uint32Array(1))[0]!
+  sound.unlock(); hidePowerHint(); notifyVanguardStart(); run = newRun(pendingSeed); live = true; paused = false; shown = ''; loadoutKey = ''; resetInput(); last = 0
+  $('skill-cutin').hidden = true; cutinUntil = 0
+  $('menu').hidden = true; $('play').hidden = false; $('overlay').hidden = true; $<HTMLButtonElement>('pause').disabled = false; schedule()
+  $<HTMLButtonElement>('start').blur(); window.scrollTo(0, 0)
+  layoutTrial()
+}
+$('start').onclick = () => begin()
+function pause() { if (!live || run.state !== 'playing' || run.offers.length) return; paused = !paused; resetInput(); shown = ''; showOverlay(); schedule() }
+$('pause').onclick = pause
+$('dash').onclick = () => { if (!paused && !run.offers.length) dash = true; $('dash').blur() }
+$('skill').onclick = () => { if (!paused && !run.offers.length) skill = true; $('skill').blur() }
+window.addEventListener('keydown', e => {
+  if (!live) return
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) || e.key === ' ' && e.target === document.body) e.preventDefault()
+  if (e.key === 'Escape' && !e.repeat) { pause(); return }
+  if (paused || inspecting || run.offers.length || run.state !== 'playing') return
+  if (e.target instanceof HTMLButtonElement && (e.key === ' ' || e.key === 'Enter')) return
+  keys.add(e.key.toLowerCase()); if (e.key === 'Shift' && !e.repeat) dash = true; if (e.key === ' ' && !e.repeat) skill = true
+})
+window.addEventListener('keyup', e => keys.delete(e.key.toLowerCase()))
+window.addEventListener('blur', () => {
+  resetInput()
+  // Read-only visual QA can run without stealing focus from the user's other apps.
+  const backgroundReview = import.meta.env.DEV && query.has('review') && query.has('background')
+  if (!backgroundReview && live && run.state === 'playing') { paused = true; shown = ''; showOverlay() }
+})
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { heroVideo.pause(); mediaKey = ''; cancelAnimationFrame(raf); raf = 0; resetInput(); if (live && run.state === 'playing') paused = true; shown = ''; showOverlay(); sound.frame(run, live, true) }
+  else { last = 0; schedule() }
+})
+function point(e: PointerEvent) {
+  const r = canvas.getBoundingClientRect(), scale = Math.min(r.width / C.width, r.height / C.height)
+  // object-fit:contain may letterbox the canvas on short or narrow landscape screens.
+  destination = { x: Math.max(0, Math.min(C.width, (e.clientX - r.left - (r.width - C.width * scale) / 2) / scale)), y: Math.max(0, Math.min(C.height, (e.clientY - r.top - (r.height - C.height * scale) / 2) / scale)) }
+}
+canvas.onpointerdown = e => { if (!live || paused || inspecting || run.offers.length || run.state !== 'playing') return; (document.activeElement as HTMLElement)?.blur(); canvas.setPointerCapture(e.pointerId); point(e) }
+canvas.onpointermove = e => { if (canvas.hasPointerCapture(e.pointerId)) point(e) }
+canvas.onpointerup = e => { if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId) }
+canvas.onpointercancel = () => { destination = null }
+function routeHint(k: Power) { return kitCombos(kit).filter(c => k in c.needs).map(c => `${c.name}: ${Object.entries(c.needs).map(([key, n]) => `${POWERS[key as Power].name} ${n}`).join(' + ')}`).join('<br>') || '모든 공격 능력과 함께 효과를 냅니다.' }
+function showOverlay() {
+  const state = !live ? '' : run.state !== 'playing' ? run.state : run.offers.length ? 'upgrade:' + run.offers.join(',') : paused ? 'pause' : ''
+  if (!state) { shown = ''; $('overlay').hidden = true; return }
+  if (state === shown) return
+  hidePowerHint()
+  shown = state; const overlay = $('overlay'); overlay.hidden = !state; if (!state) return
+  resetInput()
+  if (state.startsWith('upgrade')) {
+    overlay.innerHTML = `<div class="panel upgrade"><small>기세가 차올랐다 · 레벨 ${run.level + 1}</small><h2>어떤 힘을 더할까?</h2><p>선택하는 동안 전투는 멈춥니다. 선택 시 체력 +${C.levelHeal}</p><div class="choices">${run.offers.map(k => { const p = POWERS[k]; return `<button data-up="${k}" style="--accent:${p.color}"><span class="rune">${powerIcon(k)}</span><small>${run.ranks[k] ? '강화' : '새 능력'} · ${run.ranks[k] + 1}/${p.max}</small><b>${p.name}</b><span>${p.desc}</span><em>${routeHint(k)}</em></button>` }).join('')}</div><button id="reroll" ${run.rerolls ? '' : 'disabled'}>다른 선택지 · ${run.rerolls}회 남음</button></div>`
+    overlay.querySelectorAll<HTMLButtonElement>('[data-up]').forEach(b => b.onclick = () => { if (choose(run, b.dataset.up as Power)) { shown = ''; showOverlay(); updateHud() } })
+    overlay.querySelector('.panel>p')!.textContent += ` · 공격은 ${weapon} 포함 3종, 보조 능력은 별도.`
+    if (run.level === 1) { $<HTMLButtonElement>('reroll').disabled = true; $('reroll').textContent = '첫 공격 능력을 골라 주세요' }
+    $('reroll').onclick = () => { if (reroll(run)) { shown = ''; showOverlay() } }
+  } else if (state === 'pause') {
+    overlay.innerHTML = '<div class="panel"><small>장수 열전</small><h2>잠시 숨 고르기</h2><p>성장과 전투는 그대로 기다립니다.</p><button id="resume" class="primary">계속 싸우기</button><button id="quit">출전 화면으로</button></div>'
+    $('resume').onclick = () => { paused = false; shown = ''; last = 0; showOverlay() }; $('quit').onclick = menu
+    if (vanguardToken) { $('quit').textContent = '지금 확보한 돌파로 귀환'; $('quit').onclick = withdraw }
+    else if (mode === 'stage') { $('quit').textContent = '물러나기 · 버틴 만큼 금 받기'; $('quit').onclick = withdraw }
+  } else {
+    // 독립 열전: 판이 끝나면 한 번만 금을 주고 기록한다 (지면 버틴 만큼 · 깨면 휘장 + 깸 금)
+    if (mode === 'stage' && rewarded !== run) { rewarded = run; const gold = runGold(run); reward = { gold, ...record(meta, run.stage, gold, run.state === 'won', run.t, heroId) }; saveMeta(meta) }
+    overlay.innerHTML = `<div class="panel result ${run.state}"><small>${run.state === 'won' ? '열전 완수' : '다시 도전할 시간'}</small><h2>${run.state === 'won' ? mode === 'stage' ? `${stageName(run.stage)} 토벌 완료` : `${HERO.name}, 산길의 폭풍이 되다` : run.hp <= 0 ? `${josa(weapon, '을', '를')} 다시 들어 올리자` : run.t < runDuration(run) ? '물러나 다음을 기약한다' : '두목을 놓쳤다'}</h2><p>${Math.floor(run.t / 60)}분 ${Math.floor(run.t % 60)}초 · ${run.kills.toLocaleString()}명 격파 · Lv.${run.level}</p><div class="result-combos">${run.combos.length ? kitCombos(kit).filter(c => run.combos.includes(c.id)).map(c => `<b>${c.name}</b>`).join('') : '다음 판에는 조합 비전을 완성해 보세요.'}</div>${mode === 'stage' ? `<p class="reward">금 <b>+${reward.gold.toLocaleString()}</b> · 보유 ${meta.gold.toLocaleString()}${reward.first ? ` · <strong><img class="won-emblem" src="${import.meta.env.BASE_URL}realm/raid/emblem-${run.stage}.png" alt="">${stageName(run.stage)} 휘장 획득</strong>` : ''}${reward.heroFirst && run.stage === SEAL_STAGE && TRUE_WAKE.has(heroId) ? ` · <strong class="tw-open">본편에서 ${josa(HERO.name, '이', '가')} 진각성할 수 있습니다</strong>` : ''}</p>` : ''}<p>누적 피해 ${Math.round(run.damage).toLocaleString()}${mode === 'stage' ? '' : ' · 본편 병력 손실 없음'}</p><button id="retry" class="primary">같은 운으로 재도전</button><button id="new-run">새로운 운으로 출전</button><button id="quit">출전 화면으로</button>${mode === 'stage' ? '<button id="to-shop">상점 · 영구 강화</button>' : ''}${window.parent !== window ? '<button id="return">본편으로 돌아가기</button>' : ''}</div>`
+    if (vanguardToken) {
+      overlay.querySelector('small')!.textContent = '선봉 돌파 결과'
+      overlay.querySelector('h2')!.textContent = run.breaches === 3 ? '길은 열었다. 본대여, 진격하라!' : `${run.breaches}/3 돌파 확보 · 본대로 귀환`
+      overlay.querySelector('.result-combos')!.textContent = isBreakthrough(run.breaches) ? breakthroughText(run.breaches) : ''
+      for (const id of ['retry', 'new-run', 'quit']) $(id).hidden = true
+    }
+    $('retry').onclick = () => begin(true); $('new-run').onclick = () => begin(); $('quit').onclick = menu
+    if ($('to-shop')) $('to-shop').onclick = () => { menu(); renderShop(); $('shop').hidden = false }
+    if ($('return')) {
+      const back = $<HTMLButtonElement>('return')
+      if (vanguardToken) {
+        back.textContent = '돌파 성과를 반영하고 합전 계속'
+        back.onclick = () => { back.disabled = true; window.parent.postMessage({ type: 'hanbal.haebi.vanguard-result', token: vanguardToken, breaches: run.breaches, elapsed: run.t }, location.origin) }
+      } else if (trialToken && run.state === 'won') {
+        back.textContent = '각성하고 본편으로 귀환'
+        back.onclick = () => {
+          back.disabled = true; back.textContent = '각성 보상 저장 중…'
+          window.parent.postMessage({ type: 'hanbal.haebi.trial-result', token: trialToken, result: run.state, elapsed: run.t }, location.origin)
+          window.setTimeout(() => { if (back.isConnected) { back.disabled = false; back.textContent = '귀환 다시 시도' } }, 4000)
+        }
+      } else back.onclick = () => location.replace('about:blank')
+    }
+  }
+}
+let rewarded: HaebiRun | null = null, reward = { gold: 0, first: false, heroFirst: false }
+function withdraw() { run.state = 'lost'; run.offers = []; paused = false; shown = ''; showOverlay() }
+function menu() { renderStageMenu(); hidePowerHint(); live = false; paused = false; shown = ''; resetInput(); run = newRun(7); loadoutKey = ''; $('menu').hidden = false; $('play').hidden = true; $('overlay').hidden = true; $<HTMLButtonElement>('pause').disabled = true; layoutTrial(); updateHud() }
+window.addEventListener('message', e => {
+  if (e.origin !== location.origin || e.source !== window.parent || !trialToken || e.data?.token !== trialToken || e.data?.type !== 'hanbal.haebi.trial-error') return
+  const back = $<HTMLButtonElement>('return'); if (back) { back.disabled = false; back.textContent = '귀환 다시 시도'; back.insertAdjacentHTML('afterend', '<p class="save-error"></p>'); $('overlay').querySelector('.save-error')!.textContent = String(e.data.reason) }
+})
+function updateHud() {
+  $('health').textContent = `${Math.ceil(run.hp)} / ${run.maxHp}`; $('hp-fill').style.width = `${Math.max(0, run.hp / run.maxHp * 100)}%`
+  $('phase').textContent = phase(run);
+  if (mode === 'vanguard') $('hint').textContent = `전위대장 ${run.breaches}/3 돌파 · 일시정지에서 성과를 갖고 귀환 가능`;  const remaining = Math.max(0, Math.ceil(runDuration(run) - run.t)); $('clock').textContent = `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`
+  $('kills').textContent = run.kills.toLocaleString(); $('level').textContent = `Lv.${run.level}`
+  $('xp-fill').style.width = `${run.level >= C.maxLevel ? 100 : Math.min(100, run.xp / xpNeeded(run) * 100)}%`
+  $('rank-title').textContent = run.combos.length ? `각성 · ${HERO.name}` : HERO.name
+  $('reaction').textContent = !live ? mode === 'vanguard' ? '내가 길을 열겠다. 뒤따라와!' : `${weapon} 하나로 시작하는 열전` : run.hurt > 0 ? '버텨낼 수 있어!' : run.attack > 0 ? '길을 열어라!' : run.combos.length ? '이제, 몰아칠 차례다.' : run.moving ? '내 뒤를 따라와.' : '빈틈을 기다리는 중'
+  $('character').classList.toggle('awakened', run.combos.length > 0); $('character').classList.toggle('hurt', run.hurt > 0)
+  $('announcement').textContent = run.messageTime > 0 ? run.message : ''; $('announcement').classList.toggle('visible', run.messageTime > 0)
+  $('streak').textContent = run.comboKills >= 15 ? `${run.comboKills} 연속 격파` : ''
+  for (const [id, cd, title] of [['dash', run.dashCd, '회피 Shift'], ['skill', run.skillCd, `${K.skill} Space`]] as const) {
+    const b = $<HTMLButtonElement>(id); b.textContent = cd > 0 ? `${title} · ${cd.toFixed(1)}초` : title; b.disabled = cd > 0 || paused || !!run.offers.length || run.state !== 'playing'
+  }
+  const key = JSON.stringify(run.ranks) + run.combos.join(',')
+  if (key !== loadoutKey) {
+    loadoutKey = key
+    hidePowerHint()
+    $('loadout').innerHTML = (Object.keys(POWERS) as Power[]).filter(k => run.ranks[k]).map(k => `<button class="power-slot" data-power="${k}" aria-label="${POWERS[k].name} ${run.ranks[k]}단계 / 최대 ${POWERS[k].max}단계" style="--accent:${POWERS[k].color}">${powerIcon(k)}<b>${run.ranks[k]}</b></button>`).join('')
+    $('combo-badges').innerHTML = kitCombos(kit).filter(c => run.combos.includes(c.id)).map(c => `<span>${COMBO_ART.has(c.id) ? `<img src="${import.meta.env.BASE_URL}realm/raid/${c.id}.png" alt="">` : powerIcon(Object.keys(c.needs)[0] as Power)}<b>${c.name}</b></span>`).join('')
+  }
+}
+function frame(now: number) {
+  raf = 0; if (document.hidden) return
+  const dt = last ? Math.min(.1, (now - last) / 1000) : 0; last = now
+  if (live && !paused && !inspecting && !rotationBlocked && run.state === 'playing' && !run.offers.length) {
+    acc += dt
+    while (acc >= 1 / 120) {
+      let x = Number(keys.has('d') || keys.has('arrowright')) - Number(keys.has('a') || keys.has('arrowleft')), y = Number(keys.has('s') || keys.has('arrowdown')) - Number(keys.has('w') || keys.has('arrowup'))
+      if (x || y) destination = null
+      else if (destination) { const dx = destination.x - run.x, dy = destination.y - run.y, len = Math.hypot(dx, dy); if (len < 5) destination = null; else { x = dx / len; y = dy / len } }
+      const skillBefore = run.skillCd
+      stepHaebi(run, { x, y, dash, skill }, 1 / 120)
+      if (run.skillCd > skillBefore) showSkillCutin()
+      dash = false; skill = false; acc -= 1 / 120
+      if (run.offers.length || run.state !== 'playing') { acc = 0; break }
+    }
+  }
+  if (live) drawField(ctx, images, run, destination)
+  if (!live || run.t >= cutinUntil) $('skill-cutin').hidden = true
+  sound.frame(run, live, paused || inspecting || rotationBlocked)
+  updatePortrait(); updateHud(); showOverlay(); schedule()
+}
+function schedule() { if (!raf && !document.hidden) raf = requestAnimationFrame(frame) }
+updateHud(); schedule()
+if (import.meta.env.DEV && new URLSearchParams(location.search).has('review')) {
+  import('./raid/haebi-review.ts').then(({ installReview }) => installReview(root, s => { notifyVanguardStart(); run = s; live = true; paused = !s.offers.length; shown = ''; loadoutKey = ''; resetInput(); $('menu').hidden = true; $('play').hidden = false; $<HTMLButtonElement>('pause').disabled = false; layoutTrial(); showOverlay(); updateHud(); schedule() }, mode, kit))
+}

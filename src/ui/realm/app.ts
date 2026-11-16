@@ -1,3 +1,12 @@
+import { mapSquad } from './map-unit.ts'
+import { hasAwakeningTrial } from '../../realm/trial-rules.ts'
+import { kitOfSprite } from '../../raid/hero-kit.ts'
+import { josa } from '../../core/josa.ts'
+import { KITS, trialWinValid } from '../../raid/haebi.ts'
+import { mergeRoster, raidSealed, META_KEY, SEAL_STAGE, type RosterHero } from '../../raid/link.ts'
+/** 각성 시련의 무기 묶음 — 각성 전 전투 그림의 무기로 */
+const trialKit = (x: Parameters<typeof generalSprite>[0] & object) => kitOfSprite(generalSprite({ ...x, ascended: false }))
+import { trialBlock, completeTrial } from '../../realm/awakening-trial.ts'
 /**
  * 칠십팔국 — 앱 화면 (docs/realm/FLOW.md §5)
  *
@@ -9,7 +18,7 @@
 import { faceFile, noteAscended } from './face.ts'
 import { aiOrders, strikeLive } from '../../realm/ai.ts'
 import { headcount, strength, type Equip, type UnitKind } from '../../realm/battle.ts'
-import { bustOf, generalSprite, CUSTOM_ICON, FACTION_ART, GOOD_ICON, MIGRANT_ANIM, SEASON_ICON, SOL_ANIM2, SOL_ANIM_AR, UNIT_ICON, flagIcon, kidBust, nodeIcon, nodePos, noteGrowing, noteKids } from '../../realm/data/art.ts'
+import { bustOf, generalSprite, CUSTOM_ICON, FACTION_ART, GOOD_ICON, MIGRANT_ANIM, SEASON_ICON, UNIT_ICON, flagIcon, kidBust, nodeIcon, nodePos, noteGrowing, noteKids } from '../../realm/data/art.ts'
 import { AWAKEN2_LOOP, AWAKEN_ART, AWAKEN_LOOP, loopFile, loopTakes, loopTakes2 } from '../../realm/data/awaken-art.ts'
 import { LOCKED_TRUE_WAKE_PREVIEW, TRUE_WAKE } from '../../realm/data/awaken2.ts'
 import { NATIONS, type NationInfo } from '../../realm/data/nations.ts'
@@ -28,6 +37,7 @@ import { CARDS, GRAND_FEST, cardFallback, cardInfo } from '../../realm/data/card
 import { cardPreview, pirateMission, type CardFx } from '../../realm/events.ts'
 import { festName, festMonth, festNextIn } from '../../realm/festival.ts'
 import { mountDuel, type DuelSide } from '../../duel/view.ts'
+import { duelMuOf } from '../../duel/power.ts'
 import { clampTier } from '../../realm/tier.ts'
 import {
   ASK_KIND_NAME as ASK_KIND_NAME_KO, ASK_NAME as ASK_NAME_KO, deedText, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME as PLOT_NAME_KO, askLine, arriveWhen, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME as UNIT_NAME_KO, reportText, seasonLabel, dateLabel, spanLabel, turnsLabel, turnText, turnWord, whyLine, NODE_NOW, BUILD_NAME as BUILD_NAME_KO, BOW_NAME, CONCEAL_LINE, GOOD_NAME as GOOD_NAME_KO, MEET_HOW, tagNow,
@@ -56,7 +66,7 @@ import { foundable, joinable, partiesOf, partyCost, partyMoves, partyRoute, part
 import { ascendNeed, canCohabit, canWed, heroJobOf, heroSeen, honeyLeft, idleHeroOrders, together, inheritOf, isRuler, postHero, rulerOf, tieOf, wanderersFor, wedCost, wooable } from '../../realm/heroes.ts'
 import { guardOptions } from '../../realm/council.ts'
 import type { Approach, Army, BuildWhat, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, Party, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic, WooApproach } from '../../realm/types.ts'
-import { P } from '../../tune/params.ts'
+import { HAEBI_RUN, HAEBI_STAGES, P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, noReachWhy, visibleNodes, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
 import { LEGACY_CSS, bringHtml, clearBring, toggleBring } from './legacy.ts'
 import { TOWN_CSS, townCheer, townVeilHtml, townViewHtml, type TownSlot } from './townview.ts'
@@ -154,6 +164,10 @@ const APPROACH_NAME = nameTable('approach', APPROACH_NAME_KO)
 const REL_NAME = nameTable('rel', { war: '전쟁', neutral: '중립', truce: '화친', ally: '동맹' } as const)
 
 export interface AppHost {
+  /** Persist a same-turn trial reward before the app adopts it. null = durable success. */
+  onCheckpoint?(next: Realm): string | null
+  /** Isolated review harness; never overwrite the player's order draft. */
+  isolated?: boolean
   /** 플레이 기록을 다 지운다(계정·설정은 남김) — 로그인했으면 서버 것부터. 못 지웠으면 false (형 10-24) */
   /** 플레이 기록 지우기 — 다 지웠으면 null(곧 새로고침), 못 지웠으면 까닭 */
   resetPlay?(): Promise<string | null>
@@ -244,6 +258,7 @@ function goalFolded(): boolean {
   try { return localStorage.getItem(GOAL_FOLD_KEY) === '1' } catch { return false }
 }
 function muted(): boolean {
+  if (import.meta.env.DEV && new URLSearchParams(location.search).has('silent')) return true
   try { return localStorage.getItem(MUTE_KEY) === '1' } catch { return false }
 }
 // 확장자가 이미 붙은 이름(snd() 의 'realm/sfx/x.ogg')엔 또 붙이지 않는다 — 전엔 /.w+$/ 라 「.ogg.ogg」로 받아 깃발·징병·출정 소리가 안 났다 (형 10-24)
@@ -777,6 +792,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let tut = { seed: -1, i: 0, acts: new Set<string>(), off: false }
   const TUT_KEY = 'hanbal.realm.tut'
   const loadTut = (): void => {
+    if (host.isolated) return
     if (realm === null || realm.region !== 'tutorial') return
     if (tut.seed === realm.seed) return
     tut = { seed: realm.seed, i: 0, acts: new Set(), off: false }
@@ -786,6 +802,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     } catch { /* 처음부터 */ }
   }
   const saveTut = (): void => {
+    if (host.isolated) return
     try { localStorage.setItem(TUT_KEY, JSON.stringify({ seed: tut.seed, i: tut.i, acts: [...tut.acts], off: tut.off })) } catch { /* 저장 못 하는 곳 */ }
   }
 
@@ -1519,6 +1536,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const chip = (ok: boolean, ic: string, label: string, tip: string): string => `<i class="twk${ok ? ' ok' : ''}" data-tip="${esc(tip)}">${ic}<b>${label}</b>${ok ? '<u>✓</u>' : ''}</i>`
     const conds = woke ? '' : `<span class="twcs">${chip(asc, '✦', tr('wake.asc'), tr('wake.ascTip'))}`
       + `${chip(asc && fl >= need, '🔥', tr('wake.flame', { a: Math.min(fl, need), b: need }), tr('wake.flameTip', { n: need }))}`
+      + `${chip((realm?.raidSeals ?? []).includes(x.id), '🏯', tr('wake.raid', { stage: HAEBI_STAGES[SEAL_STAGE].name }), tr('wake.raidTip', { stage: HAEBI_STAGES[SEAL_STAGE].name }))}`
       + `${chip(false, '⚔', tr('wake.big'), tr('wake.bigTip', { pct: Math.round(R.trueWakeBig * 100) }))}</span>`
     const canView = woke || LOCKED_TRUE_WAKE_PREVIEW
     return `<button class="twc${woke ? ' on' : ''}"${canView ? ` data-act="bust-view" data-src="${ART}awaken2-hd/${bo}.jpg" data-loop="${loop ?? ''}" data-elem="${elemOf(x)}"` : ' disabled'} data-tip="${esc(tr(woke ? 'wake.tipDone' : canView ? 'wake.tipView' : 'wake.tipLocked'))}">`
@@ -1539,6 +1557,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       : `<img class="flm" src="${ART}fx/awaken/slot-off.png" alt="">`).join('')
     // 깨어난 뒤의 불꽃은 각성기의 연료 — 「각성」 붓글씨 곁에 남은 불꽃 (위원회 11-04 던파 ①)
     if (x.ascended === true) return `<span class="flms on" data-act="flm" data-why="${tr('flame.onWhy', { n, max: P.realm.ascendWins })}"><img class="flmw" src="${ART}fx/awaken/word.png" alt="${tr('wake.asc')}">${cells}</span>`
+    if (hasAwakeningTrial(x)) return `<span class="flms" data-act="flm" data-why="${x.trialReady ? '시련이 열렸습니다. 장수 상세에서 도전해 각성하세요.' : '공훈으로 각성 시련을 열고, 시련을 통과하면 각성합니다.'}">${cells}</span>`
     return `<span class="flms" data-act="flm" data-why="${tr('flame.why', { n, max: Math.round(P.realm.ascendWins), first: free > 0 ? tr('flame.first') : '' })}">${cells}</span>`
   }
   /**
@@ -2001,7 +2020,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const kinds = (Object.entries(a.mix) as Array<[UnitKind, number]>).filter(([, v]) => v > 0).sort((x, y) => y[1] - x[1]).map(([k]) => k)
       const top = kinds[0] ?? 'spear'
       return {
-        squad: squadOf(kinds),
+        squad: mapSquad(kinds, hero, ART),
         army: a.id, node: a.at, men: headcount(forceOf(r, a)), morale: a.morale, sel: armySel.includes(a.id), going: pick[a.id] !== undefined,
         img: file !== undefined ? `${ART}bust/${file}.jpg` : `${ART}icon/${UNIT_ICON[top]}.png`,
         ...(a.march !== null ? { march: { from: a.march.from, to: a.march.to, left: a.march.left } } : {}),
@@ -2022,7 +2041,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const hero = known && a.hero !== null ? r.heroes[a.hero] : undefined
       const file = hero !== undefined ? faceFile(hero.id) : undefined
       tokens.push({ army: a.id, node: a.march.from, men: known ? headcount(forceOf(r, a)) : 0, sel: false, going: false, foe: a.faction,
-        img: file !== undefined ? `${ART}bust/${file}.jpg` : `${ART}icon/${UNIT_ICON[kinds[0] ?? 'spear']}.png`, squad: squadOf(known ? kinds : []),
+        img: file !== undefined ? `${ART}bust/${file}.jpg` : `${ART}icon/${UNIT_ICON[kinds[0] ?? 'spear']}.png`, squad: mapSquad(known ? kinds : [], hero, ART),
         ...(known ? { known: true } : {}), ...(sneaky.has(a.id) ? { sneak: true } : {}), march: { from: a.march.from, to: a.march.to, left: a.march.left } })
     }
     // 빈땅에 둔 척후도 그 고을에 머무는 적을 본다. 길 위의 적과 달리 고을 위에 말을 둔다.
@@ -2031,7 +2050,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const hero = a.hero !== null ? r.heroes[a.hero] : undefined
       const file = hero !== undefined ? faceFile(hero.id) : undefined
       tokens.push({ army: a.id, node: a.at, men: headcount(forceOf(r, a)), sel: false, going: false, foe: a.faction, known: true,
-        img: file !== undefined ? `${ART}bust/${file}.jpg` : `${ART}icon/${UNIT_ICON[kinds[0] ?? 'spear']}.png`, squad: squadOf(kinds) })
+        img: file !== undefined ? `${ART}bust/${file}.jpg` : `${ART}icon/${UNIT_ICON[kinds[0] ?? 'spear']}.png`, squad: mapSquad(kinds, hero, ART) })
     }
     // 개척단의 말 — 군대 말처럼 누르면 고르고 갈 곳이 빛난다 (지난 계절부터 길 위에 있으면 길 가운데)
     for (const p of partiesOf(r, me())) {
@@ -2396,7 +2415,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 배우는 판의 띠 — 지금 할 일 하나 · 눌러야 할 곳이 빛난다 (tutorial.ts) */
   function paintTut(r: Realm): void {
     const band = $('.tutband')
-    if (realm === null || realm.region !== 'tutorial' || front !== null || prologue !== null || (realm.outcome && !realm.endless)) {
+    if (host.isolated || realm === null || realm.region !== 'tutorial' || front !== null || prologue !== null || (realm.outcome && !realm.endless)) {
       band.innerHTML = ''
       tutSheet.textContent = ''
       spot.set(undefined, null)
@@ -2796,17 +2815,6 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const mix = (Object.entries(a.mix) as Array<[UnitKind, number]>).filter(([, v]) => v > 0).sort((x, y) => y[1] - x[1]).map(([k, v]) => `${UNIT_NAME[k]} ${v}`).join(' · ')
     const hero = a.hero !== null ? r.heroes[a.hero] : undefined
     return tr('foe.known', { head, n: headcount(forceOf(r, a)), mix, hero: hero !== undefined ? tr('foe.hero', { name: hero.name }) : tr('foe.noHero') })
-  }
-  function squadOf(kinds: readonly UnitKind[]): Array<{ src: string; ar: number; r?: number }> {
-    const anim = (k: UnitKind | undefined): string => (k === undefined ? 'spear' : k === 'boat' ? 'marine' : k)
-    const a = anim(kinds[0])
-    const b = anim(kinds[1] ?? kinds[0])
-    // 새 20컷 띠가 있으면 그것 (art.ts SOL_ANIM2) — 병사 칸은 옛 비, 안의 그림만 넓다
-    return [a, b === a ? a : b, a].map((k) => {
-      const ar = SOL_ANIM_AR[k] ?? 1
-      const a2 = SOL_ANIM2[k]
-      return a2 !== undefined ? { src: `${ART}anim2/${k}.png`, ar, r: a2 / ar } : { src: `${ART}anim/${k}.png`, ar }
-    })
   }
 
   /** 그 나라가 이기는 데 얼마나 다가섰나 (0~1) — 승리 길 넷 가운데 가장 찬 것 · 장 판·배우는 판은 도읍 차지로 */
@@ -4352,12 +4360,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const a = r.heroes[c.hero]
     const b = r.heroes[c.hero2]
     if (a === undefined || b === undefined) return
-    const side = (h: Hero): DuelSide => { const bb = bustOf(h.id); return { name: h.name, mu: h.mu, sprite: generalSprite(h), ...(bb !== undefined ? { portrait: bb } : {}) } }
+    const side = (h: Hero): DuelSide => { const bb = bustOf(h.id); return { name: h.name, mu: duelMuOf(h), sprite: generalSprite(h), ...(bb !== undefined ? { portrait: bb } : {}) } }
     const s = c.season
     const seed = (r.seed ^ Math.imul(s + 1, 2654435761) ^ 0xd0e1) >>> 0
     void mountDuel({ me: side(a), foe: side(b), tier: clampTier(r.tier ?? 1), seed }).then((res) => {
       if (realm?.card?.grand !== true || realm.card.season !== s) return
-      cardHeld[`card:${s}`] = (res === undefined ? a.mu >= b.mu : res === 'win') ? 1 : 0
+      cardHeld[`card:${s}`] = (res === undefined ? duelMuOf(a) >= duelMuOf(b) : res === 'win') ? 1 : 0
       answers[`card:${s}`] = false
       delete answers[`hush:${s}`]
       saveDraft()
@@ -4372,7 +4380,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     openFrame(`${CONTEST}?seed=${seed}&bow=${bow}&id=contest-archery&back=about:blank`, tr('frame.contest'))
   }
 
-  function openFrame(src: string, title: string): void {
+  function openFrame(src: string, title: string): HTMLDivElement {
     const ov = document.createElement('div')
     ov.className = 'nightov'
     ov.innerHTML = `<iframe src="${src}" title="${title}"></iframe><button class="btn" data-close>${tr('frame.close')}</button>`
@@ -4398,10 +4406,83 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         close() // 다른 곳으로 나갔다
       }
     })
+    return ov
+  }
+
+  /**
+   * 장수 열전 잇기 (raid/link.ts · 형 11-16) — 우리 장수를 열전 명부에 적고(열전에서 데려갈 수 있게),
+   * 열전에서 마지막 스테이지를 깬 장수를 이 판에 옮겨 적는다(진각성 자격 · heroes.trueWakeOf). 바뀌었으면 true
+   */
+  function raidLook(r: Realm, h: Hero): RosterHero | null {
+    const bust = bustOf(h.id); if (bust === undefined) return null
+    const base = generalSprite({ ...h, ascended: false }), awake = generalSprite({ ...h, ascended: true })
+    return { id: h.id, name: h.name, home: `${r.factions[h.faction]?.name ?? '떠돌이'}의 장수`, bust, sprite: base, ...(awake !== base ? { awake } : {}), kit: kitOfSprite(base), video: AWAKEN_LOOP.has(bust) }
+  }
+  /** 장수 판에서 곧장 열전으로 — 이 장수로 독립 열전(스테이지·상점)을 연다. 닫으면 깬 기록을 다시 읽어 진각성 칸을 켠다 */
+  function openRaidStage(id: string): void {
+    if (realm === null) return
+    const h = realm.heroes[id], look = h !== undefined && h.faction === realm.player ? raidLook(realm, h) : null
+    if (h === undefined || look === null) return
+    saveDraft()
+    const q = new URLSearchParams({ hero: look.id, name: look.name, home: look.home, bust: look.bust, sprite: look.sprite, kit: look.kit, video: look.video ? '1' : '0' })
+    if (look.awake !== undefined) q.set('awake', look.awake)
+    const ov = openFrame(`${import.meta.env.BASE_URL}raid.html?${q}`, `${h.name}의 열전`)
+    ov.querySelector('iframe')!.allow = 'fullscreen'
+    const done = new MutationObserver(() => { if (ov.isConnected) return; done.disconnect(); if (syncRaidLink()) { saveDraft(); paint() } })
+    done.observe(root, { childList: true })
+  }
+  function syncRaidLink(): boolean {
+    if (realm === null || host.isolated) return false
+    const r = realm
+    const list: RosterHero[] = []
+    for (const h of Object.values(r.heroes)) {
+      const look = h.faction === r.player ? raidLook(r, h) : null
+      if (look !== null) list.push(look)
+    }
+    mergeRoster(list)
+    const seals = raidSealed().filter(id => r.heroes[id] !== undefined)
+    if (JSON.stringify(seals) === JSON.stringify(r.raidSeals ?? [])) return false
+    if (seals.length) r.raidSeals = seals; else delete r.raidSeals
+    return true
+  }
+  // 열전을 다른 탭에서 깼다 — 돌아오면 진각성 칸이 곧바로 켜진다
+  window.addEventListener('storage', (e) => { if (e.key === META_KEY && syncRaidLink()) paint() })
+
+  let activeTrial: { campaign: Realm; hero: string; token: string; frame: HTMLIFrameElement; overlay: HTMLDivElement } | null = null
+  function openHaebiTrial(id: string): void {
+    if (realm === null) return
+    const why = trialBlock(realm, id)
+    if (why) { goToast(why); return }
+    if (!host.onCheckpoint) { goToast('이 화면에서는 각성 보상을 저장할 수 없습니다.'); return }
+    if (activeTrial?.overlay.isConnected) return
+    saveDraft()
+    const token = Array.from(crypto.getRandomValues(new Uint32Array(4)), n => n.toString(16)).join('-')
+    // 열전 화면에 겉모습만 넘긴다 (이름·초상·전투 그림·무기 묶음) — 보상은 이쪽 기록(토큰·장수 id)으로만 준다
+    const h = realm.heroes[id]!, base = generalSprite({ ...h, ascended: false }), awake = generalSprite({ ...h, ascended: true }), bust = bustOf(id) ?? ''
+    const look = new URLSearchParams({ trial: token, hero: id, name: h.name, home: `${realm.factions[h.faction]?.name ?? '떠돌이'}의 장수`, bust, sprite: base, kit: kitOfSprite(base), video: AWAKEN_LOOP.has(bust) ? '1' : '0' })
+    if (awake !== base) look.set('awake', awake)
+    if (host.isolated && import.meta.env.DEV) look.set('review', '')
+    const overlay = openFrame(`${import.meta.env.BASE_URL}raid.html?${look}`, `${h.name}의 각성 시련`)
+    const frame = overlay.querySelector('iframe')!
+    frame.allow = 'fullscreen'
+    activeTrial = { campaign: realm, hero: id, token, frame, overlay }
   }
 
   window.addEventListener('message', (ev) => {
     if (ev.origin !== location.origin) return
+    const trial = ev.data as { type?: string; token?: string; result?: string; elapsed?: number }
+    if (trial?.type === 'hanbal.haebi.trial-result') {
+      const a = activeTrial
+      if (!a || !a.overlay.isConnected || ev.source !== a.frame.contentWindow || trial.token !== a.token || realm !== a.campaign) return
+      if (trial.result !== 'won' || !trialWinValid(trial.elapsed)) return
+      const reward = completeTrial(realm, a.hero)
+      const why = reward === null ? '시련 보상을 받을 수 없는 상태입니다.' : host.onCheckpoint ? host.onCheckpoint(reward.next) : '저장 연결이 없습니다.'
+      if (why) { a.frame.contentWindow?.postMessage({ type: 'hanbal.haebi.trial-error', token: a.token, reason: why }, location.origin); return }
+      realm = reward!.next; activeTrial = null; a.overlay.remove(); sheet = { kind: 'hero', id: a.hero }; saveDraft(); paint()
+      goToast(`${josa(realm.heroes[a.hero]?.name ?? '장수', '이', '가')} 시련을 통과해 각성했습니다. 패배해도 각성은 유지됩니다.`)
+      queueAscend(realm, reward!.lines)
+      return
+    }
     // 밤 판의 결과 — 연습은 결과를 안 보낸다 (night-main.ts). skip 은 건너뛰기, seen 이면 진짜 지붕을 본 뒤다
     const m = ev.data as { type?: string; id?: string; result?: Hand['result']; alarm?: boolean; seen?: boolean; rot?: boolean }
     // 세로 폰에서 밤 판이 통째로 눕는다 — 바깥 「닫기」도 같이 눕혀 판의 오른쪽 위에 둔다 (night-main.ts layoutStage)
@@ -4719,6 +4800,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += heroRadar(x, seen, ours)
     h += `<div class="tr3">${traitChips(x, seen)}${artChip(x, seen, icon)}</div>`
     if (ours) h += growthHtml(r, x)
+    if (ours && hasAwakeningTrial(x)) {
+      const why = trialBlock(r, x.id)
+      h += `<div class="trial-card" style="padding:14px;border:1px solid #b99a57;margin:12px 0"><b>${esc(x.name)}의 각성 시련 · ${KITS[trialKit(x)].title}</b><p>${x.trialCleared ? '시련 완료 · 각성은 이 캠페인 동안 유지됩니다.' : why ?? `시련 개방 · ${Math.round(HAEBI_RUN.duration * HAEBI_STAGES.trial.length / 60)}분 도전. 실패해도 무료로 다시 도전할 수 있습니다.`}</p>${x.trialCleared ? '' : `<button class="btn" data-act="haebi-trial" data-id="${x.id}" ${why ? 'disabled' : ''}>각성 시련에 도전</button>`}<small>시련 동안 본편 시간은 흐르지 않습니다.</small></div>`
+    }
+    // 장수 열전 — 이 장수로 독립 열전에 (진각성 그림이 있으면 마지막 스테이지가 진각성 자격 · raid/link.ts)
+    if (ours && bo !== undefined) {
+      const sealed = (r.raidSeals ?? []).includes(x.id), stage = HAEBI_STAGES[SEAL_STAGE].name
+      const line = !tw ? '금과 휘장을 모아 판 밖에서 강해집니다.' : sealed ? `${josa(stage, '을', '를')} 깼습니다 · 진각성 자격을 얻었습니다.` : `이 장수로 ${josa(stage, '을', '를')} 깨면 진각성할 수 있습니다.`
+      h += `<div class="trial-card" style="padding:14px;border:1px solid #6a5a3a;margin:12px 0"><b>장수 열전 · ${KITS[trialKit(x)].title}</b><p>${line}</p><button class="btn" data-act="raid-stage" data-id="${x.id}">이 장수로 열전 출전</button><small>열전 동안 본편 시간은 흐르지 않습니다.</small></div>`
+    }
     // 아는 만큼 — 우리 장수 · 싸워 봤거나 정찰·첩자로 본 장수 · 이름만 들은 장수 (형: "이름 들어본 군주나 적장이랑 싸워본 적장이랑은 구분해야")
     if (!seen) h += `<p class="heardp">${tr('hero.unseen')}</p>`
     else if (!ours && x.faction !== me()) h += `<p class="mute">${tr('hero.seenAsIs')}</p>`
@@ -6676,13 +6767,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * 다른 화면에 다녀오거나 새로고침해도 같은 판·같은 계절이면 그대로 되살린다. 저장이 안 되는 곳이면 그냥 없이 간다.
    */
   function saveDraft(): void {
+    if (host.isolated) return
     if (realm === null) return
+    syncRaidLink()
     // hireShown — 등용 장면을 이미 띄운 떠돌이. 초안과 함께 남겨야 앱이 다시 열려도(새 빌드 · 껐다 켬) 계절 끝에 또 뜨지 않는다 (형 10-25: "마파람 등용 한번 떴었는데 왜 또 뜨지")
     const d = { seed: realm.seed, season: realm.season, player: realm.player, armyOrders, musters, settles, pick, goalStop, landSeen: [...landSeen], scouts, rite, answers, cardHeld, cardPerfect, guards, guardAp, envoys, plots, heroOrders, councils, persuadeBy, wooDone, hands, hireShown: [...hireShown], autoIdle: realm.autoIdle, manual: realm.manual?.[me()] }
     try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)) } catch { /* 저장 못 하는 곳 */ }
   }
 
   function restoreDraft(): void {
+    if (host.isolated) return
     if (realm === null) return
     let d: Record<string, unknown> | null = null
     try { d = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? 'null') as Record<string, unknown> | null } catch { d = null }
@@ -8121,6 +8215,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'card-beat': if (realm?.card) { const k = `card:${realm.card.season}`; cardBeat[k] = (cardBeat[k] ?? 0) + 1 } break
       case 'card-skip': if (realm?.card) cardBeat[`card:${realm.card.season}`] = 99; break
       case 'practice-open': openPractice(); break
+      case 'haebi-trial': openHaebiTrial(d['id']!); return
+      case 'raid-stage': openRaidStage(d['id']!); return
       case 'spar-open': fmoreOpen = false; openSpar(); return
       case 'contest': openContest(); break
       case 'unwed': heroOrders = heroOrders.filter((o) => !(o.kind === 'wed' && (o.a === d['id'] || o.b === d['id']))); break
@@ -9300,10 +9396,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       prologue = fresh ? 0 : null
       looking = false
       resetTurn()
+      syncRaidLink()
       restoreDraft()
       loadSeen()
-      if (r !== null) { noteFaces(r); recordDex(r) } // 열 때 한 번 — 아이 얼굴을 먼저 짝짓고 · 알림 없이 (이 판에서 이미 본 장수)
-      engraveNow(r) // 끝난 판을 열었다 — 아직 안 새긴 공이 있으면 (새기기 전에 창을 닫았거나 옛 빌드였다)
+      if (r !== null) { noteFaces(r); if (!host.isolated) recordDex(r) } // 열 때 한 번 — 아이 얼굴을 먼저 짝짓고 · 알림 없이 (이 판에서 이미 본 장수)
+      if (!host.isolated) engraveNow(r) // 끝난 판을 열었다 — 아직 안 새긴 공이 있으면
       sheet = null
       paint()
       if (fresh && r !== null) coverMap() // 새 판 — 지도 그림을 다 받을 때까지 가린다

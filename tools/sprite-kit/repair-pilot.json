@@ -1,0 +1,662 @@
+{
+  "haebi": {
+    "pipeline": "generated-master"
+  },
+  "aryeong": {
+    "pipeline": "generated-master"
+  },
+  "soseono": {
+    "pipeline": "generated-master"
+  },
+  "heo": {
+    "pipeline": "generated-master"
+  },
+  "gamsil": {
+    "pipeline": "generated-master"
+  },
+  "eomni": {
+    "pipeline": "generated-master"
+  },
+  "odi": {
+    "pipeline": "generated-master"
+  },
+  "bira": {
+    "pipeline": "generated-master"
+  },
+  "haesol": {
+    "pipeline": "generated-master"
+  },
+  "sinneoul": {
+    "pipeline": "generated-master"
+  },
+  "goeun": {
+    "pipeline": "generated-master"
+  },
+  "byeol": {
+    "pipeline": "generated-master"
+  },
+  "baram": {
+    "pipeline": "generated-master"
+  },
+  "beom": {
+    "pipeline": "generated-master"
+  },
+  "dokmudeom": {
+    "pipeline": "generated-master"
+  },
+  "areum": {
+    "pipeline": "generated-master"
+  },
+  "halla": {
+    "pipeline": "generated-master"
+  },
+  "sagong": {
+    "pipeline": "generated-master"
+  },
+  "gom": {
+    "pipeline": "generated-master"
+  },
+  "gureum": {
+    "pipeline": "generated-master"
+  },
+  "mulbeom": {
+    "pipeline": "generated-master"
+  },
+  "mdallae": {
+    "pipeline": "generated-master"
+  },
+  "beomi": {
+    "pipeline": "generated-master"
+  },
+  "sogeumbi": {
+    "pipeline": "generated-master"
+  },
+  "gomok": {
+    "pipeline": "generated-master"
+  },
+  "jinha": {
+    "pipeline": "generated-master"
+  },
+  "keundol": {
+    "pipeline": "generated-master"
+  },
+  "geumbawi": {
+    "pipeline": "generated-master"
+  },
+  "hogong": {
+    "pipeline": "generated-master"
+  },
+  "alpyeong": {
+    "pipeline": "generated-master"
+  },
+  "sobeol": {
+    "pipeline": "generated-master"
+  },
+  "jita": {
+    "pipeline": "generated-master"
+  },
+  "ara": {
+    "pipeline": "full20-master"
+  },
+  "irang": {
+    "pipeline": "full20-master"
+  },
+  "gaon": {
+    "pipeline": "full20-master"
+  },
+  "duman": {
+    "pipeline": "full20-master"
+  },
+  "jibaekho": {
+    "pipeline": "full20-master"
+  },
+  "maenun": {
+    "pipeline": "full20-master"
+  },
+  "jumong": {
+    "pipeline": "full20-master"
+  },
+  "onjo": {
+    "pipeline": "full20-master"
+  },
+  "maehwa": {
+    "pipeline": "full20-master"
+  },
+  "base-g-07-drunk-warrior": {
+    "pipeline": "full20-master"
+  },
+  "base-g-40-anya-adan": {
+    "pipeline": "full20-master"
+  },
+  "base-w-13-young-archer": {
+    "pipeline": "full20-master"
+  },
+  "base-g-03-sea-trader": {
+    "pipeline": "full20-master"
+  },
+  "base-w-10-pirate-captain": {
+    "pipeline": "full20-master"
+  },
+  "base-w-64-miri-dallae": {
+    "pipeline": "full20-master"
+  },
+  "base-g-41-goja-bau": {
+    "pipeline": "full20-master"
+  },
+  "base-g-42-dokro-garam": {
+    "pipeline": "full20-master"
+  },
+  "base-g-09-farmer-conscript": {
+    "pipeline": "full20-master"
+  },
+  "base-w-02-goguryeo-lady": {
+    "pipeline": "full20-master"
+  },
+  "base-w-17-mahan-pearl-diver": {
+    "pipeline": "full20-master"
+  },
+  "bdanbi": {
+    "pipeline": "full20-master"
+  },
+  "dallae2": {
+    "pipeline": "full20-master"
+  },
+  "base-g-17-saro-isageum": {
+    "pipeline": "full20-master"
+  },
+  "base-g-18-daegaya-king": {
+    "pipeline": "full20-master"
+  },
+  "base-g-35-dabeol-dalgu": {
+    "pipeline": "full20-master"
+  },
+  "base-g-19-sabeol-veteran": {
+    "pipeline": "full20-master"
+  },
+  "base-w-23-usisan-whale-queen": {
+    "pipeline": "full20-master"
+  },
+  "base-g-36-gammun-gamdol": {
+    "pipeline": "full20-master"
+  },
+  "base-g-20-samul-sea-lord": {
+    "pipeline": "full20-master"
+  },
+  "base-g-37-eumjeup-jeup": {
+    "pipeline": "full20-master"
+  },
+  "base-g-38-chopal-palmae": {
+    "pipeline": "full20-master"
+  },
+  "noeul": {
+    "pipeline": "full20-master"
+  },
+  "base-w-75-daegaya-soemoe": {
+    "pipeline": "full20-master"
+  },
+  "base-g-45-dabeol-deulgae": {
+    "pipeline": "full20-master"
+  },
+  "base-g-04-jinhan-giant": {
+    "pipeline": "full20-master"
+  },
+  "base-g-08-veteran": {
+    "pipeline": "full20-master"
+  },
+  "base-w-18-jinhan-salt-widow": {
+    "pipeline": "full20-master"
+  },
+  "base-w-12-court-dancer": {
+    "pipeline": "full20-master"
+  },
+  "base-w-83-gyeonji-beodeul": {
+    "pipeline": "full20-master"
+  },
+  "base-w-05-baekje-queen": {
+    "pipeline": "full20-master"
+  },
+  "base-w-21-baekje-court-dancer": {
+    "pipeline": "full20-master"
+  },
+  "base-g-01-master-smith": {
+    "pipeline": "full20-master"
+  },
+  "base-g-93-jomun-solgae": {
+    "pipeline": "full20-master"
+  },
+  "base-g-57-bihwa-neup": {
+    "pipeline": "full20-master"
+  },
+  "base-w-72-eumjeup-beol": {
+    "pipeline": "full20-master"
+  },
+  "songyang": {
+    "pipeline": "full20-master"
+  },
+  "songbi": {
+    "pipeline": "full20-master"
+  },
+  "haedal": {
+    "pipeline": "full20-master"
+  },
+  "hneoul": {
+    "pipeline": "full20-master"
+  },
+  "ogan": {
+    "pipeline": "full20-master"
+  },
+  "hyeokgeose": {
+    "pipeline": "full20-master"
+  },
+  "danbi": {
+    "pipeline": "full20-master"
+  },
+  "guryema": {
+    "pipeline": "full20-master"
+  },
+  "hojin": {
+    "pipeline": "full20-master"
+  },
+  "sdallae": {
+    "pipeline": "full20-master"
+  },
+  "waechief": {
+    "pipeline": "full20-master"
+  },
+  "suro": {
+    "pipeline": "full20-master"
+  },
+  "musoe": {
+    "pipeline": "full20-master"
+  },
+  "base-w-102-garak-dana": {
+    "pipeline": "full20-master"
+  },
+  "adogan": {
+    "pipeline": "full20-master"
+  },
+  "yeodogan": {
+    "pipeline": "full20-master"
+  },
+  "pidogan": {
+    "pipeline": "full20-master"
+  },
+  "odogan": {
+    "pipeline": "full20-master"
+  },
+  "ocheongan": {
+    "pipeline": "full20-master"
+  },
+  "singwigan": {
+    "pipeline": "full20-master"
+  },
+  "tahae": {
+    "pipeline": "full20-master"
+  },
+  "tneoul": {
+    "pipeline": "full20-master"
+  },
+  "daemusin": {
+    "pipeline": "full20-master"
+  },
+  "gwaeyu": {
+    "pipeline": "full20-master"
+  },
+  "mir": {
+    "pipeline": "full20-master"
+  },
+  "olddaeso": {
+    "pipeline": "full20-master"
+  },
+  "horselord": {
+    "pipeline": "full20-master"
+  },
+  "darae": {
+    "pipeline": "full20-master"
+  },
+  "maryeo": {
+    "pipeline": "full20-master"
+  },
+  "base-g-68-baekje-onnuri": {
+    "pipeline": "full20-master"
+  },
+  "base-w-27-mokji-jinha": {
+    "pipeline": "full20-master"
+  },
+  "base-g-22-ungcheon-gomnae": {
+    "pipeline": "full20-master"
+  },
+  "base-g-23-sangdang-soedal": {
+    "pipeline": "full20-master"
+  },
+  "base-g-24-wansan-onsan": {
+    "pipeline": "full20-master"
+  },
+  "base-g-25-balla-keunmoe": {
+    "pipeline": "full20-master"
+  },
+  "base-g-61-heomcheuk-bawi": {
+    "pipeline": "full20-master"
+  },
+  "base-g-88-wander-soeul": {
+    "pipeline": "full20-master"
+  },
+  "base-w-14-feast-spy": {
+    "pipeline": "full20-master"
+  },
+  "base-g-12-silla-youth": {
+    "pipeline": "full20-master"
+  },
+  "base-w-08-mahan-warrior": {
+    "pipeline": "full20-master"
+  },
+  "base-g-62-beonye-hanul": {
+    "pipeline": "full20-master"
+  },
+  "base-g-63-heomcheuk-beogeum": {
+    "pipeline": "full20-master"
+  },
+  "base-g-84-wander-seoneul": {
+    "pipeline": "full20-master"
+  },
+  "malgalgi": {
+    "pipeline": "full20-master"
+  },
+  "oi": {
+    "pipeline": "full20-master"
+  },
+  "hyeopbo": {
+    "pipeline": "full20-master"
+  },
+  "daeso": {
+    "pipeline": "full20-master"
+  },
+  "eureum": {
+    "pipeline": "full20-master"
+  },
+  "beombal": {
+    "pipeline": "full20-master"
+  },
+  "soebi": {
+    "pipeline": "full20-master"
+  },
+  "budeul": {
+    "pipeline": "full20-master"
+  },
+  "gaennae": {
+    "pipeline": "full20-master"
+  },
+  "soenun": {
+    "pipeline": "full20-master"
+  },
+  "base-g-56-haseulla-gwahama": {
+    "pipeline": "full20-master"
+  },
+  "base-w-50-siljik-mulga": {
+    "pipeline": "full20-master"
+  },
+  "base-g-46-uga-nureongso": {
+    "pipeline": "full20-master"
+  },
+  "base-w-80-usan-gangchi": {
+    "pipeline": "full20-master"
+  },
+  "base-g-47-guga-sanyanggae": {
+    "pipeline": "full20-master"
+  },
+  "base-w-76-gampyeong-baetsagong": {
+    "pipeline": "full20-master"
+  },
+  "base-g-05-mahan-chieftain": {
+    "pipeline": "full20-master"
+  },
+  "base-g-58-usan-uhae": {
+    "pipeline": "full20-master"
+  },
+  "base-g-27-maek-maekdol": {
+    "pipeline": "full20-master"
+  },
+  "base-w-53-hwanna-gabi": {
+    "pipeline": "full20-master"
+  },
+  "base-w-29-golpo-janmul": {
+    "pipeline": "full20-master"
+  },
+  "base-g-53-baekje-haeru": {
+    "pipeline": "full20-master"
+  },
+  "base-w-71-yeonna-neoul": {
+    "pipeline": "full20-master"
+  },
+  "hwalmi": {
+    "pipeline": "full20-master"
+  },
+  "dangung": {
+    "pipeline": "full20-master"
+  },
+  "nuri": {
+    "pipeline": "full20-master"
+  },
+  "base-w-79-yangmaek-solmae": {
+    "pipeline": "full20-master"
+  },
+  "base-w-34-chopal-deulme": {
+    "pipeline": "full20-master"
+  },
+  "base-g-44-maga-malgup": {
+    "pipeline": "full20-master"
+  },
+  "base-w-31-dabeol-dalbit": {
+    "pipeline": "full20-master"
+  },
+  "base-g-51-biryuna-mulgyeol": {
+    "pipeline": "full20-master"
+  },
+  "wan": {
+    "pipeline": "full20-master"
+  },
+  "bakdal": {
+    "pipeline": "full20-master"
+  },
+  "base-g-48-gwanna-musoe": {
+    "pipeline": "full20-master"
+  },
+  "base-g-32-uga-sodu": {
+    "pipeline": "full20-master"
+  },
+  "base-g-49-goguryeo-sona": {
+    "pipeline": "full20-master"
+  },
+  "base-g-30-gwanna-soemoe": {
+    "pipeline": "full20-master"
+  },
+  "damul": {
+    "pipeline": "full20-master"
+  },
+  "base-g-52-tamna-oreum": {
+    "pipeline": "full20-master"
+  },
+  "base-g-29-yeonna-myeongsol": {
+    "pipeline": "full20-master"
+  },
+  "base-w-56-dongokjeo-sogeum": {
+    "pipeline": "full20-master"
+  },
+  "base-g-54-mokji-mahan": {
+    "pipeline": "full20-master"
+  },
+  "base-g-33-jeoga-metdol": {
+    "pipeline": "full20-master"
+  },
+  "base-w-36-baekje-maena": {
+    "pipeline": "full20-master"
+  },
+  "base-w-38-sangdang-bulmae": {
+    "pipeline": "full20-master"
+  },
+  "base-w-39-gosaburi-galmae": {
+    "pipeline": "full20-master"
+  },
+  "base-w-40-mujin-munui": {
+    "pipeline": "full20-master"
+  },
+  "base-w-41-hwanna-beodeul": {
+    "pipeline": "full20-master"
+  },
+  "base-w-43-uga-nuri": {
+    "pipeline": "full20-master"
+  },
+  "base-w-45-tamna-oreumbi": {
+    "pipeline": "full20-master"
+  },
+  "base-g-60-golbeol-golgae": {
+    "pipeline": "full20-master"
+  },
+  "base-g-61-apdok-ap": {
+    "pipeline": "full20-master"
+  },
+  "base-g-62-gammun-gamnamu": {
+    "pipeline": "full20-master"
+  },
+  "base-g-63-chopal-yeoul": {
+    "pipeline": "full20-master"
+  },
+  "base-g-64-michuhol-sogeumkkun": {
+    "pipeline": "full20-master"
+  },
+  "base-g-65-sangdang-soemangchi": {
+    "pipeline": "full20-master"
+  },
+  "base-g-66-geonma-malbalgup": {
+    "pipeline": "full20-master"
+  },
+  "base-g-67-gosaburi-buri": {
+    "pipeline": "full20-master"
+  },
+  "base-g-68-mujin-bitgoeul": {
+    "pipeline": "full20-master"
+  },
+  "base-g-69-goryong-yong": {
+    "pipeline": "full20-master"
+  },
+  "base-g-70-siljik-pado": {
+    "pipeline": "full20-master"
+  },
+  "base-w-81-byeokjin-byeolbit": {
+    "pipeline": "full20-master"
+  },
+  "geota": {
+    "pipeline": "full20-master"
+  },
+  "soebo": {
+    "pipeline": "full20-master"
+  },
+  "biryu": {
+    "pipeline": "full20-master"
+  },
+  "geumha": {
+    "pipeline": "full20-master"
+  },
+  "yusugan": {
+    "pipeline": "full20-master"
+  },
+  "yucheongan": {
+    "pipeline": "full20-master"
+  },
+  "sincheongan": {
+    "pipeline": "full20-master"
+  },
+  "base-w-46-geonma-maru": {
+    "pipeline": "full20-master"
+  },
+  "base-w-48-mujin-mudeung": {
+    "pipeline": "full20-master"
+  },
+  "base-g-26-gampyeong-gaetbeol": {
+    "pipeline": "full20-master"
+  },
+  "base-g-60-eupcha-hangyeol": {
+    "pipeline": "full20-master"
+  },
+  "base-g-15-shaman-man": {
+    "pipeline": "full20-master"
+  },
+  "base-g-85-wander-ure": {
+    "pipeline": "full20-master"
+  },
+  "base-g-43-hwanna-amnok": {
+    "pipeline": "full20-master"
+  },
+  "base-g-50-bullae-gwaha": {
+    "pipeline": "full20-master"
+  },
+  "base-g-55-saro-bakdal": {
+    "pipeline": "full20-master"
+  },
+  "sori": {
+    "pipeline": "full20-master"
+  },
+  "base-w-06-buyeo-huntress": {
+    "pipeline": "full20-master"
+  },
+  "base-w-22-dongye-tiger-huntress": {
+    "pipeline": "full20-master"
+  },
+  "base-w-25-bihwa-priestess": {
+    "pipeline": "full20-master"
+  },
+  "base-w-24-apdok-queen": {
+    "pipeline": "full20-master"
+  },
+  "base-w-61-iseo-sinae": {
+    "pipeline": "full20-master"
+  },
+  "base-w-26-iseo-tomboy-general": {
+    "pipeline": "full20-master"
+  },
+  "mari": {
+    "pipeline": "full20-master"
+  },
+  "mulsae": {
+    "pipeline": "full20-master"
+  },
+  "maro": {
+    "pipeline": "full20-master"
+  },
+  "dalli": {
+    "pipeline": "full20-master"
+  },
+  "base-g-59-yangmaek-maekson": {
+    "pipeline": "full20-master"
+  },
+  "aw1-haebi": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-soseono": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-gamsil": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-mir": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-dangung": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-ara": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-jumong": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-onjo": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-base-w-83-gyeonji-beodeul": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-heo": {
+    "pipeline": "awakened20-master"
+  }
+}

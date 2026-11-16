@@ -331,3 +331,45 @@ plot/rumor_h.mp3  형 · 「소문」
 plot/sow_h.mp3  형 · 「이간」
 plot/bribe_h.mp3  형 · 「매수」
 plot/night_h.mp3  형 · 「암살구출」 (암살·구출이 먹힌 장 · 밤 임무 끝)
+cand/raid/raid_kiai_m_g1.ogg  Freesound · ID 464485 (https://freesound.org/s/464485/) · Male Attack Grunt · elynch0901 · CC0
+cand/raid/raid_kiai_m_g2.ogg  Freesound · ID 661242 (https://freesound.org/s/661242/) · Swing grunt.mp3 · DeqstersLab · CC0
+cand/raid/raid_kiai_m_g3.ogg  Freesound · ID 464495 (https://freesound.org/s/464495/) · S12_Grunt_Player_1.wav · kaygrum · CC0
+cand/raid/raid_kiai_f_g1.ogg  Freesound · ID 242623 (https://freesound.org/s/242623/) · grunt.wav · Reitanna · CC0
+cand/raid/raid_kiai_f_g2.ogg  Freesound · ID 242617 (https://freesound.org/s/242617/) · huah!.wav · Reitanna · CC0
+cand/raid/raid_kiai_f_g3.ogg  Freesound · ID 464675 (https://freesound.org/s/464675/) · FemaleGrunt1.wav · BranndyBottle · CC0
+cand/raid/raid_hurt_m_g1.ogg  Freesound · ID 547209 (https://freesound.org/s/547209/) · Voice_AdultMale_PainGrunts_09.wav · MrFossy · CC0
+cand/raid/raid_hurt_m_g2.ogg  Freesound · ID 413186 (https://freesound.org/s/413186/) · male_hurt9.ogg · micahlg · CC0
+cand/raid/raid_hurt_m_g3.ogg  Freesound · ID 342229 (https://freesound.org/s/342229/) · Hurt  1 - (Male) · Christopherderp · CC0
+cand/raid/raid_hurt_f_g1.ogg  Freesound · ID 577968 (https://freesound.org/s/577968/) · female-hurt.wav · birdOfTheNorth · CC0
+cand/raid/raid_hurt_f_g2.ogg  Freesound · ID 203976 (https://freesound.org/s/203976/) · female_hurt.wav · thatbennyguy · CC0
+cand/raid/raid_hurt_f_g3.ogg  Freesound · ID 796094 (https://freesound.org/s/796094/) · Woman getting pain · Guinamun · CC0
+cand/raid/raid_die_m_g1.ogg  Freesound · ID 173126 (https://freesound.org/s/173126/) · Death sound (male) · Replix · CC0
+cand/raid/raid_die_m_g2.ogg  Freesound · ID 163442 (https://freesound.org/s/163442/) · Man Dying · Under7dude · CC0
+cand/raid/raid_die_m_g3.ogg  Freesound · ID 345456 (https://freesound.org/s/345456/) · Male_Death_04 · Artmasterrich · CC0
+cand/raid/raid_boss_roar_g1.ogg  Freesound · ID 265554 (https://freesound.org/s/265554/) · Studio roar · AugustSandberg · CC0
+cand/raid/raid_boss_roar_g2.ogg  Freesound · ID 521831 (https://freesound.org/s/521831/) · Middle Ages War Cry 3.wav · joelcarrsound · CC0
+cand/raid/raid_boss_roar_g3.ogg  Freesound · ID 521830 (https://freesound.org/s/521830/) · Middle Ages War Cry.wav · joelcarrsound · CC0
+cand/raid/raid_skill_m_g1.ogg  Freesound · ID 521832 (https://freesound.org/s/521832/) · Middle Ages War Cry 2.wav · joelcarrsound · CC0
+cand/raid/raid_skill_m_g2.ogg  Freesound · ID 490700 (https://freesound.org/s/490700/) · yaaahhh.wav · GENERALMiDiGUy · CC0
+cand/raid/raid_skill_m_g3.ogg  Freesound · ID 219815 (https://freesound.org/s/219815/) · effort scream.wav · saraonsins · CC0
+cand/raid/raid_skill_f_g1.ogg  Freesound · ID 509882 (https://freesound.org/s/509882/) · female_shout_01.wav · slamaxu · CC0
+cand/raid/raid_skill_f_g2.ogg  Freesound · ID 220307 (https://freesound.org/s/220307/) · oneshout.wav · Ellenskellington · CC0
+cand/raid/raid_skill_f_g3.ogg  Freesound · ID 219686 (https://freesound.org/s/219686/) · girl-shout.wav · mariateresa_garcia · CC0
+bgm_raid_d1.ogg  Pixabay · Primitive Battle Groove with Rhythmic Taiko Drums & Handclaps (491389) · DesiFreeMusic · Pixabay Content License · 형이 고름 (11-15 열전 전투 음악) · -18 LUFS
+
+# 열전 소리 · 형이 Pixabay 에서 받아 줌 (11-15 밤) · Pixabay Content License · 원본 assets_src/realm/sfx-in/raid/pixabay
+raid/swing_1~4.ogg  Pixabay · Heavy Greatsword Slash in the Air 1~4 (450242·450243·450245·450244) · yodguard
+raid/kiai_m_1.ogg · kiai_m_2.ogg  Pixabay · Male Soldier Voice Attack Grunt (520841) · 2 (520933) · PhatPhrogStudio
+raid/kiai_m_3.ogg  Pixabay · RPG M Knight Voice Attack Grunt (490291) · PhatPhrogStudio
+raid/kiai_m_heavy_1.ogg · kiai_m_heavy_2.ogg  Pixabay · Male Fighter Voice Heavy Attack Grunt (544355) · Voice 2 (582547) · PhatPhrogStudio
+raid/kiai_f_1.ogg  Pixabay · RPG Female Attack Grunt (481720) · PhatPhrogStudio
+raid/kiai_f_2.ogg  Freesound · ID 464495 · S12_Grunt_Player_1.wav · kaygrum · CC0 (형: 여자 기합은 이것)
+raid/hurt_f_1.ogg  Pixabay · Shock Gasp Female (383751) · Universfield
+raid/hurt_f_2.ogg  Pixabay · Female Hurt 2 (94301) · freesound_community
+raid/level.ogg  Pixabay · Level Up 2 (540176) · yodguard
+raid/defeat.ogg  Pixabay · Defeat Outros Game Sounds Collection (477823) · PhatPhrogStudio · 앞 10초
+raid/fire_1~3.ogg  Pixabay · Fire Magic 1·2·4 (378636·378638·378637) · yodguard
+raid/wind_1~3.ogg  Pixabay · Wind Magic 2·5·6 (378627·378630·378626) · yodguard
+raid/bolt_1~2.ogg  Pixabay · Lightning Magic 1·4 (378645·378647) · yodguard
+raid/earth_1~2.ogg · skill_hit.ogg  Pixabay · Earth Magic 1·2·5 (378599·378602·378598) · yodguard
+raid/light_1.ogg · light_2.ogg  Pixabay · Healing Magic 1·4 (378665·378668) · yodguard · Pixabay Content License (형이 받아 줌 11-15 · 열전 혼불)

@@ -154,7 +154,7 @@ export function run(args) {
       if (command === 'submitted') {
         check(attempt.status === 'claimed', `Cannot submit from ${attempt.status}`)
         let url; try { url = new URL(opts.chat) } catch { throw new Error('Valid --chat URL required') }
-        check(url.protocol === 'https:' && url.hostname === 'gemini.google.com', 'Expected HTTPS Gemini chat URL')
+        check(url.protocol === 'https:' && ['gemini.google.com', 'flow.google.com'].includes(url.hostname), 'Expected HTTPS Gemini or Flow URL')
         attempt.chatUrl = url.href; attempt.status = 'submitted'
       } else if (command === 'downloaded') {
         check(attempt.status === 'submitted', `Cannot download from ${attempt.status}`)

@@ -1,0 +1,192 @@
+{
+ "bar-hp": {
+  "size": [
+   700,
+   68
+  ],
+  "window": [
+   85,
+   16,
+   617,
+   53
+  ],
+  "slice": 85
+ },
+ "bar-xp": {
+  "size": [
+   662,
+   39
+  ],
+  "window": [
+   65,
+   12,
+   598,
+   26
+  ],
+  "slice": 65
+ },
+ "bar-boss": {
+  "size": [
+   730,
+   173
+  ],
+  "window": [
+   104,
+   35,
+   626,
+   82
+  ],
+  "slice": 104
+ },
+ "plaque": {
+  "size": [
+   316,
+   62
+  ]
+ },
+ "btn": {
+  "size": [
+   374,
+   130
+  ],
+  "slice": 58
+ },
+ "btn-primary": {
+  "size": [
+   374,
+   130
+  ],
+  "slice": 58
+ },
+ "ic-evade": {
+  "size": [
+   140,
+   138
+  ]
+ },
+ "ic-evade-glyph": {
+  "size": [
+   78,
+   78
+  ]
+ },
+ "ic-pause": {
+  "size": [
+   140,
+   138
+  ]
+ },
+ "ic-pause-glyph": {
+  "size": [
+   78,
+   78
+  ]
+ },
+ "ic-full": {
+  "size": [
+   140,
+   138
+  ]
+ },
+ "ic-full-glyph": {
+  "size": [
+   78,
+   78
+  ]
+ },
+ "ic-reroll": {
+  "size": [
+   140,
+   138
+  ]
+ },
+ "ic-reroll-glyph": {
+  "size": [
+   78,
+   78
+  ]
+ },
+ "ic-close": {
+  "size": [
+   140,
+   138
+  ]
+ },
+ "ic-close-glyph": {
+  "size": [
+   78,
+   78
+  ]
+ },
+ "mark-slam": {
+  "size": [
+   350,
+   261
+  ]
+ },
+ "mark-ring": {
+  "size": [
+   300,
+   238
+  ]
+ },
+ "mark-arrow": {
+  "size": [
+   73,
+   129
+  ]
+ },
+ "mark-move": {
+  "size": [
+   133,
+   116
+  ]
+ },
+ "mark-hero": {
+  "size": [
+   250,
+   112
+  ]
+ },
+ "mark-target": {
+  "size": [
+   314,
+   142
+  ]
+ },
+ "banner": {
+  "size": [
+   740,
+   104
+  ],
+  "slice": 115
+ },
+ "badge-bronze": {
+  "size": [
+   212,
+   98
+  ],
+  "slice": 35
+ },
+ "badge-iron": {
+  "size": [
+   212,
+   98
+  ],
+  "slice": 35
+ },
+ "badge-red": {
+  "size": [
+   212,
+   98
+  ],
+  "slice": 35
+ },
+ "ribbon": {
+  "size": [
+   746,
+   200
+  ],
+  "slice": 150
+ }
+}

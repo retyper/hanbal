@@ -133,7 +133,9 @@ function spawnCue(d: Duel, at: number, avoid?: Cue): Cue {
   }
   const heavy = d.rng.next() < R.heavyChance
   const lead = Math.round(R.lead * leadOf(mu) * tierOf(d).lead * (heavy ? R.heavyLead : 1))
-  const c: Cue = { id: d.nextId++, x, y, t0: at - lead, hitAt: at, heavy, done: null }
+  // 큰 공격의 긴 준비를 과거로 당기지 않는다. 처음 보인 순간부터 lead 전체를 읽을 수 있어야 한다.
+  const hitAt = Math.max(at, d.t + lead)
+  const c: Cue = { id: d.nextId++, x, y, t0: hitAt - lead, hitAt, heavy, done: null }
   d.cues.push(c)
   return c
 }

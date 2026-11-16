@@ -29,7 +29,7 @@ describe('장수 그림 고르기', () => {
     for (const [id, k] of Object.entries(GEN_OWN)) assert.equal(generalSprite(h({ id, traits: ['archer'] })), k)
   })
   it('결마다 띠 그림이 있고 고른 결은 그릴 수 있다', () => {
-    for (const k of Object.keys(GEN_ANIM)) assert.ok(existsSync(`public/realm/anim2/gen-${k}.png`), k)
+    for (const k of Object.keys(GEN_ANIM)) assert.ok(existsSync(`public/realm/${genArtOf(k).file}`), k)
     for (const k of ['g-sword', 'g-bow', 'g-spear', 'w-spear', 'w-bow', 'mount', 'nope', ...Object.values(GEN_OWN)]) assert.ok(GEN_ANIM[genArtOf(k).kind] !== undefined, k)
   })
 })

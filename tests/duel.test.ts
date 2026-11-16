@@ -3,7 +3,7 @@
  */
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { createDuel, stepDuel, type Duel, type Tap } from '../src/duel/sim.ts'
+import { createDuel, stepDuel, tierOf, type Duel, type Tap } from '../src/duel/sim.ts'
 import { P } from '../src/tune/params.ts'
 
 type Bot = (d: Duel) => Tap | undefined
@@ -39,6 +39,37 @@ test('못 막으면 맞다가 진다 — 적장은 지치지도 않는다', () =
     assert.equal(d.over, 'kod', `seed ${s}`)
     assert.equal(d.stats.rushHit + d.stats.crit, 0)
   }
+})
+
+test('강공격의 준비시간은 처음 나타난 뒤 온전히 주어진다', () => {
+  let heavy = 0, normal = 0
+  for (let seed = 1; seed <= 80; seed++) {
+    const d = createDuel({ seed, muMe: 5, muFoe: 5, tier: 1 })
+    while (d.cues.length === 0) stepDuel(d)
+    const c = d.cues[0]!
+    const lead = Math.round(P.duel.lead * tierOf(d).lead * (c.heavy ? P.duel.heavyLead : 1))
+    assert.equal(c.t0, d.t, `seed ${seed}: 고리가 과거에서 출발하면 처음부터 줄어든 채 보인다`)
+    assert.equal(c.hitAt - d.t, lead, `seed ${seed}`)
+    if (c.heavy) heavy++; else normal++
+  }
+  assert.ok(heavy > 0 && normal > 0)
+})
+
+test('같은 타이밍의 강공격도 막을 수 있고 정확하면 치명타가 더 세다', () => {
+  let checked = false
+  for (let seed = 1; seed <= 80 && !checked; seed++) {
+    const d = createDuel({ seed, muMe: 5, muFoe: 5 })
+    while (d.cues.length === 0) stepDuel(d)
+    const c = d.cues[0]!
+    if (!c.heavy) continue
+    while (d.t < c.hitAt - 1) stepDuel(d)
+    stepDuel(d, { x: c.x, y: c.y })
+    assert.equal(d.me.hp, P.duel.hp)
+    assert.equal(d.stats.perfect, 1)
+    assert.equal(d.events.find((e) => e.kind === 'crit')?.dmgFoe, Math.round(P.duel.critDmg * P.duel.critHeavy))
+    checked = true
+  }
+  assert.equal(checked, true)
 })
 
 test('완벽히 맞추는 손은 치명공격으로 KO 를 낸다', () => {

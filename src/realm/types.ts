@@ -311,11 +311,15 @@ export interface Hero {
    * 없으면 P.realm.bondStart. 섬긴 계절·이긴 싸움으로 오르고 진 싸움으로 준다. 70 이면 믿는 장수, 100 이면 특성 하나에 눈뜬다
    */
   bond?: number
-  /** 각성 불꽃 — 우리 장수가 내리 이긴 싸움 수 (ascendWins 에 닿으면 각성 · 지거나 비기면 꺼진다) · 형 10-31. 없으면 0 */
+  /** 각성 전 공훈 / 각성 후 기술 연료. 0이 되어도 이미 얻은 각성은 유지한다. */
   flames?: number
   /** 각성했다 — 이 판에서 능력치가 모두 오르고 얼굴이 각성 초상으로 (heroes.battleGrowth) */
   ascended?: boolean
-  /** 이 판에서 깨어난 횟수 — 불꽃이 다 꺼져 풀린 뒤 다시 깨어나면 2 부터 (짧은 연출) */
+  /** Once opened through military merit, Haebi's trial stays open in this campaign. */
+  trialReady?: boolean
+  /** Campaign reward receipt. Prevents duplicate stat awards across saves/retries. */
+  trialCleared?: boolean
+  /** 이 판에서 깨어난 횟수. 과거 저장의 재각성 횟수도 보존한다. */
   ascents?: number
   /** 자라는 능력치마다 쌓인 공 — growNeed 를 채우면 한 단계 오른다 */
   xp?: Partial<Record<GrowStat, number>>
@@ -531,6 +535,8 @@ export interface RoundOrder {
   readonly target?: string
   /** 손으로 치른 장수 겨루기의 끝 (겨루기 시험판 · 형 11-09) — 있으면 굴림 대신 이것 · 비기면 없다(굴림) */
   readonly duel?: 'win' | 'lose'
+  /** 선봉 난전에서 확보한 돌파 수. 이번 비기와 함께 한 번 적용. */
+  readonly breakthrough?: import('./vanguard.ts').Breakthrough
 }
 
 /**
@@ -538,6 +544,7 @@ export interface RoundOrder {
  * 화면은 이것으로 "우리 기병 120이 왼쪽으로 돌아 적 궁수를 쳤다. 적 궁수 30이 쓰러졌다" 를 짓는다 (prose.roundStory)
  */
 export interface Act {
+  readonly breakthrough?: import('./vanguard.ts').Breakthrough
   readonly s: 'a' | 'd'
   readonly g: Grp | 'lead'
   readonly c: Cmd
@@ -686,7 +693,7 @@ export interface Pending {
   /** 각성기를 낼 장수가 진각성할 수 있는 장수면 — 'big' 이 싸움이 커서 각성기를 쓰면 진각성 · 'small' 싸움이 작아 각성기만 (tactics · DESIRE §17) */
   readonly trueWake?: 'big' | 'small'
   /** 이 싸움의 우리 장수들 — 총대장이 먼저 · 비기 · 썼나 (장수가 여럿이면 누가 나설지 고른다) */
-  readonly heroes?: ReadonlyArray<{ readonly id: string; readonly chief: boolean; readonly mu: number; readonly art?: Art; readonly artUsed: boolean }>
+  readonly heroes?: ReadonlyArray<{ readonly id: string; readonly chief: boolean; readonly mu: number; readonly art?: Art; readonly artUsed: boolean; readonly breakthrough?: true }>
   /** 적장들 — 사로잡을 수 있는 몫 (총대장은 호위가 두껍다) */
   readonly foeHeroes?: ReadonlyArray<{ readonly id: string; readonly chief: boolean; readonly p: number }>
   /** 총대장을 잃어 지휘가 흔들린다 — 이 합엔 북과 물러나기뿐 */
@@ -1016,6 +1023,8 @@ export interface Realm {
   marketWish?: Record<string, import('./merchant.ts').Wish>
   /** 이 판에서 진각성한 장수 — 한 판에 한 번 (heroes.trueWakeOf · DESIRE §17) */
   trueWoke?: string[]
+  /** 장수 열전에서 마지막 스테이지를 깬 장수 — 진각성 자격 (heroes.trueWakeOf). 본편 화면이 열전 기록(raid/link.ts raidSealed)에서 옮겨 적는다 */
+  raidSeals?: string[]
   /** 다음 상단이 올 턴 — 나라마다 */
   marketNext?: Record<string, number>
   /**

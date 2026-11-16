@@ -7,6 +7,7 @@ import assert from 'node:assert/strict'
 
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import { battleGrowth } from '../../src/realm/heroes.ts'
+import { completeTrial } from '../../src/realm/awakening-trial.ts'
 import { P } from '../../src/tune/params.ts'
 import type { ReportLine } from '../../src/realm/types.ts'
 
@@ -18,16 +19,22 @@ describe('각성', () => {
     return { r, h: ours[ours.length - 1]!, foe: theirs }
   }
 
-  it('내리 이기면 각성하고 능력치가 모두 오른다 · 남의 장수는 안 한다', () => {
+  it('내리 이기면 각성 시련이 열리고, 시련을 넘으면 각성해 능력치가 모두 오른다 · 남의 장수는 안 한다', () => {
     const { r, h, foe } = setup()
     const before = { mu: h.mu, tong: h.tong, ryak: h.ryak, chi: h.chi, deok: h.deok }
     const lines: ReportLine[] = []
     for (let i = 0; i < P.realm.ascendWins; i++) battleGrowth(r, [h.id, foe.id], [], [], lines)
     const now = r.heroes[h.id]!
-    assert.equal(now.ascended, true)
+    // 11-15 형: 각성은 시련으로 — 이기기만 해서는 열리기만 한다
+    assert.equal(now.ascended, undefined)
+    assert.equal(now.trialReady, true)
+    const done = completeTrial(r, h.id)!
+    Object.assign(r, done.next); lines.push(...done.lines)
+    const woke = r.heroes[h.id]!
+    assert.equal(woke.ascended, true)
     assert.ok(lines.some((l) => l.kind === 'ascend' && l.hero === h.id))
     // 싸움에서 공이 쌓여 무예·통솔이 따로 오를 수 있다 — 적어도 각성 몫은 오른다
-    for (const s of ['mu', 'tong', 'ryak', 'chi', 'deok'] as const) assert.ok(now[s] >= before[s] + P.realm.ascendBonus, s)
+    for (const s of ['mu', 'tong', 'ryak', 'chi', 'deok'] as const) assert.ok(woke[s] >= before[s] + P.realm.ascendBonus, s)
     assert.notEqual(r.heroes[foe.id]!.ascended, true, '남의 나라 장수는 각성하지 않는다')
   })
 

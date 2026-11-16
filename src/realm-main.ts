@@ -45,7 +45,7 @@ import { loadBar } from './ui/realm/loadbar.ts'
 import { showBoot } from './ui/realm/boot.ts'
 import { openingSeen, playOpening } from './ui/realm/opening.ts'
 import { openCredits } from './ui/realm/credits.ts'
-import { GEN_ANIM, MIGRANT_ANIM, SOL_ANIM2, genArtOf, nodeIcon } from './realm/data/art.ts'
+import { generalSprite, MIGRANT_ANIM, SOL_ANIM2, genArtOf, nodeIcon } from './realm/data/art.ts'
 
 const KEY = 'hanbal.realm.v2'
 /** 한 계절 앞의 저장 — 지금 것이 깨졌으면 이걸로 되살린다 */
@@ -406,7 +406,7 @@ function hideSplashWhenReady(): void {
   const game: string[] = r === null ? [] : [
     ...new Set(Object.values(r.nodes).map((n) => `${art}icon/${nodeIcon(n)}.png`)),
     ...Object.keys(SOL_ANIM2).map((k) => `${art}anim-px/${k}.png`),
-    ...Object.keys(GEN_ANIM).map((k) => `${art}${genArtOf(k).file}`),
+    ...new Set(Object.values(r.heroes).map((h) => `${art}${genArtOf(generalSprite(h)).file}`)),
     `${art}${MIGRANT_ANIM.file}`,
   ]
   // 몫 — 지도 바탕이 있으면 그것이 loadBarMapShare, 나머지를 글꼴과 그림들이 똑같이 나눈다
@@ -442,6 +442,14 @@ else showBoot(import.meta.env.BASE_URL)
 hideSplashWhenReady()
 
 const app = mountRealmApp(root, {
+  onCheckpoint(next) {
+    if (state === null || state.realm.seed !== next.seed || state.realm.player !== next.player || state.realm.season !== next.season) return '진행 중인 캠페인이 바뀌었습니다.'
+    const out = { ...state, realm: next, at: new Date().toISOString() }
+    try { localStorage.setItem(KEY, JSON.stringify(out)) } catch { return '저장 공간이 부족합니다. 공간을 확보한 뒤 다시 귀환해 주세요.' }
+    state = out
+    sync.dirty(true)
+    return null
+  },
   onAdvance(next, report, orders, mine) {
     if (state === null) return
     state = save({ ...state, log: [...state.log, [...orders]], before: state.realm, realm: next, report })

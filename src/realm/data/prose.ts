@@ -162,29 +162,8 @@ export const RELATION_NAME: Record<Relation['state'], string> = {
 /** 이 승산보다 낮은데 이기면(또는 높은데 지면) "뜻밖" — 글의 문턱이라 여기 둔다 */
 const UPSET = 0.35
 
-/**
- * 숫자를 우리말로 읽을 때 끝소리의 받침 — 0 없음 · 8 ㄹ · 그 밖 받침 있음 (josa 가 쓴다).
- * 끝자리: 영(ㅇ) 일(ㄹ) 이 삼(ㅁ) 사 오 육(ㄱ) 칠(ㄹ) 팔(ㄹ) 구 · 끝이 0 이면 십(ㅂ) 백(ㄱ) 천(ㄴ) 만(ㄴ).
- * "철 2를" · "집 16이" · "곡식 300을" · "군사 1로" (형: "텍스트들 규칙에서 항상 한글 조사 틀리지 않게").
- */
-function numberFinal(s: string): number {
-  const d = s.replace(/[^0-9]/g, '')
-  if (d === '' || /^0+$/.test(d)) return 21 // 영 — ㅇ
-  const zeros = d.length - d.replace(/0+$/, '').length
-  if (zeros > 0) return zeros === 1 ? 17 : zeros === 2 ? 1 : 4 // 십(ㅂ) · 백(ㄱ) · 천·만(ㄴ)
-  return ({ '1': 8, '2': 0, '3': 16, '4': 0, '5': 0, '6': 1, '7': 8, '8': 8, '9': 0 } as Record<string, number>)[d[d.length - 1]!]!
-}
-
-/** 받침이 있으면 앞 것, 없으면 뒤 것 — 을/를 · 이/가 · 은/는 · 과/와 · 으로/로. 숫자로 끝나면 우리말 읽기로 판정한다 */
-export function josa(word: string, withFinal: string, without: string): string {
-  const c = word.charCodeAt(word.length - 1)
-  let fin: number
-  if (c >= 0x30 && c <= 0x39) fin = numberFinal(word)
-  else if (c < 0xac00 || c > 0xd7a3) return word + without
-  else fin = (c - 0xac00) % 28
-  if (withFinal === '으로' && fin === 8) return word + without // ㄹ 받침은 "로"
-  return word + (fin !== 0 ? withFinal : without)
-}
+export { josa } from '../../core/josa.ts'
+import { josa } from '../../core/josa.ts'
 
 /** 물건마다 어디에 쓰나 — 위 띠의 말풍선 (형: "소금은 어디다쓰는거지?") */
 export const GOOD_USE: Record<Good, string> = {
@@ -1263,7 +1242,7 @@ export function roundStory(rd: RoundLog, prev: RoundLog | undefined, c: StoryCtx
         sway: a.res === 'hit' ? `${josa(hx, '이', '가')} 무기를 버리면 살려 준다고 외쳤다. 흔들리던 ${who(y)} 군사 ${josa(ppl(a.tl ?? 0), '이', '가')} 창을 내려놓았다.` : `${josa(hx, '이', '가')} 항복하라 외쳤지만 ${who(y)} 군사들은 꿈쩍도 않는다.`,
         stand: `${josa(hx, '이', '가')} 백 사람의 이름을 하나하나 부르며 버티라 했다. ${who(x)} 군사들이 이를 악문다.`,
         ambush: a.res === 'hit' ? `${hx}의 날랜 무리가 샛길로 돌아 먼저 덮쳤다. ${who(y)} ${grp(y, a.tg)} ${josa(ppl(a.tl ?? 0), '이', '가')} 쓰러졌다.` : `${hx}의 날랜 무리가 샛길로 돌았지만 칠 데가 없었다.`,
-        vanguard: `${josa(hx, '이', '가')} 칼을 뽑아 맨 앞에 섰다. ${who(x)} 앞줄이 함성을 지른다.`,
+        vanguard: a.breakthrough !== undefined ? `${hx}의 선봉 돌파 · ${a.breakthrough}/3. ${a.breakthrough > 0 ? `적 앞줄 ${ppl(a.tl ?? 0)} 손실, 아군 앞줄이 열린 틈으로 진격한다.` : '돌파하지 못해 본대에 합류했다. 각성은 유지된다.'}` : `${josa(hx, '이', '가')} 칼을 뽑아 맨 앞에 섰다. ${who(x)} 앞줄이 함성을 지른다.`,
         feint: a.res === 'won' ? `${josa(hx, '이', '가')} 물러나는 척하자 ${who(y)} 군사가 우르르 달려들었다. 기다리던 옆구리 공격에 걸렸다.` : `${josa(hx, '이', '가')} 물러나는 척했지만 ${who(y)} 군사는 따라오지 않았다.`,
         order: `${josa(hx, '이', '가')} 흐트러진 진을 다잡았다. ${who(x)} 대열이 다시 선다.`,
         shout: `${josa(hx, '이', '가')} 크게 외쳐 군사를 일으켰다. ${who(x)} 군사들의 기세가 오른다.`,

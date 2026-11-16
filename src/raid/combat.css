@@ -1,0 +1,155 @@
+:root{font-family:'Malgun Gothic',system-ui,sans-serif;color:#f4e7cb;background:#0a100f;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#0a100f}button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation;background:linear-gradient(#403b2a,#1c2420);border:1px solid #94805a;border-radius:3px;padding:10px 16px}button:hover:not(:disabled),button:focus-visible{border-color:#f5dc9d;outline:1px solid #f5dc9d;outline-offset:2px}button:disabled{opacity:.45;cursor:default}[hidden]{display:none!important}.primary{background:linear-gradient(#82602f,#45341f);border-color:#d7b775;color:#fff0bf;font-weight:700}h1,h2,h3,p{margin:0}h1,h2,.portrait-title b{font-family:Georgia,'Batang',serif}small,.note{color:#b4b9a7}
+header{position:absolute;right:22px;top:20px;z-index:3;pointer-events:none}header>div:first-child{display:none}.head-actions{display:flex;gap:8px;pointer-events:auto}.head-actions button{width:40px;height:36px;padding:0;font-size:20px;background:#121e1be8}
+#layout{height:100dvh;min-height:360px;display:grid;grid-template-columns:clamp(170px,23vw,320px) minmax(0,1fr);gap:12px;padding:12px;max-width:2000px;margin:auto}main{min-width:0;min-height:0;display:flex;align-items:center;justify-content:center}
+#character{position:relative;overflow:hidden;min-height:0;border:1px solid #8a7550;background:#151d1b;box-shadow:inset 0 0 0 4px #0c1616}#character:after{content:'';position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 30px #0007;background:linear-gradient(transparent 48%,#101612bb 78%,#0a110ff2)}#portrait-media{position:absolute;inset:0}#portrait-media img,#portrait-media video{width:100%;height:100%;object-fit:cover;object-position:50% 20%;display:block}#portrait-media img{object-position:48% 12%}#character.hurt:before{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;box-shadow:inset 0 0 45px #da4e39a8}#character.awakened{border-color:#d8aa55}
+.portrait-title{position:absolute;bottom:142px;left:18px;right:18px;z-index:1;display:flex;flex-direction:column;gap:6px}.portrait-title span{font-size:11px;color:#d3c29d;letter-spacing:.14em}.portrait-title b{font-size:clamp(24px,3vw,42px);text-shadow:0 3px 10px #000}.portrait-title button{align-self:start;padding:4px 7px;font-size:10px;background:#121d1dcc}#reaction{position:absolute;bottom:112px;left:18px;right:10px;z-index:1;font-size:12px;color:#ecd5a4;text-shadow:0 1px 4px #000}#combo-badges{position:absolute;bottom:16px;left:14px;right:10px;z-index:1;display:grid;gap:5px}#combo-badges span{display:flex;align-items:center;gap:7px;font-size:11px;color:#e6c584}#combo-badges img{width:30px;height:30px;object-fit:contain}
+#menu{width:100%;height:100%;padding:clamp(30px,6vw,100px) clamp(24px,5vw,75px);border:1px solid #746440;background:linear-gradient(90deg,#071512ef,#0c1c11a6),url('/realm/raid/forest.webp') center/cover;overflow:auto;display:flex;flex-direction:column;justify-content:center}.eyebrow{font-size:11px;letter-spacing:.3em;color:#d8b675}#menu h2{font-size:clamp(26px,3vw,48px);line-height:1.5;margin:24px 0}#menu h2 em{font-style:normal;color:#edc27b}#menu p{font-size:13px;line-height:1.9;color:#c7cbbb}.journey{display:flex;gap:30px;margin:30px 0}.journey span{font-size:11px;color:#c4bea5}.journey b{display:block;color:#ddbd7c;font-size:24px;margin-bottom:7px}#start{align-self:start;min-width:240px;padding:16px 25px;font-size:17px;margin:8px 0 20px}#menu .controls{font-size:11px}#menu .note{font-size:10px;margin-top:14px;color:#a0ad98}
+#play{width:100%;height:100%;display:flex;align-items:center;justify-content:center}#arena{position:relative;width:min(100%,calc((100dvh - 24px)*1.555556));aspect-ratio:14/9;max-height:100%;overflow:hidden;border:1px solid #67583c;background:#17231a;box-shadow:0 0 25px #0007}#field{display:block;width:100%;height:100%;object-fit:contain;touch-action:none;cursor:crosshair}
+#combat-hud{position:absolute;top:14px;left:14px;width:308px;max-width:48%;pointer-events:none;filter:drop-shadow(0 2px 3px #0009)}.health-line{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;font-size:12px;text-shadow:0 1px 3px #000}.health-line b{letter-spacing:.1em}.health-line span{font-variant-numeric:tabular-nums;font-size:11px}.bar{background:#101810dd;border:1px solid #9b8752;height:13px;box-shadow:inset 0 0 3px #000}.bar i{display:block;height:100%;width:100%;background:linear-gradient(#e56f58,#b93532 50%,#6b2324);transition:width .12s linear}.bar.xp{position:absolute;bottom:0;left:0;right:0;height:6px;border:0;background:#0c1613}.bar.xp i{background:linear-gradient(90deg,#397961,#9be5b8)}
+#loadout{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;pointer-events:auto;max-width:100%}.power-slot{position:relative;width:40px;height:44px;padding:3px;background:linear-gradient(#202a25ed,#101914f7);border-color:#a18b5f;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}.power-slot img{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none}.power-slot b{position:absolute;bottom:-1px;right:1px;min-width:16px;font:bold 13px Georgia,serif;color:#ffe6a2;text-shadow:0 1px 2px #000;background:#11190feb;border-left:1px solid #a18b5f;border-top:1px solid #a18b5f;pointer-events:none}
+#hud{position:absolute;top:14px;left:60%;display:flex;flex-direction:column;align-items:center;pointer-events:none;text-shadow:0 2px 4px #000;background:#11201488;padding:5px 14px;border-bottom:1px solid #b99b6655}#hud b{font:25px Georgia,serif;font-variant-numeric:tabular-nums}#hud small{font-size:10px;color:#f0dfb6}#score{position:absolute;bottom:23px;left:16px;display:flex;gap:6px;align-items:baseline;text-shadow:0 2px 5px #000;pointer-events:none}#score b{font:22px Georgia,serif;color:#ffdf9f}#score small{font-size:10px}#score #level{margin-left:14px;font-size:17px;color:#c4edc2}
+#announcement{position:absolute;top:28%;left:10%;right:10%;text-align:center;padding:14px;background:linear-gradient(90deg,transparent,#0e2023e8,transparent);color:#ffe1a1;font:bold 19px 'Batang',serif;pointer-events:none;opacity:0;transition:opacity .3s}#announcement.visible{opacity:1}#streak{position:absolute;bottom:83px;right:20px;color:#ffe2a6;font:24px Georgia,serif;text-shadow:0 2px 6px #000;pointer-events:none}footer{position:absolute;bottom:18px;right:14px;display:flex;gap:8px;align-items:center}#hint{display:none}footer button{background:linear-gradient(#3b4334ed,#12221cf5);border-color:#b09a64;padding:13px 12px;font-size:11px;min-width:85px;box-shadow:0 2px 5px #0007}footer .primary{background:linear-gradient(#816238ed,#3e2c1bf5)}
+#power-tooltip{position:fixed;z-index:12;width:280px;max-width:calc(100vw - 16px);padding:14px;background:linear-gradient(135deg,#28362af7,#0f1c19fc);border:1px solid #c5a764;box-shadow:0 8px 28px #000b;pointer-events:none;font-size:12px;line-height:1.6;color:#d4d8c9}#power-tooltip>b{font-size:16px;color:#ffe2a0}#power-tooltip p{margin-top:9px}#power-tooltip p b{color:#d7c28d}.rank-steps{display:flex;gap:5px;margin-top:10px}.rank-steps span{width:25px;text-align:center;border:1px solid #536046;color:#7e8b79;background:#101c18}.rank-steps .earned{color:#e8cb88;border-color:#998252}.rank-steps .current{background:#b0843f;color:#fff8db;border-color:#ffdb91}
+#overlay{position:fixed;inset:0;background:#050d13c9;backdrop-filter:blur(3px);z-index:5;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}.panel{max-width:980px;width:100%;padding:32px;background:linear-gradient(145deg,#29392de8,#111e18f5);border:1px solid #bda165;text-align:center;box-shadow:0 20px 80px #0008;max-height:calc(100dvh - 30px);overflow:auto}.panel>small{letter-spacing:.15em;color:#dfc38d;font-size:12px}.panel h2{font-size:30px;margin:12px 0}.panel p{font-size:13px;color:#bdc5b3;line-height:1.8;margin:12px 0}.panel>button{margin:10px 5px}.choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:26px 0 14px}.choices button{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;padding:22px;border-color:color-mix(in srgb,var(--accent) 60%,transparent);background:linear-gradient(#17251df5,#0a1714fa);min-width:0}.rune{display:block;width:70px;height:70px}.rune img{width:100%;height:100%;object-fit:contain}.choices b{font-size:20px}.choices small{font-size:11px;color:var(--accent)}.choices span:not(.rune){font-size:12px;line-height:1.7;color:#c5cbbd}.choices em{border-top:1px solid #7a8c7044;padding-top:12px;font-size:10px;line-height:1.8;color:#a8b6a3;font-style:normal}.result-combos{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin:20px}.result-combos b{padding:8px 14px;border:1px solid #a88d51;color:#efd298}
+#rotate-guide{position:fixed;inset:0;z-index:20;background:#101e24f5;display:grid;place-items:center;text-align:center;padding:24px}#rotate-guide p{margin-top:18px;line-height:1.8;color:#c5cfba}.review-tools{position:fixed;bottom:0;left:0;right:0;z-index:8;background:#142226;max-height:72px;overflow:auto}.review-tools button{padding:6px 10px;font-size:11px}
+@media(max-width:950px){#layout{grid-template-columns:clamp(140px,22vw,220px) minmax(0,1fr);gap:6px;padding:6px}.portrait-title{left:12px}.portrait-title b{font-size:26px}#reaction{left:12px;font-size:10px}#combo-badges{left:10px}header{right:12px;top:12px}#arena{width:min(100%,calc((100dvh - 12px)*1.555556))}#combat-hud{left:8px;top:8px;max-width:54%}#hud{top:8px;padding:3px 8px;left:62%}#hud b{font-size:20px}#hud small{font-size:9px}.power-slot{width:36px;height:40px}#loadout{gap:3px}footer{right:8px;bottom:15px}footer button{padding:12px 8px;font-size:10px;min-width:75px}#streak{font-size:19px}#score{left:10px;bottom:20px}.journey{gap:15px}#menu{padding:20px}#menu h2{margin:16px 0}#start{min-width:210px}}
+@media(orientation:landscape) and (max-height:600px){body{overflow:hidden}#layout{min-height:0}header{top:10px;right:12px}.head-actions{gap:5px}.head-actions button{width:30px;height:28px;font-size:17px}#menu{padding:24px}#menu h2{font-size:25px;margin:10px 0}#menu p{font-size:10px}.journey{margin:10px 0}.journey b{font-size:18px}#start{padding:11px 20px;margin:3px 0 9px;font-size:15px}#menu .controls{font-size:10px}#menu .note{font-size:9px}.portrait-title{bottom:109px;left:10px;gap:3px}.portrait-title span{font-size:9px}.portrait-title b{font-size:24px}.portrait-title button{font-size:9px}#reaction{bottom:87px;left:10px;font-size:9px}#combo-badges{bottom:9px;gap:2px}#combo-badges img{width:22px;height:22px}#combo-badges span{font-size:9px}#announcement{font-size:14px;padding:9px}#score b{font-size:18px}.health-line{font-size:10px;margin-bottom:3px}.health-line span{font-size:9px}.bar.hp{height:10px}#loadout{margin-top:5px}.power-slot{width:34px;height:36px}.power-slot b{font-size:11px;min-width:13px}#power-tooltip{width:250px;padding:10px;font-size:10px}#power-tooltip>b{font-size:13px}#power-tooltip p{margin-top:5px}.rank-steps{margin-top:6px}#overlay{padding:10px}.panel{padding:12px 20px;max-height:calc(100dvh - 20px)}.panel h2{font-size:23px;margin:5px 0}.panel p{font-size:11px;margin:6px 0}.choices{gap:9px;margin:10px 0}.choices button{padding:12px;gap:5px}.choices .rune{width:40px;height:40px}.choices b{font-size:16px}.choices span:not(.rune){font-size:10px}.choices em{font-size:9px;padding-top:5px}.panel>button{padding:8px 12px;margin:5px}.result-combos{margin:12px}}
+@media(orientation:portrait) and (max-width:700px){#layout{height:auto;min-height:100dvh;grid-template-columns:1fr;padding:10px;gap:10px}#character{height:240px}#portrait-media img,#portrait-media video{object-position:50% 22%}#portrait-media{right:35%}#character:after{background:linear-gradient(90deg,transparent,#10161299 55%,#0a110ff2)}.portrait-title{bottom:85px;left:60%;right:4px}.portrait-title b{font-size:27px}#reaction{left:60%;bottom:50px}#combo-badges{display:none}#menu{padding:25px 20px}#menu h2{font-size:28px}header{top:20px;right:20px}.choices{grid-template-columns:1fr}.choices button{padding:12px}.choices .rune{width:40px;height:40px}.panel h2{font-size:23px}}
+/* Six acquired slots at most (three attacks + three support); keep touch targets usable. */
+.power-slot{width:44px;height:44px}
+.power-slot{border:5px solid transparent;border-image:url('/realm/raid/ui-slot.png') 28 stretch;padding:1px}
+.choices button{border:12px solid transparent;border-image:url('/realm/raid/ui-card.png') 36 stretch}
+#power-tooltip{border:9px solid transparent;border-image:url('/realm/raid/ui-tooltip.png') 48 stretch}
+.bar.hp{position:relative;height:18px;border:0;background:transparent;box-shadow:none;padding:5px 13%}
+.bar.hp:after{content:'';position:absolute;inset:0;background:url('/realm/raid/ui-health.png') center/100% 100% no-repeat;pointer-events:none}
+.bar.hp i{position:relative;z-index:1;height:8px}
+#skill{display:flex;align-items:center;gap:5px}
+#skill:before{content:'';width:24px;height:24px;background:url('/realm/raid/power-skill.png') center/contain no-repeat}
+/* A shared fitted stage keeps portrait and battlefield touching at every landscape size. */
+@media(orientation:landscape),(min-width:701px){
+  #layout{width:min(100%,calc((100dvh - 12px)*1.995556 + 12px));height:min(100dvh,calc((100vw - 12px)/1.995556 + 12px));min-height:0;grid-template-columns:minmax(0,.44fr) minmax(0,1.555556fr);gap:0;padding:6px}
+  main,#play{align-items:stretch;justify-content:flex-start}
+  #arena{width:100%;height:100%;max-height:none;aspect-ratio:auto;border:0}
+  #character{border:0;height:100%}
+}
+/* 큰 창 테두리 · H20 조각(모서리+민무늬 막대 반복+매듭) · 늘이지 않는다 (형 11-15) · 굽기 tools/raid-frame-kit.py */
+:root{--fk:clamp(20px,2.6vw,36px)}
+/* 모서리 장식에 안 가리게 네 귀의 HUD 를 테두리만큼 안으로 */
+#combat-hud{margin:calc(var(--fk)*.45) 0 0 calc(var(--fk)*.45)}#score{margin:0 0 calc(var(--fk)*.2) calc(var(--fk)*.45)}footer{margin:0 calc(var(--fk)*.45) calc(var(--fk)*.2) 0}header{margin:calc(var(--fk)*.4) calc(var(--fk)*.4) 0 0}
+#character:before,#arena:before{content:'';position:absolute;inset:0;z-index:3;pointer-events:none;border:9px solid transparent;border-image:url('/realm/raid/frame-9.png') 131 / var(--fk) round}
+.frame-knots{position:absolute;inset:0;z-index:4;pointer-events:none;--kh:calc(var(--fk)*.36);background:url('/realm/raid/frame-knot-h.png') left 50% top calc(var(--fk)*.298 - var(--kh)/2)/auto var(--kh) no-repeat,url('/realm/raid/frame-knot-h.png') left 50% bottom calc(var(--fk)*.298 - var(--kh)/2)/auto var(--kh) no-repeat,url('/realm/raid/frame-knot-v.png') left calc(var(--fk)*.33 - var(--kh)/2) top 50%/var(--kh) auto no-repeat,url('/realm/raid/frame-knot-v.png') right calc(var(--fk)*.33 - var(--kh)/2) top 50%/var(--kh) auto no-repeat}
+#menu,.panel{border:12px solid transparent;border-image:url('/realm/raid/frame-9.png') 131 / var(--fk) round}
+#skill-cutin{position:absolute;left:1%;bottom:8%;width:29%;height:62%;pointer-events:none;animation:skill-cutin .7s ease-out both;z-index:2;filter:drop-shadow(0 0 10px #dfb85a55)}#skill-cutin img{width:100%;height:100%;object-fit:cover;object-position:50% 15%;mask-image:linear-gradient(transparent,#000 15%,#000 70%,transparent)}#skill-cutin.full-body img{object-fit:contain;object-position:center;mask-image:radial-gradient(closest-side,#000 80%,transparent)}#skill-cutin b{position:absolute;bottom:15%;left:5%;right:-30%;font:bold clamp(14px,2.6vw,32px) 'Batang',serif;letter-spacing:.12em;color:#ffe7ab;text-shadow:0 2px 4px #000,2px 0 5px #000}@keyframes skill-cutin{0%{opacity:0;transform:translateX(-60%)}18%{opacity:1;transform:translateX(0)}68%{opacity:1;transform:translateX(3%)}100%{opacity:0;transform:translateX(20%)}}@media(prefers-reduced-motion:reduce){#skill-cutin{animation:none}}
+
+@media(orientation:landscape),(min-width:701px){header{right:max(12px,calc((100vw - ((100dvh - 12px)*1.995556 + 12px))/2 + 12px))}}
+/* ── H21~H24 UI 조각 (형 11-15 · 굽기 tools/raid-ui-kit.py · 숫자는 public/realm/raid/ui/kit.json) ──
+   게이지: 양 끝 마개는 높이에 맞춰 그대로, 가운데 홈만 반복 · 홈은 투명하게 뚫려 있어 채움(i)이 밑에서 보인다
+   bar-hp 700×68 홈 y16~53 x85~617 · bar-xp 662×39 홈 y12~26 x65~598 */
+.bar.hp{--bh:26px;position:relative;height:var(--bh);border:0;background:transparent;box-shadow:none;padding:calc(var(--bh)*16/68) calc(var(--bh)*85/68) calc(var(--bh)*15/68)}
+.bar.hp:after{background:none;border-style:solid;border-color:transparent;border-image:url('/realm/raid/ui/bar-hp.png') 0 85 fill / 0 calc(var(--bh)*85/68) round stretch}
+.bar.hp i{height:100%;background-color:#101810}
+.bar.xp{--bh:16px;bottom:calc(var(--fk)*.48);left:calc(var(--fk)*.6);right:calc(var(--fk)*.6);height:var(--bh);background:transparent;padding:calc(var(--bh)*12/39) calc(var(--bh)*65/39) calc(var(--bh)*13/39)}
+.bar.xp:after{content:'';position:absolute;inset:0;pointer-events:none;border-style:solid;border-color:transparent;border-image:url('/realm/raid/ui/bar-xp.png') 0 65 fill / 0 calc(var(--bh)*65/39) round stretch}
+/* 단추 판(9분할, 모서리 고정) · 아이콘 */
+footer button{background:none;border:0;border-image:url('/realm/raid/ui/btn.png') 58 fill / 15px stretch;box-shadow:none;text-shadow:0 1px 3px #000}
+footer .primary{background:none;border-image-source:url('/realm/raid/ui/btn-primary.png');color:#fff3cf}
+footer button:active{filter:brightness(1.25);transform:scale(.97)}
+#dash{display:flex;align-items:center;gap:5px}
+#dash:before{content:'';width:24px;height:24px;background:url('/realm/raid/ui/ic-evade-glyph.png') center/contain no-repeat}
+.head-actions button{font-size:0;border:0;background:url('/realm/raid/ui/ic-pause.png') center/contain no-repeat;box-shadow:none}
+.head-actions #fullscreen{background-image:url('/realm/raid/ui/ic-full.png')}
+.head-actions button:active{transform:scale(.92)}
+#reroll{display:inline-flex;align-items:center;gap:6px}
+#reroll:before{content:'';width:20px;height:20px;background:url('/realm/raid/ui/ic-reroll-glyph.png') center/contain no-repeat}
+/* 알림 띠 · 조합 패 */
+#announcement{background:none;border-style:solid;border-color:transparent;border-image:url('/realm/raid/ui/banner.png') 0 115 fill / 0 calc(var(--fk)*1.6) round stretch;padding-left:calc(var(--fk)*1.8);padding-right:calc(var(--fk)*1.8);left:14%;right:14%}
+#combo-badges span{border-style:solid;border-color:transparent;border-image:url('/realm/raid/ui/badge-bronze.png') 35 fill / 10px stretch;padding:3px 10px;justify-self:start}
+.result-combos b{border:0;border-image:url('/realm/raid/ui/badge-red.png') 35 fill / 12px stretch;padding:10px 18px}
+/* 기세바가 아래 테두리 막대 바로 위에 앉으니 격파 수·단추를 그만큼 올린다 */
+#score{margin-bottom:calc(var(--fk)*.48 + 12px)}footer{margin-bottom:calc(var(--fk)*.48 + 12px)}
+/* ── 11-15 형 검수: 글꼴 · 테두리 맞춤 · 시작 화면이 한 화면에 · 비기 컷인 읽을 시간 ── */
+/* 글꼴은 본편과 같은 셋 (public/fonts · raid.html 이 fonts.css 를 부른다): 본문 고운돋움 · 제목 고운바탕 · 큰 이름 송명 · 숫자 바를로 */
+:root{--body:'Gowun Dodum',system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;--serif:'Gowun Batang','Apple SD Gothic Neo','Batang',serif;--display:'Song Myung','Gowun Batang','Batang',serif;--num:'Barlow Condensed','Gowun Dodum',sans-serif;font-family:var(--body)}
+h1,h2,.choices b,#power-tooltip>b{font-family:var(--serif)}
+.portrait-title b,#menu h2,#skill-cutin b,.panel.result h2{font-family:var(--display);font-weight:400}
+#hud b,#score b,#streak,.power-slot b,.health-line span,.journey b{font-family:var(--num);font-weight:600;font-variant-numeric:tabular-nums}
+#announcement{font-family:var(--serif)}
+/* 화면 가운데에 앉힌다 (16:9 창에서 아래만 비던 것) */
+#raid{min-height:100dvh;display:grid;align-items:center}
+/* 테두리: 그림 바깥 여백(막대 밖 20/131)만큼 밖으로 내어 막대가 칸 가장자리에 딱 붙게 — 초상·전장이 막대 밖으로 새지 않는다 */
+#character:before,#arena:before{border-image-outset:calc(var(--fk)*.153)}
+#menu,.panel{border-image-outset:calc(var(--fk)*.153)}
+.frame-knots{background-position:left 50% top calc(var(--fk)*.145 - var(--kh)/2),left 50% bottom calc(var(--fk)*.145 - var(--kh)/2),left calc(var(--fk)*.177 - var(--kh)/2) top 50%,right calc(var(--fk)*.177 - var(--kh)/2) top 50%}
+/* 시작 화면: 굴리지 않는다 — 창 높이에 맞춰 글씨와 간격이 줄어든다 */
+#menu{overflow:hidden;gap:clamp(5px,1.9vh,20px);padding:clamp(16px,5vh,70px) clamp(22px,5vw,75px)}
+#menu h2{margin:0;font-size:clamp(24px,6.4vh,56px);line-height:1.2}
+#menu h2 em{display:block;font-size:.62em;margin-top:.15em}
+#menu p{font-size:clamp(11px,2vh,15px);line-height:1.6}
+.journey{margin:0;gap:clamp(14px,3vw,34px)}
+.journey b{font-size:clamp(16px,3.4vh,28px);margin-bottom:2px}
+.journey span{font-size:clamp(10px,1.7vh,13px)}
+#start{margin:clamp(2px,1vh,10px) 0 0;padding:clamp(9px,2vh,16px) 25px;font-size:clamp(14px,2.4vh,18px)}
+#menu .controls{font-size:clamp(10px,1.6vh,12px)}
+#menu .note{margin:0;font-size:clamp(10px,1.5vh,12px)}
+@media(orientation:portrait) and (max-width:700px){#layout{height:100dvh;min-height:0;grid-template-rows:clamp(150px,27dvh,240px) minmax(0,1fr)}#character{height:auto}main{min-height:0}.journey{flex-wrap:wrap}}
+/* 연속 격파는 단추와 겹치지 않게 오른쪽 위 단추 아래로 */
+#streak{bottom:auto;top:calc(var(--fk)*.45 + 62px);right:calc(var(--fk)*.6 + 6px);font-size:clamp(15px,2.2vw,24px)}
+/* 비기 컷인: 들어와서 이름을 읽을 만큼 머문다 (길이는 params skillCutin · 코드가 animation-duration 으로 넣는다) */
+#skill-cutin b{bottom:12%;left:0;right:-45%;padding:.25em .6em;font-size:clamp(18px,3.4vw,44px);background:linear-gradient(90deg,#060d0fd9,#060d0f99 60%,transparent);border-left:3px solid #e8c577}
+@keyframes skill-cutin{0%{opacity:0;transform:translateX(-60%)}9%{opacity:1;transform:translateX(0)}86%{opacity:1;transform:translateX(3%)}100%{opacity:0;transform:translateX(18%)}}
+/* 가운데로 내려앉은 판을 따라 오른쪽 위 단추도 내려온다 */
+@media(orientation:landscape),(min-width:701px){header{top:calc((100dvh - min(100dvh,(100vw - 12px)/1.995556 + 12px))/2 + 20px)}}
+/* 11-16 독립 열전: 스테이지 셋 · 금 · 상점 (다이센카식 판 밖 성장) */
+.stage-pick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(6px,1.2vw,14px);width:100%}
+.stage-pick button{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:clamp(6px,1.4vh,12px) 6px;background:#0d1a16cc;border:1px solid #5b5236;border-radius:8px;color:#e8dfc7;cursor:pointer;transition:transform .12s}
+.stage-pick button:active{transform:scale(.95)}
+.stage-pick button.on{background:linear-gradient(180deg,#5a4520,#2b2112);border-color:#e8c46a;box-shadow:0 0 0 2px #e8c46a66,0 0 18px #e8c46a44}
+.stage-pick button.on::after{content:'✓';position:absolute;top:4px;right:8px;color:#ffd977;font-weight:700}
+.stage-pick button:disabled{opacity:.45;cursor:not-allowed}
+.stage-pick b{font-family:var(--serif);font-size:clamp(12px,2.2vh,17px)}
+.stage-pick small{font-size:clamp(9px,1.5vh,11px);color:#b9ae92}
+.stage-pick .emblem{width:clamp(36px,8vh,64px);height:clamp(36px,8vh,64px);border-radius:50%;display:grid;place-items:center;font-family:var(--serif);font-size:clamp(13px,2.4vh,20px);background:radial-gradient(circle at 35% 30%,#6b6250,#2a2620);color:#8d8370;border:2px solid #5a5242}
+.stage-pick .emblem.got{background:radial-gradient(circle at 35% 30%,#ffe7a0,#b07a2a 60%,#5a3a12);color:#3a2408;border-color:#ffd977;box-shadow:0 0 12px #ffcf6a88}
+#menu .note{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.gold-line{font-size:clamp(12px,2vh,15px);color:#e8dfc7}.gold-line b{font-family:var(--num);color:#ffd36a;font-size:1.25em}
+#open-shop{padding:6px 14px;border-radius:6px;background:#3a2c14;border:1px solid #c9a24f;color:#ffe3a0;cursor:pointer}
+#shop{position:fixed;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;padding:14px;background:#050d13d9;backdrop-filter:blur(3px)}
+#shop[hidden]{display:none}
+.panel.shop{max-width:1040px;padding:clamp(14px,3vh,28px)}
+.panel.shop h2{margin:4px 0;font-family:var(--num);color:#ffd36a}
+.panel.shop>p{margin:0 0 8px;font-size:clamp(10px,1.7vh,13px);color:#b9ae92}
+.shop-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(5px,1vh,10px)}
+.shop-grid button{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto auto;column-gap:8px;align-items:center;text-align:left;padding:clamp(5px,1.1vh,10px);background:#122019;border:1px solid #4d4630;border-radius:8px;color:#e8dfc7;cursor:pointer;transition:transform .12s}
+.shop-grid button:active{transform:scale(.95)}
+.shop-grid .rune{grid-row:1/4;width:clamp(28px,5.4vh,44px);height:clamp(28px,5.4vh,44px);display:grid;place-items:center;font-family:var(--serif);font-size:clamp(15px,2.8vh,24px);border-radius:8px;background:#2a3a2e;color:#ffe3a0}
+.shop-grid b{font-size:clamp(11px,1.9vh,14px)}.shop-grid b i{font-style:normal;font-family:var(--num);color:#b9ae92;margin-left:4px}
+.shop-grid small{font-size:clamp(9px,1.5vh,11px);color:#c9bea2;line-height:1.3}
+.shop-grid em{font-style:normal;font-family:var(--num);font-size:clamp(10px,1.7vh,13px);color:#ffd36a}
+.shop-grid .poor em{color:#d9826a}.shop-grid .poor{opacity:.75}
+.shop-grid .maxed{background:linear-gradient(180deg,#4a3a18,#241c0e);border-color:#e8c46a}.shop-grid .maxed em{color:#ffe3a0}
+.shop-grid .bought{animation:shop-pop .3s}
+@keyframes shop-pop{0%{transform:scale(1.12);box-shadow:0 0 24px #ffd36a}100%{transform:scale(1)}}
+.shop-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:10px}
+/* 데려갈 장수 (raid-main renderHeroes · 본편에서 모은 장수) — 많으면 상자 안에서만 내려 본다 */
+.panel.shop.heroes{width:min(1040px,100%)}
+.hero-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px;max-height:min(52vh,460px);overflow-y:auto;padding:4px}
+.hero-grid button{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;background:#122019;border:1px solid #4d4630;border-radius:10px;color:#e8dfc7;cursor:pointer;transition:transform .12s}
+.hero-grid button:active{transform:scale(.93)}
+.hero-grid button.on{border-color:#ffd36a;box-shadow:0 0 0 2px #ffd36a,0 0 12px #ffd36a66;background:#2a2410}
+.hero-grid img{width:60px;height:60px;object-fit:cover;object-position:top;border-radius:8px}
+.hero-grid b{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.hero-grid small{font-size:10px;color:#b9ae92}
+.hero-grid .tw,.panel.shop .tw{position:absolute;top:3px;right:3px;font-style:normal;font-size:10px;padding:0 5px;border-radius:8px;background:#3a2c10;border:1px solid #c9a04a;color:#ffd36a}
+.panel.shop>p .tw{position:static}
+.hero-grid .tw.ok{background:#c9a04a;color:#1a1408;font-weight:800}
+.reward .tw-open{color:#ffd36a}
+.panel.result .reward{font-size:clamp(14px,2.4vh,18px);color:#e8dfc7}.panel.result .reward b{font-family:var(--num);color:#ffd36a;font-size:1.3em}.panel.result .reward strong{color:#ffe3a0}
+@media(orientation:portrait) and (max-width:700px){.shop-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.shop-grid button{grid-template-columns:1fr;grid-template-rows:auto auto auto auto;justify-items:center;text-align:center;padding:6px 3px}.shop-grid .rune{grid-row:auto;width:34px;height:34px}.shop-grid small{font-size:9px}.panel.shop{padding:12px}.panel.shop>p{display:none}#menu .controls{display:none}#menu h2{font-size:clamp(22px,4.6vh,40px)}#menu p{font-size:12px;line-height:1.5}.stage-pick b{font-size:13px}.stage-pick small{font-size:9px}}
+/* 11-16 그림 도착: 상점 아이콘(H41) · 휘장(H42) · 결과 배경(H43·H44) */
+.shop-grid img.rune{object-fit:contain;padding:2px;background:#1c2a20}
+.stage-pick img.emblem{object-fit:contain;padding:0;background:none;border:0;filter:grayscale(1) brightness(.55);box-shadow:none}
+.stage-pick img.emblem.got{filter:drop-shadow(0 0 8px #ffcf6a99);background:none;border:0}
+.stage-pick button:disabled img.emblem{filter:grayscale(1) brightness(.3)}
+.panel.result.won{background:linear-gradient(180deg,#0a120ecc,#0a120ef2 60%),url('/realm/raid/result-win.webp') center/cover}
+.panel.result.lost{background:linear-gradient(180deg,#070b10cc,#070b10f2 60%),url('/realm/raid/result-lose.webp') center/cover}
+.won-emblem{width:1.8em;height:1.8em;vertical-align:middle;margin-right:4px}

@@ -18,7 +18,10 @@ for (const d of ['gpt', 'veo', 'gem', 'strip']) mkdirSync(join(OUT, d), { recurs
 
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
 const cards = { gpt: [], veo: [], gem: [], strip: [] }
+// User-created replacements already installed: omit obsolete remake requests.
+const userArtImports = existsSync('tools/user-art-imports-20261114.json') ? JSON.parse(readFileSync('tools/user-art-imports-20261114.json', 'utf8')).images : []
 const add = (kind, n, title, imgs, prompt, save, note = '') => {
+  if (kind === 'gpt' && userArtImports.some((x) => save === `gpt_aw${x.tier}-${x.id}.png`)) return
   const files = imgs.map((src, i) => { const f = `${kind}/${String(n).padStart(2, '0')}-${i}-${basename(src)}`; copyFileSync(src, join(OUT, f)); return f })
   cards[kind].push({ n, title, files, prompt, save, note })
 }
@@ -236,6 +239,7 @@ button.ok { background: #2e6b33; } code { color: var(--gold); } small { color: v
 @media (max-width: 640px) { .row { flex-direction: column; } .row img { width: 100%; } }
 </style></head><body><main>
 <h1>굽기 꾸러미</h1>
+<p><a data-haebi-pack href="../haebi-pack/index.html">새 제작실 · 해비 시련·선봉 이미지 12 + 영상 4 →</a></p>
 <p class="how">그림은 끌어다 챗지피티·제미나이 입력칸에 놓으면 붙습니다 (안 되면 그림을 눌러 연 뒤 저장해서 첨부). 받은 결과는 <b>저장 이름</b> 그대로 <code>Downloads</code> 에 두세요. 다 두면 Claude 에게 「꾸러미 넣어」 한마디면 됩니다 (<code>sh tools/bake-intake.sh</code>). 「다 함」 표시는 이 컴퓨터에만 남습니다.</p>
 <nav><a href="#gem">제미나이 ${cards.gem.length}</a><a href="#strip">전투 띠 ${cards.strip.length}</a><a href="#gpt">챗지피티 진각성 ${cards.gpt.length}</a><a href="#veo">Veo ${cards.veo.length}</a></nav>
 ${sec('gem', '제미나이 그림', '「이미지 만들기」 · 16:9 · 옥문 셋은 한 대화에서 차례로 (같은 틀이어야 겹쳐 쓸 수 있습니다)')}

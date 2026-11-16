@@ -1,3 +1,5 @@
+import { mountVanguard } from '../../raid/vanguard-bridge.ts'
+import { breakthroughText } from '../../realm/vanguard.ts'
 /**
  * 전장 — 우리가 낀 싸움을 합(라운드)마다 직접 지휘한다 (docs/realm/BATTLE.md §전투 2판 · 형 2026-10-19:
  * "기병컨트롤은 방법이없나? 군대 운용이 제일 중요한데" · "창병움직이면 다른애들 가만있냐. 각자 행동 컨트롤")
@@ -29,6 +31,7 @@ import { artVoicePath, autoVoicePath, voiceGate, voicePath } from './voice.ts'
 import { WIN_BUZZ, warmWinLogos, winFxHtml } from './winfx.ts'
 import { morph, morphInto } from './morph.ts'
 import { mountDuel, type DuelSide } from '../../duel/view.ts'
+import { duelMuOf } from '../../duel/power.ts'
 import { clampTier } from '../../realm/tier.ts'
 import { holdBox } from './holdbox.ts'
 import { TIER_MEN, sideIdx, tierCounts, tierPrec, tierStanding, type Tier } from './troops.ts'
@@ -38,6 +41,9 @@ import type { Elem } from '../../realm/elem.ts'
 import { cellColor, lookCells, lookNums, oneChance, pctText, signed, type LookCell } from './lookword.ts'
 import { t as tr, type Key } from '../../i18n/index.ts'
 import { nameTable } from '../../i18n/names.ts'
+import { WALK_CYCLE } from '../../raid/walk-cycle.ts'
+/** 걷기 띠가 6·4칸이면 그 칸까지만 돈다 (8칸으로 돌리면 한 바퀴마다 같은 두 걸음이 거듭 나와 턱 걸림 · 형 11-16) · 20칸 띠의 칸 k 는 k/19 */
+const walkVars = (file: string): string => { const n = WALK_CYCLE[file]; return n === undefined ? '' : `;--w1:${((4 + n) / 19 * 100).toFixed(4)}%;--gwn:${n}` }
 
 /** 장수마다 숨쉬기 박자를 어긋나게 (0~1 · 이름에서 정해져 같은 장수는 늘 같다 · 형 11-12: 「다 동시에 움직인다」) */
 const idlePhase = (id: string): string => ([...id].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 997, 7) / 997).toFixed(2)
@@ -471,7 +477,7 @@ function stakes(art: string, broken: boolean, gate: boolean): string {
   const N = 24
   for (let i = 0; i < N; i++) {
     const oy = -40 + (80 * i) / (N - 1)
-    if (gate && Math.abs(oy) < 6.5) continue // 성문 자리
+    if (gate && Math.abs(oy) < 6.5) continue // 성문 양끝이 목책 줄과 이어지는 자리
     const x = 47.5 + oy * 0.22 + (jit(i, 7) - 0.5) * 0.6
     let k = 4 + Math.floor(jit(i, 1) * 6)
     let r = (jit(i, 2) - 0.5) * 6
@@ -486,9 +492,8 @@ function stakes(art: string, broken: boolean, gate: boolean): string {
     h += img(k, 'stk', x, oy, hk, r, 10 + Math.round(oy + 40))
   }
   if (gate) {
-    // 성문 — 키 큰 통나무 둘씩 망루 기둥 · 사이에 널문
-    for (const [oy, k] of [[-8, 1], [-6.5, 3], [6.5, 2], [8, 1]] as const) h += img(k, 'stk tall', 47.5 + oy * 0.22, oy, 1, broken && oy > 0 ? 18 : 0, 10 + Math.round(oy + 40))
-    h += `<i class="gatedoor${broken ? ' smashed' : ''}" style="--x:47.5%;--oy:0%;z-index:50"></i>`
+    // 기존 작화 성문/파괴 소품을 사용한다. 문 양옆 기둥도 그림에 포함되어 있다.
+    h += `<img class="gatedoor${broken ? ' smashed' : ''}" src="${art}fx/field/${broken ? 'gate-oblique-broken' : 'gate-oblique'}.png" alt="" style="--x:47.5%;--oy:4%;z-index:50">`
   }
   return h + '</span>'
 }
@@ -517,6 +522,11 @@ const ROUND_KEYS = ['war.round.1', 'war.round.2', 'war.round.3', 'war.round.4', 
 /** 장수를 골라야 하는 깃발 — 비기(누가 쓰나) · 겨루기(누가 나서나) · 사로잡기(누구를 잡나) */
 const WHO_KINDS = ['art', 'duel', 'capture'] as const
 /** 비기 깃발에 걸 비기 — 「누가 비기를 쓰나」에서 고른 장수의 것 · 안 골랐으면 처음 보인 것 */
+function vanguardHero(p: Pending, who?: string) {
+  const hs = (p.heroes ?? []).filter(h => h.art && !h.artUsed)
+  const h = hs.find(h => h.id === who) ?? hs[0]
+  return h?.breakthrough && h.art === 'vanguard' ? h : undefined
+}
 const artFor = (p: Pending, who: string | undefined): Art | undefined => (who !== undefined ? p.heroes?.find((x) => x.id === who && x.art !== undefined && !x.artUsed)?.art : undefined) ?? p.art
 
 /**
@@ -637,6 +647,7 @@ function duskHtml(l: BattleLine, a: DuskAsk, weAtk: boolean, art: string, anim: 
 }
 
 export interface WarHost {
+  review?: boolean
   readonly art: string
   /** 도트 시험(연습 싸움) — 겨루기 장수를 anim-px 도트 띠로 (없는 장수는 옛 띠) */
   readonly px?: boolean
@@ -701,7 +712,7 @@ function actRow(x: Act, ourS: 'a' | 'd', art: string, mixA: Readonly<Partial<Rec
     const self = `<img src="${art}icon/${groupIcon(mixOfS(x.s), x.g)}.png" alt=""><b>${esc(verb)}</b>`
     const tgt = x.tg !== undefined ? `<img class="tg" src="${art}icon/${groupIcon(mixOfS(other), x.tg)}.png" alt="">` : ''
     const res = `<span class="res">${badge} ${word}</span>`
-    let tail = ''
+    let tail = x.breakthrough !== undefined ? `<span class="kept">${breakthroughText(x.breakthrough)}</span>` : ''
     if ((x.tl ?? 0) > 0) tail += `<span class="loss">${us ? tr('war.duskrow.2') : tr('war.duskrow.1')} −${x.tl}</span>`
     if ((x.sl ?? 0) > 0) tail += `<span class="loss own">${us ? tr('war.duskrow.1') : tr('war.duskrow.2')} −${x.sl}</span>`
     // 물러나기 — 잃은 수만 있으면 「−21」을 남은 수로 읽었다 (형 10-25: "330명이 21명 됐음 · 21명이 죽은 거 아닌가?") — 빠져나간 수를 곁에
@@ -1353,7 +1364,7 @@ export function beatLen(c: Cmd): number {
   const s = FX_SPAN[c]
   return s === undefined ? R.warBeatStep : Math.min(R.warBeatLong, Math.max(R.warBeatMin, s * R.warFxSquash))
 }
-function roundPlan(rd: RoundLog, weAtk: boolean): { beats: Beat[]; clash: number; story: number; result: number } {
+export function roundPlan(rd: RoundLog, weAtk: boolean): { beats: Beat[]; clash: number; story: number; result: number } {
   const R = P.realm
   const ord = (o: RoundOrder | undefined, main: Cmd, art: boolean): Cmd[] => {
     const cs = o === undefined ? [main] : (['front', 'bows', 'horse', 'lead'] as const).filter((g) => !(art && g === 'lead')).map((g) => o[g]).filter((c): c is Cmd => c !== undefined && c !== 'art')
@@ -1385,7 +1396,7 @@ export function goWord(picked: number, n: number): string {
 
 /** 고른 것에 이 깃발을 끼운 명령 — 안 고른 무리는 장수가 고를 것(엔진이 채운다) */
 const withPick = (sel: RoundOrder, g: Grp | 'lead', c: Cmd): RoundOrder => ({ ...sel, [g]: c })
-const orderKey = (o: RoundOrder): string => [o.front, o.bows, o.horse, o.lead, o.who, o.target].map((x) => x ?? '').join('|')
+const orderKey = (o: RoundOrder): string => [o.front, o.bows, o.horse, o.lead, o.who, o.target, o.breakthrough].map((x) => x ?? '').join('|')
 const LOOKS = new WeakMap<RoundAt, Map<string, Look>>()
 /** 깃발 짐작 — 한 합 동안 한 번 셈한 것은 다시 쓴다 (고를 때마다 다시 그려도 셈은 한 번). compute 가 아니면 셈해 둔 것만 */
 function lookFor(at: RoundAt, o: RoundOrder, compute: boolean): Look | undefined {
@@ -1446,6 +1457,11 @@ function deltaBar(lk: Look): string {
 /** 「이대로 싸우면」 — 무리마다 다 골랐을 때 그 명령 그대로의 짐작 (전투 개시 단추 위) */
 function lookSumHtml(at: RoundAt | undefined, sel: RoundOrder, all: boolean, compute: boolean): string {
   if (at === undefined || !all) return ''
+  const mine = at.mine === 'a' ? at.c.atk : at.c.def
+  const used = at.mine === 'a' ? at.st.artsA : at.st.artsD
+  const hs = [mine.hero, ...(mine.aides ?? [])].filter(h => h && h.art && !used.has(h.id))
+  const actor = hs.find(h => h?.id === sel.who) ?? hs[0]
+  if (sel.lead === 'art' && actor?.breakthrough && sel.breakthrough === undefined) return '<b class="wlst">선봉 돌파 후 이번 합의 판세가 결정됩니다</b><p>적 앞줄 최대 12% 손실 · 이번 합 아군 앞줄 힘 최대 +75%. 돌파하지 못하면 추가 효과가 없습니다.</p>'
   const k = orderKey(sel)
   const lk = lookFor(at, sel, compute)
   return lk === undefined ? '' : `<b class="wlst">${tr('war.looksumhtml.1')}</b>${lookHtml(lk, k)}`
@@ -1687,7 +1703,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
         const gDown = caught || rounds.some((rd) => rd.lostHero?.hero === id)
         const gNow = anim && (caught || last?.lostHero?.hero === id)
         const gCls = ` gsp g-${ga.kind}${ga.bow === true ? ' gbw' : ''}${ga.mount === true ? ' gmt' : ''}${gNow ? ' gfall' : gDown ? ' gdown' : ''}${takenNow ? ' gtaken' : ''}${aide ? ' gcap-aide' : ''}`
-        return `<span class="wgen${gCls}" data-hero="${esc(id)}" style="--fc:${fc};--gar:${ga.ar.toFixed(3)};--gb:${ga.body.toFixed(3)};--k:${idlePhase(id)}"><i class="wpole">${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}</i><i class="gbody"><b class="gspf" style="background-image:url('${art}${ga.file}')"></b></i>${face(id, art, 'unit-general')}</span>`
+        return `<span class="wgen${gCls}" data-hero="${esc(id)}" style="--fc:${fc};--gar:${ga.ar.toFixed(3)};--gb:${ga.body.toFixed(3)};--k:${idlePhase(id)}"><i class="wpole">${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}</i><i class="gbody"><b class="gspf" style="background-image:url('${art}${ga.file}')${walkVars(ga.file)}"></b></i></span>`
       }
       // 우리가(이 진이) 사로잡은 적장들 — 장수 발치 땅바닥에 쓰러진 채 (쓰러짐 컷 19). 이번 합에 잡은 이는 이고 올 때까지 숨어 있다(.late)
       const mySide: 'a' | 'd' = i === 0 ? 'a' : 'd'
@@ -2024,8 +2040,9 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       const wk = c === 'wake' ? p.wake : undefined
       // 진각성 — 이 싸움이 크면 각성기 단추가 「진각성」으로 금빛이 짙어지고, 작으면 「진각성은 큰 싸움에서」 꼬리 (형 11-05: "진각성 방법도 자연스럽게 알 수 있어야")
       if (wk !== undefined) tag = p.trueWake === 'big' ? `<em class="art tru">${tr('war.warhtml.65')}</em>` : `<em class="art">${tr('war.cmdName.wake')}</em>${p.trueWake === 'small' ? `<small class="trun">${tr('war.warhtml.66')}</small>` : ''}`
-      const nm = wk !== undefined ? WAKE_NAME[wk] : ak !== undefined ? ART_NAME[ak] : CMD_NAME[c]
-      const sh = wk !== undefined ? WAKE_SHORT[wk] : ak !== undefined ? ART_SHORT[ak] : CMD_SHORT[c]
+      const vg = c === 'art' && vanguardHero(p, sel.who) !== undefined
+      const nm = vg ? '선봉에 서기' : wk !== undefined ? WAKE_NAME[wk] : ak !== undefined ? ART_NAME[ak] : CMD_NAME[c]
+      const sh = vg ? '직접 돌파 · 최대 3분. 아래 예상은 기본 비기 기준이며 난전 성과에 따라 달라집니다.' : wk !== undefined ? WAKE_SHORT[wk] : ak !== undefined ? ART_SHORT[ak] : CMD_SHORT[c]
       return `<button class="wcmd ${c}${on ? ' on' : ''}${recNow === c ? ' rec' : ''}${ctr}${wk !== undefined && p.trueWake === 'big' ? ' tru' : ''}" data-war="pick" data-g="${g}" data-c="${c}" data-more="${esc(ak !== undefined ? ART_DOES[ak] : CMD_DOES[c])}"><img class="wflag${wk !== undefined ? ' wbeast' : ''}" src="${flagSrc(art, c, ak, wk)}" alt=""><span class="wct"><b>${nm}</b>${tag}${feel}<small>${esc(sh)}</small>${gu}</span></button>`
     }
     // 무리 탭 — 누른 무리만 빛나고 그 무리 깃발만 보인다. 무리마다 다 고르면 「전투 개시」가 켜진다
@@ -2332,9 +2349,9 @@ html[data-lang="en"] .ap .wr.b0 .whelp::after { content: 'Details'; } html[data-
 .ap .wf2s .wf-pal .stk { position: absolute; left: var(--x); top: calc(60% + var(--oy)); height: calc(clamp(30px, 8.5cqw, 62px) * var(--hk) * var(--p, 1)); width: auto;
   transform: translate(-50%, -100%) rotate(var(--r)); transform-origin: 50% 100%; filter: drop-shadow(1px 3px 2px #000a); }
 .ap .wf2s .wf-pal .stk.tall { height: calc(clamp(60px, 17cqw, 124px) * var(--p, 1)); }
-.ap .wf2s .wf-pal .gatedoor { position: absolute; left: var(--x); top: calc(60% + var(--oy)); width: clamp(20px, 5cqw, 38px); height: clamp(36px, 9cqw, 66px); transform: translate(-50%, -100%) skewY(-12deg);
-  background: repeating-linear-gradient(90deg, #5a3a1e 0 22%, #3a2614 22% 25%); border: 2px solid #2a1a0c; filter: drop-shadow(1px 2px 2px #000a); }
-.ap .wf2s .wf-pal .gatedoor.smashed { clip-path: polygon(0 0, 40% 0, 30% 40%, 55% 55%, 35% 100%, 0 100%); filter: brightness(.6) drop-shadow(1px 2px 2px #000a); }
+.ap .wf2s .wf-pal .gatedoor { position: absolute; left: var(--x); top: calc(60% + var(--oy)); width: auto; height: clamp(60px, 17cqw, 124px); transform: translate(-50%, -100%) skewY(56deg); transform-origin: 50% 100%;
+  filter: drop-shadow(1px 2px 2px #000a); }
+.ap .wf2s .wf-pal .gatedoor.smashed { filter: brightness(.8) drop-shadow(1px 2px 2px #000a); }
 /* 성은 판 바닥까지 — 바닥 이름표(「수비 · 적 …」)의 중간에서 끊겨 떠 보였다 (형 10-26: "더 밑에까지 내려야해") */
 /* 폰 폭에서는 높이 95% 가 너비의 4분의 1을 먹어 목책과 겹쳤다 → 26cqw 로 묶었더니 너무 작다 (형 10-29: "성벽이 너무 작아진 거 아님") · 그 사이 44cqw */
 .ap .wf2s .wf-wall { position: absolute; left: -4%; bottom: -3%; height: min(95%, 44cqw); width: auto; transform: scaleX(-1); z-index: 1; pointer-events: none; filter: brightness(.8) saturate(.9) drop-shadow(0 4px 8px #000b); }
@@ -2359,15 +2376,13 @@ html[data-lang="en"] .ap .wr.b0 .whelp::after { content: 'Details'; } html[data-
 .ap .wf2s .tk.tkd, .ap .wf2s .tk.strike-gone, .ap .wfield:not(.play) .tk.tkf, .ap .wr.fast .wfield .tk.tkf { visibility: hidden; }
 /* 장수 — 맨 뒤 · 깃발 */
 .ap .wf2s .wgen { position: absolute; left: calc(7% + var(--gdx, 0%)); top: 60%; width: clamp(26px, 6.6cqw, 40px); transform: translate(-50%, -78%); z-index: 60; transition: left .5s cubic-bezier(.3, 1.25, .5, 1); }
-.ap .wf2s .wgen .wf { width: 100%; height: auto; aspect-ratio: 1; border-radius: 50%; object-fit: cover; border: 2px solid var(--fc); box-shadow: 0 0 0 1.5px #000a, 0 2px 6px #000c; background: #201811; position: relative; z-index: 1; }
-.ap .wf2s.foe .wgen .wf { transform: scaleX(-1); }
 .ap .wf2s .wpole { position: absolute; left: 50%; bottom: 60%; width: 3px; height: 110%; background: linear-gradient(90deg, #3a2814, #8a6a40); }
-.ap .wf2s .wpole img { position: absolute; left: 3px; top: 0; width: clamp(16px, 4cqw, 24px); aspect-ratio: 1.2; object-fit: contain; padding: 2px; background: var(--fc); border: 1px solid #1a1008; clip-path: polygon(0 0, 100% 0, 85% 50%, 100% 100%, 0 100%); }
+.ap .wf2s .wpole img { position: absolute; left: 1px; top: 0; width: clamp(22px, 5.2cqw, 32px); height: auto; display: block; }
 /* 지금 고르는 무리가 진에서 빛난다 (탭과 이어진다) */
 .ap .wfield[data-act="front"] .us .tk.r0, .ap .wfield[data-act="bows"] .us .tk.r1, .ap .wfield[data-act="horse"] .us .tk.r2 { filter: drop-shadow(0 0 4px #ffd27a) drop-shadow(0 0 2px #ffd27a) drop-shadow(0 2px 2px #000c); }
-.ap .wfield[data-act="lead"] .us .wgen .wf { box-shadow: 0 0 0 2px #ffd27a, 0 0 14px #ffd27a; }
+.ap .wfield[data-act="lead"] .us .wgen .gbody { filter: drop-shadow(0 0 3px #ffd27a) drop-shadow(0 2px 2px #000c); }
 /* 장수 그림 (형 10-30: "전투할 때 장수 유닛도") — public/realm/anim2/gen-<결>.png · 병사 v2 띠와 같은 20컷(서기 0~3 · 걷기 4~11 · 공격 12~17 · 맞음 18 · 쓰러짐 19).
-   발이 땅(60%)에 · 몸은 병사의 1.3배쯤(--gb = 서 있는 몸 / 띠 높이) · 얼굴 동그라미는 머리 위 · 깃대는 등 뒤 */
+   발이 땅(60%)에 · 몸은 병사의 1.3배쯤(--gb = 서 있는 몸 / 띠 높이) · 나라 깃대는 등 뒤 */
 .ap .wf2s .wgen.gsp { left: calc(9% + var(--gdx, 0%)); width: auto; height: calc(clamp(44px, 12.4cqw, 80px) / var(--gb, 1)); aspect-ratio: var(--gar, 1); transform: translate(-50%, -100%); }
 .ap .wf2s .wgen.gsp.gcap-aide { left: 16%; top: 72%; }
 .ap .wf2s .wgen.gsp.gmt { height: calc(clamp(56px, 15.6cqw, 100px) / var(--gb, 1)); }
@@ -2376,28 +2391,29 @@ html[data-lang="en"] .ap .wr.b0 .whelp::after { content: 'Details'; } html[data-
 .ap .wf2s .wgen.gsp .gbody::before { content: ''; position: absolute; left: 30%; right: 30%; bottom: -3%; height: 9%; border-radius: 50%; background: radial-gradient(closest-side, #000b, #0000); z-index: -1; }
 .ap .wf2s .wgen.gsp .gspf { position: absolute; inset: 0; background: 0 0 / 2000% 100% no-repeat; --i0: 0%; --i1: 21.0526%; --w0: 21.0526%; --w1: 63.1579%;
   animation: spidle calc(2.3s + var(--k, .4) * .7s) steps(4) calc(var(--k, .4) * -2.6s) infinite; }
-.ap .wf2s .wgen.gsp .wf { position: absolute; left: 50%; top: 0; width: clamp(16px, 4.2cqw, 26px); translate: -50% -92%; z-index: 2; }
 .ap .wf2s .wgen.gsp .wpole { left: 30%; bottom: 30%; height: 175%; z-index: 0; }
 /* 장수의 깃발(비기·겨루기·사로잡기·북)이 오른 합엔 맞부딪기 앞부터 칼질(활 장수는 쏘기). */
-.ap .wfield.enter .wgen.gsp .gspf { animation: spidle calc(2.3s + var(--k, .4) * .7s) steps(4) calc(var(--k, .4) * -2.6s) infinite, spwalk calc(var(--entry-time) / 3) steps(8) var(--entry-delay) 3; }
-.ap .wfield.play:not(.capture-round) .wf2s:is([data-l="art"], [data-l="duel"], [data-l="drum"]) .wgen.gsp:not(.gdown):not(.gfall) .gspf { animation: spidle calc(2.3s + var(--k, .4) * .7s) steps(4) calc(var(--k, .4) * -2.6s) infinite, gatk .9s steps(1) calc(var(--hd) - 1.2s) 3; }
+.ap .wfield.enter .wgen.gsp .gspf { animation: spidle calc(2.3s + var(--k, .4) * .7s) steps(4) calc(var(--k, .4) * -2.6s) infinite, spwalk calc(var(--entry-time) / 3) steps(var(--gwn, 8)) var(--entry-delay) 3; }
+.ap .wfield.play:not(.capture-round) .wf2s:is([data-l="art"], [data-l="duel"], [data-l="drum"]) .wgen.gsp:not(.gdown):not(.gfall) .gspf { animation: spidle calc(2.3s + var(--k, .4) * .7s) steps(4) calc(var(--k, .4) * -2.6s) infinite, gcharge 3.4s steps(1) calc(var(--hd) - 1.3s) 1; }
 .ap .wfield.play:not(.capture-round) .wf2s:is([data-l="art"], [data-l="duel"], [data-l="drum"]) .wgen.gsp.gbw:not(.gdown):not(.gfall) .gspf { animation: spidle calc(2.3s + var(--k, .4) * .7s) steps(4) calc(var(--k, .4) * -2.6s) infinite, spshot 1.1s steps(1) calc(var(--hd) - 1.2s) 3; }
 /* 합마다 장수도 칼질한다 — 자기 깃발이 아닌 합엔 진 맨 뒤에 서 있기만 해서 "장수 유닛은 왜 안 움직이냐 · 공격·기술이 하나도 안 보임"(형 11-04) ·
    맞부딪는 때에 한 번 · 자기 깃발(비기·겨루기·사로잡기·북) 합엔 앞으로 뛰어들어 세 번(아래 gdash) */
-.ap .wfield.play:not(.enter, .capture-round) .wf2s:not(:is([data-l="art"], [data-l="duel"], [data-l="capture"], [data-l="drum"])) .wgen.gsp:not(.gdown):not(.gfall) .gspf { animation: spidle calc(2.3s + var(--k, .4) * .7s) steps(4) calc(var(--k, .4) * -2.6s) infinite, gatk .9s steps(1) calc(var(--hd) - .5s) 1; }
-.ap .wfield.play:not(.enter, .capture-round) .wf2s:not(:is([data-l="art"], [data-l="duel"], [data-l="capture"], [data-l="drum"])) .wgen.gsp.gbw:not(.gdown):not(.gfall) .gspf { animation: spidle calc(2.3s + var(--k, .4) * .7s) steps(4) calc(var(--k, .4) * -2.6s) infinite, spshot 1.1s steps(1) calc(var(--hd) - .6s) 1; }
-.ap .wfield.play:not(.enter, .capture-round) .wf2s:is([data-l="art"], [data-l="duel"], [data-l="drum"]) .wgen.gsp:not(.gdown):not(.gfall):not(.gbw) { animation: gdash 3.4s cubic-bezier(.3, 0, .2, 1) calc(var(--hd) - 1.3s) 1 both; }
+.ap .wfield.play:not(.enter, .capture-round, .paired-strikes) .wf2s:not(:is([data-l="art"], [data-l="duel"], [data-l="capture"], [data-l="drum"])) .wgen.gsp:not(.gdown):not(.gfall) .gspf { animation: spidle calc(2.3s + var(--k, .4) * .7s) steps(4) calc(var(--k, .4) * -2.6s) infinite, gatk .9s steps(1) calc(var(--hd) - .5s) 1; }
+.ap .wfield.play:not(.enter, .capture-round, .paired-strikes) .wf2s:not(:is([data-l="art"], [data-l="duel"], [data-l="capture"], [data-l="drum"])) .wgen.gsp.gbw:not(.gdown):not(.gfall) .gspf { animation: spidle calc(2.3s + var(--k, .4) * .7s) steps(4) calc(var(--k, .4) * -2.6s) infinite, spshot 1.1s steps(1) calc(var(--hd) - .6s) 1; }
+.ap .wfield.play:not(.enter, .capture-round, .paired-strikes) .wf2s:is([data-l="art"], [data-l="duel"], [data-l="drum"]) .wgen.gsp:not(.gdown):not(.gfall):not(.gbw) { animation: gdash 3.4s linear calc(var(--hd) - 1.3s) 1 both; }
 @keyframes gdash { 0% { translate: 0 0; } 25%, 75% { translate: clamp(40px, 16cqw, 120px) 0; } 100% { translate: 0 0; } }
+/* Feet move during travel, attack only while planted, then face the return path. */
+@keyframes gcharge { 0% { background-position-x: 21.0526%; } 3.125% { background-position-x: 26.3158%; } 6.25% { background-position-x: 31.5789%; } 9.375% { background-position-x: 36.8421%; } 12.5% { background-position-x: 42.1053%; } 15.625% { background-position-x: 47.3684%; } 18.75% { background-position-x: 52.6316%; } 21.875% { background-position-x: 57.8947%; } 25% { background-position-x: 63.1579%; } 29% { background-position-x: 68.4211%; } 33% { background-position-x: 73.6842%; } 37% { background-position-x: 78.9474%; } 41% { background-position-x: 84.2105%; } 45% { background-position-x: 89.4737%; } 50% { background-position-x: 63.1579%; } 54% { background-position-x: 68.4211%; } 58% { background-position-x: 73.6842%; } 62% { background-position-x: 78.9474%; } 66% { background-position-x: 84.2105%; } 70% { background-position-x: 89.4737%; } 75% { background-position-x: 21.0526%; } 78.125% { background-position-x: 26.3158%; } 81.25% { background-position-x: 31.5789%; } 84.375% { background-position-x: 36.8421%; } 87.5% { background-position-x: 42.1053%; } 90.625% { background-position-x: 47.3684%; } 93.75% { background-position-x: 52.6316%; } 96.875% { background-position-x: 57.8947%; } 100% { background-position-x: 0.0000%; } }
+.ap .wfield.play:not(.enter, .capture-round, .paired-strikes) .wf2s:is([data-l="art"], [data-l="duel"], [data-l="drum"]) .wgen.gsp:not(.gdown):not(.gfall):not(.gbw) .gbody { animation: greturn 3.4s steps(1) calc(var(--hd) - 1.3s) 1; }
+@keyframes greturn { 0%, 74.999%, 100% { transform: scaleX(1); } 75%, 99.999% { transform: scaleX(-1); } }
 @media (prefers-reduced-motion: reduce) { .ap .wfield.play .wgen.gsp { animation: none !important; } }
 @keyframes gatk { 0% { background-position-x: 63.1579%; } 10% { background-position-x: 68.4211%; } 26% { background-position-x: 73.6842%; } 40% { background-position-x: 78.9474%; } 66% { background-position-x: 84.2105%; } 84%, 100% { background-position-x: 89.4737%; } }
 /* 사로잡히거나 쓰러진 장수 — 그 합엔 휘청(18) 했다가 쓰러지고(19) 깃대가 넘어간다 · 다음 합부터 누운 채 */
 .ap .wfield .wgen.gsp.gfall .gspf { animation: gdie 1.3s steps(1) calc(var(--hd) + .1s) forwards; }
 @keyframes gdie { 0% { background-position-x: 94.7368%; } 35%, 100% { background-position-x: 100%; } }
 .ap .wfield .wgen.gsp.gfall .wpole { animation: gpolefall .7s ease-in calc(var(--hd) + .6s) forwards; } @keyframes gpolefall { to { rotate: -70deg; } }
-.ap .wfield .wgen.gsp.gfall .wf { animation: gbadge .5s ease-in calc(var(--hd) + .6s) forwards; } @keyframes gbadge { to { top: 58%; opacity: .7; } }
 .ap .wf2s .wgen.gsp.gdown .gspf { animation: none; background-position-x: 100%; }
 .ap .wf2s .wgen.gsp.gdown .wpole { rotate: -70deg; } .ap .wf2s .wgen.gsp .wpole { transform-origin: 50% 100%; }
-.ap .wf2s .wgen.gsp.gdown .wf { top: 58%; opacity: .7; }
 /* 사로잡힌 적장 — 잡은 쪽 진, 장수 발치 땅바닥에 쓰러진 채 (쓰러짐 컷 19 · 형 11-08). 제 진(거울)에서 쓰러진 모습 그대로라 칸을 뒤집는다.
    이번 합에 잡힌 이(.late)는 장수가 이고 와서 내려놓을 때 나타난다 (battle-capture.ts 가 쥔다) · 연출을 못 돌리면 그 합이 끝날 때(--ce) 바뀐다 */
 .ap .wf2s .wcapt { position: absolute; left: calc(11% + var(--ci, 0) * 7%); top: calc(69% + var(--ci, 0) * 4%); height: calc(clamp(44px, 12.4cqw, 80px) / var(--gb, 1)); aspect-ratio: var(--gar, 1); transform: translate(-50%, -100%); z-index: 130; pointer-events: none; }
@@ -2599,7 +2615,7 @@ html[data-lang="en"] .ap .wr.b0 .whelp::after { content: 'Details'; } html[data-
 @keyframes spdraw { from { background-position-x: var(--a0, 57.1429%); } to { background-position-x: var(--al, 71.4286%); } }
 /* 진·길이 바뀌어 자리를 옮기는 .5초(.wf2s.mv · left 전환과 같은 길이) — 걷기 칸을 돌린다 (형 11-11: 선 채로 날아다님) */
 .ap .wf2s.mv .tk.wsp .spf { animation: spwalk .5s steps(var(--spwalkn, 2)) 0s 1 !important; }
-.ap .wf2s.mv .wgen.gsp .gspf { animation: spwalk .5s steps(8) 0s 1 !important; }
+.ap .wf2s.mv .wgen.gsp .gspf { animation: spwalk .5s steps(var(--gwn, 8)) 0s 1 !important; }
 /* 새 띠(v2)의 궁수·쇠뇌 — 1.1초 박자로 살 메기기(12) 당기기(13) 다 당겨 겨누기(14 · 오래) 놓기(15 · 살이 떠난다) 내리기(16·17).
    놓는 때(박자의 반)가 화살(.wf-arw)이 뜨는 때와 같고, 화살과 같은 수(--bn)만큼 되풀이한다 (형 10-30: "창병은 공격 모션이 보이는데 다른 유닛들은 공격하는 게 안 보임" — 전엔 여섯 컷을 고르게 넘겨 다 당긴 컷이 0.2초씩만 비쳤고 화살은 한 번만 났다).
    끝없는 움직임이 아니라 횟수가 있어 저사양에서도 멈추지 않는다 (quality.ts 는 infinite 만 멈춘다) */
@@ -4518,8 +4534,23 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
    * 끝(이김·짐)은 그 합의 명령에 적혀 판 기록에 남는다 — 다시 돌려도 같다. 비기면 적지 않아 예전처럼 무예로 굴린다.
    * 겨루기는 전투판 위에 겹쳐 뜨고 저절로 닫힌다 — 싸움 음악은 그대로 흐른다.
    */
+  let vanguardOpen = false
   const fight = (key: string): void => {
+    if (vanguardOpen) return
     const pd = t.line?.key === key ? t.line.pending : undefined
+    const vg = pd !== undefined && sel.lead === 'art' ? vanguardHero(pd, sel.who) : undefined
+    if (vg && sel.breakthrough === undefined) {
+      let seed = 0
+      for (const ch of `${prev.seed}:${prev.season}:${key}:${pd!.round}:${vg.id}`) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0
+      vanguardOpen = true
+      const order = { ...sel, who: vg.id }, round = pd!.round
+      void mountVanguard(ov, seed, host.review).then(n => {
+        vanguardOpen = false
+        if (!ov.isConnected || t.line?.key !== key || t.line.pending?.round !== round) return
+        if (n !== undefined) { sel = { ...order, breakthrough: n }; fightNow(key) }
+      })
+      return
+    }
     if (sel.lead === 'duel' && sel.duel === undefined && pd !== undefined) {
       const mine = pd.heroes ?? []
       const meId = sel.who ?? [...mine].sort((a, b) => b.mu - a.mu || (a.id < b.id ? -1 : 1))[0]?.id
@@ -4527,7 +4558,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       const foe = (pd.foeHeroes ?? []).map((h) => prev.heroes[h.id]).filter((h): h is Hero => h !== undefined)
         .sort((a, b) => b.mu - a.mu || (a.id < b.id ? -1 : 1))[0]
       if (me !== undefined && foe !== undefined) {
-        const side = (h: Hero): DuelSide => { const b = bustOf(h.id); return { name: h.name, mu: h.mu, sprite: host.px === true ? (PX_HERO[h.id] ?? generalSprite(h)) : generalSprite(h), ...(b !== undefined ? { portrait: b } : {}) } }
+        const side = (h: Hero): DuelSide => { const b = bustOf(h.id); return { name: h.name, mu: duelMuOf(h), sprite: host.px === true ? (PX_HERO[h.id] ?? generalSprite(h)) : generalSprite(h), ...(b !== undefined ? { portrait: b } : {}) } }
         let seed = 0
         for (const ch of `${key}:${pd.round}`) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0
         const line = t.line
@@ -4765,8 +4796,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         // 비기 깃발의 이름·그림도 그 장수의 비기로 (오간을 골랐는데 깃발은 을음의 「거짓 퇴각」이었다)
         const ak = kind === 'art' && t.line?.pending !== undefined ? artFor(t.line.pending, id) : undefined
         if (ak !== undefined) for (const x of ov.querySelectorAll<HTMLElement>('.wcmd.art[data-war="pick"]')) {
-          const nb = x.querySelector('.wct > b'); if (nb !== null) nb.textContent = ART_NAME[ak]
-          const sm = x.querySelector('.wct > small'); if (sm !== null) sm.textContent = ART_SHORT[ak]
+          const nb = x.querySelector('.wct > b'); if (nb !== null) nb.textContent = t.line?.pending && vanguardHero(t.line.pending, id) ? '선봉에 서기' : ART_NAME[ak]
+          const sm = x.querySelector('.wct > small'); if (sm !== null) sm.textContent = t.line?.pending && vanguardHero(t.line.pending, id) ? '직접 돌파 · 최대 3분. 아래 예상은 기본 비기 기준이며 난전 성과에 따라 달라집니다.' : ART_SHORT[ak]
           x.querySelector<HTMLImageElement>('.wflag')?.setAttribute('src', flagSrc(host.art, 'art', ak))
           if (x.dataset['more'] !== undefined) x.dataset['more'] = ART_DOES[ak]
           if (x.dataset['desc'] !== undefined) x.dataset['desc'] = ART_DOES[ak]
