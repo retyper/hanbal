@@ -19,8 +19,8 @@ OVR = ROOT / 'tools/skill-cut-override.json'
 DRY = '--dry' in sys.argv
 rec = json.loads(REC.read_text(encoding='utf-8')) if REC.exists() else {}
 done = []
-for f in sorted(SRC.glob('skillbody_aw[12]_*_v2.png')):
-    m = re.fullmatch(r'skillbody_(aw[12])_(.+)_v2\.png', f.name)
+for f in sorted(SRC.glob('skillbody_aw[12]_*_v2.png')) + sorted(SRC.glob('skillbody_aw[12]_*_v3.png')):   # _v3(검수 반려 다시)가 나중에 덮는다
+    m = re.fullmatch(r'skillbody_(aw[12])_(.+)_v[23]\.png', f.name)
     if not m:
         continue
     form, ident = m.group(1), m.group(2)

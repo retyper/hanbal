@@ -347,6 +347,17 @@ for (const [form, dir, table, group] of [['aw1', 'awaken-hd', ANAT_AW1, 'skill1'
       prompt: `FIX REQUEST (most important): ${table[id]}\n` + bodyV2(id, weaponText, kit, form) + '\nIMAGE 2 is the rejected previous cut-in: do NOT copy its pose, style or mistakes.' })
   }
 }
+// 11-17 밤 Claude 핑퐁 반려 — 받은 각성 v2 가운데 다시: 저장 _v3 (tools/skillbody-aw-v2-intake.py 가 _v3 를 _v2 보다 나중에 덮는다)
+const BOWFIX3 = 'BOW: the string must run continuously from the upper bow tip to the lower bow tip and be pulled back by the draw hand at the jaw; the arrow nock sits in the string at the draw hand and the shaft rests on the bow hand. In the v2 the string stood straight and untouched behind the bow while the arrow floated.'
+const AW_REJECT = { 'aw2/w-65-goguryeo-hwalmi': BOWFIX3 }
+for (const [key, fix] of Object.entries(AW_REJECT)) {
+  const [form, id] = key.split('/'), dir = form === 'aw1' ? 'awaken-hd' : 'awaken2-hd'
+  const { weaponText, kit } = weaponOf(id, { rope: true })
+  jobs.push({ id: `SB${form.slice(2)}-${id}-v3`, group: 'skilltest', save: `skillbody_${form}_${id}_v3.png`, title: `${id} · ${form === 'aw1' ? '1차 각성' : '진각성'} 비기 전신 v3 (Claude 검수 반려)`,
+    refs: [`/realm/${dir}/${id}.jpg`, `/realm/skill-body/${form}/${id}.jpg`], now: 'v2 반려: ' + fix.slice(0, 50),
+    use: '받으면 검수 → py -3 -I tools/skillbody-aw-v2-intake.py',
+    prompt: `FIX REQUEST (most important): ${fix}\nIMAGE 2 is the rejected v2: keep its good pose, outfit and exposure, fix only the problem.\n` + bodyV2(id, weaponText, kit, form) })
+}
 for (const [id, fix] of Object.entries(SB_FIX)) if (false) {
   const r = roster.find((x) => x.bust === id)
   const hold = r ? (r.hold || `the weapon and gear described here: ${r.desc.replace(/ from IMAGE \d/g, '')}`).replace(/,? ?held the same way in (every frame|all 8 frames)/gi, '') : 'the weapon in the portrait'
