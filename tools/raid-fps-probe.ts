@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 const THROTTLE = Number(process.argv[2] ?? 4), SEC = Number(process.argv[3] ?? 8), VARIANT = process.argv[4] ?? 'none', UNTIL = process.argv[5] ?? '300'
-const URL0 = `http://localhost:5174/raid.html?mode=stage&review&background`
+const URL0 = `http://localhost:5174/raid.html?mode=stage&review&background${process.env["KIT"] ? "&kit=" + process.env["KIT"] : ""}`   // KIT=bow 처럼 묶음 고르기
 const W = 844, H = 390, PORT = 9500 + Math.floor(Math.random() * 40)
 const CHROMES = ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe']
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))

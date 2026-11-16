@@ -1,9 +1,9 @@
 import { breakthroughText, isBreakthrough } from './realm/vanguard.ts'
 import { HAEBI_RUN as C, HAEBI_STICK as STICK, HAEBI_TREE as TREE } from './tune/params.ts'
-import { createHaebi, runDuration, stepHaebi, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, type Kit, type Power, type Pick, type HaebiRun, type StageId } from './raid/haebi.ts'
+import { createHaebi, runDuration, stepHaebi, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, nodeText, nodeAt, branchName, branchPoints, type Kit, type Power, type Pick, type HaebiRun, type StageId } from './raid/haebi.ts'
 import { loadMeta, saveMeta, buy, refund, record, shopCost, shopMax, stageOpen, stageName, SHOP, STAGE_ORDER, type ShopKey } from './raid/meta.ts'
 import { drawField, imagePaths, setHeroArt, heroArtFiles } from './raid/haebi-view.ts'
-import { powerIcon, installPowerHints, comboIcon, rankMark, treeSvg } from './raid/power-ui.ts'
+import { powerIcon, installPowerHints, comboIcon, rankMark, treeSvg, treeInfo, BRANCH_COLOR } from './raid/power-ui.ts'
 import { KIT_BY_SPRITE } from './raid/kit-table.ts'
 import { hasSkillBody } from './realm/data/skill-body.ts'
 import { josa } from './core/josa.ts'
@@ -125,9 +125,11 @@ function renderShop() {
   $('refund').onclick = () => { refund(meta); saveMeta(meta); run = newRun(7); renderShop(); renderStageMenu() }
   $('close-shop').onclick = () => { $('shop').hidden = true }
 }
-const canvas = $<HTMLCanvasElement>('field'), ctx = canvas.getContext('2d')!
+const canvas = $<HTMLCanvasElement>('field'), ctx = canvas.getContext('2d', { alpha: false })!   // 판은 늘 바탕을 다 칠한다 — 불투명이면 폰이 겹치기를 덜 한다
 const images = new Map<string, HTMLImageElement>(), keys = new Set<string>()
-let run = newRun(7), live = false, paused = false, shown = '', loadoutKey = '', acc = 0, last = 0, raf = 0, dash = false, skill = false
+let run = newRun(7), live = false, paused = false, shown = '', loadoutKey = '', acc = 0, last = 0, raf = 0
+/** 회피·비기를 누른 판 시각 (STICK.queue 초 동안 맡아 둔다 · press) */
+let dashAt = -9, skillAt = -9
 let destination: { x: number; y: number } | null = null
 /** 손가락 조이스틱 — 닿은 자리(받침)와 지금 손가락 · 화면 px · 마우스는 예전대로 누른 곳으로 걷기 */
 let stick: { id: number; ox: number; oy: number; x: number; y: number } | null = null
@@ -163,7 +165,7 @@ let pendingSeed = vanguardToken ? Number(query.get('seed')) >>> 0 : crypto.getRa
 const notifyVanguardStart = () => { if (vanguardToken) window.parent.postMessage({ type: 'hanbal.haebi.vanguard-start', token: vanguardToken }, location.origin) }
 const base = import.meta.env.BASE_URL + 'realm/'
 Promise.all([...imagePaths, ...heroArtFiles()].map(path => new Promise<void>((resolve, reject) => { const img = new Image(); img.onload = () => { images.set(path, img); resolve() }; img.onerror = reject; img.src = base + path }))).then(() => { $<HTMLButtonElement>('start').disabled = false; $('start').textContent = startLabel(); renderStageMenu(); schedule() }).catch(() => { $('start').textContent = '그림을 불러오지 못했어요. 새로고침해 주세요.' })
-function resetInput() { keys.clear(); destination = null; stickEnd(); dash = false; skill = false; acc = 0 }
+function resetInput() { keys.clear(); destination = null; stickEnd(); dashAt = skillAt = -9; acc = 0 }
 function begin(sameSeed = false) {
   if (!sameSeed && !vanguardToken) pendingSeed = crypto.getRandomValues(new Uint32Array(1))[0]!
   sound.unlock(); hidePowerHint(); notifyVanguardStart(); run = newRun(pendingSeed); live = true; paused = false; shown = ''; loadoutKey = ''; resetInput(); last = 0
@@ -175,15 +177,13 @@ function begin(sameSeed = false) {
 $('start').onclick = () => begin()
 function pause() { if (!live || run.state !== 'playing' || run.offers.length) return; paused = !paused; resetInput(); shown = ''; showOverlay(); schedule() }
 $('pause').onclick = pause
-$('dash').onclick = () => { if (!paused && !run.offers.length) dash = true; $('dash').blur() }
-$('skill').onclick = () => { if (!paused && !run.offers.length) skill = true; $('skill').blur() }
 window.addEventListener('keydown', e => {
   if (!live) return
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) || e.key === ' ' && e.target === document.body) e.preventDefault()
   if (e.key === 'Escape' && !e.repeat) { if (!treeView.hidden) closeTree(); else pause(); return }
   if (paused || inspecting || run.offers.length || run.state !== 'playing') return
   if (e.target instanceof HTMLButtonElement && (e.key === ' ' || e.key === 'Enter')) return
-  keys.add(e.key.toLowerCase()); if (e.key === 'Shift' && !e.repeat) dash = true; if (e.key === ' ' && !e.repeat) skill = true
+  keys.add(e.key.toLowerCase()); if (e.key === 'Shift' && !e.repeat) press('dash'); if (e.key === ' ' && !e.repeat) press('skill')
 })
 window.addEventListener('keyup', e => keys.delete(e.key.toLowerCase()))
 window.addEventListener('blur', () => {
@@ -202,10 +202,10 @@ function point(e: PointerEvent) {
   destination = { x: Math.max(0, Math.min(C.width, (e.clientX - r.left - (r.width - C.width * scale) / 2) / scale)), y: Math.max(0, Math.min(C.height, (e.clientY - r.top - (r.height - C.height * scale) / 2) / scale)) }
 }
 const stickEl = $('stick'), knobEl = stickEl.querySelector('i')!
+document.body.append(stickEl)   // 화면 기준으로 띄운다 (초상 판에서도 · #stick 은 position:fixed)
 function stickShow() {
   if (!stick) { stickEl.hidden = true; return }
-  const r = $('arena').getBoundingClientRect()
-  stickEl.hidden = false; stickEl.style.left = `${stick.ox - r.left}px`; stickEl.style.top = `${stick.oy - r.top}px`
+  stickEl.hidden = false; stickEl.style.left = `${stick.ox}px`; stickEl.style.top = `${stick.oy}px`
   knobEl.style.transform = `translate(${stick.x - stick.ox}px, ${stick.y - stick.oy}px)`
 }
 function stickMove(e: PointerEvent) {
@@ -226,39 +226,79 @@ function stickDir(): { x: number; y: number } | null {
   if (len < STICK.dead) return null
   return { x: dx / STICK.radius, y: dy / STICK.radius }
 }
-canvas.onpointerdown = e => {
+/** 조이스틱을 띄울 수 있는 곳 — 전장 캔버스와 왼쪽 초상 판(영상·원화 · 11-17 형: 「왼쪽 캐릭터 부분을 눌러도 조이스틱」) · 단추는 빼고 */
+function stickStart(el: HTMLElement, e: PointerEvent) {
   if (!live || paused || inspecting || run.offers.length || run.state !== 'playing') return
-  (document.activeElement as HTMLElement)?.blur(); canvas.setPointerCapture(e.pointerId)
-  if (e.pointerType === 'mouse') { point(e); return }
+  if ((e.target as Element).closest('button')) return
+  (document.activeElement as HTMLElement)?.blur(); el.setPointerCapture(e.pointerId)
+  if (e.pointerType === 'mouse') { if (el === canvas) point(e); return }
+  e.preventDefault()
   if (stick) return
   destination = null; stick = { id: e.pointerId, ox: e.clientX, oy: e.clientY, x: e.clientX, y: e.clientY }; stickShow()
 }
-canvas.onpointermove = e => { if (!canvas.hasPointerCapture(e.pointerId)) return; if (stick && e.pointerId === stick.id) stickMove(e); else if (e.pointerType === 'mouse') point(e) }
-canvas.onpointerup = e => { if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId); if (stick && e.pointerId === stick.id) stickEnd() }
-canvas.onpointercancel = e => { destination = null; if (stick && e.pointerId === stick.id) stickEnd() }
+for (const el of [canvas, $('character')]) {
+  el.addEventListener('pointerdown', e => stickStart(el, e))
+  el.addEventListener('pointermove', e => { if (!el.hasPointerCapture(e.pointerId)) return; if (stick && e.pointerId === stick.id) stickMove(e); else if (e.pointerType === 'mouse' && el === canvas) point(e) })
+  el.addEventListener('pointerup', e => { if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId); if (stick && e.pointerId === stick.id) stickEnd() })
+  el.addEventListener('pointercancel', e => { destination = null; if (stick && e.pointerId === stick.id) stickEnd() })
+}
+/**
+ * 회피·비기 단추 (11-17 형: 「회피나 기술도 잘 안 눌렸음」) — 누르는 순간(pointerdown) · 다른 손가락이 조이스틱을 잡고 있어도 ·
+ * 재사용이 STICK.queue 초 안에 풀리면 그때 나간다(누름을 잠깐 맡아 둠) · 재사용 중에도 disabled 를 걸지 않는다(걸면 눌림 자체가 사라짐).
+ */
+function press(kind: 'dash' | 'skill') {
+  if (!live || paused || inspecting || run.offers.length || run.state !== 'playing') return
+  if (kind === 'dash') dashAt = run.t; else skillAt = run.t
+}
+for (const kind of ['dash', 'skill'] as const) {
+  const b = $(kind)
+  b.addEventListener('pointerdown', e => {
+    e.preventDefault(); e.stopPropagation(); press(kind)
+    b.classList.add('pressed'); window.setTimeout(() => b.classList.remove('pressed'), 140)
+  })
+  b.addEventListener('click', e => { if (e.detail === 0) press(kind); b.blur() })   // 키보드로 단추를 눌렀을 때만 (손가락·마우스는 pointerdown 에서 이미)
+}
 /** 조합 길 — 글 대신 그림 셈: [능력 그림 ×단계] + [능력 그림 ×단계] = [조합 그림] (형 11-16: 「텍스트로 하지 말고 아이콘3 + 아이콘3 = 아이콘」) · 이미 채운 단계는 밝게 */
 const recipe = (c: ReturnType<typeof kitCombos>[number], me?: Power) => {
-  const parts = Object.entries(c.needs).map(([key, n]) => { const done = run.ranks[key as Power] >= n; return `<span class="need${done ? ' ok' : ''}${key === me ? ' me' : ''}">${powerIcon(key as Power)}<b>${n}</b></span>` }).join('<i class="op">+</i>')
+  const parts = Object.entries(c.needs).map(([key, n]) => { const done = run.ranks[key as Power] >= n; return `<span class="need${done ? ' ok' : ''}${key === me ? ' me' : ''}">${powerIcon(key as Power, kit)}<b>${n}</b></span>` }).join('<i class="op">+</i>')
   const r = comboRank(run, c.id)
-  return `<span class="recipe" aria-label="${c.name}: ${Object.entries(c.needs).map(([key, n]) => `${POWERS[key as Power].name} ${n}`).join(' + ')}">${parts}<i class="op">=</i><span class="combo${r ? ' got' : ''}">${comboIcon(c.id)}<small>${c.name}${r ? ' ' + rankMark(r) : ''}</small></span></span>`
+  return `<span class="recipe" aria-label="${c.name}: ${Object.entries(c.needs).map(([key, n]) => `${nodeText(kit, key as Power).name} ${n}`).join(' + ')}">${parts}<i class="op">=</i><span class="combo${r ? ' got' : ''}">${comboIcon(c.id)}<small>${c.name}${r ? ' ' + rankMark(r) : ''}</small></span></span>`
+}
+/** 갈래 막대 — 그 갈래에 찍은 점 · 층이 열리는 눈금(4·9·15점) · 다음 층까지 (조합에 안 쓰이는 칸의 카드 아래) */
+function branchHint(k: Power) {
+  const at = nodeAt(kit, k)!, pts = branchPoints(run, at.branch), last = TREE.tiers[TREE.tiers.length - 1]!, next = TREE.tiers.find(n => n > pts)
+  const ticks = TREE.tiers.slice(1).map(n => `<b class="${pts >= n ? 'on' : ''}" style="left:${n / last * 100}%"></b>`).join('')
+  return `<span class="branch-bar" style="--c:${BRANCH_COLOR[at.branch]}"><i style="width:${Math.min(100, pts / last * 100)}%"></i>${ticks}</span><small class="branch-next">${next ? `다음 층 ${next}점 · 지금 ${pts}점` : '갈래 끝까지 열림'}</small>`
 }
 function routeHint(k: Power) {
-  return kitCombos(kit).filter(c => k in c.needs).map(c => recipe(c, k)).join('') || '모든 공격에 함께 효과'
+  // 끝 단계까지 올린 조합은 빼고 (카드가 길어져 폰 가로에서 넘쳤다)
+  return kitCombos(kit).filter(c => k in c.needs && comboRank(run, c.id) < TREE.max).map(c => recipe(c, k)).join('') || branchHint(k)
 }
-/** 레벨업 카드 — 능력 카드 · 금테 조합 카드(처음엔 열기 · 다시 나오면 단계 올리기 · 끝 단계는 비기 강화) */
+/** 레벨업 카드 — 칸 카드(위에 갈래 띠 · 갈래 끝은 별 테) · 금테 조합 카드(처음엔 열기 · 다시 나오면 단계 올리기 · 끝 단계는 비기 강화) */
 function card(k: Pick) {
-  if (!isCombo(k)) { const p = POWERS[k]; return `<button data-up="${k}" style="--accent:${p.color}"><span class="rune">${powerIcon(k)}</span><small>${run.ranks[k] ? '강화' : '새 능력'} · ${run.ranks[k] + 1}/${p.max}</small><b>${p.name}</b><span>${p.desc}</span><em>${routeHint(k)}</em></button>` }
+  if (!isCombo(k)) {
+    const p = POWERS[k], t = nodeText(kit, k), at = nodeAt(kit, k)!, cap = at.tier === TREE.tiers.length - 1, color = BRANCH_COLOR[at.branch]
+    const tag = `<i class="branch-tag" style="--c:${color}">${branchName(kit, at.branch)} · ${branchPoints(run, at.branch)}점</i>`
+    return `<button data-up="${k}" class="${cap ? 'cap-card' : ''}" style="--accent:${cap ? color : p.color};--c:${color}">${cap ? '<i class="ribbon cap">갈래 끝</i>' : tag}<span class="rune">${powerIcon(k, kit)}</span><small>${run.ranks[k] ? '강화' : '새 칸'} · ${run.ranks[k] + 1}/${p.max}</small><b>${t.name}</b><span>${t.desc}</span><em>${routeHint(k)}</em></button>`
+  }
   const c = comboOf(k), r = comboRank(run, k), next = r + 1
   const pips = Array.from({ length: TREE.max }, (_, i) => `<i class="${i < r ? 'on' : i === r ? 'new' : ''}"></i>`).join('')
   const ult = next >= TREE.max ? `<span class="ultup"><img src="${import.meta.env.BASE_URL}realm/raid/power-skill.png" alt="">${K.skill} 강화</span>` : ''
   return `<button data-up="${k}" class="combo-card" style="--accent:#f2c45a"><i class="ribbon">조합</i><span class="rune">${comboIcon(k)}</span><small>${r ? `조합 강화 · ${next}/${TREE.max}` : '조합 열기'}</small><b>${c.name}</b><span>${c.desc}</span><em><span class="pips" aria-label="${next}단계">${pips}</span>${ult || recipe(c)}</em></button>`
 }
-/** 기술 나무 보기 (레벨업 창 · 멈춤 창의 「나무」) — 판 위에 한 겹 더 · 누르면 닫힘 */
+/** 기술 나무 보기 (레벨업 창 · 멈춤 창의 「나무」) — 판 위에 한 겹 더 · 칸을 누르면 아래 한 줄에 설명 · 바깥이나 닫기를 누르면 닫힘 */
 const treeView = document.createElement('div'); treeView.id = 'tree-view'; treeView.hidden = true; treeView.setAttribute('role', 'dialog'); treeView.setAttribute('aria-label', '기술 나무')
 root.append(treeView)
-function openTree() { treeView.innerHTML = `<div class="panel tree-panel"><h2>${weapon} 기술 나무</h2>${treeSvg(run)}<button class="tree-close primary">닫기</button></div>`; treeView.hidden = false }
+function openTree() {
+  treeView.innerHTML = `<div class="panel tree-panel"><div class="tree-head"><h2>${weapon} 기술 나무</h2><small>레벨 ${run.level} · 남은 고름 ${Math.max(0, C.maxLevel - run.level)}번</small><button class="tree-close primary">닫기</button></div>${treeSvg(run)}<p class="tree-info">칸을 누르면 설명이 나옵니다</p></div>`
+  treeView.hidden = false
+}
 function closeTree() { treeView.hidden = true }
-treeView.onclick = closeTree
+treeView.onclick = e => {
+  const t = e.target as Element, node = t.closest('[data-node],[data-combo],[data-ult]')
+  if (node) { treeView.querySelectorAll('.picked').forEach(x => x.classList.remove('picked')); node.classList.add('picked'); treeView.querySelector('.tree-info')!.innerHTML = treeInfo(run, node); return }
+  if (t === treeView || t.closest('.tree-close')) closeTree()
+}
 const treeButton = '<button id="tree-open" class="tree-btn" aria-label="기술 나무 보기"><img src="' + import.meta.env.BASE_URL + 'realm/raid/power-skill.png" alt="">나무</button>'
 function showOverlay() {
   const state = !live ? '' : run.state !== 'playing' ? run.state : run.offers.length ? 'upgrade:' + run.offers.join(',') : paused ? 'pause' : ''
@@ -270,7 +310,7 @@ function showOverlay() {
   if (state.startsWith('upgrade')) {
     overlay.innerHTML = `<div class="panel upgrade">${treeButton}<h2 class="lvup">레벨 업!</h2><div class="choices">${run.offers.map(card).join('')}</div><button id="reroll" ${run.rerolls ? '' : 'disabled'}>다른 선택지 · ${run.rerolls}회 남음</button></div>`
     overlay.querySelectorAll<HTMLButtonElement>('[data-up]').forEach(b => b.onclick = () => { if (choose(run, b.dataset.up as Pick)) { shown = ''; showOverlay(); updateHud() } })
-    if (run.level === 1) { $<HTMLButtonElement>('reroll').disabled = true; $('reroll').textContent = '첫 공격 능력을 골라 주세요' }
+    if (run.level === 1) { $<HTMLButtonElement>('reroll').disabled = true; $('reroll').textContent = '첫 갈래를 골라 주세요' }
     $('reroll').onclick = () => { if (reroll(run)) { shown = ''; showOverlay() } }
     $('tree-open').onclick = openTree
   } else if (state === 'pause') {
@@ -355,13 +395,14 @@ function updateHud() {
   setText('announcement', run.messageTime > 0 ? run.message : ''); setFlag('announcement', 'visible', run.messageTime > 0)
   setText('streak', run.comboKills >= 15 ? `${run.comboKills} 연속 격파` : '')
   for (const [id, cd, title] of [['dash', run.dashCd, '회피 Shift'], ['skill', run.skillCd, `${K.skill} Space`]] as const) {
-    setText(id, cd > 0 ? `${title} · ${cd.toFixed(1)}초` : title); const off = cd > 0 || paused || !!run.offers.length || run.state !== 'playing'; if (hudLast.get(id + '.off') !== String(off)) { hudLast.set(id + '.off', String(off)); $<HTMLButtonElement>(id).disabled = off }
+    setText(id, cd > 0 ? `${title} · ${cd.toFixed(1)}초` : title); const off = cd > 0 || paused || !!run.offers.length || run.state !== 'playing'; setFlag(id, 'cool', off)   // disabled 대신 빛만 (재사용 중에도 누름을 받아 맡아 둔다)
   }
-  const key = JSON.stringify(run.ranks) + JSON.stringify(run.comboRanks) + run.combos.join(',')
+  // 칸·조합은 레벨이 오를 때만 바뀐다 — 판마다 JSON 을 만들지 않는다 (폰 프레임 11-17)
+  const key = String(run.level)
   if (key !== loadoutKey) {
     loadoutKey = key
     hidePowerHint()
-    $('loadout').innerHTML = (Object.keys(POWERS) as Power[]).filter(k => run.ranks[k]).map(k => `<button class="power-slot" data-power="${k}" aria-label="${POWERS[k].name} ${run.ranks[k]}단계 / 최대 ${POWERS[k].max}단계" style="--accent:${POWERS[k].color}">${powerIcon(k)}<b>${run.ranks[k]}</b></button>`).join('')
+    $('loadout').innerHTML = (Object.keys(POWERS) as Power[]).filter(k => run.ranks[k]).map(k => `<button class="power-slot" data-power="${k}" aria-label="${nodeText(kit, k).name} ${run.ranks[k]}단계 / 최대 ${POWERS[k].max}단계" style="--accent:${POWERS[k].color}">${powerIcon(k, kit)}<b>${run.ranks[k]}</b></button>`).join('')
     $('combo-badges').innerHTML = kitCombos(kit).filter(c => run.combos.includes(c.id)).map(c => `<span>${comboIcon(c.id)}<b>${c.name} ${rankMark(comboRank(run, c.id))}</b></span>`).join('')
   }
 }
@@ -376,11 +417,13 @@ function frame(now: number) {
       if (x || y) destination = null
       else if (sd) { x = sd.x; y = sd.y }
       else if (destination) { const dx = destination.x - run.x, dy = destination.y - run.y, len = Math.hypot(dx, dy); if (len < 5) destination = null; else { x = dx / len; y = dy / len } }
-      const skillBefore = run.skillCd, wakesBefore = run.wakes
-      stepHaebi(run, { x, y, dash, skill }, 1 / 120)
+      const skillBefore = run.skillCd, dashBefore = run.dashCd, wakesBefore = run.wakes
+      // 맡아 둔 누름: 누른 지 STICK.queue 초 안이면 계속 넣는다 (재사용이 그 안에 풀리면 나간다) · 나가면 지운다
+      stepHaebi(run, { x, y, dash: run.t - dashAt <= STICK.queue, skill: run.t - skillAt <= STICK.queue }, 1 / 120)
+      if (run.dashCd > dashBefore) dashAt = -9
       if (run.wakes > wakesBefore && run.form === 'awake') showSkillCutin(true)
-      else if (run.skillCd > skillBefore) showSkillCutin()
-      dash = false; skill = false; acc -= 1 / 120
+      else if (run.skillCd > skillBefore) { showSkillCutin(); skillAt = -9 }
+      acc -= 1 / 120
       if (run.offers.length || run.state !== 'playing') { acc = 0; break }
     }
   }

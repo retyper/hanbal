@@ -160,7 +160,7 @@ h1,h2,.choices b,#power-tooltip>b{font-family:var(--serif)}
 .panel.result.lost{background:linear-gradient(180deg,#070b10cc,#070b10f2 60%),url('/realm/raid/result-lose.webp') center/cover}
 .won-emblem{width:1.8em;height:1.8em;vertical-align:middle;margin-right:4px}
 /* 손가락 조이스틱 (11-16) — 닿은 자리에 생기는 받침 + 손잡이 · 끝을 넘기면 받침이 따라온다 */
-#stick{position:absolute;width:108px;height:108px;margin:-54px 0 0 -54px;border-radius:50%;border:2px solid #e8c57799;background:radial-gradient(circle,#0b141099 0 55%,#0b141055 70%,transparent 72%);box-shadow:0 0 0 1px #00000066 inset,0 2px 10px #0008;pointer-events:none;z-index:3}
+#stick{position:fixed;width:108px;height:108px;margin:-54px 0 0 -54px;border-radius:50%;border:2px solid #e8c57799;background:radial-gradient(circle,#0b141099 0 55%,#0b141055 70%,transparent 72%);box-shadow:0 0 0 1px #00000066 inset,0 2px 10px #0008;pointer-events:none;z-index:4}
 #stick i{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:radial-gradient(circle at 38% 34%,#f6dfa0,#c99a4a 55%,#7a5a28);border:2px solid #fff3c899;box-shadow:0 3px 8px #000a}
 /* 체력 깎임 토막 (11-16 · 본편 싸움 막대와 같은 롤 체력바) — 막대는 단번에 떨어지고 잃은 토막이 번쩍 뒤 줄어든다 · 움직임은 raid-main updateChunk */
 .bar.hp .hp-track{position:relative;display:block;height:100%}
@@ -216,26 +216,63 @@ h1,h2,.choices b,#power-tooltip>b{font-family:var(--serif)}
 .tree-btn:active{transform:scale(.93)}
 #tree-view{position:fixed;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;padding:10px;background:#050d13d9}
 #tree-view[hidden]{display:none}
-.tree-panel{background:linear-gradient(145deg,#29392d,#111e18);width:min(980px,100%);padding:12px 16px;display:flex;flex-direction:column;align-items:center;gap:6px}
-.tree-panel h2{margin:0;font-size:clamp(16px,3.4vh,24px);color:#ffe3a0}
-.tree-panel .tree-close{margin:0;padding:7px 26px}
-svg.tree{width:100%;height:auto;max-height:calc(100dvh - 130px);display:block}
-svg.tree line{stroke:#4d564a;stroke-width:3}
-svg.tree line.on{stroke:#f2c45a}
+/* 기술 나무 갈래 셋 (11-17 밤 · D2 식) — 위 한 줄(이름 · 남은 고름 · 닫기) · 나무 그림 · 아래 한 줄 설명 */
+.tree-panel{background:linear-gradient(145deg,#29392d,#111e18);width:min(1180px,100%);padding:10px 16px;display:flex;flex-direction:column;align-items:stretch;gap:4px}
+.tree-head{display:flex;align-items:center;gap:12px}
+.tree-head h2{margin:0;font-size:clamp(16px,3.4vh,24px);color:#ffe3a0}
+.tree-head small{flex:1;text-align:left;font-size:12px;color:#bdc5b3;letter-spacing:.04em}
+.tree-panel .tree-close{margin:0;padding:6px 22px}
+.tree-info{margin:0!important;min-height:1.6em;font-size:12px!important;line-height:1.6!important;color:#d6dccb!important;text-align:center}
+.tree-info b{color:#ffe2a0}
+svg.tree{width:100%;height:auto;max-height:calc(100dvh - 104px);display:block;margin:0 auto}
+svg.tree line{stroke:#3a4038;stroke-width:3}
+svg.tree .head{font-size:17px;font-weight:bold;text-anchor:middle;letter-spacing:.06em}
+svg.tree .head .pts{fill:#e8e2c8;font-size:14px;font-weight:normal}
+svg.tree .node{cursor:pointer}
 svg.tree .node .ring{fill:#0d1712;stroke:#3a4038;stroke-width:3}
 svg.tree .node.on .ring{fill:#3a2c10;stroke:#f2c45a}
+svg.tree .node.max .ring{fill:#5a4416;stroke:#ffe08a;stroke-width:4}
 svg.tree .node.next .ring{stroke:#e8e2c8;stroke-dasharray:6 4}
-svg.tree .node.off image{opacity:.28}
-svg.tree .label{fill:#c5cbbd;font-size:13px;text-anchor:middle}
+svg.tree .node.off image{opacity:.25}
+svg.tree .node.picked .ring{stroke:#fff3c8;stroke-width:5}
+svg.tree .cap-ring{fill:none;stroke-width:2;stroke-dasharray:3 4;opacity:.5}
+svg.tree .node.cap.on .cap-ring{opacity:1;stroke-dasharray:none}
+svg.tree .label{fill:#c5cbbd;font-size:12.5px;text-anchor:middle}
 svg.tree .node.on .label{fill:#ffe2a0}
+svg.tree .node.cap .label{font-weight:bold}
 svg.tree .node.off .label{fill:#6c7468}
-svg.tree .badge circle{fill:#11190f;stroke:#a18b5f;stroke-width:1.5}
-svg.tree .badge text{fill:#ffe6a2;font:bold 12px Georgia,serif;text-anchor:middle}
-svg.tree .pip{fill:#1a221c;stroke:#7a6a40;stroke-width:1.5}
-svg.tree .pip.on{fill:#f2c45a}
-svg.tree .tag rect{fill:#0d1712;stroke:#4d564a;stroke-width:1.5}
-svg.tree .tag text{fill:#8f9a8a;font-size:11px;text-anchor:middle}
-svg.tree .tag.on rect{stroke:#f2c45a}
-svg.tree .tag.on text{fill:#ffe2a0}
-svg.tree .tier{fill:#dfc38d;font-size:13px;letter-spacing:.3em;text-anchor:middle}
-@media(orientation:landscape) and (max-height:600px){.tree-btn{top:4px;right:4px;padding:3px 7px;font-size:10px}.tree-btn img{width:16px;height:16px}.tree-panel{padding:6px 10px;gap:3px}svg.tree{max-height:calc(100dvh - 96px)}.tree-panel .tree-close{padding:5px 20px;font-size:12px}.combo-card .ribbon{font-size:9px;padding:0 10px}.combo-card .ultup img{width:22px;height:22px}.combo-card .pips i{width:9px;height:9px}}
+svg.tree .badge rect{fill:#11190f;stroke:#a18b5f;stroke-width:1.2}
+svg.tree .badge text{fill:#ffe6a2;font:bold 10.5px Georgia,serif;text-anchor:middle}
+svg.tree .lock rect{fill:#0b110e;stroke:#5a6256;stroke-width:1.2}
+svg.tree .lock text{fill:#9aa394;font-size:10.5px;text-anchor:middle}
+svg.tree .combo .cname{fill:#c5cbbd;font-size:13px}
+svg.tree .combo.on .cname{fill:#ffe2a0;font-weight:bold}
+svg.tree .combo .csub{fill:#9aa394;font-size:11px}
+svg.tree .combo .ring{stroke:#6b5a2c}
+svg.tree .combo.next .ring{stroke:#f2c45a}
+svg.tree .need image{opacity:.45}
+svg.tree .need text{fill:#8f9a8a;font:bold 11px Georgia,serif}
+svg.tree .need.ok image{opacity:1}
+svg.tree .need.ok text{fill:#ffe2a0}
+/* 묶음마다 다른 칸의 빌린 그림을 빛깔로 가른다 (전용 그림 H59~H61 전까지 · 움직이지 않는 그림이라 filter 를 써도 된다) */
+.tint-hone{filter:sepia(.5) saturate(1.8) hue-rotate(-18deg) drop-shadow(0 0 3px #ff7a2a)}
+.tint-drill{filter:saturate(1.4) hue-rotate(120deg) drop-shadow(0 0 3px #5ae0c8)}
+.tint-cap-a{filter:drop-shadow(0 0 4px #ffd36a) drop-shadow(0 0 2px #ffd36a)}
+.tint-cap-b{filter:drop-shadow(0 0 4px #6fe8d8) drop-shadow(0 0 2px #6fe8d8)}
+.tint-cap-c{filter:sepia(.6) saturate(2) hue-rotate(220deg) drop-shadow(0 0 4px #c7a3ff)}
+/* 레벨업 칸 카드 — 위에 갈래 띠(이름 · 점) · 갈래 끝 카드는 갈래 빛 테 · 조합에 안 쓰이는 칸은 갈래 막대 */
+.choices .branch-tag{position:absolute;top:-2px;left:50%;transform:translateX(-50%);padding:1px 12px;font-style:normal;font-size:11px;font-weight:bold;letter-spacing:.06em;white-space:nowrap;color:#10140f;background:var(--c);border-radius:0 0 8px 8px}
+.choices button.cap-card{border:2px solid var(--c);border-image:none;border-radius:6px;background:linear-gradient(#262a3af5,#0c0f16fa);box-shadow:0 0 0 1px #00000088,inset 0 0 18px color-mix(in srgb,var(--c) 40%,transparent),0 0 16px color-mix(in srgb,var(--c) 50%,transparent)}
+.choices .ribbon.cap{position:absolute;top:-2px;left:50%;transform:translateX(-50%);padding:1px 14px;font-style:normal;font-size:11px;font-weight:bold;letter-spacing:.2em;color:#10140f;background:var(--c);border-radius:0 0 8px 8px}
+.choices button.cap-card b{color:var(--c)}
+.branch-bar{position:relative;display:block;width:100%;max-width:150px;height:7px;border-radius:4px;background:#0b110e;border:1px solid #4d564a}
+.branch-bar>i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--c)}
+.branch-bar>b{position:absolute;top:-3px;width:2px;height:11px;margin-left:-1px;background:#6c7468}
+.branch-bar>b.on{background:#fff3c8}
+.choices em small.branch-next{font-size:10px;color:#bdc5b3}
+@media(orientation:landscape) and (max-height:600px){.panel.upgrade h2.lvup{font-size:22px;margin:0 0 2px}.tree-btn{top:4px;right:4px;padding:3px 7px;font-size:10px}.tree-btn img{width:16px;height:16px}.tree-panel{padding:6px 10px;gap:2px}svg.tree{max-height:calc(100dvh - 70px)}.tree-head h2{font-size:16px}.tree-head small{font-size:10px}.tree-panel .tree-close{padding:4px 16px;font-size:12px}.tree-info{font-size:10px!important;min-height:1.4em}.combo-card .ribbon,.choices .ribbon.cap,.choices .branch-tag{font-size:9px;padding:0 10px}.combo-card .ultup img{width:22px;height:22px}.combo-card .pips i{width:9px;height:9px}.choices em small.branch-next{font-size:8px}}
+/* 조이스틱은 화면 기준(fixed · body 아래) — 왼쪽 초상 판을 눌러도 손가락 자리에 뜬다 (11-17) · 회피·비기 단추는 누르는 순간 반응 · 재사용 중엔 빛만 죽인다(disabled 아님) */
+#layout.in-run #character{touch-action:none}
+footer #dash,footer #skill{touch-action:none;-webkit-user-select:none;user-select:none}
+footer button.cool{opacity:.5}
+footer button.pressed{filter:brightness(1.4);transform:scale(.93)}

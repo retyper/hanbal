@@ -1,5 +1,6 @@
 import { HAEBI_RUN as C, HAEBI_VANGUARD as V, HAEBI_STAGES as ST, HAEBI_MOBS as M, HAEBI_SHOP as SH, HAEBI_GOLD as G, HAEBI_ULT as U, HAEBI_TREE as T, HAEBI_AWAKEN as A } from '../tune/params.ts'
 import { makeRng } from '../core/rng.ts'
+import { josa } from '../core/josa.ts'
 
 /**
  * 장수 열전 — 다이센카식 20분 판 (11-16 형: 「스테이지·판 밖 상점·휘장 · 무기 10단계 · 적 단계업」).
@@ -7,7 +8,7 @@ import { makeRng } from '../core/rng.ts'
  * 판(mode): stage = 독립 열전(스테이지 · 상점 강화 bonus) · trial = 본편 각성 시련(짧고 쉬움) · vanguard = 본편 선봉.
  */
 export type Kit = 'axe' | 'bow' | 'spear' | 'sword' | 'dagger' | 'magic' | 'sling'
-export type Power = 'axe' | 'gale' | 'ember' | 'thunder' | 'echo' | 'tempo' | 'reach' | 'bow' | 'rain' | 'spear' | 'javelin' | 'sword' | 'wave' | 'dagger' | 'knife' | 'bell' | 'soul' | 'sling' | 'skip'
+export type Power = 'axe' | 'gale' | 'ember' | 'thunder' | 'echo' | 'tempo' | 'reach' | 'bow' | 'rain' | 'spear' | 'javelin' | 'sword' | 'wave' | 'dagger' | 'knife' | 'bell' | 'soul' | 'sling' | 'skip' | 'hone' | 'drill' | 'tough' | 'breath' | 'nimble' | 'stout' | 'capA' | 'capB' | 'capC'
 export const POWERS: Record<Power, { name: string; icon: string; max: number; color: string; desc: string }> = {
   axe: { name: '파쇄 도끼', icon: '斧', max: 10, color: '#f5c578', desc: '직접 휘두르는 도끼의 위력과 범위 증가' },
   gale: { name: '질풍 도끼', icon: '風', max: 10, color: '#96e9cf', desc: '회전하는 도끼 투사체가 적을 관통' },
@@ -28,6 +29,16 @@ export const POWERS: Record<Power, { name: string; icon: string; max: number; co
   soul: { name: '혼불', icon: '魂', max: 10, color: '#9fd8ff', desc: '적을 쫓아가 터지는 푸른 혼불을 띄움' },
   sling: { name: '돌팔매', icon: '石', max: 10, color: '#dcc8a0', desc: '돌을 빙빙 돌려 가까운 적에게 던져, 떨어진 둘레를 치고 밀어냄' },
   skip: { name: '물수제비', icon: '跳', max: 10, color: '#9fd0e0', desc: '맞힌 적에게서 곁의 적으로 튀어 가며 여러 번 치는 돌' },
+  // ── 갈래 칸 (11-17 밤 · 이름·설명은 묶음마다 NODE_TEXT 가 덮는다) ──
+  hone: { name: '벼리기', icon: '鍊', max: 5, color: '#f5b85a', desc: '주 무기 피해 증가' },
+  drill: { name: '숙련', icon: '熟', max: 5, color: '#8fdcc4', desc: '보조 공격 피해와 빠르기 증가' },
+  tough: { name: '단단한 몸', icon: '甲', max: 5, color: '#c0b6a0', desc: '받는 피해 감소' },
+  breath: { name: '숨 고르기', icon: '息', max: 5, color: '#9fe0a0', desc: '초마다 체력을 조금씩 되찾음' },
+  nimble: { name: '날랜 발', icon: '捷', max: 3, color: '#b8e4f0', desc: '회피를 더 자주 · 이동 속도 증가' },
+  stout: { name: '굳센 몸', icon: '剛', max: 5, color: '#e0a090', desc: '최대 체력 증가' },
+  capA: { name: '주 무기 끝', icon: '極', max: 3, color: '#ffd36a', desc: '' },
+  capB: { name: '보조 끝', icon: '極', max: 3, color: '#7fe8d8', desc: '' },
+  capC: { name: '되받아치기', icon: '反', max: 3, color: '#d0a8ff', desc: '' },
 }
 export const KITS: Record<Kit, { primary: Power; secondary: Power; title: string; weapon: string; skill: string }> = {
   axe: { primary: 'axe', secondary: 'gale', title: '폭풍을 가르는 도끼', weapon: '도끼', skill: '천지 가르기' },
@@ -38,26 +49,75 @@ export const KITS: Record<Kit, { primary: Power; secondary: Power; title: string
   magic: { primary: 'bell', secondary: 'soul', title: '혼을 부르는 방울', weapon: '방울', skill: '하늘 굿' },
   sling: { primary: 'sling', secondary: 'skip', title: '하늘을 가르는 돌팔매', weapon: '돌팔매', skill: '돌벼락' },
 }
-const SHARED: readonly Power[] = ['ember', 'thunder', 'echo', 'tempo', 'reach']
-/** 그 묶음에서 고를 수 있는 능력 — POWERS 순서 그대로 (도끼 묶음은 예전 일곱과 같은 순서) */
-export const kitPowers = (kit: Kit): Power[] => (Object.keys(POWERS) as Power[]).filter(k => k === KITS[kit].primary || k === KITS[kit].secondary || SHARED.includes(k))
+// ── 기술 나무: 갈래 셋 × 네 층 (11-17 밤 · RAID-LINK §2 · D2 식 — 층은 그 갈래에 찍은 점으로 열린다 · HAEBI_TREE.tiers) ──
+/** a 주 무기 갈래 · b 보조 갈래 · c 버팀 갈래 */
+export type Branch = 'a' | 'b' | 'c'
+export const BRANCHES: readonly Branch[] = ['a', 'b', 'c']
+/** 갈래마다 층(0~3)의 칸 — 큰 물결(범위)·부적은 주 무기 갈래, 메아리(보조 수)·벽력은 보조 갈래, 기세는 버팀 갈래 · 조합은 늘 두 갈래를 잇는다 */
+export function branchNodes(kit: Kit): Record<Branch, Power[][]> {
+  const k = KITS[kit]
+  return { a: [[k.primary], ['reach', 'ember'], ['hone'], ['capA']], b: [[k.secondary], ['echo', 'thunder'], ['drill'], ['capB']], c: [['tough', 'tempo'], ['breath', 'nimble'], ['stout'], ['capC']] }
+}
+/** 묶음마다 갈래 이름과 이름이 바뀌는 칸 (벼리기·숙련·갈래 끝) — 설명은 늘 「합니다」 */
+export const NODE_TEXT: Record<Kit, { a: string; b: string } & Partial<Record<Power, { name: string; desc: string }>>> = {
+  axe: { a: '파쇄', b: '질풍', hone: { name: '도끼날 벼리기', desc: '파쇄 도끼의 피해가 커집니다' }, drill: { name: '바람 길들이기', desc: '질풍 도끼가 더 세고 더 자주 날아갑니다' },
+    capA: { name: '땅 가르기', desc: '휘두를 때마다 앞으로 땅이 갈라져 한 줄의 적을 모두 벱니다' }, capB: { name: '돌아오는 회오리', desc: '질풍 도끼가 끝에서 되돌아오며 한 번 더 벱니다' } },
+  bow: { a: '속사', b: '화살비', hone: { name: '시위 벼리기', desc: '속사 화살의 피해가 커집니다' }, drill: { name: '하늘 읽기', desc: '화살비가 더 세고 더 자주 쏟아집니다' },
+    capA: { name: '꿰뚫는 일제', desc: '화살이 모든 적을 꿰뚫고 한 번에 더 많이 날아갑니다' }, capB: { name: '폭우', desc: '화살비가 떨어진 자리에 한 번 더 쏟아집니다' } },
+  spear: { a: '찌르기', b: '투창', hone: { name: '창끝 벼리기', desc: '찌르기의 피해가 커집니다' }, drill: { name: '던지기 숙련', desc: '투창이 더 세고 더 자주 날아갑니다' },
+    capA: { name: '삼지창', desc: '앞과 양옆, 세 방향을 한꺼번에 찌릅니다' }, capB: { name: '솟는 창', desc: '던진 창이 처음 꿰뚫은 자리에서 창날이 솟아 둘레를 칩니다' } },
+  sword: { a: '베기', b: '검기', hone: { name: '칼날 벼리기', desc: '환두대도의 피해가 커집니다' }, drill: { name: '기 다스리기', desc: '검기가 더 세고 더 자주 날아갑니다' },
+    capA: { name: '칼바람 베기', desc: '벨 때마다 짧은 검기가 함께 날아갑니다' }, capB: { name: '십자 검기', desc: '검기가 등 뒤로도 함께 날아갑니다' } },
+  dagger: { a: '쌍검', b: '비도', hone: { name: '단검 벼리기', desc: '쌍단검의 피해가 커집니다' }, drill: { name: '손끝 숙련', desc: '비도가 더 세고 더 자주 날아갑니다' },
+    capA: { name: '독 묻은 쌍검', desc: '찌른 적이 독으로 계속 깎입니다' }, capB: { name: '터지는 비도', desc: '비도가 처음 맞힌 자리에서 작은 칼이 사방으로 튑니다' } },
+  magic: { a: '방울', b: '혼불', hone: { name: '방울 울림', desc: '방울 파동의 피해가 커집니다' }, drill: { name: '혼 다스리기', desc: '혼불이 더 세고 더 자주 떠오릅니다' },
+    capA: { name: '신령 부르기', desc: '방울이 울릴 때마다 혼불 신령이 날아가 적을 쫓습니다' }, capB: { name: '갈라지는 혼불', desc: '혼불이 터지면 작은 혼불로 갈라져 또 쫓아갑니다' } },
+  sling: { a: '팔매', b: '물수제비', hone: { name: '팔매 벼리기', desc: '돌팔매의 피해가 커집니다' }, drill: { name: '물수제비 숙련', desc: '물수제비가 더 세고 더 자주 날아갑니다' },
+    capA: { name: '땅울림', desc: '돌이 떨어진 둘레의 적이 잠시 어질어질 멈춥니다' }, capB: { name: '끝없는 물수제비', desc: '물수제비가 훨씬 많이 튀고 튈 때마다 세집니다' } },
+}
+export const branchName = (kit: Kit, b: Branch) => b === 'c' ? '버팀' : NODE_TEXT[kit][b]
+/** 칸 이름·설명 — 묶음마다 다른 칸은 NODE_TEXT · 되받아치기는 그 묶음 비기 이름으로 */
+export function nodeText(kit: Kit, p: Power) {
+  if (p === 'capC') return { name: '되받아치기', desc: `맞으면 ${josa(KITS[kit].skill, '이', '가')} 작게 터집니다` }
+  const t = NODE_TEXT[kit][p]
+  return t ?? { name: POWERS[p].name, desc: POWERS[p].desc }
+}
+/** 그 묶음에서 고를 수 있는 칸 — 갈래 a·b·c 차례 */
+export const kitPowers = (kit: Kit): Power[] => BRANCHES.flatMap(b => branchNodes(kit)[b].flat())
 export const attackPowers = (kit: Kit): Power[] => [KITS[kit].primary, KITS[kit].secondary, 'ember', 'thunder']
+/** 칸이 선 갈래와 층 (그 묶음에 없는 칸은 null) */
+export function nodeAt(kit: Kit, p: Power): { branch: Branch; tier: number } | null {
+  const t = branchNodes(kit)
+  for (const branch of BRANCHES) { const tier = t[branch].findIndex(row => row.includes(p)); if (tier >= 0) return { branch, tier } }
+  return null
+}
+/** 그 갈래에 찍은 점 (주 무기 첫 단계도 1점 · 조합은 세지 않는다) */
+export const branchPoints = (s: HaebiRun, b: Branch) => branchNodes(s.kit)[b].flat().reduce((n, p) => n + s.ranks[p], 0)
+/** 층이 열렸나 — 그 갈래에 T.tiers[층] 점 */
+export const tierOpen = (s: HaebiRun, b: Branch, tier: number) => branchPoints(s, b) >= T.tiers[tier]!
+export function nodeOpen(s: HaebiRun, p: Power) { const at = nodeAt(s.kit, p); return !!at && tierOpen(s, at.branch, at.tier) }
+/** 가장 많이 찍은 갈래 (같으면 a → b → c) */
+export function mainBranch(s: HaebiRun): Branch { let best: Branch = 'a'; for (const b of BRANCHES) if (branchPoints(s, b) > branchPoints(s, best)) best = b; return best }
+/** 그 묶음 나무를 다 채우는 점 (칸 끝 단계 합 + 조합 끝 단계) — 한 판 점(레벨 44 → 43점)의 두 배를 넘게 둔다 */
+export const treeTotal = (kit: Kit) => kitPowers(kit).reduce((n, p) => n + POWERS[p].max, 0) + kitCombos(kit).length * T.max
+/** 갈래 끝 단계가 곱하는 몫 (share + step × (단계−1)) */
+const capShare = (rank: number, c: { share: number; step: number }) => c.share + c.step * (rank - 1)
 export const COMBOS = [
   { id: 'cyclone', kit: 'axe', name: '도끼 폭풍', needs: { axe: 4, gale: 3 }, desc: '거대한 도끼들이 주위를 돌며 적을 갈아버립니다.' },
   { id: 'inferno', kit: null, name: '뇌화 연옥', needs: { ember: 3, thunder: 3 }, desc: '번개가 떨어진 자리마다 불꽃 폭발이 일어납니다.' },
-  { id: 'torrent', kit: 'axe', name: '천 갈래 바람', needs: { gale: 3, echo: 2 }, desc: '질풍 도끼가 적을 맞힐 때 작은 칼날로 갈라집니다.' },
+  { id: 'torrent', kit: 'axe', name: '천 갈래 바람', needs: { gale: 3, reach: 2 }, desc: '질풍 도끼가 적을 맞힐 때 작은 칼날로 갈라집니다.' },
   { id: 'volley', kit: 'bow', name: '만 갈래 화살', needs: { bow: 4, rain: 3 }, desc: '사방으로 화살 고리가 쉴 새 없이 퍼져 나갑니다.' },
-  { id: 'meteor', kit: 'bow', name: '유성 화살비', needs: { rain: 3, echo: 2 }, desc: '화살비가 떨어진 자리에서 화살 조각이 튀어 나갑니다.' },
+  { id: 'meteor', kit: 'bow', name: '유성 화살비', needs: { rain: 3, reach: 2 }, desc: '화살비가 떨어진 자리에서 화살 조각이 튀어 나갑니다.' },
   { id: 'grove', kit: 'spear', name: '창의 숲', needs: { spear: 4, javelin: 3 }, desc: '주위 땅에서 창날이 돌아가며 솟구칩니다.' },
-  { id: 'boomerang', kit: 'spear', name: '돌아오는 창', needs: { javelin: 3, echo: 2 }, desc: '던진 창이 되돌아오며 한 번 더 꿰뚫습니다.' },
+  { id: 'boomerang', kit: 'spear', name: '돌아오는 창', needs: { javelin: 3, reach: 2 }, desc: '던진 창이 되돌아오며 한 번 더 꿰뚫습니다.' },
   { id: 'tempest', kit: 'sword', name: '칼바람', needs: { sword: 4, wave: 3 }, desc: '온몸을 휘감는 칼바람이 주위를 연달아 벱니다.' },
-  { id: 'splitwave', kit: 'sword', name: '갈라지는 검기', needs: { wave: 3, echo: 2 }, desc: '검기가 끝에서 두 갈래로 갈라져 더 날아갑니다.' },
+  { id: 'splitwave', kit: 'sword', name: '갈라지는 검기', needs: { wave: 3, reach: 2 }, desc: '검기가 끝에서 두 갈래로 갈라져 더 날아갑니다.' },
   { id: 'shadowdance', kit: 'dagger', name: '그림자 춤', needs: { dagger: 4, knife: 3 }, desc: '그림자가 둘레의 적 셋을 쉴 새 없이 벱니다.' },
-  { id: 'venom', kit: 'dagger', name: '독 비수', needs: { knife: 3, echo: 2 }, desc: '비도에 맞은 적이 독으로 계속 깎입니다.' },
+  { id: 'venom', kit: 'dagger', name: '독 비수', needs: { knife: 3, reach: 2 }, desc: '비도에 맞은 적이 독으로 계속 깎입니다.' },
   { id: 'rite', kit: 'magic', name: '만신 굿', needs: { bell: 4, soul: 3 }, desc: '큰 굿판이 열려 둘레의 적을 한꺼번에 날립니다.' },
-  { id: 'soulstorm', kit: 'magic', name: '혼불 회오리', needs: { soul: 3, echo: 2 }, desc: '혼불이 몸 둘레를 돌며 닿는 적을 태웁니다.' },
+  { id: 'soulstorm', kit: 'magic', name: '혼불 회오리', needs: { soul: 3, reach: 2 }, desc: '혼불이 몸 둘레를 돌며 닿는 적을 태웁니다.' },
   { id: 'boulder', kit: 'sling', name: '굴러가는 바위', needs: { sling: 4, skip: 3 }, desc: '큰 바위가 굴러가며 한 줄의 적을 모두 짓이기고 밀어냅니다.' },
-  { id: 'daze', kit: 'sling', name: '어지럼 돌', needs: { skip: 3, echo: 2 }, desc: '물수제비에 맞은 적이 잠시 어질어질 멈춰 섭니다.' },
+  { id: 'daze', kit: 'sling', name: '어지럼 돌', needs: { skip: 3, reach: 2 }, desc: '물수제비에 맞은 적이 잠시 어질어질 멈춰 섭니다.' },
 ] as const
 export type Combo = typeof COMBOS[number]['id']
 export const kitCombos = (kit: Kit) => COMBOS.filter(c => c.kit === null || c.kit === kit)
@@ -75,10 +135,10 @@ export const NO_BONUS: Bonus = { might: 0, vigor: 0, armor: 0, regen: 0, haste: 
 export interface Mob { id: number; x: number; y: number; hp: number; max: number; kind: MobKind; cd: number; flash: number; wind: number; aimX: number; aimY: number; act: number; vx: number; vy: number; buff: number; poison: number; pdps: number; daze: number }
 export interface Missile { x: number; y: number; vx: number; vy: number; life: number; kind: 'gale' | 'ember' | 'shard' | 'enemy' | 'arrow' | 'rain' | 'javelin' | 'wave' | 'barrage' | 'stone' | 'flame' | 'knife' | 'soul' | 'hurl' | 'pebble' | 'skip' | 'boulder'; damage: number; radius: number; hit: number[]; angle: number; tx: number; ty: number; gen?: number }
 export interface Effect { x: number; y: number; x2: number; y2: number; r: number; angle: number; life: number; total: number; kind: 'hit' | 'slash' | 'blast' | 'bolt' | 'skill' | 'ult' | 'death' | 'spike' | 'thrust' | 'buff' | 'ring' | 'thud'; color: string; mob?: Mob['kind']; face?: number; n?: number; crit?: boolean; ult?: Kit }
-/** 이어지는 비기(용오름 창의 솟음 · 그림자 베기의 순간 이동 · 돌벼락의 물결) — 남은 수 n · 다음까지 t 초 · 처음 자리 · 이미 벤 적 */
-export interface UltState { n: number; t: number; x: number; y: number; used: number[] }
+/** 이어지는 비기(용오름 창의 솟음 · 그림자 베기의 순간 이동 · 돌벼락의 물결) — 남은 수 n · 다음까지 t 초 · 처음 자리 · 이미 벤 적 · k 힘 몫(되받아치기는 작게) */
+export interface UltState { n: number; t: number; x: number; y: number; used: number[]; k: number }
 export interface Drop { x: number; y: number; value: number; age: number }
-type Cool = 'axe' | 'gale' | 'ember' | 'thunder' | 'orbit' | 'bow' | 'rain' | 'volley' | 'spear' | 'javelin' | 'grove' | 'sword' | 'wave' | 'tempest' | 'dagger' | 'knife' | 'shadow' | 'bell' | 'soul' | 'rite' | 'storm' | 'sling' | 'skip' | 'boulder'
+type Cool = 'counter' | 'axe' | 'gale' | 'ember' | 'thunder' | 'orbit' | 'bow' | 'rain' | 'volley' | 'spear' | 'javelin' | 'grove' | 'sword' | 'wave' | 'tempest' | 'dagger' | 'knife' | 'shadow' | 'bell' | 'soul' | 'rite' | 'storm' | 'sling' | 'skip' | 'boulder'
 export interface HaebiRun {
   mode: 'stage' | 'trial' | 'vanguard'; stage: StageId; bonus: Bonus; maxHp: number; revives: number; elites: number; kit: Kit; breaches: number; captains: number;
   seed: number; t: number; x: number; y: number; hp: number; face: number; moving: boolean;
@@ -86,6 +146,8 @@ export interface HaebiRun {
   cool: Record<Cool, number>; ult: UltState | null;
   /** combos = 연 조합 (고른 차례) · comboRanks = 그 단계 1~T.max (없으면 1) */
   ranks: Record<Power, number>; combos: Combo[]; comboRanks: Partial<Record<Combo, number>>; xp: number; level: number; offers: Pick[]; rerolls: number;
+  /** 버팀 끝 「되받아치기」 — 맞은 다음 걸음에 비기가 작게 터진다 */
+  counterDue: boolean;
   /** 판 안 각성 (RAID-LINK §1) — gauge 모은 점 · form 지금 모습(보통·각성·투지) · formT 남은 초 · wakes 각성(투지)한 수 · canAwaken 본편 각성 장수인가 */
   gauge: number; form: 'normal' | 'awake' | 'grit'; formT: number; wakes: number; canAwaken: boolean;
   enemies: Mob[]; shots: Missile[]; fx: Effect[]; drops: Drop[];
@@ -99,11 +161,12 @@ export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit
   const bonus = { ...NO_BONUS, ...opts.bonus }, maxHp = C.health + bonus.vigor * SH.vigor.step, stage: StageId = mode === 'trial' ? 'trial' : opts.stage ?? 'forest'
   const k = KITS[kit]
   const ranks = Object.fromEntries((Object.keys(POWERS) as Power[]).map(p => [p, 0])) as Record<Power, number>
-  ranks[k.primary] = 1
+  // 주 무기와 보조 공격을 1단계로 들고 시작한다 (11-17 밤 · 갈래 둘 다 1점 — 주 무기 갈래에 몰빵해도 활잡이를 칠 무엇이 있게)
+  ranks[k.primary] = 1; ranks[k.secondary] = 1
   const s: HaebiRun = { mode, stage, bonus, maxHp, revives: bonus.revive, elites: 0, kit, breaches: 0, captains: 0, seed, t: 0, x: C.width / 2, y: C.height / 2, hp: maxHp, face: 1, moving: false,
     attack: 0, hurt: 0, inv: 0, dash: 0, dashCd: 0, skillCd: 0, ult: null,
-    cool: { axe: 0, gale: 0, ember: 0, thunder: 0, orbit: 0, bow: 0, rain: 0, volley: 0, spear: 0, javelin: 0, grove: 0, sword: 0, wave: 0, tempest: 0, dagger: 0, knife: 0, shadow: 0, bell: 0, soul: 0, rite: 0, storm: 0, sling: 0, skip: 0, boulder: 0 },
-    ranks, combos: [], comboRanks: {},
+    cool: { counter: 0, axe: 0, gale: 0, ember: 0, thunder: 0, orbit: 0, bow: 0, rain: 0, volley: 0, spear: 0, javelin: 0, grove: 0, sword: 0, wave: 0, tempest: 0, dagger: 0, knife: 0, shadow: 0, bell: 0, soul: 0, rite: 0, storm: 0, sling: 0, skip: 0, boulder: 0 },
+    ranks, combos: [], comboRanks: {}, counterDue: false,
     gauge: opts.mastery ? A.need * A.mastery : 0, form: 'normal', formT: 0, wakes: 0, canAwaken: !!opts.awaken,
     xp: 0, level: 1, offers: [], rerolls: 3 + bonus.reroll, enemies: [], shots: [], fx: [], drops: [],
     spawn: 0, nextElite: C.eliteEvery * ST[stage].length, nextBarrage: C.barrageAt, boss: false, next: 1, kills: 0, damage: 0,
@@ -131,6 +194,8 @@ export function runGold(s: HaebiRun) {
 export const xpNeeded = (s: HaebiRun) => C.xpBase + s.level * C.xpPerLevel + s.level ** 2 * C.xpCurve
 export const powerScale = (s: HaebiRun) => (1 + (s.level - 1) * C.levelPower) * (1 + s.bonus.might * SH.might.step)
 export const areaScale = (s: HaebiRun) => 1 + s.ranks.reach * C.reachStep
+/** 떨어진 기세를 끌어오는 둘레 — 기본 + 상점 「끌어오기」 */
+export const magnetRadius = (s: HaebiRun) => C.dropMagnet * (1 + s.bonus.magnet * SH.magnet.step)
 /** 열전 시간을 예전 10분 판의 시각으로 — 국면·적 몰려옴은 예전 10분 곡선을 판 길이만큼 늘린다 (11-16 형: 「10분보다 길어지더라도 즐기게」) */
 const paced = (s: HaebiRun) => s.t * 600 / runDuration(s)
 export function phase(s: HaebiRun) { const u = paced(s); return s.mode === 'vanguard' ? `전위 돌파 ${s.breaches}/3` : u < 120 ? '첫 불씨' : u < 300 ? '힘의 결합' : u < 480 ? '폭풍의 진격' : s.t < bossTime(s) ? '압도' : '마지막 두목' }
@@ -148,29 +213,32 @@ export function comboChoices(s: HaebiRun) {
   const ready = kitCombos(s.kit).filter(c => comboReady(s, c) && comboRank(s, c.id) < T.max)
   return { fresh: ready.filter(c => !comboRank(s, c.id)).map(c => c.id), more: ready.filter(c => comboRank(s, c.id) > 0).map(c => c.id) }
 }
+/** 레벨업 카드 셋 — 층이 열렸고 끝 단계가 아닌 칸에서 · 조합(금테)은 맨 끝 자리 · 첫 고름은 갈래마다 하나 */
 function offer(s: HaebiRun) {
-  const attackKeys = attackPowers(s.kit)
-  const slotsFull = attackKeys.filter(k => s.ranks[k] > 0).length >= C.attackSlots
-  const pool = kitPowers(s.kit).filter(k => s.ranks[k] < POWERS[k].max && !(slotsFull && attackKeys.includes(k) && !s.ranks[k]))
+  const pool = kitPowers(s.kit).filter(k => s.ranks[k] < POWERS[k].max && nodeOpen(s, k))
   const { fresh, more } = comboChoices(s)
   if (!pool.length && !fresh.length && !more.length || s.level >= C.maxLevel) return
-  if (s.level === 1) { s.offers = [KITS[s.kit].secondary, 'ember', 'thunder']; return }
-  powerOffers(s, pool, attackKeys)
+  if (s.level === 1) { const k = KITS[s.kit]; s.offers = [k.secondary, k.primary, 'tempo']; return }
+  powerOffers(s, pool)
   // 조합 카드는 한 번에 하나 · 맨 끝 자리 — 새로 조건이 찬 조합은 늘, 연 조합의 다음 단계는 upgradeChance 몫으로
   const combo = fresh[0] ?? (more.length && random(s) < T.upgradeChance ? more[Math.floor(random(s) * more.length)] : undefined)
   if (combo) { if (s.offers.length >= 3) s.offers[s.offers.length - 1] = combo; else s.offers.push(combo) }
 }
-function powerOffers(s: HaebiRun, pool: Power[], attackKeys: Power[]) {
+/** 칸 셋을 무게대로 뽑는다 — 무게 = 1 + lean × 그 갈래 점수 몫 (찍은 갈래로 끌림) · 셋이 다 주 갈래면 가운데를 다른 갈래 칸으로 (조합 카드가 끝을 덮어도 남게) */
+function powerOffers(s: HaebiRun, pool: Power[]) {
   s.offers = []
-  if (!pool.length) return
-  // A developing attack is always offered; the remaining choices retain seeded variety.
-  const attacks = pool.filter(k => attackKeys.includes(k))
-  const developing = attacks.filter(k => s.ranks[k] > 0)
-  const first = (developing.length ? developing : attacks)[Math.floor(random(s) * (developing.length || attacks.length))]
-  s.offers = first ? [first] : []
-  while (s.offers.length < 3 && s.offers.length < pool.length) {
-    const rest = pool.filter(k => !s.offers.includes(k))
-    s.offers.push(rest[Math.floor(random(s) * rest.length)]!)
+  const branch = (p: Power) => nodeAt(s.kit, p)!.branch
+  const points = { a: branchPoints(s, 'a'), b: branchPoints(s, 'b'), c: branchPoints(s, 'c') }, total = points.a + points.b + points.c || 1
+  const weight = (p: Power) => 1 + T.lean * points[branch(p)] / total
+  const draw = (from: Power[]) => {
+    let r = random(s) * from.reduce((n, p) => n + weight(p), 0)
+    for (const p of from) { r -= weight(p); if (r < 0) return p }
+    return from[from.length - 1]!
+  }
+  while (s.offers.length < 3 && s.offers.length < pool.length) s.offers.push(draw(pool.filter(k => !s.offers.includes(k))))
+  const main = mainBranch(s), others = pool.filter(k => branch(k) !== main && !s.offers.includes(k))
+  if (s.offers.length && others.length && s.offers.every(k => branch(k as Power) === main)) {
+    if (s.offers.length < 3) s.offers.push(draw(others)); else s.offers[1] = draw(others)
   }
 }
 export function reroll(s: HaebiRun) { if (s.state !== 'playing' || s.level === 1 || !s.offers.length || s.rerolls <= 0) return false; s.rerolls--; offer(s); return true }
@@ -184,8 +252,12 @@ export function choose(s: HaebiRun, key: Pick) {
     s.comboRanks[key] = rank + 1
     announce(s, rank + 1 >= T.max ? `비기 강화 · ${KITS[s.kit].skill}` : rank ? `조합 강화 · ${c.name} ${rank + 1}단계` : `조합 개방 · ${c.name}`)
   } else {
-    if (s.ranks[key] >= POWERS[key].max) return false
+    // 남의 묶음 칸 · 잠긴 층 · 끝 단계는 못 고른다
+    if (s.ranks[key] >= POWERS[key].max || !nodeOpen(s, key)) return false
     s.ranks[key]++
+    if (key === 'stout') { s.maxHp += T.stout; s.hp += T.stout }
+    const at = nodeAt(s.kit, key)!
+    if (at.tier === T.tiers.length - 1 && s.ranks[key] === 1) announce(s, `갈래 끝 · ${nodeText(s.kit, key).name}`)
   }
   s.xp -= xpNeeded(s); s.level++; s.offers = []; s.hp = Math.min(s.maxHp, s.hp + C.levelHeal)
   if (s.xp >= xpNeeded(s)) offer(s)
@@ -240,7 +312,8 @@ function hit(s: HaebiRun, e: Mob, amount: number, knock = true) {
   fx(s, 'death', e.x, e.y - 20, e.kind === 'boss' ? 80 : 25, '#d4af76')
   Object.assign(s.fx[s.fx.length - 1]!, { mob: e.kind, face: s.x < e.x ? -1 : 1, n: amount, crit })
   const value = e.kind === 'boss' ? 100 : e.kind === 'elite' ? 45 : M[e.kind].xp
-  if (s.drops.length >= C.maxDrops) s.xp += value
+  // 판 위 기세 알이 끝까지 차면 가장 가까운 알에 보탠다 (그냥 주면 멀리서도 먹힌다)
+  if (s.drops.length >= C.maxDrops) { let best = s.drops[0]!, bd = Infinity; for (const d of s.drops) { const n = Math.hypot(d.x - e.x, d.y - e.y); if (n < bd) { bd = n; best = d } } best.value += value; best.age = 0 }
   else s.drops.push({ x: e.x, y: e.y, value, age: 0 })
   if (e.kind === 'boss') {
     if (s.mode === 'vanguard') { s.breaches++; announce(s, `전위대장 격파 · ${s.breaches}/3 돌파 확보`) }
@@ -271,7 +344,8 @@ function shoot(s: HaebiRun, kind: Missile['kind'], angle: number, damage: number
 function pierce(s: HaebiRun, b: Missile) {
   if (b.kind === 'knife') return C.knifePierce + Math.floor(s.ranks.knife / 3)
   if (b.kind === 'soul') return 1
-  if (b.kind === 'skip') return C.skipBounces + Math.ceil(s.ranks.skip / 2)
+  if (b.kind === 'skip') return C.skipBounces + Math.ceil(s.ranks.skip / 2) + (s.kit === 'sling' ? s.ranks.capB * T.cap.sling.b.bounces : 0)
+  if (b.kind === 'arrow' && s.kit === 'bow' && s.ranks.capA) return Infinity   // 꿰뚫는 일제 (갈래 끝)
   if (b.kind === 'boulder') return Infinity
   return b.kind === 'shard' ? 2 : b.kind === 'arrow' ? C.bowPierce + Math.floor(s.ranks.bow / 2) : b.kind === 'javelin' ? C.javelinPierce + s.ranks.javelin : b.kind === 'wave' ? Infinity : 3 + s.ranks.gale
 }
@@ -296,49 +370,73 @@ export const charge = (kind: MobKind) => kind === 'runner' || kind === 'tiger' ?
 /** 내려찍기(wind) 범위 · 준비 시간 — 두목·정예 · 반달곰 */
 export const slamRadius = (kind: MobKind) => kind === 'bear' ? M.bearRadius : C.bossRadius
 export const slamWindup = (kind: MobKind) => kind === 'bear' ? M.bearWind : C.bossWindup
-function hurt(s: HaebiRun, amount: number) { if (s.inv > 0) return; s.hp -= Math.max(1, amount * ST[s.stage].damage - s.bonus.armor * SH.armor.step); s.inv = C.hitInv; s.hurt = .3 }
+function hurt(s: HaebiRun, amount: number) {
+  if (s.inv > 0) return
+  s.hp -= Math.max(1, amount * ST[s.stage].damage * (1 - s.ranks.tough * T.tough) - s.bonus.armor * SH.armor.step); s.inv = C.hitInv; s.hurt = .3
+  // 되받아치기 (버팀 끝): 맞으면 다음 걸음에 비기가 작게 터진다
+  if (s.ranks.capC && !s.cool.counter) { s.counterDue = true; s.cool.counter = T.counterCd - T.counterCdStep * (s.ranks.capC - 1) }
+}
 /** 시간이 갈수록 적 한 대가 아파진다 — 가만히 서서 고르기만 해도 깨지 않게 (형 11-15) */
 const threat = (s: HaebiRun) => 1 + s.t * C.threatTimeScale
 function won(s: HaebiRun) { return s.state === 'won' }
-/** 주 무기 — 가장 가까운 적을 향해 (도끼 묶음은 예전 해비 코드 그대로) */
+/** 주 무기 — 가장 가까운 적을 향해 (도끼 묶음은 예전 해비 코드 그대로) · 3층 벼리기가 피해를 · 4층 갈래 끝(capA)이 꼴을 바꾼다 */
 function primary(s: HaebiRun, target: Mob, angle: number, dist: number, power: number, area: number, tempo: number) {
-  const cos = Math.cos(angle), sin = Math.sin(angle)
+  const cos = Math.cos(angle), sin = Math.sin(angle), cap = s.ranks.capA
+  power *= 1 + s.ranks.hone * T.hone
   if (s.kit === 'axe') {
     const reach = (C.axeRange + C.axeRankRange * s.ranks.axe) * area
     if (!s.cool.axe && dist < reach) {
       s.cool.axe = C.axeCooldown / tempo; s.attack = .3; s.face = Math.cos(angle) < 0 ? -1 : 1
       fx(s, 'slash', s.x, s.y, reach, '#ffe2a0', angle)
-      for (const e of s.enemies) if (Math.hypot(e.x - s.x, e.y - s.y) < reach && (s.ranks.axe >= 4 || (e.x - s.x) * Math.cos(angle) + (e.y - s.y) * Math.sin(angle) > -30)) hit(s, e, (C.axeDamage + C.axeRankDamage * s.ranks.axe) * power)
+      const damage = (C.axeDamage + C.axeRankDamage * s.ranks.axe) * power
+      for (const e of s.enemies) if (Math.hypot(e.x - s.x, e.y - s.y) < reach && (s.ranks.axe >= 4 || (e.x - s.x) * Math.cos(angle) + (e.y - s.y) * Math.sin(angle) > -30)) hit(s, e, damage)
+      if (cap) {
+        // 땅 가르기: 내려친 쪽으로 땅이 길게 갈라져 그 줄을 모두 벤다
+        const c = T.cap.axe.a, length = c.length * area, width = c.width * area
+        fx(s, 'thrust', s.x, s.y, length, '#d9a85a', angle)
+        for (const e of s.enemies) if (e.hp > 0 && inLine(s.x, s.y, e, cos, sin, length, width)) hit(s, e, damage * capShare(cap, c), false)
+      }
     }
   } else if (s.kit === 'bow') {
     if (!s.cool.bow && dist < C.bowRange * area) {
       s.cool.bow = C.bowCooldown / tempo; s.attack = .3; s.face = cos < 0 ? -1 : 1
-      const count = 1 + Math.floor(s.ranks.bow / 3)
-      for (let i = 0; i < count; i++) shoot(s, 'arrow', angle + (i - (count - 1) / 2) * .12, (C.bowDamage + C.bowRankDamage * s.ranks.bow) * power)
+      // 꿰뚫는 일제: 단계마다 extra 대 더 (모두 꿰뚫기는 pierce)
+      const count = 1 + Math.floor(s.ranks.bow / 3) + cap * T.cap.bow.a.extra, damage = (C.bowDamage + C.bowRankDamage * s.ranks.bow) * power * (cap ? capShare(cap, T.cap.bow.a) : 1)
+      for (let i = 0; i < count; i++) shoot(s, 'arrow', angle + (i - (count - 1) / 2) * .12, damage)
     }
   } else if (s.kit === 'spear') {
     const length = (C.spearLength + C.spearRankLength * s.ranks.spear) * area, width = C.spearWidth * area * (s.ranks.spear >= 4 ? 1.6 : 1)
     if (!s.cool.spear && dist < length) {
       s.cool.spear = C.spearCooldown / tempo; s.attack = .3; s.face = cos < 0 ? -1 : 1
-      fx(s, 'thrust', s.x, s.y, length, '#ffe2a0', angle)
-      for (const e of s.enemies) {
-        const ex = e.x - s.x, ey = e.y - s.y, along = ex * cos + ey * sin
-        if (along > -12 && along < length && Math.abs(ey * cos - ex * sin) < width) hit(s, e, (C.spearDamage + C.spearRankDamage * s.ranks.spear) * power)
+      const damage = (C.spearDamage + C.spearRankDamage * s.ranks.spear) * power, side = cap ? capShare(cap, T.cap.spear.a) : 0
+      // 삼지창(갈래 끝): 앞과 양옆(spread) 세 방향 · 옆 찌르기는 share 몫
+      const prongs: [number, number][] = cap ? [[angle, 1], [angle + T.cap.spear.a.spread, side], [angle - T.cap.spear.a.spread, side]] : [[angle, 1]]
+      for (const [a, k] of prongs) {
+        const c = Math.cos(a), n = Math.sin(a)
+        fx(s, 'thrust', s.x, s.y, length, '#ffe2a0', a)
+        for (const e of s.enemies) {
+          const ex = e.x - s.x, ey = e.y - s.y, along = ex * c + ey * n
+          if (along > -12 && along < length && Math.abs(ey * c - ex * n) < width) hit(s, e, damage * k)
+        }
       }
     }
   } else if (s.kit === 'dagger') {
-    // 쌍단검: 짧게 아주 빠르게 · 4단계부터 등 뒤까지
+    // 쌍단검: 짧게 아주 빠르게 · 4단계부터 등 뒤까지 · 독 묻은 쌍검(갈래 끝)은 찌른 적에 독
     const reach = (C.daggerRange + C.daggerRankRange * s.ranks.dagger) * area
     if (!s.cool.dagger && dist < reach) {
       s.cool.dagger = C.daggerCooldown / tempo; s.attack = .3; s.face = cos < 0 ? -1 : 1
       fx(s, 'slash', s.x, s.y, reach, '#f1e4c0', angle)
+      const damage = (C.daggerDamage + C.daggerRankDamage * s.ranks.dagger) * power
       for (const e of s.enemies) {
         const ex = e.x - s.x, ey = e.y - s.y, d = Math.hypot(ex, ey) || 1
-        if (d < reach && (s.ranks.dagger >= 4 || (ex * cos + ey * sin) / d > C.daggerArc)) hit(s, e, (C.daggerDamage + C.daggerRankDamage * s.ranks.dagger) * power)
+        if (d < reach && (s.ranks.dagger >= 4 || (ex * cos + ey * sin) / d > C.daggerArc)) {
+          hit(s, e, damage)
+          if (cap && e.hp > 0) { e.poison = Math.max(e.poison, T.cap.dagger.a.poison); e.pdps = Math.max(e.pdps, damage * capShare(cap, T.cap.dagger.a)) }
+        }
       }
     }
   } else if (s.kit === 'sling') {
-    // 돌팔매: 가까운 적(돌 수만큼 서로 다른 적)이 선 자리로 돌이 포물선을 그리며 slingFlight 초 만에 떨어진다 · 떨어진 둘레를 친다
+    // 돌팔매: 가까운 적(돌 수만큼 서로 다른 적)이 선 자리로 돌이 포물선을 그리며 slingFlight 초 만에 떨어진다 · 떨어진 둘레를 친다 (땅울림은 떨어질 때)
     if (!s.cool.sling && dist < C.slingRange * area) {
       s.cool.sling = C.slingCooldown / tempo; s.attack = .3; s.face = cos < 0 ? -1 : 1
       const used: number[] = [], damage = (C.slingDamage + C.slingRankDamage * s.ranks.sling) * power
@@ -350,22 +448,26 @@ function primary(s: HaebiRun, target: Mob, angle: number, dist: number, power: n
       }
     }
   } else if (s.kit === 'magic') {
-    // 방울 파동: 방향 없이 둘레 전체
+    // 방울 파동: 방향 없이 둘레 전체 · 신령 부르기(갈래 끝)는 울릴 때마다 혼불이 단계 수만큼
     const r = (C.bellRadius + C.bellRankRadius * s.ranks.bell) * area
     if (!s.cool.bell && dist < r) {
       s.cool.bell = C.bellCooldown / tempo; s.attack = .3
       fx(s, 'ring', s.x, s.y, r, '#f3dc8a')
       for (const e of s.enemies) if (Math.hypot(e.x - s.x, e.y - s.y) < r) hit(s, e, (C.bellDamage + C.bellRankDamage * s.ranks.bell) * power)
+      for (let i = 0; i < cap; i++) shoot(s, 'soul', angle + (i - (cap - 1) / 2) * 1.2, (C.soulDamage + C.soulRankDamage * s.ranks.soul) * power * capShare(cap, T.cap.magic.a), s.x, s.y, s.x, s.y, 1)
     }
   } else {
     const reach = (C.swordRange + C.swordRankRange * s.ranks.sword) * area
     if (!s.cool.sword && dist < reach) {
       s.cool.sword = C.swordCooldown / tempo; s.attack = .3; s.face = cos < 0 ? -1 : 1
       fx(s, 'slash', s.x, s.y, reach, '#fff0c8', angle)
+      const damage = (C.swordDamage + C.swordRankDamage * s.ranks.sword) * power
       for (const e of s.enemies) {
         const ex = e.x - s.x, ey = e.y - s.y, d = Math.hypot(ex, ey) || 1
-        if (d < reach && (s.ranks.sword >= 4 || (ex * cos + ey * sin) / d > -C.swordArc)) hit(s, e, (C.swordDamage + C.swordRankDamage * s.ranks.sword) * power)
+        if (d < reach && (s.ranks.sword >= 4 || (ex * cos + ey * sin) / d > -C.swordArc)) hit(s, e, damage)
       }
+      // 칼바람 베기(갈래 끝): 벨 때마다 짧은 검기 (갈라지지 않는다 · gen 1)
+      if (cap) { const b = shoot(s, 'wave', angle, damage * capShare(cap, T.cap.sword.a), s.x, s.y, s.x, s.y, 1); if (b) b.life = T.cap.sword.a.life }
     }
   }
   void target
@@ -376,8 +478,9 @@ function archerAngle(s: HaebiRun) {
   for (const e of s.enemies) if (e.kind === 'archer' && e.hp > 0) { const d = Math.hypot(e.x - s.x, e.y - s.y); if (d < bd) { bd = d; best = e } }
   return best ? Math.atan2(best.y - s.y, best.x - s.x) : null
 }
-/** 묶음 전용 보조 공격 (도끼 묶음 = 질풍 도끼, 예전 그대로) */
+/** 묶음 전용 보조 공격 (도끼 묶음 = 질풍 도끼, 예전 그대로) · 3층 숙련이 피해·빠르기를 · 4층 갈래 끝(capB)은 대개 날아간 뒤(움직이는 투사체 쪽)에서 */
 function secondary(s: HaebiRun, target: Mob, angle: number, power: number, tempo: number) {
+  power *= 1 + s.ranks.drill * T.drill; tempo *= 1 + s.ranks.drill * T.drillTempo
   if (s.kit === 'axe') {
     if (s.ranks.gale && !s.cool.gale) {
       s.cool.gale = C.galeCooldown / tempo; const count = 1 + Math.ceil(s.ranks.gale / 2) + s.ranks.echo
@@ -416,8 +519,10 @@ function secondary(s: HaebiRun, target: Mob, angle: number, power: number, tempo
     }
   } else if (s.ranks.wave && !s.cool.wave) {
     angle = archerAngle(s) ?? angle
-    s.cool.wave = C.waveCooldown / tempo; const count = 1 + Math.floor(s.ranks.wave / 3) + s.ranks.echo
-    for (let i = 0; i < count; i++) shoot(s, 'wave', angle + (i - (count - 1) / 2) * .3, (C.waveDamage + C.waveRankDamage * s.ranks.wave) * power)
+    s.cool.wave = C.waveCooldown / tempo; const count = 1 + Math.floor(s.ranks.wave / 3) + s.ranks.echo, damage = (C.waveDamage + C.waveRankDamage * s.ranks.wave) * power
+    for (let i = 0; i < count; i++) shoot(s, 'wave', angle + (i - (count - 1) / 2) * .3, damage)
+    // 십자 검기(갈래 끝): 등 뒤로도
+    if (s.ranks.capB) for (let i = 0; i < count; i++) shoot(s, 'wave', angle + Math.PI + (i - (count - 1) / 2) * .3, damage * capShare(s.ranks.capB, T.cap.sword.b))
   }
 }
 /** 묶음 조합 중 스스로 도는 것 (도끼 폭풍은 예전 그대로) */
@@ -498,9 +603,10 @@ function bestAim(s: HaebiRun, length: number, width: number, damage: number, tow
   }
   return best
 }
-function ultimate(s: HaebiRun, mx: number, my: number, power: number, area: number) {
-  s.skillCd = U[s.kit].cooldown * (ultUpgraded(s) ? T.ultCooldown : 1); s.inv = Math.max(s.inv, C.skillInv); s.attack = .3
-  s.shots = s.shots.filter(b => b.kind !== 'enemy' && b.kind !== 'hurl')
+/** 비기 — free: 되받아치기(버팀 끝)로 작게 터질 때 · 재사용을 돌리지 않고 날아오던 화살도 그대로 둔다 (k = 힘 몫 · 이어지는 비기도 그 몫으로) */
+function ultimate(s: HaebiRun, mx: number, my: number, power: number, area: number, free = false, k = 1) {
+  if (!free) { s.skillCd = U[s.kit].cooldown * (ultUpgraded(s) ? T.ultCooldown : 1); s.shots = s.shots.filter(b => b.kind !== 'enemy' && b.kind !== 'hurl') }
+  s.inv = Math.max(s.inv, C.skillInv); s.attack = .3; power *= k
   const moveAim = s.moving && (mx || my) ? Math.atan2(my, mx) : null
   if (s.kit === 'axe' || s.kit === 'bow' || s.kit === 'sword') {
     // 줄 비기: 도끼는 땅을 가르고 · 활은 화면을 꿰고 · 칼은 그 줄을 따라 내달린다
@@ -536,9 +642,9 @@ function ultimate(s: HaebiRun, mx: number, my: number, power: number, area: numb
       if (sum > most) { most = sum; cx = c.x; cy = c.y }
     }
     ultFx(s, true, cx, cy, R, 0, s.x, s.y)   // 그림자 고리 (떨어질 자리) · 장수는 팔매를 크게 돌린다
-    s.ult = { n: p.waves, t: 0, x: cx, y: cy, used: [] }
+    s.ult = { n: p.waves, t: 0, x: cx, y: cy, used: [], k }
   } else {
-    s.ult = { n: s.kit === 'spear' ? U.spear.pulses : U.dagger.targets, t: 0, x: s.x, y: s.y, used: [] }
+    s.ult = { n: s.kit === 'spear' ? U.spear.pulses : U.dagger.targets, t: 0, x: s.x, y: s.y, used: [], k }
     if (s.kit === 'dagger') ultFx(s, true, s.x, s.y, 0)   // 그림자로 사라짐
   }
 }
@@ -546,7 +652,7 @@ function ultimate(s: HaebiRun, mx: number, my: number, power: number, area: numb
 const GOLDEN = Math.PI * (3 - Math.sqrt(5))
 /** 이어지는 비기의 한 걸음 — 용오름 창은 넓어지며 솟고, 그림자 베기는 다음 적에게 옮겨 가 베고, 돌벼락은 물결마다 둘레 전체에 돌이 떨어진다 */
 function ultTick(s: HaebiRun, dt: number, power: number, area: number) {
-  const u = s.ult!; u.t -= dt
+  const u = s.ult!; u.t -= dt; power *= u.k
   while (u.t <= 0 && u.n > 0) {
     if (s.kit === 'spear') {
       const p = U.spear, i = p.pulses - u.n, r = (p.r0 + (p.r1 - p.r0) * i / Math.max(1, p.pulses - 1)) * area
@@ -591,19 +697,21 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
   if (s.form !== 'normal') { s.formT = Math.max(0, s.formT - dt); if (!s.formT) { s.form = 'normal'; if (s.canAwaken) announce(s, '각성이 풀렸다 · 다시 모아라') } }
   if (!s.streakTime) s.comboKills = 0
   for (const key of Object.keys(s.cool) as Cool[]) s.cool[key] = Math.max(0, s.cool[key] - dt)
-  s.hp = Math.min(s.maxHp, s.hp + (C.regen + s.bonus.regen * SH.regen.step) * dt)
+  s.hp = Math.min(s.maxHp, s.hp + (C.regen + s.bonus.regen * SH.regen.step + s.ranks.breath * T.breath) * dt)
   const len = Math.hypot(input.x, input.y), divisor = Math.max(1, len)
   let dx = input.x / divisor, dy = input.y / divisor
   s.moving = len > .05
   if (dx) s.face = Math.sign(dx)
-  if (input.dash && !s.dashCd) { s.dash = C.dashTime; s.dashCd = C.dashCooldown; s.inv = C.dashInv }
+  if (input.dash && !s.dashCd) { s.dash = C.dashTime; s.dashCd = C.dashCooldown * (1 - s.ranks.nimble * T.nimble); s.inv = C.dashInv }
   if (s.dash && !len) dx = s.face
-  const speed = C.speed * (1 + s.bonus.swift * SH.swift.step) * (s.dash ? C.dashSpeed : 1) * boost.move
+  const speed = C.speed * (1 + s.bonus.swift * SH.swift.step + s.ranks.nimble * T.nimbleMove) * (s.dash ? C.dashSpeed : 1) * boost.move
   s.x = heroX(s.x + dx * speed * dt); s.y = heroY(s.y + dy * speed * dt)
   const power = powerScale(s) * boost.power, area = areaScale(s), tempo = (1 + s.ranks.tempo * C.tempoStep + s.bonus.haste * SH.haste.step) * boost.tempo
   // 3층 비기 강화 (조합 하나를 끝 단계로)
   const up = ultUpgraded(s), uPower = power * (up ? T.ultDamage : 1), uArea = area * (up ? T.ultArea : 1)
   if (input.skill && !s.skillCd) ultimate(s, dx, dy, uPower, uArea)
+  // 되받아치기 (버팀 끝): 맞은 다음 걸음에 비기가 작게 · 이어지는 비기가 도는 중이면 건너뛴다
+  if (s.counterDue) { s.counterDue = false; if (!s.ult) ultimate(s, dx, dy, uPower, uArea, true, T.counter + T.counterStep * (s.ranks.capC - 1)) }
   if (s.ult) ultTick(s, dt, uPower, uArea)
   const target = nearest(s, s.x, s.y)
   if (target) {
@@ -704,6 +812,8 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
           if (e.hp <= 0 || d >= b.radius) continue
           hit(s, e, b.damage)
           if (e.hp > 0 && !steady(e)) { e.x += (e.x - b.tx) / (d || 1) * C.slingKnock; e.y += (e.y - b.ty) / (d || 1) * C.slingKnock }
+          // 땅울림 (팔매 갈래 끝): 떨어진 둘레가 잠시 멈춘다 (두목·정예·철갑·곰은 버틴다)
+          if (s.ranks.capA && s.kit === 'sling' && e.hp > 0 && !steady(e) && e.kind !== 'elite') e.daze = Math.max(e.daze, T.cap.sling.a.daze + T.cap.sling.a.daStep * (s.ranks.capA - 1))
         }
       }
     } else if (b.kind === 'barrage') {
@@ -712,11 +822,16 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
       if (b.life <= 0) {
         blast(s, b.x, b.y, C.rainRadius * area, b.damage, '#cfe3ff')
         if (s.combos.includes('meteor')) for (let i = 0; i < 3; i++) shoot(s, 'shard', i * Math.PI * 2 / 3 + s.t, b.damage * C.splitDamage * cp(s, 'meteor'), b.x, b.y)
+        // 폭우 (화살비 갈래 끝): 같은 자리에 한 번 더 (두 번째는 다시 안 부른다)
+        if (!b.gen && s.kit === 'bow' && s.ranks.capB) { const c = T.cap.bow.b, again = shoot(s, 'rain', 0, b.damage * capShare(s.ranks.capB, c), b.x, b.y, b.x, b.y, 1); if (again) again.life = c.delay }
       }
     } else {
-      if (b.kind === 'javelin' && !b.gen && s.combos.includes('boomerang') && b.life < C.javelinLife * C.boomerangTurn) {
+      // 돌아오는 창(조합) · 돌아오는 회오리(질풍 갈래 끝): 날아가던 것이 장수 쪽으로 되돌아오며 다시 꿰뚫는다
+      const back = b.gen ? 0 : b.kind === 'javelin' && s.combos.includes('boomerang') && b.life < C.javelinLife * C.boomerangTurn ? cp(s, 'boomerang')
+        : b.kind === 'gale' && s.kit === 'axe' && s.ranks.capB && b.life < C.galeLife * T.cap.axe.b.turn ? capShare(s.ranks.capB, T.cap.axe.b) : 0
+      if (back) {
         const a = Math.atan2(s.y - b.y, s.x - b.x), v = Math.hypot(b.vx, b.vy)
-        b.vx = Math.cos(a) * v; b.vy = Math.sin(a) * v; b.angle = a; b.hit = []; b.gen = 1; b.damage *= cp(s, 'boomerang')
+        b.vx = Math.cos(a) * v; b.vy = Math.sin(a) * v; b.angle = a; b.hit = []; b.gen = 1; b.damage *= back
       }
       if (b.kind === 'soul') {
         // 혼불: 가장 가까운 적 쪽으로 천천히 꺾는다
@@ -726,7 +841,12 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
       if (b.kind === 'wave' && !b.gen && b.life <= 0 && s.combos.includes('splitwave')) for (const turn of [-.6, .6]) shoot(s, 'wave', b.angle + turn, b.damage * C.splitDamage * cp(s, 'splitwave'), b.x, b.y, b.x, b.y, 1)
       for (const e of s.enemies) {
         if (e.hp <= 0 || b.hit.includes(e.id) || Math.hypot(b.x - e.x, b.y - e.y) > b.radius + 18) continue
-        if (b.kind === 'soul') { blast(s, b.x, b.y, C.soulRadius * areaScale(s), b.damage, '#9fd8ff'); b.life = 0; break }
+        if (b.kind === 'soul') {
+          blast(s, b.x, b.y, C.soulRadius * areaScale(s), b.damage, '#9fd8ff'); b.life = 0
+          // 갈라지는 혼불 (혼불 갈래 끝): 터진 자리에서 작은 혼불로 갈라져 다른 적을 쫓는다 (갈라진 것은 다시 안 갈라진다)
+          if (!b.gen && s.kit === 'magic' && s.ranks.capB) for (let i = 0, n = T.cap.magic.b.split; i < n; i++) { const o = shoot(s, 'soul', b.angle + (i - (n - 1) / 2) * 1.6, b.damage * capShare(s.ranks.capB, T.cap.magic.b), b.x, b.y, b.x, b.y, 1); if (o) o.hit.push(e.id) }
+          break
+        }
         hit(s, e, b.damage * (e.kind === 'shield' ? M.shieldBlock : 1)); b.hit.push(e.id)
         if (b.kind === 'boulder' && e.hp > 0 && !steady(e)) { const v = Math.hypot(b.vx, b.vy) || 1; e.x += b.vx / v * C.boulderKnock; e.y += b.vy / v * C.boulderKnock }
         if (b.kind === 'skip') {
@@ -735,9 +855,15 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
           const n = b.hit.length < pierce(s, b) ? nearest(s, b.x, b.y, b.hit, C.skipRange * area) : undefined
           if (!n) { b.life = 0; break }
           const a = Math.atan2(n.y - b.y, n.x - b.x); b.vx = Math.cos(a) * C.skipSpeed; b.vy = Math.sin(a) * C.skipSpeed; b.angle = a; b.life = C.skipLife
+          // 끝없는 물수제비 (갈래 끝): 튈 때마다 세진다
+          if (s.kit === 'sling' && s.ranks.capB) b.damage *= 1 + T.cap.sling.b.grow
           break
         }
         if (b.kind === 'knife' && s.combos.includes('venom')) { e.poison = C.venomTime; e.pdps = Math.max(e.pdps, b.damage * C.venomShare * cp(s, 'venom')) }
+        // 솟는 창 (투창 갈래 끝): 던진 창이 처음 꿰뚫은 자리에서 창날이 솟아 둘레를 친다 (돌아오는 창은 돌아올 때도 한 번)
+        if (b.kind === 'javelin' && b.hit.length === 1 && s.kit === 'spear' && s.ranks.capB) { const c = T.cap.spear.b, r = c.radius * area; fx(s, 'spike', e.x, e.y, r, '#e8eefc'); for (const o of s.enemies) if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < r) hit(s, o, b.damage * capShare(s.ranks.capB, c)) }
+        // 터지는 비도 (비도 갈래 끝): 처음 맞힌 자리에서 작은 칼이 사방으로 (튄 칼은 다시 안 튄다)
+        if (b.kind === 'knife' && !b.gen && b.hit.length === 1 && s.kit === 'dagger' && s.ranks.capB) for (let i = 0, n = T.cap.dagger.b.shards; i < n; i++) { const o = shoot(s, 'knife', b.angle + (i + 1) * Math.PI * 2 / (n + 1), b.damage * capShare(s.ranks.capB, T.cap.dagger.b), b.x, b.y, b.x, b.y, 1); if (o) o.hit.push(e.id) }
         if (b.kind === 'gale' && s.combos.includes('torrent') && b.hit.length === 1) for (let i = 0; i < 3; i++) shoot(s, 'shard', i * Math.PI * 2 / 3 + b.angle, b.damage * .6 * cp(s, 'torrent'), b.x, b.y)
         if (b.hit.length >= pierce(s, b)) { b.life = 0; break }
       }
@@ -745,8 +871,10 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
   }
   for (const d of s.drops) {
     d.age += dt; const dx = s.x - d.x, dy = s.y - d.y, dist = Math.hypot(dx, dy) || 1
-    if (dist < C.dropMagnet * (1 + s.bonus.magnet * SH.magnet.step) || d.age > C.dropLife / 2) { const travel = Math.min(dist, C.dropSpeed * dt); d.x += dx / dist * travel; d.y += dy / dist * travel }
-    if (dist < 22 || d.age > C.dropLife) { s.xp += d.value * (1 + s.bonus.wisdom * SH.wisdom.step); d.value = 0 }
+    // 끌어오는 둘레 안의 것만 날아온다 (기본 + 상점 「끌어오기」) · 못 주운 것은 dropLife 에 사라진다 (11-17 형: 「가운데 가만히 있어도 맵의 모든 돈이 먹어짐」 — 예전엔 반쯤 지나면 어디서든 날아왔다)
+    if (dist < magnetRadius(s)) { const travel = Math.min(dist, C.dropSpeed * dt); d.x += dx / dist * travel; d.y += dy / dist * travel }
+    if (dist < 22) { s.xp += d.value * (1 + s.bonus.wisdom * SH.wisdom.step); d.value = 0 }
+    else if (d.age > C.dropLife) d.value = 0
   }
   s.drops = s.drops.filter(d => d.value > 0); s.enemies = s.enemies.filter(e => e.hp > 0)
   s.shots = s.shots.filter(b => b.life > 0 && b.x > -60 && b.x < C.width + 60 && b.y > -60 && b.y < C.height + 60)

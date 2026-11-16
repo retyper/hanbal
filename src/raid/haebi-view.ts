@@ -16,11 +16,14 @@ const BOSS_WIN = [104, 35, 626, 82] as const
 export function sprite(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, path: string, x: number, y: number, height: number, frame: number, face = 1, flash = false) {
   const img = images.get(path); if (!img) return
   const w = img.width / 20, h = img.height
-  ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.scale(face, 1); ctx.imageSmoothingEnabled = false
+  // 폰 프레임 (11-17): save/restore 대신 옮긴 만큼 되돌린다 — 적 230 명마다 save 가 판 그리기의 8% 를 먹었다
+  const tx = Math.round(x), ty = Math.round(y)
+  const smooth = ctx.imageSmoothingEnabled
+  ctx.translate(tx, ty); if (face !== 1) ctx.scale(face, 1); ctx.imageSmoothingEnabled = false
   ctx.drawImage(img, frame * w, 0, w, h, -height * w / h / 2, -height, height * w / h, height)
   // 맞은 번쩍: 같은 그림을 한 번 더 빛으로 더한다 — ctx.filter 는 폰에서 그림마다 소프트웨어로 돌아 프레임을 크게 깎았다 (11-16 플립7 20프레임)
-  if (flash) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = C.flashAdd; ctx.drawImage(img, frame * w, 0, w, h, -height * w / h / 2, -height, height * w / h, height) }
-  ctx.restore()
+  if (flash) { const op = ctx.globalCompositeOperation, a = ctx.globalAlpha; ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = a * C.flashAdd; ctx.drawImage(img, frame * w, 0, w, h, -height * w / h / 2, -height, height * w / h, height); ctx.globalCompositeOperation = op; ctx.globalAlpha = a }
+  if (face !== 1) ctx.scale(face, 1); ctx.translate(-tx, -ty); ctx.imageSmoothingEnabled = smooth
 }
 /**
  * 회피 잔상 — 화면 쪽에서만 들고 있는 그림 기록(판 상태는 읽기만). 지나온 자리마다 장수 실루엣을 남겨
@@ -85,7 +88,9 @@ function axe(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement
 }
 function stamp(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, path: string, x: number, y: number, size: number, angle = 0) {
   const img = images.get(path); if (!img) return
-  ctx.save(); ctx.translate(x, y); ctx.rotate(angle); ctx.drawImage(img, -size / 2, -size / 2, size, size); ctx.restore()
+  // 돌리지 않는 그림(기세 알 · 대부분)은 옮기지도 않는다 · 돌리면 돌린 만큼 되돌린다 (save/restore 없이 · 폰 프레임 11-17)
+  if (!angle) { ctx.drawImage(img, x - size / 2, y - size / 2, size, size); return }
+  ctx.translate(x, y); ctx.rotate(angle); ctx.drawImage(img, -size / 2, -size / 2, size, size); ctx.rotate(-angle); ctx.translate(-x, -y)
 }
 /** 바닥 표식(H23) — 그림이 있으면 w×h 로 깔고 true. 없으면 false 를 돌려 옛 선 그리기로 대신하게 한다 */
 function decal(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, name: string, x: number, y: number, w: number, h: number, alpha = 1) {
@@ -237,12 +242,28 @@ export function drawPortrait(ctx: CanvasRenderingContext2D, images: Map<string, 
   sprite(ctx, images, heroSprite(s), w / 2, h - 24, h - 28, heroFrame(s, true, menuTime), 1, s.hurt > 0)
   if (s.hurt > 0) { ctx.fillStyle = '#f5654933'; ctx.fillRect(0, 0, w, h) }
 }
+/** 판 바탕 — 큰 그림을 판 크기로 줄이고 어둡게 덮은 것을 한 번만 구워 둔다 (판마다 큰 그림을 줄여 그리던 것 · 폰 프레임 11-17) */
+let backdrop: { img: HTMLImageElement; canvas: HTMLCanvasElement } | null = null
+function fieldBackdrop(bg: HTMLImageElement, W: number, H: number) {
+  if (backdrop?.img === bg) return backdrop.canvas
+  if (typeof document === 'undefined') return null   // 헤드리스 시험(node) — 그때그때 그린다
+  const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H
+  const c = canvas.getContext('2d')!, sw = bg.height * W / H
+  c.fillStyle = '#273c35'; c.fillRect(0, 0, W, H)
+  c.drawImage(bg, (bg.width - sw) / 2, 0, sw, bg.height, 0, 0, W, H)
+  c.fillStyle = '#11281b25'; c.fillRect(0, 0, W, H)
+  backdrop = { img: bg, canvas }; return canvas
+}
+/** 그리는 차례 (위에서 아래로) — 판마다 다시 쓰는 배열 */
+const order: (HaebiRun['enemies'][number] | null)[] = []
 export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, destination: { x: number; y: number } | null) {
   const W = C.width, H = C.height
+  ctx.setTransform(1, 0, 0, 1, 0, 0)   // 그림마다 옮겼다 되돌리는 셈의 작은 오차가 판마다 쌓이지 않게 (sprite·stamp 는 save/restore 없이 · 11-17)
   ctx.fillStyle = '#273c35'; ctx.fillRect(0, 0, W, H)
   const bg = images.get('raid/' + ST[s.stage].bg) ?? images.get('raid/forest.webp')
-  if (bg) { const sw = bg.height * W / H; ctx.drawImage(bg, (bg.width - sw) / 2, 0, sw, bg.height, 0, 0, W, H) }
-  ctx.fillStyle = '#11281b25'; ctx.fillRect(0, 0, W, H)
+  const baked = bg && fieldBackdrop(bg, W, H)
+  if (baked) ctx.drawImage(baked, 0, 0)
+  else { if (bg) { const sw = bg.height * W / H; ctx.drawImage(bg, (bg.width - sw) / 2, 0, sw, bg.height, 0, 0, W, H) } ctx.fillStyle = '#11281b25'; ctx.fillRect(0, 0, W, H) }
   for (const e of s.enemies) if (e.wind > 0) {
     // 내려찍기 경고: 금 간 땅 원(점점 진해짐) + 바깥까지 자라는 고리 = 맞는 범위 그대로 (지름 2r)
     const r = slamRadius(e.kind), k = 1 - e.wind / slamWindup(e.kind)
@@ -267,14 +288,20 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
     const u = 1 - k, px = b.tx + (b.x - b.tx) * u, py = b.ty + (b.y - b.ty) * u - Math.sin(u * Math.PI) * 160
     ctx.fillStyle = b.gen ? '#ff8a3a' : '#8a7a66'; ctx.beginPath(); ctx.arc(px, py - 20, b.gen ? 6 : 7, 0, Math.PI * 2); ctx.fill(); ctx.restore()
   } else if (b.kind === 'flame') effectStrip(ctx, images, 'fire', b.x, b.y - 10, b.radius * 1.1, (s.t * 1.7 + b.x * .01) % 1)
-  for (const d of s.drops) stamp(ctx, images, d.value > 2 ? 'raid/essence-large.png' : 'raid/essence.png', d.x, d.y, d.value > 2 ? 23 : 15)
+  // 못 주운 기세는 마지막 1초에 옅어지며 사라진다 (dropLife)
+  for (const d of s.drops) { const fade = Math.min(1, C.dropLife - d.age); if (fade < 1) ctx.globalAlpha = Math.max(0, fade); stamp(ctx, images, d.value > 2 ? 'raid/essence-large.png' : 'raid/essence.png', d.x, d.y, d.value > 2 ? 23 : 15); if (fade < 1) ctx.globalAlpha = 1 }
   if (destination) decal(ctx, images, 'mark-move', destination.x, destination.y, 30, 26, .85)
-  const entities = [...s.enemies.map(e => ({ y: e.y, e })), { y: s.y, e: null }].sort((a, b) => a.y - b.y)
-  for (const { e } of entities) {
+  // 발밑 그림자는 길 하나로 한 번에 칠한다 (적마다 fill 하던 것 · 폰 프레임 11-17) — 땅이라 모든 몸보다 먼저 그려도 된다
+  ctx.fillStyle = '#07181655'; ctx.beginPath()
+  for (const e of s.enemies) { const rx = e.kind === 'boss' || e.kind === 'elite' ? 24 : 16; ctx.moveTo(e.x + rx, e.y + 2); ctx.ellipse(e.x, e.y + 2, rx, 6, 0, 0, Math.PI * 2) }
+  ctx.fill()
+  // 위에서 아래로 그린다 (null = 장수) — 판마다 새 배열을 만들지 않는다
+  order.length = 0; for (const e of s.enemies) order.push(e); order.push(null)
+  order.sort((a, b) => (a ? a.y : s.y) - (b ? b.y : s.y))
+  for (const e of order) {
     if (e) {
       const big = e.kind === 'boss' || e.kind === 'elite', h = mobHeight(e.kind)
       const target = s.mode === 'vanguard' && e.kind === 'boss'
-      ctx.fillStyle = '#07181655'; ctx.beginPath(); ctx.ellipse(e.x, e.y + 2, big ? 24 : 16, 6, 0, 0, Math.PI * 2); ctx.fill()
       // 무당이 북돋운 적 · 성난 광전사: 발밑 붉은 기운
       if (e.buff > 0 || e.kind === 'berserker' && e.hp < e.max / 2) { ctx.save(); ctx.globalAlpha = .45 + .25 * Math.sin(s.t * 12 + e.id); ctx.fillStyle = '#ff3b2f'; ctx.beginPath(); ctx.ellipse(e.x, e.y + 2, 22, 8, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore() }
       if (target) decal(ctx, images, 'mark-target', e.x, e.y, 100, 45)
@@ -348,7 +375,10 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
     const a = s.t * 2.8 + i * Math.PI * 2 / 3
     axe(ctx, images, s.x + Math.cos(a) * C.orbitRadius * areaScale(s), s.y - 18 + Math.sin(a) * C.orbitRadius * areaScale(s), a + s.t * 4, 48)
   }
+  // 맞은 불꽃(hit)은 새것 drawHits 개만 — 화살이 무리를 꿰면 한 프레임에 수백 개가 쌓여 폰이 버벅였다 (11-17 형 「이쯤 오면 렉」)
+  let hitSkip = -C.drawHits, deathSkip = -C.drawDeaths; for (const f of s.fx) if (f.kind === 'hit') hitSkip++; else if (f.kind === 'death') deathSkip++
   for (const f of s.fx) {
+    if (f.kind === 'hit' ? hitSkip-- > 0 : f.kind === 'death' && deathSkip-- > 0) continue   // 쓰러지는 몸도 새것 drawDeaths 개만
     const age = 1 - f.life / f.total; ctx.save(); ctx.globalAlpha = Math.min(1, f.life / f.total * 1.5); ctx.strokeStyle = f.color; ctx.fillStyle = f.color; ctx.lineWidth = 3
     if (f.kind === 'bolt') {
       const img=images.get('raid/lightning-strip.png'),dx=f.x2-f.x,dy=f.y2-f.y
@@ -389,8 +419,11 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   }
   // 피해 숫자 (형 11-16: 「한방이라 강해지는지 모르겠다」) — 맞은 자리에서 툭 커졌다 떠오르며 사라짐 · 쓰러뜨린 한 방은 금빛으로 크게
   ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'
+  // 피해 숫자도 새것 drawNumbers 개만 (같은 까닭 · 쓰러뜨린 금빛 숫자도 같이 센다)
+  let numSkip = -C.drawNumbers; for (const f of s.fx) if (f.n !== undefined && f.mob !== 'boss') numSkip++
   for (const f of s.fx) {
     if (f.n === undefined || f.mob === 'boss') continue
+    if (numSkip-- > 0) continue
     const age = 1 - f.life / f.total, kill = f.kind === 'death', hot = kill || !!f.crit, pop = age < .18 ? 1.45 - age / .18 * .45 : 1
     ctx.globalAlpha = Math.min(1, (1 - age) * 2.2)
     const y = f.y - (kill ? 30 : 14) - age * 26, text = String(Math.round(f.n)), size = (f.crit ? 26 : kill ? 21 : 16) * pop

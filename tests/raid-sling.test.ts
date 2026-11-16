@@ -22,11 +22,11 @@ const hurt = (e: Mob) => e.max - e.hp
 /** 그 쿨만 남기고 나머지 공격은 쉬게 */
 function only(s: HaebiRun, keep: (keyof HaebiRun['cool'])[]) { for (const k of Object.keys(s.cool) as (keyof HaebiRun['cool'])[]) if (!keep.includes(k)) s.cool[k] = 99 }
 
-test('돌팔매 묶음: 돌팔매로 시작 · 첫 고름은 물수제비·부적·번개 · 같은 씨앗이면 같은 판', () => {
+test('돌팔매 묶음: 돌팔매로 시작 · 첫 고름은 갈래마다 하나(물수제비·돌팔매·기세) · 같은 씨앗이면 같은 판', () => {
   const s = createHaebi(7, 'trial', 'sling')
   assert.equal(s.ranks.sling, 1); assert.equal(s.ranks.axe, 0)
   s.xp = 999; stepHaebi(s, { x: 0, y: 0 }, .01)
-  assert.deepEqual(s.offers, ['skip', 'ember', 'thunder'])
+  assert.deepEqual(s.offers, ['skip', 'sling', 'tempo'])
   assert.ok(!kitPowers('sling').includes('bow') && !kitPowers('sling').includes('gale'))
   assert.equal(KITS.sling.weapon, '돌팔매')
   assert.deepEqual(replay(5, 90, 'storm', undefined, 'sling'), replay(5, 90, 'storm', undefined, 'sling'))

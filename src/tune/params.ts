@@ -25,18 +25,21 @@ export const HAEBI_SOUND = {
   whirl: .55, stone: .32, stoneGap: .05,
 } as const
 /** 열전 손가락 조이스틱 (형 11-16: 「뱀서 컨텐츠 할 때는 조이스틱 생겨야 하는 거 아님?」) — 손가락 댄 자리에 생기는 떠다니는 막대.
- *  radius 막대가 끝까지 가는 거리(화면 px) · dead 이보다 덜 밀면 멈춤 · follow 끝을 넘겨 끌면 받침이 따라오는 몫(0~1) */
-export const HAEBI_STICK = { radius: 54, dead: 7, follow: 1 } as const
+ *  radius 막대가 끝까지 가는 거리(화면 px) · dead 이보다 덜 밀면 멈춤 · follow 끝을 넘겨 끌면 받침이 따라오는 몫(0~1)
+ *  queue: 회피·비기를 재사용 중에 눌러도 이 초 안에 풀리면 나간다 (11-17 형: 「회피나 기술도 잘 안 눌렸음」) */
+export const HAEBI_STICK = { radius: 54, dead: 7, follow: 1, queue: .15 } as const
 /** Haebi's independent ten-minute run. Combat tuning lives here, not in the renderer. */
 export const HAEBI_RUN = {
   /** 판 길이 · 두목 — 다이센카처럼 20분 (11-16 형 고름 · 예전 600/540 → 900/840 → 1200/1140) · 스테이지마다 length 를 곱한다 */
   duration: 1200, bossAt: 1140, health: 180, speed: 185, width: 1120, height: 720,
   /** 맞은 적·장수 번쩍임 — 같은 그림을 빛으로 한 번 더 더하는 세기 (예전 brightness(1.7) 필터 대신 · 폰 프레임) */
   flashAdd: .55,
+  /** 한 프레임에 그리는 맞은 불꽃 · 피해 숫자 · 쓰러지는 몸 수 (새것부터 · 판 상태는 그대로) — 늦은 판 폰 프레임 (11-17 형 「이쯤 오면 렉」) */
+  drawHits: 40, drawNumbers: 24, drawDeaths: 40,
   /** 체력 깎임 토막 (본편 싸움 막대와 같은 롤 체력바 · 형 11-16) — 막대는 단번에 떨어지고, 잃은 토막이 희게→노랗게→붉게 번쩍(hpChunkFlash 초)한 뒤
    *  마지막으로 맞고 hpChunkHold 초 지나면 처음엔 빠르게 끝 무렵엔 천천히(초마다 hpChunkRate 배로 좁아짐) 줄어든다 */
   hpChunkFlash: .24, hpChunkHold: .32, hpChunkRate: 4.5,
-  maxEnemies: 230, maxShots: 240, maxFx: 320, maxDrops: 160, maxLevel: 44, attackSlots: 3,
+  maxEnemies: 230, maxShots: 240, maxFx: 320, maxDrops: 90, maxLevel: 44,
   xpBase: 8, xpPerLevel: 7, xpCurve: .8, levelHeal: 28, killHeal: .08, regen: .8,
   dashCooldown: 2.4, dashTime: .22, dashInv: .42, dashSpeed: 3.8,
   /** 회피 잔상 (형 11-16: 「돌진 모션이 잔상처럼 여러 개 생기다 없어지게 · 사이버펑크처럼」) — 몇 초마다 하나 · 얼마나 남나 · 처음 진하기 · 색 갈라짐(px) */
@@ -65,7 +68,8 @@ export const HAEBI_RUN = {
   barrageAt: 40, barrageEvery: 9, barrageEveryLate: 4.5, barrageDelay: 1.25, barrageRadius: 58, barrageDamage: 22, barrageTimeScale: .0018, barrageExtra: 3, threatTimeScale: .0015, shotTimeScale: 0, archerShare: .08, archerTimeShare: 0, archerCooldown: 3, archerRange: 370,
   bossDamage: 30, bossWindup: 1.15, bossRadius: 95, bossCooldown: 2.5,
   spawnEarly: 1.5, spawnMid: 5, spawnLate: 13, spawnFeast: 23,
-  dropLife: 2.4, dropSpeed: 390, dropMagnet: 150, knockback: 14,
+  /** 떨어진 기세: dropLife 초 뒤 사라짐(마지막 1초 옅어짐) · dropMagnet 둘레 안만 날아옴 (11-17 · 예전엔 반쯤 지나면 어디서든 날아와 가운데 서 있어도 다 먹혔다) */
+  dropLife: 30, dropSpeed: 390, dropMagnet: 210, knockback: 14,
   // ── 무기 묶음 (11-15 각성 시련을 모든 장수로 · 도끼=해비 위 수치 그대로) ──
   // 활: 멀리서 꿰뚫는 속사 + 늦게 떨어지는 화살비
   bowDamage: 30, bowRankDamage: 11, bowRange: 430, bowCooldown: .68, bowSpeed: 640, bowLife: 1.1, bowPierce: 1,
@@ -81,7 +85,7 @@ export const HAEBI_RUN = {
   tempestInterval: .5, tempestRadius: 135, tempestDamage: 58,
   splitDamage: .55, boomerangTurn: .5,
   // 단검 (11-16 형: 「단검도 있고 마법도 쓰는 거 같고」 · 단검·낫·맨손·채찍 장수): 짧고 아주 빠른 찌르기 + 부채꼴 비도
-  daggerDamage: 23, daggerRankDamage: 9, daggerRange: 86, daggerRankRange: 6, daggerCooldown: .42, daggerArc: .3,
+  daggerDamage: 26, daggerRankDamage: 9, daggerRange: 86, daggerRankRange: 6, daggerCooldown: .42, daggerArc: .3,
   knifeDamage: 22, knifeRankDamage: 11, knifeSpeed: 700, knifeCooldown: 1.3, knifeLife: .8, knifePierce: 1,
   shadowInterval: .7, shadowTargets: 3, shadowRange: 280, shadowDamage: 44, venomTime: 3, venomShare: .45,
   // 주술 (지팡이·방울·홀 장수): 둘레로 퍼지는 방울 파동 + 적을 쫓는 혼불
@@ -124,7 +128,40 @@ export const HAEBI_ULT = {
  * upgradeChance: 이미 연 조합이 레벨업 카드 하나로 다시 나올 몫 (새로 조건이 찬 조합은 늘 나온다 · 한 번에 조합 카드는 하나)
  * 조합 하나를 max 단계로 올리면 3층 「비기 강화」 — 비기 피해 ×ultDamage · 범위 ×ultArea · 재사용 ×ultCooldown
  */
-export const HAEBI_TREE = { max: 3, rankStep: .4, upgradeChance: .5, ultDamage: 1.4, ultArea: 1.25, ultCooldown: .8 } as const
+export const HAEBI_TREE = { max: 3, rankStep: .4, upgradeChance: .5, ultDamage: 1.4, ultArea: 1.25, ultCooldown: .8,
+  /**
+   * 갈래 셋 (11-17 밤 형: 「다 찍을 정도로 레벨 올리는 건 의미 없지 않아? 몇 개만 몰빵하거나 여러 개를 일단 찍거나」 · D2 식).
+   * 갈래마다 네 층 — 층 n 은 그 갈래에 tiers[n] 점을 찍어야 열린다 (주 무기 첫 단계도 1점) · 4층 = 갈래 끝(빌드를 바꾸는 칸 · capMax 단계).
+   * 한 판(20분)에 찍는 점은 레벨 44 까지 43점 · 갈래 칸을 다 채우면 약 100점이라 다 못 찍는다 (2.3배).
+   * lean: 레벨업 카드가 이미 찍은 갈래로 끌리는 세기 — 칸 무게 = 1 + lean × 그 갈래 점수 몫 (카드 하나는 늘 다른 갈래)
+   */
+  tiers: [0, 3, 7, 12], capMax: 3, lean: 2,
+  /** 3층 · 주 무기 벼리기(주 무기 피해 +hone/단계) · 보조 숙련(보조 공격 피해 +drill · 빠르기 +drillTempo /단계) */
+  hone: .12, drill: .14, drillTempo: .08,
+  /** 버팀 갈래 — 단단한 몸(받는 피해 −tough/단계) · 숨 고르기(초마다 +breath 회복) · 날랜 발(회피 재사용 −nimble · 이동 +nimbleMove) · 굳센 몸(최대 체력 +stout) */
+  tough: .07, breath: .45, nimble: .12, nimbleMove: .04, stout: 24,
+  /** 버팀 끝 「되받아치기」 — 맞으면 그 묶음 비기가 작게 터진다 · 재사용 counterCd − counterCdStep × (단계−1) 초 · 힘 counter + counterStep × (단계−1) */
+  counterCd: 12, counterCdStep: 2, counter: .4, counterStep: .15,
+  /**
+   * 갈래 끝 (주 무기 a · 보조 b) — 피해 몫은 share + step × (단계−1)
+   * 도끼 a 땅 가르기: 휘두를 때마다 길이 length · 반폭 width 로 땅이 갈라진다 · b 돌아오는 회오리: 질풍 도끼가 life × turn 에서 되돌아온다
+   * 활 a 꿰뚫는 일제: 화살이 모두 꿰뚫고 단계마다 extra 대 더 · b 폭우: 화살비 자리에 delay 초 뒤 한 번 더
+   * 창 a 삼지창: 양옆(spread 라디안)으로도 찌른다 · b 솟는 창: 던진 창이 처음 꿰뚫은 자리 둘레 radius 에 창날이 솟는다
+   * 칼 a 칼바람 베기: 벨 때마다 짧은 검기(life 초) · b 십자 검기: 검기가 뒤로도
+   * 단검 a 독 묻은 쌍검: 찌른 적이 poison 초 동안 깎인다 · b 터지는 비도: 처음 맞힌 자리에서 작은 칼 shards 개
+   * 방울 a 신령 부르기: 방울이 울릴 때마다 혼불 단계 수만큼 · b 갈라지는 혼불: 터지면 혼불 split 개로
+   * 돌팔매 a 땅울림: 떨어진 둘레가 daze 초(+daStep/단계) 멈춤 · b 끝없는 물수제비: 튀는 수 +bounces/단계 · 튈 때마다 피해 ×(1+grow)
+   */
+  cap: {
+    axe: { a: { share: .55, step: .25, length: 300, width: 34 }, b: { share: 1, step: .3, turn: .5 } },
+    bow: { a: { share: 1.3, step: .2, extra: 1 }, b: { share: .55, step: .25, delay: .35 } },
+    spear: { a: { share: .55, step: .2, spread: 2.1 }, b: { share: .7, step: .25, radius: 80 } },
+    sword: { a: { share: .45, step: .2, life: .55 }, b: { share: .6, step: .2 } },
+    dagger: { a: { share: .5, step: .15, poison: 2.5 }, b: { share: .35, step: .15, shards: 3 } },
+    magic: { a: { share: .7, step: .2 }, b: { share: .55, step: .2, split: 3 } },
+    sling: { a: { daze: .45, daStep: .2 }, b: { bounces: 2, grow: .1 } },
+  },
+} as const
 /**
  * 판 안 각성 (11-17 · RAID-LINK §1 디지몬식) — 적을 잡으면 막대가 차고(잡졸 kill · 정예 elite · 두목 boss 점), 다 차면 sec 초 동안 각성.
  * 막대 크기 = need × (1 + 각성한 수 × needGrowth) · 각성 동안 피해 ×power · 공격 속도 ×tempo · 이동 ×move · 비기 쿨이 ultRate 배로 돈다.

@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { HAEBI_RUN as C } from '../src/tune/params.ts'
-import { createHaebi, stepHaebi, choose, reroll, xpNeeded, spawnMob, POWERS, type HaebiRun, type Power } from '../src/raid/haebi.ts'
+import { createHaebi, stepHaebi, choose, reroll, xpNeeded, spawnMob, magnetRadius, POWERS, type HaebiRun, type Power } from '../src/raid/haebi.ts'
 import { replay } from '../src/raid/haebi-replay.ts'
 import { heroFrame } from '../src/raid/haebi-view.ts'
 const idle = { x: 0, y: 0 }
@@ -12,10 +12,10 @@ test('same seed and inputs reproduce the run; choices freeze all combat and appl
   assert.deepEqual(a, b); reward(a); const snapshot = structuredClone(a); stepHaebi(a, { x: 1, y: 1, skill: true }, .05); assert.deepEqual(a, snapshot)
   const pick = a.offers[0] as Power; assert.ok(choose(a, pick)); const rank = a.ranks[pick]; assert.equal(choose(a, pick), false); assert.equal(a.ranks[pick], rank)
 })
-test('three attack slots force a route; maxed powers disappear and rerolls are limited', () => {
-  const s = createHaebi(); s.ranks.gale = 1; s.ranks.ember = 1; s.ranks.axe = POWERS.axe.max; s.level = 5
+test('locked tiers never appear; maxed powers disappear and rerolls are limited', () => {
+  const s = createHaebi(); s.ranks.gale = 1; s.ranks.axe = POWERS.axe.max; s.level = 5
   reward(s)
-  for (let i = 0; i < 4; i++) { assert.ok(!s.offers.includes('thunder')); assert.ok(!s.offers.includes('axe')); assert.equal(new Set(s.offers).size, s.offers.length); assert.equal(reroll(s), i < 3) }
+  for (let i = 0; i < 4; i++) { assert.ok(!s.offers.includes('capB')); assert.ok(!s.offers.includes('axe')); assert.equal(new Set(s.offers).size, s.offers.length); assert.equal(reroll(s), i < 3) }
   assert.equal(s.rerolls, 0)
 })
 test('combination never auto-unlocks: the met recipe becomes a gold card that must be chosen', () => {
@@ -46,5 +46,17 @@ test('real ten-minute route grows into crowd clearing with bounded live objects'
   const s = replay(7, C.duration, 'storm', r => { minutes.push(r.kills - kills); kills = r.kills; assert.ok(r.enemies.length <= C.maxEnemies + 2); assert.ok(r.shots.length <= C.maxShots); assert.ok(r.fx.length <= C.maxFx); assert.ok(r.drops.length <= C.maxDrops) })
   assert.equal(s.state, 'won'); assert.ok(s.t >= C.bossAt); assert.ok(s.combos.includes('cyclone')); assert.ok(s.kills > 4000)
   assert.ok(minutes[8]! > minutes[0]! * 5); assert.ok(s.level <= C.maxLevel)
-  assert.equal((['axe','gale','ember','thunder'] as Power[]).filter(k => s.ranks[k]).length, C.attackSlots)
+})
+test('drops outside the magnet radius are not collected while standing still, and expire without granting xp', () => {
+  const s = createHaebi(); s.spawn = 1e9; s.nextElite = s.nextBarrage = 1e9; s.level = C.maxLevel
+  const far = magnetRadius(s) + 60
+  s.drops.push({ x: s.x + far, y: s.y, value: 5, age: 0 }, { x: s.x + magnetRadius(s) - 20, y: s.y, value: 3, age: 0 })
+  for (let i = 0; i < 120 * 3; i++) stepHaebi(s, idle, 1 / 120)
+  assert.equal(s.xp, 3, 'only the drop inside the radius flew in')
+  assert.equal(s.drops.length, 1); assert.ok(Math.abs(s.drops[0]!.x - (s.x + far)) < 1e-9, 'the far drop did not move')
+  for (let i = 0; i < 120 * (C.dropLife + 1); i++) stepHaebi(s, idle, 1 / 120)
+  assert.equal(s.drops.length, 0, 'expired'); assert.equal(s.xp, 3, 'expiry grants nothing')
+  // 상점 「끌어오기」 widens the radius
+  const shop = createHaebi(7, 'stage', 'axe', { bonus: { magnet: 5 } })
+  assert.ok(magnetRadius(shop) > magnetRadius(s) * 1.5)
 })

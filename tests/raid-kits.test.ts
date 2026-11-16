@@ -14,13 +14,13 @@ import type { ReportLine } from '../src/realm/types.ts'
 
 const NEW: Kit[] = ['bow', 'spear', 'sword', 'dagger', 'magic']
 
-test('각 묶음은 제 주 무기로 시작하고 첫 고름은 제 보조 공격·부적·번개', () => {
+test('각 묶음은 제 주 무기로 시작하고 첫 고름은 갈래마다 하나 (보조 공격 · 주 무기 · 기세)', () => {
   for (const kit of NEW) {
     const s = createHaebi(7, 'trial', kit), k = KITS[kit]
     assert.equal(s.ranks[k.primary], 1)
     assert.equal(s.ranks.axe, 0)
     s.xp = 999; stepHaebi(s, { x: 0, y: 0 }, .01)
-    assert.deepEqual(s.offers, [k.secondary, 'ember', 'thunder'])
+    assert.deepEqual(s.offers, [k.secondary, k.primary, 'tempo'])
     assert.ok(attackPowers(kit).every(p => kitPowers(kit).includes(p)))
     assert.ok(!kitPowers(kit).includes('gale') && !kitPowers(kit).includes('axe'))
   }
@@ -43,7 +43,7 @@ test('활·창·칼 모두 상점을 조금 산 봇이 숲 산길 20분 두목�
     assert.ok(s.t >= C.bossAt)
     assert.ok(s.kills > 4000, `${kit} ${s.kills}`)
     assert.ok(s.combos.some(c => c !== 'inferno'), `${kit} ${s.combos}`)
-    assert.equal(attackPowers(kit).filter(k => s.ranks[k]).length, C.attackSlots)
+    assert.ok(s.ranks[KITS[kit].primary] > 1 && s.ranks[KITS[kit].secondary] > 0, kit)
   }
 })
 

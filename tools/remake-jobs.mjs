@@ -319,7 +319,7 @@ const SP_KEYS = [...Object.keys(AUDIT.tierA_chin_ge38), ...Object.keys(AUDIT.tie
 for (const k of Object.keys(WFIX)) if (!SP_KEYS.includes(k)) SP_KEYS.push(k)
 // 11-17 첫 12명은 얼굴이 1%p 밖에 안 줄어 모두 반려(tools/sprite-kit/prop-intake-20261117.json · 형: 크레딧 아끼기) →
 //   새 문안(머리통 전체를 0.75 배로 · 숫자 · 기준 판을 IMAGE 2 로)으로 갈매 한 명만 시험 · 나머지는 시험이 통과할 때까지 줄에서 뺀다
-const SP_TEST = ['gen-base-w-39-gosaburi-galmae']
+const SP_TEST = []   // 11-17 갈매 시험도 머리가 거의 안 줄어 반려 — 그림 생성으로는 안 된다 · 형과 다른 길(코드로 머리 줄이기 등) 정하기 전까지 멈춤
 const HEAD2 = 'HEAD SIZE FIX (the most important rule — the previous redraw failed it): shrink the WHOLE HEAD (skull, face AND hair mass together) to 75% of its size in IMAGE 1 while keeping the body exactly the same height and build. Concretely, at the same standing height: the head (top of skull to chin) must be no taller than the head of the approved figures in IMAGE 2, the chin must sit at about one third of the way down from the top of the head to the soles, the head must be narrower than the shoulders, eyes small with adult spacing, a visible neck. Big round chibi heads are wrong.'
 for (const k of SP_KEYS) {
   if (!SP_TEST.includes(k)) continue
