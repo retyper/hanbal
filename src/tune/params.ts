@@ -51,6 +51,8 @@ export const HAEBI_RUN = {
   skillInv: .7,
   /** 비기 컷인이 화면에 머무는 시간(초) · 이름을 읽을 수 있게 (형 11-15: 「너무 빨라서 읽을 수조차 없음」 · 예전 .7) */
   skillCutin: 1.8,
+  /** 컷인 띠가 맞는 순간(번쩍·떨림) · 전체 길이의 몇 할 · 띠 뒤 어두운 막 진하기 (판은 그대로 돌아 너무 어둡지 않게) */
+  skillCutinHit: .32, skillCutinDim: .3,
   axeDamage: 38, axeRankDamage: 16, axeRange: 112, axeRankRange: 11, axeCooldown: 1,
   galeDamage: 30, galeRankDamage: 16, galeSpeed: 350, galeCooldown: 2.3, galeLife: 2.1,
   heroShotHeight: 46, enemyShotHeight: 34, shotHandLead: 14, shotReleaseTime: .12,

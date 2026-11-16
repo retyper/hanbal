@@ -1,24 +1,26 @@
 import { HAEBI_TREE as T } from '../tune/params.ts'
 import { POWERS, KITS, BRANCHES, kitCombos, comboRank, comboReady, ultUpgraded, branchNodes, branchName, branchPoints, tierOpen, nodeText, nodeAt, type Branch, type Combo, type Kit, type Power, type HaebiRun } from './haebi.ts'
+import { ICON_READY } from './icon-ready.ts'
 
-// 활·창·칼 묶음 아이콘은 전용 그림이 올 때까지 병종 아이콘을 빌린다 (형 11-15 · 챗지피티 H27 굽는 중)
+/** 전용 아이콘(release-jobs H56~H61 · tools/raid-icons-h56.py)이 구워져 있으면 raid/<이름>.png, 아니면 빌린 그림 */
+const own = (name: string, borrowed: string) => ICON_READY.has(name) ? `raid/${name}.png` : borrowed
 const icons: Record<Power, string> = {
   axe: 'raid/power-axe.png', gale: 'raid/power-gale.png', ember: 'raid/power-ember.png',
   thunder: 'raid/power-thunder.png', echo: 'raid/power-echo.png', tempo: 'raid/power-tempo.png', reach: 'raid/power-reach.png',
   bow: 'raid/power-bow.png', rain: 'raid/power-rain.png', spear: 'raid/power-spear.png', javelin: 'raid/power-javelin.png', sword: 'raid/power-sword.png', wave: 'raid/power-wave.png',
   dagger: 'raid/power-dagger.png', knife: 'raid/power-knife.png', bell: 'raid/power-bell.png', soul: 'raid/power-soul.png',
-  // 돌팔매 묶음 (11-16) — 전용 아이콘(H56·H57)이 오기 전엔 본편의 투석병·징검돌 아이콘을 빌린다
-  sling: 'icon/unit-slingers.png', skip: 'icon/route-steppingstones.png',
+  // 돌팔매 묶음 (11-16 · H56·H57) — 없으면 본편의 투석병·징검돌 아이콘
+  sling: own('power-sling', 'icon/unit-slingers.png'), skip: own('power-skip', 'icon/route-steppingstones.png'),
   // 버팀 갈래 (11-17 밤) — 상점 영구 강화와 같은 물건 그림 (같은 뜻: 갑옷·회복·발·체력)
   tough: 'raid/shop-armor.png', breath: 'raid/shop-regen.png', nimble: 'raid/shop-swift.png', stout: 'raid/shop-vigor.png',
   // 묶음마다 다른 칸 — 아래 KIT_ART 가 덮는다 (없을 때만 이것)
-  hone: 'raid/shop-might.png', drill: 'raid/shop-haste.png', capA: 'raid/power-skill.png', capB: 'raid/power-skill.png', capC: 'fx/shield.png',
+  hone: 'raid/shop-might.png', drill: 'raid/shop-haste.png', capA: 'raid/power-skill.png', capB: 'raid/power-skill.png', capC: own('node-counter', 'fx/shield.png'),
 }
 /**
- * 묶음마다 다른 칸의 그림 — 전용 그림(release-jobs H59~H61)이 올 때까지 가까운 그림을 빌려 빛깔(tint)로 가른다.
+ * 묶음마다 다른 칸의 그림 — 전용 그림(H59~H61)이 없으면 가까운 그림을 빌려 빛깔(tint)로 가른다.
  * 벼리기 = 주 무기 그림 + 불빛 · 숙련 = 보조 그림 + 물빛 · 갈래 끝은 그 꼴에 가까운 투사체·조합 그림.
  */
-const KIT_ART: Record<Kit, { capA: string; capB: string }> = {
+const BORROWED: Record<Kit, { capA: string; capB: string }> = {
   axe: { capA: 'raid/power-skill.png', capB: 'raid/wind-blade.png' },
   bow: { capA: 'raid/arrow.png', capB: 'raid/power-rain.png' },
   spear: { capA: 'fx/spear.png', capB: 'raid/javelin.png' },
@@ -27,22 +29,23 @@ const KIT_ART: Record<Kit, { capA: string; capB: string }> = {
   magic: { capA: 'raid/soul.png', capB: 'raid/power-soul.png' },
   sling: { capA: 'fx/rock.png', capB: 'icon/route-steppingstones.png' },
 }
-/** 칸 그림 (public/realm/ 아래) · tint 빛깔 이름 (combat.css .tint-*) */
+const capArt = (kit: Kit, key: 'capA' | 'capB') => own(`cap-${kit}-${key === 'capA' ? 'a' : 'b'}`, BORROWED[kit][key])
+/** 칸 그림 (public/realm/ 아래) · tint 빛깔 이름 (combat.css .tint-*) · 전용 그림이면 빛깔을 바꾸지 않는다 (갈래 끝의 테두리 빛만) */
 export function nodeArt(kit: Kit | undefined, key: Power): { src: string; tint: string } {
   if (!kit) return { src: icons[key], tint: '' }
   const k = KITS[kit]
-  if (key === 'hone') return { src: icons[k.primary], tint: 'hone' }
-  if (key === 'drill') return { src: icons[k.secondary], tint: 'drill' }
-  if (key === 'capA' || key === 'capB') return { src: KIT_ART[kit][key], tint: key === 'capA' ? 'cap-a' : 'cap-b' }
-  if (key === 'capC') return { src: icons.capC, tint: 'cap-c' }
+  if (key === 'hone') return ICON_READY.has('node-hone') ? { src: 'raid/node-hone.png', tint: '' } : { src: icons[k.primary], tint: 'hone' }
+  if (key === 'drill') return ICON_READY.has('node-drill') ? { src: 'raid/node-drill.png', tint: '' } : { src: icons[k.secondary], tint: 'drill' }
+  if (key === 'capA' || key === 'capB') return { src: capArt(kit, key), tint: key === 'capA' ? 'cap-a' : 'cap-b' }
+  if (key === 'capC') return { src: icons.capC, tint: ICON_READY.has('node-counter') ? 'cap-glow' : 'cap-c' }
   return { src: icons[key], tint: '' }
 }
 export function powerIcon(key: Power, kit?: Kit) {
   const a = nodeArt(kit, key)
   return `<img src="${import.meta.env.BASE_URL}realm/${a.src}" alt="" draggable="false"${a.tint ? ` class="tint-${a.tint}"` : ''}>`
 }
-/** 조합 그림 (public/realm/ 아래) — 전용 그림은 raid/<id>.png · 돌팔매 둘은 H58 이 오기 전까지 본편 바위·타격 그림을 빌린다 */
-const comboArt = (id: Combo) => id === 'boulder' ? 'fx/rock.png' : id === 'daze' ? 'raid/hit.png' : `raid/${id}.png`
+/** 조합 그림 (public/realm/ 아래) — raid/<id>.png · 돌팔매 둘은 H58 이 없으면 본편 바위·타격 그림 */
+const comboArt = (id: Combo) => id === 'boulder' ? own('boulder', 'fx/rock.png') : id === 'daze' ? own('daze', 'raid/hit.png') : `raid/${id}.png`
 export const comboSrc = (id: Combo) => `${import.meta.env.BASE_URL}realm/${comboArt(id)}`
 export const comboIcon = (id: Combo) => `<img src="${comboSrc(id)}" alt="" draggable="false">`
 /** 단계 표시 — Ⅰ Ⅱ Ⅲ */

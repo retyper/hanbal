@@ -5,7 +5,7 @@ import { loadMeta, saveMeta, buy, refund, record, shopCost, shopMax, stageOpen, 
 import { drawField, imagePaths, setHeroArt, heroArtFiles } from './raid/haebi-view.ts'
 import { powerIcon, installPowerHints, comboIcon, rankMark, treeSvg, treeInfo, BRANCH_COLOR } from './raid/power-ui.ts'
 import { KIT_BY_SPRITE } from './raid/kit-table.ts'
-import { hasSkillBody } from './realm/data/skill-body.ts'
+import { cutBandHtml, cutHeroPath, ensureCutinBandCss, type CutBg } from './ui/cutin-band.ts'
 import { josa } from './core/josa.ts'
 import { raidSound } from './raid/sound.ts'
 import { DEFAULT_HERO, SEAL_STAGE, loadRoster, type RosterHero } from './raid/link.ts'
@@ -51,18 +51,23 @@ root.innerHTML = `<header><div><small>장수 열전 · 독립 모드</small><h1>
 <section id="play" hidden><div id="arena"><canvas id="field" width="${C.width}" height="${C.height}" aria-label="${HERO.name} 토벌 전장. 클릭 또는 드래그로 이동"></canvas><div id="combat-hud"><div class="health-line"><b>${HERO.name}</b><span id="health">180 / 180</span></div><div class="bar hp"><span class="hp-track"><i id="hp-fill"></i><em id="hp-chunk"></em></span></div><div id="wake-bar" class="${canAwaken ? '' : 'grit'}" aria-label="${canAwaken ? '각성' : '투지'} 막대"><i id="wake-fill"></i></div><div id="loadout" aria-label="획득한 전투 능력"></div></div><div id="hud"><small id="phase"></small><b id="clock"></b></div><div id="score"><b id="kills"></b><small>격파</small><b id="level"></b></div><div class="bar xp"><i id="xp-fill"></i></div><div id="announcement" aria-live="polite"></div><div id="streak"></div><footer><span id="hint">자동 공격 · 화면을 끌면 그쪽으로 이동 · 능력 아이콘을 누르고 있으면 설명</span><button id="dash">회피 Shift</button><button id="skill" class="primary" data-kit="${kit}">${K.skill} Space</button></footer><div id="stick" hidden aria-hidden="true"><i></i></div><i class="frame-knots"></i></div></section></main></div><div id="power-tooltip" role="tooltip" hidden></div><div id="overlay" hidden></div>`
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T
 root.insertAdjacentHTML('beforeend', `<div id="rotate-guide" hidden><div><span style="font-size:44px">↻</span><h2>폰을 가로로 돌려 주세요</h2><p>확대 ${josa(HERO.name, '과', '와')} 전장을 함께 보며 싸웁니다.<br>회전하는 동안 전투는 멈춰 있습니다.</p></div></div>`)
-$('arena').insertAdjacentHTML('beforeend', `<div id="skill-cutin" hidden aria-hidden="true"><img alt=""><b>${K.skill}</b></div>`)
+/** 비기 컷인 띠의 기운 바탕 — 묶음마다 (fx/skill/bg/<결>.webp) */
+const KIT_BG: Record<Kit, CutBg> = { axe: 'earth', bow: 'arrow', spear: 'wind', sword: 'bolt', dagger: 'shadow', magic: 'spirit', sling: 'earth' }
+ensureCutinBandCss()
+$('arena').insertAdjacentHTML('beforeend', '<div id="skill-cutin" hidden aria-hidden="true"></div>')
 let cutinUntil = 0
-/** 비기 컷인 · 각성 컷인 (같은 결 · 각성은 각성 원화와 「각성」 글자) */
+/**
+ * 비기 컷인 · 각성 컷인 — 본편과 같은 띠(ui/cutin-band.ts). 판 안에서 각성해 있으면 1차 각성 윗몸 → 기본 윗몸 → 각성 초상 순.
+ * 띠를 새로 그려 넣으니 애니는 매번 처음부터 · 화면을 누르면 걷힌다 (판은 그대로 돈다).
+ */
 function showSkillCutin(wake = false) {
-  const id = HERO.bust, body = !wake && hasSkillBody(id)
-  const cut = $('skill-cutin'); cut.classList.toggle('full-body', body); cut.classList.toggle('wake', wake)
-  cut.querySelector('img')!.src = import.meta.env.BASE_URL + 'realm/' + (body ? 'skill-body' : awakenedLook(run) ? 'awaken-hd' : 'bust-hd') + '/' + id + '.jpg'
-  cut.querySelector('b')!.innerHTML = wake ? `각성 · ${HERO.name}` : K.skill
-  // 같은 애니를 다시 틀려면 한 번 꺼야 한다
-  cut.style.animation = 'none'; void cut.offsetWidth; cut.style.animation = ''
-  cut.style.animationDuration = C.skillCutin + 's'; cut.hidden = false; cutinUntil = run.t + C.skillCutin
+  const face = awakenedLook(run) ? `../awaken-hd/${HERO.bust}` : HERO.bust, ms = C.skillCutin * 1000
+  const cut = $('skill-cutin')
+  cut.innerHTML = cutBandHtml({ art: import.meta.env.BASE_URL + 'realm/', bg: KIT_BG[kit], hero: cutHeroPath(face), endMs: ms, hitMs: wake ? null : ms * C.skillCutinHit,
+    title: wake ? `각성 · ${HERO.name}` : K.skill, ...wake ? {} : { sub: HERO.name }, dim: C.skillCutinDim })
+  cut.hidden = false; cutinUntil = run.t + C.skillCutin
 }
+function skipCutin() { if (!$('skill-cutin').hidden) { $('skill-cutin').hidden = true; $('skill-cutin').innerHTML = ''; cutinUntil = 0 } }
 $('pause').insertAdjacentHTML('beforebegin', '<button id="fullscreen">전체화면</button>')
 $('fullscreen').textContent = '⛶'; $('fullscreen').setAttribute('aria-label', '전체화면');
 $('fullscreen').onclick = () => { if (document.fullscreenElement) void document.exitFullscreen?.(); else void document.documentElement.requestFullscreen?.().catch(() => undefined) }
@@ -169,7 +174,7 @@ function resetInput() { keys.clear(); destination = null; stickEnd(); dashAt = s
 function begin(sameSeed = false) {
   if (!sameSeed && !vanguardToken) pendingSeed = crypto.getRandomValues(new Uint32Array(1))[0]!
   sound.unlock(); hidePowerHint(); notifyVanguardStart(); run = newRun(pendingSeed); live = true; paused = false; shown = ''; loadoutKey = ''; resetInput(); last = 0
-  $('skill-cutin').hidden = true; cutinUntil = 0
+  skipCutin()
   $('menu').hidden = true; $('play').hidden = false; $('overlay').hidden = true; $<HTMLButtonElement>('pause').disabled = false; schedule()
   $<HTMLButtonElement>('start').blur(); window.scrollTo(0, 0)
   layoutTrial()
@@ -237,7 +242,7 @@ function stickStart(el: HTMLElement, e: PointerEvent) {
   destination = null; stick = { id: e.pointerId, ox: e.clientX, oy: e.clientY, x: e.clientX, y: e.clientY }; stickShow()
 }
 for (const el of [canvas, $('character')]) {
-  el.addEventListener('pointerdown', e => stickStart(el, e))
+  el.addEventListener('pointerdown', e => { if (el === canvas) skipCutin(); stickStart(el, e) })
   el.addEventListener('pointermove', e => { if (!el.hasPointerCapture(e.pointerId)) return; if (stick && e.pointerId === stick.id) stickMove(e); else if (e.pointerType === 'mouse' && el === canvas) point(e) })
   el.addEventListener('pointerup', e => { if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId); if (stick && e.pointerId === stick.id) stickEnd() })
   el.addEventListener('pointercancel', e => { destination = null; if (stick && e.pointerId === stick.id) stickEnd() })
@@ -428,14 +433,14 @@ function frame(now: number) {
     }
   }
   if (live) drawField(ctx, images, run, destination)
-  if (!live || run.t >= cutinUntil) $('skill-cutin').hidden = true
+  if (!live || run.t >= cutinUntil) skipCutin()
   sound.frame(run, live, paused || inspecting || rotationBlocked)
   updatePortrait(); updateHud(); showOverlay(); schedule()
 }
 function schedule() { if (!raf && !document.hidden) raf = requestAnimationFrame(frame) }
 updateHud(); schedule()
 // 개발 검수 손잡이 — 헤드리스 시험(tools/raid-*-probe.ts)이 판 상태를 읽고 체력을 깎아 본다 · 배포 빌드엔 없음
-if (import.meta.env.DEV) (window as unknown as { __raid: () => typeof run }).__raid = () => run
+if (import.meta.env.DEV) Object.assign(window, { __raid: () => run, __raidCutin: (wake: boolean) => showSkillCutin(wake) })
 if (import.meta.env.DEV && new URLSearchParams(location.search).has('review')) {
   import('./raid/haebi-review.ts').then(({ installReview }) => installReview(root, s => { notifyVanguardStart(); run = s; live = true; paused = !s.offers.length; shown = ''; loadoutKey = ''; resetInput(); $('menu').hidden = true; $('play').hidden = false; $<HTMLButtonElement>('pause').disabled = false; layoutTrial(); showOverlay(); updateHud(); schedule() }, mode, kit))
 }

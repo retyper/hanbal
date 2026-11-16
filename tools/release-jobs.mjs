@@ -417,6 +417,10 @@ jobs.push({ id: 'H61', group: 'raid', save: 'haebi-pack-v1-H61.png', title: '갈
   now: '땅울림=본편 바위 · 끝없는 물수제비=징검돌 · 되받아치기=본편 방패 보랏빛 · 벼리기·숙련=주 무기·보조 그림 불빛·물빛', use: '칸마다 잘라 raid/cap-sling-a.png · cap-sling-b.png · node-counter.png · node-hone.png · node-drill.png → power-ui.ts icons·KIT_ART (6번 칸은 비움)',
   prompt: CAP_SHEET('1) Earth tremor: a river stone hitting the ground with circular shock rings and little dizzy golden stars. 2) Endless skipping stone: one flat pebble bouncing many times along a long zig-zag of splashes, each splash bigger. 3) Counterstrike: a round bronze shield with a burst of golden light exploding outward from behind it. 4) Honing: a whetstone and a blade edge with bright orange sparks. 5) Mastery: a coiled rope and a feathered throwing weapon with a teal swirl of skill. 6) Leave the sixth cell EMPTY (fully transparent).') })
 
+// 11-17 Claude 검수: H61 되받아치기 = 둥근 방패 뒤로 햇살처럼 퍼지는 빛 → 해·햇살 금지 규칙에 걸려 다시 (한 칸만)
+jobs.push({ id: 'H61b', group: 'raid', save: 'haebi-pack-v1-H61b.png', title: '되받아치기 아이콘 다시 (햇살 꼴 빼기)', refs: ['/realm/raid/node-counter.png', '/realm/raid/shop-armor.png'],
+  now: 'H61 되받아치기가 방패 뒤 햇살 퍼짐 — 해 꼴 금지', use: '칸 하나 → raid/node-counter.png (tools/raid-icons-h56.py 가 H61b 를 H61 의 3번 칸 대신 쓴다)',
+  prompt: 'Create ONE square game icon (1024x1024) with a true transparent background, matching the painted style of IMAGE 2. Counterstrike: a round bronze-and-wood shield seen at an angle, with three sharp crimson slash-shaped arcs bouncing OFF its surface toward the upper right, a few sparks. ABSOLUTELY NO radiating rays or halo behind the shield, no sun shape, no circle of light, no glow disc. IMAGE 1 is the rejected version (do not copy its rays). No text.' })
 // ── 진각성 초상이 없는 남장수 셋 (진각성 묶음 · aw2 는 1차와 확 달라야 · 활시위 자세 금지 · 눈높이 카메라)
 const AW2M = (id, theme) => ({ id: 'AW2-' + id, group: 'dlc', save: `gpt_aw2-${id}.png`, title: `${id} · 진각성 초상`, refs: [`/realm/awaken-hd/${id}.jpg`, `/realm/bust-hd/${id}.jpg`],
   now: '진각성 초상이 없어 진각성 칸이 비어 있음', use: '900×900 jpg → public/realm/awaken2-hd/<id>.jpg · 작은 판 awaken2/<id>.jpg (tools/bake-intake.sh 의 gpt_aw2 길) · data/awaken2.ts TRUE_WAKE_ART 에 장수 id',

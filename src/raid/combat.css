@@ -26,7 +26,7 @@ header{position:absolute;right:22px;top:20px;z-index:3;pointer-events:none}heade
 #skill{display:flex;align-items:center;gap:5px}
 #skill:before{content:'';width:24px;height:24px;background:url('/realm/raid/power-skill.png') center/contain no-repeat}
 /* 비기 단추 그림은 무기마다 (11-16 · 전용 그림이 오기 전까지 있는 그림을 빌린다: 도끼 땅 불길 · 활 꿰뚫는 빛 · 창의 숲 · 칼바람 · 그림자 춤 · 만신 굿) */
-#skill[data-kit=axe]:before{background-image:url('/realm/raid/meteor.png')}#skill[data-kit=bow]:before{background-image:url('/realm/raid/splitwave.png')}#skill[data-kit=spear]:before{background-image:url('/realm/raid/grove.png')}#skill[data-kit=sword]:before{background-image:url('/realm/raid/tempest.png')}#skill[data-kit=dagger]:before{background-image:url('/realm/raid/shadowdance.png')}#skill[data-kit=magic]:before{background-image:url('/realm/raid/rite.png')}#skill[data-kit=sling]:before{background-image:url('/realm/fx/skill/wake/rock-spikes.png')}
+#skill[data-kit=axe]:before{background-image:url('/realm/raid/meteor.png')}#skill[data-kit=bow]:before{background-image:url('/realm/raid/splitwave.png')}#skill[data-kit=spear]:before{background-image:url('/realm/raid/grove.png')}#skill[data-kit=sword]:before{background-image:url('/realm/raid/tempest.png')}#skill[data-kit=dagger]:before{background-image:url('/realm/raid/shadowdance.png')}#skill[data-kit=magic]:before{background-image:url('/realm/raid/rite.png')}#skill[data-kit=sling]:before{background-image:url('/realm/raid/stonefall.png')}
 /* A shared fitted stage keeps portrait and battlefield touching at every landscape size. */
 @media(orientation:landscape),(min-width:701px){
   #layout{width:min(100%,calc((100dvh - 12px)*1.995556 + 12px));height:min(100dvh,calc((100vw - 12px)/1.995556 + 12px));min-height:0;grid-template-columns:minmax(0,.44fr) minmax(0,1.555556fr);gap:0;padding:6px}
@@ -41,7 +41,7 @@ header{position:absolute;right:22px;top:20px;z-index:3;pointer-events:none}heade
 #character:before,#arena:before{content:'';position:absolute;inset:0;z-index:3;pointer-events:none;border:9px solid transparent;border-image:url('/realm/raid/frame-9.png') 131 / var(--fk) round}
 .frame-knots{position:absolute;inset:0;z-index:4;pointer-events:none;--kh:calc(var(--fk)*.36);background:url('/realm/raid/frame-knot-h.png') left 50% top calc(var(--fk)*.298 - var(--kh)/2)/auto var(--kh) no-repeat,url('/realm/raid/frame-knot-h.png') left 50% bottom calc(var(--fk)*.298 - var(--kh)/2)/auto var(--kh) no-repeat,url('/realm/raid/frame-knot-v.png') left calc(var(--fk)*.33 - var(--kh)/2) top 50%/var(--kh) auto no-repeat,url('/realm/raid/frame-knot-v.png') right calc(var(--fk)*.33 - var(--kh)/2) top 50%/var(--kh) auto no-repeat}
 #menu,.panel{border:12px solid transparent;border-image:url('/realm/raid/frame-9.png') 131 / var(--fk) round}
-#skill-cutin{position:absolute;left:1%;bottom:8%;width:29%;height:62%;pointer-events:none;animation:skill-cutin .7s ease-out both;z-index:2;filter:drop-shadow(0 0 10px #dfb85a55)}#skill-cutin img{width:100%;height:100%;object-fit:cover;object-position:50% 15%;mask-image:linear-gradient(transparent,#000 15%,#000 70%,transparent)}#skill-cutin.full-body img{object-fit:contain;object-position:center;mask-image:radial-gradient(closest-side,#000 80%,transparent)}#skill-cutin b{position:absolute;bottom:15%;left:5%;right:-30%;font:bold clamp(14px,2.6vw,32px) 'Batang',serif;letter-spacing:.12em;color:#ffe7ab;text-shadow:0 2px 4px #000,2px 0 5px #000}@keyframes skill-cutin{0%{opacity:0;transform:translateX(-60%)}18%{opacity:1;transform:translateX(0)}68%{opacity:1;transform:translateX(3%)}100%{opacity:0;transform:translateX(20%)}}@media(prefers-reduced-motion:reduce){#skill-cutin{animation:none}}
+#skill-cutin{position:absolute;inset:0;pointer-events:none;z-index:2;overflow:hidden}
 
 @media(orientation:landscape),(min-width:701px){header{right:max(12px,calc((100vw - ((100dvh - 12px)*1.995556 + 12px))/2 + 12px))}}
 /* ── H21~H24 UI 조각 (형 11-15 · 굽기 tools/raid-ui-kit.py · 숫자는 public/realm/raid/ui/kit.json) ──
@@ -73,7 +73,7 @@ footer button:active{filter:brightness(1.25);transform:scale(.97)}
 /* 글꼴은 본편과 같은 셋 (public/fonts · raid.html 이 fonts.css 를 부른다): 본문 고운돋움 · 제목 고운바탕 · 큰 이름 송명 · 숫자 바를로 */
 :root{--body:'Gowun Dodum',system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;--serif:'Gowun Batang','Apple SD Gothic Neo','Batang',serif;--display:'Song Myung','Gowun Batang','Batang',serif;--num:'Barlow Condensed','Gowun Dodum',sans-serif;font-family:var(--body)}
 h1,h2,.choices b,#power-tooltip>b{font-family:var(--serif)}
-.portrait-title b,#menu h2,#skill-cutin b,.panel.result h2{font-family:var(--display);font-weight:400}
+.portrait-title b,#menu h2,.panel.result h2{font-family:var(--display);font-weight:400}
 #hud b,#score b,#streak,.power-slot b,.health-line span,.journey b{font-family:var(--num);font-weight:600;font-variant-numeric:tabular-nums}
 #announcement{font-family:var(--serif)}
 /* 화면 가운데에 앉힌다 (16:9 창에서 아래만 비던 것) */
@@ -96,9 +96,6 @@ h1,h2,.choices b,#power-tooltip>b{font-family:var(--serif)}
 @media(orientation:portrait) and (max-width:700px){#layout{height:100dvh;min-height:0;grid-template-rows:clamp(150px,27dvh,240px) minmax(0,1fr)}#character{height:auto}main{min-height:0}.journey{flex-wrap:wrap}}
 /* 연속 격파는 단추와 겹치지 않게 오른쪽 위 단추 아래로 */
 #streak{bottom:auto;top:calc(var(--fk)*.45 + 62px);right:calc(var(--fk)*.6 + 6px);font-size:clamp(15px,2.2vw,24px)}
-/* 비기 컷인: 들어와서 이름을 읽을 만큼 머문다 (길이는 params skillCutin · 코드가 animation-duration 으로 넣는다) */
-#skill-cutin b{bottom:12%;left:0;right:-45%;padding:.25em .6em;font-size:clamp(18px,3.4vw,44px);background:linear-gradient(90deg,#060d0fd9,#060d0f99 60%,transparent);border-left:3px solid #e8c577}
-@keyframes skill-cutin{0%{opacity:0;transform:translateX(-60%)}9%{opacity:1;transform:translateX(0)}86%{opacity:1;transform:translateX(3%)}100%{opacity:0;transform:translateX(18%)}}
 /* 가운데로 내려앉은 판을 따라 오른쪽 위 단추도 내려온다 */
 @media(orientation:landscape),(min-width:701px){header{top:calc((100dvh - min(100dvh,(100vw - 12px)/1.995556 + 12px))/2 + 20px)}}
 /* 11-16 독립 열전: 스테이지 셋 · 금 · 상점 (다이센카식 판 밖 성장) */
@@ -197,7 +194,6 @@ h1,h2,.choices b,#power-tooltip>b{font-family:var(--serif)}
 #wake-bar.on{border-color:#ffe08a;box-shadow:0 0 7px #ffd36aaa}
 #wake-bar.grit.on{border-color:#ff9a52;box-shadow:0 0 7px #ff8a3aaa}
 .campaign-vanguard #wake-bar{display:none}
-#skill-cutin.wake b{color:#fff3c8;border-left-color:#ffe08a}
 /* 기술 나무 (11-17 · RAID-LINK §2) — 레벨업 금테 조합 카드 · 「나무」 단추 · 나무 보기 */
 .choices button{position:relative}
 .choices button.combo-card{border:2px solid #f2c45a;border-image:none;border-radius:6px;background:linear-gradient(#3a2c10f5,#140f06fa);box-shadow:0 0 0 1px #6b4a14,inset 0 0 18px #f2c45a55,0 0 16px #f2c45a66}
@@ -260,6 +256,7 @@ svg.tree .need.ok text{fill:#ffe2a0}
 .tint-cap-a{filter:drop-shadow(0 0 4px #ffd36a) drop-shadow(0 0 2px #ffd36a)}
 .tint-cap-b{filter:drop-shadow(0 0 4px #6fe8d8) drop-shadow(0 0 2px #6fe8d8)}
 .tint-cap-c{filter:sepia(.6) saturate(2) hue-rotate(220deg) drop-shadow(0 0 4px #c7a3ff)}
+.tint-cap-glow{filter:drop-shadow(0 0 4px #c7a3ff) drop-shadow(0 0 2px #c7a3ff)}
 /* 레벨업 칸 카드 — 위에 갈래 띠(이름 · 점) · 갈래 끝 카드는 갈래 빛 테 · 조합에 안 쓰이는 칸은 갈래 막대 */
 .choices .branch-tag{position:absolute;top:-2px;left:50%;transform:translateX(-50%);padding:1px 12px;font-style:normal;font-size:11px;font-weight:bold;letter-spacing:.06em;white-space:nowrap;color:#10140f;background:var(--c);border-radius:0 0 8px 8px}
 .choices button.cap-card{border:2px solid var(--c);border-image:none;border-radius:6px;background:linear-gradient(#262a3af5,#0c0f16fa);box-shadow:0 0 0 1px #00000088,inset 0 0 18px color-mix(in srgb,var(--c) 40%,transparent),0 0 16px color-mix(in srgb,var(--c) 50%,transparent)}
