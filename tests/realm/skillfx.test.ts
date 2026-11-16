@@ -31,7 +31,7 @@ describe('장수 기술 장면', () => {
   it('안 구운 그림은 빠진다 · 구운 그림만 얹는다 · 초상과 이름은 늘', () => {
     const h0 = skillCutHtml('/', 'snipe', 'g-01', '을음', '명궁의 한 발')
     assert.ok(!h0.includes('skill/snipe/bow-draw.png'))
-    assert.ok(h0.includes('bust/g-01.jpg') && h0.includes('명궁의 한 발') && h0.includes('을음'))
+    assert.ok(h0.includes('bust-hd/g-01.jpg') && h0.includes('명궁의 한 발') && h0.includes('을음'))
     markSkillReady(['skill/snipe/bow-draw.png'])
     const h1 = skillCutHtml('/', 'snipe', 'g-01', '을음', '명궁의 한 발')
     assert.ok(h1.includes('/fx/skill/snipe/bow-draw.png'))

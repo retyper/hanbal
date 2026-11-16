@@ -1,0 +1,395 @@
+{
+  "date": "2026-11-17",
+  "why": "형 11-16 「번예 갈매 얼굴이 너무 큼 · 이동 프레임 자연스럽게」 → 챗지피티 SP-<who>-act/walk 다시 · 이 영수증이 받은 그림·검수·설치 기록",
+  "method": "bake-full20.py (동작 4x5 그대로 · 걷기 4x2 8컷은 본편 띠 4~11칸) · 얼굴 = 턱 자리를 몸 키(머리카락 위~발바닥, 가는 장식 뺌) % 로 눈 판정, head-audit-20261116 과 같은 법",
+  "heroes": {
+    "base-g-49-goguryeo-sona": {
+      "status": "rejected",
+      "order": "strip",
+      "act": "D:/에셋창고/sprite_prop_base-g-49-goguryeo-sona_act.png",
+      "walk": "D:/에셋창고/sprite_prop_base-g-49-goguryeo-sona_walk.png",
+      "actSha256": "a7a536c8d668c3709d76847d73e6a4c11f26f546d12cb9576c34d21a0e913275",
+      "walkSha256": "bfe9d2269b288e1dc0142e0268304241b023bef3bfdebb79c5b6a242cb1ddc1b",
+      "portrait": "g-49-goguryeo-sona",
+      "auto": {
+        "cell": [
+          200,
+          160
+        ],
+        "walkScale": 0.6107,
+        "contact": [
+          14,
+          0.92,
+          0.58
+        ],
+        "headsOld": 5.37,
+        "headsNew": 5.96,
+        "headsNewWalk": 5.02,
+        "residueAct": 0.001,
+        "residueWalk": 0.0
+      },
+      "reason": "얼굴 목표 미달: 턱 자리가 1%p쯤만 올라감 (자 눈금 37→34.5 · 기준 소서노28.5·감실30·쇠비31·온조30 같은 자) · head-audit 기준으로 40→약 38 (목표 31~34) · 띠 크기에서 옛것과 거의 구분 안 됨. 그 밖 검사(20+8 사람·무기·초상 같은 사람·발 줄·찌꺼기)는 통과",
+      "review": {
+        "chinOld": 37.0,
+        "chinNew": 34.5,
+        "note": "투구 꼭대기~턱 / 몸 키 (기준 온조·소서노 22~23%) · 걷기 1·5 같은 다리"
+      }
+    },
+    "base-g-50-bullae-gwaha": {
+      "status": "rejected",
+      "order": "strip",
+      "act": "D:/에셋창고/sprite_prop_base-g-50-bullae-gwaha_act.png",
+      "walk": "D:/에셋창고/sprite_prop_base-g-50-bullae-gwaha_walk.png",
+      "actSha256": "845b2f7bef10fc668ef14933fb026244a6e35dc8806ff30569ba47680888379f",
+      "walkSha256": "e1658e676f892aeedbb88f074c1063749354c84e661ca5ea85e43db3360948de",
+      "portrait": "g-50-bullae-gwaha",
+      "auto": {
+        "cell": [
+          192,
+          160
+        ],
+        "walkScale": 0.593,
+        "contact": [
+          15,
+          0.75,
+          0.55
+        ],
+        "headsOld": 3.26,
+        "headsNew": 3.81,
+        "headsNewWalk": 3.4,
+        "residueAct": 0.0005,
+        "residueWalk": 0.0001
+      },
+      "reason": "얼굴 목표 미달: 턱 자리가 1%p쯤만 올라감 (자 눈금 33→32 · 기준 소서노28.5·감실30·쇠비31·온조30 같은 자) · head-audit 기준으로 41→약 40 (목표 31~34) · 띠 크기에서 옛것과 거의 구분 안 됨. 그 밖 검사(20+8 사람·무기·초상 같은 사람·발 줄·찌꺼기)는 통과",
+      "review": {
+        "chinOld": 33.0,
+        "chinNew": 32.0,
+        "note": "수염으로 턱 추정"
+      }
+    },
+    "base-g-59-yangmaek-maekson": {
+      "status": "rejected",
+      "order": "strip",
+      "act": "D:/에셋창고/sprite_prop_base-g-59-yangmaek-maekson_act.png",
+      "walk": "D:/에셋창고/sprite_prop_base-g-59-yangmaek-maekson_walk.png",
+      "actSha256": "80e5ef0702f0bb02ca984485f94063ad377a3cf4df1dd33da14cfdbad192e22f",
+      "walkSha256": "b8c6b4894674147bffd70a4002d1df5835d817c7b87dda6fdfc6081103d8ac46",
+      "portrait": "g-59-yangmaek-maekson",
+      "auto": {
+        "cell": [
+          168,
+          160
+        ],
+        "walkScale": 0.5583,
+        "contact": [
+          15,
+          0.76,
+          0.62
+        ],
+        "headsOld": 11.17,
+        "headsNew": 11.17,
+        "headsNewWalk": 9.2,
+        "residueAct": 0.0,
+        "residueWalk": 0.0
+      },
+      "reason": "얼굴 목표 미달: 턱 자리가 1%p쯤만 올라감 (자 눈금 41→38 · 기준 소서노28.5·감실30·쇠비31·온조30 같은 자) · head-audit 기준으로 40→약 37 (목표 31~34) · 띠 크기에서 옛것과 거의 구분 안 됨. 그 밖 검사(20+8 사람·무기·초상 같은 사람·발 줄·찌꺼기)는 통과",
+      "review": {
+        "chinOld": 41.0,
+        "chinNew": 38.0,
+        "note": "모자 꼭대기~턱 / 몸 키 · 걷기 1·5 같은 다리 · 열둘 중 가장 나아짐"
+      }
+    },
+    "base-w-27-mokji-jinha": {
+      "status": "rejected",
+      "order": "strip",
+      "act": "D:/에셋창고/sprite_prop_base-w-27-mokji-jinha_act.png",
+      "walk": "D:/에셋창고/sprite_prop_base-w-27-mokji-jinha_walk.png",
+      "actSha256": "bdffa7f21f1e39eebbcc54593358c43e337a243bbfaa2a03155ec5724b145613",
+      "walkSha256": "c63dfe4c4ef8e19ce413524c993ca452f989ef78e308aacda376559a6cf80fa7",
+      "portrait": "w-27-mokji-jinha",
+      "auto": {
+        "cell": [
+          208,
+          160
+        ],
+        "walkScale": 0.5838,
+        "contact": [
+          14,
+          0.88,
+          0.44
+        ],
+        "headsOld": 2.63,
+        "headsNew": 3.01,
+        "headsNewWalk": 2.8,
+        "residueAct": 0.0002,
+        "residueWalk": 0.0002
+      },
+      "reason": "얼굴 목표 미달: 턱 자리가 1%p쯤만 올라감 (자 눈금 34→33 · 기준 소서노28.5·감실30·쇠비31·온조30 같은 자) · head-audit 기준으로 39→약 38 (목표 31~34) · 띠 크기에서 옛것과 거의 구분 안 됨. 그 밖 검사(20+8 사람·무기·초상 같은 사람·발 줄·찌꺼기)는 통과",
+      "review": {
+        "chinOld": 34.0,
+        "chinNew": 33.0,
+        "note": ""
+      }
+    },
+    "base-w-36-baekje-maena": {
+      "status": "rejected",
+      "order": "strip",
+      "act": "D:/에셋창고/sprite_prop_base-w-36-baekje-maena_act.png",
+      "walk": "D:/에셋창고/sprite_prop_base-w-36-baekje-maena_walk.png",
+      "actSha256": "d2b1fc3302b476fddf7a9411823a553856379a0ee64a210597c72c40b0deb3fe",
+      "walkSha256": "52d1c2e55417f4590002cdbaced5d6281dd0d65d315a178a88dd7c24a2751ad3",
+      "portrait": "w-36-baekje-maena",
+      "auto": {
+        "cell": [
+          208,
+          160
+        ],
+        "walkScale": 0.5458,
+        "contact": [
+          15,
+          0.75,
+          0.51
+        ],
+        "headsOld": 2.63,
+        "headsNew": 2.98,
+        "headsNewWalk": 2.75,
+        "residueAct": 0.0001,
+        "residueWalk": 0.0
+      },
+      "reason": "얼굴 목표 미달: 턱 자리가 1%p쯤만 올라감 (자 눈금 37→36.5 · 기준 소서노28.5·감실30·쇠비31·온조30 같은 자) · head-audit 기준으로 40→약 39 (목표 31~34) · 띠 크기에서 옛것과 거의 구분 안 됨. 그 밖 검사(20+8 사람·무기·초상 같은 사람·발 줄·찌꺼기)는 통과",
+      "review": {
+        "chinOld": 37.0,
+        "chinNew": 36.5,
+        "note": "걷기 3·7 교대"
+      }
+    },
+    "base-w-39-gosaburi-galmae": {
+      "status": "rejected",
+      "order": "strip",
+      "act": "D:/에셋창고/sprite_prop_base-w-39-gosaburi-galmae_act.png",
+      "walk": "D:/에셋창고/sprite_prop_base-w-39-gosaburi-galmae_walk.png",
+      "actSha256": "84b8f5b87756f526df55b63ce9d73bc41914504991ec49bc687a78ac8420d10b",
+      "walkSha256": "7e84041e1650588d9ee070bca6664eacef42b2e1faf473dfdb4bbf270826f2cd",
+      "portrait": "w-39-gosaburi-galmae",
+      "auto": {
+        "cell": [
+          168,
+          160
+        ],
+        "walkScale": 0.5162,
+        "contact": [
+          15,
+          0.8,
+          0.54
+        ],
+        "headsOld": 2.57,
+        "headsNew": 2.85,
+        "headsNewWalk": 2.77,
+        "residueAct": 0.0017,
+        "residueWalk": 0.0007
+      },
+      "reason": "얼굴 목표 미달: 턱 자리가 1%p쯤만 올라감 (자 눈금 37→36 · 기준 소서노28.5·감실30·쇠비31·온조30 같은 자) · head-audit 기준으로 40→약 39 (목표 31~34) · 띠 크기에서 옛것과 거의 구분 안 됨. 그 밖 검사(20+8 사람·무기·초상 같은 사람·발 줄·찌꺼기)는 통과",
+      "review": {
+        "chinOld": 37.0,
+        "chinNew": 36.0,
+        "note": "걷기 3·7 교대, 1·5 실루엣 거의 같음"
+      }
+    },
+    "base-w-40-mujin-munui": {
+      "status": "rejected",
+      "order": "strip",
+      "act": "D:/에셋창고/sprite_prop_base-w-40-mujin-munui_act.png",
+      "walk": "D:/에셋창고/sprite_prop_base-w-40-mujin-munui_walk.png",
+      "actSha256": "a716115f325cf1a240ffddaf0d3d55c8c4e719f18985d5f640b96236906fb91a",
+      "walkSha256": "cc3011e5d44cdc58b71091e2c0e863c917ccf95ad3eefd85fe3f9cfc5130b1d0",
+      "portrait": "w-40-mujin-munui",
+      "auto": {
+        "cell": [
+          224,
+          160
+        ],
+        "walkScale": 0.5703,
+        "contact": [
+          14,
+          0.91,
+          0.46
+        ],
+        "headsOld": 2.58,
+        "headsNew": 2.88,
+        "headsNewWalk": 2.7,
+        "residueAct": 0.0021,
+        "residueWalk": 0.0008
+      },
+      "reason": "얼굴 목표 미달: 턱 자리가 1%p쯤만 올라감 (자 눈금 31→30.5 · 기준 소서노28.5·감실30·쇠비31·온조30 같은 자) · head-audit 기준으로 40→약 39 (목표 31~34) · 띠 크기에서 옛것과 거의 구분 안 됨. 그 밖 검사(20+8 사람·무기·초상 같은 사람·발 줄·찌꺼기)는 통과",
+      "review": {
+        "chinOld": 31.0,
+        "chinNew": 30.5,
+        "note": "깃털 머리장식 때문에 자 눈금이 낮게 나옴"
+      }
+    },
+    "base-w-46-geonma-maru": {
+      "status": "rejected",
+      "order": "strip",
+      "act": "D:/에셋창고/sprite_prop_base-w-46-geonma-maru_act.png",
+      "walk": "D:/에셋창고/sprite_prop_base-w-46-geonma-maru_walk.png",
+      "actSha256": "5351d575141964efce111925e513e778ee891a29d9a560d38ece93a5baf88d9f",
+      "walkSha256": "db0dfb35de873936e053aba2ac1f33ea8aa560bcf5c1c9424cbe9efc039e4328",
+      "portrait": "w-46-geonma-maru",
+      "auto": {
+        "cell": [
+          208,
+          160
+        ],
+        "walkScale": 0.5592,
+        "contact": [
+          14,
+          0.94,
+          0.47
+        ],
+        "headsOld": 2.63,
+        "headsNew": 3.34,
+        "headsNewWalk": 2.98,
+        "residueAct": 0.0171,
+        "residueWalk": 0.0064
+      },
+      "reason": "얼굴 목표 미달: 턱 자리가 1%p쯤만 올라감 (자 눈금 33.5→32.5 · 기준 소서노28.5·감실30·쇠비31·온조30 같은 자) · head-audit 기준으로 39→약 38 (목표 31~34) · 띠 크기에서 옛것과 거의 구분 안 됨. 그 밖 검사(20+8 사람·무기·초상 같은 사람·발 줄·찌꺼기)는 통과",
+      "review": {
+        "chinOld": 33.5,
+        "chinNew": 32.5,
+        "note": ""
+      }
+    },
+    "base-w-48-mujin-mudeung": {
+      "status": "rejected",
+      "order": "strip",
+      "act": "D:/에셋창고/sprite_prop_base-w-48-mujin-mudeung_act.png",
+      "walk": "D:/에셋창고/sprite_prop_base-w-48-mujin-mudeung_walk.png",
+      "actSha256": "9ca35a5b138b384a514b6c17ac904336a4a2bf0c8f3b54d19d230a5acc6d17e3",
+      "walkSha256": "b41ceeb0c3f4f60b93280736d1e67f49e22182ed4e632663018d02811d84b2f4",
+      "portrait": "w-48-mujin-mudeung",
+      "auto": {
+        "cell": [
+          208,
+          160
+        ],
+        "walkScale": 0.5932,
+        "contact": [
+          14,
+          0.96,
+          0.45
+        ],
+        "headsOld": 2.8,
+        "headsNew": 3.19,
+        "headsNewWalk": 2.79,
+        "residueAct": 0.0173,
+        "residueWalk": 0.0189
+      },
+      "reason": "얼굴 목표 미달: 턱 자리가 1%p쯤만 올라감 (자 눈금 34→33 · 기준 소서노28.5·감실30·쇠비31·온조30 같은 자) · head-audit 기준으로 39→약 38 (목표 31~34) · 띠 크기에서 옛것과 거의 구분 안 됨. 그 밖 검사(20+8 사람·무기·초상 같은 사람·발 줄·찌꺼기)는 통과",
+      "review": {
+        "chinOld": 34.0,
+        "chinNew": 33.0,
+        "note": ""
+      }
+    },
+    "base-w-50-siljik-mulga": {
+      "status": "waiting-walk",
+      "act": "D:\\에셋창고\\sprite_prop_base-w-50-siljik-mulga_act.png"
+    },
+    "base-w-81-byeokjin-byeolbit": {
+      "status": "rejected",
+      "order": "strip",
+      "act": "D:/에셋창고/sprite_prop_base-w-81-byeokjin-byeolbit_act.png",
+      "walk": "D:/에셋창고/sprite_prop_base-w-81-byeokjin-byeolbit_walk.png",
+      "actSha256": "627c4565ce3493fcf57fe2ceb7ea3c4e955c3c2049ec0825560f32d41c7f2fd5",
+      "walkSha256": "126041b1040da3360155009f57294f88b159616949ba9736b8edf2ede66063d6",
+      "portrait": "w-81-byeokjin-byeolbit",
+      "auto": {
+        "cell": [
+          232,
+          160
+        ],
+        "walkScale": 0.5367,
+        "contact": [
+          14,
+          0.95,
+          0.54
+        ],
+        "headsOld": 2.66,
+        "headsNew": 2.88,
+        "headsNewWalk": 2.81,
+        "residueAct": 0.0215,
+        "residueWalk": 0.0177
+      },
+      "reason": "얼굴 목표 미달: 턱 자리가 1%p쯤만 올라감 (자 눈금 33→32 · 기준 소서노28.5·감실30·쇠비31·온조30 같은 자) · head-audit 기준으로 40→약 39 (목표 31~34) · 띠 크기에서 옛것과 거의 구분 안 됨. 그 밖 검사(20+8 사람·무기·초상 같은 사람·발 줄·찌꺼기)는 통과",
+      "review": {
+        "chinOld": 33.0,
+        "chinNew": 32.0,
+        "note": "걷기 1·5 같은 다리(접지 컷 복사꼴), 3·7 은 교대"
+      }
+    },
+    "geumha": {
+      "status": "rejected",
+      "order": "strip",
+      "act": "D:/에셋창고/sprite_prop_geumha_act.png",
+      "walk": "D:/에셋창고/sprite_prop_geumha_walk.png",
+      "actSha256": "da13f8bfbcf36b59482e26b7af5b6ab0a610f900541dd572b2f351f2a033d3e8",
+      "walkSha256": "58840aab6ec2b1cf4f0b2492b85e91efade25cdc4751661d9381c4f9eb670ef2",
+      "portrait": "g-66-buyeo-geumha",
+      "auto": {
+        "cell": [
+          200,
+          160
+        ],
+        "walkScale": 0.583,
+        "contact": [
+          14,
+          0.88,
+          0.49
+        ],
+        "headsOld": 4.77,
+        "headsNew": 8.06,
+        "headsNewWalk": 8.31,
+        "residueAct": 0.0108,
+        "residueWalk": 0.0007
+      },
+      "reason": "얼굴 목표 미달: 턱 자리가 1%p쯤만 올라감 (자 눈금 36→35 · 기준 소서노28.5·감실30·쇠비31·온조30 같은 자) · head-audit 기준으로 40→약 39 (목표 31~34) · 띠 크기에서 옛것과 거의 구분 안 됨. 그 밖 검사(20+8 사람·무기·초상 같은 사람·발 줄·찌꺼기)는 통과",
+      "review": {
+        "chinOld": 36.0,
+        "chinNew": 35.0,
+        "note": "말 탄 띠 · 몸 키에 말 포함"
+      }
+    },
+    "irang": {
+      "status": "rejected",
+      "order": "strip",
+      "act": "D:/에셋창고/sprite_prop_irang_act.png",
+      "walk": "D:/에셋창고/sprite_prop_irang_walk.png",
+      "actSha256": "f2964b8519a01432ad9e7d48e9fe5a2372732be47d56fe8d1c7fa6cd1d2ea6a8",
+      "walkSha256": "1f8a6c391003147b56c1c7c829b5e8e96395209deca70e8153bca3a7f14f5e20",
+      "portrait": "w-59-jomun-irang",
+      "auto": {
+        "cell": [
+          184,
+          160
+        ],
+        "walkScale": 0.5519,
+        "contact": [
+          14,
+          0.9,
+          0.45
+        ],
+        "headsOld": 2.56,
+        "headsNew": 3.04,
+        "headsNewWalk": 2.84,
+        "residueAct": 0.0,
+        "residueWalk": 0.0
+      },
+      "reason": "얼굴 목표 미달: 턱 자리가 1%p쯤만 올라감 (자 눈금 33.5→32.5 · 기준 소서노28.5·감실30·쇠비31·온조30 같은 자) · head-audit 기준으로 40→약 39 (목표 31~34) · 띠 크기에서 옛것과 거의 구분 안 됨. 그 밖 검사(20+8 사람·무기·초상 같은 사람·발 줄·찌꺼기)는 통과",
+      "review": {
+        "chinOld": 33.5,
+        "chinNew": 32.5,
+        "note": "걷기 3·7 교대"
+      }
+    }
+  }
+}

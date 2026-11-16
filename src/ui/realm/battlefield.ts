@@ -35,7 +35,7 @@ import { duelMuOf } from '../../duel/power.ts'
 import { clampTier } from '../../realm/tier.ts'
 import { holdBox } from './holdbox.ts'
 import { TIER_MEN, sideIdx, tierCounts, tierPrec, tierStanding, type Tier } from './troops.ts'
-import { preloadSkillFx, skillCues, skillCutHtml, type SkSfx, type SkillId } from './skillfx.ts'
+import { preloadSkillFx, preloadSkillHero, skillCues, skillCutHtml, type SkSfx, type SkillId } from './skillfx.ts'
 import { ELEM } from './ascend.ts'
 import type { Elem } from '../../realm/elem.ts'
 import { cellColor, lookCells, lookNums, oneChance, pctText, signed, type LookCell } from './lookword.ts'
@@ -3505,13 +3505,15 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   if (t.line === null) return false
   preloadSkillFx(host.art) // 기술 장면 그림을 미리 — 안 구운 그림은 장면에서 빠진다 (skillfx.ts)
   // 각성 장면의 짐승·진각성 초상도 미리 (형 11-10: 각성 연출이 되게 늦게 뜸)
+  // 장면 띠에 오를 장수 윗몸도 미리 (총대장 둘 · 비기·각성을 쓰는 장수 — 진각성이면 진각성 그림)
+  for (const id of t.line.start?.heroes ?? []) if (id !== null && id !== undefined) preloadSkillHero(host.art, faceFile(id) ?? null)
   for (const rd of t.line.rounds ?? []) for (const x of rd.acts ?? []) {
+    if (x.hero !== undefined && (x.c === 'art' || x.c === 'wake')) {
+      const b2 = x.c === 'wake' && x.true === true ? bustOf(x.hero) ?? null : null
+      preloadSkillHero(host.art, b2 !== null ? `../awaken2-hd/${b2}` : faceFile(x.hero) ?? null)
+    }
     if (x.c !== 'wake' || x.wake === undefined) continue
     new Image().src = `${host.art}fx/awaken/beast-${ELEM[x.wake].beast}.png`
-    const b2 = x.true === true && x.hero !== undefined ? bustOf(x.hero) : undefined
-    if (b2 !== undefined && b2 !== null) new Image().src = `${host.art}awaken2-hd/${b2}`
-    const f = x.hero !== undefined ? faceFile(x.hero) : undefined
-    if (f !== undefined && f !== null) new Image().src = `${host.art}${f}`
   }
   // 싸움 소리도 미리 — 처음 내는 소리는 받기·풀기를 기다려 늦었다: 방진의 쾅이 방패가 내려앉은 뒤에 났다 (형 11-01)
   host.warm?.([...new Set([...Object.values(BATTLE_SFX), ...Object.values(SK_SFX), ...MELEE, ...Object.values(LAYERS).flatMap((ly) => (ly ?? []).map(([f]) => f))])])

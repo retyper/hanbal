@@ -2,16 +2,17 @@
  * 장수 기술 장면 (컷인) — 비기·겨루기·사로잡기·물러나기를 고른 합이 풀릴 때 (형 11-01: "명궁의 한발 이런기술 쓰는데 화면이 어두워지면서 장수만 강조되고
  * 활을 강하게 당겼다 쏘는 그런 모습이 있어야 와 내가 기술을 썼다 하고 느껴질거임 · 기술마다 새롭게 고민 · 싸구려 svg 로 대충 때우지 마").
  *
- * 모든 장면이 같은 뼈대: 화면이 어두워지고 → 바람 줄기와 먹 띠가 휙 → 장수 초상이 미끄러져 들고 → 기술 이름이 붓으로 → 기술마다 제 몸짓(그림 낱낱) →
- * 맞는 순간 멈칫(히트스톱: 띠가 떨고 번쩍) → 걷힌다. 1.2~1.6초 · 누르면 바로 걷힌다.
+ * 모든 장면이 같은 뼈대 (11-17 형: "전신 나오는 게 촌스러워 · 던파 따라 하고 연출 배경도"): 화면이 어두워지고 → 비스듬한 띠가 휙 가로지르며
+ * 기술의 결(불·물·바람·번개·땅·싸움·넋·그림자·화살)에 맞는 기운 바탕이 흐르고 → 비기 전신에서 잘라 낸 장수의 윗몸이 띠 위로 머리를 내밀며 들고 →
+ * 기술 이름이 붓으로 → 기술마다 제 몸짓(그림 낱낱 · 띠 밑 전장) → 맞는 순간 띠가 번쩍·떨고 → 걷힌다. 1.2~1.6초 · 누르면 바로 걷힌다.
+ * 띠는 열전과 같이 쓰는 ../cutin-band.ts.
  *
  * 그림은 모두 구운 래스터(public/realm/fx/skill/… · 설계와 굽는 말은 docs/realm/SKILL-FX.md). SVG·CSS 로 그린 효과는 쓰지 않는다.
  * 아직 안 구운 그림은 건너뛴다 — preloadSkillFx 가 미리 불러 본 것 가운데 닿은 것만 얹는다 (깨진 그림 표시 없음).
  * 움직임은 작은 그림 하나하나의 transform·opacity 뿐 (폰 그래픽 한도) · 어두워지는 막은 opacity 한 번.
  */
 import { P } from '../../tune/params.ts'
-import { hasSkillBody } from '../../realm/data/skill-body.ts'
-import { aw1SkillBody } from '../../realm/data/skill-body-aw1.ts'
+import { CUTIN_BAND_CSS, CUT_BGS, cutBandHtml, cutBgSrc, cutHeroPath, type CutBg } from '../cutin-band.ts'
 
 /** 장면이 있는 기술 — 비기 아홉 + 장수의 명령 셋 */
 export type SkillId = 'snipe' | 'rite' | 'sway' | 'stand' | 'ambush' | 'vanguard' | 'feint' | 'order' | 'shout' | 'duel' | 'capture' | 'retreat'
@@ -243,8 +244,15 @@ export const SKILL_SEQ: Readonly<Record<SkillId, Seq>> = {
   },
 }
 
-/** 뼈대 그림 — 모든 장면에 */
-const FRAME = [C.speed, C.band, C.brush] as const
+/** 기술마다 띠 바탕의 결 — fx/skill/bg/<결>.webp */
+export const SKILL_BG: Readonly<Record<SkillId, CutBg>> = {
+  snipe: 'arrow', rite: 'spirit', sway: 'spirit', stand: 'earth', ambush: 'shadow', vanguard: 'war', feint: 'shadow', order: 'war', shout: 'war',
+  duel: 'bolt', capture: 'wind', retreat: 'shadow',
+  'w-earth': 'earth', 'w-wind': 'wind', 'w-fire': 'fire', 'w-water': 'water', 'w-bolt': 'bolt',
+}
+
+/** 뼈대 그림 — 모든 장면에 (이름 붓 자국) */
+const FRAME = [C.brush] as const
 
 /** 장면에 쓰는 모든 그림 (중복 없이) — 문서(SKILL-FX.md)·미리 불러오기 */
 export function skillAssets(): string[] {
@@ -267,11 +275,26 @@ export function preloadSkillFx(art: string): void {
     im.decoding = 'async'
     im.src = `${art}fx/${src}`
   }
+  for (const bg of CUT_BGS) {
+    const im = new Image()
+    im.onload = (): void => { READY.add(bgKey(bg)) }
+    im.decoding = 'async'
+    im.src = cutBgSrc(art, bg)
+  }
+}
+const bgKey = (bg: CutBg): string => `bg/${bg}`
+/** 장면에 오를 장수 그림을 미리 — 싸움이 열릴 때 나설 장수들 (얼굴 이름은 skillCutHtml 의 bust 와 같은 꼴) */
+export function preloadSkillHero(art: string, face: string | null): void {
+  const h = cutHeroPath(face)
+  if (h === null || typeof Image === 'undefined') return
+  const im = new Image()
+  im.decoding = 'async'
+  im.src = art + h.src
 }
 /** 시험용 — 닿았다고 치는 그림 (tests) */
 export function markSkillReady(srcs: readonly string[]): void { for (const s of srcs) READY.add(s) }
-
-const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
+/** 시험용 — 띠 바탕이 닿았다고 친다 */
+export function markSkillBgReady(): void { for (const bg of CUT_BGS) READY.add(bgKey(bg)) }
 
 /** 장면의 소리 — 시각(초)과 소리. 부르는 쪽이 제 소리 시계에 건다 */
 export function skillCues(id: SkillId): Array<readonly [number, SkSfx]> {
@@ -280,7 +303,8 @@ export function skillCues(id: SkillId): Array<readonly [number, SkSfx]> {
 }
 
 /**
- * 장면 한 판의 HTML — 초상(bust · 없으면 장수 그림) · 기술 이름 · 장수 이름 · 기술의 몸짓.
+ * 장면 한 판의 HTML — 띠(기운 바탕 · 장수 윗몸 · 기술 이름 · 장수 이름) + 띠 밑 전장의 기술 몸짓.
+ * bust — 얼굴 이름 (bust id · ../awaken-hd/<id> 1차 각성 · ../awaken2-hd/<id> 진각성) · 그림은 진각성 전신 → 1차 전신 → 기본 전신 → 초상 (cutin-band.ts)
  * 바깥 상자가 끝까지 도는 애니메이션(wsk-end)이 끝나면 부르는 쪽이 걷는다 · 누르면 바로 걷는다.
  */
 export function skillCutHtml(art: string, id: SkillId, bust: string | null, heroName: string, skillName: string, res: 'hit' | 'miss' | null = null, foe = false): string {
@@ -290,28 +314,22 @@ export function skillCutHtml(art: string, id: SkillId, bust: string | null, hero
   const ms = (x: number): string => `${Math.round(x * sp)}ms`
   const seq = SKILL_SEQ[id]
   const img = (src: string): string => `${art}fx/${src}`
-  // 적의 기술(foe) — 초상이 오른쪽에서, 이름이 왼쪽에서 · 몸짓은 통째로 좌우 뒤집어 적진에서 우리 쪽으로 · 막은 핏빛 (11-08)
+  // 적의 기술(foe) — 띠가 거꾸로 기울고 장수는 오른쪽, 이름은 왼쪽 · 몸짓은 통째로 좌우 뒤집어 적진에서 우리 쪽으로 · 막은 핏빛 (11-08)
   let h = `<div class="wsk k-${id}${foe ? ' foe' : ''}" style="--end:${end}ms;--dim:${R.warSkDim}">`
   h += `<i class="wsk-dim"></i>`
-  // 바람 줄기 · 먹 띠 — 위 띠 자리를 가로지른다
-  if (READY.has(C.speed)) h += `<i class="wsk-sp" style="left:50%;top:31%;width:150cqw;z-index:2"><img class="wsk-m mv-streak" src="${img(C.speed)}" alt="" style="animation-duration:${ms(640)};animation-delay:0ms"></i>`
-  if (READY.has(C.band)) h += `<i class="wsk-sp" style="left:50%;top:31%;width:120cqw;z-index:3"><img class="wsk-b mv-slideR" src="${img(C.band)}" alt="" style="animation-duration:${end}ms;animation-delay:0ms"></i>`
-  // 초상 — 왼쪽에서 미끄러져 든다 · 맞는 순간 떤다
-  const shake = seq.hit !== null ? `,wsk-hs ${R.warSkHitMs}ms steps(2) ${ms(seq.hit)} 2` : ''
-  // 비기 전신 그림이 있으면 초상 대신 전신 (src/realm/data/skill-body.ts · 형 11-08)
-  // 1차 각성한 장수는 각성 옷의 전신 (src/realm/data/skill-body-aw1.ts)
-  const aw1 = bust !== null ? aw1SkillBody(bust) : null
-  const body = aw1 !== null || (bust !== null && hasSkillBody(bust))
-  const face = aw1 !== null ? `<img class="wsk-face" src="${art}${aw1}" alt="">` : body ? `<img class="wsk-face" src="${art}skill-body/${bust}.jpg" alt="">` : bust !== null ? `<img class="wsk-face" src="${art}bust/${bust}.jpg" alt="">` : `<img class="wsk-face unit" src="${art}icon/unit-general.png" alt="">`
-  // 헛치면 맞는 순간 초상이 잿빛 막에 덮여 식는다 (filter 없이 opacity 한 번 · 폰 그래픽 한도)
+  const hero = cutHeroPath(bust)
   const at = seq.hit ?? Math.round(R.warSkEndMs * 0.55)
-  const ash = res === 'miss' ? `<i class="wsk-ash" style="animation-delay:${ms(at)}"></i>` : ''
-  h += `<div class="wsk-bust${body ? ' body' : ''}" style="animation:wsk-${foe ? 'slideR' : 'slideL'} ${end}ms cubic-bezier(.2,1.2,.4,1) 60ms both${shake}">${face}${ash}</div>`
-  // 기술 이름 — 붓 자국 위에 큰 글씨 · 그 밑에 장수 이름
+  // 헛치면 맞는 순간 장수가 잿빛으로 식는다 — 같은 그림 한 장을 잿빛(정지 filter)으로 겹쳐 두고 opacity 한 번 (filter 애니 없음 · 폰 그래픽 한도)
+  const ash = res === 'miss' && hero !== null ? `<img class="cbd-face wsk-ash${hero.cut ? '' : ' sq'}" src="${art}${hero.src}" alt="" style="animation-delay:${ms(at)}">` : ''
   // 헛치면 붉은 붓 자국 위로 갈라진 먹이 덮여 깨진다 — 글씨 밑 층이라 기술 이름은 그대로 읽힌다
   const crack = res === 'miss' && READY.has(C.crack) ? `<img class="wsk-crack" src="${img(C.crack)}" alt="" style="animation-delay:${ms(at)}">` : ''
-  const brush = (READY.has(C.brush) ? `<img class="wsk-brush" src="${img(C.brush)}" alt="">` : '') + crack
-  h += `<div class="wsk-ttl" style="animation:wsk-${foe ? 'slideL' : 'slideR'} ${end}ms cubic-bezier(.2,1.2,.4,1) ${ms(140)} both${shake}">${brush}<b class="${[...skillName].length > 5 ? 'long' : ''}">${esc(skillName)}</b><span>${esc(heroName)}</span></div>`
+  // 먹혔다 — 기술 이름 귀에 붉은 네모 도장이 쾅 (글 없이 그림으로)
+  const left = R.warSkEndMs - at
+  const seal = res === 'hit' && !foe && READY.has(C.seal) ? `<i class="wsk-sp wsk-seal"><img class="wsk-m mv-stamp" src="${img(C.seal)}" alt="" style="animation-duration:${ms(left)};animation-delay:${ms(at)}"></i>` : ''
+  h += cutBandHtml({
+    art, bg: SKILL_BG[id], bgReady: READY.has(bgKey(SKILL_BG[id])), hero, endMs: end, hitMs: seq.hit !== null ? seq.hit * sp : null, shakeMs: R.warSkHitMs, foe,
+    title: skillName, sub: heroName, brush: READY.has(C.brush) ? `fx/${C.brush}` : null, ttlExtra: crack + seal, heroExtra: ash,
+  })
   // 기술의 몸짓 — 그림 낱낱
   let z = 10
   h += '<div class="wsk-fx">'
@@ -326,9 +344,6 @@ export function skillCutHtml(art: string, id: SkillId, bust: string | null, hero
       h += `<i class="wsk-sp${n > 1 ? ' wsk-n' : ''}" style="${wrap}"><img class="wsk-m mv-${s.mv}" src="${img(s.src)}" alt="" style="animation-duration:${ms(s.d)};animation-delay:${ms(s.t + (s.dt ?? 0) * i)}"></i>`
     }
   }
-  // 먹혔다 — 기술 이름 옆에 붉은 네모 도장이 쾅 · 헛쳤다 — 이름의 붓 자국이 먹으로 갈라져 떨어진다 (글 없이 그림으로)
-  const left = R.warSkEndMs - at
-  if (res === 'hit' && !foe && READY.has(C.seal)) h += `<i class="wsk-sp" style="left:91%;top:17%;width:17cqw;z-index:${z++};rotate:-8deg"><img class="wsk-m mv-stamp" src="${img(C.seal)}" alt="" style="animation-duration:${ms(left)};animation-delay:${ms(at)}"></i>`
   return h + '</div></div>'
 }
 
@@ -345,32 +360,22 @@ export const SKFX_CSS = `
 .ap .wsk.wsk-true .wsk-dim { background: radial-gradient(ellipse at 50% 46%, #ffd27a33, #000c 70%); }
 @keyframes wsk-beast { 0% { opacity: 0; transform: translate(-50%, -40%) scale(.7); } 22% { opacity: .95; transform: translate(-50%, -52%) scale(1); } 62% { opacity: .85; transform: translate(-50%, -54%) scale(1.06); } 100% { opacity: 0; transform: translate(-50%, -58%) scale(1.18); } }
 .ap .wsk-sp { position: absolute; display: block; translate: -50% -50%; pointer-events: none; }
-.ap .wsk-fx { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
+.ap .wsk-fx { position: absolute; inset: 0; z-index: 10; pointer-events: none; container-type: size; }
+/* 가로 화면 — 몸짓 판을 가운데 좁은 판으로 (cqw 가 이 판 기준이라 그림이 띠·장수를 덜 덮는다) · 조금 아래로 */
+@container (min-aspect-ratio: 1/1) { .ap .wsk-fx { inset: 8cqh auto 0 50%; width: min(100cqw, 128cqh); translate: -50% 0; } }
 .ap .wsk.foe .wsk-fx { scale: -1 1; }
-.ap .wsk.foe .wsk-bust { left: auto; right: 3%; }
-.ap .wsk.foe .wsk-ttl { left: 3%; right: 46%; }
 .ap .wsk.foe .wsk-dim { background: #1c0406; }
 .ap .wsk-sp > img { display: block; width: 100%; height: auto; opacity: 0; animation-timing-function: cubic-bezier(.2, .9, .3, 1); animation-fill-mode: both; }
-.ap .wsk-sp > .wsk-b { animation-name: wsk-slideR; }
-.ap .wsk-bust { position: absolute; left: 3%; top: 31%; translate: 0 -50%; width: min(44cqw, 300px); aspect-ratio: 1; z-index: 4; pointer-events: none; }
-.ap .wsk-face { width: 100%; height: 100%; object-fit: cover; object-position: top; -webkit-mask: url(__ART__fx/mask-bust.png) center / 100% 100% no-repeat; mask: url(__ART__fx/mask-bust.png) center / 100% 100% no-repeat; }
-.ap .wsk-ash { position: absolute; inset: 0; background: #12151bd9; -webkit-mask: url(__ART__fx/mask-bust.png) center / 100% 100% no-repeat; mask: url(__ART__fx/mask-bust.png) center / 100% 100% no-repeat; opacity: 0; animation: wsk-ash 260ms ease-out both; }
-/* Keep full weapons and limbs: fade only the outside margin, not a large oval through the figure. */
-.ap .wsk-bust.body { top: 47%; width: min(40cqw, 270px); aspect-ratio: 2 / 3; }
-.ap .wsk-bust.body .wsk-face, .ap .wsk-bust.body .wsk-ash { object-fit: contain; object-position: center; -webkit-mask: linear-gradient(transparent, #000 5%, #000 95%, transparent); mask: linear-gradient(transparent, #000 5%, #000 95%, transparent); }
+/* 헛침 — 장수 그림을 잿빛으로 한 장 더 겹쳐 opacity 로 (filter 는 정지) · 먹힘 도장은 이름 귀에 */
+.ap .wsk-ash { position: absolute; inset: 0; filter: grayscale(1) brightness(.38); opacity: 0; animation: wsk-ash 260ms ease-out both; }
+.ap .wsk-seal { left: 100%; top: -12%; width: min(24cqw, 22cqh, 150px); rotate: -8deg; z-index: 2; }
+.ap .wsk .cbd { z-index: 2; } .ap .wsk.wsk-true .cbd { --cc: #ffd98a; }
 @keyframes wsk-ash { to { opacity: 1; } }
 .ap .wsk-m.mv-roar { animation-name: wsk-roar; animation-timing-function: cubic-bezier(.2, 1.1, .4, 1); } @keyframes wsk-roar { 0% { opacity: 0; transform: translateX(-14cqw) scale(.7); } 22% { opacity: 1; transform: translateX(0) scale(1.08); } 32% { transform: scale(1); } 74% { opacity: 1; transform: scale(1.02); } 100% { opacity: 0; transform: translateX(4cqw) scale(1.06); } }
 .ap .wsk-m.mv-stamp { animation-name: wsk-stamp; animation-timing-function: cubic-bezier(.5, 0, .9, .4); } @keyframes wsk-stamp { 0% { opacity: 0; transform: scale(2.6); } 12% { opacity: 1; transform: scale(.9); } 18% { transform: scale(1.06); } 24% { transform: scale(1); } 100% { opacity: 1; transform: scale(1); } }
-.ap .wsk-crack { position: absolute; left: -6%; top: 50%; width: 112%; height: auto; translate: 0 -58%; z-index: -1; opacity: 0; animation: wsk-crack 520ms ease-in both; } @keyframes wsk-crack { 0% { opacity: 0; transform: scale(1.12); } 10% { opacity: 1; transform: scale(1); } 60% { opacity: 1; transform: translateY(1cqh); } 100% { opacity: .9; transform: translateY(3cqh); } }
-.ap .wsk-face.unit { object-fit: contain; -webkit-mask: none; mask: none; }
-.ap .wsk-ttl { position: absolute; left: 46%; right: 3%; top: 31%; translate: 0 -50%; z-index: 5; display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none; }
-.ap .wsk-brush { position: absolute; left: -8%; top: 50%; width: 116%; height: auto; translate: 0 -62%; z-index: -1; }
-.ap .wsk-ttl b { font-family: var(--display); font-weight: 400; font-size: clamp(30px, 10cqw, 64px); line-height: 1.05; color: #fff4d6; text-align: center; letter-spacing: .03em; -webkit-text-stroke: 1px #2a1400; paint-order: stroke fill; text-shadow: 0 3px 0 #2a1400, 0 0 16px #000; white-space: nowrap; }
-.ap .wsk-ttl b.long { font-size: clamp(22px, 7.4cqw, 52px); }
-.ap .wsk-ttl span { font-size: clamp(13px, 3.6cqw, 18px); font-weight: 800; color: #ffe6b0; background: #000c; padding: 2px 12px; border-radius: 9px; }
+.ap .wsk-crack { position: absolute; left: -8%; top: 50%; width: 112%; height: auto; translate: 0 -58%; z-index: -1; opacity: 0; animation: wsk-crack 520ms ease-in both; } @keyframes wsk-crack { 0% { opacity: 0; transform: scale(1.12); } 10% { opacity: 1; transform: scale(1); } 60% { opacity: 1; transform: translateY(1cqh); } 100% { opacity: .9; transform: translateY(3cqh); } }
 @keyframes wsk-slideL { 0% { transform: translateX(-70cqw); opacity: 0; } 22% { transform: translateX(0); opacity: 1; } 84% { transform: translateX(0); opacity: 1; } 100% { transform: translateX(-12cqw); opacity: 0; } }
 @keyframes wsk-slideR { 0% { transform: translateX(70cqw); opacity: 0; } 22% { transform: translateX(0); opacity: 1; } 84% { transform: translateX(0); opacity: 1; } 100% { transform: translateX(12cqw); opacity: 0; } }
-@keyframes wsk-hs { 0% { translate: -6px calc(-50% + 3px); } 50% { translate: 6px calc(-50% - 3px); } 100% { translate: 0 -50%; } }
 .ap .wsk-m.mv-fade { animation-name: wsk-fade; } @keyframes wsk-fade { 0% { opacity: 0; } 15% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
 .ap .wsk-m.mv-pop { animation-name: wsk-pop; } @keyframes wsk-pop { 0% { opacity: 0; transform: scale(.3); } 30% { opacity: 1; transform: scale(1.25); } 45% { transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: scale(1); } }
 .ap .wsk-m.mv-flash { animation-name: wsk-flash; animation-timing-function: ease-out; } @keyframes wsk-flash { 0% { opacity: 0; transform: scale(.5); } 18% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0; transform: scale(1.5); } }
@@ -399,5 +404,5 @@ export const SKFX_CSS = `
 .ap .wsk-m.mv-clash { animation-name: wsk-clash; animation-timing-function: cubic-bezier(.2, 1.4, .4, 1); } @keyframes wsk-clash { 0% { opacity: 0; transform: scale(1.6); } 28% { opacity: 1; transform: scale(1); } 32% { transform: translate(3px, -2px); } 36% { transform: translate(-3px, 2px); } 40% { transform: translate(0, 0); } 85% { opacity: 1; } 100% { opacity: 0; } }
 .ap .wsk-m.mv-lasso { animation-name: wsk-lasso; animation-timing-function: cubic-bezier(.3, .2, .3, 1); } @keyframes wsk-lasso { 0% { opacity: 0; transform: translate(-46cqw, -6cqh) rotate(-200deg) scale(.6); } 20% { opacity: 1; } 55% { transform: translate(0, 0) rotate(0) scale(1); } 62% { transform: scale(.85); } 85% { opacity: 1; transform: scale(.85); } 100% { opacity: 0; transform: scale(.85); } }
 .ap .wsk-m.mv-flagup { animation-name: wsk-flagup; animation-timing-function: cubic-bezier(.2, 1.3, .4, 1); transform-origin: 50% 100%; } @keyframes wsk-flagup { 0% { opacity: 0; transform: translateY(8cqh) scaleY(.4); } 35% { opacity: 1; transform: translateY(0) scaleY(1); } 85% { opacity: 1; } 100% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .ap .wr .wsk { animation-duration: var(--end) !important; } .ap .wsk .wsk-sp { display: none; } .ap .wsk-bust, .ap .wsk-ttl { animation: none !important; } .ap .wsk-dim { animation: none; opacity: var(--dim); } }
-`
+@media (prefers-reduced-motion: reduce) { .ap .wr .wsk { animation-duration: var(--end) !important; } .ap .wsk .wsk-sp { display: none; } .ap .wsk-dim { animation: none; opacity: var(--dim); } }
+` + CUTIN_BAND_CSS

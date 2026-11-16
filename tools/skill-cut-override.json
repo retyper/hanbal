@@ -1,0 +1,107 @@
+{
+ "g-64-jumong": {
+  "head": [
+   0.4,
+   0.05,
+   0.11
+  ]
+ },
+ "g-73-baekje-eureum": {
+  "head": [
+   0.53,
+   0.1,
+   0.11
+  ]
+ },
+ "g-74-saro-hyeokgeose": {
+  "head": [
+   0.47,
+   0.1,
+   0.11
+  ]
+ },
+ "w-05-baekje-queen": {
+  "head": [
+   0.5,
+   0.08,
+   0.11
+  ]
+ },
+ "w-33-gammun-gamsil": {
+  "head": [
+   0.3,
+   0.1,
+   0.11
+  ]
+ },
+ "l-L7-aryeong": {
+  "head": [
+   0.24,
+   0.09,
+   0.11
+  ]
+ },
+ "aw1/g-83-mokji-keundol": {
+  "head": [
+   0.43,
+   0.21,
+   0.11
+  ]
+ },
+ "aw1/g-82-saro-hojin": {
+  "head": [
+   0.57,
+   0.16,
+   0.11
+  ]
+ },
+ "aw1/w-04-gaya-swordswoman": {
+  "head": [
+   0.62,
+   0.25,
+   0.1
+  ]
+ },
+ "aw2/w-24-apdok-queen": {
+  "head": [
+   0.47,
+   0.18,
+   0.1
+  ]
+ },
+ "aw2/w-25-bihwa-priestess": {
+  "head": [
+   0.5,
+   0.27,
+   0.1
+  ]
+ },
+ "aw2/w-11-assassin": {
+  "head": [
+   0.4,
+   0.26,
+   0.1
+  ]
+ },
+ "aw2/g-65-sangdang-soemangchi": {
+  "head": [
+   0.52,
+   0.23,
+   0.11
+  ]
+ },
+ "aw2/w-05-baekje-queen": {
+  "head": [
+   0.48,
+   0.17,
+   0.1
+  ]
+ },
+ "aw2/g-37-eumjeup-jeup": {
+  "head": [
+   0.47,
+   0.24,
+   0.11
+  ]
+ }
+}
