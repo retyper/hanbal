@@ -309,15 +309,25 @@ for (const [k, title, ref, body] of CUTS) jobs.push({ id: `CUT-${k}`, group: 're
 const AUDIT = JSON.parse(readFileSync('tools/sprite-kit/head-audit-20261116.json', 'utf8'))
 const FACE = 'FACE SIZE RULE (measured on the approved characters in IMAGE 2: Soseono, Gamsil, Soebi, Onjo, all at the SAME standing height as this character): the standing height from the soles to the top of the SKULL is 4.5 heads (hair volume, buns, hats, crowns and feathers are NOT counted and may stay as big as in IMAGE 1). The FACE itself, from the eyebrows to the chin, is only 1/9 of the standing height; eye-to-chin is about 8% of the height; cheek-to-cheek face width is about 1/9 of the height. The CURRENT face in IMAGE 1 is about 40% too big, round and childlike: make the face clearly smaller, adult and slimmer-jawed, with a proper neck, while keeping the same body height.'
 const PIX = 'Sharp deliberate pixel-cluster outlines and shading exactly like IMAGE 2 (premium HD pixel art), detailed tiny eyes with sclera, iris and upper lash, small nose and mouth; no blur, no smooth illustration look.'
-const tier = (k) => (k in AUDIT.tierA_chin_ge38 ? 'A' : 'B')
-for (const k of [...Object.keys(AUDIT.tierA_chin_ge38), ...Object.keys(AUDIT.tierB_chin_37)]) {
-  const bust = k.startsWith('gen-base-') ? k.slice('gen-base-'.length) : null
+// 11-16 무기 감사 — 띠가 원화와 다른 무기를 든 장수 (tools/sprite-kit/weapon-audit-20261116.json · 형: 「원화 기준으로 통일」)
+const WAUDIT = JSON.parse(readFileSync('tools/sprite-kit/weapon-audit-20261116.json', 'utf8'))
+const WROWS = Array.isArray(WAUDIT) ? WAUDIT : (WAUDIT.rows ?? [])
+const WFIX = Object.fromEntries(WROWS.filter((r) => (r.mismatch ?? []).includes('sprite≠art')).map((r) => ['gen-' + r.key, r]))
+const PORTRAIT = Object.fromEntries(WROWS.filter((r) => r.portrait).map((r) => ['gen-' + r.key, r.portrait]))
+const tier = (k) => (k in AUDIT.tierA_chin_ge38 ? 'A' : k in AUDIT.tierB_chin_37 ? 'B' : '무기')
+const SP_KEYS = [...Object.keys(AUDIT.tierA_chin_ge38), ...Object.keys(AUDIT.tierB_chin_37)]
+for (const k of Object.keys(WFIX)) if (!SP_KEYS.includes(k)) SP_KEYS.push(k)
+for (const k of SP_KEYS) {
+  const bust = PORTRAIT[k] ?? (k.startsWith('gen-base-') ? k.slice('gen-base-'.length) : null)
   const refs = [`/assets_src/realm/sprite-prop/${k}-now.png`, '/assets_src/realm/sprite-prop/ref-approved.png', ...(bust && existsSync(`public/realm/bust-hd/${bust}.jpg`) ? [`/realm/bust-hd/${bust}.jpg`] : [])]
+  const wf = WFIX[k]
+  const WEAP = wf ? `WEAPON FIX (most important): in the original portrait art (IMAGE 3) this character holds ${wf.artWeapon}, NOT the ${wf.spriteWeapon} drawn in IMAGE 1. Redraw every cell with the ${wf.artWeapon} from the portrait, held the same way in all poses; the attack poses use it the way that item is really used (swing, thrust, throw, ring, play or wave it).
+` : ''
   const who = k.slice(4)
-  jobs.push({ id: `SP-${who}-act`, group: 'remake-sprite', save: `sprite_prop_${who}_act.png`, title: `${who} · 전투 띠 20자세 (얼굴 줄임 · ${tier(k)})`,
-    refs, now: `얼굴이 기준보다 큼 · 턱 위치 몸 키의 ${AUDIT.tierA_chin_ge38[k] ?? AUDIT.tierB_chin_37[k]}% (기준 31~33%)`,
+  jobs.push({ id: `SP-${who}-act`, group: 'remake-sprite', save: `sprite_prop_${who}_act.png`, title: `${who} · 전투 띠 20자세 (${wf ? '무기 바로잡기 · ' : ''}얼굴 ${tier(k)})`,
+    refs, now: `${wf ? `띠 무기 ${wf.spriteWeapon} → 원화 ${wf.artWeapon} · ` : ''}${tier(k) === '무기' ? '얼굴은 기준 안' : `얼굴이 기준보다 큼 · 턱 위치 몸 키의 ${AUDIT.tierA_chin_ge38[k] ?? AUDIT.tierB_chin_37[k]}% (기준 31~33%)`}`,
     use: `받으면 11-14 비율 교정과 같은 길로 띠에 넣음(anim-px/${k}.png · 걷기 칸은 다음 장으로 바꿈) · 옛 띠는 assets_src/realm/retired 로`,
-    prompt: `Redraw the SAME adult game character as IMAGE 1 (the current battle sprite sheet, 20 cells read left to right, top to bottom)${refs.length > 2 ? ' — IMAGE 3 is the character portrait for face identity' : ''}: all 20 poses in exactly FOUR columns x FIVE rows.
+    prompt: `${WEAP}Redraw the SAME adult game character as IMAGE 1 (the current battle sprite sheet, 20 cells read left to right, top to bottom)${refs.length > 2 ? ' — IMAGE 3 is the character portrait for face identity' : ''}: all 20 poses in exactly FOUR columns x FIVE rows.
 ${FACE}
 Keep this character's face identity, gender, age, hairstyle, colors, clothing layers, ornaments and weapon exactly from IMAGE 1. ${PIX}
 Every weapon complete and the same size and material in all 20 cells; spears stay a long WOODEN shaft with a SMALL metal head, never a sword. Keep every cell's action exactly as in the SAME cell of IMAGE 1 (same pose order: idles, walk, attack, guard and hit, lying defeated); only the face and head proportions, the pixel quality and any broken weapon change. If archer: the bow stays in all 20 poses, the release pose has an empty draw hand, and no knife or sword appears. All standing poses face RIGHT in 3/4 view with the same adult proportions and the same standing height.

@@ -1,4 +1,4 @@
-import { HAEBI_RUN as C, HAEBI_VANGUARD as V, HAEBI_STAGES as ST, HAEBI_MOBS as M, HAEBI_SHOP as SH, HAEBI_GOLD as G } from '../tune/params.ts'
+import { HAEBI_RUN as C, HAEBI_VANGUARD as V, HAEBI_STAGES as ST, HAEBI_MOBS as M, HAEBI_SHOP as SH, HAEBI_GOLD as G, HAEBI_ULT as U } from '../tune/params.ts'
 import { makeRng } from '../core/rng.ts'
 
 /**
@@ -64,14 +64,16 @@ export const NO_BONUS: Bonus = { might: 0, vigor: 0, armor: 0, regen: 0, haste: 
 /** act: 창돌격꾼·범 예고(+)·돌진(−) 시간 · 투창 사냥꾼 겨눔(+) · 방화꾼 다음 불바닥까지 · vx·vy: 돌진·던질 방향 · buff: 무당이 북돋운 남은 시간 */
 export interface Mob { id: number; x: number; y: number; hp: number; max: number; kind: MobKind; cd: number; flash: number; wind: number; aimX: number; aimY: number; act: number; vx: number; vy: number; buff: number; poison: number; pdps: number }
 export interface Missile { x: number; y: number; vx: number; vy: number; life: number; kind: 'gale' | 'ember' | 'shard' | 'enemy' | 'arrow' | 'rain' | 'javelin' | 'wave' | 'barrage' | 'stone' | 'flame' | 'knife' | 'soul' | 'hurl'; damage: number; radius: number; hit: number[]; angle: number; tx: number; ty: number; gen?: number }
-export interface Effect { x: number; y: number; x2: number; y2: number; r: number; angle: number; life: number; total: number; kind: 'hit' | 'slash' | 'blast' | 'bolt' | 'skill' | 'death' | 'spike' | 'thrust' | 'buff' | 'ring'; color: string; mob?: Mob['kind']; face?: number; n?: number; crit?: boolean }
+export interface Effect { x: number; y: number; x2: number; y2: number; r: number; angle: number; life: number; total: number; kind: 'hit' | 'slash' | 'blast' | 'bolt' | 'skill' | 'ult' | 'death' | 'spike' | 'thrust' | 'buff' | 'ring'; color: string; mob?: Mob['kind']; face?: number; n?: number; crit?: boolean; ult?: Kit }
+/** 이어지는 비기(용오름 창의 솟음 · 그림자 베기의 순간 이동) — 남은 수 n · 다음까지 t 초 · 처음 자리 · 이미 벤 적 */
+export interface UltState { n: number; t: number; x: number; y: number; used: number[] }
 export interface Drop { x: number; y: number; value: number; age: number }
 type Cool = 'axe' | 'gale' | 'ember' | 'thunder' | 'orbit' | 'bow' | 'rain' | 'volley' | 'spear' | 'javelin' | 'grove' | 'sword' | 'wave' | 'tempest' | 'dagger' | 'knife' | 'shadow' | 'bell' | 'soul' | 'rite' | 'storm'
 export interface HaebiRun {
   mode: 'stage' | 'trial' | 'vanguard'; stage: StageId; bonus: Bonus; maxHp: number; revives: number; elites: number; kit: Kit; breaches: number; captains: number;
   seed: number; t: number; x: number; y: number; hp: number; face: number; moving: boolean;
   attack: number; hurt: number; inv: number; dash: number; dashCd: number; skillCd: number;
-  cool: Record<Cool, number>;
+  cool: Record<Cool, number>; ult: UltState | null;
   ranks: Record<Power, number>; combos: Combo[]; xp: number; level: number; offers: Power[]; rerolls: number;
   enemies: Mob[]; shots: Missile[]; fx: Effect[]; drops: Drop[];
   spawn: number; nextElite: number; nextBarrage: number; boss: boolean; next: number; kills: number; damage: number;
@@ -85,7 +87,7 @@ export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit
   const ranks = Object.fromEntries((Object.keys(POWERS) as Power[]).map(p => [p, 0])) as Record<Power, number>
   ranks[k.primary] = 1
   const s: HaebiRun = { mode, stage, bonus, maxHp, revives: bonus.revive, elites: 0, kit, breaches: 0, captains: 0, seed, t: 0, x: C.width / 2, y: C.height / 2, hp: maxHp, face: 1, moving: false,
-    attack: 0, hurt: 0, inv: 0, dash: 0, dashCd: 0, skillCd: 0,
+    attack: 0, hurt: 0, inv: 0, dash: 0, dashCd: 0, skillCd: 0, ult: null,
     cool: { axe: 0, gale: 0, ember: 0, thunder: 0, orbit: 0, bow: 0, rain: 0, volley: 0, spear: 0, javelin: 0, grove: 0, sword: 0, wave: 0, tempest: 0, dagger: 0, knife: 0, shadow: 0, bell: 0, soul: 0, rite: 0, storm: 0 },
     ranks, combos: [],
     xp: 0, level: 1, offers: [], rerolls: 3 + bonus.reroll, enemies: [], shots: [], fx: [], drops: [],
@@ -150,13 +152,17 @@ function fx(s: HaebiRun, kind: Effect['kind'], x: number, y: number, r = 18, col
 }
 /** 맞는 쪽이 덜 받는 몫 — 무당이 북돋운 적 */
 const guard = (e: Mob) => e.buff > 0 ? 1 - M.shamanArmor : 1
+/** 밀리지 않는 적 — 두목 · 철갑 · 반달곰 */
+const steady = (e: Mob) => e.kind === 'boss' || e.kind === 'iron' || e.kind === 'bear'
+/** 장수가 설 수 있는 판 안 */
+const heroX = (x: number) => Math.max(32, Math.min(C.width - 32, x)), heroY = (y: number) => Math.max(65, Math.min(C.height - 24, y))
 function hit(s: HaebiRun, e: Mob, amount: number, knock = true) {
   if (e.hp <= 0) return
   // 급소 (상점 「행운」) — 강화가 없으면 난수를 뽑지 않는다 (예전 판과 같은 차례)
   const crit = s.bonus.luck > 0 && random(s) < s.bonus.luck * SH.luck.step
   amount *= guard(e) * (crit ? 2 : 1)
   s.damage += Math.min(e.hp, amount); e.hp -= amount; e.flash = .12
-  if (knock && e.kind !== 'boss' && e.kind !== 'iron' && e.kind !== 'bear') { const d = Math.hypot(e.x - s.x, e.y - s.y) || 1; e.x += (e.x - s.x) / d * C.knockback; e.y += (e.y - s.y) / d * C.knockback }
+  if (knock && !steady(e)) { const d = Math.hypot(e.x - s.x, e.y - s.y) || 1; e.x += (e.x - s.x) / d * C.knockback; e.y += (e.y - s.y) / d * C.knockback }
   // 피해 숫자 (형 11-16: 「한방이라 강해지는지 모르겠다」) — 맞은 자리의 이펙트에 실어 화면이 띄운다
   if (e.hp > 0) { fx(s, 'hit', e.x, e.y - 22); Object.assign(s.fx[s.fx.length - 1]!, { n: amount, crit }); return }
   s.kills++; s.comboKills++; s.streakTime = 2; s.hp = Math.min(s.maxHp, s.hp + C.killHeal); if (e.kind === 'elite') s.elites++
@@ -370,6 +376,92 @@ function aura(s: HaebiRun, power: number, area: number) {
     for (const e of s.enemies) if (Math.hypot(e.x - s.x, e.y - s.y) < r) hit(s, e, C.tempestDamage * power)
   }
 }
+// ── 비기 (형 11-16: 무기마다 꼴이 다르게 · 수치는 HAEBI_ULT · DPS 는 tools/raid-ult-dps.ts) ──
+/** 비기 그림 — 첫 조각은 'skill'(소리·컷인 신호), 잇따르는 조각은 'ult' · 그리는 쪽이 f.ult 로 묶음마다 다르게 그린다 */
+function ultFx(s: HaebiRun, lead: boolean, x: number, y: number, r: number, angle = 0, x2 = x, y2 = y) {
+  fx(s, lead ? 'skill' : 'ult', x, y, r, '#ffdf8b', angle, x2, y2)
+  const f = s.fx[s.fx.length - 1]!; f.ult = s.kit; f.life = f.total = U[s.kit].fx
+}
+/** (x0,y0) 에서 angle 쪽으로 길이 length · 반폭 width 의 띠 안인가 (발밑 조금 뒤까지) */
+function inLine(x0: number, y0: number, e: Mob, cos: number, sin: number, length: number, width: number) {
+  const ex = e.x - x0, ey = e.y - y0, along = ex * cos + ey * sin
+  return along > -width / 2 && along < length && Math.abs(ey * cos - ex * sin) < width
+}
+/** 줄 비기의 방향 — 가까운 적 몇 쪽으로 줄을 대 보고 실제로 깎을 체력이 가장 많은 쪽.
+ *  toward 가 있으면(칼: 움직이는 쪽) 그 쪽 cone 안의 줄만 견준다 · 걸리는 적이 없으면 toward 또는 보는 쪽 */
+function bestAim(s: HaebiRun, length: number, width: number, damage: number, toward: number | null = null, cone = Math.PI) {
+  const near = s.enemies.filter(e => e.hp > 0).map(e => ({ e, d: Math.hypot(e.x - s.x, e.y - s.y) })).sort((a, b) => a.d - b.d || a.e.id - b.e.id).slice(0, U.aimTries)
+  let best = toward ?? (s.face < 0 ? Math.PI : 0), most = 0
+  for (const { e } of near) {
+    const a = Math.atan2(e.y - s.y, e.x - s.x), cos = Math.cos(a), sin = Math.sin(a)
+    if (toward !== null && Math.abs(Math.atan2(Math.sin(a - toward), Math.cos(a - toward))) > cone) continue
+    let sum = 0
+    for (const o of s.enemies) if (o.hp > 0 && inLine(s.x, s.y, o, cos, sin, length, width)) sum += Math.min(o.hp, damage)
+    if (sum > most) { most = sum; best = a }
+  }
+  return best
+}
+function ultimate(s: HaebiRun, mx: number, my: number, power: number, area: number) {
+  s.skillCd = U[s.kit].cooldown; s.inv = Math.max(s.inv, C.skillInv); s.attack = .3
+  s.shots = s.shots.filter(b => b.kind !== 'enemy' && b.kind !== 'hurl')
+  const moveAim = s.moving && (mx || my) ? Math.atan2(my, mx) : null
+  if (s.kit === 'axe' || s.kit === 'bow' || s.kit === 'sword') {
+    // 줄 비기: 도끼는 땅을 가르고 · 활은 화면을 꿰고 · 칼은 그 줄을 따라 내달린다
+    const u = U[s.kit], width = u.width * area, damage = u.damage * power, x0 = s.x, y0 = s.y
+    let length = s.kit === 'bow' ? u.length : u.length * area
+    let angle = s.kit === 'sword' ? bestAim(s, length, width, damage, moveAim, U.sword.cone) : bestAim(s, length, width, damage)
+    if (s.kit === 'sword') {
+      // 판 밖으로는 못 나간다 — 실제로 내달린 거리·방향만큼만 벤다
+      const ex = heroX(x0 + Math.cos(angle) * length), ey = heroY(y0 + Math.sin(angle) * length)
+      length = Math.hypot(ex - x0, ey - y0); if (length > 1) angle = Math.atan2(ey - y0, ex - x0)
+    }
+    const cos = Math.cos(angle), sin = Math.sin(angle)
+    ultFx(s, true, x0, y0, width, angle, x0 + cos * length, y0 + sin * length)
+    // 도끼는 내려찍은 발밑도 둘레로 터진다 (burst · 갈라진 줄과 겹쳐도 한 번만)
+    const burst = s.kit === 'axe' ? U.axe.burst * area : 0
+    for (const e of s.enemies) if (inLine(x0, y0, e, cos, sin, length, width) || Math.hypot(e.x - x0, e.y - y0) < burst) hit(s, e, damage)
+    if (s.kit === 'sword') { s.x = x0 + cos * length; s.y = y0 + sin * length }
+    if (Math.abs(cos) > .1) s.face = cos < 0 ? -1 : 1
+  } else if (s.kit === 'magic') {
+    // 하늘 굿: 화면의 모든 적 · 번개 줄은 고르게 bolts 개만 그린다 (맞는 건 모두)
+    const alive = s.enemies.filter(e => e.hp > 0), every = Math.max(1, Math.ceil(alive.length / U.magic.bolts))
+    ultFx(s, true, s.x, s.y, 0)
+    for (const e of alive) hit(s, e, U.magic.damage * power, false)
+    alive.forEach((e, i) => { if (i % every === 0) ultFx(s, false, e.x, e.y, 0, 0, e.x, e.y) })
+  } else {
+    s.ult = { n: s.kit === 'spear' ? U.spear.pulses : U.dagger.targets, t: 0, x: s.x, y: s.y, used: [] }
+    if (s.kit === 'dagger') ultFx(s, true, s.x, s.y, 0)   // 그림자로 사라짐
+  }
+}
+/** 이어지는 비기의 한 걸음 — 용오름 창은 넓어지며 솟고, 그림자 베기는 다음 적에게 옮겨 가 벤다 */
+function ultTick(s: HaebiRun, dt: number, power: number, area: number) {
+  const u = s.ult!; u.t -= dt
+  while (u.t <= 0 && u.n > 0) {
+    if (s.kit === 'spear') {
+      const p = U.spear, i = p.pulses - u.n, r = (p.r0 + (p.r1 - p.r0) * i / Math.max(1, p.pulses - 1)) * area
+      ultFx(s, i === 0, s.x, s.y, r, i)
+      for (const e of s.enemies) {
+        const d = Math.hypot(e.x - s.x, e.y - s.y)
+        if (e.hp <= 0 || d >= r) continue
+        hit(s, e, p.damage * power)
+        if (e.hp > 0 && !steady(e)) { e.x += (e.x - s.x) / (d || 1) * p.knock; e.y += (e.y - s.y) / (d || 1) * p.knock }
+      }
+    } else {
+      const p = U.dagger, i = p.targets - u.n, e = nearest(s, s.x, s.y, u.used, p.range * area)
+      if (!e) u.n = 1
+      else {
+        const side = s.x < e.x ? -1 : 1, px = s.x, py = s.y, r = p.splash * area
+        s.x = heroX(e.x + side * p.beside); s.y = heroY(e.y); s.face = -side; u.used.push(e.id)
+        ultFx(s, false, e.x, e.y, r, i, px, py)
+        for (const o of s.enemies) if (o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < r) hit(s, o, p.damage * power)
+      }
+    }
+    u.n--; u.t += s.kit === 'spear' ? U.spear.gap : U.dagger.gap
+  }
+  if (u.n > 0) return
+  if (s.kit === 'dagger') { ultFx(s, false, u.x, u.y, 0, 0, s.x, s.y); s.x = u.x; s.y = u.y }   // 처음 자리로 돌아옴
+  s.ult = null
+}
 export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
   if (s.state !== 'playing' || s.offers.length) return
   dt = Math.max(0, Math.min(.05, dt)); s.t += dt
@@ -384,14 +476,10 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
   if (input.dash && !s.dashCd) { s.dash = C.dashTime; s.dashCd = C.dashCooldown; s.inv = C.dashInv }
   if (s.dash && !len) dx = s.face
   const speed = C.speed * (1 + s.bonus.swift * SH.swift.step) * (s.dash ? C.dashSpeed : 1)
-  s.x = Math.max(32, Math.min(C.width - 32, s.x + dx * speed * dt)); s.y = Math.max(65, Math.min(C.height - 24, s.y + dy * speed * dt))
+  s.x = heroX(s.x + dx * speed * dt); s.y = heroY(s.y + dy * speed * dt)
   const power = powerScale(s), area = areaScale(s), tempo = 1 + s.ranks.tempo * C.tempoStep + s.bonus.haste * SH.haste.step
-  if (input.skill && !s.skillCd) {
-    s.skillCd = C.skillCooldown; s.inv = C.skillInv; s.attack = .3
-    fx(s, 'skill', s.x, s.y, C.skillRange * area, '#ffdf8b')
-    blast(s, s.x, s.y, C.skillRange * area, C.skillDamage * power)
-    s.shots = s.shots.filter(b => b.kind !== 'enemy' && b.kind !== 'hurl')
-  }
+  if (input.skill && !s.skillCd) ultimate(s, dx, dy, power, area)
+  if (s.ult) ultTick(s, dt, power, area)
   const target = nearest(s, s.x, s.y)
   if (target) {
     const angle = Math.atan2(target.y - s.y, target.x - s.x), dist = Math.hypot(target.x - s.x, target.y - s.y)

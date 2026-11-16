@@ -42,7 +42,8 @@ export const HAEBI_RUN = {
   /** 장수 그림 키(px) · 걷기 한 바퀴(두 걸음)에 몸이 나아가는 거리 ÷ 몸 키 — 띠 227개의 그린 보폭을 잰 값(한 걸음 ≈ 몸 키의 0.39).
    *  걷기 칸은 시간이 아니라 실제로 움직인 거리로 넘긴다: 발이 바닥에서 미끄러지지 않게 (형 11-16 「이동이 부자연스럽다」) */
   heroPx: 94, walkStride: .78,
-  skillCooldown: 13, skillDamage: 160, skillRange: 290, skillInv: .7,
+  /** 비기를 쓴 뒤 무적 시간(초) — 비기 꼴·피해·재사용은 HAEBI_ULT */
+  skillInv: .7,
   /** 비기 컷인이 화면에 머무는 시간(초) · 이름을 읽을 수 있게 (형 11-15: 「너무 빨라서 읽을 수조차 없음」 · 예전 .7) */
   skillCutin: 1.8,
   axeDamage: 38, axeRankDamage: 16, axeRange: 112, axeRankRange: 11, axeCooldown: 1,
@@ -85,6 +86,26 @@ export const HAEBI_RUN = {
   bellDamage: 34, bellRankDamage: 14, bellRadius: 130, bellRankRadius: 10, bellCooldown: .95,
   soulDamage: 34, soulRankDamage: 16, soulSpeed: 300, soulCooldown: 1.8, soulLife: 2.6, soulTurn: 5, soulRadius: 44,
   riteInterval: 2.2, riteRadius: 230, riteDamage: 120, stormOrbs: 4, stormRadius: 110, stormDamage: 40, stormInterval: .25,
+} as const
+/**
+ * 열전 비기 — 무기 묶음마다 꼴이 다르다 (형 11-16: 「무기마다 확실히 다르게 · DPS 예측해서 밸런스 조절」 · 재는 길 tools/raid-ult-dps.ts · docs/BALANCE.md).
+ * damage 는 한 번 맞을 때 피해(× powerScale) · cooldown 재사용(초) · fx 그림이 머무는 시간(초) · 너비·반지름은 「큰 물결」 범위를 곱한다.
+ * axe 천지 가르기: 내려찍은 발밑 둘레 burst 가 터지고, 가장 많이 걸리는 쪽으로 길이 length · 반폭 width 의 땅을 가른다 (넓고 짧게)
+ * bow 하늘 꿰뚫기: 가장 많이 꿰는 줄로 화면을 가로지르는 큰 화살 한 대 (length 는 화면 대각선보다 길게)
+ * spear 용오름 창: 몸 둘레로 창날이 pulses 번 솟는다 — gap 초마다 반지름 r0 → r1 로 넓어지며 knock 만큼 바깥으로 밀어낸다
+ * sword 번개 베기: 움직이는 쪽(±cone 라디안 안에서 가장 많이 걸리는 줄 · 서 있으면 아무 쪽)으로 length 만큼 내달아(장수가 실제로 옮겨 간다) 지나간 줄(반폭 width)을 벤다
+ * dagger 그림자 베기: range 안의 가장 가까운 적에게 차례로 targets 번 순간 이동해(gap 초 간격 · 적 곁 beside px) 그 둘레 splash 를 베고, 처음 자리로 돌아온다
+ * magic 하늘 굿: 화면의 모든 적에게 신령 번개 (그리는 번개 줄은 bolts 개까지 · 피해는 모두에게)
+ */
+export const HAEBI_ULT = {
+  axe: { cooldown: 13, damage: 170, length: 440, width: 80, burst: 240, fx: .75 },
+  bow: { cooldown: 13, damage: 400, length: 1400, width: 42, fx: .6 },
+  spear: { cooldown: 13, damage: 140, pulses: 3, gap: .15, r0: 130, r1: 285, knock: 40, fx: .5 },
+  sword: { cooldown: 13, damage: 430, length: 500, width: 110, cone: 1.57, fx: .5 },
+  dagger: { cooldown: 13, damage: 110, targets: 8, range: 320, gap: .07, splash: 40, beside: 24, fx: .38 },
+  magic: { cooldown: 13, damage: 23, bolts: 40, fx: .5 },
+  /** 줄 비기(도끼·활·칼)가 견줘 보는 방향 수 — 가까운 적 이만큼 쪽으로 줄을 대 보고 가장 많이 걸리는 쪽 */
+  aimTries: 16,
 } as const
 
 /**

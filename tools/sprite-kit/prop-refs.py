@@ -15,6 +15,11 @@ OUT.mkdir(parents=True, exist_ok=True)
 man = json.loads((PX / 'manifest.json').read_text(encoding='utf-8'))
 audit = json.loads((ROOT / 'tools/sprite-kit/head-audit-20261116.json').read_text(encoding='utf-8'))
 keys = list(audit['tierA_chin_ge38']) + list(audit['tierB_chin_37'])
+# 11-16 무기 감사(tools/sprite-kit/weapon-audit-20261116.json): 띠가 원화와 다른 무기를 든 장수도 다시 굽는다
+_wa = json.loads((ROOT / 'tools/sprite-kit/weapon-audit-20261116.json').read_text(encoding='utf-8'))
+for r in (_wa if isinstance(_wa, list) else _wa.get('rows', [])):
+    if 'sprite≠art' in (r.get('mismatch') or []) and 'gen-' + r['key'] not in keys:
+        keys.append('gen-' + r['key'])
 Z = 2
 BG = (58, 60, 68, 255)
 for k in keys:

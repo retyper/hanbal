@@ -1,6 +1,6 @@
-import { HAEBI_RUN as C, HAEBI_MOBS as M, HAEBI_STAGES as ST } from '../tune/params.ts'
+import { HAEBI_RUN as C, HAEBI_MOBS as M, HAEBI_STAGES as ST, HAEBI_ULT as U } from '../tune/params.ts'
 import { genArtOf } from '../realm/data/art.ts'
-import { areaScale, charge, slamRadius, slamWindup, type HaebiRun, type Missile, type StageId } from './haebi.ts'
+import { areaScale, charge, slamRadius, slamWindup, type HaebiRun, type Kit, type Missile, type StageId } from './haebi.ts'
 import { WALK_CYCLE } from './walk-cycle.ts'
 
 /** bandit-<종류> 가 아닌 적 그림 (11-16 H50~H53 · tools/sprite-kit/bake-raid-enemies.py) */
@@ -132,6 +132,82 @@ function effectStrip(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImag
   ctx.save(); ctx.translate(x,y); ctx.rotate(angle)
   ctx.drawImage(img,impactFrame(age)*256,0,256,256,-radius,-radius,radius*2,radius*2);ctx.restore()
 }
+/** 비기 빛깔 — 묶음마다 (도끼 흙불 · 활 하늘 · 창 은빛 · 칼 번개 · 단검 그림자 · 방울 신령 금빛) */
+const ULT_COLOR: Record<Kit, string> = { axe: '#ffb04a', bow: '#d4ecff', spear: '#eef3ff', sword: '#8fd0ff', dagger: '#b48cff', magic: '#ffe27a' }
+/** 띠 그림의 한 칸을 (0,0)→(len,0) 으로 늘여 그린다 — 번개 띠(256×128 여덟 칸) */
+function stripAlong(ctx: CanvasRenderingContext2D, img: HTMLImageElement | undefined, age: number, len: number, h: number) {
+  if (img) ctx.drawImage(img, impactFrame(age) * 256, 0, 256, 128, 0, -h / 2, len, h)
+}
+/** 비기 그림 (판 상태는 읽기만) — f.ult 묶음마다 꼴이 다르다. 폰 프레임: filter·shadowBlur·그라디언트 없이 그림 띠와 선만 */
+function drawUlt(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, f: HaebiRun['fx'][number], age: number) {
+  const kit = f.ult!, color = ULT_COLOR[kit], len = Math.hypot(f.x2 - f.x, f.y2 - f.y), lead = f.kind === 'skill'
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineCap = 'round'; ctx.lineJoin = 'round'
+  if (kit === 'axe') {
+    // 천지 가르기: 땅이 앞으로 갈라져 나간다 — 바닥 빛 띠 · 지그재그 금 · 금을 따라 차례로 터지는 흙불
+    const reach = len * Math.min(1, age * 2.4), r = f.r
+    ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.angle)
+    ctx.globalAlpha *= .3 * (1 - age); ctx.fillRect(0, -r * .55, reach, r * 1.1); ctx.restore()
+    ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.angle)
+    for (const [w, c] of [[9, '#2a1407'], [3, color]] as const) {
+      ctx.lineWidth = w; ctx.strokeStyle = c; ctx.beginPath(); ctx.moveTo(0, 0)
+      for (let d = 26, i = 1; d < reach; d += 26, i++) ctx.lineTo(d, Math.sin(i * 2.3) * r * .28)
+      ctx.lineTo(reach, 0); ctx.stroke()
+    }
+    for (let d = 40, i = 0; d < reach; d += 80, i++) impact(ctx, images, d, Math.sin(i * 1.7) * r * .2 - 8, r * .75, Math.max(0, age * 1.7 - i * .06))
+    ctx.restore()
+    impact(ctx, images, f.x, f.y - 8, U.axe.burst * areaScale(s), age)   // 내려찍은 발밑
+    if (age < .45) axe(ctx, images, f.x, f.y - C.heroShotHeight, f.angle - 1.4 + Math.min(1, age * 5) * 1.4, 54)
+  } else if (kit === 'bow') {
+    // 하늘 꿰뚫기: 큰 화살 한 대가 화면 끝까지 — 지나간 자리에 빛줄기가 남아 옅어진다
+    const head = len * Math.min(1, age * 3.2)
+    ctx.save(); ctx.translate(f.x, f.y - C.heroShotHeight); ctx.rotate(f.angle); ctx.globalCompositeOperation = 'lighter'
+    ctx.globalAlpha *= .45 * (1 - age); ctx.lineWidth = f.r * .9; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(head, 0); ctx.stroke()
+    ctx.globalAlpha = Math.min(1, (1 - age) * 2); ctx.lineWidth = 3; ctx.strokeStyle = '#ffffff'; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(head, 0); ctx.stroke()
+    ctx.restore()
+    stamp(ctx, images, 'raid/arrow.png', f.x + Math.cos(f.angle) * head, f.y - C.heroShotHeight + Math.sin(f.angle) * head, 150, f.angle)
+  } else if (kit === 'spear') {
+    // 용오름 창: 창날 여덟이 몸 둘레를 돌며 솟구친다 (솟음마다 고리가 넓어진다)
+    const rr = f.r * (.55 + .45 * age)
+    ctx.save(); ctx.globalAlpha *= 1 - age; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(f.x, f.y, rr, rr * .6, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore()
+    for (let j = 0; j < 8; j++) {
+      const a = j * Math.PI / 4 + f.angle * .4 + age * 2.6
+      stamp(ctx, images, 'raid/javelin.png', f.x + Math.cos(a) * rr, f.y + Math.sin(a) * rr * .6 - 30 - age * 80, 74, -Math.PI / 2 + Math.cos(a) * .35)
+    }
+  } else if (kit === 'sword') {
+    // 번개 베기: 지나온 줄에 번개가 남고, 장수 잔상 넷 · 베기 셋
+    ctx.save(); ctx.globalAlpha *= .32 * (1 - age)
+    for (let i = 0; i < 4; i++) { const k = i / 4; sprite(ctx, images, heroSprite(s), f.x + (f.x2 - f.x) * k, f.y + (f.y2 - f.y) * k, C.heroPx, 12, Math.cos(f.angle) < 0 ? -1 : 1) }
+    ctx.restore()
+    ctx.save(); ctx.translate(f.x, f.y - C.heroShotHeight); ctx.rotate(f.angle); ctx.globalCompositeOperation = 'lighter'
+    stripAlong(ctx, images.get('raid/lightning-strip.png'), age, len, f.r * .8); ctx.restore()
+    for (let i = 1; i <= 3; i++) effectStrip(ctx, images, 'slash', f.x + (f.x2 - f.x) * i / 4, f.y + (f.y2 - f.y) * i / 4 - C.heroShotHeight, f.r * .9, Math.min(1, age + i * .08), f.angle + i * 1.3)
+  } else if (kit === 'dagger') {
+    if (!f.r) {
+      // 사라짐(첫 조각)·돌아옴: 그림자 연기 · 돌아오는 줄
+      if (lead) effectStrip(ctx, images, 'death', f.x, f.y - 20, 46, age)
+      else { ctx.globalAlpha *= .6; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(f.x2, f.y2 - 30); ctx.lineTo(f.x, f.y - 30); ctx.stroke() }
+      return
+    }
+    // 그림자 베기: 앞 자리에서 그 적까지 보랏빛 줄 · 앞 자리에 잔상 · 적 위에 엇갈린 베기 둘
+    ctx.save(); ctx.globalAlpha *= .7 * (1 - age); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(f.x2, f.y2 - 30); ctx.lineTo(f.x, f.y - 30); ctx.stroke()
+    ctx.globalAlpha *= .5; sprite(ctx, images, heroSprite(s), f.x2, f.y2, C.heroPx, 14, f.x2 < f.x ? 1 : -1); ctx.restore()
+    for (const turn of [0, 1.7]) effectStrip(ctx, images, 'slash', f.x, f.y - 30, f.r * 1.3, age, f.angle * 2.1 + turn)
+    stamp(ctx, images, 'raid/knife.png', f.x, f.y - 30, 40, f.angle * 2.1 + age * 6)
+  } else {
+    if (lead) {
+      // 하늘 굿: 장수 둘레로 굿판 방울 소리가 크게 퍼진다
+      const img = images.get('raid/bell-ring.png'), r = 260 * (.3 + .7 * age)
+      if (img) { ctx.globalAlpha *= 1 - age * .7; ctx.drawImage(img, f.x - r, f.y - r * .6, r * 2, r * 1.2) }
+      return
+    }
+    // 신령 번개: 적마다 하늘에서 곧게 내리꽂힘 · 자리마다 조금씩 늦게 (그리기만 · 맞는 건 한꺼번에)
+    const late = ((f.x * 13 + f.y * 7) % 100) / 100 * .3, k = (age - late) / (1 - late)
+    if (k < 0) return
+    ctx.save(); ctx.translate(f.x, f.y - 330); ctx.rotate(Math.PI / 2); ctx.globalCompositeOperation = 'lighter'
+    stripAlong(ctx, images.get('raid/lightning-strip.png'), k, 320, 44); ctx.restore()
+    impact(ctx, images, f.x, f.y - 8, 34, k)
+  }
+}
 export function drawPortrait(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, menuTime = 0) {
   const { width: w, height: h } = ctx.canvas; ctx.clearRect(0, 0, w, h)
   const bg = ctx.createRadialGradient(w / 2, h * .46, 20, w / 2, h / 2, h * .65)
@@ -248,8 +324,8 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       effectStrip(ctx, images, 'slash', f.r / 2, 0, f.r / 2, age)
     } else if (f.kind === 'spike') {
       impact(ctx, images, f.x, f.y - 8, f.r, age)
-    } else if (f.kind === 'skill') {
-      impact(ctx, images, f.x, f.y - 12, f.r, age)
+    } else if (f.kind === 'skill' || f.kind === 'ult') {
+      if (f.ult) drawUlt(ctx, images, s, f, age); else impact(ctx, images, f.x, f.y - 12, f.r, age)
     } else if (f.kind === 'ring') {
       // 방울 파동 · 만신 굿: 고리가 맞는 범위까지 퍼지며 옅어진다
       const img = images.get('raid/bell-ring.png'), r = f.r * (.35 + .65 * age)

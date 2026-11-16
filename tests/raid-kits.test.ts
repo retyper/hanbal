@@ -52,6 +52,7 @@ test('전투 그림에서 무기 묶음 · 표에 없는 결도 가까운 묶음
   assert.equal(kitOfSprite('maenun'), 'bow')
   assert.equal(kitOfSprite('sori'), 'dagger', '단검 장수는 단검 묶음 (11-16)')
   assert.equal(kitOfSprite('base-g-15-shaman-man'), 'magic', '방울·지팡이 장수는 주술 묶음 (11-16)')
+  assert.equal(kitOfSprite('gamsil'), 'magic', '원화가 방울이면 주술 묶음 · 원장 무기보다 원화가 먼저 (11-16 무기 감사)')
   assert.equal(kitOfSprite('g-bow'), 'bow')
   assert.equal(kitOfSprite('w-spear'), 'spear')
   assert.equal(kitOfSprite('없는-그림'), 'sword')

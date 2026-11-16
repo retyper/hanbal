@@ -182,3 +182,4 @@
 - 19:17 Create video 풀림 확인 → g-38 팔매: 첫 답 「encountering an error」 → 같은 대화에 한 번 되묻기 → 받음(좋음 · awaken-loop/g-38-chopal-palmae.mp4).
   - 사고: 대화 목록 맨 위가 아닌 옛 대화(g-30 쇠뫼)를 열어 그 영상을 g-38 로 넣었다가 빼냄. take-in.sh 에 「이미 받은 영상과 같은 파일이면 멈춤」 걸쇠를 더함. 에셋창고의 veo_g-38-..._aw1_manual-20261116.mp4 는 진짜 g-38 로 덮였다.
 - g-40 아단: 「I encountered an error」 → 되묻기 보냄(대화 https://gemini.google.com/u/5/app/295e3ea88e2b7169) · 결과 보기 전에 19:37 윈도 크롬 연결이 끊김(맥만 붙어 있음) → 멈춤.
+- 22시대 다시: g-40 아단 되묻기도 「Sorry, something went wrong」 · g-41 바우(대화 cc1ca1a35ef7cbe4) 「encountering an error」 → 되묻기 「I'm having a hard time」 → **연속 실패 넷 · 걸쇠로 멈춤** (Create video 는 잠기지 않았음 · 그림 탓이 아니라 붐비는 탓으로 보임 · 다음엔 g-40·g-41 부터 같은 문안으로). Flow 는 무료 넷 내일 오후 · Jay 남은 5 크레딧.
