@@ -6,6 +6,8 @@ const icons: Record<Power, string> = {
   thunder: 'raid/power-thunder.png', echo: 'raid/power-echo.png', tempo: 'raid/power-tempo.png', reach: 'raid/power-reach.png',
   bow: 'raid/power-bow.png', rain: 'raid/power-rain.png', spear: 'raid/power-spear.png', javelin: 'raid/power-javelin.png', sword: 'raid/power-sword.png', wave: 'raid/power-wave.png',
   dagger: 'raid/power-dagger.png', knife: 'raid/power-knife.png', bell: 'raid/power-bell.png', soul: 'raid/power-soul.png',
+  // 돌팔매 묶음 (11-16) — 전용 아이콘(H56·H57)이 오기 전엔 본편의 투석병·징검돌 아이콘을 빌린다
+  sling: 'icon/unit-slingers.png', skip: 'icon/route-steppingstones.png',
 }
 export function powerIcon(key: Power) {
   return `<img src="${import.meta.env.BASE_URL}realm/${icons[key]}" alt="" draggable="false">`

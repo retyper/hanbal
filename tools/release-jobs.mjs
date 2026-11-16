@@ -204,6 +204,20 @@ jobs.push({ id: 'H55', group: 'raid', save: 'haebi-pack-v1-H55.png', title: '산
   use: '산성 스테이지 두목(마지막) · anim-px/boss-fortress.png · 가장 크고 화려하게',
   prompt: BOSS('the REBEL WARLORD who set the mountain fortress on fire, the final and most fearsome boss: a towering adult man in blackened iron lamellar armour with glowing ember-orange cracks, a soot-stained dark red cloak with burnt edges, a horned iron helmet with a cheek guard, smouldering embers drifting from his shoulders, wielding a huge two-handed iron war hammer whose head glows red-hot. Early Korean, not Chinese imperial, not samurai, no sun disc.', BOSS_POSES('war hammer')) })
 
+// ── 열전 돌팔매 묶음 (11-16 형: 「돌팔매는 슬링샷 사운드 같은 거 찾으면 만들 수 있지 않을까?」 · 초팔 팔매) · 지금은 본편 투석병·징검돌·바위 아이콘을 빌려 씀
+jobs.push({ id: 'H56', group: 'raid', save: 'haebi-pack-v1-H56.png', title: '돌팔매 능력 아이콘 (주 무기)', refs: ['/realm/raid/power-bow.png', '/realm/raid/power-javelin.png', '/realm/icon/unit-slingers.png'],
+  now: '본편 투석병 병종 아이콘(icon/unit-slingers.png)을 빌려 씀', use: '열전 능력 칸·강화 카드 · 받으면 raid/power-sling.png · power-ui.ts icons.sling',
+  prompt: `Create one transparent PNG, 1024x1024, ONE game ability icon in the same set as the attached first two icons (same size, framing, lighting and brush quality). One bold readable symbol centered with generous empty margin. ${RAID_STYLE}
+Sling throw: a braided hemp rope sling whirled in a fast circle, a fist-sized grey river stone just leaving the pouch with a short pale motion arc behind it. The third attached image shows the sling only for its shape; do not draw the man.` })
+jobs.push({ id: 'H57', group: 'raid', save: 'haebi-pack-v1-H57.png', title: '물수제비 능력 아이콘 (보조 · 튀는 돌)', refs: ['/realm/raid/power-knife.png', '/realm/raid/power-thunder.png', '/realm/raid/power-javelin.png'],
+  now: '본편 징검돌 아이콘(icon/route-steppingstones.png)을 빌려 씀', use: '열전 능력 칸·강화 카드 · 받으면 raid/power-skip.png · power-ui.ts icons.skip',
+  prompt: `Create one transparent PNG, 1024x1024, ONE game ability icon in the same set as the attached icons (same size, framing, lighting and brush quality). One bold readable symbol centered with generous empty margin. ${RAID_STYLE}
+Skipping stone: one flat grey pebble bouncing along a zig-zag path of three small impact puffs, each bounce marked by a tiny burst of dust, the path rising and falling like a skipping stone, cool pale blue-grey highlights.` })
+jobs.push({ id: 'H58', group: 'raid', save: 'haebi-pack-v1-H58.png', title: '돌팔매 조합 문양 둘 + 비기 「돌벼락」 문양', refs: ['/realm/raid/cyclone.png', '/realm/raid/meteor.png', '/realm/raid/shadowdance.png'],
+  now: '조합은 본편 바위(fx/rock.png)·별(raid/hit.png), 비기 단추는 바위 솟음(fx/skill/wake/rock-spikes.png)을 빌려 씀', use: '받으면 raid/boulder.png · raid/daze.png · raid/stonefall.png → raid-main COMBO_ART · combat.css #skill[data-kit=sling]',
+  prompt: `Create one transparent PNG, 1536x512, a 3x1 row of three combo emblems in the same set as the 3 attached emblems (same size, framing, brush, glow). One bold symbol per cell, wide margins, no cell lines. ${RAID_STYLE}
+1) Rolling boulder: a huge round mossy boulder rolling forward over cracked ground, dust and small stones flying from under it. 2) Dazing stone: a small stone striking with a burst of little golden stars circling, a dizzy spiral. 3) Stone storm: a rain of many grey stones falling diagonally from a dark sky onto one circular shadow on the ground, dust bursting where they land.` })
+
 // ── 진각성 초상이 없는 남장수 셋 (진각성 묶음 · aw2 는 1차와 확 달라야 · 활시위 자세 금지 · 눈높이 카메라)
 const AW2M = (id, theme) => ({ id: 'AW2-' + id, group: 'dlc', save: `gpt_aw2-${id}.png`, title: `${id} · 진각성 초상`, refs: [`/realm/awaken-hd/${id}.jpg`, `/realm/bust-hd/${id}.jpg`],
   now: '진각성 초상이 없어 진각성 칸이 비어 있음', use: '900×900 jpg → public/realm/awaken2-hd/<id>.jpg · 작은 판 awaken2/<id>.jpg (tools/bake-intake.sh 의 gpt_aw2 길) · data/awaken2.ts TRUE_WAKE_ART 에 장수 id',

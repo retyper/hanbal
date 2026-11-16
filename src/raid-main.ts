@@ -33,8 +33,8 @@ const K = KITS[kit], weapon = K.weapon
 const heroId = query.get('hero') ?? DEFAULT_HERO
 /** 목소리 결 — 본편이 넘기면 그대로, 아니면 초상 이름의 앞 글자(w·l = 여인) */
 const sound = raidSound((query.get('sex') ?? (/^[wl]-/.test(HERO.bust) ? 'f' : 'm')) === 'f', kit)
-/** 전용 그림이 있는 조합 (public/realm/raid/<id>.png) — 나머지는 능력 아이콘을 빌린다 */
-const COMBO_ART = new Set(['cyclone', 'inferno', 'torrent', 'volley', 'meteor', 'grove', 'boomerang', 'tempest', 'splitwave', 'shadowdance', 'venom', 'rite', 'soulstorm'])
+/** 조합 그림 (public/realm/ 아래) — 전용 그림은 raid/<id>.png · 돌팔매 둘은 H58 이 오기 전까지 본편 바위·별 그림을 빌린다 · 없으면 능력 아이콘 */
+const COMBO_ART: Record<string, string> = { ...Object.fromEntries(['cyclone', 'inferno', 'torrent', 'volley', 'meteor', 'grove', 'boomerang', 'tempest', 'splitwave', 'shadowdance', 'venom', 'rite', 'soulstorm'].map(id => [id, `raid/${id}.png`])), boulder: 'fx/rock.png', daze: 'raid/hit.png' }
 setHeroArt(sprite, HERO.awake)
 /** 판 밖 기록 (금·상점·휘장) — 독립 열전만 쓴다 */
 const meta = loadMeta()
@@ -255,7 +255,7 @@ function showOverlay() {
   } else {
     // 독립 열전: 판이 끝나면 한 번만 금을 주고 기록한다 (지면 버틴 만큼 · 깨면 휘장 + 깸 금)
     if (mode === 'stage' && rewarded !== run) { rewarded = run; const gold = runGold(run); reward = { gold, ...record(meta, run.stage, gold, run.state === 'won', run.t, heroId) }; saveMeta(meta) }
-    overlay.innerHTML = `<div class="panel result ${run.state}"><h2>${run.state === 'won' ? mode === 'stage' ? `${stageName(run.stage)} 토벌 완료` : '열전 완수' : run.hp <= 0 ? '도전 실패' : run.t < runDuration(run) ? '철수' : '시간 초과 · 두목 생존'}</h2><p>${Math.floor(run.t / 60)}분 ${Math.floor(run.t % 60)}초 · ${run.kills.toLocaleString()}명 격파 · Lv.${run.level}</p><div class="result-combos">${kitCombos(kit).filter(c => run.combos.includes(c.id)).map(c => `<b>${COMBO_ART.has(c.id) ? `<img src="${import.meta.env.BASE_URL}realm/raid/${c.id}.png" alt="">` : ''}${c.name}</b>`).join('')}</div>${mode === 'stage' ? `<p class="reward">금 <b>+${reward.gold.toLocaleString()}</b> · 보유 ${meta.gold.toLocaleString()}${reward.first ? ` · <strong><img class="won-emblem" src="${import.meta.env.BASE_URL}realm/raid/emblem-${run.stage}.png" alt="">${stageName(run.stage)} 휘장 획득</strong>` : ''}${reward.heroFirst && run.stage === SEAL_STAGE && TRUE_WAKE.has(heroId) ? ` · <strong class="tw-open">본편에서 ${josa(HERO.name, '이', '가')} 진각성할 수 있습니다</strong>` : ''}</p>` : ''}${mode === 'stage' ? '' : '<p>본편 병력 손실 없음</p>'}<div class="result-acts"><button id="new-run" class="primary">다시 출전</button><div>${mode === 'stage' ? '<button id="to-shop">상점</button>' : ''}<button id="quit">스테이지 고르기</button>${window.parent !== window ? '<button id="return">본편으로</button>' : ''}</div></div></div>`
+    overlay.innerHTML = `<div class="panel result ${run.state}"><h2>${run.state === 'won' ? mode === 'stage' ? `${stageName(run.stage)} 토벌 완료` : '열전 완수' : run.hp <= 0 ? '도전 실패' : run.t < runDuration(run) ? '철수' : '시간 초과 · 두목 생존'}</h2><p>${Math.floor(run.t / 60)}분 ${Math.floor(run.t % 60)}초 · ${run.kills.toLocaleString()}명 격파 · Lv.${run.level}</p><div class="result-combos">${kitCombos(kit).filter(c => run.combos.includes(c.id)).map(c => `<b>${COMBO_ART[c.id] ? `<img src="${import.meta.env.BASE_URL}realm/${COMBO_ART[c.id]}" alt="">` : ''}${c.name}</b>`).join('')}</div>${mode === 'stage' ? `<p class="reward">금 <b>+${reward.gold.toLocaleString()}</b> · 보유 ${meta.gold.toLocaleString()}${reward.first ? ` · <strong><img class="won-emblem" src="${import.meta.env.BASE_URL}realm/raid/emblem-${run.stage}.png" alt="">${stageName(run.stage)} 휘장 획득</strong>` : ''}${reward.heroFirst && run.stage === SEAL_STAGE && TRUE_WAKE.has(heroId) ? ` · <strong class="tw-open">본편에서 ${josa(HERO.name, '이', '가')} 진각성할 수 있습니다</strong>` : ''}</p>` : ''}${mode === 'stage' ? '' : '<p>본편 병력 손실 없음</p>'}<div class="result-acts"><button id="new-run" class="primary">다시 출전</button><div>${mode === 'stage' ? '<button id="to-shop">상점</button>' : ''}<button id="quit">스테이지 고르기</button>${window.parent !== window ? '<button id="return">본편으로</button>' : ''}</div></div></div>`
     if (vanguardToken) {
       overlay.querySelector('h2')!.textContent = run.breaches === 3 ? '길은 열었다. 본대여, 진격하라!' : `${run.breaches}/3 돌파 확보 · 본대로 귀환`
       overlay.querySelector('.result-combos')!.textContent = isBreakthrough(run.breaches) ? breakthroughText(run.breaches) : ''
@@ -333,7 +333,7 @@ function updateHud() {
     loadoutKey = key
     hidePowerHint()
     $('loadout').innerHTML = (Object.keys(POWERS) as Power[]).filter(k => run.ranks[k]).map(k => `<button class="power-slot" data-power="${k}" aria-label="${POWERS[k].name} ${run.ranks[k]}단계 / 최대 ${POWERS[k].max}단계" style="--accent:${POWERS[k].color}">${powerIcon(k)}<b>${run.ranks[k]}</b></button>`).join('')
-    $('combo-badges').innerHTML = kitCombos(kit).filter(c => run.combos.includes(c.id)).map(c => `<span>${COMBO_ART.has(c.id) ? `<img src="${import.meta.env.BASE_URL}realm/raid/${c.id}.png" alt="">` : powerIcon(Object.keys(c.needs)[0] as Power)}<b>${c.name}</b></span>`).join('')
+    $('combo-badges').innerHTML = kitCombos(kit).filter(c => run.combos.includes(c.id)).map(c => `<span>${COMBO_ART[c.id] ? `<img src="${import.meta.env.BASE_URL}realm/${COMBO_ART[c.id]}" alt="">` : powerIcon(Object.keys(c.needs)[0] as Power)}<b>${c.name}</b></span>`).join('')
   }
 }
 function frame(now: number) {

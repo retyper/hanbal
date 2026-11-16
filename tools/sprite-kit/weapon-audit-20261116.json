@@ -1914,12 +1914,12 @@
   "artKit": "axe",
   "queueWeapon": "club",
   "currentKit": "axe",
-  "fixedKit": "axe",
+  "fixedKit": "sword",
   "spriteWeapon": "iron bar club",
   "spriteKit": "axe",
   "mismatch": [],
   "artConflict": true,
-  "note": "CONFLICT bust+skill-body blunt square-ended iron blade with hilt (sprite matches); aw1 curved sword; kept axe"
+  "note": "CONFLICT bust+skill-body blunt square-ended iron blade with hilt (sprite matches); aw1 curved sword; kept axe · 11-16 형: 비각성·각성·진각성 모두 장검 → 칼"
  },
  {
   "key": "base-g-23-sangdang-soedal",

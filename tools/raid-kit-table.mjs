@@ -6,7 +6,9 @@ import { readFileSync, writeFileSync } from 'node:fs'
 const KIT = { bow: 'bow', spear: 'spear', trident: 'spear', glaive: 'spear', sword: 'sword', greatsword: 'sword', null: 'sword',
   // 11-16 형: 「단검도 있고 마법도 쓰는 거 같고」 → 단검 묶음 · 주술 묶음
   dagger: 'dagger', sickle: 'dagger', fists: 'dagger', whip: 'dagger', staff: 'magic', scepter: 'magic',
-  axe: 'axe', hammer: 'axe', club: 'axe', heavy: 'axe', oar: 'axe', hoe: 'axe' }
+  axe: 'axe', hammer: 'axe', club: 'axe', heavy: 'axe', oar: 'axe', hoe: 'axe',
+  // 11-16 형: 「돌팔매는 슬링샷 사운드 같은 거 찾으면 만들 수 있지 않을까?」 → 돌팔매 묶음 (원장엔 없고 덮어쓰기로만 · 초팔 팔매)
+  sling: 'sling' }
 const q = JSON.parse(readFileSync('tools/sprite-kit/nonawakened-20261113/queue.json', 'utf8'))
 const table = { 'g-sword': 'sword', 'g-bow': 'bow', 'w-bow': 'bow', 'g-spear': 'spear', 'w-spear': 'spear', mount: 'spear' }
 for (const r of q) { const k = KIT[String(r.weapon)]; if (!k) throw new Error(`무기 ${r.weapon} (${r.key}) 묶음 없음`); table[r.key] = k }
@@ -21,5 +23,5 @@ for (const [key, kit] of Object.entries(over)) {
   table[key] = kit
 }
 const count = {}; for (const k of Object.values(table)) count[k] = (count[k] ?? 0) + 1
-writeFileSync('src/raid/kit-table.ts', `// 자동 생성 — tools/raid-kit-table.mjs (손으로 고치지 말 것) · ${JSON.stringify(count)}\nexport const KIT_BY_SPRITE: Readonly<Record<string, 'axe' | 'bow' | 'spear' | 'sword' | 'dagger' | 'magic'>> = ${JSON.stringify(table)}\n`)
+writeFileSync('src/raid/kit-table.ts', `// 자동 생성 — tools/raid-kit-table.mjs (손으로 고치지 말 것) · ${JSON.stringify(count)}\nexport const KIT_BY_SPRITE: Readonly<Record<string, 'axe' | 'bow' | 'spear' | 'sword' | 'dagger' | 'magic' | 'sling'>> = ${JSON.stringify(table)}\n`)
 console.log(count)

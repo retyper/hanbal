@@ -1,9 +1,10 @@
 {
  "_readme": "원화 기준 열전 무기 묶음 (11-16 무기 감사 · tools/sprite-kit/weapon-audit-20261116.json) · raid-kit-table.mjs 가 원장 무기 뒤에 덮어쓴다",
  "base-g-07-drunk-warrior": "dagger",
+ "base-g-22-ungcheon-gomnae": "sword",
  "base-g-18-daegaya-king": "magic",
  "base-g-37-eumjeup-jeup": "magic",
- "base-g-38-chopal-palmae": "dagger",
+ "base-g-38-chopal-palmae": "sling",
  "base-g-45-dabeol-deulgae": "sword",
  "base-g-60-golbeol-golgae": "axe",
  "base-g-66-geonma-malbalgup": "sword",

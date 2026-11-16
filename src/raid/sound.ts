@@ -6,6 +6,7 @@
  *  - 무기마다 다르다: 활은 시위 놓는 소리, 칼·창·도끼는 휘두르는 소리(창은 높게, 도끼는 낮게).
  * 목소리(기합·신음·포효)는 형이 고른 것 (11-15 밤 · raid-sounds.html 판정 + 형이 받아 준 Pixabay 소리). 여자 비기 외침도 고른 여자 기합.
  * 능력 소리(불·바람·번개·땅)는 새로 생긴 투사체·이펙트를 세어 낸다. 원본: assets_src/realm/sfx-in/raid/pixabay
+ * 돌팔매 묶음(11-16): 놓는 소리 · 돌 떨어지는 소리 · 비기·바위 때 팔매 돌리는 바람 소리 — 후보 셋 중 1번 (sfx/cand/sling_* · tools/out/sling-sound-candidates.json · 형이 고르면 SLING 만 바꾼다)
  * 소리 끔·크기는 본편 설정(hanbal.realm.mute · hanbal.realm.volume.*)을 따른다. 출처: public/realm/sfx/CREDITS.txt · public/sfx/CREDITS.txt
  */
 import { HAEBI_SOUND as V } from '../tune/params.ts'
@@ -13,6 +14,8 @@ import type { HaebiRun, Kit } from './haebi.ts'
 
 const BASE = import.meta.env.BASE_URL
 const R = 'realm/sfx/', X = R + 'raid/', G = R + 'cand/raid/raid_'
+/** 돌팔매 소리 — 후보 번호만 바꾸면 된다 (sfx/cand/sling_<자리>_<번호>.ogg · CC0 · 출처 CREDITS.txt) */
+const SLING = { whirl: R + 'cand/sling_whirl_1.ogg', release: R + 'cand/sling_release_1.ogg', impact: R + 'cand/sling_impact_1.ogg' } as const
 /** 주 무기 소리 — [파일들, 빠르기(=높낮이)] */
 const WEAPON: Record<Kit, readonly [readonly string[], number]> = {
   bow: [['sfx/shot_longbow.ogg', 'sfx/shot_loose.ogg', 'sfx/shot_flecha.ogg'], 1],
@@ -21,6 +24,7 @@ const WEAPON: Record<Kit, readonly [readonly string[], number]> = {
   axe: [[X + 'swing_1.ogg', X + 'swing_2.ogg'], .85],
   dagger: [[X + 'swing_3.ogg', X + 'swing_4.ogg'], 1.6],
   magic: [[R + 'tap_bell_g1.wav', R + 'tap_bell_g2.wav', R + 'tap_bell_g3.wav'], 1],
+  sling: [[SLING.release], 1],
 }
 const FILES = {
   hit: [R + 'duel/rushHit_h1.mp3', R + 'duel/rushHit_h2.mp3', R + 'duel/rushHit_h3.mp3'],
@@ -30,6 +34,7 @@ const FILES = {
   elite: [R + 'war_cry_h1.mp3'], win: [R + 'horn_victory_a.ogg'], lose: [X + 'defeat.ogg'],
   fire: [X + 'fire_1.ogg', X + 'fire_2.ogg', X + 'fire_3.ogg'], wind: [X + 'wind_1.ogg', X + 'wind_2.ogg', X + 'wind_3.ogg'],
   bolt: [X + 'bolt_1.ogg', X + 'bolt_2.ogg'], light: [X + 'light_1.ogg', X + 'light_2.ogg'], earth: [X + 'earth_1.ogg', X + 'earth_2.ogg'], skillHit: [X + 'skill_hit.ogg'],
+  whirl: [SLING.whirl], stone: [SLING.impact],
 } as const
 /** 목소리 — 자리마다 돌려 쓰는 묶음. 기합은 비기 때만 (평타엔 목소리 없음) */
 const VOICE = {
@@ -99,9 +104,9 @@ export function raidSound(female: boolean, kit: Kit) {
       const fell = Math.min(V.hitVoices, s.kills - prev.kills)
       for (let i = 0; i < fell; i++) sfx('hit', V.hit * (1 - i * .18), 0, .86 + ((n + i * 3) % 7) * .05)
       if (fell > 0) say('die', V.die, V.dieGap)
-      if (s.skillCd > prev.skillCd) say(shout, V.skill)
-      for (const b of s.shots) if (!seen.has(b)) { seen.add(b); if (b.kind === 'ember') sfx('fire', V.magic, V.magicGap); else if (b.kind === 'gale' || b.kind === 'wave' || b.kind === 'knife') sfx('wind', V.magic, V.magicGap); else if (b.kind === 'soul') sfx('light', V.magic, V.magicGap) }
-      for (const e of s.fx) if (!seen.has(e)) { seen.add(e); if (e.kind === 'bolt') sfx('bolt', V.magic, V.magicGap); else if (e.kind === 'spike') sfx('earth', V.magic, V.magicGap); else if (e.kind === 'skill') sfx('skillHit', V.skillHit) }
+      if (s.skillCd > prev.skillCd) { say(shout, V.skill); if (kit === 'sling') sfx('whirl', V.whirl) }
+      for (const b of s.shots) if (!seen.has(b)) { seen.add(b); if (b.kind === 'ember') sfx('fire', V.magic, V.magicGap); else if (b.kind === 'gale' || b.kind === 'wave' || b.kind === 'knife') sfx('wind', V.magic, V.magicGap); else if (b.kind === 'soul') sfx('light', V.magic, V.magicGap); else if (b.kind === 'boulder') sfx('whirl', V.whirl * .7, V.magicGap, .8) }
+      for (const e of s.fx) if (!seen.has(e)) { seen.add(e); if (e.kind === 'bolt') sfx('bolt', V.magic, V.magicGap); else if (e.kind === 'spike') sfx('earth', V.magic, V.magicGap); else if (e.kind === 'skill') sfx('skillHit', V.skillHit); else if (e.kind === 'thud' || e.kind === 'ult' && e.ult === 'sling') sfx('stone', V.stone, V.stoneGap, .9 + (n % 5) * .05) }
       if (s.offers.length && !prev.offers) sfx('level', V.ui)
       if (!s.offers.length && prev.offers && s.level > prev.level) sfx('pick', V.ui)
       if (barrage < prev.barrage) sfx('arrows', V.arrows, .15)

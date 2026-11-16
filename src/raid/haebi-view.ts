@@ -3,10 +3,12 @@ import { genArtOf } from '../realm/data/art.ts'
 import { areaScale, charge, slamRadius, slamWindup, type HaebiRun, type Kit, type Missile, type StageId } from './haebi.ts'
 import { WALK_CYCLE } from './walk-cycle.ts'
 
+/** 돌팔매 묶음의 돌 · 바위 (전용 그림 H56~H58 이 오기 전엔 본편 바위 그림을 빌린다) */
+const ROCK = 'fx/rock.png'
 /** bandit-<종류> 가 아닌 적 그림 (11-16 H50~H53 · tools/sprite-kit/bake-raid-enemies.py) */
 const MOB_ART: Record<string, string> = { tiger: 'beast-tiger', bear: 'beast-bear', hunter: 'snow-hunter', torch: 'torch-raider' }
 export const imagePaths = [genArtOf('haebi').file, genArtOf('aw1-haebi').file, 'anim-px/bandit-club.png', 'anim-px/bandit-chief.png', 'anim-px/bandit-archer.png',
-  ...['runner', 'slinger', 'shield', 'dog', 'berserker', 'firearcher', 'iron', 'shaman'].map(k => `anim-px/bandit-${k}.png`), ...['ford.webp', 'palisade.webp', 'digits.png', 'knife.png', 'soul.png', 'bell-ring.png', 'javelin.png','sword-wave.png','forest.webp','axe.png','impact-strip.png','slash-strip.png','death-strip.png','fire-strip.png','lightning-strip.png','talisman.png','wind-blade.png','arrow.png','hit.png','essence.png','essence-large.png',...['mark-slam','mark-ring','mark-move','mark-hero','mark-target','mark-arrow','bar-boss','plaque'].map(p=>`ui/${p}.png`)].map(p=>'raid/'+p), 'anim-px/bandit-warlord.png',
+  ...['runner', 'slinger', 'shield', 'dog', 'berserker', 'firearcher', 'iron', 'shaman'].map(k => `anim-px/bandit-${k}.png`), ...['ford.webp', 'palisade.webp', 'digits.png', 'knife.png', 'soul.png', 'bell-ring.png', 'javelin.png','sword-wave.png','forest.webp','axe.png','impact-strip.png','slash-strip.png','death-strip.png','fire-strip.png','lightning-strip.png','talisman.png','wind-blade.png','arrow.png','hit.png','essence.png','essence-large.png',...['mark-slam','mark-ring','mark-move','mark-hero','mark-target','mark-arrow','bar-boss','plaque'].map(p=>`ui/${p}.png`)].map(p=>'raid/'+p), 'anim-px/bandit-warlord.png', ROCK,
   // 11-16 H45~H53: 스테이지 두목 둘 · 설원·산성 적 넷 · 넷째·다섯째 바닥
   ...['boss-ford', 'boss-palisade', 'boss-snow', 'boss-fortress', ...Object.values(MOB_ART)].map(n => `anim-px/${n}.png`), 'raid/snow.webp', 'raid/fortress.webp']
 /** bar-boss.png 의 투명한 홈 [x0,y0,x1,y1] — tools/raid-ui-kit.py 가 public/realm/raid/ui/kit.json 에 적는 값 */
@@ -133,7 +135,7 @@ function effectStrip(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImag
   ctx.drawImage(img,impactFrame(age)*256,0,256,256,-radius,-radius,radius*2,radius*2);ctx.restore()
 }
 /** 비기 빛깔 — 묶음마다 (도끼 흙불 · 활 하늘 · 창 은빛 · 칼 번개 · 단검 그림자 · 방울 신령 금빛) */
-const ULT_COLOR: Record<Kit, string> = { axe: '#ffb04a', bow: '#d4ecff', spear: '#eef3ff', sword: '#8fd0ff', dagger: '#b48cff', magic: '#ffe27a' }
+const ULT_COLOR: Record<Kit, string> = { axe: '#ffb04a', bow: '#d4ecff', spear: '#eef3ff', sword: '#8fd0ff', dagger: '#b48cff', magic: '#ffe27a', sling: '#e6cfa2' }
 /** 띠 그림의 한 칸을 (0,0)→(len,0) 으로 늘여 그린다 — 번개 띠(256×128 여덟 칸) */
 function stripAlong(ctx: CanvasRenderingContext2D, img: HTMLImageElement | undefined, age: number, len: number, h: number) {
   if (img) ctx.drawImage(img, impactFrame(age) * 256, 0, 256, 128, 0, -h / 2, len, h)
@@ -193,6 +195,23 @@ function drawUlt(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageEle
     ctx.globalAlpha *= .5; sprite(ctx, images, heroSprite(s), f.x2, f.y2, C.heroPx, 14, f.x2 < f.x ? 1 : -1); ctx.restore()
     for (const turn of [0, 1.7]) effectStrip(ctx, images, 'slash', f.x, f.y - 30, f.r * 1.3, age, f.angle * 2.1 + turn)
     stamp(ctx, images, 'raid/knife.png', f.x, f.y - 30, 40, f.angle * 2.1 + age * 6)
+  } else if (kit === 'sling') {
+    if (lead) {
+      // 돌벼락 예고: 떨어질 둘레에 짙어지는 그림자 · 하늘에서 쏟아지는 돌 줄기 · 장수 머리 위로 크게 도는 팔매
+      ctx.save(); ctx.globalAlpha *= .35 * (1 - age * .6); ctx.fillStyle = '#1a120a'; ctx.beginPath(); ctx.ellipse(f.x, f.y, f.r, f.r * .62, 0, 0, Math.PI * 2); ctx.fill()
+      ctx.globalAlpha = Math.min(1, (1 - age) * 2); ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(f.x, f.y, f.r, f.r * .62, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore()
+      for (let i = 0; i < 9; i++) {
+        const k = (age * 3 + i * .37) % 1, a = i * 2.4, rr = f.r * Math.sqrt((i + .5) / 9)
+        stamp(ctx, images, ROCK, f.x + Math.cos(a) * rr, f.y + Math.sin(a) * rr * .62 - (1 - k) * 300, 18 + (i % 3) * 5, k * 6 + i)
+      }
+      const hx = f.x2, hy = f.y2 - C.heroShotHeight - 26, spin = age * 26
+      ctx.save(); ctx.globalAlpha *= 1 - age; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(hx, hy, 34, 12, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore()
+      stamp(ctx, images, ROCK, hx + Math.cos(spin) * 34, hy + Math.sin(spin) * 12, 16, spin)
+      return
+    }
+    // 떨어진 돌 하나: 흙먼지 터짐 · 땅에 박혔다 튀어 오르는 돌
+    impact(ctx, images, f.x, f.y - 6, f.r * 1.1, age)
+    stamp(ctx, images, ROCK, f.x, f.y - 10 - Math.sin(Math.min(1, age * 1.6) * Math.PI) * 18, 22 + (f.angle % 3) * 4, f.angle)
   } else {
     if (lead) {
       // 하늘 굿: 장수 둘레로 굿판 방울 소리가 크게 퍼진다
@@ -259,6 +278,8 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       if (e.buff > 0 || e.kind === 'berserker' && e.hp < e.max / 2) { ctx.save(); ctx.globalAlpha = .45 + .25 * Math.sin(s.t * 12 + e.id); ctx.fillStyle = '#ff3b2f'; ctx.beginPath(); ctx.ellipse(e.x, e.y + 2, 22, 8, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore() }
       if (target) decal(ctx, images, 'mark-target', e.x, e.y, 100, 45)
       sprite(ctx, images, warlord(e.kind, s.stage), e.x, e.y, h, e.wind > 0 ? 13 : archerFrame(s, e) ?? 4 + Math.floor(s.t * 8 + e.id) % 8, s.x < e.x ? -1 : 1, e.flash > 0)
+      // 어지럼 돌: 머리 위를 도는 별 둘
+      if (e.daze > 0) for (let i = 0; i < 2; i++) { const a = s.t * 7 + i * Math.PI; stamp(ctx, images, 'raid/hit.png', e.x + Math.cos(a) * 14, e.y - h - 4 + Math.sin(a) * 4, 14, a) }
       if (target) decal(ctx, images, 'mark-arrow', e.x, e.y - h - 26 + Math.sin(s.t * 4) * 4, 22, 39)
       if (big) { ctx.fillStyle = '#111c'; ctx.fillRect(e.x - 28, e.y - h, 56, 5); ctx.fillStyle = '#ef9873'; ctx.fillRect(e.x - 28, e.y - h, 56 * e.hp / e.max, 5) }
     } else {
@@ -282,6 +303,20 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       stamp(ctx, images, 'raid/javelin.png', p.x, p.y, 68, Math.atan2(b.vy, b.vx))
     } else if (b.kind === 'stone' || b.kind === 'flame') {
       // 돌팔매·불바닥은 위에서 땅 표식과 함께 따로 그린다
+    } else if (b.kind === 'pebble') {
+      // 돌팔매: 손 높이에서 떠나 포물선을 그리고 땅에 떨어진다 · 땅에는 작아지는 그림자
+      const u = 1 - Math.max(0, b.life) / C.slingFlight
+      ctx.save(); ctx.globalAlpha = .35; ctx.fillStyle = '#0a0806'; ctx.beginPath(); ctx.ellipse(b.x, b.y, 7 + 4 * u, 3 + 2 * u, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore()
+      stamp(ctx, images, ROCK, b.x, b.y - C.heroShotHeight * (1 - u) - Math.sin(u * Math.PI) * C.slingArc, 17, u * 9)
+    } else if (b.kind === 'skip') {
+      // 물수제비: 튈 때마다 통통 뛰는 작은 돌
+      const hop = Math.abs(Math.sin((C.skipLife - b.life) * 9))
+      stamp(ctx, images, ROCK, p.x, p.y + C.heroShotHeight * .6 - hop * 22, 16, b.life * 14)
+    } else if (b.kind === 'boulder') {
+      // 굴러가는 바위: 땅을 굴러간다 (굴러간 거리만큼 돈다)
+      const r = b.radius, roll = (C.boulderLife - b.life) * C.boulderSpeed / r * Math.sign(b.vx || 1)
+      ctx.save(); ctx.globalAlpha = .4; ctx.fillStyle = '#0a0806'; ctx.beginPath(); ctx.ellipse(b.x, b.y + 2, r * .9, r * .3, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore()
+      stamp(ctx, images, ROCK, b.x, b.y - r * .75, r * 1.9, roll)
     } else if (b.kind === 'knife') {
       stamp(ctx, images, 'raid/knife.png', p.x, p.y, 40, Math.atan2(b.vy, b.vx))
     } else if (b.kind === 'soul') {
@@ -322,6 +357,10 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       // 창 찌르기: 베기 띠를 찌른 방향으로 길고 납작하게 (길이 = 찌른 거리)
       ctx.translate(f.x, f.y - C.heroShotHeight); ctx.rotate(f.angle); ctx.scale(1, .32)
       effectStrip(ctx, images, 'slash', f.r / 2, 0, f.r / 2, age)
+    } else if (f.kind === 'thud') {
+      // 돌팔매가 떨어진 자리: 흙먼지 고리 + 작은 터짐 (맞는 둘레 그대로)
+      ctx.globalAlpha *= 1 - age; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(f.x, f.y, f.r * (.5 + .5 * age), f.r * .55 * (.5 + .5 * age), 0, 0, Math.PI * 2); ctx.stroke()
+      impact(ctx, images, f.x, f.y - 6, f.r * .8, age)
     } else if (f.kind === 'spike') {
       impact(ctx, images, f.x, f.y - 8, f.r, age)
     } else if (f.kind === 'skill' || f.kind === 'ult') {

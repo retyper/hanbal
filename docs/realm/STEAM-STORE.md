@@ -26,6 +26,7 @@
 - **장수가 깨어난다** — 내리 이기면 불꽃이 차고 각성한다. 각성한 장수는 숨 쉬는 초상으로 움직인다.
 - **장수 겨루기 · 활 한 발** — 큰 싸움 한가운데 적장과 일대일 겨루기, 밤 지붕 위에서 적장을 노리는 한 발.
 - **삼한의 일흔여덟 나라** — 마한·진한·변한, 부여와 고구려. 이야기 장(온조·주몽 …)과 자유 판.
+- **장수 열전** — 모은 장수 하나로 몰려오는 적을 베어 넘기는 20분 생존 판. 무기 일곱(도끼·활·창·칼·단검·방울·돌팔매)마다 다른 능력과 비기, 조합을 열면 판이 뒤집힌다.
 - **확률은 거짓말하지 않는다** — 화면에 적힌 숫자는 진짜다. 같은 결정을 다시 해도 같은 결과, 바꾸려면 결정을 바꿔야 한다.
 
 **English**
@@ -36,6 +37,7 @@
 - **Heroes awaken**: win in a row and the flames fill. Awakened heroes come alive as breathing, animated portraits.
 - **Duels and the single arrow**: a one-on-one duel with the enemy general in the middle of battle, and a lone shot from the night rooftops.
 - **Seventy-eight kingdoms of the Samhan**: Mahan, Jinhan and Byeonhan, Buyeo and Goguryeo. Story chapters (Onjo, Jumong …) and free play.
+- **Hero Chronicles**: take any hero you have collected into a 20-minute survival run against endless waves. Seven weapons (axe, bow, spear, sword, dagger, spirit bell, sling), each with its own powers, ultimate and combos that turn the run around.
 - **Honest odds**: a number on screen is the real number. Make the same choice again and you get the same result; to change the outcome, change your decision.
 
 ## 3. 태그 (스팀 사용자 태그 후보 · 앞이 더 중요)
@@ -111,3 +113,13 @@ Strategy · Turn-Based Strategy · Grand Strategy · Historical · Collectathon 
 > 저장 이름: `logo-title-yeolguk.png` (받으면 `public/realm/logo/title.png` 로 · 옛 「삼한열전」 판은 assets_src/realm/retired/logo 로)
 
 영어 로고: 같은 틀로 「FIRST REALMS」 한 장 더 (청동 대문자 세리프 · 뒤에 같은 동검 · 저장 이름 `logo-title-firstrealms.png` → `public/realm/logo/title-en.png`).
+
+
+## 11. 11-16 고침 (가입 시작 뒤)
+
+- 스팀웍스 가입 진행 중(신원·세금 검토 최대 45영업일 · STEAM-RELEASE.md 진행 기록). 앱이 열리면 이 문서 1~3·8·9 를 그대로 붙인다.
+- 특징에 「장수 열전」 더함 (뱀서식 20분 판 · 무기 일곱 · 무기별 비기 · 11-16 배포).
+- **DLC 「진각성 묶음」** 은 본편 상점 글에 넣지 않는다 — 본편 출시 뒤 따로 (src/realm/dlc.ts 스위치 · 가게 그림 D:/에셋창고/dlc-truewake-key·vertical.png · 로고는 낼 때 얹음).
+- 숫자 다시 셈(11-16): 장수 206명 · 1차 각성 숨 쉬는 영상 151편(남자 장수 68편 남음). 「이백 명의 장수」 표현은 그대로 맞다.
+- 앱 아이콘 후보: 소서노·쇠비 얼굴 여섯(형 고름 대기 · scratch icon-candidates.jpg) — 정해지면 public/realm-icon-*.png 와 스팀 클라이언트 아이콘(184×184 · 32×32 ico)으로.
+- 스크린샷 자동 촬영: 열전 비기 장면(tools 의 헤드리스 시험 길로 1920×1080) 추가 후보.

@@ -21,6 +21,8 @@ export const HAEBI_VANGUARD = {
 export const HAEBI_SOUND = {
   bgm: .2, swing: .3, hurt: .6, groan: .7, groanGap: .5,
   hit: .24, hitVoices: 4, die: .3, dieGap: 1.2, skill: .85, skillHit: .6, magic: .28, magicGap: .2, ui: .5, arrows: .4, cry: .55, roar: .8, end: .7, silence: .012,
+  /** 돌팔매 묶음: 팔매 돌리는 바람(비기·바위) · 돌 떨어짐(같은 프레임에 여럿이면 stoneGap 초 틈) */
+  whirl: .55, stone: .32, stoneGap: .05,
 } as const
 /** 열전 손가락 조이스틱 (형 11-16: 「뱀서 컨텐츠 할 때는 조이스틱 생겨야 하는 거 아님?」) — 손가락 댄 자리에 생기는 떠다니는 막대.
  *  radius 막대가 끝까지 가는 거리(화면 px) · dead 이보다 덜 밀면 멈춤 · follow 끝을 넘겨 끌면 받침이 따라오는 몫(0~1) */
@@ -86,6 +88,13 @@ export const HAEBI_RUN = {
   bellDamage: 34, bellRankDamage: 14, bellRadius: 130, bellRankRadius: 10, bellCooldown: .95,
   soulDamage: 34, soulRankDamage: 16, soulSpeed: 300, soulCooldown: 1.8, soulLife: 2.6, soulTurn: 5, soulRadius: 44,
   riteInterval: 2.2, riteRadius: 230, riteDamage: 120, stormOrbs: 4, stormRadius: 110, stormDamage: 40, stormInterval: .25,
+  // 돌팔매 (11-16 형: 「돌팔매는 슬링샷 사운드 같은 거 찾으면 만들 수 있지 않을까?」 · 초팔 팔매): 포물선으로 떨어져 둘레를 치는 돌 + 적 사이를 튀는 물수제비
+  //   돌은 언제나 slingFlight 초 만에 떨어진다(먼 적일수록 빨리 날아감 · 그림의 포물선 높이 slingArc) · 떨어진 둘레 slingSplash(+단계마다) · 4단계부터 slingWide 배 · 맞은 적을 slingKnock 만큼 밀어냄
+  slingDamage: 34, slingRankDamage: 15, slingRange: 360, slingCooldown: .85, slingFlight: .3, slingSplash: 36, slingRankSplash: 3, slingWide: 1.4, slingKnock: 16, slingArc: 70,
+  //   물수제비: 맞힐 때마다 skipRange 안의 다음 적으로 튄다 (튀는 수 = skipBounces + 단계/2)
+  skipDamage: 28, skipRankDamage: 14, skipSpeed: 620, skipCooldown: 1.6, skipLife: .9, skipBounces: 2, skipRange: 210,
+  //   굴러가는 바위(조합): boulderInterval 초마다 가장 많이 걸리는 줄로 · 어지럼 돌(조합): 물수제비에 맞으면 dazeTime 초 멈춤
+  boulderInterval: 2.4, boulderDamage: 95, boulderSpeed: 260, boulderLife: 2.4, boulderRadius: 44, boulderKnock: 22, dazeTime: .9,
 } as const
 /**
  * 열전 비기 — 무기 묶음마다 꼴이 다르다 (형 11-16: 「무기마다 확실히 다르게 · DPS 예측해서 밸런스 조절」 · 재는 길 tools/raid-ult-dps.ts · docs/BALANCE.md).
@@ -96,6 +105,7 @@ export const HAEBI_RUN = {
  * sword 번개 베기: 움직이는 쪽(±cone 라디안 안에서 가장 많이 걸리는 줄 · 서 있으면 아무 쪽)으로 length 만큼 내달아(장수가 실제로 옮겨 간다) 지나간 줄(반폭 width)을 벤다
  * dagger 그림자 베기: range 안의 가장 가까운 적에게 차례로 targets 번 순간 이동해(gap 초 간격 · 적 곁 beside px) 그 둘레 splash 를 베고, 처음 자리로 돌아온다
  * magic 하늘 굿: 화면의 모든 적에게 신령 번개 (그리는 번개 줄은 bolts 개까지 · 피해는 모두에게)
+ * sling 돌벼락: range 안에서 가장 많이 걸리는 자리를 골라 그 둘레 radius 에 waves 물결 × stones 개 돌이 gap 초 간격으로 떨어진다 (돌마다 둘레 splash · 가운데일수록 여러 번)
  */
 export const HAEBI_ULT = {
   axe: { cooldown: 13, damage: 170, length: 440, width: 80, burst: 240, fx: .75 },
@@ -104,6 +114,7 @@ export const HAEBI_ULT = {
   sword: { cooldown: 13, damage: 430, length: 500, width: 110, cone: 1.57, fx: .5 },
   dagger: { cooldown: 13, damage: 110, targets: 8, range: 320, gap: .07, splash: 40, beside: 24, fx: .38 },
   magic: { cooldown: 13, damage: 23, bolts: 40, fx: .5 },
+  sling: { cooldown: 13, damage: 60, waves: 4, stones: 7, gap: .12, radius: 165, splash: 46, range: 480, fx: .5 },
   /** 줄 비기(도끼·활·칼)가 견줘 보는 방향 수 — 가까운 적 이만큼 쪽으로 줄을 대 보고 가장 많이 걸리는 쪽 */
   aimTries: 16,
 } as const
@@ -1693,8 +1704,12 @@ export const SPEC = {
     banditFrameUp: k(5.2, 3, 8, 0.1, '산적 판: 화면이 늘 담는 하늘 높이 (윗길 위 산적 머리까지)', 'm'),
     chiefLane: k(1, 0, 2, 1, '산적 판: 두목이 타는 길 (0 아랫길 · 1 가운뎃길 · 2 윗길)'),
     pickSec: k(20, 5, 60, 1, '막기 판: 물결 사이 고르기 — 이 시간이 지나야 저절로 첫째가 고른다 (띠가 남은 시간을 보여 준다)', 's'),
-    dprCap: k(3, 1, 3, 0.25, '막기 판: 캔버스 DPR 상한 (폰도 처음엔 이만큼 · 버거우면 dprDropMs 로 내린다)'),
-    dprDropMs: k(22, 12, 60, 1, '막기 판: DPR 을 내리는 프레임 간격 가운데값', 'ms'),
+    dprCap: k(3, 1, 3, 0.25, '막기 판: 캔버스 DPR 상한 (마우스 화면)'),
+    dprTouchCap: k(2, 1, 3, 0.25, '막기 판: 폰(손가락 화면) DPR 상한 — 2.6 그대로면 화소가 1.7배라 버벅이고, 버벅이면 1 까지 떨어져 흐려졌다 (11-16)'),
+    dprFloor: k(1.5, 1, 3, 0.25, '막기 판: DPR 을 이 아래로는 안 내린다 (1 이면 폰에서 뿌옇다)'),
+    dprSlowRuns: k(2, 1, 6, 1, '막기 판: 느린 묶음(60프레임)이 이만큼 잇달아야 DPR 을 내린다 (한 번 버벅인 것으로 흐려지지 않게)'),
+    dprDropMs: k(24, 12, 60, 1, '막기 판: DPR 을 내리는 프레임 간격 가운데값 (그리기 상한 60 · 41fps 아래)', 'ms'),
+    maxFps: k(60, 20, 144, 1, '막기 판: 그리기 상한 — 120Hz 폰에서 두 배로 그리지 않는다 (밤 판과 같다)', 'fps'),
     pullDead: k(8, 2, 40, 1, '막기 판: 그만두는 고리 반지름 (CSS px · 형 11-12: 물 쓸어내리는 조작감 — 눌러 조금만 끌어도 당겨진다)', 'px'),
     kickPx: k(5, 0, 20, 0.5, '막기 판: 쏘는 순간 화면이 뒤로 밀리는 폭 (CSS px)', 'px'),
     killStopMs: k(60, 0, 150, 5, '막기 판: 한 놈 쓰러뜨릴 때 멈칫하는 시간', 'ms'),

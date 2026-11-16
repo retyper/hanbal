@@ -373,3 +373,15 @@ raid/wind_1~3.ogg  Pixabay · Wind Magic 2·5·6 (378627·378630·378626) · yod
 raid/bolt_1~2.ogg  Pixabay · Lightning Magic 1·4 (378645·378647) · yodguard
 raid/earth_1~2.ogg · skill_hit.ogg  Pixabay · Earth Magic 1·2·5 (378599·378602·378598) · yodguard
 raid/light_1.ogg · light_2.ogg  Pixabay · Healing Magic 1·4 (378665·378668) · yodguard · Pixabay Content License (형이 받아 줌 11-15 · 열전 혼불)
+
+# 열전 돌팔매 묶음 후보 (11-16 · 형: 「돌팔매는 슬링샷 사운드 같은 거 찾으면 만들 수 있지 않을까?」) — sfx/cand/sling_<자리>_<번호>.ogg
+# 모두 Freesound CC0 · 앞뒤를 짧게 자르고 크기를 맞춤 · 지금 열전은 1번씩을 쓴다 (형이 고르면 바꿈)
+cand/sling_whirl_1.ogg  Lasso rope being spun, spinning through air then throw · zapsplat.com · CC0 · https://freesound.org/s/719638/ (앞 1.3초 · 도는 부분)
+cand/sling_whirl_2.ogg  Rope Swinging · Robo9418 · CC0 · https://freesound.org/s/841835/
+cand/sling_whirl_3.ogg  Rope Swinging.wav · EugeneEverett · CC0 · https://freesound.org/s/596514/ (2.1초부터 1.3초)
+cand/sling_release_1.ogg  Throwing / Whip Effect · denao270 · CC0 · https://freesound.org/s/346373/
+cand/sling_release_2.ogg  Throw 1.mp3 · deleted_user_6479820 · CC0 · https://freesound.org/s/394873/
+cand/sling_release_3.ogg  Slingshot 2 · renne100 · CC0 · https://freesound.org/s/353034/
+cand/sling_impact_1.ogg  Stone hit · CamoMano · CC0 · https://freesound.org/s/431019/
+cand/sling_impact_2.ogg  Single Rock hit Dirt.wav · worthahep88 · CC0 · https://freesound.org/s/319222/ (0.15초부터 0.6초)
+cand/sling_impact_3.ogg  impact-stone-heavy.wav · kasparsj · CC0 · https://freesound.org/s/513694/
