@@ -142,7 +142,9 @@ function lotHtml(t: TownViewIn, s: TownSlot, i: number, sel: boolean): string {
 
 function lotInner(t: TownViewIn, s: TownSlot, i: number, sel: boolean): string {
   const L = LOTS[i]!
-  const pos = `left:${pct(L.x)};top:${pct(L.y)};width:${pct(L.w)};z-index:${zOf(L.y)}`
+  // 땅에 깔린 터(논·소금밭·빈 터·잠긴 터)는 늘 사람 밑 — 터의 아랫변으로 z 를 매기면 그 위를 걷는 주민이 땅속으로 들어갔다 (형 11-17)
+  const flat = s.k !== 'work' || /work-(paddy|saltpan)/.test(s.sprite ?? '')
+  const pos = `left:${pct(L.x)};top:${pct(L.y)};width:${pct(L.w)};z-index:${flat ? 2 : zOf(L.y)}`
   const open = (cls: string, tip: string): string => `<button class="tvlot2 ${cls}${sel ? ' sel' : ''}" data-act="town-lot" data-i="${i}"${tip !== '' ? ` data-tip="${esc(tip)}"` : ''} style="${pos}"><img class="tvlotbg" src="${t.art}town/${/^(locked|going clearing)/.test(cls) ? 'lot-rough' : 'lot'}.png" alt="">`
   if (s.k === 'work') {
     const up = s.going !== null
@@ -296,7 +298,7 @@ export function townViewHtml(t: TownViewIn): string {
       const x0 = 0.48 + c * 0.04
       const y0 = 0.12 + u * 0.62
       const sc = 0.66 + y0 * 0.6
-      folk += `<i class="tvf walkv v${vOf(i)}" style="left:${pct(x0)};top:${pct(y0)};z-index:${zOf(y0) + 1};--dy:${(8 + c * 8).toFixed(1)}cqh;--sc:${sc.toFixed(2)};--dur:${(7 + c * 5).toFixed(1)}s;${delay}"><u></u></i>`
+      folk += `<i class="tvf walkv v${vOf(i)}" style="left:${pct(x0)};top:${pct(y0)};z-index:${zOf(y0 + (8 + c * 8) / 100) + 1};--dy:${(8 + c * 8).toFixed(1)}cqh;--sc:${sc.toFixed(2)};--dur:${(7 + c * 5).toFixed(1)}s;${delay}"><u></u></i>`
     } else {
       // 둘레 길 — 타원 길의 위·아래 호에 고루(양끝은 폰에서 잘린다) · 제자리 가까이를 가로로 오간다
       const ang = u < 0.5 ? Math.PI * (0.2 + 0.6 * u * 2) : Math.PI * (1.2 + 0.6 * (u - 0.5) * 2)

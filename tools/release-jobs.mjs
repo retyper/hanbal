@@ -187,6 +187,15 @@ const SB_FIX = {
 //   ③ 손이 무기를 감싸는 모양을 못 그렸다 → 쥔 손은 옆에서 본 주먹 하나, 손가락 넷이 손잡이를 감싼다
 //   자세는 액션 RPG 각성 컷인처럼 감탄할 만하게 — 무기마다 한 벌 (낮은 카메라 · 대각선 · 무기 궤적 · 옷·머리 흩날림)
 const AGES = (() => { const s = readFileSync('src/realm/data/ages.ts', 'utf8'); const m = {}; for (const [, id, age] of s.matchAll(/'([glw]-[^']+)': \{ age: (\d+)/g)) m[id] ??= Number(age); return m })()
+// 11-17 같은 무기면 자세가 똑같이 나왔다(단검 셋이 모두 엎드린 질주) → 무기마다 자세 셋 · 장수 id 로 하나를 고른다 · 인물은 판 높이 80% 이상
+const POSE_ALT = {
+  bow: ['POSE: a kneeling power shot — one knee down, torso leaning back slightly, bow drawn to the ear aiming at the upper right, cloak flaring.', 'POSE: a spinning release — mid-pivot, hair and sash whirling in a circle, the arrow just loosed toward the right with a bright streak.'],
+  spear: ['POSE: a leaping downward spear strike — airborne, the spear held overhead with both hands and driving down toward the lower right.', 'POSE: a sweeping guard — feet wide, the spear swung horizontally at waist height leaving a bright fan-shaped arc toward the right.'],
+  sword: ['POSE: a drawing slash — upright, stepping forward, the sword whipping out horizontally from the hip in one hand, a long bright line trailing, the free hand open in front of the chest.', 'POSE: a leaping overhead cut — airborne, sword raised high in both hands, about to cleave down toward the lower right.'],
+  dagger: ['POSE: a spinning reverse-grip slash — standing on the ball of one foot mid-spin, daggers in reverse grip trailing two bright arcs, cloth spiralling.', 'POSE: an aerial strike — leaping toward the upper right, knees tucked, the dagger thrust forward, the free hand open in front.'],
+  axe: ['POSE: a spinning axe swing — feet planted, the whole body twisting, the axe swung horizontally in both hands leaving a heavy arc toward the right.', 'POSE: a ground-splitting blow — one knee down, the axe just slammed into the ground at the right, a shockwave of cracks and dust bursting out.'],
+  magic: ['POSE: a ringing invocation — the implement raised high above the head in one hand, the other palm toward the viewer, spirit light spiralling up around the body.', 'POSE: a dancing ritual step — mid-turn on one foot, sleeves and ribbons in a wide circle, the implement shaken toward the right with ripples of light.'],
+}
 const POSE_V2 = {
   bow: 'POSE: a leaping backward archer shot — airborne for a heartbeat, body angled toward the viewer, drawing the bow to full draw toward the upper right; one knee raised, hair and sash whipping; the arrow tip glowing. Both bow limbs and one taut string visible, draw hand at the jaw.',
   spear: 'POSE: a spiralling spear lunge — the body coiled low, one leg deep forward, the spear driven diagonally toward the upper right with a bright spiral trail along the shaft; both hands on the shaft, the rear hand near the butt, the front hand mid-shaft.',
@@ -202,7 +211,8 @@ const bodyV2 = (id, weaponText, kit) => {
   return `Create ONE full-body ultimate-skill cut-in illustration for an original Korean historical-fantasy game, in the spectacular style of an action-RPG awakening cut-in.
 STYLE LOCK (most important): paint it in EXACTLY the same art style as IMAGE 1, the character's portrait — same rendering, same brushwork, same skin and face shading, same level of detail and lighting — as if the same artist painted both. Not simplified, not flat, not anime, not chibi.
 AGE LOCK: this ${woman ? 'woman' : 'man'} is ${age ?? 'the same age as in IMAGE 1'}${age ? ' years old' : ''}: keep the exact adult face from IMAGE 1 — same eye size, nose, jaw and cheek proportions${woman ? '; do NOT make her look younger, no childlike face, no enlarged eyes' : ''}. Adult body proportions, head about 1/7 of the height.
-${POSE_V2[kit] ?? POSE_V2.sword}
+${(() => { const all = [POSE_V2[kit] ?? POSE_V2.sword, ...(POSE_ALT[kit] ?? POSE_ALT.sword)]; let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0; return all[h % all.length] })()}
+FRAMING: the figure fills at least 80% of the canvas height; no large empty margins.
 CAMERA: slightly low angle, dynamic diagonal composition, mild foreshortening toward the viewer, motion lines and energy only around the weapon path.
 ANATOMY: exactly two arms and two legs, every joint bending the natural way. Each hand holding something is drawn as a clear fist with one thumb and four fingers wrapped around the grip. A free hand is never stretched behind the back: keep it in front of the body, open palm forward or on the weapon.
 WEAPON: ${weaponText}. Complete, solid, the same weapon as the portrait and the battle sprite.
