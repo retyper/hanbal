@@ -3,6 +3,7 @@
  * 규격은 tools/sprite-spec.mjs (설명은 docs/realm/SPRITE-AUDIT.md 맨 위). 먼저 node tools/sprite-audit.mjs 로 docs/realm/sprite-audit.json 을 만든다.
  * 쓰는 법: node tools/sprite-normalize.mjs [이름...]   (이름 없으면 전부) · 점검 그림은 D:/tmp-node/spx/
  */
+import { applyHeadgear } from './sprite-kit/headgear.mjs'
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { decodePng, encodePng } from './png.mjs'
@@ -240,6 +241,7 @@ if (!only.size && !all['gen-dalbit']) {
   const lp = decodePng(`${OUT_DIR}/gen-dalbit.png`)
   all['gen-dalbit'] = { cell: [lp.w / 20, lp.h], feet: lp.h, bodyPx: lp.h, kind: 'general', cells: 20, colors: 0 }
 }
+applyHeadgear(all)   // 11-17 투구·관이 큰 장수 몸 키 바로잡기 (tools/sprite-kit/headgear.json)
 writeFileSync(`${OUT_DIR}/manifest.json`, JSON.stringify(all))
 if (!only.size) writeFileSync('docs/realm/sprite-clean-log.json', JSON.stringify(cleanLog))
 const ts = `/** public/realm/anim-px/manifest.json 의 사본 — tools/sprite-normalize.mjs 가 만든다 (손으로 고치지 말 것). 칸 [가로, 세로] · feet = 발 줄(칸 위에서 y) · bodyPx = 서 있는 몸 키 */\nexport const SPRITE_PX: Readonly<Record<string, { readonly cell: readonly [number, number]; readonly feet: number; readonly bodyPx: number; readonly kind: 'general' | 'soldier' | 'folk' | 'crowd'; readonly cells: number }>> = ${JSON.stringify(Object.fromEntries(Object.entries(all).map(([k, v]) => [k, { cell: v.cell, feet: v.feet, bodyPx: v.bodyPx, kind: v.kind, cells: v.cells }])))}\n`

@@ -205,6 +205,7 @@ def stage(args):
     q = load(QUEUE, []); rc = receipt(); wf = weapon_fix(); man = load(PX / 'manifest.json', {})
     OUT.mkdir(parents=True, exist_ok=True)
     for who, act, walk in pairs(args.inbox):
+        if args.only and who != args.only: continue
         h = rc['heroes'].get(who, {})
         if not walk.exists():
             print('짝 없음(걷기 아직)', who); h.update(status='waiting-walk', act=str(act)); rc['heroes'][who] = h; continue
@@ -318,7 +319,7 @@ def index(_):
 
 
 ap = argparse.ArgumentParser(); sp = ap.add_subparsers(dest='cmd')
-s = sp.add_parser('stage'); s.add_argument('--inbox', default='D:/에셋창고'); s.add_argument('--force', action='store_true'); s.set_defaults(fn=stage)
+s = sp.add_parser('stage'); s.add_argument('--inbox', default='D:/에셋창고'); s.add_argument('--force', action='store_true'); s.add_argument('--only', help='이 장수만'); s.set_defaults(fn=stage)
 s = sp.add_parser('review'); s.add_argument('key'); s.add_argument('decision', choices=['accept', 'reject'])
 s.add_argument('--chin-old', type=float); s.add_argument('--chin-new', type=float); s.add_argument('--weapon'); s.add_argument('--note'); s.add_argument('--reason'); s.set_defaults(fn=review)
 s = sp.add_parser('install'); s.set_defaults(fn=install)
