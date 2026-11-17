@@ -243,7 +243,13 @@ const v2Jobs = []
 for (const [why, ids] of Object.entries(V2_REDO)) for (const id of ids) v2Jobs.push([id, V2_WHY[why]])
 for (const id of Object.keys(SB_FIX)) v2Jobs.push([id, '형 11-17 반려(앞 줄)'])
 // 장수의 무기 글·자세 갈래 (무기 감사 artWeapon 먼저) · rope: 줄·채찍·팔매를 줄 무기 자세로 (새 다시 그리기만)
+// 11-17 형: 「주술 자세로 다시 그려」 — 원화(초상·각성)에 무기가 없는데 비기 전신만 창을 들었던 둘
+const MAGIC_ART = {
+  'w-19-buyeo-fur-princess': 'NO weapon and NO spear: bare-handed winter magic, a glowing ice-blue snowflake crystal forming between her open palms, frost and snow swirling from her hands',
+  'w-24-apdok-queen': 'NO weapon and NO spear: a golden rice sheaf held in the crook of one arm (as in IMAGE 1) while golden grain-light magic pours from her open free palm',
+}
 const weaponOf = (id, { rope = false } = {}) => {
+  if (MAGIC_ART[id]) return { weaponText: MAGIC_ART[id], kit: 'magic' }
   const r = roster.find((x) => x.bust === id), a = AUDITW[id]
   const weaponText = id === 'g-37-eumjeup-jeup' ? 'a ritual gourd rattle (dried calabash on a short wooden handle with small bronze bells and tassels), shaken like a shaman spirit bell; a small rice-sheaf charm hangs at the belt'
     : a?.artWeapon ?? (r ? (r.hold || r.desc).replace(/ from IMAGE \d/g, '').replace(/,? ?held the same way in (every frame|all 8 frames)/gi, '') : 'the weapon in the portrait')
@@ -260,7 +266,8 @@ const pushV2 = (id, why, fix, { rope = false, group = 'skill' } = {}) => {
 for (const [id, why] of v2Jobs) pushV2(id, why, SB_FIX[id])
 // 11-17 밤 Claude 검수 반려 (핑퐁) — 받은 v2 가운데 다시: 저장 _v3 (tools/skillbody-v2-intake.py 가 _v3 를 _v2 보다 먼저 쓴다)
 const KATANA = 'The sword was drawn curved with a round guard like a Japanese katana — forbidden in this game. Draw a STRAIGHT Korean iron sword: a straight blade with a ring pommel (hwandudaedo), a small rectangular guard and a wrapped grip.'
-const V2_REJECT = {}   // g-23 쇠달 v3 받음(곧은 고리자루칼) · 11-17
+const MAGFIX = 'MAGIC POSE (most important): the previous version gave her a spear, but her portrait has no weapon. Remove the spear completely; a dynamic graceful spell-casting pose with both hands open and visible, five fingers each.'
+const V2_REJECT = { 'w-19-buyeo-fur-princess': MAGFIX, 'w-24-apdok-queen': MAGFIX }   // 11-17 형: 주술 자세로   // g-23 쇠달 v3 받음(곧은 고리자루칼) · 11-17
 for (const [id, fix] of Object.entries(V2_REJECT)) {
   const { weaponText, kit } = weaponOf(id)
   jobs.push({ id: `SB-${id}-v3`, group: 'skilltest', save: `skillbody_${id}_v3.png`, title: `${id} · 비기 전신 v3 (Claude 검수 반려)`,
@@ -353,7 +360,8 @@ const BOWFIX3 = 'BOW: the string must run continuously from the upper bow tip to
 const SOFT = (t) => t.replace(/COSTUME EXPOSURE:[^\n]*/, 'COSTUME: copy the outfit of IMAGE 1 exactly, same cut, same skin areas, same jewelry; opaque fabric.')
   .replace(/\b(strike|striking|attack|attacking|slash|slashing|kill|lethal|blood)\w*/gi, 'move')
 const BOWFIX3S = 'ARCHERY FORM (most important): a graceful traditional archery stance like a sports archer at full draw; the bowstring runs continuously from the upper bow tip to the lower bow tip and is held by the drawing hand beside the jaw; the arrow rests on the string at that hand and lies across the bow grip. In the previous version the string stood straight behind the bow, untouched.'
-const AW_REJECT = { 'aw2/w-65-goguryeo-hwalmi': BOWFIX3S, 'aw1/w-64-miri-dallae': 'Dynamic graceful leap with the ritual staff from IMAGE 1, both hands natural on the staff.' }
+const AW_REJECT = { 'aw2/w-65-goguryeo-hwalmi': BOWFIX3S, 'aw1/w-64-miri-dallae': 'Dynamic graceful leap with the ritual staff from IMAGE 1, both hands natural on the staff.',
+  'aw1/w-19-buyeo-fur-princess': MAGFIX, 'aw2/w-19-buyeo-fur-princess': MAGFIX, 'aw1/w-24-apdok-queen': MAGFIX, 'aw2/w-24-apdok-queen': MAGFIX }
 for (const [key, fix] of Object.entries(AW_REJECT)) {
   { const [f, i] = key.split('/'), old = jobs.findIndex((j) => j.id === `SB${f.slice(2)}-${i}-v2`); if (old >= 0) jobs.splice(old, 1) }   // v3 가 v2 를 대신한다
   const [form, id] = key.split('/'), dir = form === 'aw1' ? 'awaken-hd' : 'awaken2-hd'

@@ -319,30 +319,33 @@ const SP_KEYS = [...Object.keys(AUDIT.tierA_chin_ge38), ...Object.keys(AUDIT.tie
 for (const k of Object.keys(WFIX)) if (!SP_KEYS.includes(k)) SP_KEYS.push(k)
 // 11-17 첫 12명은 얼굴이 1%p 밖에 안 줄어 모두 반려(tools/sprite-kit/prop-intake-20261117.json · 형: 크레딧 아끼기) →
 //   새 문안(머리통 전체를 0.75 배로 · 숫자 · 기준 판을 IMAGE 2 로)으로 갈매 한 명만 시험 · 나머지는 시험이 통과할 때까지 줄에서 뺀다
-const SP_TEST = []   // 11-17 갈매 시험도 머리가 거의 안 줄어 반려 — 그림 생성으로는 안 된다 · 형과 다른 길(코드로 머리 줄이기 등) 정하기 전까지 멈춤
+// 11-17 형: 「실패한 것들만 다시 · 베이스라인 그림체 비슷하게」 → v3: 기준 판(소서노·감실·쇠비·온조)을 IMAGE 1 로 앞에 두고 그 그림체·비율을 「베끼게」 · 옛 띠는 옷·무기·자세 순서만 (IMAGE 2)
+//   갈매 한 명 시험 → 통과하면 SP_KEYS 나머지(얼굴 큰 80명)
+const SP_TEST = ['gen-base-w-39-gosaburi-galmae']
+const STYLE3 = 'STYLE MASTER (the most important rule): IMAGE 1 shows four APPROVED characters of this same game (Soseono, Gamsil, Soebi, Onjo). Your character must look like a FIFTH member of that exact lineup: the same pixel-art rendering, the same outline weight, the same small adult face, the same head-to-body proportion (about 4.5 heads tall, the face eyebrow-to-chin about 1/9 of the standing height, a visible neck, head narrower than the shoulders) and the same standing height. If you placed your character next to IMAGE 1, the face must be the same size as theirs. Hair, buns, hats and crowns may stay large; only the face and skull must match.'
 const HEAD2 = 'HEAD SIZE FIX (the most important rule — the previous redraw failed it): shrink the WHOLE HEAD (skull, face AND hair mass together) to 75% of its size in IMAGE 1 while keeping the body exactly the same height and build. Concretely, at the same standing height: the head (top of skull to chin) must be no taller than the head of the approved figures in IMAGE 2, the chin must sit at about one third of the way down from the top of the head to the soles, the head must be narrower than the shoulders, eyes small with adult spacing, a visible neck. Big round chibi heads are wrong.'
 for (const k of SP_KEYS) {
   if (!SP_TEST.includes(k)) continue
   const bust = PORTRAIT[k] ?? (k.startsWith('gen-base-') ? k.slice('gen-base-'.length) : null)
-  const refs = [`/assets_src/realm/sprite-prop/${k}-now.png`, '/assets_src/realm/sprite-prop/ref-approved.png', ...(bust && existsSync(`public/realm/bust-hd/${bust}.jpg`) ? [`/realm/bust-hd/${bust}.jpg`] : [])]
+  const refs = ['/assets_src/realm/sprite-prop/ref-approved.png', `/assets_src/realm/sprite-prop/${k}-now.png`, ...(bust && existsSync(`public/realm/bust-hd/${bust}.jpg`) ? [`/realm/bust-hd/${bust}.jpg`] : [])]
   const wf = WFIX[k]
-  const WEAP = wf ? `WEAPON FIX (most important): in the original portrait art (IMAGE 3) this character holds ${wf.artWeapon}, NOT the ${wf.spriteWeapon} drawn in IMAGE 1. Redraw every cell with the ${wf.artWeapon} from the portrait, held the same way in all poses; the attack poses use it the way that item is really used (swing, thrust, throw, ring, play or wave it).
+  const WEAP = wf ? `WEAPON FIX (most important): in the original portrait art (IMAGE 3) this character holds ${wf.artWeapon}, NOT the ${wf.spriteWeapon} drawn in IMAGE 2. Redraw every cell with the ${wf.artWeapon} from the portrait, held the same way in all poses; the attack poses use it the way that item is really used (swing, thrust, throw, ring, play or wave it).
 ` : ''
   const who = k.slice(4)
-  jobs.push({ id: `SP-${who}-act-v2`, group: 'remake-sprite', save: `sprite_prop_${who}_act_v2.png`, title: `${who} · 전투 띠 20자세 (${wf ? '무기 바로잡기 · ' : ''}얼굴 ${tier(k)})`,
+  jobs.push({ id: `SP-${who}-act-v3`, group: 'remake-sprite', save: `sprite_prop_${who}_act_v3.png`, title: `${who} · 전투 띠 20자세 (${wf ? '무기 바로잡기 · ' : ''}얼굴 ${tier(k)})`,
     refs, now: `${wf ? `띠 무기 ${wf.spriteWeapon} → 원화 ${wf.artWeapon} · ` : ''}${tier(k) === '무기' ? '얼굴은 기준 안' : `얼굴이 기준보다 큼 · 턱 위치 몸 키의 ${AUDIT.tierA_chin_ge38[k] ?? AUDIT.tierB_chin_37[k]}% (기준 31~33%)`}`,
     use: `받으면 11-14 비율 교정과 같은 길로 띠에 넣음(anim-px/${k}.png · 걷기 칸은 다음 장으로 바꿈) · 옛 띠는 assets_src/realm/retired 로`,
-    prompt: `${HEAD2}
-${WEAP}Redraw the SAME adult game character as IMAGE 1 (the current battle sprite sheet, 20 cells read left to right, top to bottom)${refs.length > 2 ? ' — IMAGE 3 is the character portrait for face identity' : ''}: all 20 poses in exactly FOUR columns x FIVE rows.
+    prompt: `${STYLE3}
+${WEAP}Draw the character of IMAGE 2 (the current battle sprite sheet, 20 cells read left to right, top to bottom — use it ONLY for costume, colors, weapon and the pose order, NOT for head size or drawing style)${refs.length > 2 ? ' — IMAGE 3 is the character portrait for face identity' : ''}: all 20 poses in exactly FOUR columns x FIVE rows.
 ${FACE}
-Keep this character's face identity, gender, age, hairstyle, colors, clothing layers, ornaments and weapon exactly from IMAGE 1. ${PIX}
-Every weapon complete and the same size and material in all 20 cells; spears stay a long WOODEN shaft with a SMALL metal head, never a sword. Keep every cell's action exactly as in the SAME cell of IMAGE 1 (same pose order: idles, walk, attack, guard and hit, lying defeated); only the face and head proportions, the pixel quality and any broken weapon change. If archer: the bow stays in all 20 poses, the release pose has an empty draw hand, and no knife or sword appears. All standing poses face RIGHT in 3/4 view with the same adult proportions and the same standing height.
+Keep this character's face identity, gender, age, hairstyle, colors, clothing layers, ornaments and weapon from IMAGE 2/3, but draw them in the style and head-to-body proportion of IMAGE 1. ${PIX}
+Every weapon complete and the same size and material in all 20 cells; spears stay a long WOODEN shaft with a SMALL metal head, never a sword. Keep every cell's action as in the SAME cell of IMAGE 2 (same pose order: idles, walk, attack, guard and hit, lying defeated); only the face and head proportions, the pixel quality and any broken weapon change. If archer: the bow stays in all 20 poses, the release pose has an empty draw hand, and no knife or sword appears. All standing poses face RIGHT in 3/4 view with the same adult proportions and the same standing height.
 True transparent alpha background with 10% padding around every complete figure, weapon and feather in every cell. No grid lines, labels, text, effects, shadow or background. Exactly 20 distinct full-body figures.` })
-  jobs.push({ id: `SP-${who}-walk-v2`, group: 'remake-sprite', save: `sprite_prop_${who}_walk_v2.png`, title: `${who} · 걷기 8칸 (자연스러운 걸음)`,
+  jobs.push({ id: `SP-${who}-walk-v3`, group: 'remake-sprite', save: `sprite_prop_${who}_walk_v3.png`, title: `${who} · 걷기 8칸 (자연스러운 걸음)`,
     refs, now: '걷기 칸이 거의 한 자세라 미끄러지듯 움직임',
     use: `받으면 띠의 걷기 칸을 이 8칸으로 (1·5번 다리 반대 검사 · tools/sprite-kit/check-strip.py)`,
-    prompt: `[코덱스] D:/에셋창고/sprite_prop_${who}_act_v2.png 도 맨 뒤에 첨부 (방금 만든 동작 판)
-Using the corrected character in the LAST attached image (the new action sheet) as the exact identity, outfit, weapon and proportions — NOT the old big-faced IMAGE 1 — draw ONE natural 8-frame walk cycle, facing RIGHT in 3/4 view, in a strict grid of FOUR columns x TWO rows, row-major order: 1 contact (right foot forward, heel down), 2 down (weight sinks), 3 passing (left leg passes the right), 4 up (body highest), 5 contact (LEFT foot forward), 6 down, 7 passing, 8 up. Frames 1 and 5 have opposite legs forward; arms swing opposite to the legs; the head bobs 1 to 2 pixels between down and up; hair, cloth and ornaments follow the motion a beat late. The weapon is carried relaxed in the same hand with the same grip and the same size in all 8 frames. ${FACE.split(':')[0]}: keep exactly the face and head size of the new action sheet.
+    prompt: `[코덱스] D:/에셋창고/sprite_prop_${who}_act_v3.png 도 맨 뒤에 첨부 (방금 만든 동작 판)
+Using the corrected character in the LAST attached image (the new action sheet) as the exact identity, outfit, weapon and proportions — NOT the old big-faced IMAGE 2 — draw ONE natural 8-frame walk cycle, facing RIGHT in 3/4 view, in a strict grid of FOUR columns x TWO rows, row-major order: 1 contact (right foot forward, heel down), 2 down (weight sinks), 3 passing (left leg passes the right), 4 up (body highest), 5 contact (LEFT foot forward), 6 down, 7 passing, 8 up. Frames 1 and 5 have opposite legs forward; arms swing opposite to the legs; the head bobs 1 to 2 pixels between down and up; hair, cloth and ornaments follow the motion a beat late. The weapon is carried relaxed in the same hand with the same grip and the same size in all 8 frames. ${FACE.split(':')[0]}: keep exactly the face and head size of the new action sheet.
 ${PIX} Same standing height as the action sheet, feet on one shared baseline in every cell. True transparent alpha background with 10% padding, no grid lines, labels, text, shadow or background.` })
 }
 
