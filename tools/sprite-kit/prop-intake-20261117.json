@@ -2841,6 +2841,45 @@
       },
       "archive": "assets_src/realm/retired/prop-20261117/geumbawi",
       "installed": "2026-11-17"
+    },
+    "goeun": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_goeun_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_goeun_walk.png",
+      "actSha256": "4a95c659da8dc7f0e141565e6421505671d3cfb54eb7386ca1be0cffe0c3dd80",
+      "walkSha256": "bf21ca14791a7ab250771c8179c6028761ab58b7448a6a1024cfc68c30f03457",
+      "weaponFix": {
+        "sprite": "sword",
+        "art": "fan",
+        "artKit": "magic"
+      },
+      "portrait": "w-01-silla-princess",
+      "auto": {
+        "cell": [
+          208,
+          160
+        ],
+        "walkScale": 0.6092,
+        "contact": [
+          14,
+          0.85,
+          0.46
+        ],
+        "headsOld": 4.06,
+        "headsNew": 3.42,
+        "headsNewWalk": 3.38,
+        "residueAct": 0.0,
+        "residueWalk": 0.0
+      },
+      "review": {
+        "chinOld": 32.0,
+        "chinNew": 29.0,
+        "note": "v3 보류 후보 · 칼→원화대로 부채(주술)",
+        "weapon": "staff"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/goeun",
+      "installed": "2026-11-17"
     }
   }
 }
