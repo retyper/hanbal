@@ -2619,6 +2619,39 @@
       },
       "archive": "assets_src/realm/retired/prop-20261117/sdallae",
       "installed": "2026-11-17"
+    },
+    "waechief": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_waechief_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_waechief_walk.png",
+      "actSha256": "86c35660e281d52db8183ebfb325c543054f6ab1b592110c3e01e633cf835505",
+      "walkSha256": "939a68f3caa84899e7e3c6b0c91ddd25298c8c65a0b5e5a1391bcad47282759c",
+      "portrait": "g-87-wae-chief",
+      "auto": {
+        "cell": [
+          208,
+          160
+        ],
+        "walkScale": 0.6219,
+        "contact": [
+          14,
+          0.95,
+          0.46
+        ],
+        "headsOld": 2.8,
+        "headsNew": 3.7,
+        "headsNewWalk": 3.12,
+        "residueAct": 0.0005,
+        "residueWalk": 0.0004
+      },
+      "review": {
+        "chinOld": 33.0,
+        "chinNew": 29.0,
+        "note": "v3 보류 후보 · 온조 기준과 맞음 · 곧은 칼(카타나 아님)"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/waechief",
+      "installed": "2026-11-17"
     }
   }
 }
