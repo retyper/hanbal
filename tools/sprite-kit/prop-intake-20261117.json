@@ -132,36 +132,37 @@
       }
     },
     "base-w-36-baekje-maena": {
-      "status": "rejected",
+      "status": "installed",
       "order": "strip",
-      "act": "D:/에셋창고/sprite_prop_base-w-36-baekje-maena_act.png",
-      "walk": "D:/에셋창고/sprite_prop_base-w-36-baekje-maena_walk.png",
-      "actSha256": "d2b1fc3302b476fddf7a9411823a553856379a0ee64a210597c72c40b0deb3fe",
-      "walkSha256": "52d1c2e55417f4590002cdbaced5d6281dd0d65d315a178a88dd7c24a2751ad3",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-36-baekje-maena_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-36-baekje-maena_walk.png",
+      "actSha256": "34bc837129d3611e2c0adf2d6bf6668467d39be6eda310bcaedb49bb6998cd9c",
+      "walkSha256": "3f7c93dfa54ca27854d149c545024ca58625918c2ebcb23f9da4b87357052fdb",
       "portrait": "w-36-baekje-maena",
       "auto": {
         "cell": [
-          208,
+          192,
           160
         ],
-        "walkScale": 0.5458,
+        "walkScale": 0.6002,
         "contact": [
           15,
-          0.75,
-          0.51
+          0.74,
+          0.54
         ],
         "headsOld": 2.63,
-        "headsNew": 2.98,
-        "headsNewWalk": 2.75,
+        "headsNew": 2.69,
+        "headsNewWalk": 2.64,
         "residueAct": 0.0001,
         "residueWalk": 0.0
       },
-      "reason": "얼굴 목표 미달: 턱 자리가 1%p쯤만 올라감 (자 눈금 37→36.5 · 기준 소서노28.5·감실30·쇠비31·온조30 같은 자) · head-audit 기준으로 40→약 39 (목표 31~34) · 띠 크기에서 옛것과 거의 구분 안 됨. 그 밖 검사(20+8 사람·무기·초상 같은 사람·발 줄·찌꺼기)는 통과",
       "review": {
-        "chinOld": 37.0,
-        "chinNew": 36.5,
-        "note": "걷기 3·7 교대"
-      }
+        "chinOld": 33.0,
+        "chinNew": 30.0,
+        "note": "v3 · 걷기 1·5 는 Codex 보류 후보를 Claude 가 판정해 씀"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-36-baekje-maena",
+      "installed": "2026-11-17"
     },
     "base-w-39-gosaburi-galmae": {
       "status": "installed",
@@ -199,33 +200,33 @@
     "base-w-40-mujin-munui": {
       "status": "rejected",
       "order": "strip",
-      "act": "D:/에셋창고/sprite_prop_base-w-40-mujin-munui_act.png",
-      "walk": "D:/에셋창고/sprite_prop_base-w-40-mujin-munui_walk.png",
-      "actSha256": "a716115f325cf1a240ffddaf0d3d55c8c4e719f18985d5f640b96236906fb91a",
-      "walkSha256": "cc3011e5d44cdc58b71091e2c0e863c917ccf95ad3eefd85fe3f9cfc5130b1d0",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-40-mujin-munui_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-40-mujin-munui_walk.png",
+      "actSha256": "0679c3ff740716077e0a0f383b41bdaa148a09643a2dee8f8ff5a323895dd5a9",
+      "walkSha256": "41e4d913c5e6272cbc1c6c0849d3880e5e5996e421e26a0aedf6ba7a240bb320",
       "portrait": "w-40-mujin-munui",
       "auto": {
         "cell": [
-          224,
+          192,
           160
         ],
-        "walkScale": 0.5703,
+        "walkScale": 0.677,
         "contact": [
           14,
-          0.91,
-          0.46
+          0.94,
+          0.51
         ],
         "headsOld": 2.58,
-        "headsNew": 2.88,
-        "headsNewWalk": 2.7,
-        "residueAct": 0.0021,
-        "residueWalk": 0.0008
+        "headsNew": 2.42,
+        "headsNewWalk": 2.69,
+        "residueAct": 0.0013,
+        "residueWalk": 0.0021
       },
-      "reason": "얼굴 목표 미달: 턱 자리가 1%p쯤만 올라감 (자 눈금 31→30.5 · 기준 소서노28.5·감실30·쇠비31·온조30 같은 자) · head-audit 기준으로 40→약 39 (목표 31~34) · 띠 크기에서 옛것과 거의 구분 안 됨. 그 밖 검사(20+8 사람·무기·초상 같은 사람·발 줄·찌꺼기)는 통과",
+      "reason": "v3 얼굴이 옛 띠와 거의 같은 크기(머리 띠 2.58→2.42) · 기준 판보다 큼",
       "review": {
-        "chinOld": 31.0,
-        "chinNew": 30.5,
-        "note": "깃털 머리장식 때문에 자 눈금이 낮게 나옴"
+        "chinOld": null,
+        "chinNew": null,
+        "note": ""
       }
     },
     "base-w-46-geonma-maru": {
@@ -297,36 +298,37 @@
       "act": "D:\\에셋창고\\sprite_prop_base-w-50-siljik-mulga_act.png"
     },
     "base-w-81-byeokjin-byeolbit": {
-      "status": "rejected",
+      "status": "installed",
       "order": "strip",
-      "act": "D:/에셋창고/sprite_prop_base-w-81-byeokjin-byeolbit_act.png",
-      "walk": "D:/에셋창고/sprite_prop_base-w-81-byeokjin-byeolbit_walk.png",
-      "actSha256": "627c4565ce3493fcf57fe2ceb7ea3c4e955c3c2049ec0825560f32d41c7f2fd5",
-      "walkSha256": "126041b1040da3360155009f57294f88b159616949ba9736b8edf2ede66063d6",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-81-byeokjin-byeolbit_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-81-byeokjin-byeolbit_walk.png",
+      "actSha256": "0e26b85cdcd487fd69adb34b65fb06f795f27ebd8de6dc763544d53681d50215",
+      "walkSha256": "a7dce27697b238a929cbeaa8f779e30674316546672bb6099a87869d857b7835",
       "portrait": "w-81-byeokjin-byeolbit",
       "auto": {
         "cell": [
-          232,
+          208,
           160
         ],
-        "walkScale": 0.5367,
+        "walkScale": 0.6802,
         "contact": [
           14,
           0.95,
-          0.54
+          0.55
         ],
         "headsOld": 2.66,
-        "headsNew": 2.88,
-        "headsNewWalk": 2.81,
-        "residueAct": 0.0215,
-        "residueWalk": 0.0177
+        "headsNew": 2.98,
+        "headsNewWalk": 2.79,
+        "residueAct": 0.0254,
+        "residueWalk": 0.0103
       },
-      "reason": "얼굴 목표 미달: 턱 자리가 1%p쯤만 올라감 (자 눈금 33→32 · 기준 소서노28.5·감실30·쇠비31·온조30 같은 자) · head-audit 기준으로 40→약 39 (목표 31~34) · 띠 크기에서 옛것과 거의 구분 안 됨. 그 밖 검사(20+8 사람·무기·초상 같은 사람·발 줄·찌꺼기)는 통과",
       "review": {
-        "chinOld": 33.0,
-        "chinNew": 32.0,
-        "note": "걷기 1·5 같은 다리(접지 컷 복사꼴), 3·7 은 교대"
-      }
+        "chinOld": 34.0,
+        "chinNew": 30.0,
+        "note": "v3"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-81-byeokjin-byeolbit",
+      "installed": "2026-11-17"
     },
     "geumha": {
       "status": "rejected",
