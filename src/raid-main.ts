@@ -7,6 +7,7 @@ import { powerIcon, installPowerHints, comboIcon, rankMark, treeSvg, treeInfo, B
 import { KIT_BY_SPRITE } from './raid/kit-table.ts'
 import { cutBandHtml, cutHeroPath, ensureCutinBandCss, type CutBg } from './ui/cutin-band.ts'
 import { josa } from './core/josa.ts'
+import { hitPortrait, hitStrength, hitArtPath } from './ui/hit-portrait.ts'
 import { raidSound } from './raid/sound.ts'
 import { DEFAULT_HERO, SEAL_STAGE, loadRoster, type RosterHero } from './raid/link.ts'
 import { TRUE_WAKE } from './realm/data/awaken2.ts'
@@ -394,9 +395,22 @@ function updateChunk(pct: number) {
   const left = pct.toFixed(1), w = (chunk.lag - pct).toFixed(1)
   if (hudLast.get('chunk') !== left + '/' + w) { hudLast.set('chunk', left + '/' + w); const el = $('hp-chunk'); el.style.left = left + '%'; el.style.width = w + '%' }
 }
+/**
+ * 맞은 초상 (11-17 형: 「맞았을 때 모습」) — 판이 맞을 때마다 hurt 를 새로 세운다(판 상태는 읽기만). 그때 왼쪽 초상 판이 흔들리고 붉게 번쩍 · 빛 빠짐 · 금.
+ * 잃은 체력이 클수록 세게 (ui/hit-portrait.ts · P.render.hitPortrait*). 피격 그림(realm/hit)이 있으면 그것도 잠깐.
+ */
+const hitSeen = { run: null as HaebiRun | null, hurt: 0, hp: 0 }
+function watchHit() {
+  if (!live || hitSeen.run !== run) { hitSeen.run = run; hitSeen.hurt = run.hurt; hitSeen.hp = run.hp; return }
+  if (run.hurt > hitSeen.hurt + 1e-6) {
+    const art = hitArtPath(awakenedLook(run) ? 'awaken' : 'bust', HERO.bust), media = $('portrait-media')
+    hitPortrait(media, hitStrength(hitSeen.hp - run.hp, run.maxHp), { art: art === null ? null : import.meta.env.BASE_URL + 'realm/' + art, pos: heroVideo.hidden ? '48% 12%' : '50% 20%' })
+  }
+  hitSeen.hurt = run.hurt; hitSeen.hp = run.hp
+}
 function updateHud() {
   const hpPct = Math.max(0, run.hp / run.maxHp * 100)
-  setText('health', `${Math.ceil(run.hp)} / ${run.maxHp}`); setWidth('hp-fill', hpPct); updateChunk(hpPct)
+  setText('health', `${Math.ceil(run.hp)} / ${run.maxHp}`); setWidth('hp-fill', hpPct); updateChunk(hpPct); watchHit()
   // 영웅의 투지 보호막: 체력 끝에 이어 붙는 하늘빛 덧막대 (막대가 넘치면 끝에 붙여 체력 위로 겹친다)
   const wardPct = Math.min(100, run.ward / run.maxHp * 100), wardOn = live && wardPct > 0
   if ($('hp-ward').hidden === wardOn) $('hp-ward').hidden = !wardOn

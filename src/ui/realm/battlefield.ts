@@ -42,6 +42,7 @@ import { cellColor, lookCells, lookNums, oneChance, pctText, signed, type LookCe
 import { t as tr, type Key } from '../../i18n/index.ts'
 import { nameTable } from '../../i18n/names.ts'
 import { WALK_CYCLE } from '../../raid/walk-cycle.ts'
+import { ensureHitPortraitCss, hitArtPath, hitPortraitHtml } from '../hit-portrait.ts'
 /** 걷기 띠가 6·4칸이면 그 칸까지만 돈다 (8칸으로 돌리면 한 바퀴마다 같은 두 걸음이 거듭 나와 턱 걸림 · 형 11-16) · 20칸 띠의 칸 k 는 k/19 */
 const walkVars = (file: string): string => { const n = WALK_CYCLE[file]; return n === undefined ? '' : `;--w1:${((4 + n) / 19 * 100).toFixed(4)}%;--gwn:${n}` }
 
@@ -1580,6 +1581,9 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const mr = (x: number): number => Math.round(Math.max(0, Math.min(1.2, x / base)) * 83)
     const num = `<span class="wn">${tr('war.warhtml.1', { cnt: cnt(old, now) })}</span>`
     const hitFx = hitOf(i) !== '' ? `<img class="wfx-hit" src="${art}fx/impact.png" alt="">` : ''
+    // 맞은 초상 (11-17 형 · ui/hit-portrait.ts) — 흔들림과 같은 때(--hd) 초상 위에 붉은 빛 · 빛 빠짐 · 금 · 크게 잃으면 세게
+    const hitArt = hitArtPath('bust', hero !== null ? faceFile(hero) : undefined)
+    const hitPic = hitOf(i) === '' ? '' : (ensureHitPortraitCss(), hitPortraitHtml(hitOf(i).includes('hithard') ? 1 : 0.45, { delay: 'var(--hd, 1.2s)', inset: '8%', seed: i, pos: 'top', art: hitArt === null ? null : art + hitArt }))
     // 잃은 사람 수 · 꺾인 사기는 전장 한가운데 배지로 튄다 (fieldHtml 의 popOf · 형 11-01: "화면 중앙부근에서") — 위 카드에서는 막대와 숫자만 준다
     // 호궤를 고를 수 있으면 — 그 깃발에 마우스를 올리거나 누르고 있거나 골라 두면 사기 막대에 오를 몫이 깜박인다 (형 10-25)
     const fNow = mr(m(i))
@@ -1591,7 +1595,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     // 부장 — 처음부터 선 이들 + 원군과 함께 닿아 지휘를 맡지 않은 이들
     const cameH = rounds.flatMap((x) => (x.relief?.side === (i === 0 ? 'a' : 'd') ? (x.relief.heroes ?? []).filter((id) => id !== x.relief!.chief) : []))
     const aides = [...(st?.aides?.[i] ?? []), ...cameH].map((id) => `<span class="waide${lostIds.has(id) ? ' gone' : ''}" title="${esc(prev.heroes[id]?.name ?? after.heroes[id]?.name ?? '')}">${face(id, art, unitOf(i))}</span>`).join('')
-    return `<div class="ws ${cls}${hitOf(i)}${hero !== null && lostIds.has(hero) ? ' chiefgone' : ''}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--bd:${tAt(2)}s"><span class="wpf">${face(hero, art, unitOf(i))}<i></i>${aides !== '' ? `<span class="waides">${aides}</span>` : ''}</span><b>${esc(name)}</b><span class="wnat">${roleChip((cls === 'us') === weAtk)}${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}${esc(fname(f))}</span>`
+    return `<div class="ws ${cls}${hitOf(i)}${hero !== null && lostIds.has(hero) ? ' chiefgone' : ''}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--bd:${tAt(2)}s"><span class="wpf">${face(hero, art, unitOf(i))}${hitPic}<i></i>${aides !== '' ? `<span class="waides">${aides}</span>` : ''}</span><b>${esc(name)}</b><span class="wnat">${roleChip((cls === 'us') === weAtk)}${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}${esc(fname(f))}</span>`
       // 무너지는 금 — 이 밑으로 떨어지면 그 편이 무너져 진다 (tactics: 군사 tacBreakMen · 사기는 처음의 tacBreakMorale) (형 10-24: "사기가 어느 정도 떨어지면 패배한다가 가로바에 표시")
       + `<div class="wbar men">${bar(Math.round(n(i) * 100), Math.round(n0(i) * 100))}${brk(Math.round(P.realm.tacBreakMen * 100), Math.round(n(i) * 100), tr('war.warhtml.2'))}</div>${num}`
       + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}${feastPv}${brk(st?.brk !== undefined ? mr(st.brk[i]) : Math.round(P.realm.tacBreakMorale * 83), mr(m(i)), tr('war.warhtml.3'))}</div><span class="wn">${tr('war.warhtml.4', { cnt: cnt(Math.round((m0(i) / base) * 100), Math.round((m(i) / base) * 100)) })}<small class="brkl"> ${tr('war.warhtml.5', { round: Math.round(((st?.brk?.[i] ?? P.realm.tacBreakMorale * base) / base) * 100) })}</small></span>${hitFx}</div>` // 맞은 불꽃은 맨 뒤에 — 앞에 끼면 초상이 새로 만들어져 깜빡였다 (paintNow 의 바뀐 곳만 고치기)

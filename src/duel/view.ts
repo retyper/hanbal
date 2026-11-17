@@ -13,6 +13,7 @@ import { makeRng } from '../core/rng.ts'
 import { AWAKEN_ART, AWAKEN_LOOP, loopFile } from '../realm/data/awaken-art.ts'
 import { SPRITE_PX } from '../realm/data/spritePx.ts'
 import { DUEL_ATLASES, LEGACY_ATLAS, fighterMotion, type FighterAnim } from './fighter-motion.ts'
+import { HitClock, drawHitPortrait, hitArtPath, hitStrength, type HitForm, type HitFrame } from '../ui/hit-portrait.ts'
 
 export interface DuelSide {
   readonly name: string
@@ -103,6 +104,21 @@ const mePid = cfg.me.portrait
 const foeArt = foePid !== undefined ? img(`realm/awaken-hd/${foePid}.jpg`, `realm/bust-hd/${foePid}.jpg`) : null
 const meFace = mePid !== undefined ? img(`realm/bust/${mePid}.jpg`) : null
 const foeFace = foePid !== undefined ? img(`realm/bust/${foePid}.jpg`) : null
+/**
+ * 맞은 초상 (11-17 형: 「맞았을 때 모습」 · ui/hit-portrait.ts) — 우리 얼굴(체력 막대 머리) · 적장 액자와 얼굴이 맞으면 붉게 번쩍 · 빛 빠짐 · 금.
+ * 그리는 쪽 기억만 (판은 읽기만) · 피격 그림(realm/hit)은 있을 때만 부른다.
+ */
+const meHit = new HitClock(), foeHit = new HitClock()
+const hitArt = (form: HitForm, pid: string | undefined): HTMLImageElement | null => { const p = hitArtPath(form, pid); return p === null ? null : img('realm/' + p) }
+const foePanelHitArt = hitArt('awaken', foePid), meFaceHitArt = hitArt('bust', mePid), foeFaceHitArt = hitArt('bust', foePid)
+const calmMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+/** 피격 그림을 겉막 아래에 잠깐 (그림이 있을 때만) */
+const hitArtDraw = (im: HTMLImageElement | null, f: HitFrame, x: number, y: number, w: number, h: number, circle: boolean): void => {
+  if (im === null || f.art <= 0.001 || !im.complete || im.naturalWidth === 0) return
+  ctx.save(); ctx.beginPath()
+  if (circle) ctx.arc(x + w / 2, y + h / 2, Math.min(w, h) / 2, 0, Math.PI * 2); else ctx.rect(x, y, w, h)
+  ctx.clip(); ctx.globalAlpha *= f.art; ctx.drawImage(im, x, y, w, h); ctx.restore()
+}
 /**
  * 각성 영상은 전투 전의 짧은 등장 컷에서만, 원래 화면비 그대로 쓴다.
  * 정사각 초상에 세로 영상을 겹치면 얼굴이 두 겹으로 보이고 크기가 튄다.
@@ -260,6 +276,8 @@ let entranceSource: HTMLVideoElement | HTMLImageElement | null = null
 let entrancePending = false
 let entranceShade: CanvasGradient | null = null
 let duel: Duel = createDuel({ seed, muMe, muFoe, tier })
+/** 적장 체력 끝 (맞은 초상 세기 셈) */
+const foeHpMax = (): number => Math.round(P.duel.hp * tierOf(duel).foeHp)
 let seen = 0
 let queued: Tap | null = null
 let freezeUntil = 0
@@ -511,7 +529,7 @@ function begin(): void {
   seen = 0; queued = null
   pops.length = 0; sparks.length = 0; slashes.length = 0; marks.length = 0; judges.length = 0
   freezeUntil = 0; acc = 0; last = 0; shake = 0; flash = null
-  critAt = -1e9; rushKickAt = -1e9; hurtAt = -1e9; foeHurtAt = -1e9
+  critAt = -1e9; rushKickAt = -1e9; hurtAt = -1e9; foeHurtAt = -1e9; meHit.reset(); foeHit.reset()
   meAnim = { kind: 'idle', t0: 0 }; foeAnim = { kind: 'idle', t0: 0 }
   mode = 'intro'; modeAt = performance.now(); endAt = 0
   entranceSource = foeLoop === null ? foeArt : null
@@ -651,7 +669,7 @@ function onEvent(e: DuelEvent, now: number): void {
       meAnim = { kind: 'guard', t0: now }; foeAnim = { kind: 'attack', t0: now }
       break
     case 'miss':
-      SFX.miss(); freezeUntil = now + R.hitStopHit; shake = R.shake; hurtAt = now
+      SFX.miss(); freezeUntil = now + R.hitStopHit; shake = R.shake; hurtAt = now; meHit.hit(now, hitStrength(e.dmgMe, R.hp))
       flash = { rgb: '190,20,10', t0: now, ms: 220, a: 0.4 }
       marks.push({ x, y, t0: now, kind: 'miss', off: e.off ?? 0 })
       judges.push({ x, y, t0: now, kind: 'miss', when: (e.off ?? 0) < 0 ? 'early' : 'late' })
@@ -661,7 +679,7 @@ function onEvent(e: DuelEvent, now: number): void {
       break
     case 'crit':
       // 적이 맞는 건 화면이 아니라 적장 액자(critAt 의 kick·zoom)와 적 체력 막대가 흔들린다 (형 11-11)
-      SFX.crit(); critAt = now; foeHurtAt = now; freezeUntil = now + R.hitStopCrit
+      SFX.crit(); critAt = now; foeHurtAt = now; freezeUntil = now + R.hitStopCrit; foeHit.hit(now, hitStrength(e.dmgFoe, foeHpMax()))
       flash = { rgb: '255,250,235', t0: now, ms: 260, a: 0.75 }
       slashes.push({ x: (x + panel().x + panel().s / 2) / 2, y: (y + panel().y + panel().s / 2) / 2, ang: slashAngle(x, y, e.t), len: Math.hypot(W, H) * 0.85, t0: now + 60, ms: 520, color: '255,255,255', w: 22 })
       burst(W / 2, play().y + play().h * 0.42, 34, '#ffd98a', 12, now)
@@ -674,7 +692,7 @@ function onEvent(e: DuelEvent, now: number): void {
       foeAnim = { kind: 'stagger', t0: now }
       break
     case 'rushHit':
-      SFX.rushHit(); foeHurtAt = now; rushKickAt = now
+      SFX.rushHit(); foeHurtAt = now; rushKickAt = now; foeHit.hit(now, hitStrength(e.dmgFoe, foeHpMax()))
       try { navigator.vibrate?.(18) } catch { /* 햅틱 없는 기기 */ }
       slashes.push({ x, y, ang: slashAngle(x, y, e.t), len: Math.min(W, H) * 0.32, t0: now, ms: 240, color: '255,255,255', w: 8 })
       pop(`−${e.dmgFoe}`, '#ffd98a', 26)
@@ -1021,14 +1039,16 @@ function drawDuel(now: number, fadeIn: number): void {
   const sinceRush = now - rushKickAt
   const kick = (sinceCrit < 400 ? Math.sin(sinceCrit / 30) * (1 - sinceCrit / 400) * 12 : 0)
     + (sinceRush < 90 ? Math.sin(sinceRush / 7) * (1 - sinceRush / 90) * 9 : 0) // 연타가 먹히면 아주 빠른 좌우 떨림
+  const fhit = foeHit.at(now, calmMotion)
   ctx.save()
-  ctx.translate(pn.x + pn.s / 2 + kick, pn.y + pn.s / 2); ctx.rotate(sway)
+  ctx.translate(pn.x + pn.s / 2 + kick + (fhit?.dx ?? 0), pn.y + pn.s / 2 + (fhit?.dy ?? 0)); ctx.rotate(sway)
   const zoom = 1 + (sinceCrit < 500 ? 0.05 * (1 - sinceCrit / 500) : 0)
   ctx.scale(zoom, zoom)
   const pb = panelBake(pn.s)
   if (pb !== null) { ctx.globalAlpha = fadeIn; ctx.drawImage(pb, -pn.s / 2, -pn.s / 2, pn.s, pn.s); ctx.globalAlpha = 1 }
   else { roundRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s, pn.s * 0.06); ctx.fillStyle = 'rgba(10,7,5,.55)'; ctx.fill() }
   if (now - foeHurtAt < 120) { roundRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s, pn.s * 0.06); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(255,240,220,${0.28 * (1 - (now - foeHurtAt) / 120)})`; ctx.fill(); ctx.globalCompositeOperation = 'source-over' } // 맞으면 초상이 잠깐 하얗게 번쩍
+  if (fhit !== null) { ctx.globalAlpha = fadeIn; hitArtDraw(foePanelHitArt, fhit, -pn.s / 2, -pn.s / 2, pn.s, pn.s, false); drawHitPortrait(ctx, fhit, -pn.s / 2, -pn.s / 2, pn.s, pn.s, 'rect', pn.s * 0.06); ctx.globalAlpha = 1 } // 맞은 초상: 붉게 · 빛 빠짐 · 금
   const fr = art('panel-frame')
   if (fr !== null) { const F = pn.s / 0.89, Fh = pn.s / 0.877; ctx.drawImage(scaled(fr, F, Fh), -pn.s / 2 - 0.055 * F, -pn.s / 2 - 0.061 * Fh, F, Fh) } // 테두리 안쪽 창 = 그림의 5.5~94.5% · 6.1~93.8%
   else { ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(214,170,90,.85)'; roundRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s, pn.s * 0.06); ctx.stroke() }
@@ -1150,10 +1170,15 @@ function drawDuel(now: number, fadeIn: number): void {
   const capFoe = bar(bxFoe + jfx, by + jfy, bw, bh, d.foe.hp / Math.round(R.hp * tierOf(d).foeHp), now - foeHurtAt < 200 ? '#ffffff' : '#e76f51', 'right', 'hud-bar')
   pm('bars')
   // 둥근 머리 안에 얼굴
-  for (const [cap, face] of [[capMe, meFace], [capFoe, foeFace]] as const) {
+  // 맞으면 얼굴도 붉게 · 빛 빠짐 · 금 (흔들림은 막대 떨림이 이미 준다) · 피격 그림이 있으면 그 얼굴로 잠깐
+  for (const [cap, face, hc, hitIm] of [[capMe, meFace, meHit, meFaceHitArt], [capFoe, foeFace, foeHit, foeFaceHitArt]] as const) {
     if (cap === null || face === null || !face.complete || face.naturalWidth === 0) continue
+    const hf = hc.at(now, true)
     ctx.save(); ctx.beginPath(); ctx.arc(cap.cx, cap.cy, cap.r, 0, Math.PI * 2); ctx.clip()
-    ctx.drawImage(face, cap.cx - cap.r * 1.15, cap.cy - cap.r * 1.0, cap.r * 2.3, cap.r * 2.3); ctx.restore()
+    ctx.drawImage(face, cap.cx - cap.r * 1.15, cap.cy - cap.r * 1.0, cap.r * 2.3, cap.r * 2.3)
+    if (hf !== null && hitIm !== null && hf.art > 0.001 && hitIm.complete && hitIm.naturalWidth > 0) { ctx.globalAlpha = hf.art; ctx.drawImage(hitIm, cap.cx - cap.r * 1.15, cap.cy - cap.r * 1.0, cap.r * 2.3, cap.r * 2.3); ctx.globalAlpha = 1 }
+    ctx.restore()
+    if (hf !== null) drawHitPortrait(ctx, hf, cap.cx - cap.r, cap.cy - cap.r, cap.r * 2, cap.r * 2, 'circle')
   }
   const namePx = Math.round(14 * Math.max(1, hudS))
   const nameY = by + bh + Math.round(18 * Math.max(1, hudS))
@@ -1299,5 +1324,7 @@ function close(): void {
 }
 if (mode === 'duel') begin()
 wake()
+// 개발 검수 손잡이 — 헤드리스 시험(tools/hit-portrait-probe.ts)이 화면 쪽 사건 하나를 틀어 본다 (판은 그대로) · 배포 빌드엔 없음
+if (import.meta.env?.DEV === true) Object.assign(window, { __duelEvent: (e: DuelEvent): number => { onEvent(e, last); return last }, __duelMode: () => mode })
 return done
 }

@@ -1468,6 +1468,23 @@ export const SPEC = {
      * fullArch(0.07)와 같은 크기라, 진짜 만작으로 젖혔던 등이 완전 소진에서 정확히 0으로 돌아온다.
      */
     poseStrainSpine: k(0.07, 0, 0.4, 0.005, '등이 헐거워지는 양', 'm'),
+
+    // ── 맞은 장수 초상 (11-17 형: 「맞았을 때 모습」 1단계 = 그림 없이 코드로 · src/ui/hit-portrait.ts) ──
+    // 열전 왼쪽 초상 판 · 겨루기 적장 액자와 얼굴 · 본편 합전 장수 초상이 같은 값을 쓴다.
+    // 세기 s(0~1) = 잃은 체력 몫 ÷ hitPortraitBigLoss. 아래 Min~Max 사이를 s 로 고른다.
+    hitPortraitMs: k(260, 120, 600, 10, '맞은 초상: 효과 길이 (작은 피해)', 'ms'),
+    hitPortraitMsHard: k(320, 120, 800, 10, '맞은 초상: 효과 길이 (큰 피해)', 'ms'),
+    hitPortraitBigLoss: k(0.12, 0.02, 0.5, 0.01, '맞은 초상: 이만큼(최대 체력 몫) 잃으면 가장 세게'),
+    hitPortraitShakeMin: k(3, 0, 12, 0.5, '맞은 초상: 흔들림 폭 (작은 피해)', 'px'),
+    hitPortraitShakeMax: k(7, 0, 20, 0.5, '맞은 초상: 흔들림 폭 (큰 피해)', 'px'),
+    hitPortraitRedMin: k(0.22, 0, 1, 0.01, '맞은 초상: 붉은 번쩍임 짙기 (작은 피해)'),
+    hitPortraitRedMax: k(0.42, 0, 1, 0.01, '맞은 초상: 붉은 번쩍임 짙기 (큰 피해)'),
+    hitPortraitGrayMin: k(0.16, 0, 1, 0.01, '맞은 초상: 빛 빠짐(잿빛 막) 짙기 (작은 피해)'),
+    hitPortraitGrayMax: k(0.34, 0, 1, 0.01, '맞은 초상: 빛 빠짐(잿빛 막) 짙기 (큰 피해)'),
+    hitPortraitCrackMin: k(0.5, 0, 1, 0.01, '맞은 초상: 갈라진 금 짙기 (작은 피해)'),
+    hitPortraitCrackMax: k(0.9, 0, 1, 0.01, '맞은 초상: 갈라진 금 짙기 (큰 피해)'),
+    hitPortraitGapMs: k(90, 0, 400, 10, '맞은 초상: 이 안에 또 맞으면 처음부터 다시 틀지 않고 세기만 올린다 (연타에 깜빡이지 않게)', 'ms'),
+    hitPortraitArtMs: k(420, 100, 1500, 10, '맞은 초상: 피격 그림(realm/hit)이 있으면 바꿔 보여 주는 시간', 'ms'),
   },
 
   /**
