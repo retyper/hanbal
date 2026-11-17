@@ -338,16 +338,23 @@ const RETRY4 = {
 // v4 를 받고도 Claude 가 반려한 것 → v5 (까닭 한 줄을 문안 맨 앞에)
 const SAME_H = 'SIZE CONSISTENCY (the v4 was rejected for this): every one of the 20 cells shows the character at the SAME scale. The walking figures in cells 4 to 9 must be exactly as tall and as broad as the standing figures in cells 1 to 3 (only the stride changes), never a smaller or slimmer person.'
 const SP_V5 = { 'gen-base-g-46-uga-nureongso': SAME_H, 'gen-damul': 'STYLE (the v4 was rejected by the lead artist): it looked realistic and long-legged. Match the cute stylized pixel look and build of Soseono and Gamsil exactly.', 'gen-base-g-52-tamna-oreum': 'STYLE (the v4 was rejected by the lead artist): the v4 looked more realistic and longer-legged than Soseono and Gamsil. Match their cute stylized pixel look and their build exactly.' }
-for (const k of SP_KEYS) {
-  if (!SP_TEST.includes(k)) continue
-  const V = SP_V5[k] ? 'v5' : SP_RETRY[k] ? 'v4' : 'v3', R4 = (SP_V5[k] ? SP_V5[k] + '\n' : '') + (SP_RETRY[k] ? RETRY4[SP_RETRY[k]] + '\n' : '')
+// 11-17 저녁 형: 「베이스라인 될 애들부터 제대로 만들자. 무기별 성별로 쫙」 → 무기×성별 기준 판 열 장을 먼저(소서노=창·여 · 감실=주술·여 · 쇠비=도끼·여 는 이미 있음)
+//   이 열 장을 형이 보고 맞다 할 때까지 나머지 얼굴 줄(v3·v4·v5)은 멈춘다 → 맞으면 각 장수는 자기 무기·성별 기준 판을 IMAGE 1 로
+const BL = { '도끼·남': 'gen-biryu', '활·남': 'gen-jumong', '활·여': 'gen-haedal', '단검·남': 'gen-hogong', '단검·여': 'gen-irang',
+  '주술·남': 'gen-jinha', '돌팔매·남': 'gen-base-g-38-chopal-palmae', '창·남': 'gen-oi', '칼·남': 'gen-onjo', '칼·여': 'gen-ara' }
+const BL_MODE = true
+const BL_OF = Object.fromEntries(Object.entries(BL).map(([slot, k]) => [k, slot]))
+const SP_RUN = BL_MODE ? Object.values(BL) : SP_KEYS.filter((k) => SP_TEST.includes(k))
+for (const k of SP_RUN) {
+  const BLT = BL_OF[k] ? `BASELINE MASTER (${BL_OF[k]}): this sheet becomes the style reference that every other character with the same weapon and gender will be drawn from, so it must sit perfectly beside Soseono and Gamsil in IMAGE 1 as one family: identical pixel rendering, outline weight, palette warmth, face size, 4.5-head build, leg length and boot size. Check side by side before saving.\n` : ''
+  const V = BL_OF[k] ? 'bl' : SP_V5[k] ? 'v5' : SP_RETRY[k] ? 'v4' : 'v3', R4 = BLT + (SP_V5[k] ? SP_V5[k] + '\n' : '') + (SP_RETRY[k] ? RETRY4[SP_RETRY[k]] + '\n' : '')
   const bust = PORTRAIT[k] ?? (k.startsWith('gen-base-') ? k.slice('gen-base-'.length) : null)
   const refs = ['/assets_src/realm/sprite-prop/ref-style2.png', `/assets_src/realm/sprite-prop/${k}-now.png`, ...(bust && existsSync(`public/realm/bust-hd/${bust}.jpg`) ? [`/realm/bust-hd/${bust}.jpg`] : [])]
   const wf = WFIX[k]
   const WEAP = wf ? `WEAPON FIX (most important): in the original portrait art (IMAGE 3) this character holds ${wf.artWeapon}, NOT the ${wf.spriteWeapon} drawn in IMAGE 2. Redraw every cell with the ${wf.artWeapon} from the portrait, held the same way in all poses; the attack poses use it the way that item is really used (swing, thrust, throw, ring, play or wave it).
 ` : ''
   const who = k.slice(4)
-  jobs.push({ id: `SP-${who}-act-${V}`, group: 'remake-sprite', save: `sprite_prop_${who}_act_${V}.png`, title: `${who} · 전투 띠 20자세 (${wf ? '무기 바로잡기 · ' : ''}얼굴 ${tier(k)})`,
+  jobs.push({ id: `SP-${who}-act-${V}`, group: 'remake-sprite', save: `sprite_prop_${who}_act_${V}.png`, title: `${BL_OF[k] ? `★ 기준 판 ${BL_OF[k]} · ` : ''}${who} · 전투 띠 20자세 (${wf ? '무기 바로잡기 · ' : ''}얼굴 ${tier(k)})`,
     refs, now: `${wf ? `띠 무기 ${wf.spriteWeapon} → 원화 ${wf.artWeapon} · ` : ''}${tier(k) === '무기' ? '얼굴은 기준 안' : `얼굴이 기준보다 큼 · 턱 위치 몸 키의 ${AUDIT.tierA_chin_ge38[k] ?? AUDIT.tierB_chin_37[k]}% (기준 31~33%)`}`,
     use: `받으면 11-14 비율 교정과 같은 길로 띠에 넣음(anim-px/${k}.png · 걷기 칸은 다음 장으로 바꿈) · 옛 띠는 assets_src/realm/retired 로`,
     prompt: `${R4}${STYLE3}
