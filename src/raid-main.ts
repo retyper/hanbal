@@ -309,7 +309,7 @@ function openTree() {
   treeView.innerHTML = `<div class="panel tree-panel"><div class="tree-head"><h2>${weapon} 기술 나무</h2><small>레벨 ${run.level} · 남은 고름 ${Math.max(0, C.maxLevel - run.level)}번</small><button class="tree-close primary">닫기</button></div>${treeSvg(run)}<p class="tree-info">칸을 누르면 설명이 나옵니다</p></div>`
   treeView.hidden = false
 }
-function closeTree() { treeView.hidden = true }
+function closeTree() { if (!treeView.hidden) treeView.hidden = true }   // 판마다 불린다 — 같은 값도 쓰면 속성이 바뀐 셈이 된다 (11-18)
 treeView.onclick = e => {
   const t = e.target as Element, node = t.closest('[data-node],[data-combo],[data-ult]')
   if (node) { treeView.querySelectorAll('.picked').forEach(x => x.classList.remove('picked')); node.classList.add('picked'); treeView.querySelector('.tree-info')!.innerHTML = treeInfo(run, node); return }
@@ -318,7 +318,7 @@ treeView.onclick = e => {
 const treeButton = '<button id="tree-open" class="tree-btn" aria-label="기술 나무 보기"><img src="' + import.meta.env.BASE_URL + 'realm/raid/power-skill.png" alt="">나무</button>'
 function showOverlay() {
   const state = !live ? '' : run.state !== 'playing' ? run.state : run.offers.length ? 'upgrade:' + run.offers.join(',') : paused ? 'pause' : ''
-  if (!state) { shown = ''; $('overlay').hidden = true; closeTree(); return }
+  if (!state) { shown = ''; if (!$('overlay').hidden) $('overlay').hidden = true; closeTree(); return }
   if (state === shown) return
   hidePowerHint(); closeTree()
   shown = state; const overlay = $('overlay'); overlay.hidden = !state; if (!state) return
@@ -372,7 +372,7 @@ window.addEventListener('message', e => {
 /** 값이 바뀔 때만 DOM 에 쓴다 — 같은 글자·폭을 매 프레임 다시 써도 폰은 화면 배치·그리기를 다시 해서 프레임이 20 으로 떨어졌다 (11-16 형 · 갤럭시 플립7) */
 const hudLast = new Map<string, string>()
 function setText(id: string, v: string) { if (hudLast.get(id) === v) return; hudLast.set(id, v); $(id).textContent = v }
-function setWidth(id: string, pct: number) { const v = pct.toFixed(1); if (hudLast.get(id + '.w') === v) return; hudLast.set(id + '.w', v); $(id).style.width = v + '%' }
+function setWidth(id: string, pct: number, step = .1) { const v = (Math.round(pct / step) * step).toFixed(1); if (hudLast.get(id + '.w') === v) return; hudLast.set(id + '.w', v); $(id).style.width = v + '%' }
 function setFlag(id: string, cls: string, on: boolean) { const k = id + '.' + cls, v = on ? '1' : ''; if (hudLast.get(k) === v) return; hudLast.set(k, v); $(id).classList.toggle(cls, on) }
 /** 잃은 체력 토막 — 롤 체력바 (본편 battlefield 막대와 같은 결 · 형 11-16) · 화면 쪽 기억만 (판 상태는 읽기만) */
 const chunk = { lag: 100, last: 100, hitAt: -9, flashAt: -9, at: 0 }
@@ -400,6 +400,7 @@ function updateChunk(pct: number) {
  * 잃은 체력이 클수록 세게 (ui/hit-portrait.ts · P.render.hitPortrait*). 피격 그림(realm/hit)이 있으면 그것도 잠깐.
  */
 const hitSeen = { run: null as HaebiRun | null, hurt: 0, hp: 0 }
+let hudCountAt = -9
 function watchHit() {
   if (!live || hitSeen.run !== run) { hitSeen.run = run; hitSeen.hurt = run.hurt; hitSeen.hp = run.hp; return }
   if (run.hurt > hitSeen.hurt + 1e-6) {
@@ -417,16 +418,19 @@ function updateHud() {
   if (wardOn) { setWidth('hp-ward', wardPct); const left = Math.min(hpPct, 100 - wardPct).toFixed(1); if (hudLast.get('ward.l') !== left) { hudLast.set('ward.l', left); $('hp-ward').style.left = left + '%' } }
   setText('phase', phase(run));
   if (mode === 'vanguard') setText('hint', `전위대장 ${run.breaches}/3 돌파 · 일시정지에서 성과를 갖고 귀환 가능`);  const remaining = Math.max(0, Math.ceil(runDuration(run) - run.t)); setText('clock', `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`)
-  setText('kills', run.kills.toLocaleString()); setText('level', `Lv.${run.level}`)
-  setWidth('xp-fill', run.level >= C.maxLevel ? 100 : Math.min(100, run.xp / xpNeeded(run) * 100))
+  // 격파 수·연속 격파 글자는 C.hudCountEvery 초에 한 번만 (늑대 떼에 프레임마다 바뀌어 그림자 진 큰 글자를 매번 다시 칠했다 · 11-18 플립7)
+  const countNow = performance.now() / 1000, countDue = countNow - hudCountAt >= C.hudCountEvery || run.comboKills < 15
+  if (countDue) { hudCountAt = countNow; setText('kills', run.kills.toLocaleString()) }
+  setText('level', `Lv.${run.level}`)
+  setWidth('xp-fill', run.level >= C.maxLevel ? 100 : Math.min(100, run.xp / xpNeeded(run) * 100), C.hudBarStep)
   // 각성 막대 — 차는 동안 · 각성(투지) 동안은 남은 시간이 줄어든다 (바뀔 때만 씀)
-  setWidth('wake-fill', gaugeRatio(run) * 100); setFlag('wake-bar', 'on', run.form !== 'normal')
+  setWidth('wake-fill', gaugeRatio(run) * 100, C.hudBarStep); setFlag('wake-bar', 'on', run.form !== 'normal')
   setText('rank-title', awakenedLook(run) ? `각성 · ${HERO.name}` : HERO.name)
   setText('reaction', !live ? mode === 'vanguard' ? '내가 길을 열겠다. 뒤따라와!' : `${weapon} 하나로 시작하는 열전` : run.hurt > 0 ? '버텨낼 수 있어!' : run.attack > 0 ? '길을 열어라!' : awakenedLook(run) ? '이제, 몰아칠 차례다.' : run.moving ? '내 뒤를 따라와.' : '빈틈을 기다리는 중')
   setFlag('character', 'awakened', awakenedLook(run)); setFlag('character', 'hurt', run.hurt > 0)
   setFlag('layout', 'in-run', live)   // 싸우는 동안 초상 옆 글(고을·이름·한마디)은 걷는다 (형 11-16: 「백제의 장수 · 길을 열어라 같은 텍스트 다 없애」)
   setText('announcement', run.messageTime > 0 ? run.message : ''); setFlag('announcement', 'visible', run.messageTime > 0)
-  setText('streak', run.comboKills >= 15 ? `${run.comboKills} 연속 격파` : '')
+  if (countDue) setText('streak', run.comboKills >= 15 ? `${run.comboKills} 연속 격파` : '')
   // 각성 단추: 막대가 다 차면 뜬다 · 각성 동안 체력 막대가 금빛으로 흐른다 (무적)
   const ready = live && wakeReady(run); if ($('wake').hidden === ready) $('wake').hidden = !ready
   setFlag('combat-hud', 'awake', run.form === 'awake')
@@ -442,8 +446,22 @@ function updateHud() {
     $('combo-badges').innerHTML = kitCombos(kit).filter(c => run.combos.includes(c.id)).map(c => `<span>${comboIcon(c.id)}<b>${c.name} ${rankMark(comboRank(run, c.id))}</b></span>`).join('')
   }
 }
+/**
+ * 폰에서 프레임 재기 (11-18 · 헤드리스로는 플립7의 늑대 떼 렉이 재현되지 않았다) — 주소에 ?perf 를 붙이면 왼쪽 위에 초당 프레임 · 적 · 늑대 · 효과 · 숫자 수를
+ * 0.5초마다 적는다. 배포본에서도 된다: …/raid.html?kit=bow&perf
+ */
+const perfEl = query.has('perf') ? Object.assign(document.body.appendChild(document.createElement('output')), { id: 'perf-meter' }) : null
+if (perfEl) perfEl.style.cssText = 'position:fixed;left:4px;top:4px;z-index:99;font:11px monospace;color:#fff;background:#000a;padding:2px 5px;pointer-events:none'
+const perf = { at: 0, frames: 0 }
+function perfTick(now: number) {
+  if (!perfEl) return
+  perf.frames++; if (now - perf.at < 500) return
+  const fps = perf.frames * 1000 / (now - perf.at); perf.at = now; perf.frames = 0
+  perfEl.textContent = `${fps.toFixed(0)}fps 적${run.enemies.length} 늑대${run.enemies.filter(e => e.kind === 'dog').length} 투사${run.shots.length} 효과${run.fx.length} 숫자${run.fx.filter(f => f.n !== undefined).length}`
+}
 function frame(now: number) {
   raf = 0; if (document.hidden) return
+  perfTick(now)
   const dt = last ? Math.min(.1, (now - last) / 1000) : 0; last = now
   if (live && !paused && !inspecting && !rotationBlocked && run.state === 'playing' && !run.offers.length) {
     acc += dt
@@ -472,7 +490,7 @@ function frame(now: number) {
 function schedule() { if (!raf && !document.hidden) raf = requestAnimationFrame(frame) }
 updateHud(); schedule()
 // 개발 검수 손잡이 — 헤드리스 시험(tools/raid-*-probe.ts)이 판 상태를 읽고 체력을 깎아 본다 · 배포 빌드엔 없음
-if (import.meta.env.DEV) Object.assign(window, { __raid: () => run, __raidCutin: (wake: boolean, tru = false) => showSkillCutin(wake, tru) })
+if (import.meta.env.DEV) Object.assign(window, { __raid: () => run, __raidSound: sound, __raidCutin: (wake: boolean, tru = false) => showSkillCutin(wake, tru) })
 if (import.meta.env.DEV && new URLSearchParams(location.search).has('review')) {
   import('./raid/haebi-review.ts').then(({ installReview }) => installReview(root, s => { notifyVanguardStart(); run = s; live = true; paused = !s.offers.length; shown = ''; loadoutKey = ''; resetInput(); $('menu').hidden = true; $('play').hidden = false; $<HTMLButtonElement>('pause').disabled = false; layoutTrial(); showOverlay(); updateHud(); schedule() }, mode, kit))
 }

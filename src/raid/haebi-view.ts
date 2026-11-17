@@ -13,16 +13,43 @@ export const imagePaths = [genArtOf('haebi').file, genArtOf('aw1-haebi').file, '
   ...['boss-ford', 'boss-palisade', 'boss-snow', 'boss-fortress', ...Object.values(MOB_ART)].map(n => `anim-px/${n}.png`), 'raid/snow.webp', 'raid/fortress.webp']
 /** bar-boss.png 의 투명한 홈 [x0,y0,x1,y1] — tools/raid-ui-kit.py 가 public/realm/raid/ui/kit.json 에 적는 값 */
 const BOSS_WIN = [104, 35, 626, 82] as const
+/**
+ * 구운 그림 띠 (11-18 형 플립7 「늑대 떼부터 초당 3프레임」) — 20칸 띠를 그리는 키(height) 그대로 한 번 줄여 캔버스에 굽는다.
+ * 늑대 띠는 6400×128 인데 46px 로 판마다 90번 줄여 찍혔다 · 폰 GPU 텍스처 한도(4096)를 넘는 띠는 그릴 때마다 조각내 올릴 수 있다.
+ * 구운 띠는 폭이 C.spriteBakeMax 를 넘지 않게 여러 줄로 접는다. 헤드리스 시험(node)에는 document 가 없어 그대로 그린다.
+ */
+type Baked = { c: CanvasImageSource; fw: number; fh: number; cols: number }
+const bakedStrips = new Map<HTMLImageElement, Map<number, Baked | null>>()
+function bakedStrip(img: HTMLImageElement, height: number): Baked | null {
+  // 찾기 먼저 (판마다 200번 불린다 — 그림의 width·height 읽기도 값이 든다)
+  const fh = Math.max(1, Math.round(height)), per = bakedStrips.get(img), had = per?.get(fh)
+  if (had !== undefined) return had
+  if (typeof document === 'undefined' || !img.width || !img.height || !img.complete) return null
+  if (!per) { bakedStrips.set(img, new Map()); return bakedStrip(img, height) }
+  const sw = img.width / 20, fw = Math.max(1, Math.round(sw * fh / img.height))
+  if (fh >= img.height) { per.set(fh, null); return null }   // 키우는 그림(초상 판 등)은 굽지 않는다
+  const cols = Math.max(1, Math.min(20, Math.floor(C.spriteBakeMax / fw))), rows = Math.ceil(20 / cols)
+  const c = document.createElement('canvas'); c.width = cols * fw; c.height = rows * fh
+  const g = c.getContext('2d')!; g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'
+  for (let i = 0; i < 20; i++) g.drawImage(img, i * sw, 0, sw, img.height, (i % cols) * fw, Math.floor(i / cols) * fh, fw, fh)
+  const b: Baked = { c, fw, fh, cols }; per.set(fh, b)
+  // 굳힌 그림(ImageBitmap)으로 바꿔 쥔다 — 캔버스를 원본으로 찍으면 찍을 때마다 사본을 뜰 수 있다
+  if (typeof createImageBitmap === 'function') void createImageBitmap(c).then(bm => { b.c = bm }, () => {})
+  return b
+}
 export function sprite(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, path: string, x: number, y: number, height: number, frame: number, face = 1, flash = false) {
   const img = images.get(path); if (!img) return
-  const w = img.width / 20, h = img.height
+  const b = bakedStrip(img, height)
+  let src: CanvasImageSource = img, sx: number, sy = 0, sw: number, sh: number, dw: number, dh: number
+  if (b) { src = b.c; sx = (frame % b.cols) * b.fw; sy = Math.floor(frame / b.cols) * b.fh; sw = dw = b.fw; sh = dh = b.fh }
+  else { sw = img.width / 20; sh = img.height; sx = frame * sw; dh = height; dw = height * sw / sh }
   // 폰 프레임 (11-17): save/restore 대신 옮긴 만큼 되돌린다 — 적 230 명마다 save 가 판 그리기의 8% 를 먹었다
-  const tx = Math.round(x), ty = Math.round(y)
+  const tx = Math.round(x), ty = Math.round(y), dx = -Math.round(dw / 2)
   const smooth = ctx.imageSmoothingEnabled
   ctx.translate(tx, ty); if (face !== 1) ctx.scale(face, 1); ctx.imageSmoothingEnabled = false
-  ctx.drawImage(img, frame * w, 0, w, h, -height * w / h / 2, -height, height * w / h, height)
+  ctx.drawImage(src, sx, sy, sw, sh, dx, -dh, dw, dh)
   // 맞은 번쩍: 같은 그림을 한 번 더 빛으로 더한다 — ctx.filter 는 폰에서 그림마다 소프트웨어로 돌아 프레임을 크게 깎았다 (11-16 플립7 20프레임)
-  if (flash) { const op = ctx.globalCompositeOperation, a = ctx.globalAlpha; ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = a * C.flashAdd; ctx.drawImage(img, frame * w, 0, w, h, -height * w / h / 2, -height, height * w / h, height); ctx.globalCompositeOperation = op; ctx.globalAlpha = a }
+  if (flash) { const op = ctx.globalCompositeOperation, a = ctx.globalAlpha; ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = a * C.flashAdd; ctx.drawImage(src, sx, sy, sw, sh, dx, -dh, dw, dh); ctx.globalCompositeOperation = op; ctx.globalAlpha = a }
   if (face !== 1) ctx.scale(face, 1); ctx.translate(-tx, -ty); ctx.imageSmoothingEnabled = smooth
 }
 /**
@@ -254,7 +281,7 @@ function drawUlt(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageEle
  * 판 시각으로 날린다(멈추면 같이 멈추고 시전 동안은 같이 느려진다). 크게 찍혔다 줄며 포물선으로 옆·위로 튀고 살짝 흔들린다 ·
  * 겹쳐도 읽히게 좌우를 번갈아 다른 폭으로 · 치명타는 더 빠르고 크고 금·주황 + 작은 터짐 · 개수 한도 drawNumbers (새것만).
  */
-type Num = { x: number; y: number; vx: number; vy: number; g: number; t: number; life: number; text: string; crit: boolean; kill: boolean; spin: number }
+type Num = { x: number; y: number; vx: number; vy: number; g: number; t: number; life: number; text: string; crit: boolean; kill: boolean; spin: number; sum: number; pop: number }
 const nums: Num[] = [], seenNum = new WeakSet<object>()
 let numT = -1, numFlip = 0
 function trackNumbers(s: HaebiRun) {
@@ -264,9 +291,12 @@ function trackNumbers(s: HaebiRun) {
     if (f.n === undefined || f.mob === 'boss' || seenNum.has(f)) continue
     seenNum.add(f)
     const crit = !!f.crit, kill = f.kind === 'death', sp = crit ? C.numCritSpeed : 1
+    // 같은 자리 · 방금 난 숫자에 더한다 (11-18 · 무리를 한꺼번에 치면 한 덩이) — 더해지면 다시 크게 튄다
+    const near = nums.find(p => s.t - p.t < C.numMergeTime && p.kill === kill && Math.abs(p.x - f.x) < C.numMerge && Math.abs(p.y - (f.y - (kill ? 30 : 16))) < C.numMerge)
+    if (near) { near.sum += f.n; near.text = String(Math.round(near.sum)); near.pop = s.t; if (crit && !near.crit) { near.crit = true; near.life = C.numCritLife } continue }
     numFlip = (numFlip + 1) % 6
     const side = (numFlip % 2 ? 1 : -1) * (.45 + (numFlip >> 1) * .3)
-    nums.push({ x: f.x, y: f.y - (kill ? 30 : 16), vx: side * C.numSpread * sp, vy: -C.numRise * sp, g: C.numGravity * sp * sp, t: s.t, life: crit ? C.numCritLife : C.numLife, text: String(Math.round(f.n)), crit, kill, spin: side * C.numWobble })
+    nums.push({ x: f.x, y: f.y - (kill ? 30 : 16), vx: side * C.numSpread * sp, vy: -C.numRise * sp, g: C.numGravity * sp * sp, t: s.t, life: crit ? C.numCritLife : C.numLife, text: String(Math.round(f.n)), crit, kill, spin: side * C.numWobble, sum: f.n, pop: s.t })
     if (nums.length > C.drawNumbers) nums.shift()
   }
   for (let i = nums.length - 1; i >= 0; i--) if (s.t - nums[i]!.t >= nums[i]!.life) nums.splice(i, 1)
@@ -277,7 +307,7 @@ function drawNumbers(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImag
   for (const p of nums) {
     const age = s.t - p.t, k = age / p.life; if (k < 0 || k >= 1) continue
     const x = p.x + p.vx * age, y = p.y + p.vy * age + p.g * age * age / 2
-    const popT = C.numPopTime / (p.crit ? C.numCritSpeed : 1), scale = age < popT ? C.numPop - (C.numPop - 1) * age / popT : 1
+    const popT = C.numPopTime / (p.crit ? C.numCritSpeed : 1), pa = s.t - p.pop, scale = pa < popT ? C.numPop - (C.numPop - 1) * pa / popT : 1
     const size = p.crit ? C.numCritSize : p.kill ? C.numKill : C.numSize
     ctx.save(); ctx.translate(x, y); ctx.rotate(p.spin * Math.sin(age * 34) * (1 - k)); ctx.scale(scale, scale)
     ctx.globalAlpha = k < .72 ? 1 : (1 - k) / .28

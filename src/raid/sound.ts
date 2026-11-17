@@ -57,7 +57,7 @@ export function raidSound(female: boolean, kit: Kit) {
   // 화면이 열리자마자 받아 둔다 (풀기는 손길 뒤 — 브라우저 규칙)
   const raw = new Map(mine.map(f => [f, fetch(BASE + f).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)] as const))
   const clips = new Map<string, Clip>(), last = new Map<string, number>()
-  let ctx: AudioContext | null = null, music: HTMLAudioElement | null = null, n = 0
+  let ctx: AudioContext | null = null, music: HTMLAudioElement | null = null, n = 0, voices = 0, hitAt = -9
   /** 풀면서 앞의 빈 소리를 잰다 (mp3 는 앞에 0.03~0.06초가 비어 있다) */
   async function decode(c: AudioContext, file: string) {
     const bytes = await raw.get(file); if (!bytes) return
@@ -68,17 +68,17 @@ export function raidSound(female: boolean, kit: Kit) {
     } catch { /* 못 푸는 파일은 조용히 */ }
   }
   /** 곧바로 낸다. gap 은 같은 자리 소리가 한 프레임 안에서 수십 번 겹쳐 터지지 않게 하는 아주 짧은 틈 */
-  function play(slot: string, file: string, vol: number, gap = 0, rate = 1) {
-    if (!ctx || muted() || document.hidden) return
+  function play(slot: string, file: string, vol: number, gap = 0, rate = 1, capped = false) {
+    if (!ctx || muted() || document.hidden || capped && voices >= V.maxVoices) return
     const clip = clips.get(file); if (!clip) return
     const now = ctx.currentTime; if (gap && now - (last.get(slot) ?? -9) < gap) return
     last.set(slot, now)
     const src = ctx.createBufferSource(), gain = ctx.createGain()
     gain.gain.value = vol; src.buffer = clip.buf; src.playbackRate.value = rate
-    src.connect(gain).connect(ctx.destination); src.onended = () => { src.disconnect(); gain.disconnect() }; src.start(0, clip.from)
+    src.connect(gain).connect(ctx.destination); voices++; src.onended = () => { voices--; src.disconnect(); gain.disconnect() }; src.start(0, clip.from)
   }
   const any = (list: readonly string[]) => list[n++ % list.length]!
-  const sfx = (slot: keyof typeof FILES, vol: number, gap = 0, rate = 1) => play(slot, any(FILES[slot]), vol * volume('sfx'), gap, rate)
+  const sfx = (slot: keyof typeof FILES, vol: number, gap = 0, rate = 1) => play(slot, any(FILES[slot]), vol * volume('sfx'), gap, rate, true)
   const say = (slot: Voice, vol: number, gap = 0) => play(slot, any(VOICE[slot]), vol * volume('voice'), gap)
   /** 이미 소리를 낸 투사체·이펙트 (새로 생긴 것만 낸다) */
   const seen = new WeakSet<object>()
@@ -98,10 +98,12 @@ export function raidSound(female: boolean, kit: Kit) {
       // 판이 바뀐 것은 씨앗이 아니라 판 그 자체로 가린다 (씨앗이 NaN 이면 매 프레임 처음으로 돌아가 비기 외침·신음이 프레임마다 다시 났다 · 형 11-16)
       if (prev.run !== s) Object.assign(prev, { attack: 0, hurt: 0, kills: s.kills, skillCd: 0, offers: 0, level: s.level, wakes: s.wakes, barrage: 0, elites: 0, boss: s.boss, state: 'playing', run: s })
       const barrage = s.shots.reduce((k, b) => k + Number(b.kind === 'barrage'), 0), elites = s.enemies.reduce((k, e) => k + Number(e.kind === 'elite'), 0)
-      if (s.attack > prev.attack) { play('weapon', any(WEAPON[kit][0]), V.swing * volume('sfx'), 0, WEAPON[kit][1] * (.95 + (n % 5) * .025)) }  // 평타엔 목소리 없음 (형 11-16: 「기합은 스킬 쓸 때만」)
+      if (s.attack > prev.attack) { play('weapon', any(WEAPON[kit][0]), V.swing * volume('sfx'), 0, WEAPON[kit][1] * (.95 + (n % 5) * .025), true) }  // 평타엔 목소리 없음 (형 11-16: 「기합은 스킬 쓸 때만」)
       if (s.hurt > prev.hurt) { sfx('hurt', V.hurt); say(ouch, V.groan, V.groanGap) }
       // 쓰러진 수만큼 한꺼번에 — 줄 세우지 않는다 (형: 「겹쳐서도 들려야 하는데 … 순서대로 들림」)
-      const fell = Math.min(V.hitVoices, s.kills - prev.kills)
+      // 묶음은 hitGap 초에 한 번 (늑대 떼에 프레임마다 넷씩 새로 틀어 동시에 수십 개 · 11-18) · 그 사이 쓰러진 것은 다음 묶음 수에 든다
+      const fell = ctx && ctx.currentTime - hitAt >= V.hitGap ? Math.min(V.hitVoices, s.kills - prev.kills) : 0
+      if (fell > 0) hitAt = ctx!.currentTime
       for (let i = 0; i < fell; i++) sfx('hit', V.hit * (1 - i * .18), 0, .86 + ((n + i * 3) % 7) * .05)
       if (fell > 0) say('die', V.die, V.dieGap)
       if (s.skillCd > prev.skillCd) { say(shout, V.skill); if (kit === 'sling') sfx('whirl', V.whirl) }
@@ -115,7 +117,7 @@ export function raidSound(female: boolean, kit: Kit) {
       if (elites > prev.elites) sfx('elite', V.cry)
       if (s.boss && !prev.boss) say('roar', V.roar)
       if (s.state !== prev.state) sfx(s.state === 'won' ? 'win' : 'lose', V.end)
-      Object.assign(prev, { attack: s.attack, hurt: s.hurt, kills: s.kills, skillCd: s.skillCd, offers: s.offers.length, level: s.level, wakes: s.wakes, barrage, elites, boss: s.boss, state: s.state })
+      Object.assign(prev, { attack: s.attack, hurt: s.hurt, kills: fell > 0 || !ctx || ctx.currentTime - hitAt >= V.hitGap ? s.kills : prev.kills, skillCd: s.skillCd, offers: s.offers.length, level: s.level, wakes: s.wakes, barrage, elites, boss: s.boss, state: s.state })
     },
   }
 }
