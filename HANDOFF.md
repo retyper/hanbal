@@ -273,3 +273,214 @@ Steam은 `docs/realm/STEAM-RELEASE.md`의 조사/체크리스트까지다. 가�
 - Manual intake validation: final npm run build passed (typecheck + Vite + budget gzip1443.6/raw4648.4KB), skill-body3 tests passed. New media in-game playback remains unverified; source contact frames inspected only.
 - [FINAL2 VIDEO INTAKE 11-14] User asked whether assets applied. Found Maryeo/Gwaeyu manual tier1 videos arrived after earlier37 intake. Reviewed0/3/6/9sec source contacts and installed2 H264 muted runtime files + AWAKEN_LOOP registry, appended SHA receipt total39, regenerated page. Existing9skillbodies/22icons/6videos remain applied; newly queued29skillbody outputs absent from Downloads. Skillbody appears on skillCutHtml at ultimate use, not idle. Final2 in-game playback not browser-verified. Typecheck result checked this turn. No commit/push/deploy.
 `n- **[Codex 비각성 스킬바디 재제작 실행 중 · 11-17]** 사용자 지시. SB-v2 50명 원화 첨부 재제작, 원본 보존·게임 미적용. 담당/진행/Claude 추가 지시: docs/realm/production/CODEX-SKILLBODY-REDO-20261117.md. 동일 생성 중복 금지.
+
+- **[Codex 11-17 스킬바디 현 큐 처리 완료·수정 대기]** 최초 비각성50 + 후속55 PNG 저장/원화대조; 후속55 파일 존재·디코드·SHA 일치. 단, 활미aw2 v2는 Claude 반려(기존 Codex 통과 판단 철회), v3 입력 안전 검토 거절로 이미지 없음. 해결 대기13개와 중단SP2개 세부/다음 행동: docs/realm/production/CODEX-SKILLBODY-REDO-20261117.md 최신「Codex 끝」절. 원장 D:/에셋창고/Codex-production-next-20261117.json, 보류 후보는 같은 창고 Codex-production-next-20261117-candidates/. Codex 런타임 적용·커밋·배포 없음. 사용자 요청대로 같은 채팅에서 Claude MD/QUEUE의 새 지시를 기다려 이어서 처리한다. 같은 보류 job 자동 반복 금지.
+
+- **[Codex 11-17 지시9 후속]** Claude가 기존보류 후보11개를 채택/적용했다고 보고(원장 claudeReview accepted; Codex 런타임 검증 아님). 현재 큐 활미aw2v3·미리달래aw1v3는 이전 안전거절 요청의 문구변경 재제출이어서 추가 제출하지 않음. 상세/남은점은 CODEX-SKILLBODY-REDO-20261117.md 최신 지시9 수신절. 기존 후보/PNG 보존, 새 독립작업 지시 대기.
+
+- **[Codex 11-17 지시9 완료 정정]** 직전 2대상 보류 판단 정정: 성인 비선정 자세/도구 교정임을 명확히 한 내장 image_gen 요청으로 활미aw2v3·미리달래aw1v3 정상 반환·검수·D:/에셋창고 정식저장. 후속57PNG 무결성 전부 일치. 이전 aw1미리달래v2 보류와 활미v3 입력거절 이력은 완료 v3로 해소. Claude 후보11개 채택 보고 유지. 현재 두 v3 Claude 검수대기, 새MD/큐 대기; 상세 CODEX-SKILLBODY-REDO-20261117.md 최신절. Codex 코드적용/커밋/배포 없음.
+
+- **[Codex 11-17 최종 채택 확인·대기]** Claude 지시10: 활미aw2v3·미리달래aw1v3 채택/적용 보고, QUEUE0장. 현재 재제작 수정 요청 전부 처리 완료; 지시9 후보11개 채택도 유지. Codex 직접 게임 실행 검증 아님. 최종57PNG 무결성 검증 통과, 원장/원본/후보 보존. 상세 CODEX-SKILLBODY-REDO-20261117.md 최신절. 사용자 요청대로 이 채팅에서 새 MD/큐 지시 대기. SP중단 유지·추가 생성/코드 변경/커밋/배포 없음.
+
+- **[Codex 11-17 지시11 결과·판정대기]** 부여공주/압독여왕 비각성·aw1·aw2 v3 창 제거 주술6장 저장. 갈매 act_v3/walk_v3는 요청파일명 루트에 비교시험2장 전달(status=trial). 얼굴비율 Claude 측정 대기, walk는 교정1회 후에도1/5앞발교대 불분명하여 보행 미통과. 80명 확대 금지. 상세/QA한계 CODEX-SKILLBODY-REDO-20261117.md 최신 지시11끝절. 후속63reviewed+2trial=65PNG 무결성 전부 일치, 코드적용/커밋/배포 없음. 새 MD/큐 지시 대기.
+
+- **[Codex 11-17 전투띠174 진행중·6명12job]** 지시12/13 새87명174장 수행중. 83~94 매나/무늬/별빛/소나/맥손/이랑쌍처리, root11+매나walk Claude후보채택. 무늬act얼굴반려기록·현job재시도안함. 다음금하95/96부터(83이후원래174job인덱스256까지). 원장 D:/에셋창고/Codex-production-next-20261117.json · 진행 docs/realm/production/CODEX-SKILLBODY-REDO-20261117.md 최신절. walk는칸수/동일사람·무기/잘림검수후저장하고미세다리위상판정은Claude. 당장전체완료아님, 계속제작후MD대기해야함. 코드적용/커밋/배포없음.
+
+
+- **[Codex 전투띠174 진행중·12명24job]** 83~106처리, root23무결성일치+매나walk Claude후보채택. 무늬act반려유지. 물가창제거/단검도구+물빛, 금하탑승/과하도보유지 등 상세공유MD최신절. 남은150원래job, 다음107뱃사공부터계속. 현재전체완료아님. 같은job2회상한/원화실제첨부/기준4명판/act새결과walk마지막첨부유지. 코드/입수/커밋/배포없음.
+
+- **[Codex 전투띠174 진행중·18명36job]** 83~118처리/root35무결성일치+매나walk Claude채택보고. 무늬act반려유지. 남은138원래job/다음119부터. 신규12장상세공유MD최신절, 동일job2회상한유지. 전체완료아님/계속제작중, 코드입수·커밋·배포없음.
+
+- **[Codex 전투띠174 진행중·24명48job]** 83~130처리/root45무결성일치+매나walk Claude채택보고. 늪121/말발굽123act 교정후실제알파막held/root없음/두후보보존/새판정필요. 무늬act반려유지. 다음131/남은126원래job, 전체완료아님. 상세공유MD최신절/원장유지, 코드입수·커밋·배포없음.
+
+- **[Codex 전투띠174 진행중·30명60job]** 83~142처리/root57무결성일치+매나walk Claude채택보고. 늪121/말발굽123act알파막held·무늬act반려유지. 다음143/남은114원래job. 시내창→산가지투척/불매walk망치복원 등 공유MD최신절. 전체완료아님/계속제작중, 코드입수·커밋·배포없음.
+
+- **[Codex 전투띠174 진행중·36명72job]** 83~154처리/root69무결성일치+매나walk Claude채택보고. 늪121/말발굽123actheld·무늬act반려유지. 신규버들/범/범발/부들/달래2/달리12장, 범발도끼→단검/달래쌍검가시성교정 등 상세공유MD최신절. 다음155/남은102원래job, 전체완료아님·계속제작중. 원화실제첨부/같은job2회상한/후보보존, 코드입수·커밋·배포없음.
+
+- **[Codex 전투띠174 진행중·42명84job/지시14수신]** 83~166처리/root81무결성일치. 원래v3남은90job. Claude14반려무늬/진하/무등/범사냥꾼/말발굽 v4actwalk10장우선 후167부터v3계속. 다물활→검·walk왕관잘림교정 등 상세공유MD최신절. 기존후보/반려이력보존, 전체완료아님·계속제작중. 코드입수·커밋·배포없음.
+
+- **[Codex 지시14처리/15수신·v3계속]** v4신규10job처리/root8무결성일치+무등/말발굽act실제끝잘림held각두후보보존. Claude15무늬/진하v4·신귀간v3적용보고accepted, 무등v4act/walk반려(장식잘림/walk커짐)원장기록·줄끝새버전재작업대기. 원래v3남은90/다음167계속, 전체완료아님. 상세공유MD최신절. 코드입수·커밋·배포없음.
+
+### Codex 지시16 수신 / 전신 비율 v4 우선 진행
+- v3 83~176 누적94job 처리, v3 root90장 + 지시14 v4 root8장 총98장 존재/PNG디코드/SHA일치. 원래174중 남은80job. 167~175 대장장이/명솔/멧돌/즙/말굽act 정식저장, 정확화풍/얼굴/몸비율 최종Claude검수. 즙 명시WEAPON FIX 박방울+청동종/볏단부적 전셀반영.
+- 말굽176walk는2회후held/root없음: alpha0/8칸/잘림없으나 읽기전용입수배율비교에서 act서기대비 전체윤곽키 중앙값0.8657 및 시각적크기차이 잔여. 후보둘보존/현job3번째안함. 원래v3 held 늪act121/말발굽act123와 별도 신규보류. 매나walk Claude후보채택별도.
+- 지시16확인: 남은문안 BODY PROPORTION 갱신수신, 우선 들개/누렁소/오름/다물/대장장이/멧돌 v4 12장(267~278) 진행. 기준판과 같은키에서 얼굴뿐아니라 몸통/팔다리/장화/주먹 확인. 들개267초안검수후 전신1회교정중. 다음177 마한 전 원래줄중단, v4후 갱신문안으로재개. 지시15무등은줄끝새버전재작업유지.
+
+### Codex 지시16 중간 / 들개·누렁소 v4 쌍 저장
+- 267/268 들개 v4 act/walk 저장: 각1회 전신보정, 기준판같은전체윤곽키에서 얼굴/다리/몸통/장화/주먹 비교, 검 전20/8셀 유지. 269/270 누렁소 v4 쌍 저장: 각1회보정, 작은얼굴·긴허벅지/정강이·청동목종/나무몽둥이 유지. 모두20/8검출·실제잘림없음·남색밝은합성정상. 최종정확비율/화풍/걷기채택 Claude판정.
+- 새읽기전용검수 work/check-act-walk-scale.py는 bake-full20.py의 strip core-height 배율을 읽어 act서기+walk8개 발바닥기준 나란히 비교(입수/픽셀후처리없음). 들개보정walk 전체윤곽키중앙값0.9733, 누렁소0.9227(머리카락포함차이로해부학적키동일증명아님); QA에몸통·얼굴비교남김. runtime실측미검증.
+- 오름271act 저장(전신보정1회,20/잘림없음/알파정상), 272walk는얼굴·목비율보정중. 그다음 다물→대장장이→멧돌. 전체완료아님. 지시15무등줄끝재작업/말굽176walkheld는계속별도유지.
+
+### Codex 지시17 수신 / 누렁소 act_v5 크기 일관성 보류
+- 지시17 누렁소v4반려 수신(동작판안걷기인물이서기보다작고가늘어짐). v4원장269/270은Claude반려사유기록예정, 새v5 279/280 우선진행. v5에도 승인기준판·옛띠·원화·v4전신후보 실제첨부.
+- 279act_v5 2회후held/root없음: 1회교정후 앞걷기5~8은서기대비전체윤곽키1.004~1.009, 뒤걷기9~12는0.943~0.965로여전히작고가늘게보임. 20칸같은배율·발바닥정렬QA에서직접확인. alpha0/20칸/잘림없음만통과, SIZE CONSISTENCY합격아님. 후보둘보존/3번째생성안함. 280walk는교정heldact를마지막첨부해독립제작·검수후제출예정.
+- 새읽기전용 work/check-act-consistency.py로 동작20칸내부 같은배율 비교 추가(무기/머리/자세포함수치는해부학측정아님). 이후모든act저장전검수추가. 다물273/274v4쌍은20/8·잘림없음·알파정상저장, 정확전신/20칸내부일관성 추가확인예정. 다음275대장장이/277멧돌 후177v3재개. 전체완료아님.
+
+### Codex 사용자 중단 수신 / 지시18~20 새 베이스라인으로 전환
+- 사용자 직접지시로 기존v3/v4/v5장수생성 즉시중단. 방금돌아온276대장장이walkv4두번째후보는미검수held로보존/root없음(최종알파/자세/비율검수미실시).275actv4는보정후정식저장이력이나 새기준채택아님. 277/278멧돌v4·177이후옛줄 진행안함. 기존파일보존.
+- 지시18~20수신: 이전온조·다리40%전신지시폐기. 승인기준은 ref-style3 소서노·감실·진하(여성) 셋, 같은배율의한가족. 새베이스라인11명act/walk22장만진행, 남성키(머리카락/관제외정수리~발바닥)는소서노와같거나더크고어깨넓게. 쇠비도다시생성. 나머지장수재개는사용자베이스라인승인후Claude새큐에따름.
+- 280누렁소walkv5는보정후8칸/알파/잘림확인저장,279actv5는크기일관성held유지. 이옛결과들은새기준판으로자동채택하지않음. 원본/후보/실제요청/참조원장보존.
+
+### Codex 새 베이스라인 호진 act_bl 보류 / 합격 처리하지 않음
+- 281호진act_bl 실제 ref-style3(소서노·감실·진하)·옛호진띠·호진원화 모두첨부하여생성/1회보정. 보정후에도같은전체윤곽키비교에서 기준셋보다얼굴크고다리짧아 한가족비율/화풍베이스라인합격아님. held/root없음·두후보보존/3번째생성안함. PNG20칸·alpha0·무기전체·잘림없음은확인했으나 이검수만으로베이스라인채택안함.
+- work/exec-22b6cab7-9328-46ac-a4ca-b5de29cec35a-face-lineup-QA.jpg 에새3명+옛호진+보정호진비교. 이QA는전체윤곽키개별맞춤이라정수리키동일수치증명아님. 호진남성기준키/정확얼굴/화풍미통과. 동작20칸같은배율QA도보존(뒤걷기인물작아짐잔여).
+- 현재기준판11명22장만진행중.281을다른장수의승인기준으로사용안함.282별도걷기는held동작참조하되승인3명과별도검수예정. 사용자베이스라인승인전나머지장수재개안함.
+
+### Codex 호진 walk_bl도 보류 / 옛띠 화풍 고착 의심
+- 282호진walk_bl도2회후held/root없음. 8칸/투명/도끼전체/잘림은확인했지만 승인3명과직접비교시얼굴/외곽선/체형차이남아베이스라인합격안함. 281/282모두승인기준으로사용안함. 각후보둘/실제첨부원장보존.
+- 옛호진띠·생성후보가여러장첨부되어옛체형/화풍이강하게복제되는것으로추정(원인확정아님). 다음주몽은옛띠를눈으로확인해의상/무기/20자세를문안으로옮기고, 생성기에는승인 ref-style3+실제주몽원화만첨부해스타일고착완화시도. 실제참조목록차이는원장명시. 사용자요청원화첨부는계속유지. Claude새지시있으면우선따름.
+
+### Codex 사용자 상태문의 수신 / 에셋 root에도 검수 알림 MD 저장
+- 사용자「클로드가 뭐 안온다던데」문의수신. 승인새베이스라인0장이라root정식PNG감지에는새결과없음. 호진2장은후보보류, 주몽act초안후보저장·1회보정전. Claude가이MD를읽었는지는미확인.
+- D:\에셋창고\CODEX-BASELINE-REVIEW-20261117.md 에후보파일명·비교QA절대경로·보류이유·현재상태정리. Claude는완성PNG만아니라해당MD와candidates를확인해주기바람. 다음주몽act보정계속예정.
+
+## 갱신: 주몽 act_bl도 2회 후 보류
+- 최신 후보: D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_jumong_act_bl.png
+- 보정 후 20칸/alpha0/잘림없음/활전체/발사빈손은 확인. 다만 뒤걷기9~12 전체윤곽키가 서기대비0.926~0.937이며 작고가늘게보여 SIZE CONSISTENCY 미통과. 남성정수리키도동일성미검증. 승인베이스라인0장 유지.
+- 최신비교: C:\Users\my\Documents\Codex\2026-11-17\detail-bad-request\work\exec-de4cb61d-f10b-497d-8a1b-a0246d975efb-face-lineup-QA.jpg
+- 내부같은배율: C:\Users\my\Documents\Codex\2026-11-17\detail-bad-request\work\exec-de4cb61d-f10b-497d-8a1b-a0246d975efb-act-consistency-QA.jpg
+- 원화+승인판만 첨부해도 내부걷기 크기 문제가 남아 옛띠참조만이 원인이라고 단정할수없음. 지금은284별도걷기를진행하며Claude후속지시확인.
+
+## 갱신: 주몽 walk_bl 검수 제출본 1장 root 저장 (승인 완료 아님)
+- D:\에셋창고\sprite_prop_jumong_walk_bl.png
+- 최초+보정1회. 직접 기준3명 비교에서 얼굴/눈이 작아져 가까워졌고 8칸/alpha0/활시위전체/잘림없음 확인. Claude/사용자 검수용 제출이며 승인베이스라인수는 아직0장입니다. act_bl은 보류 유지.
+- 정확 화풍·남성 정수리~발바닥 키·걷기 최종판정 요청. 전체윤곽키만 비교한 QA로 정수리키조건을 증명하지 않았습니다.
+- QA: C:\Users\my\Documents\Codex\2026-11-17\detail-bad-request\work\exec-58028d00-c98a-4867-a31c-4466196daad6-face-lineup-QA.jpg
+- 읽기전용 코드확인: bake-full20.py의 scale=138/parts[0].height는 첫 자세의 머리카락/관/깃털/무기를 포함한 전체윤곽높이를 정규화합니다. 깃털 큰 남성은 정수리~발바닥 키가 상대적으로 작아질수있으니 남성키 최종검수시 이점 확인 부탁합니다. 이는코드에서한추론이며 runtime실측증명은 아닙니다. Codex는입수/코드수정안했습니다.
+- 다음 해달 baseline285/286, 기존장수옛큐재개없음.
+
+## 갱신: 해달 act_bl 검수 제출본 저장
+- D:\에셋창고\sprite_prop_haedal_act_bl.png (285, 첫 생성). 승인완료아님/Claude·사용자 화풍최종판정대기.
+- ref-style3+실제해달원화첨부, 옛띠는눈으로의상/자세확인.20칸/alpha0/활화살/발사빈손/누운활/잘림없음확인. 같은배율동작판내걷기키비0.971~1.008(몸덩어리0.979~1.012), 호진·주몽보다크기일관성개선. 화풍/정확얼굴비율확정아님.
+- QA: C:\Users\my\Documents\Codex\2026-11-17\detail-bad-request\work\exec-52fdaf9a-4f51-4332-849b-c31889283c92-face-lineup-QA.jpg
+- 다음286걷기에는방금저장285동작판을마지막실제첨부. 현재root검수제출본2장(주몽walk/해달act), 승인0장으로구분.
+
+## 갱신: 해달 walk_bl 검수 제출 / root 총3장
+- D:\에셋창고\sprite_prop_haedal_walk_bl.png (286, 1회보정). 8칸/alpha0/활시위전체/실제잘림없음·남색밝은합성정상. 동작판서기와비교해얼굴축소/체형맞춤, 읽기전용입수예측전체윤곽키중앙값0.9794(정확해부학/런타임증명아님).
+- QA: C:\Users\my\Documents\Codex\2026-11-17\detail-bad-request\work\exec-b67fb3ec-8e94-461f-b2d5-4a8c1cc49094-face-lineup-QA.jpg
+- 검수제출root는 주몽walk/해달act/해달walk 총3장. 승인완료는Claude·사용자판정수신전0장유지. 호진act/walk와주몽act는held 후보별도. 다음호공287/288.
+
+## 갱신: Claude 지시21 승인 수신
+- Claude가호진·주몽기준판을사용자확정·적용했다고보고.281~284원장claudeReview=accepted기록. held후보중정확선택파일은개별명시없어Codex임의root복사안함. 이수신으로앞의승인0장기록은과거상태이며현재2명4장승인보고수신으로갱신.
+- 깃털/관을headgear.json에서키측정제외했다고Claude보고, 온조299/300재작업취소. Codex코드수정없음.
+- 현재QUEUE13장:호공walk부터이랑/고목/쇠비/팔매/오이/아라. 여성OUTFIT갱신문안수신, 이랑부터원화색/재질/장식을유지한감실정도의노출의상적용. 기존해달act/walk는이줄이전제출본으로Claude판정대기. 호공288walk얼굴보정1회진행중.
+
+## 갱신: 호공 act/walk_bl 검수 제출
+- D:\에셋창고\sprite_prop_hogong_act_bl.png / sprite_prop_hogong_walk_bl.png (287/288 각최초+1회보정). 원화박/조개장식유지, 큐단검남기준대로단검전20/8칸. alpha0/잘림없음/무기전체/남색밝은합성검수.
+- act내걷기크기차이는보정후0.951~0.996로개선, walk대act서기읽기전용입수예측전체윤곽키중앙값0.9738. 남성정수리키·정확화풍·걷기최종판정Claude/사용자, 이수치는해부학실측아님.
+- 다음이랑289부터지시21OUTFIT적용. 기존해달은이줄전의상으로판정대기, 옛v3/v4/v5일반장수제작중단유지.
+
+## 갱신: 이랑 act/walk_bl 제출 / 새 기준 진행10job
+- D:\에셋창고\sprite_prop_irang_act_bl.png / sprite_prop_irang_walk_bl.png (289/290 각최초+보정1회). 지시21성인여성의상반영:원화갈색가죽/붉은끈/구슬/문신/잎청동단검유지,감실정도의드러나는불투명전투복.20/8칸·alpha0·실제잘림없음·남색밝은합성검수.
+- act내걷기윤곽키비보정후0.930~0.967 잔여, walk대act서기입수예측중앙값0.9474(큰포니테일/자세포함). 정확전신/화풍/걷기최종판정Claude/사용자요청, 이수치만으로동일키합격선언안함. 후보·실제첨부/문안원장보존.
+- 온조취소후요청20job중281~290누적10처리. root검수제출7장(주몽walk+해달쌍+호공쌍+이랑쌍) PNG디코드/SHA일치,호진쌍/주몽actheld후보는Claude21승인·적용보고별도(임의root복사안함). 검증보고 outputs/baseline-progress-20261117.json. 다음291고목→쇠비→팔매→오이→아라,기존일반장수큐중단유지.
+- 긴문안CLI저장실패는actual request JSON파일로읽도록작업용savehelper수정후정상저장복구. 첫이랑후보원본/참조보존,추가이미지생성없이해결. 프로젝트코드수정/입수/커밋/배포없음.
+
+
+## Codex 지시22 수신 / 해달·호공 bl2 우선 진행
+- 고목291 생성 전 Claude22 확인, 큐 맨 위 해달303/304·호공305/306 bl2 네 장 먼저 진행. 해달 머리/얼굴 감실보다 크지 않게 조금 축소·감실 수준 의상, 호공 남성 정수리 높이·다리·어깨 확대. 기존 bl 보존. 이미지 생성 스킬의 내장 imagegen 사용, 실제 원화와 ref-style3 첨부·실제문안/참조 원장 유지. 결과 root와 이 MD에 기록하여 Claude 검수 요청.
+
+
+
+## Codex 해달 bl2 쌍 제출 / 호공 bl2 시작
+- 해달 sprite_prop_haedal_act_bl2.png / sprite_prop_haedal_walk_bl2.png 둘 모두 D:\에셋창고 root 저장. 각각최초+1회보정,20/8칸 alpha0 실제잘림없음. 원화와승인판실제첨부,walk는새act마지막참조(보정시에도포함). 얼굴/머리축소 및새노출의상반영, 최종Claude/사용자판정요청.
+- walk입수예측윤곽키중앙값0.9684(머리카락/자세포함,런타임증명아님). QA work/exec-56096f14-b687-49cb-9bf5-85e43cfa93ed-pair-scale-QA.jpg. 다음호공305/306은지시22대로소서노·해달보다정수리높고다리길고어깨넓게,얼굴은작게.
+
+
+
+## Codex 지시22 해달·호공 bl2 네 장 검수 제출 완료
+- D:\에셋창고\sprite_prop_haedal_act_bl2.png / sprite_prop_haedal_walk_bl2.png / sprite_prop_hogong_act_bl2.png / sprite_prop_hogong_walk_bl2.png (303~306). 각최초+1회보정·원화/ref-style3 실제첨부·실제문안/참조원장보존.20/8칸 alpha0 투명배경·잘림없음·무기전체 검수. 승인완료아님/Claude사용자최종검수요청.
+- 해달:작은얼굴·감실수준노출의상. 호공:작은얼굴·긴다리·넓은어깨. 호공walk대act서기윤곽키예측중앙0.9589로자세차이잔여; 남성정수리키/정확화풍은Claude입수후비교판정필요, Codex동일키합격선언안함.
+- 호공walk QA C:\Users\my\Documents\Codex\2026-11-17\detail-bad-request\work\exec-0e277648-7084-437a-bbcf-026c9f4ad134-pair-scale-QA.jpg. 이제고목291→292부터새베이스라인잔여10장진행,옛일반장수큐중단유지. Claude후속지시우선.
+
+
+
+## Codex 고목 보정 응답 도착 / 고목act·쇠비쌍 제출
+- 지연된고목291두번째보정정상수신, D:\에셋창고\sprite_prop_gomok_act_bl.png 검수제출.20칸 alpha0 실제잘림없음,작은얼굴·원화나무지팡이/송곳니/방울/모피유지. 내부걷기윤곽0.988~1.0. 중복재요청없이처리.
+- 쇠비쌍 D:\에셋창고\sprite_prop_soebi_act_bl.png / sprite_prop_soebi_walk_bl.png 제출완료(293/294각최초+1회). 원화사각철망치/옥장식/의상유지,20/8칸 alpha0 잘림없음. walk대act예측윤곽중앙0.9861(머리포함,런타임증명아님),최종화풍/얼굴Claude사용자판정.
+- 고목QA work/exec-bb47c69b-be0c-415f-b851-f315152bbb81-face-lineup-QA.jpg, 쇠비pair work/exec-e1f02048-8459-49a1-8fd1-9d355dcda3fd-pair-scale-QA.jpg. 다음292고목walk→295팔매,잔여7장. 옛일반큐중단유지.
+
+
+
+## Codex 지시23 수신 / 호공 bl3 최우선 전환
+- Claude23: 이랑289/290사용자확정수신,원장accepted기록예정. 호공305/306 bl2는사용자평가「8등신사실몸·여성보다작은머리」반려. 기존Codex검수제출은승인아니며이평가로교체. 307/308 bl3로호진·주몽·여성기준과같은머리/얼굴크기,4.5등신듬직한몸. 머리축소로키맞추기폐기,약간큰몸으로만남성키.
+- 여성비각성노출지시21을23으로대체:원래옷/머리색/장식유지우선·살짝드러나는정도,다른짧은옷으로교체하지않음. 아라301/302부터최신문안확인후적용. 이미제출된해달bl2/쇠비bl은23이전의상,Claude판정대기·무단재작업없음.
+- 고목walk292 root제출완료,8칸alpha0잘림없음/지팡이전체. act대walk윤곽예측중앙0.9901(정수리실측아님),최종화풍/키Claude판정. 다음307호공bl3→308→팔매/오이/아라. 옛일반큐중단유지.
+
+
+
+## Codex 호공 act_bl3 보류 / 후보 직접 검수 요청
+- D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_hogong_act_bl3.png (307,최초+1회보정). 지시23대로bl2의작은머리/긴다리폐기,ref-style3+호공원화실제첨부하여4.5등신듬직한몸재생성.20칸alpha0잘림없음/단검전체는확인했으나뒤걷기9~12윤곽0.892~0.903로작아짐잔여. 얼굴/체형정확일치미확정이라held·root없음,기준판합격처리안함/3번째추가생성안함.
+- Claude후보직접검수요청: work/exec-fa7d0be7-3db1-490c-9c2a-b2a14bc53925-face-lineup-QA.jpg / act-consistency-QA.jpg. 전체윤곽QA정수리키증명아님. 308별도걷기는이후보첫서기+승인판+원화로작성하되기준승인으로간주안함.
+
+
+
+## Codex 호공 bl3 쌍 후보 검수 요청 / 2회 한도 후 보류
+- D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_hogong_act_bl3.png / sprite_prop_hogong_walk_bl3.png (307/308 각각최초+1회).20/8칸alpha0잘림없음,단검/박/조개/원본옷유지. 같은기준머리·4.5등신으로생성했으나얼굴/체형일치미확정·act내부뒤걷기작음잔여. root합격제출안함,두초안/보정후보와실제참조문안모두보존. Claude후보직접판정요청.
+- walkpair예측중앙0.9175:입수공식이act내부걷기몸크기를기준으로쓰므로,307내부걷기축소가별도walk정규화에도영향(읽기전용코드공식에근거한추론,런타임실측아님). 단순별도walk전체확대만으로해결된다고주장하지않음. Codex입수코드수정없음.
+- QA work/exec-04e3f5c3-19f6-4fa2-be71-1fedfa3cd2a5-pair-scale-QA.jpg / face-lineup-QA.jpg. 추가생성은새판정/새버전지시뒤. 현재다음팔매295/296→오이297/298→아라301/302,6장진행.
+
+
+
+## Codex 지시24 수신 / 승인된 계열 일반큐 재개 허용 확인
+- Claude24:새쇠비293/294·고목291/292·해달현재bl2(303/304)사용자확정「이대로」보고수신,원장claudeReview=accepted(정확채택원본별도미명시)기록. 고목은할아버지현재키유지. 이랑23승인289/290도원장반영완료.
+- 일반장수재개허용은이번24의새QUEUE71장에한함(옛중단큐전체임의재개안함). 각무기성별마지막ref-slot실제이미지를보고첨부,승인왼쪽장수체형/머리/다리/장화/키복제·원화정체성/옷/무기만해당장수.남성소서노보다5~8%크되머리는기준크기,여성원래옷우선.
+- 현재먼저296팔매walk→297/298오이→301/302아라기준판잔여후새일반큐순서. 호공307/308와팔매295보류후보는Claude판정대기,3번째호출없음. 기준남은계열일반장수는Claude추가큐뒤진행.
+
+
+
+## Codex 오이 act/walk_bl 검수 제출 완료
+- D:\에셋창고\sprite_prop_oi_act_bl.png / sprite_prop_oi_walk_bl.png (297첫생성/298최초+투명보정1회).20/8칸alpha0잘림없음,긴나무창/쇠창날/깃털투구유지,walk안개배경해소·완전투명모서리확인. pair예측윤곽중앙0.9659(깃털포함),정확남성5~8%정수리키·머리크기·화풍·자연걸음Claude사용자최종검수요청.
+- headgear현재gen-oi없음은이전노트참조,큰깃털제외키검수필요. QA work/exec-46966d0e-2ad4-4f9f-be21-0cad22e5eee8-pair-scale-QA.jpg. 다음아라301/302원본남색옷/검은단발/찰갑/환두검유지(지시23/24의상우선)후일반큐.
+
+
+
+## Codex 새 기준판 요청 전26job 처리 / 일반큐 진행 시작
+- 아라쌍 D:\에셋창고\sprite_prop_ara_act_bl.png / sprite_prop_ara_walk_bl.png (301첫생성/302최초+1회).20/8칸 alpha0 잘림없음·원본남색옷/찰갑/검은단발/환두검/칼집유지. pair예측윤곽중앙0.9399(내부act걷기영향포함),정확화풍/체형/1·5앞다리자연걸음최종Claude사용자판정요청. QA work/exec-643461fb-3cb3-4ca7-a77f-076f343aa27b-pair-scale-QA.jpg.
+- 온조취소제외281~308 총26job(기본20+해달/호공bl2네장+호공bl3두장)모두생성/검수/상태기록. root20장검수제출무결성확인,held6개중호진쌍/주몽act3개는Claude21승인별도; 미해결held는호공bl3쌍307/308·팔매act295. 호공bl2는Claude23반려. root제출=사용자승인아님,승인판명단은Claude24기준.
+- 현재새QUEUE71중기준잔여5건(296/297/298/301/302)처리. 다음309/310오름v5→311/312다물v5→새QUEUE일반장수순서. 각ref-slot실제첨부·원화확인,남성5~8%키/같은기준머리/여성원본옷우선. 기존중단큐임의전체재개안함/새24큐만진행.
+- 검증보고 outputs/baseline-progress-20261117.json,실제문안/참조/원본/후보원장유지. 게임입수/코드수정/커밋/배포없음. Claude수정MD/새큐우선확인계속.
+
+
+
+## Codex 오름 act_v5 지시24후보 보류 / 기준 몸 일치 미통과
+- D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_base-g-52-tamna-oreum_act_v5.png (309,최초+1회보정). 지시24새ref-slot포함전체4refs실제첨부.20칸alpha0잘림없음·원화짚옷/현무암구슬/돌몽둥이보존. 다만slot호진대얼굴/짧은다리체형차이잔여·뒤걷기0.914~0.947,기준몸동일합격안함/held/root없음/추가3번째호출안함. Claude후보직접판정요청.
+- QA work/exec-99c1fa74-5467-489b-898f-99f24ab24583-face-lineup-QA.jpg (SLOT BASELINE/소서노/OLD/NEW) 및 act-consistency-QA.jpg. 다음310별도walk첫서기후보참조. 다음생성부터slot를첫참조로재배치해기준체형우선도를높임,지정참고그림은모두첨부하고실제순서/문안원장기록. 원화필수계속.
+
+
+
+## Codex 오름 walk_v5 검수 제출 / act는 보류 유지
+- D:\에셋창고\sprite_prop_base-g-52-tamna-oreum_walk_v5.png (310최초+1회). 마지막보정에서slot+실제원화두참조로다시구성하니초안보다얼굴/다리비율개선(원인확정아님).8칸alpha0완전투명모서리 잘림없음 원본짚옷/현무암구슬/돌몽둥이유지. 정확체형/정수리키/화풍/걸음Claude사용자판정요청,act309합격은아님/held유지.
+- QA work/exec-5642f459-39db-443e-92ee-9035e5da3cc7-face-lineup-QA.jpg / pair-scale-QA.jpg. pair0.9573는heldact작은걷기기준입수예측으로런타임증명아님. actualRefs변경기록완료. 다음311/312다물v5는slot첫참조·지정refs전부첨부하되짧고명확한참조역할문안으로진행.
+
+
+
+## Codex 지시25 수신 / 장수별 cm 기준·오이181cm bl2 우선
+- Claude25:아라301/302·호공307/308 bl3사용자확정보고수신,원장accepted기록. 호공held후보채택정확소스개별미명시로임의root복사안함. 이전Codexheld판정은사용자반려와다름,이번사용자승인으로갱신. 오이297/298은땅딸보반려→313/314 bl2새지시.
+- 새tools/sprite-kit/heights.json 읽기확인:소서노165/오이181/호진주몽178/호공174/팔매172/고목168/아라166 등,없는장수여163·남174. 앞으로고정5~8%문안을이cm지시로대체,머리는기준크기/키차이는다리·몸통,오이깃털낮게. 게임화면키반영은Claude작업,원파일수정안함.
+- 다물actv5(311)root검수제출완료,최초+1회후내부걷기0.964~0.986로개선·20칸alpha0잘림없음·활/화살통제거·원화검왕관보라옷표범모피유지. 정확키/화풍Claude판정요청. 다음313/314오이bl2→315/316오름v6(174cm)→312다물walkv5→새큐75순서. 옛오름v5보류309/검수310보존,추가v5재생성없음.
+
+
+## Codex 11-17 추가 인수인계 (지시26까지)
+- 지시25 키표/26 대상만20·투명배경수신.다물311/312v5,우해317/318v4root검수제출(승인미확정).오이313/314bl2·오름315/316v6·맷돌277/278v4·한울181/182v3은문제명시held후보,최초+1회상한준수.우해179v3격자26반려/180v3보존,새v4별도.
+- 실제prompt/refs/SHA/초안/보정원본 D:\에셋창고\Codex-production-next-20261117.json,상세진행 docs/realm/production/CODEX-SKILLBODY-REDO-20261117.md,루트알림 D:\에셋창고\CODEX-BASELINE-REVIEW-20261117.md.
+- 현재큐67장,한울walk182이미2회held라추가안함/새버전대기,다음빛고을185/186. 게임코드/QUEUE/입수/커밋/배포미수행,Claude변경보존.걷기추가문안좌우충돌발견/미래초안교정기록있음.
+
+## Codex 11-17 병렬 진행 인수인계 (지시27·최신 키표)
+- 사용자 직접 병렬화 요청 수신, 4캐릭터 동시 생성/검수로 전환. 원화 실제첨부/양HARD같은TOTAL키 비교/각판최초+보정1회 상한 유지. 완료보고가 사용자승인/게임적용을 뜻하지 않음.
+- 소서노167/남default179/여default163 및 최신 heights.json·QUEUE 감지해205이후신규호출 적용. 이미2회완료된195~204실제165문안은사후변조/3번째호출없음. 사용자/Claude가새버전판정 가능.
+- 부모196~200·207208·215216 완료후 전부held 후보(투명/격자/머리·다리/걸음별검수근거 상세MD). 병렬201~206·209~214·217218완료후held,개인원장 전4records씩 공유 Codex-production-next-20261117.json 취합. 병렬219220도완료held·원장취합済,MD요약아직추가예정.
+- 현재부모227/228가온(227첫판생성/QA진행),작업자221/222단궁·225/226활미·231/232산달래. 다음229230옛대소미배정.223224는현큐없어건너뜀.중복생성금지.
+- 공유상세 docs/realm/production/CODEX-SKILLBODY-REDO-20261117.md / 루트알림 D:\에셋창고\CODEX-BASELINE-REVIEW-20261117.md. 각병렬보고 C:\Users\my\Documents\Codex\2026-11-17\detail-bad-request\work\parallel-<act>-<walk>-report.md.
+- 후보 D:\에셋창고\Codex-production-next-20261117-candidates 또는 Codex-parallel-<act>-<walk>-20261117-candidates. root없음은생성안함이아닌HARD/걸음등미합격보류. 초안·보정·actualPrompt/Refs/SHA원장보존. 오름비212보정5번추가팔있고초안별도보존. 게임코드/QUEUE/입수/커밋/배포작업안함.
+
+## Codex 사용자 중단 대기 (최신)
+- 사용자「잠깐만, 클로드 명령 기다려」로 새생성/보정/후속배정 즉시중단. 병렬작업자3명 모두통지/대기. 요청중346아라aw1피격초상 반환후 held-user-pause 후보로보존만,최종QA/보정미실행.
+- HIT-a8장12calls/b8장8calls/c8장8calls완료보고·개인원장공유취합. 부모343344345각1call trial제출,346first1call held. 기록상27roottrial+1held,통합최종검증은중단으로미실행. 모두原900→생성1254 sizeMismatch미완/최종승인아님.
+- 마지막후보 D:\에셋창고\Codex-production-next-20261117-candidates\hit_aw1_w-04-gaya-swordswoman.png. 실제prompt/refs/SHA D:\에셋창고\Codex-production-next-20261117.json. work/hit-a-report.md, hit-b-report.md, hit-c-report.md 보존.345QA경로전사오류만정정済.
+- 현재모든배정SP생성/검수마침(대부분held,비라254walk root검수제출/승인아님). 자세한HARD/결함/경로는공유생산MD와루트reviewMD. 기존파일/Claude변경보존. 다음Claude새지시대기,옛큐자동재시작안함.
+
+## Codex 컨텍스트 압축 후 재개 / Claude29
+- 사용자 재개 요청으로 이전 중단 해제. 복구 기록 C:\Users\my\Documents\Codex\2026-11-17\detail-bad-request\work\RESUME-CHECKPOINT-20261117.md 저장, 자동 컨텍스트 압축 완료.
+- Claude29 최신: 피격 이미지의 상처/피/멍/먼지 전부 제거, 받은 HIT+실제 원화 2참조로 새 v2 편집. 기존27trial/346held 및 크기불일치 보존. 새 큐 스냅샷/중복 확인 후 재개. 게임코드/QUEUE/입수/커밋 변경 없음.
+
