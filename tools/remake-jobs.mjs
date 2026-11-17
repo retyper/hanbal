@@ -337,7 +337,7 @@ const RETRY4 = {
 }
 // v4 를 받고도 Claude 가 반려한 것 → v5 (까닭 한 줄을 문안 맨 앞에)
 const SAME_H = 'SIZE CONSISTENCY (the v4 was rejected for this): every one of the 20 cells shows the character at the SAME scale. The walking figures in cells 4 to 9 must be exactly as tall and as broad as the standing figures in cells 1 to 3 (only the stride changes), never a smaller or slimmer person.'
-const SP_V5 = { 'gen-base-g-46-uga-nureongso': SAME_H, 'gen-base-g-52-tamna-oreum': 'STYLE (the v4 was rejected by the lead artist): the v4 looked more realistic and longer-legged than Soseono and Gamsil. Match their cute stylized pixel look and their build exactly.' }
+const SP_V5 = { 'gen-base-g-46-uga-nureongso': SAME_H, 'gen-damul': 'STYLE (the v4 was rejected by the lead artist): it looked realistic and long-legged. Match the cute stylized pixel look and build of Soseono and Gamsil exactly.', 'gen-base-g-52-tamna-oreum': 'STYLE (the v4 was rejected by the lead artist): the v4 looked more realistic and longer-legged than Soseono and Gamsil. Match their cute stylized pixel look and their build exactly.' }
 for (const k of SP_KEYS) {
   if (!SP_TEST.includes(k)) continue
   const V = SP_V5[k] ? 'v5' : SP_RETRY[k] ? 'v4' : 'v3', R4 = (SP_V5[k] ? SP_V5[k] + '\n' : '') + (SP_RETRY[k] ? RETRY4[SP_RETRY[k]] + '\n' : '')

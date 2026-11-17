@@ -620,19 +620,19 @@
       }
     },
     "base-g-52-tamna-oreum": {
-      "status": "rejected",
+      "status": "staged",
       "order": "strip",
       "act": "D:/tmp-node/sp-inbox/sprite_prop_base-g-52-tamna-oreum_act.png",
       "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-g-52-tamna-oreum_walk.png",
       "actSha256": "0a2b530625367d81c0732f02f3106ad1c970624bd2231946e4586119b601e986",
-      "walkSha256": "2e53fe215c200e4109d4adcd59300025508cf8cd4f66fd8d713ce31dfc1dcda9",
+      "walkSha256": "29df9a2900c591c39b34a07df1bd8429d3eeb0a8fea61c6ecd12d1bb0f00e8f5",
       "portrait": "g-52-tamna-oreum",
       "auto": {
         "cell": [
           184,
           160
         ],
-        "walkScale": 0.6338,
+        "walkScale": 0.6298,
         "contact": [
           14,
           0.83,
@@ -640,15 +640,9 @@
         ],
         "headsOld": 3.8,
         "headsNew": 5.04,
-        "headsNewWalk": 5.08,
+        "headsNewWalk": 5.91,
         "residueAct": 0.0,
         "residueWalk": 0.0
-      },
-      "reason": "형 11-17: v4 그림체가 소서노·감실과 다름(사실적 · 다리 너무 김) · v3 그대로 둠",
-      "review": {
-        "chinOld": null,
-        "chinNew": null,
-        "note": ""
       }
     },
     "base-w-06-buyeo-huntress": {
@@ -1145,12 +1139,12 @@
       "installed": "2026-11-17"
     },
     "damul": {
-      "status": "installed",
+      "status": "rejected",
       "order": "strip",
-      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_damul_act.png",
-      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_damul_walk.png",
-      "actSha256": "a953d15786d238067d74c813818277ece1b7cc890ed0d0fa5feda33339743ded",
-      "walkSha256": "3cbaebd61bd691022d991271fac97f3f687e5a79ff13852438e444d420bbbf12",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_damul_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_damul_walk.png",
+      "actSha256": "a4a95b0f2aac47bfb6ee02a57482c8d1ab607bfb290cb222c595a168622d8235",
+      "walkSha256": "b8f4598f164393218336413f3fc9b5f6f439c11052317cbdf0cd30792e443bf6",
       "weaponFix": {
         "sprite": "bow",
         "art": "sword",
@@ -1159,29 +1153,27 @@
       "portrait": "g-65-goguryeo-damul",
       "auto": {
         "cell": [
-          200,
+          192,
           160
         ],
-        "walkScale": 0.6117,
+        "walkScale": 0.5918,
         "contact": [
-          15,
-          0.85,
-          0.87
+          14,
+          0.92,
+          0.48
         ],
-        "headsOld": 2.7,
-        "headsNew": 2.62,
-        "headsNewWalk": 2.68,
-        "residueAct": 0.0208,
-        "residueWalk": 0.0042
+        "headsOld": 2.62,
+        "headsNew": 4.75,
+        "headsNewWalk": 6.85,
+        "residueAct": 0.0315,
+        "residueWalk": 0.0115
       },
+      "reason": "v4 는 옛 문안(다리 40%)이라 사실적·다리 김 · 걷기 판 머리 작음 → v5",
       "review": {
-        "chinOld": 32.0,
-        "chinNew": 31.0,
-        "note": "v3 · 활→원화대로 칼 · 큰 관 때문에 머리 띠 수치는 그대로",
-        "weapon": "sword"
-      },
-      "archive": "assets_src/realm/retired/prop-20261117/damul",
-      "installed": "2026-11-17"
+        "chinOld": null,
+        "chinNew": null,
+        "note": ""
+      }
     },
     "darae": {
       "status": "rejected",
