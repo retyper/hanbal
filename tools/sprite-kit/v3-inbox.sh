@@ -5,11 +5,13 @@
 set -euo pipefail
 OUT=${1:?inbox}; A="D:/에셋창고"; C="$A/Codex-production-next-20261117-candidates"
 mkdir -p "$OUT"
-for act in "$A"/sprite_prop_*_act_v3.png; do
+for act in "$A"/sprite_prop_*_act_v3.png "$A"/sprite_prop_*_act_v4.png; do
   [ -e "$act" ] || continue
-  who=$(basename "$act"); who=${who#sprite_prop_}; who=${who%_act_v3.png}
-  walk="$A/sprite_prop_${who}_walk_v3.png"
-  [ -e "$walk" ] || walk=$(ls -t "$C"/sprite_prop_"${who}"_walk_v3*.png 2>/dev/null | head -1 || true)
+  V=${act##*_act_}; V=${V%.png}   # v3 · v4(Claude 반려 다시 · 있으면 v3 를 덮는다 — 글롭 순서상 뒤)
+  who=$(basename "$act"); who=${who#sprite_prop_}; who=${who%_act_$V.png}
+  [ "$V" = v3 ] && [ -e "$A/sprite_prop_${who}_act_v4.png" ] && continue
+  walk="$A/sprite_prop_${who}_walk_$V.png"
+  [ -e "$walk" ] || walk=$(ls -t "$C"/sprite_prop_"${who}"_walk_$V*.png 2>/dev/null | head -1 || true)
   [ -n "${walk:-}" ] && [ -e "$walk" ] || { echo "걷기 아직: $who"; continue; }
   cmp -s "$act" "$OUT/sprite_prop_${who}_act.png" 2>/dev/null || cp "$act" "$OUT/sprite_prop_${who}_act.png"
   cmp -s "$walk" "$OUT/sprite_prop_${who}_walk.png" 2>/dev/null || cp "$walk" "$OUT/sprite_prop_${who}_walk.png"
