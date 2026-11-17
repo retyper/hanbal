@@ -222,10 +222,10 @@ const CONTACT: Readonly<Record<string, [number, number, number]>> = {
   'gen-base-w-05-baekje-queen': [14, 0.94, 0.48],
   'gen-base-w-83-gyeonji-beodeul': [14, 0.85, 0.52],
   'gen-base-w-12-court-dancer': [14, 0.89, 0.47],
-  'gen-base-w-18-jinhan-salt-widow': [14, 0.83, 0.45],
+  'gen-base-w-18-jinhan-salt-widow': [14, 0.83, 0.46],
   'gen-base-g-08-veteran': [14, 0.92, 0.46],
   'gen-base-g-04-jinhan-giant': [14, 0.96, 0.56],
-  'gen-base-g-45-dabeol-deulgae': [14, 0.95, 0.54],
+  'gen-base-g-45-dabeol-deulgae': [14, 0.95, 0.49],
   'gen-base-w-75-daegaya-soemoe': [14, 0.88, 0.47],
   'gen-base-g-38-chopal-palmae': [14, 0.95, 0.43],
   'gen-base-g-37-eumjeup-jeup': [14, 0.94, 0.47],
@@ -252,11 +252,11 @@ const CONTACT: Readonly<Record<string, [number, number, number]>> = {
   marine: [15, .99, .40], militia: [14, .98, .33],
   'gen-g-spear': [15, .97, .35], 'gen-g-sword': [16, .99, .67], 'gen-w-spear': [14, .98, .56],
   'gen-mount': [15, .98, .22], 'gen-ara': [14, 0.92, 0.43], 'gen-aryeong': [14, 0.95, 0.47],
-  'gen-daeso': [14, 0.95, 0.47], 'gen-eureum': [14, 0.9, 0.48], 'gen-gamsil': [14, 0.91, 0.43],
+  'gen-daeso': [14, 0.92, 0.48], 'gen-eureum': [14, 0.9, 0.48], 'gen-gamsil': [14, 0.91, 0.43],
   'gen-haebi': [14, 0.86, 0.73], 'gen-heo': [14, 0.95, 0.43], 'gen-hyeokgeose': [14, 0.93, 0.46],
   'gen-hyeopbo': [14, 0.94, 0.47], 'gen-malgalgi': [14, 0.96, 0.52], 'gen-mari': [14, 0.95, 0.48],
   'gen-oi': [14, 0.95, 0.55], 'gen-onjo': [14, 0.93, 0.45], 'gen-soebi': [14, 0.88, 0.54],
-  'gen-soseono': [14, 0.97, 0.4], 'gen-bdanbi': [14, 0.87, 0.44], 'gen-dallae2': [14, 0.88, 0.49], 'gen-maryeo': [14, 0.94, 0.59], 'gen-horselord': [14, 0.94, 0.48], 'gen-olddaeso': [14, 0.9, 0.49], 'gen-maro': [14, 0.94, 0.53], 'gen-gwaeyu': [14, 0.95, 0.45], 'gen-daemusin': [15, 0.77, 0.61], 'gen-tahae': [14, 0.95, 0.54], 'gen-ocheongan': [14, 0.95, 0.47], 'gen-yusugan': [14, 0.96, 0.47], 'gen-odogan': [14, 0.86, 0.48], 'gen-pidogan': [14, 0.87, 0.51], 'gen-yeodogan': [14, 0.89, 0.46], 'gen-adogan': [14, 0.89, 0.52], 'gen-musoe': [14, 0.83, 0.53], 'gen-suro': [14, 0.93, 0.45], 'gen-waechief': [14, 0.94, 0.48], 'gen-hojin': [14, 0.78, 0.69], 'gen-jita': [14, 0.94, 0.43], 'gen-guryema': [15, 0.76, 0.51], 'gen-jibaekho': [14, 0.95, 0.51], 'gen-sobeol': [14, 0.95, 0.41], 'gen-alpyeong': [14, 0.88, 0.56], 'gen-hogong': [14, 0.89, 0.43], 'gen-geumbawi': [14, 0.96, 0.44], 'gen-keundol': [14, 0.92, 0.53], 'gen-jinha': [14, 0.93, 0.42], 'gen-duman': [14, 0.95, 0.52], 'gen-gomok': [14, 0.95, 0.45], 'gen-hneoul': [15, 0.74, 0.37], 'gen-tneoul': [14, 0.94, 0.49], 'gen-sdallae': [15, 0.75, 0.44], 'gen-yucheongan': [14, 0.94, 0.48], 'gen-sincheongan': [14, 0.94, 0.47], 'gen-singwigan': [14, 0.86, 0.5], 'gen-mdallae': [14, 0.96, 0.44], 'gen-mulbeom': [14, 0.95, 0.4], 'gen-beomi': [14, 0.96, 0.42], 'gen-danbi': [15, 0.7, 0.43], 'gen-mulsae': [14, 0.94, 0.46], 'gen-darae': [15, 0.72, 0.47], 'gen-mir': [15, 0.72, 0.47], 'gen-wan': [15, 0.7, 0.41], 'gen-gom': [14, 0.96, 0.39], 'gen-sagong': [14, 0.96, 0.5], 'gen-halla': [14, 0.93, 0.46], 'gen-areum': [14, 0.88, 0.48], 'gen-dokmudeom': [14, 0.87, 0.37], 'gen-beom': [14, 0.89, 0.36], 'gen-baram': [14, 0.87, 0.44], 'gen-goeun': [14, 0.92, 0.42], 'gen-byeol': [14, 0.94, 0.44], 'gen-sinneoul': [14, 0.94, 0.46], 'gen-haesol': [14, 0.95, 0.49], 'gen-odi': [14, 0.96, 0.45], 'gen-irang': [14, 0.86, 0.47], 'gen-dalli': [15, 0.76, 0.53], 'gen-bakdal': [15, 0.72, 0.43], 'gen-noeul': [15, 0.73, 0.44], 'gen-maehwa': [15, 0.74, 0.54], 'gen-gaon': [14, 0.95, 0.56], 'gen-eomni': [14, 0.96, 0.42], 'gen-nuri': [14, 0.96, 0.54], 'gen-bira': [14, 0.96, 0.48], 'gen-gureum': [14, 0.96, 0.45],
+  'gen-soseono': [14, 0.97, 0.4], 'gen-bdanbi': [14, 0.87, 0.44], 'gen-dallae2': [14, 0.88, 0.49], 'gen-maryeo': [14, 0.94, 0.59], 'gen-horselord': [14, 0.94, 0.48], 'gen-olddaeso': [14, 0.9, 0.49], 'gen-maro': [14, 0.94, 0.53], 'gen-gwaeyu': [14, 0.95, 0.45], 'gen-daemusin': [15, 0.77, 0.61], 'gen-tahae': [14, 0.95, 0.54], 'gen-ocheongan': [14, 0.95, 0.47], 'gen-yusugan': [14, 0.96, 0.47], 'gen-odogan': [14, 0.86, 0.48], 'gen-pidogan': [14, 0.87, 0.51], 'gen-yeodogan': [14, 0.89, 0.46], 'gen-adogan': [14, 0.89, 0.52], 'gen-musoe': [14, 0.83, 0.53], 'gen-suro': [14, 0.93, 0.45], 'gen-waechief': [14, 0.94, 0.48], 'gen-hojin': [14, 0.78, 0.69], 'gen-jita': [14, 0.94, 0.43], 'gen-guryema': [15, 0.76, 0.51], 'gen-jibaekho': [14, 0.95, 0.51], 'gen-sobeol': [14, 0.95, 0.41], 'gen-alpyeong': [14, 0.88, 0.56], 'gen-hogong': [14, 0.89, 0.43], 'gen-geumbawi': [14, 0.96, 0.44], 'gen-keundol': [14, 0.92, 0.53], 'gen-jinha': [14, 0.93, 0.42], 'gen-duman': [14, 0.95, 0.52], 'gen-gomok': [14, 0.95, 0.45], 'gen-hneoul': [15, 0.74, 0.37], 'gen-tneoul': [14, 0.94, 0.49], 'gen-sdallae': [15, 0.75, 0.44], 'gen-yucheongan': [14, 0.89, 0.51], 'gen-sincheongan': [14, 0.94, 0.47], 'gen-singwigan': [14, 0.86, 0.5], 'gen-mdallae': [14, 0.96, 0.44], 'gen-mulbeom': [14, 0.95, 0.4], 'gen-beomi': [14, 0.96, 0.42], 'gen-danbi': [15, 0.7, 0.43], 'gen-mulsae': [14, 0.94, 0.46], 'gen-darae': [15, 0.72, 0.47], 'gen-mir': [15, 0.72, 0.47], 'gen-wan': [15, 0.7, 0.41], 'gen-gom': [14, 0.96, 0.39], 'gen-sagong': [14, 0.96, 0.5], 'gen-halla': [14, 0.93, 0.46], 'gen-areum': [14, 0.88, 0.48], 'gen-dokmudeom': [14, 0.87, 0.37], 'gen-beom': [14, 0.89, 0.36], 'gen-baram': [14, 0.87, 0.44], 'gen-goeun': [14, 0.92, 0.42], 'gen-byeol': [14, 0.94, 0.44], 'gen-sinneoul': [14, 0.94, 0.46], 'gen-haesol': [14, 0.95, 0.49], 'gen-odi': [14, 0.96, 0.45], 'gen-irang': [14, 0.86, 0.47], 'gen-dalli': [15, 0.76, 0.53], 'gen-bakdal': [15, 0.72, 0.43], 'gen-noeul': [15, 0.73, 0.44], 'gen-maehwa': [15, 0.74, 0.54], 'gen-gaon': [14, 0.95, 0.56], 'gen-eomni': [14, 0.96, 0.42], 'gen-nuri': [14, 0.96, 0.54], 'gen-bira': [14, 0.96, 0.48], 'gen-gureum': [14, 0.96, 0.45],
   'gen-biryu': [14, 0.82, 0.46], 'gen-geumha': [14, 0.88, 0.46], 'gen-geota': [14, 0.86, 0.37], 'gen-soebo': [14, 0.85, 0.45],
   'gen-gaennae': [14, 0.84, 0.45],
   'gen-budeul': [14, 0.88, 0.46],
@@ -269,7 +269,7 @@ const CONTACT: Readonly<Record<string, [number, number, number]>> = {
 }
 
 const HEAVY_SWINGS = new Set([...[...GENERATED_HEAVY_KEYS,...AWAKENED_HEAVY].map(k => 'gen-'+k), 'axe', 'gen-soebi', 'gen-haebi', 'gen-gamsil', 'gen-biryu', 'gen-geumha', 'gen-soebo'])
-const BLADE_SWINGS = new Set([...[...GENERATED_BLADE_KEYS,...AWAKENED_BLADE].map(k => 'gen-'+k), 'gen-sogeumbi', 'gen-ara', 'gen-g-sword', 'gen-hyeokgeose', 'gen-eureum', 'gen-hyeopbo', 'gen-onjo', 'gen-mount', 'gen-geota'])
+const BLADE_SWINGS = new Set([...[...GENERATED_BLADE_KEYS,...AWAKENED_BLADE].map(k => 'gen-'+k), 'gen-sogeumbi', 'gen-base-g-45-dabeol-deulgae', 'gen-ara', 'gen-g-sword', 'gen-hyeokgeose', 'gen-eureum', 'gen-hyeopbo', 'gen-onjo', 'gen-mount', 'gen-geota'])
 const swingArt = (skin: string): 'heavy' | 'sweep' | 'thrust' =>
   HEAVY_SWINGS.has(skin) ? 'heavy' : BLADE_SWINGS.has(skin) ? 'sweep' : 'thrust'
 

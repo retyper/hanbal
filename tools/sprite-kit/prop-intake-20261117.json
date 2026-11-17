@@ -460,6 +460,144 @@
         "residueAct": 0.0011,
         "residueWalk": 0.0002
       }
+    },
+    "base-w-18-jinhan-salt-widow": {
+      "status": "installed",
+      "order": "strip",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-18-jinhan-salt-widow_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-18-jinhan-salt-widow_walk.png",
+      "actSha256": "f18e633f9703ed9c9fba99912cd41f5608dc805659af9f832eefc1ac8f169e20",
+      "walkSha256": "f04661c573f26505def40ac85e783b93c20a9bad12a548049e538cf2959d1ce2",
+      "portrait": "w-18-jinhan-salt-widow",
+      "auto": {
+        "cell": [
+          208,
+          160
+        ],
+        "walkScale": 0.6837,
+        "contact": [
+          14,
+          0.83,
+          0.46
+        ],
+        "headsOld": 2.66,
+        "headsNew": 3.3,
+        "headsNewWalk": 3.0,
+        "residueAct": 0.002,
+        "residueWalk": 0.0003
+      },
+      "review": {
+        "chinOld": 33.0,
+        "chinNew": 30.0,
+        "note": "v3"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-18-jinhan-salt-widow",
+      "installed": "2026-11-17"
+    },
+    "daeso": {
+      "status": "installed",
+      "order": "strip",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_daeso_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_daeso_walk.png",
+      "actSha256": "e2ce182b91ef428c12fd357ccad68df0efd0b782d7b95403f8a3d79a99c36b41",
+      "walkSha256": "b5c1c171ac0d2334c7d27958ca0760ff4815261a4754327610dcb20e3055d8eb",
+      "portrait": "g-67-buyeo-daeso",
+      "auto": {
+        "cell": [
+          200,
+          160
+        ],
+        "walkScale": 0.6527,
+        "contact": [
+          14,
+          0.92,
+          0.48
+        ],
+        "headsOld": 2.92,
+        "headsNew": 3.26,
+        "headsNewWalk": 3.04,
+        "residueAct": 0.0241,
+        "residueWalk": 0.0094
+      },
+      "review": {
+        "chinOld": 33.0,
+        "chinNew": 30.0,
+        "note": "v3"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/daeso",
+      "installed": "2026-11-17"
+    },
+    "yucheongan": {
+      "status": "installed",
+      "order": "strip",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_yucheongan_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_yucheongan_walk.png",
+      "actSha256": "9607a20f261a2d6cb913aa5977d0d920c3d9c52b685cfc7d5d76327d8710777d",
+      "walkSha256": "259d8dfb0a6984525631b4de445d4bc6aca7644dc31c18f6e800d3fec249317d",
+      "portrait": "w-99-garak-yucheongan",
+      "auto": {
+        "cell": [
+          208,
+          160
+        ],
+        "walkScale": 0.6397,
+        "contact": [
+          14,
+          0.89,
+          0.51
+        ],
+        "headsOld": 2.63,
+        "headsNew": 3.01,
+        "headsNewWalk": 2.59,
+        "residueAct": 0.0,
+        "residueWalk": 0.0
+      },
+      "review": {
+        "chinOld": 33.0,
+        "chinNew": 30.0,
+        "note": "v3"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/yucheongan",
+      "installed": "2026-11-17"
+    },
+    "base-g-45-dabeol-deulgae": {
+      "status": "installed",
+      "order": "strip",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-g-45-dabeol-deulgae_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-g-45-dabeol-deulgae_walk.png",
+      "actSha256": "dd9f063f12867df15b1cabfe4b93c68539eec500ca3d40b67c298c5cbc78661b",
+      "walkSha256": "df5edf735417ea1c46b23ea66d5322bd9ac75db6684e9596647ec1234bb822dc",
+      "weaponFix": {
+        "sprite": "club",
+        "art": "sword",
+        "artKit": "sword"
+      },
+      "portrait": "g-45-dabeol-deulgae",
+      "auto": {
+        "cell": [
+          200,
+          160
+        ],
+        "walkScale": 0.5895,
+        "contact": [
+          14,
+          0.95,
+          0.49
+        ],
+        "headsOld": 3.36,
+        "headsNew": 4.22,
+        "headsNewWalk": 3.39,
+        "residueAct": 0.006,
+        "residueWalk": 0.0017
+      },
+      "review": {
+        "chinOld": 32.0,
+        "chinNew": 29.0,
+        "note": "v3 · 몽둥이→원화대로 칼",
+        "weapon": "sword"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-g-45-dabeol-deulgae",
+      "installed": "2026-11-17"
     }
   }
 }
