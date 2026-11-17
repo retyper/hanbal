@@ -201,36 +201,37 @@
       "installed": "2026-11-17"
     },
     "base-w-40-mujin-munui": {
-      "status": "rejected",
+      "status": "installed",
       "order": "strip",
-      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-40-mujin-munui_act.png",
-      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-40-mujin-munui_walk.png",
-      "actSha256": "0679c3ff740716077e0a0f383b41bdaa148a09643a2dee8f8ff5a323895dd5a9",
-      "walkSha256": "41e4d913c5e6272cbc1c6c0849d3880e5e5996e421e26a0aedf6ba7a240bb320",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-w-40-mujin-munui_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-w-40-mujin-munui_walk.png",
+      "actSha256": "a0d22d22257e5f235190c73c8503d887177ee51ea4854c991420c80d39c08ee7",
+      "walkSha256": "a04a44d68d37cc56b956e59c8945467c11d89e81174414961d64fc69c4dfc995",
       "portrait": "w-40-mujin-munui",
       "auto": {
         "cell": [
-          192,
+          208,
           160
         ],
-        "walkScale": 0.677,
+        "walkScale": 0.6156,
         "contact": [
           14,
-          0.94,
-          0.51
+          0.89,
+          0.47
         ],
         "headsOld": 2.58,
-        "headsNew": 2.42,
-        "headsNewWalk": 2.69,
-        "residueAct": 0.0013,
-        "residueWalk": 0.0021
+        "headsNew": 3.01,
+        "headsNewWalk": 2.68,
+        "residueAct": 0.0025,
+        "residueWalk": 0.0013
       },
-      "reason": "v3 얼굴이 옛 띠와 거의 같은 크기(머리 띠 2.58→2.42) · 기준 판보다 큼",
       "review": {
-        "chinOld": null,
-        "chinNew": null,
-        "note": ""
-      }
+        "chinOld": 34.0,
+        "chinNew": 30.0,
+        "note": "v4 (v3 반려 뒤) · 얼굴 작아짐"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-40-mujin-munui",
+      "installed": "2026-11-17"
     },
     "base-w-46-geonma-maru": {
       "status": "installed",
@@ -1325,6 +1326,39 @@
         "note": "v3"
       },
       "archive": "assets_src/realm/retired/prop-20261117/maehwa",
+      "installed": "2026-11-17"
+    },
+    "singwigan": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_singwigan_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_singwigan_walk.png",
+      "actSha256": "a09cb1f89c21e6292ee8f45e6bc730fcf59736f397aab44b8a3eb05f20af185f",
+      "walkSha256": "a99b4e85c8638873d37e0642fb0d0b88d632abfa772b079a974228a40c5501fa",
+      "portrait": "w-101-garak-singwigan",
+      "auto": {
+        "cell": [
+          216,
+          160
+        ],
+        "walkScale": 0.5712,
+        "contact": [
+          14,
+          0.87,
+          0.44
+        ],
+        "headsOld": 2.54,
+        "headsNew": 3.11,
+        "headsNewWalk": 2.67,
+        "residueAct": 0.0,
+        "residueWalk": 0.0
+      },
+      "review": {
+        "chinOld": 34.0,
+        "chinNew": 31.0,
+        "note": "v3"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/singwigan",
       "installed": "2026-11-17"
     }
   }
