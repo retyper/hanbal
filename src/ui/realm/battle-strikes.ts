@@ -165,7 +165,7 @@ const CONTACT: Readonly<Record<string, [number, number, number]>> = {
   'gen-base-g-62-gammun-gamnamu': [15, 0.74, 0.54],
   'gen-base-g-61-apdok-ap': [14, 0.93, 0.5],
   'gen-base-g-60-golbeol-golgae': [14, 0.93, 0.44],
-  'gen-base-w-45-tamna-oreumbi': [14, 0.92, 0.45],
+  'gen-base-w-45-tamna-oreumbi': [14, 0.94, 0.45],
   'gen-base-w-43-uga-nuri': [14, 0.96, 0.44],
   'gen-base-w-41-hwanna-beodeul': [15, 0.79, 0.6],
   'gen-base-w-40-mujin-munui': [14, 0.89, 0.47],

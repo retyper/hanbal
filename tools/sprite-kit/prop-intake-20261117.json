@@ -2244,6 +2244,45 @@
       },
       "archive": "assets_src/realm/retired/prop-20261117/base-w-41-hwanna-beodeul",
       "installed": "2026-11-17"
+    },
+    "base-w-45-tamna-oreumbi": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-w-45-tamna-oreumbi_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-w-45-tamna-oreumbi_walk.png",
+      "actSha256": "f93777e15caed0caf7d74c3bd571dbff5dfa29059577fd6e0eef2d50429227be",
+      "walkSha256": "ed30b5f01b1f291d06ff06cae2be2c756b70c19032ed95e3946eb1a48a68c136",
+      "weaponFix": {
+        "sprite": "walking staff",
+        "art": "whip",
+        "artKit": "dagger"
+      },
+      "portrait": "w-45-tamna-oreumbi",
+      "auto": {
+        "cell": [
+          216,
+          160
+        ],
+        "walkScale": 0.6344,
+        "contact": [
+          14,
+          0.94,
+          0.45
+        ],
+        "headsOld": 2.82,
+        "headsNew": 3.16,
+        "headsNewWalk": 2.98,
+        "residueAct": 0.0,
+        "residueWalk": 0.0
+      },
+      "review": {
+        "chinOld": 33.0,
+        "chinNew": 29.0,
+        "note": "v3 보류 후보 · 지팡이→원화대로 채찍 · 이랑 기준과 맞음",
+        "weapon": "dagger"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-45-tamna-oreumbi",
+      "installed": "2026-11-17"
     }
   }
 }
