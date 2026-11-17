@@ -37,36 +37,37 @@
       "installed": "2026-11-17"
     },
     "base-g-50-bullae-gwaha": {
-      "status": "rejected",
+      "status": "installed",
       "order": "strip",
-      "act": "D:/에셋창고/sprite_prop_base-g-50-bullae-gwaha_act.png",
-      "walk": "D:/에셋창고/sprite_prop_base-g-50-bullae-gwaha_walk.png",
-      "actSha256": "845b2f7bef10fc668ef14933fb026244a6e35dc8806ff30569ba47680888379f",
-      "walkSha256": "e1658e676f892aeedbb88f074c1063749354c84e661ca5ea85e43db3360948de",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-g-50-bullae-gwaha_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-g-50-bullae-gwaha_walk.png",
+      "actSha256": "9bebab9ff28ae391dbee68c20fdaeffb3a630634444f7569526a95b154d68422",
+      "walkSha256": "89a7655907aff82035fa717ea0697f88b896e2eeda9494ec82ec7664bcb9c5cc",
       "portrait": "g-50-bullae-gwaha",
       "auto": {
         "cell": [
           192,
           160
         ],
-        "walkScale": 0.593,
+        "walkScale": 0.5979,
         "contact": [
           15,
-          0.75,
-          0.55
+          0.76,
+          0.59
         ],
         "headsOld": 3.26,
-        "headsNew": 3.81,
-        "headsNewWalk": 3.4,
+        "headsNew": 3.38,
+        "headsNewWalk": 3.24,
         "residueAct": 0.0005,
-        "residueWalk": 0.0001
+        "residueWalk": 0.0
       },
-      "reason": "얼굴 목표 미달: 턱 자리가 1%p쯤만 올라감 (자 눈금 33→32 · 기준 소서노28.5·감실30·쇠비31·온조30 같은 자) · head-audit 기준으로 41→약 40 (목표 31~34) · 띠 크기에서 옛것과 거의 구분 안 됨. 그 밖 검사(20+8 사람·무기·초상 같은 사람·발 줄·찌꺼기)는 통과",
       "review": {
-        "chinOld": 33.0,
-        "chinNew": 32.0,
-        "note": "수염으로 턱 추정"
-      }
+        "chinOld": 34.0,
+        "chinNew": 31.0,
+        "note": "v3"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-g-50-bullae-gwaha",
+      "installed": "2026-11-17"
     },
     "base-g-59-yangmaek-maekson": {
       "status": "installed",
@@ -104,32 +105,32 @@
     "base-w-27-mokji-jinha": {
       "status": "rejected",
       "order": "strip",
-      "act": "D:/에셋창고/sprite_prop_base-w-27-mokji-jinha_act.png",
-      "walk": "D:/에셋창고/sprite_prop_base-w-27-mokji-jinha_walk.png",
-      "actSha256": "bdffa7f21f1e39eebbcc54593358c43e337a243bbfaa2a03155ec5724b145613",
-      "walkSha256": "c63dfe4c4ef8e19ce413524c993ca452f989ef78e308aacda376559a6cf80fa7",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-27-mokji-jinha_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-27-mokji-jinha_walk.png",
+      "actSha256": "532b21eb726a2e81bd855db4b3ed70f1f49541e4d00b1f38f2444640638fa7ce",
+      "walkSha256": "28b69d6d267e29631b658f7f1ef2a0a34c50e96f0c23443cf3d6a30c1f254a4f",
       "portrait": "w-27-mokji-jinha",
       "auto": {
         "cell": [
-          208,
+          200,
           160
         ],
-        "walkScale": 0.5838,
+        "walkScale": 0.5541,
         "contact": [
           14,
-          0.88,
-          0.44
+          0.87,
+          0.51
         ],
         "headsOld": 2.63,
-        "headsNew": 3.01,
-        "headsNewWalk": 2.8,
-        "residueAct": 0.0002,
-        "residueWalk": 0.0002
+        "headsNew": 2.74,
+        "headsNewWalk": 2.87,
+        "residueAct": 0.0006,
+        "residueWalk": 0.0003
       },
-      "reason": "얼굴 목표 미달: 턱 자리가 1%p쯤만 올라감 (자 눈금 34→33 · 기준 소서노28.5·감실30·쇠비31·온조30 같은 자) · head-audit 기준으로 39→약 38 (목표 31~34) · 띠 크기에서 옛것과 거의 구분 안 됨. 그 밖 검사(20+8 사람·무기·초상 같은 사람·발 줄·찌꺼기)는 통과",
+      "reason": "v3 얼굴이 옛 띠와 거의 같은 크기(머리 띠 2.63→2.74) · 기준 판보다 큼",
       "review": {
-        "chinOld": 34.0,
-        "chinNew": 33.0,
+        "chinOld": null,
+        "chinNew": null,
         "note": ""
       }
     },
@@ -232,72 +233,108 @@
       }
     },
     "base-w-46-geonma-maru": {
-      "status": "rejected",
+      "status": "installed",
       "order": "strip",
-      "act": "D:/에셋창고/sprite_prop_base-w-46-geonma-maru_act.png",
-      "walk": "D:/에셋창고/sprite_prop_base-w-46-geonma-maru_walk.png",
-      "actSha256": "5351d575141964efce111925e513e778ee891a29d9a560d38ece93a5baf88d9f",
-      "walkSha256": "db0dfb35de873936e053aba2ac1f33ea8aa560bcf5c1c9424cbe9efc039e4328",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-46-geonma-maru_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-46-geonma-maru_walk.png",
+      "actSha256": "ea920c58795a7e69df392edf0baab6627408efa98ecd0fd1a36ca23fb966c4e5",
+      "walkSha256": "ddb9b51e793d758818a0a56ccd73c9a27c32d19caa03a1ef35e9481b130958ef",
       "portrait": "w-46-geonma-maru",
       "auto": {
         "cell": [
-          208,
+          224,
           160
         ],
-        "walkScale": 0.5592,
+        "walkScale": 0.5481,
         "contact": [
           14,
-          0.94,
-          0.47
+          0.95,
+          0.48
         ],
         "headsOld": 2.63,
-        "headsNew": 3.34,
-        "headsNewWalk": 2.98,
-        "residueAct": 0.0171,
-        "residueWalk": 0.0064
+        "headsNew": 3.04,
+        "headsNewWalk": 2.79,
+        "residueAct": 0.0206,
+        "residueWalk": 0.005
       },
-      "reason": "얼굴 목표 미달: 턱 자리가 1%p쯤만 올라감 (자 눈금 33.5→32.5 · 기준 소서노28.5·감실30·쇠비31·온조30 같은 자) · head-audit 기준으로 39→약 38 (목표 31~34) · 띠 크기에서 옛것과 거의 구분 안 됨. 그 밖 검사(20+8 사람·무기·초상 같은 사람·발 줄·찌꺼기)는 통과",
       "review": {
-        "chinOld": 33.5,
-        "chinNew": 32.5,
-        "note": ""
-      }
+        "chinOld": 34.0,
+        "chinNew": 31.0,
+        "note": "v3"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-46-geonma-maru",
+      "installed": "2026-11-17"
     },
     "base-w-48-mujin-mudeung": {
       "status": "rejected",
       "order": "strip",
-      "act": "D:/에셋창고/sprite_prop_base-w-48-mujin-mudeung_act.png",
-      "walk": "D:/에셋창고/sprite_prop_base-w-48-mujin-mudeung_walk.png",
-      "actSha256": "9ca35a5b138b384a514b6c17ac904336a4a2bf0c8f3b54d19d230a5acc6d17e3",
-      "walkSha256": "b41ceeb0c3f4f60b93280736d1e67f49e22182ed4e632663018d02811d84b2f4",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-48-mujin-mudeung_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-48-mujin-mudeung_walk.png",
+      "actSha256": "7c4abdb774dd3c9da3dfa2b5459f4582f0b64cfd5d582ead39a14f019bf8a3f4",
+      "walkSha256": "7651f6aeb4af384ffdfef5d7f8e78ced7f99ace0446afb67680a6cce654d37f6",
       "portrait": "w-48-mujin-mudeung",
       "auto": {
         "cell": [
-          208,
+          224,
           160
         ],
-        "walkScale": 0.5932,
+        "walkScale": 0.5424,
         "contact": [
           14,
           0.96,
-          0.45
+          0.46
         ],
         "headsOld": 2.8,
-        "headsNew": 3.19,
-        "headsNewWalk": 2.79,
-        "residueAct": 0.0173,
-        "residueWalk": 0.0189
+        "headsNew": 2.77,
+        "headsNewWalk": 2.81,
+        "residueAct": 0.0237,
+        "residueWalk": 0.0116
       },
-      "reason": "얼굴 목표 미달: 턱 자리가 1%p쯤만 올라감 (자 눈금 34→33 · 기준 소서노28.5·감실30·쇠비31·온조30 같은 자) · head-audit 기준으로 39→약 38 (목표 31~34) · 띠 크기에서 옛것과 거의 구분 안 됨. 그 밖 검사(20+8 사람·무기·초상 같은 사람·발 줄·찌꺼기)는 통과",
+      "reason": "v3 얼굴 크기 그대로(머리 띠 2.80→2.77)",
       "review": {
-        "chinOld": 34.0,
-        "chinNew": 33.0,
+        "chinOld": null,
+        "chinNew": null,
         "note": ""
       }
     },
     "base-w-50-siljik-mulga": {
-      "status": "waiting-walk",
-      "act": "D:\\에셋창고\\sprite_prop_base-w-50-siljik-mulga_act.png"
+      "status": "installed",
+      "order": "strip",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-50-siljik-mulga_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-50-siljik-mulga_walk.png",
+      "actSha256": "50ac3a3d20e07a7a2071a7a1a8d5cec312d28f67c442e8120596a2da43da5386",
+      "walkSha256": "7901330b9c990aa702bcb0f76f2d62a036051737b121e4781bd18e587527bed9",
+      "weaponFix": {
+        "sprite": "spear",
+        "art": "short blade+water magic",
+        "artKit": "dagger"
+      },
+      "portrait": "w-50-siljik-mulga",
+      "auto": {
+        "cell": [
+          216,
+          160
+        ],
+        "walkScale": 0.5205,
+        "contact": [
+          14,
+          0.94,
+          0.45
+        ],
+        "headsOld": 2.74,
+        "headsNew": 3.61,
+        "headsNewWalk": 3.02,
+        "residueAct": 0.0009,
+        "residueWalk": 0.0
+      },
+      "review": {
+        "chinOld": 34.0,
+        "chinNew": 30.0,
+        "note": "v3 · 창→원화대로 단검+물 기운",
+        "weapon": "dagger"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-50-siljik-mulga",
+      "installed": "2026-11-17"
     },
     "base-w-81-byeokjin-byeolbit": {
       "status": "installed",
@@ -397,6 +434,32 @@
       },
       "archive": "assets_src/realm/retired/prop-20261117/irang",
       "installed": "2026-11-17"
+    },
+    "base-w-76-gampyeong-baetsagong": {
+      "status": "staged",
+      "order": "strip",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-76-gampyeong-baetsagong_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-76-gampyeong-baetsagong_walk.png",
+      "actSha256": "0a6baf002e7a05f6734674b9fce7782f31095b40d054d03da45c3bff2576dacb",
+      "walkSha256": "b183b2513066a66795ccb03586cf65afdfa16d050405a62c612c3485a6ba9bac",
+      "portrait": "w-76-gampyeong-baetsagong",
+      "auto": {
+        "cell": [
+          200,
+          160
+        ],
+        "walkScale": 0.6427,
+        "contact": [
+          14,
+          0.93,
+          0.56
+        ],
+        "headsOld": 2.66,
+        "headsNew": 2.81,
+        "headsNewWalk": 2.77,
+        "residueAct": 0.0011,
+        "residueWalk": 0.0002
+      }
     }
   }
 }
