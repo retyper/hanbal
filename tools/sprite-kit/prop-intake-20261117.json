@@ -103,36 +103,37 @@
       "installed": "2026-11-17"
     },
     "base-w-27-mokji-jinha": {
-      "status": "rejected",
+      "status": "installed",
       "order": "strip",
-      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-27-mokji-jinha_act.png",
-      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-27-mokji-jinha_walk.png",
-      "actSha256": "532b21eb726a2e81bd855db4b3ed70f1f49541e4d00b1f38f2444640638fa7ce",
-      "walkSha256": "28b69d6d267e29631b658f7f1ef2a0a34c50e96f0c23443cf3d6a30c1f254a4f",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-w-27-mokji-jinha_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-w-27-mokji-jinha_walk.png",
+      "actSha256": "29bae22570722b66751c66a658f286b2068e08b3e987bfa9d5ee24575c6ce6a2",
+      "walkSha256": "583193c6dcb61ae393067769b8ae94a13915655121c6fdf10ca633845317cead",
       "portrait": "w-27-mokji-jinha",
       "auto": {
         "cell": [
           200,
           160
         ],
-        "walkScale": 0.5541,
+        "walkScale": 0.654,
         "contact": [
           14,
-          0.87,
-          0.51
+          0.86,
+          0.4
         ],
-        "headsOld": 2.63,
-        "headsNew": 2.74,
-        "headsNewWalk": 2.87,
-        "residueAct": 0.0006,
-        "residueWalk": 0.0003
+        "headsOld": 3.81,
+        "headsNew": 3.81,
+        "headsNewWalk": 3.23,
+        "residueAct": 0.0003,
+        "residueWalk": 0.0
       },
-      "reason": "v3 얼굴이 옛 띠와 거의 같은 크기(머리 띠 2.63→2.74) · 기준 판보다 큼",
       "review": {
-        "chinOld": null,
-        "chinNew": null,
-        "note": ""
-      }
+        "chinOld": 34.0,
+        "chinNew": 29.0,
+        "note": "v4 (v3 반려 뒤) · 2.63→3.81"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-27-mokji-jinha",
+      "installed": "2026-11-17"
     },
     "base-w-36-baekje-maena": {
       "status": "installed",
@@ -269,29 +270,29 @@
     "base-w-48-mujin-mudeung": {
       "status": "rejected",
       "order": "strip",
-      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-48-mujin-mudeung_act.png",
-      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-48-mujin-mudeung_walk.png",
-      "actSha256": "7c4abdb774dd3c9da3dfa2b5459f4582f0b64cfd5d582ead39a14f019bf8a3f4",
-      "walkSha256": "7651f6aeb4af384ffdfef5d7f8e78ced7f99ace0446afb67680a6cce654d37f6",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-w-48-mujin-mudeung_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-w-48-mujin-mudeung_walk.png",
+      "actSha256": "2226928cf06bb74c4908d6aed596da44af33e3d35f38a10dad9dca7b0f170f5d",
+      "walkSha256": "f0c81d59cfd10edb4874b5971b8d38ce286fe6bbbe727d492bdb27e3b5b1af67",
       "portrait": "w-48-mujin-mudeung",
       "auto": {
         "cell": [
           224,
           160
         ],
-        "walkScale": 0.5424,
+        "walkScale": 0.6535,
         "contact": [
           14,
-          0.96,
-          0.46
+          0.94,
+          0.55
         ],
         "headsOld": 2.8,
-        "headsNew": 2.77,
-        "headsNewWalk": 2.81,
-        "residueAct": 0.0237,
-        "residueWalk": 0.0116
+        "headsNew": 4.38,
+        "headsNewWalk": 4.03,
+        "residueAct": 0.0073,
+        "residueWalk": 0.0148
       },
-      "reason": "v3 얼굴 크기 그대로(머리 띠 2.80→2.77)",
+      "reason": "v4 act 는 얼굴 작아졌으나 누운 칸 아래 잘림(줄마다 여백 덧대 봄) · 걷기 판 사람이 서기보다 크게 나와 걸을 때 커짐",
       "review": {
         "chinOld": null,
         "chinNew": null,

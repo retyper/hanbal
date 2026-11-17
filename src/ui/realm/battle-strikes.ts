@@ -211,7 +211,7 @@ const CONTACT: Readonly<Record<string, [number, number, number]>> = {
   'gen-base-g-24-wansan-onsan': [14, 0.92, 0.48],
   'gen-base-g-23-sangdang-soedal': [14, 0.92, 0.44],
   'gen-base-g-22-ungcheon-gomnae': [14, 0.94, 0.5],
-  'gen-base-w-27-mokji-jinha': [14, 0.87, 0.46],
+  'gen-base-w-27-mokji-jinha': [14, 0.86, 0.4],
   'gen-base-g-68-baekje-onnuri': [14, 0.94, 0.49],
   'gen-base-w-102-garak-dana': [15, 0.71, 0.95],
   'gen-base-w-72-eumjeup-beol': [14, 0.84, 0.42],
