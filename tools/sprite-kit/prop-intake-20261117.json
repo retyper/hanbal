@@ -2481,6 +2481,144 @@
       },
       "archive": "assets_src/realm/retired/prop-20261117/hwalmi",
       "installed": "2026-11-17"
+    },
+    "olddaeso": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_olddaeso_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_olddaeso_walk.png",
+      "actSha256": "84112645d7dc1dfb2b1c6b5bdc94a69ab41543009076e30f814db6d099743230",
+      "walkSha256": "508e49e7c1c8ec03012f35011d502f91c207fb5c1f3e5daaafb9e2c25ad73e7b",
+      "weaponFix": {
+        "sprite": "scepter-mace",
+        "art": "whip",
+        "artKit": "dagger"
+      },
+      "portrait": "g-100-buyeo-old-daeso",
+      "auto": {
+        "cell": [
+          232,
+          160
+        ],
+        "walkScale": 0.6169,
+        "contact": [
+          14,
+          0.96,
+          0.45
+        ],
+        "headsOld": 3.19,
+        "headsNew": 4.89,
+        "headsNewWalk": 4.37,
+        "residueAct": 0.0002,
+        "residueWalk": 0.0
+      },
+      "review": {
+        "chinOld": 32.0,
+        "chinNew": 29.0,
+        "note": "v3 보류 후보 · 홀→원화대로 채찍",
+        "weapon": "dagger"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/olddaeso",
+      "installed": "2026-11-17"
+    },
+    "songyang": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_songyang_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_songyang_walk.png",
+      "actSha256": "93da38b334d5e6b7602754fb65e407dbbad81c09a930e6ae2891451e1eaa6029",
+      "walkSha256": "f4b5de4cd71f19739585b1c20a3e410ce2eb79a90cc05a3165357aea5a09c9d5",
+      "portrait": "g-91-biryu-songyang",
+      "auto": {
+        "cell": [
+          176,
+          160
+        ],
+        "walkScale": 0.601,
+        "contact": [
+          15,
+          0.8,
+          0.37
+        ],
+        "headsOld": 5.33,
+        "headsNew": 5.96,
+        "headsNewWalk": 5.02,
+        "residueAct": 0.0,
+        "residueWalk": 0.0
+      },
+      "review": {
+        "chinOld": 33.0,
+        "chinNew": 29.0,
+        "note": "v3 보류 후보 · 기준 판과 맞음"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/songyang",
+      "installed": "2026-11-17"
+    },
+    "sori": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_sori_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_sori_walk.png",
+      "actSha256": "e8a53c4170d784d10a21b0bc0066b5d7124a004eed9b6aabfa83f870836e837a",
+      "walkSha256": "634109df4f9db40307f6ee832d3928e87787661ef99fb7bdaf1d1fd7b59a269d",
+      "portrait": "w-11-assassin",
+      "auto": {
+        "cell": [
+          184,
+          160
+        ],
+        "walkScale": 0.653,
+        "contact": [
+          14,
+          0.89,
+          0.49
+        ],
+        "headsOld": 3.04,
+        "headsNew": 3.81,
+        "headsNewWalk": 3.61,
+        "residueAct": 0.0012,
+        "residueWalk": 0.0
+      },
+      "review": {
+        "chinOld": 33.0,
+        "chinNew": 29.0,
+        "note": "v3 보류 후보 · 기준 판과 맞음"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/sori",
+      "installed": "2026-11-17"
+    },
+    "sdallae": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_sdallae_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_sdallae_walk.png",
+      "actSha256": "88aaa72c7ce3625d0be50c11e022d0284d9f192498126f4e901fe9514c2effbc",
+      "walkSha256": "6898158cbe042cc8474f040de059e2747bcd1661f49753b94caeb43f98bcff88",
+      "portrait": "w-92-saro-dallae",
+      "auto": {
+        "cell": [
+          200,
+          160
+        ],
+        "walkScale": 0.6077,
+        "contact": [
+          15,
+          0.78,
+          0.41
+        ],
+        "headsOld": 2.85,
+        "headsNew": 3.91,
+        "headsNewWalk": 2.5,
+        "residueAct": 0.0003,
+        "residueWalk": 0.0
+      },
+      "review": {
+        "chinOld": 33.0,
+        "chinNew": 29.0,
+        "note": "v3 보류 후보 · 기준 판과 맞음"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/sdallae",
+      "installed": "2026-11-17"
     }
   }
 }
