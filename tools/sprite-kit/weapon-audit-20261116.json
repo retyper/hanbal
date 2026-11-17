@@ -342,16 +342,18 @@
  {
   "key": "gaon",
   "portrait": "w-19-buyeo-fur-princess",
-  "artWeapon": "spear",
-  "artKit": "spear",
+  "artWeapon": "no weapon: bare-handed ice magic (a glowing snowflake between the palms)",
+  "artKit": "magic",
   "queueWeapon": "spear",
   "currentKit": "spear",
-  "fixedKit": "spear",
+  "fixedKit": "magic",
   "spriteWeapon": "spear",
   "spriteKit": "spear",
-  "mismatch": [],
+  "mismatch": [
+   "sprite≠art"
+  ],
   "artConflict": false,
-  "note": "awaken ice orb"
+  "note": "11-17 형: 원화대로 주술"
  },
  {
   "key": "base-w-22-dongye-tiger-huntress",
@@ -750,16 +752,18 @@
  {
   "key": "base-w-24-apdok-queen",
   "portrait": "w-24-apdok-queen",
-  "artWeapon": "spear",
-  "artKit": "spear",
+  "artWeapon": "no weapon: a golden rice sheaf in one arm and grain-light magic from the free palm",
+  "artKit": "magic",
   "queueWeapon": "spear",
   "currentKit": "spear",
-  "fixedKit": "spear",
+  "fixedKit": "magic",
   "spriteWeapon": "spear",
   "spriteKit": "spear",
-  "mismatch": [],
+  "mismatch": [
+   "sprite≠art"
+  ],
   "artConflict": false,
-  "note": "bust rice sheaf"
+  "note": "11-17 형: 원화대로 주술"
  },
  {
   "key": "base-w-61-iseo-sinae",
