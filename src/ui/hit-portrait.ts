@@ -22,7 +22,7 @@ import { P } from '../tune/params.ts'
 /** 초상 결 — bust(기본 원화) · awaken(각성 원화) */
 export type HitForm = 'bust' | 'awaken'
 /** 피격 그림이 있는 초상 — `${결}/${초상 id}` (public/realm/hit/<결>/<id>.webp). 지금은 그림 없음 */
-export const HIT_ART: ReadonlySet<string> = new Set<string>([])
+export const HIT_ART: ReadonlySet<string> = new Set<string>(['awaken/g-76-mokji-jinha', 'awaken/g-82-saro-hojin', 'awaken/g-90-haengin-gomok', 'awaken/l-L2-soseono', 'awaken/w-30-guya-soebi', 'awaken/w-33-gammun-gamsil', 'awaken/w-59-jomun-irang', 'bust/g-38-chopal-palmae', 'bust/g-76-mokji-jinha', 'bust/g-82-saro-hojin', 'bust/g-90-haengin-gomok', 'bust/l-L2-soseono', 'bust/w-30-guya-soebi', 'bust/w-33-gammun-gamsil', 'bust/w-59-jomun-irang', 'bust/w-67-buyeo-haedal'])
 /** 피격 그림 길 (realm/ 아래) — 없으면 null */
 export const hitArtPath = (form: HitForm, bust: string | null | undefined): string | null =>
   bust !== null && bust !== undefined && HIT_ART.has(`${form}/${bust}`) ? `hit/${form}/${bust}.webp` : null
