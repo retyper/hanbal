@@ -471,3 +471,57 @@
 ### 22 · 11-17 밤 (형 판정) — 해달·호공 기준 판 다시(bl2 · QUEUE 맨 위)
 - 해달: 머리가 약간 큼(더 커지면 안 됨) · 노출 약함 → 머리·얼굴 조금 작게(감실보다 크지 않게) · 감실만큼 드러나게. 저장 `_act_bl2` / `_walk_bl2`.
 - 호공: 해달·소서노보다 키가 작음 → 여자들보다 확실히 크게(정수리 더 높게 · 다리 길게 · 어깨 넓게). 저장 `_act_bl2` / `_walk_bl2`.
+
+
+## Codex 지시22 수신 / 해달·호공 bl2 우선 진행
+- 고목291 생성 전 Claude22 확인, 큐 맨 위 해달303/304·호공305/306 bl2 네 장 먼저 진행. 해달 머리/얼굴 감실보다 크지 않게 조금 축소·감실 수준 의상, 호공 남성 정수리 높이·다리·어깨 확대. 기존 bl 보존. 이미지 생성 스킬의 내장 imagegen 사용, 실제 원화와 ref-style3 첨부·실제문안/참조 원장 유지. 결과 root와 이 MD에 기록하여 Claude 검수 요청.
+
+
+
+## Codex 해달 act_bl2 검수 제출
+- D:\에셋창고\sprite_prop_haedal_act_bl2.png (303, 최초+1회보정). 지시22 머리/얼굴축소·감실수준 의상적용.20칸/alpha0/실제잘림없음/활시위전체/빈발사손/누운활확인. 정확머리크기·화풍최종판정Claude/사용자. 옛bl보존. 다음walk_bl2는이새동작판마지막첨부.
+- QA C:\Users\my\Documents\Codex\2026-11-17\detail-bad-request\work\exec-bc454591-d731-49d6-92d4-638a20294cf3-face-lineup-QA.jpg
+
+
+
+## Codex 해달 bl2 쌍 제출 / 호공 bl2 시작
+- 해달 sprite_prop_haedal_act_bl2.png / sprite_prop_haedal_walk_bl2.png 둘 모두 D:\에셋창고 root 저장. 각각최초+1회보정,20/8칸 alpha0 실제잘림없음. 원화와승인판실제첨부,walk는새act마지막참조(보정시에도포함). 얼굴/머리축소 및새노출의상반영, 최종Claude/사용자판정요청.
+- walk입수예측윤곽키중앙값0.9684(머리카락/자세포함,런타임증명아님). QA work/exec-56096f14-b687-49cb-9bf5-85e43cfa93ed-pair-scale-QA.jpg. 다음호공305/306은지시22대로소서노·해달보다정수리높고다리길고어깨넓게,얼굴은작게.
+
+
+
+## Codex 호공 act_bl2 검수 제출
+- D:\에셋창고\sprite_prop_hogong_act_bl2.png (305,최초+1회보정). 지시22대로작은머리/얼굴·긴다리·넓은어깨반영.20칸 alpha0 실제잘림없음 단검/박/조개유지. 내부걷기윤곽0.949~0.957잔여,남성정수리키/정확화풍은Claude/사용자최종판정요청. QA전체윤곽정규화는정수리키증명아님.
+- QA work/exec-7298d55e-ecef-4e4a-8f7e-76188f61535f-face-lineup-QA.jpg 및 act-consistency-QA.jpg. 다음306별도걷기는새305첫서기기준.
+
+
+
+## Codex 지시22 해달·호공 bl2 네 장 검수 제출 완료
+- D:\에셋창고\sprite_prop_haedal_act_bl2.png / sprite_prop_haedal_walk_bl2.png / sprite_prop_hogong_act_bl2.png / sprite_prop_hogong_walk_bl2.png (303~306). 각최초+1회보정·원화/ref-style3 실제첨부·실제문안/참조원장보존.20/8칸 alpha0 투명배경·잘림없음·무기전체 검수. 승인완료아님/Claude사용자최종검수요청.
+- 해달:작은얼굴·감실수준노출의상. 호공:작은얼굴·긴다리·넓은어깨. 호공walk대act서기윤곽키예측중앙0.9589로자세차이잔여; 남성정수리키/정확화풍은Claude입수후비교판정필요, Codex동일키합격선언안함.
+- 호공walk QA C:\Users\my\Documents\Codex\2026-11-17\detail-bad-request\work\exec-0e277648-7084-437a-bbcf-026c9f4ad134-pair-scale-QA.jpg. 이제고목291→292부터새베이스라인잔여10장진행,옛일반장수큐중단유지. Claude후속지시우선.
+
+
+
+## Codex 현재 진행: 고목291 보정 응답 대기
+- 고목act_bl 초안20칸/alpha0/검출잘림없음, 내부걷기윤곽0.984~1.004. 후보는 Codex-production-next-20261117-candidates\sprite_prop_gomok_act_bl.png 에보존. 얼굴축소·우측지팡이여백보정(2번째/마지막호출)이수분지연중. 중복재요청없음,완료PNG로오인하지말아주세요.
+- 지시22해달·호공bl2네장 root 제출·디코드/SHA검증완료, 원장/MD기록완료. Claude해당파일검수가능. 다음고목walk는현재보정응답검수후진행.
+
+
+
+## Codex 쇠비 act_bl 검수 제출 / 고목 보정은 별도 응답 대기
+- D:\에셋창고\sprite_prop_soebi_act_bl.png (293,최초+1회보정).20칸 alpha0 실제잘림없음, 내부걷기윤곽0.956~0.989로개선. 원화의사각철망치(도끼여무기계열분류)·옥/구슬장식·지시21의상유지. 정확화풍/얼굴최종Claude사용자판정요청.
+- QA work/exec-2e6ffa4b-aee9-43c1-98db-ab1a3041b864-face-lineup-QA.jpg / act-consistency-QA.jpg. 다음294walk새293동작판참조. 고목291두번째보정호출은지연중으로중복요청안함;292는291완료뒤진행.
+
+
+
+## Codex 고목 보정 응답 도착 / 고목act·쇠비쌍 제출
+- 지연된고목291두번째보정정상수신, D:\에셋창고\sprite_prop_gomok_act_bl.png 검수제출.20칸 alpha0 실제잘림없음,작은얼굴·원화나무지팡이/송곳니/방울/모피유지. 내부걷기윤곽0.988~1.0. 중복재요청없이처리.
+- 쇠비쌍 D:\에셋창고\sprite_prop_soebi_act_bl.png / sprite_prop_soebi_walk_bl.png 제출완료(293/294각최초+1회). 원화사각철망치/옥장식/의상유지,20/8칸 alpha0 잘림없음. walk대act예측윤곽중앙0.9861(머리포함,런타임증명아님),최종화풍/얼굴Claude사용자판정.
+- 고목QA work/exec-bb47c69b-be0c-415f-b851-f315152bbb81-face-lineup-QA.jpg, 쇠비pair work/exec-e1f02048-8459-49a1-8fd1-9d355dcda3fd-pair-scale-QA.jpg. 다음292고목walk→295팔매,잔여7장. 옛일반큐중단유지.
+
+
+### 23 · 11-17 밤 (형 판정)
+- 이랑 기준 판 확정(「딱 좋아」).
+- **호공 bl2 반려 → bl3 (QUEUE 맨 위)**: 8등신 사실적 몸 · 머리가 여자보다 작음. 호진·주몽·여자 기준과 **같은 머리·얼굴 크기 · 4.5등신 · 듬직한 몸** · 키는 몸으로만 조금 더 크게(머리를 줄여서 키를 맞추지 말 것).
+- **여자 비각성 노출은 세게 하지 말 것**(형: 「각성 때 더 드러나면 된다」): 원본 옷·머리색·장신구 그대로가 먼저, 살짝 더 드러나는 정도만. 원본 옷을 다른 짧은 옷으로 바꾸지 말 것.

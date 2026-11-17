@@ -346,7 +346,7 @@ const BL_MODE = true
 // 형 판정 뒤 다시(bl2): 까닭을 문안 맨 앞에
 const BL_RETRY = {
   'gen-haedal': 'SECOND DRAFT (lead artist): the head came out slightly too big. Make the head and face a little SMALLER than the first draft, never bigger than Gamsil in IMAGE 1. The outfit was too covered: make it clearly more revealing as described below.',
-  'gen-hogong': 'SECOND DRAFT (lead artist): he came out shorter than the women. He must stand clearly TALLER than Soseono and every woman in IMAGE 1 (top of skull higher than theirs), with longer legs and broader shoulders, same style.',
+  'gen-hogong': 'THIRD DRAFT (lead artist): the second draft became an 8-head realistic man with a head SMALLER than the women. Keep the same stylized 4.5-head chibi-leaning build as the men Hojin and Jumong and the women in IMAGE 1: his head and face the SAME size as theirs, a sturdy body, chunky boots. He may be a little taller than the women only through a slightly longer body, never by shrinking the head.',
 }
 const BL_OF = Object.fromEntries(Object.entries(BL).map(([slot, k]) => [k, slot]))
 const SP_RUN = BL_MODE ? Object.values(BL) : SP_KEYS.filter((k) => SP_TEST.includes(k))
@@ -355,8 +355,10 @@ for (const k of SP_RUN) {
   const MALE = BL_OF[k]?.endsWith('남') ? 'HEIGHT (men): the standing height from the soles to the top of the SKULL (not hair, crown or hat) must be EQUAL TO OR TALLER than Soseono in IMAGE 1, with broader shoulders; a man must never look shorter or smaller than the women.\n' : ''
   // 11-17 형: 「여캐들은 더 노출 높아도 될 듯 · 어차피 픽셀 캐릭터니까」 (스팀 15세: 비침·유두 윤곽만 금지)
   const isW = BL_OF[k] ? BL_OF[k].endsWith('여') : /^gen-(base-)?[wl]-/.test(k) || ['gen-irang', 'gen-haedal', 'gen-ara', 'gen-soebi'].includes(k)
-  const SKIN = isW ? 'OUTFIT (women): make the outfit noticeably more revealing than IMAGE 2, at least as revealing as Gamsil in IMAGE 1: bare shoulders, a deep neckline with cleavage, a bare midriff and bare thighs or a high slit, keeping the character’s own colours, materials and ornaments. Fabric stays opaque: no see-through cloth and no nipple outline.\n' : ''
-  const V = BL_OF[k] ? (BL_RETRY[k] ? 'bl2' : 'bl') : SP_V5[k] ? 'v5' : SP_RETRY[k] ? 'v4' : 'v3', R4 = (BL_RETRY[k] ? BL_RETRY[k] + '\n' : '') + BLT + MALE + SKIN + (SP_V5[k] ? SP_V5[k] + '\n' : '') + (SP_RETRY[k] ? RETRY4[SP_RETRY[k]] + '\n' : '')
+  // 11-17 밤 형: 「비각성은 노출 안 심해도 돼 · 각성 때 더 드러나면 된다」 → 원본 옷·머리색 그대로가 먼저 · 살짝 더 드러나는 정도만
+  const SKIN = isW ? 'OUTFIT (women): keep the outfit, colours, hair colour and ornaments of the portrait (IMAGE 3) first; you may make it slightly more revealing (a little more neckline or leg), but never replace the portrait clothes with a different skimpy costume. Fabric stays opaque: no see-through cloth and no nipple outline.\n' : ''
+  const BL3 = { 'gen-hogong': true }   // 세 번째 판
+  const V = BL_OF[k] ? (BL3[k] ? 'bl3' : BL_RETRY[k] ? 'bl2' : 'bl') : SP_V5[k] ? 'v5' : SP_RETRY[k] ? 'v4' : 'v3', R4 = (BL_RETRY[k] ? BL_RETRY[k] + '\n' : '') + BLT + MALE + SKIN + (SP_V5[k] ? SP_V5[k] + '\n' : '') + (SP_RETRY[k] ? RETRY4[SP_RETRY[k]] + '\n' : '')
   const bust = PORTRAIT[k] ?? (k.startsWith('gen-base-') ? k.slice('gen-base-'.length) : null)
   const refs = ['/assets_src/realm/sprite-prop/ref-style3.png', `/assets_src/realm/sprite-prop/${k}-now.png`, ...(bust && existsSync(`public/realm/bust-hd/${bust}.jpg`) ? [`/realm/bust-hd/${bust}.jpg`] : [])]
   const wf = WFIX[k]
