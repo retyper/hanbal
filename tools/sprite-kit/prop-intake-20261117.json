@@ -1738,6 +1738,45 @@
       },
       "archive": "assets_src/realm/retired/prop-20261117/soebi",
       "installed": "2026-11-17"
+    },
+    "base-g-38-chopal-palmae": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-g-38-chopal-palmae_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-g-38-chopal-palmae_walk.png",
+      "actSha256": "dd5d75b8a77124651063c668649a5c9ebde8ac1107257a5d1bf51f31a94945d8",
+      "walkSha256": "9226c32853bf030da80b1808b7f97452289a6f00a8167e1bd6ec3f929eb93b99",
+      "weaponFix": {
+        "sprite": "spear",
+        "art": "sling (rope+stone)",
+        "artKit": "dagger"
+      },
+      "portrait": "g-38-chopal-palmae",
+      "auto": {
+        "cell": [
+          192,
+          160
+        ],
+        "walkScale": 0.6104,
+        "contact": [
+          14,
+          0.93,
+          0.28
+        ],
+        "headsOld": 2.85,
+        "headsNew": 3.91,
+        "headsNewWalk": 3.57,
+        "residueAct": 0.0,
+        "residueWalk": 0.0
+      },
+      "review": {
+        "chinOld": 31.0,
+        "chinNew": 29.0,
+        "note": "★ 기준 판 돌팔매·남 (형: 좋다 · 팔이 조금 두꺼운 것 빼고)",
+        "weapon": "sling"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-g-38-chopal-palmae",
+      "installed": "2026-11-17"
     }
   }
 }

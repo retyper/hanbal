@@ -344,7 +344,7 @@ const BL = { '도끼·남': 'gen-hojin', '활·남': 'gen-jumong', '활·여': '
   '주술·남': 'gen-gomok', '도끼·여': 'gen-soebi', '돌팔매·남': 'gen-base-g-38-chopal-palmae', '창·남': 'gen-oi', '칼·여': 'gen-ara' }   // 칼·남 = 지금 온조(관 키 바로잡음 headgear.json · 형 「남자 베이스라인에 가깝다」)
 const BL_MODE = false   // 11-17 밤: 형이 확정한 기준 판이 있는 무기·성별부터 나머지 장수를 다시 줄에 올린다
 // 확정한 기준 판(형 11-17) · 칸 ref-slot-<무기>-<g|w>.png = 기준 장수 + 소서노(키 맞춤) · 게임 속 크기
-const SLOT_DONE = { 'axe-g': 'hojin', 'axe-w': 'soebi', 'bow-g': 'jumong', 'bow-w': 'haedal', 'dagger-w': 'irang', 'magic-g': 'gomok', 'magic-w': 'gamsil', 'spear-w': 'soseono', 'sword-g': 'onjo' }
+const SLOT_DONE = { 'axe-g': 'hojin', 'axe-w': 'soebi', 'bow-g': 'jumong', 'bow-w': 'haedal', 'dagger-w': 'irang', 'magic-g': 'gomok', 'magic-w': 'gamsil', 'spear-w': 'soseono', 'sword-g': 'onjo', 'sling-g': 'base-g-38-chopal-palmae' }
 const KITS = (() => { const t = readFileSync('src/raid/kit-table.ts', 'utf8'); return JSON.parse(t.slice(t.indexOf('= {') + 2, t.lastIndexOf('}') + 1)) })()
 const genderOf = (k) => { const p = PORTRAIT[k] ?? (k.startsWith('gen-base-') ? k.slice(9) : ''); return /^[wl]-/.test(p) ? 'w' : /^g-/.test(p) ? 'g' : (['gen-irang', 'gen-haedal', 'gen-ara', 'gen-soebi', 'gen-jinha', 'gen-gamsil', 'gen-soseono'].includes(k) ? 'w' : 'g') }
 const slotOf = (k) => `${KITS[k.slice(4)] ?? ''}-${genderOf(k)}`
