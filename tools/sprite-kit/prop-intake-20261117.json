@@ -795,6 +795,137 @@
       },
       "archive": "assets_src/realm/retired/prop-20261117/base-w-34-chopal-deulme",
       "installed": "2026-11-17"
+    },
+    "base-w-38-sangdang-bulmae": {
+      "status": "staged",
+      "order": "strip",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-38-sangdang-bulmae_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-38-sangdang-bulmae_walk.png",
+      "actSha256": "0fdbffedff2444b514b02d4e8d7d6abb819365a89557c8b784cf391fd7d5fe18",
+      "walkSha256": "fe4c908351426c21c03b5e2d6d2659ac2287959491e77322bd1c4904ebfa9d7c",
+      "portrait": "w-38-sangdang-bulmae",
+      "auto": {
+        "cell": [
+          200,
+          160
+        ],
+        "walkScale": 0.5995,
+        "contact": [
+          14,
+          0.84,
+          0.54
+        ],
+        "headsOld": 2.91,
+        "headsNew": 3.3,
+        "headsNewWalk": 3.0,
+        "residueAct": 0.0,
+        "residueWalk": 0.0001
+      }
+    },
+    "base-w-53-hwanna-gabi": {
+      "status": "installed",
+      "order": "strip",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-53-hwanna-gabi_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-53-hwanna-gabi_walk.png",
+      "actSha256": "dc740a4b85d659d4eb2c115dd11ad6cc39e825227038a19a616b4f38a4b8b258",
+      "walkSha256": "a47402e2ba021a4453314f7180707432808f0f6287a6d0df26d9ba4fe97a5f10",
+      "portrait": "w-53-hwanna-gabi",
+      "auto": {
+        "cell": [
+          168,
+          160
+        ],
+        "walkScale": 0.6411,
+        "contact": [
+          14,
+          0.92,
+          0.52
+        ],
+        "headsOld": 2.58,
+        "headsNew": 2.74,
+        "headsNewWalk": 2.67,
+        "residueAct": 0.0016,
+        "residueWalk": 0.0
+      },
+      "review": {
+        "chinOld": 33.0,
+        "chinNew": 31.0,
+        "note": "v3"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-53-hwanna-gabi",
+      "installed": "2026-11-17"
+    },
+    "base-w-61-iseo-sinae": {
+      "status": "installed",
+      "order": "strip",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-61-iseo-sinae_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-61-iseo-sinae_walk.png",
+      "actSha256": "5c53580af6339f0b8148760b55a931afc1954eece6c22bac4e386291569c2143",
+      "walkSha256": "9060b65da3ac96452416e44df3cc86bce9d956d098635c59a0c1c082cb33c470",
+      "weaponFix": {
+        "sprite": "spear",
+        "art": "bamboo counting rods (thrown)",
+        "artKit": "magic"
+      },
+      "portrait": "w-61-iseo-sinae",
+      "auto": {
+        "cell": [
+          208,
+          160
+        ],
+        "walkScale": 0.6421,
+        "contact": [
+          14,
+          0.93,
+          0.4
+        ],
+        "headsOld": 3.15,
+        "headsNew": 3.15,
+        "headsNewWalk": 3.44,
+        "residueAct": 0.0025,
+        "residueWalk": 0.0008
+      },
+      "review": {
+        "chinOld": 31.0,
+        "chinNew": 30.0,
+        "note": "v3 · 창→원화대로 산가지(주술)",
+        "weapon": "magic"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-61-iseo-sinae",
+      "installed": "2026-11-17"
+    },
+    "base-w-75-daegaya-soemoe": {
+      "status": "installed",
+      "order": "strip",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-75-daegaya-soemoe_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-75-daegaya-soemoe_walk.png",
+      "actSha256": "31011e8432f33ee2e2b1a3f837802bad07b856da3ad8d82eb6e8a8734c7b8fdc",
+      "walkSha256": "ac4069a661ad3ba9116e5c95339483b18d8838956ca687aa2f0ddbc58eef125f",
+      "portrait": "w-75-daegaya-soemoe",
+      "auto": {
+        "cell": [
+          192,
+          160
+        ],
+        "walkScale": 0.6189,
+        "contact": [
+          14,
+          0.88,
+          0.46
+        ],
+        "headsOld": 2.98,
+        "headsNew": 4.03,
+        "headsNewWalk": 3.51,
+        "residueAct": 0.0,
+        "residueWalk": 0.0004
+      },
+      "review": {
+        "chinOld": 33.0,
+        "chinNew": 29.0,
+        "note": "v3"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-75-daegaya-soemoe",
+      "installed": "2026-11-17"
     }
   }
 }
