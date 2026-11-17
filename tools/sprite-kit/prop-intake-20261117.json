@@ -1914,6 +1914,264 @@
       },
       "archive": "assets_src/realm/retired/prop-20261117/base-g-84-wander-seoneul",
       "installed": "2026-11-17"
+    },
+    "base-g-62-beonye-hanul": {
+      "status": "rejected",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-g-62-beonye-hanul_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-g-62-beonye-hanul_walk.png",
+      "actSha256": "473f58a8898e04e33c6893b21272f1dff14173950ff078518314c88c66d560e9",
+      "walkSha256": "479b3adf2e5cdf02ee2bc82b39b9448f0df22ea669a7c78f244336ee542aa74b",
+      "portrait": "g-62-beonye-hanul",
+      "reason": "판 칸 수가 맞지 않음(스무 사람 못 찾음) → v4",
+      "review": {
+        "chinOld": null,
+        "chinNew": null,
+        "note": ""
+      }
+    },
+    "base-g-68-mujin-bitgoeul": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-g-68-mujin-bitgoeul_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-g-68-mujin-bitgoeul_walk.png",
+      "actSha256": "339484d613ef86e0710c1731a5ce8af9b5ad7e8ef50de922904247fd4aab338b",
+      "walkSha256": "e667837288f600241757fe9d3211933f83bcac00011ecff74cd02c74b11c5865",
+      "weaponFix": {
+        "sprite": "sun-disc staff",
+        "art": "sword",
+        "artKit": "sword"
+      },
+      "portrait": "g-68-mujin-bitgoeul",
+      "auto": {
+        "cell": [
+          184,
+          160
+        ],
+        "walkScale": 0.6399,
+        "contact": [
+          14,
+          0.93,
+          0.43
+        ],
+        "headsOld": 3.26,
+        "headsNew": 3.61,
+        "headsNewWalk": 3.97,
+        "residueAct": 0.0158,
+        "residueWalk": 0.0135
+      },
+      "review": {
+        "chinOld": 32.0,
+        "chinNew": 30.0,
+        "note": "v3 보류 후보 · 원화대로 칼",
+        "weapon": "sword"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-g-68-mujin-bitgoeul",
+      "installed": "2026-11-17"
+    },
+    "base-g-93-jomun-solgae": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-g-93-jomun-solgae_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-g-93-jomun-solgae_walk.png",
+      "actSha256": "3d3603fa08e7b2ee851095a1461d0fb99961ac4aba07ebbff5ae1e9b38fcaf6e",
+      "walkSha256": "4d5395ed2606d697240a603856eebaa2989f193ed5939e4b90d761b101c9f027",
+      "portrait": "g-93-jomun-solgae",
+      "auto": {
+        "cell": [
+          176,
+          160
+        ],
+        "walkScale": 0.6086,
+        "contact": [
+          15,
+          0.76,
+          0.44
+        ],
+        "headsOld": 3.26,
+        "headsNew": 4.66,
+        "headsNewWalk": 5.54,
+        "residueAct": 0.0,
+        "residueWalk": 0.0
+      },
+      "review": {
+        "chinOld": 32.0,
+        "chinNew": 29.0,
+        "note": "v3 Codex 보류 후보 · Claude 판정(기준 판 옆 같은 키로 맞음)"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-g-93-jomun-solgae",
+      "installed": "2026-11-17"
+    },
+    "base-w-05-baekje-queen": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-w-05-baekje-queen_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-w-05-baekje-queen_walk.png",
+      "actSha256": "20444b6358e473ccf6fc995dc87a198bbefa5df30bd21ae310341224c7dc5aa4",
+      "walkSha256": "f6740247f51604a458fa7304238f3d9007e7a93d54ec1a763b92480d442fa745",
+      "weaponFix": {
+        "sprite": "sword",
+        "art": "incense burner",
+        "artKit": "magic"
+      },
+      "portrait": "w-05-baekje-queen",
+      "auto": {
+        "cell": [
+          192,
+          160
+        ],
+        "walkScale": 0.6558,
+        "contact": [
+          14,
+          0.78,
+          0.28
+        ],
+        "headsOld": 3.04,
+        "headsNew": 3.63,
+        "headsNewWalk": 4.06,
+        "residueAct": 0.0,
+        "residueWalk": 0.0
+      },
+      "review": {
+        "chinOld": 32.0,
+        "chinNew": 29.0,
+        "note": "v3 보류 후보 · 원화대로 향로(주술)",
+        "weapon": "staff"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-05-baekje-queen",
+      "installed": "2026-11-17"
+    },
+    "base-w-10-pirate-captain": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-w-10-pirate-captain_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-w-10-pirate-captain_walk.png",
+      "actSha256": "ec5c272899681cfaeb17cfb86362a255c8350f8e40568b490f05722bf267f6d5",
+      "walkSha256": "c7402eb18ee5eef0306fef1edd96ca1ec581ddef7c55ccfe3c6c876001e45ce1",
+      "portrait": "w-10-pirate-captain",
+      "auto": {
+        "cell": [
+          224,
+          160
+        ],
+        "walkScale": 0.6214,
+        "contact": [
+          14,
+          0.95,
+          0.49
+        ],
+        "headsOld": 3.61,
+        "headsNew": 3.26,
+        "headsNewWalk": 3.14,
+        "residueAct": 0.0025,
+        "residueWalk": 0.0
+      },
+      "review": {
+        "chinOld": 32.0,
+        "chinNew": 29.0,
+        "note": "v3 Codex 보류 후보 · Claude 판정(기준 판 옆 같은 키로 맞음)"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-10-pirate-captain",
+      "installed": "2026-11-17"
+    },
+    "base-w-17-mahan-pearl-diver": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-w-17-mahan-pearl-diver_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-w-17-mahan-pearl-diver_walk.png",
+      "actSha256": "cd3dac181d617b0d1441e1d77dfe40cf67de05806dd60bfab633d1c5227d0d78",
+      "walkSha256": "81df7744aebd03aa0e3589509f1fe4cd7a1385ebf217869320a43ff2c7c35b63",
+      "portrait": "w-17-mahan-pearl-diver",
+      "auto": {
+        "cell": [
+          208,
+          160
+        ],
+        "walkScale": 0.6137,
+        "contact": [
+          14,
+          0.94,
+          0.46
+        ],
+        "headsOld": 2.74,
+        "headsNew": 3.11,
+        "headsNewWalk": 4.46,
+        "residueAct": 0.006,
+        "residueWalk": 0.0032
+      },
+      "review": {
+        "chinOld": 32.0,
+        "chinNew": 29.0,
+        "note": "v3 Codex 보류 후보 · Claude 판정(기준 판 옆 같은 키로 맞음)"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-17-mahan-pearl-diver",
+      "installed": "2026-11-17"
+    },
+    "base-w-21-baekje-court-dancer": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-w-21-baekje-court-dancer_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-w-21-baekje-court-dancer_walk.png",
+      "actSha256": "d165ea07a43f47df8139be304b05ca6de7d3108167fb22a150361643bbe6593d",
+      "walkSha256": "dee24e5b262cdbf55fc68c31438a2c32e9fcba296ae94039ace36f707ecb22b8",
+      "portrait": "w-21-baekje-court-dancer",
+      "auto": {
+        "cell": [
+          192,
+          160
+        ],
+        "walkScale": 0.5828,
+        "contact": [
+          14,
+          0.91,
+          0.41
+        ],
+        "headsOld": 3.34,
+        "headsNew": 3.3,
+        "headsNewWalk": 3.51,
+        "residueAct": 0.0006,
+        "residueWalk": 0.0001
+      },
+      "review": {
+        "chinOld": 32.0,
+        "chinNew": 29.0,
+        "note": "v3 Codex 보류 후보 · Claude 판정(기준 판 옆 같은 키로 맞음)"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-21-baekje-court-dancer",
+      "installed": "2026-11-17"
+    },
+    "base-w-23-usisan-whale-queen": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-w-23-usisan-whale-queen_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-w-23-usisan-whale-queen_walk.png",
+      "actSha256": "b04733a0b8e661361af14422990d48c2b36aea9a4a4633f0a07a938234278760",
+      "walkSha256": "e1a5dde516ed8bb8f8ed68a8241b6dcacf2752c978dc0556844f261d0b166c56",
+      "portrait": "w-23-usisan-whale-queen",
+      "auto": {
+        "cell": [
+          216,
+          160
+        ],
+        "walkScale": 0.6332,
+        "contact": [
+          14,
+          0.91,
+          0.47
+        ],
+        "headsOld": 2.85,
+        "headsNew": 4.57,
+        "headsNewWalk": 4.19,
+        "residueAct": 0.0,
+        "residueWalk": 0.0
+      },
+      "review": {
+        "chinOld": 32.0,
+        "chinNew": 29.0,
+        "note": "v3 Codex 보류 후보 · Claude 판정(기준 판 옆 같은 키로 맞음)"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-23-usisan-whale-queen",
+      "installed": "2026-11-17"
     }
   }
 }
