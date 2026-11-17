@@ -14,7 +14,7 @@ for (const [k, v] of Object.entries(man)) {
   const key = k.slice(4)
   const p = portrait[key] ?? portrait[key.replace(/^aw1-/, '')] ?? key.replace(/^(aw1-)?base-/, '')
   const woman = W.has(key.replace(/^aw1-/, '')) || /^[wl]-/.test(p)
-  out[key] = set[key] ?? set[key.replace(/^aw1-/, '')] ?? (woman ? 163 : 174)
+  out[key] = set[key] ?? set[key.replace(/^aw1-/, '')] ?? (woman ? (set._femaleDefault ?? 163) : (set._maleDefault ?? 174))
 }
 writeFileSync('src/realm/data/hero-height.ts', `/** 장수 키 cm — tools/sprite-kit/heights.mjs 가 만든다(손으로 고치지 말 것 · 값은 tools/sprite-kit/heights.json). 기준 소서노 165 · 화면 키 = 띠 몸 키 × cm/165 */\nexport const HERO_CM: Readonly<Record<string, number>> = ${JSON.stringify(out)}\n`)
 console.log('키', Object.keys(out).length)

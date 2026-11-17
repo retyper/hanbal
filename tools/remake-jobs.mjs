@@ -364,8 +364,8 @@ const SP_RUN = BL_MODE ? Object.values(BL) : [...Object.values(BL), ...SP_KEYS.f
 for (const k of SP_RUN) {
   const BLT = BL_OF[k] ? `BASELINE MASTER (${BL_OF[k]}): this sheet becomes the style reference that every other character with the same weapon and gender will be drawn from, so it must sit perfectly beside Soseono, Gamsil and Jinha in IMAGE 1 as one family: identical pixel rendering, outline weight, palette warmth, face size, 4.5-head build, leg length and boot size. Check side by side before saving.\n` : ''
   // 11-17 밤 형: 「다음 남자들은 좀 더 키워도 됨」(고목은 할아버지라 그대로)
-  const cm = CM[k.slice(4)] ?? (genderOf(k) === 'w' ? 163 : 174)
-  const MALE = `HEIGHT: this character is ${cm} cm tall and Soseono in IMAGE 1 is 165 cm. Draw the body proportions of an adult of that height in this stylized look: the head and face stay the same size as the baseline figures, and the extra or missing height goes into the legs and torso (a taller person has longer legs, never a smaller head; a shorter person is compact, never a bigger head).${genderOf(k) === 'g' ? ' Men have broader shoulders than the women.' : ''}\n`
+  const cm = CM[k.slice(4)] ?? (genderOf(k) === 'w' ? 163 : 179)
+  const MALE = `HEIGHT: this character is ${cm} cm tall and Soseono in IMAGE 1 is 167 cm. Draw the body proportions of an adult of that height in this stylized look: the head and face stay the same size as the baseline figures, and the extra or missing height goes into the legs and torso (a taller person has longer legs, never a smaller head; a shorter person is compact, never a bigger head).${genderOf(k) === 'g' ? ' Men have broader shoulders than the women.' : ''}\n`
   // 11-17 형: 「여캐들은 더 노출 높아도 될 듯 · 어차피 픽셀 캐릭터니까」 (스팀 15세: 비침·유두 윤곽만 금지)
   const isW = BL_OF[k] ? BL_OF[k].endsWith('여') : genderOf(k) === 'w'
   // 11-17 밤 형: 「비각성은 노출 안 심해도 돼 · 각성 때 더 드러나면 된다」 → 원본 옷·머리색 그대로가 먼저 · 살짝 더 드러나는 정도만
