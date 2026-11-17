@@ -623,3 +623,65 @@
 ### 25 · 11-17 밤 (형 「아라 좋고 · 오이 너무 땅딸보 · 장수들마다 키 설정을 넣고 그에 맞게 그리는 거 어때 · 호공 좋아」)
 - 아라(칼·여)·호공(단검·남) 기준 판 확정 → 그 칸 장수들도 줄에 올림. **오이 bl2**(QUEUE 맨 위): 181cm 장수 · 다리·몸통 길게 · 머리는 기준 크기 · 투구 깃털 낮게.
 - **장수 키 표**를 만들었다: `tools/sprite-kit/heights.json` → `src/realm/data/hero-height.ts` (소서노 165 · 없는 장수 여 163/남 174). 게임 화면 키도 이 값으로 곱한다. 모든 SP 문안에 「HEIGHT: 이 장수는 N cm · 소서노 165 cm · 머리는 기준 크기 그대로, 키 차이는 다리·몸통으로」.
+
+
+## Codex 지시25 수신 / 장수별 cm 기준·오이181cm bl2 우선
+- Claude25:아라301/302·호공307/308 bl3사용자확정보고수신,원장accepted기록. 호공held후보채택정확소스개별미명시로임의root복사안함. 이전Codexheld판정은사용자반려와다름,이번사용자승인으로갱신. 오이297/298은땅딸보반려→313/314 bl2새지시.
+- 새tools/sprite-kit/heights.json 읽기확인:소서노165/오이181/호진주몽178/호공174/팔매172/고목168/아라166 등,없는장수여163·남174. 앞으로고정5~8%문안을이cm지시로대체,머리는기준크기/키차이는다리·몸통,오이깃털낮게. 게임화면키반영은Claude작업,원파일수정안함.
+- 다물actv5(311)root검수제출완료,최초+1회후내부걷기0.964~0.986로개선·20칸alpha0잘림없음·활/화살통제거·원화검왕관보라옷표범모피유지. 정확키/화풍Claude판정요청. 다음313/314오이bl2→315/316오름v6(174cm)→312다물walkv5→새큐75순서. 옛오름v5보류309/검수310보존,추가v5재생성없음.
+
+
+## Codex 오이 act_bl2 후보 검수 요청 / 동일체격 보류
+- D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_oi_act_bl2.png (313 최초+1회보정). 지시25 181cm/긴몸통·다리/작은깃털 요청,실제 원화·스타일 첨부.20칸 alpha0 잘림없음. 걷기 전체윤곽0.941~0.973로 개선했지만17/18 guard 약0.85·머리/몸 축소 잔여,동일체격 및 정확181cm/화풍 합격선언 못함.
+- QA work/exec-7bc23bb0-c519-4c2f-aad5-b9b2b9fdf225-face-lineup-QA.jpg / act-consistency-QA.jpg. 최초·보정본 원장 보존,root없음/held/3번째호출없음. Claude후보 직접판정 또는 새버전 지시요청.314walk는새act첫서기 실제첨부하며 진행,act승인으로 간주안함.
+
+## Codex 오이 walk_bl2 보류 / 보정한도 도달
+- D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_oi_walk_bl2.png (314 최초+1회보정).8인물·실제원화/새act첫서기첨부.1/5앞다리중복이보정뒤에도미흡,보정본alpha0비율0.152(초안0.733)로낮고저alpha색상잔여증가.남색/흰색합성에서뚜렷한안개는안보여도청정배경합격아님.held/root없음,3번째호출없음.
+- 초안(배경더깨끗함)은원장candidate기록원본 exec-16683e7a-f09c-4a10-9d27-eff544807a71.png,보정원본 exec-3c9d2c12-0594-4d03-96ac-4e430afac074.png.초안pair윤곽0.9537는입수예측일뿐181cm런타임검증아님.313/314둘다Claude후보직접검수/새버전지시대기,다음현재큐315/316오름v6(174cm)계속.
+
+## Codex 오름 v6 보정 참조 조정
+- 315최초는지시25 HEIGHT174cm와지정4refs전부실제첨부.기존큰얼굴/짧은다리몸이남고뒤걷기작아짐.최초후보저장,마지막1회보정은승인slot(호진178/소서노165)+실제원화두장만으로174cm몸재구성,actualRefs/문안원장명시.원화첨부계속.추정된참조고착완화시도이며원인확정아님.
+
+## Codex 오름 act_v6 후보 보류 / 재시도 종료
+- D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_base-g-52-tamna-oreum_act_v6.png (315최초+1회).20칸alpha0잘림없음/원화옷·돌몽둥이보존.승인slot+실제원화보정후에도호진대얼굴몸비율·짧은다리차이,내부걷기0.912~0.938잔여.174cm·화풍·동일몸합격못함/held/root없음/3번째호출없음.
+- QA work/exec-65957926-a996-4da3-a67c-19e0ae349c11-face-lineup-QA.jpg / act-consistency-QA.jpg. 원본모두원장보존. Claude직접후보판정요청.316걷기새act첫서기참조후312다물walk계속.
+
+## Codex 오름 walk_v6 보정 참조 기록
+- 316최초는지정4refs+새315act마지막첨부,8칸투명/잘림없음이나체형/1·5중복미흡.초안저장후마지막보정은승인slot+실제원화두장,174cm/해부학적좌우앞다리전환을명시.실제참조변경원장기록/추가횟수없음.
+
+## Codex 오름 walk_v6 후보 보류 / 실제참조와 결과 보존
+- D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_base-g-52-tamna-oreum_walk_v6.png (316최초+1회).slot+원화보정으로얼굴/다리비율초안보다개선,원래짚옷/현무암구슬/돌몽둥이유지.8칸alpha0잘림없음.다만1/5반대앞다리전환불명확·act체형차이/pair윤곽0.9291잔여,174cm·같은몸·자연걸음합격보류/held/root없음/3번째호출없음.
+- QA work/exec-4ed53bc1-c8d3-4c80-bae0-06c7fb7632ea-face-lineup-QA.jpg / pair-scale-QA.jpg. 313~316네장연속held후보이므로완료품수에섞지않음,Claude직접판정요청.다음312다물walk(174cm,기존311새동작판실제첨부)진행.
+
+## Codex 다물 act/walk_v5 검수 제출 완료
+- D:\에셋창고\sprite_prop_damul_act_v5.png / sprite_prop_damul_walk_v5.png (311/312각최초+1회).20/8칸alpha0잘림없음/실제원화·승인slot/새act첫서기실제첨부,잘못된활·화살통제거/원래왕관·보라옷·표범모피·환두검보존.312는지시25 HEIGHT174cm. walk두번째줄앞장화겹침/다리변화개선,7번passing보다앞발뻗는잔여는Claude자연걸음최종판정요청.
+- QA work/exec-4123e932-09dc-4d96-af44-61fd6af9162f-face-lineup-QA.jpg / pair-scale-QA.jpg. pair윤곽0.9762는입수예측일뿐정확키/런타임증명아님. root검수제출≠사용자승인. 다음최신QUEUE/MD확인후맷돌277/278및일반큐순서진행.
+
+## Codex 맷돌277/278 원화 무기 확인
+- 최신큐는HEIGHT174cm/ref-slot-axe-g포함으로읽기확인.실제원화 a60ca1a62948a0-realm__bust-hd__g-33-jeoga-metdol.jpg 는어두운쇠도끼날+나무자루,낡은시트의나무몽둥이가틀림.원화쇠도끼/멧돼지머리모피/상아목걸이/찢어진상아색옷을실제첨부해재현.코드/QUEUE수정없음.
+
+## Codex 맷돌 act_v4 보류 / 잘림·피격 무기 잔여
+- D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_base-g-33-jeoga-metdol_act_v4.png (277최초+1회).실제원화첨부해대부분쇠도끼/멧돼지머리모피/원복장재현했으나19피격도끼는나무몽둥이처럼변형,20도끼끝canvasClip true·17/18윤곽0.821몸축소남음.합격아님/held/root없음/3번째호출없음.
+- QA work/exec-878027fa-4d1a-4695-9499-645084f58754-act-consistency-QA.jpg.모든원본보존/Claude직접판정또는새버전지시요청.278walk는올바른첫서기쇠도끼실제참조후진행,act승인아님.
+
+## Codex 맷돌 walk_v4 보류 / 동일앞다리 반복 잔여
+- D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_base-g-33-jeoga-metdol_walk_v4.png (278최초+1회).8칸alpha0잘림없음/원화쇠도끼·멧돼지머리모피보존.보정뒤에도1/5해부학적반대앞다리전환확정어려움,같은앞발반복잔여로held/root없음/3번째호출없음.체격pair윤곽0.9739는입수예측일뿐런타임증명아님.
+- QA work/exec-b6cba0df-bc36-4e78-846b-161e739f6a6c-pair-scale-QA.jpg. 277/278둘다Claude직접후보판정요청.다음현재QUEUE우해179/180→한울181/182순,새MD지시우선확인계속.
+
+## Codex 우해179 마지막 보정 실제참조 기록
+- 최초지정4refs실제첨부20칸alpha0잘림없음.호진대짧은다리/얼굴몸비율차이로후보보존후마지막1회는승인slot+실제원화2refs,174cm/호진178대같은머리·몸길이조정명시.원화무기해초나무곤봉·남색옷·전복목걸이보존.실제Refs/문안원장기록.
+
+## Codex 우해 act_v3 보류 / 보정본 격자 실패
+- D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_base-g-58-usan-uhae_act_v3.png (179최초+1회).마지막slot+원화보정이요청외좌측우해/소서노비교2인+우측20작은인물(22인)을그려4x5단독시트실패.held/root없음/3번째호출없음.참조원화를안넣은문제가아니며실제Refs/문안원장보존.
+- 최초정상20격자원본 exec-f4129db6-1a8a-4ab1-8be1-d76b4c5457d7.png 도candidate원장보존,20칸alpha0잘림없으나기준머리/몸비율미흡.180walk는여성비교가섞인22인보정본대신이최초새act첫서기를마지막참조로첨부. 정확선택소스actualRefs명시,Claude직접판정요청.
+
+## Codex 우해 walk_v3 검수 제출 / act는 보류 유지
+- D:\에셋창고\sprite_prop_base-g-58-usan-uhae_walk_v3.png (180최초+1회).8칸alpha0잘림없음/원화남색옷·전복목걸이·해초나무곤봉보존.마지막보정5번앞큰장화/다리겹침이1번과차이개선.7번passing잔여·정확174cm/화풍/자연걸음Claude사용자최종판정요청.
+- QA work/exec-2a643ac5-2cf3-4eb3-ab47-ac2026a93720-pair-scale-QA.jpg. pair윤곽0.935는부적합act초안내부걷기기준입수예측,전체walk단순확대로해결된다는뜻아님/런타임미검증.179act격자실패held계속.다음현재큐한울181/182.
+
+## Codex 한울 act_v3 보류 / 보정본 분리 검수 실패
+- D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_base-g-62-beonye-hanul_act_v3.png (181최초+1회).원화/주몽slot실제첨부,활·화살통·아이보리옷·귀걸이/16빈방출손보존. 보정뒤시각상20인물이지만행간접촉/저alpha잔여증가(alpha0비율0.330,초안0.634)로프로젝트분리기19슬롯(7누락검출),consistencyQA KeyError6.실제인물소실로단정아님/격자분리검증불합격held/root없음/3번째없음.
+- 초안 exec-9dfaaebd-e303-4e56-8e46-9af5c1177696.png 는20슬롯잘림없음/걷기0.886~0.923작음,별도candidate원장보존.182walk는초안첫서기를freshact마지막참조선택해행간접촉보정본영향피함(actualRefs명시).Claude직접후보판정요청.
+
+### 26 · 11-17 밤 (Claude) — 우해 v3 반려(파일 꼴)
+- act_v3 왼쪽에 「우해+소서노 비교 그림」이 같이 들어갔고 배경이 투명하지 않았다 → v4. **비교는 혼자 보고, 저장 파일엔 4×5 스무 칸만 · 배경 완전 투명.** 다른 장수도 같다.

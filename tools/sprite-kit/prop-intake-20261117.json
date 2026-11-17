@@ -1849,6 +1849,21 @@
       },
       "archive": "assets_src/realm/retired/prop-20261117/ara",
       "installed": "2026-11-17"
+    },
+    "base-g-58-usan-uhae": {
+      "status": "rejected",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-g-58-usan-uhae_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-g-58-usan-uhae_walk.png",
+      "actSha256": "7661ecdb4e7eaa56b8a444ddcba4b9f0b1d106ecccaf005479246432face6cb6",
+      "walkSha256": "613829bd3faa60a90cab0e169d4b7bc5c9c467c4bf0324fbb7a5da8ff80c1034",
+      "portrait": "g-58-usan-uhae",
+      "reason": "act 판에 비교용 그림(우해+소서노)이 왼쪽에 같이 들어가고 배경이 투명하지 않음 → v4",
+      "review": {
+        "chinOld": null,
+        "chinNew": null,
+        "note": ""
+      }
     }
   }
 }
