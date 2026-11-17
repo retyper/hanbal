@@ -2172,6 +2172,78 @@
       },
       "archive": "assets_src/realm/retired/prop-20261117/base-w-23-usisan-whale-queen",
       "installed": "2026-11-17"
+    },
+    "base-w-24-apdok-queen": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-w-24-apdok-queen_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-w-24-apdok-queen_walk.png",
+      "actSha256": "ee3e8a3d7e574e1f24ec0001e0673c85125898c3a1170d319347c106e74bb3e7",
+      "walkSha256": "ea2279cb39e97a7d72495326d2f6aa4e6802f24390b4d0deb638b9b6f6105a77",
+      "weaponFix": {
+        "sprite": "spear",
+        "art": "no weapon: a golden rice sheaf in one arm and grain-light magic from the free palm",
+        "artKit": "magic"
+      },
+      "portrait": "w-24-apdok-queen",
+      "auto": {
+        "cell": [
+          184,
+          160
+        ],
+        "walkScale": 0.65,
+        "contact": [
+          14,
+          0.82,
+          0.44
+        ],
+        "headsOld": 2.85,
+        "headsNew": 3.19,
+        "headsNewWalk": 3.37,
+        "residueAct": 0.0,
+        "residueWalk": 0.0
+      },
+      "review": {
+        "chinOld": 33.0,
+        "chinNew": 29.0,
+        "note": "v3 보류 후보 · 창→원화대로 볏단 주술 · 머리 작아짐",
+        "weapon": "staff"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-24-apdok-queen",
+      "installed": "2026-11-17"
+    },
+    "base-w-41-hwanna-beodeul": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-w-41-hwanna-beodeul_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-w-41-hwanna-beodeul_walk.png",
+      "actSha256": "3929bdc0770b42a76d339da67edfdf2a84ef01a91d08b3df97b04d2649c9f8f4",
+      "walkSha256": "8e2426812a5c969f6c2eb4341714b84657365d50580ccafe6cdaa63a23a4758a",
+      "portrait": "w-41-hwanna-beodeul",
+      "auto": {
+        "cell": [
+          184,
+          160
+        ],
+        "walkScale": 0.6219,
+        "contact": [
+          15,
+          0.79,
+          0.6
+        ],
+        "headsOld": 4.61,
+        "headsNew": 5.54,
+        "headsNewWalk": 6.05,
+        "residueAct": 0.0002,
+        "residueWalk": 0.0003
+      },
+      "review": {
+        "chinOld": 31.0,
+        "chinNew": 29.0,
+        "note": "v3 보류 후보 · 해달 기준과 맞음"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-41-hwanna-beodeul",
+      "installed": "2026-11-17"
     }
   }
 }
