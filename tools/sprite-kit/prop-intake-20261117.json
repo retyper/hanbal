@@ -1855,10 +1855,27 @@
       "order": "strip",
       "act": "D:/tmp-node/sp-inbox/sprite_prop_base-g-58-usan-uhae_act.png",
       "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-g-58-usan-uhae_walk.png",
-      "actSha256": "7661ecdb4e7eaa56b8a444ddcba4b9f0b1d106ecccaf005479246432face6cb6",
-      "walkSha256": "613829bd3faa60a90cab0e169d4b7bc5c9c467c4bf0324fbb7a5da8ff80c1034",
+      "actSha256": "ec383cbaa225ec2513531548b952058c06544e61da66f43cfc0af2367baf99c4",
+      "walkSha256": "54d94459e2d65793b868fbc88276705f16155d6406b7ef6fe31435a57212e113",
       "portrait": "g-58-usan-uhae",
-      "reason": "act 판에 비교용 그림(우해+소서노)이 왼쪽에 같이 들어가고 배경이 투명하지 않음 → v4",
+      "auto": {
+        "cell": [
+          208,
+          160
+        ],
+        "walkScale": 0.6423,
+        "contact": [
+          14,
+          0.88,
+          0.5
+        ],
+        "headsOld": 3.15,
+        "headsNew": 3.04,
+        "headsNewWalk": 3.44,
+        "residueAct": 0.0,
+        "residueWalk": 0.0
+      },
+      "reason": "형: v4 머리 너무 큼 · 지금 띠 그대로 · 다음부터 가이드라인 더 지키게",
       "review": {
         "chinOld": null,
         "chinNew": null,

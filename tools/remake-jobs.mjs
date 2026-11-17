@@ -376,7 +376,9 @@ for (const k of SP_RUN) {
   const refs = ['/assets_src/realm/sprite-prop/ref-style3.png', `/assets_src/realm/sprite-prop/${k}-now.png`, ...(bust && existsSync(`public/realm/bust-hd/${bust}.jpg`) ? [`/realm/bust-hd/${bust}.jpg`] : [])]
   const SLOT = !BL_OF[k] && SLOT_DONE[slotOf(k)] ? `/assets_src/realm/sprite-prop/ref-slot-${slotOf(k)}.png` : null
   if (SLOT) refs.push(SLOT)
-  const SLOTT = SLOT ? `BASELINE FOR THIS WEAPON AND GENDER: IMAGE ${refs.length} shows the approved baseline character (left) standing next to Soseono (right) at true game scale. Match that baseline exactly in head size, build, leg length, boot size and standing height; only the identity, costume and weapon come from IMAGE 2 and 3.\n` : ''
+  // 11-17 밤 형: 「우해 머리 너무 큼 · 다음 만드는 것부터 가이드라인 더 준수」 → 저장 전 스스로 재는 검사를 맨 앞에
+  const HARD = SLOT ? `HARD CHECK BEFORE SAVING (the lead artist rejected recent sheets for big heads): put your standing cell next to the baseline figure in IMAGE ${refs.length} at the same total height. Your head (top of skull to chin, hair excluded) must be NO TALLER than the baseline head, and your legs (crotch to sole) NO SHORTER than the baseline legs. If either fails, redraw before saving. Copying the old sheet in IMAGE 2 is the most common failure: do not keep its head size.\n` : ''
+  const SLOTT = HARD + (SLOT ? `BASELINE FOR THIS WEAPON AND GENDER: IMAGE ${refs.length} shows the approved baseline character (left) standing next to Soseono (right) at true game scale. Match that baseline exactly in head size, build, leg length, boot size and standing height; only the identity, costume and weapon come from IMAGE 2 and 3.\n` : '')
   const wf = WFIX[k]
   const WEAP = wf ? `WEAPON FIX (most important): in the original portrait art (IMAGE 3) this character holds ${wf.artWeapon}, NOT the ${wf.spriteWeapon} drawn in IMAGE 2. Redraw every cell with the ${wf.artWeapon} from the portrait, held the same way in all poses; the attack poses use it the way that item is really used (swing, thrust, throw, ring, play or wave it).
 ` : ''
