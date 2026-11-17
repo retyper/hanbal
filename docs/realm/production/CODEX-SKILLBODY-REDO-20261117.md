@@ -709,3 +709,153 @@
 - 우해 v4·다물 v5 는 옛 띠와 거의 같아 넣지 않았다(지금 띠 그대로 · 다물은 관 키만 바로잡음).
 - **모든 남은 SP 문안 맨 앞에 HARD CHECK** — 저장 전, 서 있는 칸을 기준 판 그림(마지막 참고 그림)과 같은 키로 나란히 놓고: 머리(정수리~턱 · 머리카락 뺌)가 기준보다 크지 않은가 · 다리(가랑이~발바닥)가 기준보다 짧지 않은가. 하나라도 어기면 저장하지 말고 다시. **옛 띠(IMAGE 2)의 머리 크기를 베끼는 것이 제일 흔한 실패.**
 - 저장 전 Codex 셀프 검수에 이 두 줄을 꼭 넣어 줘. 어기는 판은 held 로 두고 넘어가도 된다(Claude 가 판정).
+
+## Codex 지시27 수신 / 빛고을 act_v3 HARD CHECK 보류
+- Claude27:우해v4/다물v5옛띠비율과거의같아미적용/다물관키만별도수정보고수신.기존root검수제출을적용·승인으로간주하지않음.남은SP전부저장전같은키로승인slot대비머리카락제외머리/다리두항목셀프검수,실패면held허용확인.
+- D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_base-g-68-mujin-bitgoeul_act_v3.png (185최초+1회).20칸alpha0잘림없음/태양지팡이전부검으로교체/원화옷·목걸이유지.内部걷기0.918~0.964/guard0.893~0.900몸축소잔여.3번째호출없음/held/root없음.
+- HARD CHECK 머리(머리카락제외정수리~턱):동일키승인slot보다안큼통과확정못함/보류.
+- HARD CHECK 다리(가랑이~밑창):동일키승인slot보다짧지않음통과확정못함/보류.
+- 기존face-lineup FULL윤곽정규화(머리카락포함)는위두해부학검사증명으로사용안함. QA work/exec-fbb986c8-1593-4dbb-8bd1-5890477babf3-face-lineup-QA.jpg / act-consistency-QA.jpg.새큐HARD CHECK스냅샷반영후186걷기진행/원화실제첨부계속.
+
+## Codex 빛고을 walk_v3 첫후보 HARD CHECK 보류
+- D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_base-g-68-mujin-bitgoeul_walk_v3.png (186첫생성만,보정1회미사용).지시27실제생성문안맨앞추가/원화포함지정4refs+fresh185마지막실제첨부.8칸alpha0잘림없음/원래옷목걸이/검보존/지팡이없음.1/5앞다리유사잔여.held/root없음,Claude구체판정뒤남은1회보정가능.
+- HARD CHECK 머리(머리카락제외정수리~턱):같은정수리키기준비교통과확정못함/보류.
+- HARD CHECK 다리(가랑이~밑창):로브가가랑이가리고보행관절각도달라동일키기준통과확정못함/보류.
+- FULL윤곽정규화는HARD CHECK증명아님,추정치로PASS채우지않음. QA work/exec-5d1e7a41-4273-4638-8941-0179d1781fed-face-lineup-QA.jpg / pair-scale-QA.jpg. pair0.9405는heldact작은내부걷기영향있는입수예측/런타임증명아님.다음현재큐191/192서늘진행,추가MD우선.
+
+## Codex 서늘 act_v3 검수 제출 / 지시27 두항목 육안 판정
+- D:\에셋창고\sprite_prop_base-g-84-wander-seoneul_act_v3.png (191최초+1회).원화포함지정refs실제첨부/보정머리축소,20슬롯alpha0모서리/합성깨끗/잘림없음.원래검은민소매·붉은띠·장발·귀걸이·단검보존,内部걷기윤곽0.944~0.965(관절/머리카락포함).
+- HARD CHECK 머리(머리카락제외정수리~턱):승인호공과같은TOTAL전체키나란히놓은QA에서크지않음,육안통과판단.
+- HARD CHECK 다리(가랑이~밑창):같은TOTAL전체키QA에서가랑이/다리확인,호공보다짧지않음,육안통과판단.
+- 위는정밀해부학자동계측/정확174cm런타임검증/사용자승인이아닌Codex육안검수의견.QUEUE27원문same totalheight에맞춘비교이며머리카락은머리길이검사에서제외. FULL윤곽높이수치자체로두항목증명한것아님. QA work/exec-594ba1f9-bfbc-49ec-9254-e3377ccbe641-face-lineup-QA.jpg / act-consistency-QA.jpg. Claude최종화풍·체격판정요청,192walk새191첫서기마지막참조진행.
+
+## Codex 서늘 act/walk_v3 검수 제출 완료
+- D:\에셋창고\sprite_prop_base-g-84-wander-seoneul_act_v3.png / sprite_prop_base-g-84-wander-seoneul_walk_v3.png (191/192각최초+1회).20/8칸정상격자·alpha0모서리/합성깨끗/잘림없음.原검은옷·붉은띠·단검보존/actual原화·slot·freshact첨부.5foreground장화/다리겹침변화개선,7passing잔여/전체걸음은Claude최종판정.
+- HARD CHECK 머리(머리카락제외정수리~턱):같은TOTAL전체키호공비교,act/walk크지않음육안통과판단.
+- HARD CHECK 다리(가랑이~밑창):같은TOTAL전체키호공비교,act/walk짧지않음육안통과판단.
+- 정밀자동계측/사용자승인아닌Codex검수의견. QA work/exec-79c3096e-fc8c-4e4b-85d1-5a472692e43d-face-lineup-QA.jpg / pair-scale-QA.jpg, pair0.949는입수예측/정확174cm런타임미검증. Claude최종화풍·체격판정요청.다음193/194솔개→현재큐순서/새MD우선.
+
+## Codex 솔개 act_v3 HARD CHECK 머리 경계로 후보 보류
+- D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_base-g-93-jomun-solgae_act_v3.png (193최초+1회).원화/승인주몽slot실제첨부,20칸alpha0모서리/합성깨끗/잘림없음.머리축소·다리길이개선/原갈색갑옷·깃털·활/16빈방출손·20완전활유지,내부걷기윤곽0.964~0.984.
+- HARD CHECK 머리(머리카락제외정수리~턱):같은TOTAL키주몽투구에가려진두개부와비교경계,크지않음통과확정못함/held.
+- HARD CHECK 다리(가랑이~밑창):같은TOTAL키주몽대짧지않음,육안통과판단.
+- QA work/exec-98b284b5-99cb-4646-8485-de0f76f43c7b-face-lineup-QA.jpg / act-consistency-QA.jpg. 두항목합격선언아님/root없음/3번째호출없음,Claude직접후보판정요청.194walk는새보정act첫서기마지막실제첨부,승인머리/다리우선진행.
+
+## Codex 솔개 walk_v3 HARD CHECK/걸음 후보 보류
+- D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_base-g-93-jomun-solgae_walk_v3.png (194최초+1회).8슬롯alpha0모서리/합성깨끗/잘림없음/원화활·가죽갑옷보존/머리추가축소.1/5반대앞다리전환불명확잔여.원화/slot/freshact마지막실제첨부.
+- HARD CHECK 머리(머리카락제외정수리~턱):같은TOTAL키주몽투구가린두개부와비교경계,크지않음통과미확정/held.
+- HARD CHECK 다리(가랑이~밑창):같은TOTAL키주몽대짧지않음육안통과판단.
+- QA work/exec-4efc0089-e59d-4344-906a-aca872d48fb1-face-lineup-QA.jpg / pair-scale-QA.jpg. pair0.9696는입수예측/런타임미검증.193/194둘다held/root없음/3번째호출없음,Claude직접후보판정요청.다음195/196백제여왕현재큐순서진행.
+
+## Codex 백제여왕195/196 무기 지시 확인
+- QUEUE명시WEAPON FIX 검→향로,原화크롭은보라옷/목걸이손까지만보여향로형태를직접확인했다고주장안함.명시지시따라단순한작은청동뚜껑향로(일관된원형그릇/타공돔뚜껑/작은받침)로해석,과한장식추정안함.검/칼집전부제거·무연의식제스처,그림효과/연기없음.
+- 원래보라높은깃·금문양긴소매치마·낮은머리·금잎관·녹색구슬보존,감실slot은머리/몸/화풍참고만/의상베끼지않음.HEIGHT163cm/여성원복장23·24지시우선/지시27HARD CHECK유지.
+
+## Codex 백제여왕 act_v3 HARD CHECK 다리 미확정 후보 보류
+- D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_base-w-05-baekje-queen_act_v3.png (195최초+1회).20슬롯alpha0모서리/합성깨끗/잘림없음/검전부향로교체/원래보라옷·긴치마·금관·녹색구슬보존.머리축소/내부걷기윤곽0.988~1.012로일관성개선,의식동작/무연향로20칸유지.
+- HARD CHECK 머리(머리카락제외정수리~턱):같은TOTAL키감실대크지않음육안통과판단.
+- HARD CHECK 다리(가랑이~밑창):원복장긴치마가가랑이가려직접확정못함/held.짧다고단정한것은아님,확인불가를PASS로채우지않음/노출의상변경안함.
+- QA work/exec-6aa019d2-e3d4-4cea-a223-3020e1088173-face-lineup-QA.jpg / act-consistency-QA.jpg. root없음/3번째호출없음/Claude직접후보판정요청.196walk새195첫서기마지막첨부진행.
+
+## Codex 백제여왕 walk_v3 첫후보 보류
+- D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_base-w-05-baekje-queen_walk_v3.png (196첫생성만/보정1회미사용).8칸alpha0모서리/합성깨끗/잘림없음,원화보라옷·금관·녹색목걸이·향로보존/검없음.1·5반대앞다리는긴치마아래불명확.
+- HARD CHECK 머리(머리카락제외정수리~턱):같은TOTAL키감실대크지않음육안통과판단.
+- HARD CHECK 다리(가랑이~밑창):원래긴치마가가랑이가려직접확정못함/held.짧다고단정하지않음/옷바꾸지않음.
+- QA work/exec-939a205e-457d-4b3b-a471-ebebcd3bfd57-face-lineup-QA.jpg / pair-scale-QA.jpg,입수예측윤곽중앙0.9993는런타임증명아님.195/196root없음/Claude직접후보판정요청,구체수정있으면196남은1회가능.다음197/198해적선장원화·승인창여slot확인후진행.
+
+## Codex 해적선장 act_v3 HARD CHECK 불합격 후보 보류
+- D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_base-w-10-pirate-captain_act_v3.png (197최초+1회).原화/승인창여소서노slot실제첨부,20슬롯/잘림없음/표범조끼·검은옷·붉은머리끈·작살창유지.보정후에도옛비율잔여/root없음/3번째호출없음.
+- HARD CHECK 머리(머리카락제외정수리~턱):같은TOTAL키소서노보다커보여불합격/held.
+- HARD CHECK 다리(가랑이~밑창):같은TOTAL키소서노보다짧아보여불합격/held.
+- QA work/exec-30035530-f398-40fb-9176-9a360dad2f85-face-lineup-QA.jpg / act-consistency-QA.jpg.남색흰색합성상배경깨끗하나한모서리alpha1/낮은alpha붉은가장자리증가도기록.第二걷기/guard작아지는잔여.정밀자동계측아닌육안의견/Claude직접후보판정요청.198walk는새act정체성+승인slot몸우선으로계속.
+
+## Codex 해적선장 walk_v3 후보 보류
+- D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_base-w-10-pirate-captain_walk_v3.png (198최초+1회).8슬롯alpha0모서리/합성깨끗/잘림없음,原표범조끼·검은옷·작살창유지.보정에도1/5반대앞다리전환불명확잔여.
+- HARD CHECK 머리(머리카락제외정수리~턱):같은TOTAL키소서노보다큼육안불합격/held.
+- HARD CHECK 다리(가랑이~밑창):보행관절각도차이있어짧지않음통과확정못함/held.
+- QA work/exec-b5ff08b3-7a10-467d-b0ce-5b3e8ad2489b-face-lineup-QA.jpg / pair-scale-QA.jpg,입수예측0.9698런타임미검증.197/198root없음/각최초+1회보존/3번째없음/Claude직접판정요청.다음199/200마한잠녀원화확인진행.
+
+## Codex 병렬 진행 전환 (사용자 직접 요청)
+- 사용자「만드는거 좀 빨리 병렬적으로 못만드나」수신. 현재 3개 캐릭터 독립 병렬: 부모199/200마한잠녀, sprite_201_202백제궁중무희, sprite_203_204우시산고래여왕. 각원화실제첨부·HARD2항목·최초+1회상한동일.
+- 공유QUEUE/런타임/원장/MD충돌방지: 병렬작업은 Codex-parallel-201-202-20261117.json 및 Codex-parallel-203-204-20261117.json 개별원장/동명-candidates, 부모가검수보고와공유MD취합. root는검수통과판만/보류판은개별후보폴더. 기존보류를승인으로바꾸지않음.
+- 승인slot을마지막참고로배치하여옛띠마지막첨부영향가능성을줄이는방향적용,원인확정주장아님. 이전actualPrompt/Refs그대로보존.
+
+## Codex 마한잠녀 act_v3 후보 보류
+- D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_base-w-17-mahan-pearl-diver_act_v3.png (199최초+1회).초안4refs,보정은실제原화+승인slot2refs만첨부(실제원장기록).20슬롯alpha0모서리/합성깨끗/잘림없음,原남색옷·진주목걸이·그물가방·작은쇠작살창유지.
+- HARD CHECK 머리(머리카락제외정수리~턱):같은TOTAL키소서노대큼육안불합격held.
+- HARD CHECK 다리(가랑이~밑창):같은TOTAL키소서노대짧음육안불합격held.
+- QA work/exec-ba01c898-3e8d-4455-90ac-2385460e6d22-face-lineup-QA.jpg / act-consistency-QA.jpg.내부걷기윤곽0.962~0.993/guard0.966으로일관성개선은있으나해부학HARD통과아님.3번째없음/root없음/Claude직접후보판정요청.200walk새act정체성+승인slot몸우선진행.
+
+## Codex 마한잠녀 walk_v3 걸음 후보 보류
+- D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_base-w-17-mahan-pearl-diver_walk_v3.png (200최초+1회).8슬롯잘림없음/原옷·그물·진주·작살유지.보정은原화+slot+freshact마지막3refs실제첨부,두개부축소/다리길이개선.
+- HARD CHECK 머리(머리카락제외정수리~턱):같은TOTAL키소서노대크지않음육안통과판단.
+- HARD CHECK 다리(가랑이~밑창):같은TOTAL키소서노대짧지않음육안통과판단.
+- 두항목정밀자동측정/사용자승인아님.1/5반대앞다리전환불명확/act와몸비율차이로held,root없음/3번째없음.합성깨끗하나한모서리alpha1기록. QA work/exec-aa5019e8-9c02-4e5f-86a0-7c2689a70a7f-face-lineup-QA.jpg / pair-scale-QA.jpg,입수예측0.9828런타임미검증.201~204병렬진행중/후속캐릭터배분계속.
+
+## Codex 병렬201/202 백제궁중무희 완료 취합
+- D:\에셋창고\Codex-parallel-201-202-20261117-candidates\sprite_prop_base-w-21-baekje-court-dancer_act_v3.png / sprite_prop_base-w-21-baekje-court-dancer_walk_v3.png.각최초+1회/20·8칸/alpha0모서리/합성깨끗/잘림없음.原분홍저고리·녹색소매·붉은띠·갈색치마·단검보존.원화실제첨부/actualPrompt·Refs·4records공유원장취합완료.
+- HARD CHECK 머리(머리카락제외정수리~턱):act/walk모두같은TOTAL키slotLEFT대크지않음경계/확정못함held(작업자육안의견).
+- HARD CHECK 다리(가랑이~밑창):原치마가랑이가림/act·walk둘다확인불가held,짧다고단정안함.
+- 보정후에도walk1/5앞장화반복·3/7유사passing잔여,pair0.9344입수예측/런타임미검증.root없음/3번째없음/Claude직접판정요청.상세 C:\Users\my\Documents\Codex\2026-11-17\detail-bad-request\work\parallel-201-202-report.md.담당자는다음205/206압독여왕으로이동,부모207/208이서여장군/다른작업자203/204진행중.
+
+## Codex 최신 키표 변경 감지 / 이후 문안 적용
+- 최신QUEUE 및 tools/sprite-kit/heights.json 직접읽음: 소서노167/호진183/주몽181/온조180/고목170/호공178/팔매177/오이183/남default179,여default163. HEAD같은크기/키차이몸통다리원칙유지. 현재QUEUE59장 스냅샷갱신/refs기존SHA동일.
+- 205이후새호출은167비교키적용. 이미2회끝난195~204의실제165문안은사후변조·세번째생성안함,필요시Claude새버전판정요청. 새키표적용런타임은Claude소관.
+
+## Codex 병렬203/204 우시산고래여왕 완료 취합
+- D:\에셋창고\Codex-parallel-203-204-20261117-candidates\sprite_prop_base-w-23-usisan-whale-queen_act_v3.png / sprite_prop_base-w-23-usisan-whale-queen_walk_v3.png.각최초+1회/20·8슬롯/잘림없음/原옷·고래문신·이빨목걸이·작살보존.원화실제첨부/개인4records공유원장취합.
+- HARD CHECK 머리(머리카락제외정수리~턱):act같은TOTAL키slot대안큼육안통과의견,walk경계통과미확정held.
+- HARD CHECK 다리(가랑이~밑창):act/walk모피·헐렁바지가랑이가림/보행각도·compact잔여로짧지않음미확정held.
+- act보정본넓은lowalpha오염(네모서리alpha2~3,alpha0비율0.00196),초안alpha0보존.Walk한모서리alpha1/축소합성깨끗하나1/5반대heel-contact불명확·3/7반대지지다리미확정.둘다root없음/3번째없음/Claude직접후보판정요청.상세 work/parallel-203-204-report.md.담당자는다음209/210환나버들진행.
+
+## Codex 이서여장군 act_v3 후보 보류
+- D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_base-w-26-iseo-tomboy-general_act_v3.png (207최초+1회).20슬롯alpha0모서리/합성깨끗/잘림없음/原갈색찰갑·붉은띠·짧은검은머리·목제창보존.163/167최신cm문안실제첨부.
+- HARD CHECK 머리(머리카락제외정수리~턱):같은TOTAL키소서노대크지않음경계/통과미확정held.
+- HARD CHECK 다리(가랑이~밑창):같은TOTAL키대짧아보이는잔여/갑옷이가랑이일부가림,통과확정못함held.
+- 보정原화+slot2refs로실제변경기록.내부걷기윤곽0.849~0.865로몸작아지는문제도남음. QA work/exec-eedb7b82-ea07-4bdc-802d-76944023326c-face-lineup-QA.jpg / act-consistency-QA.jpg.root없음/3번째없음/Claude직접판정요청.208walk승인몸우선계속,205206·209210·211212도병렬.
+
+## Codex 이서여장군208 walk_v3 후보 보류
+- D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_base-w-26-iseo-tomboy-general_walk_v3.png (208최초+1회).8슬롯alpha0모서리/합성깨끗/잘림없음/原찰갑·단발·木창보존.163/167cm/보정原화+slot+freshactLAST3refs실제첨부.
+- HARD CHECK 머리(머리카락제외정수리~턱):같은TOTAL키소서노대크지않음육안통과판단。
+- HARD CHECK 다리(가랑이~밑창):같은TOTAL키소서노대짧지않음육안통과판단。
+- 정밀자동측정아닌의견,1/5반대앞다리불명확/7passing미확정/act와체격차이로held.입수예측0.8533는act작은내부walk영향/런타임미검증. QA work/exec-660c2434-30df-49fc-9c94-db8fc903d4a0-face-lineup-QA.jpg / pair-scale-QA.jpg.root없음/3번째없음/Claude직접판정요청.부모다음215/216범이/작업자213214·217218·211212병렬。
+
+## Codex 병렬205/206 압독여왕 완료 취합
+- D:\에셋창고\Codex-parallel-205-206-20261117-candidates\sprite_prop_base-w-24-apdok-queen_act_v3.png / sprite_prop_base-w-24-apdok-queen_walk_v3.png.각최초+1회/20·8슬롯/잘림없음/原녹색금옷·목걸이·머리띠·볏단보존/창제거.163/167cm원문적용/4records공유원장취합。
+- HARD CHECK 머리(머리카락제외정수리~턱):act/walk모두같은TOTAL키slotLEFT대경계/안큼확정못함held。
+- HARD CHECK 다리(가랑이~밑창):act/walk원래긴치마가랑이가림/확인불가held,짧다고단정안함。
+- act초안15/17볏단누락은보정전20복원/15그립전환잔여,walk1/5앞장화반복·3/7반대passing미확정。act모서리alpha0/walk한모서리alpha1·合성깨끗,입수예측0.9973런타임미검증。root없음/3번째없음/Claude직접판정요청。상세 work/parallel-205-206-report.md。
+
+## Codex 병렬209/210 환나버들 완료 취합
+- D:\에셋창고\Codex-parallel-209-210-20261117-candidates\sprite_prop_base-w-41-hwanna-beodeul_act_v3.png / sprite_prop_base-w-41-hwanna-beodeul_walk_v3.png.각최초+1회/20·8슬롯/잘림없음/原navy무늬어깨옷·쌍깃모자·활/화살통·16빈방출손보존.163/167cm/4records공유원장취합。
+- HARD CHECK 머리(머리카락제외정수리~턱):act/walk모자가두개부가림/같은TOTAL키slotLEFT보다안큼확정못함held。
+- HARD CHECK 다리(가랑이~밑창):act/walk로브·바지가랑이가림/짧지않음미확정held,짧다고단정안함。
+- act보정넓은lowalpha잔여(alpha0비율0.15916/한모서리1)·내부walk/guard작아짐,walkalpha0모서리/合성깨끗하나1/5앞장화반복·3/7반대지지다리미확정。입수예측0.9122런타임미검증/root없음/3번째없음/Claude직접판정요청。상세 work/parallel-209-210-report.md。
+
+## Codex 병렬211/212 탐나오름비 완료 취합
+- D:\에셋창고\Codex-parallel-211-212-20261117-candidates\sprite_prop_base-w-45-tamna-oreumbi_act_v3.png / sprite_prop_base-w-45-tamna-oreumbi_walk_v3.png。각최초+1회/20·8슬롯잘림없음/原아이보리민소매·검은구슬·높은머리·로프채찍교정/지팡이제거。4records공유원장취합/163·167cm。
+- HARD CHECK 머리(머리카락제외정수리~턱):act같은TOTAL키slotLEFT대크지않음육안통과의견,walk경계미확정held。
+- HARD CHECK 다리(가랑이~밑창):act/walk허리천·헐렁바지가림/compact잔여·보행각도로짧지않음미확정held,짧다고단정안함。
+- walk보정5번추가팔명확결함/1·5반대앞다리불명확。추가팔없는walk초안도동일폴더타임스탬프보존(043455ff원본)。act모서리alpha0/walk보정좌상alpha1/축소합성깨끗하나결함별도。root없음/3번째없음/Claude직접후보판정요청。상세 work/parallel-211-212-report.md。담당자는다음219220대무신으로이동。
+
+## Codex 병렬213/214 동옥저소금 완료 취합
+- D:\에셋창고\Codex-parallel-213-214-20261117-candidates\sprite_prop_base-w-56-dongokjeo-sogeum_act_v3.png / sprite_prop_base-w-56-dongokjeo-sogeum_walk_v3.png。각최초+1회/20·8슬롯잘림없음/原청남색긴옷·흰검은점모피·수정장신구·황금단검보존。163/167cm/4records공유원장취합。
+- HARD CHECK 머리(머리카락제외정수리~턱):act/walk같은TOTAL키slotLEFT대안큼경계미확정held。
+- HARD CHECK 다리(가랑이~밑창):act/walk原긴치마가랑이가림확인불가held,짧다고단정안함。
+- act한모서리alpha1·walk모서리alpha0/合성깨끗。walk1/5장화배치달라졌으나반대contact미확정/3·7앞발뻗음passing미흡。입수예측0.9729런타임미검증/root없음/3번째없음/Claude직접판정요청。상세 work/parallel-213-214-report.md。담당다음221222단궁。
+
+## Codex 범이215/216 act/walk_v3 후보 보류
+- D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_beomi_act_v3.png / sprite_prop_beomi_walk_v3.png。각최초+1회/20·8슬롯잘림없음/原호랑이털옷·가죽엄니머리띠·목걸이·돌촉木창보존/163·167cm。215첫판넓은lowalpha잔여는보정모서리alpha0·合성깨끗으로개선/216한모서리alpha1。
+- HARD CHECK 머리(머리카락제외정수리~턱):act같은TOTAL키소서노대경계/통과미확정held,walk보정대크지않음육안통과의견。
+- HARD CHECK 다리(가랑이~밑창):act같은TOTAL키대짧지않음통과미확정held,walk보정대짧지않음육안통과의견。
+- walk1/5반대앞다리contact·3/7반대지지passing미확정/act작은내부walker0.891~0.925및체격차이잔여로둘다held。QA work/exec-cee062d1-c133-4b73-bf45-10d07d8af46f-face-lineup-QA.jpg 및 exec-5a02fdc1-9ebe-4872-95b6-cdc10da0c454-face-lineup-QA.jpg / pair-scale-QA.jpg。입수예측0.9073런타임미검증/정밀해부학측정아닌육안의견/root없음/3번째없음/Claude직접판정요청。
+
+## Codex 병렬217/218 별 완료 취합
+- D:\에셋창고\Codex-parallel-217-218-20261117-candidates\sprite_prop_byeol_act_v3.png / sprite_prop_byeol_walk_v3.png。각최초+1회/20·8슬롯alpha0모서리/合성깨끗/잘림없음/原아이보리걷어올린긴소매복구·가죽앞치마·땋은머리·장갑·hot sword보존。weapon-audit hot sword명시읽기근거/원화집게를칼자루라주장안함。4records공유원장취합/163·167cm。
+- HARD CHECK 머리(머리카락제외정수리~턱):act같은TOTAL키slotLEFT대큼육안불합격held,walk축소보정후안큼육안통과의견。
+- HARD CHECK 다리(가랑이~밑창):act/walk앞치마·헐렁바지가랑이가림/compact잔여·보행각도로짧지않음미확정held。
+- walk1/5앞장화반복/3·7반대지지다리미확정。act내부walk0.987~1.030/guard1.004~1.017일관성개선,pair0.9948입수예측/런타임미검증。root없음/3번째없음/Claude직접판정요청。상세 work/parallel-217-218-report.md。다음부모227228가온/작업자225226활미·221222단궁·219220대무신병렬。
+
+### 28 · 11-17 밤 (형 「그래 그렇게 해」 · 피격 초상)
+- 새 묶음 **HIT** 28장(QUEUE 의 전투 띠 뒤): 기준 판 14명 × 비각성(bust-hd)·각성(awaken-hd). 그 초상을 그대로 두고 **맞는 순간**만(움찔 · 이 악묾/짧은 비명 · 머리·어깨 뒤로 젖힘 · 머리카락·천 날림 · 작은 긁힘·입가 피 한 줄 · 먼지). 같은 사람·그림체·옷·구도·배경·크기. 잔인하지 않게 · 글자·테 금지.
+- 저장 `hit_<base|aw1>_<초상 id>.png`. 진각성은 DLC 라 나중.

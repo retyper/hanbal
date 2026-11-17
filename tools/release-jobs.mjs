@@ -5,7 +5,7 @@ import { CARDS as STORE } from './store-pack.mjs'
 import { bodyBase } from './haebi-repair-jobs.mjs'
 import { AWAKEN_ART } from '../src/realm/data/awaken-art.ts'
 
-export const GROUPS = { steam: '스팀 캡슐', r15: '15세 판', bust: '고화질 초상', cover: '장 표지', skill: '비기 전신', skill1: '각성 비기 전신', dlc: '진각성 묶음', skill2: '진각성 비기 전신' }
+export const GROUPS = { hit: '피격 초상', steam: '스팀 캡슐', r15: '15세 판', bust: '고화질 초상', cover: '장 표지', skill: '비기 전신', skill1: '각성 비기 전신', dlc: '진각성 묶음', skill2: '진각성 비기 전신' }
 const pub = (p) => '/' + p.replace(/^public\//, '')
 const jobs = []
 
@@ -476,5 +476,14 @@ for (const id of SB2_ON ? AW2_IDS : []) {
     now: '진각성기를 써도 컷인이 진각성 초상(가슴 위)으로 나옴', use: '받으면 검수 → public/realm/skill-body/aw2/<id>.jpg (800×1200 · 남색 판) · 진각성 컷인에 잇기 (aw1 과 같은 틀)',
     prompt: AW1_HEAD.replaceAll('FIRST-AWAKENING', 'TRUE-AWAKENING (second awakening)').replace('%REF3%', aw1 ? ' Image 3 is the same character in her or his FIRST-awakening skill cut-in: use it ONLY for weapon type and fighting style, never for costume; the true-awakening action must be grander and clearly different.' : '')
       + `\nCHARACTER: ${id}\n` + AW1_TAIL.replace('%DIFF%', aw1 ? ' and from the pose in Image 3' : '') })
+}
+// 11-17 밤 형: 「비각성·각성·진각성 피격 이미지 만들면 어떤 전투에도 쓸 수 있지 않을까」 → 1단계 코드 효과 + 2단계 그림은 기준 판 14명의 비각성·각성부터 (진각성은 DLC 라 뒤)
+const HIT_HEROES = ['l-L2-soseono', 'w-33-gammun-gamsil', 'g-76-mokji-jinha', 'w-30-guya-soebi', 'g-82-saro-hojin', 'g-64-jumong', 'w-67-buyeo-haedal', 'g-75-saro-hogong', 'w-59-jomun-irang', 'g-90-haengin-gomok', 'g-38-chopal-palmae', 'g-16-goguryeo-gaema-commander', 'g-71-baekje-onjo', 'w-04-gaya-swordswoman']
+const HIT_P = (form) => `Edit IMAGE 1, a finished portrait from our game, into the moment this same character is HIT in battle: a sharp flinch. Keep exactly the same person, face identity, age, painted art style, hair, ${form === 'aw1' ? 'awakened ' : ''}outfit, colours, ornaments, weapon, framing, camera, crop and background as IMAGE 1, same canvas size. Change only: eyes squeezed half shut or wide with pain, teeth gritted or mouth open in a short cry, head and shoulders jolted a little back and to one side, hair and loose cloth flung by the impact, one or two small fresh scratches or a thin trickle of blood at the cheek or lip, a little dust on the clothes. Dramatic, not gory; no large wounds, no severed parts, no extra people. Fabric stays opaque. No text, no frame.`
+for (const id of HIT_HEROES) for (const [form, dir] of [['base', 'bust-hd'], ['aw1', 'awaken-hd']]) {
+  jobs.push({ id: `HIT-${form}-${id}`, group: 'hit', save: `hit_${form}_${id}.png`, title: `${id} · ${form === 'aw1' ? '각성' : '비각성'} 피격 초상`,
+    refs: [`/realm/${dir}/${id}.jpg`], now: '피격 초상 없음 (지금은 코드 효과만)',
+    use: `받으면 public/realm/hit/${form}/${id}.webp (초상과 같은 크기) · 열전·겨루기·본편 전투에서 맞는 순간 잠깐 바꿔 보여 줌`,
+    prompt: HIT_P(form) })
 }
 export const RELEASE_JOBS = jobs
