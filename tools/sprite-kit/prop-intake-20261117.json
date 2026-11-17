@@ -268,11 +268,11 @@
       "installed": "2026-11-17"
     },
     "base-w-48-mujin-mudeung": {
-      "status": "rejected",
+      "status": "installed",
       "order": "strip",
       "act": "D:/tmp-node/sp-inbox/sprite_prop_base-w-48-mujin-mudeung_act.png",
       "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-w-48-mujin-mudeung_walk.png",
-      "actSha256": "2226928cf06bb74c4908d6aed596da44af33e3d35f38a10dad9dca7b0f170f5d",
+      "actSha256": "2b196357cb536bb88328344f34d8521c7b707d5ca867c05547c18e461ddcf0ad",
       "walkSha256": "f0c81d59cfd10edb4874b5971b8d38ce286fe6bbbe727d492bdb27e3b5b1af67",
       "portrait": "w-48-mujin-mudeung",
       "auto": {
@@ -280,24 +280,25 @@
           224,
           160
         ],
-        "walkScale": 0.6535,
+        "walkScale": 0.5789,
         "contact": [
           14,
-          0.94,
-          0.55
+          0.95,
+          0.46
         ],
         "headsOld": 2.8,
-        "headsNew": 4.38,
-        "headsNewWalk": 4.03,
-        "residueAct": 0.0073,
+        "headsNew": 4.57,
+        "headsNewWalk": 4.06,
+        "residueAct": 0.0077,
         "residueWalk": 0.0148
       },
-      "reason": "v4 act 는 얼굴 작아졌으나 누운 칸 아래 잘림(줄마다 여백 덧대 봄) · 걷기 판 사람이 서기보다 크게 나와 걸을 때 커짐",
       "review": {
-        "chinOld": null,
-        "chinNew": null,
-        "note": ""
-      }
+        "chinOld": 34.0,
+        "chinNew": 29.0,
+        "note": "v4 보류 후보 · 맨 아래 4px 비워 칸 걸침 해결 · 2.80→4.57"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-48-mujin-mudeung",
+      "installed": "2026-11-17"
     },
     "base-w-50-siljik-mulga": {
       "status": "installed",
@@ -1360,6 +1361,45 @@
         "note": "v3"
       },
       "archive": "assets_src/realm/retired/prop-20261117/singwigan",
+      "installed": "2026-11-17"
+    },
+    "base-g-66-geonma-malbalgup": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-g-66-geonma-malbalgup_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-g-66-geonma-malbalgup_walk.png",
+      "actSha256": "31452c9eb3b0c2604e057b793b11c8899b65c98fddc9a02194b38eae06d72a33",
+      "walkSha256": "21599fb64a3f8693318694123f8c21407407d4408e92d8a59b9d6bb6310f23f4",
+      "weaponFix": {
+        "sprite": "spear",
+        "art": "sword",
+        "artKit": "sword"
+      },
+      "portrait": "g-66-geonma-malbalgup",
+      "auto": {
+        "cell": [
+          240,
+          160
+        ],
+        "walkScale": 0.519,
+        "contact": [
+          14,
+          0.95,
+          0.51
+        ],
+        "headsOld": 2.74,
+        "headsNew": 2.96,
+        "headsNewWalk": 2.71,
+        "residueAct": 0.0438,
+        "residueWalk": 0.0186
+      },
+      "review": {
+        "chinOld": 34.0,
+        "chinNew": 31.0,
+        "note": "v4 보류 후보 · 배경 투명 · 창→원화대로 칼 · 맨 아래 4px 비움",
+        "weapon": "sword"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-g-66-geonma-malbalgup",
       "installed": "2026-11-17"
     }
   }

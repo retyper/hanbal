@@ -158,7 +158,7 @@ const CONTACT: Readonly<Record<string, [number, number, number]>> = {
   'gen-base-g-69-goryong-yong': [14, 0.94, 0.51],
   'gen-base-g-68-mujin-bitgoeul': [14, 0.93, 0.48],
   'gen-base-g-67-gosaburi-buri': [15, 0.74, 0.57],
-  'gen-base-g-66-geonma-malbalgup': [14, 0.95, 0.49],
+  'gen-base-g-66-geonma-malbalgup': [14, 0.95, 0.51],
   'gen-base-g-65-sangdang-soemangchi': [14, 0.87, 0.49],
   'gen-base-g-64-michuhol-sogeumkkun': [14, 0.95, 0.44],
   'gen-base-g-63-chopal-yeoul': [14, 0.95, 0.47],
@@ -269,7 +269,7 @@ const CONTACT: Readonly<Record<string, [number, number, number]>> = {
 }
 
 const HEAVY_SWINGS = new Set([...[...GENERATED_HEAVY_KEYS,...AWAKENED_HEAVY].map(k => 'gen-'+k), 'axe', 'gen-soebi', 'gen-haebi', 'gen-gamsil', 'gen-biryu', 'gen-geumha', 'gen-soebo'])
-const BLADE_SWINGS = new Set([...[...GENERATED_BLADE_KEYS,...AWAKENED_BLADE].map(k => 'gen-'+k), 'gen-sogeumbi', 'gen-base-g-45-dabeol-deulgae', 'gen-damul', 'gen-ara', 'gen-g-sword', 'gen-hyeokgeose', 'gen-eureum', 'gen-hyeopbo', 'gen-onjo', 'gen-mount', 'gen-geota'])
+const BLADE_SWINGS = new Set([...[...GENERATED_BLADE_KEYS,...AWAKENED_BLADE].map(k => 'gen-'+k), 'gen-sogeumbi', 'gen-base-g-45-dabeol-deulgae', 'gen-damul', 'gen-base-g-66-geonma-malbalgup', 'gen-ara', 'gen-g-sword', 'gen-hyeokgeose', 'gen-eureum', 'gen-hyeopbo', 'gen-onjo', 'gen-mount', 'gen-geota'])
 const swingArt = (skin: string): 'heavy' | 'sweep' | 'thrust' =>
   HEAVY_SWINGS.has(skin) ? 'heavy' : BLADE_SWINGS.has(skin) ? 'sweep' : 'thrust'
 
