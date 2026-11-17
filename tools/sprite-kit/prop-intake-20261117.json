@@ -1641,7 +1641,7 @@
       }
     },
     "haedal": {
-      "status": "staged",
+      "status": "installed",
       "order": "strip",
       "act": "D:/tmp-node/sp-inbox/sprite_prop_haedal_act.png",
       "walk": "D:/tmp-node/sp-inbox/sprite_prop_haedal_walk.png",
@@ -1664,7 +1664,80 @@
         "headsNewWalk": 3.05,
         "residueAct": 0.0,
         "residueWalk": 0.0
-      }
+      },
+      "review": {
+        "chinOld": 31.0,
+        "chinNew": 29.0,
+        "note": "★ 기준 판 (형 11-17 확정)"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/haedal",
+      "installed": "2026-11-17"
+    },
+    "gomok": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_gomok_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_gomok_walk.png",
+      "actSha256": "c55fdbebd60c5f8e5c4135db2b273ba1159d96473ad856f8b2e70689822ffed7",
+      "walkSha256": "dd382074039f11608893c40a64280b8b51ea39c41c632994d3ce162771b2d881",
+      "portrait": "g-90-haengin-gomok",
+      "auto": {
+        "cell": [
+          208,
+          160
+        ],
+        "walkScale": 0.6618,
+        "contact": [
+          14,
+          0.93,
+          0.45
+        ],
+        "headsOld": 4.86,
+        "headsNew": 4.57,
+        "headsNewWalk": 4.6,
+        "residueAct": 0.0,
+        "residueWalk": 0.0
+      },
+      "review": {
+        "chinOld": 31.0,
+        "chinNew": 29.0,
+        "note": "★ 기준 판 (형 11-17 확정)"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/gomok",
+      "installed": "2026-11-17"
+    },
+    "soebi": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_soebi_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_soebi_walk.png",
+      "actSha256": "800f97c543fa587ec55e2000f776414e4e4cc21750d93f2e9c6368c5a842442a",
+      "walkSha256": "46170ca4d20d09dcae557a2ea7570d23b6ebf2557df8c3944873b2659b792896",
+      "portrait": "w-30-guya-soebi",
+      "auto": {
+        "cell": [
+          200,
+          160
+        ],
+        "walkScale": 0.6713,
+        "contact": [
+          14,
+          0.91,
+          0.49
+        ],
+        "headsOld": 2.97,
+        "headsNew": 3.26,
+        "headsNewWalk": 3.21,
+        "residueAct": 0.0,
+        "residueWalk": 0.0
+      },
+      "review": {
+        "chinOld": 31.0,
+        "chinNew": 29.0,
+        "note": "★ 기준 판 (형 11-17 확정)"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/soebi",
+      "installed": "2026-11-17"
     }
   }
 }

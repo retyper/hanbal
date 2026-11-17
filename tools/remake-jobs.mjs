@@ -342,25 +342,34 @@ const SP_V5 = { 'gen-base-g-46-uga-nureongso': SAME_H, 'gen-damul': 'STYLE (the 
 //   이 열 장을 형이 보고 맞다 할 때까지 나머지 얼굴 줄(v3·v4·v5)은 멈춘다 → 맞으면 각 장수는 자기 무기·성별 기준 판을 IMAGE 1 로
 const BL = { '도끼·남': 'gen-hojin', '활·남': 'gen-jumong', '활·여': 'gen-haedal', '단검·남': 'gen-hogong', '단검·여': 'gen-irang',
   '주술·남': 'gen-gomok', '도끼·여': 'gen-soebi', '돌팔매·남': 'gen-base-g-38-chopal-palmae', '창·남': 'gen-oi', '칼·여': 'gen-ara' }   // 칼·남 = 지금 온조(관 키 바로잡음 headgear.json · 형 「남자 베이스라인에 가깝다」)
-const BL_MODE = true
+const BL_MODE = false   // 11-17 밤: 형이 확정한 기준 판이 있는 무기·성별부터 나머지 장수를 다시 줄에 올린다
+// 확정한 기준 판(형 11-17) · 칸 ref-slot-<무기>-<g|w>.png = 기준 장수 + 소서노(키 맞춤) · 게임 속 크기
+const SLOT_DONE = { 'axe-g': 'hojin', 'axe-w': 'soebi', 'bow-g': 'jumong', 'bow-w': 'haedal', 'dagger-w': 'irang', 'magic-g': 'gomok', 'magic-w': 'gamsil', 'spear-w': 'soseono', 'sword-g': 'onjo' }
+const KITS = (() => { const t = readFileSync('src/raid/kit-table.ts', 'utf8'); return JSON.parse(t.slice(t.indexOf('= {') + 2, t.lastIndexOf('}') + 1)) })()
+const genderOf = (k) => { const p = PORTRAIT[k] ?? (k.startsWith('gen-base-') ? k.slice(9) : ''); return /^[wl]-/.test(p) ? 'w' : /^g-/.test(p) ? 'g' : (['gen-irang', 'gen-haedal', 'gen-ara', 'gen-soebi', 'gen-jinha', 'gen-gamsil', 'gen-soseono'].includes(k) ? 'w' : 'g') }
+const slotOf = (k) => `${KITS[k.slice(4)] ?? ''}-${genderOf(k)}`
 // 형 판정 뒤 다시(bl2): 까닭을 문안 맨 앞에
 const BL_RETRY = {
   'gen-haedal': 'SECOND DRAFT (lead artist): the head came out slightly too big. Make the head and face a little SMALLER than the first draft, never bigger than Gamsil in IMAGE 1. The outfit was too covered: make it clearly more revealing as described below.',
   'gen-hogong': 'THIRD DRAFT (lead artist): the second draft became an 8-head realistic man with a head SMALLER than the women. Keep the same stylized 4.5-head chibi-leaning build as the men Hojin and Jumong and the women in IMAGE 1: his head and face the SAME size as theirs, a sturdy body, chunky boots. He may be a little taller than the women only through a slightly longer body, never by shrinking the head.',
 }
 const BL_OF = Object.fromEntries(Object.entries(BL).map(([slot, k]) => [k, slot]))
-const SP_RUN = BL_MODE ? Object.values(BL) : SP_KEYS.filter((k) => SP_TEST.includes(k))
+const SP_RUN = BL_MODE ? Object.values(BL) : [...Object.values(BL), ...SP_KEYS.filter((k) => SP_TEST.includes(k) && !BL_OF[k] && SLOT_DONE[slotOf(k)])]
 for (const k of SP_RUN) {
   const BLT = BL_OF[k] ? `BASELINE MASTER (${BL_OF[k]}): this sheet becomes the style reference that every other character with the same weapon and gender will be drawn from, so it must sit perfectly beside Soseono, Gamsil and Jinha in IMAGE 1 as one family: identical pixel rendering, outline weight, palette warmth, face size, 4.5-head build, leg length and boot size. Check side by side before saving.\n` : ''
-  const MALE = BL_OF[k]?.endsWith('남') ? 'HEIGHT (men): the standing height from the soles to the top of the SKULL (not hair, crown or hat) must be EQUAL TO OR TALLER than Soseono in IMAGE 1, with broader shoulders; a man must never look shorter or smaller than the women.\n' : ''
+  // 11-17 밤 형: 「다음 남자들은 좀 더 키워도 됨」(고목은 할아버지라 그대로)
+  const MALE = (BL_OF[k] ? BL_OF[k].endsWith('남') : genderOf(k) === 'g') ? 'HEIGHT (men): the standing height from the soles to the top of the SKULL (not hair, crown or hat) must be clearly TALLER than Soseono in IMAGE 1 (about 5 to 8 percent), with broader shoulders, while the head stays the same size as the baseline figures; a man must never look shorter or smaller than the women.\n' : ''
   // 11-17 형: 「여캐들은 더 노출 높아도 될 듯 · 어차피 픽셀 캐릭터니까」 (스팀 15세: 비침·유두 윤곽만 금지)
-  const isW = BL_OF[k] ? BL_OF[k].endsWith('여') : /^gen-(base-)?[wl]-/.test(k) || ['gen-irang', 'gen-haedal', 'gen-ara', 'gen-soebi'].includes(k)
+  const isW = BL_OF[k] ? BL_OF[k].endsWith('여') : genderOf(k) === 'w'
   // 11-17 밤 형: 「비각성은 노출 안 심해도 돼 · 각성 때 더 드러나면 된다」 → 원본 옷·머리색 그대로가 먼저 · 살짝 더 드러나는 정도만
   const SKIN = isW ? 'OUTFIT (women): keep the outfit, colours, hair colour and ornaments of the portrait (IMAGE 3) first; you may make it slightly more revealing (a little more neckline or leg), but never replace the portrait clothes with a different skimpy costume. Fabric stays opaque: no see-through cloth and no nipple outline.\n' : ''
   const BL3 = { 'gen-hogong': true }   // 세 번째 판
   const V = BL_OF[k] ? (BL3[k] ? 'bl3' : BL_RETRY[k] ? 'bl2' : 'bl') : SP_V5[k] ? 'v5' : SP_RETRY[k] ? 'v4' : 'v3', R4 = (BL_RETRY[k] ? BL_RETRY[k] + '\n' : '') + BLT + MALE + SKIN + (SP_V5[k] ? SP_V5[k] + '\n' : '') + (SP_RETRY[k] ? RETRY4[SP_RETRY[k]] + '\n' : '')
   const bust = PORTRAIT[k] ?? (k.startsWith('gen-base-') ? k.slice('gen-base-'.length) : null)
   const refs = ['/assets_src/realm/sprite-prop/ref-style3.png', `/assets_src/realm/sprite-prop/${k}-now.png`, ...(bust && existsSync(`public/realm/bust-hd/${bust}.jpg`) ? [`/realm/bust-hd/${bust}.jpg`] : [])]
+  const SLOT = !BL_OF[k] && SLOT_DONE[slotOf(k)] ? `/assets_src/realm/sprite-prop/ref-slot-${slotOf(k)}.png` : null
+  if (SLOT) refs.push(SLOT)
+  const SLOTT = SLOT ? `BASELINE FOR THIS WEAPON AND GENDER: IMAGE ${refs.length} shows the approved baseline character (left) standing next to Soseono (right) at true game scale. Match that baseline exactly in head size, build, leg length, boot size and standing height; only the identity, costume and weapon come from IMAGE 2 and 3.\n` : ''
   const wf = WFIX[k]
   const WEAP = wf ? `WEAPON FIX (most important): in the original portrait art (IMAGE 3) this character holds ${wf.artWeapon}, NOT the ${wf.spriteWeapon} drawn in IMAGE 2. Redraw every cell with the ${wf.artWeapon} from the portrait, held the same way in all poses; the attack poses use it the way that item is really used (swing, thrust, throw, ring, play or wave it).
 ` : ''
@@ -368,7 +377,7 @@ for (const k of SP_RUN) {
   jobs.push({ id: `SP-${who}-act-${V}`, group: 'remake-sprite', save: `sprite_prop_${who}_act_${V}.png`, title: `${BL_OF[k] ? `★ 기준 판 ${BL_OF[k]} · ` : ''}${who} · 전투 띠 20자세 (${wf ? '무기 바로잡기 · ' : ''}얼굴 ${tier(k)})`,
     refs, now: `${wf ? `띠 무기 ${wf.spriteWeapon} → 원화 ${wf.artWeapon} · ` : ''}${tier(k) === '무기' ? '얼굴은 기준 안' : `얼굴이 기준보다 큼 · 턱 위치 몸 키의 ${AUDIT.tierA_chin_ge38[k] ?? AUDIT.tierB_chin_37[k]}% (기준 31~33%)`}`,
     use: `받으면 11-14 비율 교정과 같은 길로 띠에 넣음(anim-px/${k}.png · 걷기 칸은 다음 장으로 바꿈) · 옛 띠는 assets_src/realm/retired 로`,
-    prompt: `${R4}${STYLE3}
+    prompt: `${R4}${SLOTT}${STYLE3}
 ${WEAP}Draw the character of IMAGE 2 (the current battle sprite sheet, 20 cells read left to right, top to bottom — use it ONLY for costume, colors, weapon and the pose order, NOT for head size or drawing style)${refs.length > 2 ? ' — IMAGE 3 is the character portrait for face identity' : ''}: all 20 poses in exactly FOUR columns x FIVE rows.
 ${FACE}
 Keep this character's face identity, gender, age, hairstyle, colors, clothing layers, ornaments and weapon from IMAGE 2/3, but draw them in the style and WHOLE-BODY proportion of IMAGE 1. ${BODY3} ${PIX}
