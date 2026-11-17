@@ -509,4 +509,17 @@ for (const id of HIT_HEROES) for (const [form, dir] of [['base', 'bust-hd'], ['a
       refs: [`/realm/${dir}/${id}.jpg`], now: '피격 초상 없음 (코드 효과만)', use: 'py -3 -I tools/hit-intake.py', prompt: HIT_P(form) })
   }
 }
+// 11-18 형: 「들어온 피격 그림 중에 해부학적으로 말이 안 되는 건 다시 그리라고」 → tools/out/hit-anatomy-review.json 의 sure:true (+ 형이 반려한 애매한 것) 를 _v2 로 다시
+{
+  const rev = existsSync('tools/out/hit-anatomy-review.json') ? JSON.parse(readFileSync('tools/out/hit-anatomy-review.json', 'utf8')) : []
+  const HIT_ALSO = []   // 형이 「다시」 한 애매한 것: 'base/w-39-gosaburi-galmae' 꼴
+  for (const r of rev) {
+    if (!(r.sure || HIT_ALSO.includes(`${r.form}/${r.id}`))) continue
+    if (existsSync(`D:/에셋창고/hit_${r.form}_${r.id}_v2.png`)) continue
+    const dir = r.form === 'aw1' ? 'awaken-hd' : 'bust-hd'
+    jobs.unshift({ id: `HIT-${r.form}-${r.id}-v2`, group: 'hit', save: `hit_${r.form}_${r.id}_v2.png`, title: `${r.id} · ${r.form === 'aw1' ? '각성' : '비각성'} 피격 초상 · 해부학 다시`,
+      refs: [`/realm/${dir}/${r.id}.jpg`], now: `해부학 반려: ${r.problem}`, use: 'py -3 -I tools/hit-intake.py (_v2 우선)',
+      prompt: `ANATOMY FIX (the previous version was rejected): ${r.problem} Draw exactly two arms and two hands, each arm attached at its own shoulder, five fingers per hand, every limb continuous from shoulder to hand.\n` + HIT_P(r.form) })
+  }
+}
 export const RELEASE_JOBS = jobs
