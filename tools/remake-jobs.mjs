@@ -340,8 +340,8 @@ const SAME_H = 'SIZE CONSISTENCY (the v4 was rejected for this): every one of th
 const SP_V5 = { 'gen-base-g-46-uga-nureongso': SAME_H, 'gen-damul': 'STYLE (the v4 was rejected by the lead artist): it looked realistic and long-legged. Match the cute stylized pixel look and build of Soseono and Gamsil exactly.', 'gen-base-g-52-tamna-oreum': 'STYLE (the v4 was rejected by the lead artist): the v4 looked more realistic and longer-legged than Soseono and Gamsil. Match their cute stylized pixel look and their build exactly.' }
 // 11-17 저녁 형: 「베이스라인 될 애들부터 제대로 만들자. 무기별 성별로 쫙」 → 무기×성별 기준 판 열 장을 먼저(소서노=창·여 · 감실=주술·여 · 쇠비=도끼·여 는 이미 있음)
 //   이 열 장을 형이 보고 맞다 할 때까지 나머지 얼굴 줄(v3·v4·v5)은 멈춘다 → 맞으면 각 장수는 자기 무기·성별 기준 판을 IMAGE 1 로
-const BL = { '도끼·남': 'gen-biryu', '활·남': 'gen-jumong', '활·여': 'gen-haedal', '단검·남': 'gen-hogong', '단검·여': 'gen-irang',
-  '주술·남': 'gen-jinha', '돌팔매·남': 'gen-base-g-38-chopal-palmae', '창·남': 'gen-oi', '칼·남': 'gen-onjo', '칼·여': 'gen-ara' }
+const BL = { '도끼·남': 'gen-hojin', '활·남': 'gen-jumong', '활·여': 'gen-haedal', '단검·남': 'gen-hogong', '단검·여': 'gen-irang',
+  '주술·남': 'gen-gomok', '돌팔매·남': 'gen-base-g-38-chopal-palmae', '창·남': 'gen-oi', '칼·남': 'gen-onjo', '칼·여': 'gen-ara' }
 const BL_MODE = true
 const BL_OF = Object.fromEntries(Object.entries(BL).map(([slot, k]) => [k, slot]))
 const SP_RUN = BL_MODE ? Object.values(BL) : SP_KEYS.filter((k) => SP_TEST.includes(k))
