@@ -40,6 +40,9 @@ jobs:
       # 번들 예산 (GDD 1장 C6). npm run build 가 이미 부르지만 여기서 이름을 드러내
       # 둔다 — Actions 로그에서 "왜 빨간불인가"가 한 줄로 읽혀야 한다.
       - run: npm run budget
+      # Pages 한도 1GB · 사이트 판만 각성 영상을 작게 다시 굽는다 (원본·스팀 판은 그대로)
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - run: bash tools/pages-shrink.sh dist
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
