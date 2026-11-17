@@ -495,4 +495,17 @@ for (const id of HIT_HEROES) for (const [form, dir] of [['base', 'bust-hd'], ['a
     use: `받으면 public/realm/hit/${form}/${id}.webp (초상과 같은 크기) · 열전·겨루기·본편 전투에서 맞는 순간 잠깐 바꿔 보여 줌`,
     prompt: HIT_P(form) })
 }
+// 11-18 형: 「피격도 계속 만들면 좋겠는데」 → 나머지 장수 전부(초상·각성 초상이 다 있는 이) · 여인 먼저 · 이미 받은 것은 건너뜀(새 문안은 상처 없음)
+{
+  const audit = JSON.parse(readFileSync('tools/sprite-kit/weapon-audit-20261116.json', 'utf8'))
+  const all = [...new Set((Array.isArray(audit) ? audit : audit.rows).map((r) => r.portrait).filter(Boolean))]
+    .filter((p) => !HIT_HEROES.includes(p) && existsSync(`public/realm/bust-hd/${p}.jpg`) && existsSync(`public/realm/awaken-hd/${p}.jpg`))
+    .sort((a, b) => (/^[wl]-/.test(a) ? 0 : 1) - (/^[wl]-/.test(b) ? 0 : 1) || a.localeCompare(b, 'en', { numeric: true }))
+  const got = (form, id) => existsSync(`D:/에셋창고/hit_${form}_${id}.png`) || readdirSync('D:/에셋창고').some((d) => /^Codex-.*-candidates$/.test(d) && existsSync(`D:/에셋창고/${d}/hit_${form}_${id}.png`))
+  for (const id of all) for (const [form, dir] of [['base', 'bust-hd'], ['aw1', 'awaken-hd']]) {
+    if (got(form, id)) continue
+    jobs.push({ id: `HIT-${form}-${id}`, group: 'hit', save: `hit_${form}_${id}.png`, title: `${id} · ${form === 'aw1' ? '각성' : '비각성'} 피격 초상`,
+      refs: [`/realm/${dir}/${id}.jpg`], now: '피격 초상 없음 (코드 효과만)', use: 'py -3 -I tools/hit-intake.py', prompt: HIT_P(form) })
+  }
+}
 export const RELEASE_JOBS = jobs
