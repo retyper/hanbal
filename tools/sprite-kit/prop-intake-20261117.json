@@ -1826,35 +1826,29 @@
       "installed": "2026-11-17"
     },
     "oi": {
-      "status": "rejected",
+      "status": "staged",
       "order": "strip",
       "act": "D:/tmp-node/sp-inbox/sprite_prop_oi_act.png",
       "walk": "D:/tmp-node/sp-inbox/sprite_prop_oi_walk.png",
-      "actSha256": "344f4a5e54898ac84538c0c363ec3596bb530269762f6d0550d204e8f725c484",
-      "walkSha256": "092706965dc713a623f1518f1fa77980acef7c31f2e73b4e0d509a8994ab97f6",
+      "actSha256": "dd7f549ec86de08d36690a95ea8e6bfe38dc4e66bea4f4e4a97702179168e219",
+      "walkSha256": "fb15b4e52cc56ad6eea5bd4bff6a9ef4c82a653d9ca10622f2b1ad67157d0d0f",
       "portrait": "g-16-goguryeo-gaema-commander",
       "auto": {
         "cell": [
           224,
           160
         ],
-        "walkScale": 0.6329,
+        "walkScale": 0.5662,
         "contact": [
           14,
           0.96,
-          0.54
+          0.47
         ],
         "headsOld": 2.8,
-        "headsNew": 3.86,
-        "headsNewWalk": 3.05,
-        "residueAct": 0.0056,
-        "residueWalk": 0.0076
-      },
-      "reason": "형: 너무 땅딸보 → 키 표대로 다시",
-      "review": {
-        "chinOld": null,
-        "chinNew": null,
-        "note": ""
+        "headsNew": 4.03,
+        "headsNewWalk": 3.75,
+        "residueAct": 0.0001,
+        "residueWalk": 0.0006
       }
     },
     "ara": {
@@ -1956,19 +1950,37 @@
       "installed": "2026-11-17"
     },
     "base-g-62-beonye-hanul": {
-      "status": "rejected",
+      "status": "installed",
       "order": "strip",
       "act": "D:/tmp-node/sp-inbox/sprite_prop_base-g-62-beonye-hanul_act.png",
       "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-g-62-beonye-hanul_walk.png",
-      "actSha256": "473f58a8898e04e33c6893b21272f1dff14173950ff078518314c88c66d560e9",
-      "walkSha256": "479b3adf2e5cdf02ee2bc82b39b9448f0df22ea669a7c78f244336ee542aa74b",
+      "actSha256": "f0f66ce15da70c418f93025b478241d925d2f142d52446bf9d31067526004325",
+      "walkSha256": "73bc1411b8b70ef1b010c9f6e36afec807fa242ce94342d93336ab9b44ca28e9",
       "portrait": "g-62-beonye-hanul",
-      "reason": "판 칸 수가 맞지 않음(스무 사람 못 찾음) → v4",
+      "auto": {
+        "cell": [
+          240,
+          160
+        ],
+        "walkScale": 0.526,
+        "contact": [
+          15,
+          0.75,
+          0.44
+        ],
+        "headsOld": 3.22,
+        "headsNew": 3.15,
+        "headsNewWalk": 3.27,
+        "residueAct": 0.0,
+        "residueWalk": 0.0
+      },
       "review": {
-        "chinOld": null,
-        "chinNew": null,
-        "note": ""
-      }
+        "chinOld": 32.0,
+        "chinNew": 29.0,
+        "note": "v4 · 주몽 기준과 맞음"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-g-62-beonye-hanul",
+      "installed": "2026-11-17"
     },
     "base-g-68-mujin-bitgoeul": {
       "status": "installed",
