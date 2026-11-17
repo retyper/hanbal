@@ -2415,6 +2415,72 @@
       },
       "archive": "assets_src/realm/retired/prop-20261117/beomi",
       "installed": "2026-11-17"
+    },
+    "dangung": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_dangung_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_dangung_walk.png",
+      "actSha256": "6cd0bb066974fdd691a657989c640d36c5ee89f807d81cca9023e3fe3ab6f862",
+      "walkSha256": "32d633864e6bc5522308d49f9e453c2f047e7a257af389ffca0ad5a966da0d28",
+      "portrait": "w-51-haseulla-dangung",
+      "auto": {
+        "cell": [
+          192,
+          160
+        ],
+        "walkScale": 0.6124,
+        "contact": [
+          15,
+          0.75,
+          0.41
+        ],
+        "headsOld": 2.77,
+        "headsNew": 4.15,
+        "headsNewWalk": 4.16,
+        "residueAct": 0.0003,
+        "residueWalk": 0.0
+      },
+      "review": {
+        "chinOld": 33.0,
+        "chinNew": 29.0,
+        "note": "v3 보류 후보 · 해달 기준과 맞음"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/dangung",
+      "installed": "2026-11-17"
+    },
+    "hwalmi": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_hwalmi_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_hwalmi_walk.png",
+      "actSha256": "48ba144d6f6948fad90410447beb6d5d631360c84b9f7e05e9aa926cc9f6576e",
+      "walkSha256": "d847dba1f2a38a7e3c7f061ca4274cb226a73dc86ff3383d17cbe5926d856fc6",
+      "portrait": "w-65-goguryeo-hwalmi",
+      "auto": {
+        "cell": [
+          184,
+          160
+        ],
+        "walkScale": 0.6037,
+        "contact": [
+          15,
+          0.8,
+          0.39
+        ],
+        "headsOld": 4.18,
+        "headsNew": 4.4,
+        "headsNewWalk": 5.04,
+        "residueAct": 0.0,
+        "residueWalk": 0.0
+      },
+      "review": {
+        "chinOld": 33.0,
+        "chinNew": 29.0,
+        "note": "v3 보류 후보 · 해달 기준과 맞음"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/hwalmi",
+      "installed": "2026-11-17"
     }
   }
 }

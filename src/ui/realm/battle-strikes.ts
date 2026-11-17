@@ -263,8 +263,8 @@ const CONTACT: Readonly<Record<string, [number, number, number]>> = {
   'gen-sogeumbi': [14, 0.95, 0.4],
   'gen-sori': [14, 0.88, 0.47],
   'gen-beombal': [14, 0.95, 0.47],
-  'gen-hwalmi': [15, 0.73, 0.45],
-  'gen-dangung': [15, 0.76, 0.57],
+  'gen-hwalmi': [15, 0.8, 0.39],
+  'gen-dangung': [15, 0.75, 0.41],
   'gen-soenun': [14, 0.95, 0.47],
 }
 
