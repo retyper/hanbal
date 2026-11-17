@@ -926,6 +926,203 @@
       },
       "archive": "assets_src/realm/retired/prop-20261117/base-w-75-daegaya-soemoe",
       "installed": "2026-11-17"
+    },
+    "base-w-80-usan-gangchi": {
+      "status": "installed",
+      "order": "strip",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-80-usan-gangchi_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-80-usan-gangchi_walk.png",
+      "actSha256": "cc216f9905086631fc2b1e37c3c9e1876883c68d4926b45d277c097aa2d66088",
+      "walkSha256": "360b1e5bcc587b06d5e6dab60916caf4039cc9b604b2ba8743ff659c591dd2df",
+      "portrait": "w-80-usan-gangchi",
+      "auto": {
+        "cell": [
+          184,
+          160
+        ],
+        "walkScale": 0.6276,
+        "contact": [
+          14,
+          0.95,
+          0.58
+        ],
+        "headsOld": 2.64,
+        "headsNew": 2.95,
+        "headsNewWalk": 2.62,
+        "residueAct": 0.0018,
+        "residueWalk": 0.0005
+      },
+      "review": {
+        "chinOld": 33.0,
+        "chinNew": 30.0,
+        "note": "v3"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-80-usan-gangchi",
+      "installed": "2026-11-17"
+    },
+    "base-w-83-gyeonji-beodeul": {
+      "status": "staged",
+      "order": "strip",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-83-gyeonji-beodeul_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-83-gyeonji-beodeul_walk.png",
+      "actSha256": "48fd67e95987d116193f1bd4da60bd51ab7112681102d5d82800e436a70d6e06",
+      "walkSha256": "87212dac7833ad8d31ab7df9f916b3248ef278db4eca398086851d6fe4676112",
+      "portrait": "w-83-gyeonji-beodeul",
+      "auto": {
+        "cell": [
+          216,
+          160
+        ],
+        "walkScale": 0.6356,
+        "contact": [
+          14,
+          0.86,
+          0.49
+        ],
+        "headsOld": 2.74,
+        "headsNew": 2.8,
+        "headsNewWalk": 2.68,
+        "residueAct": 0.0009,
+        "residueWalk": 0.0008
+      }
+    },
+    "beom": {
+      "status": "installed",
+      "order": "strip",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_beom_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_beom_walk.png",
+      "actSha256": "6941df8db012eea7f5d26cc8098abc2483b83545ff2401dcdf24518f509e513d",
+      "walkSha256": "6fbb0b643037fbea135a4dac3756499cf4920d339c0bd9d9866ebd3c5c2cbb61",
+      "portrait": "w-60-golbeol-beom",
+      "auto": {
+        "cell": [
+          208,
+          160
+        ],
+        "walkScale": 0.6667,
+        "contact": [
+          14,
+          0.86,
+          0.39
+        ],
+        "headsOld": 2.86,
+        "headsNew": 2.96,
+        "headsNewWalk": 2.69,
+        "residueAct": 0.0,
+        "residueWalk": 0.0004
+      },
+      "review": {
+        "chinOld": 31.0,
+        "chinNew": 30.0,
+        "note": "v3"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/beom",
+      "installed": "2026-11-17"
+    },
+    "beombal": {
+      "status": "installed",
+      "order": "strip",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_beombal_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_beombal_walk.png",
+      "actSha256": "0b71b7db576472e4875cf016f04523c94d4db60a5a9dc35ae8a714013a75c610",
+      "walkSha256": "361d21ac0012b99d5984b39bdac7e20669f53de95ffde047f4e9c9de653442f5",
+      "weaponFix": {
+        "sprite": "hand axe",
+        "art": "dagger",
+        "artKit": "dagger"
+      },
+      "portrait": "w-68-maek-beombal",
+      "auto": {
+        "cell": [
+          184,
+          160
+        ],
+        "walkScale": 0.6533,
+        "contact": [
+          14,
+          0.95,
+          0.47
+        ],
+        "headsOld": 3.08,
+        "headsNew": 3.68,
+        "headsNewWalk": 3.07,
+        "residueAct": 0.0018,
+        "residueWalk": 0.0018
+      },
+      "review": {
+        "chinOld": 33.0,
+        "chinNew": 30.0,
+        "note": "v3 · 도끼→원화대로 단검",
+        "weapon": "dagger"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/beombal",
+      "installed": "2026-11-17"
+    },
+    "budeul": {
+      "status": "installed",
+      "order": "strip",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_budeul_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_budeul_walk.png",
+      "actSha256": "866109a5e8b8c5424b673cef4da2d4dea82885af179e89ed7e93efadb9d95ee7",
+      "walkSha256": "690b77a81d40b95854edca418ecc3b62a4232e5808ec03a0279e164bb07add1a",
+      "portrait": "w-32-golbeol-budeul",
+      "auto": {
+        "cell": [
+          168,
+          160
+        ],
+        "walkScale": 0.593,
+        "contact": [
+          14,
+          0.9,
+          0.43
+        ],
+        "headsOld": 2.85,
+        "headsNew": 4.22,
+        "headsNewWalk": 3.26,
+        "residueAct": 0.0018,
+        "residueWalk": 0.0
+      },
+      "review": {
+        "chinOld": 33.0,
+        "chinNew": 30.0,
+        "note": "v3"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/budeul",
+      "installed": "2026-11-17"
+    },
+    "dallae2": {
+      "status": "installed",
+      "order": "strip",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_dallae2_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_dallae2_walk.png",
+      "actSha256": "24a5765477cd94fffa65fdb646d0f329323ba89b9b6fe0d81c0103491398aa06",
+      "walkSha256": "9650e6282c16531df354c2a62632b82521993c8d09cdda6b35a3f93decab3c5e",
+      "portrait": "w-84-salhae-dallae",
+      "auto": {
+        "cell": [
+          184,
+          160
+        ],
+        "walkScale": 0.6588,
+        "contact": [
+          14,
+          0.89,
+          0.47
+        ],
+        "headsOld": 2.54,
+        "headsNew": 3.19,
+        "headsNewWalk": 2.68,
+        "residueAct": 0.0061,
+        "residueWalk": 0.0151
+      },
+      "review": {
+        "chinOld": 33.0,
+        "chinNew": 30.0,
+        "note": "v3"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/dallae2",
+      "installed": "2026-11-17"
     }
   }
 }
