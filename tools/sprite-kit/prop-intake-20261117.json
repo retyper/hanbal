@@ -3033,24 +3033,43 @@
       "installed": "2026-11-17"
     },
     "gaon": {
-      "status": "rejected",
+      "status": "installed",
       "order": "strip",
       "act": "D:/tmp-node/sp-inbox/sprite_prop_gaon_act.png",
       "walk": "D:/tmp-node/sp-inbox/sprite_prop_gaon_walk.png",
-      "actSha256": "8cafff1b9486eb517df6a56ec31e8c1d1ef37e4c1c2824daddf15d51a141e183",
-      "walkSha256": "13dd5ee407b0f8bd0a07016dbd0e6ed1213ba4554caf8c26fae6eda11eb78abb",
+      "actSha256": "e1708a64b12e41d75dab854eeb64cee279722898dc44fccc94747fd04f069686",
+      "walkSha256": "c9a83d7b3bb6fe89dfd37a1e6785ad6f54c9da6aafa99e7afc89bdac34cc6583",
       "weaponFix": {
         "sprite": "spear",
         "art": "no weapon: bare-handed ice magic (a glowing snowflake between the palms)",
         "artKit": "magic"
       },
       "portrait": "w-19-buyeo-fur-princess",
-      "reason": "칸 잘림(pose 16) → 다시",
+      "auto": {
+        "cell": [
+          176,
+          160
+        ],
+        "walkScale": 0.6958,
+        "contact": [
+          14,
+          0.78,
+          0.38
+        ],
+        "headsOld": 2.66,
+        "headsNew": 3.34,
+        "headsNewWalk": 3.05,
+        "residueAct": 0.0,
+        "residueWalk": 0.001
+      },
       "review": {
-        "chinOld": null,
-        "chinNew": null,
-        "note": ""
-      }
+        "chinOld": 32.0,
+        "chinNew": 29.0,
+        "note": "v4 · 창→원화대로 맨손 눈꽃 주술 · 칸 잘림 고침",
+        "weapon": "staff"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/gaon",
+      "installed": "2026-11-17"
     }
   }
 }
