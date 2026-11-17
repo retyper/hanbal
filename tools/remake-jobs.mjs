@@ -355,6 +355,8 @@ const BL_RETRY = {
   'gen-oi': 'SECOND DRAFT (lead artist): the first draft was too squat, a short stumpy dwarf under a big helmet. He is a tall general (181 cm, Soseono is 165 cm): longer legs and a longer torso than Hojin, a lean strong build, the same head and face size as the baseline figures, and a lower, smaller helmet plume.',
 }
 // 11-17 밤 형: 「장수들마다 키 설정을 넣고 그에 맞게 그리는 거 어때」 → tools/sprite-kit/heights.json → src/realm/data/hero-height.ts (게임 화면 키도 이 값으로)
+// v5 도 옛 문안(기준 판·키 전)이라 반려 → v6 (기준 판 그림 · 키 줄이 붙은 새 문안)
+const REDO6 = { 'gen-base-g-52-tamna-oreum': true }
 const CM = (() => { const t = readFileSync('src/realm/data/hero-height.ts', 'utf8'); return JSON.parse(t.slice(t.indexOf('= {') + 2, t.lastIndexOf('}') + 1)) })()
 const BL_OF = Object.fromEntries(Object.entries(BL).map(([slot, k]) => [k, slot]))
 const SP_RUN = BL_MODE ? Object.values(BL) : [...Object.values(BL), ...SP_KEYS.filter((k) => SP_TEST.includes(k) && !BL_OF[k] && SLOT_DONE[slotOf(k)])]
@@ -368,7 +370,7 @@ for (const k of SP_RUN) {
   // 11-17 밤 형: 「비각성은 노출 안 심해도 돼 · 각성 때 더 드러나면 된다」 → 원본 옷·머리색 그대로가 먼저 · 살짝 더 드러나는 정도만
   const SKIN = isW ? 'OUTFIT (women): keep the outfit, colours, hair colour and ornaments of the portrait (IMAGE 3) first; you may make it slightly more revealing (a little more neckline or leg), but never replace the portrait clothes with a different skimpy costume. Fabric stays opaque: no see-through cloth and no nipple outline.\n' : ''
   const BL3 = { 'gen-hogong': true }   // 세 번째 판 (oi 는 bl2)
-  const V = BL_OF[k] ? (BL3[k] ? 'bl3' : BL_RETRY[k] ? 'bl2' : 'bl') : SP_V5[k] ? 'v5' : SP_RETRY[k] ? 'v4' : 'v3', R4 = (BL_RETRY[k] ? BL_RETRY[k] + '\n' : '') + BLT + MALE + SKIN + (SP_V5[k] ? SP_V5[k] + '\n' : '') + (SP_RETRY[k] ? RETRY4[SP_RETRY[k]] + '\n' : '')
+  const V = BL_OF[k] ? (BL3[k] ? 'bl3' : BL_RETRY[k] ? 'bl2' : 'bl') : REDO6[k] ? 'v6' : SP_V5[k] ? 'v5' : SP_RETRY[k] ? 'v4' : 'v3', R4 = (BL_RETRY[k] ? BL_RETRY[k] + '\n' : '') + BLT + MALE + SKIN + (SP_V5[k] ? SP_V5[k] + '\n' : '') + (SP_RETRY[k] ? RETRY4[SP_RETRY[k]] + '\n' : '')
   const bust = PORTRAIT[k] ?? (k.startsWith('gen-base-') ? k.slice('gen-base-'.length) : null)
   const refs = ['/assets_src/realm/sprite-prop/ref-style3.png', `/assets_src/realm/sprite-prop/${k}-now.png`, ...(bust && existsSync(`public/realm/bust-hd/${bust}.jpg`) ? [`/realm/bust-hd/${bust}.jpg`] : [])]
   const SLOT = !BL_OF[k] && SLOT_DONE[slotOf(k)] ? `/assets_src/realm/sprite-prop/ref-slot-${slotOf(k)}.png` : null
