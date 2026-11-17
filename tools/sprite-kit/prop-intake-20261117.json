@@ -1607,6 +1607,70 @@
       },
       "archive": "assets_src/realm/retired/prop-20261117/jumong",
       "installed": "2026-11-17"
+    },
+    "hogong": {
+      "status": "rejected",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_hogong_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_hogong_walk.png",
+      "actSha256": "da09cfc3b26ef3c14d3ed29110e814fec9d7194bccc2c0f031d88bafed01f112",
+      "walkSha256": "1acdbe3155833535be17c8bdd2393a75ba4b1c5367a3d2e1956f3972bf620157",
+      "portrait": "g-75-saro-hogong",
+      "auto": {
+        "cell": [
+          208,
+          160
+        ],
+        "walkScale": 0.665,
+        "contact": [
+          14,
+          0.84,
+          0.45
+        ],
+        "headsOld": 4.03,
+        "headsNew": 4.22,
+        "headsNewWalk": 4.06,
+        "residueAct": 0.001,
+        "residueWalk": 0.0
+      },
+      "reason": "형 11-17: 다시(해달 머리 약간 큼·노출 약함 / 호공 키가 해달보다 작음) → bl2",
+      "review": {
+        "chinOld": null,
+        "chinNew": null,
+        "note": ""
+      }
+    },
+    "haedal": {
+      "status": "rejected",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_haedal_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_haedal_walk.png",
+      "actSha256": "361666cc8a5d3cb66bc30e755b1f7812b06589d2a8e76c6566abcf3e5bcdb495",
+      "walkSha256": "8614c3aeb7bca1b5365221a40d041a86374b23293bf41faba3e94468b3fccbd7",
+      "portrait": "w-67-buyeo-haedal",
+      "auto": {
+        "cell": [
+          232,
+          160
+        ],
+        "walkScale": 0.6263,
+        "contact": [
+          15,
+          0.76,
+          0.28
+        ],
+        "headsOld": 2.82,
+        "headsNew": 2.49,
+        "headsNewWalk": 2.38,
+        "residueAct": 0.0,
+        "residueWalk": 0.0
+      },
+      "reason": "형 11-17: 다시(해달 머리 약간 큼·노출 약함 / 호공 키가 해달보다 작음) → bl2",
+      "review": {
+        "chinOld": null,
+        "chinNew": null,
+        "note": ""
+      }
     }
   }
 }

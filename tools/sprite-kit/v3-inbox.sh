@@ -5,12 +5,13 @@
 set -euo pipefail
 OUT=${1:?inbox}; A="D:/에셋창고"; C="$A/Codex-production-next-20261117-candidates"
 mkdir -p "$OUT"
-for act in "$A"/sprite_prop_*_act_v3.png "$A"/sprite_prop_*_act_v4.png "$A"/sprite_prop_*_act_v5.png "$A"/sprite_prop_*_act_bl.png; do
+for act in "$A"/sprite_prop_*_act_v3.png "$A"/sprite_prop_*_act_v4.png "$A"/sprite_prop_*_act_v5.png "$A"/sprite_prop_*_act_bl.png "$A"/sprite_prop_*_act_bl2.png; do
   [ -e "$act" ] || continue
   V=${act##*_act_}; V=${V%.png}   # v3 · v4(Claude 반려 다시 · 있으면 v3 를 덮는다 — 글롭 순서상 뒤)
   who=$(basename "$act"); who=${who#sprite_prop_}; who=${who%_act_$V.png}
   [ "$V" = v3 ] && { [ -e "$A/sprite_prop_${who}_act_v4.png" ] || [ -e "$A/sprite_prop_${who}_act_v5.png" ]; } && continue
   [ "$V" = v4 ] && [ -e "$A/sprite_prop_${who}_act_v5.png" ] && continue
+  [ "$V" = bl ] && [ -e "$A/sprite_prop_${who}_act_bl2.png" ] && continue
   walk="$A/sprite_prop_${who}_walk_$V.png"
   [ -e "$walk" ] || walk=$(ls -t "$C"/sprite_prop_"${who}"_walk_$V*.png 2>/dev/null | head -1 || true)
   [ -n "${walk:-}" ] && [ -e "$walk" ] || { echo "걷기 아직: $who"; continue; }
