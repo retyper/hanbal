@@ -306,3 +306,30 @@ footer #wake.pressed{transform:scale(.9);filter:brightness(1.3)}
 .choices small.gain.new{color:#10140f;background:var(--accent);padding:1px 12px;border-radius:9px;text-shadow:none}
 @media(orientation:landscape) and (max-height:600px){.lv-have .have{width:24px;height:24px;padding:1px;border-radius:5px}.lv-have .have b{font-size:9px;height:13px;line-height:13px;min-width:13px;right:-4px;bottom:-4px}.lv-have{gap:5px 4px}}
 @media(orientation:portrait) and (max-width:700px){.lv-head{grid-template-columns:1fr;gap:4px}.lv-head h2.lvup{grid-column:1;grid-row:2}.lv-have{grid-row:1;padding-right:70px}}
+/* 11-17 밤 형: 레벨업 창에 굴림막대가 생긴다 → 카드는 작게 · 왼쪽 위 가진 칸 아이콘은 크게 */
+.lv-have .have{width:40px;height:40px}
+.lv-have .have b{min-width:17px;height:17px;font-size:11px;line-height:17px}
+.panel.upgrade .choices{margin:14px 0 8px}
+.panel.upgrade .choices button{padding:14px 12px;gap:6px}
+.panel.upgrade .choices .rune{width:52px;height:52px}
+.panel.upgrade .choices b{font-size:18px}
+.panel.upgrade .choices em{padding-top:6px;gap:3px}
+.panel.upgrade .recipe .need{width:26px;height:26px}
+.panel.upgrade .recipe .combo img{width:30px;height:30px}
+@media(orientation:landscape) and (max-height:600px){
+  .lv-have .have{width:36px;height:36px;padding:2px}
+  .lv-have .have b{min-width:15px;height:15px;font-size:10px;line-height:15px;right:-4px;bottom:-4px}
+  .panel.upgrade{padding:8px 16px}
+  .panel.upgrade .choices{gap:8px;margin:6px 0 4px}
+  .panel.upgrade .choices button{padding:6px 8px;gap:2px}
+  .panel.upgrade .choices .rune{width:30px;height:30px;margin-top:12px}
+  .panel.upgrade .choices b{font-size:14px}
+  .panel.upgrade .choices span:not(.rune){font-size:9px;line-height:1.4}
+  .panel.upgrade .choices small.gain{font-size:11px}
+  .panel.upgrade .choices em{padding-top:3px;gap:2px;font-size:8px}
+  .panel.upgrade .recipe .need{width:20px;height:20px}
+  .panel.upgrade .recipe .need b{min-width:12px;height:12px;font-size:9px;line-height:12px;right:-4px;bottom:-4px}
+  .panel.upgrade .recipe .combo img{width:22px;height:22px}
+  .panel.upgrade .recipe .combo small{font-size:8px}
+  .panel.upgrade .recipe .op{font-size:12px}
+}
