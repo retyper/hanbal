@@ -620,7 +620,7 @@
       }
     },
     "base-g-52-tamna-oreum": {
-      "status": "staged",
+      "status": "rejected",
       "order": "strip",
       "act": "D:/tmp-node/sp-inbox/sprite_prop_base-g-52-tamna-oreum_act.png",
       "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-g-52-tamna-oreum_walk.png",
@@ -643,6 +643,12 @@
         "headsNewWalk": 5.08,
         "residueAct": 0.0,
         "residueWalk": 0.0
+      },
+      "reason": "형 11-17: v4 그림체가 소서노·감실과 다름(사실적 · 다리 너무 김) · v3 그대로 둠",
+      "review": {
+        "chinOld": null,
+        "chinNew": null,
+        "note": ""
       }
     },
     "base-w-06-buyeo-huntress": {
