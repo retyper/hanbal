@@ -1826,7 +1826,7 @@
       "installed": "2026-11-17"
     },
     "oi": {
-      "status": "staged",
+      "status": "installed",
       "order": "strip",
       "act": "D:/tmp-node/sp-inbox/sprite_prop_oi_act.png",
       "walk": "D:/tmp-node/sp-inbox/sprite_prop_oi_walk.png",
@@ -1849,7 +1849,14 @@
         "headsNewWalk": 3.75,
         "residueAct": 0.0001,
         "residueWalk": 0.0006
-      }
+      },
+      "review": {
+        "chinOld": 31.0,
+        "chinNew": 29.0,
+        "note": "★ 기준 판 창·남 (형 11-18 「좋다」)"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/oi",
+      "installed": "2026-11-17"
     },
     "ara": {
       "status": "installed",
