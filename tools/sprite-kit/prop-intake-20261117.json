@@ -3089,6 +3089,120 @@
       },
       "archive": "assets_src/realm/retired/prop-20261117/gaon",
       "installed": "2026-11-17"
+    },
+    "base-g-54-mokji-mahan": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox31/sprite_prop_base-g-54-mokji-mahan_act.png",
+      "walk": "D:/tmp-node/sp-inbox31/sprite_prop_base-g-54-mokji-mahan_walk.png",
+      "actSha256": "eb1855fb5fb8023b8fb7ae4f421648a25c7ba2efa2c914bb124940709a7000ae",
+      "walkSha256": "36ce82686de5641dbe0a96bb731152da18e16ad77e96e9500bd1a5dfaa511c0f",
+      "portrait": "g-54-mokji-mahan",
+      "auto": {
+        "cell": [
+          224,
+          160
+        ],
+        "walkScale": 0.6115,
+        "contact": [
+          14,
+          0.95,
+          0.51
+        ],
+        "headsOld": 3.34,
+        "headsNew": 4.57,
+        "headsNewWalk": 4.61,
+        "residueAct": 0.0001,
+        "residueWalk": 0.0
+      },
+      "review": {
+        "chinOld": 40.0,
+        "chinNew": 30.0,
+        "note": "11-18 claude31 보류 후보 · 오이(창·남) 기준판과 그림체·비율 맞음"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-g-54-mokji-mahan",
+      "installed": "2026-11-17"
+    },
+    "base-g-64-michuhol-sogeumkkun": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox31/sprite_prop_base-g-64-michuhol-sogeumkkun_act.png",
+      "walk": "D:/tmp-node/sp-inbox31/sprite_prop_base-g-64-michuhol-sogeumkkun_walk.png",
+      "actSha256": "11a98dd090dfc6d615a848c4ef1cd7ae4eb65a99b63b73d9847e6187bd61cceb",
+      "walkSha256": "067ef1adc55a2e5dc999379444aa7aff96de4957bed974a3cc2c87369a0beb7c",
+      "portrait": "g-64-michuhol-sogeumkkun",
+      "auto": {
+        "cell": [
+          240,
+          160
+        ],
+        "walkScale": 0.6325,
+        "contact": [
+          14,
+          0.94,
+          0.43
+        ],
+        "headsOld": 2.88,
+        "headsNew": 4.28,
+        "headsNewWalk": 4.45,
+        "residueAct": 0.0,
+        "residueWalk": 0.0
+      },
+      "review": {
+        "chinOld": 40.0,
+        "chinNew": 30.0,
+        "note": "11-18 claude31 보류 후보 · 오이(창·남) 기준판과 그림체·비율 맞음"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-g-64-michuhol-sogeumkkun",
+      "installed": "2026-11-17"
+    },
+    "base-g-69-goryong-yong": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox31/sprite_prop_base-g-69-goryong-yong_act.png",
+      "walk": "D:/tmp-node/sp-inbox31/sprite_prop_base-g-69-goryong-yong_walk.png",
+      "actSha256": "d60449424dbb3c9b2dff18838b269b35b12faf2c888941ae8af0611fa413667a",
+      "walkSha256": "a98e230ebaacb76cbc8a6cb8bf980f21a0ca590891f1952b94896627c87d63bb",
+      "portrait": "g-69-goryong-yong",
+      "auto": {
+        "cell": [
+          224,
+          160
+        ],
+        "walkScale": 0.5363,
+        "contact": [
+          14,
+          0.95,
+          0.39
+        ],
+        "headsOld": 2.88,
+        "headsNew": 4.42,
+        "headsNewWalk": 4.09,
+        "residueAct": 0.0065,
+        "residueWalk": 0.002
+      },
+      "review": {
+        "chinOld": 40.0,
+        "chinNew": 30.0,
+        "note": "11-18 claude31 보류 후보 · 오이(창·남) 기준판과 그림체·비율 맞음"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-g-69-goryong-yong",
+      "installed": "2026-11-17"
+    },
+    "base-g-70-siljik-pado": {
+      "status": "rejected",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox31/sprite_prop_base-g-70-siljik-pado_act.png",
+      "walk": "D:/tmp-node/sp-inbox31/sprite_prop_base-g-70-siljik-pado_walk.png",
+      "actSha256": "8e4c80be4712879f19b26b70705b7643d02a9b51970f4d7c77a4923b7370d322",
+      "walkSha256": "72986dfeae218ed8e32eed7cbdb702ced26db2fe04550de1e9e9c1b46f0a90ff",
+      "portrait": "g-70-siljik-pado",
+      "reason": "걷기 판 8컷이 아님(1+6) · 다시",
+      "review": {
+        "chinOld": null,
+        "chinNew": null,
+        "note": ""
+      }
     }
   }
 }
