@@ -164,36 +164,37 @@
       }
     },
     "base-w-39-gosaburi-galmae": {
-      "status": "rejected",
+      "status": "installed",
       "order": "strip",
-      "act": "D:/에셋창고/sprite_prop_base-w-39-gosaburi-galmae_act.png",
-      "walk": "D:/에셋창고/sprite_prop_base-w-39-gosaburi-galmae_walk.png",
-      "actSha256": "84b8f5b87756f526df55b63ce9d73bc41914504991ec49bc687a78ac8420d10b",
-      "walkSha256": "7e84041e1650588d9ee070bca6664eacef42b2e1faf473dfdb4bbf270826f2cd",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-39-gosaburi-galmae_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-39-gosaburi-galmae_walk.png",
+      "actSha256": "6ba1a57baaa2a975e2177ee1f07301834225d65cba56458c883ffdf8f82d05b8",
+      "walkSha256": "13f19ffe34e1aa8341563e2345e1996a829939d84d2cab04ef830c7de11cb4ef",
       "portrait": "w-39-gosaburi-galmae",
       "auto": {
         "cell": [
-          168,
+          192,
           160
         ],
-        "walkScale": 0.5162,
+        "walkScale": 0.657,
         "contact": [
           15,
-          0.8,
-          0.54
+          0.76,
+          0.58
         ],
         "headsOld": 2.57,
-        "headsNew": 2.85,
-        "headsNewWalk": 2.77,
-        "residueAct": 0.0017,
-        "residueWalk": 0.0007
+        "headsNew": 2.89,
+        "headsNewWalk": 2.73,
+        "residueAct": 0.0003,
+        "residueWalk": 0.0004
       },
-      "reason": "얼굴 목표 미달: 턱 자리가 1%p쯤만 올라감 (자 눈금 37→36 · 기준 소서노28.5·감실30·쇠비31·온조30 같은 자) · head-audit 기준으로 40→약 39 (목표 31~34) · 띠 크기에서 옛것과 거의 구분 안 됨. 그 밖 검사(20+8 사람·무기·초상 같은 사람·발 줄·찌꺼기)는 통과",
       "review": {
-        "chinOld": 37.0,
-        "chinNew": 36.0,
-        "note": "걷기 3·7 교대, 1·5 실루엣 거의 같음"
-      }
+        "chinOld": 33.0,
+        "chinNew": 30.0,
+        "note": "v3 기준 판 그림체 베끼기 · 얼굴 소서노와 같은 크기 · 걷기 1·5 다리가 비슷해 보임(다음 묶음에서 다시 볼 것)"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-39-gosaburi-galmae",
+      "installed": "2026-11-17"
     },
     "base-w-40-mujin-munui": {
       "status": "rejected",
