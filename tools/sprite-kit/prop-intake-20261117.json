@@ -1149,8 +1149,8 @@
       "order": "strip",
       "act": "D:/tmp-node/sp-inbox/sprite_prop_damul_act.png",
       "walk": "D:/tmp-node/sp-inbox/sprite_prop_damul_walk.png",
-      "actSha256": "a4a95b0f2aac47bfb6ee02a57482c8d1ab607bfb290cb222c595a168622d8235",
-      "walkSha256": "b8f4598f164393218336413f3fc9b5f6f439c11052317cbdf0cd30792e443bf6",
+      "actSha256": "a59ced6a8e2c41e6014b1ff766ee77cb1253bad3f7ae5a16d76775b0a23b79b8",
+      "walkSha256": "2402f66f0035e4c84693f604a61be78e7e32b37bdd327ba25b44a8c7c0820129",
       "weaponFix": {
         "sprite": "bow",
         "art": "sword",
@@ -1159,22 +1159,22 @@
       "portrait": "g-65-goguryeo-damul",
       "auto": {
         "cell": [
-          192,
+          184,
           160
         ],
-        "walkScale": 0.5918,
+        "walkScale": 0.634,
         "contact": [
           14,
-          0.92,
-          0.48
+          0.95,
+          0.51
         ],
         "headsOld": 2.62,
-        "headsNew": 4.75,
-        "headsNewWalk": 6.85,
-        "residueAct": 0.0315,
-        "residueWalk": 0.0115
+        "headsNew": 3.07,
+        "headsNewWalk": 4.26,
+        "residueAct": 0.0151,
+        "residueWalk": 0.0
       },
-      "reason": "v4 는 옛 문안(다리 40%)이라 사실적·다리 김 · 걷기 판 머리 작음 → v5",
+      "reason": "v5 가 지금 띠와 거의 같음 · 지금 띠 두고 관 키만 바로잡음",
       "review": {
         "chinOld": null,
         "chinNew": null,
