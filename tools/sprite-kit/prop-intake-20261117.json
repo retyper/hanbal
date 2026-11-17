@@ -1543,7 +1543,7 @@
       }
     },
     "hojin": {
-      "status": "staged",
+      "status": "installed",
       "order": "strip",
       "act": "D:/tmp-node/sp-inbox/sprite_prop_hojin_act.png",
       "walk": "D:/tmp-node/sp-inbox/sprite_prop_hojin_walk.png",
@@ -1566,10 +1566,17 @@
         "headsNewWalk": 5.32,
         "residueAct": 0.0,
         "residueWalk": 0.0
-      }
+      },
+      "review": {
+        "chinOld": 31.0,
+        "chinNew": 29.0,
+        "note": "★ 기준 판 (형 11-17 「좋다」)"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/hojin",
+      "installed": "2026-11-17"
     },
     "jumong": {
-      "status": "staged",
+      "status": "installed",
       "order": "strip",
       "act": "D:/tmp-node/sp-inbox/sprite_prop_jumong_act.png",
       "walk": "D:/tmp-node/sp-inbox/sprite_prop_jumong_walk.png",
@@ -1592,7 +1599,14 @@
         "headsNewWalk": 6.0,
         "residueAct": 0.0,
         "residueWalk": 0.0004
-      }
+      },
+      "review": {
+        "chinOld": 31.0,
+        "chinNew": 29.0,
+        "note": "★ 기준 판 (형 11-17 「좋다」)"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/jumong",
+      "installed": "2026-11-17"
     }
   }
 }

@@ -341,14 +341,17 @@ const SP_V5 = { 'gen-base-g-46-uga-nureongso': SAME_H, 'gen-damul': 'STYLE (the 
 // 11-17 저녁 형: 「베이스라인 될 애들부터 제대로 만들자. 무기별 성별로 쫙」 → 무기×성별 기준 판 열 장을 먼저(소서노=창·여 · 감실=주술·여 · 쇠비=도끼·여 는 이미 있음)
 //   이 열 장을 형이 보고 맞다 할 때까지 나머지 얼굴 줄(v3·v4·v5)은 멈춘다 → 맞으면 각 장수는 자기 무기·성별 기준 판을 IMAGE 1 로
 const BL = { '도끼·남': 'gen-hojin', '활·남': 'gen-jumong', '활·여': 'gen-haedal', '단검·남': 'gen-hogong', '단검·여': 'gen-irang',
-  '주술·남': 'gen-gomok', '도끼·여': 'gen-soebi', '돌팔매·남': 'gen-base-g-38-chopal-palmae', '창·남': 'gen-oi', '칼·남': 'gen-onjo', '칼·여': 'gen-ara' }
+  '주술·남': 'gen-gomok', '도끼·여': 'gen-soebi', '돌팔매·남': 'gen-base-g-38-chopal-palmae', '창·남': 'gen-oi', '칼·여': 'gen-ara' }   // 칼·남 = 지금 온조(관 키 바로잡음 headgear.json · 형 「남자 베이스라인에 가깝다」)
 const BL_MODE = true
 const BL_OF = Object.fromEntries(Object.entries(BL).map(([slot, k]) => [k, slot]))
 const SP_RUN = BL_MODE ? Object.values(BL) : SP_KEYS.filter((k) => SP_TEST.includes(k))
 for (const k of SP_RUN) {
   const BLT = BL_OF[k] ? `BASELINE MASTER (${BL_OF[k]}): this sheet becomes the style reference that every other character with the same weapon and gender will be drawn from, so it must sit perfectly beside Soseono, Gamsil and Jinha in IMAGE 1 as one family: identical pixel rendering, outline weight, palette warmth, face size, 4.5-head build, leg length and boot size. Check side by side before saving.\n` : ''
   const MALE = BL_OF[k]?.endsWith('남') ? 'HEIGHT (men): the standing height from the soles to the top of the SKULL (not hair, crown or hat) must be EQUAL TO OR TALLER than Soseono in IMAGE 1, with broader shoulders; a man must never look shorter or smaller than the women.\n' : ''
-  const V = BL_OF[k] ? 'bl' : SP_V5[k] ? 'v5' : SP_RETRY[k] ? 'v4' : 'v3', R4 = BLT + MALE + (SP_V5[k] ? SP_V5[k] + '\n' : '') + (SP_RETRY[k] ? RETRY4[SP_RETRY[k]] + '\n' : '')
+  // 11-17 형: 「여캐들은 더 노출 높아도 될 듯 · 어차피 픽셀 캐릭터니까」 (스팀 15세: 비침·유두 윤곽만 금지)
+  const isW = BL_OF[k] ? BL_OF[k].endsWith('여') : /^gen-(base-)?[wl]-/.test(k) || ['gen-irang', 'gen-haedal', 'gen-ara', 'gen-soebi'].includes(k)
+  const SKIN = isW ? 'OUTFIT (women): make the outfit noticeably more revealing than IMAGE 2, at least as revealing as Gamsil in IMAGE 1: bare shoulders, a deep neckline with cleavage, a bare midriff and bare thighs or a high slit, keeping the character’s own colours, materials and ornaments. Fabric stays opaque: no see-through cloth and no nipple outline.\n' : ''
+  const V = BL_OF[k] ? 'bl' : SP_V5[k] ? 'v5' : SP_RETRY[k] ? 'v4' : 'v3', R4 = BLT + MALE + SKIN + (SP_V5[k] ? SP_V5[k] + '\n' : '') + (SP_RETRY[k] ? RETRY4[SP_RETRY[k]] + '\n' : '')
   const bust = PORTRAIT[k] ?? (k.startsWith('gen-base-') ? k.slice('gen-base-'.length) : null)
   const refs = ['/assets_src/realm/sprite-prop/ref-style3.png', `/assets_src/realm/sprite-prop/${k}-now.png`, ...(bust && existsSync(`public/realm/bust-hd/${bust}.jpg`) ? [`/realm/bust-hd/${bust}.jpg`] : [])]
   const wf = WFIX[k]
