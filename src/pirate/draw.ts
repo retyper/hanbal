@@ -10,6 +10,7 @@
 import { P } from '../tune/params.ts'
 import { worldToScreenX, worldToScreenY, type Camera } from '../render/camera.ts'
 import { sprite } from '../render/sprites.ts'
+import { drawFoeBar, FOE_BAR } from '../render/foebar.ts'
 import type { SceneHooks } from '../render/scene.ts'
 import type { Target, World } from '../sim/types.ts'
 import type { PirateRun } from './sim.ts'
@@ -297,59 +298,22 @@ function drawRunner(ctx: CanvasRenderingContext2D, cam: Camera, w: World, t: Tar
   const soleY = worldToScreenY(cam, bandit ? footY(lane, t.x) : 0)
   footShadow(ctx, x, soleY, a.tallM * cam.scale)
   drawStrip(ctx, im, a.ar, frame, x, soleY, a.tallM * cam.scale, flip) // 도적 띠는 왼쪽(궁수)을 보고 그렸다 · 산적·방패 띠는 오른쪽이라 뒤집는다 (형 11-10)
-  const top = soleY - a.tallM * cam.scale - 8
+  const top = soleY - a.tallM * cam.scale - BAR.above - FOE_BAR.h
   if (captain && t.hpMax > 0) {
-    // 두목의 남은 몸 — 머리 위 테 두른 붉은 바 (열전 체력 바와 같은 틀 · 11-16 형: 「체력바도 색이 다르고 제대로 보이지도 않아」)
-    drawHpFrame(ctx, x, top - BAR.frameH / 2, Math.max(BAR.bossW, t.r * 2.2 * cam.scale), t.hp / t.hpMax)
+    // 두목의 남은 몸 — 머리 위 붉은 바 (다른 적과 한 꼴 · 더 길게). 크게 읽는 것은 화면 위 두목 체력창 (pirate-main)
+    drawFoeBar(ctx, x, top, Math.max(BAR.bossW, t.r * 1.6 * cam.scale), t.hp / t.hpMax)
   } else if (shielded && p !== null) {
-    // 방패가 남은 수 — 같은 틀의 잿빛 칸 (몇 대 더 맞아야 깨지나)
-    const left = Math.max(0, p.shieldLeft[t.id] ?? 0)
-    drawBar(ctx, x, top, BAR.unitW, left / Math.max(1, Math.round(P.pirate.shieldHits)), BAR.shield, Math.round(P.pirate.shieldHits))
+    // 방패 든 도적 — 몸통을 몇 대 더 맞아야 쓰러지나: 쇳빛 칸(방패)이 오른쪽부터 깨지고, 붉은 한 칸이 몸 (11-16 형: 「체력바도 색이 다르고」)
+    const hits = Math.max(1, Math.round(P.pirate.shieldHits))
+    const left = Math.max(0, Math.min(hits, p.shieldLeft[t.id] ?? 0))
+    const cells = hits + 1
+    drawFoeBar(ctx, x, top, Math.max(FOE_BAR.minW, BAR.cellW * cells), 1 / cells, left / cells, cells)
   }
   return true
 }
 
-/** 체력 바 — 막기 판의 바는 다 이 꼴 (어두운 테 · 붉은 몸 · 위쪽 밝은 줄). 밝은 모래 위에서도 읽힌다 */
-const BAR = {
-  h: 6, edge: 1.5, unitW: 34, bossW: 120, frameH: 12,
-  back: '#2a1712', edgeCol: 'rgba(10, 6, 4, 0.9)', hp: '#d4432f', hpHi: '#ff8a68', shield: '#b9c4cc', shieldHi: '#eef3f6',
-  /** 열전 체력 바 틀 (public/realm/raid/ui/bar-hp.png · kit.json 의 홈) */
-  frame: 'raid/ui/bar-hp.png', frameSize: [700, 68] as const, frameWin: [85, 16, 617, 53] as const,
-} as const
-function drawBar(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, ratio: number, col: string = BAR.hp, cells = 0): void {
-  const r = Math.max(0, Math.min(1, ratio))
-  const e = BAR.edge
-  ctx.fillStyle = BAR.edgeCol
-  ctx.fillRect(x - w / 2 - e, y - e, w + e * 2, BAR.h + e * 2)
-  ctx.fillStyle = BAR.back
-  ctx.fillRect(x - w / 2, y, w, BAR.h)
-  ctx.fillStyle = col
-  ctx.fillRect(x - w / 2, y, w * r, BAR.h)
-  ctx.fillStyle = col === BAR.hp ? BAR.hpHi : BAR.shieldHi
-  ctx.globalAlpha = 0.55
-  ctx.fillRect(x - w / 2, y, w * r, 2)
-  ctx.globalAlpha = 1
-  if (cells > 1) {
-    ctx.fillStyle = BAR.edgeCol
-    for (let i = 1; i < cells; i++) ctx.fillRect(x - w / 2 + (w * i) / cells - 0.75, y, 1.5, BAR.h)
-  }
-}
-/** 두목 바 — 열전 체력 바 틀을 두른다 (그림이 아직이면 drawBar) */
-function drawHpFrame(ctx: CanvasRenderingContext2D, x: number, cy: number, w: number, ratio: number): void {
-  const fr = img(BAR.frame)
-  if (fr === null) { drawBar(ctx, x, cy - BAR.h / 2, w, ratio); return }
-  const [fw, fh] = BAR.frameSize
-  const [wx0, wy0, wx1, wy1] = BAR.frameWin
-  const k = w / fw
-  const h = fh * k
-  const x0 = x - w / 2
-  const y0 = cy - h / 2
-  ctx.fillStyle = BAR.back
-  ctx.fillRect(x0 + wx0 * k, y0 + wy0 * k, (wx1 - wx0) * k, (wy1 - wy0) * k)
-  ctx.fillStyle = BAR.hp
-  ctx.fillRect(x0 + wx0 * k, y0 + wy0 * k, (wx1 - wx0) * k * Math.max(0, Math.min(1, ratio)), (wy1 - wy0) * k)
-  ctx.drawImage(fr, x0, y0, w, h)
-}
+/** 머리 위 바 — 머리에서 띄우는 틈 · 두목 바 가장 짧은 폭 · 방패 칸 하나의 폭 (CSS px) · 꼴은 render/foebar.ts 한 벌 */
+const BAR = { above: 6, bossW: 72, cellW: 16 } as const
 
 function drawBoat(ctx: CanvasRenderingContext2D, cam: Camera, x: number): void {
   const R = P.pirate

@@ -16,6 +16,7 @@ import type { Camera } from './camera.ts'
 import { drawArcher } from './stickman.ts'
 import { skyOf, drawShadow } from './sky.ts'
 import { BOOST, drawPinBoost } from './boost.ts'
+import { drawFoeBar, FOE_BAR } from './foebar.ts'
 import type { SkyPalette } from './sky.ts'
 import { drawFoeArcher, drawFoeGunner, drawFoeRusher, drawFoeSlinger } from './foe.ts'
 import { drawBuildings, drawBuildingFronts, windowOf } from './buildings.ts'
@@ -1557,13 +1558,8 @@ function drawHpBar(
 ): void {
   const h = 5
   if (BOOST.on) {
-    // 막기 판 — 바다도적 두목·방패와 같은 꼴 (어두운 테 · 붉은 몸). 밝은 모래 위에서도 읽힌다 (11-16 형: 「체력바도 색이 다르고 제대로 보이지도 않아」)
-    ctx.fillStyle = 'rgba(10, 6, 4, 0.9)'
-    ctx.fillRect(x - w / 2 - 1.5, y - 1.5, w + 3, h + 4)
-    ctx.fillStyle = '#2a1712'
-    ctx.fillRect(x - w / 2, y, w, h + 1)
-    ctx.fillStyle = '#d4432f'
-    ctx.fillRect(x - w / 2, y, w * Math.max(0, Math.min(1, ratio)), h + 1)
+    // 막기 판 — 바다도적 두목·방패와 같은 한 꼴 (render/foebar.ts · 11-16 형: 「체력바도 색이 다르고 제대로 보이지도 않아」)
+    drawFoeBar(ctx, x, y - FOE_BAR.h / 2, Math.max(FOE_BAR.minW, w), ratio)
     return
   }
   ctx.fillStyle = THEME.gaugeBack

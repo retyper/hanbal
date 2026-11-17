@@ -25,6 +25,7 @@ import { createPirate, pickBoon, stepPirate, type PickId, type PirateRun } from 
 import { pirateHooks } from './pirate/draw.ts'
 import { WAVE_COUNT } from './pirate/waves.ts'
 import { P } from './tune/params.ts'
+import { josa } from './core/josa.ts'
 
 const canvas = document.getElementById('night') as HTMLCanvasElement
 const ui = document.getElementById('night-ui') as HTMLDivElement
@@ -79,107 +80,336 @@ function send(m: { held: number; won: boolean; perfect: boolean } | { skip: true
 }
 
 // ───────────────────────── 화면 위 판 (DOM) ─────────────────────────
+// 판·단추·체력창은 저장소에 있는 그림을 빌려 입힌다 (11-17 형: 「UI만 에셋 씌우고 체력창 제대로」) —
+// 카드·단추는 본편 카드와 한 벌(ui/frame-panel · btn-dark · btn-gold), 체력창·띠·명패는 열전 것(raid/ui/bar-hp · bar-boss · banner · plaque · badge-bronze),
+// 끝 도장은 본편 사건의 성공·실패 도장(fx/stamp-ok · stamp-fail). 우리 목책은 파랑(본편 지도 MY_LAND 와 같은 결), 적은 붉게.
+
+const ART = (import.meta.env?.BASE_URL ?? '/') + 'realm/'
+const IMG = {
+  frame: `${ART}ui/frame-panel.png?v=3`,
+  btn: `${ART}ui/btn-dark.png?v=2`,
+  btnOn: `${ART}ui/btn-gold.png?v=2`,
+  ring: `${ART}ui/ring-portrait.png`,
+  hpFrame: `${ART}raid/ui/bar-hp.png`,
+  bossFrame: `${ART}raid/ui/bar-boss.png`,
+  banner: `${ART}raid/ui/banner.png`,
+  plaque: `${ART}raid/ui/plaque.png`,
+  badge: `${ART}raid/ui/badge-bronze.png`,
+  wall: `${ART}raid/emblem-palisade.png`,
+  wave: `${ART}icon/${bandit ? 'emblem-mountain' : 'emblem-wave'}.png`,
+  fire: `${ART}icon/unit-fire-archers.png`,
+  pull: `${ART}raid/power-bow.png`,
+  arrows: `${ART}icon/good-arrow-bundle.png`,
+  stampOk: `${ART}fx/stamp-ok.png`,
+  stampFail: `${ART}fx/stamp-fail.png`,
+  chief: `${ART}anim2/${bandit ? 'bandit-chief' : 'pirate-captain'}.png`,
+} as const
+/** 두목 얼굴 — 걷기 띠 첫 컷(서기)의 머리 자리 (띠 가로 3000px 로 늘였을 때 · 그림 좌표라 손맛 노브가 아니다) */
+const FACE = bandit ? { x: -71, y: -10 } : { x: -36, y: -12 }
+const img = (src: string, cls = ''): string => `<img${cls === '' ? '' : ` class="${cls}"`} src="${src}" alt="" draggable="false">`
 
 const CSS = `
-#night-ui { position: fixed; inset: 0; pointer-events: none; font: 15px/1.45 system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; color: #efe6d2; }
-#night-ui .card { pointer-events: auto; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(92%, 420px);
-  max-height: 90%; overflow-y: auto; box-sizing: border-box; padding: 18px; border-radius: 18px; background: #14202aee; border: 1px solid #5f8aa0;
-  box-shadow: 0 16px 40px #000c; text-align: center; }
-#night-ui h1 { font-family: 'Gowun Batang', serif; font-size: 26px; margin: 2px 0 8px; color: #f0c86a; }
+#night-ui { position: fixed; inset: 0; pointer-events: none; container-type: size; font: 15px/1.45 system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; color: #efe6d2; }
+#night-ui [hidden] { display: none !important; }
+#night-ui .card { pointer-events: auto; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(92%, 440px); max-height: 94%; overflow-y: auto; box-sizing: border-box; padding: 10px 14px 12px;
+  border: 12px solid transparent; border-image: url(${IMG.frame}) 118 / 12px stretch; background: #1d1610f2 padding-box; box-shadow: 0 16px 40px #000c; text-align: center; }
+#night-ui h1 { font-family: 'Gowun Batang', serif; font-size: 26px; line-height: 1.25; margin: 2px 0 6px; color: #f0c86a; text-shadow: 0 2px 0 #000; }
 #night-ui p { margin: 6px 0; color: #d8ccb2; }
-#night-ui .rules { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 12px 0 4px; }
-#night-ui .rules div { background: #0c161ecc; border: 1px solid #36576a; border-radius: 12px; padding: 8px 4px; font-size: 13px; }
-#night-ui .rules b { display: block; font-size: 22px; line-height: 1.2; color: #fff4dc; }
-#night-ui .btns { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
-#night-ui button { font: inherit; font-size: 16px; padding: 12px 20px; border-radius: 12px; border: 1px solid #4d6a7a; background: #1d2c37; color: #efe6d2; cursor: pointer; }
-#night-ui button.on { background: linear-gradient(#c98f3a, #8a5a1f); border-color: #f0c86a; color: #fff4dc; font-weight: 800; }
-#night-ui button:active { transform: scale(0.95); }
-#night-ui .top { position: absolute; left: 50%; transform: translateX(-50%); top: max(8px, env(safe-area-inset-top)); display: flex; align-items: center; gap: 12px;
-  padding: 5px 12px; border-radius: 14px; background: #0b1218d9; border: 1px solid #f0c86a55; box-shadow: 0 2px 10px #0008; }
-#night-ui .waves { display: flex; gap: 5px; }
-#night-ui .waves i { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font: 800 13px/1 system-ui, sans-serif; font-style: normal;
-  color: #ffffff70; background: #ffffff10; border: 2px solid #ffffff40; box-sizing: border-box; }
-#night-ui .waves i.done { background: #f0c86a; border-color: #ffe3a0; color: #2a1a06; }
-#night-ui .waves i.now { background: #fff4dc; border-color: #fff; color: #2a1a06; animation: pir-blink 0.9s ease-in-out infinite alternate; }
-#night-ui .top .sep { width: 1px; height: 22px; background: #ffffff30; }
-#night-ui .lives { display: flex; gap: 3px; }
-#night-ui .lives svg { width: 22px; height: 26px; }
-#night-ui .lives .gone { opacity: 0.22; filter: grayscale(1); }
-#night-ui .quit { pointer-events: auto; position: absolute; left: max(10px, env(safe-area-inset-left)); top: max(8px, env(safe-area-inset-top)); padding: 6px 12px; font-size: 13px; background: #0b1218d9; border-color: #ffffff30; }
-#night-ui .arm { position: absolute; left: 50%; transform: translateX(-50%); top: calc(max(8px, env(safe-area-inset-top)) + 46px); display: flex; align-items: center; gap: 8px;
-  padding: 4px 12px 4px 6px; border-radius: 14px; background: #0b1218e6; border: 2px solid #f0c86a; box-shadow: 0 2px 10px #0008; }
-#night-ui .arm img { width: 40px; height: 40px; }
+#night-ui .mute { color: #a39a88; font-size: 13px; }
+#night-ui .rules { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 10px 0 4px; }
+#night-ui .rules > div { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px 2px 6px; border: 8px solid transparent; border-image: url(${IMG.btn}) 30 33 fill / 8px 10px stretch; font-size: 13px; line-height: 1.3; color: #d8ccb2; }
+#night-ui .rules span { display: flex; align-items: center; gap: 2px; font: 800 20px/1 system-ui, sans-serif; color: #fff4dc; text-shadow: 0 1px 0 #000; }
+#night-ui .rules img { width: 40px; height: 40px; object-fit: contain; }
+#night-ui .btns { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 12px; }
+#night-ui button { font: inherit; font-size: 16px; min-height: 48px; padding: 2px 22px; box-sizing: border-box; border: 9px solid transparent; border-image: url(${IMG.btn}) 30 33 fill / 9px 12px stretch;
+  background: none; color: #efe3c6; text-shadow: 0 1px 2px #000c; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+#night-ui button.on { border-image: url(${IMG.btnOn}) 30 35 fill / 9px 12px stretch; color: #2a1606; font-weight: 800; text-shadow: 1px 1px 0 #f7dc9a; }
+#night-ui button:active { transform: scale(0.94); }
+#night-ui .quit { pointer-events: auto; position: absolute; right: max(8px, env(safe-area-inset-right)); top: max(6px, env(safe-area-inset-top)); min-height: 40px; padding: 0 14px; font-size: 14px; }
+
+/* 체력창 — 열전 체력 바 틀(bar-hp)을 두른 칸 · 막대는 단번에 떨어지고 잃은 토막이 번쩍 뒤 줄어든다 (rollTo) */
+#night-ui .hpb { --bh: 28px; position: relative; display: block; width: clamp(130px, 22cqw, 240px); height: var(--bh); box-sizing: border-box; padding: calc(var(--bh) * 16 / 68) calc(var(--bh) * 85 / 68) calc(var(--bh) * 15 / 68); }
+#night-ui .hpb::after { content: ''; position: absolute; inset: 0; pointer-events: none; border-style: solid; border-color: transparent; border-width: 0 calc(var(--bh) * 85 / 68);
+  border-image: url(${IMG.hpFrame}) 0 85 fill / 0 calc(var(--bh) * 85 / 68) stretch; }
+#night-ui .hpb .trk { position: relative; display: block; height: 100%; background: #070d16; }
+#night-ui .hpb .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: linear-gradient(#a8d4ff, #2f8cff 42%, #124a9e); }
+#night-ui .hpb.foe .trk { background: #160605; }
+#night-ui .hpb.foe .fill { background: linear-gradient(#ffb09a, #e0402c 42%, #7a160c); }
+#night-ui .hpb .chunk { position: absolute; top: 0; bottom: 0; left: 100%; width: 0; background: #c8160c; transform-origin: left center; }
+#night-ui .hpb .tick { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: #070d16; }
+/* 우리 목책 — 왼쪽 위 (밤 판의 남은 화살 자리) */
+#night-ui .wall { position: absolute; left: max(6px, env(safe-area-inset-left)); top: max(4px, env(safe-area-inset-top)); display: flex; align-items: center; }
+#night-ui .wall > img { position: relative; z-index: 2; width: 46px; height: 46px; margin-right: -12px; }
+#night-ui .wall .num { margin-left: 4px; font: 800 17px/1 system-ui, sans-serif; color: #dcecff; text-shadow: 0 1px 0 #000, 0 0 6px #000, 0 0 2px #000; font-variant-numeric: tabular-nums; }
+#night-ui .wall.hit { animation: pir-shake 0.38s ease-out; }
+/* 물결 — 가운데 위 띠 (열전 알림 띠) */
+#night-ui .waves { position: absolute; left: 50%; top: max(4px, env(safe-area-inset-top)); transform: translateX(-50%); height: 44px; box-sizing: border-box; display: flex; align-items: center; gap: 6px; padding: 0 4px;
+  border-style: solid; border-color: transparent; border-width: 0 49px; border-image: url(${IMG.banner}) 0 115 fill / 0 49px stretch; }
+#night-ui .waves i { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-sizing: border-box; font: 800 14px/1 system-ui, sans-serif; font-style: normal;
+  color: #ffffff80; background: #00000066; border: 2px solid #c9a46a77; }
+#night-ui .waves i.done { background: linear-gradient(#ffe39a, #d9a640); border-color: #fff0c0; color: #2a1606; }
+#night-ui .waves i.now { background: #fff4dc; border-color: #fff; color: #2a1606; animation: pir-blink 0.9s ease-in-out infinite alternate; }
+/* 두목 — 물결 띠 아래 큰 붉은 체력창 (열전 두목 바 틀 bar-hp → bar-boss) */
+#night-ui .boss { position: absolute; left: 50%; top: calc(max(4px, env(safe-area-inset-top)) + 46px); transform: translateX(-50%); display: none; align-items: flex-start; }
+#night-ui .boss.on { display: flex; }
+#night-ui.picking .boss { visibility: hidden; }
+#night-ui .boss.in { animation: pir-in 0.4s ease-out; }
+#night-ui .boss .hpb { --bh: 56px; width: clamp(220px, 36cqw, 400px); padding: calc(var(--bh) * 35 / 173) calc(var(--bh) * 104 / 173) calc(var(--bh) * 91 / 173); }
+#night-ui .boss .hpb::after { border-width: calc(var(--bh) * 35 / 173) calc(var(--bh) * 104 / 173) calc(var(--bh) * 91 / 173);
+  border-image: url(${IMG.bossFrame}) 35 104 91 104 fill / calc(var(--bh) * 35 / 173) calc(var(--bh) * 104 / 173) calc(var(--bh) * 91 / 173) stretch; }
+#night-ui .boss .face { position: relative; z-index: 2; flex: none; width: 42px; height: 42px; margin: -9px -10px 0 0; border-radius: 50%; background: #3a2418 url(${IMG.chief}) no-repeat; background-size: 3000px auto; background-position: ${FACE.x}px ${FACE.y}px; }
+#night-ui .boss .face::after { content: ''; position: absolute; inset: -6px; background: url(${IMG.ring}) center / 100% 100% no-repeat; }
+/* 쥔 궤짝 살 — 오른쪽 위 명패 (열전 plaque) · 남은 시간 띠 */
+#night-ui .arm { position: absolute; right: max(8px, env(safe-area-inset-right)); top: calc(max(6px, env(safe-area-inset-top)) + 46px); display: flex; align-items: center; gap: 8px; padding: 6px 16px 6px 10px;
+  background: url(${IMG.plaque}) center / 100% 100% no-repeat; }
+#night-ui .arm img { width: 38px; height: 38px; }
 #night-ui .arm > span { display: flex; flex-direction: column; gap: 4px; }
-#night-ui .arm .bar { display: block; width: 96px; height: 8px; border-radius: 4px; background: #ffffff25; overflow: hidden; }
-#night-ui .arm .bar i { display: block; height: 100%; background: #f0c86a; }
-#night-ui .arm b { color: #fff4dc; font-size: 14px; }
+#night-ui .arm b { color: #fff4dc; font-size: 14px; line-height: 1.1; text-shadow: 0 1px 0 #000; }
+#night-ui .arm .bar { display: block; width: 92px; height: 7px; background: #0a0705; box-shadow: 0 0 0 1px #000; }
+#night-ui .arm .bar i { display: block; height: 100%; background: linear-gradient(#ffe39a, #f0b84a); }
 #night-ui .arm.pop { animation: pir-pop 0.35s ease-out; }
-#night-ui .banner { position: absolute; left: 0; right: 0; top: 30%; text-align: center; font-family: 'Gowun Batang', serif; font-size: clamp(30px, 9vw, 56px);
-  font-weight: 800; color: #fff4dc; text-shadow: 0 3px 0 #000, 0 0 24px #000; animation: pir-banner 1.6s ease-out forwards; }
-#night-ui .banner.red { color: #ff7a5c; }
-#night-ui .picks { pointer-events: auto; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(94%, 560px); text-align: center; }
+/* 알림 — 열전 알림 띠 위 큰 글자 */
+#night-ui .banner { position: absolute; left: 50%; top: 31%; width: min(84%, 480px); margin-left: calc(min(84%, 480px) / -2); box-sizing: border-box; padding: 4px 6px; text-align: center;
+  border-style: solid; border-color: transparent; border-width: 0 58px; border-image: url(${IMG.banner}) 0 115 fill / 0 58px stretch;
+  font-family: 'Gowun Batang', serif; font-size: 32px; line-height: 1.35; font-weight: 800; color: #fff4dc; text-shadow: 0 2px 0 #000, 0 0 12px #000; animation: pir-banner 1.6s ease-out forwards; }
+#night-ui .banner.red { color: #ff8a6a; }
+/* 물결 사이 고르기 — 카드는 본편 카드 틀 · 고른 것은 금빛으로 눌린 채 + ✓ */
+#night-ui .picks { pointer-events: auto; position: absolute; left: 50%; top: 45%; transform: translate(-50%, -50%); width: min(94%, 580px); text-align: center; }
 #night-ui .picks h2 { font-family: 'Gowun Batang', serif; font-size: 26px; margin: 0 0 6px; color: #fff4dc; text-shadow: 0 2px 0 #000, 0 0 16px #000; }
-#night-ui .picks .sub { margin: 0 0 10px; font-size: 14px; color: #f0e4c8; text-shadow: 0 1px 0 #000, 0 0 10px #000; }
-#night-ui .picks .row { display: flex; gap: 8px; justify-content: center; }
-#night-ui .picks button.pk { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 6px; background: #14202af0; border: 2px solid #5f8aa0; border-radius: 14px; animation: pir-pick 0.28s ease-out backwards; }
+#night-ui .picks .row { display: flex; gap: 10px; justify-content: center; }
+#night-ui .picks button.pk { position: relative; flex: 1 1 0; min-width: 0; min-height: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 2px 4px 6px;
+  border: 11px solid transparent; border-image: url(${IMG.frame}) 118 / 11px stretch; background: #1d1610f0 padding-box; color: #efe3c6; text-shadow: none; animation: pir-pick 0.28s ease-out backwards; }
 #night-ui .picks button.pk:nth-child(2) { animation-delay: 0.06s }
 #night-ui .picks button.pk:nth-child(3) { animation-delay: 0.12s }
-#night-ui .picks button.pk b { font-size: 17px; color: #f0c86a; }
-#night-ui .picks button.pk small { font-size: 12.5px; color: #d8ccb2; line-height: 1.35; }
-#night-ui .picks button.pk.on { background: linear-gradient(#c98f3a, #8a5a1f); border-color: #f0c86a; transform: scale(1.06); }
-#night-ui .picks .ico { font-size: 36px; line-height: 1; height: 42px; display: flex; align-items: center; }
-#night-ui .picks button.pk b { font-size: 18px; }
-#night-ui .picks button.pk small { font-size: 13.5px; }
-#night-ui .picks button.pk { position: relative; padding: 8px 8px 8px; }
-#night-ui .picks button.pk.on::after { content: '✓'; position: absolute; right: 8px; top: 6px; font-size: 20px; font-weight: 900; color: #fff4dc; text-shadow: 0 1px 0 #000; }
-#night-ui .picks .left { margin-top: 6px; font-size: 13px; color: #f0e4c8; text-shadow: 0 1px 0 #000; }
-#night-ui .pickbar { pointer-events: auto; position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 16px calc(12px + env(safe-area-inset-bottom)); display: flex; justify-content: center; background: linear-gradient(#0000, #000a 40%); }
-#night-ui .pickbar button { min-width: min(88%, 360px); min-height: 52px; font-size: 19px; font-weight: 800; }
-#night-ui .pickbar button:disabled { opacity: 0.55; background: #1d2c37; border-color: #4d6a7a; }
-#night-ui .picks .auto { margin-top: 10px; height: 6px; border-radius: 3px; background: #ffffff25; overflow: hidden; }
-#night-ui .picks .auto i { display: block; height: 100%; background: #f0c86a; }
-@keyframes pir-pick { from { transform: translateY(26px) scale(0.85); opacity: 0 } to { transform: none; opacity: 1 } }
+#night-ui .picks .ico { height: 56px; display: flex; align-items: center; }
+#night-ui .picks .ico img { width: 56px; height: 56px; object-fit: contain; }
+#night-ui .picks button.pk b { font-size: 18px; color: #f0c86a; text-shadow: 0 1px 0 #000; }
+#night-ui .picks button.pk small { font-size: 13px; color: #d8ccb2; line-height: 1.35; }
+#night-ui .picks button.pk.on { border-image: url(${IMG.frame}) 118 / 11px stretch; background: #4a3614 padding-box; box-shadow: 0 0 0 3px #ffd27a, 0 0 18px #ffd27a99; transform: scale(1.05); }
+#night-ui .picks button.pk.on b { color: #ffe9a8; }
+#night-ui .picks button.pk.on::after { content: '✓'; position: absolute; right: -14px; top: -16px; width: 28px; height: 28px; border-radius: 50%; background: #f0c86a; color: #2a1606; font: 900 18px/28px system-ui, sans-serif; box-shadow: 0 1px 0 #000; }
+#night-ui .picks .auto { margin: 10px auto 0; width: 70%; height: 8px; background: #0a0705; box-shadow: 0 0 0 1px #000, 0 0 0 2px #c9a46a88; }
+#night-ui .picks .auto i { display: block; height: 100%; background: linear-gradient(#ffe39a, #f0b84a); }
+#night-ui .picks .left { margin-top: 4px; font-size: 13px; color: #f0e4c8; text-shadow: 0 1px 0 #000, 0 0 6px #000; }
+#night-ui .pickbar { pointer-events: auto; position: absolute; left: 0; right: 0; bottom: 0; padding: 6px 16px calc(8px + env(safe-area-inset-bottom)); display: flex; justify-content: center; background: linear-gradient(#0000, #000b 45%); }
+#night-ui .pickbar button { min-width: min(88%, 360px); min-height: 54px; font-size: 19px; font-weight: 800; }
+/* 낮은 화면(세로 폰을 눕힌 360~430px) — 고르기가 위 물결 띠·아래 단추와 겹치지 않게 줄인다 */
+@container (max-height: 430px) {
+  #night-ui .picks { top: 50%; }
+  #night-ui .picks h2 { font-size: 21px; margin: 0 0 2px; }
+  #night-ui .picks .ico, #night-ui .picks .ico img { width: 42px; height: 42px; }
+  #night-ui .picks button.pk b { font-size: 17px; }
+  #night-ui .picks button.pk small { font-size: 12px; line-height: 1.3; }
+  #night-ui .picks .auto { margin-top: 6px; }
+  #night-ui .pickbar button { min-height: 48px; font-size: 17px; }
+}
+#night-ui .pickbar button:disabled { border-image: url(${IMG.btn}) 30 33 fill / 9px 12px stretch; color: #bfb39a; text-shadow: 0 1px 2px #000c; font-weight: 700; }
+/* 끝 — 도장 · 셈 띠 (열전 결과 띠 badge) */
+#night-ui .end .stamp { display: block; width: 128px; margin: 0 auto 2px; animation: pir-stamp 0.45s cubic-bezier(.3, 1.5, .5, 1) both; }
+#night-ui .end.won h1 { color: #8fd07a; }
+#night-ui .end.lost h1 { color: #e08a74; }
+#night-ui .end.perfect h1 { color: #ffd36a; }
+#night-ui .stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 8px 0 2px; }
+#night-ui .stats span { display: inline-flex; align-items: center; gap: 6px; padding: 0 8px; border: 10px solid transparent; border-image: url(${IMG.badge}) 35 fill / 10px stretch; font-size: 13px; color: #e8dcc0; }
+#night-ui .stats img { width: 24px; height: 24px; object-fit: contain; }
+#night-ui .stats b { font: 800 16px/1 system-ui, sans-serif; color: #ffd36a; font-variant-numeric: tabular-nums; }
 #night-ui .flash { position: absolute; inset: 0; box-shadow: inset 0 0 80px 30px #ff2a1a; animation: pir-fade 0.5s ease-out forwards; }
+@keyframes pir-pick { from { transform: translateY(26px) scale(0.85); opacity: 0 } to { transform: none; opacity: 1 } }
 @keyframes pir-blink { from { opacity: 0.45 } to { opacity: 1 } }
-@keyframes pir-pop { 0% { transform: translateX(-50%) scale(1.6) } 100% { transform: translateX(-50%) scale(1) } }
-@keyframes pir-banner { 0% { transform: scale(2.2); opacity: 0 } 15% { transform: scale(1); opacity: 1 } 75% { opacity: 1 } 100% { opacity: 0 } }
+@keyframes pir-pop { 0% { transform: scale(1.5) } 100% { transform: none } }
+@keyframes pir-in { from { opacity: 0; transform: translate(-50%, -10px) } to { opacity: 1; transform: translateX(-50%) } }
+@keyframes pir-shake { 0%, 100% { transform: none } 20% { transform: translateX(-7px) } 45% { transform: translateX(6px) } 70% { transform: translateX(-3px) } }
+@keyframes pir-stamp { 0% { transform: scale(2.4) rotate(-8deg); opacity: 0 } 60% { transform: scale(0.94) rotate(-3deg); opacity: 1 } 100% { transform: rotate(-3deg) } }
+@keyframes pir-banner { 0% { transform: scale(1.6); opacity: 0 } 15% { transform: scale(1); opacity: 1 } 75% { opacity: 1 } 100% { opacity: 0 } }
 @keyframes pir-fade { from { opacity: 1 } to { opacity: 0 } }
 `
 document.head.insertAdjacentHTML('beforeend', `<style>${CSS}</style>`)
 
-const card = (h: string): void => { ui.innerHTML = `<div class="card">${h}</div>` }
+const card = (h: string, cls = ''): void => { ui.innerHTML = `<div class="card${cls === '' ? '' : ` ${cls}`}">${h}</div>` }
 const NTH = ['첫', '둘째', '셋째'] as const
-const STAKE = '<svg viewBox="0 0 22 26"><path d="M3 26V7l3-5 3 5v19zM9.5 26V5l3-5 3 5v21zM16 26V7l3-5 3 5v19z" fill="#a27c52" stroke="#3f2a16" stroke-width="1"/><rect x="2" y="13" width="18" height="2.4" fill="#c9b48a"/></svg>'
+/** 적 이름 — 판마다 (화전 설명 · 끝 글) */
+const FOE = bandit ? '산적' : '도적'
 
 function showIntro(): void {
   live = false
   const lives = run.livesMax
   card(`<h1>${bandit ? '산적이 고개를 넘어온다' : '바다 도적이 몰려온다'}</h1><p>${bandit ? '고갯길에 목책을 세웠다. 물결 셋을 막아 내면 산적의 쇠를 빼앗는다.' : '모래밭에 목책을 세웠다. 물결 셋을 막아 내면 도적의 쇠를 빼앗는다.'}</p>`
-    + `<div class="rules"><div><b>🌊×${WAVE_COUNT}</b>물결</div><div><b>${STAKE.replace('<svg', '<svg width="22" height="26"')}×${lives}</b>목책</div><div><b>${arrowIcon('burst', 26)}</b>${bandit ? '노획 수레' : '궤짝'}을 쏘면 살이 바뀝니다</div></div>`
-    + `<p style="font-size:13px;color:#a9b8c2">누르고 있으면 당기고, 놓으면 쏩니다. 화살은 끝이 없습니다. 방패를 든 자는 몸통을 두 번 맞혀야 방패가 깨지고, 머리는 한 발입니다.</p>`
+    + `<div class="rules"><div><span>${img(IMG.wave)}×${WAVE_COUNT}</span>물결</div><div><span>${img(IMG.wall)}×${lives}</span>목책</div><div><span>${arrowIcon('burst', 40)}</span>${josa(bandit ? '노획 수레' : '궤짝', '을', '를')} 쏘면 살이 바뀝니다</div></div>`
+    + `<p class="mute">누르고 있으면 당기고, 놓으면 쏩니다. 화살은 끝이 없습니다. 방패를 든 자는 몸통을 두 번 맞혀야 방패가 깨지고, 머리는 한 발입니다.</p>`
     + `<div class="btns"><button data-act="back">물러난다</button><button class="on" data-act="go">막는다</button></div>`)
 }
 
-/** 머리띠 — 물결 · 목책 · 쥔 궤짝 살 (글 없이 그림으로) */
-let lastHud = ''
-function playHud(force = false): void {
-  const waves = Array.from({ length: WAVE_COUNT }, (_, k) => `<i class="${k < run.held ? 'done' : k === run.wave && run.phase === 'fight' ? 'now' : ''}">${k < run.held ? '✓' : k + 1}</i>`).join('')
-  const lives = Array.from({ length: run.livesMax }, (_, k) => (k < run.lives ? STAKE : STAKE.replace('<svg', '<svg class="gone"'))).join('')
-  const key = `${waves}|${run.lives}|${run.special}`
-  if (!force && key === lastHud) return
-  const armChanged = !lastHud.endsWith(`|${run.special}`)
-  lastHud = key
-  const keep = [...ui.querySelectorAll('.banner, .flash, .picks, .pickbar')]
-  ui.innerHTML = '<button class="quit" data-act="quit">그만</button>'
-    + `<div class="top"><div class="waves">${waves}</div><span class="sep"></span><div class="lives">${lives}</div></div>`
-    + (run.special !== 'basic' ? `<div class="arm${armChanged ? ' pop' : ''}">${arrowIcon(run.special, 40)}<span><b>${ARROW_KINDS.find((k) => k.id === run.special)?.name ?? ''}</b><span class="bar"><i></i></span></span></div>` : '')
-  for (const el of keep) ui.appendChild(el)
+// ── 체력창 (롤식 피 감소 — 열전 raid-main updateChunk 와 같은 셈 · 수치는 P.pirate.hpChunk*) ──
+
+/** 체력창 하나의 화면 쪽 기억 — 판 상태는 읽기만 한다 */
+interface Roll {
+  readonly fill: HTMLElement
+  readonly chunk: HTMLElement
+  /** 토막 끝 (%) · 지난 값 (%) · 마지막으로 깎인 때 · 마지막 번쩍 (초) */
+  lag: number
+  last: number
+  hitAt: number
+  flashAt: number
+  shown: string
+}
+const CHUNK_FX: Keyframe[] = [
+  { backgroundColor: '#ffffff', boxShadow: '0 0 14px 4px #ffffff', transform: 'scaleY(2)' },
+  { backgroundColor: '#ffe14a', boxShadow: '0 0 12px 3px #ffc800', transform: 'scaleY(1.55)', offset: 0.3 },
+  { backgroundColor: '#ff2a14', boxShadow: '0 0 10px 3px #ff2a14', transform: 'scaleY(1.15)', offset: 0.65 },
+  { backgroundColor: '#c8160c', boxShadow: '0 0 5px 1px #ff2a1499', transform: 'none' },
+]
+/** 토막이 이만큼(%) 아래로 좁아지면 없앤다 · 이만큼 넘게 떨어져야 맞은 것으로 본다 (열전과 같다) */
+const CHUNK_EPS = { snap: 0.15, hit: 0.05 } as const
+function makeRoll(root: Element, pct = 100): Roll {
+  return { fill: root.querySelector<HTMLElement>('.fill')!, chunk: root.querySelector<HTMLElement>('.chunk')!, lag: pct, last: pct, hitAt: -9, flashAt: -9, shown: '' }
+}
+function resetRoll(r: Roll, pct: number): void {
+  r.lag = pct
+  r.last = pct
+  r.hitAt = -9
+}
+/** 막대는 곧바로 pct 로 · 잃은 토막은 번쩍인 뒤 hpChunkHold 초 지나 처음엔 빠르게 끝 무렵엔 천천히 줄어든다 */
+function rollTo(r: Roll, pct: number, now: number, dt: number): void {
+  const C = P.pirate
+  if (pct < r.last - CHUNK_EPS.hit) {
+    r.lag = Math.max(r.lag, r.last)
+    r.hitAt = now
+    if (now - r.flashAt > C.hpChunkFlash * 0.5) {
+      r.flashAt = now
+      r.chunk.animate(CHUNK_FX, { duration: C.hpChunkFlash * 1000, easing: 'linear' })
+    }
+  }
+  r.last = pct
+  if (r.lag <= pct) r.lag = pct
+  else if (now - r.hitAt > C.hpChunkHold) {
+    r.lag = pct + (r.lag - pct) * Math.exp(-C.hpChunkRate * dt)
+    if (r.lag - pct < CHUNK_EPS.snap) r.lag = pct
+  }
+  const left = pct.toFixed(1)
+  const w = (r.lag - pct).toFixed(1)
+  const key = `${left}/${w}`
+  if (key === r.shown) return // 바뀔 때만 쓴다 (폰은 같은 값을 다시 써도 배치를 다시 한다 · 열전 11-16)
+  r.shown = key
+  r.fill.style.width = `${left}%`
+  r.chunk.style.left = `${left}%`
+  r.chunk.style.width = `${w}%`
 }
 
-/** 쥔 살의 남은 시간 — 띠만 줄인다 (DOM 을 새로 안 만든다) */
-function armBar(): void {
-  const bar = ui.querySelector<HTMLElement>('.arm .bar i')
-  if (bar !== null) bar.style.width = `${Math.max(0, (run.specialLeft / P.pirate.specialSec) * 100).toFixed(1)}%`
+// ── 머리띠 — 왼쪽 위 목책 체력창 · 가운데 물결 띠 · 그 아래 두목 체력창 · 오른쪽 위 그만·쥔 살 ──
+
+interface Hud {
+  readonly wall: HTMLElement
+  readonly num: HTMLElement
+  readonly ticks: HTMLElement
+  readonly waves: HTMLElement
+  readonly boss: HTMLElement
+  readonly arm: HTMLElement
+  readonly wallRoll: Roll
+  readonly bossRoll: Roll
+}
+let hudEl: Hud | null = null
+const shown = { waves: '', wall: '', max: -1, arm: '' }
+/** 두목 체력창이 따라가는 자리 · 두목이 사라진 때 (초 · 아직이면 −1) */
+let bossId = -1
+let bossGoneAt = -1
+
+function buildHud(): void {
+  const bar = (cls: string, ticks: boolean): string => `<span class="hpb ${cls}"><span class="trk"><i class="fill"></i><em class="chunk"></em>${ticks ? '<span class="ticks"></span>' : ''}</span></span>`
+  ui.innerHTML = `<div class="wall">${img(IMG.wall)}${bar('us', true)}<b class="num"></b></div>`
+    + '<div class="waves"></div>'
+    + `<div class="boss"><span class="face"></span>${bar('foe', false)}</div>`
+    + '<button class="quit" data-act="quit">그만</button>'
+    + '<div class="arm" hidden></div>'
+  const q = (s: string): HTMLElement => ui.querySelector<HTMLElement>(s)!
+  hudEl = {
+    wall: q('.wall'), num: q('.wall .num'), ticks: q('.wall .ticks'), waves: q('.waves'), boss: q('.boss'), arm: q('.arm'),
+    wallRoll: makeRoll(q('.wall .hpb')), bossRoll: makeRoll(q('.boss .hpb')),
+  }
+  shown.waves = ''
+  shown.wall = ''
+  shown.max = -1
+  shown.arm = ''
+  bossId = -1
+  bossGoneAt = -1
+}
+
+/** 프레임마다 — 바뀐 것만 고친다 */
+function updateHud(now: number, dt: number): void {
+  const h = hudEl
+  if (h === null || !h.wall.isConnected) return
+  // 물결 — 막은 것은 금빛 ✓, 지금 것은 깜박
+  const wk = `${run.held}|${run.wave}|${run.phase}`
+  if (wk !== shown.waves) {
+    shown.waves = wk
+    h.waves.innerHTML = Array.from({ length: WAVE_COUNT }, (_, k) => `<i class="${k < run.held ? 'done' : k === run.wave && run.phase === 'fight' ? 'now' : ''}">${k < run.held ? '✓' : k + 1}</i>`).join('')
+  }
+  // 목책 — 칸 나눈 파란 체력창 · 남은 수
+  const lk = `${run.lives}/${run.livesMax}`
+  if (lk !== shown.wall) {
+    shown.wall = lk
+    h.num.textContent = lk
+  }
+  if (run.livesMax !== shown.max) {
+    shown.max = run.livesMax
+    h.ticks.innerHTML = Array.from({ length: Math.max(0, run.livesMax - 1) }, (_, k) => `<i class="tick" style="left:${(((k + 1) / run.livesMax) * 100).toFixed(2)}%"></i>`).join('')
+  }
+  rollTo(h.wallRoll, run.livesMax > 0 ? (Math.max(0, run.lives) / run.livesMax) * 100 : 0, now, dt)
+  bossHud(h, now, dt)
+  // 쥔 궤짝 살
+  if (run.special !== shown.arm) {
+    const first = shown.arm !== ''
+    shown.arm = run.special
+    if (run.special === 'basic') h.arm.hidden = true
+    else {
+      h.arm.innerHTML = `${arrowIcon(run.special, 38)}<span><b>${ARROW_KINDS.find((k) => k.id === run.special)?.name ?? ''}</b><span class="bar"><i></i></span></span>`
+      h.arm.hidden = false
+      if (first) {
+        h.arm.classList.remove('pop')
+        void h.arm.offsetWidth
+        h.arm.classList.add('pop')
+      }
+    }
+  }
+  if (run.special !== 'basic') {
+    const bar = h.arm.querySelector<HTMLElement>('.bar i')
+    if (bar !== null) bar.style.width = `${Math.max(0, (run.specialLeft / P.pirate.specialSec) * 100).toFixed(1)}%`
+  }
+}
+
+/** 두목 체력창 — 두목이 서면 위에 뜨고, 쓰러지면 토막이 줄어든 뒤 거둔다 (목책에 닿아 사라졌으면 곧바로) */
+function bossHud(h: Hud, now: number, dt: number): void {
+  const ts = run.w.targets
+  let id = -1
+  if (bossId >= 0 && run.role[bossId] === 'captain' && ts[bossId]?.alive === true) id = bossId
+  else for (let i = 0; i < ts.length; i++) if (run.role[i] === 'captain' && ts[i]!.alive) { id = i; break }
+  if (id >= 0) {
+    const t = ts[id]!
+    const pct = t.hpMax > 0 ? Math.max(0, t.hp / t.hpMax) * 100 : 0
+    if (id !== bossId || bossGoneAt >= 0) {
+      bossId = id
+      bossGoneAt = -1
+      resetRoll(h.bossRoll, pct)
+      h.boss.classList.add('on', 'in')
+    }
+    rollTo(h.bossRoll, pct, now, dt)
+    return
+  }
+  if (bossId < 0) return
+  if (bossGoneAt < 0) bossGoneAt = (ts[bossId]?.hp ?? 0) > 0 ? now - P.pirate.bossGoneSec : now
+  rollTo(h.bossRoll, 0, now, dt)
+  if (now - bossGoneAt >= P.pirate.bossGoneSec) {
+    bossId = -1
+    h.boss.classList.remove('on', 'in')
+  }
+}
+
+/** 목책이 깎였다 — 체력창이 흔들린다 (작은 칸만 움직인다) */
+function shakeWall(): void {
+  const el = hudEl?.wall
+  if (el === undefined || !el.isConnected) return
+  el.classList.remove('hit')
+  void el.offsetWidth
+  el.classList.add('hit')
 }
 
 function banner(text: string, red = false): void {
@@ -199,15 +429,16 @@ function flash(): void {
 }
 
 const PICK_UI: ReadonlyArray<{ id: PickId; ico: string; name: string; does: string }> = [
-  { id: 'fire', ico: '🔥', name: '화전', does: `다음 물결 내내 불화살을 씁니다. 맞은 자리가 터져 ${P.arrowkind.burstRadius}미터 안의 산적이 함께 다칩니다` },
-  { id: 'repair', ico: STAKE.replace('<svg', '<svg width="34" height="40"'), name: '목책 고치기', does: `부서진 목책 ${Math.round(P.pirate.pickLife)}칸을 고칩니다. 멀쩡하면 1칸 늘립니다` },
-  { id: 'draw', ico: '💪', name: '당김 빨라짐', does: `활이 만작까지 ${Math.round((1 - P.pirate.pickDrawMul) * 100)}퍼센트 빨리 당겨집니다. 이번 판 내내 이어집니다` },
+  { id: 'fire', ico: img(IMG.fire), name: '화전', does: `다음 물결 내내 불화살을 씁니다. 맞은 자리가 터져 ${P.arrowkind.burstRadius}미터 안의 ${josa(FOE, '이', '가')} 함께 다칩니다` },
+  { id: 'repair', ico: img(IMG.wall), name: '목책 고치기', does: `부서진 목책 ${Math.round(P.pirate.pickLife)}칸을 고칩니다. 멀쩡하면 1칸 늘립니다` },
+  { id: 'draw', ico: img(IMG.pull), name: '당김 빨라짐', does: `활이 만작까지 ${Math.round((1 - P.pirate.pickDrawMul) * 100)}퍼센트 빨리 당겨집니다. 이번 판 내내 이어집니다` },
 ]
 let picking = false
 /** 눌러 둔 카드 — 아래 「이걸로」를 눌러야 정해진다 */
 let chosen: PickId | null = null
 function showPick(): void {
   picking = true
+  ui.classList.add('picking')
   chosen = null
   ui.querySelector('.picks')?.remove()
   ui.querySelector('.pickbar')?.remove()
@@ -241,6 +472,7 @@ function pickBar(): void {
 }
 function donePick(id: PickId): void {
   picking = false
+  ui.classList.remove('picking')
   const el = ui.querySelector<HTMLElement>('.picks')
   if (el !== null) el.style.pointerEvents = 'none' // 사라지는 동안 판 위 손가락을 먹지 않는다
   el?.querySelector(`[data-pick="${id}"]`)?.classList.add('on')
@@ -249,27 +481,31 @@ function donePick(id: PickId): void {
   setTimeout(() => el?.remove(), 380)
   banner(PICK_UI.find((p) => p.id === id)?.name ?? '')
   playUi(sfx, 'unlock')
-  playHud(true)
 }
 
 function start(): void {
   run = createPirate(opts)
   live = true
   picking = false
-  ui.querySelector('.picks')?.remove()
-  ui.querySelector('.pickbar')?.remove()
+  ui.classList.remove('picking')
   acc = 0
-  lastHud = ''
-  playHud(true)
+  buildHud()
 }
 
 function showEnd(won: boolean, held: number): void {
   live = false
+  hudEl = null
   if (run.shots > 0) send({ held, won, perfect: run.perfect })
   else send({ skip: true })
+  const stats = '<div class="stats">'
+    + `<span>${img(IMG.wave)}물결<b>${held}/${WAVE_COUNT}</b></span>`
+    + `<span>${img(IMG.wall)}목책<b>${Math.max(0, run.lives)}/${run.livesMax}</b></span>`
+    + `<span>${img(IMG.arrows)}쏜 살<b>${run.shots}</b></span></div>`
+  const stamp = img(won ? IMG.stampOk : IMG.stampFail, 'stamp')
   card(won
-    ? `<h1>${run.perfect ? '두목을 사로잡았다' : '물결 셋을 다 막았다'}</h1><p>${run.perfect ? '목책이 한 칸도 부서지지 않았다. 두목을 묶어 두고 쇠를 곱절로 거둔다.' : bandit ? '산적들이 산으로 달아난다. 남기고 간 쇠를 거둔다.' : '도적들이 배를 버리고 달아난다. 남기고 간 쇠를 거둔다.'}</p><div class="btns"><button class="on" data-act="back">돌아가기</button></div>`
-    : `<h1>${NTH[Math.min(2, held)]} 물결에 목책이 뚫렸다</h1><p>${held > 0 ? `${['', '물결 하나를', '물결 둘을'][held]} 막아 낸 만큼 잃는 것이 줄었다.` : bandit ? '산적들이 마을로 쏟아져 들어온다.' : '도적들이 포구로 쏟아져 들어온다.'}</p><div class="btns"><button class="on" data-act="back">돌아가기</button></div>`)
+    ? `${stamp}<h1>${run.perfect ? '두목을 사로잡았다' : '물결 셋을 다 막았다'}</h1><p>${run.perfect ? '목책이 한 칸도 부서지지 않았다. 두목을 묶어 두고 쇠를 곱절로 거둔다.' : bandit ? '산적들이 산으로 달아난다. 남기고 간 쇠를 거둔다.' : '도적들이 배를 버리고 달아난다. 남기고 간 쇠를 거둔다.'}</p>${stats}<div class="btns"><button class="on" data-act="back">돌아가기</button></div>`
+    : `${stamp}<h1>${NTH[Math.min(2, held)]} 물결에 목책이 뚫렸다</h1><p>${held > 0 ? `${['', '물결 하나를', '물결 둘을'][held]} 막아 낸 만큼 잃는 것이 줄었다.` : bandit ? '산적들이 마을로 쏟아져 들어온다.' : '도적들이 포구로 쏟아져 들어온다.'}</p>${stats}<div class="btns"><button class="on" data-act="back">돌아가기</button></div>`,
+  `end ${won ? (run.perfect ? 'won perfect' : 'won') : 'lost'}`)
 }
 
 ui.addEventListener('click', (ev) => {
@@ -302,16 +538,15 @@ function wakeSound(): void {
 canvas.addEventListener('pointerdown', wakeSound, { passive: true })
 canvas.addEventListener('pointerup', wakeSound, { passive: true })
 
-/** 판의 사건 → 띠·글자·소리 (WWE: 막으면 크게, 뚫리면 붉게) */
+/** 판의 사건 → 띠·글자·소리 (WWE: 막으면 크게, 뚫리면 붉게) — 머리띠의 숫자는 updateHud 가 프레임마다 맞춘다 */
 function pumpRun(): void {
   for (const e of run.events) {
-    if (e.t === 'wave') { banner(`${NTH[e.k]} 물결`); playHud(true) }
-    else if (e.t === 'clear' && e.k < WAVE_COUNT - 1) { banner('막았다!'); playUi(sfx, 'levelup'); playHud(true) }
+    if (e.t === 'wave') banner(`${NTH[e.k]} 물결`)
+    else if (e.t === 'clear' && e.k < WAVE_COUNT - 1) { banner('막았다!'); playUi(sfx, 'levelup') }
     else if (e.t === 'pick') showPick()
     else if (e.t === 'picked') donePick(e.id)
-    else if (e.t === 'break') { flash(); playHud(true) }
-    else if (e.t === 'arm') { playUi(sfx, 'unlock'); playHud(true) }
-    else if (e.t === 'unarm') playHud(true)
+    else if (e.t === 'break') { flash(); shakeWall() }
+    else if (e.t === 'arm') playUi(sfx, 'unlock')
   }
   run.events.length = 0
 }
@@ -369,7 +604,7 @@ function frame(now: number): void {
     }
     if (steps >= P.sim.maxCatchUpSteps) acc = 0
     pumpRun()
-    armBar()
+    updateHud(now / 1000, realDt)
     pickBar()
   }
   feelEvents(w, now)
