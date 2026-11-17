@@ -268,37 +268,30 @@
       "installed": "2026-11-17"
     },
     "base-w-48-mujin-mudeung": {
-      "status": "installed",
+      "status": "staged",
       "order": "strip",
       "act": "D:/tmp-node/sp-inbox/sprite_prop_base-w-48-mujin-mudeung_act.png",
       "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-w-48-mujin-mudeung_walk.png",
-      "actSha256": "2b196357cb536bb88328344f34d8521c7b707d5ca867c05547c18e461ddcf0ad",
-      "walkSha256": "f0c81d59cfd10edb4874b5971b8d38ce286fe6bbbe727d492bdb27e3b5b1af67",
+      "actSha256": "7c4abdb774dd3c9da3dfa2b5459f4582f0b64cfd5d582ead39a14f019bf8a3f4",
+      "walkSha256": "7651f6aeb4af384ffdfef5d7f8e78ced7f99ace0446afb67680a6cce654d37f6",
       "portrait": "w-48-mujin-mudeung",
       "auto": {
         "cell": [
           224,
           160
         ],
-        "walkScale": 0.5789,
+        "walkScale": 0.5424,
         "contact": [
           14,
-          0.95,
+          0.96,
           0.46
         ],
-        "headsOld": 2.8,
-        "headsNew": 4.57,
-        "headsNewWalk": 4.06,
-        "residueAct": 0.0077,
-        "residueWalk": 0.0148
-      },
-      "review": {
-        "chinOld": 34.0,
-        "chinNew": 29.0,
-        "note": "v4 보류 후보 · 맨 아래 4px 비워 칸 걸침 해결 · 2.80→4.57"
-      },
-      "archive": "assets_src/realm/retired/prop-20261117/base-w-48-mujin-mudeung",
-      "installed": "2026-11-17"
+        "headsOld": 4.57,
+        "headsNew": 2.77,
+        "headsNewWalk": 2.81,
+        "residueAct": 0.0237,
+        "residueWalk": 0.0116
+      }
     },
     "base-w-50-siljik-mulga": {
       "status": "installed",
@@ -702,36 +695,37 @@
       "installed": "2026-11-17"
     },
     "base-w-22-dongye-tiger-huntress": {
-      "status": "rejected",
+      "status": "installed",
       "order": "strip",
-      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-22-dongye-tiger-huntress_act.png",
-      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-22-dongye-tiger-huntress_walk.png",
-      "actSha256": "0348064faf8fa7cbc59c0d26affe1735785f949973e03cd45d05bcb5b4366c52",
-      "walkSha256": "231fa654d7c41080729a225107ba8aea08804ec8f8e42a2c0be776263877c0ca",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-w-22-dongye-tiger-huntress_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-w-22-dongye-tiger-huntress_walk.png",
+      "actSha256": "749f8075d90e4dacf34c595edbc02a9286de8b1dab474c56e2bdaa9088d3e0b2",
+      "walkSha256": "598fccc4e48524aab5fae63f3ed6a65b34f97215ee90d7e0fb1c0d0aeab56f28",
       "portrait": "w-22-dongye-tiger-huntress",
       "auto": {
         "cell": [
           208,
           160
         ],
-        "walkScale": 0.624,
+        "walkScale": 0.5668,
         "contact": [
           14,
-          0.96,
-          0.46
+          0.93,
+          0.45
         ],
         "headsOld": 2.95,
-        "headsNew": 2.88,
-        "headsNewWalk": 3.05,
-        "residueAct": 0.0003,
-        "residueWalk": 0.0001
+        "headsNew": 4.53,
+        "headsNewWalk": 3.35,
+        "residueAct": 0.0021,
+        "residueWalk": 0.0013
       },
-      "reason": "v3 얼굴 크기 그대로(머리 띠 2.95→2.88)",
       "review": {
-        "chinOld": null,
-        "chinNew": null,
-        "note": ""
-      }
+        "chinOld": 33.0,
+        "chinNew": 29.0,
+        "note": "v4 · 2.95→4.53"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-22-dongye-tiger-huntress",
+      "installed": "2026-11-17"
     },
     "base-w-29-golpo-janmul": {
       "status": "installed",
@@ -1401,6 +1395,32 @@
       },
       "archive": "assets_src/realm/retired/prop-20261117/base-g-66-geonma-malbalgup",
       "installed": "2026-11-17"
+    },
+    "base-g-01-master-smith": {
+      "status": "staged",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-g-01-master-smith_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-g-01-master-smith_walk.png",
+      "actSha256": "7ce70b78ef1e969ca04b41d815251cbc037ca174ff92335b0c29405975600bf3",
+      "walkSha256": "657b7be88521d51cc4dab1f34791fdbcc1a8eb96ddf08be127991928075cc00b",
+      "portrait": "g-01-master-smith",
+      "auto": {
+        "cell": [
+          184,
+          160
+        ],
+        "walkScale": 0.6037,
+        "contact": [
+          14,
+          0.92,
+          0.49
+        ],
+        "headsOld": 3.22,
+        "headsNew": 4.12,
+        "headsNewWalk": 3.35,
+        "residueAct": 0.0,
+        "residueWalk": 0.0
+      }
     }
   }
 }
