@@ -16,7 +16,9 @@ FORM = {'base': ('bust', 'bust-hd'), 'aw1': ('awaken', 'awaken-hd')}
 
 done = []
 for f in sorted(SRC.glob('hit_*.png')):
-    m = re.fullmatch(r'hit_(base|aw1)_(.+)\.png', f.name)
+    if not f.name.endswith('_v2.png') and (SRC / f.name.replace('.png', '_v2.png')).exists():
+        continue   # 11-17 상처·피 지운 _v2 가 있으면 그것을
+    m = re.fullmatch(r'hit_(base|aw1)_(.+?)(?:_v2)?\.png', f.name)
     if not m or f.stat().st_size == 0:
         continue
     form, pid = m.groups()

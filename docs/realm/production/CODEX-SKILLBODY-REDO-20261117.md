@@ -859,3 +859,78 @@
 ### 28 · 11-17 밤 (형 「그래 그렇게 해」 · 피격 초상)
 - 새 묶음 **HIT** 28장(QUEUE 의 전투 띠 뒤): 기준 판 14명 × 비각성(bust-hd)·각성(awaken-hd). **맞는 순간** — 형 「얼굴만 찡그리는 게 아니라 구도·자세도 변해야 재밌지」: 상체가 뒤로 밀려 비틀림 · 머리 옆으로 꺾임 · 빈 팔로 막거나 맞은 곳 움켜쥠 · 무기 흔들림 · 카메라 10도 기울임 · 인물이 한쪽으로 밀림 + 아픈 얼굴 · 작은 긁힘·입가 피 한 줄 · 먼지. 같은 사람·그림체·옷·구도·배경·크기. 잔인하지 않게 · 글자·테 금지.
 - 저장 `hit_<base|aw1>_<초상 id>.png`. 진각성은 DLC 라 나중.
+
+## Codex 지시28 수신 / HIT 뒤묶음 반영
+- 전투띠뒤HIT28장(기준14명×base/aw1)추가확인,QUEUE75장/전체스냅샷347개로갱신。현재전투띠병렬계속후HIT순서,임의DLC진각성안함。원본초상실제첨부/같은인물·옷·배경·크기,피격몸·머리·팔·기울기변화와비잔혹미세상처지시수신。기존SPHARD를초상에혼동적용하지않음。
+
+## Codex 병렬219/220 대무신·221/222 단궁 완료 취합
+- 대무신 D:\에셋창고\Codex-parallel-219-220-20261117-candidates\sprite_prop_daemusin_act_v3.png / sprite_prop_daemusin_walk_v3.png。각최초+1회/20·8슬롯잘림없음/모서리alpha0/原녹색옷·찰갑·모피·쌍깃모자·활·16빈방출손·20완전활보존/179·167cm。
+- HARD CHECK 머리(머리카락제외정수리~턱):대무신act/walk같은TOTAL키slotLEFT대모자두개부가림으로안큼직접미확정held。
+- HARD CHECK 다리(가랑이~밑창):대무신act/walk찰갑가랑이가림·보행각도차이로짧지않음미확정held,짧다고단정안함。
+- 단궁 D:\에셋창고\Codex-parallel-221-222-20261117-candidates\sprite_prop_dangung_act_v3.png / sprite_prop_dangung_walk_v3.png。각최초+1회/20·8슬롯잘림없음/原붉은옷·표범모피·긴검은땋은머리·활·16빈손유지/163·167cm。
+- HARD CHECK 머리(머리카락제외정수리~턱):단궁act/walk같은TOTAL키slotLEFT대크지않음육안통과의견。
+- HARD CHECK 다리(가랑이~밑창):단궁act/walkcompact잔여·헐렁바지가랑이일부가림·보행각도로짧지않음미확정held。
+- 둘다walk1/5반대앞다리·3/7반대passing미확정。단궁act한모서리alpha1/walkalpha0·合성깨끗/pair0.9434입수예측런타임미검증。각개인4records공유취합/모두root없음/3번째없음/Claude직접후보판정요청。상세 work/parallel-219-220-report.md 및 parallel-221-222-report.md。후속229230옛대소·231232산달래담당배정済。
+
+## Codex 가온227 act_v3 후보 보류
+- D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_gaon_act_v3.png (227최초+1회)。20슬롯/原흰모피옷·모자·검은쌍땋은머리·금장보존/전20창제거·빈손2팔시전동작。QUEUE빙마법glow와효과금지충돌은무효과제스처로정리,原화크롭에눈꽃/손이직접보인다고주장안함。
+- HARD CHECK 머리(머리카락제외정수리~턱):같은TOTAL키감실대모자아래두개부크지않음확정못함held。
+- HARD CHECK 다리(가랑이~밑창):같은TOTAL키감실대모피옷가랑이가림/compact잔여로짧지않음확정못함held。
+- 보정20슬롯이나canvasclip=true(상단모자·하단/가장자리)·한모서리alpha1。 QA work/exec-06210812-1008-424c-9844-725ea3b270d3-face-lineup-QA.jpg / act-consistency-QA.jpg。초안은정상20/잘림없음으로보존。228walk참조는잘린보정대신정상새act초안exec-88bc0b65-891f-4996-810e-1fdf11c97ee7.png LAST사용、실제원장기록/root없음/3번째없음/Claude직접판정요청。
+
+
+## Codex 가온228·활미225226·산달래231232 후보 취합
+- 가온228: D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_gaon_walk_v3.png (최초+1회).8슬롯alpha0모서리/합성깨끗/잘림없음/원래흰모피옷·모자·쌍땋은머리·빈손보존. HARD 머리(모자제외정수리~턱):같은TOTAL키감실대크지않음미확정held. HARD 다리(가랑이~밑창):옷가림/compact잔여로짧지않음미확정held. 보정1·5contact반복이외1서기/3·7뻗은발등walk순서퇴행,입수예측0.9129런타임미검증. QA work/exec-d4c6dcde-3ceb-4dcc-9d3c-1ffeace76cf0-face-lineup-QA.jpg/pair-scale-QA.jpg. 정상act초안참조LAST기록/3번째없음/root없음.
+- 활미225/226: D:\에셋창고\Codex-parallel-225-226-20261117-candidates\sprite_prop_hwalmi_act_v3.png / sprite_prop_hwalmi_walk_v3.png.각최초+1회/20·8슬롯잘림없음/原점무늬아이보리긴소매·검은깃·붉은띠·쌍깃·활/화살통·16빈방출손보존. HARD 머리:act/walk같은TOTALslotLEFT대안큼육안통과의견. HARD 다리:튜닉/띠가랑이가림/compact잔여·보행각도로짧지않음미확정held. walk1/5앞장화반복·3/7반대passing미확정/4up개선. act한모서리alpha1/walkalpha0·합성깨끗,입수예측0.9524런타임미검증. 4records취합/상세work/parallel-225-226-report.md.
+- 산달래231/232: D:\에셋창고\Codex-parallel-231-232-20261117-candidates\sprite_prop_sdallae_act_v3.png / sprite_prop_sdallae_walk_v3.png.각최초+1회/20·8슬롯잘림없음/최종alpha0모서리/原긴꽃땋은머리·마룬긴소매·어깨갑옷·활·16빈손복원. HARD 머리:act/walk같은TOTALslotLEFT대경계/안큼미확정held. HARD 다리:原로브가랑이가려짧지않음미확정held(짧음단정아님). act모피깃약화/누락,walk보정모피복구/의상차이잔여·1/5앞장화반복·3/7passing유사.4records취합/상세work/parallel-231-232-report.md.
+- 모두root없음/3번째없음/Claude직접후보판정요청. 최신키표daemusin184추가감지(작업자2명직접읽음),기존219/220실제179문안보존/사후변조·3번째생성안함. 새버전필요시Claude판정.
+- 후속배분:부모237238수로→253254비라→255256골개; 작업자229230후239240왜추장→241242술꾼전사; 다른235236후243244비단비→245246고은; 다른233234후247248대가야왕→251252금바위. 각쌍보고뒤다음쌍자동진행/HIT는이SP완료뒤별도배분.
+
+
+## Codex 옛대소229230·송양233234·소리235236 후보 취합
+- 옛대소 D:\에셋창고\Codex-parallel-229-230-20261117-candidates\sprite_prop_olddaeso_act_v3.png / sprite_prop_olddaeso_walk_v3.png (각최초+1회).20·8슬롯잘림없음/原붉은금옷·모피·옥관·백발수염/금손잡이검은가죽채찍20칸·옛홀제거/179·167cm. HARD 머리:act/walk같은TOTALslot대관·수염이가린정수리~턱크지않음미확정held. HARD 다리:원로브가랑이가림/compact·보행각도로짧지않음미확정held. actalpha0모서리/walk3모서리alpha1·합성깨끗,1/5반대contact·3/7passing미확정/2·6뻗은발잔여,pair0.9508입수예측. 상세work/parallel-229-230-report.md.
+- 송양 D:\에셋창고\Codex-parallel-233-234-20261117-candidates\sprite_prop_songyang_act_v3.png / sprite_prop_songyang_walk_v3.png (각최초+1회).20·8슬롯잘림없음/原남색금무늬옷·수염깃모자·활·16빈손보존/179·167cm. HARD 머리:모자두개부가림경계로같은TOTALslot대안큼미확정held. HARD 다리:원로브가랑이가려짧지않음미확정held. act내부walk9~12윤곽0.825~0.836축소/보정walk회색저alpha테·좌상좌하alpha1/초안walkalpha0보존,1/5앞장화반복·3/7유사passing. 상세work/parallel-233-234-report.md.
+- 소리 D:\에셋창고\Codex-parallel-235-236-20261117-candidates\sprite_prop_sori_act_v3.png / sprite_prop_sori_walk_v3.png (각최초+1회).20·8슬롯잘림없음/原회흑천·가죽조끼/짧은머리·navy머리띠·단검·보조등활화살통유지/옛찰갑교정/163·167cm. HARD 머리:act같은TOTALslot대큼육안불합격held,walk보정후안큼육안통과의견. HARD 다리:actcompact·가랑이일부가림미확정held,walk보정후짧지않음육안통과의견. walk1/5앞장화반복·3/7반대지지passing미확정으로held,pair0.9474입수예측. actalpha0모서리/walk한모서리1·합성깨끗. 상세work/parallel-235-236-report.md.
+- 모두원화실제첨부/개인각4records공유원장취합/원본초안보정보존/root없음/3번째없음/Claude직접후보판정요청. 위육안의견은정밀해부학자동계측/사용자승인아님,입수예측은런타임증명아님. 배정된다음캐릭터4개병렬계속.
+
+
+## Codex 수로237 act_v3 후보 보류
+- D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_suro_act_v3.png (237최초+1회).20슬롯잘림없음/原백금문양옷·붉은머리띠·긴검은머리·곡옥목걸이/큐검키트철검보존. 原화손은쇳덩이로보이며검전신이보인다고주장안함,별도WEAPONFIX없어기존검따름. 179/167cm/原화실제첨부/보정원화+slot2refs변경기록.
+- HARD CHECK 머리(머리카락제외정수리~턱):같은TOTAL키온조대크지않음육안통과의견(정밀계측아님).
+- HARD CHECK 다리(가랑이~밑창):原로브가랑이가림/compact잔여로짧지않음확정못함held.
+- 내부walk윤곽0.865~0.915서기보다작아짐/한모서리alpha1·合성깨끗. QA work/exec-dcb3d68a-2915-4248-91dd-20f24643e536-face-lineup-QA.jpg/act-consistency-QA.jpg. root없음/3번째없음/Claude직접판정요청.238freshactLAST로정체성보존/승인몸우선진행.
+
+
+## Codex 수로238·왜추장239240·대가야왕247248 후보 취합
+- 수로238 D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_suro_walk_v3.png (최초+1회).8슬롯alpha0모서리/合성깨끗/잘림없음/原백금옷·붉은머리띠·곡옥·검보존. HARD 머리:같은TOTAL키온조대안큼육안통과의견. HARD 다리:原로브가랑이가림으로짧지않음미확정held.5foreground앞장화/겹침개선있지만반대해부학앞다리·7passing미확정잔여/pair0.8869입수예측은작은act내부walk영향/런타임미검증. QA work/exec-dfc71503-be68-4ee3-98d4-fc6973e33c34-face-lineup-QA.jpg/pair-scale-QA.jpg. 두항목정밀계측아님/root없음/3번째없음.
+- 왜추장 D:\에셋창고\Codex-parallel-239-240-20261117-candidates\sprite_prop_waechief_act_v3.png / sprite_prop_waechief_walk_v3.png (각최초+1회).20·8슬롯잘림없음/原회갈색옷·비늘치아테망토·푸른문신·검은포니테일·직선철검유지/179·167cm. HARD 머리:act같은TOTALslot대안큼경계미확정held,walk보정대안큼육안통과의견. HARD 다리:양판허리천·바지가랑이가림/compact·보행각도로짧지않음미확정held. act한모서리alpha1/walkalpha0·合성깨끗/1·5앞장화반복·3·7반대passing미확정/4·8down유사/pair0.9735입수예측. 상세work/parallel-239-240-report.md.
+- 대가야왕 D:\에셋창고\Codex-parallel-247-248-20261117-candidates\sprite_prop_base-g-18-daegaya-king_act_v3.png / sprite_prop_base-g-18-daegaya-king_walk_v3.png (각최초+1회).原녹색금도포·관·흰수염/옛검→가야금교체/179·167cm. HARD 머리:양판같은TOTALslot대관·수염가림으로안큼미확정held. HARD 다리:도포가랑이가려짧지않음미확정held. 첫walk배경alpha0없음·분리2/8·face/pair KeyError0실패기록→보정8슬롯/alpha0모서리회복/合성깨끗. 최종20·8슬롯잘림없으나관위패딩미흡/1·5장화반복·3·7passing유사. 상세work/parallel-247-248-report.md.
+- 양병렬개인원장각4records공유취합/모든초안·보정actualPrompt/Refs보존/root없음/3번째없음/Claude직접후보판정요청. 보류사유없는자동PASS/게임적용은아님. 다음비라253254/남은배정SP병렬진행.
+
+
+## Codex 비라253 후보 및 HIT 병렬 배정
+- 비라253 D:\에셋창고\Codex-production-next-20261117-candidates\sprite_prop_bira_act_v3.png (최초+1회).20슬롯alpha0모서리/合성깨끗/잘림없음.原흰짧은소매·남색조끼·깃털·조개호박목걸이복구/작살전부로프올가미교체,163·167cm.
+- HARD CHECK 머리(머리카락제외정수리~턱):같은TOTAL키이랑대크지않음육안통과의견(정밀계측아님).
+- HARD CHECK 다리(가랑이~밑창):같은TOTAL키이랑대짧아보이는compact잔여육안불합격held.
+- 내부walk윤곽0.888~0.939/guard0.845~0.888작아짐도잔여. QA work/exec-53969fa2-5988-4708-bca2-ec0dbac428ef-face-lineup-QA.jpg/act-consistency-QA.jpg.root없음/3번째없음/Claude직접후보판정요청,254진행.
+- 사용자병렬요청에따라자기배정SP끝난작업자부터독립HIT로자동전환하여대기시간줄임. SP남은배정중복없음/코드·QUEUE수정없음. HIT-a indices319320321322327328329330(8장)담당배정/원본초상실제첨부·동일인물화풍배경크기·몸과기울기피격변화28검수/각최초+1회상한·첫합격이면1콜. SP4.5등신/HARD를초상에적용안함. 개인원장Codex-hit-a-20261117.json/부모취합.
+
+
+## Codex 비라254 검수 제출 및 남은 SP 처리 취합
+- D:\에셋창고\sprite_prop_bira_walk_v3.png (254최초+1회),8슬롯alpha0모서리/합성깨끗/잘림없음/原흰소매·남색조끼·로프보존. HARD 머리(머리카락제외정수리~턱):같은TOTAL키이랑대안큼육안통과의견. HARD 다리(가랑이~밑창):같은TOTAL키이랑대짧지않음육안통과의견. 5foreground장화·겹침전환개선/7passing·전체자연걸음은Claude최종판정요청. root검수제출≠사용자승인/253act는held그대로. QA work/exec-1ec81ea1-a6c8-45b2-a9f9-81243b13a445-face-lineup-QA.jpg/pair-scale-QA.jpg,입수예측0.9097는act작은내부walk영향/런타임미검증.3번째없음.
+- 술꾼전사241242 held: D:\에셋창고\Codex-parallel-241-242-20261117-candidates\sprite_prop_base-g-07-drunk-warrior_act_v3.png 및 walk_v3.png.각최초+1회/20·8슬롯잘림없음/최종alpha0모서리/原조끼배·상투수염·항아리잔복구검제거. HARD머리수염/고개각도경계·다리바지가랑이가림compact미확정. act14컵누락/19컵항아리비대/4팔전환잔여,walk1/5앞장화반복·3/7passing미확정. 상세work/parallel-241-242-report.md.
+- 비단비243244 held: D:\에셋창고\Codex-parallel-243-244-20261117-candidates\sprite_prop_bdanbi_act_v3.png 및 walk_v3.png.각최초+1회/20·8슬롯alpha0모서리잘림없음/原상아천·황토띠·흰두건/몽둥이전부낫교정. HARD머리두건가림/큰얼굴경계·다리헐렁바지가랑이가림미확정.1/5앞장화반복·3/7passing미확정/원화보울최종빠짐잔여. 상세work/parallel-243-244-report.md.
+- 고은245246 held: D:\에셋창고\Codex-parallel-245-246-20261117-candidates\sprite_prop_goeun_act_v3.png 및 walk_v3.png.각최초+1회/20·8슬롯alpha0모서리잘림없음/原붉은navy긴소매·곡옥·귀걸이·붉은끈머리/검칼집전부부채교정. HARD머리양판안큼육안통과의견·다리原긴로브가랑이가림미확정. walk보정1/5down비슷해contact약화/초안contact더명확·3/7passing미확정. 상세work/parallel-245-246-report.md.
+- 금바위251252 held: D:\에셋창고\Codex-parallel-251-252-20261117-candidates\sprite_prop_geumbawi_act_v3.png 및 walk_v3.png.각최초+1회/20·8슬롯잘림없음/原거친갈색옷·옥·상투수염/곤봉전부검교정. HARD머리act큼불합격/walk경계미확정·다리튜닉/바지가랑이가림미확정.内部walk0.866~0.929축소/1/5반복·3/7passing유사·walk보정검날짧아짐잔여. actalpha0/walk좌상alpha1. 상세work/parallel-251-252-report.md.
+- 골개255256 held: D:\에셋창고\Codex-parallel-255-256-20261117-candidates\sprite_prop_base-g-60-golbeol-golgae_act_v3.png 및 walk_v3.png.각최초+1회/原스터드갑옷·모피·붉은깃navy소매/검→망치20칸교정. HARD머리양판안큼육안통과의견·다리갑옷가랑이가림미확정. act초안망치clip→보정clipfalse/alpha0개선. walk보정넓은회색lowalpha오염(alpha0비율0.046/모서리3,2,3,4),초안alpha0깨끗보존/1·5반복·3·7passing유사. 상세work/parallel-255-256-report.md.
+- 위병렬각4records공유취합/초안·보정·actualPromptRefs보존/held는root없음/3번째없음/Claude직접후보판정요청. 미확정은짧다고단정아님/육안의견은정밀자동계측아님. 배정SP전부생성·검수마침/현재HIT28장4작업자로진행. HIT내용검수통과/크기만900→1254불일치판은trial root검수용제출하되크기미완명시/최종동일크기PASS아님. 공유QUEUE/게임코드미수정.
+
+
+## Codex HIT 검수용 PNG 제출 시작 / 크기 차이 미완
+- 원본초상900×900을EXACT요청했으나내장생성출력은1254×1254반복확인. 내용(동일인물·화풍·옷·원배경/명확한몸·머리·팔·무기반동/기울기·통증표정)검수통과의견인판은 status=trial로D:\에셋창고\hit_<base|aw1>_<id>.png 루트검수용원본PNG제출. 크기만재생성반복안함/크기미완 sizeMismatch=true기록/동일크기PASS·최종승인으로간주금지. 생성원본픽셀후처리없음.
+- 현재작업자보고소서노319320·감실321322·진하323324·쇠비325326·이랑335336·고목337338내용검수trial제출. 개별개인원장진행중/전체종료후부모공유취합. 양HARD는SP전용으로HIT에혼동적용안함.
+- 부모온조343 base 첫판trial제출: D:\에셋창고\hit_base_g-71-baekje-onjo.png.동일남성·관·남색금옷·찰갑·검은모피·환두검·청남배경보존/상체뒤밀림비틀림·머리옆꺾임·가슴손·검반동·머리장신구날림·기울기/고통표정미세상처확인. 原900²→출력1254²크기미완. QA work/exec-632c5db6-9231-4c6f-bee6-96e1f0b07f0d-hit-QA.jpg. 첫내용통과의견이라크기만2번째콜안함.344aw1계속.
+
+### 29 · 11-17 밤 (형 「얼굴에 상처 나고 피 나면 안 될 듯 · 피격 뒤 바로 원래 그림으로 돌아오니까 안 맞는다」)
+- 피격 초상 문안에서 상처·피·멍·먼지를 **모두 금지**로 바꿨다(얼굴·피부는 원래 초상처럼 깨끗하게 · 자세·표정·구도만).
+- 이미 받은 27장은 `HIT-<form>-<id>-v2` 로 **편집만**: 참고 1 = 받은 피격 그림(refs/store__…) · 참고 2 = 원래 초상 → 상처·피·흙만 지우고 나머지는 그대로. 저장 `hit_<form>_<id>_v2.png`.
