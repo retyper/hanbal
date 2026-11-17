@@ -131,7 +131,7 @@ const RELEASE: Readonly<Record<string, [number, number, number]>> = {
   'gen-g-bow': [14, .82, .35], 'gen-w-bow': [14, .90, .34],
   'gen-jumong': [15, 0.77, 0.47], 'gen-maenun': [15, 0.77, 0.39],
   'gen-ogan': [15, 0.77, 0.51], 'gen-haedal': [15, 0.75, 0.33],
-  'gen-songbi': [15, 0.71, 0.35], 'gen-damul': [15, 0.75, 0.58],
+  'gen-songbi': [15, 0.71, 0.35],
   'gen-songyang': [15, 0.75, 0.48],
 }
 // Extended weapon position in the contact cell, in each strip's native coordinate system.
@@ -269,7 +269,7 @@ const CONTACT: Readonly<Record<string, [number, number, number]>> = {
 }
 
 const HEAVY_SWINGS = new Set([...[...GENERATED_HEAVY_KEYS,...AWAKENED_HEAVY].map(k => 'gen-'+k), 'axe', 'gen-soebi', 'gen-haebi', 'gen-gamsil', 'gen-biryu', 'gen-geumha', 'gen-soebo'])
-const BLADE_SWINGS = new Set([...[...GENERATED_BLADE_KEYS,...AWAKENED_BLADE].map(k => 'gen-'+k), 'gen-sogeumbi', 'gen-base-g-45-dabeol-deulgae', 'gen-ara', 'gen-g-sword', 'gen-hyeokgeose', 'gen-eureum', 'gen-hyeopbo', 'gen-onjo', 'gen-mount', 'gen-geota'])
+const BLADE_SWINGS = new Set([...[...GENERATED_BLADE_KEYS,...AWAKENED_BLADE].map(k => 'gen-'+k), 'gen-sogeumbi', 'gen-base-g-45-dabeol-deulgae', 'gen-damul', 'gen-ara', 'gen-g-sword', 'gen-hyeokgeose', 'gen-eureum', 'gen-hyeopbo', 'gen-onjo', 'gen-mount', 'gen-geota'])
 const swingArt = (skin: string): 'heavy' | 'sweep' | 'thrust' =>
   HEAVY_SWINGS.has(skin) ? 'heavy' : BLADE_SWINGS.has(skin) ? 'sweep' : 'thrust'
 

@@ -1123,6 +1123,104 @@
       },
       "archive": "assets_src/realm/retired/prop-20261117/dallae2",
       "installed": "2026-11-17"
+    },
+    "dalli": {
+      "status": "installed",
+      "order": "strip",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_dalli_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_dalli_walk.png",
+      "actSha256": "c9f5089de90b9f65270a273de12e8d6d818d10f3de049ec3755e6a5e0ce7da0c",
+      "walkSha256": "a5b60e9e3eb9bc7dc4a745b283d93894c45670d79acd6b2c9313ef280004bf0b",
+      "portrait": "w-54-maga-dalli",
+      "auto": {
+        "cell": [
+          184,
+          160
+        ],
+        "walkScale": 0.61,
+        "contact": [
+          15,
+          0.76,
+          0.53
+        ],
+        "headsOld": 2.88,
+        "headsNew": 3.19,
+        "headsNewWalk": 2.75,
+        "residueAct": 0.0002,
+        "residueWalk": 0.0
+      },
+      "review": {
+        "chinOld": 33.0,
+        "chinNew": 30.0,
+        "note": "v3"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/dalli",
+      "installed": "2026-11-17"
+    },
+    "damul": {
+      "status": "installed",
+      "order": "strip",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_damul_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_damul_walk.png",
+      "actSha256": "a953d15786d238067d74c813818277ece1b7cc890ed0d0fa5feda33339743ded",
+      "walkSha256": "3cbaebd61bd691022d991271fac97f3f687e5a79ff13852438e444d420bbbf12",
+      "weaponFix": {
+        "sprite": "bow",
+        "art": "sword",
+        "artKit": "sword"
+      },
+      "portrait": "g-65-goguryeo-damul",
+      "auto": {
+        "cell": [
+          200,
+          160
+        ],
+        "walkScale": 0.6117,
+        "contact": [
+          15,
+          0.85,
+          0.87
+        ],
+        "headsOld": 2.7,
+        "headsNew": 2.62,
+        "headsNewWalk": 2.68,
+        "residueAct": 0.0208,
+        "residueWalk": 0.0042
+      },
+      "review": {
+        "chinOld": 32.0,
+        "chinNew": 31.0,
+        "note": "v3 · 활→원화대로 칼 · 큰 관 때문에 머리 띠 수치는 그대로",
+        "weapon": "sword"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/damul",
+      "installed": "2026-11-17"
+    },
+    "darae": {
+      "status": "staged",
+      "order": "strip",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_darae_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_darae_walk.png",
+      "actSha256": "4ba2423b5c1c162edba91ad10e2134af601654a07a00a6cb5afe1cc5a5e6aa5e",
+      "walkSha256": "f63d308d04ef75d9d70368d53da9b088f3166a0c1b7d528e6f57bba9aaa44b3b",
+      "portrait": "w-104-buyeo-darae",
+      "auto": {
+        "cell": [
+          184,
+          160
+        ],
+        "walkScale": 0.679,
+        "contact": [
+          15,
+          0.73,
+          0.49
+        ],
+        "headsOld": 4.25,
+        "headsNew": 3.89,
+        "headsNewWalk": 3.72,
+        "residueAct": 0.0003,
+        "residueWalk": 0.0
+      }
     }
   }
 }
