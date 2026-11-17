@@ -36,6 +36,16 @@ export const HAEBI_RUN = {
   flashAdd: .55,
   /** 한 프레임에 그리는 맞은 불꽃 · 피해 숫자 · 쓰러지는 몸 수 (새것부터 · 판 상태는 그대로) — 늦은 판 폰 프레임 (11-17 형 「이쯤 오면 렉」) */
   drawHits: 40, drawNumbers: 24, drawDeaths: 40,
+  /**
+   * 피해 숫자 (11-17 형: 「퍽 하고 테일즈위버처럼 튀어나가게 · 치명타는 더 빠르게 더 크게」) — 화면 쪽 알갱이 (판 상태는 읽기만).
+   * 맞은 자리에서 numPop 배로 크게 찍혔다(numPopTime 초) 줄며, 위로 numRise px/초 · 옆으로 ±numSpread px/초 튀고 numGravity 로 꺾여 떨어진다 ·
+   * numWobble 라디안만큼 흔들림 · 머무는 시간 numLife 초 · 글자 키 numSize(쓰러뜨림 numKill) px.
+   * 치명타: numCritSize px · 더 빠르게(numCritSpeed 배 · 머무름 numCritLife) · 뒤에 작은 터짐 numCritBurst px.
+   */
+  numLife: .85, numPop: 1.9, numPopTime: .09, numRise: 150, numSpread: 70, numGravity: 330, numWobble: .14, numSize: 17, numKill: 21,
+  numCritSize: 29, numCritSpeed: 1.45, numCritLife: .7, numCritBurst: 46,
+  /** 각성 오라 (11-17 형: 「캐릭터 둘레에 여러 오라」) — 도는 고리 반지름·도는 빠르기 · 솟는 기운 수·높이 · 불티 수 (그리기만 · 'lighter') */
+  auraRing: 48, auraSpin: 2.4, auraFlames: 9, auraFlameRise: 110, auraSparks: 14,
   /** 체력 깎임 토막 (본편 싸움 막대와 같은 롤 체력바 · 형 11-16) — 막대는 단번에 떨어지고, 잃은 토막이 희게→노랗게→붉게 번쩍(hpChunkFlash 초)한 뒤
    *  마지막으로 맞고 hpChunkHold 초 지나면 처음엔 빠르게 끝 무렵엔 천천히(초마다 hpChunkRate 배로 좁아짐) 줄어든다 */
   hpChunkFlash: .24, hpChunkHold: .32, hpChunkRate: 4.5,
@@ -49,10 +59,14 @@ export const HAEBI_RUN = {
   heroPx: 94, walkStride: .78,
   /** 비기를 쓴 뒤 무적 시간(초) — 비기 꼴·피해·재사용은 HAEBI_ULT */
   skillInv: .7,
-  /** 비기 컷인이 화면에 머무는 시간(초) · 이름을 읽을 수 있게 (형 11-15: 「너무 빨라서 읽을 수조차 없음」 · 예전 .7) */
-  skillCutin: 1.8,
-  /** 컷인 띠가 맞는 순간(번쩍·떨림) · 전체 길이의 몇 할 · 띠 뒤 어두운 막 진하기 (판은 그대로 돌아 너무 어둡지 않게) */
-  skillCutinHit: .32, skillCutinDim: .3,
+  /** 컷인 띠 뒤 어두운 막 진하기 (판은 그대로 돌아 너무 어둡지 않게) */
+  skillCutinDim: .3,
+  /**
+   * 컷인 길이는 시전에 맞춘다 (11-17 형: 「컷인 보고 → 컷인 끝나고 데미지」) — 띠가 번쩍이는 순간 = 비기가 터지는 순간 = 시전 끝(HAEBI_ULT.cast ÷ slow 초 · 화면 1.1~1.3초).
+   * 예전엔 1.8초 고정이었다(11-15 형: 「너무 빨라서 읽을 수조차 없음」 · 그 전 .7) — 시전 동안 판이 느려져 이름을 읽을 틈은 남는다.
+   * skillCutinTail: 터진 뒤 띠가 마저 걷히는 판 시각(초)
+   */
+  skillCutinTail: .12,
   axeDamage: 38, axeRankDamage: 16, axeRange: 112, axeRankRange: 11, axeCooldown: 1,
   galeDamage: 30, galeRankDamage: 16, galeSpeed: 350, galeCooldown: 2.3, galeLife: 2.1,
   heroShotHeight: 46, enemyShotHeight: 34, shotHandLead: 14, shotReleaseTime: .12,
@@ -123,6 +137,12 @@ export const HAEBI_ULT = {
   sling: { cooldown: 13, damage: 60, waves: 4, stones: 7, gap: .12, radius: 165, splash: 46, range: 480, fx: .5 },
   /** 줄 비기(도끼·활·칼)가 견줘 보는 방향 수 — 가까운 적 이만큼 쪽으로 줄을 대 보고 가장 많이 걸리는 쪽 */
   aimTries: 16,
+  /**
+   * 시전 (11-17 형: 「궁극기는 캐스팅 시간을 약간 줘야 컷인도 보고, 컷인 끝나고 적들이 데미지 입는 연출도 보고」) —
+   * 비기를 누르면 cast 초(판 시각) 동안 기를 모으고 끝나는 순간 터진다. 시전 동안 판이 slow 배로 느려지고(화면에선 cast ÷ slow 초) 장수는 다치지 않는다.
+   * 진 비기 (각성 중): 시전 trueCast 초 · 피해 ×trueDamage · 범위(너비·반지름) ×trueArea · 이름 앞에 「진」
+   */
+  cast: .55, slow: .5, trueCast: .65, trueDamage: 1.5, trueArea: 1.25,
 } as const
 /**
  * 열전 기술 나무 (11-17 · docs/realm/RAID-LINK.md §2 디아블로식) — 조건이 찬 조합은 레벨업에 금테 카드로 나오고, 골라야 열린다.
@@ -172,9 +192,15 @@ export const HAEBI_TREE = { max: 3, rankStep: .4, upgradeChance: .5, ultDamage: 
  */
 export const HAEBI_AWAKEN = {
   need: 160, needGrowth: .5, kill: 1, elite: 30, boss: 0,
-  sec: 14, power: 1.35, tempo: 1.3, move: 1.15, ultRate: 2.5, burstRadius: 210, burstDamage: 90,
+  sec: 9, power: 1.35, tempo: 1.3, move: 1.15, ultRate: 2.5, burstRadius: 210, burstDamage: 90,
   gritSec: 7, gritPower: 1.12, gritTempo: 1.12, gritMove: 1.08,
   mastery: .5,
+  /**
+   * 각성 단추 (11-17 형: 「게이지 다 찼을 때 각성 버튼이 생기고 누르면 각성」) — 막대가 다 차면 찬 채로 기다린다.
+   * 누르면 cast 초(판 시각 · HAEBI_ULT.slow 로 느려짐) 동안 각성 컷인 · 그동안 비기는 기다린다 · 끝나는 순간 둘레를 친다(burst*).
+   * 각성 동안은 다치지 않는다 (금빛 체력 막대 · 오라).
+   */
+  cast: .6,
 } as const
 
 /**

@@ -75,6 +75,7 @@ function walkPhase(s: HaebiRun) {
 }
 export function heroFrame(s: HaebiRun, portrait = false, menuTime = 0) {
   if (s.hurt > 0) return 18
+  if (s.cast?.kind === 'ult') return 12   // 비기 시전: 기를 모으는 자세
   if (s.attack > 0) return 12 + Math.min(5, Math.floor((.3 - Math.min(.3, s.attack)) / .3 * 6))
   if (s.moving && !portrait) { const n = WALK_CYCLE[heroSprite(s)] ?? 8; return 4 + Math.floor(walkPhase(s) * n) % n }
   return [0, 1, 2, 1][Math.floor((menuTime || s.t) / .65) % 4]!
@@ -142,13 +143,28 @@ function effectStrip(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImag
 }
 /** 비기 빛깔 — 묶음마다 (도끼 흙불 · 활 하늘 · 창 은빛 · 칼 번개 · 단검 그림자 · 방울 신령 금빛) */
 const ULT_COLOR: Record<Kit, string> = { axe: '#ffb04a', bow: '#d4ecff', spear: '#eef3ff', sword: '#8fd0ff', dagger: '#b48cff', magic: '#ffe27a', sling: '#e6cfa2' }
+/** 진 비기(각성 중) 빛깔 — 묶음 빛에 금을 섞어 더 뜨겁게 (11-17 형: 「진 하늘굿처럼」) */
+const TRUE_COLOR: Record<Kit, string> = { axe: '#ffd25a', bow: '#fff1b0', spear: '#ffe9a8', sword: '#ffe27a', dagger: '#ffc6f0', magic: '#fff3b8', sling: '#ffd98a' }
+/** 진 비기가 터지는 자리: 금빛 충격 고리 둘 + 사방으로 뻗는 빛살 (lighter · 그라디언트·필터 없이 선만) */
+function trueFlare(ctx: CanvasRenderingContext2D, x: number, y: number, age: number) {
+  const op = ctx.globalCompositeOperation, a = ctx.globalAlpha
+  ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = '#ffd86a'
+  for (const [k, w] of [[1, 7], [.62, 4]] as const) {
+    const r = 40 + 330 * Math.min(1, age * 1.8) * k
+    ctx.globalAlpha = a * Math.max(0, 1 - age * 1.4); ctx.lineWidth = w; ctx.beginPath(); ctx.ellipse(x, y, r, r * .55, 0, 0, Math.PI * 2); ctx.stroke()
+  }
+  ctx.globalAlpha = a * Math.max(0, 1 - age * 2); ctx.lineWidth = 3; ctx.strokeStyle = '#fff2c0'; ctx.beginPath()
+  for (let i = 0; i < 14; i++) { const ang = i * Math.PI / 7 + .2, r0 = 30 + age * 120, r1 = r0 + 70 + (i % 3) * 30; ctx.moveTo(x + Math.cos(ang) * r0, y - 40 + Math.sin(ang) * r0 * .6); ctx.lineTo(x + Math.cos(ang) * r1, y - 40 + Math.sin(ang) * r1 * .6) }
+  ctx.stroke(); ctx.globalCompositeOperation = op; ctx.globalAlpha = a
+}
 /** 띠 그림의 한 칸을 (0,0)→(len,0) 으로 늘여 그린다 — 번개 띠(256×128 여덟 칸) */
 function stripAlong(ctx: CanvasRenderingContext2D, img: HTMLImageElement | undefined, age: number, len: number, h: number) {
   if (img) ctx.drawImage(img, impactFrame(age) * 256, 0, 256, 128, 0, -h / 2, len, h)
 }
 /** 비기 그림 (판 상태는 읽기만) — f.ult 묶음마다 꼴이 다르다. 폰 프레임: filter·shadowBlur·그라디언트 없이 그림 띠와 선만 */
 function drawUlt(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, f: HaebiRun['fx'][number], age: number) {
-  const kit = f.ult!, color = ULT_COLOR[kit], len = Math.hypot(f.x2 - f.x, f.y2 - f.y), lead = f.kind === 'skill'
+  const kit = f.ult!, color = f.tru ? TRUE_COLOR[kit] : ULT_COLOR[kit], len = Math.hypot(f.x2 - f.x, f.y2 - f.y), lead = f.kind === 'skill'
+  if (f.tru && lead) trueFlare(ctx, kit === 'sling' ? f.x2 : f.x, kit === 'sling' ? f.y2 : f.y, age)
   ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineCap = 'round'; ctx.lineJoin = 'round'
   if (kit === 'axe') {
     // 천지 가르기: 땅이 앞으로 갈라져 나간다 — 바닥 빛 띠 · 지그재그 금 · 금을 따라 차례로 터지는 흙불
@@ -233,6 +249,101 @@ function drawUlt(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageEle
     impact(ctx, images, f.x, f.y - 8, 34, k)
   }
 }
+/**
+ * 피해 숫자 알갱이 (11-17 형: 「퍽 하고 테일즈위버처럼」) — 화면 쪽 기억(판 상태는 읽기만): 새로 생긴 숫자 표식(f.n)을 한 번씩 알갱이로 옮겨
+ * 판 시각으로 날린다(멈추면 같이 멈추고 시전 동안은 같이 느려진다). 크게 찍혔다 줄며 포물선으로 옆·위로 튀고 살짝 흔들린다 ·
+ * 겹쳐도 읽히게 좌우를 번갈아 다른 폭으로 · 치명타는 더 빠르고 크고 금·주황 + 작은 터짐 · 개수 한도 drawNumbers (새것만).
+ */
+type Num = { x: number; y: number; vx: number; vy: number; g: number; t: number; life: number; text: string; crit: boolean; kill: boolean; spin: number }
+const nums: Num[] = [], seenNum = new WeakSet<object>()
+let numT = -1, numFlip = 0
+function trackNumbers(s: HaebiRun) {
+  if (s.t < numT) nums.length = 0   // 새 판
+  numT = s.t
+  for (const f of s.fx) {
+    if (f.n === undefined || f.mob === 'boss' || seenNum.has(f)) continue
+    seenNum.add(f)
+    const crit = !!f.crit, kill = f.kind === 'death', sp = crit ? C.numCritSpeed : 1
+    numFlip = (numFlip + 1) % 6
+    const side = (numFlip % 2 ? 1 : -1) * (.45 + (numFlip >> 1) * .3)
+    nums.push({ x: f.x, y: f.y - (kill ? 30 : 16), vx: side * C.numSpread * sp, vy: -C.numRise * sp, g: C.numGravity * sp * sp, t: s.t, life: crit ? C.numCritLife : C.numLife, text: String(Math.round(f.n)), crit, kill, spin: side * C.numWobble })
+    if (nums.length > C.drawNumbers) nums.shift()
+  }
+  for (let i = nums.length - 1; i >= 0; i--) if (s.t - nums[i]!.t >= nums[i]!.life) nums.splice(i, 1)
+}
+function drawNumbers(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun) {
+  const hit = images.get('raid/hit.png')
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'
+  for (const p of nums) {
+    const age = s.t - p.t, k = age / p.life; if (k < 0 || k >= 1) continue
+    const x = p.x + p.vx * age, y = p.y + p.vy * age + p.g * age * age / 2
+    const popT = C.numPopTime / (p.crit ? C.numCritSpeed : 1), scale = age < popT ? C.numPop - (C.numPop - 1) * age / popT : 1
+    const size = p.crit ? C.numCritSize : p.kill ? C.numKill : C.numSize
+    ctx.save(); ctx.translate(x, y); ctx.rotate(p.spin * Math.sin(age * 34) * (1 - k)); ctx.scale(scale, scale)
+    ctx.globalAlpha = k < .72 ? 1 : (1 - k) / .28
+    // 치명타: 숫자 뒤 작은 터짐 (빛으로 더함)
+    if (p.crit && hit && age < .2) { ctx.globalCompositeOperation = 'lighter'; const r = C.numCritBurst * (.55 + age * 3); ctx.globalAlpha = 1 - age / .2; ctx.drawImage(hit, -r / 2, -r / 2, r, r); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1 }
+    if (!digits(ctx, images, p.text, 0, 0, size, p.crit)) {
+      ctx.font = '900 ' + size + "px 'Barlow Condensed', system-ui, sans-serif"
+      ctx.lineWidth = 5; ctx.strokeStyle = p.crit ? '#5a1408' : '#2a1d12'; ctx.strokeText(p.text, 0, 0)
+      ctx.fillStyle = p.crit ? '#ffb43a' : '#fff6e2'; ctx.fillText(p.text, 0, 0)
+    }
+    ctx.restore()
+  }
+}
+/** 각성 오라 (11-17 형: 「캐릭터 에셋 주변에 여러 오라」) — 뒤: 몸 뒤 빛 · 발밑에서 서로 거꾸로 도는 고리 둘 · 솟는 금빛 기운 / 앞: 오르는 불티. 'lighter' · filter 없음 */
+let auraGlow: CanvasGradient | null = null
+function drawAura(ctx: CanvasRenderingContext2D, s: HaebiRun, front: boolean) {
+  const t = s.t, R = C.auraRing, op = ctx.globalCompositeOperation, a = ctx.globalAlpha
+  ctx.globalCompositeOperation = 'lighter'
+  if (!front) {
+    // 몸 뒤 둥근 빛 (그라디언트 하나를 한 번만 만들어 옮겨 쓴다)
+    auraGlow ??= (() => { const g = ctx.createRadialGradient(0, 0, 4, 0, 0, 62); g.addColorStop(0, '#ffd56aa0'); g.addColorStop(.55, '#ff9a3a40'); g.addColorStop(1, '#ff9a3a00'); return g })()
+    const pulse = .8 + .2 * Math.sin(t * 7), cy = s.y - C.heroPx * .5
+    ctx.save(); ctx.translate(s.x, cy); ctx.scale(pulse, pulse * 1.35); ctx.fillStyle = auraGlow; ctx.fillRect(-62, -62, 124, 124); ctx.restore()
+    ctx.globalCompositeOperation = 'lighter'
+    // 발밑 고리: 안쪽은 이쪽으로, 바깥은 저쪽으로 돈다 (끊긴 호 셋씩)
+    ctx.strokeStyle = '#ffd66a'
+    for (const [r, dir, w, al] of [[R, 1, 4.5, 1], [R * 1.42, -1, 3, .7]] as const) {
+      ctx.lineWidth = w; ctx.globalAlpha = a * al; ctx.beginPath()
+      for (let i = 0; i < 3; i++) { const a0 = dir * t * C.auraSpin + i * Math.PI * 2 / 3; ctx.moveTo(s.x + Math.cos(a0) * r, s.y + Math.sin(a0) * r * .34); ctx.ellipse(s.x, s.y, r, r * .34, 0, a0, a0 + 1.25) }
+      ctx.stroke()
+    }
+    // 솟는 기운: 발밑에서 위로 오르며 가늘어지는 불꽃 혀
+    ctx.fillStyle = '#ffae38'
+    for (let i = 0; i < C.auraFlames; i++) {
+      const ph = (t * 1.25 + i / C.auraFlames) % 1, side = Math.sin(i * 2.399) * R * .62, x = s.x + side + Math.sin(t * 5 + i) * 4, y = s.y - ph * C.auraFlameRise
+      ctx.globalAlpha = a * .8 * (1 - ph); ctx.beginPath(); ctx.ellipse(x, y - 10, 9 * (1 - ph * .6), 24 * (1 - ph * .4), 0, 0, Math.PI * 2); ctx.fill()
+    }
+  } else {
+    // 불티: 몸 둘레에서 반짝이며 오른다
+    ctx.fillStyle = '#fff1b8'
+    for (let i = 0; i < C.auraSparks; i++) {
+      const ph = (t * .9 + i * .137) % 1, ang = i * 2.399 + t * .8, x = s.x + Math.cos(ang) * (18 + i % 4 * 9), y = s.y - 14 - ph * (C.heroPx + 30)
+      ctx.globalAlpha = a * (1 - ph) * (.6 + .4 * Math.sin(t * 20 + i)); const r = 1.6 + (i % 3) * .8; ctx.fillRect(x - r, y - r, r * 2, r * 2)
+    }
+  }
+  ctx.globalCompositeOperation = op; ctx.globalAlpha = a
+}
+/** 비기·각성 시전: 기운이 장수에게 모여드는 고리 (남은 시간만큼 오므라든다) · 진 비기·각성은 금빛 겹고리 */
+function drawCast(ctx: CanvasRenderingContext2D, s: HaebiRun) {
+  const c = s.cast; if (!c) return
+  const k = Math.max(0, c.t / c.total), gold = c.tru || c.kind === 'wake', op = ctx.globalCompositeOperation, a = ctx.globalAlpha
+  ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = gold ? '#ffd66a' : ULT_COLOR[s.kit]
+  for (const [m, w] of (gold ? [[1, 4], [1.5, 2]] : [[1, 3]]) as [number, number][]) {
+    const r = (24 + 150 * k) * m; ctx.lineWidth = w; ctx.globalAlpha = a * (1 - k * .7) * .9
+    ctx.beginPath(); ctx.ellipse(s.x, s.y, r, r * .4, 0, 0, Math.PI * 2); ctx.stroke()
+  }
+  ctx.globalCompositeOperation = op; ctx.globalAlpha = a
+}
+/** 비기가 터지는 순간 판이 떤다 — 가장 새 비기 머리 조각의 나이로 (진 비기는 더 크게) · 그리기만 */
+function shakeOf(s: HaebiRun) {
+  let best: HaebiRun['fx'][number] | null = null
+  for (const f of s.fx) if (f.kind === 'skill' && f.ult && (!best || f.life / f.total > best.life / best.total)) best = f
+  if (!best) return 0
+  const k = 1 - (best.total - best.life) / .3
+  return k > 0 ? (best.tru ? 7 : 3.5) * k : 0
+}
 export function drawPortrait(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, menuTime = 0) {
   const { width: w, height: h } = ctx.canvas; ctx.clearRect(0, 0, w, h)
   const bg = ctx.createRadialGradient(w / 2, h * .46, 20, w / 2, h / 2, h * .65)
@@ -260,6 +371,8 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   const W = C.width, H = C.height
   ctx.setTransform(1, 0, 0, 1, 0, 0)   // 그림마다 옮겼다 되돌리는 셈의 작은 오차가 판마다 쌓이지 않게 (sprite·stamp 는 save/restore 없이 · 11-17)
   ctx.fillStyle = '#273c35'; ctx.fillRect(0, 0, W, H)
+  const quake = shakeOf(s)
+  if (quake) ctx.setTransform(1, 0, 0, 1, Math.round(Math.sin(s.t * 91) * quake), Math.round(Math.cos(s.t * 77) * quake * .6))
   const bg = images.get('raid/' + ST[s.stage].bg) ?? images.get('raid/forest.webp')
   const baked = bg && fieldBackdrop(bg, W, H)
   if (baked) ctx.drawImage(baked, 0, 0)
@@ -314,8 +427,16 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       if (!decal(ctx, images, 'mark-hero', s.x, s.y, 72, 32, .8)) { ctx.strokeStyle = '#f9d89788'; ctx.fillStyle = '#ffd97726'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(s.x, s.y, 29, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke() }
       trackGhosts(s, heroSprite(s)); drawGhosts(ctx, images, s, C.heroPx)
       // 각성(금빛)·투지(붉은빛) 동안 발밑에 뛰는 빛 고리 — 그림 하나 더 없이 선 두 개
+      if (s.form === 'awake') drawAura(ctx, s, false)
+      drawCast(ctx, s)
       if (s.form !== 'normal') { const p = .5 + .5 * Math.sin(s.t * 9); ctx.save(); ctx.strokeStyle = s.form === 'awake' ? '#ffe08a' : '#ff9a52'; ctx.globalAlpha = .35 + .4 * p; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(s.x, s.y, 40 + 8 * p, 13 + 3 * p, 0, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha *= .5; ctx.beginPath(); ctx.ellipse(s.x, s.y, 56 + 10 * p, 18 + 4 * p, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore() }
       sprite(ctx, images, heroSprite(s), s.x, s.y, C.heroPx, heroFrame(s), s.face, s.hurt > 0)
+      if (s.form === 'awake') {
+        // 각성: 몸이 금빛으로 맥박친다 (같은 그림을 빛으로 한 번 더) + 앞쪽 불티
+        const op = ctx.globalCompositeOperation; ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .16 + .12 * Math.sin(s.t * 7)
+        sprite(ctx, images, heroSprite(s), s.x, s.y, C.heroPx, heroFrame(s), s.face); ctx.globalCompositeOperation = op; ctx.globalAlpha = 1
+        drawAura(ctx, s, true)
+      }
     }
   }
   for (const b of s.shots) {
@@ -398,6 +519,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       impact(ctx, images, f.x, f.y - 8, f.r, age)
     } else if (f.kind === 'skill' || f.kind === 'ult') {
       if (f.ult) drawUlt(ctx, images, s, f, age); else impact(ctx, images, f.x, f.y - 12, f.r, age)
+      if (f.tru && f.kind === 'ult') { ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = '#ffd66a'; ctx.lineWidth = 3; ctx.globalAlpha = Math.max(0, 1 - age); const r = 14 + 46 * age; ctx.beginPath(); ctx.ellipse(f.x, f.y, r, r * .5, 0, 0, Math.PI * 2); ctx.stroke() }
     } else if (f.kind === 'ring') {
       // 방울 파동 · 만신 굿: 고리가 맞는 범위까지 퍼지며 옅어진다
       const img = images.get('raid/bell-ring.png'), r = f.r * (.35 + .65 * age)
@@ -417,22 +539,8 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
     } else stamp(ctx, images, 'raid/hit.png', f.x, f.y, 30 * (1 - age * .5))
     ctx.restore()
   }
-  // 피해 숫자 (형 11-16: 「한방이라 강해지는지 모르겠다」) — 맞은 자리에서 툭 커졌다 떠오르며 사라짐 · 쓰러뜨린 한 방은 금빛으로 크게
-  ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'
-  // 피해 숫자도 새것 drawNumbers 개만 (같은 까닭 · 쓰러뜨린 금빛 숫자도 같이 센다)
-  let numSkip = -C.drawNumbers; for (const f of s.fx) if (f.n !== undefined && f.mob !== 'boss') numSkip++
-  for (const f of s.fx) {
-    if (f.n === undefined || f.mob === 'boss') continue
-    if (numSkip-- > 0) continue
-    const age = 1 - f.life / f.total, kill = f.kind === 'death', hot = kill || !!f.crit, pop = age < .18 ? 1.45 - age / .18 * .45 : 1
-    ctx.globalAlpha = Math.min(1, (1 - age) * 2.2)
-    const y = f.y - (kill ? 30 : 14) - age * 26, text = String(Math.round(f.n)), size = (f.crit ? 26 : kill ? 21 : 16) * pop
-    if (digits(ctx, images, text, f.x, y, size, hot)) continue
-    ctx.font = `700 ${Math.round(size)}px 'Barlow Condensed', system-ui, sans-serif`
-    ctx.lineWidth = 4; ctx.strokeStyle = hot ? '#5a1408' : '#2a1d12'; ctx.strokeText(text, f.x, y)
-    ctx.fillStyle = hot ? '#ffc94a' : '#fff6e2'; ctx.fillText(text, f.x, y)
-  }
-  ctx.restore()
+  // 피해 숫자 — 알갱이로 튀어 나간다 (trackNumbers · drawNumbers)
+  trackNumbers(s); ctx.save(); drawNumbers(ctx, images, s); ctx.restore()
   if (s.hurt > 0) { ctx.strokeStyle = '#ff735a99'; ctx.lineWidth = 12; ctx.strokeRect(0, 0, W, H) }
   const boss = s.enemies.find(e => e.kind === 'boss')
   if (boss) {

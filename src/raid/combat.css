@@ -273,3 +273,36 @@ svg.tree .need.ok text{fill:#ffe2a0}
 footer #dash,footer #skill{touch-action:none;-webkit-user-select:none;user-select:none}
 footer button.cool{opacity:.5}
 footer button.pressed{filter:brightness(1.4);transform:scale(.93)}
+/* 각성 단추 (11-17 형: 「게이지 다 찼을 때 각성 버튼이 생기게」) — 회피·비기 단추 위 · 반짝이며 맥박 · 누르면 각성 (E) · 투지 장수는 붉은빛 */
+footer #wake{position:absolute;right:0;bottom:calc(100% + 12px);width:84px;height:84px;padding:0;border-radius:50%;border:3px solid #ffe08a;border-image:none;background:radial-gradient(circle at 50% 38%,#fff3c0,#ffc94a 38%,#b8741c 72%,#5a3208);color:#3a1c02;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;box-shadow:0 0 0 3px #4a2a06,0 0 18px #ffcf5a,0 3px 8px #000a;touch-action:none;-webkit-user-select:none;user-select:none;z-index:2;animation:wake-beat .9s ease-in-out infinite}
+footer #wake b{font:900 23px var(--serif,'Batang',serif);letter-spacing:.04em;text-shadow:0 1px 0 #fff6}
+footer #wake small{font-size:10px;color:#4a2a06;font-weight:bold}
+footer #wake:before{content:'';position:absolute;inset:-9px;border-radius:50%;border:3px solid #ffe08a;opacity:0;animation:wake-ring .9s ease-out infinite;pointer-events:none}
+footer #wake.grit{border-color:#ffb27a;background:radial-gradient(circle at 50% 38%,#ffe0c0,#ff9a52 38%,#b4441c 72%,#4a1206);box-shadow:0 0 0 3px #4a1206,0 0 18px #ff8a4a,0 3px 8px #000a}
+footer #wake.grit:before{border-color:#ffb27a}
+footer #wake.pressed{transform:scale(.9);filter:brightness(1.3)}
+@keyframes wake-beat{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+@keyframes wake-ring{0%{opacity:.9;transform:scale(.85)}100%{opacity:0;transform:scale(1.35)}}
+#arena:has(#wake:not([hidden])) #streak{visibility:hidden}
+@media(orientation:landscape) and (max-height:600px){footer #wake{width:70px;height:70px;bottom:calc(100% + 8px)}footer #wake b{font-size:19px}}
+@media(prefers-reduced-motion:reduce){footer #wake,footer #wake:before{animation:none}}
+/* 각성 동안 체력 막대가 금빛으로 흐른다 (무적) — 바탕 금 + 빛 뭉치(radial)와 딱 끊기는 빗금을 background-position 으로 흘림 (폰에서 부드러운 linear-gradient 가 깨진 적 · 10-28) */
+#combat-hud.awake .bar.hp #hp-fill{background-color:#e8a92c;background-image:radial-gradient(ellipse 50% 90% at 50% 50%,#fff6d0ee,#ffe27a88 45%,#ffe27a00 72%),repeating-linear-gradient(115deg,#0000 0 9px,#fff3b555 9px 13px);background-size:46% 100%,26px 100%;animation:hp-gold 1.1s linear infinite}
+#combat-hud.awake #health{color:#ffe08a;text-shadow:0 0 6px #ffb84a}
+#combat-hud.awake .bar.hp:after{filter:none}
+@keyframes hp-gold{from{background-position:-46% 0,0 0}to{background-position:146% 0,52px 0}}
+@media(prefers-reduced-motion:reduce){#combat-hud.awake .bar.hp #hp-fill{animation:none}}
+/* 레벨업 창 (11-17 형: 「좌상단에 지금 올려놓은 것들 아이콘이랑 숫자」) — 왼쪽 위에 가진 칸 · 가운데 「레벨 업!」 · 오른쪽 위는 나무 단추 자리 */
+.panel.upgrade{position:relative}
+.lv-head{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:start;gap:10px}
+.lv-head h2.lvup{grid-column:2}
+.lv-have{grid-column:1;grid-row:1;display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-start;align-content:flex-start;max-width:100%}
+.lv-have .have{position:relative;width:30px;height:30px;padding:2px;border:2px solid var(--c,#a18b5f);border-radius:6px;background:#0d1612e6;box-shadow:0 0 6px color-mix(in srgb,var(--c,#a18b5f) 45%,transparent)}
+.lv-have .have img{display:block;width:100%;height:100%;object-fit:contain}
+.lv-have .have b{position:absolute;right:-5px;bottom:-5px;min-width:15px;height:15px;padding:0 3px;border-radius:8px;font:bold 10px/15px Georgia,serif;font-style:normal;color:#10140f;background:var(--c,#d7b775);text-align:center}
+.lv-have .have.max b{background:#ffe08a;box-shadow:0 0 5px #ffd36a}
+.lv-have .have.combo{--c:#f2c45a;border-color:#f2c45a}
+.choices small.gain{font-size:13px;font-weight:900;letter-spacing:.04em;color:#ffe08a;text-shadow:0 1px 2px #000}
+.choices small.gain.new{color:#10140f;background:var(--accent);padding:1px 12px;border-radius:9px;text-shadow:none}
+@media(orientation:landscape) and (max-height:600px){.lv-have .have{width:24px;height:24px;padding:1px;border-radius:5px}.lv-have .have b{font-size:9px;height:13px;line-height:13px;min-width:13px;right:-4px;bottom:-4px}.lv-have{gap:5px 4px}}
+@media(orientation:portrait) and (max-width:700px){.lv-head{grid-template-columns:1fr;gap:4px}.lv-head h2.lvup{grid-column:1;grid-row:2}.lv-have{grid-row:1;padding-right:70px}}

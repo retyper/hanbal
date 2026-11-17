@@ -93,6 +93,7 @@ test('돌벼락: 무리가 가장 많은 자리에 물결 지어 돌이 쏟아�
   for (const k of Object.keys(s.cool) as (keyof HaebiRun['cool'])[]) s.cool[k] = 99
   const stones: object[] = []
   stepHaebi(s, { x: 0, y: 0, skill: true }, DT)
+  for (let i = 0; i < 600 && s.cast; i++) { only(s, []); stepHaebi(s, { x: 0, y: 0 }, DT) }
   assert.ok(s.ult, '물결이 이어진다')
   for (let i = 0; i < 120 && s.ult; i++) { for (const f of s.fx) if (f.kind === 'ult' && !stones.includes(f)) stones.push(f); only(s, []); stepHaebi(s, { x: 0, y: 0 }, DT) }
   for (const f of s.fx) if (f.kind === 'ult' && !stones.includes(f)) stones.push(f)
@@ -102,7 +103,7 @@ test('돌벼락: 무리가 가장 많은 자리에 물결 지어 돌이 쏟아�
   assert.equal(hurt(far), 0, '둘레 밖')
   assert.ok(pack.every(e => hurt(e) >= one - 1e-6))
   assert.ok(Math.max(...pack.map(hurt)) >= one * 2 - 1e-6, '가운데는 여러 번')
-  assert.ok(Math.abs(s.skillCd - (U.sling.cooldown - U.sling.gap * (U.sling.waves - 1))) < .05)
+  assert.ok(Math.abs(s.skillCd - (U.sling.cooldown - U.cast - U.sling.gap * (U.sling.waves - 1))) < .05)
 })
 
 test('돌팔매 묶음 봇: 상점을 조금 산 봇이 숲 산길 20분 두목을 잡고 제 조합을 완성한다', () => {

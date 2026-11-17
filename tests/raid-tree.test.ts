@@ -2,7 +2,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { HAEBI_TREE as T, HAEBI_AWAKEN as A, HAEBI_ULT as U, HAEBI_RUN as C } from '../src/tune/params.ts'
-import { createHaebi, stepHaebi, choose, xpNeeded, spawnMob, comboRank, ultUpgraded, gaugeNeed, gaugeRatio, awakenedLook, isCombo, type HaebiRun } from '../src/raid/haebi.ts'
+import { createHaebi, stepHaebi, choose, xpNeeded, spawnMob, comboRank, ultUpgraded, gaugeNeed, gaugeRatio, awakenedLook, isCombo, wakeReady, ultName, POWERS, type HaebiRun } from '../src/raid/haebi.ts'
 import { replay } from '../src/raid/haebi-replay.ts'
 
 const idle = { x: 0, y: 0 }
@@ -60,9 +60,10 @@ test('3층 비기 강화: 비기 피해·범위가 커지고 재사용이 짧아
   const plain = ready(), up = ready(); up.combos = ['cyclone']; up.comboRanks = { cyclone: T.max }
   for (const r of [plain, up]) for (let i = 0; i < 6; i++) { spawnMob(r); Object.assign(r.enemies[i]!, { x: r.x + 60 + i * 60, y: r.y, hp: 1e6, max: 1e6 }) }
   for (const r of [plain, up]) { r.cool.axe = r.cool.gale = r.cool.orbit = 99; stepHaebi(r, { x: 0, y: 0, skill: true }, DT) }
-  assert.ok(up.damage > plain.damage * (T.ultDamage - .05), `${up.damage} > ${plain.damage}`)
   assert.ok(Math.abs(plain.skillCd - U.axe.cooldown) < .02)
   assert.ok(Math.abs(up.skillCd - U.axe.cooldown * T.ultCooldown) < .02)
+  for (const r of [plain, up]) for (let i = 0; i < 600 && r.cast; i++) stepHaebi(r, idle, DT)
+  assert.ok(up.damage > plain.damage * (T.ultDamage - .05), `${up.damage} > ${plain.damage}`)
 })
 
 test('각성 막대: 잡으면 차고 → 각성(그림·힘) → sec 초 뒤 풀리고 다시 모은다 (다음은 더 많이)', () => {
@@ -71,7 +72,16 @@ test('각성 막대: 잡으면 차고 → 각성(그림·힘) → sec 초 뒤 �
   const need = gaugeNeed(s); s.gauge = need - 2
   killOne(s); assert.equal(s.form, 'normal'); assert.equal(s.gauge, need - 1); assert.ok(gaugeRatio(s) > .9)
   killOne(s)
-  assert.equal(s.form, 'awake'); assert.ok(awakenedLook(s)); assert.equal(s.wakes, 1)
+  // 막대가 차도 저절로 각성하지 않는다 — 각성 단추(wake)를 누를 때까지 찬 채로 기다린다 (11-17 형)
+  assert.equal(s.form, 'normal'); assert.ok(wakeReady(s)); assert.equal(gaugeRatio(s), 1)
+  killOne(s); assert.equal(s.gauge, need, '찬 막대는 넘치지 않는다')
+  stepHaebi(s, { ...idle, wake: true }, DT)
+  assert.equal(s.form, 'awake'); assert.ok(awakenedLook(s)); assert.equal(s.wakes, 1); assert.equal(s.gauge, 0)
+  assert.equal(s.cast?.kind, 'wake', '각성 컷인 동안은 시전')
+  // 각성 시전 동안 비기를 눌러도 기다린다 (컷인이 겹치지 않게)
+  const cd = s.skillCd; stepHaebi(s, { ...idle, skill: true }, DT); assert.equal(s.cast?.kind, 'wake'); assert.equal(s.skillCd, cd)
+  for (let i = 0; i < 600 && s.cast; i++) stepHaebi(s, idle, DT)
+  assert.equal(s.formT, A.sec, '각성 시간은 시전이 끝난 뒤부터')
   // 각성 동안: 비기 쿨이 빨리 돈다 · 막대는 안 찬다
   s.skillCd = 10; stepHaebi(s, idle, .05); assert.ok(10 - s.skillCd > .05 * (A.ultRate - .1))
   killOne(s); assert.equal(s.gauge, 0)
@@ -100,7 +110,7 @@ test('정예는 막대를 많이 채운다', () => {
 
 test('본편에서 각성 못 한 장수는 막대가 차도 투지뿐 — 모습은 그대로, 짧게', () => {
   const s = still(); s.canAwaken = false; s.gauge = gaugeNeed(s) - 1
-  killOne(s)
+  killOne(s); stepHaebi(s, { ...idle, wake: true }, DT)
   assert.equal(s.form, 'grit'); assert.equal(awakenedLook(s), false); assert.match(s.message, /투지/)
   for (let t = 0; t < A.gritSec + .1; t += .05) stepHaebi(s, idle, .05)
   assert.equal(s.form, 'normal')
@@ -116,4 +126,41 @@ test('숙련(숲·여울·목책을 다 깬 장수)은 막대 절반으로 시�
 test('봇은 조합 카드를 먼저 고르고 20분 안에 조합을 연다', () => {
   const s = replay(7, 600, 'storm', undefined, 'axe')
   assert.ok(s.combos.length >= 1, String(s.combos))
+})
+
+test('각성 동안·시전 동안은 다치지 않는다 · 투지는 다친다', () => {
+  const shot = (s: HaebiRun) => { s.enemies = []; s.inv = 0; s.shots.push({ x: s.x, y: s.y, vx: 0, vy: 0, life: 1, kind: 'enemy', damage: 30, radius: 10, hit: [], angle: 0, tx: 0, ty: 0 }); const hp = s.hp; stepHaebi(s, idle, DT); return hp - s.hp }
+  const awake = still(); awake.form = 'awake'; awake.formT = 9
+  assert.equal(shot(awake), 0)
+  const casting = still(); stepHaebi(casting, { ...idle, skill: true }, DT); assert.ok(casting.cast)
+  assert.equal(shot(casting), 0)
+  const grit = still(); grit.form = 'grit'; grit.formT = 9
+  assert.ok(shot(grit) > 0)
+})
+
+test('진 비기: 각성 중의 비기는 이름에 「진」 · 더 세고 넓다 · 그림에 진 표식', () => {
+  const fire = (form: HaebiRun['form']) => {
+    const s = still(); s.form = form; s.formT = 99
+    for (let i = 0; i < 8; i++) { spawnMob(s); Object.assign(s.enemies[i]!, { x: s.x + 70 + i * 40, y: s.y + (i % 2) * 20, hp: 1e7, max: 1e7, cd: 99 }) }
+    stepHaebi(s, { ...idle, skill: true }, DT)
+    const tru = !!s.cast?.tru
+    for (const k of Object.keys(s.cool) as (keyof HaebiRun['cool'])[]) s.cool[k] = 99
+    const before = s.damage
+    for (let i = 0; i < 600 && (s.cast || s.ult); i++) { for (const k of Object.keys(s.cool) as (keyof HaebiRun['cool'])[]) s.cool[k] = 99; stepHaebi(s, idle, DT) }
+    return { tru, damage: s.damage - before, mark: s.fx.some(f => f.ult && f.tru) }
+  }
+  const plain = fire('normal'), tru = fire('awake')
+  assert.equal(plain.tru, false); assert.equal(tru.tru, true); assert.ok(tru.mark && !plain.mark)
+  assert.ok(tru.damage > plain.damage * U.trueDamage, `${tru.damage} > ${plain.damage} × 진`)
+  assert.equal(ultName('magic', true), '진 하늘 굿'); assert.equal(ultName('magic', false), '하늘 굿')
+})
+
+test('끝 단계까지 찍은 칸은 레벨업 카드에 다시 안 나온다 (조합 재료여도)', () => {
+  const s = still(); s.level = 10; s.ranks.axe = POWERS.axe.max; s.ranks.reach = POWERS.reach.max; s.ranks.ember = POWERS.ember.max; s.ranks.tempo = POWERS.tempo.max
+  for (let i = 0; i < 40; i++) { s.offers = []; levelUp(s); for (const p of s.offers) if (!isCombo(p)) assert.ok(s.ranks[p] < POWERS[p].max, `${p} 끝 단계인데 나옴`); s.level = 10 }
+})
+
+test('봇은 각성 막대가 차면 바로 누른다', () => {
+  const s = replay(3, 420, 'storm', undefined, 'axe', { awaken: true })
+  assert.ok(s.wakes >= 1, `각성 ${s.wakes}번`)
 })

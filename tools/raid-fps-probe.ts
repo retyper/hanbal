@@ -2,7 +2,7 @@
  * 열전 프레임 재기 (11-16 형: 「폰으로 하는데 프레임 20 밖에 안 나오는 것 같다 · 갤럭시 플립7 · 60 나와야」).
  * 헤드리스 크롬 · 폰 가로 · CPU 를 THROTTLE 배 느리게 · ?review 로 중반 5분 판을 만든 뒤 손가락 조이스틱으로 원을 그리며 SEC 초 동안
  * requestAnimationFrame 간격을 잰다. VARIANT 로 의심 가는 것을 하나씩 끈다(같은 판에서 견줌).
- *   node --experimental-strip-types tools/raid-fps-probe.ts [THROTTLE 4] [SEC 8] [VARIANT none|nofilter|novideo|noportrait|nohud] [UNTIL 300]
+ *   node --experimental-strip-types tools/raid-fps-probe.ts [THROTTLE 4] [SEC 8] [VARIANT none|nofilter|novideo|noportrait|nohud|awake] [UNTIL 300]
  */
 import { spawn } from 'node:child_process'
 import { existsSync, mkdtempSync, rmSync } from 'node:fs'
@@ -22,6 +22,8 @@ const INJECT: Record<string, string> = {
   nofilter: `Object.defineProperty(CanvasRenderingContext2D.prototype, 'filter', { set() {}, get() { return 'none' } })`,
   novideo: `HTMLMediaElement.prototype.play = function () { return Promise.resolve() }`,
   noportrait: `addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.textContent = '#hero-portrait,#hero-video,canvas:not(#field){display:none!important}'; document.head.append(s) })`,
+  // 각성 오라·금빛 체력·진 비기를 켜 둔 판 (11-17 · 개발 손잡이 __raid 로 모습만 각성으로 붙잡아 둔다)
+  awake: `setInterval(() => { const r = window.__raid?.(); if (r && r.state === 'playing') { r.form = 'awake'; r.formT = 60 } }, 300)`,
   nohud: `addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.textContent = '#combat-hud,#hud,#score,.bar,#loadout,#combo-badges{display:none!important}'; document.head.append(s) })`,
 }
 try {

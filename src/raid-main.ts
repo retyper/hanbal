@@ -1,6 +1,6 @@
 import { breakthroughText, isBreakthrough } from './realm/vanguard.ts'
-import { HAEBI_RUN as C, HAEBI_STICK as STICK, HAEBI_TREE as TREE } from './tune/params.ts'
-import { createHaebi, runDuration, stepHaebi, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, nodeText, nodeAt, branchName, branchPoints, type Kit, type Power, type Pick, type HaebiRun, type StageId } from './raid/haebi.ts'
+import { HAEBI_RUN as C, HAEBI_STICK as STICK, HAEBI_TREE as TREE, HAEBI_ULT as ULT, HAEBI_AWAKEN as AWK } from './tune/params.ts'
+import { createHaebi, runDuration, stepHaebi, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, nodeText, nodeAt, branchName, branchPoints, wakeReady, ultName, BRANCHES, branchNodes, type Kit, type Power, type Pick, type HaebiRun, type StageId } from './raid/haebi.ts'
 import { loadMeta, saveMeta, buy, refund, record, shopCost, shopMax, stageOpen, stageName, SHOP, STAGE_ORDER, type ShopKey } from './raid/meta.ts'
 import { drawField, imagePaths, setHeroArt, heroArtFiles } from './raid/haebi-view.ts'
 import { powerIcon, installPowerHints, comboIcon, rankMark, treeSvg, treeInfo, BRANCH_COLOR } from './raid/power-ui.ts'
@@ -47,8 +47,8 @@ const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec 
 const newRun = (seed: number) => { const r = createHaebi(seed, mode, kit, { ...mode === 'stage' ? { stage, bonus: meta.shop } : {}, awaken: canAwaken, mastery }); if (r.message.endsWith('첫 조합을 향해')) { r.message = ''; r.messageTime = 0 }  /* 시작 군말 띠는 걷는다 (형 11-16) */ return r }
 root.innerHTML = `<header><div><small>장수 열전 · 독립 모드</small><h1>${HERO.name} <em>${K.title}</em></h1></div><div class="head-actions"><button id="pause" disabled aria-label="일시정지">Ⅱ</button></div></header>
 <div id="layout"><aside id="character"><div id="portrait-media"><img id="hero-portrait" src="${import.meta.env.BASE_URL}realm/bust-hd/${HERO.bust}.jpg" alt="${HERO.name} 원화"><video id="hero-video" muted loop playsinline preload="none" hidden aria-label="각성 ${HERO.name} 영상"></video></div><div class="portrait-title"><span>${HERO.home}</span><b id="rank-title">${HERO.name}</b><button id="portrait-toggle" hidden>원화로 보기</button></div><div id="reaction">${weapon} 하나로 시작하는 열전</div><div id="combo-badges"></div><i class="frame-knots"></i></aside>
-<main><section id="menu"><span class="eyebrow">장수 열전</span><h2>${HERO.name}<em>${K.title}</em></h2><p>능력을 고르고 두 힘을 묶어, 15분 가까이 버틴 뒤 오는 두목을 쓰러뜨리세요.</p><div class="journey"><span><b>01</b> 붉은 고리를 피하고</span><span><b>02</b> 두 힘을 묶어</span><span><b>03</b> 두목을 잡습니다</span></div><button id="start" class="primary" disabled>그림을 불러오는 중…</button><p class="controls">이동 WASD·방향키·화면 누르기 · 회피 Shift · 비기 Space · 멈춤 Esc</p><p class="note">본편의 병력과 따로인 한 판입니다.</p></section>
-<section id="play" hidden><div id="arena"><canvas id="field" width="${C.width}" height="${C.height}" aria-label="${HERO.name} 토벌 전장. 클릭 또는 드래그로 이동"></canvas><div id="combat-hud"><div class="health-line"><b>${HERO.name}</b><span id="health">180 / 180</span></div><div class="bar hp"><span class="hp-track"><i id="hp-fill"></i><em id="hp-chunk"></em></span></div><div id="wake-bar" class="${canAwaken ? '' : 'grit'}" aria-label="${canAwaken ? '각성' : '투지'} 막대"><i id="wake-fill"></i></div><div id="loadout" aria-label="획득한 전투 능력"></div></div><div id="hud"><small id="phase"></small><b id="clock"></b></div><div id="score"><b id="kills"></b><small>격파</small><b id="level"></b></div><div class="bar xp"><i id="xp-fill"></i></div><div id="announcement" aria-live="polite"></div><div id="streak"></div><footer><span id="hint">자동 공격 · 화면을 끌면 그쪽으로 이동 · 능력 아이콘을 누르고 있으면 설명</span><button id="dash">회피 Shift</button><button id="skill" class="primary" data-kit="${kit}">${K.skill} Space</button></footer><div id="stick" hidden aria-hidden="true"><i></i></div><i class="frame-knots"></i></div></section></main></div><div id="power-tooltip" role="tooltip" hidden></div><div id="overlay" hidden></div>`
+<main><section id="menu"><span class="eyebrow">장수 열전</span><h2>${HERO.name}<em>${K.title}</em></h2><p>능력을 고르고 두 힘을 묶어, 15분 가까이 버틴 뒤 오는 두목을 쓰러뜨리세요.</p><div class="journey"><span><b>01</b> 붉은 고리를 피하고</span><span><b>02</b> 두 힘을 묶어</span><span><b>03</b> 두목을 잡습니다</span></div><button id="start" class="primary" disabled>그림을 불러오는 중…</button><p class="controls">이동 WASD·방향키·화면 누르기 · 회피 Shift · 비기 Space · 각성 E · 멈춤 Esc</p><p class="note">본편의 병력과 따로인 한 판입니다.</p></section>
+<section id="play" hidden><div id="arena"><canvas id="field" width="${C.width}" height="${C.height}" aria-label="${HERO.name} 토벌 전장. 클릭 또는 드래그로 이동"></canvas><div id="combat-hud"><div class="health-line"><b>${HERO.name}</b><span id="health">180 / 180</span></div><div class="bar hp"><span class="hp-track"><i id="hp-fill"></i><em id="hp-chunk"></em></span></div><div id="wake-bar" class="${canAwaken ? '' : 'grit'}" aria-label="${canAwaken ? '각성' : '투지'} 막대"><i id="wake-fill"></i></div><div id="loadout" aria-label="획득한 전투 능력"></div></div><div id="hud"><small id="phase"></small><b id="clock"></b></div><div id="score"><b id="kills"></b><small>격파</small><b id="level"></b></div><div class="bar xp"><i id="xp-fill"></i></div><div id="announcement" aria-live="polite"></div><div id="streak"></div><footer><button id="wake" class="${canAwaken ? '' : 'grit'}" hidden aria-label="${canAwaken ? '각성' : '투지'} E"><b>${canAwaken ? '각성' : '투지'}</b><small>E</small></button><span id="hint">자동 공격 · 화면을 끌면 그쪽으로 이동 · 능력 아이콘을 누르고 있으면 설명</span><button id="dash">회피 Shift</button><button id="skill" class="primary" data-kit="${kit}">${K.skill} Space</button></footer><div id="stick" hidden aria-hidden="true"><i></i></div><i class="frame-knots"></i></div></section></main></div><div id="power-tooltip" role="tooltip" hidden></div><div id="overlay" hidden></div>`
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T
 root.insertAdjacentHTML('beforeend', `<div id="rotate-guide" hidden><div><span style="font-size:44px">↻</span><h2>폰을 가로로 돌려 주세요</h2><p>확대 ${josa(HERO.name, '과', '와')} 전장을 함께 보며 싸웁니다.<br>회전하는 동안 전투는 멈춰 있습니다.</p></div></div>`)
 /** 비기 컷인 띠의 기운 바탕 — 묶음마다 (fx/skill/bg/<결>.webp) */
@@ -60,12 +60,13 @@ let cutinUntil = 0
  * 비기 컷인 · 각성 컷인 — 본편과 같은 띠(ui/cutin-band.ts). 판 안에서 각성해 있으면 1차 각성 윗몸 → 기본 윗몸 → 각성 초상 순.
  * 띠를 새로 그려 넣으니 애니는 매번 처음부터 · 화면을 누르면 걷힌다 (판은 그대로 돈다).
  */
-function showSkillCutin(wake = false) {
-  const face = awakenedLook(run) ? `../awaken-hd/${HERO.bust}` : HERO.bust, ms = C.skillCutin * 1000
+function showSkillCutin(wake = false, tru = false) {
+  // 시전(판 시각 cast)이 끝나는 순간 띠가 번쩍이며 걷히기 시작하고 비기가 터진다 — 판이 느려지므로 화면에선 cast ÷ slow 초 (11-17 형: 「컷인 보고 → 데미지 보고」)
+  const face = awakenedLook(run) ? `../awaken-hd/${HERO.bust}` : HERO.bust, cast = wake ? AWK.cast : tru ? ULT.trueCast : ULT.cast, hit = cast / ULT.slow * 1000
   const cut = $('skill-cutin')
-  cut.innerHTML = cutBandHtml({ art: import.meta.env.BASE_URL + 'realm/', bg: KIT_BG[kit], hero: cutHeroPath(face), endMs: ms, hitMs: wake ? null : ms * C.skillCutinHit,
-    title: wake ? `각성 · ${HERO.name}` : K.skill, ...wake ? {} : { sub: HERO.name }, dim: C.skillCutinDim })
-  cut.hidden = false; cutinUntil = run.t + C.skillCutin
+  cut.innerHTML = cutBandHtml({ art: import.meta.env.BASE_URL + 'realm/', bg: KIT_BG[kit], hero: cutHeroPath(face), endMs: hit / .88, hitMs: hit,
+    title: wake ? `각성 · ${HERO.name}` : ultName(kit, tru), ...wake ? {} : { sub: HERO.name }, dim: C.skillCutinDim, grand: wake || tru })
+  cut.hidden = false; cutinUntil = run.t + cast + C.skillCutinTail
 }
 function skipCutin() { if (!$('skill-cutin').hidden) { $('skill-cutin').hidden = true; $('skill-cutin').innerHTML = ''; cutinUntil = 0 } }
 $('pause').insertAdjacentHTML('beforebegin', '<button id="fullscreen">전체화면</button>')
@@ -134,7 +135,7 @@ const canvas = $<HTMLCanvasElement>('field'), ctx = canvas.getContext('2d', { al
 const images = new Map<string, HTMLImageElement>(), keys = new Set<string>()
 let run = newRun(7), live = false, paused = false, shown = '', loadoutKey = '', acc = 0, last = 0, raf = 0
 /** 회피·비기를 누른 판 시각 (STICK.queue 초 동안 맡아 둔다 · press) */
-let dashAt = -9, skillAt = -9
+let dashAt = -9, skillAt = -9, wakeAt = -9
 let destination: { x: number; y: number } | null = null
 /** 손가락 조이스틱 — 닿은 자리(받침)와 지금 손가락 · 화면 px · 마우스는 예전대로 누른 곳으로 걷기 */
 let stick: { id: number; ox: number; oy: number; x: number; y: number } | null = null
@@ -170,7 +171,7 @@ let pendingSeed = vanguardToken ? Number(query.get('seed')) >>> 0 : crypto.getRa
 const notifyVanguardStart = () => { if (vanguardToken) window.parent.postMessage({ type: 'hanbal.haebi.vanguard-start', token: vanguardToken }, location.origin) }
 const base = import.meta.env.BASE_URL + 'realm/'
 Promise.all([...imagePaths, ...heroArtFiles()].map(path => new Promise<void>((resolve, reject) => { const img = new Image(); img.onload = () => { images.set(path, img); resolve() }; img.onerror = reject; img.src = base + path }))).then(() => { $<HTMLButtonElement>('start').disabled = false; $('start').textContent = startLabel(); renderStageMenu(); schedule() }).catch(() => { $('start').textContent = '그림을 불러오지 못했어요. 새로고침해 주세요.' })
-function resetInput() { keys.clear(); destination = null; stickEnd(); dashAt = skillAt = -9; acc = 0 }
+function resetInput() { keys.clear(); destination = null; stickEnd(); dashAt = skillAt = wakeAt = -9; acc = 0 }
 function begin(sameSeed = false) {
   if (!sameSeed && !vanguardToken) pendingSeed = crypto.getRandomValues(new Uint32Array(1))[0]!
   sound.unlock(); hidePowerHint(); notifyVanguardStart(); run = newRun(pendingSeed); live = true; paused = false; shown = ''; loadoutKey = ''; resetInput(); last = 0
@@ -188,7 +189,7 @@ window.addEventListener('keydown', e => {
   if (e.key === 'Escape' && !e.repeat) { if (!treeView.hidden) closeTree(); else pause(); return }
   if (paused || inspecting || run.offers.length || run.state !== 'playing') return
   if (e.target instanceof HTMLButtonElement && (e.key === ' ' || e.key === 'Enter')) return
-  keys.add(e.key.toLowerCase()); if (e.key === 'Shift' && !e.repeat) press('dash'); if (e.key === ' ' && !e.repeat) press('skill')
+  keys.add(e.key.toLowerCase()); if (e.key === 'Shift' && !e.repeat) press('dash'); if (e.key === ' ' && !e.repeat) press('skill'); if (e.key.toLowerCase() === 'e' && !e.repeat) press('wake')
 })
 window.addEventListener('keyup', e => keys.delete(e.key.toLowerCase()))
 window.addEventListener('blur', () => {
@@ -251,11 +252,13 @@ for (const el of [canvas, $('character')]) {
  * 회피·비기 단추 (11-17 형: 「회피나 기술도 잘 안 눌렸음」) — 누르는 순간(pointerdown) · 다른 손가락이 조이스틱을 잡고 있어도 ·
  * 재사용이 STICK.queue 초 안에 풀리면 그때 나간다(누름을 잠깐 맡아 둠) · 재사용 중에도 disabled 를 걸지 않는다(걸면 눌림 자체가 사라짐).
  */
-function press(kind: 'dash' | 'skill') {
+function press(kind: 'dash' | 'skill' | 'wake') {
   if (!live || paused || inspecting || run.offers.length || run.state !== 'playing') return
-  if (kind === 'dash') dashAt = run.t; else skillAt = run.t
+  // 시전 중에 누른 비기·각성은 시전이 끝난 뒤까지 맡아 둔다 (각성 컷인 뒤에 비기 컷인 · 겹치지 않게)
+  const at = run.t + (run.cast ? run.cast.t : 0)
+  if (kind === 'dash') dashAt = run.t; else if (kind === 'skill') skillAt = at; else wakeAt = at
 }
-for (const kind of ['dash', 'skill'] as const) {
+for (const kind of ['dash', 'skill', 'wake'] as const) {
   const b = $(kind)
   b.addEventListener('pointerdown', e => {
     e.preventDefault(); e.stopPropagation(); press(kind)
@@ -283,13 +286,20 @@ function routeHint(k: Power) {
 function card(k: Pick) {
   if (!isCombo(k)) {
     const p = POWERS[k], t = nodeText(kit, k), at = nodeAt(kit, k)!, cap = at.tier === TREE.tiers.length - 1, color = BRANCH_COLOR[at.branch]
-    const tag = `<i class="branch-tag" style="--c:${color}">${branchName(kit, at.branch)} · ${branchPoints(run, at.branch)}점</i>`
-    return `<button data-up="${k}" class="${cap ? 'cap-card' : ''}" style="--accent:${cap ? color : p.color};--c:${color}">${cap ? '<i class="ribbon cap">갈래 끝</i>' : tag}<span class="rune">${powerIcon(k, kit)}</span><small>${run.ranks[k] ? '강화' : '새 칸'} · ${run.ranks[k] + 1}/${p.max}</small><b>${t.name}</b><span>${t.desc}</span><em>${routeHint(k)}</em></button>`
+    const tag = `<i class="branch-tag" style="--c:${color}">${branchName(kit, at.branch)}</i>`
+    return `<button data-up="${k}" class="${cap ? 'cap-card' : ''}" style="--accent:${cap ? color : p.color};--c:${color}">${cap ? '<i class="ribbon cap">갈래 끝</i>' : tag}<span class="rune">${powerIcon(k, kit)}</span><small class="gain${run.ranks[k] ? '' : ' new'}">${run.ranks[k] ? '+1' : '획득'}</small><b>${t.name}</b><span>${t.desc}</span><em>${routeHint(k)}</em></button>`
   }
   const c = comboOf(k), r = comboRank(run, k), next = r + 1
   const pips = Array.from({ length: TREE.max }, (_, i) => `<i class="${i < r ? 'on' : i === r ? 'new' : ''}"></i>`).join('')
   const ult = next >= TREE.max ? `<span class="ultup"><img src="${import.meta.env.BASE_URL}realm/raid/power-skill.png" alt="">${K.skill} 강화</span>` : ''
-  return `<button data-up="${k}" class="combo-card" style="--accent:#f2c45a"><i class="ribbon">조합</i><span class="rune">${comboIcon(k)}</span><small>${r ? `조합 강화 · ${next}/${TREE.max}` : '조합 열기'}</small><b>${c.name}</b><span>${c.desc}</span><em><span class="pips" aria-label="${next}단계">${pips}</span>${ult || recipe(c)}</em></button>`
+  return `<button data-up="${k}" class="combo-card" style="--accent:#f2c45a"><i class="ribbon">조합</i><span class="rune">${comboIcon(k)}</span><small class="gain${r ? '' : ' new'}">${r ? '+1' : '획득'}</small><b>${c.name}</b><span>${c.desc}</span><em><span class="pips" aria-label="${next}단계">${pips}</span>${ult || recipe(c)}</em></button>`
+}
+/** 레벨업 창 좌상단의 지금 가진 칸 — 갈래 차례(주 무기 · 보조 · 버팀) · 그림 + 단계 배지 · 갈래 빛 테 · 끝 단계는 금빛 배지 · 연 조합은 금테 */
+function haveRow() {
+  const tree = branchNodes(kit)
+  const slots = BRANCHES.flatMap(b => tree[b].flat().filter(p => run.ranks[p] > 0).map(p => `<i class="have${run.ranks[p] >= POWERS[p].max ? ' max' : ''}" style="--c:${BRANCH_COLOR[b]}" title="${nodeText(kit, p).name}">${powerIcon(p, kit)}<b>${run.ranks[p]}</b></i>`))
+  const combos = kitCombos(kit).filter(c => run.combos.includes(c.id)).map(c => `<i class="have combo" title="${c.name}">${comboIcon(c.id)}<b>${rankMark(comboRank(run, c.id))}</b></i>`)
+  return `<div class="lv-have" aria-label="지금 가진 능력">${[...slots, ...combos].join('')}</div>`
 }
 /** 기술 나무 보기 (레벨업 창 · 멈춤 창의 「나무」) — 판 위에 한 겹 더 · 칸을 누르면 아래 한 줄에 설명 · 바깥이나 닫기를 누르면 닫힘 */
 const treeView = document.createElement('div'); treeView.id = 'tree-view'; treeView.hidden = true; treeView.setAttribute('role', 'dialog'); treeView.setAttribute('aria-label', '기술 나무')
@@ -313,7 +323,7 @@ function showOverlay() {
   shown = state; const overlay = $('overlay'); overlay.hidden = !state; if (!state) return
   resetInput()
   if (state.startsWith('upgrade')) {
-    overlay.innerHTML = `<div class="panel upgrade">${treeButton}<h2 class="lvup">레벨 업!</h2><div class="choices">${run.offers.map(card).join('')}</div><button id="reroll" ${run.rerolls ? '' : 'disabled'}>다른 선택지 · ${run.rerolls}회 남음</button></div>`
+    overlay.innerHTML = `<div class="panel upgrade">${treeButton}<div class="lv-head">${haveRow()}<h2 class="lvup">레벨 업!</h2></div><div class="choices">${run.offers.map(card).join('')}</div><button id="reroll" ${run.rerolls ? '' : 'disabled'}>다른 선택지 · ${run.rerolls}회 남음</button></div>`
     overlay.querySelectorAll<HTMLButtonElement>('[data-up]').forEach(b => b.onclick = () => { if (choose(run, b.dataset.up as Pick)) { shown = ''; showOverlay(); updateHud() } })
     if (run.level === 1) { $<HTMLButtonElement>('reroll').disabled = true; $('reroll').textContent = '첫 갈래를 골라 주세요' }
     $('reroll').onclick = () => { if (reroll(run)) { shown = ''; showOverlay() } }
@@ -399,7 +409,10 @@ function updateHud() {
   setFlag('layout', 'in-run', live)   // 싸우는 동안 초상 옆 글(고을·이름·한마디)은 걷는다 (형 11-16: 「백제의 장수 · 길을 열어라 같은 텍스트 다 없애」)
   setText('announcement', run.messageTime > 0 ? run.message : ''); setFlag('announcement', 'visible', run.messageTime > 0)
   setText('streak', run.comboKills >= 15 ? `${run.comboKills} 연속 격파` : '')
-  for (const [id, cd, title] of [['dash', run.dashCd, '회피 Shift'], ['skill', run.skillCd, `${K.skill} Space`]] as const) {
+  // 각성 단추: 막대가 다 차면 뜬다 · 각성 동안 체력 막대가 금빛으로 흐른다 (무적)
+  const ready = live && wakeReady(run); if ($('wake').hidden === ready) $('wake').hidden = !ready
+  setFlag('combat-hud', 'awake', run.form === 'awake')
+  for (const [id, cd, title] of [['dash', run.dashCd, '회피 Shift'], ['skill', run.skillCd, `${ultName(kit, run.form === 'awake')} Space`]] as const) {
     setText(id, cd > 0 ? `${title} · ${cd.toFixed(1)}초` : title); const off = cd > 0 || paused || !!run.offers.length || run.state !== 'playing'; setFlag(id, 'cool', off)   // disabled 대신 빛만 (재사용 중에도 누름을 받아 맡아 둔다)
   }
   // 칸·조합은 레벨이 오를 때만 바뀐다 — 판마다 JSON 을 만들지 않는다 (폰 프레임 11-17)
@@ -422,12 +435,13 @@ function frame(now: number) {
       if (x || y) destination = null
       else if (sd) { x = sd.x; y = sd.y }
       else if (destination) { const dx = destination.x - run.x, dy = destination.y - run.y, len = Math.hypot(dx, dy); if (len < 5) destination = null; else { x = dx / len; y = dy / len } }
-      const skillBefore = run.skillCd, dashBefore = run.dashCd, wakesBefore = run.wakes
+      const castBefore = run.cast, dashBefore = run.dashCd, wakesBefore = run.wakes
       // 맡아 둔 누름: 누른 지 STICK.queue 초 안이면 계속 넣는다 (재사용이 그 안에 풀리면 나간다) · 나가면 지운다
-      stepHaebi(run, { x, y, dash: run.t - dashAt <= STICK.queue, skill: run.t - skillAt <= STICK.queue }, 1 / 120)
+      stepHaebi(run, { x, y, dash: run.t - dashAt <= STICK.queue, skill: run.t - skillAt <= STICK.queue, wake: run.t - wakeAt <= STICK.queue }, 1 / 120)
       if (run.dashCd > dashBefore) dashAt = -9
-      if (run.wakes > wakesBefore && run.form === 'awake') showSkillCutin(true)
-      else if (run.skillCd > skillBefore) { showSkillCutin(); skillAt = -9 }
+      if (run.wakes > wakesBefore) wakeAt = -9
+      // 시전이 새로 섰다 = 각성 또는 비기 (한 번에 하나 · 판이 줄 세운다)
+      if (run.cast && run.cast !== castBefore) { showSkillCutin(run.cast.kind === 'wake', run.cast.tru); if (run.cast.kind === 'ult') skillAt = -9 }
       acc -= 1 / 120
       if (run.offers.length || run.state !== 'playing') { acc = 0; break }
     }
@@ -440,7 +454,7 @@ function frame(now: number) {
 function schedule() { if (!raf && !document.hidden) raf = requestAnimationFrame(frame) }
 updateHud(); schedule()
 // 개발 검수 손잡이 — 헤드리스 시험(tools/raid-*-probe.ts)이 판 상태를 읽고 체력을 깎아 본다 · 배포 빌드엔 없음
-if (import.meta.env.DEV) Object.assign(window, { __raid: () => run, __raidCutin: (wake: boolean) => showSkillCutin(wake) })
+if (import.meta.env.DEV) Object.assign(window, { __raid: () => run, __raidCutin: (wake: boolean, tru = false) => showSkillCutin(wake, tru) })
 if (import.meta.env.DEV && new URLSearchParams(location.search).has('review')) {
   import('./raid/haebi-review.ts').then(({ installReview }) => installReview(root, s => { notifyVanguardStart(); run = s; live = true; paused = !s.offers.length; shown = ''; loadoutKey = ''; resetInput(); $('menu').hidden = true; $('play').hidden = false; $<HTMLButtonElement>('pause').disabled = false; layoutTrial(); showOverlay(); updateHud(); schedule() }, mode, kit))
 }

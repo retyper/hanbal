@@ -18,8 +18,10 @@ function place(s: HaebiRun, dx: number, dy: number, kind: Mob['kind'] = 'iron') 
   return e
 }
 function step(s: HaebiRun, skill: boolean, input = idle) { for (const k of Object.keys(s.cool) as (keyof HaebiRun['cool'])[]) s.cool[k] = 99; stepHaebi(s, { ...input, skill }, 1 / 120) }
-/** 비기를 쓰고 이어지는 조각이 다 끝날 때까지 */
-function cast(s: HaebiRun, input = idle) { step(s, true, input); for (let i = 0; i < 120 && s.ult; i++) step(s, false, input) }
+/** 시전이 끝나 비기가 터질 때까지 (HAEBI_ULT.cast · 판이 느려진다) */
+function release(s: HaebiRun, input = idle) { for (let i = 0; i < 600 && s.cast; i++) step(s, false, input) }
+/** 비기를 쓰고 시전 → 이어지는 조각이 다 끝날 때까지 */
+function cast(s: HaebiRun, input = idle) { step(s, true, input); release(s, input); for (let i = 0; i < 120 && s.ult; i++) step(s, false, input) }
 const hurt = (e: Mob) => e.max - e.hp
 
 test('같은 씨앗·같은 입력이면 비기까지 같은 판 · 비기는 재사용·무적을 묶음 값대로 건다', () => {
@@ -30,6 +32,9 @@ test('같은 씨앗·같은 입력이면 비기까지 같은 판 · 비기는 �
     assert.deepEqual(a, b, kit)
     const s = make(); step(s, true)
     assert.ok(Math.abs(s.skillCd - U[kit].cooldown) < .02, `${kit} 재사용`)
+    assert.equal(s.damage, 0, `${kit} 누른 순간은 시전 · 아직 안 터진다`)
+    assert.ok(s.cast && s.cast.kind === 'ult', `${kit} 시전`)
+    release(s)
     assert.ok(s.inv >= C.skillInv - .02, `${kit} 무적`)
     assert.ok(s.damage > 0, `${kit} 맞힘`)
     const r1 = replay(5, 60, 'storm', undefined, kit), r2 = replay(5, 60, 'storm', undefined, kit)
@@ -41,7 +46,7 @@ test('비기 한 번에 소리 신호(skill 그림)는 하나 · 그림은 모�
   for (const kit of KIT6) {
     const s = field(kit); for (let i = 0; i < 8; i++) place(s, 60 + i * 30, (i % 3 - 1) * 40, 'club')
     const seen = new Set<object>(), lead: object[] = []
-    step(s, true); for (let i = 0; i < 120; i++) { for (const f of s.fx) if (!seen.has(f)) { seen.add(f); if (f.kind === 'skill') lead.push(f) } step(s, false) }
+    step(s, true); for (let i = 0; i < 300; i++) { for (const f of s.fx) if (!seen.has(f)) { seen.add(f); if (f.kind === 'skill') lead.push(f) } step(s, false) }
     assert.equal(lead.length, 1, kit)
     for (const f of seen) if ((f as { kind: string }).kind === 'ult' || (f as { kind: string }).kind === 'skill') assert.equal((f as { ult?: Kit }).ult, kit)
   }
@@ -92,7 +97,7 @@ test('번개 베기: 장수가 실제로 내달리고 지나간 줄만 벤다 ·
 test('그림자 베기: 가까운 적에게 차례로 순간 이동해 베고, 처음 자리로 돌아온다', () => {
   const s = field('dagger', 120), x0 = s.x, y0 = s.y
   const chain = Array.from({ length: U.dagger.targets }, (_, i) => place(s, 110 * (i + 1), 0)), extra = place(s, 110 * (U.dagger.targets + 1), 0)
-  step(s, true); step(s, false)
+  step(s, true); release(s)
   assert.ok(s.ult && Math.hypot(s.x - x0, s.y - y0) > 50, '베는 동안은 적 곁에 있다')
   for (let i = 0; i < 120 && s.ult; i++) step(s, false)
   for (const e of chain) assert.ok(Math.abs(hurt(e) - U.dagger.damage * powerScale(s)) < 1e-6)

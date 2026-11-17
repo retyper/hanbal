@@ -16,7 +16,8 @@ const seeds = (process.argv[2] ?? '7,11,23').split(',').map(Number)
 const KITS6 = Object.keys(KITS) as Kit[]
 // 두목은 나오자마자 (봇 판이 두목을 1초 안팎에 잡는다) · ONLY=1 이면 그 국면만 (0 초반 · 1 중반 · 2 후반 · 3 두목)
 const MOMENTS = ([['초반 1분', 60, [0, 3, 6, 9]], ['중반 5분', 300, [0, 3, 6, 9]], ['후반 13분', 780, [0, 3, 6, 9]], ['두목', -1, [.05, .15, .25, .35]]] as const).filter((_, i) => process.env['ONLY'] === undefined || String(i) === process.env['ONLY'])
-const RUN_DT = 1 / 60, DT = 1 / 120, WINDOW = 1
+// 시전(cast · 판이 slow 배로 느려짐)이 끝나야 터지므로 그만큼 더 본다 (11-17)
+const RUN_DT = 1 / 60, DT = 1 / 120, WINDOW = 1 + P.HAEBI_ULT.cast / P.HAEBI_ULT.slow
 const BONUS = { vigor: 3, might: 2, armor: 1 }
 
 type Field = { kit: Kit; moment: number; s: HaebiRun; total: number }

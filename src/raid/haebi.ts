@@ -134,7 +134,7 @@ export const NO_BONUS: Bonus = { might: 0, vigor: 0, armor: 0, regen: 0, haste: 
 /** daze: 어지럼 돌에 맞아 멈춘 남은 시간 · act: 창돌격꾼·범 예고(+)·돌진(−) 시간 · 투창 사냥꾼 겨눔(+) · 방화꾼 다음 불바닥까지 · vx·vy: 돌진·던질 방향 · buff: 무당이 북돋운 남은 시간 */
 export interface Mob { id: number; x: number; y: number; hp: number; max: number; kind: MobKind; cd: number; flash: number; wind: number; aimX: number; aimY: number; act: number; vx: number; vy: number; buff: number; poison: number; pdps: number; daze: number }
 export interface Missile { x: number; y: number; vx: number; vy: number; life: number; kind: 'gale' | 'ember' | 'shard' | 'enemy' | 'arrow' | 'rain' | 'javelin' | 'wave' | 'barrage' | 'stone' | 'flame' | 'knife' | 'soul' | 'hurl' | 'pebble' | 'skip' | 'boulder'; damage: number; radius: number; hit: number[]; angle: number; tx: number; ty: number; gen?: number }
-export interface Effect { x: number; y: number; x2: number; y2: number; r: number; angle: number; life: number; total: number; kind: 'hit' | 'slash' | 'blast' | 'bolt' | 'skill' | 'ult' | 'death' | 'spike' | 'thrust' | 'buff' | 'ring' | 'thud'; color: string; mob?: Mob['kind']; face?: number; n?: number; crit?: boolean; ult?: Kit }
+export interface Effect { x: number; y: number; x2: number; y2: number; r: number; angle: number; life: number; total: number; kind: 'hit' | 'slash' | 'blast' | 'bolt' | 'skill' | 'ult' | 'death' | 'spike' | 'thrust' | 'buff' | 'ring' | 'thud'; color: string; mob?: Mob['kind']; face?: number; n?: number; crit?: boolean; ult?: Kit; tru?: boolean }
 /** 이어지는 비기(용오름 창의 솟음 · 그림자 베기의 순간 이동 · 돌벼락의 물결) — 남은 수 n · 다음까지 t 초 · 처음 자리 · 이미 벤 적 · k 힘 몫(되받아치기는 작게) */
 export interface UltState { n: number; t: number; x: number; y: number; used: number[]; k: number }
 export interface Drop { x: number; y: number; value: number; age: number }
@@ -148,13 +148,16 @@ export interface HaebiRun {
   ranks: Record<Power, number>; combos: Combo[]; comboRanks: Partial<Record<Combo, number>>; xp: number; level: number; offers: Pick[]; rerolls: number;
   /** 버팀 끝 「되받아치기」 — 맞은 다음 걸음에 비기가 작게 터진다 */
   counterDue: boolean;
+  /** 시전 (HAEBI_ULT.cast · HAEBI_AWAKEN.cast) — 비기·각성을 누른 뒤 터지기까지 · 그동안 판이 느려지고 장수는 다치지 않는다 · tru = 진 비기(각성 중) · trueUlt = 지금 도는 비기가 진 비기 */
+  cast: CastState | null; trueUlt: boolean;
   /** 판 안 각성 (RAID-LINK §1) — gauge 모은 점 · form 지금 모습(보통·각성·투지) · formT 남은 초 · wakes 각성(투지)한 수 · canAwaken 본편 각성 장수인가 */
   gauge: number; form: 'normal' | 'awake' | 'grit'; formT: number; wakes: number; canAwaken: boolean;
   enemies: Mob[]; shots: Missile[]; fx: Effect[]; drops: Drop[];
   spawn: number; nextElite: number; nextBarrage: number; boss: boolean; next: number; kills: number; damage: number;
   state: 'playing' | 'won' | 'lost'; message: string; messageTime: number; comboKills: number; streakTime: number;
 }
-export interface RunInput { x: number; y: number; dash?: boolean; skill?: boolean }
+export interface RunInput { x: number; y: number; dash?: boolean; skill?: boolean; wake?: boolean }
+export interface CastState { kind: 'ult' | 'wake'; t: number; total: number; tru: boolean }
 export function random(s: HaebiRun) { const rng = makeRng(s.seed); const n = rng.next(); s.seed = rng.state(); return n }
 /** awaken: 본편에서 각성한(각성 그림이 있는) 장수 — 없으면 막대가 차도 투지뿐 · mastery: 숲·여울·목책을 다 깬 장수 (막대 절반으로 시작) */
 export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit = 'axe', opts: { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean } = {}): HaebiRun {
@@ -166,7 +169,7 @@ export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit
   const s: HaebiRun = { mode, stage, bonus, maxHp, revives: bonus.revive, elites: 0, kit, breaches: 0, captains: 0, seed, t: 0, x: C.width / 2, y: C.height / 2, hp: maxHp, face: 1, moving: false,
     attack: 0, hurt: 0, inv: 0, dash: 0, dashCd: 0, skillCd: 0, ult: null,
     cool: { counter: 0, axe: 0, gale: 0, ember: 0, thunder: 0, orbit: 0, bow: 0, rain: 0, volley: 0, spear: 0, javelin: 0, grove: 0, sword: 0, wave: 0, tempest: 0, dagger: 0, knife: 0, shadow: 0, bell: 0, soul: 0, rite: 0, storm: 0, sling: 0, skip: 0, boulder: 0 },
-    ranks, combos: [], comboRanks: {}, counterDue: false,
+    ranks, combos: [], comboRanks: {}, counterDue: false, cast: null, trueUlt: false,
     gauge: opts.mastery ? A.need * A.mastery : 0, form: 'normal', formT: 0, wakes: 0, canAwaken: !!opts.awaken,
     xp: 0, level: 1, offers: [], rerolls: 3 + bonus.reroll, enemies: [], shots: [], fx: [], drops: [],
     spawn: 0, nextElite: C.eliteEvery * ST[stage].length, nextBarrage: C.barrageAt, boss: false, next: 1, kills: 0, damage: 0,
@@ -218,7 +221,7 @@ function offer(s: HaebiRun) {
   const pool = kitPowers(s.kit).filter(k => s.ranks[k] < POWERS[k].max && nodeOpen(s, k))
   const { fresh, more } = comboChoices(s)
   if (!pool.length && !fresh.length && !more.length || s.level >= C.maxLevel) return
-  if (s.level === 1) { const k = KITS[s.kit]; s.offers = [k.secondary, k.primary, 'tempo']; return }
+  if (s.level === 1) { const k = KITS[s.kit]; s.offers = ([k.secondary, k.primary, 'tempo'] as Power[]).filter(p => s.ranks[p] < POWERS[p].max); return }
   powerOffers(s, pool)
   // 조합 카드는 한 번에 하나 · 맨 끝 자리 — 새로 조건이 찬 조합은 늘, 연 조합의 다음 단계는 upgradeChance 몫으로
   const combo = fresh[0] ?? (more.length && random(s) < T.upgradeChance ? more[Math.floor(random(s) * more.length)] : undefined)
@@ -274,20 +277,30 @@ export const awakenedLook = (s: HaebiRun) => s.form === 'awake' || s.mode === 'v
 function formBoost(s: HaebiRun) {
   return s.form === 'awake' ? { power: A.power, tempo: A.tempo, move: A.move, ult: A.ultRate } : s.form === 'grit' ? { power: A.gritPower, tempo: A.gritTempo, move: A.gritMove, ult: 1 } : { power: 1, tempo: 1, move: 1, ult: 1 }
 }
-/** 적을 잡아 막대를 채운다 — 다 차면 각성(본편 각성 장수) 또는 투지 */
+/** 적을 잡아 막대를 채운다 — 다 차면 찬 채로 기다린다 (각성 단추 · 11-17 형) */
 function fillGauge(s: HaebiRun, kind: MobKind) {
   if (s.mode === 'vanguard' || s.form !== 'normal' || s.state !== 'playing') return
-  s.gauge += kind === 'boss' ? A.boss : kind === 'elite' ? A.elite : A.kill
-  if (s.gauge < gaugeNeed(s)) return
+  s.gauge = Math.min(gaugeNeed(s), s.gauge + (kind === 'boss' ? A.boss : kind === 'elite' ? A.elite : A.kill))
+}
+/** 각성 단추를 누를 수 있나 — 막대가 다 찼고 보통 모습 · 시전 중이 아님 */
+export const wakeReady = (s: HaebiRun) => s.mode !== 'vanguard' && s.state === 'playing' && s.form === 'normal' && !s.cast && s.gauge >= gaugeNeed(s)
+/** 각성(본편 각성 장수) 또는 투지 — 각성은 HAEBI_AWAKEN.cast 초 동안 컷인(시전)을 거쳐 둘레를 친다 */
+function awaken(s: HaebiRun) {
   s.gauge = 0; s.wakes++
   s.form = s.canAwaken ? 'awake' : 'grit'; s.formT = s.canAwaken ? A.sec : A.gritSec
   if (!s.canAwaken) { announce(s, '투지 · 몸이 달아오른다'); fx(s, 'buff', s.x, s.y, 90, '#ffb35a'); return }
-  announce(s, '각성!'); s.inv = Math.max(s.inv, C.skillInv)
-  // 각성하는 순간 둘레를 치고 밀어낸다
+  // 각성 컷인이 이름을 보여 주니 가운데 알림 띠는 띄우지 않는다
+  s.cast = { kind: 'wake', t: A.cast, total: A.cast, tru: false }
+}
+/** 각성 시전이 끝나는 순간 둘레를 치고 밀어낸다 */
+function wakeBurst(s: HaebiRun) {
+  s.inv = Math.max(s.inv, C.skillInv)
   const r = A.burstRadius * areaScale(s), damage = A.burstDamage * powerScale(s)
   fx(s, 'ring', s.x, s.y, r, '#ffe08a')
   for (const e of s.enemies) if (e.hp > 0 && Math.hypot(e.x - s.x, e.y - s.y) < r) hit(s, e, damage)
 }
+/** 비기 이름 — 각성 중엔 「진」 (11-17 형: 「진 하늘굿처럼 각성 기술로」) */
+export const ultName = (kit: Kit, tru: boolean) => tru ? `진 ${KITS[kit].skill}` : KITS[kit].skill
 function fx(s: HaebiRun, kind: Effect['kind'], x: number, y: number, r = 18, color = '#ffdba0', angle = 0, x2 = x, y2 = y) {
   if (s.fx.length >= C.maxFx) s.fx.shift()
   const life = kind === 'bolt' ? .24 : kind === 'death' ? .45 : kind === 'skill' ? .65 : .32
@@ -371,7 +384,8 @@ export const charge = (kind: MobKind) => kind === 'runner' || kind === 'tiger' ?
 export const slamRadius = (kind: MobKind) => kind === 'bear' ? M.bearRadius : C.bossRadius
 export const slamWindup = (kind: MobKind) => kind === 'bear' ? M.bearWind : C.bossWindup
 function hurt(s: HaebiRun, amount: number) {
-  if (s.inv > 0) return
+  // 무적: 회피·비기 뒤 · 시전 중 · 각성 동안 (11-17 형: 「각성하면 무적」)
+  if (s.inv > 0 || s.cast || s.form === 'awake') return
   s.hp -= Math.max(1, amount * ST[s.stage].damage * (1 - s.ranks.tough * T.tough) - s.bonus.armor * SH.armor.step); s.inv = C.hitInv; s.hurt = .3
   // 되받아치기 (버팀 끝): 맞으면 다음 걸음에 비기가 작게 터진다
   if (s.ranks.capC && !s.cool.counter) { s.counterDue = true; s.cool.counter = T.counterCd - T.counterCdStep * (s.ranks.capC - 1) }
@@ -582,7 +596,7 @@ function aura(s: HaebiRun, power: number, area: number) {
 /** 비기 그림 — 첫 조각은 'skill'(소리·컷인 신호), 잇따르는 조각은 'ult' · 그리는 쪽이 f.ult 로 묶음마다 다르게 그린다 */
 function ultFx(s: HaebiRun, lead: boolean, x: number, y: number, r: number, angle = 0, x2 = x, y2 = y) {
   fx(s, lead ? 'skill' : 'ult', x, y, r, '#ffdf8b', angle, x2, y2)
-  const f = s.fx[s.fx.length - 1]!; f.ult = s.kit; f.life = f.total = U[s.kit].fx
+  const f = s.fx[s.fx.length - 1]!; f.ult = s.kit; f.life = f.total = U[s.kit].fx; if (s.trueUlt) f.tru = true
 }
 /** (x0,y0) 에서 angle 쪽으로 길이 length · 반폭 width 의 띠 안인가 (발밑 조금 뒤까지) */
 function inLine(x0: number, y0: number, e: Mob, cos: number, sin: number, length: number, width: number) {
@@ -603,9 +617,16 @@ function bestAim(s: HaebiRun, length: number, width: number, damage: number, tow
   }
   return best
 }
-/** 비기 — free: 되받아치기(버팀 끝)로 작게 터질 때 · 재사용을 돌리지 않고 날아오던 화살도 그대로 둔다 (k = 힘 몫 · 이어지는 비기도 그 몫으로) */
+/** 비기 재사용 (3층 비기 강화면 짧게) */
+const ultCooldown = (s: HaebiRun) => U[s.kit].cooldown * (ultUpgraded(s) ? T.ultCooldown : 1)
+/** 비기를 누름 — 재사용은 지금부터 돌고, 시전(cast 초 · 진 비기는 trueCast)이 끝나면 터진다 */
+function startUlt(s: HaebiRun) {
+  const tru = s.form === 'awake', t = tru ? U.trueCast : U.cast
+  s.skillCd = ultCooldown(s); s.cast = { kind: 'ult', t, total: t, tru }
+}
+/** 비기 — free: 되받아치기(버팀 끝)로 작게 터질 때 · 날아오던 화살도 그대로 둔다 (k = 힘 몫 · 이어지는 비기도 그 몫으로) · 재사용은 누를 때(startUlt) */
 function ultimate(s: HaebiRun, mx: number, my: number, power: number, area: number, free = false, k = 1) {
-  if (!free) { s.skillCd = U[s.kit].cooldown * (ultUpgraded(s) ? T.ultCooldown : 1); s.shots = s.shots.filter(b => b.kind !== 'enemy' && b.kind !== 'hurl') }
+  if (!free) s.shots = s.shots.filter(b => b.kind !== 'enemy' && b.kind !== 'hurl')
   s.inv = Math.max(s.inv, C.skillInv); s.attack = .3; power *= k
   const moveAim = s.moving && (mx || my) ? Math.atan2(my, mx) : null
   if (s.kit === 'axe' || s.kit === 'bow' || s.kit === 'sword') {
@@ -689,12 +710,15 @@ function ultTick(s: HaebiRun, dt: number, power: number, area: number) {
 }
 export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
   if (s.state !== 'playing' || s.offers.length) return
-  dt = Math.max(0, Math.min(.05, dt)); s.t += dt
+  dt = Math.max(0, Math.min(.05, dt))
+  // 시전 동안 판이 느려진다 (컷인을 보고 → 터지는 것을 본다 · 11-17 형)
+  if (s.cast) dt *= U.slow
+  s.t += dt
   const boost = formBoost(s)
   for (const key of ['attack', 'hurt', 'inv', 'dash', 'dashCd', 'messageTime', 'streakTime'] as const) s[key] = Math.max(0, s[key] - dt)
   s.skillCd = Math.max(0, s.skillCd - dt * boost.ult)
-  // 각성(투지)이 풀리면 보통 모습으로 · 막대는 처음부터 다시
-  if (s.form !== 'normal') { s.formT = Math.max(0, s.formT - dt); if (!s.formT) { s.form = 'normal'; if (s.canAwaken) announce(s, '각성이 풀렸다 · 다시 모아라') } }
+  // 각성(투지)이 풀리면 보통 모습으로 · 막대는 처음부터 다시 (각성 시전 동안은 각성 시간이 줄지 않는다)
+  if (s.form !== 'normal' && s.cast?.kind !== 'wake') { s.formT = Math.max(0, s.formT - dt); if (!s.formT) { s.form = 'normal'; if (s.canAwaken) announce(s, '각성이 풀렸다 · 다시 모아라') } }
   if (!s.streakTime) s.comboKills = 0
   for (const key of Object.keys(s.cool) as Cool[]) s.cool[key] = Math.max(0, s.cool[key] - dt)
   s.hp = Math.min(s.maxHp, s.hp + (C.regen + s.bonus.regen * SH.regen.step + s.ranks.breath * T.breath) * dt)
@@ -709,10 +733,19 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
   const power = powerScale(s) * boost.power, area = areaScale(s), tempo = (1 + s.ranks.tempo * C.tempoStep + s.bonus.haste * SH.haste.step) * boost.tempo
   // 3층 비기 강화 (조합 하나를 끝 단계로)
   const up = ultUpgraded(s), uPower = power * (up ? T.ultDamage : 1), uArea = area * (up ? T.ultArea : 1)
-  if (input.skill && !s.skillCd) ultimate(s, dx, dy, uPower, uArea)
+  // 시전: 비기·각성을 누르면 cast 초 뒤 터진다 · 그동안 다른 비기·각성은 기다린다 (각성 컷인과 비기 컷인이 겹치지 않게 · 11-17 형)
+  if (s.cast) {
+    s.cast.t -= dt
+    if (s.cast.t <= 0) {
+      const c = s.cast; s.cast = null
+      if (c.kind === 'wake') wakeBurst(s)
+      else { s.trueUlt = c.tru; ultimate(s, dx, dy, uPower * (c.tru ? U.trueDamage : 1), uArea * (c.tru ? U.trueArea : 1)) }
+    }
+  } else if (input.wake && wakeReady(s)) awaken(s)
+  else if (input.skill && !s.skillCd) startUlt(s)
   // 되받아치기 (버팀 끝): 맞은 다음 걸음에 비기가 작게 · 이어지는 비기가 도는 중이면 건너뛴다
-  if (s.counterDue) { s.counterDue = false; if (!s.ult) ultimate(s, dx, dy, uPower, uArea, true, T.counter + T.counterStep * (s.ranks.capC - 1)) }
-  if (s.ult) ultTick(s, dt, uPower, uArea)
+  if (s.counterDue) { s.counterDue = false; if (!s.ult) { s.trueUlt = false; ultimate(s, dx, dy, uPower, uArea, true, T.counter + T.counterStep * (s.ranks.capC - 1)) } }
+  if (s.ult) ultTick(s, dt, uPower * (s.trueUlt ? U.trueDamage : 1), uArea * (s.trueUlt ? U.trueArea : 1))
   const target = nearest(s, s.x, s.y)
   if (target) {
     const angle = Math.atan2(target.y - s.y, target.x - s.x), dist = Math.hypot(target.x - s.x, target.y - s.y)

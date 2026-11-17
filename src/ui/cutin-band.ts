@@ -64,6 +64,8 @@ export interface CutBandOpts {
   readonly heroExtra?: string
   /** 어두운 막 (0~1) — 부르는 쪽이 제 막을 쓰면 null */
   readonly dim?: number | null
+  /** 큰 판 (열전 각성·진 비기 · 11-17 형: 「비각성 궁극기 컷인보다 더 멋지게」) — 금빛 겹테 · 뒤에 거꾸로 기운 둘째 띠 · 띠 안을 흐르는 속도선 · 더 센 떨림과 금빛 터짐 */
+  readonly grand?: boolean
 }
 
 /**
@@ -73,17 +75,20 @@ export interface CutBandOpts {
 export function cutBandHtml(o: CutBandOpts): string {
   const end = Math.max(1, Math.round(o.endMs))
   const hs = o.shakeMs ?? 90
-  const shake = o.hitMs !== null ? `animation:cbd-hs ${hs}ms steps(2) ${Math.round(o.hitMs)}ms 2` : ''
-  let h = `<div class="cbd bg-${o.bg}${o.foe === true ? ' foe' : ''}" style="--end:${end}ms" aria-hidden="true">`
+  const shake = o.hitMs !== null ? `animation:${o.grand === true ? 'cbd-hs2' : 'cbd-hs'} ${hs}ms steps(2) ${Math.round(o.hitMs)}ms ${o.grand === true ? 4 : 2}` : ''
+  const grand = o.grand === true
+  let h = `<div class="cbd bg-${o.bg}${o.foe === true ? ' foe' : ''}${grand ? ' grand' : ''}" style="--end:${end}ms" aria-hidden="true">`
   if (o.dim !== undefined && o.dim !== null) h += `<i class="cbd-dim" style="--dim:${o.dim}"></i>`
   h += `<div class="cbd-rig" style="${shake}">`
   // 띠 — 위아래 가는 빛 띠 둘이 엇갈려 지나가고, 가운데 넓은 띠에 기운 바탕이 흐른다
   h += '<i class="cbd-stripe a"></i><i class="cbd-stripe b"></i>'
+  if (grand) h += '<i class="cbd-band2"><i class="cbd-speed"></i></i>'
   h += '<div class="cbd-band">'
   if (o.bgReady !== false) h += `<img class="cbd-plate" src="${cutBgSrc(o.art, o.bg)}" alt="" decoding="async">`
-  h += '<i class="cbd-shade"></i><i class="cbd-glint"></i>'
+  h += '<i class="cbd-shade"></i>' + (grand ? '<i class="cbd-speed"></i>' : '') + '<i class="cbd-glint"></i>'
   if (o.hitMs !== null) h += `<i class="cbd-flash" style="animation-delay:${Math.round(o.hitMs)}ms"></i>`
   h += '</div>'
+  if (grand && o.hitMs !== null) h += `<i class="cbd-burst" style="animation-delay:${Math.round(o.hitMs)}ms"></i>`
   // 장수 — 띠 위로 머리를 내민 윗몸 · 그림이 없으면 장수 표식
   const hero = o.hero
   const img = hero === null ? `<img class="cbd-face unit" src="${o.art}icon/unit-general.png" alt="">` : `<img class="cbd-face${hero.cut ? '' : ' sq'}" src="${o.art}${hero.src}" alt="" decoding="async">`
@@ -153,8 +158,29 @@ export const CUTIN_BAND_CSS = `
 .cbd-ttl b.long { font-size: clamp(22px, min(7cqw, 11cqh), 54px); }
 .cbd-ttl span { font-size: clamp(12px, min(3.4cqw, 4.6cqh), 18px); font-weight: 800; color: #ffe6b0; background: #000c; padding: 2px 12px; border-radius: 9px; border: 1px solid color-mix(in srgb, var(--cc) 60%, #0000); }
 @keyframes cbd-hs { 0% { translate: -6px 3px; } 50% { translate: 6px -3px; } 100% { translate: 0 0; } }
+/* 큰 판 (grand) — 금빛 겹테 · 둘째 띠 · 속도선(딱 끊기는 줄무늬를 background-position 으로 흘림) · 금빛 터짐 (radial) · 이름 금빛 */
+.cbd.grand { --cc: #ffd66a; }
+.cbd.grand .cbd-band { box-shadow: 0 0 0 3px #ffd66a, 0 0 0 6px #4a2a06, 0 0 0 8px #fff0b0, 0 10px 28px #000c; }
+.cbd-band2 { position: absolute; left: -20cqw; width: 140cqw; top: calc(var(--by) - var(--bh) * .95); height: calc(var(--bh) * .34); rotate: calc(5deg * var(--dir)); overflow: hidden;
+  background: #2a0d04; box-shadow: 0 0 0 2px #ffd66a; animation: cbd-band2 var(--end) cubic-bezier(.2, .9, .25, 1) 40ms both; }
+@keyframes cbd-band2 { 0% { opacity: 0; transform: translateX(calc(70cqw * var(--dir))); } 15% { opacity: .95; transform: translateX(0); } 86% { opacity: .95; transform: translateX(0); } 100% { opacity: 0; transform: translateX(calc(-40cqw * var(--dir))); } }
+/* 속도선: 가로로 끊긴 빛줄 여섯 줄(딱 끊기는 줄무늬 · 줄마다 길이가 달라 겹치지 않게)이 띠 방향으로 흐른다 — 움직임은 background-position */
+.cbd-speed { position: absolute; inset: 0; mix-blend-mode: screen; background-repeat: repeat-x;
+  background-image: linear-gradient(90deg, #0000 62%, #fff8 62%), linear-gradient(90deg, #0000 70%, #ffd66a99 70%), linear-gradient(90deg, #0000 55%, #fff6 55%), linear-gradient(90deg, #0000 74%, #ffd66aaa 74%), linear-gradient(90deg, #0000 60%, #fff7 60%), linear-gradient(90deg, #0000 68%, #ffd66a88 68%);
+  background-size: 180px 2px, 260px 3px, 140px 2px, 300px 3px, 210px 2px, 240px 2px;
+  background-position: 0 14%, 40px 29%, 90px 44%, 10px 61%, 120px 76%, 60px 90%; animation: cbd-speed .3s linear infinite; }
+@keyframes cbd-speed { to { background-position: calc(-180px * var(--dir)) 14%, calc(40px - 260px * var(--dir)) 29%, calc(90px - 140px * var(--dir)) 44%, calc(10px - 300px * var(--dir)) 61%, calc(120px - 210px * var(--dir)) 76%, calc(60px - 240px * var(--dir)) 90%; } }
+.cbd-band2 .cbd-speed { mix-blend-mode: normal; background-image: linear-gradient(90deg, #0000 50%, #ffd66a 50%), linear-gradient(90deg, #0000 64%, #fff2c0cc 64%); background-size: 120px 3px, 170px 2px; background-position: 0 32%, 50px 70%; animation: cbd-speed2 .24s linear infinite; }
+@keyframes cbd-speed2 { to { background-position: calc(120px * var(--dir)) 32%, calc(50px + 170px * var(--dir)) 70%; } }
+.cbd-burst { position: absolute; left: 10cqw; top: calc(var(--by) - var(--bh)); width: 50cqw; height: calc(var(--bh) * 2); z-index: 1; background: radial-gradient(closest-side, #fff8, #ffd66a77 40%, #ffd66a00); opacity: 0; animation: cbd-burst 420ms ease-out both; }
+@keyframes cbd-burst { 0% { opacity: 0; transform: scale(.4); } 18% { opacity: 1; } 100% { opacity: 0; transform: scale(1.5); } }
+.cbd.grand .cbd-ttl b { color: #ffe9a0; font-size: clamp(30px, min(10.5cqw, 16cqh), 80px); text-shadow: 0 3px 0 #2a1400, 0 0 18px #ffb84a, 0 0 4px #000; }
+.cbd.grand .cbd-ttl b.long { font-size: clamp(24px, min(7.6cqw, 12cqh), 60px); }
+.cbd.grand .cbd-hero { animation-name: cbd-hero2; }
+@keyframes cbd-hero2 { 0% { opacity: 0; transform: translateX(calc(-28cqw * var(--dir))) scale(1.18); } 16% { opacity: 1; transform: translateX(0) scale(1); } 84% { opacity: 1; transform: translateX(calc(2cqw * var(--dir))) scale(1.06); } 100% { opacity: 0; transform: translateX(calc(-8cqw * var(--dir))) scale(1.06); } }
+@keyframes cbd-hs2 { 0% { translate: -11px 5px; } 50% { translate: 10px -6px; } 100% { translate: 0 0; } }
 @media (prefers-reduced-motion: reduce) {
-  .cbd-band, .cbd-stripe, .cbd-hero, .cbd-ttl, .cbd-rig { animation: none !important; }
+  .cbd-band, .cbd-band2, .cbd-stripe, .cbd-hero, .cbd-ttl, .cbd-rig, .cbd-speed { animation: none !important; } .cbd-burst { display: none; }
   .cbd-stripe { opacity: .7; } .cbd-plate { animation: none; } .cbd-glint { display: none; } .cbd-flash { animation: none; }
 }
 `
