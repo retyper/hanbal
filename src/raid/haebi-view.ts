@@ -1,6 +1,6 @@
-import { HAEBI_RUN as C, HAEBI_MOBS as M, HAEBI_STAGES as ST, HAEBI_ULT as U } from '../tune/params.ts'
+import { HAEBI_RUN as C, HAEBI_MOBS as M, HAEBI_STAGES as ST, HAEBI_ULT as U, HAEBI_AWAKEN as A } from '../tune/params.ts'
 import { genArtOf } from '../realm/data/art.ts'
-import { areaScale, awakenedLook, charge, slamRadius, slamWindup, type HaebiRun, type Kit, type Missile, type StageId } from './haebi.ts'
+import { areaScale, awakenedLook, charge, slamRadius, slamWindup, wardMax, type HaebiRun, type Kit, type Missile, type StageId } from './haebi.ts'
 import { WALK_CYCLE } from './walk-cycle.ts'
 
 /** 돌팔매 묶음의 돌 · 바위 (전용 그림 H56~H58 이 오기 전엔 본편 바위 그림을 빌린다) */
@@ -325,6 +325,26 @@ function drawAura(ctx: CanvasRenderingContext2D, s: HaebiRun, front: boolean) {
   }
   ctx.globalCompositeOperation = op; ctx.globalAlpha = a
 }
+/** 영웅의 투지 보호막 — 몸 둘레 반투명 방패 빛 ('lighter' · filter 없음) · 남은 흡수량만큼 짙고, 막아 낸 직후엔 번쩍 */
+let wardGlow: CanvasGradient | null = null
+function drawWard(ctx: CanvasRenderingContext2D, s: HaebiRun) {
+  if (s.ward <= 0) return
+  const k = Math.min(1, s.ward / wardMax(s)), flash = s.inv > C.hitInv - A.gritShieldFlash ? 1 : 0, p = .5 + .5 * Math.sin(s.t * 5)
+  const op = ctx.globalCompositeOperation, a = ctx.globalAlpha, cy = s.y - C.heroPx * .46, rx = A.gritShieldRx * (1 + .03 * p), ry = A.gritShieldRy * (1 + .03 * p)
+  ctx.globalCompositeOperation = 'lighter'
+  // 껍질: 가운데는 비고 가장자리가 하늘빛 (그라디언트 하나를 한 번만 만들어 늘려 쓴다)
+  wardGlow ??= (() => { const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1); g.addColorStop(0, '#2f86ff12'); g.addColorStop(.6, '#3a96ff3a'); g.addColorStop(.88, '#78c8ffb0'); g.addColorStop(1, '#78c8ff00'); return g })()
+  ctx.globalAlpha = a * Math.min(1, A.gritShieldAlpha * (.55 + .45 * k) + flash * .4)
+  ctx.save(); ctx.translate(s.x, cy); ctx.scale(rx, ry); ctx.fillStyle = wardGlow; ctx.fillRect(-1, -1, 2, 2); ctx.restore()
+  ctx.globalCompositeOperation = 'lighter'
+  // 테두리 · 위쪽을 도는 흰 윤기 한 줄
+  ctx.strokeStyle = flash ? '#ffffff' : '#62c0ff'; ctx.lineWidth = 2; ctx.globalAlpha = a * (.35 + .4 * k + flash * .25)
+  ctx.beginPath(); ctx.ellipse(s.x, cy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke()
+  const sheen = s.t * 1.6 % (Math.PI * 2)
+  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3; ctx.globalAlpha = a * (.3 + .4 * k)
+  ctx.beginPath(); ctx.ellipse(s.x, cy, rx * .86, ry * .9, 0, sheen, sheen + .7); ctx.stroke()
+  ctx.globalCompositeOperation = op; ctx.globalAlpha = a
+}
 /** 비기·각성 시전: 기운이 장수에게 모여드는 고리 (남은 시간만큼 오므라든다) · 진 비기·각성은 금빛 겹고리 */
 function drawCast(ctx: CanvasRenderingContext2D, s: HaebiRun) {
   const c = s.cast; if (!c) return
@@ -437,6 +457,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
         sprite(ctx, images, heroSprite(s), s.x, s.y, C.heroPx, heroFrame(s), s.face); ctx.globalCompositeOperation = op; ctx.globalAlpha = 1
         drawAura(ctx, s, true)
       }
+      drawWard(ctx, s)
     }
   }
   for (const b of s.shots) {

@@ -138,6 +138,27 @@ test('각성 동안·시전 동안은 다치지 않는다 · 투지는 다친다
   assert.ok(shot(grit) > 0)
 })
 
+test('영웅의 투지: 최대 체력의 gritShield 몫 보호막이 먼저 받고, 다 깎이거나 투지가 끝나면 사라진다', () => {
+  const shot = (s: HaebiRun, damage: number) => { s.enemies = []; s.inv = 0; s.shots.push({ x: s.x, y: s.y, vx: 0, vy: 0, life: 1, kind: 'enemy', damage, radius: 10, hit: [], angle: 0, tx: 0, ty: 0 }); const hp = s.hp; stepHaebi(s, idle, DT); return hp - s.hp }
+  const s = still(); s.canAwaken = false; s.gauge = gaugeNeed(s)
+  stepHaebi(s, { ...idle, wake: true }, DT)
+  assert.equal(s.form, 'grit'); assert.match(s.message, /영웅의 투지/)
+  assert.equal(s.ward, s.maxHp * A.gritShield)
+  // 작은 한 대는 보호막이 다 받는다 (체력은 그대로 · 아파하는 몸짓 없음)
+  const before = s.ward
+  assert.ok(shot(s, 10) <= C.regen * DT * 2, '체력이 안 깎인다'); assert.ok(s.ward < before); assert.equal(s.hurt, 0)
+  // 큰 한 대는 보호막을 깨고 남은 만큼 체력으로
+  assert.ok(shot(s, 1e4) > 0); assert.equal(s.ward, 0)
+  // 다시 투지 → 끝나면 보호막도 사라진다
+  const t = still(); t.canAwaken = false; t.gauge = gaugeNeed(t); stepHaebi(t, { ...idle, wake: true }, DT)
+  assert.ok(t.ward > 0)
+  for (let k = 0; k < A.gritSec + .1; k += .05) stepHaebi(t, idle, .05)
+  assert.equal(t.form, 'normal'); assert.equal(t.ward, 0)
+  // 본편 각성 장수의 각성은 보호막 없이 무적
+  const w = still(); w.canAwaken = true; w.gauge = gaugeNeed(w); stepHaebi(w, { ...idle, wake: true }, DT)
+  assert.equal(w.form, 'awake'); assert.equal(w.ward, 0)
+})
+
 test('진 비기: 각성 중의 비기는 이름에 「진」 · 더 세고 넓다 · 그림에 진 표식', () => {
   const fire = (form: HaebiRun['form']) => {
     const s = still(); s.form = form; s.formT = 99

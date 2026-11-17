@@ -2,7 +2,7 @@
 //   node --experimental-strip-types tools/raid-winrate.ts [kits axe,bow,...] [seeds 1-10] [stage forest] [route storm]
 //   route: storm(예전 길) · deepA/deepB/deepC(한 갈래 몰빵) · spread(고르게) — 기술 나무 갈래 빌드 (RAID-LINK §2)
 //   OVR='{"bowDamage":28}' (HAEBI_RUN) · MOVR (HAEBI_MOBS) · STOVR='{"forest":{"damage":.8}}' · AWOVR (HAEBI_AWAKEN) · TROVR (HAEBI_TREE) — params.ts 는 그대로 두고 재 본다
-//   SHOP=0 (상점 없음) · SHOP=small (체력3·힘2·갑옷1) · SHOP=.5 (최대의 반) · AWAKE=0 (본편 각성 없음 → 투지) · MASTER=1 (막대 절반으로 시작)
+//   SHOP=0 (상점 없음) · SHOP=small (체력3·힘2·갑옷1) · SHOP=.5 (최대의 반) · AWAKE=0 (본편 각성 없음 → 영웅의 투지 · 보호막) · MASTER=1 (막대 절반으로 시작)
 //   한 줄: 승 수 · 이긴 판의 두목 잡은 시각(두목이 나온 뒤 초) 평균 · 20분(또는 진 때) 레벨 평균 · 갈래 점수 평균 a/b/c · 씨앗마다
 import { HAEBI_SHOP, HAEBI_RUN, HAEBI_MOBS, HAEBI_STAGES, HAEBI_AWAKEN, HAEBI_TREE } from '../src/tune/params.ts'
 import { branchPoints, type Kit, type Bonus, type StageId } from '../src/raid/haebi.ts'

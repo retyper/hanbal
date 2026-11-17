@@ -187,13 +187,19 @@ export const HAEBI_TREE = { max: 3, rankStep: .4, upgradeChance: .5, ultDamage: 
 /**
  * 판 안 각성 (11-17 · RAID-LINK §1 디지몬식) — 적을 잡으면 막대가 차고(잡졸 kill · 정예 elite · 두목 boss 점), 다 차면 sec 초 동안 각성.
  * 막대 크기 = need × (1 + 각성한 수 × needGrowth) · 각성 동안 피해 ×power · 공격 속도 ×tempo · 이동 ×move · 비기 쿨이 ultRate 배로 돈다.
- * 각성할 때 둘레 burstRadius 를 burstDamage(× 힘) 로 치고 밀어낸다 · 본편에서 각성 못 한 장수는 「투지」(grit*) — 모습은 그대로, 짧고 작게.
+ * 각성할 때 둘레 burstRadius 를 burstDamage(× 힘) 로 치고 밀어낸다 · 본편에서 각성 못 한 장수는 「영웅의 투지」(grit*) — 모습은 그대로, 짧고 작게 · 보호막(gritShield*).
  * 숲·여울·목책을 다 깬 장수(숙련)는 막대 mastery 몫을 채우고 시작한다.
  */
 export const HAEBI_AWAKEN = {
   need: 160, needGrowth: .5, kill: 1, elite: 30, boss: 0,
   sec: 9, power: 1.35, tempo: 1.3, move: 1.15, ultRate: 2.5, burstRadius: 210, burstDamage: 90,
   gritSec: 7, gritPower: 1.12, gritTempo: 1.12, gritMove: 1.08,
+  /**
+   * 영웅의 투지 보호막 (11-17 형: 「영웅의 투지로 해 주고 보호막 효과도 주는 거지」) — 투지를 켜면 최대 체력의 gritShield 몫을 먼저 받아 낸다.
+   * 다 깎이거나 투지(gritSec)가 끝나면 사라진다 · 두를 때·깨질 때 gritShieldBurst 둘레 빛 고리.
+   * 몸 둘레 방패 빛(그리기만): 가로 gritShieldRx · 세로 gritShieldRy · 짙기 gritShieldAlpha · 맞아서 막은 직후 gritShieldFlash 초 동안 더 밝게.
+   */
+  gritShield: .3, gritShieldBurst: 110, gritShieldRx: 46, gritShieldRy: 58, gritShieldAlpha: .6, gritShieldFlash: .18,
   mastery: .5,
   /**
    * 각성 단추 (11-17 형: 「게이지 다 찼을 때 각성 버튼이 생기고 누르면 각성」) — 막대가 다 차면 찬 채로 기다린다.
