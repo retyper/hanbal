@@ -268,7 +268,7 @@
       "installed": "2026-11-17"
     },
     "base-w-48-mujin-mudeung": {
-      "status": "staged",
+      "status": "rejected",
       "order": "strip",
       "act": "D:/tmp-node/sp-inbox/sprite_prop_base-w-48-mujin-mudeung_act.png",
       "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-w-48-mujin-mudeung_walk.png",
@@ -291,6 +291,12 @@
         "headsNewWalk": 2.81,
         "residueAct": 0.0237,
         "residueWalk": 0.0116
+      },
+      "reason": "v4 가 이미 들어가 있음 · v3 다시 staged 된 것 정리",
+      "review": {
+        "chinOld": null,
+        "chinNew": null,
+        "note": ""
       }
     },
     "base-w-50-siljik-mulga": {
@@ -432,10 +438,10 @@
       "installed": "2026-11-17"
     },
     "base-w-76-gampyeong-baetsagong": {
-      "status": "staged",
+      "status": "installed",
       "order": "strip",
-      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-76-gampyeong-baetsagong_act.png",
-      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-76-gampyeong-baetsagong_walk.png",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-w-76-gampyeong-baetsagong_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-w-76-gampyeong-baetsagong_walk.png",
       "actSha256": "0a6baf002e7a05f6734674b9fce7782f31095b40d054d03da45c3bff2576dacb",
       "walkSha256": "b183b2513066a66795ccb03586cf65afdfa16d050405a62c612c3485a6ba9bac",
       "portrait": "w-76-gampyeong-baetsagong",
@@ -455,7 +461,14 @@
         "headsNewWalk": 2.77,
         "residueAct": 0.0011,
         "residueWalk": 0.0002
-      }
+      },
+      "review": {
+        "chinOld": 33.0,
+        "chinNew": 29.0,
+        "note": "v3"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-76-gampyeong-baetsagong",
+      "installed": "2026-11-17"
     },
     "base-w-18-jinhan-salt-widow": {
       "status": "installed",
@@ -557,7 +570,7 @@
       "installed": "2026-11-17"
     },
     "base-g-45-dabeol-deulgae": {
-      "status": "staged",
+      "status": "installed",
       "order": "strip",
       "act": "D:/tmp-node/sp-inbox/sprite_prop_base-g-45-dabeol-deulgae_act.png",
       "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-g-45-dabeol-deulgae_walk.png",
@@ -585,7 +598,15 @@
         "headsNewWalk": 7.05,
         "residueAct": 0.0167,
         "residueWalk": 0.0122
-      }
+      },
+      "review": {
+        "chinOld": 32.0,
+        "chinNew": 29.0,
+        "note": "v4 몸 비율",
+        "weapon": "sword"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-g-45-dabeol-deulgae",
+      "installed": "2026-11-17"
     },
     "base-g-46-uga-nureongso": {
       "status": "rejected",
@@ -784,10 +805,10 @@
       "installed": "2026-11-17"
     },
     "base-w-38-sangdang-bulmae": {
-      "status": "staged",
+      "status": "installed",
       "order": "strip",
-      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-38-sangdang-bulmae_act.png",
-      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-38-sangdang-bulmae_walk.png",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-w-38-sangdang-bulmae_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-w-38-sangdang-bulmae_walk.png",
       "actSha256": "0fdbffedff2444b514b02d4e8d7d6abb819365a89557c8b784cf391fd7d5fe18",
       "walkSha256": "fe4c908351426c21c03b5e2d6d2659ac2287959491e77322bd1c4904ebfa9d7c",
       "portrait": "w-38-sangdang-bulmae",
@@ -807,7 +828,14 @@
         "headsNewWalk": 3.0,
         "residueAct": 0.0,
         "residueWalk": 0.0001
-      }
+      },
+      "review": {
+        "chinOld": 32.0,
+        "chinNew": 29.0,
+        "note": "v3"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-38-sangdang-bulmae",
+      "installed": "2026-11-17"
     },
     "base-w-53-hwanna-gabi": {
       "status": "installed",
@@ -948,10 +976,10 @@
       "installed": "2026-11-17"
     },
     "base-w-83-gyeonji-beodeul": {
-      "status": "staged",
+      "status": "rejected",
       "order": "strip",
-      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-83-gyeonji-beodeul_act.png",
-      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-83-gyeonji-beodeul_walk.png",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-w-83-gyeonji-beodeul_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-w-83-gyeonji-beodeul_walk.png",
       "actSha256": "48fd67e95987d116193f1bd4da60bd51ab7112681102d5d82800e436a70d6e06",
       "walkSha256": "87212dac7833ad8d31ab7df9f916b3248ef278db4eca398086851d6fe4676112",
       "portrait": "w-83-gyeonji-beodeul",
@@ -971,6 +999,12 @@
         "headsNewWalk": 2.68,
         "residueAct": 0.0009,
         "residueWalk": 0.0008
+      },
+      "reason": "v3 가 지금 띠와 거의 같음",
+      "review": {
+        "chinOld": null,
+        "chinNew": null,
+        "note": ""
       }
     },
     "beom": {
@@ -1523,29 +1557,35 @@
       "installed": "2026-11-17"
     },
     "base-g-44-maga-malgup": {
-      "status": "staged",
+      "status": "rejected",
       "order": "strip",
       "act": "D:/tmp-node/sp-inbox/sprite_prop_base-g-44-maga-malgup_act.png",
       "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-g-44-maga-malgup_walk.png",
-      "actSha256": "3a2b523f037a076460a42d944039767c53ab66d41b1e7f7d2ee97debc0476c1e",
+      "actSha256": "efc82260a4699395d06df8de4e53ab6de18653eb146f5cca05fa2563c2333190",
       "walkSha256": "ae33e3fee557303504a3880b759ce9be57f344231d87522ca912bd3b9c3dab92",
       "portrait": "g-44-maga-malgup",
       "auto": {
         "cell": [
-          216,
+          248,
           160
         ],
-        "walkScale": 0.5542,
+        "walkScale": 0.4934,
         "contact": [
           14,
           0.96,
           0.47
         ],
         "headsOld": 3.26,
-        "headsNew": 5.37,
-        "headsNewWalk": 6.56,
+        "headsNew": 3.56,
+        "headsNewWalk": 6.41,
         "residueAct": 0.0001,
         "residueWalk": 0.0
+      },
+      "reason": "v3 가 지금 띠와 거의 같음",
+      "review": {
+        "chinOld": null,
+        "chinNew": null,
+        "note": ""
       }
     },
     "hojin": {
@@ -2880,6 +2920,137 @@
       },
       "archive": "assets_src/realm/retired/prop-20261117/goeun",
       "installed": "2026-11-17"
+    },
+    "base-g-60-golbeol-golgae": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-g-60-golbeol-golgae_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-g-60-golbeol-golgae_walk.png",
+      "actSha256": "461d2b932b45649f1e1d28e22d95617aa5746efb2df253e349afedc92be2b176",
+      "walkSha256": "7b863e6b48c13c929487b4677e4d2139c925eb6a334f5d725b8d0b269a8d59ae",
+      "weaponFix": {
+        "sprite": "sword",
+        "art": "war hammer",
+        "artKit": "axe"
+      },
+      "portrait": "g-60-golbeol-golgae",
+      "auto": {
+        "cell": [
+          184,
+          160
+        ],
+        "walkScale": 0.5856,
+        "contact": [
+          14,
+          0.86,
+          0.76
+        ],
+        "headsOld": 3.56,
+        "headsNew": 4.09,
+        "headsNewWalk": 4.12,
+        "residueAct": 0.0,
+        "residueWalk": 0.0
+      },
+      "review": {
+        "chinOld": 32.0,
+        "chinNew": 29.0,
+        "note": "v3 · 칼→원화대로 전투 망치",
+        "weapon": "axe"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-g-60-golbeol-golgae",
+      "installed": "2026-11-17"
+    },
+    "base-w-26-iseo-tomboy-general": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-w-26-iseo-tomboy-general_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-w-26-iseo-tomboy-general_walk.png",
+      "actSha256": "2c139232a3f7fbd555f9fb2f234d78c51852035689e391bb573707281070b1d6",
+      "walkSha256": "c8ee6337e275da3a951cd8790b9539fa5599c426f200e4c2bc1e06162c41d6d4",
+      "portrait": "w-26-iseo-tomboy-general",
+      "auto": {
+        "cell": [
+          248,
+          160
+        ],
+        "walkScale": 0.5531,
+        "contact": [
+          14,
+          0.96,
+          0.52
+        ],
+        "headsOld": 2.69,
+        "headsNew": 3.3,
+        "headsNewWalk": 5.36,
+        "residueAct": 0.0037,
+        "residueWalk": 0.0033
+      },
+      "review": {
+        "chinOld": 32.0,
+        "chinNew": 29.0,
+        "note": "v3"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-26-iseo-tomboy-general",
+      "installed": "2026-11-17"
+    },
+    "bira": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_bira_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_bira_walk.png",
+      "actSha256": "5b7f22f697b1123bfa16dc909c34316b8a7ec9a156b01853511e7e136bcdf384",
+      "walkSha256": "aa4b51b580a3b908432c89a7481c75ab8969b00a6c0326791d398ac46f2cbda9",
+      "weaponFix": {
+        "sprite": "harpoon spear",
+        "art": "rope lasso",
+        "artKit": "dagger"
+      },
+      "portrait": "w-28-michuhol-bira",
+      "auto": {
+        "cell": [
+          232,
+          160
+        ],
+        "walkScale": 0.6364,
+        "contact": [
+          14,
+          0.95,
+          0.33
+        ],
+        "headsOld": 3.21,
+        "headsNew": 2.82,
+        "headsNewWalk": 2.81,
+        "residueAct": 0.0,
+        "residueWalk": 0.0001
+      },
+      "review": {
+        "chinOld": 32.0,
+        "chinNew": 29.0,
+        "note": "v3 · 작살창→원화대로 올가미",
+        "weapon": "dagger"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/bira",
+      "installed": "2026-11-17"
+    },
+    "gaon": {
+      "status": "rejected",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_gaon_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_gaon_walk.png",
+      "actSha256": "8cafff1b9486eb517df6a56ec31e8c1d1ef37e4c1c2824daddf15d51a141e183",
+      "walkSha256": "13dd5ee407b0f8bd0a07016dbd0e6ed1213ba4554caf8c26fae6eda11eb78abb",
+      "weaponFix": {
+        "sprite": "spear",
+        "art": "no weapon: bare-handed ice magic (a glowing snowflake between the palms)",
+        "artKit": "magic"
+      },
+      "portrait": "w-19-buyeo-fur-princess",
+      "reason": "칸 잘림(pose 16) → 다시",
+      "review": {
+        "chinOld": null,
+        "chinNew": null,
+        "note": ""
+      }
     }
   }
 }
