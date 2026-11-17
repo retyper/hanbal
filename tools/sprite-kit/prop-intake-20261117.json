@@ -664,6 +664,137 @@
       },
       "archive": "assets_src/realm/retired/prop-20261117/base-g-52-tamna-oreum",
       "installed": "2026-11-17"
+    },
+    "base-w-06-buyeo-huntress": {
+      "status": "installed",
+      "order": "strip",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-06-buyeo-huntress_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-06-buyeo-huntress_walk.png",
+      "actSha256": "873e9ecec4ea218e422b7526732fbf1e2295411bc10a77d90c4108dc1a15939c",
+      "walkSha256": "e08bb9a9be7efb278eb6e6b92ef0a444a51b5b5e5b58db0c0940643a82de683d",
+      "portrait": "w-06-buyeo-huntress",
+      "auto": {
+        "cell": [
+          192,
+          160
+        ],
+        "walkScale": 0.66,
+        "contact": [
+          14,
+          0.93,
+          0.53
+        ],
+        "headsOld": 2.96,
+        "headsNew": 3.34,
+        "headsNewWalk": 2.92,
+        "residueAct": 0.0124,
+        "residueWalk": 0.0056
+      },
+      "review": {
+        "chinOld": 32.0,
+        "chinNew": 30.0,
+        "note": "v3"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-06-buyeo-huntress",
+      "installed": "2026-11-17"
+    },
+    "base-w-22-dongye-tiger-huntress": {
+      "status": "rejected",
+      "order": "strip",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-22-dongye-tiger-huntress_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-22-dongye-tiger-huntress_walk.png",
+      "actSha256": "0348064faf8fa7cbc59c0d26affe1735785f949973e03cd45d05bcb5b4366c52",
+      "walkSha256": "231fa654d7c41080729a225107ba8aea08804ec8f8e42a2c0be776263877c0ca",
+      "portrait": "w-22-dongye-tiger-huntress",
+      "auto": {
+        "cell": [
+          208,
+          160
+        ],
+        "walkScale": 0.624,
+        "contact": [
+          14,
+          0.96,
+          0.46
+        ],
+        "headsOld": 2.95,
+        "headsNew": 2.88,
+        "headsNewWalk": 3.05,
+        "residueAct": 0.0003,
+        "residueWalk": 0.0001
+      },
+      "reason": "v3 얼굴 크기 그대로(머리 띠 2.95→2.88)",
+      "review": {
+        "chinOld": null,
+        "chinNew": null,
+        "note": ""
+      }
+    },
+    "base-w-29-golpo-janmul": {
+      "status": "installed",
+      "order": "strip",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-29-golpo-janmul_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-29-golpo-janmul_walk.png",
+      "actSha256": "9b2a0e8b67b59fa80bb392986829acb4c3171ce26660806415a131e653da0da6",
+      "walkSha256": "1132cc9758c0fb0d057592fe7d242ee9181d380191a0dc07442faafd9084dd98",
+      "portrait": "w-29-golpo-janmul",
+      "auto": {
+        "cell": [
+          200,
+          160
+        ],
+        "walkScale": 0.6441,
+        "contact": [
+          14,
+          0.94,
+          0.48
+        ],
+        "headsOld": 2.74,
+        "headsNew": 3.11,
+        "headsNewWalk": 2.89,
+        "residueAct": 0.0,
+        "residueWalk": 0.0
+      },
+      "review": {
+        "chinOld": 33.0,
+        "chinNew": 30.0,
+        "note": "v3"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-29-golpo-janmul",
+      "installed": "2026-11-17"
+    },
+    "base-w-34-chopal-deulme": {
+      "status": "installed",
+      "order": "strip",
+      "act": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-34-chopal-deulme_act.png",
+      "walk": "C:/Users/my/AppData/Local/Temp/claude/3222708f3fd5a762/16220e9c-b2f5-47ea-9087-36a080c3cade/scratchpad/sp-inbox/sprite_prop_base-w-34-chopal-deulme_walk.png",
+      "actSha256": "8eb17fbe36b3210d7ed9b0d298ef7dfe9783d7631dd8be825854209baff7412f",
+      "walkSha256": "14a22ad2a581ca730fe07c06df978f9e112a9b1acd767ac3c14c507f8363d90a",
+      "portrait": "w-34-chopal-deulme",
+      "auto": {
+        "cell": [
+          200,
+          160
+        ],
+        "walkScale": 0.6581,
+        "contact": [
+          14,
+          0.94,
+          0.57
+        ],
+        "headsOld": 2.95,
+        "headsNew": 3.15,
+        "headsNewWalk": 2.85,
+        "residueAct": 0.0167,
+        "residueWalk": 0.0165
+      },
+      "review": {
+        "chinOld": 33.0,
+        "chinNew": 30.0,
+        "note": "v3"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-34-chopal-deulme",
+      "installed": "2026-11-17"
     }
   }
 }
