@@ -15,8 +15,12 @@ TS = ROOT / 'src/ui/hit-portrait.ts'
 FORM = {'base': ('bust', 'bust-hd'), 'aw1': ('awaken', 'awaken-hd')}
 
 done = []
-for f in sorted(SRC.glob('hit_*.png')):
-    if not f.name.endswith('_v2.png') and (SRC / f.name.replace('.png', '_v2.png')).exists():
+_files = {}
+for f in sorted(SRC.glob('Codex-*-candidates/hit_*.png')) + sorted(SRC.glob('hit_*.png')):   # Codex 보류 후보도 · 정식 자리가 나중이라 덮는다
+    if re.search(r'-\d{12}\.png$', f.name): continue
+    _files[f.name] = f
+for f in _files.values():
+    if not f.name.endswith('_v2.png') and f'{f.name[:-4]}_v2.png' in _files:
         continue   # 11-17 상처·피 지운 _v2 가 있으면 그것을
     m = re.fullmatch(r'hit_(base|aw1)_(.+?)(?:_v2)?\.png', f.name)
     if not m or f.stat().st_size == 0:

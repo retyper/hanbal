@@ -483,9 +483,10 @@ const HIT_P = (form) => `Redraw IMAGE 1, a finished portrait from our game, as t
 // 11-17 밤 형: 「얼굴에 상처 나고 피 나면 안 될 듯 · 피격 뒤 바로 원래 그림으로 돌아올 텐데 안 맞잖아」 → 받은 판은 _v2 로 상처·피만 지우기(같은 그림 편집)
 const HIT_CLEAN = 'Edit IMAGE 1 only: remove every scratch, cut, drop or trickle of blood, bruise and dirt mark from the face, neck, hands and skin, restoring clean skin exactly like the original portrait IMAGE 2. Change nothing else at all: same pose, expression, hair, clothes, lighting, framing and canvas size.'
 for (const id of HIT_HEROES) for (const [form, dir] of [['base', 'bust-hd'], ['aw1', 'awaken-hd']]) {
-  if (existsSync(`D:/에셋창고/hit_${form}_${id}.png`)) {
+  const HIT_GOT = [`D:/에셋창고/hit_${form}_${id}.png`, ...readdirSync('D:/에셋창고').filter((d) => /^Codex-.*-candidates$/.test(d)).map((d) => `D:/에셋창고/${d}/hit_${form}_${id}.png`)].find((f) => existsSync(f))
+  if (HIT_GOT) {
     jobs.push({ id: `HIT-${form}-${id}-v2`, group: 'hit', save: `hit_${form}_${id}_v2.png`, title: `${id} · ${form === 'aw1' ? '각성' : '비각성'} 피격 초상 · 상처·피 지우기`,
-      refs: [`D:/에셋창고/hit_${form}_${id}.png`, `/realm/${dir}/${id}.jpg`], now: '받은 판에 얼굴 상처·피가 있음 — 원래 초상으로 돌아올 때 안 맞음(형)',
+      refs: [HIT_GOT, `/realm/${dir}/${id}.jpg`], now: '받은 판에 얼굴 상처·피가 있음 — 원래 초상으로 돌아올 때 안 맞음(형)',
       use: 'py -3 -I tools/hit-intake.py (_v2 가 있으면 그것을 씀)', prompt: HIT_CLEAN })
     continue
   }
