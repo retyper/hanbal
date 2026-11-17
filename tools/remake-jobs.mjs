@@ -335,9 +335,12 @@ const RETRY4 = {
   body: 'BODY REDRAW (the v3 sheet fixed the face but kept short stumpy legs, giant boots and a squat torso): keep the new smaller face, and give the body the limb and torso proportions of the IMAGE 1 figures — longer legs, normal-size boots and fists, a taller torso — so the character stands as tall and long-legged as Onjo in IMAGE 1 while staying broad and muscular.',
   alpha: 'SECOND ATTEMPT (the v3 redraw was rejected because the background was a semi-transparent film, not truly transparent, and the face was still big): the background must be FULLY transparent (alpha 0) everywhere outside the figures — no haze, no film, no glow, no vignette. Also make the face smaller than IMAGE 2, matching the face of Soseono in IMAGE 1.',
 }
+// v4 를 받고도 Claude 가 반려한 것 → v5 (까닭 한 줄을 문안 맨 앞에)
+const SAME_H = 'SIZE CONSISTENCY (the v4 was rejected for this): every one of the 20 cells shows the character at the SAME scale. The walking figures in cells 4 to 9 must be exactly as tall and as broad as the standing figures in cells 1 to 3 (only the stride changes), never a smaller or slimmer person.'
+const SP_V5 = { 'gen-base-g-46-uga-nureongso': SAME_H }
 for (const k of SP_KEYS) {
   if (!SP_TEST.includes(k)) continue
-  const V = SP_RETRY[k] ? 'v4' : 'v3', R4 = SP_RETRY[k] ? RETRY4[SP_RETRY[k]] + '\n' : ''
+  const V = SP_V5[k] ? 'v5' : SP_RETRY[k] ? 'v4' : 'v3', R4 = (SP_V5[k] ? SP_V5[k] + '\n' : '') + (SP_RETRY[k] ? RETRY4[SP_RETRY[k]] + '\n' : '')
   const bust = PORTRAIT[k] ?? (k.startsWith('gen-base-') ? k.slice('gen-base-'.length) : null)
   const refs = ['/assets_src/realm/sprite-prop/ref-approved.png', `/assets_src/realm/sprite-prop/${k}-now.png`, ...(bust && existsSync(`public/realm/bust-hd/${bust}.jpg`) ? [`/realm/bust-hd/${bust}.jpg`] : [])]
   const wf = WFIX[k]
