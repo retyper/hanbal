@@ -1,0 +1,20 @@
+{
+ "_readme": "장수 키 cm · 기준 소서노 165 · 없는 장수는 여 163 / 남 174 · 형 11-17 「장수들마다 키 설정」 · 남녀는 원화 파일 이름(w-/l-=여)으로 가르고 _women 은 그와 다른 예외(진하 띠는 여인)",
+ "_women": [
+  "jinha"
+ ],
+ "soseono": 165,
+ "gamsil": 160,
+ "jinha": 160,
+ "irang": 165,
+ "haedal": 164,
+ "soebi": 160,
+ "ara": 166,
+ "hojin": 178,
+ "jumong": 178,
+ "onjo": 176,
+ "gomok": 168,
+ "hogong": 174,
+ "base-g-38-chopal-palmae": 172,
+ "oi": 181
+}

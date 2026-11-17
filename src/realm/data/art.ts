@@ -10,6 +10,7 @@ import type { CustomId } from './customs.ts'
 import { GEO as YEONGNAM_GEO, yeongnamPos } from './regions/yeongnam.ts'
 import { placeOf, worldGeoOf } from './regions/index.ts'
 import { SPRITE_PX } from './spritePx.ts'
+import { HERO_CM } from './hero-height.ts'
 import { FULL20_OWN, FULL20_ANIM } from './full20Generated.ts'
 import { AWAKENED_BY_BASE, AWAKENED_ANIM } from './awakenedSpritesGenerated.ts'
 
@@ -516,7 +517,8 @@ export function genArtOf(kind: string): { kind: string; ar: number; body: number
     if (a === undefined) continue
     // 도트 규격 띠(anim-px · tools/sprite-normalize.mjs)가 있으면 그 칸 비와 몸 비를 쓴다 — 모든 장수의 몸 키가 같아진다 (SPRITE-AUDIT.md)
     const px = SPRITE_PX[`gen-${k}`]
-    if (px !== undefined) return { kind: k, ...a, ar: px.cell[0] / px.cell[1], body: px.bodyPx / px.cell[1], file: `anim-px/gen-${k}.png` }
+    // 11-17 장수 키(cm · hero-height.ts · 소서노 165 기준): 몸 비를 키 비로 나눠 화면 키가 cm 에 따라 달라지게 (형: 「장수들마다 키 설정」)
+    if (px !== undefined) return { kind: k, ...a, ar: px.cell[0] / px.cell[1], body: px.bodyPx / px.cell[1] / ((HERO_CM[k] ?? 165) / 165), file: `anim-px/gen-${k}.png` }
     return { kind: k, ...a, file: `anim2/gen-${k}.png` }
   }
   return { kind: 'g-sword', ar: 1, body: 1, file: 'anim2/gen-g-sword.png' }

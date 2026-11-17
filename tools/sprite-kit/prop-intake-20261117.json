@@ -1609,36 +1609,37 @@
       "installed": "2026-11-17"
     },
     "hogong": {
-      "status": "rejected",
+      "status": "installed",
       "order": "strip",
       "act": "D:/tmp-node/sp-inbox/sprite_prop_hogong_act.png",
       "walk": "D:/tmp-node/sp-inbox/sprite_prop_hogong_walk.png",
-      "actSha256": "efc47c374f93b3aab03a180801855b6b1d002c75d68dfa4f704ce1da77ffce45",
-      "walkSha256": "2a06e12e586e267044b6467b66761dedc05b74ca18a12cc5da92bbb68f98b282",
+      "actSha256": "ffa5dc9b899ef1c819b9a70fe49f0b1ed4730cdf22aa9e0ccf639ea06444f358",
+      "walkSha256": "c100cd88a6c144d30f55e087026fae1647e951a49f0c70b1f579572d76332370",
       "portrait": "g-75-saro-hogong",
       "auto": {
         "cell": [
-          184,
+          216,
           160
         ],
-        "walkScale": 0.6479,
+        "walkScale": 0.6353,
         "contact": [
           14,
           0.86,
-          0.37
+          0.5
         ],
         "headsOld": 4.03,
-        "headsNew": 5.96,
-        "headsNewWalk": 7.28,
-        "residueAct": 0.0005,
-        "residueWalk": 0.0006
+        "headsNew": 4.15,
+        "headsNewWalk": 4.42,
+        "residueAct": 0.0053,
+        "residueWalk": 0.0001
       },
-      "reason": "형: 8등신·머리가 여자보다 작음 → bl3",
       "review": {
-        "chinOld": null,
-        "chinNew": null,
-        "note": ""
-      }
+        "chinOld": 31.0,
+        "chinNew": 29.0,
+        "note": "★ 기준 판 (형 11-17 「좋다」)"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/hogong",
+      "installed": "2026-11-17"
     },
     "haedal": {
       "status": "installed",
@@ -1776,6 +1777,71 @@
         "weapon": "sling"
       },
       "archive": "assets_src/realm/retired/prop-20261117/base-g-38-chopal-palmae",
+      "installed": "2026-11-17"
+    },
+    "oi": {
+      "status": "rejected",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_oi_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_oi_walk.png",
+      "actSha256": "344f4a5e54898ac84538c0c363ec3596bb530269762f6d0550d204e8f725c484",
+      "walkSha256": "092706965dc713a623f1518f1fa77980acef7c31f2e73b4e0d509a8994ab97f6",
+      "portrait": "g-16-goguryeo-gaema-commander",
+      "auto": {
+        "cell": [
+          224,
+          160
+        ],
+        "walkScale": 0.6329,
+        "contact": [
+          14,
+          0.96,
+          0.54
+        ],
+        "headsOld": 2.8,
+        "headsNew": 3.86,
+        "headsNewWalk": 3.05,
+        "residueAct": 0.0056,
+        "residueWalk": 0.0076
+      },
+      "reason": "형: 너무 땅딸보 → 키 표대로 다시",
+      "review": {
+        "chinOld": null,
+        "chinNew": null,
+        "note": ""
+      }
+    },
+    "ara": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_ara_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_ara_walk.png",
+      "actSha256": "a8192b1a9f22fb883ba09e00438967e7f52f39fbcad8e28544541e51214c9b53",
+      "walkSha256": "ff3969565249ec2186e6dd89311710369061bf90ba084a5f8ef5d2aa50dc0bf4",
+      "portrait": "w-04-gaya-swordswoman",
+      "auto": {
+        "cell": [
+          216,
+          160
+        ],
+        "walkScale": 0.6023,
+        "contact": [
+          14,
+          0.94,
+          0.41
+        ],
+        "headsOld": 3.08,
+        "headsNew": 3.91,
+        "headsNewWalk": 3.85,
+        "residueAct": 0.0155,
+        "residueWalk": 0.001
+      },
+      "review": {
+        "chinOld": 31.0,
+        "chinNew": 29.0,
+        "note": "★ 기준 판 (형 11-17 「좋다」)"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/ara",
       "installed": "2026-11-17"
     }
   }
