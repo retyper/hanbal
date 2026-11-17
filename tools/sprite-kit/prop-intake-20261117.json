@@ -1397,19 +1397,19 @@
       "installed": "2026-11-17"
     },
     "base-g-01-master-smith": {
-      "status": "staged",
+      "status": "installed",
       "order": "strip",
       "act": "D:/tmp-node/sp-inbox/sprite_prop_base-g-01-master-smith_act.png",
       "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-g-01-master-smith_walk.png",
       "actSha256": "7ce70b78ef1e969ca04b41d815251cbc037ca174ff92335b0c29405975600bf3",
-      "walkSha256": "657b7be88521d51cc4dab1f34791fdbcc1a8eb96ddf08be127991928075cc00b",
+      "walkSha256": "d4b6f1a631f1d1a26fe11d38df8f983b05e6dda83bb2c630960a2745ebdfe012",
       "portrait": "g-01-master-smith",
       "auto": {
         "cell": [
           184,
           160
         ],
-        "walkScale": 0.6037,
+        "walkScale": 0.6327,
         "contact": [
           14,
           0.92,
@@ -1417,10 +1417,50 @@
         ],
         "headsOld": 3.22,
         "headsNew": 4.12,
-        "headsNewWalk": 3.35,
+        "headsNewWalk": 4.74,
         "residueAct": 0.0,
         "residueWalk": 0.0
-      }
+      },
+      "review": {
+        "chinOld": 32.0,
+        "chinNew": 29.0,
+        "note": "v3 · 3.22→4.12"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-g-01-master-smith",
+      "installed": "2026-11-17"
+    },
+    "base-g-29-yeonna-myeongsol": {
+      "status": "installed",
+      "order": "strip",
+      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-g-29-yeonna-myeongsol_act.png",
+      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-g-29-yeonna-myeongsol_walk.png",
+      "actSha256": "c9c0d37690444f6cf043354b67d7127ef0ae4c62800e507253bfc10b2ca350c7",
+      "walkSha256": "b71885ab5331f4436cb0794dd86a59c87bf0ec4ee5aaa1adb22407b05f6e6fe4",
+      "portrait": "g-29-yeonna-myeongsol",
+      "auto": {
+        "cell": [
+          192,
+          160
+        ],
+        "walkScale": 0.6181,
+        "contact": [
+          14,
+          0.92,
+          0.52
+        ],
+        "headsOld": 3.65,
+        "headsNew": 4.49,
+        "headsNewWalk": 4.89,
+        "residueAct": 0.0347,
+        "residueWalk": 0.0207
+      },
+      "review": {
+        "chinOld": 31.0,
+        "chinNew": 29.0,
+        "note": "v3 · 3.65→4.49"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-g-29-yeonna-myeongsol",
+      "installed": "2026-11-17"
     }
   }
 }
