@@ -135,7 +135,7 @@ console.log(`영상 할 일 ${count('todo')} · 판정 대기 ${count('judge')} 
 
 // ── 챗지피티(코덱스) 앱에 한마디로 맡기는 줄 (형 11-16: 「한마디만 한 다음에 계속 만들게」) ──
 //   tools/out/gpt-queue/QUEUE.md + refs/ · 아직 안 받은 그림만 · 영상(Veo)은 넣지 않는다
-const Q = 'tools/out/gpt-queue', ORDER = ['skilltest', 'remake', 'hit', 'hit2', 'raid', 'steam', 'r15', 'bust', 'cover', 'skill', 'skill1', 'dlc', 'skill2']
+const Q = 'tools/out/gpt-queue', ORDER = ['skilltest', 'remake', 'hit', 'redo', 'hit2', 'raid', 'steam', 'r15', 'bust', 'cover', 'skill', 'skill1', 'dlc', 'skill2']
 mkdirSync(`${Q}/refs`, { recursive: true })
 const rank = (r) => ORDER.indexOf(r.group.startsWith('remake') ? 'remake' : r.group)
 const todo = raid.filter((r) => r.kind !== 'img-done').sort((a, b) => rank(a) - rank(b))  // 마을·배경 다시는 한 순위 (remake-jobs 의 배열 차례 그대로)
