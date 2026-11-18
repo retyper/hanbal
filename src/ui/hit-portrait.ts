@@ -19,6 +19,8 @@
  *  - 그림마다 얼굴 가운데 자리를 미리 재 둔다 (hit-focus.generated.ts HIT_FOCUS). 판이 그림을 잘라 보여 주면(cover) 잘리는 축에서만 그림을 밀어
  *    얼굴이 보이게 한다 — 그림 끝을 넘지 않는다 (판 바탕이 드러나지 않는다). 뒤집지 않는다 (무기 든 손이 바뀐다).
  *  - 판 크기는 맞는 순간 한 번 잰다 (기기·화면에 매이지 않는다 · 프레임마다 재지 않는다). 자리 자료가 없으면 예전 자리 그대로.
+ *  - 11-19 형: 「계속 같은 부분만 보인다」 → 열전 판(hitPortrait)은 맞을 때마다 얼굴 자리를 판 가운데 ± hitPortraitFaceSpread 안에서 맞은 횟수로 옮기고
+ *    (첫 번은 가운데 · hitVary · 난수 없음), 비껴 선 데서 밀려 들어와 선다 (hitPortraitSlide · object-position 만 움직인다).
  *  - 피격 그림이 실려 있으면 금은 끈다 (hitPortraitCrackWithArt · 형: 「깨지는 연출은 필요 없지 않을까」). 그림이 없거나 덜 실렸으면 금까지 예전 그대로.
  *  - 「실렸다」 = 받은 Image 를 쥐고 있고 다 실렸다 (warmHitArt · 최근 HIT_ART_KEEP 장). 쥐고 있어야 맞을 때 끼우는 그림이 망을 다시 타지 않고 곧바로 뜬다
  *    (hitPortrait 는 쥐고 있는 그 Image 를 그대로 끼운다).
@@ -95,6 +97,55 @@ export function facePos(f: Focus | null, bw: number, bh: number, aspect = 1): st
   const pc = (p: number | null): string => `${p === null ? 50 : Math.round(p * 1000) / 10}%`
   return `${pc(s[0])} ${pc(s[1])}`
 }
+// ── 맞을 때마다 다른 자리 (11-19 형: 「계속 이미지 같은 부분만 보인다 · x 위치 바뀌게 하는 거 아니었어?」)
+/** 고름 걸음 = 1 - 1/φ — 몇 번을 맞아도 앞엣것과 겹치지 않게 고루 흩어진다 (셈 상수 · 손맛 수치 아님) */
+const VARY_STEP = 0.3819660112501051
+/** n 번째 맞음의 고름 (0~1) — 첫 번(0)은 가운데(0.5), 그다음부터 황금비 걸음. 맞은 횟수로만 정한다 (같은 n 이면 늘 같다 · 난수 없음) */
+export const hitVary = (n: number): number => { const t = 0.5 + (Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0) * VARY_STEP; return t - Math.floor(t) }
+/**
+ * 한 축에서 얼굴이 판의 [at - spread, at + spread] 안에 오는 자리 몫 범위 [작은 쪽, 큰 쪽] — 그림 끝을 넘지 않게 0~1 로 자른다
+ * (끝에 막히면 그쪽은 끝에서 멈춘다 · 그래도 얼굴은 예전 가운데 자리보다 판 밖으로 나가지 않는다). 안 잘리는 축이면 null.
+ */
+export function focusRange(f: number, v: number, at: number, spread: number): readonly [number, number] | null {
+  const a = focusSlide(f, v, at + spread), b = focusSlide(f, v, at - spread)
+  return a === null || b === null ? null : [Math.min(a, b), Math.max(a, b)]
+}
+/** 맞은 자리 — object-position · 밀려 들어오기 시작하는 자리(안 움직이면 null) · 당겨 보는 배율(1 이상) · 당기는 축(판 안 얼굴 자리 · transform-origin) */
+export interface HitPin { readonly pos: string; readonly from: string | null; readonly zoom: number; readonly origin: string }
+/**
+ * cover 판(bw×bh)에서 n 번째 맞음의 피격 그림 자리 — 잘리는 축에서 얼굴을 FaceX/Y ± FaceSpread 안의 hitVary(n) 자리에 둔다 (n = 0 이면 facePos 와 같다).
+ * from = 그 자리에서 hitPortraitSlide(판 길이 몫)만큼 비껴 선 자리 — 맞을 때마다 번갈아 반대쪽에서 밀려 들어오고, 그쪽이 그림 끝에 막히면 다른 쪽에서.
+ * 얼굴 자료가 없거나 · 판을 못 쟀거나 · 안 잘리면 null → 부르는 쪽 기본 자리 그대로 (facePos 와 같은 약속).
+ */
+export function faceHitPin(f: Focus | null, bw: number, bh: number, aspect: number, n: number): HitPin | null {
+  if (f === null || !(bw > 0 && bh > 0 && aspect > 0) || !Number.isFinite(bw / bh / aspect)) return null
+  const R = P.render, box = bw / bh, dw = Math.max(box, aspect), dh = dw / aspect, t = hitVary(n)
+  const axis = (fa: number, v: number, at: number, spread: number): readonly [number, number] | null => {
+    const r = focusRange(fa, v, at, spread), c = focusSlide(fa, v, at)
+    if (r === null || c === null) return null
+    // t 0.5 = 예전 가운데 자리 c · 위로는 c→큰 쪽, 아래로는 c→작은 쪽 (그쪽이 그림 끝에 막혀 없으면 다른 쪽으로 · 같은 자리를 되풀이하지 않게)
+    let side = t >= 0.5 ? r[1] : r[0]
+    if (Math.abs(side - c) < 1e-6) side = t >= 0.5 ? r[0] : r[1]
+    const p = c + (side - c) * Math.abs(t - 0.5) * 2
+    // 밀려 들어오기: 판 길이 몫 → 자리 몫 (잘린 몫 1 - v 가 자리 몫 1 에 해당) · 번갈아 반대쪽 · 막히면 다른 쪽
+    const d = (R.hitPortraitSlide * v) / (1 - v), dir = n % 2 === 0 ? 1 : -1
+    let from = clamp01(p + dir * d)
+    if (Math.abs(from - p) < d / 2) from = clamp01(p - dir * d)
+    return [p, from]
+  }
+  const x = axis(f[0], box / dw, R.hitPortraitFaceX, R.hitPortraitFaceSpreadX), y = axis(f[1], 1 / dh, R.hitPortraitFaceY, R.hitPortraitFaceSpreadY)
+  if (x === null && y === null) return null
+  const pc = (p: number | null): string => `${p === null ? 50 : Math.round(p * 1000) / 10}%`
+  const pos = `${pc(x?.[0] ?? null)} ${pc(y?.[0] ?? null)}`, from = `${pc(x?.[1] ?? null)} ${pc(y?.[1] ?? null)}`
+  // 당겨 보기: 얼굴이 그림 끝에 붙은 그림은 가로로 옮길 몫이 거의 없다 → 맞을 때마다 얼굴 둘레를 조금씩 다르게 당겨 본다 (첫 번은 1 · 얼굴 자리는 그대로)
+  // 1 보다 크게만 당기고 얼굴 자리를 축으로 삼으니 판 바탕이 드러나지 않는다
+  const px = x?.[0] ?? 0.5, py = y?.[0] ?? 0.5
+  const ax = clamp01((f[0] * dw - px * (dw - box)) / box), ay = clamp01(f[1] * dh - py * (dh - 1))
+  const zoom = 1 + R.hitPortraitZoom * Math.abs(t - 0.5) * 2
+  return { pos, from: from === pos ? null : from, zoom, origin: `${pc(ax)} ${pc(ay)}` }
+}
+/** 피격 그림 열쇠로 — n 번째 맞음의 자리 (faceHitPin) */
+export const hitArtPin = (key: string | null | undefined, bw: number, bh: number, aspect: number, n: number): HitPin | null => faceHitPin(hitFocus(key), bw, bh, aspect, n)
 /** 피격 그림 열쇠로 — 잘려 그리는 자리에서 밀 몫 (faceSlide) */
 export const hitFocusSlide = (key: string | null | undefined, bw: number, bh: number, dw: number, dh: number): readonly [number | null, number | null] | null => faceSlide(hitFocus(key), bw, bh, dw, dh)
 /** 피격 그림 열쇠로 — cover 판의 object-position (facePos) · null 이면 부르는 쪽 기본 자리 */
@@ -263,7 +314,8 @@ function overlayHtml(s: number, o: HitHtmlOpts, img: boolean): string {
   return `<span class="hitp" aria-hidden="true" style="${vars.join(';')}">${art}<i class="hitp-gray"></i><i class="hitp-red"></i>${crack > 0.001 ? crackSvg(o.seed ?? 0) : ''}</span>`
 }
 
-const live = new WeakMap<HTMLElement, { t0: number; seed: number }>()
+/** 판마다 맞은 때 · 금 꼴 · 맞은 횟수 n (피격 그림 자리를 n 으로 고른다 — 화면 쪽 셈일 뿐 판은 건드리지 않는다) */
+const live = new WeakMap<HTMLElement, { t0: number; seed: number; n: number }>()
 let seedNext = 0
 const calm = (): boolean => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
 export interface HitPortraitOpts {
@@ -285,15 +337,16 @@ export function hitPortrait(host: HTMLElement, s: number, o: HitPortraitOpts = {
   ensureHitPortraitCss()
   const now = performance.now(), was = live.get(host)
   if (was !== undefined && now - was.t0 < P.render.hitPortraitGapMs) return
-  const seed = seedNext++
-  live.set(host, { t0: now, seed })
+  const seed = seedNext++, n = was === undefined ? 0 : was.n + 1
+  live.set(host, { t0: now, seed, n })
   const el = o.shake === undefined ? host : o.shake, art = o.art ?? null
   // 이 그림을 쥐고 있는다 — 부르는 쪽이 미리 받아 두지 않았어도 다음부터는 끼우자마자 뜨게 (쥐고 있으면 「방금 썼다」고만 적는다)
   warmHitArt(art)
   // 재기는 겉막을 끼우기 전에 한 번 (끼운 뒤에 재면 배치를 한 번 더 돌린다)
   const bw = host.clientWidth, bh = host.clientHeight
   const size = Math.max(1, el === null || el === host ? Math.min(bw || 1, bh || 1) : Math.min(el.clientWidth || 1, el.clientHeight || 1))
-  const pin = art !== null ? hitArtPos(o.focus, bw, bh, artAspect.get(art) ?? 1) : null
+  // 맞을 때마다 얼굴 자리를 조금씩 옮기고(n · 첫 번은 가운데) 비껴 선 데서 밀려 들어온다 (11-19 형: 「계속 같은 부분만 보인다」)
+  const at = art !== null ? hitArtPin(o.focus, bw, bh, artAspect.get(art) ?? 1, n) : null, pin = at?.pos ?? null
   host.querySelector(':scope > .hitp')?.remove()
   // 쥐고 있는 그림이 다 실렸으면 그 Image 를 그대로 끼운다 — 이미 받은 그림이라 망을 타지 않고 끼우는 순간 뜬다 (새 <img> 는 브라우저에 따라
   // 받은 지 오래된 그림을 서버에 다시 물어볼 수 있다). 끼우는 순간 CSS 애니가 처음부터 돈다. 다른 판에 떠 있는 중이면(같은 그림 두 판) 새 <img> 로.
@@ -309,6 +362,14 @@ export function hitPortrait(host: HTMLElement, s: number, o: HitPortraitOpts = {
     const im = host.querySelector<HTMLImageElement>(':scope > .hitp > .hitp-art')
     const hold = (): void => { artBad.delete(art); warmHitArt(art) }
     if (im !== null) { if (artLoaded(im)) hold(); else im.addEventListener('load', hold, { once: true }) }
+  }
+  // 밀려 들어오기 — 그림 자리(object-position)만 짧게 옮긴다: 그림 끝을 넘지 않으니 판 바탕이 안 드러나고, 좁은 판 그림 한 장이라 레이어를 새로 만들지 않는다 (폰 그래픽)
+  // 당겨 보기는 움직이지 않는 transform 한 번 (좁은 판 그림 한 장 · 쥐고 돌려 쓰는 Image 라 매번 새로 박는다 — 자료가 없으면 지운다)
+  const artIm = host.querySelector<HTMLImageElement>(':scope > .hitp > .hitp-art')
+  if (artIm !== null) {
+    const z = at !== null && at.zoom > 1.001 ? at.zoom : 1
+    artIm.style.transform = z > 1 ? `scale(${z.toFixed(3)})` : ''; artIm.style.transformOrigin = z > 1 ? at!.origin : ''
+    if (at !== null && at.from !== null && !calm() && typeof artIm.animate === 'function') artIm.animate([{ objectPosition: at.from }, { objectPosition: at.pos }], { duration: P.render.hitPortraitSlideMs, easing: 'cubic-bezier(.15,.85,.35,1)' })
   }
   if (el === null || calm() || typeof el.animate !== 'function') return
   const L = hitLook(s), a = L.shake

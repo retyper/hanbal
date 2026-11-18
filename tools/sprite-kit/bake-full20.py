@@ -64,9 +64,10 @@ def bake(out,key,job=None):
         walk_source=Path(job['walkSheet'])
         if not walk_source.is_absolute():walk_source=ROOT/walk_source
         walk=cut(walk_source,4,2,' (walk sheet)')
-        # 걷기 판 배율: 동작 판 걷기 6칸(3~8)과 새 걷기 8칸의 「몸 덩어리 키」 중앙값을 맞춘다 (가는 무기는 깎고 잰다)
+        # 걷기 판 배율: 서기 칸(띠 차례 0~3 · 옛 차례 0~2)과 새 걷기 8칸의 「몸 덩어리 키」 중앙값을 맞춘다 (가는 무기는 깎고 잰다)
+        # 11-19 형 「걸을 때마다 키가 작아짐」: 11-17 판은 동작 판의 걷기 칸에 맞췄는데, 동작 판 걷기 칸이 서기보다 5~15% 작게 그려져 와서 걷기 띠가 줄었다
         unit_a=parts[0][0].height/138;unit_w=float(np.median([p[0].height for p in walk]))/138
-        walk_factor=float(np.median([core_height(parts[i][0],unit_a) for i in (range(4,12) if stripOrder else range(3,9))])/np.median([core_height(p[0],unit_w) for p in walk]))
+        walk_factor=float(np.median([core_height(parts[i][0],unit_a) for i in (range(0,4) if stripOrder else range(0,3))])/np.median([core_height(p[0],unit_w) for p in walk]))
         if job.get('walkFactor'):walk_factor=float(job['walkFactor'])  # 11-18 각성 띠(aw1-intake.py): 동작 판 걷기 칸이 띠 차례와 달라 배율을 밖에서 잰다
         assert .2<walk_factor<4,'Walk sheet scale outside limits'
         for j,(part,box,cx) in enumerate(walk):

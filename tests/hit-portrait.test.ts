@@ -7,7 +7,7 @@ import assert from 'node:assert/strict'
 import { P } from '../src/tune/params.ts'
 import { HIT_FOCUS } from '../src/ui/hit-focus.generated.ts'
 import {
-  HIT_ART, HIT_ART_KEEP, drawHitPortrait, facePos, faceSlide, focusSlide, hitArtKey, hitArtPath, hitArtPos, hitArtReady, hitFaceKey, hitFocus, hitFocusSlide,
+  HIT_ART, HIT_ART_KEEP, drawHitPortrait, faceHitPin, facePos, faceSlide, focusSlide, hitArtKey, hitArtPath, hitArtPin, hitArtPos, hitArtReady, hitFaceKey, hitFocus, hitFocusSlide, hitVary,
   hitKeyPath, hitPortraitHtml, warmHitArt, type HitFrame,
 } from '../src/ui/hit-portrait.ts'
 
@@ -122,6 +122,38 @@ test('얼굴 자료 꼴: 열쇠는 결/초상 id · 값은 0~1 둘 · 어느 판
       else assert.ok(y >= 0 && y <= 1, key)
     }
   }
+})
+
+test('맞을 때마다 다른 자리 (11-19 형: 「계속 같은 부분만 보인다」): 첫 번은 예전 자리 · 다음부터 옮기고 · 얼굴은 판 안 · 끝은 안 넘는다', () => {
+  assert.equal(hitVary(0), 0.5)
+  for (let n = 1; n < 12; n++) assert.ok(Math.abs(hitVary(n) - hitVary(n - 1)) > 0.2, `n ${n} 은 앞 번과 떨어진다`)
+  assert.equal(hitVary(5), hitVary(5), '맞은 횟수로만 정한다')
+  // 열전 가로 화면 판 (폰 915×392 · 형 화면 2000×857 의 왼쪽 판)
+  for (const [bw, bh] of [[167, 380], [372, 845]] as const) {
+    const box = bw / bh
+    // 아라 (bust/w-04-gaya-swordswoman 얼굴 0.26) — 첫 번은 facePos 그대로
+    const ara = HIT_FOCUS['bust/w-04-gaya-swordswoman']!
+    assert.equal(faceHitPin(ara, bw, bh, 1, 0)!.pos, facePos(ara, bw, bh))
+    const xs = new Set<string>()
+    for (let n = 0; n < 6; n++) xs.add(faceHitPin(ara, bw, bh, 1, n)!.pos)
+    assert.ok(xs.size >= 5, `맞을 때마다 자리가 바뀐다 ${[...xs].join(' / ')}`)
+    for (const [key, f] of Object.entries(HIT_FOCUS)) for (let n = 0; n < 8; n++) {
+      const h = faceHitPin(f, bw, bh, 1, n)
+      if (h === null) continue
+      const [x, y] = pos(h.pos), [a, b] = win(x, box)
+      assert.equal(y, 0.5)
+      assert.ok(x >= 0 && x <= 1 && a - 0.001 <= f[0] && f[0] <= b + 0.001, `${key} n${n} 얼굴이 판 안`)
+      if (h.from !== null) { const [fx] = pos(h.from); assert.ok(fx >= 0 && fx <= 1 && fx !== x, `${key} n${n} 밀려 들어오는 자리도 그림 끝 안`) }
+      // 당겨 보기: 첫 번은 1 · 늘 1 이상(판 바탕이 안 드러난다) · 축은 판 안의 얼굴 자리
+      assert.ok(n === 0 ? h.zoom === 1 : h.zoom >= 1 && h.zoom <= 1 + P.render.hitPortraitZoom + 1e-9, `${key} n${n} 배율 ${h.zoom}`)
+      const [ox] = pos(h.origin)
+      assert.ok(Math.abs(ox - (f[0] - win(x, box)[0]) / box) < 0.01, `${key} n${n} 당기는 축이 얼굴 자리`)
+    }
+  }
+  // 자료 없음 · 안 잘림 → null (부르는 쪽 기본 자리)
+  assert.equal(faceHitPin(null, 167, 380, 1, 3), null)
+  assert.equal(faceHitPin([0.5, 0.5], 200, 200, 1, 3), null)
+  assert.equal(hitArtPin('bust/없는-초상', 167, 380, 1, 2), null)
 })
 
 test('피격 그림 열쇠: 지금 떠 있는 얼굴과 같은 결 (각성 장수는 awaken · 진각성 모습은 awaken2)', () => {
