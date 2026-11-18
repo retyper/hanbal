@@ -887,6 +887,12 @@ KEEP EXACTLY: her face, smile, eyes, hair and red ribbon, the leather armour and
       [`public/realm/${dir}/g-84-wander-seoneul.jpg`], '피격 초상이 옛 옷(닌자풍) 기준 · 초상이 한국식 저고리·두건으로 바뀜(11-19)',
       `py -3 -I tools/hit-intake.py (_v2 우선) → public/realm/hit/${form === 'aw1' ? 'awaken' : 'bust'}/g-84-wander-seoneul.webp`, HIT_P(form))
   }
+  // 11-19 남장수 1차 각성 열(g-61~g-70)이 「멀리 서 있던 것」에서 가슴 위로 당긴 새 그림으로 바뀌었다 → 각성 피격 초상도 새 그림 기준으로 다시
+  for (const id of ['g-61-apdok-ap', 'g-62-gammun-gamnamu', 'g-63-chopal-yeoul', 'g-64-michuhol-sogeumkkun', 'g-65-sangdang-soemangchi', 'g-66-geonma-malbalgup', 'g-67-gosaburi-buri', 'g-68-mujin-bitgoeul', 'g-69-goryong-yong', 'g-70-siljik-pado']) {
+    add('misc', 2, `hit/aw1/${id}`, `${id} · 각성 피격 초상 · 새 각성 초상(가슴 위) 기준으로 다시`, `hit_aw1_${id}_v2.png`,
+      [`public/realm/awaken-hd/${id}.jpg`], '각성 초상이 가슴 위 구도로 바뀜(11-19) · 피격 초상은 옛 먼 구도',
+      `py -3 -I tools/hit-intake.py (_v2 우선) → public/realm/hit/awaken/${id}.webp`, HIT_P('aw1'))
+  }
   const LANE = { portrait: '초상', strip: '띠', skill: '비기', misc: '그 밖' }
   const seen = new Set()
   R.filter((r) => !seen.has(r.save) && seen.add(r.save)).sort((a, b) => a.priority - b.priority).forEach((r) => jobs.push({
