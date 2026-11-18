@@ -18,6 +18,7 @@ done = []
 _files = {}
 for f in sorted(SRC.glob('Codex-*-candidates/hit_*.png')) + sorted(SRC.glob('hit_*.png')):   # Codex 보류 후보도 · 정식 자리가 나중이라 덮는다
     if re.search(r'-\d{12}\.png$', f.name): continue
+    if f.name in _files and _files[f.name].stat().st_mtime >= f.stat().st_mtime: continue   # 11-18 같은 이름이면 더 새로 그린 쪽(Codex 다시 그린 후보가 옛 정식 자리보다 새것일 수 있다)
     _files[f.name] = f
 for f in _files.values():
     if not f.name.endswith('_v2.png') and f'{f.name[:-4]}_v2.png' in _files:
