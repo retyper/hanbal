@@ -414,7 +414,7 @@ ${PIX} Same standing height as the action sheet, feet on one shared baseline in 
   // → 「새로 그리기」를 「비각성 띠를 그대로 두고 옷만 갈아입히는 편집」으로 바꾸고, 기준 셋 그림을 뺀다(등신이 큰 장수를 작게 끌어당겼다). 이미 받은 것은 _v2 로 다시.
   const awDirs = ['D:/에셋창고', ...readdirSync('D:/에셋창고').filter((d) => /^Codex-.*-candidates$/.test(d)).map((d) => `D:/에셋창고/${d}`)]
   const gotAw = (n) => awDirs.some((d) => existsSync(`${d}/${n}`))
-  const AW_HOLD = ['goeun', 'sori', 'gomok', 'haedal', 'irang', 'aryeong', 'base-w-17-mahan-pearl-diver']   // 머리 ×1.06~1.12 · 형 판정 대기라 다시 줄에 올리지 않는다
+  const AW_HOLD = []   // 11-18 형 「권한 대로」: 6% 넘으면 다시 그린다 → 보류 일곱(고은·소리·고목·해달·이랑·알영·진주 해녀)도 _v2 줄로
   const AW_WALK_ONLY = ['hojin']   // 동작 판은 통과 · 걷기 판만 다시 (걷기 판 등신이 동작 판과 달랐다)
   const MEASURE = (who, v) => `[코덱스] 저장 전에 재기: py -3 -I tools/sprite-kit/aw1-intake.py measure --who ${who} --act <방금 만든 act 파일>${v === 'walk' ? ' --walk <방금 만든 walk 파일>' : ''} → 끝 줄이 VERDICT PASS 가 아니면 한 번만 다시 그려 나은 쪽을 저장(숫자를 원장에 적는다)`
   rows.forEach((r) => {

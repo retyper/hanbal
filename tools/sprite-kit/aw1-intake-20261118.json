@@ -4,7 +4,7 @@
   "method": "aw1-intake.py · bake-full20.py (동작 4x5 + 걷기 4x2 → 띠 20칸) · 턱~발 픽셀을 비각성 띠와 같게(idlePx) · bodyPx = 비각성 띠 값 · 공격 칸은 원본 자세를 골라 띠 12~17 에",
   "heroes": {
     "aryeong": {
-      "status": "staged",
+      "status": "rejected",
       "act": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_aryeong_act.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_aryeong_walk.png",
       "actSha256": "47a5a8cbdf13773db5ceb41ab7db9d804fd482a1f6a073ccd6bbf4d9af0d243c",
@@ -203,7 +203,13 @@
       "warn": [
         "머리 찾기 불확실(닮음 0.39/0.47 · 두 방향 1.055/1.133) → 몸 위끝으로 맞춤 · detail.png E 를 보고 --top-base/--top-aw (+ --chin-base/--chin-aw)",
         "공격 칸 자동 고름 [0, 11, 12, 13, 14, 15] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
-      ]
+      ],
+      "reason": "head larger than the normal-form strip by more than 6 percent (lead artist rule 11-18: redraw); keep the head-to-body ratio of IMAGE 1",
+      "rejectedBy": "review",
+      "review": {
+        "note": "",
+        "date": "2026-11-18"
+      }
     },
     "base-g-38-chopal-palmae": {
       "status": "installed",
@@ -623,7 +629,7 @@
       }
     },
     "goeun": {
-      "status": "staged",
+      "status": "rejected",
       "act": "D:/에셋창고/Codex-claude35-hit-new-20261118-candidates/sprite_aw1_goeun_act.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-new-20261118-candidates/sprite_aw1_goeun_walk.png",
       "actSha256": "26c53eb2d64dc6a7e10b834a63bf6fa8ae19540725f86452ea46eb36e809842b",
@@ -826,10 +832,16 @@
         "각성 머리 위로 8.9px 솟음(관·깃털·든 무기) · 키에서 뺌",
         "칸(160)에 다 못 담아 그림은 8.39px 작게 구움 → 화면에서 몸 키 값(bodyPx 129)으로 키워 맞춘다",
         "걷기 판 등신이 동작 판과 다름: 같은 몸 크기에서 걷기 머리 ×0.90 (반씩 나눠 구움 · 10% 넘으면 걷기 판을 다시 받는다)"
-      ]
+      ],
+      "reason": "head larger than the normal-form strip by more than 6 percent (lead artist rule 11-18: redraw); keep the head-to-body ratio of IMAGE 1",
+      "rejectedBy": "review",
+      "review": {
+        "note": "",
+        "date": "2026-11-18"
+      }
     },
     "gomok": {
-      "status": "staged",
+      "status": "rejected",
       "act": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_gomok_act.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_gomok_walk.png",
       "actSha256": "b00f8af3888ab7ae639de08ff7262201c0eaba8371d21dacab1ad92fb1443c1e",
@@ -1027,10 +1039,16 @@
         "머리가 큼 ×1.1 (같은 키에서 머리 높이 · 5% 넘음)",
         "옷 빛깔이 비각성과 비슷 0.177",
         "공격 칸 자동 고름 [0, 11, 12, 13, 14, 0] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
-      ]
+      ],
+      "reason": "head larger than the normal-form strip by more than 6 percent (lead artist rule 11-18: redraw); keep the head-to-body ratio of IMAGE 1",
+      "rejectedBy": "review",
+      "review": {
+        "note": "",
+        "date": "2026-11-18"
+      }
     },
     "haedal": {
-      "status": "staged",
+      "status": "rejected",
       "act": "D:/에셋창고/Codex-claude35-root-20261118-candidates/sprite_aw1_haedal_act.png",
       "walk": "D:/에셋창고/Codex-claude35-root-20261118-candidates/sprite_aw1_haedal_walk.png",
       "actSha256": "7c6c11b6dd3a5f75e10b55ec07db6ec57ee5c661486e0dcff9b0058badb38a38",
@@ -1228,7 +1246,13 @@
       "warn": [
         "머리가 큼 ×1.107 (같은 키에서 머리 높이 · 5% 넘음)",
         "공격 칸 자동 고름 [0, 9, 10, 11, 12, 13] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
-      ]
+      ],
+      "reason": "head larger than the normal-form strip by more than 6 percent (lead artist rule 11-18: redraw); keep the head-to-body ratio of IMAGE 1",
+      "rejectedBy": "review",
+      "review": {
+        "note": "",
+        "date": "2026-11-18"
+      }
     },
     "hogong": {
       "status": "rejected",
@@ -1655,7 +1679,7 @@
       }
     },
     "irang": {
-      "status": "staged",
+      "status": "rejected",
       "act": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_irang_act.png",
       "walk": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_irang_walk.png",
       "actSha256": "d86c065d554282df5f0ecc839d5fde565388154acf888f34d31ec70ce91d7b47",
@@ -1855,7 +1879,13 @@
       "warn": [
         "머리가 큼 ×1.12 (같은 키에서 머리 높이 · 5% 넘음)",
         "공격 칸 자동 고름 [0, 11, 12, 13, 14, 0] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
-      ]
+      ],
+      "reason": "head larger than the normal-form strip by more than 6 percent (lead artist rule 11-18: redraw); keep the head-to-body ratio of IMAGE 1",
+      "rejectedBy": "review",
+      "review": {
+        "note": "",
+        "date": "2026-11-18"
+      }
     },
     "maehwa": {
       "status": "rejected",
@@ -3361,7 +3391,7 @@
       "pending": "act v2 · walk v1 → waiting for walk"
     },
     "sori": {
-      "status": "staged",
+      "status": "rejected",
       "act": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_sori_act.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_sori_walk.png",
       "actSha256": "533bdbac1620f3f01638298301088352a5a1b687781139f6b8a4a43b4a0ca24e",
@@ -3564,7 +3594,13 @@
         "머리가 큼 ×1.087 (같은 키에서 머리 높이 · 5% 넘음)",
         "옷 빛깔이 비각성과 비슷 0.164",
         "공격 칸 자동 고름 [0, 13, 14, 15, 16, 0] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
-      ]
+      ],
+      "reason": "head larger than the normal-form strip by more than 6 percent (lead artist rule 11-18: redraw); keep the head-to-body ratio of IMAGE 1",
+      "rejectedBy": "review",
+      "review": {
+        "note": "",
+        "date": "2026-11-18"
+      }
     },
     "base-w-10-pirate-captain": {
       "status": "rejected",
@@ -3989,7 +4025,7 @@
       ]
     },
     "base-w-17-mahan-pearl-diver": {
-      "status": "staged",
+      "status": "rejected",
       "act": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_base-w-17-mahan-pearl-diver_act.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_base-w-17-mahan-pearl-diver_walk.png",
       "actSha256": "f0e90bf11e4895c1671459a2d583b5f9d93f06dc4c0f4263f9da9fba6988e807",
@@ -4189,7 +4225,13 @@
         "머리 찾기 불확실(닮음 0.62/0.62 · 두 방향 0.938/1.375) → 몸 위끝으로 맞춤 · detail.png E 를 보고 --top-base/--top-aw (+ --chin-base/--chin-aw)",
         "각성 머리 위로 4.7px 솟음(관·깃털·든 무기) · 키에서 뺌",
         "공격 칸 자동 고름 [0, 9, 10, 11, 12, 0] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
-      ]
+      ],
+      "reason": "head larger than the normal-form strip by more than 6 percent (lead artist rule 11-18: redraw); keep the head-to-body ratio of IMAGE 1",
+      "rejectedBy": "review",
+      "review": {
+        "note": "",
+        "date": "2026-11-18"
+      }
     },
     "base-w-18-jinhan-salt-widow": {
       "status": "rejected",
@@ -5691,7 +5733,7 @@
       "pending": "act v1 · walk vNone → waiting for walk"
     },
     "base-w-29-golpo-janmul": {
-      "status": "staged",
+      "status": "rejected",
       "act": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_base-w-29-golpo-janmul_act.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_base-w-29-golpo-janmul_walk.png",
       "actSha256": "764a065df6818a6fe0b3449791c66ba6be2af9ba777feda9c74da8295287f9e6",
@@ -5891,7 +5933,13 @@
         "머리가 큼 ×1.12 (같은 키에서 머리 높이 · 5% 넘음)",
         "옷 빛깔이 비각성과 비슷 0.184",
         "공격 칸 자동 고름 [0, 11, 12, 13, 14, 0] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
-      ]
+      ],
+      "reason": "head larger than the normal-form strip by more than 6 percent (lead artist rule 11-18: redraw); keep the head-to-body ratio of IMAGE 1",
+      "rejectedBy": "review",
+      "review": {
+        "note": "",
+        "date": "2026-11-18"
+      }
     },
     "base-w-31-dabeol-dalbit": {
       "status": "waiting-walk",

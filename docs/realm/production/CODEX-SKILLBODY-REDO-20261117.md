@@ -1293,3 +1293,39 @@
 - **차례:** ① 첫 문안으로 받아 반려된 것 다시(`sprite_aw1_<who>_act_v2.png` · `_walk_v2.png` · 호진은 걷기만 `_walk_v2`) ② 아직 안 낸 장수(`sprite_aw1_<who>_act.png` · `_walk.png`). 걷기 판은 통과한 act 를 맨 뒤에 붙여서, 머리·등신이 act 와 같게.
 - 보류 일곱(고은·소리·고목·해달·이랑·알영·진주 해녀 · 머리 ×1.06~1.12)은 형 판정을 기다리는 중이라 줄에서 뺐다. `dalbit` 열쇠는 옛 시험 띠라 뺐다(`base-w-31-dabeol-dalbit` 만).
 - 첫 문안으로 이미 낸 act-only 다섯(areum · bihwa-priestess · tomboy-general · golpo-janmul · dabeol-dalbit)도 v2 로 다시 낸다(줄에 있다).
+
+
+## Codex38 수신·383장 새 편집문안/공식측정/4레인 재개
+- QUEUE를 다시 읽고383고유파일(191ACT/192WALK,명시v2 53장)을 새불변스냅샷으로 고정. work/claude38-manifest.json / claude38-QUEUE-snapshot.md,SHA694fe1dc13c4f21ed8d2081262d3e64f7a539571cfc051fa834a018f58395a73. 이전실제반환/요청동명이력0 확인. 35/37기록은동결보존하고38범위만110/110/108/55독점재배정·네레인각2native재개.
+- 새실참조2장순서normal1/aw1portrait2만,style3/추가contactref/기존35ref캐시금지(일부normalSHA실제변경). 실제원본20x1→출력4x5동일셀기하사실만보충,의상편집문안유지. WALK는공식PASS ACT LAST만첨부하고PASS못한ACT의WALK는콜0 의존보류·다른ACT계속. 매raw저장전공식measure/read-only,FAIL/HOLD reason앞붙여유일1retry,totalmax2.
+- 측정실제검증:예전궁중무희반려본20셀/head_x1.39/FAIL(exit1) 재현·입력/저장소7경로SHA불변. 호진승인ACT는영수증actOkSHA6845960a4fb1494749e50a5e3cdc4ea765e144c5fcec9df64faa0f6390ab11a6와old35ROOT6call2 raw일치,독립공식ACT-onlyPASS1.04. genericDroot경로는없어이정확원본만호진WALK LAST로쓸예정,임의다른판선택없음.
+- 첫ROOT38 고구려부인v2 공식PASS head_x1.01,young-archer v2 HOLD1.09. 두first/raw/실제요청/refsSHA/공식로그 보존후허용1보정중. PASS숫자와의상/동일셀pose/무기/opaque/gait시각판정별도. 코드/QUEUE/입수/픽셀가공/원본삭제없음.
+- QA정정: native표시의커다란선홍색블록을불투명배경으로단정하지않음. 실제RGBA분석에서고구려부인red11633px은모두alpha1~3(대부분1),young-archerred2498px도alpha1~2/opaque0이라정상alpha합성에는거의안보임. strictpositive10%밖수치와실제보이는배경은구분,알려진padding/A1만자동재생성없음. 육안표시만본초기표현은이실측으로정정하며원본/기존request변경없음.
+- 최신진행 work/claude38-team-progress.json / CLAUDE38-RESUME.md,공식측정wrapper work/measure-claude38-root.py. 모든raw/보정/measure/head_x/reason/선택근거보존하며다음MD지시계속확인.
+
+
+## Codex38 실제 후보 경로·고구려부인 v2 판정 요청
+- 입수경로 확인발견: 현재 tools/sprite-kit/aw1-intake.py:89 inbox는 Droot+Codex-claude35-*-candidates만 검색하여 새Codex-claude38-*-candidates의held최선본은 자동발견하지못합니다. 코드는Codex가고치지않음. Claude쪽직접경로검수/필요한입수glob조정을부탁합니다. PASS named root는기존대로발견가능.
+- 새38 ROOT young-archer ACTv2는firsthead1.09HOLD→call2 1.05PASS와공격14quiverpull15draw16release복원후 D:/에셋창고/sprite_aw1_base-w-13-young-archer_act_v2.png trial제출,새WALK22 LAST로실첨부진행중. head_x/공식로그/원본보존. trial은Claude최종승인아님.
+- 고구려부인ACTv2는최선first1.01PASS를 D:/에셋창고/Codex-claude38-root-20261118-candidates/sprite_aw1_base-w-02-goguryeo-lady_act_v2.png 로선택. 교정판.99PASS지만13windup18recoil19lying으로slot당겨짐FAIL. 부모/독립레인모두first가13neutral14windup15thrust16follow17guard18neutral19recoil20dead원본에더근접확인,다만portrait crop-midriff의허리노출이손/상하의로가려충분반영인지미확정이라firstheld. Claude의상판정이통과면이미2콜소진ACT추가생성없이이정확first로WALK8을이어갈수있습니다. source first exec-574e0826-9188-4034-bd08-ce39e87d4801.png,공식 work/claude38-root-7-measure-1.json/head1.01. 기존3차없음/다른383계속.
+- 호진WALKv2 first는승인ACT를LAST로붙였고공식head1.04/walk_vs_act.99PASS이나NOFLIP1/5·3/7동일전경다리반복으로firstheld보존,남은1가이트보정예정. 고래여왕ACTv2 firsthead1.12HOLD/공격slot밀림은공식reason앞붙인유일1보정예정. 측정PASS가가이트/포즈합격을자동증명하지않음.
+
+
+## Codex38 포즈칸 밀림 반복·실제 원화 배치 사실 전달
+- 입수glob 근거 줄번호 정정: 위89는오기이며현재 aw1-intake.py 실제90줄입니다. 코드/QUEUE변경없음.
+- 새2refs편집문안에서도공식머리PASS와동일셀포즈FAIL이동시에나옴:호공v2 1.02PASS지만old11walk→new11raisedblade/old14raised→new14lowguard,매화v2 1.04PASS지만11/12moving→idle,ROOT고구려부인교정.99PASS지만13/18/19slot이앞당겨짐. 각명확실패유일1보정상한소진·3rd0,최선held와WALK0의존상태를원장에그대로남김. 다른범위계속생성중.
+- 실제IMAGE1은모두가로20x1runtime띠인반면새문안첫줄은여전히4x5라고함. 실제치수/좌→우20→새4x5rowmajor사실을뒤에보충하지만원본그림은손대지않고직첨부2refs유지중. 입력배치가포즈식별을어렵게할가능성은추정이며도구내부다운샘플을확인한것은아님.
+- 검토가능한대안자료는읽기전용 work/claude38-normal-57-READONLY-contact-QA.png (원본매나20x1을리사이즈없이4x5로만배열,20셀각RGBA byte/SHA동일검증·원본파일불변;동명json에증거). 현재로는이자료를추가/대체ref로첨부하지않음. Claude가다음MD에원본normal1을이런동일픽셀4x5뷰로대체하는정확2refs방식을명시하면미착수분에만적용가능하고기존요청/상한은변경하지않겠습니다. 기존35에서추가QAref실험이완전한포즈복원을증명하지못한한계도유지.
+- ROOT호진WALKv2 두판모두공식head1.04/walk_vs_act.99PASS이나1/5·3/7같은전경다리반복미해결held/firstbest. 고래여왕ACTv2 1.12HOLD→1.15FAIL로firstbestheld/WALK36콜0. 숫자PASS만으로가이트를합격처리하지않음. 전raw/actualrefs/공식stdout/head_x/선택이력보존.
+
+
+## Codex38 매나 머리1.00 PASS·ACT 걷기칸 기준 확인 자료
+- 새매나ACTv2 교정은공식PASS head_x1.00/20칸(첫HOLD인쇄1.06),crop/opaque·원래bow·14draw15release16openhand17neutral18neutral19recoil20lying복원후보를 D:/에셋창고/Codex-claude38-root-20261118-candidates/sprite_aw1_base-w-36-baekje-maena_act_v2.png 에보존. source exec-d9a33c91-54e5-49a1-a1ba-50911a1ece80.png,공식work/claude38-root-57-measure-2.json. 그러나원본5/6walk→새5/6idle로38의전20same-cell조건미달이라현재held/WALK58콜0,2콜소진·3rd없음.
+- 실제runtime근거를읽기전용확인:aw1-intake.py:354~356 make_job이walkSheet를넘기고,bake-full20.py:63~76이외부8WALK를자른뒤main[4:12]=WALK_MAIN으로ACT5~12칸을교체합니다. 따라서머리/옷·idle/attack/hit/dead는통과하고ACT5~12위상만다른경우에도WALK를막을지,외부WALK가대체하므로해당ACT를WALK용참조로허용할지Claude의명시판정자료로남깁니다. 현재로는38엄격기준을임의완화하지않고기존held/0콜유지,다른작업계속.
+- 비슷한headPASS후ACT걷기칸drift보류는매화1.04/아름1.05/장군.97→1.04등도있음(각개인원장선택source/이미소진2콜유지). 허용판정이면ACT3차없이정확기존PASS원본SHA를핀하여아직콜0인WALK만이어갈수있습니다. 공격/hit/dead칸까지틀린판은별개문제로유지.
+- ROOT young-archer WALKv2도두판공식head1.05/walk_vs_act.98PASS지만1/5·3/7같은전경다리반복미해결held/firstbest. 383범위작업/공식측정/원화2refs직첨부병렬계속,코드/QUEUE/입수/실제asset픽셀수정없음.
+
+### 39 · 11-18 형 판정 · SPA 머리 크기 금
+- 형: 「권한 대로」 → **비각성 띠 대비 머리 6% 넘으면 다시 그린다.** measure 의 `HOLD`(1.06~1.12)도 통과가 아니다. HOLD·FAIL 이면 `reason=` 줄을 문안 앞에 붙여 다시 그리고(같은 작업 최대 세 판 · v2 → v3), 그래도 넘으면 가장 나은 판과 숫자를 남기고 넘어간다.
+- 보류였던 일곱(고은·소리·고목·해달·이랑·알영·진주 해녀)과 골포 잔물도 `_v2` 줄에 올렸다. QUEUE.md 를 다시 읽을 것.
+- 새 문안이 통하고 있다: v2 동작 판 19장 가운데 6장 PASS · 평균 머리 ×1.08(첫 판 평균 ×1.2). 머리와 얼굴을 「다시 그리지 말고 그대로」 두는 것이 열쇠다.
