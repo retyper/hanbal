@@ -346,7 +346,9 @@ function nearest(s: HaebiRun, x: number, y: number, excluded: number[] = [], rad
   return best
 }
 const SPEED: Partial<Record<Missile['kind'], number>> = { pebble: 0, skip: C.skipSpeed, boulder: C.boulderSpeed, enemy: C.enemyShotSpeed, arrow: C.bowSpeed, javelin: C.javelinSpeed, wave: C.waveSpeed, rain: 0, barrage: 0, stone: 0, flame: 0, knife: C.knifeSpeed, soul: C.soulSpeed, hurl: M.hunterSpeed }
-const LIFE: Partial<Record<Missile['kind'], number>> = { pebble: C.slingFlight, skip: C.skipLife, boulder: C.boulderLife, arrow: C.bowLife, javelin: C.javelinLife, wave: C.waveLife, rain: C.rainDelay, barrage: C.barrageDelay, stone: M.lobDelay, flame: M.flameLife, knife: C.knifeLife, soul: C.soulLife, hurl: M.hunterLife }
+const LIFE: Partial<Record<Missile['kind'], number>> = { pebble: C.slingFlight, enemy: C.enemyShotLife, skip: C.skipLife, boulder: C.boulderLife, arrow: C.bowLife, javelin: C.javelinLife, wave: C.waveLife, rain: C.rainDelay, barrage: C.barrageDelay, stone: M.lobDelay, flame: M.flameLife, knife: C.knifeLife, soul: C.soulLife, hurl: M.hunterLife }
+/** 투사체 종류의 처음 수명(초) — 보는 쪽이 발사 직후 손끝 보정을 잴 때 같은 값을 쓴다 */
+export const missileLife = (kind: Missile['kind']) => LIFE[kind] ?? C.galeLife
 const RADIUS: Partial<Record<Missile['kind'], number>> = { skip: 14, boulder: C.boulderRadius, gale: 25, wave: C.waveRadius, javelin: 16, arrow: 10, barrage: C.barrageRadius, stone: M.lobRadius, flame: M.flameRadius, knife: 12, soul: 16 }
 function shoot(s: HaebiRun, kind: Missile['kind'], angle: number, damage: number, x = s.x, y = s.y, tx = x, ty = y, gen = 0) {
   if (s.shots.length >= C.maxShots) return undefined

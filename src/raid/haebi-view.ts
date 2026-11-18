@@ -1,6 +1,6 @@
 import { HAEBI_RUN as C, HAEBI_MOBS as M, HAEBI_STAGES as ST, HAEBI_ULT as U, HAEBI_AWAKEN as A, HAEBI_FX as K } from '../tune/params.ts'
 import { genArtOf } from '../realm/data/art.ts'
-import { areaScale, awakenedLook, charge, slamRadius, slamWindup, wardMax, type HaebiRun, type Kit, type Missile, type StageId } from './haebi.ts'
+import { areaScale, awakenedLook, charge, missileLife, slamRadius, slamWindup, wardMax, type HaebiRun, type Kit, type Missile, type StageId } from './haebi.ts'
 import { WALK_CYCLE } from './walk-cycle.ts'
 import { AURA_ART, drawAura, drawAuraBurst, drawAuraGround, type AuraArt, type AuraAt, type AuraKind } from './fx-aura.ts'
 
@@ -161,7 +161,7 @@ function digits(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElem
 export function impactFrame(age: number) { return Math.min(7, Math.max(0, Math.floor(age * 8))) }
 /** Simulation positions are ground contacts; project missiles at hand/bow height. */
 export function projectileAnchor(b: Missile) {
-  const release = b.kind === 'shard' ? 0 : Math.max(0,1-(C.galeLife-b.life)/C.shotReleaseTime)
+  const release = b.kind === 'shard' ? 0 : Math.max(0,1-(missileLife(b.kind)-b.life)/C.shotReleaseTime)
   return {x:b.x+Math.sign(b.vx)*C.shotHandLead*release,y:b.y-(b.kind==='enemy'||b.kind==='hurl'?C.enemyShotHeight:C.heroShotHeight)}
 }
 function impact(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, x: number, y: number, radius: number, age: number) {

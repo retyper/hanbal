@@ -60,3 +60,10 @@ test('drops outside the magnet radius are not collected while standing still, an
   const shop = createHaebi(7, 'stage', 'axe', { bonus: { magnet: 5 } })
   assert.ok(magnetRadius(shop) > magnetRadius(s) * 1.5)
 })
+test('archerRange 바로 안에서 쏜 화살이 서 있는 장수의 체력을 깎는다', () => {
+  const s = createHaebi(); s.spawn = 99; s.cool.axe = 99
+  spawnMob(s, 'archer'); const e = s.enemies[0]!; Object.assign(e, { x: s.x - C.archerRange * .95, y: s.y, cd: 0, hp: 10000, max: 10000 })
+  const hp = s.hp
+  for (let i = 0; i < 120 * 4 && s.hp === hp; i++) { e.x = s.x - C.archerRange * .95; e.y = s.y; stepHaebi(s, idle, 1 / 120) }
+  assert.ok(s.hp < hp, '맞아서 체력이 줄어야 한다')
+})

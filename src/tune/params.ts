@@ -94,7 +94,7 @@ export const HAEBI_RUN = {
   /** 잡졸 체력 = mobHp × (1 + 초 × hpTimeScale + 분² × hpTimeCurve) — 처음 두세 대, 자라면 줄고, 시간이 다시 두껍게 (예전 42 · .0014 · 0 = 늘 한 방) */
   mobHp: 75, hpTimeScale: .004, hpTimeCurve: .012, mobSpeed: 42, speedTimeScale: .035,
   eliteHp: 1300, bossHp: 30000, eliteEvery: 150,
-  contactDamage: 9, enemyShotDamage: 10, hitInv: .65, enemyShotSpeed: 155,
+  contactDamage: 9, enemyShotDamage: 7, hitInv: .65, enemyShotSpeed: 155, enemyShotLife: 2.6,
   /** 적 한 대의 아픔이 초마다 붙는 비율 · 산적 활잡이 비율(처음 + 초마다) · 활잡이 재장전 (형 11-15: 가만히 있어도 깬다) */
   archerHunt: 480,
   /** 산적 일제 사격 — 처음 뜨는 때 · 간격(처음→두목 무렵) · 경고 시간 · 반지름 · 피해(초마다 붙는 비율) · 두목 무렵 곁에 더 떨어지는 수 */
