@@ -280,3 +280,13 @@
   - 이 셋은 Gemini 에서 두 번씩 실패 → 다음엔 Flow 로 돌리는 게 나아 보임(그림 탓 가설은 확인 안 됨).
 - 남은 남자 1차 영상(「파일:-」 g-): 48편(held·downloaded 여섯 · g-49 받기만 · 실패 셋 포함). 다음 번호 g-65-goguryeo-damul.
 - 다음: 무료 계정 Flow 오늘 14:33~15:36 갱신(각 30 · 두 편씩) · Jay Flow 11-28 갱신 · Gemini Jay 는 걸쇠 풀 이유(원인) 확인 뒤.
+
+## 11-18 13시 반 (Claude · 형 「영상 만드는 것도 해봐」)
+
+- 새 윈도 크롬 **5d7f0148**(옛 bcba6fe9 대신)을 select_browser 로 고름. 경고·CAPTCHA 없음.
+- **이 크롬엔 구글 계정이 둘뿐이다**: Gemini·Flow `u/0` = roqkfeke12 · `u/1` = retyper92. `u/2`~`u/6` 은 모두 u/0 으로 되돌아감 → **Jay·hepastosian·digimon-sin 은 로그인돼 있지 않다.** 로그인은 형 몫이라 손대지 않음.
+  - 그래서 Gemini Jay(Argon) 영상은 못 냄. Flow 는 u/0(roqkfeke12 · 프로젝트 목록이 11-17 g-44·47·52·54 와 같음 = 어제의 u/0)·u/1 만 쓸 수 있다.
+- Flow 화면(flow.google.com)에서 **스크린샷·클릭이 「Permission denied for this action on this domain」**(새 확장이라 사이트 허락이 아직 없음). 글 읽기·JS 는 됨 → 형이 확장에서 flow.google.com 허락 필요.
+- 13:3x 첫 스크린샷 다시 시도 중 **윈도 크롬 연결이 끊기고 맥(8d9283e0)만 inUse** → 규칙대로 멈춤.
+- **보냄 0 · 성공 0 · 실패 0** · 크레딧 안 씀 · 받은 영상 없음.
+- 다음: 형이 ① 윈도 크롬 다시 붙이기 ② flow.google.com 사이트 허락 ③ Jay(와 hepastosian·digimon-sin) 로그인 뒤 이어서. 차례는 그대로 g-65-goguryeo-damul(문안 `npx tsx tools/veo/prompt-for.ts g-65-goguryeo-damul`) · 골개·압·한울은 Flow 몫. Flow 무료 갱신 u/0 14:33 · u/1 15:01 (u/4 15:14 · u/2 15:36 은 로그인 뒤).
