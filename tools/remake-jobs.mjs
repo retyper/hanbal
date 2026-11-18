@@ -3,7 +3,7 @@
 //   refs 1번 = 지금 그림(무엇을 그리나) · 나머지 = 챗지피티 화풍 기준 · 앞 장 결과가 필요한 장은 문안 첫 줄에 「D:/에셋창고/<이름> 도 첨부」
 //   한 벌(일터 1·2·3단 · 궁궐 네 단 · 필름 넷)은 격자 한 장으로 받아 코드로 자른다 — 크레딧을 아끼고 서로 맞는다
 
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 export const REMAKE_GROUPS = { 'remake-town': '마을 다시', 'remake-bg': '배경 다시', 'remake-icon': '아이콘 다시', 'remake-sprite-aw': '각성 전투 띠', 'remake-sprite': '전투 띠 얼굴 크기 다시', 'remake-cutin': '컷인 배경 판' }
 
 const RULES = 'Original early-Korean (Proto-Three-Kingdoms, Samhan) historical fantasy. Not Chinese imperial: no glazed-tile palace roofs, no stacked pagoda roofs or sharply upturned eaves, no dragon pillars, no hanfu robes. No Japanese motifs: no torii gates, no shimenawa ropes and no white zigzag paper streamers, no samurai armor, no katana, no knotted white hachimaki headbands. No red sun discs and no sun rays: no visible sun anywhere. No text, letters, numbers, pseudo-characters, logo, signature or watermark anywhere; banners, plaques and cloth are plain or carry simple geometric or animal shapes only.'
@@ -410,25 +410,36 @@ ${PIX} Same standing height as the action sheet, feet on one shared baseline in 
   const masters = Object.values(BL).map((k) => k.slice(4))
   const rankOf = (r) => (masters.includes(r.key) ? 0 : /^[wl]-/.test(r.portrait) ? 1 : 2)
   rows.sort((a, b) => rankOf(a) - rankOf(b) || a.portrait.localeCompare(b.portrait, 'en', { numeric: true }))
-  rows.forEach((r, i) => {
-    const who = r.key, k = 'gen-' + who, test = i < 12
-    const refs = ['/assets_src/realm/sprite-prop/ref-style3.png', `/realm/anim-px/${k}.png`, `/realm/awaken-hd/${r.portrait}.jpg`]
-    jobs.push({ id: `SPA-${who}-act`, group: 'remake-sprite-aw', save: `sprite_aw1_${who}_act.png`, title: `${test ? '★ 시험 12 · ' : ''}${who} · 각성 전투 띠 20자세`,
-      refs, now: '각성 전투 띠 없음 — 각성해도 싸우는 모습이 비각성 그대로 (열전은 이 띠가 있는 장수만 판 안에서 각성한다)',
-      use: '받으면 Claude 가 비각성 띠와 같은 키·머리 크기인지 나란히 재고 anim-px/gen-aw1-<who>.png 로 넣음',
-      prompt: `AWAKENED-FORM BATTLE SPRITE SHEET. IMAGE 1 shows three approved characters of this game (rendering style only). IMAGE 2 is THIS character's current approved normal-form battle sprite sheet (20 cells, FOUR columns x FIVE rows, read left to right, top to bottom). IMAGE 3 is the same character's FIRST-AWAKENING portrait.
-Draw the awakened-form sheet of the SAME person: in every one of the 20 cells keep EXACTLY the head size, face, body proportions, standing height, drawing scale, pixel rendering and the pose of the SAME cell of IMAGE 2 (same order: idles, walk, dash, attack windup, contact, follow-through, recover, guards, staggers, hit, lying defeated). CHANGE ONLY the look to the awakened form of IMAGE 3: outfit, colours, hair style and ornaments, armour pieces and the decoration of the weapon. Keep the weapon KIND of IMAGE 2 (if IMAGE 3 shows a different kind of weapon, keep IMAGE 2's kind and decorate it in the awakened style); the weapon stays complete and the same size in all 20 cells.
-HARD CHECK BEFORE SAVING: put your standing cell on top of the standing cell of IMAGE 2 at the same scale. Your head (top of skull to chin, hair and headgear excluded) must be NO TALLER, your legs NO SHORTER and the total height EQUAL. And the awakened outfit must read as clearly different from IMAGE 2 at a glance (colour and silhouette). If any of these fail, redraw before saving.
-OUTFIT: follow IMAGE 3 including how much skin it shows, translated into combat wear; fabric stays opaque, no see-through cloth and no nipple outline. Ancient Korean setting: no katana, no ninja gear, no red sun disc or sun rays.
-No aura, glow, sparks, energy trails or ground shadow around the body (the game adds the awakening aura itself); a small magic prop is allowed only where the same cell of IMAGE 2 already has one.
-${PIX}
-All standing poses face RIGHT in 3/4 view. True transparent alpha background with 10% padding around every complete figure and weapon in every cell. No grid lines, labels, text or background. Exactly 20 distinct full-body figures.` })
-    jobs.push({ id: `SPA-${who}-walk`, group: 'remake-sprite-aw', save: `sprite_aw1_${who}_walk.png`, title: `${test ? '★ 시험 12 · ' : ''}${who} · 각성 걷기 8칸`,
-      refs, now: '각성 전투 띠의 걷기 칸',
-      use: '받으면 각성 띠의 걷기 칸을 이 8칸으로 (1·5번 다리 반대 검사)',
-      prompt: `[코덱스] D:/에셋창고/sprite_aw1_${who}_act.png 도 맨 뒤에 첨부 (방금 만든 각성 동작 판)
-Using the awakened character in the LAST attached image (the new awakened action sheet) as the exact identity, outfit, weapon and proportions, draw ONE natural 8-frame walk cycle, facing RIGHT in 3/4 view, in a strict grid of FOUR columns x TWO rows, row-major order: 1 contact (right foot forward, heel down), 2 down (weight sinks), 3 passing (left leg passes the right), 4 up (body highest), 5 contact (LEFT foot forward), 6 down, 7 passing, 8 up. Frames 1 and 5 have opposite legs forward; arms swing opposite to the legs; the weapon is carried the same way in all 8 frames.
-${PIX} Same standing height as the action sheet, feet on one shared baseline in every cell. No aura, glow or shadow. True transparent alpha background with 10% padding, no grid lines, labels, text or background.` })
+  // 11-18 밤: 첫 문안으로 받은 25짝 가운데 24짝이 머리가 비각성 띠보다 6~39% 컸다(자: tools/sprite-kit/aw1-intake.py measure).
+  // → 「새로 그리기」를 「비각성 띠를 그대로 두고 옷만 갈아입히는 편집」으로 바꾸고, 기준 셋 그림을 뺀다(등신이 큰 장수를 작게 끌어당겼다). 이미 받은 것은 _v2 로 다시.
+  const awDirs = ['D:/에셋창고', ...readdirSync('D:/에셋창고').filter((d) => /^Codex-.*-candidates$/.test(d)).map((d) => `D:/에셋창고/${d}`)]
+  const gotAw = (n) => awDirs.some((d) => existsSync(`${d}/${n}`))
+  const AW_HOLD = ['goeun', 'sori', 'gomok', 'haedal', 'irang', 'aryeong', 'base-w-17-mahan-pearl-diver']   // 머리 ×1.06~1.12 · 형 판정 대기라 다시 줄에 올리지 않는다
+  const AW_WALK_ONLY = ['hojin']   // 동작 판은 통과 · 걷기 판만 다시 (걷기 판 등신이 동작 판과 달랐다)
+  const MEASURE = (who, v) => `[코덱스] 저장 전에 재기: py -3 -I tools/sprite-kit/aw1-intake.py measure --who ${who} --act <방금 만든 act 파일>${v === 'walk' ? ' --walk <방금 만든 walk 파일>' : ''} → 끝 줄이 VERDICT PASS 가 아니면 한 번만 다시 그려 나은 쪽을 저장(숫자를 원장에 적는다)`
+  rows.forEach((r) => {
+    const who = r.key, k = 'gen-' + who
+    if (AW_HOLD.includes(who) || who === 'dalbit') return   // dalbit 은 옛 시험 띠(게임은 base-w-31-dabeol-dalbit 를 쓴다)
+    const walkOnly = AW_WALK_ONLY.includes(who)
+    const V = walkOnly || gotAw(`sprite_aw1_${who}_act.png`) ? '_v2' : ''
+    const actName = walkOnly ? `sprite_aw1_${who}_act.png` : `sprite_aw1_${who}_act${V}.png`
+    const refs = [`/realm/anim-px/${k}.png`, `/realm/awaken-hd/${r.portrait}.jpg`]
+    if (!walkOnly) jobs.push({ id: `SPA-${who}-act${V.replace('_', '-')}`, group: 'remake-sprite-aw', save: actName, title: `${who} · 각성 전투 띠 20자세${V ? ' · 머리 크기 다시' : ''}`,
+      refs, now: V ? '첫 판은 머리가 비각성 띠보다 커서 반려' : '각성 전투 띠 없음 — 각성해도 싸우는 모습이 비각성 그대로',
+      use: `${MEASURE(who, 'act')} · 받으면 Claude 가 anim-px/gen-aw1-<who>.png 로 넣음`,
+      prompt: `REDRESS EDIT of a sprite sheet (this is an edit, not a new drawing). IMAGE 1 is this character's approved normal-form battle sprite sheet: 20 cells, FOUR columns x FIVE rows, read left to right, top to bottom. IMAGE 2 is the same character's FIRST-AWAKENING portrait.
+Edit IMAGE 1 into the awakened form. Every one of the 20 figures stays in the same cell, the same pose, the same position and EXACTLY the same size. Do not redraw, enlarge or restyle the head: the skull, face, eyes and neck of every figure must overlay IMAGE 1, and the body (shoulders, arms, torso, legs, boots) keeps the same proportions and standing height. Repaint ONLY what the character wears and carries: clothes, armour, colours, hair ornaments or headgear and the decoration of the weapon, changed to the awakened outfit of IMAGE 2. Keep the weapon KIND and size of IMAGE 1 (if IMAGE 2 shows a different kind of weapon, keep IMAGE 1's kind and decorate it in the awakened style); the weapon stays complete in all 20 cells.
+MEASURE BEFORE SAVING (the first batch was rejected because heads came out 6 to 39 percent bigger than IMAGE 1): in the first cell, head height (top of the skull to the chin; hair ornaments and headgear are NOT counted) divided by the full standing height must be the same number as in IMAGE 1, within 5 percent. Taller ornaments, plumes or a crown may only add height ABOVE the skull; they never make the skull or face bigger and never shrink the body. Then check that the awakened outfit reads as clearly different from IMAGE 1 at a glance (colour and silhouette of the clothes). If either check fails, redo before saving.
+OUTFIT: follow IMAGE 2 including how much skin it shows, translated into combat wear; fabric stays opaque, no see-through cloth and no nipple outline. Ancient Korean setting: no katana, no ninja gear, no red sun disc or sun rays.
+No aura, glow, sparks, energy trails or ground shadow around the body (the game adds the awakening aura itself); a small magic prop is allowed only where the same cell of IMAGE 1 already has one.
+Keep the pixel-art rendering of IMAGE 1 exactly: the same outline weight, pixel-cluster shading, face detail and palette warmth. All standing poses face RIGHT in 3/4 view. True transparent alpha background with 10% padding around every complete figure and weapon in every cell. No grid lines, labels, text or background. Exactly 20 distinct full-body figures.` })
+    jobs.push({ id: `SPA-${who}-walk${V.replace('_', '-')}`, group: 'remake-sprite-aw', save: `sprite_aw1_${who}_walk${V}.png`, title: `${who} · 각성 걷기 8칸${V ? ' · 다시' : ''}`,
+      refs, now: walkOnly ? '첫 걷기 판이 동작 판과 등신이 달라 반려(동작 판은 통과)' : '각성 전투 띠의 걷기 칸',
+      use: `${MEASURE(who, 'walk')} · 받으면 각성 띠의 걷기 칸을 이 8칸으로 (1·5번 다리 반대 검사)`,
+      prompt: `[코덱스] D:/에셋창고/${actName} 도 맨 뒤에 첨부 (각성 동작 판 · 통과한 것)
+Using the awakened character in the LAST attached image (the awakened action sheet) as the exact identity, outfit, weapon and proportions, draw ONE natural 8-frame walk cycle, facing RIGHT in 3/4 view, in a strict grid of FOUR columns x TWO rows, row-major order: 1 contact (right foot forward, heel down), 2 down (weight sinks), 3 passing (left leg passes the right), 4 up (body highest), 5 contact (LEFT foot forward), 6 down, 7 passing, 8 up. Frames 1 and 5 have opposite legs forward; arms swing opposite to the legs; the weapon is carried the same way in all 8 frames.
+HEAD AND BODY: every frame has exactly the head size and the head-to-body ratio of the standing figure in the action sheet (do not enlarge the head, do not shorten the legs). Same standing height as the action sheet, feet on one shared baseline in every cell.
+Keep the pixel-art rendering of the action sheet exactly. No aura, glow or shadow. True transparent alpha background with 10% padding, no grid lines, labels, text or background.` })
   })
 }
 

@@ -4,5 +4,8 @@
  "gen-jumong": 14,
  "gen-damul": 16,
  "gen-daemusin": 13,
- "gen-oi": 10
+ "gen-oi": 10,
+ "_aw1": "11-18 옛 각성 띠 둘(11-14 판)은 비각성 띠만 관·투구를 빼서 본편에서 각성하면 키가 8~12% 줄어 보였다 → 같은 자로 재서(aw1-intake.py 머리 본 맞추기) 맞춤. 11-18 뒤로 넣는 각성 띠는 여기 적지 않는다(aw1-intake.py 가 구울 때 bodyPx 를 비각성 값으로 맞춘다)",
+ "gen-aw1-onjo": 11,
+ "gen-aw1-jumong": 16
 }

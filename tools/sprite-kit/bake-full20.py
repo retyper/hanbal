@@ -67,13 +67,14 @@ def bake(out,key,job=None):
         # 걷기 판 배율: 동작 판 걷기 6칸(3~8)과 새 걷기 8칸의 「몸 덩어리 키」 중앙값을 맞춘다 (가는 무기는 깎고 잰다)
         unit_a=parts[0][0].height/138;unit_w=float(np.median([p[0].height for p in walk]))/138
         walk_factor=float(np.median([core_height(parts[i][0],unit_a) for i in (range(4,12) if stripOrder else range(3,9))])/np.median([core_height(p[0],unit_w) for p in walk]))
+        if job.get('walkFactor'):walk_factor=float(job['walkFactor'])  # 11-18 각성 띠(aw1-intake.py): 동작 판 걷기 칸이 띠 차례와 달라 배율을 밖에서 잰다
         assert .2<walk_factor<4,'Walk sheet scale outside limits'
         for j,(part,box,cx) in enumerate(walk):
             raw_walk[20+j]=(part,walk_factor)
             small=part.resize((round(part.width*walk_factor),round(part.height*walk_factor)),Image.Resampling.LANCZOS)
             parts.append((small,[0,0,small.width,small.height],(cx-box[0])*walk_factor))
         main[4:12]=WALK_MAIN
-    scale=min(138/parts[0][0].height,150/max(p[0].height for p in parts))
+    scale=min(job.get('idlePx',138)/parts[0][0].height,150/max(p[0].height for p in parts))  # idlePx: 각성 띠를 비각성 띠와 같은 몸 크기로 (aw1-intake.py)
     patch_report={};patch_source=None;raw_patch={}
     if job.get('reviewedPosePatch'):
         cfg=job['reviewedPosePatch'];patch_source=ROOT/cfg['file']
@@ -110,15 +111,16 @@ def bake(out,key,job=None):
         x=i%4*width*2;y=i//4*344;contact.paste(f.resize((width*2,320),Image.Resampling.NEAREST),(x,y),f.resize((width*2,320),Image.Resampling.NEAREST));d.text((x+5,y+322),str(i+1),fill='white')
     contact.save(out/f'{key}-contact.png')
     bow=job['weapon']=='bow'
-    attack=np.array(frames[(15 if bow else 14) if stripOrder else (12 if bow else 11)])[...,3]>64;tx=int(np.where(attack.any(axis=0))[0].max());ty=float(np.where(attack[:,tx])[0].mean())
+    attack=np.array(frames[main[15 if bow else 14]])[...,3]>64;tx=int(np.where(attack.any(axis=0))[0].max());ty=float(np.where(attack[:,tx])[0].mean())
     atlas={**(STRIP_ATLAS if stripOrder else ATLAS),**job.get('atlasOverrides',{})}
     sources={source.relative_to(ROOT).as_posix():hashlib.sha256(source.read_bytes()).hexdigest()}
     if patch_source:sources[patch_source.relative_to(ROOT).as_posix()]=hashlib.sha256(patch_source.read_bytes()).hexdigest()
     if walk_source:sources[walk_source.relative_to(ROOT).as_posix()]=hashlib.sha256(walk_source.read_bytes()).hexdigest()
     report=dict(sources=sources,
-        cell=[width,160],feet=frames[0].getbbox()[3],bodyPx=frames[0].getbbox()[3]-frames[0].getbbox()[1],cells=20,kind='general',generationCalls=1,correctionCalls=job.get('correctionCalls',0),
+        cell=[width,160],feet=frames[0].getbbox()[3],bodyPx=job.get('bodyPx',frames[0].getbbox()[3]-frames[0].getbbox()[1]),cells=20,kind='general',generationCalls=1,correctionCalls=job.get('correctionCalls',0),
         faceRetouch=False,idleStretch=False,idleDrawnFrames=3,frames=[reports[i] for i in main],
         contact=[15 if bow else 14,round(tx/width,2),round(ty/160,2)],duelCells=20,duelAtlas=atlas,excludedMasterPoses=job.get('excludedMasterPoses',[]),
-        **({'walk8':dict(cells=list(range(4,12)),scale=round(walk_factor,4))} if walk_source else {}))
+        **({'walk8':dict(cells=list(range(4,12)),scale=round(walk_factor,4))} if walk_source else {}),
+        **({'bodyPxRaw':frames[0].getbbox()[3]-frames[0].getbbox()[1]} if 'bodyPx' in job else {}))  # bodyPx 를 밖에서 정한 판(각성 띠 = 비각성 띠의 몸 키)
     (out/f'{key}-report.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
     return report

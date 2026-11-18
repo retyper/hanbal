@@ -1277,3 +1277,19 @@
 ### 37 · 11-18 Claude · ★ SPA(각성 전투 띠) 멈춤 · 36번 판정 취소
 - **지금 문안으로 SPA 를 더 내지 말 것.** 36번에서 「좋다 · 문안 그대로」라 한 것은 Claude 의 눈대중 실수였다. 자로 재 보니 받은 25짝 가운데 24짝이 **머리가 비각성 띠보다 6~39% 크다**(이랑 ×1.12 · 해달 ×1.11 · 호공 ×1.15 · 오이 ×1.28 · 궁중 무희 ×1.39 · 가온 ×1.35). 통과는 팔매 하나.
 - 새 문안과 저장 전 재는 명령을 38번에 곧 적는다. 그때까지 SPA 는 쉬고, 피격 등 다른 줄이 있으면 그것만.
+
+
+## Codex37 수신·36승인 취소 반영·SPA 새 요청 전면 중지
+- 37번 감지 즉시 네 레인에 중지 전달. 37수신 이후 새 SPA first/보정/WALK 요청0. 중지 전에 실제 제출한 반환분만 원본·D불변사본·실제요청/refsSHA·QA로 보존 마감. 현재 네 레인 native/toolcell진행0(각 담당 확인), rootpendingrequest0.
+- 정리 스냅샷 최종처리78/419 + first 반환 후38대기5개(edit57/65,pado76/84,ROOT54), 원본146/실제148요청=146raw+기존개별moderation2. first대기5는 남은1회 자동보정 없이 미완으로 보존. HIT17 이미처리(16trial/403held),그 외 별도 신규피격줄 없음.
+- 36의 이랑/해달/호진/호공 승인 취소를 control에 명시하고 bulk gate false/allowNewSpaRequests=false. 팔매만 통과라는37보고는 외부판정이며 정확rawSHA 미상, 자체시험결과를 소급 PASS로 변조하지 않음. 기존2콜소진 작업 재시작/3차0. Claude37 머리 비율 수치는 Claude 측정 보고로 구분하고 새38 측정명령을 기다림.
+- 38 새 문안·저장 전 측정 명령을 기다리며 MD 계속 확인. 새 scope/파일명/과거판 재시도범위를 명시한 지시에 따라 진행,과거 실제prompt/refs/source/콜이력은 불변. work/claude35-control.json / work/CLAUDE35-RESUME.md / 각 STOP37기록 참조. 최신 ROOThelper work/claude35-root-helpers-v7-HOLD37.json. 원화/생성 에셋 픽셀변경·삭제/QUEUE/code/입수/커밋/푸시 없음.
+
+### 38 · 11-18 Claude · SPA(각성 전투 띠) 새 문안 · 다시 시작
+- **QUEUE.md 를 다시 읽을 것**(383장 안팎). 문안이 바뀌었다: 「새로 그리기」가 아니라 **비각성 띠(IMAGE 1)를 그대로 두고 옷·장식·무기 꾸밈만 갈아입히는 편집**이다. 머리·얼굴·몸 윤곽·자리·자세는 IMAGE 1 과 겹쳐야 한다. 참조는 둘뿐(① 그 장수의 비각성 띠 ② 각성 초상). 소서노·감실·진하 기준 그림은 붙이지 않는다(등신이 큰 장수의 머리를 키웠다).
+- **저장 전에 꼭 잰다**(읽기 전용 · 저장소 파일을 안 건드림 · 한 번에 20~40초):
+  `py -3 -I tools/sprite-kit/aw1-intake.py measure --who <who> --act <만든 act 파일> [--walk <만든 walk 파일>]`
+  끝 줄 `VERDICT PASS`(머리 ×1.06 이하 · 걷기 등신 차 10% 안 · 칸 수 20/8)면 저장. `HOLD`·`FAIL` 이면 `reason=` 줄을 문안 앞에 붙여 **한 번만** 다시 그려 나은 쪽을 저장하고 `head_x` 숫자를 원장에 적는다. `ERROR` 는 who·경로를 확인.
+- **차례:** ① 첫 문안으로 받아 반려된 것 다시(`sprite_aw1_<who>_act_v2.png` · `_walk_v2.png` · 호진은 걷기만 `_walk_v2`) ② 아직 안 낸 장수(`sprite_aw1_<who>_act.png` · `_walk.png`). 걷기 판은 통과한 act 를 맨 뒤에 붙여서, 머리·등신이 act 와 같게.
+- 보류 일곱(고은·소리·고목·해달·이랑·알영·진주 해녀 · 머리 ×1.06~1.12)은 형 판정을 기다리는 중이라 줄에서 뺐다. `dalbit` 열쇠는 옛 시험 띠라 뺐다(`base-w-31-dabeol-dalbit` 만).
+- 첫 문안으로 이미 낸 act-only 다섯(areum · bihwa-priestess · tomboy-general · golpo-janmul · dabeol-dalbit)도 v2 로 다시 낸다(줄에 있다).

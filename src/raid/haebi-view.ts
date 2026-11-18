@@ -86,8 +86,13 @@ function drawGhosts(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImage
   ctx.restore()
 }
 /** 열전에 선 장수의 전투 그림 — 기본은 해비 · 각성 그림이 없으면 조합을 완성해도 기본 그림 그대로 (raid-main 이 장수마다 정함) */
-const heroArt = { base: genArtOf('haebi').file, awake: genArtOf('aw1-haebi').file, body: genArtOf('haebi').body }
-export function setHeroArt(baseKey: string, awakeKey?: string) { heroArt.base = genArtOf(baseKey).file; heroArt.awake = awakeKey ? genArtOf(awakeKey).file : heroArt.base; heroArt.body = genArtOf(baseKey).body }
+const heroArt = { base: genArtOf('haebi').file, awake: genArtOf('aw1-haebi').file, body: genArtOf('haebi').body, grow: genArtOf('haebi').body / genArtOf('aw1-haebi').body }
+export function setHeroArt(baseKey: string, awakeKey?: string) { const b = genArtOf(baseKey), a = awakeKey ? genArtOf(awakeKey) : b; heroArt.base = b.file; heroArt.awake = a.file; heroArt.body = b.body; heroArt.grow = b.body / a.body }
+/**
+ * 장수 그림 키 — 각성 그림은 큰 관·깃털 때문에 칸 안에 몸이 작게 그려진 판이 있다(칸 160 에 다 못 담음 · tools/sprite-kit/aw1-intake.py).
+ * 그만큼 키워 몸 키(정수리~발)를 보통 모습과 같게 한다 — 본편 전장이 genArtOf().body 로 맞추는 것과 같은 법. 몸 비가 같으면 그대로다
+ */
+const heroH = (s: HaebiRun) => awakenedLook(s) ? C.heroPx * heroArt.grow : C.heroPx
 export const heroArtFiles = () => [...new Set([heroArt.base, heroArt.awake])]
 /** 판 안 각성(디지몬식) 동안만 각성 그림 — 조합을 열어도 모습은 그대로 (RAID-LINK §1) */
 const heroSprite = (s: HaebiRun) => awakenedLook(s) ? heroArt.awake : heroArt.base
@@ -227,7 +232,7 @@ function drawUlt(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageEle
   } else if (kit === 'sword') {
     // 번개 베기: 지나온 줄에 번개가 남고, 장수 잔상 넷 · 베기 셋
     ctx.save(); ctx.globalAlpha *= .32 * (1 - age)
-    for (let i = 0; i < 4; i++) { const k = i / 4; sprite(ctx, images, heroSprite(s), f.x + (f.x2 - f.x) * k, f.y + (f.y2 - f.y) * k, C.heroPx, 12, Math.cos(f.angle) < 0 ? -1 : 1) }
+    for (let i = 0; i < 4; i++) { const k = i / 4; sprite(ctx, images, heroSprite(s), f.x + (f.x2 - f.x) * k, f.y + (f.y2 - f.y) * k, heroH(s), 12, Math.cos(f.angle) < 0 ? -1 : 1) }
     ctx.restore()
     ctx.save(); ctx.translate(f.x, f.y - C.heroShotHeight); ctx.rotate(f.angle); ctx.globalCompositeOperation = 'lighter'
     stripAlong(ctx, images.get('raid/lightning-strip.png'), age, len, f.r * .8); ctx.restore()
@@ -241,7 +246,7 @@ function drawUlt(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageEle
     }
     // 그림자 베기: 앞 자리에서 그 적까지 보랏빛 줄 · 앞 자리에 잔상 · 적 위에 엇갈린 베기 둘
     ctx.save(); ctx.globalAlpha *= .7 * (1 - age); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(f.x2, f.y2 - 30); ctx.lineTo(f.x, f.y - 30); ctx.stroke()
-    ctx.globalAlpha *= .5; sprite(ctx, images, heroSprite(s), f.x2, f.y2, C.heroPx, 14, f.x2 < f.x ? 1 : -1); ctx.restore()
+    ctx.globalAlpha *= .5; sprite(ctx, images, heroSprite(s), f.x2, f.y2, heroH(s), 14, f.x2 < f.x ? 1 : -1); ctx.restore()
     for (const turn of [0, 1.7]) effectStrip(ctx, images, 'slash', f.x, f.y - 30, f.r * 1.3, age, f.angle * 2.1 + turn)
     stamp(ctx, images, 'raid/knife.png', f.x, f.y - 30, 40, f.angle * 2.1 + age * 6)
   } else if (kit === 'sling') {
@@ -475,16 +480,16 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       if (big) { ctx.fillStyle = '#111c'; ctx.fillRect(e.x - 28, e.y - h, 56, 5); ctx.fillStyle = '#ef9873'; ctx.fillRect(e.x - 28, e.y - h, 56 * e.hp / e.max, 5) }
     } else {
       if (!decal(ctx, images, 'mark-hero', s.x, s.y, 72, 32, .8)) { ctx.strokeStyle = '#f9d89788'; ctx.fillStyle = '#ffd97726'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(s.x, s.y, 29, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke() }
-      trackGhosts(s, heroSprite(s)); drawGhosts(ctx, images, s, C.heroPx)
+      trackGhosts(s, heroSprite(s)); drawGhosts(ctx, images, s, heroH(s))
       // 각성(금빛)·투지(붉은빛) 동안 발밑에 뛰는 빛 고리 — 그림 하나 더 없이 선 두 개
       if (s.form === 'awake') drawAura(ctx, s, false)
       drawCast(ctx, s)
       if (s.form !== 'normal') { const p = .5 + .5 * Math.sin(s.t * 9); ctx.save(); ctx.strokeStyle = s.form === 'awake' ? '#ffe08a' : '#ff9a52'; ctx.globalAlpha = .35 + .4 * p; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(s.x, s.y, 40 + 8 * p, 13 + 3 * p, 0, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha *= .5; ctx.beginPath(); ctx.ellipse(s.x, s.y, 56 + 10 * p, 18 + 4 * p, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore() }
-      sprite(ctx, images, heroSprite(s), s.x, s.y, C.heroPx, heroFrame(s), s.face, s.hurt > 0)
+      sprite(ctx, images, heroSprite(s), s.x, s.y, heroH(s), heroFrame(s), s.face, s.hurt > 0)
       if (s.form === 'awake') {
         // 각성: 몸이 금빛으로 맥박친다 (같은 그림을 빛으로 한 번 더) + 앞쪽 불티
         const op = ctx.globalCompositeOperation; ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .16 + .12 * Math.sin(s.t * 7)
-        sprite(ctx, images, heroSprite(s), s.x, s.y, C.heroPx, heroFrame(s), s.face); ctx.globalCompositeOperation = op; ctx.globalAlpha = 1
+        sprite(ctx, images, heroSprite(s), s.x, s.y, heroH(s), heroFrame(s), s.face); ctx.globalCompositeOperation = op; ctx.globalAlpha = 1
         drawAura(ctx, s, true)
       }
       drawWard(ctx, s)
