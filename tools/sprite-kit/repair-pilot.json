@@ -664,5 +664,8 @@
   },
   "aw1-base-w-25-bihwa-priestess": {
     "pipeline": "awakened20-master"
+  },
+  "aw1-sori": {
+    "pipeline": "awakened20-master"
   }
 }

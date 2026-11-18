@@ -4,8 +4,8 @@
   "method": "aw1-intake.py · bake-full20.py (동작 4x5 + 걷기 4x2 → 띠 20칸) · 턱~발 픽셀을 비각성 띠와 같게(idlePx) · bodyPx = 비각성 띠 값 · 공격 칸은 원본 자세를 골라 띠 12~17 에",
   "heroes": {
     "aryeong": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_aryeong_act.png",
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-root-20261118-candidates/sprite_aw1_aryeong_act_v3.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_aryeong_walk.png",
       "actSha256": "47a5a8cbdf13773db5ceb41ab7db9d804fd482a1f6a073ccd6bbf4d9af0d243c",
       "walkSha256": "ce32a6043871b8609efeee7512674820a6d4d09bb386bffffe6abf216e48f103",
@@ -209,7 +209,8 @@
       "review": {
         "note": "",
         "date": "2026-11-18"
-      }
+      },
+      "pending": "act v3 · walk v1 → waiting for walk"
     },
     "base-g-38-chopal-palmae": {
       "status": "installed",
@@ -421,7 +422,7 @@
     },
     "base-w-02-goguryeo-lady": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-root-20261118-candidates/sprite_aw1_base-w-02-goguryeo-lady_act_v2.png",
+      "act": "D:/에셋창고/Codex-claude40-root-20261118-candidates/sprite_aw1_base-w-02-goguryeo-lady_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_base-w-02-goguryeo-lady_walk.png",
       "actSha256": "8522e90408d0dd2324ac57bd5fe80473d858f80c7dd89fc690415fc8b5dd991f",
       "walkSha256": "7bed909e158298b4f3e83222e972314c79b5f82372b91f36bb6897992b7a7556",
@@ -630,429 +631,421 @@
       "pending": "act v2 · walk v1 → waiting for walk"
     },
     "goeun": {
-      "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude39-hit-edit-20261118-candidates/sprite_aw1_goeun_act_v2.png",
-      "walk": "D:/에셋창고/Codex-claude35-hit-new-20261118-candidates/sprite_aw1_goeun_walk.png",
-      "actSha256": "26c53eb2d64dc6a7e10b834a63bf6fa8ae19540725f86452ea46eb36e809842b",
-      "walkSha256": "8a5dae2c528f1d86e5c4b9c5ba6874ccfc3857bfaf7c67f13a00b3b2052f381f",
-      "attack": [
-        0,
-        13,
-        14,
-        14,
-        15,
-        0
-      ],
-      "attackBy": "review",
+      "status": "staged",
+      "act": "D:/에셋창고/Codex-claude40-hit-edit-20261118-candidates/sprite_aw1_goeun_act_v2.png",
+      "walk": "D:/에셋창고/Codex-claude40-hit-edit-20261118-candidates/sprite_aw1_goeun_walk_v2.png",
+      "actSha256": "4abd10b354a90b57aa100f5139b7375124925c5a6f3da27a053f952a2094fdfa",
+      "walkSha256": "255c679c6b6fd8331bcabd6ad9b674f4596dc594cb945a42981264309896e575",
+      "actVersion": 2,
+      "walkVersion": 2,
       "auto": {
         "act": {
-          "clear": 0.777,
-          "halo": 0.135,
-          "residue": 0.0002
+          "clear": 0.783,
+          "halo": 0.154,
+          "residue": 0.0
         },
         "walk": {
-          "clear": 0.784,
-          "halo": 0.088,
+          "clear": 0.803,
+          "halo": 0.095,
           "residue": 0.0
         },
         "walkFit": {
-          "byHeight": 0.6291,
-          "byArea": 0.6213,
-          "used": 0.6577,
-          "walkHead": 0.904
+          "byHeight": 0.672,
+          "byArea": 0.6411,
+          "used": 0.6829,
+          "walkHead": 0.924
         },
         "walkCheck": {
-          "legDiff15": 0.114,
-          "legIou15": 0.836,
-          "legShadeFlip": 0.003,
-          "stride": 2.55,
+          "legDiff15": 0.091,
+          "legIou15": 0.88,
+          "legShadeFlip": -0.031,
+          "stride": 1.98,
           "still": 0
         },
         "poseHead": {
           "0": 1.0,
-          "1": 0.97,
-          "2": 1.0,
+          "1": 1.01,
+          "2": 0.98,
           "3": 0.98,
-          "13": 0.97,
-          "14": 0.98,
-          "15": 0.93,
-          "18": 0.98
+          "12": 0.92,
+          "13": 0.92,
+          "14": 0.95,
+          "15": 0.95,
+          "16": 0.95
         },
-        "colourGap": 0.401,
+        "colourGap": 0.241,
         "cell": [
           200,
           160
         ],
         "contact": [
           14,
-          0.79,
-          0.66
+          0.88,
+          0.51
         ],
         "poses": [
           {
-            "reach": 0.252,
-            "h": 1.056,
-            "w": 0.498
+            "reach": 0.269,
+            "h": 1.022,
+            "w": 0.528
           },
           {
-            "reach": 0.247,
-            "h": 1.051,
-            "w": 0.493
-          },
-          {
-            "reach": 0.24,
-            "h": 1.056,
-            "w": 0.484
-          },
-          {
-            "reach": 0.242,
-            "h": 1.047,
-            "w": 0.498
+            "reach": 0.259,
+            "h": 1.026,
+            "w": 0.508
           },
           {
             "reach": 0.253,
-            "h": 1.028,
-            "w": 0.512
+            "h": 1.017,
+            "w": 0.523
           },
           {
-            "reach": 0.309,
-            "h": 1.014,
-            "w": 0.591
+            "reach": 0.268,
+            "h": 1.026,
+            "w": 0.537
           },
           {
-            "reach": 0.292,
-            "h": 1.005,
-            "w": 0.553
+            "reach": 0.267,
+            "h": 1.007,
+            "w": 0.528
           },
           {
-            "reach": 0.26,
-            "h": 1.005,
-            "w": 0.53
+            "reach": 0.269,
+            "h": 1.007,
+            "w": 0.542
+          },
+          {
+            "reach": 0.261,
+            "h": 1.026,
+            "w": 0.561
           },
           {
             "reach": 0.287,
-            "h": 0.991,
-            "w": 0.572
+            "h": 1.017,
+            "w": 0.614
           },
           {
-            "reach": 0.302,
-            "h": 0.981,
-            "w": 0.605
+            "reach": 0.286,
+            "h": 0.993,
+            "w": 0.552
           },
           {
-            "reach": 0.277,
-            "h": 0.977,
-            "w": 0.595
+            "reach": 0.294,
+            "h": 0.978,
+            "w": 0.576
           },
           {
-            "reach": 0.308,
-            "h": 0.958,
-            "w": 0.605
+            "reach": 0.29,
+            "h": 0.983,
+            "w": 0.566
           },
           {
-            "reach": 0.36,
-            "h": 0.958,
-            "w": 0.665
-          },
-          {
-            "reach": 0.415,
-            "h": 0.991,
-            "w": 0.777
+            "reach": 0.279,
+            "h": 0.983,
+            "w": 0.561
           },
           {
             "reach": 0.421,
-            "h": 0.944,
-            "w": 0.791
+            "h": 0.988,
+            "w": 0.811
           },
           {
-            "reach": 0.3,
-            "h": 0.944,
-            "w": 0.628
+            "reach": 0.545,
+            "h": 0.988,
+            "w": 0.954
           },
           {
-            "reach": 0.291,
-            "h": 0.949,
-            "w": 0.558
+            "reach": 0.448,
+            "h": 0.988,
+            "w": 0.844
           },
           {
-            "reach": 0.345,
-            "h": 0.935,
-            "w": 0.628
+            "reach": 0.342,
+            "h": 0.969,
+            "w": 0.657
           },
           {
-            "reach": 0.396,
-            "h": 0.902,
-            "w": 0.749
+            "reach": 0.303,
+            "h": 0.969,
+            "w": 0.59
           },
           {
-            "reach": 0.536,
-            "h": 0.507,
-            "w": 1.181
+            "reach": 0.304,
+            "h": 0.983,
+            "w": 0.614
+          },
+          {
+            "reach": 0.348,
+            "h": 0.93,
+            "w": 0.715
+          },
+          {
+            "reach": 0.474,
+            "h": 0.523,
+            "w": 1.118
           }
         ]
       },
+      "attack": [
+        0,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "attackBy": "auto",
       "fit": {
         "by": "head",
-        "idlePx": 171.28,
-        "k": 1.241,
-        "bodyPx": 129,
-        "awRaw": 147,
+        "idlePx": 162.34,
+        "k": 1.176,
+        "bodyPx": 130,
+        "awRaw": 144,
         "awFeet": 155.0,
-        "head": 1.063,
+        "head": 1.065,
         "headBy": "head match",
-        "headFwd": 1.03,
-        "headRev": 1.097,
-        "headScale": 0.97,
+        "headFwd": 1.05,
+        "headRev": 1.08,
+        "headScale": 0.985,
         "ncc": [
-          0.56,
-          0.61
+          0.61,
+          0.69
         ],
-        "gear": 8.9,
+        "gear": 7.9,
         "base": {
           "top": 19.0,
           "chin": null,
           "feet": 155.0
         },
         "aw": {
-          "top": 27.4,
-          "bodyTop": 18.5,
+          "top": 26.9,
+          "bodyTop": 19.5,
           "chin": null,
           "feet": 155.0
         },
-        "left": 8.39,
+        "left": 7.94,
         "box": [
           75,
-          25,
-          49,
-          49
+          24,
+          52,
+          52
         ]
       },
       "warn": [
-        "머리가 큼 ×1.063 (같은 키에서 머리 높이 · 5% 넘음)",
-        "칸 크기(138) 그대로면 키가 ×0.806 였다 → 맞춰 구움 (머리 장식·든 무기 높이 차)",
-        "각성 머리 위로 8.9px 솟음(관·깃털·든 무기) · 키에서 뺌",
-        "칸(160)에 다 못 담아 그림은 8.39px 작게 구움 → 화면에서 몸 키 값(bodyPx 129)으로 키워 맞춘다",
-        "걷기 판 등신이 동작 판과 다름: 같은 몸 크기에서 걷기 머리 ×0.90 (반씩 나눠 구움 · 10% 넘으면 걷기 판을 다시 받는다)"
-      ],
-      "reason": "head larger than the normal-form strip by more than 6 percent (lead artist rule 11-18: redraw); keep the head-to-body ratio of IMAGE 1",
-      "rejectedBy": "review",
-      "review": {
-        "note": "",
-        "date": "2026-11-18"
-      },
-      "pending": "act v2 · walk v1 → waiting for walk"
+        "머리가 큼 ×1.065 (같은 키에서 머리 높이 · 5% 넘음)",
+        "칸 크기(138) 그대로면 키가 ×0.85 였다 → 맞춰 구움 (머리 장식·든 무기 높이 차)",
+        "각성 머리 위로 7.9px 솟음(관·깃털·든 무기) · 키에서 뺌",
+        "칸(160)에 다 못 담아 그림은 7.94px 작게 구움 → 화면에서 몸 키 값(bodyPx 130)으로 키워 맞춘다",
+        "걷기 판 등신이 동작 판과 다름: 같은 몸 크기에서 걷기 머리 ×0.92 (반씩 나눠 구움 · 10% 넘으면 걷기 판을 다시 받는다)",
+        "옷 빛깔이 비각성과 비슷 0.241",
+        "공격 칸 자동 고름 [0, 12, 13, 14, 15, 16] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
+      ]
     },
     "gomok": {
-      "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude39-hit-edit-20261118-candidates/sprite_aw1_gomok_act_v2.png",
-      "walk": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_gomok_walk.png",
-      "actSha256": "b00f8af3888ab7ae639de08ff7262201c0eaba8371d21dacab1ad92fb1443c1e",
-      "walkSha256": "aa832bbf9ef6544fe51965336c03d8edc6240ba031cf34cfe1eb0926a4d53a2f",
-      "attack": [
-        0,
-        11,
-        12,
-        13,
-        14,
-        0
-      ],
-      "attackBy": "auto",
+      "status": "staged",
+      "act": "D:/에셋창고/Codex-claude40-hit-edit-20261118-candidates/sprite_aw1_gomok_act_v2.png",
+      "walk": "D:/에셋창고/sprite_aw1_gomok_walk_v2.png",
+      "actSha256": "423ac0237a7c02b8e94ae2da111633c33bbbbe8c6429f54948dd8ada29af8d49",
+      "walkSha256": "a717bae49c27bf5c66ec051ce568a833c01c865fc7121321855fc0a67f844d82",
+      "actVersion": 2,
+      "walkVersion": 2,
       "auto": {
         "act": {
-          "clear": 0.695,
-          "halo": 0.064,
+          "clear": 0.73,
+          "halo": 0.077,
           "residue": 0.0
         },
         "walk": {
-          "clear": 0.704,
-          "halo": 0.047,
+          "clear": 0.738,
+          "halo": 0.05,
           "residue": 0.0
         },
         "walkFit": {
-          "byHeight": 0.6299,
-          "byArea": 0.6525,
+          "byHeight": 0.6564,
+          "byArea": 0.6591,
           "used": 0.6528,
-          "walkHead": 0.964
+          "walkHead": 1.015
         },
         "walkCheck": {
-          "legDiff15": 0.095,
-          "legIou15": 0.917,
-          "legShadeFlip": 0.014,
-          "stride": 1.39,
+          "legDiff15": 0.118,
+          "legIou15": 0.902,
+          "legShadeFlip": 0.006,
+          "stride": 1.25,
           "still": 0
         },
         "poseHead": {
           "0": 1.0,
-          "1": 1.0,
+          "1": 1.02,
           "2": 1.0,
-          "3": 1.0,
-          "14": 0.96
+          "3": 0.99,
+          "16": 0.97
         },
-        "colourGap": 0.177,
+        "colourGap": 0.15,
         "cell": [
-          192,
+          200,
           160
         ],
         "contact": [
           14,
-          0.93,
-          0.78
+          0.94,
+          0.54
         ],
         "poses": [
           {
-            "reach": 0.388,
+            "reach": 0.353,
             "h": 1.005,
-            "w": 0.76
+            "w": 0.72
           },
           {
-            "reach": 0.385,
-            "h": 1.005,
-            "w": 0.76
-          },
-          {
-            "reach": 0.383,
-            "h": 1.005,
-            "w": 0.742
-          },
-          {
-            "reach": 0.381,
+            "reach": 0.351,
             "h": 1.0,
-            "w": 0.737
+            "w": 0.724
           },
           {
-            "reach": 0.379,
-            "h": 0.995,
-            "w": 0.76
+            "reach": 0.347,
+            "h": 1.005,
+            "w": 0.715
           },
           {
-            "reach": 0.384,
-            "h": 0.995,
-            "w": 0.811
+            "reach": 0.35,
+            "h": 1.0,
+            "w": 0.715
           },
           {
-            "reach": 0.384,
-            "h": 0.995,
-            "w": 0.825
+            "reach": 0.354,
+            "h": 0.981,
+            "w": 0.738
           },
           {
-            "reach": 0.399,
-            "h": 0.995,
-            "w": 0.848
+            "reach": 0.359,
+            "h": 0.986,
+            "w": 0.738
           },
           {
-            "reach": 0.397,
-            "h": 0.959,
-            "w": 0.82
+            "reach": 0.357,
+            "h": 0.981,
+            "w": 0.752
           },
           {
-            "reach": 0.39,
-            "h": 0.959,
-            "w": 0.811
+            "reach": 0.369,
+            "h": 0.972,
+            "w": 0.762
           },
           {
-            "reach": 0.367,
-            "h": 0.926,
-            "w": 0.747
+            "reach": 0.36,
+            "h": 0.935,
+            "w": 0.752
           },
           {
-            "reach": 0.432,
-            "h": 0.959,
-            "w": 0.839
+            "reach": 0.345,
+            "h": 0.916,
+            "w": 0.743
           },
           {
-            "reach": 0.592,
-            "h": 0.871,
-            "w": 1.065
+            "reach": 0.351,
+            "h": 0.902,
+            "w": 0.734
           },
           {
-            "reach": 0.58,
-            "h": 0.853,
-            "w": 1.023
+            "reach": 0.376,
+            "h": 0.832,
+            "w": 0.794
           },
           {
-            "reach": 0.382,
-            "h": 0.885,
-            "w": 0.793
+            "reach": 0.363,
+            "h": 0.813,
+            "w": 0.743
           },
           {
-            "reach": 0.372,
-            "h": 0.903,
-            "w": 0.737
+            "reach": 0.408,
+            "h": 0.981,
+            "w": 0.864
           },
           {
-            "reach": 0.364,
-            "h": 0.912,
-            "w": 0.747
+            "reach": 0.638,
+            "h": 0.79,
+            "w": 1.098
           },
           {
-            "reach": 0.383,
-            "h": 0.88,
-            "w": 0.751
+            "reach": 0.602,
+            "h": 0.79,
+            "w": 1.014
           },
           {
-            "reach": 0.372,
-            "h": 0.843,
-            "w": 0.774
+            "reach": 0.333,
+            "h": 0.846,
+            "w": 0.715
           },
           {
-            "reach": 0.579,
-            "h": 0.544,
-            "w": 1.189
+            "reach": 0.327,
+            "h": 0.888,
+            "w": 0.696
+          },
+          {
+            "reach": 0.36,
+            "h": 0.836,
+            "w": 0.724
+          },
+          {
+            "reach": 0.546,
+            "h": 0.491,
+            "w": 1.093
           }
         ]
       },
+      "attack": [
+        0,
+        13,
+        14,
+        15,
+        16,
+        0
+      ],
+      "attackBy": "auto",
       "fit": {
         "by": "head",
-        "idlePx": 139.88,
-        "k": 1.014,
+        "idlePx": 139.42,
+        "k": 1.01,
         "bodyPx": 138,
-        "awRaw": 140,
+        "awRaw": 139,
         "awFeet": 155.0,
-        "head": 1.1,
+        "head": 0.957,
         "headBy": "head match",
-        "headFwd": 1.105,
-        "headRev": 1.095,
-        "headScale": 1.11,
+        "headFwd": 0.959,
+        "headRev": 0.955,
+        "headScale": 0.96,
         "ncc": [
-          0.53,
-          0.53
+          0.66,
+          0.67
         ],
-        "gear": 2.3,
+        "gear": 0.4,
         "base": {
           "top": 18.5,
           "chin": null,
           "feet": 155.0
         },
         "aw": {
-          "top": 18.4,
-          "bodyTop": 16.5,
+          "top": 17.9,
+          "bodyTop": 18.0,
           "chin": null,
           "feet": 155.0
         },
-        "left": -0.14,
+        "left": -0.59,
         "box": [
-          54,
-          15,
-          100,
-          57
+          64,
+          16,
+          85,
+          49
         ]
       },
       "warn": [
-        "머리가 큼 ×1.1 (같은 키에서 머리 높이 · 5% 넘음)",
-        "옷 빛깔이 비각성과 비슷 0.177",
-        "공격 칸 자동 고름 [0, 11, 12, 13, 14, 0] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
-      ],
-      "reason": "head larger than the normal-form strip by more than 6 percent (lead artist rule 11-18: redraw); keep the head-to-body ratio of IMAGE 1",
-      "rejectedBy": "review",
-      "review": {
-        "note": "",
-        "date": "2026-11-18"
-      },
-      "pending": "act v2 · walk v1 → waiting for walk"
+        "옷 빛깔이 비각성과 비슷 0.15",
+        "공격 칸 자동 고름 [0, 13, 14, 15, 16, 0] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
+      ]
     },
     "haedal": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude35-root-20261118-candidates/sprite_aw1_haedal_act.png",
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-root-20261118-candidates/sprite_aw1_haedal_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-root-20261118-candidates/sprite_aw1_haedal_walk.png",
       "actSha256": "7c6c11b6dd3a5f75e10b55ec07db6ec57ee5c661486e0dcff9b0058badb38a38",
       "walkSha256": "fb76bdbe94623ab5fb2e05a826b67050fde68163a029c32736b6b8ad7c77b65d",
@@ -1255,218 +1248,31 @@
       "review": {
         "note": "",
         "date": "2026-11-18"
-      }
-    },
-    "hogong": {
-      "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-hit-new-20261118-candidates/sprite_aw1_hogong_act_v2.png",
-      "walk": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_hogong_walk.png",
-      "actSha256": "a16a44d920444b2c5f2b24c49bdc53b6a699250a637673e5b1af5f716ec6fdfa",
-      "walkSha256": "2a35b523e67f3e8dcd44c742dee1b5e1672e3ce180a5cf587700ee82a09d4e74",
-      "attack": [
-        0,
-        9,
-        10,
-        11,
-        12,
-        13
-      ],
-      "attackBy": "auto",
-      "auto": {
-        "act": {
-          "clear": 0.742,
-          "halo": 0.063,
-          "residue": 0.0021
-        },
-        "walk": {
-          "clear": 0.767,
-          "halo": 0.041,
-          "residue": 0.0
-        },
-        "walkFit": {
-          "byHeight": 0.673,
-          "byArea": 0.6773,
-          "used": 0.6839,
-          "walkHead": 0.975
-        },
-        "walkCheck": {
-          "legDiff15": 0.153,
-          "legIou15": 0.872,
-          "legShadeFlip": -0.032,
-          "stride": 1.67,
-          "still": 0
-        },
-        "poseHead": {
-          "0": 1.0,
-          "1": 1.01,
-          "2": 1.01,
-          "3": 1.01,
-          "9": 1.01,
-          "10": 1.0,
-          "11": 1.0,
-          "12": 1.01,
-          "13": 1.0
-        },
-        "colourGap": 0.265,
-        "cell": [
-          184,
-          160
-        ],
-        "contact": [
-          14,
-          0.9,
-          0.53
-        ],
-        "poses": [
-          {
-            "reach": 0.303,
-            "h": 1.007,
-            "w": 0.575
-          },
-          {
-            "reach": 0.295,
-            "h": 1.007,
-            "w": 0.571
-          },
-          {
-            "reach": 0.293,
-            "h": 0.998,
-            "w": 0.566
-          },
-          {
-            "reach": 0.306,
-            "h": 0.993,
-            "w": 0.575
-          },
-          {
-            "reach": 0.307,
-            "h": 0.998,
-            "w": 0.593
-          },
-          {
-            "reach": 0.279,
-            "h": 0.989,
-            "w": 0.566
-          },
-          {
-            "reach": 0.331,
-            "h": 0.976,
-            "w": 0.636
-          },
-          {
-            "reach": 0.252,
-            "h": 0.998,
-            "w": 0.497
-          },
-          {
-            "reach": 0.311,
-            "h": 0.954,
-            "w": 0.593
-          },
-          {
-            "reach": 0.46,
-            "h": 0.941,
-            "w": 0.837
-          },
-          {
-            "reach": 0.556,
-            "h": 0.915,
-            "w": 0.946
-          },
-          {
-            "reach": 0.555,
-            "h": 0.889,
-            "w": 0.976
-          },
-          {
-            "reach": 0.453,
-            "h": 0.937,
-            "w": 0.815
-          },
-          {
-            "reach": 0.317,
-            "h": 0.95,
-            "w": 0.627
-          },
-          {
-            "reach": 0.307,
-            "h": 0.95,
-            "w": 0.597
-          },
-          {
-            "reach": 0.295,
-            "h": 0.919,
-            "w": 0.619
-          },
-          {
-            "reach": 0.295,
-            "h": 0.871,
-            "w": 0.606
-          },
-          {
-            "reach": 0.303,
-            "h": 0.806,
-            "w": 0.645
-          },
-          {
-            "reach": 0.355,
-            "h": 0.693,
-            "w": 0.732
-          },
-          {
-            "reach": 0.536,
-            "h": 0.383,
-            "w": 1.142
-          }
-        ]
-      },
-      "fit": {
-        "by": "head",
-        "idlePx": 136.41,
-        "k": 0.988,
-        "bodyPx": 138,
-        "awRaw": 136,
-        "awFeet": 155.0,
-        "head": 1.152,
-        "headBy": "head match",
-        "headFwd": 1.154,
-        "headRev": 1.15,
-        "headScale": 1.15,
-        "ncc": [
-          0.58,
-          0.64
-        ],
-        "gear": -1.5,
-        "base": {
-          "top": 19.5,
-          "chin": null,
-          "feet": 155.0
-        },
-        "aw": {
-          "top": 19.5,
-          "bodyTop": 21.0,
-          "chin": null,
-          "feet": 155.0
-        },
-        "left": -0.05,
-        "box": [
-          61,
-          16,
-          58,
-          58
-        ]
-      },
-      "warn": [
-        "머리가 큼 ×1.152 (같은 키에서 머리 높이 · 5% 넘음)",
-        "공격 칸 자동 고름 [0, 9, 10, 11, 12, 13] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
-      ],
-      "reason": "head about 15% too large for the body compared with the current normal-form strip gen-hogong (at equal standing height the head is x1.15); redraw both sheets keeping EXACTLY the head-to-body ratio of IMAGE 2 (smaller head, longer torso and legs); outfit and weapon are fine",
-      "rejectedBy": "review",
-      "review": {
-        "note": "",
-        "date": "2026-11-18"
       },
       "pending": "act v2 · walk v1 → waiting for walk"
+    },
+    "hogong": {
+      "status": "rejected",
+      "act": "D:/에셋창고/Codex-claude40-hit-new-20261118-candidates/sprite_aw1_hogong_act_v2.png",
+      "walk": "D:/에셋창고/Codex-claude40-hit-new-20261118-candidates/sprite_aw1_hogong_walk_v2.png",
+      "actSha256": "5d2f9794603aea8b6259af9ff24c32977ceaad03762bca0b3bc05aa3df0d4bfa",
+      "walkSha256": "179a292df24b86f6340d669941832f7bcf243a0f703bbea025c59d2f06e2f412",
+      "actVersion": 2,
+      "walkVersion": 2,
+      "auto": {
+        "act": {
+          "clear": 0.782,
+          "halo": 0.062,
+          "residue": 0.0024
+        },
+        "walk": {
+          "clear": 0.256,
+          "halo": 1.759,
+          "residue": 0.0055
+        }
+      },
+      "reason": "walk sheet background is not transparent (alpha-zero area 26%); export with a true transparent background",
+      "rejectedBy": "auto"
     },
     "hojin": {
       "status": "staged",
@@ -1677,249 +1483,237 @@
       ]
     },
     "irang": {
-      "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_irang_act_v2.png",
-      "walk": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_irang_walk.png",
-      "actSha256": "d86c065d554282df5f0ecc839d5fde565388154acf888f34d31ec70ce91d7b47",
-      "walkSha256": "e3e418b7e9b8659bbd884a5adf421a26e1a4eff717060b854ff7bdf6cabbb4fc",
-      "attack": [
-        0,
-        11,
-        12,
-        13,
-        14,
-        0
-      ],
-      "attackBy": "auto",
+      "status": "staged",
+      "act": "D:/에셋창고/Codex-claude40-pado-20261118-candidates/sprite_aw1_irang_act_v2.png",
+      "walk": "D:/에셋창고/sprite_aw1_irang_walk_v2.png",
+      "actSha256": "54f6052cd3b25527ba6bf19ad8ee1adc7e9c7f64a4d6b140c5b0dab307f8c68b",
+      "walkSha256": "bc58c1a11388ebf79b89aec12bfa7bdfc82c6d803a5ac7c6f53b8918031b52c0",
+      "actVersion": 2,
+      "walkVersion": 2,
       "auto": {
         "act": {
-          "clear": 0.751,
-          "halo": 0.121,
-          "residue": 0.0013
+          "clear": 0.826,
+          "halo": 0.13,
+          "residue": 0.0001
         },
         "walk": {
-          "clear": 0.79,
-          "halo": 0.088,
-          "residue": 0.0004
+          "clear": 0.816,
+          "halo": 0.082,
+          "residue": 0.0
         },
         "walkFit": {
-          "byHeight": 0.7368,
-          "byArea": 0.7159,
-          "used": 0.7172,
-          "walkHead": 1.025
+          "byHeight": 0.602,
+          "byArea": 0.6254,
+          "used": 0.6215,
+          "walkHead": 0.975
         },
         "walkCheck": {
-          "legDiff15": 0.131,
-          "legIou15": 0.824,
-          "legShadeFlip": -0.056,
-          "stride": 2.87,
+          "legDiff15": 0.111,
+          "legIou15": 0.828,
+          "legShadeFlip": 0.01,
+          "stride": 3.16,
           "still": 0
         },
         "poseHead": {
           "0": 1.0,
-          "1": 0.98,
-          "2": 0.92,
+          "1": 1.0,
+          "2": 0.98,
           "3": 0.98,
-          "11": 0.94,
-          "12": 0.97,
-          "13": 0.95,
-          "14": 0.97
+          "13": 0.97,
+          "14": 0.97,
+          "15": 0.94,
+          "16": 0.98,
+          "18": 0.97
         },
-        "colourGap": 0.271,
+        "colourGap": 0.133,
         "cell": [
-          176,
+          192,
           160
         ],
         "contact": [
           14,
-          0.88,
-          0.52
+          0.91,
+          0.47
         ],
         "poses": [
           {
-            "reach": 0.283,
-            "h": 1.004,
-            "w": 0.563
-          },
-          {
-            "reach": 0.274,
-            "h": 1.0,
-            "w": 0.547
-          },
-          {
-            "reach": 0.281,
-            "h": 1.008,
-            "w": 0.524
-          },
-          {
-            "reach": 0.27,
-            "h": 1.0,
-            "w": 0.528
-          },
-          {
-            "reach": 0.282,
-            "h": 0.953,
-            "w": 0.528
-          },
-          {
-            "reach": 0.305,
-            "h": 0.961,
-            "w": 0.579
-          },
-          {
-            "reach": 0.292,
-            "h": 0.945,
+            "reach": 0.304,
+            "h": 1.005,
             "w": 0.559
           },
           {
-            "reach": 0.23,
-            "h": 0.921,
-            "w": 0.496
+            "reach": 0.302,
+            "h": 1.005,
+            "w": 0.55
+          },
+          {
+            "reach": 0.298,
+            "h": 1.0,
+            "w": 0.54
+          },
+          {
+            "reach": 0.299,
+            "h": 1.0,
+            "w": 0.536
+          },
+          {
+            "reach": 0.297,
+            "h": 0.976,
+            "w": 0.531
+          },
+          {
+            "reach": 0.261,
+            "h": 0.981,
+            "w": 0.502
+          },
+          {
+            "reach": 0.216,
+            "h": 0.972,
+            "w": 0.441
           },
           {
             "reach": 0.221,
-            "h": 0.937,
-            "w": 0.48
-          },
-          {
-            "reach": 0.202,
-            "h": 0.917,
-            "w": 0.461
-          },
-          {
-            "reach": 0.207,
-            "h": 0.913,
+            "h": 0.972,
             "w": 0.445
           },
           {
-            "reach": 0.317,
-            "h": 0.894,
-            "w": 0.654
+            "reach": 0.319,
+            "h": 0.967,
+            "w": 0.559
           },
           {
-            "reach": 0.488,
-            "h": 0.882,
-            "w": 0.823
+            "reach": 0.236,
+            "h": 0.938,
+            "w": 0.469
           },
           {
-            "reach": 0.453,
-            "h": 0.894,
-            "w": 0.783
+            "reach": 0.236,
+            "h": 0.919,
+            "w": 0.464
           },
           {
-            "reach": 0.267,
-            "h": 0.906,
-            "w": 0.551
+            "reach": 0.229,
+            "h": 0.972,
+            "w": 0.46
           },
           {
-            "reach": 0.284,
-            "h": 0.921,
-            "w": 0.543
+            "reach": 0.312,
+            "h": 0.924,
+            "w": 0.559
           },
           {
-            "reach": 0.301,
-            "h": 0.89,
-            "w": 0.575
+            "reach": 0.331,
+            "h": 0.948,
+            "w": 0.64
           },
           {
-            "reach": 0.337,
-            "h": 0.843,
-            "w": 0.614
+            "reach": 0.573,
+            "h": 0.915,
+            "w": 0.943
           },
           {
-            "reach": 0.337,
-            "h": 0.819,
-            "w": 0.638
+            "reach": 0.496,
+            "h": 0.905,
+            "w": 0.867
           },
           {
-            "reach": 0.453,
-            "h": 0.374,
-            "w": 1.016
+            "reach": 0.314,
+            "h": 0.915,
+            "w": 0.573
+          },
+          {
+            "reach": 0.327,
+            "h": 0.915,
+            "w": 0.578
+          },
+          {
+            "reach": 0.333,
+            "h": 0.915,
+            "w": 0.607
+          },
+          {
+            "reach": 0.466,
+            "h": 0.398,
+            "w": 1.081
           }
         ]
       },
+      "attack": [
+        0,
+        13,
+        14,
+        15,
+        16,
+        0
+      ],
+      "attackBy": "auto",
       "fit": {
         "by": "head",
-        "idlePx": 136.88,
-        "k": 0.992,
+        "idlePx": 138.0,
+        "k": 1.0,
         "bodyPx": 138,
-        "awRaw": 137,
+        "awRaw": 138,
         "awFeet": 155.0,
-        "head": 1.12,
+        "head": 1.02,
         "headBy": "head match",
-        "headFwd": 1.112,
-        "headRev": 1.129,
-        "headScale": 1.105,
+        "headFwd": 1.017,
+        "headRev": 1.023,
+        "headScale": 1.02,
         "ncc": [
-          0.82,
+          0.83,
           0.83
         ],
-        "gear": -1.1,
+        "gear": -1.0,
         "base": {
           "top": 19.0,
           "chin": null,
           "feet": 155.0
         },
         "aw": {
-          "top": 18.9,
-          "bodyTop": 20.0,
+          "top": 18.6,
+          "bodyTop": 19.5,
           "chin": null,
           "feet": 155.0
         },
-        "left": -0.12,
+        "left": -0.44,
         "box": [
-          53,
-          15,
           64,
-          58
+          15,
+          59,
+          53
         ]
       },
       "warn": [
-        "머리가 큼 ×1.12 (같은 키에서 머리 높이 · 5% 넘음)",
-        "공격 칸 자동 고름 [0, 11, 12, 13, 14, 0] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
-      ],
-      "reason": "head larger than the normal-form strip by more than 6 percent (lead artist rule 11-18: redraw); keep the head-to-body ratio of IMAGE 1",
-      "rejectedBy": "review",
-      "review": {
-        "note": "",
-        "date": "2026-11-18"
-      },
-      "pending": "act v2 · walk v1 → waiting for walk"
+        "옷 빛깔이 비각성과 비슷 0.133",
+        "공격 칸 자동 고름 [0, 13, 14, 15, 16, 0] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
+      ]
     },
     "maehwa": {
-      "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-hit-edit-20261118-candidates/sprite_aw1_maehwa_act_v2.png",
-      "walk": "D:/에셋창고/Codex-claude35-root-20261118-candidates/sprite_aw1_maehwa_walk.png",
-      "actSha256": "c8ccbfccf32745c8e92466e4cd50e04edbd48528f5931002d1e7eef56047c276",
-      "walkSha256": "f68fbb19fe33a80a60ab44571ff4072d1e54870a4d29cc52673382c7a6081467",
-      "attack": [
-        0,
-        12,
-        13,
-        14,
-        15,
-        0
-      ],
-      "attackBy": "auto",
+      "status": "rejected",
+      "act": "D:/에셋창고/Codex-claude40-hit-edit-20261118-candidates/sprite_aw1_maehwa_act_v2.png",
+      "walk": "D:/에셋창고/Codex-claude40-hit-edit-20261118-candidates/sprite_aw1_maehwa_walk_v2.png",
+      "actSha256": "400e429bfdf0e1e5f913c4e3bf507598f6071b81976d313493fe4583c14d6368",
+      "walkSha256": "e0c2982f3a13882c6548f5ca49c6b2cdbbf1fbd28c2dfddf86d14a255aea4ed8",
+      "actVersion": 2,
+      "walkVersion": 2,
       "auto": {
         "act": {
-          "clear": 0.729,
-          "halo": 0.132,
+          "clear": 0.779,
+          "halo": 0.17,
           "residue": 0.0
         },
         "walk": {
-          "clear": 0.755,
-          "halo": 0.069,
-          "residue": 0.0
+          "clear": 0.203,
+          "halo": 1.923,
+          "residue": 0.0011
         }
       },
-      "reason": "auto check: Canvas clipping pose 3 (walk sheet) (every figure and its weapon must sit fully inside its own cell with a clear gap; all 20 + 8 cells filled)",
-      "rejectedBy": "auto",
-      "pending": "act v2 · walk v1 → waiting for walk"
+      "reason": "walk sheet background is not transparent (alpha-zero area 20%); export with a true transparent background",
+      "rejectedBy": "auto"
     },
     "oi": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-hit-edit-20261118-candidates/sprite_aw1_oi_act_v2.png",
+      "act": "D:/에셋창고/Codex-claude39-hit-edit-20261118-candidates/sprite_aw1_oi_act_v3.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_oi_walk.png",
       "actSha256": "2c23a46165ebdaddbc76ba553f32ab72447acd56a9943de26ef33505ca99a4d6",
       "walkSha256": "5dd8fb2ae5fcac1d01b4f1d2a90ada6037a2911b2eef183d2fbd23b5a258e405",
@@ -2122,11 +1916,11 @@
         "note": "",
         "date": "2026-11-18"
       },
-      "pending": "act v2 · walk v1 → waiting for walk"
+      "pending": "act v3 · walk v1 → waiting for walk"
     },
     "soebi": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-pado-20261118-candidates/sprite_aw1_soebi_act_v2.png",
+      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_soebi_act_v3.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-new-20261118-candidates/sprite_aw1_soebi_walk.png",
       "actSha256": "08bd0a26babf92cd062ee0512cbda36529831e04f7a1fc08ea854cc5394ab9a7",
       "walkSha256": "93b166f829b2da4124b1a2f83f6bb7d3160ad03488ae6d72cf31cd5cd6aeae12",
@@ -2335,11 +2129,11 @@
         "note": "",
         "date": "2026-11-18"
       },
-      "pending": "act v2 · walk v1 → waiting for walk"
+      "pending": "act v3 · walk v1 → waiting for walk"
     },
     "base-w-05-baekje-queen": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-hit-new-20261118-candidates/sprite_aw1_base-w-05-baekje-queen_act_v2.png",
+      "act": "D:/에셋창고/Codex-claude39-hit-new-20261118-candidates/sprite_aw1_base-w-05-baekje-queen_act_v3.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_base-w-05-baekje-queen_walk.png",
       "actSha256": "4570ddf7b55ddc98ae88e4742c259064c5f1c11639e17c299aca8c0f97f5d1bd",
       "walkSha256": "1c81bb43a3d1d613c3409dda40bffd9f56cf45767a2996a33c5529b9e1a63c65",
@@ -2548,11 +2342,11 @@
         "note": "",
         "date": "2026-11-18"
       },
-      "pending": "act v2 · walk v1 → waiting for walk"
+      "pending": "act v3 · walk v1 → waiting for walk"
     },
     "base-w-06-buyeo-huntress": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-pado-20261118-candidates/sprite_aw1_base-w-06-buyeo-huntress_act_v2.png",
+      "act": "D:/에셋창고/Codex-claude40-pado-20261118-candidates/sprite_aw1_base-w-06-buyeo-huntress_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-new-20261118-candidates/sprite_aw1_base-w-06-buyeo-huntress_walk.png",
       "actSha256": "1b6e526117ef5b62b1264434384b6a4f1c73912878713056f8d7e9f8d6d85fb5",
       "walkSha256": "11a45c87d0f83e80df118ed87c2fb05822b7b854515ed83ac667a22c648052ee",
@@ -2765,7 +2559,7 @@
     },
     "base-w-08-mahan-warrior": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-hit-edit-20261118-candidates/sprite_aw1_base-w-08-mahan-warrior_act_v2.png",
+      "act": "D:/에셋창고/Codex-claude40-hit-edit-20261118-candidates/sprite_aw1_base-w-08-mahan-warrior_act_v3.png",
       "walk": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_base-w-08-mahan-warrior_walk.png",
       "actSha256": "b2e1a7936777d2a3639a8b1d603165a127237621df92f27613f2e2f3ce6b15d8",
       "walkSha256": "728000a1d5c36b6eba6f56be21f32eb86a53820a6a3262491726f67366a49a45",
@@ -2976,11 +2770,11 @@
         "note": "",
         "date": "2026-11-18"
       },
-      "pending": "act v2 · walk v1 → waiting for walk"
+      "pending": "act v3 · walk v1 → waiting for walk"
     },
     "base-w-12-court-dancer": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-pado-20261118-candidates/sprite_aw1_base-w-12-court-dancer_act_v2.png",
+      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_base-w-12-court-dancer_act_v3.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-new-20261118-candidates/sprite_aw1_base-w-12-court-dancer_walk.png",
       "actSha256": "9912d4bc16b0c1c77210c54206bc42029126391a6c84b51250471355962ceb2d",
       "walkSha256": "f1fe7e6943b103e3073de5b8bcc92fcdcdd3f6d91fe050ce6b01bd761a3a6758",
@@ -3186,7 +2980,7 @@
         "note": "",
         "date": "2026-11-18"
       },
-      "pending": "act v2 · walk v1 → waiting for walk"
+      "pending": "act v3 · walk v1 → waiting for walk"
     },
     "base-w-13-young-archer": {
       "status": "staged",
@@ -3395,221 +3189,219 @@
       ]
     },
     "sori": {
-      "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude39-hit-new-20261118-candidates/sprite_aw1_sori_act_v2.png",
-      "walk": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_sori_walk.png",
-      "actSha256": "533bdbac1620f3f01638298301088352a5a1b687781139f6b8a4a43b4a0ca24e",
-      "walkSha256": "6db3c7017a1101eff7d4224c9533156b7bfa06d74db89b79871ca2a0578ebf6e",
-      "actVersion": 1,
-      "walkVersion": 1,
+      "status": "installed",
+      "act": "D:/에셋창고/Codex-claude40-hit-new-20261118-candidates/sprite_aw1_sori_act_v2.png",
+      "walk": "D:/에셋창고/sprite_aw1_sori_walk_v2.png",
+      "actSha256": "2e0386fc18938cc5539582a64c9ad7f96fd3133b379f36219850425094ef830e",
+      "walkSha256": "d31ac3721f59a1937aa8fef200eb4b3bf0198083c0000a297bc412b2a888a3ce",
+      "actVersion": 2,
+      "walkVersion": 2,
+      "auto": {
+        "act": {
+          "clear": 0.815,
+          "halo": 0.107,
+          "residue": 0.0036
+        },
+        "walk": {
+          "clear": 0.823,
+          "halo": 0.06,
+          "residue": 0.0
+        },
+        "walkFit": {
+          "byHeight": 0.6527,
+          "byArea": 0.6622,
+          "used": 0.6574,
+          "walkHead": 0.995
+        },
+        "walkCheck": {
+          "legDiff15": 0.111,
+          "legIou15": 0.784,
+          "legShadeFlip": 0.01,
+          "stride": 2.3,
+          "still": 0
+        },
+        "poseHead": {
+          "0": 1.0,
+          "1": 1.0,
+          "2": 1.0,
+          "3": 1.01,
+          "13": 0.96,
+          "15": 0.93,
+          "16": 0.98,
+          "17": 0.96
+        },
+        "colourGap": 0.211,
+        "cell": [
+          168,
+          160
+        ],
+        "contact": [
+          14,
+          0.92,
+          0.4
+        ],
+        "poses": [
+          {
+            "reach": 0.234,
+            "h": 1.0,
+            "w": 0.456
+          },
+          {
+            "reach": 0.232,
+            "h": 1.0,
+            "w": 0.456
+          },
+          {
+            "reach": 0.232,
+            "h": 1.0,
+            "w": 0.456
+          },
+          {
+            "reach": 0.233,
+            "h": 1.0,
+            "w": 0.46
+          },
+          {
+            "reach": 0.274,
+            "h": 0.969,
+            "w": 0.487
+          },
+          {
+            "reach": 0.292,
+            "h": 0.969,
+            "w": 0.535
+          },
+          {
+            "reach": 0.232,
+            "h": 0.96,
+            "w": 0.416
+          },
+          {
+            "reach": 0.265,
+            "h": 0.951,
+            "w": 0.487
+          },
+          {
+            "reach": 0.306,
+            "h": 0.907,
+            "w": 0.615
+          },
+          {
+            "reach": 0.215,
+            "h": 0.898,
+            "w": 0.389
+          },
+          {
+            "reach": 0.21,
+            "h": 0.854,
+            "w": 0.385
+          },
+          {
+            "reach": 0.207,
+            "h": 0.841,
+            "w": 0.385
+          },
+          {
+            "reach": 0.258,
+            "h": 0.942,
+            "w": 0.482
+          },
+          {
+            "reach": 0.32,
+            "h": 0.987,
+            "w": 0.606
+          },
+          {
+            "reach": 0.517,
+            "h": 0.903,
+            "w": 0.854
+          },
+          {
+            "reach": 0.39,
+            "h": 0.907,
+            "w": 0.721
+          },
+          {
+            "reach": 0.255,
+            "h": 0.965,
+            "w": 0.482
+          },
+          {
+            "reach": 0.305,
+            "h": 0.951,
+            "w": 0.549
+          },
+          {
+            "reach": 0.36,
+            "h": 0.916,
+            "w": 0.668
+          },
+          {
+            "reach": 0.425,
+            "h": 0.35,
+            "w": 0.965
+          }
+        ]
+      },
       "attack": [
         0,
         13,
         14,
         15,
         16,
-        0
+        17
       ],
       "attackBy": "auto",
-      "auto": {
-        "act": {
-          "clear": 0.79,
-          "halo": 0.095,
-          "residue": 0.0036
-        },
-        "walk": {
-          "clear": 0.774,
-          "halo": 0.068,
-          "residue": 0.0
-        },
-        "walkFit": {
-          "byHeight": 0.6543,
-          "byArea": 0.6437,
-          "used": 0.6409,
-          "walkHead": 1.025
-        },
-        "walkCheck": {
-          "legDiff15": 0.102,
-          "legIou15": 0.794,
-          "legShadeFlip": 0.021,
-          "stride": 3.45,
-          "still": 0
-        },
-        "poseHead": {
-          "0": 1.0,
-          "1": 1.01,
-          "2": 0.98,
-          "3": 0.97,
-          "13": 0.96,
-          "14": 0.92,
-          "15": 0.95,
-          "16": 0.93
-        },
-        "colourGap": 0.164,
-        "cell": [
-          152,
-          160
-        ],
-        "contact": [
-          14,
-          0.91,
-          0.45
-        ],
-        "poses": [
-          {
-            "reach": 0.219,
-            "h": 1.006,
-            "w": 0.469
-          },
-          {
-            "reach": 0.214,
-            "h": 1.002,
-            "w": 0.461
-          },
-          {
-            "reach": 0.211,
-            "h": 1.006,
-            "w": 0.453
-          },
-          {
-            "reach": 0.21,
-            "h": 1.006,
-            "w": 0.457
-          },
-          {
-            "reach": 0.209,
-            "h": 0.949,
-            "w": 0.469
-          },
-          {
-            "reach": 0.318,
-            "h": 0.949,
-            "w": 0.57
-          },
-          {
-            "reach": 0.24,
-            "h": 0.949,
-            "w": 0.485
-          },
-          {
-            "reach": 0.196,
-            "h": 0.954,
-            "w": 0.436
-          },
-          {
-            "reach": 0.249,
-            "h": 0.844,
-            "w": 0.477
-          },
-          {
-            "reach": 0.242,
-            "h": 0.84,
-            "w": 0.513
-          },
-          {
-            "reach": 0.227,
-            "h": 0.844,
-            "w": 0.481
-          },
-          {
-            "reach": 0.224,
-            "h": 0.848,
-            "w": 0.436
-          },
-          {
-            "reach": 0.235,
-            "h": 0.893,
-            "w": 0.477
-          },
-          {
-            "reach": 0.296,
-            "h": 0.893,
-            "w": 0.586
-          },
-          {
-            "reach": 0.456,
-            "h": 0.857,
-            "w": 0.731
-          },
-          {
-            "reach": 0.387,
-            "h": 0.861,
-            "w": 0.659
-          },
-          {
-            "reach": 0.256,
-            "h": 0.869,
-            "w": 0.513
-          },
-          {
-            "reach": 0.293,
-            "h": 0.857,
-            "w": 0.562
-          },
-          {
-            "reach": 0.346,
-            "h": 0.828,
-            "w": 0.646
-          },
-          {
-            "reach": 0.392,
-            "h": 0.339,
-            "w": 0.873
-          }
-        ]
-      },
       "fit": {
         "by": "head",
-        "idlePx": 139.23,
-        "k": 1.009,
+        "idlePx": 138.0,
+        "k": 1.0,
         "bodyPx": 138,
-        "awRaw": 139,
+        "awRaw": 138,
         "awFeet": 155.0,
-        "head": 1.087,
+        "head": 1.033,
         "headBy": "head match",
-        "headFwd": 1.084,
-        "headRev": 1.091,
-        "headScale": 1.09,
+        "headFwd": 1.027,
+        "headRev": 1.039,
+        "headScale": 1.03,
         "ncc": [
-          0.69,
-          0.71
+          0.68,
+          0.68
         ],
-        "gear": 0.3,
+        "gear": 0.1,
         "base": {
           "top": 18.5,
           "chin": null,
           "feet": 155.0
         },
         "aw": {
-          "top": 18.3,
+          "top": 18.1,
           "bodyTop": 18.0,
           "chin": null,
           "feet": 155.0
         },
-        "left": -0.23,
+        "left": -0.41,
         "box": [
-          39,
+          49,
           16,
-          64,
-          55
+          60,
+          52
         ]
       },
       "warn": [
-        "머리가 큼 ×1.087 (같은 키에서 머리 높이 · 5% 넘음)",
-        "옷 빛깔이 비각성과 비슷 0.164",
-        "공격 칸 자동 고름 [0, 13, 14, 15, 16, 0] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
+        "옷 빛깔이 비각성과 비슷 0.211",
+        "공격 칸 자동 고름 [0, 13, 14, 15, 16, 17] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
       ],
-      "reason": "head larger than the normal-form strip by more than 6 percent (lead artist rule 11-18: redraw); keep the head-to-body ratio of IMAGE 1",
-      "rejectedBy": "review",
       "review": {
-        "note": "",
+        "note": "head 1.033, dagger same, outfit changed, walk 1/5 opposite",
         "date": "2026-11-18"
       },
-      "pending": "act v2 · walk v1 → waiting for walk"
+      "installed": "2026-11-18",
+      "key": "aw1-sori"
     },
     "base-w-10-pirate-captain": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-hit-new-20261118-candidates/sprite_aw1_base-w-10-pirate-captain_act_v2.png",
+      "act": "D:/에셋창고/Codex-claude40-hit-new-20261118-candidates/sprite_aw1_base-w-10-pirate-captain_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-root-20261118-candidates/sprite_aw1_base-w-10-pirate-captain_walk.png",
       "actSha256": "6c2ae16bf4baa7f6b799245aa09e48482e9e56d9c3942e62888c8198288179a0",
       "walkSha256": "52d5f62af3e5c63ea739247ef42440e6f857412f0cace600b2a6a4770d9e308c",
@@ -3823,7 +3615,7 @@
     },
     "base-w-14-feast-spy": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-hit-edit-20261118-candidates/sprite_aw1_base-w-14-feast-spy_act_v2.png",
+      "act": "D:/에셋창고/Codex-claude39-hit-edit-20261118-candidates/sprite_aw1_base-w-14-feast-spy_act_v3.png",
       "walk": "D:/에셋창고/Codex-claude35-root-20261118-candidates/sprite_aw1_base-w-14-feast-spy_walk.png",
       "actSha256": "57472b05ce228a171a90ff0abef2b5133c18245e7fe6b9239c3ed47f86da4dc4",
       "walkSha256": "76685fce6e5441e777ffbc0f56f0c563cf8aadac6a8300bfcbf09577651e6f4c",
@@ -4035,11 +3827,11 @@
         "note": "",
         "date": "2026-11-18"
       },
-      "pending": "act v2 · walk v1 → waiting for walk"
+      "pending": "act v3 · walk v1 → waiting for walk"
     },
     "base-w-17-mahan-pearl-diver": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_base-w-17-mahan-pearl-diver_act.png",
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-pado-20261118-candidates/sprite_aw1_base-w-17-mahan-pearl-diver_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_base-w-17-mahan-pearl-diver_walk.png",
       "actSha256": "f0e90bf11e4895c1671459a2d583b5f9d93f06dc4c0f4263f9da9fba6988e807",
       "walkSha256": "5c91333c912bf3accc16ef92966a1bbcd26520c3e4c1396b6d9d90c0426ddd1b",
@@ -4244,11 +4036,12 @@
       "review": {
         "note": "",
         "date": "2026-11-18"
-      }
+      },
+      "pending": "act v2 · walk v1 → waiting for walk"
     },
     "base-w-18-jinhan-salt-widow": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-hit-new-20261118-candidates/sprite_aw1_base-w-18-jinhan-salt-widow_act_v2.png",
+      "act": "D:/에셋창고/Codex-claude39-hit-new-20261118-candidates/sprite_aw1_base-w-18-jinhan-salt-widow_act_v3.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-new-20261118-candidates/sprite_aw1_base-w-18-jinhan-salt-widow_walk.png",
       "actSha256": "79d7aa0e5f60c685ee9ad7c14bc5a225290d56ca60d4ca55077720b9366b499d",
       "walkSha256": "111b2deecbe10e6c8c8c45e532d2d2fe38fe4ea9ac37b750470b42d079397193",
@@ -4455,11 +4248,11 @@
         "note": "",
         "date": "2026-11-18"
       },
-      "pending": "act v2 · walk v1 → waiting for walk"
+      "pending": "act v3 · walk v1 → waiting for walk"
     },
     "base-w-21-baekje-court-dancer": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-hit-new-20261118-candidates/sprite_aw1_base-w-21-baekje-court-dancer_act_v2.png",
+      "act": "D:/에셋창고/Codex-claude39-hit-new-20261118-candidates/sprite_aw1_base-w-21-baekje-court-dancer_act_v3.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_base-w-21-baekje-court-dancer_walk.png",
       "actSha256": "4a6b9479dba69094fa61e4d2a135cc09d2a2d57130e803d9105eeece81c06824",
       "walkSha256": "83437b78a1876a9e9b22f9bfdc98eb1c986213726445dffdecb39c5635725934",
@@ -4668,11 +4461,11 @@
         "note": "",
         "date": "2026-11-18"
       },
-      "pending": "act v2 · walk v1 → waiting for walk"
+      "pending": "act v3 · walk v1 → waiting for walk"
     },
     "base-w-22-dongye-tiger-huntress": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-pado-20261118-candidates/sprite_aw1_base-w-22-dongye-tiger-huntress_act_v2.png",
+      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_base-w-22-dongye-tiger-huntress_act_v3.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-new-20261118-candidates/sprite_aw1_base-w-22-dongye-tiger-huntress_walk.png",
       "actSha256": "e55daba7a376afea5e672b01cbff1c48efeadc2126e0dc16880acd549e18a7ed",
       "walkSha256": "a0680fa282e4c0c8f3c815087ef0daa8d90d3064a9f853fd094ca5e085b7cb4a",
@@ -4881,11 +4674,11 @@
         "note": "",
         "date": "2026-11-18"
       },
-      "pending": "act v2 · walk v1 → waiting for walk"
+      "pending": "act v3 · walk v1 → waiting for walk"
     },
     "base-w-23-usisan-whale-queen": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-root-20261118-candidates/sprite_aw1_base-w-23-usisan-whale-queen_act_v2.png",
+      "act": "D:/에셋창고/Codex-claude39-root-20261118-candidates/sprite_aw1_base-w-23-usisan-whale-queen_act_v3.png",
       "walk": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_base-w-23-usisan-whale-queen_walk.png",
       "actSha256": "0209a76d6ba83f34bd156b241e1466af3765c4ada168702719d4b9a431e3d946",
       "walkSha256": "6c78c0ba8bb6e7a76f2829eb80558e3997be6a8a25699ec6bbd98fa64fee817a",
@@ -5090,11 +4883,11 @@
         "note": "",
         "date": "2026-11-18"
       },
-      "pending": "act v2 · walk v1 → waiting for walk"
+      "pending": "act v3 · walk v1 → waiting for walk"
     },
     "base-w-27-mokji-jinha": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-hit-edit-20261118-candidates/sprite_aw1_base-w-27-mokji-jinha_act_v2.png",
+      "act": "D:/에셋창고/Codex-claude40-hit-edit-20261118-candidates/sprite_aw1_base-w-27-mokji-jinha_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_base-w-27-mokji-jinha_walk.png",
       "actSha256": "9ccbd6914e777a6b18b2065b4048f21ab90408e9dabccd8d87ee13a6afab5c34",
       "walkSha256": "fb61ec5e4e992cc6663c0bc9d6458361a0aa7018194cb53e283dec56d446c310",
@@ -5328,7 +5121,7 @@
     },
     "gaon": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-pado-20261118-candidates/sprite_aw1_gaon_act_v2.png",
+      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_gaon_act_v3.png",
       "walk": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_gaon_walk.png",
       "actSha256": "1994b4e6bf8d297f33795bb8d8120346936cf03bb13ef1efb94b670473e4d39f",
       "walkSha256": "48eaff40c8fa9c918bb00c09c688a12e4df0d904dcfab056f54cbe98cfae7b94",
@@ -5535,11 +5328,11 @@
         "note": "",
         "date": "2026-11-18"
       },
-      "pending": "act v2 · walk v1 → waiting for walk"
+      "pending": "act v3 · walk v1 → waiting for walk"
     },
     "areum": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-hit-edit-20261118-candidates/sprite_aw1_areum_act_v2.png",
+      "act": "D:/에셋창고/Codex-claude40-hit-edit-20261118-candidates/sprite_aw1_areum_act_v2.png",
       "pending": "act v2 · walk vNone → waiting for walk"
     },
     "base-w-25-bihwa-priestess": {
@@ -5765,7 +5558,7 @@
     },
     "base-w-29-golpo-janmul": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-hit-new-20261118-candidates/sprite_aw1_base-w-29-golpo-janmul_act_v2.png",
+      "act": "D:/에셋창고/Codex-claude40-hit-new-20261118-candidates/sprite_aw1_base-w-29-golpo-janmul_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_base-w-29-golpo-janmul_walk.png",
       "actSha256": "764a065df6818a6fe0b3449791c66ba6be2af9ba777feda9c74da8295287f9e6",
       "walkSha256": "7559efb7f2c6c36405a069d912cf4aaca939988ac0c7ea43957061b55e859664",
@@ -5980,73 +5773,1578 @@
     },
     "base-w-24-apdok-queen": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-hit-edit-20261118-candidates/sprite_aw1_base-w-24-apdok-queen_act_v2.png",
-      "pending": "act v2 · walk vNone → waiting for walk"
+      "act": "D:/에셋창고/Codex-claude39-hit-edit-20261118-candidates/sprite_aw1_base-w-24-apdok-queen_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
     },
     "base-w-36-baekje-maena": {
-      "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-root-20261118-candidates/sprite_aw1_base-w-36-baekje-maena_act_v2.png",
-      "pending": "act v2 · walk vNone → waiting for walk"
+      "status": "staged",
+      "act": "D:/에셋창고/Codex-claude40-root-20261118-candidates/sprite_aw1_base-w-36-baekje-maena_act_v2.png",
+      "walk": "D:/에셋창고/sprite_aw1_base-w-36-baekje-maena_walk_v2.png",
+      "actSha256": "424c22fd74a49a13bcf741851b2551a03d1bf967793940921addff341ee5f825",
+      "walkSha256": "ab4a3df8e0a3b3ddb4dd29786e498c134665bed259f522da59aa30953be88a1d",
+      "actVersion": 2,
+      "walkVersion": 2,
+      "auto": {
+        "act": {
+          "clear": 0.739,
+          "halo": 0.124,
+          "residue": 0.0
+        },
+        "walk": {
+          "clear": 0.773,
+          "halo": 0.068,
+          "residue": 0.0
+        },
+        "walkFit": {
+          "byHeight": 0.6416,
+          "byArea": 0.6757,
+          "used": 0.6584,
+          "walkHead": 0.99
+        },
+        "walkCheck": {
+          "legDiff15": 0.15,
+          "legIou15": 0.796,
+          "legShadeFlip": 0.07,
+          "stride": 3.27,
+          "still": 0
+        },
+        "poseHead": {
+          "0": 1.0,
+          "1": 0.99,
+          "2": 0.98,
+          "3": 1.01,
+          "12": 1.0,
+          "13": 0.99,
+          "14": 0.99,
+          "15": 0.99,
+          "16": 1.01
+        },
+        "colourGap": 0.164,
+        "cell": [
+          176,
+          160
+        ],
+        "contact": [
+          15,
+          0.78,
+          0.53
+        ],
+        "poses": [
+          {
+            "reach": 0.288,
+            "h": 1.0,
+            "w": 0.591
+          },
+          {
+            "reach": 0.285,
+            "h": 1.0,
+            "w": 0.591
+          },
+          {
+            "reach": 0.296,
+            "h": 0.983,
+            "w": 0.609
+          },
+          {
+            "reach": 0.292,
+            "h": 1.0,
+            "w": 0.604
+          },
+          {
+            "reach": 0.287,
+            "h": 0.987,
+            "w": 0.6
+          },
+          {
+            "reach": 0.291,
+            "h": 0.983,
+            "w": 0.6
+          },
+          {
+            "reach": 0.306,
+            "h": 0.983,
+            "w": 0.63
+          },
+          {
+            "reach": 0.29,
+            "h": 0.978,
+            "w": 0.63
+          },
+          {
+            "reach": 0.282,
+            "h": 0.974,
+            "w": 0.609
+          },
+          {
+            "reach": 0.291,
+            "h": 0.961,
+            "w": 0.626
+          },
+          {
+            "reach": 0.3,
+            "h": 0.948,
+            "w": 0.657
+          },
+          {
+            "reach": 0.324,
+            "h": 0.965,
+            "w": 0.674
+          },
+          {
+            "reach": 0.279,
+            "h": 0.991,
+            "w": 0.583
+          },
+          {
+            "reach": 0.389,
+            "h": 0.983,
+            "w": 0.717
+          },
+          {
+            "reach": 0.378,
+            "h": 0.965,
+            "w": 0.726
+          },
+          {
+            "reach": 0.365,
+            "h": 0.983,
+            "w": 0.717
+          },
+          {
+            "reach": 0.289,
+            "h": 0.983,
+            "w": 0.604
+          },
+          {
+            "reach": 0.309,
+            "h": 0.978,
+            "w": 0.643
+          },
+          {
+            "reach": 0.382,
+            "h": 0.865,
+            "w": 0.778
+          },
+          {
+            "reach": 0.427,
+            "h": 0.465,
+            "w": 1.0
+          }
+        ]
+      },
+      "attack": [
+        0,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "attackBy": "auto",
+      "fit": {
+        "by": "head",
+        "idlePx": 135.47,
+        "k": 0.982,
+        "bodyPx": 137,
+        "awRaw": 135,
+        "awFeet": 155.0,
+        "head": 1.005,
+        "headBy": "head match",
+        "headFwd": 0.995,
+        "headRev": 1.015,
+        "headScale": 0.98,
+        "ncc": [
+          0.73,
+          0.72
+        ],
+        "gear": 1.9,
+        "base": {
+          "top": 22.0,
+          "chin": null,
+          "feet": 155.0
+        },
+        "aw": {
+          "top": 23.4,
+          "bodyTop": 21.0,
+          "chin": null,
+          "feet": 155.0
+        },
+        "left": 1.44,
+        "box": [
+          47,
+          20,
+          69,
+          50
+        ]
+      },
+      "warn": [
+        "옷 빛깔이 비각성과 비슷 0.164",
+        "공격 칸 자동 고름 [0, 12, 13, 14, 15, 16] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
+      ]
     },
     "base-w-40-mujin-munui": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-hit-edit-20261118-candidates/sprite_aw1_base-w-40-mujin-munui_act_v2.png",
-      "pending": "act v2 · walk vNone → waiting for walk"
+      "act": "D:/에셋창고/Codex-claude40-hit-edit-20261118-candidates/sprite_aw1_base-w-40-mujin-munui_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
     },
     "base-w-34-chopal-deulme": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-hit-edit-20261118-candidates/sprite_aw1_base-w-34-chopal-deulme_act.png",
+      "act": "D:/에셋창고/Codex-claude40-hit-edit-20261118-candidates/sprite_aw1_base-w-34-chopal-deulme_act.png",
       "pending": "act v1 · walk vNone → waiting for walk"
     },
     "base-w-38-sangdang-bulmae": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-root-20261118-candidates/sprite_aw1_base-w-38-sangdang-bulmae_act.png",
-      "pending": "act v1 · walk vNone → waiting for walk"
+      "act": "D:/에셋창고/Codex-claude40-root-20261118-candidates/sprite_aw1_base-w-38-sangdang-bulmae_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
     },
     "base-w-39-gosaburi-galmae": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-hit-edit-20261118-candidates/sprite_aw1_base-w-39-gosaburi-galmae_act.png",
+      "act": "D:/에셋창고/Codex-claude40-hit-edit-20261118-candidates/sprite_aw1_base-w-39-gosaburi-galmae_act.png",
       "pending": "act v1 · walk vNone → waiting for walk"
     },
     "base-w-46-geonma-maru": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-root-20261118-candidates/sprite_aw1_base-w-46-geonma-maru_act.png",
-      "pending": "act v1 · walk vNone → waiting for walk"
+      "act": "D:/에셋창고/Codex-claude39-root-20261118-candidates/sprite_aw1_base-w-46-geonma-maru_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
     },
     "bira": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-hit-new-20261118-candidates/sprite_aw1_bira_act.png",
+      "act": "D:/에셋창고/Codex-claude40-hit-new-20261118-candidates/sprite_aw1_bira_act.png",
       "pending": "act v1 · walk vNone → waiting for walk"
     },
     "budeul": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-pado-20261118-candidates/sprite_aw1_budeul_act.png",
-      "pending": "act v1 · walk vNone → waiting for walk"
+      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_budeul_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
     },
     "gaennae": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-pado-20261118-candidates/sprite_aw1_gaennae_act.png",
-      "pending": "act v1 · walk vNone → waiting for walk"
+      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_gaennae_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
     },
     "soenun": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-pado-20261118-candidates/sprite_aw1_soenun_act.png",
-      "pending": "act v1 · walk vNone → waiting for walk"
+      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_soenun_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
     },
     "base-w-45-tamna-oreumbi": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-pado-20261118-candidates/sprite_aw1_base-w-45-tamna-oreumbi_act.png",
-      "pending": "act v1 · walk vNone → waiting for walk"
+      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_base-w-45-tamna-oreumbi_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
     },
     "gureum": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude38-pado-20261118-candidates/sprite_aw1_gureum_act.png",
-      "pending": "act v1 · walk vNone → waiting for walk"
+      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_gureum_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
     },
     "odi": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude39-hit-new-20261118-candidates/sprite_aw1_odi_act_v2.png",
+      "act": "D:/에셋창고/Codex-claude40-hit-new-20261118-candidates/sprite_aw1_odi_act_v2.png",
       "pending": "act v2 · walk vNone → waiting for walk"
+    },
+    "bakdal": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_bakdal_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "baram": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-hit-edit-20261118-candidates/sprite_aw1_baram_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
+    },
+    "base-g-01-master-smith": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-root-20261118-candidates/sprite_aw1_base-g-01-master-smith_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
+    },
+    "base-g-03-sea-trader": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-hit-edit-20261118-candidates/sprite_aw1_base-g-03-sea-trader_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
+    },
+    "base-g-05-mahan-chieftain": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_base-g-05-mahan-chieftain_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
+    },
+    "base-g-08-veteran": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_base-g-08-veteran_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "base-g-09-farmer-conscript": {
+      "status": "staged",
+      "act": "D:/에셋창고/Codex-claude40-root-20261118-candidates/sprite_aw1_base-g-09-farmer-conscript_act_v2.png",
+      "walk": "D:/에셋창고/sprite_aw1_base-g-09-farmer-conscript_walk_v2.png",
+      "actSha256": "f2f1aeeec354139742feed1c20304de20d93665e19f4ed6fd01dea1a41519c6c",
+      "walkSha256": "f1e7982d17a068156f3b15c74410220dc1014a5bf35e218a26fbbe6cf21efddb",
+      "actVersion": 2,
+      "walkVersion": 2,
+      "auto": {
+        "act": {
+          "clear": 0.807,
+          "halo": 0.121,
+          "residue": 0.0037
+        },
+        "walk": {
+          "clear": 0.799,
+          "halo": 0.08,
+          "residue": 0.0058
+        },
+        "walkFit": {
+          "byHeight": 0.6018,
+          "byArea": 0.6121,
+          "used": 0.6116,
+          "walkHead": 0.985
+        },
+        "walkCheck": {
+          "legDiff15": 0.104,
+          "legIou15": 0.897,
+          "legShadeFlip": -0.023,
+          "stride": 2.54,
+          "still": 0
+        },
+        "poseHead": {
+          "0": 1.0,
+          "1": 1.0,
+          "2": 1.0,
+          "3": 1.0,
+          "13": 0.99,
+          "14": 0.95,
+          "15": 0.99,
+          "16": 1.02,
+          "17": 0.99
+        },
+        "colourGap": 0.176,
+        "cell": [
+          216,
+          160
+        ],
+        "contact": [
+          14,
+          0.95,
+          0.49
+        ],
+        "poses": [
+          {
+            "reach": 0.445,
+            "h": 1.01,
+            "w": 0.741
+          },
+          {
+            "reach": 0.45,
+            "h": 1.01,
+            "w": 0.731
+          },
+          {
+            "reach": 0.444,
+            "h": 1.01,
+            "w": 0.711
+          },
+          {
+            "reach": 0.446,
+            "h": 1.01,
+            "w": 0.726
+          },
+          {
+            "reach": 0.445,
+            "h": 1.015,
+            "w": 0.766
+          },
+          {
+            "reach": 0.442,
+            "h": 1.015,
+            "w": 0.796
+          },
+          {
+            "reach": 0.449,
+            "h": 1.01,
+            "w": 0.776
+          },
+          {
+            "reach": 0.459,
+            "h": 1.01,
+            "w": 0.781
+          },
+          {
+            "reach": 0.448,
+            "h": 0.985,
+            "w": 0.801
+          },
+          {
+            "reach": 0.456,
+            "h": 0.995,
+            "w": 0.786
+          },
+          {
+            "reach": 0.46,
+            "h": 0.99,
+            "w": 0.796
+          },
+          {
+            "reach": 0.453,
+            "h": 1.005,
+            "w": 0.736
+          },
+          {
+            "reach": 0.452,
+            "h": 0.97,
+            "w": 0.746
+          },
+          {
+            "reach": 0.362,
+            "h": 0.995,
+            "w": 0.706
+          },
+          {
+            "reach": 0.72,
+            "h": 0.876,
+            "w": 1.124
+          },
+          {
+            "reach": 0.565,
+            "h": 0.94,
+            "w": 0.925
+          },
+          {
+            "reach": 0.624,
+            "h": 0.91,
+            "w": 1.015
+          },
+          {
+            "reach": 0.447,
+            "h": 0.94,
+            "w": 0.756
+          },
+          {
+            "reach": 0.461,
+            "h": 0.886,
+            "w": 0.826
+          },
+          {
+            "reach": 0.547,
+            "h": 0.453,
+            "w": 1.179
+          }
+        ]
+      },
+      "attack": [
+        0,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "attackBy": "auto",
+      "fit": {
+        "by": "head",
+        "idlePx": 138.0,
+        "k": 1.0,
+        "bodyPx": 138,
+        "awRaw": 138,
+        "awFeet": 155.0,
+        "head": 1.054,
+        "headBy": "head match",
+        "headFwd": 1.04,
+        "headRev": 1.069,
+        "headScale": 1.035,
+        "ncc": [
+          0.68,
+          0.69
+        ],
+        "gear": 1.1,
+        "base": {
+          "top": 20.0,
+          "chin": null,
+          "feet": 155.0
+        },
+        "aw": {
+          "top": 20.1,
+          "bodyTop": 19.0,
+          "chin": null,
+          "feet": 155.0
+        },
+        "left": 0.06,
+        "box": [
+          73,
+          15,
+          104,
+          55
+        ]
+      },
+      "warn": [
+        "머리가 큼 ×1.054 (같은 키에서 머리 높이 · 5% 넘음)",
+        "옷 빛깔이 비각성과 비슷 0.176",
+        "공격 칸 자동 고름 [0, 13, 14, 15, 16, 17] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
+      ]
+    },
+    "base-g-12-silla-youth": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_base-g-12-silla-youth_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "base-g-18-daegaya-king": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-root-20261118-candidates/sprite_aw1_base-g-18-daegaya-king_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "base-g-26-gampyeong-gaetbeol": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-root-20261118-candidates/sprite_aw1_base-g-26-gampyeong-gaetbeol_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
+    },
+    "base-g-43-hwanna-amnok": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-root-20261118-candidates/sprite_aw1_base-g-43-hwanna-amnok_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "base-w-102-garak-dana": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-hit-edit-20261118-candidates/sprite_aw1_base-w-102-garak-dana_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
+    },
+    "base-w-41-hwanna-beodeul": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-hit-new-20261118-candidates/sprite_aw1_base-w-41-hwanna-beodeul_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "base-w-43-uga-nuri": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-hit-edit-20261118-candidates/sprite_aw1_base-w-43-uga-nuri_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "base-w-48-mujin-mudeung": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-hit-new-20261118-candidates/sprite_aw1_base-w-48-mujin-mudeung_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "base-w-50-siljik-mulga": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-hit-edit-20261118-candidates/sprite_aw1_base-w-50-siljik-mulga_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "base-w-53-hwanna-gabi": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_base-w-53-hwanna-gabi_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
+    },
+    "base-w-56-dongokjeo-sogeum": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-hit-new-20261118-candidates/sprite_aw1_base-w-56-dongokjeo-sogeum_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
+    },
+    "base-w-61-iseo-sinae": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_base-w-61-iseo-sinae_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "base-w-64-miri-dallae": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-hit-new-20261118-candidates/sprite_aw1_base-w-64-miri-dallae_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "base-w-71-yeonna-neoul": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-hit-edit-20261118-candidates/sprite_aw1_base-w-71-yeonna-neoul_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
+    },
+    "base-w-72-eumjeup-beol": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-hit-new-20261118-candidates/sprite_aw1_base-w-72-eumjeup-beol_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "base-w-75-daegaya-soemoe": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-hit-new-20261118-candidates/sprite_aw1_base-w-75-daegaya-soemoe_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "base-w-76-gampyeong-baetsagong": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_base-w-76-gampyeong-baetsagong_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "base-w-79-yangmaek-solmae": {
+      "status": "staged",
+      "act": "D:/에셋창고/Codex-claude40-hit-new-20261118-candidates/sprite_aw1_base-w-79-yangmaek-solmae_act_v2.png",
+      "walk": "D:/에셋창고/sprite_aw1_base-w-79-yangmaek-solmae_walk_v2.png",
+      "actSha256": "44560251bbb174639df84073c9705213cc685cbbee418dc4dad102351e9d3a7d",
+      "walkSha256": "4e24d6764ec29c63cbdbd9586f93e91c005521e3189ae7f14580444f7c011453",
+      "actVersion": 2,
+      "walkVersion": 2,
+      "auto": {
+        "act": {
+          "clear": 0.821,
+          "halo": 0.137,
+          "residue": 0.0
+        },
+        "walk": {
+          "clear": 0.817,
+          "halo": 0.078,
+          "residue": 0.0
+        },
+        "walkFit": {
+          "byHeight": 0.6239,
+          "byArea": 0.6279,
+          "used": 0.6259,
+          "walkHead": 1.0
+        },
+        "walkCheck": {
+          "legDiff15": 0.116,
+          "legIou15": 0.864,
+          "legShadeFlip": -0.005,
+          "stride": 3.62,
+          "still": 0
+        },
+        "poseHead": {
+          "0": 1.0,
+          "1": 0.99,
+          "2": 0.99,
+          "3": 0.99,
+          "12": 0.99,
+          "15": 0.95,
+          "16": 0.99
+        },
+        "colourGap": 0.092,
+        "cell": [
+          192,
+          160
+        ],
+        "contact": [
+          15,
+          0.8,
+          0.34
+        ],
+        "poses": [
+          {
+            "reach": 0.257,
+            "h": 1.015,
+            "w": 0.53
+          },
+          {
+            "reach": 0.26,
+            "h": 1.01,
+            "w": 0.54
+          },
+          {
+            "reach": 0.256,
+            "h": 1.01,
+            "w": 0.535
+          },
+          {
+            "reach": 0.256,
+            "h": 1.01,
+            "w": 0.535
+          },
+          {
+            "reach": 0.306,
+            "h": 0.96,
+            "w": 0.574
+          },
+          {
+            "reach": 0.251,
+            "h": 0.955,
+            "w": 0.515
+          },
+          {
+            "reach": 0.268,
+            "h": 0.955,
+            "w": 0.545
+          },
+          {
+            "reach": 0.269,
+            "h": 0.96,
+            "w": 0.54
+          },
+          {
+            "reach": 0.266,
+            "h": 0.936,
+            "w": 0.545
+          },
+          {
+            "reach": 0.26,
+            "h": 0.921,
+            "w": 0.53
+          },
+          {
+            "reach": 0.269,
+            "h": 0.926,
+            "w": 0.54
+          },
+          {
+            "reach": 0.254,
+            "h": 0.911,
+            "w": 0.53
+          },
+          {
+            "reach": 0.26,
+            "h": 1.005,
+            "w": 0.535
+          },
+          {
+            "reach": 0.413,
+            "h": 0.98,
+            "w": 0.703
+          },
+          {
+            "reach": 0.421,
+            "h": 0.99,
+            "w": 0.748
+          },
+          {
+            "reach": 0.37,
+            "h": 0.98,
+            "w": 0.718
+          },
+          {
+            "reach": 0.252,
+            "h": 0.995,
+            "w": 0.53
+          },
+          {
+            "reach": 0.257,
+            "h": 0.995,
+            "w": 0.54
+          },
+          {
+            "reach": 0.37,
+            "h": 0.926,
+            "w": 0.693
+          },
+          {
+            "reach": 0.488,
+            "h": 0.406,
+            "w": 1.094
+          }
+        ]
+      },
+      "attack": [
+        0,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "attackBy": "auto",
+      "fit": {
+        "by": "head",
+        "idlePx": 142.81,
+        "k": 1.035,
+        "bodyPx": 138,
+        "awRaw": 143,
+        "awFeet": 155.0,
+        "head": 0.921,
+        "headBy": "head match",
+        "headFwd": 0.917,
+        "headRev": 0.925,
+        "headScale": 0.925,
+        "ncc": [
+          0.49,
+          0.5
+        ],
+        "gear": 2.7,
+        "base": {
+          "top": 18.0,
+          "chin": null,
+          "feet": 155.0
+        },
+        "aw": {
+          "top": 17.7,
+          "bodyTop": 15.0,
+          "chin": null,
+          "feet": 155.0
+        },
+        "left": -0.29,
+        "box": [
+          67,
+          13,
+          65,
+          49
+        ]
+      },
+      "warn": [
+        "머리가 작음 ×0.921",
+        "옷 빛깔이 비각성과 비슷 0.092",
+        "공격 칸 자동 고름 [0, 12, 13, 14, 15, 16] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
+      ]
+    },
+    "base-w-80-usan-gangchi": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_base-w-80-usan-gangchi_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
+    },
+    "base-w-81-byeokjin-byeolbit": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-hit-edit-20261118-candidates/sprite_aw1_base-w-81-byeokjin-byeolbit_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "bdanbi": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-root-20261118-candidates/sprite_aw1_bdanbi_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "beom": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-hit-new-20261118-candidates/sprite_aw1_beom_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
+    },
+    "beombal": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-hit-new-20261118-candidates/sprite_aw1_beombal_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
+    },
+    "beomi": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-hit-edit-20261118-candidates/sprite_aw1_beomi_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
+    },
+    "byeol": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-root-20261118-candidates/sprite_aw1_byeol_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "dallae2": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_dallae2_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "dalli": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-root-20261118-candidates/sprite_aw1_dalli_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "danbi": {
+      "status": "staged",
+      "act": "D:/에셋창고/Codex-claude40-hit-edit-20261118-candidates/sprite_aw1_danbi_act_v2.png",
+      "walk": "D:/에셋창고/sprite_aw1_danbi_walk_v2.png",
+      "actSha256": "b4e305130813e9a0bf0dcdaabf223431490f9dd1ffc1acd2a712afcfe926d4d9",
+      "walkSha256": "b5810bc89a66c83251622f8ec0338367055b23357493a41dd65b0d4367ce744a",
+      "actVersion": 2,
+      "walkVersion": 2,
+      "auto": {
+        "act": {
+          "clear": 0.838,
+          "halo": 0.162,
+          "residue": 0.0001
+        },
+        "walk": {
+          "clear": 0.826,
+          "halo": 0.097,
+          "residue": 0.0
+        },
+        "walkFit": {
+          "byHeight": 0.6297,
+          "byArea": 0.6196,
+          "used": 0.6246,
+          "walkHead": 0.995
+        },
+        "walkCheck": {
+          "legDiff15": 0.137,
+          "legIou15": 0.832,
+          "legShadeFlip": 0.026,
+          "stride": 3.34,
+          "still": 0
+        },
+        "poseHead": {
+          "0": 1.0,
+          "1": 0.98,
+          "2": 0.98,
+          "3": 0.98,
+          "10": 0.95,
+          "12": 0.98,
+          "13": 0.91
+        },
+        "colourGap": 0.264,
+        "cell": [
+          184,
+          160
+        ],
+        "contact": [
+          15,
+          0.67,
+          0.56
+        ],
+        "poses": [
+          {
+            "reach": 0.246,
+            "h": 1.007,
+            "w": 0.473
+          },
+          {
+            "reach": 0.238,
+            "h": 1.002,
+            "w": 0.464
+          },
+          {
+            "reach": 0.241,
+            "h": 0.998,
+            "w": 0.459
+          },
+          {
+            "reach": 0.235,
+            "h": 0.998,
+            "w": 0.45
+          },
+          {
+            "reach": 0.237,
+            "h": 0.998,
+            "w": 0.459
+          },
+          {
+            "reach": 0.24,
+            "h": 0.984,
+            "w": 0.483
+          },
+          {
+            "reach": 0.237,
+            "h": 0.97,
+            "w": 0.501
+          },
+          {
+            "reach": 0.232,
+            "h": 0.928,
+            "w": 0.515
+          },
+          {
+            "reach": 0.236,
+            "h": 0.914,
+            "w": 0.487
+          },
+          {
+            "reach": 0.241,
+            "h": 0.882,
+            "w": 0.469
+          },
+          {
+            "reach": 0.237,
+            "h": 0.896,
+            "w": 0.483
+          },
+          {
+            "reach": 0.304,
+            "h": 0.891,
+            "w": 0.599
+          },
+          {
+            "reach": 0.231,
+            "h": 0.919,
+            "w": 0.45
+          },
+          {
+            "reach": 0.26,
+            "h": 0.905,
+            "w": 0.506
+          },
+          {
+            "reach": 0.315,
+            "h": 0.91,
+            "w": 0.585
+          },
+          {
+            "reach": 0.288,
+            "h": 0.905,
+            "w": 0.594
+          },
+          {
+            "reach": 0.239,
+            "h": 0.937,
+            "w": 0.459
+          },
+          {
+            "reach": 0.232,
+            "h": 0.928,
+            "w": 0.45
+          },
+          {
+            "reach": 0.296,
+            "h": 0.896,
+            "w": 0.613
+          },
+          {
+            "reach": 0.417,
+            "h": 0.469,
+            "w": 1.002
+          }
+        ]
+      },
+      "attack": [
+        0,
+        10,
+        11,
+        12,
+        13,
+        0
+      ],
+      "attackBy": "auto",
+      "fit": {
+        "by": "head",
+        "idlePx": 139.1,
+        "k": 1.008,
+        "bodyPx": 138,
+        "awRaw": 139,
+        "awFeet": 155.0,
+        "head": 1.049,
+        "headBy": "head match",
+        "headFwd": 1.036,
+        "headRev": 1.062,
+        "headScale": 1.035,
+        "ncc": [
+          0.68,
+          0.68
+        ],
+        "gear": 0.6,
+        "base": {
+          "top": 19.0,
+          "chin": null,
+          "feet": 155.0
+        },
+        "aw": {
+          "top": 19.1,
+          "bodyTop": 18.5,
+          "chin": null,
+          "feet": 155.0
+        },
+        "left": 0.11,
+        "box": [
+          57,
+          15,
+          68,
+          54
+        ]
+      },
+      "warn": [
+        "자세마다 머리 크기가 다름 {13: 0.91}",
+        "공격 칸 자동 고름 [0, 10, 11, 12, 13, 0] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
+      ]
+    },
+    "darae": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_darae_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
+    },
+    "dokmudeom": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-hit-edit-20261118-candidates/sprite_aw1_dokmudeom_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "duman": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-root-20261118-candidates/sprite_aw1_duman_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
+    },
+    "eomni": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_eomni_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
+    },
+    "gom": {
+      "status": "staged",
+      "act": "D:/에셋창고/Codex-claude40-hit-new-20261118-candidates/sprite_aw1_gom_act_v2.png",
+      "walk": "D:/에셋창고/sprite_aw1_gom_walk_v2.png",
+      "actSha256": "16124386b666b774c52613f88a0236fdac1ad47777a5a438f9c47327a84e1f3b",
+      "walkSha256": "97db5c353270e0fd6cb1f7b4c84f9c7160ee215e122bc1e89f369adc284a7601",
+      "actVersion": 2,
+      "walkVersion": 2,
+      "auto": {
+        "act": {
+          "clear": 0.771,
+          "halo": 0.119,
+          "residue": 0.0
+        },
+        "walk": {
+          "clear": 0.761,
+          "halo": 0.075,
+          "residue": 0.0
+        },
+        "walkFit": {
+          "byHeight": 0.6018,
+          "byArea": 0.6157,
+          "used": 0.6182,
+          "walkHead": 0.97
+        },
+        "walkCheck": {
+          "legDiff15": 0.128,
+          "legIou15": 0.86,
+          "legShadeFlip": -0.111,
+          "stride": 3.72,
+          "still": 0
+        },
+        "poseHead": {
+          "0": 1.0,
+          "1": 0.99,
+          "2": 1.0,
+          "3": 1.0,
+          "16": 0.95,
+          "17": 0.93
+        },
+        "colourGap": 0.176,
+        "cell": [
+          224,
+          160
+        ],
+        "contact": [
+          14,
+          0.96,
+          0.78
+        ],
+        "poses": [
+          {
+            "reach": 0.52,
+            "h": 1.005,
+            "w": 0.884
+          },
+          {
+            "reach": 0.525,
+            "h": 1.005,
+            "w": 0.884
+          },
+          {
+            "reach": 0.521,
+            "h": 1.0,
+            "w": 0.889
+          },
+          {
+            "reach": 0.527,
+            "h": 1.0,
+            "w": 0.894
+          },
+          {
+            "reach": 0.553,
+            "h": 0.99,
+            "w": 0.944
+          },
+          {
+            "reach": 0.539,
+            "h": 0.995,
+            "w": 0.884
+          },
+          {
+            "reach": 0.54,
+            "h": 0.99,
+            "w": 0.949
+          },
+          {
+            "reach": 0.532,
+            "h": 0.995,
+            "w": 0.914
+          },
+          {
+            "reach": 0.542,
+            "h": 0.985,
+            "w": 0.955
+          },
+          {
+            "reach": 0.533,
+            "h": 0.98,
+            "w": 0.899
+          },
+          {
+            "reach": 0.544,
+            "h": 0.975,
+            "w": 0.97
+          },
+          {
+            "reach": 0.54,
+            "h": 0.97,
+            "w": 0.894
+          },
+          {
+            "reach": 0.511,
+            "h": 0.96,
+            "w": 0.869
+          },
+          {
+            "reach": 0.408,
+            "h": 1.0,
+            "w": 0.859
+          },
+          {
+            "reach": 0.672,
+            "h": 0.904,
+            "w": 1.247
+          },
+          {
+            "reach": 0.753,
+            "h": 0.874,
+            "w": 1.359
+          },
+          {
+            "reach": 0.53,
+            "h": 0.914,
+            "w": 0.975
+          },
+          {
+            "reach": 0.518,
+            "h": 0.919,
+            "w": 0.934
+          },
+          {
+            "reach": 0.546,
+            "h": 0.889,
+            "w": 0.99
+          },
+          {
+            "reach": 0.608,
+            "h": 0.47,
+            "w": 1.288
+          }
+        ]
+      },
+      "attack": [
+        0,
+        14,
+        15,
+        16,
+        17,
+        0
+      ],
+      "attackBy": "auto",
+      "fit": {
+        "by": "head",
+        "idlePx": 138.0,
+        "k": 1.0,
+        "bodyPx": 138,
+        "awRaw": 138,
+        "awFeet": 155.0,
+        "head": 1.009,
+        "headBy": "head match",
+        "headFwd": 0.985,
+        "headRev": 1.035,
+        "headScale": 0.985,
+        "ncc": [
+          0.71,
+          0.69
+        ],
+        "gear": 0.4,
+        "base": {
+          "top": 18.0,
+          "chin": null,
+          "feet": 154.0
+        },
+        "aw": {
+          "top": 19.4,
+          "bodyTop": 19.0,
+          "chin": null,
+          "feet": 155.0
+        },
+        "left": 0.43,
+        "box": [
+          68,
+          16,
+          111,
+          50
+        ]
+      },
+      "warn": [
+        "옷 빛깔이 비각성과 비슷 0.176",
+        "공격 칸 자동 고름 [0, 14, 15, 16, 17, 0] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
+      ]
+    },
+    "haesol": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-hit-edit-20261118-candidates/sprite_aw1_haesol_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "halla": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-hit-edit-20261118-candidates/sprite_aw1_halla_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "hneoul": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_hneoul_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
+    },
+    "hwalmi": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_hwalmi_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "malgalgi": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-root-20261118-candidates/sprite_aw1_malgalgi_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
+    },
+    "mulbeom": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-root-20261118-candidates/sprite_aw1_mulbeom_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "noeul": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-hit-edit-20261118-candidates/sprite_aw1_noeul_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "nuri": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-hit-edit-20261118-candidates/sprite_aw1_nuri_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "sagong": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_sagong_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
+    },
+    "sdallae": {
+      "status": "staged",
+      "act": "D:/에셋창고/Codex-claude40-pado-20261118-candidates/sprite_aw1_sdallae_act_v3.png",
+      "walk": "D:/에셋창고/sprite_aw1_sdallae_walk_v3.png",
+      "actSha256": "166aeb08aafd2684ad315c5030c35a1a513465091f13e4adfd35a8de7415f212",
+      "walkSha256": "3e1dfd922dfd019f39e382a58b32b9542aec8bd8740298d61f7e99f393b5aef8",
+      "actVersion": 3,
+      "walkVersion": 3,
+      "auto": {
+        "act": {
+          "clear": 0.772,
+          "halo": 0.1,
+          "residue": 0.0001
+        },
+        "walk": {
+          "clear": 0.79,
+          "halo": 0.068,
+          "residue": 0.0
+        },
+        "walkFit": {
+          "byHeight": 0.6158,
+          "byArea": 0.6586,
+          "used": 0.6626,
+          "walkHead": 0.924
+        },
+        "walkCheck": {
+          "legDiff15": 0.114,
+          "legIou15": 0.785,
+          "legShadeFlip": -0.04,
+          "stride": 3.66,
+          "still": 0
+        },
+        "poseHead": {
+          "0": 1.0,
+          "1": 1.02,
+          "2": 0.99,
+          "3": 1.01,
+          "12": 0.86,
+          "16": 0.96
+        },
+        "colourGap": 0.155,
+        "cell": [
+          200,
+          160
+        ],
+        "contact": [
+          15,
+          0.77,
+          0.47
+        ],
+        "poses": [
+          {
+            "reach": 0.324,
+            "h": 1.0,
+            "w": 0.633
+          },
+          {
+            "reach": 0.326,
+            "h": 1.005,
+            "w": 0.643
+          },
+          {
+            "reach": 0.311,
+            "h": 0.995,
+            "w": 0.633
+          },
+          {
+            "reach": 0.314,
+            "h": 1.005,
+            "w": 0.638
+          },
+          {
+            "reach": 0.315,
+            "h": 0.981,
+            "w": 0.624
+          },
+          {
+            "reach": 0.317,
+            "h": 0.995,
+            "w": 0.624
+          },
+          {
+            "reach": 0.313,
+            "h": 1.0,
+            "w": 0.624
+          },
+          {
+            "reach": 0.313,
+            "h": 0.995,
+            "w": 0.624
+          },
+          {
+            "reach": 0.317,
+            "h": 0.986,
+            "w": 0.633
+          },
+          {
+            "reach": 0.322,
+            "h": 0.967,
+            "w": 0.643
+          },
+          {
+            "reach": 0.326,
+            "h": 0.967,
+            "w": 0.648
+          },
+          {
+            "reach": 0.318,
+            "h": 0.976,
+            "w": 0.638
+          },
+          {
+            "reach": 0.348,
+            "h": 0.948,
+            "w": 0.676
+          },
+          {
+            "reach": 0.474,
+            "h": 1.052,
+            "w": 0.843
+          },
+          {
+            "reach": 0.405,
+            "h": 1.01,
+            "w": 0.752
+          },
+          {
+            "reach": 0.381,
+            "h": 0.976,
+            "w": 0.767
+          },
+          {
+            "reach": 0.327,
+            "h": 0.971,
+            "w": 0.648
+          },
+          {
+            "reach": 0.322,
+            "h": 0.971,
+            "w": 0.648
+          },
+          {
+            "reach": 0.385,
+            "h": 0.971,
+            "w": 0.79
+          },
+          {
+            "reach": 0.568,
+            "h": 0.533,
+            "w": 1.233
+          }
+        ]
+      },
+      "attack": [
+        0,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "attackBy": "auto",
+      "fit": {
+        "by": "head",
+        "idlePx": 137.02,
+        "k": 0.993,
+        "bodyPx": 137,
+        "awRaw": 136,
+        "awFeet": 155.0,
+        "head": 1.013,
+        "headBy": "head match",
+        "headFwd": 1.012,
+        "headRev": 1.013,
+        "headScale": 1.005,
+        "ncc": [
+          0.61,
+          0.62
+        ],
+        "gear": 0.0,
+        "base": {
+          "top": 19.0,
+          "chin": null,
+          "feet": 155.0
+        },
+        "aw": {
+          "top": 19.9,
+          "bodyTop": 19.5,
+          "chin": null,
+          "feet": 155.0
+        },
+        "left": 0.94,
+        "box": [
+          58,
+          17,
+          90,
+          51
+        ]
+      },
+      "warn": [
+        "걷기 판 등신이 동작 판과 다름: 같은 몸 크기에서 걷기 머리 ×0.92 (반씩 나눠 구움 · 10% 넘으면 걷기 판을 다시 받는다)",
+        "자세마다 머리 크기가 다름 {12: 0.86}",
+        "옷 빛깔이 비각성과 비슷 0.155",
+        "공격 칸 자동 고름 [0, 12, 13, 14, 15, 16] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
+      ]
+    },
+    "singwigan": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_singwigan_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "sinneoul": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-root-20261118-candidates/sprite_aw1_sinneoul_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
+    },
+    "sogeumbi": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-hit-new-20261118-candidates/sprite_aw1_sogeumbi_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "songbi": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-hit-new-20261118-candidates/sprite_aw1_songbi_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "wan": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-hit-edit-20261118-candidates/sprite_aw1_wan_act_v3.png",
+      "pending": "act v3 · walk vNone → waiting for walk"
+    },
+    "yucheongan": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-hit-edit-20261118-candidates/sprite_aw1_yucheongan_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
+    },
+    "base-g-17-saro-isageum": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_base-g-17-saro-isageum_act.png",
+      "pending": "act v1 · walk vNone → waiting for walk"
+    },
+    "base-g-50-bullae-gwaha": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-root-20261118-candidates/sprite_aw1_base-g-50-bullae-gwaha_act.png",
+      "pending": "act v1 · walk vNone → waiting for walk"
+    },
+    "base-g-57-bihwa-neup": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-root-20261118-candidates/sprite_aw1_base-g-57-bihwa-neup_act.png",
+      "pending": "act v1 · walk vNone → waiting for walk"
+    },
+    "base-g-62-beonye-hanul": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-root-20261118-candidates/sprite_aw1_base-g-62-beonye-hanul_act.png",
+      "pending": "act v1 · walk vNone → waiting for walk"
+    },
+    "mulsae": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude40-hit-new-20261118-candidates/sprite_aw1_mulsae_act.png",
+      "pending": "act v1 · walk vNone → waiting for walk"
     }
   }
 }
