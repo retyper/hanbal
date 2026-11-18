@@ -49,6 +49,7 @@ export const SKILL_BODY: ReadonlySet<string> = new Set<string>([
   'g-77-saro-sobeol',
   'g-78-saro-alpyeong',
   'g-75-saro-hogong',
+  'g-84-wander-seoneul',
   'g-86-mokji-geumbawi',
   'g-83-mokji-keundol',
   'g-76-mokji-jinha',

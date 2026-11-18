@@ -206,6 +206,7 @@ export const SKILL_BODY_AW1: ReadonlySet<string> = new Set<string>([
   'g-82-saro-hojin',
   'g-83-mokji-keundol',
   'g-85-wander-ure',
+  'g-84-wander-seoneul',
   'g-86-mokji-geumbawi',
   'g-87-wae-chief',
   'g-88-wander-soeul',
