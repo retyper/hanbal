@@ -2606,32 +2606,32 @@
     "sori": {
       "status": "installed",
       "order": "strip",
-      "act": "D:/tmp-node/sp-inbox/sprite_prop_sori_act.png",
-      "walk": "D:/tmp-node/sp-inbox/sprite_prop_sori_walk.png",
-      "actSha256": "e8a53c4170d784d10a21b0bc0066b5d7124a004eed9b6aabfa83f870836e837a",
-      "walkSha256": "634109df4f9db40307f6ee832d3928e87787661ef99fb7bdaf1d1fd7b59a269d",
+      "act": "D:/tmp-node/sp-inbox33/sprite_prop_sori_act.png",
+      "walk": "D:/tmp-node/sp-inbox33/sprite_prop_sori_walk.png",
+      "actSha256": "22ea92a3cf9c8a5f452a442ceed86e3efe356d2a5f6931cfd93d97323c4b9118",
+      "walkSha256": "d32a8f131e097b79dcc746583ed8eed8809a7c3297172a287d52a33be65b8c23",
       "portrait": "w-11-assassin",
       "auto": {
         "cell": [
-          184,
+          176,
           160
         ],
-        "walkScale": 0.653,
+        "walkScale": 0.6073,
         "contact": [
           14,
-          0.89,
-          0.49
+          0.9,
+          0.42
         ],
-        "headsOld": 3.04,
-        "headsNew": 3.81,
-        "headsNewWalk": 3.61,
-        "residueAct": 0.0012,
-        "residueWalk": 0.0
+        "headsOld": 3.81,
+        "headsNew": 3.97,
+        "headsNewWalk": 3.46,
+        "residueAct": 0.0064,
+        "residueWalk": 0.0016
       },
       "review": {
-        "chinOld": 33.0,
-        "chinNew": 29.0,
-        "note": "v3 보류 후보 · 기준 판과 맞음"
+        "chinOld": 3.81,
+        "chinNew": 3.97,
+        "note": "11-18 claude33 · 조금 나음"
       },
       "archive": "assets_src/realm/retired/prop-20261117/sori",
       "installed": "2026-11-17"
@@ -2850,12 +2850,12 @@
       }
     },
     "geumbawi": {
-      "status": "installed",
+      "status": "staged",
       "order": "strip",
-      "act": "D:/tmp-node/sp-inbox/sprite_prop_geumbawi_act.png",
-      "walk": "D:/tmp-node/sp-inbox/sprite_prop_geumbawi_walk.png",
-      "actSha256": "0de468c3e3b16a23bbb3227b2e25ad0ef67b9d486ba6b5167cf530dc68cfadc0",
-      "walkSha256": "405f6dc844979c1a2eb8026174b4342c5edcd4bbc822add2fc6121c9e3396e81",
+      "act": "D:/tmp-node/sp-inbox33/sprite_prop_geumbawi_act.png",
+      "walk": "D:/tmp-node/sp-inbox33/sprite_prop_geumbawi_walk.png",
+      "actSha256": "5483c73ac691f43b4d31dfb240e9cbd92593e718da0c4f5fba4b182af885bf2d",
+      "walkSha256": "027dfdd7812008f3cfae2da509e4f0f68b4e7afb5d584ec7d14c2b2990e14ced",
       "weaponFix": {
         "sprite": "club",
         "art": "sword",
@@ -2864,37 +2864,29 @@
       "portrait": "g-86-mokji-geumbawi",
       "auto": {
         "cell": [
-          184,
+          168,
           160
         ],
-        "walkScale": 0.6025,
+        "walkScale": 0.6,
         "contact": [
           14,
-          0.93,
-          0.43
+          0.94,
+          0.48
         ],
-        "headsOld": 4.06,
-        "headsNew": 4.03,
-        "headsNewWalk": 4.77,
-        "residueAct": 0.0161,
-        "residueWalk": 0.0
-      },
-      "review": {
-        "chinOld": 32.0,
-        "chinNew": 29.0,
-        "note": "v3 보류 후보 · 몽둥이→원화대로 칼",
-        "weapon": "sword"
-      },
-      "archive": "assets_src/realm/retired/prop-20261117/geumbawi",
-      "installed": "2026-11-17"
+        "headsOld": 4.03,
+        "headsNew": 4.35,
+        "headsNewWalk": 4.15,
+        "residueAct": 0.0285,
+        "residueWalk": 0.0013
+      }
     },
     "goeun": {
-      "status": "installed",
+      "status": "staged",
       "order": "strip",
-      "act": "D:/tmp-node/sp-inbox/sprite_prop_goeun_act.png",
-      "walk": "D:/tmp-node/sp-inbox/sprite_prop_goeun_walk.png",
-      "actSha256": "4a95c659da8dc7f0e141565e6421505671d3cfb54eb7386ca1be0cffe0c3dd80",
-      "walkSha256": "bf21ca14791a7ab250771c8179c6028761ab58b7448a6a1024cfc68c30f03457",
+      "act": "D:/tmp-node/sp-inbox33/sprite_prop_goeun_act.png",
+      "walk": "D:/tmp-node/sp-inbox33/sprite_prop_goeun_walk.png",
+      "actSha256": "03cceb8e2d788327d4e46594074f5680357adabcaac97dee15a8b41a5ae8e252",
+      "walkSha256": "9327047a7cc1f3ba5e1bf7b64d533f968d95fa98a6c710b5e2b2be6ae5c55f97",
       "weaponFix": {
         "sprite": "sword",
         "art": "fan",
@@ -2903,29 +2895,21 @@
       "portrait": "w-01-silla-princess",
       "auto": {
         "cell": [
-          208,
+          184,
           160
         ],
-        "walkScale": 0.6092,
+        "walkScale": 0.6153,
         "contact": [
           14,
-          0.85,
-          0.46
+          0.83,
+          0.45
         ],
-        "headsOld": 4.06,
-        "headsNew": 3.42,
-        "headsNewWalk": 3.38,
-        "residueAct": 0.0,
-        "residueWalk": 0.0
-      },
-      "review": {
-        "chinOld": 32.0,
-        "chinNew": 29.0,
-        "note": "v3 보류 후보 · 칼→원화대로 부채(주술)",
-        "weapon": "staff"
-      },
-      "archive": "assets_src/realm/retired/prop-20261117/goeun",
-      "installed": "2026-11-17"
+        "headsOld": 3.42,
+        "headsNew": 5.27,
+        "headsNewWalk": 4.4,
+        "residueAct": 0.0005,
+        "residueWalk": 0.0002
+      }
     },
     "base-g-60-golbeol-golgae": {
       "status": "installed",

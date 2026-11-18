@@ -261,7 +261,7 @@ const CONTACT: Readonly<Record<string, [number, number, number]>> = {
   'gen-gaennae': [14, 0.84, 0.45],
   'gen-budeul': [14, 0.9, 0.43],
   'gen-sogeumbi': [14, 0.95, 0.4],
-  'gen-sori': [14, 0.89, 0.49],
+  'gen-sori': [14, 0.9, 0.42],
   'gen-beombal': [14, 0.95, 0.47],
   'gen-hwalmi': [15, 0.74, 0.46],
   'gen-dangung': [15, 0.75, 0.41],
