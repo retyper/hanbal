@@ -2401,37 +2401,36 @@
       "installed": "2026-11-17"
     },
     "daemusin": {
-      "status": "installed",
+      "status": "rejected",
       "order": "strip",
-      "act": "D:/tmp-node/sp-inbox/sprite_prop_daemusin_act.png",
-      "walk": "D:/tmp-node/sp-inbox/sprite_prop_daemusin_walk.png",
-      "actSha256": "ccc8be78bf2c101fa604165b66b0796033d0f8369d3c40893535798e9e2efdd8",
-      "walkSha256": "76e77cdc2fffb4fb8bfd057cefc56ebc08e8817a9ba5a374ebc5820150615c56",
+      "act": "D:/tmp-node/sp-inbox33/sprite_prop_daemusin_act.png",
+      "walk": "D:/tmp-node/sp-inbox33/sprite_prop_daemusin_walk.png",
+      "actSha256": "58fb7e0442d0ce714dafdf7d7c376fd34f6ff918d0958303199b32ae6dd3426e",
+      "walkSha256": "453eccf3466652db0ad0e2e93274c046875c527a55ce2c1847c2470a6c642374",
       "portrait": "g-95-goguryeo-daemusin",
       "auto": {
         "cell": [
-          168,
+          152,
           160
         ],
-        "walkScale": 0.6209,
+        "walkScale": 0.6764,
         "contact": [
           15,
-          0.84,
-          0.59
+          0.8,
+          0.57
         ],
-        "headsOld": 2.89,
-        "headsNew": 5.04,
-        "headsNewWalk": 5.32,
-        "residueAct": 0.0,
+        "headsOld": 5.04,
+        "headsNew": 4.19,
+        "headsNewWalk": 3.77,
+        "residueAct": 0.0005,
         "residueWalk": 0.0
       },
+      "reason": "새 판 머리가 옛 판보다 큼 → 옛 판 유지",
       "review": {
-        "chinOld": 33.0,
-        "chinNew": 29.0,
-        "note": "v3 보류 후보 · 기준 판 옆 같은 키로 맞음"
-      },
-      "archive": "assets_src/realm/retired/prop-20261117/daemusin",
-      "installed": "2026-11-17"
+        "chinOld": null,
+        "chinNew": null,
+        "note": ""
+      }
     },
     "beomi": {
       "status": "installed",
@@ -2574,32 +2573,32 @@
     "songyang": {
       "status": "installed",
       "order": "strip",
-      "act": "D:/tmp-node/sp-inbox/sprite_prop_songyang_act.png",
-      "walk": "D:/tmp-node/sp-inbox/sprite_prop_songyang_walk.png",
-      "actSha256": "93da38b334d5e6b7602754fb65e407dbbad81c09a930e6ae2891451e1eaa6029",
-      "walkSha256": "f4b5de4cd71f19739585b1c20a3e410ce2eb79a90cc05a3165357aea5a09c9d5",
+      "act": "D:/tmp-node/sp-inbox33/sprite_prop_songyang_act.png",
+      "walk": "D:/tmp-node/sp-inbox33/sprite_prop_songyang_walk.png",
+      "actSha256": "08c5e6bc5c5840dea2221e1e47ce09ee10b98ec0f09e0d970816987fb5fb8f0f",
+      "walkSha256": "e0ea72bb9b60669eab90a36c08499d3dda8e2ef5c5cb0e48995f64415a9948f5",
       "portrait": "g-91-biryu-songyang",
       "auto": {
         "cell": [
-          176,
+          184,
           160
         ],
-        "walkScale": 0.601,
+        "walkScale": 0.6143,
         "contact": [
           15,
-          0.8,
-          0.37
+          0.73,
+          0.47
         ],
-        "headsOld": 5.33,
-        "headsNew": 5.96,
-        "headsNewWalk": 5.02,
-        "residueAct": 0.0,
-        "residueWalk": 0.0
+        "headsOld": 5.96,
+        "headsNew": 6.48,
+        "headsNewWalk": 5.54,
+        "residueAct": 0.0006,
+        "residueWalk": 0.0001
       },
       "review": {
-        "chinOld": 33.0,
-        "chinNew": 29.0,
-        "note": "v3 보류 후보 · 기준 판과 맞음"
+        "chinOld": 5.96,
+        "chinNew": 6.48,
+        "note": "11-18 claude33 · 옛 판과 거의 같고 조금 나음"
       },
       "archive": "assets_src/realm/retired/prop-20261117/songyang",
       "installed": "2026-11-17"
@@ -2814,12 +2813,12 @@
       "installed": "2026-11-17"
     },
     "base-g-07-drunk-warrior": {
-      "status": "installed",
+      "status": "rejected",
       "order": "strip",
-      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-g-07-drunk-warrior_act.png",
-      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-g-07-drunk-warrior_walk.png",
-      "actSha256": "50586d5e62af86fee4401e6cc3fed545904f804271fc19a71d7f33bc33075ec4",
-      "walkSha256": "35b1cb10ade8d5af78aa472d966c0ea6bb7f7133597d40b06136c5a531654381",
+      "act": "D:/tmp-node/sp-inbox33/sprite_prop_base-g-07-drunk-warrior_act.png",
+      "walk": "D:/tmp-node/sp-inbox33/sprite_prop_base-g-07-drunk-warrior_walk.png",
+      "actSha256": "48dbf15c39b5f00155d35f70b0a309f92b1d0c3a65d72d72c322e559ef52ff44",
+      "walkSha256": "b93db676c4de837b6b99117ae6cfc82504cdfc634d1a5b66aaa203401d4457b5",
       "weaponFix": {
         "sprite": "sword",
         "art": "fists (jar/cup)",
@@ -2828,29 +2827,27 @@
       "portrait": "g-07-drunk-warrior",
       "auto": {
         "cell": [
-          192,
+          184,
           160
         ],
-        "walkScale": 0.5314,
+        "walkScale": 0.6087,
         "contact": [
           14,
-          0.84,
-          0.44
+          0.82,
+          0.4
         ],
-        "headsOld": 3.08,
-        "headsNew": 3.91,
-        "headsNewWalk": 3.33,
+        "headsOld": 3.91,
+        "headsNew": 3.24,
+        "headsNewWalk": 3.14,
         "residueAct": 0.0,
-        "residueWalk": 0.0
+        "residueWalk": 0.006
       },
+      "reason": "새 판 머리가 옛 판보다 큼(3.24 vs 3.91) → 옛 판 유지",
       "review": {
-        "chinOld": 33.0,
-        "chinNew": 30.0,
-        "note": "v3 보류 후보 · 칼→원화대로 술독·잔(주먹)",
-        "weapon": "dagger"
-      },
-      "archive": "assets_src/realm/retired/prop-20261117/base-g-07-drunk-warrior",
-      "installed": "2026-11-17"
+        "chinOld": null,
+        "chinNew": null,
+        "note": ""
+      }
     },
     "geumbawi": {
       "status": "installed",
