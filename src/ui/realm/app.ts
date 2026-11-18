@@ -78,6 +78,8 @@ import { WONDER_CSS } from './wondermap.ts'
 import { LEAGUE_CSS, leagueChipHtml, leagueToastHtml } from './league.ts'
 import { BOND_CSS, endBondsHtml } from './bonds.ts'
 import { DEX_CSS, clanHeroes, dexHtml, dexToastHtml, loadDex, recordDex, toggleDexAwake, type DexBoard } from './dex.ts'
+import { recBurst, recCss, recDot, recsOf, syncBook, visitRec, type Rec } from './recommend.ts'
+import { SHOP, loadMeta, shopCost, shopMax } from '../../raid/meta.ts'
 import { DEX_AWOKE, DEX_SERVED, dexCatalog } from '../../realm/dex.ts'
 import { DRILL_CSS, drillLevel, engraveRun, hasDrill, loadDrill, raiseHero, yardAct, yardAfterPaint, yardBack, yardHtml, yardReset, yardSearch, yardStripHtml, yardBeforePaint, type DrillKit } from './drill.ts'
 import { applyDrill, earnedOf } from '../../realm/drill.ts'
@@ -729,7 +731,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS.replaceAll('__ART__', ART) + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + BOND_CSS + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + VOLUME_CSS + MEM_CSS + ASCEND_CSS.replaceAll('__ART__', ART) + HILITE_CSS + TOWN_CSS.replaceAll('__ART__', ART) + RISE_CSS + BOOK_CSS + CROWN_CSS + LEAGUE_CSS + WONDER_CSS
+  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS.replaceAll('__ART__', ART) + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + BOND_CSS + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + VOLUME_CSS + MEM_CSS + ASCEND_CSS.replaceAll('__ART__', ART) + HILITE_CSS + TOWN_CSS.replaceAll('__ART__', ART) + RISE_CSS + BOOK_CSS + CROWN_CSS + LEAGUE_CSS + WONDER_CSS + recCss()
   document.head.appendChild(style)
   root.classList.add('ap')
   // 그래픽 단계 저사양 · 보통 · 고사양 (quality.ts · 형 10-29: 폰 절전 모드에서 그림이 다 깨졌다)
@@ -919,6 +921,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let diploMode: 'envoy' | 'plot' | 'scout' = 'envoy'
   /** 장수 판의 탭 — 우리 장수 · 옥에 가둔 적장 · 적장 (형 10-23: "한 페이지에 다 담지 말고 탭을 나눠야") */
   let heroTab: 'cmd' | 'mine' | 'jail' | 'foe' = 'cmd'
+  /** 추천 점 (recommend.ts) — 그릴 때마다 다시 센다 · rqHold 는 방금 들어간 장수의 추천(들어가면 꺼지지만 그 판 안의 출전 단추에는 남긴다) */
+  let rqNow: Rec[] = []
+  let rqHold: Rec | null = null
   /** 「명령」에서 연 일 창 — null 이면 일 카드 여섯 · cmdHero 는 그 창에서 고른 장수 ('' 이면 그 일에 가장 맞는 이) */
   let cmdJob: CmdJob | null = null
   /** 판을 열기 전 「데려갈 장수」 팝업 — 고른 판 (형 10-25: "게임 시작할 때 데려갈 장수가 팝업으로 · 영웅전 내 기록의 장수만 · 가능한 수대로 체크") */
@@ -4552,7 +4557,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   })
 
   // ───────── 장수 (docs/realm/HEROES.md §5)
-  function heroRow(r: Realm, h: Hero, extra = ''): string {
+  function heroRow(r: Realm, h: Hero, extra = '', rqMark = false): string {
     const seen = h.faction === me() || heroSeen(realm!, me(), h.id)
     const job = heroJob(r, h.id)
     // 이번 계절 무엇을 하나 — 📜 내가 시킨 일 · ⚙ 알아서 하는 일(맡은 고을·군대를 이어 가거나 계절 끝에 찾아 갈 곳) · 직접 부리는 장수 (형 10-26)
@@ -4562,7 +4567,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const keeps = h.post != null || Object.values(r.armies).some((a) => a.hero === h.id)
     const work = h.faction !== me() || h.status !== 'free' ? '' : orderedByMe(h.id) ? ` <i class="hwk me">${tr('hero.cmdMark')}</i>`
       : !ours ? '' : job === null && !mine && realm !== null && autoIdle(realm) && (chan !== null || keeps) ? ` <i class="hwk au">${tr('hero.autoMark')}</i>` : ''
-    return `<button class="hrow${isRuler(r, h.id) ? ' ruler' : ''}${job !== null ? ' busy' : ''}" data-act="hero" data-id="${h.id}">${bust(h)}${job !== null ? `<i class="hbz">⏳</i>` : ''}<span class="hb">`
+    return `<button class="hrow${isRuler(r, h.id) ? ' ruler' : ''}${job !== null ? ' busy' : ''}${rqMark ? ' rq-row' : ''}" data-act="hero" data-id="${h.id}">${rqMark ? recDot(tr('rec.badge')) : ''}${bust(h)}${job !== null ? `<i class="hbz">⏳</i>` : ''}<span class="hb">`
       + `<b>${nameHtml(h.name)}${isRuler(r, h.id) ? ` <span class="mute">${tr('hero.ruler')}</span>` : ''}${h.drill !== undefined && h.drill.lv > 0 && h.faction === me() ? ` <span class="dlv">${tr('hero.drill', { n: h.drill.lv })}</span>` : ''}${h.faction === me() ? relicChips(ART, esc, h.relics, h.relicLv ?? {}) : ''}${mine ? ` <span class="jsm">${tr('hero.manual')}</span>` : ''}${work}${seen ? '' : ` <span class="heard">${tr('hero.heard')}</span>`}</b>`
       + (job !== null ? `<span class="hdo">⏳ ${esc(job[1])}</span>` : `<span class="mute">${esc(roleLine(r, h))}</span>`)
       + (chan !== null ? `<span class="jsd">${chanJobHtml(h.id)}</span>` : '')
@@ -4575,7 +4580,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const caps = sorted(Object.values(r.heroes)).filter((x) => x.status === 'captive' && x.captor === me())
     const foes = sorted(Object.values(r.heroes)).filter((x) => x.faction !== me() && x.status === 'free' && heroSeen(realm!, me(), x.id))
     const wand = wanderersFor(r, me()) // 들인 이는 벌써 위 장군 줄에 있다
-    const tab = (v: typeof heroTab, name: string, n: number): string => `<button class="${heroTab === v ? 'on' : ''}" data-act="htab" data-v="${v}">${name}${n > 0 ? ` <i>${n}</i>` : ''}</button>`
+    const tab = (v: typeof heroTab, name: string, n: number): string => `<button class="${heroTab === v ? 'on' : ''}" data-act="htab" data-v="${v}">${name}${n > 0 ? ` <i>${n}</i>` : ''}${v === 'mine' && heroTab !== 'mine' && rqNow.length > 0 ? recDot(tr('rec.badge')) : ''}</button>`
     let h = `<div class="seg dseg">${tab('cmd', tr('hero.tabCmd'), 0)}${tab('mine', tr('hero.tabMine'), mine.length + wand.length)}${tab('jail', tr('hero.tabJail'), caps.length)}${tab('foe', tr('hero.tabFoe'), foes.length)}</div>`
     // 재상에게 맡기기 — 명령 칸·우리 장수 칸 맨 위에 (형 10-26)
     if (heroTab === 'mine' || (heroTab === 'cmd' && cmdJob === null)) h += chancellorBar()
@@ -4591,10 +4596,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       for (const x of foes) h += heroRow(r, x)
       return h
     }
-    for (const x of ruler) h += heroRow(r, x)
+    // 추천 점이 붙은 장수는 맨 위로 (recommend.ts · 형 11-18 「그냥 타고 들어가게」)
+    const rqIds = new Set(rqNow.map((v) => v.id))
+    for (const v of rqNow) { const x = mine.find((y) => y.id === v.id); if (x !== undefined) h += heroRow(r, x, '', true) }
+    for (const x of ruler) if (!rqIds.has(x.id)) h += heroRow(r, x)
     h += `<h4>${tr('hero.mineH')}</h4>`
     const hiredNow = new Set(heroOrders.flatMap((o) => (o.kind === 'hire' ? [o.hero] : [])))
-    for (const x of mine.filter((y) => !isRuler(r, y.id))) h += heroRow(r, x, hiredNow.has(x.id) ? `<span class="newb">${tr('hero.newbie')}</span>` : '')
+    for (const x of mine.filter((y) => !isRuler(r, y.id) && !rqIds.has(y.id))) h += heroRow(r, x, hiredNow.has(x.id) ? `<span class="newb">${tr('hero.newbie')}</span>` : '')
     // 자라는 아이 — 아직 장수가 아니라 일을 못 맡는다 (형 10-24)
     const kids = (r.growing ?? []).filter((g) => g.hero.faction === me())
     if (kids.length > 0) {
@@ -4785,6 +4793,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const x = r.heroes[id] ?? (realm!.wanderers ?? []).find((w) => w.hero.id === id)?.hero
     if (x === undefined) return ''
     const ours = x.faction === me() && x.status === 'free'
+    const rq = ours ? rqNow.find((v) => v.id === x.id) ?? (rqHold?.id === x.id ? rqHold : undefined) : undefined
     const seen = x.faction === me() || heroSeen(realm!, me(), x.id) || (realm!.wanderers ?? []).some((w) => w.hero.id === id)
     const file = faceFile(x.id)
     let h = `<button class="btn ghost sm hback" data-act="hero-back">${tr('hero.backList')}</button><div class="hcard">`
@@ -4805,25 +4814,31 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const hpic = hloop !== null ? `<span class="vthumb awakening-frame"><video class="big vloop${sqCls(hloop)}" ${takeAttrs(hloops!)} poster="${hpost}" autoplay muted playsinline preload="auto" data-act="bust-view" data-src="${hpost}" data-loop="${hloop}" data-elem="${e}"></video>${awakeningGemHtml(e, ART)}</span>`
       : woke2 ? `<img class="big" src="${hpost}" alt="" data-act="bust-view" data-src="${hpost}">`
       : file !== undefined ? `<img class="big" src="${ART}bust/${file}.jpg" alt="" data-act="bust-view" data-src="${ART}bust/${file}.jpg">` : bust(x, 'face')
-    h += `<div class="hpic${hloop !== null ? ' framed' : ''}">${hpic}${annal !== undefined ? `<button class="annb" data-act="annal" data-id="${x.id}" aria-label="${tr('hero.annal')}">📜<b>?</b></button>` : ''}${flamesHtml(x)}</div>`
+    h += `<div class="hpic${hloop !== null ? ' framed' : ''}">${hpic}${annal !== undefined ? `<button class="annb" data-act="annal" data-id="${x.id}" aria-label="${tr('hero.annal')}">📜<b>?</b></button>` : ''}${flamesHtml(x)}${rq?.to === 'pic' ? recDot(tr('rec.badge')) : ''}</div>`
     if (tw) h += trueWakeCard(x, bo!, woke2, loop2)
     // 판 밖 단련을 들고 온 장수 — 「단련 n」 (HERO-GROWTH ★ §A)
     h += `<div class="hn">${nameHtml(x.name)}${x.drill !== undefined && x.drill.lv > 0 && x.faction === me() ? ` <span class="dlv">${tr('hero.drill', { n: x.drill.lv })}</span>` : ''}${x.faction === me() ? relicChips(ART, esc, x.relics, x.relicLv ?? {}) : ''}</div><div class="mute">${emblem(x.faction)}${esc(r.factions[x.faction]?.name ?? tr('hero.wanderer'))}${isRuler(r, x.id) ? ` ${tr('hero.ruler')}` : ''} · ${esc(roleLine(r, x))}</div>`
+    const rqAt = h.length // 추천이 붙은 장수면 시련·열전 카드를 이 자리(이름 바로 밑)로 끌어올린다 (recommend.ts)
     // 기억 — 겪은 일이 계절 차례 그림으로, 이름 바로 밑에 (MEMORY §3-2 5). 남의 장수는 우리와 얽힌 일만
     if (seen) h += memRowHtml(realm!, x, me(), ART, esc)
     h += heroRadar(x, seen, ours)
     h += `<div class="tr3">${traitChips(x, seen)}${artChip(x, seen, icon)}</div>`
     if (ours) h += growthHtml(r, x)
+    let cards = '', top = '' // top: 추천 점이 붙은 카드 하나 — 이름 바로 밑으로 끌어올린다
+    const rqT = rq?.to === 'trial', rqR = rq?.to === 'raid', rqDot = recDot(tr('rec.badge'))
     if (ours && hasAwakeningTrial(x)) {
       const why = trialBlock(r, x.id)
-      h += `<div class="trial-card" style="padding:14px;border:1px solid #b99a57;margin:12px 0"><b>${esc(x.name)}의 각성 시련 · ${KITS[trialKit(x)].title}</b><p>${x.trialCleared ? '시련 완료 · 각성은 이 캠페인 동안 유지됩니다.' : why ?? `시련 개방 · ${Math.round(HAEBI_RUN.duration * HAEBI_STAGES.trial.length / 60)}분 도전. 실패해도 무료로 다시 도전할 수 있습니다.`}</p>${x.trialCleared ? '' : `<button class="btn" data-act="haebi-trial" data-id="${x.id}" ${why ? 'disabled' : ''}>각성 시련에 도전</button>`}<small>시련 동안 본편 시간은 흐르지 않습니다.</small></div>`
+      const card = `<div class="trial-card${rqT ? ' rq-on' : ''}" style="padding:14px;border:1px solid #b99a57;margin:12px 0"><b>${esc(x.name)}의 각성 시련 · ${KITS[trialKit(x)].title}</b><p>${x.trialCleared ? '시련 완료 · 각성은 이 캠페인 동안 유지됩니다.' : why ?? `시련 개방 · ${Math.round(HAEBI_RUN.duration * HAEBI_STAGES.trial.length / 60)}분 도전. 실패해도 무료로 다시 도전할 수 있습니다.`}</p>${x.trialCleared ? '' : `<button class="btn${rqT && !why ? ' pri rq-go' : ''}" data-act="haebi-trial" data-id="${x.id}" ${why ? 'disabled' : ''}>각성 시련에 도전${rqT && !why ? rqDot : ''}</button>`}<small>시련 동안 본편 시간은 흐르지 않습니다.</small></div>`
+      if (rqT) top = card; else cards += card
     }
     // 장수 열전 — 이 장수로 독립 열전에 (진각성 그림이 있으면 마지막 스테이지가 진각성 자격 · raid/link.ts)
     if (ours && bo !== undefined) {
       const sealed = (r.raidSeals ?? []).includes(x.id), stage = HAEBI_STAGES[SEAL_STAGE].name
       const line = !tw ? '금과 휘장을 모아 판 밖에서 강해집니다.' : sealed ? `${josa(stage, '을', '를')} 깼습니다 · 진각성 자격을 얻었습니다.` : `이 장수로 ${josa(stage, '을', '를')} 깨면 진각성할 수 있습니다.`
-      h += `<div class="trial-card" style="padding:14px;border:1px solid #6a5a3a;margin:12px 0"><b>장수 열전 · ${KITS[trialKit(x)].title}</b><p>${line}</p><button class="btn" data-act="raid-stage" data-id="${x.id}">이 장수로 열전 출전</button><small>열전 동안 본편 시간은 흐르지 않습니다.</small></div>`
+      const card = `<div class="trial-card${rqR ? ' rq-on' : ''}" style="padding:14px;border:1px solid #6a5a3a;margin:12px 0"><b>장수 열전 · ${KITS[trialKit(x)].title}</b><p>${line}</p><button class="btn${rqR ? ' pri rq-go' : ''}" data-act="raid-stage" data-id="${x.id}">이 장수로 열전 출전${rqR ? rqDot : ''}</button><small>열전 동안 본편 시간은 흐르지 않습니다.</small></div>`
+      if (rqR) top = card; else cards += card
     }
+    h = h.slice(0, rqAt) + top + h.slice(rqAt) + cards
     // 아는 만큼 — 우리 장수 · 싸워 봤거나 정찰·첩자로 본 장수 · 이름만 들은 장수 (형: "이름 들어본 군주나 적장이랑 싸워본 적장이랑은 구분해야")
     if (!seen) h += `<p class="heardp">${tr('hero.unseen')}</p>`
     else if (!ours && x.faction !== me()) h += `<p class="mute">${tr('hero.seenAsIs')}</p>`
@@ -5433,6 +5448,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           : armyIdle && r.season >= 1 ? { tab: 'army', line: tr('todo.army') }
             : null
     return t === null ? '' : `<button class="todochip" data-act="tab" data-tab="${t.tab}">${tr('todo.chip', { turn: turnWord(r), line: esc(t.line) })}</button>`
+  }
+
+  /** 추천 점을 센다 (recommend.ts) — 판·영웅전 표·열전 기록을 읽기만 한다. 새로 들어온 장수를 적는 것만 화면 쪽 저장 칸에 쓴다 */
+  function recNow(r: Realm): Rec[] {
+    if (r.region === 'tutorial' || r.outcome) return []
+    const book = syncBook(r, me(), bustOf, !host.isolated)
+    const m = loadMeta()
+    const next = SHOP.filter((it) => m.shop[it.key] < shopMax(it.key)).map((it) => shopCost(it.key, m.shop[it.key]))
+    return recsOf(r, me(), bustOf, loadDex(), { cleared: m.heroes, gold: m.gold, cheapest: next.length > 0 ? Math.min(...next) : 0 }, book)
   }
 
   /**
@@ -7549,11 +7573,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     $('.goalb').classList.toggle('folded', goalFolded())
     let tabs = ''
     const rec = recTabs(r)
+    rqNow = recNow(r)
+    const rqTab = rqNow.length > 0 && sheet?.kind !== 'heroes' && sheet?.kind !== 'hero'
     for (const t of TABS) {
       const wait = tabWait(r, t.id)
       if (wait > 0) { tabs += `<button class="locked" data-act="locktab"${noBtn(tr('tab.locked', { name: t.name, turns: turnsLabel(r, wait) }))}>🔒<span>${t.name}</span></button>`; continue }
       const dot = dotKeys(r, t.id).some((k) => !seenKeys.has(k))
-      tabs += `<button class="${sheet?.kind === t.id ? 'on' : ''}${newTab === t.id ? ' fresh' : ''}" data-act="tab" data-tab="${t.id}" data-tip="${t.name}" data-more="${t.more}">${icon(t.icon, 'tic')}<span>${t.name}</span>${dot ? '<i class="dot"></i>' : ''}${rec.has(t.id) ? `<i class="rec" title="${esc(rec.get(t.id)!)}" data-why="${esc(rec.get(t.id)!)}">${tr('rec.badge')}</i>` : ''}</button>`
+      tabs += `<button class="${sheet?.kind === t.id ? 'on' : ''}${newTab === t.id ? ' fresh' : ''}" data-act="tab" data-tab="${t.id}" data-tip="${t.name}" data-more="${t.more}">${icon(t.icon, 'tic')}<span>${t.name}</span>${dot ? '<i class="dot"></i>' : ''}${t.id === 'heroes' && rqTab ? recDot(tr('rec.badge')) : ''}${rec.has(t.id) ? `<i class="rec" title="${esc(rec.get(t.id)!)}" data-why="${esc(rec.get(t.id)!)}">${tr('rec.badge')}</i>` : ''}</button>`
     }
     noteNewTabs(r)
     morph($('.tabs'), tabs)
@@ -8070,6 +8096,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (zoom.dragged() && t.closest('.mapwrap') !== null) return // 지도를 끌다 놓은 것 — 누르기가 아니다
     // 못 하는 단추 — 눌러도 아무 일 없으면 고장 같았다 (형 11-01: "목책 눌렀는데 아무 반응 없음 · 글자·소리로 알려줘야") → 까닭을 띄우고 둔탁한 소리
     if (t.getAttribute('aria-disabled') === 'true') { denyPop(t, t.dataset['why'] ?? ''); return }
+    // 추천 점이 붙은 곳을 누르면 그 자리에서 금빛 고리와 불티가 터진다 (WWE · recommend.ts) · 길은 다음 단계로 옮겨 붙는다
+    { const dot = t.querySelector<HTMLElement>(':scope > .rqd'); if (dot !== null) { recBurst(dot, document.body); ding(snd('tap_bell'), 0.5) } }
     if (t.dataset['act'] === 'bk-fast' || t.dataset['act'] === 'rep-fast') {
       $('.modal').classList.add('fast') // 보고판을 한 번 누르면 끝까지 바로 — 다시 그리지 않는다
       return
@@ -8344,6 +8372,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           const fresh = dotKeys(plan(), 'heroes').filter((k) => !seenKeys.has(k))
           if (fresh.some((k) => k.startsWith('w:'))) heroTab = 'mine'
           else if (fresh.some((k) => k.startsWith('c:'))) heroTab = 'jail'
+          else if (rqNow.length > 0) heroTab = 'mine' // 추천 점이 붙은 장수가 있으면 그 장수 줄이 보이는 칸으로 (recommend.ts)
         }
         // 외교 탭은 늘 다 접힌 채로 연다 (형 11-03: "외교창 누르면 기본적으로 다 닫혀 있어야 · 나라들 다 열려 있어서 한참 스크롤")
         if (d['tab'] === 'diplo') { diploOpen.clear(); diploOnly = '' }
@@ -9322,6 +9351,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         // 우리 장수를 부르면 곧바로 대답한다 — 결마다 「네?」 「부르셨습니까」… (voice.ts)
         const h = realm?.heroes[d['id']!]
         if (h !== undefined && h.faction === me() && h.status === 'free' && !isRuler(realm!, h.id) && voiceGate(performance.now())) ding(voicePath(h, 'tap', false), 0.9)
+        // 추천 점이 붙은 장수 판에 들어갔다 — 가벼운 추천은 끄고(새 장수는 영영 · 나머지는 그 턴 동안) 판 안의 출전 단추에는 남긴다
+        const rv = rqNow.find((v) => v.id === d['id'])
+        rqHold = rv ?? null
+        if (rv !== undefined && realm !== null) visitRec(realm, rv, !host.isolated)
         openSheet({ kind: 'hero', id: d['id']! }); return
       }
       case 'bust-view': openBust(d['src']!, d['loop'], d['elem']); return
