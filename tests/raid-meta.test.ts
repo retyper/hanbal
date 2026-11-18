@@ -4,6 +4,8 @@ import assert from 'node:assert/strict'
 import { HAEBI_RUN as C, HAEBI_SHOP as SH } from '../src/tune/params.ts'
 import { createHaebi, runGold, runDuration, stepHaebi, tierOf, spawnMob } from '../src/raid/haebi.ts'
 import { loadMeta, buy, refund, record, shopCost, stageOpen } from '../src/raid/meta.ts'
+import { DLC } from '../src/realm/dlc.ts'
+const noDlc = DLC.trueWake ? false : '진각성 묶음(DLC)이 꺼진 빌드 · 설원·산성 스테이지 없음'
 
 test('상점: 사면 금이 줄고 다음 값이 오르며, 되돌리면 쓴 금을 전부 돌려받는다', () => {
   const m = loadMeta(); m.gold = 1000
@@ -79,7 +81,7 @@ test('본편 각성 시련: 실제 시련 판으로 이긴 기록을 본편이 �
   assert.ok(!trialWinValid(runDuration(s) + 30) && !trialWinValid('x') && !trialWinValid(NaN))
 })
 
-test('스테이지 다섯 (11-16 설원 고개·불타는 산성): 차례대로 열리고 뒤로 갈수록 어렵다', async () => {
+test('스테이지 다섯 (11-16 설원 고개·불타는 산성): 차례대로 열리고 뒤로 갈수록 어렵다', { skip: noDlc }, async () => {
   const { STAGE_ORDER } = await import('../src/raid/meta.ts')
   const { HAEBI_STAGES: ST } = await import('../src/tune/params.ts')
   assert.deepEqual([...STAGE_ORDER], ['forest', 'ford', 'palisade', 'snow', 'fortress'])
@@ -162,7 +164,7 @@ test('목책의 1분 벽: 상점이 얇으면 여울을 골라 두고, 벽을 �
   assert.ok(WALL.shop.axe < WALL.shop.magic && WALL.shop.magic < WALL.shop.bow && WALL.shop.bow <= WALL.shop.dagger)
 })
 
-test('목책의 1분 벽: 직접 골라 들어가 오래 버텼으면 그 뒤로 목책을 골라 둔다 · 금방 쓰러진 기록은 아니다', async () => {
+test('목책의 1분 벽: 직접 골라 들어가 오래 버텼으면 그 뒤로 목책을 골라 둔다 · 금방 쓰러진 기록은 아니다', { skip: noDlc }, async () => {
   const { pickStage, behindWall } = await import('../src/raid/meta.ts')
   const { HAEBI_WALL: WALL } = await import('../src/tune/params.ts')
   const m = loadMeta(); record(m, 'forest', 0, true, 1150); record(m, 'ford', 0, true, 1150)

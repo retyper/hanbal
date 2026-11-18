@@ -5,4 +5,4 @@
  * ★ 시험 동안은 켜 둔다. 출시 빌드 직전에 trueWake 를 false 로 (결제·Steam 소유 확인은 형이 계정을 만든 뒤 여기에 잇는다).
  * 판의 셈(sim)도 읽는 값이라 바꾸면 그 빌드 전체가 같은 값을 본다 — 결정론은 그대로다.
  */
-export const DLC: { trueWake: boolean } = { trueWake: true }
+export const DLC: { trueWake: boolean } = { trueWake: false }   // 11-18 형: 「진각성 DLC 로 넣겠다 그랬는데 왜 계속 캐릭터 이미지 밑에 떠 있냐」 → 본편 빌드에서 끔

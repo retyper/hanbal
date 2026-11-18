@@ -6,7 +6,7 @@
  *  - 깨어난 장수는 이기면 불꽃 하나(셋까지), 지면 하나 꺼진다. 다 꺼져도 각성과 능력치는 그대로다 (불꽃은 각성기의 연료)
  *  - 같은 판이면 같은 결과 (A1)
  */
-import { describe, it } from 'node:test'
+import { after, before, describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { fightRounds, leadOptions, type Side } from '../../src/realm/tactics.ts'
@@ -202,6 +202,10 @@ describe('각성기 — 불꽃', () => {
 })
 
 describe('진각성 (DESIRE §17 · 한 판에 한 번 · 큰 싸움에서만)', () => {
+  // 11-18 본편 빌드는 DLC 를 끈다 → 이 묶음은 DLC 를 켠 채 시험하고 되돌린다
+  let dlcWas = false
+  before(async () => { const { DLC } = await import('../../src/realm/dlc.ts'); dlcWas = DLC.trueWake; DLC.trueWake = true })
+  after(async () => { const { DLC } = await import('../../src/realm/dlc.ts'); DLC.trueWake = dlcWas })
   const trueWaker = (e: 'earth' | 'fire'): Side['hero'] => ({ id: 'me', mu: 6, ryak: 5, coward: false, wake: e, trueWake: true })
   it('큰 싸움이면 각성기가 진각성으로 터지고 적 사기가 더 꺾인다 · 작은 싸움이면 보통 각성기', () => {
     const big = play(side(1, MIX, true, { hero: trueWaker('fire') }), side(1, MIX), 'tw1', 3, 'wake')
