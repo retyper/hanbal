@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SRC = Path('D:/에셋창고')
 OUT = ROOT / 'public/realm/hit'
 TS = ROOT / 'src/ui/hit-portrait.ts'
-FORM = {'base': ('bust', 'bust-hd'), 'aw1': ('awaken', 'awaken-hd')}
+FORM = {'base': ('bust', 'bust-hd'), 'aw1': ('awaken', 'awaken-hd'), 'aw2': ('awaken2', 'awaken2-hd')}   # aw2 = 진각성(11-18 · DLC · 그림 먼저)
 
 done = []
 _files = {}
@@ -22,7 +22,7 @@ for f in sorted(SRC.glob('Codex-*-candidates/hit_*.png')) + sorted(SRC.glob('hit
 for f in _files.values():
     if not f.name.endswith('_v2.png') and f'{f.name[:-4]}_v2.png' in _files:
         continue   # 11-17 상처·피 지운 _v2 가 있으면 그것을
-    m = re.fullmatch(r'hit_(base|aw1)_(.+?)(?:_v2)?\.png', f.name)
+    m = re.fullmatch(r'hit_(base|aw1|aw2)_(.+?)(?:_v2)?\.png', f.name)
     if not m or f.stat().st_size == 0:
         continue
     form, pid = m.groups()

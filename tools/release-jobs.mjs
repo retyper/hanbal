@@ -499,12 +499,16 @@ for (const id of HIT_HEROES) for (const [form, dir] of [['base', 'bust-hd'], ['a
 // 11-18 형: 「피격도 계속 만들면 좋겠는데」 → 나머지 장수 전부(초상·각성 초상이 다 있는 이) · 여인 먼저 · 이미 받은 것은 건너뜀(새 문안은 상처 없음)
 {
   const audit = JSON.parse(readFileSync('tools/sprite-kit/weapon-audit-20261116.json', 'utf8'))
-  const all = [...new Set((Array.isArray(audit) ? audit : audit.rows).map((r) => r.portrait).filter(Boolean))]
-    .filter((p) => !HIT_HEROES.includes(p) && existsSync(`public/realm/bust-hd/${p}.jpg`) && existsSync(`public/realm/awaken-hd/${p}.jpg`))
+  // 11-18 형 「더 만들 거 있으면 많이 시켜」 → 감사표에 없던 전설·장수(유화·평강·바리… · 쓰는 이만 · 아이 얼굴 y- 빼고)도
+  const DATA = readdirSync('src/realm/data').filter((n) => n.endsWith('.ts')).map((n) => readFileSync('src/realm/data/' + n, 'utf8')).join(' ')
+  const used = (p) => DATA.includes(`'${p}'`) || DATA.includes(`"${p}"`)
+  const all = [...new Set([...(Array.isArray(audit) ? audit : audit.rows).map((r) => r.portrait).filter(Boolean),
+    ...readdirSync('public/realm/bust-hd').filter((n) => n.endsWith('.jpg') && !n.endsWith('.a.jpg')).map((n) => n.slice(0, -4)).filter((p) => !p.startsWith('y-') && used(p))])]
+    .filter((p) => !HIT_HEROES.includes(p) && existsSync(`public/realm/bust-hd/${p}.jpg`))
     .sort((a, b) => (/^[wl]-/.test(a) ? 0 : 1) - (/^[wl]-/.test(b) ? 0 : 1) || a.localeCompare(b, 'en', { numeric: true }))
   const got = (form, id) => existsSync(`D:/에셋창고/hit_${form}_${id}.png`) || readdirSync('D:/에셋창고').some((d) => /^Codex-.*-candidates$/.test(d) && existsSync(`D:/에셋창고/${d}/hit_${form}_${id}.png`))
   for (const id of all) for (const [form, dir] of [['base', 'bust-hd'], ['aw1', 'awaken-hd']]) {
-    if (got(form, id)) continue
+    if (got(form, id) || !existsSync(`public/realm/${dir}/${id}.jpg`)) continue
     jobs.push({ id: `HIT-${form}-${id}`, group: 'hit', save: `hit_${form}_${id}.png`, title: `${id} · ${form === 'aw1' ? '각성' : '비각성'} 피격 초상`,
       refs: [`/realm/${dir}/${id}.jpg`], now: '피격 초상 없음 (코드 효과만)', use: 'py -3 -I tools/hit-intake.py', prompt: HIT_P(form) })
   }
@@ -520,6 +524,17 @@ for (const id of HIT_HEROES) for (const [form, dir] of [['base', 'bust-hd'], ['a
     jobs.unshift({ id: `HIT-${r.form}-${r.id}-v2`, group: 'hit', save: `hit_${r.form}_${r.id}_v2.png`, title: `${r.id} · ${r.form === 'aw1' ? '각성' : '비각성'} 피격 초상 · 해부학 다시`,
       refs: [`/realm/${dir}/${r.id}.jpg`], now: `해부학 반려: ${r.problem}`, use: 'py -3 -I tools/hit-intake.py (_v2 우선)',
       prompt: `ANATOMY FIX (the previous version was rejected): ${r.problem} Draw exactly two arms and two hands, each arm attached at its own shoulder, five fingers per hand, every limb continuous from shoulder to hand.\n` + HIT_P(r.form) })
+  }
+}
+// 11-18 형 「챗지피티로 많이 만들어도 괜찮다 · 더 만들 거 있으면 많이 시켜」 → 진각성 피격 초상(처음 형 생각: 비각성·각성·진각성) · DLC 라 그림 먼저 · 줄 맨 뒤
+{
+  const got2 = (id) => existsSync(`D:/에셋창고/hit_aw2_${id}.png`) || readdirSync('D:/에셋창고').some((d) => /^Codex-.*-candidates$/.test(d) && existsSync(`D:/에셋창고/${d}/hit_aw2_${id}.png`))
+  for (const n of readdirSync('public/realm/awaken2-hd').filter((n) => n.endsWith('.jpg') && !n.endsWith('.a.jpg')).sort((a, b) => (/^[wl]-/.test(a) ? 0 : 1) - (/^[wl]-/.test(b) ? 0 : 1) || a.localeCompare(b, 'en', { numeric: true }))) {
+    const id = n.slice(0, -4)
+    if (got2(id)) continue
+    jobs.push({ id: `HIT-aw2-${id}`, group: 'hit2', save: `hit_aw2_${id}.png`, title: `${id} · 진각성 피격 초상`,
+      refs: [`/realm/awaken2-hd/${id}.jpg`], now: '진각성 피격 초상 없음', use: 'py -3 -I tools/hit-intake.py → public/realm/hit/awaken2/<id>.webp',
+      prompt: HIT_P('aw1').replace('awakened outfit', 'true-awakened outfit') })
   }
 }
 export const RELEASE_JOBS = jobs
