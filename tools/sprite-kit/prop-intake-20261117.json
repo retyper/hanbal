@@ -2169,76 +2169,69 @@
     "base-w-21-baekje-court-dancer": {
       "status": "installed",
       "order": "strip",
-      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-w-21-baekje-court-dancer_act.png",
-      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-w-21-baekje-court-dancer_walk.png",
-      "actSha256": "d165ea07a43f47df8139be304b05ca6de7d3108167fb22a150361643bbe6593d",
-      "walkSha256": "dee24e5b262cdbf55fc68c31438a2c32e9fcba296ae94039ace36f707ecb22b8",
+      "act": "D:/tmp-node/sp-inbox33/sprite_prop_base-w-21-baekje-court-dancer_act.png",
+      "walk": "D:/tmp-node/sp-inbox33/sprite_prop_base-w-21-baekje-court-dancer_walk.png",
+      "actSha256": "1dfbdb64b02c4c203dfa4094d72221dcb55ec3df38adc886add9cdf9ca626542",
+      "walkSha256": "931b8539f5e06fbe9ecedb87731bf88d863437133fba6225356ac6c52e89d70b",
       "portrait": "w-21-baekje-court-dancer",
       "auto": {
         "cell": [
-          192,
+          184,
           160
         ],
-        "walkScale": 0.5828,
+        "walkScale": 0.6699,
         "contact": [
           14,
-          0.91,
-          0.41
+          0.86,
+          0.43
         ],
-        "headsOld": 3.34,
-        "headsNew": 3.3,
-        "headsNewWalk": 3.51,
-        "residueAct": 0.0006,
-        "residueWalk": 0.0001
+        "headsOld": 3.3,
+        "headsNew": 3.81,
+        "headsNewWalk": 3.02,
+        "residueAct": 0.0036,
+        "residueWalk": 0.0
       },
       "review": {
-        "chinOld": 32.0,
-        "chinNew": 29.0,
-        "note": "v3 Codex 보류 후보 · Claude 판정(기준 판 옆 같은 키로 맞음)"
+        "chinOld": 3.3,
+        "chinNew": 3.81,
+        "note": "11-18 claude33 · 이랑·아라 기준과 머리 비율 맞음"
       },
       "archive": "assets_src/realm/retired/prop-20261117/base-w-21-baekje-court-dancer",
       "installed": "2026-11-17"
     },
     "base-w-23-usisan-whale-queen": {
-      "status": "installed",
+      "status": "staged",
       "order": "strip",
-      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-w-23-usisan-whale-queen_act.png",
-      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-w-23-usisan-whale-queen_walk.png",
-      "actSha256": "b04733a0b8e661361af14422990d48c2b36aea9a4a4633f0a07a938234278760",
-      "walkSha256": "e1a5dde516ed8bb8f8ed68a8241b6dcacf2752c978dc0556844f261d0b166c56",
+      "act": "D:/tmp-node/sp-inbox33/sprite_prop_base-w-23-usisan-whale-queen_act.png",
+      "walk": "D:/tmp-node/sp-inbox33/sprite_prop_base-w-23-usisan-whale-queen_walk.png",
+      "actSha256": "4d385961761f3089e341698ec3411f70bd6f9d6b417d16695b7f6e12d462c7e6",
+      "walkSha256": "065f8042775c710f6cc4ed9b08d41ba388a1007d3bef9298151696c9cc65de0b",
       "portrait": "w-23-usisan-whale-queen",
       "auto": {
         "cell": [
-          216,
+          192,
           160
         ],
-        "walkScale": 0.6332,
+        "walkScale": 0.6033,
         "contact": [
           14,
-          0.91,
-          0.47
+          0.94,
+          0.54
         ],
-        "headsOld": 2.85,
-        "headsNew": 4.57,
-        "headsNewWalk": 4.19,
-        "residueAct": 0.0,
-        "residueWalk": 0.0
-      },
-      "review": {
-        "chinOld": 32.0,
-        "chinNew": 29.0,
-        "note": "v3 Codex 보류 후보 · Claude 판정(기준 판 옆 같은 키로 맞음)"
-      },
-      "archive": "assets_src/realm/retired/prop-20261117/base-w-23-usisan-whale-queen",
-      "installed": "2026-11-17"
+        "headsOld": 4.57,
+        "headsNew": 3.34,
+        "headsNewWalk": 3.23,
+        "residueAct": 0.0185,
+        "residueWalk": 0.0191
+      }
     },
     "base-w-24-apdok-queen": {
-      "status": "installed",
+      "status": "rejected",
       "order": "strip",
-      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-w-24-apdok-queen_act.png",
-      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-w-24-apdok-queen_walk.png",
-      "actSha256": "ee3e8a3d7e574e1f24ec0001e0673c85125898c3a1170d319347c106e74bb3e7",
-      "walkSha256": "ea2279cb39e97a7d72495326d2f6aa4e6802f24390b4d0deb638b9b6f6105a77",
+      "act": "D:/tmp-node/sp-inbox33/sprite_prop_base-w-24-apdok-queen_act.png",
+      "walk": "D:/tmp-node/sp-inbox33/sprite_prop_base-w-24-apdok-queen_walk.png",
+      "actSha256": "6049b7ec8b4e1df598883327aaca2d65d97ffe6eb7ef10c697547e729c290280",
+      "walkSha256": "2bd2d189e4fe8bfb50f93ece755b97ba26fd78fa6d78dc9b52b58340c2764b19",
       "weaponFix": {
         "sprite": "spear",
         "art": "no weapon: a golden rice sheaf in one arm and grain-light magic from the free palm",
@@ -2250,26 +2243,24 @@
           184,
           160
         ],
-        "walkScale": 0.65,
+        "walkScale": 0.5564,
         "contact": [
           14,
-          0.82,
-          0.44
+          0.93,
+          0.35
         ],
-        "headsOld": 2.85,
-        "headsNew": 3.19,
-        "headsNewWalk": 3.37,
-        "residueAct": 0.0,
-        "residueWalk": 0.0
+        "headsOld": 3.19,
+        "headsNew": 2.85,
+        "headsNewWalk": 3.0,
+        "residueAct": 0.0018,
+        "residueWalk": 0.0001
       },
+      "reason": "머리가 옛 판보다도 커짐(2.85 머리) · 기준판(3.3~4.4)보다 아이 같음",
       "review": {
-        "chinOld": 33.0,
-        "chinNew": 29.0,
-        "note": "v3 보류 후보 · 창→원화대로 볏단 주술 · 머리 작아짐",
-        "weapon": "staff"
-      },
-      "archive": "assets_src/realm/retired/prop-20261117/base-w-24-apdok-queen",
-      "installed": "2026-11-17"
+        "chinOld": null,
+        "chinNew": null,
+        "note": ""
+      }
     },
     "base-w-41-hwanna-beodeul": {
       "status": "installed",
