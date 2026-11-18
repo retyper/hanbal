@@ -1065,10 +1065,17 @@ export function isKin(x: Hero, y: Hero): boolean {
   return x.parents !== undefined && y.parents !== undefined && x.parents.some((p) => y.parents!.includes(p))
 }
 
+/**
+ * 사서가 부모와 자식으로 적은 사이 — 혼인만 막는다 (11-18 형 「그래 막아줘」 · 온조와 소서노는 『삼국사기』에서 어머니와 아들).
+ * Hero.parents 는 「이 판에서 태어난 아이」 표라(아이 얼굴·가문 도감·회유가 거기 걸려 있다) 여기에 쓰지 않는다. 시대가 안 맞는 것은 막지 않는다.
+ */
+const BLOOD_PAIRS: ReadonlyArray<readonly [string, string]> = [['mh-soseono', 'mh-onjo']]
+const bloodPair = (a: string, b: string): boolean => BLOOD_PAIRS.some(([p, c]) => (p === a && c === b) || (p === b && c === a))
+
 export function canWed(r: Realm, faction: string, a: string, b: string): boolean {
   const x = r.heroes[a]
   const y = r.heroes[b]
-  if (x === undefined || y === undefined || a === b) return false
+  if (x === undefined || y === undefined || a === b || bloodPair(a, b)) return false
   if (x.faction !== faction || y.faction !== faction || x.status !== 'free' || y.status !== 'free') return false
   if (x.look === y.look || x.spouse !== undefined || y.spouse !== undefined || isKin(x, y)) return false
   return !(r.births ?? []).some((v) => v.a === a || v.b === a || v.a === b || v.b === b)

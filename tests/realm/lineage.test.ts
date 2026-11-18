@@ -81,6 +81,18 @@ describe('혈통 — 혼인', () => {
     assert.equal(canWed(r, r.player, a, b), false)
   })
 
+  it('사서의 어머니와 아들은 맺지 못한다 (온조와 소서노 · 11-18)', () => {
+    const r = byeonhanMini(3)
+    const [a, b] = couple(r)
+    const g = r.heroes[a]!.look === 'g' ? a : b, w = g === a ? b : a
+    r.heroes['mh-onjo'] = { ...r.heroes[g]!, id: 'mh-onjo' }
+    r.heroes['mh-soseono'] = { ...r.heroes[w]!, id: 'mh-soseono' }
+    assert.equal(canWed(r, r.player, 'mh-onjo', 'mh-soseono'), false)
+    assert.equal(canWed(r, r.player, 'mh-soseono', 'mh-onjo'), false)
+    assert.equal(canWed(r, r.player, 'mh-onjo', w), true)   // 다른 사람과는 그대로
+    assert.equal(canWed(r, r.player, g, 'mh-soseono'), true)
+  })
+
   it('잔치 곡식이 들고 짝이 적힌다 · 곡식이 모자라면 안 된다', () => {
     const r = byeonhanMini(3)
     const [a, b] = couple(r)
