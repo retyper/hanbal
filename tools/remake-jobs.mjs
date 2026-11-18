@@ -421,6 +421,10 @@ ${PIX} Same standing height as the action sheet, feet on one shared baseline in 
     if (m) { const o = (AW_VER[m[1]] ??= { act: 0, walk: 0 }); o[m[2]] = Math.max(o[m[2]], Number(m[3] ?? 1)) }
   }
   const vName = (v) => (v <= 1 ? '' : `_v${v}`)
+  // 11-19 형 판정: 비각성 띠를 다시 그리는 장수는 새 띠가 들어오기 전까지 각성 띠를 내지 않는다(SPA 는 비각성 몸을 베끼는 편집이라 옛 몸을 베낀다)
+  //   너울·누리: 얼굴이 기준 셋보다 크고 둥글어 아이 같음 → release-jobs REDO-sprite_prop_<who>_act_v3 · 서늘: 닌자풍 옷을 한국식 자객으로(초상·각성 초상부터 다시) → REDO-..._act_v4
+  //   새 띠를 install 하면 여기서 빼고 release-pack 을 다시 돌린다
+  const SPA_WAIT = ['base-w-71-yeonna-neoul', 'nuri', 'base-g-84-wander-seoneul']
   const AW_HOLD = []   // 11-18 형 「권한 대로」: 6% 넘으면 다시 그린다 → 보류 일곱(고은·소리·고목·해달·이랑·알영·진주 해녀)도 _v2 줄로
   // 동작 판은 통과 · 걷기 판만 다시: 영수증에 review reject --walk-only (또는 stage 의 걷기 다리 검사 자동 반려)로 actOk 가 적힌 장수
   const AW_RC = existsSync('tools/sprite-kit/aw1-intake-20261118.json') ? (JSON.parse(readFileSync('tools/sprite-kit/aw1-intake-20261118.json', 'utf8')).heroes ?? {}) : {}
@@ -430,7 +434,7 @@ ${PIX} Same standing height as the action sheet, feet on one shared baseline in 
   const MEASURE = (who, v) => `[코덱스] 저장 전에 재기: py -3 -I tools/sprite-kit/aw1-intake.py measure --who ${who} --act <${v === 'walk' ? '맨 뒤에 붙인 act 파일' : '방금 만든 act 파일'}>${v === 'walk' ? ' --walk <방금 만든 walk 파일> (걷기 다리 검사 walk_legs 포함)' : ''} → 끝 줄이 VERDICT PASS 가 아니면 한 번만 다시 그려 나은 쪽을 저장(숫자를 원장에 적는다)`
   rows.forEach((r) => {
     const who = r.key, k = 'gen-' + who
-    if (AW_HOLD.includes(who) || who === 'dalbit') return   // dalbit 은 옛 시험 띠(게임은 base-w-31-dabeol-dalbit 를 쓴다)
+    if (AW_HOLD.includes(who) || SPA_WAIT.includes(who) || who === 'dalbit') return   // dalbit 은 옛 시험 띠(게임은 base-w-31-dabeol-dalbit 를 쓴다)
     const ok = AW_RC[who]?.actOk, walkOnly = !!ok
     const V = gotAw(`sprite_aw1_${who}_act.png`) ? '_v2' : ''
     const actName = walkOnly ? `sprite_aw1_${who}_act${vName(ok.version ?? 1)}.png` : `sprite_aw1_${who}_act${V}.png`

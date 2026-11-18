@@ -44,7 +44,7 @@ describe('사람 열쇠', () => {
     for (const g of groups.values()) for (const id of g) assert.deepEqual(sameIds(id), g, id)
   })
 
-  it('초상이 다르면 따로 센다 — 늙은 대소 · 진하 둘', () => {
+  it('초상이 다르면 따로 센다 — 늙은 대소 · 진왕 진하와 신지 방울', () => {
     assert.ok(!samePerson('jm-daeso', 'dm-daeso'))
     assert.ok(!samePerson('mh-jinwang', 'mokji-ruler'))
   })

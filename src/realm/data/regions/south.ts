@@ -167,7 +167,7 @@ const h = (
 /** 군주와 장군 — 이름은 지어냈다. 칭호는 위서 한조의 신지·읍차, 동예는 삼로 */
 const NEW_HEROES: Hero[] = [
   h('baekje-ruler', '신지 온누리', 'baekje', 'g', [5, 7, 7, 6, 7, 8], ['careful'], 'm-baekje-cap'),
-  h('mokji-ruler', '신지 진하', 'mokji', 'w', [3, 5, 7, 7, 8, 9], ['charm'], 'm-mokji-cap'),
+  h('mokji-ruler', '신지 방울', 'mokji', 'w', [3, 5, 7, 7, 8, 9], ['charm'], 'm-mokji-cap'),
   h('michuhol-ruler', '읍차 비라', 'michuhol', 'w', [4, 5, 6, 5, 6, 7], ['trader'], 'm-michuhol-cap'),
   h('ungcheon-ruler', '읍차 곰내', 'ungcheon', 'g', [5, 5, 5, 6, 5, 8], ['mountain'], 'm-ungcheon-cap'),
   h('sangdang-ruler', '읍차 쇠달', 'sangdang', 'g', [6, 6, 5, 5, 4, 7], ['smith'], 'm-sangdang-cap'),

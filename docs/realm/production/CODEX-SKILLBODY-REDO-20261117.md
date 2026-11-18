@@ -1438,3 +1438,21 @@
 - **걷기 줄은 짝이 먼저**: `sprite_prop_<열쇠>_walk_v3` 는 바로 앞 줄의 `_act_v3`(D:/에셋창고)를 맨 뒤에 붙여야 한다. 동작 판을 못 받았으면 걷기도 건너뛴다. 이서 왈가닥 장군 걷기는 통과한 옛 동작 판(`D:/tmp-node/sp-inbox/sprite_prop_base-w-26-iseo-tomboy-general_act.png`)과 짝이다.
 - **규칙**: 15세(가슴 천은 불투명, 비침·유두 윤곽 금지) · 닌자 금지(카타나·쿠나이·수리검·복면·둥근 코등이 금지, 칼은 곧은 고리자루칼) · 붉은 해 금지(빨간 동그라미·해 원반·햇살 무늬 금지, 깃발·도장·거울 모두) · 글자·워터마크 금지(투지 붓글씨만 글자, 철자 「투지」 두 글자만).
 - **넣기·승인은 Claude**: 받은 그림은 D:/에셋창고 에 저장 이름 그대로 두기만 한다. 넣기·옛 판 보관·영상 다시 굽기는 Claude 몫이다.
+
+
+## Codex42 수신·fresh 맥락 SPA 추가 걷기 우선 재개
+- 새42를요청전guard로감지해41신규ACT는네레인모두native0으로차단했습니다(74/79등준비JSON만/native0). 직전에마감한호진·소녀궁수도fullPASS own8/8로정식walk_v3저장,41걷기총10raw/9PASS/1솔매비율FAIL·모두누적3보존. 코드/QUEUE/asset픽셀수정0.
+- 새QUEUE367을 id+저장이름 기준으로동결: work/claude42-manifest.json / claude42-QUEUE-snapshot.md, SHA9b6ad3ea55b47da012a96983ee8c59a2b05a6f1ad8174b82fa1c1de198e3c85d. SPA294+REDO73,REDO우선12/50/11(감사문서읽음). 현재먼저할SPA걷기는기존ACT정확경로존재·남은누적콜있는28WHO입니다(별도191WALK목록:exactACT부재156/이미41PASScarry5/누적3소진2). 이름자동상향만보고이미PASS인매나·농군·단비등을4차로또그리지않습니다. 해당현재PASS/raw/로그는검수해사용가능합니다.
+- 42의한장수=새대화규칙에따라기존긴세레인은정지하고,새독립맥락에이전트(fork none)를장수마다새로열었습니다. 첫호공·해달·고구려무녀3장수를각1native/전역3병렬로재개,각prior2+남은1=누적최종3. 서로다른원화가맥락에섞이지않게카드·정확3refs만전달하며완료후다른장수로재사용하지않습니다. sourcewalkref4x2/portrait/정확ACT LAST,공식gait포함PASS만정식명.
+- 28SPA걷기처리후REDO우선1 12장부터순서대로진행하며,그때도장수한명·물건하나마다새맥락/원그림나란히QA/다르면1보정한도로합니다. REDO실제생성은아직0. 진행·재개·공간정리증거는 work/CLAUDE-RESUME-CURRENT.md에압축해갱신합니다.
+
+### 43 · 11-19 형 판정 (REDO-AUDIT 「형에게 물을 것」의 답)
+- **형 결정**: 너울·누리 비각성 띠 다시 · 두만 그대로 · 서늘은 한국식 자객(조선풍 · **닌자 금지**: 복면·오비·카타나·쿠나이·수리검·둥근 코등이 금지, 저고리·바지·대님·토시·두건) · 달래는 비각성 초상 **칼만 편집**(곧은 외날 · 똑바로 쥐게, 얼굴·옷·자세·배경 그대로) · 칼 셋(혁거세·온누리·명솔)과 비침(알영·구름)은 그대로 · w-27 진하는 「신지 방울」로 다른 사람(그림은 그대로, 줄 없음).
+- **QUEUE.md 를 다시 읽을 것**: `node tools/release-pack.mjs` 로 다시 만들었다(371장). 새 줄 11장은 REDO 묶음 맨 앞 288~298번이고 모두 차례 1이다. 번호가 아니라 id·저장 이름으로 잇는다.
+- **먼저 낼 것 (이 차례대로 · 뒤 것은 앞 것을 받은 뒤에)**:
+  1. `REDO-gpt_bust-g-84-wander-seoneul` 서늘 초상(옷·칼만 바꿈) → 2. `REDO-gpt_aw1-g-84-wander-seoneul` 1차 각성 초상(1번을 IMAGE 2로 붙임) → 3. `REDO-skillbody_g-84-wander-seoneul_v2` · 4. `REDO-skillbody_aw1_g-84-wander-seoneul_v2` 비기 전신 둘(1·2번을 붙임) → 5·6. `REDO-sprite_prop_base-g-84-wander-seoneul_act_v4` · `_walk_v4` 비각성 띠(1번을 맨 뒤 · 걷기는 5번을 맨 뒤)
+  7. `REDO-gpt_bust-w-84-salhae-dallae` 달래 초상 칼 편집(혼자 낼 수 있음)
+  8~11. `REDO-sprite_prop_base-w-71-yeonna-neoul_act_v3` · `_walk_v3` · `REDO-sprite_prop_nuri_act_v3` · `_walk_v3` (동작 판 → 걷기는 동작 판을 맨 뒤에 · 저장 전 기준 판 ref-slot-spear-w 옆에 놓고 머리 크기 HARD CHECK)
+- **SPA 에서 뺀 줄**: `SPA-nuri-walk-v2` · `SPA-base-w-71-yeonna-neoul-walk-v2` · `SPA-base-g-84-wander-seoneul-act` · `-walk` 은 줄에서 빠졌다(remake-jobs.mjs `SPA_WAIT` · 옛 비각성 몸·옛 닌자 옷을 베끼므로). 41·42번 지시로 이 넷을 하고 있었으면 **멈추고 버리지 말고 그대로 둔다**. 너울·누리의 통과한 각성 동작 판(`Codex-claude40-hit-edit-20261118-candidates/sprite_aw1_{nuri_act_v3,base-w-71-yeonna-neoul_act_v2}.png`)도 옛 몸 기준이라 새 띠가 들어온 뒤 Claude 가 다시 줄에 올린다.
+- **서늘을 앞 장과 나란히 볼 것**: 얼굴·나이(23)·성별·체격·귀고리는 지금 초상 그대로. 두건을 써도 얼굴과 앞머리는 보인다. 칼은 짧고 곧은 외날 고리자루 단도. 닌자처럼 보이면 저장하지 않는다.
+- **넣기·승인은 Claude**: 받은 그림은 D:/에셋창고 에 저장 이름 그대로 두기만 한다.

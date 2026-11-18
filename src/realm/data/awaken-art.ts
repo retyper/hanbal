@@ -295,7 +295,7 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'w-82-ungcheon-gom', // 11-10 곰 v3 (형 손굽기 · 얼굴·그림체 고정 문안) · 형: 지금 것 쓴다
   'w-59-jomun-irang', // 11-10 이랑 1차 (Flow Jay · Omni 1.2 Flash) · 형: 일단 오케이 · 5초쯤 잠깐 멈춤
   'w-08-mahan-warrior', // 11-10 이슬 1차 (Flow Jay · Omni) · 형: 나쁘지 않음
-  'w-27-mokji-jinha', // 11-10 신지 진하 1차 (Flow Jay · Omni · 무당 춤) · 형: 나이스
+  'w-27-mokji-jinha', // 11-10 신지 방울(옛 이름 진하) 1차 (Flow Jay · Omni · 무당 춤) · 형: 나이스
   'w-46-geonma-maru', // 11-10 마루 1차 (Flow Jay) · 형: 나쁘지 않음
   'w-36-baekje-maena', // 11-10 매나 1차 (Flow Jay) · 형: 가슴 움직임 부족하지만 나쁘지 않음
   'w-70-bukokjeo-mulbeom', // 11-10 물범 1차 (Flow Jay) · 형: 나쁘지 않음

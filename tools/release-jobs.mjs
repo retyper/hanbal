@@ -556,6 +556,99 @@ for (const id of HIT_HEROES) for (const [form, dir] of [['base', 'bust-hd'], ['a
   const R = []
   const add = (lane, priority, key, title, save, refs, now, use, prompt) => R.push({ lane, priority, key, title, save, refs, now, use, prompt })
 
+  // ── 11-19 형 판정(REDO-AUDIT-20261119.md 「형에게 물을 것」의 답) · 먼저 낸다 ──
+  //   서늘: 초상부터 한국식 자객(닌자 금지 · no-ninja-assassin) → 1차 각성 초상 → 비기 전신 둘 → 비각성 띠 (뒤 것은 앞 것을 맨 뒤에 붙여)
+  //   달래: 비각성 초상의 칼만 곧은 외날로 편집 · 너울·누리: 비각성 띠 다시(얼굴이 기준 셋보다 크고 둥글어 아이 같음 · 각성 띠 SPA 는 이것이 들어온 뒤)
+  const SEO_BUST = 'D:/에셋창고/gpt_bust-g-84-wander-seoneul.png', SEO_AW1 = 'D:/에셋창고/gpt_aw1-g-84-wander-seoneul.png'
+  const NO_NINJA = 'BANNED (this is an ancient Korean game): no Japanese ninja look, no face mask or hood covering the face, no obi or wide wrapped Japanese sash, no katana, no curved blade with a round tsuba, no kunai, no shuriken, no tabi or split-toe shoes, no Japanese motifs, no red sun disc or sun rays.'
+  const KR_ASSASSIN = 'a Korean wandering assassin in a traditional Korean cut (Joseon-flavoured but fitting the ancient Samhan setting): a dark charcoal-indigo hemp jeogori jacket with a white-edged crossed collar (git) and narrow sleeves, left slightly open at the chest; wide dark baji trousers tied at the ankles with daenim cords over soft leather boots; leather wrist guards (tosi) tied with cords; a narrow dark leather belt with a small bronze buckle and a thin dark-red cord (no wide sash); a dark cloth head wrap (dugeon) tied around his topknot with two short tails hanging at the back, his face and bangs fully visible'
+  const KR_KNIFE = 'a short STRAIGHT single-edged Korean iron knife with a small ring pommel (hwandu style), a plain flat little guard or none, held firmly in his fist'
+  add('portrait', 1, 'g-84-wander-seoneul', '서늘 · 초상 · 닌자풍 옷을 한국식 자객으로 (얼굴 그대로)', 'gpt_bust-g-84-wander-seoneul.png',
+    ['public/realm/bust-hd/g-84-wander-seoneul.jpg'],
+    '형 11-19 「서늘 그렇게 해 조선풍 암살자?」 · 검은 민소매·넓게 감은 붉은 허리띠·감은 팔토시·외날 칼이라 닌자풍으로 읽힘',
+    '~/Downloads 에 두고 sh tools/bake-intake.sh (①-0 gpt_bust → tools/sprite-kit/install-bust.sh · 열쇠 wander-25 · 같은 id 라 hero-bust.ts 그대로 · 옛 판은 tools/retire-history.py) · 피격 초상 hit_base_g-84-wander-seoneul 도 옛 옷이라 다시',
+    `This is an AI-generated illustration of a fictional adult man from my own Korean historical fantasy strategy game (an original character, not a real person). IMAGE 1 is his current portrait. Edit IMAGE 1 by changing ONLY his clothes and weapon: the black sleeveless top with a wide wrapped red sash and wrapped forearms reads as a Japanese ninja, which is banned in this Korean game.
+KEEP EXACTLY: the same face, eyes, expression, age, gender, hairline and loose bangs, the small hoop earring, the muscular build and shoulder width, the pose, camera angle, framing, lighting, the plain very dark navy background, and the same painted premium Korean MMORPG illustration style.
+NEW OUTFIT: ${KR_ASSASSIN}.
+WEAPON: in the same hand and position as now, ${KR_KNIFE}; the blade continues straight out of the grip.
+${NO_NINJA} Anatomy: each visible hand has one thumb and four fingers. No text, no frame. Square 1:1, same size as IMAGE 1.`)
+  add('portrait', 1, 'g-84-wander-seoneul', '서늘 · 1차 각성 초상 · 한국식 자객의 각성 차림 (얼굴·기운 그대로)', 'gpt_aw1-g-84-wander-seoneul.png',
+    ['public/realm/awaken-hd/g-84-wander-seoneul.jpg', SEO_BUST],
+    '형 11-19 · 비각성 초상을 한국식 자객으로 바꾸므로 각성도 그 옷의 각성판으로(지금은 닌자풍 바탕에 비늘·털을 얹은 꼴)',
+    `${SEO_BUST} 가 들어온 뒤 · ~/Downloads 에 두고 sh tools/bake-intake.sh (①-2 gpt_aw1 → awaken·awaken-hd 덮어쓰기 · 옛 판 tools/retire-history.py) · 피격 초상 hit_aw1_g-84-wander-seoneul 도 다시`,
+    `[attach ${SEO_BUST} as IMAGE 2: his NEW approved normal portrait]
+This is an AI-generated illustration of a fictional adult man from my own Korean historical fantasy strategy game (an original character, not a real person). IMAGE 1 is his current FIRST-AWAKENING portrait; IMAGE 2 is his new normal portrait in a Korean assassin outfit. Redraw IMAGE 1 keeping EXACTLY its face, eyes, expression, age, hair, hoop earring, muscular build, pose, framing, camera, the strong golden awakening aura (ember sparks, bright rim light, flying dark-red ribbons) and the painted premium Korean MMORPG style.
+CHANGE the outfit into the AWAKENED version of IMAGE 2's Korean assassin outfit: the same dark jeogori cut with a crossed collar now trimmed in gilded bronze, ancient Korean iron lamellar plates over the shoulders and upper chest, a short dark fur collar, the jade comma-shaped gogok ornaments on cords as in IMAGE 1, a dark dugeon head wrap with a small gilt-bronze and jade ornament tied around his topknot (face fully visible), wide baji trousers tied with daenim, leather wrist guards with bronze fittings, a narrow belt with a gilt-bronze belt plaque instead of the wide wrapped sash. The awakened look must be clearly richer than IMAGE 2.
+WEAPON: ${KR_KNIFE}, its blade glowing faintly gold.
+${NO_NINJA} Teen (15+) rating. Each visible hand has one thumb and four fingers. No text, no frame. Square 1:1, same size as IMAGE 1.`)
+  add('skill', 1, 'g-84-wander-seoneul', '서늘 · 비각성 비기 전신 · 한국식 자객 (없는 그림 새로)', 'skillbody_g-84-wander-seoneul_v2.png',
+    ['public/realm/skill-body/g-75-saro-hogong.jpg', SEO_BUST],
+    '쓰이는 장수(wander-25)인데 비기 전신이 없다(창고의 옛 skillbody_g-84-wander-seoneul.png 는 닌자풍이라 쓰지 않음) · 새 초상의 옷으로',
+    `${SEO_BUST} 가 들어온 뒤 · py -3 -I tools/skillbody-v2-intake.py (→ public/realm/skill-body/g-84-wander-seoneul.jpg · 윗몸 컷 tools/skill-cut-bake.py --force --only g-84-wander-seoneul) + src/realm/data/skill-body.ts SKILL_BODY 에 'g-84-wander-seoneul' 더하기`,
+    `[attach ${SEO_BUST} as IMAGE 2: his NEW approved normal portrait]
+INPUT ROLES: Image 2 is the NON-awakened portrait of this fictional adult Korean wandering assassin: his face, age, hair with the dark dugeon head wrap, hoop earring, muscular build and outfit (dark jeogori with crossed collar, narrow sleeves, leather wrist guards, narrow belt). Image 1 is STYLE ONLY (painterly semi-realistic game illustration, crisp edges); do not copy its person or clothes.
+TASK: one full-body ultimate-skill moment, decisive and dynamic: a low darting lunge toward screen RIGHT, weight on the bent front leg, the knife hand thrusting forward in a reverse grip, the jacket tails and dugeon tails whipping behind, a strong diagonal; NOT a stock standing pose.
+OUTFIT: exactly the outfit of Image 2, extended below as wide dark baji trousers tied at the ankles with daenim cords and soft leather boots.
+WEAPON: ${KR_KNIFE}.
+${NO_NINJA} Anatomy: exactly two arms and two legs; each hand has one thumb plus four fingers. Keep his own adult face and age; no anime smoothing. Effects: a short dark-red and silver slash trail beside the blade only. Uniform flat dark navy #111827 background, no scenery, ground, text, frame or UI. Portrait 2:3 (1024x1536), figure at least 80% of frame height.`)
+  add('skill', 1, 'g-84-wander-seoneul (aw1)', '서늘 · 1차 각성 비기 전신 · 한국식 자객의 각성 차림 (새로)', 'skillbody_aw1_g-84-wander-seoneul_v2.png',
+    ['public/realm/skill-body/aw1/g-75-saro-hogong.jpg', SEO_AW1],
+    '1차 각성 비기 전신이 없다(창고의 옛 skillbody_aw1 판은 닌자풍 옷) · 새 각성 초상의 옷으로',
+    `${SEO_AW1} 가 들어온 뒤 · py -3 -I tools/skillbody-aw-v2-intake.py --dry 로 먼저 보고 → 실행 (→ skill-body/aw1/g-84-wander-seoneul.jpg · 윗몸 컷 다시 굽기) + src/realm/data/skill-body-aw1.ts 에 'g-84-wander-seoneul' 더하기`,
+    `[attach ${SEO_AW1} as IMAGE 2: his NEW approved first-awakening portrait]
+INPUT ROLES: Image 2 is the FIRST-AWAKENING portrait of this fictional adult Korean wandering assassin: his face, age, hair and dugeon head wrap with its ornament, hoop earring, build and awakened outfit (gilt-trimmed dark jeogori, Korean lamellar on the shoulders, fur collar, jade gogok cords, gilt-bronze belt plaque, wrist guards). Image 1 is STYLE ONLY; do not copy its person or clothes.
+TASK: one full-body ultimate-skill moment, decisive and dynamic: he vanishes and reappears mid-dash toward screen RIGHT, body low and twisted, the knife driven forward in a reverse grip, ribbons and gogok cords streaming behind; a strong diagonal, NOT a stock standing pose.
+OUTFIT: exactly the awakened outfit of Image 2, extended below as wide dark baji trousers tied with daenim cords and leather boots with bronze fittings.
+WEAPON: ${KR_KNIFE}, glowing gold.
+${NO_NINJA} Anatomy: exactly two arms and two legs; each hand has one thumb plus four fingers. Keep his own adult face and age. Effects: golden ember sparks and a bright slash trail around the blade and body. Uniform flat dark navy #111827 background, no scenery, ground, text, frame or UI. Portrait 2:3 (1024x1536), figure at least 80% of frame height.`)
+  add('portrait', 1, 'w-84-salhae-dallae', '살해 달래 · 비각성 초상 · 칼만 곧은 외날로 똑바로 쥐게 (편집)', 'gpt_bust-w-84-salhae-dallae.png',
+    ['public/realm/bust-hd/w-84-salhae-dallae.jpg', 'public/realm/awaken-hd/w-84-salhae-dallae.jpg'],
+    '형 11-19 「달래는 비각성 초상 칼만 똑바로 쥐게」 · 쌍칼이 휘고 코등이가 둥글어 카타나로 읽히고 손잡이와 칼날 줄이 어긋남 · 각성은 곧은 고리자루칼',
+    '~/Downloads 에 두고 sh tools/bake-intake.sh (①-0 gpt_bust → tools/sprite-kit/install-bust.sh · 열쇠 wander-21 · 옛 판 tools/retire-history.py) · 얼굴·옷이 같으면 피격 초상은 그대로',
+    `WEAPON-ONLY EDIT. This is an AI-generated illustration of a fictional adult woman from my own Korean historical fantasy strategy game (an original character, not a real person). IMAGE 1 is her current portrait; IMAGE 2 is her awakened portrait, shown only for the correct sword type.
+Edit IMAGE 1 changing ONLY her two swords: replace each with a STRAIGHT single-edged ancient Korean ring-pommel sword (hwandudaedo style, like IMAGE 2): a straight blade, a small round ring pommel below the fist, a plain flat little guard or none, NO round tsuba, NO curve. Each sword is gripped firmly and correctly in her fist: the grip passes through the closed hand and the blade continues in one straight line out of the top of the fist, pointing the same directions as now.
+KEEP EXACTLY: her face, smile, eyes, hair and red ribbon, the leather armour and cream inner top, the red sash, the bronze bracers, her pose and hand positions, the camera, framing, lighting, the plain dark navy background and the painted premium Korean MMORPG illustration style. Each hand has one thumb and four fingers. No katana, no Japanese motifs, no red sun disc. No text. Square 1:1, same size as IMAGE 1.`)
+  // 비각성 띠 셋: 기준 셋(소서노·감실·진하) 그림 + 같은 무기×성별 기준 판(ref-slot) · 머리 크기 HARD CHECK · 동작 판 → 걷기 8칸(동작 판을 맨 뒤에)
+  const STYLE19 = 'STYLE MASTER (the most important rule): IMAGE 1 shows the three APPROVED characters of this same game (Soseono, Gamsil and Jinha, left to right). Your character must look like a FOURTH member of that exact group: the same cute-but-adult pixel-art look, soft painterly pixel shading, warm palette, the same outline weight, the same small adult face (eyebrow-to-chin about 1/9 of the standing height, a visible neck, head narrower than the shoulders), about 4.5 heads tall, legs crotch-to-sole about one third of the height, the same chunky stylized boots.'
+  const LAY19 = 'Layout: 20 poses in exactly FOUR columns x FIVE rows, row-major, the same cell order as IMAGE 2: 3 idle, 6 walk, lunge, draw back, strike, full extension, recover, 2 guard, 2 stagger, hit, lying defeated. All standing poses face RIGHT in 3/4 view at the same standing height.'
+  const HARD19 = (n, why = 'the lead artist rejected this character for a big round childlike face') => `HARD CHECK BEFORE SAVING (${why}): put your standing cell next to the baseline figure in IMAGE ${n} at the same total height. Your head (top of skull to chin, hair excluded) must be NO TALLER and your face NO WIDER than the baseline head, and your legs (crotch to sole) NO SHORTER than the baseline legs. If either fails, redraw before saving.${why.startsWith('the lead') ? ' Copying the head of the old sheet in IMAGE 2 is the most common failure.' : ''}`
+  const TAIL19 = (w) => `Ancient Korean setting: no katana, no ninja gear, no red sun disc or sun rays. Sharp deliberate pixel clusters, no blur, no smooth illustration look. True transparent alpha background with 10% padding around every complete figure and ${w} in every cell. No grid lines, labels, text, effects, shadow or background. Exactly 20 distinct full-body figures.`
+  const WALK19 = 'draw ONE natural 8-frame walk cycle facing RIGHT in 3/4 view, in a strict grid of FOUR columns x TWO rows, row-major: 1 contact (right foot forward), 2 down, 3 passing, 4 up, 5 contact (LEFT foot forward), 6 down, 7 passing, 8 up. Frames 1 and 5 have opposite legs forward and must NOT look alike; arms swing opposite to the legs'
+  const TAIL19W = 'True transparent alpha background with 10% padding, no grid lines, labels, text, shadow or background. Exactly 8 distinct full-body figures.'
+  const ACT_IN19 = 'act 와 짝으로 prop-intake.py stage → 1·5번 다리 반대 검사(tools/sprite-kit/check-strip.py) → review accept → install'
+  const SPEAR19 = 'WEAPON: a long WOODEN-shafted spear with a SMALL metal leaf blade, complete and the same size in all 20 cells, never a sword.'
+  const STRIP19 = [
+    ['base-w-71-yeonna-neoul', '연나 너울', 'w-71-yeonna-neoul', 'ref-slot-spear-w.png', 'the spear-woman baseline', '163 cm',
+      'a dark violet wrap robe with large pale lavender round dots and a black crossed collar, a thick brown fur mantle over her shoulders fastened with a small bronze disc, dark trousers and boots, a high black bun wrapped in a violet head cloth with one striped hawk feather, a small beauty mark under her lip, a calm confident adult face',
+      SPEAR19.replace('SMALL metal leaf blade', 'SMALL dark iron leaf blade with a few hanging feathers on a cord')],
+    ['nuri', '구가 누리', 'w-55-guga-nuri', 'ref-slot-spear-w.png', 'the spear-woman baseline', '163 cm',
+      'a cream-white robe with gold animal-pattern embroidery and a thick white fur collar, long straight black hair with a small white fur ornament on top, gold leaf earrings, a pearl necklace with a small gold dog pendant, wide trousers and boots, a gentle adult smile (no puppy in the sprite)', SPEAR19],
+  ]
+  for (const [k, name, bust, slot, slotName, cm, outfit, weapon] of STRIP19) {
+    const act = `sprite_prop_${k}_act_v3.png`, actPath = `D:/에셋창고/${act}`
+    add('strip', 1, k, `${name} · 비각성 띠 20자세 · 얼굴 작게 통째로 다시 (형 11-19)`, act,
+      ['assets_src/realm/sprite-prop/ref-style3.png', `public/realm/anim-px/gen-${k}.png`, `public/realm/bust-hd/${bust}.jpg`, `assets_src/realm/sprite-prop/${slot}`],
+      '형 11-19 「너울 누리 다시 만들어야 할 듯」 · 같은 키에서 얼굴이 기준 셋보다 크고 둥글어 아이 같다(head-audit 수치로는 통과) · 각성 띠(SPA)는 이 띠가 들어온 뒤',
+      `D:/에셋창고 → py -3 -I tools/sprite-kit/prop-intake.py stage → 눈으로 검수(기준 판 옆 같은 키 · 얼굴 크기) → review ${k} accept → install (옛 띠는 assets_src/realm/retired/prop-20261117/${k}) · 그 뒤 tools/remake-jobs.mjs SPA_WAIT 에서 빼면 각성 띠 줄이 다시 선다`,
+      `REDRAW (lead artist): the current sheet (IMAGE 2) gives her a face that is too big and round, so she looks like a child next to the approved family. Use IMAGE 2 ONLY for the pose order, outfit colours and the spear.\n${STYLE19}\nBASELINE FOR THIS WEAPON AND GENDER: IMAGE 4 shows ${slotName} (left) next to Soseono (right) at true game scale. Match it in head size, face size, build, leg length and standing height (she is ${cm}, Soseono 167 cm). Her face is an ADULT woman's face: narrower cheeks, smaller eyes with adult spacing, a visible neck.\nOUTFIT (from the portrait IMAGE 3, copy it faithfully): ${outfit}. Fabric opaque, no see-through cloth, no nipple outline.\n${weapon}\n${LAY19}\n${HARD19(4)}\n${TAIL19('spear')}`)
+    add('strip', 1, k, `${name} · 비각성 걷기 8칸 · 새 동작 판과 짝`, `sprite_prop_${k}_walk_v3.png`,
+      ['assets_src/realm/sprite-prop/ref-style3.png', `assets_src/realm/sprite-prop/${slot}`, actPath],
+      `${name} 걷기 8칸 (새 동작 판과 같은 얼굴·키)`, ACT_IN19,
+      `[attach ${actPath} LAST: the new approved action sheet]\nUsing the character in the LAST attached image (the new action sheet) as the exact identity, outfit, spear and proportions, NOT the old big-faced sheet, ${WALK19}; hair and fur follow a beat late. The spear is carried in the same hand, same grip and size in all 8 frames. Same face, head and body size and standing height as the action sheet in every frame; feet on one shared baseline. Sharp deliberate pixel clusters, no blur. ${TAIL19W}`)
+  }
+  {   // 서늘 비각성 띠: 옷이 초상과 같은 닌자풍(검은 민소매·붉은 허리띠) → 새 초상의 한국식 자객 옷으로 (v3 는 받아 넣은 얼굴 고침 판이라 v4)
+    const k = 'base-g-84-wander-seoneul', act = `sprite_prop_${k}_act_v4.png`, actPath = `D:/에셋창고/${act}`
+    add('strip', 1, k, '서늘 · 비각성 띠 20자세 · 닌자풍 옷을 한국식 자객으로 (형 11-19)', act,
+      ['assets_src/realm/sprite-prop/ref-style3.png', `public/realm/anim-px/gen-${k}.png`, 'assets_src/realm/sprite-prop/ref-slot-dagger-g.png', SEO_BUST],
+      '형 11-19 「조선풍 암살자」 · 띠 옷이 옛 초상과 같은 검은 민소매·넓은 붉은 허리띠라 닌자풍 · 몸 틀(얼굴 크기)은 11-17 v3 그대로',
+      `${SEO_BUST} 가 들어온 뒤 · D:/에셋창고 → py -3 -I tools/sprite-kit/prop-intake.py stage → 검수(옷이 새 초상과 같은지 · 기준 판 옆 같은 키) → review ${k} accept → install · 각성 띠 SPA 는 새 1차 각성 초상과 이 띠가 들어온 뒤`,
+      `[attach ${SEO_BUST} LAST: his NEW approved portrait in a Korean assassin outfit]\nREDRESS (lead artist): IMAGE 2 is his current approved battle sheet; its head size, body proportions and pose order are correct, but the outfit (black sleeveless top, wide red wrapped sash) reads as a Japanese ninja and is banned. Keep IMAGE 2's head size, build and every pose; change the outfit to the LAST attached portrait.\n${STYLE19}\nBASELINE FOR THIS WEAPON AND GENDER: IMAGE 3 shows the approved dagger-man baseline (left) next to Soseono (right) at true game scale. Match it in head size, build, leg length and standing height (he is 179 cm, Soseono 167 cm; the extra height goes into the legs and torso, never a bigger head). Men have broader shoulders than the women.\nOUTFIT (from the LAST attached portrait): ${KR_ASSASSIN}.\nWEAPON: ${KR_KNIFE}, complete and the same size in all 20 cells.\n${LAY19}\n${HARD19(3, 'keep the head size of IMAGE 2, which already passed')}\n${NO_NINJA}\n${TAIL19('knife')}`)
+    add('strip', 1, k, '서늘 · 비각성 걷기 8칸 · 새 동작 판과 짝', `sprite_prop_${k}_walk_v4.png`,
+      ['assets_src/realm/sprite-prop/ref-style3.png', 'assets_src/realm/sprite-prop/ref-slot-dagger-g.png', actPath],
+      '서늘 걷기 8칸 (새 동작 판과 같은 옷)', ACT_IN19,
+      `[attach ${actPath} LAST: the new approved action sheet]\nUsing the Korean assassin in the LAST attached image (the new action sheet) as the exact identity, outfit (dark jeogori, dugeon head wrap, baji with daenim, wrist guards), knife and proportions, ${WALK19}; the dugeon tails follow a beat late. The knife is carried in the same hand, same grip and size in all 8 frames. Same face, head and body size and standing height as the action sheet in every frame; feet on one shared baseline. ${NO_NINJA} Sharp deliberate pixel clusters, no blur. ${TAIL19W}`)
+  }
+
   // ── 초상 갈래 ──
   add('portrait', 1, 'l-L3-heo-hwangok', '허황옥 · 전설 초상 · 풍경 배경을 민무늬 남색 판으로', 'gpt_bust-l-L3-heo-hwangok.png',
     ['public/realm/bust-hd/l-L3-heo-hwangok.jpg', 'public/realm/bust-hd/l-L2-soseono.jpg'],
