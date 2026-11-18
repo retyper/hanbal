@@ -2738,7 +2738,7 @@
       }
     },
     "base-g-18-daegaya-king": {
-      "status": "staged",
+      "status": "installed",
       "order": "strip",
       "act": "D:/tmp-node/sp-inbox33/sprite_prop_base-g-18-daegaya-king_act.png",
       "walk": "D:/tmp-node/sp-inbox33/sprite_prop_base-g-18-daegaya-king_walk.png",
@@ -2766,7 +2766,15 @@
         "headsNewWalk": 5.55,
         "residueAct": 0.0004,
         "residueWalk": 0.0003
-      }
+      },
+      "review": {
+        "chinOld": 4.79,
+        "chinNew": 5.67,
+        "note": "11-18 claude33 · 머리 작아짐 · 원화대로 가야금 주술",
+        "weapon": "magic"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-g-18-daegaya-king",
+      "installed": "2026-11-17"
     },
     "suro": {
       "status": "installed",

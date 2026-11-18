@@ -234,7 +234,7 @@ const CONTACT: Readonly<Record<string, [number, number, number]>> = {
   'gen-base-w-23-usisan-whale-queen': [14, 0.91, 0.47],
   'gen-base-g-19-sabeol-veteran': [14, 0.93, 0.48],
   'gen-base-g-35-dabeol-dalgu': [14, 0.92, 0.46],
-  'gen-base-g-18-daegaya-king': [14, 0.77, 0.43],
+  'gen-base-g-18-daegaya-king': [14, 0.85, 0.5],
   'gen-base-g-17-saro-isageum': [14, 0.94, 0.51],
   'gen-base-w-17-mahan-pearl-diver': [14, 0.94, 0.46],
   'gen-base-w-02-goguryeo-lady': [14, 0.91, 0.42],
