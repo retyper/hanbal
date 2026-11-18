@@ -21,7 +21,7 @@
     "pipeline": "generated-master"
   },
   "bira": {
-    "pipeline": "generated-master"
+    "pipeline": "full20-master"
   },
   "haesol": {
     "pipeline": "generated-master"
@@ -30,16 +30,16 @@
     "pipeline": "generated-master"
   },
   "goeun": {
-    "pipeline": "generated-master"
+    "pipeline": "full20-master"
   },
   "byeol": {
-    "pipeline": "generated-master"
+    "pipeline": "full20-master"
   },
   "baram": {
     "pipeline": "generated-master"
   },
   "beom": {
-    "pipeline": "generated-master"
+    "pipeline": "full20-master"
   },
   "dokmudeom": {
     "pipeline": "generated-master"
@@ -66,13 +66,13 @@
     "pipeline": "generated-master"
   },
   "beomi": {
-    "pipeline": "generated-master"
+    "pipeline": "full20-master"
   },
   "sogeumbi": {
     "pipeline": "generated-master"
   },
   "gomok": {
-    "pipeline": "generated-master"
+    "pipeline": "full20-master"
   },
   "jinha": {
     "pipeline": "generated-master"
@@ -81,10 +81,10 @@
     "pipeline": "generated-master"
   },
   "geumbawi": {
-    "pipeline": "generated-master"
+    "pipeline": "full20-master"
   },
   "hogong": {
-    "pipeline": "generated-master"
+    "pipeline": "full20-master"
   },
   "alpyeong": {
     "pipeline": "generated-master"
@@ -657,6 +657,12 @@
     "pipeline": "awakened20-master"
   },
   "aw1-heo": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-base-g-38-chopal-palmae": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-base-w-25-bihwa-priestess": {
     "pipeline": "awakened20-master"
   }
 }

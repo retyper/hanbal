@@ -3153,8 +3153,8 @@
       }
     },
     "base-w-13-young-archer": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_base-w-13-young-archer_act.png",
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/sprite_aw1_base-w-13-young-archer_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_base-w-13-young-archer_walk.png",
       "actSha256": "1277325aef76d16ea7782d4953c06c55e62b0905cc0a39af4478e68f3d971462",
       "walkSha256": "c7bfb0374727998a048f57a5a1eb3e55d2ede122f6646549ff24d2134a202a62",
@@ -3357,7 +3357,8 @@
       "review": {
         "note": "",
         "date": "2026-11-18"
-      }
+      },
+      "pending": "act v2 · walk v1 → waiting for walk"
     },
     "sori": {
       "status": "staged",
@@ -5470,9 +5471,219 @@
       "pending": "act v1 · walk vNone → waiting for walk"
     },
     "base-w-25-bihwa-priestess": {
-      "status": "waiting-walk",
+      "status": "installed",
       "act": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_base-w-25-bihwa-priestess_act.png",
-      "pending": "act v1 · walk vNone → waiting for walk"
+      "walk": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_base-w-25-bihwa-priestess_walk.png",
+      "actSha256": "a55b69f2409b79ee148886a2edc9ab2dbc7423ab6af0327762611edc56eb8467",
+      "walkSha256": "2d69655b5d4ce2d546ad5e04c9efa574d5a248dbce17f11c9590fdde740c63e2",
+      "actVersion": 1,
+      "walkVersion": 1,
+      "auto": {
+        "act": {
+          "clear": 0.657,
+          "halo": 0.125,
+          "residue": 0.0002
+        },
+        "walk": {
+          "clear": 0.745,
+          "halo": 0.085,
+          "residue": 0.0
+        },
+        "walkFit": {
+          "byHeight": 0.7461,
+          "byArea": 0.7514,
+          "used": 0.7664,
+          "walkHead": 0.954
+        },
+        "walkCheck": {
+          "legDiff15": 0.169,
+          "legIou15": 0.86,
+          "legShadeFlip": -0.023,
+          "stride": 1.66,
+          "still": 0
+        },
+        "poseHead": {
+          "0": 1.0,
+          "1": 1.0,
+          "2": 0.99,
+          "3": 0.99,
+          "10": 0.97,
+          "11": 1.01,
+          "12": 1.01,
+          "13": 0.97,
+          "14": 0.98
+        },
+        "colourGap": 0.242,
+        "cell": [
+          184,
+          160
+        ],
+        "contact": [
+          14,
+          0.91,
+          0.5
+        ],
+        "poses": [
+          {
+            "reach": 0.321,
+            "h": 1.012,
+            "w": 0.635
+          },
+          {
+            "reach": 0.328,
+            "h": 1.012,
+            "w": 0.635
+          },
+          {
+            "reach": 0.321,
+            "h": 1.012,
+            "w": 0.623
+          },
+          {
+            "reach": 0.323,
+            "h": 1.012,
+            "w": 0.635
+          },
+          {
+            "reach": 0.322,
+            "h": 1.008,
+            "w": 0.623
+          },
+          {
+            "reach": 0.328,
+            "h": 0.992,
+            "w": 0.627
+          },
+          {
+            "reach": 0.342,
+            "h": 0.992,
+            "w": 0.65
+          },
+          {
+            "reach": 0.337,
+            "h": 0.988,
+            "w": 0.646
+          },
+          {
+            "reach": 0.357,
+            "h": 0.938,
+            "w": 0.719
+          },
+          {
+            "reach": 0.381,
+            "h": 0.935,
+            "w": 0.712
+          },
+          {
+            "reach": 0.344,
+            "h": 0.923,
+            "w": 0.727
+          },
+          {
+            "reach": 0.518,
+            "h": 0.915,
+            "w": 0.873
+          },
+          {
+            "reach": 0.489,
+            "h": 0.912,
+            "w": 0.831
+          },
+          {
+            "reach": 0.327,
+            "h": 0.923,
+            "w": 0.642
+          },
+          {
+            "reach": 0.316,
+            "h": 0.931,
+            "w": 0.631
+          },
+          {
+            "reach": 0.317,
+            "h": 0.919,
+            "w": 0.623
+          },
+          {
+            "reach": 0.313,
+            "h": 0.877,
+            "w": 0.654
+          },
+          {
+            "reach": 0.268,
+            "h": 0.777,
+            "w": 0.585
+          },
+          {
+            "reach": 0.412,
+            "h": 0.677,
+            "w": 0.819
+          },
+          {
+            "reach": 0.413,
+            "h": 0.469,
+            "w": 0.981
+          }
+        ]
+      },
+      "attack": [
+        0,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "attackBy": "auto",
+      "fit": {
+        "by": "head",
+        "idlePx": 150.73,
+        "k": 1.092,
+        "bodyPx": 134,
+        "awRaw": 145,
+        "awFeet": 155.0,
+        "head": 0.966,
+        "headBy": "head match",
+        "headFwd": 0.963,
+        "headRev": 0.969,
+        "headScale": 0.95,
+        "ncc": [
+          0.71,
+          0.71
+        ],
+        "gear": 9.8,
+        "base": {
+          "top": 19.0,
+          "chin": null,
+          "feet": 155.0
+        },
+        "aw": {
+          "top": 22.8,
+          "bodyTop": 13.0,
+          "chin": null,
+          "feet": 155.0
+        },
+        "left": 3.81,
+        "box": [
+          64,
+          20,
+          78,
+          47
+        ]
+      },
+      "warn": [
+        "칸 크기(138) 그대로면 키가 ×0.916 였다 → 맞춰 구움 (머리 장식·든 무기 높이 차)",
+        "각성 머리 위로 9.8px 솟음(관·깃털·든 무기) · 키에서 뺌",
+        "칸(160)에 다 못 담아 그림은 3.81px 작게 구움 → 화면에서 몸 키 값(bodyPx 134)으로 키워 맞춘다",
+        "옷 빛깔이 비각성과 비슷 0.242",
+        "공격 칸 자동 고름 [0, 10, 11, 12, 13, 14] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
+      ],
+      "review": {
+        "note": "head 0.966, outfit changed, bell staff same, 20 cells consistent, attack order ok, walk 1/5 legs opposite",
+        "date": "2026-11-18"
+      },
+      "installed": "2026-11-18",
+      "key": "aw1-base-w-25-bihwa-priestess"
     },
     "base-w-26-iseo-tomboy-general": {
       "status": "waiting-walk",
@@ -5480,13 +5691,226 @@
       "pending": "act v1 · walk vNone → waiting for walk"
     },
     "base-w-29-golpo-janmul": {
-      "status": "waiting-walk",
+      "status": "staged",
       "act": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_base-w-29-golpo-janmul_act.png",
-      "pending": "act v1 · walk vNone → waiting for walk"
+      "walk": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_base-w-29-golpo-janmul_walk.png",
+      "actSha256": "764a065df6818a6fe0b3449791c66ba6be2af9ba777feda9c74da8295287f9e6",
+      "walkSha256": "7559efb7f2c6c36405a069d912cf4aaca939988ac0c7ea43957061b55e859664",
+      "actVersion": 1,
+      "walkVersion": 1,
+      "auto": {
+        "act": {
+          "clear": 0.761,
+          "halo": 0.132,
+          "residue": 0.0003
+        },
+        "walk": {
+          "clear": 0.765,
+          "halo": 0.072,
+          "residue": 0.001
+        },
+        "walkFit": {
+          "byHeight": 0.6142,
+          "byArea": 0.6506,
+          "used": 0.6321,
+          "walkHead": 0.995
+        },
+        "walkCheck": {
+          "legDiff15": 0.161,
+          "legIou15": 0.836,
+          "legShadeFlip": -0.008,
+          "stride": 2.7,
+          "still": 0
+        },
+        "poseHead": {
+          "0": 1.0,
+          "1": 0.98,
+          "2": 0.98,
+          "3": 0.98,
+          "14": 0.92
+        },
+        "colourGap": 0.184,
+        "cell": [
+          176,
+          160
+        ],
+        "contact": [
+          14,
+          0.93,
+          0.49
+        ],
+        "poses": [
+          {
+            "reach": 0.46,
+            "h": 1.002,
+            "w": 0.824
+          },
+          {
+            "reach": 0.457,
+            "h": 1.002,
+            "w": 0.8
+          },
+          {
+            "reach": 0.457,
+            "h": 0.993,
+            "w": 0.772
+          },
+          {
+            "reach": 0.455,
+            "h": 0.998,
+            "w": 0.772
+          },
+          {
+            "reach": 0.464,
+            "h": 0.984,
+            "w": 0.819
+          },
+          {
+            "reach": 0.457,
+            "h": 0.984,
+            "w": 0.805
+          },
+          {
+            "reach": 0.457,
+            "h": 0.988,
+            "w": 0.833
+          },
+          {
+            "reach": 0.461,
+            "h": 0.965,
+            "w": 0.838
+          },
+          {
+            "reach": 0.48,
+            "h": 0.927,
+            "w": 0.856
+          },
+          {
+            "reach": 0.463,
+            "h": 0.927,
+            "w": 0.875
+          },
+          {
+            "reach": 0.489,
+            "h": 0.908,
+            "w": 0.96
+          },
+          {
+            "reach": 0.39,
+            "h": 0.936,
+            "w": 0.762
+          },
+          {
+            "reach": 0.564,
+            "h": 0.889,
+            "w": 0.936
+          },
+          {
+            "reach": 0.536,
+            "h": 0.852,
+            "w": 0.984
+          },
+          {
+            "reach": 0.531,
+            "h": 0.88,
+            "w": 0.936
+          },
+          {
+            "reach": 0.483,
+            "h": 0.894,
+            "w": 0.885
+          },
+          {
+            "reach": 0.445,
+            "h": 0.889,
+            "w": 0.838
+          },
+          {
+            "reach": 0.414,
+            "h": 0.889,
+            "w": 0.852
+          },
+          {
+            "reach": 0.483,
+            "h": 0.776,
+            "w": 0.885
+          },
+          {
+            "reach": 0.559,
+            "h": 0.438,
+            "w": 1.144
+          }
+        ]
+      },
+      "attack": [
+        0,
+        11,
+        12,
+        13,
+        14,
+        0
+      ],
+      "attackBy": "auto",
+      "fit": {
+        "by": "head",
+        "idlePx": 133.95,
+        "k": 0.971,
+        "bodyPx": 138,
+        "awRaw": 134,
+        "awFeet": 155.0,
+        "head": 1.12,
+        "headBy": "head match",
+        "headFwd": 1.098,
+        "headRev": 1.142,
+        "headScale": 1.1,
+        "ncc": [
+          0.66,
+          0.67
+        ],
+        "gear": -2.2,
+        "base": {
+          "top": 20.0,
+          "chin": null,
+          "feet": 155.0
+        },
+        "aw": {
+          "top": 20.3,
+          "bodyTop": 22.5,
+          "chin": null,
+          "feet": 155.0
+        },
+        "left": 0.31,
+        "box": [
+          51,
+          17,
+          62,
+          55
+        ]
+      },
+      "warn": [
+        "머리가 큼 ×1.12 (같은 키에서 머리 높이 · 5% 넘음)",
+        "옷 빛깔이 비각성과 비슷 0.184",
+        "공격 칸 자동 고름 [0, 11, 12, 13, 14, 0] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
+      ]
     },
     "base-w-31-dabeol-dalbit": {
       "status": "waiting-walk",
       "act": "D:/에셋창고/Codex-claude35-hit-new-20261118-candidates/sprite_aw1_base-w-31-dabeol-dalbit_act.png",
+      "pending": "act v1 · walk vNone → waiting for walk"
+    },
+    "base-w-24-apdok-queen": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude35-root-20261118-candidates/sprite_aw1_base-w-24-apdok-queen_act.png",
+      "pending": "act v1 · walk vNone → waiting for walk"
+    },
+    "base-w-36-baekje-maena": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_base-w-36-baekje-maena_act.png",
+      "pending": "act v1 · walk vNone → waiting for walk"
+    },
+    "base-w-40-mujin-munui": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_base-w-40-mujin-munui_act.png",
       "pending": "act v1 · walk vNone → waiting for walk"
     }
   }
