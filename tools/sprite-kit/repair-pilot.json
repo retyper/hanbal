@@ -667,5 +667,20 @@
   },
   "aw1-sori": {
     "pipeline": "awakened20-master"
+  },
+  "aw1-gomok": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-irang": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-budeul": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-gom": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-sdallae": {
+    "pipeline": "awakened20-master"
   }
 }
