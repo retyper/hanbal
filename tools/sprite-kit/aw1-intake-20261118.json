@@ -421,13 +421,28 @@
       "key": "aw1-base-g-38-chopal-palmae"
     },
     "base-w-02-goguryeo-lady": {
-      "status": "rejected",
+      "status": "installed",
       "act": "D:/에셋창고/Codex-claude40-root-20261118-candidates/sprite_aw1_base-w-02-goguryeo-lady_act_v2.png",
-      "walk": "D:/에셋창고/sprite_aw1_base-w-02-goguryeo-lady_walk_v2.png",
+      "walk": "D:/에셋창고/sprite_aw1_base-w-02-goguryeo-lady_walk_v3.png",
       "actSha256": "4d21bd634852b54cc8afc27a6cce268f145ba1043568b218fe2e7a9bd97121f8",
-      "walkSha256": "7d76c1b339ec93c17f7a57903d927953e7c799761fe9a48c14343f1087dc79ca",
+      "walkSha256": "64144cdf630093f43a199f0f2fd0c3180386fd3469eae5a831158d426673e62a",
       "actVersion": 2,
-      "walkVersion": 2,
+      "walkVersion": 3,
+      "attack": [
+        0,
+        13,
+        14,
+        15,
+        16,
+        0
+      ],
+      "attackBy": "auto",
+      "actOk": {
+        "sha256": "4d21bd634852b54cc8afc27a6cce268f145ba1043568b218fe2e7a9bd97121f8",
+        "version": 2,
+        "date": "2026-11-18",
+        "by": "auto: walk legs only"
+      },
       "auto": {
         "act": {
           "clear": 0.832,
@@ -435,54 +450,54 @@
           "residue": 0.0002
         },
         "walk": {
-          "clear": 0.82,
-          "halo": 0.073,
+          "clear": 0.686,
+          "halo": 0.057,
           "residue": 0.0
         },
         "walkFit": {
-          "byHeight": 0.618,
-          "byArea": 0.6233,
-          "used": 0.6158,
-          "walkHead": 1.016
+          "byHeight": 0.4656,
+          "byArea": 0.4633,
+          "used": 0.4771,
+          "walkHead": 0.948
         },
         "walkCheck": {
-          "legDiff15": 0.096,
-          "legIou15": 0.917,
-          "legShadeFlip": -0.0,
-          "stride": 3.22,
+          "legDiff15": 0.151,
+          "legIou15": 0.777,
+          "legShadeFlip": 0.004,
+          "stride": 1.03,
           "still": 0
         },
         "walkLegs": {
-          "ok": false,
+          "ok": true,
           "opposite": 4,
-          "own": 2,
-          "margin": -0.012,
+          "own": 7,
+          "margin": 0.085,
           "margins": [
-            0.049,
-            -0.003,
-            -0.026,
-            0.039,
-            -0.047,
-            -0.021,
-            0.008,
-            -0.058
+            0.08,
+            0.238,
+            0.057,
+            0.091,
+            0.051,
+            0.202,
+            0.004,
+            0.124
           ]
         },
         "poseHead": {
           "0": 1.0,
-          "1": 0.99,
-          "2": 0.99,
-          "3": 0.97,
-          "15": 0.96
+          "1": 1.02,
+          "2": 1.01,
+          "3": 0.99,
+          "15": 0.97
         },
-        "colourGap": 0.215,
+        "colourGap": 0.209,
         "cell": [
-          192,
+          184,
           160
         ],
         "contact": [
           14,
-          0.92,
+          0.93,
           0.47
         ],
         "poses": [
@@ -588,27 +603,18 @@
           }
         ]
       },
-      "attack": [
-        0,
-        13,
-        14,
-        15,
-        16,
-        0
-      ],
-      "attackBy": "auto",
       "fit": {
         "by": "head",
         "idlePx": 163.76,
         "k": 1.187,
-        "bodyPx": 134,
-        "awRaw": 149,
+        "bodyPx": 133,
+        "awRaw": 147,
         "awFeet": 155.0,
         "head": 1.008,
         "headBy": "head match",
-        "headFwd": 1.004,
+        "headFwd": 1.005,
         "headRev": 1.012,
-        "headScale": 0.975,
+        "headScale": 0.96,
         "ncc": [
           0.62,
           0.6
@@ -620,34 +626,33 @@
           "feet": 155.0
         },
         "aw": {
-          "top": 22.9,
-          "bodyTop": 12.5,
+          "top": 23.9,
+          "bodyTop": 14.0,
           "chin": null,
           "feet": 155.0
         },
-        "left": 4.38,
+        "left": 5.38,
         "box": [
-          61,
-          20,
-          84,
-          51
+          58,
+          22,
+          81,
+          49
         ]
       },
       "warn": [
         "칸 크기(138) 그대로면 키가 ×0.843 였다 → 맞춰 구움 (머리 장식·든 무기 높이 차)",
         "각성 머리 위로 9.9px 솟음(관·깃털·든 무기) · 키에서 뺌",
-        "칸(160)에 다 못 담아 그림은 4.38px 작게 구움 → 화면에서 몸 키 값(bodyPx 134)으로 키워 맞춘다",
-        "옷 빛깔이 비각성과 비슷 0.215",
+        "칸(160)에 다 못 담아 그림은 5.38px 작게 구움 → 화면에서 몸 키 값(bodyPx 133)으로 키워 맞춘다",
+        "걷기 발 벌림 약함 ×1.03",
+        "옷 빛깔이 비각성과 비슷 0.209",
         "공격 칸 자동 고름 [0, 13, 14, 15, 16, 0] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
       ],
-      "reason": "walk frames 1 and 5 have the same leg forward (half cycle repeated); redo as a redress edit of the normal-form walk (only 2 of 8 walk frames follow their own frame of the normal-form walk better than the opposite-leg frame, median margin -0.012)",
-      "rejectedBy": "auto",
-      "actOk": {
-        "sha256": "4d21bd634852b54cc8afc27a6cce268f145ba1043568b218fe2e7a9bd97121f8",
-        "version": 2,
-        "date": "2026-11-18",
-        "by": "auto: walk legs only"
-      }
+      "review": {
+        "note": "head ok, outfit changed, weapon same, attack order ok, walk height within 5% of stand",
+        "date": "2026-11-18"
+      },
+      "installed": "2026-11-18",
+      "key": "aw1-base-w-02-goguryeo-lady"
     },
     "goeun": {
       "status": "rejected",
@@ -1113,13 +1118,28 @@
       "key": "aw1-gomok"
     },
     "haedal": {
-      "status": "rejected",
+      "status": "installed",
       "act": "D:/에셋창고/Codex-claude40-root-20261118-candidates/sprite_aw1_haedal_act_v2.png",
-      "walk": "D:/에셋창고/sprite_aw1_haedal_walk_v2.png",
+      "walk": "D:/에셋창고/sprite_aw1_haedal_walk_v3.png",
       "actSha256": "72623cf0980582b3346caf6753b32819805edbab2fb39597a46d975265bc7b6a",
-      "walkSha256": "f203b94b21bb85d86c4713e40ea8b03f4fa6170307c498a4f76cb8648ac6fb88",
+      "walkSha256": "e638c8b20b6c3c5b9a2c2d3ed872bc63ed9b483716c0b060640f41d6508add32",
       "actVersion": 2,
-      "walkVersion": 2,
+      "walkVersion": 3,
+      "attack": [
+        0,
+        14,
+        15,
+        16,
+        17,
+        0
+      ],
+      "attackBy": "auto",
+      "actOk": {
+        "sha256": "72623cf0980582b3346caf6753b32819805edbab2fb39597a46d975265bc7b6a",
+        "version": 2,
+        "date": "2026-11-18",
+        "by": "auto: walk legs only"
+      },
       "auto": {
         "act": {
           "clear": 0.729,
@@ -1127,37 +1147,37 @@
           "residue": 0.0
         },
         "walk": {
-          "clear": 0.75,
-          "halo": 0.053,
+          "clear": 0.626,
+          "halo": 0.043,
           "residue": 0.0
         },
         "walkFit": {
-          "byHeight": 0.6349,
-          "byArea": 0.6689,
-          "used": 0.6329,
-          "walkHead": 1.06
+          "byHeight": 0.5403,
+          "byArea": 0.5465,
+          "used": 0.5333,
+          "walkHead": 1.038
         },
         "walkCheck": {
-          "legDiff15": 0.137,
-          "legIou15": 0.895,
-          "legShadeFlip": -0.033,
-          "stride": 3.5,
+          "legDiff15": 0.148,
+          "legIou15": 0.831,
+          "legShadeFlip": -0.012,
+          "stride": 2.4,
           "still": 0
         },
         "walkLegs": {
-          "ok": false,
+          "ok": true,
           "opposite": 4,
-          "own": 3,
-          "margin": 0.004,
+          "own": 8,
+          "margin": 0.102,
           "margins": [
-            -0.027,
-            -0.025,
-            0.003,
-            0.041,
-            0.047,
-            0.04,
-            0.004,
-            -0.04
+            0.099,
+            0.089,
+            0.119,
+            0.093,
+            0.105,
+            0.105,
+            0.085,
+            0.105
           ]
         },
         "poseHead": {
@@ -1281,15 +1301,6 @@
           }
         ]
       },
-      "attack": [
-        0,
-        14,
-        15,
-        16,
-        17,
-        0
-      ],
-      "attackBy": "auto",
       "fit": {
         "by": "head",
         "idlePx": 138.0,
@@ -1327,27 +1338,39 @@
         ]
       },
       "warn": [
-        "걷기 판 등신이 동작 판과 다름: 같은 몸 크기에서 걷기 머리 ×1.06 (반씩 나눠 구움 · 10% 넘으면 걷기 판을 다시 받는다)",
         "옷 빛깔이 비각성과 비슷 0.206",
         "공격 칸 자동 고름 [0, 14, 15, 16, 17, 0] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
       ],
-      "reason": "walk frames 1 and 5 have the same leg forward (half cycle repeated); redo as a redress edit of the normal-form walk (only 3 of 8 walk frames follow their own frame of the normal-form walk better than the opposite-leg frame, median margin 0.004)",
-      "rejectedBy": "auto",
+      "review": {
+        "note": "head ok, outfit changed, weapon same, attack order ok, walk height within 5% of stand",
+        "date": "2026-11-18"
+      },
+      "installed": "2026-11-18",
+      "key": "aw1-haedal"
+    },
+    "hogong": {
+      "status": "installed",
+      "act": "D:/에셋창고/Codex-claude40-hit-new-20261118-candidates/sprite_aw1_hogong_act_v2.png",
+      "walk": "D:/에셋창고/sprite_aw1_hogong_walk_v3.png",
+      "actSha256": "5d2f9794603aea8b6259af9ff24c32977ceaad03762bca0b3bc05aa3df0d4bfa",
+      "walkSha256": "eec7c7697a38357381e505322815ee9a6c9cdf7bd34aa731d6e825dc6db7ac0c",
+      "actVersion": 2,
+      "walkVersion": 3,
+      "attack": [
+        0,
+        10,
+        11,
+        12,
+        13,
+        0
+      ],
+      "attackBy": "auto",
       "actOk": {
-        "sha256": "72623cf0980582b3346caf6753b32819805edbab2fb39597a46d975265bc7b6a",
+        "sha256": "5d2f9794603aea8b6259af9ff24c32977ceaad03762bca0b3bc05aa3df0d4bfa",
         "version": 2,
         "date": "2026-11-18",
         "by": "auto: walk legs only"
-      }
-    },
-    "hogong": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude40-hit-new-20261118-candidates/sprite_aw1_hogong_act_v2.png",
-      "walk": "D:/에셋창고/sprite_aw1_hogong_walk_v2.png",
-      "actSha256": "5d2f9794603aea8b6259af9ff24c32977ceaad03762bca0b3bc05aa3df0d4bfa",
-      "walkSha256": "1f533e771083023190405bf3275502df00c04152bed58fb3112bf96d1bcbdfee",
-      "actVersion": 2,
-      "walkVersion": 2,
+      },
       "auto": {
         "act": {
           "clear": 0.782,
@@ -1355,37 +1378,37 @@
           "residue": 0.0024
         },
         "walk": {
-          "clear": 0.765,
-          "halo": 0.042,
+          "clear": 0.699,
+          "halo": 0.037,
           "residue": 0.0
         },
         "walkFit": {
-          "byHeight": 0.5984,
-          "byArea": 0.6206,
-          "used": 0.5768,
-          "walkHead": 1.116
+          "byHeight": 0.5202,
+          "byArea": 0.5526,
+          "used": 0.5421,
+          "walkHead": 0.978
         },
         "walkCheck": {
-          "legDiff15": 0.112,
-          "legIou15": 0.876,
-          "legShadeFlip": -0.012,
-          "stride": 2.08,
+          "legDiff15": 0.123,
+          "legIou15": 0.874,
+          "legShadeFlip": -0.015,
+          "stride": 1.91,
           "still": 0
         },
         "walkLegs": {
-          "ok": false,
+          "ok": true,
           "opposite": 4,
-          "own": 2,
-          "margin": 0.004,
+          "own": 7,
+          "margin": 0.062,
           "margins": [
-            -0.006,
-            -0.001,
-            0.022,
-            0.049,
-            0.002,
-            0.005,
-            0.011,
-            -0.004
+            0.062,
+            0.062,
+            0.076,
+            0.082,
+            0.006,
+            0.037,
+            0.048,
+            0.116
           ]
         },
         "poseHead": {
@@ -1512,15 +1535,6 @@
           }
         ]
       },
-      "attack": [
-        0,
-        10,
-        11,
-        12,
-        13,
-        0
-      ],
-      "attackBy": "auto",
       "fit": {
         "by": "head",
         "idlePx": 136.55,
@@ -1558,18 +1572,15 @@
         ]
       },
       "warn": [
-        "걷기 판 등신이 동작 판과 다름: 같은 몸 크기에서 걷기 머리 ×1.12 (반씩 나눠 구움 · 10% 넘으면 걷기 판을 다시 받는다)",
         "옷 빛깔이 비각성과 비슷 0.244",
         "공격 칸 자동 고름 [0, 10, 11, 12, 13, 0] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
       ],
-      "reason": "walk frames 1 and 5 have the same leg forward (half cycle repeated); redo as a redress edit of the normal-form walk (only 2 of 8 walk frames follow their own frame of the normal-form walk better than the opposite-leg frame, median margin 0.004)",
-      "rejectedBy": "auto",
-      "actOk": {
-        "sha256": "5d2f9794603aea8b6259af9ff24c32977ceaad03762bca0b3bc05aa3df0d4bfa",
-        "version": 2,
-        "date": "2026-11-18",
-        "by": "auto: walk legs only"
-      }
+      "review": {
+        "note": "head ok, outfit changed, weapon same, attack order ok, walk height within 5% of stand",
+        "date": "2026-11-18"
+      },
+      "installed": "2026-11-18",
+      "key": "aw1-hogong"
     },
     "hojin": {
       "status": "rejected",
@@ -2038,13 +2049,28 @@
       "key": "aw1-irang"
     },
     "maehwa": {
-      "status": "rejected",
+      "status": "installed",
       "act": "D:/에셋창고/Codex-claude40-hit-edit-20261118-candidates/sprite_aw1_maehwa_act_v2.png",
-      "walk": "D:/에셋창고/sprite_aw1_maehwa_walk_v2.png",
+      "walk": "D:/에셋창고/sprite_aw1_maehwa_walk_v3.png",
       "actSha256": "400e429bfdf0e1e5f913c4e3bf507598f6071b81976d313493fe4583c14d6368",
-      "walkSha256": "3433c5acf3863c181fd03152d2e074272a02593917e37614acf612d0b09836da",
+      "walkSha256": "acd2c7560c5e48af60939a30064b7c60bd140592a1d98504bccfccd892f7a273",
       "actVersion": 2,
-      "walkVersion": 2,
+      "walkVersion": 3,
+      "attack": [
+        0,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "attackBy": "auto",
+      "actOk": {
+        "sha256": "400e429bfdf0e1e5f913c4e3bf507598f6071b81976d313493fe4583c14d6368",
+        "version": 2,
+        "date": "2026-11-18",
+        "by": "auto: walk legs only"
+      },
       "auto": {
         "act": {
           "clear": 0.779,
@@ -2052,37 +2078,37 @@
           "residue": 0.0
         },
         "walk": {
-          "clear": 0.826,
-          "halo": 0.092,
+          "clear": 0.633,
+          "halo": 0.061,
           "residue": 0.0
         },
         "walkFit": {
-          "byHeight": 0.7005,
-          "byArea": 0.7138,
-          "used": 0.7626,
-          "walkHead": 0.86
+          "byHeight": 0.4753,
+          "byArea": 0.4913,
+          "used": 0.5042,
+          "walkHead": 0.919
         },
         "walkCheck": {
-          "legDiff15": 0.127,
-          "legIou15": 0.825,
-          "legShadeFlip": 0.001,
-          "stride": 2.28,
+          "legDiff15": 0.155,
+          "legIou15": 0.729,
+          "legShadeFlip": 0.005,
+          "stride": 1.4,
           "still": 0
         },
         "walkLegs": {
-          "ok": false,
+          "ok": true,
           "opposite": 4,
-          "own": 2,
-          "margin": 0.008,
+          "own": 8,
+          "margin": 0.13,
           "margins": [
-            0.083,
-            0.018,
-            0.01,
-            0.006,
-            0.041,
-            -0.0,
-            -0.038,
-            0.002
+            0.157,
+            0.16,
+            0.11,
+            0.075,
+            0.15,
+            0.151,
+            0.089,
+            0.08
           ]
         },
         "poseHead": {
@@ -2209,15 +2235,6 @@
           }
         ]
       },
-      "attack": [
-        0,
-        12,
-        13,
-        14,
-        15,
-        16
-      ],
-      "attackBy": "auto",
       "fit": {
         "by": "head",
         "idlePx": 134.82,
@@ -2255,18 +2272,16 @@
         ]
       },
       "warn": [
-        "걷기 판 등신이 동작 판과 다름: 같은 몸 크기에서 걷기 머리 ×0.86 (반씩 나눠 구움 · 10% 넘으면 걷기 판을 다시 받는다)",
+        "걷기 판 등신이 동작 판과 다름: 같은 몸 크기에서 걷기 머리 ×0.92 (반씩 나눠 구움 · 10% 넘으면 걷기 판을 다시 받는다)",
         "옷 빛깔이 비각성과 비슷 0.142",
         "공격 칸 자동 고름 [0, 12, 13, 14, 15, 16] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
       ],
-      "reason": "walk frames 1 and 5 have the same leg forward (half cycle repeated); redo as a redress edit of the normal-form walk (only 2 of 8 walk frames follow their own frame of the normal-form walk better than the opposite-leg frame, median margin 0.008)",
-      "rejectedBy": "auto",
-      "actOk": {
-        "sha256": "400e429bfdf0e1e5f913c4e3bf507598f6071b81976d313493fe4583c14d6368",
-        "version": 2,
-        "date": "2026-11-18",
-        "by": "auto: walk legs only"
-      }
+      "review": {
+        "note": "head ok, outfit changed, weapon same, attack order ok, walk height within 5% of stand",
+        "date": "2026-11-18"
+      },
+      "installed": "2026-11-18",
+      "key": "aw1-maehwa"
     },
     "oi": {
       "status": "waiting-walk",
@@ -2902,13 +2917,28 @@
       "pending": "act v3 · walk v1 → waiting for walk"
     },
     "base-w-06-buyeo-huntress": {
-      "status": "rejected",
+      "status": "installed",
       "act": "D:/에셋창고/Codex-claude40-pado-20261118-candidates/sprite_aw1_base-w-06-buyeo-huntress_act_v2.png",
-      "walk": "D:/에셋창고/sprite_aw1_base-w-06-buyeo-huntress_walk_v2.png",
+      "walk": "D:/에셋창고/sprite_aw1_base-w-06-buyeo-huntress_walk_v3.png",
       "actSha256": "73b161d724310bf90f07d8e12bbe394cafa4587dad47f8ac6aa3d48b1050b8d5",
-      "walkSha256": "f332831af46cce4b2b772a618cb2ce3fd8c0fc63fe0ea3651e18af6d397fdd9f",
+      "walkSha256": "ed6c9bc2f2346dab9857305e7d9f6ed4884981cb866b0ae0b0e206b2a89c2345",
       "actVersion": 2,
-      "walkVersion": 2,
+      "walkVersion": 3,
+      "attack": [
+        0,
+        13,
+        14,
+        15,
+        16,
+        0
+      ],
+      "attackBy": "auto",
+      "actOk": {
+        "sha256": "73b161d724310bf90f07d8e12bbe394cafa4587dad47f8ac6aa3d48b1050b8d5",
+        "version": 2,
+        "date": "2026-11-18",
+        "by": "auto: walk legs only"
+      },
       "auto": {
         "act": {
           "clear": 0.803,
@@ -2916,37 +2946,37 @@
           "residue": 0.0118
         },
         "walk": {
-          "clear": 0.748,
-          "halo": 0.065,
-          "residue": 0.0
+          "clear": 0.708,
+          "halo": 0.064,
+          "residue": 0.0004
         },
         "walkFit": {
-          "byHeight": 0.5484,
-          "byArea": 0.5723,
-          "used": 0.569,
-          "walkHead": 0.969
+          "byHeight": 0.5205,
+          "byArea": 0.5319,
+          "used": 0.539,
+          "walkHead": 0.953
         },
         "walkCheck": {
-          "legDiff15": 0.078,
-          "legIou15": 0.922,
-          "legShadeFlip": 0.009,
-          "stride": 3.74,
+          "legDiff15": 0.125,
+          "legIou15": 0.897,
+          "legShadeFlip": -0.012,
+          "stride": 3.03,
           "still": 0
         },
         "walkLegs": {
-          "ok": false,
+          "ok": true,
           "opposite": 4,
-          "own": 2,
-          "margin": -0.002,
+          "own": 8,
+          "margin": 0.099,
           "margins": [
-            -0.013,
-            -0.051,
-            -0.014,
-            -0.04,
-            0.019,
-            0.032,
-            0.009,
-            0.039
+            0.041,
+            0.114,
+            0.033,
+            0.107,
+            0.058,
+            0.16,
+            0.092,
+            0.106
           ]
         },
         "poseHead": {
@@ -3073,15 +3103,6 @@
           }
         ]
       },
-      "attack": [
-        0,
-        13,
-        14,
-        15,
-        16,
-        0
-      ],
-      "attackBy": "auto",
       "fit": {
         "by": "head",
         "idlePx": 134.26,
@@ -3122,23 +3143,36 @@
         "옷 빛깔이 비각성과 비슷 0.156",
         "공격 칸 자동 고름 [0, 13, 14, 15, 16, 0] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
       ],
-      "reason": "walk frames 1 and 5 have the same leg forward (half cycle repeated); redo as a redress edit of the normal-form walk (only 2 of 8 walk frames follow their own frame of the normal-form walk better than the opposite-leg frame, median margin -0.002)",
-      "rejectedBy": "auto",
-      "actOk": {
-        "sha256": "73b161d724310bf90f07d8e12bbe394cafa4587dad47f8ac6aa3d48b1050b8d5",
-        "version": 2,
-        "date": "2026-11-18",
-        "by": "auto: walk legs only"
-      }
+      "review": {
+        "note": "head ok, outfit changed, weapon same, attack order ok, walk height within 5% of stand",
+        "date": "2026-11-18"
+      },
+      "installed": "2026-11-18",
+      "key": "aw1-base-w-06-buyeo-huntress"
     },
     "base-w-08-mahan-warrior": {
-      "status": "rejected",
+      "status": "installed",
       "act": "D:/에셋창고/Codex-claude40-hit-edit-20261118-candidates/sprite_aw1_base-w-08-mahan-warrior_act_v3.png",
-      "walk": "D:/에셋창고/sprite_aw1_base-w-08-mahan-warrior_walk_v3.png",
+      "walk": "D:/에셋창고/sprite_aw1_base-w-08-mahan-warrior_walk_v4.png",
       "actSha256": "2fa0e9c58d854ccbcf126df8eadfcf02f17413ad65f9ae8ba60a91aec2264028",
-      "walkSha256": "37197a774ce9818630ba1e5a15dccca2dcd2b2831a702b9ed8b13a14ca00094d",
+      "walkSha256": "94303c48164a2992e1f358bd464edd11ae0202ba7e548cb4dacd829466cf4b41",
       "actVersion": 3,
-      "walkVersion": 3,
+      "walkVersion": 4,
+      "attack": [
+        0,
+        13,
+        14,
+        15,
+        16,
+        0
+      ],
+      "attackBy": "auto",
+      "actOk": {
+        "sha256": "2fa0e9c58d854ccbcf126df8eadfcf02f17413ad65f9ae8ba60a91aec2264028",
+        "version": 3,
+        "date": "2026-11-18",
+        "by": "auto: walk legs only"
+      },
       "auto": {
         "act": {
           "clear": 0.83,
@@ -3146,37 +3180,37 @@
           "residue": 0.0003
         },
         "walk": {
-          "clear": 0.827,
-          "halo": 0.099,
-          "residue": 0.0009
+          "clear": 0.77,
+          "halo": 0.093,
+          "residue": 0.0
         },
         "walkFit": {
-          "byHeight": 0.6546,
-          "byArea": 0.6403,
-          "used": 0.6637,
-          "walkHead": 0.951
+          "byHeight": 0.5777,
+          "byArea": 0.5539,
+          "used": 0.577,
+          "walkHead": 0.961
         },
         "walkCheck": {
-          "legDiff15": 0.083,
-          "legIou15": 0.845,
-          "legShadeFlip": -0.003,
-          "stride": 2.9,
+          "legDiff15": 0.108,
+          "legIou15": 0.459,
+          "legShadeFlip": 0.055,
+          "stride": 0.92,
           "still": 0
         },
         "walkLegs": {
-          "ok": false,
+          "ok": true,
           "opposite": 4,
-          "own": 2,
-          "margin": -0.028,
+          "own": 8,
+          "margin": 0.189,
           "margins": [
-            -0.028,
-            0.018,
-            -0.101,
-            -0.088,
-            0.052,
-            -0.084,
-            0.112,
-            -0.027
+            0.25,
+            0.194,
+            0.256,
+            0.153,
+            0.27,
+            0.161,
+            0.184,
+            0.124
           ]
         },
         "poseHead": {
@@ -3302,15 +3336,6 @@
           }
         ]
       },
-      "attack": [
-        0,
-        13,
-        14,
-        15,
-        16,
-        0
-      ],
-      "attackBy": "auto",
       "fit": {
         "by": "head",
         "idlePx": 137.04,
@@ -3348,17 +3373,16 @@
         ]
       },
       "warn": [
+        "걷기 발 벌림 약함 ×0.92",
         "옷 빛깔이 비각성과 비슷 0.11",
         "공격 칸 자동 고름 [0, 13, 14, 15, 16, 0] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
       ],
-      "reason": "walk frames 1 and 5 have the same leg forward (half cycle repeated); redo as a redress edit of the normal-form walk (only 2 of 8 walk frames follow their own frame of the normal-form walk better than the opposite-leg frame, median margin -0.028)",
-      "rejectedBy": "auto",
-      "actOk": {
-        "sha256": "2fa0e9c58d854ccbcf126df8eadfcf02f17413ad65f9ae8ba60a91aec2264028",
-        "version": 3,
-        "date": "2026-11-18",
-        "by": "auto: walk legs only"
-      }
+      "review": {
+        "note": "head ok, outfit changed, weapon same, attack order ok, walk height within 5% of stand",
+        "date": "2026-11-18"
+      },
+      "installed": "2026-11-18",
+      "key": "aw1-base-w-08-mahan-warrior"
     },
     "base-w-12-court-dancer": {
       "status": "rejected",
@@ -6022,11 +6046,25 @@
     "areum": {
       "status": "rejected",
       "act": "D:/에셋창고/Codex-claude40-hit-edit-20261118-candidates/sprite_aw1_areum_act_v2.png",
-      "walk": "D:/에셋창고/sprite_aw1_areum_walk_v2.png",
+      "walk": "D:/에셋창고/sprite_aw1_areum_walk_v3.png",
       "actSha256": "1aabf0f35f3d53508881fb54e03b4c0de54d48ec688a01b29124b439a5250dc2",
-      "walkSha256": "1330f5d98e166940455bc2b03140888f0c2c96bca10c861c6980a268a0e3ae90",
+      "walkSha256": "8c4b96d3b0fcde6bb1d5104e441327733041c79286741ff7d393d8e15e7b3d53",
       "actVersion": 2,
-      "walkVersion": 2,
+      "walkVersion": 3,
+      "attack": [
+        0,
+        13,
+        14,
+        15,
+        16,
+        0
+      ],
+      "attackBy": "auto",
+      "actOk": {
+        "sha256": "1aabf0f35f3d53508881fb54e03b4c0de54d48ec688a01b29124b439a5250dc2",
+        "version": 2,
+        "date": "2026-11-18"
+      },
       "auto": {
         "act": {
           "clear": 0.831,
@@ -6034,37 +6072,37 @@
           "residue": 0.0
         },
         "walk": {
-          "clear": 0.838,
-          "halo": 0.083,
+          "clear": 0.722,
+          "halo": 0.057,
           "residue": 0.0
         },
         "walkFit": {
-          "byHeight": 0.632,
-          "byArea": 0.6555,
-          "used": 0.6535,
-          "walkHead": 0.97
+          "byHeight": 0.4516,
+          "byArea": 0.4951,
+          "used": 0.4728,
+          "walkHead": 0.99
         },
         "walkCheck": {
-          "legDiff15": 0.081,
-          "legIou15": 0.814,
-          "legShadeFlip": 0.019,
-          "stride": 3.09,
+          "legDiff15": 0.019,
+          "legIou15": 0.991,
+          "legShadeFlip": -0.0,
+          "stride": 0.87,
           "still": 0
         },
         "walkLegs": {
-          "ok": false,
+          "ok": true,
           "opposite": 2,
-          "own": 3,
-          "margin": 0.016,
+          "own": 8,
+          "margin": 0.141,
           "margins": [
-            0.013,
-            0.031,
-            -0.013,
-            0.057,
-            -0.089,
-            0.02,
-            0.02,
-            -0.005
+            0.141,
+            0.14,
+            0.127,
+            0.153,
+            0.14,
+            0.142,
+            0.124,
+            0.154
           ]
         },
         "poseHead": {
@@ -6186,15 +6224,6 @@
           }
         ]
       },
-      "attack": [
-        0,
-        13,
-        14,
-        15,
-        16,
-        0
-      ],
-      "attackBy": "auto",
       "fit": {
         "by": "head",
         "idlePx": 137.25,
@@ -6233,16 +6262,16 @@
       },
       "warn": [
         "머리가 큼 ×1.052 (같은 키에서 머리 높이 · 5% 넘음)",
+        "걷기 1·5 다리가 같은 쪽으로 보임",
+        "걷기 발 벌림 약함 ×0.87",
         "옷 빛깔이 비각성과 비슷 0.202",
         "공격 칸 자동 고름 [0, 13, 14, 15, 16, 0] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
       ],
-      "reason": "walk legs do not alternate like the 4-frame normal-form walk (frames 1 and 3 have opposite legs forward, 5-8 repeat 1-4); redo as a redress edit of the normal-form walk (only 3 of 8 walk frames follow their own frame of the normal-form walk better than the opposite-leg frame, median margin 0.016)",
-      "rejectedBy": "auto",
-      "actOk": {
-        "sha256": "1aabf0f35f3d53508881fb54e03b4c0de54d48ec688a01b29124b439a5250dc2",
-        "version": 2,
-        "date": "2026-11-18",
-        "by": "auto: walk legs only"
+      "reason": "walk plate (D): frames 1 and 5 show the same leg forward and stride is weak (x0.87); walk height 5% over stand cell; redo as redress edit of normal-form walk",
+      "rejectedBy": "review",
+      "review": {
+        "note": "",
+        "date": "2026-11-18"
       }
     },
     "base-w-25-bihwa-priestess": {
@@ -6692,13 +6721,28 @@
       }
     },
     "base-w-29-golpo-janmul": {
-      "status": "rejected",
+      "status": "installed",
       "act": "D:/에셋창고/Codex-claude40-hit-new-20261118-candidates/sprite_aw1_base-w-29-golpo-janmul_act_v2.png",
-      "walk": "D:/에셋창고/sprite_aw1_base-w-29-golpo-janmul_walk_v2.png",
+      "walk": "D:/에셋창고/sprite_aw1_base-w-29-golpo-janmul_walk_v3.png",
       "actSha256": "d6f4e45bb5d54d183d48bfafad602a64e6d1a1b3a59bb3435c3b590a654d9d99",
-      "walkSha256": "3ae9d290bf90f4fda02132646abe733e0148e46deeda4bd2b20ba0c3ff85f201",
+      "walkSha256": "d7c6430b338db4ad478e9db0e48f50ab5114b702522bf765ceff4989a581fb68",
       "actVersion": 2,
-      "walkVersion": 2,
+      "walkVersion": 3,
+      "attack": [
+        0,
+        13,
+        14,
+        15,
+        16,
+        0
+      ],
+      "attackBy": "auto",
+      "actOk": {
+        "sha256": "d6f4e45bb5d54d183d48bfafad602a64e6d1a1b3a59bb3435c3b590a654d9d99",
+        "version": 2,
+        "date": "2026-11-18",
+        "by": "auto: walk legs only"
+      },
       "auto": {
         "act": {
           "clear": 0.834,
@@ -6706,37 +6750,37 @@
           "residue": 0.0
         },
         "walk": {
-          "clear": 0.782,
-          "halo": 0.092,
-          "residue": 0.0001
+          "clear": 0.731,
+          "halo": 0.055,
+          "residue": 0.0002
         },
         "walkFit": {
-          "byHeight": 0.5331,
-          "byArea": 0.5669,
-          "used": 0.5698,
-          "walkHead": 0.931
+          "byHeight": 0.489,
+          "byArea": 0.5067,
+          "used": 0.4882,
+          "walkHead": 1.04
         },
         "walkCheck": {
-          "legDiff15": 0.123,
-          "legIou15": 0.869,
-          "legShadeFlip": -0.005,
-          "stride": 2.64,
+          "legDiff15": 0.169,
+          "legIou15": 0.84,
+          "legShadeFlip": -0.056,
+          "stride": 2.77,
           "still": 0
         },
         "walkLegs": {
-          "ok": false,
+          "ok": true,
           "opposite": 4,
-          "own": 4,
-          "margin": 0.011,
+          "own": 8,
+          "margin": 0.11,
           "margins": [
-            0.049,
+            0.068,
+            0.13,
+            0.077,
+            0.175,
             0.09,
-            0.04,
-            -0.017,
-            -0.052,
-            -0.064,
-            -0.032,
-            0.05
+            0.144,
+            0.082,
+            0.161
           ]
         },
         "poseHead": {
@@ -6862,15 +6906,6 @@
           }
         ]
       },
-      "attack": [
-        0,
-        13,
-        14,
-        15,
-        16,
-        0
-      ],
-      "attackBy": "auto",
       "fit": {
         "by": "head",
         "idlePx": 133.69,
@@ -6908,27 +6943,39 @@
         ]
       },
       "warn": [
-        "걷기 판 등신이 동작 판과 다름: 같은 몸 크기에서 걷기 머리 ×0.93 (반씩 나눠 구움 · 10% 넘으면 걷기 판을 다시 받는다)",
         "옷 빛깔이 비각성과 비슷 0.107",
         "공격 칸 자동 고름 [0, 13, 14, 15, 16, 0] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
       ],
-      "reason": "walk frames 1 and 5 have the same leg forward (half cycle repeated); redo as a redress edit of the normal-form walk (only 4 of 8 walk frames follow their own frame of the normal-form walk better than the opposite-leg frame, median margin 0.011)",
-      "rejectedBy": "auto",
+      "review": {
+        "note": "head ok, outfit changed, weapon same, attack order ok, walk height within 5% of stand",
+        "date": "2026-11-18"
+      },
+      "installed": "2026-11-18",
+      "key": "aw1-base-w-29-golpo-janmul"
+    },
+    "base-w-31-dabeol-dalbit": {
+      "status": "installed",
+      "act": "D:/에셋창고/Codex-claude40-pado-20261118-candidates/sprite_aw1_base-w-31-dabeol-dalbit_act_v2.png",
+      "walk": "D:/에셋창고/sprite_aw1_base-w-31-dabeol-dalbit_walk_v3.png",
+      "actSha256": "2bdc0b2185bfffc87a99ceb1c80b2e38210b5161550532c356e7014ee78b7b04",
+      "walkSha256": "dcc371d99d58b44237fa0162c754d6b24905d175f4047450435714a473480fb5",
+      "actVersion": 2,
+      "walkVersion": 3,
+      "attack": [
+        0,
+        13,
+        14,
+        15,
+        16,
+        0
+      ],
+      "attackBy": "auto",
       "actOk": {
-        "sha256": "d6f4e45bb5d54d183d48bfafad602a64e6d1a1b3a59bb3435c3b590a654d9d99",
+        "sha256": "2bdc0b2185bfffc87a99ceb1c80b2e38210b5161550532c356e7014ee78b7b04",
         "version": 2,
         "date": "2026-11-18",
         "by": "auto: walk legs only"
-      }
-    },
-    "base-w-31-dabeol-dalbit": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude40-pado-20261118-candidates/sprite_aw1_base-w-31-dabeol-dalbit_act_v2.png",
-      "walk": "D:/에셋창고/sprite_aw1_base-w-31-dabeol-dalbit_walk_v2.png",
-      "actSha256": "2bdc0b2185bfffc87a99ceb1c80b2e38210b5161550532c356e7014ee78b7b04",
-      "walkSha256": "1daf2f8a477209f8a0b1545a516176c8bb3d705355aa0a6c9e09fd53a6597a19",
-      "actVersion": 2,
-      "walkVersion": 2,
+      },
       "auto": {
         "act": {
           "clear": 0.734,
@@ -6936,37 +6983,37 @@
           "residue": 0.0
         },
         "walk": {
-          "clear": 0.764,
-          "halo": 0.086,
+          "clear": 0.656,
+          "halo": 0.064,
           "residue": 0.0
         },
         "walkFit": {
-          "byHeight": 0.6765,
-          "byArea": 0.6769,
-          "used": 0.6767,
-          "walkHead": 0.99
+          "byHeight": 0.5212,
+          "byArea": 0.556,
+          "used": 0.5435,
+          "walkHead": 0.981
         },
         "walkCheck": {
-          "legDiff15": 0.134,
-          "legIou15": 0.823,
-          "legShadeFlip": -0.036,
-          "stride": 3.68,
+          "legDiff15": 0.143,
+          "legIou15": 0.672,
+          "legShadeFlip": 0.027,
+          "stride": 1.03,
           "still": 0
         },
         "walkLegs": {
-          "ok": false,
+          "ok": true,
           "opposite": 4,
-          "own": 1,
-          "margin": -0.03,
+          "own": 8,
+          "margin": 0.179,
           "margins": [
-            -0.032,
-            -0.041,
-            -0.086,
-            0.017,
-            0.018,
-            -0.028,
-            0.064,
-            -0.035
+            0.189,
+            0.209,
+            0.163,
+            0.076,
+            0.168,
+            0.201,
+            0.215,
+            0.066
           ]
         },
         "poseHead": {
@@ -7092,15 +7139,6 @@
           }
         ]
       },
-      "attack": [
-        0,
-        13,
-        14,
-        15,
-        16,
-        0
-      ],
-      "attackBy": "auto",
       "fit": {
         "by": "head",
         "idlePx": 136.64,
@@ -7138,17 +7176,16 @@
         ]
       },
       "warn": [
+        "걷기 발 벌림 약함 ×1.03",
         "옷 빛깔이 비각성과 비슷 0.178",
         "공격 칸 자동 고름 [0, 13, 14, 15, 16, 0] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
       ],
-      "reason": "walk frames 1 and 5 have the same leg forward (half cycle repeated); redo as a redress edit of the normal-form walk (only 1 of 8 walk frames follow their own frame of the normal-form walk better than the opposite-leg frame, median margin -0.030)",
-      "rejectedBy": "auto",
-      "actOk": {
-        "sha256": "2bdc0b2185bfffc87a99ceb1c80b2e38210b5161550532c356e7014ee78b7b04",
-        "version": 2,
-        "date": "2026-11-18",
-        "by": "auto: walk legs only"
-      }
+      "review": {
+        "note": "head ok, outfit changed, weapon same, attack order ok, walk height within 5% of stand",
+        "date": "2026-11-18"
+      },
+      "installed": "2026-11-18",
+      "key": "aw1-base-w-31-dabeol-dalbit"
     },
     "base-w-24-apdok-queen": {
       "status": "waiting-walk",
@@ -7626,13 +7663,28 @@
       "pending": "act v1 · walk vNone → waiting for walk"
     },
     "base-w-38-sangdang-bulmae": {
-      "status": "rejected",
+      "status": "installed",
       "act": "D:/에셋창고/Codex-claude40-root-20261118-candidates/sprite_aw1_base-w-38-sangdang-bulmae_act_v3.png",
-      "walk": "D:/에셋창고/sprite_aw1_base-w-38-sangdang-bulmae_walk_v3.png",
+      "walk": "D:/에셋창고/sprite_aw1_base-w-38-sangdang-bulmae_walk_v4.png",
       "actSha256": "bda4a5dfefcedb536c6ad5d57a0ced828a43e13240c0ee594333d691cdb254e3",
-      "walkSha256": "1378d2de581ff1a0b719ce5c39bc108ff97e4025406404cb7b1040a7bffeea48",
+      "walkSha256": "429050517a893fddce4810830ef29324e50b48398064ba8b12f11c3ca2d2a26f",
       "actVersion": 3,
-      "walkVersion": 3,
+      "walkVersion": 4,
+      "attack": [
+        0,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "attackBy": "auto",
+      "actOk": {
+        "sha256": "bda4a5dfefcedb536c6ad5d57a0ced828a43e13240c0ee594333d691cdb254e3",
+        "version": 3,
+        "date": "2026-11-18",
+        "by": "auto: walk legs only"
+      },
       "auto": {
         "act": {
           "clear": 0.799,
@@ -7640,37 +7692,37 @@
           "residue": 0.0
         },
         "walk": {
-          "clear": 0.803,
-          "halo": 0.063,
+          "clear": 0.641,
+          "halo": 0.045,
           "residue": 0.0
         },
         "walkFit": {
-          "byHeight": 0.6368,
-          "byArea": 0.6666,
-          "used": 0.6433,
-          "walkHead": 1.026
+          "byHeight": 0.4843,
+          "byArea": 0.4903,
+          "used": 0.4924,
+          "walkHead": 0.98
         },
         "walkCheck": {
-          "legDiff15": 0.085,
-          "legIou15": 0.864,
-          "legShadeFlip": -0.056,
-          "stride": 3.04,
+          "legDiff15": 0.138,
+          "legIou15": 0.768,
+          "legShadeFlip": 0.019,
+          "stride": 2.89,
           "still": 0
         },
         "walkLegs": {
-          "ok": false,
+          "ok": true,
           "opposite": 4,
-          "own": 4,
-          "margin": 0.009,
+          "own": 8,
+          "margin": 0.13,
           "margins": [
-            0.058,
-            0.042,
-            0.084,
-            0.105,
-            -0.102,
-            -0.025,
-            -0.063,
-            -0.061
+            0.179,
+            0.154,
+            0.099,
+            0.115,
+            0.209,
+            0.145,
+            0.095,
+            0.099
           ]
         },
         "poseHead": {
@@ -7797,15 +7849,6 @@
           }
         ]
       },
-      "attack": [
-        0,
-        13,
-        14,
-        15,
-        16,
-        17
-      ],
-      "attackBy": "auto",
       "fit": {
         "by": "head",
         "idlePx": 131.1,
@@ -7848,14 +7891,12 @@
         "옷 빛깔이 비각성과 비슷 0.181",
         "공격 칸 자동 고름 [0, 13, 14, 15, 16, 17] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
       ],
-      "reason": "walk frames 1 and 5 have the same leg forward (half cycle repeated); redo as a redress edit of the normal-form walk (only 4 of 8 walk frames follow their own frame of the normal-form walk better than the opposite-leg frame, median margin 0.009)",
-      "rejectedBy": "auto",
-      "actOk": {
-        "sha256": "bda4a5dfefcedb536c6ad5d57a0ced828a43e13240c0ee594333d691cdb254e3",
-        "version": 3,
-        "date": "2026-11-18",
-        "by": "auto: walk legs only"
-      }
+      "review": {
+        "note": "head ok, outfit changed, weapon same, attack order ok, walk height within 5% of stand",
+        "date": "2026-11-18"
+      },
+      "installed": "2026-11-18",
+      "key": "aw1-base-w-38-sangdang-bulmae"
     },
     "base-w-39-gosaburi-galmae": {
       "status": "waiting-walk",
@@ -7868,13 +7909,28 @@
       "pending": "act v3 · walk vNone → waiting for walk"
     },
     "bira": {
-      "status": "rejected",
+      "status": "installed",
       "act": "D:/에셋창고/Codex-claude40-hit-new-20261118-candidates/sprite_aw1_bira_act.png",
-      "walk": "D:/에셋창고/sprite_aw1_bira_walk.png",
+      "walk": "D:/에셋창고/sprite_aw1_bira_walk_v2.png",
       "actSha256": "67f5ebce66049267afe79a40d3135f4a77ec324837b942f612436de4b4ddaba1",
-      "walkSha256": "a4689dd6adc4a8d5ba188f0555563b0535390801d3ed0e00e364591a942df982",
+      "walkSha256": "726371d5bc31fa5af7d0e12fb86c0b107048dcef42abfe7745657fc15cfcea97",
       "actVersion": 1,
-      "walkVersion": 1,
+      "walkVersion": 2,
+      "attack": [
+        0,
+        13,
+        14,
+        15,
+        16,
+        0
+      ],
+      "attackBy": "auto",
+      "actOk": {
+        "sha256": "67f5ebce66049267afe79a40d3135f4a77ec324837b942f612436de4b4ddaba1",
+        "version": 1,
+        "date": "2026-11-18",
+        "by": "auto: walk legs only"
+      },
       "auto": {
         "act": {
           "clear": 0.832,
@@ -7882,37 +7938,37 @@
           "residue": 0.0008
         },
         "walk": {
-          "clear": 0.794,
-          "halo": 0.084,
-          "residue": 0.0003
+          "clear": 0.714,
+          "halo": 0.066,
+          "residue": 0.0
         },
         "walkFit": {
-          "byHeight": 0.6125,
-          "byArea": 0.5707,
-          "used": 0.5487,
-          "walkHead": 1.161
+          "byHeight": 0.5034,
+          "byArea": 0.4862,
+          "used": 0.5069,
+          "walkHead": 0.952
         },
         "walkCheck": {
-          "legDiff15": 0.187,
-          "legIou15": 0.701,
-          "legShadeFlip": 0.116,
-          "stride": 1.99,
+          "legDiff15": 0.165,
+          "legIou15": 0.757,
+          "legShadeFlip": 0.011,
+          "stride": 1.44,
           "still": 0
         },
         "walkLegs": {
-          "ok": false,
+          "ok": true,
           "opposite": 4,
-          "own": 5,
-          "margin": 0.033,
+          "own": 8,
+          "margin": 0.102,
           "margins": [
-            0.083,
-            -0.007,
-            -0.031,
-            -0.038,
-            0.11,
-            0.043,
-            0.04,
-            0.026
+            0.152,
+            0.052,
+            0.081,
+            0.098,
+            0.132,
+            0.079,
+            0.106,
+            0.146
           ]
         },
         "poseHead": {
@@ -8037,15 +8093,6 @@
           }
         ]
       },
-      "attack": [
-        0,
-        13,
-        14,
-        15,
-        16,
-        0
-      ],
-      "attackBy": "auto",
       "fit": {
         "by": "head",
         "idlePx": 138.0,
@@ -8083,18 +8130,15 @@
         ]
       },
       "warn": [
-        "걷기 판 등신이 동작 판과 다름: 같은 몸 크기에서 걷기 머리 ×1.16 (반씩 나눠 구움 · 10% 넘으면 걷기 판을 다시 받는다)",
         "옷 빛깔이 비각성과 비슷 0.193",
         "공격 칸 자동 고름 [0, 13, 14, 15, 16, 0] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
       ],
-      "reason": "walk frames 1 and 5 have the same leg forward (half cycle repeated); redo as a redress edit of the normal-form walk (only 5 of 8 walk frames follow their own frame of the normal-form walk better than the opposite-leg frame, median margin 0.033)",
-      "rejectedBy": "auto",
-      "actOk": {
-        "sha256": "67f5ebce66049267afe79a40d3135f4a77ec324837b942f612436de4b4ddaba1",
-        "version": 1,
-        "date": "2026-11-18",
-        "by": "auto: walk legs only"
-      }
+      "review": {
+        "note": "head ok, outfit changed, weapon same, attack order ok, walk height within 5% of stand",
+        "date": "2026-11-18"
+      },
+      "installed": "2026-11-18",
+      "key": "aw1-bira"
     },
     "budeul": {
       "status": "installed",
@@ -8569,11 +8613,25 @@
     "odi": {
       "status": "rejected",
       "act": "D:/에셋창고/Codex-claude40-hit-new-20261118-candidates/sprite_aw1_odi_act_v2.png",
-      "walk": "D:/에셋창고/sprite_aw1_odi_walk_v2.png",
+      "walk": "D:/에셋창고/sprite_aw1_odi_walk_v3.png",
       "actSha256": "5c0c25509a187611b00ceac1a9c0ebeb5a7eb5295ef754505bfb35ec587a2933",
-      "walkSha256": "289bac0dfe4f1c29c0f467d11920ecf334409d78a2028f11b2a95c22c2629583",
+      "walkSha256": "83d092998d2f2e328b89f91706d12dc98bcf91e1a3eb08c6119e547cf5048f3d",
       "actVersion": 2,
-      "walkVersion": 2,
+      "walkVersion": 3,
+      "attack": [
+        0,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "attackBy": "auto",
+      "actOk": {
+        "sha256": "5c0c25509a187611b00ceac1a9c0ebeb5a7eb5295ef754505bfb35ec587a2933",
+        "version": 2,
+        "date": "2026-11-18"
+      },
       "auto": {
         "act": {
           "clear": 0.791,
@@ -8581,37 +8639,37 @@
           "residue": 0.0088
         },
         "walk": {
-          "clear": 0.787,
-          "halo": 0.074,
-          "residue": 0.0046
+          "clear": 0.765,
+          "halo": 0.077,
+          "residue": 0.0127
         },
         "walkFit": {
-          "byHeight": 0.6505,
-          "byArea": 0.6344,
-          "used": 0.6114,
-          "walkHead": 1.104
+          "byHeight": 0.5997,
+          "byArea": 0.601,
+          "used": 0.6193,
+          "walkHead": 0.94
         },
         "walkCheck": {
-          "legDiff15": 0.124,
-          "legIou15": 0.891,
-          "legShadeFlip": 0.005,
-          "stride": 2.9,
+          "legDiff15": 0.046,
+          "legIou15": 0.983,
+          "legShadeFlip": -0.002,
+          "stride": 1.01,
           "still": 0
         },
         "walkLegs": {
-          "ok": false,
+          "ok": true,
           "opposite": 2,
-          "own": 2,
-          "margin": 0.001,
+          "own": 8,
+          "margin": 0.076,
           "margins": [
-            0.014,
+            0.097,
+            0.088,
+            0.064,
+            0.052,
+            0.095,
+            0.089,
             0.053,
-            -0.013,
-            -0.034,
-            0.015,
-            0.038,
-            -0.015,
-            -0.017
+            0.044
           ]
         },
         "poseHead": {
@@ -8738,15 +8796,6 @@
           }
         ]
       },
-      "attack": [
-        0,
-        13,
-        14,
-        15,
-        16,
-        17
-      ],
-      "attackBy": "auto",
       "fit": {
         "by": "head",
         "idlePx": 135.62,
@@ -8784,16 +8833,16 @@
         ]
       },
       "warn": [
-        "걷기 판 등신이 동작 판과 다름: 같은 몸 크기에서 걷기 머리 ×1.10 (반씩 나눠 구움 · 10% 넘으면 걷기 판을 다시 받는다)",
+        "걷기 판 등신이 동작 판과 다름: 같은 몸 크기에서 걷기 머리 ×0.94 (반씩 나눠 구움 · 10% 넘으면 걷기 판을 다시 받는다)",
+        "걷기 1·5 다리가 같은 쪽으로 보임",
+        "걷기 발 벌림 약함 ×1.01",
         "공격 칸 자동 고름 [0, 13, 14, 15, 16, 17] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
       ],
-      "reason": "walk legs do not alternate like the 4-frame normal-form walk (frames 1 and 3 have opposite legs forward, 5-8 repeat 1-4); redo as a redress edit of the normal-form walk (only 2 of 8 walk frames follow their own frame of the normal-form walk better than the opposite-leg frame, median margin 0.001)",
-      "rejectedBy": "auto",
-      "actOk": {
-        "sha256": "5c0c25509a187611b00ceac1a9c0ebeb5a7eb5295ef754505bfb35ec587a2933",
-        "version": 2,
-        "date": "2026-11-18",
-        "by": "auto: walk legs only"
+      "reason": "walk plate (D): frames 1 and 5 same leg forward, legs barely move across 8 frames, walk head x0.94 vs action plate; redo as redress edit of normal-form walk",
+      "rejectedBy": "review",
+      "review": {
+        "note": "",
+        "date": "2026-11-18"
       }
     },
     "bakdal": {
