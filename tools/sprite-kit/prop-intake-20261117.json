@@ -2850,7 +2850,7 @@
       }
     },
     "geumbawi": {
-      "status": "staged",
+      "status": "installed",
       "order": "strip",
       "act": "D:/tmp-node/sp-inbox33/sprite_prop_geumbawi_act.png",
       "walk": "D:/tmp-node/sp-inbox33/sprite_prop_geumbawi_walk.png",
@@ -2878,7 +2878,15 @@
         "headsNewWalk": 4.15,
         "residueAct": 0.0285,
         "residueWalk": 0.0013
-      }
+      },
+      "review": {
+        "chinOld": 4.03,
+        "chinNew": 4.35,
+        "note": "11-18 claude33 · 조금 나음 · 원화대로 칼",
+        "weapon": "sword"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/geumbawi",
+      "installed": "2026-11-17"
     },
     "goeun": {
       "status": "staged",
