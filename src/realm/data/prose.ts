@@ -18,6 +18,8 @@ import { WONDERS, wonderEffect } from '../wonders.ts'
 import { PALACE_NAME, SEAT_DEFS, type PalaceTier } from '../palace.ts'
 import { knows } from '../discovery.ts'
 import { HERO_POOL } from './heroes-pool.ts'
+import { ascendNeed } from '../heroes.ts'
+import { hasAwakeningTrial } from '../trial-rules.ts'
 
 export const SEASON_NAME: Record<SeasonOfYear, string> = {
   spring: '봄', summer: '여름', autumn: '가을', winter: '겨울',
@@ -729,7 +731,12 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
     case 'kindle': {
       const h = after.heroes[line.hero]
       if (h === undefined || h.faction !== viewer) return null
-      return `${h.name}의 각성 불꽃이 ${line.n}개 켜졌다. ${P.realm.ascendWins}번 내리 이기면 각성한다.`
+      // 지금 규칙 (heroes.kindle): 이기면 한 칸 켜지고 지면 한 칸 꺼진다(순증). 문턱은 ascendNeed 가 셈한다.
+      // 시련이 있는 장수는 다 켜지면 시련이 열리고, 그 밖(배우는 판 · 각성 그림 없는 장수 · 시련 관문이 닫힌 판)은 다 켜지는 싸움에 곧바로 각성한다
+      const trial = hasAwakeningTrial(h)
+      // 시련이 열린 채 또 이겨도 같은 줄이 나온다 (불꽃은 문턱에서 멈춘다) — 처음에도 그 뒤에도 맞는 말로
+      if (trial && line.n >= ascendNeed(h)) return `${h.name}의 불꽃이 다 켜졌다. 각성 시련에 도전할 수 있다.`
+      return `${h.name}의 불꽃이 한 칸 켜졌다. 다 켜지면 ${trial ? '각성 시련이 열린다' : '각성한다'}. 지면 한 칸 꺼진다.`
     }
     case 'ascend': {
       const h = after.heroes[line.hero]
@@ -739,7 +746,8 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
     case 'fade': {
       const h = after.heroes[line.hero]
       if (h === undefined || h.faction !== viewer) return null
-      return `${h.name}의 불꽃이 다 꺼졌다. 깨어남이 풀렸다. ${P.realm.ascendWins}번 내리 이기면 다시 깨어난다.`
+      // 지금은 내보내는 곳이 없다 (11-04 뒤로 각성은 져도 안 풀린다 · 불꽃은 각성기의 연료). 옛 보고 줄이 남아 있어도 지금 규칙과 어긋나지 않는 말만 한다
+      return `${h.name}의 불꽃이 모두 꺼졌다. 만만치 않은 싸움을 이기면 다시 켜진다.`
     }
     // 사건 카드 · 점괘 (SYSTEMS §9) — 우리 것만
     case 'card': {

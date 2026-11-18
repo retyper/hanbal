@@ -1,7 +1,7 @@
 // 장수 열전 무기 묶음 (11-15 형: 「각성 시련을 모든 장수로 · 활·창·칼 먼저」)
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { HAEBI_RUN as C } from '../src/tune/params.ts'
+import { HAEBI_RUN as C, getParam, setParam } from '../src/tune/params.ts'
 import { createHaebi, choose, stepHaebi, KITS, attackPowers, kitPowers, type Kit } from '../src/raid/haebi.ts'
 import { replay } from '../src/raid/haebi-replay.ts'
 import { kitOfSprite } from '../src/raid/hero-kit.ts'
@@ -58,19 +58,24 @@ test('전투 그림에서 무기 묶음 · 표에 없는 결도 가까운 묶음
   assert.equal(kitOfSprite('없는-그림'), 'sword')
 })
 
-test('해비 말고 다른 우리 장수도 공훈으로 시련이 열리고, 시련을 넘어야 각성한다', () => {
-  const r = byeonhanMini(1)
-  const h = Object.values(r.heroes).find(x => x.faction === r.player && x.status === 'free' && hasAwakeningTrial(x))!
-  assert.ok(h, '시련이 있는 다른 우리 장수')
-  const lines: ReportLine[] = []
-  for (let i = 0; i < ascendNeed(h); i++) battleGrowth(r, [h.id], [], [], lines)
-  assert.notEqual(h.ascended, true)
-  assert.equal(h.trialReady, true)
-  assert.equal(trialBlock(r, h.id), null)
-  const done = completeTrial(r, h.id)!
-  assert.equal(done.next.heroes[h.id]!.ascended, true)
-  assert.equal(done.next.heroes[h.id]!.trialCleared, true)
-  assert.equal(r.heroes[h.id]!.ascended, undefined, '원본은 그대로 (저장이 끝난 뒤에 채택)')
+test('해비 말고 다른 우리 장수도 공훈으로 시련이 열리고, 시련을 넘어야 각성한다 (시련 관문이 열린 규칙 · ascendTrialOpen 1)', () => {
+  // 본편의 시련 관문을 닫은 규칙(0 · 각성 v2)은 tests/realm/ascend-switch.test.ts 가 본다. 이 시험은 열린 규칙을 못박아 본다
+  const was = getParam('realm.ascendTrialOpen')!
+  setParam('realm.ascendTrialOpen', 1)
+  try {
+    const r = byeonhanMini(1)
+    const h = Object.values(r.heroes).find(x => x.faction === r.player && x.status === 'free' && hasAwakeningTrial(x))!
+    assert.ok(h, '시련이 있는 다른 우리 장수')
+    const lines: ReportLine[] = []
+    for (let i = 0; i < ascendNeed(h); i++) battleGrowth(r, [h.id], [], [], lines)
+    assert.notEqual(h.ascended, true)
+    assert.equal(h.trialReady, true)
+    assert.equal(trialBlock(r, h.id), null)
+    const done = completeTrial(r, h.id)!
+    assert.equal(done.next.heroes[h.id]!.ascended, true)
+    assert.equal(done.next.heroes[h.id]!.trialCleared, true)
+    assert.equal(r.heroes[h.id]!.ascended, undefined, '원본은 그대로 (저장이 끝난 뒤에 채택)')
+  } finally { setParam('realm.ascendTrialOpen', was) }
 })
 
 test('배우는 판의 다른 장수는 예전 길 — 이기면 바로 각성 (판이 약속한 말갈기 각성) · 해비만 시련', () => {

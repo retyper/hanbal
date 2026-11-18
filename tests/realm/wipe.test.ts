@@ -16,3 +16,8 @@ test('설정·계정·활터는 남긴다', () => {
   for (const k of ['hanbal.realm.mute', 'hanbal.realm.layers', 'hanbal.realm.gfx', 'hanbal.realm.gfx.auto', 'hanbal.realm.warHelp', 'hanbal.realm.battle0',
     'hanbal.night.rotate', 'hanbal.auth', 'hanbal.device', 'hanbal.audio.v1', 'hanbal.save.v1', 'hanbal.installHide']) assert.ok(!wipeable(k), k)
 })
+
+test('장수 열전 기록도 지운다 — 금 · 상점 · 깬 스테이지 · 명부 (지운 뒤 도깨비 도장이 되살아나지 않게 · 각성 v2 가2)', () => {
+  for (const k of ['hanbal.raid.meta', 'hanbal.raid.roster', 'hanbal.raid.anything-new']) assert.ok(wipeable(k), k)
+  assert.ok(!wipeable('hanbal.raids'), '머리말이 비슷한 남의 칸은 아니다')
+})

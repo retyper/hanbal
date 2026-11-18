@@ -5,7 +5,8 @@
  * 들으면 이름과 얼굴, 만나면 능력치와 특성(그 판에 처음 나올 때의 솜씨), 사로잡으면 포승줄, 거느리면 금테.
  * 기록은 이 기기에만 (판 저장·판 해금처럼). 상태는 app.ts 가 쥐고, 누름은 data-act 로 app.ts 가 받는다.
  */
-import { DEX_AWOKE, DEX_CAUGHT, DEX_HEARD, DEX_MET, DEX_SERVED, dexCatalog, dexCounts, dexLevel, scanDex, type Dex, type DexHero } from '../../realm/dex.ts'
+import { DEX_AWOKE, DEX_CAUGHT, DEX_DEMON, DEX_HEARD, DEX_MASK, DEX_MET, DEX_SERVED, dexCatalog, dexCounts, dexLevel, scanDex, type Dex, type DexHero } from '../../realm/dex.ts'
+import { DEX_KEY, META_KEY, raidDemons, stampDemons } from '../../raid/link.ts'
 import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
 import { noteKids } from '../../realm/data/art.ts'
 import { elemOf } from '../../realm/elem.ts'
@@ -14,17 +15,35 @@ import { heroRadar, nameHtml, traitChips } from './heroview.ts'
 import { bondTotals, loadBonds, recordBonds, rosterHtml } from './bonds.ts'
 import { lazyList, lazyTable, t as tr } from '../../i18n/index.ts'
 
-const KEY = 'hanbal.realm.dex'
+const KEY = DEX_KEY
 
+/**
+ * 열전에서 도깨비를 잡은 장수 (raid/link.ts raidDemons) — 표를 읽을 때마다 열전 기록을 풀지 않게, 그 원문이 바뀌었을 때만 다시 센다
+ */
+let raidSeen: string | null | undefined
+let demons: readonly string[] = []
+function demonIds(): readonly string[] {
+  let raw: string | null
+  try { raw = localStorage.getItem(META_KEY) } catch { return [] }
+  if (raw !== raidSeen) { raidSeen = raw; demons = raw === null ? [] : raidDemons() }
+  return demons
+}
+
+/**
+ * 영웅전 표를 읽는다. 열전에서 잡은 도깨비가 표에 아직 없으면 그 자리에서 도장으로 넘겨받아 적는다 (각성 v2 · 통합안 1절 ⑥ · ⑩):
+ * 열전은 목책을 깬 그 자리에서 제 손으로 찍는다(raid-main.ts). 여기는 그 길이 생기기 전에 깬 목책과, 옛 빌드가 표를 덮어 떨어뜨린 도장을 되살리는 몫이다
+ */
 export function loadDex(): Dex {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) ?? 'null') as unknown
-    if (v === null || typeof v !== 'object') return {}
     const out: Dex = {}
-    for (const [id, e] of Object.entries(v as Record<string, unknown>)) {
+    if (v !== null && typeof v === 'object') for (const [id, e] of Object.entries(v as Record<string, unknown>)) {
+      // 아는 비트만 남긴다 (DEX_MASK · 예전에는 31 로 잘라 도깨비 도장 32 와 두목 만남 64 가 읽을 때마다 사라졌다)
       const f = (e as { f?: unknown })?.f
-      if (typeof f === 'number' && f > 0) out[id] = { f: f & 31, ...(typeof (e as { b?: unknown }).b === 'string' ? { b: (e as { b: RegionId }).b } : {}) }
+      if (typeof f === 'number' && f > 0) out[id] = { f: f & DEX_MASK, ...(typeof (e as { b?: unknown }).b === 'string' ? { b: (e as { b: RegionId }).b } : {}) }
     }
+    const missing = demonIds().filter((id) => ((out[id]?.f ?? 0) & DEX_DEMON) === 0)
+    if (missing.length > 0 && stampDemons()) for (const id of missing) out[id] = { ...out[id], f: (out[id]?.f ?? 0) | DEX_DEMON }
     return out
   } catch {
     return {}

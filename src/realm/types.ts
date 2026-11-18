@@ -1423,11 +1423,11 @@ export type ReportLine =
   | { readonly kind: 'bond'; readonly hero: string; readonly tier: 'trust' | 'sworn' }
   /** 정이 다 차서 특성 하나에 눈떴다 */
   | { readonly kind: 'awaken'; readonly hero: string; readonly trait: string }
-  /** 각성 불꽃이 하나 켜졌다 (n / ascendWins) · 각성했다 — 능력치가 모두 오른다 (형 10-31) */
+  /** 각성 불꽃이 하나 켜졌다 — n 은 지금 켜진 불꽃 수(처음부터 켜진 덤 칸은 안 센다) · 문턱은 heroes.ascendNeed. 시련 장수는 문턱에 닿아도 이 줄만 낸다 (형 10-31 · 11-15) */
   | { readonly kind: 'kindle'; readonly hero: string; readonly n: number }
   /** 깨어났다 · again 이면 이 판에서 다시 깨어난 것 (화면은 짧은 연출 ascendAgainMs) */
   | { readonly kind: 'ascend'; readonly hero: string; readonly again?: true }
-  /** 각성한 장수의 불꽃이 다 꺼져 깨어남이 풀렸다 — 얼굴이 본래로 돌아오고 각성 몫이 빠진다 (heroes.battleGrowth · 위원회 11-04 던파 ①) */
+  /** 옛 줄 — 지금은 내보내는 곳이 없다. 각성은 져도 안 풀리고 불꽃은 각성기의 연료로만 준다 (heroes.dimFlame · 11-04 뒤). 옛 판 기록에 남은 줄을 읽으려고 둔다 */
   | { readonly kind: 'fade'; readonly hero: string }
   /**
    * 풍습·나라 고리·땅 한 수가 걸렸다 (data/customs.ts · customs-rules.ts) — 누가 · 무엇이 · 어디서 · 누구와 · 얼마나.

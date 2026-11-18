@@ -128,3 +128,82 @@ test('새 적 몸짓: 범은 겨눴다 덮치고 · 곰은 내려치고 · 사�
   { const { s } = place('fortress', 'torch', 500); for (let i = 0; i < 100; i++) stepHaebi(s, { x: 0, y: 0 }, .02)
     assert.ok(s.shots.some(b => b.kind === 'flame'), '불바닥을 깐다') }
 })
+
+// ───────── 각성 v2 의 열전 쪽 고침 (docs/realm/study-20261118/30-PROPOSAL.md 7-1 가9 · 「바로 고칠 것」 6 · 7 · 9)
+test('출전 화면이 골라 두는 스테이지: 열렸고 아직 못 깬 첫 스테이지 · 다 깼으면 처음', async () => {
+  const { pickStage, STAGE_ORDER } = await import('../src/raid/meta.ts')
+  const m = loadMeta()
+  assert.equal(pickStage(m, 'axe'), 'forest', '새 손님')
+  record(m, 'forest', 0, false, 300); assert.equal(pickStage(m, 'axe'), 'forest', '숲을 못 깼으면 숲')
+  record(m, 'forest', 0, true, 1150); assert.equal(pickStage(m, 'bow'), 'ford', '숲을 깨면 여울 (여울에는 벽이 없다)')
+  for (const id of STAGE_ORDER) record(m, id, 0, true, 1150)
+  assert.equal(pickStage(m, 'bow'), 'forest', '다 깼으면 첫 스테이지')
+})
+
+test('목책의 1분 벽: 상점이 얇으면 여울을 골라 두고, 벽을 넘으면 목책을 골라 둔다', async () => {
+  const { pickStage, behindWall, shopTotal, shopMax, SHOP } = await import('../src/raid/meta.ts')
+  const { HAEBI_WALL: WALL } = await import('../src/tune/params.ts')
+  const total = shopTotal()
+  assert.equal(total, SHOP.reduce((sum, it) => sum + Array.from({ length: shopMax(it.key) }, (_, lv) => shopCost(it.key, lv)).reduce((a, b) => a + b, 0), 0))
+  assert.equal(total, 37335, '상점 값이 바뀌면 HAEBI_WALL 의 근거(쓴 금의 몫)를 다시 잰다')
+  const open = () => { const m = loadMeta(); record(m, 'forest', 0, true, 1150); record(m, 'ford', 0, true, 1150); return m }
+  for (const kit of ['axe', 'sword', 'spear', 'magic', 'sling', 'bow', 'dagger'] as const) {
+    const m = open()
+    assert.equal(stageOpen(m, 'palisade'), true)
+    assert.equal(behindWall(m, 'palisade', kit), true, `${kit} 상점 없음`)
+    assert.equal(pickStage(m, kit), 'ford', `${kit} 벽 앞에서는 여울`)
+    m.spent = Math.ceil(total * WALL.shop[kit]) - 1; assert.equal(pickStage(m, kit), 'ford', `${kit} 문턱 바로 아래`)
+    m.spent = Math.ceil(total * WALL.shop[kit]); assert.equal(pickStage(m, kit), 'palisade', `${kit} 상점이 문턱에 닿음`)
+    refund(m); assert.equal(pickStage(m, kit), 'ford', `${kit} 전부 되돌리면 다시 벽 앞`)
+  }
+  // 근접 묶음은 여울까지 번 금을 쓰면 벽을 넘지만, 활·단검은 그 금으로는 벽 앞이다 (14-ref-pacing 6-2: 번 금 13~26% 에서 1분 안에 쓰러짐)
+  const thin = open(); thin.spent = Math.round(total * .2)
+  assert.equal(pickStage(thin, 'axe'), 'palisade'); assert.equal(pickStage(thin, 'bow'), 'ford'); assert.equal(pickStage(thin, 'dagger'), 'ford')
+  assert.ok(WALL.shop.axe < WALL.shop.magic && WALL.shop.magic < WALL.shop.bow && WALL.shop.bow <= WALL.shop.dagger)
+})
+
+test('목책의 1분 벽: 직접 골라 들어가 오래 버텼으면 그 뒤로 목책을 골라 둔다 · 금방 쓰러진 기록은 아니다', async () => {
+  const { pickStage, behindWall } = await import('../src/raid/meta.ts')
+  const { HAEBI_WALL: WALL } = await import('../src/tune/params.ts')
+  const m = loadMeta(); record(m, 'forest', 0, true, 1150); record(m, 'ford', 0, true, 1150)
+  record(m, 'palisade', 40, false, 45); assert.equal(pickStage(m, 'bow'), 'ford', '45초에 쓰러졌다')
+  record(m, 'palisade', 40, false, WALL.survive); assert.equal(pickStage(m, 'bow'), 'ford', '문턱에 딱 걸친 기록은 아직')
+  record(m, 'palisade', 900, false, WALL.survive + 1); assert.equal(pickStage(m, 'bow'), 'palisade', '벽을 넘겨 버텼다')
+  assert.equal(behindWall(m, 'palisade', 'bow'), false)
+  // 깬 뒤에는 벽이 아니다 · 다른 스테이지에는 벽이 없다
+  const done = loadMeta(); for (const id of ['forest', 'ford', 'palisade'] as const) record(done, id, 0, true, 1150)
+  assert.equal(behindWall(done, 'palisade', 'bow'), false); assert.equal(behindWall(done, 'snow', 'bow'), false); assert.equal(pickStage(done, 'bow'), 'snow')
+  assert.equal(behindWall(loadMeta(), 'forest', 'bow'), false); assert.equal(behindWall(loadMeta(), 'ford', 'bow'), false)
+})
+
+test('알림 띠: 정예와 이긴 띠가 스테이지마다 제 말이다 (예전에는 어디서나 「정예 산적」 · 「산길을 가른 폭풍」)', async () => {
+  const { HAEBI_STAGES: ST } = await import('../src/tune/params.ts')
+  const stages = ['forest', 'ford', 'palisade', 'snow', 'fortress'] as const
+  const elite = new Set<string>(), won = new Set<string>()
+  for (const stage of stages) {
+    const s = createHaebi(4, 'stage', 'axe', { stage }); s.spawn = 1e9; s.nextBarrage = 1e9
+    s.t = s.nextElite; stepHaebi(s, { x: 0, y: 0 }, .01)
+    assert.equal(s.message, `${ST[stage].eliteName} · 쓰러뜨리면 기세 대량 획득`, stage); assert.ok(s.enemies.some(e => e.kind === 'elite'))
+    elite.add(s.message)
+    const w = createHaebi(4, 'stage', 'axe', { stage }); w.spawn = 1e9; w.nextElite = 1e9; w.nextBarrage = 1e9
+    spawnMob(w, 'boss'); const boss = w.enemies[0]!; boss.x = w.x + 40; boss.y = w.y; boss.hp = 1
+    for (let i = 0; i < 600 && w.state === 'playing'; i++) stepHaebi(w, { x: 0, y: 0 }, 1 / 60)
+    assert.equal(w.state, 'won', stage); assert.equal(w.message, `${ST[stage].bossName} 격파 · 토벌 완료`, stage)
+    won.add(w.message)
+  }
+  assert.equal(elite.size, stages.length, '스테이지마다 다른 정예 이름'); assert.equal(won.size, stages.length, '스테이지마다 다른 이긴 띠')
+  assert.equal(ST.forest.eliteName, '정예 산적', '숲 산길은 예전 그대로'); assert.equal(ST.trial.eliteName, ST.forest.eliteName, '각성 시련은 숲 산길의 산적')
+  for (const id of [...stages, 'trial'] as const) assert.ok(!/[—]/.test(ST[id].eliteName + ST[id].bossName), id)
+})
+
+test('출전 글의 두목 시각은 수치에서 읽는다: 스테이지 19분(판 20분) · 각성 시련 7분(판 8분)', async () => {
+  const { bossTime } = await import('../src/raid/haebi.ts')
+  const stage = createHaebi(1, 'stage'), trial = createHaebi(1, 'trial')
+  assert.equal(Math.floor(bossTime(stage) / 60), 19); assert.equal(Math.round(runDuration(stage) / 60), 20)
+  assert.equal(Math.floor(bossTime(trial) / 60), 7); assert.equal(Math.round(runDuration(trial) / 60), 8)
+  // 화면 글에 판 길이를 글자로 박아 두지 않는다 (raid-main.ts 의 「15분 가까이」 · 「20분을 버티고」 자리)
+  const { readFileSync } = await import('node:fs')
+  const src = readFileSync(new URL('../src/raid-main.ts', import.meta.url), 'utf8')
+  assert.ok(!/15분 가까이|20분을 버티고/.test(src))
+  assert.match(src, /\$\{bossMinute\(\)\}분을 버틴 뒤 오는 두목/)
+})

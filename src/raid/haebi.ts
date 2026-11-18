@@ -332,7 +332,7 @@ function hit(s: HaebiRun, e: Mob, amount: number, knock = true) {
   else s.drops.push({ x: e.x, y: e.y, value, age: 0 })
   if (e.kind === 'boss') {
     if (s.mode === 'vanguard') { s.breaches++; announce(s, `전위대장 격파 · ${s.breaches}/3 돌파 확보`) }
-    if (s.mode !== 'vanguard' || s.breaches === 3) { s.state = 'won'; s.offers = []; announce(s, s.mode === 'vanguard' ? '전위 완전 돌파 · 본대가 진격한다' : '산길을 가른 폭풍 · 토벌 완료') }
+    if (s.mode !== 'vanguard' || s.breaches === 3) { s.state = 'won'; s.offers = []; announce(s, s.mode === 'vanguard' ? '전위 완전 돌파 · 본대가 진격한다' : `${ST[s.stage].bossName} 격파 · 토벌 완료`) }
   }
   fillGauge(s, e.kind)
 }
@@ -777,7 +777,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
   s.spawn -= dt
   const rate = s.mode === 'vanguard' ? V.spawnEarly + (V.spawnLate - V.spawnEarly) * s.t / V.duration : paced(s) < 120 ? C.spawnEarly + paced(s) / 70 : paced(s) < 300 ? C.spawnMid + (paced(s) - 120) / 45 : paced(s) < 480 ? C.spawnLate + (paced(s) - 300) / 35 : C.spawnFeast
   if (s.spawn <= 0) { if (s.enemies.length < C.maxEnemies) spawnMob(s); s.spawn = 1 / (rate * ST[s.stage].spawn) }
-  if (s.mode !== 'vanguard' && s.t >= s.nextElite && s.nextElite < bossTime(s)) { spawnMob(s, 'elite'); s.nextElite += C.eliteEvery * ST[s.stage].length; announce(s, '정예 산적 · 쓰러뜨리면 기세 대량 획득') }
+  if (s.mode !== 'vanguard' && s.t >= s.nextElite && s.nextElite < bossTime(s)) { spawnMob(s, 'elite'); s.nextElite += C.eliteEvery * ST[s.stage].length; announce(s, `${ST[s.stage].eliteName} · 쓰러뜨리면 기세 대량 획득`) }
   if (s.mode !== 'vanguard' && !s.boss && s.t >= bossTime(s)) { spawnMob(s, 'boss'); s.boss = true; announce(s, '마지막 두목 · 완성한 힘을 쏟아부어라') }
   if (s.mode === 'vanguard' && s.captains < 3 && s.breaches === s.captains && s.t >= V.captainAt[s.captains]!) {
     spawnMob(s, 'boss'); s.captains++

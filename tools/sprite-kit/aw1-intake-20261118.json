@@ -630,8 +630,8 @@
       "pending": "act v2 · walk v1 → waiting for walk"
     },
     "goeun": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude35-hit-new-20261118-candidates/sprite_aw1_goeun_act.png",
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-hit-edit-20261118-candidates/sprite_aw1_goeun_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-new-20261118-candidates/sprite_aw1_goeun_walk.png",
       "actSha256": "26c53eb2d64dc6a7e10b834a63bf6fa8ae19540725f86452ea46eb36e809842b",
       "walkSha256": "8a5dae2c528f1d86e5c4b9c5ba6874ccfc3857bfaf7c67f13a00b3b2052f381f",
@@ -839,11 +839,12 @@
       "review": {
         "note": "",
         "date": "2026-11-18"
-      }
+      },
+      "pending": "act v2 · walk v1 → waiting for walk"
     },
     "gomok": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_gomok_act.png",
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-hit-edit-20261118-candidates/sprite_aw1_gomok_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_gomok_walk.png",
       "actSha256": "b00f8af3888ab7ae639de08ff7262201c0eaba8371d21dacab1ad92fb1443c1e",
       "walkSha256": "aa832bbf9ef6544fe51965336c03d8edc6240ba031cf34cfe1eb0926a4d53a2f",
@@ -1046,7 +1047,8 @@
       "review": {
         "note": "",
         "date": "2026-11-18"
-      }
+      },
+      "pending": "act v2 · walk v1 → waiting for walk"
     },
     "haedal": {
       "status": "rejected",
@@ -1675,8 +1677,8 @@
       ]
     },
     "irang": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_irang_act.png",
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-pado-20261118-candidates/sprite_aw1_irang_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_irang_walk.png",
       "actSha256": "d86c065d554282df5f0ecc839d5fde565388154acf888f34d31ec70ce91d7b47",
       "walkSha256": "e3e418b7e9b8659bbd884a5adf421a26e1a4eff717060b854ff7bdf6cabbb4fc",
@@ -1881,7 +1883,8 @@
       "review": {
         "note": "",
         "date": "2026-11-18"
-      }
+      },
+      "pending": "act v2 · walk v1 → waiting for walk"
     },
     "maehwa": {
       "status": "waiting-walk",
@@ -3392,8 +3395,8 @@
       ]
     },
     "sori": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_sori_act.png",
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-hit-new-20261118-candidates/sprite_aw1_sori_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_sori_walk.png",
       "actSha256": "533bdbac1620f3f01638298301088352a5a1b687781139f6b8a4a43b4a0ca24e",
       "walkSha256": "6db3c7017a1101eff7d4224c9533156b7bfa06d74db89b79871ca2a0578ebf6e",
@@ -3601,7 +3604,8 @@
       "review": {
         "note": "",
         "date": "2026-11-18"
-      }
+      },
+      "pending": "act v2 · walk v1 → waiting for walk"
     },
     "base-w-10-pirate-captain": {
       "status": "waiting-walk",
@@ -6028,6 +6032,21 @@
       "status": "waiting-walk",
       "act": "D:/에셋창고/Codex-claude38-pado-20261118-candidates/sprite_aw1_soenun_act.png",
       "pending": "act v1 · walk vNone → waiting for walk"
+    },
+    "base-w-45-tamna-oreumbi": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-pado-20261118-candidates/sprite_aw1_base-w-45-tamna-oreumbi_act.png",
+      "pending": "act v1 · walk vNone → waiting for walk"
+    },
+    "gureum": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-pado-20261118-candidates/sprite_aw1_gureum_act.png",
+      "pending": "act v1 · walk vNone → waiting for walk"
+    },
+    "odi": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude39-hit-new-20261118-candidates/sprite_aw1_odi_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
     }
   }
 }

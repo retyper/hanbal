@@ -3,7 +3,7 @@
  *  - 깨어난 우리 장수만 · 불꽃이 wakeMinFlames 이상 · 켠 기운(땅·바람·불)만 · 적에게는 없다
  *  - 한 판에 한 번 · 쓰면 불꽃 하나를 태운다(마지막 하나는 남는다)
  *  - 땅: 그 싸움 무너지지 않는다 · 바람: 그 합 적 화살이 안 닿는다 · 불: 그 합 상성에 져도 밀리지 않는다
- *  - 깨어난 장수는 이기면 불꽃 하나(셋까지), 지면 하나 꺼지고, 다 꺼지면 깨어남이 풀린다
+ *  - 깨어난 장수는 이기면 불꽃 하나(셋까지), 지면 하나 꺼진다. 다 꺼져도 각성과 능력치는 그대로다 (불꽃은 각성기의 연료)
  *  - 같은 판이면 같은 결과 (A1)
  */
 import { describe, it } from 'node:test'
@@ -231,9 +231,13 @@ describe('진각성 (DESIRE §17 · 한 판에 한 번 · 큰 싸움에서만)',
   })
 })
 
-/** 11-15 각성은 시련으로 — 이겨서 시련을 열고(trialReady), 열전 두목을 쓰러뜨린 셈으로 completeTrial 과 같은 보상을 준다 */
+/**
+ * 깨운다 — 시련 관문이 열린 규칙(11-15 · ascendTrialOpen 1)은 이겨서 시련을 열고(trialReady), 열전 두목을 쓰러뜨린 셈으로 completeTrial 과 같은 보상을 준다.
+ * 닫힌 규칙(0 · 각성 v2)은 불꽃이 다 켜지는 싸움 끝에 이미 붙어 있다. 어느 쪽이든 끝나면 깨어난 장수에 불꽃 셋
+ */
 function wakeUp(r: { player: string; heroes: Record<string, Hero> }, h: Hero, lines: ReportLine[]): void {
   for (let i = 0; i < P.realm.ascendWins; i++) battleGrowth(r as never, [h.id], [], [], lines)
+  if (h.ascended === true) return
   assert.equal(h.trialReady, true)
   h.trialCleared = true
   awardAwakening(h, lines)

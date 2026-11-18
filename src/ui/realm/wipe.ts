@@ -1,14 +1,15 @@
 /**
  * 플레이 기록 지우기의 이 기기 몫 (형 11-01: "데이터 초기화 할 때 남겨지는 게 너무 많던데 · 확실하게").
  *
- * 지울 것: 열국군웅전(`hanbal.realm.`)과 궁술 연습장(`hanbal.night.`)의 모든 칸 — 판 · 저장 칸 · 영웅전 · 해금 · 연대기 · 단련 · 유물 ·
- * 배우는 판 · 처음 한 번 알림까지. 남길 것: 설정(소리 · 지도 층 · 그래픽 · 화면 돌림 · 싸움 도움말)과 계정 · 기기 표시.
+ * 지울 것: 열국군웅전(`hanbal.realm.`) · 궁술 연습장(`hanbal.night.`) · 장수 열전(`hanbal.raid.`)의 모든 칸 — 판 · 저장 칸 · 영웅전 · 해금 · 연대기 · 단련 · 유물 ·
+ * 배우는 판 · 처음 한 번 알림 · 열전의 금 · 상점 · 휘장 · 장수마다 깬 스테이지 · 데려갈 장수 명부까지. 남길 것: 설정(소리 · 지도 층 · 그래픽 · 화면 돌림 · 싸움 도움말)과 계정 · 기기 표시.
+ * 열전 기록을 남기면 지운 뒤에도 목책 깸이 남아 영웅전의 도깨비 도장이 되살아난다 (raid/link.ts stampDemons · 각성 v2 가2).
  * 활터(`hanbal.save.v1`)는 제 「처음부터」가 따로 있다 (realm-main 머리말).
  *
  * 지운 뒤 새로고침 사이에 아직 떠 있는 화면이 무엇이든 다시 써 넣을 수 있다 — 그래서 표시를 남기고,
  * 다음 열 때 다른 모듈이 저장을 읽기 전에(realm-main 의 맨 첫 import) 한 번 더 지운다. localStorage.clear() 는 쓰지 않는다.
  */
-const PREFIX = ['hanbal.realm.', 'hanbal.night.'] as const
+const PREFIX = ['hanbal.realm.', 'hanbal.night.', 'hanbal.raid.'] as const
 /** 설정 — 기록이 아니다 */
 const KEEP: ReadonlySet<string> = new Set([
   'hanbal.realm.mute', 'hanbal.realm.layers', 'hanbal.realm.gfx', 'hanbal.realm.gfx.auto',

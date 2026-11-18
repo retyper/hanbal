@@ -882,15 +882,19 @@ export function battleGrowth(r: Realm, won: readonly (string | null)[], lost: re
 }
 
 /**
- * 각성까지 내리 이겨야 하는 싸움 수 — 처음 깨어날 때만 firstAscendEase 만큼 덜 (첫 30분 깔때기 · docs/realm/FIRST-HOUR.md · 11-11).
- * 깨어난 뒤 연료 칸 수(ascendWins)는 그대로다
+ * 불꽃 문턱 — 불꽃이 이만큼 켜지면 다 찬 것이다. 내리 이길 필요는 없다: 이기면 한 칸 켜지고 지거나 비기면 한 칸 꺼진다 (순증 · 11-04).
+ * 처음 깨어날 때만 firstAscendEase 만큼 덜 (첫 칸은 켜진 채 시작 · docs/realm/FIRST-HOUR.md · 11-11). 깨어난 뒤 연료 칸 수(ascendWins)는 그대로다
  */
 export function ascendNeed(h: Pick<Hero, 'ascents'>): number {
   const R = P.realm
   return Math.max(1, Math.round(R.ascendWins) - ((h.ascents ?? 0) === 0 ? Math.round(R.firstAscendEase) : 0))
 }
 
-/** 불꽃 하나 — 다 켜지면 각성: 능력치가 모두 ascendBonus 오른다 (10 을 넘을 수 있다 · 그 판에서만) */
+/**
+ * 불꽃 하나 — 시련이 있는 장수(trial-rules.hasAwakeningTrial)는 다 켜지면 시련이 열리기만 한다(trialReady · 힘은 시련을 넘어야 · awakening-trial.completeTrial).
+ * 그 밖은 예전 길: 다 켜지는 싸움 끝에 곧바로 붙는다. 능력치가 모두 ascendBonus 오른다 (10 을 넘을 수 있다 · 그 판에서만).
+ * 본편의 시련 관문을 닫으면(P.realm.ascendTrialOpen 0 · 각성 v2) 본편 장수가 모두 예전 길로 온다. 시련이 열린 채 멈춘 옛 저장의 장수도 다음에 이기는 제 몫의 싸움에서 이 길을 탄다
+ */
 function kindle(h: Hero, lines: ReportLine[]): void {
   if (hasAwakeningTrial(h)) {
     h.flames = Math.min(ascendNeed(h), (h.flames ?? 0) + 1)

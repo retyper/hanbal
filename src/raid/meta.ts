@@ -3,8 +3,8 @@
  * · 중간 패배는 조금, 다 깨면 많이 · 스테이지를 깨면 휘장」). 본편 저장(hanbal.realm.*)과 따로인 한 칸.
  * 상점 값은 언제든 전부 되돌려 받는다 (다이센카와 같이).
  */
-import { HAEBI_SHOP as SH, HAEBI_STAGES as ST } from '../tune/params.ts'
-import { NO_BONUS, type Bonus, type StageId } from './haebi.ts'
+import { HAEBI_SHOP as SH, HAEBI_STAGES as ST, HAEBI_WALL as WALL } from '../tune/params.ts'
+import { NO_BONUS, type Bonus, type Kit, type StageId } from './haebi.ts'
 import { META_KEY } from './link.ts'
 import { DLC } from '../realm/dlc.ts'
 
@@ -37,6 +37,22 @@ export const shopMax = (key: ShopKey) => SH[key].max
 /** 깨야 열리는 스테이지 — 앞 스테이지를 깨면 다음이 열린다 */
 export const stageOpen = (m: RaidMeta, id: Exclude<StageId, 'trial'>) => { const i = STAGE_ORDER.indexOf(id); return i <= 0 || !!m.cleared[STAGE_ORDER[i - 1]!] }
 export const stageName = (id: StageId) => ST[id].name
+/** 상점을 끝까지 올리는 데 드는 금 */
+export const shopTotal = () => SHOP.reduce((sum, it) => { for (let lv = 0; lv < shopMax(it.key); lv++) sum += shopCost(it.key, lv); return sum }, 0)
+/**
+ * 벽 앞인가 — 그 스테이지가 「1분 벽」이 있는 판이고(HAEBI_WALL · 목책) 아직 못 깼는데, 거기서 오래 버틴 적도 없고 상점도 얇다.
+ * 벽을 넘었다고 보는 때: 그 스테이지에서 WALL.survive 초를 넘겨 버텼거나, 상점에 쓴 금이 전체 값의 WALL.shop[묶음] 몫에 닿았다.
+ */
+export const behindWall = (m: RaidMeta, id: Exclude<StageId, 'trial'>, kit: Kit) =>
+  id === WALL.stage && !m.cleared[id] && (m.best[id] ?? 0) <= WALL.survive && m.spent < shopTotal() * WALL.shop[kit]
+/**
+ * 출전 화면이 골라 두는 스테이지 — 열렸고 아직 못 깬 첫 스테이지(다 깼으면 첫 스테이지). 다만 벽 앞이면 바로 앞 스테이지를 골라 둔다 (각성 v2 가9):
+ * 상점이 얇은 손님이 목책에서 곧바로 쓰러져 금 한두 자리를 받는 판을 되풀이하지 않게. 골라 두기만 한다: 손님이 직접 목책을 누르는 것은 막지 않는다.
+ */
+export function pickStage(m: RaidMeta, kit: Kit): Exclude<StageId, 'trial'> {
+  const i = STAGE_ORDER.findIndex(id => stageOpen(m, id) && !m.cleared[id])
+  return STAGE_ORDER[i > 0 && behindWall(m, STAGE_ORDER[i]!, kit) ? i - 1 : Math.max(0, i)]!
+}
 
 export function loadMeta(): RaidMeta {
   try {

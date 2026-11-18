@@ -2,6 +2,11 @@ import { ascendNeed, awardAwakening } from './heroes.ts'
 import { hasAwakeningTrial } from './trial-rules.ts'
 import type { Realm, ReportLine } from './types.ts'
 import { josa } from '../core/josa.ts'
+/**
+ * 시련에 못 들어가는 까닭 (들어갈 수 있으면 null). 시련이 있는 장수만 본다 (trial-rules.hasAwakeningTrial).
+ * 본편의 시련 관문을 닫으면(P.realm.ascendTrialOpen 0 · 각성 v2) 본편 장수는 첫 줄에서 막힌다: 시련 문이 안 열리고 보상(completeTrial)도 없다.
+ * 그때 힘은 불꽃이 다 켜지는 싸움 끝에 셈 안에서 붙는다 (heroes.kindle). 배우는 판의 해비는 어느 쪽이든 이 길을 탄다
+ */
 export function trialBlock(r: Realm, id: string): string | null {
   const h = r.heroes[id]
   if (!h || !hasAwakeningTrial(h) || h.faction !== r.player || h.status !== 'free') return '우리 장수만 도전할 수 있습니다.'

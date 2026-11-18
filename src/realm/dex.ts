@@ -24,6 +24,8 @@ import { startGujibong } from './data/regions/gujibong.ts'
 import { startDaemusin } from './data/regions/daemusin.ts'
 import { met } from './discovery.ts'
 import { heroSeen, wanderersFor } from './heroes.ts'
+import { DEX_AWOKE, DEX_BOSS, DEX_DEMON, sameIds } from './person.ts'
+import { ascendTrialOpen } from './trial-rules.ts'
 import type { Hero, Realm, RegionId } from './types.ts'
 
 /** 네 칸 — 비트로 쌓는다 */
@@ -31,8 +33,13 @@ export const DEX_HEARD = 1
 export const DEX_MET = 2
 export const DEX_CAUGHT = 4
 export const DEX_SERVED = 8
-/** 우리 장수로 각성해 본 적이 있다 — 영웅전에서 각성 초상을 켜 볼 수 있다 (형 11-03 · 단계 셈 dexLevel 에는 안 든다) */
-export const DEX_AWOKE = 16
+/**
+ * 사람 단위 비트 셋 (person.ts 에 산다 · 열전도 쓴다): 16 우리 장수로 각성해 봄 = 본편 도장 · 32 도깨비 도장 · 64 열전의 두목을 만남.
+ * 영웅전의 각성 초상 보기는 지금 16 만 본다 (형 11-03). 32 · 64 는 적기만 하고 아직 읽는 화면이 없다 (각성 v2 가5 · 가7 · 사연의 몫)
+ */
+export { DEX_AWOKE, DEX_BOSS, DEX_DEMON }
+/** 영웅전 표가 아는 비트 모두 — 저장을 읽을 때 이것으로 거른다 (모르는 비트만 버린다 · ui/realm/dex.ts loadDex) */
+export const DEX_MASK = DEX_HEARD | DEX_MET | DEX_CAUGHT | DEX_SERVED | DEX_AWOKE | DEX_DEMON | DEX_BOSS
 
 /** 도감 한 줄 — `f` 켜진 칸 · `b` 처음 오른 판 */
 export interface DexEntry { f: number; b?: RegionId }
@@ -126,24 +133,33 @@ function flagsIn(r: Realm, h: Hero): number {
 }
 
 /**
+ * 배우는 판의 맛보기 각성 — 빌린 힘이라 영웅전에 안 남는다 (형 11-18 ASK 5 ① · 통합안 1절 ⑨).
+ * 16 은 본편 도장이기도 하니, 여기서 적으면 6분짜리 배우는 판이 도장의 뒷문이 된다. 옛 기록에 이미 켜진 것은 그대로 둔다 (통합안 1절 ⑩)
+ */
+const BORROWED_WAKE: ReadonlySet<string> = new Set(['tut-malgalgi'])
+
+/**
  * 한 판을 훑어 도감을 채운다 — 새로 켜진 칸이 있는 장수를 돌려준다 (화면이 "도감에 올랐다"를 띄운다).
  * `dex` 는 바꾸지 않고 새 것을 돌려준다.
  */
-/** 배우는 판의 장수 → 1장(마한)의 같은 사람 */
-const TUT_SAME: Readonly<Record<string, string>> = { 'tut-ogan': 'mh-ogan', 'tut-malgalgi': 'sabeol-1', 'tut-onjo': 'mh-onjo' }
-
 export function scanDex(dex: Readonly<Dex>, r: Realm): { dex: Dex; fresh: Array<{ id: string; was: number; now: number }> } {
   const out: Dex = { ...dex }
   const fresh: Array<{ id: string; was: number; now: number }> = []
-  // 배우는 판은 셈하지 않는다 — 다만 깨어남은 1장의 같은 사람에게 적는다 (튜토리얼 오간 각성을 영웅전에서 켤 수 있게 · 형 11-04)
+  // 배우는 판은 셈하지 않는다 — 다만 지금 규칙(시련 관문이 열림)에서는 깨어남을 다른 판의 같은 사람에게 적는다
+  // (튜토리얼 오간 각성을 영웅전에서 켤 수 있게 · 형 11-04 · 같은 사람은 person.ts 가 초상으로 묶는다: 오간 → mh-ogan · 온조 → mh-onjo).
+  // 각성 v2 를 켜면(ascendTrialOpen 0) 배우는 판은 아무것도 안 적는다 (배우는 판은 도장을 안 찍는다 · 통합안 1절 ② 상태 표)
   if (r.region === 'tutorial') {
-    for (const [t, id] of Object.entries(TUT_SAME)) {
-      const h = r.heroes[t]
-      if (h === undefined || h.faction !== r.player || h.ascended !== true) continue
-      const was = out[id]?.f ?? 0
-      if ((was & DEX_AWOKE) !== 0) continue
-      out[id] = { f: was | DEX_AWOKE, b: out[id]?.b ?? 'mahan' }
-      fresh.push({ id, was, now: was | DEX_AWOKE })
+    if (!ascendTrialOpen()) return { dex: out, fresh }
+    for (const t of Object.keys(r.heroes).sort()) {
+      const h = r.heroes[t]!
+      if (h.faction !== r.player || h.ascended !== true || BORROWED_WAKE.has(t)) continue
+      for (const id of sameIds(t)) {
+        if (r.heroes[id] !== undefined) continue // 배우는 판 안의 id 는 영웅전 명단에 없다
+        const was = out[id]?.f ?? 0
+        if ((was & DEX_AWOKE) !== 0) continue
+        out[id] = { f: was | DEX_AWOKE, b: out[id]?.b ?? 'mahan' } // 배우는 판의 무리는 1장(마한)으로 이어진다
+        fresh.push({ id, was, now: was | DEX_AWOKE })
+      }
     }
     return { dex: out, fresh }
   }

@@ -63,8 +63,6 @@ export const HAEBI_RUN = {
    */
   numLife: .85, numPop: 1.9, numPopTime: .09, numRise: 150, numSpread: 70, numGravity: 330, numWobble: .14, numSize: 17, numKill: 21,
   numCritSize: 29, numCritSpeed: 1.45, numCritLife: .7, numCritBurst: 46,
-  /** 각성 오라 (11-17 형: 「캐릭터 둘레에 여러 오라」) — 도는 고리 반지름·도는 빠르기 · 솟는 기운 수·높이 · 불티 수 (그리기만 · 'lighter') */
-  auraRing: 48, auraSpin: 2.4, auraFlames: 9, auraFlameRise: 110, auraSparks: 14,
   /** 체력 깎임 토막 (본편 싸움 막대와 같은 롤 체력바 · 형 11-16) — 막대는 단번에 떨어지고, 잃은 토막이 희게→노랗게→붉게 번쩍(hpChunkFlash 초)한 뒤
    *  마지막으로 맞고 hpChunkHold 초 지나면 처음엔 빠르게 끝 무렵엔 천천히(초마다 hpChunkRate 배로 좁아짐) 줄어든다 */
   hpChunkFlash: .24, hpChunkHold: .32, hpChunkRate: 4.5,
@@ -134,6 +132,83 @@ export const HAEBI_RUN = {
   skipDamage: 28, skipRankDamage: 14, skipSpeed: 620, skipCooldown: 1.6, skipLife: .9, skipBounces: 2, skipRange: 210,
   //   굴러가는 바위(조합): boulderInterval 초마다 가장 많이 걸리는 줄로 · 어지럼 돌(조합): 물수제비에 맞으면 dazeTime 초 멈춤
   boulderInterval: 2.4, boulderDamage: 95, boulderSpeed: 260, boulderLife: 2.4, boulderRadius: 44, boulderKnock: 22, dazeTime: .9,
+} as const
+/**
+ * 열전 그리기의 말 — 누구 것인가 (11-18 형 플립: 「적 공격 이펙트랑 내 공격 이펙트가 헷갈림 · 내 발밑에 노란 원 생기다 불 나오던데 내가 맞는 공격 맞지?」).
+ * 그리기만 (판의 셈은 그대로 · src/raid/haebi-view.ts). 약속은 하나: **붉은 것 = 적이 나를 때릴 자리 · 금빛·하늘빛 = 내 것**(피할 필요가 없어 덜 눈에 띄게).
+ * 예전엔 거꾸로였다: 적이 던진 돌 자리는 누런 타원(내 발밑 금빛 표식에 덮였다), 내 화살비 자리는 붉은 불 고리.
+ * foe 적이 나를 때릴 자리 — 돌·불 던지기 · 일제 사격 · 두목·곰 내려찍기가 한 꼴 (맞는 범위 그대로의 원):
+ *   rim·rimDark 붉은 테와 그 밑 검붉은 받침(굵기 rimWidth·rimDarkWidth px · 밝은 땅·눈밭에서도 읽히게) · fill 바닥 붉은빛(짙기 fillAlpha · 맥박 pulse rad/초 · 깊이 pulseDepth)
+ *   hatch* 바닥 빗금: 줄 사이 hatchGap px · 굵기 hatchWidth · 짙기 hatchAlpha · 흐르는 빠르기 hatchSlide px/초 (꽉 찬 붉은 동그라미가 아니라 테와 빗금으로)
+ *   close* 가운데로 줄어드는 고리 = 남은 시간 (흰 속 hot 굵기 closeWidth · 붉은 겉 closeRim)
+ *   flash 떨어지기 직전 한 번 번쩍이는 시간(초) · flashAlpha 그 짙기 · artFrom→artTo 용암 테 그림(ui/mark-slam) 짙기 처음→끝 · artScale 그림의 테가 맞는 범위에 닿게 키우는 몫
+ *   onPulse·onWidth·onAlpha 내가 그 안에 서 있으면 테가 한 겹 더 빠르게 뛴다 (rad/초 · px)
+ *   flameFill 타는 불바닥 둘레의 붉은 바닥 짙기 (불 그림 둘레에 붉은 테 = 여기 서면 아프다)
+ *   shock 떨어진 뒤 붉은 테가 퍼져 나가는 몫 · line 돌진·투창 겨눔 줄 · buff 무당이 북돋는 고리(나를 때리지 않는다 · 검붉고 가늘게 buffWidth)
+ *   lob* 던진 돌·기름 단지: 포물선 높이 lobArc · 손 높이 lobLift · 크기 lobSize · 붉은 꼬리 점 lobTail 개(포물선 몫 lobTailGap 간격) · jar·jarHot 기름 단지 빛
+ * own 내 것:
+ *   rim·rimWidth·rimAlpha 내 기술(화살비)이 떨어질 자리의 가는 금빛 테 · motes 안으로 모이는 빛 알 수(mote 빛 · moteSize px · moteAlpha)
+ *   heroMark 내 발밑 표식 짙기 · heroMarkDim 맞을 자리 안에 섰을 때 (적의 붉은 표식이 위에서 더 진하게 보이게 물러난다)
+ *   grit 영웅의 투지를 켠 순간 번지는 고리 빛 (예전엔 붉게 그려졌다) · ring 내 터짐 위로 번지는 가는 고리 굵기·짙기
+ * trail 날아가는 것의 꼬리: 적의 화살·창 = 검붉은 받침 + 붉은 줄(foeLen · foeWidth px) · 내 것 = 무기 묶음 빛 한 줄(ownLen · ownWidth · ownAlpha)
+ * aura 장수 오라 손잡이(입자 꼴은 FX_AURA): 적이 crowd 명을 넘으면 입자를 crowdDensity 몫만(늑대 떼 장면 프레임) · 각성 시전 동안 castFrom 몫에서 차오른다
+ */
+export const HAEBI_FX = {
+  foe: {
+    rim: '#ff3226', rimDark: '#3a0606', hot: '#ffe6dc', fill: '#ff2414', rimWidth: 3, rimDarkWidth: 6.5,
+    fillAlpha: .2, pulse: 8, pulseDepth: .45,
+    hatchGap: 13, hatchWidth: 2.4, hatchAlpha: .5, hatchSlide: 22,
+    closeWidth: 2, closeRim: 5,
+    flash: .16, flashAlpha: .7, artFrom: .5, artTo: 1, artScale: 1.05,
+    onPulse: 16, onWidth: 3, onAlpha: .9,
+    flameFill: .16,
+    shock: .45, line: '#ff3a2c', buff: '#b3262e', buffWidth: 2.5,
+    lobArc: 160, lobLift: 20, lobSize: 7, lobTail: 3, lobTailGap: .055, jar: '#ff7a2a', jarHot: '#ffe2a0',
+  },
+  own: {
+    rim: '#ffe7a6', rimWidth: 1.6, rimAlpha: .55, motes: 6, mote: '#f3fbff', moteSize: 3, moteAlpha: .8,
+    heroMark: .8, heroMarkDim: .3, grit: '#9fdcff', ringWidth: 2, ringAlpha: .7,
+  },
+  trail: { foeLen: 34, foeWidth: 3, ownLen: 24, ownWidth: 2, ownAlpha: .55 },
+  aura: { crowd: 120, crowdDensity: .6, castFrom: .35 },
+} as const
+/**
+ * 오라 입자 (11-18 형: 「투지 오라랑 각성 오라 이펙트도 필요」) — src/raid/fx-aura.ts · 열전 장수에 쓰고 본편에서도 쓴다 · 그리기만.
+ * 덩어리 그림 한 장을 통째로 움직이지 않는다 — 낱낱 입자: 불꽃 가닥(불꽃 그림 한 장에 빛깔만 입혀 N번) · 불티(낱알) · 발밑 고리.
+ * 입자 자리는 시계와 번호로만 셈한다(판의 셈과 무관 · 같은 시각이면 늘 같은 그림). filter·shadowBlur 없음 · 그라디언트는 한 번 만들어 다시 쓴다.
+ * 길이·퍼짐은 몸 키의 몫(다른 키의 그림에도 그대로) · 굵기·고리는 px.
+ *  grit 「투지」(불꽃이 찬 힘 · 모습 그대로): 하늘빛·흰빛 가는 가닥이 몸에서 오르고 발밑에 얇은 고리 — 차분하게 「버틴다」
+ *  awake 「각성」: 금빛 불기둥 가닥이 몸 뒤에서 솟고(몸 앞에도 몇 가닥 = 깊이) 금 불티가 흩어 오르고 발밑 금 고리가 맥박친다 — 한눈에 크고 뜨겁다
+ * 칸: colors 가닥 빛 셋(으뜸 · 속 · 짙은) · back·front 몸 뒤·앞 가닥 수 · rise 오르는 높이 · frontRise 앞 가닥은 그 몫만 · taper 바깥 가닥일수록 낮게(기둥 꼴) ·
+ *  spread 좌우 퍼짐 · gather 오르며 가운데로 모이는 몫 · w·h 가닥 굵기·길이 · vary 가닥마다 크기·빠르기 들쭉날쭉 · thin 오르며 가늘어지는 몫 ·
+ *  rate 한 번 오르는 빠르기(1/초) · sway 흔들림 px · swayRate rad/초 · alpha 짙기 · fadeIn 피어나는 구간(오름의 몫) · lift 구울 때 희게 띄우는 몫(밝은 땅에서도 보이게) ·
+ *  sparks 불티 수 · spark 크기 px · sparkRate 빠르기 · sparkFrom→sparkRise 뜨는 높이 처음→끝 · drift 옆으로 흩어지는 폭 · twinkle 반짝임 rad/초 ·
+ *  ring 발밑 고리 반지름 · ringWidth · ringAlpha · beat 맥박(1/초) · beatGrow 맥박 고리가 번지는 몫 · arcs 거꾸로 도는 끊긴 고리의 호 수(0 = 없음) · arcR 그 반지름 몫 · spin rad/초 ·
+ *  glow 몸 뒤 둥근 빛 반지름(0 = 없음) · glowAlpha · tintEvery 무기 묶음 빛이 섞이는 가닥(몇 개마다 하나 · 0 = 안 섞음) · add 빛으로 더하는가(1) 덧칠인가(0 · 밝은 땅에서 하얗게 날지 않게)
+ *  burst 켜지는 순간 한 번: life 초 · radius 고리가 번지는 끝 px · rings 고리 수 · width 고리 굵기 · sparks 흩어지는 불티 수 · lift 불티가 뜨는 높이 px · pillars 솟구치는 가닥 수 · pillarRise 그 높이(몸 키 몫)
+ * density 입자 수 몫(전체) · minCount 줄여도 남기는 수 · flat 발밑 고리 납작함 · small 화면 짧은 변이 이 px 아래면 smallDensity 몫만(폰)
+ * 그림: 가닥 = 본편 각성 불꽃(fx/awaken/flame) · 불티 = 불티 낱알(fx/awaken/ember) · 고리 = 열전 방울 고리(raid/bell-ring) — 오라 빛마다 한 번만 빛깔을 입혀 굽는다.
+ *  bake·emberBake 구운 그림의 키 px · emberWide·emberTall 불티 낱알의 너비·키(불티 크기의 몫) · ringArt 고리 그림을 그 반지름에 맞추는 몫 · arcWidth 끊긴 고리 굵기
+ */
+export const FX_AURA = {
+  density: 1, minCount: 2, flat: .36, small: 480, smallDensity: .75,
+  bake: 96, emberBake: 28, emberWide: 2.2, emberTall: 4.6, ringArt: 1.3,
+  grit: {
+    colors: ['#58bdff', '#cfeeff', '#3a98ff'], back: 9, front: 4, rise: 1.05, frontRise: .6, taper: .3, spread: .38, gather: .35,
+    w: 17, h: 50, vary: .5, thin: .45, rate: .6, sway: 3, swayRate: 3.2, alpha: 1, fadeIn: .15, lift: .2,
+    sparks: 8, spark: 2.2, sparkRate: .5, sparkFrom: .1, sparkRise: 1.15, drift: .1, twinkle: 14,
+    ring: 34, ringWidth: 1.8, ringAlpha: .8, beat: .7, beatGrow: .55, arcs: 0, arcR: 1.4, arcWidth: 0, spin: 0,
+    glow: 46, glowAlpha: .55, tintEvery: 0, add: 0,
+    burst: { life: .5, radius: 110, rings: 1, width: 3, sparks: 10, lift: 30, pillars: 0, pillarRise: 0 },
+  },
+  awake: {
+    colors: ['#ffc02e', '#ffe58a', '#ff8a1e'], back: 14, front: 4, rise: 1.6, frontRise: .45, taper: .45, spread: .44, gather: .5,
+    w: 28, h: 78, vary: .5, thin: .45, rate: .95, sway: 5, swayRate: 5, alpha: .95, fadeIn: .1, lift: .1,
+    sparks: 16, spark: 2.8, sparkRate: .8, sparkFrom: .1, sparkRise: 1.5, drift: .55, twinkle: 20,
+    ring: 46, ringWidth: 4, ringAlpha: .95, beat: 1.25, beatGrow: .7, arcs: 3, arcR: 1.5, arcWidth: 2, spin: 2.4,
+    glow: 62, glowAlpha: 1, tintEvery: 4, add: 0,
+    burst: { life: .7, radius: 230, rings: 2, width: 7, sparks: 26, lift: 70, pillars: 8, pillarRise: 2.3 },
+  },
 } as const
 /**
  * 열전 비기 — 무기 묶음마다 꼴이 다르다 (형 11-16: 「무기마다 확실히 다르게 · DPS 예측해서 밸런스 조절」 · 재는 길 tools/raid-ult-dps.ts · docs/BALANCE.md).
@@ -235,19 +310,19 @@ export const HAEBI_AWAKEN = {
  * trial 은 본편 각성 시련: 숲 산길의 짧고 쉬운 판 (상점 강화 없이도 깰 수 있게 · 형 11-16 「따로 떼기」).
  */
 export const HAEBI_STAGES = {
-  forest: { name: '숲 산길', length: 1, hp: 1, damage: .9, spawn: 1, bossHp: 1, gold: 1, bg: 'forest.webp', boss: 'bandit-warlord', bossName: '산적 대두목',
+  forest: { name: '숲 산길', length: 1, hp: 1, damage: .9, spawn: 1, bossHp: 1, gold: 1, bg: 'forest.webp', boss: 'bandit-warlord', bossName: '산적 대두목', eliteName: '정예 산적',
     tiers: [['club', 'archer'], ['runner', 'slinger'], ['shield', 'dog'], ['berserker', 'firearcher'], ['iron', 'shaman']] },
-  ford: { name: '물안개 여울', length: 1, hp: 1.7, damage: 1.8, spawn: 1.3, bossHp: 1.8, gold: 2, bg: 'ford.webp', boss: 'boss-ford', bossName: '여울 물두령',
+  ford: { name: '물안개 여울', length: 1, hp: 1.7, damage: 1.8, spawn: 1.3, bossHp: 1.8, gold: 2, bg: 'ford.webp', boss: 'boss-ford', bossName: '여울 물두령', eliteName: '정예 여울 도적',
     tiers: [['dog', 'slinger'], ['runner', 'firearcher'], ['shield', 'archer'], ['berserker', 'shaman'], ['iron', 'dog']] },
-  palisade: { name: '목책 돌파', length: 1, hp: 2.2, damage: 2.2, spawn: 1.4, bossHp: 2.8, gold: 3.2, bg: 'palisade.webp', boss: 'boss-palisade', bossName: '배신한 성주',
+  palisade: { name: '목책 돌파', length: 1, hp: 2.2, damage: 2.2, spawn: 1.4, bossHp: 2.8, gold: 3.2, bg: 'palisade.webp', boss: 'boss-palisade', bossName: '배신한 성주', eliteName: '정예 수비병',
     tiers: [['shield', 'archer'], ['iron', 'slinger'], ['berserker', 'firearcher'], ['runner', 'shaman'], ['iron', 'berserker']] },
   /** 11-16 H47·H50~H52: 설원 고개 — 범(멈칫 뒤 길게 덮침) · 반달곰(일어서서 내려침 · 아주 단단함) · 맥족 투창 사냥꾼(붉은 줄 뒤 창) · 두목 H54 설산 우두머리(쇠도리깨) */
-  snow: { name: '설원 고개', length: 1, hp: 2.4, damage: 2.3, spawn: 1.45, bossHp: 3.6, gold: 4.5, bg: 'snow.webp', boss: 'boss-snow', bossName: '설산 우두머리',
+  snow: { name: '설원 고개', length: 1, hp: 2.4, damage: 2.3, spawn: 1.45, bossHp: 3.6, gold: 4.5, bg: 'snow.webp', boss: 'boss-snow', bossName: '설산 우두머리', eliteName: '정예 설산 도적',
     tiers: [['dog', 'hunter'], ['runner', 'tiger'], ['bear', 'hunter'], ['berserker', 'tiger'], ['tiger', 'bear']] },
   /** 11-16 H48·H53: 불타는 산성 — 횃불 방화꾼(지나간 자리에 불바닥 · 기름 단지) · 두목 H55 불의 반란 장군(달군 망치) */
-  fortress: { name: '불타는 산성', length: 1, hp: 3.2, damage: 3, spawn: 1.6, bossHp: 4.6, gold: 6.5, bg: 'fortress.webp', boss: 'boss-fortress', bossName: '불의 반란 장군',
+  fortress: { name: '불타는 산성', length: 1, hp: 3.2, damage: 3, spawn: 1.6, bossHp: 4.6, gold: 6.5, bg: 'fortress.webp', boss: 'boss-fortress', bossName: '불의 반란 장군', eliteName: '정예 반란군',
     tiers: [['shield', 'torch'], ['berserker', 'firearcher'], ['iron', 'torch'], ['runner', 'shaman'], ['iron', 'torch']] },
-  trial: { name: '각성 시련', length: .4, hp: 1, damage: 1, spawn: 1, bossHp: .3, gold: 0, bg: 'forest.webp', boss: 'bandit-warlord', bossName: '산적 대두목',
+  trial: { name: '각성 시련', length: .4, hp: 1, damage: 1, spawn: 1, bossHp: .3, gold: 0, bg: 'forest.webp', boss: 'bandit-warlord', bossName: '산적 대두목', eliteName: '정예 산적',
     tiers: [['club', 'archer'], ['runner', 'slinger'], ['shield', 'dog'], ['berserker', 'firearcher'], ['iron', 'shaman']] },
 } as const
 /**
@@ -295,6 +370,20 @@ export const HAEBI_SHOP = {
 } as const
 /** 판이 끝나면 받는 금 — 지면 적게, 다 깨면 많이 (형 11-16) · 스테이지 gold 배수 · greed 강화를 곱한다 */
 export const HAEBI_GOLD = { perKill: .05, perElite: 12, perMinute: 6, clear: 400 } as const
+/**
+ * 목책의 「1분 벽」 (각성 v2 가9 · docs/realm/study-20261118/14-ref-pacing.md 6-2 · 6-4 의 2) — 상점이 얇은 손님은 목책에서 곧바로 쓰러져
+ * 금 한두 자리를 받는다. 그런데 출전 화면은 「열렸고 아직 못 깬 첫 스테이지」인 그 목책을 골라 뒀다. 벽 앞에서는 바로 앞 스테이지(여울)를 골라 둔다
+ * (raid/meta.ts pickStage). 손님이 직접 목책을 고르는 것은 막지 않는다. 벽을 넘었다고 보는 때는 둘 가운데 하나:
+ *  - survive: 그 스테이지에서 이 초를 넘겨 버틴 적이 있다. 봇 118판(11-18 · 아래)에서 벽에 막힌 판은 0:24~2:51 에 끝났고 그 밖은 3:35 넘게 갔다(거의 18~19분)
+ *  - shop: 상점에 쓴 금이 상점 전체 값(37,335)의 이 몫에 닿았다. 무기 묶음마다 다르다.
+ * 근거 (11-18 · REACT=.5 tools/raid-stage-balance.ts palisade 일곱 묶음 · 씨앗 7,11 · SHOP 0~.8 → 쓴 금 0 · 2 · 4 · 12 · 14 · 28 · 32 · 52 · 62% · 62% 는 단검 · 활 · 돌팔매만):
+ *  - 도끼 · 칼 · 창 .12: 금 12% 에서 여섯 판이 모두 5분을 넘겼다(다섯은 19분 두목까지 · 셋 이김). 4% 에서는 도끼가 0:55 · 1:18
+ *  - 주술 .32: 28% 는 1:57 · 2:51, 32% 는 둘 다 19분
+ *  - 돌팔매 .5: 32% 는 1:19 와 이김으로 갈렸고 52% 는 둘 다 이김 / 활 .5: 32% 까지 1분 안, 52% 는 둘 다 19분
+ *  - 단검 .64: 52% 에서도 한 판은 1:56, 62% 는 이김과 3:35. 14 의 표에서 단검 봇이 목책을 처음 깬 가장 낮은 몫이 64%
+ * 씨앗 둘짜리 봇 값이다. 사람 손으로 잰 뒤(가10) 다시 본다.
+ */
+export const HAEBI_WALL = { stage: 'palisade', survive: 180, shop: { axe: .12, sword: .12, spear: .12, magic: .32, sling: .5, bow: .5, dagger: .64 } } as const
 
 export interface Knob {
   readonly v: number
@@ -3115,9 +3204,11 @@ export const SPEC = {
     uiRollMs: k(600, 0, 2000, 50, '손맛: 계절을 넘길 때 위 띠 수가 굴러 바뀌는 시간(ms)'),
     uiRollPlanMs: k(250, 0, 1000, 25, '손맛: 이번 계절 고르는 동안 위 띠 수가 바뀌는 시간(ms)'),
     placeShare: k(0.06, 0, 1, 0.01, '백성 배치: 한 계절에 옮길 수 있는 집 — 나라 전체 가호 대비'),
-    // 각성 (형 10-31) — 우리 장수가 내리 이기면 불꽃이 켜지고, 다 켜지면 각성한다. 그 판에서만
-    ascendWins: k(3, 1, 10, 1, '각성: 내리 이겨야 하는 싸움 수 (불꽃 칸 수)'),
-    firstAscendEase: k(1, 0, 3, 1, '각성: 처음 깨어날 때만 덜 이겨도 되는 싸움 수 (첫 30분 안에 첫 각성 · docs/realm/FIRST-HOUR.md 11-11)'),
+    // 각성 (형 10-31 · 11-04 · 11-15) — 우리 장수가 제 몫의 싸움을 이기면 불꽃이 하나 켜지고, 지거나 비기면 하나 꺼진다 (내리 이길 필요는 없다 · 순증).
+    // 다 켜지면 각성 시련이 열리고(ascendTrialOpen 1) 시련을 넘으면 각성한다. 그 판에서만. 문턱은 heroes.ascendNeed 가 셈한다
+    ascendWins: k(3, 1, 10, 1, '각성: 불꽃 칸 수. 제 몫의 싸움을 이기면 한 칸 켜지고 지거나 비기면 한 칸 꺼진다. 이만큼 켜지면 다 찬 것이다 (내리 이길 필요는 없다)'),
+    firstAscendEase: k(1, 0, 3, 1, '각성: 처음 깨어날 때 켜진 채 시작하는 불꽃 칸 수. 그만큼 덜 이겨도 된다 (11-11 · docs/realm/FIRST-HOUR.md)'),
+    ascendTrialOpen: k(1, 0, 1, 1, '각성: 본편의 시련 관문. 1 = 불꽃이 다 켜지면 시련이 열리고 시련을 넘어야 힘이 붙는다(지금 규칙) · 0 = 시련 없이 불꽃이 다 켜지는 싸움 끝에 곧바로 붙는다(각성 v2 · 형의 판이 끝난 뒤 0 으로 · docs/realm/study-20261118/30-PROPOSAL.md 1절 ⑧). 배우는 판의 해비는 어느 쪽이든 시련이다'),
     flameFairShare: k(0.5, 0, 1, 0.05, '각성 불꽃: 진 쪽 군사가 이긴 쪽의 이 몫을 넘어야 붙는다 (제 몫의 싸움 · 위원회 11-04 던파)'),
     ascendBonus: k(1, 0, 5, 1, '각성: 능력치마다 오르는 몫 (10 을 넘을 수 있다)'),
     wakeMinFlames: k(2, 1, 3, 1, '각성기: 불꽃이 이만큼 있어야 쓴다 — 하나를 태우고 마지막 하나는 남는다 (위원회 11-04 던파 ①)'),

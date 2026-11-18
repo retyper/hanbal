@@ -1,14 +1,15 @@
-import { HAEBI_RUN as C, HAEBI_MOBS as M, HAEBI_STAGES as ST, HAEBI_ULT as U, HAEBI_AWAKEN as A } from '../tune/params.ts'
+import { HAEBI_RUN as C, HAEBI_MOBS as M, HAEBI_STAGES as ST, HAEBI_ULT as U, HAEBI_AWAKEN as A, HAEBI_FX as K } from '../tune/params.ts'
 import { genArtOf } from '../realm/data/art.ts'
 import { areaScale, awakenedLook, charge, slamRadius, slamWindup, wardMax, type HaebiRun, type Kit, type Missile, type StageId } from './haebi.ts'
 import { WALK_CYCLE } from './walk-cycle.ts'
+import { AURA_ART, drawAura, drawAuraBurst, drawAuraGround, type AuraArt, type AuraAt, type AuraKind } from './fx-aura.ts'
 
 /** 돌팔매 묶음의 돌 · 바위 (전용 그림 H56~H58 이 오기 전엔 본편 바위 그림을 빌린다) */
 const ROCK = 'fx/rock.png'
 /** bandit-<종류> 가 아닌 적 그림 (11-16 H50~H53 · tools/sprite-kit/bake-raid-enemies.py) */
 const MOB_ART: Record<string, string> = { tiger: 'beast-tiger', bear: 'beast-bear', hunter: 'snow-hunter', torch: 'torch-raider' }
 export const imagePaths = [genArtOf('haebi').file, genArtOf('aw1-haebi').file, 'anim-px/bandit-club.png', 'anim-px/bandit-chief.png', 'anim-px/bandit-archer.png',
-  ...['runner', 'slinger', 'shield', 'dog', 'berserker', 'firearcher', 'iron', 'shaman'].map(k => `anim-px/bandit-${k}.png`), ...['ford.webp', 'palisade.webp', 'digits.png', 'knife.png', 'soul.png', 'bell-ring.png', 'javelin.png','sword-wave.png','forest.webp','axe.png','impact-strip.png','slash-strip.png','death-strip.png','fire-strip.png','lightning-strip.png','talisman.png','wind-blade.png','arrow.png','hit.png','essence.png','essence-large.png',...['mark-slam','mark-ring','mark-move','mark-hero','mark-target','mark-arrow','bar-boss','plaque'].map(p=>`ui/${p}.png`)].map(p=>'raid/'+p), 'anim-px/bandit-warlord.png', ROCK,
+  ...['runner', 'slinger', 'shield', 'dog', 'berserker', 'firearcher', 'iron', 'shaman'].map(k => `anim-px/bandit-${k}.png`), ...['ford.webp', 'palisade.webp', 'digits.png', 'knife.png', 'soul.png', 'bell-ring.png', 'javelin.png','sword-wave.png','forest.webp','axe.png','impact-strip.png','slash-strip.png','death-strip.png','fire-strip.png','lightning-strip.png','talisman.png','wind-blade.png','arrow.png','hit.png','essence.png','essence-large.png',...['mark-slam','mark-move','mark-hero','mark-target','mark-arrow','bar-boss','plaque'].map(p=>`ui/${p}.png`)].map(p=>'raid/'+p), 'anim-px/bandit-warlord.png', ROCK, AURA_ART.flame, AURA_ART.ember,
   // 11-16 H45~H53: 스테이지 두목 둘 · 설원·산성 적 넷 · 넷째·다섯째 바닥
   ...['boss-ford', 'boss-palisade', 'boss-snow', 'boss-fortress', ...Object.values(MOB_ART)].map(n => `anim-px/${n}.png`), 'raid/snow.webp', 'raid/fortress.webp']
 /** bar-boss.png 의 투명한 홈 [x0,y0,x1,y1] — tools/raid-ui-kit.py 가 public/realm/raid/ui/kit.json 에 적는 값 */
@@ -326,39 +327,189 @@ function drawNumbers(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImag
     ctx.restore()
   }
 }
-/** 각성 오라 (11-17 형: 「캐릭터 에셋 주변에 여러 오라」) — 뒤: 몸 뒤 빛 · 발밑에서 서로 거꾸로 도는 고리 둘 · 솟는 금빛 기운 / 앞: 오르는 불티. 'lighter' · filter 없음 */
-let auraGlow: CanvasGradient | null = null
-function drawAura(ctx: CanvasRenderingContext2D, s: HaebiRun, front: boolean) {
-  const t = s.t, R = C.auraRing, op = ctx.globalCompositeOperation, a = ctx.globalAlpha
-  ctx.globalCompositeOperation = 'lighter'
-  if (!front) {
-    // 몸 뒤 둥근 빛 (그라디언트 하나를 한 번만 만들어 옮겨 쓴다)
-    auraGlow ??= (() => { const g = ctx.createRadialGradient(0, 0, 4, 0, 0, 62); g.addColorStop(0, '#ffd56aa0'); g.addColorStop(.55, '#ff9a3a40'); g.addColorStop(1, '#ff9a3a00'); return g })()
-    const pulse = .8 + .2 * Math.sin(t * 7), cy = s.y - C.heroPx * .5
-    ctx.save(); ctx.translate(s.x, cy); ctx.scale(pulse, pulse * 1.35); ctx.fillStyle = auraGlow; ctx.fillRect(-62, -62, 124, 124); ctx.restore()
-    ctx.globalCompositeOperation = 'lighter'
-    // 발밑 고리: 안쪽은 이쪽으로, 바깥은 저쪽으로 돈다 (끊긴 호 셋씩)
-    ctx.strokeStyle = '#ffd66a'
-    for (const [r, dir, w, al] of [[R, 1, 4.5, 1], [R * 1.42, -1, 3, .7]] as const) {
-      ctx.lineWidth = w; ctx.globalAlpha = a * al; ctx.beginPath()
-      for (let i = 0; i < 3; i++) { const a0 = dir * t * C.auraSpin + i * Math.PI * 2 / 3; ctx.moveTo(s.x + Math.cos(a0) * r, s.y + Math.sin(a0) * r * .34); ctx.ellipse(s.x, s.y, r, r * .34, 0, a0, a0 + 1.25) }
-      ctx.stroke()
+/**
+ * 장수 오라 (11-18 형: 「투지 오라랑 각성 오라 이펙트도 필요」) — 영웅의 투지 = 하늘빛 가닥 · 각성 = 금빛 불기둥. 입자는 fx-aura.ts 가 낱낱이 그린다.
+ * 켜진 순간(한 번 터지는 고리)은 화면 쪽 기억으로 잡는다 (판 상태는 읽기만): 투지는 켠 그때 · 각성은 시전(컷인)이 끝나 둘레를 치는 그때.
+ * 각성 가닥에는 무기 묶음 빛(TRUE_COLOR · ULT_COLOR)이 섞여 장수마다 결이 다르다.
+ */
+const auraArt: AuraArt = {}, auraAt: AuraAt & { tints: string[] } = { x: 0, y: 0, t: 0, height: 0, tints: [], density: 1, gain: 1, art: auraArt }
+const auraMem = { t: -1, form: 'normal' as HaebiRun['form'], casting: false, burst: -9 }
+function heroAura(s: HaebiRun, images: Map<string, HTMLImageElement>): AuraKind | null {
+  if (s.t < auraMem.t) { auraMem.form = 'normal'; auraMem.casting = false; auraMem.burst = -9 }   // 새 판
+  const casting = s.cast?.kind === 'wake'
+  if (s.form === 'grit' ? auraMem.form !== 'grit' : s.form === 'awake' && !casting && (auraMem.casting || auraMem.form !== 'awake')) auraMem.burst = s.t
+  auraMem.t = s.t; auraMem.form = s.form; auraMem.casting = casting
+  if (s.form === 'normal') return null
+  auraAt.x = s.x; auraAt.y = s.y; auraAt.t = s.t; auraAt.height = C.heroPx
+  auraArt.flame = images.get(AURA_ART.flame); auraArt.ember = images.get(AURA_ART.ember); auraArt.ring = images.get(AURA_ART.ring)
+  auraAt.tints[0] = TRUE_COLOR[s.kit]; auraAt.tints[1] = ULT_COLOR[s.kit]
+  // 붐비는 장면(늑대 떼)에서는 입자를 덜 · 각성 시전 동안은 낮게 시작해 차오른다
+  auraAt.density = s.enemies.length > K.aura.crowd ? K.aura.crowdDensity : 1
+  auraAt.gain = casting && s.cast ? K.aura.castFrom + (1 - K.aura.castFrom) * (1 - Math.max(0, s.cast.t) / s.cast.total) : 1
+  return s.form
+}
+// ── 누구 것인가 (11-18 형 플립: 「적 공격 이펙트랑 내 공격 이펙트가 헷갈림」) ── 붉은 것 = 적이 나를 때릴 자리 · 금빛·하늘빛 = 내 것 (빛·굵기는 HAEBI_FX)
+const TAU = Math.PI * 2, GOLDEN_TURN = Math.PI * (3 - Math.sqrt(5))
+/** 적이 나를 때릴 자리 하나 — k 0(막 뜸) → 1(떨어짐) · left 남은 초 · on 내가 그 안에 서 있나. 판마다 다시 쓰는 그릇 */
+type Zone = { x: number; y: number; r: number; k: number; left: number; on: boolean }
+const zones: Zone[] = [], flames: Missile[] = []
+let zoneN = 0
+function zone(s: HaebiRun, x: number, y: number, r: number, k: number, left: number) {
+  const z = zones[zoneN] ??= { x: 0, y: 0, r: 0, k: 0, left: 0, on: false }; zoneN++
+  z.x = x; z.y = y; z.r = r; z.k = Math.max(0, Math.min(1, k)); z.left = left; z.on = Math.hypot(s.x - x, s.y - y) < r
+  return z.on
+}
+/** 적이 나를 때릴 자리를 모은다 (두목·정예·곰 내려찍기 · 돌·불 던지기 · 일제 사격) — 돌려주는 값: 내가 그런 자리나 불바닥 안에 서 있나 */
+function collectThreats(s: HaebiRun) {
+  let on = false; zoneN = 0; flames.length = 0
+  for (const e of s.enemies) if (e.wind > 0) on = zone(s, e.aimX, e.aimY, slamRadius(e.kind), 1 - e.wind / slamWindup(e.kind), e.wind) || on
+  for (const b of s.shots) {
+    if (b.kind === 'stone') on = zone(s, b.x, b.y, b.radius, 1 - b.life / M.lobDelay, b.life) || on
+    else if (b.kind === 'barrage') on = zone(s, b.x, b.y, C.barrageRadius, 1 - b.life / C.barrageDelay, b.life) || on
+    else if (b.kind === 'flame') { flames.push(b); on = Math.hypot(s.x - b.x, s.y - b.y) < b.radius || on }
+  }
+  return on
+}
+/**
+ * 겹친 원들의 겉 테만 길에 싣는다 — 원마다 둘레를 RIM_SLOTS 토막으로 나눠 다른 원 안에 든 토막은 빼고 남은 호만 긋는다.
+ * 불바닥이 줄지어 겹칠 때(방화꾼이 달리며 떨어뜨린 줄) 테가 고리처럼 얽히지 않고 한 덩이의 둘레가 된다. 꼭 같은 자리의 원 둘은 하나만 남긴다.
+ */
+const RIM_SLOTS = 48, rimIn = new Uint8Array(RIM_SLOTS)
+function unionRim(ctx: CanvasRenderingContext2D, list: readonly Missile[]) {
+  const n = list.length, step = TAU / RIM_SLOTS
+  for (let i = 0; i < n; i++) {
+    const c = list[i]!, r = c.radius
+    let whole = false, any = false
+    rimIn.fill(0)
+    for (let j = 0; j < n && !whole; j++) {
+      if (j === i) continue
+      const o = list[j]!, d = Math.hypot(o.x - c.x, o.y - c.y)
+      if (d >= r + o.radius || d + o.radius <= r && d + r > o.radius) continue   // 안 닿음 · 저쪽이 이 안에 들어 있음
+      if (d + r <= o.radius) { whole = d + r < o.radius || j < i; continue }     // 이 원이 통째로 저쪽 안
+      const mid = Math.atan2(o.y - c.y, o.x - c.x), half = Math.acos((d * d + r * r - o.radius * o.radius) / (2 * d * r))
+      for (let k = Math.ceil((mid - half) / step - .5), end = Math.floor((mid + half) / step - .5); k <= end; k++) rimIn[(k % RIM_SLOTS + RIM_SLOTS) % RIM_SLOTS] = 1
+      any = true
     }
-    // 솟는 기운: 발밑에서 위로 오르며 가늘어지는 불꽃 혀
-    ctx.fillStyle = '#ffae38'
-    for (let i = 0; i < C.auraFlames; i++) {
-      const ph = (t * 1.25 + i / C.auraFlames) % 1, side = Math.sin(i * 2.399) * R * .62, x = s.x + side + Math.sin(t * 5 + i) * 4, y = s.y - ph * C.auraFlameRise
-      ctx.globalAlpha = a * .8 * (1 - ph); ctx.beginPath(); ctx.ellipse(x, y - 10, 9 * (1 - ph * .6), 24 * (1 - ph * .4), 0, 0, Math.PI * 2); ctx.fill()
-    }
-  } else {
-    // 불티: 몸 둘레에서 반짝이며 오른다
-    ctx.fillStyle = '#fff1b8'
-    for (let i = 0; i < C.auraSparks; i++) {
-      const ph = (t * .9 + i * .137) % 1, ang = i * 2.399 + t * .8, x = s.x + Math.cos(ang) * (18 + i % 4 * 9), y = s.y - 14 - ph * (C.heroPx + 30)
-      ctx.globalAlpha = a * (1 - ph) * (.6 + .4 * Math.sin(t * 20 + i)); const r = 1.6 + (i % 3) * .8; ctx.fillRect(x - r, y - r, r * 2, r * 2)
+    if (whole) continue
+    if (!any) { ctx.moveTo(c.x + r, c.y); ctx.arc(c.x, c.y, r, 0, TAU); continue }
+    for (let k = 0; k < RIM_SLOTS; k++) {
+      if (rimIn[k]) continue
+      let end = k; while (end < RIM_SLOTS && !rimIn[end]) end++
+      ctx.moveTo(c.x + Math.cos(k * step) * r, c.y + Math.sin(k * step) * r); ctx.arc(c.x, c.y, r, k * step, end * step); k = end
     }
   }
-  ctx.globalCompositeOperation = op; ctx.globalAlpha = a
+}
+/**
+ * 적이 나를 때릴 자리 — 한 가지 꼴 (맞는 범위 그대로의 원): 붉은 테(검붉은 받침) · 맥박치는 붉은 바닥에 흐르는 빗금 · 가운데로 줄어드는 고리(남은 시간) ·
+ * 떨어지기 직전 한 번 번쩍. 타는 불바닥은 불 그림 둘레에 같은 붉은 바닥과 테(빗금·고리 없이 = 지금 타는 중). 꽉 찬 붉은 동그라미로는 그리지 않는다.
+ * 폰 프레임: 자리가 몇이든 길 하나에 모아 한 번씩만 칠한다(바닥 · 빗금 · 테 둘 · 고리 둘) — 자리마다 따로 그리는 건 용암 테 그림과 마지막 번쩍뿐.
+ */
+function drawThreats(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun) {
+  const F = K.foe, a = ctx.globalAlpha, beat = 1 - F.pulseDepth * (.5 + .5 * Math.sin(s.t * F.pulse))
+  if (!zoneN && !flames.length) return
+  if (flames.length) {
+    // 타는 불바닥: 붉은 바닥(겹쳐도 한 번만 칠해진다) 위에 불 그림
+    ctx.beginPath()
+    for (const b of flames) { ctx.moveTo(b.x + b.radius, b.y); ctx.arc(b.x, b.y, b.radius, 0, TAU) }
+    ctx.fillStyle = F.fill; ctx.globalAlpha = a * F.flameFill * beat; ctx.fill(); ctx.globalAlpha = a
+    const fire = images.get('raid/fire-strip.png')
+    if (fire) for (const b of flames) { const r = b.radius * 1.1; ctx.drawImage(fire, impactFrame((s.t * 1.7 + b.x * .01) % 1) * 256, 0, 256, 256, b.x - r, b.y - 10 - r, r * 2, r * 2) }
+  }
+  if (zoneN) {
+    // 바닥: 붉은빛이 맥박친다 (겹친 자리도 한 번만 칠해져 진해지지 않는다)
+    ctx.beginPath()
+    for (let i = 0; i < zoneN; i++) { const z = zones[i]!; ctx.moveTo(z.x + z.r, z.y); ctx.arc(z.x, z.y, z.r, 0, TAU) }
+    ctx.fillStyle = F.fill; ctx.globalAlpha = a * F.fillAlpha * beat; ctx.fill()
+    // 용암 테 그림: 떨어질 때가 가까울수록 진하게
+    const art = images.get('raid/ui/mark-slam.png')
+    if (art) for (let i = 0; i < zoneN; i++) { const z = zones[i]!, d = z.r * F.artScale; ctx.globalAlpha = a * (F.artFrom + (F.artTo - F.artFrom) * z.k); ctx.drawImage(art, z.x - d, z.y - d, d * 2, d * 2) }
+    // 빗금: 왼쪽 아래에서 오른쪽 위로 긋고 천천히 흐른다
+    const slide = s.t * F.hatchSlide % F.hatchGap
+    ctx.beginPath()
+    for (let i = 0; i < zoneN; i++) {
+      const z = zones[i]!
+      for (let o = slide - z.r; o < z.r; o += F.hatchGap) { const h = Math.sqrt(z.r * z.r - o * o) * Math.SQRT1_2, cx = z.x + o * Math.SQRT1_2, cy = z.y + o * Math.SQRT1_2; ctx.moveTo(cx - h, cy + h); ctx.lineTo(cx + h, cy - h) }
+    }
+    ctx.strokeStyle = F.rim; ctx.lineWidth = F.hatchWidth; ctx.lineCap = 'butt'; ctx.globalAlpha = a * F.hatchAlpha; ctx.stroke()
+  }
+  // 테: 검붉은 받침 위에 붉은 줄 (떨어질 자리 + 불바닥)
+  ctx.beginPath()
+  for (let i = 0; i < zoneN; i++) { const z = zones[i]!; ctx.moveTo(z.x + z.r, z.y); ctx.arc(z.x, z.y, z.r, 0, TAU) }
+  unionRim(ctx, flames)
+  ctx.globalAlpha = a; ctx.strokeStyle = F.rimDark; ctx.lineWidth = F.rimDarkWidth; ctx.stroke()
+  ctx.strokeStyle = F.rim; ctx.lineWidth = F.rimWidth; ctx.stroke()
+  if (zoneN) {
+    // 가운데로 줄어드는 고리 = 남은 시간
+    ctx.beginPath()
+    for (let i = 0; i < zoneN; i++) { const z = zones[i]!, r = z.r * (1 - z.k); if (r > 1) { ctx.moveTo(z.x + r, z.y); ctx.arc(z.x, z.y, r, 0, TAU) } }
+    ctx.strokeStyle = F.rim; ctx.lineWidth = F.closeRim; ctx.stroke(); ctx.strokeStyle = F.hot; ctx.lineWidth = F.closeWidth; ctx.stroke()
+    for (let i = 0; i < zoneN; i++) {
+      const z = zones[i]!
+      // 내가 그 안에 서 있다: 테가 한 겹 더 빠르게 뛴다 · 떨어지기 직전: 한 번 번쩍
+      if (z.on) { ctx.globalAlpha = a * F.onAlpha * (.5 + .5 * Math.sin(s.t * F.onPulse)); ctx.strokeStyle = F.hot; ctx.lineWidth = F.onWidth; ctx.beginPath(); ctx.arc(z.x, z.y, z.r + F.rimWidth, 0, TAU); ctx.stroke() }
+      if (z.left < F.flash) { ctx.globalAlpha = a * F.flashAlpha * (1 - Math.max(0, z.left) / F.flash); ctx.fillStyle = F.hot; ctx.beginPath(); ctx.arc(z.x, z.y, z.r, 0, TAU); ctx.fill() }
+    }
+  }
+  ctx.globalAlpha = a
+}
+/** 내 기술이 떨어질 자리 (화살비) — 가는 금빛 테와 안으로 모이는 빛 알뿐: 피할 필요가 없으니 적의 표식보다 덜 눈에 띄게 · 붉은빛은 쓰지 않는다. 길 둘로 모아 칠한다 */
+function drawOwnZones(ctx: CanvasRenderingContext2D, s: HaebiRun) {
+  const O = K.own, r = C.rainRadius * areaScale(s), a = ctx.globalAlpha
+  let n = 0
+  ctx.beginPath()
+  for (const b of s.shots) if (b.kind === 'rain') { ctx.moveTo(b.x + r, b.y); ctx.arc(b.x, b.y, r, 0, TAU); n++ }
+  if (!n) return
+  ctx.strokeStyle = O.rim; ctx.lineWidth = O.rimWidth; ctx.globalAlpha = a * O.rimAlpha; ctx.stroke()
+  ctx.beginPath()
+  for (const b of s.shots) if (b.kind === 'rain') {
+    const k = Math.max(0, Math.min(1, b.life / C.rainDelay))
+    for (let j = 0; j < O.motes; j++) { const ang = j * GOLDEN_TURN + b.x * .05 + b.y * .03, d = r * k * (.55 + .45 * (j * .618 % 1)); ctx.rect(b.x + Math.cos(ang) * d - O.moteSize / 2, b.y + Math.sin(ang) * d - O.moteSize / 2, O.moteSize, O.moteSize) }
+  }
+  ctx.fillStyle = O.mote; ctx.globalAlpha = a * O.moteAlpha; ctx.fill(); ctx.globalAlpha = a
+}
+/** 꼬리를 다는 내 투사체 (곧게 나는 것) */
+const OWN_TRAIL = new Set<Missile['kind']>(['arrow', 'javelin', 'knife', 'shard', 'gale', 'ember', 'soul', 'wave'])
+/** 날아가는 것의 꼬리 — 적의 화살·창은 검붉은 받침에 붉은 줄 · 내 것은 무기 묶음 빛 한 줄. 길 하나씩에 모아 한 번에 긋는다 (투사체가 몇이든 칠하기는 셋) */
+function drawTrails(ctx: CanvasRenderingContext2D, s: HaebiRun) {
+  const T = K.trail, a = ctx.globalAlpha
+  let n = 0
+  ctx.lineCap = 'round'; ctx.beginPath()
+  for (const b of s.shots) if (b.kind === 'enemy' || b.kind === 'hurl') {
+    const v = Math.hypot(b.vx, b.vy) || 1, y = b.y - C.enemyShotHeight
+    ctx.moveTo(b.x, y); ctx.lineTo(b.x - b.vx / v * T.foeLen, y - b.vy / v * T.foeLen); n++
+  }
+  if (n) { ctx.strokeStyle = K.foe.rimDark; ctx.lineWidth = T.foeWidth + 3; ctx.stroke(); ctx.strokeStyle = K.foe.rim; ctx.lineWidth = T.foeWidth; ctx.stroke() }
+  n = 0; ctx.beginPath()
+  for (const b of s.shots) if (OWN_TRAIL.has(b.kind)) {
+    const v = Math.hypot(b.vx, b.vy) || 1, y = b.y - C.heroShotHeight
+    ctx.moveTo(b.x, y); ctx.lineTo(b.x - b.vx / v * T.ownLen, y - b.vy / v * T.ownLen); n++
+  }
+  if (n) { ctx.strokeStyle = ULT_COLOR[s.kit]; ctx.lineWidth = T.ownWidth; ctx.globalAlpha = a * T.ownAlpha; ctx.stroke(); ctx.globalAlpha = a }
+  ctx.lineCap = 'butt'
+}
+/**
+ * 터짐(blast)이 누구 것인가 — 화면 쪽 기억 (판 상태는 읽기만): 적이 떨어뜨릴 자리(돌·불·일제 사격)를 판마다 적어 두었다가,
+ * 바로 그 자리에서 난 터짐을 적의 것으로 본다. 1 = 적의 돌·화살(흙먼지) · 2 = 적의 불 · 0 = 내 것
+ */
+const foeSpots: { x: number; y: number; fire: boolean }[] = [], blastOf = new WeakMap<object, 0 | 1 | 2>()
+let spotN = 0, spotT = -1
+function trackFoeBlasts(s: HaebiRun) {
+  if (s.t < spotT) spotN = 0   // 새 판
+  spotT = s.t
+  for (const f of s.fx) if (f.kind === 'blast' && !blastOf.has(f)) {
+    let who: 0 | 1 | 2 = 0
+    for (let i = 0; i < spotN; i++) { const p = foeSpots[i]!; if (p.x === f.x && p.y === f.y) { who = p.fire ? 2 : 1; break } }
+    blastOf.set(f, who)
+  }
+  spotN = 0
+  for (const b of s.shots) if (b.kind === 'stone' || b.kind === 'barrage') { const p = foeSpots[spotN] ??= { x: 0, y: 0, fire: false }; spotN++; p.x = b.x; p.y = b.y; p.fire = b.kind === 'stone' && !!b.gen }
+}
+/** 따뜻한 빛인가 (붉은 쪽이 푸른 쪽보다 셈) — 내 터짐 가운데 불빛(부적·뇌화)과 찬 빛(화살비·혼불)을 가른다 */
+const warmth = new Map<string, boolean>()
+function warm(color: string) {
+  let w = warmth.get(color)
+  if (w === undefined) { w = parseInt(color.slice(1, 3), 16) > parseInt(color.slice(5, 7), 16); warmth.set(color, w) }
+  return w
 }
 /** 영웅의 투지 보호막 — 몸 둘레 반투명 방패 빛 ('lighter' · filter 없음) · 남은 흡수량만큼 짙고, 막아 낸 직후엔 번쩍 */
 let wardGlow: CanvasGradient | null = null
@@ -432,30 +583,22 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   const baked = bg && fieldBackdrop(bg, W, H)
   if (baked) ctx.drawImage(baked, 0, 0)
   else { if (bg) { const sw = bg.height * W / H; ctx.drawImage(bg, (bg.width - sw) / 2, 0, sw, bg.height, 0, 0, W, H) } ctx.fillStyle = '#11281b25'; ctx.fillRect(0, 0, W, H) }
-  for (const e of s.enemies) if (e.wind > 0) {
-    // 내려찍기 경고: 금 간 땅 원(점점 진해짐) + 바깥까지 자라는 고리 = 맞는 범위 그대로 (지름 2r)
-    const r = slamRadius(e.kind), k = 1 - e.wind / slamWindup(e.kind)
-    if (!decal(ctx, images, 'mark-slam', e.aimX, e.aimY, r * 2, r * 2, .55 + .45 * k) || !decal(ctx, images, 'mark-ring', e.aimX, e.aimY, r * 2 * k, r * 2 * k)) {
-      ctx.fillStyle = '#df4c3455'; ctx.strokeStyle = '#ffc1a0'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(e.aimX, e.aimY, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke()
-      ctx.beginPath(); ctx.arc(e.aimX, e.aimY, r * k, 0, Math.PI * 2); ctx.stroke()
-    }
-  }
+  // ── 땅 표식 (모든 몸보다 먼저) ── 아래부터: 내 발밑 표식 · 내 오라 고리 · 내 기술이 떨어질 자리 → 적의 겨눔 줄 · 적이 나를 때릴 자리.
+  //    적의 것이 늘 위에, 더 진하게 (예전엔 내 발밑 금빛 표식이 적이 던진 돌의 자리를 덮었다 · 11-18 형 플립)
+  trackFoeBlasts(s)
+  const aura = heroAura(s, images), danger = collectThreats(s)
+  // 내 발밑 표식 — 맞을 자리 안에 서 있으면 옅게 물러난다
+  if (!decal(ctx, images, 'mark-hero', s.x, s.y, 72, 32, danger ? K.own.heroMarkDim : K.own.heroMark)) { ctx.strokeStyle = '#f9d89788'; ctx.fillStyle = '#ffd97726'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(s.x, s.y, 29, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke() }
+  if (aura) drawAuraGround(ctx, aura, auraAt)
+  drawOwnZones(ctx, s)
   // 창돌격꾼·범 돌진 · 투창 사냥꾼 겨눔 예고: 겨눈 줄이 점점 진해진다 (투창은 가늘게)
   for (const e of s.enemies) if (e.act > 0 && (charge(e.kind) || e.kind === 'hunter')) {
     const thin = e.kind === 'hunter', k = 1 - e.act / (thin ? M.hunterWind : charge(e.kind)!.wind)
-    ctx.save(); ctx.globalAlpha = .25 + .55 * k; ctx.strokeStyle = '#ff4a3a'; ctx.lineWidth = thin ? 3 + 4 * k : 6 + 10 * k; ctx.lineCap = 'round'
+    ctx.save(); ctx.globalAlpha = .25 + .55 * k; ctx.strokeStyle = K.foe.line; ctx.lineWidth = thin ? 3 + 4 * k : 6 + 10 * k; ctx.lineCap = 'round'
     ctx.beginPath(); ctx.moveTo(e.x, e.y); ctx.lineTo(e.aimX, e.aimY); ctx.stroke(); ctx.restore()
   }
-  // 돌팔매·불화살 떨어질 자리 · 타는 불바닥
-  for (const b of s.shots) if (b.kind === 'stone') {
-    const k = Math.max(0, b.life) / M.lobDelay, r = b.radius
-    ctx.save(); ctx.strokeStyle = b.gen ? '#ff7a3a' : '#e8c890'; ctx.fillStyle = b.gen ? '#ff5a2a33' : '#e8c89026'; ctx.lineWidth = 3
-    ctx.beginPath(); ctx.ellipse(b.x, b.y, r, r * .6, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke()
-    ctx.beginPath(); ctx.ellipse(b.x, b.y, r * (1 - k), r * .6 * (1 - k), 0, 0, Math.PI * 2); ctx.stroke()
-    // 포물선: 던진 자리(tx,ty)에서 떨어질 자리로
-    const u = 1 - k, px = b.tx + (b.x - b.tx) * u, py = b.ty + (b.y - b.ty) * u - Math.sin(u * Math.PI) * 160
-    ctx.fillStyle = b.gen ? '#ff8a3a' : '#8a7a66'; ctx.beginPath(); ctx.arc(px, py - 20, b.gen ? 6 : 7, 0, Math.PI * 2); ctx.fill(); ctx.restore()
-  } else if (b.kind === 'flame') effectStrip(ctx, images, 'fire', b.x, b.y - 10, b.radius * 1.1, (s.t * 1.7 + b.x * .01) % 1)
+  // 두목·곰 내려찍기 · 돌·불 던지기 · 일제 사격이 떨어질 자리 · 타는 불바닥 — 모두 같은 붉은 말
+  drawThreats(ctx, images, s)
   // 못 주운 기세는 마지막 1초에 옅어지며 사라진다 (dropLife)
   for (const d of s.drops) { const fade = Math.min(1, C.dropLife - d.age); if (fade < 1) ctx.globalAlpha = Math.max(0, fade); stamp(ctx, images, d.value > 2 ? 'raid/essence-large.png' : 'raid/essence.png', d.x, d.y, d.value > 2 ? 23 : 15); if (fade < 1) ctx.globalAlpha = 1 }
   if (destination) decal(ctx, images, 'mark-move', destination.x, destination.y, 30, 26, .85)
@@ -479,22 +622,22 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       if (target) decal(ctx, images, 'mark-arrow', e.x, e.y - h - 26 + Math.sin(s.t * 4) * 4, 22, 39)
       if (big) { ctx.fillStyle = '#111c'; ctx.fillRect(e.x - 28, e.y - h, 56, 5); ctx.fillStyle = '#ef9873'; ctx.fillRect(e.x - 28, e.y - h, 56 * e.hp / e.max, 5) }
     } else {
-      if (!decal(ctx, images, 'mark-hero', s.x, s.y, 72, 32, .8)) { ctx.strokeStyle = '#f9d89788'; ctx.fillStyle = '#ffd97726'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(s.x, s.y, 29, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke() }
       trackGhosts(s, heroSprite(s)); drawGhosts(ctx, images, s, heroH(s))
-      // 각성(금빛)·투지(붉은빛) 동안 발밑에 뛰는 빛 고리 — 그림 하나 더 없이 선 두 개
-      if (s.form === 'awake') drawAura(ctx, s, false)
+      // 오라: 뒤 겹(몸 뒤 빛 · 뒤 가닥) → 몸 → 앞 겹(앞 가닥 · 불티) · 발밑 고리와 표식은 땅 표식 차례에 이미 그렸다
+      if (aura) drawAura(ctx, aura, false, auraAt)
       drawCast(ctx, s)
-      if (s.form !== 'normal') { const p = .5 + .5 * Math.sin(s.t * 9); ctx.save(); ctx.strokeStyle = s.form === 'awake' ? '#ffe08a' : '#ff9a52'; ctx.globalAlpha = .35 + .4 * p; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(s.x, s.y, 40 + 8 * p, 13 + 3 * p, 0, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha *= .5; ctx.beginPath(); ctx.ellipse(s.x, s.y, 56 + 10 * p, 18 + 4 * p, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore() }
       sprite(ctx, images, heroSprite(s), s.x, s.y, heroH(s), heroFrame(s), s.face, s.hurt > 0)
       if (s.form === 'awake') {
-        // 각성: 몸이 금빛으로 맥박친다 (같은 그림을 빛으로 한 번 더) + 앞쪽 불티
+        // 각성: 몸이 금빛으로 맥박친다 (같은 그림을 빛으로 한 번 더)
         const op = ctx.globalCompositeOperation; ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .16 + .12 * Math.sin(s.t * 7)
         sprite(ctx, images, heroSprite(s), s.x, s.y, heroH(s), heroFrame(s), s.face); ctx.globalCompositeOperation = op; ctx.globalAlpha = 1
-        drawAura(ctx, s, true)
       }
+      if (aura) { drawAura(ctx, aura, true, auraAt); drawAuraBurst(ctx, aura, auraAt, s.t - auraMem.burst) }
       drawWard(ctx, s)
     }
   }
+  // 날아가는 것의 꼬리 (적 = 붉은 줄 · 내 것 = 무기 묶음 빛) — 그림보다 먼저
+  drawTrails(ctx, s)
   for (const b of s.shots) {
     const p = projectileAnchor(b)
     if (b.kind === 'gale') axe(ctx, images, p.x, p.y, b.angle, 30)
@@ -508,8 +651,19 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
     } else if (b.kind === 'hurl') {
       // 맥족 사냥꾼의 창 — 투창 그림 그대로
       stamp(ctx, images, 'raid/javelin.png', p.x, p.y, 68, Math.atan2(b.vy, b.vx))
-    } else if (b.kind === 'stone' || b.kind === 'flame') {
-      // 돌팔매·불바닥은 위에서 땅 표식과 함께 따로 그린다
+    } else if (b.kind === 'flame') {
+      // 불바닥은 땅 표식 차례에 그렸다 (drawThreats)
+    } else if (b.kind === 'stone') {
+      // 적이 던진 돌·기름 단지: 던진 자리(tx,ty)에서 떨어질 자리로 포물선 · 뒤에 붉은 꼬리 점 (떨어질 자리 표식은 땅 차례에)
+      const F = K.foe, u = 1 - Math.max(0, b.life) / M.lobDelay
+      for (let j = F.lobTail; j >= 0; j--) {
+        const v = Math.max(0, u - j * F.lobTailGap), px = b.tx + (b.x - b.tx) * v, py = b.ty + (b.y - b.ty) * v - Math.sin(v * Math.PI) * F.lobArc - F.lobLift
+        if (j) { ctx.globalAlpha = .7 * (1 - j / (F.lobTail + 1)); ctx.fillStyle = F.rim; ctx.beginPath(); ctx.arc(px, py, F.lobSize * (1 - j / (F.lobTail + 1)), 0, TAU); ctx.fill(); ctx.globalAlpha = 1; continue }
+        if (!b.gen) { stamp(ctx, images, ROCK, px, py, F.lobSize * 3, u * 9); continue }
+        ctx.fillStyle = F.rimDark; ctx.beginPath(); ctx.arc(px, py, F.lobSize + 2, 0, TAU); ctx.fill()
+        ctx.fillStyle = F.jar; ctx.beginPath(); ctx.arc(px, py, F.lobSize, 0, TAU); ctx.fill()
+        ctx.fillStyle = F.jarHot; ctx.beginPath(); ctx.arc(px, py - 1, F.lobSize * .45, 0, TAU); ctx.fill()
+      }
     } else if (b.kind === 'pebble') {
       // 돌팔매: 손 높이에서 떠나 포물선을 그리고 땅에 떨어진다 · 땅에는 작아지는 그림자
       const u = 1 - Math.max(0, b.life) / C.slingFlight
@@ -531,16 +685,18 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
     } else if (b.kind === 'wave') {
       stamp(ctx, images, images.has('raid/sword-wave.png') ? 'raid/sword-wave.png' : 'raid/wind-blade.png', p.x, p.y, b.gen ? 40 : 58, Math.atan2(b.vy,b.vx))
     } else if (b.kind === 'barrage') {
-      // 산적 일제 사격: 붉은 경고 판 + 줄어드는 고리, 끝날 때 화살이 내리꽂힌다 (두목 내려찍기와 같은 말)
+      // 산적 일제 사격: 화살이 붉은 줄을 끌며 내리꽂힌다 (떨어질 자리 표식은 땅 차례에 · 두목 내려찍기·던진 돌과 같은 붉은 말)
       const k = Math.max(0, b.life) / C.barrageDelay, r = C.barrageRadius
-      if (!decal(ctx, images, 'mark-slam', b.x, b.y, r * 2, r * 2, .5 + .5 * (1 - k)) || !decal(ctx, images, 'mark-ring', b.x, b.y, r * 2 * (1 - k), r * 2 * (1 - k))) {
-        ctx.save(); ctx.strokeStyle = '#ff8a5c'; ctx.lineWidth = 3; ctx.globalAlpha = .9; ctx.beginPath(); ctx.ellipse(b.x, b.y, r, r, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore()
-      }
+      ctx.strokeStyle = K.foe.rim; ctx.lineWidth = K.trail.foeWidth; ctx.beginPath()
+      for (let i = 0; i < 5; i++) { const x = b.x + Math.cos(i * 2.4) * r * .5, y = b.y + Math.sin(i * 2.4) * r * .35 - 24 - k * 260 - i * 16; ctx.moveTo(x, y); ctx.lineTo(x, y - K.trail.foeLen) }
+      ctx.stroke()
       for (let i = 0; i < 5; i++) stamp(ctx, images, 'raid/arrow.png', b.x + Math.cos(i * 2.4) * r * .5, b.y + Math.sin(i * 2.4) * r * .35 - 14 - k * 260 - i * 16, 38, Math.PI / 2)
     } else if (b.kind === 'rain') {
-      // 화살비: 떨어질 자리를 옅은 고리로 미리 보이고, 남은 시간만큼 위에서 화살 셋이 내려온다 (판정은 땅 좌표 그대로)
+      // 화살비: 남은 시간만큼 위에서 화살 셋이 무기 묶음 빛을 끌며 내려온다 (떨어질 자리의 금빛 테는 땅 차례에 · 판정은 땅 좌표 그대로)
       const k = Math.max(0, b.life) / C.rainDelay
-      decal(ctx, images, 'mark-ring', b.x, b.y, C.rainRadius * 2 * areaScale(s), C.rainRadius * 2 * areaScale(s), .35 * (1 - k) + .15)
+      ctx.strokeStyle = ULT_COLOR[s.kit]; ctx.lineWidth = K.trail.ownWidth; ctx.globalAlpha = K.trail.ownAlpha; ctx.beginPath()
+      for (let i = 0; i < 3; i++) { const x = b.x + (i - 1) * 18, y = b.y - 30 - k * 150 - i * 12; ctx.moveTo(x, y); ctx.lineTo(x, y - K.trail.ownLen) }
+      ctx.stroke(); ctx.globalAlpha = 1
       for (let i = 0; i < 3; i++) stamp(ctx, images, 'raid/arrow.png', b.x + (i - 1) * 18, b.y - 20 - k * 150 - i * 12, 40, Math.PI / 2)
     } else stamp(ctx, images, 'raid/wind-blade.png', p.x, p.y, 27, Math.atan2(b.vy,b.vx))
   }
@@ -581,9 +737,20 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       const img = images.get('raid/bell-ring.png'), r = f.r * (.35 + .65 * age)
       if (img) { ctx.globalAlpha *= 1 - age * .6; ctx.drawImage(img, f.x - r, f.y - r * .6, r * 2, r * 1.2) }
     } else if (f.kind === 'buff') {
-      ctx.strokeStyle = '#ff5a4a'; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(f.x, f.y, f.r * age, f.r * age * .55, 0, 0, Math.PI * 2); ctx.stroke()
+      // 무당이 둘레를 북돋는 고리(적 · 나를 때리진 않는다 = 검붉고 가늘게) · 영웅의 투지를 켠 순간(내 것 = 하늘빛)
+      const foe = f.r === M.shamanRadius
+      ctx.strokeStyle = foe ? K.foe.buff : K.own.grit; ctx.lineWidth = foe ? K.foe.buffWidth : 4; ctx.beginPath(); ctx.ellipse(f.x, f.y, f.r * age, f.r * age * .55, 0, 0, Math.PI * 2); ctx.stroke()
     } else if (f.kind === 'blast') {
-      effectStrip(ctx,images,'fire',f.x,f.y,f.r*1.3,age)
+      const foe = blastOf.get(f)
+      if (foe) {
+        // 적의 것이 떨어졌다: 불 종류는 불 · 돌·화살은 흙먼지 · 붉은 테가 퍼져 나가며 옅어진다
+        if (foe === 2) effectStrip(ctx, images, 'fire', f.x, f.y, f.r * 1.3, age); else impact(ctx, images, f.x, f.y - 6, f.r * 1.25, age)
+        ctx.strokeStyle = K.foe.rim; ctx.lineWidth = 1 + K.foe.rimWidth * (1 - age); ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (1 + K.foe.shock * age), 0, TAU); ctx.stroke()
+      } else {
+        // 내 것: 불빛(부적·뇌화)은 불 · 찬 빛(화살비·혼불)은 흙먼지 터짐 · 그 빛의 가는 고리가 번진다
+        if (warm(f.color)) effectStrip(ctx, images, 'fire', f.x, f.y, f.r * 1.3, age); else impact(ctx, images, f.x, f.y - 6, f.r, age)
+        ctx.lineWidth = K.own.ringWidth; ctx.globalAlpha *= K.own.ringAlpha; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (.55 + .45 * age), 0, TAU); ctx.stroke()
+      }
     } else if (f.kind === 'death') {
       if (f.mob) {
         ctx.save(); ctx.translate(f.x, f.y + 20); ctx.rotate((f.face ?? 1) * Math.min(1,age * 2) * .65)
