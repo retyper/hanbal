@@ -881,6 +881,12 @@ KEEP EXACTLY: her face, smile, eyes, hair and red ribbon, the leather armour and
   nw('new/power-fan-charm', '열전 「홀리는 바람」 비기 아이콘 · 새 그림', 'new-raid-power-fan-charm.png', [RD + 'power-soul.png', RD + 'cap-magic-b.png', RD + 'rite.png'], '부채 갈래 비기 아이콘(홀리는 바람). 그림 없음', RD + 'power-fan-charm.png', 96,
     "NEW raid skill icon 'bewitching wind': a spiral vortex of pink-violet wind ribbons with a few separate azalea petals caught in it, sweeping off the edge of a half-open Korean folding fan at lower-left. Match IMAGE 1, IMAGE 2 and IMAGE 3 in rendering, glow, size and framing. No people, no red circle, no Japanese motifs. Single icon, centered, true transparent alpha background, 8% padding, no text, no watermark.")
 
+  // 11-19 서늘 초상(비각성·각성)이 한국식 자객으로 들어왔다 → 피격 초상은 옛 닌자풍 옷이라 새 초상 기준으로 다시 (hit-intake 가 _v2 를 먼저 씀)
+  for (const [form, dir] of [['base', 'bust-hd'], ['aw1', 'awaken-hd']]) {
+    add('misc', 2, `hit/${form}/g-84-wander-seoneul`, `서늘 · ${form === 'aw1' ? '각성' : '비각성'} 피격 초상 · 새 한국식 자객 옷으로 다시`, `hit_${form}_g-84-wander-seoneul_v2.png`,
+      [`public/realm/${dir}/g-84-wander-seoneul.jpg`], '피격 초상이 옛 옷(닌자풍) 기준 · 초상이 한국식 저고리·두건으로 바뀜(11-19)',
+      `py -3 -I tools/hit-intake.py (_v2 우선) → public/realm/hit/${form === 'aw1' ? 'awaken' : 'bust'}/g-84-wander-seoneul.webp`, HIT_P(form))
+  }
   const LANE = { portrait: '초상', strip: '띠', skill: '비기', misc: '그 밖' }
   const seen = new Set()
   R.filter((r) => !seen.has(r.save) && seen.add(r.save)).sort((a, b) => a.priority - b.priority).forEach((r) => jobs.push({
