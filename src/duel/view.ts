@@ -13,7 +13,7 @@ import { makeRng } from '../core/rng.ts'
 import { AWAKEN_ART, AWAKEN_LOOP, loopFile } from '../realm/data/awaken-art.ts'
 import { SPRITE_PX } from '../realm/data/spritePx.ts'
 import { DUEL_ATLASES, LEGACY_ATLAS, fighterMotion, type FighterAnim } from './fighter-motion.ts'
-import { HitClock, drawHitPortrait, hitArtPath, hitStrength, type HitForm, type HitFrame } from '../ui/hit-portrait.ts'
+import { HitClock, drawHitPortrait, hitArtKey, hitArtPath, hitFocusSlide, hitStrength, type HitForm, type HitFrame } from '../ui/hit-portrait.ts'
 
 export interface DuelSide {
   readonly name: string
@@ -106,11 +106,21 @@ const meFace = mePid !== undefined ? img(`realm/bust/${mePid}.jpg`) : null
 const foeFace = foePid !== undefined ? img(`realm/bust/${foePid}.jpg`) : null
 /**
  * 맞은 초상 (11-17 형: 「맞았을 때 모습」 · ui/hit-portrait.ts) — 우리 얼굴(체력 막대 머리) · 적장 액자와 얼굴이 맞으면 붉게 번쩍 · 빛 빠짐 · 금.
- * 그리는 쪽 기억만 (판은 읽기만) · 피격 그림(realm/hit)은 있을 때만 부른다.
+ * 그리는 쪽 기억만 (판은 읽기만) · 피격 그림(realm/hit)은 있을 때만 부른다 · 피격 그림을 실어 그린 자리에는 금을 안 긋는다 (11-18 형).
+ * 얼굴 자리 (11-18 형: 「얼굴이 바깥에 나가 있는 그림은 얼굴이 안 보인다」):
+ *  - 적장 액자는 정사각 판에 정사각 그림을 통째로 그린다 → 안 잘리니 그대로.
+ *  - 체력 막대 머리는 그림을 창 지름의 FACE_ZOOM 배로 키워 둥글게 오린다 → 잘리니, 피격 그림은 얼굴이 보이게 그 남는 몫 안에서만 민다
+ *    (그림 끝을 넘지 않는다 · 얼굴 자료가 없으면 얼굴 그림과 같은 자리: 가로 가운데 · 위 끝). 셈은 창 크기와 무관한 몫이라 여기서 한 번만.
  */
 const meHit = new HitClock(), foeHit = new HitClock()
 const hitArt = (form: HitForm, pid: string | undefined): HTMLImageElement | null => { const p = hitArtPath(form, pid); return p === null ? null : img('realm/' + p) }
 const foePanelHitArt = hitArt('awaken', foePid), meFaceHitArt = hitArt('bust', mePid), foeFaceHitArt = hitArt('bust', foePid)
+/** 체력 막대 머리 — 얼굴 그림은 둥근 창 지름의 이 배수 (가로 가운데 · 위 끝 맞춤) */
+const FACE_ZOOM = 1.15
+/** 머리 창에서 피격 그림을 밀 몫 [가로, 세로] (0~1 · 남는 몫 가운데 얼마를 왼쪽·위로 넘길지) */
+const faceHitSlide = (pid: string | undefined): readonly [number, number] => { const s = hitFocusSlide(hitArtKey('bust', pid), 1, 1, FACE_ZOOM, FACE_ZOOM); return [s?.[0] ?? 0.5, s?.[1] ?? 0] }
+const meFaceHitSlide = faceHitSlide(mePid), foeFaceHitSlide = faceHitSlide(foePid)
+const artReady = (im: HTMLImageElement | null): im is HTMLImageElement => im !== null && im.complete && im.naturalWidth > 0
 const calmMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
 /** 피격 그림을 겉막 아래에 잠깐 (그림이 있을 때만) */
 const hitArtDraw = (im: HTMLImageElement | null, f: HitFrame, x: number, y: number, w: number, h: number, circle: boolean): void => {
@@ -1048,7 +1058,7 @@ function drawDuel(now: number, fadeIn: number): void {
   if (pb !== null) { ctx.globalAlpha = fadeIn; ctx.drawImage(pb, -pn.s / 2, -pn.s / 2, pn.s, pn.s); ctx.globalAlpha = 1 }
   else { roundRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s, pn.s * 0.06); ctx.fillStyle = 'rgba(10,7,5,.55)'; ctx.fill() }
   if (now - foeHurtAt < 120) { roundRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s, pn.s * 0.06); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(255,240,220,${0.28 * (1 - (now - foeHurtAt) / 120)})`; ctx.fill(); ctx.globalCompositeOperation = 'source-over' } // 맞으면 초상이 잠깐 하얗게 번쩍
-  if (fhit !== null) { ctx.globalAlpha = fadeIn; hitArtDraw(foePanelHitArt, fhit, -pn.s / 2, -pn.s / 2, pn.s, pn.s, false); drawHitPortrait(ctx, fhit, -pn.s / 2, -pn.s / 2, pn.s, pn.s, 'rect', pn.s * 0.06); ctx.globalAlpha = 1 } // 맞은 초상: 붉게 · 빛 빠짐 · 금
+  if (fhit !== null) { ctx.globalAlpha = fadeIn; hitArtDraw(foePanelHitArt, fhit, -pn.s / 2, -pn.s / 2, pn.s, pn.s, false); drawHitPortrait(ctx, fhit, -pn.s / 2, -pn.s / 2, pn.s, pn.s, 'rect', pn.s * 0.06, artReady(foePanelHitArt)); ctx.globalAlpha = 1 } // 맞은 초상: 붉게 · 빛 빠짐 · 피격 그림이 없을 때만 금
   const fr = art('panel-frame')
   if (fr !== null) { const F = pn.s / 0.89, Fh = pn.s / 0.877; ctx.drawImage(scaled(fr, F, Fh), -pn.s / 2 - 0.055 * F, -pn.s / 2 - 0.061 * Fh, F, Fh) } // 테두리 안쪽 창 = 그림의 5.5~94.5% · 6.1~93.8%
   else { ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(214,170,90,.85)'; roundRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s, pn.s * 0.06); ctx.stroke() }
@@ -1170,15 +1180,15 @@ function drawDuel(now: number, fadeIn: number): void {
   const capFoe = bar(bxFoe + jfx, by + jfy, bw, bh, d.foe.hp / Math.round(R.hp * tierOf(d).foeHp), now - foeHurtAt < 200 ? '#ffffff' : '#e76f51', 'right', 'hud-bar')
   pm('bars')
   // 둥근 머리 안에 얼굴
-  // 맞으면 얼굴도 붉게 · 빛 빠짐 · 금 (흔들림은 막대 떨림이 이미 준다) · 피격 그림이 있으면 그 얼굴로 잠깐
-  for (const [cap, face, hc, hitIm] of [[capMe, meFace, meHit, meFaceHitArt], [capFoe, foeFace, foeHit, foeFaceHitArt]] as const) {
+  // 맞으면 얼굴도 붉게 · 빛 빠짐 (흔들림은 막대 떨림이 이미 준다) · 피격 그림이 있으면 그 얼굴로 잠깐(얼굴이 보이게 밀어서) · 없으면 금
+  for (const [cap, face, hc, hitIm, sl] of [[capMe, meFace, meHit, meFaceHitArt, meFaceHitSlide], [capFoe, foeFace, foeHit, foeFaceHitArt, foeFaceHitSlide]] as const) {
     if (cap === null || face === null || !face.complete || face.naturalWidth === 0) continue
     const hf = hc.at(now, true)
     ctx.save(); ctx.beginPath(); ctx.arc(cap.cx, cap.cy, cap.r, 0, Math.PI * 2); ctx.clip()
     ctx.drawImage(face, cap.cx - cap.r * 1.15, cap.cy - cap.r * 1.0, cap.r * 2.3, cap.r * 2.3)
-    if (hf !== null && hitIm !== null && hf.art > 0.001 && hitIm.complete && hitIm.naturalWidth > 0) { ctx.globalAlpha = hf.art; ctx.drawImage(hitIm, cap.cx - cap.r * 1.15, cap.cy - cap.r * 1.0, cap.r * 2.3, cap.r * 2.3); ctx.globalAlpha = 1 }
+    if (hf !== null && hf.art > 0.001 && artReady(hitIm)) { const d = cap.r * 2 * FACE_ZOOM, spare = d - cap.r * 2; ctx.globalAlpha = hf.art; ctx.drawImage(hitIm, cap.cx - cap.r - sl[0] * spare, cap.cy - cap.r - sl[1] * spare, d, d); ctx.globalAlpha = 1 }
     ctx.restore()
-    if (hf !== null) drawHitPortrait(ctx, hf, cap.cx - cap.r, cap.cy - cap.r, cap.r * 2, cap.r * 2, 'circle')
+    if (hf !== null) drawHitPortrait(ctx, hf, cap.cx - cap.r, cap.cy - cap.r, cap.r * 2, cap.r * 2, 'circle', 0, artReady(hitIm))
   }
   const namePx = Math.round(14 * Math.max(1, hudS))
   const nameY = by + bh + Math.round(18 * Math.max(1, hudS))

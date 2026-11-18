@@ -42,7 +42,7 @@ import { cellColor, lookCells, lookNums, oneChance, pctText, signed, type LookCe
 import { t as tr, type Key } from '../../i18n/index.ts'
 import { nameTable } from '../../i18n/names.ts'
 import { WALK_CYCLE } from '../../raid/walk-cycle.ts'
-import { ensureHitPortraitCss, hitArtPath, hitPortraitHtml } from '../hit-portrait.ts'
+import { ensureHitPortraitCss, hitFaceKey, hitKeyPath, hitPortraitHtml, warmHitArt } from '../hit-portrait.ts'
 /** 걷기 띠가 6·4칸이면 그 칸까지만 돈다 (8칸으로 돌리면 한 바퀴마다 같은 두 걸음이 거듭 나와 턱 걸림 · 형 11-16) · 20칸 띠의 칸 k 는 k/19 */
 const walkVars = (file: string): string => { const n = WALK_CYCLE[file]; return n === undefined ? '' : `;--w1:${((4 + n) / 19 * 100).toFixed(4)}%;--gwn:${n}` }
 
@@ -1581,8 +1581,11 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const mr = (x: number): number => Math.round(Math.max(0, Math.min(1.2, x / base)) * 83)
     const num = `<span class="wn">${tr('war.warhtml.1', { cnt: cnt(old, now) })}</span>`
     const hitFx = hitOf(i) !== '' ? `<img class="wfx-hit" src="${art}fx/impact.png" alt="">` : ''
-    // 맞은 초상 (11-17 형 · ui/hit-portrait.ts) — 흔들림과 같은 때(--hd) 초상 위에 붉은 빛 · 빛 빠짐 · 금 · 크게 잃으면 세게
-    const hitArt = hitArtPath('bust', hero !== null ? faceFile(hero) : undefined)
+    // 맞은 초상 (11-17 형 · ui/hit-portrait.ts) — 흔들림과 같은 때(--hd) 초상 위에 붉은 빛 · 빛 빠짐 · 크게 잃으면 세게 · 피격 그림이 없을 때만 금 (11-18 형)
+    // 피격 그림은 지금 떠 있는 얼굴과 같은 결로 — 각성한 장수의 얼굴 이름은 `../awaken-hd/<id>` 라 'bust' 열쇠로는 안 맞았다 (11-18 고침 · hitFaceKey)
+    // 이 판(.wpf 안 84% 정사각)에 정사각 피격 그림은 안 잘린다 → 얼굴 자리 셈(hitArtPos)은 쓰지 않는다. 그림은 미리 받아 둔다 (실린 뒤에야 금을 끈다)
+    const hitArt = hitKeyPath(hitFaceKey(hero !== null ? faceFile(hero) : undefined))
+    if (hitArt !== null) warmHitArt(art + hitArt)
     const hitPic = hitOf(i) === '' ? '' : (ensureHitPortraitCss(), hitPortraitHtml(hitOf(i).includes('hithard') ? 1 : 0.45, { delay: 'var(--hd, 1.2s)', inset: '8%', seed: i, pos: 'top', art: hitArt === null ? null : art + hitArt }))
     // 잃은 사람 수 · 꺾인 사기는 전장 한가운데 배지로 튄다 (fieldHtml 의 popOf · 형 11-01: "화면 중앙부근에서") — 위 카드에서는 막대와 숫자만 준다
     // 호궤를 고를 수 있으면 — 그 깃발에 마우스를 올리거나 누르고 있거나 골라 두면 사기 막대에 오를 몫이 깜박인다 (형 10-25)

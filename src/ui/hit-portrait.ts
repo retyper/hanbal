@@ -12,23 +12,126 @@
  * 폰 그래픽 (메모리 mobile-gpu-layer-limit · ui/gfxsafe.ts): 넓은 판에 filter 애니 금지 · 부드러운 그러데이션 금지.
  * 그래서 채도 빠짐은 잿빛 단색 막의 opacity 로 흉내 내고, 붉은 빛도 단색 + 안쪽 그림자 · 움직이는 것은 opacity 와 작은 transform 한 번뿐.
  *
- * 나중에 장수별 피격 초상 그림(public/realm/hit/<form>/<초상 id>.webp)이 생기면 HIT_ART 에 한 줄 적는다 → 그 그림을 잠깐 바꿔 보여 준다.
+ * 장수별 피격 초상 그림(public/realm/hit/<form>/<초상 id>.webp)이 있으면 HIT_ART 에 한 줄 적는다 → 그 그림을 잠깐 바꿔 보여 준다.
  * 없는 그림은 부르지 않는다 (맞을 때마다 404 를 내지 않게).
+ *
+ * 얼굴 자리 (11-18 형: 「열전에서는 그림 전체가 안 나와서 얼굴이 바깥에 나가 있는 그림은 얼굴이 안 보인다」):
+ *  - 그림마다 얼굴 가운데 자리를 미리 재 둔다 (hit-focus.generated.ts HIT_FOCUS). 판이 그림을 잘라 보여 주면(cover) 잘리는 축에서만 그림을 밀어
+ *    얼굴이 보이게 한다 — 그림 끝을 넘지 않는다 (판 바탕이 드러나지 않는다). 뒤집지 않는다 (무기 든 손이 바뀐다).
+ *  - 판 크기는 맞는 순간 한 번 잰다 (기기·화면에 매이지 않는다 · 프레임마다 재지 않는다). 자리 자료가 없으면 예전 자리 그대로.
+ *  - 피격 그림이 실려 있으면 금은 끈다 (hitPortraitCrackWithArt · 형: 「깨지는 연출은 필요 없지 않을까」). 그림이 없거나 덜 실렸으면 금까지 예전 그대로.
+ *  - 「실렸다」 = 받은 Image 를 쥐고 있고 다 실렸다 (warmHitArt · 최근 HIT_ART_KEEP 장). 쥐고 있어야 맞을 때 끼우는 그림이 망을 다시 타지 않고 곧바로 뜬다
+ *    (hitPortrait 는 쥐고 있는 그 Image 를 그대로 끼운다).
  *
  * 그리기 쪽만 쓴다 — 판 상태는 읽기만 (절대 규칙 2). 맨 위에서 document 를 만지지 않는다 (node 시험이 이 파일을 읽는다).
  */
 import { P } from '../tune/params.ts'
+import { HIT_FOCUS } from './hit-focus.generated.ts'
 
-/** 초상 결 — bust(기본 원화) · awaken(각성 원화) */
-export type HitForm = 'bust' | 'awaken'
-/** 피격 그림이 있는 초상 — `${결}/${초상 id}` (public/realm/hit/<결>/<id>.webp). 지금은 그림 없음 */
+/** 초상 결 — bust(기본 원화) · awaken(각성 원화) · awaken2(진각성 원화 · 그 모습이 화면에 떠 있을 때만) */
+export type HitForm = 'bust' | 'awaken' | 'awaken2'
+/** 피격 그림이 있는 초상 — `${결}/${초상 id}` (public/realm/hit/<결>/<id>.webp) */
 export const HIT_ART: ReadonlySet<string> = new Set<string>(['awaken/g-01-master-smith', 'awaken/g-02-goguryeo-archer-prince', 'awaken/g-03-sea-trader', 'awaken/g-04-jinhan-giant', 'awaken/g-05-mahan-chieftain', 'awaken/g-06-strategist', 'awaken/g-07-drunk-warrior', 'awaken/g-08-veteran', 'awaken/g-09-farmer-conscript', 'awaken/g-10-buyeo-horse-lord', 'awaken/g-100-buyeo-old-daeso', 'awaken/g-101-garak-adogan', 'awaken/g-102-garak-yeodogan', 'awaken/g-103-garak-pidogan', 'awaken/g-104-garak-odogan', 'awaken/g-105-garak-yusugan', 'awaken/g-106-garak-ocheongan', 'awaken/g-107-garak-musoe', 'awaken/g-11-gaya-iron-general', 'awaken/g-12-silla-youth', 'awaken/g-13-baekje-general', 'awaken/g-15-shaman-man', 'awaken/g-16-goguryeo-gaema-commander', 'awaken/g-17-saro-isageum', 'awaken/g-18-daegaya-king', 'awaken/g-19-sabeol-veteran', 'awaken/g-20-samul-sea-lord', 'awaken/g-21-baekje-onnuri', 'awaken/g-22-ungcheon-gomnae', 'awaken/g-23-sangdang-soedal', 'awaken/g-24-wansan-onsan', 'awaken/g-25-balla-keunmoe', 'awaken/g-26-gampyeong-gaetbeol', 'awaken/g-27-maek-maekdol', 'awaken/g-28-goguryeo-damul', 'awaken/g-29-yeonna-myeongsol', 'awaken/g-30-gwanna-soemoe', 'awaken/g-31-buyeo-geumha', 'awaken/g-32-uga-sodu', 'awaken/g-33-jeoga-metdol', 'awaken/g-34-bukokjeo-duman', 'awaken/g-35-dabeol-dalgu', 'awaken/g-36-gammun-gamdol', 'awaken/g-37-eumjeup-jeup', 'awaken/g-38-chopal-palmae', 'awaken/g-40-anya-adan', 'awaken/g-41-goja-bau', 'awaken/g-42-dokro-garam', 'awaken/g-43-hwanna-amnok', 'awaken/g-44-maga-malgup', 'awaken/g-45-dabeol-deulgae', 'awaken/g-46-uga-nureongso', 'awaken/g-47-guga-sanyanggae', 'awaken/g-48-gwanna-musoe', 'awaken/g-49-goguryeo-sona', 'awaken/g-50-bullae-gwaha', 'awaken/g-51-biryuna-mulgyeol', 'awaken/g-52-tamna-oreum', 'awaken/g-53-baekje-haeru', 'awaken/g-54-mokji-mahan', 'awaken/g-55-saro-bakdal', 'awaken/g-56-haseulla-gwahama', 'awaken/g-57-bihwa-neup', 'awaken/g-58-usan-uhae', 'awaken/g-59-yangmaek-maekson', 'awaken/g-60-eupcha-hangyeol', 'awaken/g-60-golbeol-golgae', 'awaken/g-61-apdok-ap', 'awaken/g-61-heomcheuk-bawi', 'awaken/g-62-beonye-hanul', 'awaken/g-62-gammun-gamnamu', 'awaken/g-63-chopal-yeoul', 'awaken/g-63-heomcheuk-beogeum', 'awaken/g-64-jumong', 'awaken/g-64-michuhol-sogeumkkun', 'awaken/g-65-goguryeo-damul', 'awaken/g-65-sangdang-soemangchi', 'awaken/g-66-buyeo-geumha', 'awaken/g-66-geonma-malbalgup', 'awaken/g-67-buyeo-daeso', 'awaken/g-67-gosaburi-buri', 'awaken/g-68-baekje-onnuri', 'awaken/g-68-mujin-bitgoeul', 'awaken/g-69-goryong-yong', 'awaken/g-69-guya-soebo', 'awaken/g-70-siljik-pado', 'awaken/g-71-baekje-onjo', 'awaken/g-73-baekje-eureum', 'awaken/g-74-saro-hyeokgeose', 'awaken/g-75-saro-hogong', 'awaken/g-76-mokji-jinha', 'awaken/g-77-saro-sobeol', 'awaken/g-78-saro-alpyeong', 'awaken/g-79-saro-jibaekho', 'awaken/g-80-saro-guryema', 'awaken/g-81-saro-jita', 'awaken/g-82-saro-hojin', 'awaken/g-83-mokji-keundol', 'awaken/g-84-wander-seoneul', 'awaken/g-85-wander-ure', 'awaken/g-86-mokji-geumbawi', 'awaken/g-87-wae-chief', 'awaken/g-88-wander-soeul', 'awaken/g-89-baekje-maryeo', 'awaken/g-90-haengin-gomok', 'awaken/g-91-biryu-songyang', 'awaken/g-92-goguryeo-mari', 'awaken/g-93-jomun-solgae', 'awaken/g-94-golpo-maenun', 'awaken/g-95-goguryeo-daemusin', 'awaken/g-96-garak-suro', 'awaken/g-97-tahae', 'awaken/g-98-goguryeo-gwaeyu', 'awaken/g-99-goguryeo-maro', 'awaken/l-L1-yuhwa', 'awaken/l-L10-pyeonggang', 'awaken/l-L2-soseono', 'awaken/l-L3-heo-hwangok', 'awaken/l-L4-bari-gongju', 'awaken/l-L5-seonyeo', 'awaken/l-L6-jeonggyeon-moju', 'awaken/l-L7-aryeong', 'awaken/l-L8-nangnang-princess', 'awaken/l-L9-ungnyeo', 'awaken/w-01-silla-princess', 'awaken/w-02-goguryeo-lady', 'awaken/w-03-goguryeo-archer', 'awaken/w-04-gaya-swordswoman', 'awaken/w-05-baekje-queen', 'awaken/w-06-buyeo-huntress', 'awaken/w-08-mahan-warrior', 'awaken/w-09-byeonhan-smith', 'awaken/w-10-pirate-captain', 'awaken/w-100-garak-sincheongan', 'awaken/w-101-garak-singwigan', 'awaken/w-102-garak-dana', 'awaken/w-103-tahae-neoul', 'awaken/w-104-buyeo-darae', 'awaken/w-11-assassin', 'awaken/w-12-court-dancer', 'awaken/w-13-young-archer', 'awaken/w-14-feast-spy', 'awaken/w-17-mahan-pearl-diver', 'awaken/w-18-jinhan-salt-widow', 'awaken/w-19-buyeo-fur-princess', 'awaken/w-20-gaya-smith-daughter', 'awaken/w-21-baekje-court-dancer', 'awaken/w-22-dongye-tiger-huntress', 'awaken/w-23-usisan-whale-queen', 'awaken/w-24-apdok-queen', 'awaken/w-25-bihwa-priestess', 'awaken/w-26-iseo-tomboy-general', 'awaken/w-27-mokji-jinha', 'awaken/w-28-michuhol-bira', 'awaken/w-29-golpo-janmul', 'awaken/w-30-guya-soebi', 'awaken/w-31-dabeol-dalbit', 'awaken/w-32-golbeol-budeul', 'awaken/w-33-gammun-gamsil', 'awaken/w-34-chopal-deulme', 'awaken/w-35-jomun-odi', 'awaken/w-36-baekje-maena', 'awaken/w-37-michuhol-gaennae', 'awaken/w-38-sangdang-bulmae', 'awaken/w-39-gosaburi-galmae', 'awaken/w-40-mujin-munui', 'awaken/w-41-hwanna-beodeul', 'awaken/w-42-gwanna-soenun', 'awaken/w-43-uga-nuri', 'awaken/w-44-okjeo-sogeumbi', 'awaken/w-45-tamna-oreumbi', 'awaken/w-46-geonma-maru', 'awaken/w-47-gosaburi-baram', 'awaken/w-48-mujin-mudeung', 'awaken/w-49-goryong-gureum', 'awaken/w-50-siljik-mulga', 'awaken/w-51-haseulla-dangung', 'awaken/w-52-biryuna-songbi', 'awaken/w-53-hwanna-gabi', 'awaken/w-54-maga-dalli', 'awaken/w-55-guga-nuri', 'awaken/w-56-dongokjeo-sogeum', 'awaken/w-57-bullae-bakdal', 'awaken/w-58-tamna-halla', 'awaken/w-59-jomun-irang', 'awaken/w-60-golbeol-beom', 'awaken/w-61-iseo-sinae', 'awaken/w-62-byeokjin-byeol', 'awaken/w-63-us-haesol', 'awaken/w-64-miri-dallae', 'awaken/w-65-goguryeo-hwalmi', 'awaken/w-66-saro-noeul', 'awaken/w-67-buyeo-haedal', 'awaken/w-68-maek-beombal', 'awaken/w-69-jeoga-eomni', 'awaken/w-70-bukokjeo-mulbeom', 'awaken/w-71-yeonna-neoul', 'awaken/w-72-eumjeup-beol', 'awaken/w-73-samul-sagong', 'awaken/w-74-balla-dokmudeom', 'awaken/w-75-daegaya-soemoe', 'awaken/w-76-gampyeong-baetsagong', 'awaken/w-77-sabeol-malgalgi', 'awaken/w-78-wansan-wan', 'awaken/w-79-yangmaek-solmae', 'awaken/w-80-usan-gangchi', 'awaken/w-81-byeokjin-byeolbit', 'awaken/w-82-ungcheon-gom', 'awaken/w-83-gyeonji-beodeul', 'awaken/w-84-salhae-dallae', 'awaken/w-85-sinji-neoul', 'awaken/w-90-saro-danbi', 'awaken/w-91-saro-mulsae', 'awaken/w-92-saro-dallae', 'awaken/w-93-saro-beomi', 'awaken/w-94-mokji-dallae', 'awaken/w-95-michuhol-haebi', 'awaken/w-96-haengin-neoul', 'awaken/w-97-goguryeo-mir', 'awaken/w-98-byeonhan-danbi', 'awaken/w-99-garak-yucheongan', 'awaken2/g-01-master-smith', 'awaken2/g-02-goguryeo-archer-prince', 'awaken2/g-03-sea-trader', 'awaken2/g-04-jinhan-giant', 'awaken2/g-05-mahan-chieftain', 'awaken2/g-06-strategist', 'awaken2/g-07-drunk-warrior', 'awaken2/g-08-veteran', 'awaken2/g-09-farmer-conscript', 'awaken2/g-10-buyeo-horse-lord', 'awaken2/g-11-gaya-iron-general', 'awaken2/g-12-silla-youth', 'awaken2/g-13-baekje-general', 'awaken2/g-15-shaman-man', 'awaken2/g-16-goguryeo-gaema-commander', 'awaken2/g-17-saro-isageum', 'awaken2/g-18-daegaya-king', 'awaken2/g-19-sabeol-veteran', 'awaken2/g-20-samul-sea-lord', 'awaken2/g-21-baekje-onnuri', 'awaken2/g-22-ungcheon-gomnae', 'awaken2/g-23-sangdang-soedal', 'awaken2/g-24-wansan-onsan', 'awaken2/g-25-balla-keunmoe', 'awaken2/g-26-gampyeong-gaetbeol', 'awaken2/g-27-maek-maekdol', 'awaken2/g-29-yeonna-myeongsol', 'awaken2/g-30-gwanna-soemoe', 'awaken2/g-31-buyeo-geumha', 'awaken2/g-33-jeoga-metdol', 'awaken2/g-34-bukokjeo-duman', 'awaken2/g-35-dabeol-dalgu', 'awaken2/g-36-gammun-gamdol', 'awaken2/g-37-eumjeup-jeup', 'awaken2/g-38-chopal-palmae', 'awaken2/g-40-anya-adan', 'awaken2/g-41-goja-bau', 'awaken2/g-42-dokro-garam', 'awaken2/g-43-hwanna-amnok', 'awaken2/g-44-maga-malgup', 'awaken2/g-45-dabeol-deulgae', 'awaken2/g-46-uga-nureongso', 'awaken2/g-47-guga-sanyanggae', 'awaken2/g-48-gwanna-musoe', 'awaken2/g-49-goguryeo-sona', 'awaken2/g-50-bullae-gwaha', 'awaken2/g-51-biryuna-mulgyeol', 'awaken2/g-52-tamna-oreum', 'awaken2/g-53-baekje-haeru', 'awaken2/g-54-mokji-mahan', 'awaken2/g-55-saro-bakdal', 'awaken2/g-56-haseulla-gwahama', 'awaken2/g-57-bihwa-neup', 'awaken2/g-58-usan-uhae', 'awaken2/g-59-yangmaek-maekson', 'awaken2/g-60-eupcha-hangyeol', 'awaken2/g-60-golbeol-golgae', 'awaken2/g-61-apdok-ap', 'awaken2/g-61-heomcheuk-bawi', 'awaken2/g-62-beonye-hanul', 'awaken2/g-62-gammun-gamnamu', 'awaken2/g-63-chopal-yeoul', 'awaken2/g-63-heomcheuk-beogeum', 'awaken2/g-65-goguryeo-damul', 'awaken2/g-65-sangdang-soemangchi', 'awaken2/g-66-buyeo-geumha', 'awaken2/g-67-buyeo-daeso', 'awaken2/g-67-gosaburi-buri', 'awaken2/g-68-baekje-onnuri', 'awaken2/g-69-goryong-yong', 'awaken2/g-69-guya-soebo', 'awaken2/g-70-siljik-pado', 'awaken2/g-73-baekje-eureum', 'awaken2/g-75-saro-hogong', 'awaken2/g-77-saro-sobeol', 'awaken2/g-79-saro-jibaekho', 'awaken2/g-81-saro-jita', 'awaken2/g-83-mokji-keundol', 'awaken2/l-L1-yuhwa', 'awaken2/l-L10-pyeonggang', 'awaken2/l-L2-soseono', 'awaken2/l-L3-heo-hwangok', 'awaken2/l-L4-bari-gongju', 'awaken2/l-L5-seonyeo', 'awaken2/l-L6-jeonggyeon-moju', 'awaken2/l-L7-aryeong', 'awaken2/l-L8-nangnang-princess', 'awaken2/l-L9-ungnyeo', 'awaken2/w-01-silla-princess', 'awaken2/w-02-goguryeo-lady', 'awaken2/w-03-goguryeo-archer', 'awaken2/w-04-gaya-swordswoman', 'awaken2/w-05-baekje-queen', 'awaken2/w-06-buyeo-huntress', 'awaken2/w-08-mahan-warrior', 'awaken2/w-09-byeonhan-smith', 'awaken2/w-10-pirate-captain', 'awaken2/w-100-garak-sincheongan', 'awaken2/w-101-garak-singwigan', 'awaken2/w-102-garak-dana', 'awaken2/w-103-tahae-neoul', 'awaken2/w-104-buyeo-darae', 'awaken2/w-11-assassin', 'awaken2/w-12-court-dancer', 'awaken2/w-13-young-archer', 'awaken2/w-14-feast-spy', 'awaken2/w-17-mahan-pearl-diver', 'awaken2/w-18-jinhan-salt-widow', 'awaken2/w-19-buyeo-fur-princess', 'awaken2/w-20-gaya-smith-daughter', 'awaken2/w-21-baekje-court-dancer', 'awaken2/w-22-dongye-tiger-huntress', 'awaken2/w-23-usisan-whale-queen', 'awaken2/w-24-apdok-queen', 'awaken2/w-25-bihwa-priestess', 'awaken2/w-26-iseo-tomboy-general', 'awaken2/w-27-mokji-jinha', 'awaken2/w-28-michuhol-bira', 'awaken2/w-29-golpo-janmul', 'awaken2/w-30-guya-soebi', 'awaken2/w-31-dabeol-dalbit', 'awaken2/w-32-golbeol-budeul', 'awaken2/w-33-gammun-gamsil', 'awaken2/w-34-chopal-deulme', 'awaken2/w-35-jomun-odi', 'awaken2/w-36-baekje-maena', 'awaken2/w-37-michuhol-gaennae', 'awaken2/w-38-sangdang-bulmae', 'awaken2/w-39-gosaburi-galmae', 'awaken2/w-40-mujin-munui', 'awaken2/w-41-hwanna-beodeul', 'awaken2/w-42-gwanna-soenun', 'awaken2/w-43-uga-nuri', 'awaken2/w-44-okjeo-sogeumbi', 'awaken2/w-45-tamna-oreumbi', 'awaken2/w-46-geonma-maru', 'awaken2/w-47-gosaburi-baram', 'awaken2/w-48-mujin-mudeung', 'awaken2/w-49-goryong-gureum', 'awaken2/w-50-siljik-mulga', 'awaken2/w-51-haseulla-dangung', 'awaken2/w-52-biryuna-songbi', 'awaken2/w-53-hwanna-gabi', 'awaken2/w-54-maga-dalli', 'awaken2/w-55-guga-nuri', 'awaken2/w-56-dongokjeo-sogeum', 'awaken2/w-57-bullae-bakdal', 'awaken2/w-58-tamna-halla', 'awaken2/w-59-jomun-irang', 'awaken2/w-60-golbeol-beom', 'awaken2/w-61-iseo-sinae', 'awaken2/w-62-byeokjin-byeol', 'awaken2/w-63-us-haesol', 'awaken2/w-64-miri-dallae', 'awaken2/w-65-goguryeo-hwalmi', 'awaken2/w-66-saro-noeul', 'awaken2/w-67-buyeo-haedal', 'awaken2/w-68-maek-beombal', 'awaken2/w-69-jeoga-eomni', 'awaken2/w-70-bukokjeo-mulbeom', 'awaken2/w-71-yeonna-neoul', 'awaken2/w-72-eumjeup-beol', 'awaken2/w-73-samul-sagong', 'awaken2/w-74-balla-dokmudeom', 'awaken2/w-75-daegaya-soemoe', 'awaken2/w-76-gampyeong-baetsagong', 'awaken2/w-77-sabeol-malgalgi', 'awaken2/w-78-wansan-wan', 'awaken2/w-79-yangmaek-solmae', 'awaken2/w-80-usan-gangchi', 'awaken2/w-81-byeokjin-byeolbit', 'awaken2/w-82-ungcheon-gom', 'awaken2/w-83-gyeonji-beodeul', 'awaken2/w-84-salhae-dallae', 'awaken2/w-85-sinji-neoul', 'awaken2/w-90-saro-danbi', 'awaken2/w-91-saro-mulsae', 'awaken2/w-92-saro-dallae', 'awaken2/w-93-saro-beomi', 'awaken2/w-94-mokji-dallae', 'awaken2/w-95-michuhol-haebi', 'awaken2/w-96-haengin-neoul', 'awaken2/w-97-goguryeo-mir', 'awaken2/w-98-byeonhan-danbi', 'awaken2/w-99-garak-yucheongan', 'bust/g-01-master-smith', 'bust/g-02-goguryeo-archer-prince', 'bust/g-03-sea-trader', 'bust/g-04-jinhan-giant', 'bust/g-05-mahan-chieftain', 'bust/g-06-strategist', 'bust/g-07-drunk-warrior', 'bust/g-08-veteran', 'bust/g-09-farmer-conscript', 'bust/g-10-buyeo-horse-lord', 'bust/g-100-buyeo-old-daeso', 'bust/g-101-garak-adogan', 'bust/g-102-garak-yeodogan', 'bust/g-103-garak-pidogan', 'bust/g-104-garak-odogan', 'bust/g-105-garak-yusugan', 'bust/g-106-garak-ocheongan', 'bust/g-107-garak-musoe', 'bust/g-11-gaya-iron-general', 'bust/g-12-silla-youth', 'bust/g-13-baekje-general', 'bust/g-15-shaman-man', 'bust/g-16-goguryeo-gaema-commander', 'bust/g-17-saro-isageum', 'bust/g-18-daegaya-king', 'bust/g-19-sabeol-veteran', 'bust/g-20-samul-sea-lord', 'bust/g-21-baekje-onnuri', 'bust/g-22-ungcheon-gomnae', 'bust/g-23-sangdang-soedal', 'bust/g-24-wansan-onsan', 'bust/g-25-balla-keunmoe', 'bust/g-26-gampyeong-gaetbeol', 'bust/g-27-maek-maekdol', 'bust/g-28-goguryeo-damul', 'bust/g-29-yeonna-myeongsol', 'bust/g-30-gwanna-soemoe', 'bust/g-31-buyeo-geumha', 'bust/g-32-uga-sodu', 'bust/g-33-jeoga-metdol', 'bust/g-34-bukokjeo-duman', 'bust/g-35-dabeol-dalgu', 'bust/g-36-gammun-gamdol', 'bust/g-37-eumjeup-jeup', 'bust/g-38-chopal-palmae', 'bust/g-40-anya-adan', 'bust/g-41-goja-bau', 'bust/g-42-dokro-garam', 'bust/g-43-hwanna-amnok', 'bust/g-44-maga-malgup', 'bust/g-45-dabeol-deulgae', 'bust/g-46-uga-nureongso', 'bust/g-47-guga-sanyanggae', 'bust/g-48-gwanna-musoe', 'bust/g-49-goguryeo-sona', 'bust/g-50-bullae-gwaha', 'bust/g-51-biryuna-mulgyeol', 'bust/g-52-tamna-oreum', 'bust/g-53-baekje-haeru', 'bust/g-54-mokji-mahan', 'bust/g-55-saro-bakdal', 'bust/g-56-haseulla-gwahama', 'bust/g-57-bihwa-neup', 'bust/g-58-usan-uhae', 'bust/g-59-yangmaek-maekson', 'bust/g-60-eupcha-hangyeol', 'bust/g-60-golbeol-golgae', 'bust/g-61-apdok-ap', 'bust/g-61-heomcheuk-bawi', 'bust/g-62-beonye-hanul', 'bust/g-62-gammun-gamnamu', 'bust/g-63-chopal-yeoul', 'bust/g-63-heomcheuk-beogeum', 'bust/g-64-jumong', 'bust/g-64-michuhol-sogeumkkun', 'bust/g-65-goguryeo-damul', 'bust/g-65-sangdang-soemangchi', 'bust/g-66-buyeo-geumha', 'bust/g-66-geonma-malbalgup', 'bust/g-67-buyeo-daeso', 'bust/g-67-gosaburi-buri', 'bust/g-68-baekje-onnuri', 'bust/g-68-mujin-bitgoeul', 'bust/g-69-goryong-yong', 'bust/g-69-guya-soebo', 'bust/g-70-siljik-pado', 'bust/g-71-baekje-onjo', 'bust/g-73-baekje-eureum', 'bust/g-74-saro-hyeokgeose', 'bust/g-75-saro-hogong', 'bust/g-76-mokji-jinha', 'bust/g-77-saro-sobeol', 'bust/g-78-saro-alpyeong', 'bust/g-79-saro-jibaekho', 'bust/g-80-saro-guryema', 'bust/g-81-saro-jita', 'bust/g-82-saro-hojin', 'bust/g-83-mokji-keundol', 'bust/g-84-wander-seoneul', 'bust/g-85-wander-ure', 'bust/g-86-mokji-geumbawi', 'bust/g-87-wae-chief', 'bust/g-88-wander-soeul', 'bust/g-89-baekje-maryeo', 'bust/g-90-haengin-gomok', 'bust/g-91-biryu-songyang', 'bust/g-92-goguryeo-mari', 'bust/g-93-jomun-solgae', 'bust/g-94-golpo-maenun', 'bust/g-95-goguryeo-daemusin', 'bust/g-96-garak-suro', 'bust/g-97-tahae', 'bust/g-98-goguryeo-gwaeyu', 'bust/g-99-goguryeo-maro', 'bust/l-L1-yuhwa', 'bust/l-L10-pyeonggang', 'bust/l-L2-soseono', 'bust/l-L3-heo-hwangok', 'bust/l-L4-bari-gongju', 'bust/l-L5-seonyeo', 'bust/l-L6-jeonggyeon-moju', 'bust/l-L7-aryeong', 'bust/l-L8-nangnang-princess', 'bust/l-L9-ungnyeo', 'bust/w-01-silla-princess', 'bust/w-02-goguryeo-lady', 'bust/w-03-goguryeo-archer', 'bust/w-04-gaya-swordswoman', 'bust/w-05-baekje-queen', 'bust/w-06-buyeo-huntress', 'bust/w-08-mahan-warrior', 'bust/w-09-byeonhan-smith', 'bust/w-10-pirate-captain', 'bust/w-100-garak-sincheongan', 'bust/w-101-garak-singwigan', 'bust/w-102-garak-dana', 'bust/w-103-tahae-neoul', 'bust/w-104-buyeo-darae', 'bust/w-11-assassin', 'bust/w-12-court-dancer', 'bust/w-13-young-archer', 'bust/w-14-feast-spy', 'bust/w-17-mahan-pearl-diver', 'bust/w-18-jinhan-salt-widow', 'bust/w-19-buyeo-fur-princess', 'bust/w-20-gaya-smith-daughter', 'bust/w-21-baekje-court-dancer', 'bust/w-22-dongye-tiger-huntress', 'bust/w-23-usisan-whale-queen', 'bust/w-24-apdok-queen', 'bust/w-25-bihwa-priestess', 'bust/w-26-iseo-tomboy-general', 'bust/w-27-mokji-jinha', 'bust/w-28-michuhol-bira', 'bust/w-29-golpo-janmul', 'bust/w-30-guya-soebi', 'bust/w-31-dabeol-dalbit', 'bust/w-32-golbeol-budeul', 'bust/w-33-gammun-gamsil', 'bust/w-34-chopal-deulme', 'bust/w-35-jomun-odi', 'bust/w-36-baekje-maena', 'bust/w-37-michuhol-gaennae', 'bust/w-38-sangdang-bulmae', 'bust/w-39-gosaburi-galmae', 'bust/w-40-mujin-munui', 'bust/w-41-hwanna-beodeul', 'bust/w-42-gwanna-soenun', 'bust/w-43-uga-nuri', 'bust/w-44-okjeo-sogeumbi', 'bust/w-45-tamna-oreumbi', 'bust/w-46-geonma-maru', 'bust/w-47-gosaburi-baram', 'bust/w-48-mujin-mudeung', 'bust/w-49-goryong-gureum', 'bust/w-50-siljik-mulga', 'bust/w-51-haseulla-dangung', 'bust/w-52-biryuna-songbi', 'bust/w-53-hwanna-gabi', 'bust/w-54-maga-dalli', 'bust/w-55-guga-nuri', 'bust/w-56-dongokjeo-sogeum', 'bust/w-57-bullae-bakdal', 'bust/w-58-tamna-halla', 'bust/w-59-jomun-irang', 'bust/w-60-golbeol-beom', 'bust/w-61-iseo-sinae', 'bust/w-62-byeokjin-byeol', 'bust/w-63-us-haesol', 'bust/w-64-miri-dallae', 'bust/w-65-goguryeo-hwalmi', 'bust/w-66-saro-noeul', 'bust/w-67-buyeo-haedal', 'bust/w-68-maek-beombal', 'bust/w-69-jeoga-eomni', 'bust/w-70-bukokjeo-mulbeom', 'bust/w-71-yeonna-neoul', 'bust/w-72-eumjeup-beol', 'bust/w-73-samul-sagong', 'bust/w-74-balla-dokmudeom', 'bust/w-75-daegaya-soemoe', 'bust/w-76-gampyeong-baetsagong', 'bust/w-77-sabeol-malgalgi', 'bust/w-78-wansan-wan', 'bust/w-79-yangmaek-solmae', 'bust/w-80-usan-gangchi', 'bust/w-81-byeokjin-byeolbit', 'bust/w-82-ungcheon-gom', 'bust/w-83-gyeonji-beodeul', 'bust/w-84-salhae-dallae', 'bust/w-85-sinji-neoul', 'bust/w-90-saro-danbi', 'bust/w-91-saro-mulsae', 'bust/w-92-saro-dallae', 'bust/w-93-saro-beomi', 'bust/w-94-mokji-dallae', 'bust/w-95-michuhol-haebi', 'bust/w-96-haengin-neoul', 'bust/w-97-goguryeo-mir', 'bust/w-98-byeonhan-danbi', 'bust/w-99-garak-yucheongan'])
+/** 피격 그림 열쇠 (`${결}/${초상 id}` · HIT_ART 와 HIT_FOCUS 가 같이 쓴다) — 그림이 없으면 null */
+export const hitArtKey = (form: HitForm, bust: string | null | undefined): string | null =>
+  bust !== null && bust !== undefined && HIT_ART.has(`${form}/${bust}`) ? `${form}/${bust}` : null
+/** 열쇠 → 피격 그림 길 (realm/ 아래) */
+export const hitKeyPath = (key: string | null): string | null => (key === null ? null : `hit/${key}.webp`)
 /** 피격 그림 길 (realm/ 아래) — 없으면 null */
-export const hitArtPath = (form: HitForm, bust: string | null | undefined): string | null =>
-  bust !== null && bust !== undefined && HIT_ART.has(`${form}/${bust}`) ? `hit/${form}/${bust}.webp` : null
+export const hitArtPath = (form: HitForm, bust: string | null | undefined): string | null => hitKeyPath(hitArtKey(form, bust))
+/** 화면 얼굴 이름의 앞머리 → 결 (컷인과 같은 약속 · ui/realm/face.ts faceFile · ui/cutin-band.ts) */
+const FACE_DIRS: readonly (readonly [string, HitForm])[] = [['../awaken2-hd/', 'awaken2'], ['../awaken-hd/', 'awaken']]
+/**
+ * 화면에 그리는 얼굴 이름(초상 id · `../awaken-hd/<id>` 각성 · `../awaken2-hd/<id>` 진각성) → 피격 그림 열쇠 · 없으면 null.
+ * 맞은 초상은 지금 떠 있는 모습과 같은 결이어야 한다 (맞는 순간 옷이 바뀌면 안 된다).
+ */
+export function hitFaceKey(file: string | null | undefined): string | null {
+  if (file === null || file === undefined) return null
+  for (const [dir, form] of FACE_DIRS) if (file.startsWith(dir)) return hitArtKey(form, file.slice(dir.length))
+  return hitArtKey('bust', file)
+}
 
 const clamp01 = (x: number): number => (x < 0 ? 0 : x > 1 ? 1 : x)
 const mix = (a: number, b: number, s: number): number => a + (b - a) * s
+
+// ── 얼굴 자리 (잘려 보이는 판에서 얼굴이 보이게 그림을 민다)
+/** 얼굴 가운데 자리 [가로, 세로] (그림의 0~1) */
+export type Focus = readonly [number, number]
+/** 재 둔 얼굴 자리 — 자료가 없거나 값이 이상하면 null */
+export function hitFocus(key: string | null | undefined): Focus | null {
+  if (key === null || key === undefined) return null
+  const f = HIT_FOCUS[key]   // 열쇠는 늘 '결/초상 id' 꼴이라 물려받은 이름과 겹치지 않는다
+  return f !== undefined && f[0] >= 0 && f[0] <= 1 && f[1] >= 0 && f[1] <= 1 ? f : null
+}
+/**
+ * 한 축에서 그림을 밀 몫 (0~1 · CSS object-position 과 같은 뜻: 0 = 그림 앞끝이 판 앞끝에, 1 = 뒤끝이 뒤끝에).
+ * f 얼굴 자리(그림의 0~1) · v 보이는 몫(판 길이 ÷ 그려진 그림 길이) · at 얼굴을 판의 어디에 둘지(0~1).
+ * 0~1 로 자르므로 그림 끝을 넘지 않는다 (판 바탕이 드러나지 않는다). 이 축이 안 잘리면(v ≥ 1) null — 밀 것이 없다.
+ */
+export function focusSlide(f: number, v: number, at: number): number | null {
+  if (!(v > 0) || !(v < 1) || !Number.isFinite(f) || !Number.isFinite(at)) return null
+  return clamp01((f - v * at) / (1 - v))
+}
+/**
+ * 판(bw×bh)보다 크게 그려 잘리는 그림(dw×dh)을 얼굴이 보이게 밀 몫 [가로, 세로] — 안 잘리는 축은 null (부르는 쪽 자리 그대로).
+ * 가로가 잘리면 얼굴이 판의 hitPortraitFaceX(가운데), 세로가 잘리면 판 위에서 hitPortraitFaceY(1/3) 쯤에 온다.
+ * 얼굴 자료가 없거나 · 크기가 이상하거나 · 어느 축도 안 잘리면 null (전부 부르는 쪽 자리 그대로).
+ */
+export function faceSlide(f: Focus | null, bw: number, bh: number, dw: number, dh: number): readonly [number | null, number | null] | null {
+  if (f === null || !(bw > 0 && bh > 0 && dw > 0 && dh > 0)) return null
+  const x = focusSlide(f[0], bw / dw, P.render.hitPortraitFaceX), y = focusSlide(f[1], bh / dh, P.render.hitPortraitFaceY)
+  return x === null && y === null ? null : [x, y]
+}
+/**
+ * cover 로 판(bw×bh)을 덮는 그림의 object-position — cover 는 한 축만 잘리므로 그 축만 민다 (안 잘리는 축은 어디에 두어도 같아 50%).
+ * aspect = 그림 가로 ÷ 세로 (모르면 1 · 피격 그림은 정사각). 얼굴 자료가 없거나 · 판을 못 쟀거나 · 안 잘리면 null → 부르는 쪽 기본 자리를 그대로 쓴다.
+ */
+export function facePos(f: Focus | null, bw: number, bh: number, aspect = 1): string | null {
+  if (!(bw > 0 && bh > 0 && aspect > 0) || !Number.isFinite(bw / bh / aspect)) return null
+  // 덮는 배율 = 두 축 가운데 큰 쪽 → 그려지는 그림 크기 (판 높이를 1 로 놓고 셈)
+  const box = bw / bh, dw = Math.max(box, aspect), dh = dw / aspect
+  const s = faceSlide(f, box, 1, dw, dh)
+  if (s === null) return null
+  const pc = (p: number | null): string => `${p === null ? 50 : Math.round(p * 1000) / 10}%`
+  return `${pc(s[0])} ${pc(s[1])}`
+}
+/** 피격 그림 열쇠로 — 잘려 그리는 자리에서 밀 몫 (faceSlide) */
+export const hitFocusSlide = (key: string | null | undefined, bw: number, bh: number, dw: number, dh: number): readonly [number | null, number | null] | null => faceSlide(hitFocus(key), bw, bh, dw, dh)
+/** 피격 그림 열쇠로 — cover 판의 object-position (facePos) · null 이면 부르는 쪽 기본 자리 */
+export const hitArtPos = (key: string | null | undefined, bw: number, bh: number, aspect = 1): string | null => facePos(hitFocus(key), bw, bh, aspect)
+
+// ── 쥐고 있는 피격 그림 (주소 → Image) — 실린 뒤에야 금을 끄고 그림 비율을 안다. 덜 실렸으면 예전 그대로 (금 있음 · 비율 1)
+// 받은 Image 를 놓아 버리면 브라우저가 그 그림을 기억에서 지워, 맞을 때 새로 끼우는 <img> 가 그림을 다시 받아 온다 —
+// 금은 이미 껐으니 그 틈에는 붉은 빛·흔들림만 남고, 망이 끊겼으면 끝내 안 뜬다 (11-18 검토 · 실측). 그래서 Image 를 쥐고 있는다:
+// 쥐고 있는 동안은 끼우자마자 그릴 수 있고 망 요청이 없다. 「실렸다」는 곧 「쥐고 있는 Image 가 다 실렸다」.
+// hitPortrait(열전 초상 판)는 한 걸음 더 — 쥐고 있는 그 Image 를 겉막에 그대로 끼운다 (브라우저의 그림 기억에 기대지 않는다).
+/** 쥐고 있을 그림 수 — 최근에 쓴 것만 (본편 합전에서 싸우는 장수가 바뀌어도 쌓이지 않게 · 한 화면에 뜨는 초상은 둘, 열전은 기본·각성 둘) */
+export const HIT_ART_KEEP = 8
+/** 주소 → 쥐고 있는 Image · 넣은 차례 = 덜 쓴 차례 (맨 앞이 가장 오래 안 쓴 것) */
+const artKeep = new Map<string, HTMLImageElement>()
+/** 못 받은 주소 — 다시 부르지 않는다 */
+const artBad = new Set<string>()
+/** 실린 적 있는 그림의 가로÷세로 (숫자뿐이라 그림을 놓은 뒤에도 남긴다) */
+const artAspect = new Map<string, number>()
+const artLoaded = (im: HTMLImageElement | undefined): boolean => im !== undefined && im.complete && im.naturalWidth > 0 && im.naturalHeight > 0
+/** 이 피격 그림을 쥐고 있고 다 실렸나 (끼우자마자 그릴 수 있나) */
+export const hitArtReady = (url: string | null | undefined): boolean => url !== null && url !== undefined && artLoaded(artKeep.get(url))
+/**
+ * 피격 그림을 미리 받아 쥐고 있는다 — 이미 쥐고 있으면 「방금 썼다」고만 적는다 (화면 쪽 기억일 뿐 판은 건드리지 않는다 · DOM 이 없으면 아무것도 안 함).
+ * HIT_ART_KEEP 장을 넘으면 가장 오래 안 쓴 것부터 놓는다 — 놓은 그림은 다음에 부를 때 다시 받아 쥔다 (그때까지는 금까지 예전 그대로).
+ * 못 받은 그림은 다시 부르지 않는다 (없는 그림에 404 를 거듭 내지 않게) — 그 그림은 금까지 예전 그대로 보인다.
+ */
+export function warmHitArt(url: string | null | undefined): void {
+  if (url === null || url === undefined || artBad.has(url) || typeof Image === 'undefined') return
+  const had = artKeep.get(url)
+  if (had !== undefined) { artKeep.delete(url); artKeep.set(url, had); return }
+  const im = new Image()
+  artKeep.set(url, im)
+  for (const old of artKeep.keys()) { if (artKeep.size <= HIT_ART_KEEP) break; artKeep.delete(old) }
+  im.onload = () => { if (im.naturalWidth > 0 && im.naturalHeight > 0) artAspect.set(url, im.naturalWidth / im.naturalHeight) }
+  im.onerror = () => { if (artKeep.get(url) === im) artKeep.delete(url); artBad.add(url) }
+  im.src = url
+}
 
 /** 세기 0~1 — 잃은 체력 ÷ 최대 체력 ÷ hitPortraitBigLoss */
 export const hitStrength = (loss: number, max: number): number => (max > 0 && loss > 0 ? clamp01(loss / max / P.render.hitPortraitBigLoss) : 0)
@@ -132,42 +235,83 @@ export interface HitHtmlOpts {
   readonly delay?: string
   /** 피격 그림 주소 (hitArtPath 앞에 그림 뿌리를 붙인 것) · 없으면 코드 효과만 */
   readonly art?: string | null
-  /** 그림 자리 (object-position) */
+  /** 그림 자리 (object-position) — 판 쪽 CSS 가 그림 자리를 따로 정해 두었으면 그쪽이 이긴다 */
   readonly pos?: string
+  /** 얼굴이 보이게 민 자리 (hitArtPos 가 낸 값) — 그림에 바로 박아 판 쪽 CSS 보다 앞선다 · 없으면 pos / 판 쪽 CSS 그대로 */
+  readonly pin?: string | null
   /** 판 안쪽으로 들일 몫 (액자 안 그림만 덮을 때 · CSS 길이) */
   readonly inset?: string
   /** 금 꼴 고르기 */
   readonly seed?: number
 }
-/** 겉막 조각 — 판(position 있는 칸) 안에 넣으면 들어가는 순간(또는 delay 뒤) 한 번 돈다 */
-export function hitPortraitHtml(s: number, o: HitHtmlOpts = {}): string {
-  const L = hitLook(s)
-  const vars = [`--hitp-ms:${Math.round(L.ms)}ms`, `--hitp-red:${L.red.toFixed(2)}`, `--hitp-gray:${L.gray.toFixed(2)}`, `--hitp-crack:${L.crack.toFixed(2)}`, `--hitp-art-ms:${Math.round(P.render.hitPortraitArtMs)}ms`]
+const attr = (x: string): string => x.replace(/"/g, '&quot;')
+/**
+ * 겉막 조각 — 판(position 있는 칸) 안에 넣으면 들어가는 순간(또는 delay 뒤) 한 번 돈다.
+ * 피격 그림이 다 실려 있으면(warmHitArt · hitArtReady) 금은 hitPortraitCrackWithArt 몫만 (0 이면 금 줄을 아예 안 넣는다). 덜 실렸으면 금까지 예전 그대로.
+ */
+export function hitPortraitHtml(s: number, o: HitHtmlOpts = {}): string { return overlayHtml(s, o, true) }
+/** 겉막 조각 (안쪽) — img 가 false 면 피격 그림 <img> 는 빼고 만든다 (hitPortrait 가 쥐고 있는 Image 를 그 자리에 끼운다 · 금 판정은 같다) */
+function overlayHtml(s: number, o: HitHtmlOpts, img: boolean): string {
+  const L = hitLook(s), hasArt = o.art !== null && o.art !== undefined
+  const crack = L.crack * (hasArt && hitArtReady(o.art) ? P.render.hitPortraitCrackWithArt : 1)
+  const vars = [`--hitp-ms:${Math.round(L.ms)}ms`, `--hitp-red:${L.red.toFixed(2)}`, `--hitp-gray:${L.gray.toFixed(2)}`, `--hitp-crack:${crack.toFixed(2)}`, `--hitp-art-ms:${Math.round(P.render.hitPortraitArtMs)}ms`]
   if (o.delay !== undefined) vars.push(`--hitp-delay:${o.delay}`)
   if (o.pos !== undefined) vars.push(`--hitp-pos:${o.pos}`)
   if (o.inset !== undefined) vars.push(`--hitp-inset:${o.inset}`)
-  const art = o.art !== null && o.art !== undefined ? `<img class="hitp-art" src="${o.art.replace(/"/g, '&quot;')}" alt="">` : ''
-  return `<span class="hitp" aria-hidden="true" style="${vars.join(';')}">${art}<i class="hitp-gray"></i><i class="hitp-red"></i>${crackSvg(o.seed ?? 0)}</span>`
+  const pin = o.pin !== null && o.pin !== undefined ? ` style="object-position:${attr(o.pin)}"` : ''
+  const art = hasArt && img ? `<img class="hitp-art" src="${attr(o.art!)}" alt=""${pin}>` : ''
+  return `<span class="hitp" aria-hidden="true" style="${vars.join(';')}">${art}<i class="hitp-gray"></i><i class="hitp-red"></i>${crack > 0.001 ? crackSvg(o.seed ?? 0) : ''}</span>`
 }
 
 const live = new WeakMap<HTMLElement, { t0: number; seed: number }>()
 let seedNext = 0
 const calm = (): boolean => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+export interface HitPortraitOpts {
+  /** 피격 그림 주소 · 없으면 코드 효과만 */
+  readonly art?: string | null
+  /** 그림 기본 자리 (얼굴 자료가 없을 때 · HitHtmlOpts.pos) */
+  readonly pos?: string
+  /** 피격 그림 열쇠 (hitArtKey · hitFaceKey) — 얼굴 자료가 있으면 판을 재서 얼굴이 보이게 그림을 민다 · 없으면 예전 자리 그대로 */
+  readonly focus?: string | null
+  /** 흔들 칸 (기본 host · null 이면 안 흔든다) */
+  readonly shake?: HTMLElement | null
+}
 /**
  * 지금 맞았다 — 판(host · position 있는 칸)에 겉막을 새로 끼우고(애니가 처음부터) 작은 흔들림을 한 번.
  * hitPortraitGapMs 안에 또 오면 무시한다 (연타에 깜빡이지 않게). 흔들림은 shake 칸(기본 host)에 transform 한 번 · 움직임 줄이기면 안 흔든다.
+ * 판 크기는 여기서(맞는 순간) 한 번만 잰다 — 가로·세로 화면, 폰·넓은 창 어디서든 그때 크기로 얼굴 자리를 셈한다.
  */
-export function hitPortrait(host: HTMLElement, s: number, o: { readonly art?: string | null; readonly pos?: string; readonly shake?: HTMLElement | null } = {}): void {
+export function hitPortrait(host: HTMLElement, s: number, o: HitPortraitOpts = {}): void {
   ensureHitPortraitCss()
   const now = performance.now(), was = live.get(host)
   if (was !== undefined && now - was.t0 < P.render.hitPortraitGapMs) return
   const seed = seedNext++
   live.set(host, { t0: now, seed })
+  const el = o.shake === undefined ? host : o.shake, art = o.art ?? null
+  // 이 그림을 쥐고 있는다 — 부르는 쪽이 미리 받아 두지 않았어도 다음부터는 끼우자마자 뜨게 (쥐고 있으면 「방금 썼다」고만 적는다)
+  warmHitArt(art)
+  // 재기는 겉막을 끼우기 전에 한 번 (끼운 뒤에 재면 배치를 한 번 더 돌린다)
+  const bw = host.clientWidth, bh = host.clientHeight
+  const size = Math.max(1, el === null || el === host ? Math.min(bw || 1, bh || 1) : Math.min(el.clientWidth || 1, el.clientHeight || 1))
+  const pin = art !== null ? hitArtPos(o.focus, bw, bh, artAspect.get(art) ?? 1) : null
   host.querySelector(':scope > .hitp')?.remove()
-  host.insertAdjacentHTML('beforeend', hitPortraitHtml(s, { seed, ...(o.art !== undefined ? { art: o.art } : {}), ...(o.pos !== undefined ? { pos: o.pos } : {}) }))
-  const el = o.shake === undefined ? host : o.shake
+  // 쥐고 있는 그림이 다 실렸으면 그 Image 를 그대로 끼운다 — 이미 받은 그림이라 망을 타지 않고 끼우는 순간 뜬다 (새 <img> 는 브라우저에 따라
+  // 받은 지 오래된 그림을 서버에 다시 물어볼 수 있다). 끼우는 순간 CSS 애니가 처음부터 돈다. 다른 판에 떠 있는 중이면(같은 그림 두 판) 새 <img> 로.
+  const kept = art !== null ? artKeep.get(art) : undefined
+  const held = kept !== undefined && artLoaded(kept) && !kept.isConnected ? kept : null
+  host.insertAdjacentHTML('beforeend', overlayHtml(s, { seed, ...(o.art !== undefined ? { art: o.art } : {}), ...(o.pos !== undefined ? { pos: o.pos } : {}), pin }, held === null))
+  if (held !== null) {
+    held.className = 'hitp-art'; held.alt = ''; held.style.objectPosition = pin ?? ''
+    host.querySelector(':scope > .hitp')?.prepend(held)   // 맨 밑에 (잿빛 막 · 붉은 빛 아래)
+  }
+  // 못 쥔 그림(미리 받기가 한 번 실패했다 · 망이 잠깐 끊겼을 때)이 여기 끼운 <img> 로 늦게라도 실리면 다시 쥔다 — 다음에 맞을 때는 곧바로 뜬다
+  if (art !== null && !artKeep.has(art)) {
+    const im = host.querySelector<HTMLImageElement>(':scope > .hitp > .hitp-art')
+    const hold = (): void => { artBad.delete(art); warmHitArt(art) }
+    if (im !== null) { if (artLoaded(im)) hold(); else im.addEventListener('load', hold, { once: true }) }
+  }
   if (el === null || calm() || typeof el.animate !== 'function') return
-  const L = hitLook(s), a = L.shake, size = Math.max(1, Math.min(el.clientWidth || 1, el.clientHeight || 1))
+  const L = hitLook(s), a = L.shake
   const k = 1 + (2.2 * a) / size   // 가장자리 바탕이 드러나지 않게 아주 조금 키운 채 흔든다
   el.animate(SHAKE.map(([u, x, y]) => ({ offset: u, transform: u === 0 || u === 1 ? 'none' : `translate(${(x * a).toFixed(1)}px,${(y * a).toFixed(1)}px) scale(${k.toFixed(3)})` })), { duration: L.ms, easing: 'linear' })
 }
@@ -211,9 +355,11 @@ export class HitClock {
 /**
  * 캔버스 초상 위에 겉막 — 잿빛 막 · 붉은 빛 · 금. 흔들림(f.dx·dy)은 그리는 쪽이 초상 자리에 먼저 더한다.
  * shape: 'rect'(모서리 r) 또는 'circle'(x,y,w,h 에 꼭 맞는 원)
+ * withArt: 이 자리에 피격 그림을 실어 그렸다 → 금은 hitPortraitCrackWithArt 몫만 (0 이면 안 그린다)
  */
-export function drawHitPortrait(ctx: CanvasRenderingContext2D, f: HitFrame, x: number, y: number, w: number, h: number, shape: 'rect' | 'circle' = 'rect', r = 0): void {
-  if (f.red <= 0.001 && f.gray <= 0.001 && f.crack <= 0.001) return
+export function drawHitPortrait(ctx: CanvasRenderingContext2D, f: HitFrame, x: number, y: number, w: number, h: number, shape: 'rect' | 'circle' = 'rect', r = 0, withArt = false): void {
+  const crack = withArt ? f.crack * P.render.hitPortraitCrackWithArt : f.crack
+  if (f.red <= 0.001 && f.gray <= 0.001 && crack <= 0.001) return
   const base = ctx.globalAlpha   // 바깥에서 건 투명도(들어오는 암전 등)에 곱한다
   ctx.save()
   ctx.beginPath()
@@ -223,7 +369,7 @@ export function drawHitPortrait(ctx: CanvasRenderingContext2D, f: HitFrame, x: n
   ctx.clip()
   if (f.gray > 0.001) { ctx.globalAlpha = base * f.gray; ctx.fillStyle = '#454851'; ctx.fillRect(x, y, w, h) }
   if (f.red > 0.001) { ctx.globalAlpha = base * f.red; ctx.fillStyle = '#ff2a18'; ctx.fillRect(x, y, w, h) }
-  if (f.crack > 0.001) {
+  if (crack > 0.001) {
     // SVG 의 slice 와 같게: 0~100 정사각을 긴 변에 맞추고 가운데로
     const k = Math.max(w, h) / 100, ox = x + (w - 100 * k) / 2, oy = y + (h - 100 * k) / 2, px = Math.max(0.6, Math.min(w, h) / 300)
     ctx.lineJoin = 'miter'; ctx.lineCap = 'square'
@@ -236,8 +382,8 @@ export function drawHitPortrait(ctx: CanvasRenderingContext2D, f: HitFrame, x: n
         ctx.moveTo(ox + q.p[0]! * k, oy + q.p[1]! * k)
         for (let i = 2; i < q.p.length; i += 2) ctx.lineTo(ox + q.p[i]! * k, oy + q.p[i + 1]! * k)
       }
-      ctx.globalAlpha = base * f.crack * op * 0.7; ctx.strokeStyle = '#1a0503'; ctx.lineWidth = dw * px; ctx.stroke()
-      ctx.globalAlpha = base * f.crack * op; ctx.strokeStyle = '#fff6ee'; ctx.lineWidth = lw * px; ctx.stroke()
+      ctx.globalAlpha = base * crack * op * 0.7; ctx.strokeStyle = '#1a0503'; ctx.lineWidth = dw * px; ctx.stroke()
+      ctx.globalAlpha = base * crack * op; ctx.strokeStyle = '#fff6ee'; ctx.lineWidth = lw * px; ctx.stroke()
     }
   }
   ctx.restore()

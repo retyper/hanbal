@@ -47,3 +47,14 @@ s2 = re.sub(r'export const HIT_ART: ReadonlySet<string> = new Set<string>\(\[[^\
 if s2 != s:
     TS.write_bytes(s2.encode('utf-8'))
 print('넣음', len(done), done, '· 목록', len(have))
+
+# 얼굴 자리 재기 (11-18 형: 열전처럼 그림이 다 안 나오는 판에서 얼굴이 잘리지 않게) — tools/hit-focus.py 가 새 그림 · 바뀐 그림만 재고
+# src/ui/hit-focus.generated.ts 를 다시 쓴다. 실패해도 받기는 끝난 것이다 (그 그림은 자리 자료 없이 가운데로 나온다).
+try:
+    import subprocess
+    import sys
+    r = subprocess.run([sys.executable, '-I', str(ROOT / 'tools/hit-focus.py')], timeout=3600)
+    if r.returncode != 0:
+        print('얼굴 자리 재기 실패 · 받기는 끝났다 · 따로 돌리기: py -3 -I tools/hit-focus.py')
+except Exception as e:
+    print('얼굴 자리 재기 못 함 · 받기는 끝났다:', e)

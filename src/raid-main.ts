@@ -7,7 +7,7 @@ import { powerIcon, installPowerHints, comboIcon, rankMark, treeSvg, treeInfo, B
 import { KIT_BY_SPRITE } from './raid/kit-table.ts'
 import { cutBandHtml, cutHeroPath, ensureCutinBandCss, type CutBg } from './ui/cutin-band.ts'
 import { josa } from './core/josa.ts'
-import { hitPortrait, hitStrength, hitArtPath } from './ui/hit-portrait.ts'
+import { hitPortrait, hitStrength, hitArtKey, hitKeyPath, warmHitArt } from './ui/hit-portrait.ts'
 import { raidSound } from './raid/sound.ts'
 import { DEFAULT_HERO, SEAL_STAGE, loadRoster, type RosterHero } from './raid/link.ts'
 import { TRUE_WAKE } from './realm/data/awaken2.ts'
@@ -149,6 +149,9 @@ $('portrait-toggle').onclick = () => { stillPortrait = !stillPortrait; mediaKey 
 heroVideo.onerror = () => { videoFailed = true; mediaKey = ''; updatePortrait() }
 // 각성 원화는 판 가운데 갑자기 바뀌니 미리 받아 둔다
 if (canAwaken) new Image().src = import.meta.env.BASE_URL + 'realm/awaken-hd/' + HERO.bust + '.jpg'
+// 피격 그림도 미리 (처음 맞을 때부터 그림이 뜨게 · 실린 뒤에야 금을 끈다 · ui/hit-portrait.ts)
+const hitArtUrl = (awake: boolean): { key: string | null; url: string | null } => { const key = hitArtKey(awake ? 'awaken' : 'bust', HERO.bust), p = hitKeyPath(key); return { key, url: p === null ? null : import.meta.env.BASE_URL + 'realm/' + p } }
+warmHitArt(hitArtUrl(false).url); if (canAwaken) warmHitArt(hitArtUrl(true).url)
 function updatePortrait() {
   const awake = awakenedLook(run), animate = awake && HERO.video && !stillPortrait && !videoFailed
   const playing = animate && !paused && !run.offers.length && !document.hidden && !inspecting && (!live || run.state === 'playing')
@@ -396,16 +399,18 @@ function updateChunk(pct: number) {
   if (hudLast.get('chunk') !== left + '/' + w) { hudLast.set('chunk', left + '/' + w); const el = $('hp-chunk'); el.style.left = left + '%'; el.style.width = w + '%' }
 }
 /**
- * 맞은 초상 (11-17 형: 「맞았을 때 모습」) — 판이 맞을 때마다 hurt 를 새로 세운다(판 상태는 읽기만). 그때 왼쪽 초상 판이 흔들리고 붉게 번쩍 · 빛 빠짐 · 금.
+ * 맞은 초상 (11-17 형: 「맞았을 때 모습」) — 판이 맞을 때마다 hurt 를 새로 세운다(판 상태는 읽기만). 그때 왼쪽 초상 판이 흔들리고 붉게 번쩍 · 빛 빠짐 · (피격 그림이 없거나 덜 실렸을 때만) 금.
  * 잃은 체력이 클수록 세게 (ui/hit-portrait.ts · P.render.hitPortrait*). 피격 그림(realm/hit)이 있으면 그것도 잠깐.
+ * 초상 판은 그림을 잘라 보여 주므로(가로 화면은 좁고 긴 판 · 폰 세로는 넓은 판) 피격 그림은 얼굴이 보이게 민다 — 판 크기는 hitPortrait 가 맞는 순간 한 번 잰다
+ * (영상이 떠 있든 원화든 같은 판 #portrait-media). 얼굴 자료가 없는 그림은 예전 자리 그대로 (combat.css #portrait-media img).
  */
 const hitSeen = { run: null as HaebiRun | null, hurt: 0, hp: 0 }
 let hudCountAt = -9
 function watchHit() {
   if (!live || hitSeen.run !== run) { hitSeen.run = run; hitSeen.hurt = run.hurt; hitSeen.hp = run.hp; return }
   if (run.hurt > hitSeen.hurt + 1e-6) {
-    const art = hitArtPath(awakenedLook(run) ? 'awaken' : 'bust', HERO.bust), media = $('portrait-media')
-    hitPortrait(media, hitStrength(hitSeen.hp - run.hp, run.maxHp), { art: art === null ? null : import.meta.env.BASE_URL + 'realm/' + art, pos: heroVideo.hidden ? '48% 12%' : '50% 20%' })
+    const art = hitArtUrl(awakenedLook(run))
+    hitPortrait($('portrait-media'), hitStrength(hitSeen.hp - run.hp, run.maxHp), { art: art.url, focus: art.key, pos: heroVideo.hidden ? '48% 12%' : '50% 20%' })
   }
   hitSeen.hurt = run.hurt; hitSeen.hp = run.hp
 }
