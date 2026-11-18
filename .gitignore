@@ -28,3 +28,4 @@ du.exe.stackdump
 desktop/node_modules/
 desktop/game/
 desktop/dist/
+.claude/skills/design-study/
