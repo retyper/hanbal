@@ -1456,3 +1456,11 @@
 - **SPA 에서 뺀 줄**: `SPA-nuri-walk-v2` · `SPA-base-w-71-yeonna-neoul-walk-v2` · `SPA-base-g-84-wander-seoneul-act` · `-walk` 은 줄에서 빠졌다(remake-jobs.mjs `SPA_WAIT` · 옛 비각성 몸·옛 닌자 옷을 베끼므로). 41·42번 지시로 이 넷을 하고 있었으면 **멈추고 버리지 말고 그대로 둔다**. 너울·누리의 통과한 각성 동작 판(`Codex-claude40-hit-edit-20261118-candidates/sprite_aw1_{nuri_act_v3,base-w-71-yeonna-neoul_act_v2}.png`)도 옛 몸 기준이라 새 띠가 들어온 뒤 Claude 가 다시 줄에 올린다.
 - **서늘을 앞 장과 나란히 볼 것**: 얼굴·나이(23)·성별·체격·귀고리는 지금 초상 그대로. 두건을 써도 얼굴과 앞머리는 보인다. 칼은 짧고 곧은 외날 고리자루 단도. 닌자처럼 보이면 저장하지 않는다.
 - **넣기·승인은 Claude**: 받은 그림은 D:/에셋창고 에 저장 이름 그대로 두기만 한다.
+
+
+## Codex43 수신·서늘 새 의상 의존 연쇄·달래 독립 병렬
+- 새43을제출전guard로감지,해적여선장42예정콜은native0/실request0차단. 42이미반환한6WHO(호공·해달·고구려무녀·매화·부여여사냥꾼·마한여전사)는전부현재공식gait포함PASS/원본·요청·측정·QA·실제3refSHA보존. 큐자동상향된v4/v5이름만으로이미누적3완료본을또생성하지않습니다. 개별42원장/중앙에보존했고현재부재정식파일은Claude입수와별도로추적(중복재생성0).
+- 새QUEUE371=SPA287/REDO84(새43우선0 11+기존12/50/11)와원화S H A를work/claude43-manifest.json·control.json·QUEUE-snapshot.md·redo-cards에동결. 사용자판정43의먼저낼것순서가현재우선이며,너울·누리옛몸/서늘옛닌자옷SPA4줄은제외·보존합니다. 새ACT41phase는전레인native0에서중단되었습니다.
+- 서늘한장수새독립맥락(redo43_seoneul)에서1초상→2각성초상→3/4비기전신→5ACT→6WALK를새선행그림실제로받고QA합격한뒤다음참조로동일바이트freeze해진행중. 1한국식정상초상SHA5a53f89d6651a4500ed68196d3377b13b25bcfdacb925518b62a49c1378e1270,2각성초상SHA3fb7eb5bbfd47f9b62e12666882f6e2f74945fd18f17fdf8f66721f0c2af7d0c first자체QA통과/정식공급. 얼굴23세남성·귀고리·체격유지/저고리깃·좁은띠·토시·두건·짧은곧은환두단도직접비교. 3/4는해당새1/2를각IMAGE2로독립병렬진행중.
+- 달래칼만편집은별도새맥락(redo43_dallae)독립병렬. first손위치소폭이동을1보정해원위치복원/두칼직선·그립축·작은평코등이·고리·얼굴/옷/배경보존확인,정식저장마감중. 네울별도맥락은지금원화4장/HARDHEADbaseline읽기전용준비만/native0,서늘6산출물받기전실제generation차단. 같은장수맥락을다른사람에재사용하지않습니다.
+- 각REDOasset첫+1보정최대2·전raw불변,opaque초상/flatnavy전신은alpha=false·실sprite는alpha=true. native1254²vs원본900²해상도차이는별도기록/로컬resize0. 의존그림은actualnewacceptedsource동일바이트SHA로고정/다른초상·QA대체0. 최종설치·승인은Claude. 현재재개파일 work/CLAUDE-RESUME-CURRENT.md 및 claude43-dispatch-state.json/개별원장.

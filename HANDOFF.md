@@ -1,3 +1,4 @@
+- **[11-18~19 밤 Claude 진행 정리 · ★ 여기부터]** ① 설계 연구 `docs/realm/study-20261118/`(00 색인 · 30 통합안 · 31 물음 · 형 답 「권한 대로」 = 여섯 모두 ① · 메모리 awakening-v2-decided · awakening-slow-like-digimon: 첫 각성 10시간대) ② 각성 v2 바닥 커밋(스위치 `P.realm.ascendTrialOpen` 기본 1 = 지금 규칙 · **형 판이 끝난 뒤 0 으로 켬** · 사람 열쇠 src/realm/person.ts · 도장 비트 32/64 · 열전 출전 벽 앞 여울) · 다음은 30-PROPOSAL 7-1 가5~가8(모습 가르기 · 터지는 순간 · 도깨비 표식) ③ 진각성 DLC 스위치 끔(src/realm/dlc.ts) ④ 열전: 적 화살 닿지 않던 버그 고침 · 적 위험 표식 붉은/내 표식 금빛 · 투지·각성 오라(src/raid/fx-aura.ts) ⑤ 피격 초상 221×3 다 넣음 + 얼굴 자리 맞추기(src/ui/hit-focus.generated.ts) ⑥ 본편 추천 표시(src/ui/realm/recommend.ts) ⑦ 각성 전투 띠: 받기 도구 tools/sprite-kit/aw1-intake.py(AW1-INTAKE.md · measure · 걷기 다리 검사) · 21명 넣음 · Codex 지시 35~43 · 걷기는 비각성 걷기를 옷만 갈아입히는 편집(walkref) ⑧ 에셋 감사 73장 줄(REDO-AUDIT-20261119.md) · 형 판정: 너울·누리 띠 다시 · 서늘 한국식 자객(초상 넣음) · 달래 칼(넣음) · w-27 진하 → 신지 방울(다시 녹음 세 줄 cast/part-3.md) ⑨ 남은 버그: season.planned() 가 원본 판 호감을 바꿈(01·X 갈래 보고) ⑩ PC 크롬은 이 세션에서 끊긴 채 · 영상은 PC 크롬 붙으면(Windows 라도 노트북 5d7f0148 은 아님 · 메모리 browser-mac-vs-pc).
 - **[11-17 밤 Claude 진행 정리 · 대화 기록 비우기 전 ★ 여기부터]** ① 전투 띠 **기준 판 13칸 확정**(창·여 소서노 · 주술·여 감실·진하 · 도끼·여 쇠비 · 단검·여 이랑 · 활·여 해달 · 칼·여 아라 / 도끼·남 호진 · 활·남 주몽 · 칼·남 온조 · 단검·남 호공 · 주술·남 고목 · 돌팔매·남 팔매) · 창·남 오이만 bl2 대기. 장수 키 표 `tools/sprite-kit/heights.json`(소서노 167 · 남 기본 179 · 여 163) → `src/realm/data/hero-height.ts` 로 싸움터 화면 키 · 머리 장식 키 빼기 `tools/sprite-kit/headgear.json`. 남은 장수 띠는 `ref-slot-<무기>-<g|w>.png` 기준 판 참고 + 저장 전 HARD CHECK(tools/remake-jobs.mjs). Codex 보류 후보는 Claude 가 게임 크기 시트로 판정 · 애매하면 형에게(메모리 ask-on-borderline-redraw). ② **피격 초상**: 코드 효과(src/ui/hit-portrait.ts · 열전·겨루기·본편 합전) + 그림 28장(기준 판 14 × 비각성·각성 · public/realm/hit · `tools/hit-intake.py`) · 상처·피 금지(형) → `_v2` 지우기 편집이 들어오는 중(intake 가 _v2 우선). ③ 열전: 레벨업 카드 +1/획득·가진 칸 크게·카드 작게 · 각성 단추·무적·진 비기·시전·피해 숫자 · 「영웅의 투지」 보호막. ④ 각성 영상: 11-17 Jay·Flow 로 g-40~63 상당수 받음(등록은 형 판정 뒤 · ART-VIDEO-STATUS.md 11-17 절들) · 다음 g-63-heomcheuk-beogeum · Jay 실패 셋(골개·압·한울) 새 대화로 다시 · 소나 g-49 는 형 손으로 받기. ⑤ 형에게 남은 질문: 각성 토글(끄면 능력치도 빠지나 · 열전 토글 시 판 시작부터 각성인가) · 3스테이지 악마 아이콘 각성 규칙 개편(아직 구현 안 함). ⑥ C 드라이브: 크롬 캐시 6GB 비움 · 옛 대화 기록 정리.
 - **[Codex Bad Request 조사 · 2026-11-17]** 이전 채팅 「Flutter 작업 이어받기」는 KST 00:18·00:34·00:35 Codex `/codex/responses` HTTP400 `{"detail":"Bad Request"}`로 실패. 이미지 생성 서비스 거절로 확인된 오류가 아니며 서버의 정확한 거절 이유는 미공개(attestation timeout 경고와 인과관계 미확인). `D:/에셋창고/Codex-queue-latest-20261116.json` 실제 대조: 최신 큐200장 중49장 존재, 이번 생성기록34개, 마지막34번 `sprite_prop_base-w-50-siljik-mulga_act.png` 저장됨. 다음35번 `sprite_prop_base-w-50-siljik-mulga_walk.png`는 없음. 원장 `status: running`은 실패한 턴과 불일치하므로 현재 실행 중의 근거로 쓰지 말 것. 최신34장 게임 적용은 원장상 false. 진각성 원본PNG220장·runtime AW2 JPG220장 존재 확인(품질·실행 검수는 재실시 안 함). 다음: 기존 파일을 건너뛰고35번부터 재개하되 30번 마루 동작의 마지막 쓰러짐 칸 창 누락 교정과31번 걷기 반대발 검수 미완료 기록 보존. 이번은 진단만, 새 생성·코드수정·커밋·푸시·배포 없음.
 - **[진각성 DLC 스위치 · 챗지피티 줄 230 · 용량 11-16 latest · Claude]** 형 「2차 각성 DLC · 그래 그렇게 해」: src/realm/dlc.ts DLC.trueWake (시험 중 true · 출시 빌드 직전 false) 하나로 진각성 전부(TRUE_WAKE · 싸움 진각성 · 장수 판 칸)와 열전 4·5 스테이지가 잠긴다. 챗지피티 줄 230장(tools/out/gpt-queue/QUEUE.md): 필름 넷·신방 d 다시(_r2) · 설원·산성 두목 H54·H55 · 활 꼴 반려 셋 다시 · 남장수 진각성 초상 셋 · DLC 가게 그림 둘 · 진각성 비기 전신은 형 지시로 아직 안 만듦(SB2_ON=false). 용량: C 5.8→11.4GB(임시·npm 캐시) · D 8.7→15.0GB(dist·tmp-node 헤드리스 크롬 판).
@@ -485,3 +486,119 @@ Steam은 `docs/realm/STEAM-RELEASE.md`의 조사/체크리스트까지다. 가�
 - 사용자 재개 요청으로 이전 중단 해제. 복구 기록 C:\Users\my\Documents\Codex\2026-11-17\detail-bad-request\work\RESUME-CHECKPOINT-20261117.md 저장, 자동 컨텍스트 압축 완료.
 - Claude29 최신: 피격 이미지의 상처/피/멍/먼지 전부 제거, 받은 HIT+실제 원화 2참조로 새 v2 편집. 기존27trial/346held 및 크기불일치 보존. 새 큐 스냅샷/중복 확인 후 재개. 게임코드/QUEUE/입수/커밋 변경 없음.
 
+
+## Codex Claude29 전체 편집 종료 (가장 최신)
+- 사용자 요청대로 진행사항 저장·자동 컨텍스트 압축 후 재개. HITv2 28건 중26 roottrial 제출,349감실base/360해달aw1 도구출력안전필터 거절(파일없음)2건held. 성공28이미지(최종26+355371보정전2)+거절2=30requests,같은판최대2콜. 원화+받은HIT 실제첨부.
+- 중앙원장 D:\에셋창고\Codex-production-next-20261117.json 593records. work/hit-clean-final-audit.json 전체참조SHA/소스저장SHA/실제원화첨부 검증통과. 전부편집입출력1254동일/원화900대비크기미완. 최종승인/게임적용아님. 상세공유production MD와a/b/c/parent report.
+- C:공간0 복구: 본채팅work2416파일430644645bytes 전SHA검증후D:\에셋창고\Codex-resume-work-20261117\chat-work로옮기고 원래C:work Junction연결,기존절대경로유지. source/refs삭제없음. 복구checkpoint C:\Users\my\Documents\Codex\2026-11-17\detail-bad-request\work\RESUME-CHECKPOINT-20261117.md.
+- 다음Claude새지시대기. 작업자전원대기. 기존SPheld/도구거절 자동중복생성없음/3번째없음. 코드·QUEUE·입수·커밋·배포변경없음.
+
+
+## Codex Claude30 병렬 종료 (11-18 최신)
+- 사용자 계속/병렬요청으로 가온375376v4·오이313314bl2(30명시재지시181cm)·한울377378v4(179cm) 세작업자동시생성,각2콜/총12콜.6최종held후보정식명보존,중앙원장605records. 실제원화첨부/참조SHA·소스저장SHA감사전부통과. 게임승인/적용은아님.
+- 중요:canvasClipfalse만으로자기셀안전아님. act셀침범 가온20(-3.74%)·오이14/15/16/19/20(-16.93%)·한울1~16(-6.42%);walk최소여백8.12/5.19/2.03%와반대앞다리/passing문제. 한울머리LEFT대큼,다른HARD는옷장식가림미확정. 상세sharedproductionMD/ work\claude30-final-audit.json 및각report.
+- 후보 D:\에셋창고\Codex-parallel-375-376-20261117-candidates, Codex-claude30-oi-20261118-candidates, Codex-claude30-hanul-20261118-candidates. 초기+보정모두actualpromptRefs/source보존. 작업자전원대기/생성중없음,다음Claude새작업지시감지. 기존30넣음/그대로대상자동재생성안함. 게임코드·QUEUE·입수·커밋·배포미수행.
+- 최신복구기록 C:\Users\my\Documents\Codex\2026-11-17\detail-bad-request\work\RESUME-CHECKPOINT-20261117.md 상단우선. C:work는D:의검증된복사본Junction으로경로유지.
+
+
+
+## Codex Claude31 401 plus priority2 final audited
+- 2026-11-18T04:08:05.789008+09:00 original401 handled:386HITtrial+8SPheld+1SBheld+6toolerrors. Priority772773alsoHITtrial,total388HITreviewsubmissions. 441actualrequests/435rawoutputs;all4laneauditscomplete,central1047records. No runtime/userapproval.
+- Original portraits attached, actual requests/source/saved/refSHA preserved andchecked. Most HIT900to1254sizegap remains;SP/SBheldconditionsdocumented,notPASS. Soenunv2Claudeaccepted,Beodeulv2root+independentanatomychecked/submitted;3ambiguousportraitsawaituserjudgement.
+- Allworkerscompleted/idle,allfiles/requestsandfirstcorrectionretained. NextreadsharedproductionMDTAILincludingunnumberedappends,continueNEWscopeonly. Noauto3rdcalls/safetybypass/exhaustedoldversionrestarts. Recovery C:\Users\my\Documents\Codex\2026-11-17\detail-bad-request\work\RESUME-CHECKPOINT-20261117.md;teamfinalaudit C:\Users\my\Documents\Codex\2026-11-17\detail-bad-request\work\claude31-final-team-audit.json.
+
+
+## Codex Claude33 completed and audited
+- 2026-11-18T12:26:41.584461+09:00:33initial52+newversions10=62uniquejobsprocessed.113raw/114imagecalls(one moderation24);onePado6refvalidator(noimage),oneunsubmittedWALK25dependency.7HITtrial/53SPheldlocalQA,10pairsClaudeaccepted/gameinsertedseparately. Noactiveimagecalls.
+- Source/request/originalstyle-slotrefs/freshACT/storageSHA/attemptlimit audit complete; team audit C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/work/claude33-final-team-audit.json.8personal116recordsmergedto1164centralhistory(includes35same-timestampformattingalias1,notnewimage).
+- Latest keepOLD/no-redraw includes Hwannabeodeul,Sogeum,Daemusin,OldDaeso,WaeChief,Drunkwarrior,Bdanbi,Goeun,Golgae.Whalequeenuserjudgementpending.Dangung24moderation/25dependencyrecorded,no bypass. Numeroushead/alpha/margin/gait issues remainheld;HIT900to1254gap remains.
+- ActualruntimeOLDfirst20x1frame differsfromfrozen4x5ref;comparisonsnowusepublic/realm/anim-px.Hiddenskull/chin estimates separatefromvisiblehatproxy. Allraw/first/correctionpreserved.No code/QUEUE/intake/commit edits.
+- Resume C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/work/CLAUDE33-RESUME.md. Read sharedproductionMDTAILincludingunnumberedappends;followNEWexplicitClaude/userinstructions only, no automatic oldversionthirdcalls.
+
+
+## Codex Claude34 active
+- User directed34. Immutable work/claude34-manifest.json snapshots296: existingSP52+obsoleteSB1 skip; newHITbase/aw122+aw2221=243 dispatched4exclusive lanes61/61/61/60. Up to8independentcalls total, currentimagesmaybeinflight.
+- Per-lane work/claude34-<lane>-progress.json and D:/에셋창고/Codex-claude34-<lane>-20261118.json are actualstate. Mainresume C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/work/CLAUDE34-RESUME.md; teamstatus work/claude34-team-progress.json.
+- Builtinimagegen/actualportraitviewandattachment eachcall/currentaw2outfit/cleanuninjuredskin/opaquecloth/anatomy+grip+bowstringaudit. First+1targetedcorrection total2;34allowsone neutralmoderationretry, no bypass. Saveactualrequestbeforetool,rawfirstbeforecorrection; preservedgenerationcounts do not reset afterappquit. No code/QUEUE/intake/commit edits.
+
+
+## Codex Claude34 tail rebalance and preserved storage
+- Work continues: newHIT243, initial61/61/61/60 -> confirmeduncalledtail12redistributedto69/65/49/60(hit-edit/hit-new/pado/ROOT),all243unique. work/claude34-tail-rebalance.json. Per-laneprogress/ledgersandsharedMDlatestprevailoveroldsnapshots.
+- ClosedOLDgeneratedfolder01a1d3a8-4428-7e93-8874-2102ea19b75e only:1101files/2,104,721,630bytes SHAverifiedatDprimarycopy+separatelymovedoriginals;oldCabsolute pathremainsJunctiontoDprimarycopy. Imagefilesdeleted0,current4lanegenerationfoldersunchanged. D:/에셋창고/Codex-generated-preserved-20261118/;journalwork/claude34-space-relocation.json phasecomplete/allSHAtrue. Do not redo or deletepreservedpaths.
+- SomeearlyHITtrialcloth-opacityQAwasinadequate;currentreviewstatuseswerecorrectedandcleardefectsreceivedremainingonecorrectionwithinmax2. Uncertain77/101/113/117/pado74/ROOT99held;latestindividualledgerstatusprevailsincludingoldrootPNGhistory. Source/requesthistorypreserved,no thirdcalls.
+
+
+## Codex Claude34 ROOT complete, team continues
+- ROOT40/46raw final audit passed;39trial+1held(99). Current exclusive team69/65/69/40=243. Last snapshot218complete/284raw; others continue allremaining25. Read current progress rather than old snapshots.
+- Named6 AFTER independent side-by-side QA saved work/claude34-claude-pose6-after-independent-QA.jpg/json;149/157/169 improvedtrial,129/141/173held and no3rdcall. Final global audit pending, no runtime/QUEUE/commit edits.
+
+
+## Codex Claude34 final audited
+- 2026-11-18T16:03:40.979127+09:00:243고유작업전량처리(비각성/각성22+진각성221),314raw/314실제요청/도구오류기록0. 최종trial231+held12,trial은자체검수후보이며Claude/사용자승인이나게임적용아님. 최초+구체1교정max2,3차0. 준비미사용JSON/판정정정record는추가호출로세지않음.
+- 실제원화첨부·frozenrefSHA/actualrequestpromptrefs/sourceSHA/불변D rawArchiveSHA·243독점배정/고유파일명감사통과. 상세 work/claude34-final-team-audit.json 및각lane보고서. 모든처음/보정raw·요청·QA보존,현재생성중0. 중앙원장1478records(과거역사포함)병합.
+- 보류indices[77, 101, 113, 117, 129, 141, 173, 197, 74, 242, 99, 294]:최신개인원장review와outputs/production-status.md 사유우선. 원본900→출력1254차이/가린손가락한계/정확10도미계측유지. 피격자세Claude지적6전후부모독립검수도보존,149/157/169개선trial·129/141/173held. 옛부적합root파일은hit-new-held-history보존경로참조/자동입수금지.
+- 기존SP52+폐기SB1은이미생성/채택/oldkeep/거절이력있어콜상한초기화안함. 위단궁ACT/WALK예외범위질문은명시답변대기;답없이추가실행안함. 새명시버전/추가지시만다음범위로이어감. 코드/QUEUE/입수/commit/푸시/배포미수행,모든원본보존. 공유HANDOFF/checkpoint갱신.
+
+
+## Codex34 개인 마감 기록 보완·전량 종료
+- hit-edit69/88raw·hit-new63/89raw·pado65/84raw·ROOT46/53raw=243/314. 모든생성0/원본보존/각max2. hit-new개인감사스크립트의로컬한글인코딩SyntaxError는이미지오류가아님. 부모의독립전량314요청/ref/source/rawArchiveSHA PASS에해당89건도포함되어그감사결과를인용해개인기록마감(중복SHA검사재실행없음). work/claude34-hit-new-parent-closure.md 및전체감사참조. 최종231trial/12held변동없음. 새명시지시만대기/기존판자동재생성없음.
+
+
+## Codex 지시35 수신·419신규 불변스냅샷/4레인 병렬 착수
+- 2026-11-18T17:31:30.785875 사용자MD확인/병렬계속요청으로35수신. liveQUEUE419고유새이름/중앙기존반환중복0 검증,work/claude35-manifest.json 원화refs SHA고정. 실제QUEUE는SPA먼저이나MD35우선지시대로HIT17(indices402..418)→시험12명24SPA(indices0..23)→후속여장수우선순서로배정. 독점107/104/104/104=419/중복0,각2독립native콜최대8. 기존34/33결과와콜이력보존/재시작없음.
+- 피격17은자세v2 14와해부학v2 3,실원화view/매번첨부·강한후방흉곽/어깨머리·구도변화/손팔2·불투명천·깨끗피부·시위관통검수. ROOT405미르/409마한우두머리첫2콜착수,다른3lane도우선HIT착수. 각최초+구체1보정(거절중립retry포함)총max2/실제request선저장/raw·D불변사본·SHA보존.
+- SPA실제IMAGE2호진참조4160x160=20x1runtime띠로문안의4x5설명과다름발견. 실제좌→우20칸을새4x5rowmajor로대응한다는사실보충,원본비율/머리/키/다리/pose무기KIND는비각성띠우선/각성원화는의상장식만. 동일scale검수는cell정규화와키강제정렬을구분해순환PASS금지,실제bbox/head-leg숫자·가림한계기록. 실제에셋픽셀변경없음/read-onlyQA만.
+- 시험24전체제출시MD통지·20분마감기록,Claude판정/SPA문안바꿈감지후반영;20분판정없으면새35지시대로여장수부터계속하도록control gate관리. work/claude35-control.json. 당궁SP는답수신:old유지/ACT추가retry없음,옛SP/SB이번큐제외. 게임코드/QUEUE/입수/commit변경없음. 현재상태 work/claude35-team-progress.json / work/CLAUDE35-RESUME.md.
+
+
+## Codex35 36판정 반영·419장 계속 생성 중
+- 최신 MD는 36번이며 새 문안 변경 없음. 시험24와 우선HIT17 처리 후 대기 없이 여장수부터 전량 이어가는 중. 마지막 확인 70/419작업 처리·128반환원본·도구거절2(각 허용 중립 재요청 성공). 수치는 계속 변하므로 work/claude35-team-progress.json 우선.
+- 현재 독점 배정 edit121/new118/pado116/ROOT64=419, 기존4레인 native각2/총8 상한. 미착수40건 재배분만 했고 진행/완료판 이동 없음. 각 실제 원화 첨부·원본/D불변사본·요청/참조SHA 보존, 동일작업 총2콜 상한.
+- Claude36의 ACT4명 외부통과와 자체 strict alpha/포즈/가이트 보류는 구분. WALK1/5와3/7 같은 앞다리 반복이 다수여서 구체 실패에만 남은1보정 후 held기록. 기존normal도 반복이라 검증된 걷기 정답으로 쓰지 않음. 최초+보정 raw 모두 유지/옛판 3차 재시작 없음.
+- 다음: ROOT39 WALK보정+46 ACT첫판 실제 요청 반환을 기다려 검수·저장, 이후54 ACT 등 계속. work/CLAUDE35-RESUME.md와 각 진행/실제 request 파일을 확인해 중복 제출하지 않음. 현재 생성 중이므로 완료로 오해하지 말 것. 코드/QUEUE/입수/커밋/푸시 없음.
+
+
+## Codex37 수신·36승인 취소 반영·SPA 새 요청 전면 중지
+- 37번 감지 즉시 네 레인에 중지 전달. 37수신 이후 새 SPA first/보정/WALK 요청0. 중지 전에 실제 제출한 반환분만 원본·D불변사본·실제요청/refsSHA·QA로 보존 마감. 현재 네 레인 native/toolcell진행0(각 담당 확인), rootpendingrequest0.
+- 정리 스냅샷 최종처리78/419 + first 반환 후38대기5개(edit57/65,pado76/84,ROOT54), 원본146/실제148요청=146raw+기존개별moderation2. first대기5는 남은1회 자동보정 없이 미완으로 보존. HIT17 이미처리(16trial/403held),그 외 별도 신규피격줄 없음.
+- 36의 이랑/해달/호진/호공 승인 취소를 control에 명시하고 bulk gate false/allowNewSpaRequests=false. 팔매만 통과라는37보고는 외부판정이며 정확rawSHA 미상, 자체시험결과를 소급 PASS로 변조하지 않음. 기존2콜소진 작업 재시작/3차0. Claude37 머리 비율 수치는 Claude 측정 보고로 구분하고 새38 측정명령을 기다림.
+- 38 새 문안·저장 전 측정 명령을 기다리며 MD 계속 확인. 새 scope/파일명/과거판 재시도범위를 명시한 지시에 따라 진행,과거 실제prompt/refs/source/콜이력은 불변. work/claude35-control.json / work/CLAUDE35-RESUME.md / 각 STOP37기록 참조. 최신 ROOThelper work/claude35-root-helpers-v7-HOLD37.json. 원화/생성 에셋 픽셀변경·삭제/QUEUE/code/입수/커밋/푸시 없음.
+
+
+## Codex38 수신·383장 새 편집문안/공식측정/4레인 재개
+- QUEUE를 다시 읽고383고유파일(191ACT/192WALK,명시v2 53장)을 새불변스냅샷으로 고정. work/claude38-manifest.json / claude38-QUEUE-snapshot.md,SHA694fe1dc13c4f21ed8d2081262d3e64f7a539571cfc051fa834a018f58395a73. 이전실제반환/요청동명이력0 확인. 35/37기록은동결보존하고38범위만110/110/108/55독점재배정·네레인각2native재개.
+- 새실참조2장순서normal1/aw1portrait2만,style3/추가contactref/기존35ref캐시금지(일부normalSHA실제변경). 실제원본20x1→출력4x5동일셀기하사실만보충,의상편집문안유지. WALK는공식PASS ACT LAST만첨부하고PASS못한ACT의WALK는콜0 의존보류·다른ACT계속. 매raw저장전공식measure/read-only,FAIL/HOLD reason앞붙여유일1retry,totalmax2.
+- 측정실제검증:예전궁중무희반려본20셀/head_x1.39/FAIL(exit1) 재현·입력/저장소7경로SHA불변. 호진승인ACT는영수증actOkSHA6845960a4fb1494749e50a5e3cdc4ea765e144c5fcec9df64faa0f6390ab11a6와old35ROOT6call2 raw일치,독립공식ACT-onlyPASS1.04. genericDroot경로는없어이정확원본만호진WALK LAST로쓸예정,임의다른판선택없음.
+- 첫ROOT38 고구려부인v2 공식PASS head_x1.01,young-archer v2 HOLD1.09. 두first/raw/실제요청/refsSHA/공식로그 보존후허용1보정중. PASS숫자와의상/동일셀pose/무기/opaque/gait시각판정별도. 코드/QUEUE/입수/픽셀가공/원본삭제없음.
+- QA정정: native표시의커다란선홍색블록을불투명배경으로단정하지않음. 실제RGBA분석에서고구려부인red11633px은모두alpha1~3(대부분1),young-archerred2498px도alpha1~2/opaque0이라정상alpha합성에는거의안보임. strictpositive10%밖수치와실제보이는배경은구분,알려진padding/A1만자동재생성없음. 육안표시만본초기표현은이실측으로정정하며원본/기존request변경없음.
+- 최신진행 work/claude38-team-progress.json / CLAUDE38-RESUME.md,공식측정wrapper work/measure-claude38-root.py. 모든raw/보정/measure/head_x/reason/선택근거보존하며다음MD지시계속확인.
+
+
+## Codex39 수신·live368 재독/누적3판/해제7명 병렬 재개
+- 사용자새지시확인요청으로39즉시수신. HOLD도머리통과가아님/VERDICT가권위(인쇄head_x1.06이어도HOLD면재작성대상). immutable work/claude39-manifest.json+claude39-QUEUE-snapshot.md:live368=ACT172/WALK196,38의383대비새이름26/빠진이름41/겹치는문안·refs변경0. 새이름에는해제7명14장외이미38에서받은base를_v2로올린6명12장이포함되어모두새3회로리셋하지않음.
+- 누적한도운영:현재REDRESS38+39 동일who-kind 실제native최대3,이미38실콜2면39추가1만(HEAD HOLD/FAIL에한함),이름/v2/v3변경리셋0. 기존35별도방식의역사는삭제/축소없음. 숫자PASS이면서pose/padding만미달은39머리추가판범위를임의확대하지않음. 39HEAD추가판은reason=원문앞/매raw공식measure/head_x·VERDICT·전raw/실제refs보존후가장나은선택별도기록.
+- live독점106/104/105/53 배정,같은who-kind기존38주인유지. fresh해제:edit고목/고은,pado이랑/진주해녀,ROOT해달/알영,new소리(+기존38오디first1의보정2)를우선최대8native로재개. 새두원화view/normal1·aw1portrait2순서실첨부,style3/contact대체없음. 38이미제출된마지막반환도전부보존/측정중이며미제출preparedJSON은콜로세지않음.
+- live에서기존ACT줄이빠졌다고통과로추정하지않음. 소유lane의HEADHOLD/FAIL최종추가판은원38index X→보충index100000+X,명시*_act_v3.png로별도개인보충manifest(immutablelive368변경없음). live새_v2가동일who로있으면그index우선/중복추가판0. PASS ACT_v3를쓰면아직미제출WALK도_v3짝으로맞추고원liveWALKindex/이름을superseded0콜기록,논리WALK누적3유지.
+- 작업복구:work/claude39-control.json/claude39-<lane>-dispatch.json 및기존38원장/실제requestfiles/toolcells우선. 현재ROOT새해달7/알영9 first2native실제제출(cell398),이전38ROOT61/77solecorrection은반환·공식측정HOLD1.06/FAIL1.23 보존후39남은1회_v2대상정리중. 코드/QUEUE/입수/원화·asset픽셀변경/삭제/commit없음.
+
+
+## Codex39 active checkpoint v2 (generation continues)
+- 2026-11-18T21:44:40.866716+09:00 latestMD39/liveQUEUE368 unchanged. REDRESS38+39 same who-kind native max3, exactnormal+portrait2refs, officialmeasure everyraw; all trials/held/raws/actualprompts preserved. No projectcode/QUEUE/intake/commit/push byCodex. Agents continue their full dispatch; do not final after a batch.
+- Read C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/work/CLAUDE39-ROOT-CHECKPOINT-2128.md plus actual request/measure/ledgers. ROOT helper export claude39-root-helpers-v2.json is a recovery aid, caches can lag active cells. Important correction: cell469 timed out in READ-ONLY preflight before requestfile existed/nativecall0; generator now polls real process completion. Actual104finalthird is cell477,132second cell478,160first measure/QA cell479. Never resend a requestfile based on stale cache.
+- Latest central progress is work/claude39-team-progress.json (lastsnapshot68newraw/live78+13supplementals, countsincludeheld/dependency). OfficialHEADPASS is not visualpose/cloth/gait approval. All20normal/output read-only contact comparison is now required before any correction reason. Byeol16 original pose misreading explicitly corrected in sharedMD/review; actualprompt/raw immutable/max3, no4th. inboxglobnowCodex-*-candidates confirmed; runtimeACT5..12exception still no explicit MD answer.
+
+
+## Codex40 WALK 우선 전환 인수인계
+공유지시40 수신 후 새 ACT 요청 중단, 기존 공식 PASS ACT와 같은 버전 WALK 네 레인 병렬 제작 중. 39 최종183raw/183실제요청 보존·공식측정/원장 저장 완료(170live+13보충 처리, 보류포함). 40 재개 정보는 C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/work/CLAUDE40-RESUME.md, claude40-team-progress.json, 개별 Codex-claude40-LANE-20261118.json. PASS WALK만 정식명 저장/시각gait보류 및 승인·설치false는 유지. 새41+마다 요청전guard/재독, 최고ACT버전 동일바이트pin와WALK버전맞춤, 38+39+40 실제누적3상한 유지. 코드/QUEUE/입수 변경없음.
+
+
+## Codex41 사용자 컨텍스트·공간정리 재개점
+현재권위/미완료/콜한도/cleanup검증/다음이미지작업은 C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/work/CLAUDE-RESUME-CURRENT.md 에 짧게 저장. 41 새walkref8raw 중7PASS1비율FAIL, ROOT호진1·소녀궁수9미제출/남은1판씩. 새native0/미보존반환0에서사용자요청정리후계속. 원본·실제요청·측정은보존.
+
+
+## Codex 11-19 공간정리 완료
+D실측2.65GiB확보/여유10.19GiB. 동일원본1101장중복사본은같은경로junction으로유지,옛QA2905는C검증ZIP보관후D사본만정리. 원본·요청·measure삭제0. work/CLAUDE-RESUME-CURRENT.md·cleanup-completed-note-20261119.json에검증/복구/다음작업저장,최신MD확인후계속.
+
+
+## Codex42 현재 인수인계
+새42/QUEUE367/id-name기준·fresh독립맥락으로SPA걷기28남은범위우선재개. 첫호공/해달/고구려무녀각새agent진행,신규ACT는guard로전레인native0. 이어REDO73우선12/50/11. 현재상태·콜예산·원장·정리증거·다음행동은 work/CLAUDE-RESUME-CURRENT.md 한파일권위. D2.65GiB확보/원본·요청·측정삭제0.
