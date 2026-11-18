@@ -2226,12 +2226,12 @@
       }
     },
     "base-w-24-apdok-queen": {
-      "status": "rejected",
+      "status": "installed",
       "order": "strip",
       "act": "D:/tmp-node/sp-inbox33/sprite_prop_base-w-24-apdok-queen_act.png",
       "walk": "D:/tmp-node/sp-inbox33/sprite_prop_base-w-24-apdok-queen_walk.png",
-      "actSha256": "6049b7ec8b4e1df598883327aaca2d65d97ffe6eb7ef10c697547e729c290280",
-      "walkSha256": "0aff99cc3c9f7e25164642b2195f3bf46a784d0951f49e2fd06dc48b3bd42a94",
+      "actSha256": "f7c7a85a38590628fa93fc22090c6dc4b0bc895c7c230af28ac680c1598e5d91",
+      "walkSha256": "b6e4ea56f9d04fa8859781fd94ab30d0eea6bfb59042075cca90f05cadf5d22b",
       "weaponFix": {
         "sprite": "spear",
         "art": "no weapon: a golden rice sheaf in one arm and grain-light magic from the free palm",
@@ -2243,24 +2243,26 @@
           184,
           160
         ],
-        "walkScale": 0.5693,
+        "walkScale": 0.6003,
         "contact": [
           14,
-          0.93,
-          0.35
+          0.92,
+          0.31
         ],
         "headsOld": 3.19,
-        "headsNew": 2.85,
-        "headsNewWalk": 3.37,
-        "residueAct": 0.0018,
+        "headsNew": 4.03,
+        "headsNewWalk": 4.95,
+        "residueAct": 0.0,
         "residueWalk": 0.0
       },
-      "reason": "머리가 옛 판보다도 커짐(2.85 머리) · 기준판보다 아이 같음",
       "review": {
-        "chinOld": null,
-        "chinNew": null,
-        "note": ""
-      }
+        "chinOld": 3.19,
+        "chinNew": 4.03,
+        "note": "11-18 v4 · 머리 작아짐 · 원화대로 주술(벼단)",
+        "weapon": "magic"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-24-apdok-queen",
+      "installed": "2026-11-17"
     },
     "base-w-41-hwanna-beodeul": {
       "status": "installed",
@@ -2296,12 +2298,12 @@
       "installed": "2026-11-17"
     },
     "base-w-45-tamna-oreumbi": {
-      "status": "rejected",
+      "status": "installed",
       "order": "strip",
       "act": "D:/tmp-node/sp-inbox33/sprite_prop_base-w-45-tamna-oreumbi_act.png",
       "walk": "D:/tmp-node/sp-inbox33/sprite_prop_base-w-45-tamna-oreumbi_walk.png",
-      "actSha256": "415bce23ecaf0ffefcf69e5a2b30beae071731740898f86b9cf1da7a6493ef05",
-      "walkSha256": "110d80aa01cd2c81f26d1670ab5891f88d54097ecf004b3ed96072426196d135",
+      "actSha256": "73d6df91eaa77b25e8064b619bbe937477115f5d36f5f89148d38e8e0ade27be",
+      "walkSha256": "487ca5a25f098ee1ad5866fa8c3575a0800b989c0d1dbc888091e46249bed84d",
       "weaponFix": {
         "sprite": "walking staff",
         "art": "whip",
@@ -2313,51 +2315,53 @@
           184,
           160
         ],
-        "walkScale": 0.5875,
+        "walkScale": 0.6247,
         "contact": [
           14,
-          0.89,
-          0.42
+          0.94,
+          0.43
         ],
         "headsOld": 3.16,
-        "headsNew": 3.38,
+        "headsNew": 3.15,
         "headsNewWalk": 3.05,
         "residueAct": 0.0,
         "residueWalk": 0.0
       },
-      "reason": "머리털 둘레 붉은 키잉 찌꺼기 · 무기가 원래 초상의 밧줄에서 몽둥이로 바뀜",
       "review": {
-        "chinOld": null,
-        "chinNew": null,
-        "note": ""
-      }
+        "chinOld": 3.16,
+        "chinNew": 3.15,
+        "note": "11-18 v4 · 원화대로 채찍·밧줄(단검 묶음) · 키잉 깨끗",
+        "weapon": "dagger"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/base-w-45-tamna-oreumbi",
+      "installed": "2026-11-17"
     },
     "base-w-56-dongokjeo-sogeum": {
       "status": "rejected",
       "order": "strip",
       "act": "D:/tmp-node/sp-inbox33/sprite_prop_base-w-56-dongokjeo-sogeum_act.png",
       "walk": "D:/tmp-node/sp-inbox33/sprite_prop_base-w-56-dongokjeo-sogeum_walk.png",
-      "actSha256": "d6bc79588e59ec364039eef9005e4750a0f3de7a3e7fe2d252a293097724c3c8",
-      "walkSha256": "f6ade7c5e9631e31d4d730bb1540f9384f3c11f86fe1c689b1ddcfbc9b6b2c16",
+      "actSha256": "90850ed16298ca0a282d8d8c18698db7624c4df32fac8c02e3c674b1fb7fc1dc",
+      "walkSha256": "fb4f439e2fe78e165ced3210983747cad244a3b44df135f7d9bcc388295c92ce",
       "portrait": "w-56-dongokjeo-sogeum",
       "auto": {
         "cell": [
           176,
           160
         ],
-        "walkScale": 0.7003,
+        "walkScale": 0.6964,
         "contact": [
           14,
           0.91,
-          0.45
+          0.49
         ],
         "headsOld": 3.38,
-        "headsNew": 2.82,
-        "headsNewWalk": 2.6,
-        "residueAct": 0.0071,
-        "residueWalk": 0.0064
+        "headsNew": 2.98,
+        "headsNewWalk": 3.37,
+        "residueAct": 0.0042,
+        "residueWalk": 0.0069
       },
-      "reason": "옛 판과 거의 같고 머리는 더 커짐(2.82)",
+      "reason": "v4 도 옛 판과 같고 머리 더 큼 → 옛 판 유지 · 더 시키지 않음",
       "review": {
         "chinOld": null,
         "chinNew": null,
