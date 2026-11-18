@@ -3816,7 +3816,7 @@
       }
     },
     "base-w-14-feast-spy": {
-      "status": "staged",
+      "status": "rejected",
       "act": "D:/에셋창고/Codex-claude35-root-20261118-candidates/sprite_aw1_base-w-14-feast-spy_act.png",
       "walk": "D:/에셋창고/Codex-claude35-root-20261118-candidates/sprite_aw1_base-w-14-feast-spy_walk.png",
       "actSha256": "57472b05ce228a171a90ff0abef2b5133c18245e7fe6b9239c3ed47f86da4dc4",
@@ -4022,7 +4022,13 @@
         "자세마다 머리 크기가 다름 {18: 1.08}",
         "옷 빛깔이 비각성과 비슷 0.231",
         "공격 칸 자동 고름 [0, 12, 13, 14, 15, 16] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
-      ]
+      ],
+      "reason": "head about 23% too large for the body compared with the current normal-form strip gen-base-w-14-feast-spy (at equal standing height the head is x1.23); redraw both sheets keeping EXACTLY the head-to-body ratio of IMAGE 2 (smaller head, longer torso and legs); the idle clothing colors are also too close to the normal form",
+      "rejectedBy": "review",
+      "review": {
+        "note": "",
+        "date": "2026-11-18"
+      }
     },
     "base-w-17-mahan-pearl-diver": {
       "status": "rejected",
@@ -5076,13 +5082,22 @@
       }
     },
     "base-w-27-mokji-jinha": {
-      "status": "staged",
+      "status": "rejected",
       "act": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_base-w-27-mokji-jinha_act.png",
       "walk": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_base-w-27-mokji-jinha_walk.png",
       "actSha256": "9ccbd6914e777a6b18b2065b4048f21ab90408e9dabccd8d87ee13a6afab5c34",
       "walkSha256": "fb61ec5e4e992cc6663c0bc9d6458361a0aa7018194cb53e283dec56d446c310",
       "actVersion": 1,
       "walkVersion": 1,
+      "attack": [
+        0,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "attackBy": "auto",
       "auto": {
         "act": {
           "clear": 0.739,
@@ -5097,28 +5112,27 @@
         "walkFit": {
           "byHeight": 0.6393,
           "byArea": 0.674,
-          "used": 0.6792,
-          "walkHead": 0.934
+          "used": 0.683,
+          "walkHead": 0.924
         },
         "walkCheck": {
           "legDiff15": 0.149,
           "legIou15": 0.873,
           "legShadeFlip": -0.066,
-          "stride": 3.39,
+          "stride": 3.33,
           "still": 0
         },
         "poseHead": {
           "0": 1.0,
-          "1": 1.0,
+          "1": 0.99,
           "2": 0.98,
-          "3": 1.0,
-          "13": 0.98,
-          "14": 0.98,
-          "15": 1.08,
-          "16": 0.98,
-          "18": 1.03
+          "3": 0.99,
+          "13": 0.96,
+          "14": 0.96,
+          "15": 1.04,
+          "16": 1.02
         },
-        "colourGap": 0.15,
+        "colourGap": 0.145,
         "cell": [
           200,
           160
@@ -5231,60 +5245,63 @@
           }
         ]
       },
-      "attack": [
-        0,
-        13,
-        14,
-        15,
-        16,
-        17
-      ],
-      "attackBy": "auto",
+      "manual": {
+        "baseChin": 62.0,
+        "baseTop": 20.0,
+        "awChinFrac": 0.5734265734265734,
+        "awTopFrac": 0.8881118881118881
+      },
       "fit": {
-        "by": "top",
-        "idlePx": 144.95,
-        "k": 1.05,
-        "bodyPx": 137,
+        "by": "manual",
+        "idlePx": 158.21,
+        "k": 1.146,
+        "bodyPx": 130,
         "awRaw": 143,
         "awFeet": 155.0,
-        "head": null,
-        "headBy": "head match",
-        "headFwd": 1.134,
-        "headRev": 1.321,
+        "head": 1.139,
+        "headBy": "chin rows (review)",
+        "headFwd": 1.148,
+        "headRev": 1.331,
         "headScale": 1.08,
         "ncc": [
-          0.51,
-          0.61
+          0.52,
+          0.6
         ],
-        "gear": 4.7,
+        "gear": 7.0,
         "base": {
-          "top": 19.5,
-          "chin": null,
+          "top": 20.0,
+          "chin": 62.0,
           "feet": 155.0
         },
         "aw": {
-          "top": 20.5,
-          "bodyTop": 20.5,
-          "chin": null,
+          "top": 28.0,
+          "bodyTop": 21.0,
+          "chin": 73.0,
           "feet": 155.0
         },
-        "left": 1.0,
+        "left": 8.0,
         "box": [
-          70,
-          22,
+          69,
+          24,
           83,
-          55
+          54
         ]
       },
       "warn": [
-        "머리 찾기 불확실(닮음 0.51/0.61 · 두 방향 1.134/1.321) → 몸 위끝으로 맞춤 · detail.png E 를 보고 --top-base/--top-aw (+ --chin-base/--chin-aw)",
-        "칸 크기(138) 그대로면 키가 ×0.952 였다 → 맞춰 구움 (머리 장식·든 무기 높이 차)",
-        "각성 머리 위로 4.7px 솟음(관·깃털·든 무기) · 키에서 뺌",
-        "걷기 판 등신이 동작 판과 다름: 같은 몸 크기에서 걷기 머리 ×0.93 (반씩 나눠 구움 · 10% 넘으면 걷기 판을 다시 받는다)",
-        "자세마다 머리 크기가 다름 {15: 1.08}",
-        "옷 빛깔이 비각성과 비슷 0.15",
+        "머리가 큼 ×1.139 (같은 키에서 머리 높이 · 5% 넘음)",
+        "칸 크기(138) 그대로면 키가 ×0.872 였다 → 맞춰 구움 (머리 장식·든 무기 높이 차)",
+        "각성 머리 위로 7.0px 솟음(관·깃털·든 무기) · 키에서 뺌",
+        "칸(160)에 다 못 담아 그림은 8.0px 작게 구움 → 화면에서 몸 키 값(bodyPx 130)으로 키워 맞춘다",
+        "걷기 판 등신이 동작 판과 다름: 같은 몸 크기에서 걷기 머리 ×0.92 (반씩 나눠 구움 · 10% 넘으면 걷기 판을 다시 받는다)",
+        "옷 빛깔이 비각성과 비슷 0.145",
         "공격 칸 자동 고름 [0, 13, 14, 15, 16, 17] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
-      ]
+      ],
+      "reason": "head about 14% too large for the body compared with the current normal-form strip gen-base-w-27-mokji-jinha (at equal standing height the head is x1.14, crown excluded); redraw both sheets keeping EXACTLY the head-to-body ratio of IMAGE 2 (smaller head, longer torso and legs); walk sheet head is also 8% smaller than the action sheet",
+      "rejectedBy": "review",
+      "review": {
+        "note": "",
+        "date": "2026-11-18"
+      }
     },
     "dalbit": {
       "status": "rejected",
