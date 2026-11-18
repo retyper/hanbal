@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """1차 각성 전투 띠 받아 넣기 (11-18 · tools/remake-jobs.mjs 묶음 'remake-sprite-aw' · SPA-<who>-act/walk). 절차 요약은 AW1-INTAKE.md.
 
-챗지피티(Codex)가 준 두 장 (D:/에셋창고 뿌리나 Codex-claude35-*-candidates/ · 읽기만 · 이름 끝 -숫자12자리는 원본 사본이라 안 본다):
+챗지피티(Codex)가 준 두 장 (D:/에셋창고 뿌리나 Codex-*-candidates/ (어느 묶음이든) · 읽기만 · 이름 끝 -숫자12자리는 원본 사본이라 안 본다):
   sprite_aw1_<who>_act.png   4x5 스무 자세 (서기 · 걷기 · 공격 · 막기 · 비틀 · 맞음 · 누움 · 칸 차례가 장수마다 조금씩 다르다)
   sprite_aw1_<who>_walk.png  4x2 걷기 여덟 칸
 <who> = 비각성 띠 열쇠(nonawakened-20261113/queue.json 의 key · 띠 gen-<who>). 넣는 이름은 기존 열 명과 같은 aw1-<who>.
@@ -87,7 +87,7 @@ def inbox(root, rc=None):
     판 = 이름 끝 _v2 · _v3 … (없으면 1). 가장 높은 판을 쓰고 같은 판끼리만 짝짓는다.
     예외: 영수증에 「동작 판은 통과 · 걷기 판만 다시」(review reject --walk-only → actOk)로 적힌 장수는 그 동작 판 + 더 높은 걷기 판"""
     root = Path(root); found = {}
-    for rank, d in enumerate([root] + sorted(root.glob('Codex-claude35-*-candidates'))):
+    for rank, d in enumerate([root] + sorted(root.glob('Codex-*-candidates'))):
         for p in d.glob('sprite_aw1_*.png'):
             m = re.fullmatch(r'sprite_aw1_(.+)_(act|walk)(?:_v(\d+))?\.png', p.name)
             if not m: continue

@@ -420,8 +420,8 @@
       "key": "aw1-base-g-38-chopal-palmae"
     },
     "base-w-02-goguryeo-lady": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_base-w-02-goguryeo-lady_act.png",
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-root-20261118-candidates/sprite_aw1_base-w-02-goguryeo-lady_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_base-w-02-goguryeo-lady_walk.png",
       "actSha256": "8522e90408d0dd2324ac57bd5fe80473d858f80c7dd89fc690415fc8b5dd991f",
       "walkSha256": "7bed909e158298b4f3e83222e972314c79b5f82372b91f36bb6897992b7a7556",
@@ -626,7 +626,8 @@
       "review": {
         "note": "",
         "date": "2026-11-18"
-      }
+      },
+      "pending": "act v2 · walk v1 → waiting for walk"
     },
     "goeun": {
       "status": "rejected",
@@ -1255,8 +1256,8 @@
       }
     },
     "hogong": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_hogong_act.png",
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-hit-new-20261118-candidates/sprite_aw1_hogong_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_hogong_walk.png",
       "actSha256": "a16a44d920444b2c5f2b24c49bdc53b6a699250a637673e5b1af5f716ec6fdfa",
       "walkSha256": "2a35b523e67f3e8dcd44c742dee1b5e1672e3ce180a5cf587700ee82a09d4e74",
@@ -1462,14 +1463,17 @@
       "review": {
         "note": "",
         "date": "2026-11-18"
-      }
+      },
+      "pending": "act v2 · walk v1 → waiting for walk"
     },
     "hojin": {
-      "status": "rejected",
+      "status": "staged",
       "act": "D:/에셋창고/Codex-claude35-root-20261118-candidates/sprite_aw1_hojin_act.png",
-      "walk": "D:/에셋창고/Codex-claude35-root-20261118-candidates/sprite_aw1_hojin_walk.png",
+      "walk": "D:/에셋창고/Codex-claude38-root-20261118-candidates/sprite_aw1_hojin_walk_v2.png",
       "actSha256": "6845960a4fb1494749e50a5e3cdc4ea765e144c5fcec9df64faa0f6390ab11a6",
-      "walkSha256": "7fda1cb4bd20b83e442582fcb555ad2dcbe6a8a8335fa367dfb9a92f879cd5a9",
+      "walkSha256": "60585d8a6b8de9b5ed6e98539999d5ec03760d89d18424da87e4f297af1dd6e2",
+      "actVersion": 1,
+      "walkVersion": 2,
       "attack": [
         0,
         12,
@@ -1479,6 +1483,11 @@
         0
       ],
       "attackBy": "auto",
+      "actOk": {
+        "sha256": "6845960a4fb1494749e50a5e3cdc4ea765e144c5fcec9df64faa0f6390ab11a6",
+        "version": 1,
+        "date": "2026-11-18"
+      },
       "auto": {
         "act": {
           "clear": 0.656,
@@ -1486,40 +1495,40 @@
           "residue": 0.0
         },
         "walk": {
-          "clear": 0.698,
-          "halo": 0.047,
+          "clear": 0.695,
+          "halo": 0.035,
           "residue": 0.0
         },
         "walkFit": {
-          "byHeight": 0.6314,
-          "byArea": 0.689,
-          "used": 0.746,
-          "walkHead": 0.782
+          "byHeight": 0.6571,
+          "byArea": 0.6861,
+          "used": 0.6715,
+          "walkHead": 0.995
         },
         "walkCheck": {
-          "legDiff15": 0.101,
-          "legIou15": 0.814,
-          "legShadeFlip": 0.023,
-          "stride": 1.26,
+          "legDiff15": 0.116,
+          "legIou15": 0.856,
+          "legShadeFlip": -0.044,
+          "stride": 2.13,
           "still": 0
         },
         "poseHead": {
           "0": 1.0,
-          "1": 1.01,
+          "1": 1.0,
           "2": 1.0,
-          "3": 1.01,
-          "12": 1.05,
+          "3": 1.0,
+          "12": 1.04,
           "13": 1.04,
-          "15": 1.01
+          "15": 0.99
         },
-        "colourGap": 0.299,
+        "colourGap": 0.301,
         "cell": [
-          200,
+          216,
           160
         ],
         "contact": [
           14,
-          0.85,
+          0.86,
           0.91
         ],
         "poses": [
@@ -1629,54 +1638,41 @@
         "by": "head",
         "idlePx": 139.62,
         "k": 1.012,
-        "bodyPx": 123,
-        "awRaw": 125,
+        "bodyPx": 138,
+        "awRaw": 140,
         "awFeet": 155.0,
-        "head": 1.05,
+        "head": 1.044,
         "headBy": "head match",
-        "headFwd": 1.03,
+        "headFwd": 1.019,
         "headRev": 1.07,
-        "headScale": 0.915,
+        "headScale": 1.015,
         "ncc": [
           0.54,
           0.56
         ],
-        "gear": 1.8,
+        "gear": 2.0,
         "base": {
           "top": 19.0,
           "chin": null,
           "feet": 155.0
         },
         "aw": {
-          "top": 34.2,
-          "bodyTop": 32.0,
+          "top": 19.0,
+          "bodyTop": 17.0,
           "chin": null,
           "feet": 155.0
         },
-        "left": 15.22,
+        "left": 0.05,
         "box": [
-          67,
-          31,
-          69,
-          48
+          72,
+          16,
+          76,
+          53
         ]
       },
       "warn": [
-        "칸(160)에 다 못 담아 그림은 15.22px 작게 구움 → 화면에서 몸 키 값(bodyPx 123)으로 키워 맞춘다",
-        "걷기 판 등신이 동작 판과 다름: 같은 몸 크기에서 걷기 머리 ×0.78 (반씩 나눠 구움 · 10% 넘으면 걷기 판을 다시 받는다)",
         "공격 칸 자동 고름 [0, 12, 13, 14, 15, 0] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
-      ],
-      "reason": "action sheet is fine (head x1.05); WALK sheet only: its figure has a head about 22% smaller relative to the body than the action sheet, so the hero changes size when he starts walking - redraw only the 8-frame walk with exactly the action sheet's head size, body proportions and drawing scale (save as sprite_aw1_hojin_walk_v2.png)",
-      "rejectedBy": "review",
-      "review": {
-        "note": "",
-        "date": "2026-11-18"
-      },
-      "actOk": {
-        "sha256": "6845960a4fb1494749e50a5e3cdc4ea765e144c5fcec9df64faa0f6390ab11a6",
-        "version": 1,
-        "date": "2026-11-18"
-      }
+      ]
     },
     "irang": {
       "status": "rejected",
@@ -1888,8 +1884,8 @@
       }
     },
     "maehwa": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude35-root-20261118-candidates/sprite_aw1_maehwa_act.png",
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-hit-edit-20261118-candidates/sprite_aw1_maehwa_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-root-20261118-candidates/sprite_aw1_maehwa_walk.png",
       "actSha256": "c8ccbfccf32745c8e92466e4cd50e04edbd48528f5931002d1e7eef56047c276",
       "walkSha256": "f68fbb19fe33a80a60ab44571ff4072d1e54870a4d29cc52673382c7a6081467",
@@ -1915,11 +1911,12 @@
         }
       },
       "reason": "auto check: Canvas clipping pose 3 (walk sheet) (every figure and its weapon must sit fully inside its own cell with a clear gap; all 20 + 8 cells filled)",
-      "rejectedBy": "auto"
+      "rejectedBy": "auto",
+      "pending": "act v2 · walk v1 → waiting for walk"
     },
     "oi": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_oi_act.png",
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-hit-edit-20261118-candidates/sprite_aw1_oi_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_oi_walk.png",
       "actSha256": "2c23a46165ebdaddbc76ba553f32ab72447acd56a9943de26ef33505ca99a4d6",
       "walkSha256": "5dd8fb2ae5fcac1d01b4f1d2a90ada6037a2911b2eef183d2fbd23b5a258e405",
@@ -2121,11 +2118,12 @@
       "review": {
         "note": "",
         "date": "2026-11-18"
-      }
+      },
+      "pending": "act v2 · walk v1 → waiting for walk"
     },
     "soebi": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude35-hit-new-20261118-candidates/sprite_aw1_soebi_act.png",
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-pado-20261118-candidates/sprite_aw1_soebi_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-new-20261118-candidates/sprite_aw1_soebi_walk.png",
       "actSha256": "08bd0a26babf92cd062ee0512cbda36529831e04f7a1fc08ea854cc5394ab9a7",
       "walkSha256": "93b166f829b2da4124b1a2f83f6bb7d3160ad03488ae6d72cf31cd5cd6aeae12",
@@ -2333,11 +2331,12 @@
       "review": {
         "note": "",
         "date": "2026-11-18"
-      }
+      },
+      "pending": "act v2 · walk v1 → waiting for walk"
     },
     "base-w-05-baekje-queen": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_base-w-05-baekje-queen_act.png",
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-hit-new-20261118-candidates/sprite_aw1_base-w-05-baekje-queen_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_base-w-05-baekje-queen_walk.png",
       "actSha256": "4570ddf7b55ddc98ae88e4742c259064c5f1c11639e17c299aca8c0f97f5d1bd",
       "walkSha256": "1c81bb43a3d1d613c3409dda40bffd9f56cf45767a2996a33c5529b9e1a63c65",
@@ -2545,11 +2544,12 @@
       "review": {
         "note": "",
         "date": "2026-11-18"
-      }
+      },
+      "pending": "act v2 · walk v1 → waiting for walk"
     },
     "base-w-06-buyeo-huntress": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude35-hit-new-20261118-candidates/sprite_aw1_base-w-06-buyeo-huntress_act.png",
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-pado-20261118-candidates/sprite_aw1_base-w-06-buyeo-huntress_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-new-20261118-candidates/sprite_aw1_base-w-06-buyeo-huntress_walk.png",
       "actSha256": "1b6e526117ef5b62b1264434384b6a4f1c73912878713056f8d7e9f8d6d85fb5",
       "walkSha256": "11a45c87d0f83e80df118ed87c2fb05822b7b854515ed83ac667a22c648052ee",
@@ -2757,11 +2757,12 @@
       "review": {
         "note": "",
         "date": "2026-11-18"
-      }
+      },
+      "pending": "act v2 · walk v1 → waiting for walk"
     },
     "base-w-08-mahan-warrior": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_base-w-08-mahan-warrior_act.png",
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-hit-edit-20261118-candidates/sprite_aw1_base-w-08-mahan-warrior_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_base-w-08-mahan-warrior_walk.png",
       "actSha256": "b2e1a7936777d2a3639a8b1d603165a127237621df92f27613f2e2f3ce6b15d8",
       "walkSha256": "728000a1d5c36b6eba6f56be21f32eb86a53820a6a3262491726f67366a49a45",
@@ -2971,11 +2972,12 @@
       "review": {
         "note": "",
         "date": "2026-11-18"
-      }
+      },
+      "pending": "act v2 · walk v1 → waiting for walk"
     },
     "base-w-12-court-dancer": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude35-hit-new-20261118-candidates/sprite_aw1_base-w-12-court-dancer_act.png",
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-pado-20261118-candidates/sprite_aw1_base-w-12-court-dancer_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-new-20261118-candidates/sprite_aw1_base-w-12-court-dancer_walk.png",
       "actSha256": "9912d4bc16b0c1c77210c54206bc42029126391a6c84b51250471355962ceb2d",
       "walkSha256": "f1fe7e6943b103e3073de5b8bcc92fcdcdd3f6d91fe050ce6b01bd761a3a6758",
@@ -3180,155 +3182,161 @@
       "review": {
         "note": "",
         "date": "2026-11-18"
-      }
+      },
+      "pending": "act v2 · walk v1 → waiting for walk"
     },
     "base-w-13-young-archer": {
-      "status": "waiting-walk",
+      "status": "staged",
       "act": "D:/에셋창고/sprite_aw1_base-w-13-young-archer_act_v2.png",
-      "walk": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_base-w-13-young-archer_walk.png",
-      "actSha256": "1277325aef76d16ea7782d4953c06c55e62b0905cc0a39af4478e68f3d971462",
-      "walkSha256": "c7bfb0374727998a048f57a5a1eb3e55d2ede122f6646549ff24d2134a202a62",
+      "walk": "D:/에셋창고/Codex-claude38-root-20261118-candidates/sprite_aw1_base-w-13-young-archer_walk_v2.png",
+      "actSha256": "44cafbce5048b3402c83a066761e6b521299941914ee2bac39077cb1e0534d63",
+      "walkSha256": "de72c2544f2c995cab8a7730ad93fc482a9ba6f432cb57627f7a7a38a3f31c8e",
+      "actVersion": 2,
+      "walkVersion": 2,
       "auto": {
         "act": {
-          "clear": 0.758,
-          "halo": 0.105,
+          "clear": 0.797,
+          "halo": 0.129,
           "residue": 0.0
         },
         "walk": {
-          "clear": 0.758,
-          "halo": 0.063,
+          "clear": 0.799,
+          "halo": 0.072,
           "residue": 0.0
         },
         "walkFit": {
-          "byHeight": 0.6113,
-          "byArea": 0.6457,
-          "used": 0.6364,
-          "walkHead": 0.975
+          "byHeight": 0.6188,
+          "byArea": 0.6355,
+          "used": 0.632,
+          "walkHead": 0.985
         },
         "walkCheck": {
-          "legDiff15": 0.154,
-          "legIou15": 0.866,
-          "legShadeFlip": -0.034,
-          "stride": 3.5,
+          "legDiff15": 0.124,
+          "legIou15": 0.821,
+          "legShadeFlip": -0.009,
+          "stride": 2.71,
           "still": 0
         },
         "poseHead": {
           "0": 1.0,
-          "1": 1.0,
-          "2": 0.99,
-          "3": 1.0,
-          "15": 0.98
+          "1": 1.01,
+          "2": 0.98,
+          "3": 0.98,
+          "13": 0.99,
+          "14": 0.98,
+          "15": 0.96,
+          "16": 0.97
         },
         "colourGap": 0.175,
         "cell": [
-          192,
+          200,
           160
         ],
         "contact": [
           15,
-          0.74,
-          0.33
+          0.76,
+          0.41
         ],
         "poses": [
           {
-            "reach": 0.298,
+            "reach": 0.257,
+            "h": 1.005,
+            "w": 0.545
+          },
+          {
+            "reach": 0.253,
             "h": 1.0,
-            "w": 0.616
+            "w": 0.545
+          },
+          {
+            "reach": 0.253,
+            "h": 1.0,
+            "w": 0.545
+          },
+          {
+            "reach": 0.267,
+            "h": 0.995,
+            "w": 0.545
+          },
+          {
+            "reach": 0.261,
+            "h": 0.982,
+            "w": 0.541
+          },
+          {
+            "reach": 0.266,
+            "h": 0.977,
+            "w": 0.568
+          },
+          {
+            "reach": 0.255,
+            "h": 0.959,
+            "w": 0.545
+          },
+          {
+            "reach": 0.257,
+            "h": 0.955,
+            "w": 0.541
+          },
+          {
+            "reach": 0.298,
+            "h": 0.95,
+            "w": 0.595
           },
           {
             "reach": 0.296,
-            "h": 1.0,
-            "w": 0.607
+            "h": 0.914,
+            "w": 0.623
           },
           {
-            "reach": 0.302,
-            "h": 1.0,
-            "w": 0.616
+            "reach": 0.264,
+            "h": 0.918,
+            "w": 0.541
           },
           {
-            "reach": 0.3,
-            "h": 1.0,
-            "w": 0.612
+            "reach": 0.243,
+            "h": 0.936,
+            "w": 0.532
           },
           {
-            "reach": 0.301,
-            "h": 0.991,
-            "w": 0.612
-          },
-          {
-            "reach": 0.313,
-            "h": 0.986,
-            "w": 0.612
-          },
-          {
-            "reach": 0.314,
-            "h": 0.982,
-            "w": 0.653
-          },
-          {
-            "reach": 0.33,
-            "h": 0.986,
-            "w": 0.68
-          },
-          {
-            "reach": 0.327,
+            "reach": 0.256,
             "h": 0.968,
-            "w": 0.671
+            "w": 0.545
+          },
+          {
+            "reach": 0.268,
+            "h": 0.968,
+            "w": 0.564
+          },
+          {
+            "reach": 0.421,
+            "h": 0.968,
+            "w": 0.741
+          },
+          {
+            "reach": 0.384,
+            "h": 0.968,
+            "w": 0.714
+          },
+          {
+            "reach": 0.331,
+            "h": 0.923,
+            "w": 0.65
+          },
+          {
+            "reach": 0.259,
+            "h": 0.923,
+            "w": 0.55
           },
           {
             "reach": 0.348,
-            "h": 0.945,
-            "w": 0.735
+            "h": 0.823,
+            "w": 0.65
           },
           {
-            "reach": 0.373,
-            "h": 0.932,
-            "w": 0.749
-          },
-          {
-            "reach": 0.301,
-            "h": 0.954,
-            "w": 0.648
-          },
-          {
-            "reach": 0.296,
-            "h": 0.954,
-            "w": 0.612
-          },
-          {
-            "reach": 0.36,
-            "h": 0.959,
-            "w": 0.708
-          },
-          {
-            "reach": 0.433,
-            "h": 1.0,
-            "w": 0.795
-          },
-          {
-            "reach": 0.334,
-            "h": 0.995,
-            "w": 0.689
-          },
-          {
-            "reach": 0.349,
-            "h": 0.822,
-            "w": 0.667
-          },
-          {
-            "reach": 0.359,
-            "h": 0.84,
-            "w": 0.662
-          },
-          {
-            "reach": 0.385,
-            "h": 0.749,
-            "w": 0.717
-          },
-          {
-            "reach": 0.508,
-            "h": 0.402,
-            "w": 1.123
+            "reach": 0.497,
+            "h": 0.341,
+            "w": 1.136
           }
         ]
       },
@@ -3343,52 +3351,45 @@
       "attackBy": "auto",
       "fit": {
         "by": "head",
-        "idlePx": 140.8,
-        "k": 1.02,
+        "idlePx": 138.25,
+        "k": 1.002,
         "bodyPx": 138,
-        "awRaw": 141,
+        "awRaw": 138,
         "awFeet": 155.0,
-        "head": 1.272,
+        "head": 1.051,
         "headBy": "head match",
-        "headFwd": 1.273,
-        "headRev": 1.27,
-        "headScale": 1.275,
+        "headFwd": 1.05,
+        "headRev": 1.053,
+        "headScale": 1.045,
         "ncc": [
-          0.56,
-          0.59
+          0.61,
+          0.6
         ],
-        "gear": 3.8,
+        "gear": 1.1,
         "base": {
           "top": 19.0,
           "chin": null,
           "feet": 155.0
         },
         "aw": {
-          "top": 18.8,
-          "bodyTop": 15.0,
+          "top": 19.1,
+          "bodyTop": 18.0,
           "chin": null,
           "feet": 155.0
         },
-        "left": -0.16,
+        "left": 0.11,
         "box": [
-          46,
-          14,
-          98,
-          66
+          60,
+          16,
+          79,
+          54
         ]
       },
       "warn": [
-        "머리가 큼 ×1.272 (같은 키에서 머리 높이 · 5% 넘음)",
+        "머리가 큼 ×1.051 (같은 키에서 머리 높이 · 5% 넘음)",
         "옷 빛깔이 비각성과 비슷 0.175",
         "공격 칸 자동 고름 [0, 13, 14, 15, 16, 0] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
-      ],
-      "reason": "head about 27% too large for the body compared with the current normal-form strip gen-base-w-13-young-archer (at equal standing height the head is x1.27); redraw both sheets keeping EXACTLY the head-to-body ratio of IMAGE 2 (smaller head, longer torso and legs); outfit and bow are fine",
-      "rejectedBy": "review",
-      "review": {
-        "note": "",
-        "date": "2026-11-18"
-      },
-      "pending": "act v2 · walk v1 → waiting for walk"
+      ]
     },
     "sori": {
       "status": "rejected",
@@ -3603,8 +3604,8 @@
       }
     },
     "base-w-10-pirate-captain": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude35-root-20261118-candidates/sprite_aw1_base-w-10-pirate-captain_act.png",
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-hit-new-20261118-candidates/sprite_aw1_base-w-10-pirate-captain_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-root-20261118-candidates/sprite_aw1_base-w-10-pirate-captain_walk.png",
       "actSha256": "6c2ae16bf4baa7f6b799245aa09e48482e9e56d9c3942e62888c8198288179a0",
       "walkSha256": "52d5f62af3e5c63ea739247ef42440e6f857412f0cace600b2a6a4770d9e308c",
@@ -3813,11 +3814,12 @@
       "review": {
         "note": "",
         "date": "2026-11-18"
-      }
+      },
+      "pending": "act v2 · walk v1 → waiting for walk"
     },
     "base-w-14-feast-spy": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude35-root-20261118-candidates/sprite_aw1_base-w-14-feast-spy_act.png",
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-hit-edit-20261118-candidates/sprite_aw1_base-w-14-feast-spy_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-root-20261118-candidates/sprite_aw1_base-w-14-feast-spy_walk.png",
       "actSha256": "57472b05ce228a171a90ff0abef2b5133c18245e7fe6b9239c3ed47f86da4dc4",
       "walkSha256": "76685fce6e5441e777ffbc0f56f0c563cf8aadac6a8300bfcbf09577651e6f4c",
@@ -4028,7 +4030,8 @@
       "review": {
         "note": "",
         "date": "2026-11-18"
-      }
+      },
+      "pending": "act v2 · walk v1 → waiting for walk"
     },
     "base-w-17-mahan-pearl-diver": {
       "status": "rejected",
@@ -4240,8 +4243,8 @@
       }
     },
     "base-w-18-jinhan-salt-widow": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude35-hit-new-20261118-candidates/sprite_aw1_base-w-18-jinhan-salt-widow_act.png",
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-hit-new-20261118-candidates/sprite_aw1_base-w-18-jinhan-salt-widow_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-new-20261118-candidates/sprite_aw1_base-w-18-jinhan-salt-widow_walk.png",
       "actSha256": "79d7aa0e5f60c685ee9ad7c14bc5a225290d56ca60d4ca55077720b9366b499d",
       "walkSha256": "111b2deecbe10e6c8c8c45e532d2d2fe38fe4ea9ac37b750470b42d079397193",
@@ -4447,11 +4450,12 @@
       "review": {
         "note": "",
         "date": "2026-11-18"
-      }
+      },
+      "pending": "act v2 · walk v1 → waiting for walk"
     },
     "base-w-21-baekje-court-dancer": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_base-w-21-baekje-court-dancer_act.png",
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-hit-new-20261118-candidates/sprite_aw1_base-w-21-baekje-court-dancer_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_base-w-21-baekje-court-dancer_walk.png",
       "actSha256": "4a6b9479dba69094fa61e4d2a135cc09d2a2d57130e803d9105eeece81c06824",
       "walkSha256": "83437b78a1876a9e9b22f9bfdc98eb1c986213726445dffdecb39c5635725934",
@@ -4659,11 +4663,12 @@
       "review": {
         "note": "",
         "date": "2026-11-18"
-      }
+      },
+      "pending": "act v2 · walk v1 → waiting for walk"
     },
     "base-w-22-dongye-tiger-huntress": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude35-hit-new-20261118-candidates/sprite_aw1_base-w-22-dongye-tiger-huntress_act.png",
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-pado-20261118-candidates/sprite_aw1_base-w-22-dongye-tiger-huntress_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-new-20261118-candidates/sprite_aw1_base-w-22-dongye-tiger-huntress_walk.png",
       "actSha256": "e55daba7a376afea5e672b01cbff1c48efeadc2126e0dc16880acd549e18a7ed",
       "walkSha256": "a0680fa282e4c0c8f3c815087ef0daa8d90d3064a9f853fd094ca5e085b7cb4a",
@@ -4871,11 +4876,12 @@
       "review": {
         "note": "",
         "date": "2026-11-18"
-      }
+      },
+      "pending": "act v2 · walk v1 → waiting for walk"
     },
     "base-w-23-usisan-whale-queen": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_base-w-23-usisan-whale-queen_act.png",
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-root-20261118-candidates/sprite_aw1_base-w-23-usisan-whale-queen_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_base-w-23-usisan-whale-queen_walk.png",
       "actSha256": "0209a76d6ba83f34bd156b241e1466af3765c4ada168702719d4b9a431e3d946",
       "walkSha256": "6c78c0ba8bb6e7a76f2829eb80558e3997be6a8a25699ec6bbd98fa64fee817a",
@@ -5079,11 +5085,12 @@
       "review": {
         "note": "",
         "date": "2026-11-18"
-      }
+      },
+      "pending": "act v2 · walk v1 → waiting for walk"
     },
     "base-w-27-mokji-jinha": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_base-w-27-mokji-jinha_act.png",
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-hit-edit-20261118-candidates/sprite_aw1_base-w-27-mokji-jinha_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_base-w-27-mokji-jinha_walk.png",
       "actSha256": "9ccbd6914e777a6b18b2065b4048f21ab90408e9dabccd8d87ee13a6afab5c34",
       "walkSha256": "fb61ec5e4e992cc6663c0bc9d6458361a0aa7018194cb53e283dec56d446c310",
@@ -5301,7 +5308,8 @@
       "review": {
         "note": "",
         "date": "2026-11-18"
-      }
+      },
+      "pending": "act v2 · walk v1 → waiting for walk"
     },
     "dalbit": {
       "status": "rejected",
@@ -5315,8 +5323,8 @@
       "rejectedBy": "auto"
     },
     "gaon": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_gaon_act.png",
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-pado-20261118-candidates/sprite_aw1_gaon_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_gaon_walk.png",
       "actSha256": "1994b4e6bf8d297f33795bb8d8120346936cf03bb13ef1efb94b670473e4d39f",
       "walkSha256": "48eaff40c8fa9c918bb00c09c688a12e4df0d904dcfab056f54cbe98cfae7b94",
@@ -5522,12 +5530,13 @@
       "review": {
         "note": "",
         "date": "2026-11-18"
-      }
+      },
+      "pending": "act v2 · walk v1 → waiting for walk"
     },
     "areum": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude35-root-20261118-candidates/sprite_aw1_areum_act.png",
-      "pending": "act v1 · walk vNone → waiting for walk"
+      "act": "D:/에셋창고/Codex-claude38-hit-edit-20261118-candidates/sprite_aw1_areum_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
     },
     "base-w-25-bihwa-priestess": {
       "status": "installed",
@@ -5742,16 +5751,17 @@
         "date": "2026-11-18"
       },
       "installed": "2026-11-18",
-      "key": "aw1-base-w-25-bihwa-priestess"
+      "key": "aw1-base-w-25-bihwa-priestess",
+      "pending": "act v2 · walk v1 → waiting for walk"
     },
     "base-w-26-iseo-tomboy-general": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude35-hit-new-20261118-candidates/sprite_aw1_base-w-26-iseo-tomboy-general_act.png",
-      "pending": "act v1 · walk vNone → waiting for walk"
+      "act": "D:/에셋창고/Codex-claude38-pado-20261118-candidates/sprite_aw1_base-w-26-iseo-tomboy-general_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
     },
     "base-w-29-golpo-janmul": {
-      "status": "rejected",
-      "act": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_base-w-29-golpo-janmul_act.png",
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-hit-new-20261118-candidates/sprite_aw1_base-w-29-golpo-janmul_act_v2.png",
       "walk": "D:/에셋창고/Codex-claude35-hit-edit-20261118-candidates/sprite_aw1_base-w-29-golpo-janmul_walk.png",
       "actSha256": "764a065df6818a6fe0b3449791c66ba6be2af9ba777feda9c74da8295287f9e6",
       "walkSha256": "7559efb7f2c6c36405a069d912cf4aaca939988ac0c7ea43957061b55e859664",
@@ -5956,26 +5966,67 @@
       "review": {
         "note": "",
         "date": "2026-11-18"
-      }
+      },
+      "pending": "act v2 · walk v1 → waiting for walk"
     },
     "base-w-31-dabeol-dalbit": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude35-hit-new-20261118-candidates/sprite_aw1_base-w-31-dabeol-dalbit_act.png",
-      "pending": "act v1 · walk vNone → waiting for walk"
+      "act": "D:/에셋창고/Codex-claude38-pado-20261118-candidates/sprite_aw1_base-w-31-dabeol-dalbit_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
     },
     "base-w-24-apdok-queen": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude35-root-20261118-candidates/sprite_aw1_base-w-24-apdok-queen_act.png",
-      "pending": "act v1 · walk vNone → waiting for walk"
+      "act": "D:/에셋창고/Codex-claude38-hit-edit-20261118-candidates/sprite_aw1_base-w-24-apdok-queen_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
     },
     "base-w-36-baekje-maena": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_base-w-36-baekje-maena_act.png",
-      "pending": "act v1 · walk vNone → waiting for walk"
+      "act": "D:/에셋창고/Codex-claude38-root-20261118-candidates/sprite_aw1_base-w-36-baekje-maena_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
     },
     "base-w-40-mujin-munui": {
       "status": "waiting-walk",
-      "act": "D:/에셋창고/Codex-claude35-pado-20261118-candidates/sprite_aw1_base-w-40-mujin-munui_act.png",
+      "act": "D:/에셋창고/Codex-claude38-hit-edit-20261118-candidates/sprite_aw1_base-w-40-mujin-munui_act_v2.png",
+      "pending": "act v2 · walk vNone → waiting for walk"
+    },
+    "base-w-34-chopal-deulme": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-hit-edit-20261118-candidates/sprite_aw1_base-w-34-chopal-deulme_act.png",
+      "pending": "act v1 · walk vNone → waiting for walk"
+    },
+    "base-w-38-sangdang-bulmae": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-root-20261118-candidates/sprite_aw1_base-w-38-sangdang-bulmae_act.png",
+      "pending": "act v1 · walk vNone → waiting for walk"
+    },
+    "base-w-39-gosaburi-galmae": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-hit-edit-20261118-candidates/sprite_aw1_base-w-39-gosaburi-galmae_act.png",
+      "pending": "act v1 · walk vNone → waiting for walk"
+    },
+    "base-w-46-geonma-maru": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-root-20261118-candidates/sprite_aw1_base-w-46-geonma-maru_act.png",
+      "pending": "act v1 · walk vNone → waiting for walk"
+    },
+    "bira": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-hit-new-20261118-candidates/sprite_aw1_bira_act.png",
+      "pending": "act v1 · walk vNone → waiting for walk"
+    },
+    "budeul": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-pado-20261118-candidates/sprite_aw1_budeul_act.png",
+      "pending": "act v1 · walk vNone → waiting for walk"
+    },
+    "gaennae": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-pado-20261118-candidates/sprite_aw1_gaennae_act.png",
+      "pending": "act v1 · walk vNone → waiting for walk"
+    },
+    "soenun": {
+      "status": "waiting-walk",
+      "act": "D:/에셋창고/Codex-claude38-pado-20261118-candidates/sprite_aw1_soenun_act.png",
       "pending": "act v1 · walk vNone → waiting for walk"
     }
   }
