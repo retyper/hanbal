@@ -1,6 +1,6 @@
 // Deterministic, ordinary-input bot for balance probes and the dev review page.
 import { HAEBI_RUN as C, HAEBI_MOBS as M } from '../tune/params.ts'
-import { createHaebi, choose, stepHaebi, isCombo, KITS, nodeAt, branchPoints, wakeReady, type Branch, type HaebiRun, type Kit, type Pick, type Power, type RunInput } from './haebi.ts'
+import { createHaebi, choose, stepHaebi, isCombo, KITS, nodeAt, branchPoints, wakeReady, ultOpen, type Branch, type HaebiRun, type Kit, type Pick, type Power, type RunInput } from './haebi.ts'
 /** storm·fire·mixed: 예전 길(능력 이름 차례) · deepA/B/C: 한 갈래에 몰빵(그 갈래 칸이 있으면 늘 그것 · 끝 칸 먼저) · spread: 가장 덜 찍은 갈래부터 고르게 */
 export type Route = 'storm' | 'fire' | 'mixed' | 'deepA' | 'deepB' | 'deepC' | 'spread'
 /** 갈래 안에서 봇이 찍는 차례 — [칸, 이 단계까지] 를 앞에서부터 (공격을 먼저 세우고 → 갈래 끝 → 나머지를 채운다 · 사람이 몰빵할 때의 흔한 길) */
@@ -70,7 +70,7 @@ export function botInput(s: HaebiRun, react = 0): RunInput {
   if (lane && !danger && !ring) { x = -lane.vy; y = lane.vx }
   const len = Math.hypot(x, y) || 1
   // 각성 막대가 차면 바로 누른다 (사람도 단추가 뜨면 누른다 · 11-17 각성 단추)
-  return { x: x / len, y: y / len, skill: s.skillCd === 0 && s.enemies.some(e => Math.hypot(e.x - s.x, e.y - s.y) < 230), dash: !!danger && s.dashCd === 0, wake: wakeReady(s) }
+  return { x: x / len, y: y / len, skill: ultOpen(s) && s.skillCd === 0 && s.enemies.some(e => Math.hypot(e.x - s.x, e.y - s.y) < 230), dash: !!danger && s.dashCd === 0, wake: wakeReady(s) }
 }
 export function replay(seed = 7, until: number = C.duration, route: Route = 'storm', onMinute?: (s: HaebiRun) => void, kit: Kit = 'axe', opts: Parameters<typeof createHaebi>[3] = {}) {
   const s = createHaebi(seed, 'stage', kit, opts); let minute = 1

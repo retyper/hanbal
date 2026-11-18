@@ -7,7 +7,7 @@
  */
 import type { Kit } from './haebi.ts'
 import { HERO_BUST } from '../realm/data/hero-bust.ts'
-import { DEX_DEMON } from '../realm/person.ts'
+import { DEX_DEMON, sameIds, sealsOf } from '../realm/person.ts'
 
 export const ROSTER_KEY = 'hanbal.raid.roster'
 export const META_KEY = 'hanbal.raid.meta'
@@ -60,7 +60,7 @@ export const raidDemons = (): string[] => clearedBy(DEMON_STAGE).filter(id => HE
  *  - 본편이 영웅전 표를 읽을 때도 부른다 (ui/realm/dex.ts loadDex): 이 길이 생기기 전에 깬 목책도 그때 넘겨받는다 (통합안 1절 ⑩)
  * 이름난 장수(raidDemons)만 찍는다.
  * 장수 id 그대로 적고, 같은 사람은 읽을 때 묶는다 (person.sealsOf). 영웅전 표는 서버와 비트 OR 로 맞추니 기기를 바꿔도 도장이 남는다 (열전 기록은 안 맞춘다).
- * 적기만 한다: 이 도장을 읽어 규칙이나 화면을 바꾸는 곳은 아직 없다 (각성 v2 가5 · 가7 의 몫).
+ * 이 도장을 읽는 곳: 열전 판 안 각성 자격 (demonSealed · 각성 v2 가7).
  */
 export function stampDemons(): boolean {
   const ids = raidDemons()
@@ -79,3 +79,28 @@ export function stampDemons(): boolean {
     return changed
   } catch { return false }
 }
+/**
+ * 판 안 각성 자격 — 그 사람의 도깨비 도장이 있나 (각성 v2 가7 · 11-19). 순수한 셈: 영웅전 표와 열전의 장수별 깸을 받아서 본다.
+ *  - 영웅전 표의 도깨비 비트(32)를 사람으로 묶어 읽는다 (person.sealsOf · 다른 id 로 잡은 같은 사람도 든다)
+ *  - 아직 표로 옮기지 않은 열전 기록의 목책 깸도 도장으로 친다 (아라처럼 이 길이 생기기 전에 깬 장수 · 사생활 창이라 표를 못 쓴 판)
+ *  - 이름난 장수(초상이 정해진 id)만: 판마다 새로 나는 자녀의 id 는 판끼리 겹친다 (raidDemons 와 같은 까닭)
+ * 도장이 없으면 막대가 차도 「영웅의 투지」다. 각성 띠가 없는 장수도 도장이 있으면 각성한다 (초상·영상·컷인·오라로 보인다).
+ */
+export function hasDemonSeal(dex: Readonly<Record<string, { readonly f: number } | undefined>>, heroes: Readonly<Record<string, readonly string[] | undefined>>, heroId: string): boolean {
+  return sealsOf(dex, heroId).demon || sameIds(heroId).some(id => HERO_BUST[id] !== undefined && heroes[id]?.includes(DEMON_STAGE) === true)
+}
+/** 영웅전 표를 저장소에서 읽는다 — 알 수 없는 꼴이면 빈 표 (도장 없음 · 판은 투지로 선다) */
+function readDex(): Record<string, { f: number }> {
+  try {
+    const raw = JSON.parse(localStorage.getItem(DEX_KEY) ?? 'null') as unknown
+    if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) return {}
+    const out: Record<string, { f: number }> = {}
+    for (const [id, e] of Object.entries(raw as Record<string, { f?: unknown } | null>)) if (typeof e?.f === 'number') out[id] = { f: e.f }
+    return out
+  } catch { return {} }
+}
+/**
+ * 열전 화면이 판을 만들기 전에 부른다 (raid-main 출전 준비) — 그 장수가 판 안에서 각성할 수 있나.
+ * heroes = 열전 기록의 장수별 깸 (meta.heroes · 화면이 이미 읽어 둔 것). 판의 셈(haebi.ts)은 이 값을 createHaebi 의 awaken 으로만 받는다.
+ */
+export const demonSealed = (heroId: string, heroes: Readonly<Record<string, readonly string[] | undefined>>): boolean => hasDemonSeal(readDex(), heroes, heroId)

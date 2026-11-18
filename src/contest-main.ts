@@ -22,6 +22,8 @@ import { createSfx, pumpSfx, unlockSfx, updateSfx } from './audio/sfx.ts'
 import { BOW_NAME, tierBow, tierOf } from './night/sim.ts'
 import { P } from './tune/params.ts'
 import { josa } from './realm/data/prose.ts'
+import { guardMedia } from './ui/media-guard.ts'
+guardMedia() // 그림 길게 누름 메뉴·끌기 막기 (11-19)
 
 const canvas = document.getElementById('night') as HTMLCanvasElement
 const ui = document.getElementById('night-ui') as HTMLDivElement

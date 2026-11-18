@@ -159,13 +159,17 @@ export interface HaebiRun {
 export interface RunInput { x: number; y: number; dash?: boolean; skill?: boolean; wake?: boolean }
 export interface CastState { kind: 'ult' | 'wake'; t: number; total: number; tru: boolean }
 export function random(s: HaebiRun) { const rng = makeRng(s.seed); const n = rng.next(); s.seed = rng.state(); return n }
-/** awaken: 본편에서 각성한(각성 그림이 있는) 장수 — 없으면 막대가 차도 투지뿐 · mastery: 숲·여울·목책을 다 깬 장수 (막대 절반으로 시작) */
+/**
+ * awaken: 판 안 각성 자격 — 그 사람의 도깨비 도장(목책의 도깨비를 잡음 · 영웅전 비트 32)이 있는 장수 (각성 v2 · 11-19).
+ *   화면이 판 밖 기록(raid/link.ts demonSealed)을 읽어 넘긴다 · 판의 셈은 이 값만 본다 · 없으면 막대가 차도 투지뿐
+ * mastery: 숲·여울·목책을 다 깬 장수 (막대 절반으로 시작)
+ */
 export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit = 'axe', opts: { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean } = {}): HaebiRun {
   const bonus = { ...NO_BONUS, ...opts.bonus }, maxHp = C.health + bonus.vigor * SH.vigor.step, stage: StageId = mode === 'trial' ? 'trial' : opts.stage ?? 'forest'
   const k = KITS[kit]
   const ranks = Object.fromEntries((Object.keys(POWERS) as Power[]).map(p => [p, 0])) as Record<Power, number>
-  // 주 무기와 보조 공격을 1단계로 들고 시작한다 (11-17 밤 · 갈래 둘 다 1점 — 주 무기 갈래에 몰빵해도 활잡이를 칠 무엇이 있게)
-  ranks[k.primary] = 1; ranks[k.secondary] = 1
+  // 평타(주 무기)만 들고 시작한다 (11-19 형: 「시작은 평타만」) — 보조 공격은 첫 레벨업 카드(맨 앞)로 · 비기는 첫 레벨업에서 열린다 (ultOpen)
+  ranks[k.primary] = T.startPrimary; ranks[k.secondary] = T.startSecondary
   const s: HaebiRun = { mode, stage, bonus, maxHp, revives: bonus.revive, elites: 0, kit, breaches: 0, captains: 0, seed, t: 0, x: C.width / 2, y: C.height / 2, hp: maxHp, face: 1, moving: false,
     attack: 0, hurt: 0, inv: 0, dash: 0, dashCd: 0, skillCd: 0, ult: null,
     cool: { counter: 0, axe: 0, gale: 0, ember: 0, thunder: 0, orbit: 0, bow: 0, rain: 0, volley: 0, spear: 0, javelin: 0, grove: 0, sword: 0, wave: 0, tempest: 0, dagger: 0, knife: 0, shadow: 0, bell: 0, soul: 0, rite: 0, storm: 0, sling: 0, skip: 0, boulder: 0 },
@@ -263,6 +267,8 @@ export function choose(s: HaebiRun, key: Pick) {
     if (at.tier === T.tiers.length - 1 && s.ranks[key] === 1) announce(s, `갈래 끝 · ${nodeText(s.kit, key).name}`)
   }
   s.xp -= xpNeeded(s); s.level++; s.offers = []; s.hp = Math.min(s.maxHp, s.hp + C.levelHeal)
+  // 비기가 열리는 레벨에 닿았다 — 장수 둘레에 금빛 고리 (단추가 터지며 켜지는 것은 그리는 쪽 · 글 꼬리표는 없다)
+  if (s.level === U.unlockLevel) fx(s, 'ring', s.x, s.y, U.unlockRing, '#ffd66b')
   if (s.xp >= xpNeeded(s)) offer(s)
   return true
 }
@@ -624,6 +630,8 @@ function bestAim(s: HaebiRun, length: number, width: number, damage: number, tow
   }
   return best
 }
+/** 비기가 열렸나 — 판은 평타만으로 시작하고 첫 레벨업(HAEBI_ULT.unlockLevel)에서 열린다 (11-19 형) · 선봉은 높은 레벨로 시작해 처음부터 */
+export const ultOpen = (s: HaebiRun) => s.level >= U.unlockLevel
 /** 비기 재사용 (3층 비기 강화면 짧게) */
 const ultCooldown = (s: HaebiRun) => U[s.kit].cooldown * (ultUpgraded(s) ? T.ultCooldown : 1)
 /** 비기를 누름 — 재사용은 지금부터 돌고, 시전(cast 초 · 진 비기는 trueCast)이 끝나면 터진다 */
@@ -725,7 +733,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
   for (const key of ['attack', 'hurt', 'inv', 'dash', 'dashCd', 'messageTime', 'streakTime'] as const) s[key] = Math.max(0, s[key] - dt)
   s.skillCd = Math.max(0, s.skillCd - dt * boost.ult)
   // 각성(투지)이 풀리면 보통 모습으로 · 막대는 처음부터 다시 (각성 시전 동안은 각성 시간이 줄지 않는다)
-  if (s.form !== 'normal' && s.cast?.kind !== 'wake') { s.formT = Math.max(0, s.formT - dt); if (!s.formT) { s.form = 'normal'; s.ward = 0; if (s.canAwaken) announce(s, '각성이 풀렸다 · 다시 모아라') } }
+  if (s.form !== 'normal' && s.cast?.kind !== 'wake') { s.formT = Math.max(0, s.formT - dt); if (!s.formT) { s.form = 'normal'; s.ward = 0 } }   // 11-19 형: 「풀리면 풀린 거지 「다시 모아라」 글은 지워야」
   if (!s.streakTime) s.comboKills = 0
   for (const key of Object.keys(s.cool) as Cool[]) s.cool[key] = Math.max(0, s.cool[key] - dt)
   s.hp = Math.min(s.maxHp, s.hp + (C.regen + s.bonus.regen * SH.regen.step + s.ranks.breath * T.breath) * dt)
@@ -749,7 +757,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
       else { s.trueUlt = c.tru; ultimate(s, dx, dy, uPower * (c.tru ? U.trueDamage : 1), uArea * (c.tru ? U.trueArea : 1)) }
     }
   } else if (input.wake && wakeReady(s)) awaken(s)
-  else if (input.skill && !s.skillCd) startUlt(s)
+  else if (input.skill && !s.skillCd && ultOpen(s)) startUlt(s)
   // 되받아치기 (버팀 끝): 맞은 다음 걸음에 비기가 작게 · 이어지는 비기가 도는 중이면 건너뛴다
   if (s.counterDue) { s.counterDue = false; if (!s.ult) { s.trueUlt = false; ultimate(s, dx, dy, uPower, uArea, true, T.counter + T.counterStep * (s.ranks.capC - 1)) } }
   if (s.ult) ultTick(s, dt, uPower * (s.trueUlt ? U.trueDamage : 1), uArea * (s.trueUlt ? U.trueArea : 1))

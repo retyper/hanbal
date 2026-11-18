@@ -108,7 +108,7 @@ test('정예는 막대를 많이 채운다', () => {
   assert.equal(s.gauge, A.elite)
 })
 
-test('본편에서 각성 못 한 장수는 막대가 차도 투지뿐 — 모습은 그대로, 짧게', () => {
+test('도깨비 도장이 없는 장수(canAwaken 거짓)는 막대가 차도 투지뿐 — 모습은 그대로, 짧게', () => {
   const s = still(); s.canAwaken = false; s.gauge = gaugeNeed(s) - 1
   killOne(s); stepHaebi(s, { ...idle, wake: true }, DT)
   assert.equal(s.form, 'grit'); assert.equal(awakenedLook(s), false); assert.match(s.message, /투지/)

@@ -43,6 +43,8 @@ import { t as tr, type Key } from '../../i18n/index.ts'
 import { nameTable } from '../../i18n/names.ts'
 import { WALK_CYCLE } from '../../raid/walk-cycle.ts'
 import { ensureHitPortraitCss, hitFaceKey, hitKeyPath, hitPortraitHtml, warmHitArt } from '../hit-portrait.ts'
+import { haptics } from '../haptics.ts'
+import { HAPTICS } from '../../tune/params.ts'
 /** 걷기 띠가 6·4칸이면 그 칸까지만 돈다 (8칸으로 돌리면 한 바퀴마다 같은 두 걸음이 거듭 나와 턱 걸림 · 형 11-16) · 20칸 띠의 칸 k 는 k/19 */
 const walkVars = (file: string): string => { const n = WALK_CYCLE[file]; return n === undefined ? '' : `;--w1:${((4 + n) / 19 * 100).toFixed(4)}%;--gwn:${n}` }
 
@@ -3620,10 +3622,13 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     say(autoVoicePath(autoEnd.hero, endGood(l) ? 'win' : 'lose', isRulerHero(autoEnd.hero)))
   }
 
-  /** 폰 떨림 — 잘됐을 때만 (좋은 합 · 사로잡기 · 이김). 진 쪽 떨림은 헷갈려서 안 쓴다 (형: "공격하거나 잘됐을때로 긍정 피드백 시켜야 하나? 헷갈리니까??") */
-  const buzz = (s: number, pattern: number[]): void => {
-    if (typeof navigator.vibrate !== 'function') return
-    afterBeat(() => { if (document.visibilityState === 'visible') navigator.vibrate(pattern) }, s)
+  /**
+   * 폰 떨림 — 잘됐을 때 (좋은 합 · 사로잡기 · 이김). 진 쪽 다다닥은 헷갈려서 안 쓴다 (형: "공격하거나 잘됐을때로 긍정 피드백 시켜야 하나? 헷갈리니까??")
+   * 다만 우리 장수가 크게 맞은 때(겨루기에서 짐 · 쓰러지거나 잡힘)는 짧게 한 번 「둑」 (11-19 형: 「피격될 때 햅틱」) · 끄기·가려진 탭은 ui/haptics.ts
+   */
+  const buzz = (s: number, pattern: number | readonly number[]): void => {
+    if (!haptics().can()) return
+    afterBeat(() => { haptics().buzz(pattern) }, s)
   }
   // 소리 — 깃발 → 맞부딪힘(필살이면 크게) → 마지막 일격 · 이김/짐. 탭이 보일 때만
   const sound = (rd: RoundLog | undefined, weAtk: boolean, end: BattleLine | null): void => {
@@ -3635,7 +3640,10 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       const plan = roundPlan(rd, weAtk)
       // 맞는 순간 하나 — 맞부딪힘 소리 · 떨림 · 흔들림(그림) 이 같은 때 (plan.clash)
       const clashAt = plan.clash
-      if (rd.ev === 'capture-ok' && rd.by === ourSide) buzz(clashAt, [30, 50, 30, 50, 70])
+      // 우리 장수가 크게 맞았다 — 겨루기에서 짐(우리가 건 겨루기를 졌거나 적이 건 겨루기에 짐) · 이 합에 쓰러지거나 잡힘
+      const heroHurt = (rd.ev === 'duel-lose' && rd.by === ourSide) || (rd.ev === 'duel-win' && rd.by !== undefined && rd.by !== ourSide) || rd.lostHero?.side === ourSide
+      if (heroHurt) buzz(clashAt, HAPTICS.fieldHurt)
+      else if (rd.ev === 'capture-ok' && rd.by === ourSide) buzz(clashAt, [30, 50, 30, 50, 70])
       else if (rd.beat === ourSide) buzz(clashAt, [25, 40, 25])
       else if (wePushed) buzz(clashAt, [15])
       // 맞부딪힘 · 큰일 소리를 먼저 잡아 둔다 — 깃발 소리가 넘치면 깃발 쪽이 빠진다
@@ -3675,11 +3683,11 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       markEnd(end)
       // 마지막 일격 — 한쪽이 무너지거나 사로잡혀 끝난 판의 마지막 합 (전엔 이름만 있고 안 냈다)
       // 판의 끝 — 결과 때에 승리·패배 소리 하나 · 음악은 그 소리가 가라앉은 뒤 (마지막 일격 소리는 맞부딪힘이 맡는다)
-      const endAt = (rd !== undefined ? roundPlan(rd, weAtk).result : STAGE_S[2]) + 0.5
+      const resAt = rd !== undefined ? roundPlan(rd, weAtk).result : STAGE_S[2], endAt = resAt + 0.5
       if (!endSeen.horn) afterBeat(() => { if (document.visibilityState === 'visible') { endSeen.horn = true; host.ding(good ? BATTLE_SFX.win : BATTLE_SFX.lose, 0.45) } }, endAt)
       if (!endSeen.music) afterBeat(() => { endSeen.music = true; host.music?.(good ? 'win' : 'lose') }, endAt + 0.6)
-      // 이겼다 — 부우웅 크게 (듀오링고처럼)
-      if (good) buzz(endAt, end.outcome === 'rout' ? [60, 40, 60, 40, 60, 40, 120, 60, 300] : [...WIN_BUZZ])
+      // 이겼다 — 다다닥 (듀오링고처럼 · 11-19 형) · 가운데 「승리」 글자가 쾅 박히는 첫 박자(winFxHtml 의 --wd = 끝 합 결과 + 0.9초)에 맞춘다
+      if (good) buzz(resAt + 0.9, end.outcome === 'rout' ? HAPTICS.bigWin : WIN_BUZZ)
     }
   }
 
@@ -4680,7 +4688,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       p0.held = true
       swallow = true
       showTip(h.key, x, y, true)
-      if (typeof navigator.vibrate === 'function') navigator.vibrate(8)
+      haptics().buzz(8)
     }, P.realm.warTipHoldMs)
     press = p0
   })

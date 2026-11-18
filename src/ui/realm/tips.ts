@@ -15,6 +15,7 @@
  * 손가락은 길게 누르면 손가락 위쪽에(가리지 않게) 뜬다. 짧게 누르면 카드의 일을 한다.
  */
 import { P } from '../../tune/params.ts'
+import { haptics } from '../haptics.ts'
 
 /** 눌러서 일이 일어나는 것 — 이런 데선 누르기는 그 일, 설명은 길게 눌러야 */
 const ACTS = 'button, a, input, select, label, [data-act], .nd'
@@ -172,7 +173,7 @@ export function installTips(root: HTMLElement): void {
     const timer = window.setTimeout(() => {
       if (hold === null) return
       swallow = act
-      navigator.vibrate?.(8)
+      haptics().buzz(8)
     }, P.realm.tipHold)
     hold = { el, x, y, timer, act }
   })

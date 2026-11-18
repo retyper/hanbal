@@ -36,6 +36,8 @@ import { guardName, stageName } from './night/names.ts'
 import { guardOf, kindOf, PRACTICE_STAGES, stageTitle, type Guard } from './night/layout.ts'
 import { rehearsalSeed, reportsResult, type NightMode } from './night/mission.ts'
 import { t as tr } from './i18n/index.ts'
+import { guardMedia } from './ui/media-guard.ts'
+guardMedia() // 그림 길게 누름 메뉴·끌기 막기 (11-19)
 
 const RESULT_KEY = 'hanbal.night.result'
 /** 틀 안의 판이 눕혔는지 — 칠십팔국이 「닫기」를 같이 눕힌다 */

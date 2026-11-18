@@ -5,6 +5,8 @@
  */
 import { mountDuel } from './duel/view.ts'
 import { GEN_OWN, HERO_BUST } from './realm/data/art.ts'
+import { guardMedia } from './ui/media-guard.ts'
+guardMedia() // 그림 길게 누름 메뉴·끌기 막기 (11-19)
 
 const params = new URLSearchParams(location.search)
 const num = (k: string, d: number): number => { const v = Number(params.get(k)); return params.get(k) !== null && Number.isFinite(v) ? v : d }

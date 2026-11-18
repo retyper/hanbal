@@ -13,6 +13,7 @@ import { makeRng } from '../core/rng.ts'
 import { AWAKEN_ART, AWAKEN_LOOP, loopFile } from '../realm/data/awaken-art.ts'
 import { SPRITE_PX } from '../realm/data/spritePx.ts'
 import { DUEL_ATLASES, LEGACY_ATLAS, fighterMotion, type FighterAnim } from './fighter-motion.ts'
+import { haptics } from '../ui/haptics.ts'
 import { HitClock, drawHitPortrait, hitArtKey, hitArtPath, hitFocusSlide, hitStrength, type HitForm, type HitFrame } from '../ui/hit-portrait.ts'
 
 export interface DuelSide {
@@ -703,7 +704,7 @@ function onEvent(e: DuelEvent, now: number): void {
       break
     case 'rushHit':
       SFX.rushHit(); foeHurtAt = now; rushKickAt = now; foeHit.hit(now, hitStrength(e.dmgFoe, foeHpMax()))
-      try { navigator.vibrate?.(18) } catch { /* 햅틱 없는 기기 */ }
+      haptics().buzz(18)
       slashes.push({ x, y, ang: slashAngle(x, y, e.t), len: Math.min(W, H) * 0.32, t0: now, ms: 240, color: '255,255,255', w: 8 })
       pop(`−${e.dmgFoe}`, '#ffd98a', 26)
       meAnim = { kind: 'attack', t0: now }; foeAnim = { kind: 'hit', t0: now }

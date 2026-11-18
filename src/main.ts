@@ -27,6 +27,8 @@ import { mountDefense } from './ui/defense.ts'
 import { mountSteady } from './ui/steady.ts'
 import { mountParry } from './ui/parry.ts'
 import { mountOpening } from './ui/opening.ts'
+import { guardMedia } from './ui/media-guard.ts'
+guardMedia() // 그림 길게 누름 메뉴·끌기 막기 (11-19)
 
 const el = document.getElementById('game')
 if (!(el instanceof HTMLCanvasElement)) {

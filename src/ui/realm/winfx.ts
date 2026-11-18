@@ -1,3 +1,5 @@
+import { HAPTICS } from '../../tune/params.ts'
+import { haptics } from '../haptics.ts'
 /**
  * 이겼다 · 졌다 — 화면 가운데 큰 글자가 쾅 박히고 금빛 불티가 낱낱이 튄다 (형 10-23: "승리하면 햅틱이랑 로고가 막 파방 하는 거랑 이펙트 튀는 거")
  *
@@ -166,9 +168,6 @@ export const WINFX_CSS = `
 .ap:not(.q-high) .winfx .wf-word .wf-logo, .ap:not(.q-high) .winfx .wf-word b, .ap:not(.q-high) .winfx.lose .wf-word b { filter: none; }
 `
 
-/** 폰 떨림 — 이겼을 때 "파바방" (안드로이드만 · 아이폰 사파리는 진동을 막아 두었다) */
-export const WIN_BUZZ: readonly number[] = [40, 30, 40, 30, 60, 50, 220]
-export function buzz(pattern: readonly number[]): void {
-  if (typeof navigator.vibrate !== 'function' || document.visibilityState !== 'visible') return
-  try { navigator.vibrate([...pattern]) } catch { /* 진동이 없는 곳 */ }
-}
+/** 폰 떨림 — 이겼을 때 다다닥 (듀오링고 · 11-19 형) · 안드로이드만(아이폰 사파리는 진동이 없다) · 끄기·가려진 탭은 ui/haptics.ts 가 지킨다 */
+export const WIN_BUZZ: readonly number[] = HAPTICS.win
+export function buzz(pattern: readonly number[]): void { haptics().buzz(pattern) }

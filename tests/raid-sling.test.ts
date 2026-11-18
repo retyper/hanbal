@@ -87,7 +87,8 @@ test('굴러가는 바위: 한 줄의 적을 모두 꿰뚫고 앞으로 밀어�
 })
 
 test('돌벼락: 무리가 가장 많은 자리에 물결 지어 돌이 쏟아진다 — 가운데는 여러 번, 둘레 밖은 안 맞는다', () => {
-  const s = field(200), area = areaScale(s), one = U.sling.damage * powerScale(s)
+  const s = field(200); s.level = U.unlockLevel   // 비기는 첫 레벨업에서 열린다 (11-19)
+  const area = areaScale(s), one = U.sling.damage * powerScale(s)
   const lone = place(s, -120, 0), pack = [[300, 0], [330, 30], [300, -40], [270, 20], [340, -10]].map(([x, y]) => place(s, x!, y!))
   const far = place(s, 300, (U.sling.radius + U.sling.splash) * area + 40)
   for (const k of Object.keys(s.cool) as (keyof HaebiRun['cool'])[]) s.cool[k] = 99

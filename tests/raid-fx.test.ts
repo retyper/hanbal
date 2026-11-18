@@ -2,7 +2,7 @@
 //   붉은 것 = 적이 나를 때릴 자리 · 금빛·하늘빛 = 내 것 · 오라는 낱낱 입자(시계와 번호로만 셈) · 폰을 느리게 하는 것은 쓰지 않는다
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { HAEBI_RUN as C, HAEBI_MOBS as M, HAEBI_FX as K, FX_AURA as P } from '../src/tune/params.ts'
+import { HAEBI_RUN as C, HAEBI_MOBS as M, HAEBI_FX as K, FX_AURA as P, HAEBI_ULT as U } from '../src/tune/params.ts'
 import { createHaebi, stepHaebi, spawnMob, gaugeNeed, type HaebiRun, type Kit, type Missile, type Mob } from '../src/raid/haebi.ts'
 import { drawField, imagePaths } from '../src/raid/haebi-view.ts'
 import { AURA_ART, auraCount, auraSparks, auraWisps, drawAura, drawAuraBurst, drawAuraGround, setAuraDensity, type AuraAt, type AuraKind, type Mote } from '../src/raid/fx-aura.ts'
@@ -197,6 +197,7 @@ test('타는 불바닥: 불 둘레에 붉은 테 · 줄지어 겹치면 한 덩�
 /** 내 것만 있는 판을 걸어가며 그린다 — 칠한 빛을 모두 모은다 */
 function ownColors(kit: Kit, awaken: boolean) {
   const s = field(kit, { awaken }), { ctx, log } = fakeCtx()
+  s.level = U.unlockLevel   // 비기(i === 300)도 그려 보게 · 비기는 첫 레벨업에서 열린다 (11-19)
   Object.assign(s.ranks, { ember: 3, thunder: 2, echo: 2, reach: 1 }); s.ranks[kit === 'bow' ? 'rain' : kit === 'magic' ? 'soul' : 'gale'] = 4
   for (let i = 0; i < 8; i++) place(s, 'iron', Math.cos(i) * (90 + i * 22), Math.sin(i * 1.7) * (70 + i * 14))
   s.gauge = gaugeNeed(s)

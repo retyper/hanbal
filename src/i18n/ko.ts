@@ -506,6 +506,8 @@ export const ko = {
   'nation.saveTip': '판을 저장 칸에 남기거나 불러온다 · 파일로 내려받기',
   'nation.soundOn': '소리 켜기',
   'nation.soundOff': '소리 끄기',
+  'nation.hapticOn': '진동 켜기',
+  'nation.hapticOff': '진동 끄기',
   'nation.archeryTip': '활쏘기 모드 (신궁)',
   'nation.newTip': '판 고르기로, 새 게임을 시작하기 전까지 지금 판은 그대로다',
   'nation.lobbyTip': '이 판은 저장돼 있어 「이어 하기」로 돌아온다',

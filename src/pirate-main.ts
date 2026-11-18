@@ -26,6 +26,8 @@ import { pirateHooks } from './pirate/draw.ts'
 import { WAVE_COUNT } from './pirate/waves.ts'
 import { P } from './tune/params.ts'
 import { josa } from './core/josa.ts'
+import { guardMedia } from './ui/media-guard.ts'
+guardMedia() // 그림 길게 누름 메뉴·끌기 막기 (11-19)
 
 const canvas = document.getElementById('night') as HTMLCanvasElement
 const ui = document.getElementById('night-ui') as HTMLDivElement

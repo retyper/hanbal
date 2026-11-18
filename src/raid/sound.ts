@@ -7,12 +7,13 @@
  * 목소리(기합·신음·포효)는 형이 고른 것 (11-15 밤 · raid-sounds.html 판정 + 형이 받아 준 Pixabay 소리). 여자 비기 외침도 고른 여자 기합.
  * 능력 소리(불·바람·번개·땅)는 새로 생긴 투사체·이펙트를 세어 낸다. 원본: assets_src/realm/sfx-in/raid/pixabay
  * 돌팔매 묶음(11-16): 놓는 소리 · 돌 떨어지는 소리 · 비기·바위 때 팔매 돌리는 바람 소리 — 후보 셋 중 1번 (sfx/cand/sling_* · tools/out/sling-sound-candidates.json · 형이 고르면 SLING 만 바꾼다)
+ * 적이 맞는 「둑」·기세 알 줍는 「뽁」(11-19 형: 다이센카 · 버블 소리)은 파일 없이 WebAudio 로 합성 — 피해 숫자(fx hit·death)와 사라진 알을 세어 한 프레임 한 묶음, 소리 수 한도(maxVoices) 안에서.
  * 소리 끔·크기는 본편 설정(hanbal.realm.mute · hanbal.realm.volume.*)을 따른다. 출처: public/realm/sfx/CREDITS.txt · public/sfx/CREDITS.txt
  */
 import { HAEBI_SOUND as V } from '../tune/params.ts'
 import type { HaebiRun, Kit } from './haebi.ts'
 
-const BASE = import.meta.env.BASE_URL
+const BASE: string = import.meta.env?.BASE_URL ?? '/'
 const R = 'realm/sfx/', X = R + 'raid/', G = R + 'cand/raid/raid_'
 /** 돌팔매 소리 — 후보 번호만 바꾸면 된다 (sfx/cand/sling_<자리>_<번호>.ogg · CC0 · 출처 CREDITS.txt) */
 const SLING = { whirl: R + 'cand/sling_whirl_1.ogg', release: R + 'cand/sling_release_1.ogg', impact: R + 'cand/sling_impact_1.ogg' } as const
@@ -50,6 +51,13 @@ const stored = (key: string) => { try { return localStorage.getItem(key) } catch
 const muted = () => stored('hanbal.realm.mute') === '1' || new URLSearchParams(location.search).has('silent')
 const volume = (channel: 'bgm' | 'sfx' | 'voice') => { const n = Number(stored('hanbal.realm.volume.' + channel) ?? 1); return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 1 }
 type Clip = { buf: AudioBuffer; from: number }
+/** 「둑」 모양 — 한 묶음 맞은 수 · 그 묶음 피해 합 · 흔들기(-1~1) → 길이(초) · 높이(Hz) · 크기 몫(0~). 피해가 클수록 조금 낮고 크게 */
+export function thudShape(count: number, damage: number, wobble = 0) {
+  const big = damage > 0 ? damage / (damage + V.thudRef) : 0, stack = 1 + Math.min(Math.max(0, count - 1), V.thudStackMax) * V.thudStack
+  return { s: (V.thudMs[0] + (V.thudMs[1] - V.thudMs[0]) * big) / 1000, hz: (V.thudHz[0] + (V.thudHz[1] - V.thudHz[0]) * big) * (1 + wobble * V.thudJitter), vol: V.thud * stack * (.8 + .4 * big) }
+}
+/** 「뽁」 높이 — 연달아 먹은 칸(0~popSteps) */
+export const popHz = (step: number) => V.popHz * V.popStep ** Math.min(V.popSteps, Math.max(0, step))
 
 export function raidSound(female: boolean, kit: Kit) {
   const ouch: Voice = female ? 'hurt_f' : 'hurt_m', shout: Voice = female ? 'skill_f' : 'skill_m'
@@ -58,6 +66,8 @@ export function raidSound(female: boolean, kit: Kit) {
   const raw = new Map(mine.map(f => [f, fetch(BASE + f).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)] as const))
   const clips = new Map<string, Clip>(), last = new Map<string, number>()
   let ctx: AudioContext | null = null, music: HTMLAudioElement | null = null, n = 0, voices = 0, hitAt = -9
+  /** 합성 소리 — 노이즈 한 조각(풀 때 한 번) · 「둑」 모아 둔 수·피해 · 「뽁」 연달음 */
+  let noise: AudioBuffer | null = null, thudAt = -9, thudN = 0, thudD = 0, popAt = -9, popN = 0
   /** 풀면서 앞의 빈 소리를 잰다 (mp3 는 앞에 0.03~0.06초가 비어 있다) */
   async function decode(c: AudioContext, file: string) {
     const bytes = await raw.get(file); if (!bytes) return
@@ -77,11 +87,46 @@ export function raidSound(female: boolean, kit: Kit) {
     gain.gain.value = vol; src.buffer = clip.buf; src.playbackRate.value = rate
     src.connect(gain).connect(ctx.destination); voices++; src.onended = () => { voices--; src.disconnect(); gain.disconnect() }; src.start(0, clip.from)
   }
+  /** 합성 소리를 낼 수 있나 — 꺼짐 · 가려진 탭 · 소리 수 한도면 못 낸다 */
+  const room = () => !!ctx && !muted() && !document.hidden && voices < V.maxVoices
+  /** 짧은 소리 한 번 — 노드들을 이어 out 에 모으고, 끝나면 풀어 소리 수에서 뺀다 */
+  function voice(c: AudioContext, len: number, vol: number, build: (out: GainNode, t: number, nodes: AudioNode[]) => AudioScheduledSourceNode[]) {
+    const t = c.currentTime, out = c.createGain(), nodes: AudioNode[] = [out]
+    out.gain.setValueAtTime(0, t); out.gain.linearRampToValueAtTime(vol, t + .004); out.gain.exponentialRampToValueAtTime(.001, t + len)
+    out.connect(c.destination)
+    const srcs = build(out, t, nodes); voices++
+    srcs[0]!.onended = () => { voices--; for (const x of [...srcs, ...nodes]) x.disconnect() }
+    for (const x of srcs) { x.start(t); x.stop(t + len + .01) }
+  }
+  /** 「둑」 — 낮은 사인이 아래로 떨어지고 거친 노이즈가 한 번 (적이 맞음) */
+  function thud(count: number, damage: number) {
+    const c = ctx!, k = thudShape(count, damage, Math.random() * 2 - 1)
+    voice(c, k.s, k.vol * volume('sfx'), (out, t, nodes) => {
+      const osc = c.createOscillator(); osc.type = 'sine'; osc.frequency.setValueAtTime(k.hz, t); osc.frequency.exponentialRampToValueAtTime(k.hz * V.thudDrop, t + k.s); osc.connect(out)
+      if (!noise) return [osc]
+      const nz = c.createBufferSource(), lp = c.createBiquadFilter(), ng = c.createGain()
+      nz.buffer = noise; lp.type = 'lowpass'; lp.frequency.value = V.thudCut; ng.gain.value = V.thudNoise; nz.connect(lp).connect(ng).connect(out)
+      nodes.push(lp, ng)
+      return [osc, nz]
+    })
+  }
+  /** 「뽁」 — 위로 짧게 미끄러지는 사인 · 연달아 먹으면 한 칸씩 올라간다 (듀오링고 콤보) */
+  function pop(count: number) {
+    const c = ctx!, now = c.currentTime
+    popN = now - popAt < V.popCombo ? Math.min(V.popSteps, popN + count) : count - 1; popAt = now
+    const hz = popHz(popN), len = V.popMs / 1000
+    voice(c, len, V.pop * volume('sfx'), (out, t) => {
+      const osc = c.createOscillator(); osc.type = 'sine'; osc.frequency.setValueAtTime(hz, t); osc.frequency.exponentialRampToValueAtTime(hz * V.popRise, t + len * .8); osc.connect(out)
+      return [osc]
+    })
+  }
   const any = (list: readonly string[]) => list[n++ % list.length]!
   const sfx = (slot: keyof typeof FILES, vol: number, gap = 0, rate = 1) => play(slot, any(FILES[slot]), vol * volume('sfx'), gap, rate, true)
   const say = (slot: Voice, vol: number, gap = 0) => play(slot, any(VOICE[slot]), vol * volume('voice'), gap)
   /** 이미 소리를 낸 투사체·이펙트 (새로 생긴 것만 낸다) */
   const seen = new WeakSet<object>()
+  /** 지난 프레임에 판에 있던 기세 알 (사라진 수 = 주운 수 · 새 판이면 비운다) */
+  let known = new WeakSet<object>(), dropsWere = 0, xpWas = 0
   const prev = { attack: 0, hurt: 0, kills: 0, skillCd: 0, offers: 0, level: 1, wakes: 0, barrage: 0, elites: 0, boss: false, state: 'playing' as HaebiRun['state'], run: null as HaebiRun | null }
   return {
     /** 첫 손길(출전 단추)에서 부른다 — 브라우저는 손길 뒤에만 소리를 연다. 여기서 전부 풀어 둔다 */
@@ -89,6 +134,8 @@ export function raidSound(female: boolean, kit: Kit) {
       if (ctx) { void ctx.resume().catch(() => undefined); return }
       try { ctx = new AudioContext({ latencyHint: 'interactive' }) } catch { return }
       for (const f of mine) void decode(ctx, f)
+      // 「둑」의 거친 결 — 흰 노이즈 한 조각을 한 번 만들어 돌려 쓴다
+      try { const len = Math.ceil(ctx.sampleRate * V.thudMs[1] / 1000), d = (noise = ctx.createBuffer(1, len, ctx.sampleRate)).getChannelData(0); for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1 } catch { noise = null }
       music = new Audio(BASE + BGM); music.loop = true; music.preload = 'auto'
     },
     frame(s: HaebiRun, live: boolean, paused: boolean) {
@@ -96,6 +143,7 @@ export function raidSound(female: boolean, kit: Kit) {
       if (music) { music.volume = V.bgm * volume('bgm'); if (on && !s.offers.length) { if (music.paused) void music.play().catch(() => undefined) } else if (!music.paused) music.pause() }
       if (!live) { prev.run = null; return }
       // 판이 바뀐 것은 씨앗이 아니라 판 그 자체로 가린다 (씨앗이 NaN 이면 매 프레임 처음으로 돌아가 비기 외침·신음이 프레임마다 다시 났다 · 형 11-16)
+      if (prev.run !== s) { known = new WeakSet(); dropsWere = 0; xpWas = s.xp; thudN = thudD = 0 }
       if (prev.run !== s) Object.assign(prev, { attack: 0, hurt: 0, kills: s.kills, skillCd: 0, offers: 0, level: s.level, wakes: s.wakes, barrage: 0, elites: 0, boss: s.boss, state: 'playing', run: s })
       const barrage = s.shots.reduce((k, b) => k + Number(b.kind === 'barrage'), 0), elites = s.enemies.reduce((k, e) => k + Number(e.kind === 'elite'), 0)
       if (s.attack > prev.attack) { play('weapon', any(WEAPON[kit][0]), V.swing * volume('sfx'), 0, WEAPON[kit][1] * (.95 + (n % 5) * .025), true) }  // 평타엔 목소리 없음 (형 11-16: 「기합은 스킬 쓸 때만」)
@@ -108,7 +156,16 @@ export function raidSound(female: boolean, kit: Kit) {
       if (fell > 0) say('die', V.die, V.dieGap)
       if (s.skillCd > prev.skillCd) { say(shout, V.skill); if (kit === 'sling') sfx('whirl', V.whirl) }
       for (const b of s.shots) if (!seen.has(b)) { seen.add(b); if (b.kind === 'ember') sfx('fire', V.magic, V.magicGap); else if (b.kind === 'gale' || b.kind === 'wave' || b.kind === 'knife') sfx('wind', V.magic, V.magicGap); else if (b.kind === 'soul') sfx('light', V.magic, V.magicGap); else if (b.kind === 'boulder') sfx('whirl', V.whirl * .7, V.magicGap, .8) }
-      for (const e of s.fx) if (!seen.has(e)) { seen.add(e); if (e.kind === 'bolt') sfx('bolt', V.magic, V.magicGap); else if (e.kind === 'spike') sfx('earth', V.magic, V.magicGap); else if (e.kind === 'skill') sfx('skillHit', V.skillHit); else if (e.kind === 'thud' || e.kind === 'ult' && e.ult === 'sling') sfx('stone', V.stone, V.stoneGap, .9 + (n % 5) * .05) }
+      let hitN = 0, hitD = 0
+      for (const e of s.fx) if (!seen.has(e)) { seen.add(e); if (e.kind === 'hit' || e.kind === 'death') { hitN++; hitD += e.n ?? 0 } if (e.kind === 'bolt') sfx('bolt', V.magic, V.magicGap); else if (e.kind === 'spike') sfx('earth', V.magic, V.magicGap); else if (e.kind === 'skill') sfx('skillHit', V.skillHit); else if (e.kind === 'thud' || e.kind === 'ult' && e.ult === 'sling') sfx('stone', V.stone, V.stoneGap, .9 + (n % 5) * .05) }
+      // 적이 맞는 「둑」 — 이 프레임에 맞은 것을 한 묶음으로 (여럿이면 조금 크게) · thudGap 안이면 다음 묶음에 더한다 · 한도면 버린다
+      thudN += hitN; thudD += hitD
+      if (thudN > 0 && (!ctx || ctx.currentTime - thudAt >= V.thudGap)) { if (room()) { thudAt = ctx!.currentTime; thud(thudN, thudD / thudN) } thudN = thudD = 0 }
+      // 기세 알 줍는 「뽁」 — 기세가 오른 프레임에 사라진 알 수만큼 (새 알은 다음 프레임부터 셈)
+      let kept = 0; for (const d of s.drops) { if (known.has(d)) kept++; else known.add(d) }
+      const picked = s.xp > xpWas + 1e-9 ? Math.max(1, dropsWere - kept) : 0
+      dropsWere = s.drops.length; xpWas = s.xp
+      if (picked > 0 && ctx && ctx.currentTime - popAt >= V.popGap && room()) pop(picked)
       // 판 안 각성(투지) — 외침 + 터짐 (RAID-LINK §1)
       if (s.wakes > prev.wakes) { say(shout, V.skill); sfx('skillHit', V.skillHit) }
       if (s.offers.length && !prev.offers) sfx('level', V.ui)

@@ -28,6 +28,27 @@ export const HAEBI_SOUND = {
    * 쓰러뜨림 소리 묶음은 hitGap 초에 한 번 · 지금 울리는 소리가 maxVoices 개면 효과음은 건너뛴다(목소리·외침은 그대로).
    */
   hitGap: .07, maxVoices: 8,
+  /**
+   * 적이 맞는 「둑」 (11-19 형: 「다이센카처럼 적 데미지 입으면 둑 소리」) — 노이즈 한 번 + 낮은 사인, 판의 피해 숫자(fx hit·death)를 세어 낸다.
+   * thudGap 초에 한 묶음(그 사이 맞은 것은 다음 묶음에 더함) · thudMs 길이(작은 피해→큰 피해) · thudHz 높이(작은→큰, 큰 피해가 낮다) · thudDrop 끝 높이 몫
+   * thudRef 피해가 이만하면 「큰」 쪽 절반 · thudStack 한 묶음에 하나 더 맞을 때 커지는 몫(thudStackMax 개까지) · thudJitter 높이를 흔드는 몫(귀가 안 지침) · thudNoise 노이즈 몫 · thudCut 노이즈 저역 필터 Hz
+   */
+  thud: .32, thudGap: .05, thudMs: [30, 60], thudHz: [150, 85], thudDrop: .55, thudRef: 60, thudStack: .12, thudStackMax: 5, thudJitter: .06, thudNoise: .55, thudCut: 900,
+  /**
+   * 기세 알 줍는 「뽁」 (11-19 형: 「보석인지 템인지는 먹을 때 작은 버블 소리」) — 위로 짧게 미끄러지는 사인.
+   * popHz 첫 높이 · popRise 끝 높이 몫 · popMs 길이 · popGap 묶음 틈(초) · popCombo 이 초 안에 또 먹으면 한 칸 오름 · popStep 한 칸(반음 몫) · popSteps 몇 칸까지
+   */
+  pop: .16, popHz: 620, popRise: 1.7, popMs: 55, popGap: .045, popCombo: .5, popStep: 1.0595, popSteps: 12,
+} as const
+/**
+ * 폰 떨림 (11-19 형: 「피격될 때 햅틱 · 전투 승리하면 듀오링고처럼 햅틱 막 지랄 나 주면」) — src/ui/haptics.ts 한 곳에서 낸다.
+ * hurt 맞을 때 [가장 짧게, 가장 길게] ms · hurtFull 잃은 체력이 최대의 이 몫이면 가장 길게 · hurtGap 연타 사이 ms
+ * fieldHurt 본편 싸움에서 우리 장수가 크게 맞을 때(겨루기 짐·쓰러짐) ms · win 이김 · bigWin 대승(본편 몰아냄) — 떨기·쉬기 ms 번갈아
+ * 아이폰 사파리는 진동이 없어 조용히 넘어간다. 끄기는 본편 설정(hanbal.realm.haptics)
+ */
+export const HAPTICS = {
+  hurt: [15, 40], hurtFull: .15, hurtGap: 180, fieldHurt: 40,
+  win: [30, 40, 30, 40, 60, 60, 120], bigWin: [30, 40, 30, 40, 30, 40, 60, 60, 60, 60, 160],
 } as const
 /** 열전 손가락 조이스틱 (형 11-16: 「뱀서 컨텐츠 할 때는 조이스틱 생겨야 하는 거 아님?」) — 손가락 댄 자리에 생기는 떠다니는 막대.
  *  radius 막대가 끝까지 가는 거리(화면 px) · dead 이보다 덜 밀면 멈춤 · follow 끝을 넘겨 끌면 받침이 따라오는 몫(0~1)
@@ -67,7 +88,12 @@ export const HAEBI_RUN = {
    *  마지막으로 맞고 hpChunkHold 초 지나면 처음엔 빠르게 끝 무렵엔 천천히(초마다 hpChunkRate 배로 좁아짐) 줄어든다 */
   hpChunkFlash: .24, hpChunkHold: .32, hpChunkRate: 4.5,
   maxEnemies: 230, maxShots: 240, maxFx: 320, maxDrops: 90, maxLevel: 44,
-  xpBase: 8, xpPerLevel: 7, xpCurve: .8, levelHeal: 28, killHeal: .08, regen: .8,
+  /**
+   * 레벨업 기세 = xpBase + 레벨 × xpPerLevel + 레벨² × xpCurve.
+   * xpBase 8 → −3 (11-19 「시작은 평타만」 되맞춤): 보조 공격을 첫 카드로 얻게 되며 판마다 한 점이 모자라 숲 승률이 81% → 68% (봇 84판).
+   * 첫 레벨을 15.8 → 4.8(첫 카드 약 15초)로, 앞 레벨들을 한 칸씩 당겨 81% 로 되돌렸다 · 뒤 레벨(30레벨 935)에는 1% 아래.
+   */
+  xpBase: -3, xpPerLevel: 7, xpCurve: .8, levelHeal: 28, killHeal: .08, regen: .8,
   dashCooldown: 2.4, dashTime: .22, dashInv: .42, dashSpeed: 3.8,
   /** 회피 잔상 (형 11-16: 「돌진 모션이 잔상처럼 여러 개 생기다 없어지게 · 사이버펑크처럼」) — 몇 초마다 하나 · 얼마나 남나 · 처음 진하기 · 색 갈라짐(px) */
   ghostEvery: .045, ghostLife: .42, ghostAlpha: .7, ghostSplit: 4,
@@ -237,6 +263,12 @@ export const HAEBI_ULT = {
    * 진 비기 (각성 중): 시전 trueCast 초 · 피해 ×trueDamage · 범위(너비·반지름) ×trueArea · 이름 앞에 「진」
    */
   cast: .55, slow: .5, trueCast: .65, trueDamage: 1.5, trueArea: 1.25,
+  /**
+   * 비기가 열리는 레벨 (11-19 형: 「시작은 평타만 가지고 해야 하는 거 아님??」) — 판은 평타만으로 시작하고, 첫 레벨업(1→2)에서
+   * Space 단추가 금빛으로 터지며 열린다. 시련(8분)도 같은 규칙 · 선봉은 HAEBI_VANGUARD.startLevel 로 시작하니 처음부터 열려 있다.
+   * unlockFlash = 열리는 순간 단추가 빛나는 초(화면 초 · 그리기만) · unlockRing = 열리는 순간 장수 둘레에 퍼지는 금빛 고리 반지름(px)
+   */
+  unlockLevel: 2, unlockFlash: 1.6, unlockRing: 150,
 } as const
 /**
  * 열전 기술 나무 (11-17 · docs/realm/RAID-LINK.md §2 디아블로식) — 조건이 찬 조합은 레벨업에 금테 카드로 나오고, 골라야 열린다.
@@ -252,6 +284,13 @@ export const HAEBI_TREE = { max: 3, rankStep: .4, upgradeChance: .5, ultDamage: 
    * lean: 레벨업 카드가 이미 찍은 갈래로 끌리는 세기 — 칸 무게 = 1 + lean × 그 갈래 점수 몫 (카드 하나는 늘 다른 갈래)
    */
   tiers: [0, 3, 7, 12], capMax: 3, lean: 2,
+  /**
+   * 시작 단계 (11-19 형: 「시작은 평타만」 · 「둘 다 빼기」) — 판은 주 무기(평타) startPrimary 단계 하나로 시작하고,
+   * 보조 공격(아라의 「검기」·해비의 「질풍 도끼」…)은 startSecondary 단계(0 = 없음)라 첫 레벨업 카드로 얻는다 (첫 카드 셋의 맨 앞이 늘 그것).
+   * 시련(8분)도 같은 규칙: 첫 레벨업이 15초 안팎(xpBase)이라 짧은 판에서도 「평타 → 첫 카드로 보조 · 비기가 열림」을 그대로 본다.
+   * 선봉(3분)은 HAEBI_VANGUARD.startLevel 과 함께 갖춘 채로 선다 (createHaebi).
+   */
+  startPrimary: 1, startSecondary: 0,
   /** 3층 · 주 무기 벼리기(주 무기 피해 +hone/단계) · 보조 숙련(보조 공격 피해 +drill · 빠르기 +drillTempo /단계) */
   hone: .12, drill: .14, drillTempo: .08,
   /** 버팀 갈래 — 단단한 몸(받는 피해 −tough/단계) · 숨 고르기(초마다 +breath 회복) · 날랜 발(회피 재사용 −nimble · 이동 +nimbleMove) · 굳센 몸(최대 체력 +stout) */

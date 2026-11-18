@@ -494,6 +494,8 @@ export const en: Partial<Record<Key, string>> = {
   'nation.saveTip': 'Save the game to a slot or load one · download as a file',
   'nation.soundOn': 'Sound On',
   'nation.soundOff': 'Sound Off',
+  'nation.hapticOn': 'Vibration On',
+  'nation.hapticOff': 'Vibration Off',
   'nation.archeryTip': 'Archery mode (Divine Bow)',
   'nation.newTip': 'Goes to the board picker. Your current game stays as it is until you start a new one',
   'nation.lobbyTip': 'This game is saved. Come back with "Continue"',

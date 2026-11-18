@@ -2,7 +2,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { HAEBI_RUN as C, HAEBI_ULT as U } from '../src/tune/params.ts'
-import { createHaebi, stepHaebi, spawnMob, powerScale, areaScale, KITS, type HaebiRun, type Kit, type Mob } from '../src/raid/haebi.ts'
+import { createHaebi, stepHaebi, spawnMob, powerScale, areaScale, KITS, choose, xpNeeded, ultOpen, type HaebiRun, type Kit, type Mob } from '../src/raid/haebi.ts'
 import { replay } from '../src/raid/haebi-replay.ts'
 
 const KIT6 = Object.keys(KITS) as Kit[]
@@ -10,6 +10,7 @@ const idle = { x: 0, y: 0 }
 /** 적이 저절로 나오지 않고 평타·조합이 쉬는 판 — 맞는 건 비기뿐 */
 function field(kit: Kit, x = C.width / 2, y = C.height / 2) {
   const s = createHaebi(7, 'stage', kit); s.spawn = 1e9; s.nextElite = 1e9; s.nextBarrage = 1e9; s.x = x; s.y = y
+  s.level = U.unlockLevel   // 비기는 첫 레벨업에서 열린다 (11-19 형: 「시작은 평타만」) · 이 판들은 비기만 재므로 열린 레벨로
   return s
 }
 function place(s: HaebiRun, dx: number, dy: number, kind: Mob['kind'] = 'iron') {
@@ -130,4 +131,29 @@ test('비기 그림: 여섯 묶음 모두 그리다 깨지지 않고, 폰을 느
     assert.ok((draws['drawImage'] ?? 0) > before, kit)
   }
   assert.deepEqual(banned, [])
+})
+
+test('판은 평타만으로 시작한다 — 비기는 첫 레벨업에서 열리고 장수 둘레에 금빛 고리 · 시련도 같고 선봉은 처음부터 (11-19 형)', () => {
+  const s = createHaebi(7, 'stage', 'sword'); s.spawn = 1e9; s.nextElite = 1e9; s.nextBarrage = 1e9
+  place(s, 120, 0, 'club')
+  assert.equal(ultOpen(s), false, '1레벨은 잠김')
+  stepHaebi(s, { ...idle, skill: true }, 1 / 120)
+  assert.equal(s.cast, null, '잠긴 비기는 눌러도 시전이 안 선다'); assert.equal(s.skillCd, 0)
+  s.xp = xpNeeded(s); stepHaebi(s, idle, 1 / 120); assert.ok(s.offers.length, '첫 레벨업 카드')
+  assert.ok(choose(s, s.offers[0]!)); assert.equal(s.level, U.unlockLevel)
+  assert.ok(ultOpen(s), '첫 레벨업에서 열림')
+  assert.ok(s.fx.some(f => f.kind === 'ring' && f.r === U.unlockRing), '열리는 순간 금빛 고리')
+  stepHaebi(s, { ...idle, skill: true }, 1 / 120); assert.equal((s as HaebiRun).cast?.kind, 'ult', '열린 뒤엔 누르면 시전')
+  assert.equal(ultOpen(createHaebi(7, 'trial', 'sword')), false, '시련도 평타만으로 시작')
+  assert.ok(ultOpen(createHaebi(7, 'vanguard', 'sword')), '선봉은 높은 레벨로 시작해 처음부터 열림')
+})
+
+test('봇 판: 같은 씨앗이면 비기가 열리는 때까지 같은 판 · 열리기 전엔 비기를 한 번도 안 쓴다', () => {
+  for (const kit of ['sword', 'axe'] as Kit[]) {
+    const a = replay(9, 150, 'storm', undefined, kit), b = replay(9, 150, 'storm', undefined, kit)
+    assert.deepEqual(a, b, kit); assert.ok(a.level >= U.unlockLevel, `${kit} 2분 반이면 열린다`)
+    const s = createHaebi(9, 'stage', kit); let early = 0
+    while (s.state === 'playing' && !ultOpen(s)) { if (s.offers.length) choose(s, s.offers[0]!); else { stepHaebi(s, { x: Math.sin(s.t), y: Math.cos(s.t), skill: true }, 1 / 120); if (s.cast || s.skillCd) early++ } }
+    assert.equal(early, 0, `${kit} 열리기 전 비기`)
+  }
 })

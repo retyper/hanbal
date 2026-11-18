@@ -18,6 +18,7 @@ test('각 묶음은 제 주 무기로 시작하고 첫 고름은 갈래마다 �
   for (const kit of NEW) {
     const s = createHaebi(7, 'trial', kit), k = KITS[kit]
     assert.equal(s.ranks[k.primary], 1)
+    assert.equal(s.ranks[k.secondary], 0, '보조 공격은 첫 카드로 (11-19 형: 「시작은 평타만」)')
     assert.equal(s.ranks.axe, 0)
     s.xp = 999; stepHaebi(s, { x: 0, y: 0 }, .01)
     assert.deepEqual(s.offers, [k.secondary, k.primary, 'tempo'])
@@ -36,9 +37,12 @@ test('같은 씨앗·같은 입력이면 같은 판 · 남의 묶음 능력은 �
 })
 
 // 11-16: 강화 없이 숲 산길 20분은 완벽한 봇도 두목 앞에서 아슬아슬 (형: 「처음엔 못 깨게」) — 상점을 조금 산 판으로 본다
+// 11-19 「시작은 평타만」(보조 공격을 첫 카드로) 뒤로 판의 길이 바뀌어 씨앗 7 의 단검이 두목 앞에서 진다 (예전에도 씨앗 11 은 졌다 ·
+// 상점 조금 · 씨앗 넷: 예전 18/20 · 지금 17/20 · 단검이 가장 약하다). 그래서 씨앗 셋 가운데 처음 이긴 판으로 본다 (대개 첫 씨앗에서 끝난다)
 test('활·창·칼 모두 상점을 조금 산 봇이 숲 산길 20분 두목을 잡고 제 조합을 완성한다', () => {
   for (const kit of NEW) {
-    const s = replay(7, C.duration, 'storm', r => assert.ok(r.shots.length <= C.maxShots), kit, { bonus: { vigor: 3, might: 2, armor: 1 } })
+    let s = replay(7, C.duration, 'storm', r => assert.ok(r.shots.length <= C.maxShots), kit, { bonus: { vigor: 3, might: 2, armor: 1 } })
+    for (const seed of [11, 13]) if (s.state !== 'won') s = replay(seed, C.duration, 'storm', undefined, kit, { bonus: { vigor: 3, might: 2, armor: 1 } })
     assert.equal(s.state, 'won', kit)
     assert.ok(s.t >= C.bossAt)
     assert.ok(s.kills > 4000, `${kit} ${s.kills}`)

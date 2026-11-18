@@ -46,6 +46,8 @@ import { showBoot } from './ui/realm/boot.ts'
 import { openingSeen, playOpening } from './ui/realm/opening.ts'
 import { openCredits } from './ui/realm/credits.ts'
 import { generalSprite, MIGRANT_ANIM, SOL_ANIM2, genArtOf, nodeIcon } from './realm/data/art.ts'
+import { guardMedia } from './ui/media-guard.ts'
+guardMedia() // 그림 길게 누름 메뉴·끌기 막기 (11-19)
 
 const KEY = 'hanbal.realm.v2'
 /** 한 계절 앞의 저장 — 지금 것이 깨졌으면 이걸로 되살린다 */

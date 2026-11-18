@@ -1,3 +1,4 @@
+import { haptics } from '../haptics.ts'
 // 누르고 있는 동안만 뜨는 설명 창 — 전장과 지도가 같이 쓴다 (형 10-28: 하스스톤처럼 · ZAXIS-1031 4단계)
 // 꼴은 WAR_CSS 의 .whold 하나. 손가락 위에 뜨고, 위에 자리가 없으면 아래로. 손을 떼면 linger 뒤 걷힌다.
 
@@ -61,7 +62,7 @@ export function longPress(
       if (press !== p0 || !opt.onHold(el, p0.x, p0.y)) return
       p0.held = true
       eat = true
-      if (typeof navigator.vibrate === 'function') navigator.vibrate(8)
+      haptics().buzz(8)
     }, opt.holdMs())
     press = p0
   })

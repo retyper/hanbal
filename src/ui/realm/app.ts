@@ -137,6 +137,7 @@ import { exileArt, exileBeats, fugitiveBeats, quarrelArt, quarrelBeats, romanceB
 import { HERO_POOL } from '../../realm/data/heroes-pool.ts'
 import { chiefCastOf, hireVoicePath, voiceGate, voiceKind, voicePath, type VoiceLine } from './voice.ts'
 import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
+import { haptics } from '../haptics.ts'
 import { loadTip, tipHtml, tipReadMs } from './loadtips.ts'
 import { worldMapReady } from './worldmap.ts'
 import { loadBar } from './loadbar.ts'
@@ -1656,7 +1657,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (E.sfx !== null) { const s = E.sfx; at(t(R.ascendVortexMs), () => ding(snd(s), 0.8)) }
     at(t(R.ascendBeastMs), () => ding(snd(E.cry), 0.9))
     at(Math.max(0, t(R.ascendFlashMs) - preRoll('ax_flash')), () => ding(snd('ax_flash'), 0.95))
-    at(t(R.ascendFlashMs), () => { if (typeof navigator.vibrate === 'function') navigator.vibrate([40, 40, 80, 40, 120]) })
+    at(t(R.ascendFlashMs), () => { buzz([40, 40, 80, 40, 120]) })
     at(t(R.ascendFlashMs) + 1100, () => { if (h.status === 'free' && !isRuler(r, h.id)) ding(voicePath(h, 'tap', false), 0.9) })
   }
   /** 합종 알림 — 섰을 때 깃발들이 끌려와 묶이고, 깼을 때 줄이 끊긴다 (league.ts · 위원회 11-08 ⑤) */
@@ -4444,6 +4445,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (h === undefined || look === null) return
     saveDraft()
     const q = new URLSearchParams({ hero: look.id, name: look.name, home: look.home, bust: look.bust, sprite: look.sprite, kit: look.kit, video: look.video ? '1' : '0' })
+    // awake = 각성 전투 띠 이름(겉모습만) · 판 안 각성 자격(도깨비 도장)은 열전 화면이 영웅전 표와 제 기록을 직접 읽는다 (raid/link.ts demonSealed · 각성 v2 가7)
     if (look.awake !== undefined) q.set('awake', look.awake)
     const ov = openFrame(`${import.meta.env.BASE_URL}raid.html?${q}`, `${h.name}의 열전`)
     ov.querySelector('iframe')!.allow = 'fullscreen'
@@ -5335,7 +5337,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<div class="menu3"><button class="btn" data-act="help">${tr('nation.help')}</button><button class="btn" data-act="log-open">${tr('nation.log')}</button><button class="btn" data-act="dex-open">${tr('title.heroes')}</button>`
     if (!installed() && installPrompt() !== null) h += `<button class="btn ghost" data-act="install">${tr('nation.install')}</button>`
     if (host.saves !== undefined) h += `<button class="btn" data-act="save-open" data-tip="${tr('nation.saveTip')}">${tr('nation.save')}</button>`
-    h += `<button class="btn ghost" data-act="mute">${tr(muted() ? 'nation.soundOn' : 'nation.soundOff')}</button><button class="btn ghost" data-act="export" data-tip="${tr('more.exportTip', { n: host.gameCount() })}">${tr('more.export')}</button>`
+    h += `<button class="btn ghost" data-act="mute">${tr(muted() ? 'nation.soundOn' : 'nation.soundOff')}</button>${haptics().can() ? `<button class="btn ghost" data-act="haptic" aria-pressed="${!haptics().on()}">${tr(haptics().on() ? 'nation.hapticOff' : 'nation.hapticOn')}</button>` : ''}<button class="btn ghost" data-act="export" data-tip="${tr('more.exportTip', { n: host.gameCount() })}">${tr('more.export')}</button>`
     h += `<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}" data-tip="${tr('nation.archeryTip')}">${tr('more.archery')}</a>${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">${tr('more.practice')}</button>` : ''}`
     h += `<button class="btn ghost" data-act="newgame" data-tip="${tr('nation.newTip')}">${tr('title.new')}</button><button class="btn ghost" data-act="lobby" data-tip="${tr('nation.lobbyTip')}">${tr('nation.lobby')}</button></div>`
     return h + gfxRowHtml() + perfRowHtml() + volumeRowsHtml() + acctHtml() + resetHtml()
@@ -8421,6 +8423,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'install': {
         const p = installPrompt()
         if (p !== null) void p.prompt().catch(() => { /* 막힌 곳 */ }).finally(() => { delete (window as unknown as { __bip?: InstallPrompt }).__bip; paint() })
+        break
+      }
+      // 진동 끄기·켜기 (11-19 · 기본 켬 · 이 기기에만 · 열전도 같은 값을 따른다) — 켜는 순간 짧게 한 번 떨어 알려 준다
+      case 'haptic': {
+        const on = !haptics().on()
+        haptics().set(on)
+        if (on) haptics().buzz(20)
         break
       }
       case 'mute': {
