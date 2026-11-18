@@ -1025,6 +1025,11 @@ export interface Realm {
   trueWoke?: string[]
   /** 장수 열전에서 마지막 스테이지를 깬 장수 — 진각성 자격 (heroes.trueWakeOf). 본편 화면이 열전 기록(raid/link.ts raidSealed)에서 옮겨 적는다 */
   raidSeals?: string[]
+  /**
+   * 장수 열전에 나간 달 — 장수 id → 나간 턴(t)·그 턴에 나간 횟수(n) (raid-month.ts · 형 11-19 「한 달에 한 번」).
+   * 화면만 읽고 쓴다 (출전 단추 잠금 · 추천). 판의 셈은 읽지 않는다. 옛 저장에는 없다
+   */
+  raidRuns?: Record<string, { readonly t: number; readonly n: number }>
   /** 다음 상단이 올 턴 — 나라마다 */
   marketNext?: Record<string, number>
   /**

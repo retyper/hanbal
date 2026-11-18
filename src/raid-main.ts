@@ -23,6 +23,14 @@ const trialToken = window.parent !== window ? new URLSearchParams(location.searc
 /** 판: 본편 선봉 · 본편 각성 시련(짧고 쉬움) · 독립 열전(스테이지·상점·휘장 · 형 11-16 「따로 떼기」) */
 const mode = query.has('vanguard') ? 'vanguard' : trialToken ? 'trial' : 'stage'
 /**
+ * 본편 장수 판에서 연 열전 (app.ts openRaidStage) — 장수마다 본편 한 달에 한 번이라 (형 11-19) 이 틀에서는 한 판만 싸운다:
+ * 출전하면 본편에 알리고(그 달은 쓴 것) · 끝나면 「본편으로」만 · 장수 바꾸기도 숨긴다. 주소로 따로 연 열전(본편 틀 밖)은 그대로 연습판이다
+ */
+const campaignToken = window.parent !== window && mode === 'stage' ? query.get('campaign') : null
+/** 본편에서 연 판 (열전 · 각성 시련 · 선봉) — 결과 화면에 「다시 출전」이 없다 */
+const fromCampaign = campaignToken !== null || trialToken !== null || vanguardToken !== null
+let campaignBegun = false
+/**
  * 열전에 서는 장수 — 본편(app.ts)이 주소로 넘긴다. 없으면 해비 (형 11-15: 각성 시련을 모든 장수로).
  * 겉모습만 정하는 값이라 주소를 믿는다: 보상은 본편이 제 쪽 기록(토큰·장수 id)으로만 준다.
  */
@@ -83,6 +91,7 @@ function skipCutin() { if (!$('skill-cutin').hidden) { $('skill-cutin').hidden =
 $('pause').insertAdjacentHTML('beforebegin', '<button id="fullscreen">전체화면</button>')
 $('fullscreen').textContent = '⛶'; $('fullscreen').setAttribute('aria-label', '전체화면');
 $('fullscreen').onclick = () => { if (document.fullscreenElement) void document.exitFullscreen?.(); else void document.documentElement.requestFullscreen?.().catch(() => undefined) }
+if (campaignToken) root.querySelector('header small')!.textContent = `본편 · ${HERO.name}의 열전`
 if (trialToken) {
   document.body.classList.add('campaign-trial')
   root.querySelector('header small')!.textContent = `본편 · ${HERO.name}의 각성 시련`
@@ -110,9 +119,9 @@ function renderStageMenu() {
     return `<button data-stage="${id}" class="${id === stage ? 'on' : ''}" ${open ? '' : 'disabled title="앞 스테이지를 깨면 열립니다"'} aria-pressed="${id === stage}"><img class="emblem ${meta.cleared[id] ? 'got' : ''}" src="${import.meta.env.BASE_URL}realm/raid/emblem-${id}.png" alt="${STAGE_GLYPH[id]}"><b>${stageName(id)}</b><small>${!open ? '앞을 깨면 열립니다' : meta.cleared[id] ? '휘장 획득' : best ? `최고 ${clock(best)} 버팀` : '첫 도전'}</small></button>`
   }).join('')
   pick.querySelectorAll<HTMLButtonElement>('[data-stage]').forEach(b => b.onclick = () => { stage = b.dataset.stage as typeof stage; run = newRun(7); renderStageMenu() })
-  menu.querySelector('.note')!.innerHTML = `<span class="gold-line">금 <b>${meta.gold.toLocaleString()}</b></span><button id="open-shop">상점 · 영구 강화</button><button id="open-heroes">장수 바꾸기</button>`
+  menu.querySelector('.note')!.innerHTML = `<span class="gold-line">금 <b>${meta.gold.toLocaleString()}</b></span><button id="open-shop">상점 · 영구 강화</button>${campaignToken ? '' : '<button id="open-heroes">장수 바꾸기</button>'}`
   $('open-shop').onclick = () => { renderShop(); $('shop').hidden = false }
-  $('open-heroes').onclick = () => { renderHeroes(); $('shop').hidden = false }
+  if (!campaignToken) $('open-heroes').onclick = () => { renderHeroes(); $('shop').hidden = false }
   if (!$<HTMLButtonElement>('start').disabled) $('start').textContent = startLabel()
 }
 /**
@@ -196,6 +205,8 @@ const base = import.meta.env.BASE_URL + 'realm/'
 Promise.all([...imagePaths, ...heroArtFiles()].map(path => new Promise<void>((resolve, reject) => { const img = new Image(); img.onload = () => { images.set(path, img); resolve() }; img.onerror = reject; img.src = base + path }))).then(() => { $<HTMLButtonElement>('start').disabled = false; $('start').textContent = startLabel(); renderStageMenu(); schedule() }).catch(() => { $('start').textContent = '그림을 불러오지 못했어요. 새로고침해 주세요.' })
 function resetInput() { keys.clear(); destination = null; stickEnd(); dashAt = skillAt = wakeAt = -9; acc = 0 }
 function begin(sameSeed = false) {
+  // 본편에서 연 열전은 한 판만 — 출전하는 그 순간 본편에 알린다 (그 장수의 이번 달 출전 · app.ts markRaid)
+  if (campaignToken) { if (campaignBegun) return; campaignBegun = true; window.parent.postMessage({ type: 'hanbal.raid.start', token: campaignToken }, location.origin) }
   if (!sameSeed && !vanguardToken) pendingSeed = crypto.getRandomValues(new Uint32Array(1))[0]!
   sound.unlock(); hidePowerHint(); notifyVanguardStart(); run = newRun(pendingSeed); live = true; paused = false; shown = ''; loadoutKey = ''; resetInput(); last = 0
   skipCutin()
@@ -374,18 +385,20 @@ function showOverlay() {
     $('resume').onclick = () => { paused = false; shown = ''; last = 0; showOverlay() }; $('quit').onclick = menu
     if (vanguardToken) { $('quit').textContent = '지금 확보한 돌파로 귀환'; $('quit').onclick = withdraw }
     else if (mode === 'stage') { $('quit').textContent = '물러나기 · 버틴 만큼 금 받기'; $('quit').onclick = withdraw }
+    else if (trialToken) { $('quit').textContent = '물러나기'; $('quit').onclick = withdraw } // 본편에서 연 시련은 다시 고르는 화면 없이 결과로 (다시 도전은 본편 장수 판에서)
   } else {
     // 이겼다 — 결과 판이 뜨는 그 박자에 다다닥 (11-19 형: 「듀오링고처럼 햅틱 막 지랄 나 주면」) · 판마다 한 번 (탭을 다녀와 다시 그려도 또 떨지 않는다)
     if (run.state === 'won' && wonBuzz !== run) { wonBuzz = run; haptics().win() }
     // 독립 열전: 판이 끝나면 한 번만 금을 주고 기록한다 (지면 버틴 만큼 · 깨면 휘장 + 깸 금)
     if (mode === 'stage' && rewarded !== run) { rewarded = run; const gold = runGold(run); reward = { gold, ...record(meta, run.stage, gold, run.state === 'won', run.t, heroId) }; saveMeta(meta); if (run.state === 'won' && run.stage === DEMON_STAGE) { stampDemons(); refreshWakeKind() } }
-    overlay.innerHTML = `<div class="panel result ${run.state}"><h2>${run.state === 'won' ? mode === 'stage' ? `${stageName(run.stage)} 토벌 완료` : '열전 완수' : run.hp <= 0 ? '도전 실패' : run.t < runDuration(run) ? '철수' : '시간 초과 · 두목 생존'}</h2><p>${Math.floor(run.t / 60)}분 ${Math.floor(run.t % 60)}초 · ${run.kills.toLocaleString()}명 격파 · Lv.${run.level}</p><div class="result-combos">${kitCombos(kit).filter(c => run.combos.includes(c.id)).map(c => `<b>${comboIcon(c.id)}${c.name} ${rankMark(comboRank(run, c.id))}</b>`).join('')}</div>${mode === 'stage' ? `<p class="reward">금 <b>+${reward.gold.toLocaleString()}</b> · 보유 ${meta.gold.toLocaleString()}${reward.first ? ` · <strong><img class="won-emblem" src="${import.meta.env.BASE_URL}realm/raid/emblem-${run.stage}.png" alt="">${stageName(run.stage)} 휘장 획득</strong>` : ''}${reward.heroFirst && run.stage === SEAL_STAGE && TRUE_WAKE.has(heroId) ? ` · <strong class="tw-open">본편에서 ${josa(HERO.name, '이', '가')} 진각성할 수 있습니다</strong>` : ''}</p>` : ''}${mode === 'stage' ? '' : '<p>본편 병력 손실 없음</p>'}<div class="result-acts"><button id="new-run" class="primary">다시 출전</button><div>${mode === 'stage' ? '<button id="to-shop">상점</button>' : ''}<button id="quit">스테이지 고르기</button>${window.parent !== window ? '<button id="return">본편으로</button>' : ''}</div></div></div>`
+    overlay.innerHTML = `<div class="panel result ${run.state}"><h2>${run.state === 'won' ? mode === 'stage' ? `${stageName(run.stage)} 토벌 완료` : '열전 완수' : run.hp <= 0 ? '도전 실패' : run.t < runDuration(run) ? '철수' : '시간 초과 · 두목 생존'}</h2><p>${Math.floor(run.t / 60)}분 ${Math.floor(run.t % 60)}초 · ${run.kills.toLocaleString()}명 격파 · Lv.${run.level}</p><div class="result-combos">${kitCombos(kit).filter(c => run.combos.includes(c.id)).map(c => `<b>${comboIcon(c.id)}${c.name} ${rankMark(comboRank(run, c.id))}</b>`).join('')}</div>${mode === 'stage' ? `<p class="reward">금 <b>+${reward.gold.toLocaleString()}</b> · 보유 ${meta.gold.toLocaleString()}${reward.first ? ` · <strong><img class="won-emblem" src="${import.meta.env.BASE_URL}realm/raid/emblem-${run.stage}.png" alt="">${stageName(run.stage)} 휘장 획득</strong>` : ''}${reward.heroFirst && run.stage === SEAL_STAGE && TRUE_WAKE.has(heroId) ? ` · <strong class="tw-open">본편에서 ${josa(HERO.name, '이', '가')} 진각성할 수 있습니다</strong>` : ''}</p>` : ''}${mode === 'stage' ? '' : '<p>본편 병력 손실 없음</p>'}${fromCampaign ? `<div class="result-acts">${window.parent !== window ? '<button id="return" class="primary">본편으로</button>' : ''}</div>` : `<div class="result-acts"><button id="new-run" class="primary">다시 출전</button><div>${mode === 'stage' ? '<button id="to-shop">상점</button>' : ''}<button id="quit">스테이지 고르기</button>${window.parent !== window ? '<button id="return">본편으로</button>' : ''}</div></div>`}</div>`
     if (vanguardToken) {
       overlay.querySelector('h2')!.textContent = run.breaches === 3 ? '길은 열었다. 본대여, 진격하라!' : `${run.breaches}/3 돌파 확보 · 본대로 귀환`
       overlay.querySelector('.result-combos')!.textContent = isBreakthrough(run.breaches) ? breakthroughText(run.breaches) : ''
-      for (const id of ['new-run', 'quit']) $(id).hidden = true
     }
-    $('new-run').onclick = () => begin(); $('quit').onclick = menu
+    // 본편에서 연 판은 결과 화면에 「다시 출전」·「스테이지 고르기」가 없다 (형 11-19 · 한 달에 한 번) — 「본편으로」만
+    if ($('new-run')) $('new-run').onclick = () => begin()
+    if ($('quit')) $('quit').onclick = menu
     if ($('to-shop')) $('to-shop').onclick = () => { menu(); renderShop(); $('shop').hidden = false }
     if ($('return')) {
       const back = $<HTMLButtonElement>('return')

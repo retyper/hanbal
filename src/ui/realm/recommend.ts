@@ -9,6 +9,7 @@
  *  - 자주 (soft): 새로 들어온 장수(한 번) · 열전에서 아직 아무 판도 못 깬 장수 하나(턴마다 바뀜) · 열전 금이 쌓였을 때.
  *      그 장수 판에 한 번 들어가 보면 끈다 (새 장수는 영영 · 나머지는 recQuietTurns 턴)
  *  - 배우는 판에서는 아무것도 안 뜬다. 장수 추천은 한 번에 recHeroMax 까지 (무조건은 늘 뜬다)
+ *  - 열전 카드로 가는 추천(목책 도깨비 · 가벼운 것 모두)은 이번 달 열전에 이미 나간 장수를 뺀다 (realm/raid-month.ts · 형 11-19) — 다음 달에 다시 뜬다
  *
  * 판의 셈은 읽기만 한다 (A1). 끈 기록은 화면 쪽 저장 칸(REC_KEY) 하나에 판(씨앗 · 나라)마다 둔다.
  */
@@ -16,6 +17,7 @@ import type { Hero, Realm } from '../../realm/types.ts'
 import { ascendTrialOpen, hasAwakeningTrial } from '../../realm/trial-rules.ts'
 import { sealsOf } from '../../realm/person.ts'
 import { AWAKEN_ART } from '../../realm/data/awaken-art.ts'
+import { raidOpen } from '../../realm/raid-month.ts'
 import { P } from '../../tune/params.ts'
 
 export const REC_KEY = 'hanbal.realm.rec'
@@ -104,14 +106,15 @@ export function recsOf(r: Realm, me: string, face: (id: string) => string | unde
     if (hasAwakeningTrial(h)) { if (h.trialReady === true && h.trialCleared !== true) hard.push({ id: h.id, whys: ['trial'], hard: true, to: 'trial' }); continue }
     if (!v2 || !AWAKEN_ART.has(face(h.id) ?? '')) continue
     const s = sealsOf(dex, h.id)
-    if ((h.ascended === true || s.flame) && !s.demon) hard.push({ id: h.id, whys: ['demon'], hard: true, to: 'raid' })
+    // 이번 달 열전에 이미 나간 장수는 다음 달에 (raid-month.ts · 형 11-19 「한 달에 한 번」)
+    if ((h.ascended === true || s.flame) && !s.demon) { if (raidOpen(r, h.id)) hard.push({ id: h.id, whys: ['demon'], hard: true, to: 'raid' }) }
     else if (s.both && h.ascended === true && !book.woke.includes(h.id)) hard.push({ id: h.id, whys: ['woke'], hard: true, to: 'pic' })
   }
   const room = Math.max(0, Math.round(R.recHeroMax) - hard.length)
   const quiet = (w: RecWhy): boolean => { const t = book.quiet[w]; return typeof t === 'number' && r.season < t + Math.round(R.recQuietTurns) }
   const soft = new Map<string, RecWhy[]>()
   const add = (id: string, w: RecWhy): void => {
-    if (hard.some((x) => x.id === id)) return
+    if (hard.some((x) => x.id === id) || !raidOpen(r, id)) return // 가벼운 추천은 모두 열전 카드로 간다 — 이번 달 나간 장수는 빼고 아직 안 나간 장수를 권한다
     const had = soft.get(id)
     if (had !== undefined) had.push(w)
     else if (soft.size < room) soft.set(id, [w])
@@ -120,12 +123,12 @@ export function recsOf(r: Realm, me: string, face: (id: string) => string | unde
   for (const id of book.fresh) if (live.has(id)) add(id, 'newbie')
   // 열전 금 — 가장 많이 데려간 장수로 (처음이면 첫 장수)
   if (!quiet('shop') && raid.cheapest > 0 && raid.gold >= raid.cheapest * R.recShopMul && ours.length > 0) {
-    const used = [...ours].sort((a, b) => (raid.cleared[b.id]?.length ?? 0) - (raid.cleared[a.id]?.length ?? 0))
-    add(used[0]!.id, 'shop')
+    const used = ours.filter((h) => raidOpen(r, h.id)).sort((a, b) => (raid.cleared[b.id]?.length ?? 0) - (raid.cleared[a.id]?.length ?? 0))
+    if (used.length > 0) add(used[0]!.id, 'shop')
   }
   // 열전에서 아직 아무 판도 못 깬 장수 하나 — 턴마다 돌아가며
   if (!quiet('untried')) {
-    const fresh = ours.filter((h) => (raid.cleared[h.id]?.length ?? 0) === 0 && !soft.has(h.id) && !hard.some((x) => x.id === h.id))
+    const fresh = ours.filter((h) => raidOpen(r, h.id) && (raid.cleared[h.id]?.length ?? 0) === 0 && !soft.has(h.id) && !hard.some((x) => x.id === h.id))
     if (fresh.length > 0) add(fresh[Math.abs(Math.floor(r.season)) % fresh.length]!.id, 'untried')
   }
   return [...hard, ...[...soft].map(([id, whys]) => ({ id, whys, hard: false, to: 'raid' as const }))]

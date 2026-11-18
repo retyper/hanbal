@@ -129,6 +129,10 @@ export const HERO_CSS = `
 /* 이번 계절 무엇을 — 📜 내가 시킨 일 · ⚙ 알아서 하는 일 (heroRow · 형 10-26: "림월드·팰월드처럼") */
 .ap .hwk { display: inline-block; padding: 0 5px; border-radius: 6px; font-style: normal; font-size: 11px; font-weight: 700; vertical-align: 1px; white-space: nowrap; }
 .ap .hwk.me { background: #4a3418; border: 1px solid #e0a850; color: #ffd890; } .ap .hwk.au { background: #22301e; border: 1px solid #6a9a50; color: #b8e09a; }
+.ap .hwk.rd { background: #20243a; border: 1px solid #7a86c0; color: #dfe4ff; letter-spacing: -1px; } .ap .hwk.rd small { font-size: 9px; }
+.ap .trial-card.rdone { opacity: .82; }
+.ap .trial-card .btn.rdlk { display: inline-flex; align-items: center; gap: 6px; background: #1e2232; border: 1px solid #5a648c; color: #c8d0f0; opacity: 1; cursor: default; }
+.ap .trial-card .btn.rdlk i { font-style: normal; font-size: 16px; } .ap .trial-card .btn.rdlk b { font-weight: 700; }
 .ap .trait { display: inline-flex; align-items: baseline; gap: 3px; padding: 1px 7px; border-radius: 10px; border: 1.5px solid var(--g); background: #17110c;
   font-size: 12px; white-space: nowrap; } .ap .trait i { font-style: normal; font-size: 10px; color: var(--mute); }
 .ap .trait.bad { border-style: dashed; color: #f1b8a8; }

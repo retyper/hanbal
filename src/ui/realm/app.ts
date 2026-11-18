@@ -7,6 +7,7 @@ import { mergeRoster, raidSealed, META_KEY, SEAL_STAGE, type RosterHero } from '
 /** 각성 시련의 무기 묶음 — 각성 전 전투 그림의 무기로 */
 const trialKit = (x: Parameters<typeof generalSprite>[0] & object) => kitOfSprite(generalSprite({ ...x, ascended: false }))
 import { trialBlock, completeTrial } from '../../realm/awakening-trial.ts'
+import { markRaid, raidCap, raidOpen, raidUsed } from '../../realm/raid-month.ts'
 /**
  * 칠십팔국 — 앱 화면 (docs/realm/FLOW.md §5)
  *
@@ -4443,14 +4444,34 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (realm === null) return
     const h = realm.heroes[id], look = h !== undefined && h.faction === realm.player ? raidLook(realm, h) : null
     if (h === undefined || look === null) return
+    // 장수마다 본편 한 달에 한 번 (형 11-19 · raid-month.ts) — 이번 달 이미 나간 장수는 카드가 잠겨 있지만 한 번 더 막는다
+    if (!raidOpen(realm, id)) { goToast(`${josa(h.name, '은', '는')} 이번 ${turnWord(realm)} 열전에 이미 나갔습니다. 다음 ${turnWord(realm)}에 다시 나갈 수 있습니다.`); return }
+    if (activeRaid?.overlay.isConnected) return
     saveDraft()
-    const q = new URLSearchParams({ hero: look.id, name: look.name, home: look.home, bust: look.bust, sprite: look.sprite, kit: look.kit, video: look.video ? '1' : '0' })
+    // campaign = 이 틀의 표 — 출전하면 열전이 이 표로 알린다 ('hanbal.raid.start') · 이 틀에서는 한 판만 · 결과 화면은 「본편으로」만 (raid-main.ts)
+    const token = Array.from(crypto.getRandomValues(new Uint32Array(4)), n => n.toString(16)).join('-')
+    const q = new URLSearchParams({ campaign: token, hero: look.id, name: look.name, home: look.home, bust: look.bust, sprite: look.sprite, kit: look.kit, video: look.video ? '1' : '0' })
     // awake = 각성 전투 띠 이름(겉모습만) · 판 안 각성 자격(도깨비 도장)은 열전 화면이 영웅전 표와 제 기록을 직접 읽는다 (raid/link.ts demonSealed · 각성 v2 가7)
     if (look.awake !== undefined) q.set('awake', look.awake)
     const ov = openFrame(`${import.meta.env.BASE_URL}raid.html?${q}`, `${h.name}의 열전`)
-    ov.querySelector('iframe')!.allow = 'fullscreen'
-    const done = new MutationObserver(() => { if (ov.isConnected) return; done.disconnect(); if (syncRaidLink()) { saveDraft(); paint() } })
+    const frame = ov.querySelector('iframe')!
+    frame.allow = 'fullscreen'
+    activeRaid = { campaign: realm, hero: id, token, frame, overlay: ov, counted: false }
+    const done = new MutationObserver(() => { if (ov.isConnected) return; done.disconnect(); if (activeRaid?.overlay === ov) activeRaid = null; syncRaidLink(); saveDraft(); paint() })
     done.observe(root, { childList: true })
+  }
+  /** 본편에서 연 열전 하나 — 출전 알림을 받으면 그 장수의 이번 달 출전으로 적는다 (한 틀에 한 번) */
+  let activeRaid: { campaign: Realm; hero: string; token: string; frame: HTMLIFrameElement; overlay: HTMLDivElement; counted: boolean } | null = null
+  function countRaid(a: NonNullable<typeof activeRaid>): void {
+    if (a.counted || realm === null || realm !== a.campaign) return
+    a.counted = true
+    // 판 저장에 곧바로 — 중간에 나가거나 창을 닫아도 그 달은 쓴 것이다 (각성 시련 보상과 같은 길 · host.onCheckpoint)
+    const next = structuredClone(realm)
+    markRaid(next, a.hero)
+    const why = host.onCheckpoint ? host.onCheckpoint(next) : null
+    realm = next; a.campaign = next
+    if (why) goToast(why)
+    paint()
   }
   function syncRaidLink(): boolean {
     if (realm === null || host.isolated) return false
@@ -4491,6 +4512,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   window.addEventListener('message', (ev) => {
     if (ev.origin !== location.origin) return
+    // 본편에서 연 열전이 시작됐다 — 이 틀·이 표일 때만 센다
+    const rs = ev.data as { type?: string; token?: string }
+    if (rs?.type === 'hanbal.raid.start') {
+      const a = activeRaid
+      if (a && a.overlay.isConnected && ev.source === a.frame.contentWindow && rs.token === a.token) countRaid(a)
+      return
+    }
     const trial = ev.data as { type?: string; token?: string; result?: string; elapsed?: number }
     if (trial?.type === 'hanbal.haebi.trial-result') {
       const a = activeTrial
@@ -4570,7 +4598,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const work = h.faction !== me() || h.status !== 'free' ? '' : orderedByMe(h.id) ? ` <i class="hwk me">${tr('hero.cmdMark')}</i>`
       : !ours ? '' : job === null && !mine && realm !== null && autoIdle(realm) && (chan !== null || keeps) ? ` <i class="hwk au">${tr('hero.autoMark')}</i>` : ''
     return `<button class="hrow${isRuler(r, h.id) ? ' ruler' : ''}${job !== null ? ' busy' : ''}${rqMark ? ' rq-row' : ''}" data-act="hero" data-id="${h.id}">${rqMark ? recDot(tr('rec.badge')) : ''}${bust(h)}${job !== null ? `<i class="hbz">⏳</i>` : ''}<span class="hb">`
-      + `<b>${nameHtml(h.name)}${isRuler(r, h.id) ? ` <span class="mute">${tr('hero.ruler')}</span>` : ''}${h.drill !== undefined && h.drill.lv > 0 && h.faction === me() ? ` <span class="dlv">${tr('hero.drill', { n: h.drill.lv })}</span>` : ''}${h.faction === me() ? relicChips(ART, esc, h.relics, h.relicLv ?? {}) : ''}${mine ? ` <span class="jsm">${tr('hero.manual')}</span>` : ''}${work}${seen ? '' : ` <span class="heard">${tr('hero.heard')}</span>`}</b>`
+      + `<b>${nameHtml(h.name)}${isRuler(r, h.id) ? ` <span class="mute">${tr('hero.ruler')}</span>` : ''}${h.drill !== undefined && h.drill.lv > 0 && h.faction === me() ? ` <span class="dlv">${tr('hero.drill', { n: h.drill.lv })}</span>` : ''}${h.faction === me() ? relicChips(ART, esc, h.relics, h.relicLv ?? {}) : ''}${mine ? ` <span class="jsm">${tr('hero.manual')}</span>` : ''}${work}${h.faction === me() && raidUsed(r, h.id) > 0 ? ` <i class="hwk rd" role="img" aria-label="이번 ${turnWord(r)} 열전 출전함">⚔<small>🌙</small></i>` : ''}${seen ? '' : ` <span class="heard">${tr('hero.heard')}</span>`}</b>`
       + (job !== null ? `<span class="hdo">⏳ ${esc(job[1])}</span>` : `<span class="mute">${esc(roleLine(r, h))}</span>`)
       + (chan !== null ? `<span class="jsd">${chanJobHtml(h.id)}</span>` : '')
       + `<span class="tr3">${h.faction === me() && h.status === 'free' ? bondChip(r, h) : ''}${traitChips(h, seen)}</span>${extra}</span></button>`
@@ -4836,9 +4864,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 장수 열전 — 이 장수로 독립 열전에 (진각성 그림이 있으면 마지막 스테이지가 진각성 자격 · raid/link.ts)
     if (ours && bo !== undefined) {
       const sealed = (r.raidSeals ?? []).includes(x.id), stage = HAEBI_STAGES[SEAL_STAGE].name
-      const line = !tw ? '금과 휘장을 모아 판 밖에서 강해집니다.' : sealed ? `${josa(stage, '을', '를')} 깼습니다 · 진각성 자격을 얻었습니다.` : `이 장수로 ${josa(stage, '을', '를')} 깨면 진각성할 수 있습니다.`
-      const card = `<div class="trial-card${rqR ? ' rq-on' : ''}" style="padding:14px;border:1px solid #6a5a3a;margin:12px 0"><b>장수 열전 · ${KITS[trialKit(x)].title}</b><p>${line}</p><button class="btn${rqR ? ' pri rq-go' : ''}" data-act="raid-stage" data-id="${x.id}">이 장수로 열전 출전${rqR ? rqDot : ''}</button><small>열전 동안 본편 시간은 흐르지 않습니다.</small></div>`
-      if (rqR) top = card; else cards += card
+      // 장수마다 본편 한 달에 한 번 (형 11-19 · raid-month.ts) — 이번 달 나갔으면 자물쇠 + 「다음 달」 달 그림
+      const rOpen = raidOpen(r, x.id), cap = raidCap(), used = raidUsed(r, x.id), tw2 = turnWord(r), go = rqR && rOpen
+      const line = !rOpen ? `이번 ${tw2} 출전을 마쳤습니다.` : !tw ? '금과 휘장을 모아 판 밖에서 강해집니다.' : sealed ? `${josa(stage, '을', '를')} 깼습니다 · 진각성 자격을 얻었습니다.` : `이 장수로 ${josa(stage, '을', '를')} 깨면 진각성할 수 있습니다.`
+      const btn = rOpen
+        ? `<button class="btn${go ? ' pri rq-go' : ''}" data-act="raid-stage" data-id="${x.id}">이 장수로 열전 출전${cap > 1 && used > 0 ? ` · ${cap - used}/${cap}` : ''}${go ? rqDot : ''}</button>`
+        : `<button class="btn rdlk" disabled aria-label="다음 ${tw2}에 다시 출전"><i>🔒</i><b>다음 ${tw2}</b><i>🌙</i></button>`
+      const card = `<div class="trial-card${go ? ' rq-on' : ''}${rOpen ? '' : ' rdone'}" style="padding:14px;border:1px solid #6a5a3a;margin:12px 0"><b>장수 열전 · ${KITS[trialKit(x)].title}</b><p>${line}</p>${btn}<small>${cap > 1 ? `장수마다 한 ${tw2}에 ${cap}번` : `장수마다 한 ${tw2}에 한 번`} · 열전 동안 본편 시간은 흐르지 않습니다.</small></div>`
+      if (go) top = card; else cards += card
     }
     h = h.slice(0, rqAt) + top + h.slice(rqAt) + cards
     // 아는 만큼 — 우리 장수 · 싸워 봤거나 정찰·첩자로 본 장수 · 이름만 들은 장수 (형: "이름 들어본 군주나 적장이랑 싸워본 적장이랑은 구분해야")
