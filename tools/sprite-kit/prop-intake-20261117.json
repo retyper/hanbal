@@ -2370,29 +2370,29 @@
       "act": "D:/tmp-node/sp-inbox33/sprite_prop_byeol_act.png",
       "walk": "D:/tmp-node/sp-inbox33/sprite_prop_byeol_walk.png",
       "actSha256": "648e0c8886e2639b1d39b6eb74ca9810ecf5776cf21aaa749ce707d46c843974",
-      "walkSha256": "58eb07d766c73a6cb49d6974e8e707cb36f86062a8b50cefe93e209bcab332d5",
+      "walkSha256": "8152f1f86bcd86fac97b9b508ab07f10e0b2b969e4c955dab13b2c5f70e7ece6",
       "portrait": "w-62-byeokjin-byeol",
       "auto": {
         "cell": [
           192,
           160
         ],
-        "walkScale": 0.5976,
+        "walkScale": 0.6333,
         "contact": [
           14,
           0.92,
           0.46
         ],
-        "headsOld": 3.3,
+        "headsOld": 3.47,
         "headsNew": 3.47,
-        "headsNewWalk": 3.53,
+        "headsNewWalk": 3.5,
         "residueAct": 0.0001,
         "residueWalk": 0.0
       },
       "review": {
         "chinOld": 3.3,
         "chinNew": 3.47,
-        "note": "11-18 claude33 · 옛 판보다 조금 나음 · 기준판 결"
+        "note": "11-18 claude33 · 옛 판보다 조금 나음"
       },
       "archive": "assets_src/realm/retired/prop-20261117/byeol",
       "installed": "2026-11-17"
@@ -2502,14 +2502,14 @@
       "act": "D:/tmp-node/sp-inbox33/sprite_prop_hwalmi_act.png",
       "walk": "D:/tmp-node/sp-inbox33/sprite_prop_hwalmi_walk.png",
       "actSha256": "614944f63d6032bf843113fccd0cf5a5e94ee2f3ba84f6907ea30ab0cd5a7446",
-      "walkSha256": "1a956699a57275c66b83b4483d44fcbd0afa01d707e15e8befcc0e545ad9e975",
+      "walkSha256": "315c94e07bb42d3d1a07f29dad60020e0efcdf2ad39926543d5f05da2abf9c2f",
       "portrait": "w-65-goguryeo-hwalmi",
       "auto": {
         "cell": [
           176,
           160
         ],
-        "walkScale": 0.6352,
+        "walkScale": 0.6516,
         "contact": [
           15,
           0.74,
@@ -2517,11 +2517,11 @@
         ],
         "headsOld": 4.4,
         "headsNew": 3.86,
-        "headsNewWalk": 3.61,
+        "headsNewWalk": 3.85,
         "residueAct": 0.0002,
         "residueWalk": 0.0
       },
-      "reason": "머리가 옛 판보다 커짐(3.86) · 해달 기준보다 아이 같음",
+      "reason": "머리가 옛 판보다 커짐(3.86)",
       "review": {
         "chinOld": null,
         "chinNew": null,
@@ -2634,37 +2634,36 @@
       "installed": "2026-11-17"
     },
     "sdallae": {
-      "status": "installed",
+      "status": "rejected",
       "order": "strip",
-      "act": "D:/tmp-node/sp-inbox/sprite_prop_sdallae_act.png",
-      "walk": "D:/tmp-node/sp-inbox/sprite_prop_sdallae_walk.png",
-      "actSha256": "88aaa72c7ce3625d0be50c11e022d0284d9f192498126f4e901fe9514c2effbc",
-      "walkSha256": "6898158cbe042cc8474f040de059e2747bcd1661f49753b94caeb43f98bcff88",
+      "act": "D:/tmp-node/sp-inbox33/sprite_prop_sdallae_act.png",
+      "walk": "D:/tmp-node/sp-inbox33/sprite_prop_sdallae_walk.png",
+      "actSha256": "a5ecef2235f9bc3693d8bfd5cfccf1e9e1199cc51b7b688da4858d77a958ba83",
+      "walkSha256": "84156e96c2c918e55aeda820f859bf0daf9e212031c6282af3959dc1577bad8a",
       "portrait": "w-92-saro-dallae",
       "auto": {
         "cell": [
-          200,
+          176,
           160
         ],
-        "walkScale": 0.6077,
+        "walkScale": 0.6214,
         "contact": [
           15,
-          0.78,
-          0.41
+          0.75,
+          0.33
         ],
-        "headsOld": 2.85,
-        "headsNew": 3.91,
-        "headsNewWalk": 2.5,
-        "residueAct": 0.0003,
-        "residueWalk": 0.0
+        "headsOld": 3.91,
+        "headsNew": 3.81,
+        "headsNewWalk": 3.41,
+        "residueAct": 0.0001,
+        "residueWalk": 0.0017
       },
+      "reason": "옛 판과 거의 같음 · 나아진 것 없음 → 옛 판 유지",
       "review": {
-        "chinOld": 33.0,
-        "chinNew": 29.0,
-        "note": "v3 보류 후보 · 기준 판과 맞음"
-      },
-      "archive": "assets_src/realm/retired/prop-20261117/sdallae",
-      "installed": "2026-11-17"
+        "chinOld": null,
+        "chinNew": null,
+        "note": ""
+      }
     },
     "waechief": {
       "status": "installed",
@@ -3044,7 +3043,7 @@
       "act": "D:/tmp-node/sp-inbox33/sprite_prop_gaon_act.png",
       "walk": "D:/tmp-node/sp-inbox33/sprite_prop_gaon_walk.png",
       "actSha256": "1143629868fb64fe10b97cfa02960499706ed808902e3e65fca624e4822fa54e",
-      "walkSha256": "6cebbf4ae1356bfd6eaf3fedd3de722d79630acf2948ede609f50e64b99a8f1c",
+      "walkSha256": "61f3d66acf33dce2187e4c4a09311837de3908b90fff2f494d07192cfead92f0",
       "weaponFix": {
         "sprite": "spear",
         "art": "no weapon: bare-handed ice magic (a glowing snowflake between the palms)",
@@ -3056,7 +3055,7 @@
           184,
           160
         ],
-        "walkScale": 0.5891,
+        "walkScale": 0.6692,
         "contact": [
           14,
           0.84,
@@ -3064,11 +3063,11 @@
         ],
         "headsOld": 3.34,
         "headsNew": 2.47,
-        "headsNewWalk": 2.6,
+        "headsNewWalk": 2.73,
         "residueAct": 0.0208,
-        "residueWalk": 0.007
+        "residueWalk": 0.0023
       },
-      "reason": "털모자 포함 머리가 더 커짐(2.47) · 옛 판보다 나쁨",
+      "reason": "털모자째 머리 2.5등신",
       "review": {
         "chinOld": null,
         "chinNew": null,
