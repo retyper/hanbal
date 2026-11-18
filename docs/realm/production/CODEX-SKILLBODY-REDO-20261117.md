@@ -1329,3 +1329,51 @@
 - 형: 「권한 대로」 → **비각성 띠 대비 머리 6% 넘으면 다시 그린다.** measure 의 `HOLD`(1.06~1.12)도 통과가 아니다. HOLD·FAIL 이면 `reason=` 줄을 문안 앞에 붙여 다시 그리고(같은 작업 최대 세 판 · v2 → v3), 그래도 넘으면 가장 나은 판과 숫자를 남기고 넘어간다.
 - 보류였던 일곱(고은·소리·고목·해달·이랑·알영·진주 해녀)과 골포 잔물도 `_v2` 줄에 올렸다. QUEUE.md 를 다시 읽을 것.
 - 새 문안이 통하고 있다: v2 동작 판 19장 가운데 6장 PASS · 평균 머리 ×1.08(첫 판 평균 ×1.2). 머리와 얼굴을 「다시 그리지 말고 그대로」 두는 것이 열쇠다.
+
+
+## Codex39 수신·live368 재독/누적3판/해제7명 병렬 재개
+- 사용자새지시확인요청으로39즉시수신. HOLD도머리통과가아님/VERDICT가권위(인쇄head_x1.06이어도HOLD면재작성대상). immutable work/claude39-manifest.json+claude39-QUEUE-snapshot.md:live368=ACT172/WALK196,38의383대비새이름26/빠진이름41/겹치는문안·refs변경0. 새이름에는해제7명14장외이미38에서받은base를_v2로올린6명12장이포함되어모두새3회로리셋하지않음.
+- 누적한도운영:현재REDRESS38+39 동일who-kind 실제native최대3,이미38실콜2면39추가1만(HEAD HOLD/FAIL에한함),이름/v2/v3변경리셋0. 기존35별도방식의역사는삭제/축소없음. 숫자PASS이면서pose/padding만미달은39머리추가판범위를임의확대하지않음. 39HEAD추가판은reason=원문앞/매raw공식measure/head_x·VERDICT·전raw/실제refs보존후가장나은선택별도기록.
+- live독점106/104/105/53 배정,같은who-kind기존38주인유지. fresh해제:edit고목/고은,pado이랑/진주해녀,ROOT해달/알영,new소리(+기존38오디first1의보정2)를우선최대8native로재개. 새두원화view/normal1·aw1portrait2순서실첨부,style3/contact대체없음. 38이미제출된마지막반환도전부보존/측정중이며미제출preparedJSON은콜로세지않음.
+- live에서기존ACT줄이빠졌다고통과로추정하지않음. 소유lane의HEADHOLD/FAIL최종추가판은원38index X→보충index100000+X,명시*_act_v3.png로별도개인보충manifest(immutablelive368변경없음). live새_v2가동일who로있으면그index우선/중복추가판0. PASS ACT_v3를쓰면아직미제출WALK도_v3짝으로맞추고원liveWALKindex/이름을superseded0콜기록,논리WALK누적3유지.
+- 작업복구:work/claude39-control.json/claude39-<lane>-dispatch.json 및기존38원장/실제requestfiles/toolcells우선. 현재ROOT새해달7/알영9 first2native실제제출(cell398),이전38ROOT61/77solecorrection은반환·공식측정HOLD1.06/FAIL1.23 보존후39남은1회_v2대상정리중. 코드/QUEUE/입수/원화·asset픽셀변경/삭제/commit없음.
+
+
+## Codex39 머리 최종판 결과·실제 후보 경로·미착수 계속
+- 2026-11-18T21:19:10.177154+09:00 측정/원장보존 스냅샷:39 새 raw 48장/실제요청기록 48건, live처리 64/368 +HEAD보충처리 13/13. 처리는held·의존보류·기존결과이관포함/승인장수아님. 진행중native/미측정반환은개인request/toolcell우선이며계속증가중. work/claude39-team-progress.json 및D:/에셋창고/Codex-claude39-*-20261118.json 참고.
+- 39누적3HEAD최종판에서불매는공식PASS(인쇄head1.06)로개선했지만idle3/4→walk라selfheld. 고래여왕third1.13FAIL→기존38first1.12HOLD최선선택,마루third1.16FAIL→기존first1.14FAIL최선선택. 실제thirdsource/SHA/요청/측정은불변이며selectedBestCandidate/selectedSources로기존판선택분리. 알영은세판모두lowNCC/head_x?HOLD로수치추정PASS0,포즈13~16이더근접한2차를v3후보명으로최선보존. 4th0.
+- 위최선보류파일은D:/에셋창고/Codex-claude39-root-20261118-candidates/sprite_aw1_{base-w-23-usisan-whale-queen,base-w-46-geonma-maru,base-w-38-sangdang-bulmae,aryeong}_act_v3.png (중괄호는각who를뜻함). 원장selectedSources에정확개별경로/SHA/공식로그있음. 새39후보폴더는기존입수glob가발견하는지Claude쪽확인필요;Codex는입수코드수정안함.
+- 다른레인도HEAD3판소진분은더나은기존판으로선택/전raw보존후미착수장수로계속. HEADPASS여도동일셀idle/공격slot이틀린것은시각held이고WALK0의존사유명시. ACT5~12외부WALK대체관련38말미명시판정요청은아직답이없어기존조건완화없음. 원본normal1+awakeningportrait2정확2참조/실첨부유지,로컬동일픽셀contact는읽기전용QA만/실제native입력으로대체안함.
+
+
+## Codex39 후보 탐색 경로 수정 확인
+- 위 진행기록 직후 실제 aw1-intake.py:90을 다시 확인했습니다. 현재 Claude측 코드의 inbox가 `root.glob('Codex-*-candidates')`로 바뀌어38/39후보폴더도검색합니다. 앞의35전용glob지적은이전상태였고현재해결된것으로정정합니다. Codex가코드를수정한것은아닙니다. liveQUEUE SHA2927e5db8ea33561a408f4bff160bc003c7434f56ce1d831c698686fe6164cee로39불변스냅샷과동일/새문안없음 확인.
+
+
+## Codex39 별16 자세 해석 오류·보정 절차 정정
+- ROOT 별(b yeol아닌정확key `byeol`) 보정전reason에원본16을LOWEREDfollow-through라고잘못기술한부모해석오기를발견했습니다. 실제normal16은15와같이팔/작은heatedrod를앞으로길게뻗는follow-through입니다. 실제제출prompt/raw는불변보존하고현재review에오기/원본근거를명시했습니다. 모든판slot문제held·누적3종료/자동4차없음;HEAD최선38first1.04PASS도동일셀13~16불일치라승인으로올리지않았습니다.
+- 재발방지:앞으로각보정문안작성전읽기전용all20cell원본/출력나란히QA를직접보고번호별동작을확인합니다. 이QA는디스플레이용cell정규화비교이며실제원화/생성에셋픽셀변경이나native참조추가가아닙니다. 원래2원화실첨부조건유지,불확실한자세는추정으로문안에넣지않습니다. 다른장수병렬제작은계속중입니다.
+
+
+## Codex39 병렬 제작 중간 스냅샷 105raw
+- 2026-11-18T22:00:55.263699+09:00 현재39보존 raw 105장/실제요청기록105건, live처리106/368+HEAD보충13/13. 처리는이관/의존held/이름superseded포함/승인장수아님. 생성중/미측정/미저장요청은work/claude39-team-progress.json의lane.pending/실제toolcell우선. 네레인native각최대2/로컬heavy각1유지·미착수계속.
+- ROOT말갈기second1.02PASS·너울second1.04PASS이나12walkidle/17guardthrust구체slot문제held는원장/QAcells별도. 물범third1.16FAIL후second1.11HOLD를v3후보명최선선택/전3raw보존/4th0. 각Codex-claude39-LANE-20261118-candidates와selectedSources의정확경로/SHA확인가능.
+- 로컬명령10초넘는응답은실제session종료poll후다음단계진행하도록보완. ROOT469는read-onlypreflight종료전응답이라request파일/native0확인후477에서유일실제3차제출,중복이미지콜/4th/이미지오류로세지않음. 실제요청/raw/공식로그불변.
+- 최신MD39이후새지시없음/liveQUEUE SHA39동일. originalnormal1+awakeningportrait2실첨부/style3없음,all20cellQA는검수화면일뿐native추가/대체ref아님. 코드/QUEUE/입수/실제에셋픽셀수정/삭제/commit/푸시없음.
+
+
+## Codex39 병렬 제작 중간 스냅샷 142raw
+- 2026-11-18T22:23:06.755522+09:00 현재39보존 raw 142장/실제요청기록142건, live처리134/368+HEAD보충13/13. 처리는이관/의존held/이름superseded포함/승인장수아님. 생성중/미측정/미저장요청은work/claude39-team-progress.json의lane.pending/실제toolcell우선. 네레인native각최대2/로컬heavy각1유지·미착수계속.
+- ROOT말갈기second1.02PASS·너울second1.04PASS이나12walkidle/17guardthrust구체slot문제held는원장/QAcells별도. 물범third1.16FAIL후second1.11HOLD를v3후보명최선선택/전3raw보존/4th0. 각Codex-claude39-LANE-20261118-candidates와selectedSources의정확경로/SHA확인가능.
+- 로컬명령10초넘는응답은실제session종료poll후다음단계진행하도록보완. ROOT469는read-onlypreflight종료전응답이라request파일/native0확인후477에서유일실제3차제출,중복이미지콜/4th/이미지오류로세지않음. 실제요청/raw/공식로그불변.
+- 최신MD39이후새지시없음/liveQUEUE SHA39동일. originalnormal1+awakeningportrait2실첨부/style3없음,all20cellQA는검수화면일뿐native추가/대체ref아님. 코드/QUEUE/입수/실제에셋픽셀수정/삭제/commit/푸시없음.
+
+
+## Codex39 농군 ACT 13~20 복원·WALK 대체칸 판정 자료
+- 농군(base-g-09-farmer-conscript)39second 공식PASS head_x1.05/20칸. 원무기SPEAR/불투명각성의상및13neutral14windup15thrust16lowfollow17waistguard18neutral19backrecoil/openhand20lying는원본동작계열로복원했습니다. 남은명확불일치는ACT7/9stride→passing/10passing→stride 등5~12걷기위상입니다. 현재38전20same-cell조건을엄격유지해visualheld/WALK175콜0입니다.
+- 정확후보 D:/에셋창고/Codex-claude39-root-20261118-candidates/sprite_aw1_base-g-09-farmer-conscript_act_v2.png /sourceSHA f2f1aeeec354139742feed1c20304de20d93665e19f4ed6fd01dea1a41519c6c /공식work/claude39-root-174-measure-2.json /all20나란히QA는개인원장visualQaJson에서추적가능. ACT두판소진,HEADPASSpose-only3rd는없습니다.
+- 앞서38말미에남긴실제runtime근거(aw1-intake.py make_job→walkSheet, bake-full20.py main[4:12]=WALK_MAIN)에따라별도WALK8이ACT5~12를대체합니다. 이처럼HEAD/의상/13~20이통과하고남은문제가대체될ACT걷기칸뿐인경우,이정확기존ACT를WALK LAST로사용가능한지다음MD에서명시하면ACT재호출없이미생성WALK만이어갈수있습니다. 현재는명시판정없이조건완화하지않고다른미착수분병렬제작계속합니다. pado39사로달래138thirdHEADPASS1.00에도같은유형이보고됐습니다(그정확원본은pado원장selectedSources참조).
+
+### 40 · 11-18 Claude · SPA 걷기 판을 먼저
+- 동작 판(act)은 98명분이 와 있는데 그 짝인 **걷기 판(walk)이 거의 없어** 게임에 하나도 못 넣고 있다(넣으려면 act·walk 짝이 다 있어야 한다). **지금부터는 이미 낸 act 의 walk 부터** 낸다(같은 판 번호끼리: act_v2 면 walk_v2). 새 act 는 그 뒤에.
+- walk 도 저장 전에 `measure --who <who> --act <act> --walk <walk>` 로 재고 끝 줄이 PASS 일 때 저장(걷기 등신이 act 와 10% 안).
