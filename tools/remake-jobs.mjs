@@ -414,15 +414,28 @@ ${PIX} Same standing height as the action sheet, feet on one shared baseline in 
   // → 「새로 그리기」를 「비각성 띠를 그대로 두고 옷만 갈아입히는 편집」으로 바꾸고, 기준 셋 그림을 뺀다(등신이 큰 장수를 작게 끌어당겼다). 이미 받은 것은 _v2 로 다시.
   const awDirs = ['D:/에셋창고', ...readdirSync('D:/에셋창고').filter((d) => /^Codex-.*-candidates$/.test(d)).map((d) => `D:/에셋창고/${d}`)]
   const gotAw = (n) => awDirs.some((d) => existsSync(`${d}/${n}`))
+  // 판 번호: 뿌리와 Codex 후보 폴더 어디든 가장 높은 판 (aw1-intake.py inbox 와 같은 이름 규칙 · 끝이 -숫자 인 사본은 안 셈)
+  const AW_VER = {}
+  for (const d of awDirs) for (const n of readdirSync(d)) {
+    const m = n.match(/^sprite_aw1_(.+)_(act|walk)(?:_v(\d+))?\.png$/)
+    if (m) { const o = (AW_VER[m[1]] ??= { act: 0, walk: 0 }); o[m[2]] = Math.max(o[m[2]], Number(m[3] ?? 1)) }
+  }
+  const vName = (v) => (v <= 1 ? '' : `_v${v}`)
   const AW_HOLD = []   // 11-18 형 「권한 대로」: 6% 넘으면 다시 그린다 → 보류 일곱(고은·소리·고목·해달·이랑·알영·진주 해녀)도 _v2 줄로
-  const AW_WALK_ONLY = ['hojin']   // 동작 판은 통과 · 걷기 판만 다시 (걷기 판 등신이 동작 판과 달랐다)
-  const MEASURE = (who, v) => `[코덱스] 저장 전에 재기: py -3 -I tools/sprite-kit/aw1-intake.py measure --who ${who} --act <방금 만든 act 파일>${v === 'walk' ? ' --walk <방금 만든 walk 파일>' : ''} → 끝 줄이 VERDICT PASS 가 아니면 한 번만 다시 그려 나은 쪽을 저장(숫자를 원장에 적는다)`
+  // 동작 판은 통과 · 걷기 판만 다시: 영수증에 review reject --walk-only (또는 stage 의 걷기 다리 검사 자동 반려)로 actOk 가 적힌 장수
+  const AW_RC = existsSync('tools/sprite-kit/aw1-intake-20261118.json') ? (JSON.parse(readFileSync('tools/sprite-kit/aw1-intake-20261118.json', 'utf8')).heroes ?? {}) : {}
+  // 11-18 밤: 걷기 판이 거의 다 「네 칸 반걸음을 두 번」(1·5 같은 다리 → 늘 같은 다리만 나가 절뚝임)
+  // → 걷기도 비각성 걷기 여덟 칸(walkref · tools/sprite-kit/aw1-walkref.py)을 옷만 갈아입히는 편집으로. walkref.json = 걸음 칸 수(8 · 4)
+  const WALKREF = existsSync('tools/sprite-kit/walkref.json') ? JSON.parse(readFileSync('tools/sprite-kit/walkref.json', 'utf8')) : {}
+  const MEASURE = (who, v) => `[코덱스] 저장 전에 재기: py -3 -I tools/sprite-kit/aw1-intake.py measure --who ${who} --act <${v === 'walk' ? '맨 뒤에 붙인 act 파일' : '방금 만든 act 파일'}>${v === 'walk' ? ' --walk <방금 만든 walk 파일> (걷기 다리 검사 walk_legs 포함)' : ''} → 끝 줄이 VERDICT PASS 가 아니면 한 번만 다시 그려 나은 쪽을 저장(숫자를 원장에 적는다)`
   rows.forEach((r) => {
     const who = r.key, k = 'gen-' + who
     if (AW_HOLD.includes(who) || who === 'dalbit') return   // dalbit 은 옛 시험 띠(게임은 base-w-31-dabeol-dalbit 를 쓴다)
-    const walkOnly = AW_WALK_ONLY.includes(who)
-    const V = walkOnly || gotAw(`sprite_aw1_${who}_act.png`) ? '_v2' : ''
-    const actName = walkOnly ? `sprite_aw1_${who}_act.png` : `sprite_aw1_${who}_act${V}.png`
+    const ok = AW_RC[who]?.actOk, walkOnly = !!ok
+    const V = gotAw(`sprite_aw1_${who}_act.png`) ? '_v2' : ''
+    const actName = walkOnly ? `sprite_aw1_${who}_act${vName(ok.version ?? 1)}.png` : `sprite_aw1_${who}_act${V}.png`
+    const actPath = walkOnly && AW_RC[who].act ? AW_RC[who].act : `D:/에셋창고/${actName}`   // 통과한 그 파일 (후보 폴더에 있을 수 있다)
+    const WV = walkOnly ? vName(Math.max(AW_VER[who]?.walk ?? 0, ok.version ?? 1) + 1) : V   // 걷기만 다시: 지금 가장 높은 걷기 판 다음 번호
     const refs = [`/realm/anim-px/${k}.png`, `/realm/awaken-hd/${r.portrait}.jpg`]
     if (!walkOnly) jobs.push({ id: `SPA-${who}-act${V.replace('_', '-')}`, group: 'remake-sprite-aw', save: actName, title: `${who} · 각성 전투 띠 20자세${V ? ' · 머리 크기 다시' : ''}`,
       refs, now: V ? '첫 판은 머리가 비각성 띠보다 커서 반려' : '각성 전투 띠 없음 — 각성해도 싸우는 모습이 비각성 그대로',
@@ -433,13 +446,18 @@ MEASURE BEFORE SAVING (the first batch was rejected because heads came out 6 to 
 OUTFIT: follow IMAGE 2 including how much skin it shows, translated into combat wear; fabric stays opaque, no see-through cloth and no nipple outline. Ancient Korean setting: no katana, no ninja gear, no red sun disc or sun rays.
 No aura, glow, sparks, energy trails or ground shadow around the body (the game adds the awakening aura itself); a small magic prop is allowed only where the same cell of IMAGE 1 already has one.
 Keep the pixel-art rendering of IMAGE 1 exactly: the same outline weight, pixel-cluster shading, face detail and palette warmth. All standing poses face RIGHT in 3/4 view. True transparent alpha background with 10% padding around every complete figure and weapon in every cell. No grid lines, labels, text or background. Exactly 20 distinct full-body figures.` })
-    jobs.push({ id: `SPA-${who}-walk${V.replace('_', '-')}`, group: 'remake-sprite-aw', save: `sprite_aw1_${who}_walk${V}.png`, title: `${who} · 각성 걷기 8칸${V ? ' · 다시' : ''}`,
-      refs, now: walkOnly ? '첫 걷기 판이 동작 판과 등신이 달라 반려(동작 판은 통과)' : '각성 전투 띠의 걷기 칸',
-      use: `${MEASURE(who, 'walk')} · 받으면 각성 띠의 걷기 칸을 이 8칸으로 (1·5번 다리 반대 검사)`,
-      prompt: `[코덱스] D:/에셋창고/${actName} 도 맨 뒤에 첨부 (각성 동작 판 · 통과한 것)
-Using the awakened character in the LAST attached image (the awakened action sheet) as the exact identity, outfit, weapon and proportions, draw ONE natural 8-frame walk cycle, facing RIGHT in 3/4 view, in a strict grid of FOUR columns x TWO rows, row-major order: 1 contact (right foot forward, heel down), 2 down (weight sinks), 3 passing (left leg passes the right), 4 up (body highest), 5 contact (LEFT foot forward), 6 down, 7 passing, 8 up. Frames 1 and 5 have opposite legs forward; arms swing opposite to the legs; the weapon is carried the same way in all 8 frames.
-HEAD AND BODY: every frame has exactly the head size and the head-to-body ratio of the standing figure in the action sheet (do not enlarge the head, do not shorten the legs). Same standing height as the action sheet, feet on one shared baseline in every cell.
-Keep the pixel-art rendering of the action sheet exactly. No aura, glow or shadow. True transparent alpha background with 10% padding, no grid lines, labels, text or background.` })
+    const four = WALKREF[who] === 4   // 비각성 걷기가 네 칸 걸음을 두 번 늘어놓은 띠(1↔3 반대 다리)
+    const legs = four ? 'IMAGE 1 is a 4-frame cycle shown twice: frames 1 and 3 have opposite legs forward and frames 5 to 8 repeat frames 1 to 4 — keep that' : 'frames 1 and 5 have opposite legs forward — keep that'
+    jobs.push({ id: `SPA-${who}-walk${WV.replace('_', '-')}`, group: 'remake-sprite-aw', save: `sprite_aw1_${who}_walk${WV}.png`, title: `${who} · 각성 걷기 8칸 · 비각성 걷기 옷만 갈아입히기${walkOnly ? ' · 다시' : ''}`,
+      refs: [`/assets_src/realm/sprite-prop/walkref-${who}.png`, `/realm/awaken-hd/${r.portrait}.jpg`],
+      now: walkOnly ? '걷기 판이 1·5번 같은 다리(네 칸 반걸음 되풀이)라 반려 · 동작 판은 통과' : '각성 전투 띠의 걷기 칸',
+      use: `${MEASURE(who, 'walk')} · 받으면 각성 띠의 걷기 칸을 이 8칸으로 (걷기 다리 검사: 여덟 칸이 비각성 걷기의 같은 칸을 따라가야 통과)`,
+      prompt: `[코덱스] ${actPath} 도 맨 뒤에 첨부 (각성 동작 판 · 통과한 것)
+REDRESS EDIT of the 8-frame walk in IMAGE 1 (not a new drawing): keep every figure's leg and arm positions, body size, head size and baseline EXACTLY (${legs}); repaint only clothes, colours, ornaments and weapon decoration to the awakened outfit shown in the LAST attached image (the awakened action sheet).
+IMAGE 1 is this character's approved normal-form walk: 8 frames in FOUR columns x TWO rows, read left to right, top to bottom. Every frame stays in the same cell with the same pose, the same position and EXACTLY the same size; which leg and which arm is in front in each frame stays as in IMAGE 1. Do not redraw, enlarge or restyle the head: skull, face and neck overlay IMAGE 1. IMAGE 2 is the same character's FIRST-AWAKENING portrait (face identity and outfit details). Keep the weapon KIND, size and grip of IMAGE 1, decorated in the awakened style; the weapon stays complete in all 8 frames.
+OUTFIT: the awakened outfit of the LAST attached image, including how much skin it shows; fabric stays opaque, no see-through cloth and no nipple outline. Ancient Korean setting: no katana, no ninja gear, no red sun disc or sun rays.
+No aura, glow, sparks, energy trails or ground shadow around the body (the game adds the awakening aura itself).
+Keep the pixel-art rendering of IMAGE 1 exactly: the same outline weight, pixel-cluster shading, face detail and palette warmth. All frames face RIGHT in 3/4 view. True transparent alpha background with 10% padding around every complete figure and weapon in every cell. No grid lines, labels, text or background. Exactly 8 distinct full-body figures.` })
   })
 }
 

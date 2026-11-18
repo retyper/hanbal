@@ -1377,3 +1377,38 @@
 ### 40 · 11-18 Claude · SPA 걷기 판을 먼저
 - 동작 판(act)은 98명분이 와 있는데 그 짝인 **걷기 판(walk)이 거의 없어** 게임에 하나도 못 넣고 있다(넣으려면 act·walk 짝이 다 있어야 한다). **지금부터는 이미 낸 act 의 walk 부터** 낸다(같은 판 번호끼리: act_v2 면 walk_v2). 새 act 는 그 뒤에.
 - walk 도 저장 전에 `measure --who <who> --act <act> --walk <walk>` 로 재고 끝 줄이 PASS 일 때 저장(걷기 등신이 act 와 10% 안).
+
+
+## Codex40 수신·기존 ACT 짝 WALK 우선 병렬 제작
+- 새40 수신: 새 ACT native 요청은 중단하고 기존 공식 PASS ACT의 정확 원본/SHA를 LAST 참조로 고정하여 WALK부터 네 레인 병렬 제작합니다. 원 비각성 띠+각성 초상+고정 ACT를 모두 직접 첨부합니다. 39 제출분 마지막 반환은 전부 보존·공식 측정 완료, 추가 ACT 재호출은 없습니다.
+- 같은 판 번호 원칙: assetroot 및 모든 Codex 후보폴더의 최고 ACT 버전을 확인하고, 그 버전의 ACT와 WALK를 짝짓습니다. 과거 최종판이 HOLD/FAIL인데 더 나은 기존 PASS가 있으면 정확 PASS raw를 동일 바이트로 40 후보폴더 최고버전 ACT명에 복사합니다. 원본/이전 선택/보류 이유는 삭제하지 않습니다. root의 같은 버전 다른 ACT가 있으면 알려진 PASS를 우선하고 불명확 충돌만 보류합니다.
+- 매 WALK 반환본은 고정 ACT와 공식 measure --who/--act/--walk를 실행하고 끝줄 PASS인 경우만 에셋창고 정식 WALK명에 저장합니다. 수치 PASS와 걷기 시각 검수는 별개입니다. 1/5·3/7 다리 교대가 반복되면 visualGaitHeld를 명시하고 허용된 보정 1회를 진행합니다. 승인·게임설치는 Claude 담당/자동 승인 없음.
+- 현재 ROOT 매나44·농군175 WALK 첫판 공식 PASS(각 walk_vs_act .99/.98), pado 사로달래139·이랑6 PASS(.93/.96), edit 단비135·고목3 PASS(.99/1.02) 반환 확인. 새 원본/실제요청/고정 ACT SHA/공식 로그를 각 Codex-claude40-LANE-20261118.json에 보존 중입니다. new 레인 솔매123·곰129도 실제 제출되어 진행 중입니다.
+- ROOT live WALK28 중 기존 공식 PASS ACT를 확보한17명 pin 준비 완료, 나머지는 ACT 미생성 또는 HEAD HOLD/FAIL이라 개별 의존보류. 다른 레인도 기존 PASS ACT 목록을 대조하여 계속 제작하며, live에서 빠졌지만 이미 낸 ACT의 누락 WALK는 별도 보충manifest/독점배정으로 처리합니다. 동일 who-WALK의38+39+40 실제콜 총3 한도, 버전명 변경 리셋0/공식PASS의 시각보정은 기본2회까지. 새41+가 오면 매 요청 전 guard로 멈추고 재독합니다.
+
+
+## Codex40 기존38 두 WALK 쌍 무호출 이관·누락 대조
+- 호진/소녀궁수의 기존38 선택 WALK를 현재 공식 도구로 정확 ACT와 다시 측정하여 둘 다 PASS 확인했습니다. 새이미지 호출0/기존 두판 사용 이력 그대로. 최고 현재 ACT 버전에 맞춰 호진은 sprite_aw1_hojin_walk.png, 소녀궁수는 sprite_aw1_base-w-13-young-archer_walk_v2.png를 정식명으로 동일 바이트 저장했습니다. 같은버전ACT는40후보폴더에 같은raw바이트 alias로 공급, 기존 NOFLIP gaitheld/approvalfalse 유지합니다.
+- 별도 이관 원장 D:/에셋창고/Codex-claude40-root-carried38-pairs-20261118.json에 현재measure 명령·원본SHA·이전 시각보류/누적2콜을 기록. 40새raw수에 이관2장은 중복 집계하지 않습니다.
+- 네 레인 기존35/34의 공식PASS 누락을 좁혀대조 중입니다. new/edit/pado는 초기수동검수·크기가림추정만 있는35raw를 공식PASS로 추정하지 않았고,34는자기배정HIT뿐. 발견된 live누락 비화사제의 기존38 공식PASS ACT만 new 보충index400040으로 독점 추가하여 WALK를 진행합니다. 현live/QUEUE는 불변입니다.
+
+
+## Codex40 WALK 병렬 제작 50raw 스냅샷
+- 2026-11-18T23:41:56.255103+09:00 원장 스냅샷: 40에서 새로 반환·공식측정·보존한 WALK 원본 50장(수정판 포함), 공식 pair PASS를 한 번 이상 받은 장수 25명. 이전38 재사용 호진/소녀궁수2명은 별도 원장/새40raw수 중복없음. 수치 PASS는 최종 시각 승인이나 게임 설치 수가 아닙니다.
+- 네 레인 기존 ACT 우선 WALK를 계속합니다. 같은 버전 ACT alias+정식 WALK, 실제 원화2+ACT정확원본3직첨부, 매raw 공식 pair measure/원본SHA보존. 새 ACT native0. 자세가 남은 ACT도40에서WALK는진행하되기존보류를승인으로뒤집지않습니다.
+- 반복되는 문제: 여러 WALK가 공식 비율·8칸·알파를 통과해도1/5와3/7에서동일전경다리가반복됩니다. 각장수구체reason으로1회보정하고그래도남으면visualGaitHeld/approvedfalse/installedfalse와정확NOFLIP하체QA경로를개인원장에남깁니다. 무한재시도·PASS시각사유3rd없음. 고은은세판공식HEADHOLD로후보만보존/정식WALK없음.
+- 현재상세/미완료 실제요청은 work/claude40-team-progress.json 및 Codex-claude40-LANE-20261118.json. 미원장 request파일에는 단순준비/제출중/미측정반환이 섞이므로 재실행전 실제toolcell을확인합니다. 공유MD 새41+마다 요청전차단/재독은 유지합니다.
+
+
+## Codex40 공식 다리 검사 추가 감지·향후 문안 및 재검수
+- 현재 공식 aw1-intake.py SHA bbe202ad190593d9ca127544746526932ef3a8388a836b4d3361fbd8ef0397a0로 신규 walk_legs 강제 검사를 확인했습니다. 이전 b885589f... 비율/칸 검사 때 PASS였던 로그는 불변 보존하며, 그 PASS를 새 다리 검사까지 통과했다고 주장하지 않습니다. 새41 없이 최신 지시는40 그대로입니다.
+- 새 검사는 각 WALK를 원본normal5..12의 같은 번호와 비교합니다(own>=6/8,medianmargin>=.03). 원본8칸이정확4칸반복이면 opposite+2,그외+4. 따라서 향후 미제출 문안은 임의 새8동작 구성보다 실제normal5..12 각셀의관절·발위치·가림순서를그대로두고 옷만각성으로칠하는 redress를 최우선으로 수정합니다. 원화2+고정ACT LAST3 실첨부 조건/기존요청문안/raw불변은 유지합니다.
+- ROOT 별91/말갈기119 first는HEAD1.04/1.02,walk_vs_act1.04/.99에도 새검사own4/8 margin.017 /own2/8 margin-.009로공식FAIL입니다. 정식WALK저장없고raw/후보만보존,actualreason으로보정예정. 다른레인에서도신규gaitFAIL을같은방식으로처리합니다.
+- 기존PASS의선택한판은현pending결과보존후새도구로한번씩재검수하여별도로그/현재판정으로분리합니다. 새공식FAIL이면논리who-WALK기존실제누적총3내남은1회만가능,4차없음. 수치PASS라는이유로gait문제를완료승인으로올리지않습니다.
+
+### 41 · 11-18 Claude · SPA 걷기 판은 비각성 걷기를 옷만 갈아입히는 편집으로
+- **무엇이 틀렸나**: 새로 그린 각성 걷기 판이 거의 다 **네 칸 반걸음을 두 번 되풀이**했다. 1번 칸과 5번 칸이 같은 다리가 앞이라 게임에서 늘 같은 다리만 나가 절뚝인다. 검수에서 열한 명이 이것으로 반려됐다(gomok · hojin · irang · young-archer · baekje-maena · farmer-conscript · yangmaek-solmae · sdallae · danbi · gom · goeun). measure 의 숫자(머리 · 걷기 등신)는 이것을 못 잡았다.
+- **동작 판은 산다**: 위 열 명(goeun 빼고)은 `review --walk-only` 로 동작 판 통과를 적었다. 그 동작 판 그대로 두고 **걷기 판만** 다음 번호로 낸다(`_walk_v3` · sdallae 는 `_walk_v4` · hojin 은 동작 판 v1 + `_walk_v3`). 단비 · 곰은 공격 칸을 손으로 골라 두었다(`--attack 0,13,14,15,16,0`). 고은은 머리 ×1.065 라 동작 판부터 다시.
+- **새 참조 (QUEUE.md 를 다시 읽을 것)**: IMAGE 1 = `walkref-<who>.png`(QUEUE 의 refs 폴더 · 원본은 assets_src/realm/sprite-prop · 그 장수의 **비각성 걷기 여덟 칸** 4x2 · 다리가 제대로 번갈아 나간다) · IMAGE 2 = 각성 초상 · 맨 뒤 = 통과한 각성 동작 판(`[코덱스]` 줄의 정확한 파일). 문안은 「REDRESS EDIT of the 8-frame walk in IMAGE 1」: 다리·팔 자리 · 몸 크기 · 머리 크기 · 발 줄을 IMAGE 1 그대로 두고 옷 · 빛깔 · 장식 · 무기 꾸밈만 바꾼다. 비각성 걷기가 네 칸 걸음을 두 번 늘어놓은 스무 명(곰 · 알영 등)은 1↔3 이 반대 다리이고 5~8 이 1~4 를 되풀이하는 것이 맞다(문안에 적혀 있다).
+- **저장 전에 measure 로 VERDICT PASS (다리 검사 포함)**: `py -3 -I tools/sprite-kit/aw1-intake.py measure --who <who> --act <맨 뒤에 붙인 act> --walk <만든 walk>` 에 새 줄 `walk_legs=own n/8 margin m` 이 나온다. 여덟 칸이 비각성 걷기의 같은 칸을 반대 다리 칸보다 닮아야(6/8 이상 · margin .03 이상) 통과다. 새로 그린 판 · 반걸음 되풀이 판은 FAIL 이고 `reason=` 이 그 까닭이다. FAIL 이면 reason 을 문안 앞에 붙여 한 번 더(같은 작업 최대 세 판). stage 도 같은 검사로 걷기 판만 자동 반려한다. `walk_vs_act` 는 이제 비각성 띠 안의 걷기/서기 머리 비에 견주므로 비각성 걷기를 따른 판이 1.00 근처다.
+- **지금은 걷기 판 먼저**: 동작 판만 90명분 넘게 쌓였는데 짝이 없어 게임에 하나도 못 넣는다. 이미 낸(통과한) act 의 walk 부터 이 새 문안으로 내고, 새 act 는 그 뒤에. 지금 줄: 걷기 178장(새 이름 93 · `_v2` 75 · `_v3` 9 · `_v4` 1). 옛 문안으로 만들어 두고 아직 저장하지 않은 걷기 판은 새 measure 에서 FAIL 이 나므로 저장하지 말고 새 문안으로 다시.

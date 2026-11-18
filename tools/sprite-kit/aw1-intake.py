@@ -18,8 +18,9 @@
   py -3 -I tools/sprite-kit/aw1-intake.py list                                 지금 상태 (짝 기다림 · 검수 대기 · 반려 까닭)
   py -3 -I tools/sprite-kit/aw1-intake.py measure --who <who> --act <png> [--walk <png>]
         저장 전에 스스로 재기(Codex). 영수증·저장소 파일은 안 건드린다(임시 폴더에서만 굽는다). 출력은 영어·숫자 한 줄씩:
-        who= · cells_act= · cells_walk= · head_x=(같은 키에서 머리 높이 비 · 못 재면 ?) · walk_vs_act=(같은 몸 크기에서 걷기 머리/동작 머리) · reason= · VERDICT PASS|HOLD|FAIL
+        who= · cells_act= · cells_walk= · head_x=(같은 키에서 머리 높이 비 · 못 재면 ?) · walk_vs_act=(같은 몸 크기에서 걷기 머리/동작 머리 · 비각성 띠의 같은 비에 견줌) · walk_legs=(걷기 다리 검사) · reason= · VERDICT PASS|HOLD|FAIL
         금: head_x 1.06 이하 PASS · 1.12 이하 HOLD · 넘으면 FAIL / walk_vs_act 가 1 에서 10% 넘게 벗어나면 FAIL / 칸 수(20 · 8)·투명 바탕·칸 잘림 FAIL
+        걷기 다리 검사(11-18): 각성 걷기 여덟 칸이 비각성 걷기(walkref)의 같은 칸을 반대 다리 칸보다 닮아야 한다(여덟 중 6 이상 · 가운데 차 .03 이상) · 아니면 FAIL (1·5 같은 다리 반걸음 되풀이 · 새로 그림). stage 도 같은 검사로 걷기 판만 자동 반려
         종료 코드 PASS 0 · HOLD/FAIL 1 · 쓰는 법이 틀리면(모르는 who · 없는 파일) VERDICT ERROR 2
 다시 그린 판: sprite_aw1_<who>_act_v2.png · _walk_v2.png (v3 …). 가장 높은 판을 쓰고 같은 판끼리만 짝짓는다(동작 v2 + 걷기 v1 은 짝이 아니다 → 기다림).
   예외: `review <who> reject --walk-only --reason ...` 로 「동작 판은 통과 · 걷기 판만 다시」 라고 적힌 장수는 그 동작 판 + 더 높은 걷기 판을 짝짓는다.
@@ -58,7 +59,7 @@ TODAY = '2026-11-18'
 HEAD_WARN, TALL_WARN = 1.05, 0.05            # 머리 5% 넘게 큼 · 키 5% 넘게 다름 → 경고
 HEAD_OK = 1.06                               # 이보다 크면 accept 가 막힌다 (--override 로만)
 HEAD_HOLD, WALK_OFF = 1.12, .10              # 11-18 첫 묶음의 금: 머리 1.06~1.12 보류 · 넘으면 반려 / 걷기 판 등신 차 10% 넘으면 걷기 판 반려
-WALK_HEAD = .985                             # 걷기 칸 머리 / 서기 칸 머리 (기존 각성 띠 열 벌의 중앙값)
+WALK_HEAD = .985                             # 걷기 칸 머리 / 서기 칸 머리 (기존 각성 띠 열 벌의 중앙값 · 11-18 부터는 비각성 띠에서 잰 값 base_walk_ratio 를 먼저 쓴다)
 PAD, FRAC = 3, .36                           # 머리 본: 몸 위 36% · 둘레 3px
 
 spec = importlib.util.spec_from_file_location('full20', KIT / 'bake-full20.py')
@@ -245,6 +246,60 @@ def walk_stats(ws):
                 still=sum(1 for c, u in near if c < .035 and u > .93))
 
 
+LEG_OWN, LEG_MARGIN, LEG_FRAME = 6, .03, .02   # 걷기 다리 검사 금: 여덟 칸 중 6칸 이상(칸마다 차 .02 넘게) · 가운데 차 .03 이상 (11-18 · 시험값: 비각성 걷기 색만 바꾼 판 .19~.35 · 새로 그린 판 -.03~.03)
+
+
+def leg_feat(c, y0, y1):
+    a = np.array(c).astype(float); m = a[..., 3] > 64
+    L = (a[..., :3] @ np.array([.299, .587, .114])) * m
+    return m[y0:y1].astype(float), np.hypot(ndimage.sobel(L, 1), ndimage.sobel(L, 0))[y0:y1]
+
+
+def leg_sim(A, B, sx=5, sy=2):
+    """아랫몸 윤곽(가림 순서·겹친 선) 닮음: 덩어리 ncc 와 테두리 ncc 의 반반 · 조금씩 밀어 가장 닮은 값 (옷 빛깔이 바뀌어도 선은 남는다)"""
+    def ncc(a, b):
+        a = a - a.mean(); b = b - b.mean(); d = np.sqrt((a * a).sum() * (b * b).sum()); return float((a * b).sum() / d) if d else 0.
+    best = -9.
+    for dy in range(-sy, sy + 1):
+        for dx in range(-sx, sx + 1):
+            best = max(best, .5 * ncc(A[0], np.roll(np.roll(B[0], dx, 1), dy, 0)) + .5 * ncc(A[1], np.roll(np.roll(B[1], dx, 1), dy, 0)))
+    return best
+
+
+def walk_legs(acells, bcells):
+    """각성 걷기 여덟 칸(띠 4~11)이 비각성 걷기(walkref · 같은 띠 4~11)의 「같은 칸」 을 「반대 다리 칸」 보다 더 닮았는가.
+    걷기 판은 비각성 걷기를 옷만 갈아입히는 편집이라 다리 자리가 같아야 한다. 반걸음 네 칸을 두 번 되풀이한 판(1·5 같은 다리)은
+    뒤 네 칸이 반대 다리 칸을 닮아 여덟 칸 중 넷만 맞는다. 비각성 걷기가 네 칸 걸음을 두 번 늘어놓은 띠면 반대 다리 칸은 +2 (1↔3)."""
+    ref, aw = bcells[4:12], acells[4:12]
+    k = 2 if all(np.array_equal(np.array(ref[i]), np.array(ref[i + 4])) for i in range(4)) else 4
+    hgt = lambda cs: float(np.median([c.getbbox()[3] - c.getbbox()[1] for c in cs]))
+    z = hgt(ref) / hgt(aw)
+    if abs(z - 1) > .01:   # 키를 비각성 걷기에 맞춘다 (발 줄·칸 가운데 고정)
+        def grow(c):
+            s = c.resize((round(c.width * z), round(c.height * z)), Image.Resampling.LANCZOS); o = Image.new('RGBA', c.size, (0, 0, 0, 0))
+            o.alpha_composite(s.crop((max(0, (s.width - c.width) // 2), max(0, s.height - c.height), max(0, (s.width - c.width) // 2) + min(s.width, c.width), s.height)),
+                              (max(0, (c.width - s.width) // 2), max(0, c.height - s.height)))
+            return o
+        aw = [grow(c) for c in aw]
+    W = min(ref[0].width, aw[0].width)
+    def fit(c):   # 칸 가운데를 맞춰 같은 폭으로 (굽는 틀이 몸 가운데를 칸 가운데에 둔다)
+        x = (c.width - W) // 2; return c.crop((x, 0, x + W, c.height))
+    ref, aw = [fit(c) for c in ref], [fit(c) for c in aw]
+    m = np.zeros((ref[0].height, W), bool)
+    for c in ref: m |= np.array(c)[..., 3] > 64
+    ys = np.where(m.any(1))[0]; y0, y1 = int(ys[-1] - (ys[-1] - ys[0]) * .5), min(m.shape[0], int(ys[-1]) + 3)
+    A, F = [leg_feat(c, y0, y1) for c in aw], [leg_feat(c, y0, y1) for c in ref]
+    marg = [leg_sim(A[j], F[j]) - leg_sim(A[j], F[(j + k) % 8]) for j in range(8)]
+    n, med = sum(1 for x in marg if x > LEG_FRAME), float(np.median(marg))
+    ok = n >= LEG_OWN and med >= LEG_MARGIN
+    why = None
+    if not ok:
+        detail_ = f'only {n} of 8 walk frames follow their own frame of the normal-form walk better than the opposite-leg frame, median margin {med:.3f}'
+        why = (f'walk frames 1 and 5 have the same leg forward (half cycle repeated); redo as a redress edit of the normal-form walk ({detail_})' if k == 4 else
+               f'walk legs do not alternate like the 4-frame normal-form walk (frames 1 and 3 have opposite legs forward, 5-8 repeat 1-4); redo as a redress edit of the normal-form walk ({detail_})')
+    return dict(ok=ok, opposite=k, own=n, margin=round(med, 3), margins=[round(x, 3) for x in marg], reason=why)
+
+
 def colour_gap(a, b):
     """서기 칸 빛깔 차이 (0 같음 ~ 1) · 옷이 한눈에 달라졌는가의 낌새"""
     def hist(im):
@@ -365,17 +420,25 @@ def walk_fit(parts, wparts, h0):
     return f_h, f_a, float(np.sqrt(f_h * f_a))
 
 
+def base_walk_ratio(bcells):
+    """비각성 띠 안에서 걷기 칸 머리 / 서기 칸 머리 (11-18: 걷기 판은 비각성 걷기를 옷만 갈아입히는 편집이라 이 관계를 그대로 따른다 ·
+    비각성 띠마다 0.75~1.1 로 다르다(이랑 0.75 · 단비 1.10) · 못 재면 기존 각성 띠 열 벌의 중앙값 WALK_HEAD)"""
+    tb = body_top(bcells[0])[0]
+    ms = [m for m in (head_match(bcells[0], bcells[4 + i], .6, 1.5, top=tb) for i in range(8)) if m and m['ncc'] >= .5]
+    return float(np.median([m['s'] for m in ms])) if len(ms) >= 4 else WALK_HEAD
+
+
 def fit_loop(bake, S, bcells, man_, has_walk=True):
     """굽기(138) → 머리 위끝~발을 비각성 띠에 맞춰 다시 → 걷기 판: 몸 크기로 맞춘 배율에서 걷기 칸 머리가 서기 칸 머리의 몇 배인가(두 판의 등신 차)를
-    재고 차이는 머리·몸에 반씩 나눠 다시. S = {idle_px, wf} 를 고친다 → (rep, 띠 칸들, 머리·키, 걷기 머리 비)"""
+    재고(비각성 띠의 같은 비 base_walk_ratio 에 견줘) 차이는 머리·몸에 반씩 나눠 다시. S = {idle_px, wf} 를 고친다 → (rep, 띠 칸들, 머리·키, 걷기 머리 비)"""
     for turn in range(4):
         rep, acells = bake(); pr = proportion(bcells, acells, man_, rep['bodyPxRaw'])
         if abs(pr['Hb'] - pr['Ha']) <= .7 or turn == 3: break
         S['idle_px'] *= pr['Hb'] / pr['Ha']
     walk_head = None
     if has_walk:
-        ms = [m for m in (head_match(acells[0], acells[4 + i], .7, 1.4, top=pr['awTop']) for i in range(8)) if m and m['ncc'] >= .5]
-        walk_head = float(np.median([m['s'] for m in ms])) / WALK_HEAD if len(ms) >= 4 else None
+        ms = [m for m in (head_match(acells[0], acells[4 + i], .6, 1.5, top=pr['awTop']) for i in range(8)) if m and m['ncc'] >= .5]
+        walk_head = float(np.median([m['s'] for m in ms])) / base_walk_ratio(bcells) if len(ms) >= 4 else None
         if walk_head is not None and abs(walk_head - 1) > .015: S['wf'] *= walk_head ** -.5; rep, acells = bake()
     return rep, acells, pr, walk_head
 
@@ -476,6 +539,7 @@ def stage(args):
         h['fit'] = fit
         auto['walkFit'] = dict(byHeight=round(f_h, 4), byArea=round(f_a, 4), used=round(wf, 4), walkHead=round(walk_head, 3) if walk_head else None)   # walkHead = 같은 몸 크기에서 걷기 판 머리 / 동작 판 머리
         ws = walk_stats(acells[4:12]); auto['walkCheck'] = ws
+        legs = walk_legs(acells, bcells); auto['walkLegs'] = {k: v for k, v in legs.items() if k != 'reason'}
         duel, _ = cells(d / 'cand' / f'duel-aw1-{who}.png')
         ph = {}
         for p in sorted(set([0, 1, 2, 3] + h['attack'] + [h.get('hit', 18)])):
@@ -505,6 +569,11 @@ def stage(args):
         if h.get('attackBy') == 'auto': warn.append(f'공격 칸 자동 고름 {h["attack"]} · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것')
         h['warn'] = warn
         detail(who, h, base, bcells, acells, duel, d)
+        if not legs['ok']:   # 11-18 걷기 다리 검사: 비각성 걷기 칸을 따라가지 않으면(반걸음 되풀이 · 새로 그림) 걷기 판만 자동 반려
+            reject(legs['reason'])
+            if fit['head'] is not None and fit['head'] <= HEAD_OK:   # 동작 판은 머리가 금 안 → 이 동작 판 + 더 높은 걷기 판을 짝지어 받는다 (눈 검수는 그때)
+                h['actOk'] = dict(sha256=sa, version=f['actV'], date=TODAY, by='auto: walk legs only')
+            continue
         print('검수 대기', who, f"head×{fit['head']} ({pr['headFwd']}/{pr['headRev']} ncc {pr['ncc']}/{pr['ncc2']}) k={fit['k']} gear={pr['gear']} walkHead={auto['walkFit']['walkHead']} attack={h['attack']}({h['attackBy']})")
         for w in warn: print('   ※', w)
     save(RECEIPT, rc)
@@ -711,6 +780,9 @@ def measure(args):
         if cw_:
             if walk_head is None: hold.append('walk sheet head size could not be measured; needs a visual check')
             elif abs(walk_head - 1) > WALK_OFF: fail.append(f'walk sheet proportions differ from the action sheet: at equal body size the walk head is x{walk_head:.2f} (limit 10%)')
+            legs = walk_legs(acells, bcells)
+            print(f"walk_legs=own {legs['own']}/8 margin {legs['margin']:.3f} opposite_frame +{legs['opposite']} (pass: own >= {LEG_OWN} and margin >= {LEG_MARGIN})")
+            if not legs['ok']: fail.append(legs['reason'])
         end('FAIL' if fail else 'HOLD' if hold else 'PASS', '; '.join(fail or hold) or None)
     finally:
         bk.ROOT = root0; shutil.rmtree(tmp, ignore_errors=True)
