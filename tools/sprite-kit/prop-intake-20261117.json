@@ -2886,7 +2886,7 @@
       "installed": "2026-11-17"
     },
     "goeun": {
-      "status": "staged",
+      "status": "rejected",
       "order": "strip",
       "act": "D:/tmp-node/sp-inbox33/sprite_prop_goeun_act.png",
       "walk": "D:/tmp-node/sp-inbox33/sprite_prop_goeun_walk.png",
@@ -2914,6 +2914,12 @@
         "headsNewWalk": 4.4,
         "residueAct": 0.0005,
         "residueWalk": 0.0002
+      },
+      "reason": "형 11-18: 옛 판이 기준판에 더 가깝다 → 옛 판 유지",
+      "review": {
+        "chinOld": null,
+        "chinNew": null,
+        "note": ""
       }
     },
     "base-g-60-golbeol-golgae": {
