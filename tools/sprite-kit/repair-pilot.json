@@ -682,5 +682,14 @@
   },
   "aw1-sdallae": {
     "pipeline": "awakened20-master"
+  },
+  "aw1-base-w-13-young-archer": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-base-w-36-baekje-maena": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-base-g-09-farmer-conscript": {
+    "pipeline": "awakened20-master"
   }
 }
