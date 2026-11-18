@@ -2,7 +2,7 @@
 //   + 「뱀서식 컨텐츠 캔버스·css 로 그린 것들 에셋 프롬프트 · 챗지피티로 만들어 올게」)
 //   node tools/release-pack.mjs  →  tools/out/release-pack/index.html  (http://127.0.0.1:5174/tools/out/release-pack/)
 //   영상 동작 줄: tools/veo/tier1-lines-20261115.json (장수 그림을 직접 보고 쓴 것) · 할 일 목록은 그때그때 missing-loops 와 같은 셈으로 다시 센다
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { AWAKEN_ART, AWAKEN_LOOP } from '../src/realm/data/awaken-art.ts'
 import { GROUPS as RELEASE_GROUPS, RELEASE_JOBS } from './release-jobs.mjs'
 import { REMAKE_GROUPS, REMAKE_JOBS } from './remake-jobs.mjs'
@@ -84,7 +84,7 @@ const GROUPS = { raid: '해비 열전', ...REMAKE_GROUPS, ...RELEASE_GROUPS }
 raid.push(...REMAKE_JOBS, ...RELEASE_JOBS)
 const saveName = (r) => r.save ?? `haebi-pack-v1-${r.id}.png`
 const HOME = process.env.USERPROFILE ?? 'C:/Users/my'
-const SEEN = ['assets_src/realm/raid', 'assets_src/realm/steam', `${HOME}/Downloads`, 'D:/에셋창고', 'D:/에셋창고/Codex-production-next-20261117-candidates']   // 보류 후보도 받음 · Claude 가 채택하거나 v3 로 다시 줌
+const SEEN = ['assets_src/realm/raid', 'assets_src/realm/steam', `${HOME}/Downloads`, 'D:/에셋창고', ...readdirSync('D:/에셋창고').filter((d) => /^Codex-.*-candidates$/.test(d)).map((d) => `D:/에셋창고/${d}`)]   // 보류 후보도 받음 · Claude 가 채택하거나 v3 로 다시 줌
 const received = (r) => { const n = saveName(r), raw = n.replace(/^haebi-pack-v1-(H\d+)\.png$/, 'haebi-pack-v1-$1.png'); return SEEN.some((d) => existsSync(`${d}/${raw}`) || existsSync(`${d}/${raw}.png`)) }
 for (const r of raid) { r.group ??= 'raid'; r.kind = received(r) ? 'img-done' : r.group }
 const icount = (k) => raid.filter((r) => r.kind === k).length

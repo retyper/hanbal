@@ -4,7 +4,7 @@
 //   한 벌(일터 1·2·3단 · 궁궐 네 단 · 필름 넷)은 격자 한 장으로 받아 코드로 자른다 — 크레딧을 아끼고 서로 맞는다
 
 import { existsSync, readFileSync } from 'node:fs'
-export const REMAKE_GROUPS = { 'remake-town': '마을 다시', 'remake-bg': '배경 다시', 'remake-icon': '아이콘 다시', 'remake-sprite': '전투 띠 얼굴 크기 다시', 'remake-cutin': '컷인 배경 판' }
+export const REMAKE_GROUPS = { 'remake-town': '마을 다시', 'remake-bg': '배경 다시', 'remake-icon': '아이콘 다시', 'remake-sprite-aw': '각성 전투 띠', 'remake-sprite': '전투 띠 얼굴 크기 다시', 'remake-cutin': '컷인 배경 판' }
 
 const RULES = 'Original early-Korean (Proto-Three-Kingdoms, Samhan) historical fantasy. Not Chinese imperial: no glazed-tile palace roofs, no stacked pagoda roofs or sharply upturned eaves, no dragon pillars, no hanfu robes. No Japanese motifs: no torii gates, no shimenawa ropes and no white zigzag paper streamers, no samurai armor, no katana, no knotted white hachimaki headbands. No red sun discs and no sun rays: no visible sun anywhere. No text, letters, numbers, pseudo-characters, logo, signature or watermark anywhere; banners, plaques and cloth are plain or carry simple geometric or animal shapes only.'
 const PAINT = 'Painting style: match the attached ChatGPT reference paintings exactly: rich hand-painted digital painting with fine ink detail, muted natural earth colors, soft hazy atmospheric light, cinematic but grounded. Not photographic, not a 3D render, not a flat cartoon, not anime.'
@@ -399,6 +399,37 @@ True transparent alpha background with 10% padding around every complete figure,
     prompt: `[코덱스] D:/에셋창고/sprite_prop_${who}_act_${V}.png 도 맨 뒤에 첨부 (방금 만든 동작 판)
 Using the corrected character in the LAST attached image (the new action sheet) as the exact identity, outfit, weapon and proportions — NOT the old big-faced IMAGE 2 — draw ONE natural 8-frame walk cycle, facing RIGHT in 3/4 view, in a strict grid of FOUR columns x TWO rows, row-major order: 1 contact (right foot forward, heel down), 2 down (weight sinks), 3 passing (left leg passes the right), 4 up (body highest), 5 contact (LEFT foot forward), 6 down, 7 passing, 8 up. Frames 1 and 5 have opposite legs forward and must NOT look alike: in frame 1 the near (camera-side) leg is forward and the far arm swings forward, in frame 5 the far leg is forward and the near arm swings forward; arms swing opposite to the legs; the head bobs 1 to 2 pixels between down and up; hair, cloth and ornaments follow the motion a beat late. The weapon is carried relaxed in the same hand with the same grip and the same size in all 8 frames. ${FACE.split(':')[0]}: keep exactly the face and head size of the new action sheet.
 ${PIX} Same standing height as the action sheet, feet on one shared baseline in every cell. True transparent alpha background with 10% padding, no grid lines, labels, text, shadow or background.` })
+}
+
+// 11-18 형 「챗지피티 쉬는 중 · 할 일 넘겨줘」 + 설계 연구(study-20261118/01): 열전에서 판 안 각성을 하는 장수는 각성 전투 띠가 있는 10명뿐
+// → 나머지 장수의 1차 각성 전투 띠. 몸 틀은 지금 들어 있는 비각성 띠(기준 판 비율로 통과한 것), 옷은 각성 초상. 저장 sprite_aw1_<who>_act.png · _walk.png
+{
+  const hasAw = (key) => existsSync(`public/realm/anim-px/gen-aw1-${key}.png`)
+  const seenKey = new Set()
+  const rows = WROWS.filter((r) => r.portrait && !r.key.startsWith('aw1-') && existsSync(`public/realm/anim-px/gen-${r.key}.png`) && existsSync(`public/realm/awaken-hd/${r.portrait}.jpg`) && !hasAw(r.key) && !seenKey.has(r.key) && seenKey.add(r.key))
+  const masters = Object.values(BL).map((k) => k.slice(4))
+  const rankOf = (r) => (masters.includes(r.key) ? 0 : /^[wl]-/.test(r.portrait) ? 1 : 2)
+  rows.sort((a, b) => rankOf(a) - rankOf(b) || a.portrait.localeCompare(b.portrait, 'en', { numeric: true }))
+  rows.forEach((r, i) => {
+    const who = r.key, k = 'gen-' + who, test = i < 12
+    const refs = ['/assets_src/realm/sprite-prop/ref-style3.png', `/realm/anim-px/${k}.png`, `/realm/awaken-hd/${r.portrait}.jpg`]
+    jobs.push({ id: `SPA-${who}-act`, group: 'remake-sprite-aw', save: `sprite_aw1_${who}_act.png`, title: `${test ? '★ 시험 12 · ' : ''}${who} · 각성 전투 띠 20자세`,
+      refs, now: '각성 전투 띠 없음 — 각성해도 싸우는 모습이 비각성 그대로 (열전은 이 띠가 있는 장수만 판 안에서 각성한다)',
+      use: '받으면 Claude 가 비각성 띠와 같은 키·머리 크기인지 나란히 재고 anim-px/gen-aw1-<who>.png 로 넣음',
+      prompt: `AWAKENED-FORM BATTLE SPRITE SHEET. IMAGE 1 shows three approved characters of this game (rendering style only). IMAGE 2 is THIS character's current approved normal-form battle sprite sheet (20 cells, FOUR columns x FIVE rows, read left to right, top to bottom). IMAGE 3 is the same character's FIRST-AWAKENING portrait.
+Draw the awakened-form sheet of the SAME person: in every one of the 20 cells keep EXACTLY the head size, face, body proportions, standing height, drawing scale, pixel rendering and the pose of the SAME cell of IMAGE 2 (same order: idles, walk, dash, attack windup, contact, follow-through, recover, guards, staggers, hit, lying defeated). CHANGE ONLY the look to the awakened form of IMAGE 3: outfit, colours, hair style and ornaments, armour pieces and the decoration of the weapon. Keep the weapon KIND of IMAGE 2 (if IMAGE 3 shows a different kind of weapon, keep IMAGE 2's kind and decorate it in the awakened style); the weapon stays complete and the same size in all 20 cells.
+HARD CHECK BEFORE SAVING: put your standing cell on top of the standing cell of IMAGE 2 at the same scale. Your head (top of skull to chin, hair and headgear excluded) must be NO TALLER, your legs NO SHORTER and the total height EQUAL. And the awakened outfit must read as clearly different from IMAGE 2 at a glance (colour and silhouette). If any of these fail, redraw before saving.
+OUTFIT: follow IMAGE 3 including how much skin it shows, translated into combat wear; fabric stays opaque, no see-through cloth and no nipple outline. Ancient Korean setting: no katana, no ninja gear, no red sun disc or sun rays.
+No aura, glow, sparks, energy trails or ground shadow around the body (the game adds the awakening aura itself); a small magic prop is allowed only where the same cell of IMAGE 2 already has one.
+${PIX}
+All standing poses face RIGHT in 3/4 view. True transparent alpha background with 10% padding around every complete figure and weapon in every cell. No grid lines, labels, text or background. Exactly 20 distinct full-body figures.` })
+    jobs.push({ id: `SPA-${who}-walk`, group: 'remake-sprite-aw', save: `sprite_aw1_${who}_walk.png`, title: `${test ? '★ 시험 12 · ' : ''}${who} · 각성 걷기 8칸`,
+      refs, now: '각성 전투 띠의 걷기 칸',
+      use: '받으면 각성 띠의 걷기 칸을 이 8칸으로 (1·5번 다리 반대 검사)',
+      prompt: `[코덱스] D:/에셋창고/sprite_aw1_${who}_act.png 도 맨 뒤에 첨부 (방금 만든 각성 동작 판)
+Using the awakened character in the LAST attached image (the new awakened action sheet) as the exact identity, outfit, weapon and proportions, draw ONE natural 8-frame walk cycle, facing RIGHT in 3/4 view, in a strict grid of FOUR columns x TWO rows, row-major order: 1 contact (right foot forward, heel down), 2 down (weight sinks), 3 passing (left leg passes the right), 4 up (body highest), 5 contact (LEFT foot forward), 6 down, 7 passing, 8 up. Frames 1 and 5 have opposite legs forward; arms swing opposite to the legs; the weapon is carried the same way in all 8 frames.
+${PIX} Same standing height as the action sheet, feet on one shared baseline in every cell. No aura, glow or shadow. True transparent alpha background with 10% padding, no grid lines, labels, text or background.` })
+  })
 }
 
 export const REMAKE_JOBS = jobs

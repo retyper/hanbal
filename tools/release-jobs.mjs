@@ -516,7 +516,7 @@ for (const id of HIT_HEROES) for (const [form, dir] of [['base', 'bust-hd'], ['a
 // 11-18 형: 「들어온 피격 그림 중에 해부학적으로 말이 안 되는 건 다시 그리라고」 → tools/out/hit-anatomy-review.json 의 sure:true (+ 형이 반려한 애매한 것) 를 _v2 로 다시
 {
   const rev = existsSync('tools/out/hit-anatomy-review.json') ? JSON.parse(readFileSync('tools/out/hit-anatomy-review.json', 'utf8')) : []
-  const HIT_ALSO = []   // 형이 「다시」 한 애매한 것: 'base/w-39-gosaburi-galmae' 꼴
+  const HIT_ALSO = ['base/w-39-gosaburi-galmae', 'aw1/w-17-mahan-pearl-diver', 'aw1/g-30-gwanna-soemoe']   // 11-18 애매 셋: 챗지피티가 쉬는 동안 다시 받아 나은 쪽을 쓴다
   for (const r of rev) {
     if (!(r.sure || HIT_ALSO.includes(`${r.form}/${r.id}`))) continue
     if (existsSync(`D:/에셋창고/hit_${r.form}_${r.id}_v2.png`)) continue
@@ -535,6 +535,17 @@ for (const id of HIT_HEROES) for (const [form, dir] of [['base', 'bust-hd'], ['a
     jobs.push({ id: `HIT-aw2-${id}`, group: 'hit2', save: `hit_aw2_${id}.png`, title: `${id} · 진각성 피격 초상`,
       refs: [`/realm/awaken2-hd/${id}.jpg`], now: '진각성 피격 초상 없음', use: 'py -3 -I tools/hit-intake.py → public/realm/hit/awaken2/<id>.webp',
       prompt: HIT_P('aw1').replace('awakened outfit', 'true-awakened outfit') })
+  }
+}
+// 11-18 Claude 검수: 진각성 피격 가운데 자세가 거의 그대로이고 얼굴만 찡그린 판 → _v2 로 다시 (hit-intake 가 _v2 를 먼저 쓴다)
+{
+  const POSE_WEAK = ['w-97-goguryeo-mir', 'w-101-garak-singwigan', 'g-18-daegaya-king', 'g-13-baekje-general', 'g-05-mahan-chieftain', 'g-08-veteran', 'w-49-goryong-gureum', 'w-61-iseo-sinae', 'w-57-bullae-bakdal', 'g-65-goguryeo-damul', 'g-67-buyeo-daeso', 'l-L8-nangnang-princess', 'w-77-sabeol-malgalgi', 'w-93-saro-beomi']
+  const dirs = ['D:/에셋창고', ...readdirSync('D:/에셋창고').filter((d) => /^Codex-.*-candidates$/.test(d)).map((d) => `D:/에셋창고/${d}`)]
+  for (const id of POSE_WEAK) {
+    if (dirs.some((d) => existsSync(`${d}/hit_aw2_${id}_v2.png`)) || !existsSync(`public/realm/awaken2-hd/${id}.jpg`)) continue
+    jobs.push({ id: `HIT-aw2-${id}-v2`, group: 'hit', save: `hit_aw2_${id}_v2.png`, title: `${id} · 진각성 피격 초상 · 자세 다시`,
+      refs: [`/realm/awaken2-hd/${id}.jpg`], now: '받은 판이 원래 초상과 자세가 거의 같고 얼굴만 찡그림', use: 'py -3 -I tools/hit-intake.py (_v2 우선)',
+      prompt: 'POSE REDO (the previous version was rejected: the body pose stayed almost identical to the portrait and only the face changed). The upper body MUST visibly move: torso knocked back and twisted, one shoulder thrown back, head snapped to the side, the free arm flung up or clutching the hit spot, and the camera tilted about 10 degrees. Compare with IMAGE 1 before saving: if the silhouette is nearly the same, redraw.\n' + HIT_P('aw1').replace('awakened outfit', 'true-awakened outfit') })
   }
 }
 export const RELEASE_JOBS = jobs
