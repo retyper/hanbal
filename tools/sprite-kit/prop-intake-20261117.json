@@ -2265,37 +2265,36 @@
       "installed": "2026-11-17"
     },
     "base-w-41-hwanna-beodeul": {
-      "status": "installed",
+      "status": "rejected",
       "order": "strip",
-      "act": "D:/tmp-node/sp-inbox/sprite_prop_base-w-41-hwanna-beodeul_act.png",
-      "walk": "D:/tmp-node/sp-inbox/sprite_prop_base-w-41-hwanna-beodeul_walk.png",
-      "actSha256": "3929bdc0770b42a76d339da67edfdf2a84ef01a91d08b3df97b04d2649c9f8f4",
-      "walkSha256": "8e2426812a5c969f6c2eb4341714b84657365d50580ccafe6cdaa63a23a4758a",
+      "act": "D:/tmp-node/sp-inbox33/sprite_prop_base-w-41-hwanna-beodeul_act.png",
+      "walk": "D:/tmp-node/sp-inbox33/sprite_prop_base-w-41-hwanna-beodeul_walk.png",
+      "actSha256": "c776a787e543254c6c54ff048b973e312f99eddf13e36d4c1fa6d9265346914f",
+      "walkSha256": "1feb3e0ce1b9445f61189625ed64140083816c66ab3d400d93d9229a0a195f21",
       "portrait": "w-41-hwanna-beodeul",
       "auto": {
         "cell": [
-          184,
+          160,
           160
         ],
-        "walkScale": 0.6219,
+        "walkScale": 0.6497,
         "contact": [
           15,
-          0.79,
-          0.6
+          0.75,
+          0.55
         ],
-        "headsOld": 4.61,
-        "headsNew": 5.54,
-        "headsNewWalk": 6.05,
-        "residueAct": 0.0002,
-        "residueWalk": 0.0003
+        "headsOld": 5.54,
+        "headsNew": 4.39,
+        "headsNewWalk": 4.17,
+        "residueAct": 0.0001,
+        "residueWalk": 0.0001
       },
+      "reason": "새 판 머리가 옛 판보다 큼(4.39 vs 5.54) → 옛 판 유지",
       "review": {
-        "chinOld": 31.0,
-        "chinNew": 29.0,
-        "note": "v3 보류 후보 · 해달 기준과 맞음"
-      },
-      "archive": "assets_src/realm/retired/prop-20261117/base-w-41-hwanna-beodeul",
-      "installed": "2026-11-17"
+        "chinOld": null,
+        "chinNew": null,
+        "note": ""
+      }
     },
     "base-w-45-tamna-oreumbi": {
       "status": "installed",
@@ -2501,36 +2500,37 @@
       "installed": "2026-11-17"
     },
     "hwalmi": {
-      "status": "rejected",
+      "status": "installed",
       "order": "strip",
       "act": "D:/tmp-node/sp-inbox33/sprite_prop_hwalmi_act.png",
       "walk": "D:/tmp-node/sp-inbox33/sprite_prop_hwalmi_walk.png",
-      "actSha256": "614944f63d6032bf843113fccd0cf5a5e94ee2f3ba84f6907ea30ab0cd5a7446",
-      "walkSha256": "315c94e07bb42d3d1a07f29dad60020e0efcdf2ad39926543d5f05da2abf9c2f",
+      "actSha256": "1ef8d62451c0893c2d53414f195015a5ce19921a0b4df37f09f5654b88015461",
+      "walkSha256": "b2a132427b205471f8dab1501d30f1147ef8f63d8f4044af1ddb055cd21efee7",
       "portrait": "w-65-goguryeo-hwalmi",
       "auto": {
         "cell": [
           176,
           160
         ],
-        "walkScale": 0.6516,
+        "walkScale": 0.6335,
         "contact": [
           15,
           0.74,
-          0.49
+          0.46
         ],
         "headsOld": 4.4,
-        "headsNew": 3.86,
-        "headsNewWalk": 3.85,
-        "residueAct": 0.0002,
+        "headsNew": 4.5,
+        "headsNewWalk": 4.03,
+        "residueAct": 0.0,
         "residueWalk": 0.0
       },
-      "reason": "머리가 옛 판보다 커짐(3.86)",
       "review": {
-        "chinOld": null,
-        "chinNew": null,
-        "note": ""
-      }
+        "chinOld": 4.4,
+        "chinNew": 4.5,
+        "note": "11-18 v4 · 머리 옛 판만큼 작아짐"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/hwalmi",
+      "installed": "2026-11-17"
     },
     "olddaeso": {
       "status": "installed",
@@ -3042,12 +3042,12 @@
       "installed": "2026-11-17"
     },
     "gaon": {
-      "status": "rejected",
+      "status": "installed",
       "order": "strip",
       "act": "D:/tmp-node/sp-inbox33/sprite_prop_gaon_act.png",
       "walk": "D:/tmp-node/sp-inbox33/sprite_prop_gaon_walk.png",
-      "actSha256": "1143629868fb64fe10b97cfa02960499706ed808902e3e65fca624e4822fa54e",
-      "walkSha256": "61f3d66acf33dce2187e4c4a09311837de3908b90fff2f494d07192cfead92f0",
+      "actSha256": "91949ce31efe6f3cc38f4e3514c5253d6c534957576d0649e912007402a18849",
+      "walkSha256": "34a9a6bc64707ed4920d6e53b6562c914db0b5fb1c2976b184df696e15cdf62e",
       "weaponFix": {
         "sprite": "spear",
         "art": "no weapon: bare-handed ice magic (a glowing snowflake between the palms)",
@@ -3056,27 +3056,29 @@
       "portrait": "w-19-buyeo-fur-princess",
       "auto": {
         "cell": [
-          184,
+          160,
           160
         ],
-        "walkScale": 0.6692,
+        "walkScale": 0.6025,
         "contact": [
           14,
-          0.84,
-          0.44
+          0.89,
+          0.38
         ],
         "headsOld": 3.34,
-        "headsNew": 2.47,
-        "headsNewWalk": 2.73,
-        "residueAct": 0.0208,
-        "residueWalk": 0.0023
+        "headsNew": 3.75,
+        "headsNewWalk": 3.41,
+        "residueAct": 0.0188,
+        "residueWalk": 0.011
       },
-      "reason": "털모자째 머리 2.5등신",
       "review": {
-        "chinOld": null,
-        "chinNew": null,
-        "note": ""
-      }
+        "chinOld": 3.34,
+        "chinNew": 3.75,
+        "note": "11-18 v5 · 털모자 작아짐 · 원화대로 맨손 얼음 주술",
+        "weapon": "magic"
+      },
+      "archive": "assets_src/realm/retired/prop-20261117/gaon",
+      "installed": "2026-11-17"
     },
     "base-g-54-mokji-mahan": {
       "status": "installed",
