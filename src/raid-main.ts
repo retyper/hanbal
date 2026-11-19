@@ -123,6 +123,8 @@ zoomBtn.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropaga
 zoomBtn.addEventListener('click', e => { if (e.detail === 0) cycleZoom(); zoomBtn.blur() })   // 키보드로 눌렀을 때만 (손가락·마우스는 pointerdown 에서)
 zoomBtn.addEventListener('animationend', () => zoomBtn.classList.remove('pop'))
 paintZoom()
+// 본편 틀 안 — 틀의 「닫기」가 오른쪽 위 모서리를 덮는다 (app.ts .nightov [data-close]) · 그 모서리는 비워 둔다 (11-19 형: 「우상단 버튼 겹치니까」)
+if (window.parent !== window) document.body.classList.add('framed')
 if (campaignToken) root.querySelector('header small')!.textContent = `본편 · ${HERO.name}의 열전`
 if (trialToken) {
   document.body.classList.add('campaign-trial')
@@ -396,22 +398,37 @@ const recipe = (c: ReturnType<typeof kitCombos>[number], me?: Power) => {
   const r = comboRank(run, c.id)
   return `<span class="recipe" aria-label="${c.name}: ${Object.entries(c.needs).map(([key, n]) => `${nodeText(kit, key as Power).name} ${n}`).join(' + ')}">${parts}<i class="op">=</i><span class="combo${r ? ' got' : ''}">${comboIcon(c.id)}<small>${c.name}${r ? ' ' + rankMark(r) : ''}</small></span></span>`
 }
-/** 갈래 막대 — 그 갈래에 찍은 점 · 층이 열리는 눈금(4·9·15점) · 다음 층까지 (조합에 안 쓰이는 칸의 카드 아래) */
-function branchHint(k: Power) {
-  const at = nodeAt(kit, k)!, pts = branchPoints(run, at.branch), last = TREE.tiers[TREE.tiers.length - 1]!, next = TREE.tiers.find(n => n > pts)
-  const ticks = TREE.tiers.slice(1).map(n => `<b class="${pts >= n ? 'on' : ''}" style="left:${n / last * 100}%"></b>`).join('')
-  return `<span class="branch-bar" style="--c:${BRANCH_COLOR[at.branch]}"><i style="width:${Math.min(100, pts / last * 100)}%"></i>${ticks}</span><small class="branch-next">${next ? `다음 층 ${next}점 · 지금 ${pts}점` : '갈래 끝까지 열림'}</small>`
+/** 자물쇠 그림 (열림 · 잠김) — 카드의 「열리는 칸」과 나무의 잠긴 층이 같은 그림 */
+const lockSvg = (open: boolean) => `<svg class="lock-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="${open ? 'M5 7V4.6a3 3 0 0 1 5.8-1.1' : 'M5 7V5a3 3 0 0 1 6 0v2'}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="2.6" y="7" width="10.8" height="8" rx="1.6" fill="currentColor"/></svg>`
+/**
+ * 이 갈래에서 다음에 열리는 칸 (11-19 형: 「다음 층 12점 · 지금 10점」이 뭔 말인지 모르겠다 · 「갈래 끝까지 열림」은 이 기술이 최대로 읽힌다).
+ * 이 카드 하나로 문턱에 닿으면 열림 자물쇠 + 열리는 칸 그림 + 이름을 금빛으로 크게 · 아직 멀면 흐린 그림 + 「N번 더」(이 갈래에서 고를 횟수) ·
+ * 갈래가 다 열렸으면 아무것도 없다. soon 만 = 조합 셈이 이미 있는 카드는 가까운 것만 (폰 가로에서 넘친다)
+ */
+function unlockHint(k: Power, soonOnly: boolean) {
+  const at = nodeAt(kit, k)!, pts = branchPoints(run, at.branch), tier = TREE.tiers.findIndex(n => n > pts)
+  if (tier < 0) return ''
+  const left = TREE.tiers[tier]! - pts, nodes = branchNodes(kit)[at.branch][tier]!, names = nodes.map(p => nodeText(kit, p).name).join(' · ')
+  if (left <= 1) return `<i class="unlock now" aria-label="고르면 ${names} 열림">${lockSvg(true)}${nodes.map(p => `<i class="unl-node">${powerIcon(p, kit)}<i>${nodeText(kit, p).name}</i></i>`).join('')}</i>`
+  return soonOnly ? '' : `<i class="unlock later" aria-label="${names}: 이 갈래에서 ${left}번 더 고르면 열림">${lockSvg(false)}${nodes.map(p => powerIcon(p, kit)).join('')}<i>${left}번 더</i></i>`
 }
 function routeHint(k: Power) {
   // 끝 단계까지 올린 조합은 빼고 (카드가 길어져 폰 가로에서 넘쳤다)
-  return kitCombos(kit).filter(c => k in c.needs && comboRank(run, c.id) < TREE.max).map(c => recipe(c, k)).join('') || branchHint(k)
+  const recipes = kitCombos(kit).filter(c => k in c.needs && comboRank(run, c.id) < TREE.max).map(c => recipe(c, k)).join('')
+  return recipes + unlockHint(k, recipes !== '')
 }
-/** 레벨업 카드 — 칸 카드(위에 갈래 띠 · 갈래 끝은 별 테) · 금테 조합 카드(처음엔 열기 · 다시 나오면 단계 올리기 · 끝 단계는 비기 강화) */
+/** 기술 단계 칸 — 지금 단계는 채움 · 이번에 오를 한 칸은 금빛 반짝 · 남은 칸은 빈 칸 · 숫자는 작게 (11-19 형: 「+1」로는 이 기술이 몇 단계인지 안 보였다) */
+function levelPips(rank: number, max: number) {
+  const cells = Array.from({ length: max }, (_, i) => `<i class="${i < rank ? 'on' : i === rank ? 'up' : ''}"></i>`).join('')
+  return `<i class="lv-pips" aria-label="${rank + 1}/${max}단계">${cells}<i class="lv-num">${rank ? `${rank}→` : ''}<i class="to">${rank + 1}</i>/${max}</i></i>`
+}
+/** 레벨업 카드 — 칸 카드(위에 갈래 띠 · 갈래 끝은 별 테 · 이름 밑에 단계 칸) · 금테 조합 카드(처음엔 열기 · 다시 나오면 단계 올리기 · 끝 단계는 비기 강화) */
 function card(k: Pick) {
   if (!isCombo(k)) {
-    const p = POWERS[k], t = nodeText(kit, k), at = nodeAt(kit, k)!, cap = at.tier === TREE.tiers.length - 1, color = BRANCH_COLOR[at.branch]
-    const tag = `<i class="branch-tag" style="--c:${color}">${branchName(kit, at.branch)}</i>`
-    return `<button data-up="${k}" class="${cap ? 'cap-card' : ''}" style="--accent:${cap ? color : p.color};--c:${color}">${cap ? '<i class="ribbon cap">갈래 끝</i>' : tag}<span class="rune">${powerIcon(k, kit)}</span><small class="gain${run.ranks[k] ? '' : ' new'}">${run.ranks[k] ? '+1' : '획득'}</small><b>${t.name}</b><span>${t.desc}</span><em>${routeHint(k)}</em></button>`
+    const p = POWERS[k], t = nodeText(kit, k), at = nodeAt(kit, k)!, cap = at.tier === TREE.tiers.length - 1, color = BRANCH_COLOR[at.branch], rank = run.ranks[k]
+    // 갈래 띠 — 기술 이름과 헷갈리지 않게 작고 흐리게 · 갈래 빛 점 + 「○○ 갈래」 (형 11-19: 벽력 카드 위의 「투창」이 다른 기술로 읽혔다)
+    const tag = `<i class="branch-tag" style="--c:${color}"><i class="dot"></i>${branchName(kit, at.branch)} 갈래</i>`
+    return `<button data-up="${k}" class="${cap ? 'cap-card' : ''}" style="--accent:${cap ? color : p.color};--c:${color}">${cap ? '<i class="ribbon cap">갈래 끝</i>' : tag}<span class="rune">${powerIcon(k, kit)}</span>${rank ? '' : '<small class="gain new">획득</small>'}<b>${t.name}</b>${levelPips(rank, p.max)}<span>${t.desc}</span><em>${routeHint(k)}</em></button>`
   }
   const c = comboOf(k), r = comboRank(run, k), next = r + 1
   const pips = Array.from({ length: TREE.max }, (_, i) => `<i class="${i < r ? 'on' : i === r ? 'new' : ''}"></i>`).join('')
@@ -429,7 +446,7 @@ function haveRow() {
 const treeView = document.createElement('div'); treeView.id = 'tree-view'; treeView.hidden = true; treeView.setAttribute('role', 'dialog'); treeView.setAttribute('aria-label', '기술 나무')
 root.append(treeView)
 function openTree() {
-  treeView.innerHTML = `<div class="panel tree-panel"><div class="tree-head"><h2>${weapon} 기술 나무</h2><small>레벨 ${run.level} · 남은 고름 ${Math.max(0, C.maxLevel - run.level)}번</small><button class="tree-close primary">닫기</button></div>${treeSvg(run)}<p class="tree-info">칸을 누르면 설명이 나옵니다</p></div>`
+  treeView.innerHTML = `<div class="panel tree-panel"><div class="tree-head"><button class="tree-close primary">돌아가기</button><h2>${weapon} 기술 나무</h2><small>레벨 ${run.level} · 앞으로 레벨업 ${Math.max(0, C.maxLevel - run.level)}번</small></div>${treeSvg(run)}<p class="tree-info">칸을 누르면 설명이 나옵니다</p></div>`
   treeView.hidden = false
 }
 function closeTree() { if (!treeView.hidden) treeView.hidden = true }   // 판마다 불린다 — 같은 값도 쓰면 속성이 바뀐 셈이 된다 (11-18)
@@ -448,13 +465,13 @@ function showOverlay() {
   shown = state; const overlay = $('overlay'); overlay.hidden = !state; if (!state) return
   resetInput()
   if (state.startsWith('upgrade')) {
-    overlay.innerHTML = `<div class="panel upgrade">${treeButton}<div class="lv-head">${haveRow()}<h2 class="lvup">레벨 업!</h2></div><div class="choices">${run.offers.map(card).join('')}</div><button id="reroll" ${run.rerolls ? '' : 'disabled'}>다른 선택지 · ${run.rerolls}회 남음</button></div>`
+    overlay.innerHTML = `<div class="panel upgrade"><div class="lv-head">${haveRow()}<h2 class="lvup">레벨 업!</h2>${treeButton}</div><div class="choices">${run.offers.map(card).join('')}</div><button id="reroll" ${run.rerolls ? '' : 'disabled'}>다른 선택지 · ${run.rerolls}회 남음</button></div>`
     overlay.querySelectorAll<HTMLButtonElement>('[data-up]').forEach(b => b.onclick = () => { const pick = b.dataset.up as Pick, log = logging(); if (choose(run, pick)) { if (log) { recPick(rec!, pick); saveLog() } shown = ''; showOverlay(); updateHud() } })
     if (run.level === 1) { $<HTMLButtonElement>('reroll').disabled = true; $('reroll').textContent = '첫 갈래를 골라 주세요' }
     $('reroll').onclick = () => { const log = logging(); if (reroll(run)) { if (log) recReroll(rec!); shown = ''; showOverlay() } }
     $('tree-open').onclick = openTree
   } else if (state === 'pause') {
-    overlay.innerHTML = `<div class="panel">${treeButton}<small>장수 열전</small><h2>잠시 숨 고르기</h2><p>성장과 전투는 그대로 기다립니다.</p><button id="resume" class="primary">계속 싸우기</button><button id="quit">출전 화면으로</button></div>`
+    overlay.innerHTML = `<div class="panel"><small>장수 열전</small><h2>잠시 숨 고르기</h2><p>성장과 전투는 그대로 기다립니다.</p><button id="resume" class="primary">계속 싸우기</button>${treeButton}<button id="quit">출전 화면으로</button></div>`
     $('tree-open').onclick = openTree
     $('resume').onclick = () => { paused = false; shown = ''; last = 0; showOverlay() }; $('quit').onclick = menu
     if (vanguardToken) { $('quit').textContent = '지금 확보한 돌파로 귀환'; $('quit').onclick = withdraw }

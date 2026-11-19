@@ -55,26 +55,28 @@ export const BRANCH_COLOR: Record<Branch, string> = { a: '#f2c45a', b: '#6fd8c4'
 
 /**
  * 기술 나무 (RAID-LINK §2 · 11-17 밤 D2 식) — 갈래 셋(주 무기 · 보조 · 버팀)을 세로 줄로, 줄마다 네 층.
- * 층은 그 갈래에 찍은 점으로 열린다(잠긴 층 사이엔 「이 갈래 9점」) · 4층은 갈래 끝(크게 · 별 테).
+ * 층은 그 갈래에 찍은 점으로 열린다(잠긴 층 사이엔 자물쇠 + 「N번 더」 = 이 갈래에서 더 고를 횟수) · 4층은 갈래 끝(크게 · 별 테).
  * 오른쪽 줄: 조합(두 갈래를 잇는 금테 · 필요한 칸 그림 셈) → 맨 아래 비기 강화.
  * 열린 칸 금빛(on) · 고를 수 있는 칸 테두리(next) · 잠긴 칸 어둡게(off). 칸을 누르면 data-node 로 설명 (raid-main).
  * 그림 한 장(SVG · viewBox 1000×350)이라 폰 가로 844×390 에도 굴리지 않고 다 들어간다.
  */
+/** 잠긴 층 알약의 자물쇠 (레벨업 카드의 자물쇠와 같은 꼴 · 14px) — 알약 숫자는 「이 갈래에서 N번 더 고르면 열림」 (11-19 형: 「이 갈래 12점」이 무슨 뜻인지 몰랐다) */
+const lockIcon = (x: number, y: number) => `<g class="lock-ic" transform="translate(${x} ${y}) scale(.875)"><path d="M5 7V5a3 3 0 0 1 6 0v2" fill="none" stroke-width="2" stroke-linecap="round"/><rect x="2.6" y="7" width="10.8" height="8" rx="1.6"/></g>`
 export function treeSvg(s: HaebiRun) {
   const k = KITS[s.kit], base = import.meta.env.BASE_URL + 'realm/', tree = branchNodes(s.kit)
   const COL: Record<Branch, number> = { a: 135, b: 395, c: 645 }, ROW = (t: number) => 64 + t * 80, R = 22, PAIR = 58
-  const parts: string[] = [], lines: string[] = []
+  const parts: string[] = [], lines: string[] = [], locks: string[] = []   // 잠긴 층 알약은 칸 위에 (갈래 끝 칸의 테가 글을 덮었다)
   const img = (key: Power, x: number, y: number, r: number) => { const a = nodeArt(s.kit, key); return `<image href="${base + a.src}" x="${x - r * .8}" y="${y - r * .8}" width="${r * 1.6}" height="${r * 1.6}"${a.tint ? ` class="tint-${a.tint}"` : ''}/>` }
   for (const b of BRANCHES) {
     const cx = COL[b], pts = branchPoints(s, b), color = BRANCH_COLOR[b]
-    parts.push(`<text class="head" x="${cx}" y="22" style="fill:${color}">${branchName(s.kit, b)} <tspan class="pts">${pts}점</tspan></text>`)
+    parts.push(`<text class="head" x="${cx}" y="22" style="fill:${color}">${branchName(s.kit, b)} 갈래 <tspan class="pts">${pts}번 고름</tspan></text>`)
     tree[b].forEach((row, t) => {
       const y = ROW(t), open = tierOpen(s, b, t)
       // 층 사이: 다음 층이 열렸으면 금줄, 아니면 「이 갈래 N점」 알약
       if (t < tree[b].length - 1) {
         const nextOpen = tierOpen(s, b, t + 1), y2 = ROW(t + 1)
         lines.push(`<line class="${nextOpen ? 'on' : ''}" x1="${cx}" y1="${y + (row.length === 1 ? R + 19 : 0)}" x2="${cx}" y2="${tree[b][t + 1]!.length === 1 ? y2 - R - 6 : y2}" style="${nextOpen ? `stroke:${color}` : ''}"/>`)
-        if (!nextOpen) parts.push(`<g class="lock"><rect x="${cx - 44}" y="${y + 41}" width="88" height="16" rx="8"/><text x="${cx}" y="${y + 53}">이 갈래 ${T.tiers[t + 1]}점</text></g>`)
+        if (!nextOpen) locks.push(`<g class="lock"><rect x="${cx - 36}" y="${y + 40}" width="72" height="18" rx="9"/>${lockIcon(cx - 27, y + 42)}<text x="${cx + 7}" y="${y + 53}">${T.tiers[t + 1]! - pts}번 더</text></g>`)
       }
       row.forEach((p, i) => {
         const x = row.length === 1 ? cx : cx + (i ? PAIR : -PAIR), rank = s.ranks[p], max = POWERS[p].max, cap = t === tree[b].length - 1
@@ -96,14 +98,14 @@ export function treeSvg(s: HaebiRun) {
   })
   const uy = ROW(3), uOn = ultUpgraded(s)
   parts.push(`<g class="node combo ult ${uOn ? 'on max' : combos.some(c => comboRank(s, c.id)) ? 'next' : 'off'}" data-ult="1"><circle class="ring" cx="${CX}" cy="${uy}" r="${R + 3}"/><image href="${base}raid/power-skill.png" x="${CX - 20}" y="${uy - 20}" width="40" height="40"/><text class="cname" x="${CX + 32}" y="${uy - 4}">${k.skill} 강화</text><text class="csub" x="${CX + 32}" y="${uy + 13}">조합 하나 ${rankMark(T.max)}</text></g>`)
-  return `<svg class="tree" viewBox="0 0 1000 350" role="img" aria-label="${k.weapon} 기술 나무"><g class="lines">${lines.join('')}</g>${parts.join('')}</svg>`
+  return `<svg class="tree" viewBox="0 0 1000 350" role="img" aria-label="${k.weapon} 기술 나무"><g class="lines">${lines.join('')}</g>${parts.join('')}${locks.join('')}</svg>`
 }
 /** 나무에서 누른 칸의 한 줄 설명 (조합·비기 강화 포함) */
 export function treeInfo(s: HaebiRun, el: Element) {
   const node = el.getAttribute('data-node') as Power | null, combo = el.getAttribute('data-combo') as Combo | null
   if (node) {
     const at = nodeAt(s.kit, node)!, t = nodeText(s.kit, node), need = T.tiers[at.tier]!, open = tierOpen(s, at.branch, at.tier)
-    return `<b>${t.name}</b> ${s.ranks[node]}/${POWERS[node].max} · ${t.desc}${open ? '' : ` · ${branchName(s.kit, at.branch)} 갈래 ${need}점에 열립니다`}`
+    return `<b>${t.name}</b> ${s.ranks[node]}/${POWERS[node].max} · ${t.desc}${open ? '' : ` · ${branchName(s.kit, at.branch)} 갈래에서 ${need - branchPoints(s, at.branch)}번 더 고르면 열립니다`}`
   }
   if (combo) { const c = kitCombos(s.kit).find(x => x.id === combo)!; return `<b>${c.name}</b> ${comboRank(s, combo)}/${T.max} · ${c.desc}` }
   if (el.getAttribute('data-ult')) return `<b>${KITS[s.kit].skill} 강화</b> · 조합 하나를 ${T.max}단계로 올리면 비기가 더 세고 넓어지고 자주 쓸 수 있습니다`
@@ -113,7 +115,7 @@ export function powerTooltip(s: HaebiRun, key: Power) {
   const p = POWERS[key], rank = s.ranks[key], t = nodeText(s.kit, key), at = nodeAt(s.kit, key)
   const steps = Array.from({ length: p.max }, (_, i) => `<span class="${i < rank ? 'earned' : ''} ${i + 1 === rank ? 'current' : ''}">${i + 1}</span>`).join('')
   const combos = kitCombos(s.kit).filter(c => key in c.needs).map(c => `<p><b>${c.name}</b><br>${Object.entries(c.needs).map(([k, n]) => `${nodeText(s.kit, k as Power).name} ${s.ranks[k as Power]}/${n}`).join(' · ')}</p>`).join('')
-  const branch = at ? `<p class="branch-line" style="color:${BRANCH_COLOR[at.branch]}">${branchName(s.kit, at.branch)} 갈래 · ${branchPoints(s, at.branch)}점</p>` : ''
+  const branch = at ? `<p class="branch-line" style="color:${BRANCH_COLOR[at.branch]}">${branchName(s.kit, at.branch)} 갈래 · ${branchPoints(s, at.branch)}번 고름</p>` : ''
   return `<b>${t.name} · ${rank}/${p.max}</b><div class="rank-steps">${steps}</div><p>${t.desc}</p>${branch}${combos}`
 }
 
