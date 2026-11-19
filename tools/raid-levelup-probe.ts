@@ -63,7 +63,7 @@ try {
   await call('Page.navigate', { url: HARNESS })
   await sleep(3000)
   for (let i = 0; i < 80 && await inF(`return D.getElementById('start')?.disabled`) !== false; i++) await sleep(250)
-  check(await inF(`return D.body.classList.contains('framed')`) === true, '틀 안에서 열면 framed (오른쪽 위 비움)')
+  check(await inF(`return D.body.classList.contains('framed')`) === false, '틀 안이어도 오른쪽 위를 비우지 않는다 (본편 닫기 없음 · 11-19)')
   await inF(`D.getElementById('start').click()`)
   await sleep(1500)
   // 판 만들기 — 창 묶음 · 레벨 30 · 찌르기 갈래 12번(다 열림) · 투창 갈래 11번(문턱 12 의 1 전) · 버팀 4번 (다음 문턱 7)

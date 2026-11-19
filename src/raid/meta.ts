@@ -1,9 +1,9 @@
 /**
  * 장수 열전의 판 밖 기록 — 금 · 상점 영구 강화 · 스테이지 휘장 (형 11-16: 다이센카식 「돈을 모아 상점에서 사서 새 판마다 기본 능력치가 자란다
  * · 중간 패배는 조금, 다 깨면 많이 · 스테이지를 깨면 휘장」). 본편 저장(hanbal.realm.*)과 따로인 한 칸.
- * 상점 값은 언제든 전부 되돌려 받는다 (다이센카와 같이).
+ * 상점 값은 언제든 전부 되돌려 받는다 (다이센카와 같이) · 다만 되돌리기 값을 낸다 (11-19 형 · refundFee).
  */
-import { HAEBI_SHOP as SH, HAEBI_STAGES as ST, HAEBI_WALL as WALL } from '../tune/params.ts'
+import { HAEBI_SHOP as SH, HAEBI_STAGES as ST, HAEBI_WALL as WALL, HAEBI_REFUND as RF } from '../tune/params.ts'
 import { NO_BONUS, type Bonus, type Kit, type StageId } from './haebi.ts'
 import { META_KEY } from './link.ts'
 import { DLC } from '../realm/dlc.ts'
@@ -70,8 +70,15 @@ export function buy(m: RaidMeta, key: ShopKey) {
   const cost = shopCost(key, lv); if (m.gold < cost) return false
   m.gold -= cost; m.spent += cost; m.shop[key] = lv + 1; return true
 }
-/** 산 것을 모두 되돌린다 — 쓴 금을 전부 돌려받는다 */
-export function refund(m: RaidMeta) { m.gold += m.spent; m.spent = 0; m.shop = { ...NO_BONUS } }
+/**
+ * 되돌리기 값 (11-19 형: 「능력치 초기화는 무료로 하지 말고 돈 써서」 · HAEBI_REFUND) — 쓴 금의 몫 · 적어도 min · 많아야 쓴 금 · 쓴 금이 없으면 0
+ */
+export const refundFee = (m: Pick<RaidMeta, 'spent'>) => m.spent <= 0 ? 0 : Math.min(m.spent, Math.max(RF.min, Math.round(m.spent * RF.share / RF.round) * RF.round))
+/** 산 것을 모두 되돌린다 — 지금 가진 금에서 값(refundFee)을 내고 쓴 금을 전부 돌려받는다 · 금이 모자라거나 쓴 금이 없으면 false */
+export function refund(m: RaidMeta) {
+  const fee = refundFee(m); if (m.spent <= 0 || m.gold < fee) return false
+  m.gold += m.spent - fee; m.spent = 0; m.shop = { ...NO_BONUS }; return true
+}
 const cleanHeroes = (x: unknown): Record<string, StageId[]> => {
   const out: Record<string, StageId[]> = {}
   if (x && typeof x === 'object') for (const [id, s] of Object.entries(x)) if (Array.isArray(s)) out[id] = s.filter((v): v is StageId => typeof v === 'string' && v in ST)

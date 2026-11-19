@@ -1,19 +1,30 @@
 // 장수 열전 판 밖 성장 (11-16 형: 다이센카식 상점·스테이지·휘장)
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { HAEBI_RUN as C, HAEBI_SHOP as SH } from '../src/tune/params.ts'
+import { HAEBI_RUN as C, HAEBI_SHOP as SH, HAEBI_REFUND as RF } from '../src/tune/params.ts'
 import { createHaebi, runGold, runDuration, stepHaebi, tierOf, spawnMob } from '../src/raid/haebi.ts'
-import { loadMeta, buy, refund, record, shopCost, stageOpen } from '../src/raid/meta.ts'
+import { loadMeta, buy, refund, refundFee, record, shopCost, stageOpen } from '../src/raid/meta.ts'
 import { DLC } from '../src/realm/dlc.ts'
 const noDlc = DLC.trueWake ? false : '진각성 묶음(DLC)이 꺼진 빌드 · 설원·산성 스테이지 없음'
 
-test('상점: 사면 금이 줄고 다음 값이 오르며, 되돌리면 쓴 금을 전부 돌려받는다', () => {
+test('상점: 사면 금이 줄고 다음 값이 오르며, 되돌리면 쓴 금을 돌려받는다(값을 내고)', () => {
   const m = loadMeta(); m.gold = 1000
   assert.ok(buy(m, 'might')); assert.equal(m.gold, 1000 - shopCost('might', 0)); assert.equal(m.shop.might, 1)
   assert.ok(shopCost('might', 1) > shopCost('might', 0))
   const left = m.gold; m.gold = 0; assert.equal(buy(m, 'might'), false, '금이 모자라면 못 산다'); m.gold = left
-  refund(m); assert.equal(m.gold, 1000); assert.equal(m.shop.might, 0)
+  const fee = refundFee(m); assert.ok(refund(m)); assert.equal(m.gold, 1000 - fee); assert.equal(m.shop.might, 0)
   m.gold = 1e9; for (let i = 0; i < 20; i++) buy(m, 'revive'); assert.equal(m.shop.revive, SH.revive.max)
+})
+
+test('상점 되돌리기는 값을 낸다 (11-19 형): 쓴 금의 몫 · 적어도 min · 많아야 쓴 금 · 모자라면 못 한다 · 쓴 금이 없으면 잠김', () => {
+  const m = loadMeta()
+  assert.equal(refundFee(m), 0); m.gold = 5000; assert.equal(refund(m), false, '쓴 금이 없으면 되돌릴 것도 없다')
+  m.spent = 100; assert.equal(refundFee(m), 100, '값은 쓴 금보다 비싸지 않다')
+  m.spent = 2000; assert.equal(refundFee(m), RF.min, '적게 썼으면 최소값')
+  m.spent = 37335; assert.equal(refundFee(m), Math.round(37335 * RF.share / RF.round) * RF.round, '많이 썼으면 몫')
+  m.gold = refundFee(m) - 1; assert.equal(refund(m), false, '금이 모자라면 못 한다'); assert.equal(m.spent, 37335)
+  m.gold = refundFee(m) + 7; const fee = refundFee(m); m.shop.might = 3
+  assert.equal(refund(m), true); assert.equal(m.gold, fee + 7 + 37335 - fee, '쓴 금을 다 돌려받고 값만큼 낸다'); assert.equal(m.spent, 0); assert.equal(m.shop.might, 0)
 })
 
 test('스테이지: 앞을 깨야 다음이 열리고, 처음 깰 때만 휘장', () => {
@@ -156,7 +167,7 @@ test('목책의 1분 벽: 상점이 얇으면 여울을 골라 두고, 벽을 �
     assert.equal(pickStage(m, kit), 'ford', `${kit} 벽 앞에서는 여울`)
     m.spent = Math.ceil(total * WALL.shop[kit]) - 1; assert.equal(pickStage(m, kit), 'ford', `${kit} 문턱 바로 아래`)
     m.spent = Math.ceil(total * WALL.shop[kit]); assert.equal(pickStage(m, kit), 'palisade', `${kit} 상점이 문턱에 닿음`)
-    refund(m); assert.equal(pickStage(m, kit), 'ford', `${kit} 전부 되돌리면 다시 벽 앞`)
+    m.gold = refundFee(m); assert.ok(refund(m)); assert.equal(pickStage(m, kit), 'ford', `${kit} 전부 되돌리면 다시 벽 앞`)
   }
   // 근접 묶음은 여울까지 번 금을 쓰면 벽을 넘지만, 활·단검은 그 금으로는 벽 앞이다 (14-ref-pacing 6-2: 번 금 13~26% 에서 1분 안에 쓰러짐)
   const thin = open(); thin.spent = Math.round(total * .2)

@@ -219,7 +219,6 @@ h1,h2,.choices b,#power-tooltip>b{font-family:var(--serif)}
 /* 기술 나무 갈래 셋 (11-17 밤 · D2 식) — 위 한 줄(이름 · 남은 고름 · 닫기) · 나무 그림 · 아래 한 줄 설명 */
 .tree-panel{background:linear-gradient(145deg,#29392d,#111e18);width:min(1180px,100%);padding:10px 16px;display:flex;flex-direction:column;align-items:stretch;gap:4px}
 .tree-head{display:flex;align-items:center;gap:12px}
-.framed .tree-head{padding-right:90px}
 .tree-head h2{margin:0;font-size:clamp(16px,3.4vh,24px);color:#ffe3a0}
 .tree-head small{flex:1;text-align:left;font-size:12px;color:#bdc5b3;letter-spacing:.04em}
 .tree-panel .tree-close{margin:0;padding:6px 22px}
@@ -380,6 +379,13 @@ footer #skill.unlock:after{content:'';position:absolute;left:50%;top:50%;width:1
 body:not(.raid-running) .head-actions #zoom{display:none}
 .head-actions{align-items:center}
 @media(orientation:landscape) and (max-height:600px){.head-actions #zoom{width:36px;height:36px;padding:3px}}
+/* 판 빠르기 ×1 → ×2 → ×3 (11-19 형) — 돋보기 왼쪽 · 같은 꼴의 둥근 단추 · ×2·×3(빨라진 채)은 금빛 · 누르면 크게 튀었다 돌아온다 · 출전 화면에서는 숨김 */
+.head-actions #speed{width:40px;height:40px;padding:0;display:grid;place-items:center;font:800 15px/1 var(--num,system-ui);letter-spacing:-.02em;color:#f0dfb6;background:#121e1bd9;border:1.5px solid #b99b66;border-radius:50%;box-shadow:0 1px 4px #000a;touch-action:manipulation}
+.head-actions #speed.on{color:#ffe08a;border-color:#ffd66b;background:#4a3410e6;box-shadow:0 0 10px #ffc84aaa,inset 0 0 6px #ffd66b66;text-shadow:0 0 6px #ffc84a}
+.head-actions #speed.pop{animation:zoom-pop var(--pop,.32s) cubic-bezier(.3,1.9,.5,1)}
+.head-actions #speed:active{transform:scale(.92)}
+body:not(.raid-running) .head-actions #speed{display:none}
+@media(orientation:landscape) and (max-height:600px){.head-actions #speed{width:36px;height:36px;font-size:14px}}
 /* 11-19 형: 「좌상단 체력칸이랑 획득 템 아이콘 너무 큰 거 같은데 좀 줄여 줘 · 화면 답답해 보임」 → 맨 끝에서 줄인다 (위의 크기 규칙들보다 뒤라야 이긴다) */
 #combat-hud{width:236px;max-width:38%}
 .health-line{font-size:11px;margin-bottom:2px}.health-line span{font-size:10px}
@@ -390,3 +396,23 @@ body:not(.raid-running) .head-actions #zoom{display:none}
 @media(orientation:landscape) and (max-height:600px){#combat-hud{width:190px;max-width:34%}.health-line{font-size:10px}.health-line span{font-size:9px}.bar.hp{--bh:16px}.power-slot{width:28px;height:28px;border-width:3px}.power-slot b{font-size:10px;min-width:11px}}
 /* 금 = 동전 그림 (11-19 형) · 글자 크기 따라감 */
 img.coin{display:inline-block;width:1.5em;height:1.5em;vertical-align:-.38em;margin-right:.15em;object-fit:contain;pointer-events:none;-webkit-user-drag:none}
+/* 상점 「전부 되돌리기」는 값을 낸다 (11-19 형) — 동전 그림 + 값 · 모자라면 붉은 값 + 「모자람」 · 누르면 흔들림 · 쓴 금이 없으면 잠김 · 한 번 묻는 상자 */
+.shop-actions #refund{display:inline-flex;align-items:center;gap:6px}
+.shop-actions #refund em{font-style:normal;font-family:var(--num);color:#ffd36a}
+.shop-actions #refund.poor{opacity:.8}.shop-actions #refund.poor em{color:#d9826a}
+.shop-actions #refund:disabled{opacity:.4}
+.rf-ic{font-style:normal;font-size:1.2em;line-height:1;color:#ffd36a}
+.shop-grid .nudge,.shop-actions .nudge{animation:skill-nudge .38s ease-out}
+.refund-ask{position:fixed;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;padding:16px;background:#050d13e6}
+.refund-ask[hidden]{display:none}
+.refund-ask>div{width:min(380px,100%);padding:18px 20px;border-radius:10px;background:linear-gradient(145deg,#2d3b2c,#121d17);border:1.5px solid #c9a24f;box-shadow:0 6px 24px #000c;text-align:center;animation:shop-pop .25s}
+.refund-ask>div>b{display:flex;align-items:center;justify-content:center;gap:6px;font-size:18px;color:#ffe3a0}
+.refund-ask p{margin:8px 0;font-size:13px;color:#d8ceb4}
+.ask-sum{display:flex;justify-content:center;gap:18px;margin:8px 0 14px;font-family:var(--num);font-size:20px}
+.ask-sum .back b{color:#9fe08a}.ask-sum .pay b{color:#ff9a7a}
+.ask-acts{display:flex;justify-content:center;gap:10px}
+.panel.shop h2.refunded{animation:shop-pop .45s}
+@media(orientation:landscape) and (max-height:600px){.refund-ask>div{padding:12px 16px}.refund-ask>div>b{font-size:15px}.refund-ask p{font-size:11px;margin:5px 0}.ask-sum{font-size:16px;margin:5px 0 10px}}
+/* 출전 화면 「본편으로」 (11-19 형 · 본편 틀의 닫기 대신) */
+#to-realm{padding:6px 14px;border-radius:6px;cursor:pointer;background:#1c2a26;border:1px solid #8f7d55;color:#e8dfc7}
+#to-realm:active{transform:scale(.94)}

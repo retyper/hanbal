@@ -4387,10 +4387,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     openFrame(`${CONTEST}?seed=${seed}&bow=${bow}&id=contest-archery&back=about:blank`, tr('frame.contest'))
   }
 
-  function openFrame(src: string, title: string): HTMLDivElement {
+  /**
+   * 틀 안 판을 연다. noClose: 열전(열전·각성 시련)은 바깥 「닫기」가 없다 (11-19 형: 「멈추고 거기까지의 돈 얻는 거 확인하고 끝내야지
+   * 본편으로 한 방에 돌아갈 이유가 없다」) — 판 안의 멈춤 → 물러나기 → 결과 → 「본편으로」, 출전 화면의 「본편으로」로만 나온다
+   */
+  function openFrame(src: string, title: string, noClose = false): HTMLDivElement {
     const ov = document.createElement('div')
     ov.className = 'nightov'
-    ov.innerHTML = `<iframe src="${src}" title="${title}"></iframe><button class="btn" data-close>${tr('frame.close')}</button>`
+    ov.innerHTML = `<iframe src="${src}" title="${title}"></iframe>${noClose ? '' : `<button class="btn" data-close>${tr('frame.close')}</button>`}`
     root.appendChild(ov)
     // 틀이 덮는 동안 밑의 본편은 그리지도 움직이지도 않는다 — 가려져도 지도·단풍·물결 애니메이션이 계속 합성돼
     // 폰에서 틀 안 판(열전·바다 도적)이 20프레임으로 버벅였다 (형 11-16 · 갤럭시 플립7)
@@ -4417,7 +4421,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     })
     back.observe(root, { childList: true })
     const close = (): void => { ov.remove(); music.refresh() }
-    ov.querySelector('[data-close]')!.addEventListener('click', close)
+    ov.querySelector('[data-close]')?.addEventListener('click', close)
     // "돌아가기"는 틀을 about:blank 로 보낸다 — 그때만 닫는다 (결과판의 '연습장'처럼 틀 안에서 옮겨 가는 건 그대로 둔다)
     const ifr = ov.querySelector('iframe')!
     ifr.addEventListener('load', () => {
@@ -4453,7 +4457,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const q = new URLSearchParams({ campaign: token, hero: look.id, name: look.name, home: look.home, bust: look.bust, sprite: look.sprite, kit: look.kit, video: look.video ? '1' : '0', game: String(realm.seed), turn: String(realm.season) })   // game·turn = 열전 판 기록에 적는 본편 판·달 (raid/runlog-store.ts)
     // awake = 각성 전투 띠 이름(겉모습만) · 판 안 각성 자격(도깨비 도장)은 열전 화면이 영웅전 표와 제 기록을 직접 읽는다 (raid/link.ts demonSealed · 각성 v2 가7)
     if (look.awake !== undefined) q.set('awake', look.awake)
-    const ov = openFrame(`${import.meta.env.BASE_URL}raid.html?${q}`, `${h.name}의 열전`)
+    const ov = openFrame(`${import.meta.env.BASE_URL}raid.html?${q}`, `${h.name}의 열전`, true)
     const frame = ov.querySelector('iframe')!
     frame.allow = 'fullscreen'
     activeRaid = { campaign: realm, hero: id, token, frame, overlay: ov, counted: false }
@@ -4504,7 +4508,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const look = new URLSearchParams({ trial: token, hero: id, name: h.name, home: `${realm.factions[h.faction]?.name ?? '떠돌이'}의 장수`, bust, sprite: base, kit: kitOfSprite(base), video: AWAKEN_LOOP.has(bust) ? '1' : '0', game: String(realm.seed), turn: String(realm.season) })
     if (awake !== base) look.set('awake', awake)
     if (host.isolated && import.meta.env.DEV) look.set('review', '')
-    const overlay = openFrame(`${import.meta.env.BASE_URL}raid.html?${look}`, `${h.name}의 각성 시련`)
+    const overlay = openFrame(`${import.meta.env.BASE_URL}raid.html?${look}`, `${h.name}의 각성 시련`, true)
     const frame = overlay.querySelector('iframe')!
     frame.allow = 'fullscreen'
     activeTrial = { campaign: realm, hero: id, token, frame, overlay }
@@ -7991,6 +7995,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   // 지킴 칸 하나를 쌓아 두고, 뒤로가기가 그 칸을 걷으면(popstate) 한 겹 닫고 다시 쌓는다. 처음 화면에서 누르면 그때 페이지를 떠난다.
   /** 한 겹 닫는다 — 닫은 게 있으면 true */
   function backOne(): boolean {
+    // 열전(열전·각성 시련·선봉) 틀이 떠 있으면 판에 알린다 — 판 중이면 멈춤 창 · 출전 화면이면 「본편으로」와 같다 · 곧장 본편으로 빠지지 않는다 (11-19 형 · raid-main backPressed)
+    const raidFrame = document.querySelector<HTMLIFrameElement>('iframe[src*="raid.html"]')
+    if (raidFrame !== null) { raidFrame.contentWindow?.postMessage({ type: 'hanbal.raid.back' }, location.origin); return true }
     if (root.classList.contains('war-open') || root.querySelector('.wr') !== null) return true // 싸움 중엔 닫지 않는다 (싸움은 끝까지)
     if (closeHowWin(root)) { howPin(); return true }
     const fail = root.querySelector('.failbox')
