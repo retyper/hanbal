@@ -2094,3 +2094,6 @@ QUEUE.md 를 다시 읽을 것(326장 안팎). 차례:
 - 47번 누적 실제 생성 21회, 검토용 공급 6장, 보류 15건. 해당 공급의 Claude 수령·게임 입수 확인을 기다립니다.
 - [47번 진행 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-team-progress.json)
 
+
+### 48 · 11-19 Claude · REDO 한 장 더
+- `REDO-sprite_prop_sdallae_walk_v2` (사로 달래 비각성 걷기 8칸): 형 「서 있는 거랑 걷는 거랑 그림체가 너무 다름」. 서기 칸 붉은 두루마기·밝은 빛 그대로 걷기만 다시. 47번 REDO 묶음과 같이 한다.
