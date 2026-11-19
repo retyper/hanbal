@@ -50,7 +50,7 @@ const K = KITS[kit], weapon = K.weapon
 /** 본편 장수 id — 열전 깸을 장수마다 적는다 (본편 진각성 자격 · raid/link.ts) */
 const heroId = query.get('hero') ?? DEFAULT_HERO
 /** 목소리 결 — 본편이 넘기면 그대로, 아니면 초상 이름의 앞 글자(w·l = 여인) */
-const sound = raidSound((query.get('sex') ?? (/^[wl]-/.test(HERO.bust) ? 'f' : 'm')) === 'f', kit)
+const sound = raidSound((query.get('sex') ?? (/^[wl]-/.test(HERO.bust) ? 'f' : 'm')) === 'f', kit, () => TRUE_WAKE.has(heroId) && (meta.heroes[heroId] ?? []).includes(SEAL_STAGE))   // 진각성(DLC)한 장수면 「진」 비기가 진각성 계단 소리·진동
 setHeroArt(sprite, HERO.awake)
 /** 판 밖 기록 (금·상점·휘장) — 독립 열전만 쓴다 */
 const meta = loadMeta()
@@ -617,7 +617,9 @@ function frame(now: number) {
   }
   if (live) { followCam(cam, run.x, run.y, dt); drawField(ctx, images, run, destination, cam) }
   if (!live || run.t >= cutinUntil) skipCutin()
-  sound.frame(run, live, paused || inspecting || rotationBlocked)
+  // 기술이 터지면 계단마다 떨고(비기 한 번 · 각성 두 박 · 진각성 세 박) 크리티컬은 짧게 한 번 (11-19 형 · HAEBI_FEEL_TIERS · 끄기·가려진 탭은 haptics 가 막음)
+  const felt = sound.frame(run, live, paused || inspecting || rotationBlocked)
+  if (felt.skill) haptics().skill(felt.skill); else if (felt.crit) haptics().crit()
   updatePortrait(); updateHud(); showOverlay(); schedule()
 }
 function schedule() { if (!raf && !document.hidden) raf = requestAnimationFrame(frame) }

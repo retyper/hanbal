@@ -41,6 +41,27 @@ export const HAEBI_SOUND = {
   pop: .16, popHz: 620, popRise: 1.7, popMs: 55, popGap: .045, popCombo: .5, popStep: 1.0595, popSteps: 12,
 } as const
 /**
+ * 열전 기술·크리티컬 소리와 진동 계단 (11-19 형: 「기술 쓸 때 사운드랑 햅틱 · 크리티컬은 핑 · 각성 기술은 더 강해야 하니 초반 사운드 너무 심하면 안 됨 · 진각성은 더 임팩트」).
+ * 소리는 src/raid/sound.ts 가 WebAudio 로 합성(skill_hit.ogg 만 파일) · 진동은 src/ui/haptics.ts skill(tier)·crit().
+ * tiers 한 줄에 한 계단 — skill 비기(평상) · awake 각성 비기(판 안 각성 중 「진」 비기) · true 진각성 비기(DLC · src/realm/dlc.ts 가 켜질 때)
+ *   cast 누를 때 「탁」 크기 · hit 터질 때 skill_hit.ogg 크기 · boom 낮은 울림 크기 · boomMs 그 길이 · tail 높은 종 꼬리 크기 · tailMs 그 길이 · buzz 터질 때 진동 ms(떨기·쉬기 번갈아)
+ *   비기 hit 는 예전 HAEBI_SOUND.skillHit(.6)보다 낮춰 위 계단의 머리 공간을 둔다 (기합 목소리 HAEBI_SOUND.skill 은 그대로)
+ * crit 맑은 「핑」 — ping 크기 · hz 첫 배음 높이 · ms 길이 · gap 묶음 틈(초 · 한 프레임 한 번) · buzz 진동 ms · buzzGap 진동 사이 ms
+ * castHz·castMs 「탁」 높이·길이 · castNoise 「탁」 노이즈 몫 · castCut 「탁」 노이즈 띠 Hz · boomHz 울림 [시작, 끝] Hz(폰 스피커가 들리게 둘째 배음 boomOver 몫을 겹침)
+ * tailHz·tailRatios 종 배음 · pingRatios 핑 배음 · chimeFall 배음마다 작아지는 몫(높은 배음일수록 작고 빨리 사라짐) · reserve 기술 소리만 maxVoices 위로 더 쓸 수 있는 소리 수 · busDb·busRatio 기술 소리 묶음 압축(겹쳐도 찢어지지 않게)
+ */
+export const HAEBI_FEEL_TIERS = {
+  tiers: {
+    skill: { cast: .12, hit: .42, boom: 0, boomMs: 0, tail: 0, tailMs: 0, buzz: [18] },
+    awake: { cast: .18, hit: .55, boom: .5, boomMs: 420, tail: 0, tailMs: 0, buzz: [32, 50, 48] },
+    true: { cast: .24, hit: .62, boom: .64, boomMs: 680, tail: .24, tailMs: 1400, buzz: [42, 45, 58, 45, 130] },
+  },
+  crit: { ping: .3, hz: 2350, ms: 210, gap: .12, buzz: 10, buzzGap: 220 },
+  castHz: 260, castMs: 70, castNoise: .6, castCut: 2600, boomHz: [72, 38], boomOver: .55,
+  tailHz: 1560, tailRatios: [1, 2.76, 5.4], pingRatios: [1, 2.32, 4.25], chimeFall: 1.6, reserve: 3, busDb: -12, busRatio: 4,
+} as const
+export type FeelTier = keyof typeof HAEBI_FEEL_TIERS.tiers
+/**
  * 폰 떨림 (11-19 형: 「피격될 때 햅틱 · 전투 승리하면 듀오링고처럼 햅틱 막 지랄 나 주면」) — src/ui/haptics.ts 한 곳에서 낸다.
  * hurt 맞을 때 [가장 짧게, 가장 길게] ms · hurtFull 잃은 체력이 최대의 이 몫이면 가장 길게 · hurtGap 연타 사이 ms
  * fieldHurt 본편 싸움에서 우리 장수가 크게 맞을 때(겨루기 짐·쓰러짐) ms · win 이김 · bigWin 대승(본편 몰아냄) — 떨기·쉬기 ms 번갈아

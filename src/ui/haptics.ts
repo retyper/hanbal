@@ -4,9 +4,9 @@
  *  - 아이폰 사파리는 navigator.vibrate 가 없다: 조용히 넘어간다 (오류도 글도 없음)
  *  - 탭이 가려졌거나 화면이 꺼졌으면 떨지 않는다 (절대 규칙 4)
  *  - 판 상태는 읽기만 한다: 부르는 쪽이 판의 사건(hurt · 이김)을 보고 부른다
- * 길이·패턴은 src/tune/params.ts HAPTICS.
+ * 길이·패턴은 src/tune/params.ts HAPTICS · 열전 기술 계단·크리티컬은 HAEBI_FEEL_TIERS (11-19 형: 「기술 쓸 때 햅틱 · 크리티컬은 더 강하게」).
  */
-import { HAPTICS as H } from '../tune/params.ts'
+import { HAPTICS as H, HAEBI_FEEL_TIERS as F, type FeelTier } from '../tune/params.ts'
 
 export const HAPTICS_KEY = 'hanbal.realm.haptics'
 type Pattern = number | readonly number[]
@@ -37,8 +37,12 @@ export function hurtMs(share: number): number {
 /** 이김 패턴 — big: 대승(몰아냄) */
 export const winPattern = (big = false): readonly number[] => big ? H.bigWin : H.win
 
+/** 기술 계단 패턴 (HAEBI_FEEL_TIERS) — 비기 한 번 · 각성 두 박 · 진각성 세 박 길게 */
+export const skillPattern = (tier: FeelTier): readonly number[] => F.tiers[tier].buzz
+const total = (p: readonly number[]) => p.reduce((a, b) => a + b, 0)
+
 export function makeHaptics(env: HapticEnv = browserEnv()) {
-  let hurtAt = -Infinity
+  let hurtAt = -Infinity, critAt = -Infinity, skillUntil = -Infinity
   const on = (): boolean => { try { return env.store()?.getItem(HAPTICS_KEY) !== '0' } catch { return true } }
   /** 낸다 — 냈으면 true (끔 · 없는 기기 · 가려진 탭이면 false) */
   const buzz = (p: Pattern): boolean => {
@@ -57,6 +61,20 @@ export function makeHaptics(env: HapticEnv = browserEnv()) {
       if (now - hurtAt < H.hurtGap) return false
       const ok = buzz(hurtMs(share))
       if (ok) hurtAt = now
+      return ok
+    },
+    /** 기술이 터졌다 — 계단마다 길게 (열전 비기·각성·진각성) · 도는 동안은 크리티컬이 끊지 않는다 */
+    skill(tier: FeelTier): boolean {
+      const p = skillPattern(tier), ok = buzz(p)
+      if (ok) skillUntil = env.now() + total(p)
+      return ok
+    },
+    /** 크리티컬 — 짧고 날카롭게 한 번 · 몰려도 F.crit.buzzGap ms 사이 · 기술 떨림이 도는 중이면 건너뜀 */
+    crit(): boolean {
+      const now = env.now()
+      if (now - critAt < F.crit.buzzGap || now < skillUntil) return false
+      const ok = buzz(F.crit.buzz)
+      if (ok) critAt = now
       return ok
     },
     /** 이겼다 — 다다닥 (듀오링고) */
