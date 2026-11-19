@@ -18,6 +18,8 @@ import { TRUE_WAKE } from './realm/data/awaken2.ts'
 import './raid/combat.css'
 import { guardMedia } from './ui/media-guard.ts'
 import { haptics } from './ui/haptics.ts'
+/** 금은 글자 대신 동전 그림 (형 11-19 「금도 아이콘으로 해야겠음 텍스트 말고」) */
+const COIN = `<img class="coin" src="${import.meta.env.BASE_URL}realm/raid/coins.png" alt="금" draggable="false">`
 guardMedia() // 그림 길게 누름 메뉴·끌기 막기 (11-19)
 
 const root = document.querySelector<HTMLDivElement>('#raid')!
@@ -149,7 +151,7 @@ function renderStageMenu() {
     return `<button data-stage="${id}" class="${id === stage ? 'on' : ''}" ${open ? '' : 'disabled title="앞 스테이지를 깨면 열립니다"'} aria-pressed="${id === stage}"><img class="emblem ${meta.cleared[id] ? 'got' : ''}" src="${import.meta.env.BASE_URL}realm/raid/emblem-${id}.png" alt="${STAGE_GLYPH[id]}"><b>${stageName(id)}</b><small>${!open ? '앞을 깨면 열립니다' : meta.cleared[id] ? '휘장 획득' : best ? `최고 ${clock(best)} 버팀` : '첫 도전'}</small></button>`
   }).join('')
   pick.querySelectorAll<HTMLButtonElement>('[data-stage]').forEach(b => b.onclick = () => { stage = b.dataset.stage as typeof stage; run = newRun(7); renderStageMenu() })
-  menu.querySelector('.note')!.innerHTML = `<span class="gold-line">금 <b>${meta.gold.toLocaleString()}</b></span><button id="open-shop">상점 · 영구 강화</button>${campaignToken ? '' : '<button id="open-heroes">장수 바꾸기</button>'}`
+  menu.querySelector('.note')!.innerHTML = `<span class="gold-line">${COIN}<b>${meta.gold.toLocaleString()}</b></span><button id="open-shop">상점 · 영구 강화</button>${campaignToken ? '' : '<button id="open-heroes">장수 바꾸기</button>'}`
   $('open-shop').onclick = () => { renderShop(); $('shop').hidden = false }
   if (!campaignToken) $('open-heroes').onclick = () => { renderHeroes(); $('shop').hidden = false }
   if (!$<HTMLButtonElement>('start').disabled) $('start').textContent = startLabel()
@@ -173,10 +175,10 @@ function renderHeroes() {
   $('close-shop').onclick = () => { $('shop').hidden = true }
 }
 function renderShop() {
-  $('shop').innerHTML = `<div class="panel shop"><small>장수 열전 · 판 밖 상점</small><h2>금 ${meta.gold.toLocaleString()}</h2><p>산 것은 다음 판부터 모든 장수에게 붙습니다. 언제든 전부 되돌려 받습니다.</p><div class="shop-grid">${SHOP.map(it => {
+  $('shop').innerHTML = `<div class="panel shop"><small>장수 열전 · 판 밖 상점</small><h2>${COIN}${meta.gold.toLocaleString()}</h2><p>산 것은 다음 판부터 모든 장수에게 붙습니다. 언제든 전부 되돌려 받습니다.</p><div class="shop-grid">${SHOP.map(it => {
     const lv = meta.shop[it.key], max = shopMax(it.key), full = lv >= max, cost = full ? 0 : shopCost(it.key, lv), poor = !full && meta.gold < cost
-    return `<button data-buy="${it.key}" class="${full ? 'maxed' : poor ? 'poor' : ''}" ${full || poor ? 'aria-disabled="true"' : ''}><img class="rune" src="${import.meta.env.BASE_URL}realm/raid/shop-${it.key}.png" alt="${it.glyph}"><b>${it.name} <i>${lv}/${max}</i></b><small>${it.desc(full ? lv : lv + 1)}</small><em>${full ? '다 올림' : poor ? `금 ${cost} · 모자람` : `금 ${cost}`}</em></button>`
-  }).join('')}</div><div class="shop-actions"><button id="refund" ${meta.spent ? '' : 'disabled'}>전부 되돌리기 · 금 ${meta.spent.toLocaleString()}</button><button id="close-shop" class="primary">닫기</button></div></div>`
+    return `<button data-buy="${it.key}" class="${full ? 'maxed' : poor ? 'poor' : ''}" ${full || poor ? 'aria-disabled="true"' : ''}><img class="rune" src="${import.meta.env.BASE_URL}realm/raid/shop-${it.key}.png" alt="${it.glyph}"><b>${it.name} <i>${lv}/${max}</i></b><small>${it.desc(full ? lv : lv + 1)}</small><em>${full ? '다 올림' : poor ? `${COIN}${cost} · 모자람` : `${COIN}${cost}`}</em></button>`
+  }).join('')}</div><div class="shop-actions"><button id="refund" ${meta.spent ? '' : 'disabled'}>전부 되돌리기 · ${COIN}${meta.spent.toLocaleString()}</button><button id="close-shop" class="primary">닫기</button></div></div>`
   $('shop').querySelectorAll<HTMLButtonElement>('[data-buy]').forEach(b => b.onclick = () => { if (buy(meta, b.dataset.buy as ShopKey)) { saveMeta(meta); run = newRun(7); renderShop(); renderStageMenu(); b.classList.add('bought') } })
   $('refund').onclick = () => { refund(meta); saveMeta(meta); run = newRun(7); renderShop(); renderStageMenu() }
   $('close-shop').onclick = () => { $('shop').hidden = true }
@@ -464,7 +466,7 @@ function showOverlay() {
     if (run.state === 'won' && wonBuzz !== run) { wonBuzz = run; haptics().win() }
     // 독립 열전: 판이 끝나면 한 번만 금을 주고 기록한다 (지면 버틴 만큼 · 깨면 휘장 + 깸 금)
     if (mode === 'stage' && rewarded !== run) { rewarded = run; const gold = runGold(run); reward = { gold, ...record(meta, run.stage, gold, run.state === 'won', run.t, heroId) }; saveMeta(meta); if (run.state === 'won' && run.stage === DEMON_STAGE) { stampDemons(); refreshWakeKind() } }
-    overlay.innerHTML = `<div class="panel result ${run.state}"><h2>${run.state === 'won' ? mode === 'stage' ? `${stageName(run.stage)} 토벌 완료` : '열전 완수' : run.hp <= 0 ? '도전 실패' : run.t < runDuration(run) ? '철수' : '시간 초과 · 두목 생존'}</h2><p>${Math.floor(run.t / 60)}분 ${Math.floor(run.t % 60)}초 · ${run.kills.toLocaleString()}명 격파 · Lv.${run.level}</p><div class="result-combos">${kitCombos(kit).filter(c => run.combos.includes(c.id)).map(c => `<b>${comboIcon(c.id)}${c.name} ${rankMark(comboRank(run, c.id))}</b>`).join('')}</div>${mode === 'stage' ? `<p class="reward">금 <b>+${reward.gold.toLocaleString()}</b> · 보유 ${meta.gold.toLocaleString()}${reward.first ? ` · <strong><img class="won-emblem" src="${import.meta.env.BASE_URL}realm/raid/emblem-${run.stage}.png" alt="">${stageName(run.stage)} 휘장 획득</strong>` : ''}${reward.heroFirst && run.stage === SEAL_STAGE && TRUE_WAKE.has(heroId) ? ` · <strong class="tw-open">본편에서 ${josa(HERO.name, '이', '가')} 진각성할 수 있습니다</strong>` : ''}</p>` : ''}${mode === 'stage' ? '' : '<p>본편 병력 손실 없음</p>'}${fromCampaign ? `<div class="result-acts">${window.parent !== window ? '<button id="return" class="primary">본편으로</button>' : ''}</div>` : `<div class="result-acts"><button id="new-run" class="primary">다시 출전</button><div>${mode === 'stage' ? '<button id="to-shop">상점</button>' : ''}<button id="quit">스테이지 고르기</button>${window.parent !== window ? '<button id="return">본편으로</button>' : ''}</div></div>`}</div>`
+    overlay.innerHTML = `<div class="panel result ${run.state}"><h2>${run.state === 'won' ? mode === 'stage' ? `${stageName(run.stage)} 토벌 완료` : '열전 완수' : run.hp <= 0 ? '도전 실패' : run.t < runDuration(run) ? '철수' : '시간 초과 · 두목 생존'}</h2><p>${Math.floor(run.t / 60)}분 ${Math.floor(run.t % 60)}초 · ${run.kills.toLocaleString()}명 격파 · Lv.${run.level}</p><div class="result-combos">${kitCombos(kit).filter(c => run.combos.includes(c.id)).map(c => `<b>${comboIcon(c.id)}${c.name} ${rankMark(comboRank(run, c.id))}</b>`).join('')}</div>${mode === 'stage' ? `<p class="reward">${COIN}<b>+${reward.gold.toLocaleString()}</b> · 보유 ${COIN}${meta.gold.toLocaleString()}${reward.first ? ` · <strong><img class="won-emblem" src="${import.meta.env.BASE_URL}realm/raid/emblem-${run.stage}.png" alt="">${stageName(run.stage)} 휘장 획득</strong>` : ''}${reward.heroFirst && run.stage === SEAL_STAGE && TRUE_WAKE.has(heroId) ? ` · <strong class="tw-open">본편에서 ${josa(HERO.name, '이', '가')} 진각성할 수 있습니다</strong>` : ''}</p>` : ''}${mode === 'stage' ? '' : '<p>본편 병력 손실 없음</p>'}${fromCampaign ? `<div class="result-acts">${window.parent !== window ? '<button id="return" class="primary">본편으로</button>' : ''}</div>` : `<div class="result-acts"><button id="new-run" class="primary">다시 출전</button><div>${mode === 'stage' ? '<button id="to-shop">상점</button>' : ''}<button id="quit">스테이지 고르기</button>${window.parent !== window ? '<button id="return">본편으로</button>' : ''}</div></div>`}</div>`
     if (vanguardToken) {
       overlay.querySelector('h2')!.textContent = run.breaches === 3 ? '길은 열었다. 본대여, 진격하라!' : `${run.breaches}/3 돌파 확보 · 본대로 귀환`
       overlay.querySelector('.result-combos')!.textContent = isBreakthrough(run.breaches) ? breakthroughText(run.breaches) : ''

@@ -364,3 +364,5 @@ body:not(.raid-running) .head-actions #zoom{display:none}
 .power-slot{width:34px;height:34px;border-width:4px}
 .power-slot b{font-size:11px;min-width:13px}
 @media(orientation:landscape) and (max-height:600px){#combat-hud{width:190px;max-width:34%}.health-line{font-size:10px}.health-line span{font-size:9px}.bar.hp{--bh:16px}.power-slot{width:28px;height:28px;border-width:3px}.power-slot b{font-size:10px;min-width:11px}}
+/* 금 = 동전 그림 (11-19 형) · 글자 크기 따라감 */
+img.coin{display:inline-block;width:1.5em;height:1.5em;vertical-align:-.38em;margin-right:.15em;object-fit:contain;pointer-events:none;-webkit-user-drag:none}
