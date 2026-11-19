@@ -12568,6 +12568,468 @@
       "status": "waiting-walk",
       "act": "D:/에셋창고/Codex-claude40-hit-new-20261118-candidates/sprite_aw1_mulsae_act.png",
       "pending": "act v1 · walk vNone → waiting for walk"
+    },
+    "mdallae": {
+      "status": "rejected",
+      "act": "D:/에셋창고/sprite_aw1_mdallae_act.png",
+      "walk": "D:/에셋창고/sprite_aw1_mdallae_walk_v2.png",
+      "actSha256": "3bc28f199ea1b8146cd4768555a858339e86c3b19a9001911113606f0ba3615a",
+      "walkSha256": "7bdf5d05d16b55cddb0c90ccfd611a9576259e19fa92f8693e1034ae2af278e5",
+      "actVersion": 1,
+      "walkVersion": 2,
+      "auto": {
+        "act": {
+          "clear": 0.782,
+          "halo": 0.125,
+          "residue": 0.0055
+        },
+        "walk": {
+          "clear": 0.78,
+          "halo": 0.079,
+          "residue": 0.0057
+        },
+        "walkFit": {
+          "byHeight": 0.5893,
+          "byArea": 0.6288,
+          "used": 0.6087,
+          "walkHead": 1.0
+        },
+        "walkCheck": {
+          "legDiff15": 0.041,
+          "legIou15": 0.959,
+          "legShadeFlip": -0.002,
+          "stride": 1.07,
+          "still": 0
+        },
+        "walkLegs": {
+          "ok": true,
+          "opposite": 2,
+          "own": 8,
+          "margin": 0.075,
+          "margins": [
+            0.038,
+            0.113,
+            0.046,
+            0.105,
+            0.04,
+            0.113,
+            0.057,
+            0.093
+          ]
+        },
+        "poseHead": {
+          "0": 1.0,
+          "1": 1.0,
+          "2": 1.0,
+          "3": 1.0,
+          "13": 0.98,
+          "16": 0.98,
+          "17": 1.0
+        },
+        "colourGap": 0.202,
+        "cell": [
+          232,
+          160
+        ],
+        "contact": [
+          14,
+          0.94,
+          0.45
+        ],
+        "poses": [
+          {
+            "reach": 0.598,
+            "h": 1.0,
+            "w": 0.995
+          },
+          {
+            "reach": 0.592,
+            "h": 1.0,
+            "w": 0.986
+          },
+          {
+            "reach": 0.593,
+            "h": 1.0,
+            "w": 0.986
+          },
+          {
+            "reach": 0.595,
+            "h": 1.0,
+            "w": 0.99
+          },
+          {
+            "reach": 0.598,
+            "h": 0.976,
+            "w": 0.981
+          },
+          {
+            "reach": 0.595,
+            "h": 0.981,
+            "w": 0.981
+          },
+          {
+            "reach": 0.6,
+            "h": 0.981,
+            "w": 0.981
+          },
+          {
+            "reach": 0.607,
+            "h": 0.99,
+            "w": 0.981
+          },
+          {
+            "reach": 0.6,
+            "h": 0.995,
+            "w": 0.99
+          },
+          {
+            "reach": 0.596,
+            "h": 1.01,
+            "w": 0.99
+          },
+          {
+            "reach": 0.598,
+            "h": 1.01,
+            "w": 0.99
+          },
+          {
+            "reach": 0.602,
+            "h": 1.01,
+            "w": 0.99
+          },
+          {
+            "reach": 0.601,
+            "h": 0.966,
+            "w": 0.986
+          },
+          {
+            "reach": 0.364,
+            "h": 0.966,
+            "w": 0.99
+          },
+          {
+            "reach": 0.744,
+            "h": 0.903,
+            "w": 1.295
+          },
+          {
+            "reach": 0.749,
+            "h": 0.894,
+            "w": 1.309
+          },
+          {
+            "reach": 0.602,
+            "h": 0.976,
+            "w": 0.99
+          },
+          {
+            "reach": 0.604,
+            "h": 0.976,
+            "w": 0.99
+          },
+          {
+            "reach": 0.637,
+            "h": 0.952,
+            "w": 1.043
+          },
+          {
+            "reach": 0.677,
+            "h": 0.478,
+            "w": 1.362
+          }
+        ]
+      },
+      "attack": [
+        0,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "attackBy": "auto",
+      "fit": {
+        "by": "head",
+        "idlePx": 139.11,
+        "k": 1.008,
+        "bodyPx": 139,
+        "awRaw": 139,
+        "awFeet": 155.0,
+        "head": 1.028,
+        "headBy": "head match",
+        "headFwd": 1.027,
+        "headRev": 1.029,
+        "headScale": 1.03,
+        "ncc": [
+          0.84,
+          0.85
+        ],
+        "gear": 1.1,
+        "base": {
+          "top": 18.0,
+          "chin": null,
+          "feet": 155.0
+        },
+        "aw": {
+          "top": 18.1,
+          "bodyTop": 17.0,
+          "chin": null,
+          "feet": 155.0
+        },
+        "left": 0.09,
+        "box": [
+          80,
+          15,
+          65,
+          53
+        ]
+      },
+      "warn": [
+        "걷기 1·5 다리가 같은 쪽으로 보임",
+        "걷기 발 벌림 약함 ×1.07",
+        "옷 빛깔이 비각성과 비슷 0.202",
+        "공격 칸 자동 고름 [0, 13, 14, 15, 16, 17] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
+      ],
+      "reason": "walk frames 1 and 5 have the same leg forward (half cycle repeated); redress the walkref again keeping the normal walk's leg phase exactly",
+      "rejectedBy": "review",
+      "review": {
+        "note": "",
+        "date": "2026-11-18"
+      },
+      "actOk": {
+        "sha256": "3bc28f199ea1b8146cd4768555a858339e86c3b19a9001911113606f0ba3615a",
+        "version": 1,
+        "date": "2026-11-18"
+      }
+    },
+    "sincheongan": {
+      "status": "installed",
+      "act": "D:/에셋창고/sprite_aw1_sincheongan_act.png",
+      "walk": "D:/에셋창고/sprite_aw1_sincheongan_walk_v2.png",
+      "actSha256": "01f11ef41b1de4558751a299af76f4f8dd9cd64d86f7e95062ae04a615efc0c3",
+      "walkSha256": "7402007f307b13aac5789be7a40581ab501327a63adf18c9dca4870c824ba8d6",
+      "actVersion": 1,
+      "walkVersion": 2,
+      "auto": {
+        "act": {
+          "clear": 0.727,
+          "halo": 0.086,
+          "residue": 0.0002
+        },
+        "walk": {
+          "clear": 0.603,
+          "halo": 0.041,
+          "residue": 0.0
+        },
+        "walkFit": {
+          "byHeight": 0.5012,
+          "byArea": 0.5241,
+          "used": 0.5074,
+          "walkHead": 1.02
+        },
+        "walkCheck": {
+          "legDiff15": 0.182,
+          "legIou15": 0.757,
+          "legShadeFlip": -0.058,
+          "stride": 1.01,
+          "still": 0
+        },
+        "walkLegs": {
+          "ok": true,
+          "opposite": 4,
+          "own": 8,
+          "margin": 0.095,
+          "margins": [
+            0.107,
+            0.102,
+            0.088,
+            0.039,
+            0.117,
+            0.12,
+            0.056,
+            0.032
+          ]
+        },
+        "poseHead": {
+          "0": 1.0,
+          "1": 0.98,
+          "2": 0.98,
+          "3": 0.98,
+          "13": 0.95,
+          "14": 0.99,
+          "15": 0.99,
+          "16": 1.01,
+          "17": 0.99
+        },
+        "colourGap": 0.181,
+        "cell": [
+          216,
+          160
+        ],
+        "contact": [
+          14,
+          0.94,
+          0.46
+        ],
+        "poses": [
+          {
+            "reach": 0.34,
+            "h": 1.01,
+            "w": 0.659
+          },
+          {
+            "reach": 0.34,
+            "h": 1.005,
+            "w": 0.707
+          },
+          {
+            "reach": 0.332,
+            "h": 1.0,
+            "w": 0.635
+          },
+          {
+            "reach": 0.342,
+            "h": 1.005,
+            "w": 0.702
+          },
+          {
+            "reach": 0.336,
+            "h": 1.019,
+            "w": 0.659
+          },
+          {
+            "reach": 0.333,
+            "h": 1.014,
+            "w": 0.649
+          },
+          {
+            "reach": 0.34,
+            "h": 1.01,
+            "w": 0.668
+          },
+          {
+            "reach": 0.322,
+            "h": 1.014,
+            "w": 0.62
+          },
+          {
+            "reach": 0.35,
+            "h": 1.005,
+            "w": 0.702
+          },
+          {
+            "reach": 0.354,
+            "h": 0.99,
+            "w": 0.692
+          },
+          {
+            "reach": 0.342,
+            "h": 1.0,
+            "w": 0.678
+          },
+          {
+            "reach": 0.331,
+            "h": 1.0,
+            "w": 0.654
+          },
+          {
+            "reach": 0.328,
+            "h": 1.0,
+            "w": 0.625
+          },
+          {
+            "reach": 0.443,
+            "h": 1.038,
+            "w": 0.861
+          },
+          {
+            "reach": 0.697,
+            "h": 0.909,
+            "w": 1.125
+          },
+          {
+            "reach": 0.537,
+            "h": 0.913,
+            "w": 0.904
+          },
+          {
+            "reach": 0.345,
+            "h": 0.957,
+            "w": 0.663
+          },
+          {
+            "reach": 0.329,
+            "h": 0.986,
+            "w": 0.644
+          },
+          {
+            "reach": 0.432,
+            "h": 1.01,
+            "w": 0.803
+          },
+          {
+            "reach": 0.553,
+            "h": 0.534,
+            "w": 1.279
+          }
+        ]
+      },
+      "attack": [
+        0,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "attackBy": "auto",
+      "fit": {
+        "by": "head",
+        "idlePx": 139.04,
+        "k": 1.008,
+        "bodyPx": 138,
+        "awRaw": 139,
+        "awFeet": 155.0,
+        "head": 1.013,
+        "headBy": "head match",
+        "headFwd": 1.015,
+        "headRev": 1.011,
+        "headScale": 1.02,
+        "ncc": [
+          0.83,
+          0.84
+        ],
+        "gear": 0.0,
+        "base": {
+          "top": 19.0,
+          "chin": null,
+          "feet": 155.0
+        },
+        "aw": {
+          "top": 18.5,
+          "bodyTop": 18.0,
+          "chin": null,
+          "feet": 155.0
+        },
+        "left": -0.45,
+        "box": [
+          69,
+          15,
+          88,
+          53
+        ]
+      },
+      "warn": [
+        "걷기 발 벌림 약함 ×1.01",
+        "옷 빛깔이 비각성과 비슷 0.181",
+        "공격 칸 자동 고름 [0, 13, 14, 15, 16, 17] · detail.png A/B 에서 당김·맞닿음·뻗음 차례를 볼 것"
+      ],
+      "review": {
+        "note": "",
+        "date": "2026-11-18"
+      },
+      "installed": "2026-11-18",
+      "key": "aw1-sincheongan"
     }
   }
 }

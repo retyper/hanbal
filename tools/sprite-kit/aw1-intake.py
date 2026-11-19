@@ -104,6 +104,8 @@ def inbox(root, rc=None):
         elif vw is None: f['wait'] = 'walk'
         elif va == vw: f['pair'] = True
         elif vw > va and ok.get('version', 1) == va and ok.get('sha256') == sha(f['act']): f['pair'] = True
+        # 11-19: 동작 판을 같은 이름(v1)으로 새로 받고 걷기 판은 v2 로 온 경우(mdallae · sincheongan) — 걷기 판이 동작 판보다 뒤에 만들어졌으면 이 동작 판에 맞춘 걷기다
+        elif vw > va and Path(f['walk']).stat().st_mtime > Path(f['act']).stat().st_mtime and (rc or {}).get('heroes', {}).get(who, {}).get('status') != 'installed': f['pair'] = True
         else: f['wait'] = 'walk' if va > vw else 'act'
         out[who] = f
     return out
