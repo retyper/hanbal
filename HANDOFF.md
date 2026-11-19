@@ -1,3 +1,20 @@
+## Codex 최종 정산 — 현재 승인범위 완료·작업/감시 중지 (2026-11-19T10:25:33.2223916+09:00)
+- 사용자의 ‘할 일 다했으면 멈춰도 돼, 또 올라오면 말해줄게’에 따라 현재 명시 범위를 마쳤습니다. 새 생성·미보존·활성 배정 0, 단일 감시기도 종료했습니다. 새 지시가 올라와도 자동 재개하지 않고 사용자 재개를 기다립니다.
+- 지시45~검토46 마무리: 새 생성7회(HIT5+ACT2), 기존 원본재사용4장(g62~65·새콜0). 검토용 정확명공급10장(새6+재사용4); g70은 무기가 반대 손으로 옮겨진 실결함으로 보류·원본/QA 보존·추가생성0입니다.
+- mdallae/sincheongan ACT는 canonical4×5로 각각 누적2/3에 공식PASS(head1.03/1.01)+전20포즈·무기·보행위상·실제consumer160 직접검수 PASS, 원본동byte 공급했습니다. literal10%여백은 각각 최소1.27%/1.24%로 미달·픽셀 완전일치/가린손 미확정 한계는 원장에 공개했습니다. 설치/실게임재생은 하지 않았습니다.
+- MD44 이후 누적 기록은 실제생성38회/검토용공급26장입니다(최종승인·게임입수 수 아님). [최종정산 JSON](C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/work/claude45-final-reconciliation.json) · [live 최종집계](C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/work/claude45-team-progress.json) · [재개 요약](C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/work/CLAUDE45-FAST-RESUME.md).
+- Claude46의 g62/g63/g66 입수·얼굴자리재측정·동일인물/자세OK 보고를 확인했습니다. 그 이후 새공급의 입수/최종승인 ACK는 미확인입니다. 아래 옛0장/중단/진행중 기록은 시간별 역사이며 이 맨위 정산이 현재 상태입니다.
+- [권위MD와 사용자 재개시 확인할 다음지시](D:/flutter/arrow_game_one/docs/realm/production/CODEX-SKILLBODY-REDO-20261117.md) · [Claude 전달 경로](D:/에셋창고/CODEX-TO-CLAUDE-LATEST.md). 기존44 HOLD/RAW/실args·이력은 보존했습니다.
+
+---
+## Codex45 최신 전달 포인터 — 2026-11-19T09:46:22.326062+09:00 시점 스냅샷
+- Claude 지시45 수신·검토 후 재개했습니다. MD44~45 한정 실제 생성31회/검토용 정확명공급18장(45에서 기존HIT2 원본을 새생성0으로 공급). 최종 입수·설치 수가 아닙니다. 진행값은 [최신 전달](D:/에셋창고/CODEX-TO-CLAUDE-LATEST.md) 및 [45 live progress](C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/work/claude45-team-progress.json)를 봅니다.
+- 권위: [Claude45 및 후속 명령](D:/flutter/arrow_game_one/docs/realm/production/CODEX-SKILLBODY-REDO-20261117.md). g62/g63 HIT_v2 정확명 동byte 공급·SHA readback 완료. HIT 미제출5 첫1회 후 mdallae/sincheongan actref ACT 각 누적2/3 순서로 준비합니다.
+- 아래 예전 ‘0장/중단’과 옛 진행 기록은 당시의 역사이며 현재 상태가 아닙니다. 원문은 보존합니다. Claude45 답변은 확인했으나 이 최신 공급 알림의 실제 열람·입수 확인은 아직 미확인입니다.
+
+---
+
+- **[11-19 Claude 마무리 · ★ 여기부터 · 챗지피티 주간 한도 끝 → 멈춤]** ① 열전: 시작은 평타만(검기·비기 레벨업) · 판 안 각성은 도깨비 도장 뒤(그 전엔 투지 · 지금 바로 켜짐) · 그림 길게 누름 막기 · 맞을 때 진동 · 「둑」·「뽁」 소리 · 승리 진동 · 진동 끄기 ② 열전은 장수마다 본편 한 달에 한 번(`src/realm/raid-month.ts` · `params.realm.raidPerMonth`) · 본편에서 연 판은 결과 화면에 「본편으로」만 ③ 앱 이름 열국군웅전 · 아이콘 테두리 없는 소서노(maskable) ④ 각성 전투 띠 41명 넣음(`aw1-intake.py` · 같은 이름 동작 판 + 뒤에 온 걷기 판도 짝) · 달래·아름·오디·신지 너울은 걷기 판만 다시 ⑤ 동작 판 참조는 비각성 띠 4×5 재배열(`tools/sprite-kit/aw1-actref.py` · 197명) ⑥ 각성 피격 초상 g-62~69 다시 넣음 · g-70 은 무기 손 바뀜 보류 ⑦ Codex 지시 47(걷기 판 먼저 → REDO 269~289 → 나머지 동작 판) 진행 중 멈춤 · 한도 풀리면 형이 「47번 이어서」 · 받으면 `aw1-intake.py stage` → detail.png 눈으로 → accept/reject → install ⑧ 디스크 정리(D 3.8→14G) · 메모리 97→61줄 ⑨ 남은 것: 각성 v2 가5~가8 · `ascendTrialOpen` 0 은 형 판 끝난 뒤 · season.planned() 호감 버그 · 신지 방울 세 줄 다시 녹음 · 각성 영상(PC 크롬 bcba6fe9).
 - **[11-18~19 밤 Claude 진행 정리 · ★ 여기부터]** ① 설계 연구 `docs/realm/study-20261118/`(00 색인 · 30 통합안 · 31 물음 · 형 답 「권한 대로」 = 여섯 모두 ① · 메모리 awakening-v2-decided · awakening-slow-like-digimon: 첫 각성 10시간대) ② 각성 v2 바닥 커밋(스위치 `P.realm.ascendTrialOpen` 기본 1 = 지금 규칙 · **형 판이 끝난 뒤 0 으로 켬** · 사람 열쇠 src/realm/person.ts · 도장 비트 32/64 · 열전 출전 벽 앞 여울) · 다음은 30-PROPOSAL 7-1 가5~가8(모습 가르기 · 터지는 순간 · 도깨비 표식) ③ 진각성 DLC 스위치 끔(src/realm/dlc.ts) ④ 열전: 적 화살 닿지 않던 버그 고침 · 적 위험 표식 붉은/내 표식 금빛 · 투지·각성 오라(src/raid/fx-aura.ts) ⑤ 피격 초상 221×3 다 넣음 + 얼굴 자리 맞추기(src/ui/hit-focus.generated.ts) ⑥ 본편 추천 표시(src/ui/realm/recommend.ts) ⑦ 각성 전투 띠: 받기 도구 tools/sprite-kit/aw1-intake.py(AW1-INTAKE.md · measure · 걷기 다리 검사) · 21명 넣음 · Codex 지시 35~43 · 걷기는 비각성 걷기를 옷만 갈아입히는 편집(walkref) ⑧ 에셋 감사 73장 줄(REDO-AUDIT-20261119.md) · 형 판정: 너울·누리 띠 다시 · 서늘 한국식 자객(초상 넣음) · 달래 칼(넣음) · w-27 진하 → 신지 방울(다시 녹음 세 줄 cast/part-3.md) ⑨ 남은 버그: season.planned() 가 원본 판 호감을 바꿈(01·X 갈래 보고) ⑩ PC 크롬은 이 세션에서 끊긴 채 · 영상은 PC 크롬 붙으면(Windows 라도 노트북 5d7f0148 은 아님 · 메모리 browser-mac-vs-pc).
 - **[11-17 밤 Claude 진행 정리 · 대화 기록 비우기 전 ★ 여기부터]** ① 전투 띠 **기준 판 13칸 확정**(창·여 소서노 · 주술·여 감실·진하 · 도끼·여 쇠비 · 단검·여 이랑 · 활·여 해달 · 칼·여 아라 / 도끼·남 호진 · 활·남 주몽 · 칼·남 온조 · 단검·남 호공 · 주술·남 고목 · 돌팔매·남 팔매) · 창·남 오이만 bl2 대기. 장수 키 표 `tools/sprite-kit/heights.json`(소서노 167 · 남 기본 179 · 여 163) → `src/realm/data/hero-height.ts` 로 싸움터 화면 키 · 머리 장식 키 빼기 `tools/sprite-kit/headgear.json`. 남은 장수 띠는 `ref-slot-<무기>-<g|w>.png` 기준 판 참고 + 저장 전 HARD CHECK(tools/remake-jobs.mjs). Codex 보류 후보는 Claude 가 게임 크기 시트로 판정 · 애매하면 형에게(메모리 ask-on-borderline-redraw). ② **피격 초상**: 코드 효과(src/ui/hit-portrait.ts · 열전·겨루기·본편 합전) + 그림 28장(기준 판 14 × 비각성·각성 · public/realm/hit · `tools/hit-intake.py`) · 상처·피 금지(형) → `_v2` 지우기 편집이 들어오는 중(intake 가 _v2 우선). ③ 열전: 레벨업 카드 +1/획득·가진 칸 크게·카드 작게 · 각성 단추·무적·진 비기·시전·피해 숫자 · 「영웅의 투지」 보호막. ④ 각성 영상: 11-17 Jay·Flow 로 g-40~63 상당수 받음(등록은 형 판정 뒤 · ART-VIDEO-STATUS.md 11-17 절들) · 다음 g-63-heomcheuk-beogeum · Jay 실패 셋(골개·압·한울) 새 대화로 다시 · 소나 g-49 는 형 손으로 받기. ⑤ 형에게 남은 질문: 각성 토글(끄면 능력치도 빠지나 · 열전 토글 시 판 시작부터 각성인가) · 3스테이지 악마 아이콘 각성 규칙 개편(아직 구현 안 함). ⑥ C 드라이브: 크롬 캐시 6GB 비움 · 옛 대화 기록 정리.
 - **[Codex Bad Request 조사 · 2026-11-17]** 이전 채팅 「Flutter 작업 이어받기」는 KST 00:18·00:34·00:35 Codex `/codex/responses` HTTP400 `{"detail":"Bad Request"}`로 실패. 이미지 생성 서비스 거절로 확인된 오류가 아니며 서버의 정확한 거절 이유는 미공개(attestation timeout 경고와 인과관계 미확인). `D:/에셋창고/Codex-queue-latest-20261116.json` 실제 대조: 최신 큐200장 중49장 존재, 이번 생성기록34개, 마지막34번 `sprite_prop_base-w-50-siljik-mulga_act.png` 저장됨. 다음35번 `sprite_prop_base-w-50-siljik-mulga_walk.png`는 없음. 원장 `status: running`은 실패한 턴과 불일치하므로 현재 실행 중의 근거로 쓰지 말 것. 최신34장 게임 적용은 원장상 false. 진각성 원본PNG220장·runtime AW2 JPG220장 존재 확인(품질·실행 검수는 재실시 안 함). 다음: 기존 파일을 건너뛰고35번부터 재개하되 30번 마루 동작의 마지막 쓰러짐 칸 창 누락 교정과31번 걷기 반대발 검수 미완료 기록 보존. 이번은 진단만, 새 생성·코드수정·커밋·푸시·배포 없음.
@@ -602,3 +619,553 @@ D실측2.65GiB확보/여유10.19GiB. 동일원본1101장중복사본은같은경
 
 ## Codex42 현재 인수인계
 새42/QUEUE367/id-name기준·fresh독립맥락으로SPA걷기28남은범위우선재개. 첫호공/해달/고구려무녀각새agent진행,신규ACT는guard로전레인native0. 이어REDO73우선12/50/11. 현재상태·콜예산·원장·정리증거·다음행동은 work/CLAUDE-RESUME-CURRENT.md 한파일권위. D2.65GiB확보/원본·요청·측정삭제0.
+
+
+## Codex43 공급5개·서늘ACT 한도보류·주간예산 절약
+서늘초상2/전신2+달래칼1 정확명공급/총10raw보존. 서늘ACT2판소진후11번칼소실·여백FAIL 후보보류,의존WALK0. 너울·누리refs준비/native0,43순서조건에따라Claude의독립차례해제MD대기. 공유MD/review에정확후보/SHA/실패QA와판정요청전달. 사용자주간예산절약지시로quality-budget적용/현재모델·검증참조재사용·중복생성0. D정리완료2.65GiB확보/원본·요청·measure보존. 현재단계 work/CLAUDE-RESUME-CURRENT.md / claude43-team-progress.json / control.json. 코드·QUEUE·입수·실제PNG픽셀수정·commit·push없음.
+
+
+## Codex43 다음 독립 너울 진행
+서늘ACT2판보류/의존WALK0유지. 사용자계속지시에따라다음독립너울ACT→새ACT합격후WALK로진행, control너울2ID만허용/누리0. 이전전면대기해석해제/서늘3차없음. work/claude43-neoul-release-note.json·CLAUDE-RESUME-CURRENT.md 기준.
+
+
+## Codex43 너울 두판 보류·독립 누리 ACT부터 진행
+- 너울ACT2판은 최종보류/정확명공급0, 의존WALK0/3차없음. 2판은격자침범개선됐지만셀1~4하단여백4/229px=1.75%,8번2/229=0.87%,13번우24/344=6.98%로10%미달. 기준판과동일총키직접비교에서얼굴·머리와짧은하퇴가작은성인기준에못미침,가려진skull/crotch정밀수치null/추정합격0. 부모도비교QA직접확인. 최종후보 D:/에셋창고/Codex-claude43-redo-20261119-candidates/neoul/sprite_prop_base-w-71-yeonna-neoul_act_v3-native2.png SHA4074b10b7fde058cea1875803e295f5952dbeaec6b3828846ad67dd08b6baadf. 원장 Codex-claude43-redo-neoul-20261119.json / work/claude43-neoul-readonly-qa 보존.
+- 다음순서독립 누리ACT→합격새ACT LAST WALK로진행. 별도준비fresh맥락유지/실제4원화전체첨부/구체1보정최대2/실패ACT의걷기0. 현재control은누리2ID만허용,서늘·너울native종결/이미지추가콜0. 사용자주간한도절약지시를지켜동일실패3차·이유없는재생성·이미검증된조사반복0. 현재반환12raw/정확명공급5개,최종승인·게임적용false.
+
+
+## Codex43 누리 두판보류·기존 REDO 차례1 세 장수 병렬 전환
+- 누리ACT2판 최종보류/정확명공급0, 의존WALK0/3차없음. 2판 SHA8ff0a9f4353f09f14f183874ae8d4f34c4096fcf4e21ca591af2a3c916a81837, 후보 D:/에셋창고/Codex-claude43-redo-20261119-candidates/nuri/sprite_prop_nuri_act_v3-native2.png. 담당자직접검수에서 baseline대비얼굴넓음·짧은하퇴가남고, 하단여백1~4=3.57%/5~8=5.69%,13창끝→14칸·20몸→19칸경계침범. 가려진정밀skull/crotch수치null/추정합격0. 원장 Codex-claude43-redo-nuri-20261119.json / work/claude43-nuri-readonly-qa 에원본·실제4refs·request·전체grid/alpha/나란히비교보존.
+- 새43우선11개 처리는각자시도상한내종결: 서늘일러스트4+달래1 정확명공급, 서늘·너울·누리ACT3개보류와각직접의존WALK3개콜0. 현재14raw/5named,최종승인·게임적용false. 보류판을통과로위장하거나한도를리셋하지않습니다. Claude가후보를검수하고추가방법을지시해주면그범위로만재개합니다.
+- 사용자계속·병렬·주간예산절약지시에따라기존REDO 차례1의다음독립3장수 허황옥(배경만)·구름(ACT→합격새ACT LAST WALK)·을음(비기칼수정)을각새맥락으로진행. 허황옥/구름원화준비는완료/native0,을음은새독립맥락부터. 현재control은이4ID만허용/장수당native1동시/전역3동시,각name첫+구체이유유일1보정상한2. 다른WHO·과거SPA·보류ACT추가콜0. 이미검증된조사재독0/현재모델유지/원화전체실첨부·자체시각QA·전raw보존.
+
+
+## Codex43 허황옥 첫판 공급·다음 아단 비기 편집 배정
+- 허황옥은최초1native/보정0으로내용QA통과, D:/에셋창고/gpt_bust-l-L3-heo-hwangok.png SHA131487890453ff71227e53dbcd4ad30c3e262050b1230f59fb16d9c425b2fb5e 공급. 얼굴·나이성별·흑발/물고기금관·진주/산호·청금색옷/목선 유지, 풍경제거/navy+softglow/명치구도 원본나란히직접검수. native1254² 한계만별도/로컬편집0/입수승인·게임적용false. 원장 Codex-claude43-redo-heo-hwangok-20261119.json.
+- 구름ACT/을음칼편집은각한번구체보정중(각이름최대2),허황옥자리다음아단비기칼수정을fresh맥락으로배정. 동시에진행장수3/각native1,원화전체실첨부·정체성보존·막연한반복0. 실반환수/공급수는work/claude43-team-progress.json 기준. 다음슬롯은금바위→이사금→물건차례입니다.
+
+
+## Codex43 구름·을음 한도종결 및 아단·금바위·이사금 병렬
+- 구름ACT2판은여백·자세순서·baseline얼굴비율미달로최종HOLD/정확명0/의존WALK0/3차0. native2 SHA f9ec78227d971e3bb7e90d240e0b18dd650972af26725e1b7e6a1073e8220ddd, D:/에셋창고/Codex-claude43-redo-20261119-candidates/gureum/sprite_prop_gureum_act_v3-native2.png. 담당자직접QA에서1~4bottom1.07%/12left1.43%/20left1.79%,slot9가6thwalk아닌공격준비/13회복형으로순서당김. 가려진skull/crotch정밀수치null/추정합격0. 원장·실refs·request·전체raw/QA 보존.
+- 을음은첫판칼날휘어짐잔존으로HOLD. 후보 SHAfd105abb26f4a4a30e769cc8431c0e2f93712b804e1ebe21b0d23e9ab37a265b, D:/에셋창고/Codex-claude43-redo-20261119-candidates/eureum/skillbody_g-73-baekje-eureum_v3-native1.png. 유일1보정은HTTP400 moderation_blocked(input violence)/이미지반환0,requestID81c4cd4d-d139-43e8-8557-3b6e51966384. 실요청2/반환1로구분하고우회·3차없이종결. 배경정확단색미달/손가림미확정도원장보존.
+- 두담당자모두native종료/미보존반환0. 다음독립3장수 아단·금바위·이사금의비기칼수정을각fresh맥락에서병렬진행. 각native1동시/전역3,카드원화전체직뷰·실첨부/정체성고정/명확한실패만한번보정한도. 보류줄재개/로컬픽셀편집·원본삭제0. 최신숫자는team-progress에서실콜·반환·무이미지·정확명공급을분리합니다.
+
+
+## Codex43 아단·금바위 공급·이사금 보류 및 독립 물건 세 개 병렬
+- 아단은first가더직선인칼로선택해 D:/에셋창고/skillbody_g-40-anya-adan_v3.png SHA96a0a1ffa193a400c0a13ecc7da744fcc51299403fbe802b8888663e80ce7773 공급(실콜2/반환2). second칼끝미세bow후보보존,first초기exactRGB FAIL이력은보존하고현재native색상한계로분리. 배경RGB미세차만의불필요보정1회가있어가이드에그사유단독재생성금지명시했습니다.
+- 금바위는second의원치않는금빛원호제거/어두운붓자국·직선환두칼·평코등이/파지·원본정체성유지확인, D:/에셋창고/skillbody_g-86-mokji-geumbawi_v3.png SHAed33acb421de15404b20fc64ca00a1c94db593f3f7c2c2d5adc2e081bc165191 공급(2콜2반환). 부모도손확대직뷰: 자연양손파지·뒤손4지+엄지/앞손엄지는뒤가림,보이는추가손가락결함없음/가려진정확5지는미확정별도. 가림만을전체HOLD로오해하지않도록수정,최종승인false유지. 부모가선택아단/금바위원본도직뷰하여칼포함전체프레임범위가80%이상임확인; 보수적대략구간/비율은 work/claude43-parent-selected-frames-qa.json(정확분할측정아님,효과제외).
+- 이사금2판은그림+칼끝~발끝1212/1536≈78.906%로명시≥80%미달해HOLD/정확명0/추가0. 떨어진spark를포함해합격으로위장하지않음. 최선후보 D:/에셋창고/Codex-claude43-redo-20261119-candidates/isageum/skillbody_aw1_g-17-saro-isageum_v2-native-2.png SHA5926258557af95a2f7cc40937354405c42202370e86fc08b398b11f2f5fb74b5,얼굴·옷·포즈·곧은환두칼/파지는직검수통과·배경미세변동은보류이유아님. 모든개인원장/원본/요청/SHA/QA보존.
+- 다음차례1독립물건 성난탈·부적·정예산적을각fresh맥락으로병렬진행. 각native1동시/전역3,첫1+구체실패유일1보정max2,도구안전거절은기록후우회반복0. 다음도깨비표식/투지,이후차례2 50장순입니다. 최신실콜/반환/무반환/정확명공급은team-progress 기준,공급은최종승인·게임적용아님.
+
+
+## Codex43 성난탈 공급·산적 보류·도깨비와 투지 진행
+- 성난탈2판중native2를 D:/에셋창고/redo-icon-mood-angry.png SHA1e0eafa21535438fb934cc70f56121a7b275bcfc5b8eefe72aafeb279e6a6784 공급. 뿔/돌기/송곳니제거·목재한국탈표현·128게임크기/원본joy/wary와나란히직검수,부모도동일QA/카드직뷰. eye holes는기준마스터처럼검은안쪽으로표현/안쪽alpha253은별도한계,투명background조건을눈안쪽alpha0필수로확대해석하지않음. visible여백8.21/10.13%·바깥alpha1~2잔재471px는엄격zero-padding미달이라고별도보존/로컬가공0.
+- 부적2판은작은불꽃/한국부적/원형도장제거·visible alpha>=16 여백최소8.69% 통과. 바깥alpha1/255잔재1108px만으로전체HOLD한담당판정은부모가비가시잔재한계로분리,strictzero8%미달은그대로정직기록후동일바이트정확명공급마감요청(새콜0). 후보SHA4973fe9dedf454af7dad82bbb2a971578e9296cdfcea4261cac2f4de7bcfcd3f/개인원장. 최종공급수는team-progress와담당완료기록권위.
+- 정예산적2판은9컷/한벌/수염상투/도끼복원됐으나2·4번동일앞다리접촉·6top7.212%/9left6.413% 등10%미달로HOLD/정확명0/3차0. 최선 D:/에셋창고/Codex-claude43-redo-20261119-candidates/bandit-chief/redo-raid-bandit-chief-3x3-native2.png SHA15418a219558e0c3b544306d079df9090a6ab46ba083ce054d1ec1af5cd6e296. 원본/요청/실refs·원화나란히/2대4직접QA·SHA보존/미보존0.
+- 다음차례1도깨비표식·투지붓글씨를각fresh맥락에서독립병렬생성. 투지에만정확「투지」두글자허용/그외문자0. 기존첫+유일1보정상한/주간예산·현재모델·전raw보존·alpha비가시잔재정직기록·픽셀로컬가공0. 다음은기존priority2 50장;같은장수여러산출물은같은fresh장수맥락,전체미래그룹계획work/claude43-future-group-plan.json(54그룹61개=priority2/3),새요청전정확id/ref·최신MD재확인.
+
+
+## Codex43 투지·도깨비 공급 완료·차례2 각성초상 첫 세 장수
+- 투지는first1/보정0으로 D:/에셋창고/new-fx-word-grit.png SHA f159ccef16ed65047efeab2d2476fd873a946412ee6ea0fc6135c86283f405f0 공급. 담당직접「투지」철자/각성마스터와붓결·주황청동색·가로비율QA. native1678x937/참조900x503 aspect차0.087%·로컬가공0. alpha0 70.9023%,비가시alpha1~2전체47620중가시bbox밖1604px(max2)는한계로기록/재시도0.
+- 도깨비는first가시여백5%→유일보정call2로13.0781%이상통과, D:/에셋창고/new-mark-dokkaebi.png SHA10a487dcca15cbb721c1417fc0ccb8b64eb71e730cab0205a1bcc474d24316ed 공급(2콜2반환). 원화3+출력나란히/32게임크기확인,뿔/문자/일본oni·taotie가시결함없음. strict alpha0경계의alpha1잔재1182px(bordermax1)/globalalpha1·2수량은개별원장에보존. 부적도parent-alpha1정책마감완료/정확명동일바이트공급확인.
+- 현재43반환33raw/기록실요청34(을음400무반환1별도)/정확명공급12개. 앞우선11+기존차례1 12개는시도상한안에서공급12/보류7/직접의존WALK미제출4로구분하여23개줄처리상태기록,전체완성/사용자승인주장아님. 원본·요청·refsSHA·검수보존,추가native한도리셋0.
+- 이제기존차례2 50개로전환: 골벌골개/압독압/감문감나무각새독립맥락에서각성초상명치틀을병렬진행. 세장수refs3실뷰/SHA준비/native0완료. 원래각성옷·장식은고정,일반초상은얼굴만·다른장수master는구도만. 새각성의상창작/다른사람얼굴옷이식0. 각native1동시/전역3/첫1+명확실패유일1보정max2,현재모델·확인참조재사용/weeklybudget절약. 다음g63여울→g64소금꾼→g65쇠망치 등manifest/groupplan순.
+
+
+## Codex43 압·감나무 공급·골개 구도보류·다음 각성초상 세 장수
+- 압독압second D:/에셋창고/gpt_aw1-g-61-apdok-ap.png SHAb5cbf5cbbc17b0bdc16645bad48bb5a779bf8e75c0bbb26d8cd3d478ebda4530 공급(2콜2반환). 명치중심틀/전체머리·양어깨·윗팔/원래각성털망토·철찰갑·붉은목깃·술·브로치/도끼유지,일반판옷·master얼굴/활이식없음 직접나란히QA.
+- 감문감나무second D:/에셋창고/gpt_aw1-g-62-gammun-gamnamu.png SHA09dc3759fb5f5de616fe640353da475d346ead2d624cf7c1cc69096e8454b3c4 공급(2콜2반환). 전체상투/명치틀·본인얼굴·원각성옷/장식/활화살통 직접비교,프레임밖손·활하부미검증/미세RGB·native1254²한계보존. 두장수head약1/4정밀skull인증주장0/최종승인·runtimefalse.
+- 골벌골개2판은fulltopknot복원했지만복부갑주띠가남아명치틀불충족으로HOLD/정확명0/추가0. best D:/에셋창고/Codex-claude43-redo-20261119-raw/golgae/call-2-7ee69dd6b5213e11.png SHA7ee69dd6b5213e1147adf87bb7941e10d80513ada9cdc2c19221c56b495f7d25. 담당나란히QA/부모도IMAGE1각성옷·2얼굴·3구도·native2 contact직뷰,전체raw/실제3refs·request·QA보존.
+- 구도실패반복을줄이기위해다음첫요청부터현재카드요구를명확화: fullhead/topknot장식프레임안,하단은명치에서끝나고허리띠/복부없음,기존각성의상은보이는상반신영역에서그대로/하의는자르고새옷을발명하지않음. 참조역할/카드문안과전체원화는그대로유지. 새여울(g63)·소금꾼(g64)·쇠망치(g65)를각fresh맥락으로병렬진행. 현재모델/첫1+명확실패유일1보정2상한/미세RGB단독재생성0.
+
+
+## Codex43 소금꾼 첫판·여울 보정 공급·말발굽과 부리 진행
+- 소금꾼first1/보정0 D:/에셋창고/gpt_aw1-g-64-michuhol-sogeumkkun.png SHA50a4875c42f8fbcc2298ca9bbaa2b5b6693ff47725a0077b1e2c14bd6c08a1e8 공급. 전체머리·상투/양어깨·위팔/명치·허리복부0·본인얼굴·원각성천/철찰갑·브로치/술/작살 직접나란히QA.
+- 초팔여울은first머리잘림→유일보정second전체머리여유·명치틀통과, D:/에셋창고/gpt_aw1-g-63-chopal-yeoul.png SHAe35141747b8c9a088801e2747600db8ae80c79c988b5ddca0bea52e22efb7c3a 공급(2콜2반환). 기존각성옷/장식·본인얼굴·타인master구도역할분리직검수. native1254²·미세RGB·가린손/프레임밖무기끝한계는개별원장에보존,최종승인·runtimefalse.
+- 쇠망치장식복원유일1보정은계속,두빈슬롯은새독립말발굽(g66)·부리(g67)각성초상명치틀로이어갑니다. 첫요청구도명확화·기존각성옷고정·전체실원화첨부/시각QA,각native1/전역3·첫1+구체실패유일1보정2상한·미세색만재생성0. 다음빈슬롯빛고을(g68)은각성초상과일반비기전신두개를같은장수fresh맥락에서따로원화역할지켜진행합니다.
+
+
+## Codex43 쇠망치 장식복원 공급·빛고을 두 산출물 같은 장수 맥락
+- 쇠망치second 원형어깨브로치복원후 D:/에셋창고/gpt_aw1-g-65-sangdang-soemangchi.png SHA4f8a7626a741be1de0cab89a56a52c64dbeb101f646986af9e2eda302a70f212 공급(2콜2반환). 명치선/전체상투·양어깨위팔/층갑·브로치·털망토·붉은끈/본인얼굴·쇠망치직접나란히QA,first장식누락후보/모든request·refsSHA보존. 엄지가림·headquarter정밀미인증/nativeRGB한계별도/추가0·최종승인runtimefalse.
+- 말발굽·부리초상은별도fresh맥락진행. 새빈슬롯빛고을은같은장수fresh맥락에서각성초상명치재틀→일반비기전신새그림2개를순차실행(각name첫1+유일1보정max2,장수당native1동시). 일반전신은normalportrait가얼굴/옷권위·기존aw1skillart는칼형태만·다른사람stylemaster는그림체만이며새각성초상의옷을비각성전신에이식하지않습니다. 카드3refs씩전부정확순서첨부/초상새출력을비의존전신ref로임의대체0. 흉부bronze mirror는plain원반/광선·sun motif·mace없음,동적대각선칼베기·앞쪽열린손·원본성인얼굴·2팔2다리/전체칼포함80%·navy 조건을직접검수합니다.
+
+
+## Codex43 말발굽·부리 첫판 공급·용과 파도 배정
+- 말발굽first1/보정0 D:/에셋창고/gpt_aw1-g-66-geonma-malbalgup.png SHA0a40e43d846468344306e47527d3f4c8d462b402ea14d2eb6f30c6d27318c687 공급. 부리first1/보정0 D:/에셋창고/gpt_aw1-g-67-gosaburi-buri.png SHAe2ae99c6d115c06a659d519a21f44802fada95d3f879a7aeb20518ebb4651969 공급. 각각3원화나란히명치/머리·양어깨/본인얼굴·원래각성옷·무기역할직검수. nativeRGB·가린파지·프레임밖무기/미세머리카락한계는개별원장기록/추가0·최종승인runtimefalse.
+- 빛고을2산출물은동일WHO맥락순차계속,빈두슬롯용g69·파도g70 각성초상명치틀을fresh병렬배정. 구도clarifier/원각성옷고정/카드전체실refs/각native1·전역3/첫1+구체실패유일1보정2한도 유지. 다음이서walk지정oldACT존재확인→공용g-sword ACT/WALK→차례2물건순.
+
+
+## Codex43 각성초상 열한명 종결·이서와 공용칼띠·여름아이콘
+- 용first1 D:/에셋창고/gpt_aw1-g-69-goryong-yong.png SHAd190ea88e9cd99f60cdbbb6ee3c475cadaab4de6b0c0feb15755c7c1af1632d1,파도first1 D:/에셋창고/gpt_aw1-g-70-siljik-pado.png SHA4214d3d47e92e2c9cb28c5b7322f85e6041b4862e2e6ce8331b42ea176b3ac7d 공급. 원화3장나란히명치틀/본인얼굴·기존각성옷·무기직검수/보정0. 빛고을aw1second D:/에셋창고/gpt_aw1-g-68-mujin-bitgoeul.png SHA5e99d73b2f4ddcaba71ecea7a182375ebde965bfa1852e26375419715585c209 공급. 각성초상11명은골개구도held1/나머지10명공급,최종승인아님.
+- 빛고을normalbody2판은금지roundtsuba→smallbarguard수정했지만왼옷자락x0/y867~884잘림으로HOLD/정확명0/추가0. 최선 C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/work/claude43-bitgoeul-candidates/body-call2.png SHAe305bfe7626a3ee93dc3c23e752493e3a38437b43bf2b3d20ecaeebcc905e428,원본/Darchive·개인원장보존. 얼굴/일반옷/plainmirror/앞열린손·직도ring/80%확인은별도기록. 미세RGB·가림등한계도전원장보존.
+- 다음독립이서WALK·공용g-swordACT→합격새ACT LAST WALK·여름아이콘fresh3맥락병렬. 이서는actExactPath=null이추가외부ACT없다는뜻이며승인ACT가이미카드IMAGE2에존재함: D:/tmp-node/sp-inbox/sprite_prop_base-w-26-iseo-tomboy-general_act.png와frozenref SHA2c139232a3f7fbd555f9fb2f234d78c51852035689e391bb573707281070b1d6 동일확인. work/claude43-iseo-dependency-check.json에증거/3.3head승인체형권위명시,missing으로오인·새ACT그리기0. 카드4refs전부와동일승인ACT LAST중복첨부로정확의존충족. 각name첫1+구체실패유일1보정max2/기존전역3·주간예산정책유지.
+
+
+## Codex43 여름 공급·전투띠 한도보류·겨울과 길 표지 병렬
+- summer: 기록된실콜2/반환2/정확명공급1. 개인원장 D:\에셋창고\Codex-claude43-redo-summer-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\redo-icon-status-summer.png SHA5e6bd01f730f5d68401949126e82066e696cb6cada65858cf28d067d4ffcbc27; 최종승인·runtimefalse.
+- g-sword: 기록된실콜2/반환2/정확명공급0. 개인원장 D:\에셋창고\Codex-claude43-redo-g-sword-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  미공급최선/마지막원본 D:\에셋창고\Codex-claude43-redo-20261119-candidates\g-sword\sprite_prop_g-sword_act_v3-native2.png SHAf0f6efe614fc56f1d117f11c894fd99a45c177d193114ac8aede28fcf0ee3667; 실제선택/보류사유는원장참조.
+- iseo-walk: 기록된실콜2/반환2/정확명공급0. 개인원장 D:\에셋창고\Codex-claude43-redo-iseo-walk-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  미공급최선/마지막원본 D:/에셋창고/Codex-claude43-redo-candidates/iseo-walk/call2.png SHAd451172773a1037cc46f5c3402bdab03927ff0f1729c78873311072abeec819d; 실제선택/보류사유는원장참조.
+- 여름second가시여백최소15.39%/붓질·연잎/빗방울/봉오리직검수통과,alpha1잔재1234px별도한계. g-swordACT2판은13검→14칸고알파침범/가시10%여백미달로HOLD·의존WALK0. 이서WALK2판은1·5동일앞다리·고정ACT공통축척7컷키±3%초과/여백실패로HOLD·새ACT0. 전원추가0·원본보존. Claude에게공용띠차례3전방법판정요청: 현재처럼정확격자·동일몸/다리위상을동시에재생성하는방법은반복실패중이며,보존raw중배치결함만있는판을Claude입수후처리로살릴지/새기준판방법을MD로지시해주십시오. Codex는픽셀가공·한도밖재생성없이다음독립아이콘계속. 아이콘첫요청은기존8~10%최소여백충족을위해가시12~15%안전목표를명시(이미수용한보정판15%와동일범위),그외card스타일/요구유지.
+
+
+## Codex43 겨울·얼음길·눈고개 첫판공급·다음 독립아이콘
+- winter: 기록된실콜1/반환1/정확명공급1. 개인원장 D:\에셋창고\Codex-claude43-redo-winter-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\redo-icon-status-winter.png SHA128e5e11ea66075cc930390502c020c025ebee097950e2a0b3e60fd855174bf5; 최종승인·runtimefalse.
+- icefloe: 기록된실콜1/반환1/정확명공급1. 개인원장 D:\에셋창고\Codex-claude43-redo-icefloe-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\redo-icon-route-icefloe.png SHAc0d25b7b8fe13a10a9db112663e4599f6fe15ed1507b8d2eca32a1df4f05132e; 최종승인·runtimefalse.
+- snowpass: 기록된실콜1/반환1/정확명공급1. 개인원장 D:\에셋창고\Codex-claude43-redo-snowpass-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\redo-icon-route-snowpass.png SHA8c19927a649ea87d10a3e5bb387194f3d881fb9730cda6e232fb2e8a7fbfebd3; 최종승인·runtimefalse.
+- 세개모두first1/보정0·실제40px/원화masters나란히직검수. visible여백겨울8.29%/얼음길11.1643%/눈고개10.287%로카드8%충족. 비가시alpha1~2/strictzero여백미달/작은발자국식별한계는각원장그대로보존. 다음그림자춤·독비수·상점급소를fresh3맥락병렬,첫가시12~15%안전목표/원카드스타일·역할/첫1+구체실패유일1보정max2·전역3유지.
+
+
+## Codex43 손칼·독비수·급소 첫판공급·깃발과 버튼그림·기본마을
+- shadowdance: 기록된실콜1/반환1/정확명공급1. 개인원장 D:\에셋창고\Codex-claude43-redo-shadowdance-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\redo-raid-shadowdance.png SHA0640a548b230ab1039afee9253f9f1b1169116cce27ad7dc0878ee5e6470ea8f; 최종승인·runtimefalse.
+- venom: 기록된실콜1/반환1/정확명공급1. 개인원장 D:\에셋창고\Codex-claude43-redo-venom-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\redo-raid-venom.png SHAebf1dc3f77efcef47ba5daa82e4879926c82a9ef8f32afa1c0933ca98fa61964; 최종승인·runtimefalse.
+- shop-luck: 기록된실콜1/반환1/정확명공급1. 개인원장 D:\에셋창고\Codex-claude43-redo-shop-luck-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\redo-raid-shop-luck.png SHAcedea668535a407ca0659d201eb94b7a6025d0a61ed6f0eea972727e6f0cf7b1; 최종승인·runtimefalse.
+- 세개모두first1/보정0·원화/96px직접QA통과. 가시여백그림자춤9.81%/독비수14.19%/급소12.44%이상,비가시alpha1~2/strictzero미달은원장그대로/PNG가공0. 다음까마귀깃발흰줄만수정·연타표시두칸·기본마을diorama를각fresh맥락에서병렬. 첫가시여백안전목표/카드스타일·수정범위·각name최대2/전역3유지.
+
+
+## Codex43 깃발·기본마을 공급·연타표시 보류·다음 마을 세 개
+- crow: 기록된실콜1/반환1/정확명공급1. 개인원장 D:\에셋창고\Codex-claude43-redo-crow-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\redo-icon-emblem-crow.png SHA13b85207daaf7b8cc7bc0672f35da5d84af858e188e3b75ee4458986db125d11; 최종승인·runtimefalse.
+- duel-rush: 기록된실콜2/반환2/정확명공급0. 개인원장 D:\에셋창고\Codex-claude43-redo-duel-rush-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  미공급최선/마지막원본 D:\에셋창고\Codex-claude43-redo-20261119-candidates\duel-rush\redo-duel-rush-tap-ab-native2.png SHAdbe5ea532941e75289d9f543b52f3d7e58b9e386f63e78280401d24e6827a5ec; 실제선택/보류사유는원장참조.
+- hamlet: 기록된실콜1/반환1/정확명공급1. 개인원장 D:\에셋창고\Codex-claude43-redo-hamlet-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\redo-icon-settle-hamlet.png SHA218891e9f7dc11a373b30d61af8faf402cbd8c234a7482db407a4d1bbff1fcd9; 최종승인·runtimefalse.
+- 까마귀first1흰막대줄만제거/원구도직검수,기본마을first1네초가·두꺼운soil disc/48px직검수통과. hamlet카드숫자여백최소없어좌우6.22/6.86%안전목표미달만으로재생성0. 연타표시는2판Greek문양개선됐지만A손끝hover실패·가시여백6.20~7.44%로HOLD/추가0. 미세alpha잔재만HOLD한것아님. 다음농사·고기잡이·항구마을fresh3개각카드/마스터스타일·전체refs/각name최대2·전역3정책유지.
+
+
+## Codex43 농사·고기잡이·항구 첫판공급·다음 고을 세 개
+- farm-village: 기록된실콜1/반환1/정확명공급1. 개인원장 D:\에셋창고\Codex-claude43-redo-farm-village-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\redo-icon-settle-farm-village.png SHA2e862884ecafb6fde5290544f8180e3650db12f93016e042389d308939b00780; 최종승인·runtimefalse.
+- fishing-village: 기록된실콜1/반환1/정확명공급1. 개인원장 D:\에셋창고\Codex-claude43-redo-fishing-village-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\redo-icon-settle-fishing-village.png SHAeb89c7dda31d68e4fcb4cccde716905a8495b61cd44752c4c97529196757189a; 최종승인·runtimefalse.
+- port-town: 기록된실콜1/반환1/정확명공급1. 개인원장 D:\에셋창고\Codex-claude43-redo-port-town-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\redo-icon-settle-port-town.png SHAa796fc76293ac37d2b022b221ddd1191056179f30ca4624d4e62bee887145f2e; 최종승인·runtimefalse.
+- 세마을모두first1/보정0·전refs직뷰/SHA·원화/masters/48px비교·두꺼운입체rim/잘림없음확인. 카드수치여백최소없어12~15안전목표미달만추가0,미세alpha/strictzero한계는원장보존. 항구actualtoolargs의동일스타일문장1회중복은실제args로정확기록/사전intended별도보존. 다음강가·소금·버려진마을각fresh맥락병렬/기존예산상한·모든원본보존정책유지.
+
+
+## Codex43 강가·소금·폐촌 첫판공급·소도와 언덕성·목장
+- river-town: 기록된실콜1/반환1/정확명공급1. 개인원장 D:\에셋창고\Codex-claude43-redo-river-town-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\redo-icon-settle-river-town.png SHA7966c2fc07d6e90bc60c200f1ccfba3d0f4e503baab8945174d960ff68f2b2c6; 최종승인·runtimefalse.
+- salt-town: 기록된실콜1/반환1/정확명공급1. 개인원장 D:\에셋창고\Codex-claude43-redo-salt-town-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\redo-icon-settle-salt-town.png SHA691b82848cb27d0e6b79c4e8b87b93d96b40d45b3f52595e7e8f667413d0a030; 최종승인·runtimefalse.
+- abandoned: 기록된실콜1/반환1/정확명공급1. 개인원장 D:\에셋창고\Codex-claude43-redo-abandoned-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\redo-icon-settle-abandoned.png SHA0767b1095086fb12a1833074f1826f8246e9ef1e25c80cc28d614153ba4baef3; 최종승인·runtimefalse.
+- 세개모두first1/보정0·전체refs/masters·48px직접비교/두꺼운입체rim·잘림0. 숫자여백최소없는카드에서안전목표미달만추가0,strictalpha0/미세잔재·작은표시세부한계는개인원장보존. 다음소도·언덕성·말목장fresh3개동일예산정책으로병렬.
+
+
+## Codex43 소도·언덕성·목장 첫판공급·섬마을과 산요새·도읍
+- sodo-village: 기록된실콜1/반환1/정확명공급1. 개인원장 D:\에셋창고\Codex-claude43-redo-sodo-village-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\redo-icon-settle-sodo-village.png SHAc67ac7c3efcd06643899fc0a7db1be66a119c9b59b9522f4df10f492096b5c23; 최종승인·runtimefalse.
+- hill-fort: 기록된실콜1/반환1/정확명공급1. 개인원장 D:\에셋창고\Codex-claude43-redo-hill-fort-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\redo-icon-settle-hill-fort.png SHAb7603996b025fd73372609b1c67e9df947814fe302e81e1f6de955437e00467e; 최종승인·runtimefalse.
+- horse-ranch: 기록된실콜1/반환1/정확명공급1. 개인원장 D:\에셋창고\Codex-claude43-redo-horse-ranch-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\redo-icon-settle-horse-ranch.png SHA2840d785242895c5e664e4bd8b91c148844ea047cc58e02361dc293c99f7e316; 최종승인·runtimefalse.
+- 세개모두first1/보정0·전refs직뷰/SHA·원화/masters/48px검수·잘림없음. 안전여백목표미달/비가시alpha1~2/strictzero한계만은원장기록/추가0. 다음섬마을·산요새·도읍fresh3맥락으로동일카드/예산/보존정책병렬.
+
+
+## Codex43 섬마을·산요새·도읍 첫판공급·고을 마지막 세 개
+- island-town: 기록된실콜1/반환1/정확명공급1. 개인원장 D:\에셋창고\Codex-claude43-redo-island-town-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\redo-icon-settle-island-town.png SHA2db655e359003d26106a431960295074f188c0004d3cbd94d88c92872974fe7e; 최종승인·runtimefalse.
+- mountain-hold: 기록된실콜1/반환1/정확명공급1. 개인원장 D:\에셋창고\Codex-claude43-redo-mountain-hold-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\redo-icon-settle-mountain-hold.png SHA1383463fe4755170c47476da06193994bd052cc847773c930334307ab64a4131; 최종승인·runtimefalse.
+- capital: 기록된실콜1/반환1/정확명공급1. 개인원장 D:\에셋창고\Codex-claude43-redo-capital-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\redo-icon-settle-capital.png SHAeb65e53b910d1a912f0f28585d7ec711a7b86803a6e91447c271b5e901896bab; 최종승인·runtimefalse.
+- 세개모두first1/보정0·전원화/masters·48px직접QA/두꺼운입체diorama·잘림없음. 각카드수치최소없는안전여백목표미달·비가시alpha/내부alpha251~254는원장한계기록/추가0·원본PNG동byte보존. 다음포위된성·쇠마을·불탄마을fresh3맥락병렬,최대2·전역3·현재모델/주간예산정책유지.
+
+
+## Codex43 고을16개 모두 첫판공급·동일무기별 새그림 묶음
+- besieged: 기록된실콜1/반환1/정확명공급1. 개인원장 D:\에셋창고\Codex-claude43-redo-besieged-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\redo-icon-settle-besieged.png SHA2ed433d0c56cb37541775a8d20cfd6cee65f506f94b1d0ae5641114313d60a54; 최종승인·runtimefalse.
+- iron-town: 기록된실콜1/반환1/정확명공급1. 개인원장 D:\에셋창고\Codex-claude43-redo-iron-town-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\redo-icon-settle-iron-town.png SHAed822f6ee5491ee69bbf8849e8ef38af9a8dac44d83713d93755b868bae0e91a; 최종승인·runtimefalse.
+- ruined: 기록된실콜1/반환1/정확명공급1. 개인원장 D:\에셋창고\Codex-claude43-redo-ruined-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\redo-icon-settle-ruined.png SHAd1c3746850ccc33ae0dfa86d2cc6d8997c80bf38fae498f8d3ba2e49883520a9; 최종승인·runtimefalse.
+- 고을16개전원first1/보정0·정확명공급/원화·masters·48px직뷰·잘림0 확인. 마지막세개도전args/refsSHA/raw동byte/한계원장보존. 다음새무기·이펙트10개는같은물건의투사체/무기아이콘/비기효과를한fresh맥락에서묶어망치3·발톱4·부채3 가족세개로진행합니다(한물건=새대화유지). 같은원화직뷰/SHA는재사용하되각call에는그카드refs전부와정확역할만,새로만든형제출력을미지정참조로추가하지않음. 각ID첫1+구체실패유일1보정max2/가족당native1·전역3/최종승인runtimefalse/픽셀가공0. 이사금aw2는같은WHO의기존redo43_isageum맥락을차례3에서followup가능,아직native0.
+
+
+## Codex43 새무기효과10개 공급·맨뒤 공용띠 첫 세 개
+- hammer-family: 기록된실콜4/반환4/정확명공급3. 개인원장 D:\에셋창고\Codex-claude43-redo-hammer-family-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\new-raid-hammer.png SHAba77883a7fb401b224c931e4b7bf58295933f7af0c6056596d31e36c86b869f1; 최종승인·runtimefalse.
+  공급 D:\에셋창고\new-raid-power-hammer.png SHAcb53b80285e69518eb6922fe44e6bed2f46a8b5605eb87bb3d1514c598a691de; 최종승인·runtimefalse.
+  공급 D:\에셋창고\new-raid-power-hammer-slam.png SHA17f3c787badd50c22a804d9fbe8b80700db035e3ec2bcee65489f1a65f8efc99; 최종승인·runtimefalse.
+- claw-family: 기록된실콜5/반환5/정확명공급4. 개인원장 D:\에셋창고\Codex-claude43-redo-claw-family-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\new-raid-claw-marks.png SHAbdade13aca79104ea1a80159529aa73db950a1d8c3d455fd3790188f52e0e60d; 최종승인·runtimefalse.
+  공급 D:\에셋창고\new-raid-claw-wind.png SHA0b3a8626da16c711ac788fac5204e8d19355dad54c52f6067737c5766f8f8166; 최종승인·runtimefalse.
+  공급 D:\에셋창고\new-raid-power-claw.png SHA843b47036d4b58c2b321cbbb9fadae000fb88a5808f14f041d9a27c98bae79c4; 최종승인·runtimefalse.
+  공급 D:\에셋창고\new-raid-power-claw-pounce.png SHA2f7fd5480cc8179e175248d12e17429ecac2664baf58c6b8eefaa57e43c3e1f4; 최종승인·runtimefalse.
+- fan-family: 기록된실콜5/반환5/정확명공급3. 개인원장 D:\에셋창고\Codex-claude43-redo-fan-family-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\new-raid-fan-ring.png SHAe29563e08d76367fc6ddcd0b6d59787e266be17115efcdfc6ec2033a352aca05; 최종승인·runtimefalse.
+  공급 D:\에셋창고\new-raid-power-fan.png SHAd9d581fb5aded9d2ba38c73112fbf8263c6ac84d320e5e5b43bb93b8b2edb2f3; 최종승인·runtimefalse.
+  공급 D:\에셋창고\new-raid-power-fan-charm.png SHAaa4504f6bf403f9291bda82d1079c5d9a44e009fa8b78d7057ec9354756fe070; 최종승인·runtimefalse.
+- 같은물건3fresh맥락으로망치3개4콜/발톱4개5콜/부채3개5콜,10개정확명공급. 각실원화·96px/합성·원본동byte/SHA/모든후보보존. slam2의8%밖alpha3 797px/max3는가시9.33%·96px/navy/light/purple매트0·전체실루엣완전확인에따라부모가한정native잔재caveat로허용,strict-alpha0및alpha>2여백2.47%미달수치는그대로/새native·가공0. wind의alpha3~8오른경계잔재와각엄격미달도원장그대로/완전zeroPASS주장0.
+이제차례3 11개: 공용언월·기마·남궁수부터fresh3맥락,ACT통과새원본LAST WALK/최종ACTFAIL시WALK0/각IDmax2. 반복배치실패에대한순수prompt개선가설: source20strip의cell aspect보다좁게강제하지않는canvas(최소squarecell)·4x5행별명시지도(9번은6thwalk,10~14카드공격,15~20guard/stagger/hit/dead)로현재카드를명확화. 원화추가·픽셀repack/resize0. 개선효과는아직미검증,실제nativegrid/몸/무기·여백/포즈검수로만판정. 자세한수치 work/claude43-priority3-packing-plan.json. 여전히새Claude지시최우선.
+
+
+## Codex43 공용세띠 보류·여궁수와 여창병·진각성 준비
+- g-spear: 기록된실콜2/반환2/정확명공급0. 개인원장 D:\에셋창고\Codex-claude43-redo-g-spear-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  미공급최선/마지막원본 D:\에셋창고\Codex-claude43-redo-20261119-raw\g-spear\REDO-sprite_prop_g-spear_act_v3-call2-28b8ff61be502329.png SHA28b8ff61be502329dbc4b03175a2487bf98d5a82318227c1d7ead1650cf3e933; 실제선택/보류사유는원장참조.
+- mount: 기록된실콜2/반환2/정확명공급0. 개인원장 D:\에셋창고\Codex-claude43-redo-mount-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  미공급최선/마지막원본 D:\에셋창고\Codex-claude43-redo-20261119-raw\mount\act-request-2-748517826bfc.png SHA748517826bfcbffb85c38e49f94e4b506d8972a097b48f8b209c0829812201b5; 실제선택/보류사유는원장참조.
+- g-bow: 기록된실콜2/반환2/정확명공급0. 개인원장 D:\에셋창고\Codex-claude43-redo-g-bow-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  미공급최선/마지막원본 D:\에셋창고\Codex-claude43-redo-20261119-candidates\g-bow\act-call2.png SHA00ea948fb62f54c98347b2d1fc79a503a325a7b744a72609e9bf66a2d0b48fcb; 실제선택/보류사유는원장참조.
+- 각ACT2판/정확명0·직접의존WALK0·추가0. 새aspect/명확행지도수용(g-spear1277x1231·mount1351x1164·g-bow1122x1402/ROW3C1walk6)됐으나중앙60~70%+빈15~20%명시보정에도하단여백2~9%반복/일부셀침범. g-bow2는slot10화살꺼내기미충족도확인. strict10%FAIL과원본QA그대로보존/개선해결주장0. 부모가실제bake-full20.py읽기전용확인: >64connected components를centroid셀에배정/전체canvas1~2px경계검사·몸scale정규화(19~31,46~59,69~78줄)하므로일부10%셀여백실패raw가입수가능한지QA만별도검토해Claude에제안예정. 원본/코드/게임파일변형이나임의승인0. 다음여궁수/여창병ACT→통과ACT LAST WALK,이사금aw2는같은WHO기존맥락준비만/native0·마지막별도release.
+
+
+## Codex43 여공용띠 보류·실제입수코드 조사·마지막 진각성비기
+- w-bow: 기록된실콜2/반환2/정확명공급0. 개인원장 D:\에셋창고\Codex-claude43-redo-w-bow-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  미공급최선/마지막원본 D:\에셋창고\Codex-claude43-redo-20261119-raw\w-bow\act-native2-7f3e65ad5a2becbe.png SHA7f3e65ad5a2becbe2817df0c666328713dfff8a65a9da760681c284f29bf999f; 실제선택/보류사유는원장참조.
+- w-spear: 기록된실콜2/반환2/정확명공급0. 개인원장 D:\에셋창고\Codex-claude43-redo-w-spear-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  미공급최선/마지막원본 D:\에셋창고\Codex-claude43-redo-20261119-candidates\w-spear\act-call2.png SHA396a3490ac6be98406d34ffb1746a6993a82153ae147b09c3b89e7f06daeefd6; 실제선택/보류사유는원장참조.
+- 여공용ACT각2판최종HOLD/걷기0/정확명0/추가0. w-bow2여백7.86~9.64%<10, w-spear1이더나음(2는첫줄boots경계0%). 부모가실제입수코드로읽기전용검사(work/claude43-production-bake-probe.json): 잘못5x4서늘negative는실제bake에서20fig누락FAIL 재현. mount2/g-spear1/g-bow2는실제figures()에서20셀덩어리모두복구/전체canvas>64실루엣여백47/32/43px 확인되지만canonical queue에공용키가없어전체bake는SKIP_UNCONFIGURED(그림FAIL과구별). prop-intake.py:219는공용key거절,자동입수지원주장0. Claude는공용전용job/입수경로와내부10%여백만미달원본을살릴지검토부탁. 포즈/두상/원문10%FAIL·픽셀원본·runtime미적용그대로/임의승인0. 마지막같은WHO기존redo43_isageum에서AW2새ID만release,기존AW1상한2는그대로/누적리셋0.
+
+
+## Codex43 마지막 진각성 공급·새 지시 감시로 전환
+- isageum: 기록된실콜4/반환4/정확명공급1. 개인원장 D:\에셋창고\Codex-claude43-redo-isageum-20261119.json에원본·실제request/refsSHA·나란히검수/한계보존.
+  공급 D:\에셋창고\skillbody_aw2_g-17-saro-isageum_v2.png SHA2787f6b8e861165d4d76e03d234b8541914090ef52eb81cc2c3a6d75e3725841; 최종승인·runtimefalse.
+  미공급최선/마지막원본 D:\에셋창고\Codex-claude43-redo-20261119-candidates\isageum\skillbody_aw1_g-17-saro-isageum_v2-native-2.png SHA5926258557af95a2f7cc40937354405c42202370e86fc08b398b11f2f5fb74b5; 실제선택/보류사유는원장참조.
+- 새AW2 ID2콜2반환/1공급: physicalblade69~boot1385=85.742%·분리spark제외/전체머리·옷·칼·손발잘림0·비대칭외날끝/환두·작은평guard/본인AW2얼굴·용장식·공중자세직접나란히검수. 기존AW1 2판held이력은그대로이며WHO누적4콜4반환·새ID와분리. native0/미보존0·새픽셀편집0. 최종승인/게임적용은Claude확인대상. 현재추가지시없는상한밖생성은닫고,별도짧은맥락claude_md_monitor가MD외부변경만감시한다. root기존watchsession96402는신원·SHA확인후종료완료,새session78887는감시agent소유(부모직접poll불가),인수간max43/SHA동일확인. 전체84정합성·공급/보류/직접의존미생성최종집계는다음final-reconciliation JSON/메모권위.
+
+
+## Codex43 REDO84 정합성 마감·공급57 보류17 의존걷기10·추가명령 감시
+- 실제84개고유id/name을전수대조: 정확명공급57개 / 상한보류17개 / 선행ACT보류로WALK요청0인것10개,세집합중복0/누락0. 전체요구완성이나최종승인수주장아님. 반환원본109장·실요청110회(을음HTTP400무반환1회포함),각ID최대2·상한리셋/third0. native진행0/미보존0.
+- 정확한target별분류/선택공급source·SHA·경로는 C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/work/claude43-final-reconciliation.json 및 claude43-team-progress.json. 현재D정확명존재57개; 이후Claude입수로사라져도원본/보존SHA가권위이며중복재생성하지않음. 전체actualargs/참조SHA/원화나란히·게임표시QA/실패/미선택원본은개인원장과raw폴더보존.
+- 보류17개: sprite_prop_base-w-71-yeonna-neoul_act_v3.png, sprite_prop_nuri_act_v3.png, sprite_prop_base-g-84-wander-seoneul_act_v4.png, sprite_prop_gureum_act_v3.png, skillbody_g-73-baekje-eureum_v3.png, skillbody_aw1_g-17-saro-isageum_v2.png, redo-raid-bandit-chief-3x3.png, gpt_aw1-g-60-golbeol-golgae.png, sprite_prop_base-w-26-iseo-tomboy-general_walk_v4.png, sprite_prop_g-sword_act_v3.png, skillbody_g-68-mujin-bitgoeul_v2.png, redo-duel-rush-tap-ab.png, sprite_prop_g-spear_act_v3.png, sprite_prop_mount_act_v3.png, sprite_prop_g-bow_act_v3.png, sprite_prop_w-bow_act_v3.png, sprite_prop_w-spear_act_v3.png. 각선택최선은개인원장/progress확인(최신판이항상최선아님). ACT패딩/포즈/몸·얼굴·칼·프레이밍·거절사유는기존기록그대로,거짓PASS/설치0.
+- Claude검토요청: 보류ACT를승인·보완할지/전용공용job입수를만들지/새기준판과추가scope를MD로지시부탁. 공용3source는실제production component추출20셀모두있지만canonical job없어전체bake SKIP이며10%prompt FAIL은유지; C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/work/claude43-production-bake-probe.json 참조. 의존WALK10개는승인된선행ACT없어native0/임의대체0.
+- 사용자주간예산지시로큰원문재독·숫자RGB/비가시alpha만추가생성·이미PASS중복재생성0,동일무기variant는원화검증재사용. 마지막AW2선택도실측85.742%/칼교정·원화대조보존. 최종검수/넣기/옛판보관/영상은Claude.
+- 컨텍스트·D정리실측2.65GiB확보결과유지/현재D여유약9.17GiB. 原본·요청·measure삭제0,원본픽셀로컬변형0. 이후native원본추가저장으로여유는변동. 짧은재개 C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/work/CLAUDE-RESUME-CURRENT.md. 새생성닫음/추가승인범위명령수신대기,작은전용맥락claude_md_monitor가MD변경시만부모를깨움/주간사용량위해큰대화반복입력줄임.
+
+
+## Codex MD43 세트 간 화풍 검수 기록
+- 공급된 마을 아이콘 16종과 스킬바디 5종을 읽기 전용 연락표로 직접 비교. 마을은 따뜻한 회화식 등각 표현/두꺼운 토대가 일관되고, 스킬바디는 어두운 회화식 명암/의복 질감/따뜻한 광원이 이어짐. 연락표에서 뚜렷한 화풍 이탈은 발견하지 못함. AW2 이사금의 금빛 갑옷·효과는 각성 표현 차이로 보임.
+- 이 검수는 인게임 확인이나 최종 승인 아님. 원화 동일성·가려진 손 내부 등은 각 개별 검수의 한계를 유지. 추가 native 요청 0, 납품 PNG 픽셀 수정 0, 57 공급/17 보류/10 WALK 미제출 상태 불변.
+- 근거: work/claude43-settlement-set-visual-QA.json 및 work/claude43-skillbody-set-visual-QA.json. 새 지시 감시는 전용 짧은 맥락 claude_md_monitor가 맡고 root는 변경 이벤트만 수신.
+
+
+## Codex44 지시 수신·중복과 예산 확인
+- 44번 직접 확인. QUEUE.md 현재판을 다시 읽고 SPA WALK 우선으로 재개 준비 중. 41번의 같은 번호 비각성 walkref 옷 편집·정확한 승인 ACT LAST·공식 measure --walk 및 다리 직접 검수 유지.
+- 기존 38~42 실제 WHO/kind 시도와 이미 공급/입수된 판을 먼저 대조. 새 지시/파일명으로 누적 시도 한도 초기화하지 않음. 현재44 첫 요청은 WHO/kind당 1회로 절제, 서로 독립된 2개 native 병렬 상한. 제외된 너울·누리·서늘 SPA는 재개하지 않음.
+- 이전43의57공급/17보류/10의존 WALK미제출 이력은 보존. 새44 제어: work/claude44-control.json, 감시: claude_md_monitor(44번 기준 재가동). 새 지시 도착 시 추가 요청을 멈추고 반환 보존 후 검토.
+
+
+## Codex44 SPA WALK 22개 재개·지정 ACT 경로 확인 요청
+- 감사완료: SPA WALK185 중 지정ACT+승인SHA+잔여한도 확인22,누적3소진10,지정ACT경로부재153. 22부터계속진행; court-dancer14/pearl-diver16 독립2native배정,이후pirate13/areum19. 이번44 WHO/kind당새1회/누적최대3 유지.
+- Claude 확인요청: ACT경로부재153 중14는현재receipt에같은파일명의ACT가다른경로로존재합니다. 큐의옛정확경로SHA를입증하지못하여임의대체하지않았습니다. 아래receipt판이의도한판인지확인후QUEUE지정경로를갱신해주시면다음편집에정확히첨부하겠습니다. 판정대기없이현재22작업계속. 나머지47은다른버전receipt/92는현재receipt ACT자체없음.
+- baram: 큐 D:\에셋창고\sprite_aw1_baram_act_v2.png / 현재receipt D:\에셋창고\Codex-claude40-hit-edit-20261118-candidates\sprite_aw1_baram_act_v2.png / SHA 1036af0573a037257350b9af14e473cbe4f7f97890dac14a7549c61d2a6063fd
+- eomni: 큐 D:\에셋창고\sprite_aw1_eomni_act_v2.png / 현재receipt D:\에셋창고\Codex-claude39-pado-20261118-candidates\sprite_aw1_eomni_act_v2.png / SHA e64d000b0b3e1a79a85f782138b1554bec37beae35aababd8fd12e84410d305c
+- sagong: 큐 D:\에셋창고\sprite_aw1_sagong_act_v2.png / 현재receipt D:\에셋창고\Codex-claude39-pado-20261118-candidates\sprite_aw1_sagong_act_v2.png / SHA 0d86515565b6f67cfebc5c031219448dca5f0dd6d73ecbe535c153a3e8ac42e9
+- base-w-80-usan-gangchi: 큐 D:\에셋창고\sprite_aw1_base-w-80-usan-gangchi_act_v2.png / 현재receipt D:\에셋창고\Codex-claude39-pado-20261118-candidates\sprite_aw1_base-w-80-usan-gangchi_act_v2.png / SHA e694ad66f7e090d9b4b754258ac21a05f7e40de071a5af9fc419548b15fa76ce
+- beomi: 큐 D:\에셋창고\sprite_aw1_beomi_act_v2.png / 현재receipt D:\에셋창고\Codex-claude40-hit-edit-20261118-candidates\sprite_aw1_beomi_act_v2.png / SHA f9c9fc71d4ad18fb5e75c507e3bd06d698a47b4efda05ac6de0b0ee5674acaca
+- hneoul: 큐 D:\에셋창고\sprite_aw1_hneoul_act_v2.png / 현재receipt D:\에셋창고\Codex-claude39-pado-20261118-candidates\sprite_aw1_hneoul_act_v2.png / SHA 2c0e09fca0d3b61f9ca35d138c0e96bbbb411f2c87c4a77463058875cee19963
+- yucheongan: 큐 D:\에셋창고\sprite_aw1_yucheongan_act_v2.png / 현재receipt D:\에셋창고\Codex-claude39-hit-edit-20261118-candidates\sprite_aw1_yucheongan_act_v2.png / SHA 8b24e2a1941559c1e2bda74d8df0e181106f9848980c4547e45539626252f553
+- base-w-102-garak-dana: 큐 D:\에셋창고\sprite_aw1_base-w-102-garak-dana_act_v2.png / 현재receipt D:\에셋창고\Codex-claude39-hit-edit-20261118-candidates\sprite_aw1_base-w-102-garak-dana_act_v2.png / SHA f9d36b76a8b5a1c0e907a86b2b65cd7102c1c2d481f673ae01152005e96aa271
+- darae: 큐 D:\에셋창고\sprite_aw1_darae_act_v2.png / 현재receipt D:\에셋창고\Codex-claude39-pado-20261118-candidates\sprite_aw1_darae_act_v2.png / SHA 26a559c6b5214324503b4d80bbcad0d632c6bf7d06fdcd04c727c5f1999ee624
+- base-g-01-master-smith: 큐 D:\에셋창고\sprite_aw1_base-g-01-master-smith_act_v2.png / 현재receipt D:\에셋창고\Codex-claude40-root-20261118-candidates\sprite_aw1_base-g-01-master-smith_act_v2.png / SHA 85faf050b3dfec71391856cb6de52af77dd14d88afe1325a2594c5924f127d54
+- base-g-03-sea-trader: 큐 D:\에셋창고\sprite_aw1_base-g-03-sea-trader_act_v2.png / 현재receipt D:\에셋창고\Codex-claude40-hit-edit-20261118-candidates\sprite_aw1_base-g-03-sea-trader_act_v2.png / SHA 7c014809e77f8d4a42821779aff1c36639676d8a1ecf1f679dd8157e7939e805
+- base-g-05-mahan-chieftain: 큐 D:\에셋창고\sprite_aw1_base-g-05-mahan-chieftain_act_v2.png / 현재receipt D:\에셋창고\Codex-claude39-pado-20261118-candidates\sprite_aw1_base-g-05-mahan-chieftain_act_v2.png / SHA 334201a29778ab789ed0b2948cab22c90414268e3932268a751763a2f65b1122
+- base-g-26-gampyeong-gaetbeol: 큐 D:\에셋창고\sprite_aw1_base-g-26-gampyeong-gaetbeol_act_v2.png / 현재receipt D:\에셋창고\Codex-claude40-root-20261118-candidates\sprite_aw1_base-g-26-gampyeong-gaetbeol_act_v2.png / SHA 261e2165752b19fc4d6355c3f04c05d6f57f7915ad386510673004246d1e4908
+- duman: 큐 D:\에셋창고\sprite_aw1_duman_act_v2.png / 현재receipt D:\에셋창고\Codex-claude40-root-20261118-candidates\sprite_aw1_duman_act_v2.png / SHA c54f6b660181520b557588c6dbc6fc676148808f15325a6a7a5d90ec8ef45032
+- 근거 work/claude44-spa-walk-audit.json 및 work/claude44-spa-cards/. 참고그림/스프라이트/코드/큐 직접수정0.
+
+
+## Codex44 궁중 무희 기술PASS·시각HOLD, 해적 걷기 다음
+- {"who": "base-w-12-court-dancer", "id": "SPA-base-w-12-court-dancer-walk-v4", "name": "sprite_aw1_base-w-12-court-dancer_walk_v4.png", "saved": null, "status": "HOLD_VISUAL_STYLE_HEAD", "measureVerdict": "PASS", "review": "technical PASS, visual style/head preservation HOLD", "raw": "D:/에셋창고/Codex-claude44-20261119-raw/base-w-12-court-dancer/exec-73c29434-18c9-4c6f-af2e-c9e68b7447b5.png", "sha256": "20d28350b7e96be133405f1c24eec231485b8b81ec125532147faeb8b18b48cb", "ledger": "D:\\에셋창고\\Codex-claude44-base-w-12-court-dancer-20261119.json"}
+- 次배정 base-w-10-pirate-captain, base-w-17-mahan-pearl-diver; 각WHO44새1회·종전누적<=3·동시native2상한/원본·요청·검수보존. 기술PASS와시각PASS별도,정확명은두판정통과만공급.
+
+
+## Codex44 도트 얼굴 보존 반복실패·두 대상만 문안 명확화 시험
+- 궁중무희/진주잠수부 새걷기 각1회,공식technicalPASS 및다리own8/8이지만원본작은도트옆얼굴을더큰전면얼굴·부드러운ACT화풍으로다시그린시각HOLD. 누적3으로추가0/정확명공급0/모든raw보존. 수치PASS만으로화풍승인하지않음.
+- 다음해적/아름두WHO만 기존큐의IMAGE1원본head·도트표현권위를짧게명확화하는보완문장1개를추가해각새1회시도. 개선효과미검증. 두개에도같은시각결함이반복되면나머지동일방법native를보류하고신규피격12개로진행하여주간한도낭비를줄이겠습니다.
+- Claude검토요청: technicalPASS/legsPASS인보존raw를실제표시크기로검토하여승인가능여부또는원본head·화풍보존다른방법을지시부탁. Codex는로컬머리합성/픽셀가공0.
+
+
+## Codex44 진주 잠수부 기술PASS·시각HOLD, 아름 한정시험
+- {"who": "base-w-17-mahan-pearl-diver", "id": "SPA-base-w-17-mahan-pearl-diver-walk-v3", "name": "sprite_aw1_base-w-17-mahan-pearl-diver_walk_v3.png", "saved": null, "status": "HOLD", "measureVerdict": "PASS", "review": "Official measure PASS (head_x1.03, walk_vs_act1.07, walk_legs own8/8 margin0.141), but direct same-index QA HOLD: original face/hair was redrawn; skull/face/neck overlay and exact pixel rendering invariant unmet. Supply0, no further native.", "raw": "D:\\에셋창고\\Codex-claude44-20261119-raw\\base-w-17-mahan-pearl-diver\\walk-native3-exec-00e61cdc-eba2-42e6-a4c2-d9305cbab497.png", "sha256": "5f4034272655fb664052536e16e1326451c0a9af0da6e30f0fe6409a581946bc", "ledger": "D:\\에셋창고\\Codex-claude44-base-w-17-mahan-pearl-diver-20261119.json"}
+- 次배정 base-w-10-pirate-captain, areum; 각WHO44새1회·종전누적<=3·동시native2상한/원본·요청·검수보존. 기술PASS와시각PASS별도,정확명은두판정통과만공급.
+
+
+## Codex44 아름 명확화시험 PASS·다음 이서와 비라 WALK
+- {"who": "base-w-10-pirate-captain", "id": "SPA-base-w-10-pirate-captain-walk-v3", "name": "sprite_aw1_base-w-10-pirate-captain_walk_v3.png", "saved": null, "status": "HOLD_TECHNICAL_FAIL_AND_VISUAL_HEAD", "measureVerdict": "FAIL", "review": null, "raw": "D:/에셋창고/Codex-claude44-20261119-raw/base-w-10-pirate-captain/exec-28a63f03-3f9e-49f0-9016-77b1dae8a00a.png", "sha256": "318f721b4d3076dcbf530cd684ea17ad3471e0a3c67dc252d18fe1d15ee00e2e", "ledger": "D:\\에셋창고\\Codex-claude44-base-w-10-pirate-captain-20261119.json"}
+- {"who": "areum", "id": "SPA-areum-walk-v3", "name": "sprite_aw1_areum_walk_v3.png", "saved": "D:\\에셋창고\\sprite_aw1_areum_walk_v3.png", "status": "supplied-technical-and-visual-PASS-await-Claude-approval", "measureVerdict": null, "review": null, "raw": null, "sha256": "8c4b96d3b0fcde6bb1d5104e441327733041c79286741ff7d393d8e15e7b3d53", "ledger": "D:\\에셋창고\\Codex-claude44-areum-20261119.json"}
+- 次배정 base-w-26-iseo-tomboy-general, bira; 각WHO44새1회·종전누적<=3·동시native2상한/원본·요청·검수보존. 기술PASS와시각PASS별도,정확명은두판정통과만공급.
+
+
+## Codex44 아름 WALK 공급 확인·중앙표기 보완
+- 아름 실제 official VERDICT PASS/head_x1.05/walk_vs_act0.99/legsown8/8 margin0.141,동번호8칸및runtime크기160/body138 직접QA PASS. 부모도runtime160연락표직뷰확인. D:/에셋창고/sprite_aw1_areum_walk_v3.png SHA8c4b96d3b0fcde6bb1d5104e441327733041c79286741ff7d393d8e15e7b3d53 원본동byte공급/최종승인·게임입수는Claude.
+- 앞선롤링요약의아름 measureVerdict:null/raw:null은개인원장의officialQA.VERDICT/raw필드명이달라중앙표기에누락된것. 실제검사/원본누락아님. work/claude44_records.py 로읽기정규화하여중앙기록수정/개인원장불변. 현재44기록4native4raw/정확명1공급/3HOLD.
+- 해적은명확화에도실제기술·시각FAIL,아름은성공. 무조건중단또는전원성공으로보지않고나머지eligibleSPA를각한번씩이어감. 현재이서각성WALK·비라WALK새독립맥락2개,옛비각성REDO이서한도HOLD와구분. 실제큐이름은카드에서만선택/판자동상향금지.
+
+
+## Codex44 이서 비율·얼굴 HOLD와 비라 위치 HOLD·잔물 달빛 계속
+- {"who": "base-w-26-iseo-tomboy-general", "id": "SPA-base-w-26-iseo-tomboy-general-walk-v3", "name": "sprite_aw1_base-w-26-iseo-tomboy-general_walk_v3.png", "saved": null, "status": "HOLD_TECHNICAL_FAIL_AND_VISUAL_HEAD", "measureVerdict": "FAIL", "review": "Official FAIL: head_x0.97, walk_vs_act1.28 exceeds10pct, walk_legs own7/8 margin0.060 passes. Direct same-index and138px body/160px cell QA HOLD: raw face/skull is redrawn into a more frontal broad cheek/eye drawing rather than keeping original small side-facing pixel head. Source geometry/head overlay invariant unmet. Exact-name supply0; no further native under cumulative3 cap.", "raw": "D:\\에셋창고\\Codex-claude44-20261119-raw\\base-w-26-iseo-tomboy-general\\exec-80007f46-bfa2-424a-97cf-dda13afb038f.png", "sha256": "411093cf4301ef451bb90036049e9c9ef91d5f5bfcdf9f2396c42b7591f0a46e", "ledger": "D:\\에셋창고\\Codex-claude44-base-w-26-iseo-tomboy-general-20261119.json"}
+- {"who": "bira", "id": "SPA-bira-walk-v2", "name": "sprite_aw1_bira_walk_v2.png", "saved": null, "status": "HOLD_VISUAL_POSITION_PADDING", "measureVerdict": "PASS", "review": "Official PASS(head_x1.03,walk_vs_act0.95,legsown8/8 margin0.102); direct same-index pose/head/weapon PASS opinion, visual HOLD for real fixed-cell leftward shift(~11px at160-cell) and raw frame8 left padding2/370px. Exact supply0; no native retry; Claude review retained raw.", "raw": "D:/에셋창고/Codex-claude44-20261119-raw/bira/call1-exec-7f4acbe9-8a57-4602-90c6-1db04f7017a0.png", "sha256": "726371d5bc31fa5af7d0e12fb86c0b107048dcef42abfe7745657fc15cfcea97", "ledger": "D:\\에셋창고\\Codex-claude44-bira-20261119.json"}
+- 次배정 base-w-29-golpo-janmul, base-w-31-dabeol-dalbit; 각WHO44새1회·종전누적<=3·동시native2상한/원본·요청·검수보존. 기술PASS와시각PASS별도,정확명은두판정통과만공급.
+
+
+## Codex44 잔물 WALK 공급·원본 좁은여백 한계 유지, 오디 다음
+- {"who": "base-w-29-golpo-janmul", "id": "SPA-base-w-29-golpo-janmul-walk-v3", "name": "sprite_aw1_base-w-29-golpo-janmul_walk_v3.png", "saved": "D:\\에셋창고\\sprite_aw1_base-w-29-golpo-janmul_walk_v3.png", "status": "supplied-technical-and-visual-PASS-await-Claude-approval", "measureVerdict": "PASS", "review": "Official PASS(head_x1.02,walk_vs_act1.04,walk_legs own8/8 margin0.110); direct same-index/full-cell160/body138 head/pose/weapon QA PASS opinion. Source narrow margins retained (raw min right3.92pct/source4.05pct); literal10pct not attained, explicitly disclosed. Exact-name original-byte supplied; Claude final approval/intake pending.", "raw": "D:\\에셋창고\\Codex-claude44-20261119-raw\\base-w-29-golpo-janmul\\exec-3bf8e8c6-c043-40cc-bf6a-a675b587bcc4.png", "sha256": "d7c6430b338db4ad478e9db0e48f50ab5114b702522bf765ceff4989a581fb68", "ledger": "D:\\에셋창고\\Codex-claude44-base-w-29-golpo-janmul-20261119.json"}
+- 次배정 odi, base-w-31-dabeol-dalbit; 각WHO44새1회·종전누적<=3·동시native2상한/원본·요청·검수보존. 기술PASS와시각PASS별도,정확명은두판정통과만공급.
+
+
+## Codex44 달빛 기술PASS·발선 시각HOLD, 불매 다음
+- {"who": "base-w-31-dabeol-dalbit", "id": "SPA-base-w-31-dabeol-dalbit-walk-v3", "name": "sprite_aw1_base-w-31-dabeol-dalbit_walk_v3.png", "saved": null, "status": "HOLD_VISUAL_POSITION_BASELINE", "measureVerdict": "PASS", "review": "Official PASS(head_x1.03,walk_vs_act0.98,legsown8/8 margin0.179); same-index phase/head/weapon acceptable at138px, but visual HOLD for changed fixed-cell baseline(+3.66px frames1-4,+7.90px frames5-8 at160px cell) and relative figure size2-4% taller. Source-only redress position/baseline invariant unmet. Exact supply0; native1 this44/cumulative3; no retry.", "raw": "D:\\에셋창고\\Codex-claude44-20261119-raw\\base-w-31-dabeol-dalbit\\exec-7ed9381e-b951-4322-963f-70a326cf0081.png", "sha256": "dcc371d99d58b44237fa0162c754d6b24905d175f4047450435714a473480fb5", "ledger": "D:\\에셋창고\\Codex-claude44-base-w-31-dabeol-dalbit-20261119.json"}
+- 次배정 odi, base-w-38-sangdang-bulmae; 각WHO44새1회·종전누적<=3·동시native2상한/원본·요청·검수보존. 기술PASS와시각PASS별도,정확명은두판정통과만공급.
+
+
+## Codex44 오디·불매 기술PASS의 원본위치 한계 기록, 실제게임굽기 검증
+- odi: technical-PASS-visual-PROVISIONAL-HOLD-await-parent-runtime-review; 공식 PASS; 정확명 공급 0. 원장 D:\에셋창고\Codex-claude44-odi-20261119.json (raw SHA 83d092998d2f2e328b89f91706d12dc98bcf91e1a3eb08c6119e547cf5048f3d; 구체 사유·검수는 원장).
+- base-w-38-sangdang-bulmae: HOLD_VISUAL_POSITION_BASELINE; 공식 PASS; 정확명 공급 0. 원장 D:\에셋창고\Codex-claude44-base-w-38-sangdang-bulmae-20261119.json (raw SHA 429050517a893fddce4810830ef29324e50b48398064ba8b12f11c3ca2d2a26f; 구체 사유·검수는 원장).
+- 次배정 ; 각WHO44새1회·종전누적<=3·동시native2상한/원본·요청·검수보존. 기술PASS와시각PASS별도,정확명은두판정통과만공급.
+
+
+## Codex44 실제게임굽기 검수로 기존원본4개 검토용공급·추가생성0
+- 달빛/불매/비라 actual make_job→bk.bake→fit_loop 결과와오디기존동일pipeline을직접비교. 160px 실제셀에서발선8컷156/156·고알파경계침범0,원본/refs/ACT/runtime/도구SHA불변. 원본raw위치HOLD이력이게임변환후의실제클립·발선결함과같지않음을확인.
+- Claude검토용으로native원본바이트만정확명공급. 로컬가공된QA/bakedstrip을납품하지않음/최종승인·게임반영0. literal원본좌표·10%여백불충족은그대로이며작은실루엣차이도유지: core높이달빛+4~6px/불매-5~9px/비라-1~4px(머리·옷·포즈포함대리지표),normal대비걷기/서기상대비1.044/.989/.993. 원본EXACTgeometry완전충족주장0,Claude최종판정요청.
+- D:\에셋창고\sprite_aw1_base-w-31-dabeol-dalbit_walk_v3.png SHA dcc371d99d58b44237fa0162c754d6b24905d175f4047450435714a473480fb5
+- D:\에셋창고\sprite_aw1_base-w-38-sangdang-bulmae_walk_v4.png SHA 429050517a893fddce4810830ef29324e50b48398064ba8b12f11c3ca2d2a26f
+- D:\에셋창고\sprite_aw1_bira_walk_v2.png SHA 726371d5bc31fa5af7d0e12fb86c0b107048dcef42abfe7745657fc15cfcea97
+- D:\에셋창고\sprite_aw1_odi_walk_v3.png SHA 83d092998d2f2e328b89f91706d12dc98bcf91e1a3eb08c6119e547cf5048f3d
+- 원래개인HOLD원장그대로보존. 부모추가판정원장 D:\에셋창고\Codex-claude44-parent-runtime-review-20261119.json; 실제검수 D:\에셋창고\Codex-resume-work-20261117\chat-work\claude44-runtime-bake-probe.json. 부모검토레코드는새native로집계하지않음. 44새native10/raw10/정확명검토용공급6/미공급HOLD4,다음eligibleSPA12개이어감.
+
+
+## Codex44 실제굽기 원본4개 구제완료·무늬 구름 WALK 재개
+- 次배정 base-w-40-mujin-munui, gureum; 각WHO44새1회·종전누적<=3·동시native2상한/원본·요청·검수보존. 기술PASS와시각PASS별도,정확명은두판정통과만공급.
+
+
+## Codex44 D공간0 복구·기존경로보존·준비요청2건 제출0
+- D여유0B로무늬/구름request메타쓰기실패,둘다native실제미제출0확인하고중지. 새그림유실0/기존원본삭제0. request본문유효/0B메타는보존. write-checkpoint.py만failedwrite로0B가되어C백업으로복구하고현황쓰기를atomic으로수정.
+- 작업기록·참조폴더 10272파일/1137726037B를 C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work 에복사해전파일SHA동일확인,옛D chat-work를junction으로교체/논리경로17검증후검증된중복D사본만정리. Ctask/work→기존D경로→새Ccanonical로옛참조/request경로전부유지. unique파일손실0/픽셀가공0. 당시C여유약18GB→현재16818384896B,D현재4383846400B(다른작업으로변동).
+- sameD의raid-feel/probe/stage및Vitebuild병렬실행과D:/tmp-node총약11.24GB확인했지만남의실행중작업/출력은중지·삭제하지않음. Claude에게자기임시빌드/복제본용량점검요청. D공간소진이native나미감실패가아니므로이미지재생성으로세지않음.
+- 전체MD는감시freeze전후max44/SHA동일로명령누락0. 감시별도재개중이며그뒤부모명시로무늬/구름준비요청을단1회씩재개. 44그림집계10native/검토용공급6 유지. 증거 C:\Users\my\Documents\Codex\2026-11-17\detail-bad-request\outputs\work-migration-20261119.json 및 work/claude44-disk-incident-20261119.json. 짧은현황 work/CLAUDE44-FAST-RESUME.md.
+
+
+## Codex44 무늬·구름 한도종결·짧은조율맥락으로 후속배정 이관
+- base-w-40-mujin-munui: HOLD_OFFICIAL_UNMEASURABLE_WALK_HEAD_AND_VISUAL_FACE; 공식 HOLD; 정확명 공급 0. 원장 D:\에셋창고\Codex-claude44-base-w-40-mujin-munui-20261119.json (raw SHA 3bd4a780cd74849e6c049e95d9ff934e3364e68752236a052f1b024b669d6f12; 구체 사유·검수는 원장).
+- gureum: HOLD_TECHNICAL_WALK_LEGS_FAIL; 공식 FAIL; 정확명 공급 0. 원장 D:\에셋창고\Codex-claude44-gureum-20261119.json (raw SHA 431dd89e9bf5f03ea94b4b50be900d831cc0c0031884d002fe6da3f35b448eb4; 구체 사유·검수는 원장).
+- 次배정 ; 각WHO44새1회·종전누적<=3·동시native2상한/원본·요청·검수보존. 기술PASS와시각PASS별도,정확명은두판정통과만공급.
+
+
+## Codex44 위임 이어받기 가비·달리 새1회 배정
+- 次배정 base-w-53-hwanna-gabi, dalli; 각WHO44새1회·종전누적<=3·동시native2상한/원본·요청·검수보존. 기술PASS와시각PASS별도,정확명은두판정통과만공급.
+
+
+## Codex44 가비·달리 검토용공급 및 소금·범 새1회 배정
+- base-w-53-hwanna-gabi: supplied-technical-and-visual-PASS-await-Claude-approval; 공식 PASS; 정확명 공급 D:\에셋창고\sprite_aw1_base-w-53-hwanna-gabi_walk_v3.png. 원장 D:\에셋창고\Codex-claude44-base-w-53-hwanna-gabi-20261119.json (raw SHA 7936d8211ce430108b5383e2f98c94e0c5363768b2bef3e2f033e38d995f523e; 구체 사유·검수는 원장).
+- dalli: technical-PASS-visual-PROVISIONAL-HOLD-await-runtime-review; 공식 PASS; 정확명 공급 0. 원장 D:\에셋창고\Codex-claude44-dalli-20261119.json (raw SHA fdbcad049b01ab3de5b9b8cfc1b882b44a321e4a2477570c6fa40c6325d31ceb; 구체 사유·검수는 원장).
+- dalli: supplied-technical-and-runtime-visual-PASS-await-Claude-approval; 공식 PASS; 정확명 공급 D:\에셋창고\sprite_aw1_dalli_walk_v4.png. 원장 D:\에셋창고\Codex-claude44-dalli-20261119.json (raw SHA fdbcad049b01ab3de5b9b8cfc1b882b44a321e4a2477570c6fa40c6325d31ceb; 구체 사유·검수는 원장).
+- 次배정 base-w-56-dongokjeo-sogeum, beom; 각WHO44새1회·종전누적<=3·동시native2상한/원본·요청·검수보존. 기술PASS와시각PASS별도,정확명은두판정통과만공급.
+
+
+## Codex44 소금·범 검토용공급 및 별·범발 새1회 배정
+- base-w-56-dongokjeo-sogeum: supplied-technical-and-runtime-visual-PASS-await-Claude-approval; 공식 PASS; 정확명 공급 D:\에셋창고\sprite_aw1_base-w-56-dongokjeo-sogeum_walk_v3.png. 원장 D:\에셋창고\Codex-claude44-base-w-56-dongokjeo-sogeum-20261119.json (raw SHA 76442a0180639a23b0b08bb15b81bb9473ca6d52dbb9d712b29f3fdd4dd1d872; 구체 사유·검수는 원장).
+- beom: supplied-technical-and-runtime-visual-PASS-await-Claude-approval; 공식 PASS; 정확명 공급 D:\에셋창고\sprite_aw1_beom_walk_v3.png. 원장 D:\에셋창고\Codex-claude44-beom-20261119.json (raw SHA 023242ee8870972c718cbc2b41986ac10d8f6d2d7438537790e5c714974e136a; 구체 사유·검수는 원장).
+- 次배정 byeol, beombal; 각WHO44새1회·종전누적<=3·동시native2상한/원본·요청·검수보존. 기술PASS와시각PASS별도,정확명은두판정통과만공급.
+
+
+## Codex44 별·범발 검토용공급 및 벌·말갈기 새1회 배정
+- byeol: supplied-for-Claude-review-with-caveats; 공식 PASS; 정확명 공급 D:\에셋창고\sprite_aw1_byeol_walk_v4.png. 원장 D:\에셋창고\Codex-claude44-byeol-20261119.json (raw SHA 606575458b91c68670431c5ee9606fef17cfb696195547ec790779bc882788d2; 구체 사유·검수는 원장).
+- beombal: supplied-technical-and-runtime-visual-PASS-await-Claude-approval; 공식 PASS; 정확명 공급 D:\에셋창고\sprite_aw1_beombal_walk_v3.png. 원장 D:\에셋창고\Codex-claude44-beombal-20261119.json (raw SHA 0ef8bc1fefa5fd1577b0d190614328e734eff9b83b420d9ab79ff56f7b0facf0; 구체 사유·검수는 원장).
+- 次배정 base-w-72-eumjeup-beol, malgalgi; 각WHO44새1회·종전누적<=3·동시native2상한/원본·요청·검수보존. 기술PASS와시각PASS별도,정확명은두판정통과만공급.
+
+
+## Codex44 벌·말갈기 검토용공급 및 신너울·비단비 새1회 배정
+- base-w-72-eumjeup-beol: supplied-for-review-with-literal-raw-caveats; 공식 PASS; 정확명 공급 D:\에셋창고\sprite_aw1_base-w-72-eumjeup-beol_walk_v4.png. 원장 D:\에셋창고\Codex-claude44-base-w-72-eumjeup-beol-20261119.json (raw SHA 9c3c91261e080b23938e1303597d0fe304c54570db69af9cd99090608467dd79; 구체 사유·검수는 원장).
+- malgalgi: supplied-technical-and-runtime-visual-PASS-await-Claude-approval; 공식 PASS; 정확명 공급 D:\에셋창고\sprite_aw1_malgalgi_walk_v3.png. 원장 D:\에셋창고\Codex-claude44-malgalgi-20261119.json (raw SHA c76868b8ab17488c0d43c78f1fc7ce775e64f10c9d201fbc5b94027871506285; 구체 사유·검수는 원장).
+- 次배정 sinneoul, bdanbi; 각WHO44새1회·종전누적<=3·동시native2상한/원본·요청·검수보존. 기술PASS와시각PASS별도,정확명은두판정통과만공급.
+
+
+## Codex44 승인잔여걷기10종결 및 새피격 서늘둘·압 배정
+- sinneoul: supplied-technical-and-runtime-visual-PASS-await-Claude-approval; 공식 PASS; 정확명 공급 D:\에셋창고\sprite_aw1_sinneoul_walk_v3.png. 원장 D:\에셋창고\Codex-claude44-sinneoul-20261119.json (raw SHA e2be48b641dd087e193ef2fc370ae45ba6eeb6ce7bd16ce87478a43fe063f71f; 구체 사유·검수는 원장).
+- bdanbi: supplied-technical-and-runtime-visual-PASS-await-Claude-approval; 공식 PASS; 정확명 공급 D:\에셋창고\sprite_aw1_bdanbi_walk_v4.png. 원장 D:\에셋창고\Codex-claude44-bdanbi-20261119.json (raw SHA bca89951cf7327f02acb06778fdd29649b4d52d59796e9b97cd8505dd1524ba1; 구체 사유·검수는 원장).
+- 次배정 g-84-wander-seoneul, g-61-apdok-ap; 각WHO44새1회·종전누적<=3·동시native2상한/원본·요청·검수보존. 기술PASS와시각PASS별도,정확명은두판정통과만공급.
+
+
+## Codex44 압 피격HOLD원본보존 및 감나무 새1회 배정
+- g-61-apdok-ap: HOLD_WEAPON_GRIP_AND_FIGURE_FRAMING; 공식 NOT_APPLICABLE; 정확명 공급 0. 원장 D:\에셋창고\Codex-claude44-g-61-apdok-ap-20261119.json (raw SHA b01c2c7405bacd8c71228c031d4ce20f3fe1cfac3696e88a390a70ff284fddae; 구체 사유·검수는 원장).
+- 次배정 g-84-wander-seoneul, g-62-gammun-gamnamu; 각WHO44새1회·종전누적<=3·동시native2상한/원본·요청·검수보존. 기술PASS와시각PASS별도,정확명은두판정통과만공급.
+
+
+## Codex44 서늘피격둘 무기이탈HOLD보존 및 파지명확화2ID첫시험
+- g-84-wander-seoneul: HOLD-first-only-no-retry; 공식 NOT_APPLICABLE; 정확명 공급 0. 원장 D:\에셋창고\Codex-claude44-g-84-wander-seoneul-20261119.json (raw SHA 65c7ef226be9f4371f5ada8645ecd8f5196bd4398dfc26eb7bad955417d176ee; 구체 사유·검수는 원장).
+- g-84-wander-seoneul: HOLD-first-only-no-retry; 공식 NOT_APPLICABLE; 정확명 공급 0. 원장 D:\에셋창고\Codex-claude44-g-84-wander-seoneul-20261119.json (raw SHA ace5ec53f7b966f0140615fd6571371c1a3441fa470c36521093df1250b8d060; 구체 사유·검수는 원장).
+- 次배정 g-62-gammun-gamnamu, g-63-chopal-yeoul; 각WHO44새1회·종전누적<=3·동시native2상한/원본·요청·검수보존. 기술PASS와시각PASS별도,정확명은두판정통과만공급.
+
+
+## Codex44 파지명확화 둘 무기완전이탈0·구도HOLD 및 잔여7검토대기
+- g-62-gammun-gamnamu: HOLD_FIGURE_FRAMING_FIRST_ONLY_NO_RETRY; 공식 NOT_APPLICABLE; 정확명 공급 0. 원장 D:\에셋창고\Codex-claude44-g-62-gammun-gamnamu-20261119.json (raw SHA 5d30037657c453cc6e5f19c4b7b41bda3c467792a78b9f08c5076e019d8f104f; 구체 사유·검수는 원장).
+- g-63-chopal-yeoul: HOLD-first-only-no-retry; 공식 NOT_APPLICABLE; 정확명 공급 0. 원장 D:\에셋창고\Codex-claude44-g-63-chopal-yeoul-20261119.json (raw SHA ec0b3047ce4446c72823dad3743058de040ec1acd389f45710a96c93b7c2d681; 구체 사유·검수는 원장).
+- 次배정 ; 각WHO44새1회·종전누적<=3·동시native2상한/원본·요청·검수보존. 기술PASS와시각PASS별도,정확명은두판정통과만공급.
+
+
+## Codex44 피격 후보 원본 구제 검토 요청
+- g62/g63은 파지 접촉 개선·인물/화풍/피격동작 유지 후보이나 close framing 미충족으로 HOLD 원본을 보존했습니다. 입수 측 crop/zoom으로 구제 가능한지 Claude 검토 부탁드립니다. Codex는 픽셀 crop/zoom 가공·정확명납품·재생성을 하지 않았습니다.
+- 원본/QA/실args: D:/에셋창고/Codex-claude44-g-62-gammun-gamnamu-20261119.json 및 D:/에셋창고/Codex-claude44-g-63-chopal-yeoul-20261119.json. 부모 g63 compare900 직접뷰도 figure 축소/하단구도 확대를 확인했습니다.
+
+
+## Codex44 close피격구도명확화 소금꾼·쇠망치 첫1회시험
+- 次배정 g-64-michuhol-sogeumkkun, g-65-sangdang-soemangchi; 각WHO44새1회·종전누적<=3·동시native2상한/원본·요청·검수보존. 기술PASS와시각PASS별도,정확명은두판정통과만공급.
+
+
+## Codex44 close구도시험둘HOLD·잔여피격5미제출중지 및 ACT읽기감사
+- g-64-michuhol-sogeumkkun: HOLD_CLOSE_FRAMING_HEAD_SCALE_AND_LOWER_CROP_FIRST_ONLY_NO_RETRY; 공식 NOT_APPLICABLE; 정확명 공급 0. 원장 D:\에셋창고\Codex-claude44-g-64-michuhol-sogeumkkun-20261119.json (raw SHA c4affd740399831b2dbdab0f41922a210215ac8487eeb900141b22c8562409e2; 구체 사유·검수는 원장).
+- g-65-sangdang-soemangchi: HOLD_ARCHIVED_NO_RETRY; 공식 NOT_APPLICABLE; 정확명 공급 0. 원장 D:\에셋창고\Codex-claude44-g-65-sangdang-soemangchi-20261119.json (raw SHA a6657e14a7a0909e6bc3680af70995c46b1101dc44bfa7e768a6560005304bc7; 구체 사유·검수는 원장).
+- 次배정 ; 각WHO44새1회·종전누적<=3·동시native2상한/원본·요청·검수보존. 기술PASS와시각PASS별도,정확명은두판정통과만공급.
+
+
+## Codex44 저맥락 위임 조율 종결 기록
+- 후속 SPA WALK10: 새10회·원본보존10·검토용정확명공급10, 공식 measure와 본인 production160 전칸 직접뷰 통과. literal raw EXACT/10%여백·proxy 한계는 개별 원장 보존. 최종승인/게임적용 주장0.
+- 새 HIT12 중7회실행/원본보존7/공급0/HOLD7(서늘둘·g61~65). 파지명확화 뒤 접촉 개선됐지만 close framing 명확화 g64/g65도 얼굴 축소·하단crop확장 반복으로 중지. g66~70 5개는 미제출, 한도실패/소진 아님. 기존HOLD 재시도0.
+- ACT102 읽기감사: cap3소진3/기존receipt원본7/미요청증명부족UNKNOWN92, 새요청후보확정0. work/claude44-spa-act-readonly-audit-20261119.json 및 .md. UNKNOWN은0회라고 추정하지 않았고, receipt10개 actSHA pin 부재도 명시. 새ACT native0.
+- MD44 전체 actual29/검토용공급16(최종입수수 아님), native진행0/미보존0/control새요청false. 전용watch62188만 유지·새명령시root보고. 개인원본·실args/SHA·QA·보류사유는 각 Codex-claude44-WHO-20261119.json; 전체 work/claude44-team-progress.json.
+
+
+## Codex44 승인걷기10종결·새피격7HOLD5미제출·ACT102읽기감사완료
+- 次배정 ; 각WHO44새1회·종전누적<=3·동시native2상한/원본·요청·검수보존. 기술PASS와시각PASS별도,정확명은두판정통과만공급.
+
+
+## Codex44 ACT close-source-pose first-only two probes after protocol-bound-zero forensics
+- 次배정 mdallae, sincheongan; 각WHO44새1회·종전누적<=3·동시native2상한/원본·요청·검수보존. 기술PASS와시각PASS별도,정확명은두판정통과만공급.
+
+## Codex44 ACT 두 대상 예산 양성근거 및 입력 배치 한계
+- Root 재감사 work/claude44-act-history-forensics.json(SHA e0fd83e558b4ad9f77fe5767cfa0ff5959974f31cf60d8bd8a6fe1f6c7fa7001)에서 mdallae/sincheongan은 tracked38~44 완전inventory·명시 actual0/deferred·미제출준비기록·입수/원본없음의 결합으로 protocol-bound 0회 확인. 모든 과거의 불가능한 negative나 파일부재만으로0 추정한 결과가 아님. 새ACT 승인pin은WALK 의존성과 다르며 이번 두ACT에 필수 아님. 두ID만각첫1회, prior0→누적1/3 예정. tneoul/나머지89UNKNOWN 새요청0.
+- 큐 IMAGE1 문구는4x5이나 실제 본인 normal은20x1 strip(mdallae4480x160/sincheongan4320x160). 이번은 정확2refs·same-index·uniform CELL scale로4x5재배열만 native에게명확화. 이미지/원본/큐 가공0. 실패시 Claude가 원래20셀픽셀을변형없이4x5 canonical ref로준비/QUEUE갱신하면 배치해석부담이줄 가능성 있으나 효과미검증. Codex QAcontact를입력대체하거나추가native하지않음.
+
+## Codex44 ACT probe2 HOLD originals preserved no further native
+- mdallae: HOLD_HEAD_7PCT_POSE_ORDER_PHASE_AND_STYLE_FIRST_ONLY_NO_RETRY; 공식 HOLD; 정확명 공급 0. 원장 D:\에셋창고\Codex-claude44-mdallae-20261119.json (raw SHA f2c1679302b9303edd974a0a372e4b7ec2a79c15826b03c3d7a172b3106f34bc; 구체 사유·검수는 원장).
+- sincheongan: HOLD_POSE_ORDER_WEAPON_DUPLICATION_FIRST_ONLY_NO_RETRY; 공식 PASS; 정확명 공급 0. 원장 D:\에셋창고\Codex-claude44-sincheongan-20261119.json (raw SHA 63fda68f29ba7f2b606a1918930946a65dacd7f9cfc40aec8890d939ad055a98; 구체 사유·검수는 원장).
+- 次배정 ; 각WHO44새1회·종전누적<=3·동시native2상한/원본·요청·검수보존. 기술PASS와시각PASS별도,정확명은두판정통과만공급.
+
+## Codex44 ACT 첫 두 시험 결과·다음 입력 검토
+- mdallae: official HOLD(head_x1.07), visual FAIL.12~17동번호포즈순서·5~11걷기위상·두상/화풍변경. sincheongan: official PASS(head_x0.91)이나 visual FAIL.13~18동번호포즈불일치·16종봉두개·일부보행위상변경. 각첫1회·prior0→누적1/3, 원본·실args·SHA보존/정확명공급0/추가0. 두원장 D:/에셋창고/Codex-claude44-mdallae-20261119.json 및 D:/에셋창고/Codex-claude44-sincheongan-20261119.json.
+- 전20칸큰비교와160px 셀정규화직뷰이며 실제consumer bake는 명확한동작/무기실결함때문에실시하지않음. 실제production160검증주장0. 반환원본 픽셀가공/설치0, 최종승인/게임적용 false.
+- 같은입력배치해석을추가반복하지않고 tneoul/후속ACT·기존HIT7재시도/미제출HIT5 모두 새요청0. Claude가 원래normal20셀의픽셀을변형없이4x5로재배열한canonical입력참조와QUEUE를검토해주면 다음방식을논의가능(효과미검증, Codex 임의input대체/원본재배열/추가native0). 현재control allowNewRequests/allowFreshACTRequests false·active[]·native진행0·미보존0, MD44 전체31실콜/검토용공급16. 전용watch62188로새외부명령만감시계속.
+## Codex44 실제 normal20셀 동일픽셀 4×5 QA 제안 — Claude 검토 요청
+- 큐는 IMAGE1을4×5라고쓰지만 실제mdallae4480×160·sincheongan4320×160는20×1입니다. native에게repack+redress를동시에요구한ACT2에서실제포즈순서/다리위상/무기중복실패가나왔습니다. 동일픽셀4×5입력이배치해석부담을줄일가능성은있으나효과미검증이며추가생성하지않았습니다.
+- [mdallae 동일픽셀4×5 QA PNG](C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/outputs/claude44-act-packing-proposal/mdallae-source4x5-QA.png) · [20/20 RGBA픽셀 검증JSON](C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/outputs/claude44-act-packing-proposal/mdallae-source4x5-QA.json):4480×160→896×800,각224×160셀20개를순서그대로. proposalSHA bc0688fea637b802a43e425cefeb62d629bff4d7f5a33b84849af63c0eee19df.
+- [sincheongan 동일픽셀4×5 QA PNG](C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/outputs/claude44-act-packing-proposal/sincheongan-source4x5-QA.png) · [20/20 RGBA픽셀 검증JSON](C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/outputs/claude44-act-packing-proposal/sincheongan-source4x5-QA.json):4320×160→864×800,각216×160셀20개를순서그대로. proposalSHA e36f8240cda2f1bdffc7016da8477a8e38b81f4ebb298468ccd1b3de0759626b.
+- 두QA 모두 sourceW%20==0, 각셀RGBA원본/저장후SHA 20/20일치·원본wholeSHA전후동일·원본mode보존 확인. 리사이즈/여백추가/그림수정/라벨그림0, 출력PNG두개직접뷰로순서배치확인. native입력·실제납품으로사용0. Claude가canonical입력ref채택및QUEUE갱신을검토해주시기바랍니다. 허가없는ref대체/원본·큐·runtime변경0. HITg62/g63 입수측crop/zoom구제검토요청도유지합니다.
+- 실콜31/검토용공급16/기존RAW불변·새native0. 감시는전용watch62188만계속합니다.
+
+## Codex45 g66 g67 review supplies done; g68 g69 first1 original scope
+<!-- claude45-operation:hit-g66g67-done-g68g69-start -->
+- g-66-geonma-malbalgup: supplied-visual-PASS-await-Claude-approval; 공식 NOT_APPLICABLE; 검토용정확명공급 D:\에셋창고\hit_aw1_g-66-geonma-malbalgup_v2.png; 기존재분류 False; 원장 D:\에셋창고\Codex-claude45-g-66-geonma-malbalgup-20261119.json; raw SHA 2ba4d4dda0947a495b6ec44ae3ee635eab4e0a6341f7c0b42ba4b9c5e2144a74.
+- g-67-gosaburi-buri: VISUAL_PASS_RAW_PRESERVED_SUPPLY_HELD_MD46_ROOT_REVIEW; 공식 NOT_APPLICABLE; 검토용정확명공급 0; 기존재분류 False; 원장 D:\에셋창고\Codex-claude45-g-67-gosaburi-buri-20261119.json; raw SHA 5fab29e7302d94a5ab55a9763918a4a2c58b6348adf9966508f969ae0baad940.
+- g-67-gosaburi-buri: SUPPLIED_VISUAL_PASS_NATIVE_ORIGINAL_AWAIT_CLAUDE_REVIEW; 공식 NOT_APPLICABLE; 검토용정확명공급 D:/에셋창고/hit_aw1_g-67-gosaburi-buri_v2.png; 기존재분류 False; 원장 D:\에셋창고\Codex-claude45-g-67-gosaburi-buri-20261119.json; raw SHA 5fab29e7302d94a5ab55a9763918a4a2c58b6348adf9966508f969ae0baad940.
+- 다음 배정 g-68-mujin-bitgoeul, g-69-goryong-yong; 전역동시2/WHO1, ACT누적3·기본45첫1회, HIT첫1회.
+- 반환보존/검토용공급 기록이며 Claude수신·최종승인·게임입수는 주장하지 않습니다.
+
+## Codex46 구도보정 수용 답변 반영 — 원본2 추가공급
+- Claude46 새 번호 답변에서 g62/g63/g66 HIT_v2 입수·얼굴자리재측정(믿음1.00)·동일인물/맞는자세OK를 보고한 것을 직접 확인했습니다. Codex의 별도 인게임재생검증은 아닙니다.
+- g64 정확명 hit_aw1_g-64-michuhol-sogeumkkun_v2.png 원본 동byte 공급·재읽기SHA c4affd740399831b2dbdab0f41922a210215ac8487eeb900141b22c8562409e2.
+- g65 정확명 hit_aw1_g-65-sangdang-soemangchi_v2.png 원본 동byte 공급·재읽기SHA a6657e14a7a0909e6bc3680af70995c46b1101dc44bfa7e768a6560005304bc7.
+- 새native0/픽셀가공0/44HOLD원장·RAW불변. D:/에셋창고/Codex-claude46-policy-reclassification-20261119.json 및 work/claude46-existing-hit-supply-readback.json. 이 새공급2의 Claude열람/입수ACK는 아직미확인입니다.
+- g67도기존45첫1회 visualPASS 원본을 정확명동byte공급·saved:null 이전기록과동일actualrequest최종기록을함께보존했습니다. 현재까지44이후33실콜/검토용공급22(새45콜2+기존재분류4 포함), live45progress 참조.
+- 사용자 요청대로 현재승인잔여만마무리 후중지합니다. watcher50016은46감지출력후exit0이며재시작0, 제출직전max46/큐/refs 검증. 새47+는자동재개하지않습니다.
+
+## Codex45 g68 g69 supplied; final HIT g70 first1 original scope
+<!-- claude45-operation:hit-g68g69-done-g70-start -->
+- g-68-mujin-bitgoeul: SUPPLIED_VISUAL_PASS_NATIVE_ORIGINAL_AWAIT_CLAUDE_REVIEW; 공식 NOT_APPLICABLE; 검토용정확명공급 D:\에셋창고\hit_aw1_g-68-mujin-bitgoeul_v2.png; 기존재분류 False; 원장 D:\에셋창고\Codex-claude45-g-68-mujin-bitgoeul-20261119.json; raw SHA 35e1286aa4e33b0bfaad023da948491f4fea48e3c8631f18686fecf7bbdcbb1b.
+- g-69-goryong-yong: SUPPLIED_VISUAL_PASS_NATIVE_ORIGINAL_AWAIT_CLAUDE_REVIEW; 공식 NOT_APPLICABLE; 검토용정확명공급 D:\에셋창고\hit_aw1_g-69-goryong-yong_v2.png; 기존재분류 False; 원장 D:\에셋창고\Codex-claude45-g-69-goryong-yong-20261119.json; raw SHA eeb2a4817ccbba5f02bef611b8732cd459e8614b765aef753aaaa6889c0069a5.
+- 다음 배정 g-70-siljik-pado; 전역동시2/WHO1, ACT누적3·기본45첫1회, HIT첫1회.
+- 반환보존/검토용공급 기록이며 Claude수신·최종승인·게임입수는 주장하지 않습니다.
+
+
+## Codex45 HIT5 bounded finish; own canonical actref ACT2 cumulative2of3
+<!-- claude45-operation:hit5-done-act2-canonical-start -->
+- g-70-siljik-pado: HOLD_WEAPON_TRANSFERRED_TO_OPPOSITE_HAND_FIRST1_NO_RETRY; 공식 NOT_APPLICABLE; 검토용정확명공급 0; 기존재분류 False; 원장 D:\에셋창고\Codex-claude45-g-70-siljik-pado-20261119.json; raw SHA 1a7a5b56a3881376230f58a94b95e281c6221acc647fb13580bd1c8361bd7160.
+- 다음 배정 mdallae, sincheongan; 전역동시2/WHO1, ACT누적3·기본45첫1회, HIT첫1회.
+- 반환보존/검토용공급 기록이며 Claude수신·최종승인·게임입수는 주장하지 않습니다.
+
+
+## Codex45 Approved ACT2 passed; current scope settled and monitoring stopped by user
+<!-- claude45-operation:approved-scope-complete-user-stop -->
+- mdallae: SUPPLIED_TECHNICAL_AND_VISUAL_PASS_NATIVE_ORIGINAL_WITH_LITERAL_RAW_CAVEATS_AWAIT_CLAUDE_REVIEW; 공식 PASS; 검토용정확명공급 D:\에셋창고\sprite_aw1_mdallae_act.png; 기존재분류 False; 원장 D:\에셋창고\Codex-claude45-mdallae-20261119.json; raw SHA 3bc28f199ea1b8146cd4768555a858339e86c3b19a9001911113606f0ba3615a.
+- sincheongan: SUPPLIED_TECHNICAL_AND_VISUAL_PASS_NATIVE_ORIGINAL_WITH_LITERAL_CAVEATS_AWAIT_CLAUDE_REVIEW; 공식 PASS; 검토용정확명공급 D:\에셋창고\sprite_aw1_sincheongan_act.png; 기존재분류 False; 원장 D:\에셋창고\Codex-claude45-sincheongan-20261119.json; raw SHA 01f11ef41b1de4558751a299af76f4f8dd9cd64d86f7e95062ae04a615efc0c3.
+- 다음 배정 없음; 전역동시2/WHO1, ACT누적3·기본45첫1회, HIT첫1회.
+- 반환보존/검토용공급 기록이며 Claude수신·최종승인·게임입수는 주장하지 않습니다.
+
+
+## Codex 컨텍스트 정리 전 재개 요약 저장 · 2026-11-19
+- 사용자 요청대로 진행 요약을 [CODEX-RESUME-CURRENT.md](D:/flutter/arrow_game_one/docs/realm/production/CODEX-RESUME-CURRENT.md)에 저장. 생성·감시·자동재개 중지 유지. 최신관찰47은대기기록만추가했고실행0. 이전45~46 결과·원본·검수·상한을보존. 새채팅/컨텍스트정리후이MD부터읽고사용자재개지시를기다린다.
+
+## Codex47 사용자 요청으로 재개 — 2026-11-19T10:50:09+09:00
+<!-- claude47-operation:restarted -->
+- 47번 수신. 최신 QUEUE를 한 번 다시 뽑고 299장과 원문 SHA를 고정했습니다. 현재 intake의 waiting-walk는 65명입니다.
+- mdallae·sincheongan ACT는 수령 확인했습니다. 두 WALK부터 진행하며 현재 새 생성 0회·검토용 공급 0장입니다.
+- 순서: 승인 ACT 보유 WALK → REDO 269~289 → 나머지 ACT+WALK.
+- [47번 진행 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-team-progress.json)
+
+
+
+## Codex47 첫 두 WALK 검토용 공급 — 2026-11-19T10:57:16+09:00
+<!-- claude47-operation:first-two-walk-supplied -->
+- [sprite_aw1_mdallae_walk_v2.png](D:/에셋창고/sprite_aw1_mdallae_walk_v2.png) SHA256 `7bdf5d05d16b55cddb0c90ccfd611a9576259e19fa92f8693e1034ae2af278e5` · 공식 PASS·전8 시각/160 PASS.
+- [sprite_aw1_sincheongan_walk_v2.png](D:/에셋창고/sprite_aw1_sincheongan_walk_v2.png) SHA256 `7402007f307b13aac5789be7a40581ab501327a63adf18c9dca4870c824ba8d6` · 공식 PASS·전8 시각/160 PASS.
+- 이번 47번 실제 생성 2회·검토용 공급 2장·미보존 0. Claude 수령·게임 입수 확인을 기다립니다.
+- 두 WALK 파일명은 QUEUE의 v2입니다. 47번에서 받은 ACT 원본은 입수 원장 v1 파일이며 SHA를 카드에 고정했습니다. 현재 aw1-intake는 버전이 같거나 SHA가 묶인 actOk가 있는 경우만 짝을 받으므로, Claude 쪽에서 승인한 ACT와 이 WALK를 짝지어 입수해 주세요.
+- mdallae는 본인 walkref의 4위상 반복(1·3 반대, 5~8 재현)으로 공식 8/8 통과했습니다. 두 후보의 원본 여백 측정과 게임 크기 비교는 개인 원장에 기록했습니다.
+- [47번 진행 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-team-progress.json)
+
+
+
+## Codex47 바람·엄니 WALK 키 검수 보류 — 2026-11-19T11:02:38+09:00
+<!-- claude47-operation:baram-eomni-height-hold -->
+- 두 원본은 공식 PASS 및 전8칸 포즈·다리·인물·무기 검수 통과. 실제 소비자 160px의 윤곽 키 비교는 장식·발 위치를 포함한 수치입니다.
+- 바람: 같은 포즈의 일반형에 맞춘 실제 160px 걷기/서기 총윤곽 키 +2.50~3.25%. 160px 윤곽의 픽셀 단위(약 0.7%/px)에서 경계입니다. [보존 원본](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-raw/baram/exec-73ecf5f2-8675-4b0a-b3e5-536830bdd9ed.png) · [개인 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-baram-ledger.json).
+- 엄니: 같은 기준 +4.35~5.88%. [보존 원본](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-raw/eomni/walk-native1-727147c22f9e621.png) · [개인 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-eomni-ledger.json).
+- 47번의 3% 기준과 대조해 검토용 정확명 공급 0장, 추가 생성 0회로 보류했습니다. Claude 입수 단계에서 두 WALK의 스케일을 맞출 수 있는지, 이 원본을 정확명으로 받을 수 있는지 알려주세요. 다음 WALK 작업을 이어갑니다.
+- [47번 진행 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-team-progress.json)
+
+
+
+## Codex47 검토용 정확명 공급 — 2026-11-19T11:09:42+09:00
+<!-- claude47-supplied:sagong -->
+- [sprite_aw1_sagong_walk_v2.png](D:/에셋창고/sprite_aw1_sagong_walk_v2.png) SHA256 `a997ad141e7189279adafc2b85f1efc344e660686eb7adb5a9358976c0e1c5c3` · [개인 검수·실요청 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-sagong-ledger.json).
+- 47번 누적 실제 생성 6회, 검토용 공급 3장, 보류 2건. 해당 공급의 Claude 수령·게임 입수 확인을 기다립니다.
+- [47번 진행 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-team-progress.json)
+
+
+
+## Codex47 입수 원장 확인 — 2026-11-19T11:13:00+09:00
+<!-- claude47-operation:verified-intake-first-two -->
+- 가락 신천간은 공급한 WALK와 동일한 SHA로 입수 원장의 installed를 확인했습니다. 저장소의 합전·겨루기 결과 PNG도 존재합니다.
+- 목지 달래는 공급한 WALK와 동일한 SHA로 거절됐습니다. 원장 사유는 ‘1·5 앞다리가 같음’이며, 승인 ACT v1과 SHA는 유지됐습니다.
+- 목지 달래의 현재 QUEUE·본인 walkref는 1·3 반대, 5~8은 1~4 반복을 지시합니다. Codex 공식 measure도 이 기준(+2)으로 own 8/8 PASS였습니다. 원래 4위상 반복을 받을지, 1·5가 반대인 새 기준 walkref를 쓸지 권위 MD에 알려주세요. 같은 요청 재생성은 0회입니다.
+- [47번 진행 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-team-progress.json)
+
+
+
+## Codex47 비각성 ACT 네 장 보류
+<!-- claude47-operation:redo-four-act-holds -->
+- 너울 · 여백·발의 행 경계 교차, 얼굴 길이와 보이는 하퇴가 성인 기준판과 다름. [보존 원본](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-raw/neoul/act-native3-768fa1b4ccfe390a.png) · [검수 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-neoul-ledger.json).
+- 누리 · 가로 경계의 신발 겹침, 13·19 등 포즈 순서, 기준보다 넓은 얼굴. [보존 원본](C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/work/claude47-raw/nuri/sprite_prop_nuri_act_v3-native3.png) · [검수 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-nuri-ledger.json).
+- 서늘 · 되감기·전진 최대 뻗음이 한 칸 앞, 첫 행 부츠와 20번 이웃 칸 침범. [보존 원본](C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/work/claude47-raw/seoneul/act-native3-a20670deeb7d3fc2.png) · [검수 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-seoneul-ledger.json).
+- 구름 · 13 창끝·20 부츠가 이웃 칸 침범, 10% 여백 부족 및 얼굴·하퇴 차이. [보존 원본](C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/work/claude47-raw/gureum/sprite_prop_gureum_act_v3-native3.png) · [검수 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-gureum-ledger.json).
+- 각 대상 누적 3회, 원본 SHA 보존, 정확명 공급 0장입니다. 이 네 대상의 의존 WALK는 승인 ACT가 없어 생성 0회입니다. 다른 독립 REDO를 계속합니다.
+- [REDO 269~289 진행](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-redo-scope.json)
+
+
+
+## Codex47 검토용 정확명 공급 — 2026-11-19T11:40:46+09:00
+<!-- claude47-supplied:seoneul-hit-base -->
+- [hit_base_g-84-wander-seoneul_v2.png](D:/에셋창고/hit_base_g-84-wander-seoneul_v2.png) SHA256 `677095f65cd21a5c8fc5eb208902862850ed0efdd0adfc0bbf83842ba71cc844` · [개인 검수·실요청 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-seoneul-hit-base-ledger.json).
+- seoneul-hit-base: 900×900 원화와 1254×1254 원본의 1:1 비율은 같습니다. 얼굴·옷·원무기 파지·반동 검수 후 동바이트를 공급했으며, [판정 변경 기록](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-supply-adjustments.json)에 해상도 차이와 이전 보류를 보존했습니다. 새 호출 0회.
+- 47번 누적 실제 생성 19회, 검토용 공급 4장, 보류 14건. 해당 공급의 Claude 수령·게임 입수 확인을 기다립니다.
+- [47번 진행 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-team-progress.json)
+
+
+
+## Codex47 검토용 정확명 공급 — 2026-11-19T11:45:55+09:00
+<!-- claude47-supplied:seoneul-hit-aw1+g-70-siljik-pado -->
+- [hit_aw1_g-84-wander-seoneul_v2.png](D:/에셋창고/hit_aw1_g-84-wander-seoneul_v2.png) SHA256 `7ad21eea8e27091e6adcfa6c866b341a1b14f023defea63dbd38816c28c246b6` · [개인 검수·실요청 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-seoneul-hit-aw1-ledger.json).
+- [hit_aw1_g-70-siljik-pado_v2.png](D:/에셋창고/hit_aw1_g-70-siljik-pado_v2.png) SHA256 `ca823766958852d177d010cb6e447f030e3d7bf737ff1f9ec5e676b01140fda4` · [개인 검수·실요청 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-g-70-siljik-pado-ledger.json).
+- 47번 누적 실제 생성 21회, 검토용 공급 6장, 보류 15건. 해당 공급의 Claude 수령·게임 입수 확인을 기다립니다.
+- [47번 진행 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-team-progress.json)
+

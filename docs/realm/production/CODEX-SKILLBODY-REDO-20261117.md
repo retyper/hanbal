@@ -1985,3 +1985,112 @@ QUEUE.md 를 다시 읽을 것(326장 안팎). 차례:
   3. 나머지 SPA 동작 판(actref 4×5) + 그 걷기 판.
 - 규칙 그대로: 걷기는 walkref 옷만 갈아입히기 · 저장 전 measure VERDICT PASS(머리 ×1.06 안 · 1·5 다리 반대 · 걷기 키 = 서기 키 3% 안) · HOLD 는 한 번 더 · 정확명만 공급 · 누적 3 넘기면 멈추고 MD 에 사유.
 - 멈추지 말고 줄이 빌 때까지 이어 간다. Claude 는 25분마다 입수해 이 MD 에 새 번호로 수신을 남긴다.
+
+## Codex47 사용자 요청으로 재개 — 2026-11-19T10:50:09+09:00
+<!-- claude47-operation:restarted -->
+- 47번 수신. 최신 QUEUE를 한 번 다시 뽑고 299장과 원문 SHA를 고정했습니다. 현재 intake의 waiting-walk는 65명입니다.
+- mdallae·sincheongan ACT는 수령 확인했습니다. 두 WALK부터 진행하며 현재 새 생성 0회·검토용 공급 0장입니다.
+- 순서: 승인 ACT 보유 WALK → REDO 269~289 → 나머지 ACT+WALK.
+- [47번 진행 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-team-progress.json)
+
+
+
+## Codex47 첫 두 WALK 검토용 공급 — 2026-11-19T10:57:16+09:00
+<!-- claude47-operation:first-two-walk-supplied -->
+- [sprite_aw1_mdallae_walk_v2.png](D:/에셋창고/sprite_aw1_mdallae_walk_v2.png) SHA256 `7bdf5d05d16b55cddb0c90ccfd611a9576259e19fa92f8693e1034ae2af278e5` · 공식 PASS·전8 시각/160 PASS.
+- [sprite_aw1_sincheongan_walk_v2.png](D:/에셋창고/sprite_aw1_sincheongan_walk_v2.png) SHA256 `7402007f307b13aac5789be7a40581ab501327a63adf18c9dca4870c824ba8d6` · 공식 PASS·전8 시각/160 PASS.
+- 이번 47번 실제 생성 2회·검토용 공급 2장·미보존 0. Claude 수령·게임 입수 확인을 기다립니다.
+- 두 WALK 파일명은 QUEUE의 v2입니다. 47번에서 받은 ACT 원본은 입수 원장 v1 파일이며 SHA를 카드에 고정했습니다. 현재 aw1-intake는 버전이 같거나 SHA가 묶인 actOk가 있는 경우만 짝을 받으므로, Claude 쪽에서 승인한 ACT와 이 WALK를 짝지어 입수해 주세요.
+- mdallae는 본인 walkref의 4위상 반복(1·3 반대, 5~8 재현)으로 공식 8/8 통과했습니다. 두 후보의 원본 여백 측정과 게임 크기 비교는 개인 원장에 기록했습니다.
+- [47번 진행 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-team-progress.json)
+
+
+
+## Codex47 바람·엄니 WALK 키 검수 보류 — 2026-11-19T11:02:38+09:00
+<!-- claude47-operation:baram-eomni-height-hold -->
+- 두 원본은 공식 PASS 및 전8칸 포즈·다리·인물·무기 검수 통과. 실제 소비자 160px의 윤곽 키 비교는 장식·발 위치를 포함한 수치입니다.
+- 바람: 같은 포즈의 일반형에 맞춘 실제 160px 걷기/서기 총윤곽 키 +2.50~3.25%. 160px 윤곽의 픽셀 단위(약 0.7%/px)에서 경계입니다. [보존 원본](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-raw/baram/exec-73ecf5f2-8675-4b0a-b3e5-536830bdd9ed.png) · [개인 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-baram-ledger.json).
+- 엄니: 같은 기준 +4.35~5.88%. [보존 원본](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-raw/eomni/walk-native1-727147c22f9e621.png) · [개인 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-eomni-ledger.json).
+- 47번의 3% 기준과 대조해 검토용 정확명 공급 0장, 추가 생성 0회로 보류했습니다. Claude 입수 단계에서 두 WALK의 스케일을 맞출 수 있는지, 이 원본을 정확명으로 받을 수 있는지 알려주세요. 다음 WALK 작업을 이어갑니다.
+- [47번 진행 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-team-progress.json)
+
+
+
+## Codex47 WALK 키 검수 대조
+<!-- claude47-operation:consumer-height-control -->
+- 엄니의 승인 ACT와 그림을 바꾸지 않은 본인 비각성 walkref를 같은 실제 160px 굽기에 넣어 대조했습니다. 공식 PASS(own 8/8)였고 걷기 윤곽 149px/서기 137px(+8.76%), 비각성의 같은 포즈에서 보정한 윤곽 키 +7.98~8.08%가 나왔습니다.
+- 굽기/맞춤 경로가 윤곽 키 차이에 기여한다는 재현입니다. 복장이 다른 비각성 대조이므로 각성 WALK 원본의 해부학적 키나 실게임 합격 판정은 별도입니다. 실제 경로·입력 SHA·수치는 [대조 기록](C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/outputs/claude47-normal-geometry-probe/eomni/summary.json)에 있습니다.
+- 바람·엄니의 반환 원본은 보존했고 두 대상 추가 생성 0회입니다. Claude 쪽의 입수 스케일 기준 확인을 기다립니다.
+
+
+
+## Codex47 검토용 정확명 공급 — 2026-11-19T11:09:42+09:00
+<!-- claude47-supplied:sagong -->
+- [sprite_aw1_sagong_walk_v2.png](D:/에셋창고/sprite_aw1_sagong_walk_v2.png) SHA256 `a997ad141e7189279adafc2b85f1efc344e660686eb7adb5a9358976c0e1c5c3` · [개인 검수·실요청 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-sagong-ledger.json).
+- 47번 누적 실제 생성 6회, 검토용 공급 3장, 보류 2건. 해당 공급의 Claude 수령·게임 입수 확인을 기다립니다.
+- [47번 진행 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-team-progress.json)
+
+
+
+## Codex47 입수 원장 확인 — 2026-11-19T11:13:00+09:00
+<!-- claude47-operation:verified-intake-first-two -->
+- 가락 신천간은 공급한 WALK와 동일한 SHA로 입수 원장의 installed를 확인했습니다. 저장소의 합전·겨루기 결과 PNG도 존재합니다.
+- 목지 달래는 공급한 WALK와 동일한 SHA로 거절됐습니다. 원장 사유는 ‘1·5 앞다리가 같음’이며, 승인 ACT v1과 SHA는 유지됐습니다.
+- 목지 달래의 현재 QUEUE·본인 walkref는 1·3 반대, 5~8은 1~4 반복을 지시합니다. Codex 공식 measure도 이 기준(+2)으로 own 8/8 PASS였습니다. 원래 4위상 반복을 받을지, 1·5가 반대인 새 기준 walkref를 쓸지 권위 MD에 알려주세요. 같은 요청 재생성은 0회입니다.
+- [47번 진행 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-team-progress.json)
+
+
+
+## Codex47 입수 걷기 키 보정 시험
+<!-- claude47-operation:height-scale-receiver-preview -->
+- 기존 입수 도구 `stage --only WHO --walk-scale FACTOR`의 같은 분기로 임시 160px 판을 검수했습니다. 원본·입수 원장·게임 파일은 수정 없이 SHA 일치를 확인했습니다.
+- 바람 0.985: 같은 포즈 일반형 대비 상대 윤곽 키 +1.07~1.81%, 실제 걷기 141~142px/서기 138px, 다리 own8/8, 발선 y156. [대조 기록](C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/outputs/claude47-receiver-scale-preview/baram/summary.json).
+- 엄니 0.970: 같은 기준 +1.45~2.94%, 걷기 140px/서기 137px, 다리 own8/8, 발선 y156. [대조 기록](C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/outputs/claude47-receiver-scale-preview/eomni/summary.json).
+- 두 판의 기본 공식 measure는 PASS, 배율 후 머리 지표는 별도 재측정 전입니다. 팔다리 위상·원본 여백 기준은 별개입니다. 두 기존 raw를 검토용 정확명으로 공급해 이 옵션으로 입수할 수 있는지 알려주세요. 추가 생성 0회입니다.
+
+
+
+## Codex47 비각성 ACT 네 장 보류
+<!-- claude47-operation:redo-four-act-holds -->
+- 너울 · 여백·발의 행 경계 교차, 얼굴 길이와 보이는 하퇴가 성인 기준판과 다름. [보존 원본](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-raw/neoul/act-native3-768fa1b4ccfe390a.png) · [검수 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-neoul-ledger.json).
+- 누리 · 가로 경계의 신발 겹침, 13·19 등 포즈 순서, 기준보다 넓은 얼굴. [보존 원본](C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/work/claude47-raw/nuri/sprite_prop_nuri_act_v3-native3.png) · [검수 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-nuri-ledger.json).
+- 서늘 · 되감기·전진 최대 뻗음이 한 칸 앞, 첫 행 부츠와 20번 이웃 칸 침범. [보존 원본](C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/work/claude47-raw/seoneul/act-native3-a20670deeb7d3fc2.png) · [검수 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-seoneul-ledger.json).
+- 구름 · 13 창끝·20 부츠가 이웃 칸 침범, 10% 여백 부족 및 얼굴·하퇴 차이. [보존 원본](C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/work/claude47-raw/gureum/sprite_prop_gureum_act_v3-native3.png) · [검수 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-gureum-ledger.json).
+- 각 대상 누적 3회, 원본 SHA 보존, 정확명 공급 0장입니다. 이 네 대상의 의존 WALK는 승인 ACT가 없어 생성 0회입니다. 다른 독립 REDO를 계속합니다.
+- [REDO 269~289 진행](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-redo-scope.json)
+
+
+
+## Codex47 비각성 REDO 포즈 차례 확인
+<!-- claude47-operation:base-redo-pose-order-conflict -->
+- 비각성 REDO 문안은 IMAGE 2와 같은 번호와 3 idle·6 walk 등의 순서를 함께 요구합니다. 실제 IMAGE 2는 배열이 바뀐 게임용 20칸 띠입니다. [게임용 재배열 코드](D:/flutter/arrow_game_one/tools/sprite-kit/bake-full20.py#L9).
+- 282 공용 칼의 IMAGE 2는 3840×160이며, 2번과 4번 칸의 RGBA 픽셀이 동일합니다. 문안에서는 2번 서기와 4번 첫 걸음을 별개로 요구합니다. 너울·누리는 1·13·18, 구름은 5·9 등 다른 번호의 중복도 확인했습니다.
+- 282는 이 입력의 순서 기준이 정해질 때까지 발주 0, 283 WALK도 승인 ACT를 기다립니다. 기존 네 ACT는 현 3회 보류를 유지합니다. 새 기준에는 실제 원본 4×5를 넣거나, 게임용 칸 순서와 일치하는 포즈 문안으로 정리할 수 있습니다. 원화·QUEUE·게임 파일은 수정하지 않았습니다.
+
+
+
+## Codex47 비기 전신 구도 검수
+<!-- claude47-operation:skillbody-framing-evidence -->
+- 이사금: 실제 칼끝–신발 1,224/1,536px(79.6875%)로 80% 하한에 5px 모자랍니다. 전신·환두칼·원래 인물과 포즈가 들어왔고, 칼 옆이 아닌 작은 금색 파편 2개 및 배경 RGB 미세 편차를 QA에 남겼습니다. 최종 판정은 보류입니다. [원본](C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/work/claude47-raw/isageum/skillbody_aw1_g-17-saro-isageum_v2-native-3.png) · SHA256 f2746190e29613851e1577e265da599671f976fce68c2866a2caba9ef462fd52.
+- 이사금 원본을 그대로 공급하고 입수 시 크롭 또는 표시 크기로 맞출 수 있는지 알려주세요. 현재 정확명 공급 0장이고, 누적3이라 추가 생성은 없습니다.
+- 빛고을: 1,207~1,210/1,536px(78.58~78.78%). 옷자락과 환두칼이 프레임 안이지만 칼축·궤적도 요구한 사선 베기와 차이가 있어 구도만의 보정 후보로 보지 않았습니다. [원본](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-raw/bitgoeul/skillbody_g-68-mujin-bitgoeul_v2-native3.png) · SHA256 0e32f76efcf49552c765b096eb06ca84d72cb18a106fbcbb6846f6ce292eab69. 누적3·보류·정확명 공급 0장.
+- [47번 진행 기록](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-team-progress.json)
+
+
+
+## Codex47 검토용 정확명 공급 — 2026-11-19T11:40:46+09:00
+<!-- claude47-supplied:seoneul-hit-base -->
+- [hit_base_g-84-wander-seoneul_v2.png](D:/에셋창고/hit_base_g-84-wander-seoneul_v2.png) SHA256 `677095f65cd21a5c8fc5eb208902862850ed0efdd0adfc0bbf83842ba71cc844` · [개인 검수·실요청 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-seoneul-hit-base-ledger.json).
+- seoneul-hit-base: 900×900 원화와 1254×1254 원본의 1:1 비율은 같습니다. 얼굴·옷·원무기 파지·반동 검수 후 동바이트를 공급했으며, [판정 변경 기록](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-supply-adjustments.json)에 해상도 차이와 이전 보류를 보존했습니다. 새 호출 0회.
+- 47번 누적 실제 생성 19회, 검토용 공급 4장, 보류 14건. 해당 공급의 Claude 수령·게임 입수 확인을 기다립니다.
+- [47번 진행 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-team-progress.json)
+
+
+
+## Codex47 검토용 정확명 공급 — 2026-11-19T11:45:55+09:00
+<!-- claude47-supplied:seoneul-hit-aw1+g-70-siljik-pado -->
+- [hit_aw1_g-84-wander-seoneul_v2.png](D:/에셋창고/hit_aw1_g-84-wander-seoneul_v2.png) SHA256 `7ad21eea8e27091e6adcfa6c866b341a1b14f023defea63dbd38816c28c246b6` · [개인 검수·실요청 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-seoneul-hit-aw1-ledger.json).
+- [hit_aw1_g-70-siljik-pado_v2.png](D:/에셋창고/hit_aw1_g-70-siljik-pado_v2.png) SHA256 `ca823766958852d177d010cb6e447f030e3d7bf737ff1f9ec5e676b01140fda4` · [개인 검수·실요청 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-g-70-siljik-pado-ledger.json).
+- 47번 누적 실제 생성 21회, 검토용 공급 6장, 보류 15건. 해당 공급의 Claude 수령·게임 입수 확인을 기다립니다.
+- [47번 진행 원장](C:/Users/my/Documents/Codex/asset-archives/20261119/live-chat-work/claude47-team-progress.json)
+

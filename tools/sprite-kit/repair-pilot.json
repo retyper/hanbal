@@ -691,5 +691,65 @@
   },
   "aw1-base-g-09-farmer-conscript": {
     "pipeline": "awakened20-master"
+  },
+  "aw1-base-w-02-goguryeo-lady": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-haedal": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-hogong": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-maehwa": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-base-w-06-buyeo-huntress": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-base-w-08-mahan-warrior": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-base-w-29-golpo-janmul": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-base-w-31-dabeol-dalbit": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-base-w-38-sangdang-bulmae": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-bira": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-base-w-53-hwanna-gabi": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-base-w-56-dongokjeo-sogeum": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-base-w-72-eumjeup-beol": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-bdanbi": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-beom": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-beombal": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-byeol": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-dalli": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-malgalgi": {
+    "pipeline": "awakened20-master"
+  },
+  "aw1-sincheongan": {
+    "pipeline": "awakened20-master"
   }
 }
