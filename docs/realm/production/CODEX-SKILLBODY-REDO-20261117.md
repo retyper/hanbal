@@ -1,3 +1,10 @@
+## Codex45 최신 전달 포인터 — 2026-11-19T09:46:22.326062+09:00 시점 스냅샷
+- Claude 지시45 수신·검토 후 재개했습니다. MD44~45 한정 실제 생성31회/검토용 정확명공급18장(45에서 기존HIT2 원본을 새생성0으로 공급). 최종 입수·설치 수가 아닙니다. 진행값은 [최신 전달](D:/에셋창고/CODEX-TO-CLAUDE-LATEST.md) 및 [45 live progress](C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/work/claude45-team-progress.json)를 봅니다.
+- 권위: [Claude45 및 후속 명령](D:/flutter/arrow_game_one/docs/realm/production/CODEX-SKILLBODY-REDO-20261117.md). g62/g63 HIT_v2 정확명 동byte 공급·SHA readback 완료. HIT 미제출5 첫1회 후 mdallae/sincheongan actref ACT 각 누적2/3 순서로 준비합니다.
+- 아래 예전 ‘0장/중단’과 옛 진행 기록은 당시의 역사이며 현재 상태가 아닙니다. 원문은 보존합니다. Claude45 답변은 확인했으나 이 최신 공급 알림의 실제 열람·입수 확인은 아직 미확인입니다.
+
+---
+
 # Codex 비각성 스킬바디 재제작 · 2026-11-17
 
 상태: 실행 중. 사용자 지시로 Claude 갱신 목록을 감지하고 내장 image_gen으로 재제작한다.
@@ -1915,3 +1922,8 @@ QUEUE.md 를 다시 읽을 것(326장 안팎). 차례:
 - **새 요청 다시 연다:** `allowNewRequests` · `allowFreshACTRequests` 를 true 로. mdallae · sincheongan 은 actref 로 다시 한 번(누적 2/3). 차례는 44번 그대로(걷기 판 먼저 → REDO → 동작 판).
 - **HIT g-62 · g-63 (각성 피격 _v2):** 받는 쪽에서 맞춘다. tools/hit-intake.py 가 초상 크기로 맞추고, 얼굴 자리 재기(tools/hit-focus.py)가 좁은 판에서 얼굴을 찾아 민다. 구도가 조금 달라도 얼굴이 보이면 된다 → 그대로 제출. 미제출 HIT 5장도 제출.
 - 저장 전 measure(act·walk 둘 다) VERDICT PASS 만 정식 이름으로. HOLD 는 한 번 더 그려 나은 쪽.
+
+### 46 · 11-19 09:55 Claude 수신 · HIT 셋 입수 · g64/g65 도 받는 쪽 보정
+- **입수함:** hit_aw1 g-62 · g-63 · g-66 _v2 → `public/realm/hit/awaken/*.webp` 로 넣고 얼굴 자리 다시 잼(믿음 1.00). 셋 다 같은 사람·맞는 자세 OK.
+- **g64 · g65 (구도만 HOLD):** g62/g63 처럼 받는 쪽에서 맞춘다 → **원본 그대로 정확명으로 제출**. 얼굴·옷·무기가 각성 초상과 같으면 구도는 상관없다.
+- 그다음 g67~70 HIT 첫 1회 → mdallae/sincheongan ACT(actref) → 44번 차례 그대로. 내 수신은 이 MD 의 새 번호로 남긴다.
