@@ -440,7 +440,9 @@ ${PIX} Same standing height as the action sheet, feet on one shared baseline in 
     const actName = walkOnly ? `sprite_aw1_${who}_act${vName(ok.version ?? 1)}.png` : `sprite_aw1_${who}_act${V}.png`
     const actPath = walkOnly && AW_RC[who].act ? AW_RC[who].act : `D:/에셋창고/${actName}`   // 통과한 그 파일 (후보 폴더에 있을 수 있다)
     const WV = walkOnly ? vName(Math.max(AW_VER[who]?.walk ?? 0, ok.version ?? 1) + 1) : V   // 걷기만 다시: 지금 가장 높은 걷기 판 다음 번호
-    const refs = [`/realm/anim-px/${k}.png`, `/realm/awaken-hd/${r.portrait}.jpg`]
+    // 11-19 Codex 제안 채택: 동작 판 IMAGE 1 은 비각성 띠를 픽셀 그대로 4×5 로 늘어놓은 actref (20×1 한 줄이라 재배열까지 시키면 자세 차례가 틀렸다 · tools/sprite-kit/aw1-actref.py)
+    const ACTREF = `assets_src/realm/sprite-prop/actref-${who}.png`
+    const refs = [existsSync(ACTREF) ? `/${ACTREF}` : `/realm/anim-px/${k}.png`, `/realm/awaken-hd/${r.portrait}.jpg`]
     if (!walkOnly) jobs.push({ id: `SPA-${who}-act${V.replace('_', '-')}`, group: 'remake-sprite-aw', save: actName, title: `${who} · 각성 전투 띠 20자세${V ? ' · 머리 크기 다시' : ''}`,
       refs, now: V ? '첫 판은 머리가 비각성 띠보다 커서 반려' : '각성 전투 띠 없음 — 각성해도 싸우는 모습이 비각성 그대로',
       use: `${MEASURE(who, 'act')} · 받으면 Claude 가 anim-px/gen-aw1-<who>.png 로 넣음`,
