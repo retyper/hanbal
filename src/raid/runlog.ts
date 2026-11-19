@@ -1,0 +1,84 @@
+/**
+ * 열전 판 기록 — 적기와 다시 돌리기 (형 11-19). 기기 칸·꼴은 runlog-store.ts.
+ *
+ * 화면(raid-main)이 판에 넣는 입력을 그대로 받아 적는다: 이동은 HAEBI_LOG.grid 칸으로 맞춘 값을 판에 넣고 적는다(맞춘 값이 판이 받은 값이라
+ * 씨앗 + 입력으로 같은 판이 그대로 다시 돈다 · A1). 판의 셈(haebi.ts)은 읽고 부르기만 한다.
+ */
+import { HAEBI_LOG as LG } from '../tune/params.ts'
+import { choose, createHaebi, reroll, stepHaebi, type HaebiRun, type Pick, type RunInput } from './haebi.ts'
+import type { RaidEnd, RaidGame } from './runlog-store.ts'
+
+/** 판의 한 걸음 (raid-main 과 같은 1/120초) */
+export const STEP = 1 / 120
+
+export interface Recorder {
+  readonly g: RaidGame
+  /** 이 기록이 적는 판 (다른 판이 들어오면 — 개발 검수 재생 — 적지 않는다) */
+  readonly run: HaebiRun
+  parts: string[]
+  /** 지금 입력으로 걸은 걸음 수 · 지금 입력(격자 정수 · 누름 비트) */
+  n: number; x: number; y: number; f: number
+  quit: boolean
+}
+
+export function startRecord(run: HaebiRun, g: Omit<RaidGame, 'v' | 'grid' | 'input' | 'picks' | 'steps' | 'end'>): Recorder {
+  return { g: { v: 1, ...g, grid: LG.grid, input: '', picks: [], steps: 0, end: null }, run, parts: [], n: 0, x: 0, y: 0, f: 0, quit: false }
+}
+
+const b36 = (n: number) => n.toString(36)
+/** 격자에 맞춘 정수 (-0 은 0 으로 — atan2 가 둘을 다르게 본다) */
+const cell = (v: number, grid: number) => Math.round(v * grid) || 0
+const inputOf = (x: number, y: number, f: number, grid: number): RunInput => ({ x: x / grid, y: y / grid, dash: (f & 1) !== 0, skill: (f & 2) !== 0, wake: (f & 4) !== 0 })
+
+/** 한 걸음의 입력을 적고, 판에 넣을 입력(격자에 맞춘 값)을 돌려준다 */
+export function recInput(r: Recorder, i: RunInput): RunInput {
+  const q = r.g.grid, x = cell(i.x, q), y = cell(i.y, q), f = (i.dash ? 1 : 0) | (i.skill ? 2 : 0) | (i.wake ? 4 : 0)
+  if (x !== r.x || y !== r.y || f !== r.f) { r.parts.push(`${b36(r.n)},${b36(x)},${b36(y)},${f}`); r.n = 0; r.x = x; r.y = y; r.f = f }
+  r.n++; r.g.steps++
+  return inputOf(x, y, f, q)
+}
+/** 기록 없이 판에 넣을 때도 같은 격자로 (개발 검수 재생 등 · 손맛이 기록 있을 때와 같게) */
+export const gridInput = (i: RunInput): RunInput => { const q = LG.grid; return inputOf(cell(i.x, q), cell(i.y, q), (i.dash ? 1 : 0) | (i.skill ? 2 : 0) | (i.wake ? 4 : 0), q) }
+export function recPick(r: Recorder, pick: Pick) { r.parts.push(`${b36(r.n)}=${pick}`); r.n = 0; r.g.picks.push(pick) }
+export function recReroll(r: Recorder) { r.parts.push(`${b36(r.n)}!`); r.n = 0 }
+export function recQuit(r: Recorder) { r.parts.push(`${b36(r.n)}.`); r.n = 0; r.quit = true }
+
+/** 판에서 물러난다 (멈춤 창 「물러나기」) — 화면과 다시 돌리기가 같은 셈을 쓴다 */
+export function withdrawRun(s: HaebiRun) { s.state = 'lost'; s.offers = [] }
+
+/** 지금까지 적은 것을 기록 한 장에 담는다 (기기 칸에 쓰기 전에) */
+export function sealInput(r: Recorder): RaidGame {
+  r.g.input = (r.n ? [...r.parts, b36(r.n)] : r.parts).join(' ')
+  if (r.g.end === null) r.g.snap = { t: Math.round(r.run.t * 10) / 10, level: r.run.level, kills: r.run.kills, hp: Math.round(r.run.hp) }
+  return r.g
+}
+
+/** 판이 끝났다 — 결과를 적는다 (left: 판 가운데 화면을 떠남) */
+export function finishRecord(r: Recorder, gold: number, at: string, left = false): RaidGame {
+  const s = r.run
+  const result: RaidEnd['result'] = left ? 'left' : r.quit ? 'quit' : s.state === 'won' ? 'won' : 'lost'
+  const end: RaidEnd = { result, t: Math.round(s.t * 100) / 100, gold, level: s.level, kills: s.kills, hp: Math.max(0, Math.round(s.hp)), at }
+  if (result === 'lost') {
+    end.why = s.hp <= 0 ? 'fell' : 'time'
+    if (end.why === 'fell') end.near = s.enemies.map((e) => [e.kind, Math.hypot(e.x - s.x, e.y - s.y)] as const).filter(([, d]) => d < 150).sort((a, b) => a[1] - b[1]).slice(0, 3).map(([k]) => k)
+  }
+  r.g.end = end
+  delete r.g.snap
+  return sealInput(r)
+}
+
+/** 기록 한 장(씨앗 + 판 옵션 + 입력)으로 판을 처음부터 다시 돌린다 — 입력을 덜어 낸 기록(cut)은 못 돌린다 */
+export function replayRaid(g: RaidGame): HaebiRun {
+  const s = createHaebi(g.seed, g.mode, g.kit, g.opts)
+  let inp = inputOf(0, 0, 0, g.grid)
+  for (const tok of g.input.split(' ')) {
+    const m = /^([0-9a-z]+)(.*)$/.exec(tok); if (!m) continue
+    for (let i = parseInt(m[1]!, 36); i > 0; i--) stepHaebi(s, inp, STEP)
+    const rest = m[2]!
+    if (rest.startsWith(',')) { const [x, y, f] = rest.slice(1).split(','); inp = inputOf(parseInt(x!, 36), parseInt(y!, 36), Number(f), g.grid) }
+    else if (rest.startsWith('=')) choose(s, rest.slice(1) as Pick)
+    else if (rest === '!') reroll(s)
+    else if (rest === '.') withdrawRun(s)
+  }
+  return s
+}

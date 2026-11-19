@@ -54,6 +54,12 @@ export const HAPTICS = {
  *  radius 막대가 끝까지 가는 거리(화면 px) · dead 이보다 덜 밀면 멈춤 · follow 끝을 넘겨 끌면 받침이 따라오는 몫(0~1)
  *  queue: 회피·비기를 재사용 중에 눌러도 이 초 안에 풀리면 나간다 (11-17 형: 「회피나 기술도 잘 안 눌렸음」) */
 export const HAEBI_STICK = { radius: 54, dead: 7, follow: 1, queue: .15 } as const
+/** 열전 전투판 확대 (11-19 형: 「우상단에 돋보기 · 탭 확대 · 탭 확대 · 탭 원래대로」) — 화면만 바뀐다 (판의 셈은 그대로).
+ *  levels 단계마다 배율(처음은 1배) · follow 카메라가 장수를 따라가는 빠르기(초당 · 클수록 바짝) · ease 배율이 바뀌는 빠르기(초당) · pop 단추가 튀는 초 */
+export const HAEBI_ZOOM = { levels: [1, 1.35, 1.8], follow: 7, ease: 9, pop: .32 } as const
+/** 열전 판 기록 (11-19 형: 「열전 플레이데이터도 받고 있지?」) — grid: 이동 입력을 1/grid 칸으로 맞춰 판에 넣고 적는다
+ *  (조이스틱 끝까지 54px 이면 한 칸 1.7px · 판을 다시 돌리면 같은 결과가 나오게 · 기록이 짧아지게) */
+export const HAEBI_LOG = { grid: 32 } as const
 /** Haebi's independent ten-minute run. Combat tuning lives here, not in the renderer. */
 export const HAEBI_RUN = {
   /** 판 길이 · 두목 — 다이센카처럼 20분 (11-16 형 고름 · 예전 600/540 → 900/840 → 1200/1140) · 스테이지마다 length 를 곱한다 */

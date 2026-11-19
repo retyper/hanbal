@@ -96,6 +96,34 @@ const sideOf = (s: SaveLike): Side => ({
 })
 const sameHead = (a: SaveLike | null, seed: number | null, rev: number): boolean => (a === null ? seed === null : a.seed === seed && a.log.length === rev)
 
+// ───────── 열전 판 기록 (raid/runlog-store.ts · 형 11-19)
+
+/** 열전 판 기록 한 장 — 여기는 쓰는 칸만 안다 */
+export interface RaidLike { readonly id: string; readonly mode: string; readonly stage: string; readonly hero: string; readonly started: string; readonly end: unknown; readonly input: string }
+/** 한 번에 올리는 판 수 (밀린 판이 많으면 다음 판 끝에 이어 올린다) */
+const RAID_BATCH = 10
+
+/**
+ * 끝난 열전 판을 올린다 — 판마다 한 장 `users/{uid}/raids/{id}` (본편 판 기록 records 와 같은 꼴 · gzip).
+ * 로그인 안 했거나 gzip 이 없는 곳이면 아무것도 안 한다. 너무 크면 입력을 덜고 올린다. 올린 판 id 를 돌려준다 (실패하면 던진다 — 부르는 쪽이 삼킨다)
+ */
+export async function pushRaids(list: readonly RaidLike[]): Promise<string[]> {
+  const a = account()
+  if (a === null || !canSync() || list.length === 0) return []
+  const token = await idToken()
+  if (token === null) return []
+  const writes: Write[] = [], ids: string[] = []
+  for (const g of list.slice(0, RAID_BATCH)) {
+    let data = await gz(JSON.stringify(g))
+    if (data.length > RECORD_MAX) data = await gz(JSON.stringify({ ...g, input: '', cut: true }))
+    if (data.length > RECORD_MAX) continue
+    writes.push({ kind: 'set', path: `users/${a.uid}/raids/${g.id}`, stamp: 'updatedAt', data: { v: 1, fmt: 'gz', data, mode: g.mode, stage: g.stage, hero: g.hero, started: g.started, end: g.end ?? null } })
+    ids.push(g.id)
+  }
+  if (writes.length) await commit(writes, token)
+  return ids
+}
+
 // ───────── 맞추기
 
 type Pulled = { json: string; seed: number; rev: number; h: string; updateTime: string; log: unknown[] }
@@ -321,7 +349,8 @@ export function makeSync(host: SyncHost, onChange: (s: SyncState) => void): {
       clearTimer()
       pending = false
       const recs = await listIds(`${base}/records`, token)
-      const writes: Write[] = [...recs.map((id) => ({ kind: 'delete' as const, path: `${base}/records/${id}` })), { kind: 'delete', path: `${base}/saves/main` }, { kind: 'delete', path: base }]
+      const raids = await listIds(`${base}/raids`, token)
+      const writes: Write[] = [...recs.map((id) => ({ kind: 'delete' as const, path: `${base}/records/${id}` })), ...raids.map((id) => ({ kind: 'delete' as const, path: `${base}/raids/${id}` })), { kind: 'delete', path: `${base}/saves/main` }, { kind: 'delete', path: base }]
       for (let i = 0; i < writes.length; i += 400) await commit(writes.slice(i, i + 400), token)
       // 정말 비었나 — 판이 남아 있으면 지운 게 아니다
       if ((await remoteHead(base, token)) !== null) throw new Error('서버의 판이 아직 남아 있습니다')

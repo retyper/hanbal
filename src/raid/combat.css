@@ -346,3 +346,13 @@ footer #skill.unlock{position:relative;z-index:3;color:#fff6cf;animation:skill-u
 footer #skill.unlock:after{content:'';position:absolute;left:50%;top:50%;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;pointer-events:none;background:radial-gradient(closest-side,#fff8d0 0,#ffd66bd0 30%,#e8a83a66 55%,transparent 72%);animation:skill-burst calc(var(--unlock-s,1.6s) * .6) ease-out both}
 @keyframes skill-unlock{0%{transform:scale(.5);opacity:.3}16%{transform:scale(1.9);opacity:1}32%{transform:scale(1.2)}48%{transform:scale(1.45)}70%{transform:scale(1.08)}100%{transform:scale(1)}}
 @keyframes skill-burst{0%{transform:scale(.2);opacity:1}60%{opacity:.9}100%{transform:scale(2.6);opacity:0}}
+/* 전투판 확대 돋보기 (11-19 형) — 전체화면 왼쪽 · 확대 중(눌린 채)은 금빛 · 누르면 크게 튀었다 돌아온다 · 출전 화면에서는 숨김 */
+.head-actions #zoom{width:40px;height:40px;padding:4px;display:grid;place-items:center;color:#f0dfb6;background:#121e1bd9;border:1.5px solid #b99b66;border-radius:50%;box-shadow:0 1px 4px #000a;touch-action:manipulation}
+.head-actions #zoom svg{width:100%;height:100%;display:block;pointer-events:none}
+.head-actions #zoom.on{color:#ffe08a;border-color:#ffd66b;background:#4a3410e6;box-shadow:0 0 10px #ffc84aaa,inset 0 0 6px #ffd66b66}
+.head-actions #zoom.pop{animation:zoom-pop var(--pop,.32s) cubic-bezier(.3,1.9,.5,1)}
+.head-actions #zoom:active{transform:scale(.92)}
+@keyframes zoom-pop{0%{transform:scale(1)}35%{transform:scale(1.5)}100%{transform:scale(1)}}
+body:not(.raid-running) .head-actions #zoom{display:none}
+.head-actions{align-items:center}
+@media(orientation:landscape) and (max-height:600px){.head-actions #zoom{width:36px;height:36px;padding:3px}}

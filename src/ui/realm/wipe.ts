@@ -13,7 +13,7 @@ const PREFIX = ['hanbal.realm.', 'hanbal.night.', 'hanbal.raid.'] as const
 /** 설정 — 기록이 아니다 */
 const KEEP: ReadonlySet<string> = new Set([
   'hanbal.realm.mute', 'hanbal.realm.haptics', 'hanbal.realm.layers', 'hanbal.realm.gfx', 'hanbal.realm.gfx.auto',
-  'hanbal.realm.warHelp', 'hanbal.realm.battle0', 'hanbal.night.rotate',
+  'hanbal.realm.warHelp', 'hanbal.realm.battle0', 'hanbal.night.rotate', 'hanbal.raid.zoom',
 ])
 const MARK = 'hanbal.wipe'
 

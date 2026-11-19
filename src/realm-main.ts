@@ -27,6 +27,7 @@ import { applyBonds } from './realm/bonds.ts'
 import { bondMemory } from './ui/realm/bonds.ts'
 import { account, deleteAccount, finishSignIn, signIn, signOut } from './net/auth.ts'
 import { canSync, makeSync } from './net/sync.ts'
+import { loadRaidGames } from './raid/runlog-store.ts'
 import { bringRetainers } from './realm/legacy.ts'
 import { drillRealm } from './realm/drill.ts'
 import { loadDrill } from './ui/realm/drill.ts'
@@ -526,7 +527,8 @@ const app = mountRealmApp(root, {
   },
   onExport() {
     // 그 계절에 정해 둔 명령도 담는다 — 막힌 판을 그대로 다시 돌려 보려고 (형: "9년 가을에서 다음으로 안넘어가져")
-    const body = JSON.stringify({ exported: new Date().toISOString(), games, save: state, draft: draftNow() }, null, 1)
+    // 장수 열전 판 기록도 같이 (raid/runlog-store.ts · 형 11-19)
+    const body = JSON.stringify({ exported: new Date().toISOString(), games, raids: loadRaidGames(), save: state, draft: draftNow() }, null, 1)
     download(`78guk-records-${new Date().toISOString().slice(0, 10)}.json`, body)
   },
   gameCount: () => games.length,

@@ -30,6 +30,14 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly(['v', 'fmt', 'data', 'nation', 'region', 'started', 'end', 'updatedAt'])
           && request.resource.data.data is bytes && request.resource.data.data.size() < 900000;
       }
+
+      // 장수 열전 판 기록 — 판마다 한 장 (시작 시각 + 씨앗 · src/raid/runlog-store.ts · 11-19)
+      match /raids/{id} {
+        allow read, delete: if me(uid);
+        allow create, update: if me(uid)
+          && request.resource.data.keys().hasOnly(['v', 'fmt', 'data', 'mode', 'stage', 'hero', 'started', 'end', 'updatedAt'])
+          && request.resource.data.data is bytes && request.resource.data.data.size() < 900000;
+      }
     }
   }
 }

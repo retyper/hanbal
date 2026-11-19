@@ -109,7 +109,7 @@ users/{uid}/records/{seed}       판 기록 한 판에 한 장
 
 ## 5. 계정 지우기 (애플 5.1.1(v) · 구글 플레이)
 
-나라 판 「계정」 → 「계정 지우기」 → 두 번 묻는다 → `records/*` · `saves/main` · `users/{uid}` 지우기 → `accounts:delete` → 기기의 `hanbal.auth`·`hanbal.sync` 지우기. **기기의 판은 남긴다**(손님으로 계속).
+나라 판 「계정」 → 「계정 지우기」 → 두 번 묻는다 → `records/*` · `raids/*`(열전 판 기록) · `saves/main` · `users/{uid}` 지우기 → `accounts:delete` → 기기의 `hanbal.auth`·`hanbal.sync` 지우기. **기기의 판은 남긴다**(손님으로 계속).
 로그아웃은 `hanbal.auth`·`hanbal.sync` 만 지운다.
 
 ## 6. 보안 규칙 (`firestore.rules`)
@@ -117,6 +117,7 @@ users/{uid}/records/{seed}       판 기록 한 판에 한 장
 - `users/{uid}` 와 그 밑은 **로그인한 그 사람만** 읽고 쓴다.
 - 쓸 때 꼴을 본다: 정해 둔 필드만(`keys().hasOnly`) · `data` 는 bytes 이고 900KB 아래 · `progress` 는 문자열 200KB 아래 · 판 칸 이름은 `main`(과 나중의 slot2…)만.
 - 남의 것을 읽는 길은 없다. 형(개발자)은 콘솔에서 본다.
+- 장수 열전 판 기록은 `users/{uid}/raids/{id}` — 판마다 한 장(gzip · 입력 흐름까지 · `src/raid/runlog-store.ts`). 열전 판이 끝날 때·열전을 열 때 밀린 것을 올린다 (11-19). **규칙을 콘솔에 다시 올려야 쓰인다.**
 
 ## 7. 무료 칸 셈 (S6)
 

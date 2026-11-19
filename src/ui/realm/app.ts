@@ -4450,7 +4450,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     saveDraft()
     // campaign = 이 틀의 표 — 출전하면 열전이 이 표로 알린다 ('hanbal.raid.start') · 이 틀에서는 한 판만 · 결과 화면은 「본편으로」만 (raid-main.ts)
     const token = Array.from(crypto.getRandomValues(new Uint32Array(4)), n => n.toString(16)).join('-')
-    const q = new URLSearchParams({ campaign: token, hero: look.id, name: look.name, home: look.home, bust: look.bust, sprite: look.sprite, kit: look.kit, video: look.video ? '1' : '0' })
+    const q = new URLSearchParams({ campaign: token, hero: look.id, name: look.name, home: look.home, bust: look.bust, sprite: look.sprite, kit: look.kit, video: look.video ? '1' : '0', game: String(realm.seed), turn: String(realm.season) })   // game·turn = 열전 판 기록에 적는 본편 판·달 (raid/runlog-store.ts)
     // awake = 각성 전투 띠 이름(겉모습만) · 판 안 각성 자격(도깨비 도장)은 열전 화면이 영웅전 표와 제 기록을 직접 읽는다 (raid/link.ts demonSealed · 각성 v2 가7)
     if (look.awake !== undefined) q.set('awake', look.awake)
     const ov = openFrame(`${import.meta.env.BASE_URL}raid.html?${q}`, `${h.name}의 열전`)
@@ -4501,7 +4501,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const token = Array.from(crypto.getRandomValues(new Uint32Array(4)), n => n.toString(16)).join('-')
     // 열전 화면에 겉모습만 넘긴다 (이름·초상·전투 그림·무기 묶음) — 보상은 이쪽 기록(토큰·장수 id)으로만 준다
     const h = realm.heroes[id]!, base = generalSprite({ ...h, ascended: false }), awake = generalSprite({ ...h, ascended: true }), bust = bustOf(id) ?? ''
-    const look = new URLSearchParams({ trial: token, hero: id, name: h.name, home: `${realm.factions[h.faction]?.name ?? '떠돌이'}의 장수`, bust, sprite: base, kit: kitOfSprite(base), video: AWAKEN_LOOP.has(bust) ? '1' : '0' })
+    const look = new URLSearchParams({ trial: token, hero: id, name: h.name, home: `${realm.factions[h.faction]?.name ?? '떠돌이'}의 장수`, bust, sprite: base, kit: kitOfSprite(base), video: AWAKEN_LOOP.has(bust) ? '1' : '0', game: String(realm.seed), turn: String(realm.season) })
     if (awake !== base) look.set('awake', awake)
     if (host.isolated && import.meta.env.DEV) look.set('review', '')
     const overlay = openFrame(`${import.meta.env.BASE_URL}raid.html?${look}`, `${h.name}의 각성 시련`)

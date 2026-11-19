@@ -573,12 +573,18 @@ function fieldBackdrop(bg: HTMLImageElement, W: number, H: number) {
 }
 /** 그리는 차례 (위에서 아래로) — 판마다 다시 쓰는 배열 */
 const order: (HaebiRun['enemies'][number] | null)[] = []
-export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, destination: { x: number; y: number } | null) {
+/**
+ * cam: 확대 카메라 (raid/camera.ts · 11-19 돋보기 단추) — 화면 가운데의 판 좌표와 배율. 판 위의 것(땅·몸·효과·피해 숫자·오라)은 판과 함께 커지고,
+ * 화면에 붙은 것(맞을 때 붉은 테 · 두목 막대)은 그대로 · 없으면 1배
+ */
+export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, destination: { x: number; y: number } | null, cam?: { zoom: number; x: number; y: number }) {
   const W = C.width, H = C.height
   ctx.setTransform(1, 0, 0, 1, 0, 0)   // 그림마다 옮겼다 되돌리는 셈의 작은 오차가 판마다 쌓이지 않게 (sprite·stamp 는 save/restore 없이 · 11-17)
   ctx.fillStyle = '#273c35'; ctx.fillRect(0, 0, W, H)
-  const quake = shakeOf(s)
-  if (quake) ctx.setTransform(1, 0, 0, 1, Math.round(Math.sin(s.t * 91) * quake), Math.round(Math.cos(s.t * 77) * quake * .6))
+  const quake = shakeOf(s), qx = quake ? Math.round(Math.sin(s.t * 91) * quake) : 0, qy = quake ? Math.round(Math.cos(s.t * 77) * quake * .6) : 0
+  const z = cam?.zoom ?? 1
+  if (z !== 1 && cam) ctx.setTransform(z, 0, 0, z, W / 2 - cam.x * z + qx, H / 2 - cam.y * z + qy)
+  else if (quake) ctx.setTransform(1, 0, 0, 1, qx, qy)
   const bg = images.get('raid/' + ST[s.stage].bg) ?? images.get('raid/forest.webp')
   const baked = bg && fieldBackdrop(bg, W, H)
   if (baked) ctx.drawImage(baked, 0, 0)
@@ -764,6 +770,8 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   }
   // 피해 숫자 — 알갱이로 튀어 나간다 (trackNumbers · drawNumbers)
   trackNumbers(s); ctx.save(); drawNumbers(ctx, images, s); ctx.restore()
+  // 여기부터 화면에 붙은 것 — 확대해도 그대로 (흔들림만)
+  if (z !== 1) ctx.setTransform(1, 0, 0, 1, qx, qy)
   if (s.hurt > 0) { ctx.strokeStyle = '#ff735a99'; ctx.lineWidth = 12; ctx.strokeRect(0, 0, W, H) }
   const boss = s.enemies.find(e => e.kind === 'boss')
   if (boss) {

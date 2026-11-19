@@ -1,6 +1,10 @@
 import { breakthroughText, isBreakthrough } from './realm/vanguard.ts'
-import { HAEBI_RUN as C, HAEBI_STICK as STICK, HAEBI_TREE as TREE, HAEBI_ULT as ULT, HAEBI_AWAKEN as AWK, HAEBI_STAGES as ST } from './tune/params.ts'
-import { createHaebi, runDuration, stepHaebi, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, nodeText, nodeAt, branchName, branchPoints, wakeReady, ultName, ultOpen, BRANCHES, branchNodes, type Kit, type Power, type Pick, type HaebiRun, type StageId } from './raid/haebi.ts'
+import { HAEBI_RUN as C, HAEBI_STICK as STICK, HAEBI_TREE as TREE, HAEBI_ULT as ULT, HAEBI_AWAKEN as AWK, HAEBI_STAGES as ST, HAEBI_ZOOM as ZOOM } from './tune/params.ts'
+import { createHaebi, runDuration, stepHaebi, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, nodeText, nodeAt, branchName, branchPoints, wakeReady, ultName, ultOpen, BRANCHES, branchNodes, type Kit, type Power, type Pick, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
+import { startRecord, recInput, gridInput, recPick, recReroll, recQuit, withdrawRun, sealInput, finishRecord, type Recorder } from './raid/runlog.ts'
+import { putRaidGame, sealLeftovers, unsentRaids, markRaidsSent, type RaidGame, type RaidOpts } from './raid/runlog-store.ts'
+import { pushRaids } from './net/sync.ts'
+import { newCam, followCam, nextLevel, closest, toField } from './raid/camera.ts'
 import { loadMeta, saveMeta, buy, refund, record, shopCost, shopMax, stageOpen, stageName, pickStage, SHOP, STAGE_ORDER, type ShopKey } from './raid/meta.ts'
 import { drawField, imagePaths, setHeroArt, heroArtFiles } from './raid/haebi-view.ts'
 import { powerIcon, installPowerHints, comboIcon, rankMark, treeSvg, treeInfo, BRANCH_COLOR } from './raid/power-ui.ts'
@@ -63,7 +67,9 @@ let stage: Exclude<StageId, 'trial'> = pickStage(meta, kit)
 /** 두목이 오는 때(분) — 수치에서 읽는다: 스테이지 19분(판은 20분) · 각성 시련 7분(판은 8분) */
 const bossMinute = () => Math.floor(C.bossAt * ST[mode === 'trial' ? 'trial' : stage].length / 60)
 const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`
-const newRun = (seed: number) => { const r = createHaebi(seed, mode, kit, { ...mode === 'stage' ? { stage, bonus: meta.shop } : {}, awaken: canAwaken, mastery }); if (r.message.endsWith('첫 조합을 향해')) { r.message = ''; r.messageTime = 0 }  /* 시작 군말 띠는 걷는다 (형 11-16) */ return r }
+/** createHaebi 에 넘기는 판 옵션 — 판 기록에도 이것 그대로 적는다 (다시 돌리기) */
+const runOpts = (): RaidOpts => ({ ...mode === 'stage' ? { stage, bonus: { ...meta.shop } } : {}, awaken: canAwaken, mastery })
+const newRun = (seed: number, opts: RaidOpts = runOpts()) => { const r = createHaebi(seed, mode, kit, opts); if (r.message.endsWith('첫 조합을 향해')) { r.message = ''; r.messageTime = 0 }  /* 시작 군말 띠는 걷는다 (형 11-16) */ return r }
 root.innerHTML = `<header><div><small>장수 열전 · 독립 모드</small><h1>${HERO.name} <em>${K.title}</em></h1></div><div class="head-actions"><button id="pause" disabled aria-label="일시정지">Ⅱ</button></div></header>
 <div id="layout"><aside id="character"><div id="portrait-media"><img id="hero-portrait" src="${import.meta.env.BASE_URL}realm/bust-hd/${HERO.bust}.jpg" alt="${HERO.name} 원화"><video id="hero-video" muted loop playsinline preload="none" hidden aria-label="각성 ${HERO.name} 영상"></video></div><div class="portrait-title"><span>${HERO.home}</span><b id="rank-title">${HERO.name}</b><button id="portrait-toggle" hidden>원화로 보기</button></div><div id="reaction">${weapon} 하나로 시작하는 열전</div><div id="combo-badges"></div><i class="frame-knots"></i></aside>
 <main><section id="menu"><span class="eyebrow">장수 열전</span><h2>${HERO.name}<em>${K.title}</em></h2><p>능력을 고르고 두 힘을 묶어, ${bossMinute()}분을 버틴 뒤 오는 두목을 쓰러뜨리세요.</p><div class="journey"><span><b>01</b> 붉은 고리를 피하고</span><span><b>02</b> 두 힘을 묶어</span><span><b>03</b> 두목을 잡습니다</span></div><button id="start" class="primary" disabled>그림을 불러오는 중…</button><p class="controls">이동 WASD·방향키·화면 누르기 · 회피 Shift · 비기 Space · 각성 E · 멈춤 Esc</p><p class="note">본편의 병력과 따로인 한 판입니다.</p></section>
@@ -91,6 +97,30 @@ function skipCutin() { if (!$('skill-cutin').hidden) { $('skill-cutin').hidden =
 $('pause').insertAdjacentHTML('beforebegin', '<button id="fullscreen">전체화면</button>')
 $('fullscreen').textContent = '⛶'; $('fullscreen').setAttribute('aria-label', '전체화면');
 $('fullscreen').onclick = () => { if (document.fullscreenElement) void document.exitFullscreen?.(); else void document.documentElement.requestFullscreen?.().catch(() => undefined) }
+/**
+ * 전투판 확대 돋보기 (11-19 형: 「한 번 누르면 조금 · 한 번 더 누르면 더 가까이 · 그때는 돋보기 − 로 바뀌고 · 누르면 원래대로」) — 우상단 전체화면 왼쪽.
+ * 확대 중엔 카메라가 장수를 따라간다 (raid/camera.ts · 맵 끝에서는 판 밖이 보이지 않게 가장자리에 멈춤) · 판의 셈은 그대로 · 단계는 판 사이에 기억
+ */
+const ZOOM_KEY = 'hanbal.raid.zoom'
+const cam = newCam((() => { try { return Number(localStorage.getItem(ZOOM_KEY) ?? 0) } catch { return 0 } })())
+const zoomSvg = (minus: boolean) => `<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="13.5" cy="13.5" r="9" fill="#0d1a17aa" stroke="currentColor" stroke-width="3"/><path d="M20.6 20.6 28 28" stroke="currentColor" stroke-width="4.4" stroke-linecap="round"/><path d="M9.2 13.5h8.6${minus ? '' : 'M13.5 9.2v8.6'}" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg>`
+$('fullscreen').insertAdjacentHTML('beforebegin', '<button id="zoom"></button>')
+const zoomBtn = $<HTMLButtonElement>('zoom')
+zoomBtn.style.setProperty('--pop', ZOOM.pop + 's')
+function paintZoom() {
+  const minus = closest(cam.level)
+  zoomBtn.innerHTML = zoomSvg(minus); zoomBtn.classList.toggle('on', cam.level > 0)
+  zoomBtn.setAttribute('aria-pressed', String(cam.level > 0)); zoomBtn.setAttribute('aria-label', minus ? '원래 크기로' : '전투판 확대')
+}
+function cycleZoom() {
+  cam.level = nextLevel(cam.level); paintZoom()
+  try { localStorage.setItem(ZOOM_KEY, String(cam.level)) } catch { /* 이번 창만 */ }
+  zoomBtn.classList.remove('pop'); void zoomBtn.offsetWidth; zoomBtn.classList.add('pop')   // 누르면 크게 튀었다 돌아온다 (매번 처음부터)
+}
+zoomBtn.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); cycleZoom() })
+zoomBtn.addEventListener('click', e => { if (e.detail === 0) cycleZoom(); zoomBtn.blur() })   // 키보드로 눌렀을 때만 (손가락·마우스는 pointerdown 에서)
+zoomBtn.addEventListener('animationend', () => zoomBtn.classList.remove('pop'))
+paintZoom()
 if (campaignToken) root.querySelector('header small')!.textContent = `본편 · ${HERO.name}의 열전`
 if (trialToken) {
   document.body.classList.add('campaign-trial')
@@ -154,6 +184,37 @@ function renderShop() {
 const canvas = $<HTMLCanvasElement>('field'), ctx = canvas.getContext('2d', { alpha: false })!   // 판은 늘 바탕을 다 칠한다 — 불투명이면 폰이 겹치기를 덜 한다
 const images = new Map<string, HTMLImageElement>(), keys = new Set<string>()
 let run = newRun(7), live = false, paused = false, shown = '', loadoutKey = '', acc = 0, last = 0, raf = 0
+/**
+ * 판 기록 (11-19 형: 「열전 플레이데이터도 받고 있지?」 · raid/runlog.ts · runlog-store.ts) — 판마다 씨앗·판 옵션·입력 흐름·고른 카드·결과를
+ * 기기 칸(hanbal.raid.games)에 남기고, 로그인했으면 본편처럼 서버로 올린다(net/sync.ts pushRaids · 실패해도 판은 그대로).
+ * 적는 때: 출전 · 카드를 고를 때 · 탭이 가려질 때 · 끝날 때. 판 가운데 창을 닫으면 다음에 열 때 「떠남」으로 닫는다
+ */
+let rec: Recorder | null = null
+const numQ = (k: string) => { const v = query.get(k); return v !== null && v !== '' && Number.isFinite(Number(v)) ? Number(v) : undefined }
+const fromRealm: RaidGame['from'] = (() => {
+  const via = campaignToken ? 'campaign' : trialToken ? 'trial' : vanguardToken ? 'vanguard' : null
+  if (via === null) return null
+  const game = numQ('game'), turn = numQ('turn')
+  return { via, ...game !== undefined ? { game } : {}, ...turn !== undefined ? { turn } : {} }
+})()
+/** 지금 판을 적는 중인가 (개발 검수 재생이 판을 갈아 끼우면 적지 않는다) */
+const logging = (): boolean => rec !== null && rec.run === run && rec.g.end === null
+const feed = (i: RunInput): RunInput => logging() ? recInput(rec!, i) : gridInput(i)
+function saveLog() { if (logging()) putRaidGame(sealInput(rec!)) }
+/** 끝을 적고 올린다 — left: 판 가운데 떠남 */
+function closeLog(left = false) {
+  if (!logging()) return
+  const r = rec!
+  finishRecord(r, runGold(r.run), new Date().toISOString(), left); putRaidGame(r.g); void sendRaids()
+}
+let sending = false
+async function sendRaids() {
+  if (sending) return
+  sending = true
+  try { markRaidsSent(await pushRaids(unsentRaids())) } catch (e) { console.warn('[열전 기록] 서버에 못 올렸다 · 다음에 다시:', e) } finally { sending = false }
+}
+// 열 때: 지난번에 판 가운데 닫힌 판은 「떠남」으로 닫고, 못 올린 판을 올린다
+sealLeftovers(new Date().toISOString()); void sendRaids()
 /** 회피·비기를 누른 판 시각 (STICK.queue 초 동안 맡아 둔다 · press) */
 let dashAt = -9, skillAt = -9, wakeAt = -9
 let destination: { x: number; y: number } | null = null
@@ -208,7 +269,14 @@ function begin(sameSeed = false) {
   // 본편에서 연 열전은 한 판만 — 출전하는 그 순간 본편에 알린다 (그 장수의 이번 달 출전 · app.ts markRaid)
   if (campaignToken) { if (campaignBegun) return; campaignBegun = true; window.parent.postMessage({ type: 'hanbal.raid.start', token: campaignToken }, location.origin) }
   if (!sameSeed && !vanguardToken) pendingSeed = crypto.getRandomValues(new Uint32Array(1))[0]!
-  sound.unlock(); hidePowerHint(); notifyVanguardStart(); run = newRun(pendingSeed); live = true; paused = false; shown = ''; loadoutKey = ''; resetInput(); last = 0
+  closeLog(true)   // 앞 판이 끝을 안 적었으면 (드묾) 「떠남」으로
+  const opts = runOpts()
+  sound.unlock(); hidePowerHint(); notifyVanguardStart(); run = newRun(pendingSeed, opts); live = true; paused = false; shown = ''; loadoutKey = ''; resetInput(); last = 0
+  // 판 기록 — 시작 시각은 화면 쪽 벽시계 · 판 옵션은 createHaebi 에 넘긴 그것 (runlog.ts)
+  const now = new Date()
+  rec = startRecord(run, { id: `${now.getTime().toString(36)}-${pendingSeed.toString(36)}`, started: now.toISOString(), mode, stage: run.stage, hero: heroId, kit, sprite, seed: pendingSeed, opts, from: fromRealm })
+  saveLog()
+  followCam(cam, run.x, run.y, 0, true)   // 새 판은 카메라를 곧바로 장수에게
   skipCutin()
   $('menu').hidden = true; $('play').hidden = false; $('overlay').hidden = true; $<HTMLButtonElement>('pause').disabled = false; schedule()
   $<HTMLButtonElement>('start').blur(); window.scrollTo(0, 0)
@@ -221,6 +289,7 @@ window.addEventListener('keydown', e => {
   if (!live) return
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) || e.key === ' ' && e.target === document.body) e.preventDefault()
   if (e.key === 'Escape' && !e.repeat) { if (!treeView.hidden) closeTree(); else pause(); return }
+  if (e.key.toLowerCase() === 'z' && !e.repeat) { cycleZoom(); return }   // 확대 단추와 같다
   if (paused || inspecting || run.offers.length || run.state !== 'playing') return
   if (e.target instanceof HTMLButtonElement && (e.key === ' ' || e.key === 'Enter')) return
   keys.add(e.key.toLowerCase()); if (e.key === 'Shift' && !e.repeat) press('dash'); if (e.key === ' ' && !e.repeat) press('skill'); if (e.key.toLowerCase() === 'e' && !e.repeat) press('wake')
@@ -233,13 +302,16 @@ window.addEventListener('blur', () => {
   if (!backgroundReview && live && run.state === 'playing') { paused = true; shown = ''; showOverlay() }
 })
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) { heroVideo.pause(); mediaKey = ''; cancelAnimationFrame(raf); raf = 0; resetInput(); if (live && run.state === 'playing') paused = true; shown = ''; showOverlay(); sound.frame(run, live, true) }
+  if (document.hidden) { heroVideo.pause(); mediaKey = ''; cancelAnimationFrame(raf); raf = 0; resetInput(); if (live && run.state === 'playing') paused = true; shown = ''; showOverlay(); sound.frame(run, live, true); saveLog() }   // 판이 멈춰도 기록은 그 자리까지 남긴다
   else { last = 0; schedule() }
 })
+window.addEventListener('pagehide', () => saveLog())
 function point(e: PointerEvent) {
   const r = canvas.getBoundingClientRect(), scale = Math.min(r.width / C.width, r.height / C.height)
   // object-fit:contain may letterbox the canvas on short or narrow landscape screens.
-  destination = { x: Math.max(0, Math.min(C.width, (e.clientX - r.left - (r.width - C.width * scale) / 2) / scale)), y: Math.max(0, Math.min(C.height, (e.clientY - r.top - (r.height - C.height * scale) / 2) / scale)) }
+  // 확대 중이면 화면 자리를 카메라로 되돌려 판 자리로 (raid/camera.ts toField)
+  const at = toField(cam, (e.clientX - r.left - (r.width - C.width * scale) / 2) / scale, (e.clientY - r.top - (r.height - C.height * scale) / 2) / scale)
+  destination = { x: Math.max(0, Math.min(C.width, at.x)), y: Math.max(0, Math.min(C.height, at.y)) }
 }
 const stickEl = $('stick'), knobEl = stickEl.querySelector('i')!
 document.body.append(stickEl)   // 화면 기준으로 띄운다 (초상 판에서도 · #stick 은 position:fixed)
@@ -375,9 +447,9 @@ function showOverlay() {
   resetInput()
   if (state.startsWith('upgrade')) {
     overlay.innerHTML = `<div class="panel upgrade">${treeButton}<div class="lv-head">${haveRow()}<h2 class="lvup">레벨 업!</h2></div><div class="choices">${run.offers.map(card).join('')}</div><button id="reroll" ${run.rerolls ? '' : 'disabled'}>다른 선택지 · ${run.rerolls}회 남음</button></div>`
-    overlay.querySelectorAll<HTMLButtonElement>('[data-up]').forEach(b => b.onclick = () => { if (choose(run, b.dataset.up as Pick)) { shown = ''; showOverlay(); updateHud() } })
+    overlay.querySelectorAll<HTMLButtonElement>('[data-up]').forEach(b => b.onclick = () => { const pick = b.dataset.up as Pick, log = logging(); if (choose(run, pick)) { if (log) { recPick(rec!, pick); saveLog() } shown = ''; showOverlay(); updateHud() } })
     if (run.level === 1) { $<HTMLButtonElement>('reroll').disabled = true; $('reroll').textContent = '첫 갈래를 골라 주세요' }
-    $('reroll').onclick = () => { if (reroll(run)) { shown = ''; showOverlay() } }
+    $('reroll').onclick = () => { const log = logging(); if (reroll(run)) { if (log) recReroll(rec!); shown = ''; showOverlay() } }
     $('tree-open').onclick = openTree
   } else if (state === 'pause') {
     overlay.innerHTML = `<div class="panel">${treeButton}<small>장수 열전</small><h2>잠시 숨 고르기</h2><p>성장과 전투는 그대로 기다립니다.</p><button id="resume" class="primary">계속 싸우기</button><button id="quit">출전 화면으로</button></div>`
@@ -387,6 +459,7 @@ function showOverlay() {
     else if (mode === 'stage') { $('quit').textContent = '물러나기 · 버틴 만큼 금 받기'; $('quit').onclick = withdraw }
     else if (trialToken) { $('quit').textContent = '물러나기'; $('quit').onclick = withdraw } // 본편에서 연 시련은 다시 고르는 화면 없이 결과로 (다시 도전은 본편 장수 판에서)
   } else {
+    closeLog()   // 판 기록의 끝 (이김 · 짐 · 물러남) — 한 판에 한 번 · 서버로 올린다
     // 이겼다 — 결과 판이 뜨는 그 박자에 다다닥 (11-19 형: 「듀오링고처럼 햅틱 막 지랄 나 주면」) · 판마다 한 번 (탭을 다녀와 다시 그려도 또 떨지 않는다)
     if (run.state === 'won' && wonBuzz !== run) { wonBuzz = run; haptics().win() }
     // 독립 열전: 판이 끝나면 한 번만 금을 주고 기록한다 (지면 버틴 만큼 · 깨면 휘장 + 깸 금)
@@ -417,8 +490,8 @@ function showOverlay() {
   }
 }
 let rewarded: HaebiRun | null = null, reward = { gold: 0, first: false, heroFirst: false }
-function withdraw() { run.state = 'lost'; run.offers = []; paused = false; shown = ''; showOverlay() }
-function menu() { renderStageMenu(); hidePowerHint(); live = false; paused = false; shown = ''; resetInput(); run = newRun(7); loadoutKey = ''; $('menu').hidden = false; $('play').hidden = true; $('overlay').hidden = true; $<HTMLButtonElement>('pause').disabled = true; layoutTrial(); updateHud() }
+function withdraw() { if (logging()) recQuit(rec!); withdrawRun(run); paused = false; shown = ''; showOverlay() }
+function menu() { closeLog(true); renderStageMenu(); hidePowerHint(); live = false; paused = false; shown = ''; resetInput(); run = newRun(7); loadoutKey = ''; $('menu').hidden = false; $('play').hidden = true; $('overlay').hidden = true; $<HTMLButtonElement>('pause').disabled = true; layoutTrial(); updateHud() }
 window.addEventListener('message', e => {
   if (e.origin !== location.origin || e.source !== window.parent || !trialToken || e.data?.token !== trialToken || e.data?.type !== 'hanbal.haebi.trial-error') return
   const back = $<HTMLButtonElement>('return'); if (back) { back.disabled = false; back.textContent = '귀환 다시 시도'; back.insertAdjacentHTML('afterend', '<p class="save-error"></p>'); $('overlay').querySelector('.save-error')!.textContent = String(e.data.reason) }
@@ -531,7 +604,7 @@ function frame(now: number) {
       else if (destination) { const dx = destination.x - run.x, dy = destination.y - run.y, len = Math.hypot(dx, dy); if (len < 5) destination = null; else { x = dx / len; y = dy / len } }
       const castBefore = run.cast, dashBefore = run.dashCd, wakesBefore = run.wakes
       // 맡아 둔 누름: 누른 지 STICK.queue 초 안이면 계속 넣는다 (재사용이 그 안에 풀리면 나간다) · 나가면 지운다
-      stepHaebi(run, { x, y, dash: run.t - dashAt <= STICK.queue, skill: run.t - skillAt <= STICK.queue, wake: run.t - wakeAt <= STICK.queue }, 1 / 120)
+      stepHaebi(run, feed({ x, y, dash: run.t - dashAt <= STICK.queue, skill: run.t - skillAt <= STICK.queue, wake: run.t - wakeAt <= STICK.queue }), 1 / 120)   // 판 기록이 이동을 격자에 맞춰 적고 그 값을 넣는다 (runlog.ts)
       if (run.dashCd > dashBefore) dashAt = -9
       if (run.wakes > wakesBefore) wakeAt = -9
       // 시전이 새로 섰다 = 각성 또는 비기 (한 번에 하나 · 판이 줄 세운다)
@@ -540,7 +613,7 @@ function frame(now: number) {
       if (run.offers.length || run.state !== 'playing') { acc = 0; break }
     }
   }
-  if (live) drawField(ctx, images, run, destination)
+  if (live) { followCam(cam, run.x, run.y, dt); drawField(ctx, images, run, destination, cam) }
   if (!live || run.t >= cutinUntil) skipCutin()
   sound.frame(run, live, paused || inspecting || rotationBlocked)
   updatePortrait(); updateHud(); showOverlay(); schedule()
