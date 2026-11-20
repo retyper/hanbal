@@ -23,6 +23,8 @@ import { DEFAULT_HERO, DEMON_STAGE, SEAL_STAGE, demonSealed, loadRoster, stampDe
 import { TRUE_WAKE } from './realm/data/awaken2.ts'
 import './raid/combat.css'
 import './raid/pause.css'
+import { raidShortcut, keyHints } from './raid/keyboard.ts'
+import './raid/keyboard.css'
 import { guardMedia } from './ui/media-guard.ts'
 import { haptics } from './ui/haptics.ts'
 /** 금은 글자 대신 동전 그림 (형 11-19 「금도 아이콘으로 해야겠음 텍스트 말고」) */
@@ -193,6 +195,7 @@ function renderStageMenu() {
   $('open-shop').onclick = () => { renderShop(); $('shop').hidden = false }
   if (!campaignToken) $('open-heroes').onclick = () => { renderHeroes(); $('shop').hidden = false }
   if (!$<HTMLButtonElement>('start').disabled) $('start').textContent = startLabel()
+  keyHints(root)
 }
 /**
  * 데려갈 장수 — 본편에서 모은 우리 장수만 (본편이 raid/link.ts 에 적어 둔다 · 해비는 늘). 고르면 그 장수의 겉모습으로 열전을 다시 연다.
@@ -211,6 +214,7 @@ function renderHeroes() {
     b.classList.add('bought'); location.replace(`${location.pathname}?${q}`)
   })
   $('close-shop').onclick = () => { $('shop').hidden = true }
+  keyHints(root)
 }
 function renderShop() {
   const fee = refundFee(meta), refundPoor = meta.spent > 0 && meta.gold < fee
@@ -227,6 +231,7 @@ function renderShop() {
   $('refund-no').onclick = () => { $('refund-ask').hidden = true }
   $('refund-yes').onclick = () => { if (!refund(meta)) { $('refund-ask').hidden = true; return } saveMeta(meta); run = newRun(7); renderShop(); renderStageMenu(); $('shop').querySelector('.panel.shop h2')?.classList.add('refunded') }
   $('close-shop').onclick = () => { $('shop').hidden = true }
+  keyHints(root)
 }
 /** 되돌리기를 묻는 상자 (브라우저 confirm 대신 · 그림 셈: 돌려받는 금 + · 내는 값 −) */
 function refundAsk(fee: number) {
@@ -336,9 +341,10 @@ function begin(sameSeed = false) {
   layoutTrial()
 }
 $('start').onclick = () => begin()
-function pause() { if (!live || run.state !== 'playing' || run.offers.length) return; paused = !paused; resetInput(); shown = ''; showOverlay(); schedule() }
+function pause() { if (!live || run.state !== 'playing' || run.offers.length || paused && rotationBlocked) return; paused = !paused; resetInput(); shown = ''; showOverlay(); schedule() }
 $('pause').onclick = pause
 window.addEventListener('keydown', e => {
+  if (raidShortcut(e, root, pause, closeTree)) return
   if (!live) return
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) || e.key === ' ' && e.target === document.body) e.preventDefault()
   if (e.key === 'Escape' && !e.repeat) { if (!treeView.hidden) closeTree(); else pause(); return }
@@ -498,6 +504,7 @@ root.append(treeView)
 function openTree() {
   treeView.innerHTML = `<div class="panel tree-panel"><div class="tree-head"><button class="tree-close primary">돌아가기</button><h2>${weapon} 기술 나무</h2><small>레벨 ${run.level} · 앞으로 레벨업 ${Math.max(0, C.maxLevel - run.level)}번</small></div>${treeSvg(run)}<p class="tree-info">칸을 누르면 설명이 나옵니다</p></div>`
   treeView.hidden = false
+  keyHints(root)
 }
 function closeTree() { if (!treeView.hidden) treeView.hidden = true }   // 판마다 불린다 — 같은 값도 쓰면 속성이 바뀐 셈이 된다 (11-18)
 treeView.onclick = e => {
@@ -575,6 +582,7 @@ function showOverlay() {
       } else back.onclick = () => location.replace('about:blank')
     }
   }
+  keyHints(root)
 }
 let rewarded: HaebiRun | null = null, reward = { gold: 0, first: false, heroFirst: false }
 function withdraw() { if (logging()) recQuit(rec!); withdrawRun(run); paused = false; shown = ''; showOverlay() }
