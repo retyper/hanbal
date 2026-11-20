@@ -54,7 +54,7 @@ try {
   }
   const key = async (k: string, code: string, duration = 40) => { await call('Input.dispatchKeyEvent', { type: 'keyDown', key: k, code }); await sleep(duration); await call('Input.dispatchKeyEvent', { type: 'keyUp', key: k, code }) }
   const snap = async (label: string) => { const r = await call('Page.captureScreenshot', { format: 'png' }); const path = join(out, `${mode}-${label}.png`); writeFileSync(path, Buffer.from(r.data, 'base64')); report.shots.push(path) }
-  const read = () => ev(`(() => { const r=window.__raid?.(); return {t:r?.t,state:r?.state,hp:r?.hp,x:r?.x,y:r?.y,kills:r?.kills,enemies:r?.enemies.length,boss:r?.enemies.find(e=>e.kind==='boss'),offers:r?.offers,overlay:!document.querySelector('#overlay')?.hidden,result:!!document.querySelector('#overlay:not([hidden]) .result'),feel:window.__raidFeel?.(),end:window.__raidEnd?.(),visibility:document.visibilityState} })()`)
+  const read = () => ev(`(() => { const r=window.__raid?.(); return {t:r?.t,state:r?.state,form:r?.form,hp:r?.hp,x:r?.x,y:r?.y,kills:r?.kills,enemies:r?.enemies.length,boss:r?.enemies.find(e=>e.kind==='boss'),offers:r?.offers,overlay:!document.querySelector('#overlay')?.hidden,result:!!document.querySelector('#overlay:not([hidden]) .result'),feel:window.__raidFeel?.(),end:window.__raidEnd?.(),visibility:document.visibilityState} })()`)
   const canvasReport = () => ev(`(() => {const x=window.__raid49Draw;return x?{reads:x.reads,fx:x.fx,sources:x.sources,raw:x.raw,heroFrames:x.heroFrames,hitArt:x.hitArt,raysNextSprite:x.raysNextSprite,firstHit:x.firstHit}:null})()`)
   const exerciseEnding = async () => {
     const first = await read()
@@ -83,13 +83,13 @@ try {
       await snap('skipped-result'); return
     }
     await waitFor(`window.__raidEnd().elapsed >= Math.min(.7,window.__raidEnd().duration)`, 5000)
-    if (process.env['NO_END_SHOTS'] !== '1') await snap('ending-early')
+    if (process.env['NO_END_SHOTS'] !== '1' && process.env['HIT_ONLY'] !== '1') await snap('ending-early')
     if (first.end?.kind==='defeat' && process.env['OBSERVE_CANVAS']==='1') { await waitFor('window.__raidEnd().elapsed >= 1.8',5000); await snap('ending-full-hit-body') }
     if (Number.isFinite(first.end?.stampAt)) {
       await waitFor(`window.__raidEnd().elapsed >= window.__raidEnd().stampAt + .12`, 5000)
       const announcement = await ev(`(() => {const e=document.querySelector('#announcement');return {text:e.textContent,visible:e.classList.contains('visible'),opacity:getComputedStyle(e).opacity}})()`)
       check(!announcement.visible && Number(announcement.opacity) === 0, '도장 시점에 기존 전투 알림 띠 숨김', announcement)
-      if (process.env['NO_END_SHOTS'] !== '1') await snap('ending-stamp')
+      if (process.env['NO_END_SHOTS'] !== '1' && process.env['HIT_ONLY'] !== '1') await snap('ending-stamp')
     }
     await waitFor(`!!document.querySelector('#overlay:not([hidden]) .result')`, 10000)
     const done = await read()
@@ -115,7 +115,7 @@ try {
   })()` })
   await call('Emulation.setFocusEmulationEnabled', { enabled: true })
   await size(844, 390)
-  const q = new URLSearchParams({ kit: process.env['KIT'] ?? 'bow', sprite: 'base-w-102-garak-dana', hero: 'w-102-garak-dana', name: '다나', bust: 'w-102-garak-dana' })
+  const q = new URLSearchParams({ kit: process.env['KIT'] ?? 'bow', sprite: process.env['HERO_SPRITE'] ?? 'base-w-102-garak-dana', hero: process.env['HERO_ID'] ?? 'w-102-garak-dana', name: process.env['HERO_NAME'] ?? '다나', bust: process.env['HERO_BUST'] ?? 'w-102-garak-dana' })
   if (mode === 'review') { q.set('review', ''); q.set('stage', process.env['STAGE'] ?? 'forest') }
   report.url = `${origin}/raid.html?${q}`
   await call('Page.navigate', { url: report.url })
@@ -123,7 +123,17 @@ try {
   check(report.errors.length === 0, '첫 로드 console/exception 오류 0', report.errors)
   check((await read()).visibility === 'visible', '탭 visible')
   if (process.env['OBSERVE_CANVAS'] === '1') { report.canvasBoot = await canvasReport(); report.fxBoot=report.canvasBoot?.sources; check(Object.keys(report.fxBoot??{}).length===10&&Object.values(report.fxBoot??{}).every((x:any)=>x.complete&&x.naturalWidth>0),'실제 warmFx 공유 이미지 10개 로드·native 크기 양수',report.fxBoot) }
-  if (mode === 'fight') {
+  if (mode === 'hit-start') {
+    report.evidence='정상 출전 버튼→빠르기 키/성장 카드 UI 선택→idle 실제 HP 0 패배. replay/state 직접 주입 없음.'
+    await click('#start');await sleep(200)
+    await ev(`if(window.__raid49Draw){window.__raid49Draw.startReads=window.__raid49Draw.reads;window.__raid49Draw.lastHp=window.__raid().hp;window.__raid49Draw.firstHit=null}`)
+    report.actualStart=await read();await key('x','KeyX');await key('x','KeyX')
+    const stop=Date.now()+180000
+    while(Date.now()<stop){const r=await read();if(r.state!=='playing')break;if(r.offers?.length)await click('#overlay [data-up]');await sleep(100)}
+    report.actualInputEnd=await read()
+    check(report.actualInputEnd.state==='lost'&&report.actualInputEnd.hp===0,'정상 출전 뒤 실제 피격 HP 0 패배 도달',report.actualInputEnd)
+    await exerciseEnding()
+  } else if (mode === 'fight') {
     await click('#start'); await sleep(300)
     await ev(`if(window.__raid49Draw){window.__raid49Draw.startReads=window.__raid49Draw.reads;window.__raid49Draw.lastHp=window.__raid().hp;window.__raid49Draw.firstHit=null}`)
     const a=await read();await key('ArrowRight','ArrowRight',550);const b=await read()
@@ -192,7 +202,7 @@ try {
         await sleep(100)
       }
       for (const k of held) await call('Input.dispatchKeyEvent', { type: 'keyUp', key: k, code: arrows[k] })
-      report.actualInputEnd = await read(); if (process.env['NO_END_SHOTS'] !== '1') await snap('terminal-first')
+      report.actualInputEnd = await read(); if (process.env['NO_END_SHOTS'] !== '1' && process.env['HIT_ONLY'] !== '1') await snap('terminal-first')
       check(report.actualInputEnd.state !== 'playing', '실제 키 입력으로 종결 상태 도달', report.actualInputEnd)
       report.timeline = await ev('window.__raid49timeline')
     }
@@ -202,7 +212,7 @@ try {
       if (await ev('!!window.__raid49timeline')) report.timeline = await ev('window.__raid49timeline')
       const terminal = report.timeline?.find((x: any) => x.state !== 'playing'), result = report.timeline?.find((x: any) => x.result)
       if (terminal && result) { report.resultDelayMs = result.at - terminal.at; if (report.action === 'complete') check(Math.abs(report.resultDelayMs - terminal.end.duration * 1000) <= 100, '승패 종결 뒤 결과 창까지 정해진 연출 길이 실측', report.resultDelayMs) }
-      for (const [w,h] of [[360,800],[375,812],[390,844],[412,915],[844,390]]) {
+      for (const [w,h] of process.env['HIT_ONLY']==='1'?[]:[[360,800],[375,812],[390,844],[412,915],[844,390]]) {
         await size(w!,h!); await snap(`result-${w}x${h}`)
         const layout = await ev(`(() => {const es=[...document.querySelectorAll('.result h2,.result p,.result button,.result-combos b')].filter(e=>{const r=e.getBoundingClientRect();return r.width&&r.height});return es.map(e=>{const r=e.getBoundingClientRect();const x=r.x+r.width/2,y=r.y+r.height/2;const top=document.elementFromPoint(x,y);return {text:e.textContent.trim(),x:r.x,y:r.y,w:r.width,h:r.height,inside:r.x>=-1&&r.right<=innerWidth+1&&r.y>=-1&&r.bottom<=innerHeight+1,uncovered:e===top||e.contains(top)}})})()`)
         check(layout.every((x: any) => x.inside && x.uncovered), `${w}×${h} 결과 글/단추 viewport 안·중심 노출`, layout)
@@ -214,10 +224,10 @@ try {
   report.final = await read()
   if (process.env['OBSERVE_CANVAS'] === '1') {
     report.canvasFinal = await canvasReport(); report.fxFinal=report.canvasFinal?.fx
-    if(mode==='review'&&report.final.end?.kind){
+    if((mode==='review'||mode==='hit-start')&&report.final.end?.kind){
       const won=report.final.end.kind==='victory',stem=won?'stamp_victory':'stamp_defeat'
-      check((report.fxFinal?.['/realm/raid/fx/'+stem+'.png']?.count??0)>0&&(report.fxFinal?.['/realm/raid/fx/'+stem+'_band.png']?.count??0)>0,'native 도장 PNG와 별도 띠 PNG가 실제 field에 그려짐',report.fxFinal)
-      if(won)check(report.canvasFinal.raysNextSprite?.count>0,'native rays 다음에 sprite crop이 그려짐 (원본 식별은 소스 순서와 대조)',report.canvasFinal.raysNextSprite)
+      if(process.env['HIT_ONLY']!=='1')check((report.fxFinal?.['/realm/raid/fx/'+stem+'.png']?.count??0)>0&&(report.fxFinal?.['/realm/raid/fx/'+stem+'_band.png']?.count??0)>0,'native 도장 PNG와 별도 띠 PNG가 실제 field에 그려짐',report.fxFinal)
+      if(won&&process.env['HIT_ONLY']!=='1')check(report.canvasFinal.raysNextSprite?.count>0,'native rays 다음에 sprite crop이 그려짐 (원본 식별은 소스 순서와 대조)',report.canvasFinal.raysNextSprite)
       else check(Object.values(report.canvasFinal.hitArt).some((x:any)=>x.args.length===4),'패배 HIT 원본 전체 drawImage 사용·얼굴 source crop 없음',report.canvasFinal.hitArt)
     }
   }

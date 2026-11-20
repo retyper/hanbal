@@ -1,0 +1,341 @@
+{
+  "nativeCalls": 0,
+  "sourceBytes": 12953131,
+  "runtimeBytes": 1496270,
+  "encoding": "WebP quality 88, exact alpha; Pillow",
+  "items": [
+    {
+      "name": "fx_spark_shard",
+      "source": "assets_src/realm/raid/fx-codex49-native/fx_spark_shard.png",
+      "sourceSha256": "2caf48197a8c35d09f0003e4266317942d00816353d0bcb03561aff833dbd16c",
+      "sourceBytes": 303409,
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "path": "public/realm/raid/fx/fx_spark_shard.webp",
+      "sha256": "3042e1b380fbcb3a7d17982b53e4f9a92ac5461b47d25ccd7e817833ca2592ac",
+      "bytes": 2492,
+      "size": [
+        128,
+        43
+      ],
+      "crop": [
+        120,
+        43,
+        2092,
+        700
+      ],
+      "cropSize": [
+        1972,
+        657
+      ],
+      "boundsAlpha8": [
+        2,
+        0,
+        125,
+        42
+      ]
+    },
+    {
+      "name": "fx_ink_splat_a",
+      "source": "assets_src/realm/raid/fx-codex49-native/fx_ink_splat_a.png",
+      "sourceSha256": "3f6e16a0761f00b558e557f397c431aff5caf7a0f1503b67385b58d275c9aeec",
+      "sourceBytes": 1796210,
+      "sourceSize": [
+        1536,
+        1024
+      ],
+      "path": "public/realm/raid/fx/fx_ink_splat_a.webp",
+      "sha256": "ab42dde7d974ac6e0448ceb747ae5d130e611a49a24adff66266c5ada5598471",
+      "bytes": 5056,
+      "size": [
+        128,
+        87
+      ],
+      "crop": [
+        25,
+        10,
+        1520,
+        1024
+      ],
+      "cropSize": [
+        1495,
+        1014
+      ],
+      "boundsAlpha8": [
+        5,
+        3,
+        118,
+        78
+      ]
+    },
+    {
+      "name": "fx_ink_splat_b",
+      "source": "assets_src/realm/raid/fx-codex49-native/fx_ink_splat_b.png",
+      "sourceSha256": "b99455d6ccbed19c250e73833402a24ffe8f3a4a03082434c43b4cc133a54e99",
+      "sourceBytes": 1121830,
+      "sourceSize": [
+        1536,
+        1024
+      ],
+      "path": "public/realm/raid/fx/fx_ink_splat_b.webp",
+      "sha256": "2028f4b56bad5e928930267a83311a2bea979e42d174711d53460bf873de7463",
+      "bytes": 2868,
+      "size": [
+        128,
+        87
+      ],
+      "crop": [
+        25,
+        19,
+        1506,
+        1024
+      ],
+      "cropSize": [
+        1481,
+        1005
+      ],
+      "boundsAlpha8": [
+        14,
+        10,
+        101,
+        67
+      ]
+    },
+    {
+      "name": "fx_ink_splat_c",
+      "source": "assets_src/realm/raid/fx-codex49-native/fx_ink_splat_c.png",
+      "sourceSha256": "51a28579a6fdcd6c14ea0e4e26a952fda375e770c620356a0a55049e53789635",
+      "sourceBytes": 885376,
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "path": "public/realm/raid/fx/fx_ink_splat_c.webp",
+      "sha256": "06d66ccdf33044ac42a8607fa2afde63b41fae509d48c5e3174f346e55318e99",
+      "bytes": 2568,
+      "size": [
+        128,
+        41
+      ],
+      "crop": [
+        0,
+        38,
+        2152,
+        724
+      ],
+      "cropSize": [
+        2152,
+        686
+      ],
+      "boundsAlpha8": [
+        8,
+        10,
+        113,
+        25
+      ]
+    },
+    {
+      "name": "fx_dust_puff",
+      "source": "assets_src/realm/raid/fx-codex49-native/fx_dust_puff.png",
+      "sourceSha256": "0c3aeb862fbdff68f2b56a0b579c59834ae95d3b83e3baf705ef5e0e2bac5a17",
+      "sourceBytes": 1398930,
+      "sourceSize": [
+        1536,
+        1024
+      ],
+      "path": "public/realm/raid/fx/fx_dust_puff.webp",
+      "sha256": "a8c53785048db10cd667e24dabd03a74a5327e461e2e13f6c3af1ff6d6a6a77e",
+      "bytes": 3272,
+      "size": [
+        128,
+        84
+      ],
+      "crop": [
+        0,
+        16,
+        1535,
+        1024
+      ],
+      "cropSize": [
+        1535,
+        1008
+      ],
+      "boundsAlpha8": [
+        33,
+        14,
+        63,
+        54
+      ]
+    },
+    {
+      "name": "stamp_defeat",
+      "source": "assets_src/realm/raid/fx-codex49-native/stamp_defeat.png",
+      "sourceSha256": "ae9ca70c6db261b5f60abad82d5e835e487a5fad59325630b040a52687ea2eb3",
+      "sourceBytes": 1622851,
+      "sourceSize": [
+        1774,
+        887
+      ],
+      "path": "public/realm/raid/fx/stamp_defeat.webp",
+      "sha256": "315dd30a83eceb2b9fcf88e926c698c40e1c34c60b23465c3d60ec8bcc71a16f",
+      "bytes": 338152,
+      "size": [
+        1758,
+        887
+      ],
+      "crop": [
+        0,
+        0,
+        1758,
+        887
+      ],
+      "cropSize": [
+        1758,
+        887
+      ],
+      "boundsAlpha8": [
+        62,
+        73,
+        1649,
+        787
+      ]
+    },
+    {
+      "name": "stamp_defeat_band",
+      "source": "assets_src/realm/raid/fx-codex49-native/stamp_defeat_band.png",
+      "sourceSha256": "5773ca8d987b9a031804c8940773bea60d91d9790bb66b3a2854fd32e0a428e3",
+      "sourceBytes": 1274285,
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "path": "public/realm/raid/fx/stamp_defeat_band.webp",
+      "sha256": "6ec1eae10b5f1aa8bc90786b74378e71d2f8408ca04b49304894fd5d085ab317",
+      "bytes": 224628,
+      "size": [
+        2131,
+        724
+      ],
+      "crop": [
+        25,
+        0,
+        2156,
+        724
+      ],
+      "cropSize": [
+        2131,
+        724
+      ],
+      "boundsAlpha8": [
+        38,
+        167,
+        2051,
+        380
+      ]
+    },
+    {
+      "name": "stamp_victory",
+      "source": "assets_src/realm/raid/fx-codex49-native/stamp_victory.png",
+      "sourceSha256": "3a412b913cac844a74c7ef3cba2ea5f2bc926432076742165fda409da9228902",
+      "sourceBytes": 1426571,
+      "sourceSize": [
+        1774,
+        887
+      ],
+      "path": "public/realm/raid/fx/stamp_victory.webp",
+      "sha256": "ab6936afc3b0bb8845c23f76b88844f64f17c4a39a0b365e4bb0c84a9d92d078",
+      "bytes": 331966,
+      "size": [
+        1414,
+        752
+      ],
+      "crop": [
+        164,
+        82,
+        1578,
+        834
+      ],
+      "cropSize": [
+        1414,
+        752
+      ],
+      "boundsAlpha8": [
+        10,
+        0,
+        1404,
+        726
+      ],
+      "originalRedCollarBefore": 435,
+      "originalRedCollarAfter": 0,
+      "alphaMethod": "native alpha minimum 7x7 (3px inward), Gaussian feather sigma 0.35; RGB unchanged before WebP encoding"
+    },
+    {
+      "name": "stamp_victory_band",
+      "source": "assets_src/realm/raid/fx-codex49-native/stamp_victory_band.png",
+      "sourceSha256": "3097b8173ef5bfb8a9bcfef9740ef701f8ba68646432f33b3923f40fbf016a4d",
+      "sourceBytes": 1410517,
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "path": "public/realm/raid/fx/stamp_victory_band.webp",
+      "sha256": "6f098a69cb8dae5b594d9f048587ec1f51e2dd0f4486855d52fbf3fbe34d5e4c",
+      "bytes": 345230,
+      "size": [
+        2138,
+        714
+      ],
+      "crop": [
+        0,
+        10,
+        2138,
+        724
+      ],
+      "cropSize": [
+        2138,
+        714
+      ],
+      "boundsAlpha8": [
+        42,
+        174,
+        2093,
+        338
+      ]
+    },
+    {
+      "name": "fx_victory_rays",
+      "source": "assets_src/realm/raid/fx-codex49-native/fx_victory_rays.png",
+      "sourceSha256": "506fc331f369764673d9679b06cf71149ce403143425560a751fd8a0c686aa84",
+      "sourceBytes": 1713152,
+      "sourceSize": [
+        1024,
+        1536
+      ],
+      "path": "public/realm/raid/fx/fx_victory_rays.webp",
+      "sha256": "fdda387d9dd39fd0fc4bb084cbb7b77432b0138b73cd42ce4ef7dbe1bfbc8a1d",
+      "bytes": 240038,
+      "size": [
+        1002,
+        1526
+      ],
+      "crop": [
+        0,
+        0,
+        1002,
+        1526
+      ],
+      "cropSize": [
+        1002,
+        1526
+      ],
+      "boundsAlpha8": [
+        83,
+        77,
+        880,
+        1441
+      ]
+    }
+  ]
+}

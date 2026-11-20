@@ -3,7 +3,7 @@ import { FX_BOUNDS } from './fx-bounds.ts'
 
 export const FX_NAMES = ['fx_spark_shard', 'fx_ink_splat_a', 'fx_ink_splat_b', 'fx_ink_splat_c', 'fx_dust_puff', 'stamp_defeat', 'stamp_defeat_band', 'stamp_victory', 'stamp_victory_band', 'fx_victory_rays'] as const
 export type FxName = typeof FX_NAMES[number]
-export const FX_PATHS = FX_NAMES.map(n => `raid/fx/${n}.png`)
+export const FX_PATHS = FX_NAMES.map(n => `raid/fx/${n}.webp`)
 type Sprite = { canvas: HTMLCanvasElement; width: number; height: number }
 const cache = new WeakMap<HTMLImageElement, Sprite>()
 
@@ -11,7 +11,7 @@ const cache = new WeakMap<HTMLImageElement, Sprite>()
 function prepared(img: HTMLImageElement, name: FxName): Sprite | null {
   const old = cache.get(img); if (old) return old
   if (!img.complete || !img.naturalWidth || typeof document === 'undefined') return null
-  let bounds = FX_BOUNDS[`${name}.png`]
+  let bounds = FX_BOUNDS[`${name}.webp`]
   if (!bounds) {
     // Development fallback only: shipped assets have precomputed alpha metadata.
     const probe = document.createElement('canvas'), ratio = Math.min(1, A.alphaProbeMax / Math.max(img.naturalWidth, img.naturalHeight))
@@ -31,11 +31,11 @@ function prepared(img: HTMLImageElement, name: FxName): Sprite | null {
   canvas.getContext('2d')!.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height)
   const result = { canvas, width: sw, height: sh }; cache.set(img, result); return result
 }
-export function warmFx(images: Map<string, HTMLImageElement>) { for (const name of FX_NAMES) { const img = images.get(`raid/fx/${name}.png`); if (img) prepared(img, name) } }
+export function warmFx(images: Map<string, HTMLImageElement>) { for (const name of FX_NAMES) { const img = images.get(`raid/fx/${name}.webp`); if (img) prepared(img, name) } }
 
 /** Draw one authored particle/object, aspect-fit to a box; false permits the existing fallback. */
 export function drawFx(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, name: FxName, x: number, y: number, width: number, height: number, rotation = 0): boolean {
-  const img = images.get(`raid/fx/${name}.png`), art = img && prepared(img, name); if (!art) return false
+  const img = images.get(`raid/fx/${name}.webp`), art = img && prepared(img, name); if (!art) return false
   const k = Math.min(width / art.width, height / art.height), w = art.width * k, h = art.height * k
   ctx.save(); ctx.translate(x, y); if (rotation) ctx.rotate(rotation); ctx.drawImage(art.canvas, -w / 2, -h / 2, w, h); ctx.restore(); return true
 }
