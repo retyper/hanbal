@@ -1,4 +1,4 @@
-## Codex49 구현·검수 완료 · 2026-11-20
+- **[★★ 11-20 밤 · 맨 앞 · 열전은 Codex 가 주인 · 49 끝(타격감·승패 막 내림 · e9bac47f) → 50 진행(49 다듬기·열전 피로 A4·정지 화면·키보드·자석·해적 활쏘기·갈래 껍데기·기술 나무·효과음 후보)]** 명령 전문 `docs/realm/production/CODEX-SKILLBODY-REDO-20261117.md` ### 49·50. Codex 작업 중 열전 코드(`raid-main.ts`·`src/raid/*`)는 Claude 가 손대지 않는다. A12·A13·A14·각성 시련 합치기·가로 개편은 형에게 물을 것으로 남김.
 - B0333b9e8/A66b15925각커밋즉시푸시. C효과원본10·native11회·도장/낱알통합완료,최종typecheck/1654tests(1652pass0fail2skip)/productionbuild/로컬HTML·JS·PNG10 HTTP200+SHA검증.
 - 실제Dana승패·철수·skip·실탭hidden시계/phone5폭×승패10통과. 알림글씨가림/승리카메라맵공백재현수정. sim·이동공격캐릭터띠변경0.
 - D영상도구없어문안2/제출0/mp40. 전체검수·한계 docs/realm/production/CODEX49-RESULTS.md,현재배포CI·정확최종hash D:/에셋창고/CODEX-TO-CLAUDE-LATEST.md.
