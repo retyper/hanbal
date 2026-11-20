@@ -1,0 +1,42 @@
+<!doctype html><meta charset="utf-8"><title>해적 가독성 부품 검수 · 실제 플레이 아님</title><style>body{margin:0;background:#777;font:16px system-ui}canvas{display:block}pre{color:white}</style><canvas id="fixture" width="1000" height="620"></canvas><pre id="result"></pre><script type="module">
+import { drawPull } from '/src/night/draw.ts'
+import * as arrowArt from '/src/render/foeart.ts'
+const { drawArrowCrisp, drawArrowTailArt } = arrowArt;
+const pin = (...args) => (arrowArt.drawArrowPinArt ?? drawPinBoost)(...args)
+import { drawPinBoost, BOOST } from '/src/render/boost.ts'
+import { sprite } from '/src/render/sprites.ts'
+import { drawArcher } from '/src/render/stickman.ts'
+import { createWorld } from '/src/sim/world.ts'
+const c=document.querySelector('canvas'), ctx=c.getContext('2d');
+const checks=[];const check=(name,ok,value)=>checks.push({name,ok,value});
+const names=['fly-basic','fly-fire','fly-whistle','fly-heavy','fly-dart'];
+await Promise.all(names.map(name=>new Promise(resolve=>{const poll=()=>sprite(name)?resolve():setTimeout(poll,20);poll()})));
+BOOST.on=true;
+ctx.fillStyle='#fff';ctx.fillRect(0,0,500,620);ctx.fillStyle='#080808';ctx.fillRect(500,0,500,620);
+const pull={active:true,dead:18,ax:175,ay:200,x:98,y:230,frac:.72,max:112,inDead:false};const before=JSON.stringify(pull);
+for(const offset of [0,500]){ctx.save();ctx.translate(offset,0);drawPull(ctx,pull);ctx.fillStyle=offset?'white':'black';ctx.fillText('부품 fixture: 흰색 / 검정 · 실제 플레이 아님',16,22);
+for(const [i,kind] of ['basic','burst','chain','heavy','pierce'].entries()){const y=325+i*25;drawArrowCrisp(ctx,kind,40,y,80,y,1,1);drawArrowTailArt(ctx,kind,130,y,153.2,y);pin(ctx,220,y,243.2,y,1,kind)}ctx.restore()}
+let pinImages=0;const di=ctx.drawImage.bind(ctx);ctx.drawImage=(...args)=>{pinImages++;di(...args)};pin(ctx,220,425,243.2,425,1,'basic');ctx.drawImage=di;check('박힌 살도 원본 이미지 사용',pinImages>0,pinImages);
+const at=(x,y)=>[...ctx.getImageData(x,y,1,1).data];
+check('흰 바탕 최대 당김 원 짙은 테',at(289,200)[0]<150,at(289,200));
+const sample=document.createElement('canvas');sample.width=90;sample.height=24;const sc=sample.getContext('2d');
+const coverage=()=>{const data=sc.getImageData(0,0,90,24).data;let dark=0;for(let i=0;i<data.length;i+=4)if(data[i]<130&&data[i+3]>200)dark++;return dark};
+const paint=on=>{BOOST.on=on;sc.fillStyle='white';sc.fillRect(0,0,90,24);drawArrowCrisp(sc,'basic',20,12,60,12,1,1);return coverage()};
+const plain=paint(false),outlined=paint(!new URLSearchParams(location.search).has('fault'));check('화살 외곽 암색 면적 증가',outlined>plain*1.25,{plain,outlined});
+const original=sprite('fly-basic'),source=document.createElement('canvas');source.width=original.naturalWidth;source.height=original.naturalHeight;const src=source.getContext('2d');src.drawImage(original,0,0);const sourceBefore=source.toDataURL();
+let flightBake,tailBake;const sdi=sc.drawImage.bind(sc);sc.drawImage=(...args)=>{flightBake=args[0];sdi(...args)};drawArrowCrisp(sc,'basic',20,12,60,12,1,2.6);sc.drawImage=(...args)=>{tailBake=args[0];sdi(...args)};drawArrowTailArt(sc,'basic',20,12,43.2,12,2.6);sc.drawImage=sdi;
+check('비행/박힘 동일크기 같은 bake 공유',flightBake===tailBake,{shared:flightBake===tailBake});
+src.clearRect(0,0,source.width,source.height);src.drawImage(original,0,0);check('원본 sprite 불변',source.toDataURL()===sourceBefore,original.src);
+check('당김 상태 읽기 전용',JSON.stringify(pull)===before,JSON.stringify(pull));
+// 실제 renderer의 조준선. 상태를 넣은 부품 검사이며 실제 손가락 플레이는 별도다.
+const world=createWorld({id:'view-fixture',seed:1,arrows:10,targetScore:100,wind:0,targets:[{kind:'static',x:20,y:1.6,r:.5}]},{str:10,steady:10,stamina:10,focus:10});world.archer.steadyBlend=1;world.archer.phase='drawing';world.archer.draw=.7;world.archer.aimAngle=.2;
+const camera={x:8,y:3,scale:20,shakeX:0,shakeY:0,w:500,h:190,dpr:1},state=JSON.stringify(world),dots=[];const arc=ctx.arc.bind(ctx);ctx.arc=(...args)=>{if(ctx.fillStyle==='#000000'&&args[2]>2.5&&args[2]<4)dots.push({x:args[0],y:args[1],r:args[2],alpha:ctx.globalAlpha});arc(...args)};
+for(const x of [0,500]){ctx.save();ctx.translate(x,430);drawArcher(ctx,camera,world,1);ctx.restore()}ctx.arc=arc;check('조준 가이드 짙은 밑점 실제 출력',dots.length>4&&dots.every(d=>d.alpha>.8),{count:dots.length,first:dots[0]});check('조준 renderer World 읽기 전용',JSON.stringify(world)===state,JSON.stringify(world)===state);
+window.fixtureAPI={drawPull,BOOST};
+// 같은 장면을 반복 그릴 때 캔버스/이미지를 새로 만들면 실패. 픽셀 읽기는 fixture만 한다.
+for(const kind of ['basic','burst','chain','heavy','pierce'])drawArrowCrisp(ctx,kind,40,450,80,450,1,1);
+let created=0;const orig=document.createElement.bind(document);document.createElement=(name,...args)=>{if(name==='canvas'||name==='img')created++;return orig(name,...args)};
+for(let n=0;n<30;n++)for(const kind of ['basic','burst','chain','heavy','pierce']){drawArrowCrisp(ctx,kind,40,450,80,450,1,1);drawArrowTailArt(ctx,kind,130,450,153.2,450,1)}
+document.createElement=orig;check('워밍 뒤 추가 캔버스/이미지 0',created===0,created);
+window.fixtureResult={checks,ok:checks.every(x=>x.ok)};document.querySelector('pre').textContent=JSON.stringify(window.fixtureResult,null,2)
+</script>

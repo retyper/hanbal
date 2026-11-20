@@ -15,7 +15,7 @@ import {
 import type { Camera } from './camera.ts'
 import { drawArcher } from './stickman.ts'
 import { skyOf, drawShadow } from './sky.ts'
-import { BOOST, drawPinBoost } from './boost.ts'
+import { BOOST } from './boost.ts'
 import { drawFoeBar, FOE_BAR } from './foebar.ts'
 import type { SkyPalette } from './sky.ts'
 import { drawFoeArcher, drawFoeGunner, drawFoeRusher, drawFoeSlinger } from './foe.ts'
@@ -23,7 +23,7 @@ import { drawBuildings, drawBuildingFronts, windowOf } from './buildings.ts'
 import { createFx, pumpEvents, updateFx, drawFx, drawFxFlash, drawCorpseLayer, hitStopMs, oneShotAmount, targetSquash, targetFlinch, PLAYER_PIN, CORPSE_PIN0, corpsePose, type CorpseArt } from './effects.ts'
 import { drawNewBossBody, drawNewBossFace } from './bosses.ts'
 import { BOSS_EYES, drawBossArt, drawEyeArt, drawFoxArt, warmBossArt } from './bossart.ts'
-import { drawAnimalArt, drawArrowArt, drawArrowCrisp, drawArrowTailArt, drawLongArt, drawPondArt, drawPennantArt, drawStandArt, drawPoleArt, drawFalconArt, drawFoeArt, drawPropArt, drawShotArt, drawStoneArt, drawTargetArt, warmFoeArt } from './foeart.ts'
+import { ARROW_ART_LENGTH, ARROW_TAIL_FRACTION, arrowArtLength, drawAnimalArt, drawArrowPinArt, drawArrowArt, drawArrowCrisp, drawArrowTailArt, drawLongArt, drawPondArt, drawPennantArt, drawStandArt, drawPoleArt, drawFalconArt, drawFoeArt, drawPropArt, drawShotArt, drawStoneArt, drawTargetArt, warmFoeArt } from './foeart.ts'
 import { backdrop } from './sprites.ts'
 import { ANIMAL_LOOK, bossGrammar, bossWeakSpot, foeWeakSpot } from '../sim/target.ts'
 import type { Fx } from './effects.ts'
@@ -145,7 +145,7 @@ const BARREL = {
 } as const
 
 const DRAW = {
-  arrowLen: 0.72,
+  arrowLen: ARROW_ART_LENGTH,
   /** 화살촉 길이 / 반너비 (화살 길이 대비). 선 하나로 그리면 어느 쪽이 앞인지 안 읽힌다. */
   arrowHead: 0.26,
   arrowHeadW: 0.075,
@@ -1600,12 +1600,13 @@ function drawBodyPins(ctx: CanvasRenderingContext2D, cam: Camera, w: World, fx: 
       const ax3 = pose.x + dx0 * c - dy0 * sn
       const ay3 = Math.max(pose.g + pose.r * CORPSE_PIN_FLOOR, pose.y + dx0 * sn + dy0 * c)
       const ang3 = (fx.pA[i] ?? 0) + rot
-      const L3 = BOOST.pinLen
+      const kind = fx.pKind[i] ?? 'basic'
+      const L3 = BOOST.on ? arrowArtLength(kind) * ARROW_TAIL_FRACTION : BOOST.pinLen
       ctx.globalAlpha = pose.fade
-      drawPinBoost(
+      drawArrowPinArt(
         ctx,
         worldToScreenX(cam, ax3 - Math.cos(ang3) * L3), worldToScreenY(cam, ay3 - Math.sin(ang3) * L3),
-        worldToScreenX(cam, ax3), worldToScreenY(cam, ay3),
+        worldToScreenX(cam, ax3), worldToScreenY(cam, ay3), cam.dpr, kind,
       )
       ctx.globalAlpha = 1
       continue
@@ -1636,7 +1637,9 @@ function drawBodyPins(ctx: CanvasRenderingContext2D, cam: Camera, w: World, fx: 
     const L = DRAW.arrowLen * 0.55
     const isEnemy = id === PLAYER_PIN
     if (BOOST.on && !isEnemy) {
-      drawPinBoost(ctx, worldToScreenX(cam, ax2 - ux2 * BOOST.pinLen), worldToScreenY(cam, ay2 - uy2 * BOOST.pinLen), worldToScreenX(cam, ax2), worldToScreenY(cam, ay2))
+      const kind = fx.pKind[i] ?? 'basic'
+      const pinLen = arrowArtLength(kind) * ARROW_TAIL_FRACTION
+      drawArrowPinArt(ctx, worldToScreenX(cam, ax2 - ux2 * pinLen), worldToScreenY(cam, ay2 - uy2 * pinLen), worldToScreenX(cam, ax2), worldToScreenY(cam, ay2), cam.dpr, kind)
       continue
     }
     // 박힌 살도 그림이다 — 깃 쪽만 밖으로 나와 있다 (foeart.ts drawArrowTailArt).
@@ -1886,7 +1889,7 @@ function drawArrows(ctx: CanvasRenderingContext2D, cam: Camera, w: World, alpha:
     const tipX = worldToScreenX(cam, wx)
     const tipY = worldToScreenY(cam, wy)
     // 애기살(편전)은 반 길이 — 통아를 떠난 짧은 살이 그대로 난다 (stickman.ts와 같은 비율).
-    const shaft = ar.kind === 'pierce' ? DRAW.arrowLen * 0.52 : DRAW.arrowLen
+    const shaft = arrowArtLength(ar.kind)
     const backX = worldToScreenX(cam, wx - ux * shaft)
     const backY = worldToScreenY(cam, wy - uy * shaft)
     // 화면 방향의 단위 벡터. 월드는 y가 위로 +, 화면은 아래로 + 라 여기서 한 번 뒤집힌다.

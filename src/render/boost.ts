@@ -6,6 +6,8 @@
  * 켜지면 날아가는 살은 **밤 판의 살**이다 (구운 또렷한 살 + 옅은 짧은 꼬리 · 리본 궤적·공기 타원·잔상 궤적 없음),
  * 겨눔 점선은 작은 점, 그림자 번짐(shadowBlur)은 안 쓴다 (폰 GPU).
  */
+import { PIRATE_VISIBILITY } from '../tune/params.ts'
+
 export const BOOST = {
   on: false,
   /** 나는 살 뒤 짧은 꼬리 — 색 · 몇 스텝 거리만큼 (밤 판은 3) */
@@ -13,7 +15,7 @@ export const BOOST = {
   streakSteps: 3,
   /** 겨눔 점선의 점 반지름 (CSS px) · 밑점 테 · 점 알파 — 밝은 바탕에서도 읽히되 화면을 덮지 않게 */
   dotR: 1.9,
-  dotEdge: 0.9,
+  dotEdge: PIRATE_VISIBILITY.dotEdge,
   dotAlpha: 0.85,
   /** 이 x(m)부터는 물 — 떨어진 살이 땅에 박혀 남지 않는다 (바다도적 판이 물가로 정한다) */
   waterX: Infinity,

@@ -53,6 +53,17 @@
 - 정상 0금 상점의 세로4폭+가로1폭에서0/10·금 부족·실제 버튼 노출·텍스트 넘침0을 확인했다. 부족금 터치 후 구매0건·금0·단계0/10 유지. PC 닫기 Enter 안내 겹침을 실제 측정했고 첫36px 교정에서1.203px가 남는 빨강을 보존했다. 최종 PC만 최소폭120px·오른쪽 여백52px로 고쳐 겹침0·간격25.641px·안내 버튼 안·native Enter 닫기 통과, 터치360의 안내0·기존 여백16px·닫기 통과를 확인했다. root가 상점5화면 배치판과 최종PC PNG를 직접 열어 봤다.
 - 최종 CSS판 typecheck 통과·전체1,669개 중1,667통과·실패0·건너뜀2. 실행 전후 CSS/sim/params/meta SHA 일치. 최종 빌드 raw4,957.3/5,000KB·gzip1,535.2/1,600KB. 빌드 중 고친 이전36px CSS가 들어간 중간 산출물은 별도 보존하고, 최종 재빌드에서120px/52px 규칙의 실제 포함과 raid HTML·JS·해시 CSS HTTP200+SHA 일치를 확인했다.
 - 근거: 작업 폴더 `taskoutputs/codex50/phase4/QA-FINAL-SUMMARY.json`, `fixed-close-final/shop-close-report.json`, `outputs/codex50/magnet-{before,after}.json`, `magnet-full-test-css52-final.log`, `phase4-local-bundle.json`. JS 오류0. 실기기 FPS·정상 UI의 최대단 구매/흡인 플레이는 미검증이며 단위·봇 실험과 구분했다.
+- 커밋 `692b174d` 즉시 push, CI `44733765579` build·deploy 성공. 운영 `692b174d5f`, raid HTML·JS·해시 CSS HTTP200 및 단계4 제품 번들과 SHA 일치 확인.
+
+## 50-5 · 해적 활쏘기
+
+- 막기 판(BOOST)에서 비행은 FLY 이미지인데 박힘은 벡터였던 차이를 없앴다. 기본/특수 종류를 기존 hit·miss 이벤트의 화살에서 읽어 view FX의 몸·시체·땅 pin에 보존한다. 비행 길이 .72m와 같은 축척에서 이미지 뒤58%만 드러내며 관통살의 짧은 축척도 유지했다. src/sim 변경0, 새 캐릭터 설치0이다.
+- 흰 바탕에서도 보이도록 화살의 짙은 윤곽·하드 그림자는 작은 bake에 한 번 굽고 공유한다. 당김 원/호/줄/손가락과 가이드 밑점도 외곽을 강화했다. blur/filter/타격 중 픽셀 읽기 없이 BOOST 범위에만 적용한다. 고정 크기·DPR·모드에서 warm 후 추가 캔버스/이미지0이며, 줌/DPR 변화나48칸 캐시 퇴거 때의 새 bake까지0이라고 주장하지 않는다.
+- 뷰 부품 fixture의 흰/검정 검사10개·브라우저 예외0, 대비를 끈 변이에서 실제 빨강, BOOST off 당김4상태는 이전692b174d와 픽셀 차이0을 확인했다. 9종류 pin 보존·World JSON 불변을 포함한 대상36개 통과. fixture는 실제 사용자 플레이로 세지 않았다.
+- 정상 막는다 UI→native touch의 실제3발은 shots0→1→2→3, 각 비행 좌표 변화 true였다. 가로800×360/812×375/844×390/915×412/667×375의 원·가이드·활/살 노출·넘침0을 확인했다. 기본 `/sprites/fly-basic.png`의 비행351/박힘274 draw를 관측했다. 특수살 실제 플레이0·몸/시체/땅 각각의 실제 플레이 분류 증명0이며 단위 결과와 구분한다. 최종 기능 JS/리소스 오류0. 두 선행 검수도구 실패는 자료를 보존하고 합격 근거에서 제외했다.
+- CPU6배5초 표본은 전투→패배가 섞여 전투 FPS 증거가 아니다. render297프레임의878.9ms 및 rAF74.19Hz를 실기기 FPS·전후 향상률로 주장하지 않았다. root가 흰/검정 fixture와 실제 전투 PNG를 직접 확인했다. 근거: `taskoutputs/codex50/phase5-*`, `pirate-qa-final/QA-FINAL-SUMMARY.json` 및 `corrected-final/report.json`.
+- 내장 생성2회로 검토용 캐릭터 RAW2장 공급·원본 보존·두 참조 실제 전달 확인. pixel edit/재생성/게임 설치0. 경로와 한계는 `CODEX50-PIRATE-CONCEPTS.md`에 있다.
+- typecheck 통과·전체1,672개 중1,670통과/0실패/2skip. 최종 build raw4,959.4/5,000KB·gzip1,536.0/1,600KB, 로컬 제품 번들의 pirate HTML·JS와 raid HTML·JS·해시 CSS HTTP200+SHA 일치를 확인했다. pirate의 스타일은 HTML 안에 있어 별도 해시 CSS가 없다.
 
 ## 이어갈 순서
 

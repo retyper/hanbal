@@ -10,6 +10,15 @@
  * 단위 규약: 거리 m, 시간 s, 각도 rad, 질량 kg. 화면 픽셀 단위는 여기 들어오지 않는다.
  */
 
+/** 막기 판만 쓰는 CSS px 가독성. 살 크기·탄도·당김 반경은 바꾸지 않는다. */
+export const PIRATE_VISIBILITY = {
+  arrowRim: 0.8, arrowShadowX: 0.8, arrowShadowY: 1.2,
+  arrowInk: '#20170f', arrowShadowAlpha: 0.65,
+  pullEdge: 1.2, pullShadowX: 0.8, pullShadowY: 1.2,
+  pullInk: 'rgba(26,18,12,0.9)', pullShadow: 'rgba(16,10,6,0.65)',
+  dotEdge: 1.1, dotEdgeAlpha: 0.9,
+} as const
+
 /** Awakened Haebi's optional campaign breakthrough. */
 export const HAEBI_VANGUARD = {
   duration: 180, captainAt: [15, 65, 115], captainHp: [7000, 10000, 14000],

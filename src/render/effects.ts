@@ -19,10 +19,10 @@ import { makeRng } from '../core/rng.ts'
 import type { Rng } from '../core/rng.ts'
 import { P, SPEC } from '../tune/params.ts'
 import { TRAIL_POINTS } from '../sim/types.ts'
-import type { World } from '../sim/types.ts'
+import type { World, ArrowKindId } from '../sim/types.ts'
 import { THEME, worldToScreenX, worldToScreenY } from './camera.ts'
-import { drawCorpseArt } from './foeart.ts'
-import { BOOST, drawPinBoost } from './boost.ts'
+import { drawCorpseArt, drawArrowPinArt, arrowArtLength, ARROW_TAIL_FRACTION } from './foeart.ts'
+import { BOOST } from './boost.ts'
 import type { Camera } from './camera.ts'
 import { createPopups, drawPopups, pushPopup, updatePopups } from './popups.ts'
 import type { Popups } from './popups.ts'
@@ -254,6 +254,7 @@ export interface Fx {
   kX: Float32Array
   kY: Float32Array
   kA: Float32Array
+  kKind: ArrowKindId[]
   /**
    * 몸에 박힌 화살 (형: "맞으면 정확히 박힌 위치에 보여져야"). 과녁 id 기준 상대 좌표라
    * 보스가 움직여도 화살이 몸에 붙어 다닌다. pId<0 = 빈 칸. pId===PLAYER_PIN = 궁수 몸.
@@ -263,6 +264,7 @@ export interface Fx {
   pDx: Float32Array
   pDy: Float32Array
   pA: Float32Array
+  pKind: ArrowKindId[]
   /**
    * 쓰러뜨린 살 — 막기 판(BOOST)만. 맞힌 그 스텝에 과녁이 죽으면 몸에 박을 데가 없어 살이 사라졌다 (11-16 형: 「화살이 제대로 꽂히지도 않잖아」).
    * 'hit' 에서 적어 두었다가 바로 뒤의 'foe_down' 이 세운 시체에 박는다 (pId = CORPSE_PIN0 − 시체 칸).
@@ -273,6 +275,7 @@ export interface Fx {
   kpDy: number
   kpR: number
   kpA: number
+  kpKind: ArrowKindId
   /** 남은 히트스톱 (s) */
   hitStop: number
   /**
@@ -352,7 +355,7 @@ export const CORPSE_PIN0 = -100
  * 몸 속(반경의 절반)까지 밀어 넣고, 중심에서 너무 벗어나지 않게 자른다 —
  * 그래야 "반은 몸에, 반은 밖에"의 박힌 그림이 된다.
  */
-function pinArrow(fx: Fx, id: number, dx: number, dy: number, r: number, ang: number): void {
+function pinArrow(fx: Fx, id: number, dx: number, dy: number, r: number, ang: number, kind: ArrowKindId = 'basic'): void {
   const depth = r * 0.55
   let px2 = dx + Math.cos(ang) * depth
   let py2 = dy + Math.sin(ang) * depth
@@ -368,6 +371,7 @@ function pinArrow(fx: Fx, id: number, dx: number, dy: number, r: number, ang: nu
   fx.pDx[i] = px2
   fx.pDy[i] = py2
   fx.pA[i] = ang
+  fx.pKind[i] = kind
 }
 
 /** drawFx(ctx, cam) 2인자 호출을 지원하기 위한 현재 인스턴스. 게임에 Fx는 하나뿐이다. */
@@ -391,11 +395,12 @@ export function createFx(): Fx {
 
     head: 0,
     pHead: 0,
-    kpOn: false, kpTx: 0, kpDx: 0, kpDy: 0, kpR: 0, kpA: 0,
+    kpOn: false, kpTx: 0, kpDx: 0, kpDy: 0, kpR: 0, kpA: 0, kpKind: 'basic',
     pId: new Int32Array(BODY_PINS).fill(-1),
     pDx: new Float32Array(BODY_PINS),
     pDy: new Float32Array(BODY_PINS),
     pA: new Float32Array(BODY_PINS),
+    pKind: new Array<ArrowKindId>(BODY_PINS).fill('basic'),
     x: new Float32Array(PARTICLE_CAP),
     y: new Float32Array(PARTICLE_CAP),
     vx: new Float32Array(PARTICLE_CAP),
@@ -430,6 +435,7 @@ export function createFx(): Fx {
     kX: new Float32Array(STUCK),
     kY: new Float32Array(STUCK),
     kA: new Float32Array(STUCK),
+    kKind: new Array<ArrowKindId>(STUCK).fill('basic'),
     hitStop: 0,
     oneShot: 0,
     oneShotWant: false,
@@ -580,6 +586,7 @@ function stickArrow(f: Fx, w: World, index: number, x: number, y: number): void 
   f.kX[slot] = x
   f.kY[slot] = y
   f.kA[slot] = angle
+  f.kKind[slot] = w.arrows[index]?.kind ?? 'basic'
 }
 
 export function pumpEvents(fx: Fx, w: World): void {
@@ -640,7 +647,7 @@ export function pumpEvents(fx: Fx, w: World): void {
         if (tg.id !== e.targetId) continue
         if (tg.alive && (tg.kind === 'boss' || tg.kind === 'archer')) {
           const ar = w.arrows[e.arrow]
-          if (ar !== undefined) pinArrow(fx, tg.id, ar.x - tg.x, ar.y - tg.y, tg.r, ar.angle)
+          if (ar !== undefined) pinArrow(fx, tg.id, ar.x - tg.x, ar.y - tg.y, tg.r, ar.angle, ar.kind)
         } else if (BOOST.on && !tg.alive && (tg.kind === 'charger' || tg.kind === 'archer')) {
           const ar = w.arrows[e.arrow]
           if (ar !== undefined) {
@@ -650,6 +657,7 @@ export function pumpEvents(fx: Fx, w: World): void {
             fx.kpDy = ar.y - tg.y
             fx.kpR = tg.r
             fx.kpA = ar.angle
+            fx.kpKind = ar.kind
           }
         }
         break
@@ -818,7 +826,7 @@ export function pumpEvents(fx: Fx, w: World): void {
       const slot = fx.cHead
       spawnCorpse(fx, e.x, e.y, e.vx * hard, e.vy * hard, e.mass * hard, e.look, e.r, e.g)
       // 막 쓰러뜨린 그 살을 시체에 박는다 (같은 자리에서 죽은 그 사람일 때만)
-      if (fx.kpOn && fx.kpTx === e.x) pinArrow(fx, CORPSE_PIN0 - slot, fx.kpDx, fx.kpDy, fx.kpR, fx.kpA)
+      if (fx.kpOn && fx.kpTx === e.x) pinArrow(fx, CORPSE_PIN0 - slot, fx.kpDx, fx.kpDy, fx.kpR, fx.kpA, fx.kpKind)
       fx.kpOn = false
       if (e.hard) {
         spawn(fx, e.x, e.y, FX.missBurst, KIND_MISS, FX.missSpeed * 1.5, FX.missTtl, 1.5)
@@ -1457,10 +1465,12 @@ export function drawFx(ctx: CanvasRenderingContext2D, cam: Camera, fx?: Fx): voi
       if (x >= BOOST.waterX) continue
       const y = f.kY[s] ?? 0
       const a = f.kA[s] ?? 0
-      drawPinBoost(
+      const kind = f.kKind[s] ?? 'basic'
+      const pinLen = arrowArtLength(kind) * ARROW_TAIL_FRACTION
+      drawArrowPinArt(
         ctx,
-        worldToScreenX(cam, x - Math.cos(a) * BOOST.pinLen), worldToScreenY(cam, y - Math.sin(a) * BOOST.pinLen),
-        worldToScreenX(cam, x), worldToScreenY(cam, y),
+        worldToScreenX(cam, x - Math.cos(a) * pinLen), worldToScreenY(cam, y - Math.sin(a) * pinLen),
+        worldToScreenX(cam, x), worldToScreenY(cam, y), cam.dpr, kind,
       )
     }
   } else if (f.kN > 0) {

@@ -1,0 +1,48 @@
+{
+  "task": "50-5 pirate player concept B",
+  "native_tool": "image_gen__imagegen",
+  "native_tool_call_count": 1,
+  "references": [
+    "D:/flutter/arrow_game_one/public/sprites/hero-plain.png",
+    "C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/outputs/codex50/pirate-pull-before.png"
+  ],
+  "prompt": "Use case: stylized-concept.\nAsset type: one transparent full-body 2D game character concept, variant B, based closely on the existing Korean archer Dolswe.\nReference image 1, hero-plain.png: the PRIMARY visual anchor for the same man, white/cream coarse hemp clothing, white cloth headband, topknot, leg wraps, shoes, hand-painted semi-realistic brushwork, dark brown contours and muted earthy palette. Its arms were deliberately cut away for a runtime rig: DO NOT reproduce the missing arms. Reference image 2, pirate-pull-before.png: use ONLY to match the game's painted world, restrained color and readable silhouette. Do NOT reproduce its composition, UI, circles, symbols, characters or scenery.\nPrimary request: depict the same adult Korean male archer in his thirties, slightly sturdier and with a calm, experienced expression, still dressed in the existing cream hemp tunic and trousers, cloth belt, white headband and topknot. Add only a short, rough, worn brown leather vest over the tunic. Keep his face, garments and rendering in the same visual world as reference 1.\nPose/composition: one natural right-facing side-three-quarter archery stance at full draw, entire figure AND footwear fully inside frame with generous clear margin, realistic adult 7 to 7.5 head proportions. Both complete arms anatomically attached, natural shoulders, elbows and wrists. One hand holds a SINGLE traditional wooden bow forward, the other draws a SINGLE arrow and its bowstring beside the cheek; aim toward image right. The straight arrow is correctly nocked, the bowstring connects the bow tips to the nock, with coherent tension. Hands have five anatomically plausible fingers each. No bowstring or arrow passing through hands, forearms, face or body. Keep bow and both hands clearly readable and separated.\nStyle/medium: faithfully match the ORIGINAL hand-painted semi-realistic 2D game sprite, textured brushwork, matte fabric and leather, crisp dark-brown edge definition and broad readable shaded masses at tiny game scale, muted cream and brown. This is a refinement of an existing sprite, NOT a competing new art direction.\nBackground: actual transparent alpha, character isolated.\nConstraints: EXACTLY one character, one bow, one arrow. No extra equipment, weapons, quiver, decorative objects, UI, circles, words, labels, scenery, ground plane, horse or backdrop. No chopped limbs or cropped feet. No anime, chibi, cartoon proportion, 3D render, glossy CGI, photographic realism or new painting style. Preserve honest rough painted material texture.",
+  "transparent_background_requested": true,
+  "source": "C:/Users/my/.codex/generated_images/01a1f8da-8e4a-7801-bb46-ae80c013ddbd/exec-40208091-611b-4227-8d43-748f54a17361.png",
+  "destination": "D:/에셋창고/pirate-player-concept-b-50.png",
+  "copy": "byte-identical; original preserved; no overwrite",
+  "sha256": "EDA5A7321226F933A87B20177F80C979ECB9F5B2365D15F38FDD6625424ADA64",
+  "bytes": 1188186,
+  "width": 1217,
+  "height": 1293,
+  "pixel_format": "Format32bppArgb",
+  "alpha": {
+    "transparent_pixels": 1115178,
+    "semitransparent_pixels": 457602,
+    "opaque_pixels": 801,
+    "extrema": [
+      0,
+      255
+    ]
+  },
+  "visual_review": {
+    "method": "Both reference files and generated original directly viewed using tools.view_image.",
+    "passed": [
+      "한 인물·단일 활·단일 화살·배경/UI/문자 없음",
+      "상투·흰 머리띠·베옷과 짧은 거친 갈색 조끼",
+      "기존 짙은 갈색 윤곽·크림/갈색 계열 손그림 붓질",
+      "양팔이 정상으로 붙어 있고 신발까지 전신이 프레임 안",
+      "명백한 손/팔 관통은 관찰되지 않음"
+    ],
+    "limitations": [
+      "지정한 7~7.5등신보다 다소 짧은 비율로 보임",
+      "활 최상단 여백이 매우 작음",
+      "당기는 손은 일부 손가락이 겹쳐 보여 다섯 손가락 완전 판독을 확언할 수 없음"
+    ],
+    "status": "RAW concept for user review; not a fully approved game asset"
+  },
+  "regeneration_count": 0,
+  "postprocessing": false,
+  "installed": false,
+  "product_code_changes": 0
+}

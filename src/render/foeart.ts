@@ -13,7 +13,8 @@
  * 아래 숫자는 손맛 노브가 아니라 **그림 한 장 한 장의 좌표**다. 재는 법: tools/preview (?hit=1).
  */
 import { sprite } from './sprites.ts'
-import { BOOST } from './boost.ts'
+import { BOOST, drawPinBoost } from './boost.ts'
+import { PIRATE_VISIBILITY as V } from '../tune/params.ts'
 
 interface FoeArt {
   /** 머리 중심 — 그림 안의 자리 (0~1). */
@@ -501,6 +502,10 @@ export function drawFistArt(ctx: CanvasRenderingContext2D, x: number, y: number,
  * 날아가는 것 — 그림은 전부 **가로로 누워 촉이 오른쪽**이다. 꽁무니에서 촉으로 가는 방향으로 돌려서 그 길이에 맞춰 얹는다.
  * 굵기는 그림의 비율을 따르되 minPx 아래로는 안 내려간다 — 화살은 가늘어서 멀리 당겨 잡은 판에서 실오라기가 된다.
  */
+/** 기존 화살 그림 길이. 관통살의 짧은 몸도 비행/박힘에서 같이 쓴다. */
+export const ARROW_ART_LENGTH = 0.72
+export function arrowArtLength(kind: string): number { return ARROW_ART_LENGTH * (kind === 'pierce' ? 0.52 : 1) }
+
 const FLY = {
   basic: 'fly-basic', burst: 'fly-fire', chain: 'fly-whistle', heavy: 'fly-heavy', pierce: 'fly-dart',
   /** 적이 시위에 물린 화살 — 날아올 그것과 같은 그림이다. */
@@ -537,19 +542,28 @@ export function drawArrowArt(
  * 한 번에 줄이면 뭉개진다. 기기 화소 크기로 **반씩 줄여 한 번 구워** 두고 (그림·길이별 하나) 프레임마다는 그걸 1:1 로 얹는다.
  * 막기 판(산적·바다도적)도 이 살을 쓴다 (11-16 형: 「화살이 왜 미사일같이 커다란 이미지야 · 신궁에서 만든 걸 쓴 것도 아니고」).
  */
-const arrowBakes = new Map<string, HTMLCanvasElement>()
+const arrowBakes = new Map<string, { image: HTMLCanvasElement, pad: number }>()
 export function drawArrowCrisp(
   ctx: CanvasRenderingContext2D, kind: string, backX: number, backY: number, tipX: number, tipY: number, fat: number, dpr: number,
+): boolean {
+  return drawCrisp(ctx, kind, backX, backY, tipX, tipY, fat, dpr, 1)
+}
+
+/** 비행과 tail이 같은 축소 그림을 쓴다. crop은 그림 뒤쪽만 남긴다. */
+function drawCrisp(
+  ctx: CanvasRenderingContext2D, kind: string, backX: number, backY: number, tipX: number, tipY: number,
+  fat: number, dpr: number, crop: number,
 ): boolean {
   const name = (FLY as Record<string, string>)[kind] ?? FLY.basic
   const im = sprite(name)
   if (im === null) return false
   const len = Math.hypot(tipX - backX, tipY - backY)
   if (len < 1) return true
-  const h = Math.max(5 * fat, len * (im.naturalHeight / im.naturalWidth) * fat)
-  const tw = Math.max(2, Math.round(len * dpr))
+  const fullLen = len / crop
+  const h = Math.max(5 * fat, fullLen * (im.naturalHeight / im.naturalWidth) * fat)
+  const tw = Math.max(2, Math.round(fullLen * dpr))
   const th = Math.max(2, Math.round(h * dpr))
-  const key = `${name}:${tw}x${th}`
+  const key = `${name}:${tw}x${th}:${dpr}:${BOOST.on ? 'rim' : 'plain'}`
   let bake = arrowBakes.get(key)
   if (bake === undefined) {
     let cur: CanvasImageSource = im
@@ -569,20 +583,44 @@ export function drawArrowCrisp(
       cw = nw
       ch = nh
     }
-    bake = document.createElement('canvas')
-    bake.width = tw
-    bake.height = th
-    const bc = bake.getContext('2d')
+    const image = document.createElement('canvas')
+    const pad = BOOST.on ? Math.ceil((V.arrowRim + Math.max(V.arrowShadowX, V.arrowShadowY)) * dpr) + 1 : 0
+    image.width = tw + pad * 2
+    image.height = th + pad * 2
+    const bc = image.getContext('2d')
     if (bc === null) return false
     bc.imageSmoothingQuality = 'high'
-    bc.drawImage(cur, 0, 0, tw, th)
-    if (arrowBakes.size > 48) arrowBakes.clear()
+    if (BOOST.on) {
+      // 알파 실루엣만 짙게 칠해 한 번 굽는다. blur/filter/readback 없이 하드 그림자와 8방향 테.
+      const ink = document.createElement('canvas')
+      ink.width = tw
+      ink.height = th
+      const ic = ink.getContext('2d')
+      if (ic === null) return false
+      ic.drawImage(cur, 0, 0, tw, th)
+      ic.globalCompositeOperation = 'source-in'
+      ic.fillStyle = V.arrowInk
+      ic.fillRect(0, 0, tw, th)
+      bc.globalAlpha = V.arrowShadowAlpha
+      bc.drawImage(ink, pad + V.arrowShadowX * dpr, pad + V.arrowShadowY * dpr)
+      bc.globalAlpha = 1
+      for (let i = 0; i < 8; i++) {
+        const angle = i * Math.PI / 4
+        bc.drawImage(ink, pad + Math.cos(angle) * V.arrowRim * dpr, pad + Math.sin(angle) * V.arrowRim * dpr)
+      }
+    }
+    bc.drawImage(cur, pad, pad, tw, th)
+    bake = { image, pad }
+    if (arrowBakes.size >= 48) arrowBakes.delete(arrowBakes.keys().next().value!)
     arrowBakes.set(key, bake)
   }
   ctx.save()
   ctx.translate(backX, backY)
   ctx.rotate(Math.atan2(tipY - backY, tipX - backX))
-  ctx.drawImage(bake, 0, -h / 2, len, h)
+  const padPx = bake.pad / dpr
+  const sourceW = crop === 1 ? bake.image.width : bake.pad + tw * crop
+  ctx.drawImage(bake.image, 0, 0, sourceW, bake.image.height,
+    -padPx, -h / 2 - padPx, fullLen * sourceW / tw, h + padPx * 2)
   ctx.restore()
   return true
 }
@@ -591,10 +629,13 @@ export function drawArrowCrisp(
  * 박힌 화살 — 몸·방패에 꽂혀 **깃 쪽만 밖으로 나온** 살. 그림의 뒤쪽 TAIL 만 잘라 쓴다 (촉은 속에 있다).
  * tail 은 깃 끝, entry 는 박힌 자리.
  */
-const TAIL = 0.58
+export const ARROW_TAIL_FRACTION = 0.58
+const TAIL = ARROW_TAIL_FRACTION
 export function drawArrowTailArt(
   ctx: CanvasRenderingContext2D, kind: string, tailX: number, tailY: number, entryX: number, entryY: number,
+  dpr = 1,
 ): boolean {
+  if (BOOST.on) return drawCrisp(ctx, kind, tailX, tailY, entryX, entryY, 1, dpr, TAIL)
   const im = sprite((FLY as Record<string, string>)[kind] ?? FLY.basic)
   if (im === null) return false
   const len = Math.hypot(entryX - tailX, entryY - tailY)
@@ -605,6 +646,13 @@ export function drawArrowTailArt(
   ctx.drawImage(im, 0, 0, im.naturalWidth * TAIL, im.naturalHeight, 0, -h / 2, len, h)
   ctx.restore()
   return true
+}
+
+/** 막기 판 몸/시체에 박힌 살. 그림 미로드 때만 기존 벡터 폴백. */
+export function drawArrowPinArt(
+  ctx: CanvasRenderingContext2D, tailX: number, tailY: number, entryX: number, entryY: number, dpr = 1, kind = 'basic',
+): void {
+  if (!BOOST.on || !drawArrowTailArt(ctx, kind, tailX, tailY, entryX, entryY, dpr)) drawPinBoost(ctx, tailX, tailY, entryX, entryY)
 }
 
 /**

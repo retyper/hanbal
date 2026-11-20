@@ -1,0 +1,56 @@
+{
+  "variant": "A",
+  "source": "C:/Users/my/.codex/generated_images/01a1f8da-3817-7701-8bab-12bbaf40d26c/exec-69541c58-b311-4f0e-af2c-388c7c32da3c.png",
+  "destination": "D:/에셋창고/pirate-player-concept-a-50.png",
+  "manifest": "C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/outputs/codex50/pirate-concept-a.json",
+  "sha256": "D8703BA558ADE7664373D0BBC48D1429EB284EA563AEC096D2F8DB980C5F0CF6",
+  "bytes": 1340379,
+  "width": 1076,
+  "height": 1462,
+  "transparency": {
+    "requested": true,
+    "pixelFormat": "Format32bppArgb",
+    "alphaMin": 0,
+    "alphaMax": 255,
+    "transparentPixels": 1012317,
+    "opaquePixels": 353,
+    "sampleBodyPixel": {
+      "x": 400,
+      "y": 600,
+      "a": 253,
+      "r": 227,
+      "g": 205,
+      "b": 182
+    }
+  },
+  "tool": "image_gen__imagegen",
+  "nativeGenerationCalls": 1,
+  "regenerations": 0,
+  "apiOrCliCalls": 0,
+  "modelPromotions": 0,
+  "referenced_image_paths": [
+    "D:/flutter/arrow_game_one/public/sprites/hero-plain.png",
+    "C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/outputs/codex50/pirate-pull-before.png"
+  ],
+  "prompt": "Use case: stylized-concept.\nAsset type: ONE isolated full-body 2D game character concept, variant A, transparent PNG.\nReferences: Image 1 (hero-plain.png) is the exact identity, clothing, palette and hand-painted rendering reference: the current Korean male archer Dolswe, in his thirties, white/off-white coarse hemp wrap tunic and loose trousers, cloth headband, black hair in a topknot, dark waist sash, wrapped lower legs and rustic shoes. Image 1's missing arms are a runtime sprite separation artifact; DO NOT reproduce amputated or missing arms. Image 2 (pirate-pull-before.png) is ONLY a brushwork, muted colors and small-game-scale readability reference. Do not copy its layout, scenery, UI, yellow circle or text.\nPrimary request: refine the existing Dolswe into a light, agile ancient Korean peninsula archer, faithful to Image 1, with both normal complete arms. Exactly one adult male, natural 7–7.5-head adult proportions. Full body and all clothing and both shoes entirely within the frame, with enough transparent margin around every limb, the entire bow and arrow.\nPose: one natural side three-quarter view facing RIGHT, actively drawing ONE traditional wooden bow with exactly ONE nocked arrow aimed right. Left arm extends to hold the bow; right elbow draws back, right hand anchors near the cheek. Physically plausible shoulder/elbow/wrist alignment, five anatomical fingers per hand (natural overlap allowed), recognizable natural bow grip and string draw. Correct taut bowstring connected to bow tips and nock, no bowstring or arrow piercing flesh, no crossed/impossible limbs.\nStyle: match the exact original hand-painted semi-realistic 2D historical game sprite illustration. Visible economical brush shapes, muted warm ivory cloth, earthy tan shadows, dark warm-brown crisp contour lines, readable separated body/clothing masses at small sprite size. The face, body and clothing belong to the SAME painted game world as both references. Similar compact graphic shading and textured brushwork rather than a newly invented art direction. Adult masculine face with a focused expression. Dark sash clearly readable. Complete normal full-body anatomy.\nBackground: genuinely transparent alpha, absolutely no environment, floor, shadow plate, UI, frames, icons, circles, writing, logo or watermark.\nAvoid: 3D rendering, CGI gloss, photorealistic portrait, anime, manga, chibi, toy proportions, painterly fine-art style drift, elaborate new costume, armor, hat, pirate costume, extra people, horse, extra weapons, quiver, extra bow, extra arrow, props, cropped feet, cropped topknot, missing arms. Output exactly ONE character image, no contact sheet and no side-by-side variations.",
+  "tool_output_hint": "Generated images are saved to C:\\Users\\my\\.codex\\generated_images\\01a1f8da-3817-7701-8bab-12bbaf40d26c as C:\\Users\\my\\.codex\\generated_images\\01a1f8da-3817-7701-8bab-12bbaf40d26c\\exec-69541c58-b311-4f0e-af2c-388c7c32da3c.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+  "inspection": {
+    "method": "Native generated image viewed; local original opened via tools.view_image; read-only pixel/alpha inspection using System.Drawing. No pixel changes.",
+    "observed": [
+      "One adult male archer facing right; full body, both shoes and full bow and arrow remain within frame.",
+      "Original-like warm muted hand-painted brown contours and ivory clothing retained.",
+      "Both arms are present in an extended bow grip and drawn string pose; one bow and one arrow visible.",
+      "No UI, text, scenery, horse or extra weapon visible.",
+      "Dark waist sash requirement not met: generated waist sash is light ivory."
+    ],
+    "limits": [
+      "Five fingers per hand not individually verifiable in overlapping archery grip.",
+      "Local view_image display appeared nearly black while native generated preview was visible; on-disk body pixel is near-opaque and colored. Original bytes preserved."
+    ],
+    "status": "보류: 짙은 허리띠 조건 미달. 사용자 검토용 RAW 보존."
+  },
+  "productCodeModified": false,
+  "installedInGame": false,
+  "rawPreserved": true,
+  "pixelsEdited": false
+}

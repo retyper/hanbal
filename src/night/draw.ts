@@ -8,13 +8,14 @@
  * 사람은 그림 파일이 아니라 도형이다 — 머리 원 · 몸통 · 다리 (형: "타겟 에셋 인물마다 만들지 말고").
  */
 import { TAU, clamp, clamp01, damp, lerp, valueNoise } from '../core/math.ts'
-import { P } from '../tune/params.ts'
+import { P, PIRATE_VISIBILITY as V } from '../tune/params.ts'
 import { t as tr } from '../i18n/index.ts'
 import { bowName, guardName, stageName } from './names.ts'
 import { drawArcher, previewBlend } from '../render/stickman.ts'
 import { THEME, worldToScreenX, worldToScreenY, type Camera } from '../render/camera.ts'
 import { createFx, drawFx, type Fx } from '../render/effects.ts'
 import { drawArrowCrisp } from '../render/foeart.ts'
+import { BOOST } from '../render/boost.ts'
 import type { World } from '../sim/types.ts'
 import { effectiveStats } from '../sim/bow.ts'
 import type { Pull } from './input.ts'
@@ -1063,7 +1064,22 @@ function drawExposed(ctx: CanvasRenderingContext2D, cam: Camera, n: Night, now: 
  * 당겨 쏘기의 손잡이 (night/input.ts) — 누른 자리의 고리 · 끝까지의 테 · 끈 줄 · 손가락.
  * 고리 안이면 회색으로 "그만" — 놓으면 쏘지 않는다. 끝까지 끌면 테가 금빛으로 찬다.
  */
-/** 당겨 쏘기의 고리·호 — 밤 판과 바다도적·산적 판이 같이 쓴다 (pirate-main.ts) */
+/** 같은 형상의 원/줄에 하드 그림자와 밑선을 더한다. 밤 판 경로는 원래대로다. */
+function pullUnder(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, end: number, width: number, lineX?: number, lineY?: number): void {
+  if (!BOOST.on) return
+  for (let pass = 0; pass < 2; pass++) {
+    const dx = pass === 0 ? V.pullShadowX : 0
+    const dy = pass === 0 ? V.pullShadowY : 0
+    ctx.strokeStyle = pass === 0 ? V.pullShadow : V.pullInk
+    ctx.lineWidth = width + V.pullEdge * 2
+    ctx.beginPath()
+    if (lineX === undefined || lineY === undefined) ctx.arc(x + dx, y + dy, r, end === Math.PI * 2 ? 0 : -Math.PI / 2, end)
+    else { ctx.moveTo(x + dx, y + dy); ctx.lineTo(lineX + dx, lineY + dy) }
+    ctx.stroke()
+  }
+}
+
+/** 밤 판과 막기 판이 공유하며 BOOST일 때만 외곽을 더한다. */
 export function drawPull(ctx: CanvasRenderingContext2D, p: Pull): void {
   if (!p.active) return
   const dead = p.dead
@@ -1071,12 +1087,14 @@ export function drawPull(ctx: CanvasRenderingContext2D, p: Pull): void {
   ctx.save()
   ctx.lineCap = 'round'
   // 끝까지의 테 — 옅게, 끈 몫만큼 금빛 호
+  pullUnder(ctx, p.ax, p.ay, max, Math.PI * 2, 2)
   ctx.strokeStyle = 'rgba(233,226,212,0.18)'
   ctx.lineWidth = 2
   ctx.beginPath()
   ctx.arc(p.ax, p.ay, max, 0, Math.PI * 2)
   ctx.stroke()
   if (!p.inDead && p.frac > 0) {
+    pullUnder(ctx, p.ax, p.ay, max, -Math.PI / 2 + Math.PI * 2 * p.frac, p.frac >= 1 ? 5 : 3)
     ctx.strokeStyle = p.frac >= 1 ? '#ffd27a' : 'rgba(255,210,122,0.75)'
     ctx.lineWidth = p.frac >= 1 ? 5 : 3
     ctx.beginPath()
@@ -1085,6 +1103,7 @@ export function drawPull(ctx: CanvasRenderingContext2D, p: Pull): void {
   }
   // 고리 — 그만두는 자리
   ctx.setLineDash([5, 5])
+  pullUnder(ctx, p.ax, p.ay, dead, Math.PI * 2, 2)
   ctx.strokeStyle = p.inDead ? '#c8c0b0' : 'rgba(200,192,176,0.45)'
   ctx.lineWidth = 2
   ctx.beginPath()
@@ -1092,6 +1111,7 @@ export function drawPull(ctx: CanvasRenderingContext2D, p: Pull): void {
   ctx.stroke()
   ctx.setLineDash([])
   // 끈 줄과 손가락
+  pullUnder(ctx, p.ax, p.ay, 0, 0, 3, p.x, p.y)
   ctx.strokeStyle = p.inDead ? 'rgba(200,192,176,0.5)' : '#e9c98a'
   ctx.lineWidth = 3
   ctx.beginPath()
@@ -1101,12 +1121,15 @@ export function drawPull(ctx: CanvasRenderingContext2D, p: Pull): void {
   ctx.fillStyle = p.inDead ? '#8f887b' : '#ffd27a'
   ctx.beginPath()
   ctx.arc(p.x, p.y, 9, 0, Math.PI * 2)
+  if (BOOST.on) { ctx.strokeStyle = V.pullInk; ctx.lineWidth = V.pullEdge * 2; ctx.stroke() }
   ctx.fill()
   ctx.font = '700 13px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillStyle = '#e9e2d4'
-  ctx.fillText(p.inDead ? tr('night.pullQuit') : p.frac >= 1 ? tr('night.pullFull') : '', p.ax, p.ay - dead - 12)
+  const label = p.inDead ? tr('night.pullQuit') : p.frac >= 1 ? tr('night.pullFull') : ''
+  if (BOOST.on) { ctx.strokeStyle = V.pullInk; ctx.lineWidth = V.pullEdge * 2; ctx.strokeText(label, p.ax, p.ay - dead - 12) }
+  ctx.fillText(label, p.ax, p.ay - dead - 12)
   ctx.restore()
 }
 

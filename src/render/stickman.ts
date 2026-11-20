@@ -29,7 +29,7 @@
  */
 import { clamp, clamp01, lerp, smoothstep, TAU } from '../core/math.ts'
 import { BOOST } from './boost.ts'
-import { P } from '../tune/params.ts'
+import { P, PIRATE_VISIBILITY } from '../tune/params.ts'
 import { effectiveStats, maxDrawOf } from '../sim/bow.ts'
 import type { World } from '../sim/types.ts'
 import { THEME, worldToScreenX, worldToScreenY } from './camera.ts'
@@ -1449,7 +1449,7 @@ export function drawArcher(
           if (BOOST.on) {
             // 밝은 바탕 위에서도 읽히게 — 어두운 밑점 위에 크림색 점. 밤 판처럼 작게 (11-16 형: 큰 점이 화면을 덮었다)
             const dr = BOOST.dotR
-            ctx.globalAlpha = 0.5 * pb
+            ctx.globalAlpha = PIRATE_VISIBILITY.dotEdgeAlpha * pb
             ctx.fillStyle = '#000'
             ctx.beginPath()
             ctx.arc(worldToScreenX(cam, px3), worldToScreenY(cam, py3), dr + BOOST.dotEdge, 0, TAU)
