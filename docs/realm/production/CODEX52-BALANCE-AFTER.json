@@ -1,0 +1,761 @@
+{
+  "config": {
+    "stages": [
+      "forest",
+      "ford",
+      "palisade",
+      "snow",
+      "fortress"
+    ],
+    "kits": [
+      "axe",
+      "bow",
+      "spear",
+      "sword"
+    ],
+    "seeds": [
+      7,
+      11
+    ],
+    "react": 0.5,
+    "shop": 0,
+    "magnetOverride": null,
+    "bonus": {
+      "might": 0,
+      "vigor": 0,
+      "armor": 0,
+      "regen": 0,
+      "haste": 0,
+      "swift": 0,
+      "magnet": 0,
+      "wisdom": 0,
+      "revive": 0,
+      "reroll": 0,
+      "greed": 0,
+      "luck": 0
+    },
+    "choice": "storm",
+    "dt": 0.016666666666666666,
+    "mobOverride": {},
+    "stageOverride": {}
+  },
+  "provenance": {
+    "commit": "b9d583dc7f65b82c4fdb16370450b5a9398df527",
+    "node": "v22.19.0",
+    "sourceSha256": {
+      "src/raid/haebi.ts": "c7e2e8b39089a7238650fb4ed1f35265b292df3d830eaa7279c8d63dad70e363",
+      "src/raid/haebi-replay.ts": "6effa80630f6b7fe158b1d826d7679a5dd2b1e5c9b1cc68d86577cf41adffe16",
+      "src/tune/params.ts": "f9992feb8196f436dd23b81f47cf3e3fd3dddac57dbfb1125f13dc3a94b7fa2e",
+      "tools/raid-stage-balance.ts": "a29b88b330d62e72c4fc0b60d545ce402c8f794eea86406e84cc9016e6a030e2"
+    }
+  },
+  "runs": [
+    {
+      "stage": "forest",
+      "kit": "axe",
+      "seed": 7,
+      "time": 1148.149999999367,
+      "hp": 180,
+      "maxHp": 180,
+      "minHp": 114.38207250002336,
+      "won": true,
+      "death": false,
+      "enemyLoad": {
+        "surgeMean": 51.53197784087524,
+        "respiteMean": 16.728393933857117,
+        "respiteMax": 97
+      }
+    },
+    {
+      "stage": "forest",
+      "kit": "axe",
+      "seed": 11,
+      "time": 1147.2666666660355,
+      "hp": 180,
+      "maxHp": 180,
+      "minHp": 141.65068666667057,
+      "won": true,
+      "death": false,
+      "enemyLoad": {
+        "surgeMean": 55.79724181912392,
+        "respiteMean": 20.010525829832417,
+        "respiteMax": 125
+      }
+    },
+    {
+      "stage": "forest",
+      "kit": "bow",
+      "seed": 7,
+      "time": 1148.966666666034,
+      "hp": 67.64933664864614,
+      "maxHp": 180,
+      "minHp": 28.732360918408475,
+      "won": true,
+      "death": false,
+      "enemyLoad": {
+        "surgeMean": 52.888388338724724,
+        "respiteMean": 19.220150112814846,
+        "respiteMax": 134
+      }
+    },
+    {
+      "stage": "forest",
+      "kit": "bow",
+      "seed": 11,
+      "time": 707.5499999996795,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 41.23864114770556,
+        "respiteMean": 17.485099091044553,
+        "respiteMax": 139
+      }
+    },
+    {
+      "stage": "forest",
+      "kit": "spear",
+      "seed": 7,
+      "time": 1146.8499999993617,
+      "hp": 138.61247966668788,
+      "maxHp": 180,
+      "minHp": 116.49247966669111,
+      "won": true,
+      "death": false,
+      "enemyLoad": {
+        "surgeMean": 56.57755729735093,
+        "respiteMean": 19.777521560669648,
+        "respiteMax": 137
+      }
+    },
+    {
+      "stage": "forest",
+      "kit": "spear",
+      "seed": 11,
+      "time": 1146.666666666037,
+      "hp": 180,
+      "maxHp": 180,
+      "minHp": 104.25747850001119,
+      "won": true,
+      "death": false,
+      "enemyLoad": {
+        "surgeMean": 56.06719060883406,
+        "respiteMean": 19.757831993346272,
+        "respiteMax": 113
+      }
+    },
+    {
+      "stage": "forest",
+      "kit": "sword",
+      "seed": 7,
+      "time": 1151.399999999365,
+      "hp": 141.07939966668013,
+      "maxHp": 180,
+      "minHp": 134.76439050002125,
+      "won": true,
+      "death": false,
+      "enemyLoad": {
+        "surgeMean": 57.22927584564078,
+        "respiteMean": 20.219987315393677,
+        "respiteMax": 135
+      }
+    },
+    {
+      "stage": "forest",
+      "kit": "sword",
+      "seed": 11,
+      "time": 1149.7999999993656,
+      "hp": 180,
+      "maxHp": 180,
+      "minHp": 144.3661155000121,
+      "won": true,
+      "death": false,
+      "enemyLoad": {
+        "surgeMean": 50.073985822362545,
+        "respiteMean": 17.214522802709954,
+        "respiteMax": 108
+      }
+    },
+    {
+      "stage": "ford",
+      "kit": "axe",
+      "seed": 7,
+      "time": 883.0833333328495,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 56.22778366366056,
+        "respiteMean": 18.283253418575743,
+        "respiteMax": 117
+      }
+    },
+    {
+      "stage": "ford",
+      "kit": "axe",
+      "seed": 11,
+      "time": 1151.1416666660373,
+      "hp": 180,
+      "maxHp": 180,
+      "minHp": 103.24869300002726,
+      "won": true,
+      "death": false,
+      "enemyLoad": {
+        "surgeMean": 72.61866270430906,
+        "respiteMean": 25.184279634157384,
+        "respiteMax": 143
+      }
+    },
+    {
+      "stage": "ford",
+      "kit": "bow",
+      "seed": 7,
+      "time": 724.2333333329976,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 59.126406166765896,
+        "respiteMean": 22.778773620135933,
+        "respiteMax": 182
+      }
+    },
+    {
+      "stage": "ford",
+      "kit": "bow",
+      "seed": 11,
+      "time": 729.5333333329929,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 58.65852149706155,
+        "respiteMean": 21.679139592202553,
+        "respiteMax": 145
+      }
+    },
+    {
+      "stage": "ford",
+      "kit": "spear",
+      "seed": 7,
+      "time": 664.9666666663826,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 59.53989461159272,
+        "respiteMean": 19.109885654042657,
+        "respiteMax": 142
+      }
+    },
+    {
+      "stage": "ford",
+      "kit": "spear",
+      "seed": 11,
+      "time": 740.9499999996459,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 61.61643835616438,
+        "respiteMean": 24.173758865248228,
+        "respiteMax": 170
+      }
+    },
+    {
+      "stage": "ford",
+      "kit": "sword",
+      "seed": 7,
+      "time": 1158.2499999993663,
+      "hp": 56.46834266672323,
+      "maxHp": 180,
+      "minHp": 42.17500933338913,
+      "won": true,
+      "death": false,
+      "enemyLoad": {
+        "surgeMean": 78.08025181713468,
+        "respiteMean": 27.254747116237798,
+        "respiteMax": 164
+      }
+    },
+    {
+      "stage": "ford",
+      "kit": "sword",
+      "seed": 11,
+      "time": 1156.5833333326989,
+      "hp": 119.35906300002831,
+      "maxHp": 180,
+      "minHp": 100.71906300002766,
+      "won": true,
+      "death": false,
+      "enemyLoad": {
+        "surgeMean": 76.65444466442288,
+        "respiteMean": 26.639493964096395,
+        "respiteMax": 158
+      }
+    },
+    {
+      "stage": "palisade",
+      "kit": "axe",
+      "seed": 7,
+      "time": 31.11666666666618,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 29.358947368421052,
+        "respiteMean": null,
+        "respiteMax": 0
+      }
+    },
+    {
+      "stage": "palisade",
+      "kit": "axe",
+      "seed": 11,
+      "time": 24.633333333333216,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 26.313699536730642,
+        "respiteMean": null,
+        "respiteMax": 0
+      }
+    },
+    {
+      "stage": "palisade",
+      "kit": "bow",
+      "seed": 7,
+      "time": 22.89999999999998,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 24.949781659388645,
+        "respiteMean": null,
+        "respiteMax": 0
+      }
+    },
+    {
+      "stage": "palisade",
+      "kit": "bow",
+      "seed": 11,
+      "time": 22.266666666666683,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 24.25074850299401,
+        "respiteMean": null,
+        "respiteMax": 0
+      }
+    },
+    {
+      "stage": "palisade",
+      "kit": "spear",
+      "seed": 7,
+      "time": 417.116666666608,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 55.58276842335447,
+        "respiteMean": 26.755893536121672,
+        "respiteMax": 101
+      }
+    },
+    {
+      "stage": "palisade",
+      "kit": "spear",
+      "seed": 11,
+      "time": 43.099999999998836,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 30.766423357664234,
+        "respiteMean": 44.02150537634409,
+        "respiteMax": 47
+      }
+    },
+    {
+      "stage": "palisade",
+      "kit": "sword",
+      "seed": 7,
+      "time": 1068.6166666660465,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 69.30852153865858,
+        "respiteMean": 27.095014433191448,
+        "respiteMax": 204
+      }
+    },
+    {
+      "stage": "palisade",
+      "kit": "sword",
+      "seed": 11,
+      "time": 41.83333333333224,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 27.65612327656123,
+        "respiteMean": 35.981818181818184,
+        "respiteMax": 37
+      }
+    },
+    {
+      "stage": "snow",
+      "kit": "axe",
+      "seed": 7,
+      "time": 485.5999999998777,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 43.925407166123776,
+        "respiteMean": 11.99084390512962,
+        "respiteMax": 73
+      }
+    },
+    {
+      "stage": "snow",
+      "kit": "axe",
+      "seed": 11,
+      "time": 1017.3499999993965,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 73.59057437407952,
+        "respiteMean": 34.60447490006749,
+        "respiteMax": 228
+      }
+    },
+    {
+      "stage": "snow",
+      "kit": "bow",
+      "seed": 7,
+      "time": 18.08333333333362,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 52.341681574239715,
+        "respiteMean": null,
+        "respiteMax": 0
+      }
+    },
+    {
+      "stage": "snow",
+      "kit": "bow",
+      "seed": 11,
+      "time": 39.34999999999908,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 43.52764227642277,
+        "respiteMean": null,
+        "respiteMax": 0
+      }
+    },
+    {
+      "stage": "snow",
+      "kit": "spear",
+      "seed": 7,
+      "time": 385.049999999971,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 39.538452642534985,
+        "respiteMean": 12.663448685578494,
+        "respiteMax": 62
+      }
+    },
+    {
+      "stage": "snow",
+      "kit": "spear",
+      "seed": 11,
+      "time": 364.9666666666574,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 37.75850255388065,
+        "respiteMean": 12.166146993318485,
+        "respiteMax": 54
+      }
+    },
+    {
+      "stage": "snow",
+      "kit": "sword",
+      "seed": 7,
+      "time": 570.9166666664682,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 62.33733359825154,
+        "respiteMean": 27.123456790123456,
+        "respiteMax": 168
+      }
+    },
+    {
+      "stage": "snow",
+      "kit": "sword",
+      "seed": 11,
+      "time": 547.2666666664878,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 53.757035878867676,
+        "respiteMean": 22.629738754665095,
+        "respiteMax": 143
+      }
+    },
+    {
+      "stage": "fortress",
+      "kit": "axe",
+      "seed": 7,
+      "time": 21.30000000000007,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 26.22378716744914,
+        "respiteMean": null,
+        "respiteMax": 0
+      }
+    },
+    {
+      "stage": "fortress",
+      "kit": "axe",
+      "seed": 11,
+      "time": 19.90000000000015,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 24.69932998324958,
+        "respiteMean": null,
+        "respiteMax": 0
+      }
+    },
+    {
+      "stage": "fortress",
+      "kit": "bow",
+      "seed": 7,
+      "time": 20.733333333333437,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 25.742765273311896,
+        "respiteMean": null,
+        "respiteMax": 0
+      }
+    },
+    {
+      "stage": "fortress",
+      "kit": "bow",
+      "seed": 11,
+      "time": 19.48333333333351,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 24.179640718562876,
+        "respiteMean": null,
+        "respiteMax": 0
+      }
+    },
+    {
+      "stage": "fortress",
+      "kit": "spear",
+      "seed": 7,
+      "time": 30.29999999999956,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 34.549972987574286,
+        "respiteMean": null,
+        "respiteMax": 0
+      }
+    },
+    {
+      "stage": "fortress",
+      "kit": "spear",
+      "seed": 11,
+      "time": 29.033333333332966,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 34.141971830985916,
+        "respiteMean": null,
+        "respiteMax": 0
+      }
+    },
+    {
+      "stage": "fortress",
+      "kit": "sword",
+      "seed": 7,
+      "time": 23.033333333333307,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 28.255426917510853,
+        "respiteMean": null,
+        "respiteMax": 0
+      }
+    },
+    {
+      "stage": "fortress",
+      "kit": "sword",
+      "seed": 11,
+      "time": 20.30000000000013,
+      "hp": 0,
+      "maxHp": 180,
+      "minHp": 0,
+      "won": false,
+      "death": true,
+      "enemyLoad": {
+        "surgeMean": 25.199507389162562,
+        "respiteMean": null,
+        "respiteMax": 0
+      }
+    }
+  ],
+  "aggregate": [
+    {
+      "stage": "forest",
+      "runs": 8,
+      "won": 7,
+      "deaths": 1,
+      "deathRate": 0.125,
+      "meanTime": 1093.3312499994056,
+      "meanWinTime": 1148.4428571422236,
+      "meanHp": 133.41765199775176,
+      "meanWinHp": 152.47731656885915,
+      "meanWinHpRatio": 0.8470962031603287,
+      "minHp": 0
+    },
+    {
+      "stage": "ford",
+      "runs": 8,
+      "won": 3,
+      "deaths": 5,
+      "deathRate": 0.625,
+      "meanTime": 901.0927083328713,
+      "meanWinTime": 1155.3249999993675,
+      "meanHp": 44.47842570834394,
+      "meanWinHp": 118.60913522225052,
+      "meanWinHpRatio": 0.658939640123614,
+      "minHp": 0
+    },
+    {
+      "stage": "palisade",
+      "runs": 8,
+      "won": 0,
+      "deaths": 8,
+      "deathRate": 1,
+      "meanTime": 208.94791666658148,
+      "meanWinTime": null,
+      "meanHp": 0,
+      "meanWinHp": null,
+      "meanWinHpRatio": null,
+      "minHp": 0
+    },
+    {
+      "stage": "snow",
+      "runs": 8,
+      "won": 0,
+      "deaths": 8,
+      "deathRate": 1,
+      "meanTime": 428.5729166665239,
+      "meanWinTime": null,
+      "meanHp": 0,
+      "meanWinHp": null,
+      "meanWinHpRatio": null,
+      "minHp": 0
+    },
+    {
+      "stage": "fortress",
+      "runs": 8,
+      "won": 0,
+      "deaths": 8,
+      "deathRate": 1,
+      "meanTime": 23.01041666666664,
+      "meanWinTime": null,
+      "meanHp": 0,
+      "meanWinHp": null,
+      "meanWinHpRatio": null,
+      "minHp": 0
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import { breakthroughText, isBreakthrough } from './realm/vanguard.ts'
 import { HAEBI_RUN as C, HAEBI_STICK as STICK, HAEBI_TREE as TREE, HAEBI_ULT as ULT, HAEBI_AWAKEN as AWK, HAEBI_STAGES as ST, HAEBI_ZOOM as ZOOM, HAEBI_SPEED as SPEED } from './tune/params.ts'
-import { createHaebi, runDuration, stepHaebi, barrageArcher, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, nodeText, nodeAt, branchName, branchPoints, wakeReady, ultName, ultOpen, BRANCHES, branchNodes, type Kit, type Power, type Pick, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
+import { createHaebi, runDuration, stepHaebi, barrageArcher, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, nodeText, nodeAt, branchName, wakeReady, ultName, ultOpen, BRANCHES, branchNodes, type Kit, type Power, type Pick, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
 import { startRecord, recInput, gridInput, recPick, recReroll, recQuit, withdrawRun, sealInput, finishRecord, STEP, type Recorder } from './raid/runlog.ts'
 import { runFrame, speedOf, nextSpeed, speedLevel } from './raid/speed.ts'
 import { RaidFeel } from './raid/impact.ts'
@@ -27,6 +27,8 @@ import { raidShortcut, keyHints } from './raid/keyboard.ts'
 import './raid/keyboard.css'
 import './raid/card-skins.css'
 import './raid/tree.css'
+import { nodeOpen, kitPowers } from './raid/haebi.ts'
+import { drawTreeLinks, flashTreeParents } from './raid/tree-view.ts'
 import { guardMedia } from './ui/media-guard.ts'
 import { haptics } from './ui/haptics.ts'
 /** 금은 글자 대신 동전 그림 (형 11-19 「금도 아이콘으로 해야겠음 텍스트 말고」) */
@@ -463,12 +465,12 @@ const lockSvg = (open: boolean) => `<svg class="lock-ic" viewBox="0 0 16 16" ari
  * 이 카드 하나로 문턱에 닿으면 열림 자물쇠 + 열리는 칸 그림 + 이름을 금빛으로 크게 · 아직 멀면 흐린 그림 + 「N번 더」(이 갈래에서 고를 횟수) ·
  * 갈래가 다 열렸으면 아무것도 없다. soon 만 = 조합 셈이 이미 있는 카드는 가까운 것만 (폰 가로에서 넘친다)
  */
-function unlockHint(k: Power, soonOnly: boolean) {
-  const at = nodeAt(kit, k)!, pts = branchPoints(run, at.branch), tier = TREE.tiers.findIndex(n => n > pts)
-  if (tier < 0) return ''
-  const left = TREE.tiers[tier]! - pts, nodes = branchNodes(kit)[at.branch][tier]!, names = nodes.map(p => nodeText(kit, p).name).join(' · ')
-  if (left <= 1) return `<i class="unlock now" aria-label="고르면 ${names} 열림">${lockSvg(true)}${nodes.map(p => `<i class="unl-node">${powerIcon(p, kit)}<i>${nodeText(kit, p).name}</i></i>`).join('')}</i>`
-  return soonOnly ? '' : `<i class="unlock later" aria-label="${names}: 이 갈래에서 ${left}번 더 고르면 열림">${lockSvg(false)}${nodes.map(p => powerIcon(p, kit)).join('')}<i>${left}번 더</i></i>`
+function unlockHint(k: Power, _soonOnly: boolean) {
+  const next = { ...run, ranks: { ...run.ranks, [k]: run.ranks[k] + 1 } }
+  const nodes = kitPowers(kit).filter(p => !nodeOpen(run, p) && nodeOpen(next, p))
+  if (!nodes.length) return ''
+  const names = nodes.map(p => nodeText(kit, p).name).join(' · ')
+  return `<i class="unlock now" aria-label="고르면 ${names} 열림">${lockSvg(true)}${nodes.map(p => `<i class="unl-node">${powerIcon(p, kit)}<i>${nodeText(kit, p).name}</i></i>`).join('')}</i>`
 }
 function routeHint(k: Power) {
   // 끝 단계까지 올린 조합은 빼고 (카드가 길어져 폰 가로에서 넘쳤다)
@@ -501,18 +503,32 @@ function haveRow() {
 /** 기술 나무 보기 (레벨업 창 · 멈춤 창의 「나무」) — 판 위에 한 겹 더 · 칸을 누르면 아래 한 줄에 설명 · 바깥이나 닫기를 누르면 닫힘 */
 const treeView = document.createElement('div'); treeView.id = 'tree-view'; treeView.hidden = true; treeView.setAttribute('role', 'dialog'); treeView.setAttribute('aria-label', '기술 나무')
 root.append(treeView)
+const treeResize = new ResizeObserver(() => { if (!treeView.hidden) drawTreeLinks(treeView, run) })
 function openTree() {
-  treeView.innerHTML = `<div class="panel tree-panel"><div class="tree-head"><button class="tree-close primary">돌아가기</button><h2>${weapon} 기술 나무</h2><small>레벨 ${run.level} · 앞으로 레벨업 ${Math.max(0, C.maxLevel - run.level)}번</small></div>${treeSvg(run)}<p class="tree-info">칸을 누르면 설명이 나옵니다</p></div>`
+  treeResize.disconnect()
+  treeView.innerHTML = `<div class="panel tree-panel"><div class="tree-head"><button class="tree-close primary">돌아가기</button><h2>${weapon} 기술 나무</h2><small>레벨 ${run.level} · 앞으로 레벨업 ${Math.max(0, C.maxLevel - run.level)}번</small></div>${treeSvg(run)}<p class="tree-info" aria-live="polite">칸을 누르거나 가리키면 설명이 나옵니다</p></div>`
   treeView.hidden = false
+  drawTreeLinks(treeView, run)
+  treeResize.observe(treeView.querySelector('.tree-board')!)
   keyHints(root)
   treeView.querySelector<HTMLButtonElement>('.tree-close')!.focus()
 }
-function closeTree() { if (!treeView.hidden) treeView.hidden = true }   // 판마다 불린다 — 같은 값도 쓰면 속성이 바뀐 셈이 된다 (11-18)
+function closeTree() { if (!treeView.hidden) { treeView.hidden = true; treeResize.disconnect() } }   // 판마다 불린다 — 같은 값도 쓰면 속성이 바뀐 셈이 된다 (11-18)
+function selectTreeNode(node: HTMLElement) {
+  treeView.querySelectorAll('.picked').forEach(x => x.classList.remove('picked')); node.classList.add('picked')
+  treeView.querySelector('.tree-info')!.innerHTML = treeInfo(run, node)
+}
 treeView.onclick = e => {
-  const t = e.target as Element, node = t.closest('[data-node],[data-combo],[data-ult]')
-  if (node) { treeView.querySelectorAll('.picked').forEach(x => x.classList.remove('picked')); node.classList.add('picked'); treeView.querySelector('.tree-info')!.innerHTML = treeInfo(run, node); return }
+  const t = e.target as Element, node = t.closest<HTMLElement>('[data-tree-id]')
+  if (node) { selectTreeNode(node); flashTreeParents(treeView, node.dataset.treeId!); return }
   if (t === treeView || t.closest('.tree-close')) closeTree()
 }
+treeView.addEventListener('pointerover', e => {
+  if (e.pointerType !== 'mouse') return
+  const node = (e.target as Element).closest<HTMLElement>('[data-tree-id]')
+  if (node && !node.contains(e.relatedTarget as Node | null)) selectTreeNode(node)
+})
+treeView.addEventListener('focusin', e => { const node = (e.target as Element).closest<HTMLElement>('[data-tree-id]'); if (node) selectTreeNode(node) })
 treeView.addEventListener('keydown', e => {
   const node = (e.target as Element).closest<HTMLElement>('.tree-node')
   if (!node || e.key !== 'Enter' && e.key !== ' ') return

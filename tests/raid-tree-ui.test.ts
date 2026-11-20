@@ -1,12 +1,22 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { treeSvg } from '../src/raid/power-ui.ts'
-import { createHaebi, KITS, kitCombos, BRANCHES, branchNodes, POWERS, type Kit } from '../src/raid/haebi.ts'
+import { treeSvg, treeInfo } from '../src/raid/power-ui.ts'
+import { createHaebi, KITS, kitCombos, kitPowers, nodeParent, nodeOpen, type Kit } from '../src/raid/haebi.ts'
 import { treeModel } from '../src/raid/tree-model.ts'
 import { HAEBI_TREE as T } from '../src/tune/params.ts'
 
 /** Read rendered attributes, never TypeScript source, so a broken renderer fails. */
 const tags = (html: string) => [...html.matchAll(/<\w+\b([^>]+)>/g)].map(tag => Object.fromEntries([...tag[1]!.matchAll(/([\w-]+)="([^"]*)"/g)].map(a => [a[1]!, a[2]!])) )
+
+test('52 branch-only explanation appears only after its parent is satisfied', () => {
+  const s = createHaebi(7), element = (power: string) => ({ getAttribute: (key: string) => key === 'data-node' ? power : null }) as unknown as Element
+  assert.doesNotMatch(treeInfo(s, element('hone')), /번 더 고르면 열립니다/, 'a missing parent cannot be replaced by more branch choices')
+  assert.match(treeInfo(s, element('reach')), /이 갈래를 2번 더 고르면 열립니다/)
+  s.ranks.reach = 1
+  assert.match(treeInfo(s, element('hone')), /이 갈래를 5번 더 고르면 열립니다/)
+  s.ranks.axe = 6
+  assert.doesNotMatch(treeInfo(s, element('hone')), /번 더 고르면 열립니다/, 'no gate explanation after both requirements are met')
+})
 
 test('all seven trees expose twenty information nodes and exact power prerequisites', () => {
   for (const kit of Object.keys(KITS) as Kit[]) {
@@ -14,6 +24,8 @@ test('all seven trees expose twenty information nodes and exact power prerequisi
     const nodes = rendered.filter(t => t['data-node'] || t['data-combo'] || t['data-ult'])
     assert.equal(nodes.length, 20, kit)
     assert.ok(nodes.every(t => t['role'] === 'button' && t['tabindex'] === '0'), `${kit}: every information node is keyboard reachable`)
+    assert.equal(rendered.filter(t => t['src']).length, 20, `${kit}: only one picture per real node`)
+    assert.equal(rendered.filter(t => t['class']?.split(' ').includes('tree-edge')).length, 21, `${kit}: actual parent links, including three alternatives to the ultimate`)
     for (const c of kitCombos(kit)) for (const [power, need] of Object.entries(c.needs)) {
       const requirement = rendered.find(t => t['data-kind'] === 'power' && t['data-from'] === power && t['data-to'] === c.id)
       assert.ok(requirement, `${kit}/${power} → ${c.id}`)
@@ -34,28 +46,18 @@ test('only real offers glow, including earned powers and a ready combo', () => {
   assert.deepEqual(offered().sort(), [...s.offers].sort(), 'owned power and combo offers glow too')
 })
 
-test('all branch thresholds use the whole branch sum, with no mandatory preceding power', () => {
-  for (const kit of Object.keys(KITS) as Kit[]) for (const branch of BRANCHES) for (const threshold of [3, 7, 12] as const) {
-    for (const points of [threshold - 1, threshold]) {
-      const s = createHaebi(7, 'stage', kit)
-      for (const p of Object.keys(s.ranks) as (keyof typeof s.ranks)[]) s.ranks[p] = 0
-      // Spend only on earlier unlocked rows, respecting every power's real maximum.
-      let rest = points
-      for (const p of branchNodes(kit)[branch].slice(0, T.tiers.indexOf(threshold)).flat()) {
-        s.ranks[p] = Math.min(rest, POWERS[p].max); rest -= s.ranks[p]
-      }
-      assert.equal(rest, 0)
-      const b = treeModel(s).branches.find(b => b.id === branch)!
-      assert.equal(b.points, points)
-      for (const n of b.tiers[T.tiers.indexOf(threshold)]!) {
-        assert.equal(n.open, points >= threshold, `${kit}/${branch}/${n.id}: ${points}/${threshold}`)
-        assert.deepEqual(n.requirements, [{ kind: 'branch', from: branch, have: points, need: threshold, met: points >= threshold }])
-      }
+test('52 the rendered graph has the exact simulation parent, four roots and no cycle', () => {
+  for (const kit of Object.keys(KITS) as Kit[]) {
+    const s = createHaebi(7, 'stage', kit), model = treeModel(s)
+    assert.equal(model.nodes.filter(n => n.kind === 'power' && !n.requirements.length).length, 4)
+    for (const p of kitPowers(kit)) {
+      const n = model.nodes.find(n => n.id === p)!, parent = nodeParent(kit, p)
+      assert.equal(n.open, nodeOpen(s, p))
+      assert.deepEqual(n.requirements, parent ? [{ kind: 'power', from: parent, have: s.ranks[parent], need: 1, met: s.ranks[parent] >= 1 }] : [])
+      const visited = new Set<string>([p]); let at = parent
+      while (at) { assert.ok(!visited.has(at), `${kit}/${p}: cycle`); visited.add(at); at = nodeParent(kit, at) }
     }
   }
-  const s = createHaebi(7); s.ranks.axe = 7
-  assert.equal(s.ranks.reach, 0); assert.equal(s.ranks.ember, 0)
-  assert.equal(treeModel(s).branches[0]!.tiers[2]![0]!.open, true)
 })
 
 test('every combo checks every exact rank, and final combo rank automatically strengthens the ultimate', () => {
@@ -75,8 +77,8 @@ test('every combo checks every exact rank, and final combo rank automatically st
       s.comboRanks[c.id] = rank
       const n = treeModel(s).ult
       assert.equal(n.open, rank === T.max); assert.equal(n.offered, false)
-      assert.equal(n.requirements[0]!.have, rank)
-      assert.equal(n.requirements[0]!.need, T.max)
+      assert.equal(n.requirements.find(r => r.from === c.id)!.have, rank)
+      assert.ok(n.requirements.every(r => r.need === T.max))
     }
   }
 })

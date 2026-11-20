@@ -1,5 +1,5 @@
 import { HAEBI_TREE as T } from '../tune/params.ts'
-import { POWERS, KITS, kitCombos, comboRank, branchName, branchPoints, tierOpen, nodeText, nodeAt, type Branch, type Combo, type Kit, type Power, type HaebiRun } from './haebi.ts'
+import { POWERS, KITS, kitCombos, comboRank, branchName, branchPoints, nodeText, nodeAt, nodeParent, type Branch, type Combo, type Kit, type Power, type HaebiRun } from './haebi.ts'
 import { ICON_READY } from './icon-ready.ts'
 import { renderTree } from './tree-view.ts'
 const BASE = import.meta.env?.BASE_URL ?? '/'
@@ -63,8 +63,9 @@ export function treeSvg(s: HaebiRun) {
 export function treeInfo(s: HaebiRun, el: Element) {
   const node = el.getAttribute('data-node') as Power | null, combo = el.getAttribute('data-combo') as Combo | null
   if (node) {
-    const at = nodeAt(s.kit, node)!, t = nodeText(s.kit, node), need = T.tiers[at.tier]!, open = tierOpen(s, at.branch, at.tier)
-    return `<b>${t.name}</b> ${s.ranks[node]}/${POWERS[node].max} · ${t.desc}${open ? '' : ` · ${branchName(s.kit, at.branch)} 갈래에서 ${need - branchPoints(s, at.branch)}번 더 고르면 열립니다`}`
+    const t = nodeText(s.kit, node)
+    const at = nodeAt(s.kit, node)!, left = Math.max(0, T.tiers[at.tier]! - branchPoints(s, at.branch)), parent = nodeParent(s.kit, node)
+    return `<b>${t.name}</b> ${s.ranks[node]}/${POWERS[node].max} · ${t.desc}${left && (!parent || s.ranks[parent] >= 1) ? ` · 이 갈래를 ${left}번 더 고르면 열립니다` : ''}`
   }
   if (combo) { const c = kitCombos(s.kit).find(x => x.id === combo)!; return `<b>${c.name}</b> ${comboRank(s, combo)}/${T.max} · ${c.desc}` }
   if (el.getAttribute('data-ult')) return `<b>${KITS[s.kit].skill} 강화</b> · 조합 하나를 ${T.max}단계로 올리면 비기가 더 세고 넓어지고 자주 쓸 수 있습니다`

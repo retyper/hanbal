@@ -1,3 +1,13 @@
+## Codex52 구현·실화면 검수 완료 · 2026-11-21
+
+- 실제 부모1단과 기존 문턱을 함께 쓰는 세 기둥 기술 나무로 개편했습니다. 7무기 조건·56경로 2,408고름에서 후보막힘0. 실제6뷰(폰4/844가로/1920PC)·20그림·21선·126끝점, 부모/문턱 반응·키 입력·판 불변을 검수했습니다. PC resize선잔존/가로선붙음/닫기문자가림은 재현 후 수정했습니다.
+- Node22.19.0/npm10.9.3, typecheck·관련46/46·전체1,682(통과1,680/실패0/기존skip2). PUBLIC_BASE=/hanbal/로 CI와 같은 빌드 raw4,970.1KB/gzip1,538.7KB, 로컬 실제 HTML·해시 JS/CSS HTTP200·바이트/SHA 일치. 기본경로 빌드의 로컬404는 배포경로 불일치로 확인하고 재빌드했습니다. CI·운영 확인은 푸시 뒤 root가 수행합니다.
+- 밸런스before/parent-only/gated 각40판 보존. 최종숲8/8→7/8, 여울3/8→3/8, 다른세판0/8. 문턱제거로 목책2빌드가41~43초에 지던 회귀는 문턱병행으로 완화했으나 숲1패 잔여는 공개합니다. 이후 추가튜닝0.
+- 근거 docs/realm/production/CODEX52-TREE.md, CODEX52-BALANCE-*.json, CODEX52-SOURCE-AUDIT.json, docs/BALANCE.md. 실제화면 원본과 QA흑백파생(실OS흑백아님)은 C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/taskoutputs/codex52/QA-FINAL-SUMMARY.json. 다른6무기 실화면·실폰FPS·후반상태는 미검증입니다.
+- 최신사용자 추가: 타격감은 테일즈위버/던파 참고(공식자료·적용추론 outputs/codex53/HIT-FEEL-REFERENCES.md), 이름은 폭렬비도/파천일섬 등 효과에 맞춰 개선. 이름PREP완료/제품반영전. 순서는52다음53-A→53-B→51나머지→47/48, 독립그림/영상병렬.
+- 54: 그림은native만, 브라우저는Gemini/Flow영상만. 다나승리10초RAW1수신(4초·무음파생/손활검수전), 패배는서비스오류2회(최초+재시도1)로held/반환0. 원장은 outputs/codex54/VIDEO-STATE-54.json. 그림HOLD는 D창고보존/기존장수띠미교체. 현재 자세한인계는 D:/에셋창고/CODEX-TO-CLAUDE-LATEST.md.
+
+아래는 이전 시점의 기록입니다.
 ## Codex50 구현·검수 완료 · 2026-11-21
 
 - Claude 지시50-0~8 구현과 검수를 마쳤습니다. 열전 코드 주인은 Codex이며 결과/한계는 [CODEX50-RESULTS.md](docs/realm/production/CODEX50-RESULTS.md), 단계별 커밋·CI·운영 상태는 [최신 전달](D:/에셋창고/CODEX-TO-CLAUDE-LATEST.md)이 정본입니다.

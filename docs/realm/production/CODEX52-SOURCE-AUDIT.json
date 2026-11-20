@@ -1,0 +1,33 @@
+{
+  "measuredSourceSha256": "1e52f8b002544ff92ab893a70716047389db5994e4c06df13c513f78f4737a33",
+  "finalSourceSha256": "9048fe9ddec76731da53496b31897a51729dcb77a30ba36ba21c268e6b90d8f7",
+  "restoredMeasurementSha256": "1e52f8b002544ff92ab893a70716047389db5994e4c06df13c513f78f4737a33",
+  "onlyCommentsChanged": true,
+  "commentChanges": [
+    {
+      "atMeasurement": "/** Previous branch thresholds, retained for historical reports; nodeOpen owns current eligibility. */",
+      "atFreeze": "/** Branch thresholds are retained alongside the real parent after the 52 fixed-seed comparison. */"
+    },
+    {
+      "atMeasurement": "/** 52: four roots, then one real parent per ordinary power. Combo parents remain COMBOS.needs. */",
+      "atFreeze": "/** 52: four roots, then one real parent per ordinary power, plus the existing branch threshold. */"
+    }
+  ],
+  "otherMeasuredFiles": {
+    "src/raid/haebi-replay.ts": {
+      "measured": "6effa80630f6b7fe158b1d826d7679a5dd2b1e5c9b1cc68d86577cf41adffe16",
+      "atFreeze": "6effa80630f6b7fe158b1d826d7679a5dd2b1e5c9b1cc68d86577cf41adffe16",
+      "equal": true
+    },
+    "src/tune/params.ts": {
+      "measured": "f9992feb8196f436dd23b81f47cf3e3fd3dddac57dbfb1125f13dc3a94b7fa2e",
+      "atFreeze": "f9992feb8196f436dd23b81f47cf3e3fd3dddac57dbfb1125f13dc3a94b7fa2e",
+      "equal": true
+    },
+    "tools/raid-stage-balance.ts": {
+      "measured": "a29b88b330d62e72c4fc0b60d545ce402c8f794eea86406e84cc9016e6a030e2",
+      "atFreeze": "a29b88b330d62e72c4fc0b60d545ce402c8f794eea86406e84cc9016e6a030e2",
+      "equal": true
+    }
+  }
+}

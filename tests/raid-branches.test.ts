@@ -61,16 +61,16 @@ test('다 못 찍는다 — 나무 전체는 한 판(레벨 44 · 43점)의 두 
   assert.ok(spent < treeTotal('sword') / 2, `${spent} 점만 찍힌다`)
 })
 
-test('층은 그 갈래에 찍은 점으로 열린다 — 잠긴 칸은 카드로 안 나오고 골라도 안 된다', () => {
+test('52 부모 1단으로 열린다 — 잠긴 칸은 카드로 안 나오고 골라도 안 된다', () => {
   for (const kit of KIT_LIST) {
     const s = quiet(kit), k = KITS[kit]
     assert.equal(branchPoints(s, 'a'), 1, '주 무기 첫 단계 1점')
     assert.ok(!nodeOpen(s, 'capA') && !nodeOpen(s, 'ember') && !nodeOpen(s, 'thunder'))
     s.offers = ['capA']; s.xp = xpNeeded(s); assert.equal(choose(s, 'capA'), false, '잠긴 갈래 끝')
     s.offers = ['thunder']; assert.equal(choose(s, 'thunder'), false, '잠긴 2층')
-    s.ranks[k.primary] = T.tiers[1]!; assert.ok(nodeOpen(s, 'ember') && nodeOpen(s, 'reach') && !nodeOpen(s, 'hone') && !nodeOpen(s, 'echo'), kit)
-    s.ranks[k.primary] = T.tiers[3]! - 1; assert.ok(!nodeOpen(s, 'capA'))
-    s.ranks.ember = 1; assert.ok(nodeOpen(s, 'capA'), `${kit} 이 갈래 ${T.tiers[3]}점이면 갈래 끝`)
+    s.ranks[k.primary] = 3; assert.ok(nodeOpen(s, 'ember') && nodeOpen(s, 'reach') && !nodeOpen(s, 'hone') && !nodeOpen(s, 'echo'), kit)
+    s.ranks[k.primary] = 10; s.ranks.ember = 2; assert.ok(!nodeOpen(s, 'capA'), '갈래 합계 12여도 부모가 없으면 잠김')
+    s.ranks.reach = 1; assert.ok(nodeOpen(s, 'hone')); s.ranks.hone = 1; assert.ok(nodeOpen(s, 'capA'), `${kit} 벼리기 1단이면 갈래 끝`)
     assert.ok(!nodeOpen(s, 'capB') && !nodeOpen(s, 'capC'), '다른 갈래는 그대로 잠김')
   }
   // 아무렇게나 골라 끝까지: 카드는 늘 열린 칸·끝 단계 아닌 칸

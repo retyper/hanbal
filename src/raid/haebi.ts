@@ -93,9 +93,20 @@ export function nodeAt(kit: Kit, p: Power): { branch: Branch; tier: number } | n
 }
 /** 그 갈래에 찍은 점 (주 무기 첫 단계도 1점 · 조합은 세지 않는다) */
 export const branchPoints = (s: HaebiRun, b: Branch) => branchNodes(s.kit)[b].flat().reduce((n, p) => n + s.ranks[p], 0)
-/** 층이 열렸나 — 그 갈래에 T.tiers[층] 점 */
+/** Branch thresholds are retained alongside the real parent after the 52 fixed-seed comparison. */
 export const tierOpen = (s: HaebiRun, b: Branch, tier: number) => branchPoints(s, b) >= T.tiers[tier]!
-export function nodeOpen(s: HaebiRun, p: Power) { const at = nodeAt(s.kit, p); return !!at && tierOpen(s, at.branch, at.tier) }
+/** 52: four roots, then one real parent per ordinary power, plus the existing branch threshold. */
+export function powerParents(kit: Kit): Partial<Record<Power, Power>> {
+  const k = KITS[kit]
+  return { reach: k.primary, ember: k.primary, hone: 'reach', capA: 'hone',
+    echo: k.secondary, thunder: k.secondary, drill: 'echo', capB: 'drill',
+    breath: 'tough', nimble: 'tempo', stout: 'tough', capC: 'stout' }
+}
+export const nodeParent = (kit: Kit, p: Power): Power | null => powerParents(kit)[p] ?? null
+export function nodeOpen(s: HaebiRun, p: Power) {
+  const parent = nodeParent(s.kit, p), at = nodeAt(s.kit, p)
+  return !!at && (!parent || s.ranks[parent] >= 1) && tierOpen(s, at.branch, at.tier)
+}
 /** 가장 많이 찍은 갈래 (같으면 a → b → c) */
 export function mainBranch(s: HaebiRun): Branch { let best: Branch = 'a'; for (const b of BRANCHES) if (branchPoints(s, b) > branchPoints(s, best)) best = b; return best }
 /** 그 묶음 나무를 다 채우는 점 (칸 끝 단계 합 + 조합 끝 단계) — 한 판 점(레벨 44 → 43점)의 두 배를 넘게 둔다 */
