@@ -3,6 +3,7 @@ import { HAEBI_RUN as C, HAEBI_STICK as STICK, HAEBI_TREE as TREE, HAEBI_ULT as 
 import { createHaebi, runDuration, stepHaebi, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, nodeText, nodeAt, branchName, branchPoints, wakeReady, ultName, ultOpen, BRANCHES, branchNodes, type Kit, type Power, type Pick, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
 import { startRecord, recInput, gridInput, recPick, recReroll, recQuit, withdrawRun, sealInput, finishRecord, STEP, type Recorder } from './raid/runlog.ts'
 import { runFrame, speedOf, nextSpeed, speedLevel } from './raid/speed.ts'
+import { RaidFeel } from './raid/impact.ts'
 import { putRaidGame, sealLeftovers, unsentRaids, markRaidsSent, type RaidGame, type RaidOpts } from './raid/runlog-store.ts'
 import { pushRaids } from './net/sync.ts'
 import { newCam, followCam, nextLevel, closest, toField } from './raid/camera.ts'
@@ -664,11 +665,14 @@ function perfTick(now: number) {
   const fps = perf.frames * 1000 / (now - perf.at); perf.at = now; perf.frames = 0
   perfEl.textContent = `${fps.toFixed(0)}fps 적${run.enemies.length} 늑대${run.enemies.filter(e => e.kind === 'dog').length} 투사${run.shots.length} 효과${run.fx.length} 숫자${run.fx.filter(f => f.n !== undefined).length}`
 }
+const feel = new RaidFeel()
 function frame(now: number) {
   raf = 0; if (document.hidden) return
   perfTick(now)
   const dt = last ? Math.min(.1, (now - last) / 1000) : 0; last = now
-  if (live && !paused && !inspecting && !rotationBlocked && run.state === 'playing' && !run.offers.length) {
+  feel.observe(run)
+  feel.advance(dt, live && !paused && !inspecting && !rotationBlocked && !run.offers.length)
+  if (live && !paused && !inspecting && !rotationBlocked && !feel.stopped && run.state === 'playing' && !run.offers.length) {
     // 빠르기 ×2·×3 은 한 프레임에 걸음을 더 돌린다 (걸음은 늘 STEP · raid/speed.ts) · 시전·컷인 동안은 ×1
     acc = runFrame(acc, dt, () => run.cast || run.t < cutinUntil ? 1 : speedOf(speed), () => {
       let x = Number(keys.has('d') || keys.has('arrowright')) - Number(keys.has('a') || keys.has('arrowleft')), y = Number(keys.has('s') || keys.has('arrowdown')) - Number(keys.has('w') || keys.has('arrowup'))
@@ -679,14 +683,15 @@ function frame(now: number) {
       const castBefore = run.cast, dashBefore = run.dashCd, wakesBefore = run.wakes
       // 맡아 둔 누름: 누른 지 STICK.queue 초 안이면 계속 넣는다 (재사용이 그 안에 풀리면 나간다) · 나가면 지운다
       stepHaebi(run, feed({ x, y, dash: run.t - dashAt <= STICK.queue, skill: run.t - skillAt <= STICK.queue, wake: run.t - wakeAt <= STICK.queue }), STEP)   // 판 기록이 이동을 격자에 맞춰 적고 그 값을 넣는다 (runlog.ts)
+      feel.observe(run)
       if (run.dashCd > dashBefore) dashAt = -9
       if (run.wakes > wakesBefore) wakeAt = -9
       // 시전이 새로 섰다 = 각성 또는 비기 (한 번에 하나 · 판이 줄 세운다)
       if (run.cast && run.cast !== castBefore) { showSkillCutin(run.cast.kind === 'wake', run.cast.tru); if (run.cast.kind === 'ult') skillAt = -9 }
-      return !run.offers.length && run.state === 'playing'
+      return !feel.stopped && !run.offers.length && run.state === 'playing'
     })
   }
-  if (live) { followCam(cam, run.x, run.y, dt); drawField(ctx, images, run, destination, cam) }
+  if (live) { followCam(cam, run.x, run.y, feel.stopped ? 0 : dt); drawField(ctx, images, run, destination, cam, feel) }
   if (!live || run.t >= cutinUntil) skipCutin()
   // 기술이 터지면 계단마다 떨고(비기 한 번 · 각성 두 박 · 진각성 세 박) 크리티컬은 짧게 한 번 (11-19 형 · HAEBI_FEEL_TIERS · 끄기·가려진 탭은 haptics 가 막음)
   const felt = sound.frame(run, live, paused || inspecting || rotationBlocked)
@@ -696,7 +701,7 @@ function frame(now: number) {
 function schedule() { if (!raf && !document.hidden) raf = requestAnimationFrame(frame) }
 updateHud(); schedule()
 // 개발 검수 손잡이 — 헤드리스 시험(tools/raid-*-probe.ts)이 판 상태를 읽고 체력을 깎아 본다 · 배포 빌드엔 없음
-if (import.meta.env.DEV) Object.assign(window, { __raid: () => run, __raidSound: sound, __raidCutin: (wake: boolean, tru = false) => showSkillCutin(wake, tru) })
+if (import.meta.env.DEV) Object.assign(window, { __raid: () => run, __raidFeel: () => ({ time: feel.time, stopRemaining: feel.stopRemaining, shake: feel.shake }), __raidSound: sound, __raidCutin: (wake: boolean, tru = false) => showSkillCutin(wake, tru) })
 if (import.meta.env.DEV && new URLSearchParams(location.search).has('review')) {
   import('./raid/haebi-review.ts').then(({ installReview }) => installReview(root, s => { notifyVanguardStart(); run = s; live = true; paused = !s.offers.length; shown = ''; loadoutKey = ''; resetInput(); $('menu').hidden = true; $('play').hidden = false; $<HTMLButtonElement>('pause').disabled = false; layoutTrial(); showOverlay(); updateHud(); schedule() }, mode, kit))
 }

@@ -478,6 +478,17 @@ export interface Knob {
 const k = (v: number, min: number, max: number, step: number, label: string, unit?: string): Knob =>
   unit === undefined ? { v, min, max, step, label } : { v, min, max, step, label, unit }
 
+/** 열전 화면 전용 타격감. 판의 피해·이동·난수에는 관여하지 않는다. */
+export const HAEBI_IMPACT = {
+  criticalStop: .04, eliteStop: .08, bossSkillStop: .12, hurtStop: .08, cooldown: .25,
+  shakeLife: .2, shakeCritical: 2, shakeElite: 4, shakeHurt: 4, shakeSkill: 7, shakeMax: 8,
+  shakeXHz: 91, shakeYHz: 77, shakeYShare: .6,
+  mobFlash: .12, whiteTime: .05, mobJitter: 2.5, mobJitterHz: 83, squashX: 1.15, squashY: .9,
+  numberPop: 1.6, numberPopTime: .08, numberCriticalPop: 1.85,
+  deathDistance: 60, deathEliteDistance: 100, deathLift: 48, deathBounce: 13,
+  deathBounceAt: .65, deathSpin: 2.7, deathFadeAt: .65,
+} as const
+
 export const SPEC = {
   raid: {
     duration: k(90, 30, 300, 5, '토벌 제한 시간', 's'),

@@ -3,6 +3,8 @@ import { genArtOf } from '../realm/data/art.ts'
 import { areaScale, awakenedLook, charge, missileLife, slamRadius, slamWindup, type HaebiRun, type Kit, type Missile, type StageId } from './haebi.ts'
 import { WALK_CYCLE } from './walk-cycle.ts'
 import { AURA_ART, drawAura, drawAuraBurst, drawAuraGround, type AuraArt, type AuraAt, type AuraKind } from './fx-aura.ts'
+import { HAEBI_IMPACT as FEEL } from '../tune/params.ts'
+import type { RaidFeel } from './impact.ts'
 
 /** 돌팔매 묶음의 돌 · 바위 (전용 그림 H56~H58 이 오기 전엔 본편 바위 그림을 빌린다) */
 const ROCK = 'fx/rock.png'
@@ -38,7 +40,17 @@ function bakedStrip(img: HTMLImageElement, height: number): Baked | null {
   if (typeof createImageBitmap === 'function') void createImageBitmap(c).then(bm => { b.c = bm }, () => {})
   return b
 }
-export function sprite(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, path: string, x: number, y: number, height: number, frame: number, face = 1, flash = false) {
+const whiteStrips = new WeakMap<object, HTMLCanvasElement>()
+function whiteStrip(src: CanvasImageSource, width: number, height: number) {
+  let white = whiteStrips.get(src)
+  if (!white && typeof document !== 'undefined') {
+    white = document.createElement('canvas'); white.width = width; white.height = height
+    const g = white.getContext('2d')!; g.drawImage(src, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = '#fff'; g.fillRect(0, 0, width, height)
+    whiteStrips.set(src, white)
+  }
+  return white
+}
+export function sprite(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, path: string, x: number, y: number, height: number, frame: number, face = 1, flash: boolean | 'white' = false) {
   const img = images.get(path); if (!img) return
   const b = bakedStrip(img, height)
   let src: CanvasImageSource = img, sx: number, sy = 0, sw: number, sh: number, dw: number, dh: number
@@ -49,8 +61,12 @@ export function sprite(ctx: CanvasRenderingContext2D, images: Map<string, HTMLIm
   const smooth = ctx.imageSmoothingEnabled
   ctx.translate(tx, ty); if (face !== 1) ctx.scale(face, 1); ctx.imageSmoothingEnabled = false
   ctx.drawImage(src, sx, sy, sw, sh, dx, -dh, dw, dh)
+  if (flash === 'white') {
+    const white = whiteStrip(src, b ? b.cols * b.fw : img.width, b ? Math.ceil(20 / b.cols) * b.fh : img.height)
+    if (white) ctx.drawImage(white, sx, sy, sw, sh, dx, -dh, dw, dh)
+  }
   // 맞은 번쩍: 같은 그림을 한 번 더 빛으로 더한다 — ctx.filter 는 폰에서 그림마다 소프트웨어로 돌아 프레임을 크게 깎았다 (11-16 플립7 20프레임)
-  if (flash) { const op = ctx.globalCompositeOperation, a = ctx.globalAlpha; ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = a * C.flashAdd; ctx.drawImage(src, sx, sy, sw, sh, dx, -dh, dw, dh); ctx.globalCompositeOperation = op; ctx.globalAlpha = a }
+  if (flash === true) { const op = ctx.globalCompositeOperation, a = ctx.globalAlpha; ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = a * C.flashAdd; ctx.drawImage(src, sx, sy, sw, sh, dx, -dh, dw, dh); ctx.globalCompositeOperation = op; ctx.globalAlpha = a }
   if (face !== 1) ctx.scale(face, 1); ctx.translate(-tx, -ty); ctx.imageSmoothingEnabled = smooth
 }
 /**
@@ -313,7 +329,7 @@ function drawNumbers(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImag
   for (const p of nums) {
     const age = s.t - p.t, k = age / p.life; if (k < 0 || k >= 1) continue
     const x = p.x + p.vx * age, y = p.y + p.vy * age + p.g * age * age / 2
-    const popT = C.numPopTime / (p.crit ? C.numCritSpeed : 1), pa = s.t - p.pop, scale = pa < popT ? C.numPop - (C.numPop - 1) * pa / popT : 1
+    const popT = FEEL.numberPopTime, pa = s.t - p.pop, peak = p.crit ? FEEL.numberCriticalPop : FEEL.numberPop, scale = pa < popT ? peak - (peak - 1) * pa / popT : 1
     const size = p.crit ? C.numCritSize : p.kill ? C.numKill : C.numSize
     ctx.save(); ctx.translate(x, y); ctx.rotate(p.spin * Math.sin(age * 34) * (1 - k)); ctx.scale(scale, scale)
     ctx.globalAlpha = k < .72 ? 1 : (1 - k) / .28
@@ -558,11 +574,12 @@ const order: (HaebiRun['enemies'][number] | null)[] = []
  * cam: 확대 카메라 (raid/camera.ts · 11-19 돋보기 단추) — 화면 가운데의 판 좌표와 배율. 판 위의 것(땅·몸·효과·피해 숫자·오라)은 판과 함께 커지고,
  * 화면에 붙은 것(맞을 때 붉은 테 · 두목 막대)은 그대로 · 없으면 1배
  */
-export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, destination: { x: number; y: number } | null, cam?: { zoom: number; x: number; y: number }) {
+export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, destination: { x: number; y: number } | null, cam?: { zoom: number; x: number; y: number }, feel?: RaidFeel) {
   const W = C.width, H = C.height
   ctx.setTransform(1, 0, 0, 1, 0, 0)   // 그림마다 옮겼다 되돌리는 셈의 작은 오차가 판마다 쌓이지 않게 (sprite·stamp 는 save/restore 없이 · 11-17)
   ctx.fillStyle = '#273c35'; ctx.fillRect(0, 0, W, H)
-  const quake = shakeOf(s), qx = quake ? Math.round(Math.sin(s.t * 91) * quake) : 0, qy = quake ? Math.round(Math.cos(s.t * 77) * quake * .6) : 0
+  const quake = Math.min(FEEL.shakeMax, Math.max(shakeOf(s), feel?.shake ?? 0)), time = feel?.time ?? s.t
+  const qx = quake ? Math.round(Math.sin(time * FEEL.shakeXHz) * quake) : 0, qy = quake ? Math.round(Math.cos(time * FEEL.shakeYHz) * quake * FEEL.shakeYShare) : 0
   const z = cam?.zoom ?? 1
   if (z !== 1 && cam) ctx.setTransform(z, 0, 0, z, W / 2 - cam.x * z + qx, H / 2 - cam.y * z + qy)
   else if (quake) ctx.setTransform(1, 0, 0, 1, qx, qy)
@@ -603,7 +620,14 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       // 무당이 북돋운 적 · 성난 광전사: 발밑 붉은 기운
       if (e.buff > 0 || e.kind === 'berserker' && e.hp < e.max / 2) { ctx.save(); ctx.globalAlpha = .45 + .25 * Math.sin(s.t * 12 + e.id); ctx.fillStyle = '#ff3b2f'; ctx.beginPath(); ctx.ellipse(e.x, e.y + 2, 22, 8, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore() }
       if (target) decal(ctx, images, 'mark-target', e.x, e.y, 100, 45)
-      sprite(ctx, images, warlord(e.kind, s.stage), e.x, e.y, h, e.wind > 0 ? 13 : archerFrame(s, e) ?? 4 + Math.floor(s.t * 8 + e.id) % 8, s.x < e.x ? -1 : 1, e.flash > 0)
+      const recoil = Math.max(0, Math.min(1, e.flash / FEEL.mobFlash)), white = e.flash > FEEL.mobFlash - FEEL.whiteTime
+      const steady = e.kind === 'boss' || e.kind === 'iron' || e.kind === 'bear'
+      const lag = steady ? 0 : Math.sign(e.x - s.x) * C.knockback * recoil
+      const jitter = recoil * FEEL.mobJitter * Math.sin(time * FEEL.mobJitterHz + e.id)
+      ctx.save(); ctx.translate(e.x + jitter - lag, e.y)
+      ctx.scale(1 + (FEEL.squashX - 1) * recoil, 1 + (FEEL.squashY - 1) * recoil)
+      sprite(ctx, images, warlord(e.kind, s.stage), 0, 0, h, white ? 18 : e.wind > 0 ? 13 : archerFrame(s, e) ?? 4 + Math.floor(s.t * 8 + e.id) % 8, s.x < e.x ? -1 : 1, white ? 'white' : e.flash > 0)
+      ctx.restore()
       // 어지럼 돌: 머리 위를 도는 별 둘
       if (e.daze > 0) for (let i = 0; i < 2; i++) { const a = s.t * 7 + i * Math.PI; stamp(ctx, images, 'raid/hit.png', e.x + Math.cos(a) * 14, e.y - h - 4 + Math.sin(a) * 4, 14, a) }
       if (target) decal(ctx, images, 'mark-arrow', e.x, e.y - h - 26 + Math.sin(s.t * 4) * 4, 22, 39)
@@ -739,8 +763,12 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       }
     } else if (f.kind === 'death') {
       if (f.mob) {
-        ctx.save(); ctx.translate(f.x, f.y + 20); ctx.rotate((f.face ?? 1) * Math.min(1,age * 2) * .65)
-        ctx.globalAlpha *= Math.max(0, 1 - age * 1.3)
+        const away = -(f.face ?? 1), elite = f.mob === 'elite' || f.mob === 'boss'
+        const flight = Math.min(1, age / FEEL.deathBounceAt)
+        const bounce = age < FEEL.deathBounceAt ? Math.sin(Math.PI * flight) * FEEL.deathLift : Math.sin(Math.PI * (age - FEEL.deathBounceAt) / (1 - FEEL.deathBounceAt)) * FEEL.deathBounce
+        ctx.save(); ctx.translate(f.x + away * flight * (elite ? FEEL.deathEliteDistance : FEEL.deathDistance), f.y + 20 - bounce)
+        ctx.rotate(away * flight * FEEL.deathSpin)
+        ctx.globalAlpha *= Math.min(1, (1 - age) / (1 - FEEL.deathFadeAt))
         sprite(ctx, images, warlord(f.mob, s.stage), 0, 0, mobHeight(f.mob), 18, f.face ?? 1)
         ctx.restore()
       }
