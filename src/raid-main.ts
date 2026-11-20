@@ -26,6 +26,7 @@ import './raid/pause.css'
 import { raidShortcut, keyHints } from './raid/keyboard.ts'
 import './raid/keyboard.css'
 import './raid/card-skins.css'
+import './raid/tree.css'
 import { guardMedia } from './ui/media-guard.ts'
 import { haptics } from './ui/haptics.ts'
 /** 금은 글자 대신 동전 그림 (형 11-19 「금도 아이콘으로 해야겠음 텍스트 말고」) */
@@ -504,6 +505,7 @@ function openTree() {
   treeView.innerHTML = `<div class="panel tree-panel"><div class="tree-head"><button class="tree-close primary">돌아가기</button><h2>${weapon} 기술 나무</h2><small>레벨 ${run.level} · 앞으로 레벨업 ${Math.max(0, C.maxLevel - run.level)}번</small></div>${treeSvg(run)}<p class="tree-info">칸을 누르면 설명이 나옵니다</p></div>`
   treeView.hidden = false
   keyHints(root)
+  treeView.querySelector<HTMLButtonElement>('.tree-close')!.focus()
 }
 function closeTree() { if (!treeView.hidden) treeView.hidden = true }   // 판마다 불린다 — 같은 값도 쓰면 속성이 바뀐 셈이 된다 (11-18)
 treeView.onclick = e => {
@@ -511,6 +513,12 @@ treeView.onclick = e => {
   if (node) { treeView.querySelectorAll('.picked').forEach(x => x.classList.remove('picked')); node.classList.add('picked'); treeView.querySelector('.tree-info')!.innerHTML = treeInfo(run, node); return }
   if (t === treeView || t.closest('.tree-close')) closeTree()
 }
+treeView.addEventListener('keydown', e => {
+  const node = (e.target as Element).closest<HTMLElement>('.tree-node')
+  if (!node || e.key !== 'Enter' && e.key !== ' ') return
+  e.preventDefault(); e.stopPropagation()
+  if (!e.repeat) node.click()
+})
 const treeButton = '<button id="tree-open" class="tree-btn" aria-label="기술 나무 보기"><img src="' + import.meta.env.BASE_URL + 'realm/raid/power-skill.png" alt="">나무</button>'
 let settledRun: HaebiRun | null = null
 function settleRun() {

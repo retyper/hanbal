@@ -1,6 +1,8 @@
 import { HAEBI_TREE as T } from '../tune/params.ts'
-import { POWERS, KITS, BRANCHES, kitCombos, comboRank, comboReady, ultUpgraded, branchNodes, branchName, branchPoints, tierOpen, nodeText, nodeAt, type Branch, type Combo, type Kit, type Power, type HaebiRun } from './haebi.ts'
+import { POWERS, KITS, kitCombos, comboRank, branchName, branchPoints, tierOpen, nodeText, nodeAt, type Branch, type Combo, type Kit, type Power, type HaebiRun } from './haebi.ts'
 import { ICON_READY } from './icon-ready.ts'
+import { renderTree } from './tree-view.ts'
+const BASE = import.meta.env?.BASE_URL ?? '/'
 
 /** 전용 아이콘(release-jobs H56~H61 · tools/raid-icons-h56.py)이 구워져 있으면 raid/<이름>.png, 아니면 빌린 그림 */
 const own = (name: string, borrowed: string) => ICON_READY.has(name) ? `raid/${name}.png` : borrowed
@@ -42,63 +44,20 @@ export function nodeArt(kit: Kit | undefined, key: Power): { src: string; tint: 
 }
 export function powerIcon(key: Power, kit?: Kit) {
   const a = nodeArt(kit, key)
-  return `<img src="${import.meta.env.BASE_URL}realm/${a.src}" alt="" draggable="false"${a.tint ? ` class="tint-${a.tint}"` : ''}>`
+  return `<img src="${BASE}realm/${a.src}" alt="" draggable="false"${a.tint ? ` class="tint-${a.tint}"` : ''}>`
 }
 /** 조합 그림 (public/realm/ 아래) — raid/<id>.png · 돌팔매 둘은 H58 이 없으면 본편 바위·타격 그림 */
 const comboArt = (id: Combo) => id === 'boulder' ? own('boulder', 'fx/rock.png') : id === 'daze' ? own('daze', 'raid/hit.png') : `raid/${id}.png`
-export const comboSrc = (id: Combo) => `${import.meta.env.BASE_URL}realm/${comboArt(id)}`
+export const comboSrc = (id: Combo) => `${BASE}realm/${comboArt(id)}`
 export const comboIcon = (id: Combo) => `<img src="${comboSrc(id)}" alt="" draggable="false">`
 /** 단계 표시 — Ⅰ Ⅱ Ⅲ */
 export const rankMark = (n: number) => ['', 'Ⅰ', 'Ⅱ', 'Ⅲ'][n] ?? String(n)
 /** 갈래 빛깔 — 주 무기 금 · 보조 물 · 버팀 보라 (나무·카드·띠 모두 같은 빛) */
 export const BRANCH_COLOR: Record<Branch, string> = { a: '#f2c45a', b: '#6fd8c4', c: '#c7a3ff' }
 
-/**
- * 기술 나무 (RAID-LINK §2 · 11-17 밤 D2 식) — 갈래 셋(주 무기 · 보조 · 버팀)을 세로 줄로, 줄마다 네 층.
- * 층은 그 갈래에 찍은 점으로 열린다(잠긴 층 사이엔 자물쇠 + 「N번 더」 = 이 갈래에서 더 고를 횟수) · 4층은 갈래 끝(크게 · 별 테).
- * 오른쪽 줄: 조합(두 갈래를 잇는 금테 · 필요한 칸 그림 셈) → 맨 아래 비기 강화.
- * 열린 칸 금빛(on) · 고를 수 있는 칸 테두리(next) · 잠긴 칸 어둡게(off). 칸을 누르면 data-node 로 설명 (raid-main).
- * 그림 한 장(SVG · viewBox 1000×350)이라 폰 가로 844×390 에도 굴리지 않고 다 들어간다.
- */
-/** 잠긴 층 알약의 자물쇠 (레벨업 카드의 자물쇠와 같은 꼴 · 14px) — 알약 숫자는 「이 갈래에서 N번 더 고르면 열림」 (11-19 형: 「이 갈래 12점」이 무슨 뜻인지 몰랐다) */
-const lockIcon = (x: number, y: number) => `<g class="lock-ic" transform="translate(${x} ${y}) scale(.875)"><path d="M5 7V5a3 3 0 0 1 6 0v2" fill="none" stroke-width="2" stroke-linecap="round"/><rect x="2.6" y="7" width="10.8" height="8" rx="1.6"/></g>`
+/** Responsive tree; the name stays stable for existing callers. */
 export function treeSvg(s: HaebiRun) {
-  const k = KITS[s.kit], base = import.meta.env.BASE_URL + 'realm/', tree = branchNodes(s.kit)
-  const COL: Record<Branch, number> = { a: 135, b: 395, c: 645 }, ROW = (t: number) => 64 + t * 80, R = 22, PAIR = 58
-  const parts: string[] = [], lines: string[] = [], locks: string[] = []   // 잠긴 층 알약은 칸 위에 (갈래 끝 칸의 테가 글을 덮었다)
-  const img = (key: Power, x: number, y: number, r: number) => { const a = nodeArt(s.kit, key); return `<image href="${base + a.src}" x="${x - r * .8}" y="${y - r * .8}" width="${r * 1.6}" height="${r * 1.6}"${a.tint ? ` class="tint-${a.tint}"` : ''}/>` }
-  for (const b of BRANCHES) {
-    const cx = COL[b], pts = branchPoints(s, b), color = BRANCH_COLOR[b]
-    parts.push(`<text class="head" x="${cx}" y="22" style="fill:${color}">${branchName(s.kit, b)} 갈래 <tspan class="pts">${pts}번 고름</tspan></text>`)
-    tree[b].forEach((row, t) => {
-      const y = ROW(t), open = tierOpen(s, b, t)
-      // 층 사이: 다음 층이 열렸으면 금줄, 아니면 「이 갈래 N점」 알약
-      if (t < tree[b].length - 1) {
-        const nextOpen = tierOpen(s, b, t + 1), y2 = ROW(t + 1)
-        lines.push(`<line class="${nextOpen ? 'on' : ''}" x1="${cx}" y1="${y + (row.length === 1 ? R + 19 : 0)}" x2="${cx}" y2="${tree[b][t + 1]!.length === 1 ? y2 - R - 6 : y2}" style="${nextOpen ? `stroke:${color}` : ''}"/>`)
-        if (!nextOpen) locks.push(`<g class="lock"><rect x="${cx - 36}" y="${y + 40}" width="72" height="18" rx="9"/>${lockIcon(cx - 27, y + 42)}<text x="${cx + 7}" y="${y + 53}">${T.tiers[t + 1]! - pts}번 더</text></g>`)
-      }
-      row.forEach((p, i) => {
-        const x = row.length === 1 ? cx : cx + (i ? PAIR : -PAIR), rank = s.ranks[p], max = POWERS[p].max, cap = t === tree[b].length - 1
-        const state = rank >= max ? 'on max' : rank > 0 ? 'on' : open ? 'next' : 'off', r = cap ? R + 3 : R
-        // 단계 알약은 칸 오른쪽 위 (아래는 이름 · 가운데 줄과 겹치지 않게)
-        const bw = max >= 10 ? 32 : 26, badge = rank ? `<g class="badge"><rect x="${x + r - 12}" y="${y - r - 6}" width="${bw}" height="15" rx="7"/><text x="${x + r - 12 + bw / 2}" y="${y - r + 5}">${rank}/${max}</text></g>` : ''
-        const star = cap ? `<circle class="cap-ring" cx="${x}" cy="${y}" r="${r + 5}" style="stroke:${color}"/>` : ''
-        parts.push(`<g class="node ${state}${cap ? ' cap' : ''}" data-node="${p}">${star}<circle class="ring" cx="${x}" cy="${y}" r="${r}"/>${img(p, x, y, r)}${badge}<text class="label" x="${x}" y="${y + r + (cap ? 18 : 13)}">${nodeText(s.kit, p).name}</text></g>`)
-      })
-    })
-  }
-  // 조합 줄 — 금테 · 필요한 칸 그림 셈 (그림 + 단계) · 맨 아래 비기 강화
-  const CX = 820, combos = kitCombos(s.kit)
-  parts.push(`<text class="head" x="${CX + 70}" y="22" style="fill:#f2c45a">조합</text>`)
-  combos.forEach((c, i) => {
-    const y = ROW(i), r = comboRank(s, c.id), state = r >= T.max ? 'on max' : r ? 'on' : comboReady(s, c) ? 'next' : 'off'
-    const needs = Object.entries(c.needs).map(([p, n], j) => { const ok = s.ranks[p as Power] >= n, x = CX + 32 + j * 58; return `<g class="need${ok ? ' ok' : ''}">${img(p as Power, x + 12, y + 13, 13)}<text x="${x + 28}" y="${y + 19}">${n}</text></g>` }).join('')
-    parts.push(`<g class="node combo ${state}" data-combo="${c.id}"><circle class="ring" cx="${CX}" cy="${y}" r="${R}"/><image href="${comboSrc(c.id)}" x="${CX - R * .8}" y="${y - R * .8}" width="${R * 1.6}" height="${R * 1.6}"/><text class="cname" x="${CX + 32}" y="${y - 4}">${c.name}${r ? ' ' + rankMark(r) : ''}</text>${needs}</g>`)
-  })
-  const uy = ROW(3), uOn = ultUpgraded(s)
-  parts.push(`<g class="node combo ult ${uOn ? 'on max' : combos.some(c => comboRank(s, c.id)) ? 'next' : 'off'}" data-ult="1"><circle class="ring" cx="${CX}" cy="${uy}" r="${R + 3}"/><image href="${base}raid/power-skill.png" x="${CX - 20}" y="${uy - 20}" width="40" height="40"/><text class="cname" x="${CX + 32}" y="${uy - 4}">${k.skill} 강화</text><text class="csub" x="${CX + 32}" y="${uy + 13}">조합 하나 ${rankMark(T.max)}</text></g>`)
-  return `<svg class="tree" viewBox="0 0 1000 350" role="img" aria-label="${k.weapon} 기술 나무"><g class="lines">${lines.join('')}</g>${parts.join('')}${locks.join('')}</svg>`
+  return renderTree(s, p => powerIcon(p, s.kit), comboIcon, BRANCH_COLOR, powerIcon('capA'))
 }
 /** 나무에서 누른 칸의 한 줄 설명 (조합·비기 강화 포함) */
 export function treeInfo(s: HaebiRun, el: Element) {
