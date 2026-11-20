@@ -436,7 +436,8 @@ export const HAEBI_MOBS = {
 export const HAEBI_SHOP = {
   might: { max: 10, step: .06, cost: 60 }, vigor: { max: 10, step: 15, cost: 50 }, armor: { max: 5, step: 1.5, cost: 90 },
   regen: { max: 5, step: .3, cost: 80 }, haste: { max: 5, step: .04, cost: 120 }, swift: { max: 5, step: .04, cost: 70 },
-  magnet: { max: 5, step: .2, cost: 50 }, wisdom: { max: 5, step: .06, cost: 100 }, revive: { max: 2, step: 1, cost: 600 },
+  /** 50-4: 10단은 판 전체. 목책 추천의 투자 문턱은 예전5단 가치로 유지한다. */
+  magnet: { max: 10, step: .2, cost: 50, recommendationCap: 5 }, wisdom: { max: 5, step: .06, cost: 100 }, revive: { max: 2, step: 1, cost: 600 },
   reroll: { max: 3, step: 1, cost: 150 }, greed: { max: 5, step: .1, cost: 120 }, luck: { max: 5, step: .03, cost: 110 },
   /** 단계 값 = cost × (단계+1)^growth */
   growth: 1.45,

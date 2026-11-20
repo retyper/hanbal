@@ -208,8 +208,8 @@ export function runGold(s: HaebiRun) {
 export const xpNeeded = (s: HaebiRun) => C.xpBase + s.level * C.xpPerLevel + s.level ** 2 * C.xpCurve
 export const powerScale = (s: HaebiRun) => (1 + (s.level - 1) * C.levelPower) * (1 + s.bonus.might * SH.might.step)
 export const areaScale = (s: HaebiRun) => 1 + s.ranks.reach * C.reachStep
-/** 떨어진 기세를 끌어오는 둘레 — 기본 + 상점 「끌어오기」 */
-export const magnetRadius = (s: HaebiRun) => C.dropMagnet * (1 + s.bonus.magnet * SH.magnet.step)
+/** 떨어진 기세를 끌어오는 둘레. 끝10단은 유한한 판 대각선으로 모든 자리를 덮는다. */
+export const magnetRadius = (s: HaebiRun) => s.bonus.magnet >= SH.magnet.max ? Math.hypot(C.width, C.height) : C.dropMagnet * (1 + s.bonus.magnet * SH.magnet.step)
 /** 열전 시간을 예전 10분 판의 시각으로 — 국면·적 몰려옴은 예전 10분 곡선을 판 길이만큼 늘린다 (11-16 형: 「10분보다 길어지더라도 즐기게」) */
 const paced = (s: HaebiRun) => s.t * 600 / runDuration(s)
 export function phase(s: HaebiRun) { const u = paced(s); return s.mode === 'vanguard' ? `전위 돌파 ${s.breaches}/3` : u < 120 ? '첫 불씨' : u < 300 ? '힘의 결합' : u < 480 ? '폭풍의 진격' : s.t < bossTime(s) ? '압도' : '마지막 두목' }

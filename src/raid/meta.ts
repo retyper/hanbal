@@ -16,7 +16,7 @@ export const SHOP: readonly { key: ShopKey; name: string; glyph: string; desc: (
   { key: 'regen', name: '회복', glyph: '癒', desc: lv => `초마다 체력 +${(lv * SH.regen.step).toFixed(1)}` },
   { key: 'haste', name: '손놀림', glyph: '迅', desc: lv => `공격 속도 +${Math.round(lv * SH.haste.step * 100)}%` },
   { key: 'swift', name: '발놀림', glyph: '足', desc: lv => `이동 속도 +${Math.round(lv * SH.swift.step * 100)}%` },
-  { key: 'magnet', name: '끌어오기', glyph: '引', desc: lv => `기세 줍는 거리 +${Math.round(lv * SH.magnet.step * 100)}%` },
+  { key: 'magnet', name: '끌어오기', glyph: '引', desc: lv => lv >= SH.magnet.max ? '화면 전체의 기세를 끌어옵니다' : `기세 줍는 거리 +${Math.round(lv * SH.magnet.step * 100)}%` },
   { key: 'wisdom', name: '깨달음', glyph: '智', desc: lv => `기세 얻는 양 +${Math.round(lv * SH.wisdom.step * 100)}%` },
   { key: 'revive', name: '부활', glyph: '魂', desc: lv => `쓰러지면 ${lv}번 다시 일어남` },
   { key: 'reroll', name: '다시 고르기', glyph: '擲', desc: lv => `판마다 다시 고르기 +${lv}번` },
@@ -37,14 +37,14 @@ export const shopMax = (key: ShopKey) => SH[key].max
 /** 깨야 열리는 스테이지 — 앞 스테이지를 깨면 다음이 열린다 */
 export const stageOpen = (m: RaidMeta, id: Exclude<StageId, 'trial'>) => { const i = STAGE_ORDER.indexOf(id); return i <= 0 || !!m.cleared[STAGE_ORDER[i - 1]!] }
 export const stageName = (id: StageId) => ST[id].name
-/** 상점을 끝까지 올리는 데 드는 금 */
-export const shopTotal = () => SHOP.reduce((sum, it) => { for (let lv = 0; lv < shopMax(it.key); lv++) sum += shopCost(it.key, lv); return sum }, 0)
+/** 상점을 끝까지 올리는 데 드는 금. 추천 문턱은 자석의 예전 상한을 인수로 받는다. */
+export const shopTotal = (magnetCap: number = SH.magnet.max) => SHOP.reduce((sum, it) => { const max = it.key === 'magnet' ? Math.min(magnetCap, shopMax(it.key)) : shopMax(it.key); for (let lv = 0; lv < max; lv++) sum += shopCost(it.key, lv); return sum }, 0)
 /**
  * 벽 앞인가 — 그 스테이지가 「1분 벽」이 있는 판이고(HAEBI_WALL · 목책) 아직 못 깼는데, 거기서 오래 버틴 적도 없고 상점도 얇다.
  * 벽을 넘었다고 보는 때: 그 스테이지에서 WALL.survive 초를 넘겨 버텼거나, 상점에 쓴 금이 전체 값의 WALL.shop[묶음] 몫에 닿았다.
  */
 export const behindWall = (m: RaidMeta, id: Exclude<StageId, 'trial'>, kit: Kit) =>
-  id === WALL.stage && !m.cleared[id] && (m.best[id] ?? 0) <= WALL.survive && m.spent < shopTotal() * WALL.shop[kit]
+  id === WALL.stage && !m.cleared[id] && (m.best[id] ?? 0) <= WALL.survive && m.spent < shopTotal(SH.magnet.recommendationCap) * WALL.shop[kit]
 /**
  * 출전 화면이 골라 두는 스테이지 — 열렸고 아직 못 깬 첫 스테이지(다 깼으면 첫 스테이지). 다만 벽 앞이면 바로 앞 스테이지를 골라 둔다 (각성 v2 가9):
  * 상점이 얇은 손님이 목책에서 곧바로 쓰러져 금 한두 자리를 받는 판을 되풀이하지 않게. 골라 두기만 한다: 손님이 직접 목책을 누르는 것은 막지 않는다.

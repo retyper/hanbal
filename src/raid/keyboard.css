@@ -4,4 +4,5 @@
   .key-hint{display:block;position:absolute;top:4px;right:6px;z-index:2;font:10px/1.2 system-ui,sans-serif;font-style:normal;color:#f2dfb6;background:#111c20dc;border:1px solid #b49b6355;border-radius:3px;padding:1px 3px;pointer-events:none;white-space:nowrap}
   #pause .key-hint{top:2px;right:2px;font-size:9px}
   .result-acts button.key-target:not(.primary){padding-right:36px}
+  #close-shop.key-target{min-width:120px;padding-right:52px}
 }

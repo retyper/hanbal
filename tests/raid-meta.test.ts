@@ -156,9 +156,10 @@ test('출전 화면이 골라 두는 스테이지: 열렸고 아직 못 깬 첫 
 test('목책의 1분 벽: 상점이 얇으면 여울을 골라 두고, 벽을 넘으면 목책을 골라 둔다', async () => {
   const { pickStage, behindWall, shopTotal, shopMax, SHOP } = await import('../src/raid/meta.ts')
   const { HAEBI_WALL: WALL } = await import('../src/tune/params.ts')
-  const total = shopTotal()
-  assert.equal(total, SHOP.reduce((sum, it) => sum + Array.from({ length: shopMax(it.key) }, (_, lv) => shopCost(it.key, lv)).reduce((a, b) => a + b, 0), 0))
-  assert.equal(total, 37335, '상점 값이 바뀌면 HAEBI_WALL 의 근거(쓴 금의 몫)를 다시 잰다')
+  const total = shopTotal(SH.magnet.recommendationCap)
+  assert.equal(shopTotal(), SHOP.reduce((sum, it) => sum + Array.from({ length: shopMax(it.key) }, (_, lv) => shopCost(it.key, lv)).reduce((a, b) => a + b, 0), 0))
+  assert.equal(shopTotal(), 42486, '50-4 새 자석10단까지의 실제 상점 총액')
+  assert.equal(total, 37335, '추천 문턱은 예전 자석5단까지의 강화 가치로 보존')
   const open = () => { const m = loadMeta(); record(m, 'forest', 0, true, 1150); record(m, 'ford', 0, true, 1150); return m }
   for (const kit of ['axe', 'sword', 'spear', 'magic', 'sling', 'bow', 'dagger'] as const) {
     const m = open()
