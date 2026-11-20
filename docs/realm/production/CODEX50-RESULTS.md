@@ -87,6 +87,20 @@
 - JS오류0, favicon404 별도. 실제 장시간 플레이의12/12 도달·일곱 무기 모두의 실플레이·실기기 FPS는 미검증이다. 늦은 조건은 단위 검사와 첫 실제 판의 현재 조건 표시 검수로 구분한다. 최종 QA는 taskoutputs/codex50/phase7/의 actual-tree·box-metrics 및 QA-FINAL-SUMMARY.json, 명세는 CODEX50-TREE.md에 있다.
 - 최종 제품 build raw4,967.0/5,000KB·gzip1,537.2/1,600KB 통과. 실제 /hanbal/ 로컬 HTML·raid JS·해시CSS HTTP200+SHA 일치. 근거 outputs/codex50/phase7-local-bundle.json. 새 이미지 생성0이다.
 
+- 커밋 `37bbd4ba` 즉시 push, CI `44769683961` build·deploy 성공. 운영 `37bbd4ba05`의 HTML·raid JS·해시CSS HTTP200과 단계7 검수 번들 SHA 일치를 확인했다.
+
+## 50-8 · 고를 수 있는 효과음 후보
+
+- SoundBible 공식 게시물의 CC BY3.0 음원18개(평타·치명·쓰러짐·떨어짐·터짐·박힘 각3)를 실제 다운로드·전체 디코드했다. 원본18개5,055,560B, 후보18개7,306,678B/38.552458초다. 저자·제목·원문·CC링크·가공 표시를 D:/에셋창고/sfx-candidates-50/index.html과 manifest에 넣었다. 원본SHA18개·기존 통과 후보15개 SHA를 보존했다. 게임 설치0이다.
+- 최종18/18이 -18±.3 LUFS(range-18.26~-17.94), true peak≤-.1dBTP(range-9.29~-.11)다. 초기15/18의 실패와 두 패스/제한기 교정 이력을 보존했다. 남은3개는 자체-1.5dBTP 상한을 요구와 구분해 고정gain2개/192kHz·짧은release제한기1개를 추가 계약으로 보정했다. 같은 소리 반복·구간 자르기·피치/속도 변경0이다. 세 소스에만 유한 BS.1770 측정용 뒤 무음을 추가했다. 초기 정규화stderr 원문 미보존 한계와 추가교정 전체 명령/측정 로그는 CODEX50-SFX-CANDIDATES.md/json에 공개했다.
+- 원본과 후보의 실제 SHA18+18을 root가 다시 대조했다. HTML의18audio를 native 스크롤/재생 단추로 각각 누르고 duration·readyState≥2·currentTime 증가/종료18/18, JS0·기능 리소스 오류0·가로 넘침0을 확인했다. 페이지 위/마지막 PNG도 직접 봤다. 격리 Chrome GPU의 액세스 거부 선행2회는 도구 실패로 분리했고 승인된 격리 밖 최종 명령만 합격 근거로 사용했다. 재생 가능성 검수이며 음색·게임 적합도·후보 선정은 미청취로 남긴다.
+- Python compile·도구 actual verify·손상 SHA를 넣으면 실패하는 검사 통과. 단계8 별도 typecheck 통과·전체1,677개 중1,675통과/0실패/2skip(107,613ms). Node22.19.0/npm10.9.3 고정판 일치. runtime/src/public 변경0이므로 단계7의 동일 제품 빌드4967.0raw/1537.2gzip와 HTTP/SHA manifest를 재사용하며 로컬 전체 재빌드는 중복하지 않았다. CI는 각 커밋에서 새로 빌드한다.
+- 자료: CODEX50-SFX-CANDIDATES.{md,json}, tools/raid-sfx-candidates.py, tools/raid-sfx-listen-probe.ts, 작업 폴더 taskoutputs/codex50/phase8-native-final/ 및 outputs/codex50/phase8-{root-file-check,typecheck,full-test}.*. 후보는 사용자 선정 뒤에만 적용한다. 새 이미지 생성0이다.
+
+## 최종 전달
+
+50-0~8의 구현/검수 결과는 위에, 단계별 커밋·CI·운영 검증은 D:/에셋창고/CODEX-TO-CLAUDE-LATEST.md에 기록한다. 기존47/48 그림 재발주·영상 작업은 재개하지 않았다. 완료 뒤 새 명령을 기다리며 감시하지 않고 종료한다.
+
 ## 이어갈 순서
 
 50-1 피로 조정 → 50-2 정지 화면 → 50-3 키보드 → 50-4 자석 → 50-5 해적 활쏘기 → 50-6 갈래 카드 → 50-7 기술 나무 → 50-8 효과음 후보. 50-4의 자석 동작은 그 단계에 명시된 변경만 적용하며 50-1의 다른 전투 변경과 섞지 않는다.

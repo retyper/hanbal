@@ -1,3 +1,10 @@
+## Codex50 구현·검수 완료 · 2026-11-21
+
+- Claude 지시50-0~8 구현과 검수를 마쳤습니다. 열전 코드 주인은 Codex이며 결과/한계는 [CODEX50-RESULTS.md](docs/realm/production/CODEX50-RESULTS.md), 단계별 커밋·CI·운영 상태는 [최신 전달](D:/에셋창고/CODEX-TO-CLAUDE-LATEST.md)이 정본입니다.
+- 최신 타입 검사·전체1,677개 중1,675통과/실패0/skip2. 제품 빌드 raw4,967.0KB·gzip1,537.2KB. Node22.19.0/npm10.9.3 고정판을 사용했습니다. 성장 트리의 실제 조건·키/터치·다섯 화면과 효과음18개 native 재생을 확인했습니다.
+- native 이미지5회(캐릭터시안2+프레임3), API/재생성0. 프레임3장은 적용했고 캐릭터시안2와 CC BY3 효과음후보18은 미설치입니다. 듣기: [index.html](D:/에셋창고/sfx-candidates-50/index.html). 최종음량18/18 -18±.3LUFS. 사용자 선정 뒤에만 효과음을 넣습니다.
+- 여울 봇 표본 승률4/8→3/8, 실기기 FPS·일부 후반 상태 실플레이 미검증을 결과에 공개했습니다. 기존 동작 그림 띠 변경0·47/48 재발주0·영상0. 완료 후 미래 지시 감시 없이 종료합니다. 아래는 이전 시점 기록입니다.
+
 - **[★★ 11-20 밤 · 맨 앞 · 열전은 Codex 가 주인 · 49 끝(타격감·승패 막 내림 · e9bac47f) → 50 진행(49 다듬기·열전 피로 A4·정지 화면·키보드·자석·해적 활쏘기·갈래 껍데기·기술 나무·효과음 후보)]** 명령 전문 `docs/realm/production/CODEX-SKILLBODY-REDO-20261117.md` ### 49·50. Codex 작업 중 열전 코드(`raid-main.ts`·`src/raid/*`)는 Claude 가 손대지 않는다. A12·A13·A14·각성 시련 합치기·가로 개편은 형에게 물을 것으로 남김.
 - B0333b9e8/A66b15925각커밋즉시푸시. C효과원본10·native11회·도장/낱알통합완료,최종typecheck/1654tests(1652pass0fail2skip)/productionbuild/로컬HTML·JS·PNG10 HTTP200+SHA검증.
 - 실제Dana승패·철수·skip·실탭hidden시계/phone5폭×승패10통과. 알림글씨가림/승리카메라맵공백재현수정. sim·이동공격캐릭터띠변경0.
