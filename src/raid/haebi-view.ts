@@ -1,6 +1,7 @@
 import { HAEBI_RUN as C, HAEBI_MOBS as M, HAEBI_STAGES as ST, HAEBI_ULT as U, HAEBI_FX as K } from '../tune/params.ts'
 import { genArtOf } from '../realm/data/art.ts'
-import { areaScale, awakenedLook, charge, missileLife, slamRadius, slamWindup, type HaebiRun, type Kit, type Missile, type StageId } from './haebi.ts'
+import { areaScale, awakenedLook, barrageArcher, charge, missileLife, slamRadius, slamWindup, type HaebiRun, type Kit, type Missile, type Mob, type StageId } from './haebi.ts'
+import { fieldView } from './camera.ts'
 import { WALK_CYCLE } from './walk-cycle.ts'
 import { AURA_ART, drawAura, drawAuraBurst, drawAuraGround, type AuraArt, type AuraAt, type AuraKind } from './fx-aura.ts'
 import { HAEBI_IMPACT as FEEL, HAEBI_END as END } from '../tune/params.ts'
@@ -12,6 +13,9 @@ import { HAEBI_FX_ART as FX_ART } from '../tune/params.ts'
 
 /** 돌팔매 묶음의 돌 · 바위 (전용 그림 H56~H58 이 오기 전엔 본편 바위 그림을 빌린다) */
 const ROCK = 'fx/rock.png'
+/** 창돌격꾼은 길 대신 마지막 순간 몸만 움찔·번쩍인다. 판 상태는 쓰지 않는다. */
+export const chargeRecoil = (e: Mob) => e.kind === 'runner' && e.act > 0 && e.act <= FEEL.mobFlash ? 1 - e.act / FEEL.mobFlash : 0
+export const chargeLane = (e: Mob) => e.act > 0 && (e.kind === 'tiger' || e.kind === 'hunter')
 /** bandit-<종류> 가 아닌 적 그림 (11-16 H50~H53 · tools/sprite-kit/bake-raid-enemies.py) */
 const MOB_ART: Record<string, string> = { tiger: 'beast-tiger', bear: 'beast-bear', hunter: 'snow-hunter', torch: 'torch-raider' }
 export const imagePaths = [genArtOf('haebi').file, genArtOf('aw1-haebi').file, 'anim-px/bandit-club.png', 'anim-px/bandit-chief.png', 'anim-px/bandit-archer.png',
@@ -601,7 +605,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   if (aura) drawAuraGround(ctx, aura, auraAt)
   drawOwnZones(ctx, s)
   // 창돌격꾼·범 돌진 · 투창 사냥꾼 겨눔 예고: 겨눈 줄이 점점 진해진다 (투창은 가늘게)
-  for (const e of s.enemies) if (e.act > 0 && (charge(e.kind) || e.kind === 'hunter')) {
+  for (const e of s.enemies) if (chargeLane(e)) {
     const thin = e.kind === 'hunter', k = 1 - e.act / (thin ? M.hunterWind : charge(e.kind)!.wind)
     ctx.save(); ctx.globalAlpha = .25 + .55 * k; ctx.strokeStyle = K.foe.line; ctx.lineWidth = thin ? 3 + 4 * k : 6 + 10 * k; ctx.lineCap = 'round'
     ctx.beginPath(); ctx.moveTo(e.x, e.y); ctx.lineTo(e.aimX, e.aimY); ctx.stroke(); ctx.restore()
@@ -618,6 +622,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   // 위에서 아래로 그린다 (null = 장수) — 판마다 새 배열을 만들지 않는다
   order.length = 0; for (const e of s.enemies) order.push(e); order.push(null)
   order.sort((a, b) => (a ? a.y : s.y) - (b ? b.y : s.y))
+  const archer = s.mode === 'stage' ? barrageArcher(s, cam ? fieldView(cam) : undefined) : undefined
   for (const e of order) {
     if (e) {
       const big = e.kind === 'boss' || e.kind === 'elite', h = mobHeight(e.kind)
@@ -627,7 +632,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       // 무당이 북돋운 적 · 성난 광전사: 발밑 붉은 기운
       if (e.buff > 0 || e.kind === 'berserker' && e.hp < e.max / 2) { ctx.save(); ctx.globalAlpha = .45 + .25 * Math.sin(s.t * 12 + e.id); ctx.fillStyle = '#ff3b2f'; ctx.beginPath(); ctx.ellipse(e.x, e.y + 2, 22, 8, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore() }
       if (target) decal(ctx, images, 'mark-target', e.x, e.y, 100, 45)
-      const recoil = Math.max(0, Math.min(1, e.flash / FEEL.mobFlash)), white = e.flash > FEEL.mobFlash - FEEL.whiteTime
+      const warning = chargeRecoil(e), recoil = Math.max(warning, Math.max(0, Math.min(1, e.flash / FEEL.mobFlash))), white = e.flash > FEEL.mobFlash - FEEL.whiteTime || warning > 1 - FEEL.whiteTime / FEEL.mobFlash
       const steady = e.kind === 'boss' || e.kind === 'iron' || e.kind === 'bear'
       const lag = steady ? 0 : Math.sign(e.x - s.x) * C.knockback * recoil
       const jitter = recoil * FEEL.mobJitter * Math.sin(time * FEEL.mobJitterHz + e.id)
@@ -636,6 +641,12 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       ctx.scale(1 + (FEEL.squashX - 1) * recoil, 1 + (FEEL.squashY - 1) * recoil)
       sprite(ctx, images, warlord(e.kind, s.stage), 0, 0, h, wave >= 0 || white ? 18 : e.wind > 0 ? 13 : archerFrame(s, e) ?? 4 + Math.floor(s.t * 8 + e.id) % 8, s.x < e.x ? -1 : 1, white ? 'white' : e.flash > 0)
       ctx.restore()
+      if (e === archer) {
+        // 적대 공격의 주체: 머리 위 붉은 화살촉. 원형 붉은 고리는 쓰지 않는다.
+        const x = e.x, y = e.y - h - C.barrageMarkLift, w = C.barrageMarkWidth / 2, mh = C.barrageMarkHeight
+        ctx.save(); ctx.fillStyle = K.foe.line; ctx.strokeStyle = '#241513'; ctx.lineWidth = 2
+        ctx.beginPath(); ctx.moveTo(x - w, y - mh); ctx.lineTo(x + w, y - mh); ctx.lineTo(x, y); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore()
+      }
       // 어지럼 돌: 머리 위를 도는 별 둘
       if (e.daze > 0) for (let i = 0; i < 2; i++) { const a = s.t * 7 + i * Math.PI; stamp(ctx, images, 'raid/hit.png', e.x + Math.cos(a) * 14, e.y - h - 4 + Math.sin(a) * 4, 14, a) }
       if (target) decal(ctx, images, 'mark-arrow', e.x, e.y - h - 26 + Math.sin(s.t * 4) * 4, 22, 39)

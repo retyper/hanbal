@@ -1,6 +1,6 @@
 import { breakthroughText, isBreakthrough } from './realm/vanguard.ts'
 import { HAEBI_RUN as C, HAEBI_STICK as STICK, HAEBI_TREE as TREE, HAEBI_ULT as ULT, HAEBI_AWAKEN as AWK, HAEBI_STAGES as ST, HAEBI_ZOOM as ZOOM, HAEBI_SPEED as SPEED } from './tune/params.ts'
-import { createHaebi, runDuration, stepHaebi, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, nodeText, nodeAt, branchName, branchPoints, wakeReady, ultName, ultOpen, BRANCHES, branchNodes, type Kit, type Power, type Pick, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
+import { createHaebi, runDuration, stepHaebi, barrageArcher, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, nodeText, nodeAt, branchName, branchPoints, wakeReady, ultName, ultOpen, BRANCHES, branchNodes, type Kit, type Power, type Pick, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
 import { startRecord, recInput, gridInput, recPick, recReroll, recQuit, withdrawRun, sealInput, finishRecord, STEP, type Recorder } from './raid/runlog.ts'
 import { runFrame, speedOf, nextSpeed, speedLevel } from './raid/speed.ts'
 import { RaidFeel } from './raid/impact.ts'
@@ -10,7 +10,7 @@ import { HAEBI_END as END } from './tune/params.ts'
 import { warmFx } from './raid/fx-art.ts'
 import { putRaidGame, sealLeftovers, unsentRaids, markRaidsSent, type RaidGame, type RaidOpts } from './raid/runlog-store.ts'
 import { pushRaids } from './net/sync.ts'
-import { newCam, followCam, nextLevel, closest, toField, clampCenter } from './raid/camera.ts'
+import { newCam, followCam, nextLevel, closest, toField, fieldView, clampCenter } from './raid/camera.ts'
 import { loadMeta, saveMeta, buy, refund, refundFee, record, shopCost, shopMax, stageOpen, stageName, pickStage, SHOP, STAGE_ORDER, type ShopKey } from './raid/meta.ts'
 import { drawField, imagePaths, setHeroArt, heroArtFiles } from './raid/haebi-view.ts'
 import { powerIcon, installPowerHints, comboIcon, rankMark, treeSvg, treeInfo, BRANCH_COLOR } from './raid/power-ui.ts'
@@ -704,7 +704,7 @@ function frame(now: number) {
       else if (destination) { const dx = destination.x - run.x, dy = destination.y - run.y, len = Math.hypot(dx, dy); if (len < 5) destination = null; else { x = dx / len; y = dy / len } }
       const castBefore = run.cast, dashBefore = run.dashCd, wakesBefore = run.wakes
       // 맡아 둔 누름: 누른 지 STICK.queue 초 안이면 계속 넣는다 (재사용이 그 안에 풀리면 나간다) · 나가면 지운다
-      stepHaebi(run, feed({ x, y, dash: run.t - dashAt <= STICK.queue, skill: run.t - skillAt <= STICK.queue, wake: run.t - wakeAt <= STICK.queue }), STEP)   // 판 기록이 이동을 격자에 맞춰 적고 그 값을 넣는다 (runlog.ts)
+      stepHaebi(run, feed({ x, y, ...(run.mode === 'stage' ? { barrageSource: barrageArcher(run, fieldView(cam))?.id ?? 0 } : {}), dash: run.t - dashAt <= STICK.queue, skill: run.t - skillAt <= STICK.queue, wake: run.t - wakeAt <= STICK.queue }), STEP)   // 판 기록이 이동을 격자에 맞춰 적고 그 값을 넣는다 (runlog.ts)
       feel.observe(run)
       if (run.dashCd > dashBefore) dashAt = -9
       if (run.wakes > wakesBefore) wakeAt = -9

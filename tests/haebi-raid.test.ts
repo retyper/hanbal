@@ -45,7 +45,10 @@ test('real ten-minute route grows into crowd clearing with bounded live objects'
   const minutes: number[] = []; let kills = 0
   const s = replay(7, C.duration, 'storm', r => { minutes.push(r.kills - kills); kills = r.kills; assert.ok(r.enemies.length <= C.maxEnemies + 2); assert.ok(r.shots.length <= C.maxShots); assert.ok(r.fx.length <= C.maxFx); assert.ok(r.drops.length <= C.maxDrops) })
   assert.equal(s.state, 'won'); assert.ok(s.t >= C.bossAt); assert.ok(s.combos.includes('cyclone')); assert.ok(s.kills > 4000)
-  assert.ok(minutes[8]! > minutes[0]! * 5); assert.ok(s.level <= C.maxLevel)
+  // 50-1: 40초 몰아침+18초 숨 고름과 전반 근접팩으로 특정 한 분의 배수는 주기 위상에 따라 바뀐다.
+  // 군중을 쓸어내는 성장 자체는 유지되어야 하므로 세 분 묶음을 비교한다.
+  const early = minutes.slice(0, 3).reduce((a, b) => a + b, 0), late = minutes.slice(12, 15).reduce((a, b) => a + b, 0)
+  assert.ok(late > early * 2, `초반3분 ${early} / 후반3분 ${late} · 분별 ${minutes.join(',')}`); assert.ok(s.level <= C.maxLevel)
 })
 test('drops outside the magnet radius are not collected while standing still, and expire without granting xp', () => {
   const s = createHaebi(); s.spawn = 1e9; s.nextElite = s.nextBarrage = 1e9; s.level = C.maxLevel

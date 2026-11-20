@@ -55,7 +55,36 @@ try {
   const key = async (k: string, code: string, duration = 40) => { await call('Input.dispatchKeyEvent', { type: 'keyDown', key: k, code }); await sleep(duration); await call('Input.dispatchKeyEvent', { type: 'keyUp', key: k, code }) }
   const snap = async (label: string) => { const r = await call('Page.captureScreenshot', { format: 'png' }); const path = join(out, `${mode}-${label}.png`); writeFileSync(path, Buffer.from(r.data, 'base64')); report.shots.push(path) }
   const read = () => ev(`(() => { const r=window.__raid?.(); return {t:r?.t,state:r?.state,form:r?.form,hp:r?.hp,x:r?.x,y:r?.y,kills:r?.kills,enemies:r?.enemies.length,boss:r?.enemies.find(e=>e.kind==='boss'),offers:r?.offers,overlay:!document.querySelector('#overlay')?.hidden,result:!!document.querySelector('#overlay:not([hidden]) .result'),feel:window.__raidFeel?.(),end:window.__raidEnd?.(),visibility:document.visibilityState} })()`)
-  const canvasReport = () => ev(`(() => {const x=window.__raid49Draw;return x?{reads:x.reads,fx:x.fx,sources:x.sources,raw:x.raw,heroFrames:x.heroFrames,hitArt:x.hitArt,raysNextSprite:x.raysNextSprite,firstHit:x.firstHit}:null})()`)
+  const canvasReport = () => ev(`(() => {const x=window.__raid49Draw;return x?{reads:x.reads,fx:x.fx,sources:x.sources,raw:x.raw,heroFrames:x.heroFrames,hitArt:x.hitArt,raysNextSprite:x.raysNextSprite,fieldMatrix:x.fieldMatrix,firstHit:x.firstHit}:null})()`)
+  const installPacing = async (bootstrap: string) => ev(`(async()=>{
+    const H=await import('/src/raid/haebi.ts'),V=await import('/src/raid/haebi-view.ts'),P=await import('/src/tune/params.ts'),C=P.HAEBI_RUN;
+    const stats=window.__raid50={bootstrap:${JSON.stringify(bootstrap)},config:{surge:C.surgeSeconds,respite:C.respiteSeconds,restSpawn:C.respiteSpawn,rangedShare:C.stageRangedShare},cycles:{},phaseTransitions:[],kindBirths:{},earlyRangedBirths:0,runnerWind:0,runnerLocal:0,runnerWhite:0,runnerLaneViolations:0,newBarrageShots:0,deadSourceViolations:0,offscreenBarrageSamples:0,carrierDeaths:0,pendingCancelledOnDeath:0,events:[]};
+    let previous=null,lastT=0,lastPhase='',seen=new Set(),priorSources=new Map();const shots=new WeakSet();
+    const tick=()=>{const r=window.__raid?.();if(r&&r.t>0&&r.state==='playing'&&(r!==previous||r.t!==lastT)){if(r!==previous){previous=r;lastT=r.t;lastPhase='';seen=new Set(${JSON.stringify(bootstrap)}==='actual'?[]:r.enemies.map(e=>e.id));priorSources=new Map()}
+      const rest=H.respite(r),phase=rest?'respite':'surge',cycle=Math.floor(r.t/(C.surgeSeconds+C.respiteSeconds)),c=stats.cycles[cycle]??={surgeTime:0,respiteTime:0,surgeBirths:0,respiteBirths:0};
+      c[rest?'respiteTime':'surgeTime']+=Math.max(0,r.t-lastT);lastT=r.t;
+      if(phase!==lastPhase){if(stats.phaseTransitions.length<12)stats.phaseTransitions.push({t:r.t,phase});lastPhase=phase}
+      for(const e of r.enemies){if(!seen.has(e.id)){seen.add(e.id);c[rest?'respiteBirths':'surgeBirths']++;stats.kindBirths[e.kind]=(stats.kindBirths[e.kind]||0)+1;if(r.t<H.bossTime(r)*3/5&&H.rangedMob(e.kind))stats.earlyRangedBirths++}
+        if(e.kind==='runner'&&e.act>0){stats.runnerWind++;const k=V.chargeRecoil(e);if(k>0)stats.runnerLocal++;if(k>1-P.HAEBI_IMPACT.whiteTime/P.HAEBI_IMPACT.mobFlash)stats.runnerWhite++;if(V.chargeLane(e))stats.runnerLaneViolations++}}
+      const alive=new Map(r.enemies.filter(e=>e.hp>0).map(e=>[e.id,e])),owners=new Map();
+      for(const b of r.shots)if(b.kind==='barrage'){owners.set(b.source,(owners.get(b.source)||0)+1);const e=alive.get(b.source);if(!e)stats.deadSourceViolations++;if(!shots.has(b)){shots.add(b);stats.newBarrageShots++;if(stats.events.length<12)stats.events.push({event:'barrage-born',t:r.t,source:b.source,hp:e?.hp})}
+        const m=window.__raid49Draw?.fieldMatrix;if(e&&m){const x=m[0]*e.x+m[4],y=m[3]*e.y+m[5];if(x<-.5||x>C.width+.5||y<-.5||y>C.height+.5)stats.offscreenBarrageSamples++}}
+      for(const [id,n]of priorSources)if(!alive.has(id)){stats.carrierDeaths++;if(!owners.has(id))stats.pendingCancelledOnDeath++;if(stats.events.length<12)stats.events.push({event:'carrier-died',t:r.t,source:id,pendingBefore:n,pendingAfter:owners.get(id)||0})}priorSources=owners;
+    }requestAnimationFrame(tick)};requestAnimationFrame(tick);return stats.config;
+  })()`)
+  const drive = async (goal: number, wallLimit = 120000, powers = true) => {
+    const held=new Set<string>(),stop=Date.now()+wallLimit
+    while(Date.now()<stop){const r=await read();if(r.state!=='playing'||r.t>=goal)break
+      const next=await ev(`(async()=>{const r=window.__raid(),B=await import('/src/raid/haebi-replay.ts');return {input:B.botInput(r),pick:r.offers.length?B.botChoice(r,'storm'):null}})()`)
+      if(next.pick){await click('#overlay [data-up="'+next.pick+'"]');continue}
+      const i=next.input,want=new Set<string>();if(i.x<-.2)want.add('ArrowLeft');else if(i.x>.2)want.add('ArrowRight');if(i.y<-.2)want.add('ArrowUp');else if(i.y>.2)want.add('ArrowDown')
+      for(const k of held)if(!want.has(k)){await call('Input.dispatchKeyEvent',{type:'keyUp',key:k,code:k});held.delete(k)}
+      for(const k of want)if(!held.has(k)){await call('Input.dispatchKeyEvent',{type:'keyDown',key:k,code:k});held.add(k)}
+      if(powers){if(i.skill)await key(' ','Space');if(i.dash)await key('Shift','ShiftLeft');if(i.wake)await key('e','KeyE')}await sleep(75)
+    }
+    for(const k of held)await call('Input.dispatchKeyEvent',{type:'keyUp',key:k,code:k})
+    return read()
+  }
   const exerciseEnding = async () => {
     const first = await read()
     check(first.end?.active && !first.result, '종결 첫 화면에서 끝 연출 진행·결과 창 숨김', first.end)
@@ -97,13 +126,14 @@ try {
   }
   await call('Page.enable'); await call('Runtime.enable'); await call('Log.enable')
   if (process.env['OBSERVE_CANVAS'] === '1') await call('Page.addScriptToEvaluateOnNewDocument', { source: String.raw`(() => {
-    const labels=new WeakMap(), anonymous=new WeakMap();let serial=0;const state=window.__raid49Draw={reads:0,fx:{},sources:{},raw:{},heroFrames:{},hitArt:{},raysPending:false,raysNextSprite:{count:0},firstHit:null,startReads:0,lastHp:null};
+    const labels=new WeakMap(), anonymous=new WeakMap();let serial=0;const state=window.__raid49Draw={reads:0,fx:{},sources:{},raw:{},heroFrames:{},hitArt:{},raysPending:false,raysNextSprite:{count:0},fieldMatrix:null,firstHit:null,startReads:0,lastHp:null};
     const proto=CanvasRenderingContext2D.prototype, draw=proto.drawImage, read=proto.getImageData;
     proto.getImageData=function(...args){state.reads++;return read.apply(this,args)};
     proto.drawImage=function(source,...args){const result=draw.call(this,source,...args);let key=typeof source?.src==='string'?new URL(source.src,location.href).pathname:labels.get(source);
       if(typeof source?.src==='string' && /raid\/fx\//.test(key))state.sources[key]={complete:source.complete,naturalWidth:source.naturalWidth,naturalHeight:source.naturalHeight};
       if(key && this.canvas.id!=='field' && /raid\/fx\/|anim-px\//.test(key))labels.set(this.canvas,key);
       if(!key&&source instanceof ImageBitmap){if(!anonymous.has(source))anonymous.set(source,'bitmap:'+(++serial)+':'+source.width+'x'+source.height);key=anonymous.get(source);}
+      if(this.canvas.id==='field'&&args.length===2&&source.width===1120&&source.height===720){const m=this.getTransform();state.fieldMatrix=[m.a,m.b,m.c,m.d,m.e,m.f]}
       if(key && this.canvas.id==='field'){
         state.raw[key]=(state.raw[key]||0)+1;
         if(key.endsWith('fx_victory_rays.png'))state.raysPending=true;else if(state.raysPending&&args.length===8){state.raysPending=false;state.raysNextSprite={count:state.raysNextSprite.count+1,key,args};}
@@ -116,14 +146,49 @@ try {
   await call('Emulation.setFocusEmulationEnabled', { enabled: true })
   await size(844, 390)
   const q = new URLSearchParams({ kit: process.env['KIT'] ?? 'bow', sprite: process.env['HERO_SPRITE'] ?? 'base-w-102-garak-dana', hero: process.env['HERO_ID'] ?? 'w-102-garak-dana', name: process.env['HERO_NAME'] ?? '다나', bust: process.env['HERO_BUST'] ?? 'w-102-garak-dana' })
-  if (mode === 'review') { q.set('review', ''); q.set('stage', process.env['STAGE'] ?? 'forest') }
+  if (mode === 'review'||mode==='pacing-review') { q.set('review', ''); q.set('stage', process.env['STAGE'] ?? 'forest') }
   report.url = `${origin}/raid.html?${q}`
   await call('Page.navigate', { url: report.url })
   await waitFor(`document.querySelector('#start')?.disabled === false`, 45000)
   check(report.errors.length === 0, '첫 로드 console/exception 오류 0', report.errors)
   check((await read()).visibility === 'visible', '탭 visible')
   if (process.env['OBSERVE_CANVAS'] === '1') { report.canvasBoot = await canvasReport(); report.fxBoot=report.canvasBoot?.sources; check(Object.keys(report.fxBoot??{}).length===10&&Object.values(report.fxBoot??{}).every((x:any)=>x.complete&&x.naturalWidth>0),'실제 warmFx 공유 이미지 10개 로드·native 크기 양수',report.fxBoot) }
-  if (mode === 'hit-start') {
+  if(mode==='pacing-actual'){
+    report.evidence='정상 출전 버튼과 실제 CDP 키/성장 카드 입력. replay/state 주입 없음.';report.config=await installPacing('actual')
+    await click('#start');const first=await read();report.actualStart=first;await key('ArrowRight','ArrowRight',350);const moved=await read();check(moved.x>first.x+10,'실제 키보드 이동',{before:first.x,after:moved.x});await key('x','KeyX');await key('x','KeyX')
+    report.actualEnd=await drive(70);report.pacing=await ev('window.__raid50')
+    check(report.actualEnd.kills>0,'정상 출전 실제 공격으로 격파',report.actualEnd.kills);check(report.config.surge===40&&report.config.respite===18,'몰아침40초·숨고름18초 설정',report.config)
+    const c=report.pacing.cycles[0];check(c?.surgeTime>39&&c?.respiteTime>17,'첫 몰아침·숨고름 전 구간 실제 관측',c)
+    if(c?.surgeTime&&c?.respiteTime)check(c.respiteBirths/c.respiteTime<c.surgeBirths/c.surgeTime,'숨고름의 관측 새 적 등장률이 몰아침보다 낮음',c)
+    check(report.pacing.earlyRangedBirths===0,'관측 전반 구간 원거리 새 적0',report.pacing.kindBirths)
+    if(report.actualEnd.state==='playing')for(const [w,h]of [[800,360],[812,375],[844,390],[915,412],[667,375]]){
+      await size(w!,h!);await drive((await read()).t+.7,15000);const scene=await read()
+      const controls=await ev(`[...document.querySelectorAll('#speed,#zoom,#fullscreen,#pause,#dash,#skill,#wake')].filter(e=>e.getBoundingClientRect().width).map(e=>{const b=e.getBoundingClientRect(),top=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2);return{id:e.id,inside:b.x>=-1&&b.right<=innerWidth+1&&b.y>=-1&&b.bottom<=innerHeight+1,uncovered:e===top||e.contains(top)}})`)
+      check(scene.state==='playing'&&!scene.overlay&&controls.every((e:any)=>e.inside&&e.uncovered),w+'×'+h+' 실제 전투·조작 버튼 노출',{scene,controls});await snap('combat-'+w+'x'+h)
+    }
+    if(report.actualEnd.state==='playing')for(const [w,h]of [[360,800],[375,812],[390,844],[412,915]]){await size(w!,h!);const a=await read();await sleep(250);const b=await read();const guide=await ev(`!document.querySelector('#rotate-guide').hidden&&!!document.elementFromPoint(innerWidth/2,innerHeight/2)?.closest('#rotate-guide')`);check(guide&&a.t===b.t,w+'×'+h+' 세로는 실제 회전 안내·전투 정지',{guide,before:a.t,after:b.t});await snap('portrait-guide-'+w+'x'+h)}
+  } else if(mode==='pacing-review'){
+    const scene=process.env['PACER_SCENE']??'runner',until=scene==='runner'?'300':'780'
+    report.evidence='기존 공식 review '+until+'초 일반 입력 재생 후 실제 UI 계속/키 입력 보조검수. 정상 출전 증거와 별도.'
+    await waitFor(`!!document.querySelector('.review-tools [data-until="${until}"]')`);await click(`.review-tools [data-until="${until}"]`)
+    await waitFor(`!document.querySelector('.review-tools [data-until="${until}"]').disabled&&document.querySelector('.review-tools output').textContent.includes(' · ')`,120000)
+    report.bootstrap=await read();report.bootstrapLabel=await ev(`document.querySelector('.review-tools output').textContent`)
+    if(report.bootstrap.state==='playing'){
+      await click('.review-tools button:last-child');report.config=await installPacing('official-review-'+until);if(await ev(`!!document.querySelector('#resume')`))await click('#resume');await call('Input.dispatchMouseEvent',{type:'mouseMoved',x:1,y:1})
+      if(scene==='runner'){
+        report.runnerSnapshot=await ev(`new Promise(resolve=>{const stop=performance.now()+10000;const tick=()=>{const r=window.__raid(),e=r.enemies.find(e=>e.kind==='runner'&&e.act>0&&e.act<=.10);if(e&&!r.offers.length)return resolve({seen:true,t:r.t,enemy:{...e}});if(r.state!=='playing'||performance.now()>stop||r.offers.length)return resolve({seen:false,t:r.t,state:r.state,offers:r.offers});requestAnimationFrame(tick)};tick()})`)
+        if(report.runnerSnapshot.seen){await snap('runner-warning');await sleep(250)}else report.unobserved=['runner 최종 움찔·흰 번쩍 실프레임']
+        report.pacing=await ev('window.__raid50');check(report.pacing.runnerLaneViolations===0,'관측 runner 경고에서 빨간 길 생성 판정0',report.pacing)
+      }else{
+        const threat=()=>ev(`(()=>{const r=window.__raid(),m=window.__raid49Draw?.fieldMatrix;return{t:r.t,state:r.state,hp:r.hp,x:r.x,y:r.y,matrix:m,archers:r.enemies.filter(e=>e.kind==='archer').map(e=>({id:e.id,x:e.x,y:e.y,hp:e.hp})),barrage:r.shots.filter(b=>b.kind==='barrage').map(b=>({source:b.source,x:b.x,y:b.y,life:b.life}))}})()`)
+        const stop=Date.now()+24000;let current=await threat()
+        while(Date.now()<stop&&current.state==='playing'&&!current.barrage.length){await drive(current.t+.35,2000,false);current=await threat()}
+        report.barrageSnapshot=current
+        if(current.barrage.length){await call('Input.dispatchMouseEvent',{type:'mouseMoved',x:1,y:1});await snap('barrage-with-source');const id=current.barrage[0].source,target=current.archers.find((e:any)=>e.id===id);if(target){if(Math.abs(target.x-current.x)>20)await key(target.x<current.x?'ArrowLeft':'ArrowRight',target.x<current.x?'ArrowLeft':'ArrowRight',350);if(Math.abs(target.y-current.y)>20)await key(target.y<current.y?'ArrowUp':'ArrowDown',target.y<current.y?'ArrowUp':'ArrowDown',350);await key(' ','Space');await drive((await read()).t+5,10000);report.afterAttack=await threat();report.targetId=id;report.targetKilled=!report.afterAttack.archers.some((e:any)=>e.id===id&&e.hp>0);report.sameOwnerPendingAfter=report.afterAttack.barrage.filter((b:any)=>b.source===id).length;if(report.targetKilled){await snap('barrage-owner-dead');check(report.sameOwnerPendingAfter===0,'실제 공격 뒤 사라진 발사자 소속 화살비0',{id,pending:report.sameOwnerPendingAfter})}else report.unobserved=['발사자 실제 처치/즉시 중단 전이']}}else report.unobserved=['살아 있는 화면 안 궁수의 실제 화살비/붉은 표식','발사자 실제 처치 전이']
+        report.pacing=await ev('window.__raid50');check(report.pacing.deadSourceViolations===0,'관측 화살비의 죽은/없는 발사자0',report.pacing)
+      }
+    }else report.unobserved=['공식 review가 종결 상태로 끝나 라이브 표적 관측 불가']
+  } else if (mode === 'hit-start') {
     report.evidence='정상 출전 버튼→빠르기 키/성장 카드 UI 선택→idle 실제 HP 0 패배. replay/state 직접 주입 없음.'
     await click('#start');await sleep(200)
     await ev(`if(window.__raid49Draw){window.__raid49Draw.startReads=window.__raid49Draw.reads;window.__raid49Draw.lastHp=window.__raid().hp;window.__raid49Draw.firstHit=null}`)

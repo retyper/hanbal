@@ -158,6 +158,9 @@ export const HAEBI_RUN = {
   barrageAt: 40, barrageEvery: 9, barrageEveryLate: 4.5, barrageDelay: 1.25, barrageRadius: 58, barrageDamage: 22, barrageTimeScale: .0018, barrageExtra: 3, threatTimeScale: .0015, shotTimeScale: 0, archerShare: .08, archerTimeShare: 0, archerCooldown: 3, archerRange: 370,
   bossDamage: 30, bossWindup: 1.15, bossRadius: 95, bossCooldown: 2.5,
   spawnEarly: 1.5, spawnMid: 5, spawnLate: 13, spawnFeast: 23,
+  /** 50-1 일반 열전만: 몰아침 → 잔병이 적은 숨 고름. 기존 적은 없애지 않는다. */
+  surgeSeconds: 40, respiteSeconds: 18, respiteSpawn: .18, stageRangedShare: .08,
+  barrageMarkWidth: 20, barrageMarkHeight: 18, barrageMarkLift: 8,
   /** 떨어진 기세: dropLife 초 뒤 사라짐(마지막 1초 옅어짐) · dropMagnet 둘레 안만 날아옴 (11-17 · 예전엔 반쯤 지나면 어디서든 날아와 가운데 서 있어도 다 먹혔다) */
   dropLife: 30, dropSpeed: 390, dropMagnet: 210, knockback: 14,
   // ── 무기 묶음 (11-15 각성 시련을 모든 장수로 · 도끼=해비 위 수치 그대로) ──
@@ -381,17 +384,17 @@ export const HAEBI_AWAKEN = {
  */
 export const HAEBI_STAGES = {
   forest: { name: '숲 산길', length: 1, hp: 1, damage: .9, spawn: 1, bossHp: 1, gold: 1, bg: 'forest.webp', boss: 'bandit-warlord', bossName: '산적 대두목', eliteName: '정예 산적',
-    tiers: [['club', 'archer'], ['runner', 'slinger'], ['shield', 'dog'], ['berserker', 'firearcher'], ['iron', 'shaman']] },
+    tiers: [['club', 'dog'], ['runner', 'dog'], ['shield', 'berserker'], ['berserker', 'archer'], ['iron', 'firearcher']] },
   ford: { name: '물안개 여울', length: 1, hp: 1.7, damage: 1.8, spawn: 1.3, bossHp: 1.8, gold: 2, bg: 'ford.webp', boss: 'boss-ford', bossName: '여울 물두령', eliteName: '정예 여울 도적',
-    tiers: [['dog', 'slinger'], ['runner', 'firearcher'], ['shield', 'archer'], ['berserker', 'shaman'], ['iron', 'dog']] },
+    tiers: [['dog', 'runner'], ['runner', 'dog'], ['shield', 'berserker'], ['berserker', 'archer'], ['iron', 'dog']] },
   palisade: { name: '목책 돌파', length: 1, hp: 2.2, damage: 2.2, spawn: 1.4, bossHp: 2.8, gold: 3.2, bg: 'palisade.webp', boss: 'boss-palisade', bossName: '배신한 성주', eliteName: '정예 수비병',
-    tiers: [['shield', 'archer'], ['iron', 'slinger'], ['berserker', 'firearcher'], ['runner', 'shaman'], ['iron', 'berserker']] },
+    tiers: [['shield', 'runner'], ['iron', 'dog'], ['berserker', 'shield'], ['runner', 'firearcher'], ['iron', 'archer']] },
   /** 11-16 H47·H50~H52: 설원 고개 — 범(멈칫 뒤 길게 덮침) · 반달곰(일어서서 내려침 · 아주 단단함) · 맥족 투창 사냥꾼(붉은 줄 뒤 창) · 두목 H54 설산 우두머리(쇠도리깨) */
   snow: { name: '설원 고개', length: 1, hp: 2.4, damage: 2.3, spawn: 1.45, bossHp: 3.6, gold: 4.5, bg: 'snow.webp', boss: 'boss-snow', bossName: '설산 우두머리', eliteName: '정예 설산 도적',
-    tiers: [['dog', 'hunter'], ['runner', 'tiger'], ['bear', 'hunter'], ['berserker', 'tiger'], ['tiger', 'bear']] },
+    tiers: [['dog', 'tiger'], ['runner', 'tiger'], ['bear', 'dog'], ['berserker', 'hunter'], ['tiger', 'archer']] },
   /** 11-16 H48·H53: 불타는 산성 — 횃불 방화꾼(지나간 자리에 불바닥 · 기름 단지) · 두목 H55 불의 반란 장군(달군 망치) */
   fortress: { name: '불타는 산성', length: 1, hp: 3.2, damage: 3, spawn: 1.6, bossHp: 4.6, gold: 6.5, bg: 'fortress.webp', boss: 'boss-fortress', bossName: '불의 반란 장군', eliteName: '정예 반란군',
-    tiers: [['shield', 'torch'], ['berserker', 'firearcher'], ['iron', 'torch'], ['runner', 'shaman'], ['iron', 'torch']] },
+    tiers: [['shield', 'runner'], ['berserker', 'dog'], ['iron', 'berserker'], ['runner', 'torch'], ['iron', 'archer']] },
   trial: { name: '각성 시련', length: .4, hp: 1, damage: 1, spawn: 1, bossHp: .3, gold: 0, bg: 'forest.webp', boss: 'bandit-warlord', bossName: '산적 대두목', eliteName: '정예 산적',
     tiers: [['club', 'archer'], ['runner', 'slinger'], ['shield', 'dog'], ['berserker', 'firearcher'], ['iron', 'shaman']] },
 } as const

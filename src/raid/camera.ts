@@ -36,3 +36,5 @@ export function followCam(cam: Cam, hx: number, hy: number, dt: number, snap = f
 
 /** 캔버스 좌표(판 크기 px) → 판 좌표 · 마우스로 누른 곳으로 걷기가 확대 중에도 맞게 */
 export const toField = (cam: Cam, px: number, py: number) => ({ x: cam.x + (px - C.width / 2) / cam.zoom, y: cam.y + (py - C.height / 2) / cam.zoom })
+/** 그리는 변환과 같은 실제 시야. sim에는 화면 대신 선택한 발사자 ID만 입력한다. */
+export const fieldView = (cam: { x: number; y: number; zoom: number }) => ({ left: cam.x - C.width / (2 * cam.zoom), right: cam.x + C.width / (2 * cam.zoom), top: cam.y - C.height / (2 * cam.zoom), bottom: cam.y + C.height / (2 * cam.zoom) })

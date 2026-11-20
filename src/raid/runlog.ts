@@ -17,28 +17,28 @@ export interface Recorder {
   readonly run: HaebiRun
   parts: string[]
   /** 지금 입력으로 걸은 걸음 수 · 지금 입력(격자 정수 · 누름 비트) */
-  n: number; x: number; y: number; f: number
+  n: number; x: number; y: number; f: number; source: number
   quit: boolean
 }
 
 export function startRecord(run: HaebiRun, g: Omit<RaidGame, 'v' | 'grid' | 'input' | 'picks' | 'steps' | 'end'>): Recorder {
-  return { g: { v: 1, ...g, grid: LG.grid, input: '', picks: [], steps: 0, end: null }, run, parts: [], n: 0, x: 0, y: 0, f: 0, quit: false }
+  return { g: { v: 1, ...g, grid: LG.grid, input: '', picks: [], steps: 0, end: null }, run, parts: [], n: 0, x: 0, y: 0, f: 0, source: -1, quit: false }
 }
 
 const b36 = (n: number) => n.toString(36)
 /** 격자에 맞춘 정수 (-0 은 0 으로 — atan2 가 둘을 다르게 본다) */
 const cell = (v: number, grid: number) => Math.round(v * grid) || 0
-const inputOf = (x: number, y: number, f: number, grid: number): RunInput => ({ x: x / grid, y: y / grid, dash: (f & 1) !== 0, skill: (f & 2) !== 0, wake: (f & 4) !== 0 })
+const inputOf = (x: number, y: number, f: number, grid: number, source = -1): RunInput => ({ x: x / grid, y: y / grid, dash: (f & 1) !== 0, skill: (f & 2) !== 0, wake: (f & 4) !== 0, ...(source >= 0 ? { barrageSource: source } : {}) })
 
 /** 한 걸음의 입력을 적고, 판에 넣을 입력(격자에 맞춘 값)을 돌려준다 */
 export function recInput(r: Recorder, i: RunInput): RunInput {
-  const q = r.g.grid, x = cell(i.x, q), y = cell(i.y, q), f = (i.dash ? 1 : 0) | (i.skill ? 2 : 0) | (i.wake ? 4 : 0)
-  if (x !== r.x || y !== r.y || f !== r.f) { r.parts.push(`${b36(r.n)},${b36(x)},${b36(y)},${f}`); r.n = 0; r.x = x; r.y = y; r.f = f }
+  const q = r.g.grid, x = cell(i.x, q), y = cell(i.y, q), f = (i.dash ? 1 : 0) | (i.skill ? 2 : 0) | (i.wake ? 4 : 0), source = i.barrageSource ?? -1
+  if (x !== r.x || y !== r.y || f !== r.f || source !== r.source) { r.parts.push(`${b36(r.n)},${b36(x)},${b36(y)},${f}${source >= 0 ? `,${b36(source)}` : ''}`); r.n = 0; r.x = x; r.y = y; r.f = f; r.source = source }
   r.n++; r.g.steps++
-  return inputOf(x, y, f, q)
+  return inputOf(x, y, f, q, source)
 }
 /** 기록 없이 판에 넣을 때도 같은 격자로 (개발 검수 재생 등 · 손맛이 기록 있을 때와 같게) */
-export const gridInput = (i: RunInput): RunInput => { const q = LG.grid; return inputOf(cell(i.x, q), cell(i.y, q), (i.dash ? 1 : 0) | (i.skill ? 2 : 0) | (i.wake ? 4 : 0), q) }
+export const gridInput = (i: RunInput): RunInput => { const q = LG.grid; return inputOf(cell(i.x, q), cell(i.y, q), (i.dash ? 1 : 0) | (i.skill ? 2 : 0) | (i.wake ? 4 : 0), q, i.barrageSource ?? -1) }
 export function recPick(r: Recorder, pick: Pick) { r.parts.push(`${b36(r.n)}=${pick}`); r.n = 0; r.g.picks.push(pick) }
 export function recReroll(r: Recorder) { r.parts.push(`${b36(r.n)}!`); r.n = 0 }
 export function recQuit(r: Recorder) { r.parts.push(`${b36(r.n)}.`); r.n = 0; r.quit = true }
@@ -75,7 +75,7 @@ export function replayRaid(g: RaidGame): HaebiRun {
     const m = /^([0-9a-z]+)(.*)$/.exec(tok); if (!m) continue
     for (let i = parseInt(m[1]!, 36); i > 0; i--) stepHaebi(s, inp, STEP)
     const rest = m[2]!
-    if (rest.startsWith(',')) { const [x, y, f] = rest.slice(1).split(','); inp = inputOf(parseInt(x!, 36), parseInt(y!, 36), Number(f), g.grid) }
+    if (rest.startsWith(',')) { const [x, y, f, source] = rest.slice(1).split(','); inp = inputOf(parseInt(x!, 36), parseInt(y!, 36), Number(f), g.grid, source === undefined ? -1 : parseInt(source, 36)) }
     else if (rest.startsWith('=')) choose(s, rest.slice(1) as Pick)
     else if (rest === '!') reroll(s)
     else if (rest === '.') withdrawRun(s)

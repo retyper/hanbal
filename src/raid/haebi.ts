@@ -133,7 +133,7 @@ export type Bonus = Record<Exclude<keyof typeof SH, 'growth'>, number>
 export const NO_BONUS: Bonus = { might: 0, vigor: 0, armor: 0, regen: 0, haste: 0, swift: 0, magnet: 0, wisdom: 0, revive: 0, reroll: 0, greed: 0, luck: 0 }
 /** daze: 어지럼 돌에 맞아 멈춘 남은 시간 · act: 창돌격꾼·범 예고(+)·돌진(−) 시간 · 투창 사냥꾼 겨눔(+) · 방화꾼 다음 불바닥까지 · vx·vy: 돌진·던질 방향 · buff: 무당이 북돋운 남은 시간 */
 export interface Mob { id: number; x: number; y: number; hp: number; max: number; kind: MobKind; cd: number; flash: number; wind: number; aimX: number; aimY: number; act: number; vx: number; vy: number; buff: number; poison: number; pdps: number; daze: number }
-export interface Missile { x: number; y: number; vx: number; vy: number; life: number; kind: 'gale' | 'ember' | 'shard' | 'enemy' | 'arrow' | 'rain' | 'javelin' | 'wave' | 'barrage' | 'stone' | 'flame' | 'knife' | 'soul' | 'hurl' | 'pebble' | 'skip' | 'boulder'; damage: number; radius: number; hit: number[]; angle: number; tx: number; ty: number; gen?: number }
+export interface Missile { x: number; y: number; vx: number; vy: number; life: number; kind: 'gale' | 'ember' | 'shard' | 'enemy' | 'arrow' | 'rain' | 'javelin' | 'wave' | 'barrage' | 'stone' | 'flame' | 'knife' | 'soul' | 'hurl' | 'pebble' | 'skip' | 'boulder'; damage: number; radius: number; hit: number[]; angle: number; tx: number; ty: number; gen?: number; source?: number }
 export interface Effect { x: number; y: number; x2: number; y2: number; r: number; angle: number; life: number; total: number; kind: 'hit' | 'slash' | 'blast' | 'bolt' | 'skill' | 'ult' | 'death' | 'spike' | 'thrust' | 'buff' | 'ring' | 'thud'; color: string; mob?: Mob['kind']; face?: number; n?: number; crit?: boolean; ult?: Kit; tru?: boolean }
 /** 이어지는 비기(용오름 창의 솟음 · 그림자 베기의 순간 이동 · 돌벼락의 물결) — 남은 수 n · 다음까지 t 초 · 처음 자리 · 이미 벤 적 · k 힘 몫(되받아치기는 작게) */
 export interface UltState { n: number; t: number; x: number; y: number; used: number[]; k: number }
@@ -156,7 +156,7 @@ export interface HaebiRun {
   spawn: number; nextElite: number; nextBarrage: number; boss: boolean; next: number; kills: number; damage: number;
   state: 'playing' | 'won' | 'lost'; message: string; messageTime: number; comboKills: number; streakTime: number;
 }
-export interface RunInput { x: number; y: number; dash?: boolean; skill?: boolean; wake?: boolean }
+export interface RunInput { x: number; y: number; dash?: boolean; skill?: boolean; wake?: boolean; /** 실제 카메라 안 발사자 ID, 0=없음. 생략한 봇·옛 기록은 전체 판. */ barrageSource?: number }
 export interface CastState { kind: 'ult' | 'wake'; t: number; total: number; tru: boolean }
 export function random(s: HaebiRun) { const rng = makeRng(s.seed); const n = rng.next(); s.seed = rng.state(); return n }
 /**
@@ -191,6 +191,13 @@ export const bossTime = (s: HaebiRun) => C.bossAt * ST[s.stage].length
 export const trialWinValid = (elapsed: unknown) => typeof elapsed === 'number' && Number.isFinite(elapsed) && elapsed >= C.bossAt * ST.trial.length && elapsed <= C.duration * ST.trial.length + 1
 /** 지금 토막(0~4) — 토막마다 나오는 적이 바뀐다 */
 export const tierOf = (s: HaebiRun) => Math.min(4, Math.floor(s.t / bossTime(s) * 5))
+/** 50-1 일반 스테이지만 밀도가 오르내린다. 선택·정지 중엔 판 시계와 함께 멈춘다. */
+export const respite = (s: HaebiRun) => s.mode === 'stage' && s.t % (C.surgeSeconds + C.respiteSeconds) >= C.surgeSeconds
+export const rangedMob = (kind: MobKind) => ['archer', 'slinger', 'firearcher', 'hunter', 'torch', 'shaman'].includes(kind)
+/** 발(판 좌표)이 실제 화면 안에 있는 살아 있는 궁수. 카메라를 읽는 쪽에서 범위를 넘긴다. */
+export function barrageArcher(s: HaebiRun, view: { left: number; top: number; right: number; bottom: number } = { left: 0, top: 0, right: C.width, bottom: C.height }) {
+  return s.enemies.find(e => e.kind === 'archer' && e.hp > 0 && e.x >= view.left && e.x <= view.right && e.y >= view.top && e.y <= view.bottom)
+}
 /** 판이 끝나고 받는 금 (형 11-16: 「중간 패배는 적게, 다 깨면 클리어로 더 많이」) · 시련·선봉은 없음 */
 export function runGold(s: HaebiRun) {
   if (s.mode !== 'stage') return 0
@@ -377,7 +384,7 @@ const mobHp = (s: HaebiRun) => C.mobHp * (1 + s.t * C.hpTimeScale + (s.t / 60) *
 export function spawnMob(s: HaebiRun, kind?: Mob['kind']) {
   const side = Math.floor(random(s) * 4), p = random(s)
   if (s.mode === 'vanguard') kind ??= random(s) < C.archerShare + s.t * C.archerTimeShare ? 'archer' : 'club'
-  else if (!kind) { const [a, b] = ST[s.stage].tiers[tierOf(s)]!; kind = random(s) < M[b].share ? b : a }
+  else if (!kind) { const [a, b] = ST[s.stage].tiers[tierOf(s)]!; const share = s.mode === 'stage' && rangedMob(b) ? Math.min(M[b].share, C.stageRangedShare) : M[b].share; kind = random(s) < share ? b : a }
   const hp = kind === 'boss' ? (s.mode === 'vanguard' ? V.captainHp[Math.min(2, s.captains)]! : C.bossHp * ST[s.stage].bossHp) : kind === 'elite' ? C.eliteHp * (1 + s.t / runDuration(s)) * ST[s.stage].hp : s.mode === 'vanguard' ? V.mobHp : mobHp(s) * M[kind].hp
   // 산들개는 한쪽에서 떼로 몰려온다
   const pack = kind === 'dog' ? M.dogPack : 1
@@ -786,18 +793,22 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
   aura(s, power, area)
   s.spawn -= dt
   const rate = s.mode === 'vanguard' ? V.spawnEarly + (V.spawnLate - V.spawnEarly) * s.t / V.duration : paced(s) < 120 ? C.spawnEarly + paced(s) / 70 : paced(s) < 300 ? C.spawnMid + (paced(s) - 120) / 45 : paced(s) < 480 ? C.spawnLate + (paced(s) - 300) / 35 : C.spawnFeast
-  if (s.spawn <= 0) { if (s.enemies.length < C.maxEnemies) spawnMob(s); s.spawn = 1 / (rate * ST[s.stage].spawn) }
+  if (s.spawn <= 0) { if (s.enemies.length < C.maxEnemies) spawnMob(s); s.spawn = 1 / (rate * ST[s.stage].spawn * (respite(s) ? C.respiteSpawn : 1)) }
   if (s.mode !== 'vanguard' && s.t >= s.nextElite && s.nextElite < bossTime(s)) { spawnMob(s, 'elite'); s.nextElite += C.eliteEvery * ST[s.stage].length; announce(s, `${ST[s.stage].eliteName} · 쓰러뜨리면 기세 대량 획득`) }
   if (s.mode !== 'vanguard' && !s.boss && s.t >= bossTime(s)) { spawnMob(s, 'boss'); s.boss = true; announce(s, '마지막 두목 · 완성한 힘을 쏟아부어라') }
   if (s.mode === 'vanguard' && s.captains < 3 && s.breaches === s.captains && s.t >= V.captainAt[s.captains]!) {
     spawnMob(s, 'boss'); s.captains++
     announce(s, `제${s.captains} 전위대장 출현 · 금빛 표적을 향해 돌파하라`)
   }
-  if (s.mode !== 'vanguard' && s.t >= s.nextBarrage) {
+  const source = s.mode === 'stage' ? input.barrageSource === undefined ? barrageArcher(s) : s.enemies.find(e => e.id === input.barrageSource && e.kind === 'archer' && e.hp > 0 && e.x >= 0 && e.x <= C.width && e.y >= 0 && e.y <= C.height) : undefined
+  // 발사자가 안 보이는 동안 밀린 사격을 쌓아 두지 않는다.
+  if (s.mode === 'stage' && !source) s.nextBarrage = Math.max(s.nextBarrage, s.t)
+  if (s.mode !== 'vanguard' && (s.mode !== 'stage' || source) && s.t >= s.nextBarrage) {
     // 산적 일제 사격: 서 있는 자리에 붉은 고리가 먼저 뜨고 잠시 뒤 떨어진다 — 움직이면 안 맞고, 서 있으면 다 맞는다 (형 11-15: 가만히 있어도 깬다)
     const k = Math.min(1, s.t / bossTime(s)), damage = C.barrageDamage * (1 + s.t * C.barrageTimeScale)
-    shoot(s, 'barrage', 0, damage, s.x, s.y)
-    for (let i = 0; i < Math.floor(k * C.barrageExtra + .5); i++) { const a = random(s) * Math.PI * 2, d = C.barrageRadius * (1.4 + random(s) * 1.6); shoot(s, 'barrage', 0, damage, Math.max(32, Math.min(C.width - 32, s.x + Math.cos(a) * d)), Math.max(65, Math.min(C.height - 24, s.y + Math.sin(a) * d))) }
+    const fire = (x: number, y: number) => { const b = shoot(s, 'barrage', 0, damage, x, y); if (b && source) b.source = source.id }
+    fire(s.x, s.y)
+    for (let i = 0; i < Math.floor(k * C.barrageExtra + .5); i++) { const a = random(s) * Math.PI * 2, d = C.barrageRadius * (1.4 + random(s) * 1.6); fire(Math.max(32, Math.min(C.width - 32, s.x + Math.cos(a) * d)), Math.max(65, Math.min(C.height - 24, s.y + Math.sin(a) * d))) }
     s.nextBarrage += C.barrageEvery + (C.barrageEveryLate - C.barrageEvery) * k
   }
   for (const e of s.enemies) {
@@ -865,6 +876,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
         }
       }
     } else if (b.kind === 'barrage') {
+      if (s.mode === 'stage' && (!source || b.source !== source.id || source.hp <= 0)) { b.life = 0; continue }
       if (b.life <= 0) { fx(s, 'blast', b.x, b.y, C.barrageRadius, '#ff8a5c'); if (Math.hypot(b.x - s.x, b.y - s.y) < C.barrageRadius) hurt(s, b.damage) }
     } else if (b.kind === 'rain') {
       if (b.life <= 0) {
@@ -925,7 +937,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
     else if (d.age > C.dropLife) d.value = 0
   }
   s.drops = s.drops.filter(d => d.value > 0); s.enemies = s.enemies.filter(e => e.hp > 0)
-  s.shots = s.shots.filter(b => b.life > 0 && b.x > -60 && b.x < C.width + 60 && b.y > -60 && b.y < C.height + 60)
+  s.shots = s.shots.filter(b => b.life > 0 && b.x > -60 && b.x < C.width + 60 && b.y > -60 && b.y < C.height + 60 && (s.mode !== 'stage' || b.kind !== 'barrage' || s.enemies.some(e => e.id === b.source && e.hp > 0)))
   for (const f of s.fx) f.life -= dt
   s.fx = s.fx.filter(f => f.life > 0)
   // 되살아나기 (상점 「부활」) — 체력 반으로, 잠깐 무적, 날아오던 것을 지운다
