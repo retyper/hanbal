@@ -53,6 +53,10 @@ try {
     await call('Input.dispatchMouseEvent', { type: 'mouseReleased', x: p.x, y: p.y, button: 'left', clickCount: 1 })
   }
   const key = async (k: string, code: string, duration = 40) => { await call('Input.dispatchKeyEvent', { type: 'keyDown', key: k, code }); await sleep(duration); await call('Input.dispatchKeyEvent', { type: 'keyUp', key: k, code }) }
+  const touchPoint = (sel: string) => ev(`(()=>{const e=document.querySelector(${JSON.stringify(sel)});if(!e)return null;const b=e.getBoundingClientRect(),x=b.x+b.width/2,y=b.y+b.height/2,top=document.elementFromPoint(x,y);return{x,y,hit:e===top||e.contains(top),disabled:e.disabled}})()`)
+  const touchStart = (p: any) => call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:p.x,y:p.y,id:1,force:1,radiusX:1,radiusY:1}]})
+  const touchEnd = () => call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]})
+  const tap = async (sel: string) => {const p=await touchPoint(sel);if(!p?.hit||p.disabled)throw new Error('실제 touch 노출 실패 '+sel+': '+JSON.stringify(p));await touchStart(p);await sleep(60);await touchEnd();await sleep(80)}
   const snap = async (label: string) => { const r = await call('Page.captureScreenshot', { format: 'png' }); const path = join(out, `${mode}-${label}.png`); writeFileSync(path, Buffer.from(r.data, 'base64')); report.shots.push(path) }
   const read = () => ev(`(() => { const r=window.__raid?.(); return {t:r?.t,state:r?.state,form:r?.form,hp:r?.hp,x:r?.x,y:r?.y,kills:r?.kills,enemies:r?.enemies.length,boss:r?.enemies.find(e=>e.kind==='boss'),offers:r?.offers,overlay:!document.querySelector('#overlay')?.hidden,result:!!document.querySelector('#overlay:not([hidden]) .result'),feel:window.__raidFeel?.(),end:window.__raidEnd?.(),visibility:document.visibilityState} })()`)
   const canvasReport = () => ev(`(() => {const x=window.__raid49Draw;return x?{reads:x.reads,fx:x.fx,sources:x.sources,raw:x.raw,heroFrames:x.heroFrames,hitArt:x.hitArt,raysNextSprite:x.raysNextSprite,fieldMatrix:x.fieldMatrix,firstHit:x.firstHit}:null})()`)
@@ -125,6 +129,7 @@ try {
     check(done.end?.ready && done.end.elapsed === done.end.duration, '끝 연출 시계가 정해진 길이까지 돈 뒤 결과 표시', done.end)
   }
   await call('Page.enable'); await call('Runtime.enable'); await call('Log.enable')
+  if(mode==='pause-ui')await call('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1})
   if (process.env['OBSERVE_CANVAS'] === '1') await call('Page.addScriptToEvaluateOnNewDocument', { source: String.raw`(() => {
     const labels=new WeakMap(), anonymous=new WeakMap();let serial=0;const state=window.__raid49Draw={reads:0,fx:{},sources:{},raw:{},heroFrames:{},hitArt:{},raysPending:false,raysNextSprite:{count:0},fieldMatrix:null,firstHit:null,startReads:0,lastHp:null};
     const proto=CanvasRenderingContext2D.prototype, draw=proto.drawImage, read=proto.getImageData;
@@ -153,7 +158,35 @@ try {
   check(report.errors.length === 0, '첫 로드 console/exception 오류 0', report.errors)
   check((await read()).visibility === 'visible', '탭 visible')
   if (process.env['OBSERVE_CANVAS'] === '1') { report.canvasBoot = await canvasReport(); report.fxBoot=report.canvasBoot?.sources; check(Object.keys(report.fxBoot??{}).length===10&&Object.values(report.fxBoot??{}).every((x:any)=>x.complete&&x.naturalWidth>0),'실제 warmFx 공유 이미지 10개 로드·native 크기 양수',report.fxBoot) }
-  if(mode==='pacing-actual'){
+  if(mode==='pause-ui'){
+    report.evidence='정상 UI start→native CDP touch pause/버튼→viewport회전→계속→세로 철수. sim 직접 주입 없음.'
+    await tap('#start');await sleep(300);report.start=await read();await tap('#pause');await waitFor(`!!document.querySelector('.pause-panel')`)
+    report.pauseProfiles=[]
+    for(const [w,h]of [[360,800],[375,812],[390,844],[412,915],[844,390]]){
+      await size(w!,h!);await waitFor(`!!document.querySelector('.pause-panel')`)
+      const m=await ev(`(()=>{const p=document.querySelector('.pause-panel'),b=p.getBoundingClientRect(),top=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2),resume=document.querySelector('#resume').getBoundingClientRect();return{width:innerWidth,height:innerHeight,panelTop:!!top?.closest('.pause-panel'),rotateGuideHidden:document.querySelector('#rotate-guide').hidden,scrollX:p.scrollWidth-p.clientWidth,scrollY:p.scrollHeight-p.clientHeight,documentOverflowX:document.documentElement.scrollWidth-innerWidth,continueBottomGap:innerHeight-resume.bottom,ariaDisabled:document.querySelector('#resume').getAttribute('aria-disabled'),buttons:[...p.querySelectorAll('button')].map(e=>{const r=e.getBoundingClientRect(),cs=getComputedStyle(e),t=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return{id:e.id,height:r.height,font:cs.fontSize,inside:r.x>=-1&&r.right<=innerWidth+1&&r.y>=-1&&r.bottom<=innerHeight+1,hit:e===t||e.contains(t)}})}})()`)
+      report.pauseProfiles.push(m)
+      check(m.panelTop&&m.rotateGuideHidden&&m.buttons.every((b:any)=>b.hit&&b.inside),'정지 모달 실제 최상위·버튼 hit-test '+w+'×'+h,m)
+      check(m.buttons.every((b:any)=>Math.abs(b.height-48)<.5&&b.font==='15px')&&m.scrollX<=1&&m.scrollY<=1&&m.documentOverflowX<=1&&m.continueBottomGap>=0&&m.continueBottomGap<=48,'48px/15px·하단 계속·overflow0 '+w+'×'+h,m)
+      const a=await read();await sleep(220);const b=await read();check(a.t===b.t,'정지 중 실제 판 시각 고정 '+w+'×'+h,{before:a.t,after:b.t})
+      if(h!>w!){check(m.ariaDisabled==='true','세로 계속 aria-disabled=true '+w+'×'+h,m.ariaDisabled);await tap('#resume');const note=await ev(`document.querySelector('#pause-note').textContent`);const after=await read();check(note.includes('가로')&&after.t===b.t&&!after.result,'세로 계속 touch는 회전 까닭 표시·실전 잠금 유지 '+w+'×'+h,{note,t:after.t})}
+      await snap('pause-'+w+'x'+h)
+      if(w===360){const before=await ev(`(()=>{const c=getComputedStyle(document.querySelector('#tree-open'));return{transform:c.transform,fill:c.backgroundColor}})()`);const p=await touchPoint('#tree-open');await touchStart(p);await sleep(80);const during=await ev(`(()=>{const c=getComputedStyle(document.querySelector('#tree-open'));return{transform:c.transform,fill:c.backgroundColor}})()`);report.pressed={before,during};check(before.transform!==during.transform||before.fill!==during.fill,'native touchstart 중 눌림 transform/채움 변화',report.pressed);await touchEnd();await sleep(100)}else await tap('#tree-open')
+      await waitFor(`!document.querySelector('#tree-view').hidden`);check(await ev(`!!document.elementFromPoint(innerWidth/2,innerHeight/2)?.closest('#tree-view')`),'나무 실제 열림 '+w+'×'+h);await tap('.tree-close');await waitFor(`document.querySelector('#tree-view').hidden`)
+      if(w===360){
+        const style=()=>ev(`(()=>{const c=getComputedStyle(document.querySelector('#tree-open'));return{transform:c.transform,fill:c.backgroundColor}})()`)
+        report.pressed.release=await style();check(report.pressed.release.transform===report.pressed.before.transform&&report.pressed.release.fill===report.pressed.before.fill,'touch 해제 후 눌림 모습 복귀',report.pressed)
+        const p=await touchPoint('#tree-open');await touchStart(p);await sleep(80);const during=await style();await call('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});await sleep(80);const after=await style();report.pressed.cancel={during,after};check((during.transform!==after.transform||during.fill!==after.fill)&&after.transform===report.pressed.before.transform&&after.fill===report.pressed.before.fill&&await ev(`document.querySelector('#tree-view').hidden`),'native touchCancel 뒤 눌림 복귀·오작동 없음',report.pressed.cancel)
+      }
+    }
+    check(await ev(`document.querySelector('#resume').getAttribute('aria-disabled')==='false'`),'가로 회전 뒤 계속 활성')
+    const beforeResume=await read();await tap('#resume');await sleep(350);const resumed=await read();report.resume={before:beforeResume,after:resumed};check(resumed.t>beforeResume.t&&!resumed.overlay,'native 계속 touch로 실제 전투 재개',report.resume)
+    await tap('#pause');await size(390,844);await waitFor(`!!document.querySelector('.pause-panel')`)
+    await ev(`window.__pauseQuitClickAt=0;window.__pauseResultAt=0;document.addEventListener('click',e=>{if(e.target.closest?.('#quit'))window.__pauseQuitClickAt=performance.now()},{capture:true});new MutationObserver(()=>{if(!window.__pauseResultAt&&document.querySelector('#overlay:not([hidden]) .result'))window.__pauseResultAt=performance.now()}).observe(document.querySelector('#overlay'),{subtree:true,attributes:true,childList:true})`)
+    await tap('#quit');report.withdrawFirst=await read();check(report.withdrawFirst.end?.kind==='retreat'&&report.withdrawFirst.end.active&&!report.withdrawFirst.result,'세로 철수에서 연출 실제 시작·결과 조기 표시 없음',report.withdrawFirst)
+    await waitFor(`!!document.querySelector('#overlay:not([hidden]) .result')`,7000);report.withdrawDone=await read();report.withdrawDelayMs=await ev('window.__pauseResultAt-window.__pauseQuitClickAt')
+    check(report.withdrawDone.end?.ready&&report.withdrawDone.end.elapsed===2&&Math.abs(report.withdrawDelayMs-2000)<160,'세로 철수도 2초 뒤 결과 표시·연출 막힘0',{delay:report.withdrawDelayMs,end:report.withdrawDone.end});await snap('portrait-withdraw-result')
+  } else if(mode==='pacing-actual'){
     report.evidence='정상 출전 버튼과 실제 CDP 키/성장 카드 입력. replay/state 주입 없음.';report.config=await installPacing('actual')
     await click('#start');const first=await read();report.actualStart=first;await key('ArrowRight','ArrowRight',350);const moved=await read();check(moved.x>first.x+10,'실제 키보드 이동',{before:first.x,after:moved.x});await key('x','KeyX');await key('x','KeyX')
     report.actualEnd=await drive(70);report.pacing=await ev('window.__raid50')
@@ -168,7 +201,7 @@ try {
     }
     if(report.actualEnd.state==='playing')for(const [w,h]of [[360,800],[375,812],[390,844],[412,915]]){await size(w!,h!);const a=await read();await sleep(250);const b=await read();const guide=await ev(`!document.querySelector('#rotate-guide').hidden&&!!document.elementFromPoint(innerWidth/2,innerHeight/2)?.closest('#rotate-guide')`);check(guide&&a.t===b.t,w+'×'+h+' 세로는 실제 회전 안내·전투 정지',{guide,before:a.t,after:b.t});await snap('portrait-guide-'+w+'x'+h)}
   } else if(mode==='pacing-review'){
-    const scene=process.env['PACER_SCENE']??'runner',until=scene==='runner'?'300':'780'
+    const scene=process.env['PACER_SCENE']??'runner',until=process.env['REVIEW_UNTIL']??(scene==='runner'?'300':'780')
     report.evidence='기존 공식 review '+until+'초 일반 입력 재생 후 실제 UI 계속/키 입력 보조검수. 정상 출전 증거와 별도.'
     await waitFor(`!!document.querySelector('.review-tools [data-until="${until}"]')`);await click(`.review-tools [data-until="${until}"]`)
     await waitFor(`!document.querySelector('.review-tools [data-until="${until}"]').disabled&&document.querySelector('.review-tools output').textContent.includes(' · ')`,120000)

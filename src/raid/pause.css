@@ -1,0 +1,18 @@
+/* 정지 화면: 같은 규격, 작은 화면에서도 하단에 닿는 계속 단추. */
+.panel.pause-panel{width:min(100%,480px);min-height:340px;max-height:100%;display:flex;flex-direction:column;gap:20px;padding:24px;text-align:center;overflow:auto}
+.pause-heading small{font-size:12px;color:#dfc38d}
+.pause-heading h2{font-size:26px;margin:10px 0}
+.pause-heading p{font-size:14px;line-height:1.6;margin:8px 0}
+.pause-actions{display:grid;gap:10px}
+.pause-confirm{margin-top:auto;padding-top:10px}
+.panel.pause-panel button{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:48px;min-height:48px;margin:0;padding:8px 12px;font-size:15px;line-height:1.25;white-space:normal}
+.panel.pause-panel .tree-btn img{width:22px;height:22px}
+.panel.pause-panel button:active,.panel.pause-panel button.pressed{transform:translateY(2px);background:#354438;box-shadow:inset 0 3px 7px #0008}
+.panel.pause-panel button[aria-disabled="true"]{color:#b3b6a8;background:#25312d;border-color:#697263;opacity:.7}
+@media(max-width:600px),(max-height:600px){
+  #overlay:has(.pause-panel){align-items:stretch;padding:12px max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+  .panel.pause-panel{height:100%;min-height:0;max-height:none;margin:0 auto;padding:18px;gap:12px}
+  .pause-heading h2{font-size:23px;margin:4px 0}
+  .pause-heading p{margin:6px 0;font-size:13px}
+  .pause-confirm{padding-top:4px}
+}

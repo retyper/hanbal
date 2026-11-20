@@ -22,6 +22,7 @@ import { raidSound } from './raid/sound.ts'
 import { DEFAULT_HERO, DEMON_STAGE, SEAL_STAGE, demonSealed, loadRoster, stampDemons, type RosterHero } from './raid/link.ts'
 import { TRUE_WAKE } from './realm/data/awaken2.ts'
 import './raid/combat.css'
+import './raid/pause.css'
 import { guardMedia } from './ui/media-guard.ts'
 import { haptics } from './ui/haptics.ts'
 /** 금은 글자 대신 동전 그림 (형 11-19 「금도 아이콘으로 해야겠음 텍스트 말고」) */
@@ -304,10 +305,12 @@ function updatePortrait() {
   if (playing) void heroVideo.play().catch(() => { stillPortrait = true; mediaKey = ''; updatePortrait() }); else heroVideo.pause()
 }
 function layoutTrial() {
+  const wasBlocked = rotationBlocked
   rotationBlocked = live && run.state === 'playing' && innerWidth <= 700 && innerHeight > innerWidth
   $('rotate-guide').hidden = !rotationBlocked
   document.body.classList.toggle('raid-running', live)
   if (rotationBlocked) { paused = true; resetInput(); shown = ''; showOverlay() }
+  else if (wasBlocked) { shown = ''; showOverlay() }
 }
 window.addEventListener('resize', layoutTrial)
 let pendingSeed = vanguardToken ? Number(query.get('seed')) >>> 0 : crypto.getRandomValues(new Uint32Array(1))[0]!
@@ -511,12 +514,15 @@ function settleRun() {
   if (mode === 'stage' && rewarded !== run) { rewarded = run; const gold = runGold(run); reward = { gold, ...record(meta, run.stage, gold, run.state === 'won', run.t, heroId) }; saveMeta(meta); if (run.state === 'won' && run.stage === DEMON_STAGE) { stampDemons(); refreshWakeKind() } }
 }
 function showOverlay() {
+  if (run.state !== 'playing') { rotationBlocked = false; $('rotate-guide').hidden = true }
   if (live) {
     ending.observe(run)
     if (ending.kind) settleRun()
     if (ending.active) { shown = ''; $('overlay').hidden = true; closeTree(); return }
   }
   const state = !live ? '' : run.state !== 'playing' ? run.state : run.offers.length ? 'upgrade:' + run.offers.join(',') : paused ? 'pause' : ''
+  // 세로에서도 나무·철수는 쓸 수 있다. 계속하기는 회전 뒤에만 허용한다.
+  $('rotate-guide').hidden = !rotationBlocked || state === 'pause'
   if (!state) { shown = ''; if (!$('overlay').hidden) $('overlay').hidden = true; closeTree(); return }
   if (state === shown) return
   hidePowerHint(); closeTree()
@@ -529,9 +535,16 @@ function showOverlay() {
     $('reroll').onclick = () => { const log = logging(); if (reroll(run)) { if (log) recReroll(rec!); shown = ''; showOverlay() } }
     $('tree-open').onclick = openTree
   } else if (state === 'pause') {
-    overlay.innerHTML = `<div class="panel"><small>장수 열전</small><h2>잠시 숨 고르기</h2><p>성장과 전투는 그대로 기다립니다.</p><button id="resume" class="primary">계속 싸우기</button>${treeButton}<button id="quit">출전 화면으로</button></div>`
+    const reason = '폰을 가로로 돌리면 전투를 계속할 수 있습니다.'
+    overlay.innerHTML = `<div class="panel pause-panel" role="dialog" aria-labelledby="pause-title"><div class="pause-heading"><small>장수 열전</small><h2 id="pause-title">잠시 숨 고르기</h2><p id="pause-note" role="status">${rotationBlocked ? reason : '성장과 전투는 그대로 기다립니다.'}</p></div><div class="pause-actions">${treeButton}<button id="quit" title="이번 출전을 마칩니다">출전 화면으로</button></div><div class="pause-confirm"><button id="resume" class="primary" aria-disabled="${rotationBlocked}" title="${rotationBlocked ? reason : '멈춘 곳에서 계속 싸웁니다'}">계속 싸우기</button></div></div>`
+    // 터치는 브라우저의 :active 지연을 기다리지 않고 누른 순간 반응한다.
+    overlay.querySelectorAll<HTMLButtonElement>('.pause-panel button').forEach(b => {
+      const release = () => b.classList.remove('pressed')
+      b.addEventListener('pointerdown', () => b.classList.add('pressed'))
+      for (const event of ['pointerup', 'pointercancel', 'pointerleave', 'blur']) b.addEventListener(event, release)
+    })
     $('tree-open').onclick = openTree
-    $('resume').onclick = () => { paused = false; shown = ''; last = 0; showOverlay() }; $('quit').onclick = menu
+    $('resume').onclick = () => { if (rotationBlocked) { $('pause-note').textContent = reason; return }; paused = false; shown = ''; last = 0; showOverlay() }; $('quit').onclick = menu
     if (vanguardToken) { $('quit').textContent = '지금 확보한 돌파로 귀환'; $('quit').onclick = withdraw }
     else if (mode === 'stage') { $('quit').textContent = '물러나기 · 버틴 만큼 금 받기'; $('quit').onclick = withdraw }
     else if (trialToken) { $('quit').textContent = '물러나기'; $('quit').onclick = withdraw } // 본편에서 연 시련은 다시 고르는 화면 없이 결과로 (다시 도전은 본편 장수 판에서)
