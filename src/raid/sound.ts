@@ -201,6 +201,8 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
   }
   return {
     unlock,
+    /** 막 내림의 도장이 찍히는 박자. 음소거·음량은 기존 sfx 경로를 따른다. */
+    ending: (won: boolean) => sfx(won ? 'win' : 'lose', V.end),
     /** 파일을 다 풀었나 (들어 보기 · 시험) */
     ready: () => ready,
     /**
@@ -216,7 +218,7 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
       setTimeout(() => { impact(kind); onHit?.() }, wait)
       return wait
     },
-    frame(s: HaebiRun, live: boolean, paused: boolean): FeelEvents {
+    frame(s: HaebiRun, live: boolean, paused: boolean, deferEnding = false): FeelEvents {
       const on = live && !paused && s.state === 'playing' && !document.hidden && !muted()
       if (music) { music.volume = V.bgm * volume('bgm'); if (on && !s.offers.length) { if (music.paused) void music.play().catch(() => undefined) } else if (!music.paused) music.pause() }
       if (!live) { prev.run = null; return NONE }
@@ -256,7 +258,7 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
       if (barrage < prev.barrage) sfx('arrows', V.arrows, .15)
       if (elites > prev.elites) sfx('elite', V.cry)
       if (s.boss && !prev.boss) say('roar', V.roar)
-      if (s.state !== prev.state) sfx(s.state === 'won' ? 'win' : 'lose', V.end)
+      if (!deferEnding && s.state !== prev.state) sfx(s.state === 'won' ? 'win' : 'lose', V.end)
       Object.assign(prev, { attack: s.attack, hurt: s.hurt, kills: fell > 0 || !ctx || ctx.currentTime - hitAt >= V.hitGap ? s.kills : prev.kills, skillCd: s.skillCd, offers: s.offers.length, level: s.level, wakes: s.wakes, barrage, elites, boss: s.boss, state: s.state })
       return cast || skill || crits ? { cast, skill, crit: crits > 0 } : NONE
     },

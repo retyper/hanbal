@@ -4,6 +4,9 @@ import { createHaebi, runDuration, stepHaebi, choose, reroll, POWERS, kitCombos,
 import { startRecord, recInput, gridInput, recPick, recReroll, recQuit, withdrawRun, sealInput, finishRecord, STEP, type Recorder } from './raid/runlog.ts'
 import { runFrame, speedOf, nextSpeed, speedLevel } from './raid/speed.ts'
 import { RaidFeel } from './raid/impact.ts'
+import { RaidEnding } from './raid/ending.ts'
+import { drawEnding } from './raid/ending-view.ts'
+import { HAEBI_END as END } from './tune/params.ts'
 import { putRaidGame, sealLeftovers, unsentRaids, markRaidsSent, type RaidGame, type RaidOpts } from './raid/runlog-store.ts'
 import { pushRaids } from './net/sync.ts'
 import { newCam, followCam, nextLevel, closest, toField } from './raid/camera.ts'
@@ -499,8 +502,19 @@ treeView.onclick = e => {
   if (t === treeView || t.closest('.tree-close')) closeTree()
 }
 const treeButton = '<button id="tree-open" class="tree-btn" aria-label="기술 나무 보기"><img src="' + import.meta.env.BASE_URL + 'realm/raid/power-skill.png" alt="">나무</button>'
-let wonBuzz: HaebiRun | null = null
+let settledRun: HaebiRun | null = null
+function settleRun() {
+  if (settledRun === run) return
+  settledRun = run; closeLog()
+  // 결과 저장 시점은 그대로. 연출 중 탭을 닫아도 보상과 판 기록을 잃지 않는다.
+  if (mode === 'stage' && rewarded !== run) { rewarded = run; const gold = runGold(run); reward = { gold, ...record(meta, run.stage, gold, run.state === 'won', run.t, heroId) }; saveMeta(meta); if (run.state === 'won' && run.stage === DEMON_STAGE) { stampDemons(); refreshWakeKind() } }
+}
 function showOverlay() {
+  if (live) {
+    ending.observe(run)
+    if (ending.kind) settleRun()
+    if (ending.active) { shown = ''; $('overlay').hidden = true; closeTree(); return }
+  }
   const state = !live ? '' : run.state !== 'playing' ? run.state : run.offers.length ? 'upgrade:' + run.offers.join(',') : paused ? 'pause' : ''
   if (!state) { shown = ''; if (!$('overlay').hidden) $('overlay').hidden = true; closeTree(); return }
   if (state === shown) return
@@ -521,11 +535,8 @@ function showOverlay() {
     else if (mode === 'stage') { $('quit').textContent = '물러나기 · 버틴 만큼 금 받기'; $('quit').onclick = withdraw }
     else if (trialToken) { $('quit').textContent = '물러나기'; $('quit').onclick = withdraw } // 본편에서 연 시련은 다시 고르는 화면 없이 결과로 (다시 도전은 본편 장수 판에서)
   } else {
-    closeLog()   // 판 기록의 끝 (이김 · 짐 · 물러남) — 한 판에 한 번 · 서버로 올린다
     // 이겼다 — 결과 판이 뜨는 그 박자에 다다닥 (11-19 형: 「듀오링고처럼 햅틱 막 지랄 나 주면」) · 판마다 한 번 (탭을 다녀와 다시 그려도 또 떨지 않는다)
-    if (run.state === 'won' && wonBuzz !== run) { wonBuzz = run; haptics().win() }
     // 독립 열전: 판이 끝나면 한 번만 금을 주고 기록한다 (지면 버틴 만큼 · 깨면 휘장 + 깸 금)
-    if (mode === 'stage' && rewarded !== run) { rewarded = run; const gold = runGold(run); reward = { gold, ...record(meta, run.stage, gold, run.state === 'won', run.t, heroId) }; saveMeta(meta); if (run.state === 'won' && run.stage === DEMON_STAGE) { stampDemons(); refreshWakeKind() } }
     overlay.innerHTML = `<div class="panel result ${run.state}"><h2>${run.state === 'won' ? mode === 'stage' ? `${stageName(run.stage)} 토벌 완료` : '열전 완수' : run.hp <= 0 ? '도전 실패' : run.t < runDuration(run) ? '철수' : '시간 초과 · 두목 생존'}</h2><p>${Math.floor(run.t / 60)}분 ${Math.floor(run.t % 60)}초 · ${run.kills.toLocaleString()}명 격파 · Lv.${run.level}</p><div class="result-combos">${kitCombos(kit).filter(c => run.combos.includes(c.id)).map(c => `<b>${comboIcon(c.id)}${c.name} ${rankMark(comboRank(run, c.id))}</b>`).join('')}</div>${mode === 'stage' ? `<p class="reward">${COIN}<b>+${reward.gold.toLocaleString()}</b> · 보유 ${COIN}${meta.gold.toLocaleString()}${reward.first ? ` · <strong><img class="won-emblem" src="${import.meta.env.BASE_URL}realm/raid/emblem-${run.stage}.png" alt="">${stageName(run.stage)} 휘장 획득</strong>` : ''}${reward.heroFirst && run.stage === SEAL_STAGE && TRUE_WAKE.has(heroId) ? ` · <strong class="tw-open">본편에서 ${josa(HERO.name, '이', '가')} 진각성할 수 있습니다</strong>` : ''}</p>` : ''}${mode === 'stage' ? '' : '<p>본편 병력 손실 없음</p>'}${fromCampaign ? `<div class="result-acts">${window.parent !== window ? '<button id="return" class="primary">본편으로</button>' : ''}</div>` : `<div class="result-acts"><button id="new-run" class="primary">다시 출전</button><div>${mode === 'stage' ? '<button id="to-shop">상점</button>' : ''}<button id="quit">스테이지 고르기</button>${window.parent !== window ? '<button id="return">본편으로</button>' : ''}</div></div>`}</div>`
     if (vanguardToken) {
       overlay.querySelector('h2')!.textContent = run.breaches === 3 ? '길은 열었다. 본대여, 진격하라!' : `${run.breaches}/3 돌파 확보 · 본대로 귀환`
@@ -610,7 +621,7 @@ function watchHit() {
   if (run.hurt > hitSeen.hurt + 1e-6) {
     const art = hitArtUrl(awakenedLook(run))
     hitPortrait($('portrait-media'), hitStrength(hitSeen.hp - run.hp, run.maxHp), { art: art.url, focus: art.key, pos: heroVideo.hidden ? '48% 12%' : '50% 20%' })
-    haptics().hurt((hitSeen.hp - run.hp) / run.maxHp)   // 맞으면 폰이 짧게 (11-19 형 · 잃은 몫만큼 15~40ms · 연타는 사이를 둠)
+    if (run.hp > 0) haptics().hurt((hitSeen.hp - run.hp) / run.maxHp)   // 치명타격 진동은 막 내림의 정지 순간 한 번
   }
   hitSeen.hurt = run.hurt; hitSeen.hp = run.hp
 }
@@ -634,7 +645,7 @@ function updateHud() {
   setText('reaction', !live ? mode === 'vanguard' ? '내가 길을 열겠다. 뒤따라와!' : `${weapon} 하나로 시작하는 열전` : run.hurt > 0 ? '버텨낼 수 있어!' : run.attack > 0 ? '길을 열어라!' : awakenedLook(run) ? '이제, 몰아칠 차례다.' : run.moving ? '내 뒤를 따라와.' : '빈틈을 기다리는 중')
   setFlag('character', 'awakened', awakenedLook(run)); setFlag('character', 'hurt', run.hurt > 0)
   setFlag('layout', 'in-run', live)   // 싸우는 동안 초상 옆 글(고을·이름·한마디)은 걷는다 (형 11-16: 「백제의 장수 · 길을 열어라 같은 텍스트 다 없애」)
-  setText('announcement', run.messageTime > 0 ? run.message : ''); setFlag('announcement', 'visible', run.messageTime > 0)
+  setText('announcement', run.messageTime > 0 ? run.message : ''); setFlag('announcement', 'visible', !ending.active && run.messageTime > 0)
   if (countDue) setText('streak', run.comboKills >= 15 ? `${run.comboKills} 연속 격파` : '')
   // 각성 단추: 막대가 다 차면 뜬다 · 각성 동안 체력 막대가 금빛으로 흐른다 (무적)
   const ready = live && wakeReady(run); if ($('wake').hidden === ready) $('wake').hidden = !ready
@@ -666,12 +677,22 @@ function perfTick(now: number) {
   perfEl.textContent = `${fps.toFixed(0)}fps 적${run.enemies.length} 늑대${run.enemies.filter(e => e.kind === 'dog').length} 투사${run.shots.length} 효과${run.fx.length} 숫자${run.fx.filter(f => f.n !== undefined).length}`
 }
 const feel = new RaidFeel()
+const ending = new RaidEnding()
+let endHit: HTMLImageElement | null = null, skipClickUntil = 0
+root.addEventListener('pointerdown', e => {
+  if (!live || !ending.active) return
+  e.preventDefault(); e.stopImmediatePropagation(); ending.skip(); skipCutin(); skipClickUntil = performance.now() + END.skipClickMs
+  showOverlay(); schedule()
+}, true)
+root.addEventListener('click', e => { if (performance.now() < skipClickUntil) { e.preventDefault(); e.stopImmediatePropagation() } }, true)
 function frame(now: number) {
   raf = 0; if (document.hidden) return
   perfTick(now)
-  const dt = last ? Math.min(.1, (now - last) / 1000) : 0; last = now
+  const wallDt = last ? Math.max(0, (now - last) / 1000) : 0
+  const dt = Math.min(.1, wallDt); last = now
+  const endWasActive = ending.active
   feel.observe(run)
-  feel.advance(dt, live && !paused && !inspecting && !rotationBlocked && !run.offers.length)
+  feel.advance(wallDt, live && !paused && !inspecting && !rotationBlocked && !run.offers.length)
   if (live && !paused && !inspecting && !rotationBlocked && !feel.stopped && run.state === 'playing' && !run.offers.length) {
     // 빠르기 ×2·×3 은 한 프레임에 걸음을 더 돌린다 (걸음은 늘 STEP · raid/speed.ts) · 시전·컷인 동안은 ×1
     acc = runFrame(acc, dt, () => run.cast || run.t < cutinUntil ? 1 : speedOf(speed), () => {
@@ -691,17 +712,30 @@ function frame(now: number) {
       return !feel.stopped && !run.offers.length && run.state === 'playing'
     })
   }
-  if (live) { followCam(cam, run.x, run.y, feel.stopped ? 0 : dt); drawField(ctx, images, run, destination, cam, feel) }
+  if (live) {
+    ending.observe(run); ending.advance(wallDt, endWasActive && !rotationBlocked)
+    const events = ending.events()
+    if (events.start) {
+      skipCutin(); resetInput()
+      if (ending.kind === 'defeat') { haptics().hurt(1); endHit = new Image(); endHit.src = hitArtUrl(awakenedLook(run)).url ?? import.meta.env.BASE_URL + 'realm/bust-hd/' + HERO.bust + '.jpg' }
+    }
+    if (events.stamp && ending.kind !== 'retreat') { sound.ending(ending.kind === 'victory'); if (ending.kind === 'victory') haptics().win() }
+    followCam(cam, run.x, run.y, feel.stopped || ending.active ? 0 : dt)
+    const zoom = ending.kind === 'victory' ? Math.min(1, Math.max(0, ending.elapsed - ending.freeze) / END.cameraTime) : 0
+    const endCam = zoom ? { zoom: cam.zoom * (1 + END.cameraZoom * zoom), x: cam.x + (run.x - cam.x) * zoom, y: cam.y + (run.y - cam.y) * zoom } : cam
+    drawField(ctx, images, run, destination, endCam, feel, ending.kind ? ending : undefined)
+    drawEnding(ctx, ending, endHit, runGold(run))
+  }
   if (!live || run.t >= cutinUntil) skipCutin()
   // 기술이 터지면 계단마다 떨고(비기 한 번 · 각성 두 박 · 진각성 세 박) 크리티컬은 짧게 한 번 (11-19 형 · HAEBI_FEEL_TIERS · 끄기·가려진 탭은 haptics 가 막음)
-  const felt = sound.frame(run, live, paused || inspecting || rotationBlocked)
+  const felt = sound.frame(run, live, paused || inspecting || rotationBlocked, true)
   if (felt.skill) haptics().skill(felt.skill); else if (felt.crit) haptics().crit()
   updatePortrait(); updateHud(); showOverlay(); schedule()
 }
 function schedule() { if (!raf && !document.hidden) raf = requestAnimationFrame(frame) }
 updateHud(); schedule()
 // 개발 검수 손잡이 — 헤드리스 시험(tools/raid-*-probe.ts)이 판 상태를 읽고 체력을 깎아 본다 · 배포 빌드엔 없음
-if (import.meta.env.DEV) Object.assign(window, { __raid: () => run, __raidFeel: () => ({ time: feel.time, stopRemaining: feel.stopRemaining, shake: feel.shake }), __raidSound: sound, __raidCutin: (wake: boolean, tru = false) => showSkillCutin(wake, tru) })
+if (import.meta.env.DEV) Object.assign(window, { __raid: () => run, __raidEnd: () => ({ kind: ending.kind, elapsed: ending.elapsed, duration: ending.duration, active: ending.active, ready: ending.ready, stampAt: ending.stampAt, effectTime: ending.effectTime, overlayVisible: !$('overlay').hidden }), __raidFeel: () => ({ time: feel.time, stopRemaining: feel.stopRemaining, shake: feel.shake }), __raidSound: sound, __raidCutin: (wake: boolean, tru = false) => showSkillCutin(wake, tru) })
 if (import.meta.env.DEV && new URLSearchParams(location.search).has('review')) {
   import('./raid/haebi-review.ts').then(({ installReview }) => installReview(root, s => { notifyVanguardStart(); run = s; live = true; paused = !s.offers.length; shown = ''; loadoutKey = ''; resetInput(); $('menu').hidden = true; $('play').hidden = false; $<HTMLButtonElement>('pause').disabled = false; layoutTrial(); showOverlay(); updateHud(); schedule() }, mode, kit))
 }

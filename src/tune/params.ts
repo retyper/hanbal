@@ -489,6 +489,19 @@ export const HAEBI_IMPACT = {
   deathBounceAt: .65, deathSpin: 2.7, deathFadeAt: .65,
 } as const
 
+export const HAEBI_END = {
+  defeat: { duration: 3.2, freeze: .3, slow: 1.2, portraitAt: 1.5, stampAt: 2.2 },
+  victory: { duration: 3.8, freeze: .4, stampAt: 2.1, coinAt: 2.35 },
+  retreatDuration: 2, slowRate: .25, flashTime: .12, flashAlpha: .88,
+  shake: 12, shakeLife: .35, grayMax: .86, portraitHeight: .75, portraitWidth: .8,
+  stampSize: .24, stampOvershoot: .8, stampSettle: .24, bandWidth: .84, bandHeight: .24,
+  cameraZoom: .22, cameraTime: 1.5, waveDelay: .0013, mobFallLife: .65,
+  coinCount: 12, coinSize: 18, coinTravel: .6, sparkCount: 24, sparkSize: 3,
+  sparkLeft: .15, sparkSpan: .7, sparkSequence: .618,
+  coinSpread: .2, coinStartY: .67, coinRise: .38, coinTextY: .3, coinFont: .07, coinSeedStep: 2.4, coinFlat: .35,
+  skipClickMs: 300,
+} as const
+
 export const SPEC = {
   raid: {
     duration: k(90, 30, 300, 5, '토벌 제한 시간', 's'),

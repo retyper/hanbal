@@ -3,8 +3,9 @@ import { genArtOf } from '../realm/data/art.ts'
 import { areaScale, awakenedLook, charge, missileLife, slamRadius, slamWindup, type HaebiRun, type Kit, type Missile, type StageId } from './haebi.ts'
 import { WALK_CYCLE } from './walk-cycle.ts'
 import { AURA_ART, drawAura, drawAuraBurst, drawAuraGround, type AuraArt, type AuraAt, type AuraKind } from './fx-aura.ts'
-import { HAEBI_IMPACT as FEEL } from '../tune/params.ts'
+import { HAEBI_IMPACT as FEEL, HAEBI_END as END } from '../tune/params.ts'
 import type { RaidFeel } from './impact.ts'
+import type { RaidEnding } from './ending.ts'
 
 /** 돌팔매 묶음의 돌 · 바위 (전용 그림 H56~H58 이 오기 전엔 본편 바위 그림을 빌린다) */
 const ROCK = 'fx/rock.png'
@@ -323,13 +324,13 @@ function trackNumbers(s: HaebiRun) {
   }
   for (let i = nums.length - 1; i >= 0; i--) if (s.t - nums[i]!.t >= nums[i]!.life) nums.splice(i, 1)
 }
-function drawNumbers(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun) {
+function drawNumbers(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, viewTime = s.t) {
   const hit = images.get('raid/hit.png')
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'
   for (const p of nums) {
-    const age = s.t - p.t, k = age / p.life; if (k < 0 || k >= 1) continue
+    const age = viewTime - p.t, k = age / p.life; if (k < 0 || k >= 1) continue
     const x = p.x + p.vx * age, y = p.y + p.vy * age + p.g * age * age / 2
-    const popT = FEEL.numberPopTime, pa = s.t - p.pop, peak = p.crit ? FEEL.numberCriticalPop : FEEL.numberPop, scale = pa < popT ? peak - (peak - 1) * pa / popT : 1
+    const popT = FEEL.numberPopTime, pa = viewTime - p.pop, peak = p.crit ? FEEL.numberCriticalPop : FEEL.numberPop, scale = pa < popT ? peak - (peak - 1) * pa / popT : 1
     const size = p.crit ? C.numCritSize : p.kill ? C.numKill : C.numSize
     ctx.save(); ctx.translate(x, y); ctx.rotate(p.spin * Math.sin(age * 34) * (1 - k)); ctx.scale(scale, scale)
     ctx.globalAlpha = k < .72 ? 1 : (1 - k) / .28
@@ -574,11 +575,12 @@ const order: (HaebiRun['enemies'][number] | null)[] = []
  * cam: 확대 카메라 (raid/camera.ts · 11-19 돋보기 단추) — 화면 가운데의 판 좌표와 배율. 판 위의 것(땅·몸·효과·피해 숫자·오라)은 판과 함께 커지고,
  * 화면에 붙은 것(맞을 때 붉은 테 · 두목 막대)은 그대로 · 없으면 1배
  */
-export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, destination: { x: number; y: number } | null, cam?: { zoom: number; x: number; y: number }, feel?: RaidFeel) {
+export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, destination: { x: number; y: number } | null, cam?: { zoom: number; x: number; y: number }, feel?: RaidFeel, ending?: RaidEnding) {
   const W = C.width, H = C.height
   ctx.setTransform(1, 0, 0, 1, 0, 0)   // 그림마다 옮겼다 되돌리는 셈의 작은 오차가 판마다 쌓이지 않게 (sprite·stamp 는 save/restore 없이 · 11-17)
   ctx.fillStyle = '#273c35'; ctx.fillRect(0, 0, W, H)
-  const quake = Math.min(FEEL.shakeMax, Math.max(shakeOf(s), feel?.shake ?? 0)), time = feel?.time ?? s.t
+  const endShake = ending?.active ? END.shake * Math.max(0, 1 - ending.elapsed / END.shakeLife) : 0
+  const quake = Math.max(endShake, Math.min(FEEL.shakeMax, Math.max(shakeOf(s), feel?.shake ?? 0))), time = ending?.active ? ending.elapsed : feel?.time ?? s.t
   const qx = quake ? Math.round(Math.sin(time * FEEL.shakeXHz) * quake) : 0, qy = quake ? Math.round(Math.cos(time * FEEL.shakeYHz) * quake * FEEL.shakeYShare) : 0
   const z = cam?.zoom ?? 1
   if (z !== 1 && cam) ctx.setTransform(z, 0, 0, z, W / 2 - cam.x * z + qx, H / 2 - cam.y * z + qy)
@@ -617,6 +619,8 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
     if (e) {
       const big = e.kind === 'boss' || e.kind === 'elite', h = mobHeight(e.kind)
       const target = s.mode === 'vanguard' && e.kind === 'boss'
+      const wave = ending?.kind === 'victory' && e.kind !== 'boss' ? (ending.elapsed - ending.freeze - Math.hypot(e.x - ending.boss.x, e.y - ending.boss.y) * END.waveDelay) / END.mobFallLife : -1
+      if (wave >= 1) continue
       // 무당이 북돋운 적 · 성난 광전사: 발밑 붉은 기운
       if (e.buff > 0 || e.kind === 'berserker' && e.hp < e.max / 2) { ctx.save(); ctx.globalAlpha = .45 + .25 * Math.sin(s.t * 12 + e.id); ctx.fillStyle = '#ff3b2f'; ctx.beginPath(); ctx.ellipse(e.x, e.y + 2, 22, 8, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore() }
       if (target) decal(ctx, images, 'mark-target', e.x, e.y, 100, 45)
@@ -625,8 +629,9 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       const lag = steady ? 0 : Math.sign(e.x - s.x) * C.knockback * recoil
       const jitter = recoil * FEEL.mobJitter * Math.sin(time * FEEL.mobJitterHz + e.id)
       ctx.save(); ctx.translate(e.x + jitter - lag, e.y)
+      if (wave >= 0) { ctx.globalAlpha *= 1 - wave; ctx.translate(Math.sign(e.x - ending!.boss.x) * wave * FEEL.deathDistance, -Math.sin(wave * Math.PI) * FEEL.deathLift); ctx.rotate(Math.sign(e.x - ending!.boss.x) * wave * FEEL.deathSpin) }
       ctx.scale(1 + (FEEL.squashX - 1) * recoil, 1 + (FEEL.squashY - 1) * recoil)
-      sprite(ctx, images, warlord(e.kind, s.stage), 0, 0, h, white ? 18 : e.wind > 0 ? 13 : archerFrame(s, e) ?? 4 + Math.floor(s.t * 8 + e.id) % 8, s.x < e.x ? -1 : 1, white ? 'white' : e.flash > 0)
+      sprite(ctx, images, warlord(e.kind, s.stage), 0, 0, h, wave >= 0 || white ? 18 : e.wind > 0 ? 13 : archerFrame(s, e) ?? 4 + Math.floor(s.t * 8 + e.id) % 8, s.x < e.x ? -1 : 1, white ? 'white' : e.flash > 0)
       ctx.restore()
       // 어지럼 돌: 머리 위를 도는 별 둘
       if (e.daze > 0) for (let i = 0; i < 2; i++) { const a = s.t * 7 + i * Math.PI; stamp(ctx, images, 'raid/hit.png', e.x + Math.cos(a) * 14, e.y - h - 4 + Math.sin(a) * 4, 14, a) }
@@ -722,7 +727,8 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   let hitSkip = -C.drawHits, deathSkip = -C.drawDeaths; for (const f of s.fx) if (f.kind === 'hit') hitSkip++; else if (f.kind === 'death') deathSkip++
   for (const f of s.fx) {
     if (f.kind === 'hit' ? hitSkip-- > 0 : f.kind === 'death' && deathSkip-- > 0) continue   // 쓰러지는 몸도 새것 drawDeaths 개만
-    const age = 1 - f.life / f.total; ctx.save(); ctx.globalAlpha = Math.min(1, f.life / f.total * 1.5); ctx.strokeStyle = f.color; ctx.fillStyle = f.color; ctx.lineWidth = 3
+    const remaining = f.life - (ending?.effectTime ?? 0); if (remaining <= 0) continue
+    const age = 1 - remaining / f.total; ctx.save(); ctx.globalAlpha = Math.min(1, remaining / f.total * 1.5); ctx.strokeStyle = f.color; ctx.fillStyle = f.color; ctx.lineWidth = 3
     if (f.kind === 'bolt') {
       const img=images.get('raid/lightning-strip.png'),dx=f.x2-f.x,dy=f.y2-f.y
       ctx.translate(f.x,f.y-20);ctx.rotate(Math.atan2(dy,dx))
@@ -777,7 +783,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
     ctx.restore()
   }
   // 피해 숫자 — 알갱이로 튀어 나간다 (trackNumbers · drawNumbers)
-  trackNumbers(s); ctx.save(); drawNumbers(ctx, images, s); ctx.restore()
+  trackNumbers(s); ctx.save(); drawNumbers(ctx, images, s, s.t + (ending?.effectTime ?? 0)); ctx.restore()
   // 여기부터 화면에 붙은 것 — 확대해도 그대로 (흔들림만)
   if (z !== 1) ctx.setTransform(1, 0, 0, 1, qx, qy)
   if (s.hurt > 0) { ctx.strokeStyle = '#ff735a99'; ctx.lineWidth = 12; ctx.strokeRect(0, 0, W, H) }
