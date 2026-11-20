@@ -25,6 +25,7 @@ import './raid/combat.css'
 import './raid/pause.css'
 import { raidShortcut, keyHints } from './raid/keyboard.ts'
 import './raid/keyboard.css'
+import './raid/card-skins.css'
 import { guardMedia } from './ui/media-guard.ts'
 import { haptics } from './ui/haptics.ts'
 /** 금은 글자 대신 동전 그림 (형 11-19 「금도 아이콘으로 해야겠음 텍스트 말고」) */
@@ -478,13 +479,11 @@ function levelPips(rank: number, max: number) {
   const cells = Array.from({ length: max }, (_, i) => `<i class="${i < rank ? 'on' : i === rank ? 'up' : ''}"></i>`).join('')
   return `<i class="lv-pips" aria-label="${rank + 1}/${max}단계">${cells}<i class="lv-num">${rank ? `${rank}→` : ''}<i class="to">${rank + 1}</i>/${max}</i></i>`
 }
-/** 레벨업 카드 — 칸 카드(위에 갈래 띠 · 갈래 끝은 별 테 · 이름 밑에 단계 칸) · 금테 조합 카드(처음엔 열기 · 다시 나오면 단계 올리기 · 끝 단계는 비기 강화) */
+/** 레벨업 카드 — 세 갈래 공유 껍데기 · 갈래 끝 표식 · 이름 밑 단계 칸 / 조합은 기존 금테 */
 function card(k: Pick) {
   if (!isCombo(k)) {
     const p = POWERS[k], t = nodeText(kit, k), at = nodeAt(kit, k)!, cap = at.tier === TREE.tiers.length - 1, color = BRANCH_COLOR[at.branch], rank = run.ranks[k]
-    // 갈래 띠 — 기술 이름과 헷갈리지 않게 작고 흐리게 · 갈래 빛 점 + 「○○ 갈래」 (형 11-19: 벽력 카드 위의 「투창」이 다른 기술로 읽혔다)
-    const tag = `<i class="branch-tag" style="--c:${color}"><i class="dot"></i>${branchName(kit, at.branch)} 갈래</i>`
-    return `<button data-up="${k}" class="${cap ? 'cap-card' : ''}" style="--accent:${cap ? color : p.color};--c:${color}">${cap ? '<i class="ribbon cap">갈래 끝</i>' : tag}<span class="rune">${powerIcon(k, kit)}</span>${rank ? '' : '<small class="gain new">획득</small>'}<b>${t.name}</b>${levelPips(rank, p.max)}<span>${t.desc}</span><em>${routeHint(k)}</em></button>`
+    return `<button data-up="${k}" class="branch-card branch-${at.branch}${cap ? ' cap-card' : ''}" aria-label="${t.name}, ${branchName(kit, at.branch)} 갈래, ${rank + 1}/${p.max}단계. ${t.desc}" style="--accent:${cap ? color : p.color};--c:${color}">${cap ? '<i class="ribbon cap">갈래 끝</i>' : ''}<span class="rune">${powerIcon(k, kit)}</span>${rank ? '' : '<small class="gain new">획득</small>'}<b>${t.name}</b>${levelPips(rank, p.max)}<span>${t.desc}</span><em>${routeHint(k)}</em></button>`
   }
   const c = comboOf(k), r = comboRank(run, k), next = r + 1
   const pips = Array.from({ length: TREE.max }, (_, i) => `<i class="${i < r ? 'on' : i === r ? 'new' : ''}"></i>`).join('')
@@ -528,8 +527,8 @@ function showOverlay() {
     if (ending.active) { shown = ''; $('overlay').hidden = true; closeTree(); return }
   }
   const state = !live ? '' : run.state !== 'playing' ? run.state : run.offers.length ? 'upgrade:' + run.offers.join(',') : paused ? 'pause' : ''
-  // 세로에서도 나무·철수는 쓸 수 있다. 계속하기는 회전 뒤에만 허용한다.
-  $('rotate-guide').hidden = !rotationBlocked || state === 'pause'
+  // 세로에서도 성장·나무·철수는 쓸 수 있다. 전투 재개는 회전 뒤에만 허용한다.
+  $('rotate-guide').hidden = !rotationBlocked || state === 'pause' || state.startsWith('upgrade:')
   if (!state) { shown = ''; if (!$('overlay').hidden) $('overlay').hidden = true; closeTree(); return }
   if (state === shown) return
   hidePowerHint(); closeTree()

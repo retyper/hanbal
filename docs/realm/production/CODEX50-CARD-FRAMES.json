@@ -1,0 +1,111 @@
+{
+  "task": "Claude50-6 branch shells",
+  "newGenerationCalls": 0,
+  "nativeFramesReused": 3,
+  "assumption": "Three shared branch a/b/c frames; no individual skill-name frame variants.",
+  "transforms": "RGBA Lanczos resize 1024x1536 to 384x576, WebP quality=90 method=6 exact=True. No crop, keying, paint, or source edits.",
+  "centerUsage": "CSS border-image without fill never paints the center; tiny native alpha=1 residue is unused.",
+  "cloneLimitation": "assets_src native masters are ignored; a fresh clone contains runtime files and metadata only. Re-bake requires the recorded native masters.",
+  "runtimeBytes": 61350,
+  "items": [
+    {
+      "branch": "a",
+      "source": "assets_src/realm/raid/card-frames-50/raid-card-branch-a-50.png",
+      "sourceSha256": "0dd0aad06bd0da25b7a642c05e46954308d1b9cd42c78afc730966e9de5df24c",
+      "archivePath": "D:\\에셋창고\\raid-card-branch-a-50.png",
+      "archiveSha256": "0dd0aad06bd0da25b7a642c05e46954308d1b9cd42c78afc730966e9de5df24c",
+      "generatorPath": "C:\\Users\\my\\.codex\\generated_images\\01a1f8e2-ae72-7a23-a462-2fd714883ee0\\exec-29cd2dd6-2fb4-448d-93df-c53229f8902d.png",
+      "generatorSha256": "0dd0aad06bd0da25b7a642c05e46954308d1b9cd42c78afc730966e9de5df24c",
+      "path": "public/realm/raid/ui-card-branch-a.webp",
+      "sha256": "6ae80737727a3f33dd4776ca915a5553d85c7302dec9c65caa13f06f8b76539a",
+      "bytes": 20042,
+      "size": [
+        384,
+        576
+      ],
+      "nativeSize": [
+        1024,
+        1536
+      ],
+      "nativeSlice": 160,
+      "runtimeSlice": 60,
+      "alpha": {
+        "transparentPixels": 177926,
+        "visiblePixels": 43258,
+        "centerMax": 1
+      },
+      "metadataFile": "card-pilot-a.json",
+      "prompt": "Use case: stylized-concept\nAsset type: a single transparent PNG game UI card frame, branch A (gold primary-weapon category), to be used as a stretchable 9-slice border.\nPrimary request: Create exactly ONE empty upright portrait rectangular card border, approximately 2:3 canvas proportion. This is a 2D hand-painted ancient Korean peninsula game asset in the SAME established painting style as the references.\nInput images: Reference image 1 (ui-card.png) is the material, brushwork, scale, straight-sided geometry and 9-slice border reference. Match its old bronze and dark timber craft and worn painted edges; do not copy the red bindings or spiral motifs. Reference image 2 (keyboard-ui-PC-upgrade-key-hints.png) is ONLY for matching the painted game's readable visual weight and card rendering style. Do NOT copy any text, numbers, icons, characters, card content, screen layout or interface elements.\nSubject/materials: dark aged timber rails, antique bronze, subtly worn muted GOLD outer and inner contours. Small restrained gold triangular pieces or short diagonal geometric notches at the four corners, within the frame itself. No large protruding corner pieces. Keep straight mid-edge rails plain and repeatable/stretchable. All four outer square corners and softly rounded inner corners are fully visible, never clipped. Bilateral symmetry, level horizontal bars and perfectly vertical side rails; strictly front-on orthographic, zero tilt and zero perspective.\nTransparency is essential: the inside must be an actual completely empty alpha=0 transparent hole, at least the central 70% of image width AND 80% of image height, with NO paper, blackboard, colored fill, texture, painted backdrop, illumination, vignette, ornament or illustration inside that hole. Exterior beyond the border is also true alpha=0 transparent. No separate background panel and no cast-shadow layer; any slight shading stays within the solid frame material.\nGeometry: the thin border occupies about 8–12% of each corresponding image dimension at its edges, retaining a large open center. Compact corners and plain straight edge middles for 9-slice resizing. Keep the reference's rustic hand-painted brushwork, material character and visual scale; introduce no new art style.\nText: none.\nAvoid: all letters, Hangul, writing, numerals, logos, watermarks, ribbon nameplates, weapons, people, faces, jewels, central artwork, decorative filled panel, red color, red circles, sun symbols, Japanese motifs, Chinese dragons or cloud scrolls, taegeuk ornaments, spiral corner ornaments. No multiple frames, no variant sheet.\nOutput: ONE isolated gold card FRAME ONLY on a genuine transparent background with a genuine fully transparent central hole.",
+      "references": [
+        "D:/flutter/arrow_game_one/public/realm/raid/ui-card.png",
+        "C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/taskoutputs/codex50/phase3/actual-keyboard/keyboard-ui-PC-upgrade-key-hints.png"
+      ]
+    },
+    {
+      "branch": "b",
+      "source": "assets_src/realm/raid/card-frames-50/raid-card-branch-b-50.png",
+      "sourceSha256": "60da97cf00ac5a3a27c4005b17908920840379d7a34841f8b6e146130156b07f",
+      "archivePath": "D:\\에셋창고\\raid-card-branch-b-50.png",
+      "archiveSha256": "60da97cf00ac5a3a27c4005b17908920840379d7a34841f8b6e146130156b07f",
+      "generatorPath": "C:\\Users\\my\\.codex\\generated_images\\01a1f8ed-7092-74b0-83bf-7a6e9e80376e\\exec-6640914e-72bf-429a-a0d9-4ba9854b2315.png",
+      "generatorSha256": "60da97cf00ac5a3a27c4005b17908920840379d7a34841f8b6e146130156b07f",
+      "path": "public/realm/raid/ui-card-branch-b.webp",
+      "sha256": "810b87530abcfbee7d90f95a9a7d13db77be93d0c969cac472a5952e971885aa",
+      "bytes": 20654,
+      "size": [
+        384,
+        576
+      ],
+      "nativeSize": [
+        1024,
+        1536
+      ],
+      "nativeSlice": 160,
+      "runtimeSlice": 60,
+      "alpha": {
+        "transparentPixels": 177765,
+        "visiblePixels": 43419,
+        "centerMax": 1
+      },
+      "metadataFile": "card-b.json",
+      "prompt": "Use case: style-transfer.\nAsset type: a single empty 2:3 portrait game UI card border, 1024 x 1536, genuine alpha transparency.\nInput image 1 (raid-card-branch-a-50.png) is the EXACT geometric template and accepted family-style reference. Input image 2 (ui-card.png) is the original game's painted wood-and-aged-metal material reference.\nCreate ONE secondary branch card B. Closely preserve image 1's overall frame proportions, exact rail thickness, all four straight sides, the positions and small scale of the four corner plates, the same dark old wood, aged bronze, hand-painted brush strokes, readable edge lighting and shadows. This must look like a sibling from the same asset pack, not a new art style.\nChange only the gold accents into distinctly teal / oxidized bronze metal accents, with clear turquoise patina that remains readable at small UI size. Add only small, gentle curved incisions in the corner plates. Retain the old bronze base and original material contrast, with subtle teal metal highlights; no bright glow. No Japanese wave pattern, no Chinese clouds or dragon motifs.\nComposition: perfectly frontal upright rectangle, the whole complete frame and all four corners visible. Keep each corner plate entirely in its own 160 x 160 pixel corner cell, so it works as a 160 px nine-slice source with a 16 CSS px border. Match image 1's thin straight rails (approximately 5–6 CSS pixels visible within that 16 px border); do not widen or change geometry. The middle parts of the rails must be straight and suitable for stretching. Do not add protrusions, central ornaments, crossbars or extra framing.\nTransparency is essential: both outside the frame AND the huge central opening are truly transparent alpha, not black, brown, gray or paper pixels. Keep the central rectangular opening completely empty and alpha zero, at least 70% of the total image width and 80% of the total height. No backdrop, no drop-shadow field or vignette in the opening. Do not paint a black panel.\nAncient Korean-peninsula material mood only; do not add recognizable Japanese or Chinese iconography. No red sun, circle or taegeuk.\nText: none.\nAvoid: background, character, weapon, icon, gem, text, numbers, watermark, ribbon, paper, black panel, gray panel, center decoration, separate variants, contact sheet.\nOne single transparent PNG asset only. Preserve template geometry and painterly family style exactly while changing only the secondary metal accent and the small gentle corner incisions.",
+      "references": [
+        "D:/에셋창고/raid-card-branch-a-50.png",
+        "D:/flutter/arrow_game_one/public/realm/raid/ui-card.png"
+      ]
+    },
+    {
+      "branch": "c",
+      "source": "assets_src/realm/raid/card-frames-50/raid-card-branch-c-50.png",
+      "sourceSha256": "b5134c9068b9fecea51c9be5a62da5e08932966975ed420259da8ae0bd1bd8cd",
+      "archivePath": "D:\\에셋창고\\raid-card-branch-c-50.png",
+      "archiveSha256": "b5134c9068b9fecea51c9be5a62da5e08932966975ed420259da8ae0bd1bd8cd",
+      "generatorPath": "C:\\Users\\my\\.codex\\generated_images\\01a1f8ed-c4c4-7670-b586-0e7410c536b9\\exec-bcb580b1-5f5f-4c61-9da1-39b0c1f17e4c.png",
+      "generatorSha256": "b5134c9068b9fecea51c9be5a62da5e08932966975ed420259da8ae0bd1bd8cd",
+      "path": "public/realm/raid/ui-card-branch-c.webp",
+      "sha256": "5e4c81d44d96312aec991433d1fc2f0523c99b9fc7e4aa997d118739a3f09b99",
+      "bytes": 20654,
+      "size": [
+        384,
+        576
+      ],
+      "nativeSize": [
+        1024,
+        1536
+      ],
+      "nativeSlice": 160,
+      "runtimeSlice": 60,
+      "alpha": {
+        "transparentPixels": 177723,
+        "visiblePixels": 43461,
+        "centerMax": 0
+      },
+      "metadataFile": "card-c.json",
+      "prompt": "Use case: precise-object-edit.\nAsset type: a single native raster game UI card border, variant C “guard / bracing”, 1024 x 1536 pixels, 2:3 portrait, orthographic straight-on.\nInput image 1 is the approved A pilot and exact geometry/scale/material/style template. Input image 2 is the original in-game UI card and supports the established hand-painted aged bronze, old dark wood and brushwork family. This is ONE border, not a presentation sheet.\nKeep image 1's overall rectangular proportions, four straight side positions, rail thickness, corner positions, dark old wood rails, dimensional shading, highlights, readable edge contrast and painted grain. Preserve its small compact corners and long simple straight stretchable rail middles. Do not redesign the family or change the width geometry.\nChange only the branch identity: replace the warm gold accents with muted LIGHT PURPLE / violet-tinted aged bronze or enamel accents. The result should visibly read purple but remain desaturated and grounded in the same old wood and aged metal. Make the four compact right-angle reinforcement corner plates slightly sturdier, with small bronze rivets. Each whole corner must fit inside its 160 x 160 pixel corner cell, suitable for CSS border-image-slice 160 and a rendered 16px border. Keep all four corners completely visible. In this same rendering setup, the rails should retain the A reference's effective 5–6px visible rail within the 16 CSS pixel border, not grow thicker.\nTRANSPARENCY IS STRUCTURAL: the entire central opening must be genuinely transparent alpha=0, with a completely empty rectangular clear area at least 70% of total width and 80% of total height. The outside around the border must also be genuinely transparent. Only the wooden/metal border is opaque. No translucent brown haze, no opaque shadow covering the hole, no black backing, no gray backing, no paper, no panel, no central fill, no fake transparency checkerboard. Shadows may live on the frame itself, not fill the opening. The dark/black appearance in input previews must not be copied as an opaque central panel.\nStyle: same hand-painted brushstroke game art as both inputs, old wood grain and scuffed aged bronze, restrained ancient Korean peninsula material feeling, crisp legibility. No new art style. Straight rectangular silhouette; no large protruding ornament.\nAbsolutely no characters, weapons, icons, gems, jewels, ribbons, text, letters, numbers, watermark, decorative center objects, background scene, Chinese clouds, dragons, Japanese motifs, red disc, sun or taegeuk. No fantasy jewel corner. Output one isolated empty purple-accent guard card BORDER on a transparent background.",
+      "references": [
+        "D:/에셋창고/raid-card-branch-a-50.png",
+        "D:/flutter/arrow_game_one/public/realm/raid/ui-card.png"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+/* Native 1024×1536 / slice160 → 384×576 / slice60, same full-frame geometry.
+   No center fill: old dark timber background stays visible through the opening. */
+.choices button.branch-card{border:16px solid transparent;border-radius:0;border-image-source:var(--branch-frame);border-image-slice:60;border-image-repeat:stretch;background:linear-gradient(color-mix(in srgb,var(--c) 9%,#17251d),color-mix(in srgb,var(--c) 4%,#0a1714));background-clip:padding-box}
+.choices button.branch-a{--branch-frame:url('/realm/raid/ui-card-branch-a.webp')}
+.choices button.branch-b{--branch-frame:url('/realm/raid/ui-card-branch-b.webp')}
+.choices button.branch-c{--branch-frame:url('/realm/raid/ui-card-branch-c.webp')}
+/* Portrait growth remains a choice screen while combat waits for rotation.
+   Keep every description/recipe; horizontal card contents reduce stack height. */
+@media(orientation:portrait) and (max-width:700px){
+  #overlay:has(.panel.upgrade){padding:8px}
+  .panel.upgrade{padding:6px 8px;max-height:calc(100dvh - 16px)}
+  .panel.upgrade .lv-head{gap:2px 6px}
+  .panel.upgrade h2.lvup{font-size:20px;line-height:1.2;margin:0}
+  .panel.upgrade .lv-have{gap:4px;margin:0}
+  .panel.upgrade .lv-have .have{width:24px;height:24px;padding:1px}
+  .panel.upgrade .lv-have .have b{font-size:12px;min-width:15px;height:15px;line-height:15px}
+  .panel.upgrade .tree-btn{padding:3px 8px;font-size:12px}
+  .panel.upgrade .tree-btn img{width:18px;height:18px}
+  .panel.upgrade .choices{grid-template-columns:1fr;gap:4px;margin:6px 0}
+  .panel.upgrade .choices>button{display:grid;grid-template-columns:32px minmax(0,1fr) max-content;align-items:center;column-gap:6px;row-gap:2px;padding:3px 4px}
+  .panel.upgrade .choices>button>.rune{grid-column:1;grid-row:1/3;width:32px;height:32px;margin:0}
+  .panel.upgrade .choices>button>b{grid-column:2;grid-row:1;font-size:16px;line-height:1.2;text-align:left}
+  .panel.upgrade .choices>button>.lv-pips{grid-column:2;grid-row:2;justify-content:flex-start;gap:2px}
+  .panel.upgrade .choices .lv-num{font-size:12px;margin-left:2px}
+  .panel.upgrade .choices .lv-pips>i:not(.lv-num){width:8px;height:8px}
+  .panel.upgrade .choices>button>.gain{grid-column:3;grid-row:1/3;font-size:12px;padding:1px 5px;white-space:nowrap}
+  .panel.upgrade .choices>button>span:not(.rune){grid-column:1/-1;grid-row:3;font-size:12px;line-height:1.3}
+  .panel.upgrade .choices>button>em{grid-column:1/-1;grid-row:4;padding-top:3px;gap:3px;font-size:12px;line-height:1.3}
+  .panel.upgrade .choices>button.combo-card{padding-top:14px}
+  .panel.upgrade .choices>button.combo-card>b{grid-row:1/3}
+  .panel.upgrade .choices .ribbon{font-size:12px;line-height:1.2;letter-spacing:.08em;padding:0 10px}
+  .panel.upgrade .choices .ribbon.cap{top:-12px}
+  .panel.upgrade .recipe{gap:3px}
+  .panel.upgrade .recipe .need{width:22px;height:22px}
+  .panel.upgrade .recipe .need b{font-size:12px;line-height:14px;min-width:14px;height:14px;right:-3px;bottom:-3px}
+  .panel.upgrade .recipe .combo{flex-direction:row;gap:3px}
+  .panel.upgrade .recipe .combo img{width:24px;height:24px}
+  .panel.upgrade .recipe .combo small,.panel.upgrade .recipe .op{font-size:12px}
+  .panel.upgrade .choices .unlock{font-size:12px;gap:3px;line-height:1.3}
+  .panel.upgrade .choices .unlock img{width:18px;height:18px}
+  .panel.upgrade .choices .unlock.now{padding:1px 5px}
+  .panel.upgrade .choices .ultup{font-size:12px}
+  .panel.upgrade #reroll{font-size:12px;padding:6px 10px;margin:4px 0}
+}

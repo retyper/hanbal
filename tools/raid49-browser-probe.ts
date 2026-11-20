@@ -130,6 +130,10 @@ try {
     check(done.end?.ready && done.end.elapsed === done.end.duration, '끝 연출 시계가 정해진 길이까지 돈 뒤 결과 표시', done.end)
   }
   await call('Page.enable'); await call('Runtime.enable'); await call('Log.enable')
+  if(mode==='card-ui'){
+    const source=`(()=>{const d=Object.getOwnPropertyDescriptor(HTMLImageElement.prototype,'src');if(!d?.set||!d?.get)throw new Error('image src descriptor missing');window.__card50={images:[]};Object.defineProperty(HTMLImageElement.prototype,'src',{...d,set:function(value){d.set.call(this,value);if(String(value).includes('ui-card-branch-'))window.__card50.images.push(this)}})})()`
+    new Function(source);await call('Page.addScriptToEvaluateOnNewDocument',{source})
+  }
   if(mode==='pause-ui')await call('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1})
   if (process.env['OBSERVE_CANVAS'] === '1') await call('Page.addScriptToEvaluateOnNewDocument', { source: String.raw`(() => {
     const labels=new WeakMap(), anonymous=new WeakMap();let serial=0;const state=window.__raid49Draw={reads:0,fx:{},sources:{},raw:{},heroFrames:{},hitArt:{},raysPending:false,raysNextSprite:{count:0},fieldMatrix:null,firstHit:null,startReads:0,lastHp:null};
@@ -150,7 +154,7 @@ try {
     const tick=()=>{const r=window.__raid?.();if(r){if(state.lastHp!==null&&r.hp<state.lastHp&&!state.firstHit)state.firstHit={t:r.t,hp:r.hp,reads:state.reads,readDelta:state.reads-state.startReads};state.lastHp=r.hp}requestAnimationFrame(tick)};requestAnimationFrame(tick);
   })()` })
   await call('Emulation.setFocusEmulationEnabled', { enabled: true })
-  await size(844, 390, !mode.startsWith('keyboard'))
+  await size(844, 390, !mode.startsWith('keyboard')&&mode!=='card-ui')
   const q = new URLSearchParams({ kit: process.env['KIT'] ?? 'bow', sprite: process.env['HERO_SPRITE'] ?? 'base-w-102-garak-dana', hero: process.env['HERO_ID'] ?? 'w-102-garak-dana', name: process.env['HERO_NAME'] ?? '다나', bust: process.env['HERO_BUST'] ?? 'w-102-garak-dana' })
   if (mode === 'review'||mode==='pacing-review') { q.set('review', ''); q.set('stage', process.env['STAGE'] ?? 'forest') }
   report.url = `${origin}/raid.html?${q}`
@@ -159,7 +163,34 @@ try {
   check(report.errors.length === 0, '첫 로드 console/exception 오류 0', report.errors)
   check((await read()).visibility === 'visible', '탭 visible')
   if (process.env['OBSERVE_CANVAS'] === '1') { report.canvasBoot = await canvasReport(); report.fxBoot=report.canvasBoot?.sources; check(Object.keys(report.fxBoot??{}).length===10&&Object.values(report.fxBoot??{}).every((x:any)=>x.complete&&x.naturalWidth>0),'실제 warmFx 공유 이미지 10개 로드·native 크기 양수',report.fxBoot) }
-  if(mode==='shop-close'){
+  if(mode==='card-ui'){
+    report.evidence='정상 Enter출전→기본자동공격/native방향키→실제첫성장. meta/sim/storage주입0. 첫offer유지중 viewport와native스크롤로5폭검사,실제선택1회.'
+    report.preStart=await ev(`({startReady:!document.querySelector('#start').disabled,images:window.__card50.images.map(i=>({src:i.src,complete:i.complete,w:i.naturalWidth,h:i.naturalHeight})),network:performance.getEntriesByType('resource').filter(r=>r.name.includes('ui-card-branch-')).map(r=>({name:r.name,responseEnd:r.responseEnd,encodedBodySize:r.encodedBodySize,decodedBodySize:r.decodedBodySize})),at:performance.now()})`)
+    check(report.preStart.startReady&&report.preStart.images.length===3&&report.preStart.images.every((i:any)=>i.complete&&i.w===384&&i.h===576),'최초 출전 전 공유 Image3개 complete·native384×576',report.preStart)
+    await key('Enter','Enter');await waitFor(`document.querySelector('#menu').hidden&&!document.querySelector('#play').hidden`);const beforeMove=await read();await key('ArrowRight','ArrowRight',350);await sleep(50);const afterMove=await read();report.move={before:beforeMove,after:afterMove};check(afterMove.x!==beforeMove.x,'실제 정상전투 native방향키 이동',report.move)
+    await waitFor(`!document.querySelector('#overlay').hidden&&document.querySelectorAll('.choices [data-up]').length===3`,45000)
+    report.firstOffer=await ev(`(async()=>{const H=await import('/src/raid/haebi.ts'),r=window.__raid();return{t:r.t,kills:r.kills,kit:r.kit,offers:[...document.querySelectorAll('.choices [data-up]')].map(e=>({up:e.dataset.up,dataBranch:e.dataset.branch??null,model:H.nodeAt(r.kit,e.dataset.up),classes:e.className,aria:e.getAttribute('aria-label'),frame:getComputedStyle(e).borderImageSource,slice:getComputedStyle(e).borderImageSlice,border:getComputedStyle(e).borderTopWidth})),branchTags:document.querySelectorAll('.choices .branch-tag').length}})()`)
+    const branches=report.firstOffer.offers.map((e:any)=>e.model?.branch)
+    check(new Set(branches).size===3&&branches.every((b:any)=>['a','b','c'].includes(b))&&report.firstOffer.offers.every((e:any)=>e.classes.includes('branch-'+e.model.branch)&&e.frame.includes('ui-card-branch-'+e.model.branch+'.webp')&&e.slice==='60')&&report.firstOffer.branchTags===0,'실제 첫offer a/b/c3종·각 native프레임URL·글띠DOM0',report.firstOffer)
+    const cardGeometry=()=>ev(`(()=>{const p=document.querySelector('.panel.upgrade'),pr=p.getBoundingClientRect(),rect=r=>({x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:r.width,height:r.height}),cards=[...document.querySelectorAll('.choices [data-up]')].map(e=>{const r=e.getBoundingClientRect(),t=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2),els=[...e.children].filter(x=>{const a=x.getBoundingClientRect();return a.width&&a.height&&getComputedStyle(x).display!=='none'}),parts=els.map(x=>({tag:x.tagName,cls:x.className,text:x.textContent.trim(),rect:rect(x.getBoundingClientRect())})),overlaps=[];for(let a=0;a<parts.length;a++)for(let b=a+1;b<parts.length;b++){const u=parts[a].rect,v=parts[b].rect;if(Math.min(u.right,v.right)>Math.max(u.x,v.x)+.5&&Math.min(u.bottom,v.bottom)>Math.max(u.y,v.y)+.5)overlaps.push([parts[a].cls||parts[a].tag,parts[b].cls||parts[b].tag])}return{up:e.dataset.up,rect:rect(r),frame:getComputedStyle(e).borderImageSource,hit:e===t||e.contains(t),inside:r.x>=-1&&r.right<=innerWidth+1&&r.y>=pr.y+p.clientTop&&r.bottom<=pr.y+p.clientTop+p.clientHeight,topElement:t?.id||t?.className,overflow:e.scrollWidth-e.clientWidth,parts,overlaps}});return{w:innerWidth,h:innerHeight,panelOverflow:p.scrollWidth-p.clientWidth,documentOverflow:document.documentElement.scrollWidth-innerWidth,scrollTop:p.scrollTop,clip:{top:pr.y+p.clientTop,bottom:pr.y+p.clientTop+p.clientHeight},cards,visibleHints:[...document.querySelectorAll('.choices kbd')].filter(k=>k.getClientRects().length&&getComputedStyle(k).display!=='none').map(k=>k.textContent)}})()`)
+    report.pcGeometry=await cardGeometry();check(report.pcGeometry.visibleHints.join(',')==='1,2,3'&&report.pcGeometry.cards.every((c:any)=>c.hit&&c.inside&&c.overlaps.length===0),'PC 실제 카드 숫자hint1/2/3·텍스트/pips 겹침0',report.pcGeometry);await snap('PC-first-three-frames')
+    await call('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});report.cardProfiles=[]
+    for(const [w,h]of [[360,800],[375,812],[390,844],[412,915],[844,390]]){
+      await size(w!,h!,true);const scans=[]
+      if(await ev(`!document.querySelector('#rotate-guide').hidden`)){const g=await cardGeometry();report.cardProfiles.push({w,h,blockedByRotateGuide:true,geometry:g});check(false,'회전안내가 실제 성장카드 가림 '+w+'×'+h,g);await snap('upgrade-'+w+'x'+h);continue}
+      for(let card=0;card<3;card++){
+        let g=await cardGeometry(),c=g.cards[card]
+        for(let attempt=0;attempt<10&&(!c.inside||!c.hit);attempt++){const down=c.rect.y<g.clip.top?220:-220;await call('Input.synthesizeScrollGesture',{x:Math.round(w!*.7),y:Math.round(h!*.55),yDistance:down,gestureSourceType:'touch',speed:700});await sleep(120);g=await cardGeometry();c=g.cards[card]}
+        scans.push({card,...c});check(c.hit&&c.inside&&c.overflow<=1&&c.overlaps.length===0,'실제 카드 '+(card+1)+' native스크롤 접근·본문겹침0 '+w+'×'+h,c)
+        if(card===0)await snap('upgrade-'+w+'x'+h)
+      }
+      const g=await cardGeometry();report.cardProfiles.push({w,h,scans,geometry:g});check(g.panelOverflow<=1&&g.documentOverflow<=1&&g.visibleHints.length===0,'터치 upgrade '+w+'×'+h+' 가로overflow0·hint숨김',g)
+    }
+    await size(390,844,true);const before=await ev(`({ranks:{...window.__raid().ranks},offers:[...window.__raid().offers],t:window.__raid().t})`),chosen=report.firstOffer.offers[0].up;await tap('.choices [data-up]');await sleep(150);const after=await ev(`({ranks:{...window.__raid().ranks},offers:[...window.__raid().offers],t:window.__raid().t,state:window.__raid().state})`);report.selection={chosen,before,after};check(after.ranks[chosen]===before.ranks[chosen]+1,'세로 첫성장 실제 native touch 선택 정확히1회',report.selection)
+    await sleep(250);const locked=await read();report.portraitAfterSelection=locked;check(locked.t===after.t&&locked.state==='playing','세로 선택뒤 전투 판시계 잠금 유지',{after:after.t,locked:locked.t})
+    await size(844,390,true);await waitFor(`!!document.querySelector('.pause-panel #resume')`,5000);const paused=await read();await tap('#resume');await sleep(350);const resumed=await read();report.rotateResume={paused,resumed};check(resumed.t>paused.t&&!resumed.overlay,'가로회전뒤 native계속으로 실제 전투재개',report.rotateResume)
+    report.notRealUiValidated=['갈래끝 cap-ribbon/조합카드는 이번 실제 첫성장에 없어서 시각검증0; source+unit 별도','실제휴대폰 hardware/FPS 미검증; headless viewport','DOM data-branch속성은제품에없음: class+aria+읽기전용nodeAt실모델로3갈래대조']
+  }else if(mode==='shop-close'){
     report.evidence='상점 닫기 PC 힌트 최소CSS교정만 정상메뉴 native입력으로 재검수. 첫5폭상점 actual수치는 기존보고 유지; meta/sim/localStorage 주입0.'
     await call('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});await tap('#open-shop');await waitFor(`!document.querySelector('#shop').hidden`);await call('Emulation.setTouchEmulationEnabled',{enabled:false});await size(844,390,false)
     report.pcShopClose=await ev(`(()=>{const b=document.querySelector('#close-shop'),k=b.querySelector('kbd'),flat=r=>({left:r.left,top:r.top,right:r.right,bottom:r.bottom}),hint=k?.getBoundingClientRect(),walk=document.createTreeWalker(b,NodeFilter.SHOW_TEXT),labels=[];let n;while(n=walk.nextNode())if(n.textContent.trim()&&!n.parentElement.closest('kbd')){const r=document.createRange();r.selectNodeContents(n);for(const x of r.getClientRects())labels.push(flat(x))}return{fine:matchMedia('(pointer:fine)').matches,hover:matchMedia('(hover:hover)').matches,hint:k?.textContent,hintVisible:!!k&&getComputedStyle(k).display!=='none',paddingRight:getComputedStyle(b).paddingRight,hintRect:hint&&flat(hint),labels,overlap:!!hint&&labels.some(r=>Math.min(r.right,hint.right)>Math.max(r.left,hint.left)+.1&&Math.min(r.bottom,hint.bottom)>Math.max(r.top,hint.top)+.1)}})()`)

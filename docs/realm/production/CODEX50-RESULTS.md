@@ -65,6 +65,16 @@
 - 내장 생성2회로 검토용 캐릭터 RAW2장 공급·원본 보존·두 참조 실제 전달 확인. pixel edit/재생성/게임 설치0. 경로와 한계는 `CODEX50-PIRATE-CONCEPTS.md`에 있다.
 - typecheck 통과·전체1,672개 중1,670통과/0실패/2skip. 최종 build raw4,959.4/5,000KB·gzip1,536.0/1,600KB, 로컬 제품 번들의 pirate HTML·JS와 raid HTML·JS·해시 CSS HTTP200+SHA 일치를 확인했다. pirate의 스타일은 HTML 안에 있어 별도 해시 CSS가 없다.
 
+- 커밋 `b456779f` 즉시 push, CI `44736746025` build·deploy 성공. 운영 `b456779f4a`의 pirate HTML·JS 및 raid HTML·JS·해시 CSS HTTP200과 검수 번들 SHA 일치를 확인했다.
+
+## 50-6 · 갈래 카드 프레임
+
+- 세 구조 갈래 a/b/c에 공유 프레임3장을 적용했다. 기존 금/청록/보라와 같은 원화 계열을 실제 참조로 전달했으며 A 한 장을 4비율 CSS 9조각으로 시험한 뒤 A를 참조해 B/C를 생성했다. native 생성3회·재생성0·API0이며 50-5 캐릭터2회와 합쳐 총5회다. 원본 PNG는 수정하지 않고 D: 및 ignored assets_src에 SHA 일치 보존했다.
+- 실행384×576 WebP3장 합61,350B, slice60/16px/no-fill. CSS는 /hanbal/ 경로로 변환됐고 HTML·JS·해시CSS와3WebP 모두 로컬HTTP200+SHA 일치했다. 3이미지를 출전 전 preload한다. 눈에 보이는 갈래 글띠만 제거하고 접근 이름·단계·선택 규칙을 유지했다. 조합은 기존 별도 카드이며 갈래 끝 표식은 남긴다.
+- 실제 검수에서 세로 회전 안내가 성장 카드를 가리고 한 장347.375px로 과도하게 커지는 RED를 확인했다. 교정1회로 세로 성장 중 안내만 숨기고 전투 정지는 유지했으며, 모든 설명/조합을 보존한12px 이상 카드 배치로 바꿨다. 정상 출전·이동·첫 성장의5화면 카드15/15가 패널 안·native hit=true·겹침0·scrollTop0이다. 세로 wave0→1 선택 후 t6.475 정지, 가로 회전·계속하기 후 t7.0167 재개했다. JS오류0, favicon404 별도. root도 최종 세로/가로 PNG를 직접 확인했다.
+- reroll은5화면 시각 노출만 확인했으며 native hit 수치는 미계측이다. 갈래 끝/조합은 첫 성장에 나오지 않아 실제 화면 미검증이다. 최초 계측 도구 구문 실패와 제품 RED를 보존하고 최종 교정 결과와 분리했다. 구현 문자열 미러 검사를 제거하고 실제 import 배열/자산 파일 검사1개 및 실UI 회귀로 대체했다.
+- 최종 typecheck 통과·전체1,673개 중1,671통과/0실패/2skip. 빌드 raw4,961.9/5,000KB·gzip1,536.4/1,600KB. 근거: CODEX50-CARD-FRAMES.{md,json}, taskoutputs/codex50/phase6/QA-FINAL-SUMMARY.json, outputs/codex50/phase6-{local-bundle,local-frame-http}.json. 새 전투 규칙0이다.
+
 ## 이어갈 순서
 
 50-1 피로 조정 → 50-2 정지 화면 → 50-3 키보드 → 50-4 자석 → 50-5 해적 활쏘기 → 50-6 갈래 카드 → 50-7 기술 나무 → 50-8 효과음 후보. 50-4의 자석 동작은 그 단계에 명시된 변경만 적용하며 50-1의 다른 전투 변경과 섞지 않는다.
