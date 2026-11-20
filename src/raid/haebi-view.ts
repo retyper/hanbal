@@ -6,6 +6,9 @@ import { AURA_ART, drawAura, drawAuraBurst, drawAuraGround, type AuraArt, type A
 import { HAEBI_IMPACT as FEEL, HAEBI_END as END } from '../tune/params.ts'
 import type { RaidFeel } from './impact.ts'
 import type { RaidEnding } from './ending.ts'
+import { FX_PATHS, drawFx } from './fx-art.ts'
+import { drawImpactParticles } from './fx-particles.ts'
+import { HAEBI_FX_ART as FX_ART } from '../tune/params.ts'
 
 /** 돌팔매 묶음의 돌 · 바위 (전용 그림 H56~H58 이 오기 전엔 본편 바위 그림을 빌린다) */
 const ROCK = 'fx/rock.png'
@@ -14,7 +17,7 @@ const MOB_ART: Record<string, string> = { tiger: 'beast-tiger', bear: 'beast-bea
 export const imagePaths = [genArtOf('haebi').file, genArtOf('aw1-haebi').file, 'anim-px/bandit-club.png', 'anim-px/bandit-chief.png', 'anim-px/bandit-archer.png',
   ...['runner', 'slinger', 'shield', 'dog', 'berserker', 'firearcher', 'iron', 'shaman'].map(k => `anim-px/bandit-${k}.png`), ...['ford.webp', 'palisade.webp', 'digits.png', 'knife.png', 'soul.png', 'bell-ring.png', 'javelin.png','sword-wave.png','forest.webp','axe.png','impact-strip.png','slash-strip.png','death-strip.png','fire-strip.png','lightning-strip.png','talisman.png','wind-blade.png','arrow.png','hit.png','essence.png','essence-large.png',...['mark-slam','mark-move','mark-hero','mark-target','mark-arrow','bar-boss','plaque'].map(p=>`ui/${p}.png`)].map(p=>'raid/'+p), 'anim-px/bandit-warlord.png', ROCK, AURA_ART.flame, AURA_ART.ember,
   // 11-16 H45~H53: 스테이지 두목 둘 · 설원·산성 적 넷 · 넷째·다섯째 바닥
-  ...['boss-ford', 'boss-palisade', 'boss-snow', 'boss-fortress', ...Object.values(MOB_ART)].map(n => `anim-px/${n}.png`), 'raid/snow.webp', 'raid/fortress.webp']
+  ...['boss-ford', 'boss-palisade', 'boss-snow', 'boss-fortress', ...Object.values(MOB_ART)].map(n => `anim-px/${n}.png`), 'raid/snow.webp', 'raid/fortress.webp', ...FX_PATHS]
 /** bar-boss.png 의 투명한 홈 [x0,y0,x1,y1] — tools/raid-ui-kit.py 가 public/realm/raid/ui/kit.json 에 적는 값 */
 const BOSS_WIN = [104, 35, 626, 82] as const
 /**
@@ -638,6 +641,11 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       if (target) decal(ctx, images, 'mark-arrow', e.x, e.y - h - 26 + Math.sin(s.t * 4) * 4, 22, 39)
       if (big) { ctx.fillStyle = '#111c'; ctx.fillRect(e.x - 28, e.y - h, 56, 5); ctx.fillStyle = '#ef9873'; ctx.fillRect(e.x - 28, e.y - h, 56 * e.hp / e.max, 5) }
     } else {
+      if (ending?.kind === 'victory' && ending.elapsed > ending.freeze) {
+        ctx.save(); ctx.globalAlpha = FX_ART.rayAlpha * Math.min(1, (ending.elapsed - ending.freeze) / END.cameraTime)
+        drawFx(ctx, images, 'fx_victory_rays', s.x, s.y - heroH(s) * FX_ART.heroRayLift, heroH(s) * FX_ART.heroRayWidth, heroH(s) * FX_ART.heroRayHeight)
+        ctx.restore()
+      }
       trackGhosts(s, heroSprite(s)); drawGhosts(ctx, images, s, heroH(s))
       // 오라: 뒤 겹(몸 뒤 빛 · 뒤 가닥) → 몸 → 앞 겹(앞 가닥 · 불티) · 발밑 고리와 표식은 땅 표식 차례에 이미 그렸다
       if (aura) drawAura(ctx, aura, false, auraAt)
@@ -725,10 +733,12 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   }
   // 맞은 불꽃(hit)은 새것 drawHits 개만 — 화살이 무리를 꿰면 한 프레임에 수백 개가 쌓여 폰이 버벅였다 (11-17 형 「이쯤 오면 렉」)
   let hitSkip = -C.drawHits, deathSkip = -C.drawDeaths; for (const f of s.fx) if (f.kind === 'hit') hitSkip++; else if (f.kind === 'death') deathSkip++
+  let particleBudget = FX_ART.particleBudget
   for (const f of s.fx) {
     if (f.kind === 'hit' ? hitSkip-- > 0 : f.kind === 'death' && deathSkip-- > 0) continue   // 쓰러지는 몸도 새것 drawDeaths 개만
     const remaining = f.life - (ending?.effectTime ?? 0); if (remaining <= 0) continue
     const age = 1 - remaining / f.total; ctx.save(); ctx.globalAlpha = Math.min(1, remaining / f.total * 1.5); ctx.strokeStyle = f.color; ctx.fillStyle = f.color; ctx.lineWidth = 3
+    if (particleBudget > 0 && (f.kind === 'hit' || f.kind === 'death')) particleBudget -= drawImpactParticles(ctx, images, f, age, particleBudget)
     if (f.kind === 'bolt') {
       const img=images.get('raid/lightning-strip.png'),dx=f.x2-f.x,dy=f.y2-f.y
       ctx.translate(f.x,f.y-20);ctx.rotate(Math.atan2(dy,dx))

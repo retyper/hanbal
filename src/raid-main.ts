@@ -7,9 +7,10 @@ import { RaidFeel } from './raid/impact.ts'
 import { RaidEnding } from './raid/ending.ts'
 import { drawEnding } from './raid/ending-view.ts'
 import { HAEBI_END as END } from './tune/params.ts'
+import { warmFx } from './raid/fx-art.ts'
 import { putRaidGame, sealLeftovers, unsentRaids, markRaidsSent, type RaidGame, type RaidOpts } from './raid/runlog-store.ts'
 import { pushRaids } from './net/sync.ts'
-import { newCam, followCam, nextLevel, closest, toField } from './raid/camera.ts'
+import { newCam, followCam, nextLevel, closest, toField, clampCenter } from './raid/camera.ts'
 import { loadMeta, saveMeta, buy, refund, refundFee, record, shopCost, shopMax, stageOpen, stageName, pickStage, SHOP, STAGE_ORDER, type ShopKey } from './raid/meta.ts'
 import { drawField, imagePaths, setHeroArt, heroArtFiles } from './raid/haebi-view.ts'
 import { powerIcon, installPowerHints, comboIcon, rankMark, treeSvg, treeInfo, BRANCH_COLOR } from './raid/power-ui.ts'
@@ -312,7 +313,7 @@ window.addEventListener('resize', layoutTrial)
 let pendingSeed = vanguardToken ? Number(query.get('seed')) >>> 0 : crypto.getRandomValues(new Uint32Array(1))[0]!
 const notifyVanguardStart = () => { if (vanguardToken) window.parent.postMessage({ type: 'hanbal.haebi.vanguard-start', token: vanguardToken }, location.origin) }
 const base = import.meta.env.BASE_URL + 'realm/'
-Promise.all([...imagePaths, ...heroArtFiles()].map(path => new Promise<void>((resolve, reject) => { const img = new Image(); img.onload = () => { images.set(path, img); resolve() }; img.onerror = reject; img.src = base + path }))).then(() => { $<HTMLButtonElement>('start').disabled = false; $('start').textContent = startLabel(); renderStageMenu(); schedule() }).catch(() => { $('start').textContent = '그림을 불러오지 못했어요. 새로고침해 주세요.' })
+Promise.all([...imagePaths, ...heroArtFiles()].map(path => new Promise<void>((resolve, reject) => { const img = new Image(); img.onload = () => { images.set(path, img); resolve() }; img.onerror = reject; img.src = base + path }))).then(() => { warmFx(images); $<HTMLButtonElement>('start').disabled = false; $('start').textContent = startLabel(); renderStageMenu(); schedule() }).catch(() => { $('start').textContent = '그림을 불러오지 못했어요. 새로고침해 주세요.' })
 function resetInput() { keys.clear(); destination = null; stickEnd(); dashAt = skillAt = wakeAt = -9; acc = 0 }
 function begin(sameSeed = false) {
   // 본편에서 연 열전은 한 판만 — 출전하는 그 순간 본편에 알린다 (그 장수의 이번 달 출전 · app.ts markRaid)
@@ -723,8 +724,9 @@ function frame(now: number) {
     followCam(cam, run.x, run.y, feel.stopped || ending.active ? 0 : dt)
     const zoom = ending.kind === 'victory' ? Math.min(1, Math.max(0, ending.elapsed - ending.freeze) / END.cameraTime) : 0
     const endCam = zoom ? { zoom: cam.zoom * (1 + END.cameraZoom * zoom), x: cam.x + (run.x - cam.x) * zoom, y: cam.y + (run.y - cam.y) * zoom } : cam
+    if (zoom) Object.assign(endCam, clampCenter(endCam.zoom, endCam.x, endCam.y))
     drawField(ctx, images, run, destination, endCam, feel, ending.kind ? ending : undefined)
-    drawEnding(ctx, ending, endHit, runGold(run))
+    drawEnding(ctx, ending, endHit, runGold(run), images)
   }
   if (!live || run.t >= cutinUntil) skipCutin()
   // 기술이 터지면 계단마다 떨고(비기 한 번 · 각성 두 박 · 진각성 세 박) 크리티컬은 짧게 한 번 (11-19 형 · HAEBI_FEEL_TIERS · 끄기·가려진 탭은 haptics 가 막음)

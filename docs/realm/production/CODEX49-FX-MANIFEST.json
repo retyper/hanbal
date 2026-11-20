@@ -1,0 +1,221 @@
+{
+  "expected": 10,
+  "supplied": 10,
+  "nativeCalls": 11,
+  "pixelEdits": 0,
+  "items": [
+    {
+      "name": "fx_spark_shard.png",
+      "path": "public/realm/raid/fx/fx_spark_shard.png",
+      "bytes": 303409,
+      "sha256": "2caf48197a8c35d09f0003e4266317942d00816353d0bcb03561aff833dbd16c",
+      "size": [
+        2172,
+        724
+      ],
+      "alphaZeroPixels": 1464384,
+      "prompt": "ONE isolated elongated white-gold metal-impact spark shard, a single narrow tapered irregular streak, brilliant warm ivory core and thin amber-gold edge, slightly angular and hand-painted, no large glow cloud. It will be rendered as ONE flying particle, never a complete explosion or bundle. Large clean isolated object with generous transparent padding. Genuine transparent alpha background. No other objects, no letters, no circle or ring, no sun disc, no frame, no watermark. Painterly premium Korean historical fantasy game effect.",
+      "tool": "built-in image_gen",
+      "nativeCalls": 1,
+      "pixelEdits": 0,
+      "boundsAlpha8": [
+        129,
+        47,
+        2082,
+        689
+      ]
+    },
+    {
+      "name": "fx_ink_splat_a.png",
+      "path": "public/realm/raid/fx/fx_ink_splat_a.png",
+      "bytes": 1796210,
+      "sha256": "3f6e16a0761f00b558e557f397c431aff5caf7a0f1503b67385b58d275c9aeec",
+      "size": [
+        1536,
+        1024
+      ],
+      "alphaZeroPixels": 1029898,
+      "prompt": "ONE compact irregular black ink splat for a Korean historical fantasy game death particle. One natural asymmetric wet-ink blot with jagged bristle edges and a few tiny attached flecks, broad centre, hand-painted charcoal pigment. Black ink only, NOT red blood. Genuine transparent alpha background, generous padding. One object only, not a collection, no text, circle, ring, sun disc, scenery, border, labels or watermark.",
+      "tool": "built-in image_gen",
+      "nativeCalls": 1,
+      "pixelEdits": 0,
+      "boundsAlpha8": [
+        80,
+        45,
+        1464,
+        951
+      ]
+    },
+    {
+      "name": "fx_ink_splat_b.png",
+      "path": "public/realm/raid/fx/fx_ink_splat_b.png",
+      "bytes": 1121830,
+      "sha256": "b99455d6ccbed19c250e73833402a24ffe8f3a4a03082434c43b4cc133a54e99",
+      "size": [
+        1536,
+        1024
+      ],
+      "alphaZeroPixels": 1371070,
+      "prompt": "ONE isolated oblique black ink splat, a short slanted brush-impact blot with torn dry-bristle tips and an asymmetric compact silhouette. A different single shape from a round blot, for one death particle in a Korean historical fantasy game. Charcoal-black ink, never red or blood. Genuine transparent alpha background with generous padding. No text, circle, ring, disc, scenery, border, labels or watermark, no collection of separate examples.",
+      "tool": "built-in image_gen",
+      "nativeCalls": 1,
+      "pixelEdits": 0,
+      "boundsAlpha8": [
+        176,
+        139,
+        1358,
+        905
+      ]
+    },
+    {
+      "name": "fx_ink_splat_c.png",
+      "path": "public/realm/raid/fx/fx_ink_splat_c.png",
+      "bytes": 885376,
+      "sha256": "51a28579a6fdcd6c14ea0e4e26a952fda375e770c620356a0a55049e53789635",
+      "size": [
+        2172,
+        724
+      ],
+      "alphaZeroPixels": 1182155,
+      "prompt": "ONE isolated low wide black ink splat, an uneven dark pigment impact with a thick centre and two short rough tapered lobes, feathered broken brush edges. A single compact object for one death particle in a Korean historical fantasy game, not a sheet or cluster of separate examples. Charcoal black, not red blood. Genuine transparent alpha background, generous padding. No text, circle, ring, sun disc, scenery, border, labels or watermark.",
+      "tool": "built-in image_gen",
+      "nativeCalls": 1,
+      "pixelEdits": 0,
+      "boundsAlpha8": [
+        140,
+        205,
+        2044,
+        625
+      ]
+    },
+    {
+      "name": "fx_dust_puff.png",
+      "path": "public/realm/raid/fx/fx_dust_puff.png",
+      "bytes": 1398930,
+      "sha256": "0c3aeb862fbdff68f2b56a0b579c59834ae95d3b83e3baf705ef5e0e2bac5a17",
+      "size": [
+        1536,
+        1024
+      ],
+      "alphaZeroPixels": 1236005,
+      "prompt": "ONE isolated small roundish ochre-grey earth dust puff, one soft lumpy irregular cloud with a dense centre and feathered translucent dusty edges. Hand-painted restrained warm grey-yellow pigment, readable as one particle when tiny. No rocks or ground plane, no explosion, no collection. Genuine transparent alpha background, generous padding. Korean historical fantasy game effect. No text, circular border, red ring, sun disc, scenery or watermark.",
+      "tool": "built-in image_gen",
+      "nativeCalls": 1,
+      "pixelEdits": 0,
+      "boundsAlpha8": [
+        390,
+        178,
+        1150,
+        830
+      ]
+    },
+    {
+      "name": "stamp_defeat.png",
+      "path": "public/realm/raid/fx/stamp_defeat.png",
+      "bytes": 1622851,
+      "sha256": "ae9ca70c6db261b5f60abad82d5e835e487a5fad59325630b040a52687ea2eb3",
+      "size": [
+        1774,
+        887
+      ],
+      "alphaZeroPixels": 913753,
+      "prompt": "Only the exact TWO Korean Hangul syllables 패배, side by side as one large dramatic dry ink-brush calligraphy stamp for a Korean historical fantasy game's defeat screen. Correct legible Hangul 패배, no other letters. Rough split bristle tips, worn dark charcoal ink texture with pale warm-grey lit brush faces for readability against a dark background. Forceful horizontal composition, no background brush band because that is a separate asset. Genuine transparent alpha, generous empty outer padding. No Chinese characters, Japanese calligraphic motifs, seals, red circle, red ring, sun rays, patterned decoration, frame, subtitle or watermark.",
+      "tool": "built-in image_gen",
+      "nativeCalls": 1,
+      "pixelEdits": 0,
+      "boundsAlpha8": [
+        62,
+        73,
+        1711,
+        860
+      ]
+    },
+    {
+      "name": "stamp_defeat_band.png",
+      "path": "public/realm/raid/fx/stamp_defeat_band.png",
+      "bytes": 1274285,
+      "sha256": "5773ca8d987b9a031804c8940773bea60d91d9790bb66b3a2854fd32e0a428e3",
+      "size": [
+        2172,
+        724
+      ],
+      "alphaZeroPixels": 953930,
+      "prompt": "ONE rough horizontal charcoal-black dry ink-brush band, wide and low, dense uneven centre with ragged split-bristle ends, hand-painted traditional Korean ink texture. Empty band only, absolutely NO writing or lettering. Separate backdrop for a game defeat calligraphy stamp. Genuine transparent alpha background and generous padding. No seal, circle, ring, sun disc, Chinese or Japanese decorative motif, border, scenery or watermark.",
+      "tool": "built-in image_gen",
+      "nativeCalls": 1,
+      "pixelEdits": 0,
+      "boundsAlpha8": [
+        63,
+        167,
+        2114,
+        547
+      ]
+    },
+    {
+      "name": "stamp_victory.png",
+      "path": "public/realm/raid/fx/stamp_victory.png",
+      "bytes": 1426571,
+      "sha256": "3a412b913cac844a74c7ef3cba2ea5f2bc926432076742165fda409da9228902",
+      "size": [
+        1774,
+        887
+      ],
+      "alphaZeroPixels": 1033103,
+      "prompt": "Only the exact TWO Korean Hangul syllables 승리, side by side, large forceful Korean dry-brush calligraphy painted in warm gold ink with a few small gold-leaf flecks close to the strokes. Correct legible Hangul 승리, no other characters. Rough split-bristle stroke ends, painterly Korean historical fantasy victory stamp. No background brush band, that is a separate asset. Genuine transparent alpha with generous outer padding. No Chinese characters, Japanese calligraphy motifs, circular seals, red discs or rings, sun discs or radial sun emblems, subtitles, border or watermark.",
+      "tool": "built-in image_gen",
+      "nativeCalls": 1,
+      "pixelEdits": 0,
+      "boundsAlpha8": [
+        169,
+        78,
+        1582,
+        847
+      ]
+    },
+    {
+      "name": "stamp_victory_band.png",
+      "path": "public/realm/raid/fx/stamp_victory_band.png",
+      "bytes": 1410517,
+      "sha256": "3097b8173ef5bfb8a9bcfef9740ef701f8ba68646432f33b3923f40fbf016a4d",
+      "size": [
+        2172,
+        724
+      ],
+      "alphaZeroPixels": 1052323,
+      "prompt": "ONE wide low horizontal golden dry ink-brush band, rough split-bristle ends and irregular gold-leaf pigment, dense rich ochre-gold centre, painterly Korean historical fantasy game effect. EMPTY band with absolutely no letters, writing or symbols. Genuine transparent alpha background, generous padding. No seal, circle, red ring, sun disc, rays, Chinese or Japanese decorative motifs, border, scenery or watermark.",
+      "tool": "built-in image_gen",
+      "nativeCalls": 1,
+      "pixelEdits": 0,
+      "boundsAlpha8": [
+        42,
+        184,
+        2135,
+        522
+      ]
+    },
+    {
+      "name": "fx_victory_rays.png",
+      "path": "public/realm/raid/fx/fx_victory_rays.png",
+      "bytes": 1713152,
+      "sha256": "506fc331f369764673d9679b06cf71149ce403143425560a751fd8a0c686aa84",
+      "size": [
+        1024,
+        1536
+      ],
+      "alphaZeroPixels": 1213592,
+      "prompt": "ONE vertically elongated group of loose warm golden light streaks rising UPWARD behind a victorious hero, narrow at lower centre and opening softly upward, sparse individual feathered painted strokes and tiny gold embers. No circular light source, no disc, no radial sun emblem or complete ring. A transparent background effect only, NO person or character, no landscape, no text or UI. Genuine transparent alpha and generous outer padding. Restrained premium Korean historical fantasy painterly style, no red colour, no patterned borders or watermark.",
+      "tool": "built-in image_gen",
+      "nativeCalls": 2,
+      "pixelEdits": 0,
+      "boundsAlpha8": [
+        83,
+        77,
+        963,
+        1518
+      ],
+      "correctionPrompt": "Use the input PNG as the edit target. Extract only the existing painterly golden light streaks and the small gold embers. Preserve their vertically elongated shape: a narrow convergence near lower center with individual strokes opening softly upward. Remove the gray and white checkerboard completely, including every faint square and every cloudy or gray background pixel between and behind the streaks. The space between the strokes and the generous outer margins on all sides must be clean, truly empty canvas with RGBA alpha exactly 0. Only the warm gold brush marks and their immediate feathered edges may have nonzero alpha. Keep the same warm gold color, restraint, and rough Korean historical fantasy pigment. The edited image must composite cleanly on a dark background, free of any squares, grid, background haze, or canvas texture. Output one portrait native transparent RGBA PNG. No person, text, round light source, disk, circle, ring, scenery, emblem, border, watermark or UI.",
+      "rejectedFirstSha256": "36eb0c63e534d414416a3ee1d257c04008dee1f31f765971dace4f148b046502"
+    }
+  ],
+  "rejected": []
+}

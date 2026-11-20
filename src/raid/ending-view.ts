@@ -1,8 +1,10 @@
 import { HAEBI_END as E, HAEBI_IMPACT as F } from '../tune/params.ts'
 import type { RaidEnding } from './ending.ts'
+import { HAEBI_FX_ART as A } from '../tune/params.ts'
+import { drawFx } from './fx-art.ts'
 
 /** Canvas composites only; no CSS filter or extra compositor layer. */
-export function drawEnding(ctx: CanvasRenderingContext2D, end: RaidEnding, portrait: HTMLImageElement | null, gold: number) {
+export function drawEnding(ctx: CanvasRenderingContext2D, end: RaidEnding, portrait: HTMLImageElement | null, gold: number, images: Map<string, HTMLImageElement>) {
   if (!end.active) return
   const w = ctx.canvas.width, h = ctx.canvas.height, age = end.elapsed
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0)
@@ -23,7 +25,8 @@ export function drawEnding(ctx: CanvasRenderingContext2D, end: RaidEnding, portr
     for (let i = 0; i < E.sparkCount; i++) {
       const k = (age * E.slowRate + i / E.sparkCount) % 1
       const x = w * (E.sparkLeft + E.sparkSpan * ((i * E.sparkSequence) % 1)), y = h * (1 - k)
-      ctx.globalAlpha = Math.sin(k * Math.PI); ctx.fillStyle = '#ffe29a'; ctx.fillRect(x, y, E.sparkSize, E.sparkSize)
+      ctx.globalAlpha = Math.sin(k * Math.PI)
+      drawFx(ctx, images, 'fx_spark_shard', x, y, A.victorySparkWidth, A.victorySparkHeight)
     }
     ctx.globalAlpha = 1
   }
@@ -32,10 +35,15 @@ export function drawEnding(ctx: CanvasRenderingContext2D, end: RaidEnding, portr
     const shake = Math.max(0, 1 - t / E.shakeLife) * E.shake
     ctx.translate(w / 2 + Math.sin(t * F.shakeXHz) * shake, h / 2 + Math.cos(t * F.shakeYHz) * shake)
     ctx.scale(scale, scale)
-    ctx.fillStyle = end.kind === 'victory' ? '#3c2b13dd' : '#080b11dd'
-    ctx.fillRect(-w * E.bandWidth / 2, -h * E.bandHeight / 2, w * E.bandWidth, h * E.bandHeight)
-    ctx.font = `900 ${Math.round(w * E.stampSize)}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-    ctx.fillStyle = end.kind === 'victory' ? '#ffe298' : '#ece9df'; ctx.fillText(end.kind === 'victory' ? '승리' : '패배', 0, 0)
+    const won = end.kind === 'victory'
+    ctx.globalAlpha = won ? A.victoryBandAlpha : A.bandAlpha
+    const band = drawFx(ctx, images, won ? 'stamp_victory_band' : 'stamp_defeat_band', 0, 0, w * E.bandWidth, h * E.bandHeight)
+    ctx.globalAlpha = 1
+    if (!band) { ctx.fillStyle = won ? '#3c2b13dd' : '#080b11dd'; ctx.fillRect(-w * E.bandWidth / 2, -h * E.bandHeight / 2, w * E.bandWidth, h * E.bandHeight) }
+    if (!drawFx(ctx, images, won ? 'stamp_victory' : 'stamp_defeat', 0, 0, w * A.stampWidth, h * A.stampHeight)) {
+      ctx.font = `900 ${Math.round(w * E.stampSize)}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+      ctx.fillStyle = won ? '#ffe298' : '#ece9df'; ctx.fillText(won ? '승리' : '패배', 0, 0)
+    }
     ctx.setTransform(1, 0, 0, 1, 0, 0)
   }
   if (end.kind === 'victory' && age >= E.victory.coinAt) {

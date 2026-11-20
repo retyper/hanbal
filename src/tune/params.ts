@@ -502,6 +502,21 @@ export const HAEBI_END = {
   skipClickMs: 300,
 } as const
 
+/** 낱알·먹·도장은 원본 PNG를 보존하고 화면용 메모리에서만 잘라 한 번 굽는다. */
+export const HAEBI_FX_ART = {
+  alphaProbeMax: 256, alphaThreshold: 16, particleBakeMax: 96, uiBakeMax: 768,
+  deathParticles: 7, eliteParticles: 12, particleBudget: 96,
+  particleSeed: 2.399963, particleSpread: .72, particleSpeed: 95, eliteSpeed: 155,
+  particleLift: 65, particleGravity: 165, particleSpin: 3.6,
+  particleMinSpeed: .6, particleSpeedRange: .4, particleShrink: .3, particleSizeStep: .1,
+  inkSize: 16, dustSize: 24, sparkWidth: 18, sparkHeight: 5, sparkGate: .12,
+  hitSparks: 3, inkVariants: 3, dustEvery: 4, sparkEvery: 3,
+  stampWidth: .68, stampHeight: .36, stampY: .5, rayWidth: .55, rayHeight: .9,
+  rayY: .43, rayAlpha: .42, bandAlpha: .75,
+  victoryBandAlpha: .42, victorySparkWidth: 9, victorySparkHeight: 3,
+  heroRayWidth: 3, heroRayHeight: 4.5, heroRayLift: 1.8,
+} as const
+
 export const SPEC = {
   raid: {
     duration: k(90, 30, 300, 5, '토벌 제한 시간', 's'),

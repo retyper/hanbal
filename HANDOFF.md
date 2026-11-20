@@ -1,3 +1,9 @@
+## Codex49 구현·검수 완료 · 2026-11-20
+- B0333b9e8/A66b15925각커밋즉시푸시. C효과원본10·native11회·도장/낱알통합완료,최종typecheck/1654tests(1652pass0fail2skip)/productionbuild/로컬HTML·JS·PNG10 HTTP200+SHA검증.
+- 실제Dana승패·철수·skip·실탭hidden시계/phone5폭×승패10통과. 알림글씨가림/승리카메라맵공백재현수정. sim·이동공격캐릭터띠변경0.
+- D영상도구없어문안2/제출0/mp40. 전체검수·한계 docs/realm/production/CODEX49-RESULTS.md,현재배포CI·정확최종hash D:/에셋창고/CODEX-TO-CLAUDE-LATEST.md.
+- 코드수정종료뒤추가감시대기0. 47·48은재발주하지않았으며남은이력은별도보존. 아래옛진행·권한기록은당시상태다.
+
 - **[★★ 11-20 밤 · 맨 앞 · 열전 타격감·승패 막 내림 → Codex 49 (코드까지 Codex 가 주인)]** 동생이 다나로 한 판 깼지만 「타격감 부족」·재미없어함 + 형 「승패가 픽 하고 끝남」. 원인: 역경직 없음 · 흔들림은 비기만 · 결과 창이 상태 바뀐 그 프레임에 뜸(`raid-main.ts` 528). 명령 전문 `docs/realm/production/CODEX-SKILLBODY-REDO-20261117.md` ### 49. Codex 작업 중 `raid-main.ts`·`raid/haebi-view.ts`·`raid/sound.ts`·`raid/style.css` 는 Claude 가 손대지 않는다. 아래 A1~A14 보다 먼저.
 
 ## Codex 최종 정산 — 현재 승인범위 완료·작업/감시 중지 (2026-11-19T10:25:33.2223916+09:00)
