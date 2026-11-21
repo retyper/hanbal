@@ -68,7 +68,7 @@ const SCREENS: Screen[] = [
   { name: 'nodefoe', save: 'none', pre: `${CLICK} for (const n of document.querySelectorAll('.nd:not([data-act])')) { n.click(); await new Promise((r) => setTimeout(r, 900)); if (document.querySelector('.sheet') && !document.querySelector('[data-act="town-in"]')) break }` },
   { name: 'hero', save: 'captive', pre: `${TAB('heroes')} await clk('[data-act="hero"]', 1200)` },
   { name: 'drill', ls: 'drill', pre: `${CLICK} await clk('[data-act="dy-title"]', 2500)` },
-  { name: 'drillhero', ls: 'drill', pre: `${CLICK} await clk('[data-act="dy-title"]', 2500); await clk('.dyrow', 1200)` },
+  { name: 'drillhero', ls: 'drill', pre: `${CLICK} await clk('[data-act="dy-title"]', 2500); await clk('[data-act="dy-hero"]', 1200)` },
   { name: 'dex', pre: `${CLICK} await clk('[data-act="dex-open"]', 2500)` },
   { name: 'nationdetail', pre: `${CLICK} await clk('[data-act="fr-new"]', 1500); await clk('[data-act="fr-board"]', 2000); await clk('[data-act="fr-nation"]', 1500)` },
   { name: 'frstart', pre: `${CLICK} await clk('[data-act="fr-new"]', 1500); await clk('[data-act="fr-board"]', 2000); await clk('[data-act="fr-nation"]', 1500); await clk('[data-act="fr-start"]', 2500)` },

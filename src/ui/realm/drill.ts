@@ -3,6 +3,8 @@
  *
  *   판이 끝나면(이기든 지든) 끝 화면이 이번 판의 공을 새기고(engraveRun), 「단련터」로 들어가 장수마다 공을 써 능력치를 하나씩 올린다.
  *   첫 화면의 「단련터」로도 들어온다 — 남은 공은 아무 때나 쓴다.
+ *   장수는 얼굴 링으로 고른다 (hero-ring.ts · 58-B) — 고리 위에 필터 · 정렬, 고르면 고리 자리에 그 장수의 능력 · 유물 판을 편다.
+ *   큰 초상은 고를 때도 펼쳤을 때도 같은 자리라 PC 에서 이마 · 눈썹이 잘리지 않는다 (형 11-20 HANDOFF A14).
  * 기록은 이 기기에만 (`hanbal.realm.drill` · 영웅전·해금처럼). 못 읽으면 빈 기록 — 지우지는 않는다.
  */
 import { bustOf, forgetDrillFaces, noteDrillFaces, savedKidBust } from '../../realm/data/art.ts'
@@ -11,11 +13,12 @@ import { GRADE_COLOR, GRADE_NAME, type TraitGrade } from '../../realm/data/trait
 import { RELICS } from '../../realm/data/relics.ts'
 import { t, type Key } from '../../i18n/index.ts'
 import { ELEM, elemOf, type Elem } from './ascend.ts'
-import { DRILL_STATS, capOf, emptyDrill, engrave, engraveVows, gainOf, raise, raiseState, spendCost, uiriWith, type DrillEntry, type DrillStore } from '../../realm/drill.ts'
+import { DRILL_STATS, applyDrill, capOf, emptyDrill, engrave, engraveVows, gainOf, raise, raiseState, spendCost, uiriWith, type DrillEntry, type DrillStore } from '../../realm/drill.ts'
 import type { GrowStat, Hero, Realm, Vow } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { relicRoom, slotsFor } from '../../realm/relics.ts'
-import { nameHtml } from './heroview.ts'
+import { nameHtml, splitTitle } from './heroview.ts'
+import { mountRing, ringCard, ringHtml, type RingHandle, type RingHero, type RingOpts, type RingText } from './hero-ring.ts'
 import { t as tr } from '../../i18n/index.ts'
 import { loadRelics, pickerHtml, relicChips, relicDexHtml, slotsHtml, wornBy, wornLv, type RelicKit } from './relics.ts'
 
@@ -185,14 +188,18 @@ export function drillLevel(id: string): number {
 export interface DrillKit {
   readonly esc: (s: string) => string
   readonly bust: (id: string) => string | null
-  /** 큰 판(900px) 주소 — 없는 장수는 null (그림 없으면 bust 로 갈아 낀다) */
-  readonly bustHd: (id: string) => string | null
   /** 처음 몸 — 영웅전 명부 · 가문의 아이 (없으면 새길 때 적어 둔 몸) */
   readonly bodyOf: (id: string) => Hero | undefined
   /** 걸러 보는 갈래 — 나라 이름 · 등급 · 각성 여부 (영웅전 기록) */
   readonly meta: (id: string) => { nation: string; grade: TraitGrade | null; awake: boolean }
   /** 유물 칸 · 도감 (ui/realm/relics.ts) */
   readonly relic: RelicKit
+  /** 그림 밑동 (realm/) — 얼굴 링이 초상 · 전투 띠 주소를 만든다 */
+  readonly art: string
+  /** 각성 모습을 켜 둔 장수인가 — 한 번 읽어 여럿에 묻는다 (56-A 토글 · 큰 그림과 전투 띠가 각성 모습으로) */
+  readonly looks: () => (id: string) => boolean
+  /** 고른 장수의 목소리 (소리 끄기 · 크기는 부른 쪽이 따른다) */
+  readonly voice: (id: string) => void
 }
 
 /** 단련터에 세울 사람 — 끝 화면에서 오면 그 판의 우리 장수, 첫 화면이면 null(단련 기록이 있는 모두) */
@@ -209,7 +216,7 @@ export interface YardOpts {
   readonly from: 'end' | 'title'
   /** 열어 둔 유물 칸 — 그 장수 쪽에서 고르기 판이 올라온다 */
   readonly slot?: { readonly id: string; readonly i: number } | null
-  /** 쓸 공이 남았는데 나가려 했다 — 한 번 더 누르면 나간다 · 공을 쓸 장수 카드가 빛난다 (형 11-05: "다음으로 눌렀을 때 쓸 공이 남아 있으면 안 되잖아") */
+  /** 쓸 공이 남았는데 나가려 했다 — 한 번 더 누르면 나간다 · 공을 쓸 장수의 ▲ 표가 빛난다 (형 11-05: "다음으로 눌렀을 때 쓸 공이 남아 있으면 안 되잖아") */
   readonly leaveArmed?: boolean
 }
 
@@ -225,81 +232,112 @@ const bodyFor = (k: DrillKit, id: string, e: DrillEntry): (Pick<Hero, GrowStat> 
   return b !== undefined ? { mu: b.mu ?? 1, tong: b.tong ?? 1, ryak: b.ryak ?? 1, chi: b.chi ?? 1, deok: b.deok ?? 1, uiri: 5 } : null
 }
 
-/** 단련터에 늘어선 순서 — 화면을 다시 그려도 카드가 자리를 바꾸지 않게 */
+/** 단련터에 늘어선 순서 — 화면을 다시 그려도 장수가 자리를 바꾸지 않게 */
 let yardOrder: string[] = []
 
-// ───────── 화면 상태 — 목록(거르기 · 찾기) · 장수 한 사람 쪽 · 떴다 사라지는 판. 판(realm)의 상태가 아니라 눈에 보이는 것만이다
+// ───────── 화면 상태 — 고리(거르기 · 찾기 · 정렬) · 펼친 장수 한 사람 · 떴다 사라지는 판. 판(realm)의 상태가 아니라 눈에 보이는 것만이다
 
 type Tab = 'stat' | 'relic'
-type Pop = 'help' | 'uiri' | 'dex' | 'filter'
+type Pop = 'help' | 'uiri' | 'dex' | 'filter' | 'sort'
+const POPS: readonly Pop[] = ['help', 'uiri', 'dex', 'filter', 'sort']
+/** 정렬 — 기본(이번 판 공 · 단련 · 남은 공 · 보는 동안 자리를 지킨다) · 단련 높은 순 · 공 많은 순 · 이름 순 */
+type Sort = 'base' | 'level' | 'merit' | 'name'
+const SORTS: readonly Sort[] = ['base', 'level', 'merit', 'name']
+/** 정렬 이름 — 판에 고를 때(long) · 단추에 붙일 때(short) */
+const SORT_NAME: Readonly<Record<Sort, { readonly long: Key; readonly short: Key }>> = {
+  base: { long: 'dy.sBase', short: 'dy.sBaseS' }, level: { long: 'dy.sLevel', short: 'dy.sLevelS' },
+  merit: { long: 'dy.sMerit', short: 'dy.sMeritS' }, name: { long: 'dy.sName', short: 'dy.sNameS' },
+}
 interface YardUi {
   q: string
   state: '' | 'ready' | 'awake' | 'relic'
   nation: string
   elem: string
   grade: string
+  sort: Sort
+  /** 펼친 장수 — 고리 자리에 그 장수의 단련 판 (null 이면 고리) */
   hero: string | null
+  /** 고리 앞에 선 장수 — 다시 그려도 · 펼친 판에서 돌아와도 그 자리에서 */
+  front: string | null
+  /** 다음 그림에서 전투 띠가 공격 한 번 — 펼친 판에 들어섰다(enter · 목소리도) · 능력을 올렸다(raise) */
+  burst: '' | 'enter' | 'raise'
   tab: Tab
   pop: Pop | null
 }
-const FRESH_UI: YardUi = { q: '', state: '', nation: '', elem: '', grade: '', hero: null, tab: 'stat', pop: null }
+const FRESH_UI: YardUi = { q: '', state: '', nation: '', elem: '', grade: '', sort: 'base', hero: null, front: null, burst: '', tab: 'stat', pop: null }
 const ui: YardUi = { ...FRESH_UI }
-/** 장수 쪽에 들어갔다 나올 때 목록을 보던 자리 */
-let listTop = 0
-/** 거르기를 바꿨다 — 다시 그린 목록은 맨 위부터 */
-let resetTop = false
 
 /** 단련터에 들어설 때 — 거르기와 열어 둔 것을 비운다 */
 export function yardReset(): void {
   Object.assign(ui, FRESH_UI)
-  listTop = 0
 }
 
 const GROUPS = ['state', 'nation', 'elem', 'grade'] as const
 type Group = (typeof GROUPS)[number]
 
 /** 단련터의 누름 — 바뀌었으면 true (app.ts 가 다시 그린다) */
-export function yardAct(root: HTMLElement, act: string, d: Readonly<Record<string, string | undefined>>): boolean {
+export function yardAct(act: string, d: Readonly<Record<string, string | undefined>>): boolean {
   switch (act) {
-    case 'dy-hero':
-      listTop = root.querySelector<HTMLElement>('.dylist')?.scrollTop ?? listTop
-      ui.hero = d['id'] ?? null; ui.tab = 'stat'; ui.pop = null
+    case 'dy-hero': {
+      // 아래 「단련하기」는 고리 앞에 선 장수를 · 얼굴 링과 펼친 판의 ◀ ▶ 는 그 장수를 편다
+      const id = d['id'] ?? ui.front
+      if (id === null) return false
+      ui.hero = id; ui.front = id; ui.tab = 'stat'; ui.pop = null; ui.burst = 'enter'
       return true
+    }
     case 'dy-hback': ui.hero = null; ui.pop = null; return true
     case 'dy-tab': ui.tab = d['v'] === 'relic' ? 'relic' : 'stat'; ui.pop = null; return true
-    case 'dy-pop': ui.pop = d['v'] === 'help' || d['v'] === 'uiri' || d['v'] === 'dex' || d['v'] === 'filter' ? d['v'] : null; return true
+    case 'dy-pop': ui.pop = POPS.find((p) => p === d['v']) ?? null; return true
+    case 'dy-sort': {
+      const v = SORTS.find((s) => s === d['v'])
+      if (v === undefined) return false
+      // 정렬을 바꾸면 새 줄의 맨 앞부터
+      ui.sort = v; ui.pop = null; ui.front = null
+      return true
+    }
     case 'dy-fs': {
       const g = d['g'] as Group
       if (!GROUPS.includes(g)) return false
       const v = d['v'] ?? ''
       ui[g] = (ui[g] === v ? '' : v) as never
-      resetTop = true
       return true
     }
-    case 'dy-freset': ui.state = ''; ui.nation = ''; ui.elem = ''; ui.grade = ''; ui.q = ''; resetTop = true; return true
+    case 'dy-freset': ui.state = ''; ui.nation = ''; ui.elem = ''; ui.grade = ''; ui.q = ''; return true
   }
   return false
 }
 
-/** 뒤로 — 열린 판을 닫고, 아니면 장수 쪽에서 목록으로. 할 것이 있었으면 true */
+/** 능력을 올렸다 — 다음 그림에서 전투 띠가 공격 한 번 (형: 「퍽 하면 으아아아」) */
+export function yardRaised(): void {
+  ui.burst = 'raise'
+}
+
+/** 뒤로 — 열린 판을 닫고, 아니면 펼친 장수에서 고리로. 할 것이 있었으면 true */
 export function yardBack(): boolean {
   if (ui.pop !== null) { ui.pop = null; return true }
   if (ui.hero !== null) { ui.hero = null; return true }
   return false
 }
 
-/** 다시 그리기 전 — 목록을 보던 자리를 적어 둔다 */
-export function yardBeforePaint(root: HTMLElement): void {
-  const l = root.querySelector<HTMLElement>('.dylist')
-  if (l === null) return
-  listTop = resetTop ? 0 : l.scrollTop
-  resetTop = false
+/** 링이 고른 장수를 펴는 길 — app 의 단련터 누름과 같다 (yardAct → 다시 그림) */
+export type YardGo = (act: string, d: Readonly<Record<string, string>>) => void
+/** 살아 있는 얼굴 링 · 다음 그림에서 살릴 것 (yardHtml 이 짜고 yardAfterPaint 가 살린다) */
+let yardRing: RingHandle | null = null
+let yardPlan: ((go: YardGo) => RingOpts) | null = null
+
+/** 다시 그리기 전 — 살아 있는 링을 멈춘다 */
+export function yardBeforePaint(): void {
+  yardRing?.dispose()
+  yardRing = null
 }
 
-/** 다시 그린 뒤 — 목록을 보던 자리로 */
-export function yardAfterPaint(root: HTMLElement): void {
-  const l = root.querySelector<HTMLElement>('.dylist')
-  if (l !== null) l.scrollTop = listTop
+/** 다시 그린 뒤 — 얼굴 링을 살린다 (고리든 펼친 판이든) */
+export function yardAfterPaint(root: HTMLElement, go: YardGo): void {
+  const el = root.querySelector<HTMLElement>('.front.dyard .hrg')
+  const plan = yardPlan
+  yardPlan = null
+  if (el !== null && plan !== null) yardRing = mountRing(el, plan(go))
+  ui.burst = ''
 }
 
 interface Row {
@@ -317,8 +355,8 @@ interface Row {
   readonly can: number
 }
 
-const hit = (r: Row, useQ = true): boolean => {
-  if (useQ && ui.q !== '' && !`${r.name} ${r.nation}`.toLowerCase().includes(ui.q.toLowerCase())) return false
+const hit = (r: Row): boolean => {
+  if (ui.q !== '' && !`${r.name} ${r.nation}`.toLowerCase().includes(ui.q.toLowerCase())) return false
   if (ui.nation !== '' && r.nation !== ui.nation) return false
   if (ui.elem !== '' && r.elem !== ui.elem) return false
   if (ui.grade !== '' && r.grade !== ui.grade) return false
@@ -328,22 +366,15 @@ const hit = (r: Row, useQ = true): boolean => {
   return true
 }
 
-/** 찾기 칸에 글자를 쳤다 — 다시 그리지 않고(글자판이 닫히지 않게) 카드를 숨기고 보인다 */
+/** 지난번 그린 단련터의 사람들 — 찾기 칸에 글자를 칠 때 다시 그리지 않고 수만 센다 */
+let lastRows: readonly Row[] = []
+
+/** 필터 판의 찾기 칸에 글자를 쳤다 — 다시 그리지 않고(글자판이 닫히지 않게) 맞는 수만 고친다 · 판을 닫으면 고리가 그 사람들로 */
 export function yardSearch(root: HTMLElement, v: string): void {
   ui.q = v.trim()
-  const q = ui.q.toLowerCase()
-  let n = 0
-  for (const el of root.querySelectorAll<HTMLElement>('.dyrow')) {
-    const ok = q === '' || (el.dataset['q'] ?? '').includes(q)
-    // 거르기 칸이 이미 숨긴 카드는 그대로 숨긴다
-    const show = ok && el.dataset['pass'] === '1'
-    el.hidden = !show
-    if (show) n++
-  }
-  const c = root.querySelector('.dycount')
-  if (c !== null) c.textContent = t('dy.count', { n })
-  const none = root.querySelector<HTMLElement>('.dynone')
-  if (none !== null) none.hidden = n > 0
+  const n = lastRows.filter(hit).length
+  const show = root.querySelector('.dyfshow')
+  if (show !== null) show.textContent = t('dy.fShow', { n })
 }
 
 const ELEMS: readonly Elem[] = ['fire', 'water', 'bolt', 'wind', 'earth']
@@ -358,29 +389,71 @@ const chip = (g: Group, v: string, label: string, color?: string): string => {
 const popHtml = (title: string, body: string, cls = ''): string =>
   `<button class="dyveil" data-act="dy-pop" data-v="" aria-label="${t('dy.close')}"></button><div class="dysheet ${cls}"><div class="dysh"><b>${title}</b><button class="btn ghost" data-act="dy-pop" data-v="">${t('dy.close')}</button></div>${body}</div>`
 
-/** 카드 · 장수 쪽 어귀의 그림 — 큰 판을 오른쪽에 깔고, 없으면 작은 판 */
-const artHtml = (k: DrillKit, id: string): string => {
-  const hd = k.bustHd(id)
-  const sm = k.bust(id)
-  const src = hd ?? sm
-  if (src === null) return '<span class="dyart nof"></span>'
-  const fb = hd !== null && sm !== null ? ` onerror="this.onerror=null;this.src='${k.esc(sm)}'"` : ''
-  return `<span class="dyart"><img src="${k.esc(src)}"${fb} alt="" loading="lazy" decoding="async"></span>`
+/** 정렬한 줄 — 같으면 처음 순서 그대로 (sort 는 안정하다) */
+function sorted(rows: readonly Row[]): Row[] {
+  const xs = [...rows]
+  if (ui.sort === 'level') xs.sort((a, b) => b.e.level - a.e.level || b.e.points - a.e.points)
+  else if (ui.sort === 'merit') xs.sort((a, b) => b.e.points - a.e.points || b.e.level - a.e.level)
+  else if (ui.sort === 'name') xs.sort((a, b) => splitTitle(a.name).given.localeCompare(splitTitle(b.name).given, 'ko'))
+  return xs
 }
 
-const subLine = (k: DrillKit, r: Row): string => {
-  const g = r.grade !== null ? `<i class="dygr" style="--g:${GRADE_COLOR[r.grade]}">${GRADE_NAME[r.grade]}</i>` : ''
-  return `${k.esc(r.nation)}${r.elem !== null ? ` · ${ELEM[r.elem].name}` : ''}${g}`
+/** 이번 판 공 · 다음 단련까지의 막대 (처음 그릴 때만 차오른다) */
+const meritHtml = (o: YardOpts, r: Row): string => {
+  const e = r.e
+  const cost = spendCost(e.level)
+  const gain = o.gain[r.id] ?? 0
+  const to = Math.min(100, (e.points / cost) * 100)
+  const from = o.anim ? Math.min(100, (Math.max(0, e.points - gain) / cost) * 100) : to
+  return `<span class="dypt">${t('dy.merit', { n: `<b>${e.points}</b>` })}${gain > 0 ? `<i class="dyg">+${gain}</i>` : ''}</span><span class="dybar${e.points >= cost ? ' ready' : ''}"><i style="--from:${from.toFixed(1)}%;--to:${to.toFixed(1)}%"></i></span>`
 }
 
-/** 단련터 화면 — 목록 (장수 한 사람이 열려 있으면 그 사람 쪽) */
+/** 링 칸의 장수 — 단련한 몸의 능력치 · 공 · 등급 · 각성 모습 (펼친 판이면 능력치는 판이 보인다) */
+function cardOf(k: DrillKit, o: YardOpts, r: Row, look: (id: string) => boolean, open: boolean): RingHero {
+  const body = k.bodyOf(r.id)
+  const c = ringCard(k.art, {
+    id: r.id, name: r.name, nameHtml: nameHtml(r.name), from: `${r.nation}${r.elem !== null ? ` · ${ELEM[r.elem].name}` : ''}`,
+    lv: r.e.level, body: body !== undefined ? applyDrill(body, r.e) : undefined, awake: look(r.id),
+  })
+  // 명부에 몸이 없는 장수(가문의 아이)는 새길 때 적어 둔 몸으로
+  const born = r.born
+  const stats = open ? [] : c.stats.length > 0 || born === null ? c.stats : DRILL_STATS.map((s) => [STAT_NAME[s], Math.min(10, born[s] + (r.e.add[s] ?? 0))] as const)
+  const grade = r.grade !== null ? `<i class="dygr" style="--g:${GRADE_COLOR[r.grade]}">${GRADE_NAME[r.grade]}</i>` : ''
+  const fire = r.awake ? '<i class="dyflag awb inl">🔥</i>' : ''
+  const extra = open
+    ? `${grade}${fire}${o.fell.includes(r.id) ? `<small class="dyfell">${t('dy.fell')}</small>` : ''}`
+    : `${grade}${fire}${meritHtml(o, r)}${relicChips(k.relic.art, k.esc, r.worn)}`
+  return { ...c, stats, extra, mark: r.canUp ? '▲' : o.fell.includes(r.id) ? '☠' : '' }
+}
+
+/** 위 칸 — 제목 · 사람 수 · 유물 도감 · 도움말 */
+const topHtml = (k: DrillKit, n: number): string => {
+  const dex = t('dy.relicDex', { a: relicOwned(), b: relicTotal() })
+  return `<div class="dyhead"><h4 class="hrg-title">${t('dy.title')} <small class="dycount">${t('dy.count', { n })}</small></h4>`
+    + `<button class="dyic" data-act="dy-pop" data-v="dex" data-tip="${k.esc(dex)}" aria-label="${k.esc(dex)}">◈</button>`
+    + `<button class="dyic" data-act="dy-pop" data-v="help" aria-label="${t('dy.help')}">?</button></div>`
+}
+
+/** 고리 위 한 줄 — 필터 · 정렬 · 공 남은 장수만 (눌린 채 남는다) */
+const chipsHtml = (usable: number): string => {
+  const act = [ui.nation, ui.elem, ui.grade, ui.q].filter((x) => x !== '').length + (ui.state === 'awake' || ui.state === 'relic' ? 1 : 0)
+  const sortOn = ui.sort !== 'base'
+  const ready = ui.state === 'ready'
+  return `<button class="dychip dyfbtn${act > 0 ? ' on' : ''}" data-act="dy-pop" data-v="filter" aria-pressed="${act > 0}">${act > 0 ? '✓ ' : ''}${t('dy.filter')}${act > 0 ? ` ${act}` : ''}</button>`
+    + `<button class="dychip${sortOn ? ' on' : ''}" data-act="dy-pop" data-v="sort" aria-pressed="${sortOn}">${sortOn ? '✓ ' : ''}${t('dy.sort')}${sortOn ? ` · ${t(SORT_NAME[ui.sort].short)}` : ''}</button>`
+    + `<button class="dychip${ready ? ' on' : ''}" data-act="dy-fs" data-g="state" data-v="ready" aria-pressed="${ready}">${ready ? '✓' : '▲'} ${t('dy.fReady')} ${usable}</button>`
+}
+
+const ringText = (): RingText => ({ title: t('dy.title'), party: '', prev: t('lc.prev'), next: t('lc.next'), lv: (n) => t('dy.lv', { n }) })
+
+/** 단련터 화면 — 얼굴 링 (장수 한 사람을 펼쳤으면 고리 자리에 그 사람의 단련 판) */
 export function yardHtml(k: DrillKit, o: YardOpts): string {
   const store = loadDrill()
   // 끝 화면에서 왔으면 공을 못 번 우리 장수도 — 무덤에서 얻은 유물을 끼울 몸이 있어야 한다 (빈 기록으로 보인다)
   const ent = (id: string): DrillEntry => store.h[id] ?? { points: 0, level: 0, add: {}, runs: 0 }
   const ids = (o.ids ?? Object.keys(store.h)).filter((id) => store.h[id] !== undefined || (o.from === 'end' && k.bodyOf(id) !== undefined))
   const fresh = [...new Set(ids)].sort((a, b) => (o.gain[b] ?? 0) - (o.gain[a] ?? 0) || ent(b).level - ent(a).level || ent(b).points - ent(a).points || (a < b ? -1 : 1))
-  // 단련·유물로 단계가 오르면 그 카드가 맨 앞으로 순간이동했다 (형 10-28) — 같은 장수들을 보는 동안은 처음 순서 그대로
+  // 단련·유물로 단계가 오르면 그 장수가 맨 앞으로 순간이동했다 (형 10-28) — 같은 장수들을 보는 동안은 처음 순서 그대로
   const same = fresh.length === yardOrder.length && fresh.every((id) => yardOrder.includes(id))
   const list = same ? [...yardOrder] : fresh
   yardOrder = list
@@ -399,69 +472,63 @@ export function yardHtml(k: DrillKit, o: YardOpts): string {
       canUp: born !== null && DRILL_STATS.some((s) => raiseState(store, id, s, born, room) === 'ok'), can,
     }
   })
+  lastRows = rows
+  yardPlan = null
+  const shown = sorted(rows).filter(hit)
   const usable = rows.filter((r) => r.canUp).length
-  const one = ui.hero !== null ? rows.find((r) => r.id === ui.hero) : undefined
   const armed = o.leaveArmed === true && usable > 0
-  const go = `<div class="dygo">${armed ? `<p class="dywarn">${t('dy.warn', { n: usable })}</p>` : ''}`
-    + (one !== undefined
-      ? `<button class="btn pri big" data-act="dy-hback">${t('dy.back')}</button></div>`
-      : `<button class="btn pri big${armed ? ' armed' : ''}" data-act="dy-next" data-usable="${usable}">${armed ? t('dy.leaveAnyway') : o.from === 'end' ? t('dy.nextRun') : t('dy.toTitle')}</button></div>`)
-  const style = `--rows:${P.realm.drillRows};--rowmin:${P.realm.drillRowMinPx}px;--artw:${P.realm.drillArtPct}%`
-  if (one !== undefined) return `<div class="front dyard dyone" style="${style}">${heroHtml(k, o, store, one)}${go}${ui.pop !== null ? popBox(k, one) : ''}</div>`
-  return `<div class="front dyard" style="${style}">${listHead(k, rows)}${listBody(k, o, rows, armed)}${go}${ui.pop !== null ? popBox(k, null) : ''}</div>`
-}
+  const one = ui.hero !== null ? rows.find((r) => r.id === ui.hero) : undefined
+  if (one === undefined) ui.hero = null
+  const top = topHtml(k, shown.length)
+  const pop = ui.pop !== null ? popBox(k, one ?? null, rows) : ''
+  const frame = (body: string, bar: string, tall = false): string =>
+    `<div class="front dyard dyring hrgscr"${tall ? ' style="--hrg-bar:calc(98px + env(safe-area-inset-bottom))"' : ''}>${body}${bar}${pop}</div>`
 
-/** 위 띠 · 찾기 · 거르기 */
-function listHead(k: DrillKit, rows: readonly Row[]): string {
-  const n = rows.filter((r) => hit(r)).length
-  const act = [ui.nation, ui.elem, ui.grade].filter((x) => x !== '').length
-  const open = ui.pop === 'filter'
-  let h = `<div class="dytop"><h2>${t('dy.title')}</h2><span class="dycount">${t('dy.count', { n })}</span>`
-  h += `<button class="dyic" data-act="dy-pop" data-v="dex" data-tip="${k.esc(t('dy.relicDex', { a: relicOwned(), b: relicTotal() }))}" aria-label="${t('dy.relicDex', { a: relicOwned(), b: relicTotal() })}">◈</button>`
-  h += `<button class="dyic" data-act="dy-pop" data-v="help" aria-label="${t('dy.help')}">?</button></div>`
-  h += `<div class="dyfind"><input class="dysearch" type="search" value="${k.esc(ui.q)}" placeholder="${t('dy.search')}" enterkeyhint="search" autocomplete="off">`
-  h += `<button class="dychip dyfbtn${act > 0 || open ? ' on' : ''}" data-act="dy-pop" data-v="${open ? '' : 'filter'}" aria-pressed="${act > 0}">${act > 0 ? '✓ ' : ''}${t('dy.filter')}${act > 0 ? ` ${act}` : ''}</button></div>`
-  h += `<div class="dyquick">${chip('state', 'ready', t('dy.fReady'))}${chip('state', 'awake', t('dy.fAwake'))}${chip('state', 'relic', t('dy.fRelic'))}`
-  h += `${act > 0 || ui.state !== '' || ui.q !== '' ? `<button class="dychip ghost" data-act="dy-freset">${t('dy.fReset')}</button>` : ''}</div>`
-  return h
+  // 장수 한 사람을 펼쳤다 — 큰 그림은 그대로 두고 고리 자리에 능력 · 유물 판 (◀ ▶ 로 옆 사람)
+  if (one !== undefined) {
+    const at = shown.findIndex((r) => r.id === one.id)
+    const prev = at >= 0 && shown.length > 1 ? shown[(at - 1 + shown.length) % shown.length] : undefined
+    const next = at >= 0 && shown.length > 1 ? shown[(at + 1) % shown.length] : undefined
+    const step = (r: Row | undefined, label: string, mark: string): string =>
+      r !== undefined ? `<button class="btn dystep" data-act="dy-hero" data-id="${k.esc(r.id)}" aria-label="${label}" data-tip="${k.esc(r.name)}">${mark}</button>` : ''
+    const { panel, sheet } = trainHtml(k, o, store, one)
+    const base: RingOpts = { heroes: [cardOf(k, o, one, k.looks(), true)], max: 0, picked: [], text: ringText(), onToggle: () => [], top, panel, attack: ui.burst !== '', keys: false }
+    const voice = ui.burst === 'enter'
+    yardPlan = () => { if (voice) k.voice(one.id); return base }
+    return frame(ringHtml(base) + sheet, `<div class="hrg-go">${step(prev, t('lc.prev'), '◀')}<button class="btn pri" data-act="dy-hback">${t('dy.back')}</button>${step(next, t('lc.next'), '▶')}</div>`)
+  }
+
+  const leave = `<button class="btn${usable > 0 ? ' ghost' : ' pri'}${armed ? ' armed' : ''}" data-act="dy-next" data-usable="${usable}">${armed ? t('dy.leaveAnyway') : o.from === 'end' ? t('dy.nextRun') : t('dy.toTitle')}</button>`
+  const warn = armed ? `<p class="dywarn">${t('dy.warn', { n: usable })}</p>` : ''
+  // 아무도 없다 · 거른 끝에 아무도 없다 — 고리 대신 한 줄 (필터는 그대로 둔다)
+  if (shown.length === 0) {
+    const body = rows.length === 0
+      ? `<div class="dyvoid">${top}<p class="mute dyempty">${t('dy.empty')}</p></div>`
+      : `<div class="dyvoid">${top}<div class="hrg-head">${chipsHtml(usable)}</div><p class="mute dyempty">${t('dy.noMatch')}</p><button class="dychip ghost" data-act="dy-freset">${t('dy.fReset')}</button></div>`
+    return frame(body, `<div class="hrg-go">${warn}${leave}</div>`, armed)
+  }
+
+  // 고리 — 앞에 설 장수: 보던 사람 · 나가려다 붙잡혔으면 공이 남은 첫 사람 · 맨 앞
+  let start = shown.find((r) => r.id === ui.front)
+  if (armed && start?.canUp !== true) start = shown.find((r) => r.canUp) ?? start
+  start ??= shown[0]
+  ui.front = start?.id ?? null
+  const look = k.looks()
+  const base: RingOpts = {
+    heroes: shown.map((r) => cardOf(k, o, r, look, false)), max: 0, picked: [], text: ringText(), onToggle: () => [],
+    start: ui.front, top, head: chipsHtml(usable), hot: armed, keys: ui.pop === null,
+  }
+  // 앞 장수를 한 번 더 누르거나 Enter — 그 장수를 편다 (목소리 · 공격은 펼친 판이 처음 그릴 때)
+  yardPlan = (go) => ({ ...base, onToggle: (id) => { go('dy-hero', { id }); return [] }, onFront: (id) => { ui.front = id } })
+  const train = `<button class="btn${usable > 0 ? ' pri' : ''}" data-act="dy-hero" aria-label="${t('dy.train')}">${t('dy.train')}</button>`
+  return frame(ringHtml(base), `<div class="hrg-go">${warn}${leave}${train}</div>`, armed)
 }
 
 const relicOwned = (): number => Object.keys(loadRelics().own).length
 const relicTotal = (): number => RELICS.length
 
-/** 카드 목록 — 한 화면에 drillRows 장 */
-function listBody(k: DrillKit, o: YardOpts, rows: readonly Row[], armed: boolean): string {
-  let h = `<div class="dylist">`
-  if (rows.length === 0) h += `<p class="mute dyempty">${t('dy.empty')}</p>`
-  let shown = 0
-  for (const r of rows) {
-    const pass = hit(r)
-    if (pass) shown++
-    const e = r.e
-    const cost = spendCost(e.level)
-    const gain = o.gain[r.id] ?? 0
-    const to = Math.min(100, (e.points / cost) * 100)
-    const from = o.anim ? Math.min(100, (Math.max(0, e.points - gain) / cost) * 100) : to
-    // data-pass: 거르기 칸이 통과시킨 카드 (찾기 글자는 따로 · yardSearch)
-    const pass2 = hit(r, false)
-    const hidden = !pass
-    const g = r.grade !== null ? GRADE_COLOR[r.grade] : '#5a5a5a'
-    h += `<button class="dyrow${gain > 0 && o.anim ? ' fresh' : ''}${r.canUp && armed ? ' canup' : ''}${r.awake ? ' awk' : ''}" style="--g:${g}" data-act="dy-hero" data-id="${k.esc(r.id)}" data-q="${k.esc(`${r.name} ${r.nation}`.toLowerCase())}" data-pass="${pass2 ? 1 : 0}"${hidden ? ' hidden' : ''}>`
-    h += `${artHtml(k, r.id)}<span class="dyshade"></span><span class="dyinfo">`
-    h += `<span class="dyl1"><b class="dyname">${nameHtml(r.name)}</b>${e.level > 0 ? `<span class="dlv">${t('dy.lv', { n: e.level })}</span>` : `<span class="dlv zero">${t('dy.lv', { n: 0 })}</span>`}</span>`
-    h += `<span class="dysub">${subLine(k, r)}</span>`
-    h += `<span class="dyl3"><span class="dypt">${t('dy.merit', { n: `<b>${e.points}</b>` })}${gain > 0 ? `<i class="dyg">+${gain}</i>` : ''}</span><span class="dybar${e.points >= cost ? ' ready' : ''}"><i style="--from:${from.toFixed(1)}%;--to:${to.toFixed(1)}%"></i></span>${relicChips(k.relic.art, k.esc, r.worn)}</span>`
-    h += `</span>`
-    h += `${r.awake ? '<i class="dyflag awb">🔥</i>' : ''}${r.canUp ? '<i class="dyflag up">▲</i>' : ''}${o.fell.includes(r.id) ? `<i class="dyflag fell" data-tip="${k.esc(t('dy.fell'))}">☠</i>` : ''}`
-    h += `</button>`
-  }
-  h += `<p class="mute dyempty dynone"${shown > 0 || rows.length === 0 ? ' hidden' : ''}>${t('dy.noMatch')}</p>`
-  lastShown = shown
-  return h + `</div>`
-}
-
-/** 떠 있는 판 — 거르기 · 도움말 · 유물 도감 · 의리 */
-function popBox(k: DrillKit, one: Row | null): string {
+/** 떠 있는 판 — 필터(찾기 포함) · 정렬 · 도움말 · 유물 도감 · 의리 */
+function popBox(k: DrillKit, one: Row | null, rows: readonly Row[]): string {
   if (ui.pop === 'help') return popHtml(t('dy.help'), `<p class="dybody-t">${t('dy.helpBody', { first: spendCost(0), step: spendCost(1) - spendCost(0) })}</p><p class="dyfine">${t('dy.fine')}</p>`)
   if (ui.pop === 'dex') return popHtml(t('dy.relicDex', { a: relicOwned(), b: relicTotal() }), relicDexHtml(k.relic), 'tall')
   if (ui.pop === 'uiri' && one !== null && one.born !== null) {
@@ -469,43 +536,37 @@ function popBox(k: DrillKit, one: Row | null): string {
     const last = one.e.tales?.[one.e.tales.length - 1]
     return popHtml(t('dy.uiriTitle'), `<p class="dybody-t">${t('dy.uiriBody', { top })}</p>${last !== undefined ? `<p class="dyfine">${t('dy.uiriLast', { why: t(TALE_KEY[last]) })}</p>` : ''}`)
   }
+  if (ui.pop === 'sort') {
+    const h = SORTS.map((s) => { const on = ui.sort === s; return `<button class="dychip${on ? ' on' : ''}" data-act="dy-sort" data-v="${s}" aria-pressed="${on}">${on ? '✓ ' : ''}${t(SORT_NAME[s].long)}</button>` }).join('')
+    return popHtml(t('dy.sort'), `<div class="dyfc">${h}</div>`)
+  }
   if (ui.pop === 'filter') {
-    const rows = [...yardOrder]
-    const nations = [...new Set(rows.map((id) => k.meta(id).nation))].filter((x) => x !== '').sort()
-    const elems = new Set(rows.map((id) => { const b = k.bodyOf(id); return b !== undefined ? elemOf(b) : null }))
-    const grades = new Set(rows.map((id) => k.meta(id).grade))
-    let h = `<div class="dyfg"><b>${t('dy.gNation')}</b><div class="dyfc">${nations.map((n) => chip('nation', k.esc(n), k.esc(n))).join('')}</div></div>`
+    const nations = [...new Set(rows.map((r) => r.nation))].filter((x) => x !== '').sort()
+    const elems = new Set(rows.map((r) => r.elem))
+    const grades = new Set(rows.map((r) => r.grade))
+    let h = `<input class="dysearch" type="search" value="${k.esc(ui.q)}" placeholder="${t('dy.search')}" enterkeyhint="search" autocomplete="off">`
+    h += `<div class="dyfg"><b>${t('dy.gState')}</b><div class="dyfc">${chip('state', 'ready', t('dy.fReady'))}${chip('state', 'awake', t('dy.fAwake'))}${chip('state', 'relic', t('dy.fRelic'))}</div></div>`
+    h += `<div class="dyfg"><b>${t('dy.gNation')}</b><div class="dyfc">${nations.map((n) => chip('nation', k.esc(n), k.esc(n))).join('')}</div></div>`
     h += `<div class="dyfg"><b>${t('dy.gElem')}</b><div class="dyfc">${ELEMS.filter((e) => elems.has(e)).map((e) => chip('elem', e, ELEM[e].name)).join('')}</div></div>`
     h += `<div class="dyfg"><b>${t('dy.gGrade')}</b><div class="dyfc">${GRADES.filter((g) => grades.has(g)).map((g) => chip('grade', g, GRADE_NAME[g], GRADE_COLOR[g])).join('')}</div></div>`
-    h += `<div class="dyfgo"><button class="btn ghost" data-act="dy-freset">${t('dy.fReset')}</button><button class="btn pri" data-act="dy-pop" data-v="">${t('dy.fShow', { n: filteredCount(rows.length) })}</button></div>`
+    h += `<div class="dyfgo"><button class="btn ghost" data-act="dy-freset">${t('dy.fReset')}</button><button class="btn pri dyfshow" data-act="dy-pop" data-v="">${t('dy.fShow', { n: rows.filter(hit).length })}</button></div>`
     return popHtml(t('dy.filter'), h)
   }
   return ''
 }
-let lastShown = 0
-const filteredCount = (fallback: number): number => lastShown > 0 ? lastShown : fallback
 
-/** 장수 한 사람 쪽 — 넓은 그림 띠 · 공 · 두 갈래(능력 · 유물) 중 하나만 */
-function heroHtml(k: DrillKit, o: YardOpts, store: DrillStore, r: Row): string {
+/** 펼친 장수의 단련 판 — 공 · 두 갈래(능력 · 유물) 중 하나만. 유물 고르기 판(sheet)은 화면 위에 따로 뜬다 */
+function trainHtml(k: DrillKit, o: YardOpts, store: DrillStore, r: Row): { panel: string; sheet: string } {
   const e = r.e
   const born = r.born
   const cost = spendCost(e.level)
-  const g = r.grade !== null ? GRADE_COLOR[r.grade] : '#5a5a5a'
-  const gain = o.gain[r.id] ?? 0
-  const to = Math.min(100, (e.points / cost) * 100)
-  const from = o.anim ? Math.min(100, (Math.max(0, e.points - gain) / cost) * 100) : to
-  let h = `<div class="dyband${r.awake ? ' awk' : ''}" style="--g:${g}">${artHtml(k, r.id)}<span class="dyshade"></span>`
-  h += `<button class="dyic dyx" data-act="dy-hback" aria-label="${t('dy.back')}">‹</button>`
-  h += `<div class="dyinfo"><b class="dyname big">${nameHtml(r.name)}</b><span class="dysub">${subLine(k, r)}</span><span class="dyl1"><span class="dlv${e.level > 0 ? '' : ' zero'}">${t('dy.lv', { n: e.level })}</span>${r.awake ? '<i class="dyflag awb inl">🔥</i>' : ''}</span>`
-  if (o.fell.includes(r.id)) h += `<small class="dyfell">${t('dy.fell')}</small>`
-  h += `</div></div>`
-  h += `<div class="dymer"><span class="dypt">${t('dy.merit', { n: `<b>${e.points}</b>` })}${gain > 0 ? `<i class="dyg">+${gain}</i>` : ''}</span><span class="dybar${e.points >= cost ? ' ready' : ''}"><i style="--from:${from.toFixed(1)}%;--to:${to.toFixed(1)}%"></i></span>`
-  h += `<small>${t('dy.next', { n: cost })}${r.can > 1 ? ` · ${t('dy.canN', { n: r.can })}` : ''}</small></div>`
+  let h = `<div class="dymer">${meritHtml(o, r)}<small>${t('dy.next', { n: cost })}${r.can > 1 ? ` · ${t('dy.canN', { n: r.can })}` : ''}</small></div>`
   const room = relicRoom(r.worn, wornLv())
   const slots = slotsFor(e.level)
   h += `<div class="dytabs"><button class="dytab${ui.tab === 'stat' ? ' on' : ''}" data-act="dy-tab" data-v="stat" aria-pressed="${ui.tab === 'stat'}">${ui.tab === 'stat' ? '✓ ' : ''}${t('dy.tabStat')}</button>`
   h += `<button class="dytab${ui.tab === 'relic' ? ' on' : ''}" data-act="dy-tab" data-v="relic" aria-pressed="${ui.tab === 'relic'}">${ui.tab === 'relic' ? '✓ ' : ''}${t('dy.tabRelic', { a: r.worn.length, b: slots })}</button></div>`
   h += `<div class="dypane">`
+  let sheet = ''
   if (ui.tab === 'stat' && born !== null) {
     for (const s of DRILL_STATS) {
       const cap = capOf(born, s, room)
@@ -530,9 +591,9 @@ function heroHtml(k: DrillKit, o: YardOpts, store: DrillStore, r: Row): string {
   } else if (ui.tab === 'relic') {
     const sel = o.slot?.id === r.id ? o.slot.i : null
     h += slotsHtml(k.relic, r.id, e.level, sel)
-    if (sel !== null) h += `<button class="dyveil" data-act="rl-close" aria-label="${t('dy.close')}"></button><div class="dysheet">${pickerHtml(k.relic, r.id, sel)}</div>`
+    if (sel !== null) sheet = `<button class="dyveil" data-act="rl-close" aria-label="${t('dy.close')}"></button><div class="dysheet">${pickerHtml(k.relic, r.id, sel)}</div>`
   }
-  return h + `</div>`
+  return { panel: h + `</div>`, sheet }
 }
 
 /** 끝 화면의 단련 한 줄 — 이번 판에 공을 번 장수 얼굴과 「+공」, 그리고 단련터로 */
@@ -548,40 +609,25 @@ export function yardStripHtml(k: DrillKit, rows: ReadonlyArray<{ id: string; nam
 }
 
 export const DRILL_CSS = `
-/* 단련터 — 큰 그림 띠 카드 목록 한 줄에 한 사람 · 사람을 누르면 그 사람 쪽 (docs/realm/DRILL-UI.md) */
+/* 단련터 — 얼굴 링 한 화면 (hero-ring.ts · 58-B) · 고리 위에 필터 · 정렬 · 고르면 고리 자리에 그 장수의 능력 · 유물 판 (docs/realm/DRILL-UI.md) */
 .ap .front.dyard { display: flex; flex-direction: column; overflow: hidden; }
-.ap .dytop { display: flex; align-items: center; gap: 6px; flex: none; min-height: 48px; padding: 0 8px 0 14px; }
-.ap .dytop h2 { margin: 0; font-size: 20px; color: var(--gold); }
-.ap .dycount { flex: 1; color: var(--mute); font-size: 13px; }
+.ap .dyhead { display: flex; align-items: center; gap: 6px; }
+.ap .dyhead .hrg-title { flex: 1; min-width: 0; }
 .ap .dyic { flex: none; width: 44px; height: 44px; border-radius: 50%; border: 1px solid #6a5630; background: #1d160e; color: #e6d3a0; font: inherit; font-size: 20px; font-weight: 800; cursor: pointer; }
-.ap .dyfind { flex: none; display: flex; gap: 8px; padding: 0 12px 6px; }
 .ap .dysearch { flex: 1; min-width: 0; height: 44px; box-sizing: border-box; padding: 0 14px; border-radius: 22px; border: 1px solid #5a4a2c; background: #0d0f14; color: #f0e2c0; font: inherit; font-size: 16px; }
 .ap .dysearch::placeholder { color: #7f7664; }
-.ap .dyquick { flex: none; display: flex; gap: 6px; padding: 0 12px 8px; }
+.ap .dysheet .dysearch { display: block; width: 100%; margin: 0 0 10px; }
 /* 눌린 채 남는 단추 — 채움 + 안으로 꺼짐 + ✓ */
 .ap .dychip { flex: none; min-height: 44px; box-sizing: border-box; padding: 0 14px; border-radius: 22px; border: 1px solid #5a4a2c; background: #1d160e; color: #d9cfb6; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
 .ap .dychip.on { background: linear-gradient(#b8892f, #e2b958); border-color: #ffd98a; color: #2a1606; box-shadow: inset 0 3px 6px #5a3a0a99; }
 .ap .dychip.ghost { background: none; border-color: #4a3e2a; color: #a89c84; }
-.ap .dyquick .dychip { min-height: 38px; padding: 0 12px; } .ap .dyquick .dychip.ghost { margin-left: auto; }
-.ap .dylist { flex: 1 1 0; min-height: 0; overflow-y: auto; container-type: size; overscroll-behavior: contain; }
-.ap .dyrow { position: relative; display: block; width: 100%; box-sizing: border-box; height: max(var(--rowmin), calc(100cqh / var(--rows))); padding: 0; margin: 0; overflow: hidden; border: 0; border-bottom: 2px solid #0a0c10; border-left: 5px solid var(--g, #5a5a5a); background: #17110c; color: inherit; font: inherit; text-align: left; cursor: pointer; }
-.ap .dyrow[hidden], .ap .dynone[hidden] { display: none; }
-.ap .dyart { position: absolute; top: 0; right: 0; bottom: 0; width: var(--artw); overflow: hidden; background: #17110c; }
-.ap .dyart img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 14%; display: block; }
-.ap .dyshade { position: absolute; inset: 0; background: linear-gradient(90deg, #0c0a08f2 0%, #0c0a08e6 36%, #0c0a0866 62%, #0c0a0800 100%); pointer-events: none; }
-.ap .dyinfo { position: absolute; left: 0; top: 0; bottom: 0; width: 62%; display: flex; flex-direction: column; justify-content: center; gap: 1px; padding: 2px 6px 2px 10px; min-width: 0; }
-.ap .dyl1 { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.ap .dyname { font-size: 18px; color: #f6ead0; text-shadow: 0 1px 3px #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.ap .dyname.big { font-size: 24px; }
-.ap .dysub { font-size: 12px; color: #cfc4a8; text-shadow: 0 1px 2px #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ap .hrg-head .dychip { padding: 0 11px; font-size: 13.5px; }
 .ap .dygr { font-style: normal; margin-left: 6px; padding: 0 5px; border-radius: 6px; background: var(--g); color: #fff; font-size: 11px; font-weight: 700; text-shadow: 0 1px 1px #000a; }
-.ap .dyl3 { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.ap .dyl3 .rlchip { margin-left: 0; width: 20px; height: 20px; } .ap .dyl3 .rlchip img { width: 17px; height: 17px; }
+.ap .hrg-ex .dygr { margin-left: 0; }
+.ap .hrg-ex .rlchip { margin-left: 0; width: 20px; height: 20px; } .ap .hrg-ex .rlchip img { width: 17px; height: 17px; }
+.ap .hrg-ex .dyfell { flex: 1 0 100%; }
 .ap .dyflag { position: absolute; right: 8px; top: 6px; font-style: normal; font-size: 16px; text-shadow: 0 1px 3px #000; }
-.ap .dyflag.up { top: auto; bottom: 6px; padding: 1px 6px; border-radius: 8px; background: #e2b958; color: #2a1606; font-size: 12px; font-weight: 800; text-shadow: none; }
-.ap .dyflag.fell { top: auto; bottom: 6px; right: auto; left: 12px; }
 .ap .dyflag.awb { right: 8px; } .ap .dyflag.inl { position: static; }
-.ap .dyrow.fresh { animation: dyin .5s ease-out both; }
 @keyframes dyin { from { transform: translateY(10px) scale(.97); opacity: 0; } to { transform: none; opacity: 1; } }
 .ap .dyempty { padding: 24px 18px; text-align: center; }
 .ap .dlv { display: inline-block; flex: none; padding: 0 4px; border: 5px solid transparent; border-image: url(__ART__ui/btn-gold.png?v=2) 30 35 fill / 5px 7px stretch; border-radius: 0; color: #2a1606; font-size: 12px; font-weight: 800; line-height: 1.2; background: none; }
@@ -594,24 +640,23 @@ export const DRILL_CSS = `
 .ap .dybar i { display: block; height: 100%; width: var(--to); background: linear-gradient(90deg, #8a6a3a, #f0c060); border-radius: 4px; animation: dyfill 1.4s .25s cubic-bezier(.2,.8,.2,1) both; }
 .ap .dybar.ready i { background: linear-gradient(90deg, #c9a23a, #ffe08a); box-shadow: 0 0 8px #ffd27a99; }
 @keyframes dyfill { from { width: var(--from); } to { width: var(--to); } }
-/* 작은 폰 — 카드가 낮아지면 줄 사이를 좁히고 등급 알약은 접는다 (등급은 왼쪽 띠 빛깔로 남는다) */
-.ap .dyname, .ap .dysub, .ap .dyl3 { line-height: 1.15; }
-@container (max-height: 560px) { .dyrow .dyname { font-size: 16px; } .dyrow .dysub { font-size: 11px; } .dyrow .dygr { display: none; } .dyrow .dyinfo { gap: 0; } .dyrow .dlv { border-width: 4px 6px; font-size: 11px; } .dyrow .dypt { font-size: 12px; } .dyrow .dypt b { font-size: 14px; } }
-/* 쓸 공이 남은 채 나가려 했다 — 그 장수 카드가 금빛으로 숨 쉰다 (형 11-05) */
-.ap .dyrow.canup { box-shadow: inset 0 0 0 3px #ffd98a, inset 0 0 22px #ffb02a99; animation: dycanup 1s ease-in-out infinite alternate; }
-@keyframes dycanup { from { box-shadow: inset 0 0 0 2px #ffd98a99, inset 0 0 10px #ffb02a55; } to { box-shadow: inset 0 0 0 4px #ffd98a, inset 0 0 26px #ffb02aaa; } }
-@media (prefers-reduced-motion: reduce) { .ap .dyrow.canup { animation: none; } }
-/* 아래 붙박이 */
-.ap .front.dyard .dygo { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid #2a2418; background: #101318; }
-.ap .dygo .btn { width: 100%; max-width: 560px; min-height: 48px; display: flex; align-items: center; justify-content: center; text-align: center; }
-.ap .dygo .dywarn { margin: 0; color: #ffd27a; font-weight: 700; text-align: center; font-size: 13px; }
-.ap .dygo .btn.armed { opacity: .85; }
-/* 장수 한 사람 쪽 */
-.ap .dyband { position: relative; flex: none; height: clamp(120px, 24%, 220px); overflow: hidden; border-bottom: 4px solid var(--g, #5a5a5a); background: #17110c; }
-.ap .dyband .dyart { width: 66%; } .ap .dyband .dyart img { object-position: 50% 12%; }
-.ap .dyband .dyinfo { width: 66%; padding-left: 58px; gap: 3px; }
-.ap .dyband .dyx { position: absolute; left: 6px; top: 6px; z-index: 2; background: #0c0a08b0; }
-.ap .dyband .dyflag.awb { top: 8px; right: 10px; }
+/* 아무도 없을 때 · 거른 끝에 아무도 없을 때 — 고리 대신 한 줄 */
+.ap .dyvoid { position: absolute; left: 0; right: 0; top: 0; bottom: var(--hrg-bar); display: flex; flex-direction: column; align-items: center; gap: 10px; padding: calc(env(safe-area-inset-top) + 8px) 14px 12px; box-sizing: border-box; overflow-y: auto; }
+.ap .dyvoid .dyhead { align-self: stretch; }
+/* 아래 붙박이 띠(.hrg-go) — 펼친 판의 ◀ ▶ 는 작게 · 공을 남긴 채 나가려 하면 「그래도 나갑니다」는 흐리게 */
+.ap .hrg-go > .dystep { flex: 0 0 56px; padding: 5px 0; }
+.ap .hrg-go .btn.armed { opacity: .85; }
+/* 펼친 판 — 고리 자리 (hero-ring .hrg-panel) */
+.ap .hrg-panel .dymer { padding-top: 10px; }
+/* 낮은 화면(작은 폰) — 능력 여섯 줄이 밀지 않고 다 보이게 줄을 낮춘다 */
+@media (max-height: 700px) { .ap .hrg-panel .dyst2 { flex-basis: 40px; min-height: 40px; } .ap .hrg-panel .dyplus { min-height: 40px; } }
+/* 낮은 가로 화면(폰을 눕힌 것) — 아래 띠도 낮추고 줄 사이를 더 좁힌다 (값은 + 단추에 있다) */
+@media (orientation: landscape) and (max-height: 500px) {
+  .ap .front.dyard.dyring { --hrg-bar: calc(56px + env(safe-area-inset-bottom)); }
+  .ap .hrg-panel .dymer { padding: 6px 14px 2px; } .ap .hrg-panel .dymer small { display: none; }
+  .ap .hrg-panel .dytabs { padding: 2px 12px 4px; } .ap .hrg-panel .dytab { min-height: 40px; }
+  .ap .hrg-panel .dyst2 { flex-basis: 38px; min-height: 38px; } .ap .hrg-panel .dyplus { min-height: 38px; }
+}
 .ap .dymer { flex: none; display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: center; padding: 8px 14px 4px; } .ap .dymer small { grid-column: 1 / 3; color: var(--mute); font-size: 12px; }
 .ap .dymer .dybar { max-width: none; height: 10px; }
 .ap .dytabs { flex: none; display: flex; gap: 6px; padding: 4px 12px 8px; }
@@ -642,7 +687,9 @@ export const DRILL_CSS = `
 .ap .dyfg { margin-bottom: 10px; } .ap .dyfg > b { display: block; margin-bottom: 4px; color: #cbbf9f; font-size: 13px; }
 .ap .dyfc { display: flex; flex-wrap: wrap; gap: 6px; }
 .ap .dyfc .dychip { min-height: 44px; }
-.ap .dyfgo { display: flex; gap: 8px; margin-top: 4px; } .ap .dyfgo .btn { flex: 1; min-height: 48px; }
+.ap .dyfgo { display: flex; gap: 8px; margin-top: 4px; } .ap .dyfgo .btn { flex: 1; min-height: 48px; justify-content: center; }
+/* 필터 판의 「모두 풀기 · n명 보기」는 판 아래에 붙박이 — 나라가 많아 판을 밀어도 늘 보인다 */
+.ap .dysheet .dyfgo { position: sticky; bottom: calc(-14px - env(safe-area-inset-bottom, 0px)); margin: 4px -14px 0; padding: 8px 14px calc(14px + env(safe-area-inset-bottom, 0px)); background: #120d08; border-top: 1px solid #3a2e1e; }
 .ap .dysheet .rlpick { margin: 0; border: 0; padding: 0; background: none; } .ap .dysheet .rlpl { max-height: none; }
 /* 둥근 얼굴 — 끝 화면의 공 줄 (청동 테 그림 · ui/ring-portrait.png) */
 .ap .dystrip .dysf img, .ap .dystrip .dysf .nof { background: url(__ART__ui/ring-portrait.png) center / 100% 100% no-repeat, #17110c !important; background-origin: border-box; border-style: solid; border-color: transparent !important; border-radius: 50%; box-sizing: border-box; width: 54px !important; height: 54px !important; border-width: 9px !important; }

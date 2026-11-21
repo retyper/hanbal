@@ -27,7 +27,12 @@ import { DEFAULT_HERO, DEMON_STAGE, SEAL_STAGE, loadRoster, stampDemons, type Ro
 import { TRUE_WAKE } from './realm/data/awaken2.ts'
 import { DLC } from './realm/dlc.ts'
 import { legacyAwakeningOpen } from './realm/trial-rules.ts'
-import { AWAKENING_KEY, readHeroAwakening, setHeroAwakeningAppearance } from './ui/realm/awakening-store.ts'
+import { AWAKENING_KEY, readAwakeningProfile, readHeroAwakening, setHeroAwakeningAppearance } from './ui/realm/awakening-store.ts'
+import { hringCss, mountRing, ringFaces, ringHtml, type RingHandle, type RingHero, type RingOpts } from './ui/realm/hero-ring.ts'
+import { awakeningPersonAllowed } from './realm/awakening.ts'
+import { personOf } from './realm/person.ts'
+import { genArtOf } from './realm/data/art.ts'
+import { P } from './tune/params.ts'
 import './raid/combat.css'
 import './raid/awakening-cutin.css'
 import './raid/giant-hud.css'
@@ -243,30 +248,90 @@ function renderStageMenu() {
   pick.querySelectorAll<HTMLButtonElement>('[data-stage]').forEach(b => b.onclick = () => { cancelBegin(); stage = b.dataset.stage as typeof stage; run = newRun(7); if (baseArtReady && !beginning) $<HTMLButtonElement>('start').disabled = trialEntryClosed(); renderStageMenu() })
   menu.querySelector('.note')!.innerHTML = `<span class="gold-line">${COIN}<b>${meta.gold.toLocaleString()}</b></span><button id="open-shop">상점 · 영구 강화</button>${campaignToken ? '' : '<button id="open-heroes">장수 바꾸기</button>'}${toRealm}`
   $('open-shop').onclick = () => { cancelBegin(); renderShop(); $('shop').hidden = false }
-  if (!campaignToken) $('open-heroes').onclick = () => { cancelBegin(); renderHeroes(); $('shop').hidden = false }
+  if (!campaignToken) $('open-heroes').onclick = () => { cancelBegin(); $('shop').hidden = false; renderHeroes() }
   if (!$<HTMLButtonElement>('start').disabled) $('start').textContent = startLabel()
   keyHints(root)
 }
 /**
  * 데려갈 장수 — 본편에서 모은 우리 장수만 (본편이 raid/link.ts 에 적어 둔다 · 해비는 늘). 고르면 그 장수의 겉모습으로 열전을 다시 연다.
  * 진각성 그림이 있는 장수는 이 장수로 마지막 스테이지를 깨면 본편에서 진각성할 수 있다 (금빛 「진」 · 깼으면 ✓)
+ * 얼굴 링 (ui/realm/hero-ring.ts · 58-B) — 데려갈 장수 · 단련터와 같은 고리. 한 명만 고른다: 고르면 목소리와 공격 한 번 ·
+ * 고른 장수를 한 번 더 고르거나(Enter) 아래 「○○로 바꾸기」로 그 장수의 열전을 연다. 지금 장수를 고르면 그대로 닫는다.
  */
 const HAEBI: RosterHero = { id: DEFAULT_HERO, name: '해비', home: '미추홀의 장수', bust: 'w-95-michuhol-haebi', sprite: 'haebi', awake: 'aw1-haebi', kit: 'axe', video: true }
+const ART = import.meta.env.BASE_URL + 'realm/'
+let heroRing: RingHandle | null = null
+/** 얼굴 링 모양은 처음 열 때 한 번 (#shop 아래에서만) */
+let ringStyled = false
+/** 장수 바꾸기 판을 걷는다 — 링도 멈춘다 (상점과 같은 #shop 을 쓴다) */
+function closeHeroes() { heroRing?.dispose(); heroRing = null; $('shop').classList.remove('hrgshop'); $('shop').hidden = true }
+/** 고른 장수의 목소리 — 본편과 같은 대사 · 소리 끄기 · 크기를 따른다. 대사 셈(voice.ts)과 명부는 이 판을 처음 열 때 따로 받는다 */
+let voiceKit: Promise<[typeof import('./ui/realm/voice.ts'), typeof import('./ui/realm/voice-hero.ts'), typeof import('./realm/dex.ts'), typeof import('./ui/realm/sound.ts')]> | null = null
+const loadVoiceKit = () => voiceKit ??= Promise.all([import('./ui/realm/voice.ts'), import('./ui/realm/voice-hero.ts'), import('./realm/dex.ts'), import('./ui/realm/sound.ts')])
+function heroVoice(id: string) {
+  if (localStorage.getItem('hanbal.realm.mute') === '1' || query.has('silent')) return
+  void loadVoiceKit().then(([v, vh, d, s]) => {
+    if (document.hidden || !v.voiceGate(performance.now())) return
+    const body = d.dexCatalog().find(x => x.id === id)?.hero
+    const own = vh.heroVoiceDir(id)
+    const path = body !== undefined ? v.voicePath(body, 'tap') : own !== null ? `${own}tap-1.ogg` : null
+    const gain = s.soundVolume('voice')
+    if (path !== null && gain > 0) s.playOnce(import.meta.env.BASE_URL + path, P.realm.voiceVol * gain)
+  }).catch(() => undefined)
+}
 function renderHeroes() {
+  heroRing?.dispose(); heroRing = null
+  if (!ringStyled) { ringStyled = true; const st = document.createElement('style'); st.textContent = hringCss('#shop'); document.head.appendChild(st) }
+  void loadVoiceKit()
   const list = [HAEBI, ...loadRoster().filter(h => h.id !== DEFAULT_HERO)]
   const sealed = (id: string) => (meta.heroes[id] ?? []).includes(SEAL_STAGE)
-  $('shop').innerHTML = `<div class="panel shop heroes"><small>장수 열전 · 데려갈 장수</small><h2>${list.length}명</h2><p>본편에서 우리 장수가 되면 여기에 섭니다. ${DLC.trueWake ? `<b class="tw">진</b> 장수는 ${josa(stageName(SEAL_STAGE), '을', '를')} 깨면 본편에서 진각성할 수 있습니다.` : '진각성은 추후 내려받을 묶음으로 준비 중입니다.'}</p><div class="hero-grid">${list.map(h =>
-    `<button data-hero="${esc(h.id)}" class="${h.id === heroId ? 'on' : ''}" aria-pressed="${h.id === heroId}"><img src="${import.meta.env.BASE_URL}realm/bust/${esc(h.bust)}.jpg" alt="" loading="lazy"><b>${esc(h.name)}</b><small>${KITS[h.kit]?.weapon ?? ''}</small>${DLC.trueWake && TRUE_WAKE.has(h.id) ? `<i class="tw${sealed(h.id) ? ' ok' : ''}">${sealed(h.id) ? '진 ✓' : '진'}</i>` : ''}</button>`).join('')}</div><div class="shop-actions"><button id="close-shop" class="primary">닫기</button></div></div>`
-  $('shop').querySelectorAll<HTMLButtonElement>('[data-hero]').forEach(b => b.onclick = () => {
-    const h = list.find(x => x.id === b.dataset.hero); if (!h || h.id === heroId) { $('shop').hidden = true; return }
+  // 각성 모습을 켜 둔 장수는 각성 초상 · 각성 전투 띠로 (출전 화면 초상과 같은 셈 · readHeroAwakening)
+  const profile = readAwakeningProfile(localStorage)
+  const looks = (id: string) => { const e = awakeningPersonAllowed(id) ? profile.people[personOf(id)] : undefined; return e?.unlocked === true && e.appearanceAwake !== false }
+  const heroes: RingHero[] = list.map(h => {
+    const aw = looks(h.id), tw = DLC.trueWake && TRUE_WAKE.has(h.id), k = KITS[h.kit]
+    const won = STAGE_ORDER.filter(s => (meta.heroes[h.id] ?? []).includes(s))
+    return {
+      id: h.id, name: h.name, nameHtml: esc(h.name), from: h.home, lv: null, stats: [],
+      ...ringFaces(ART, h.bust, aw),
+      sprite: ART + genArtOf(aw && h.awake ? h.awake : h.sprite).file,
+      extra: `<b class="rh-kit">${esc(k?.weapon ?? '')}</b>${k ? `<small class="rh-ult">${esc(k.skill)}</small>` : ''}${tw ? `<i class="tw${sealed(h.id) ? ' ok' : ''}">${sealed(h.id) ? '진 ✓' : '진'}</i>` : ''}${won.map(s => `<img class="rh-em" src="${ART}raid/emblem-${s}.png" alt="${esc(stageName(s))}" title="${esc(stageName(s))} 휘장">`).join('')}`,
+      mark: tw ? (sealed(h.id) ? '진 ✓' : '진') : '',
+    }
+  })
+  let pick = heroId
+  const choose = (id: string) => {
+    const h = list.find(x => x.id === id)
+    if (!h || h.id === heroId) { closeHeroes(); return }
     const q = new URLSearchParams({ hero: h.id, name: h.name, home: h.home, bust: h.bust, sprite: h.sprite, kit: h.kit, video: h.video ? '1' : '0' })
     if (h.awake) q.set('awake', h.awake)
-    b.classList.add('bought'); location.replace(`${location.pathname}?${q}`)
-  })
-  $('close-shop').onclick = () => { $('shop').hidden = true }
+    location.replace(`${location.pathname}?${q}`)
+  }
+  const note = `본편에서 우리 장수가 되면 여기에 섭니다. ${DLC.trueWake ? `진 표시 장수는 ${josa(stageName(SEAL_STAGE), '을', '를')} 깨면 본편에서 진각성할 수 있습니다.` : '진각성은 추후 내려받을 묶음으로 준비 중입니다.'}`
+  const opts: RingOpts = {
+    heroes, max: 1, picked: [pick], start: heroId,
+    text: { title: '데려갈 장수', party: '', prev: '이전 장수', next: '다음 장수', lv: n => String(n) },
+    top: `<div class="rh-top"><h4 class="hrg-title">데려갈 장수 <small>${list.length}명</small></h4><p class="rh-note">${esc(note)}</p></div>`,
+    // 한 명만 — 다른 장수를 고르면 그 장수로 옮겨 가고, 고른 장수를 한 번 더 고르면 그 장수로 연다
+    onToggle: id => { if (id === pick) { choose(id); return [pick] } pick = id; paintGo(); return [pick] },
+    onPicked: heroVoice,
+  }
+  $('shop').classList.add('hrgshop')
+  $('shop').innerHTML = `<div class="hrgscr">${ringHtml(opts)}<div class="hrg-go"><button id="close-shop">닫기</button><button id="hero-go" class="primary" hidden><span></span></button></div></div>`
+  const go = $<HTMLButtonElement>('hero-go')
+  function paintGo() {
+    const h = list.find(x => x.id === pick)
+    go.hidden = !h || h.id === heroId
+    if (h) go.querySelector('span')!.textContent = `${josa(h.name, '으로', '로')} 바꾸기`
+  }
+  go.onclick = () => choose(pick)
+  $('close-shop').onclick = closeHeroes
+  const host = $('shop').querySelector<HTMLElement>('.hrg')
+  if (host) heroRing = mountRing(host, opts)
   keyHints(root)
 }
 function renderShop() {
+  heroRing?.dispose(); heroRing = null; $('shop').classList.remove('hrgshop')
   const fee = refundFee(meta), refundPoor = meta.spent > 0 && meta.gold < fee
   $('shop').innerHTML = `<div class="panel shop"><small>장수 열전 · 판 밖 상점</small><h2>${COIN}${meta.gold.toLocaleString()}</h2><p>산 것은 다음 판부터 모든 장수에게 붙습니다. 되돌리기는 금을 내야 합니다.</p><div class="shop-grid">${SHOP.map(it => {
     const lv = meta.shop[it.key], max = shopMax(it.key), full = lv >= max, cost = full ? 0 : shopCost(it.key, lv), poor = !full && meta.gold < cost

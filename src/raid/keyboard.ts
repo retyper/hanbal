@@ -25,6 +25,9 @@ export function raidShortcut(e: KeyboardEvent, root: HTMLElement, pause: () => v
   }
   if (e.key !== 'Enter' && e.key !== ' ') return false
   const focused = document.activeElement
+  // 얼굴 링(장수 바꾸기)은 Enter 를 링이 받는다 — 앞 장수를 고르고, 고른 장수를 한 번 더면 그 장수로 (ui/realm/hero-ring.ts) · 얼굴 칸에 손이 가 있어도 링이 한 번만 받는다
+  const ring = box === shop && box.querySelector('.hrg') !== null
+  if (ring && (!(focused instanceof HTMLButtonElement) || !box.contains(focused) || focused.closest('.hrg-slot') !== null)) return true
   if (focused instanceof HTMLButtonElement && box.contains(focused) && visible(focused) && !focused.disabled) return tap(focused)
   const selector = box === tree ? '.tree-close' : box === refund ? '#refund-yes' : box === shop ? '#close-shop' : box === overlay ? '#resume,.result-acts .primary' : '#start'
   return tap(buttons(box, selector)[0])
@@ -39,6 +42,8 @@ export function keyHints(root: HTMLElement) {
     hint.textContent = key
   }
   for (const id of ['start', 'resume', 'close-shop', 'refund-yes']) mark(root.querySelector<HTMLButtonElement>(`#${id}`), 'Enter')
+  // 장수 바꾸기(얼굴 링)의 닫기는 Esc — Enter 는 링이 받는다 (raidShortcut)
+  if (root.querySelector('#shop .hrg') !== null) mark(root.querySelector<HTMLButtonElement>('#close-shop'), 'Esc')
   mark(root.querySelector<HTMLButtonElement>('#pause'), 'P'); mark(root.querySelector<HTMLButtonElement>('.tree-close'), 'Esc')
   root.querySelectorAll<HTMLButtonElement>('.choices [data-up]').forEach((b, i) => mark(b, String(i + 1)))
   root.querySelectorAll<HTMLButtonElement>('.result-acts button').forEach((b, i) => mark(b, String(i + 1)))

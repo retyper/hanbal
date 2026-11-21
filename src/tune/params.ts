@@ -3959,10 +3959,7 @@ export const SPEC = {
     // 군대 이끈 계절이 공의 대부분이라(planner 봇 비화가야 40계절: 1 이면 주력 평균 45.5 · 단련 7.5) 반으로 — 0.5 면 26.6 · 단련 5.3 (tools/realm-drill.ts · 10-26)
     drillMeritLead: k(0.5, 0, 10, 0.5, '단련 공 — 군대를 이끈 계절마다'),
     drillMeritPlot: k(2, 0, 10, 1, '단련 공 — 자객으로 나가 공작이 먹히면'),
-    drillRows: k(7, 4, 10, 1, '단련터 목록 — 한 화면에 보이는 장수 카드 수 (카드 키 = 목록 칸 높이 ÷ 이 수)'),
-    drillRowMinPx: k(56, 40, 120, 2, '단련터 목록 — 카드 최소 키 (작은 폰에서 7장이 이보다 낮아지면 이 키로 두고 밀어 본다)'),
-    drillArtPct: k(58, 30, 90, 2, '단련터 카드 — 얼굴 그림이 차지하는 오른쪽 폭 (%)'),
-    // 얼굴 링 — 장수 고르기 (58-A · ui/realm/hero-ring.ts · 형 11-21 시안 docs/realm/production/mockups/hero-ring)
+    // 얼굴 링 — 장수 고르기 (58-A · ui/realm/hero-ring.ts · 형 11-21 시안 docs/realm/production/mockups/hero-ring) · 단련터 · 열전 장수 바꾸기도 (58-B)
     ringSlots: k(10, 6, 14, 2, '얼굴 링 — 고리에 도는 칸 수 (장수가 몇 명이든 이만큼만 · 뒤쪽 칸은 가려진 동안 다음 장수로 갈아 끼운다)'),
     ringShow: k(2.5, 1.5, 4, 0.5, '얼굴 링 — 앞쪽 몇 칸까지 얼굴을 보이나 (양쪽 · 나머지는 빈 메달)'),
     ringTilt: k(66, 40, 80, 1, '얼굴 링 — 원판을 눕힌 각도 (클수록 납작한 타원)', '도'),
