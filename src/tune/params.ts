@@ -916,7 +916,7 @@ export const HAEBI_AWAKEN = {
 export const HAEBI_STAGES = {
   forest: { name: '숲 산길', length: 1, hp: 1, damage: .9, spawn: 1, bossHp: 1, gold: 1, bg: 'forest.webp', boss: 'bandit-warlord', bossName: '산적 대두목', eliteName: '정예 산적', elite: 'elite-forest',
     tiers: [['club', 'dog'], ['runner', 'dog'], ['shield', 'berserker'], ['berserker', 'archer'], ['iron', 'firearcher']],
-    art: { club: { file: 'enemy-forest-leather', scale: 1.155 }, shield: { file: 'enemy-forest-vine-shield', scale: 1.108 } } },
+    art: { club: { file: 'enemy-forest-leather', scale: 1.155 }, shield: { file: 'enemy-forest-vine-shield', scale: 1.108 }, archer: { file: 'enemy-forest-barrage-archer', scale: 1 } } },
   ford: { name: '물안개 여울', length: 1, hp: 1.7, damage: 1.8, spawn: 1.3, bossHp: 1.8, gold: 2, bg: 'ford.webp', boss: 'boss-ford', bossName: '여울 물두령', eliteName: '정예 여울 도적', elite: 'elite-ford',
     tiers: [['dog', 'runner'], ['runner', 'dog'], ['shield', 'berserker'], ['berserker', 'archer'], ['iron', 'dog']],
     art: { runner: { file: 'enemy-ford-pole', scale: 1.07 }, berserker: { file: 'enemy-ford-net', scale: 1.029 }, archer: { file: 'enemy-ford-barrage-archer', scale: 1.228 } } },

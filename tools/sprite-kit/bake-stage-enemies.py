@@ -38,8 +38,9 @@ PICTURES = {
     'enemy-forest-leather': ('forest', 'leather', 'club', act(12, 14, 16, 15, 17, 13)),
     # 덩굴 방패 도적 → 방패병: 12 섬 · 13 칼 뒤로 · 14 웅크림 · 15 앞으로 찌름(때림) · 16·17 돌아옴
     'enemy-forest-vine-shield': ('forest', 'vine-shield', 'shield', act(14, 13, 15, 16, 17, 12)),
-    # 화살비 신호 궁수 (11-22 아직 안 옴 · 오면 칸을 보고 ORDER 를 적는다)
-    'enemy-forest-barrage-archer': ('forest', 'barrage-archer', 'archer', IDENT),
+    # 숲 화살비 궁수 (11-22 Codex 75 REVIEW20 · 깃 달린 초록 두건) → 궁수: 원본 12 화살 먹임 · 13 당기기 시작(겨눔) · 14 끝까지 당김(당김) ·
+    # 15 놓은 뒤 팔 뻗음 → 게임 16(놓음) · 16 움찔 → 맞음 18 · 17 활 내림 · 18 섬 → 안 쓰는 게임 15 · 19 쓰러짐
+    'enemy-forest-barrage-archer': ('forest', 'barrage-archer', 'archer', act(12, 13, 14, 18, 15, 17, hit=16, dead=19)),
     # 삿대 든 여울 도적 → 창돌격꾼: 12 섬 · 13 웅크림(겨눔) · 14 삿대 듦 · 15 내지름 · 16 깊게 내지름(돌진) · 17 돌아옴
     'enemy-ford-pole': ('ford', 'pole', 'runner', act(13, 14, 16, 15, 17, 12)),
     # 그물 든 습격자 → 광전사: 12 웅크림 · 13 섬 · 14 그물 듦 · 15 그물 던짐(때림) · 16 낮게 · 17 섬

@@ -50,7 +50,7 @@ test('stage art: real 20-cell strips (144 tall) · preloaded · only for kinds t
       assert.ok(art.scale > .95 && art.scale < 1.45, `${art.file}: scale ${art.scale}`)
     }
   }
-  assert.equal(n, 14, 'Codex 67 delivered 14 stage enemies (forest barrage archer pending)')
+  assert.equal(n, 15, 'Codex 67 delivered 14 stage enemies + Codex 75 forest barrage archer')
   assert.deepEqual(arts('trial'), [], 'trial keeps the old bandits')
 })
 
