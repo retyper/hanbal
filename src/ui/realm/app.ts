@@ -3472,7 +3472,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const grand = c.kind === 'skyfest' && c.grand === true
     // 쫓겨 온 사람 — 아직 우리 장수가 아니라 떠돌이 명단에서 (뽑을 때 정해 둔 사람)
     const guest = c.kind === 'exile' && c.guest !== undefined ? HERO_POOL.find((h) => h.id === c.guest) : undefined
-    const sub = (s: string): string => s.replaceAll('{a}', r.heroes[c.hero ?? '']?.name ?? '').replaceAll('{b}', r.heroes[c.hero2 ?? '']?.name ?? '').replaceAll('{n}', r.nodes[c.node ?? '']?.name ?? '')
+    const sub = (s: string): string => s.replaceAll('{a}', r.heroes[c.hero ?? '']?.name ?? '').replaceAll('{b}', r.heroes[c.hero2 ?? '']?.name ?? '').replaceAll('{n}', r.nodes[c.node ?? '']?.name || tr('ev.someTown')) // 고을을 못 찾으면 「그 고을」 (11-22 가로 점검: 「다투는 곳, . 누구 손에」)
       .replaceAll('{g}', guest?.name ?? '').replaceAll('{f}', r.factions[c.from ?? '']?.name ?? '')
     const ans = answers[`card:${c.season}`]
     const pick = ans === undefined ? null : answers[`hush:${c.season}`] === true ? 2 : ans ? 0 : 1

@@ -1792,6 +1792,7 @@ export const en: Partial<Record<Key, string>> = {
   'hd.govOut': 'Messengers and resting heroes are all out. A hero holding a town can go in person, but that town is left empty for the {turn}.',
   'hd.allOut': 'Everyone is out. Pull a hero from an army to rest and you can send more.',
   // app 다섯째 묶음 뒷부분 9: 사신 어디 · 담판
+  'ev.someTown': 'that town',
   'ev.ownerOf': '{owner}\'s ',
   'ev.joint': 'Joint attack on {name}',
   'ev.guard': 'Guard {name}',

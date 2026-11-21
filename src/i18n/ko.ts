@@ -1804,6 +1804,7 @@ export const ko = {
   'hd.govOut': '사자와 쉬는 장수는 다 나갔다. 고을을 맡은 장수는 몸소 보낼 수 있다. 그 {turn}엔 고을을 비운다.',
   'hd.allOut': '보낼 사람이 다 나갔다. 장수를 군대에서 빼서 쉬게 하면 더 보낼 수 있다.',
   // app 다섯째 묶음 뒷부분 9: 사신 어디 · 담판
+  'ev.someTown': '그 고을',
   'ev.ownerOf': '{owner}의 ',
   'ev.joint': '{name|을/를} 함께 친다',
   'ev.guard': '{name} 지키기',
