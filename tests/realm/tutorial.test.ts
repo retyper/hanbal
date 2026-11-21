@@ -185,6 +185,19 @@ describe('배우는 판 — 갇히지 않는다', () => {
     for (const id of ['build', 'envoy', 'rite', 'plot']) assert.ok(FIRSTS.some((f) => f.id === id && f.title !== '' && f.text !== ''), id)
   })
 
+  // FIRST-HOUR-20261122 TOP 4: 열전은 첫 시간 동선에 이름이 없었다 (장수 탭의 글 없는 금빛 점뿐) → 첫 계절이 지나면 그 점 곁에 한 줄
+  it('장수 열전 알림 — 금빛 점 곁에 · 판 처음 raidHintFrom 턴이 지난 뒤에만', async () => {
+    const { FIRSTS, nextFirst } = await import('../../src/ui/realm/firsts.ts')
+    const { P } = await import('../../src/tune/params.ts')
+    const raid = FIRSTS.find((f) => f.id === 'raid')!
+    assert.ok(raid.sel.includes('.rqd') && raid.text.includes('금빛 점') && raid.title === '장수 열전')
+    const seen = new Set(FIRSTS.filter((f) => f.id !== 'raid').map((f) => f.id))
+    const all = (): boolean => true
+    assert.equal(nextFirst(seen, all, P.realm.raidHintFrom - 1), null, '첫 계절 안엔 아직')
+    assert.equal(nextFirst(seen, all, P.realm.raidHintFrom)?.id, 'raid')
+    assert.equal(nextFirst(seen, (s) => s !== raid.sel, P.realm.raidHintFrom), null, '점이 안 보이면 안 뜬다')
+  })
+
   it('오래 머문 단계엔 「건너뛰기」가 뜬다 (평소엔 없다)', async () => {
     const { tutBandHtml } = await import('../../src/ui/realm/tutorial.ts')
     for (let i = 0; i < TUT_STEPS.length; i++) {

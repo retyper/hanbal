@@ -102,7 +102,7 @@ import { installMapLandscape } from './map-landscape.ts'
 import { GOAL_CSS, goalBandHtml, goalRowsHtml } from './goalband.ts'
 import { contestOpen } from '../../realm/scenario.ts'
 import { installTips, TIP_CSS } from './tips.ts'
-import { FIRST_CSS, FIRSTS, loadFirsts, nextFirst, saveFirsts, type First } from './firsts.ts'
+import { FIRST_CSS, FIRSTS, firstDue, loadFirsts, nextFirst, saveFirsts, type First } from './firsts.ts'
 import { THREAT_CSS, threatHtml } from './threatwarn.ts'
 import { threatsTo } from '../../realm/warn.ts'
 import { UPDATE_CSS } from './update.ts'
@@ -7538,10 +7538,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (realm === null || realm.region === 'tutorial' || warOn || firstOn !== null || document.visibilityState !== 'visible' || FIRSTS.every((f) => firstsSeen.has(f.id))) return
     // 가려 있으면 걷힌 뒤 다시 본다 — 보고판이 떠 있는 채 판을 열면 그 뒤로 다시 그리지 않아 놓쳤다
     if (root.classList.contains('modal-open') || root.querySelector('.cere, .ascfx, .gnpop, .wr, .stov, .dpov, .thw') !== null) { firstTimer = window.setTimeout(firstCheck, P.realm.firstHintDelayMs); return }
-    const f = nextFirst(firstsSeen, (s) => firstEl(s) !== null)
+    const f = nextFirst(firstsSeen, (s) => firstEl(s) !== null, realm.season)
     if (f === null) {
-      // 그려져 있는데 아직 안 보이면(판이 미끄러지는 중 · 굴려야 보이는 자리) 보일 때까지 · 아니면 몇 번만 더
-      const soon = FIRSTS.some((x) => !firstsSeen.has(x.id) && root.querySelector(x.sel) !== null)
+      // 그려져 있는데 아직 안 보이면(판이 미끄러지는 중 · 굴려야 보이는 자리) 보일 때까지 · 아니면 몇 번만 더 (때가 안 된 것은 기다리지 않는다)
+      const soon = FIRSTS.some((x) => !firstsSeen.has(x.id) && firstDue(x, realm!.season) && root.querySelector(x.sel) !== null)
       if (soon || firstTries++ < P.realm.firstHintTries) firstTimer = window.setTimeout(firstCheck, P.realm.firstHintDelayMs)
       return
     }

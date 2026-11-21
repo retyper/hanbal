@@ -3166,6 +3166,7 @@ export const SPEC = {
     firstHintMs: k(6000, 2000, 20000, 100, '처음 한 번 알림(firsts.ts)이 머무는 가장 짧은 시간(ms) · 글이 길면 noticePerCharMs 만큼 더'),
     firstHintDelayMs: k(450, 0, 2000, 10, '다시 그린 뒤 처음 한 번 알림을 찾기까지(ms) · 판이 미끄러져 자리 잡은 뒤에'),
     firstHintTries: k(4, 0, 10, 1, '다시 그린 뒤 처음 한 번 알림을 몇 번 더 찾아볼까 · 판 속 카드는 조금 늦게 펼쳐진다'),
+    raidHintFrom: k(3, 0, 36, 1, '처음 한 번 알림: 장수 열전 알림(장수 탭의 금빛 점)은 판 처음 이만큼 턴(달 시계면 달)이 지난 뒤에 · 첫 계절이 지나 판에 손이 익었을 때 (FIRST-HOUR-20261122 TOP 4)', '턴'),
     noticeBaseMs: k(2000, 0, 6000, 100, '알림 머무는 시간 = 이것 + 글자 수 × noticePerCharMs (ms)'),
     noticePerCharMs: k(90, 20, 300, 5, '알림 글자 하나마다 더 머무는 시간(ms) · 한 자 0.09초면 1초에 열한 자'),
     noticeMaxMs: k(14000, 4000, 30000, 500, '알림이 머무는 가장 긴 시간(ms)'),
