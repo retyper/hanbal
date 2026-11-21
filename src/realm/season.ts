@@ -1108,13 +1108,14 @@ function styleOf(h: Hero): { style?: BattleStyle } {
 }
 
 /**
- * 장수 깃발을 「겨루기 → 사로잡기」 하나씩만 보이는 안내 싸움인가 — 배우는 판은 늘, 1장(마한)은 장수끼리 맞선 첫 싸움 한 번만
- * (첫 30분 깔때기 · docs/realm/FIRST-HOUR.md 지연 3 · 11-11: 1장에선 첫 겨루기를 23턴에야 썼다)
+ * 장수 깃발을 「겨루기 → 사로잡기」 하나씩만 보이는 안내 싸움인가 — 배우는 판은 늘, 1장(마한)과 1:1 판(쇠의 바다)은 장수끼리 맞선 첫 싸움 한 번만
+ * (첫 30분 깔때기 · docs/realm/FIRST-HOUR.md 지연 3 · 11-11: 1장에선 첫 겨루기를 23턴에야 썼다 ·
+ *  FIRST-HOUR-20261122 TOP 2: 배우는 판 다음 판인 쇠의 바다는 60분 안 첫 생포가 열 판에 다섯뿐이었다)
  */
 export function lessonOn(r: Realm, faction: string): boolean {
   if (r.factions[faction]?.mind !== 'player') return false
   if (r.region === 'tutorial' && r.heroes['tut-haebi']?.faction === faction && canVanguard(r.heroes['tut-haebi']!)) return false
-  return r.region === 'tutorial' || (r.scenario?.id === 'mahan' && r.lessonDone !== true)
+  return r.region === 'tutorial' || ((r.scenario?.id === 'mahan' || r.region === 'byeonhan-mini') && r.lessonDone !== true)
 }
 /** 1장의 안내 싸움이 열렸다 — 장수끼리 맞섰으면 다음부터는 깃발을 다 보인다 */
 function markLesson(r: Realm, a: Side, d: Side): void {

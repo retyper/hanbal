@@ -9079,8 +9079,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           if (stratDone()) return
           break
         }
-        // 승산이 낮으면 한 번 묻는다 — 배우는 판·첫 싸움 안내(lessonOn)는 제 안내를 따른다
-        if (sortieD.edge !== null && r!.region !== 'tutorial' && !lessonOn(r!, me())) {
+        // 승산이 낮으면 한 번 묻는다 — 배우는 판·1장 첫 싸움 안내(lessonOn)는 제 안내를 따른다 (1:1 판의 안내 싸움은 깃발만 고르니 그대로 묻는다)
+        if (sortieD.edge !== null && r!.region !== 'tutorial' && !(lessonOn(r!, me()) && r!.scenario?.id === 'mahan')) {
           const worst = sortieWorst(r!, a)
           const wkey = `${r!.season}|${a.id}|${sortieD.edge}`
           if (worst !== null && worst < P.realm.attackWarnWin && !warned.has(wkey)) {

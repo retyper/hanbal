@@ -75,6 +75,17 @@ describe('배우는 판', () => {
     assert.ok(won >= 6, `갯골을 이긴 시드 ${won}/12`)
   })
 
+  it('1:1 판(쇠의 바다)도 첫 장수 싸움 한 번은 겨루기 → 사로잡기 안내다 (FIRST-HOUR-20261122 TOP 2)', async () => {
+    const { startRegion } = await import('../../src/realm/data/regions/index.ts')
+    const { lessonOn } = await import('../../src/realm/season.ts')
+    const r = startRegion('byeonhan-mini', 1000, 'guya')
+    assert.equal(lessonOn(r, 'guya'), true)
+    const foe = Object.keys(r.factions).find((f) => f !== 'guya')!
+    assert.equal(lessonOn(r, foe), false, 'AI 나라는 안내가 없다')
+    r.lessonDone = true
+    assert.equal(lessonOn(r, 'guya'), false, '한 번 맞선 뒤엔 깃발을 다 보인다')
+  })
+
   it('미추홀 도읍을 쥐면 이긴다', () => {
     const r = startTutorial(3)
     assert.equal(checkOutcome(r), null)
