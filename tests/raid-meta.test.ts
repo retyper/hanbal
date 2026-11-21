@@ -5,6 +5,7 @@ import { HAEBI_RUN as C, HAEBI_SHOP as SH, HAEBI_REFUND as RF } from '../src/tun
 import { createHaebi, runGold, runDuration, stepHaebi, tierOf, spawnMob } from '../src/raid/haebi.ts'
 import { loadMeta, buy, refund, refundFee, record, shopCost, stageOpen } from '../src/raid/meta.ts'
 import { DLC } from '../src/realm/dlc.ts'
+import { drawChampionOverlays } from '../src/raid/champion-view.ts'
 const noDlc = DLC.trueWake ? false : '진각성 묶음(DLC)이 꺼진 빌드 · 설원·산성 스테이지 없음'
 
 test('상점: 사면 금이 줄고 다음 값이 오르며, 되돌리면 쓴 금을 돌려받는다(값을 내고)', () => {
@@ -190,15 +191,21 @@ test('목책의 1분 벽: 직접 골라 들어가 오래 버텼으면 그 뒤로
   assert.equal(behindWall(loadMeta(), 'forest', 'bow'), false); assert.equal(behindWall(loadMeta(), 'ford', 'bow'), false)
 })
 
-test('알림 띠: 정예와 이긴 띠가 스테이지마다 제 말이다 (예전에는 어디서나 「정예 산적」 · 「산길을 가른 폭풍」)', async () => {
+test('정예는 스테이지 이름표와 실제 등장 cue로 알리고 효과 설명 띠는 없으며 이긴 띠는 보존한다', async () => {
   const { HAEBI_STAGES: ST } = await import('../src/tune/params.ts')
   const stages = ['forest', 'ford', 'palisade', 'snow', 'fortress'] as const
   const elite = new Set<string>(), won = new Set<string>()
   for (const stage of stages) {
     const s = createHaebi(4, 'stage', 'axe', { stage }); s.spawn = 1e9; s.nextBarrage = 1e9
+    const previousMessage = s.message
     s.t = s.nextElite; stepHaebi(s, { x: 0, y: 0 }, .01)
-    assert.equal(s.message, `${ST[stage].eliteName} · 쓰러뜨리면 기세 대량 획득`, stage); assert.ok(s.enemies.some(e => e.kind === 'elite'))
-    elite.add(s.message)
+    assert.equal(s.message, previousMessage, '정예 효과 설명을 새 알림 띠로 올리지 않습니다')
+    const enemy = s.enemies.find(e => e.kind === 'elite')!; assert.ok(enemy?.champion)
+    assert.ok(s.fx.some(f => f.championCue === 'enter' && f.x === enemy.champion!.startX && f.y === enemy.champion!.startY - 20), stage)
+    const names: string[] = []
+    const ctx = new Proxy({ globalAlpha: 1, fillText(text: string) { names.push(text) } }, { get(target, key) { return Reflect.get(target, key) ?? (() => {}) } }) as unknown as CanvasRenderingContext2D
+    drawChampionOverlays(ctx, new Map(), s, () => 80)
+    assert.ok(names.includes(ST[stage].eliteName), `${stage}: 실제 이름표 renderer`); elite.add(ST[stage].eliteName)
     const w = createHaebi(4, 'stage', 'axe', { stage }); w.spawn = 1e9; w.nextElite = 1e9; w.nextBarrage = 1e9
     spawnMob(w, 'boss'); const boss = w.enemies[0]!; boss.x = w.x + 40; boss.y = w.y; boss.hp = 1
     for (let i = 0; i < 600 && w.state === 'playing'; i++) stepHaebi(w, { x: 0, y: 0 }, 1 / 60)
@@ -210,10 +217,11 @@ test('알림 띠: 정예와 이긴 띠가 스테이지마다 제 말이다 (예�
   for (const id of [...stages, 'trial'] as const) assert.ok(!/[—]/.test(ST[id].eliteName + ST[id].bossName), id)
 })
 
-test('출전 글의 두목 시각은 수치에서 읽는다: 스테이지 19분(판 20분) · 각성 시련 7분(판 8분)', async () => {
+test('출전 시각은 실제 수치: 스테이지 두목19분·제한20분30초, 각성 시련 두목7분·제한8분', async () => {
   const { bossTime } = await import('../src/raid/haebi.ts')
   const stage = createHaebi(1, 'stage'), trial = createHaebi(1, 'trial')
-  assert.equal(Math.floor(bossTime(stage) / 60), 19); assert.equal(Math.round(runDuration(stage) / 60), 20)
+  assert.equal(Math.floor(bossTime(stage) / 60), 19); assert.equal(runDuration(stage), 1230)
+  assert.equal(Math.floor(runDuration(stage) / 60), 20); assert.equal(runDuration(stage) % 60, 30)
   assert.equal(Math.floor(bossTime(trial) / 60), 7); assert.equal(Math.round(runDuration(trial) / 60), 8)
   // 화면 글에 판 길이를 글자로 박아 두지 않는다 (raid-main.ts 의 「15분 가까이」 · 「20분을 버티고」 자리)
   const { readFileSync } = await import('node:fs')

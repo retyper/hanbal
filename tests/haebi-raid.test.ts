@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { HAEBI_RUN as C } from '../src/tune/params.ts'
-import { createHaebi, stepHaebi, choose, reroll, xpNeeded, spawnMob, magnetRadius, POWERS, type HaebiRun, type Power } from '../src/raid/haebi.ts'
+import { createHaebi, stepHaebi, choose, reroll, xpNeeded, spawnMob, magnetRadius, runDuration, POWERS, type HaebiRun, type Power } from '../src/raid/haebi.ts'
 import { replay } from '../src/raid/haebi-replay.ts'
 import { heroFrame } from '../src/raid/haebi-view.ts'
 const idle = { x: 0, y: 0 }
@@ -36,10 +36,12 @@ test('projectile split and lightning explosion are real damage mechanics, not vi
 })
 test('dodge avoids boss telegraph; terminal states never advance; portrait uses authored frames', () => {
   const s = createHaebi(); s.spawn = 99; spawnMob(s, 'boss'); Object.assign(s.enemies[0]!, { x: s.x, y: s.y, wind: .01, aimX: s.x, aimY: s.y })
+  s.enemies[0]!.champion!.mode = 'tell'; s.enemies[0]!.pattern = 'slam'
+  const standing = structuredClone(s); stepHaebi(standing, idle, .02); assert.ok(standing.hp < C.health, 'standing inside the actual champion slam is hit')
   stepHaebi(s, { ...idle, dash: true }, .02); assert.equal(s.hp, C.health); assert.ok(s.dashCd > 0)
   s.hurt = .2; assert.equal(heroFrame(s, true), 18); s.hurt = 0; s.attack = .15; assert.ok(heroFrame(s, true) >= 12)
   s.state = 'won'; const saved = structuredClone(s); stepHaebi(s, idle, .05); assert.deepEqual(s, saved)
-  const timeout = createHaebi(); timeout.t = C.duration; stepHaebi(timeout, idle, .01); assert.equal(timeout.state, 'lost')
+  const timeout = createHaebi(); timeout.t = runDuration(timeout); stepHaebi(timeout, idle, .01); assert.equal(timeout.state, 'lost')
 })
 test('real ten-minute route grows into crowd clearing with bounded live objects', () => {
   const minutes: number[] = []; let kills = 0

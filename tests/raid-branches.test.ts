@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { HAEBI_TREE as T, HAEBI_RUN as C } from '../src/tune/params.ts'
 import { createHaebi, stepHaebi, choose, reroll, xpNeeded, spawnMob, kitPowers, kitCombos, branchNodes, branchPoints, nodeAt, nodeOpen, mainBranch, treeTotal, nodeText, POWERS, BRANCHES, KITS, isCombo, type HaebiRun, type Kit, type Power } from '../src/raid/haebi.ts'
-import { replay } from '../src/raid/haebi-replay.ts'
+import { replay, botInput, botChoice } from '../src/raid/haebi-replay.ts'
 
 const KIT_LIST = Object.keys(KITS) as Kit[]
 const idle = { x: 0, y: 0 }
@@ -48,17 +48,28 @@ test('갈래 셋 × 네 층 · 조합은 늘 두 갈래(주 무기 · 보조)를
   }
 })
 
-test('다 못 찍는다 — 나무 전체는 한 판(레벨 44 · 43점)의 두 배를 넘고, 실제 판도 다 못 채운다', () => {
+test('다 못 찍는다 — 레벨 고름과 실제 무료 상자 고름을 합쳐도 나무 전체는 못 채운다', () => {
   const run = C.maxLevel - 1 + 1   // 고름 43 + 처음 주 무기 1
   for (const kit of KIT_LIST) {
     const total = treeTotal(kit)
     assert.ok(total >= 2 * run, `${kit} ${total} >= ${2 * run}`)
     assert.ok(total <= 2.6 * run, `${kit} ${total} — 너무 넓지도 않게`)
   }
-  const s = replay(3, Infinity, 'spread', undefined, 'sword')
+  const s = createHaebi(3, 'stage', 'sword'), initial = kitPowers('sword').reduce((n, p) => n + s.ranks[p], 0)
+  let levelChoices = 0, chestChoices = 0
+  while (s.state === 'playing') {
+    if (s.offers.length) {
+      const free = s.choiceOrigin === 'chest'
+      assert.equal(choose(s, botChoice(s, 'spread')), true)
+      if (free) chestChoices++; else levelChoices++
+    } else stepHaebi(s, botInput(s), DT)
+  }
   const spent = kitPowers('sword').reduce((n, p) => n + s.ranks[p], 0) + Object.values(s.comboRanks).reduce((n, r) => n + (r ?? 0), 0)
   assert.ok(s.level <= C.maxLevel)
-  assert.ok(spent < treeTotal('sword') / 2, `${spent} 점만 찍힌다`)
+  assert.equal(initial, 1); assert.equal(levelChoices, s.level - 1); assert.ok(chestChoices > 0)
+  assert.equal(spent, initial + levelChoices + chestChoices, `기본${initial}+레벨${levelChoices}+상자${chestChoices}=${spent}`)
+  assert.ok(spent <= initial + C.maxLevel - 1 + chestChoices, `${spent}점은 실제 고름 상한 이내`)
+  assert.ok(spent < treeTotal('sword'), `${spent}/${treeTotal('sword')} 점으로 전체 미완성`)
 })
 
 test('52 부모 1단으로 열린다 — 잠긴 칸은 카드로 안 나오고 골라도 안 된다', () => {

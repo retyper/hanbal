@@ -1,5 +1,5 @@
 import { it } from 'node:test'
-import { HAEBI_RUN } from '../src/tune/params.ts'
+import { HAEBI_RUN, HAEBI_CHAMPION } from '../src/tune/params.ts'
 import assert from 'node:assert/strict'
 import { createHaebi, stepHaebi, choose, runDuration } from '../src/raid/haebi.ts'
 import { botInput, botChoice } from '../src/raid/haebi-replay.ts'
@@ -15,10 +15,11 @@ it('vanguard starts awakened and ordinary inputs clear three sequential captains
   assert.ok(s.kills > 1000)
   const before = JSON.stringify(s); stepHaebi(s, { x: 0, y: 0 }, .05); assert.equal(JSON.stringify(s), before)
 })
-it('timeout and defeat preserve secured partial progress; normal trial runs the full raid length (11-16: 10분 → 15분)', () => {
+it('timeout and defeat preserve secured partial progress; stage includes the53B boss budget while trial stays eight minutes', () => {
   const s = createHaebi(9, 'vanguard'); s.breaches = 1; s.captains = 1; s.t = 179.99
   stepHaebi(s, { x: 0, y: 0 }, .05); assert.equal(s.state, 'lost'); assert.equal(s.breaches, 1)
   const fail = createHaebi(9, 'vanguard'); fail.hp = -10; fail.breaches = 2; fail.captains = 2
   stepHaebi(fail, { x: 0, y: 0 }, .01); assert.equal(fail.state, 'lost'); assert.equal(fail.breaches, 2)
-  const normal = createHaebi(); assert.equal(runDuration(normal), HAEBI_RUN.duration); assert.equal(normal.level, 1); assert.equal(normal.combos.length, 0)
+  const normal = createHaebi(); assert.equal(runDuration(normal), HAEBI_RUN.duration + HAEBI_CHAMPION.extraSeconds); assert.equal(runDuration(normal), 1230); assert.equal(normal.level, 1); assert.equal(normal.combos.length, 0)
+  assert.equal(runDuration(createHaebi(9, 'trial')), 480)
 })

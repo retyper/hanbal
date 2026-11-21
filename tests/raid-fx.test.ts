@@ -2,7 +2,7 @@
 //   붉은 것 = 적이 나를 때릴 자리 · 금빛·하늘빛 = 내 것 · 오라는 낱낱 입자(시계와 번호로만 셈) · 폰을 느리게 하는 것은 쓰지 않는다
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { HAEBI_RUN as C, HAEBI_MOBS as M, HAEBI_FX as K, FX_AURA as P, HAEBI_ULT as U } from '../src/tune/params.ts'
+import { HAEBI_RUN as C, HAEBI_MOBS as M, HAEBI_FX as K, FX_AURA as P, HAEBI_ULT as U, HAEBI_CHAMPION as CH } from '../src/tune/params.ts'
 import { createHaebi, stepHaebi, spawnMob, gaugeNeed, type HaebiRun, type Kit, type Missile, type Mob } from '../src/raid/haebi.ts'
 import { drawField, imagePaths } from '../src/raid/haebi-view.ts'
 import { AURA_ART, auraCount, auraSparks, auraWisps, drawAura, drawAuraBurst, drawAuraGround, setAuraDensity, type AuraAt, type AuraKind, type Mote } from '../src/raid/fx-aura.ts'
@@ -136,13 +136,14 @@ test('오라 그리기: 가닥·불티를 낱낱이 찍는다 · 판 밖이면 �
 
 test('적이 나를 때릴 자리: 돌·불 던지기 · 일제 사격 · 내려찍기가 모두 같은 붉은 테 · 맞는 범위 그대로의 원 · 고리는 가운데로 줄어든다', () => {
   const s = field('axe'), { ctx, log, clear } = fakeCtx()
-  const boss = place(s, 'elite', -260, -40, { wind: C.bossWindup * .5, aimX: s.x - 220, aimY: s.y + 30 })
+  const boss = place(s, 'elite', -260, -40, { wind: CH.slamWind * .5, aimX: s.x - 220, aimY: s.y + 30 })
+  boss.champion!.mode = 'tell'; boss.pattern = 'slam'
   s.shots.push(shot('stone', s.x + 150, s.y, M.lobDelay * .5, { radius: M.lobRadius }))
   s.shots.push(shot('stone', s.x + 150, s.y + 200, M.lobDelay * .5, { radius: M.lobRadius, gen: 1 }))
   s.shots.push(shot('barrage', s.x - 100, s.y - 220, C.barrageDelay * .5))
   drawField(ctx, images, s, null)
   assert.ok(log.styles.has(K.foe.rim) && red(K.foe.rim) && red(K.foe.fill), '붉은 테 · 붉은 바닥')
-  const spots = [[boss.aimX, boss.aimY, C.bossRadius], [s.x + 150, s.y, M.lobRadius], [s.x + 150, s.y + 200, M.lobRadius], [s.x - 100, s.y - 220, C.barrageRadius]] as const
+  const spots = [[boss.aimX, boss.aimY, CH.slamRadius], [s.x + 150, s.y, M.lobRadius], [s.x + 150, s.y + 200, M.lobRadius], [s.x - 100, s.y - 220, C.barrageRadius]] as const
   const slam = log.images.filter(d => d.img === img('raid/ui/mark-slam.png'))
   assert.equal(slam.length, spots.length, '자리마다 같은 용암 테 그림 하나')
   for (const [x, y, r] of spots) {

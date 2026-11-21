@@ -83,3 +83,7 @@ C 출력 정본: `C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request/outp
 - `docs/realm/production/CODEX53-A-RESULTS.md`
 
 제품 소스는동결이다. 다음은root 커밋·푸시→CI/운영version·assetSHA확인이며, 배포 완료로보고하지않는다.
+
+## 운영 배포 확인 · 2026-11-21
+
+root: f6cc0b11e382f9d32fe11cdc79e003c30400d43c 커밋 직후 push, CI44858175718 성공. 운영 version.txt=f6cc0b11e3/HTML200, 실제 HTML이 참조한 JS·CSS6개 모두 로컬 dist SHA 일치, HDPNG200·SHA f775f616f674adc95b919e72aad4cebd093a9142cb54516319fc0ca148e2f772 일치. 최초 검수기의 version.json 경로·manifest 범위 오인은 도구를 고치고 원 응답을 보존해 교정했습니다. 앱 변경·재빌드0. 근거 Ctask/outputs/codex53/HD-production-bundle-final.json. Pages artifact 약1.45GB 경고는 남아 있으나 실제배포는 성공했습니다.

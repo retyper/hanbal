@@ -3,11 +3,11 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { HAEBI_RUN as C, HAEBI_ZOOM as Z } from '../src/tune/params.ts'
-import { createHaebi, stepHaebi, choose, reroll, type HaebiRun } from '../src/raid/haebi.ts'
+import { createHaebi, stepHaebi, choose, reroll, championViewNeeded, type HaebiRun } from '../src/raid/haebi.ts'
 import { botChoice, botInput } from '../src/raid/haebi-replay.ts'
-import { startRecord, recInput, recPick, recReroll, recQuit, withdrawRun, finishRecord, replayRaid, STEP } from '../src/raid/runlog.ts'
+import { startRecord, recInput, gridInput, recPick, recReroll, recQuit, withdrawRun, finishRecord, replayRaid, STEP } from '../src/raid/runlog.ts'
 import { loadRaidGames, putRaidGame, sealLeftovers, unsentRaids, markRaidsSent, saveRaidGames, type RaidOpts } from '../src/raid/runlog-store.ts'
-import { newCam, followCam, nextLevel, closest, clampCenter, toField } from '../src/raid/camera.ts'
+import { newCam, followCam, nextLevel, closest, clampCenter, toField, fieldView } from '../src/raid/camera.ts'
 
 const hash = (s: HaebiRun) => JSON.stringify(s)
 
@@ -49,6 +49,47 @@ test('판 기록: 물러남도 그대로 다시 돌아가고 결과는 quit', ()
   const g = finishRecord(r, 0, 'x')
   assert.equal(g.end?.result, 'quit'); assert.equal(s.state, 'lost')
   assert.equal(hash(replayRaid(g)), hash(s))
+})
+
+test('53B withdrawal expires ground/opened chests and clears pending choice without paying gold', () => {
+  for (const state of ['ground', 'opened'] as const) {
+    const s = createHaebi(53, 'stage', 'axe')
+    s.chests!.push({ id: 1, eliteId: 9, x: s.x, y: s.y, bornAt: 0, state, choicesRemaining: 2, gold: 12, large: true })
+    s.choiceOrigin = 'chest'; s.chestChoice = { id: 1, left: 2, nonce: 1 }; s.offers = ['axe']
+    s.chestGold = state === 'opened' ? 12 : 0
+    const gold = s.chestGold; withdrawRun(s)
+    assert.equal(s.state, 'lost'); assert.equal(s.chests![0]!.state, 'expired'); assert.equal(s.chestChoice, undefined)
+    assert.deepEqual(s.offers, []); assert.equal(s.choiceOrigin, 'level'); assert.equal(s.chestGold, gold); assert.equal(choose(s, 'axe', 1), false)
+  }
+})
+
+test('53B camera-edge birth input is quantized, recorded and replays the entire encounter state', () => {
+  const s = createHaebi(7, 'stage', 'sword', { stage: 'forest' }), cam = newCam(2)
+  const r = startRecord(s, { id: 'view53', started: 'x', mode: s.mode, stage: s.stage, hero: 'h', kit: s.kit, sprite: 'haebi', seed: 7, opts: { stage: 'forest' }, from: null })
+  while (s.t < 150 && s.state === 'playing') {
+    if (s.offers.length) { const pick = botChoice(s, 'spread'); assert.equal(choose(s, pick), true); recPick(r, pick); continue }
+    followCam(cam, s.x, s.y, STEP)
+    const input = { ...botInput(s, .5), ...(championViewNeeded(s, STEP) ? { viewBounds: fieldView(cam) } : {}) }
+    const actual = recInput(r, input)
+    if (actual.viewBounds) assert.ok(Object.values(actual.viewBounds).every(n => n % 8 === 0))
+    stepHaebi(s, actual, STEP)
+  }
+  const g = finishRecord(r, 0, 'x')
+  assert.equal(g.rules, '53B'); assert.ok(g.input.includes('|'), 'real scheduled elite birth recorded a viewport')
+  assert.ok(s.enemies.some(e => e.champion) || s.elites > 0)
+  assert.equal(hash(replayRaid(JSON.parse(JSON.stringify(g)))), hash(s), 'phase, fixed aim, RNG and chest lifecycle are identical')
+})
+
+test('53B malformed view inputs fall back safely and old no-view records still parse', () => {
+  for (const viewBounds of [{ left: NaN, top: 0, right: 1000, bottom: 700 }, { left: 1, top: 1, right: 2, bottom: 2 }]) {
+    const q = gridInput({ x: 0, y: 0, viewBounds })
+    assert.deepEqual(q.viewBounds, { left: 0, top: 0, right: C.width, bottom: C.height })
+  }
+  const { s, r } = play(11, 30, { stage: 'forest' }), g = finishRecord(r, 0, 'x')
+  delete (g as { rules?: string }).rules
+  assert.ok(!g.input.includes('|')); assert.equal(hash(replayRaid(g)), hash(s))
+  const malformed = { ...g, input: '0,0,0,0|1,2,3 NaN,0,0,0|oops 1' }
+  assert.doesNotThrow(() => replayRaid(malformed))
 })
 
 test('판 기록: 쓰러지면 까닭(fell)과 둘레의 적을 적는다', () => {

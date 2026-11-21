@@ -2,7 +2,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { HAEBI_RUN as C, HAEBI_ULT as U } from '../src/tune/params.ts'
-import { createHaebi, choose, stepHaebi, spawnMob, powerScale, areaScale, KITS, kitPowers, type HaebiRun, type Mob } from '../src/raid/haebi.ts'
+import { createHaebi, choose, stepHaebi, spawnMob, powerScale, areaScale, runDuration, KITS, kitPowers, type HaebiRun, type Mob } from '../src/raid/haebi.ts'
 import { replay } from '../src/raid/haebi-replay.ts'
 import { KIT_BY_SPRITE } from '../src/raid/kit-table.ts'
 import { kitOfSprite } from '../src/raid/hero-kit.ts'
@@ -107,8 +107,8 @@ test('돌벼락: 무리가 가장 많은 자리에 물결 지어 돌이 쏟아�
   assert.ok(Math.abs(s.skillCd - (U.sling.cooldown - U.cast - U.sling.gap * (U.sling.waves - 1))) < .05)
 })
 
-test('돌팔매 묶음 봇: 상점을 조금 산 봇이 숲 산길 20분 두목을 잡고 제 조합을 완성한다', () => {
-  const s = replay(7, C.duration, 'storm', r => assert.ok(r.shots.length <= C.maxShots), 'sling', { bonus: { vigor: 3, might: 2, armor: 1 } })
+test('돌팔매 묶음 봇: 상점을 조금 산 봇이 숲 산길 실제 제한시간 안에 두목을 잡고 제 조합을 완성한다', () => {
+  const s = replay(7, runDuration(createHaebi(7, 'stage', 'sling')), 'storm', r => assert.ok(r.shots.length <= C.maxShots), 'sling', { bonus: { vigor: 3, might: 2, armor: 1 } })
   assert.equal(s.state, 'won')
   assert.ok(s.combos.includes('boulder') || s.combos.includes('daze'), String(s.combos))
 })

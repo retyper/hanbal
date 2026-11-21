@@ -1,7 +1,7 @@
 import { fieldPixels, raidLowGraphics } from './raid/surface.ts'
 import { breakthroughText, isBreakthrough } from './realm/vanguard.ts'
 import { HAEBI_RUN as C, HAEBI_STICK as STICK, HAEBI_TREE as TREE, HAEBI_ULT as ULT, HAEBI_AWAKEN as AWK, HAEBI_STAGES as ST, HAEBI_ZOOM as ZOOM, HAEBI_SPEED as SPEED } from './tune/params.ts'
-import { createHaebi, runDuration, stepHaebi, barrageArcher, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, nodeText, nodeAt, branchName, wakeReady, ultName, ultOpen, BRANCHES, branchNodes, type Kit, type Power, type Pick, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
+import { createHaebi, runDuration, championViewNeeded, stepHaebi, barrageArcher, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, nodeText, nodeAt, branchName, wakeReady, ultName, ultOpen, BRANCHES, branchNodes, type Kit, type Power, type Pick, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
 import { startRecord, recInput, gridInput, recPick, recReroll, recQuit, withdrawRun, sealInput, finishRecord, STEP, type Recorder } from './raid/runlog.ts'
 import { runFrame, speedOf, nextSpeed, speedLevel } from './raid/speed.ts'
 import { RaidFeel } from './raid/impact.ts'
@@ -80,7 +80,7 @@ let canAwaken = sealedWake()
 const mastery = (['forest', 'ford', 'palisade'] as const).every(id => (meta.heroes[heroId] ?? []).includes(id))
 /** 골라 두는 스테이지 — 열렸고 아직 못 깬 첫 스테이지 · 목책의 벽 앞이면 여울 (meta.pickStage · 각성 v2 가9) */
 let stage: Exclude<StageId, 'trial'> = pickStage(meta, kit)
-/** 두목이 오는 때(분) — 수치에서 읽는다: 스테이지 19분(판은 20분) · 각성 시련 7분(판은 8분) */
+/** 두목이 오는 때(분) — 수치에서 읽는다: 스테이지 19분(판은 20분30초) · 각성 시련 7분(판은 8분) */
 const bossMinute = () => Math.floor(C.bossAt * ST[mode === 'trial' ? 'trial' : stage].length / 60)
 const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`
 /** createHaebi 에 넘기는 판 옵션 — 판 기록에도 이것 그대로 적는다 (다시 돌리기) */
@@ -184,7 +184,8 @@ const leaveToRealm = () => location.replace('about:blank')   // 본편 틀이 ab
 if (toRealm) $('menu').querySelector('.note')!.insertAdjacentHTML('beforeend', toRealm)
 $('menu').addEventListener('click', e => { if ((e.target as Element).closest('#to-realm')) leaveToRealm() })
 root.insertAdjacentHTML('beforeend', '<div id="shop" hidden></div>')
-const startLabel = () => mode === 'vanguard' ? `각성 ${HERO.name} 출전 · 최대 3분` : mode === 'trial' ? `${HERO.name} 출전 · ${Math.round(runDuration(run) / 60)}분` : `${stageName(stage)} 출전 · ${Math.round(runDuration(run) / 60)}분`
+const durationLabel = () => `${Math.floor(runDuration(run) / 60)}분${runDuration(run) % 60 ? ` ${Math.floor(runDuration(run) % 60)}초` : ''}`
+const startLabel = () => mode === 'vanguard' ? `각성 ${HERO.name} 출전 · 최대 3분` : mode === 'trial' ? `${HERO.name} 출전 · ${durationLabel()}` : `${stageName(stage)} 출전 · ${durationLabel()}`
 /** 독립 열전 출전 화면: 스테이지 다섯(11-16 설원 고개·불타는 산성 더함 · 앞을 깨면 다음이 열림 · 깨면 휘장) + 금 + 상점 (형 11-16 다이센카식) */
 const STAGE_GLYPH: Record<string, string> = { forest: '林', ford: '灘', palisade: '柵', snow: '雪', fortress: '城' }
 function renderStageMenu() {
@@ -568,6 +569,14 @@ function settleRun() {
   // 결과 저장 시점은 그대로. 연출 중 탭을 닫아도 보상과 판 기록을 잃지 않는다.
   if (mode === 'stage' && rewarded !== run) { rewarded = run; const gold = runGold(run); reward = { gold, ...record(meta, run.stage, gold, run.state === 'won', run.t, heroId) }; saveMeta(meta); if (run.state === 'won' && run.stage === DEMON_STAGE) { stampDemons(); refreshWakeKind() } }
 }
+const chestGoldSeen = new WeakMap<HaebiRun, Set<number>>()
+function chestBurst(id: number) {
+  let seen = chestGoldSeen.get(run)
+  if (!seen) chestGoldSeen.set(run, seen = new Set())
+  if (seen.has(id)) return ''
+  seen.add(id)
+  return '<span class="chest-coinburst" aria-hidden="true">' + [[-56,-12],[-35,-26],[-12,-32],[18,-28],[42,-16],[62,0]].map(([x,y]) => `<img src="${import.meta.env.BASE_URL}realm/raid/coins.png" alt="" style="--coin-x:${x}px;--coin-y:${y}px">`).join('') + '</span>'
+}
 function showOverlay() {
   if (run.state !== 'playing') { rotationBlocked = false; $('rotate-guide').hidden = true }
   if (live) {
@@ -575,19 +584,24 @@ function showOverlay() {
     if (ending.kind) settleRun()
     if (ending.active) { shown = ''; $('overlay').hidden = true; closeTree(); return }
   }
-  const state = !live ? '' : run.state !== 'playing' ? run.state : run.offers.length ? 'upgrade:' + run.offers.join(',') : paused ? 'pause' : ''
+  const state = !live ? '' : run.state !== 'playing' ? run.state : run.offers.length ? (run.choiceOrigin === 'chest' ? 'chest:' + run.chestChoice?.id : 'upgrade') + ':' + run.offerNonce + ':' + run.offers.join(',') : paused ? 'pause' : ''
   // 세로에서도 성장·나무·철수는 쓸 수 있다. 전투 재개는 회전 뒤에만 허용한다.
-  $('rotate-guide').hidden = !rotationBlocked || state === 'pause' || state.startsWith('upgrade:')
+  $('rotate-guide').hidden = !rotationBlocked || state === 'pause' || state.startsWith('upgrade:') || state.startsWith('chest:')
   if (!state) { shown = ''; if (!$('overlay').hidden) $('overlay').hidden = true; closeTree(); return }
   if (state === shown) return
   hidePowerHint(); closeTree()
   shown = state; const overlay = $('overlay'); overlay.hidden = !state; if (!state) return
   resetInput()
-  if (state.startsWith('upgrade')) {
-    overlay.innerHTML = `<div class="panel upgrade"><div class="lv-head">${haveRow()}<h2 class="lvup">레벨 업!</h2>${treeButton}</div><div class="choices">${run.offers.map(card).join('')}</div><button id="reroll" ${run.rerolls ? '' : 'disabled'}>다른 선택지 · ${run.rerolls}회 남음</button></div>`
-    overlay.querySelectorAll<HTMLButtonElement>('[data-up]').forEach(b => b.onclick = () => { const pick = b.dataset.up as Pick, log = logging(); if (choose(run, pick)) { if (log) { recPick(rec!, pick); saveLog() } shown = ''; showOverlay(); updateHud() } })
-    if (run.level === 1) { $<HTMLButtonElement>('reroll').disabled = true; $('reroll').textContent = '첫 갈래를 골라 주세요' }
-    $('reroll').onclick = () => { const log = logging(); if (reroll(run)) { if (log) recReroll(rec!); shown = ''; showOverlay() } }
+  if (state.startsWith('upgrade:') || state.startsWith('chest:')) {
+    const chest = run.choiceOrigin === 'chest' ? run.chests?.find(c => c.id === run.chestChoice?.id) : undefined, nonce = run.offerNonce
+    overlay.innerHTML = `<div class="panel upgrade${chest ? ' chest-reward' + (chest.large ? ' large' : '') : ''}"${chest ? ` data-chest-id="${chest.id}" data-choice-left="${run.chestChoice!.left}"` : ''}><div class="lv-head">${haveRow()}<h2 class="lvup">${chest ? `<img class="chest-open" src="${import.meta.env.BASE_URL}realm/raid/chest-open.png" alt="">보물 상자<small>남은 선택 ${run.chestChoice!.left}회</small>${chestBurst(chest.id)}` : '레벨 업!'}</h2>${treeButton}</div><div class="choices">${run.offers.map(card).join('')}</div>${chest ? '' : `<button id="reroll" ${run.rerolls ? '' : 'disabled'}>다른 선택지 · ${run.rerolls}회 남음</button>`}</div>`
+    overlay.querySelectorAll<HTMLButtonElement>('[data-up]').forEach(b => b.onclick = () => { const pick = b.dataset.up as Pick, log = logging(); if (choose(run, pick, nonce)) { if (log) { recPick(rec!, pick); saveLog() } shown = ''; showOverlay(); updateHud() } })
+    const openedArt = overlay.querySelector<HTMLImageElement>('.chest-open')
+    if (openedArt) openedArt.addEventListener('error', () => { openedArt.src = import.meta.env.BASE_URL + 'realm/raid/chest.png' }, { once: true })
+    if (!chest) {
+      if (run.level === 1) { $<HTMLButtonElement>('reroll').disabled = true; $('reroll').textContent = '첫 갈래를 골라 주세요' }
+      $('reroll').onclick = () => { const log = logging(); if (reroll(run)) { if (log) recReroll(rec!); shown = ''; showOverlay() } }
+    }
     $('tree-open').onclick = openTree
   } else if (state === 'pause') {
     const reason = '폰을 가로로 돌리면 전투를 계속할 수 있습니다.'
@@ -606,7 +620,7 @@ function showOverlay() {
   } else {
     // 이겼다 — 결과 판이 뜨는 그 박자에 다다닥 (11-19 형: 「듀오링고처럼 햅틱 막 지랄 나 주면」) · 판마다 한 번 (탭을 다녀와 다시 그려도 또 떨지 않는다)
     // 독립 열전: 판이 끝나면 한 번만 금을 주고 기록한다 (지면 버틴 만큼 · 깨면 휘장 + 깸 금)
-    overlay.innerHTML = `<div class="panel result ${run.state}"><h2>${run.state === 'won' ? mode === 'stage' ? `${stageName(run.stage)} 토벌 완료` : '열전 완수' : run.hp <= 0 ? '도전 실패' : run.t < runDuration(run) ? '철수' : '시간 초과 · 두목 생존'}</h2><p>${Math.floor(run.t / 60)}분 ${Math.floor(run.t % 60)}초 · ${run.kills.toLocaleString()}명 격파 · Lv.${run.level}</p><div class="result-combos">${kitCombos(kit).filter(c => run.combos.includes(c.id)).map(c => `<b>${comboIcon(c.id)}${c.name} ${rankMark(comboRank(run, c.id))}</b>`).join('')}</div>${mode === 'stage' ? `<p class="reward">${COIN}<b>+${reward.gold.toLocaleString()}</b> · 보유 ${COIN}${meta.gold.toLocaleString()}${reward.first ? ` · <strong><img class="won-emblem" src="${import.meta.env.BASE_URL}realm/raid/emblem-${run.stage}.png" alt="">${stageName(run.stage)} 휘장 획득</strong>` : ''}${reward.heroFirst && run.stage === SEAL_STAGE && TRUE_WAKE.has(heroId) ? ` · <strong class="tw-open">본편에서 ${josa(HERO.name, '이', '가')} 진각성할 수 있습니다</strong>` : ''}</p>` : ''}${mode === 'stage' ? '' : '<p>본편 병력 손실 없음</p>'}${fromCampaign ? `<div class="result-acts">${window.parent !== window ? '<button id="return" class="primary">본편으로</button>' : ''}</div>` : `<div class="result-acts"><button id="new-run" class="primary">다시 출전</button><div>${mode === 'stage' ? '<button id="to-shop">상점</button>' : ''}<button id="quit">스테이지 고르기</button>${window.parent !== window ? '<button id="return">본편으로</button>' : ''}</div></div>`}</div>`
+    overlay.innerHTML = `<div class="panel result ${run.state}"><h2>${run.state === 'won' ? mode === 'stage' ? `${stageName(run.stage)} 토벌 완료` : '열전 완수' : run.hp <= 0 ? '도전 실패' : run.t < runDuration(run) ? '철수' : '시간 초과 · 두목 생존'}</h2><p>${Math.floor(run.t / 60)}분 ${Math.floor(run.t % 60)}초 · ${run.kills.toLocaleString()}명 격파 · Lv.${run.level}${mode === 'stage' ? ` · 정예 ${run.elites} <img class="result-chests" src="${import.meta.env.BASE_URL}realm/raid/chest.png" alt="획득 상자"> ${run.chestsClaimed ?? 0}` : ''}</p><div class="result-combos">${kitCombos(kit).filter(c => run.combos.includes(c.id)).map(c => `<b>${comboIcon(c.id)}${c.name} ${rankMark(comboRank(run, c.id))}</b>`).join('')}</div>${mode === 'stage' ? `<p class="reward">${COIN}<b>+${reward.gold.toLocaleString()}</b> · 보유 ${COIN}${meta.gold.toLocaleString()}${reward.first ? ` · <strong><img class="won-emblem" src="${import.meta.env.BASE_URL}realm/raid/emblem-${run.stage}.png" alt="">${stageName(run.stage)} 휘장 획득</strong>` : ''}${reward.heroFirst && run.stage === SEAL_STAGE && TRUE_WAKE.has(heroId) ? ` · <strong class="tw-open">본편에서 ${josa(HERO.name, '이', '가')} 진각성할 수 있습니다</strong>` : ''}</p>` : ''}${mode === 'stage' ? '' : '<p>본편 병력 손실 없음</p>'}${fromCampaign ? `<div class="result-acts">${window.parent !== window ? '<button id="return" class="primary">본편으로</button>' : ''}</div>` : `<div class="result-acts"><button id="new-run" class="primary">다시 출전</button><div>${mode === 'stage' ? '<button id="to-shop">상점</button>' : ''}<button id="quit">스테이지 고르기</button>${window.parent !== window ? '<button id="return">본편으로</button>' : ''}</div></div>`}</div>`
     if (vanguardToken) {
       overlay.querySelector('h2')!.textContent = run.breaches === 3 ? '길은 열었다. 본대여, 진격하라!' : `${run.breaches}/3 돌파 확보 · 본대로 귀환`
       overlay.querySelector('.result-combos')!.textContent = isBreakthrough(run.breaches) ? breakthroughText(run.breaches) : ''
@@ -773,7 +787,7 @@ function frame(now: number) {
       else if (destination) { const dx = destination.x - run.x, dy = destination.y - run.y, len = Math.hypot(dx, dy); if (len < 5) destination = null; else { x = dx / len; y = dy / len } }
       const castBefore = run.cast, dashBefore = run.dashCd, wakesBefore = run.wakes
       // 맡아 둔 누름: 누른 지 STICK.queue 초 안이면 계속 넣는다 (재사용이 그 안에 풀리면 나간다) · 나가면 지운다
-      stepHaebi(run, feed({ x, y, ...(run.mode === 'stage' ? { barrageSource: barrageArcher(run, fieldView(cam))?.id ?? 0 } : {}), dash: run.t - dashAt <= STICK.queue, skill: run.t - skillAt <= STICK.queue, wake: run.t - wakeAt <= STICK.queue }), STEP)   // 판 기록이 이동을 격자에 맞춰 적고 그 값을 넣는다 (runlog.ts)
+      stepHaebi(run, feed({ x, y, ...(championViewNeeded(run, STEP) ? { viewBounds: fieldView(cam) } : {}), ...(run.mode === 'stage' ? { barrageSource: barrageArcher(run, fieldView(cam))?.id ?? 0 } : {}), dash: run.t - dashAt <= STICK.queue, skill: run.t - skillAt <= STICK.queue, wake: run.t - wakeAt <= STICK.queue }), STEP)   // 판 기록이 이동을 격자에 맞춰 적고 그 값을 넣는다 (runlog.ts)
       feel.observe(run)
       if (run.dashCd > dashBefore) dashAt = -9
       if (run.wakes > wakesBefore) wakeAt = -9

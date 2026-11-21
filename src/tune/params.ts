@@ -319,6 +319,28 @@ export const HAEBI_ULT = {
  * upgradeChance: 이미 연 조합이 레벨업 카드 하나로 다시 나올 몫 (새로 조건이 찬 조합은 늘 나온다 · 한 번에 조합 카드는 하나)
  * 조합 하나를 max 단계로 올리면 3층 「비기 강화」 — 비기 피해 ×ultDamage · 범위 ×ultArea · 재사용 ×ultCooldown
  */
+/** 53B stage champions; initial values are measured against the frozen forty-run Before. */
+export const HAEBI_CHAMPION = {
+  extraSeconds: 30, eliteLateRamp: 300, entrySeconds: .65, cooldown: 3.3, phaseRate: 1.2, roarSeconds: .65,
+  dashWind: 1.05, dashRange: 400, dashSpeed: 340, dashWidth: 24, dashDamage: 20,
+  slamWind: 1.35, slamRadius: 120, slamDamage: 30,
+  fanWind: 1.1, fanCount: 5, fanSpread: .85, fanSpeed: 220, fanLife: 2.6, fanDamage: 15, fanHitRadius: 20,
+  summonWind: 1, summonCount: 3, waveCount: 4, summonRadius: 180,
+  guardSeconds: 1.5, guardFront: .3, guardRear: 1.2,
+  recoverySeconds: 1.25, recoveryDamage: 1.5, attackRange: 330, phaseMove: 1.15,
+  chestRadius: 22, fastSeconds: 20, viewGrid: 8, minViewShare: .5,
+  view: { recoveryLean: .12, recoveryRingRadius: 28, recoveryRingAlpha: .45, roarRingRadius: 65, roarRingAlpha: .5,
+    elitePlateWidth: 120, elitePlateHeight: 26, elitePlateLift: 14, eliteHpHeight: 4, eliteNameFont: 12, eliteMargin: 4, eliteBottomInset: .25,
+    chestSize: 32, chestLargeSize: 42, chestGlowAlpha: .35, chestCoinCount: 5, chestCoinSize: 12, chestCoinSeconds: .65, chestCoinSpread: 18 },
+  stages: {
+    forest: { patterns: ['dash', 'slam', 'summon'], eliteHp: 1.35, eliteLateScale: 2.4, bossHp: 11.5, minion: 'club' },
+    ford: { patterns: ['dash', 'fan', 'slam'], eliteHp: 1, eliteLateScale: 2.4, bossHp: 6, minion: 'dog' },
+    palisade: { patterns: ['guard', 'slam', 'dash'], eliteHp: 1, eliteLateScale: 1, bossHp: 6, minion: 'shield' },
+    snow: { patterns: ['dash', 'slam', 'fan'], eliteHp: 1, eliteLateScale: 1.8, bossHp: 6, minion: 'bear' },
+    fortress: { patterns: ['slam', 'fan', 'summon'], eliteHp: 1, eliteLateScale: 1, bossHp: 6, minion: 'iron' },
+  },
+} as const
+
 export const HAEBI_TREE = { max: 3, rankStep: .4, upgradeChance: .5, ultDamage: 1.4, ultArea: 1.25, ultCooldown: .8,
   /**
    * 갈래 셋 (11-17 밤 형: 「다 찍을 정도로 레벨 올리는 건 의미 없지 않아? 몇 개만 몰빵하거나 여러 개를 일단 찍거나」 · D2 식).

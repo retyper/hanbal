@@ -420,3 +420,18 @@ img.coin{display:inline-block;width:1.5em;height:1.5em;vertical-align:-.38em;mar
 .load-dots b:nth-child(2){animation-delay:.16s}.load-dots b:nth-child(3){animation-delay:.32s}
 @keyframes load-dot{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-6px);opacity:1}}
 @media(prefers-reduced-motion:reduce){.load-dots b{animation:none;opacity:.7}}
+
+/* 53B treasure is the existing choice screen; no extra interaction controls. */
+.chest-reward .lvup{position:relative;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px}
+.chest-reward .chest-open{width:80px;height:80px;object-fit:contain;image-rendering:pixelated;animation:chest-unseal .38s ease-out both}
+.chest-reward.large .chest-open{width:96px;height:96px}
+.chest-reward .lvup>small{font:600 13px var(--num,system-ui);color:#dfc38d;white-space:nowrap}
+.result-chests{width:26px;height:26px;object-fit:contain;vertical-align:middle;image-rendering:pixelated}
+@keyframes chest-unseal{0%{transform:translateY(8px) scale(.85);opacity:.4}55%{transform:translateY(-4px) scale(1.08)}100%{transform:none;opacity:1}}
+@media(orientation:portrait) and (max-width:700px){.chest-reward .chest-open,.chest-reward.large .chest-open{width:64px;height:64px}.chest-reward .lvup{gap:4px}.chest-reward .lvup>small{font-size:12px}}
+@media(prefers-reduced-motion:reduce){.chest-reward .chest-open{animation:none}}
+
+.chest-coinburst{position:absolute;inset:0;pointer-events:none}
+.chest-coinburst>img{position:absolute;left:calc(50% - 45px);top:32px;width:18px;height:18px;object-fit:contain;image-rendering:pixelated;opacity:0;animation:chest-gold-flight .7s ease-out both}
+@keyframes chest-gold-flight{0%{opacity:0;transform:translate(0,8px) scale(.5)}15%{opacity:1}65%{opacity:1;transform:translate(var(--coin-x),var(--coin-y)) scale(1)}100%{opacity:0;transform:translate(var(--coin-x),calc(var(--coin-y) - 4px)) scale(.6)}}
+@media(prefers-reduced-motion:reduce){.chest-coinburst>img{animation:none}}

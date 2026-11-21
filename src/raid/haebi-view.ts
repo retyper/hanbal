@@ -1,6 +1,7 @@
 import { fieldTransform, heroCacheHeight, wantsHeroHd } from './surface.ts'
 import { HERO_HD, HERO_HD_SHEETS } from './hero-hd.ts'
-import { HAEBI_RUN as C, HAEBI_MOBS as M, HAEBI_STAGES as ST, HAEBI_ULT as U, HAEBI_FX as K } from '../tune/params.ts'
+import { championLaneContains, championPose, championFacing, championRecovery, drawChampionTells, drawChampionOverlays, drawGroundChests } from './champion-view.ts'
+import { HAEBI_RUN as C, HAEBI_MOBS as M, HAEBI_CHAMPION as B, HAEBI_STAGES as ST, HAEBI_ULT as U, HAEBI_FX as K } from '../tune/params.ts'
 import { genArtOf } from '../realm/data/art.ts'
 import { areaScale, awakenedLook, barrageArcher, charge, missileLife, slamRadius, slamWindup, type HaebiRun, type Kit, type Missile, type Mob, type StageId } from './haebi.ts'
 import { fieldView } from './camera.ts'
@@ -22,7 +23,7 @@ export const chargeLane = (e: Mob) => e.act > 0 && (e.kind === 'tiger' || e.kind
 /** bandit-<종류> 가 아닌 적 그림 (11-16 H50~H53 · tools/sprite-kit/bake-raid-enemies.py) */
 const MOB_ART: Record<string, string> = { tiger: 'beast-tiger', bear: 'beast-bear', hunter: 'snow-hunter', torch: 'torch-raider' }
 export const imagePaths = [...CARD_FRAME_PATHS, genArtOf('haebi').file, genArtOf('aw1-haebi').file, 'anim-px/bandit-club.png', 'anim-px/bandit-chief.png', 'anim-px/bandit-archer.png',
-  ...['runner', 'slinger', 'shield', 'dog', 'berserker', 'firearcher', 'iron', 'shaman'].map(k => `anim-px/bandit-${k}.png`), ...['ford.webp', 'palisade.webp', 'digits.png', 'knife.png', 'soul.png', 'bell-ring.png', 'javelin.png','sword-wave.png','forest.webp','axe.png','impact-strip.png','slash-strip.png','death-strip.png','fire-strip.png','lightning-strip.png','talisman.png','wind-blade.png','arrow.png','hit.png','essence.png','essence-large.png',...['mark-slam','mark-move','mark-hero','mark-target','mark-arrow','bar-boss','plaque'].map(p=>`ui/${p}.png`)].map(p=>'raid/'+p), 'anim-px/bandit-warlord.png', ROCK, AURA_ART.flame, AURA_ART.ember,
+  ...['runner', 'slinger', 'shield', 'dog', 'berserker', 'firearcher', 'iron', 'shaman'].map(k => `anim-px/bandit-${k}.png`), ...['ford.webp', 'palisade.webp', 'chest.png', 'digits.png', 'knife.png', 'soul.png', 'bell-ring.png', 'javelin.png','sword-wave.png','forest.webp','axe.png','impact-strip.png','slash-strip.png','death-strip.png','fire-strip.png','lightning-strip.png','talisman.png','wind-blade.png','arrow.png','hit.png','essence.png','essence-large.png',...['mark-slam','mark-move','mark-hero','mark-target','mark-arrow','bar-boss','plaque'].map(p=>`ui/${p}.png`)].map(p=>'raid/'+p), 'anim-px/bandit-warlord.png', ROCK, AURA_ART.flame, AURA_ART.ember,
   // 11-16 H45~H53: 스테이지 두목 둘 · 설원·산성 적 넷 · 넷째·다섯째 바닥
   ...['boss-ford', 'boss-palisade', 'boss-snow', 'boss-fortress', ...Object.values(MOB_ART)].map(n => `anim-px/${n}.png`), 'raid/snow.webp', 'raid/fortress.webp', ...FX_PATHS]
 /** bar-boss.png 의 투명한 홈 [x0,y0,x1,y1] — tools/raid-ui-kit.py 가 public/realm/raid/ui/kit.json 에 적는 값 */
@@ -408,7 +409,12 @@ function zone(s: HaebiRun, x: number, y: number, r: number, k: number, left: num
 /** 적이 나를 때릴 자리를 모은다 (두목·정예·곰 내려찍기 · 돌·불 던지기 · 일제 사격) — 돌려주는 값: 내가 그런 자리나 불바닥 안에 서 있나 */
 function collectThreats(s: HaebiRun) {
   let on = false; zoneN = 0; flames.length = 0
-  for (const e of s.enemies) if (e.wind > 0) on = zone(s, e.aimX, e.aimY, slamRadius(e.kind), 1 - e.wind / slamWindup(e.kind), e.wind) || on
+  for (const e of s.enemies) {
+    if (e.champion) {
+      if (e.hp > 0 && e.champion.mode === 'tell' && e.wind > 0 && e.pattern === 'slam') on = zone(s, e.aimX, e.aimY, e.champion.radius, 1 - e.wind / B.slamWind, e.wind) || on
+      else on = championLaneContains(e, s.x, s.y) || on
+    } else if (e.wind > 0) on = zone(s, e.aimX, e.aimY, slamRadius(e.kind), 1 - e.wind / slamWindup(e.kind), e.wind) || on
+  }
   for (const b of s.shots) {
     if (b.kind === 'stone') on = zone(s, b.x, b.y, b.radius, 1 - b.life / M.lobDelay, b.life) || on
     else if (b.kind === 'barrage') on = zone(s, b.x, b.y, C.barrageRadius, 1 - b.life / C.barrageDelay, b.life) || on
@@ -633,9 +639,9 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
     ctx.beginPath(); ctx.moveTo(e.x, e.y); ctx.lineTo(e.aimX, e.aimY); ctx.stroke(); ctx.restore()
   }
   // 두목·곰 내려찍기 · 돌·불 던지기 · 일제 사격이 떨어질 자리 · 타는 불바닥 — 모두 같은 붉은 말
-  drawThreats(ctx, images, s)
   // 못 주운 기세는 마지막 1초에 옅어지며 사라진다 (dropLife)
   for (const d of s.drops) { const fade = Math.min(1, C.dropLife - d.age); if (fade < 1) ctx.globalAlpha = Math.max(0, fade); stamp(ctx, images, d.value > 2 ? 'raid/essence-large.png' : 'raid/essence.png', d.x, d.y, d.value > 2 ? 23 : 15); if (fade < 1) ctx.globalAlpha = 1 }
+  drawGroundChests(ctx, images, s)
   if (destination) decal(ctx, images, 'mark-move', destination.x, destination.y, 30, 26, .85)
   // 발밑 그림자는 길 하나로 한 번에 칠한다 (적마다 fill 하던 것 · 폰 프레임 11-17) — 땅이라 모든 몸보다 먼저 그려도 된다
   ctx.fillStyle = '#07181655'; ctx.beginPath()
@@ -655,13 +661,15 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       if (e.buff > 0 || e.kind === 'berserker' && e.hp < e.max / 2) { ctx.save(); ctx.globalAlpha = .45 + .25 * Math.sin(s.t * 12 + e.id); ctx.fillStyle = '#ff3b2f'; ctx.beginPath(); ctx.ellipse(e.x, e.y + 2, 22, 8, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore() }
       if (target) decal(ctx, images, 'mark-target', e.x, e.y, 100, 45)
       const warning = chargeRecoil(e), recoil = Math.max(warning, Math.max(0, Math.min(1, e.flash / FEEL.mobFlash))), white = e.flash > FEEL.mobFlash - FEEL.whiteTime || warning > 1 - FEEL.whiteTime / FEEL.mobFlash
-      const steady = e.kind === 'boss' || e.kind === 'iron' || e.kind === 'bear'
+      const steady = !!e.champion || e.kind === 'boss' || e.kind === 'iron' || e.kind === 'bear'
       const lag = steady ? 0 : Math.sign(e.x - s.x) * C.knockback * recoil
       const jitter = recoil * FEEL.mobJitter * Math.sin(time * FEEL.mobJitterHz + e.id)
       ctx.save(); ctx.translate(e.x + jitter - lag, e.y)
       if (wave >= 0) { ctx.globalAlpha *= 1 - wave; ctx.translate(Math.sign(e.x - ending!.boss.x) * wave * FEEL.deathDistance, -Math.sin(wave * Math.PI) * FEEL.deathLift); ctx.rotate(Math.sign(e.x - ending!.boss.x) * wave * FEEL.deathSpin) }
+      const recovery = championRecovery(e)
+      if (recovery > 0) ctx.rotate((s.x < e.x ? -1 : 1) * B.view.recoveryLean * recovery)
       ctx.scale(1 + (FEEL.squashX - 1) * recoil, 1 + (FEEL.squashY - 1) * recoil)
-      sprite(ctx, images, warlord(e.kind, s.stage), 0, 0, h, wave >= 0 || white ? 18 : e.wind > 0 ? 13 : archerFrame(s, e) ?? 4 + Math.floor(s.t * 8 + e.id) % 8, s.x < e.x ? -1 : 1, white ? 'white' : e.flash > 0)
+      sprite(ctx, images, warlord(e.kind, s.stage), 0, 0, h, wave >= 0 || white ? 18 : championPose(e) ?? (e.wind > 0 ? 13 : archerFrame(s, e) ?? 4 + Math.floor(s.t * 8 + e.id) % 8), championFacing(e, s.x < e.x ? -1 : 1), white ? 'white' : e.flash > 0)
       ctx.restore()
       if (e === archer) {
         // 적대 공격의 주체: 머리 위 붉은 화살촉. 원형 붉은 고리는 쓰지 않는다.
@@ -672,7 +680,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       // 진탕격: 머리 위를 도는 별 둘
       if (e.daze > 0) for (let i = 0; i < 2; i++) { const a = s.t * 7 + i * Math.PI; stamp(ctx, images, 'raid/hit.png', e.x + Math.cos(a) * 14, e.y - h - 4 + Math.sin(a) * 4, 14, a) }
       if (target) decal(ctx, images, 'mark-arrow', e.x, e.y - h - 26 + Math.sin(s.t * 4) * 4, 22, 39)
-      if (big) { ctx.fillStyle = '#111c'; ctx.fillRect(e.x - 28, e.y - h, 56, 5); ctx.fillStyle = '#ef9873'; ctx.fillRect(e.x - 28, e.y - h, 56 * e.hp / e.max, 5) }
+      if (big && !(e.champion && e.kind === 'elite')) { ctx.fillStyle = '#111c'; ctx.fillRect(e.x - 28, e.y - h, 56, 5); ctx.fillStyle = '#ef9873'; ctx.fillRect(e.x - 28, e.y - h, 56 * e.hp / e.max, 5) }
     } else {
       if (ending?.kind === 'victory' && ending.elapsed > ending.freeze) {
         ctx.save(); ctx.globalAlpha = FX_ART.rayAlpha * Math.min(1, (ending.elapsed - ending.freeze) / END.cameraTime)
@@ -768,6 +776,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   let hitSkip = -C.drawHits, deathSkip = -C.drawDeaths; for (const f of s.fx) if (f.kind === 'hit') hitSkip++; else if (f.kind === 'death') deathSkip++
   let particleBudget = FX_ART.particleBudget
   for (const f of s.fx) {
+    if (f.championCue) continue // State-based champion rings below; do not borrow bell-magic artwork.
     if (f.kind === 'hit' ? hitSkip-- > 0 : f.kind === 'death' && deathSkip-- > 0) continue   // 쓰러지는 몸도 새것 drawDeaths 개만
     const remaining = f.life - (ending?.effectTime ?? 0); if (remaining <= 0) continue
     const age = 1 - remaining / f.total; ctx.save(); ctx.globalAlpha = Math.min(1, remaining / f.total * 1.5); ctx.strokeStyle = f.color; ctx.fillStyle = f.color; ctx.lineWidth = 3
@@ -825,8 +834,11 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
     } else stamp(ctx, images, 'raid/hit.png', f.x, f.y, 30 * (1 - age * .5))
     ctx.restore()
   }
+  // 붉은 예고는 내 FX 뒤에: 실제 원/돌진/탄환 길만 표시하고 안전한 부채 사이를 채우지 않는다.
+  drawThreats(ctx, images, s); drawChampionTells(ctx, s)
   // 피해 숫자 — 알갱이로 튀어 나간다 (trackNumbers · drawNumbers)
   trackNumbers(s); ctx.save(); drawNumbers(ctx, images, s, s.t + (ending?.effectTime ?? 0)); ctx.restore()
+  drawChampionOverlays(ctx, images, s, mobHeight, cam ? fieldView(cam) : undefined)
   // 여기부터 화면에 붙은 것 — 확대해도 그대로 (흔들림만)
   if (z !== 1) fieldTransform(ctx, 1, qx, qy)
   if (s.hurt > 0) { ctx.strokeStyle = '#ff735a99'; ctx.lineWidth = 12; ctx.strokeRect(0, 0, W, H) }

@@ -11,7 +11,7 @@
  * 기술 계단(11-19 형: 「기술 쓸 때 사운드·햅틱 · 크리티컬은 핑 · 초반 사운드 너무 심하면 안 됨 · 진각성은 더 임팩트」): 비기 < 각성 비기 < 진각성 비기 · 크리티컬 「핑」 — HAEBI_FEEL_TIERS · 진동은 frame 이 돌려주는 사건으로 화면이 낸다.
  * 소리 끔·크기는 본편 설정(hanbal.realm.mute · hanbal.realm.volume.*)을 따른다. 출처: public/realm/sfx/CREDITS.txt · public/sfx/CREDITS.txt
  */
-import { HAEBI_SOUND as V, HAEBI_FEEL_TIERS as F, HAEBI_ULT as U, type FeelTier } from '../tune/params.ts'
+import { HAEBI_SOUND as V, HAEBI_IMPACT as IMPACT, HAEBI_FEEL_TIERS as F, HAEBI_ULT as U, type FeelTier } from '../tune/params.ts'
 import type { HaebiRun, Kit } from './haebi.ts'
 
 /** 한 프레임에 일어난 손맛 사건 — 화면이 진동에 쓴다 (판은 읽기만) · cast 비기를 누름 · skill 비기가 터짐 · crit 크리티컬이 났음 */
@@ -79,7 +79,7 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
   const clips = new Map<string, Clip>(), last = new Map<string, number>()
   let ctx: AudioContext | null = null, music: HTMLAudioElement | null = null, n = 0, voices = 0, hitAt = -9
   /** 합성 소리 — 노이즈 한 조각(풀 때 한 번) · 「둑」 모아 둔 수·피해 · 「뽁」 연달음 */
-  let noise: AudioBuffer | null = null, thudAt = -9, thudN = 0, thudD = 0, popAt = -9, popN = 0
+  let noise: AudioBuffer | null = null, thudAt = -9, thudN = 0, thudD = 0, popAt = -9, popN = 0, championAt = -9
   /** 기술 소리 묶음 — 울림·종·skill_hit 이 겹쳐도 찢어지지 않게 한 번 눌러 준다 (없는 브라우저는 바로 내보냄) · 크리티컬 「핑」 마지막 때 · 다 풀렸나 */
   let bus: AudioNode | null = null, critAt = -9, ready: Promise<void> = Promise.resolve()
   /** 풀면서 앞의 빈 소리를 잰다 (mp3 는 앞에 0.03~0.06초가 비어 있다) */
@@ -223,7 +223,7 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
       if (music) { music.volume = V.bgm * volume('bgm'); if (on && !s.offers.length) { if (music.paused) void music.play().catch(() => undefined) } else if (!music.paused) music.pause() }
       if (!live) { prev.run = null; return NONE }
       // 판이 바뀐 것은 씨앗이 아니라 판 그 자체로 가린다 (씨앗이 NaN 이면 매 프레임 처음으로 돌아가 비기 외침·신음이 프레임마다 다시 났다 · 형 11-16)
-      if (prev.run !== s) { known = new WeakSet(); dropsWere = 0; xpWas = s.xp; thudN = thudD = 0 }
+      if (prev.run !== s) { known = new WeakSet(); dropsWere = 0; xpWas = s.xp; thudN = thudD = 0; championAt = -9 }
       if (prev.run !== s) Object.assign(prev, { attack: 0, hurt: 0, kills: s.kills, skillCd: 0, offers: 0, level: s.level, wakes: s.wakes, barrage: 0, elites: 0, boss: s.boss, state: 'playing', run: s })
       const barrage = s.shots.reduce((k, b) => k + Number(b.kind === 'barrage'), 0), elites = s.enemies.reduce((k, e) => k + Number(e.kind === 'elite'), 0)
       if (s.attack > prev.attack) { play('weapon', any(WEAPON[kit][0]), V.swing * volume('sfx'), 0, WEAPON[kit][1] * (.95 + (n % 5) * .025), V.maxVoices) }  // 평타엔 목소리 없음 (형 11-16: 「기합은 스킬 쓸 때만」)
@@ -239,7 +239,9 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
       if (s.skillCd > prev.skillCd) { cast = tierOf(s.cast?.kind === 'ult' && s.cast.tru); say(shout, V.skill); if (room(F.reserve)) castTick(cast); if (kit === 'sling') sfx('whirl', V.whirl) }
       for (const b of s.shots) if (!seen.has(b)) { seen.add(b); if (b.kind === 'ember') sfx('fire', V.magic, V.magicGap); else if (b.kind === 'gale' || b.kind === 'wave' || b.kind === 'knife') sfx('wind', V.magic, V.magicGap); else if (b.kind === 'soul') sfx('light', V.magic, V.magicGap); else if (b.kind === 'boulder') sfx('whirl', V.whirl * .7, V.magicGap, .8) }
       let hitN = 0, hitD = 0
-      for (const e of s.fx) if (!seen.has(e)) { seen.add(e); if (e.kind === 'hit' || e.kind === 'death') { hitN++; hitD += e.n ?? 0; if (e.crit) crits++ } if (e.kind === 'bolt') sfx('bolt', V.magic, V.magicGap); else if (e.kind === 'spike') sfx('earth', V.magic, V.magicGap); else if (e.kind === 'skill') { const t = tierOf(e.tru === true); if (!skill || RANK[t] > RANK[skill]) skill = t } else if (e.kind === 'thud' || e.kind === 'ult' && e.ult === 'sling') sfx('stone', V.stone, V.stoneGap, .9 + (n % 5) * .05) }
+      for (const e of s.fx) if (!seen.has(e)) { seen.add(e); if (e.kind === 'hit' || e.kind === 'death') { hitN++; hitD += e.n ?? 0; if (e.crit) crits++ } if (e.championCue === 'roar') say('roar', V.roar);
+        if (e.recoveryHit && ctx && ctx.currentTime - championAt >= IMPACT.cooldown) { championAt = ctx.currentTime; const t = tierOf(false); if (!skill || RANK[t] > RANK[skill]) skill = t }
+        if (e.kind === 'bolt') sfx('bolt', V.magic, V.magicGap); else if (e.kind === 'spike') sfx('earth', V.magic, V.magicGap); else if (e.kind === 'skill') { const t = tierOf(e.tru === true); if (!skill || RANK[t] > RANK[skill]) skill = t } else if (e.kind === 'thud' || e.kind === 'ult' && e.ult === 'sling') sfx('stone', V.stone, V.stoneGap, .9 + (n % 5) * .05) }
       // 비기가 터짐(한 프레임에 하나 · 가장 높은 계단) · 크리티컬 「핑」은 한 프레임 한 번 · crit.gap 틈 · 소리 수 한도면 버린다
       if (skill) impact(skill)
       if (crits > 0 && ctx && ctx.currentTime - critAt >= F.crit.gap && room()) { critAt = ctx.currentTime; ping() }
