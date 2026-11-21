@@ -102,7 +102,9 @@ import { installMapLandscape } from './map-landscape.ts'
 import { GOAL_CSS, goalBandHtml, goalRowsHtml } from './goalband.ts'
 import { contestOpen } from '../../realm/scenario.ts'
 import { installTips, TIP_CSS } from './tips.ts'
-import { FIRST_CSS, FIRSTS, loadFirsts, nextFirst, saveFirsts, type First } from './firsts.ts'
+import { FIRST_CSS, FIRSTS, firstDue, loadFirsts, nextFirst, saveFirsts, type First } from './firsts.ts'
+import { THREAT_CSS, threatHtml } from './threatwarn.ts'
+import { threatsTo } from '../../realm/warn.ts'
 import { UPDATE_CSS } from './update.ts'
 import { scrollInside } from './scroll.ts'
 import { retainMaxOf } from '../../realm/legacy.ts'
@@ -749,7 +751,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS.replaceAll('__ART__', ART) + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + BOND_CSS + LEGACY_CSS + HRING_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + VOLUME_CSS + MEM_CSS + ASCEND_CSS.replaceAll('__ART__', ART) + HILITE_CSS + TOWN_CSS.replaceAll('__ART__', ART) + RISE_CSS + BOOK_CSS + CROWN_CSS + LEAGUE_CSS + WONDER_CSS + recCss() + LANDSCAPE_MAP_CSS
+  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + THREAT_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS.replaceAll('__ART__', ART) + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + BOND_CSS + LEGACY_CSS + HRING_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + VOLUME_CSS + MEM_CSS + ASCEND_CSS.replaceAll('__ART__', ART) + HILITE_CSS + TOWN_CSS.replaceAll('__ART__', ART) + RISE_CSS + BOOK_CSS + CROWN_CSS + LEAGUE_CSS + WONDER_CSS + recCss() + LANDSCAPE_MAP_CSS
   document.head.appendChild(style)
   root.classList.add('ap')
   // 그래픽 단계 저사양 · 보통 · 고사양 (quality.ts · 형 10-29: 폰 절전 모드에서 그림이 다 깨졌다)
@@ -7324,6 +7326,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       warnPaint() // 승산이 낮은 출정이면 한 번 묻는다
       scoutAskPaint() // 정찰꾼이 다 나갔는데 새 곳을 누르면 — 어디서 눌렀든 가운데에 「어디를 거둘까」
       marquee(root) // 말줄임으로 잘린 한 줄 글은 지하철 안내판처럼 흐른다 (형 10-29)
+      threatAfterPaint() // 적이 온다 예고가 처음 한 번 알림보다 먼저 (이번 달 안에 할 일이다)
       firstsAfterPaint()
       mapLandscape.sync()
     } catch (e) {
@@ -7469,6 +7472,51 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     el.addEventListener('animationend', () => el.remove(), { once: true })
   }
 
+  /**
+   * 적이 온다 예고 (realm/warn.ts · threatwarn.ts · FIRST-HOUR-20261122 TOP 1) — 이번 달 끝에 우리 고을을 칠 적 하나를 지도 위에.
+   * 저들 군사(범위) · 지킬 가망(범위 %) · 답 하나(이번 달 안에 닿는 우리 군대 보내기, 없으면 그 고을 보기). 같은 달 같은 것은 한 번 · 저절로 걷히고 누르면 걷힌다
+   */
+  const threatShown = new Set<string>()
+  let threatTimer = 0
+  function threatAfterPaint(): void {
+    if (threatTimer === 0 && root.querySelector('.thw') === null) threatTimer = window.setTimeout(threatCheck, P.realm.firstHintDelayMs)
+  }
+  function threatCheck(): void {
+    threatTimer = 0
+    const r = realm
+    if (r === null || front !== null || r.region === 'tutorial' || r.outcome || warOn || document.visibilityState !== 'visible' || root.querySelector('.thw') !== null) return
+    // 보고판·큰 장면·전장·회의·담판·마을 안 · 처음 한 번 알림이 떠 있으면 걷힌 뒤 다시 본다 (두 상자가 한꺼번에 뜨지 않게)
+    if (root.classList.contains('modal-open') || root.querySelector('.cere, .ascfx, .gnpop, .wr, .stov, .dpov, .townov, .fhint') !== null) { threatTimer = window.setTimeout(threatCheck, P.realm.firstHintDelayMs); return }
+    const vis = visibleNodes(r, me())
+    const busy = new Set(ordersNow().flatMap((o) => ('army' in o && typeof o.army === 'string' ? [o.army] : [])))
+    const key = (x: { to: string; foe: string }): string => `${r.seed}|${r.season}|${x.to}|${x.foe}`
+    const th = threatsTo(r, me(), (n) => vis.has(n), (a) => busy.has(a)).find((x) => !threatShown.has(key(x)))
+    if (th === undefined) return
+    threatShown.add(key(th))
+    const el = document.createElement('div')
+    el.className = 'thw'
+    el.setAttribute('role', 'alert')
+    el.innerHTML = threatHtml(th, {
+      esc, emblem: (f) => emblem(f),
+      face: (id) => { const a = r.armies[id]; return a?.hero != null ? bust(r.heroes[a.hero], 'face') : '' },
+      nodeName: (id) => r.nodes[id]?.name ?? '', foeName: (f) => r.factions[f]?.name ?? '',
+      armyName: (id) => { const a = r.armies[id]; return a !== undefined ? armyName(r, a) : '' },
+    })
+    // 카드 어디를 눌러도 걷힌다 — 단추는 앱의 눌림 처리(data-act)가 그 일을 하고 나서
+    el.addEventListener('click', () => window.setTimeout(() => threatClose(el), 0))
+    root.append(el)
+    ding(snd('bad_small'), 0.45)
+    buzz([20, 60, 20])
+    // 글 길이만큼 머물고 걷힌다 · 값이 깨져도 걷힌다 (메모리 notices-must-dismiss)
+    const life = noticeMs(el.textContent ?? '', P.realm.threatWarnMs)
+    window.setTimeout(() => threatClose(el), Number.isFinite(life) && life > 0 ? life : P.realm.noticeMaxMs)
+  }
+  function threatClose(el: HTMLElement): void {
+    if (!el.isConnected || el.classList.contains('out')) return
+    el.classList.add('out')
+    window.setTimeout(() => el.remove(), 300)
+  }
+
   /** 처음 한 번 알림 (firsts.ts) — 본 것 · 떠 있는 것 */
   const firstsSeen = loadFirsts()
   let firstOn: First | null = null
@@ -7489,11 +7537,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 배우는 판은 제 띠가 가르친다 · 큰 장면·전장·회의·담판 위에는 띄우지 않는다 · 숨은 탭에서는 쉰다 (절대 규칙 4)
     if (realm === null || realm.region === 'tutorial' || warOn || firstOn !== null || document.visibilityState !== 'visible' || FIRSTS.every((f) => firstsSeen.has(f.id))) return
     // 가려 있으면 걷힌 뒤 다시 본다 — 보고판이 떠 있는 채 판을 열면 그 뒤로 다시 그리지 않아 놓쳤다
-    if (root.classList.contains('modal-open') || root.querySelector('.cere, .ascfx, .gnpop, .wr, .stov, .dpov') !== null) { firstTimer = window.setTimeout(firstCheck, P.realm.firstHintDelayMs); return }
-    const f = nextFirst(firstsSeen, (s) => firstEl(s) !== null)
+    if (root.classList.contains('modal-open') || root.querySelector('.cere, .ascfx, .gnpop, .wr, .stov, .dpov, .thw') !== null) { firstTimer = window.setTimeout(firstCheck, P.realm.firstHintDelayMs); return }
+    const f = nextFirst(firstsSeen, (s) => firstEl(s) !== null, realm.season)
     if (f === null) {
-      // 그려져 있는데 아직 안 보이면(판이 미끄러지는 중 · 굴려야 보이는 자리) 보일 때까지 · 아니면 몇 번만 더
-      const soon = FIRSTS.some((x) => !firstsSeen.has(x.id) && root.querySelector(x.sel) !== null)
+      // 그려져 있는데 아직 안 보이면(판이 미끄러지는 중 · 굴려야 보이는 자리) 보일 때까지 · 아니면 몇 번만 더 (때가 안 된 것은 기다리지 않는다)
+      const soon = FIRSTS.some((x) => !firstsSeen.has(x.id) && firstDue(x, realm!.season) && root.querySelector(x.sel) !== null)
       if (soon || firstTries++ < P.realm.firstHintTries) firstTimer = window.setTimeout(firstCheck, P.realm.firstHintDelayMs)
       return
     }
@@ -7505,6 +7553,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     el.innerHTML = `<b>${esc(f.title)}</b>${esc(f.text)}${f.guide !== undefined ? `<br><button class="fhmore" data-act="guide" data-k="${f.guide}">${tr('fh.more')}</button>` : ''}`
     el.addEventListener('click', () => window.setTimeout(firstClose, 0)) // 「자세히」는 설명을 연 뒤 닫는다
     root.append(el)
+    el.style.width = `${el.offsetWidth}px` // 제 폭을 붙잡는다 — 화면 끝으로 옮기면 좁아져 꼬리·자리가 어긋났다 (가로 화면 장수 탭)
     firstPlace()
     ding(snd('tap_brush'), 0.35)
     window.setTimeout(() => { if (firstOn?.id === f.id) firstClose() }, noticeMs(f.title + f.text, P.realm.firstHintMs))
@@ -7525,8 +7574,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const half = box.offsetWidth / 2
     box.classList.toggle('up', up)
     box.classList.toggle('dn', !up)
-    box.style.left = `${Math.round(Math.min(innerWidth - 12 - half, Math.max(12 + half, b.left + b.width / 2)))}px`
+    const cx = Math.min(innerWidth - 12 - half, Math.max(12 + half, b.left + b.width / 2))
+    box.style.left = `${Math.round(cx)}px`
     box.style.top = `${Math.round(up ? b.top : b.bottom)}px`
+    // 화면 끝에 밀려 말풍선이 비켜 섰으면 꼬리만 그것을 가리킨다 (가로 화면의 오른쪽 장수 탭 · 11-22) — 자리를 옮긴 뒤의 폭으로 잰다(끝에 붙으면 좁아진다)
+    const h2 = box.offsetWidth / 2
+    box.style.setProperty('--ax', `calc(50% + ${Math.round(Math.max(16 - h2, Math.min(h2 - 16, b.left + b.width / 2 - cx)))}px)`)
   }
   function firstClose(): void {
     firstOn = null
@@ -8959,6 +9012,27 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         armySel = []
         break
       }
+      case 'thw-send': {
+        // 적이 온다 예고의 답 (threatwarn.ts) — 이번 달 안에 닿는 우리 군대를 그 고을로. 지도에서 골라 보낸 것과 같은 길(pick) · 같은 달 닿으면 지키는 쪽에 선다
+        const army = d['army'] ?? ''
+        const a = r?.armies[army]
+        const to = r?.nodes[d['node'] ?? '']
+        if (r === null || a === undefined || a.march !== null || to === undefined || r.edges[d['edge'] ?? ''] === undefined) break
+        pick[army] = { edge: d['edge']!, ambush: false }
+        marchSfx()
+        goToast(tr('toast.armyMove', { army: esc(armyName(r, a)), to: esc(to.name), when: turnsLabel(r, 1) }))
+        break
+      }
+      case 'thw-look': {
+        // 답이 없을 때 — 그 고을을 열어 둔다 (둘레 단추 · 지도에서 가운데로)
+        const node = d['node'] ?? ''
+        if (r === null || r.nodes[node] === undefined) break
+        sheet = null
+        ring = node
+        paint()
+        root.querySelector<HTMLElement>(`.nd[data-node="${node}"]`)?.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' })
+        return
+      }
       case 'mv': {
         const army = d['army']!
         if (d['edge'] === '') delete pick[army]
@@ -9079,8 +9153,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           if (stratDone()) return
           break
         }
-        // 승산이 낮으면 한 번 묻는다 — 배우는 판·첫 싸움 안내(lessonOn)는 제 안내를 따른다
-        if (sortieD.edge !== null && r!.region !== 'tutorial' && !lessonOn(r!, me())) {
+        // 승산이 낮으면 한 번 묻는다 — 배우는 판·1장 첫 싸움 안내(lessonOn)는 제 안내를 따른다 (1:1 판의 안내 싸움은 깃발만 고르니 그대로 묻는다)
+        if (sortieD.edge !== null && r!.region !== 'tutorial' && !(lessonOn(r!, me()) && r!.scenario?.id === 'mahan')) {
           const worst = sortieWorst(r!, a)
           const wkey = `${r!.season}|${a.id}|${sortieD.edge}`
           if (worst !== null && worst < P.realm.attackWarnWin && !warned.has(wkey)) {

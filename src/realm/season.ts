@@ -57,6 +57,7 @@ import { applyTalks } from './woo.ts'
 import { noteMemory, type Departure } from './memory.ts'
 import { relicHas, relicHorseMulOf, relicLeft, relicMoraleOf, relicMul, relicSum, relicWith, spendRelic } from './relics.ts'
 import { healWarDead, menByFaction, noteBeaten, noteWarDead } from './rout.ts'
+import { freshSpared } from './grace.ts'
 import {
   ambushTraitOf, applyHeroOrders, battleGrowth, burnWake, trueWakeOf, wakeOf, heroArt, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, isRuler, ironhandAt, noteMet, oneJobPerHero, postHero, releaseCaptives, stepHeroes, stepServed, sweepHeroes,
 } from './heroes.ts'
@@ -784,6 +785,7 @@ function settleLand(r: Realm, o: Extract<Order, { kind: 'settle' }>, lines: Repo
     const fc = foundCost(r, o.faction, freeSite(to))
     stockOf(r, o.faction).grain -= fc.grain
     addGood(r, o.faction, 'wood', -fc.wood)
+    to.foundedBy = o.faction // 새로 연 마을 — 새내기 유예가 묻는다 (grace.freshSpared)
   }
   from.hh -= o.n
   to.hh += o.n
@@ -1045,6 +1047,30 @@ export function groupPower(
 }
 
 /**
+ * 정면으로 치면 친 쪽이 이길 확률 — 판정(fight)의 맞붙기 전 승률과 같은 셈. 기습·저격·길목 지킴·원군 물결은 뺀다 · 판을 바꾸지 않는다.
+ * 우리 고을로 오는 적의 예고(warn.ts)가 쓴다 — 화면의 「지킬 가망」과 판정이 같은 셈이어야 한다 (ODDS · 보정 시험).
+ * `extra` — 이번 달 그 고을로 들일 우리 군대(같은 달 닿으면 지키는 쪽에 선다 · fight 의 원군) · `atkScale` — 친 쪽 힘의 배(범위의 끝)
+ */
+export function frontOdds(r: Realm, legs: readonly { army: Army; edge: REdge }[], to: string, extra: readonly Army[] = [], atkScale = 1): number {
+  const node = r.nodes[to]
+  const a = legs[0]?.army
+  if (node === undefined || a === undefined) return 0
+  const here = armiesAt(r, to).filter((d) => !allied(r, a.faction, d.faction))
+  const defenders = [...here, ...extra.filter((x) => !here.some((d) => d.id === x.id))]
+  const defFaction = node.owner !== null && !allied(r, a.faction, node.owner) ? node.owner : defenders[0]?.faction
+  const militia = militiaOf(r, to)
+  const standing = militia !== null && militia.faction === defFaction ? [...defenders, militia] : defenders
+  if (standing.reduce((s, d) => s + headcount(forceOf(r, d)), 0) < 1) return 1
+  const season = seasonOf(r)
+  const atkF = mergeForces(r, legs.map((x) => x.army))
+  const defF = mergeForces(r, standing)
+  const fort = siegeFort(r, a.faction, node, fortMul(node, season))
+  const fa = groupPower(r, legs.map((x) => ({ army: x.army, edge: x.edge, ambush: 'none' as const })), defF, fort) * atkScale
+  const fd = power(defF, atkF, { fort, crossing: false, ambush: 'none', snipeAtk: 1, snipeDef: 1, edge: legs[0]!.edge.kind, ambushed: false, port: node.kind === 'port' }, 'def')
+  return winChance(fa, fd)
+}
+
+/**
  * 싸움에 함께 선 장수들 — 싸운 나라들이 서로의 장수를 본다 (heroes.heroSeen). 싸우기 전에 부른다 (지면 군대에서 빠지니까)
  */
 function meet(r: Realm, sides: ReadonlyArray<{ readonly hero: string | null; readonly faction?: string }>): void {
@@ -1108,13 +1134,14 @@ function styleOf(h: Hero): { style?: BattleStyle } {
 }
 
 /**
- * 장수 깃발을 「겨루기 → 사로잡기」 하나씩만 보이는 안내 싸움인가 — 배우는 판은 늘, 1장(마한)은 장수끼리 맞선 첫 싸움 한 번만
- * (첫 30분 깔때기 · docs/realm/FIRST-HOUR.md 지연 3 · 11-11: 1장에선 첫 겨루기를 23턴에야 썼다)
+ * 장수 깃발을 「겨루기 → 사로잡기」 하나씩만 보이는 안내 싸움인가 — 배우는 판은 늘, 1장(마한)과 1:1 판(쇠의 바다)은 장수끼리 맞선 첫 싸움 한 번만
+ * (첫 30분 깔때기 · docs/realm/FIRST-HOUR.md 지연 3 · 11-11: 1장에선 첫 겨루기를 23턴에야 썼다 ·
+ *  FIRST-HOUR-20261122 TOP 2: 배우는 판 다음 판인 쇠의 바다는 60분 안 첫 생포가 열 판에 다섯뿐이었다)
  */
 export function lessonOn(r: Realm, faction: string): boolean {
   if (r.factions[faction]?.mind !== 'player') return false
   if (r.region === 'tutorial' && r.heroes['tut-haebi']?.faction === faction && canVanguard(r.heroes['tut-haebi']!)) return false
-  return r.region === 'tutorial' || (r.scenario?.id === 'mahan' && r.lessonDone !== true)
+  return r.region === 'tutorial' || ((r.scenario?.id === 'mahan' || r.region === 'byeonhan-mini') && r.lessonDone !== true)
 }
 /** 1장의 안내 싸움이 열렸다 — 장수끼리 맞섰으면 다음부터는 깃발을 다 보인다 */
 function markLesson(r: Realm, a: Side, d: Side): void {
@@ -1805,6 +1832,16 @@ function resolveMarches(
         a.march = { from: m.to, to: m.from, edge: m.edge, left: 1, ambush: false, aim: r.nodes[m.from]?.owner ?? null }
         lines.push({ kind: 'recall', faction: a.faction, army: a.id, node: m.to, owner: now })
       }
+      continue
+    }
+    // 새내기 유예 — 판 첫 해엔 우리 군대 없는 우리 고을을 치지 않는다 (grace.freshSpared · FIRST-HOUR-20261122 TOP 1).
+    // 떠날 땐 우리 군대가 있었는데 가는 사이 비었으면 들어가지 않고 떠난 고을로 돌아선다 (먼 길로 오던 군대가 빈 마을을 쳤다) · 싸울 곳일 때만 (동맹은 지나간다)
+    if (now !== null && now !== lead.faction && contested(r, node.id, lead.faction) && freshSpared(r, lead.faction, node.id)) {
+      for (const a of live) {
+        const m = a.march!
+        a.march = { from: m.to, to: m.from, edge: m.edge, left: 1, ambush: false, aim: r.nodes[m.from]?.owner ?? null }
+      }
+      lines.push({ kind: 'recall', faction: lead.faction, army: lead.id, node: node.id })
       continue
     }
     // 진묘수 — 그 고을을 맡은 장수가 지녔으면 쳐들어온 군대가 싸움 없이 떠난 고을로 돌아선다 (판마다 relicGuardianWards 번 · relics.ts)

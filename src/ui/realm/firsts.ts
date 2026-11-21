@@ -6,6 +6,7 @@
  * 자세한 것은 판마다 있는 「?」 설명(app GUIDE)으로 — 말풍선의 「자세히」가 그것을 연다.
  */
 import { t } from '../../i18n/index.ts'
+import { P } from '../../tune/params.ts'
 
 export interface First {
   readonly id: string
@@ -15,6 +16,8 @@ export interface First {
   readonly text: string
   /** 「자세히」로 열 설명 (app GUIDE 의 열쇠) */
   readonly guide?: string
+  /** 판 처음 이만큼 턴이 지난 뒤에만 (판에 손이 익었을 때) — 없으면 처음부터 */
+  readonly from?: number
 }
 
 export const FIRSTS: readonly First[] = [
@@ -24,6 +27,15 @@ export const FIRSTS: readonly First[] = [
   { id: 'exp', sel: '.cmdc[data-job="exp"]:not(.off)', get title() { return t('first.exp.title') }, get text() { return t('first.exp.text') } },
   { id: 'wed', sel: '.cmdc[data-job="wed"]:not(.off)', get title() { return t('first.wed.title') }, get text() { return t('first.wed.text') } },
   { id: 'relic', sel: '[data-act="tomb-pick"]', get title() { return t('first.relic.title') }, get text() { return t('first.relic.text') } },
+  // 배우는 판에서 뺀 넷 — 처음 열 때 그 단추 곁에 한 번 (FIRST-HOUR-20261122 TOP 5 · 배우는 판 14단계 → 10단계)
+  { id: 'build', sel: '.nring [data-act="build"]', get title() { return t('first.build.title') }, get text() { return t('first.build.text') } },
+  { id: 'envoy', sel: '[data-act="compose"]', get title() { return t('first.envoy.title') }, get text() { return t('first.envoy.text') }, guide: 'envoy' },
+  { id: 'rite', sel: '[data-act="rite"]', get title() { return t('first.rite.title') }, get text() { return t('first.rite.text') } },
+  { id: 'plot', sel: '[data-act="plot-open"]', get title() { return t('first.plot.title') }, get text() { return t('first.plot.text') }, guide: 'plot' },
+  // 장수 열전 — 첫 시간 동선에 이름이 없고 장수 탭의 글 없는 금빛 점 하나뿐이었다 (FIRST-HOUR-20261122 TOP 4).
+  // 첫 계절이 지나 판에 손이 익은 뒤 그 점 곁에 한 줄 · 출전 단추를 처음 볼 때 한 줄 더
+  { id: 'raid', sel: '[data-act="tab"][data-tab="heroes"] .rqd', get from() { return P.realm.raidHintFrom }, get title() { return t('first.raid.title') }, get text() { return t('first.raid.text') } },
+  { id: 'raidgo', sel: '[data-act="raid-stage"]', get title() { return t('first.raidgo.title') }, get text() { return t('first.raidgo.text') } },
 ]
 
 const KEY = 'hanbal.realm.firsts'
@@ -39,9 +51,12 @@ export function saveFirsts(seen: ReadonlySet<string>): void {
   try { localStorage.setItem(KEY, JSON.stringify([...seen])) } catch { /* 저장 못 하는 곳 — 이번에만 */ }
 }
 
-/** 지금 알릴 것 — 아직 안 본 것 가운데 화면에 보이는 첫 것 (보이는지는 화면 일이라 `shown` 으로 받는다) */
-export function nextFirst(seen: ReadonlySet<string>, shown: (sel: string) => boolean): First | null {
-  return FIRSTS.find((f) => !seen.has(f.id) && shown(f.sel)) ?? null
+/** 알릴 때가 됐나 — 판 처음 `from` 턴이 지났나 (`turn` 은 판의 턴) */
+export const firstDue = (f: First, turn: number): boolean => f.from === undefined || turn >= f.from
+
+/** 지금 알릴 것 — 아직 안 본 것 가운데 때가 됐고 화면에 보이는 첫 것 (보이는지는 화면 일이라 `shown` 으로 받는다) */
+export function nextFirst(seen: ReadonlySet<string>, shown: (sel: string) => boolean, turn = Infinity): First | null {
+  return FIRSTS.find((f) => !seen.has(f.id) && firstDue(f, turn) && shown(f.sel)) ?? null
 }
 
 export const FIRST_CSS = `
@@ -50,7 +65,7 @@ export const FIRST_CSS = `
 .ap .fhint.dn { transform: translate(-50%, 12px); }
 .ap .fhint b { display: block; color: #ffd27a; font-size: 15px; margin-bottom: 2px; }
 .ap .fhint .fhmore { margin-top: 6px; padding: 3px 10px; border-radius: 999px; border: 1px solid #c9a45a; background: #3a2a16; color: #ffe2a8; font-size: 12.5px; }
-.ap .fhint::after { content: ''; position: absolute; left: 50%; width: 10px; height: 10px; background: inherit; border: inherit; border-width: 0 1.5px 1.5px 0; transform: translateX(-50%) rotate(45deg); }
+.ap .fhint::after { content: ''; position: absolute; left: var(--ax, 50%); width: 10px; height: 10px; background: inherit; border: inherit; border-width: 0 1.5px 1.5px 0; transform: translateX(-50%) rotate(45deg); }
 .ap .fhint.up::after { bottom: -7px; }
 .ap .fhint.dn::after { top: -7px; transform: translateX(-50%) rotate(225deg); }
 .ap .fhint.out { opacity: 0; transition: opacity .3s ease; }

@@ -9,11 +9,13 @@
  *   ③ 한 판만 하는 사람  무모 두뇌에서 짓기·개척·곳간·제사 같은 살림 명령을 뺀다. 첫 패배 또는 30분에 접는다.
  * 결정론: 같은 씨앗이면 같은 표. 「분」은 first-hour.ts 와 같은 가운데 가정 비용이다.
  * 막힘(STUCK) = 우리 군대·고을·장수가 9턴(석 계절) 내리 그대로.
+ * --answer 1 — 「적이 온다」 예고(realm/warn.ts)의 답 단추를 누르는 손님: 예고에 「보내기」가 있으면 그 군대를 보낸다 (기본은 안 읽는 손님 · 화면 장치가 없는 최악값)
  */
 import { writeFileSync } from 'node:fs'
 import { aiOrders, decide } from '../src/realm/ai.ts'
 import { startRegion } from '../src/realm/data/regions/index.ts'
 import { advance } from '../src/realm/season.ts'
+import { threatsTo } from '../src/realm/warn.ts'
 import type { Order, Realm, RegionId } from '../src/realm/types.ts'
 import { P } from '../src/tune/params.ts'
 import { COSTS, headFlags, noCounts, scanReport, turnSeconds, type Mile } from './first-hour-lib.ts'
@@ -28,6 +30,7 @@ const BOARD = opt('board', 'mahan') as RegionId
 const MINUTES = Number(opt('minutes', '60'))
 const TURNS = Number(opt('turns', '120'))
 const OUT = opt('out', '')
+const ANSWER = opt('answer', '0') === '1'
 // --set aiGraceMahan=2,aiCautiousWin=0.5 : 고쳐 보면 어떻게 되나 (params.ts 는 안 고친다)
 for (const kv of opt('set', '').split(',').filter((x) => x !== '')) {
   const [k, v] = kv.split('=')
@@ -100,7 +103,10 @@ function play(persona: Persona, seed: number): Result {
       const c = noCounts()
       headFlags(r, AS, flags, c)
       const big0 = lost.big
-      const orders = [...playerOrders(persona, r, roll), ...aiOrders(r)]
+      const mine = playerOrders(persona, r, roll)
+      // 예고의 답을 누른다 — 이번 달 다른 명령을 받지 않은 군대만 (화면도 그렇다)
+      if (ANSWER) for (const th of threatsTo(r, AS, () => true, (a) => mine.some((o) => 'army' in o && o.army === a))) if (th.send !== null) mine.push({ kind: 'march', army: th.send.army, edge: th.send.edge, ambush: false })
+      const orders = [...mine, ...aiOrders(r)]
       const { next, report } = advance(r, orders)
       scanReport(r, next, report.lines, AS, false, startKnown, flags, c, lost)
       r = next
@@ -163,6 +169,6 @@ for (const p of PERSONAS) {
   }
 }
 const errs = all.filter((x) => x.err !== null).map((x) => `- ${LABEL[x.persona]} 씨앗 ${x.seed}: ${x.err}`)
-const text = [`## 페르소나 손님 시험 — ${BOARD} · 씨앗 1~${SEEDS} · 상한 ${MINUTES}분(가정 가운데 비용) · ${TURNS}턴`, '', '### 요약', sum.join('\n'), '', '### 판마다', rows.join('\n'), '', '### 계절별 중간 궤적 (괄호 = 그때까지 살아 있는 판)', traj.join('\n'), ...(errs.length ? ['', '### 오류', ...errs] : [])].join('\n')
+const text = [`## 페르소나 손님 시험 — ${BOARD} · 씨앗 1~${SEEDS} · 상한 ${MINUTES}분(가정 가운데 비용) · ${TURNS}턴${ANSWER ? ' · 예고의 답을 누르는 손님' : ''}`, '', '### 요약', sum.join('\n'), '', '### 판마다', rows.join('\n'), '', '### 계절별 중간 궤적 (괄호 = 그때까지 살아 있는 판)', traj.join('\n'), ...(errs.length ? ['', '### 오류', ...errs] : [])].join('\n')
 console.log('\n' + text)
 if (OUT !== '') writeFileSync(OUT, text + '\n')

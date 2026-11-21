@@ -116,7 +116,7 @@ describe('껍데기: 날짜 · 탭 · 배우는 판 · 처음 알림', () => {
     assert.equal(FIRSTS[0]!.title, 'Town Warden')
     assert.equal(tIn('en', 'tab.locked', { name: 'Diplomacy', turns: '2 months' }), 'Diplomacy: opens in 2 months')
     assert.equal(tIn('en', 'date.monthSeason', { y: 13, m: 3, s: 'Spring' }), 'Year 13, Month 3 · Spring')
-    assert.ok(tutBandHtml(0, (x) => x).includes('1/14'))
+    assert.ok(tutBandHtml(0, (x) => x).includes('1/10'))
   })
 })
 

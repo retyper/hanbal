@@ -75,6 +75,17 @@ describe('배우는 판', () => {
     assert.ok(won >= 6, `갯골을 이긴 시드 ${won}/12`)
   })
 
+  it('1:1 판(쇠의 바다)도 첫 장수 싸움 한 번은 겨루기 → 사로잡기 안내다 (FIRST-HOUR-20261122 TOP 2)', async () => {
+    const { startRegion } = await import('../../src/realm/data/regions/index.ts')
+    const { lessonOn } = await import('../../src/realm/season.ts')
+    const r = startRegion('byeonhan-mini', 1000, 'guya')
+    assert.equal(lessonOn(r, 'guya'), true)
+    const foe = Object.keys(r.factions).find((f) => f !== 'guya')!
+    assert.equal(lessonOn(r, foe), false, 'AI 나라는 안내가 없다')
+    r.lessonDone = true
+    assert.equal(lessonOn(r, 'guya'), false, '한 번 맞선 뒤엔 깃발을 다 보인다')
+  })
+
   it('미추홀 도읍을 쥐면 이긴다', () => {
     const r = startTutorial(3)
     assert.equal(checkOutcome(r), null)
@@ -139,6 +150,52 @@ describe('배우는 판 — 갇히지 않는다', () => {
     // 칸을 열면 해비 줄
     onScreen.add('[data-act="hero"][data-id="tut-haebi"]')
     assert.equal(tutPick(step, c, (sel) => onScreen.has(sel)), '[data-act="hero"][data-id="tut-haebi"]')
+  })
+
+  // FIRST-HOUR-20261122 TOP 3: 겨루기·사로잡기 쉼표 목록이 :is() 없이 끼워져 `.on` 이 마지막 것에만 붙었다 → 「장수」 칸이 한 번도 안 빛났다
+  it('전장 안내 빛 — 쉼표로 가른 선택자마다 전장(.ap .wr) 안이고, 고를 깃발 목록은 :is() 로 묶여 있다', async () => {
+    const { tutStyle } = await import('../../src/ui/realm/tutorial.ts')
+    for (const step of TUT_STEPS.filter((s) => s.war !== undefined)) {
+      const css = tutStyle(step)
+      const head = css.slice(0, css.indexOf('{'))
+      // 괄호 밖의 쉼표로만 가른다
+      const parts: string[] = []
+      let depth = 0, cur = ''
+      for (const ch of head) {
+        if (ch === '(') depth++
+        if (ch === ')') depth--
+        if (ch === ',' && depth === 0) { parts.push(cur.trim()); cur = '' } else cur += ch
+      }
+      parts.push(cur.trim())
+      assert.ok(parts.length >= 3, step.id)
+      for (const p of parts) assert.ok(p.startsWith('.ap .wr'), `${step.id}: ${p}`)
+      assert.ok(head.includes(`:is(${step.war!.pick})`), step.id)
+    }
+  })
+
+  it('배우는 판 띠 글은 단계마다 짧다 (4/14 전투 띠가 141자였다 · 60자 안)', () => {
+    const battle = TUT_STEPS.find((s) => s.id === 'battle')!
+    assert.ok(battle.text.length <= 60, `${battle.text.length}자`)
+  })
+
+  // FIRST-HOUR-20261122 TOP 5: 와 순간 바로 뒤 싸움 없는 강의 일곱 → 건설·사신·제사·공작은 본 게임에서 처음 열 때 한 번 (firsts.ts)
+  it('배우는 판은 10단계 — 건설·사신·제사·공작은 처음 한 번 알림으로 옮겼다', async () => {
+    const { FIRSTS } = await import('../../src/ui/realm/firsts.ts')
+    assert.deepEqual(TUT_STEPS.map((s) => s.id), ['look', 'march', 'council', 'battle', 'persuade', 'talk', 'draft', 'settle', 'scout', 'win'])
+    for (const id of ['build', 'envoy', 'rite', 'plot']) assert.ok(FIRSTS.some((f) => f.id === id && f.title !== '' && f.text !== ''), id)
+  })
+
+  // FIRST-HOUR-20261122 TOP 4: 열전은 첫 시간 동선에 이름이 없었다 (장수 탭의 글 없는 금빛 점뿐) → 첫 계절이 지나면 그 점 곁에 한 줄
+  it('장수 열전 알림 — 금빛 점 곁에 · 판 처음 raidHintFrom 턴이 지난 뒤에만', async () => {
+    const { FIRSTS, nextFirst } = await import('../../src/ui/realm/firsts.ts')
+    const { P } = await import('../../src/tune/params.ts')
+    const raid = FIRSTS.find((f) => f.id === 'raid')!
+    assert.ok(raid.sel.includes('.rqd') && raid.text.includes('금빛 점') && raid.title === '장수 열전')
+    const seen = new Set(FIRSTS.filter((f) => f.id !== 'raid').map((f) => f.id))
+    const all = (): boolean => true
+    assert.equal(nextFirst(seen, all, P.realm.raidHintFrom - 1), null, '첫 계절 안엔 아직')
+    assert.equal(nextFirst(seen, all, P.realm.raidHintFrom)?.id, 'raid')
+    assert.equal(nextFirst(seen, (s) => s !== raid.sel, P.realm.raidHintFrom), null, '점이 안 보이면 안 뜬다')
   })
 
   it('오래 머문 단계엔 「건너뛰기」가 뜬다 (평소엔 없다)', async () => {

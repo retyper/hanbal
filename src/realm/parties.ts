@@ -215,6 +215,7 @@ export function stepParties(r: Realm, lines: ReportLine[]): void {
       s.wood = goodOf(s, 'wood') - Math.min(extra.wood, Math.max(0, goodOf(s, 'wood')))
       const n = r.nodes[p.at]!
       n.hh += p.hh
+      if (n.owner === null) n.foundedBy = p.faction // 새로 연 마을 — 새내기 유예가 묻는다 (grace.freshSpared)
       n.owner = p.faction
       n.takenAt = r.season
       lines.push({ kind: 'settle', faction: p.faction, from: p.home, to: p.at, n: p.hh })
