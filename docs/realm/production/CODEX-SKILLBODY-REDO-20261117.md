@@ -2557,3 +2557,17 @@ Claude 결정: **둘 다, 한 장면으로.** 쇠비를 앞에 크게 세운 새
 - **넣는 길(Claude):** 형이 고른 장수만 `py -3 -I tools/veo/ending-install.py <그림id> …` → `public/realm/raid/ending/` 에 mp4 + 마지막 장면 jpg, 찍힌 줄을 `src/raid/ending-video.ts` 의 `clips` 표에 추가.
 - 정책 거절(노출 큰 그림 · 다시 돌려 쓰지 않음): 탈해 너울 각성 대기 · 감실 승리. 실직 물가·선녀는 보내지 않음.
 - 크레딧(11-21 23:30): Flow 신윤철 0 · Muffin 0 · Facts Gamble 1 · retyper 1 · Jay 8(11-28 갱신). 무료 계정은 매일 오후 갱신. 제미나이 Jay 는 모델 이름이 바뀌었다(Argon 없음 → Hydrogen/Neon) · Neon 으로 대소 각성 대기 영상 진행 중.
+
+
+### 67 · 11-21 밤 Claude · ★ Codex 는 **그림 만들기만** (검수·자르기·게임에 넣기·커밋은 전부 Claude)
+형 11-21: 「챗지피티는 만들게만 시키고 작업이나 검사는 니가 다 해」. → Codex 는 아래 그림을 **생성해서 `D:/에셋창고/codex67/` 에 정확한 이름으로 두기만** 한다. 원본 그대로(자르기·키잉·크기 바꾸기·게임 폴더 복사·QA 스크립트·커밋 하지 않음). 한 장 끝날 때마다 `CODEX-TO-CLAUDE-LATEST.md` 에 파일 이름 한 줄. 한 물건 = 새 대화 · 시험 한 장 먼저 규칙은 그대로. 다 만들면 다음 줄로 계속.
+공통 금지: 활시위 당긴 자세 · 일장기/햇살 원판/붉은 원 · 일본·중국 갑옷·관복 결 · 닌자 결 · 설명 글자 · 손가락 개수 이상 · 무기가 손을 뚫음. 15세 판 기준(비침·유두 윤곽 금지 · 여장수 노출은 원본 수준).
+
+1. **쇠비 진각성 다시** `aw2_w-30-guya-soebi_hammer-v1.png` — 65-A 그대로(지금 진각성 판 `public/realm/awaken2-hd/w-30-guya-soebi.jpg` 의 같은 사람·불꽃·붉은 비단 · 어깨의 덩이쇠 더미 대신 **긴 자루 + 덩이쇠 머리 + 감긴 쇠사슬 전용 쇠망치**(59 키 아트 망치 결) · 역동 자세 · 정사각).
+2. **키 아트 v2 두 장** `keyart-16x9-v2.png` · `keyart-9x16-v2.png` — 63·65-B 그대로(주몽 시위 당김 금지 → 활을 내려 쥠 · 쇠비 가슴께 지금보다 드러나게(1차 각성 그림 수준) · 쇠비 어깨 찰갑 결 · 가로는 위 30% 하늘 비움 · 나머지 구성은 v1 그대로).
+3. **걷기 8칸 판(24명)** `walk8_<띠이름>.png` — 지금 걷기 4칸인 띠: alpyeong areum aryeong baram dokmudeom eomni gamsil gom gureum haebi haesol halla heo jinha jita keundol mdallae mulbeom odi sagong sinneoul sobeol sogeumbi soseono (`public/realm/anim-px/gen-<이름>.png` 이 기준 그림 · 서기 칸 0번과 같은 사람·옷·그림체·크기). 판 꼴: **4×2 한 장, 칸마다 걷는 자세 하나**(1번=오른발 앞 접지 · 5번=왼발 앞 접지 · 사이 칸은 이어지는 중간 자세 · 팔은 다리와 반대 · 무기는 같은 손), 배경 #1c2129 민무늬, 칸 경계에 몸이 걸치지 않게 여백. **한 명 시험(gamsil) → Claude 확인 알림 기다리지 말고 나머지 계속**(이상하면 Claude 가 다시 요청함).
+4. **공격 8칸 판(6명)** `attack8_<띠이름>.png` — 다나(base-w-102-garak-dana) · 쇠비(soebi) · 아라(ara) · 소서노(soseono) · 감실(gamsil) · 진하(jinha). 4×2 한 장: 예비 동작 2 · 휘두름 2(그중 1칸은 무기 궤적 번짐) · 맞힘 1 · 마무리 3. 그 장수의 원래 무기 그대로(쇠비는 덩이쇠 더미).
+5. **살해 매화 걷기 8칸** `walk8_maehwa.png` — 3과 같은 꼴(서기 칸 그림체 기준 · 58-C).
+6. **56-C 바탕** `bg_ford_autumn.png`(물안개 여울: 가을 갈대·푸른 안개 · 호박빛+청록) · `bg_palisade_dusk.png`(목책: 해질녘 황토 진영 · 횃불 · **목책·사람 없음**) — 지금 `public/realm/raid/ford.webp`·`palisade.webp` 와 같은 크기·위에서 내려다보는 시점·이어 붙여도 티 안 나게. + `palisade_post_a/b/c.png`(말뚝 마디 세 가지 · 투명) · `palisade_gate.png`(목책 문 · 투명).
+7. **55 흑룡 부위** `boss_blackdragon_<부위>.png` — 머리 · 아래턱 · 목 마디 · 몸통 · 앞발 위/아래(좌우 한 벌) · 날개(펼침) · 꼬리 마디 · 꼬리 끝 — 부위마다 투명 한 장 · 같은 조명(위 왼쪽) · 같은 비늘 결 · 이음매 자리가 겹치게 여유. 이어서 구미호(여성 인간형 2막 반신 여우 · 꼬리 아홉 따로) → 불의 무녀 장군 → 불가사리 순(BOSS.md 표).
+8. **53-B 스테이지 정예 다섯** · **51** 해적 주인공 시안 c(남)·d(여) · 갈래 카드 테두리 셋 · 새 적 열다섯(51-2 표) — 지금 적 띠(`public/realm/anim-px/bandit-*.png`)와 같은 칸 꼴.
