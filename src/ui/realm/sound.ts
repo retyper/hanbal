@@ -443,10 +443,12 @@ export function makeMusic(base: string, muted: () => boolean, quiet: () => boole
       void ctx?.suspend().catch(() => {})
     }
   })
-  document.addEventListener('pointerdown', () => {
+  // 키보드로 첫 화면을 넘겨도(시작 화면 「아무 키나 누르세요」) · 폰은 손을 뗄 때(pointerup)에야 브라우저가 소리를 풀어 준다
+  const kick = (): void => {
     void audio()?.resume().catch(() => {})
     if (!off()) { bgm.resume(); amb.resume() }
-  }, { capture: true })
+  }
+  for (const ev of ['pointerdown', 'pointerup', 'keydown']) document.addEventListener(ev, kick, { capture: true })
   let warPrimed = false
   return {
     // 지도에 처음 서면 싸움 음악도 미리 받아 둔다 — 첫 싸움에서 음악이 받아질 때까지 한참 조용했다 (형 11-09)

@@ -226,6 +226,8 @@ export const en: Partial<Record<Key, string>> = {
   'first.more': 'Details ›',
   'boot.presents': 'presents',
   'boot.logoAlt': 'First Realms',
+  'start.pressKey': 'Press any key',
+  'start.pressTap': 'Tap the screen',
   'credits.title': 'Credits',
   'credits.back': '‹ Back',
   'credits.loading': 'Loading...',

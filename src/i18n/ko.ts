@@ -238,6 +238,8 @@ export const ko = {
   'first.more': '자세히 ›',
   'boot.presents': 'presents',
   'boot.logoAlt': '열국군웅전',
+  'start.pressKey': '아무 키나 누르세요',
+  'start.pressTap': '화면을 누르세요',
   'credits.title': '크레딧',
   'credits.back': '‹ 돌아가기',
   'credits.loading': '불러오는 중입니다.',
