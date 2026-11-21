@@ -162,8 +162,8 @@ export function takeAfterimage(el: Element | null, picked: Element | null = null
 }
 
 /**
- * 날린다. 돌려주는 값 = 닿을 때까지(ms · 날지 않으면 0) — 그때 onLand 가 불린다.
- * 그림을 넘기지 않으면 떠나는 자리에서 터지기만 하고 onLand 는 곧바로
+ * 날린다. 돌려주는 값 = 닿을 때까지(ms · 날지 않으면 0) — 그때 onLand 가 불리고, cue 는 날기가 시작되는 프레임에 남은 초를 받는다.
+ * 그림을 넘기지 않으면 떠나는 자리에서 터지기만 하고 onLand · cue(0) 는 곧바로
  */
 export function flyOut(o: FlyOpts, doc: Document = document, c: FlyCfg = UI_FLY): number {
   let landed = false
@@ -244,7 +244,7 @@ export function flyOut(o: FlyOpts, doc: Document = document, c: FlyCfg = UI_FLY)
       { transform: `translate(${tx.toFixed(1)}px,${(ty + c.sparkFall).toFixed(1)}px) scale(${c.sparkEnd})`, opacity: 0 },
     ], { duration: s.ms, easing: c.burstEase, fill: 'both' }))
   }
-  // ② 나는 그림 — 닿는 순간 onLand (소리) · 닿을 칸이 튀고 고리가 번진다
+  // ② 나는 그림 — 닿는 순간 onLand · 닿을 칸이 튀고 고리가 번진다 (소리는 날기 시작에 cue 로 소리 시계에 걸어 둔다)
   const vw = win.innerWidth
   const vh = win.innerHeight
   const to = onScreen(o.to, vw, vh) ? o.to : null

@@ -300,8 +300,10 @@ export function swayOn(el: SwayEl, opts: SwayOpts = {}, env: SwayEnv = domEnv(),
       wake()
     },
     hover(x, y) {
-      if (mode === 'press' || mode === 'drag' || env.calm() || env.hidden()) return
+      if (mode === 'press' || mode === 'drag') return
+      // 올리기 시작할 때만 묻는다 (마우스가 움직일 때마다 문서를 뒤지지 않게)
       if (mode === 'rest') {
+        if (env.calm() || env.hidden()) return
         low = env.low()
         const q = el.getBoundingClientRect()
         home = { cx: q.left + q.width / 2 - b.x, cy: q.top + q.height / 2 - b.y, half: q.width / 2 }

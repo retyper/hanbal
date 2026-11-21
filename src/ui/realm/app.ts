@@ -275,8 +275,7 @@ function muted(): boolean {
 }
 // 확장자가 이미 붙은 이름(snd() 의 'realm/sfx/x.ogg')엔 또 붙이지 않는다 — 전엔 /.w+$/ 라 「.ogg.ogg」로 받아 깃발·징병·출정 소리가 안 났다 (형 10-24)
 const sfxUrl = (name: string): string => `${name.includes('/') ? BASE : SFX}${name}${/\.\w+(#t=[\d.]+)?$/.test(name) ? '' : '.ogg'}`
-/** 한 번 울린다 — 소리 끄기·효과음 크기를 따른다 (시작 화면도 이 길로 · realm-main) */
-/** at — 이만큼(초) 뒤 소리 시계로 (날아간 깃발이 박히는 순간 · A1) */
+/** 한 번 울린다 — 소리 끄기·효과음 크기를 따른다 (시작 화면도 이 길로 · realm-main) · at 이만큼(초) 뒤 소리 시계로 (날아간 깃발이 박히는 순간 · A1) */
 export function ding(name: string, vol = 0.6, rate = 1, dur = 0, at = 0): void {
   if (muted()) return
   const gain = soundVolume(name.startsWith('realm/voice/') ? 'voice' : 'sfx')
