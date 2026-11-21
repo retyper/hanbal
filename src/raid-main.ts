@@ -40,6 +40,8 @@ import { RaidGiantHud } from './raid/giant-hud.ts'
 import { prewarmImugiArt } from './raid/imugi-art.ts'
 import { prewarmTigerArt } from './raid/tiger-art.ts'
 import { tigerVisualBounds } from './raid/tiger-view.ts'
+import { prewarmBulgasariArt } from './raid/bulgasari-art.ts'
+import { bulgasariVisualBounds } from './raid/bulgasari-view.ts'
 import { prewarmGumihoArt } from './raid/gumiho-art.ts'
 import { gumihoVisualBounds } from './raid/gumiho-view.ts'
 import { GIANT_NAMES, giantEntrySeconds } from './raid/giant.ts'
@@ -244,7 +246,7 @@ function renderStageMenu() {
   }
   if (mode !== 'stage') return
   const menu = $('menu')
-  const rules = raidRulesForStage(stage), giantTitle = rules === '55-IMUGI' ? GIANT_NAMES.imugi : rules === '55-TIGER' ? GIANT_NAMES.tiger : rules === '55-GUMIHO' ? GIANT_NAMES.gumiho : null
+  const rules = raidRulesForStage(stage), giantTitle = rules === '55-IMUGI' ? GIANT_NAMES.imugi : rules === '55-TIGER' ? GIANT_NAMES.tiger : rules === '57-BULGASARI' ? GIANT_NAMES.bulgasari : rules === '55-GUMIHO' ? GIANT_NAMES.gumiho : null
   menu.querySelector('p')!.textContent = giantTitle ? `${Math.floor(C.bossAt * ST[stage].length * GIANT.midFraction / 60)}분의 중간 보스를 넘고 ${bossMinute()}분에 나타나는 ${josa(giantTitle, '을', '를')} 쓰러뜨리면 휘장을 받습니다. 쓰러져도 버틴 만큼 금을 받아 상점에서 영구 강화를 삽니다.` : `${bossMinute()}분을 버틴 뒤 오는 두목을 쓰러뜨리면 휘장과 많은 금을 받습니다. 쓰러져도 버틴 만큼 금을 받아 상점에서 영구 강화를 삽니다.`
   const pick = menu.querySelector('.journey')!; pick.className = 'journey stage-pick'
   pick.innerHTML = STAGE_ORDER.map(id => {
@@ -502,8 +504,8 @@ async function begin(sameSeed = false) {
   if (beginning || trialEntryClosed()) return
   sound.unlock() // Keep audio activation inside the actual start gesture, before optional asset loading.
   const selected = stage, revision = ++startRevision
-  // 거대 보스 판은 그 보스의 부위 그림을 먼저 데운다 (여울 이무기 · 설원 백두 대호 · 숲 산길 구미호)
-  const giantArt = mode === 'stage' ? raidRulesForStage(selected) === '55-IMUGI' ? prewarmImugiArt : raidRulesForStage(selected) === '55-TIGER' ? prewarmTigerArt : raidRulesForStage(selected) === '55-GUMIHO' ? prewarmGumihoArt : null : null
+  // 거대 보스 판은 그 보스의 부위 그림을 먼저 데운다 (여울 이무기 · 설원 백두 대호 · 목책 돌파 불가사리 · 숲 산길 구미호)
+  const giantArt = mode === 'stage' ? raidRulesForStage(selected) === '55-IMUGI' ? prewarmImugiArt : raidRulesForStage(selected) === '55-TIGER' ? prewarmTigerArt : raidRulesForStage(selected) === '57-BULGASARI' ? prewarmBulgasariArt : raidRulesForStage(selected) === '55-GUMIHO' ? prewarmGumihoArt : null : null
   if (giantArt) {
     beginning = true; $<HTMLButtonElement>('start').disabled = true; $('start').textContent = '그림을 불러오는 중…'
     const ready = await giantArt(selected, images, base).catch(() => false)
@@ -968,7 +970,7 @@ function frame(now: number) {
     if (events.stamp && ending.kind !== 'retreat') { sound.ending(ending.kind === 'victory'); if (ending.kind === 'victory') haptics().win() }
     const boss = giantMob(run)
     if (boss && boss !== giantCameraOwner) { giantCameraOwner = boss; giantZoomRestore = cam.level; giantAutoFraming = true; giantFitZoom = GIANT.cameraZoom; cam.level = 0; paintZoom() }
-    const bossFrame = giantAutoFraming && boss?.giant && !ending.active ? bossFrameZoom(boss.giant.kind === 'tiger' ? tigerVisualBounds(boss.giant) : boss.giant.kind === 'gumiho' ? gumihoVisualBounds(boss.giant) : imugiVisualBounds(boss.giant.pose), GIANT.cameraZoom) : null
+    const bossFrame = giantAutoFraming && boss?.giant && !ending.active ? bossFrameZoom(boss.giant.kind === 'tiger' ? tigerVisualBounds(boss.giant) : boss.giant.kind === 'bulgasari' ? bulgasariVisualBounds(boss.giant) : boss.giant.kind === 'gumiho' ? gumihoVisualBounds(boss.giant) : imugiVisualBounds(boss.giant.pose), GIANT.cameraZoom) : null
     if (bossFrame !== null) giantFitZoom = Math.min(giantFitZoom, bossFrame)
     followCam(cam, run.x, run.y, feel.stopped || ending.active ? 0 : dt, false, bossFrame !== null ? giantFitZoom : undefined)
     // Entry eases out while the boss arrives; later overhangs must fit on the same displayed/input camera.
@@ -992,5 +994,5 @@ updateHud(); schedule()
 // 개발 검수 손잡이 — 헤드리스 시험(tools/raid-*-probe.ts)이 판 상태를 읽고 체력을 깎아 본다 · 배포 빌드엔 없음
 if (import.meta.env.DEV) Object.assign(window, { __raid: () => run, __raidEnd: () => ({ kind: ending.kind, elapsed: ending.elapsed, duration: ending.duration, active: ending.active, ready: ending.ready, stampAt: ending.stampAt, effectTime: ending.effectTime, overlayVisible: !$('overlay').hidden }), __raidFeel: () => ({ time: feel.time, stopRemaining: feel.stopRemaining, shake: feel.shake }), __raidSound: sound, __raidCutin: (wake: boolean, tru = false) => showSkillCutin(wake, tru) })
 if (import.meta.env.DEV && new URLSearchParams(location.search).has('review')) {
-  import('./raid/haebi-review.ts').then(({ installReview }) => installReview(root, s => { if (s.giantFlow && s.stage === 'snow') void prewarmTigerArt('snow', images, base).then(() => schedule()); if (s.giantFlow && s.stage === 'forest') void prewarmGumihoArt('forest', images, base).then(() => schedule()); notifyVanguardStart(); run = s; live = true; paused = !s.offers.length; shown = ''; loadoutKey = ''; resetInput(); $('menu').hidden = true; $('play').hidden = false; $<HTMLButtonElement>('pause').disabled = false; layoutTrial(); showOverlay(); updateHud(); schedule() }, mode, kit))
+  import('./raid/haebi-review.ts').then(({ installReview }) => installReview(root, s => { if (s.giantFlow && s.stage === 'snow') void prewarmTigerArt('snow', images, base).then(() => schedule()); if (s.giantFlow && s.stage === 'palisade') void prewarmBulgasariArt('palisade', images, base).then(() => schedule()); if (s.giantFlow && s.stage === 'forest') void prewarmGumihoArt('forest', images, base).then(() => schedule()); notifyVanguardStart(); run = s; live = true; paused = !s.offers.length; shown = ''; loadoutKey = ''; resetInput(); $('menu').hidden = true; $('play').hidden = false; $<HTMLButtonElement>('pause').disabled = false; layoutTrial(); showOverlay(); updateHud(); schedule() }, mode, kit))
 }

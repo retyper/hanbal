@@ -193,11 +193,11 @@ export function random(s: HaebiRun) { const rng = makeRng(s.seed); const n = rng
  * awaken remains the fallback qualification alias. Explicit53B, plus default trial/vanguard, preserve timed-awake rules.
  * mastery: 숲·여울·목책을 다 깬 장수 (막대 절반으로 시작)
  */
-export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '55-GUMIHO' }
+export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' }
 export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit = 'axe', opts: HaebiOpts = {}): HaebiRun {
   const bonus = { ...NO_BONUS, ...opts.bonus }, maxHp = C.health + bonus.vigor * SH.vigor.step, stage: StageId = mode === 'trial' ? 'trial' : opts.stage ?? 'forest'
-  // 55-IMUGI 는 여울만 · 56C(진짜 목책)는 목책 돌파만 · 55-TIGER(백두 대호)는 설원만 · 55-GUMIHO(구미호)는 숲 산길 열전만(각성 시련은 아님) — 다른 판에 들어오면 56B 그대로
-  const rules = opts.simRules === '55-IMUGI' && (mode !== 'stage' || stage !== 'ford') || opts.simRules === '56C' && (mode !== 'stage' || stage !== 'palisade') || opts.simRules === '55-TIGER' && (mode !== 'stage' || stage !== 'snow') || opts.simRules === '55-GUMIHO' && (mode !== 'stage' || stage !== 'forest') ? '56B' : opts.simRules
+  // 55-IMUGI 는 여울만 · 56C(진짜 목책)는 목책 돌파만 · 55-TIGER(백두 대호)는 설원만 · 57-BULGASARI(진짜 목책 + 불가사리)는 목책 돌파만 · 55-GUMIHO(구미호)는 숲 산길 열전만(각성 시련은 아님) — 다른 판에 들어오면 56B 그대로
+  const rules = opts.simRules === '55-IMUGI' && (mode !== 'stage' || stage !== 'ford') || (opts.simRules === '56C' || opts.simRules === '57-BULGASARI') && (mode !== 'stage' || stage !== 'palisade') || opts.simRules === '55-TIGER' && (mode !== 'stage' || stage !== 'snow') || opts.simRules === '55-GUMIHO' && (mode !== 'stage' || stage !== 'forest') ? '56B' : opts.simRules
   const k = KITS[kit]
   const ranks = Object.fromEntries((Object.keys(POWERS) as Power[]).map(p => [p, 0])) as Record<Power, number>
   // 평타(주 무기)만 들고 시작한다 (11-19 형: 「시작은 평타만」) — 보조 공격은 첫 레벨업 카드(맨 앞)로 · 비기는 첫 레벨업에서 열린다 (ultOpen)
@@ -211,10 +211,11 @@ export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit
     spawn: 0, nextElite: C.eliteEvery * ST[stage].length, nextBarrage: C.barrageAt, boss: false, next: 1, kills: 0, damage: 0,
     state: 'playing', message: kit === 'axe' ? '해비의 출전 · 첫 조합을 향해' : '출전 · 첫 조합을 향해', messageTime: 4, comboKills: 0, streakTime: 0 }
   if (mode === 'stage') Object.assign(s, { chests: [], chestGold: 0, chestsClaimed: 0, nextChestId: 1, choiceOrigin: 'level', offerNonce: 0 })
-  if (rules === '56A' || rules === '56B' || rules === '56C' || rules === '55-IMUGI' || rules === '55-TIGER' || rules === '55-GUMIHO' || mode === 'stage' && rules !== '53B') Object.assign(s, { permanentAwake: opts.permanentAwake ?? opts.awaken ?? false, appearanceAwake: opts.appearanceAwake ?? true, gritUltReady: false, ultAwakened: false, ultEmpowered: false, canAwaken: opts.permanentAwake ?? opts.awaken ?? false })
-  if (rules === '56B' || rules === '56C' || rules === '55-IMUGI' || rules === '55-TIGER' || rules === '55-GUMIHO' || mode === 'stage' && rules === undefined) Object.assign(s, { awakenedCasts: 0, ultReleaseSeq: 0 })
-  if (rules === '55-IMUGI' || rules === '55-TIGER' || rules === '55-GUMIHO') s.giantFlow = { midSpawned: false, midDefeated: false, finalSpawned: false, finalDefeated: false }
-  if (rules === '56C') s.palisade = createPalisade()
+  if (rules === '56A' || rules === '56B' || rules === '56C' || rules === '55-IMUGI' || rules === '55-TIGER' || rules === '57-BULGASARI' || rules === '55-GUMIHO' || mode === 'stage' && rules !== '53B') Object.assign(s, { permanentAwake: opts.permanentAwake ?? opts.awaken ?? false, appearanceAwake: opts.appearanceAwake ?? true, gritUltReady: false, ultAwakened: false, ultEmpowered: false, canAwaken: opts.permanentAwake ?? opts.awaken ?? false })
+  if (rules === '56B' || rules === '56C' || rules === '55-IMUGI' || rules === '55-TIGER' || rules === '57-BULGASARI' || rules === '55-GUMIHO' || mode === 'stage' && rules === undefined) Object.assign(s, { awakenedCasts: 0, ultReleaseSeq: 0 })
+  if (rules === '55-IMUGI' || rules === '55-TIGER' || rules === '57-BULGASARI' || rules === '55-GUMIHO') s.giantFlow = { midSpawned: false, midDefeated: false, finalSpawned: false, finalDefeated: false }
+  // 57 은 56C 의 진짜 목책을 그대로 세우고 그 위에 거대 보스 흐름을 얹는다
+  if (rules === '56C' || rules === '57-BULGASARI') s.palisade = createPalisade()
   if (mode === 'vanguard') {
     s.level = V.startLevel; s.ranks[k.primary] = 4; s.ranks[k.secondary] = 3; s.ranks.echo = 2; s.ranks.tempo = 1; s.ranks.reach = 1
     s.combos = kitCombos(kit).filter(c => c.kit === kit).map(c => c.id); s.message = '선봉에 서기 · 전위대장 3명을 돌파하라'
@@ -230,14 +231,14 @@ export const isPermanentAwake = (s: HaebiRun) => s.permanentAwake === true
 export function normalizedRaidOpts(s: HaebiRun, opts: HaebiOpts): HaebiOpts {
   return { ...opts, ...(opts.bonus ? { bonus: { ...opts.bonus } } : {}), ...(usesPermanentAwakening(s) ? { simRules: usesGiantBoss(s) ? giantRules(s) : usesPalisade(s) ? '56C' as const : usesAwakenedCast(s) ? '56B' as const : '56A' as const, permanentAwake: isPermanentAwake(s), appearanceAwake: s.appearanceAwake !== false } : {}) }
 }
-/** 이 판의 거대 보스 — 규칙 55 가 선 판은 여울(이무기) · 설원(백두 대호) · 숲 산길(구미호)이라 스테이지로 갈린다 */
-export const giantKind = (s: HaebiRun): GiantKind => s.stage === 'snow' ? 'tiger' : s.stage === 'forest' ? 'gumiho' : 'imugi'
-export const giantRules = (s: HaebiRun) => { const kind = giantKind(s); return kind === 'tiger' ? '55-TIGER' as const : kind === 'gumiho' ? '55-GUMIHO' as const : '55-IMUGI' as const }
+/** 이 판의 거대 보스 — 거대 보스 흐름이 선 판은 여울(이무기) · 설원(백두 대호) · 목책 돌파(불가사리) · 숲 산길(구미호)이라 스테이지로 갈린다 */
+export const giantKind = (s: HaebiRun): GiantKind => s.stage === 'snow' ? 'tiger' : s.stage === 'palisade' ? 'bulgasari' : s.stage === 'forest' ? 'gumiho' : 'imugi'
+export const giantRules = (s: HaebiRun) => { const kind = giantKind(s); return kind === 'tiger' ? '55-TIGER' as const : kind === 'bulgasari' ? '57-BULGASARI' as const : kind === 'gumiho' ? '55-GUMIHO' as const : '55-IMUGI' as const }
 const pacingDuration = (s: HaebiRun) => s.mode === 'vanguard' ? V.duration : (C.duration + (s.mode === 'stage' ? CH.extraSeconds : 0)) * ST[s.stage].length
 export const usesGiantBoss = (s: HaebiRun) => s.giantFlow !== undefined
 /** 56-C 진짜 목책이 선 판 (목책 돌파 · 규칙 56C) */
 export const usesPalisade = (s: HaebiRun) => s.palisade !== undefined
-export const raidRulesForStage = (stage: StageId) => stage === 'ford' ? '55-IMUGI' as const : stage === 'palisade' ? '56C' as const : stage === 'snow' ? '55-TIGER' as const : stage === 'forest' ? '55-GUMIHO' as const : '56B' as const
+export const raidRulesForStage = (stage: StageId) => stage === 'ford' ? '55-IMUGI' as const : stage === 'palisade' ? '57-BULGASARI' as const : stage === 'snow' ? '55-TIGER' as const : stage === 'forest' ? '55-GUMIHO' as const : '56B' as const
 export const runDuration = (s: HaebiRun) => usesGiantBoss(s) ? bossTime(s) + GI.fightBudget : pacingDuration(s)
 export const midbossTime = (s: HaebiRun) => bossTime(s) * GI.midFraction
 export const giantMob = (s: HaebiRun) => s.giantFlow?.finalOwner ?? s.enemies.find(e => e.giant)
@@ -600,7 +601,8 @@ export function spawnMob(s: HaebiRun, kind?: Mob['kind'], view?: SpawnView, sing
 export function spawnGiant(s: HaebiRun, view?: SpawnView): Mob | undefined {
   if (!s.giantFlow || s.giantFlow.finalSpawned) return undefined
   const kind = giantKind(s), hp = giantMaxHp(kind), bounds = spawnView(view), e: Mob = { id: s.next++, x: (bounds.left + bounds.right) / 2, y: (bounds.top + bounds.bottom) / 2, hp, max: hp, kind: 'boss', cd: 0, flash: 0, wind: 0, aimX: 0, aimY: 0, act: 0, vx: 0, vy: 0, buff: 0, poison: 0, pdps: 0, daze: 0, bornAt: s.t, bossRole: 'giant' }
-  e.giant = createGiant(kind, e, Math.round(s.t * 120)); s.enemies.push(e)
+  // 불가사리는 목책의 큰 문으로 들어온다 (목책 · 장수 쪽을 넘긴다 · 다른 거대 보스는 쓰지 않는다)
+  e.giant = kind === 'bulgasari' ? createGiant(kind, e, Math.round(s.t * 120), s.palisade, s.x) : createGiant(kind, e, Math.round(s.t * 120)); s.enemies.push(e)
   s.giantFlow.finalSpawned = true; s.giantFlow.finalOwner = e; s.boss = true
   fx(s, 'ring', e.x, e.y, 65, '#e8dcc0'); s.fx[s.fx.length - 1]!.championCue = 'enter'
   return e
@@ -1011,7 +1013,9 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
   // 56-C 목책: 성한 마디는 못 지나간다 (막은 마디 쪽으로 밀고 있으면 아래에서 내려친다)
   const pushed = s.palisade ? wallMove(s.palisade, s, fromX, fromY, WL.heroR) : null
   if (s.giantFlow) for (const e of s.enemies) if (e.giant && e.hp > 0) {
-    const cue = stepGiant(e.giant, e, { dt, tick: Math.round(s.t * 120), player: s, speed: C.speed * (1 + s.bonus.swift * SH.swift.step + s.ranks.nimble * T.nimbleMove) * boost.move, dazed: e.daze > 0, random: () => random(s) })
+    // 불가사리만 목책을 넘겨받는다 (큰 문 씹기 · 박치기가 박힌 마디 · 출현 자리 마디)
+    const wall = e.giant.kind === 'bulgasari' && s.palisade ? { wall: s.palisade, smash: (i: number, amount: number, x: number) => { const p = s.palisade!.pieces[i]; if (p) wallDamage(s, p, amount, x) } } : {}
+    const cue = stepGiant(e.giant, e, { dt, tick: Math.round(s.t * 120), player: s, speed: C.speed * (1 + s.bonus.swift * SH.swift.step + s.ranks.nimble * T.nimbleMove) * boost.move, dazed: e.daze > 0, random: () => random(s), ...wall })
     if (cue) { fx(s, 'ring', e.x, e.y, 65, '#e8dcc0'); s.fx[s.fx.length - 1]!.championCue = cue }
   }
   const power = powerScale(s) * boost.power, area = areaScale(s), tempo = (1 + s.ranks.tempo * C.tempoStep + s.bonus.haste * SH.haste.step) * boost.tempo
@@ -1238,8 +1242,8 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
     }
   }
   if (s.giantFlow) for (const e of s.enemies) if (e.giant) {
-    // 백두 대호 포효(눈보라)는 띠 안의 장수를 바깥으로 밀어낸다 (장수가 설 수 있는 판 안까지)
-    commitGiant(e.giant, e, s, amount => hurt(s, amount), e.daze > 0, (dx, dy) => { s.x = heroX(s.x + dx); s.y = heroY(s.y + dy) })
+    // 백두 대호 포효(눈보라)는 띠 안의 장수를 바깥으로 밀어낸다 · 불가사리 흡수는 끌어당긴다 (장수가 설 수 있는 판 안까지 · 성한 목책은 넘지 않는다)
+    commitGiant(e.giant, e, s, amount => hurt(s, amount), e.daze > 0, (dx, dy) => { const ox = s.x, oy = s.y; s.x = heroX(s.x + dx); s.y = heroY(s.y + dy); if (s.palisade) wallMove(s.palisade, s, ox, oy, WL.heroR) })
     syncGiantPose(e.giant, e, Math.round(s.t * 120))
   }
   for (const d of s.drops) {
