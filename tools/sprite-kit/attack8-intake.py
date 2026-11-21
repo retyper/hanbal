@@ -163,6 +163,12 @@ def main():
             new.save(p, optimize=True)
             if extra:
                 set_cell_width(f'gen-{key}', new.size[0] // 20)
+                # 각성 띠는 겨루기 띠(duel/sprites)와 칸 가로가 같아야 한다(tests/realm/awakened-sprites.test.ts) — 같은 만큼 양옆 빈칸만 덧댐(겨루기는 제 띠 칸으로 그려 화면은 그대로)
+                duel = os.path.join(ROOT, 'public/realm/duel/sprites', f'gen-{key}.png')
+                if key.startswith('aw1-') and os.path.exists(duel):
+                    d = Image.open(duel).convert('RGBA')
+                    if d.size[0] // 20 == old.size[0] // 20 - extra:
+                        widen(d, extra).save(duel, optimize=True)
         print(f'{key}: 배율 {scale:.3f} · 칸 밖으로 잘린 곳 {", ".join(clipped) or "없음"}' + (' · 씀' if write else '') + f' · {pv}')
 
 
