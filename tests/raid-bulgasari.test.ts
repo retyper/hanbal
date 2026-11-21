@@ -49,7 +49,7 @@ const sweepWallOf = (wall: Palisade, from: { x: number; y: number }, to: { x: nu
 
 test('57-BULGASARI 는 목책 돌파에만 선다 · 다른 판은 56B 그대로 · 진짜 목책(56C)도 같이 선다', () => {
   assert.equal(raidRulesForStage('palisade'), '57-BULGASARI'); assert.equal(raidRulesForStage('ford'), '55-IMUGI'); assert.equal(raidRulesForStage('snow'), '55-TIGER')
-  assert.equal(raidRulesForStage('forest'), '55-GUMIHO'); assert.equal(raidRulesForStage('fortress'), '56B')
+  assert.equal(raidRulesForStage('forest'), '55-GUMIHO'); assert.equal(raidRulesForStage('fortress'), '55-SHAMAN')
   for (const stage of ['forest', 'ford', 'snow', 'fortress'] as const) {
     const a = createHaebi(7, 'stage', 'sword', { stage, simRules: '57-BULGASARI' }), b = createHaebi(7, 'stage', 'sword', { stage, simRules: '56B' })
     assert.equal(usesGiantBoss(a), false, stage); assert.equal(usesPalisade(a), false, stage)

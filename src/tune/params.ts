@@ -473,6 +473,96 @@ export const HAEBI_TIGER = {
 } as const
 
 /**
+ * 55 불타는 산성 거대 보스 「불의 무녀 장군」 (docs/realm/BOSS.md 무녀 장군 표 · 무무와 장수를 섞은 창작 인물) — 규칙 55-SHAMAN 의 불타는 산성 판에만 쓴다.
+ * 막·분노·시간 예산·안전로 3P·머리 배율·환경 피해 박자는 HAEBI_GIANT 의 공통 계약을 그대로 쓰고, 여기엔 무녀만의 값만 둔다.
+ *  hp 본체 · midHpScale 10분 중간 보스(불의 반란 장군)의 체력 몫 · parts 부위 체력 = hp × 몫 (가산 체력이 아니다 · 본체도 같이 깎인다)
+ *  entrySeconds 등장(방울이 울리고 불 고리가 피어나 불 속에서 걸어 나온다) · roarSeconds 막 전환(방울을 치켜든다) · stagger* 회복 중 첫 타격의 움찔(그만큼 회복이 는다 · staggerRecover 상한)
+ *  homeY·homeBand·homePull 평소 발 자리와 둘레(벗어나면 먼저 돌아온다) · step* 미끄러지듯 다가가는 걸음(초 · px/초 · 장수와 둘 거리 · 이보다 가까우면 안 걷는다)
+ *  idleRecovery 할 수가 없을 때 쉬는 초 · turnDeadZone 장수가 이만큼 안쪽 위아래면 돌아서지 않는다 · keySwitch 몸 예고의 이 몫에서 그림 자세가 바뀐다(몸이 바닥보다 먼저)
+ *  lane 가운데 세로 안전 길 폭 — 막마다의 불과 화염 맥동이 이 길은 늘 비운다 (3P 이상 · 3P 빈 원을 재는 격자 자리가 길 안에 들게 넉넉히)
+ *  moves: phase 처음 여는 막 · body 몸 예고 · hold [최소, 최대] 정지 초를 seeded 로 미리 고른다(정지가 길면 바닥도 늦게 뜬다) · red 붉은 바닥 · next 다음 타의 붉은 바닥(연타)
+ *   recover 회복(머리 노출) · strike 타격 몸놀림 초 · impactAt 그 가운데 판정 몫 · damage 피해 (× 스테이지 피해)
+ *   sweep 방울·가로 화염: radius·halfAngle 앞 호 · ahead 호 가운데가 발보다 앞선 px · aim 몸 앞에서 장수 쪽으로 돌리는 한계(라디안) · reach 장수가 이 거리 안
+ *   ring 원무 지연 화선: radius 고리 가운데 반지름 · width 고리 폭(빈 3P 구간은 셈한다) · reach
+ *   pillars 늦은 불기둥: radius 원 반지름 · spread 원 가운데 사이
+ *   chase 세 걸음 추격: width·length 줄 하나 · steps 줄 수 · minLength 판 끝에 걸려 줄일 때의 하한 · min 장수가 이보다 가까우면 안 쓴다
+ *   twin 낮은 선회 쌍타: inner 안쪽 호 반지름 · outer 바깥 호 · rear 등 뒤 빈 쐐기의 반각 · reach · damage [안, 바깥]
+ *   pulse 끊긴 춤·화염 맥동: bands 전장 띠 수(띠 폭 W/bands · 가운데 길은 뺀다) · 타격 동안 왼쪽부터 차례로 탄다
+ *  env 막별 환경: border 막1 바깥 불띠(위아래 띠는 가운데 gap 을 비운다) · lines·lineWidth 막2 끊긴 화선 y 몫과 굵기 · lineGap 가운데 길 양옆으로 더 비우는 px · walls 막3 양옆 불벽 폭
+ *  rig 몸 판정 자리 — Codex 72 몸 판(boss_fire-shaman_body.png 1230×1278)의 원본 px 그대로 · 자세 넷 (0 서기 · 1 방울 들기 · 2 부채 내지르기 · 3 낮은 자세)
+ *   feet 발 바닥 가운데(몸의 기준점) · head [x, y, rx, ry] · torso·skirt·fan·bell [[시작], [끝], 반지름] · waist [x, y, rx, ry] · robeBack·robeFront 옷자락이 매달리는 허리 자리 · scale 원본 1px 의 판 px
+ *  motion 자세: key 자세 번호 · lean 앞 숙임(라디안) · lift 아래로 px · squash 키 늘임 몫 · spin 도는 바퀴(원무 · 판정도 같이 좁아진다) · flare 옷자락 펼침 0~1(그리기만)
+ *  view (그리기만): 그림 자리는 src/raid/shaman-art.ts
+ */
+export const HAEBI_SHAMAN = {
+  hp: 1300000, midHpScale: .4,
+  parts: { head: .1, fan: .08, bell: .08, waist: .06 },
+  entrySeconds: 2.4, roarSeconds: 1.2, staggerSeconds: .45, staggerRecover: .4,
+  homeY: 450, homeBand: 80, homePull: 1.5, idleRecovery: .9, turnDeadZone: 12, keySwitch: .25,
+  stepSeconds: 1.3, stepSpeed: 150, stepStride: 75, stepNear: 230, stepMin: 16,
+  lane: 168,
+  moves: {
+    sweep: { phase: 1, body: .5, hold: [0, .3], red: .4, recover: 1, strike: .3, impactAt: .45, damage: 22, radius: 160, halfAngle: 50 * Math.PI / 180, ahead: 30, aim: 1, reach: 240 },
+    /** ring 덧: gapPad 빈 곳을 3P 원보다 넓히는 px */
+    ring: { phase: 1, body: 1.1, hold: [0, .5], red: .7, recover: 1.5, strike: .55, impactAt: .15, damage: 24, radius: 200, width: 40, reach: 380, gapPad: 4 },
+    pillars: { phase: 1, body: .9, hold: [0, .3], red: 1.3, recover: 1.5, strike: .45, impactAt: .4, damage: 26, radius: 60, spread: 260 },
+    chase: { phase: 2, body: .6, hold: [0, .3], red: .6, next: .8, recover: 1.5, strike: .28, impactAt: .5, damage: 18, width: 80, length: 160, steps: 3, minLength: 110, min: 120 },
+    twin: { phase: 2, body: .8, hold: [0, .4], red: .6, next: 1, recover: 2, strike: .32, impactAt: .45, damage: [20, 24], inner: 120, outer: 200, rear: .62, reach: 320 },
+    pulse: { phase: 3, body: 1, hold: [0, 0], red: 1.5, recover: 2, strike: 1, impactAt: 0, damage: 28, bands: 4 },
+  },
+  env: { border: 28, gap: 200, lines: [.21, .79], lineWidth: 24, lineGap: 40, walls: 64 },
+  rig: {
+    scale: .6,
+    keys: [
+      { feet: [304, 614], head: [311, 82, 36, 40], torso: [[318, 140], [330, 245], 48], skirt: [[325, 300], [305, 516], 95], waist: [336, 258, 58, 30], fan: [[254, 160], [214, 405], 32], bell: [[364, 158], [410, 362], 32], robeBack: [285, 268], robeFront: [375, 268] },
+      { feet: [925, 614], head: [910, 80, 36, 40], torso: [[925, 130], [950, 240], 48], skirt: [[950, 290], [880, 512], 100], waist: [958, 250, 55, 30], fan: [[858, 170], [682, 298], 40], bell: [[975, 135], [1098, 95], 34], robeBack: [905, 262], robeFront: [995, 262] },
+      { feet: [302, 1250], head: [313, 730, 36, 40], torso: [[305, 780], [335, 880], 48], skirt: [[335, 925], [290, 1142], 105], waist: [339, 888, 55, 30], fan: [[390, 770], [525, 762], 46], bell: [[370, 840], [452, 943], 32], robeBack: [300, 900], robeFront: [380, 900] },
+      { feet: [917, 1250], head: [940, 790, 36, 40], torso: [[933, 840], [908, 945], 48], skirt: [[905, 985], [900, 1132], 115], waist: [902, 950, 55, 30], fan: [[890, 860], [800, 830], 44], bell: [[975, 850], [1122, 958], 32], robeBack: [860, 960], robeFront: [945, 960] },
+    ],
+  },
+  motion: {
+    rest: { key: 0, lean: 0, lift: 0, squash: 0, spin: 0, flare: .15 },
+    recover: { key: 0, lean: .12, lift: 12, squash: -.05, spin: 0, flare: .1 },
+    roar: { key: 1, lean: -.1, lift: -8, squash: .06, spin: 0, flare: .8 },
+    sweep: { prepare: { key: 1, lean: -.1, lift: 0, squash: .03, spin: 0, flare: .35 }, impact: { key: 2, lean: .14, lift: 6, squash: -.03, spin: 0, flare: .6 } },
+    ring: { prepare: { key: 3, lean: 0, lift: 12, squash: -.05, spin: 2, flare: 1 }, impact: { key: 3, lean: .06, lift: 16, squash: -.07, spin: 2, flare: .7 } },
+    pillars: { prepare: { key: 3, lean: -.14, lift: -16, squash: .09, spin: 0, flare: .45 }, impact: { key: 2, lean: .1, lift: 8, squash: -.05, spin: 0, flare: .65 } },
+    chase: { prepare: { key: 1, lean: .06, lift: 0, squash: 0, spin: 0, flare: .45 }, impact: { key: 2, lean: .2, lift: 4, squash: -.04, spin: 0, flare: .85 } },
+    twin: { prepare: { key: 3, lean: .08, lift: 24, squash: -.1, spin: 0, flare: .3 }, impact: { key: 3, lean: .1, lift: 20, squash: -.08, spin: 1, flare: 1 } },
+    /** pulse 덧: raise 두 팔을 드는 빠르기(타격 몫의 배) · shimmer 타격 동안 떨리는 반 바퀴 수 · shimmerLift 그 px */
+    pulse: { prepare: { key: 1, lean: -.04, lift: -4, squash: .04, spin: 0, flare: .55 }, impact: { key: 1, lean: -.07, lift: -10, squash: .07, spin: 0, flare: .95 }, raise: 3, shimmer: 8, shimmerLift: 3 },
+    /** 숨(키 늘임 몫 · Hz) · 흔들림(라디안 · Hz) · 움찔(뒤로 젖힘 · 들림) · 걸음(위아래 px · 앞 숙임 · 옷자락 펼침과 그 흔들림) */
+    breath: { squash: .012, hz: .32, lean: .012, leanHz: .21 }, stagger: { lean: -.14, lift: -8 }, step: { bob: 5, lean: .07, flare: .45, flareSway: .2 },
+    /** reprepare 연타 사이 다음 준비 자세로 돌아오는 몫(붉은 바닥의 앞쪽) · roarSnap 막 전환에서 방울을 치켜드는 빠르기 */
+    reprepare: .45, roarSnap: 1.6,
+    /** 등장: 불에서 몸이 드러나는 몫 구간 · 걸어 나오는 px · 마지막 걸음(땅을 울림)의 몫 · 나오며 숙인 몸 · 마지막 걸음에 눌림(숙임 · 키 · px) */
+    entry: { from: .3, to: .78, walk: 90, land: .84, lean: .08, pop: { lean: .05, squash: .06, lift: 8 } },
+  },
+  /**
+   * keyFade 자세가 바뀔 때 옛 자세가 옅어지는 초 · behind* 장수가 몸 뒤에 서면 옅게 · shadow* 발밑 그림자 · char 부서진 부채·방울에 덧칠하는 그을음 · charRadius 그 둘레(원본 px)
+   * glow* 치마 끝 불꽃 무늬 빛(짙기 · 일렁임 몫 · Hz) · hem* 불꽃 혀(크기 px · 짙기 · 오르는 Hz · 오르는 px · 흔들림 px)
+   * robe 옷자락 둘: pivot 원본(Codex 67) px 의 허리 끈 · turn 기본 기울기 · sway 흔들림 라디안 · hz · flare 펼칠 때 더 도는 라디안 · scale 원본 1px 의 판 px
+   * waist 허리 장식: pivot 원본 px 의 매달린 곳 · swing 흔들림 · hz · scale · smear 휘두름 잔상(벌 수 · 짙기 · 도는 라디안 · 팔 그림 원본 px 의 어깨·손끝(부채·방울 가운데) · 그 1px 의 판 px)
+   * bell* 방울이 울릴 때의 둥근 울림 · ring* 등장 불 고리 · break*·drop* 부서진 순간 터짐과 떨어지는 부채·방울 · fall* 쓰러짐(승리 막 내림) · pillar·band 불기둥·불벽 높이 px
+   */
+  view: {
+    keyFade: .12, behindAlpha: .55, behindPad: 10, shadowAlpha: .32, shadowWidth: 125, shadowHeight: 24,
+    char: 'rgba(26,10,6,.78)', charRadius: 70,
+    glowAlpha: .5, glowFlicker: .35, glowHz: 6.3, hemSize: 26, hemAlpha: .85, hemHz: 1.7, hemRise: 22, hemSway: 4,
+    robe: {
+      back: { pivot: [1056, 160], turn: .12, sway: .07, hz: .37, flare: .5, scale: .6 },
+      front: { pivot: [250, 160], turn: -.1, sway: .06, hz: .43, flare: .45, scale: .6 },
+    },
+    waist: { pivot: [766, 290], swing: .07, hz: .9, scale: .55 },
+    smear: { copies: 4, alpha: .42, sweep: 1.1, fan: { shoulder: [245, 380], tip: [1400, 420], scale: .42 }, bell: { shoulder: [255, 250], tip: [1150, 560], scale: .42 } },
+    bellRing: 90, bellLife: .5, ringBloom: 270,
+    breakLife: .7, breakSize: 70, dropLife: 1, dropFall: 150, dropSpin: 2.4,
+    fallSeconds: 2.8, fallHold: .45, fall: { lean: .35, lift: 44, squash: -.32 },
+    pillar: 400, band: 200,
+  },
+} as const
+
+/**
  * 55 숲 산길 거대 보스 「구미호」 (docs/realm/BOSS.md 구미호 표 · 성인 여성 · 형: 「섹시한 여성 인간형 보스」) — 규칙 55-GUMIHO 의 숲 산길 판에만 쓴다.
  * 막 1 은 부채를 든 여인 · 막 2 에 반여우로 변하며 꼬리 아홉이 하나씩 터져 나온다 · 막 3 에 아홉 꼬리 지연 찌르기가 열린다.
  * 막·분노·시간 예산·안전로 3P·머리 배율·환경 피해 박자는 HAEBI_GIANT 의 공통 계약을 그대로 쓰고, 여기엔 구미호만의 값만 둔다.

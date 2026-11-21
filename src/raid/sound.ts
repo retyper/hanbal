@@ -44,6 +44,8 @@ const FILES = {
   fire: [X + 'fire_1.ogg', X + 'fire_2.ogg', X + 'fire_3.ogg'], wind: [X + 'wind_1.ogg', X + 'wind_2.ogg', X + 'wind_3.ogg'],
   bolt: [X + 'bolt_1.ogg', X + 'bolt_2.ogg'], light: [X + 'light_1.ogg', X + 'light_2.ogg'], earth: [X + 'earth_1.ogg', X + 'earth_2.ogg'], skillHit: [X + 'skill_hit.ogg'],
   whirl: [SLING.whirl], stone: [SLING.impact],
+  /** 불의 무녀 장군의 방울 (포효 대신) — 방울 묶음과 같은 소리 */
+  bell: [R + 'tap_bell_g1.wav', R + 'tap_bell_g2.wav', R + 'tap_bell_g3.wav'],
 } as const
 /** 목소리 — 자리마다 돌려 쓰는 묶음. 기합은 비기 때만 (평타엔 목소리 없음) */
 const VOICE = {
@@ -268,7 +270,9 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
       }
       for (const b of s.shots) if (!seen.has(b)) { seen.add(b); if (b.kind === 'ember') sfx('fire', V.magic, V.magicGap); else if (b.kind === 'gale' || b.kind === 'wave' || b.kind === 'knife') sfx('wind', V.magic, V.magicGap); else if (b.kind === 'soul') sfx('light', V.magic, V.magicGap); else if (b.kind === 'boulder') sfx('whirl', V.whirl * .7, V.magicGap, .8) }
       let hitN = 0, hitD = 0
-      for (const e of s.fx) if (!seen.has(e)) { seen.add(e); if (e.kind === 'hit' || e.kind === 'death') { hitN++; hitD += e.n ?? 0; if (e.crit) crits++ } if (e.championCue === 'roar') say('roar', V.roar);
+      // 불의 무녀 장군은 포효 대신 방울을 울린다 (등장 · 막 전환 · 부위 파괴)
+      const bells = s.giantFlow?.finalOwner?.giant?.kind === 'shaman' && !s.giantFlow.finalDefeated
+      for (const e of s.fx) if (!seen.has(e)) { seen.add(e); if (e.kind === 'hit' || e.kind === 'death') { hitN++; hitD += e.n ?? 0; if (e.crit) crits++ } if (e.championCue === 'roar') { if (bells) sfx('bell', V.roar, .15); else say('roar', V.roar) }
         if (e.recoveryHit && ctx && ctx.currentTime - championAt >= IMPACT.cooldown) { championAt = ctx.currentTime; const t = tierOf(false); if (!skill || RANK[t] > RANK[skill]) skill = t }
         if (e.kind === 'bolt') sfx('bolt', V.magic, V.magicGap); else if (e.kind === 'spike') sfx('earth', V.magic, V.magicGap); else if (e.kind === 'skill') { const t = tierOf((e.awakened ?? e.tru) === true); if (!skill || RANK[t] > RANK[skill]) skill = t } else if (e.kind === 'thud' || e.kind === 'ult' && e.ult === 'sling') sfx('stone', V.stone, V.stoneGap, .9 + (n % 5) * .05) }
       // 비기가 터짐(한 프레임에 하나 · 가장 높은 계단) · 크리티컬 「핑」은 한 프레임 한 번 · crit.gap 틈 · 소리 수 한도면 버린다
@@ -288,7 +292,7 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
       if (!s.offers.length && prev.offers && s.level > prev.level) sfx('pick', V.ui)
       if (barrage < prev.barrage) sfx('arrows', V.arrows, .15)
       if (elites > prev.elites) sfx('elite', V.cry)
-      if (s.boss && !prev.boss) say('roar', V.roar)
+      if (s.boss && !prev.boss) { if (bells) sfx('bell', V.roar); else say('roar', V.roar) }
       if (!deferEnding && s.state !== prev.state) sfx(s.state === 'won' ? 'win' : 'lose', V.end)
       Object.assign(prev, { attack: s.attack, hurt: s.hurt, kills: fell > 0 || !ctx || ctx.currentTime - hitAt >= V.hitGap ? s.kills : prev.kills, skillCd: s.skillCd, offers: s.offers.length, level: s.level, wakes: s.wakes, barrage, elites, boss: s.boss, state: s.state })
       return cast || skill || crits ? { cast, skill, crit: crits > 0 } : NONE
