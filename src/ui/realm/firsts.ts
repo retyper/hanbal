@@ -24,6 +24,11 @@ export const FIRSTS: readonly First[] = [
   { id: 'exp', sel: '.cmdc[data-job="exp"]:not(.off)', get title() { return t('first.exp.title') }, get text() { return t('first.exp.text') } },
   { id: 'wed', sel: '.cmdc[data-job="wed"]:not(.off)', get title() { return t('first.wed.title') }, get text() { return t('first.wed.text') } },
   { id: 'relic', sel: '[data-act="tomb-pick"]', get title() { return t('first.relic.title') }, get text() { return t('first.relic.text') } },
+  // 배우는 판에서 뺀 넷 — 처음 열 때 그 단추 곁에 한 번 (FIRST-HOUR-20261122 TOP 5 · 배우는 판 14단계 → 10단계)
+  { id: 'build', sel: '.nring [data-act="build"]', get title() { return t('first.build.title') }, get text() { return t('first.build.text') } },
+  { id: 'envoy', sel: '[data-act="compose"]', get title() { return t('first.envoy.title') }, get text() { return t('first.envoy.text') }, guide: 'envoy' },
+  { id: 'rite', sel: '[data-act="rite"]', get title() { return t('first.rite.title') }, get text() { return t('first.rite.text') } },
+  { id: 'plot', sel: '[data-act="plot-open"]', get title() { return t('first.plot.title') }, get text() { return t('first.plot.text') }, guide: 'plot' },
 ]
 
 const KEY = 'hanbal.realm.firsts'

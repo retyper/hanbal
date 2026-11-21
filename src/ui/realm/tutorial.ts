@@ -106,34 +106,12 @@ export const TUT_STEPS: readonly TutStep[] = [
     id: 'settle', get name() { return t('tut.settle.name') }, get what() { return t('tut.settle.what') }, get text() { return t('tut.settle.text') },
     press: ['[data-act="party-to"][data-node="tut-solmoe"]', '.sheet [data-act="party"][data-node="tut-wirye-cap"]', '.nd[data-node="tut-solmoe"]'], done: (c) => has(c, 'party') || has(c, 'settle'),
   },
-  {
-    id: 'build', get name() { return t('tut.build.name') }, get what() { return t('tut.build.what') }, get text() { return t('tut.build.text') },
-    // 첫 판엔 짓기를 한 번도 안 가르쳤다 — 목책을 눌러도 반응이 없다는 형 11-01 지적의 뿌리 · 둘레 단추로
-    press: ['.nring [data-act="build"][data-node="tut-wirye-cap"]', '.nd[data-node="tut-wirye-cap"]'],
-    // 싸움 뒤로 옮겨 첫 달이 지나도 남는다 — 나무가 모자라 막히면 몇 달 뒤 저절로 넘어간다 (긴급 위원회 11-04)
-    done: (c) => has(c, 'build') || (c.r.builds ?? []).some((b) => b.faction === c.r.player) || c.r.season > 5,
-  },
+  // 건설 · 사신 · 제사 · 공작은 배우는 판에서 뺐다 — 본 게임에서 처음 열 때 한 번 알린다 (firsts.ts · FIRST-HOUR-20261122 TOP 5:
+  // 「와」 순간 바로 뒤에 싸움 없는 강의 일곱이 이어졌다 · 14단계 → 10단계 · 형 11-18 「튜토리얼에 너무 배우는 게 많은데」)
   {
     // 싸움을 앞으로 당겨 갯골은 이미 우리 땅 — 이제 미추홀 도읍을 엿본다 (긴급 위원회 11-04)
     id: 'scout', get name() { return t('tut.scout.name') }, get what() { return t('tut.scout.what') }, get text() { return t('tut.scout.text') },
     press: ['[data-act="scout"][data-node="tut-michuhol-cap"]', '.nd[data-node="tut-michuhol-cap"]'], done: (c) => has(c, 'scout'),
-  },
-  {
-    id: 'envoy', get name() { return t('tut.envoy.name') }, get what() { return t('tut.envoy.what') }, get text() { return t('tut.envoy.text') },
-    press: [
-      '.trade [data-act="envoy"]', '.trade [data-act="cq"][data-side="give"][data-res="grain"]:not([data-d^="-"])',
-      '[data-act="compose"][data-ask="gift"]', '[data-act="compose-go"][data-ask="gift"]', '.nring [data-act="nr-diplo"]', '.nd[data-node="tut-michuhol-cap"]',
-    ],
-    done: (c) => has(c, 'envoy'),
-  },
-  {
-    id: 'rite', get name() { return t('tut.rite.name') }, get what() { return t('tut.rite.what') }, get text() { return t('tut.rite.text') },
-    press: ['[data-act="rite"]', '.nd[data-node="tut-sodo"]'], done: (c) => has(c, 'rite') || c.r.season > 2, // 봄 석 달 안이면 지낸다
-  },
-  {
-    id: 'plot', get name() { return t('tut.plot.name') }, get what() { return t('tut.plot.what') }, get text() { return t('tut.plot.text') },
-    press: ['[data-act="plot"][data-op="rumor"]', '[data-act="ppick"][data-op="rumor"]', '[data-act="plot-open"][data-op="rumor"]', '[data-act="dmode"][data-v="plot"]', tab('diplo')],
-    done: (c) => c.orders.some((o) => o.kind === 'plot'),
   },
   {
     id: 'win', get name() { return t('tut.win.name') }, get what() { return t('tut.win.what') }, get text() { return t('tut.win.text') },

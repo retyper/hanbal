@@ -178,6 +178,13 @@ describe('배우는 판 — 갇히지 않는다', () => {
     assert.ok(battle.text.length <= 60, `${battle.text.length}자`)
   })
 
+  // FIRST-HOUR-20261122 TOP 5: 와 순간 바로 뒤 싸움 없는 강의 일곱 → 건설·사신·제사·공작은 본 게임에서 처음 열 때 한 번 (firsts.ts)
+  it('배우는 판은 10단계 — 건설·사신·제사·공작은 처음 한 번 알림으로 옮겼다', async () => {
+    const { FIRSTS } = await import('../../src/ui/realm/firsts.ts')
+    assert.deepEqual(TUT_STEPS.map((s) => s.id), ['look', 'march', 'council', 'battle', 'persuade', 'talk', 'draft', 'settle', 'scout', 'win'])
+    for (const id of ['build', 'envoy', 'rite', 'plot']) assert.ok(FIRSTS.some((f) => f.id === id && f.title !== '' && f.text !== ''), id)
+  })
+
   it('오래 머문 단계엔 「건너뛰기」가 뜬다 (평소엔 없다)', async () => {
     const { tutBandHtml } = await import('../../src/ui/realm/tutorial.ts')
     for (let i = 0; i < TUT_STEPS.length; i++) {
