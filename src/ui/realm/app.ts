@@ -73,6 +73,7 @@ import { HAEBI_RUN, HAEBI_STAGES, P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, noReachWhy, visibleNodes, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
 import { LEGACY_CSS, bringHtml, clearBring, loadBring, toggleBring } from './legacy.ts'
 import { HRING_CSS, mountRing, ringCard, type RingHandle, type RingOpts } from './hero-ring.ts'
+import { calmMotion, swayCards } from '../fx/sway.ts'
 import { personOf } from '../../realm/person.ts'
 import { TOWN_CSS, townCheer, townVeilHtml, townViewHtml, type TownSlot } from './townview.ts'
 import { townFort, townGround, townSprite } from '../../realm/data/town-art.ts'
@@ -274,11 +275,11 @@ function muted(): boolean {
 }
 // 확장자가 이미 붙은 이름(snd() 의 'realm/sfx/x.ogg')엔 또 붙이지 않는다 — 전엔 /.w+$/ 라 「.ogg.ogg」로 받아 깃발·징병·출정 소리가 안 났다 (형 10-24)
 const sfxUrl = (name: string): string => `${name.includes('/') ? BASE : SFX}${name}${/\.\w+(#t=[\d.]+)?$/.test(name) ? '' : '.ogg'}`
-/** 한 번 울린다 — 소리 끄기·효과음 크기를 따른다 (시작 화면도 이 길로 · realm-main) */
-export function ding(name: string, vol = 0.6, rate = 1, dur = 0): void {
+/** 한 번 울린다 — 소리 끄기·효과음 크기를 따른다 (시작 화면도 이 길로 · realm-main) · at 이만큼(초) 뒤 소리 시계로 (날아간 깃발이 박히는 순간 · A1) */
+export function ding(name: string, vol = 0.6, rate = 1, dur = 0, at = 0): void {
   if (muted()) return
   const gain = soundVolume(name.startsWith('realm/voice/') ? 'voice' : 'sfx')
-  if (gain > 0) playOnce(sfxUrl(name), vol * gain, rate, dur) // 탭이 가려져 있으면 안 낸다 (규칙 4)
+  if (gain > 0) playOnce(sfxUrl(name), vol * gain, rate, dur, at) // 탭이 가려져 있으면 안 낸다 (규칙 4)
 }
 /** 곧 낼 소리를 미리 받아 풀어 둔다 — 처음 한 번이 늦게 나지 않게 (싸움이 열릴 때) */
 export function warmSfx(names: readonly string[]): void {
@@ -756,6 +757,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   root.classList.add('ap')
   // 그래픽 단계 저사양 · 보통 · 고사양 (quality.ts · 형 10-29: 폰 절전 모드에서 그림이 다 깨졌다)
   startQuality(root, (h) => goToast(h))
+  // 옛 무덤의 고를 상자 — 누른 채 끌면 자석처럼 흔들리고 마우스를 올리면 끌린다 (A1 · ui/fx/sway.ts · 판을 다시 그려도 이어받기)
+  swayCards(root, '.front.tomb button.tbx[data-act="tomb-pick"]')
   // 끊김 기록 — 긴 작업이 난 순간 맨 위에 뜬 화면 (perflog.ts · 형 11-11 "어떤 상황에서 프레임 드랍 되는지")
   startPerfLog(root, () => {
     if (document.documentElement.classList.contains('duel-open')) return '겨루기'
@@ -8481,12 +8484,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           if (realm === null || !tombRun(realm) || !pickRunRelic(realm, id)) { paint(); return }
           ding(snd('relic_open'), 0.7) // 상자가 터지는 팡파레 (형 10-27)
           const tier = RELIC[id]?.tier ?? 'common'
+          // 귀함 소리는 솟은 유물이 제자리에 닿는 순간 (A1 소리 박자 · 예전엔 솟기 시작할 때) — 움직임 줄이기면 유물이 바로 서는 때
           window.setTimeout(() => {
             if (!seen()) return
             if (tier === 'legend') { ding(snd('horn_victory'), 0.6); ding(snd('war_bell'), 0.45) }
             else if (tier === 'rare') ding(snd('war_bell'), 0.5)
             else ding(snd('coins'), 0.5)
-          }, 380)
+          }, calmMotion() ? P.realm.relicCalmLandMs : P.realm.relicLandMs)
           front = { kind: 'tomb', fresh: true }
           paint()
         }

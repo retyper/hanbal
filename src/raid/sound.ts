@@ -105,15 +105,15 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
     if (rev !== voiceRevision || ctx && !clips.has(url)) return false
     heroVoiceFile = url; return true
   }
-  /** 곧바로 낸다. gap 은 같은 자리 소리가 한 프레임 안에서 수십 번 겹쳐 터지지 않게 하는 아주 짧은 틈 */
-  function play(slot: string, file: string, vol: number, gap = 0, rate = 1, cap = 0, dest: AudioNode | null = null) {
+  /** 곧바로 낸다 (at 초가 있으면 소리 시계로 그만큼 뒤에). gap 은 같은 자리 소리가 한 프레임 안에서 수십 번 겹쳐 터지지 않게 하는 아주 짧은 틈 */
+  function play(slot: string, file: string, vol: number, gap = 0, rate = 1, cap = 0, dest: AudioNode | null = null, at = 0) {
     if (!ctx || muted() || document.hidden || cap && voices >= cap) return
     const clip = clips.get(file); if (!clip) return
     const now = ctx.currentTime; if (gap && now - (last.get(slot) ?? -9) < gap) return
     last.set(slot, now)
     const src = ctx.createBufferSource(), gain = ctx.createGain()
     gain.gain.value = vol; src.buffer = clip.buf; src.playbackRate.value = rate
-    src.connect(gain).connect(dest ?? ctx.destination); voices++; src.onended = () => { voices--; src.disconnect(); gain.disconnect() }; src.start(0, clip.from)
+    src.connect(gain).connect(dest ?? ctx.destination); voices++; src.onended = () => { voices--; src.disconnect(); gain.disconnect() }; src.start(at > 0 ? ctx.currentTime + at : 0, clip.from)
   }
   /** 합성 소리를 낼 수 있나 — 꺼짐 · 가려진 탭 · 소리 수 한도면 못 낸다 */
   const room = (extra = 0) => !!ctx && !muted() && !document.hidden && voices < V.maxVoices + extra
@@ -195,7 +195,7 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
   /** 판 안 각성 중 「진」 비기 — 진각성한 장수면 진각성 계단 */
   const tierOf = (tru: boolean): FeelTier => tru ? trueWake() ? 'true' : 'awake' : 'skill'
   const any = (list: readonly string[]) => list[n++ % list.length]!
-  const sfx = (slot: keyof typeof FILES, vol: number, gap = 0, rate = 1) => play(slot, any(FILES[slot]), vol * volume('sfx'), gap, rate, V.maxVoices)
+  const sfx = (slot: keyof typeof FILES, vol: number, gap = 0, rate = 1, at = 0) => play(slot, any(FILES[slot]), vol * volume('sfx'), gap, rate, V.maxVoices, null, at)
   const say = (slot: Voice, vol: number, gap = 0) => play(slot, any(VOICE[slot]), vol * volume('voice'), gap)
   /** 이미 소리를 낸 투사체·이펙트 (새로 생긴 것만 낸다) */
   const seen = new WeakSet<object>()
@@ -218,6 +218,8 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
     setAwakeningVoice,
     /** 막 내림의 도장이 찍히는 박자. 음소거·음량은 기존 sfx 경로를 따른다. */
     ending: (won: boolean) => sfx(won ? 'win' : 'lose', V.end),
+    /** 고른 카드(레벨업 · 보물 상자)의 룬이 HUD 칸에 박히는 그 순간 — 화면(raid/pick-fly.ts)이 날기 시작에 남은 초(at)를 넘겨 소리 시계로 건다 (A1 · 예전엔 고른 다음 프레임) */
+    pick: (at = 0) => sfx('pick', V.ui, 0, 1, at),
     /** 파일을 다 풀었나 (들어 보기 · 시험) */
     ready: () => ready,
     /**
@@ -289,7 +291,7 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
       // 판 안 각성(투지) — 외침 + 터짐 (RAID-LINK §1)
       if (s.wakes > prev.wakes) { say(shout, V.skill); sfx('skillHit', V.skillHit) }
       if (s.offers.length && !prev.offers) sfx('level', V.ui)
-      if (!s.offers.length && prev.offers && s.level > prev.level) sfx('pick', V.ui)
+      // 「고름」 소리는 여기서 내지 않는다 — 고른 카드의 룬이 HUD 칸에 박히는 순간 화면이 pick() 을 부른다 (A1 소리 박자 · raid/pick-fly.ts)
       if (barrage < prev.barrage) sfx('arrows', V.arrows, .15)
       if (elites > prev.elites) sfx('elite', V.cry)
       if (s.boss && !prev.boss) { if (bells) sfx('bell', V.roar); else say('roar', V.roar) }

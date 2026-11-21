@@ -23,6 +23,8 @@ import { cutBandHtml, cutHeroPath, ensureCutinBandCss, type CutBg } from './ui/c
 import { josa } from './core/josa.ts'
 import { hitPortrait, hitStrength, hitArtKey, hitKeyPath, warmHitArt } from './ui/hit-portrait.ts'
 import { raidSound } from './raid/sound.ts'
+import { flyPick, pickFrom } from './raid/pick-fly.ts'
+import { swayCards } from './ui/fx/sway.ts'
 import { DEFAULT_HERO, DEMON_STAGE, SEAL_STAGE, loadRoster, stampDemons, type RosterHero } from './raid/link.ts'
 import { TRUE_WAKE } from './realm/data/awaken2.ts'
 import { DLC } from './realm/dlc.ts'
@@ -427,6 +429,7 @@ let destination: { x: number; y: number } | null = null
 let stick: { id: number; ox: number; oy: number; x: number; y: number } | null = null
 let rotationBlocked = false, inspecting = false
 const hidePowerHint = installPowerHints($('loadout'), $('power-tooltip'), () => run, held => { inspecting = held; if (held) resetInput() })
+swayCards($('overlay'), '.choices [data-up]', { touch: 'pan-y' })   // 레벨업·보물 상자 카드 — 누른 채 끌면 자석처럼 흔들리고 마우스를 올리면 끌린다 (A1 · 판을 다시 그려도 이어받기 · 손가락 위아래는 판 굴리기 그대로)
 const heroVideo = $<HTMLVideoElement>('hero-video'), heroPortrait = $<HTMLImageElement>('hero-portrait')
 heroVideo.muted = true; heroVideo.volume = 0
 let stillPortrait = matchMedia('(prefers-reduced-motion: reduce)').matches, mediaKey = '', videoFailed = false
@@ -760,7 +763,8 @@ function showOverlay() {
   if (state.startsWith('upgrade:') || state.startsWith('chest:')) {
     const chest = run.choiceOrigin === 'chest' ? run.chests?.find(c => c.id === run.chestChoice?.id) : undefined, nonce = run.offerNonce
     overlay.innerHTML = `<div class="panel upgrade${chest ? ' chest-reward' + (chest.large ? ' large' : '') : ''}"${chest ? ` data-chest-id="${chest.id}" data-choice-left="${run.chestChoice!.left}"` : ''}><div class="lv-head">${haveRow()}<h2 class="lvup">${chest ? `<img class="chest-open" src="${import.meta.env.BASE_URL}realm/raid/chest-open.png" alt="">보물 상자<small>남은 선택 ${run.chestChoice!.left}회</small>${chestBurst(chest.id)}` : '레벨업!'}</h2>${treeButton}</div><div class="choices">${run.offers.map(card).join('')}</div>${chest ? '' : `<button id="reroll" ${run.rerolls ? '' : 'disabled'}>리롤 · ${run.rerolls}회 남음</button>`}</div>`
-    overlay.querySelectorAll<HTMLButtonElement>('[data-up]').forEach(b => b.onclick = () => { const pick = b.dataset.up as Pick, log = logging(); if (choose(run, pick, nonce)) { if (log) { recPick(rec!, pick); saveLog() } shown = ''; showOverlay(); updateHud() } })
+    // 고르면 그 룬이 판 밖으로 날아가 HUD 의 그 능력 칸에 박히고, 박히는 순간 「고름」 소리 (A1 · raid/pick-fly.ts)
+    overlay.querySelectorAll<HTMLButtonElement>('[data-up]').forEach(b => b.onclick = () => { const pick = b.dataset.up as Pick, log = logging(), from = pickFrom(b); if (choose(run, pick, nonce)) { if (log) { recPick(rec!, pick); saveLog() } shown = ''; showOverlay(); updateHud(); flyPick(from, pick, sound.pick) } })
     const openedArt = overlay.querySelector<HTMLImageElement>('.chest-open')
     if (openedArt) openedArt.addEventListener('error', () => { openedArt.src = import.meta.env.BASE_URL + 'realm/raid/chest.png' }, { once: true })
     if (!chest) {
