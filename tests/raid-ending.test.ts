@@ -22,3 +22,12 @@ test('defeat lasts 3.2s and retreat 2s without stamp; skip and new run reset', (
   next.state = 'lost'; end.observe(next); assert.equal(end.kind, 'retreat')
   end.advance(2, true); assert.equal(end.ready, true); assert.equal(end.events().stamp, false)
 })
+
+
+test('55 victory centers the final giant when a midboss death is still in the same frame', () => {
+ const s=createHaebi(55,'stage','bow',{stage:'ford',simRules:'55-IMUGI'}),end=new RaidEnding()
+ const boss={id:2,x:650,y:280,hp:0,max:100,kind:'boss' as const,bossRole:'giant' as const,cd:0,flash:0,wind:0,aimX:0,aimY:0,act:0,vx:0,vy:0,buff:0,poison:0,pdps:0,daze:0}
+ s.giantFlow!.finalOwner=boss;s.giantFlow!.finalDefeated=true;s.state='won'
+ s.fx.push({kind:'death',mob:'boss',x:101,y:220,x2:101,y2:220,r:1,angle:0,life:.5,total:.5,color:'#fff'},{kind:'death',mob:'boss',x:650,y:280,x2:650,y2:280,r:1,angle:0,life:.5,total:.5,color:'#fff'})
+ const before=JSON.stringify(s);end.observe(s);assert.deepEqual(end.boss,{x:650,y:280});assert.equal(JSON.stringify(s),before)
+})

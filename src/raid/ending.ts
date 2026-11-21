@@ -15,7 +15,8 @@ export class RaidEnding {
     if (run.state === 'playing' || this.kind) return
     this.kind = run.state === 'won' ? 'victory' : run.hp <= 0 ? 'defeat' : 'retreat'
     const boss = run.fx.find(f => f.kind === 'death' && f.mob === 'boss')
-    this.boss = boss ? { x: boss.x, y: boss.y } : { x: run.x, y: run.y }
+    const giant = this.kind === 'victory' && run.giantFlow?.finalDefeated ? run.giantFlow.finalOwner : undefined
+    this.boss = giant ? { x: giant.x, y: giant.y } : boss ? { x: boss.x, y: boss.y } : { x: run.x, y: run.y }
     this.startPending = true
   }
   get duration() { return this.kind === 'victory' ? E.victory.duration : this.kind === 'defeat' ? E.defeat.duration : E.retreatDuration }

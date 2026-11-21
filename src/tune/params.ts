@@ -323,6 +323,55 @@ export const HAEBI_ULT = {
  * 조합 하나를 max 단계로 올리면 3층 「비기 강화」 — 비기 피해 ×ultDamage · 범위 ×ultArea · 재사용 ×ultCooldown
  */
 /** 53B stage champions; initial values are measured against the frozen forty-run Before. */
+/** 55 Imugi initial proposals. Only the prepared ford rules use these values. */
+export const HAEBI_GIANT = {
+  cameraZoom: .8,
+  midFraction: 600 / 1140, midHpScale: 1, fightBudget: 240, enrageAfter: 180, enrageDamage: 1.2,
+  hp: 900000, partHpShare: .08, headDamage: 1.5, recoveryHeadDamage: 2,
+  phaseCuts: [.7, .35], entrySeconds: .9, roarSeconds: .65, bodySeconds: .5, strikeSeconds: .18,
+  /** body 시작부터 첫 타격까지의 총예고. moves.tell은 짧은 박자의 총시간 후보입니다. */
+  windup: { min: .5, max: 2.5, repeatHold: .3, minRed: .25, epsilon: 1e-9 },
+  playerDiameter: 40, safeDiameters: 3, safeGrid: 40, idleRecovery: 1.2,
+  motion: {
+    impactAt: .65, mouthClearance: 80, minRelocate: 20, envelopeSteps: 8, turnHideStart: .15, turnHideSpan: .2, turnShowStart: .65, turnHiddenWindow: .5,
+    slamHead: -.55, riseHead: -1.05, fallHead: .35,
+    rest: [.08,-.12,.12,.15,-.30,.22,.12,-.22,.16,-.06],
+    submergeOrder: ['head','jaw','neck-top','neck-mid','neck-base','root','body1','body2','body3','tail1','tail2','tail3','tail-tip'],
+    brokenBend: { root: .06, 'neck-base': .55, 'neck-mid': .75, 'neck-top': -.5, head: .12, jaw: .55,
+      body1: .35, body2: .35, body3: -.3, tail1: .3, tail2: -.3, tail3: .2, 'tail-tip': -.15 },
+    // neck3,body3,tail3+tip. These author motion, never add attacks or damage.
+    profiles: {
+      emerge: { prepare: [.3,-.25,.2,.4,-.6,.3,.4,-.3,.2,-.1], impact: [.08,-.12,.12,.15,-.30,.22,.12,-.22,.16,-.06], neck: 1, body: .92, width: 1 },
+      'jaw-dash': { prepare: [.4,-.1,-.2,.2,-.4,.25,-.3,.35,-.2,.1], impact: [.4,-.1,-.2,.2,-.4,.25,-.3,.35,-.2,.1], neck: .82, body: .35, width: 1 },
+      'tail-sweep': { prepare: [0,.2,-.1,.08,-.16,.12,-.9,.25,-.15,.05], impact: [0,.2,-.1,.08,-.16,.12,.9,-.10,.08,-.03], neck: 1, body: 1, width: 1 },
+      'water-fan': { prepare: [-.18,.5,-.3,.2,-.3,.15,.1,-.2,.1,0], impact: [-.18,.5,-.3,.2,-.3,.15,.1,-.2,.1,0], neck: 1.05, body: .35, width: 1.25 },
+      'neck-slam': { prepare: [-.55,.75,-1.05,.25,-.35,.2,-.05,.15,-.1,0], impact: [.7,-.6,.45,.25,-.35,.2,-.05,.15,-.1,0], neck: 1.15, body: .95, width: 1 },
+      'failed-rise': { prepare: [-.62,-.3,.2,.5,-.65,.4,.2,-.25,.15,0], impact: [.9,-.85,.75,-.2,.4,-.2,-.15,.25,-.2,.1], neck: 1.2, body: .9, width: 1 },
+    },
+  },
+  headTurnLimit: 1, poseBoundsPadding: 110, recoveryNeck: .3, bodyNeck: -.22, jawOpen: .4,
+  environmentTell: 2, environmentEvery: 1, environmentDamage: 8, environmentBorder: 28, environmentSide: 112, environmentInner: 320,
+  moves: {
+    emerge: { phase: 1, min: 0, max: 900, tell: 2, recover: 1.5, damage: 26, radius: 120 },
+    'jaw-dash': { phase: 1, min: 70, max: 700, tell: 1.2, recover: 1.2, damage: 28, width: 120, lengthShare: .6 },
+    'tail-sweep': { phase: 1, min: 0, max: 500, tell: 1.6, recover: 1.5, damage: 28, inner: 160, outer: 240, halfAngle: 1.25 },
+    'water-fan': { phase: 1, min: 80, max: 900, tell: 2.1, recover: 2, damage: 25, rangeShare: .55, halfAngle: 35 * Math.PI / 180 },
+    'neck-slam': { phase: 2, min: 0, max: 900, tell: 1.8, recover: 1.5, damage: 30, rx: 80, ry: 120 },
+    'failed-rise': { phase: 3, min: 0, max: 900, tell: 2.5, followTell: 1, recover: 2, damage: 32, radius: 160, waveInner: 140, waveOuter: 220 },
+  },
+  pose: {
+    // ID,parent,relative angle,length,radius; head/jaw use source sockets below.
+    parts: [['root', null, 0, 0, 42], ['neck-base', 'root', -.9, 55, 30], ['neck-mid', 'neck-base', .3, 50, 27],
+      ['neck-top', 'neck-mid', .35, 45, 24], ['head', 'neck-top', .25, 0, 0], ['jaw', 'head', 0, 0, 16],
+      ['body1', 'root', Math.PI + .1, 75, 40], ['body2', 'body1', -.1, 70, 35], ['body3', 'body2', .08, 65, 30],
+      ['tail1', 'body3', -.1, 55, 24], ['tail2', 'tail1', .1, 45, 19], ['tail3', 'tail2', -.08, 35, 14], ['tail-tip', 'tail3', .1, 0, 9]],
+    headCenter: [95, 25], headRadii: [80, 45],
+  },
+  view: { widths: [70,75,80,108,100,90,78,65,55,44], headScale: .30, jawScale: .18, tipScale: .09,
+    maxQuads: 96, perEdge: 8, period: 700, screenStep: 10, densityMin: .25, densityMax: 16,
+    partHpWidth: 36, partHpHeight: 3, partHpLift: 6, waterOuterShare: .35, waterCoreShare: .10, waterAlpha: .6, waterOuter: '#69abb8', waterCore: '#d7f1ed' },
+} as const
+
 export const HAEBI_CHAMPION = {
   extraSeconds: 30, eliteLateRamp: 300, entrySeconds: .65, cooldown: 3.3, phaseRate: 1.2, roarSeconds: .65,
   dashWind: 1.05, dashRange: 400, dashSpeed: 340, dashWidth: 24, dashDamage: 20,
@@ -527,7 +576,7 @@ export const HAEBI_IMPACT = {
   numberPop: 1.6, numberPopTime: .08, numberCriticalPop: 1.85,
   deathDistance: 60, deathEliteDistance: 100, deathLift: 48, deathBounce: 13,
   deathBounceAt: .65, deathSpin: 2.7, deathFadeAt: .65,
-  // Basic critical last-hit presentation; simulation and drop values stay unchanged.
+  //60 presentation only: first .035s holds, then a brief accelerating exit. Proposed values await actual visual QA.
   criticalFinish: { life: .24, hold: .035, distance: 420, lift: 84, endScale: .12, spin: 1.9, trailAlpha: .18, trailOffsets: [.022, .045], maxBodies: 4, lowMaxBodies: 2 },
 } as const
 

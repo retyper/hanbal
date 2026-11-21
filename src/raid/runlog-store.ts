@@ -25,13 +25,15 @@ export interface RaidEnd {
   t: number; gold: number; level: number; kills: number; hp: number
   /** 쓰러질 때 둘레(150px)의 적 — 가까운 차례로 셋 */
   near?: string[]
+  /** 55 final boss remaining HP percent, including timeout/withdrawal. */
+  bossHp?: number
   /** 끝난 때 (벽시계 · 화면 쪽) */
   at: string
 }
 export interface RaidGame {
   readonly v: 1
   /** Input format stays backward compatible; earlier stage results used different combat rules. */
-  readonly rules?: '53B' | '56A' | '56B'
+  readonly rules?: '53B' | '56A' | '56B' | '55-IMUGI'
   /** 판 이름 — 시작 시각 + 씨앗 (서버 문서 이름) */
   readonly id: string
   /** 시작 시각 (벽시계 · 화면 쪽에서만) */

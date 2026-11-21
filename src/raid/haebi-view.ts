@@ -1,4 +1,5 @@
 import { criticalFinishFrames, criticalFinishHandled, drawCriticalFinishFrames } from './critical-finish.ts'
+import {drawImugiParent,drawImugiThreats,drawImugiWater} from './imugi-view.ts'
 import { fieldTransform, heroCacheHeight, wantsHeroHd } from './surface.ts'
 import { HERO_HD, HERO_HD_SHEETS } from './hero-hd.ts'
 import { championLaneContains, championPose, championFacing, championRecovery, drawChampionTells, drawChampionOverlays, drawGroundChests } from './champion-view.ts'
@@ -415,6 +416,7 @@ function zone(s: HaebiRun, x: number, y: number, r: number, k: number, left: num
 function collectThreats(s: HaebiRun) {
   let on = false; zoneN = 0; flames.length = 0
   for (const e of s.enemies) {
+    if (e.giant) continue
     if (e.champion) {
       if (e.hp > 0 && e.champion.mode === 'tell' && e.wind > 0 && e.pattern === 'slam') on = zone(s, e.aimX, e.aimY, e.champion.radius, 1 - e.wind / B.slamWind, e.wind) || on
       else on = championLaneContains(e, s.x, s.y) || on
@@ -650,7 +652,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   if (destination) decal(ctx, images, 'mark-move', destination.x, destination.y, 30, 26, .85)
   // 발밑 그림자는 길 하나로 한 번에 칠한다 (적마다 fill 하던 것 · 폰 프레임 11-17) — 땅이라 모든 몸보다 먼저 그려도 된다
   ctx.fillStyle = '#07181655'; ctx.beginPath()
-  for (const e of s.enemies) { const rx = e.kind === 'boss' || e.kind === 'elite' ? 24 : 16; ctx.moveTo(e.x + rx, e.y + 2); ctx.ellipse(e.x, e.y + 2, rx, 6, 0, 0, Math.PI * 2) }
+  for (const e of s.enemies) { if(e.giant)continue; const rx = e.kind === 'boss' || e.kind === 'elite' ? 24 : 16; ctx.moveTo(e.x + rx, e.y + 2); ctx.ellipse(e.x, e.y + 2, rx, 6, 0, 0, Math.PI * 2) }
   ctx.fill()
   // 위에서 아래로 그린다 (null = 장수) — 판마다 새 배열을 만들지 않는다
   order.length = 0; for (const e of s.enemies) order.push(e); order.push(null)
@@ -658,6 +660,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   const archer = s.mode === 'stage' ? barrageArcher(s, cam ? fieldView(cam) : undefined) : undefined
   for (const e of order) {
     if (e) {
+      if(e.giant){drawImugiParent(ctx,images,e.giant,{bounds:cam?fieldView(cam):{left:0,top:0,right:W,bottom:H},density});continue}
       const big = e.kind === 'boss' || e.kind === 'elite', h = mobHeight(e.kind)
       const target = s.mode === 'vanguard' && e.kind === 'boss'
       const wave = ending?.kind === 'victory' && e.kind !== 'boss' ? (ending.elapsed - ending.freeze - Math.hypot(e.x - ending.boss.x, e.y - ending.boss.y) * END.waveDelay) / END.mobFallLife : -1
@@ -827,7 +830,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
         ctx.lineWidth = K.own.ringWidth; ctx.globalAlpha *= K.own.ringAlpha; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (.55 + .45 * age), 0, TAU); ctx.stroke()
       }
     } else if (f.kind === 'death') {
-      if (f.mob && !criticalFinishHandled(s, f)) {
+      if (f.mob && !(s.giantFlow?.finalDefeated && f.mob === 'boss') && !criticalFinishHandled(s, f)) {
         const away = -(f.face ?? 1), elite = f.mob === 'elite' || f.mob === 'boss'
         const flight = Math.min(1, age / FEEL.deathBounceAt)
         const bounce = age < FEEL.deathBounceAt ? Math.sin(Math.PI * flight) * FEEL.deathLift : Math.sin(Math.PI * (age - FEEL.deathBounceAt) / (1 - FEEL.deathBounceAt)) * FEEL.deathBounce
@@ -841,16 +844,19 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
     } else stamp(ctx, images, 'raid/hit.png', f.x, f.y, 30 * (1 - age * .5))
     ctx.restore()
   }
-  // 붉은 예고는 내 FX 뒤에: 실제 원/돌진/탄환 길만 표시하고 안전한 부채 사이를 채우지 않는다.
   drawCriticalFinishFrames(ctx, finishFrames, (mob, face) => sprite(ctx, images, warlord(mob, s.stage), 0, 0, mobHeight(mob), 18, face))
+  // 붉은 예고는 내 FX 뒤에: 실제 원/돌진/탄환 길만 표시하고 안전한 부채 사이를 채우지 않는다.
+  for(const e of s.enemies)if(e.giant?.attack&&e.giant.state==='strike')drawImugiWater(ctx,e.giant.attack)
   drawThreats(ctx, images, s); drawChampionTells(ctx, s)
+  for(const e of s.enemies)if(e.giant?.attack&&(e.giant.state==='tell'||e.giant.state==='strike'))drawImugiThreats(ctx,e.giant.attack.shapes)
+  for(const e of s.enemies)if(e.giant?.environment&&e.giant.state!=='entry'&&e.giant.state!=='dead')drawImugiThreats(ctx,e.giant.environment.shapes)
   // 피해 숫자 — 알갱이로 튀어 나간다 (trackNumbers · drawNumbers)
   trackNumbers(s); ctx.save(); drawNumbers(ctx, images, s, s.t + (ending?.effectTime ?? 0)); ctx.restore()
   drawChampionOverlays(ctx, images, s, mobHeight, cam ? fieldView(cam) : undefined)
   // 여기부터 화면에 붙은 것 — 확대해도 그대로 (흔들림만)
   if (z !== 1) fieldTransform(ctx, 1, qx, qy)
   if (s.hurt > 0) { ctx.strokeStyle = '#ff735a99'; ctx.lineWidth = 12; ctx.strokeRect(0, 0, W, H) }
-  const boss = s.enemies.find(e => e.kind === 'boss')
+  const boss = s.enemies.find(e => e.kind === 'boss' && !e.giant)
   if (boss) {
     // Upper-right lane beneath the clock, clear of the DOM health/loadout HUD.
     const bx=W-440, by=128, name=s.mode==='vanguard'?`제${s.captains} 전위대장 · ${s.breaches}/3 돌파`:ST[s.stage].bossName

@@ -20,13 +20,14 @@ export const closest = (level: number) => level === Z.levels.length - 1
 
 /** 배율 z 에서 화면 가운데가 갈 수 있는 자리 — 판 밖이 보이지 않게 */
 export function clampCenter(z: number, x: number, y: number) {
+  if (z <= 1) return { x: C.width / 2, y: C.height / 2 }
   const hw = C.width / (2 * z), hh = C.height / (2 * z)
   return { x: Math.min(C.width - hw, Math.max(hw, x)), y: Math.min(C.height - hh, Math.max(hh, y)) }
 }
 
 /** 장수(hx, hy)를 따라간다 — dt 화면 초 · snap 이면 곧바로 (새 판) */
-export function followCam(cam: Cam, hx: number, hy: number, dt: number, snap = false) {
-  const zt = levelZoom(cam.level)
+export function followCam(cam: Cam, hx: number, hy: number, dt: number, snap = false, framing?: number) {
+  const zt = framing ?? levelZoom(cam.level)
   cam.zoom = snap ? zt : zt + (cam.zoom - zt) * Math.exp(-Z.ease * dt)
   if (Math.abs(cam.zoom - zt) < 1e-3) cam.zoom = zt
   const want = clampCenter(cam.zoom, hx, hy), k = snap ? 1 : 1 - Math.exp(-Z.follow * dt)
@@ -38,3 +39,11 @@ export function followCam(cam: Cam, hx: number, hy: number, dt: number, snap = f
 export const toField = (cam: Cam, px: number, py: number) => ({ x: cam.x + (px - C.width / 2) / cam.zoom, y: cam.y + (py - C.height / 2) / cam.zoom })
 /** 그리는 변환과 같은 실제 시야. sim에는 화면 대신 선택한 발사자 ID만 입력한다. */
 export const fieldView = (cam: { x: number; y: number; zoom: number }) => ({ left: cam.x - C.width / (2 * cam.zoom), right: cam.x + C.width / (2 * cam.zoom), top: cam.y - C.height / (2 * cam.zoom), bottom: cam.y + C.height / (2 * cam.zoom) })
+
+/** Whole board plus the current original-art overhang. View-only; no pose mutations. */
+export function bossFrameZoom(bounds: {left:number;right:number;top:number;bottom:number} | null, maximum: number): number {
+  if (!bounds) return maximum
+  const hw = Math.max(C.width / 2, C.width / 2 - bounds.left, bounds.right - C.width / 2)
+  const hh = Math.max(C.height / 2, C.height / 2 - bounds.top, bounds.bottom - C.height / 2)
+  return Math.min(maximum, C.width / (2 * hw), C.height / (2 * hh))
+}

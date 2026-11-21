@@ -1,9 +1,10 @@
 import { createEndingVideo } from './raid/ending-video.ts'
 import './raid/ending-video.css'
+import { imugiVisualBounds } from './raid/imugi-view.ts'
 import { fieldPixels, raidLowGraphics } from './raid/surface.ts'
 import { breakthroughText, isBreakthrough } from './realm/vanguard.ts'
-import { HAEBI_RUN as C, HAEBI_STICK as STICK, HAEBI_TREE as TREE, HAEBI_ULT as ULT, HAEBI_AWAKEN as AWK, HAEBI_STAGES as ST, HAEBI_ZOOM as ZOOM, HAEBI_SPEED as SPEED } from './tune/params.ts'
-import { createHaebi, runDuration, championViewNeeded, stepHaebi, barrageArcher, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, usesPermanentAwakening, normalizedRaidOpts, castWallSeconds, nodeText, nodeAt, branchName, wakeReady, ultName, ultOpen, BRANCHES, branchNodes, type Kit, type Power, type Pick, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
+import { HAEBI_RUN as C, HAEBI_STICK as STICK, HAEBI_TREE as TREE, HAEBI_ULT as ULT, HAEBI_AWAKEN as AWK, HAEBI_STAGES as ST, HAEBI_ZOOM as ZOOM, HAEBI_SPEED as SPEED, HAEBI_GIANT as GIANT } from './tune/params.ts'
+import { createHaebi, runDuration, raidRulesForStage, giantMob, giantHUD, championViewNeeded, stepHaebi, barrageArcher, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, usesPermanentAwakening, normalizedRaidOpts, castWallSeconds, nodeText, nodeAt, branchName, wakeReady, ultName, ultOpen, BRANCHES, branchNodes, type Kit, type Power, type Pick, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
 import { startRecord, recInput, gridInput, recPick, recReroll, recQuit, withdrawRun, sealInput, finishRecord, STEP, type Recorder } from './raid/runlog.ts'
 import { runFrame, speedOf, nextSpeed, speedLevel } from './raid/speed.ts'
 import { RaidFeel } from './raid/impact.ts'
@@ -13,7 +14,7 @@ import { HAEBI_END as END } from './tune/params.ts'
 import { warmFx } from './raid/fx-art.ts'
 import { putRaidGame, sealLeftovers, unsentRaids, markRaidsSent, type RaidGame, type RaidOpts } from './raid/runlog-store.ts'
 import { pushRaids } from './net/sync.ts'
-import { newCam, followCam, nextLevel, closest, toField, fieldView, clampCenter } from './raid/camera.ts'
+import { newCam, followCam, nextLevel, closest, toField, fieldView, clampCenter, bossFrameZoom } from './raid/camera.ts'
 import { loadMeta, saveMeta, buy, refund, refundFee, record, shopCost, shopMax, stageOpen, stageName, pickStage, SHOP, STAGE_ORDER, type ShopKey } from './raid/meta.ts'
 import { drawField, imagePaths, setHeroArt, heroArtFiles, heroHdFiles, warmHeroSprites } from './raid/haebi-view.ts'
 import { powerIcon, installPowerHints, comboIcon, rankMark, treeInfo, BRANCH_COLOR } from './raid/power-ui.ts'
@@ -29,6 +30,9 @@ import { legacyAwakeningOpen } from './realm/trial-rules.ts'
 import { AWAKENING_KEY, readHeroAwakening, setHeroAwakeningAppearance } from './ui/realm/awakening-store.ts'
 import './raid/combat.css'
 import './raid/awakening-cutin.css'
+import './raid/giant-hud.css'
+import { RaidGiantHud } from './raid/giant-hud.ts'
+import { prewarmImugiArt } from './raid/imugi-art.ts'
 import { RaidAwakeningCutin } from './raid/awakening-cutin.ts'
 import { prewarmAwakeUlt } from './raid/awake-ult-art.ts'
 import { HAEBI_AWAKEN_ULT as AC } from './tune/params.ts'
@@ -88,7 +92,7 @@ let stage: Exclude<StageId, 'trial'> = pickStage(meta, kit)
 const bossMinute = () => Math.floor(C.bossAt * ST[mode === 'trial' ? 'trial' : stage].length / 60)
 const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`
 /** createHaebi 에 넘기는 판 옵션 — 판 기록에도 이것 그대로 적는다 (다시 돌리기) */
-const runOpts = (): RaidOpts => ({ ...mode === 'stage' ? { stage, bonus: { ...meta.shop } } : {}, ...mode === 'trial' ? { awaken: false, simRules: '53B' as const } : { permanentAwake: awakening.permanentAwake, appearanceAwake: awakening.appearanceAwake, simRules: '56B' as const }, mastery })
+const runOpts = (): RaidOpts => ({ ...mode === 'stage' ? { stage, bonus: { ...meta.shop } } : {}, ...mode === 'trial' ? { awaken: false, simRules: '53B' as const } : { permanentAwake: awakening.permanentAwake, appearanceAwake: awakening.appearanceAwake, simRules: mode === 'stage' ? raidRulesForStage(stage) : '56B' as const }, mastery })
 const newRun = (seed: number, opts: RaidOpts = runOpts()) => { const r = createHaebi(seed, mode, kit, opts); if (r.message.endsWith('첫 조합을 향해')) { r.message = ''; r.messageTime = 0 }  /* 시작 군말 띠는 걷는다 (형 11-16) */ return r }
 root.innerHTML = `<header><div><small>장수 열전 · 독립 모드</small><h1>${HERO.name} <em>${K.title}</em></h1></div><div class="head-actions"><button id="pause" disabled aria-label="일시정지">Ⅱ</button></div></header>
 <div id="layout"><aside id="character"><div id="portrait-media"><img id="hero-portrait" src="${import.meta.env.BASE_URL}realm/bust-hd/${HERO.bust}.jpg" alt="${HERO.name} 원화"><video id="hero-video" muted loop playsinline preload="none" hidden aria-label="각성 ${HERO.name} 영상"></video></div><div class="portrait-title"><span>${HERO.home}</span><b id="rank-title">${HERO.name}</b><button id="portrait-toggle" hidden>원화로 보기</button></div><div id="reaction">${weapon} 하나로 시작하는 열전</div><div id="combo-badges"></div><i class="frame-knots"></i></aside>
@@ -103,6 +107,16 @@ function syncEndingVideo() {
     kind: ending.ready ? ending.kind : null, visible: !document.hidden && !$('overlay').hidden, lowGraphics: fieldLowGraphics })
 }
 
+let baseArtReady = false, beginning = false
+let startRevision = 0
+function cancelBegin() { startRevision++; beginning = false; $<HTMLButtonElement>('start').disabled = !baseArtReady || trialEntryClosed(); if (baseArtReady) $('start').textContent = startLabel() }
+const giantHud = new RaidGiantHud($('arena'), GIANT.phaseCuts)
+let giantCameraOwner: ReturnType<typeof giantMob> | null = null
+let giantZoomRestore: number | null = null
+let giantAutoFraming = false
+let giantFitZoom: number = GIANT.cameraZoom
+function restoreGiantZoom() { giantAutoFraming = false; if (giantZoomRestore !== null) { cam.level = giantZoomRestore; giantZoomRestore = null; paintZoom() } }
+const giantResultLine = () => { const g = giantHUD(run); return run.state === 'lost' && g ? `<p>보스 남은 체력 ${Math.ceil(100 * Math.max(0, g.hp) / g.max)}%</p>` : '' }
 root.insertAdjacentHTML('beforeend', `<div id="rotate-guide" hidden><div><span style="font-size:44px">↻</span><h2>폰을 가로로 돌려 주세요</h2><p>확대 ${josa(HERO.name, '과', '와')} 전장을 함께 보며 싸웁니다.<br>회전하는 동안 전투는 멈춰 있습니다.</p></div></div>`)
 /** 비기 컷인 띠의 기운 바탕 — 묶음마다 (fx/skill/bg/<결>.webp) */
 const KIT_BG: Record<Kit, CutBg> = { axe: 'earth', bow: 'arrow', spear: 'wind', sword: 'bolt', dagger: 'shadow', magic: 'spirit', sling: 'earth' }
@@ -147,6 +161,8 @@ function paintZoom() {
   zoomBtn.setAttribute('aria-pressed', String(cam.level > 0)); zoomBtn.setAttribute('aria-label', minus ? '원래 크기로' : '전투판 확대')
 }
 function cycleZoom() {
+  giantAutoFraming = false
+  giantZoomRestore = null // A deliberate zoom choice supersedes the temporary boss framing.
   cam.level = nextLevel(cam.level); paintZoom()
   try { localStorage.setItem(ZOOM_KEY, String(cam.level)) } catch { /* 이번 창만 */ }
   prepareHeroRaster(cam.zoom)
@@ -218,16 +234,16 @@ function renderStageMenu() {
   }
   if (mode !== 'stage') return
   const menu = $('menu')
-  menu.querySelector('p')!.textContent = `${bossMinute()}분을 버틴 뒤 오는 두목을 쓰러뜨리면 휘장과 많은 금을 받습니다. 쓰러져도 버틴 만큼 금을 받아 상점에서 영구 강화를 삽니다.`
+  menu.querySelector('p')!.textContent = raidRulesForStage(stage) === '55-IMUGI' ? `${Math.floor(C.bossAt * ST[stage].length * GIANT.midFraction / 60)}분의 중간 보스를 넘고 ${bossMinute()}분에 나타나는 이무기를 쓰러뜨리면 휘장을 받습니다. 쓰러져도 버틴 만큼 금을 받아 상점에서 영구 강화를 삽니다.` : `${bossMinute()}분을 버틴 뒤 오는 두목을 쓰러뜨리면 휘장과 많은 금을 받습니다. 쓰러져도 버틴 만큼 금을 받아 상점에서 영구 강화를 삽니다.`
   const pick = menu.querySelector('.journey')!; pick.className = 'journey stage-pick'
   pick.innerHTML = STAGE_ORDER.map(id => {
     const open = stageOpen(meta, id), best = meta.best[id]
     return `<button data-stage="${id}" class="${id === stage ? 'on' : ''}" ${open ? '' : 'disabled title="앞 스테이지를 깨면 열립니다"'} aria-pressed="${id === stage}"><img class="emblem ${meta.cleared[id] ? 'got' : ''}" src="${import.meta.env.BASE_URL}realm/raid/emblem-${id}.png" alt="${STAGE_GLYPH[id]}"><b>${stageName(id)}</b><small>${!open ? '앞을 깨면 열립니다' : meta.cleared[id] ? '휘장 획득' : best ? `최고 ${clock(best)} 버팀` : '첫 도전'}</small></button>`
   }).join('')
-  pick.querySelectorAll<HTMLButtonElement>('[data-stage]').forEach(b => b.onclick = () => { stage = b.dataset.stage as typeof stage; run = newRun(7); renderStageMenu() })
+  pick.querySelectorAll<HTMLButtonElement>('[data-stage]').forEach(b => b.onclick = () => { cancelBegin(); stage = b.dataset.stage as typeof stage; run = newRun(7); if (baseArtReady && !beginning) $<HTMLButtonElement>('start').disabled = trialEntryClosed(); renderStageMenu() })
   menu.querySelector('.note')!.innerHTML = `<span class="gold-line">${COIN}<b>${meta.gold.toLocaleString()}</b></span><button id="open-shop">상점 · 영구 강화</button>${campaignToken ? '' : '<button id="open-heroes">장수 바꾸기</button>'}${toRealm}`
-  $('open-shop').onclick = () => { renderShop(); $('shop').hidden = false }
-  if (!campaignToken) $('open-heroes').onclick = () => { renderHeroes(); $('shop').hidden = false }
+  $('open-shop').onclick = () => { cancelBegin(); renderShop(); $('shop').hidden = false }
+  if (!campaignToken) $('open-heroes').onclick = () => { cancelBegin(); renderHeroes(); $('shop').hidden = false }
   if (!$<HTMLButtonElement>('start').disabled) $('start').textContent = startLabel()
   keyHints(root)
 }
@@ -288,8 +304,8 @@ function prepareHeroRaster(zoom: number) {
 }
 let fieldLowGraphics = raidLowGraphics()
 function syncFieldPixels() {
-  fieldLowGraphics = raidLowGraphics()
   const r = canvas.getBoundingClientRect(); if (!(r.width > 0 && r.height > 0)) return
+  fieldLowGraphics = raidLowGraphics()
   const p = fieldPixels(r.width, r.height, devicePixelRatio, fieldLowGraphics)
   if (canvas.width !== p.width || canvas.height !== p.height) { canvas.width = p.width; canvas.height = p.height; heroWarmKey = '' }
   prepareHeroRaster(cam.zoom)
@@ -409,17 +425,28 @@ window.addEventListener('resize', layoutTrial)
 let pendingSeed = vanguardToken ? Number(query.get('seed')) >>> 0 : crypto.getRandomValues(new Uint32Array(1))[0]!
 const notifyVanguardStart = () => { if (vanguardToken) window.parent.postMessage({ type: 'hanbal.haebi.vanguard-start', token: vanguardToken }, location.origin) }
 const base = import.meta.env.BASE_URL + 'realm/'
-Promise.all([...imagePaths, ...heroArtFiles()].map(path => new Promise<void>((resolve, reject) => { const img = new Image(); img.onload = () => { images.set(path, img); resolve() }; img.onerror = reject; img.src = base + path }))).then(async () => { await Promise.all(heroArtFiles().map(p => images.get(p)?.decode().catch(() => {}))); heroWarmKey = ''; prepareHeroRaster(cam.zoom); warmFx(images); $<HTMLButtonElement>('start').disabled = trialEntryClosed(); $('start').textContent = startLabel(); renderStageMenu(); schedule() }).catch(() => { $('start').textContent = '그림을 불러오지 못했어요. 새로고침해 주세요.' })
+Promise.all([...imagePaths, ...heroArtFiles()].map(path => new Promise<void>((resolve, reject) => { const img = new Image(); img.onload = () => { images.set(path, img); resolve() }; img.onerror = reject; img.src = base + path }))).then(async () => { await Promise.all(heroArtFiles().map(p => images.get(p)?.decode().catch(() => {}))); heroWarmKey = ''; prepareHeroRaster(cam.zoom); warmFx(images); baseArtReady = true; $<HTMLButtonElement>('start').disabled = trialEntryClosed(); $('start').textContent = startLabel(); renderStageMenu(); schedule() }).catch(() => { $('start').textContent = '그림을 불러오지 못했어요. 새로고침해 주세요.' })
 function resetInput() { keys.clear(); destination = null; stickEnd(); dashAt = skillAt = wakeAt = -9; acc = 0 }
-function begin(sameSeed = false) {
-  if (trialEntryClosed()) return
+async function begin(sameSeed = false) {
+  if (beginning || trialEntryClosed()) return
+  sound.unlock() // Keep audio activation inside the actual start gesture, before optional asset loading.
+  const selected = stage, revision = ++startRevision
+  if (mode === 'stage' && raidRulesForStage(selected) === '55-IMUGI') {
+    beginning = true; $<HTMLButtonElement>('start').disabled = true; $('start').textContent = '그림을 불러오는 중…'
+    const ready = await prewarmImugiArt(selected, images, base).catch(() => false)
+    if (revision !== startRevision) return
+    beginning = false
+    if (stage !== selected || !$('shop').hidden) { $<HTMLButtonElement>('start').disabled = !baseArtReady || trialEntryClosed(); renderStageMenu(); return }
+    if (!ready) { $('start').textContent = '그림을 불러오지 못했어요. 새로고침해 주세요.'; return }
+    $<HTMLButtonElement>('start').disabled = !baseArtReady || trialEntryClosed()
+  }
   refreshWakeKind()
   // 본편에서 연 열전은 한 판만 — 출전하는 그 순간 본편에 알린다 (그 장수의 이번 달 출전 · app.ts markRaid)
   if (campaignToken) { if (campaignBegun) return; campaignBegun = true; window.parent.postMessage({ type: 'hanbal.raid.start', token: campaignToken }, location.origin) }
   if (!sameSeed && !vanguardToken) pendingSeed = crypto.getRandomValues(new Uint32Array(1))[0]!
   closeLog(true)   // 앞 판이 끝을 안 적었으면 (드묾) 「떠남」으로
   const opts = runOpts()
-  sound.unlock(); endingVideo.clear(); hidePowerHint(); notifyVanguardStart(); run = newRun(pendingSeed, opts); live = true; paused = false; shown = ''; loadoutKey = ''; resetInput(); last = 0
+  endingVideo.clear(); hidePowerHint(); notifyVanguardStart(); restoreGiantZoom(); giantCameraOwner = null; giantHud.update(null, 0); run = newRun(pendingSeed, opts); live = true; paused = false; shown = ''; loadoutKey = ''; resetInput(); last = 0
   // 판 기록 — 시작 시각은 화면 쪽 벽시계 · 판 옵션은 createHaebi 에 넘긴 그것 (runlog.ts)
   const now = new Date()
   rec = startRecord(run, { id: `${now.getTime().toString(36)}-${pendingSeed.toString(36)}`, started: now.toISOString(), mode, stage: run.stage, hero: heroId, kit, sprite, seed: pendingSeed, opts: normalizedRaidOpts(run, opts), from: fromRealm })
@@ -682,7 +709,7 @@ function showOverlay() {
   } else {
     // 이겼다 — 결과 판이 뜨는 그 박자에 다다닥 (11-19 형: 「듀오링고처럼 햅틱 막 지랄 나 주면」) · 판마다 한 번 (탭을 다녀와 다시 그려도 또 떨지 않는다)
     // 독립 열전: 판이 끝나면 한 번만 금을 주고 기록한다 (지면 버틴 만큼 · 깨면 휘장 + 깸 금)
-    overlay.innerHTML = `<div class="panel result ${run.state}"><h2>${run.state === 'won' ? mode === 'stage' ? `${stageName(run.stage)} 토벌 완료` : '열전 완수' : run.hp <= 0 ? '도전 실패' : run.t < runDuration(run) ? '철수' : '시간 초과 · 두목 생존'}</h2><p>${Math.floor(run.t / 60)}분 ${Math.floor(run.t % 60)}초 · ${run.kills.toLocaleString()}명 격파 · Lv.${run.level}${mode === 'stage' ? ` · 정예 ${run.elites} <img class="result-chests" src="${import.meta.env.BASE_URL}realm/raid/chest.png" alt="획득 상자"> ${run.chestsClaimed ?? 0}` : ''}</p><div class="result-combos">${kitCombos(kit).filter(c => run.combos.includes(c.id)).map(c => `<b>${comboIcon(c.id)}${c.name} ${rankMark(comboRank(run, c.id))}</b>`).join('')}</div>${mode === 'stage' ? `<p class="reward">${COIN}<b>+${reward.gold.toLocaleString()}</b> · 보유 ${COIN}${meta.gold.toLocaleString()}${reward.first ? ` · <strong><img class="won-emblem" src="${import.meta.env.BASE_URL}realm/raid/emblem-${run.stage}.png" alt="">${stageName(run.stage)} 휘장 획득</strong>` : ''}${reward.heroFirst && run.stage === SEAL_STAGE && TRUE_WAKE.has(heroId) ? ` · <strong class="tw-open">본편에서 ${josa(HERO.name, '이', '가')} 진각성할 수 있습니다</strong>` : ''}</p>` : ''}${mode === 'stage' ? '' : '<p>본편 병력 손실 없음</p>'}${fromCampaign ? `<div class="result-acts">${window.parent !== window ? '<button id="return" class="primary">본편으로</button>' : ''}</div>` : `<div class="result-acts"><button id="new-run" class="primary">다시 출전</button><div>${mode === 'stage' ? '<button id="to-shop">상점</button>' : ''}<button id="quit">스테이지 고르기</button>${window.parent !== window ? '<button id="return">본편으로</button>' : ''}</div></div>`}</div>`
+    overlay.innerHTML = `<div class="panel result ${run.state}"><h2>${run.state === 'won' ? mode === 'stage' ? `${stageName(run.stage)} 토벌 완료` : '열전 완수' : run.hp <= 0 ? '도전 실패' : run.t < runDuration(run) ? '철수' : '시간 초과 · 두목 생존'}</h2><p>${Math.floor(run.t / 60)}분 ${Math.floor(run.t % 60)}초 · ${run.kills.toLocaleString()}명 격파 · Lv.${run.level}${mode === 'stage' ? ` · 정예 ${run.elites} <img class="result-chests" src="${import.meta.env.BASE_URL}realm/raid/chest.png" alt="획득 상자"> ${run.chestsClaimed ?? 0}` : ''}</p>${giantResultLine()}<div class="result-combos">${kitCombos(kit).filter(c => run.combos.includes(c.id)).map(c => `<b>${comboIcon(c.id)}${c.name} ${rankMark(comboRank(run, c.id))}</b>`).join('')}</div>${mode === 'stage' ? `<p class="reward">${COIN}<b>+${reward.gold.toLocaleString()}</b> · 보유 ${COIN}${meta.gold.toLocaleString()}${reward.first ? ` · <strong><img class="won-emblem" src="${import.meta.env.BASE_URL}realm/raid/emblem-${run.stage}.png" alt="">${stageName(run.stage)} 휘장 획득</strong>` : ''}${reward.heroFirst && run.stage === SEAL_STAGE && TRUE_WAKE.has(heroId) ? ` · <strong class="tw-open">본편에서 ${josa(HERO.name, '이', '가')} 진각성할 수 있습니다</strong>` : ''}</p>` : ''}${mode === 'stage' ? '' : '<p>본편 병력 손실 없음</p>'}${fromCampaign ? `<div class="result-acts">${window.parent !== window ? '<button id="return" class="primary">본편으로</button>' : ''}</div>` : `<div class="result-acts"><button id="new-run" class="primary">다시 출전</button><div>${mode === 'stage' ? '<button id="to-shop">상점</button>' : ''}<button id="quit">스테이지 고르기</button>${window.parent !== window ? '<button id="return">본편으로</button>' : ''}</div></div>`}</div>`
     if (vanguardToken) {
       overlay.querySelector('h2')!.textContent = run.breaches === 3 ? '길은 열었다. 본대여, 진격하라!' : `${run.breaches}/3 돌파 확보 · 본대로 귀환`
       overlay.querySelector('.result-combos')!.textContent = isBreakthrough(run.breaches) ? breakthroughText(run.breaches) : ''
@@ -710,7 +737,7 @@ function showOverlay() {
 }
 let rewarded: HaebiRun | null = null, reward = { gold: 0, first: false, heroFirst: false }
 function withdraw() { if (logging()) recQuit(rec!); withdrawRun(run); paused = false; shown = ''; showOverlay() }
-function menu() { endingVideo.clear(); closeLog(true); renderStageMenu(); hidePowerHint(); live = false; paused = false; shown = ''; resetInput(); run = newRun(7); loadoutKey = ''; $('menu').hidden = false; $('play').hidden = true; $('overlay').hidden = true; $<HTMLButtonElement>('pause').disabled = true; layoutTrial(); updateHud() }
+function menu() { endingVideo.clear(); cancelBegin(); giantHud.update(null, 0); restoreGiantZoom(); giantCameraOwner = null; closeLog(true); renderStageMenu(); hidePowerHint(); live = false; paused = false; shown = ''; resetInput(); run = newRun(7); loadoutKey = ''; $('menu').hidden = false; $('play').hidden = true; $('overlay').hidden = true; $<HTMLButtonElement>('pause').disabled = true; layoutTrial(); updateHud() }
 /**
  * 본편의 뒤로 가기 (안드로이드 뒤로 단추 · 브라우저 뒤로 · app.ts backOne 이 'hanbal.raid.back' 으로 알린다) — 곧장 본편으로 빠지지 않는다:
  * 묻는 상자·나무·상점이 떠 있으면 그것만 닫고 · 판 중이면 멈춤 창 · 출전 화면이면 「본편으로」와 같다 · 레벨업 카드·결과 화면은 그대로 (그 창의 단추로)
@@ -866,7 +893,13 @@ function frame(now: number) {
       if (ending.kind === 'defeat') { haptics().hurt(1); endHit = new Image(); endHit.src = hitArtUrl(awakenedLook(run)).url ?? import.meta.env.BASE_URL + 'realm/bust-hd/' + HERO.bust + '.jpg' }
     }
     if (events.stamp && ending.kind !== 'retreat') { sound.ending(ending.kind === 'victory'); if (ending.kind === 'victory') haptics().win() }
-    followCam(cam, run.x, run.y, feel.stopped || ending.active ? 0 : dt)
+    const boss = giantMob(run)
+    if (boss && boss !== giantCameraOwner) { giantCameraOwner = boss; giantZoomRestore = cam.level; giantAutoFraming = true; giantFitZoom = GIANT.cameraZoom; cam.level = 0; paintZoom() }
+    const bossFrame = giantAutoFraming && boss?.giant && !ending.active ? bossFrameZoom(imugiVisualBounds(boss.giant.pose), GIANT.cameraZoom) : null
+    if (bossFrame !== null) giantFitZoom = Math.min(giantFitZoom, bossFrame)
+    followCam(cam, run.x, run.y, feel.stopped || ending.active ? 0 : dt, false, bossFrame !== null ? giantFitZoom : undefined)
+    // Entry eases out while the boss arrives; later overhangs must fit on the same displayed/input camera.
+    if (bossFrame !== null && boss!.giant!.age >= GIANT.entrySeconds) { cam.zoom = Math.min(cam.zoom, giantFitZoom); Object.assign(cam, clampCenter(cam.zoom, cam.x, cam.y)) }
     const zoom = ending.kind === 'victory' ? Math.min(1, Math.max(0, ending.elapsed - ending.freeze) / END.cameraTime) : 0
     const endCam = zoom ? { zoom: cam.zoom * (1 + END.cameraZoom * zoom), x: cam.x + (run.x - cam.x) * zoom, y: cam.y + (run.y - cam.y) * zoom } : cam
     if (zoom) Object.assign(endCam, clampCenter(endCam.zoom, endCam.x, endCam.y))
@@ -879,7 +912,7 @@ function frame(now: number) {
   // 기술이 터지면 계단마다 떨고(비기 한 번 · 각성 두 박 · 진각성 세 박) 크리티컬은 짧게 한 번 (11-19 형 · HAEBI_FEEL_TIERS · 끄기·가려진 탭은 haptics 가 막음)
   const felt = sound.frame(run, live, paused || inspecting || rotationBlocked, true)
   if (felt.skill) haptics().skill(felt.skill); else if (felt.crit) haptics().crit()
-  updatePortrait(); updateHud(); showOverlay(); syncEndingVideo(); schedule()
+  updatePortrait(); updateHud(); giantHud.update(live ? giantHUD(run) : null, live && !paused && !inspecting && !rotationBlocked && !run.offers.length && !feel.stopped ? dt : 0); showOverlay(); syncEndingVideo(); schedule()
 }
 function schedule() { if (!raf && !document.hidden) raf = requestAnimationFrame(frame) }
 updateHud(); schedule()
