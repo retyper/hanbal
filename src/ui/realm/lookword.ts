@@ -33,6 +33,9 @@ function menRange(x: readonly [number, number]): [number, number] {
   return [Math.floor(lo / step) * step, Math.ceil(hi / step) * step]
 }
 
+/** 사람 수 범위를 바깥으로 둥글린다 — 적이 온다 예고(threatwarn.ts)의 저들 군사도 같은 눈금으로 */
+export const outMen = (x: readonly [number, number]): [number, number] => menRange(x)
+
 function morRange(x: readonly [number, number]): [number, number] {
   const lo = snap(x[0])
   const hi = snap(x[1])

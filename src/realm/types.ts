@@ -72,6 +72,8 @@ export interface RNode {
   calledAt?: number
   /** 지금 주인이 이 고을을 쥔 계절 (차지·개척·다시 일어남) — 화면의 「최근에 차지한 고을 먼저」 (형 10-27). 판 처음부터 쥔 고을은 없음 */
   takenAt?: number
+  /** 개척으로 이 마을을 연 나라 (빈 땅에 처음 선 때만 · 차지한 고을엔 없다) — 새내기 유예(grace.freshSpared)가 묻는다. 옛 저장에는 없다 */
+  foundedBy?: string
   /** 주인 없는 철광·포구에 쌓인 것 — 군대가 밟으면 그 나라가 거둔다 (economy.stepSites · 형 11-05) */
   stash?: Partial<Record<Good, number>>
 }

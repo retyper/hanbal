@@ -84,6 +84,15 @@ function chip(tiers: readonly Tier[], lo: number, hi: number, pct = false): stri
 }
 
 export const fightFeel = (lo: number, hi: number): string => chip(FIGHT, lo, hi)
+/** 지킬 가망 — 우리 고을로 오는 적을 막을 확률 (적이 온다 예고 · realm/warn.ts) · 저들 군사를 범위로만 아니 범위 % */
+const HOLD: readonly Tier[] = [
+  { at: 0.85, get word() { return tr('feel.hold.0') }, color: '#3f8f3a' },
+  { at: 0.65, get word() { return tr('feel.hold.1') }, color: '#7aa83a' },
+  { at: 0.45, get word() { return tr('feel.hold.2') }, color: '#c9a23a' },
+  { at: 0.2, get word() { return tr('feel.hold.3') }, color: '#d0702f' },
+  { at: 0, get word() { return tr('feel.hold.4') }, color: '#b83a2a' },
+]
+export const holdFeel = (lo: number, hi: number): string => chip(HOLD, lo, hi, true)
 /** 조공 요구 — 내놓으라는 청이라 반기고 솔깃할 일이 아니다 (형 10-23: "조공 요구에 솔깃은 좀 아니지 않나") */
 const TRIBUTE: readonly Tier[] = [
   { at: 0.7, get word() { return tr('feel.tribute.0') }, color: '#3f8f3a' },

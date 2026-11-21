@@ -36,6 +36,7 @@ import { bowUpCost, plotAgents, plotCost, plotTargets } from './plots.ts'
 import { allianceWhy, borders, breakWhy, leaderOf, truceWhy } from './stance.ts'
 import { knows } from './discovery.ts'
 import { beatenResting, warDeadRoom } from './rout.ts'
+import { freshSpared, graceOf, pursuing } from './grace.ts'
 import { scoutCap } from './scouts.ts'
 import { BASE_MIX, mixOf } from './data/armymix.ts'
 import type { Army, EnvoyAsk, Hero, Order, PlotOp, Realm, Why } from './types.ts'
@@ -213,23 +214,15 @@ export function strikeLive(r: Realm, a: Army): boolean {
   return s.est === undefined || t.win === null || midOf(t.win) >= s.est - P.realm.aiStrikeCallOff
 }
 
-/** 2장 동부여의 추격 — 이 계절에 대소의 군대가 주몽을 쫓고 있나 */
-
-export function pursuing(r: Realm, faction: string): boolean {
-  return r.scenario?.id === 'jumong' && faction === 'buyeo' && seasonIdx(r) < P.realm.pursuitSeasons
-}
-
-/** 판의 초반 유예 (계절) — 1:1 판과 1장은 짧게 (긴급 위원회 11-04 · 긴 판은 그대로) */
-export function graceOf(r: Realm): number {
-  const R = P.realm
-  return r.scenario?.id === 'mahan' ? R.aiGraceMahan : r.region === 'byeonhan-mini' ? R.aiGraceDuel : R.aiGrace
-}
+// 판 처음의 유예 셋 — 판정(season)도 같은 값을 물어 따로 뺐다 (grace.ts)
+export { freshSpared, graceOf, pursuing }
 
 export function spared(r: Realm, faction: string, to: string): boolean {
   const owner = r.nodes[to]?.owner
   if (owner === null || owner === undefined || owner === faction) return false
   // 화친·동맹을 맺은 나라는 치지 않는다 (FLOW §4)
   if (friendly(r, faction, owner)) return true
+  if (freshSpared(r, faction, to)) return true
   if (r.factions[owner]?.mind !== 'player' || seasonIdx(r) >= graceOf(r)) return false
   // 2장 동부여의 추격군 — 주몽을 쫓아 첫 몇 계절은 유예 없이 내려온다 (CAMPAIGN §1 · 점검 10-25)
   if (pursuing(r, faction)) return false
