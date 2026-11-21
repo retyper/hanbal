@@ -35,7 +35,7 @@ const point = (p: { x: number; y: number }): Shape => ({ kind: 'circle', center:
 
 test('55-TIGER 는 설원에만 선다 · 다른 판은 56B 그대로 · 여울·목책 규칙은 그대로', () => {
   assert.equal(raidRulesForStage('snow'), '55-TIGER'); assert.equal(raidRulesForStage('ford'), '55-IMUGI'); assert.equal(raidRulesForStage('palisade'), '56C')
-  assert.equal(raidRulesForStage('forest'), '56B'); assert.equal(raidRulesForStage('fortress'), '56B')
+  assert.equal(raidRulesForStage('forest'), '56B'); assert.equal(raidRulesForStage('fortress'), '55-SHAMAN')
   for (const stage of ['forest', 'ford', 'palisade', 'fortress'] as const) {
     const a = createHaebi(7, 'stage', 'sword', { stage, simRules: '55-TIGER' }), b = createHaebi(7, 'stage', 'sword', { stage, simRules: '56B' })
     assert.equal(usesGiantBoss(a), false, stage)
