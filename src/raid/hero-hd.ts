@@ -1,5 +1,11 @@
 /** Native master rebake only. Missing entries deliberately retain their approved base assets. */
 export const HERO_HD: Readonly<Record<string, string>> = {
+  'anim-px/gen-aw1-hogong.png': 'anim-px/gen-aw1-hogong_hd.png',
+  'anim-px/gen-hogong.png': 'anim-px/gen-hogong_hd.png',
+  'anim-px/gen-aw1-gomok.png': 'anim-px/gen-aw1-gomok_hd.png',
+  'anim-px/gen-gomok.png': 'anim-px/gen-gomok_hd.png',
+  'anim-px/gen-aw1-base-g-38-chopal-palmae.png': 'anim-px/gen-aw1-base-g-38-chopal-palmae_hd.png',
+  'anim-px/gen-base-g-38-chopal-palmae.png': 'anim-px/gen-base-g-38-chopal-palmae_hd.png',
   'anim-px/gen-mir.png': 'anim-px/gen-mir_hd.png',
   'anim-px/gen-heo.png': 'anim-px/gen-heo_hd.png',
   'anim-px/gen-aw1-mir.png': 'anim-px/gen-aw1-mir_hd.png',
@@ -28,6 +34,12 @@ export const HERO_HD: Readonly<Record<string, string>> = {
 
 /** NativeHD atlas stays within4096 before upload: frame order is row-major,20 frames. */
 export const HERO_HD_SHEETS: Readonly<Record<string, { cell: readonly [number, number]; cols: number }>> = {
+  'anim-px/gen-aw1-hogong_hd.png': { cell: [400, 320], cols: 10 },
+  'anim-px/gen-hogong_hd.png': { cell: [432, 320], cols: 9 },
+  'anim-px/gen-aw1-gomok_hd.png': { cell: [400, 320], cols: 10 },
+  'anim-px/gen-gomok_hd.png': { cell: [416, 320], cols: 9 },
+  'anim-px/gen-aw1-base-g-38-chopal-palmae_hd.png': { cell: [400, 320], cols: 10 },
+  'anim-px/gen-base-g-38-chopal-palmae_hd.png': { cell: [384, 320], cols: 10 },
   'anim-px/gen-mir_hd.png': { cell: [400, 320], cols: 10 },
   'anim-px/gen-heo_hd.png': { cell: [528, 320], cols: 7 },
   'anim-px/gen-aw1-mir_hd.png': { cell: [352, 320], cols: 11 },
