@@ -260,6 +260,7 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'w-83-gyeonji-beodeul', // 형 11-14 손수 받은 판(옛 「 2」) 하나만 · 옛 판은 형이 「보관」
   'w-29-golpo-janmul', // 11-14 새 판 · 옛 판은 형이 「보관」 → assets_src/realm/retired/awaken-loop-20261115
   'g-98-goguryeo-gwaeyu', // manual intake 2026-11-14
+  'g-49-goguryeo-sona', // 11-21 Claude Flow(Omni 1.1) · 도끼를 들어 올린 채 숨 · 형: 오케이
   'g-89-baekje-maryeo', // manual intake 2026-11-14
   'g-86-mokji-geumbawi', // manual intake 2026-11-14
   'g-83-mokji-keundol', // manual intake 2026-11-14
