@@ -562,6 +562,211 @@ export const HAEBI_SHAMAN = {
   },
 } as const
 
+/**
+ * 55 숲 산길 거대 보스 「구미호」 (docs/realm/BOSS.md 구미호 표 · 성인 여성 · 형: 「섹시한 여성 인간형 보스」) — 규칙 55-GUMIHO 의 숲 산길 판에만 쓴다.
+ * 막 1 은 부채를 든 여인 · 막 2 에 반여우로 변하며 꼬리 아홉이 하나씩 터져 나온다 · 막 3 에 아홉 꼬리 지연 찌르기가 열린다.
+ * 막·분노·시간 예산·안전로 3P·머리 배율·환경 피해 박자는 HAEBI_GIANT 의 공통 계약을 그대로 쓰고, 여기엔 구미호만의 값만 둔다.
+ *  hp 본체 · midHpScale 10분 중간 보스(산적 대두목)의 체력 몫 · parts 부위 체력 = hp × 몫 (가산 체력이 아니다 · tail 은 꼬리 하나마다)
+ *  entrySeconds 등장(여우불이 모이고 숲에서 걸어 나와 부채를 편다) · transformSeconds 막 2 변신 · roarSeconds 막 3 웃음 · stagger* 회복 중 첫 타격의 움찔
+ *  homeY·homeBand 평소 발 자리(판 y)와 그 둘레 · glide* 미끄러지듯 다가감(초 · px/초 · 장수와 남길 거리 · 이보다 가까우면 안 감) · idleRecovery 할 수가 없을 때 쉬는 초
+ *  turnDeadZone 장수가 이만큼(px) 안쪽이면 돌아서지 않는다 · homePull 발 자리가 homeBand × 이만큼 벗어나면 먼저 제자리로 · fadeHidden 이보다 옅으면 안 보이고 안 맞는다
+ *  moves: phase 처음 여는 막 · body 몸 예고 · red 붉은 바닥 예고(초) · recover 회복(머리 노출) · strike 타격 몸놀림 초 · impactAt 그 가운데 판정 몫 · damage 피해 (× 스테이지 피해)
+ *   reach 장수가 발에서 이 거리 안이면 후보 · aimLimit 바라보는 쪽에서 장수 쪽으로 틀 수 있는 각
+ *   thrust 접은 부채 찌르기: 발 앞 from 부터 length 까지 폭 width 의 짧은 직선 (팔 길이 + 3P)
+ *   gale 부채 곡풍: 발에서 반지름 rings 마다 폭 width 의 곡선 셋 (선 사이 3P) · halfAngle 반각
+ *   illusion 환영 후 되받기: 자리 셋(spread 간격 · 진짜는 seeded 하나 · 몸 예고 blinkAt 몫에 자리를 바꾼다) · 진짜 앞 radius·halfAngle 부채 (환영은 피해 없음)
+ *   sweep 세 꼬리 순차쓸기: tails 꼬리 셋이 차례로 반지름 radius · 60도(halfAngle) 부채를 쓴다 · follow 다음 부채의 붉은 예고 · 뒤쪽 반은 늘 빈다
+ *   leap 반여우 도약 베기: holdMax 웅크려 버티는 seeded 0~이 초(wiggle·wiggleHz 들썩임) · min~reach 뛰는 거리 · lowest 착지 발 자리 y 한계(체력 막대 자리 위) · rx·ry 착지 타원(긴 축이 뛰는 쪽) · hop 공중 높이
+ *   ninetail 아홉 꼬리 지연 찌르기: holdMax 꼬리 부채를 펼쳐 버티는 seeded 0~이 초 · 발에서 from~from+length 폭 width 방사 직선 · slots 자리(꼬리 아홉 + 빈 통로 하나) · lane 빈 통로가 장수 쪽 자리에서 떨어진 칸 수
+ *  env 막별 환경: side 막1 양옆 숲바람 띠 · crescent 막2 양옆 꼬리 호(판 밖 x 를 중심으로 한 호) · rays 막3 방사 꼬리선 [위 x, 아래 x] 폭 width (가운데 세로 3P 는 늘 빈다)
+ *  rig 그림 자세 넷의 관절 자리 (구운 그림 px · 발 가운데 0 · 앞 +x · 아래 +y · scale 을 곱하면 판 px) — 판정과 그림이 같은 점을 쓴다
+ *   poses: 0 서기(접은 부채를 허리에) · 1 부채 팔을 뒤로 젖힘 · 2 접은 부채 찌르기 · 3 편 부채 휘두름 · crouch 웅크림 1 의 세로 눌림 몫 · turnSquash 돌아서는 순간 가로 눌림
+ *   tails: length 판 px · radius 길이에 대한 판정 굵기 몫 · rest 쉬는 각 · spread 펼친 각(앞 +x 에서 · 위가 음수) · baseStep 꼬리 뿌리를 늘어놓는 간격 · emergeOrder 변신 때 나오는 차례
+ *  motion 자세 (pose 그림 · crouch 웅크림 0~1 · lean 앞 기울임 · spread 꼬리 펼침 0~1) · sweep.raise/reach 순차쓸기 꼬리 들기·늘이기 · ninetail.reach/turn 찌르는 꼬리 길이·선 쪽으로 트는 몫 · breath 숨·꼬리 흔들림 · glide 미끄러짐 · stagger 움찔
+ *  view (그리기만): 그림 자리는 src/raid/gumiho-art.ts
+ */
+export const HAEBI_GUMIHO = {
+  hp: 1200000, midHpScale: .15,
+  parts: { head: .08, 'fan-arm': .07, 'claw-arm': .07, tail: .03 },
+  entrySeconds: 2.8, transformSeconds: 2.6, roarSeconds: 1.3, staggerSeconds: .45, staggerRecover: .4,
+  homeY: 480, homeBand: 60, glideSeconds: 1.4, glideSpeed: 150, glideNear: 210, glideMin: 12, idleRecovery: .9,
+  turnDeadZone: 14, homePull: 1.5, fadeHidden: .5,
+  moves: {
+    thrust: { phase: 1, body: .25, red: .25, recover: 1, strike: .18, impactAt: .5, damage: 20, reach: 340, aimLimit: .6, from: 40, length: 280, width: 40 },
+    gale: { phase: 1, body: .6, red: .7, recover: 1.5, strike: .3, impactAt: .4, damage: 22, reach: 470, aimLimit: .6, rings: [100, 260, 420], width: 40, halfAngle: 50 * Math.PI / 180 },
+    illusion: { phase: 1, body: .9, red: .8, recover: 1.5, strike: .3, impactAt: .5, damage: 28, reach: 420, aimLimit: 1.05, radius: 160, halfAngle: Math.PI / 4, spread: 330, blinkAt: .5, blinkFade: .12 },
+    sweep: { phase: 2, body: .7, red: .7, follow: .8, recover: 1.5, strike: .22, impactAt: .55, damage: 20, reach: 330, radius: 260, halfAngle: Math.PI / 6, tails: [1, 4, 7] },
+    leap: { phase: 2, body: .4, red: .8, holdMax: .6, recover: 1.5, strike: .5, impactAt: .85, damage: 30, reach: 560, min: 140, rx: 120, ry: 60, hop: 130, wiggle: .06, wiggleHz: 3.2, lowest: 620 },
+    ninetail: { phase: 3, body: .6, red: 1.4, holdMax: .5, recover: 2, strike: .3, impactAt: .45, damage: 28, reach: 340, from: 30, length: 280, width: 40, slots: 10, lane: 2 },
+  },
+  env: { side: 80, crescent: { x: -40, inner: 200, outer: 290, halfAngle: 1.2 }, rays: [[315, 120], [432, 330], [688, 790], [805, 1000]], width: 40 },
+  rig: {
+    scale: .9, crouch: .1, turnSquash: .7,
+    poses: [
+      { head: [36, -381], neck: [34, -338], hip: [21, -194], tail: [-22, -208], fanShoulder: [61, -326], fanHand: [83, -264], fanTip: [136, -291], fanRadius: 26, clawShoulder: [-24, -311], clawHand: [68, -251] },
+      { head: [43, -425], neck: [39, -380], hip: [23, -222], tail: [-24, -240], fanShoulder: [-44, -350], fanHand: [-167, -348], fanTip: [-214, -332], fanRadius: 26, clawShoulder: [79, -340], clawHand: [138, -278] },
+      { head: [22, -427], neck: [17, -382], hip: [15, -237], tail: [-28, -252], fanShoulder: [59, -347], fanHand: [147, -365], fanTip: [214, -374], fanRadius: 26, clawShoulder: [-28, -337], clawHand: [-68, -285] },
+      { head: [10, -451], neck: [7, -406], hip: [7, -251], tail: [-36, -273], fanShoulder: [67, -373], fanHand: [196, -384], fanTip: [211, -423], fanRadius: 52, clawShoulder: [-73, -343], clawHand: [-203, -293] },
+    ],
+    headRadii: [40, 50], robeLift: 50, robeRadius: 86, torsoRadius: 52, clawRadius: 24,
+    tails: {
+      length: [267, 246, 175, 217, 219, 248, 212, 230, 235], radius: .14, baseStep: [-.5, 4],
+      rest: [-2.182, -2.400, -2.618, -2.836, -3.054, -3.272, -3.491, -3.709, -3.927],
+      spread: [-.698, -1.156, -1.614, -2.073, -2.531, -2.989, -3.447, -3.905, -4.363],
+      emergeOrder: [4, 3, 5, 2, 6, 1, 7, 0, 8],
+    },
+  },
+  motion: {
+    rest: { pose: 0, crouch: 0, lean: 0, spread: 0 },
+    recover: { pose: 0, crouch: .3, lean: .1, spread: 0 },
+    laugh: { pose: 3, crouch: 0, lean: -.12, spread: 1 },
+    thrust: { prepare: { pose: 1, crouch: .2, lean: -.08, spread: 0 }, impact: { pose: 2, crouch: .08, lean: .14, spread: 0 } },
+    gale: { prepare: { pose: 1, crouch: .3, lean: -.14, spread: 0 }, impact: { pose: 3, crouch: .05, lean: .1, spread: .2 } },
+    illusion: { prepare: { pose: 0, crouch: .55, lean: .06, spread: 0 }, impact: { pose: 3, crouch: .1, lean: .2, spread: 0 } },
+    sweep: { prepare: { pose: 3, crouch: .1, lean: -.06, spread: .35 }, impact: { pose: 3, crouch: .05, lean: .06, spread: .35 }, raise: .9, reach: 1.15 },
+    leap: { prepare: { pose: 0, crouch: .6, lean: .16, spread: .2 }, air: { pose: 1, crouch: .1, lean: .1, spread: .5 }, impact: { pose: 2, crouch: .35, lean: .22, spread: .3 } },
+    ninetail: { prepare: { pose: 3, crouch: .12, lean: -.04, spread: 1 }, impact: { pose: 3, crouch: .05, lean: .04, spread: 1 }, reach: 1.12, turn: .6 },
+    /** 등장 몫: gather 까지 여우불만 · step 까지 걸어 나옴(rise px 위에서) · open 에 부채를 편다 */
+    entry: { gather: .35, step: .7, open: .8, rise: 70 }, fanOpen: { pose: 3, crouch: 0, lean: -.06, spread: 0 },
+    /** 변신 몫: laugh 까지 웃음 자세로 · fox 에서 반여우로(foxSpan 동안) · tails 에서 꼬리가 하나씩(tailsSpan 동안) */
+    transform: { laugh: .2, fox: .22, foxSpan: .18, tails: .42, tailsSpan: .45 },
+    breath: { hz: .32, crouch: .02, tail: .08, tailHz: .23, tailPhase: .8 },
+    glide: { lean: .1, bob: 4, hz: 1.4 }, stagger: { lean: -.14, crouch: .18 },
+  },
+  /**
+   * 그리기만 — behind* 장수가 몸 뒤(발보다 위)에 서면 옅게 · brokenShade 부서진 팔 덧칠 · sway 옷자락·머리 흔들림(px · 초마다 · 물결 · 엉덩이~발 사이 몫 from→peak→to · 가로 띠 수 · 윗몸 몫)
+   * shadow 발밑 그림자 · fire 여우불 빛(속·겉·보라) · entry 모이는 여우불 수·둘레 · illusion 환영(짙기 · 빛 · 깜빡임 Hz · 깜빡임 깊이) · ghostTail 막 1 환영 예고의 꼬리 그림자
+   * break*·drop* 부서짐 터짐 · 끊긴 꼬리가 떨어지는 초·거리·돌림 · streak 타격 빛줄기 · land 도약 착지 · fall* 쓰러짐(승리 막 내림) · flash 변신 섬광
+   */
+  view: {
+    behindAlpha: .55, behindPad: 10, brokenShade: 'rgba(36,20,44,.5)',
+    sway: { amp: 4, hz: .55, wave: 1, from: .2, peak: .72, to: .9, strips: 28, upper: .25 },
+    shadow: { alpha: .32, width: 150, height: 26, lift: .006 },
+    fire: { core: '#f4fbff', glow: '#8fd3ff', violet: '#b9a6ff', size: 15 },
+    entry: { wisps: 16, radius: 240 },
+    illusion: { alpha: .55, tint: 'rgba(140,205,255,.6)', flicker: 9, depth: .15 },
+    ghostTail: { alpha: .45, coil: 1.1 },
+    breakLife: .7, breakSize: 70, dropLife: .9, dropFall: 160, dropSpin: 1.4,
+    streak: { alpha: .85, width: 6 }, land: { size: 150, life: .5 },
+    fallSeconds: 2.8, fallHold: .35, fall: { crouch: 1, lean: .3, droop: 1.4, tilt: .32, sink: 40 }, flash: .55, flashRadius: 210, orbit: { count: 10, radius: 170, wobble: 40, speed: 2.4 },
+  },
+} as const
+
+/**
+ * 57 목책 돌파 거대 보스 「불가사리」 (쇠를 먹는 설화의 괴물 · docs/realm/BOSS.md 불가사리 표) — 규칙 57-BULGASARI 의 목책 돌파 판에만 쓴다.
+ * 막·분노·시간 예산·안전로 3P·머리 배율·환경 피해 박자는 HAEBI_GIANT 의 공통 계약을 그대로 쓰고, 여기엔 불가사리만의 값만 둔다.
+ *  hp 본체(11-22 봇 판 탐색: 1.0M 이면 상점 5할 싸움 43~92초로 막 셋을 다 보기 짧아서 1.3M · 55~119초 · docs/BALANCE.md) · midHpScale 10분 중간 보스(배신한 성주)의 체력 몫(.65 = 327,600 · 여울·설원 중간 보스와 같은 체력) · parts 부위 체력 = hp × 몫 (가산 체력이 아니다 · 본체도 같이 깎인다)
+ *  armorDamage 성한 철갑(등·어깨)을 맞히면 본체가 받는 몫 · exposedDamage 철갑이 벗겨진 살을 맞히면 받는 몫 (BOSS.md 철갑 .5 · 파괴 노출 1.2) · 등 철갑은 몸통 껍데기라 성한 동안 몸통 타격도 받는다
+ *  entrySeconds 등장 전체 초 · entry 큰 문으로 들어오는 차례(몫): walk 목책 뒤에서 문 앞까지 · chompAt 문 쇠붙이를 씹는 때 둘(chomp 한 번 피해) ·
+ *   burst 문을 부수고 뛰쳐나오는 때 · land 판에 내려서는 때 · roarAt 포효 · behind 문 앞에 설 때 발이 목책 줄보다 위인 px · startAbove 처음 자리가 그보다 더 위 · (입이 문 위에 오도록 선다)
+ *   breach 뛰쳐나올 때 몸 가운데 둘레 이 px 부터 문까지 몸이 짓밟는 성한 마디를 같이 부순다 · lunge 앞으로 나오는 px · hop 뛰쳐나오는 높이
+ *  roarSeconds 막 전환 포효 · stagger* 회복 중 첫 타격의 움찔(그만큼 회복이 늘어난다 · staggerRecover 상한)
+ *  homeY·homeBand 평소 발 자리 · floorY 세우는 자리(박치기 끝 · 출현)의 발이 이보다 아래로 가지 않는다(아래 체력 막대·조작부에 가리지 않게) · prowl* 다가가 서성임(초 · px/초 · 걸음 한 바퀴 거리 · 장수와 둘 거리) · idleRecovery 할 수가 없을 때 쉬는 초
+ *  turnDeadZone 장수가 이만큼 안쪽이면 돌아서지 않는다 · homePull 발 자리가 homeBand × 이만큼 벗어나면 먼저 제자리로 · prowlMin 이보다 가까우면 걷지 않는다 · sinkHidden 땅속에 이만큼 잠기면 안 보이고 안 맞는다
+ *  holdChance 두 번째 쓰는 수부터 붉은 예고 전에 몸 자세를 HAEBI_GIANT.windup.repeatHold 초 더 버틸 몫(seeded · 박치기·쌍돌진은 따로 seeded 긁기·수축)
+ *  moves: phase 처음 여는 막 · body 몸 예고 · red 붉은 바닥 예고(초) · recover 회복(머리 노출) · strike 타격 몸놀림 초 · impactAt 그 가운데 판정 몫 · damage 피해 (× 스테이지 피해)
+ *  env 막별 환경: border 막1 바깥 철편 띠(위아래 띠는 가운데 gap 을 비운다) · 막2 방사 철편: hub 판 가운데에서 떨어진 시작 · radial 선 방향(도) · lineWidth ·
+ *   막3 지하 질주 띠 strips [x 몫, 폭] (가운데 세로 3P 는 늘 빈다)
+ *  rig 몸 뼈대 (발 바닥 가운데가 0 · 앞이 +x · 아래가 +y · scale 을 곱한다) — 판정과 그림이 같은 뼈를 쓴다 · 그림 자리는 src/raid/bulgasari-art.ts
+ *  motion 수마다 몸 준비(prepare)·타격(impact) 자세: lift 몸 높이(+ 아래) · pitch 앞 들기(라디안) · shift 앞뒤 · head 숙임(+ 아래) · jaw 벌림 0~1 ·
+ *   swell 가슴 부풂(− 수축) · shoulder 어깨 철판 세움 0~1 · plates 등 철편 들림 0~1 · tail 꼬리 · paw 발 [앞 가까운 x,y · 앞 먼 · 뒤 가까운 · 뒤 먼] · sink 땅속
+ */
+export const HAEBI_BULGASARI = {
+  hp: 1300000, midHpScale: .65,
+  parts: { head: .1, jaw: .06, shoulder: .08, back: .16, 'fore-near': .07, 'fore-far': .07 },
+  armorDamage: .5, exposedDamage: 1.2,
+  entrySeconds: 3.4,
+  entry: { walk: .3, chompAt: [.38, .5], chomp: 1400, burst: .6, land: .8, roarAt: .84, behind: 44, startAbove: 300, breach: 120, lunge: 70, hop: 80 },
+  roarSeconds: 1.1, staggerSeconds: .45, staggerRecover: .4,
+  homeY: 470, homeBand: 80, floorY: 560, prowlSeconds: 1.6, prowlSpeed: 80, prowlStride: 130, prowlNear: 240, idleRecovery: 1,
+  turnDeadZone: 14, homePull: 1.5, prowlMin: 12, sinkHidden: .5, holdChance: .5,
+  moves: {
+    /** 쇠붙이 흡수: 입에서 장수 쪽 부채(앞에서 tilt 안) · length 6P · halfAngle 30도 · reach 입에서 이 거리 안이면 쓴다 · pull 맞으면 입 쪽으로 끌려가는 px */
+    suction: { phase: 1, body: .8, red: 1.2, recover: 1.5, strike: .5, impactAt: .4, damage: 26, length: 240, halfAngle: Math.PI / 6, reach: 330, tilt: .55, pull: 46 },
+    /** 철갑 박치기: width 4P · lengthShare 판 높이 몫(.6H) · scrape 앞발 긁기(seeded 0~이 초 · 몸 예고 뒤 · 붉은 예고 앞) · travel 타격 시간 가운데 달리는 몫 ·
+     *  min 최소 거리 · tilt 앞에서 이만큼까지 비스듬히 · minTravel 이 몫보다 짧게 끊기면 안 쓴다 · wallR 머리가 목책에 닿는 반지름 · wallHit 박힌 마디 피해 · wallStun 박힌 뒤 더 쉬는 초(머리 노출) */
+    ram: { phase: 1, body: .5, red: .7, scrape: .6, recover: 1.5, strike: .45, impactAt: .8, travel: .8, damage: 30, width: 160, lengthShare: .6, min: 100, tilt: .55, minTravel: .35, wallR: 24, wallHit: 2400, wallStun: 1.4 },
+    /** 앞발 내려찍기: rx·ry 타원 반지름(4P×5P) · reach 발에서 이 거리 안 · ahead 발이 앞으로 내딛는 px 한도 · sideBias 발 자리보다 이만큼 위까지는 가까운 발 · lift 드는 높이 · wallHit 타원에 닿은 마디 피해 */
+    stomp: { phase: 1, body: .45, red: .45, recover: 1, strike: .22, impactAt: .55, damage: 26, rx: 80, ry: 100, reach: 260, ahead: 110, sideBias: 10, lift: 150, wallHit: 900 },
+    /** 지하 질주·출현: width 띠 폭(3P) · radius 출현 원(3P) · min 이보다 가까우면 안 쓴다 · front 타격 시간 가운데 솟는 앞머리가 띠를 다 지나는 몫(그 뒤 impactAt 에 출현) · wallHit 출현 원에 닿은 마디 피해 */
+    burrow: { phase: 2, body: .8, red: 1.2, recover: 1.5, strike: .8, impactAt: .75, front: .65, damage: 30, width: 120, radius: 120, min: 200, wallHit: 3000 },
+    /** 철편 회전 살포: lines 선 수 · slots 방향 칸 수(하나는 비운다 · seeded) · width 1P · inner 발 자리에서 떨어진 시작 · length 선 길이 · spinHz 도는 빠르기(돌아서기 / 초) */
+    spin: { phase: 2, body: .8, red: 1, recover: 2, strike: .4, impactAt: .35, damage: 24, lines: 8, slots: 9, width: 40, inner: 135, length: 620, spinHz: 2.4 },
+    /** 가벼운 몸 쌍돌진(등 철갑이 벗겨진 뒤 · 막 3): width 3P · lengthShare · rush 첫 돌진 전 몸 수축 유지(seeded 0~이 초) · followBody·followRed 둘째 돌진을 다시 예고 · 나머지는 박치기와 같은 뜻 */
+    double: { phase: 3, body: .6, red: .9, rush: .4, recover: 2, strike: .35, impactAt: .8, travel: .8, damage: 28, width: 120, lengthShare: .5, min: 100, tilt: .7, minTravel: .3, wallR: 24, wallHit: 1800, wallStun: 1, followBody: .3, followRed: .7 },
+  },
+  env: { border: 28, gap: 160, hub: 150, radial: [0, 35, 145, 180, 215, 325], lineWidth: 40, strips: [[.22, 64], [.78, 64]] },
+  rig: {
+    scale: .78,
+    /** body 몸통 그림이 붙는 점 · 살(root) 캡슐 from→to · radius / back 등 철갑 캡슐 · lift 철편이 들리는 px / shoulder 어깨 철판 타원 · raise 세울 때 도는 라디안 */
+    body: { pivot: [0, -186], from: [-150, -158], to: [146, -170], radius: 76 },
+    back: { from: [-172, -232], to: [96, -258], radius: 62, lift: 40 },
+    shoulder: { center: [118, -236], radii: [72, 56], raise: .5 },
+    /** 다리: socket 어깨·엉덩이(가까운 쪽) · paw 쉬는 발 자리 · radius 캡슐 · far 먼 쪽 다리가 옮겨 서는 몫 · tuckMin·stretch 발을 들고 뻗을 때 다리 길이 몫 한계 */
+    fore: { socket: [118, -168], paw: [150, 0], radius: 34 },
+    hind: { socket: [-126, -162], paw: [-150, 0], radius: 34 },
+    far: [24, -16], tuckMin: .74, stretch: 1.04,
+    /** neck 머리가 붙는 점 · head 머리 판정 타원(목 점 기준 · 머리 각으로 돈다) · hinge 턱 관절 · mouth 입 · jaw 턱 캡슐(length · 기본 각 · 벌림 라디안 · 부서지면 dangle) · tail 꼬리 캡슐 */
+    neck: [160, -198],
+    head: { center: [197, 27], radii: [68, 62], hinge: [14.6, 27], mouth: [262, 54] },
+    jaw: { length: 259, angle: .27, open: .5, radius: 30, dangle: .42 },
+    tail: { root: [-192, -184], length: 170, angle: Math.PI - .32, radius: 30 },
+  },
+  motion: {
+    rest: { lift: 0, pitch: 0, shift: 0, head: 0, jaw: 0, swell: 0, shoulder: 0, plates: 0, tail: 0, paw: [0, 0, 0, 0, 0, 0, 0, 0], sink: 0 },
+    recover: { lift: 18, pitch: -.06, shift: 6, head: .32, jaw: .3, swell: 0, shoulder: 0, plates: 0, tail: .12, paw: [8, 0, 6, 0, 0, 0, 0, 0], sink: 0 },
+    suction: {
+      prepare: { lift: -8, pitch: .1, shift: -16, head: -.2, jaw: 1, swell: 1, shoulder: .2, plates: .1, tail: -.15, paw: [16, 0, 12, 0, -8, 0, -6, 0], sink: 0 },
+      impact: { lift: -2, pitch: .05, shift: -28, head: -.12, jaw: 1, swell: .55, shoulder: .2, plates: .1, tail: -.25, paw: [18, 0, 14, 0, -10, 0, -8, 0], sink: 0 },
+    },
+    ram: {
+      prepare: { lift: 22, pitch: -.08, shift: -22, head: .2, jaw: .15, swell: .2, shoulder: 1, plates: .2, tail: .25, paw: [-22, 0, -18, 0, 14, 0, 12, 0], sink: 0 },
+      impact: { lift: 12, pitch: -.1, shift: 26, head: .24, jaw: .2, swell: .1, shoulder: 1, plates: .2, tail: -.2, paw: [26, 0, 20, 0, -12, 0, -10, 0], sink: 0 },
+      /** 앞발 긁기: 빠르기(번/초) · 앞뒤 px · 드는 px */
+      scrapeHz: 2.6, scrapeX: 34, scrapeY: 18,
+    },
+    stomp: {
+      prepare: { lift: -10, pitch: .16, shift: -20, head: -.22, jaw: .5, swell: .3, shoulder: .3, plates: 0, tail: -.2, paw: [26, -150, -6, 0, 8, 0, 6, 0], sink: 0 },
+      impact: { lift: 14, pitch: -.06, shift: 18, head: .1, jaw: .6, swell: 0, shoulder: .1, plates: 0, tail: .2, paw: [0, 0, -4, 0, -6, 0, -4, 0], sink: 0 },
+    },
+    burrow: {
+      prepare: { lift: 34, pitch: -.22, shift: 8, head: .45, jaw: .3, swell: -.2, shoulder: .3, plates: .3, tail: .3, paw: [26, 0, 22, 0, 12, 0, 10, 0], sink: 1 },
+      impact: { lift: -16, pitch: .12, shift: 10, head: -.2, jaw: .9, swell: .4, shoulder: .4, plates: .4, tail: -.4, paw: [18, -30, 14, -26, 0, 0, 0, 0], sink: 0 },
+    },
+    spin: {
+      prepare: { lift: 20, pitch: 0, shift: 0, head: .12, jaw: .25, swell: .3, shoulder: .4, plates: 1, tail: .45, paw: [12, 0, 10, 0, -12, 0, -10, 0], sink: 0 },
+      impact: { lift: 6, pitch: .04, shift: 0, head: -.1, jaw: .5, swell: .1, shoulder: .2, plates: 0, tail: -.3, paw: [6, 0, 4, 0, -6, 0, -4, 0], sink: 0 },
+    },
+    double: {
+      prepare: { lift: 24, pitch: -.08, shift: -32, head: .14, jaw: .4, swell: -.7, shoulder: .6, plates: 0, tail: .35, paw: [-26, 0, -22, 0, 18, 0, 16, 0], sink: 0 },
+      impact: { lift: 10, pitch: -.1, shift: 30, head: .18, jaw: .5, swell: .1, shoulder: .6, plates: 0, tail: -.3, paw: [30, 0, 24, 0, -14, 0, -12, 0], sink: 0 },
+    },
+    roar: { lift: -16, pitch: .22, shift: -10, head: -.42, jaw: 1, swell: .6, shoulder: .5, plates: .5, tail: -.35, paw: [10, 0, 8, 0, 0, 0, 0, 0], sink: 0 },
+    /** 등장: 문 쇠붙이를 씹는 자세 (머리를 문 위로 숙인다) */
+    chomp: { lift: 16, pitch: -.1, shift: 14, head: .26, jaw: 0, swell: .3, shoulder: .4, plates: .2, tail: .2, paw: [14, 0, 10, 0, 0, 0, 0, 0], sink: 0 },
+    limp: { lift: -42, back: -14, sag: .05 },
+    breath: { lift: 3, hz: .3, tail: .07, tailHz: .19, swell: .12 },
+    walk: { swing: 26, raise: 24, bob: 5, tail: .12, head: .05 },
+    stagger: { shift: -14, pitch: .06, head: -.2 },
+  },
+  /**
+   * 그리기만: behind* 장수가 몸 뒤(발보다 위)에 서면 옅게 · brokenShade 부서진 다리·머리 덧칠 · exposedPulse* 벗겨진 살이 붉게 숨쉼(빠르기 · 세기)
+   * plate* 부서진 철갑 조각(초 · 조각 수 · 날아가는 px · 솟음 · 무게 · 도는 빠르기) · spark* 쇠 불티 · dust* 흙먼지 · land* 땅을 울린 먼지
+   * suck* 흡수에 빨려 드는 쇠 부스러기(수 · 크기) · shard* 회전 살포 철편 · trench* 지하 질주 흙 두둑 · shadow* 발밑 그림자 · sinkDepth·sinkClip 땅속으로 잠기는 깊이·땅 가림
+   * mouth* 입 안 · fall* 쓰러짐(승리 막 내림)
+   */
+  view: {
+    behindAlpha: .5, behindPad: 10, brokenShade: 'rgba(36,26,22,.45)', exposedPulseHz: 1.3, exposedPulse: .22, exposedTint: '#ff5a3c',
+    plateLife: 1, plates: 7, plateSpeed: 260, plateRise: 220, plateGravity: 620, plateSpin: 7,
+    sparkLife: .45, sparks: 10, sparkSpeed: 230, sparkColor: '#ffcf7a', iron: '#9c8f86', rust: '#8a4a2a', dirt: '#6b5040',
+    dustLife: .7, dustSize: 150, landLife: .6, landSize: 190, landSpan: 1.6,
+    suckBits: 14, suckSize: 7, shardSize: 18, trenchWidth: 46, trenchAlpha: .75, moundSize: 70,
+    shadowAlpha: .32, shadowShift: 10, shadowWidth: 260, shadowHeight: 36,
+    sinkDepth: 420, sinkClip: 8, turnSquash: .75, mouthColor: '#2a0d0b',
+    fallSeconds: 2.8, fallHold: .45, fall: { lift: 110, pitch: -.16, head: .6, jaw: .5, paw: [40, 0, 30, 0, -26, 0, -18, 0], tail: .4 },
+  },
+} as const
+
 export const HAEBI_CHAMPION = {
   extraSeconds: 30, eliteLateRamp: 300, entrySeconds: .65, cooldown: 3.3, phaseRate: 1.2, roarSeconds: .65,
   dashWind: 1.05, dashRange: 400, dashSpeed: 340, dashWidth: 24, dashDamage: 20,

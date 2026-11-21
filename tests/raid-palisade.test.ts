@@ -26,7 +26,8 @@ function mob(s: HaebiRun, kind: Mob['kind'], x: number, y: number) {
 }
 
 test('56C 목책은 목책 돌파 판에만 선다 · 다른 판은 56B 그대로(같은 상태)', () => {
-  assert.equal(raidRulesForStage('palisade'), '56C')
+  // 실제 출전은 57-BULGASARI(이 목책 + 불가사리) · 옛 56C 기록·검사는 목책만 그대로 다시 돈다
+  assert.equal(raidRulesForStage('palisade'), '57-BULGASARI')
   for (const stage of ['forest', 'ford', 'snow', 'fortress'] as const) {
     const a = createHaebi(7, 'stage', 'sword', { stage, simRules: '56C' }), b = createHaebi(7, 'stage', 'sword', { stage, simRules: '56B' })
     assert.equal(usesPalisade(a), false, stage)

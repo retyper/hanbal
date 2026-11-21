@@ -3,7 +3,7 @@
  "supersedes": "docs/realm/production/CODEX50-CARD-FRAMES.json (50-6 · same file names a/b/c)",
  "css": "src/raid/card-skins.css (slice · native sizes are checked by tests/raid-card-skins.test.ts)",
  "scale": 0.375,
- "runtimeBytes": 159430,
+ "runtimeBytes": 151610,
  "items": [
   {
    "branch": "a",
@@ -105,9 +105,9 @@
   },
   {
    "branch": "b",
-   "source": "assets_src/realm/raid/card-frames-51/branch-card-wave-51.png",
-   "sourceSha256": "2ce2116488e613f7f7717021d0bd072a575b5da8498f39e1a15a07a018c96211",
-   "archive": "D:/에셋창고/codex67/branch-card-wave-51.png",
+   "source": "assets_src/realm/raid/card-frames-51/branch-card-wave-74.png",
+   "sourceSha256": "826a0571dce9acd61beebe3708a7c13e620359b3a9e930f2420d96946619d58d",
+   "archive": "D:/에셋창고/codex74/branch-card-wave-74.png",
    "nativeSize": [
     1024,
     1536
@@ -120,13 +120,13 @@
       193,
       80
      ],
-     "top": -109,
+     "top": -122,
      "native": [
       515,
       214
      ],
-     "bytes": 11616,
-     "sha256": "448bd70a6a85d72b6e896849d87a24d1ef104a19e35655f0ddb036e6f9034a17"
+     "bytes": 8916,
+     "sha256": "ae8889779e5057bb1b7cde898529e335405e82433343a73a5ce4f101be171145"
     },
     "base": {
      "path": "public/realm/raid/ui-card-branch-b-base.webp",
@@ -134,43 +134,43 @@
       193,
       49
      ],
-     "bottom": 0,
+     "bottom": -26,
      "native": [
       515,
       130
      ],
-     "bytes": 7196,
-     "sha256": "6435235022ab024f7b3011a7a35663b3004f5926a7e83d4ea3a19a898e828bdb"
+     "bytes": 6540,
+     "sha256": "884b9f05e104e02f0a974ce5929ab1d848a60844f06b87070452d88f8468e661"
     }
    },
    "frame": {
     "path": "public/realm/raid/ui-card-branch-b.webp",
     "size": [
-     190,
-     524
+     182,
+     509
     ],
     "native": [
-     507,
-     1397
+     485,
+     1358
     ],
     "slice": [
-     250,
-     150,
-     236,
-     150
+     140,
+     140,
+     160,
+     140
     ],
     "runtimeSlice": [
-     94,
-     56,
-     88,
-     56
+     52,
+     52,
+     60,
+     52
     ],
     "origin": [
-     0,
-     113
+     12,
+     126
     ],
-    "bytes": 43660,
-    "sha256": "635e922dc3f59fd94f0ed786a77ba51d5aa2a3feed7bd4e6a929b10c81425c99"
+    "bytes": 39196,
+    "sha256": "1309200c2f4069bbcefcc722e83dff37475386443893b941ddda6be501814a49"
    }
   },
   {

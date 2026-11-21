@@ -5,12 +5,20 @@ import { botChoice, botInput } from '../src/raid/haebi-replay.ts'
 import { stageToolOpts, stageSample, toolPolicy, trackToolBosses } from '../tools/raid-stage-balance.ts'
 import { ultToolConfig, collectUltFields } from '../tools/raid-ult-dps.ts'
 
-test('forest default preserves original create state and ordinary bot progression', () => {
+test('forest explicit 56B lane preserves original create state and ordinary bot progression', () => {
   const bonus = { vigor: 3, might: 2, armor: 1 }
   const old = createHaebi(7, 'stage', 'axe', { stage: 'forest', bonus })
-  assert.deepEqual(createHaebi(7, 'stage', 'axe', stageToolOpts('forest', bonus)), old)
+  assert.deepEqual(createHaebi(7, 'stage', 'axe', stageToolOpts('forest', bonus, '56B')), old)
   for (let i = 0; i < 120; i++) { if (old.offers.length) choose(old, botChoice(old, 'storm')); else stepHaebi(old, botInput(old, .5), 1 / 60) }
-  assert.deepEqual(stageSample({ stage: 'forest', kit: 'axe', seed: 7, bonus, react: .5, maxOperations: 120 }).s, old)
+  assert.deepEqual(stageSample({ stage: 'forest', kit: 'axe', seed: 7, bonus, react: .5, rules: '56B', maxOperations: 120 }).s, old)
+})
+test('forest default follows the real stage rule (55-GUMIHO): same run as 56B until the 10-minute midboss, plus the giant flow', () => {
+  const bonus = { vigor: 3, might: 2, armor: 1 }
+  assert.equal(stageToolOpts('forest', bonus).simRules, raidRulesForStage('forest'))
+  const { s } = stageSample({ stage: 'forest', kit: 'axe', seed: 7, bonus, react: .5, maxOperations: 120 }), old = stageSample({ stage: 'forest', kit: 'axe', seed: 7, bonus, react: .5, rules: '56B', maxOperations: 120 }).s
+  assert.equal(usesGiantBoss(s), true); assert.equal(runDuration(s), 1380)
+  const { giantFlow, ...rest } = s
+  assert.deepEqual(giantFlow, { midSpawned: false, midDefeated: false, finalSpawned: false, finalDefeated: false }); assert.deepEqual(rest, old)
 })
 test('ford defaults to real stage rules; explicit56B comparison and permanent awake remain canonical', () => {
   const normal = createHaebi(7, 'stage', 'axe', stageToolOpts('ford', {})), awake = createHaebi(7, 'stage', 'axe', stageToolOpts('ford', {}, undefined, true))

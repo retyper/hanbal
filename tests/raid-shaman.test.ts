@@ -37,8 +37,8 @@ const step = (g: ShamanState, e: GiantOwner, player: Point, random: () => number
 /** 판정에서 환경 불을 끈다 (예고·안전 길 셈에는 그대로 남는다) */
 const quiet = (g: ShamanState) => { g.environment.active = false; g.environment.age = -1e9 }
 
-test('55-SHAMAN 은 불타는 산성에만 선다 · 다른 판은 56B 그대로 · 여울·목책·설원 규칙은 그대로', () => {
-  assert.equal(raidRulesForStage('fortress'), '55-SHAMAN'); assert.equal(raidRulesForStage('ford'), '55-IMUGI'); assert.equal(raidRulesForStage('palisade'), '56C'); assert.equal(raidRulesForStage('snow'), '55-TIGER'); assert.equal(raidRulesForStage('forest'), '56B')
+test('55-SHAMAN 은 불타는 산성에만 선다 · 다른 판은 56B 그대로 · 숲·여울·목책·설원 규칙은 그대로', () => {
+  assert.equal(raidRulesForStage('fortress'), '55-SHAMAN'); assert.equal(raidRulesForStage('ford'), '55-IMUGI'); assert.equal(raidRulesForStage('palisade'), '57-BULGASARI'); assert.equal(raidRulesForStage('snow'), '55-TIGER'); assert.equal(raidRulesForStage('forest'), '55-GUMIHO')
   for (const stage of ['forest', 'ford', 'palisade', 'snow'] as const) {
     const a = createHaebi(7, 'stage', 'sword', { stage, simRules: '55-SHAMAN' }), b = createHaebi(7, 'stage', 'sword', { stage, simRules: '56B' })
     assert.equal(usesGiantBoss(a), false, stage)
