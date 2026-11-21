@@ -25,7 +25,9 @@ SCALE, PAD, ALPHA = .375, 3, 8
 BRANCHES = {
     'a': {'src': 'sword', 'cols': (250, 776), 'crest': (4, 292), 'base': (1374, 1480), 'rows': (736, 870), 'band': ((52, 150), (874, 972)),
           'slice': (292, 128, 236, 128)},
-    'b': {'src': 'wave', 'cols': (255, 770), 'crest': (4, 218), 'base': (1380, 1510), 'slice': (250, 150, 236, 150)},
+    # 11-22 Codex 74: 물결을 일월오봉도 결(둥근 흰 물마루 · 위 물방울 셋)로 다시 그림 — 우키요에 「큰 파도」처럼 보이던 51 판 대신
+    'b': {'src': 'wave', 'file': 'branch-card-wave-74.png', 'archive': 'D:/에셋창고/codex74/branch-card-wave-74.png',
+          'cols': (255, 770), 'crest': (4, 218), 'base': (1380, 1510), 'slice': (140, 140, 160, 140)},
     'c': {'src': 'tempo', 'cols': (330, 694), 'crest': (4, 222), 'base': (1432, 1508), 'slice': (290, 190, 240, 190)},
 }
 
@@ -39,13 +41,13 @@ def save(rgba, name):
 
 def bake(letter):
     cfg = BRANCHES[letter]
-    src = SRC / f'branch-card-{cfg["src"]}-51.png'
+    src = SRC / cfg.get('file', f'branch-card-{cfg["src"]}-51.png')
     a = np.array(Image.open(src).convert('RGBA'))
     a[a[..., 3] < ALPHA] = 0
     H, W = a.shape[:2]
     c0, c1 = cfg['cols']
     row = {'branch': letter, 'source': str(src.relative_to(ROOT)).replace('\\', '/'), 'sourceSha256': hashlib.sha256(src.read_bytes()).hexdigest(),
-           'archive': f'D:/에셋창고/codex67/branch-card-{cfg["src"]}-51.png', 'nativeSize': [W, H], 'scale': SCALE, 'pieces': {}}
+           'archive': cfg.get('archive', f'D:/에셋창고/codex67/branch-card-{cfg["src"]}-51.png'), 'nativeSize': [W, H], 'scale': SCALE, 'pieces': {}}
     # 테두리: 가운데 열·줄을 빼고 맞붙임 (남는 칸 차례 그대로)
     keep_x = np.r_[0:c0, c1:W]
     keep_y = np.r_[0:H] if 'rows' not in cfg else np.r_[0:cfg['rows'][0], cfg['rows'][1]:H]

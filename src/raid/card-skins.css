@@ -1,4 +1,4 @@
-/* 51-1 갈래마다 모양이 다른 테두리 (흑백으로도 갈림): a 주 무기 = 칼날 모서리 쇠 테 + 환두 고리 · b 보조 = 물결 테 + 물보라 · c 버팀 = 가는 테에 깃·바람결 + 화살 깃 셋.
+/* 51-1 갈래마다 모양이 다른 테두리 (흑백으로도 갈림): a 주 무기 = 칼날 모서리 쇠 테 + 환두 고리 · b 보조 = 물결 테(11-22 일월오봉도 결 · Codex 74) + 물방울 셋 · c 버팀 = 가는 테에 깃·바람결 + 화살 깃 셋.
    원본 1024x1536(Codex 67)을 tools/sprite-kit/bake-branch-cards.py 가 나눈다: 테 줄은 border-image(모서리는 제 모양 · 사이 테 줄만 늘어남),
    가운데 장식(위 고리·물보라·깃 / 아래 장식 / 칼 테의 좌우 띠)은 늘리지 않고 ::before·::after 에 제 크기로 겹친다.
    --s: 원본 한 px 를 몇 CSS px 로 그리나 (넓은 화면 .13 · 낮은 가로 .11 · 세로 폰 줄 .085). 아래 숫자는 모두 원본 px (bake 의 json).
@@ -6,8 +6,8 @@
 .choices button.branch-card{--s:.13;border-style:solid;border-color:transparent;border-radius:0;border-width:calc(var(--s)*191px) calc(var(--s)*150px) calc(var(--s)*140px);background:linear-gradient(color-mix(in srgb,var(--c) 9%,#17251d),color-mix(in srgb,var(--c) 4%,#0a1714));background-clip:padding-box}
 .choices button.branch-a{border-image:url('/realm/raid/ui-card-branch-a.webp') 110 48 88 48/calc(var(--s)*292px) calc(var(--s)*128px) calc(var(--s)*236px) calc(var(--s)*128px) stretch;
   --crest:url('/realm/raid/ui-card-branch-a-crest.webp');--crest-w:526;--crest-h:288;--crest-top:-80;--base:url('/realm/raid/ui-card-branch-a-base.webp');--base-w:526;--base-h:106;--base-bottom:46}
-.choices button.branch-b{border-image:url('/realm/raid/ui-card-branch-b.webp') 94 56 88 56/calc(var(--s)*250px) calc(var(--s)*150px) calc(var(--s)*236px) calc(var(--s)*150px) stretch;
-  --crest:url('/realm/raid/ui-card-branch-b-crest.webp');--crest-w:515;--crest-h:214;--crest-top:-109;--base:url('/realm/raid/ui-card-branch-b-base.webp');--base-w:515;--base-h:130;--base-bottom:0}
+.choices button.branch-b{border-image:url('/realm/raid/ui-card-branch-b.webp') 52 52 60 52/calc(var(--s)*140px) calc(var(--s)*140px) calc(var(--s)*160px) calc(var(--s)*140px) stretch;
+  --crest:url('/realm/raid/ui-card-branch-b-crest.webp');--crest-w:515;--crest-h:214;--crest-top:-122;--base:url('/realm/raid/ui-card-branch-b-base.webp');--base-w:515;--base-h:130;--base-bottom:-26}
 .choices button.branch-c{border-image:url('/realm/raid/ui-card-branch-c.webp') 109 71 90 71/calc(var(--s)*290px) calc(var(--s)*190px) calc(var(--s)*240px) calc(var(--s)*190px) stretch;
   --crest:url('/realm/raid/ui-card-branch-c-crest.webp');--crest-w:364;--crest-h:218;--crest-top:-12;--base:url('/realm/raid/ui-card-branch-c-base.webp');--base-w:364;--base-h:76;--base-bottom:10}
 /* 위 가운데 장식 — 테 상자 위로 솟는다(칼 고리·물보라) · 갈래 끝 카드는 그 자리에 「갈래 끝」 띠가 있어 그리지 않는다 */
