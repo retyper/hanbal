@@ -16,7 +16,7 @@ import { pushRaids } from './net/sync.ts'
 import { newCam, followCam, nextLevel, closest, toField, fieldView, clampCenter } from './raid/camera.ts'
 import { loadMeta, saveMeta, buy, refund, refundFee, record, shopCost, shopMax, stageOpen, stageName, pickStage, SHOP, STAGE_ORDER, type ShopKey } from './raid/meta.ts'
 import { drawField, imagePaths, setHeroArt, heroArtFiles, heroHdFiles, warmHeroSprites } from './raid/haebi-view.ts'
-import { powerIcon, installPowerHints, comboIcon, rankMark, treeSvg, treeInfo, BRANCH_COLOR } from './raid/power-ui.ts'
+import { powerIcon, installPowerHints, comboIcon, rankMark, treeInfo, BRANCH_COLOR } from './raid/power-ui.ts'
 import { KIT_BY_SPRITE } from './raid/kit-table.ts'
 import { cutBandHtml, cutHeroPath, ensureCutinBandCss, type CutBg } from './ui/cutin-band.ts'
 import { josa } from './core/josa.ts'
@@ -36,9 +36,9 @@ import './raid/pause.css'
 import { raidShortcut, keyHints } from './raid/keyboard.ts'
 import './raid/keyboard.css'
 import './raid/card-skins.css'
-import './raid/tree.css'
+import './raid/skill-tree-view.css'
 import { nodeOpen, kitPowers } from './raid/haebi.ts'
-import { drawTreeLinks, flashTreeParents } from './raid/tree-view.ts'
+import { skillTreeHtml, drawTreeLinks, flashTreeParents, highlightTreePath } from './raid/skill-tree-view.ts'
 import { guardMedia } from './ui/media-guard.ts'
 import { haptics } from './ui/haptics.ts'
 /** 금은 글자 대신 동전 그림 (형 11-19 「금도 아이콘으로 해야겠음 텍스트 말고」) */
@@ -592,7 +592,7 @@ root.append(treeView)
 const treeResize = new ResizeObserver(() => { if (!treeView.hidden) drawTreeLinks(treeView, run) })
 function openTree() {
   treeResize.disconnect()
-  treeView.innerHTML = `<div class="panel tree-panel"><div class="tree-head"><button class="tree-close primary">돌아가기</button><h2>${weapon} 스킬 트리</h2><small>레벨 ${run.level} · 앞으로 레벨업 ${Math.max(0, C.maxLevel - run.level)}번</small></div>${treeSvg(run)}<p class="tree-info" aria-live="polite">칸을 누르거나 가리키면 설명이 나옵니다</p></div>`
+  treeView.innerHTML = `<div class="panel tree-panel"><div class="tree-head"><button class="tree-close primary">돌아가기</button><h2>${weapon} 스킬 트리</h2><small>레벨 ${run.level} · 앞으로 레벨업 ${Math.max(0, C.maxLevel - run.level)}번</small></div>${skillTreeHtml(run)}<p class="tree-info" aria-live="polite">칸을 누르거나 가리키면 설명이 나옵니다</p></div>`
   treeView.hidden = false
   drawTreeLinks(treeView, run)
   treeResize.observe(treeView.querySelector('.tree-board')!)
@@ -602,6 +602,7 @@ function openTree() {
 function closeTree() { if (!treeView.hidden) { treeView.hidden = true; treeResize.disconnect() } }   // 판마다 불린다 — 같은 값도 쓰면 속성이 바뀐 셈이 된다 (11-18)
 function selectTreeNode(node: HTMLElement) {
   treeView.querySelectorAll('.picked').forEach(x => x.classList.remove('picked')); node.classList.add('picked')
+  highlightTreePath(treeView, run, node.dataset.treeId!)
   treeView.querySelector('.tree-info')!.innerHTML = treeInfo(run, node)
 }
 treeView.onclick = e => {
