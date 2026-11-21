@@ -7326,8 +7326,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       warnPaint() // 승산이 낮은 출정이면 한 번 묻는다
       scoutAskPaint() // 정찰꾼이 다 나갔는데 새 곳을 누르면 — 어디서 눌렀든 가운데에 「어디를 거둘까」
       marquee(root) // 말줄임으로 잘린 한 줄 글은 지하철 안내판처럼 흐른다 (형 10-29)
+      threatAfterPaint() // 적이 온다 예고가 처음 한 번 알림보다 먼저 (이번 달 안에 할 일이다)
       firstsAfterPaint()
-      threatAfterPaint()
       mapLandscape.sync()
     } catch (e) {
       failNote(e)
@@ -7485,8 +7485,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     threatTimer = 0
     const r = realm
     if (r === null || front !== null || r.region === 'tutorial' || r.outcome || warOn || document.visibilityState !== 'visible' || root.querySelector('.thw') !== null) return
-    // 보고판·큰 장면·전장·회의·담판·마을 안이 떠 있으면 걷힌 뒤 다시 본다
-    if (root.classList.contains('modal-open') || root.querySelector('.cere, .ascfx, .gnpop, .wr, .stov, .dpov, .townov') !== null) { threatTimer = window.setTimeout(threatCheck, P.realm.firstHintDelayMs); return }
+    // 보고판·큰 장면·전장·회의·담판·마을 안 · 처음 한 번 알림이 떠 있으면 걷힌 뒤 다시 본다 (두 상자가 한꺼번에 뜨지 않게)
+    if (root.classList.contains('modal-open') || root.querySelector('.cere, .ascfx, .gnpop, .wr, .stov, .dpov, .townov, .fhint') !== null) { threatTimer = window.setTimeout(threatCheck, P.realm.firstHintDelayMs); return }
     const vis = visibleNodes(r, me())
     const busy = new Set(ordersNow().flatMap((o) => ('army' in o && typeof o.army === 'string' ? [o.army] : [])))
     const key = (x: { to: string; foe: string }): string => `${r.seed}|${r.season}|${x.to}|${x.foe}`
@@ -7573,8 +7573,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const half = box.offsetWidth / 2
     box.classList.toggle('up', up)
     box.classList.toggle('dn', !up)
-    box.style.left = `${Math.round(Math.min(innerWidth - 12 - half, Math.max(12 + half, b.left + b.width / 2)))}px`
+    const cx = Math.min(innerWidth - 12 - half, Math.max(12 + half, b.left + b.width / 2))
+    box.style.left = `${Math.round(cx)}px`
     box.style.top = `${Math.round(up ? b.top : b.bottom)}px`
+    // 화면 끝에 밀려 말풍선이 비켜 섰으면 꼬리만 그것을 가리킨다 (가로 화면의 오른쪽 장수 탭 · 11-22)
+    box.style.setProperty('--ax', `calc(50% + ${Math.round(Math.max(16 - half, Math.min(half - 16, b.left + b.width / 2 - cx)))}px)`)
   }
   function firstClose(): void {
     firstOn = null

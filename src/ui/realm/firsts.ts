@@ -65,7 +65,7 @@ export const FIRST_CSS = `
 .ap .fhint.dn { transform: translate(-50%, 12px); }
 .ap .fhint b { display: block; color: #ffd27a; font-size: 15px; margin-bottom: 2px; }
 .ap .fhint .fhmore { margin-top: 6px; padding: 3px 10px; border-radius: 999px; border: 1px solid #c9a45a; background: #3a2a16; color: #ffe2a8; font-size: 12.5px; }
-.ap .fhint::after { content: ''; position: absolute; left: 50%; width: 10px; height: 10px; background: inherit; border: inherit; border-width: 0 1.5px 1.5px 0; transform: translateX(-50%) rotate(45deg); }
+.ap .fhint::after { content: ''; position: absolute; left: var(--ax, 50%); width: 10px; height: 10px; background: inherit; border: inherit; border-width: 0 1.5px 1.5px 0; transform: translateX(-50%) rotate(45deg); }
 .ap .fhint.up::after { bottom: -7px; }
 .ap .fhint.dn::after { top: -7px; transform: translateX(-50%) rotate(225deg); }
 .ap .fhint.out { opacity: 0; transition: opacity .3s ease; }
