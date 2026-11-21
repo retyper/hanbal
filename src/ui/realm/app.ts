@@ -7553,6 +7553,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     el.innerHTML = `<b>${esc(f.title)}</b>${esc(f.text)}${f.guide !== undefined ? `<br><button class="fhmore" data-act="guide" data-k="${f.guide}">${tr('fh.more')}</button>` : ''}`
     el.addEventListener('click', () => window.setTimeout(firstClose, 0)) // 「자세히」는 설명을 연 뒤 닫는다
     root.append(el)
+    el.style.width = `${el.offsetWidth}px` // 제 폭을 붙잡는다 — 화면 끝으로 옮기면 좁아져 꼬리·자리가 어긋났다 (가로 화면 장수 탭)
     firstPlace()
     ding(snd('tap_brush'), 0.35)
     window.setTimeout(() => { if (firstOn?.id === f.id) firstClose() }, noticeMs(f.title + f.text, P.realm.firstHintMs))
@@ -7576,8 +7577,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const cx = Math.min(innerWidth - 12 - half, Math.max(12 + half, b.left + b.width / 2))
     box.style.left = `${Math.round(cx)}px`
     box.style.top = `${Math.round(up ? b.top : b.bottom)}px`
-    // 화면 끝에 밀려 말풍선이 비켜 섰으면 꼬리만 그것을 가리킨다 (가로 화면의 오른쪽 장수 탭 · 11-22)
-    box.style.setProperty('--ax', `calc(50% + ${Math.round(Math.max(16 - half, Math.min(half - 16, b.left + b.width / 2 - cx)))}px)`)
+    // 화면 끝에 밀려 말풍선이 비켜 섰으면 꼬리만 그것을 가리킨다 (가로 화면의 오른쪽 장수 탭 · 11-22) — 자리를 옮긴 뒤의 폭으로 잰다(끝에 붙으면 좁아진다)
+    const h2 = box.offsetWidth / 2
+    box.style.setProperty('--ax', `calc(50% + ${Math.round(Math.max(16 - h2, Math.min(h2 - 16, b.left + b.width / 2 - cx)))}px)`)
   }
   function firstClose(): void {
     firstOn = null
