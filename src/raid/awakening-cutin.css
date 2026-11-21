@@ -1,0 +1,5 @@
+#skill-cutin .awakening-cutin{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;pointer-events:none;container-type:size}
+.awakening-cutin-art{height:96%;max-width:72%;object-fit:contain;object-position:center;will-change:transform,opacity}
+.awakening-cutin-title{position:absolute;right:4%;bottom:24%;max-width:50%;display:grid;gap:8px;text-align:right;color:#ffe8a0;text-shadow:2px 3px 0 #17120c,0 0 9px #17120c;font-family:var(--display);pointer-events:none}
+.awakening-cutin-title b{font-size:clamp(28px,7cqw,80px);line-height:1.2}.awakening-cutin-title span{font-size:clamp(13px,2.4cqw,25px)}
+.pause-short-cutin{display:flex;align-items:center;justify-content:center;gap:10px;font-size:14px;min-height:44px}.pause-short-cutin input{width:20px;height:20px;accent-color:#d5ba71}

@@ -11,7 +11,7 @@
  * 기술 계단(11-19 형: 「기술 쓸 때 사운드·햅틱 · 크리티컬은 핑 · 초반 사운드 너무 심하면 안 됨 · 진각성은 더 임팩트」): 비기 < 각성 비기 < 진각성 비기 · 크리티컬 「핑」 — HAEBI_FEEL_TIERS · 진동은 frame 이 돌려주는 사건으로 화면이 낸다.
  * 소리 끔·크기는 본편 설정(hanbal.realm.mute · hanbal.realm.volume.*)을 따른다. 출처: public/realm/sfx/CREDITS.txt · public/sfx/CREDITS.txt
  */
-import { HAEBI_SOUND as V, HAEBI_IMPACT as IMPACT, HAEBI_FEEL_TIERS as F, HAEBI_ULT as U, type FeelTier } from '../tune/params.ts'
+import { HAEBI_SOUND as V, HAEBI_IMPACT as IMPACT, HAEBI_FEEL_TIERS as F, HAEBI_ULT as U, HAEBI_AWAKEN_ULT as AC, type FeelTier } from '../tune/params.ts'
 import type { HaebiRun, Kit } from './haebi.ts'
 
 /** 한 프레임에 일어난 손맛 사건 — 화면이 진동에 쓴다 (판은 읽기만) · cast 비기를 누름 · skill 비기가 터짐 · crit 크리티컬이 났음 */
@@ -90,6 +90,18 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
       let i = 0; while (i < d.length && Math.abs(d[i]!) < V.silence) i++
       clips.set(file, { buf, from: Math.min(i / buf.sampleRate, Math.max(0, buf.duration - .05)) })
     } catch { /* 못 푸는 파일은 조용히 */ }
+  }
+  let heroVoiceFile: string | null = null, voiceRevision = 0
+  let pendingHeroVoice: { cast: NonNullable<HaebiRun['cast']>; file: string } | null = null
+  /** An optional authored hero line. Preparation never plays or mutates the run. */
+  async function setAwakeningVoice(url: string | null): Promise<boolean> {
+    const rev = ++voiceRevision; heroVoiceFile = null; pendingHeroVoice = null
+    if (!url) return false
+    if (!raw.has(url)) raw.set(url, fetch(url).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null))
+    if (!await raw.get(url) || rev !== voiceRevision) return false
+    if (ctx && !clips.has(url)) await decode(ctx, url)
+    if (rev !== voiceRevision || ctx && !clips.has(url)) return false
+    heroVoiceFile = url; return true
   }
   /** 곧바로 낸다. gap 은 같은 자리 소리가 한 프레임 안에서 수십 번 겹쳐 터지지 않게 하는 아주 짧은 틈 */
   function play(slot: string, file: string, vol: number, gap = 0, rate = 1, cap = 0, dest: AudioNode | null = null) {
@@ -193,7 +205,7 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
     if (ctx) { void ctx.resume().catch(() => undefined); return }
     try { ctx = new AudioContext({ latencyHint: 'interactive' }) } catch { return }
     const c = ctx
-    ready = Promise.all(mine.map(f => decode(c, f))).then(() => undefined)
+    ready = Promise.all([...raw.keys()].map(f => decode(c, f))).then(() => undefined)
     // 「둑」·「탁」의 거친 결 — 흰 노이즈 한 조각을 한 번 만들어 돌려 쓴다
     try { const len = Math.ceil(ctx.sampleRate * Math.max(V.thudMs[1], F.castMs) / 1000), d = (noise = ctx.createBuffer(1, len, ctx.sampleRate)).getChannelData(0); for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1 } catch { noise = null }
     try { const k = ctx.createDynamicsCompressor(); k.threshold.value = F.busDb; k.ratio.value = F.busRatio; k.connect(ctx.destination); bus = k } catch { bus = null }
@@ -201,6 +213,7 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
   }
   return {
     unlock,
+    setAwakeningVoice,
     /** 막 내림의 도장이 찍히는 박자. 음소거·음량은 기존 sfx 경로를 따른다. */
     ending: (won: boolean) => sfx(won ? 'win' : 'lose', V.end),
     /** 파일을 다 풀었나 (들어 보기 · 시험) */
@@ -219,11 +232,18 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
       return wait
     },
     frame(s: HaebiRun, live: boolean, paused: boolean, deferEnding = false): FeelEvents {
+      // Keep an already-started line at the same sample while paused/hidden.
+      // Terminal-state SFX use this context too, so state !== playing does not mute endings.
+      if (ctx) {
+        const audible = !paused && !document.hidden && !muted()
+        if (!audible && ctx.state === 'running') void ctx.suspend().catch(() => undefined)
+        else if (audible && ctx.state === 'suspended') void ctx.resume().catch(() => undefined)
+      }
       const on = live && !paused && s.state === 'playing' && !document.hidden && !muted()
       if (music) { music.volume = V.bgm * volume('bgm'); if (on && !s.offers.length) { if (music.paused) void music.play().catch(() => undefined) } else if (!music.paused) music.pause() }
-      if (!live) { prev.run = null; return NONE }
+      if (!live) { prev.run = null; pendingHeroVoice = null; return NONE }
       // 판이 바뀐 것은 씨앗이 아니라 판 그 자체로 가린다 (씨앗이 NaN 이면 매 프레임 처음으로 돌아가 비기 외침·신음이 프레임마다 다시 났다 · 형 11-16)
-      if (prev.run !== s) { known = new WeakSet(); dropsWere = 0; xpWas = s.xp; thudN = thudD = 0; championAt = -9 }
+      if (prev.run !== s) { pendingHeroVoice = null; known = new WeakSet(); dropsWere = 0; xpWas = s.xp; thudN = thudD = 0; championAt = -9 }
       if (prev.run !== s) Object.assign(prev, { attack: 0, hurt: 0, kills: s.kills, skillCd: 0, offers: 0, level: s.level, wakes: s.wakes, barrage: 0, elites: 0, boss: s.boss, state: 'playing', run: s })
       const barrage = s.shots.reduce((k, b) => k + Number(b.kind === 'barrage'), 0), elites = s.enemies.reduce((k, e) => k + Number(e.kind === 'elite'), 0)
       if (s.attack > prev.attack) { play('weapon', any(WEAPON[kit][0]), V.swing * volume('sfx'), 0, WEAPON[kit][1] * (.95 + (n % 5) * .025), V.maxVoices) }  // 평타엔 목소리 없음 (형 11-16: 「기합은 스킬 쓸 때만」)
@@ -236,7 +256,16 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
       if (fell > 0) say('die', V.die, V.dieGap)
       // 비기를 누름 — 기합(그대로) + 계단마다 「탁」
       let cast: FeelTier | null = null, skill: FeelTier | null = null, crits = 0
-      if (s.skillCd > prev.skillCd) { cast = tierOf(s.cast?.kind === 'ult' && (s.cast.awakened ?? s.cast.tru)); say(shout, V.skill); if (room(F.reserve)) castTick(cast); if (kit === 'sling') sfx('whirl', V.whirl) }
+      if (s.skillCd > prev.skillCd) {
+        cast = tierOf(s.cast?.kind === 'ult' && (s.cast.awakened ?? s.cast.tru))
+        if (s.cast?.kind === 'ult' && s.cast.awakened && s.cast.seq !== undefined && heroVoiceFile && clips.has(heroVoiceFile)) pendingHeroVoice = { cast: s.cast, file: heroVoiceFile }
+        else say(shout, V.skill)
+        if (room(F.reserve)) castTick(cast); if (kit === 'sling') sfx('whirl', V.whirl)
+      }
+      if (pendingHeroVoice) {
+        if (s.cast !== pendingHeroVoice.cast || s.state !== 'playing') pendingHeroVoice = null
+        else if (on && 1 - s.cast.t / s.cast.total >= AC.enterFraction) { play('hero-awakening', pendingHeroVoice.file, V.skill * volume('voice')); pendingHeroVoice = null }
+      }
       for (const b of s.shots) if (!seen.has(b)) { seen.add(b); if (b.kind === 'ember') sfx('fire', V.magic, V.magicGap); else if (b.kind === 'gale' || b.kind === 'wave' || b.kind === 'knife') sfx('wind', V.magic, V.magicGap); else if (b.kind === 'soul') sfx('light', V.magic, V.magicGap); else if (b.kind === 'boulder') sfx('whirl', V.whirl * .7, V.magicGap, .8) }
       let hitN = 0, hitD = 0
       for (const e of s.fx) if (!seen.has(e)) { seen.add(e); if (e.kind === 'hit' || e.kind === 'death') { hitN++; hitD += e.n ?? 0; if (e.crit) crits++ } if (e.championCue === 'roar') say('roar', V.roar);

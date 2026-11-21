@@ -55,3 +55,14 @@ test('an impact aborts accelerated multi-STEP work immediately and discards catc
   const simTime = s.t; feel.advance(.08, true)
   assert.equal(s.t, simTime); assert.equal(feel.stopped, false)
 })
+
+test('56-B accepted manual awakening release requests heavy impact once; counters do not', () => {
+ const s=createHaebi(56,'stage','sword'),feel=new RaidFeel()
+ feel.observe(s)
+ const f={x:1,y:1,x2:0,y2:0,r:1,angle:0,life:1,total:1,kind:'skill' as const,ult:'sword' as const,color:'#fff',awakened:true}
+ s.fx.push({...f});feel.observe(s);assert.equal(feel.stopped,false)
+ s.fx.push({...f,awakenedRelease:true,castSeq:1});const before=JSON.stringify(s);feel.observe(s)
+ assert.equal(feel.stopRemaining,.12);assert.equal(JSON.stringify(s),before)
+ feel.advance(10,false);assert.equal(feel.stopRemaining,.12)
+ feel.advance(.3,true);feel.observe(s);assert.equal(feel.stopped,false)
+})

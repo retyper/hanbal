@@ -31,7 +31,7 @@ export interface RaidEnd {
 export interface RaidGame {
   readonly v: 1
   /** Input format stays backward compatible; earlier stage results used different combat rules. */
-  readonly rules?: '53B' | '56A'
+  readonly rules?: '53B' | '56A' | '56B'
   /** 판 이름 — 시작 시각 + 씨앗 (서버 문서 이름) */
   readonly id: string
   /** 시작 시각 (벽시계 · 화면 쪽에서만) */

@@ -14,6 +14,7 @@ import { FX_PATHS, drawFx } from './fx-art.ts'
 import { drawImpactParticles } from './fx-particles.ts'
 import { HAEBI_FX_ART as FX_ART } from '../tune/params.ts'
 import { CARD_FRAME_PATHS } from './card-skins.ts'
+import { awakeCastDim, drawAwakeCastDim, drawAwakeUlt } from './awake-ult-view.ts'
 
 /** 돌팔매 묶음의 돌 · 바위 (전용 그림 H56~H58 이 오기 전엔 본편 바위 그림을 빌린다) */
 const ROCK = 'fx/rock.png'
@@ -244,6 +245,9 @@ function stripAlong(ctx: CanvasRenderingContext2D, img: HTMLImageElement | undef
 /** 비기 그림 (판 상태는 읽기만) — f.ult 묶음마다 꼴이 다르다. 폰 프레임: filter·shadowBlur·그라디언트 없이 그림 띠와 선만 */
 function drawUlt(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, f: HaebiRun['fx'][number], age: number) {
   const kit = f.ult!, color = (f.awakened ?? f.tru) ? TRUE_COLOR[kit] : ULT_COLOR[kit], len = Math.hypot(f.x2 - f.x, f.y2 - f.y), lead = f.kind === 'skill'
+  if (drawAwakeUlt(ctx, images, f, age, kit === 'axe' ? U.axe.burst * areaScale(s) : 0, (x, y, alpha) => {
+    ctx.save(); ctx.globalAlpha *= alpha; sprite(ctx, images, heroSprite(s), x, y, heroH(s), 12, Math.cos(f.angle) < 0 ? -1 : 1); ctx.restore()
+  })) return true
   if ((f.awakened ?? f.tru) && lead) trueFlare(ctx, kit === 'sling' ? f.x2 : f.x, kit === 'sling' ? f.y2 : f.y, age)
   ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineCap = 'round'; ctx.lineJoin = 'round'
   if (kit === 'axe') {
@@ -798,8 +802,9 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
     } else if (f.kind === 'spike') {
       impact(ctx, images, f.x, f.y - 8, f.r, age)
     } else if (f.kind === 'skill' || f.kind === 'ult') {
-      if (f.ult) drawUlt(ctx, images, s, f, age); else impact(ctx, images, f.x, f.y - 12, f.r, age)
-      if ((f.awakened ?? f.tru) && f.kind === 'ult') { ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = '#ffd66a'; ctx.lineWidth = 3; ctx.globalAlpha = Math.max(0, 1 - age); const r = 14 + 46 * age; ctx.beginPath(); ctx.ellipse(f.x, f.y, r, r * .5, 0, 0, Math.PI * 2); ctx.stroke() }
+      const nativeAwake = f.ult ? drawUlt(ctx, images, s, f, age) : false
+      if (!f.ult) impact(ctx, images, f.x, f.y - 12, f.r, age)
+      if (!nativeAwake && (f.awakened ?? f.tru) && f.kind === 'ult') { ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = '#ffd66a'; ctx.lineWidth = 3; ctx.globalAlpha = Math.max(0, 1 - age); const r = 14 + 46 * age; ctx.beginPath(); ctx.ellipse(f.x, f.y, r, r * .5, 0, 0, Math.PI * 2); ctx.stroke() }
     } else if (f.kind === 'ring') {
       // 방울 파동 · 만신 굿: 고리가 맞는 범위까지 퍼지며 옅어진다
       const img = images.get('raid/bell-ring.png'), r = f.r * (.35 + .65 * age)
@@ -863,4 +868,5 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       ctx.fillText(name,bx+210,by+21)
     }
   }
+  if (s.state === 'playing' && awakeCastDim(s.cast) > 0) { fieldTransform(ctx); drawAwakeCastDim(ctx, s.cast, W, H) }
 }

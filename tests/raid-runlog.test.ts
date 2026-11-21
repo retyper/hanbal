@@ -75,7 +75,7 @@ test('53B camera-edge birth input is quantized, recorded and replays the entire 
     stepHaebi(s, actual, STEP)
   }
   const g = finishRecord(r, 0, 'x')
-  assert.equal(g.rules, '56A'); assert.ok(g.input.includes('|'), 'real scheduled elite birth recorded a viewport')
+  assert.equal(g.rules, '56B'); assert.ok(g.input.includes('|'), 'real scheduled elite birth recorded a viewport')
   assert.ok(s.enemies.some(e => e.champion) || s.elites > 0)
   assert.equal(hash(replayRaid(JSON.parse(JSON.stringify(g)))), hash(s), 'phase, fixed aim, RNG and chest lifecycle are identical')
 })

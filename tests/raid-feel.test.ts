@@ -9,6 +9,7 @@ import { makeHaptics, skillPattern, type HapticEnv } from '../src/ui/haptics.ts'
 /** 가짜 소리판 — 합성 소리 하나(voice)마다 크기(첫 오름)와 사인 높이들, 파일 소리마다 크기를 적는다 */
 type Synth = { vol: number; hz: number[]; end: (() => void) | null }
 const synths: Synth[] = [], files: number[] = []
+const fileTags: number[] = []
 let clock = 0, hidden = false, lastSet = 0
 const FAKE_BUF = { fake: true, duration: 1, sampleRate: 8000, getChannelData: () => Float32Array.of(1) }
 const node = () => ({ connect: (x: unknown) => x, disconnect: () => undefined })
@@ -17,17 +18,21 @@ const param = (onRamp?: (v: number) => void) => {
   return { get value() { return v }, set value(x: number) { v = x; lastSet = x }, setValueAtTime: () => undefined, linearRampToValueAtTime: (x: number) => onRamp?.(x), exponentialRampToValueAtTime: () => undefined }
 }
 const plain = () => ({ value: 0, setValueAtTime: () => undefined, exponentialRampToValueAtTime: () => undefined })
+const audioContexts: FakeCtx[] = []
 class FakeCtx {
+  state = 'running'
+  constructor() { audioContexts.push(this) }
+  suspend() { this.state = 'suspended'; return Promise.resolve() }
   sampleRate = 8000; destination = {}
   get currentTime() { return clock }
-  resume() { return Promise.resolve() }
+  resume() { this.state = 'running'; return Promise.resolve() }
   createGain() { return { ...node(), gain: param((x) => { if (x > 0) synths.push({ vol: x, hz: [], end: null }) }) } }
   createBiquadFilter() { return { ...node(), type: '', frequency: plain() } }
   createDynamicsCompressor() { return { ...node(), threshold: plain(), ratio: plain() } }
   createBuffer(_c: number, len: number) { return { getChannelData: () => new Float32Array(len) } }
   createBufferSource() {
     const b = { ...node(), buffer: null as unknown, playbackRate: plain(), onended: null as (() => void) | null, stop() {},
-      start() { if ((b.buffer as { fake?: boolean } | null)?.fake) files.push(lastSet); else { const v = synths[synths.length - 1]; if (v && !v.end) v.end = () => b.onended?.() } } }
+      start() { if ((b.buffer as { fake?: boolean } | null)?.fake) { files.push(lastSet); fileTags.push((b.buffer as { tag?: number }).tag ?? 0) } else { const v = synths[synths.length - 1]; if (v && !v.end) v.end = () => b.onended?.() } } }
     return b
   }
   createOscillator() {
@@ -36,10 +41,10 @@ class FakeCtx {
       frequency: { value: 0, setValueAtTime: (x: number) => { if (!o.hz) o.hz = x }, exponentialRampToValueAtTime: () => undefined } }
     return o
   }
-  decodeAudioData() { return Promise.resolve(FAKE_BUF) }
+  decodeAudioData(bytes: ArrayBuffer) { return Promise.resolve({ ...FAKE_BUF, tag: new Uint8Array(bytes)[0] ?? 0 }) }
 }
 const g = globalThis as Record<string, unknown>
-g['fetch'] = () => Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)) })
+g['fetch'] = (url: unknown) => Promise.resolve({ ok: !String(url).includes('missing-hero'), arrayBuffer: () => Promise.resolve(Uint8Array.of(String(url).endsWith('/art.ogg') ? 79 : 0).buffer) })
 g['location'] = { search: '' }
 g['document'] = { get hidden() { return hidden } }
 g['localStorage'] = { getItem: () => null, setItem: () => undefined }
@@ -50,11 +55,11 @@ const { raidSound, tierLoud } = await import('../src/raid/sound.ts')
 const TIERS: FeelTier[] = ['skill', 'awake', 'true']
 const fxOf = (kind: Effect['kind'], extra: Partial<Effect> = {}): Effect => ({ x: 0, y: 0, x2: 0, y2: 0, r: 0, angle: 0, life: .3, total: .3, kind, color: '', ...extra })
 async function fresh(trueWake = false) {
-  synths.length = 0; files.length = 0; clock = 1; hidden = false
+  synths.length = 0; files.length = 0; fileTags.length = 0; clock = 1; hidden = false
   const snd = raidSound(false, 'bow', () => trueWake); snd.unlock(); await snd.ready()
   const s = createHaebi(7, 'stage', 'bow')
   snd.frame(s, true, false)   // 첫 프레임 = 기준
-  synths.length = 0; files.length = 0
+  synths.length = 0; files.length = 0; fileTags.length = 0
   return { snd, s }
 }
 const sum = (xs: readonly number[]) => xs.reduce((a, b) => a + b, 0)
@@ -200,4 +205,40 @@ test('56-A 영구 각성 비기는 tru=false여도 각성 소리·진동 계단�
     const ev = snd.frame(s, true, false)
     assert.equal(ev.skill, awake ? 'awake' : 'skill')
   }
+})
+
+
+test('56-B hero voice waits for body entrance, plays once, and null restores generic voice', async () => {
+ const { snd, s } = await fresh()
+ assert.equal(await snd.setAwakeningVoice('/realm/voice/hero/anya-1/art.ogg'), true)
+ s.skillCd = 5; s.cast = { kind: 'ult', t: .18, total: .18, tru: false, awakened: true, empowered: false, slow: .1, seq: 1 }
+ snd.frame(s, true, false); assert.deepEqual(fileTags, [])
+ s.cast.t = .09; hidden = true; snd.frame(s, true, false); assert.deepEqual(fileTags, [])
+ hidden = false; snd.frame(s, true, true); assert.deepEqual(fileTags, [])
+ snd.frame(s, true, false); assert.deepEqual(fileTags, [79])
+ snd.frame(s, true, false); assert.deepEqual(fileTags, [79])
+ await snd.setAwakeningVoice(null)
+ s.skillCd = 6; s.cast = { kind: 'ult', t: .18, total: .18, tru: false, awakened: true, slow: .1, seq: 2 }
+ snd.frame(s, true, false); assert.deepEqual(fileTags, [79, 0])
+})
+test('56-B hero voice can load before audio unlock; missing clips use the existing fallback', async () => {
+ synths.length = 0; files.length = 0; fileTags.length = 0; hidden = false; clock = 1
+ const snd = raidSound(false, 'bow')
+ assert.equal(await snd.setAwakeningVoice('/realm/voice/hero/anya-1/art.ogg'), true)
+ snd.unlock(); await snd.ready()
+ const s = createHaebi(7, 'stage', 'bow'); snd.frame(s, true, false)
+ s.skillCd = 5; s.cast = { kind: 'ult', t: .09, total: .18, tru: false, awakened: true, slow: .1, seq: 1 }
+ snd.frame(s, true, false); assert.deepEqual(fileTags, [79])
+ assert.equal(await snd.setAwakeningVoice('/missing-hero/art.ogg'), false)
+ s.skillCd = 6; s.cast = { kind: 'ult', t: .18, total: .18, tru: false, awakened: true, slow: .1, seq: 2 }
+ snd.frame(s, true, false); assert.deepEqual(fileTags, [79, 0])
+})
+
+test('56-B pause/hidden suspends playing audio; endings remain audible', async () => {
+ const { snd, s } = await fresh(), context = audioContexts.at(-1)!
+ snd.frame(s, true, true); assert.equal(context.state, 'suspended')
+ snd.frame(s, true, false); assert.equal(context.state, 'running')
+ hidden = true; snd.frame(s, true, false); assert.equal(context.state, 'suspended')
+ hidden = false; snd.frame(s, true, false); assert.equal(context.state, 'running')
+ s.state = 'won'; snd.frame(s, true, false, true); assert.equal(context.state, 'running')
 })

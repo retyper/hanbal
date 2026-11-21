@@ -1,12 +1,14 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { createHaebi, spawnMob, stepHaebi, awakenedLook, gaugeNeed, wakeReady, normalizedRaidOpts, choose, type HaebiRun, type Kit } from '../src/raid/haebi.ts'
+import { createHaebi as createEngine, spawnMob, stepHaebi, awakenedLook, gaugeNeed, wakeReady, normalizedRaidOpts, choose, type HaebiRun, type Kit } from '../src/raid/haebi.ts'
 import { HAEBI_AWAKEN as A, HAEBI_ULT as U } from '../src/tune/params.ts'
 import { botInput, botChoice } from '../src/raid/haebi-replay.ts'
 import { startRecord, recInput, recPick, finishRecord, replayRaid } from '../src/raid/runlog.ts'
 
 const idle = { x: 0, y: 0 }
+/** The56A contract remains explicit after the default moves to56B. Default legacy vanguard is preserved. */
+const createHaebi: typeof createEngine = (seed, mode, kit, opts) => createEngine(seed, mode, kit, mode === undefined || mode === 'stage' ? { simRules: '56A', ...opts } : opts)
 function quiet(permanentAwake = true, kit: Kit = 'axe', appearanceAwake = true) {
   const s = createHaebi(56, 'stage', kit, { permanentAwake, appearanceAwake })
   s.spawn = s.nextElite = s.nextBarrage = 1e9; s.level = U.unlockLevel

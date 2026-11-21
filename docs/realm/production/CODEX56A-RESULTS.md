@@ -31,3 +31,7 @@ Ctask=C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request.
 - 폰360/375/390/412x844 및844x390에서 스위치/출전 단추10개 viewport 내부 및 실제hit, 가로overflow0. DPR2 headless 모사이며 실제 폰 FPS 증거가 아니다. root가 실제 시작2종, OFF메뉴, 장수 재로드 화면을 직접 검수했다.
 - 중간 도구 ERROR(알림/결과창 닫기 누락, 새문서 loader 대기, 준비 전 숨겨지는 투지 버튼 검사)는 보존했고 최종 PASS와 분리했다. 시험 난수 때문에 나온 무관한 결정은 우회하지 않았다.
 - 표시명만 정리한 뒤 typecheck 포함 최종 build4959.4KB와 local-bundle-final.json을 재검증했다. commit/push/CI/운영은 배포 뒤 기록한다.
+
+## 56-A 운영 검증 완료
+- commit13c1fa0c3509ec37e47827bb2ea102c07a853d12 / CI44871022820 build+deploy success. 운영version13c1fa0c35, HTML200, 실JS/CSS6+상자·주몽HD이미지2 모두HTTP200 및로컬A dist SHA일치. Coutputs/codex56A/production-bundle.json ok:true. 56-A 배포완료입니다.
+- 56-B sim50/50·view20/20(+마지막dim공통값관련full예정)·root19/19·통합tsc0. 첫full1765/1762pass/1fail/기존skip2는돌팔매구cast .55 하드코드CD예상식뿐, A .55/B .2 양경로와실경과시각정합 유지교정/관련19green. runtime셈교정0/원실패로그보존. root가full2·실제캐스팅/사진검수진행중. B미배포.

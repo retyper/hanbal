@@ -29,7 +29,7 @@ export class RaidFeel {
       this.seen.add(f)
       if (f.crit) { stop = Math.max(stop, F.criticalStop); shake = Math.max(shake, F.shakeCritical) }
       if (f.championCue === 'enter' || f.championCue === 'roar') { stop = Math.max(stop, F.eliteStop); shake = Math.max(shake, F.shakeElite) }
-      if (f.recoveryHit) { stop = Math.max(stop, F.bossSkillStop); shake = Math.max(shake, F.shakeSkill) }
+      if (f.recoveryHit || f.awakenedRelease) { stop = Math.max(stop, F.bossSkillStop); shake = Math.max(shake, F.shakeSkill) }
     }
     if (run.elites > this.elites) { stop = Math.max(stop, F.eliteStop); shake = Math.max(shake, F.shakeElite) }
     if (run.hp < this.hp || run.hurt > this.hurt) { stop = Math.max(stop, F.hurtStop); shake = Math.max(shake, F.shakeHurt) }

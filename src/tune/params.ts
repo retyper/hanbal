@@ -290,6 +290,9 @@ export const FX_AURA = {
  * magic 하늘 굿: 화면의 모든 적에게 신령 번개 (그리는 번개 줄은 bolts 개까지 · 피해는 모두에게)
  * sling 돌벼락: range 안에서 가장 많이 걸리는 자리를 골라 그 둘레 radius 에 waves 물결 × stones 개 돌이 gap 초 간격으로 떨어진다 (돌마다 둘레 splash · 가운데일수록 여러 번)
  */
+/**56B wall-time policy; legacy HAEBI_ULT values below stay unchanged for53B/56A replay. */
+export const HAEBI_AWAKEN_ULT = { normalWall: .4, normalEmpoweredWall: .5, normalSlow: .5, firstWall: 1.8, slow: .1, shortFactor: .5, enemyDaze: .3,
+  enterFraction: .24, exitSeconds: .12, slideX: .42, slideY: .2, startScale: .94, dim: .72, bowArtHeight: 250, bowFallHeight: 220, magicArtHeight: 200 } as const
 export const HAEBI_ULT = {
   axe: { cooldown: 13, damage: 170, length: 440, width: 80, burst: 240, fx: .75 },
   bow: { cooldown: 13, damage: 400, length: 1400, width: 42, fx: .6 },

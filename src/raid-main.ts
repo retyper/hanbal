@@ -1,7 +1,7 @@
 import { fieldPixels, raidLowGraphics } from './raid/surface.ts'
 import { breakthroughText, isBreakthrough } from './realm/vanguard.ts'
 import { HAEBI_RUN as C, HAEBI_STICK as STICK, HAEBI_TREE as TREE, HAEBI_ULT as ULT, HAEBI_AWAKEN as AWK, HAEBI_STAGES as ST, HAEBI_ZOOM as ZOOM, HAEBI_SPEED as SPEED } from './tune/params.ts'
-import { createHaebi, runDuration, championViewNeeded, stepHaebi, barrageArcher, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, usesPermanentAwakening, normalizedRaidOpts, nodeText, nodeAt, branchName, wakeReady, ultName, ultOpen, BRANCHES, branchNodes, type Kit, type Power, type Pick, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
+import { createHaebi, runDuration, championViewNeeded, stepHaebi, barrageArcher, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, usesPermanentAwakening, normalizedRaidOpts, castWallSeconds, nodeText, nodeAt, branchName, wakeReady, ultName, ultOpen, BRANCHES, branchNodes, type Kit, type Power, type Pick, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
 import { startRecord, recInput, gridInput, recPick, recReroll, recQuit, withdrawRun, sealInput, finishRecord, STEP, type Recorder } from './raid/runlog.ts'
 import { runFrame, speedOf, nextSpeed, speedLevel } from './raid/speed.ts'
 import { RaidFeel } from './raid/impact.ts'
@@ -26,6 +26,10 @@ import { DLC } from './realm/dlc.ts'
 import { legacyAwakeningOpen } from './realm/trial-rules.ts'
 import { AWAKENING_KEY, readHeroAwakening, setHeroAwakeningAppearance } from './ui/realm/awakening-store.ts'
 import './raid/combat.css'
+import './raid/awakening-cutin.css'
+import { RaidAwakeningCutin } from './raid/awakening-cutin.ts'
+import { prewarmAwakeUlt } from './raid/awake-ult-art.ts'
+import { HAEBI_AWAKEN_ULT as AC } from './tune/params.ts'
 import './raid/pause.css'
 import { raidShortcut, keyHints } from './raid/keyboard.ts'
 import './raid/keyboard.css'
@@ -82,7 +86,7 @@ let stage: Exclude<StageId, 'trial'> = pickStage(meta, kit)
 const bossMinute = () => Math.floor(C.bossAt * ST[mode === 'trial' ? 'trial' : stage].length / 60)
 const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`
 /** createHaebi 에 넘기는 판 옵션 — 판 기록에도 이것 그대로 적는다 (다시 돌리기) */
-const runOpts = (): RaidOpts => ({ ...mode === 'stage' ? { stage, bonus: { ...meta.shop } } : {}, ...mode === 'trial' ? { awaken: false, simRules: '53B' as const } : { permanentAwake: awakening.permanentAwake, appearanceAwake: awakening.appearanceAwake, simRules: '56A' as const }, mastery })
+const runOpts = (): RaidOpts => ({ ...mode === 'stage' ? { stage, bonus: { ...meta.shop } } : {}, ...mode === 'trial' ? { awaken: false, simRules: '53B' as const } : { permanentAwake: awakening.permanentAwake, appearanceAwake: awakening.appearanceAwake, simRules: '56B' as const }, mastery })
 const newRun = (seed: number, opts: RaidOpts = runOpts()) => { const r = createHaebi(seed, mode, kit, opts); if (r.message.endsWith('첫 조합을 향해')) { r.message = ''; r.messageTime = 0 }  /* 시작 군말 띠는 걷는다 (형 11-16) */ return r }
 root.innerHTML = `<header><div><small>장수 열전 · 독립 모드</small><h1>${HERO.name} <em>${K.title}</em></h1></div><div class="head-actions"><button id="pause" disabled aria-label="일시정지">Ⅱ</button></div></header>
 <div id="layout"><aside id="character"><div id="portrait-media"><img id="hero-portrait" src="${import.meta.env.BASE_URL}realm/bust-hd/${HERO.bust}.jpg" alt="${HERO.name} 원화"><video id="hero-video" muted loop playsinline preload="none" hidden aria-label="각성 ${HERO.name} 영상"></video></div><div class="portrait-title"><span>${HERO.home}</span><b id="rank-title">${HERO.name}</b><button id="portrait-toggle" hidden>원화로 보기</button></div><div id="reaction">${weapon} 하나로 시작하는 열전</div><div id="combo-badges"></div><i class="frame-knots"></i></aside>
@@ -95,6 +99,7 @@ const KIT_BG: Record<Kit, CutBg> = { axe: 'earth', bow: 'arrow', spear: 'wind', 
 ensureCutinBandCss()
 $('arena').insertAdjacentHTML('beforeend', '<div id="skill-cutin" hidden aria-hidden="true"></div>')
 let cutinUntil = 0
+const bigCutin = new RaidAwakeningCutin($('skill-cutin'), import.meta.env.BASE_URL + 'realm/', HERO.bust, K.skill, query.get('name') ?? '해비')
 /**
  * 비기 컷인 · 각성 컷인 — 본편과 같은 띠(ui/cutin-band.ts). 판 안에서 각성해 있으면 1차 각성 윗몸 → 기본 윗몸 → 각성 초상 순.
  * 띠를 새로 그려 넣으니 애니는 매번 처음부터 · 화면을 누르면 걷힌다 (판은 그대로 돈다).
@@ -102,14 +107,17 @@ let cutinUntil = 0
 function showSkillCutin(wake = false, tru = false) {
   // 시전(판 시각 cast)이 끝나는 순간 띠가 번쩍이며 걷히기 시작하고 비기가 터진다 — 판이 느려지므로 화면에선 cast ÷ slow 초 (11-17 형: 「컷인 보고 → 데미지 보고」)
   if (wake && usesPermanentAwakening(run)) return
+  if (run.cast?.awakened && run.cast.seq !== undefined) {
+    skipCutin(); bigCutin.show(run, awakenedLook(run)); cutinUntil = run.t + run.cast.t + AC.exitSeconds; return
+  }
   const awake = usesPermanentAwakening(run) ? run.cast?.awakened === true : tru
-  const face = awakenedLook(run) ? `../awaken-hd/${HERO.bust}` : HERO.bust, cast = run.cast?.total ?? (wake ? AWK.cast : tru ? ULT.trueCast : ULT.cast), hit = cast / ULT.slow * 1000
+  const face = awakenedLook(run) ? `../awaken-hd/${HERO.bust}` : HERO.bust, cast = run.cast?.total ?? (wake ? AWK.cast : tru ? ULT.trueCast : ULT.cast), hit = run.cast ? castWallSeconds(run.cast) * 1000 : cast / ULT.slow * 1000
   const cut = $('skill-cutin')
   cut.innerHTML = cutBandHtml({ art: import.meta.env.BASE_URL + 'realm/', bg: KIT_BG[kit], hero: cutHeroPath(face), endMs: hit / .88, hitMs: hit,
     title: wake ? `투지 · ${HERO.name}` : usesPermanentAwakening(run) ? K.skill : ultName(kit, tru), ...wake ? {} : { sub: HERO.name }, dim: C.skillCutinDim, grand: wake || awake })
   cut.hidden = false; cutinUntil = run.t + cast + C.skillCutinTail
 }
-function skipCutin() { if (!$('skill-cutin').hidden) { $('skill-cutin').hidden = true; $('skill-cutin').innerHTML = ''; cutinUntil = 0 } }
+function skipCutin() { bigCutin.clear(); cutinUntil = 0; if (!$('skill-cutin').hidden) { $('skill-cutin').hidden = true; $('skill-cutin').innerHTML = ''; cutinUntil = 0 } }
 $('pause').insertAdjacentHTML('beforebegin', '<button id="fullscreen">전체화면</button>')
 $('fullscreen').textContent = '⛶'; $('fullscreen').setAttribute('aria-label', '전체화면');
 $('fullscreen').onclick = () => { if (document.fullscreenElement) void document.exitFullscreen?.(); else void document.documentElement.requestFullscreen?.().catch(() => undefined) }
@@ -142,6 +150,8 @@ paintZoom()
  * 판 빠르기 (11-19 형: 「×1 누르면 ×2 · 또 누르면 ×3 · 한 번 더 누르면 ×1」) — 돋보기 왼쪽 · 단축키 X · 단계는 판 사이에 기억.
  * 걸음 크기는 그대로 두고 한 프레임에 더 돌린다 (raid/speed.ts runFrame) · 레벨업 카드·멈춤·결과 창에서는 판이 원래대로 서 있다
  */
+const SHORT_CUTIN_KEY = 'hanbal.raid.shortCutin'
+let shortCutin = (() => { try { return localStorage.getItem(SHORT_CUTIN_KEY) === '1' } catch { return false } })()
 const SPEED_KEY = 'hanbal.raid.speed'
 let speed = speedLevel((() => { try { return localStorage.getItem(SPEED_KEY) } catch { return 0 } })())
 zoomBtn.insertAdjacentHTML('beforebegin', '<button id="speed"></button>')
@@ -320,7 +330,16 @@ let stillPortrait = matchMedia('(prefers-reduced-motion: reduce)').matches, medi
 $('portrait-toggle').onclick = () => { stillPortrait = !stillPortrait; mediaKey = ''; updatePortrait() }
 heroVideo.onerror = () => { videoFailed = true; mediaKey = ''; updatePortrait() }
 // 각성 원화는 판 가운데 갑자기 바뀌니 미리 받아 둔다
-const warmAwake = () => { new Image().src = import.meta.env.BASE_URL + 'realm/awaken-hd/' + HERO.bust + '.jpg'; warmHitArt(hitArtUrl(true).url) }
+let awakeVoicePrepared = false
+const warmAwake = () => {
+  new Image().src = import.meta.env.BASE_URL + 'realm/awaken-hd/' + HERO.bust + '.jpg'; warmHitArt(hitArtUrl(true).url)
+  void bigCutin.prewarm(awakening.appearanceAwake)
+  void prewarmAwakeUlt(images, kit, path => new Promise<HTMLImageElement>((resolve, reject) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = reject; img.src = import.meta.env.BASE_URL + 'realm/' + path }))
+  if (!awakeVoicePrepared) {
+    awakeVoicePrepared = true
+    void import('./ui/realm/voice-hero.ts').then(({ heroVoiceDir }) => { const dir = heroVoiceDir(heroId); if (dir) return sound.setAwakeningVoice(import.meta.env.BASE_URL + dir + 'art.ogg'); return false }).catch(() => false)
+  }
+}
 // 피격 그림도 미리 (처음 맞을 때부터 그림이 뜨게 · 실린 뒤에야 금을 끈다 · ui/hit-portrait.ts)
 const hitArtUrl = (awake: boolean): { key: string | null; url: string | null } => { const key = hitArtKey(awake ? 'awaken' : 'bust', HERO.bust), p = hitKeyPath(key); return { key, url: p === null ? null : import.meta.env.BASE_URL + 'realm/' + p } }
 warmHitArt(hitArtUrl(false).url); if (awakening.permanentAwake) warmAwake()
@@ -336,7 +355,7 @@ function renderAwakeningChoice() {
       $('awakening-error').hidden = result.ok
       $('awakening-error').textContent = result.why ?? ''
       if (!result.ok) return
-      refreshWakeKind(); run = newRun(7); renderStageMenu(); updatePortrait(); updateHud()
+      refreshWakeKind(); void bigCutin.prewarm(awakening.appearanceAwake); run = newRun(7); renderStageMenu(); updatePortrait(); updateHud()
     }
   }
   choice.hidden = !awakening.permanentAwake || trialEntryClosed()
@@ -468,7 +487,7 @@ function stickStart(el: HTMLElement, e: PointerEvent) {
   destination = null; stick = { id: e.pointerId, ox: e.clientX, oy: e.clientY, x: e.clientX, y: e.clientY }; stickShow()
 }
 for (const el of [canvas, $('character')]) {
-  el.addEventListener('pointerdown', e => { if (el === canvas) skipCutin(); stickStart(el, e) })
+  el.addEventListener('pointerdown', e => { if (el === canvas && !bigCutin.active) skipCutin(); stickStart(el, e) })
   el.addEventListener('pointermove', e => { if (!el.hasPointerCapture(e.pointerId)) return; if (stick && e.pointerId === stick.id) stickMove(e); else if (e.pointerType === 'mouse' && el === canvas) point(e) })
   el.addEventListener('pointerup', e => { if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId); if (stick && e.pointerId === stick.id) stickEnd() })
   el.addEventListener('pointercancel', e => { destination = null; if (stick && e.pointerId === stick.id) stickEnd() })
@@ -634,7 +653,7 @@ function showOverlay() {
     $('tree-open').onclick = openTree
   } else if (state === 'pause') {
     const reason = '폰을 가로로 돌리면 전투를 계속할 수 있습니다.'
-    overlay.innerHTML = `<div class="panel pause-panel" role="dialog" aria-labelledby="pause-title"><div class="pause-heading"><small>장수 열전</small><h2 id="pause-title">잠시 숨 고르기</h2><p id="pause-note" role="status">${rotationBlocked ? reason : '성장과 전투는 그대로 기다립니다.'}</p></div><div class="pause-actions">${treeButton}<button id="quit" title="이번 출전을 마칩니다">출전 화면으로</button></div><div class="pause-confirm"><button id="resume" class="primary" aria-disabled="${rotationBlocked}" title="${rotationBlocked ? reason : '멈춘 곳에서 계속 싸웁니다'}">계속 싸우기</button></div></div>`
+    overlay.innerHTML = `<div class="panel pause-panel" role="dialog" aria-labelledby="pause-title"><div class="pause-heading"><small>장수 열전</small><h2 id="pause-title">잠시 숨 고르기</h2><p id="pause-note" role="status">${rotationBlocked ? reason : '성장과 전투는 그대로 기다립니다.'}</p></div><div class="pause-actions">${treeButton}<button id="quit" title="이번 출전을 마칩니다">출전 화면으로</button></div><label class="pause-short-cutin"><input id="short-cutin" type="checkbox" ${shortCutin ? 'checked' : ''}>연출 짧게</label><div class="pause-confirm"><button id="resume" class="primary" aria-disabled="${rotationBlocked}" title="${rotationBlocked ? reason : '멈춘 곳에서 계속 싸웁니다'}">계속 싸우기</button></div></div>`
     // 터치는 브라우저의 :active 지연을 기다리지 않고 누른 순간 반응한다.
     overlay.querySelectorAll<HTMLButtonElement>('.pause-panel button').forEach(b => {
       const release = () => b.classList.remove('pressed')
@@ -642,6 +661,7 @@ function showOverlay() {
       for (const event of ['pointerup', 'pointercancel', 'pointerleave', 'blur']) b.addEventListener(event, release)
     })
     $('tree-open').onclick = openTree
+    $<HTMLInputElement>('short-cutin').onchange = () => { shortCutin = $<HTMLInputElement>('short-cutin').checked; try { localStorage.setItem(SHORT_CUTIN_KEY, shortCutin ? '1' : '0') } catch { /* current window only */ } }
     $('resume').onclick = () => { if (rotationBlocked) { $('pause-note').textContent = reason; return }; paused = false; shown = ''; last = 0; showOverlay() }; $('quit').onclick = menu
     if (vanguardToken) { $('quit').textContent = '지금 확보한 돌파로 귀환'; $('quit').onclick = withdraw }
     else if (mode === 'stage') { $('quit').textContent = '물러나기 · 버틴 만큼 금 받기'; $('quit').onclick = withdraw }
@@ -816,7 +836,7 @@ function frame(now: number) {
       else if (destination) { const dx = destination.x - run.x, dy = destination.y - run.y, len = Math.hypot(dx, dy); if (len < 5) destination = null; else { x = dx / len; y = dy / len } }
       const castBefore = run.cast, dashBefore = run.dashCd, wakesBefore = run.wakes
       // 맡아 둔 누름: 누른 지 STICK.queue 초 안이면 계속 넣는다 (재사용이 그 안에 풀리면 나간다) · 나가면 지운다
-      stepHaebi(run, feed({ x, y, ...(championViewNeeded(run, STEP) ? { viewBounds: fieldView(cam) } : {}), ...(run.mode === 'stage' ? { barrageSource: barrageArcher(run, fieldView(cam))?.id ?? 0 } : {}), dash: run.t - dashAt <= STICK.queue, skill: run.t - skillAt <= STICK.queue, wake: run.t - wakeAt <= STICK.queue }), STEP)   // 판 기록이 이동을 격자에 맞춰 적고 그 값을 넣는다 (runlog.ts)
+      stepHaebi(run, feed({ x, y, ...(championViewNeeded(run, STEP) ? { viewBounds: fieldView(cam) } : {}), ...(run.mode === 'stage' ? { barrageSource: barrageArcher(run, fieldView(cam))?.id ?? 0 } : {}), dash: run.t - dashAt <= STICK.queue, skill: run.t - skillAt <= STICK.queue, wake: run.t - wakeAt <= STICK.queue, shortCutin }), STEP)   // 판 기록이 이동을 격자에 맞춰 적고 그 값을 넣는다 (runlog.ts)
       feel.observe(run)
       if (run.dashCd > dashBefore) dashAt = -9
       if (run.wakes > wakesBefore) wakeAt = -9
@@ -841,6 +861,7 @@ function frame(now: number) {
     drawField(ctx, images, run, destination, endCam, feel, ending.kind ? ending : undefined)
     drawEnding(ctx, ending, endHit, runGold(run), images)
   }
+  bigCutin.update(run)
   if (!live || run.t >= cutinUntil) skipCutin()
   // 기술이 터지면 계단마다 떨고(비기 한 번 · 각성 두 박 · 진각성 세 박) 크리티컬은 짧게 한 번 (11-19 형 · HAEBI_FEEL_TIERS · 끄기·가려진 탭은 haptics 가 막음)
   const felt = sound.frame(run, live, paused || inspecting || rotationBlocked, true)

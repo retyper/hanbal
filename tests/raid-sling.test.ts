@@ -1,7 +1,7 @@
 // 열전 돌팔매 묶음 (11-16 형: 「돌팔매는 슬링샷 사운드 같은 거 찾으면 만들 수 있지 않을까?」 · 초팔 팔매)
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { HAEBI_RUN as C, HAEBI_ULT as U } from '../src/tune/params.ts'
+import { HAEBI_RUN as C, HAEBI_ULT as U, HAEBI_AWAKEN_ULT as AC } from '../src/tune/params.ts'
 import { createHaebi, choose, stepHaebi, spawnMob, powerScale, areaScale, runDuration, KITS, kitPowers, type HaebiRun, type Mob } from '../src/raid/haebi.ts'
 import { replay } from '../src/raid/haebi-replay.ts'
 import { KIT_BY_SPRITE } from '../src/raid/kit-table.ts'
@@ -9,8 +9,8 @@ import { kitOfSprite } from '../src/raid/hero-kit.ts'
 
 const DT = 1 / 120
 /** 적이 저절로 나오지 않는 판 */
-function field(x = C.width / 2, y = C.height / 2) {
-  const s = createHaebi(7, 'stage', 'sling'); s.spawn = 1e9; s.nextElite = 1e9; s.nextBarrage = 1e9; s.x = x; s.y = y
+function field(x = C.width / 2, y = C.height / 2, simRules: '56A' | '56B' = '56B') {
+  const s = createHaebi(7, 'stage', 'sling', { simRules }); s.spawn = 1e9; s.nextElite = 1e9; s.nextBarrage = 1e9; s.x = x; s.y = y
   return s
 }
 function place(s: HaebiRun, dx: number, dy: number, kind: Mob['kind'] = 'iron', hp = 1e6) {
@@ -86,14 +86,17 @@ test('거암돌진: 한 줄의 적을 모두 꿰뚫고 앞으로 밀어낸다', 
   assert.equal(hurt(side), 0)
 })
 
-test('돌벼락: 무리가 가장 많은 자리에 물결 지어 돌이 쏟아진다 — 가운데는 여러 번, 둘레 밖은 안 맞는다', () => {
-  const s = field(200); s.level = U.unlockLevel   // 비기는 첫 레벨업에서 열린다 (11-19)
+test('돌벼락: 무리·돌 수·둘레 밖 판정과56A/56B 실제 시전시간별 쿨다운을 보존한다', t => {
+  for (const simRules of ['56A', '56B'] as const) {
+  const s = field(200, C.height / 2, simRules); s.level = U.unlockLevel   // 비기는 첫 레벨업에서 열린다 (11-19)
   const area = areaScale(s), one = U.sling.damage * powerScale(s)
   const lone = place(s, -120, 0), pack = [[300, 0], [330, 30], [300, -40], [270, 20], [340, -10]].map(([x, y]) => place(s, x!, y!))
   const far = place(s, 300, (U.sling.radius + U.sling.splash) * area + 40)
   for (const k of Object.keys(s.cool) as (keyof HaebiRun['cool'])[]) s.cool[k] = 99
   const stones: object[] = []
   stepHaebi(s, { x: 0, y: 0, skill: true }, DT)
+  const castSim = s.cast!.total, acceptedAt = s.t
+  assert.equal(castSim, simRules === '56A' ? U.cast : AC.normalWall * AC.normalSlow)
   for (let i = 0; i < 600 && s.cast; i++) { only(s, []); stepHaebi(s, { x: 0, y: 0 }, DT) }
   assert.ok(s.ult, '물결이 이어진다')
   for (let i = 0; i < 120 && s.ult; i++) { for (const f of s.fx) if (f.kind === 'ult' && !stones.includes(f)) stones.push(f); only(s, []); stepHaebi(s, { x: 0, y: 0 }, DT) }
@@ -104,7 +107,11 @@ test('돌벼락: 무리가 가장 많은 자리에 물결 지어 돌이 쏟아�
   assert.equal(hurt(far), 0, '둘레 밖')
   assert.ok(pack.every(e => hurt(e) >= one - 1e-6))
   assert.ok(Math.max(...pack.map(hurt)) >= one * 2 - 1e-6, '가운데는 여러 번')
-  assert.ok(Math.abs(s.skillCd - (U.sling.cooldown - U.cast - U.sling.gap * (U.sling.waves - 1))) < .05)
+  const expected = U.sling.cooldown - castSim - U.sling.gap * (U.sling.waves - 1)
+  assert.ok(Math.abs(s.skillCd - expected) < .05, `${simRules}: 실제${s.skillCd}, 예상${expected}`)
+  assert.ok(Math.abs(s.skillCd - (U.sling.cooldown - (s.t - acceptedAt))) < 1e-8, '쿨다운은 수락 뒤 실제 판 시간만큼만 줄어듭니다')
+  t.diagnostic(`${simRules}: castSim=${castSim}, cooldown=${s.skillCd}, expected=${expected}`)
+  }
 })
 
 test('돌팔매 묶음 봇: 상점을 조금 산 봇이 숲 산길 실제 제한시간 안에 두목을 잡고 제 조합을 완성한다', () => {

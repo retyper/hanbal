@@ -6,7 +6,7 @@
  */
 import { HAEBI_LOG as LG, HAEBI_CHAMPION as CH } from '../tune/params.ts'
 import { spawnView, type SpawnView } from './champion.ts'
-import { choose, createHaebi, expireChests, normalizedRaidOpts, usesPermanentAwakening, reroll, stepHaebi, type HaebiRun, type Pick, type RunInput } from './haebi.ts'
+import { choose, createHaebi, expireChests, normalizedRaidOpts, usesPermanentAwakening, usesAwakenedCast, reroll, stepHaebi, type HaebiRun, type Pick, type RunInput } from './haebi.ts'
 import type { RaidEnd, RaidGame } from './runlog-store.ts'
 
 /** 판의 한 걸음 (raid-main 과 같은 1/120초) */
@@ -23,7 +23,7 @@ export interface Recorder {
 }
 
 export function startRecord(run: HaebiRun, g: Omit<RaidGame, 'v' | 'grid' | 'input' | 'picks' | 'steps' | 'end'>): Recorder {
-  return { g: { v: 1, ...g, opts: normalizedRaidOpts(run, g.opts), ...(usesPermanentAwakening(run) ? { rules: '56A' as const } : run.mode === 'stage' ? { rules: '53B' as const } : {}), grid: LG.grid, input: '', picks: [], steps: 0, end: null }, run, parts: [], n: 0, x: 0, y: 0, f: 0, source: -1, view: '', quit: false }
+  return { g: { v: 1, ...g, opts: normalizedRaidOpts(run, g.opts), ...(usesAwakenedCast(run) ? { rules: '56B' as const } : usesPermanentAwakening(run) ? { rules: '56A' as const } : run.mode === 'stage' ? { rules: '53B' as const } : {}), grid: LG.grid, input: '', picks: [], steps: 0, end: null }, run, parts: [], n: 0, x: 0, y: 0, f: 0, source: -1, view: '', quit: false }
 }
 
 const b36 = (n: number) => n.toString(36)
@@ -39,18 +39,18 @@ function decodeView(text: string): SpawnView | undefined {
 }
 const inputOf = (x: number, y: number, f: number, grid: number, source = -1, view = ''): RunInput => {
   const bounds = view ? decodeView(view) : undefined
-  return { x: x / grid, y: y / grid, dash: (f & 1) !== 0, skill: (f & 2) !== 0, wake: (f & 4) !== 0, ...(source >= 0 ? { barrageSource: source } : {}), ...(bounds ? { viewBounds: bounds } : {}) }
+  return { x: x / grid, y: y / grid, dash: (f & 1) !== 0, skill: (f & 2) !== 0, wake: (f & 4) !== 0, ...(f & 8 ? { shortCutin: true } : {}), ...(source >= 0 ? { barrageSource: source } : {}), ...(bounds ? { viewBounds: bounds } : {}) }
 }
 
 /** 한 걸음의 입력을 적고, 판에 넣을 입력(격자에 맞춘 값)을 돌려준다 */
 export function recInput(r: Recorder, i: RunInput): RunInput {
-  const q = r.g.grid, x = cell(i.x, q), y = cell(i.y, q), f = (i.dash ? 1 : 0) | (i.skill ? 2 : 0) | (i.wake ? 4 : 0), source = i.barrageSource ?? -1, view = encodeView(i.viewBounds)
+  const q = r.g.grid, x = cell(i.x, q), y = cell(i.y, q), f = (i.dash ? 1 : 0) | (i.skill ? 2 : 0) | (i.wake ? 4 : 0) | (i.shortCutin ? 8 : 0), source = i.barrageSource ?? -1, view = encodeView(i.viewBounds)
   if (x !== r.x || y !== r.y || f !== r.f || source !== r.source || view !== r.view) { r.parts.push(`${b36(r.n)},${b36(x)},${b36(y)},${f}${source >= 0 ? `,${b36(source)}` : ''}${view ? '|' + view : ''}`); r.n = 0; r.x = x; r.y = y; r.f = f; r.source = source; r.view = view }
   r.n++; r.g.steps++
   return inputOf(x, y, f, q, source, view)
 }
 /** 기록 없이 판에 넣을 때도 같은 격자로 (개발 검수 재생 등 · 손맛이 기록 있을 때와 같게) */
-export const gridInput = (i: RunInput): RunInput => { const q = LG.grid; return inputOf(cell(i.x, q), cell(i.y, q), (i.dash ? 1 : 0) | (i.skill ? 2 : 0) | (i.wake ? 4 : 0), q, i.barrageSource ?? -1, encodeView(i.viewBounds)) }
+export const gridInput = (i: RunInput): RunInput => { const q = LG.grid; return inputOf(cell(i.x, q), cell(i.y, q), (i.dash ? 1 : 0) | (i.skill ? 2 : 0) | (i.wake ? 4 : 0) | (i.shortCutin ? 8 : 0), q, i.barrageSource ?? -1, encodeView(i.viewBounds)) }
 export function recPick(r: Recorder, pick: Pick) { r.parts.push(`${b36(r.n)}=${pick}`); r.n = 0; r.g.picks.push(pick) }
 export function recReroll(r: Recorder) { r.parts.push(`${b36(r.n)}!`); r.n = 0 }
 export function recQuit(r: Recorder) { r.parts.push(`${b36(r.n)}.`); r.n = 0; r.quit = true }
@@ -81,7 +81,7 @@ export function finishRecord(r: Recorder, gold: number, at: string, left = false
 
 /** 기록 한 장(씨앗 + 판 옵션 + 입력)으로 판을 처음부터 다시 돌린다 — 입력을 덜어 낸 기록(cut)은 못 돌린다 */
 export function replayRaid(g: RaidGame): HaebiRun {
-  const s = createHaebi(g.seed, g.mode, g.kit, { ...g.opts, simRules: g.rules === '56A' ? '56A' : '53B' })
+  const s = createHaebi(g.seed, g.mode, g.kit, { ...g.opts, simRules: g.rules === '56B' ? '56B' : g.rules === '56A' ? '56A' : '53B' })
   let inp = inputOf(0, 0, 0, g.grid)
   for (const tok of g.input.split(' ')) {
     const m = /^([0-9a-z]+)(.*)$/.exec(tok); if (!m) continue
