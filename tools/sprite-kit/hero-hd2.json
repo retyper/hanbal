@@ -1,4 +1,23 @@
 {
+ "aw1-gamsil": {
+  "bytes": 1582374,
+  "cell": [
+   368,
+   320
+  ],
+  "cols": 11,
+  "feet": 312,
+  "scale": {
+   "attack": 0.9718,
+   "hdx": 0.7132,
+   "walk": 0.9356
+  },
+  "sources": {
+   "attack": "codex70/attack8_aw1-gamsil.png",
+   "hdx": "codex75/hdx_aw1-gamsil.png",
+   "walk": "codex68/walk8_aw1-gamsil.png"
+  }
+ },
  "aw1-haebi": {
   "bytes": 1585481,
   "cell": [
@@ -18,6 +37,44 @@
    "walk": "codex68/walk8_aw1-haebi.png"
   }
  },
+ "aw1-soseono": {
+  "bytes": 1663453,
+  "cell": [
+   544,
+   320
+  ],
+  "cols": 7,
+  "feet": 312,
+  "scale": {
+   "attack": 1.1597,
+   "hdx": 0.8961,
+   "walk": 1.1288
+  },
+  "sources": {
+   "attack": "codex70/attack8_aw1-soseono.png",
+   "hdx": "codex75/hdx_aw1-soseono.png",
+   "walk": "codex68/walk8_aw1-soseono.png"
+  }
+ },
+ "gamsil": {
+  "bytes": 1553314,
+  "cell": [
+   480,
+   320
+  ],
+  "cols": 8,
+  "feet": 310,
+  "scale": {
+   "attack": 1.0698,
+   "hdx": 0.748,
+   "walk": 1.0299
+  },
+  "sources": {
+   "attack": "codex70/attack8_gamsil.png",
+   "hdx": "codex75/hdx_gamsil.png",
+   "walk": "codex67/walk8_gamsil.png"
+  }
+ },
  "haebi": {
   "bytes": 1285310,
   "cell": [
@@ -35,6 +92,25 @@
    "attack": "codex70/attack8_haebi.png",
    "hdx": "codex75/hdx_haebi.png",
    "walk": "codex67/walk8_haebi.png"
+  }
+ },
+ "soseono": {
+  "bytes": 1699520,
+  "cell": [
+   560,
+   320
+  ],
+  "cols": 7,
+  "feet": 310,
+  "scale": {
+   "attack": 1.2,
+   "hdx": 0.8492,
+   "walk": 1.0337
+  },
+  "sources": {
+   "attack": "codex70/attack8_soseono.png",
+   "hdx": "codex75/hdx_soseono.png",
+   "walk": "codex67/walk8_soseono.png"
   }
  }
 }

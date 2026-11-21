@@ -8,7 +8,7 @@
   걷기: 배율 = 2·ref_h ÷ 걷기 판 키 가운데값 · 칸마다 몸 상자 가운데를 2·cx 에, 바닥을 2·foot 에 (walk8-intake.place 와 같음).
   공격: 배율 = 2·ref_h ÷ 공격 판 1번 칸 키 · 줄마다 서기 칸(1·8)의 발 가운데와 바닥선을 (2·cx, 2·foot) 에 (attack8-intake.build 와 같음).
   보충: 배율 = 2·ref_h ÷ 보충 판 1번 칸 키 · 줄마다 서기 칸(1·4)의 발 가운데와 바닥선을 (2·cx, 2·foot) 에 — 숨쉬기 넷이 떨리지 않고 맞음의 젖힘·쓰러짐 자리가 화가 그대로.
-원본 픽셀은 줄이기만 한다(6% 넘게 늘려야 하면 멈춤 · 160 띠는 쓰지 않음). 판 가로는 4096 안으로 접는다(열 수 = 4096 ÷ 칸 가로).
+원본 픽셀은 줄이기만 한다(20% 넘게 늘려야 하면 그 장수는 건너뜀 · 160 띠는 쓰지 않음). 판 가로는 4096 안으로 접는다(열 수 = 4096 ÷ 칸 가로).
   py -3 -I tools/sprite-kit/bake-hero-hd2.py <띠이름> [...]           → 미리보기만 (D:/에셋창고/codex75/check/hd-<띠이름>.jpg)
   py -3 -I tools/sprite-kit/bake-hero-hd2.py --write <띠이름> [...]   → gen-<띠이름>_hd.png + src/raid/hero-hd.ts 등록 + tools/sprite-kit/hero-hd2.json
 """
@@ -30,12 +30,12 @@ A8 = _load('attack8_intake', 'attack8-intake.py')
 ROOT = W8.ROOT
 PX = os.path.join(ROOT, 'public/realm/anim-px')
 STORE = 'D:/에셋창고'
-WALK_SRC = ('codex71', 'codex68', 'codex67')
+WALK_SRC = ('codex76', 'codex71', 'codex68', 'codex67')   # 76 = 확대 전용 걷기(띠 걷기가 옛 길이라 고해상도 판이 없던 장수)
 ATTACK_SRC = ('codex73', 'codex71', 'codex70', 'codex67')
 HDX_SRC = ('codex75',)
 ATLAS_MAX = 4096
 SCALE, CELL_H = 2, 320
-UPSCALE_MAX = 1.06   # Codex 고해상도 판(칸 ~440px)은 2배 띠와 거의 같은 크기라 몇 % 늘림은 흐림이 보이지 않는다 · 160 띠를 2배로 늘리는 것과 다르다(그건 금지)
+UPSCALE_MAX = 1.2    # Codex 고해상도 판(칸 ~440px)은 2배 띠와 거의 같은 크기라 15% 안 늘림은 흐림이 거의 보이지 않는다(각성 소서노는 공격 판 인물이 작아 1.16 · 배율은 hero-hd2.json 에 남아 나중에 큰 원본을 다시 받을 장수를 고를 수 있다) · 160 띠를 2배로 늘리는 것과 다르다(그건 금지)
 REGISTRY = os.path.join(HERE, 'hero-hd2.json')
 HD_TS = os.path.join(ROOT, 'src/raid/hero-hd.ts')
 
@@ -62,7 +62,7 @@ def put(canvas_cell, arr, scale, ox, oy):
     """arr(칸 좌표) 를 scale 로 줄여 (ox, oy) 에 놓는다 · 칸 밖으로 나간 px 수를 돌려준다."""
     im = Image.fromarray(arr)
     if scale > UPSCALE_MAX:
-        raise SystemExit(f'배율 {scale:.3f} > {UPSCALE_MAX} — 원본이 작아 크게 늘려야 한다(금지)')
+        raise SystemExit(f'배율 {scale:.3f} > {UPSCALE_MAX} · 원본이 작아 크게 늘려야 한다(금지)')
     nw, nh = max(1, round(im.size[0] * scale)), max(1, round(im.size[1] * scale))
     g = im.resize((nw, nh), Image.LANCZOS)
     a = np.asarray(g)[:, :, 3] > 64
@@ -176,7 +176,10 @@ def main():
     if not keys:
         raise SystemExit(__doc__)
     for key in keys:
-        strip, atlas, frames, meta, lost = build(key)
+        try:
+            strip, atlas, frames, meta, lost = build(key)
+        except SystemExit as e:
+            print(f'{key}: 건너뜀 · {e}'); continue
         pv = preview(key, strip, frames)
         bad = {k: v for k, v in lost.items() if v}
         if write:
