@@ -1,3 +1,5 @@
+import { createEndingVideo } from './raid/ending-video.ts'
+import './raid/ending-video.css'
 import { fieldPixels, raidLowGraphics } from './raid/surface.ts'
 import { breakthroughText, isBreakthrough } from './realm/vanguard.ts'
 import { HAEBI_RUN as C, HAEBI_STICK as STICK, HAEBI_TREE as TREE, HAEBI_ULT as ULT, HAEBI_AWAKEN as AWK, HAEBI_STAGES as ST, HAEBI_ZOOM as ZOOM, HAEBI_SPEED as SPEED } from './tune/params.ts'
@@ -93,6 +95,14 @@ root.innerHTML = `<header><div><small>장수 열전 · 독립 모드</small><h1>
 <main><section id="menu"><span class="eyebrow">장수 열전</span><h2>${HERO.name}<em>${K.title}</em></h2><p>능력을 고르고 두 힘을 묶어, ${bossMinute()}분을 버틴 뒤 오는 두목을 쓰러뜨리세요.</p><div class="journey"><span><b>01</b> 붉은 고리를 피하고</span><span><b>02</b> 두 힘을 묶어</span><span><b>03</b> 두목을 잡습니다</span></div><button id="start" class="primary" disabled aria-label="불러오는 중"><i class="load-dots" aria-hidden="true"><b></b><b></b><b></b></i></button><p class="controls">이동 WASD·방향키·화면 누르기 · 회피 Shift · 비기 Space · 투지 E · 배속 X · 일시정지 Esc</p><p class="note">본편의 병력과 따로인 한 판입니다.</p></section>
 <section id="play" hidden><div id="arena"><canvas id="field" width="${C.width}" height="${C.height}" aria-label="${HERO.name} 토벌 전장. 클릭 또는 드래그로 이동"></canvas><div id="combat-hud"><div class="health-line"><b>${HERO.name}</b><span id="health">180 / 180</span></div><div class="bar hp"><span class="hp-track"><i id="hp-fill"></i><em id="hp-chunk"></em><b id="hp-ward" hidden></b></span></div><div id="wake-bar" class="grit" aria-label="투지 막대"><i id="wake-fill"></i></div><div id="loadout" aria-label="획득한 전투 능력"></div></div><div id="hud"><small id="phase"></small><b id="clock"></b></div><div id="score"><b id="kills"></b><small>격파</small><b id="level"></b></div><div class="bar xp"><i id="xp-fill"></i></div><div id="announcement" aria-live="polite"></div><div id="streak"></div><footer><button id="wake" class="grit" hidden aria-label="투지 E"><b>투지</b><small>E</small></button><span id="hint">자동 공격 · 화면을 끌면 그쪽으로 이동 · 능력 아이콘을 누르고 있으면 설명</span><button id="dash">회피 Shift</button><button id="skill" class="primary" data-kit="${kit}">${K.skill} Space</button></footer><div id="stick" hidden aria-hidden="true"><i></i></div><i class="frame-knots"></i></div></section></main></div><div id="power-tooltip" role="tooltip" hidden></div><div id="overlay" hidden></div>`
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T
+const endingMediaHost = document.createElement('div')
+root.appendChild(endingMediaHost)
+const endingVideo = createEndingVideo(import.meta.env.BASE_URL)
+function syncEndingVideo() {
+  endingVideo.sync({ host: endingMediaHost, run: live ? run : null, portraitKey: HERO.bust,
+    kind: ending.ready ? ending.kind : null, visible: !document.hidden && !$('overlay').hidden, lowGraphics: raidLowGraphics() })
+}
+
 root.insertAdjacentHTML('beforeend', `<div id="rotate-guide" hidden><div><span style="font-size:44px">↻</span><h2>폰을 가로로 돌려 주세요</h2><p>확대 ${josa(HERO.name, '과', '와')} 전장을 함께 보며 싸웁니다.<br>회전하는 동안 전투는 멈춰 있습니다.</p></div></div>`)
 /** 비기 컷인 띠의 기운 바탕 — 묶음마다 (fx/skill/bg/<결>.webp) */
 const KIT_BG: Record<Kit, CutBg> = { axe: 'earth', bow: 'arrow', spear: 'wind', sword: 'bolt', dagger: 'shadow', magic: 'spirit', sling: 'earth' }
@@ -407,7 +417,7 @@ function begin(sameSeed = false) {
   if (!sameSeed && !vanguardToken) pendingSeed = crypto.getRandomValues(new Uint32Array(1))[0]!
   closeLog(true)   // 앞 판이 끝을 안 적었으면 (드묾) 「떠남」으로
   const opts = runOpts()
-  sound.unlock(); hidePowerHint(); notifyVanguardStart(); run = newRun(pendingSeed, opts); live = true; paused = false; shown = ''; loadoutKey = ''; resetInput(); last = 0
+  sound.unlock(); endingVideo.clear(); hidePowerHint(); notifyVanguardStart(); run = newRun(pendingSeed, opts); live = true; paused = false; shown = ''; loadoutKey = ''; resetInput(); last = 0
   // 판 기록 — 시작 시각은 화면 쪽 벽시계 · 판 옵션은 createHaebi 에 넘긴 그것 (runlog.ts)
   const now = new Date()
   rec = startRecord(run, { id: `${now.getTime().toString(36)}-${pendingSeed.toString(36)}`, started: now.toISOString(), mode, stage: run.stage, hero: heroId, kit, sprite, seed: pendingSeed, opts: normalizedRaidOpts(run, opts), from: fromRealm })
@@ -440,7 +450,7 @@ window.addEventListener('blur', () => {
   if (!backgroundReview && live && run.state === 'playing') { paused = true; shown = ''; showOverlay() }
 })
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) { heroVideo.pause(); mediaKey = ''; cancelAnimationFrame(raf); raf = 0; resetInput(); if (live && run.state === 'playing') paused = true; shown = ''; showOverlay(); sound.frame(run, live, true); saveLog() }   // 판이 멈춰도 기록은 그 자리까지 남긴다
+  if (document.hidden) { heroVideo.pause(); mediaKey = ''; cancelAnimationFrame(raf); raf = 0; resetInput(); if (live && run.state === 'playing') paused = true; shown = ''; showOverlay(); sound.frame(run, live, true); saveLog(); syncEndingVideo() }   // 판이 멈춰도 기록은 그 자리까지 남긴다
   else { last = 0; schedule() }
 })
 window.addEventListener('pagehide', () => saveLog())
@@ -697,7 +707,7 @@ function showOverlay() {
 }
 let rewarded: HaebiRun | null = null, reward = { gold: 0, first: false, heroFirst: false }
 function withdraw() { if (logging()) recQuit(rec!); withdrawRun(run); paused = false; shown = ''; showOverlay() }
-function menu() { closeLog(true); renderStageMenu(); hidePowerHint(); live = false; paused = false; shown = ''; resetInput(); run = newRun(7); loadoutKey = ''; $('menu').hidden = false; $('play').hidden = true; $('overlay').hidden = true; $<HTMLButtonElement>('pause').disabled = true; layoutTrial(); updateHud() }
+function menu() { endingVideo.clear(); closeLog(true); renderStageMenu(); hidePowerHint(); live = false; paused = false; shown = ''; resetInput(); run = newRun(7); loadoutKey = ''; $('menu').hidden = false; $('play').hidden = true; $('overlay').hidden = true; $<HTMLButtonElement>('pause').disabled = true; layoutTrial(); updateHud() }
 /**
  * 본편의 뒤로 가기 (안드로이드 뒤로 단추 · 브라우저 뒤로 · app.ts backOne 이 'hanbal.raid.back' 으로 알린다) — 곧장 본편으로 빠지지 않는다:
  * 묻는 상자·나무·상점이 떠 있으면 그것만 닫고 · 판 중이면 멈춤 창 · 출전 화면이면 「본편으로」와 같다 · 레벨업 카드·결과 화면은 그대로 (그 창의 단추로)
@@ -866,7 +876,7 @@ function frame(now: number) {
   // 기술이 터지면 계단마다 떨고(비기 한 번 · 각성 두 박 · 진각성 세 박) 크리티컬은 짧게 한 번 (11-19 형 · HAEBI_FEEL_TIERS · 끄기·가려진 탭은 haptics 가 막음)
   const felt = sound.frame(run, live, paused || inspecting || rotationBlocked, true)
   if (felt.skill) haptics().skill(felt.skill); else if (felt.crit) haptics().crit()
-  updatePortrait(); updateHud(); showOverlay(); schedule()
+  updatePortrait(); updateHud(); showOverlay(); syncEndingVideo(); schedule()
 }
 function schedule() { if (!raf && !document.hidden) raf = requestAnimationFrame(frame) }
 updateHud(); schedule()
