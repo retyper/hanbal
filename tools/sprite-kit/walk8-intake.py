@@ -3,7 +3,7 @@
   py -3 -I tools/sprite-kit/walk8-intake.py <띠이름> [...]          → 미리보기만 (D:/에셋창고/codex67/check/)
   py -3 -I tools/sprite-kit/walk8-intake.py --write <띠이름> [...]  → public/realm/anim2 · anim-px 의 gen-<띠이름>.png 를 고쳐 씀
 
-판: D:/에셋창고/codex67/walk8_<띠이름>.png (칸 순서 = 윗줄 왼→오, 아랫줄 왼→오)
+판: D:/에셋창고/codex67/walk8_<띠이름>.png (칸 순서 = 윗줄 왼→오, 아랫줄 왼→오) · --src D:/에셋창고/codex68 로 다른 폴더(미리보기는 그 폴더의 check/)
 배율과 발 높이는 그 띠의 서기 칸 0 에 맞춘다(키 = 서기 칸 키, 발끝 = 서기 칸 발끝, 가운데 = 서기 칸 가운데).
 옛 판은 git 기록에 남는다 → 커밋 뒤 py -I tools/retire-history.py 로 assets_src/realm/retired 에 꺼내 둔다.
 """
@@ -128,7 +128,7 @@ def preview(key, strips):
     for r in rows:
         im.alpha_composite(r, (0, y)); y += r.size[1]
     os.makedirs(CHECK, exist_ok=True)
-    im.convert('RGB').save(os.path.join(CHECK, f'walk8-{key}.jpg'), quality=88)
+    im.convert('RGB').save(os.path.join(CHECK, f'walk8-{key}.jpg'), quality=88)  # CHECK 는 main 에서 --src 를 따라 바뀜
 
 
 def main():
@@ -137,7 +137,10 @@ def main():
     write = '--write' in args
     sheet = args[args.index('--sheet') + 1] if '--sheet' in args else None
     grid = args[args.index('--grid') + 1] if '--grid' in args else '4x2'
-    skip = {sheet, grid}
+    global SRC, CHECK
+    if '--src' in args:
+        SRC = args[args.index('--src') + 1]; CHECK = os.path.join(SRC, 'check')
+    skip = {sheet, grid, SRC}
     keys = [a for a in args if not a.startswith('--') and a not in skip]
     if not keys:
         raise SystemExit(__doc__)
