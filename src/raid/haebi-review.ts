@@ -1,4 +1,4 @@
-import { createHaebi, stepHaebi, choose, type HaebiRun } from './haebi.ts'
+import { createHaebi, stepHaebi, choose, raidRulesForStage, type HaebiRun } from './haebi.ts'
 import { botChoice, botInput, type Route } from './haebi-replay.ts'
 import { STAGE_ORDER, stageName, shopMax, SHOP } from './meta.ts'
 export function installReview(root: HTMLElement, install: (s: HaebiRun) => void, mode: HaebiRun['mode'] = 'trial', kit: HaebiRun['kit'] = 'axe') {
@@ -17,7 +17,8 @@ export function installReview(root: HTMLElement, install: (s: HaebiRun) => void,
   const close = document.createElement('button'); close.textContent = '검수 도구 닫기'; close.onclick = () => { panel.hidden = true }; panel.append(close)
   panel.querySelectorAll<HTMLButtonElement>('button[data-until]').forEach(b => b.onclick = async () => {
     panel.querySelectorAll<HTMLButtonElement>('button').forEach(x => x.disabled = true)
-    const s = createHaebi(7, mode, kit, mode === 'stage' ? { stage: stageSel.value as typeof STAGE_ORDER[number], bonus: maxShop } : {}), first = b.dataset.until === '0', until = Number(b.dataset.until) || 60, out = panel.querySelector('output')!, selectedRoute = route.value as Route
+    // 스테이지 규칙은 실제 출전과 같게 (여울 이무기 · 목책 돌파 진짜 목책)
+    const s = createHaebi(7, mode, kit, mode === 'stage' ? { stage: stageSel.value as typeof STAGE_ORDER[number], bonus: maxShop, simRules: raidRulesForStage(stageSel.value as typeof STAGE_ORDER[number]) } : {}), first = b.dataset.until === '0', until = Number(b.dataset.until) || 60, out = panel.querySelector('output')!, selectedRoute = route.value as Route
     while (s.t < until && s.state === 'playing' && !(first && s.offers.length)) {
       for (let i = 0; i < 1200 && s.t < until && s.state === 'playing' && !(first && s.offers.length); i++) { if (s.offers.length) choose(s, botChoice(s, selectedRoute)); else stepHaebi(s, botInput(s), 1 / 120) }
       out.textContent = ` ${Math.floor(s.t)}초 재생 중…`; await new Promise(resolve => setTimeout(resolve, 0))

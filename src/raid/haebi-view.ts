@@ -3,7 +3,7 @@ import {drawImugiParent,drawImugiThreats,drawImugiWater} from './imugi-view.ts'
 import { fieldTransform, heroCacheHeight, wantsHeroHd } from './surface.ts'
 import { HERO_HD, HERO_HD_SHEETS } from './hero-hd.ts'
 import { championLaneContains, championPose, championFacing, championRecovery, drawChampionTells, drawChampionOverlays, drawGroundChests } from './champion-view.ts'
-import { HAEBI_RUN as C, HAEBI_MOBS as M, HAEBI_CHAMPION as B, HAEBI_STAGES as ST, HAEBI_ULT as U, HAEBI_FX as K } from '../tune/params.ts'
+import { HAEBI_RUN as C, HAEBI_MOBS as M, HAEBI_CHAMPION as B, HAEBI_STAGES as ST, HAEBI_ULT as U, HAEBI_FX as K, HAEBI_PALISADE as WL } from '../tune/params.ts'
 import { genArtOf } from '../realm/data/art.ts'
 import { areaScale, awakenedLook, barrageArcher, charge, missileLife, slamRadius, slamWindup, type HaebiRun, type Kit, type Missile, type Mob, type StageId } from './haebi.ts'
 import { fieldView } from './camera.ts'
@@ -28,7 +28,7 @@ export const chargeLane = (e: Mob) => e.act > 0 && (e.kind === 'tiger' || e.kind
 /** bandit-<종류> 가 아닌 적 그림 (11-16 H50~H53 · tools/sprite-kit/bake-raid-enemies.py) */
 const MOB_ART: Record<string, string> = { tiger: 'beast-tiger', bear: 'beast-bear', hunter: 'snow-hunter', torch: 'torch-raider' }
 export const imagePaths = [...CARD_FRAME_PATHS, genArtOf('haebi').file, genArtOf('aw1-haebi').file, 'anim-px/bandit-club.png', 'anim-px/bandit-chief.png', 'anim-px/bandit-archer.png',
-  ...['runner', 'slinger', 'shield', 'dog', 'berserker', 'firearcher', 'iron', 'shaman'].map(k => `anim-px/bandit-${k}.png`), ...['ford.webp', 'palisade.webp', 'chest.png', 'digits.png', 'knife.png', 'soul.png', 'bell-ring.png', 'javelin.png','sword-wave.png','forest.webp','axe.png','impact-strip.png','slash-strip.png','death-strip.png','fire-strip.png','lightning-strip.png','talisman.png','wind-blade.png','arrow.png','hit.png','essence.png','essence-large.png',...['mark-slam','mark-move','mark-hero','mark-target','mark-arrow','bar-boss','plaque'].map(p=>`ui/${p}.png`)].map(p=>'raid/'+p), 'anim-px/bandit-warlord.png', ROCK, AURA_ART.flame, AURA_ART.ember,
+  ...['runner', 'slinger', 'shield', 'dog', 'berserker', 'firearcher', 'iron', 'shaman'].map(k => `anim-px/bandit-${k}.png`), ...['ford.webp', 'palisade.webp', 'palisade-wall.png', 'palisade-broken.png', 'palisade-gate.png', 'palisade-gate-open.png', 'palisade-gate-broken.png', 'chest.png', 'digits.png', 'knife.png', 'soul.png', 'bell-ring.png', 'javelin.png','sword-wave.png','forest.webp','axe.png','impact-strip.png','slash-strip.png','death-strip.png','fire-strip.png','lightning-strip.png','talisman.png','wind-blade.png','arrow.png','hit.png','essence.png','essence-large.png',...['mark-slam','mark-move','mark-hero','mark-target','mark-arrow','bar-boss','plaque'].map(p=>`ui/${p}.png`)].map(p=>'raid/'+p), 'anim-px/bandit-warlord.png', ROCK, AURA_ART.flame, AURA_ART.ember,
   // 11-16 H45~H53: 스테이지 두목 둘 · 설원·산성 적 넷 · 넷째·다섯째 바닥
   ...['boss-ford', 'boss-palisade', 'boss-snow', 'boss-fortress', ...Object.values(MOB_ART)].map(n => `anim-px/${n}.png`), 'raid/snow.webp', 'raid/fortress.webp', ...FX_PATHS]
 /** bar-boss.png 의 투명한 홈 [x0,y0,x1,y1] — tools/raid-ui-kit.py 가 public/realm/raid/ui/kit.json 에 적는 값 */
@@ -630,8 +630,64 @@ function fieldBackdrop(bg: HTMLImageElement, W: number, H: number) {
   c.fillStyle = '#11281b25'; c.fillRect(0, 0, W, H)
   backdrop = { img: bg, canvas }; return canvas
 }
-/** 그리는 차례 (위에서 아래로) — 판마다 다시 쓰는 배열 */
-const order: (HaebiRun['enemies'][number] | null)[] = []
+// ── 56-C 목책 (그리기만 · 판의 palisade 를 읽기만 한다) ──
+const PALISADE_ART = { wall: 'raid/palisade-wall.png', broken: 'raid/palisade-broken.png', gate: 'raid/palisade-gate.png', open: 'raid/palisade-gate-open.png', smashed: 'raid/palisade-gate-broken.png' } as const
+/** 목책 발밑 그늘 — 땅 차례에 길 하나로 (열린 문은 기둥뿐이라 빼고) */
+function drawPalisadeShadow(ctx: CanvasRenderingContext2D, s: HaebiRun) {
+  const P = s.palisade!, V = WL.view
+  ctx.beginPath()
+  for (const p of P.pieces) if (p.kind !== 'o') { const cx = (p.x0 + p.x1) / 2, rx = (p.x1 - p.x0) * V.shadowWidth; ctx.moveTo(cx + rx, P.y + V.foot); ctx.ellipse(cx, P.y + V.foot, rx, V.shadowHeight, 0, 0, TAU) }
+  const a = ctx.globalAlpha; ctx.fillStyle = '#0b0806'; ctx.globalAlpha = a * V.shadowAlpha; ctx.fill(); ctx.globalAlpha = a
+}
+/** 부서진 마디에서 나무 조각이 튀고 흙먼지가 인다 (부서진 때부터 debrisLife 초 · 마디 자리로 정한 각 · 난수 없음) */
+function drawPalisadeDebris(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, cx: number, y: number, width: number, age: number) {
+  const V = WL.view, t = age * V.debrisLife, dust = V.debrisSize * V.dustGrow * (1 + age)
+  ctx.save(); ctx.globalAlpha *= 1 - age
+  for (let j = -1; j <= 1; j++) drawFx(ctx, images, 'fx_dust_puff', cx + j * width * V.dustSpread, y - V.debrisFrom / 3 - t * V.dustRise, dust, dust)
+  ctx.fillStyle = '#7a5434'
+  for (let j = 0; j < V.debris; j++) {
+    // 위쪽 반원으로 고르게 (마디 자리로 조금씩 어긋나게) · 빠르기와 크기는 조각마다 조금씩 다르게
+    const ang = -Math.PI * (j + .5) / V.debris + Math.sin(j * 2.4 + cx) * .25, v = V.debrisSpeed * (.55 + .45 * ((j * .618) % 1))
+    const x = cx + Math.cos(ang) * v * t, py = y - V.debrisFrom + Math.sin(ang) * v * t * (V.debrisLift / V.debrisSpeed) + V.debrisGravity * t * t / 2, size = V.debrisSize * (.35 + .25 * (j % 3))
+    ctx.save(); ctx.translate(x, py); ctx.rotate(t * V.debrisSpin + j); ctx.fillRect(-size / 2, -size / 6, size, size / 3); ctx.restore()
+  }
+  ctx.restore()
+}
+/** 부서질 때 판이 떤다 — 가장 최근에 부서진 마디의 나이로 (큰 문은 두 배) */
+function palisadeQuake(s: HaebiRun) {
+  let q = 0
+  for (const p of s.palisade!.pieces) if (p.brokenAt !== undefined) { const k = 1 - (s.t - p.brokenAt) / WL.view.breakShakeLife; if (k > 0) q = Math.max(q, WL.view.breakShake * k * (p.kind === 'g' ? WL.view.gateShake : 1)) }
+  return q
+}
+/**
+ * 목책 마디들 — 몸들과 같은 위→아래 차례의 한 자리(발 y)에서 그린다: 뒤의 몸은 가리고 앞의 몸은 위에 선다.
+ * 성한 말뚝 · 부서진 말뚝 · 큰 문(닫힘 · 부서지면 쪼개진 문짝) · 열린 문(기둥과 가로대). 맞으면 번쩍이며 흔들리고(판의 flash) · 깎인 체력 막대 ·
+ * 장수가 마디 바로 뒤에 서면 그 마디를 옅게 (가려 안 보이지 않게).
+ */
+function drawPalisade(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, time: number) {
+  const P = s.palisade!, V = WL.view
+  for (let i = 0; i < P.pieces.length; i++) {
+    const p = P.pieces[i]!, width = p.x1 - p.x0, cx = (p.x0 + p.x1) / 2
+    const img = images.get(PALISADE_ART[p.kind === 'w' ? p.hp > 0 ? 'wall' : 'broken' : p.kind === 'o' ? 'open' : p.hp > 0 ? 'gate' : 'smashed'])
+    if (!img) continue
+    const dw = p.kind === 'w' ? width * (p.hp > 0 ? V.wallDraw : V.brokenDraw) : width + V.gateOverhang * 2, dh = img.height * dw / img.width
+    const k = p.flash > 0 ? p.flash / WL.flash : 0, top = P.y + V.foot - dh, left = cx - dw / 2 + (k ? Math.sin(time * V.shakeHz + i * 1.7) * V.shake * k : 0)
+    const a = ctx.globalAlpha, fade = s.y < P.y && s.y > top && Math.abs(s.x - cx) < dw / 2 + V.behindPad ? V.behindAlpha : 1
+    ctx.globalAlpha = a * fade; ctx.drawImage(img, left, top, dw, dh)
+    // 맞은 번쩍: 같은 그림을 빛으로 한 번 더 (적이 맞을 때와 같은 결 · filter 없이)
+    if (k) { const op = ctx.globalCompositeOperation; ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = a * fade * C.flashAdd * k; ctx.drawImage(img, left, top, dw, dh); ctx.globalCompositeOperation = op }
+    ctx.globalAlpha = a
+    if (p.brokenAt !== undefined && s.t - p.brokenAt < V.debrisLife) drawPalisadeDebris(ctx, images, cx, P.y, width, (s.t - p.brokenAt) / V.debrisLife)
+    // 깎인 체력 — 눈에 띄게(barFrom 아래로) 깎였을 때만 · 큰 문은 그 뒤로 늘 · 말뚝은 맞은 뒤 잠깐 (스친 공격의 작은 흠으로 막대가 줄줄이 뜨지 않게)
+    if (p.hp > 0 && p.hp < p.max * V.barFrom && (p.kind === 'g' || p.hitAt !== undefined && s.t - p.hitAt < V.barShow)) {
+      const bw = width * V.barWidth, by = top - V.barLift
+      ctx.fillStyle = '#111c'; ctx.fillRect(cx - bw / 2, by, bw, V.barHeight)
+      ctx.fillStyle = '#ef9873'; ctx.fillRect(cx - bw / 2, by, bw * p.hp / p.max, V.barHeight)
+    }
+  }
+}
+/** 그리는 차례 (위에서 아래로) — 판마다 다시 쓰는 배열 · false = 목책 줄 (56-C) */
+const order: (HaebiRun['enemies'][number] | null | false)[] = []
 /**
  * cam: 확대 카메라 (raid/camera.ts · 11-19 돋보기 단추) — 화면 가운데의 판 좌표와 배율. 판 위의 것(땅·몸·효과·피해 숫자·오라)은 판과 함께 커지고,
  * 화면에 붙은 것(맞을 때 붉은 테 · 두목 막대)은 그대로 · 없으면 1배
@@ -641,7 +697,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   fieldTransform(ctx)   // 그림마다 옮겼다 되돌리는 셈의 작은 오차가 판마다 쌓이지 않게 (sprite·stamp 는 save/restore 없이 · 11-17)
   ctx.fillStyle = '#273c35'; ctx.fillRect(0, 0, W, H)
   const endShake = ending?.active ? END.shake * Math.max(0, 1 - ending.elapsed / END.shakeLife) : 0
-  const quake = Math.max(endShake, Math.min(FEEL.shakeMax, Math.max(shakeOf(s), feel?.shake ?? 0))), time = ending?.active ? ending.elapsed : feel?.time ?? s.t
+  const quake = Math.max(endShake, Math.min(FEEL.shakeMax, Math.max(shakeOf(s), feel?.shake ?? 0, s.palisade ? palisadeQuake(s) : 0))), time = ending?.active ? ending.elapsed : feel?.time ?? s.t
   const qx = quake ? Math.round(Math.sin(time * FEEL.shakeXHz) * quake) : 0, qy = quake ? Math.round(Math.cos(time * FEEL.shakeYHz) * quake * FEEL.shakeYShare) : 0
   const z = cam?.zoom ?? 1, density = z * Math.max((ctx.canvas?.width ?? W) / W, (ctx.canvas?.height ?? H) / H)
   if (z !== 1 && cam) fieldTransform(ctx, z, W / 2 - cam.x * z + qx, H / 2 - cam.y * z + qy)
@@ -673,11 +729,14 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   ctx.fillStyle = '#07181655'; ctx.beginPath()
   for (const e of s.enemies) { if(e.giant)continue; const rx = e.kind === 'boss' || e.kind === 'elite' ? 24 : 16; ctx.moveTo(e.x + rx, e.y + 2); ctx.ellipse(e.x, e.y + 2, rx, 6, 0, 0, Math.PI * 2) }
   ctx.fill()
-  // 위에서 아래로 그린다 (null = 장수) — 판마다 새 배열을 만들지 않는다
-  order.length = 0; for (const e of s.enemies) order.push(e); order.push(null)
-  order.sort((a, b) => (a ? a.y : s.y) - (b ? b.y : s.y))
+  if (s.palisade) drawPalisadeShadow(ctx, s)
+  // 위에서 아래로 그린다 (null = 장수 · false = 목책 줄) — 판마다 새 배열을 만들지 않는다
+  const wallY = s.palisade?.y ?? 0
+  order.length = 0; for (const e of s.enemies) order.push(e); order.push(null); if (s.palisade) order.push(false)
+  order.sort((a, b) => (a ? a.y : a === null ? s.y : wallY) - (b ? b.y : b === null ? s.y : wallY))
   const archer = s.mode === 'stage' ? barrageArcher(s, cam ? fieldView(cam) : undefined) : undefined
   for (const e of order) {
+    if (e === false) { drawPalisade(ctx, images, s, time); continue }
     if (e) {
       if(e.giant){drawImugiParent(ctx,images,e.giant,{bounds:cam?fieldView(cam):{left:0,top:0,right:W,bottom:H},density});continue}
       const big = e.kind === 'boss' || e.kind === 'elite', h = mobHeight(e.kind)
