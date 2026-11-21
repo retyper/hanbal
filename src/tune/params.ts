@@ -580,6 +580,51 @@ export const HAEBI_IMPACT = {
   criticalFinish: { life: .24, hold: .035, distance: 420, lift: 84, endScale: .12, spin: 1.9, trailAlpha: .18, trailOffsets: [.022, .045], maxBodies: 4, lowMaxBodies: 2 },
 } as const
 
+/**
+ * 열전 장수 몸놀림 (62-A · 11-21 형: 「걷는 거랑 공격이 부자연스럽다 · 프레임이 부족한 건지 매끄럽지 못해서」) — 화면 전용(raid/hero-motion.ts).
+ * 판(haebi.ts)의 피해·쿨다운·이동·난수는 그대로다. 시간은 모두 판 초(s.t)라 멈춤·숨은 탭·맞은 순간 멈춤 때 같이 멈춘다.
+ *
+ * 공격 박자: 판은 공격이 서는 그 걸음에 곧바로 친다(attack = window · 맞은 불꽃·숫자·소리도 그때). 그래서 맞힘을 늦추지 않고
+ * 서는 순간부터 휘두름(swing 초) → 맞힘 칸에서 멈춤(contact 초 · 맞은 순간 멈춤 동안은 이 칸에 머문다) → 남은 시간 천천히 마무리.
+ * 예비 동작(뒤로 젖힘)은 한 번 친 뒤 다음 공격 쿨다운의 마지막 anticTime 초에만 미리 보인다 — 서 있고, 가장 가까운 적이
+ * 지금까지 친 거리 안(× anticReach + anticPad px)일 때만. 빗나가면(쿨다운이 끝났는데 안 침) anticCancel 초 준비 칸에 머물다 선다.
+ * 그래서 첫 한 방에는 예비가 없다 — 그것까지 맞추려면 판이 피해를 늦춰야 한다(판 셈 바꿈 · 이번엔 안 함).
+ */
+export const HAEBI_ANIM = {
+  /** 판이 공격 때 세우는 attack 값(haebi.ts 의 s.attack = .3) — 공격 칸 시계의 길이 */
+  window: .3,
+  /** 열전 띠 칸: 서기(idleTime 초마다 다음) · 걷기 첫 칸 · 맞음 · 비기 시전(기를 모으는 자세) */
+  idle: [0, 1, 2, 1], idleTime: .65, walkCell: 4, hurtCell: 18, castCell: 12,
+  /**
+   * 공격 칸 역할 — 열전 띠(anim-px 정규 20칸)의 공격은 모든 장수가 12..17 이다(대결 원본 틀 [9..13,0] 같은 번호와 다르다 · codex62 PREP).
+   * ready 준비(빗나간 예비를 거둘 때) · antic 예비 · swing 휘두름 · contact 맞힘·쏨 · recover 마무리(서기로).
+   * strike: 내려치기·베기·찌르기·흔들기(도끼·칼·창·단검·방울·돌팔매) — 12 준비 · 13 젖힘 · 14 휘두름 · 15 맞힘 · 16·17 거둠.
+   * draw: 활 — 13 메김 · 14 당김을 예비로, 15 놓음이 맞힘 칸(화살이 그 걸음에 나간다) · 휘두름 칸 없음.
+   */
+  roles: {
+    strike: { ready: 12, antic: [13], swing: [14], contact: 15, recover: [16, 17], anticTime: .1, stretch: .06 },
+    draw: { ready: 12, antic: [13, 14], swing: [], contact: 15, recover: [16, 17], anticTime: .14, stretch: 0 },
+  },
+  /** draw 역할을 쓰는 무기 묶음 (나머지는 strike) */
+  drawKits: ['bow'],
+  /** 휘두름 칸 보이는 판 초 (아주 짧게) · 맞힘 칸 멈춤 판 초 · 마무리 두 칸 중 앞 칸 몫 (뒤 칸 — 서기로 돌아가는 칸 — 을 더 오래) */
+  swing: .04, contact: .08, recoverSplit: .4,
+  /** 걷는 중 공격은 마무리를 이만큼(판 초)만 보이고 걷기로 돌아간다 — 공격 칸이 오래 미끄러지지 않게 · 예비는 서 있을 때만 */
+  moveRecover: .06,
+  /** 예비 거두기 · 예비 거리(지금까지 친 순간 가장 가까운 적 거리의 최댓값 × anticReach + anticPad px) · 예비 때 뒤로 젖히는 px */
+  anticCancel: .06, anticReach: 1.05, anticPad: 6, anticPull: 2,
+  /** 런지(px · 그림만 · 판 좌표·그림자·맞는 자리는 그대로) — 맞힐 때 적 쪽으로 밀었다 마무리 동안 돌아온다 · 음수는 뒤로 반동(활) */
+  lunge: { axe: 5, sword: 5, spear: 7, dagger: 4, magic: 0, bow: -2, sling: 2 },
+  /** 휘두름 잔상 — 휘두름 칸을 옅게 낱낱이(몸 뒤로 ghostGap px 씩) · 개수 · 첫 진하기 (저사양 0) */
+  ghosts: 2, ghostGap: 8, ghostAlpha: .42,
+  /**
+   * 걷기: bob = 발을 축으로 한 세로 늘임(디딤 칸 0·n/2 에서 줄고 사이 칸에서 늚 · 4칸 띠 24개는 모두, 8칸 띠는 128개 중 115개가 칸 0 에서 발이 가장 벌어진다).
+   * 6·8칸 띠는 그림에 이미 출렁임이 있어(정수리 6~7px 흔들림 · 위상 제각각) bobRich 배만. lean = 걷는 쪽으로 기울기(탄젠트 · 위가 앞으로) ·
+   * leanTau 초로 따라감 · settle 판 초 동안 마지막 걸음 칸에 머물렀다 선다(한 박 늦게).
+   */
+  bob: .018, bobCells: 4, bobRich: .4, lean: .03, leanTau: .08, settle: .08,
+} as const
+
 export const HAEBI_END = {
   defeat: { duration: 3.2, freeze: .3, slow: 1.2, portraitAt: 1.5, stampAt: 2.2 },
   victory: { duration: 3.8, freeze: .4, stampAt: 2.1, coinAt: 2.35 },

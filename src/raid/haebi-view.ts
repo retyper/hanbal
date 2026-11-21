@@ -8,6 +8,8 @@ import { genArtOf } from '../realm/data/art.ts'
 import { areaScale, awakenedLook, barrageArcher, charge, missileLife, slamRadius, slamWindup, type HaebiRun, type Kit, type Missile, type Mob, type StageId } from './haebi.ts'
 import { fieldView } from './camera.ts'
 import { WALK_CYCLE } from './walk-cycle.ts'
+import { attackFrame, attackRole, heroPose, idleFrame, type HeroPose } from './hero-motion.ts'
+import { HAEBI_ANIM as ANIM } from '../tune/params.ts'
 import { AURA_ART, drawAura, drawAuraBurst, drawAuraGround, type AuraArt, type AuraAt, type AuraKind } from './fx-aura.ts'
 import { HAEBI_IMPACT as FEEL, HAEBI_END as END } from '../tune/params.ts'
 import type { RaidFeel } from './impact.ts'
@@ -96,9 +98,9 @@ export function sprite(ctx: CanvasRenderingContext2D, images: Map<string, HTMLIm
 type Ghost = { x: number; y: number; frame: number; face: number; t: number; path: string }
 const ghosts: Ghost[] = []
 let ghostAt = -1, tint: HTMLCanvasElement | null = null
-function trackGhosts(s: HaebiRun, path: string) {
+function trackGhosts(s: HaebiRun, path: string, frame: number) {
   if (ghosts.length && s.t < ghosts[ghosts.length - 1]!.t) { ghosts.length = 0; ghostAt = -1 }   // 새 판
-  if (s.dash > 0 && s.t - ghostAt >= C.ghostEvery) { ghosts.push({ x: s.x, y: s.y, frame: heroFrame(s), face: s.face, t: s.t, path }); ghostAt = s.t }
+  if (s.dash > 0 && s.t - ghostAt >= C.ghostEvery) { ghosts.push({ x: s.x, y: s.y, frame, face: s.face, t: s.t, path }); ghostAt = s.t }
   while (ghosts.length && s.t - ghosts[0]!.t > C.ghostLife) ghosts.shift()
 }
 function drawGhosts(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, height: number) {
@@ -147,21 +149,38 @@ export function warmHeroSprites(images: Map<string, HTMLImageElement>, density: 
     if (!b) whiteStrip(img, img.width, img.height)
   }
 }
-/** 걷기 위상(바퀴) — 화면 쪽 기억: 실제로 움직인 거리 ÷ 한 바퀴 보폭. 같은 판 같은 시각엔 한 번만 더하고, 새 판·순간 이동은 건너뛴다 */
-const walk = { x: 0, y: 0, t: -1, phase: 0 }
-function walkPhase(s: HaebiRun) {
-  const d = Math.hypot(s.x - walk.x, s.y - walk.y)
-  if (walk.t < 0 || s.t < walk.t || d > C.heroPx) walk.phase = 0
-  else if (s.t > walk.t) walk.phase += d / (C.walkStride * C.heroPx * heroArt.body)
-  walk.x = s.x; walk.y = s.y; walk.t = s.t
-  return walk.phase
-}
+/** 몸놀림(hero-motion.ts) 재료 — 걷기 칸은 실제로 움직인 거리 ÷ 한 바퀴 보폭(몸 키 비례)으로 넘긴다 · 띠마다 걷기 칸 수 */
+const poseOptions = (s: HaebiRun) => ({ stride: C.walkStride * C.heroPx * heroArt.body, cells: WALK_CYCLE[heroSprite(s)] ?? 8 })
+/** 움직임 줄이기(기기 설정)면 몸 변형(런지·늘임·출렁·기울기·잔상)을 끈다 — 칸 박자는 그대로 */
+const calmMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+/** 장수 칸 — 초상(portrait)은 판 상태만으로(걷지 않음 · 기억 없음) · 판 위는 heroPose 와 같다 */
 export function heroFrame(s: HaebiRun, portrait = false, menuTime = 0) {
-  if (s.hurt > 0) return 18
-  if (s.cast?.kind === 'ult') return 12   // 비기 시전: 기를 모으는 자세
-  if (s.attack > 0) return 12 + Math.min(5, Math.floor((.3 - Math.min(.3, s.attack)) / .3 * 6))
-  if (s.moving && !portrait) { const n = WALK_CYCLE[heroSprite(s)] ?? 8; return 4 + Math.floor(walkPhase(s) * n) % n }
-  return [0, 1, 2, 1][Math.floor((menuTime || s.t) / .65) % 4]!
+  if (!portrait) return heroPose(s, poseOptions(s)).frame
+  if (s.hurt > 0) return ANIM.hurtCell
+  if (s.cast?.kind === 'ult') return ANIM.castCell   // 비기 시전: 기를 모으는 자세
+  if (s.attack > 0) return attackFrame(attackRole(s.kit), ANIM.window - s.attack) ?? idleFrame(menuTime || s.t)
+  return idleFrame(menuTime || s.t)
+}
+/**
+ * 장수 몸 (62-A) — 몸놀림의 변형(런지 dx · 가로/세로 늘임 · 기울기)을 발 자리에 한 번 걸고 잔상 → 몸 → 각성 빛을 같은 변형으로 그린다.
+ * 판 좌표·발밑 표식·그림자는 그대로 s.x/s.y. 변형이 없으면 예전처럼 곧바로 찍는다(save/restore 없이).
+ */
+function drawHero(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, path: string, density: number, pose: HeroPose) {
+  const h = heroH(s), plain = pose.sx === 1 && pose.sy === 1 && !pose.lean
+  const x = Math.round(s.x + pose.dx), y = Math.round(s.y), ox = plain ? x : 0, oy = plain ? y : 0
+  if (!plain) { ctx.save(); ctx.translate(x, y); ctx.transform(pose.sx, 0, -pose.lean, pose.sy, 0, 0) }
+  if (pose.ghosts > 0 && pose.ghostAlpha > 0) {
+    const a = ctx.globalAlpha
+    for (let i = pose.ghosts; i >= 1; i--) { ctx.globalAlpha = a * pose.ghostAlpha * (1 - (i - 1) / pose.ghosts); sprite(ctx, images, path, ox + pose.ghostStep * i, oy, h, pose.ghostFrame, pose.face, false, density) }
+    ctx.globalAlpha = a
+  }
+  sprite(ctx, images, path, ox, oy, h, pose.frame, pose.face, s.hurt > 0, density)
+  if (awakenedLook(s)) {
+    // 각성: 몸이 금빛으로 맥박친다 (같은 그림을 빛으로 한 번 더)
+    const op = ctx.globalCompositeOperation; ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .16 + .12 * Math.sin(s.t * 7)
+    sprite(ctx, images, path, ox, oy, h, pose.frame, pose.face, false, density); ctx.globalCompositeOperation = op; ctx.globalAlpha = 1
+  }
+  if (!plain) ctx.restore()
 }
 function axe(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, x: number, y: number, angle: number, size: number) {
   ctx.save(); ctx.translate(x, y); ctx.rotate(angle)
@@ -695,16 +714,13 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
         drawFx(ctx, images, 'fx_victory_rays', s.x, s.y - heroH(s) * FX_ART.heroRayLift, heroH(s) * FX_ART.heroRayWidth, heroH(s) * FX_ART.heroRayHeight)
         ctx.restore()
       }
-      trackGhosts(s, heroSprite(s, images, density)); drawGhosts(ctx, images, s, heroH(s))
+      // 몸놀림은 한 프레임에 한 번만 묻는다 (회피 잔상·몸·각성 빛이 같은 칸) — 맞은 순간 멈춤 · 움직임 줄이기 · 판 끝 연출 · 저사양을 함께 넘긴다
+      const heroPath = heroSprite(s, images, density), pose = heroPose(s, { ...poseOptions(s), stopped: feel?.stopped ?? false, still: calmMotion || !!ending?.active, low: criticalLow })
+      trackGhosts(s, heroPath, pose.frame); drawGhosts(ctx, images, s, heroH(s))
       // 오라: 뒤 겹(몸 뒤 빛 · 뒤 가닥) → 몸 → 앞 겹(앞 가닥 · 불티) · 발밑 고리와 표식은 땅 표식 차례에 이미 그렸다
       if (aura) drawAura(ctx, aura, false, auraAt)
       drawCast(ctx, s)
-      sprite(ctx, images, heroSprite(s, images, density), s.x, s.y, heroH(s), heroFrame(s), s.face, s.hurt > 0, density)
-      if (awakenedLook(s)) {
-        // 각성: 몸이 금빛으로 맥박친다 (같은 그림을 빛으로 한 번 더)
-        const op = ctx.globalCompositeOperation; ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .16 + .12 * Math.sin(s.t * 7)
-        sprite(ctx, images, heroSprite(s, images, density), s.x, s.y, heroH(s), heroFrame(s), s.face, false, density); ctx.globalCompositeOperation = op; ctx.globalAlpha = 1
-      }
+      drawHero(ctx, images, s, heroPath, density, pose)
       if (aura) { drawAura(ctx, aura, true, auraAt); drawAuraBurst(ctx, aura, auraAt, s.t - auraMem.burst) }
     }
   }
