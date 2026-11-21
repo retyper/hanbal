@@ -1,3 +1,4 @@
+import { criticalFinishFrames, criticalFinishHandled, drawCriticalFinishFrames } from './critical-finish.ts'
 import { fieldTransform, heroCacheHeight, wantsHeroHd } from './surface.ts'
 import { HERO_HD, HERO_HD_SHEETS } from './hero-hd.ts'
 import { championLaneContains, championPose, championFacing, championRecovery, drawChampionTells, drawChampionOverlays, drawGroundChests } from './champion-view.ts'
@@ -614,7 +615,7 @@ const order: (HaebiRun['enemies'][number] | null)[] = []
  * cam: 확대 카메라 (raid/camera.ts · 11-19 돋보기 단추) — 화면 가운데의 판 좌표와 배율. 판 위의 것(땅·몸·효과·피해 숫자·오라)은 판과 함께 커지고,
  * 화면에 붙은 것(맞을 때 붉은 테 · 두목 막대)은 그대로 · 없으면 1배
  */
-export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, destination: { x: number; y: number } | null, cam?: { zoom: number; x: number; y: number }, feel?: RaidFeel, ending?: RaidEnding) {
+export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, destination: { x: number; y: number } | null, cam?: { zoom: number; x: number; y: number }, feel?: RaidFeel, ending?: RaidEnding, criticalLow = false) {
   const W = C.width, H = C.height
   fieldTransform(ctx)   // 그림마다 옮겼다 되돌리는 셈의 작은 오차가 판마다 쌓이지 않게 (sprite·stamp 는 save/restore 없이 · 11-17)
   ctx.fillStyle = '#273c35'; ctx.fillRect(0, 0, W, H)
@@ -778,6 +779,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   }
   // 맞은 불꽃(hit)은 새것 drawHits 개만 — 화살이 무리를 꿰면 한 프레임에 수백 개가 쌓여 폰이 버벅였다 (11-17 형 「이쯤 오면 렉」)
   let hitSkip = -C.drawHits, deathSkip = -C.drawDeaths; for (const f of s.fx) if (f.kind === 'hit') hitSkip++; else if (f.kind === 'death') deathSkip++
+  const finishFrames = criticalFinishFrames(s, s.fx, time, s.state === 'playing' && !ending?.active, criticalLow, FEEL.criticalFinish)
   let particleBudget = FX_ART.particleBudget
   for (const f of s.fx) {
     if (f.championCue) continue // State-based champion rings below; do not borrow bell-magic artwork.
@@ -825,7 +827,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
         ctx.lineWidth = K.own.ringWidth; ctx.globalAlpha *= K.own.ringAlpha; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (.55 + .45 * age), 0, TAU); ctx.stroke()
       }
     } else if (f.kind === 'death') {
-      if (f.mob) {
+      if (f.mob && !criticalFinishHandled(s, f)) {
         const away = -(f.face ?? 1), elite = f.mob === 'elite' || f.mob === 'boss'
         const flight = Math.min(1, age / FEEL.deathBounceAt)
         const bounce = age < FEEL.deathBounceAt ? Math.sin(Math.PI * flight) * FEEL.deathLift : Math.sin(Math.PI * (age - FEEL.deathBounceAt) / (1 - FEEL.deathBounceAt)) * FEEL.deathBounce
@@ -840,6 +842,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
     ctx.restore()
   }
   // 붉은 예고는 내 FX 뒤에: 실제 원/돌진/탄환 길만 표시하고 안전한 부채 사이를 채우지 않는다.
+  drawCriticalFinishFrames(ctx, finishFrames, (mob, face) => sprite(ctx, images, warlord(mob, s.stage), 0, 0, mobHeight(mob), 18, face))
   drawThreats(ctx, images, s); drawChampionTells(ctx, s)
   // 피해 숫자 — 알갱이로 튀어 나간다 (trackNumbers · drawNumbers)
   trackNumbers(s); ctx.save(); drawNumbers(ctx, images, s, s.t + (ending?.effectTime ?? 0)); ctx.restore()

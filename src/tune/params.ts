@@ -527,6 +527,8 @@ export const HAEBI_IMPACT = {
   numberPop: 1.6, numberPopTime: .08, numberCriticalPop: 1.85,
   deathDistance: 60, deathEliteDistance: 100, deathLift: 48, deathBounce: 13,
   deathBounceAt: .65, deathSpin: 2.7, deathFadeAt: .65,
+  // Basic critical last-hit presentation; simulation and drop values stay unchanged.
+  criticalFinish: { life: .24, hold: .035, distance: 420, lift: 84, endScale: .12, spin: 1.9, trailAlpha: .18, trailOffsets: [.022, .045], maxBodies: 4, lowMaxBodies: 2 },
 } as const
 
 export const HAEBI_END = {

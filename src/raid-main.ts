@@ -100,7 +100,7 @@ root.appendChild(endingMediaHost)
 const endingVideo = createEndingVideo(import.meta.env.BASE_URL)
 function syncEndingVideo() {
   endingVideo.sync({ host: endingMediaHost, run: live ? run : null, portraitKey: HERO.bust,
-    kind: ending.ready ? ending.kind : null, visible: !document.hidden && !$('overlay').hidden, lowGraphics: raidLowGraphics() })
+    kind: ending.ready ? ending.kind : null, visible: !document.hidden && !$('overlay').hidden, lowGraphics: fieldLowGraphics })
 }
 
 root.insertAdjacentHTML('beforeend', `<div id="rotate-guide" hidden><div><span style="font-size:44px">↻</span><h2>폰을 가로로 돌려 주세요</h2><p>확대 ${josa(HERO.name, '과', '와')} 전장을 함께 보며 싸웁니다.<br>회전하는 동안 전투는 멈춰 있습니다.</p></div></div>`)
@@ -286,9 +286,11 @@ function prepareHeroRaster(zoom: number) {
     img.src = import.meta.env.BASE_URL + 'realm/' + path
   }
 }
+let fieldLowGraphics = raidLowGraphics()
 function syncFieldPixels() {
+  fieldLowGraphics = raidLowGraphics()
   const r = canvas.getBoundingClientRect(); if (!(r.width > 0 && r.height > 0)) return
-  const p = fieldPixels(r.width, r.height, devicePixelRatio, raidLowGraphics())
+  const p = fieldPixels(r.width, r.height, devicePixelRatio, fieldLowGraphics)
   if (canvas.width !== p.width || canvas.height !== p.height) { canvas.width = p.width; canvas.height = p.height; heroWarmKey = '' }
   prepareHeroRaster(cam.zoom)
 }
@@ -868,7 +870,7 @@ function frame(now: number) {
     const endCam = zoom ? { zoom: cam.zoom * (1 + END.cameraZoom * zoom), x: cam.x + (run.x - cam.x) * zoom, y: cam.y + (run.y - cam.y) * zoom } : cam
     if (zoom) Object.assign(endCam, clampCenter(endCam.zoom, endCam.x, endCam.y))
     prepareHeroRaster(endCam.zoom)
-    drawField(ctx, images, run, destination, endCam, feel, ending.kind ? ending : undefined)
+    drawField(ctx, images, run, destination, endCam, feel, ending.kind ? ending : undefined, fieldLowGraphics)
     drawEnding(ctx, ending, endHit, runGold(run), images)
   }
   bigCutin.update(run)

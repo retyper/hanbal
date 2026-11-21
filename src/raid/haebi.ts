@@ -1,3 +1,4 @@
+import { tagPrimaryShot, primaryShotDirection, tagCriticalFinish } from './critical-finish.ts'
 import { HAEBI_RUN as C, HAEBI_VANGUARD as V, HAEBI_STAGES as ST, HAEBI_MOBS as M, HAEBI_SHOP as SH, HAEBI_GOLD as G, HAEBI_ULT as U, HAEBI_TREE as T, HAEBI_AWAKEN as A } from '../tune/params.ts'
 import { makeRng } from '../core/rng.ts'
 import { josa } from '../core/josa.ts'
@@ -414,7 +415,7 @@ const guard = (e: Mob) => e.buff > 0 ? 1 - M.shamanArmor : 1
 const steady = (e: Mob) => !!e.champion || e.kind === 'boss' || e.kind === 'iron' || e.kind === 'bear'
 /** 장수가 설 수 있는 판 안 */
 const heroX = (x: number) => Math.max(32, Math.min(C.width - 32, x)), heroY = (y: number) => Math.max(65, Math.min(C.height - 24, y))
-function hit(s: HaebiRun, e: Mob, amount: number, knock = true, origin: { x: number; y: number } | null = { x: s.x, y: s.y }) {
+function hit(s: HaebiRun, e: Mob, amount: number, knock = true, origin: { x: number; y: number } | null = { x: s.x, y: s.y }, primaryDirection?: number) {
   if (e.hp <= 0) return
   const recoveryHit = !!e.champion && (e.recovery ?? 0) > 0 && !e.champion.recoveryHitUsed
   if (recoveryHit) e.champion!.recoveryHitUsed = true
@@ -428,6 +429,7 @@ function hit(s: HaebiRun, e: Mob, amount: number, knock = true, origin: { x: num
   s.kills++; s.comboKills++; s.streakTime = 2; s.hp = Math.min(s.maxHp, s.hp + C.killHeal); if (e.kind === 'elite') s.elites++
   fx(s, 'death', e.x, e.y - 20, e.kind === 'boss' ? 80 : 25, '#d4af76')
   Object.assign(s.fx[s.fx.length - 1]!, { mob: e.kind, face: s.x < e.x ? -1 : 1, n: amount, crit })
+  if (primaryDirection !== undefined) tagCriticalFinish(s.fx[s.fx.length - 1]!, primaryDirection)
   if (recoveryHit) s.fx[s.fx.length - 1]!.recoveryHit = true
   if (s.mode === 'stage' && e.kind === 'elite') {
     const large = e.bornAt !== undefined && s.t - e.bornAt <= CH.fastSeconds
@@ -524,7 +526,7 @@ function primary(s: HaebiRun, target: Mob, angle: number, dist: number, power: n
       s.cool.axe = C.axeCooldown / tempo; s.attack = .3; s.face = Math.cos(angle) < 0 ? -1 : 1
       fx(s, 'slash', s.x, s.y, reach, '#ffe2a0', angle)
       const damage = (C.axeDamage + C.axeRankDamage * s.ranks.axe) * power
-      for (const e of s.enemies) if (Math.hypot(e.x - s.x, e.y - s.y) < reach && (s.ranks.axe >= 4 || (e.x - s.x) * Math.cos(angle) + (e.y - s.y) * Math.sin(angle) > -30)) hit(s, e, damage)
+      for (const e of s.enemies) if (Math.hypot(e.x - s.x, e.y - s.y) < reach && (s.ranks.axe >= 4 || (e.x - s.x) * Math.cos(angle) + (e.y - s.y) * Math.sin(angle) > -30)) hit(s, e, damage, true, undefined, cos < 0 ? -1 : 1)
       if (cap) {
         // 대지파쇄: 내려친 쪽으로 땅이 길게 갈라져 그 줄을 모두 벤다
         const c = T.cap.axe.a, length = c.length * area, width = c.width * area
@@ -537,7 +539,7 @@ function primary(s: HaebiRun, target: Mob, angle: number, dist: number, power: n
       s.cool.bow = C.bowCooldown / tempo; s.attack = .3; s.face = cos < 0 ? -1 : 1
       // 관통일제: 단계마다 extra 대 더 (모두 꿰뚫기는 pierce)
       const count = 1 + Math.floor(s.ranks.bow / 3) + cap * T.cap.bow.a.extra, damage = (C.bowDamage + C.bowRankDamage * s.ranks.bow) * power * (cap ? capShare(cap, T.cap.bow.a) : 1)
-      for (let i = 0; i < count; i++) shoot(s, 'arrow', angle + (i - (count - 1) / 2) * .12, damage)
+      for (let i = 0; i < count; i++) { const b = shoot(s, 'arrow', angle + (i - (count - 1) / 2) * .12, damage); tagPrimaryShot(b) }
     }
   } else if (s.kit === 'spear') {
     const length = (C.spearLength + C.spearRankLength * s.ranks.spear) * area, width = C.spearWidth * area * (s.ranks.spear >= 4 ? 1.6 : 1)
@@ -551,7 +553,7 @@ function primary(s: HaebiRun, target: Mob, angle: number, dist: number, power: n
         fx(s, 'thrust', s.x, s.y, length, '#ffe2a0', a)
         for (const e of s.enemies) {
           const ex = e.x - s.x, ey = e.y - s.y, along = ex * c + ey * n
-          if (along > -12 && along < length && Math.abs(ey * c - ex * n) < width) hit(s, e, damage * k)
+          if (along > -12 && along < length && Math.abs(ey * c - ex * n) < width) hit(s, e, damage * k, true, undefined, c < 0 ? -1 : 1)
         }
       }
     }
@@ -565,7 +567,7 @@ function primary(s: HaebiRun, target: Mob, angle: number, dist: number, power: n
       for (const e of s.enemies) {
         const ex = e.x - s.x, ey = e.y - s.y, d = Math.hypot(ex, ey) || 1
         if (d < reach && (s.ranks.dagger >= 4 || (ex * cos + ey * sin) / d > C.daggerArc)) {
-          hit(s, e, damage)
+          hit(s, e, damage, true, undefined, ex < 0 ? -1 : 1)
           if (cap && e.hp > 0) { e.poison = Math.max(e.poison, T.cap.dagger.a.poison); e.pdps = Math.max(e.pdps, damage * capShare(cap, T.cap.dagger.a)) }
         }
       }
@@ -579,7 +581,7 @@ function primary(s: HaebiRun, target: Mob, angle: number, dist: number, power: n
         const e = i ? nearest(s, s.x, s.y, used, C.slingRange * area) : target; if (!e) break
         used.push(e.id)
         const b = shoot(s, 'pebble', Math.atan2(e.y - s.y, e.x - s.x), damage, s.x, s.y, e.x, e.y)
-        if (b) { b.vx = (e.x - s.x) / C.slingFlight; b.vy = (e.y - s.y) / C.slingFlight; b.radius = (C.slingSplash + C.slingRankSplash * s.ranks.sling) * area * (s.ranks.sling >= 4 ? C.slingWide : 1) }
+        if (b) { b.vx = (e.x - s.x) / C.slingFlight; b.vy = (e.y - s.y) / C.slingFlight; b.radius = (C.slingSplash + C.slingRankSplash * s.ranks.sling) * area * (s.ranks.sling >= 4 ? C.slingWide : 1); tagPrimaryShot(b) }
       }
     }
   } else if (s.kit === 'magic') {
@@ -588,7 +590,7 @@ function primary(s: HaebiRun, target: Mob, angle: number, dist: number, power: n
     if (!s.cool.bell && dist < r) {
       s.cool.bell = C.bellCooldown / tempo; s.attack = .3
       fx(s, 'ring', s.x, s.y, r, '#f3dc8a')
-      for (const e of s.enemies) if (Math.hypot(e.x - s.x, e.y - s.y) < r) hit(s, e, (C.bellDamage + C.bellRankDamage * s.ranks.bell) * power)
+      for (const e of s.enemies) if (Math.hypot(e.x - s.x, e.y - s.y) < r) hit(s, e, (C.bellDamage + C.bellRankDamage * s.ranks.bell) * power, true, undefined, e.x < s.x ? -1 : 1)
       for (let i = 0; i < cap; i++) shoot(s, 'soul', angle + (i - (cap - 1) / 2) * 1.2, (C.soulDamage + C.soulRankDamage * s.ranks.soul) * power * capShare(cap, T.cap.magic.a), s.x, s.y, s.x, s.y, 1)
     }
   } else {
@@ -599,7 +601,7 @@ function primary(s: HaebiRun, target: Mob, angle: number, dist: number, power: n
       const damage = (C.swordDamage + C.swordRankDamage * s.ranks.sword) * power
       for (const e of s.enemies) {
         const ex = e.x - s.x, ey = e.y - s.y, d = Math.hypot(ex, ey) || 1
-        if (d < reach && (s.ranks.sword >= 4 || (ex * cos + ey * sin) / d > -C.swordArc)) hit(s, e, damage)
+        if (d < reach && (s.ranks.sword >= 4 || (ex * cos + ey * sin) / d > -C.swordArc)) hit(s, e, damage, true, undefined, ex < 0 ? -1 : 1)
       }
       // 칼바람 베기(갈래 끝): 벨 때마다 짧은 검기 (갈라지지 않는다 · gen 1)
       if (cap) { const b = shoot(s, 'wave', angle, damage * capShare(cap, T.cap.sword.a), s.x, s.y, s.x, s.y, 1); if (b) b.life = T.cap.sword.a.life }
@@ -1005,7 +1007,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
         for (const e of s.enemies) {
           const d = Math.hypot(e.x - b.tx, e.y - b.ty)
           if (e.hp <= 0 || d >= b.radius) continue
-          hit(s, e, b.damage, true, null)
+          hit(s, e, b.damage, true, null, primaryShotDirection(b))
           if (e.hp > 0 && !steady(e)) { e.x += (e.x - b.tx) / (d || 1) * C.slingKnock; e.y += (e.y - b.ty) / (d || 1) * C.slingKnock }
           // 땅울림 (팔매 갈래 끝): 떨어진 둘레가 잠시 멈춘다 (두목·정예·철갑·곰은 버틴다)
           if (s.ranks.capA && s.kit === 'sling' && e.hp > 0 && !steady(e) && e.kind !== 'elite') e.daze = Math.max(e.daze, T.cap.sling.a.daze + T.cap.sling.a.daStep * (s.ranks.capA - 1))
@@ -1043,7 +1045,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
           if (!b.gen && s.kit === 'magic' && s.ranks.capB) for (let i = 0, n = T.cap.magic.b.split; i < n; i++) { const o = shoot(s, 'soul', b.angle + (i - (n - 1) / 2) * 1.6, b.damage * capShare(s.ranks.capB, T.cap.magic.b), b.x, b.y, b.x, b.y, 1); if (o) o.hit.push(e.id) }
           break
         }
-        hit(s, e, b.damage * (e.kind === 'shield' ? M.shieldBlock : 1), true, { x: b.x - b.vx * dt, y: b.y - b.vy * dt }); b.hit.push(e.id)
+        hit(s, e, b.damage * (e.kind === 'shield' ? M.shieldBlock : 1), true, { x: b.x - b.vx * dt, y: b.y - b.vy * dt }, primaryShotDirection(b)); b.hit.push(e.id)
         if (b.kind === 'boulder' && e.hp > 0 && !steady(e)) { const v = Math.hypot(b.vx, b.vy) || 1; e.x += b.vx / v * C.boulderKnock; e.y += b.vy / v * C.boulderKnock }
         if (b.kind === 'skip') {
           // 연환석: 맞힌 적 곁의 다음 적으로 튄다 · 진탕격이면 멈춰 세운다 (두목·정예·철갑·곰은 버틴다)
