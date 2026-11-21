@@ -90,7 +90,7 @@ const runOpts = (): RaidOpts => ({ ...mode === 'stage' ? { stage, bonus: { ...me
 const newRun = (seed: number, opts: RaidOpts = runOpts()) => { const r = createHaebi(seed, mode, kit, opts); if (r.message.endsWith('첫 조합을 향해')) { r.message = ''; r.messageTime = 0 }  /* 시작 군말 띠는 걷는다 (형 11-16) */ return r }
 root.innerHTML = `<header><div><small>장수 열전 · 독립 모드</small><h1>${HERO.name} <em>${K.title}</em></h1></div><div class="head-actions"><button id="pause" disabled aria-label="일시정지">Ⅱ</button></div></header>
 <div id="layout"><aside id="character"><div id="portrait-media"><img id="hero-portrait" src="${import.meta.env.BASE_URL}realm/bust-hd/${HERO.bust}.jpg" alt="${HERO.name} 원화"><video id="hero-video" muted loop playsinline preload="none" hidden aria-label="각성 ${HERO.name} 영상"></video></div><div class="portrait-title"><span>${HERO.home}</span><b id="rank-title">${HERO.name}</b><button id="portrait-toggle" hidden>원화로 보기</button></div><div id="reaction">${weapon} 하나로 시작하는 열전</div><div id="combo-badges"></div><i class="frame-knots"></i></aside>
-<main><section id="menu"><span class="eyebrow">장수 열전</span><h2>${HERO.name}<em>${K.title}</em></h2><p>능력을 고르고 두 힘을 묶어, ${bossMinute()}분을 버틴 뒤 오는 두목을 쓰러뜨리세요.</p><div class="journey"><span><b>01</b> 붉은 고리를 피하고</span><span><b>02</b> 두 힘을 묶어</span><span><b>03</b> 두목을 잡습니다</span></div><button id="start" class="primary" disabled aria-label="불러오는 중"><i class="load-dots" aria-hidden="true"><b></b><b></b><b></b></i></button><p class="controls">이동 WASD·방향키·화면 누르기 · 회피 Shift · 비기 Space · 투지 E · 빠르기 X · 멈춤 Esc</p><p class="note">본편의 병력과 따로인 한 판입니다.</p></section>
+<main><section id="menu"><span class="eyebrow">장수 열전</span><h2>${HERO.name}<em>${K.title}</em></h2><p>능력을 고르고 두 힘을 묶어, ${bossMinute()}분을 버틴 뒤 오는 두목을 쓰러뜨리세요.</p><div class="journey"><span><b>01</b> 붉은 고리를 피하고</span><span><b>02</b> 두 힘을 묶어</span><span><b>03</b> 두목을 잡습니다</span></div><button id="start" class="primary" disabled aria-label="불러오는 중"><i class="load-dots" aria-hidden="true"><b></b><b></b><b></b></i></button><p class="controls">이동 WASD·방향키·화면 누르기 · 회피 Shift · 비기 Space · 투지 E · 배속 X · 일시정지 Esc</p><p class="note">본편의 병력과 따로인 한 판입니다.</p></section>
 <section id="play" hidden><div id="arena"><canvas id="field" width="${C.width}" height="${C.height}" aria-label="${HERO.name} 토벌 전장. 클릭 또는 드래그로 이동"></canvas><div id="combat-hud"><div class="health-line"><b>${HERO.name}</b><span id="health">180 / 180</span></div><div class="bar hp"><span class="hp-track"><i id="hp-fill"></i><em id="hp-chunk"></em><b id="hp-ward" hidden></b></span></div><div id="wake-bar" class="grit" aria-label="투지 막대"><i id="wake-fill"></i></div><div id="loadout" aria-label="획득한 전투 능력"></div></div><div id="hud"><small id="phase"></small><b id="clock"></b></div><div id="score"><b id="kills"></b><small>격파</small><b id="level"></b></div><div class="bar xp"><i id="xp-fill"></i></div><div id="announcement" aria-live="polite"></div><div id="streak"></div><footer><button id="wake" class="grit" hidden aria-label="투지 E"><b>투지</b><small>E</small></button><span id="hint">자동 공격 · 화면을 끌면 그쪽으로 이동 · 능력 아이콘을 누르고 있으면 설명</span><button id="dash">회피 Shift</button><button id="skill" class="primary" data-kit="${kit}">${K.skill} Space</button></footer><div id="stick" hidden aria-hidden="true"><i></i></div><i class="frame-knots"></i></div></section></main></div><div id="power-tooltip" role="tooltip" hidden></div><div id="overlay" hidden></div>`
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T
 root.insertAdjacentHTML('beforeend', `<div id="rotate-guide" hidden><div><span style="font-size:44px">↻</span><h2>폰을 가로로 돌려 주세요</h2><p>확대 ${josa(HERO.name, '과', '와')} 전장을 함께 보며 싸웁니다.<br>회전하는 동안 전투는 멈춰 있습니다.</p></div></div>`)
@@ -160,7 +160,7 @@ speedBtn.style.setProperty('--pop', SPEED.pop + 's')
 function paintSpeed() {
   const x = speedOf(speed)
   speedBtn.textContent = `×${x}`; speedBtn.classList.toggle('on', x > 1)
-  speedBtn.setAttribute('aria-pressed', String(x > 1)); speedBtn.setAttribute('aria-label', `판 빠르기 ${x}배`)
+  speedBtn.setAttribute('aria-pressed', String(x > 1)); speedBtn.setAttribute('aria-label', `배속 ${x}배`)
 }
 function cycleSpeed() {
   speed = nextSpeed(speed); paintSpeed()
@@ -575,12 +575,12 @@ function haveRow() {
   return `<div class="lv-have" aria-label="지금 가진 능력">${[...slots, ...combos].join('')}</div>`
 }
 /** 기술 나무 보기 (레벨업 창 · 멈춤 창의 「나무」) — 판 위에 한 겹 더 · 칸을 누르면 아래 한 줄에 설명 · 바깥이나 닫기를 누르면 닫힘 */
-const treeView = document.createElement('div'); treeView.id = 'tree-view'; treeView.hidden = true; treeView.setAttribute('role', 'dialog'); treeView.setAttribute('aria-label', '기술 나무')
+const treeView = document.createElement('div'); treeView.id = 'tree-view'; treeView.hidden = true; treeView.setAttribute('role', 'dialog'); treeView.setAttribute('aria-label', '스킬 트리')
 root.append(treeView)
 const treeResize = new ResizeObserver(() => { if (!treeView.hidden) drawTreeLinks(treeView, run) })
 function openTree() {
   treeResize.disconnect()
-  treeView.innerHTML = `<div class="panel tree-panel"><div class="tree-head"><button class="tree-close primary">돌아가기</button><h2>${weapon} 기술 나무</h2><small>레벨 ${run.level} · 앞으로 레벨업 ${Math.max(0, C.maxLevel - run.level)}번</small></div>${treeSvg(run)}<p class="tree-info" aria-live="polite">칸을 누르거나 가리키면 설명이 나옵니다</p></div>`
+  treeView.innerHTML = `<div class="panel tree-panel"><div class="tree-head"><button class="tree-close primary">돌아가기</button><h2>${weapon} 스킬 트리</h2><small>레벨 ${run.level} · 앞으로 레벨업 ${Math.max(0, C.maxLevel - run.level)}번</small></div>${treeSvg(run)}<p class="tree-info" aria-live="polite">칸을 누르거나 가리키면 설명이 나옵니다</p></div>`
   treeView.hidden = false
   drawTreeLinks(treeView, run)
   treeResize.observe(treeView.querySelector('.tree-board')!)
@@ -609,7 +609,7 @@ treeView.addEventListener('keydown', e => {
   e.preventDefault(); e.stopPropagation()
   if (!e.repeat) node.click()
 })
-const treeButton = '<button id="tree-open" class="tree-btn" aria-label="기술 나무 보기"><img src="' + import.meta.env.BASE_URL + 'realm/raid/power-skill.png" alt="">나무</button>'
+const treeButton = '<button id="tree-open" class="tree-btn" aria-label="스킬 트리 보기"><img src="' + import.meta.env.BASE_URL + 'realm/raid/power-skill.png" alt="">스킬 트리</button>'
 let settledRun: HaebiRun | null = null
 function settleRun() {
   if (settledRun === run) return
@@ -642,7 +642,7 @@ function showOverlay() {
   resetInput()
   if (state.startsWith('upgrade:') || state.startsWith('chest:')) {
     const chest = run.choiceOrigin === 'chest' ? run.chests?.find(c => c.id === run.chestChoice?.id) : undefined, nonce = run.offerNonce
-    overlay.innerHTML = `<div class="panel upgrade${chest ? ' chest-reward' + (chest.large ? ' large' : '') : ''}"${chest ? ` data-chest-id="${chest.id}" data-choice-left="${run.chestChoice!.left}"` : ''}><div class="lv-head">${haveRow()}<h2 class="lvup">${chest ? `<img class="chest-open" src="${import.meta.env.BASE_URL}realm/raid/chest-open.png" alt="">보물 상자<small>남은 선택 ${run.chestChoice!.left}회</small>${chestBurst(chest.id)}` : '레벨 업!'}</h2>${treeButton}</div><div class="choices">${run.offers.map(card).join('')}</div>${chest ? '' : `<button id="reroll" ${run.rerolls ? '' : 'disabled'}>다른 선택지 · ${run.rerolls}회 남음</button>`}</div>`
+    overlay.innerHTML = `<div class="panel upgrade${chest ? ' chest-reward' + (chest.large ? ' large' : '') : ''}"${chest ? ` data-chest-id="${chest.id}" data-choice-left="${run.chestChoice!.left}"` : ''}><div class="lv-head">${haveRow()}<h2 class="lvup">${chest ? `<img class="chest-open" src="${import.meta.env.BASE_URL}realm/raid/chest-open.png" alt="">보물 상자<small>남은 선택 ${run.chestChoice!.left}회</small>${chestBurst(chest.id)}` : '레벨업!'}</h2>${treeButton}</div><div class="choices">${run.offers.map(card).join('')}</div>${chest ? '' : `<button id="reroll" ${run.rerolls ? '' : 'disabled'}>리롤 · ${run.rerolls}회 남음</button>`}</div>`
     overlay.querySelectorAll<HTMLButtonElement>('[data-up]').forEach(b => b.onclick = () => { const pick = b.dataset.up as Pick, log = logging(); if (choose(run, pick, nonce)) { if (log) { recPick(rec!, pick); saveLog() } shown = ''; showOverlay(); updateHud() } })
     const openedArt = overlay.querySelector<HTMLImageElement>('.chest-open')
     if (openedArt) openedArt.addEventListener('error', () => { openedArt.src = import.meta.env.BASE_URL + 'realm/raid/chest.png' }, { once: true })
@@ -653,7 +653,7 @@ function showOverlay() {
     $('tree-open').onclick = openTree
   } else if (state === 'pause') {
     const reason = '폰을 가로로 돌리면 전투를 계속할 수 있습니다.'
-    overlay.innerHTML = `<div class="panel pause-panel" role="dialog" aria-labelledby="pause-title"><div class="pause-heading"><small>장수 열전</small><h2 id="pause-title">잠시 숨 고르기</h2><p id="pause-note" role="status">${rotationBlocked ? reason : '성장과 전투는 그대로 기다립니다.'}</p></div><div class="pause-actions">${treeButton}<button id="quit" title="이번 출전을 마칩니다">출전 화면으로</button></div><label class="pause-short-cutin"><input id="short-cutin" type="checkbox" ${shortCutin ? 'checked' : ''}>연출 짧게</label><div class="pause-confirm"><button id="resume" class="primary" aria-disabled="${rotationBlocked}" title="${rotationBlocked ? reason : '멈춘 곳에서 계속 싸웁니다'}">계속 싸우기</button></div></div>`
+    overlay.innerHTML = `<div class="panel pause-panel" role="dialog" aria-labelledby="pause-title"><div class="pause-heading"><small>장수 열전</small><h2 id="pause-title">일시정지</h2><p id="pause-note" role="status">${rotationBlocked ? reason : '성장과 전투는 그대로 기다립니다.'}</p></div><div class="pause-actions">${treeButton}<button id="quit" title="이번 출전을 마칩니다">출전 화면으로</button></div><label class="pause-short-cutin"><input id="short-cutin" type="checkbox" ${shortCutin ? 'checked' : ''}>연출 짧게</label><div class="pause-confirm"><button id="resume" class="primary" aria-disabled="${rotationBlocked}" title="${rotationBlocked ? reason : '멈춘 곳에서 계속 싸웁니다'}">계속 싸우기</button></div></div>`
     // 터치는 브라우저의 :active 지연을 기다리지 않고 누른 순간 반응한다.
     overlay.querySelectorAll<HTMLButtonElement>('.pause-panel button').forEach(b => {
       const release = () => b.classList.remove('pressed')

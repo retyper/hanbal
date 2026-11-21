@@ -39,3 +39,8 @@
 - PUBLIC_BASE=/hanbal/ build raw4972.4KB/gzip1551.1KB. 예산 여유27.6/48.9KB. 56-A 대비 +13.0/+3.5KB(단계 전체 차이).
 - compiled realm.html/raid.html200, 실제 raid HTML의 JS6+CSS1 및 PNG2 HTTP200/SHA 일치, bow/magic 새 PNG200. local-bundle.json ok:true. 실제 entry raid-C-ubpzZp.js, CSS raid-DT3oXhWf.css. CI/운영은 push 후 별도 기록.
 - source-freeze.json의 제품·검사·RAW29파일 SHA 동결. 다른 사용자 변경 ART-VIDEO-STATUS.md·기존 untracked 원본 제외.
+
+
+## 56-B 운영 배포 확정 · 57 수신
+- 56-B commit5bb213a98420334d0698d3401f800429b8db6264 / CI44878209738 build+deploy success. 운영version5bb213a984/HTML200/실JS6·CSS1·기존PNG2·새FX7 모두HTTP200 및 고정B dist SHA일치. C outputs/codex56B-final/production-bundle.json ok:true, production-fx.json7/7. 이제 B dist교체 가능.
+- CI가 Pages artifact1,453,335,993bytes/1GB경고를 냈지만 해당배포성공·위실파일검증완료. JS예산과별도인전체미디어양이며 다음미디어추가때실측주의, 원본삭제0.

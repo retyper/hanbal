@@ -92,6 +92,7 @@ export function kidBust(id: string, look: 'g' | 'w', traits: readonly string[] =
 
 /** 판의 아이들 — id 만 아는 곳(싸움 기록·고을 판의 말)도 얼굴을 찾게, 화면이 판을 그릴 때 적어 둔다 */
 const kidFace = new Map<string, string>()
+const persistedKidFace = new Map<string, string>()
 /** 지금 자라는 얼굴을 단 아이 — 다 자라 장수 목록에 오르면 어른 얼굴로 바꾼다 */
 const childFace = new Set<string>()
 export function noteGrowing(kids: Iterable<{ readonly id: string; readonly look: 'g' | 'w' }>): void {
@@ -114,8 +115,27 @@ export function noteKids(heroes: Iterable<{ readonly id: string; readonly look: 
   }
 }
 
+/** 저장된 아이 얼굴도 판과 같은 hash/갈래를 쓴다. 재료가 없으면 추측하지 않는다. */
+export function savedKidBust(id: string, face: { look?: 'g' | 'w'; traits?: readonly string[]; bust?: string }): string | undefined {
+  if (!id.startsWith('kid-') && !id.startsWith('clan-')) return undefined
+  const pool = face.look === 'g' || face.look === 'w' ? KID_BUST[face.look] : [...KID_BUST.g, ...KID_BUST.w]
+  if (face.bust !== undefined && pool.includes(face.bust)) return face.bust
+  if ((face.look !== 'g' && face.look !== 'w') || face.traits === undefined) return undefined
+  return id.startsWith('clan-') ? clanFace(id, face.traits) : kidBust(id, face.look, face.traits)
+}
+
+/** 판에서 이미 본 얼굴을 덮지 않는다. 단련터/동행/영웅전이 같은 bustOf를 읽는다. */
+export function noteDrillFaces(faces: Iterable<{ id: string; look?: 'g' | 'w'; traits?: readonly string[]; bust?: string }>): void {
+  for (const h of faces) {
+    const f = savedKidBust(h.id, h)
+    if (f !== undefined) persistedKidFace.set(h.id, f)
+  }
+}
+/** 복원 근거가 바뀌면 fallback만 비운다. 판의 실제 얼굴과 저장소는 건드리지 않는다. */
+export function forgetDrillFaces(): void { persistedKidFace.clear() }
+
 /** 장수 id → 명치판 이름 (아이도) · 다음 판에 데려온 가문의 아이(`clan-<생김>-<시드>-<판의 id>`)는 난 판의 얼굴 그대로 (특성은 noteKids 로 적어 둔다) */
-export const bustOf = (id: string): string | undefined => HERO_BUST[id] ?? kidFace.get(id) ?? clanFace(id)
+export const bustOf = (id: string): string | undefined => HERO_BUST[id] ?? kidFace.get(id) ?? persistedKidFace.get(id) ?? clanFace(id)
 function clanFace(id: string, traits?: readonly string[]): string | undefined {
   if (!id.startsWith('clan-')) return undefined
   const [, look, , ...rest] = id.split('-')

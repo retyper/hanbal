@@ -1,3 +1,19 @@
+
+## 57 최종 검수 완료 · 커밋/운영 확인 전
+- 전체1789/1787pass/0fail/2기존skip,116.998초; typecheck0·dash/josa 각0. build4975.5raw/1552.3gzip KB·여유24.5/47.7KB. compiled localHTML2·JS/CSS7·PNG2 HTTP200/SHA일치.
+- 열전 실제 출전/레벨업/스킬트리/일시정지 폰4폭+가로15사진/18검사 PASS·overflow0/JS0/소스불변. cold 옛단련+index없는정식수동저장 fixture는 판열기0·3얼굴원본일치/필터폰4폭·실결과/닫기입력/두저장원문불변 포함11검사 PASS·JS0·소스불변·fresh프로필cleanup. source8 SHA동결.
+- 실제사용자 운영cold목록 RED3과 실제가문 기존얼굴 y-w-11/y-w-04/y-g-05 로딩을 직접 확인했다. fixture판정과 실사용자 복구 확인은 분리. 후자는 이번57 배포 뒤 확인할 것. 직접localStorage 원문 조회는API미지원, 판load후비교는쓰기부작용때문실행0/clear0.
+- 새 Claude58 fe812e7e/59 0f5362fa 수신(지시MD+58mockup만, 제품0). 58공유10칸얼굴링/가로본편정리/매화걷기재제작,59시작첫화면+쇠비키아트2/10초영상2. 최신작업57 CI/운영확인 뒤55기존순서에수신사항이어처리; 별도우선순위명시시적용. 추가영상은54-V 계정규칙/Flow이전업로드막힘기록유지.
+- 55 renderer C초안 outputs/codex55-render-draft 6GREEN/파괴mutant1fail/원본5SHA동일/제품0, strictTS·실Canvas·성능미검증/입안gapHOLD. engine C첫geometry/13pose/TOI/dedupe초안구현중, root full/build끝알림후작은검사. 55D코드아직0, 새gen0/누적21RAW21(native20/browser1).
+
+
+## 56-B 운영 배포 확정 · 57 수신
+- 56-B commit5bb213a98420334d0698d3401f800429b8db6264 / CI44878209738 build+deploy success. 운영version5bb213a984/HTML200/실JS6·CSS1·기존PNG2·새FX7 모두HTTP200 및 고정B dist SHA일치. C outputs/codex56B-final/production-bundle.json ok:true, production-fx.json7/7. 이제 B dist교체 가능.
+- CI가 Pages artifact1,453,335,993bytes/1GB경고를 냈지만 해당배포성공·위실파일검증완료. JS예산과별도인전체미디어양이며 다음미디어추가때실측주의, 원본삭제0.
+- Claude57(aaea88e4) 수신: 현재B단계완료직후57-A단련터아이얼굴복원→57-B일반게임UI표기→55기존순서. 사용자실운영cold단련터108명에서마루kid-bihwa-1-guya-3/가시kid-byeokjin-1-wander-12/보람kid-anya-ruler-bihwa-ruler 모두 dyart.nof·images0 실제DOM RED3 확인. directlocalStorage는브라우저읽기API미지원/5173미가동; 실제판load/advance/쓰기·clear발행0. 판load후증거아직0.
+- 57-A source원인: engrave/look만·traits누락, loadDrill도버림, rawkid bustOf는livecache밖경로없음. readonly구저장증거복원+신기록face재료보존수정중/별도fallback map으로나중live판우선. root app paint noteFaces→hydrate접점 연결예정/미배포.
+- 57-B dy.filter필터/숙련공격속도2곳+root main9문구 스킬트리·배속·일시정지·리롤·레벨업 적용/기존관련20green·lints0/0, 실제폰5뷰는검수준비. docs/realm/production/CODEX57-TERMS.md 적용·유지·애매표. 57전체검사·build·commit아직0.
+
 # Codex 현재 인수인계 · 2026-11-21
 
 ## 완료·현재 단계

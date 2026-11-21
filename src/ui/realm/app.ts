@@ -84,7 +84,7 @@ import { DEX_CSS, clanHeroes, dexHtml, dexToastHtml, loadDex, recordDex, toggleD
 import { recBurst, recCss, recDot, recsOf, syncBook, visitRec, type Rec } from './recommend.ts'
 import { SHOP, loadMeta, shopCost, shopMax } from '../../raid/meta.ts'
 import { DEX_AWOKE, DEX_SERVED, dexCatalog } from '../../realm/dex.ts'
-import { DRILL_CSS, drillLevel, engraveRun, hasDrill, loadDrill, raiseHero, yardAct, yardAfterPaint, yardBack, yardHtml, yardReset, yardSearch, yardStripHtml, yardBeforePaint, type DrillKit } from './drill.ts'
+import { DRILL_CSS, drillLevel, engraveRun, hasDrill, hydrateDrillFaces, loadDrill, raiseHero, yardAct, yardAfterPaint, yardBack, yardHtml, yardReset, yardSearch, yardStripHtml, yardBeforePaint, type DrillKit } from './drill.ts'
 import { applyDrill, earnedOf } from '../../realm/drill.ts'
 import { RELIC_CSS, openRunTomb, pickRunRelic, putRelic, relicChips, takeOffRelic, tombHtml, tombRun, tombStripHtml, wornBy, type RelicKit } from './relics.ts'
 import { RELIC } from '../../realm/data/relics.ts'
@@ -7524,6 +7524,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       ? Object.fromEntries(Object.values(realm.factions).flatMap((f) => (f.ruler !== undefined ? [[f.id, f.ruler]] : [])))
       : {}
     if (realm !== null) noteFaces(realm)
+    // Restore out-of-campaign child faces from existing records without opening or writing a save.
+    if (!host.isolated && (realm === null || front !== null)) hydrateDrillFaces()
     saveDraft()
     if (realm === null && front === null) front = { kind: 'title' }
     // 서막 — 같은 장이면 다시 깔지 않는다 (다시 깔면 글자가 처음부터 다시 번진다)

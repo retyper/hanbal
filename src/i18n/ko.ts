@@ -285,7 +285,7 @@ export const ko = {
   'dy.empty': '아직 공을 새긴 장수가 없습니다. 판에서 싸우고 고을을 맡으면 공이 쌓이고, 판이 끝나면 여기서 씁니다.',
   'dy.noMatch': '맞는 장수가 없습니다',
   'dy.search': '이름 찾기',
-  'dy.filter': '거르기',
+  'dy.filter': '필터',
   'dy.count': '{n}명',
   'dy.fAll': '전체',
   'dy.fReady': '공 남음',

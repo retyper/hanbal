@@ -34,7 +34,7 @@ export const POWERS: Record<Power, { name: string; icon: string; max: number; co
   skip: { name: '연환석', icon: '跳', max: 10, color: '#9fd0e0', desc: '맞힌 적에게서 곁의 적으로 튀어 가며 여러 번 치는 돌' },
   // ── 갈래 칸 (11-17 밤 · 이름·설명은 묶음마다 NODE_TEXT 가 덮는다) ──
   hone: { name: '벼리기', icon: '鍊', max: 5, color: '#f5b85a', desc: '주 무기 피해 증가' },
-  drill: { name: '숙련', icon: '熟', max: 5, color: '#8fdcc4', desc: '보조 공격 피해와 빠르기 증가' },
+  drill: { name: '숙련', icon: '熟', max: 5, color: '#8fdcc4', desc: '보조 공격 피해와 공격 속도 증가' },
   tough: { name: '철벽', icon: '甲', max: 5, color: '#c0b6a0', desc: '받는 피해 감소' },
   breath: { name: '재생', icon: '息', max: 5, color: '#9fe0a0', desc: '초마다 체력을 조금씩 되찾음' },
   nimble: { name: '신속', icon: '捷', max: 3, color: '#b8e4f0', desc: '회피를 더 자주 · 이동 속도 증가' },

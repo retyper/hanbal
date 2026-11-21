@@ -5,6 +5,7 @@
  *   첫 화면의 「단련터」로도 들어온다 — 남은 공은 아무 때나 쓴다.
  * 기록은 이 기기에만 (`hanbal.realm.drill` · 영웅전·해금처럼). 못 읽으면 빈 기록 — 지우지는 않는다.
  */
+import { bustOf, forgetDrillFaces, noteDrillFaces, savedKidBust } from '../../realm/data/art.ts'
 import { STAT_NAME } from '../../realm/data/prose.ts'
 import { GRADE_COLOR, GRADE_NAME, type TraitGrade } from '../../realm/data/traits.ts'
 import { RELICS } from '../../realm/data/relics.ts'
@@ -20,12 +21,32 @@ import { loadRelics, pickerHtml, relicChips, relicDexHtml, slotsHtml, wornBy, wo
 
 const KEY = 'hanbal.realm.drill'
 
+type DrillReadKV = Pick<Storage, 'getItem'>
+const parsed = new WeakMap<DrillReadKV, Map<string, { raw: string | null; value: unknown }>>()
+const recovered = new WeakMap<DrillReadKV, { raw: string | null; faces: Record<string, Partial<DrillEntry>> }>()
+const obj = (x: unknown): x is Record<string, unknown> => x !== null && typeof x === 'object' && !Array.isArray(x)
+const strings = (x: unknown): x is string[] => Array.isArray(x) && x.every(v => typeof v === 'string')
+const childId = (id: string): boolean => id.startsWith('kid-') || id.startsWith('clan-')
+function read(kv: DrillReadKV, key: string): { raw: string | null; value: unknown } {
+  let raw: string | null
+  try { raw = kv.getItem(key) } catch { return { raw: null, value: null } }
+  let cache = parsed.get(kv)
+  if (!cache) { cache = new Map(); parsed.set(kv, cache) }
+  const was = cache.get(key)
+  if (was?.raw === raw) return was
+  let value: unknown = null
+  try { value = JSON.parse(raw ?? 'null') } catch { /* malformed source remains untouched */ }
+  const next = { raw, value }; cache.set(key, next); return next
+}
+
 const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0)
 
 /** 판 밖 단련 기록 — 깨졌거나 없으면 빈 기록 */
-export function loadDrill(): DrillStore {
+export function loadDrill(storage?: DrillReadKV): DrillStore {
   try {
-    const v = JSON.parse(localStorage.getItem(KEY) ?? 'null') as Partial<DrillStore> | null
+    const kv = storage ?? localStorage
+    const source = read(kv, KEY)
+    const v = source.value as Partial<DrillStore> | null
     if (v === null || typeof v !== 'object' || typeof v.h !== 'object' || v.h === null) return emptyDrill()
     const h: Record<string, DrillEntry> = {}
     for (const [id, e] of Object.entries(v.h)) {
@@ -37,6 +58,8 @@ export function loadDrill(): DrillStore {
         ...(typeof e.lastSeed === 'number' ? { lastSeed: e.lastSeed } : {}),
         ...(typeof e.name === 'string' ? { name: e.name } : {}),
         ...(e.look === 'g' || e.look === 'w' ? { look: e.look } : {}),
+        ...(strings(e.traits) ? { traits: [...e.traits] } : {}),
+        ...(typeof e.bust === 'string' && savedKidBust(id, { ...(e.look !== undefined ? { look: e.look } : {}), bust: e.bust }) === e.bust ? { bust: e.bust } : {}),
         ...(e.born !== undefined && typeof e.born === 'object' ? { born: e.born } : {}),
         // 의리 — 판 밖에서 움직인 몫 · 까닭 · 새긴 판 (UIRI)
         ...(typeof e.uiri === 'number' && Number.isFinite(e.uiri) && e.uiri !== 0 ? { uiri: Math.round(e.uiri) } : {}),
@@ -44,6 +67,11 @@ export function loadDrill(): DrillStore {
         ...(typeof e.uiriSeed === 'number' ? { uiriSeed: e.uiriSeed } : {}),
       }
     }
+    const proof = recovered.get(kv)
+    if (proof?.raw === source.raw) for (const [id, face] of Object.entries(proof.faces)) {
+      if (h[id] !== undefined) h[id] = { ...h[id], ...face }
+    }
+    noteDrillFaces(Object.entries(h).map(([id, e]) => ({ id, ...e })))
     const paid = typeof v.paid === 'object' && v.paid !== null ? v.paid : {}
     const order = Array.isArray(v.order) ? v.order.filter((x): x is string => typeof x === 'string') : Object.keys(paid)
     return { v: 1, h, paid, order }
@@ -52,7 +80,72 @@ export function loadDrill(): DrillStore {
   }
 }
 
+export interface DrillFaceReport {
+  restored: string[]
+  unknown: { id: string; reason: 'missing-seed' | 'not-found' | 'identity-mismatch' | 'ambiguous' }[]
+  sources: { id: string; key: string }[]
+}
+
+/** Cold app entry hook. Only exact known save keys are read; no load/migrate/write/replay. */
+export function hydrateDrillFaces(storage?: DrillReadKV): DrillFaceReport {
+  const report: DrillFaceReport = { restored: [], unknown: [], sources: [] }
+  let kv: DrillReadKV
+  try { kv = storage ?? localStorage } catch { return report }
+  forgetDrillFaces()
+  recovered.delete(kv) // Revalidate source strings on every explicit entry hook.
+  const store = loadDrill(kv), raw = read(kv, KEY).raw
+  const faces: Record<string, Partial<DrillEntry>> = {}
+  for (const [id, e] of Object.entries(store.h)) {
+    if (!childId(id)) continue
+    if (savedKidBust(id, e) !== undefined) { noteDrillFaces([{ id, ...e }]); report.restored.push(id); continue }
+    const seed = e.lastSeed ?? e.uiriSeed
+    if (seed === undefined || !Number.isFinite(seed)) { report.unknown.push({ id, reason: 'missing-seed' }); continue }
+    const keys = ['hanbal.realm.v2', 'hanbal.realm.v2.prev', `hanbal.realm.slot.${seed}`,
+      ...Array.from({ length: Math.min(100, Math.max(1, Math.round(P.realm.saveSlots))) }, (_, i) => `hanbal.realm.save.${i}`)]
+    const found: { key: string; look: 'g' | 'w'; traits: string[]; bust: string }[] = []
+    let mismatch = false
+    const consider = (h: unknown, key: string) => {
+      if (!obj(h)) return
+      if (typeof h['id'] === 'string' && h['id'] !== id) { mismatch = true; return }
+      if ((e.name !== undefined && h['name'] !== e.name) || (e.look !== undefined && h['look'] !== e.look)) { mismatch = true; return }
+      if ((h['look'] !== 'g' && h['look'] !== 'w') || !strings(h['traits'])) return
+      const look = h['look'], traits = [...h['traits']], bust = savedKidBust(id, { look, traits })
+      if (bust !== undefined) found.push({ key, look, traits, bust })
+    }
+    for (const key of keys) {
+      const value = read(kv, key).value
+      if (!obj(value)) continue
+      const game = obj(value['game']) ? value['game'] : value
+      for (const realm of [game['realm'], game['before']]) {
+        if (!obj(realm) || realm['seed'] !== seed || !obj(realm['heroes'])) continue
+        consider(realm['heroes'][id], key)
+      }
+    }
+    const clan = read(kv, 'hanbal.realm.clan').value
+    if (obj(clan)) {
+      const clanParts = id.startsWith('clan-') ? id.split('-') : null
+      const clanId = clanParts ? clanParts.slice(3).join('-') : id
+      const originSeed = clanParts?.[2] ?? seed
+      consider(clan[`${originSeed}:${clanId}`], 'hanbal.realm.clan')
+    }
+    if (found.length === 0 || new Set(found.map(x => x.bust)).size !== 1) {
+      report.unknown.push({ id, reason: found.length > 0 ? 'ambiguous' : mismatch ? 'identity-mismatch' : 'not-found' }); continue
+    }
+    const f = found[0]!
+    faces[id] = { look: f.look, traits: f.traits, bust: f.bust }
+    noteDrillFaces([{ id, ...faces[id] }])
+    report.restored.push(id); report.sources.push({ id, key: f.key })
+  }
+  recovered.set(kv, { raw, faces })
+  return report
+}
+
 function saveDrill(s: DrillStore): void {
+  for (const [id, e] of Object.entries(s.h)) {
+    if (!childId(id)) continue
+    const bust = bustOf(id) ?? savedKidBust(id, e)
+    if (bust !== undefined && savedKidBust(id, { ...(e.look !== undefined ? { look: e.look } : {}), bust }) === bust) e.bust ??= bust
+  }
   try { localStorage.setItem(KEY, JSON.stringify(s)) } catch { /* 저장 못 하는 곳 — 이번 판의 공은 다음에 다시 새긴다(아직 안 새긴 몫으로 남는다) */ }
 }
 

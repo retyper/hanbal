@@ -33,6 +33,9 @@ export interface DrillEntry {
   /** 첫 화면 단련터에서 판 없이 보이려고 — 이름 · 얼굴 짝 · 처음 몸 (영웅전 명부에 없는 아이를 위해) */
   name?: string
   look?: 'g' | 'w'
+  /** 아이 얼굴의 원래 갈래와 실제 화면에서 쓴 파일명 */
+  traits?: string[]
+  bust?: string
   born?: Partial<Record<GrowStat, number>>
   /** 판 밖에서 움직인 의리 — 타고난 값에 더한다 (−·+ · 위로는 uiriRoom 까지) · 그 까닭 (가장 최근이 끝) · 마지막으로 새긴 판 */
   uiri?: number
@@ -153,6 +156,7 @@ export function engraveVows(store: DrillStore, r: Realm): DrillStore {
     if (body !== undefined) {
       e.name ??= body.name
       e.look ??= body.look
+      if (id.startsWith('kid-') || id.startsWith('clan-')) e.traits ??= [...body.traits]
       e.born ??= bornFrom(body)
     }
     const base = body !== undefined ? body.uiri - (body.drill?.uiri ?? 0) : 5
@@ -218,6 +222,10 @@ export function engrave(store: DrillStore, r: Realm, won: boolean): DrillStore {
     if (body !== undefined) {
       e.name = body.name
       e.look = body.look
+      if (id.startsWith('kid-') || id.startsWith('clan-')) {
+        e.traits = [...body.traits]
+        if (was?.lastSeed !== undefined && was.lastSeed !== r.seed) delete e.bust
+      }
       e.born ??= bornFrom(body)
     }
     h[id] = e
