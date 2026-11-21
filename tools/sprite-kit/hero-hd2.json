@@ -56,6 +56,44 @@
    "walk": "codex68/walk8_aw1-haebi.png"
   }
  },
+ "aw1-haedal": {
+  "bytes": 1862393,
+  "cell": [
+   368,
+   320
+  ],
+  "cols": 11,
+  "feet": 312,
+  "scale": {
+   "attack": 1.0376,
+   "hdx": 0.7886,
+   "walk": 0.6658
+  },
+  "sources": {
+   "attack": "codex70/attack8_aw1-haedal.png",
+   "hdx": "codex75/hdx_aw1-haedal.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/awakened-20261114/intake-20261118/aw1-haedal-walk.png"
+  }
+ },
+ "aw1-irang": {
+  "bytes": 1324712,
+  "cell": [
+   384,
+   320
+  ],
+  "cols": 10,
+  "feet": 312,
+  "scale": {
+   "attack": 0.9787,
+   "hdx": 0.7439,
+   "walk": 0.6141
+  },
+  "sources": {
+   "attack": "codex70/attack8_aw1-irang.png",
+   "hdx": "codex75/hdx_aw1-irang.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/awakened-20261114/intake-20261118/aw1-irang-walk.png"
+  }
+ },
  "aw1-soseono": {
   "bytes": 1663453,
   "cell": [
@@ -113,6 +151,63 @@
    "walk": "codex67/walk8_haebi.png"
   }
  },
+ "haedal": {
+  "bytes": 1753425,
+  "cell": [
+   400,
+   320
+  ],
+  "cols": 10,
+  "feet": 312,
+  "scale": {
+   "attack": 0.8875,
+   "hdx": 0.7688,
+   "walk": 0.6997
+  },
+  "sources": {
+   "attack": "codex70/attack8_haedal.png",
+   "hdx": "codex75/hdx_haedal.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/haedal-prop20261117-walk.png"
+  }
+ },
+ "hojin": {
+  "bytes": 1694936,
+  "cell": [
+   416,
+   320
+  ],
+  "cols": 9,
+  "feet": 312,
+  "scale": {
+   "attack": 0.8313,
+   "hdx": 0.8166,
+   "walk": 0.683
+  },
+  "sources": {
+   "attack": "codex70/attack8_hojin.png",
+   "hdx": "codex75/hdx_hojin.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/hojin-prop20261117-walk.png"
+  }
+ },
+ "irang": {
+  "bytes": 1344096,
+  "cell": [
+   416,
+   320
+  ],
+  "cols": 9,
+  "feet": 312,
+  "scale": {
+   "attack": 0.8288,
+   "hdx": 0.7095,
+   "walk": 0.6919
+  },
+  "sources": {
+   "attack": "codex70/attack8_irang.png",
+   "hdx": "codex75/hdx_irang.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/irang-prop20261117-walk.png"
+  }
+ },
  "jinha": {
   "bytes": 1584488,
   "cell": [
@@ -130,6 +225,25 @@
    "attack": "codex67/attack8_jinha.png",
    "hdx": "codex75/hdx_jinha.png",
    "walk": "codex67/walk8_jinha.png"
+  }
+ },
+ "soebi": {
+  "bytes": 1414215,
+  "cell": [
+   400,
+   320
+  ],
+  "cols": 10,
+  "feet": 312,
+  "scale": {
+   "attack": 1.0376,
+   "hdx": 0.734,
+   "walk": 0.6733
+  },
+  "sources": {
+   "attack": "codex70/attack8_soebi.png",
+   "hdx": "codex75/hdx_soebi.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/soebi-prop20261117-walk.png"
   }
  },
  "soseono": {

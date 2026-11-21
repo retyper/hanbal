@@ -76,6 +76,61 @@ def put(canvas_cell, arr, scale, ox, oy):
     return lost
 
 
+WALK_FALLBACK_MAX = 1.45   # 옛 걷기 원본(prop 판 · 인물 ~235px)은 2배 띠보다 작다 · 띠 걷기와 같은 그림이라 확대·축소 때 걸음이 그대로고, 160 띠를 2배로 늘린 것보다 훨씬 또렷하다
+FULL20 = None
+
+
+def report_walk(key, strip, frames, lost, fw, foot):
+    """repairs/20261113/<key>-report.json 의 걷기 판에서 띠 걷기 칸(4~11)을 만든 셈(bake-full20: 몸 덩어리 가로 무게중심을 칸 가운데 · 바닥 156)을 2배로.
+    배율은 칸마다 (띠 칸 몸 상자 키 ÷ 원본 조각 몸 상자 키) 의 가운데값 × 2 · 띠 2배와 몸 상자가 3px 넘게 어긋나면 멈춘다."""
+    global FULL20
+    if FULL20 is None:
+        FULL20 = _load('bake_full20', 'bake-full20.py')
+    rp = os.path.join(HERE, 'repairs/20261113', f'{key}-report.json')
+    if not os.path.exists(rp):
+        raise SystemExit(f'{key}: walk8 원본도 보고서도 없음')
+    rep = json.load(open(rp, encoding='utf-8'))
+    walk_src = [p for p in rep.get('sources', {}) if 'walk' in os.path.basename(p)]
+    if len(walk_src) != 1:
+        raise SystemExit(f'{key}: 보고서에 걷기 판이 하나가 아님 {walk_src}')
+    wpath = os.path.join(ROOT, walk_src[0])
+    im, labels, pieces = FULL20.figures(wpath, 4, 2)
+    if set(pieces) != set(range(8)):
+        raise SystemExit(f'{key}: 걷기 판 사람 수 {sorted(pieces)}')
+    from scipy import ndimage
+    a = np.array(im)
+    raw = []
+    for i in range(8):
+        mask = np.isin(labels, pieces[i]); ys, xs = np.nonzero(mask)
+        box = [int(xs.min()), int(ys.min()), int(xs.max() + 1), int(ys.max() + 1)]
+        rgba = a.copy(); rgba[~ndimage.binary_dilation(mask, iterations=2), 3] = 0
+        raw.append((rgba[box[1]:box[3], box[0]:box[2]], box, float(xs.mean()), int(ys.max() - ys.min() + 1)))
+    poses = [rep['frames'][c]['walkPose'] - 1 for c in range(4, 12)]
+    base = np.asarray(strip)
+    ratios = []
+    for c, p in zip(range(4, 12), poses):
+        al = base[:, c * fw:(c + 1) * fw, 3] > 64
+        ys = np.nonzero(al.any(1))[0]
+        ratios.append((ys[-1] - ys[0] + 1) / raw[p][3])
+    s = SCALE * float(np.median(ratios))
+    if s > WALK_FALLBACK_MAX:
+        raise SystemExit(f'{key}: 옛 걷기 원본 배율 {s:.3f} > {WALK_FALLBACK_MAX}')
+    W = frames[0].size[0]
+    for c, p in zip(range(4, 12), poses):
+        arr, box, mx, _ = raw[p]
+        im2 = Image.fromarray(arr)
+        g = im2.resize((max(1, round(im2.size[0] * s)), max(1, round(im2.size[1] * s))), Image.LANCZOS)
+        # 띠: x = 칸 가운데 − (무게중심 − 상자 왼끝)·배율 · y = 156 − 키 (bake-full20) → 2배
+        x = round(W / 2 - (mx - box[0]) * s); y = SCALE * foot - g.size[1] if foot == 156 else round(SCALE * 156 - g.size[1])
+        cell = frames[c]; cell.paste(g, (x, y), g)
+        hb = np.nonzero(np.asarray(cell)[:, :, 3] > 64); bb = np.nonzero(base[:, c * fw:(c + 1) * fw, 3] > 64)
+        delta = [int(hb[1].min()) - 2 * int(bb[1].min()), int(hb[0].min()) - 2 * int(bb[0].min()), int(hb[1].max()) - 2 * int(bb[1].max()), int(hb[0].max()) - 2 * int(bb[0].max())]
+        if max(abs(v) for v in delta) > 6:
+            raise SystemExit(f'{key}: 걷기 칸 {c} 이 띠 2배와 {delta} px 어긋남')
+        lost[c] = 0
+    return round(s, 4), os.path.relpath(wpath, ROOT).replace('\\', '/')
+
+
 def build(key):
     base_p = os.path.join(PX, f'gen-{key}.png')
     strip = Image.open(base_p).convert('RGBA')
@@ -87,14 +142,21 @@ def build(key):
     lost = {}
     src = {}
 
-    # 걷기 4~11 (walk8-intake.place × 2)
-    wp = find('walk8', key, WALK_SRC); src['walk'] = wp
-    wc = W8.cells_of(keyed(wp), 4, 2)
-    ws = SCALE * ref_h / float(np.median([f.size[1] for f in wc]))
-    for i, f in enumerate(wc):
-        arr = np.asarray(f)
-        nw, nh = max(1, round(f.size[0] * ws)), max(1, round(f.size[1] * ws))
-        lost[4 + i] = put(frames[4 + i], arr, ws, round(SCALE * cx - nw / 2), round(SCALE * foot - nh))
+    # 걷기 4~11 (walk8-intake.place × 2) · Codex 걷기 판이 없으면 띠 걷기를 구운 옛 원본(repairs 보고서의 걷기 판)을 같은 셈 × 2 로
+    try:
+        wp = find('walk8', key, WALK_SRC)
+    except SystemExit:
+        wp = None
+    if wp is not None:
+        src['walk'] = wp
+        wc = W8.cells_of(keyed(wp), 4, 2)
+        ws = SCALE * ref_h / float(np.median([f.size[1] for f in wc]))
+        for i, f in enumerate(wc):
+            arr = np.asarray(f)
+            nw, nh = max(1, round(f.size[0] * ws)), max(1, round(f.size[1] * ws))
+            lost[4 + i] = put(frames[4 + i], arr, ws, round(SCALE * cx - nw / 2), round(SCALE * foot - nh))
+    else:
+        ws, src['walk'] = report_walk(key, strip, frames, lost, fw, foot)
 
     # 공격 12~17 (attack8-intake.build × 2 · 판 2~7)
     ap = find('attack8', key, ATTACK_SRC); src['attack'] = ap
