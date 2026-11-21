@@ -1,6 +1,7 @@
 import { criticalFinishFrames, criticalFinishHandled, drawCriticalFinishFrames } from './critical-finish.ts'
 import {drawImugiParent,drawImugiThreats,drawImugiWater} from './imugi-view.ts'
 import { drawTiger, drawTigerFall, drawTigerGround, drawTigerThreats } from './tiger-view.ts'
+import { drawGumiho, drawGumihoFall, drawGumihoGround, drawGumihoThreats } from './gumiho-view.ts'
 import { fieldTransform, heroCacheHeight, wantsHeroHd } from './surface.ts'
 import { HERO_HD, HERO_HD_SHEETS } from './hero-hd.ts'
 import { championLaneContains, championPose, championFacing, championRecovery, drawChampionTells, drawChampionOverlays, drawGroundChests } from './champion-view.ts'
@@ -732,9 +733,9 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   for (const e of s.enemies) { if(e.giant)continue; const rx = e.kind === 'boss' || e.kind === 'elite' ? 24 : 16; ctx.moveTo(e.x + rx, e.y + 2); ctx.ellipse(e.x, e.y + 2, rx, 6, 0, 0, Math.PI * 2) }
   ctx.fill()
   // 백두 대호의 큰 그림자 · 잠행 눈 더미 (땅 표식 차례) · 이긴 막 내림 동안 쓰러지는 몸 (판에서는 이미 사라졌다)
-  for (const e of s.enemies) if (e.giant?.kind === 'tiger') drawTigerGround(ctx, images, e.giant)
+  for (const e of s.enemies) if (e.giant?.kind === 'tiger') drawTigerGround(ctx, images, e.giant); else if (e.giant?.kind === 'gumiho') drawGumihoGround(ctx, images, e.giant)
   const fallen = ending?.kind === 'victory' ? s.giantFlow?.finalOwner?.giant : undefined
-  if (fallen?.kind === 'tiger') drawTigerFall(ctx, images, fallen, ending!.elapsed)
+  if (fallen?.kind === 'tiger') drawTigerFall(ctx, images, fallen, ending!.elapsed); else if (fallen?.kind === 'gumiho') drawGumihoFall(ctx, images, fallen, ending!.elapsed)
   if (s.palisade) drawPalisadeShadow(ctx, s)
   // 위에서 아래로 그린다 (null = 장수 · false = 목책 줄) — 판마다 새 배열을 만들지 않는다
   const wallY = s.palisade?.y ?? 0
@@ -744,7 +745,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   for (const e of order) {
     if (e === false) { drawPalisade(ctx, images, s, time); continue }
     if (e) {
-      if(e.giant){if(e.giant.kind==='tiger')drawTiger(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else drawImugiParent(ctx,images,e.giant,{bounds:cam?fieldView(cam):{left:0,top:0,right:W,bottom:H},density});continue}
+      if(e.giant){if(e.giant.kind==='tiger')drawTiger(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else if(e.giant.kind==='gumiho')drawGumiho(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else drawImugiParent(ctx,images,e.giant,{bounds:cam?fieldView(cam):{left:0,top:0,right:W,bottom:H},density});continue}
       const big = e.kind === 'boss' || e.kind === 'elite', h = mobHeight(e.kind)
       const target = s.mode === 'vanguard' && e.kind === 'boss'
       const wave = ending?.kind === 'victory' && e.kind !== 'boss' ? (ending.elapsed - ending.freeze - Math.hypot(e.x - ending.boss.x, e.y - ending.boss.y) * END.waveDelay) / END.mobFallLife : -1
@@ -931,7 +932,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   drawThreats(ctx, images, s); drawChampionTells(ctx, s)
   for(const e of s.enemies)if(e.giant?.kind==='imugi'&&e.giant.attack&&(e.giant.state==='tell'||e.giant.state==='strike'))drawImugiThreats(ctx,e.giant.attack.shapes)
   for(const e of s.enemies)if(e.giant?.kind==='imugi'&&e.giant.environment&&e.giant.state!=='entry'&&e.giant.state!=='dead')drawImugiThreats(ctx,e.giant.environment.shapes)
-  for(const e of s.enemies)if(e.giant?.kind==='tiger')drawTigerThreats(ctx,e.giant)
+  for(const e of s.enemies)if(e.giant?.kind==='tiger')drawTigerThreats(ctx,e.giant);else if(e.giant?.kind==='gumiho')drawGumihoThreats(ctx,e.giant)
   // 피해 숫자 — 알갱이로 튀어 나간다 (trackNumbers · drawNumbers)
   trackNumbers(s); ctx.save(); drawNumbers(ctx, images, s, s.t + (ending?.effectTime ?? 0)); ctx.restore()
   drawChampionOverlays(ctx, images, s, mobHeight, cam ? fieldView(cam) : undefined)

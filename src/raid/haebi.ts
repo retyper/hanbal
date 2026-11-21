@@ -193,11 +193,11 @@ export function random(s: HaebiRun) { const rng = makeRng(s.seed); const n = rng
  * awaken remains the fallback qualification alias. Explicit53B, plus default trial/vanguard, preserve timed-awake rules.
  * mastery: 숲·여울·목책을 다 깬 장수 (막대 절반으로 시작)
  */
-export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' }
+export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '55-GUMIHO' }
 export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit = 'axe', opts: HaebiOpts = {}): HaebiRun {
   const bonus = { ...NO_BONUS, ...opts.bonus }, maxHp = C.health + bonus.vigor * SH.vigor.step, stage: StageId = mode === 'trial' ? 'trial' : opts.stage ?? 'forest'
-  // 55-IMUGI 는 여울만 · 56C(진짜 목책)는 목책 돌파만 · 55-TIGER(백두 대호)는 설원만 — 다른 판에 들어오면 56B 그대로
-  const rules = opts.simRules === '55-IMUGI' && (mode !== 'stage' || stage !== 'ford') || opts.simRules === '56C' && (mode !== 'stage' || stage !== 'palisade') || opts.simRules === '55-TIGER' && (mode !== 'stage' || stage !== 'snow') ? '56B' : opts.simRules
+  // 55-IMUGI 는 여울만 · 56C(진짜 목책)는 목책 돌파만 · 55-TIGER(백두 대호)는 설원만 · 55-GUMIHO(구미호)는 숲 산길 열전만(각성 시련은 아님) — 다른 판에 들어오면 56B 그대로
+  const rules = opts.simRules === '55-IMUGI' && (mode !== 'stage' || stage !== 'ford') || opts.simRules === '56C' && (mode !== 'stage' || stage !== 'palisade') || opts.simRules === '55-TIGER' && (mode !== 'stage' || stage !== 'snow') || opts.simRules === '55-GUMIHO' && (mode !== 'stage' || stage !== 'forest') ? '56B' : opts.simRules
   const k = KITS[kit]
   const ranks = Object.fromEntries((Object.keys(POWERS) as Power[]).map(p => [p, 0])) as Record<Power, number>
   // 평타(주 무기)만 들고 시작한다 (11-19 형: 「시작은 평타만」) — 보조 공격은 첫 레벨업 카드(맨 앞)로 · 비기는 첫 레벨업에서 열린다 (ultOpen)
@@ -211,9 +211,9 @@ export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit
     spawn: 0, nextElite: C.eliteEvery * ST[stage].length, nextBarrage: C.barrageAt, boss: false, next: 1, kills: 0, damage: 0,
     state: 'playing', message: kit === 'axe' ? '해비의 출전 · 첫 조합을 향해' : '출전 · 첫 조합을 향해', messageTime: 4, comboKills: 0, streakTime: 0 }
   if (mode === 'stage') Object.assign(s, { chests: [], chestGold: 0, chestsClaimed: 0, nextChestId: 1, choiceOrigin: 'level', offerNonce: 0 })
-  if (rules === '56A' || rules === '56B' || rules === '56C' || rules === '55-IMUGI' || rules === '55-TIGER' || mode === 'stage' && rules !== '53B') Object.assign(s, { permanentAwake: opts.permanentAwake ?? opts.awaken ?? false, appearanceAwake: opts.appearanceAwake ?? true, gritUltReady: false, ultAwakened: false, ultEmpowered: false, canAwaken: opts.permanentAwake ?? opts.awaken ?? false })
-  if (rules === '56B' || rules === '56C' || rules === '55-IMUGI' || rules === '55-TIGER' || mode === 'stage' && rules === undefined) Object.assign(s, { awakenedCasts: 0, ultReleaseSeq: 0 })
-  if (rules === '55-IMUGI' || rules === '55-TIGER') s.giantFlow = { midSpawned: false, midDefeated: false, finalSpawned: false, finalDefeated: false }
+  if (rules === '56A' || rules === '56B' || rules === '56C' || rules === '55-IMUGI' || rules === '55-TIGER' || rules === '55-GUMIHO' || mode === 'stage' && rules !== '53B') Object.assign(s, { permanentAwake: opts.permanentAwake ?? opts.awaken ?? false, appearanceAwake: opts.appearanceAwake ?? true, gritUltReady: false, ultAwakened: false, ultEmpowered: false, canAwaken: opts.permanentAwake ?? opts.awaken ?? false })
+  if (rules === '56B' || rules === '56C' || rules === '55-IMUGI' || rules === '55-TIGER' || rules === '55-GUMIHO' || mode === 'stage' && rules === undefined) Object.assign(s, { awakenedCasts: 0, ultReleaseSeq: 0 })
+  if (rules === '55-IMUGI' || rules === '55-TIGER' || rules === '55-GUMIHO') s.giantFlow = { midSpawned: false, midDefeated: false, finalSpawned: false, finalDefeated: false }
   if (rules === '56C') s.palisade = createPalisade()
   if (mode === 'vanguard') {
     s.level = V.startLevel; s.ranks[k.primary] = 4; s.ranks[k.secondary] = 3; s.ranks.echo = 2; s.ranks.tempo = 1; s.ranks.reach = 1
@@ -230,14 +230,14 @@ export const isPermanentAwake = (s: HaebiRun) => s.permanentAwake === true
 export function normalizedRaidOpts(s: HaebiRun, opts: HaebiOpts): HaebiOpts {
   return { ...opts, ...(opts.bonus ? { bonus: { ...opts.bonus } } : {}), ...(usesPermanentAwakening(s) ? { simRules: usesGiantBoss(s) ? giantRules(s) : usesPalisade(s) ? '56C' as const : usesAwakenedCast(s) ? '56B' as const : '56A' as const, permanentAwake: isPermanentAwake(s), appearanceAwake: s.appearanceAwake !== false } : {}) }
 }
-/** 이 판의 거대 보스 — 규칙 55 가 선 판은 여울(이무기)과 설원(백두 대호) 둘뿐이라 스테이지로 갈린다 */
-export const giantKind = (s: HaebiRun): GiantKind => s.stage === 'snow' ? 'tiger' : 'imugi'
-export const giantRules = (s: HaebiRun) => giantKind(s) === 'tiger' ? '55-TIGER' as const : '55-IMUGI' as const
+/** 이 판의 거대 보스 — 규칙 55 가 선 판은 여울(이무기) · 설원(백두 대호) · 숲 산길(구미호)이라 스테이지로 갈린다 */
+export const giantKind = (s: HaebiRun): GiantKind => s.stage === 'snow' ? 'tiger' : s.stage === 'forest' ? 'gumiho' : 'imugi'
+export const giantRules = (s: HaebiRun) => { const kind = giantKind(s); return kind === 'tiger' ? '55-TIGER' as const : kind === 'gumiho' ? '55-GUMIHO' as const : '55-IMUGI' as const }
 const pacingDuration = (s: HaebiRun) => s.mode === 'vanguard' ? V.duration : (C.duration + (s.mode === 'stage' ? CH.extraSeconds : 0)) * ST[s.stage].length
 export const usesGiantBoss = (s: HaebiRun) => s.giantFlow !== undefined
 /** 56-C 진짜 목책이 선 판 (목책 돌파 · 규칙 56C) */
 export const usesPalisade = (s: HaebiRun) => s.palisade !== undefined
-export const raidRulesForStage = (stage: StageId) => stage === 'ford' ? '55-IMUGI' as const : stage === 'palisade' ? '56C' as const : stage === 'snow' ? '55-TIGER' as const : '56B' as const
+export const raidRulesForStage = (stage: StageId) => stage === 'ford' ? '55-IMUGI' as const : stage === 'palisade' ? '56C' as const : stage === 'snow' ? '55-TIGER' as const : stage === 'forest' ? '55-GUMIHO' as const : '56B' as const
 export const runDuration = (s: HaebiRun) => usesGiantBoss(s) ? bossTime(s) + GI.fightBudget : pacingDuration(s)
 export const midbossTime = (s: HaebiRun) => bossTime(s) * GI.midFraction
 export const giantMob = (s: HaebiRun) => s.giantFlow?.finalOwner ?? s.enemies.find(e => e.giant)
