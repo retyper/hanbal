@@ -86,7 +86,7 @@ import { DEX_CSS, clanHeroes, dexHtml, dexToastHtml, loadDex, recordDex, toggleD
 import { recBurst, recCss, recDot, recsOf, syncBook, visitRec, type Rec } from './recommend.ts'
 import { SHOP, loadMeta, shopCost, shopMax } from '../../raid/meta.ts'
 import { DEX_AWOKE, DEX_SERVED, dexCatalog } from '../../realm/dex.ts'
-import { DRILL_CSS, drillLevel, engraveRun, hasDrill, hydrateDrillFaces, loadDrill, raiseHero, yardAct, yardAfterPaint, yardBack, yardHtml, yardReset, yardSearch, yardStripHtml, yardBeforePaint, type DrillKit } from './drill.ts'
+import { DRILL_CSS, drillLevel, engraveRun, hasDrill, hydrateDrillFaces, loadDrill, raiseHero, yardAct, yardAfterPaint, yardBack, yardHtml, yardRaised, yardReset, yardSearch, yardStripHtml, yardBeforePaint, type DrillKit } from './drill.ts'
 import { applyDrill, earnedOf } from '../../realm/drill.ts'
 import { RELIC_CSS, openRunTomb, pickRunRelic, putRelic, relicChips, takeOffRelic, tombHtml, tombRun, tombStripHtml, wornBy, type RelicKit } from './relics.ts'
 import { RELIC } from '../../realm/data/relics.ts'
@@ -681,8 +681,18 @@ const RELIC_KIT: RelicKit = { art: ART, esc, nameOf: (id: string): string => dri
 const DRILL_KIT: DrillKit = {
   esc,
   bust: (id: string): string | null => (faceFile(id) !== undefined ? `${ART}bust/${faceFile(id)}.jpg` : null),
-  bustHd: (id: string): string | null => (faceFile(id) !== undefined ? `${ART}bust-hd/${faceFile(id)}.jpg` : null),
   bodyOf: drillBody,
+  art: ART,
+  /** 각성 모습을 켠 장수 — 저장 칸을 한 번만 읽고 여럿에 묻는다 (데려갈 장수 링과 같은 셈 · 56-A) */
+  looks: () => {
+    const people = readAwakeningProfile(localStorage).people
+    return (id: string): boolean => { const st = people[personOf(id)]; return st?.unlocked === true && st.appearanceAwake !== false }
+  },
+  /** 펼친 장수의 목소리 — 너무 잦으면 voiceGate 가 거른다 */
+  voice: (id: string): void => {
+    const h = drillBody(id)
+    if (h !== undefined && voiceGate(performance.now())) ding(voicePath(h, 'tap'), P.realm.voiceVol)
+  },
   /** 단련터 목록의 거르기 갈래 — 나라 · 등급 · 각성 (영웅전 기록) */
   meta: (id: string) => {
     const x = dexCatalog().find((c) => c.id === id)
@@ -981,6 +991,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     front = end ? null : { kind: 'title' }
     fastNext = end
     paint()
+  }
+  /** 단련터의 누름 — 단추(data-act)와 얼굴 링(앞 장수를 한 번 더 · Enter = 그 장수를 편다)이 같은 길로 (drill.yardAct) */
+  const yardGo = (act: string, d: Readonly<Record<string, string | undefined>>): void => {
+    if (front === null || front.kind !== 'drill') return
+    if (yardAct(act, d)) { front = { ...front, anim: false, gain: {}, last: null, slot: null }; paint() }
   }
   /** 첫 화면 「다른 판」에서 ✕ 를 한 번 누른 판 — 한 번 더 누르면 지운다 */
   let slotArmed: number | null = null
@@ -5660,19 +5675,18 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const isServed = (id: string): boolean => served.some((x) => x.id === id)
     // 단련한 몸으로 온다 — 「단련 n」과 그 몸의 능력치 (HERO-GROWTH ★ §A)
     const drill = loadDrill()
-    const awake = readAwakeningProfile(localStorage)
+    const look = DRILL_KIT.looks()
     const cat = new Map(dexCatalog().map((x) => [x.id, x] as const))
     const heroes = served.map(({ id, name }) => {
       const x = cat.get(id)
       const born = drillBody(id)
       const e = drill.h[id]
-      const st = awake.people[personOf(id)]
       return ringCard(ART, {
         id, name, nameHtml: nameHtml(name),
         from: x === undefined ? tr('dx.clan') : x.board === 'wander' ? tr('dxBoard.wander') : x.nationName,
         lv: e?.level ?? 0,
         body: born !== undefined && e !== undefined && e.level > 0 ? applyDrill(born, e) : born,
-        awake: st?.unlocked === true && st.appearanceAwake !== false,
+        awake: look(id),
       })
     })
     const picks = (): string[] => loadBring().filter(isServed).slice(0, max)
@@ -5685,10 +5699,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         toggleBring(id, max)
         return picks()
       },
-      onPicked: (id) => {
-        const h = drillBody(id)
-        if (h !== undefined && voiceGate(performance.now())) ding(voicePath(h, 'tap'), P.realm.voiceVol)
-      },
+      onPicked: DRILL_KIT.voice,
     }
     const body = `<div class="bringbox hrgbox" role="dialog" aria-label="${tr('bring.aria')}"><button class="bx" data-act="bring-x" aria-label="${tr('more.closeAria')}">✕</button>${bringHtml(opts)}`
       + `<div class="bringgo"><button class="btn ghost" data-act="bring-none">${tr('bring.none')}</button><button class="btn pri" data-act="bring-go">${tr('bring.go')}</button></div></div>`
@@ -7585,9 +7596,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       // 도감은 장수를 누를 때마다 다시 그린다 — 내려 본 자리를 지킨다
       const keepSel = front?.kind === 'dex' ? '.front.dexp' : front?.kind === 'drill' && !front.anim ? '.front.dyard' : null
       const keepFront = keepSel !== null ? (root.querySelector(keepSel)?.scrollTop ?? 0) : 0
-      if (front?.kind === 'drill') yardBeforePaint(root)
+      if (front?.kind === 'drill') yardBeforePaint()
       $('.mapwrap').innerHTML = frontHtml(front!)
-      if (front?.kind === 'drill') yardAfterPaint(root)
+      if (front?.kind === 'drill') yardAfterPaint(root, yardGo) // 얼굴 링을 살린다 (고리 · 펼친 판)
       if (keepSel !== null && keepFront > 0) { const fe = root.querySelector(keepSel); if (fe !== null) fe.scrollTop = keepFront }
       if (front?.kind === 'title') fitTitle()
       $('.top').innerHTML = ''
@@ -8075,7 +8086,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (front.kind === 'dex') {
         if (front.sel !== null) front = { ...front, sel: null }
         else front = front.back
-      } else if (front.kind === 'drill') { if (yardBack()) front = { ...front, slot: null }; else yardLeave(); return true }
+      } else if (front.kind === 'drill') { if (yardBack()) { front = { ...front, slot: null }; paint() } else yardLeave(); return true }
       else if (front.kind === 'tomb') { front = null; fastNext = true }
       else if (front.kind === 'detail') front = { kind: 'nations', region: front.region }
       else if (front.kind === 'nations') front = { kind: 'boards' }
@@ -8383,16 +8394,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'unwed': heroOrders = heroOrders.filter((o) => !(o.kind === 'wed' && (o.a === d['id'] || o.b === d['id']))); break
       case 'dex-open': root.querySelector('.dxtoast')?.remove(); front = { kind: 'dex', board: 'all', sel: null, back: front }; sheet = null; paint(); return
       // 단련터 — 끝 화면에서 · 첫 화면에서 (HERO-GROWTH ★ §C)
-      case 'dy-hero': case 'dy-hback': case 'dy-tab': case 'dy-pop': case 'dy-fs': case 'dy-freset': {
-        if (front === null || front.kind !== 'drill') return
-        if (yardAct(root, d['act']!, d)) { front = { ...front, anim: false, gain: {}, last: null, slot: null }; paint() }
-        return
-      }
+      case 'dy-hero': case 'dy-hback': case 'dy-tab': case 'dy-pop': case 'dy-fs': case 'dy-freset': case 'dy-sort': yardGo(d['act']!, d); return
       case 'dy-open': yardReset(); yardArmed = false; if (realm !== null) { engraveNow(realm); front = yardFromEnd(realm); sheet = null; $('.mapwrap').scrollTop = 0 } paint(); return
       case 'dy-title': yardReset(); yardArmed = false; front = { kind: 'drill', from: 'title', ids: null, gain: {}, fell: [], anim: true, last: null }; sheet = null; paint(); return
       case 'dy-next': {
         // 쓸 공이 남았으면 한 번은 붙잡는다 — 빛나는 카드 · 한 번 더 누르면 나간다 (형 11-05)
-        if (!yardArmed && Number(d['usable'] ?? 0) > 0) { yardArmed = true; paint(); requestAnimationFrame(() => scrollInside(root.querySelector<HTMLElement>('.dyrow.canup'), 'center')); return }
+        // 붙잡히면 고리가 공이 남은 첫 장수 앞으로 돌고 그 얼굴들의 ▲ 가 빛난다 (drill.yardHtml)
+        if (!yardArmed && Number(d['usable'] ?? 0) > 0) { yardArmed = true; paint(); return }
         yardArmed = false
         yardLeave(); return
       }
@@ -8402,6 +8410,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const s = d['s'] as 'mu' | 'tong' | 'ryak' | 'chi' | 'deok'
         if (raiseHero(id, s, drillBody(id))) {
           ding(snd('tap_coin'), 0.5)
+          yardRaised() // 전투 띠가 공격 한 번 (형: 「퍽 하면 으아아아」)
           front = { ...front, anim: false, last: `${id}:${s}`, gain: {} }
         }
         paint()
