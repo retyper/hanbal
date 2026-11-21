@@ -2646,3 +2646,10 @@ Claude 결정: **둘 다, 한 장면으로.** 쇠비를 앞에 크게 세운 새
 #### 75-2 · 숲 화살비 궁수 (51-2 남은 하나)
 `enemy_forest_barrage-archer.png` — 다른 스테이지 화살비 궁수와 같은 틀(한 줄 20칸 · 2172×724 투명). 숲 산적 결(가죽·덩굴) · 머리 위 표식이 잘 보이게 실루엣이 다른 궁수와 다르게(깃 달린 두건 등) · **활을 당기는 칸(13·14)과 쏘는 칸(16)** 을 꼭 그릴 것(다른 화살비 궁수 넷은 신호 몸짓만 있어서 아쉬웠다).
 - **75 덧붙임: 시험 합격 · 계속.** `hdx_haebi` · `hdx_aw1-haebi` 를 2배 띠로 구워 넣었다(서기 넷이 떨리지 않고 · 맞음·쓰러짐 자리 좋음 · 확대 때 얼굴·머리카락이 또렷함). 같은 꼴로 차례대로 계속: 기준 판 장수와 그 각성 → 나머지(`ATTACK8-QUEUE.md` 차례 · 이미 한 해비·각성 해비·주몽 제외 · 주몽은 맨 끝에 `hdx_jumong` 도). 숲 화살비 궁수(HELD-21figures)는 한 줄 20칸이 아니라 21명이라 다시 — 정확히 20칸 · 칸마다 한 명.
+
+
+### 76 · 11-22 Claude · 확대 고해상도는 우선 장수 34명까지 · 그중 걷기 고해상도 판이 없는 15명 걷기 8칸
+75 보충 판(hdx) 받은 것 여덟 중 해비·각성 해비·감실·각성 감실·소서노·각성 소서노는 2배 띠로 넣었다. **이랑·쇠비는 고해상도 걷기 판이 없어 못 구웠다**(옛 길로 걷기 8칸이 이미 있어 68 에서 빠진 장수들).
+- **75 차례를 아래 34명으로 줄인다**(나머지 장수 hdx 는 형이 「더」라고 할 때까지 멈춤 · 사용량 아낌): haebi aw1-haebi soseono aw1-soseono gamsil aw1-gamsil jinha soebi irang aw1-irang haedal aw1-haedal ara aw1-ara hojin jumong aw1-jumong onjo aw1-onjo hogong aw1-hogong gomok aw1-gomok base-g-38-chopal-palmae aw1-base-g-38-chopal-palmae base-w-102-garak-dana mir aw1-mir dangung aw1-dangung heo aw1-heo maenun mulsae. 이 중 **아직 hdx 없는 26명** 계속.
+- **걷기 8칸(68 과 같은 꼴 · 4×2 · #1c2129 · 기준 띠 0~11칸 그대로 · 걷기 다리 교대) → `D:/에셋창고/codex76/walk8_<띠이름>.png`**: soebi irang aw1-irang haedal aw1-haedal ara hojin jumong hogong aw1-hogong gomok aw1-gomok base-g-38-chopal-palmae aw1-base-g-38-chopal-palmae dangung (15). 확대 때만 쓰는 판이라 **인물 키를 그 장수 attack8 판과 같게**.
+- 차례: 위 15명 걷기와 hdx 를 장수마다 짝으로(걷기 → hdx) · 한 장 끝날 때마다 `CODEX-TO-CLAUDE-LATEST.md` 한 줄.
