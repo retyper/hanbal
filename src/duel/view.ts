@@ -1336,6 +1336,7 @@ function close(): void {
 if (mode === 'duel') begin()
 wake()
 // 개발 검수 손잡이 — 헤드리스 시험(tools/hit-portrait-probe.ts)이 화면 쪽 사건 하나를 틀어 본다 (판은 그대로) · 배포 빌드엔 없음
-if (import.meta.env?.DEV === true) Object.assign(window, { __duelEvent: (e: DuelEvent): number => { onEvent(e, last); return last }, __duelMode: () => mode })
+// __duel·__duelTap: 프레임 재기(tools/duel-fps-probe.ts)가 고리 닿는 때에 맞춰 눌러 가장 무거운 순간(챙·베기·치명·연타)을 만든다
+if (import.meta.env?.DEV === true) Object.assign(window, { __duelEvent: (e: DuelEvent): number => { onEvent(e, last); return last }, __duelMode: () => mode, __duel: () => duel, __duelTap: (x: number, y: number): void => { if (mode === 'duel' && duel.over === null) queued = { x, y } } })
 return done
 }
