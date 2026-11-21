@@ -20,7 +20,8 @@
  * 화면만 그린다 — 고름은 부른 쪽의 손잡이(onToggle)로만 바뀐다. 숨은 탭 · 링이 떨어져 나간 뒤에는 rAF 도 타이머도 돌지 않는다 (규칙 4).
  * 저사양 · 쉼 · 움직임 줄이기(q-low · q-rest · q-calm)에선 서기 숨을 멈춘 한 장으로 (한 번짜리 공격은 그대로).
  */
-import { P } from '../../tune/params.ts'
+import { P, UI_SWAY } from '../../tune/params.ts'
+import { swayBody, swayStep } from '../fx/sway.ts'
 import { SPRITE_PX } from '../../realm/data/spritePx.ts'
 import { bustOf, genArtOf, generalSprite } from '../../realm/data/art.ts'
 import { AWAKEN_ART } from '../../realm/data/awaken-art.ts'
@@ -242,8 +243,14 @@ export function mountRing(host: HTMLElement, o: RingOpts): RingHandle {
   let timer = 0
   let alive = true
   let geo = { cx: 0, cy: 0, rx: 0, ry: 0, size: 0 }
+  // 고리가 도는 빠르기만큼 얼굴이 도는 쪽으로 기운다 (A1 · 자석 흔들림 · 앞 얼굴일수록 크게) — 멈추면 용수철로 출렁이다 선다
+  const lean = swayBody()
+  const leanCfg = { ...UI_SWAY, maxTilt: UI_SWAY.ring.max }
+  let leanPos = pos
 
   const calm = (): boolean => reduce || host.closest('.q-low, .q-rest, .q-calm') !== null
+  /** 움직임 줄이기면 기울지 않는다 */
+  const still = (): boolean => reduce || host.closest('.q-calm') !== null
 
   function measure(): void {
     if (ring === null || disc === null) return
@@ -294,7 +301,7 @@ export function mountRing(host: HTMLElement, o: RingOpts): RingHandle {
       const sc = 0.5 + depth * 0.62
       const x = geo.cx + Math.cos(a) * geo.rx
       const y = geo.cy + Math.sin(a) * geo.ry
-      el.style.transform = `translate(${(x - geo.size / 2).toFixed(1)}px,${(y - geo.size * 0.7).toFixed(1)}px) scale(${sc.toFixed(3)})`
+      el.style.transform = `translate(${(x - geo.size / 2).toFixed(1)}px,${(y - geo.size * 0.7).toFixed(1)}px) rotate(${(lean.r * depth).toFixed(2)}deg) scale(${sc.toFixed(3)})`
       el.style.zIndex = String(10 + Math.round(depth * 100))
       el.style.opacity = (0.35 + depth * 0.65).toFixed(2)
       face(el, mod(base + off))
@@ -386,10 +393,18 @@ export function mountRing(host: HTMLElement, o: RingOpts): RingHandle {
         if (Math.abs(target - pos) < 0.002) pos = target
       }
     }
+    // 기울기 — pos 가 늘면 얼굴들이 왼쪽으로 간다 · 가는 쪽으로 윗머리가 (칸/초 × perSlot 도 · ±max)
+    if (!still() && dt > 0) {
+      const aim = Math.max(-leanCfg.maxTilt, Math.min(leanCfg.maxTilt, ((leanPos - pos) / dt) * UI_SWAY.ring.perSlot))
+      swayStep(lean, { x: 0, y: 0, s: 1, r: aim }, dt, UI_SWAY.ring.spring, UI_SWAY.ring.spring, leanCfg)
+    }
+    leanPos = pos
+    const leaning = Math.abs(lean.r) > UI_SWAY.restDeg || Math.abs(lean.vr) > UI_SWAY.restSpin
+    if (!leaning) { lean.r = 0; lean.vr = 0 }
     layout()
     showFront(t)
     drawFight(t)
-    if (moving || pos !== target || attackAt !== null || bigShown !== shown) { raf = requestAnimationFrame(tick); return }
+    if (moving || pos !== target || attackAt !== null || bigShown !== shown || leaning) { raf = requestAnimationFrame(tick); return }
     last = 0
     // 가만히 있을 땐 서기 숨 한 컷마다 한 번만 깬다 (rAF 를 계속 돌리지 않는다)
     if (!calm()) timer = window.setTimeout(() => { timer = 0; wake() }, R.ringIdleMs - (t % R.ringIdleMs) + 4)

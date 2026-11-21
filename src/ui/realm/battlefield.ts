@@ -22,7 +22,9 @@ import { seasonOf } from '../../realm/season.ts'
 import { heroArt } from '../../realm/heroes.ts'
 import type { Act, Approach, Art, Clock, Cmd, Dusk, DuskAsk, DuskLog, Grp, Hero, Look, Order, Pending, Realm, RoundLog, RoundOrder, Tactic } from '../../realm/types.ts'
 import type { GuardWhy } from '../../realm/council.ts'
-import { P } from '../../tune/params.ts'
+import { P, UI_FLY, UI_SWAY } from '../../tune/params.ts'
+import { swayCards } from '../fx/sway.ts'
+import { flyOut, takeAfterimage, type Afterimage, type Box } from '../fx/flyout.ts'
 import { captureAttempts, playBattleStrikes } from './battle-strikes.ts'
 import { captureCast, carryEnd, caughtIn, playCapture, withoutCapture } from './battle-capture.ts'
 import { BATTLE_SPEEDS, battlePlayback, battleSpeed, type BattleSpeed } from './battle-playback.ts'
@@ -3573,7 +3575,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     new Image().src = `${host.art}fx/awaken/beast-${ELEM[x.wake].beast}.png`
   }
   // 싸움 소리도 미리 — 처음 내는 소리는 받기·풀기를 기다려 늦었다: 방진의 쾅이 방패가 내려앉은 뒤에 났다 (형 11-01)
-  host.warm?.([...new Set([...Object.values(BATTLE_SFX), ...Object.values(SK_SFX), ...MELEE, ...Object.values(LAYERS).flatMap((ly) => (ly ?? []).map(([f]) => f))])])
+  // 깃발이 무리에 박히는 「딸깍」(click1)도 — 박히는 그 프레임에 나야 한다 (A1)
+  host.warm?.([...new Set([...Object.values(BATTLE_SFX), ...Object.values(SK_SFX), ...MELEE, ...Object.values(LAYERS).flatMap((ly) => (ly ?? []).map(([f]) => f)), 'click1'])])
   /** 처음 우리 싸움 수 — 머리의 "몇 판" */
   let left = t.left
   /** 이번 합에 고른 장수 기술 — 풀릴 때 초상 장면을 띄운다 */
@@ -4375,6 +4378,24 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const next = [...order.slice(at + 1), ...order.slice(0, at)].find((x) => sel[x] === undefined)
     if (next !== undefined) timers.push(window.setTimeout(() => { if (active === g) { active = next; syncCmd(); if (fromPop && choosing()) openPop(next) } }, P.realm.warTabNextMs))
   }
+  /**
+   * 고른 깃발이 판 밖으로 날아가 그 무리 머리 위에 박힌다 (A1 · 형 11-20: 「이펙트가 판 레이아웃 경계를 넘나듦 · 소리와 딱 맞음」).
+   * 깃발 판은 고르면 곧바로 닫히므로 고르기 전에 깃발 그림 자리 · 판의 잔상을 떠 두고(flagFrom), 고른 뒤 날린다(landFlag).
+   * 「딸깍」은 박히는 그 순간 — 깃발을 내렸거나(고른 것이 없음) 물러나기처럼 날 곳이 없으면 곧바로
+   */
+  const flagFrom = (card: HTMLElement): { box: Box; img: string | null; after: Afterimage | null } => {
+    const im = card.querySelector<HTMLImageElement>('img.wflag')
+    const q = (im ?? card).getBoundingClientRect()
+    return { box: { left: q.left, top: q.top, width: q.width, height: q.height }, img: im?.getAttribute('src') ?? null, after: card.closest('.wfpop') !== null && !pop.hidden ? takeAfterimage(pop, card) : null }
+  }
+  const landFlag = (from: ReturnType<typeof flagFrom>, g: Grp | 'lead', c: Cmd, vol: number): void => {
+    const q = groupRect('us', g)
+    if (sel[g] !== c || q === null) { host.ding('click1', vol); return }
+    // 무리 윗머리(보석 자리)에 깃발보다 조금 크게 — 박히는 자리가 보이게
+    const s = Math.max(from.box.width, from.box.height) * UI_FLY.plantScale
+    const to: Box = { left: q.left + q.width / 2 - s / 2, top: q.top + q.height * UI_FLY.plant - s / 2, width: s, height: s }
+    flyOut({ after: from.after, afterHost: ov, from: from.box, to, img: from.img, onLand: () => host.ding('click1', vol) })
+  }
 
   // ───────── 누르고 있는 동안만 뜨는 설명 창 · 지금 고를 무리 위의 보석 · 깃발 끌기 (형 10-28: 하스스톤처럼)
   /** 설명 창 — 손가락 위에 · 손을 떼면 warHoldLingerMs 뒤 걷힌다 (holdbox.ts · 지도와 같이 쓴다) */
@@ -4510,9 +4531,12 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       const who = WHO_KINDS.some((k) => d.card.classList.contains(k)) && pop.querySelector('.wwho.show') !== null
       if (ev.type === 'pointerup' && d.card.isConnected && performance.now() - d.t0 < P.realm.warTapPickMs && (d.was || !who)) {
         swallow = true // 뗀 뒤 오는 click 이 판을 다시 열지 않게
-        host.ding('click1', 0.22)
         disarm()
-        doPick(d.card.dataset['g'] as Grp | 'lead', d.card.dataset['c'] as Cmd, d.card, false)
+        const g = d.card.dataset['g'] as Grp | 'lead'
+        const c = d.card.dataset['c'] as Cmd
+        const fl = flagFrom(d.card)
+        doPick(g, c, d.card, false)
+        landFlag(fl, g, c, 0.22) // 「딸깍」은 깃발이 무리에 박히는 순간 (A1)
         return
       }
       // 꾹 눌러 붙은 피해·사기 표는 손을 떼면 설명 창과 함께 걷힌다 — 판이 다시 낮아져 전장이 보인다
@@ -4523,14 +4547,19 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     hideHold(0)
     if (ev.type === 'pointerup' && overField(ev.clientX, ev.clientY)) {
       swallow = true // 놓은 뒤 오는 click 이 전장 누르기로 깃발 판을 다시 열지 않게
-      host.ding('click1', 0.22)
       disarm()
-      doPick(d.card.dataset['g'] as Grp | 'lead', d.card.dataset['c'] as Cmd, d.card, false)
+      const g = d.card.dataset['g'] as Grp | 'lead'
+      const c = d.card.dataset['c'] as Cmd
+      const fl = flagFrom(d.card)
+      doPick(g, c, d.card, false)
+      landFlag(fl, g, c, 0.22) // 「딸깍」은 깃발이 무리에 박히는 순간 (A1)
     } else if (d.card.isConnected) aimAt(d.card) // 전장 밖에 놓았다 — 처음 화살로
   }
   ov.addEventListener('pointerup', endDrag)
   ov.addEventListener('pointercancel', endDrag)
   pop.addEventListener('contextmenu', (ev) => ev.preventDefault()) // 폰에서 꾹 누르면 뜨는 메뉴를 막는다
+  // 깃발 카드(판 위 · 아래 칸) — 누른 채 끌면 화살 쪽으로 자석처럼 끌려 기울고, 놓으면 돌아온다 · 마우스를 올리면 커서 쪽으로 (A1 · CSS 가 이미 들어 올리니 들림은 cssLift)
+  swayCards(ov, '[data-war="pick"]', { hoverLift: UI_SWAY.cssLift })
   window.addEventListener('resize', placeGem)
 
   /** 다음 합을 고르는 중인가 (합이 풀리는 중·맡긴 싸움을 보는 중이 아니고) */
@@ -4842,12 +4871,17 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const l = t.line
     if (l === null || l.key === undefined) return
     if (animating && b.dataset['war'] !== 'auto' && b.dataset['war'] !== 'auto-yes' && b.dataset['war'] !== 'auto-no' && b.dataset['war'] !== 'next' && b.dataset['war'] !== 'help') return
-    host.ding('click1', 0.18)
+    // 아래 칸의 깃발 고르기는 깃발이 무리에 박히는 순간에 「딸깍」 (A1 · landFlag) — 나머지 단추는 누른 순간
+    if (b.dataset['war'] !== 'pick' || b.closest('.wfpop') !== null) host.ding('click1', 0.18)
     switch (b.dataset['war']) {
       case 'pick': {
         // 전장 위 깃발 판은 누르기로 고르지 않는다 — 끌어 전장에 놓아야 (dropFlag) · 누르고 있으면 설명 창
         if (b.closest('.wfpop') !== null) return
-        doPick(b.dataset['g'] as Grp | 'lead', b.dataset['c'] as Cmd, b, true)
+        const g = b.dataset['g'] as Grp | 'lead'
+        const c = b.dataset['c'] as Cmd
+        const fl = flagFrom(b)
+        doPick(g, c, b, true)
+        landFlag(fl, g, c, 0.18)
         return
       }
       case 'gtab': {

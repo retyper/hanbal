@@ -73,6 +73,7 @@ import { HAEBI_RUN, HAEBI_STAGES, P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, noReachWhy, visibleNodes, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
 import { LEGACY_CSS, bringHtml, clearBring, loadBring, toggleBring } from './legacy.ts'
 import { HRING_CSS, mountRing, ringCard, type RingHandle, type RingOpts } from './hero-ring.ts'
+import { calmMotion, swayCards } from '../fx/sway.ts'
 import { personOf } from '../../realm/person.ts'
 import { TOWN_CSS, townCheer, townVeilHtml, townViewHtml, type TownSlot } from './townview.ts'
 import { townFort, townGround, townSprite } from '../../realm/data/town-art.ts'
@@ -756,6 +757,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   root.classList.add('ap')
   // 그래픽 단계 저사양 · 보통 · 고사양 (quality.ts · 형 10-29: 폰 절전 모드에서 그림이 다 깨졌다)
   startQuality(root, (h) => goToast(h))
+  // 옛 무덤의 고를 상자 — 누른 채 끌면 자석처럼 흔들리고 마우스를 올리면 끌린다 (A1 · ui/fx/sway.ts · 판을 다시 그려도 이어받기)
+  swayCards(root, '.front.tomb button.tbx[data-act="tomb-pick"]')
   // 끊김 기록 — 긴 작업이 난 순간 맨 위에 뜬 화면 (perflog.ts · 형 11-11 "어떤 상황에서 프레임 드랍 되는지")
   startPerfLog(root, () => {
     if (document.documentElement.classList.contains('duel-open')) return '겨루기'
@@ -8481,12 +8484,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           if (realm === null || !tombRun(realm) || !pickRunRelic(realm, id)) { paint(); return }
           ding(snd('relic_open'), 0.7) // 상자가 터지는 팡파레 (형 10-27)
           const tier = RELIC[id]?.tier ?? 'common'
+          // 귀함 소리는 솟은 유물이 제자리에 닿는 순간 (A1 소리 박자 · 예전엔 솟기 시작할 때) — 움직임 줄이기면 유물이 바로 서는 때
           window.setTimeout(() => {
             if (!seen()) return
             if (tier === 'legend') { ding(snd('horn_victory'), 0.6); ding(snd('war_bell'), 0.45) }
             else if (tier === 'rare') ding(snd('war_bell'), 0.5)
             else ding(snd('coins'), 0.5)
-          }, 380)
+          }, calmMotion() ? P.realm.relicCalmLandMs : P.realm.relicLandMs)
           front = { kind: 'tomb', fresh: true }
           paint()
         }

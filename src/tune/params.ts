@@ -80,6 +80,51 @@ export const HAPTICS = {
   hurt: [15, 40], hurtFull: .15, hurtGap: 180, fieldHurt: 40,
   win: [30, 40, 30, 40, 60, 60, 120], bigWin: [30, 40, 30, 40, 30, 40, 60, 60, 60, 60, 160],
 } as const
+/**
+ * 카드 자석 흔들림 (A1 · 형 11-20: 「카드 끌 때 자석처럼 흔들림(관성·기울기)」) — src/ui/fx/sway.ts 한 곳에서 쓴다 (열전 레벨업 카드 · 본편 싸움 깃발 · 옛 무덤 상자 · 얼굴 링).
+ * 누른 채 끌면: 카드가 손가락을 고무줄처럼 조금만 따라온다 — 끈 거리 d 에 d·pull/(1+|d|/reach) (멀리 끌어도 pull·reach px 를 넘지 않는다)
+ *   기울기 = 손가락 빠르기(px/초)·tiltPerSpeed + 따라온 거리·tiltPerPull (도) · 어떤 때에도 maxTilt 도를 넘지 않는다 · velTau 빠르기를 거르는 시간(초)
+ *   slop 이만큼(px) 움직여야 끌기로 본다 · pressScale 누르기만 했을 때 · liftScale 끄는 동안 크기 · lift 끄는 동안의 그림자(저사양은 없음)
+ * 용수철 [hz 떨림 수, zeta 감쇠 몫] — follow 누르고 있는 동안 따라붙기 · back 놓은 뒤 제자리로(감쇠가 작아 조금 넘쳤다 돌아온다) · tilt·tiltBack 기울기 몫
+ * 마우스를 올리면(컴퓨터): 커서 쪽으로 가운데에서 떨어진 px 의 hoverPull 몫만큼 끌리고 hoverLift px 들리며 hoverScale 로 · 기울기는 가장자리에서 hoverTilt 도
+ *   cssLift — CSS 가 이미 마우스를 올리면 들어 올리는 카드(본편 깃발 .wcmd:hover)의 들림 (겹쳐 두 배로 뜨지 않게 0)
+ * 멈춤 판정: restPx·restDeg·restScale 안에 들고 빠르기가 restSpeed(px/초)·restSpin(도/초)·restGrow(/초) 밑이면 rAF 를 끄고 꾸밈을 걷는다
+ * step 셈 한 걸음(초 · 용수철이 튀지 않게 잘게) · maxDt 한 프레임에 셈하는 가장 긴 시간(초 · 탭을 다녀오면 뛰지 않게) · z 끄는 카드를 이웃 위로
+ * wideRef 이 폭(px)보다 넓은 카드는 폭에 반비례해 덜 기운다(끝이 흔들리는 거리를 비슷하게 · 본편 깃발 판의 한 줄짜리 넓은 깃발) · wideMin 그 몫의 바닥
+ * ring — 얼굴 링: 고리가 도는 빠르기(칸/초)에 perSlot 도씩 얼굴이 기운다(앞 얼굴일수록 크게) · max 도까지 · 용수철 [hz, zeta]
+ */
+export const UI_SWAY = {
+  pull: .3, reach: 80, tiltPerSpeed: .01, tiltPerPull: .15, maxTilt: 8, velTau: .06, slop: 6, wideRef: 300, wideMin: .35,
+  pressScale: .97, liftScale: 1.05, lift: '0 16px 16px #000000a0',
+  follow: [7, .75], back: [4.5, .45], tilt: [6, .55], tiltBack: [4.5, .4],
+  hoverPull: .035, hoverLift: 4, hoverScale: 1.02, hoverTilt: 2, cssLift: 0,
+  restPx: .15, restDeg: .04, restScale: .0006, restSpeed: 2, restSpin: 1, restGrow: .005,
+  step: 1 / 120, maxDt: .05, z: 3,
+  ring: { perSlot: 1.6, max: 8, spring: [5, .35] },
+} as const
+/**
+ * 판 밖으로 넘는 꾸밈 (A1 · 형 11-20: 「이펙트가 판 레이아웃 경계를 넘나듦 · 소리와 딱 맞음」) — src/ui/fx/flyout.ts.
+ * 고른 카드의 그림이 판 안에서 popMs 동안 popScale 로 부풀며 popRise px 솟고, flyMs 동안 화면을 가로질러 쓰이는 자리로 날아가 박힌다 (닿는 때 = 소리)
+ *   arc 날아가는 길이 위로 휘는 몫(거리에 곱함) · spin 날며 도는 도 · ease 날기 빠르기 곡선(지수 · 1 보다 크면 끝에서 빨라져 「쾅」) · steps 길 위의 마디 수
+ *   fit [작게, 크게] 닿을 때 크기 몫의 한도(닿을 칸 ÷ 나는 그림)
+ *   landMs 박힌 뒤 납작해졌다 사라지는 시간 · squash 박히는 순간 크기 몫 · pulse 박힌 자리가 튀는 크기 · pulseAt 그 꼭대기 때(0~1) · pulseMs 그 시간 · hold 닿기 전 그 자리의 흐림(opacity)
+ * 떠날 때 불티 sparks 낱이 판 테두리를 넘어 흩어진다 — 거리 sparkDist[가까이, 멀리] px · 크기 sparkSize px · 시간 sparkMs · sparkFall 끝에 처지는 px
+ *   sparkMid 가는 길의 이 몫(때·거리·크기)까지 밝게 · sparkEnd 끝 크기 · lowSparks·midSparks 저사양·보통에서 남기는 몫(minSparks 낱은 남김)
+ *   sparkCore 불티 속 빛 · sparkGlow 불티 번짐 px
+ * ringMs 떠나는 자리 · 닿는 자리의 고리가 번지는 시간 · ringScale [처음, 끝] 크기 몫 · ringAlpha 처음 진하기 · ringLine 고리 굵기 px · ringFrom·ringTo 고리 지름(그림 크기 몫)
+ * burstEase 터져 나가는 곡선 · 다 해서 0.8초 안 (popMs+flyMs+ringMs 770ms) · safety 그 몇 배가 지나면 애니가 멈췄어도 걷는다 · z 화면 위 겹 · glow 나는 그림의 빛(저사양 없음) · color 기본 빛깔
+ * afterMs 고르자 닫힌 판의 잔상이 옅어지는 시간 · afterScale 그동안 작아지는 몫 (날아가는 그림이 판 테두리를 넘는 것이 보이게)
+ * plant 본편 싸움 깃발이 박히는 높이 — 그 무리 네모의 위에서 이 몫 (보석이 뜨는 윗머리 쪽) · plantScale 박힐 때 깃발 크기 몫(판 위 깃발 그림에 곱함)
+ */
+export const UI_FLY = {
+  popMs: 70, popScale: 1.6, popRise: 12, flyMs: 400, arc: .3, spin: 16, ease: 1.6, steps: 12, fit: [.25, 2],
+  landMs: 170, squash: 1.3, pulse: 1.3, pulseAt: .3, pulseMs: 260, hold: .35,
+  sparks: 10, minSparks: 2, sparkDist: [90, 210], sparkSize: [6, 12], sparkMs: [380, 540], sparkFall: 30, sparkMid: .6, sparkEnd: .3,
+  lowSparks: .3, midSparks: .6, sparkCore: '#fff6cf', sparkGlow: 8,
+  ringMs: 300, ringScale: [.4, 1.8], ringAlpha: .95, ringLine: 3, ringFrom: 1.3, ringTo: 1.4,
+  burstEase: 'cubic-bezier(.15,.8,.3,1)', safety: 3, z: 9990, glow: 'drop-shadow(0 0 10px #ffd27a)', color: '#ffd27a',
+  afterMs: 220, afterScale: .97, plant: .3, plantScale: 1.6,
+} as const
 /** 열전 손가락 조이스틱 (형 11-16: 「뱀서 컨텐츠 할 때는 조이스틱 생겨야 하는 거 아님?」) — 손가락 댄 자리에 생기는 떠다니는 막대.
  *  radius 막대가 끝까지 가는 거리(화면 px) · dead 이보다 덜 밀면 멈춤 · follow 끝을 넘겨 끌면 받침이 따라오는 몫(0~1)
  *  queue: 회피·비기를 재사용 중에 눌러도 이 초 안에 풀리면 나간다 (11-17 형: 「회피나 기술도 잘 안 눌렸음」) */
@@ -4251,6 +4296,8 @@ export const SPEC = {
     relicShakeMs: k(950, 0, 2500, 50, '옛 무덤 — 고른 상자가 북소리에 떨리다 터지기까지', 'ms'),
     relicSparks: k(24, 0, 60, 1, '옛 무덤 — 유물이 떠오를 때 흩어지는 금빛 낱알', '개'),
     relicDusts: k(7, 0, 16, 1, '옛 무덤 — 상자가 터질 때 이는 흙먼지 덩이', '개'),
+    relicLandMs: k(745, 0, 3000, 5, '옛 무덤 — 터진 뒤 유물이 솟아 제자리에 처음 닿는 때 · 귀함 소리(엽전·종·나팔)를 이때 낸다 (relics.ts tbup: .35초 늦게 1.1초 cubic-bezier(.2,.9,.25,1.25) 가 처음 1 에 닿는 때 · 예전 380 은 솟기 시작할 때 · A1 소리 박자)', 'ms'),
+    relicCalmLandMs: k(380, 0, 3000, 5, '옛 무덤 — 움직임 줄이기면 유물이 솟지 않고 .35초에 바로 선다 · 그때 귀함 소리', 'ms'),
 
     /** 이김·짐 (FLOW §7 #1) */
     winCapitals: k(3, 2, 6, 1, '이김: 이만큼의 국읍을 쥔다 (제 국읍 포함)', '곳'),
