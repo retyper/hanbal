@@ -1,3 +1,5 @@
+import { fieldTransform, heroCacheHeight, wantsHeroHd } from './surface.ts'
+import { HERO_HD, HERO_HD_SHEETS } from './hero-hd.ts'
 import { HAEBI_RUN as C, HAEBI_MOBS as M, HAEBI_STAGES as ST, HAEBI_ULT as U, HAEBI_FX as K } from '../tune/params.ts'
 import { genArtOf } from '../realm/data/art.ts'
 import { areaScale, awakenedLook, barrageArcher, charge, missileLife, slamRadius, slamWindup, type HaebiRun, type Kit, type Missile, type Mob, type StageId } from './haebi.ts'
@@ -32,21 +34,24 @@ const BOSS_WIN = [104, 35, 626, 82] as const
  */
 type Baked = { c: CanvasImageSource; fw: number; fh: number; cols: number }
 const bakedStrips = new Map<HTMLImageElement, Map<number, Baked | null>>()
-function bakedStrip(img: HTMLImageElement, height: number): Baked | null {
+function bakedStrip(img: HTMLImageElement, height: number, warmWhite = false, layout?: { cell: readonly [number, number]; cols: number }): Baked | null {
   // 찾기 먼저 (판마다 200번 불린다 — 그림의 width·height 읽기도 값이 든다)
   const fh = Math.max(1, Math.round(height)), per = bakedStrips.get(img), had = per?.get(fh)
   if (had !== undefined) return had
   if (typeof document === 'undefined' || !img.width || !img.height || !img.complete) return null
-  if (!per) { bakedStrips.set(img, new Map()); return bakedStrip(img, height) }
-  const sw = img.width / 20, fw = Math.max(1, Math.round(sw * fh / img.height))
-  if (fh >= img.height) { per.set(fh, null); return null }   // 키우는 그림(초상 판 등)은 굽지 않는다
+  if (!per) { bakedStrips.set(img, new Map()); return bakedStrip(img, height, warmWhite, layout) }
+  const nativeH = layout?.cell[1] ?? img.height, sourceCols = layout?.cols ?? 20
+  const sw = layout?.cell[0] ?? img.width / 20, fw = Math.max(1, Math.round(sw * fh / nativeH))
+  if (fh >= nativeH && img.width <= C.spriteBakeMax) { per.set(fh, null); return null }   // 키우는 그림(초상 판 등)은 굽지 않는다
   const cols = Math.max(1, Math.min(20, Math.floor(C.spriteBakeMax / fw))), rows = Math.ceil(20 / cols)
   const c = document.createElement('canvas'); c.width = cols * fw; c.height = rows * fh
   const g = c.getContext('2d')!; g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'
-  for (let i = 0; i < 20; i++) g.drawImage(img, i * sw, 0, sw, img.height, (i % cols) * fw, Math.floor(i / cols) * fh, fw, fh)
+  for (let i = 0; i < 20; i++) g.drawImage(img, (i % sourceCols) * sw, Math.floor(i / sourceCols) * nativeH, sw, nativeH, (i % cols) * fw, Math.floor(i / cols) * fh, fw, fh)
   const b: Baked = { c, fw, fh, cols }; per.set(fh, b)
+  if (warmWhite) whiteStrip(c, c.width, c.height)
+  while (per.size > 3) { const key = per.keys().next().value!; const old = per.get(key); if (old && 'close' in old.c) (old.c as ImageBitmap).close(); per.delete(key) }
   // 굳힌 그림(ImageBitmap)으로 바꿔 쥔다 — 캔버스를 원본으로 찍으면 찍을 때마다 사본을 뜰 수 있다
-  if (typeof createImageBitmap === 'function') void createImageBitmap(c).then(bm => { b.c = bm }, () => {})
+  if (typeof createImageBitmap === 'function') void createImageBitmap(c).then(bm => { if (per.get(fh) !== b) { bm.close(); return }; if (warmWhite) whiteStrip(bm, c.width, c.height); b.c = bm }, () => {})
   return b
 }
 const whiteStrips = new WeakMap<object, HTMLCanvasElement>()
@@ -59,12 +64,14 @@ function whiteStrip(src: CanvasImageSource, width: number, height: number) {
   }
   return white
 }
-export function sprite(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, path: string, x: number, y: number, height: number, frame: number, face = 1, flash: boolean | 'white' = false) {
+export function sprite(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, path: string, x: number, y: number, height: number, frame: number, face = 1, flash: boolean | 'white' = false, density?: number) {
   const img = images.get(path); if (!img) return
-  const b = bakedStrip(img, height)
+  const layout = HERO_HD_SHEETS[path], nativeH = layout?.cell[1] ?? img.height
+  const b = bakedStrip(img, density === undefined ? height : heroCacheHeight(height, density, nativeH), density !== undefined, layout)
   let src: CanvasImageSource = img, sx: number, sy = 0, sw: number, sh: number, dw: number, dh: number
-  if (b) { src = b.c; sx = (frame % b.cols) * b.fw; sy = Math.floor(frame / b.cols) * b.fh; sw = dw = b.fw; sh = dh = b.fh }
-  else { sw = img.width / 20; sh = img.height; sx = frame * sw; dh = height; dw = height * sw / sh }
+  if (b) { src = b.c; sx = (frame % b.cols) * b.fw; sy = Math.floor(frame / b.cols) * b.fh; sw = b.fw; sh = b.fh; dh = density === undefined ? b.fh : height; dw = density === undefined ? b.fw : b.fw * height / b.fh }
+  else { sw = layout?.cell[0] ?? img.width / 20; sh = nativeH; sx = (frame % (layout?.cols ?? 20)) * sw; sy = Math.floor(frame / (layout?.cols ?? 20)) * sh; dh = height; dw = height * sw / sh }
+  if (density !== undefined) dw = Math.round(height * (layout?.cell[0] ?? img.width / 20) / nativeH)
   // 폰 프레임 (11-17): save/restore 대신 옮긴 만큼 되돌린다 — 적 230 명마다 save 가 판 그리기의 8% 를 먹었다
   const tx = Math.round(x), ty = Math.round(y), dx = -Math.round(dw / 2)
   const smooth = ctx.imageSmoothingEnabled
@@ -93,7 +100,7 @@ function trackGhosts(s: HaebiRun, path: string) {
 function drawGhosts(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, height: number) {
   if (!ghosts.length) return
   const img = images.get(ghosts[0]!.path); if (!img) return
-  const fw = img.width / 20, fh = img.height
+  const layout = HERO_HD_SHEETS[ghosts[0]!.path], fw = layout?.cell[0] ?? img.width / 20, fh = layout?.cell[1] ?? img.height
   tint ??= document.createElement('canvas')
   if (tint.width !== fw || tint.height !== fh) { tint.width = fw; tint.height = fh }
   const t = tint.getContext('2d')!; t.imageSmoothingEnabled = false
@@ -102,7 +109,7 @@ function drawGhosts(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImage
   for (const g of ghosts) {
     const k = 1 - (s.t - g.t) / C.ghostLife; if (k <= 0) continue
     for (const [color, dx, a] of [['#ff2bd6', C.ghostSplit, .55], ['#18e8ff', -C.ghostSplit * .5, 1]] as const) {
-      t.globalCompositeOperation = 'copy'; t.drawImage(img, g.frame * fw, 0, fw, fh, 0, 0, fw, fh)
+      t.globalCompositeOperation = 'copy'; t.drawImage(img, (g.frame % (layout?.cols ?? 20)) * fw, Math.floor(g.frame / (layout?.cols ?? 20)) * fh, fw, fh, 0, 0, fw, fh)
       t.globalCompositeOperation = 'source-in'; t.fillStyle = color; t.fillRect(0, 0, fw, fh)
       ctx.globalAlpha = C.ghostAlpha * a * k * k
       ctx.save(); ctx.translate(Math.round(g.x + dx * (2 - k)), Math.round(g.y)); ctx.scale(g.face, 1)
@@ -121,7 +128,21 @@ export function setHeroArt(baseKey: string, awakeKey?: string) { const b = genAr
 const heroH = (s: HaebiRun) => awakenedLook(s) ? C.heroPx * heroArt.grow : C.heroPx
 export const heroArtFiles = () => [...new Set([heroArt.base, heroArt.awake])]
 /** 판 안 각성(디지몬식) 동안만 각성 그림 — 조합을 열어도 모습은 그대로 (RAID-LINK §1) */
-const heroSprite = (s: HaebiRun) => awakenedLook(s) ? heroArt.awake : heroArt.base
+const heroSprite = (s: HaebiRun, images?: Map<string, HTMLImageElement>, density = 1) => {
+  const normal = awakenedLook(s) ? heroArt.awake : heroArt.base, hd = HERO_HD[normal]
+  return hd && wantsHeroHd(density) && images?.has(hd) ? hd : normal
+}
+export function heroHdFiles(density: number): string[] { return wantsHeroHd(density) ? [...new Set([heroArt.base, heroArt.awake].flatMap(p => HERO_HD[p] ? [HERO_HD[p]!] : []))] : [] }
+/** Decode happens in the loader; masks are painted without pixel readback before first HIT. */
+export function warmHeroSprites(images: Map<string, HTMLImageElement>, density: number) {
+  for (const [path, height] of [[heroArt.base, C.heroPx], [heroArt.awake, C.heroPx * heroArt.grow]] as const) {
+    const hd = HERO_HD[path], use = hd && wantsHeroHd(density) && images.has(hd) ? hd : path, img = images.get(use)
+    if (!img) continue
+    const layout = HERO_HD_SHEETS[use]
+    const b = bakedStrip(img, heroCacheHeight(height, density, layout?.cell[1] ?? img.height), true, layout)
+    if (!b) whiteStrip(img, img.width, img.height)
+  }
+}
 /** 걷기 위상(바퀴) — 화면 쪽 기억: 실제로 움직인 거리 ÷ 한 바퀴 보폭. 같은 판 같은 시각엔 한 번만 더하고, 새 판·순간 이동은 건너뛴다 */
 const walk = { x: 0, y: 0, t: -1, phase: 0 }
 function walkPhase(s: HaebiRun) {
@@ -585,14 +606,14 @@ const order: (HaebiRun['enemies'][number] | null)[] = []
  */
 export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, destination: { x: number; y: number } | null, cam?: { zoom: number; x: number; y: number }, feel?: RaidFeel, ending?: RaidEnding) {
   const W = C.width, H = C.height
-  ctx.setTransform(1, 0, 0, 1, 0, 0)   // 그림마다 옮겼다 되돌리는 셈의 작은 오차가 판마다 쌓이지 않게 (sprite·stamp 는 save/restore 없이 · 11-17)
+  fieldTransform(ctx)   // 그림마다 옮겼다 되돌리는 셈의 작은 오차가 판마다 쌓이지 않게 (sprite·stamp 는 save/restore 없이 · 11-17)
   ctx.fillStyle = '#273c35'; ctx.fillRect(0, 0, W, H)
   const endShake = ending?.active ? END.shake * Math.max(0, 1 - ending.elapsed / END.shakeLife) : 0
   const quake = Math.max(endShake, Math.min(FEEL.shakeMax, Math.max(shakeOf(s), feel?.shake ?? 0))), time = ending?.active ? ending.elapsed : feel?.time ?? s.t
   const qx = quake ? Math.round(Math.sin(time * FEEL.shakeXHz) * quake) : 0, qy = quake ? Math.round(Math.cos(time * FEEL.shakeYHz) * quake * FEEL.shakeYShare) : 0
-  const z = cam?.zoom ?? 1
-  if (z !== 1 && cam) ctx.setTransform(z, 0, 0, z, W / 2 - cam.x * z + qx, H / 2 - cam.y * z + qy)
-  else if (quake) ctx.setTransform(1, 0, 0, 1, qx, qy)
+  const z = cam?.zoom ?? 1, density = z * Math.max((ctx.canvas?.width ?? W) / W, (ctx.canvas?.height ?? H) / H)
+  if (z !== 1 && cam) fieldTransform(ctx, z, W / 2 - cam.x * z + qx, H / 2 - cam.y * z + qy)
+  else if (quake) fieldTransform(ctx, 1, qx, qy)
   const bg = images.get('raid/' + ST[s.stage].bg) ?? images.get('raid/forest.webp')
   const baked = bg && fieldBackdrop(bg, W, H)
   if (baked) ctx.drawImage(baked, 0, 0)
@@ -658,15 +679,15 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
         drawFx(ctx, images, 'fx_victory_rays', s.x, s.y - heroH(s) * FX_ART.heroRayLift, heroH(s) * FX_ART.heroRayWidth, heroH(s) * FX_ART.heroRayHeight)
         ctx.restore()
       }
-      trackGhosts(s, heroSprite(s)); drawGhosts(ctx, images, s, heroH(s))
+      trackGhosts(s, heroSprite(s, images, density)); drawGhosts(ctx, images, s, heroH(s))
       // 오라: 뒤 겹(몸 뒤 빛 · 뒤 가닥) → 몸 → 앞 겹(앞 가닥 · 불티) · 발밑 고리와 표식은 땅 표식 차례에 이미 그렸다
       if (aura) drawAura(ctx, aura, false, auraAt)
       drawCast(ctx, s)
-      sprite(ctx, images, heroSprite(s), s.x, s.y, heroH(s), heroFrame(s), s.face, s.hurt > 0)
+      sprite(ctx, images, heroSprite(s, images, density), s.x, s.y, heroH(s), heroFrame(s), s.face, s.hurt > 0, density)
       if (s.form === 'awake') {
         // 각성: 몸이 금빛으로 맥박친다 (같은 그림을 빛으로 한 번 더)
         const op = ctx.globalCompositeOperation; ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .16 + .12 * Math.sin(s.t * 7)
-        sprite(ctx, images, heroSprite(s), s.x, s.y, heroH(s), heroFrame(s), s.face); ctx.globalCompositeOperation = op; ctx.globalAlpha = 1
+        sprite(ctx, images, heroSprite(s, images, density), s.x, s.y, heroH(s), heroFrame(s), s.face, false, density); ctx.globalCompositeOperation = op; ctx.globalAlpha = 1
       }
       if (aura) { drawAura(ctx, aura, true, auraAt); drawAuraBurst(ctx, aura, auraAt, s.t - auraMem.burst) }
     }
@@ -807,7 +828,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   // 피해 숫자 — 알갱이로 튀어 나간다 (trackNumbers · drawNumbers)
   trackNumbers(s); ctx.save(); drawNumbers(ctx, images, s, s.t + (ending?.effectTime ?? 0)); ctx.restore()
   // 여기부터 화면에 붙은 것 — 확대해도 그대로 (흔들림만)
-  if (z !== 1) ctx.setTransform(1, 0, 0, 1, qx, qy)
+  if (z !== 1) fieldTransform(ctx, 1, qx, qy)
   if (s.hurt > 0) { ctx.strokeStyle = '#ff735a99'; ctx.lineWidth = 12; ctx.strokeRect(0, 0, W, H) }
   const boss = s.enemies.find(e => e.kind === 'boss')
   if (boss) {

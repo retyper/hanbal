@@ -1,0 +1,743 @@
+{
+  "key": "jumong",
+  "method": "native source crop → direct Lanczos downsample into2x geometry; no160strip upscale/ESR/AI",
+  "sources": {
+    "D:\\flutter\\arrow_game_one\\tools\\sprite-kit\\nonawakened-20261113\\jumong-master.png": {
+      "sha256": "afc70752c98cbc9a64691ad7b1e0ca47424cada59868483f5f9ec0c4be14c3b6",
+      "size": [
+        1122,
+        1402
+      ]
+    },
+    "D:\\flutter\\arrow_game_one\\tools\\sprite-kit\\nonawakened-20261113\\jumong-walk-installed.png": {
+      "sha256": "4d275638cea5dc78c313326ec1b3d76b02d67547e98fcc8ae3a51a1078f1c815",
+      "size": [
+        1774,
+        887
+      ]
+    }
+  },
+  "normalSHA256": "f5263059d6ee19f105b34cebb4e76846edecde39ca5f9d1b406ec253048ca3eb",
+  "reportSHA256": "d7d28e7caea9f6c0a258fa1b9583fa7f1843ef2ce8524bcd35af661371bf0470",
+  "output": "public\\realm\\anim-px\\gen-jumong_hd.png",
+  "sha256": "f775f616f674adc95b919e72aad4cebd093a9142cb54516319fc0ca148e2f772",
+  "cell": [
+    384,
+    320
+  ],
+  "cells": 20,
+  "feet": 312,
+  "bodyPx": 276,
+  "rawToNormalScale": 0.4842105263157895,
+  "rawToHdScale": 0.968421052631579,
+  "walkFactor": 0.7057356608478803,
+  "frames": [
+    {
+      "frame": 0,
+      "source": "D:\\flutter\\arrow_game_one\\tools\\sprite-kit\\nonawakened-20261113\\jumong-master.png",
+      "sourceBox": [
+        66,
+        7,
+        226,
+        292
+      ],
+      "sourcePose": 1,
+      "nativeToHdScale": 0.968421052631579,
+      "offset": [
+        117,
+        36
+      ],
+      "alpha64BBox": [
+        117,
+        36,
+        272,
+        312
+      ],
+      "baseAlpha64BBox": [
+        59,
+        18,
+        136,
+        156
+      ],
+      "bboxDeltaFrom2x": [
+        -1,
+        0,
+        0,
+        0
+      ],
+      "feet": 312
+    },
+    {
+      "frame": 1,
+      "source": "D:\\flutter\\arrow_game_one\\tools\\sprite-kit\\nonawakened-20261113\\jumong-master.png",
+      "sourceBox": [
+        319,
+        7,
+        477,
+        292
+      ],
+      "sourcePose": 2,
+      "nativeToHdScale": 0.968421052631579,
+      "offset": [
+        118,
+        36
+      ],
+      "alpha64BBox": [
+        118,
+        36,
+        271,
+        312
+      ],
+      "baseAlpha64BBox": [
+        59,
+        18,
+        136,
+        156
+      ],
+      "bboxDeltaFrom2x": [
+        0,
+        0,
+        -1,
+        0
+      ],
+      "feet": 312
+    },
+    {
+      "frame": 2,
+      "source": "D:\\flutter\\arrow_game_one\\tools\\sprite-kit\\nonawakened-20261113\\jumong-master.png",
+      "sourceBox": [
+        578,
+        7,
+        737,
+        291
+      ],
+      "sourcePose": 3,
+      "nativeToHdScale": 0.968421052631579,
+      "offset": [
+        119,
+        37
+      ],
+      "alpha64BBox": [
+        119,
+        37,
+        273,
+        312
+      ],
+      "baseAlpha64BBox": [
+        60,
+        18,
+        137,
+        156
+      ],
+      "bboxDeltaFrom2x": [
+        -1,
+        1,
+        -1,
+        0
+      ],
+      "feet": 312
+    },
+    {
+      "frame": 3,
+      "source": "D:\\flutter\\arrow_game_one\\tools\\sprite-kit\\nonawakened-20261113\\jumong-master.png",
+      "sourceBox": [
+        843,
+        7,
+        1007,
+        292
+      ],
+      "sourcePose": 4,
+      "nativeToHdScale": 0.968421052631579,
+      "offset": [
+        116,
+        36
+      ],
+      "alpha64BBox": [
+        116,
+        36,
+        275,
+        312
+      ],
+      "baseAlpha64BBox": [
+        58,
+        18,
+        137,
+        156
+      ],
+      "bboxDeltaFrom2x": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "feet": 312
+    },
+    {
+      "frame": 4,
+      "source": "D:\\flutter\\arrow_game_one\\tools\\sprite-kit\\nonawakened-20261113\\jumong-walk-installed.png",
+      "sourceBox": [
+        103,
+        13,
+        335,
+        425
+      ],
+      "sourcePose": 1,
+      "nativeToHdScale": 0.6834492715579472,
+      "offset": [
+        112,
+        30
+      ],
+      "alpha64BBox": [
+        112,
+        30,
+        271,
+        312
+      ],
+      "baseAlpha64BBox": [
+        56,
+        15,
+        135,
+        156
+      ],
+      "bboxDeltaFrom2x": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "feet": 312
+    },
+    {
+      "frame": 5,
+      "source": "D:\\flutter\\arrow_game_one\\tools\\sprite-kit\\nonawakened-20261113\\jumong-walk-installed.png",
+      "sourceBox": [
+        550,
+        20,
+        771,
+        425
+      ],
+      "sourcePose": 2,
+      "nativeToHdScale": 0.6834492715579472,
+      "offset": [
+        115,
+        35
+      ],
+      "alpha64BBox": [
+        115,
+        35,
+        266,
+        312
+      ],
+      "baseAlpha64BBox": [
+        58,
+        18,
+        134,
+        156
+      ],
+      "bboxDeltaFrom2x": [
+        -1,
+        -1,
+        -2,
+        0
+      ],
+      "feet": 312
+    },
+    {
+      "frame": 6,
+      "source": "D:\\flutter\\arrow_game_one\\tools\\sprite-kit\\nonawakened-20261113\\jumong-walk-installed.png",
+      "sourceBox": [
+        993,
+        22,
+        1210,
+        425
+      ],
+      "sourcePose": 3,
+      "nativeToHdScale": 0.6834492715579472,
+      "offset": [
+        118,
+        37
+      ],
+      "alpha64BBox": [
+        118,
+        37,
+        266,
+        312
+      ],
+      "baseAlpha64BBox": [
+        59,
+        18,
+        133,
+        156
+      ],
+      "bboxDeltaFrom2x": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "feet": 312
+    },
+    {
+      "frame": 7,
+      "source": "D:\\flutter\\arrow_game_one\\tools\\sprite-kit\\nonawakened-20261113\\jumong-walk-installed.png",
+      "sourceBox": [
+        1439,
+        22,
+        1650,
+        425
+      ],
+      "sourcePose": 4,
+      "nativeToHdScale": 0.6834492715579472,
+      "offset": [
+        120,
+        37
+      ],
+      "alpha64BBox": [
+        120,
+        37,
+        264,
+        312
+      ],
+      "baseAlpha64BBox": [
+        60,
+        18,
+        132,
+        156
+      ],
+      "bboxDeltaFrom2x": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "feet": 312
+    },
+    {
+      "frame": 8,
+      "source": "D:\\flutter\\arrow_game_one\\tools\\sprite-kit\\nonawakened-20261113\\jumong-walk-installed.png",
+      "sourceBox": [
+        107,
+        467,
+        338,
+        869
+      ],
+      "sourcePose": 5,
+      "nativeToHdScale": 0.6834492715579472,
+      "offset": [
+        115,
+        37
+      ],
+      "alpha64BBox": [
+        115,
+        37,
+        273,
+        312
+      ],
+      "baseAlpha64BBox": [
+        58,
+        19,
+        137,
+        156
+      ],
+      "bboxDeltaFrom2x": [
+        -1,
+        -1,
+        -1,
+        0
+      ],
+      "feet": 312
+    },
+    {
+      "frame": 9,
+      "source": "D:\\flutter\\arrow_game_one\\tools\\sprite-kit\\nonawakened-20261113\\jumong-walk-installed.png",
+      "sourceBox": [
+        552,
+        468,
+        771,
+        869
+      ],
+      "sourcePose": 6,
+      "nativeToHdScale": 0.6834492715579472,
+      "offset": [
+        118,
+        38
+      ],
+      "alpha64BBox": [
+        118,
+        38,
+        268,
+        312
+      ],
+      "baseAlpha64BBox": [
+        59,
+        19,
+        134,
+        156
+      ],
+      "bboxDeltaFrom2x": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "feet": 312
+    },
+    {
+      "frame": 10,
+      "source": "D:\\flutter\\arrow_game_one\\tools\\sprite-kit\\nonawakened-20261113\\jumong-walk-installed.png",
+      "sourceBox": [
+        993,
+        470,
+        1211,
+        870
+      ],
+      "sourcePose": 7,
+      "nativeToHdScale": 0.6834492715579472,
+      "offset": [
+        117,
+        39
+      ],
+      "alpha64BBox": [
+        117,
+        39,
+        266,
+        312
+      ],
+      "baseAlpha64BBox": [
+        59,
+        19,
+        133,
+        156
+      ],
+      "bboxDeltaFrom2x": [
+        -1,
+        1,
+        0,
+        0
+      ],
+      "feet": 312
+    },
+    {
+      "frame": 11,
+      "source": "D:\\flutter\\arrow_game_one\\tools\\sprite-kit\\nonawakened-20261113\\jumong-walk-installed.png",
+      "sourceBox": [
+        1436,
+        468,
+        1650,
+        868
+      ],
+      "sourcePose": 8,
+      "nativeToHdScale": 0.6834492715579472,
+      "offset": [
+        117,
+        39
+      ],
+      "alpha64BBox": [
+        117,
+        39,
+        263,
+        312
+      ],
+      "baseAlpha64BBox": [
+        59,
+        19,
+        132,
+        156
+      ],
+      "bboxDeltaFrom2x": [
+        -1,
+        1,
+        -1,
+        0
+      ],
+      "feet": 312
+    },
+    {
+      "frame": 12,
+      "source": "D:\\flutter\\arrow_game_one\\tools\\sprite-kit\\nonawakened-20261113\\jumong-master.png",
+      "sourceBox": [
+        56,
+        837,
+        224,
+        1112
+      ],
+      "sourcePose": 13,
+      "nativeToHdScale": 0.968421052631579,
+      "offset": [
+        113,
+        46
+      ],
+      "alpha64BBox": [
+        113,
+        46,
+        276,
+        312
+      ],
+      "baseAlpha64BBox": [
+        57,
+        23,
+        138,
+        156
+      ],
+      "bboxDeltaFrom2x": [
+        -1,
+        0,
+        0,
+        0
+      ],
+      "feet": 312
+    },
+    {
+      "frame": 13,
+      "source": "D:\\flutter\\arrow_game_one\\tools\\sprite-kit\\nonawakened-20261113\\jumong-master.png",
+      "sourceBox": [
+        307,
+        838,
+        484,
+        1113
+      ],
+      "sourcePose": 14,
+      "nativeToHdScale": 0.968421052631579,
+      "offset": [
+        111,
+        46
+      ],
+      "alpha64BBox": [
+        111,
+        46,
+        282,
+        312
+      ],
+      "baseAlpha64BBox": [
+        56,
+        23,
+        142,
+        156
+      ],
+      "bboxDeltaFrom2x": [
+        -1,
+        0,
+        -2,
+        0
+      ],
+      "feet": 312
+    },
+    {
+      "frame": 14,
+      "source": "D:\\flutter\\arrow_game_one\\tools\\sprite-kit\\nonawakened-20261113\\jumong-master.png",
+      "sourceBox": [
+        560,
+        837,
+        778,
+        1114
+      ],
+      "sourcePose": 15,
+      "nativeToHdScale": 0.968421052631579,
+      "offset": [
+        105,
+        44
+      ],
+      "alpha64BBox": [
+        105,
+        44,
+        316,
+        312
+      ],
+      "baseAlpha64BBox": [
+        52,
+        22,
+        158,
+        156
+      ],
+      "bboxDeltaFrom2x": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "feet": 312
+    },
+    {
+      "frame": 15,
+      "source": "D:\\flutter\\arrow_game_one\\tools\\sprite-kit\\nonawakened-20261113\\jumong-master.png",
+      "sourceBox": [
+        818,
+        837,
+        1031,
+        1113
+      ],
+      "sourcePose": 16,
+      "nativeToHdScale": 0.968421052631579,
+      "offset": [
+        93,
+        45
+      ],
+      "alpha64BBox": [
+        93,
+        45,
+        299,
+        312
+      ],
+      "baseAlpha64BBox": [
+        47,
+        22,
+        150,
+        156
+      ],
+      "bboxDeltaFrom2x": [
+        -1,
+        1,
+        -1,
+        0
+      ],
+      "feet": 312
+    },
+    {
+      "frame": 16,
+      "source": "D:\\flutter\\arrow_game_one\\tools\\sprite-kit\\nonawakened-20261113\\jumong-master.png",
+      "sourceBox": [
+        41,
+        1116,
+        225,
+        1381
+      ],
+      "sourcePose": 17,
+      "nativeToHdScale": 0.968421052631579,
+      "offset": [
+        100,
+        55
+      ],
+      "alpha64BBox": [
+        100,
+        55,
+        278,
+        312
+      ],
+      "baseAlpha64BBox": [
+        50,
+        28,
+        139,
+        156
+      ],
+      "bboxDeltaFrom2x": [
+        0,
+        -1,
+        0,
+        0
+      ],
+      "feet": 312
+    },
+    {
+      "frame": 17,
+      "source": "D:\\flutter\\arrow_game_one\\tools\\sprite-kit\\nonawakened-20261113\\jumong-master.png",
+      "sourceBox": [
+        276,
+        1124,
+        471,
+        1381
+      ],
+      "sourcePose": 18,
+      "nativeToHdScale": 0.968421052631579,
+      "offset": [
+        99,
+        63
+      ],
+      "alpha64BBox": [
+        99,
+        63,
+        288,
+        312
+      ],
+      "baseAlpha64BBox": [
+        49,
+        32,
+        143,
+        156
+      ],
+      "bboxDeltaFrom2x": [
+        1,
+        -1,
+        2,
+        0
+      ],
+      "feet": 312
+    },
+    {
+      "frame": 18,
+      "source": "D:\\flutter\\arrow_game_one\\tools\\sprite-kit\\nonawakened-20261113\\jumong-master.png",
+      "sourceBox": [
+        524,
+        1116,
+        725,
+        1381
+      ],
+      "sourcePose": 19,
+      "nativeToHdScale": 0.968421052631579,
+      "offset": [
+        99,
+        55
+      ],
+      "alpha64BBox": [
+        99,
+        55,
+        294,
+        312
+      ],
+      "baseAlpha64BBox": [
+        49,
+        28,
+        146,
+        156
+      ],
+      "bboxDeltaFrom2x": [
+        1,
+        -1,
+        2,
+        0
+      ],
+      "feet": 312
+    },
+    {
+      "frame": 19,
+      "source": "D:\\flutter\\arrow_game_one\\tools\\sprite-kit\\nonawakened-20261113\\jumong-master.png",
+      "sourceBox": [
+        736,
+        1217,
+        1078,
+        1375
+      ],
+      "sourcePose": 20,
+      "nativeToHdScale": 0.968421052631579,
+      "offset": [
+        20,
+        159
+      ],
+      "alpha64BBox": [
+        20,
+        159,
+        351,
+        312
+      ],
+      "baseAlpha64BBox": [
+        10,
+        79,
+        176,
+        156
+      ],
+      "bboxDeltaFrom2x": [
+        0,
+        1,
+        -1,
+        0
+      ],
+      "feet": 312
+    }
+  ],
+  "originalsUnchanged": true,
+  "columns": 10,
+  "rows": 2,
+  "imageSize": [
+    3840,
+    640
+  ]
+}

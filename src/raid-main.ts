@@ -1,3 +1,4 @@
+import { fieldPixels, raidLowGraphics } from './raid/surface.ts'
 import { breakthroughText, isBreakthrough } from './realm/vanguard.ts'
 import { HAEBI_RUN as C, HAEBI_STICK as STICK, HAEBI_TREE as TREE, HAEBI_ULT as ULT, HAEBI_AWAKEN as AWK, HAEBI_STAGES as ST, HAEBI_ZOOM as ZOOM, HAEBI_SPEED as SPEED } from './tune/params.ts'
 import { createHaebi, runDuration, stepHaebi, barrageArcher, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, nodeText, nodeAt, branchName, wakeReady, ultName, ultOpen, BRANCHES, branchNodes, type Kit, type Power, type Pick, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
@@ -12,7 +13,7 @@ import { putRaidGame, sealLeftovers, unsentRaids, markRaidsSent, type RaidGame, 
 import { pushRaids } from './net/sync.ts'
 import { newCam, followCam, nextLevel, closest, toField, fieldView, clampCenter } from './raid/camera.ts'
 import { loadMeta, saveMeta, buy, refund, refundFee, record, shopCost, shopMax, stageOpen, stageName, pickStage, SHOP, STAGE_ORDER, type ShopKey } from './raid/meta.ts'
-import { drawField, imagePaths, setHeroArt, heroArtFiles } from './raid/haebi-view.ts'
+import { drawField, imagePaths, setHeroArt, heroArtFiles, heroHdFiles, warmHeroSprites } from './raid/haebi-view.ts'
 import { powerIcon, installPowerHints, comboIcon, rankMark, treeSvg, treeInfo, BRANCH_COLOR } from './raid/power-ui.ts'
 import { KIT_BY_SPRITE } from './raid/kit-table.ts'
 import { cutBandHtml, cutHeroPath, ensureCutinBandCss, type CutBg } from './ui/cutin-band.ts'
@@ -130,6 +131,7 @@ function paintZoom() {
 function cycleZoom() {
   cam.level = nextLevel(cam.level); paintZoom()
   try { localStorage.setItem(ZOOM_KEY, String(cam.level)) } catch { /* 이번 창만 */ }
+  prepareHeroRaster(cam.zoom)
   zoomBtn.classList.remove('pop'); void zoomBtn.offsetWidth; zoomBtn.classList.add('pop')   // 누르면 크게 튀었다 돌아온다 (매번 처음부터)
 }
 zoomBtn.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); cycleZoom() })
@@ -243,6 +245,28 @@ function refundAsk(fee: number) {
 }
 const canvas = $<HTMLCanvasElement>('field'), ctx = canvas.getContext('2d', { alpha: false })!   // 판은 늘 바탕을 다 칠한다 — 불투명이면 폰이 겹치기를 덜 한다
 const images = new Map<string, HTMLImageElement>(), keys = new Set<string>()
+canvas.style.aspectRatio = C.width + '/' + C.height
+const hdRequested = new Set<string>()
+let heroWarmKey = ''
+function prepareHeroRaster(zoom: number) {
+  const density = zoom * Math.max(canvas.width / C.width, canvas.height / C.height), key = Math.ceil(density * 16) + ''
+  if (key !== heroWarmKey) { heroWarmKey = key; warmHeroSprites(images, density) }
+  for (const path of heroHdFiles(density)) if (!hdRequested.has(path)) {
+    hdRequested.add(path); const img = new Image()
+    img.onload = () => { void img.decode().catch(() => {}).then(() => { images.set(path, img); heroWarmKey = ''; prepareHeroRaster(cam.zoom) }) }
+    img.onerror = () => {} // Optional HD failure keeps approved base art.
+    img.src = import.meta.env.BASE_URL + 'realm/' + path
+  }
+}
+function syncFieldPixels() {
+  const r = canvas.getBoundingClientRect(); if (!(r.width > 0 && r.height > 0)) return
+  const p = fieldPixels(r.width, r.height, devicePixelRatio, raidLowGraphics())
+  if (canvas.width !== p.width || canvas.height !== p.height) { canvas.width = p.width; canvas.height = p.height; heroWarmKey = '' }
+  prepareHeroRaster(cam.zoom)
+}
+new ResizeObserver(syncFieldPixels).observe(canvas)
+window.addEventListener('storage', e => { if (e.key === 'hanbal.realm.gfx') syncFieldPixels() })
+try { const host = window.parent.document.querySelector('.ap'); if (host) new MutationObserver(syncFieldPixels).observe(host, { attributes: true, attributeFilter: ['class'] }) } catch { /* cross-origin host */ }
 let run = newRun(7), live = false, paused = false, shown = '', loadoutKey = '', acc = 0, last = 0, raf = 0
 /**
  * 판 기록 (11-19 형: 「열전 플레이데이터도 받고 있지?」 · raid/runlog.ts · runlog-store.ts) — 판마다 씨앗·판 옵션·입력 흐름·고른 카드·결과를
@@ -314,6 +338,7 @@ function updatePortrait() {
   if (playing) void heroVideo.play().catch(() => { stillPortrait = true; mediaKey = ''; updatePortrait() }); else heroVideo.pause()
 }
 function layoutTrial() {
+  syncFieldPixels()
   const wasBlocked = rotationBlocked
   rotationBlocked = live && run.state === 'playing' && innerWidth <= 700 && innerHeight > innerWidth
   $('rotate-guide').hidden = !rotationBlocked
@@ -325,7 +350,7 @@ window.addEventListener('resize', layoutTrial)
 let pendingSeed = vanguardToken ? Number(query.get('seed')) >>> 0 : crypto.getRandomValues(new Uint32Array(1))[0]!
 const notifyVanguardStart = () => { if (vanguardToken) window.parent.postMessage({ type: 'hanbal.haebi.vanguard-start', token: vanguardToken }, location.origin) }
 const base = import.meta.env.BASE_URL + 'realm/'
-Promise.all([...imagePaths, ...heroArtFiles()].map(path => new Promise<void>((resolve, reject) => { const img = new Image(); img.onload = () => { images.set(path, img); resolve() }; img.onerror = reject; img.src = base + path }))).then(() => { warmFx(images); $<HTMLButtonElement>('start').disabled = false; $('start').textContent = startLabel(); renderStageMenu(); schedule() }).catch(() => { $('start').textContent = '그림을 불러오지 못했어요. 새로고침해 주세요.' })
+Promise.all([...imagePaths, ...heroArtFiles()].map(path => new Promise<void>((resolve, reject) => { const img = new Image(); img.onload = () => { images.set(path, img); resolve() }; img.onerror = reject; img.src = base + path }))).then(async () => { await Promise.all(heroArtFiles().map(p => images.get(p)?.decode().catch(() => {}))); heroWarmKey = ''; prepareHeroRaster(cam.zoom); warmFx(images); $<HTMLButtonElement>('start').disabled = false; $('start').textContent = startLabel(); renderStageMenu(); schedule() }).catch(() => { $('start').textContent = '그림을 불러오지 못했어요. 새로고침해 주세요.' })
 function resetInput() { keys.clear(); destination = null; stickEnd(); dashAt = skillAt = wakeAt = -9; acc = 0 }
 function begin(sameSeed = false) {
   // 본편에서 연 열전은 한 판만 — 출전하는 그 순간 본편에 알린다 (그 장수의 이번 달 출전 · app.ts markRaid)
@@ -769,6 +794,7 @@ function frame(now: number) {
     const zoom = ending.kind === 'victory' ? Math.min(1, Math.max(0, ending.elapsed - ending.freeze) / END.cameraTime) : 0
     const endCam = zoom ? { zoom: cam.zoom * (1 + END.cameraZoom * zoom), x: cam.x + (run.x - cam.x) * zoom, y: cam.y + (run.y - cam.y) * zoom } : cam
     if (zoom) Object.assign(endCam, clampCenter(endCam.zoom, endCam.x, endCam.y))
+    prepareHeroRaster(endCam.zoom)
     drawField(ctx, images, run, destination, endCam, feel, ending.kind ? ending : undefined)
     drawEnding(ctx, ending, endHit, runGold(run), images)
   }

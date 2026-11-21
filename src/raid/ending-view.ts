@@ -1,3 +1,5 @@
+import { fieldTransform } from './surface.ts'
+import { HAEBI_RUN as C } from '../tune/params.ts'
 import { HAEBI_END as E, HAEBI_IMPACT as F } from '../tune/params.ts'
 import type { RaidEnding } from './ending.ts'
 import { HAEBI_FX_ART as A } from '../tune/params.ts'
@@ -6,8 +8,8 @@ import { drawFx } from './fx-art.ts'
 /** Canvas composites only; no CSS filter or extra compositor layer. */
 export function drawEnding(ctx: CanvasRenderingContext2D, end: RaidEnding, portrait: HTMLImageElement | null, gold: number, images: Map<string, HTMLImageElement>) {
   if (!end.active) return
-  const w = ctx.canvas.width, h = ctx.canvas.height, age = end.elapsed
-  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0)
+  const w = C.width, h = C.height, age = end.elapsed
+  ctx.save(); fieldTransform(ctx)
   if (end.kind !== 'victory') {
     const gray = Math.min(1, Math.max(0, age - end.freeze) / E.defeat.slow) * E.grayMax
     ctx.globalCompositeOperation = 'saturation'; ctx.globalAlpha = gray; ctx.fillStyle = '#888'; ctx.fillRect(0, 0, w, h)
@@ -44,7 +46,7 @@ export function drawEnding(ctx: CanvasRenderingContext2D, end: RaidEnding, portr
       ctx.font = `900 ${Math.round(w * E.stampSize)}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
       ctx.fillStyle = won ? '#ffe298' : '#ece9df'; ctx.fillText(won ? '승리' : '패배', 0, 0)
     }
-    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    fieldTransform(ctx)
   }
   if (end.kind === 'victory' && age >= E.victory.coinAt) {
     const t = age - E.victory.coinAt
