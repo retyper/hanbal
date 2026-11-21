@@ -1,0 +1,250 @@
+<title>데려갈 장수 리볼빙</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* 판: 게임 화면 그대로 어두운 한 가지 결 · 기기 틀 안쪽 크기는 전부 cqw
+   얼굴 링: 고리에는 늘 10칸만 · 뒤쪽 칸은 얼굴을 가린 빈 메달 · 가려진 사이 다음 장수로 갈아 끼운다 */
+:root {
+  --bg: #101317; --panel: #1b1712; --line: #6b5532;
+  --gold: #e3b45c; --gold2: #f6d48a; --text: #efe6d4; --dim: #a89c86; --ink: #2a1805;
+  --display: "Gowun Batang", "Noto Serif KR", serif; --body: "Noto Sans KR", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--text); font-family: var(--body); margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px }
+.wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 18px }
+h1 { font-family: var(--display); font-size: 1.6rem; margin: 0; color: var(--gold2); text-wrap: balance }
+.lead, .note { margin: 0; color: var(--dim); line-height: 1.6; max-width: 68ch }
+.note { font-size: .9rem }
+.tabs { display: flex; gap: 8px; flex-wrap: wrap }
+.tabs button { font: 500 .95rem var(--body); color: var(--dim); background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; cursor: pointer }
+.tabs button[aria-selected="true"] { color: var(--ink); background: var(--gold); border-color: var(--gold2) }
+button:focus-visible, .device:focus-visible { outline: 2px solid var(--gold2); outline-offset: 2px }
+
+.device { container-type: inline-size; position: relative; border-radius: 18px; overflow: hidden; border: 1px solid #3a3022;
+  background: radial-gradient(120% 90% at 30% 40%, #2a2418 0%, #14110d 70%); box-shadow: 0 20px 60px #0009; margin-inline: auto; user-select: none; touch-action: none }
+.device.land { aspect-ratio: 16 / 9; width: 100% }
+.device.port { aspect-ratio: 9 / 19.5; width: min(100%, 400px) }
+.stage { position: absolute; inset: 0; overflow: hidden }
+
+.title { position: absolute; font-family: var(--display); color: var(--gold2); z-index: 8 }
+.title small { font-family: var(--body); color: var(--dim); font-weight: 400; margin-left: .5em }
+.badge { display: inline-block; background: linear-gradient(#e9b55a, #b97e2a); color: var(--ink); font-weight: 700; border-radius: .35em; padding: .1em .55em; border: 1px solid var(--gold2) }
+.bar { position: absolute; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: 1fr 1.4fr; gap: 2.2%; z-index: 9; background: linear-gradient(#0000, #0d0b08f0 40%) }
+.bar button { font-family: var(--display); border-radius: .4em; cursor: pointer; border: 1px solid #5b4a2c; color: var(--text); background: linear-gradient(#3a342b, #221e18) }
+.bar button.go { color: var(--ink); background: linear-gradient(#f2c06a, #c98a2c); border-color: #ffe3a3; box-shadow: 0 0 1.4em #e3b45c55 }
+
+/* 큰 그림 + 정보 + 전투 동작 */
+.hero { position: absolute; z-index: 1 }
+.pic { position: absolute; inset: 0; background: center 16% / cover no-repeat; transition: opacity .2s, transform .25s }
+.pic.swap { opacity: 0; transform: translateX(-2.5%) }
+.info { position: absolute; display: grid; gap: .5em; z-index: 3 }
+.info .from { color: var(--dim) }
+.info .name { font-family: var(--display); line-height: 1; text-shadow: 0 .08em .4em #000 }
+.stats { display: grid; grid-template-columns: auto 1fr auto; gap: .32em .6em; align-items: center }
+.stats i { font-style: normal; color: var(--dim) }
+.stats .tr { height: .45em; border-radius: 1em; background: #ffffff18; overflow: hidden }
+.stats .tr span { display: block; height: 100%; background: linear-gradient(90deg, #b97e2a, var(--gold2)); border-radius: inherit; transition: width .3s }
+.stats b { color: var(--gold2); font-variant-numeric: tabular-nums }
+.fight { position: absolute; z-index: 4; pointer-events: none }
+.fight canvas { width: 100%; height: 100%; display: block }
+.fight::after { content: ""; position: absolute; left: 15%; right: 15%; bottom: 6%; height: 8%; border-radius: 50%; background: radial-gradient(closest-side, #0009, #0000); z-index: -1 }
+
+/* 얼굴 링 */
+.ring { position: absolute; z-index: 5; cursor: grab }
+.disc { position: absolute; inset: 0; border-radius: 50%; border: 2px solid #e3b45c55; transform: rotateX(66deg);
+  background: radial-gradient(closest-side, #e3b45c1c, #0000 75%), repeating-radial-gradient(closest-side, #0000 0 18%, #e3b45c22 18.4% 18.8%) }
+.slot { position: absolute; left: 0; top: 0; border-radius: 50%; padding: 0; border: 2px solid #8a6d3b; background: #0c0b09; cursor: pointer; overflow: hidden }
+.slot .f { position: absolute; inset: 0; background: center 12% / cover no-repeat; transition: opacity .15s }
+.slot.hid .f { opacity: 0 }
+.slot.hid { background: radial-gradient(circle at 50% 40%, #3a3022, #15120e); border-color: #4a3c25 }
+.slot.front { border-color: var(--gold2); box-shadow: 0 0 0 .22em #e3b45c55, 0 0 1.6em #e3b45c88 }
+.slot.pk::after { content: "✓"; position: absolute; right: 4%; top: 4%; width: 32%; aspect-ratio: 1; border-radius: 50%; background: var(--gold); color: var(--ink); font-weight: 700; display: grid; place-items: center; font-size: 55% }
+.count { position: absolute; z-index: 7; font-variant-numeric: tabular-nums; color: var(--dim); text-align: center }
+.count b { color: var(--gold2); font-family: var(--display) }
+.scrub { position: absolute; z-index: 7; height: .3em; border-radius: 1em; background: #ffffff14 }
+.scrub i { position: absolute; top: 50%; width: .9em; height: .9em; margin: -.45em 0 0 -.45em; border-radius: 50%; background: var(--gold2); box-shadow: 0 0 .8em var(--gold) }
+.scrub s { position: absolute; top: 0; bottom: 0; width: 2px; background: #e3b45c99 }
+.arrow { position: absolute; z-index: 7; border-radius: 50%; border: 1px solid var(--line); background: #1b1712cc; color: var(--gold2); cursor: pointer; display: grid; place-items: center }
+.party { position: absolute; z-index: 7; display: flex; gap: .5em; align-items: center; color: var(--dim) }
+.party span { width: 2.4em; height: 2.4em; border-radius: 50%; border: 1px solid var(--gold); background: #0c0b09 center/cover; display: inline-block }
+.party span.empty { border-style: dashed; border-color: #6b5532; background: none }
+
+/* 가로 */
+#L .title { left: 3%; top: 3.4%; font-size: 2.7cqw }
+#L .title small { font-size: 1.4cqw }
+#L .hero { left: 0; top: 0; bottom: 0; width: 52% }
+#L .pic { -webkit-mask-image: linear-gradient(90deg, #000 60%, #0000); mask-image: linear-gradient(90deg, #000 60%, #0000) }
+#L .info { left: 3.5%; top: 34%; width: 22%; font-size: 1.3cqw }
+#L .info .name { font-size: 4.8cqw }
+#L .fight { left: 25%; top: 40%; width: 22cqw; height: 20cqw }
+#L .ring { left: 52%; top: 6%; width: 44cqw; height: 44cqw }
+#L .count { left: 52%; width: 44cqw; top: 70%; font-size: 1.5cqw }
+#L .count b { font-size: 2.4cqw }
+#L .scrub { left: 58%; width: 32cqw; top: 78%; font-size: 1.4cqw }
+#L .arrow { width: 3.6cqw; height: 3.6cqw; top: 70%; font-size: 1.6cqw }
+#L .arrow.l { left: 53% } #L .arrow.r { left: 92.4% }
+#L .party { left: 3.5%; top: 11%; font-size: 1.2cqw }
+#L .bar { left: 48%; padding: 1.6% 3% 2.4%; font-size: 2cqw }
+#L .bar button { padding: .9cqw 0 }
+
+/* 세로 */
+#P .title { left: 5%; top: 2.2%; font-size: 6.4cqw }
+#P .title small { font-size: 3.4cqw }
+#P .hero { left: 0; right: 0; top: 0; height: 52% }
+#P .pic { -webkit-mask-image: linear-gradient(#000 70%, #0000); mask-image: linear-gradient(#000 70%, #0000) }
+#P .info { left: 5%; top: 30%; width: 50%; font-size: 3cqw }
+#P .info .name { font-size: 9cqw }
+#P .fight { right: 0; top: 32%; width: 46cqw; height: 42cqw }
+#P .party { left: 5%; top: 7.5%; font-size: 3cqw }
+#P .ring { left: 7%; top: 47%; width: 86cqw; height: 86cqw }
+#P .count { left: 0; right: 0; top: 79.5%; font-size: 3.4cqw }
+#P .count b { font-size: 5.4cqw }
+#P .scrub { left: 18%; right: 18%; top: 84%; font-size: 3cqw }
+#P .arrow { width: 9cqw; height: 9cqw; top: 70%; font-size: 4cqw }
+#P .arrow.l { left: 2% } #P .arrow.r { right: 2% }
+#P .bar { padding: 3% 4% 4%; font-size: 5cqw }
+#P .bar button { padding: 3cqw 0 }
+@media (prefers-reduced-motion: reduce) { .pic, .stats .tr span, .slot .f { transition: none } }
+</style>
+
+<div class="wrap">
+  <h1>데려갈 장수 · 얼굴 링</h1>
+  <p class="lead">고리에는 늘 열 칸만 돕니다. 앞쪽 다섯 칸만 얼굴이 보이고, 뒤로 넘어간 칸은 빈 메달이 되었다가 다시 앞으로 올 때 다음 장수 얼굴로 바뀌어 나옵니다. 그래서 장수가 몇 명이든 고리는 붐비지 않습니다. 아래 숫자가 몇 명 중 몇 번째인지, 금빛 점이 전체에서 어디쯤인지 알려 줍니다.</p>
+  <div class="tabs" role="tablist">
+    <button role="tab" data-t="L" aria-selected="true">가로 (PC)</button>
+    <button role="tab" data-t="P" aria-selected="false">세로 (폰)</button>
+  </div>
+  <div id="L" class="device land" role="tabpanel" tabindex="0"><div class="stage"></div></div>
+  <div id="P" class="device port" role="tabpanel" tabindex="0" hidden><div class="stage"></div></div>
+  <p class="note">끌기·마우스 휠·◀ ▶·방향키로 돌리고, 얼굴을 누르면 앞으로 옵니다. 앞에 온 장수를 한 번 더 누르거나 Enter를 누르면 같이 갈 장수로 고릅니다(이 시안은 셋까지). 고를 때마다 목소리가 나오고 그림 아래 전투 동작이 공격 한 번을 보여 줍니다. 목소리는 장수별 대사가 아니라 같은 결의 예시 목소리입니다.</p>
+</div>
+
+<script>
+const STAT = ['무예', '통솔', '지략', '내정', '매력'], MAX = 3, SLOTS = 10, VIS = 2.5   // 앞뒤로 얼굴이 보이는 칸 수
+const VOICE = { w: ['bright', 'cool', 'knight', 'matron', 'shaman', 'sly'], m: ['charm', 'elder', 'gruff', 'knight', 'sage', 'veteran', 'young'] }
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
+let H = [], N = 0, picked = []
+const mod = (i) => ((i % N) + N) % N
+const hash = (s) => { let x = 0; for (const c of s) x = (x * 31 + c.charCodeAt(0)) >>> 0; return x }
+const sprites = new Map()
+const spr = (h) => { if (!h.anim) return null; let im = sprites.get(h.id); if (!im) { im = new Image(); im.src = 'spr/' + h.anim.file; sprites.set(h.id, im) } return im }
+function speak(h) {
+  const kinds = VOICE[h.look === 'g' ? 'm' : 'w'], k = kinds[hash(h.id) % kinds.length]
+  try { const a = new Audio(`voice/tap-${h.look === 'g' ? 'm' : 'w'}-${k}-${1 + hash(h.id + 'n') % 3}.ogg`); a.volume = .8; a.play().catch(() => {}) } catch { }
+}
+const all = []
+
+function make(root, kind) {
+  const st = root.querySelector('.stage')
+  st.innerHTML = `<div class="title">데려갈 장수 <small>0/${MAX}</small></div>
+    <div class="party"></div>
+    <div class="hero"><div class="pic"></div></div>
+    <div class="info"><div class="from"></div><div class="name"></div><div><span class="badge"></span></div><div class="stats"></div></div>
+    <div class="fight"><canvas></canvas></div>
+    <div class="ring"><div class="disc"></div></div>
+    <div class="count"></div><div class="scrub"><i></i></div>
+    <button class="arrow l" aria-label="이전 장수">◀</button><button class="arrow r" aria-label="다음 장수">▶</button>
+    <div class="bar"><button class="solo">혼자 간다</button><button class="go">이대로 떠난다</button></div>`
+  const ring = st.querySelector('.ring'), pic = st.querySelector('.pic'), info = st.querySelector('.info'), cv = st.querySelector('.fight canvas'), cx2 = cv.getContext('2d')
+  const scrub = st.querySelector('.scrub')
+  // 전체 위치 눈금 (10명마다)
+  for (let i = 10; i < N; i += 10) { const s = document.createElement('s'); s.style.left = (i / (N - 1) * 100) + '%'; scrub.appendChild(s) }
+  const slots = []
+  for (let k = 0; k < SLOTS; k++) { const b = document.createElement('button'); b.className = 'slot'; b.innerHTML = '<span class="f"></span>'; ring.appendChild(b); slots.push(b) }
+  let pos = 0, target = 0, drag = null, last = 0, shown = -1, act = null
+  const cur = () => mod(Math.round(pos))
+  const goTo = (i) => { let d = mod(i - Math.round(target)); if (d > N / 2) d -= N; target = Math.round(target) + d }
+  function pick(i) {
+    const at = picked.indexOf(i)
+    if (at >= 0) picked.splice(at, 1)
+    else { if (picked.length >= MAX) picked.shift(); picked.push(i); speak(H[i]); act = { t: 0 } }
+    refreshAll()
+  }
+  const choose = (i) => { if (cur() === i) pick(i); else goTo(i) }
+
+  function layout() {
+    const r = ring.getBoundingClientRect(), sr = st.getBoundingClientRect()
+    const cx = r.left - sr.left + r.width / 2, cy = r.top - sr.top + r.height / 2, rx = r.width / 2 * .9, ry = r.height / 2 * Math.cos(66 * Math.PI / 180) * .95
+    const base = Math.round(pos), f = pos - base, size0 = r.width * .25
+    slots.forEach((el, k) => {
+      // 칸 k 는 앞 칸에서 off 만큼 떨어진 자리 (-5 ~ +4) · 그 자리의 장수 = base + off
+      const off = ((k - base) % SLOTS + SLOTS + SLOTS / 2) % SLOTS - SLOTS / 2, rel = off - f
+      const a = rel / SLOTS * Math.PI * 2 + Math.PI / 2, depth = (Math.sin(a) + 1) / 2, size = size0 * (.5 + depth * .62)
+      const i = mod(base + off), hid = Math.abs(rel) > VIS
+      el.style.width = el.style.height = size + 'px'
+      el.style.transform = `translate(${cx + Math.cos(a) * rx - size / 2 - (r.left - sr.left)}px, ${cy + Math.sin(a) * ry - size * .7 - (r.top - sr.top)}px)`
+      el.style.zIndex = String(10 + Math.round(depth * 100)); el.style.opacity = String(.35 + depth * .65)
+      el.classList.toggle('hid', hid)
+      if (el.dataset.i !== String(i)) { el.dataset.i = String(i); el.querySelector('.f').style.backgroundImage = `url(face/${H[i].bust}.jpg)`; el.setAttribute('aria-label', H[i].name) }
+      el.classList.toggle('front', Math.abs(rel) < .5)
+      el.classList.toggle('pk', picked.includes(i))
+    })
+  }
+  slots.forEach((el) => el.onclick = () => { if (!drag?.moved) choose(+el.dataset.i) })
+  ring.addEventListener('wheel', (e) => { e.preventDefault(); goTo(Math.round(target) + Math.sign(e.deltaY || e.deltaX)) }, { passive: false })
+  ring.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, p: pos, w: ring.getBoundingClientRect().width, moved: false } })
+  ring.addEventListener('pointermove', (e) => { if (!drag) return; const d = (e.clientX - drag.x) / drag.w * SLOTS * .45; if (Math.abs(d) > .12 && !drag.moved) { drag.moved = true; ring.setPointerCapture(e.pointerId) } if (drag.moved) pos = target = drag.p - d })
+  ring.addEventListener('pointerup', () => { if (drag) { if (drag.moved) target = Math.round(pos); setTimeout(() => { drag = null }, 0) } })
+  st.querySelector('.arrow.l').onclick = () => goTo(Math.round(target) - 1)
+  st.querySelector('.arrow.r').onclick = () => goTo(Math.round(target) + 1)
+  root.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { goTo(Math.round(target) + 1); e.preventDefault() }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { goTo(Math.round(target) - 1); e.preventDefault() }
+    if (e.key === 'Enter') pick(cur())
+  })
+  st.querySelector('.go').onclick = () => { if (!picked.length) pick(cur()) }
+  st.querySelector('.solo').onclick = () => { picked = []; refreshAll() }
+
+  function show() {
+    const i = cur(), h = H[i]
+    st.querySelector('.count').innerHTML = `<b>${i + 1}</b> / ${N}`
+    scrub.querySelector('i').style.left = (i / (N - 1) * 100) + '%'
+    if (i === shown) return
+    shown = i; act = null
+    pic.classList.add('swap')
+    setTimeout(() => { pic.style.backgroundImage = `url(hd/${h.bust}.jpg)`; pic.classList.remove('swap') }, reduce ? 0 : 110)
+    info.querySelector('.from').textContent = h.from
+    info.querySelector('.name').textContent = h.name
+    info.querySelector('.badge').textContent = '단련 ' + (1 + hash(h.id) % 15)
+    info.querySelector('.stats').innerHTML = h.st.map((v, s) => `<i>${STAT[s]}</i><span class="tr"><span style="width:${v * 10}%"></span></span><b>${v}</b>`).join('')
+  }
+  root.refresh = () => {
+    st.querySelector('.title small').textContent = `${picked.length}/${MAX}`
+    st.querySelector('.party').innerHTML = Array.from({ length: MAX }, (_, j) => picked[j] !== undefined ? `<span style="background-image:url(face/${H[picked[j]].bust}.jpg)" title="${H[picked[j]].name}"></span>` : '<span class="empty"></span>').join('') + '<em>같이 간다</em>'
+  }
+  // 전투 동작: 둘러볼 땐 서기 숨, 고르면 공격 한 번 뒤 다시 서기
+  let clock = 0
+  function drawFight(dt) {
+    const h = H[cur()], im = spr(h), r = cv.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1)
+    if (cv.width !== Math.round(r.width * dpr)) { cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr) }
+    cx2.clearRect(0, 0, cv.width, cv.height)
+    if (!im || !im.complete || !im.naturalWidth) return
+    const A = h.anim; clock += dt
+    let cell
+    if (act) { act.t += dt; const k = Math.floor(act.t / .09); if (k >= A.attack.length) act = null; else cell = A.attack[k] }
+    if (cell === undefined) cell = A.idle[Math.floor(clock / .28) % A.idle.length]
+    const sc = cv.height * .95 / 160, w = A.cell * sc, x = (cv.width - w) / 2, y = cv.height - 160 * sc
+    cx2.drawImage(im, cell * A.cell, 0, A.cell, 160, x, y, w, 160 * sc)
+  }
+  function tick(t) {
+    const dt = last ? Math.min(.05, (t - last) / 1000) : 0; last = t
+    if (!document.hidden && !root.hidden) {
+      if (!drag?.moved) pos += (target - pos) * Math.min(1, dt * (reduce ? 60 : 11))
+      layout(); show(); drawFight(dt)
+    }
+    requestAnimationFrame(tick)
+  }
+  root.refresh(); requestAnimationFrame(tick)
+}
+function refreshAll() { for (const r of all) r.refresh() }
+fetch('all.json').then((r) => r.json()).then((list) => {
+  H = list; N = H.length
+  for (const id of ['L', 'P']) { const el = document.getElementById(id); make(el, id); all.push(el) }
+})
+document.querySelectorAll('.tabs button').forEach((b) => b.onclick = () => {
+  document.querySelectorAll('.tabs button').forEach((x) => x.setAttribute('aria-selected', String(x === b)))
+  for (const id of ['L', 'P']) document.getElementById(id).hidden = id !== b.dataset.t
+})
+</script>
