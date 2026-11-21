@@ -18,8 +18,11 @@ export function pickFrom(card: HTMLElement): PickFrom {
   return { box: { left: q.left, top: q.top, width: q.width, height: q.height }, img: im?.getAttribute('src') ?? null, cls: im?.className ?? '', color: cs.getPropertyValue('--c').trim() || cs.getPropertyValue('--accent').trim(), after: takeAfterimage(card.closest('.panel'), card) }
 }
 
-/** 고른 뒤 — 판이 다시 그려지고 HUD 가 새 칸을 단 다음에 부른다. 돌려주는 값 = 박힐 때까지(ms) */
-export function flyPick(from: PickFrom, key: string, land: () => void, doc: Document = document): number {
+/**
+ * 고른 뒤 — 판이 다시 그려지고 HUD 가 새 칸을 단 다음에 부른다. 돌려주는 값 = 박힐 때까지(ms).
+ * land(초) — 날기가 시작될 때 박힐 때까지 남은 초를 받아 소리 시계로 건다 (그 사이 판이 바빠도 박히는 순간에 난다)
+ */
+export function flyPick(from: PickFrom, key: string, land: (inSec: number) => void, doc: Document = document): number {
   const w = doc.defaultView
   /** 화면 안이고 다른 판에 덮이지 않은 칸 (세로 폰은 고른 뒤 멈춤 판이 HUD 를 덮는다) */
   const seen = (e: Element | null | undefined): HTMLElement | null => {
@@ -42,5 +45,5 @@ export function flyPick(from: PickFrom, key: string, land: () => void, doc: Docu
     ?? seen(doc.getElementById('loadout'))
   // 이어서 고르기 판이 또 떴으면 그 판이 잔상을 덮으니 잔상은 띄우지 않는다
   const after = overlay !== null && !overlay.hidden ? null : from.after
-  return flyOut({ after, from: from.box, to: target?.getBoundingClientRect() ?? null, img: from.img, imgClass: from.cls, ...(from.color !== '' ? { color: from.color } : {}), pulse: target, onLand: land }, doc)
+  return flyOut({ after, from: from.box, to: target?.getBoundingClientRect() ?? null, img: from.img, imgClass: from.cls, ...(from.color !== '' ? { color: from.color } : {}), pulse: target, cue: land }, doc)
 }

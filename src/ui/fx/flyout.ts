@@ -39,8 +39,13 @@ export interface FlyOpts {
   readonly color?: string
   /** 닿는 순간 한 번 튀는 칸 (HUD 능력 칸) — 닿기 전엔 흐리게 둔다 */
   readonly pulse?: HTMLElement | null
-  /** 닿는 그 프레임 — 소리. 날지 않을 때는 곧바로 */
+  /** 닿는 그 프레임 — 화면 쪽 일. 날지 않을 때는 곧바로 */
   readonly onLand?: () => void
+  /**
+   * 소리 — 날기가 시작되는 그 프레임에 「닿을 때까지 남은 초」를 넘긴다. 소리 시계(AudioContext)에 그만큼 뒤로 걸면
+   * 그 사이 화면 일이 밀려도(다음 깃발 판을 그리느라 등) 정확히 닿는 순간에 난다. 날지 않을 때는 0 으로 곧바로
+   */
+  readonly cue?: (inSec: number) => void
 }
 
 /** 화면 안에 보이는 칸인가 */
@@ -167,8 +172,22 @@ export function flyOut(o: FlyOpts, doc: Document = document, c: FlyCfg = UI_FLY)
     landed = true
     o.onLand?.()
   }
+  let cued = false
+  const cue = (sec: number): void => {
+    if (cued) return
+    cued = true
+    o.cue?.(Math.max(0, sec))
+  }
+  /** 날기가 시작된 그 프레임에 — 닿을 때(시작 + ms)까지 남은 초를 소리에 넘긴다 */
+  const cueAt = (a: Animation, ms: number): void => {
+    void a.ready.then(() => {
+      const st = a.startTime
+      const now = doc.timeline.currentTime
+      cue(st !== null && now !== null ? (Number(st) + ms - Number(now)) / 1000 : ms / 1000)
+    }, () => cue(0))
+  }
   const win = doc.defaultView
-  if (win === null || doc.hidden || calmMotion(doc) || typeof doc.documentElement.animate !== 'function') { land(); return 0 }
+  if (win === null || doc.hidden || calmMotion(doc) || typeof doc.documentElement.animate !== 'function') { land(); cue(0); return 0 }
   const layer = layerOf(doc, c)
   const low = marked(doc, '.q-low')
   const mid = !low && marked(doc, '.q-mid')
@@ -183,6 +202,7 @@ export function flyOut(o: FlyOpts, doc: Document = document, c: FlyCfg = UI_FLY)
     for (const e of made) e.remove()
     if (pulse !== null) pulse.style.opacity = ''
     land()
+    cue(0)
   }
   const settle = (): void => { void Promise.allSettled(runs.map((a) => a.finished)).then(finish) }
   /** 한 겹 위에 작은 것 하나 — 가운데 (x, y) · 크기 w×h */
@@ -245,6 +265,7 @@ export function flyOut(o: FlyOpts, doc: Document = document, c: FlyCfg = UI_FLY)
       const fly = g.animate(keys.map((k) => ({ offset: k.offset, transform: tf(k) })), { duration: c.popMs + c.flyMs, fill: 'forwards' })
       runs.push(fly)
       landAt = c.popMs + c.flyMs
+      cueAt(fly, landAt)
       fly.onfinish = (): void => {
         if (done) return
         land() // ★ 닿는 그 프레임
@@ -263,6 +284,7 @@ export function flyOut(o: FlyOpts, doc: Document = document, c: FlyCfg = UI_FLY)
       const pop = g.animate([{ transform: tf({ x: 0, y: 0, s: 1, r: 0 }) }, { transform: tf(top) }], { duration: c.popMs, fill: 'forwards' })
       runs.push(pop)
       landAt = c.popMs
+      cueAt(pop, landAt)
       pop.onfinish = (): void => {
         if (done) return
         land()
@@ -272,6 +294,7 @@ export function flyOut(o: FlyOpts, doc: Document = document, c: FlyCfg = UI_FLY)
     }
   } else {
     land()
+    cue(0)
     settle()
   }
   // 애니가 멈춰도(숨은 탭 · 깨진 값) 반드시 걷힌다

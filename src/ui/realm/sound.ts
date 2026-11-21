@@ -270,7 +270,11 @@ export function warmOnce(url0: string): void {
 
 /** rate — 빠르기(=높낮이). 같은 소리를 여러 번 겹칠 때 조금씩 달리 낸다 (화살비 여러 발) */
 /** 한 번 낸다 — dur 를 주면 앞부분만 그만큼 울리고 끝을 살짝 줄이며 끊는다 (싸움 깃발 소리가 겹쳐 뭉개지지 않게) */
-export function playOnce(url0: string, vol: number, rate = 1, dur = 0): void {
+/**
+ * at — 이만큼(초) 뒤에 소리 시계로 건다 (A1 · 날아간 깃발이 박히는 순간 · 그 사이 화면 일이 밀려도 늦지 않게). 0 이면 곧바로.
+ * 파일을 받고 푸는 데 걸린 시간은 뺀다 — 늦게 풀렸으면 그만큼 덜 기다린다
+ */
+export function playOnce(url0: string, vol: number, rate = 1, dur = 0, at = 0): void {
   if (document.visibilityState !== 'visible') return
   // 「#t=초」 — 파일 앞의 빈 데를 건너뛰고 그 자리부터 (형 10-25: "c1 이 앞부분에 무음 부분이 조금 길긴 하지만")
   const m = /#t=([\d.]+)$/.exec(url0)
@@ -278,10 +282,12 @@ export function playOnce(url0: string, vol: number, rate = 1, dur = 0): void {
   const url = m !== null ? url0.slice(0, m.index) : url0
   const c = audio()
   if (c === null) {
-    try { const a = new Audio(url); a.volume = vol; a.playbackRate = rate; a.currentTime = from; void a.play().catch(() => {}) } catch { /* 소리를 못 내는 곳 */ }
+    const go = (): void => { try { const a = new Audio(url); a.volume = vol; a.playbackRate = rate; a.currentTime = from; void a.play().catch(() => {}) } catch { /* 소리를 못 내는 곳 */ } }
+    if (at > 0) window.setTimeout(go, at * 1000); else go()
     return
   }
   void c.resume().catch(() => {})
+  const asked = performance.now()
   void bufferOf(c, url).then((buf) => {
     if (buf === null || document.visibilityState !== 'visible') return
     const src = c.createBufferSource()
@@ -291,9 +297,10 @@ export function playOnce(url0: string, vol: number, rate = 1, dur = 0): void {
     src.playbackRate.value = rate
     src.connect(gain).connect(c.destination)
     src.onended = () => { src.disconnect(); gain.disconnect() } // 다 울면 풀어 준다
-    src.start(0, Math.min(from, Math.max(0, buf.duration - 0.05)))
+    const wait = Math.max(0, at - (performance.now() - asked) / 1000)
+    const t = c.currentTime + wait
+    src.start(wait > 0 ? t : 0, Math.min(from, Math.max(0, buf.duration - 0.05)))
     if (dur > 0 && dur < (buf.duration - from) / rate) {
-      const t = c.currentTime
       gain.gain.setValueAtTime(vol, t + Math.max(0, dur - 0.18))
       gain.gain.linearRampToValueAtTime(0, t + dur)
       src.stop(t + dur + 0.02)

@@ -657,7 +657,8 @@ export interface WarHost {
   /** 도트 시험(연습 싸움) — 겨루기 장수를 anim-px 도트 띠로 (없는 장수는 옛 띠) */
   readonly px?: boolean
   readonly me: string
-  ding(name: string, vol?: number, rate?: number, dur?: number): void
+  /** at — 이만큼(초) 뒤 소리 시계로 (날아간 깃발이 박히는 순간 · A1) */
+  ding(name: string, vol?: number, rate?: number, dur?: number, at?: number): void
   /** 곧 낼 소리를 미리 받아 풀어 둔다 (ding 과 같은 이름) — 처음 한 번이 늦게 나지 않게 */
   warm?(names: readonly string[]): void
   /** 음악 — 싸움이 열리면 싸움 음악, 끝나면 이긴·진 음악 (비기면 그대로) */
@@ -4394,7 +4395,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     // 무리 윗머리(보석 자리)에 깃발보다 조금 크게 — 박히는 자리가 보이게
     const s = Math.max(from.box.width, from.box.height) * UI_FLY.plantScale
     const to: Box = { left: q.left + q.width / 2 - s / 2, top: q.top + q.height * UI_FLY.plant - s / 2, width: s, height: s }
-    flyOut({ after: from.after, afterHost: ov, from: from.box, to, img: from.img, onLand: () => host.ding('click1', vol) })
+    // 「딸깍」은 날기가 시작될 때 소리 시계에 박히는 순간으로 걸어 둔다 — 그 사이 다음 깃발 판을 그리느라 화면이 밀려도 늦지 않게
+    flyOut({ after: from.after, afterHost: ov, from: from.box, to, img: from.img, cue: (sec) => host.ding('click1', vol, 1, 0, sec) })
   }
 
   // ───────── 누르고 있는 동안만 뜨는 설명 창 · 지금 고를 무리 위의 보석 · 깃발 끌기 (형 10-28: 하스스톤처럼)
