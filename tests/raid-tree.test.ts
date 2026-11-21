@@ -173,7 +173,7 @@ test('진 비기: 각성 중의 비기는 이름에 「진」 · 더 세고 넓�
   const plain = fire('normal'), tru = fire('awake')
   assert.equal(plain.tru, false); assert.equal(tru.tru, true); assert.ok(tru.mark && !plain.mark)
   assert.ok(tru.damage > plain.damage * U.trueDamage, `${tru.damage} > ${plain.damage} × 진`)
-  assert.equal(ultName('magic', true), '진 하늘 굿'); assert.equal(ultName('magic', false), '하늘 굿')
+  assert.equal(ultName('magic', true), '진 천벌'); assert.equal(ultName('magic', false), '천벌')
 })
 
 test('끝 단계까지 찍은 칸은 레벨업 카드에 다시 안 나온다 (조합 재료여도)', () => {

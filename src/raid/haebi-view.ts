@@ -225,7 +225,7 @@ function drawUlt(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageEle
   if (f.tru && lead) trueFlare(ctx, kit === 'sling' ? f.x2 : f.x, kit === 'sling' ? f.y2 : f.y, age)
   ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineCap = 'round'; ctx.lineJoin = 'round'
   if (kit === 'axe') {
-    // 천지 가르기: 땅이 앞으로 갈라져 나간다 — 바닥 빛 띠 · 지그재그 금 · 금을 따라 차례로 터지는 흙불
+    // 천지개벽: 땅이 앞으로 갈라져 나간다 — 바닥 빛 띠 · 지그재그 금 · 금을 따라 차례로 터지는 흙불
     const reach = len * Math.min(1, age * 2.4), r = f.r
     ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.angle)
     ctx.globalAlpha *= .3 * (1 - age); ctx.fillRect(0, -r * .55, reach, r * 1.1); ctx.restore()
@@ -240,7 +240,7 @@ function drawUlt(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageEle
     impact(ctx, images, f.x, f.y - 8, U.axe.burst * areaScale(s), age)   // 내려찍은 발밑
     if (age < .45) axe(ctx, images, f.x, f.y - C.heroShotHeight, f.angle - 1.4 + Math.min(1, age * 5) * 1.4, 54)
   } else if (kit === 'bow') {
-    // 하늘 꿰뚫기: 큰 화살 한 대가 화면 끝까지 — 지나간 자리에 빛줄기가 남아 옅어진다
+    // 파천일섬: 큰 화살 한 대가 화면 끝까지 — 지나간 자리에 빛줄기가 남아 옅어진다
     const head = len * Math.min(1, age * 3.2)
     ctx.save(); ctx.translate(f.x, f.y - C.heroShotHeight); ctx.rotate(f.angle); ctx.globalCompositeOperation = 'lighter'
     ctx.globalAlpha *= .45 * (1 - age); ctx.lineWidth = f.r * .9; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(head, 0); ctx.stroke()
@@ -256,7 +256,7 @@ function drawUlt(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageEle
       stamp(ctx, images, 'raid/javelin.png', f.x + Math.cos(a) * rr, f.y + Math.sin(a) * rr * .6 - 30 - age * 80, 74, -Math.PI / 2 + Math.cos(a) * .35)
     }
   } else if (kit === 'sword') {
-    // 번개 베기: 지나온 줄에 번개가 남고, 장수 잔상 넷 · 베기 셋
+    // 섬광참: 지나온 줄에 번개가 남고, 장수 잔상 넷 · 베기 셋
     ctx.save(); ctx.globalAlpha *= .32 * (1 - age)
     for (let i = 0; i < 4; i++) { const k = i / 4; sprite(ctx, images, heroSprite(s), f.x + (f.x2 - f.x) * k, f.y + (f.y2 - f.y) * k, heroH(s), 12, Math.cos(f.angle) < 0 ? -1 : 1) }
     ctx.restore()
@@ -270,7 +270,7 @@ function drawUlt(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageEle
       else { ctx.globalAlpha *= .6; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(f.x2, f.y2 - 30); ctx.lineTo(f.x, f.y - 30); ctx.stroke() }
       return
     }
-    // 그림자 베기: 앞 자리에서 그 적까지 보랏빛 줄 · 앞 자리에 잔상 · 적 위에 엇갈린 베기 둘
+    // 환영난무: 앞 자리에서 그 적까지 보랏빛 줄 · 앞 자리에 잔상 · 적 위에 엇갈린 베기 둘
     ctx.save(); ctx.globalAlpha *= .7 * (1 - age); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(f.x2, f.y2 - 30); ctx.lineTo(f.x, f.y - 30); ctx.stroke()
     ctx.globalAlpha *= .5; sprite(ctx, images, heroSprite(s), f.x2, f.y2, heroH(s), 14, f.x2 < f.x ? 1 : -1); ctx.restore()
     for (const turn of [0, 1.7]) effectStrip(ctx, images, 'slash', f.x, f.y - 30, f.r * 1.3, age, f.angle * 2.1 + turn)
@@ -294,7 +294,7 @@ function drawUlt(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageEle
     stamp(ctx, images, ROCK, f.x, f.y - 10 - Math.sin(Math.min(1, age * 1.6) * Math.PI) * 18, 22 + (f.angle % 3) * 4, f.angle)
   } else {
     if (lead) {
-      // 하늘 굿: 장수 둘레로 굿판 방울 소리가 크게 퍼진다
+      // 천벌: 장수 둘레로 굿판 방울 소리가 크게 퍼진다
       const img = images.get('raid/bell-ring.png'), r = 260 * (.3 + .7 * age)
       if (img) { ctx.globalAlpha *= 1 - age * .7; ctx.drawImage(img, f.x - r, f.y - r * .6, r * 2, r * 1.2) }
       return
@@ -648,7 +648,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
         ctx.save(); ctx.fillStyle = K.foe.line; ctx.strokeStyle = '#241513'; ctx.lineWidth = 2
         ctx.beginPath(); ctx.moveTo(x - w, y - mh); ctx.lineTo(x + w, y - mh); ctx.lineTo(x, y); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore()
       }
-      // 어지럼 돌: 머리 위를 도는 별 둘
+      // 진탕격: 머리 위를 도는 별 둘
       if (e.daze > 0) for (let i = 0; i < 2; i++) { const a = s.t * 7 + i * Math.PI; stamp(ctx, images, 'raid/hit.png', e.x + Math.cos(a) * 14, e.y - h - 4 + Math.sin(a) * 4, 14, a) }
       if (target) decal(ctx, images, 'mark-arrow', e.x, e.y - h - 26 + Math.sin(s.t * 4) * 4, 22, 39)
       if (big) { ctx.fillStyle = '#111c'; ctx.fillRect(e.x - 28, e.y - h, 56, 5); ctx.fillStyle = '#ef9873'; ctx.fillRect(e.x - 28, e.y - h, 56 * e.hp / e.max, 5) }
@@ -705,11 +705,11 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       ctx.save(); ctx.globalAlpha = .35; ctx.fillStyle = '#0a0806'; ctx.beginPath(); ctx.ellipse(b.x, b.y, 7 + 4 * u, 3 + 2 * u, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore()
       stamp(ctx, images, ROCK, b.x, b.y - C.heroShotHeight * (1 - u) - Math.sin(u * Math.PI) * C.slingArc, 17, u * 9)
     } else if (b.kind === 'skip') {
-      // 물수제비: 튈 때마다 통통 뛰는 작은 돌
+      // 연환석: 튈 때마다 통통 뛰는 작은 돌
       const hop = Math.abs(Math.sin((C.skipLife - b.life) * 9))
       stamp(ctx, images, ROCK, p.x, p.y + C.heroShotHeight * .6 - hop * 22, 16, b.life * 14)
     } else if (b.kind === 'boulder') {
-      // 굴러가는 바위: 땅을 굴러간다 (굴러간 거리만큼 돈다)
+      // 거암돌진: 땅을 굴러간다 (굴러간 거리만큼 돈다)
       const r = b.radius, roll = (C.boulderLife - b.life) * C.boulderSpeed / r * Math.sign(b.vx || 1)
       ctx.save(); ctx.globalAlpha = .4; ctx.fillStyle = '#0a0806'; ctx.beginPath(); ctx.ellipse(b.x, b.y + 2, r * .9, r * .3, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore()
       stamp(ctx, images, ROCK, b.x, b.y - r * .75, r * 1.9, roll)

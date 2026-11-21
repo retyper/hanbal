@@ -1,3 +1,13 @@
+## 스킬 이름26개 개선 · 2026-11-21
+
+- 사용자 직접지시로 폭렬비도·파천일섬·천지개벽·섬광참·환영난무·천벌·질풍회륜·진탕격과 패시브6개 등을 포함한 주 표시명26개를 바꿨습니다. 연환석의 현재설명자가참조3곳·숙련표시1개도 연동했습니다. 반격·진비기7묶음 자동연동을 확인했습니다. 원래좋은명칭은유지했습니다.
+- ID·수치·색·아이콘·max·needs·부모·갈래·title·weapon 전후deep-equal, 표시4필드/주석을 제외한 실행AST SHA동일. 타입검사·기존8파일62검사 PASS. 실제기존renderer26/26새명칭·구기술명0, 정상기본장수 출전·확대화면에서 천지개벽 표기도 확인했습니다(844×390/DPR2 headless 모사,실기기FPS아님). PUBLIC_BASE=/hanbal/빌드 raw4,970.0KB/gzip1,538.7KB, 로컬실HTML·JS·CSS HTTP200/SHA일치. 다른25명칭실플레이전수는미실행입니다.
+- 이름표/정확검수: docs/realm/production/CODEX-SKILL-NAMES-20261121.md, Ctask/outputs/codex53/NAMES-RESULT.md/json. 이름커밋다음53-A→53-B 코드순차, 그림은51남은줄병렬. root만푸시/CI/운영확인.
+- 52 커밋e184fe3e의 CI44829710166 성공, 운영version e184fe3efa/HTML200/실JS·CSS SHA가로컬52manifest와일치했습니다. CI의Pages artifact1.45GB경고는있지만이번실배포성공입니다.
+- 53-A 변경전 기본보유해비 실제출전·확대/5초워밍+10초×3 샘플완료. 3차각rAF p95 15.1ms/field호출span p95약0.6ms, headless 모사·난수비일치라실폰FPS/인과개선주장0. 측정파일 Ctask/outputs/codex53/baseline-haebi-844-d2. 53-A코드아직시작전입니다.
+- Flow각성시내는원화SHA대조·새job준비만/claim0·생성0. 파일선택대기API6310초hang후폐기: 앞으로waitForEvent는download/filechooser모두사용금지. 브라우저API Upload media는반응없고Windowsnative탭클릭도geometry불가. 이부분만미제출보존/코드는계속합니다. 실제잔여마지막50크레딧/Omni1.2Flash10s720p9:16 x1=30크레딧설정관측. 원화첨부·제출이되었다고세지않습니다.
+
+Ctask = C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request. 아래는이전기록입니다.
 ## Codex52 구현·실화면 검수 완료 · 2026-11-21
 
 - 실제 부모1단과 기존 문턱을 함께 쓰는 세 기둥 기술 나무로 개편했습니다. 7무기 조건·56경로 2,408고름에서 후보막힘0. 실제6뷰(폰4/844가로/1920PC)·20그림·21선·126끝점, 부모/문턱 반응·키 입력·판 불변을 검수했습니다. PC resize선잔존/가로선붙음/닫기문자가림은 재현 후 수정했습니다.

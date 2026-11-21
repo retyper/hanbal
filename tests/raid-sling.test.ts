@@ -22,7 +22,7 @@ const hurt = (e: Mob) => e.max - e.hp
 /** 그 쿨만 남기고 나머지 공격은 쉬게 */
 function only(s: HaebiRun, keep: (keyof HaebiRun['cool'])[]) { for (const k of Object.keys(s.cool) as (keyof HaebiRun['cool'])[]) if (!keep.includes(k)) s.cool[k] = 99 }
 
-test('돌팔매 묶음: 돌팔매로 시작 · 첫 고름은 갈래마다 하나(물수제비·돌팔매·기세) · 같은 씨앗이면 같은 판', () => {
+test('돌팔매 묶음: 돌팔매로 시작 · 첫 고름은 갈래마다 하나(연환석·돌팔매·기세) · 같은 씨앗이면 같은 판', () => {
   const s = createHaebi(7, 'trial', 'sling')
   assert.equal(s.ranks.sling, 1); assert.equal(s.ranks.axe, 0)
   s.xp = 999; stepHaebi(s, { x: 0, y: 0 }, .01)
@@ -54,7 +54,7 @@ test('돌팔매 단계: 3단계마다 돌이 하나 더 (서로 다른 적에게
   for (const e of [a, b, c]) assert.ok(hurt(e) > 0)
 })
 
-test('물수제비: 맞힌 적에게서 곁의 적으로 튄다 (튀는 수만큼만)', () => {
+test('연환석: 맞힌 적에게서 곁의 적으로 튄다 (튀는 수만큼만)', () => {
   const s = field(200); s.ranks.skip = 3
   const row = Array.from({ length: 7 }, (_, i) => place(s, 120 + i * 110, (i % 2) * 30))
   only(s, ['skip']); stepHaebi(s, { x: 0, y: 0 }, DT)
@@ -64,7 +64,7 @@ test('물수제비: 맞힌 적에게서 곁의 적으로 튄다 (튀는 수만�
   assert.ok(row.slice(0, bounces).every(e => hurt(e) > 0), '가까운 차례로')
 })
 
-test('어지럼 돌: 물수제비에 맞은 잡졸은 멈춰 서고, 두목은 버틴다', () => {
+test('진탕격: 연환석에 맞은 잡졸은 멈춰 서고, 두목은 버틴다', () => {
   const s = field(200); s.ranks.skip = 3; s.combos.push('daze')
   const club = place(s, 140, 0, 'club'), boss = place(s, 250, 0, 'boss')
   only(s, ['skip']); stepHaebi(s, { x: 0, y: 0 }, DT)
@@ -76,7 +76,7 @@ test('어지럼 돌: 물수제비에 맞은 잡졸은 멈춰 서고, 두목은 �
   assert.equal(boss.daze, 0)
 })
 
-test('굴러가는 바위: 한 줄의 적을 모두 꿰뚫고 앞으로 밀어낸다', () => {
+test('거암돌진: 한 줄의 적을 모두 꿰뚫고 앞으로 밀어낸다', () => {
   const s = field(150); s.combos.push('boulder')
   const row = [120, 260, 400].map(d => place(s, d, 0, 'club')), side = place(s, 200, 200, 'club')
   only(s, ['boulder']); stepHaebi(s, { x: 0, y: 0 }, DT)

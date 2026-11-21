@@ -53,7 +53,7 @@ test('비기 한 번에 소리 신호(skill 그림)는 하나 · 그림은 모�
   }
 })
 
-test('천지 가르기: 발밑 둘레가 터지고, 줄이 가장 많이 걸리는 쪽으로 넓고 짧게 · 둘레 밖의 옆과 뒤와 먼 끝은 안 맞는다', () => {
+test('천지개벽: 발밑 둘레가 터지고, 줄이 가장 많이 걸리는 쪽으로 넓고 짧게 · 둘레 밖의 옆과 뒤와 먼 끝은 안 맞는다', () => {
   const s = field('axe', 360), area = areaScale(s), out = U.axe.burst * area + 40
   const row = [150, 280, 400].map(d => place(s, d, 0)), feet = place(s, -100, 50), side = place(s, 0, out), back = place(s, -out, 0), far = place(s, U.axe.length * area + 80, 0)
   const edge = place(s, 300, U.axe.width * area - 10)   // 넓은 반폭 안
@@ -62,7 +62,7 @@ test('천지 가르기: 발밑 둘레가 터지고, 줄이 가장 많이 걸리�
   for (const e of [side, back, far]) assert.equal(hurt(e), 0)
 })
 
-test('하늘 꿰뚫기: 화면 끝까지 꿰지만 줄은 좁다', () => {
+test('파천일섬: 화면 끝까지 꿰지만 줄은 좁다', () => {
   const s = field('bow', 100), area = areaScale(s)
   const row = [150, 450, 900].map(d => place(s, d, 0)), wide = place(s, 300, U.bow.width * area + 15), side = place(s, 0, 220)
   cast(s)
@@ -82,7 +82,7 @@ test('용오름 창: 몸 둘레로 넓어지며 여러 번 솟는다 — 가까�
   assert.equal(s.ult, null)
 })
 
-test('번개 베기: 장수가 실제로 내달리고 지나간 줄만 벤다 · 판 밖으로는 못 나간다', () => {
+test('섬광참: 장수가 실제로 내달리고 지나간 줄만 벤다 · 판 밖으로는 못 나간다', () => {
   const s = field('sword', 200), x0 = s.x
   const path = [120, 260, 400].map(d => place(s, d, 0)), side = place(s, 200, 260)
   cast(s)
@@ -95,7 +95,7 @@ test('번개 베기: 장수가 실제로 내달리고 지나간 줄만 벤다 ·
   assert.ok(hurt(left) > 0 && right.every(e => hurt(e) === 0), '움직이는 쪽으로 내달린다 (적이 더 많은 뒤쪽이 아니라)')
 })
 
-test('그림자 베기: 가까운 적에게 차례로 순간 이동해 베고, 처음 자리로 돌아온다', () => {
+test('환영난무: 가까운 적에게 차례로 순간 이동해 베고, 처음 자리로 돌아온다', () => {
   const s = field('dagger', 120), x0 = s.x, y0 = s.y
   const chain = Array.from({ length: U.dagger.targets }, (_, i) => place(s, 110 * (i + 1), 0)), extra = place(s, 110 * (U.dagger.targets + 1), 0)
   step(s, true); release(s)
@@ -107,7 +107,7 @@ test('그림자 베기: 가까운 적에게 차례로 순간 이동해 베고, �
   const lone = field('dagger'); cast(lone); assert.equal(lone.ult, null, '적이 없어도 끝난다')
 })
 
-test('하늘 굿: 화면 어디에 있든 모든 적이 한 번씩 (한 대 피해는 가장 낮다)', () => {
+test('천벌: 화면 어디에 있든 모든 적이 한 번씩 (한 대 피해는 가장 낮다)', () => {
   const s = field('magic')
   const all = [[-500, -280], [500, 300], [-20, 340], [480, -300], [60, 0]].map(([x, y]) => place(s, x!, y!))
   cast(s)

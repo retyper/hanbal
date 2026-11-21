@@ -126,7 +126,7 @@ test('땅울림 (돌팔매 갈래 끝 a): 돌이 떨어진 둘레의 적이 멈�
   assert.equal(t.enemies[0]!.daze, 0)
 })
 
-test('버팀 갈래 — 단단한 몸·굳센 몸·날랜 발·숨 고르기 · 되받아치기는 맞으면 비기가 작게 터진다', () => {
+test('버팀 갈래 — 철벽·불굴·신속·재생 · 되받아치기는 맞으면 비기가 작게 터진다', () => {
   const hitBy = (tough: number) => { const s = quiet('sword'); s.ranks.tough = tough; s.enemies = []; s.shots.push({ x: s.x, y: s.y, vx: 0, vy: 0, life: 1, kind: 'enemy', damage: 50, radius: 10, hit: [], angle: 0, tx: 0, ty: 0 }); stepHaebi(s, idle, DT); return s.maxHp - s.hp }
   assert.ok(hitBy(5) < hitBy(0) * (1 - 5 * T.tough) + 1)
   const s = quiet('axe'); s.level = 5; Object.assign(s.ranks, { tough: 3, tempo: 3, breath: 1 })
