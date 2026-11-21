@@ -4451,7 +4451,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     dragSvg.classList.toggle('ok', ok)
     dragSvg.style.display = ''
   }
-  let drag: { card: HTMLElement; x0: number; y0: number; on: boolean; id: number } | null = null
+  /** t0 — 누른 때 (짧게 누르고 떼면 고른다) · was — 누르기 전에 이미 든 깃발이었나 (누가 나서나 줄이 있으면 두 번째 누름에 고른다) */
+  let drag: { card: HTMLElement; x0: number; y0: number; on: boolean; id: number; t0: number; was: boolean } | null = null
   /** 누른 깃발 — 그 깃발에서 화면 가운데 위 1/3 자리로 화살이 서 있다 (형 10-28: "선택하자마자 그 박스를 시작점으로 화면 중앙 위에서 1/3 지점을 가리키고 · 그게 움직여야") */
   let armed: HTMLElement | null = null
   const aimAt = (card: HTMLElement): void => {
@@ -4483,9 +4484,10 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       const q2 = pop.getBoundingClientRect()
       if (hold.isOpen()) showHold(flagHold(card), q2.left + q2.width / 2, q2.top + 18)
     }, P.realm.warLookTableMs)
+    const was = armed === card
     if (armed !== card) { armed?.classList.remove('armed'); armed = card; card.classList.add('armed') }
     aimAt(card)
-    drag = { card, x0: ev.clientX, y0: ev.clientY, on: false, id: ev.pointerId }
+    drag = { card, x0: ev.clientX, y0: ev.clientY, on: false, id: ev.pointerId, t0: performance.now(), was }
     try { card.setPointerCapture(ev.pointerId) } catch { /* 못 잡아도 끌기는 ov 에서 */ }
   })
   ov.addEventListener('pointermove', (ev) => {
@@ -4503,6 +4505,16 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     window.clearTimeout(lookT)
     if (!d.on) {
       hideHold()
+      // 짧게 누르고 뗐다 — 그 깃발을 고른다 (폰에서 누르기만 하면 설명만 뜨고 끌어 놓아야 골랐다 · FIRST-HOUR-20261122 TOP 3).
+      // 꾹 누르면 예전처럼 판세 · 누가 나서나 줄이 뜬 깃발은 그 줄을 고를 틈을 두고 두 번째 누름에 고른다
+      const who = WHO_KINDS.some((k) => d.card.classList.contains(k)) && pop.querySelector('.wwho.show') !== null
+      if (ev.type === 'pointerup' && d.card.isConnected && performance.now() - d.t0 < P.realm.warTapPickMs && (d.was || !who)) {
+        swallow = true // 뗀 뒤 오는 click 이 판을 다시 열지 않게
+        host.ding('click1', 0.22)
+        disarm()
+        doPick(d.card.dataset['g'] as Grp | 'lead', d.card.dataset['c'] as Cmd, d.card, false)
+        return
+      }
       // 꾹 눌러 붙은 피해·사기 표는 손을 떼면 설명 창과 함께 걷힌다 — 판이 다시 낮아져 전장이 보인다
       if (pop.querySelector('.wfplook.held') !== null) lookT = window.setTimeout(() => { if (drag === null && d.card.isConnected) showLook(d.card) }, P.realm.warHoldLingerMs)
       if (armed === d.card && d.card.isConnected) aimAt(d.card)

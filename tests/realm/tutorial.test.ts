@@ -141,6 +141,32 @@ describe('배우는 판 — 갇히지 않는다', () => {
     assert.equal(tutPick(step, c, (sel) => onScreen.has(sel)), '[data-act="hero"][data-id="tut-haebi"]')
   })
 
+  // FIRST-HOUR-20261122 TOP 3: 겨루기·사로잡기 쉼표 목록이 :is() 없이 끼워져 `.on` 이 마지막 것에만 붙었다 → 「장수」 칸이 한 번도 안 빛났다
+  it('전장 안내 빛 — 쉼표로 가른 선택자마다 전장(.ap .wr) 안이고, 고를 깃발 목록은 :is() 로 묶여 있다', async () => {
+    const { tutStyle } = await import('../../src/ui/realm/tutorial.ts')
+    for (const step of TUT_STEPS.filter((s) => s.war !== undefined)) {
+      const css = tutStyle(step)
+      const head = css.slice(0, css.indexOf('{'))
+      // 괄호 밖의 쉼표로만 가른다
+      const parts: string[] = []
+      let depth = 0, cur = ''
+      for (const ch of head) {
+        if (ch === '(') depth++
+        if (ch === ')') depth--
+        if (ch === ',' && depth === 0) { parts.push(cur.trim()); cur = '' } else cur += ch
+      }
+      parts.push(cur.trim())
+      assert.ok(parts.length >= 3, step.id)
+      for (const p of parts) assert.ok(p.startsWith('.ap .wr'), `${step.id}: ${p}`)
+      assert.ok(head.includes(`:is(${step.war!.pick})`), step.id)
+    }
+  })
+
+  it('배우는 판 띠 글은 단계마다 짧다 (4/14 전투 띠가 141자였다 · 60자 안)', () => {
+    const battle = TUT_STEPS.find((s) => s.id === 'battle')!
+    assert.ok(battle.text.length <= 60, `${battle.text.length}자`)
+  })
+
   it('오래 머문 단계엔 「건너뛰기」가 뜬다 (평소엔 없다)', async () => {
     const { tutBandHtml } = await import('../../src/ui/realm/tutorial.ts')
     for (let i = 0; i < TUT_STEPS.length; i++) {

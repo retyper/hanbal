@@ -167,7 +167,11 @@ export function tutPick(step: TutStep, c: TutCtx, ok: (sel: string) => boolean):
 /** 전장 안에서만 빛낼 곳 — <style> 하나로 (전장은 다시 그려져도 그대로 빛난다) */
 export function tutStyle(step: TutStep | undefined): string {
   if (step?.war === undefined) return ''
-  const { pick, go, tab } = step.war
+  // 선택자는 :is() 로 묶는다 — 쉼표 목록(겨루기, 사로잡기)을 그대로 끼우면 `.on` · `:not(.on)` · `.ap .wr` 가 마지막 것에만 붙어
+  // `:has(겨루기, 사로잡기.on)` 이 늘 참이 되고 「장수」 칸이 한 번도 안 빛났다 (FIRST-HOUR-20261122 TOP 3 · 맞는 것 0개 → 2개)
+  const pick = `:is(${step.war.pick})`
+  const go = `:is(${step.war.go})`
+  const tab = step.war.tab !== undefined ? `:is(${step.war.tab})` : undefined
   // 고르기 전엔 그 탭 · 그 명령 카드, 고른 뒤엔 (잠겨 있으면) 아직 안 고른 무리 탭, 켜지면 「전투 개시」 (「★ 권함대로 채운다」는 뺐다 — 형 10-25)
   const sels = [`.ap .wr ${pick}:not(.on)`, `.ap .wr:has(${pick}.on) ${go}:not([disabled]):not([aria-disabled="true"])`, `.ap .wr:has(${pick}.on):has(${go}:is([disabled], [aria-disabled="true"])) .wgt[data-g]:not(.done)`]
   if (tab !== undefined) sels.push(`.ap .wr:not(:has(${pick}.on)) ${tab}:not(.on)`)
