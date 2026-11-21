@@ -382,6 +382,8 @@ export const HAEBI_CHAMPION = {
   recoverySeconds: 1.25, recoveryDamage: 1.5, attackRange: 330, phaseMove: 1.15,
   chestRadius: 22, fastSeconds: 20, viewGrid: 8, minViewShare: .5,
   view: { recoveryLean: .12, recoveryRingRadius: 28, recoveryRingAlpha: .45, roarRingRadius: 65, roarRingAlpha: .5,
+    /** 53-B 스테이지 정예 띠(칸 144 · 발 142 · bake-elite-strips.py)를 그리는 높이 — 옛 산적 두령(칸 128 · 100)과 몸 크기를 맞추고 조금 키움 */
+    eliteArtHeight: 118,
     elitePlateWidth: 120, elitePlateHeight: 26, elitePlateLift: 14, eliteHpHeight: 4, eliteNameFont: 12, eliteMargin: 4, eliteBottomInset: .25,
     chestSize: 32, chestLargeSize: 42, chestGlowAlpha: .35, chestCoinCount: 5, chestCoinSize: 12, chestCoinSeconds: .65, chestCoinSpread: 18 },
   stages: {
@@ -468,19 +470,19 @@ export const HAEBI_AWAKEN = {
  * trial 은 본편 각성 시련: 숲 산길의 짧고 쉬운 판 (상점 강화 없이도 깰 수 있게 · 형 11-16 「따로 떼기」).
  */
 export const HAEBI_STAGES = {
-  forest: { name: '숲 산길', length: 1, hp: 1, damage: .9, spawn: 1, bossHp: 1, gold: 1, bg: 'forest.webp', boss: 'bandit-warlord', bossName: '산적 대두목', eliteName: '정예 산적',
+  forest: { name: '숲 산길', length: 1, hp: 1, damage: .9, spawn: 1, bossHp: 1, gold: 1, bg: 'forest.webp', boss: 'bandit-warlord', bossName: '산적 대두목', eliteName: '정예 산적', elite: 'elite-forest',
     tiers: [['club', 'dog'], ['runner', 'dog'], ['shield', 'berserker'], ['berserker', 'archer'], ['iron', 'firearcher']] },
-  ford: { name: '물안개 여울', length: 1, hp: 1.7, damage: 1.8, spawn: 1.3, bossHp: 1.8, gold: 2, bg: 'ford.webp', boss: 'boss-ford', bossName: '여울 물두령', eliteName: '정예 여울 도적',
+  ford: { name: '물안개 여울', length: 1, hp: 1.7, damage: 1.8, spawn: 1.3, bossHp: 1.8, gold: 2, bg: 'ford.webp', boss: 'boss-ford', bossName: '여울 물두령', eliteName: '정예 여울 도적', elite: 'elite-ford',
     tiers: [['dog', 'runner'], ['runner', 'dog'], ['shield', 'berserker'], ['berserker', 'archer'], ['iron', 'dog']] },
-  palisade: { name: '목책 돌파', length: 1, hp: 2.2, damage: 2.2, spawn: 1.4, bossHp: 2.8, gold: 3.2, bg: 'palisade.webp', boss: 'boss-palisade', bossName: '배신한 성주', eliteName: '정예 수비병',
+  palisade: { name: '목책 돌파', length: 1, hp: 2.2, damage: 2.2, spawn: 1.4, bossHp: 2.8, gold: 3.2, bg: 'palisade.webp', boss: 'boss-palisade', bossName: '배신한 성주', eliteName: '정예 수비병', elite: 'elite-palisade',
     tiers: [['shield', 'runner'], ['iron', 'dog'], ['berserker', 'shield'], ['runner', 'firearcher'], ['iron', 'archer']] },
   /** 11-16 H47·H50~H52: 설원 고개 — 범(멈칫 뒤 길게 덮침) · 반달곰(일어서서 내려침 · 아주 단단함) · 맥족 투창 사냥꾼(붉은 줄 뒤 창) · 두목 H54 설산 우두머리(쇠도리깨) */
-  snow: { name: '설원 고개', length: 1, hp: 2.4, damage: 2.3, spawn: 1.45, bossHp: 3.6, gold: 4.5, bg: 'snow.webp', boss: 'boss-snow', bossName: '설산 우두머리', eliteName: '정예 설산 도적',
+  snow: { name: '설원 고개', length: 1, hp: 2.4, damage: 2.3, spawn: 1.45, bossHp: 3.6, gold: 4.5, bg: 'snow.webp', boss: 'boss-snow', bossName: '설산 우두머리', eliteName: '정예 설산 도적', elite: 'elite-snow',
     tiers: [['dog', 'tiger'], ['runner', 'tiger'], ['bear', 'dog'], ['berserker', 'hunter'], ['tiger', 'archer']] },
   /** 11-16 H48·H53: 불타는 산성 — 횃불 방화꾼(지나간 자리에 불바닥 · 기름 단지) · 두목 H55 불의 반란 장군(달군 망치) */
-  fortress: { name: '불타는 산성', length: 1, hp: 3.2, damage: 3, spawn: 1.6, bossHp: 4.6, gold: 6.5, bg: 'fortress.webp', boss: 'boss-fortress', bossName: '불의 반란 장군', eliteName: '정예 반란군',
+  fortress: { name: '불타는 산성', length: 1, hp: 3.2, damage: 3, spawn: 1.6, bossHp: 4.6, gold: 6.5, bg: 'fortress.webp', boss: 'boss-fortress', bossName: '불의 반란 장군', eliteName: '정예 반란군', elite: 'elite-fortress',
     tiers: [['shield', 'runner'], ['berserker', 'dog'], ['iron', 'berserker'], ['runner', 'torch'], ['iron', 'archer']] },
-  trial: { name: '각성 시련', length: .4, hp: 1, damage: 1, spawn: 1, bossHp: .3, gold: 0, bg: 'forest.webp', boss: 'bandit-warlord', bossName: '산적 대두목', eliteName: '정예 산적',
+  trial: { name: '각성 시련', length: .4, hp: 1, damage: 1, spawn: 1, bossHp: .3, gold: 0, bg: 'forest.webp', boss: 'bandit-warlord', bossName: '산적 대두목', eliteName: '정예 산적', elite: 'elite-forest',
     tiers: [['club', 'archer'], ['runner', 'slinger'], ['shield', 'dog'], ['berserker', 'firearcher'], ['iron', 'shaman']] },
 } as const
 /**

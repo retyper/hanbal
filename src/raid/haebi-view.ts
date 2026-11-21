@@ -27,10 +27,11 @@ export const chargeRecoil = (e: Mob) => e.kind === 'runner' && e.act > 0 && e.ac
 export const chargeLane = (e: Mob) => e.act > 0 && (e.kind === 'tiger' || e.kind === 'hunter')
 /** bandit-<종류> 가 아닌 적 그림 (11-16 H50~H53 · tools/sprite-kit/bake-raid-enemies.py) */
 const MOB_ART: Record<string, string> = { tiger: 'beast-tiger', bear: 'beast-bear', hunter: 'snow-hunter', torch: 'torch-raider' }
-export const imagePaths = [...CARD_FRAME_PATHS, genArtOf('haebi').file, genArtOf('aw1-haebi').file, 'anim-px/bandit-club.png', 'anim-px/bandit-chief.png', 'anim-px/bandit-archer.png',
+export const imagePaths = [...CARD_FRAME_PATHS, genArtOf('haebi').file, genArtOf('aw1-haebi').file, 'anim-px/bandit-club.png', 'anim-px/bandit-archer.png',
   ...['runner', 'slinger', 'shield', 'dog', 'berserker', 'firearcher', 'iron', 'shaman'].map(k => `anim-px/bandit-${k}.png`), ...['ford.webp', 'palisade.webp', 'palisade-wall.png', 'palisade-broken.png', 'palisade-gate.png', 'palisade-gate-open.png', 'palisade-gate-broken.png', 'chest.png', 'digits.png', 'knife.png', 'soul.png', 'bell-ring.png', 'javelin.png','sword-wave.png','forest.webp','axe.png','impact-strip.png','slash-strip.png','death-strip.png','fire-strip.png','lightning-strip.png','talisman.png','wind-blade.png','arrow.png','hit.png','essence.png','essence-large.png',...['mark-slam','mark-move','mark-hero','mark-target','mark-arrow','bar-boss','plaque'].map(p=>`ui/${p}.png`)].map(p=>'raid/'+p), 'anim-px/bandit-warlord.png', ROCK, AURA_ART.flame, AURA_ART.ember,
   // 11-16 H45~H53: 스테이지 두목 둘 · 설원·산성 적 넷 · 넷째·다섯째 바닥
-  ...['boss-ford', 'boss-palisade', 'boss-snow', 'boss-fortress', ...Object.values(MOB_ART)].map(n => `anim-px/${n}.png`), 'raid/snow.webp', 'raid/fortress.webp', ...FX_PATHS]
+  // 11-22 53-B 스테이지 정예 다섯 (Codex 67 · tools/sprite-kit/bake-elite-strips.py)
+  ...['boss-ford', 'boss-palisade', 'boss-snow', 'boss-fortress', ...Object.values(MOB_ART), 'elite-forest', 'elite-ford', 'elite-palisade', 'elite-snow', 'elite-fortress'].map(n => `anim-px/${n}.png`), 'raid/snow.webp', 'raid/fortress.webp', ...FX_PATHS]
 /** bar-boss.png 의 투명한 홈 [x0,y0,x1,y1] — tools/raid-ui-kit.py 가 public/realm/raid/ui/kit.json 에 적는 값 */
 const BOSS_WIN = [104, 35, 626, 82] as const
 /**
@@ -200,8 +201,8 @@ function decal(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageEleme
   const img = images.get('raid/ui/' + name + '.png'); if (!img) return false
   ctx.save(); ctx.globalAlpha *= alpha; ctx.drawImage(img, x - w / 2, y - h / 2, w, h); ctx.restore(); return true
 }
-/** 적 그림 — 두목은 스테이지마다(HAEBI_STAGES.boss) · 정예는 산적 두령 · 나머지는 bandit-<종류> 또는 MOB_ART */
-const warlord = (mob: string, stage: StageId) => 'anim-px/' + (mob === 'boss' ? ST[stage].boss : mob === 'elite' ? 'bandit-chief' : MOB_ART[mob] ?? 'bandit-' + mob) + '.png'
+/** 적 그림 — 두목·정예는 스테이지마다(HAEBI_STAGES.boss · .elite) · 나머지는 bandit-<종류> 또는 MOB_ART */
+const warlord = (mob: string, stage: StageId) => 'anim-px/' + (mob === 'boss' ? ST[stage].boss : mob === 'elite' ? ST[stage].elite : MOB_ART[mob] ?? 'bandit-' + mob) + '.png'
 /** 산적 활잡이는 사거리 안에서 멈춰 서서 쏜다 — 메기기(13) → 당기기(14) → 놓기(16) · 걷는 그림으로 제자리걸음하지 않게 (H26) */
 function archerFrame(s: HaebiRun, e: HaebiRun['enemies'][number]) {
   const d = Math.hypot(s.x - e.x, s.y - e.y)
@@ -218,7 +219,7 @@ function archerFrame(s: HaebiRun, e: HaebiRun['enemies'][number]) {
   if (d < 34 && e.cd > .6) return 14
   return null
 }
-const mobHeight = (mob: string) => mob === 'boss' ? 150 : mob === 'elite' ? 100 : mob in M ? (M as unknown as Record<string, { height: number }>)[mob]!.height : 64
+const mobHeight = (mob: string) => mob === 'boss' ? 150 : mob === 'elite' ? B.view.eliteArtHeight : mob in M ? (M as unknown as Record<string, { height: number }>)[mob]!.height : 64
 /** 피해 숫자 — H32 글꼴 (위 줄 보통 · 아래 줄 급소·쓰러뜨림) · 그림이 없으면 글자로 */
 function digits(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, text: string, x: number, y: number, h: number, hot: boolean) {
   const img = images.get('raid/digits.png'); if (!img) return false

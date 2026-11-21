@@ -27,7 +27,7 @@ function canvas() {
 }
 function image(path: string, width: number, height: number) { return { path, width, height, complete: true } as unknown as HTMLImageElement }
 function assets() { return new Map([
-  ['anim-px/bandit-chief.png', image('chief', 2320, 128)],
+  ['anim-px/elite-forest.png', image('chief', 2320, 144)],
   ['raid/ui/plaque.png', image('plate', 200, 50)],
   ['raid/chest.png', image('chest', 56, 56)],
   ['raid/arrow.png', image('arrow', 100, 20)],
