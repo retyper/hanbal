@@ -87,8 +87,14 @@ test('55 lazy prewarm downloads ford only once, decodes atomically, retries fail
  const a=prewarmImugiArt('ford',map,'/realm/',factory(requests)),b=prewarmImugiArt('ford',map,'/realm/',factory(requests));assert.equal(a,b);assert.equal(map.size,0);assert.equal(await a,true);assert.equal(requests.length,4);assert.equal(imugiArtReady(map),true);assert.equal(await prewarmImugiArt('ford',map,'/realm/',factory(requests)),true);assert.equal(requests.length,4)
  const bad=new Map<string,HTMLImageElement>();assert.equal(await prewarmImugiArt('ford',bad,'/realm/',factory([],true)),false);assert.equal(bad.size,0);assert.equal(await prewarmImugiArt('ford',bad,'/realm/',factory([])),true)
 })
-test('55 installed native candidates are byte-identical to all four warehouse originals',()=>{
- for(const id of Object.keys(IMUGI_ART)){const a=readFileSync('public/realm/raid/giants/imugi/'+id+'.png'),b=readFileSync('D:/에셋창고/55-imugi-'+id+'-01-native.png');assert.equal(createHash('sha256').update(a).digest('hex'),createHash('sha256').update(b).digest('hex'))}
+test('55 installed native candidates match the approved original fingerprints on every platform',()=>{
+ const receipt=JSON.parse(readFileSync(new URL('../docs/realm/production/CODEX55-IMUGI-ORIGINALS.json',import.meta.url),'utf8')) as {files:Record<string,{sha256:string;bytes:number}>}
+ assert.deepEqual(Object.keys(receipt.files).sort(),Object.keys(IMUGI_ART).sort())
+ for(const id of Object.keys(IMUGI_ART)){
+  const a=readFileSync(new URL('../public/realm/raid/giants/imugi/'+id+'.png',import.meta.url)),original=receipt.files[id]!
+  assert.equal(a.byteLength,original.bytes,id+' original size')
+  assert.equal(createHash('sha256').update(a).digest('hex'),original.sha256,id+' original SHA256')
+ }
 })
 test('55 native head/jaw sockets land on mirrored authoritative world endpoints, not a second jawOpen',()=>{
  for(const side of [1,-1] as const){const p=pose({ownerId:1,tick:0,x:500,y:400,angle:2.7,mirrorY:side,height:80,jawOpen:.65}),seen=new Map<string,number[]>();let m=[1,0,0,1,0,0];const stack:number[][]=[]

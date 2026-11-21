@@ -31,3 +31,10 @@
 강화0 비각성은 두 선택 모두0/3, 고강화는 네 셀 모두3/3이었다. 중간강화 비각성 집중은3/3으로 “약 절반” 초기 목표보다 쉬웠다. 각성은 성장 보상으로 같은 강화에서 더 수월했다. 한 seed의 세 무기 표본이므로 일반 승률·난이도 완성으로 단정하지 않고 후속 조율 자료로 남긴다.
 
 증거: C outputs/codex55-balance/{freeze-final-04.json,before-final-36.json,after-final-36.json}, C outputs/codex55-ui/{actual-races-03,actual-fullrun-01}, C outputs/codex61-imugi/{GIANT-DEATH-VIEW.md,REVIEW.md,test.log,build.log,local-bundle.json,local-art.json}. 최신 engine13 SHA는 화면1줄 수정 전후 동일해36판 수치 재사용 범위를 확인했다. 초기 순환참조/경계 예외/검사 도구 navigation 경합의 실패 로그는 삭제하지 않았다.
+
+## CI 이식성 교정
+
+- CI44901278611에서17개 시각 검사 중 원본 무결성1개가 D:/에셋창고 절대 경로 ENOENT로 실패했다. 로컬 검사에서 놓친 환경 의존이며, 이무기는 아직 운영 반영 전이다. 기존 트리 배포본은 정상 유지됐다.
+- 원본4개와 제품4개를 독립 비교한 SHA256/bytes를 CODEX55-IMUGI-ORIGINALS.json에 기록하고 검사는 저장소 상대 file URL로 읽는다. 건너뛰기0/이미지·게임 코드 변경0. 복사한 head 원본의 마지막1byte만 바꾼 독립 fixture는16PASS/무결성1FAIL, 정상 제품은 전체1888/1886PASS/0FAIL/기존skip2·typecheck0으로 확인했다.
+- 앞33의 CI는45의 지시문서 push로 취소됐다. 같은 재발을 막도록 배포 workflow는 이 지시 MD 한 파일만 바뀐 push를 제외한다. 제품 코드·원본지문 JSON·workflow 변경과 혼합 push는 계속 모든 검사/빌드를 실행한다. YAML 및4개 경로 조합을 검증했다. 실제 다음 지시문서 push의 skip 관측은 아직 없으므로 완료로 주장하지 않는다.
+- GitHub [공식 경로 필터 문서](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onpushpull_requestpull_request_targetpathspaths-ignore)를 기준으로 좁혔다. 전·후36판과 게임 빌드는 코드 변경이 없어 재사용하고, 새 커밋 CI·운영 SHA를 다시 확인한다. 로컬 근거 C outputs/codex61-imugi/ci-portable-fix/.

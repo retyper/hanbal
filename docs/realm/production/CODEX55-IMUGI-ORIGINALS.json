@@ -1,0 +1,29 @@
+{
+  "provenance": "Approved native originals; SHA256 measured from warehouse originals and delivered files independently on 2026-11-21. Runtime never reads this receipt.",
+  "files": {
+    "head-upper": {
+      "file": "public/realm/raid/giants/imugi/head-upper.png",
+      "originalFile": "55-imugi-head-upper-01-native.png",
+      "sha256": "58aab64e7523d69596b244e50a6a1b5637a69cc1b9b20f1684eb1ddc42aa34f1",
+      "bytes": 1359005
+    },
+    "jaw-lower": {
+      "file": "public/realm/raid/giants/imugi/jaw-lower.png",
+      "originalFile": "55-imugi-jaw-lower-01-native.png",
+      "sha256": "0a33cf32a4b6f7fa80ff8e9bdc035b5bfd6a382f3bba853b9a1675de0c90e469",
+      "bytes": 321398
+    },
+    "neck-segment": {
+      "file": "public/realm/raid/giants/imugi/neck-segment.png",
+      "originalFile": "55-imugi-neck-segment-01-native.png",
+      "sha256": "a02a7ba450ad038cd5bdf08fb11f19d89b171248359645a016bcb017bba185e2",
+      "bytes": 916937
+    },
+    "tail-tip": {
+      "file": "public/realm/raid/giants/imugi/tail-tip.png",
+      "originalFile": "55-imugi-tail-tip-01-native.png",
+      "sha256": "c9dbfd3693abb59292ecb127469c05b33a028da5329c3f3f319a6d42468e9568",
+      "bytes": 1511440
+    }
+  }
+}

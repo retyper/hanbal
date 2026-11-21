@@ -10,6 +10,9 @@ name: deploy
 on:
   push:
     branches: [master, main]
+    # 지시 문서만 바뀐 push가 진행 중인 제품 배포를 취소하지 않게 한다.
+    paths-ignore:
+      - 'docs/realm/production/CODEX-SKILLBODY-REDO-20261117.md'
   workflow_dispatch:
 
 permissions:
