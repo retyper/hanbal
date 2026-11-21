@@ -568,22 +568,31 @@ export const HAEBI_AWAKEN = {
  * tiers: 판을 다섯 토막으로 나눠 토막마다 나오는 적 둘 (앞 토막 적은 다음 토막에 안 나온다 · 「쉬운 적은 초반에만」).
  * 숲 산길 damage .9 (11-17): 상점 없는 새 사람의 첫 판 — 봇 씨앗 1~10 에서 일곱 묶음 모두 7/10 이상 (docs/BALANCE.md 2026-11-17).
  * trial 은 본편 각성 시련: 숲 산길의 짧고 쉬운 판 (상점 강화 없이도 깰 수 있게 · 형 11-16 「따로 떼기」).
+ * art (51-2 · 그리기만): 그 스테이지에서 이 종류를 그릴 그림 — 판 셈(종류·능력치·스폰 표)은 그대로, 그림만 스테이지마다 (haebi-view.ts warlord).
+ *  file 은 public/realm/anim-px/<file>.png (칸 144 · 발 140 · tools/sprite-kit/bake-stage-enemies.py) · scale 은 HAEBI_MOBS[종류].height 에 곱해 그리는 키 —
+ *  대기 몸 키가 같은 종류 옛 bandit-<종류> 띠(칸 128)와 같게 굽는 도구가 셈해 찍는다(키 위 표식·별은 옛 키 그대로라 머리 위 같은 자리).
+ *  화살비 궁수(archer)는 머리 위 붉은 화살촉이 얹히는 몸이라 스테이지마다 모자·깃 실루엣이 다르다 · 숲 화살비 궁수는 그림이 오면 넣는다.
  */
 export const HAEBI_STAGES = {
   forest: { name: '숲 산길', length: 1, hp: 1, damage: .9, spawn: 1, bossHp: 1, gold: 1, bg: 'forest.webp', boss: 'bandit-warlord', bossName: '산적 대두목', eliteName: '정예 산적', elite: 'elite-forest',
-    tiers: [['club', 'dog'], ['runner', 'dog'], ['shield', 'berserker'], ['berserker', 'archer'], ['iron', 'firearcher']] },
+    tiers: [['club', 'dog'], ['runner', 'dog'], ['shield', 'berserker'], ['berserker', 'archer'], ['iron', 'firearcher']],
+    art: { club: { file: 'enemy-forest-leather', scale: 1.155 }, shield: { file: 'enemy-forest-vine-shield', scale: 1.108 } } },
   ford: { name: '물안개 여울', length: 1, hp: 1.7, damage: 1.8, spawn: 1.3, bossHp: 1.8, gold: 2, bg: 'ford.webp', boss: 'boss-ford', bossName: '여울 물두령', eliteName: '정예 여울 도적', elite: 'elite-ford',
-    tiers: [['dog', 'runner'], ['runner', 'dog'], ['shield', 'berserker'], ['berserker', 'archer'], ['iron', 'dog']] },
+    tiers: [['dog', 'runner'], ['runner', 'dog'], ['shield', 'berserker'], ['berserker', 'archer'], ['iron', 'dog']],
+    art: { runner: { file: 'enemy-ford-pole', scale: 1.07 }, berserker: { file: 'enemy-ford-net', scale: 1.029 }, archer: { file: 'enemy-ford-barrage-archer', scale: 1.228 } } },
   palisade: { name: '목책 돌파', length: 1, hp: 2.2, damage: 2.2, spawn: 1.4, bossHp: 2.8, gold: 3.2, bg: 'palisade.webp', boss: 'boss-palisade', bossName: '배신한 성주', eliteName: '정예 수비병', elite: 'elite-palisade',
-    tiers: [['shield', 'runner'], ['iron', 'dog'], ['berserker', 'shield'], ['runner', 'firearcher'], ['iron', 'archer']] },
+    tiers: [['shield', 'runner'], ['iron', 'dog'], ['berserker', 'shield'], ['runner', 'firearcher'], ['iron', 'archer']],
+    art: { runner: { file: 'enemy-palisade-spear', scale: 1.133 }, shield: { file: 'enemy-palisade-wood-shield', scale: 1.091 }, archer: { file: 'enemy-palisade-barrage-marksman', scale: 1.36 } } },
   /** 11-16 H47·H50~H52: 설원 고개 — 범(멈칫 뒤 길게 덮침) · 반달곰(일어서서 내려침 · 아주 단단함) · 맥족 투창 사냥꾼(붉은 줄 뒤 창) · 두목 H54 설산 우두머리(쇠도리깨) */
   snow: { name: '설원 고개', length: 1, hp: 2.4, damage: 2.3, spawn: 1.45, bossHp: 3.6, gold: 4.5, bg: 'snow.webp', boss: 'boss-snow', bossName: '설산 우두머리', eliteName: '정예 설산 도적', elite: 'elite-snow',
-    tiers: [['dog', 'tiger'], ['runner', 'tiger'], ['bear', 'dog'], ['berserker', 'hunter'], ['tiger', 'archer']] },
+    tiers: [['dog', 'tiger'], ['runner', 'tiger'], ['bear', 'dog'], ['berserker', 'hunter'], ['tiger', 'archer']],
+    art: { berserker: { file: 'enemy-snow-fur-axe', scale: 1.068 }, runner: { file: 'enemy-snow-shield-pursuer', scale: 1.105 }, archer: { file: 'enemy-snow-barrage-hunter', scale: 1.179 } } },
   /** 11-16 H48·H53: 불타는 산성 — 횃불 방화꾼(지나간 자리에 불바닥 · 기름 단지) · 두목 H55 불의 반란 장군(달군 망치) */
   fortress: { name: '불타는 산성', length: 1, hp: 3.2, damage: 3, spawn: 1.6, bossHp: 4.6, gold: 6.5, bg: 'fortress.webp', boss: 'boss-fortress', bossName: '불의 반란 장군', eliteName: '정예 반란군', elite: 'elite-fortress',
-    tiers: [['shield', 'runner'], ['berserker', 'dog'], ['iron', 'berserker'], ['runner', 'torch'], ['iron', 'archer']] },
+    tiers: [['shield', 'runner'], ['berserker', 'dog'], ['iron', 'berserker'], ['runner', 'torch'], ['iron', 'archer']],
+    art: { iron: { file: 'enemy-fortress-scorched-guard', scale: 1.084 }, berserker: { file: 'enemy-fortress-ash-axe', scale: 1.1 }, archer: { file: 'enemy-fortress-barrage-marksman', scale: 1.204 } } },
   trial: { name: '각성 시련', length: .4, hp: 1, damage: 1, spawn: 1, bossHp: .3, gold: 0, bg: 'forest.webp', boss: 'bandit-warlord', bossName: '산적 대두목', eliteName: '정예 산적', elite: 'elite-forest',
-    tiers: [['club', 'archer'], ['runner', 'slinger'], ['shield', 'dog'], ['berserker', 'firearcher'], ['iron', 'shaman']] },
+    tiers: [['club', 'archer'], ['runner', 'slinger'], ['shield', 'dog'], ['berserker', 'firearcher'], ['iron', 'shaman']], art: {} },
 } as const
 /**
  * 적 종류 — hp 는 그 시각 잡졸 체력의 배수 · share 는 토막 안에서 둘째 적이 나올 비율 · xp 는 떨어뜨리는 기세 · height 는 화면 키(px).

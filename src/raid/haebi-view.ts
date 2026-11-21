@@ -28,11 +28,17 @@ export const chargeRecoil = (e: Mob) => e.kind === 'runner' && e.act > 0 && e.ac
 export const chargeLane = (e: Mob) => e.act > 0 && (e.kind === 'tiger' || e.kind === 'hunter')
 /** bandit-<종류> 가 아닌 적 그림 (11-16 H50~H53 · tools/sprite-kit/bake-raid-enemies.py) */
 const MOB_ART: Record<string, string> = { tiger: 'beast-tiger', bear: 'beast-bear', hunter: 'snow-hunter', torch: 'torch-raider' }
+/** 51-2 스테이지마다 새 적 그림 (HAEBI_STAGES.<스테이지>.art · 판 셈은 그대로 · 그리기만) */
+type StageArt = { readonly file: string; readonly scale: number }
+const stageArt = (mob: string, stage: StageId): StageArt | undefined => (ST[stage].art as Partial<Record<string, StageArt>>)[mob]
+const STAGE_ART_PATHS = [...new Set(Object.values(ST).flatMap(st => Object.values(st.art as Partial<Record<string, StageArt>>).map(a => `anim-px/${a!.file}.png`)))]
 export const imagePaths = [...CARD_FRAME_PATHS, genArtOf('haebi').file, genArtOf('aw1-haebi').file, 'anim-px/bandit-club.png', 'anim-px/bandit-archer.png',
   ...['runner', 'slinger', 'shield', 'dog', 'berserker', 'firearcher', 'iron', 'shaman'].map(k => `anim-px/bandit-${k}.png`), ...['ford.webp', 'palisade.webp', 'palisade-wall.png', 'palisade-broken.png', 'palisade-gate.png', 'palisade-gate-open.png', 'palisade-gate-broken.png', 'chest.png', 'digits.png', 'knife.png', 'soul.png', 'bell-ring.png', 'javelin.png','sword-wave.png','forest.webp','axe.png','impact-strip.png','slash-strip.png','death-strip.png','fire-strip.png','lightning-strip.png','talisman.png','wind-blade.png','arrow.png','hit.png','essence.png','essence-large.png',...['mark-slam','mark-move','mark-hero','mark-target','mark-arrow','bar-boss','plaque'].map(p=>`ui/${p}.png`)].map(p=>'raid/'+p), 'anim-px/bandit-warlord.png', ROCK, AURA_ART.flame, AURA_ART.ember,
   // 11-16 H45~H53: 스테이지 두목 둘 · 설원·산성 적 넷 · 넷째·다섯째 바닥
   // 11-22 53-B 스테이지 정예 다섯 (Codex 67 · tools/sprite-kit/bake-elite-strips.py)
-  ...['boss-ford', 'boss-palisade', 'boss-snow', 'boss-fortress', ...Object.values(MOB_ART), 'elite-forest', 'elite-ford', 'elite-palisade', 'elite-snow', 'elite-fortress'].map(n => `anim-px/${n}.png`), 'raid/snow.webp', 'raid/fortress.webp', ...FX_PATHS]
+  ...['boss-ford', 'boss-palisade', 'boss-snow', 'boss-fortress', ...Object.values(MOB_ART), 'elite-forest', 'elite-ford', 'elite-palisade', 'elite-snow', 'elite-fortress'].map(n => `anim-px/${n}.png`), 'raid/snow.webp', 'raid/fortress.webp', ...FX_PATHS,
+  // 11-22 51-2 스테이지마다 새 적 (Codex 67 · tools/sprite-kit/bake-stage-enemies.py)
+  ...STAGE_ART_PATHS]
 /** bar-boss.png 의 투명한 홈 [x0,y0,x1,y1] — tools/raid-ui-kit.py 가 public/realm/raid/ui/kit.json 에 적는 값 */
 const BOSS_WIN = [104, 35, 626, 82] as const
 /**
@@ -202,8 +208,8 @@ function decal(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageEleme
   const img = images.get('raid/ui/' + name + '.png'); if (!img) return false
   ctx.save(); ctx.globalAlpha *= alpha; ctx.drawImage(img, x - w / 2, y - h / 2, w, h); ctx.restore(); return true
 }
-/** 적 그림 — 두목·정예는 스테이지마다(HAEBI_STAGES.boss · .elite) · 나머지는 bandit-<종류> 또는 MOB_ART */
-const warlord = (mob: string, stage: StageId) => 'anim-px/' + (mob === 'boss' ? ST[stage].boss : mob === 'elite' ? ST[stage].elite : MOB_ART[mob] ?? 'bandit-' + mob) + '.png'
+/** 적 그림 — 두목·정예는 스테이지마다(HAEBI_STAGES.boss · .elite) · 나머지는 스테이지 그림(.art) · 없으면 bandit-<종류> 또는 MOB_ART */
+const warlord = (mob: string, stage: StageId) => 'anim-px/' + (mob === 'boss' ? ST[stage].boss : mob === 'elite' ? ST[stage].elite : stageArt(mob, stage)?.file ?? MOB_ART[mob] ?? 'bandit-' + mob) + '.png'
 /** 산적 활잡이는 사거리 안에서 멈춰 서서 쏜다 — 메기기(13) → 당기기(14) → 놓기(16) · 걷는 그림으로 제자리걸음하지 않게 (H26) */
 function archerFrame(s: HaebiRun, e: HaebiRun['enemies'][number]) {
   const d = Math.hypot(s.x - e.x, s.y - e.y)
@@ -221,6 +227,8 @@ function archerFrame(s: HaebiRun, e: HaebiRun['enemies'][number]) {
   return null
 }
 const mobHeight = (mob: string) => mob === 'boss' ? 150 : mob === 'elite' ? B.view.eliteArtHeight : mob in M ? (M as unknown as Record<string, { height: number }>)[mob]!.height : 64
+/** 그림을 그리는 키 — 스테이지 그림은 칸이 커서(144) scale 만큼 키운다 · 머리 위 표식·별·막대는 mobHeight 그대로(몸 키가 옛 그림과 같다) */
+const artHeight = (mob: string, stage: StageId) => mobHeight(mob) * (stageArt(mob, stage)?.scale ?? 1)
 /** 피해 숫자 — H32 글꼴 (위 줄 보통 · 아래 줄 급소·쓰러뜨림) · 그림이 없으면 글자로 */
 function digits(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, text: string, x: number, y: number, h: number, hot: boolean) {
   const img = images.get('raid/digits.png'); if (!img) return false
@@ -761,7 +769,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       const recovery = championRecovery(e)
       if (recovery > 0) ctx.rotate((s.x < e.x ? -1 : 1) * B.view.recoveryLean * recovery)
       ctx.scale(1 + (FEEL.squashX - 1) * recoil, 1 + (FEEL.squashY - 1) * recoil)
-      sprite(ctx, images, warlord(e.kind, s.stage), 0, 0, h, wave >= 0 || white ? 18 : championPose(e) ?? (e.wind > 0 ? 13 : archerFrame(s, e) ?? 4 + Math.floor(s.t * 8 + e.id) % 8), championFacing(e, s.x < e.x ? -1 : 1), white ? 'white' : e.flash > 0)
+      sprite(ctx, images, warlord(e.kind, s.stage), 0, 0, artHeight(e.kind, s.stage), wave >= 0 || white ? 18 : championPose(e) ?? (e.wind > 0 ? 13 : archerFrame(s, e) ?? 4 + Math.floor(s.t * 8 + e.id) % 8), championFacing(e, s.x < e.x ? -1 : 1), white ? 'white' : e.flash > 0)
       ctx.restore()
       if (e === archer) {
         // 적대 공격의 주체: 머리 위 붉은 화살촉. 원형 붉은 고리는 쓰지 않는다.
@@ -918,14 +926,14 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
         ctx.save(); ctx.translate(f.x + away * flight * (elite ? FEEL.deathEliteDistance : FEEL.deathDistance), f.y + 20 - bounce)
         ctx.rotate(away * flight * FEEL.deathSpin)
         ctx.globalAlpha *= Math.min(1, (1 - age) / (1 - FEEL.deathFadeAt))
-        sprite(ctx, images, warlord(f.mob, s.stage), 0, 0, mobHeight(f.mob), 18, f.face ?? 1)
+        sprite(ctx, images, warlord(f.mob, s.stage), 0, 0, artHeight(f.mob, s.stage), 18, f.face ?? 1)
         ctx.restore()
       }
       effectStrip(ctx,images,'death',f.x,f.y+12,f.r*1.6,age)
     } else stamp(ctx, images, 'raid/hit.png', f.x, f.y, 30 * (1 - age * .5))
     ctx.restore()
   }
-  drawCriticalFinishFrames(ctx, finishFrames, (mob, face) => sprite(ctx, images, warlord(mob, s.stage), 0, 0, mobHeight(mob), 18, face))
+  drawCriticalFinishFrames(ctx, finishFrames, (mob, face) => sprite(ctx, images, warlord(mob, s.stage), 0, 0, artHeight(mob, s.stage), 18, face))
   // 붉은 예고는 내 FX 뒤에: 실제 원/돌진/탄환 길만 표시하고 안전한 부채 사이를 채우지 않는다.
   for(const e of s.enemies)if(e.giant?.kind==='imugi'&&e.giant.attack&&e.giant.state==='strike')drawImugiWater(ctx,e.giant.attack)
   drawThreats(ctx, images, s); drawChampionTells(ctx, s)

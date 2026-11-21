@@ -1,0 +1,247 @@
+{
+ "task": "Claude 51-1 branch card frames (Codex 67 sources · tools/sprite-kit/bake-branch-cards.py)",
+ "supersedes": "docs/realm/production/CODEX50-CARD-FRAMES.json (50-6 · same file names a/b/c)",
+ "css": "src/raid/card-skins.css (slice · native sizes are checked by tests/raid-card-skins.test.ts)",
+ "scale": 0.375,
+ "runtimeBytes": 159430,
+ "items": [
+  {
+   "branch": "a",
+   "source": "assets_src/realm/raid/card-frames-51/branch-card-sword-51.png",
+   "sourceSha256": "cf88532abe6bc7a8708d7ce975d502d7a4f3efb4f471066828ecba54cb0e0225",
+   "archive": "D:/에셋창고/codex67/branch-card-sword-51.png",
+   "nativeSize": [
+    1024,
+    1536
+   ],
+   "scale": 0.375,
+   "pieces": {
+    "crest": {
+     "path": "public/realm/raid/ui-card-branch-a-crest.webp",
+     "size": [
+      197,
+      108
+     ],
+     "top": -80,
+     "native": [
+      526,
+      288
+     ],
+     "bytes": 10394,
+     "sha256": "d83d7b3d884580cf7b0ea076ac2323390ab84cee0c50142e1abeb175df1749d1"
+    },
+    "base": {
+     "path": "public/realm/raid/ui-card-branch-a-base.webp",
+     "size": [
+      197,
+      40
+     ],
+     "bottom": 46,
+     "native": [
+      526,
+      106
+     ],
+     "bytes": 4186,
+     "sha256": "0b3fa1f1f1e842bffba3b18b1d85c4f5ef3ec7b00b33543dc4f3d1e50d45b8ad"
+    },
+    "band-l": {
+     "path": "public/realm/raid/ui-card-branch-a-band-l.webp",
+     "size": [
+      37,
+      50
+     ],
+     "side": 26,
+     "native": [
+      98,
+      134
+     ],
+     "bytes": 1932,
+     "sha256": "4ad3aad46936d98ac3289d1072cda8525c27e9ed2ae223ff9c7d6eb53fa91ed8"
+    },
+    "band-r": {
+     "path": "public/realm/raid/ui-card-branch-a-band-r.webp",
+     "size": [
+      37,
+      50
+     ],
+     "side": 26,
+     "native": [
+      98,
+      134
+     ],
+     "bytes": 1842,
+     "sha256": "83ca36a5ceece3de75864a3572d58458703dff32a7d9600d61ce7a0b57a9ef69"
+    }
+   },
+   "frame": {
+    "path": "public/realm/raid/ui-card-branch-a.webp",
+    "size": [
+     167,
+     490
+    ],
+    "native": [
+     446,
+     1308
+    ],
+    "slice": [
+     292,
+     128,
+     236,
+     128
+    ],
+    "runtimeSlice": [
+     110,
+     48,
+     88,
+     48
+    ],
+    "origin": [
+     26,
+     84
+    ],
+    "bytes": 23602,
+    "sha256": "5d0a547372fe6524867a4cc743964ae88aaa992138433e6d63ba8236006cf87d"
+   }
+  },
+  {
+   "branch": "b",
+   "source": "assets_src/realm/raid/card-frames-51/branch-card-wave-51.png",
+   "sourceSha256": "2ce2116488e613f7f7717021d0bd072a575b5da8498f39e1a15a07a018c96211",
+   "archive": "D:/에셋창고/codex67/branch-card-wave-51.png",
+   "nativeSize": [
+    1024,
+    1536
+   ],
+   "scale": 0.375,
+   "pieces": {
+    "crest": {
+     "path": "public/realm/raid/ui-card-branch-b-crest.webp",
+     "size": [
+      193,
+      80
+     ],
+     "top": -109,
+     "native": [
+      515,
+      214
+     ],
+     "bytes": 11616,
+     "sha256": "448bd70a6a85d72b6e896849d87a24d1ef104a19e35655f0ddb036e6f9034a17"
+    },
+    "base": {
+     "path": "public/realm/raid/ui-card-branch-b-base.webp",
+     "size": [
+      193,
+      49
+     ],
+     "bottom": 0,
+     "native": [
+      515,
+      130
+     ],
+     "bytes": 7196,
+     "sha256": "6435235022ab024f7b3011a7a35663b3004f5926a7e83d4ea3a19a898e828bdb"
+    }
+   },
+   "frame": {
+    "path": "public/realm/raid/ui-card-branch-b.webp",
+    "size": [
+     190,
+     524
+    ],
+    "native": [
+     507,
+     1397
+    ],
+    "slice": [
+     250,
+     150,
+     236,
+     150
+    ],
+    "runtimeSlice": [
+     94,
+     56,
+     88,
+     56
+    ],
+    "origin": [
+     0,
+     113
+    ],
+    "bytes": 43660,
+    "sha256": "635e922dc3f59fd94f0ed786a77ba51d5aa2a3feed7bd4e6a929b10c81425c99"
+   }
+  },
+  {
+   "branch": "c",
+   "source": "assets_src/realm/raid/card-frames-51/branch-card-tempo-51.png",
+   "sourceSha256": "115b94b88739cd13747fa411d9e979a1faa6e5479d0e2eb0cdb88e6ccbf43cdd",
+   "archive": "D:/에셋창고/codex67/branch-card-tempo-51.png",
+   "nativeSize": [
+    1024,
+    1536
+   ],
+   "scale": 0.375,
+   "pieces": {
+    "crest": {
+     "path": "public/realm/raid/ui-card-branch-c-crest.webp",
+     "size": [
+      136,
+      82
+     ],
+     "top": -12,
+     "native": [
+      364,
+      218
+     ],
+     "bytes": 8158,
+     "sha256": "39ef9817a293a358dd785ca782d8cd8003cefa1b7f854770cee833fb8659e4f1"
+    },
+    "base": {
+     "path": "public/realm/raid/ui-card-branch-c-base.webp",
+     "size": [
+      136,
+      28
+     ],
+     "bottom": 10,
+     "native": [
+      364,
+      76
+     ],
+     "bytes": 3024,
+     "sha256": "5cd0333aae41ffde6be50140eb6e88c36f05404544eb8c813d87337aef60e671"
+    }
+   },
+   "frame": {
+    "path": "public/realm/raid/ui-card-branch-c.webp",
+    "size": [
+     240,
+     563
+    ],
+    "native": [
+     641,
+     1502
+    ],
+    "slice": [
+     290,
+     190,
+     240,
+     190
+    ],
+    "runtimeSlice": [
+     109,
+     71,
+     90,
+     71
+    ],
+    "origin": [
+     9,
+     16
+    ],
+    "bytes": 43820,
+    "sha256": "c3e14a50967a26ef36295d0bf42b843818e7528bf5a9da16869299bca40237a5"
+   }
+  }
+ ]
+}
