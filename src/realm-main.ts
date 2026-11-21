@@ -20,7 +20,9 @@ import { headcount } from './realm/battle.ts'
 import { forceOf, seasonOf } from './realm/season.ts'
 import { isOldTutorial, migrate, remapOldTutorial, remapOldTutorialJson } from './realm/migrate.ts'
 import type { Hero, Order, Realm, RegionId, ReportLine } from './realm/types.ts'
-import { mountRealmApp } from './ui/realm/app.ts'
+import { ding, mountRealmApp, warmSfx } from './ui/realm/app.ts'
+import { snd } from './ui/realm/sound.ts'
+import { openStartGate, startPreload, type StartGate } from './ui/realm/startgate.ts'
 import { takeRetainers } from './ui/realm/legacy.ts'
 import { clanHeroes } from './ui/realm/dex.ts'
 import { applyBonds } from './realm/bonds.ts'
@@ -379,6 +381,8 @@ const sync = makeSync({
 }, () => app.cloudChanged())
 
 const root = document.getElementById('realm')!
+/** 시작 화면 「아무 키나 누르세요」 — 스플래시 밑에 깔려 있다가 스플래시가 걷히기 시작하면 움직이고 누름을 받는다 (startgate.ts) */
+let startGate: StartGate | null = null
 /**
  * 스플래시를 걷는다 — 글꼴과 첫 화면 그림을 다 받았을 때 (늦어도 SPLASH_MAX_MS). 너무 빨리 걷히면 번쩍이므로 SPLASH_MIN_MS 는 보인다
  * (realm.html #splash · 형 10-23: "이미지 로딩되는 게 고스란히 보이는데")
@@ -412,12 +416,15 @@ function hideSplashWhenReady(): void {
     ...new Set(Object.values(r.heroes).map((h) => `${art}${genArtOf(generalSprite(h)).file}`)),
     `${art}${MIGRANT_ANIM.file}`,
   ]
+  // 시작 화면의 그림 — 로비 그림이 아니면 같이 받아 둔다 (스플래시가 걷히자마자 그 그림이 깔리게)
+  const startStill = startPreload(base)
   // 몫 — 지도 바탕이 있으면 그것이 loadBarMapShare, 나머지를 글꼴과 그림들이 똑같이 나눈다
-  const smalls = 3 + game.length
+  const smalls = 3 + (startStill !== null ? 1 : 0) + game.length
   const mapW = r !== null ? (smalls * R.loadBarMapShare) / (1 - R.loadBarMapShare) : 0
   const fonts = document.fonts.ready.then(() => undefined)
   const ready = Promise.all([
     lb?.add(fonts, 1, R.loadBarImgExpectMs) ?? fonts, img(`${base}realm/title/title-lobby.jpg`, 1), img(`${base}realm/logo/emblem-dagger.png`, 1),
+    ...(startStill !== null ? [img(startStill, 1)] : []),
     ...game.map((u) => img(u, 1)),
     ...(r !== null ? [(() => { const p = worldMapReady(art, seasonOf(r), r.region ?? 'byeonhan-mini'); return lb?.add(p, mapW, R.loadBarMapExpectMs) ?? p })()] : []),
   ])
@@ -434,6 +441,7 @@ function hideSplashWhenReady(): void {
     lb?.finish()
     el.classList.add('out')
     el.addEventListener('transitionend', () => el.remove(), { once: true })
+    startGate?.arm()
   }
   void Promise.race([ready, late]).then(() => {
     el.addEventListener('click', gone)
@@ -570,6 +578,14 @@ const app = mountRealmApp(root, {
   },
 })
 app.show(state?.realm ?? null, state?.before ?? null, state?.report ?? null)
+// 시작 화면 — 로비 앞에 한 장 (Codex 59-A · 형 11-21: "시작할 때 아무 키나 누르세요 이런 게 없다"). 무엇이 어긋나도 로비는 보이게
+try {
+  startGate = openStartGate({ base: import.meta.env.BASE_URL, root, ding: () => ding(snd('tap_drum'), P.realm.startSfxVol), warm: () => warmSfx([snd('tap_drum')]) })
+} catch (e) {
+  console.warn('[시작 화면] 못 열었다:', e)
+  document.getElementById('kstart')?.remove()
+  root.style.visibility = ''
+}
 
 void finishSignIn()
   .then((r) => { if (r !== null && 'error' in r) console.warn('[계정] 로그인 못 함:', r.error) })

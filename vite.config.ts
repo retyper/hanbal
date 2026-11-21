@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { defineConfig, type Plugin } from 'vite'
 
 /**
@@ -30,12 +32,19 @@ const buildStamp = (): Plugin => ({
   generateBundle() { this.emitFile({ type: 'asset', fileName: 'version.txt', source: BUILD_ID }) },
 })
 
+/**
+ * 시작 화면(「아무 키나 누르세요」)의 그림·영상 자리 — public/realm/title/ 에 넣은 것만 적어 번들에 넣는다 (src/ui/realm/startgate.ts).
+ * 없는 파일을 브라우저가 더듬어 404 를 내지 않게. 파일을 넣으면 다음 빌드부터 쓴다 (dev 서버는 다시 켜야 한다)
+ */
+const START_ART = ['start-16x9.mp4', 'start-9x16.mp4', 'start-16x9.jpg', 'start-9x16.jpg']
+  .filter((f) => existsSync(fileURLToPath(new URL(`./public/realm/title/${f}`, import.meta.url))))
+
 // base는 GitHub Pages 서브경로 배포를 위해 빌드 시 주입한다.
 // 로컬 dev/preview는 '/' 로 동작.
 export default defineConfig(({ command }) => ({
   base: process.env.PUBLIC_BASE ?? '/',
   plugins: [stripTuneLabels(), buildStamp()],
-  define: { __BUILD_ID__: JSON.stringify(command === 'build' ? BUILD_ID : 'dev') },
+  define: { __BUILD_ID__: JSON.stringify(command === 'build' ? BUILD_ID : 'dev'), __START_ART__: JSON.stringify(START_ART) },
   build: {
     target: 'es2022',
     // 칠십팔국 시험판(realm.html)은 활터와 번들을 나눈다 — 시험판이 활터의 첫 화면을 건드리지 않게
