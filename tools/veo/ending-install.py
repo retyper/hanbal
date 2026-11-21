@@ -18,7 +18,7 @@ STORE = 'D:/에셋창고'
 OUT = 'public/realm/raid/ending'
 
 
-def pick(kind: str, hero: str) -> str | None:
+def pick(kind, hero):
     found = sorted(glob.glob(f'{STORE}/{kind}_{hero}_flow-*.mp4'), key=os.path.getmtime)
     if not found:
         return None

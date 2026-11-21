@@ -5,6 +5,19 @@ type Entry={host:HTMLElement;run:object;kind:string;low:boolean;visible:boolean;
 /** Only approved clips. Identity is the actual portrait key, not the campaign ID. */
 const clips:Record<string,Partial<Record<'victory'|'defeat',string>>>={
  'w-102-garak-dana':{victory:'victory_w-102-garak-dana',defeat:'defeat_w-102-garak-dana'},
+ // 11-21 Claude Flow(Omni 1.1 · 4초) · tools/veo/ending-install.py 로 넣음 · 쇠비는 덩이쇠를 지킨 v2 판
+ 'w-30-guya-soebi':{victory:'victory_w-30-guya-soebi',defeat:'defeat_w-30-guya-soebi'},
+ 'w-04-gaya-swordswoman':{victory:'victory_w-04-gaya-swordswoman',defeat:'defeat_w-04-gaya-swordswoman'},
+ 'l-L2-soseono':{victory:'victory_l-L2-soseono',defeat:'defeat_l-L2-soseono'},
+ 'w-27-mokji-jinha':{victory:'victory_w-27-mokji-jinha',defeat:'defeat_w-27-mokji-jinha'},
+ 'w-02-goguryeo-lady':{victory:'victory_w-02-goguryeo-lady',defeat:'defeat_w-02-goguryeo-lady'},
+ 'w-13-young-archer':{victory:'victory_w-13-young-archer',defeat:'defeat_w-13-young-archer'},
+ 'w-91-saro-mulsae':{victory:'victory_w-91-saro-mulsae',defeat:'defeat_w-91-saro-mulsae'},
+ 'w-10-pirate-captain':{victory:'victory_w-10-pirate-captain',defeat:'defeat_w-10-pirate-captain'},
+ 'g-64-jumong':{victory:'victory_g-64-jumong',defeat:'defeat_g-64-jumong'},
+ 'g-71-baekje-onjo':{victory:'victory_g-71-baekje-onjo',defeat:'defeat_g-71-baekje-onjo'},
+ 'g-94-golpo-maenun':{victory:'victory_g-94-golpo-maenun',defeat:'defeat_g-94-golpo-maenun'},
+ 'g-11-gaya-iron-general':{victory:'victory_g-11-gaya-iron-general',defeat:'defeat_g-11-gaya-iron-general'},
 }
 export function createEndingVideo(base:string,makeVideo=(host:HTMLElement)=>host.ownerDocument.createElement('video'),makeImage=(host:HTMLElement)=>host.ownerDocument.createElement('img')){
  let current:Entry|null=null
