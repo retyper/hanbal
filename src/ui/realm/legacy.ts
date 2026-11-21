@@ -7,19 +7,8 @@
  */
 import { retainMaxOf, snapshot } from '../../realm/legacy.ts'
 import type { Hero, RegionId } from '../../realm/types.ts'
-import { nameHtml } from './heroview.ts'
-import { STAT_NAME } from '../../realm/data/prose.ts'
 import { t as tr } from '../../i18n/index.ts'
-
-interface Kit {
-  readonly esc: (s: string) => string
-  readonly bust: (hero: string) => string | null
-}
-
-const face = (k: Kit, id: string): string => {
-  const src = k.bust(id)
-  return src !== null ? `<img src="${src}" alt="">` : '<span class="nof"></span>'
-}
+import { ringHtml, type RingOpts } from './hero-ring.ts'
 
 const KEY = 'hanbal.realm.retain'
 
@@ -81,29 +70,15 @@ export function takeRetainers(region: RegionId, tier: number, bodyOf: (id: strin
   return loadBring().slice(0, retainMaxOf(tier)).map((id) => bodyOf(id)).filter((h): h is Hero => h !== undefined).map(snapshot)
 }
 
-/** 단련한 몸의 다섯 능력치 — 「무7 통6 …」 (카드가 좁아 첫 글자만) */
-const drillLine = (h: Hero): string =>
-  `<small class="rtst">${(['mu', 'tong', 'ryak', 'chi', 'deok'] as const).map((s) => `${STAT_NAME[s].slice(0, 1)}${h[s]}`).join(' ')}</small>`
-
 /**
- * 판 고르기의 「데려갈 장수」 — 영웅전에서 거느려 본 장수들. max 는 고른 난세 단계의 동행 수.
- * drilled — 단련터에서 단련한 이의 단련 몸 (없으면 null · 처음 몸으로 온다)
+ * 판 고르기의 「데려갈 장수」 — 영웅전에서 거느려 본 장수들을 얼굴 링으로 (58-A · hero-ring.ts). o.max 는 고른 난세 단계의 동행 수.
+ * 링의 장수 칸(단련 몸 · 각성 모습 · 출신)은 app.ts 가 만들어 넘기고, 고름은 toggleBring 으로만 바뀐다.
  */
-export function bringHtml(k: Kit, served: ReadonlyArray<{ id: string; name: string }>, max: number, drilled: (id: string) => Hero | null = () => null): string {
-  const ids = loadBring().filter((id) => served.some((x) => x.id === id))
-  const on = new Set(ids.slice(0, max))
-  let h = `<div class="retain carry"><h4>${tr('lc.title')} <small>${on.size}/${max}</small></h4>`
-  if (max === 0) return h + `<p class="mute">${tr('lc.alone')}</p></div>`
-  if (served.length === 0) return h + `<p class="mute">${tr('lc.empty')}</p></div>`
-  h += `<p class="mute">${tr('lc.note')}</p><div class="rtl">`
-  for (const x of served) {
-    const sel = on.has(x.id)
-    const d = drilled(x.id)
-    const lv = d?.drill?.lv ?? 0
-    h += `<button class="rtc${sel ? ' on' : ''}${!sel && on.size >= max ? ' full' : ''}" data-act="bring" data-id="${x.id}" data-max="${max}">${face(k, x.id)}<b>${nameHtml(x.name)}</b>`
-      + `${d !== null && lv > 0 ? `<span class="dlv">${tr('dx.drill', { n: lv })}</span>${drillLine(d)}` : ''}<i>${sel ? tr('lc.go') : tr('lc.stay')}</i></button>`
-  }
-  return h + `</div></div>`
+export function bringHtml(o: RingOpts): string {
+  const head = `<div class="retain carry"><h4>${tr('lc.title')} <small>0/${o.max}</small></h4>`
+  if (o.max === 0) return head + `<p class="mute">${tr('lc.alone')}</p></div>`
+  if (o.heroes.length === 0) return head + `<p class="mute">${tr('lc.empty')}</p></div>`
+  return ringHtml(o)
 }
 
 export const LEGACY_CSS = `

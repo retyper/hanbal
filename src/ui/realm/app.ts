@@ -71,7 +71,9 @@ import { guardOptions } from '../../realm/council.ts'
 import type { Approach, Army, BuildWhat, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, Party, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic, WooApproach } from '../../realm/types.ts'
 import { HAEBI_RUN, HAEBI_STAGES, P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, noReachWhy, visibleNodes, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
-import { LEGACY_CSS, bringHtml, clearBring, toggleBring } from './legacy.ts'
+import { LEGACY_CSS, bringHtml, clearBring, loadBring, toggleBring } from './legacy.ts'
+import { HRING_CSS, mountRing, ringCard, type RingHandle, type RingOpts } from './hero-ring.ts'
+import { personOf } from '../../realm/person.ts'
 import { TOWN_CSS, townCheer, townVeilHtml, townViewHtml, type TownSlot } from './townview.ts'
 import { townFort, townGround, townSprite } from '../../realm/data/town-art.ts'
 import { RISE_CSS, riseGraphHtml } from './risegraph.ts'
@@ -736,7 +738,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS.replaceAll('__ART__', ART) + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + BOND_CSS + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + VOLUME_CSS + MEM_CSS + ASCEND_CSS.replaceAll('__ART__', ART) + HILITE_CSS + TOWN_CSS.replaceAll('__ART__', ART) + RISE_CSS + BOOK_CSS + CROWN_CSS + LEAGUE_CSS + WONDER_CSS + recCss() + LANDSCAPE_MAP_CSS
+  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS.replaceAll('__ART__', ART) + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + BOND_CSS + LEGACY_CSS + HRING_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + VOLUME_CSS + MEM_CSS + ASCEND_CSS.replaceAll('__ART__', ART) + HILITE_CSS + TOWN_CSS.replaceAll('__ART__', ART) + RISE_CSS + BOOK_CSS + CROWN_CSS + LEAGUE_CSS + WONDER_CSS + recCss() + LANDSCAPE_MAP_CSS
   document.head.appendChild(style)
   root.classList.add('ap')
   // 그래픽 단계 저사양 · 보통 · 고사양 (quality.ts · 형 10-29: 폰 절전 모드에서 그림이 다 깨졌다)
@@ -934,6 +936,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let cmdJob: CmdJob | null = null
   /** 판을 열기 전 「데려갈 장수」 팝업 — 고른 판 (형 10-25: "게임 시작할 때 데려갈 장수가 팝업으로 · 영웅전 내 기록의 장수만 · 가능한 수대로 체크") */
   let bringAsk: { nation: string; region: RegionId; tier: number } | null = null
+  /** 그 팝업의 얼굴 링 (58-A) — 팝업을 닫으면 멈춘다 */
+  let bringRing: RingHandle | null = null
   /** 협공 짝을 마지막으로 울린 때 — 같은 고름엔 한 번만 */
   let pinRung = ''
   /** 거둔 소리를 낸 보고 — 같은 달 보고로 지도를 다시 그려도 한 번만 */
@@ -5643,22 +5647,62 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     clearBring()
     bringPopup()
   }
-  /** 「데려갈 장수」 팝업을 (다시) 그린다 — 영웅전에서 거느려 본 장수만 · 난세가 허락하는 수까지 체크 */
+  /**
+   * 「데려갈 장수」 팝업을 (다시) 그린다 — 영웅전에서 거느려 본 장수만 · 난세가 허락하는 수까지.
+   * 얼굴 링 (58-A · hero-ring.ts): 큰 그림은 기본 초상(각성 모습을 켠 장수는 각성 초상) · 단련한 몸의 능력치 · 고를 때 그 장수 목소리.
+   * 고름은 toggleBring 으로만 바뀐다 — 자리가 다 찼으면 먼저 고른 이를 빼고 넣는다 (한 명만 데려가는 난세에서 얼굴만 바꿔 누르면 되게)
+   */
   function bringPopup(): void {
     if (bringAsk === null) return
     const max = retainMaxOf(bringAsk.tier)
-    // 단련한 몸으로 온다 — 카드에 「단련 n」과 그 몸의 능력치 (HERO-GROWTH ★ §A)
+    const served = servedHeroes()
+    const isServed = (id: string): boolean => served.some((x) => x.id === id)
+    // 단련한 몸으로 온다 — 「단련 n」과 그 몸의 능력치 (HERO-GROWTH ★ §A)
     const drill = loadDrill()
-    const drilled = (id: string): Hero | null => {
-      const b = drillBody(id)
+    const awake = readAwakeningProfile(localStorage)
+    const cat = new Map(dexCatalog().map((x) => [x.id, x] as const))
+    const heroes = served.map(({ id, name }) => {
+      const x = cat.get(id)
+      const born = drillBody(id)
       const e = drill.h[id]
-      return b !== undefined && e !== undefined && e.level > 0 ? applyDrill(b, e) : null
+      const st = awake.people[personOf(id)]
+      return ringCard(ART, {
+        id, name, nameHtml: nameHtml(name),
+        from: x === undefined ? tr('dx.clan') : x.board === 'wander' ? tr('dxBoard.wander') : x.nationName,
+        lv: e?.level ?? 0,
+        body: born !== undefined && e !== undefined && e.level > 0 ? applyDrill(born, e) : born,
+        awake: st?.unlocked === true && st.appearanceAwake !== false,
+      })
+    })
+    const picks = (): string[] => loadBring().filter(isServed).slice(0, max)
+    const opts: RingOpts = {
+      heroes, max, picked: picks(),
+      text: { title: tr('lc.title'), party: tr('lc.party'), prev: tr('lc.prev'), next: tr('lc.next'), lv: (n) => tr('dx.drill', { n }) },
+      onToggle: (id) => {
+        const now = picks()
+        if (!now.includes(id) && now.length >= max && now[0] !== undefined) toggleBring(now[0], max)
+        toggleBring(id, max)
+        return picks()
+      },
+      onPicked: (id) => {
+        const h = drillBody(id)
+        if (h !== undefined && voiceGate(performance.now())) ding(voicePath(h, 'tap'), P.realm.voiceVol)
+      },
     }
-    const body = `<div class="bringbox" role="dialog" aria-label="${tr('bring.aria')}"><button class="bx" data-act="bring-x" aria-label="${tr('more.closeAria')}">✕</button>${bringHtml(DEX_KIT, servedHeroes(), max, drilled)}`
+    const body = `<div class="bringbox hrgbox" role="dialog" aria-label="${tr('bring.aria')}"><button class="bx" data-act="bring-x" aria-label="${tr('more.closeAria')}">✕</button>${bringHtml(opts)}`
       + `<div class="bringgo"><button class="btn ghost" data-act="bring-none">${tr('bring.none')}</button><button class="btn pri" data-act="bring-go">${tr('bring.go')}</button></div></div>`
     let ov = root.querySelector<HTMLElement>('.bringov')
-    if (ov === null) { root.insertAdjacentHTML('beforeend', `<div class="bringov"></div>`); ov = root.querySelector<HTMLElement>('.bringov')! }
+    if (ov === null) { root.insertAdjacentHTML('beforeend', `<div class="bringov hrgov"></div>`); ov = root.querySelector<HTMLElement>('.bringov')! }
+    bringRing?.dispose()
     ov.innerHTML = body
+    const ringEl = ov.querySelector<HTMLElement>('.hrg')
+    bringRing = ringEl !== null ? mountRing(ringEl, opts) : null
+  }
+  /** 「데려갈 장수」 팝업을 걷는다 — 링도 멈춘다 */
+  function bringClose(): void {
+    bringRing?.dispose()
+    bringRing = null
+    root.querySelector('.bringov')?.remove()
   }
 
   /** 「저장 · 불러오기」 창을 (다시) 그린다 — 닫혀 있으면 걷는다 */
@@ -8294,9 +8338,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'fr-nation': if (front !== null && front.kind === 'nations') front = { kind: 'detail', region: front.region, id: d['id']! }; $('.mapwrap').scrollTop = 0; paint(); return
       case 'fr-start': if (front !== null && front.kind === 'detail') startWithBring(d['id']!, front.region, front.region === 'tutorial' ? 0 : Math.min(tierPick[front.region] ?? 1, tierOpen(front.region))); return
-      case 'bring-go': { const b = bringAsk; bringAsk = null; root.querySelector('.bringov')?.remove(); if (b !== null) host.onNewGame(b.nation, b.region, b.tier); return }
-      case 'bring-none': { const b = bringAsk; bringAsk = null; root.querySelector('.bringov')?.remove(); clearBring(); if (b !== null) host.onNewGame(b.nation, b.region, b.tier); return }
-      case 'bring-x': bringAsk = null; root.querySelector('.bringov')?.remove(); return
+      case 'bring-go': { const b = bringAsk; bringAsk = null; bringClose(); if (b !== null) host.onNewGame(b.nation, b.region, b.tier); return }
+      case 'bring-none': { const b = bringAsk; bringAsk = null; bringClose(); clearBring(); if (b !== null) host.onNewGame(b.nation, b.region, b.tier); return }
+      case 'bring-x': bringAsk = null; bringClose(); return
       case 'fr-again': if (realm !== null) { const rg = realm.region ?? 'byeonhan-mini'; host.onNewGame(realm.player, rg, Math.min(realm.tier ?? 1, tierOpen(rg))) } return
       case 'tier-pick': if (front !== null && front.kind === 'detail') tierPick[front.region] = Number(d['v']); paint(); return
       case 'goal-fold': try { localStorage.setItem(GOAL_FOLD_KEY, goalFolded() ? '0' : '1') } catch { /* 저장 못 하는 곳 */ } paint(); return
