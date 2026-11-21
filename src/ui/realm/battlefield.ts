@@ -3426,6 +3426,54 @@ html[data-lang="en"] .ap .wr.b0 .whelp::after { content: 'Details'; } html[data-
   .ap .wfpop { width: 400px; }
 }
 @media (prefers-reduced-motion: reduce) { .ap .wr *, .ap .warfx, .ap .warfx * { animation-duration: .01s !important; animation-delay: 0s !important; transition: none !important; } }
+/* 58-B2 v2: restore the confrontation composition; preserve assets, clock and skip. */
+@media (orientation: landscape) {
+  .ap .wopen .wocol { box-sizing: border-box; height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; justify-content: stretch; align-content: stretch; gap: 6px; padding: max(8px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left)); overflow: visible; }
+  .ap .wopen .wohead { padding: 0; }
+  .ap .wopen .wohead b { font-size: clamp(28px, 8vh, 48px); line-height: 1.05; letter-spacing: 2px; }
+  .ap .wopen .wohead span { margin-top: 3px; font-size: 13px; line-height: 1.15; }
+  .ap .wopen .woin { min-height: 0; padding: 0 2vw; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-content: center; align-items: start; gap: 16px; }
+  .ap .wopen .wosd { --pf: clamp(174px, 46vh, 360px); position: relative; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: var(--pf) auto auto; justify-items: center; align-items: center; align-self: center; gap: 3px; text-align: center; }
+  .ap .wopen .wosd .wpf.big { --pf: clamp(174px, 46vh, 360px); grid-column: 1; grid-row: 1; }
+  .ap .wopen .wosd > .woe { position: absolute; z-index: 2; top: 2px; left: calc(50% - var(--pf) / 2 + 2px); width: 36px; height: 36px; }
+  .ap .wopen .wosd > b { grid-column: 1; grid-row: 1; align-self: end; z-index: 2; max-width: 100%; box-sizing: border-box; margin-bottom: 3px; padding: 2px 10px; font-size: clamp(22px, 5.6vh, 36px); line-height: 1.1; background: #000b; overflow-wrap: anywhere; }
+  .ap .wopen .wosd > span:not(.wpf) { grid-column: 1; grid-row: 2; font-size: 13px; line-height: 1.2; overflow-wrap: anywhere; }
+  .ap .wopen .wosd .womix { grid-column: 1; grid-row: 3; max-width: 100%; margin-top: 0; justify-content: center; gap: 2px 4px; }
+  .ap .wopen .wosd .womix span { padding: 1px 4px 1px 2px; font-size: 12px; line-height: 1.2; }
+  .ap .wopen .wosd .womix b { margin-right: 2px; font-size: 12px; }
+  .ap .wopen .wosd .womix img { width: 20px; height: 20px; }
+  .ap .wopen .wom { align-self: start; margin-top: calc((clamp(174px, 46vh, 360px) - clamp(96px, 25vh, 180px)) / 2); }
+  .ap .wopen .wom img.wox { width: clamp(96px, 25vh, 180px); }
+  .ap .wopen .wofoot { display: grid; grid-template-columns: auto minmax(0, 1fr) 52px; align-items: center; width: min(100%, 960px); margin: 0 auto; gap: 4px 12px; text-align: left; }
+  .ap .wopen .wobar { grid-column: 1 / -1; height: 8px; }
+  .ap .wopen .wofoot > em { grid-column: 1; grid-row: 2; justify-self: start; margin-top: 0; padding: 2px 8px; font-size: 12px; line-height: 1.2; overflow-wrap: anywhere; }
+  .ap .wopen .woterr { grid-column: 2; grid-row: 2; display: flex; flex-wrap: wrap; justify-content: center; min-width: 0; gap: 4px 12px; margin-top: 0; }
+  .ap .wopen .wotc { gap: 4px; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+  .ap .wopen .wotc img { width: 24px; height: 24px; }
+  .ap .wopen .wotc > span { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px; }
+  .ap .wopen .wotc b, .ap .wopen .wofoot .wotc em { margin-top: 0; font-size: 12px; line-height: 1.15; }
+  /* The same c.line remains available in the existing preparation terrain tooltip. */
+  .ap .wopen .wotc small { display: none; }
+  .ap .wopen .wointro { grid-column: 1 / span 2; grid-row: 3; margin-top: 0; padding: 0; gap: 6px; border: 0; border-radius: 0; background: none; }
+  .ap .wopen .wointro img { width: 22px; height: 22px; }
+  .ap .wopen .wointro p { font-size: 12px; line-height: 1.2; }
+  .ap .wopen .wofoot > .wocd { grid-column: 3; grid-row: 2 / span 2; justify-self: end; box-sizing: border-box; width: 40px; height: 40px; margin-top: 0; }
+  .ap .wopen .wofoot > .wocd i { font-size: 24px; }
+  .ap .wopen .wofoot > .wocd::after { left: auto; right: calc(100% + 2px); top: 50%; margin: -8px 0 0; font-size: 16px; }
+}
+
+/* 58-B2 portrait: preserve the confrontation portraits; fit existing footer content. */
+@media (orientation: portrait) {
+  .ap .wopen .wocol { padding-top: max(18px, env(safe-area-inset-top)); padding-bottom: max(14px, env(safe-area-inset-bottom)); gap: 8px; overflow: visible; }
+  .ap .wopen .wosd .womix b { font-size: 12px; }
+  .ap .wopen .woterr { margin-top: 8px; }
+  .ap .wopen .wofoot .wotc em { font-size: 12px; }
+  /* Same terrChips c.line remains in the existing preparation terrain tooltip. */
+  .ap .wopen .wotc small { display: none; }
+  .ap .wopen .wointro { margin-top: 8px; }
+  .ap .wopen .wofoot > .wocd { box-sizing: border-box; width: 48px; height: 48px; margin-top: 8px; }
+}
+
 `
 
 /** 싸움이 열리는 판 — 싸움터 그림 · 양쪽 깃발과 장수 · 이름 · 누가 쳐들어왔나 · 세기 막대 · 어느 나라와 싸우는 중인가 */
