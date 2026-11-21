@@ -18,7 +18,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 SRC = 'D:/에셋창고/codex67'
 CHECK = os.path.join(SRC, 'check')
 FOLDERS = ('public/realm/anim-px',)   # anim2 는 옛 옷인 띠가 있어(감실 등) 열전이 쓰는 anim-px 에만 넣는다
-TOL = 30          # 바탕 색과 이만큼 안쪽이면 바탕 (채널 최대 차)
+TOL = 8           # 바탕 색과 이만큼 안쪽이면 바탕 (채널 최대 차) · 11-22: 30 이던 때 바탕(#1c2129)과 가까운 검은 외곽선·어두운 옷까지 지워져 그림이 흐리고 얇아졌다 → Codex 판 바탕은 ±2 로 평평하니 8
+SPECK = 25        # 바탕을 지운 뒤 몸과 떨어진 이보다 작은 점은 지움
+POCKET = 20       # 몸에 갇힌 바탕 덩어리가 이 칸 이상이면 지움
 MIN_AREA = 60     # 이보다 작은 덩어리는 티끌로 버림
 
 
@@ -29,23 +31,19 @@ def key_out(img):
     corners = np.concatenate([a[:8, :8].reshape(-1, 3), a[:8, -8:].reshape(-1, 3), a[-8:, :8].reshape(-1, 3), a[-8:, -8:].reshape(-1, 3)])
     bg = np.median(corners, axis=0)
     near = np.abs(a - bg).max(axis=2) <= TOL
-    seen = np.zeros((h, w), bool)
-    q = deque()
-    for x in range(w):
-        for y in (0, h - 1):
-            if near[y, x] and not seen[y, x]:
-                seen[y, x] = True; q.append((y, x))
-    for y in range(h):
-        for x in (0, w - 1):
-            if near[y, x] and not seen[y, x]:
-                seen[y, x] = True; q.append((y, x))
-    while q:
-        y, x = q.popleft()
-        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-            ny, nx = y + dy, x + dx
-            if 0 <= ny < h and 0 <= nx < w and near[ny, nx] and not seen[ny, nx]:
-                seen[ny, nx] = True; q.append((ny, nx))
-    rgba = np.dstack([a.astype(np.uint8), np.where(seen, 0, 255).astype(np.uint8)])
+    # 가장자리와 (상하좌우로) 이어진 바탕 덩어리만 — 옛 한 칸씩 넓혀 가기(deque)와 같은 결과를 scipy 로 빠르게
+    from scipy import ndimage
+    lab, n = ndimage.label(near)
+    edge = np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))
+    # 활대와 시위 사이 · 팔과 몸 사이처럼 몸에 갇힌 바탕도 지운다 (바탕색 그대로인 덩어리 POCKET 칸 이상 · 머리카락 속 바탕색 점 몇 개는 남김)
+    big = np.nonzero(ndimage.sum(near, lab, range(1, n + 1)) >= POCKET)[0] + 1 if n else np.array([], int)
+    seen = np.isin(lab, np.union1d(edge[edge > 0], big))
+    alpha = np.where(seen, 0, 255).astype(np.uint8)
+    lab, n = ndimage.label(alpha > 0)
+    if n:
+        size = ndimage.sum(alpha > 0, lab, range(1, n + 1))
+        alpha[np.isin(lab, np.nonzero(size < SPECK)[0] + 1)] = 0
+    rgba = np.dstack([a.astype(np.uint8), alpha])
     return Image.fromarray(rgba)
 
 
