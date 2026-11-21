@@ -46,16 +46,23 @@ export function championFanAngles(e: Mob) {
   return Array.from({ length: count }, (_, i) => angle + (i - (count - 1) / 2) * B.fanSpread / (count - 1))
 }
 export const championWindup = (pattern: ChampionPattern | null | undefined) => pattern === 'dash' ? B.dashWind : pattern === 'slam' ? B.slamWind : pattern === 'fan' ? B.fanWind : pattern === 'summon' ? B.summonWind : 0
-export function stepChampion(s: HaebiRun, e: Mob, dt: number, hooks: ChampionHooks) {
+/** 공격·돌진이 끝나 비틀거림(회복 틈)으로 — 판 끝에 박힌 돌진 · 56-C 목책에 박힌 돌진도 같은 길 */
+export function championRecover(e: Mob, hooks: Pick<ChampionHooks, 'cue'>) {
+  const c = e.champion!
+  e.wind = 0; e.recovery = B.recoverySeconds; c.recoveryHitUsed = false; c.mode = 'chase'; hooks.cue('recovery')
+}
+/** walk: 걸어갈 자리 (56-C 목책 판에서 문으로 돌 때 · 없으면 장수) — 겨눔·공격 거리는 늘 장수 */
+export function stepChampion(s: HaebiRun, e: Mob, dt: number, hooks: ChampionHooks, walk?: { x: number; y: number } | null) {
   const c = e.champion!
   if (e.hp <= 0 || s.state !== 'playing') return
-  const recover = () => { e.wind = 0; e.recovery = B.recoverySeconds; c.recoveryHitUsed = false; c.mode = 'chase'; hooks.cue('recovery') }
+  const recover = () => championRecover(e, hooks)
   const summon = (count: number) => { for (let i = 0; i < count; i++) { const a = i * Math.PI * 2 / count; hooks.summon(championStage(s).minion, e.x + Math.cos(a) * B.summonRadius, e.y + Math.sin(a) * B.summonRadius) } }
   if (e.recovery! > 0) { e.recovery = Math.max(0, e.recovery! - dt); return }
   if (c.mode === 'enter') {
     c.t -= dt
-    const d = Math.hypot(s.x - e.x, s.y - e.y) || 1, speed = C.mobSpeed + s.t * C.speedTimeScale
-    e.x += (s.x - e.x) / d * speed * dt; e.y += (s.y - e.y) / d * speed * dt
+    const tx = walk?.x ?? s.x, ty = walk?.y ?? s.y
+    const d = Math.hypot(tx - e.x, ty - e.y) || 1, speed = C.mobSpeed + s.t * C.speedTimeScale
+    e.x += (tx - e.x) / d * speed * dt; e.y += (ty - e.y) / d * speed * dt
     if (c.t <= 0) c.mode = 'chase'
     return
   }
@@ -96,5 +103,9 @@ export function stepChampion(s: HaebiRun, e: Mob, dt: number, hooks: ChampionHoo
     }
     return
   }
-  if (d > 100) { const speed = (C.mobSpeed + s.t * C.speedTimeScale) * (e.phase! >= 2 ? B.phaseMove : 1); e.x += x / d * speed * dt; e.y += y / d * speed * dt }
+  if (d > 100) {
+    const speed = (C.mobSpeed + s.t * C.speedTimeScale) * (e.phase! >= 2 ? B.phaseMove : 1)
+    if (walk) { const wx = walk.x - e.x, wy = walk.y - e.y, wd = Math.hypot(wx, wy) || 1; e.x += wx / wd * speed * dt; e.y += wy / wd * speed * dt }
+    else { e.x += x / d * speed * dt; e.y += y / d * speed * dt }
+  }
 }

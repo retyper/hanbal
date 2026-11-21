@@ -553,6 +553,40 @@ export const HAEBI_GOLD = { perKill: .05, perElite: 12, perMinute: 6, clear: 400
  * 씨앗 둘짜리 봇 값이다. 사람 손으로 잰 뒤(가10) 다시 본다.
  */
 export const HAEBI_WALL = { stage: 'palisade', survive: 180, shop: { axe: .12, sword: .12, spear: .12, magic: .32, sling: .5, bow: .5, dagger: .64 } } as const
+/**
+ * 56-C 목책을 진짜로 (11-21 형: 「3스테이지 목책이 오브젝트도 아니라서 다 그림 밟고 온다」) — 목책 돌파 판(규칙 56C)에만 선다.
+ * 판을 가로지르는 목책 줄을 마디(축에 맞춘 상자)로 세운다. 장수도 적도 성한 마디에 막힌다 · 화살·던진 것은 넘어간다.
+ * 적은 곧게 못 오면 가장 가까운 문(열린 문 · 부서진 마디)으로 돌아 들어온다(문까지 곧장 · 길 찾기 없음 · 프레임 예산).
+ * 마디는 체력이 있다: 장수의 공격·비기가 닿으면 깎이고(내가 부수면 지름길) 창돌격꾼 돌진 · 정예·두목도 부순다. 부서진 마디는 지나간다.
+ * 가운데 큰 문(g)이 「마지막 문」 — 부서진 판 초를 palisade.gateBrokenAt 에 적는다(거대 보스 연결은 뒤에 · 두목 때는 그대로).
+ *  y 줄의 발 자리(판 y) · depth 막는 띠의 반 두께(px) · layout 왼쪽부터 w 말뚝 마디 · o 열린 문 · g 큰 문(문은 두 마디 폭 · 마디 폭 = 판 폭 ÷ 마디 수)
+ *  wallHp·gateHp 체력 · heroR·mobR·bigR 부딪힘 반지름(장수 · 잡졸 · 정예·두목) · aimMargin 문으로 돌 때 문 기둥·띠에서 띄우는 px
+ *  bash·bashEvery·bashPush 장수가 목책 쪽으로 밀면 내려친다: 한 번 피해(× 레벨·상점 힘 · 모습) · 사이(초 ÷ 맹공) · 목책 쪽으로 미는 몫(입력 방향 0~1)
+ *  hit 장수의 공격이 닿을 때 한 번에 깎는 값(레벨과 무관) — melee 주 무기 근접(도끼·칼·창·단검·방울 · 떨어진 팔매돌) ·
+ *    splash 터짐·조합 둘레(부적·화살비·혼불·뇌화·도는 도끼 … · 마디가 번쩍이는 동안은 다시 안 깎는다) · skill 비기·각성 터짐.
+ *    공격의 피해 숫자를 쓰지 않는다 — 무기 단계·조합으로 수십 배 크는 피해를 받으면 줄이 통째로 녹는다
+ *    (11-22 봇 판: 피해 그대로면 4분 · 정한 값 × 레벨 힘이어도 5분 안에 줄이 다 무너졌다). 목책은 일부러 밀어 부수는 것(bash · 레벨 힘을 탄다)이 첫 길이다.
+ *  chargeBreak 창돌격꾼 돌진이 박힐 때 · champBash·bossBash 정예·두목이 밀 때 초당 · champDash 정예·두목 돌진이 박힐 때
+ *  flash 맞은 번쩍(초) · hitLift 맞은 불꽃을 띄우는 높이(px · 말뚝 허리) · breakDust 부서질 때 흙먼지 둘레(마디 폭의 몫)
+ * view (그리기만): wallDraw·brokenDraw 마디 그림 폭(마디 폭의 몇 배 · 끝 가로대가 이웃과 겹친다) · gateOverhang 문 기둥이 이웃 마디에 걸치는 px · foot 그림 발을 줄보다 내리는 px
+ *   shake·shakeHz 맞을 때 흔들림(px · 빠르기) · behindAlpha·behindPad 장수가 마디 바로 뒤에 서면 옅게(그림 폭 + 이만큼 안) · bar* 깎인 체력 막대(맞은 뒤 보이는 초 · 이 몫 아래로 깎여야 뜸 · 폭 몫 · 키 · 띄움) ·
+ *   debris* 부서질 때 나무 조각(초 · 수 · 빠르기 · 솟음 · 무게 · 크기 · 튀어 오르는 높이 px · 도는 빠르기) · dust* 흙먼지(퍼짐 몫 · 오르는 px/초 · 커지는 배) ·
+ *   breakShake·breakShakeLife 부서질 때 판 흔들림(큰 문은 gateShake 배) · shadow* 발밑 그늘(짙기 · 세로 반지름 · 가로 반지름 = 마디 폭의 몫)
+ */
+export const HAEBI_PALISADE = {
+  y: 205, depth: 8, layout: 'wwwwowwwgwwwowwww',
+  wallHp: 1500, gateHp: 15000, heroR: 14, mobR: 10, bigR: 18, aimMargin: 4,
+  bash: 120, bashEvery: .45, bashPush: .45, hit: { melee: 8, splash: 1, skill: 25 },
+  chargeBreak: 220, champBash: 240, bossBash: 600, champDash: 500,
+  flash: .14, hitLift: 28, breakDust: .6,
+  view: {
+    wallDraw: 1.1545, brokenDraw: 1.177, gateOverhang: 6, foot: 2, shake: 2.5, shakeHz: 70, behindAlpha: .5, behindPad: 20,
+    barShow: 2.5, barFrom: .95, barWidth: .7, barHeight: 4, barLift: 6,
+    debrisLife: .6, debris: 9, debrisSpeed: 170, debrisLift: 120, debrisGravity: 420, debrisSize: 16, debrisFrom: 30, debrisSpin: 9,
+    dustSpread: .35, dustRise: 30, dustGrow: 2,
+    breakShake: 5, breakShakeLife: .3, gateShake: 2, shadowAlpha: .28, shadowHeight: 7, shadowWidth: .56,
+  },
+} as const
 
 export interface Knob {
   readonly v: number
