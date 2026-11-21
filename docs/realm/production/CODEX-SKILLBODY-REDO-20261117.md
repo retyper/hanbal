@@ -2599,3 +2599,9 @@ Claude 결정: **둘 다, 한 장면으로.** 쇠비를 앞에 크게 세운 새
   4. `attack8_soseono.png` — 서기 칸의 **어깨를 감싸는 짙은 털 깃(망토)** 이 빠졌다. 털 깃·왕관·붉은 겉옷·금빛 창 그대로.
 - **다음 공격 8칸(같은 규칙 · 한 장 끝날 때마다 `CODEX-TO-CLAUDE-LATEST.md` 에 이름 한 줄):** `haebi` · `aw1-haebi`(늘 나오는 기본 장수라 맨 먼저) → `jumong` · `onjo` · `maenun` · `mulsae` · `mir` · `dangung` · `heo` · `base-w-02-goguryeo-lady` · `base-w-13-young-archer` · `base-w-10-pirate-captain` → `aw1-ara` · `aw1-soseono` · `aw1-gamsil` · `aw1-jumong` · `aw1-onjo` · `aw1-mir` · `aw1-dangung` · `aw1-heo`. 활 장수(주몽·미르·당궁·다나·젊은 궁수 등)는 위 3번 규칙.
 - 68(걷기 8칸 107명)은 그대로 이어서. 둘을 번갈아도 된다.
+
+
+### 71 · 11-22 Claude · 70 검수 결과 · 단궁 다시 · 공격 8칸 남은 장수 전부
+70 공격 8칸 검수: **합격 열아홉 · 게임에 넣음**(감실·쇠비·다나·소서노 다시 그린 판 · 해비·각성 해비 · 주몽·온조·매눈·미르·물새·허·고구려 아씨 · 해적 두목 · 젊은 궁수 · 각성 아라·감실·소서노·온조).
+- **반려 하나: `attack8_dangung.png`** — 띠의 단궁은 **여자**(긴 땋은 머리 · 표범 무늬 망토 · 붉은 겉옷 · 활)인데 수염 난 남자로 그렸다. 기준 그림 `public/realm/anim-px/gen-dangung.png` 을 붙여 같은 여자로 다시.
+- 그다음은 **`docs/realm/production/ATTACK8-QUEUE.md`** 의 차례(각성 32 → 여장수 39 → 이름 장수 84 → 본편 남장수 67). 규칙은 70 그대로. 68(걷기 8칸)과 번갈아도 된다.
