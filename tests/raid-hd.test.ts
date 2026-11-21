@@ -35,8 +35,8 @@ test('53-A actual CSS content controls backing, low tier uses DPR1, pointer logi
   assert.equal(wantsHeroHd(1.3), false); assert.equal(wantsHeroHd(1.3001), true)
   setHeroArt('jumong', 'aw1-jumong')
   assert.deepEqual(heroHdFiles(1), []); assert.deepEqual(heroHdFiles(1.8), ['anim-px/gen-jumong_hd.png', 'anim-px/gen-aw1-jumong_hd.png'], '11-22: 각성 주몽도 2배 띠(bake-hero-hd2)')
-  setHeroArt('base-w-102-garak-dana')
-  assert.deepEqual(heroHdFiles(4), [], 'unqualified Dana source cannot masquerade asHD')
+  setHeroArt('base-w-13-young-archer')
+  assert.deepEqual(heroHdFiles(4), [], 'a hero without a baked 2x strip never asks for one (11-22: Dana now has one)')
 })
 test('53-A density cache preserves logical size, folds wideHD, prewarms white without getImageData', () => {
   const old = globalThis.document, made: { width: number; height: number; draws: number }[] = []
@@ -63,12 +63,18 @@ test('53-A ending overlay also restores backing transform while using logical di
 test('53-A shipped nativeHD itself fits4096, and folded frame18 uses row1 without changing20-frame order', () => {
   const path = 'anim-px/gen-jumong_hd.png', sheet = HERO_HD_SHEETS[path]!, draws: unknown[][] = []
   const png = readFileSync(new URL('../public/realm/anim-px/gen-jumong_hd.png', import.meta.url))
-  const meta = JSON.parse(readFileSync(new URL('../tools/sprite-kit/hero-hd-jumong.json', import.meta.url), 'utf8'))
+  // 11-22: 주몽 2배 띠도 bake-hero-hd2 로 다시 구움(새 공격 칸) · 2배 띠 모두의 원본·배율·sha 는 tools/sprite-kit/hero-hd2.json
+  const reg = JSON.parse(readFileSync(new URL('../tools/sprite-kit/hero-hd2.json', import.meta.url), 'utf8')) as Record<string, { cell: [number, number]; cols: number; feet: number; scale: Record<string, number>; sha256: string }>
+  assert.ok(Object.keys(reg).length >= 30 && 'jumong' in reg)
+  for (const [key, meta] of Object.entries(reg)) {
+    const file = readFileSync(new URL(`../public/realm/anim-px/gen-${key}_hd.png`, import.meta.url))
+    assert.equal(createHash('sha256').update(file).digest('hex'), meta.sha256, key)
+    assert.equal(file.readUInt32BE(16), meta.cell[0] * meta.cols, key); assert.equal(file.readUInt32BE(20), meta.cell[1] * Math.ceil(20 / meta.cols), key)
+    assert.ok(file.readUInt32BE(16) <= 4096 && meta.cell[1] === 320 && meta.feet >= 300 && meta.feet <= 320, key)
+    assert.ok(Object.values(meta.scale).every(v => v <= 1.3), `${key}: hi-res sources are reduced or only mildly enlarged, never the 160 strip`)
+    assert.deepEqual(HERO_HD_SHEETS[`anim-px/gen-${key}_hd.png`], { cell: meta.cell, cols: meta.cols }, key)
+  }
   assert.equal(png.readUInt32BE(16), 3840); assert.equal(png.readUInt32BE(20), 640)
-  assert.equal(createHash('sha256').update(png).digest('hex'), meta.sha256)
-  assert.ok(meta.rawToHdScale <= 1 && meta.rawToHdScale * meta.walkFactor <= 1, 'native pixels are reduced, never upscaled')
-  assert.equal(meta.feet, 312); assert.equal(meta.frames.length, 20)
-  assert.ok(meta.frames.every((f: { frame: number; feet: number }, i: number) => f.frame === i && f.feet === 312))
   const ctx = { canvas: { width: 2240, height: 1440 }, translate() {}, scale() {}, drawImage: (...a: unknown[]) => draws.push(a), imageSmoothingEnabled: true } as unknown as CanvasRenderingContext2D
   sprite(ctx, new Map([[path, { width: sheet.cell[0] * sheet.cols, height: 640, complete: true } as HTMLImageElement]]), path, 1, 1, 94, 18, 1, false, 4)
   assert.deepEqual(draws[0]!.slice(1, 5), [3072, 320, 384, 320])

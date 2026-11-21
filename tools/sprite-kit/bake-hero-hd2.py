@@ -248,6 +248,8 @@ def main():
             dst = os.path.join(PX, f'gen-{key}_hd.png')
             atlas.save(dst, optimize=True)
             meta['bytes'] = os.path.getsize(dst)
+            import hashlib
+            meta['sha256'] = hashlib.sha256(open(dst, 'rb').read()).hexdigest()
             register(key, meta)
         print(f"{key}: 칸 {meta['cell']} · 열 {meta['cols']} · 배율 걷기 {meta['scale']['walk']} 공격 {meta['scale']['attack']} 보충 {meta['scale']['hdx']}"
               + f" · 칸 밖 {bad or '없음'}" + (' · 씀' if write else '') + f' · {pv}')

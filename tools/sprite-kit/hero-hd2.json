@@ -12,6 +12,7 @@
    "hdx": 0.8492,
    "walk": 0.6935
   },
+  "sha256": "fdbde7136f17b3347af0501b1a92eeb0c6c3d1e72fa7e8a08094e7dace86b5a1",
   "sources": {
    "attack": "codex67/attack8_ara.png",
    "hdx": "codex75/hdx_ara.png",
@@ -31,6 +32,7 @@
    "hdx": 0.7688,
    "walk": 1.0073
   },
+  "sha256": "e415e2945eeaec4bbf3bf62e9d95641fe2dfa38c2751759c0b70d78b7cc44dd7",
   "sources": {
    "attack": "codex70/attack8_aw1-ara.png",
    "hdx": "codex75/hdx_aw1-ara.png",
@@ -50,6 +52,7 @@
    "hdx": 0.829,
    "walk": 0.8006
   },
+  "sha256": "c316f6dfc9ab81b3db01b3132010ba22f6c4660ccca33158f0f0a0e9059e8cdd",
   "sources": {
    "attack": "codex70/attack8_aw1-base-g-38-chopal-palmae.png",
    "hdx": "codex75/hdx_aw1-base-g-38-chopal-palmae.png",
@@ -69,6 +72,7 @@
    "hdx": 0.7562,
    "walk": 0.9928
   },
+  "sha256": "784b569749a6302a9a2bf928ca07e8f94720d6307e1a2c5032e13faee1352e3a",
   "sources": {
    "attack": "codex71/attack8_aw1-dangung.png",
    "hdx": "codex75/hdx_aw1-dangung.png",
@@ -88,6 +92,7 @@
    "hdx": 0.7132,
    "walk": 0.9356
   },
+  "sha256": "eddd103064faf31acd34ea31a4ca1f8a27296e26b52ea3a67f42afe50c54e3aa",
   "sources": {
    "attack": "codex70/attack8_aw1-gamsil.png",
    "hdx": "codex75/hdx_aw1-gamsil.png",
@@ -107,6 +112,7 @@
    "hdx": 0.7413,
    "walk": 0.6667
   },
+  "sha256": "69e0de3cd0c85846af703583a066bac6f2280d19d7e23e2f387e5382b02a2d52",
   "sources": {
    "attack": "codex71/attack8_aw1-gomok.png",
    "hdx": "codex75/hdx_aw1-gomok.png",
@@ -126,6 +132,7 @@
    "hdx": 0.7775,
    "walk": 0.9185
   },
+  "sha256": "bde52e739d9bd0e664b837f43ed2527a46f50e6995e7c7f26f4290acd6ac192e",
   "sources": {
    "attack": "codex70/attack8_aw1-haebi.png",
    "hdx": "codex75/hdx_aw1-haebi.png",
@@ -145,6 +152,7 @@
    "hdx": 0.7886,
    "walk": 0.6658
   },
+  "sha256": "b3f2f7684b8040c19db5984943e6df4309c344b2cad871a028965fe9ffc4bfd5",
   "sources": {
    "attack": "codex70/attack8_aw1-haedal.png",
    "hdx": "codex75/hdx_aw1-haedal.png",
@@ -164,6 +172,7 @@
    "hdx": 0.7731,
    "walk": 0.9617
   },
+  "sha256": "667e9ffd293185a5c67c32c06fee7e970f37c527fe006cc1a0b85dccbaff8d4e",
   "sources": {
    "attack": "codex70/attack8_aw1-heo.png",
    "hdx": "codex75/hdx_aw1-heo.png",
@@ -183,6 +192,7 @@
    "hdx": 0.7569,
    "walk": 0.6994
   },
+  "sha256": "29e36aa7f39e3d95350eb3a1ec45640a67d64394b18298ee2c6408976bb9e0ad",
   "sources": {
    "attack": "codex71/attack8_aw1-hogong.png",
    "hdx": "codex75/hdx_aw1-hogong.png",
@@ -202,6 +212,7 @@
    "hdx": 0.7439,
    "walk": 0.6141
   },
+  "sha256": "62e035d89d6111d885dc0c697f6035498e37f59a9a3eb8eb26a984e5b82b01c3",
   "sources": {
    "attack": "codex70/attack8_aw1-irang.png",
    "hdx": "codex75/hdx_aw1-irang.png",
@@ -221,6 +232,7 @@
    "hdx": 0.7645,
    "walk": 0.9485
   },
+  "sha256": "0fc9ab1fe83d89e110bb4a489bd5e3981893f9382744f8beb1029685715617d8",
   "sources": {
    "attack": "codex70/attack8_aw1-jumong.png",
    "hdx": "codex75/hdx_aw1-jumong.png",
@@ -240,6 +252,7 @@
    "hdx": 0.7399,
    "walk": 0.9049
   },
+  "sha256": "58757405b9acea36337d503a7c11da280f1e164132eeb96f141cf54c2e0bea4a",
   "sources": {
    "attack": "codex70/attack8_aw1-mir.png",
    "hdx": "codex75/hdx_aw1-mir.png",
@@ -259,6 +272,7 @@
    "hdx": 0.8,
    "walk": 0.9875
   },
+  "sha256": "670a612ea2cf26e0541574cfa776d5b991e9ffd6e304ee8d87deb5d106217704",
   "sources": {
    "attack": "codex70/attack8_aw1-onjo.png",
    "hdx": "codex75/hdx_aw1-onjo.png",
@@ -278,6 +292,7 @@
    "hdx": 0.8961,
    "walk": 1.1288
   },
+  "sha256": "a7448abb8037048e1adc7389d4dc3e03d2d811c6c8e8e587e311f481a15ba45d",
   "sources": {
    "attack": "codex70/attack8_aw1-soseono.png",
    "hdx": "codex75/hdx_aw1-soseono.png",
@@ -297,10 +312,51 @@
    "hdx": 0.7863,
    "walk": 0.6883
   },
+  "sha256": "6b02a14ffb6ef9405299bf68c1a7f2e5bd635169175da33ea441065375665ddb",
   "sources": {
    "attack": "codex70/attack8_base-g-38-chopal-palmae.png",
    "hdx": "codex75/hdx_base-g-38-chopal-palmae.png",
    "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/base-g-38-chopal-palmae-prop20261117-walk.png"
+  }
+ },
+ "base-w-102-garak-dana": {
+  "bytes": 1088257,
+  "cell": [
+   432,
+   320
+  ],
+  "cols": 9,
+  "feet": 312,
+  "scale": {
+   "attack": 0.942,
+   "hdx": 0.7399,
+   "walk": 0.9718
+  },
+  "sha256": "b64b637edcc1675bd9e63c6132e7c9b801904b90cd6b8788aef50952c7591382",
+  "sources": {
+   "attack": "codex70/attack8_base-w-102-garak-dana.png",
+   "hdx": "codex75/hdx_base-w-102-garak-dana.png",
+   "walk": "codex68/walk8_base-w-102-garak-dana.png"
+  }
+ },
+ "dangung": {
+  "bytes": 1469399,
+  "cell": [
+   384,
+   320
+  ],
+  "cols": 10,
+  "feet": 312,
+  "scale": {
+   "attack": 0.9517,
+   "hdx": 0.7169,
+   "walk": 0.6587
+  },
+  "sha256": "b86fc64cd6719193e287d6f73ef3c2564b5b5546aed52602ed35b03cb162ef2f",
+  "sources": {
+   "attack": "codex71/attack8_dangung.png",
+   "hdx": "codex75/hdx_dangung.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/dangung-prop20261117-walk.png"
   }
  },
  "gamsil": {
@@ -316,6 +372,7 @@
    "hdx": 0.748,
    "walk": 1.0299
   },
+  "sha256": "1ba11ac2af85a5038690a563f8fddd29f5b5342179b20d9d7dc74480e990185f",
   "sources": {
    "attack": "codex70/attack8_gamsil.png",
    "hdx": "codex75/hdx_gamsil.png",
@@ -335,6 +392,7 @@
    "hdx": 0.7645,
    "walk": 0.7244
   },
+  "sha256": "245c1f8bb8dc4a789f4e02b96d36fe083e1fd793e9bdb17b1a13bcd48a2ca21b",
   "sources": {
    "attack": "codex70/attack8_gomok.png",
    "hdx": "codex75/hdx_gomok.png",
@@ -354,6 +412,7 @@
    "hdx": 0.7575,
    "walk": 0.9619
   },
+  "sha256": "5239c3b8184e401a230f694ca84add293f7bb2c9abb06ba8c75455d682251d45",
   "sources": {
    "attack": "codex70/attack8_haebi.png",
    "hdx": "codex75/hdx_haebi.png",
@@ -373,6 +432,7 @@
    "hdx": 0.7688,
    "walk": 0.6997
   },
+  "sha256": "ba40cb0bbe675e45b0de36edc816bd02eb8d4471f1798bd3700fe08c917de7f7",
   "sources": {
    "attack": "codex70/attack8_haedal.png",
    "hdx": "codex75/hdx_haedal.png",
@@ -392,6 +452,7 @@
    "hdx": 0.7688,
    "walk": 1.0435
   },
+  "sha256": "2e4ee67ec9653954110fbc2d9a29c4f95cedf789af45390675b0b26c0931d403",
   "sources": {
    "attack": "codex70/attack8_heo.png",
    "hdx": "codex75/hdx_heo.png",
@@ -411,6 +472,7 @@
    "hdx": 0.7603,
    "walk": 0.7053
   },
+  "sha256": "5b8d38fdf488ee213250b944f99eaef2980d1bef08b0e6e7f71c183a05e3e52b",
   "sources": {
    "attack": "codex70/attack8_hogong.png",
    "hdx": "codex75/hdx_hogong.png",
@@ -430,6 +492,7 @@
    "hdx": 0.8166,
    "walk": 0.683
   },
+  "sha256": "73f79914b78539772c7f8670009a24083b97ec1b790fac1d1dd4d3d47d105c00",
   "sources": {
    "attack": "codex70/attack8_hojin.png",
    "hdx": "codex75/hdx_hojin.png",
@@ -449,6 +512,7 @@
    "hdx": 0.7095,
    "walk": 0.6919
   },
+  "sha256": "e8837b34b98a34c6ffeb31117c2eefe3af8479f62296e52c1ee537037cc2b27a",
   "sources": {
    "attack": "codex70/attack8_irang.png",
    "hdx": "codex75/hdx_irang.png",
@@ -468,10 +532,51 @@
    "hdx": 0.7797,
    "walk": 1.0299
   },
+  "sha256": "8504fa304f77f7c158227bd1a0464372205c03639f158c1c41f660d7298d6807",
   "sources": {
    "attack": "codex67/attack8_jinha.png",
    "hdx": "codex75/hdx_jinha.png",
    "walk": "codex67/walk8_jinha.png"
+  }
+ },
+ "jumong": {
+  "bytes": 1582748,
+  "cell": [
+   384,
+   320
+  ],
+  "cols": 10,
+  "feet": 312,
+  "scale": {
+   "attack": 1.0073,
+   "hdx": 0.7645,
+   "walk": 0.6847
+  },
+  "sha256": "93dfaf2912ce58236e45a4fee93be15e3676bf4ac36c339729b16b4c3c0ef204",
+  "sources": {
+   "attack": "codex70/attack8_jumong.png",
+   "hdx": "codex75/hdx_jumong.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/jumong-walk-installed.png"
+  }
+ },
+ "maenun": {
+  "bytes": 1334851,
+  "cell": [
+   384,
+   320
+  ],
+  "cols": 10,
+  "feet": 312,
+  "scale": {
+   "attack": 0.8571,
+   "hdx": 0.7863,
+   "walk": 0.9753
+  },
+  "sha256": "e710c4092941b00f273364ce808ecdec579a0f79de382397d604072cc77058c0",
+  "sources": {
+   "attack": "codex70/attack8_maenun.png",
+   "hdx": "codex75/hdx_maenun.png",
+   "walk": "codex68/walk8_maenun.png"
   }
  },
  "mir": {
@@ -487,10 +592,31 @@
    "hdx": 0.7645,
    "walk": 0.8947
   },
+  "sha256": "e52d4446e1de6eecc96cf4d72b0a2d29693ec2175af57e21964d84da8480fb5c",
   "sources": {
    "attack": "codex70/attack8_mir.png",
    "hdx": "codex75/hdx_mir.png",
    "walk": "codex68/walk8_mir.png"
+  }
+ },
+ "mulsae": {
+  "bytes": 1322876,
+  "cell": [
+   432,
+   320
+  ],
+  "cols": 9,
+  "feet": 312,
+  "scale": {
+   "attack": 1.0656,
+   "hdx": 0.819,
+   "walk": 1.0073
+  },
+  "sha256": "f0c36cb730e22aa1e83f004e74238bcc58018a87ba16bb781f65f8e05251b4db",
+  "sources": {
+   "attack": "codex70/attack8_mulsae.png",
+   "hdx": "codex75/hdx_mulsae.png",
+   "walk": "codex68/walk8_mulsae.png"
   }
  },
  "onjo": {
@@ -506,6 +632,7 @@
    "hdx": 0.7841,
    "walk": 0.9356
   },
+  "sha256": "de320b3a19e74c425e45b32bc447b6fcfa5a3200537d46264a53550ea02d9f6e",
   "sources": {
    "attack": "codex70/attack8_onjo.png",
    "hdx": "codex75/hdx_onjo.png",
@@ -525,6 +652,7 @@
    "hdx": 0.734,
    "walk": 0.6733
   },
+  "sha256": "305320eca6d7b37d016cf278cf713a4b8a044bd6d2c6b3c9d55c3dd6d00fdccb",
   "sources": {
    "attack": "codex70/attack8_soebi.png",
    "hdx": "codex75/hdx_soebi.png",
@@ -544,6 +672,7 @@
    "hdx": 0.8492,
    "walk": 1.0337
   },
+  "sha256": "0cdc0813bb5d9a2b61f0ac85aa377be6f9dc6fbdd36228b5ec783e603f664a47",
   "sources": {
    "attack": "codex70/attack8_soseono.png",
    "hdx": "codex75/hdx_soseono.png",
