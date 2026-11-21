@@ -69,6 +69,13 @@ const LOCK = `(() => {
       let tag = 0; try { tag = L.tag?.(n) ?? 0 } catch { tag = -1 }
       L.rec.push([gap, b - a, tag])
       if (L.holdAt === n) L.hold = true
+      // 찍을 틀 — [이름, 사건, 몇 틀 뒤] 가 이 틀이면 멈춘다 (찍는 쪽이 shotNow 를 비우고 푼다)
+      if (L.shots?.length && L.marksOf) {
+        const marks = L.marksOf(), now = [], keep = []
+        for (const s of L.shots) { const m = marks[s[1]]; if (m === undefined || m < 0) { keep.push(s); continue } const at = m + s[2]; if (at === n) now.push(s[0]); else if (at < n) (L.passed ??= []).push(s[0]); else keep.push(s) }
+        L.shots = keep
+        if (now.length) { L.shotNow = now; L.hold = true }
+      }
     }
     raf0(tick)
   }
@@ -96,12 +103,14 @@ const COUNTER = `(() => {
 const DUEL_SCENE = `(() => {
   const L = window.__lock, PLAN = ['perfect', 'perfect', 'good', 'perfect', 'miss', 'good']
   const S = window.__scene = { ev: 0, marks: {}, lastRush: -99, tapped: new Set(), over: -1, duelAt: -1 }
+  L.marksOf = () => ({ ...S.marks, duel: S.duelAt, over: S.over })
   L.before = (n) => {
     const mode = window.__duelMode?.()
     if (n === 12 && mode === 'field') document.querySelector('.dflag')?.click()
     if (mode === 'intro') document.querySelector('.dskip')?.click()
+    if (mode === 'end' && S.over < 0) S.over = n
     if (mode !== 'duel') return
-    if (S.duelAt < 0) S.duelAt = n
+    if (S.duelAt < 0) { S.duelAt = n; S.warmAtDuel = window.__duelWarm?.() }
     const d = window.__duel()
     for (; S.ev < d.events.length; S.ev++) { const k = d.events[S.ev].kind; if (!(k in S.marks)) S.marks[k] = n }
     if (d.over !== null) { if (S.over < 0) S.over = n; return }
@@ -124,7 +133,8 @@ const DUEL_SCENE = `(() => {
 })()`
 /** 겨루기 찍을 때 — 처음 난 사건 뒤 몇 틀 (전후가 같은 틀) */
 const DUEL_SHOTS: ReadonlyArray<readonly [string, string, number]> = [
-  ['calm', 'duel', 150], ['crit-a', 'crit', 2], ['crit-b', 'crit', 14], ['good', 'good', 5], ['miss', 'miss', 3], ['rush', 'break', 40], ['rushhit', 'rushHit', 4],
+  ['intro-a', 'duel', 22], ['intro-b', 'duel', 45], ['calm', 'duel', 150], ['crit-a', 'crit', 2], ['crit-b', 'crit', 14], ['good', 'good', 5], ['miss', 'miss', 3],
+  ['rush', 'break', 40], ['rushhit', 'rushHit', 4], ['end-a', 'over', 8], ['end-b', 'over', 40],
 ]
 
 /** 시련 판 짓기 — 활 묶음 · 화살비·유성 먼저 · 돌리는 동안 죽지 않게 (tools/raid-fps-probe.ts SCENE=trial 과 같은 판) */
@@ -142,6 +152,7 @@ const TRIAL_BUILD = `(async () => {
 const TRIAL_SCENE = `(() => {
   const L = window.__lock, DIRS = [['d'], ['d', 's'], ['s'], ['s', 'a'], ['a'], ['a', 'w'], ['w'], ['w', 'd']]
   const S = window.__scene = { held: [], marks: {}, cast: 0 }
+  L.marksOf = () => ({ ...S.marks, start: 0 })
   const key = (type, k) => window.dispatchEvent(new KeyboardEvent(type, { key: k, bubbles: true }))
   L.before = (n) => {
     const r = window.__raid?.()
@@ -175,24 +186,30 @@ try {
   for (let i = 0; i < 50 && tabs === null; i++) { try { tabs = await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json() } catch { await sleep(200) } }
   const ws = new WebSocket(tabs.find((t: any) => t.type === 'page').webSocketDebuggerUrl)
   await new Promise((r, j) => { ws.onopen = r; ws.onerror = j })
-  let id = 0
+  let id = 0, crashed = false
   const waits = new Map<number, (v: any) => void>()
   ws.onmessage = (m) => {
     const o = JSON.parse(String(m.data))
     if (o.method === 'Runtime.exceptionThrown') console.log('  페이지 예외', String(o.params.exceptionDetails?.exception?.description ?? o.params.exceptionDetails?.text).slice(0, 300))
-    if (o.method === 'Inspector.targetCrashed') console.log('  페이지가 죽었다 (targetCrashed)')
+    if (o.method === 'Inspector.targetCrashed') { console.log('  페이지가 죽었다 (targetCrashed)'); crashed = true; for (const w of waits.values()) w({ error: 'closed' }); waits.clear() }
     if (o.id !== undefined) { waits.get(o.id)?.(o.result ?? o.error); waits.delete(o.id) }
   }
   // 크롬이 죽거나 답이 없으면 기다리지 않고 끝낸다 (판이 멈춘 채 몇 분씩 걸려 있었다)
   ws.onclose = () => { for (const w of waits.values()) w({ error: 'closed' }); waits.clear() }
   const call = (method: string, params: object = {}): Promise<any> => new Promise((r, j) => {
+    if (crashed) { j(new Error(`${method}: 페이지가 죽은 뒤`)); return }
     const k = ++id
     const t = setTimeout(() => { waits.delete(k); j(new Error(`${method}: 120초 동안 답 없음`)) }, 120000)
     waits.set(k, (v) => { clearTimeout(t); if (v?.error === 'closed') j(new Error(`${method}: 크롬 연결이 끊겼다`)); else r(v) })
     ws.send(JSON.stringify({ id: k, method, params }))
   })
   const step = (what: string): void => { if (env('VERBOSE') === '1') console.error(`  [${new Date().toISOString().slice(11, 19)}] ${what}`) }
-  const evTop = async (expression: string): Promise<any> => { const r = await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }); if (r.exceptionDetails) console.log('  스크립트 오류', String(r.exceptionDetails.exception?.description ?? r.exceptionDetails.text).slice(0, 400)); return r.result?.value }
+  const evTop = async (expression: string): Promise<any> => {
+    const r = await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true })
+    if (r.exceptionDetails) console.log('  스크립트 오류', String(r.exceptionDetails.exception?.description ?? r.exceptionDetails.text).slice(0, 400))
+    else if (r.result === undefined) console.log('  CDP 오류', JSON.stringify(r).slice(0, 300), expression.slice(0, 80))
+    return r.result?.value
+  }
   /** 판이 사는 창 — 겨루기는 이 창 · 시련은 틀 안 창 */
   const WIN = SCENE === 'trial' ? `document.querySelector('iframe').contentWindow` : 'window'
   /** 판이 사는 창의 realm 에서 돌린다 (그 창의 document·window 로) */
@@ -201,6 +218,8 @@ try {
   await call('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 })
   await call('Emulation.setFocusEmulationEnabled', { enabled: true })
   await call('Page.enable'); await call('Runtime.enable')
+  // BLOCK='*/realm/hit/*,…': 그 주소는 받지 않는다 — 무엇 때문에 멈추는지 하나씩 빼 볼 때
+  if (env('BLOCK')) { await call('Network.enable'); await call('Network.setBlockedURLs', { urls: env('BLOCK').split(',') }) }
   await call('Page.addScriptToEvaluateOnNewDocument', { source: LOCK })
   if (COUNT) await call('Page.addScriptToEvaluateOnNewDocument', { source: COUNTER })
   let built: unknown = null
@@ -209,6 +228,8 @@ try {
     for (let i = 0; i < 80 && await ev(`typeof window.__duel === 'function' && !!document.querySelector('.dflag')`) !== true; i++) await sleep(250)
     // 겨루기의 그림(바탕·띠·초상·테두리)이 다 오기를 — 처음 굽기(warmNow)도 이때 끝난다
     await sleep(2500)
+    // FONTS=1: 겨루기 글자에 드는 고운바탕 조각(700·800·900)을 먼저 다 받아 둔다 — 글꼴이 늦게 와 대신 글꼴로 구워지던 예전 판과 화소를 견줄 때 (글꼴 말고 다른 차이만 보려고)
+    if (env('FONTS') === '1') console.log('  글꼴 미리 받음: ' + await ev(`(async () => { const ko = (await import('/src/i18n/ko.ts')).ko; const text = Object.entries(ko).filter(([k]) => k.startsWith('duel.')).map(([, v]) => v).join('') + '알영해비0123456789−⚔!'; await Promise.all([700, 800, 900].map(w => document.fonts.load(w + ' 20px "Gowun Batang"', text))); const ok = [700, 800, 900].every(w => document.fonts.check(w + ' 20px "Gowun Batang"', text)); dispatchEvent(new Event('resize')); return ok })()`))
     // 재는 판만: DPR 고정(전후 같은 해상도) · 체간 끝을 낮춰 연타가 일찍 온다 (판 셈 자체는 그대로 · 전후 같은 판)
     await ev(`import('/src/tune/params.ts').then(m => { ${WATCH ? '' : 'm.P.duel.dprDropMs = 1e9;'} m.P.duel.posture = ${Number(env('POSTURE') || 40)} })`)
     await ev(DUEL_SCENE)
@@ -237,15 +258,20 @@ try {
   if (COUNT) await ev(`(() => { const L = window.__lock, C = window.__cnt, tag0 = L.tag; L.tag = (n) => { C.frames.push(C.cur); C.reset(); return tag0 ? tag0(n) : 0 }; C.reset() })()`)
   const shotList = SHOTS ? (SCENE === 'duel' ? DUEL_SHOTS : TRIAL_SHOTS) : []
   const shotsTaken: Record<string, string> = {}
+  if (shotList.length) await ev(`window.__lock.shots = ${JSON.stringify(shotList)}`)
   // PROFAT=780,160: 그 틀(앞뒤 한 틀씩)만 따로 프로파일 — 가장 무거운 틀이 무엇에 시간을 쓰나
   const profAt = env('PROFAT').split(',').filter(Boolean).map(Number).sort((a, b) => a - b)
   const profOut: string[] = []
   let profOn = -1
   if (profAt.length) { await call('Profiler.enable'); await call('Profiler.setSamplingInterval', { interval: 100 }) }
+  // 주 스레드가 화면 배치·스타일을 몇 번 다시 셈했나 · JS 더미 크기 (CDP Performance) — 재는 동안의 차로 틀마다
+  await call('Performance.enable')
+  const metrics = async (): Promise<Record<string, number>> => Object.fromEntries(((await call('Performance.getMetrics')).metrics ?? []).map((m: { name: string; value: number }) => [m.name, m.value]))
+  const m0 = await metrics()
   await ev(`window.__lock.hold = false`)
   const t0 = Date.now()
   for (;;) {
-    const st = await ev(`(() => { const L = window.__lock, S = window.__scene; return { n: L.n, hold: L.hold, marks: S.marks, duelAt: S.duelAt ?? 0, over: S.over ?? -1, err: L.err ?? '' } })()`)
+    const st = await ev(`(() => { const L = window.__lock, S = window.__scene; return { n: L.n, hold: L.hold, shotNow: L.shotNow ?? null, marks: S.marks, duelAt: S.duelAt ?? 0, over: S.over ?? -1, err: L.err ?? '' } })()`)
     if (st === undefined || st === null) { console.log('  판 창을 못 읽었다'); break }
     if (st.err) { console.log('  손 오류', st.err.slice(0, 300)); break }
     if (st.n % 100 < 8) step(`틀 ${st.n}`)
@@ -267,34 +293,24 @@ try {
       }
     }
     if (st.n >= FRAMES || (st.over >= 0 && st.n > st.over + 120) || Date.now() - t0 > 600000) break
-    if (shotList.length) {
-      const marks: Record<string, number> = { ...st.marks, duel: st.duelAt, start: 0 }
-      // 아직 안 찍은 것 가운데 가장 이른 틀에 멈춤을 건다 (그 틀을 그린 뒤 멈춘다)
-      const due = shotList.filter(([name, m]) => shotsTaken[name] === undefined && marks[m] !== undefined && (m !== 'duel' || st.duelAt > 0)).map(([name, m, off]) => [name, (marks[m] as number) + off] as const).sort((a, b) => a[1] - b[1])[0]
-      if (due !== undefined) {
-        if (st.hold) {
-          if (!SHOTS) break
-          mkdirSync(SHOTS, { recursive: true })
-          const { data } = await call('Page.captureScreenshot', { format: 'png' })
-          const file = join(SHOTS, `${SCENE}-${VW}x${VH}-${due[0]}-${TAG}.png`)
-          writeFileSync(file, Buffer.from(data, 'base64'))
-          shotsTaken[due[0]] = file
-          await ev(`(() => { const L = window.__lock; L.holdAt = -1; L.hold = false })()`)
-          continue
-        }
-        if (st.n <= due[1]) await ev(`window.__lock.holdAt = ${due[1]}`)
-        else shotsTaken[due[0]] = '(지나침)'
-      }
+    if (shotList.length && st.hold && st.shotNow) {
+      // 페이지가 그 틀을 그린 뒤 멈춰 있다 — 위 창 전체를 찍는다 (같은 틀에 둘이면 같은 그림)
+      mkdirSync(SHOTS, { recursive: true })
+      const { data } = await call('Page.captureScreenshot', { format: 'png' })
+      for (const name of st.shotNow as string[]) { const file = join(SHOTS, `${SCENE}-${VW}x${VH}-${name}-${TAG}.png`); writeFileSync(file, Buffer.from(data, 'base64')); shotsTaken[name] = file }
+      await ev(`(() => { const L = window.__lock; L.shotNow = null; L.hold = false })()`)
+      continue
     }
     await sleep(SHOTS ? 30 : 400)
   }
   await ev(`window.__lock.stop = true`)
+  const m1 = await metrics()
   if (THROTTLE > 1) await call('Emulation.setCPUThrottlingRate', { rate: 1 })
   const rec: Array<[number, number, number]> = await ev(`window.__lock.rec`)
-  const scene = await ev(SCENE === 'duel' ? `(() => { const d = window.__duel(), S = window.__scene; return { stats: d.stats, over: d.over, t: d.t, duelAt: S.duelAt, marks: S.marks, dpr: +(document.querySelector('.duelx canvas:last-of-type').width / innerWidth).toFixed(2) } })()`
+  const scene = await ev(SCENE === 'duel' ? `(() => { const d = window.__duel(), S = window.__scene; return { stats: d.stats, over: d.over, t: d.t, duelAt: S.duelAt, marks: S.marks, dpr: +(document.querySelector('.duelx canvas:last-of-type').width / innerWidth).toFixed(2), warm: [S.warmAtDuel ?? null, window.__duelWarm?.() ?? null] } })()`
     : `(() => { const r = window.__raid(), S = window.__scene; return { t: +r.t.toFixed(1), state: r.state, mode: r.mode, kills: r.kills, enemies: r.enemies.length, fx: r.fx.length, marks: S.marks, canvas: document.getElementById('field').width + 'x' + document.getElementById('field').height, rotate: !document.getElementById('rotate-guide').hidden } })()`)
-  // 겨루기는 겨루기 화면이 선 뒤의 틀만 · 첫 30틀(굽기·들어오는 암전)은 뺀다
-  const from = SCENE === 'duel' ? Math.max(0, (scene.duelAt as number) + 30) : 30
+  // 겨루기는 겨루기 화면이 선 뒤의 틀만 (들어오는 암전·이름판 1초도 넣는다) · 시련은 첫 30틀(판 갈아 끼운 뒤 첫 굽기)을 뺀다
+  const from = SCENE === 'duel' ? Math.max(0, (scene.duelAt as number) + 1) : 30
   const body = rec.slice(from)
   const gaps = body.map((r) => r[0]).filter((g) => g > 0), cbs = body.map((r) => r[1])
   const heavy = SCENE === 'duel' ? body.filter((r) => r[2] === 2) : body.filter((r) => r[2] >= 0)
@@ -303,6 +319,8 @@ try {
     gap: { ...stats(gaps), over16: gaps.filter((g) => g > 16.7 + 0.5).length, over33: gaps.filter((g) => g > 33.4 + 0.5).length },
     script: stats(cbs),
     heavy: SCENE === 'duel' ? { n: heavy.length, gap: stats(heavy.map((r) => r[0]).filter((g) => g > 0)), script: stats(heavy.map((r) => r[1])) } : undefined,
+    // 틀마다: 화면 배치(Layout)·스타일 다시 셈 횟수와 ms · JS 더미(MB · 150틀마다)
+    dom: (() => { const n = Math.max(1, rec.length), d = (k: string): number => (m1[k] ?? 0) - (m0[k] ?? 0); return { layouts: +(d('LayoutCount') / n).toFixed(2), styles: +(d('RecalcStyleCount') / n).toFixed(2), layoutMs: +(1000 * d('LayoutDuration') / n).toFixed(2), styleMs: +(1000 * d('RecalcStyleDuration') / n).toFixed(2), scriptMs: +(1000 * d('ScriptDuration') / n).toFixed(2), taskMs: +(1000 * d('TaskDuration') / n).toFixed(2), nodes: m1['Nodes'], heapMB: [Math.round((m0['JSHeapUsedSize'] ?? 0) / 1048576), Math.round((m1['JSHeapUsedSize'] ?? 0) / 1048576)] } })(),
     built, at: scene,
   }
   console.log(JSON.stringify(out))
@@ -311,6 +329,8 @@ try {
   const marksOf = (scene.marks ?? {}) as Record<string, number>
   const near = (n: number): string => Object.entries(marksOf).filter(([, m]) => m <= n + 1).sort((a, b) => b[1] - a[1]).slice(0, 1).map(([k, m]) => `${k}+${n + 1 - m}`).join('')
   console.log('slowest: ' + body.map((r, i) => [i + from, r[1], r[0]] as const).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([n, s, g]) => `#${n} ${s.toFixed(1)}ms/${g.toFixed(0)}ms ${near(n)}`).join(' · '))
+  // 틀 간격이 가장 길었던 곳 — 간격은 그 앞 틀이 끝난 뒤부터 이 틀까지 (앞 틀의 일 · 그 사이 GC·그림 풀기 등)
+  console.log('longest gaps: ' + body.map((r, i) => [i + from, r[0], body[i - 1]?.[1] ?? 0] as const).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([n, g, prevS]) => `#${n} ${g.toFixed(0)}ms (앞 틀 ${prevS.toFixed(1)}ms) ${near(n - 1)}`).join(' · '))
   if (COUNT) {
     const frames: Array<{ vis: Record<string, number>; off: Record<string, number>; visPx: number; offPx: number }> = (await ev(`window.__cnt.frames`)).slice(from)
     const px = DPR * DPR, screen = VW * VH * px
@@ -338,7 +358,7 @@ try {
     console.log('inclusive: ' + [...incl].filter(([k]) => WANT.test(k)).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${(100 * v / tot).toFixed(1)}%`).join(' · '))
   }
   if (SHOTS) {
-    console.log('shots: ' + JSON.stringify(shotsTaken))
+    console.log('shots: ' + Object.keys(shotsTaken).join(' · ') + ' · 지나침: ' + JSON.stringify(await ev(`window.__lock.passed ?? []`)) + ' · 못 옴: ' + JSON.stringify(await ev(`(window.__lock.shots ?? []).map(s => s[0])`)))
     if (CMP) {
       // 견줄 태그의 같은 틀 그림과 화소 차 — 페이지 캔버스로 읽는다 (차 > 8 인 화소 몫 · 가장 큰 차)
       await call('Page.navigate', { url: `${ROOT}/favicon-32.png` }); await sleep(800)
@@ -346,14 +366,16 @@ try {
         const other = file.replace(`-${TAG}.png`, `-${CMP}.png`)
         if (!existsSync(file) || !existsSync(other)) { console.log(`  ${name}: 견줄 그림 없음`); continue }
         const a = readFileSync(file).toString('base64'), b = readFileSync(other).toString('base64')
-        const r = await evTop(`(async () => { const load = (s) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.src = 'data:image/png;base64,' + s }); const [A, B] = await Promise.all([load(${JSON.stringify(a)}), load(${JSON.stringify(b)})]); const w = A.width, h = A.height; if (B.width !== w || B.height !== h) return { size: 'differs' }; const px = (im) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); g.drawImage(im, 0, 0); return g.getImageData(0, 0, w, h).data }; const p = px(A), q = px(B); let diff = 0, max = 0, sum = 0; for (let i = 0; i < p.length; i += 4) { const d = Math.max(Math.abs(p[i] - q[i]), Math.abs(p[i + 1] - q[i + 1]), Math.abs(p[i + 2] - q[i + 2])); if (d > 8) diff++; if (d > max) max = d; sum += d } return { diffPct: +(100 * diff / (w * h)).toFixed(3), max, mean: +(sum / (w * h)).toFixed(3) } })()`)
+        const r = await evTop(`(async () => { const load = (s) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.src = 'data:image/png;base64,' + s }); const [A, B] = await Promise.all([load(${JSON.stringify(a)}), load(${JSON.stringify(b)})]); const w = A.width, h = A.height; if (B.width !== w || B.height !== h) return { size: 'differs' }; const px = (im) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); g.drawImage(im, 0, 0); return g.getImageData(0, 0, w, h).data }; const p = px(A), q = px(B); let diff = 0, max = 0, sum = 0, x0 = w, y0 = h, x1 = -1, y1 = -1; for (let i = 0; i < p.length; i += 4) { const d = Math.max(Math.abs(p[i] - q[i]), Math.abs(p[i + 1] - q[i + 1]), Math.abs(p[i + 2] - q[i + 2])); if (d > 8) { diff++; const x = (i / 4) % w, y = Math.floor(i / 4 / w); if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y } if (d > max) max = d; sum += d } return { diffPct: +(100 * diff / (w * h)).toFixed(3), max, mean: +(sum / (w * h)).toFixed(3), box: x1 < 0 ? null : [x0, y0, x1, y1] } })()`)
         console.log(`  ${name} vs ${CMP}: ${JSON.stringify(r)}`)
       }
     }
   }
   ws.close()
 } finally {
-  chrome.kill()
+  // 크롬이 다 내려간 뒤 임시 프로필을 지운다 (곧바로 지우면 잠겨 있어 판마다 남았다)
+  await new Promise<void>((r) => { chrome.once('exit', () => r()); chrome.kill(); setTimeout(r, 5000) })
   await sleep(600)
-  for (let i = 0; i < 15 && existsSync(prof); i++) { try { rmSync(prof, { recursive: true, force: true }) } catch { await sleep(400) } }
+  for (let i = 0; i < 20 && existsSync(prof); i++) { try { rmSync(prof, { recursive: true, force: true }) } catch { await sleep(500) } }
+  if (existsSync(prof)) console.log('  임시 프로필이 남았다: ' + prof)
 }
