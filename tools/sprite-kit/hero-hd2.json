@@ -37,6 +37,25 @@
    "walk": "codex68/walk8_aw1-ara.png"
   }
  },
+ "aw1-dangung": {
+  "bytes": 1547996,
+  "cell": [
+   400,
+   320
+  ],
+  "cols": 10,
+  "feet": 312,
+  "scale": {
+   "attack": 0.9356,
+   "hdx": 0.7562,
+   "walk": 0.9928
+  },
+  "sources": {
+   "attack": "codex71/attack8_aw1-dangung.png",
+   "hdx": "codex75/hdx_aw1-dangung.png",
+   "walk": "codex68/walk8_aw1-dangung.png"
+  }
+ },
  "aw1-gamsil": {
   "bytes": 1582374,
   "cell": [
@@ -94,6 +113,25 @@
    "walk": "../flutter/arrow_game_one/tools/sprite-kit/awakened-20261114/intake-20261118/aw1-haedal-walk.png"
   }
  },
+ "aw1-heo": {
+  "bytes": 1793147,
+  "cell": [
+   528,
+   320
+  ],
+  "cols": 7,
+  "feet": 312,
+  "scale": {
+   "attack": 1.1265,
+   "hdx": 0.7731,
+   "walk": 0.9617
+  },
+  "sources": {
+   "attack": "codex70/attack8_aw1-heo.png",
+   "hdx": "codex75/hdx_aw1-heo.png",
+   "walk": "codex68/walk8_aw1-heo.png"
+  }
+ },
  "aw1-irang": {
   "bytes": 1324712,
   "cell": [
@@ -111,6 +149,44 @@
    "attack": "codex70/attack8_aw1-irang.png",
    "hdx": "codex75/hdx_aw1-irang.png",
    "walk": "../flutter/arrow_game_one/tools/sprite-kit/awakened-20261114/intake-20261118/aw1-irang-walk.png"
+  }
+ },
+ "aw1-jumong": {
+  "bytes": 1640217,
+  "cell": [
+   352,
+   320
+  ],
+  "cols": 11,
+  "feet": 312,
+  "scale": {
+   "attack": 1.011,
+   "hdx": 0.7645,
+   "walk": 0.9485
+  },
+  "sources": {
+   "attack": "codex70/attack8_aw1-jumong.png",
+   "hdx": "codex75/hdx_aw1-jumong.png",
+   "walk": "codex68/walk8_aw1-jumong.png"
+  }
+ },
+ "aw1-mir": {
+  "bytes": 1543912,
+  "cell": [
+   352,
+   320
+  ],
+  "cols": 11,
+  "feet": 312,
+  "scale": {
+   "attack": 0.9718,
+   "hdx": 0.7399,
+   "walk": 0.9049
+  },
+  "sources": {
+   "attack": "codex70/attack8_aw1-mir.png",
+   "hdx": "codex75/hdx_aw1-mir.png",
+   "walk": "codex68/walk8_aw1-mir.png"
   }
  },
  "aw1-onjo": {
@@ -208,6 +284,25 @@
    "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/haedal-prop20261117-walk.png"
   }
  },
+ "heo": {
+  "bytes": 1822225,
+  "cell": [
+   528,
+   320
+  ],
+  "cols": 7,
+  "feet": 310,
+  "scale": {
+   "attack": 1.1646,
+   "hdx": 0.7688,
+   "walk": 1.0435
+  },
+  "sources": {
+   "attack": "codex70/attack8_heo.png",
+   "hdx": "codex75/hdx_heo.png",
+   "walk": "codex67/walk8_heo.png"
+  }
+ },
  "hojin": {
   "bytes": 1694936,
   "cell": [
@@ -263,6 +358,25 @@
    "attack": "codex67/attack8_jinha.png",
    "hdx": "codex75/hdx_jinha.png",
    "walk": "codex67/walk8_jinha.png"
+  }
+ },
+ "mir": {
+  "bytes": 1173878,
+  "cell": [
+   400,
+   320
+  ],
+  "cols": 10,
+  "feet": 312,
+  "scale": {
+   "attack": 0.9485,
+   "hdx": 0.7645,
+   "walk": 0.8947
+  },
+  "sources": {
+   "attack": "codex70/attack8_mir.png",
+   "hdx": "codex75/hdx_mir.png",
+   "walk": "codex68/walk8_mir.png"
   }
  },
  "onjo": {

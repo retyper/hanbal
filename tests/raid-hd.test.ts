@@ -34,7 +34,7 @@ test('53-A actual CSS content controls backing, low tier uses DPR1, pointer logi
   assert.equal(heroCacheHeight(94, 1.8 * 2, 320), 320)
   assert.equal(wantsHeroHd(1.3), false); assert.equal(wantsHeroHd(1.3001), true)
   setHeroArt('jumong', 'aw1-jumong')
-  assert.deepEqual(heroHdFiles(1), []); assert.deepEqual(heroHdFiles(1.8), ['anim-px/gen-jumong_hd.png'])
+  assert.deepEqual(heroHdFiles(1), []); assert.deepEqual(heroHdFiles(1.8), ['anim-px/gen-jumong_hd.png', 'anim-px/gen-aw1-jumong_hd.png'], '11-22: 각성 주몽도 2배 띠(bake-hero-hd2)')
   setHeroArt('base-w-102-garak-dana')
   assert.deepEqual(heroHdFiles(4), [], 'unqualified Dana source cannot masquerade asHD')
 })
