@@ -95,7 +95,8 @@ import { TALK_CSS, WOO_CSS, outlookHtml, miniHtml, pickBoxHtml, progressHtml, ta
 import { wooKneelLine, wooLordLine, wooNotYetLine, wooOpenLine, wooPitchLine, wooReactLine, wooWonLine } from './woo-lines.ts'
 import { talkAuto, talkRun, talkWhy } from '../../realm/woo.ts'
 import { GROW_CSS, HERO_CSS, TITLE_MEAN, artChip, bondChip, growthHtml, heroRadar, nameHtml, roleLine, splitTitle, traitChips } from './heroview.ts'
-import { APP_CSS, CLOUD_CSS, SEASONP_CSS, UI_CSS } from './appstyle.ts'
+import { APP_CSS, CLOUD_CSS, SEASONP_CSS, UI_CSS, LANDSCAPE_MAP_CSS } from './appstyle.ts'
+import { installMapLandscape } from './map-landscape.ts'
 import { GOAL_CSS, goalBandHtml, goalRowsHtml } from './goalband.ts'
 import { contestOpen } from '../../realm/scenario.ts'
 import { installTips, TIP_CSS } from './tips.ts'
@@ -735,7 +736,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS.replaceAll('__ART__', ART) + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + BOND_CSS + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + VOLUME_CSS + MEM_CSS + ASCEND_CSS.replaceAll('__ART__', ART) + HILITE_CSS + TOWN_CSS.replaceAll('__ART__', ART) + RISE_CSS + BOOK_CSS + CROWN_CSS + LEAGUE_CSS + WONDER_CSS + recCss()
+  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS.replaceAll('__ART__', ART) + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + BOND_CSS + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + VOLUME_CSS + MEM_CSS + ASCEND_CSS.replaceAll('__ART__', ART) + HILITE_CSS + TOWN_CSS.replaceAll('__ART__', ART) + RISE_CSS + BOOK_CSS + CROWN_CSS + LEAGUE_CSS + WONDER_CSS + recCss() + LANDSCAPE_MAP_CSS
   document.head.appendChild(style)
   root.classList.add('ap')
   // 그래픽 단계 저사양 · 보통 · 고사양 (quality.ts · 형 10-29: 폰 절전 모드에서 그림이 다 깨졌다)
@@ -785,6 +786,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     + `<nav class="tabs"></nav><div class="back" data-act="close"></div><section class="sheet"></section><div class="modal"></div><div class="plbox"></div>`
   const $ = (sel: string): HTMLElement => root.querySelector<HTMLElement>(sel)!
   const zoom = attachZoom($('.mapwrap'))
+  const mapLandscape = installMapLandscape(root, { more: () => tr('fr.otherNation'), close: () => tr('more.closeAria') })
   // 배우는 판의 빛낼 곳 — 단계마다 갈아 끼우는 <style> (tutorial.ts)
   const tutSheet = document.createElement('style')
   tutSheet.textContent = ''
@@ -1935,7 +1937,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return `<button class="tl" data-act="log-open" aria-label="${tr('top.logAria')}">${icon(SEASON_ICON[season], 'sic')}<b>${esc(dateLabel(r))}</b><i class="tlx">📜</i></button>`
       + `<div class="tr">${(['grain', 'iron', 'salt', 'wood', 'horse'] as const).filter((g) => g === 'grain' || g === 'iron' || goodOf(st, g) > 0).map((g) => goodStat(r, g, goodOf(st, g))).join('')}`
       + `<span class="stat" data-tip="${tr('top.men')}">${icon('unit-spear')}<b>${men}</b></span>`
-      + `<button class="stat nat" data-act="tab" data-tab="nation">${bust(r.heroes[r.factions[me()]?.ruler ?? rulerId(me())], 'tface')}${emblem(me())}<b>${esc(nation?.name ?? '')}</b></button></div>`
+      + `<button class="stat nat" data-act="tab" data-tab="nation" aria-label="${esc(nation?.name ?? '')}" data-tip="${esc(nation?.name ?? '')}">${bust(r.heroes[r.factions[me()]?.ruler ?? rulerId(me())], 'tface')}${emblem(me())}<b>${esc(nation?.name ?? '')}</b></button></div>`
   }
 
   /**
@@ -7267,6 +7269,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       scoutAskPaint() // 정찰꾼이 다 나갔는데 새 곳을 누르면 — 어디서 눌렀든 가운데에 「어디를 거둘까」
       marquee(root) // 말줄임으로 잘린 한 줄 글은 지하철 안내판처럼 흐른다 (형 10-29)
       firstsAfterPaint()
+      mapLandscape.sync()
     } catch (e) {
       failNote(e)
     }
@@ -7637,9 +7640,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const rqTab = rqNow.length > 0 && sheet?.kind !== 'heroes' && sheet?.kind !== 'hero'
     for (const t of TABS) {
       const wait = tabWait(r, t.id)
-      if (wait > 0) { tabs += `<button class="locked" data-act="locktab"${noBtn(tr('tab.locked', { name: t.name, turns: turnsLabel(r, wait) }))}>🔒<span>${t.name}</span></button>`; continue }
+      if (wait > 0) { const why = tr('tab.locked', { name: t.name, turns: turnsLabel(r, wait) }); tabs += `<button class="locked" data-act="locktab" aria-label="${esc(why)}"${noBtn(why)}><i class="tab-lock" aria-hidden="true">🔒</i>${icon(t.icon, 'tic')}<span>${t.name}</span></button>`; continue }
       const dot = dotKeys(r, t.id).some((k) => !seenKeys.has(k))
-      tabs += `<button class="${sheet?.kind === t.id ? 'on' : ''}${newTab === t.id ? ' fresh' : ''}" data-act="tab" data-tab="${t.id}" data-tip="${t.name}" data-more="${t.more}">${icon(t.icon, 'tic')}<span>${t.name}</span>${dot ? '<i class="dot"></i>' : ''}${t.id === 'heroes' && rqTab ? recDot(tr('rec.badge')) : ''}${rec.has(t.id) ? `<i class="rec" title="${esc(rec.get(t.id)!)}" data-why="${esc(rec.get(t.id)!)}">${tr('rec.badge')}</i>` : ''}</button>`
+      tabs += `<button class="${sheet?.kind === t.id ? 'on' : ''}${newTab === t.id ? ' fresh' : ''}" data-act="tab" data-tab="${t.id}" aria-label="${esc(t.name)}${rec.has(t.id) ? ` · ${esc(rec.get(t.id)!)}` : t.id === 'heroes' && rqTab ? ` · ${tr('rec.badge')}` : ''}" data-tip="${t.name}" data-more="${t.more}">${icon(t.icon, 'tic')}<span>${t.name}</span>${dot ? '<i class="dot"></i>' : ''}${t.id === 'heroes' && rqTab ? recDot(tr('rec.badge')) : ''}${rec.has(t.id) ? `<i class="rec" title="${esc(rec.get(t.id)!)}" data-why="${esc(rec.get(t.id)!)}">${tr('rec.badge')}</i>` : ''}</button>`
     }
     noteNewTabs(r)
     morph($('.tabs'), tabs)

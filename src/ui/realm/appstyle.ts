@@ -1565,3 +1565,67 @@ html[data-lang="en"] .ap .paths .path { grid-template-columns: 76px 1fr auto; } 
 html[data-lang="en"] .ap .draftc .seg button { font-size: min(11.5px, 15cqw); gap: 1px; }
 html[data-lang="en"] .ap .wtop .ws .wnat { font-size: 10.5px; padding: 0 5px 0 3px; gap: 2px; }
 `
+
+
+export const LANDSCAPE_MAP_CSS = `
+/* 58-B: the existing map chrome only. Portrait and choosing screens keep their original rules. */
+.ap .tabs button.locked img.tic { display: none; }
+.ap .tabs .tab-lock { font-style: normal; }
+@media (orientation: landscape) {
+  .ap:not(.choosing) { --toph: calc(34px + env(safe-area-inset-top)); --legh: 0px; --tabh: 0px; --rail: 44px; }
+  .ap:not(.choosing) .top { left: env(safe-area-inset-left); right: calc(var(--rail) + env(safe-area-inset-right)); padding: env(safe-area-inset-top) 4px 0; gap: 6px; }
+  .ap:not(.choosing) .top :is(.tl, .stat, b) { font-size: 12px !important; }
+  .ap:not(.choosing) .top .tl { flex: none; gap: 3px; }
+  .ap:not(.choosing) .top .tlx { display: none; }
+  .ap:not(.choosing) .top img.sic { width: 20px; height: 20px; }
+  .ap:not(.choosing) .top .tr { flex: none; gap: 5px; overflow: visible; }
+  .ap:not(.choosing) .top .stat { gap: 2px; }
+  .ap:not(.choosing) .top .stat > img.ic { width: 16px; height: 16px; margin: 0; }
+  .ap:not(.choosing) .top .stat.nat > b { display: none; }
+  .ap:not(.choosing) .top .tface { display: block; width: 28px; height: 28px; border-width: 1px; }
+  .ap:not(.choosing) .top .stat.nat > img.em { width: 18px; height: 18px; margin: 0; }
+
+  .ap:not(.choosing) .legend { left: var(--land-legend-left, 110px); right: var(--land-legend-right, 320px); top: calc(env(safe-area-inset-top) + 2px); height: 26px; padding: 0; gap: 3px; border: 0; background: transparent; overflow: hidden; z-index: 6; }
+  .ap:not(.choosing) .legend .lg { flex: none; height: 24px; gap: 3px; padding: 1px 4px; border-left-width: 3px; }
+  .ap:not(.choosing) .legend .lg :is(span, .mood, .lgally) { display: none; }
+  .ap:not(.choosing) .legend :is(.lg, .lg b, .lgwar, .lgally, .legend-more) { font-size: 12px !important; }
+  .ap:not(.choosing) .legend .lg img.lem { width: 18px; height: 18px; }
+  .ap:not(.choosing) .legend .lg[data-land-fold-hidden='1'] { display: none !important; }
+  .ap:not(.choosing) .legend .crownrow { flex: none; gap: 1px; padding: 1px 3px; margin-right: 0; }
+  .ap:not(.choosing) .legend .crownrow img { width: 16px; height: 16px; }
+  .ap:not(.choosing) .legend .askpill { flex: none; font-size: 12px !important; padding: 2px 4px; }
+  .ap:not(.choosing) .legend-more { flex: none; height: 24px; border: 1px solid #6a5236; border-radius: 12px; background: #1f1710; color: #e9e2d4; padding: 1px 6px; cursor: pointer; }
+  .ap:not(.choosing) .legend[data-expanded='true'] { top: var(--toph); right: auto; width: min(420px, calc(100vw - var(--land-legend-left, 110px) - var(--rail) - env(safe-area-inset-right) - 8px)); height: auto; max-height: calc(100dvh - var(--toph) - 8px); padding: 6px; box-sizing: border-box; flex-wrap: wrap; overflow-y: auto; background: #1f1710f5; border: 1px solid #6a5236; border-radius: 8px; }
+  .ap:not(.choosing) .legend[data-expanded='true'] .lg span { display: inline; }
+  .ap:not(.choosing) .legend[data-expanded='true'] .lg .mood { display: inline-block; }
+  .ap:not(.choosing) .legend[data-expanded='true'] .lg .lgally { display: inline; }
+
+  .ap:not(.choosing) :is(.mapwrap, .seasonp) { left: env(safe-area-inset-left); right: calc(var(--rail) + env(safe-area-inset-right)); top: var(--toph); bottom: 0; }
+  .ap:not(.choosing) .tabs { left: auto; right: 0; top: var(--toph); bottom: 0; width: calc(var(--rail) + env(safe-area-inset-right)); height: auto; padding: 4px env(safe-area-inset-right) calc(4px + env(safe-area-inset-bottom)) 0; flex-direction: column; align-items: flex-start; gap: 4px; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; border: 0; border-image: none; box-shadow: inset 1px 0 #3a2c1e; background: #120d09ed; }
+  .ap:not(.choosing) .tabs::-webkit-scrollbar { display: none; }
+  .ap:not(.choosing) .tabs button { position: relative; flex: none; width: var(--rail); height: 44px; box-sizing: border-box; padding: 0; gap: 0; font-size: 12px !important; border: 1px solid #8e7b54; border-radius: 5px; background: linear-gradient(#514b37, #332f24); }
+  .ap:not(.choosing) .tabs button.on { border-color: #e8c887; background: #5a4930; }
+  .ap:not(.choosing) .tabs button.locked { opacity: 1; border-color: #77785f; background: #35372d; }
+  .ap:not(.choosing) .tabs button > span { display: none; }
+  .ap:not(.choosing) .tabs button img.tic { display: block; width: 28px; height: 28px; opacity: 1; filter: brightness(1.25); }
+  .ap:not(.choosing) .tabs button.locked img.tic { opacity: .85; }
+  .ap:not(.choosing) .tabs .tab-lock { position: absolute; right: 3px; bottom: 2px; font-size: 12px; }
+  .ap:not(.choosing) .tabs :is(.rec, .rqd, .dot) { top: 3px; left: auto; right: 3px; width: 7px; height: 7px; padding: 0; border-radius: 50%; }
+  .ap:not(.choosing) .tabs .rec { font-size: 12px; line-height: 1; color: transparent; text-indent: 20px; overflow: hidden; box-shadow: 0 0 0 1px #2a1a06; }
+  .ap:not(.choosing) .tabs .rqd::after { inset: -2px; }
+
+  .ap:not(.choosing) .zbtns { left: calc(env(safe-area-inset-left) + 8px); bottom: calc(env(safe-area-inset-bottom) + 10px); gap: 4px; }
+  .ap:not(.choosing) .zbtns button { width: 36px; height: 36px; border-radius: 10px; font-size: 20px; }
+  .ap:not(.choosing) .zbtns .lyb { font-size: 18px; }
+  .ap:not(.choosing) .next { right: calc(var(--rail) + env(safe-area-inset-right) + 10px); bottom: calc(env(safe-area-inset-bottom) + 10px); padding: 7px 10px; font-size: 14px; }
+  .ap:not(.choosing) .layers { left: calc(env(safe-area-inset-left) + 50px); bottom: calc(env(safe-area-inset-bottom) + 10px); max-height: calc(100dvh - var(--toph) - 20px); overflow-y: auto; }
+  .ap:not(.choosing) .layers .lyr span { font-size: 12px; }
+  .ap:not(.choosing) .roadkey { right: calc(var(--rail) + env(safe-area-inset-right) + 8px); }
+  .ap:not(.choosing) .todo { right: calc(var(--rail) + env(safe-area-inset-right) + 10px); }
+  .ap:not(.choosing) .selbar { right: calc(var(--rail) + env(safe-area-inset-right) + 10px); }
+  .ap:not(.choosing) .goalb .gbh :is(.gmk, small) { font-size: 12px; }
+  .ap:not(.choosing) .sheet { right: calc(var(--rail) + env(safe-area-inset-right) + 6px); bottom: env(safe-area-inset-bottom); max-height: calc(100% - var(--toph) - 12px); }
+  .ap:not(.choosing) .sheet :is(h3, .grip) { flex-shrink: 0; }
+  .ap:not(.choosing) .back { right: calc(var(--rail) + env(safe-area-inset-right)); bottom: 0; }
+}
+`
