@@ -1,4 +1,23 @@
 {
+ "aw1-ara": {
+  "bytes": 1470953,
+  "cell": [
+   448,
+   320
+  ],
+  "cols": 9,
+  "feet": 312,
+  "scale": {
+   "attack": 1.0222,
+   "hdx": 0.7688,
+   "walk": 1.0073
+  },
+  "sources": {
+   "attack": "codex70/attack8_aw1-ara.png",
+   "hdx": "codex75/hdx_aw1-ara.png",
+   "walk": "codex68/walk8_aw1-ara.png"
+  }
+ },
  "aw1-gamsil": {
   "bytes": 1582374,
   "cell": [
@@ -92,6 +111,25 @@
    "attack": "codex70/attack8_haebi.png",
    "hdx": "codex75/hdx_haebi.png",
    "walk": "codex67/walk8_haebi.png"
+  }
+ },
+ "jinha": {
+  "bytes": 1584488,
+  "cell": [
+   496,
+   320
+  ],
+  "cols": 8,
+  "feet": 310,
+  "scale": {
+   "attack": 1.2105,
+   "hdx": 0.7797,
+   "walk": 1.0299
+  },
+  "sources": {
+   "attack": "codex67/attack8_jinha.png",
+   "hdx": "codex75/hdx_jinha.png",
+   "walk": "codex67/walk8_jinha.png"
   }
  },
  "soseono": {
