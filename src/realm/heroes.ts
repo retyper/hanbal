@@ -8,7 +8,7 @@ import { canVanguard } from './vanguard.ts'
  * 숫자는 P.realm.hero* · post* · trait* · ruler* · persuade* · wanderer*.
  */
 import { roll } from '../core/rng.ts'
-import { hasAwakeningTrial } from './trial-rules.ts'
+import { hasAwakeningTrial, legacyAwakeningOpen } from './trial-rules.ts'
 import { addVow } from './drill.ts'
 import { P } from '../tune/params.ts'
 import { heroSeat, seatRiteMul } from './palace.ts'
@@ -870,7 +870,7 @@ export function battleGrowth(r: Realm, won: readonly (string | null)[], lost: re
   each(drawn, (h) => { gainXp(h, 'mu', R.xpLose, lines); gainXp(h, 'tong', R.xpLose, lines) })
   // 각성 — 우리(플레이어) 장수만. 제 몫의 싸움(fair)을 이기면 불꽃 하나 · 지거나 비기면 하나 꺼진다 (위원회 11-04 던파 · 예전엔 지면 다 꺼졌다)
   const ours = (h: Hero): boolean => h.faction === r.player && h.ascended !== true
-  each(won, (h) => { if (ours(h) && fair) kindle(h, lines) })
+  each(won, (h) => { if (ours(h) && fair) kindle(h, lines, r.region === 'tutorial' && h.id === 'tut-malgalgi') })
   // 각성은 영구 유지. 불꽃은 각성기의 연료만 나타내며 승리로 회복한다.
   const woke = (h: Hero): boolean => h.faction === r.player && h.ascended === true
   each(won, (h) => { if (woke(h) && fair) h.flames = Math.min(Math.round(R.ascendWins), (h.flames ?? 0) + 1) }) // 연료도 제 몫의 싸움으로만
@@ -895,7 +895,8 @@ export function ascendNeed(h: Pick<Hero, 'ascents'>): number {
  * 그 밖은 예전 길: 다 켜지는 싸움 끝에 곧바로 붙는다. 능력치가 모두 ascendBonus 오른다 (10 을 넘을 수 있다 · 그 판에서만).
  * 본편의 시련 관문을 닫으면(P.realm.ascendTrialOpen 0 · 각성 v2) 본편 장수가 모두 예전 길로 온다. 시련이 열린 채 멈춘 옛 저장의 장수도 다음에 이기는 제 몫의 싸움에서 이 길을 탄다
  */
-function kindle(h: Hero, lines: ReportLine[]): void {
+function kindle(h: Hero, lines: ReportLine[], borrowedTutorial = false): void {
+  if (!legacyAwakeningOpen() && !borrowedTutorial) return // Borrowed tutorial experience stays local; awakening proofs exclude it.
   if (hasAwakeningTrial(h)) {
     h.flames = Math.min(ascendNeed(h), (h.flames ?? 0) + 1)
     if (h.flames >= ascendNeed(h)) h.trialReady = true

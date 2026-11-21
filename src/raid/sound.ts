@@ -236,12 +236,12 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
       if (fell > 0) say('die', V.die, V.dieGap)
       // 비기를 누름 — 기합(그대로) + 계단마다 「탁」
       let cast: FeelTier | null = null, skill: FeelTier | null = null, crits = 0
-      if (s.skillCd > prev.skillCd) { cast = tierOf(s.cast?.kind === 'ult' && s.cast.tru); say(shout, V.skill); if (room(F.reserve)) castTick(cast); if (kit === 'sling') sfx('whirl', V.whirl) }
+      if (s.skillCd > prev.skillCd) { cast = tierOf(s.cast?.kind === 'ult' && (s.cast.awakened ?? s.cast.tru)); say(shout, V.skill); if (room(F.reserve)) castTick(cast); if (kit === 'sling') sfx('whirl', V.whirl) }
       for (const b of s.shots) if (!seen.has(b)) { seen.add(b); if (b.kind === 'ember') sfx('fire', V.magic, V.magicGap); else if (b.kind === 'gale' || b.kind === 'wave' || b.kind === 'knife') sfx('wind', V.magic, V.magicGap); else if (b.kind === 'soul') sfx('light', V.magic, V.magicGap); else if (b.kind === 'boulder') sfx('whirl', V.whirl * .7, V.magicGap, .8) }
       let hitN = 0, hitD = 0
       for (const e of s.fx) if (!seen.has(e)) { seen.add(e); if (e.kind === 'hit' || e.kind === 'death') { hitN++; hitD += e.n ?? 0; if (e.crit) crits++ } if (e.championCue === 'roar') say('roar', V.roar);
         if (e.recoveryHit && ctx && ctx.currentTime - championAt >= IMPACT.cooldown) { championAt = ctx.currentTime; const t = tierOf(false); if (!skill || RANK[t] > RANK[skill]) skill = t }
-        if (e.kind === 'bolt') sfx('bolt', V.magic, V.magicGap); else if (e.kind === 'spike') sfx('earth', V.magic, V.magicGap); else if (e.kind === 'skill') { const t = tierOf(e.tru === true); if (!skill || RANK[t] > RANK[skill]) skill = t } else if (e.kind === 'thud' || e.kind === 'ult' && e.ult === 'sling') sfx('stone', V.stone, V.stoneGap, .9 + (n % 5) * .05) }
+        if (e.kind === 'bolt') sfx('bolt', V.magic, V.magicGap); else if (e.kind === 'spike') sfx('earth', V.magic, V.magicGap); else if (e.kind === 'skill') { const t = tierOf((e.awakened ?? e.tru) === true); if (!skill || RANK[t] > RANK[skill]) skill = t } else if (e.kind === 'thud' || e.kind === 'ult' && e.ult === 'sling') sfx('stone', V.stone, V.stoneGap, .9 + (n % 5) * .05) }
       // 비기가 터짐(한 프레임에 하나 · 가장 높은 계단) · 크리티컬 「핑」은 한 프레임 한 번 · crit.gap 틈 · 소리 수 한도면 버린다
       if (skill) impact(skill)
       if (crits > 0 && ctx && ctx.currentTime - critAt >= F.crit.gap && room()) { critAt = ctx.currentTime; ping() }

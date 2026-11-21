@@ -13,7 +13,7 @@ import { fightRounds, leadOptions, type Side } from '../../src/realm/tactics.ts'
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import { awardAwakening, battleGrowth, burnWake, wakeOf } from '../../src/realm/heroes.ts'
 import { elemOf } from '../../src/realm/elem.ts'
-import { P } from '../../src/tune/params.ts'
+import { setParam, P } from '../../src/tune/params.ts'
 import type { Hero, ReportLine, RoundOrder } from '../../src/realm/types.ts'
 
 const side = (F: number, mix: Side['mix'], player = false, over: Partial<Side> = {}): Side => ({
@@ -246,3 +246,6 @@ function wakeUp(r: { player: string; heroes: Record<string, Hero> }, h: Hero, li
   h.trialCleared = true
   awardAwakening(h, lines)
 }
+
+// Explicit rollback coverage; 56-A product default stays off in awakening-persistence.test.ts.
+setParam('realm.legacyAwakeningOpen', 1)

@@ -1,7 +1,7 @@
 // 열전의 시작과 판 안 각성 자격 (11-19 형: 「시작은 평타만」 · 각성 v2 가7 「판 안 각성은 도깨비 도장 뒤에만」)
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { HAEBI_TREE as T, HAEBI_ULT as U, HAEBI_VANGUARD as V, HAEBI_AWAKEN as A, HAEBI_RUN as C } from '../src/tune/params.ts'
+import { HAEBI_TREE as T, HAEBI_ULT as U, HAEBI_VANGUARD as V, HAEBI_RUN as C } from '../src/tune/params.ts'
 import { createHaebi, stepHaebi, choose, xpNeeded, spawnMob, gaugeNeed, awakenedLook, ultOpen, KITS, type HaebiRun, type Kit } from '../src/raid/haebi.ts'
 import { replay } from '../src/raid/haebi-replay.ts'
 import { DEMON_STAGE, DEX_KEY, META_KEY, demonSealed, hasDemonSeal } from '../src/raid/link.ts'
@@ -76,15 +76,14 @@ test('도깨비 도장 읽기: 저장소의 영웅전 표에서 읽고, 표가 �
 /** 막대를 채우고 단추를 누른다 */
 function wakeAt(s: HaebiRun) { s.level = C.maxLevel; s.gauge = gaugeNeed(s); stepHaebi(s, { ...idle, wake: true }, DT); return s }
 
-test('도장 없음 = 막대가 차면 투지(보호막) · 도장 있음 = 각성 (각성 띠가 없는 장수도 판의 셈은 같다)', () => {
+test('56A 도장 자격은 처음부터 영구각성이고 막대는 양 자격 모두 같은 투지·보호막', () => {
   for (const kit of ['sword', 'axe', 'magic'] as Kit[]) {
     const [a] = pair()
     const none = wakeAt(quiet(createHaebi(7, 'stage', kit, { awaken: hasDemonSeal({}, {}, a) })))
     assert.equal(none.form, 'grit', kit); assert.ok(none.ward > 0); assert.equal(awakenedLook(none), false)
     const sealed = wakeAt(quiet(createHaebi(7, 'stage', kit, { awaken: hasDemonSeal({ [a]: { f: DEX_DEMON } }, {}, a) })))
-    assert.equal(sealed.cast?.kind, 'wake', kit)
-    for (let t = 0; t < A.cast + .1; t += DT) stepHaebi(sealed, idle, DT)
-    assert.equal(sealed.form, 'awake', kit); assert.ok(awakenedLook(sealed))
+    assert.equal(sealed.cast, null, kit); assert.equal(sealed.permanentAwake, true)
+    assert.equal(sealed.form, 'grit', kit); assert.ok(sealed.ward > 0); assert.ok(awakenedLook(sealed))
   }
 })
 

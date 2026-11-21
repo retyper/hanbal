@@ -494,7 +494,7 @@ const LEGACY_GEN_OWN: Readonly<Record<string, string>> = { 'bukokjeo-1': 'mulbeo
 export const GEN_ANIM: typeof LEGACY_GEN_ANIM = {...LEGACY_GEN_ANIM,...FULL20_ANIM,...AWAKENED_ANIM}
 export const GEN_OWN: Readonly<Record<string,string>> = {...LEGACY_GEN_OWN,...FULL20_OWN}
 
-type GenLook = { readonly id?: string; readonly ascended?: boolean; readonly look: 'g' | 'w'; readonly traits: readonly string[]; readonly mu: number; readonly tong: number; readonly ryak: number; readonly chi: number; readonly deok: number }
+type GenLook = { readonly id?: string; readonly ascended?: boolean; readonly awakeningLook?: boolean; readonly look: 'g' | 'w'; readonly traits: readonly string[]; readonly mu: number; readonly tong: number; readonly ryak: number; readonly chi: number; readonly deok: number }
 /**
  * 장수 → 싸움터에 설 그림 (순수). 제 그림이 있으면 그것 · 명궁이면 활 · 통솔이 가장 높고 비기가 날 만큼(tacArtMinStat) 높은 남자는 말 탄 장수 ·
  * 여인은 창 · 남자는 무예가 가장 높으면 언월도, 아니면 환두대도. 장수가 없으면(민병) 환두대도.
@@ -502,7 +502,7 @@ type GenLook = { readonly id?: string; readonly ascended?: boolean; readonly loo
 export function generalSprite(h: GenLook | null | undefined, minStat = 7): string {
   if (h === null || h === undefined) return 'g-sword'
   const own = h.id !== undefined ? GEN_OWN[h.id] : undefined
-  if (own !== undefined) return (h.ascended && AWAKENED_BY_BASE[own]) || own
+  if (own !== undefined) return (h.ascended && h.awakeningLook !== false && AWAKENED_BY_BASE[own]) || own
   const w = h.look === 'w'
   if (h.traits.includes('archer')) return w ? 'w-bow' : 'g-bow'
   if (w) return 'w-spear'

@@ -21,7 +21,14 @@ export function applyHeadgear(all) {
 }
 
 export function spritePxTs(all) {
-  return `/** public/realm/anim-px/manifest.json 의 사본 — tools/sprite-normalize.mjs 가 만든다 (손으로 고치지 말 것). 칸 [가로, 세로] · feet = 발 줄(칸 위에서 y) · bodyPx = 서 있는 몸 키 */\nexport const SPRITE_PX: Readonly<Record<string, { readonly cell: readonly [number, number]; readonly feet: number; readonly bodyPx: number; readonly kind: 'general' | 'soldier' | 'folk' | 'crowd'; readonly cells: number }>> = ${JSON.stringify(Object.fromEntries(Object.entries(all).map(([k, v]) => [k, { cell: v.cell, feet: v.feet, bodyPx: v.bodyPx, kind: v.kind, cells: v.cells }])))}\n`
+  const templates = [], indices = new Map(), rows = []
+  for (const [key, v] of Object.entries(all)) {
+    const value = { cell: v.cell, feet: v.feet, bodyPx: v.bodyPx, kind: v.kind, cells: v.cells }, encoded = JSON.stringify(value)
+    if (!indices.has(encoded)) { indices.set(encoded, templates.length); templates.push(value) }
+    rows.push([key, indices.get(encoded)])
+  }
+  const type = "{ readonly cell: readonly [number, number]; readonly feet: number; readonly bodyPx: number; readonly kind: 'general' | 'soldier' | 'folk' | 'crowd'; readonly cells: number }"
+  return `/** public/realm/anim-px/manifest.json 의 사본 — tools/sprite-normalize.mjs 가 만든다 (손으로 고치지 말 것). 칸 [가로, 세로] · feet = 발 줄(칸 위에서 y) · bodyPx = 서 있는 몸 키 */\nimport { expandManifest } from './sprite-manifest.ts'\nexport const SPRITE_PX: Readonly<Record<string, ${type}>> = expandManifest<${type}>(${JSON.stringify(templates)},${JSON.stringify(rows)})\n`
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {

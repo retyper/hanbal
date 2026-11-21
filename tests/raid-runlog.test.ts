@@ -75,7 +75,7 @@ test('53B camera-edge birth input is quantized, recorded and replays the entire 
     stepHaebi(s, actual, STEP)
   }
   const g = finishRecord(r, 0, 'x')
-  assert.equal(g.rules, '53B'); assert.ok(g.input.includes('|'), 'real scheduled elite birth recorded a viewport')
+  assert.equal(g.rules, '56A'); assert.ok(g.input.includes('|'), 'real scheduled elite birth recorded a viewport')
   assert.ok(s.enemies.some(e => e.champion) || s.elites > 0)
   assert.equal(hash(replayRaid(JSON.parse(JSON.stringify(g)))), hash(s), 'phase, fixed aim, RNG and chest lifecycle are identical')
 })
@@ -85,7 +85,7 @@ test('53B malformed view inputs fall back safely and old no-view records still p
     const q = gridInput({ x: 0, y: 0, viewBounds })
     assert.deepEqual(q.viewBounds, { left: 0, top: 0, right: C.width, bottom: C.height })
   }
-  const { s, r } = play(11, 30, { stage: 'forest' }), g = finishRecord(r, 0, 'x')
+  const { s, r } = play(11, 30, { stage: 'forest', simRules: '53B' }), g = finishRecord(r, 0, 'x')
   delete (g as { rules?: string }).rules
   assert.ok(!g.input.includes('|')); assert.equal(hash(replayRaid(g)), hash(s))
   const malformed = { ...g, input: '0,0,0,0|1,2,3 NaN,0,0,0|oops 1' }

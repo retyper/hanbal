@@ -243,8 +243,8 @@ function stripAlong(ctx: CanvasRenderingContext2D, img: HTMLImageElement | undef
 }
 /** 비기 그림 (판 상태는 읽기만) — f.ult 묶음마다 꼴이 다르다. 폰 프레임: filter·shadowBlur·그라디언트 없이 그림 띠와 선만 */
 function drawUlt(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, f: HaebiRun['fx'][number], age: number) {
-  const kit = f.ult!, color = f.tru ? TRUE_COLOR[kit] : ULT_COLOR[kit], len = Math.hypot(f.x2 - f.x, f.y2 - f.y), lead = f.kind === 'skill'
-  if (f.tru && lead) trueFlare(ctx, kit === 'sling' ? f.x2 : f.x, kit === 'sling' ? f.y2 : f.y, age)
+  const kit = f.ult!, color = (f.awakened ?? f.tru) ? TRUE_COLOR[kit] : ULT_COLOR[kit], len = Math.hypot(f.x2 - f.x, f.y2 - f.y), lead = f.kind === 'skill'
+  if ((f.awakened ?? f.tru) && lead) trueFlare(ctx, kit === 'sling' ? f.x2 : f.x, kit === 'sling' ? f.y2 : f.y, age)
   ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineCap = 'round'; ctx.lineJoin = 'round'
   if (kit === 'axe') {
     // 천지개벽: 땅이 앞으로 갈라져 나간다 — 바닥 빛 띠 · 지그재그 금 · 금을 따라 차례로 터지는 흙불
@@ -383,17 +383,17 @@ const auraArt: AuraArt = {}, auraAt: AuraAt & { tints: string[] } = { x: 0, y: 0
 const auraMem = { t: -1, form: 'normal' as HaebiRun['form'], casting: false, burst: -9 }
 function heroAura(s: HaebiRun, images: Map<string, HTMLImageElement>): AuraKind | null {
   if (s.t < auraMem.t) { auraMem.form = 'normal'; auraMem.casting = false; auraMem.burst = -9 }   // 새 판
-  const casting = s.cast?.kind === 'wake'
-  if (s.form === 'grit' ? auraMem.form !== 'grit' : s.form === 'awake' && !casting && (auraMem.casting || auraMem.form !== 'awake')) auraMem.burst = s.t
-  auraMem.t = s.t; auraMem.form = s.form; auraMem.casting = casting
-  if (s.form === 'normal') return null
+  const casting = s.cast?.kind === 'wake', form = s.form === 'grit' ? 'grit' : awakenedLook(s) ? 'awake' : 'normal'
+  if (form === 'grit' ? auraMem.form !== 'grit' : form === 'awake' && !casting && (auraMem.casting || auraMem.form !== 'awake')) auraMem.burst = s.t
+  auraMem.t = s.t; auraMem.form = form; auraMem.casting = casting
+  if (form === 'normal') return null
   auraAt.x = s.x; auraAt.y = s.y; auraAt.t = s.t; auraAt.height = C.heroPx
   auraArt.flame = images.get(AURA_ART.flame); auraArt.ember = images.get(AURA_ART.ember); auraArt.ring = images.get(AURA_ART.ring)
   auraAt.tints[0] = TRUE_COLOR[s.kit]; auraAt.tints[1] = ULT_COLOR[s.kit]
   // 붐비는 장면(늑대 떼)에서는 입자를 덜 · 각성 시전 동안은 낮게 시작해 차오른다
   auraAt.density = s.enemies.length > K.aura.crowd ? K.aura.crowdDensity : 1
   auraAt.gain = casting && s.cast ? K.aura.castFrom + (1 - K.aura.castFrom) * (1 - Math.max(0, s.cast.t) / s.cast.total) : 1
-  return s.form
+  return form
 }
 // ── 누구 것인가 (11-18 형 플립: 「적 공격 이펙트랑 내 공격 이펙트가 헷갈림」) ── 붉은 것 = 적이 나를 때릴 자리 · 금빛·하늘빛 = 내 것 (빛·굵기는 HAEBI_FX)
 const TAU = Math.PI * 2, GOLDEN_TURN = Math.PI * (3 - Math.sqrt(5))
@@ -567,7 +567,7 @@ function warm(color: string) {
 /** 비기·각성 시전: 기운이 장수에게 모여드는 고리 (남은 시간만큼 오므라든다) · 진 비기·각성은 금빛 겹고리 */
 function drawCast(ctx: CanvasRenderingContext2D, s: HaebiRun) {
   const c = s.cast; if (!c) return
-  const k = Math.max(0, c.t / c.total), gold = c.tru || c.kind === 'wake', op = ctx.globalCompositeOperation, a = ctx.globalAlpha
+  const k = Math.max(0, c.t / c.total), gold = (c.awakened ?? c.tru) || c.kind === 'wake', op = ctx.globalCompositeOperation, a = ctx.globalAlpha
   ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = gold ? '#ffd66a' : ULT_COLOR[s.kit]
   for (const [m, w] of (gold ? [[1, 4], [1.5, 2]] : [[1, 3]]) as [number, number][]) {
     const r = (24 + 150 * k) * m; ctx.lineWidth = w; ctx.globalAlpha = a * (1 - k * .7) * .9
@@ -581,7 +581,7 @@ function shakeOf(s: HaebiRun) {
   for (const f of s.fx) if (f.kind === 'skill' && f.ult && (!best || f.life / f.total > best.life / best.total)) best = f
   if (!best) return 0
   const k = 1 - (best.total - best.life) / .3
-  return k > 0 ? (best.tru ? 7 : 3.5) * k : 0
+  return k > 0 ? ((best.awakened ?? best.tru) ? 7 : 3.5) * k : 0
 }
 export function drawPortrait(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, menuTime = 0) {
   const { width: w, height: h } = ctx.canvas; ctx.clearRect(0, 0, w, h)
@@ -692,7 +692,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       if (aura) drawAura(ctx, aura, false, auraAt)
       drawCast(ctx, s)
       sprite(ctx, images, heroSprite(s, images, density), s.x, s.y, heroH(s), heroFrame(s), s.face, s.hurt > 0, density)
-      if (s.form === 'awake') {
+      if (awakenedLook(s)) {
         // 각성: 몸이 금빛으로 맥박친다 (같은 그림을 빛으로 한 번 더)
         const op = ctx.globalCompositeOperation; ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .16 + .12 * Math.sin(s.t * 7)
         sprite(ctx, images, heroSprite(s, images, density), s.x, s.y, heroH(s), heroFrame(s), s.face, false, density); ctx.globalCompositeOperation = op; ctx.globalAlpha = 1
@@ -799,7 +799,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       impact(ctx, images, f.x, f.y - 8, f.r, age)
     } else if (f.kind === 'skill' || f.kind === 'ult') {
       if (f.ult) drawUlt(ctx, images, s, f, age); else impact(ctx, images, f.x, f.y - 12, f.r, age)
-      if (f.tru && f.kind === 'ult') { ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = '#ffd66a'; ctx.lineWidth = 3; ctx.globalAlpha = Math.max(0, 1 - age); const r = 14 + 46 * age; ctx.beginPath(); ctx.ellipse(f.x, f.y, r, r * .5, 0, 0, Math.PI * 2); ctx.stroke() }
+      if ((f.awakened ?? f.tru) && f.kind === 'ult') { ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = '#ffd66a'; ctx.lineWidth = 3; ctx.globalAlpha = Math.max(0, 1 - age); const r = 14 + 46 * age; ctx.beginPath(); ctx.ellipse(f.x, f.y, r, r * .5, 0, 0, Math.PI * 2); ctx.stroke() }
     } else if (f.kind === 'ring') {
       // 방울 파동 · 만신 굿: 고리가 맞는 범위까지 퍼지며 옅어진다
       const img = images.get('raid/bell-ring.png'), r = f.r * (.35 + .65 * age)

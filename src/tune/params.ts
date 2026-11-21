@@ -389,6 +389,8 @@ export const HAEBI_TREE = { max: 3, rankStep: .4, upgradeChance: .5, ultDamage: 
  * 숲·여울·목책을 다 깬 장수(숙련)는 막대 mastery 몫을 채우고 시작한다.
  */
 export const HAEBI_AWAKEN = {
+  /**56A permanent qualification; legacy timed-awake values below stay unchanged for old records. */
+  permanent: { power: 1.35, tempo: 1.3, move: 1.15, ultRate: 2.5 },
   need: 160, needGrowth: .5, kill: 1, elite: 30, boss: 0,
   sec: 9, power: 1.35, tempo: 1.3, move: 1.15, ultRate: 2.5, burstRadius: 210, burstDamage: 90,
   gritSec: 7, gritPower: 1.12, gritTempo: 1.12, gritMove: 1.08,
@@ -3378,6 +3380,7 @@ export const SPEC = {
     // 다 켜지면 각성 시련이 열리고(ascendTrialOpen 1) 시련을 넘으면 각성한다. 그 판에서만. 문턱은 heroes.ascendNeed 가 셈한다
     ascendWins: k(3, 1, 10, 1, '각성: 불꽃 칸 수. 제 몫의 싸움을 이기면 한 칸 켜지고 지거나 비기면 한 칸 꺼진다. 이만큼 켜지면 다 찬 것이다 (내리 이길 필요는 없다)'),
     firstAscendEase: k(1, 0, 3, 1, '각성: 처음 깨어날 때 켜진 채 시작하는 불꽃 칸 수. 그만큼 덜 이겨도 된다 (11-11 · docs/realm/FIRST-HOUR.md)'),
+    legacyAwakeningOpen: k(0, 0, 1, 1, '옛 각성 시련·공훈 경로'),
     ascendTrialOpen: k(1, 0, 1, 1, '각성: 본편의 시련 관문. 1 = 불꽃이 다 켜지면 시련이 열리고 시련을 넘어야 힘이 붙는다(지금 규칙) · 0 = 시련 없이 불꽃이 다 켜지는 싸움 끝에 곧바로 붙는다(각성 v2 · 형의 판이 끝난 뒤 0 으로 · docs/realm/study-20261118/30-PROPOSAL.md 1절 ⑧). 배우는 판의 해비는 어느 쪽이든 시련이다'),
     flameFairShare: k(0.5, 0, 1, 0.05, '각성 불꽃: 진 쪽 군사가 이긴 쪽의 이 몫을 넘어야 붙는다 (제 몫의 싸움 · 위원회 11-04 던파)'),
     ascendBonus: k(1, 0, 5, 1, '각성: 능력치마다 오르는 몫 (10 을 넘을 수 있다)'),

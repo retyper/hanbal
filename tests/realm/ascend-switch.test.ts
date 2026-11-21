@@ -375,3 +375,6 @@ describe('각성 스위치 ascendTrialOpen · 결정론 (A1)', () => {
     }
   })
 })
+
+// Explicit rollback coverage; 56-A product default stays off in awakening-persistence.test.ts.
+setParam('realm.legacyAwakeningOpen', 1)

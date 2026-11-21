@@ -315,6 +315,8 @@ export interface Hero {
   flames?: number
   /** 각성했다 — 이 판에서 능력치가 모두 오르고 얼굴이 각성 초상으로 (heroes.battleGrowth) */
   ascended?: boolean
+  /** 56-A cosmetic only; missing means awake appearance on. Power remains ascended. */
+  awakeningLook?: boolean
   /** Once opened through military merit, Haebi's trial stays open in this campaign. */
   trialReady?: boolean
   /** Campaign reward receipt. Prevents duplicate stat awards across saves/retries. */

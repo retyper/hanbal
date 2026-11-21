@@ -11,7 +11,7 @@ let ascended: ReadonlySet<string> = new Set()
 
 /** 판이 바뀔 때마다 — 각성한 장수 id 를 다시 센다 (화면은 판을 읽기만 한다) */
 export function noteAscended(r: Realm | null): void {
-  ascended = new Set(r === null ? [] : Object.values(r.heroes).filter((h) => h.ascended === true).map((h) => h.id))
+  ascended = new Set(r === null ? [] : Object.values(r.heroes).filter((h) => h.ascended === true && h.awakeningLook !== false).map((h) => h.id))
 }
 
 export function faceFile(id: string): string | undefined {

@@ -95,3 +95,6 @@ describe('추천 점', () => {
     assert.deepEqual(recsOf(r, r.player, bustOf, {}, { ...raid, gold: 49 }, book()), [])
   })
 })
+
+// Explicit rollback coverage; 56-A product default stays off in awakening-persistence.test.ts.
+setParam('realm.legacyAwakeningOpen', 1)

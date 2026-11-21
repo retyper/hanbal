@@ -7,7 +7,7 @@
 - 53-A **f6cc0b11e382f9d32fe11cdc79e003c30400d43c**, 즉시 push·CI **44858175718 성공**, 운영version **f6cc0b11e3**. HTML200·실JS/CSS6개 전부 로컬dist SHA 일치·주몽HDPNG200/SHA일치 확인. 전체1687(1685pass/0fail/기존skip2), 타입/관련22, build4972.8KBraw/1539.9gzip.
 - CSS587.984375×378/backing1120×720→1176×756(DPR2), 내 장수94px 중간축소 제거/native160 보존. 주몽만 실제원본×2 HD3840×640/20칸/발312, SHA f775f616f674adc95b919e72aad4cebd093a9142cb54516319fc0ca148e2f772. 다나/각성해비 원본×2미달 목록. 적/판셈불변. 다나·주몽·각성해비 전후3쌍·PC사진/JS0, low/DPR1/HD실패fallback 통과. 실제각성/소유권/실폰FPS 증거 아님. rAF p95전15.1×3/후13.5·13.8·13.8ms는난수·시간대다름/인과개선주장0. D창고53A-NATIVE-CROPS.png 등3파일. 근거 Coutputs/codex53/HD-production-bundle-final.json.
 
-## 53-B 소스 완료 · 아직 미커밋/미배포
+## 53-B 배포 완료 · dbe8ad3091 · CI44865600981 성공
 - 스테이지별 dash/slam/fan/summon/guard,50%2막·boss30%3막,1.25초틈/추가피해1.5,첫실명중만큰49반응(반복전체정지방지),실공격원점방패,부하2..4/진입공격0. 실제camera bounds8px양자화·기록재생, oldlegacybot SHA불변.
 - 정예 상자 ground→opened→claimed/종료expire,20초내golden2선택/기타1,희귀상위합법칸·조합우선,XP/level/reroll불변·nonce중복click방지. 기존perElite12를실픽업금으로이동(stage/greed1회),결과정예옆실획득상자수. 기존장수·적이미지는그대로. 새closed ground기존그림, opened신규64PNG는동일byte설치/RAW보존.
 - 눈에보이는붉은예고=실제geometry,정예이름판·기존HIT18/포효대체프레임. 실제사진의이름판/footer겹침→하단25%회피, RED9/10→GREEN10/10. 새고유dash/roar그림은아직없음.
@@ -57,3 +57,14 @@ Ctask=C:/Users/my/Documents/Codex/2026-11-17/detail-bad-request, Coutputs=Ctask/
 주의: Coutputs/codex53/save-current.py는인코딩오류가발생해폐기한옛helper입니다. 실행하지말고본MD와실파일을정본으로사용합니다. 기존RAW·이전실패로그·PAUSED기록·사용자untracked삭제0. 할일다한뒤기다림/자동감시없이종료하라는사용자지시유지.
 ## 최신56 수신·미구현
 영구각성힘(목책본인클리어/옛시련각성보존)·토글은모습만/기본켬·모든판내버튼투지로통일. 본편옛시련칸은진입스위치off로보존하고목책진행안내. localStorage clear금지/저장3경로시험. 그다음각성비기1.6~2초/2회차반/짧게설정/각성전신또는초상·보이스·7묶음FX·비교0.2초사진. 55그다음,56-C물리목책과여울호박+청록/목책황토sunset배경,불가사리는C뒤. 코드아직0/다음정식GO는53Bcommit후.
+
+## 최신 배포 확정 · 53-B / 56-A 진행
+- 53-B commit dbe8ad3091e67b62c2ce666c6d6839b6536c3b7e 즉시 push 완료. CI44865600981 success. 운영 version dbe8ad3091 / HTML200 / 실JS·CSS6개와 chest-open·주몽HD 2PNG 모두 HTTP200 및 로컬dist SHA 일치. Coutputs/codex53B-prep/B-production-bundle.json ok:true.
+- 56-A sim61/61·본편/저장79/79(+저장최종10/10)·manifest동등성18/18 완료. root가 열전main/view/sound 연결중이며 아직 56-A 미커밋·미배포. 실제UI/전체검사/번들 검수 뒤 단계커밋. manifest 실제 빌드절감량 미측정. 기존사용자저장 clear0.
+
+
+## 56-A 통합 검수 · 56-B 그림 수신
+- 56-A 최종 전체1744/통과1742/실패0/기존skip2,108.937초. 실제tutorial회귀1건은region+id로빌린체험만보존/전역grant0으로고쳤고기존test유지. cast·shake tier누락도독립리뷰후RED→GREEN.
+- build raw4959.5/gzip1547.6KB, 예산여유40.5/52.4KB. 로컬실HTML2개200·실JS/CSS6+이미지2 HTTP200/SHA일치. 단계커밋전실UI3사례진행중; 도구가알림레이어race로멈춘원로그를보존하고실입력경로교정중. 일반소유권/실clear/실폰FPS주장0.
+- native56B 입자7개(칼/도끼/활/창/단검/술법/투석) 각각1회병렬발주·RAW7/7·재생성0. 누적21회/21RAW(native20/browser1). D창고56B-{kit}-particle-01-native.png+json각7전달. 실제referenceSHA/실첨부/원본불변·검수Coutputs/codex56B-art/. 7개core실잘림·구워진배경미발견/후보승인,패딩형식5미달별도공개/제품설치0. 후처리재그림0. root도7종gray합성실뷰.
+- 56B sim정책 C준비5tests green/아직제품0. 새version으로56A로그보존,첫1.8초·후속0.9초/0.1slow,manualrelease에서만0.3daze/49cue. 기존일반actual1.1초/투지1.3초는MD≈.4와차이있어최종시전정책결정필요.

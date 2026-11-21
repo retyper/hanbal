@@ -1,3 +1,6 @@
+import { readAwakeningProfile } from './awakening-store.ts'
+import { personOf } from '../../realm/person.ts'
+import type { AwakeningProfile } from '../../realm/awakening.ts'
 /**
  * 도감 판 — 판을 넘어 남는 장수 기록 (src/realm/dex.ts 의 셈을 그린다 · VISION §5-4).
  *
@@ -5,7 +8,7 @@
  * 들으면 이름과 얼굴, 만나면 능력치와 특성(그 판에 처음 나올 때의 솜씨), 사로잡으면 포승줄, 거느리면 금테.
  * 기록은 이 기기에만 (판 저장·판 해금처럼). 상태는 app.ts 가 쥐고, 누름은 data-act 로 app.ts 가 받는다.
  */
-import { DEX_AWOKE, DEX_CAUGHT, DEX_DEMON, DEX_HEARD, DEX_MASK, DEX_MET, DEX_SERVED, dexCatalog, dexCounts, dexLevel, scanDex, type Dex, type DexHero } from '../../realm/dex.ts'
+import { DEX_CAUGHT, DEX_DEMON, DEX_HEARD, DEX_MASK, DEX_MET, DEX_SERVED, dexCatalog, dexCounts, dexLevel, scanDex, type Dex, type DexHero } from '../../realm/dex.ts'
 import { DEX_KEY, META_KEY, raidDemons, stampDemons } from '../../raid/link.ts'
 import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
 import { noteKids } from '../../realm/data/art.ts'
@@ -172,29 +175,34 @@ function whereHint(x: DexHero): string {
   return tr(x.ruler ? 'dx.hintRuler' : 'dx.hintHero', { board: BOARD_NAME[x.board], nation: x.nationName })
 }
 
+let appearanceProfile: AwakeningProfile = { v: 1, people: {} }
+function sharedAwake(id: string): boolean {
+  const state = appearanceProfile.people[personOf(id)]
+  return state?.unlocked === true && state.appearanceAwake !== false
+}
 function card(k: DexKit, x: DexHero, f: number, sel: boolean): string {
   const lv = dexLevel(f)
   // 각성해 본 장수는 켜 둔 대로 각성 얼굴 · 귀퉁이에 불꽃 표 (누르면 자세히에서 켜고 끈다)
-  const aw = (f & DEX_AWOKE) !== 0 ? k.awake(x.id) : null
+  const aw = sharedAwake(x.id) ? k.awake(x.id) : null
   // 각성 보기를 켰으면 각성 얼굴 · 각성을 못 본 장수는 물음표 (형 11-05)
-  const src = awakeAll ? aw : k.bust(x.id)
-  const face = lv === 0 || src === null ? `<span class="dxf none">${lv === 0 || awakeAll ? '?' : ''}</span>` : `<img class="dxf" src="${src}" alt="" loading="lazy">`
+  const src = aw ?? k.bust(x.id)
+  const face = lv === 0 || src === null ? `<span class="dxf none">${lv === 0 ? '?' : ''}</span>` : `<img class="dxf" src="${src}" alt="" loading="lazy">`
   const name = lv === 0 ? '<b class="dxn">???</b>' : `<b class="dxn">${nameHtml(x.name)}</b>`
   const pips = [DEX_HEARD, DEX_MET, DEX_CAUGHT, DEX_SERVED].map((b, i) => `<i class="${f & b ? 'on' : ''}" title="${LV_NAME[i + 1]}"></i>`).join('')
   const g = lv >= 2 ? ` style="--g:${GRADE_COLOR[x.grade]}"` : ''
   const gr = k.grow(x.id)
   const grow = gr.lv > 0 || gr.relics !== '' ? `<span class="dxgr">${gr.lv > 0 ? `<b>${tr('dx.drill', { n: gr.lv })}</b>` : ''}${gr.relics}</span>` : ''
-  return `<button class="dxc lv${lv}${lv >= 2 ? ' graded' : ''}${sel ? ' sel' : ''}" data-act="dex-sel" data-id="${x.id}"${g}>${face}${name}<span class="dxm">${k.esc(x.board === 'wander' ? BOARD_NAME.wander : x.nationName)}</span>${grow}${aw !== null && !awakeAll ? '<i class="dxawb">🔥</i>' : ''}<span class="pips">${pips}</span></button>`
+  return `<button class="dxc lv${lv}${lv >= 2 ? ' graded' : ''}${sel ? ' sel' : ''}" data-act="dex-sel" data-id="${x.id}"${g}>${face}${name}<span class="dxm">${k.esc(x.board === 'wander' ? BOARD_NAME.wander : x.nationName)}</span>${grow}${aw !== null ? '<i class="dxawb">🔥</i>' : ''}<span class="pips">${pips}</span></button>`
 }
 
 /** 고른 장수 — 아래에 붙는 판 */
 function detail(k: DexKit, x: DexHero, f: number): string {
   const lv = dexLevel(f)
   let h = `<div class="dxsel"><button class="x" data-act="dex-sel" aria-label="${tr('more.closeAria')}">✕</button>`
-  const aw = (f & DEX_AWOKE) !== 0 ? k.awake(x.id) : null
-  const src = awakeAll ? aw : k.bust(x.id)
+  const aw = sharedAwake(x.id) ? k.awake(x.id) : null
+  const src = aw ?? k.bust(x.id)
   // 각성 보기에 고리 영상이 있으면 숨 쉬는 초상 (형 11-05 · 저사양·동작 줄이기에선 첫 장면에 멈춘다)
-  const loop = awakeAll && aw !== null ? k.awakeLoop?.(x.id) ?? null : null
+  const loop = aw !== null ? k.awakeLoop?.(x.id) ?? null : null
   const big = loop !== null ? `<video class="dxbig dxloop${loop.endsWith('.sq.mp4') ? ' sq' : ''}" src="${loop}" poster="${aw}" autoplay muted loop playsinline preload="auto" data-act="bust-view" data-src="${aw}" data-loop="${loop}" data-elem="${elemOf(x.hero)}"></video>` : `<img class="dxbig" src="${src}" alt="" data-act="bust-view" data-src="${src}">`
   h += `<div class="dxtop">${lv > 0 && src !== null ? big : '<span class="dxbig none">?</span>'}<div>`
   h += `<b class="dxname">${lv > 0 ? nameHtml(x.name) : '???'}</b>`
@@ -213,10 +221,11 @@ function detail(k: DexKit, x: DexHero, f: number): string {
 
 /** 도감 판 — `back` 은 돌아갈 곳의 이름 */
 export function dexHtml(k: DexKit, board: DexBoard, sel: string | null, back: string): string {
+  appearanceProfile = readAwakeningProfile(localStorage) // one storage snapshot per paint, not per card
   const dex = loadDex()
   const all = dexCatalog()
   const c = dexCounts(dex)
-  let h = `<div class="front dexp"><div class="fhead"><button class="btn ghost" data-act="dex-close">‹ ${k.esc(back)}</button><h2>${tr('title.heroes')}</h2><button class="dxawall${awakeAll ? ' on' : ''}" data-act="dex-awake" aria-pressed="${awakeAll}" data-tip="${tr('dx.awakeTip')}">${tr('dx.awake')}</button></div>`
+  let h = `<div class="front dexp"><div class="fhead"><button class="btn ghost" data-act="dex-close">‹ ${k.esc(back)}</button><h2>${tr('title.heroes')}</h2></div>`
   h += `<div class="dxsum"><div class="dxbar"><i class="s" style="width:${(c.served / c.total) * 100}%"></i><i class="c" style="width:${(c.caught / c.total) * 100}%"></i><i class="m" style="width:${(c.met / c.total) * 100}%"></i><i class="h" style="width:${(c.heard / c.total) * 100}%"></i></div>`
   h += `<p><span><b>${c.served}</b>${LV_NAME[4]}</span><span><b>${c.caught}</b>${LV_NAME[3]}</span><span><b>${c.met}</b>${LV_NAME[2]}</span><span><b>${c.heard}</b>${LV_NAME[1]}</span><span class="mute">${tr('dx.all', { n: c.total })}</span></p>`
   h += `<p class="mute">${tr('dx.keepNote')}</p></div>`

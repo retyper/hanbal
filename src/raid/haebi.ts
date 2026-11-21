@@ -148,7 +148,7 @@ export const NO_BONUS: Bonus = { might: 0, vigor: 0, armor: 0, regen: 0, haste: 
 export interface Mob { id: number; x: number; y: number; hp: number; max: number; kind: MobKind; cd: number; flash: number; wind: number; aimX: number; aimY: number; act: number; vx: number; vy: number; buff: number; poison: number; pdps: number; daze: number; bornAt?: number; phase?: 1 | 2 | 3; pattern?: ChampionPattern | null; patternSeq?: number; recovery?: number; champion?: ChampionState }
 export interface Chest { id: number; eliteId: number; x: number; y: number; bornAt: number; pickedAt?: number; state: 'ground' | 'opened' | 'claimed' | 'expired'; choicesRemaining: number; gold: number; large: boolean }
 export interface Missile { x: number; y: number; vx: number; vy: number; life: number; kind: 'gale' | 'ember' | 'shard' | 'enemy' | 'arrow' | 'rain' | 'javelin' | 'wave' | 'barrage' | 'stone' | 'flame' | 'knife' | 'soul' | 'hurl' | 'pebble' | 'skip' | 'boulder'; damage: number; radius: number; hit: number[]; angle: number; tx: number; ty: number; gen?: number; source?: number; championShot?: boolean }
-export interface Effect { x: number; y: number; x2: number; y2: number; r: number; angle: number; life: number; total: number; kind: 'hit' | 'slash' | 'blast' | 'bolt' | 'skill' | 'ult' | 'death' | 'spike' | 'thrust' | 'buff' | 'ring' | 'thud'; color: string; mob?: Mob['kind']; face?: number; n?: number; crit?: boolean; ult?: Kit; tru?: boolean; championCue?: 'enter' | 'roar' | 'recovery'; recoveryHit?: boolean }
+export interface Effect { x: number; y: number; x2: number; y2: number; r: number; angle: number; life: number; total: number; kind: 'hit' | 'slash' | 'blast' | 'bolt' | 'skill' | 'ult' | 'death' | 'spike' | 'thrust' | 'buff' | 'ring' | 'thud'; color: string; mob?: Mob['kind']; face?: number; n?: number; crit?: boolean; ult?: Kit; tru?: boolean; awakened?: boolean; empowered?: boolean; championCue?: 'enter' | 'roar' | 'recovery'; recoveryHit?: boolean }
 /** 이어지는 비기(용오름 창의 솟음 · 환영난무의 순간 이동 · 돌벼락의 물결) — 남은 수 n · 다음까지 t 초 · 처음 자리 · 이미 벤 적 · k 힘 몫(되받아치기는 작게) */
 export interface UltState { n: number; t: number; x: number; y: number; used: number[]; k: number }
 export interface Drop { x: number; y: number; value: number; age: number }
@@ -164,7 +164,9 @@ export interface HaebiRun {
   counterDue: boolean;
   /** 시전 (HAEBI_ULT.cast · HAEBI_AWAKEN.cast) — 비기·각성을 누른 뒤 터지기까지 · 그동안 판이 느려지고 장수는 다치지 않는다 · tru = 진 비기(각성 중) · trueUlt = 지금 도는 비기가 진 비기 */
   cast: CastState | null; trueUlt: boolean;
-  /** 판 안 각성 (RAID-LINK §1) — gauge 모은 점 · form 지금 모습(보통·각성·투지) · formT 남은 초 · wakes 각성(투지)한 수 · canAwaken 본편 각성 장수인가 · ward 영웅의 투지 보호막이 남은 흡수량 */
+  /**56A: qualification, appearance and the accepted manual-ult charge are independent. Legacy runs omit these fields. */
+  permanentAwake?: boolean; appearanceAwake?: boolean; gritUltReady?: boolean; ultAwakened?: boolean; ultEmpowered?: boolean;
+  /** gauge/form/formT describe timed grit in56A. canAwaken is a compatibility alias; old rules retain timed awake. */
   gauge: number; form: 'normal' | 'awake' | 'grit'; formT: number; wakes: number; canAwaken: boolean; ward: number;
   enemies: Mob[]; shots: Missile[]; fx: Effect[]; drops: Drop[];
   spawn: number; nextElite: number; nextBarrage: number; boss: boolean; next: number; kills: number; damage: number;
@@ -172,14 +174,15 @@ export interface HaebiRun {
   chests?: Chest[]; chestChoice?: { id: number; left: number; nonce: number }; choiceOrigin?: 'level' | 'chest'; offerNonce?: number; chestGold?: number; chestsClaimed?: number; nextChestId?: number;
 }
 export interface RunInput { x: number; y: number; dash?: boolean; skill?: boolean; wake?: boolean; /** 실제 카메라 안 발사자 ID, 0=없음. 생략한 봇·옛 기록은 전체 판. */ barrageSource?: number; viewBounds?: SpawnView }
-export interface CastState { kind: 'ult' | 'wake'; t: number; total: number; tru: boolean }
+export interface CastState { kind: 'ult' | 'wake'; t: number; total: number; tru: boolean; awakened?: boolean; empowered?: boolean }
 export function random(s: HaebiRun) { const rng = makeRng(s.seed); const n = rng.next(); s.seed = rng.state(); return n }
 /**
- * awaken: 판 안 각성 자격 — 그 사람의 도깨비 도장(목책의 도깨비를 잡음 · 영웅전 비트 32)이 있는 장수 (각성 v2 · 11-19).
- *   화면이 판 밖 기록(raid/link.ts demonSealed)을 읽어 넘긴다 · 판의 셈은 이 값만 본다 · 없으면 막대가 차도 투지뿐
+ * permanentAwake/appearanceAwake are entry snapshots supplied by the caller, never read from storage here.
+ * awaken remains the fallback qualification alias. Explicit53B, plus default trial/vanguard, preserve timed-awake rules.
  * mastery: 숲·여울·목책을 다 깬 장수 (막대 절반으로 시작)
  */
-export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit = 'axe', opts: { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean } = {}): HaebiRun {
+export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' }
+export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit = 'axe', opts: HaebiOpts = {}): HaebiRun {
   const bonus = { ...NO_BONUS, ...opts.bonus }, maxHp = C.health + bonus.vigor * SH.vigor.step, stage: StageId = mode === 'trial' ? 'trial' : opts.stage ?? 'forest'
   const k = KITS[kit]
   const ranks = Object.fromEntries((Object.keys(POWERS) as Power[]).map(p => [p, 0])) as Record<Power, number>
@@ -194,11 +197,18 @@ export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit
     spawn: 0, nextElite: C.eliteEvery * ST[stage].length, nextBarrage: C.barrageAt, boss: false, next: 1, kills: 0, damage: 0,
     state: 'playing', message: kit === 'axe' ? '해비의 출전 · 첫 조합을 향해' : '출전 · 첫 조합을 향해', messageTime: 4, comboKills: 0, streakTime: 0 }
   if (mode === 'stage') Object.assign(s, { chests: [], chestGold: 0, chestsClaimed: 0, nextChestId: 1, choiceOrigin: 'level', offerNonce: 0 })
+  if (opts.simRules === '56A' || mode === 'stage' && opts.simRules !== '53B') Object.assign(s, { permanentAwake: opts.permanentAwake ?? opts.awaken ?? false, appearanceAwake: opts.appearanceAwake ?? true, gritUltReady: false, ultAwakened: false, ultEmpowered: false, canAwaken: opts.permanentAwake ?? opts.awaken ?? false })
   if (mode === 'vanguard') {
     s.level = V.startLevel; s.ranks[k.primary] = 4; s.ranks[k.secondary] = 3; s.ranks.echo = 2; s.ranks.tempo = 1; s.ranks.reach = 1
     s.combos = kitCombos(kit).filter(c => c.kit === kit).map(c => c.id); s.message = '선봉에 서기 · 전위대장 3명을 돌파하라'
   }
   return s
+}
+export const usesPermanentAwakening = (s: HaebiRun) => s.permanentAwake !== undefined
+export const isPermanentAwake = (s: HaebiRun) => s.permanentAwake === true
+/** Snapshot external qualification/preferences once; replay never consults current storage. */
+export function normalizedRaidOpts(s: HaebiRun, opts: HaebiOpts): HaebiOpts {
+  return { ...opts, ...(opts.bonus ? { bonus: { ...opts.bonus } } : {}), ...(usesPermanentAwakening(s) ? { simRules: '56A' as const, permanentAwake: isPermanentAwake(s), appearanceAwake: s.appearanceAwake !== false } : {}) }
 }
 export const runDuration = (s: HaebiRun) => s.mode === 'vanguard' ? V.duration : (C.duration + (s.mode === 'stage' ? CH.extraSeconds : 0)) * ST[s.stage].length
 /** Camera bounds need logging only at possible champion births, not on every camera-follow frame. */
@@ -302,6 +312,7 @@ function collectChests(s: HaebiRun) {
 export function expireChests(s: HaebiRun) {
   for (const c of s.chests ?? []) if (c.state !== 'claimed') c.state = 'expired'
   delete s.chestChoice; s.offers = []; if (s.mode === 'stage') s.choiceOrigin = 'level'
+  if (usesPermanentAwakening(s)) s.gritUltReady = false
 }
 /** 카드 고르기 — 능력은 한 단계 · 조합은 처음이면 열고(금테) 다시 고르면 단계를 올린다 (자동 개방 없음) */
 function applyPick(s: HaebiRun, key: Pick) {
@@ -344,26 +355,34 @@ export function choose(s: HaebiRun, key: Pick, nonce?: number) {
 export const gaugeNeed = (s: HaebiRun) => A.need * (1 + s.wakes * A.needGrowth)
 /** 막대 몫 0~1 — 각성(투지) 동안은 남은 시간 */
 export const gaugeRatio = (s: HaebiRun) => s.form !== 'normal' ? s.formT / (s.form === 'awake' ? A.sec : A.gritSec) : Math.min(1, s.gauge / gaugeNeed(s))
-/** 각성한 모습으로 그리는가 — 선봉은 본편 각성 장수가 처음부터 */
-export const awakenedLook = (s: HaebiRun) => s.form === 'awake' || s.mode === 'vanguard'
+/** Appearance is independent of strength. Legacy vanguard keeps its authored awakened appearance. */
+export const awakenedLook = (s: HaebiRun) => usesPermanentAwakening(s) ? isPermanentAwake(s) && s.appearanceAwake !== false : s.form === 'awake' || s.mode === 'vanguard'
+export const ultAwakened = (s: HaebiRun) => usesPermanentAwakening(s) ? isPermanentAwake(s) : s.form === 'awake'
+export const ultEmpowered = (s: HaebiRun) => usesPermanentAwakening(s) ? s.ultEmpowered === true : s.trueUlt
 /** 지금 모습이 곱하는 몫 */
 function formBoost(s: HaebiRun) {
+  if (usesPermanentAwakening(s)) {
+    const a = isPermanentAwake(s), grit = s.form === 'grit'
+    return { power: (a ? A.permanent.power : 1) * (grit ? A.gritPower : 1), tempo: (a ? A.permanent.tempo : 1) * (grit ? A.gritTempo : 1), move: (a ? A.permanent.move : 1) * (grit ? A.gritMove : 1), ult: a ? A.permanent.ultRate : 1 }
+  }
   return s.form === 'awake' ? { power: A.power, tempo: A.tempo, move: A.move, ult: A.ultRate } : s.form === 'grit' ? { power: A.gritPower, tempo: A.gritTempo, move: A.gritMove, ult: 1 } : { power: 1, tempo: 1, move: 1, ult: 1 }
 }
 /** 적을 잡아 막대를 채운다 — 다 차면 찬 채로 기다린다 (각성 단추 · 11-17 형) */
 function fillGauge(s: HaebiRun, kind: MobKind) {
-  if (s.mode === 'vanguard' || s.form !== 'normal' || s.state !== 'playing') return
+  if (s.mode === 'vanguard' && !usesPermanentAwakening(s) || s.form !== 'normal' || s.state !== 'playing') return
   s.gauge = Math.min(gaugeNeed(s), s.gauge + (kind === 'boss' ? A.boss : kind === 'elite' ? A.elite : A.kill))
 }
 /** 각성 단추를 누를 수 있나 — 막대가 다 찼고 보통 모습 · 시전 중이 아님 */
-export const wakeReady = (s: HaebiRun) => s.mode !== 'vanguard' && s.state === 'playing' && s.form === 'normal' && !s.cast && s.gauge >= gaugeNeed(s)
+export const wakeReady = (s: HaebiRun) => (s.mode !== 'vanguard' || usesPermanentAwakening(s)) && s.state === 'playing' && s.form === 'normal' && !s.cast && s.gauge >= gaugeNeed(s)
 /** 영웅의 투지 보호막이 처음 두르는 흡수량 (최대 체력의 gritShield 몫) — 체력 막대 덧막대 · 몸 둘레 방패 빛 */
 export const wardMax = (s: HaebiRun) => s.maxHp * A.gritShield
 /** 각성(본편 각성 장수) 또는 영웅의 투지 — 각성은 HAEBI_AWAKEN.cast 초 동안 컷인(시전)을 거쳐 둘레를 친다 · 투지는 최대 체력의 gritShield 몫 보호막을 두른다 */
 function awaken(s: HaebiRun) {
   s.gauge = 0; s.wakes++
-  s.form = s.canAwaken ? 'awake' : 'grit'; s.formT = s.canAwaken ? A.sec : A.gritSec
-  if (!s.canAwaken) { s.ward = wardMax(s); announce(s, '영웅의 투지 · 보호막이 몸을 감싼다'); fx(s, 'buff', s.x, s.y, 90, '#ffb35a'); fx(s, 'ring', s.x, s.y, A.gritShieldBurst, '#bfe8ff'); return }
+  if (usesPermanentAwakening(s)) s.gritUltReady = true
+  const timedAwake = !usesPermanentAwakening(s) && s.canAwaken
+  s.form = timedAwake ? 'awake' : 'grit'; s.formT = timedAwake ? A.sec : A.gritSec
+  if (!timedAwake) { s.ward = wardMax(s); announce(s, '영웅의 투지 · 보호막이 몸을 감싼다'); fx(s, 'buff', s.x, s.y, 90, '#ffb35a'); fx(s, 'ring', s.x, s.y, A.gritShieldBurst, '#bfe8ff'); return }
   // 각성 컷인이 이름을 보여 주니 가운데 알림 띠는 띄우지 않는다
   s.cast = { kind: 'wake', t: A.cast, total: A.cast, tru: false }
 }
@@ -476,7 +495,7 @@ export const slamRadius = (kind: MobKind) => kind === 'bear' ? M.bearRadius : C.
 export const slamWindup = (kind: MobKind) => kind === 'bear' ? M.bearWind : C.bossWindup
 function hurt(s: HaebiRun, amount: number) {
   // 무적: 회피·비기 뒤 · 시전 중 · 각성 동안 (11-17 형: 「각성하면 무적」)
-  if (s.inv > 0 || s.cast || s.form === 'awake') return
+  if (s.inv > 0 || s.cast || !usesPermanentAwakening(s) && s.form === 'awake') return
   let loss = Math.max(1, amount * ST[s.stage].damage * (1 - s.ranks.tough * T.tough) - s.bonus.armor * SH.armor.step); s.inv = C.hitInv
   // 영웅의 투지 보호막이 먼저 받는다 · 다 깎이면 깨지는 빛
   if (s.ward > 0) { const took = Math.min(s.ward, loss); s.ward -= took; loss -= took; if (s.ward <= 0) { s.ward = 0; fx(s, 'ring', s.x, s.y, A.gritShieldBurst, '#bfe8ff') } }
@@ -691,6 +710,7 @@ function aura(s: HaebiRun, power: number, area: number) {
 function ultFx(s: HaebiRun, lead: boolean, x: number, y: number, r: number, angle = 0, x2 = x, y2 = y) {
   fx(s, lead ? 'skill' : 'ult', x, y, r, '#ffdf8b', angle, x2, y2)
   const f = s.fx[s.fx.length - 1]!; f.ult = s.kit; f.life = f.total = U[s.kit].fx; if (s.trueUlt) f.tru = true
+  if (usesPermanentAwakening(s)) { f.awakened = s.ultAwakened === true; f.empowered = s.ultEmpowered === true }
 }
 /** (x0,y0) 에서 angle 쪽으로 길이 length · 반폭 width 의 띠 안인가 (발밑 조금 뒤까지) */
 function inLine(x0: number, y0: number, e: Mob, cos: number, sin: number, length: number, width: number) {
@@ -717,6 +737,12 @@ export const ultOpen = (s: HaebiRun) => s.level >= U.unlockLevel
 const ultCooldown = (s: HaebiRun) => U[s.kit].cooldown * (ultUpgraded(s) ? T.ultCooldown : 1)
 /** 비기를 누름 — 재사용은 지금부터 돌고, 시전(cast 초 · 진 비기는 trueCast)이 끝나면 터진다 */
 function startUlt(s: HaebiRun) {
+  if (usesPermanentAwakening(s)) {
+    const empowered = s.gritUltReady === true, t = empowered ? U.trueCast : U.cast
+    s.skillCd = ultCooldown(s); s.gritUltReady = false
+    s.cast = { kind: 'ult', t, total: t, tru: false, awakened: isPermanentAwake(s), empowered }
+    return
+  }
   const tru = s.form === 'awake', t = tru ? U.trueCast : U.cast
   s.skillCd = ultCooldown(s); s.cast = { kind: 'ult', t, total: t, tru }
 }
@@ -835,13 +861,18 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
     if (s.cast.t <= 0) {
       const c = s.cast; s.cast = null
       if (c.kind === 'wake') wakeBurst(s)
-      else { s.trueUlt = c.tru; ultimate(s, dx, dy, uPower * (c.tru ? U.trueDamage : 1), uArea * (c.tru ? U.trueArea : 1)) }
+      else {
+        s.trueUlt = c.tru
+        if (usesPermanentAwakening(s)) { s.ultAwakened = c.awakened === true; s.ultEmpowered = c.empowered === true }
+        const empowered = usesPermanentAwakening(s) ? c.empowered === true : c.tru
+        ultimate(s, dx, dy, uPower * (empowered ? U.trueDamage : 1), uArea * (empowered ? U.trueArea : 1))
+      }
     }
   } else if (input.wake && wakeReady(s)) awaken(s)
   else if (input.skill && !s.skillCd && ultOpen(s)) startUlt(s)
   // 되받아치기 (버팀 끝): 맞은 다음 걸음에 비기가 작게 · 이어지는 비기가 도는 중이면 건너뛴다
-  if (s.counterDue) { s.counterDue = false; if (!s.ult) { s.trueUlt = false; ultimate(s, dx, dy, uPower, uArea, true, T.counter + T.counterStep * (s.ranks.capC - 1)) } }
-  if (s.ult) ultTick(s, dt, uPower * (s.trueUlt ? U.trueDamage : 1), uArea * (s.trueUlt ? U.trueArea : 1))
+  if (s.counterDue) { s.counterDue = false; if (!s.ult) { s.trueUlt = false; if (usesPermanentAwakening(s)) { s.ultAwakened = isPermanentAwake(s); s.ultEmpowered = false }; ultimate(s, dx, dy, uPower, uArea, true, T.counter + T.counterStep * (s.ranks.capC - 1)) } }
+  if (s.ult) ultTick(s, dt, uPower * (ultEmpowered(s) ? U.trueDamage : 1), uArea * (ultEmpowered(s) ? U.trueArea : 1))
   const target = nearest(s, s.x, s.y)
   if (target) {
     const angle = Math.atan2(target.y - s.y, target.x - s.x), dist = Math.hypot(target.x - s.x, target.y - s.y)
@@ -1027,6 +1058,6 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
   // 되살아나기 (상점 「부활」) — 체력 반으로, 잠깐 무적, 날아오던 것을 지운다
   if (s.hp <= 0 && s.revives > 0) { s.revives--; s.hp = s.maxHp / 2; s.inv = 2; s.shots = s.shots.filter(b => b.kind !== 'enemy' && b.kind !== 'hurl' && b.kind !== 'stone' && b.kind !== 'flame' && b.kind !== 'barrage'); announce(s, '다시 일어선다 · 부활') }
   if (won(s)) { s.hp = Math.max(0, s.hp); expireChests(s); return }
-  if (s.hp <= 0 || s.t >= runDuration(s) && !won(s)) { s.hp = Math.max(0, s.hp); s.state = 'lost'; if (s.mode === 'stage') expireChests(s); else s.offers = [] }
+  if (s.hp <= 0 || s.t >= runDuration(s) && !won(s)) { s.hp = Math.max(0, s.hp); s.state = 'lost'; if (s.mode === 'stage' || usesPermanentAwakening(s)) expireChests(s); else s.offers = [] }
   else if (s.state === 'playing') { if (s.mode === 'stage') collectChests(s); if (!s.offers.length && s.xp >= xpNeeded(s)) offer(s) }
 }

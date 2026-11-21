@@ -101,3 +101,6 @@ describe('각성 (시련 관문이 열린 규칙)', () => {
     assert.equal(r.heroes[h.id]!.flames, undefined)
   })
 })
+
+// Explicit rollback coverage; 56-A product default stays off in awakening-persistence.test.ts.
+setParam('realm.legacyAwakeningOpen', 1)

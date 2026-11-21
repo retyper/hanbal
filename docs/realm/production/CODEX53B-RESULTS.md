@@ -75,3 +75,7 @@ R1 After-v2에서 정예 중앙값은 숲12.97·여울10.02·목책16.67·설원
 ## root 통합 마감
 
 전체1720tests /1718pass /0fail /기존skip2,211.299초. PUBLIC_BASE=/hanbal/빌드 raw4988.1KB/gzip1545.0KB, localHTML·실JS/CSS6개·상자/주몽HDPNG 모두200·로컬SHA일치. 근거 full-final-02.log,build-final.log,B-local-bundle.json. 로컬version은의도된timestamp/CI는GITHUB_SHA. 최신56-A/B가55보다먼저이며이번코드는53B한정,이무기5RAW와리깅fixture는runtime미적용입니다. root가actualrun01폰360/가로·run02정예사진을직접확인했습니다. 푸시와CI/운영확인은이후기록합니다.
+
+## 최신 배포 확정 · 53-B / 56-A 진행
+- 53-B commit dbe8ad3091e67b62c2ce666c6d6839b6536c3b7e 즉시 push 완료. CI44865600981 success. 운영 version dbe8ad3091 / HTML200 / 실JS·CSS6개와 chest-open·주몽HD 2PNG 모두 HTTP200 및 로컬dist SHA 일치. Coutputs/codex53B-prep/B-production-bundle.json ok:true.
+- 56-A sim61/61·본편/저장79/79(+저장최종10/10)·manifest동등성18/18 완료. root가 열전main/view/sound 연결중이며 아직 56-A 미커밋·미배포. 실제UI/전체검사/번들 검수 뒤 단계커밋. manifest 실제 빌드절감량 미측정. 기존사용자저장 clear0.

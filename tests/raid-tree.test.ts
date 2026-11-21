@@ -10,13 +10,13 @@ const DT = 1 / 120
 /** 레벨업 하나를 연다 (적은 안 나오게) */
 function levelUp(s: HaebiRun) { s.xp = xpNeeded(s); stepHaebi(s, idle, DT) }
 /** 조건이 찬 도끼 묶음 (도끼 폭풍 = 도끼 4 + 질풍 3) */
-function ready() { const s = createHaebi(7); s.spawn = 1e9; s.nextElite = s.nextBarrage = 1e9; s.level = 8; s.ranks.axe = 4; s.ranks.gale = 3; return s }
+function ready(legacy = false) { const s = createHaebi(7, 'stage', 'axe', legacy ? { simRules: '53B' } : {}); s.spawn = 1e9; s.nextElite = s.nextBarrage = 1e9; s.level = 8; s.ranks.axe = 4; s.ranks.gale = 3; return s }
 /** 한 방에 쓰러지는 잡졸 하나를 장수 곁에 세운다 */
 function prey(s: HaebiRun, kind?: 'elite') { spawnMob(s, kind); const e = s.enemies[s.enemies.length - 1]!; Object.assign(e, { x: s.x + 30, y: s.y, hp: 1, max: 1 }); return e }
 /** 하나 잡을 때까지 (도끼 쿨 1초) */
 function killOne(s: HaebiRun, kind?: 'elite') { const k = s.kills; prey(s, kind); for (let i = 0; i < 300 && s.kills === k; i++) stepHaebi(s, idle, DT) }
-/** 레벨업이 안 끼는 판 (끝 레벨) */
-function still() { const s = ready(); s.level = C.maxLevel; return s }
+/** 옛53B 시간제각성/진비기의 재생 계약, 끝 레벨이라 레벨업은 끼지 않습니다.56A는raid-permanent에서 검증합니다. */
+function still() { const s = ready(true); s.level = C.maxLevel; return s }
 
 test('같은 씨앗이면 기술 나무·각성까지 같은 판', () => {
   const a = replay(11, 240, 'storm', undefined, 'bow', { awaken: true }), b = replay(11, 240, 'storm', undefined, 'bow', { awaken: true })

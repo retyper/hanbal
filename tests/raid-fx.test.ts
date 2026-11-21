@@ -3,7 +3,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { HAEBI_RUN as C, HAEBI_MOBS as M, HAEBI_FX as K, FX_AURA as P, HAEBI_ULT as U, HAEBI_CHAMPION as CH } from '../src/tune/params.ts'
-import { createHaebi, stepHaebi, spawnMob, gaugeNeed, type HaebiRun, type Kit, type Missile, type Mob } from '../src/raid/haebi.ts'
+import { createHaebi, stepHaebi, spawnMob, gaugeNeed, awakenedLook, type HaebiRun, type Kit, type Missile, type Mob } from '../src/raid/haebi.ts'
 import { drawField, imagePaths } from '../src/raid/haebi-view.ts'
 import { AURA_ART, auraCount, auraSparks, auraWisps, drawAura, drawAuraBurst, drawAuraGround, setAuraDensity, type AuraAt, type AuraKind, type Mote } from '../src/raid/fx-aura.ts'
 
@@ -202,21 +202,21 @@ function ownColors(kit: Kit, awaken: boolean) {
   Object.assign(s.ranks, { ember: 3, thunder: 2, echo: 2, reach: 1 }); s.ranks[kit === 'bow' ? 'rain' : kit === 'magic' ? 'soul' : 'gale'] = 4
   for (let i = 0; i < 8; i++) place(s, 'iron', Math.cos(i) * (90 + i * 22), Math.sin(i * 1.7) * (70 + i * 14))
   s.gauge = gaugeNeed(s)
-  const forms = new Set<string>()
+  const forms = new Set<string>(), looks = new Set<boolean>()
   let rains = 0, blasts = 0
   for (let i = 0; i < 120 * 4; i++) {
     stepHaebi(s, { x: 0, y: 0, wake: i === 60, skill: i === 300 }, 1 / 120)
     for (const e of s.enemies) e.cd = 99
-    forms.add(s.form); rains += s.shots.filter(b => b.kind === 'rain').length; blasts += s.fx.filter(f => f.kind === 'blast').length
+    forms.add(s.form); looks.add(awakenedLook(s)); rains += s.shots.filter(b => b.kind === 'rain').length; blasts += s.fx.filter(f => f.kind === 'blast').length
     if (i % 2) drawField(ctx, images, s, null)
   }
   assert.equal(s.hurt, 0); assert.ok(blasts > 0, `${kit} 내 터짐이 있었다`)
-  return { log, forms, rains }
+  return { log, forms, looks, rains }
 }
 test('내 것에는 붉은빛이 없다: 화살비 자리 · 내 투사체 꼬리 · 내 터짐 · 영웅의 투지 · 각성 오라 · 비기', () => {
   for (const [kit, awaken] of [['bow', false], ['bow', true], ['magic', false], ['axe', true]] as const) {
-    const { log, forms, rains } = ownColors(kit, awaken)
-    assert.ok(forms.has(awaken ? 'awake' : 'grit'), `${kit} ${awaken ? '각성' : '투지'}을 켰다`)
+    const { log, forms, looks, rains } = ownColors(kit, awaken)
+    assert.ok(forms.has('grit'), `${kit} 같은 투지를 켰습니다`); assert.deepEqual([...looks], [awaken], '영구 자격의 모습은 투지와 독립입니다')
     if (kit === 'bow') { assert.ok(rains > 0, '화살비가 떴다'); assert.ok(log.styles.has(K.own.rim), '화살비 자리는 금빛 테') }
     if (!awaken) assert.ok(log.styles.has(K.own.grit), '투지를 켠 순간의 고리는 하늘빛')
     const reds = [...log.styles].filter(red)
@@ -240,4 +240,15 @@ test('터짐은 누구 것인지 갈린다: 적의 돌·불이 떨어진 자리�
   assert.ok(log.styles.has(K.foe.rim))
   assert.ok(log.images.some(d => d.img === img('raid/impact-strip.png')), '돌은 흙먼지')
   assert.ok(log.images.some(d => d.img === img('raid/fire-strip.png')), '불 단지는 불')
+})
+
+test('56-A 모습 OFF도 각성 비기 시전은 금빛 계단이며 판 상태를 쓰지 않는다', () => {
+  for (const awake of [false, true]) {
+    const s = field('bow', { awaken: awake }); s.appearanceAwake = false
+    s.cast = { kind: 'ult', t: .1, total: .2, tru: false, awakened: awake, empowered: false }
+    const before = structuredClone(s), { ctx, log } = fakeCtx()
+    drawField(ctx, images, s, null)
+    assert.equal(log.styles.has('#ffd66a'), awake)
+    assert.deepEqual(s, before)
+  }
 })

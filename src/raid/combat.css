@@ -435,3 +435,5 @@ img.coin{display:inline-block;width:1.5em;height:1.5em;vertical-align:-.38em;mar
 .chest-coinburst>img{position:absolute;left:calc(50% - 45px);top:32px;width:18px;height:18px;object-fit:contain;image-rendering:pixelated;opacity:0;animation:chest-gold-flight .7s ease-out both}
 @keyframes chest-gold-flight{0%{opacity:0;transform:translate(0,8px) scale(.5)}15%{opacity:1}65%{opacity:1;transform:translate(var(--coin-x),var(--coin-y)) scale(1)}100%{opacity:0;transform:translate(var(--coin-x),calc(var(--coin-y) - 4px)) scale(.6)}}
 @media(prefers-reduced-motion:reduce){.chest-coinburst>img{animation:none}}
+/* 56-A: 요청된 출전 모습 스위치. 힘은 항상 유지된다. */
+#awakening-choice{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}#awakening-choice[hidden]{display:none}#awakening-choice small{font-size:11px;line-height:1.4;color:#c8c0a8}#awakening-look{padding:6px 12px;font-size:12px}#awakening-look[aria-checked=true]{border-color:#d5ba71;color:#ffe7ab}#awakening-error{flex-basis:100%;color:#ffce98}

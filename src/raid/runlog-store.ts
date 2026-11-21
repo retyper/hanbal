@@ -6,7 +6,7 @@
  * 서버로는 net/sync.ts pushRaids 가 올린다 (로그인했을 때만 · 실패해도 판은 그대로).
  * 이 파일은 판의 셈(haebi.ts)을 부르지 않는다 — 본편(realm-main 기록 내보내기)도 가볍게 읽을 수 있게. 적기·다시 돌리기는 runlog.ts.
  */
-import type { Bonus, HaebiRun, Kit, StageId } from './haebi.ts'
+import type { HaebiOpts, HaebiRun, Kit, StageId } from './haebi.ts'
 
 export const RAID_GAMES = 'hanbal.raid.games'
 /** 이보다 커지면 오래된 판의 입력부터 덜고, 그래도 크면 판을 덜어 낸다 (localStorage 는 5MB 안팎 · 본편 판 기록이 3MB 를 쓴다) */
@@ -15,7 +15,7 @@ const MAX_CHARS = 1_200_000
 const MAX_GAMES = 400
 
 /** createHaebi 에 넘긴 판 옵션 그대로 */
-export interface RaidOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean }
+export type RaidOpts = HaebiOpts
 export interface RaidEnd {
   /** won 이김 · lost 짐 · quit 물러남(멈춤 창에서) · left 판 가운데 화면을 떠남(닫기·새로고침) */
   result: 'won' | 'lost' | 'quit' | 'left'
@@ -31,7 +31,7 @@ export interface RaidEnd {
 export interface RaidGame {
   readonly v: 1
   /** Input format stays backward compatible; earlier stage results used different combat rules. */
-  readonly rules?: '53B'
+  readonly rules?: '53B' | '56A'
   /** 판 이름 — 시작 시각 + 씨앗 (서버 문서 이름) */
   readonly id: string
   /** 시작 시각 (벽시계 · 화면 쪽에서만) */

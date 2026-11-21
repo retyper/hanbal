@@ -190,3 +190,14 @@ test('소리·진동을 붙여도 판은 그대로 (결정론) — 같은 씨앗
   assert.deepEqual(a, b)
   assert.equal(JSON.stringify(a), JSON.stringify(b))
 })
+
+test('56-A 영구 각성 비기는 tru=false여도 각성 소리·진동 계단이며 투지 강화만으로 각성이 되지 않는다', async () => {
+  for (const awake of [false, true]) {
+    const { snd, s } = await fresh()
+    s.skillCd = 5
+    s.cast = { kind: 'ult', t: U.cast, total: U.cast, tru: false, awakened: awake, empowered: true }
+    s.fx.push(fxOf('skill', { tru: false, awakened: awake, empowered: true }))
+    const ev = snd.frame(s, true, false)
+    assert.equal(ev.skill, awake ? 'awake' : 'skill')
+  }
+})

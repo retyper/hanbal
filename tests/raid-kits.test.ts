@@ -108,3 +108,6 @@ test('일제 사격은 경고 뒤에 떨어지고, 비켜나면 맞지 않는다
   assert.ok(Math.hypot(s.x - ring.x, s.y - ring.y) > C.barrageRadius, '경고 시간 안에 걸어서 벗어난다')
   assert.ok(s.hp >= hp, '벗어났으면 안 맞는다')
 })
+
+// Explicit rollback coverage; 56-A product default stays off in awakening-persistence.test.ts.
+setParam('realm.legacyAwakeningOpen', 1)

@@ -1,9 +1,11 @@
+import { awakeningVisible } from '../../realm/awakening.ts'
+import { AWAKENING_KEY, campaignAwakeningProofs, checkpointCampaignAwakening, mergeAwakeningProofs, readAwakeningProfile, setHeroAwakeningAppearance } from './awakening-store.ts'
 import { mapSquad } from './map-unit.ts'
-import { hasAwakeningTrial } from '../../realm/trial-rules.ts'
+import { hasAwakeningTrial, legacyAwakeningOpen } from '../../realm/trial-rules.ts'
 import { kitOfSprite } from '../../raid/hero-kit.ts'
 import { josa } from '../../core/josa.ts'
 import { KITS, trialWinValid } from '../../raid/haebi.ts'
-import { mergeRoster, raidSealed, META_KEY, SEAL_STAGE, type RosterHero } from '../../raid/link.ts'
+import { hasDemonSeal, mergeRoster, raidSealed, META_KEY, SEAL_STAGE, type RosterHero } from '../../raid/link.ts'
 /** 각성 시련의 무기 묶음 — 각성 전 전투 그림의 무기로 */
 const trialKit = (x: Parameters<typeof generalSprite>[0] & object) => kitOfSprite(generalSprite({ ...x, ascended: false }))
 import { trialBlock, completeTrial } from '../../realm/awakening-trial.ts'
@@ -1552,6 +1554,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
   /** 각성 불꽃 칸 — 우리 장수만. 빈 칸 셋이 이길 때마다 켜진다 · 각성하면 「각성」 띠 (형 10-31) */
   function flamesHtml(x: Hero): string {
+    if (!legacyAwakeningOpen() && x.ascended !== true) return ''
     if (realm === null || x.faction !== me() || isRuler(realm, x.id)) return ''
     // 칸은 늘 ascendWins(셋) · 처음 깨어날 때는 첫 불씨가 처음부터 붙어 있다 = 덜 이겨도 되는 몫(firstAscendEase)
     // (형 11-12: "모두 다 각성 불꽃 칸이 2개밖에 없음. 3개여야 하는데" — 칸을 줄였더니 버그로 보였다)
@@ -2706,7 +2709,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const sh = v.hero!
       const sf = faceFile(sh.id)
       const sb = bustOf(sh.id)
-      const sloop = sh.ascended === true && sb !== undefined && AWAKEN_LOOP.has(sb) && !root.classList.contains('q-low') ? `${ART}${loopFile(sb)}` : null
+      const sloop = awakeningVisible(sh) && sb !== undefined && AWAKEN_LOOP.has(sb) && !root.classList.contains('q-low') ? `${ART}${loopFile(sb)}` : null
       const big = sloop !== null ? `<video class="cnbig vloop${sqCls(sloop)}" ${takeAttrs(loopTakes(sb!).map((t) => ART + t))} poster="${ART}awaken-hd/${sb}.jpg" autoplay muted playsinline preload="auto" data-quiet="1"></video>`
         : sf !== undefined ? `<img class="cnbig" src="${ART}bust-hd/${sf}.jpg" onerror="this.onerror=null;this.src='${ART}bust/${sf}.jpg'" alt="">` : bust(sh, 'cnbig')
       return `<div class="cnstage" data-act="cn-next"><h3 class="cnt">${esc(ag.title)}</h3><div class="cnspk${v.proven === true ? ' gold' : ''}">${big}<b>${nameHtml(sh.name)}</b>${v.proven === true ? `<i class="cngold">${tr('cn.proven')}</i>` : ''}</div>`
@@ -4440,7 +4443,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    */
   function raidLook(r: Realm, h: Hero): RosterHero | null {
     const bust = bustOf(h.id); if (bust === undefined) return null
-    const base = generalSprite({ ...h, ascended: false }), awake = generalSprite({ ...h, ascended: true })
+    const base = generalSprite({ ...h, ascended: false }), awake = generalSprite({ ...h, ascended: true, awakeningLook: true })
     return { id: h.id, name: h.name, home: `${r.factions[h.faction]?.name ?? '떠돌이'}의 장수`, bust, sprite: base, ...(awake !== base ? { awake } : {}), kit: kitOfSprite(base), video: AWAKEN_LOOP.has(bust) }
   }
   /** 장수 판에서 곧장 열전으로 — 이 장수로 독립 열전(스테이지·상점)을 연다. 닫으면 깬 기록을 다시 읽어 진각성 칸을 켠다 */
@@ -4477,9 +4480,20 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (why) goToast(why)
     paint()
   }
+  const awakeningKV = { getItem: (key: string) => localStorage.getItem(key), setItem: (key: string, value: string) => localStorage.setItem(key, value), removeItem: (key: string) => localStorage.removeItem(key) }
+  function syncAwakening(): boolean {
+    if (realm === null || host.isolated) return false
+    const merged = mergeAwakeningProofs(awakeningKV, campaignAwakeningProofs(realm))
+    if (!merged.ok) { goToast(merged.why ?? '각성 기록을 보존했습니다.'); return false }
+    const result = checkpointCampaignAwakening(realm, readAwakeningProfile(awakeningKV), next => host.onCheckpoint ? host.onCheckpoint(next) : '각성 보상을 저장할 수 없습니다.')
+    if (result.why) { goToast(result.why); return false }
+    if (result.changed) realm = result.next
+    return result.changed
+  }
   function syncRaidLink(): boolean {
     if (realm === null || host.isolated) return false
-    const r = realm
+    const awakeningChanged = syncAwakening()
+    const r = realm!
     const list: RosterHero[] = []
     for (const h of Object.values(r.heroes)) {
       const look = h.faction === r.player ? raidLook(r, h) : null
@@ -4487,12 +4501,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     mergeRoster(list)
     const seals = raidSealed().filter(id => r.heroes[id] !== undefined)
-    if (JSON.stringify(seals) === JSON.stringify(r.raidSeals ?? [])) return false
+    if (JSON.stringify(seals) === JSON.stringify(r.raidSeals ?? [])) return awakeningChanged
     if (seals.length) r.raidSeals = seals; else delete r.raidSeals
     return true
   }
   // 열전을 다른 탭에서 깼다 — 돌아오면 진각성 칸이 곧바로 켜진다
-  window.addEventListener('storage', (e) => { if (e.key === META_KEY && syncRaidLink()) paint() })
+  window.addEventListener('storage', (e) => { if ((e.key === META_KEY || e.key === AWAKENING_KEY || e.key === 'hanbal.realm.dex') && syncRaidLink()) paint() })
 
   let activeTrial: { campaign: Realm; hero: string; token: string; frame: HTMLIFrameElement; overlay: HTMLDivElement } | null = null
   function openHaebiTrial(id: string): void {
@@ -4504,7 +4518,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     saveDraft()
     const token = Array.from(crypto.getRandomValues(new Uint32Array(4)), n => n.toString(16)).join('-')
     // 열전 화면에 겉모습만 넘긴다 (이름·초상·전투 그림·무기 묶음) — 보상은 이쪽 기록(토큰·장수 id)으로만 준다
-    const h = realm.heroes[id]!, base = generalSprite({ ...h, ascended: false }), awake = generalSprite({ ...h, ascended: true }), bust = bustOf(id) ?? ''
+    const h = realm.heroes[id]!, base = generalSprite({ ...h, ascended: false }), awake = generalSprite({ ...h, ascended: true, awakeningLook: true }), bust = bustOf(id) ?? ''
     const look = new URLSearchParams({ trial: token, hero: id, name: h.name, home: `${realm.factions[h.faction]?.name ?? '떠돌이'}의 장수`, bust, sprite: base, kit: kitOfSprite(base), video: AWAKEN_LOOP.has(bust) ? '1' : '0', game: String(realm.seed), turn: String(realm.season) })
     if (awake !== base) look.set('awake', awake)
     if (host.isolated && import.meta.env.DEV) look.set('review', '')
@@ -4840,7 +4854,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const tw = x.faction === me() && TRUE_WAKE.has(x.id) && bo !== undefined
     const woke2 = tw && (r.trueWoke ?? []).includes(x.id)
     const loop2s = tw && AWAKEN2_LOOP.has(bo!) && !lowQ ? loopTakes2(bo!).map((t) => ART + t) : null
-    const hloops = woke2 && loop2s !== null ? loop2s : x.ascended === true && bo !== undefined && AWAKEN_LOOP.has(bo) && !lowQ ? loopTakes(bo).map((t) => ART + t) : null
+    const hloops = woke2 && loop2s !== null ? loop2s : awakeningVisible(x) && bo !== undefined && AWAKEN_LOOP.has(bo) && !lowQ ? loopTakes(bo).map((t) => ART + t) : null
     const loop2 = loop2s?.[0] ?? null
     const hloop = hloops?.[0] ?? null
     const hpost = woke2 ? `${ART}awaken2-hd/${bo}.jpg` : `${ART}awaken-hd/${bo}.jpg`
@@ -4860,6 +4874,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (ours) h += growthHtml(r, x)
     let cards = '', top = '' // top: 추천 점이 붙은 카드 하나 — 이름 바로 밑으로 끌어올린다
     const rqT = rq?.to === 'trial', rqR = rq?.to === 'raid', rqDot = recDot(tr('rec.badge'))
+    if (ours && bo !== undefined && !legacyAwakeningOpen()) {
+      const cleared = hasDemonSeal(loadDex(), loadMeta().heroes, x.id)
+      const toggle = x.ascended === true ? `<button class="btn" data-act="awakening-look" data-id="${x.id}" aria-pressed="${awakeningVisible(x)}">각성 모습 ${awakeningVisible(x) ? '켬' : '끔'}</button>` : ''
+      cards += `<div class="trial-card" style="padding:14px;border:1px solid #b99a57;margin:12px 0"><b>각성</b><p>열전 목책을 깨면 각성합니다.</p><p>목책 ${cleared ? '깼음' : '못 깼음'}${x.ascended === true ? ' · 각성 힘은 항상 유지됩니다.' : ''}</p>${toggle}</div>`
+    }
     if (ours && hasAwakeningTrial(x)) {
       const why = trialBlock(r, x.id)
       const card = `<div class="trial-card${rqT ? ' rq-on' : ''}" style="padding:14px;border:1px solid #b99a57;margin:12px 0"><b>${esc(x.name)}의 각성 시련 · ${KITS[trialKit(x)].title}</b><p>${x.trialCleared ? '시련 완료 · 각성은 이 캠페인 동안 유지됩니다.' : why ?? `시련 개방 · ${Math.round(HAEBI_RUN.duration * HAEBI_STAGES.trial.length / 60)}분 도전. 실패해도 무료로 다시 도전할 수 있습니다.`}</p>${x.trialCleared ? '' : `<button class="btn${rqT && !why ? ' pri rq-go' : ''}" data-act="haebi-trial" data-id="${x.id}" ${why ? 'disabled' : ''}>각성 시련에 도전${rqT && !why ? rqDot : ''}</button>`}<small>시련 동안 본편 시간은 흐르지 않습니다.</small></div>`
@@ -8299,6 +8318,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'card-beat': if (realm?.card) { const k = `card:${realm.card.season}`; cardBeat[k] = (cardBeat[k] ?? 0) + 1 } break
       case 'card-skip': if (realm?.card) cardBeat[`card:${realm.card.season}`] = 99; break
       case 'practice-open': openPractice(); break
+      case 'awakening-look': {
+        const h = realm?.heroes[d['id'] ?? '']
+        if (!h || h.faction !== realm?.player || h.ascended !== true) return
+        const merged = mergeAwakeningProofs(awakeningKV, campaignAwakeningProofs(realm!))
+        const result = merged.ok ? setHeroAwakeningAppearance(awakeningKV, h.id, !awakeningVisible(h)) : merged
+        if (!result.ok) { goToast(result.why ?? '모습을 저장하지 못했습니다.'); return }
+        syncRaidLink(); paint(); return
+      }
       case 'haebi-trial': openHaebiTrial(d['id']!); return
       case 'raid-stage': openRaidStage(d['id']!); return
       case 'spar-open': fmoreOpen = false; openSpar(); return

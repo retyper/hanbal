@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { startTutorial } from '../../src/realm/data/regions/tutorial.ts'
 import { battleGrowth, ascendNeed, awardAwakening } from '../../src/realm/heroes.ts'
 import { completeTrial, trialBlock } from '../../src/realm/awakening-trial.ts'
-import { P } from '../../src/tune/params.ts'
+import { setParam, P } from '../../src/tune/params.ts'
 import type { Realm, ReportLine } from '../../src/realm/types.ts'
 
 function setup(ready = true) {
@@ -65,3 +65,6 @@ describe('해비의 본편 각성 시련', () => {
     assert.ok(trialBlock(setup().r, 'tut-onjo'))
   })
 })
+
+// Explicit rollback coverage; 56-A product default stays off in awakening-persistence.test.ts.
+setParam('realm.legacyAwakeningOpen', 1)
