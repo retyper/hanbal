@@ -1,6 +1,7 @@
 import { createHaebi, stepHaebi, choose, raidRulesForStage, type HaebiRun } from './haebi.ts'
 import { botChoice, botInput, type Route } from './haebi-replay.ts'
 import { STAGE_ORDER, stageName, shopMax, SHOP } from './meta.ts'
+const REVIEW_EXTRA = ['snow', 'fortress'] as const
 export function installReview(root: HTMLElement, install: (s: HaebiRun) => void, mode: HaebiRun['mode'] = 'trial', kit: HaebiRun['kit'] = 'axe') {
   const panel = document.createElement('section'); panel.className = 'review-tools'
   panel.innerHTML = '<b>개발 검수 · 실제 입력 재생 (능력 주입 없음)</b><button data-until="0">첫 성장까지 재생</button><button data-until="60">초반 1분 재생</button><button data-until="300">중반 5분 재생</button><button data-until="600">10분 재생</button><button data-until="780">후반 13분 재생</button><button data-until="900">15분 재생</button><button data-until="1146">두목까지 재생</button><output></output>'
@@ -8,9 +9,10 @@ export function installReview(root: HTMLElement, install: (s: HaebiRun) => void,
   root.append(panel)
   const route = document.createElement('select'); route.setAttribute('aria-label','검수 조합')
   route.innerHTML = '<option value="storm">도끼·바람</option><option value="fire">부적·번개</option>';panel.prepend(route)
-  // 스테이지 고르기 (11-16 설원·산성 검수) — ?review&stage=snow 로도
+  // 스테이지 고르기 (11-16 설원·산성 검수) — ?review&stage=snow 로도 · 검수는 DLC 로 닫힌 스테이지(설원·산성)도 고른다
+  const stages = [...STAGE_ORDER, ...REVIEW_EXTRA.filter(id => !STAGE_ORDER.includes(id))]
   const stageSel = document.createElement('select'); stageSel.setAttribute('aria-label', '검수 스테이지')
-  stageSel.innerHTML = STAGE_ORDER.map(id => `<option value="${id}">${stageName(id)}</option>`).join(''); stageSel.value = new URLSearchParams(location.search).get('stage') ?? 'forest'
+  stageSel.innerHTML = stages.map(id => `<option value="${id}">${stageName(id)}</option>`).join(''); stageSel.value = new URLSearchParams(location.search).get('stage') ?? 'forest'
   if (mode === 'stage') panel.prepend(stageSel)
   // ?review&maxshop: 상점을 다 채운 장수로 (늦은 스테이지 두목까지 가 보기)
   const maxShop = new URLSearchParams(location.search).has('maxshop') ? Object.fromEntries(SHOP.map(x => [x.key, shopMax(x.key)])) : {}

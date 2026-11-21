@@ -6,7 +6,7 @@
  */
 import { HAEBI_LOG as LG, HAEBI_CHAMPION as CH } from '../tune/params.ts'
 import { spawnView, type SpawnView } from './champion.ts'
-import { choose, createHaebi, expireChests, normalizedRaidOpts, usesGiantBoss, usesPalisade, giantHUD, usesPermanentAwakening, usesAwakenedCast, reroll, stepHaebi, type HaebiRun, type Pick, type RunInput } from './haebi.ts'
+import { choose, createHaebi, expireChests, normalizedRaidOpts, usesGiantBoss, giantRules, usesPalisade, giantHUD, usesPermanentAwakening, usesAwakenedCast, reroll, stepHaebi, type HaebiRun, type Pick, type RunInput } from './haebi.ts'
 import type { RaidEnd, RaidGame } from './runlog-store.ts'
 
 /** 판의 한 걸음 (raid-main 과 같은 1/120초) */
@@ -23,7 +23,7 @@ export interface Recorder {
 }
 
 export function startRecord(run: HaebiRun, g: Omit<RaidGame, 'v' | 'grid' | 'input' | 'picks' | 'steps' | 'end'>): Recorder {
-  return { g: { v: 1, ...g, opts: normalizedRaidOpts(run, g.opts), ...(usesGiantBoss(run) ? { rules: '55-IMUGI' as const } : usesPalisade(run) ? { rules: '56C' as const } : usesAwakenedCast(run) ? { rules: '56B' as const } : usesPermanentAwakening(run) ? { rules: '56A' as const } : run.mode === 'stage' ? { rules: '53B' as const } : {}), grid: LG.grid, input: '', picks: [], steps: 0, end: null }, run, parts: [], n: 0, x: 0, y: 0, f: 0, source: -1, view: '', quit: false }
+  return { g: { v: 1, ...g, opts: normalizedRaidOpts(run, g.opts), ...(usesGiantBoss(run) ? { rules: giantRules(run) } : usesPalisade(run) ? { rules: '56C' as const } : usesAwakenedCast(run) ? { rules: '56B' as const } : usesPermanentAwakening(run) ? { rules: '56A' as const } : run.mode === 'stage' ? { rules: '53B' as const } : {}), grid: LG.grid, input: '', picks: [], steps: 0, end: null }, run, parts: [], n: 0, x: 0, y: 0, f: 0, source: -1, view: '', quit: false }
 }
 
 const b36 = (n: number) => n.toString(36)
@@ -83,7 +83,7 @@ export function finishRecord(r: Recorder, gold: number, at: string, left = false
 
 /** 기록 한 장(씨앗 + 판 옵션 + 입력)으로 판을 처음부터 다시 돌린다 — 입력을 덜어 낸 기록(cut)은 못 돌린다 */
 export function replayRaid(g: RaidGame): HaebiRun {
-  const s = createHaebi(g.seed, g.mode, g.kit, { ...g.opts, simRules: g.rules === '55-IMUGI' ? '55-IMUGI' : g.rules === '56C' ? '56C' : g.rules === '56B' ? '56B' : g.rules === '56A' ? '56A' : '53B' })
+  const s = createHaebi(g.seed, g.mode, g.kit, { ...g.opts, simRules: g.rules === '55-IMUGI' ? '55-IMUGI' : g.rules === '55-TIGER' ? '55-TIGER' : g.rules === '56C' ? '56C' : g.rules === '56B' ? '56B' : g.rules === '56A' ? '56A' : '53B' })
   let inp = inputOf(0, 0, 0, g.grid)
   for (const tok of g.input.split(' ')) {
     const m = /^([0-9a-z]+)(.*)$/.exec(tok); if (!m) continue

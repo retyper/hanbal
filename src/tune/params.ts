@@ -372,6 +372,106 @@ export const HAEBI_GIANT = {
     partHpWidth: 36, partHpHeight: 3, partHpLift: 6, waterOuterShare: .35, waterCoreShare: .10, waterAlpha: .6, waterOuter: '#69abb8', waterCore: '#d7f1ed' },
 } as const
 
+/**
+ * 55 설원 고개 거대 보스 「백두 대호」 (11-22 형: 흑룡 → 호랑이 그 자체 · docs/realm/BOSS.md 백두 대호 표) — 규칙 55-TIGER 의 설원 판에만 쓴다.
+ * 막·분노·시간 예산·안전로 3P·머리 배율·환경 피해 박자는 HAEBI_GIANT 의 공통 계약을 그대로 쓰고, 여기엔 범만의 값만 둔다.
+ *  hp 본체 · midHpScale 10분 중간 보스(설산 우두머리)의 체력 몫(설원 두목은 여울의 두 배라 반으로 둔다) · parts 부위 체력 = hp × 몫 (가산 체력이 아니다 · 본체도 같이 깎인다)
+ *  entrySeconds·entryDrop 등장: 하늘에서 내려앉는 초·높이 · roarSeconds 막 전환 포효 · staggerSeconds 회복 중 첫 타격의 움찔(그만큼 회복이 늘어 난다 · staggerRecover 상한)
+ *  homeY·homeBand 평소 발 자리(판 y)와 그 둘레 · prowl* 다가가 서성임(초 · px/초 · 걸음 한 바퀴 거리) · idleRecovery 할 수가 없을 때 쉬는 초
+ *  moves: phase 처음 여는 막 · body 몸 예고 · red 붉은 바닥 예고(초) · recover 회복(머리 노출) · strike 타격 몸놀림 초 · impactAt 그 가운데 판정 몫 · damage 피해 (× 스테이지 피해)
+ *   swipe 앞발 후려치기: radius 부채 반지름 · halfAngle 반각 · reach 발에서 이 거리 안 · swing 발을 휘두르는 거리
+ *   tail 꼬리 채찍: inner·outer 호 · halfAngle · reach 꼬리 뿌리에서 이 거리 안(등 뒤만)
+ *   pounce 덮치기: wiggle 엉덩이 흔듦(seeded 0~이 초 · 몸 예고 뒤 · 붉은 예고 앞) · min·max 뛰는 거리 · rx·ry 착지 타원(긴 축이 뛰는 쪽) · hop 공중 높이 · brokenLeap 뒷다리가 하나라도 부서지면 거리 몫
+ *   roar 포효(눈보라): band 좌우 띠 너비 몫(판 폭) · push 띠 안에서 밀려나는 px
+ *   dive 눈 속 잠행: radius 솟구침 원 · spread 눈 더미 사이 · tailAt 화살 묶음이 부서지면 꼬리가 먼저 보이는 때(몸 예고 몫) · floor 더미가 판 아래 끝에서 떨어지는 몫(× radius · 아래 체력 막대에 가리지 않게)
+ *   avalanche 눈사태: width 줄 폭 · gap 줄 사이 · strike 내리찍기부터 줄이 판 끝까지 내려오는 초(impactAt 몫에 내리찍고 남은 동안 내려온다) · lines 줄 수(앞다리가 하나라도 부서지면 brokenLines)
+ *  env 막별 환경: border 막1 바깥 서리 띠(위아래 띠는 가운데 gap 을 비운다) · side 막2 양옆 눈보라 띠 · strips 막3 눈사태 줄 [x 몫, 폭] (가운데 세로 3P 는 늘 빈다)
+ *  rig 몸 뼈대 (발 바닥 가운데가 0 · 앞이 +x · 아래가 +y · scale 을 곱한다) — 판정과 그림이 같은 뼈를 쓴다
+ *  motion 수마다 몸 준비(prepare)·타격(impact) 자세: lift 몸 높이(+ 아래) · pitch 앞 들기(라디안) · shift 앞뒤 · neck·head 숙임(+ 아래) · jaw 벌림 0~1 · roar 포효 머리 · tail 꼬리 마디 넷 · paw 발 [앞 가까운 x,y · 앞 먼 · 뒤 가까운 · 뒤 먼] · sink 눈 속
+ *  view (그리기만): 부위 그림 자리는 src/raid/tiger-art.ts · 김·흔들림·옅어짐 값
+ */
+export const HAEBI_TIGER = {
+  hp: 1200000, midHpScale: .5,
+  parts: { head: .1, jaw: .06, 'fore-near': .07, 'fore-far': .07, 'hind-near': .07, 'hind-far': .07, tail: .06, arrows: .05 },
+  entrySeconds: 1.6, entryDrop: 620, roarSeconds: 1.1, staggerSeconds: .45, staggerRecover: .4,
+  homeY: 470, homeBand: 70, prowlSeconds: 1.4, prowlSpeed: 120, prowlStride: 150, prowlNear: 230, idleRecovery: .9,
+  /** turnDeadZone 장수가 이만큼(px) 안쪽 위아래면 돌아서지 않는다 · homePull 발 자리가 homeBand × 이만큼 벗어나면 먼저 제자리로 걸어간다 · prowlMin 이보다 가까우면 걷지 않는다 · sinkHidden 눈 속에 이만큼 잠기면 안 보이고 안 맞는다 */
+  turnDeadZone: 12, homePull: 1.5, prowlMin: 12, sinkHidden: .5,
+  moves: {
+    /** swipe 덧: tilt 발에서 장수 쪽 부채 각의 한계 · backTilt 반대쪽(먼 발이면 아래·가까운 발이면 위)은 그 몫만 · sideBias 발 자리보다 이만큼 위까지는 가까운 발 · dip 앞으로 휘두를 때 발이 아래로 내려오는 몫 */
+    swipe: { phase: 1, body: .5, red: .3, recover: 1, strike: .2, impactAt: .5, damage: 24, radius: 160, halfAngle: Math.PI / 4, reach: 240, tilt: .9, backTilt: .25, sideBias: 10, dip: .5, swing: 120 },
+    tail: { phase: 1, body: .6, red: .9, recover: 1.5, strike: .32, impactAt: .5, damage: 26, inner: 200, outer: 280, halfAngle: 70 * Math.PI / 180, reach: 360 },
+    pounce: { phase: 1, body: .4, red: .8, wiggle: .8, recover: 1.8, strike: .45, impactAt: .92, damage: 30, min: 140, max: 640, rx: 100, ry: 60, hop: 110, brokenLeap: .5 },
+    roar: { phase: 2, body: .8, red: 1, recover: 2, strike: .3, impactAt: .3, damage: 22, band: .3, push: 80 },
+    dive: { phase: 2, body: .8, red: 1.2, recover: 1.5, strike: .3, impactAt: .25, damage: 30, radius: 120, spread: 300, tailAt: .5, floor: .8 },
+    avalanche: { phase: 3, body: .7, red: 1.3, recover: 2, strike: 1, impactAt: .12, damage: 32, width: 80, gap: 120, lines: 3, brokenLines: 2 },
+  },
+  env: { border: 28, gap: 160, side: 96, strips: [[.2, 64], [.8, 64]] },
+  rig: {
+    scale: .82,
+    body: { pivot: [0, -238], half: 160, radius: 82 }, hip: [-140, -226], shoulder: [132, -222],
+    neckBase: [176, -282], tailBase: [-200, -274], arrows: [-6, -324], arrowsRadius: 30,
+    fore: { up: 112, low: 128, bend: 1, paw: [150, 6], radius: 24 },
+    hind: { up: 104, low: 132, bend: -1, paw: [-130, 6], radius: 26 },
+    far: [16, -12],
+    neck: { length: 74, angle: -.62, radius: 40 },
+    head: { angle: .12, center: [62, -8], radii: [64, 52], mouth: [128, 24], hinge: [40, 30] },
+    jaw: { length: 72, angle: .16, open: .55, radius: 16, dangle: .62 },
+    tail: { lengths: [76, 72, 68, 76], rest: [1.95, .25, .35, .5], radius: [17, 15, 13, 12] },
+  },
+  motion: {
+    rest: { lift: 0, pitch: 0, shift: 0, neck: 0, head: 0, jaw: 0, roar: 0, tail: [0, 0, 0, 0], paw: [0, 0, 0, 0, 0, 0, 0, 0], sink: 0 },
+    recover: { lift: 14, pitch: -.06, shift: 6, neck: .32, head: .38, jaw: .3, roar: 0, tail: [.25, .15, .1, .1], paw: [10, 0, 6, 0, 0, 0, 0, 0], sink: 0 },
+    swipe: {
+      prepare: { lift: 14, pitch: -.14, shift: -18, neck: .14, head: .2, jaw: .45, roar: 0, tail: [-.2, -.1, 0, 0], paw: [-58, -120, 0, 0, 8, 0, 4, 0], sink: 0 },
+      impact: { lift: 18, pitch: -.14, shift: 22, neck: .18, head: .22, jaw: .6, roar: 0, tail: [.15, .1, 0, 0], paw: [0, 0, 0, 0, 14, 0, 10, 0], sink: 0 },
+    },
+    tail: {
+      prepare: { lift: 4, pitch: .03, shift: -8, neck: -.12, head: -.08, jaw: .2, roar: 0, tail: [2.2, .2, .25, .3], paw: [0, 0, 0, 0, -12, 0, -8, 0], sink: 0 },
+      impact: { lift: 6, pitch: -.02, shift: 6, neck: -.05, head: 0, jaw: .3, roar: 0, tail: [.15, -.2, -.3, -.45], paw: [0, 0, 0, 0, 10, 0, 6, 0], sink: 0 },
+    },
+    pounce: {
+      prepare: { lift: 46, pitch: -.08, shift: -26, neck: .22, head: .2, jaw: .2, roar: 0, tail: [.35, .2, .2, .15], paw: [12, 0, 10, 0, 22, 0, 20, 0], sink: 0 },
+      impact: { lift: 14, pitch: -.12, shift: 18, neck: .2, head: .24, jaw: .7, roar: 0, tail: [-.3, -.2, -.1, 0], paw: [34, 0, 30, 0, 6, 0, 4, 0], sink: 0 },
+      wiggleShift: 9, wiggleHz: 3.6, wiggleTail: .25,
+    },
+    roar: {
+      prepare: { lift: -8, pitch: .14, shift: -6, neck: -.3, head: -.32, jaw: 0, roar: 1, tail: [-.4, -.3, -.2, -.2], paw: [0, 0, 0, 0, 0, 0, 0, 0], sink: 0 },
+      impact: { lift: -18, pitch: .2, shift: 10, neck: -.42, head: -.46, jaw: 0, roar: 1, tail: [-.6, -.4, -.3, -.3], paw: [16, 0, 12, 0, 0, 0, 0, 0], sink: 0 },
+    },
+    dive: {
+      prepare: { lift: 60, pitch: -.2, shift: 10, neck: .4, head: .3, jaw: 0, roar: 0, tail: [.4, .2, .1, 0], paw: [30, 0, 26, 0, 10, 0, 8, 0], sink: 1 },
+      impact: { lift: -24, pitch: .24, shift: 10, neck: -.25, head: -.3, jaw: .7, roar: 0, tail: [-.5, -.3, -.2, -.2], paw: [20, -30, 16, -24, 0, 0, 0, 0], sink: 0 },
+    },
+    avalanche: {
+      prepare: { lift: -40, pitch: .58, shift: -18, neck: -.35, head: -.2, jaw: .45, roar: 0, tail: [.5, .3, .2, .2], paw: [24, -300, 10, -285, 10, 0, 6, 0], sink: 0 },
+      impact: { lift: 18, pitch: -.12, shift: 26, neck: .22, head: .26, jaw: .65, roar: 0, tail: [-.4, -.2, -.1, 0], paw: [34, 0, 30, 0, 4, 0, 2, 0], sink: 0 },
+    },
+    limp: { lift: -46, back: -10, sag: .05 }, droop: [-.4, -.22, -.32, -.45], breath: { lift: 2.5, hz: .35, tail: .09, tailHz: .21, tailPhase: .7 },
+    walk: { swing: 34, raise: 26, bob: 4, tail: [.15, .12] }, stagger: { shift: -16, pitch: .08, head: -.2 },
+    /** 등장: 떨어지는 몫(앞 fall 동안 내려오고 남은 동안 눌렸다 편다) · 눌림 px · 앞 숙임 · 입 벌림 */
+    entry: { fall: .7, squash: 34, pitch: .06, jaw: .5 },
+  },
+  /**
+   * behind* 장수가 몸 뒤(발보다 위)에 서면 옅게 · brokenShade 부서진 부위 덧칠 · puff* 입김(초마다 · 머무름 · 오름 · 크기 · 짙기 · 회복 중 간격)
+   * snowRim 눈빛 · mound* 잠행 눈 더미(짙기 · 가로 · 높이) · peekHeight 꼬리 끝이 솟는 높이 · frontAlpha 눈사태 · roarAlpha 포효 눈보라
+   * break* 부서지는 서리 터짐(초 · 크기) · fall* 화살 묶음이 떨어지는 초·거리 · sink* 눈 속으로 잠기는 깊이·땅 가림 · shadow* 발밑 큰 그림자
+   */
+  view: {
+    /** turnSquash 돌아서는 순간 가로로 눌리는 몫 · fallDrift·fallSpin 떨어지는 화살 묶음이 뒤로 밀리는 px·도는 라디안 */
+    turnSquash: .7, fallDrift: 40, fallSpin: 1.6,
+    behindAlpha: .52, behindPad: 10, brokenShade: 'rgba(38,46,66,.42)',
+    puffEvery: 1.4, puffLife: 1.1, puffRise: 26, puffSize: 18, puffAlpha: .34, puffRecover: .55,
+    snowRim: '#eef4ff', moundAlpha: .9, moundWidth: 70, moundHeight: 30, peekHeight: 90, frontAlpha: .85, roarAlpha: .38,
+    breakLife: .7, breakSize: 70, fallLife: .8, fallDrop: 150, sinkDepth: 430, sinkClip: 8,
+    shadowAlpha: .3, shadowShift: 20, shadowWidth: 250, shadowHeight: 34,
+    /** 땅을 울린 눈보라 — 크기 · 머무는 초 · 등장 착지는 그 몫만큼 빨리 */
+    landSize: 170, landLife: .55, landSpan: 1.6,
+    /** 쓰러짐(승리 막 내림): 초 · 그 몫까지는 또렷하다 옅어짐 · 몸이 주저앉는 px · 앞 숙임 · 목·머리 떨굼 · 턱 · 다리가 꺾이는 발 자리 · 꼬리 늘어짐 */
+    fallSeconds: 2.6, fallHold: .45, fall: { lift: 120, pitch: .22, neck: .6, head: .55, jaw: .45, paw: [50, 0, 40, 0, -30, 0, -20, 0], tail: [-.5, -.3, -.3, -.4] },
+  },
+} as const
+
 export const HAEBI_CHAMPION = {
   extraSeconds: 30, eliteLateRamp: 300, entrySeconds: .65, cooldown: 3.3, phaseRate: 1.2, roarSeconds: .65,
   dashWind: 1.05, dashRange: 400, dashSpeed: 340, dashWidth: 24, dashDamage: 20,

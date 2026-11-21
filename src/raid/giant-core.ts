@@ -9,13 +9,14 @@ export type PartId=typeof PART_IDS[number]
 export type Collider=Readonly<{kind:'capsule';from:Point;to:Point;radius:number}>|Readonly<{kind:'ellipse';center:Point;rx:number;ry:number;angle:number}>
 export type Primitive=Collider|Readonly<{kind:'box';center:Point;halfX:number;halfY:number;angle:number}>|Readonly<{kind:'diskCap';center:Point;radius:number;angle:number;minAlong:number}>|Readonly<{kind:'circle';center:Point;radius:number}>|Readonly<{kind:'line';from:Point;to:Point;width:number}>|Readonly<{kind:'cone';center:Point;radius:number;angle:number;halfAngle:number}>|Readonly<{kind:'annulus';center:Point;inner:number;outer:number}>|Readonly<{kind:'arc';center:Point;inner:number;outer:number;angle:number;halfAngle:number}>
 export type Shape=Primitive|Readonly<{kind:'union';shapes:readonly Shape[]}>
-export interface PartPose {
- readonly id:PartId;readonly parent:PartId|null;readonly start:Point;readonly end:Point;readonly angle:number
+/** Id defaults to the imugi parts; another giant (55 tiger) supplies its own part ids. */
+export interface PartPose<Id extends string = PartId> {
+ readonly id:Id;readonly parent:Id|null;readonly start:Point;readonly end:Point;readonly angle:number
  readonly mirrorY:1|-1;readonly alive:boolean;readonly broken:boolean;readonly damaged:boolean
  readonly visible:boolean;readonly targetable:boolean;readonly height:number;readonly widthScale:number;readonly collider:Collider;readonly mouth?:Point
 }
-export interface WorldGeometry { readonly parts:readonly Readonly<{id:PartId;shape:Collider}>[];readonly tell:readonly Shape[] }
-export interface ImugiPose {readonly ownerId:number;readonly tick:number;readonly parts:readonly PartPose[];readonly worldGeometry:WorldGeometry;readonly jawOpen:number;readonly recovering:boolean}
+export interface WorldGeometry<Id extends string = PartId> { readonly parts:readonly Readonly<{id:Id;shape:Collider}>[];readonly tell:readonly Shape[] }
+export interface ImugiPose<Id extends string = PartId> {readonly ownerId:number;readonly tick:number;readonly parts:readonly PartPose<Id>[];readonly worldGeometry:WorldGeometry<Id>;readonly jawOpen:number;readonly recovering:boolean}
 const EPS=1e-7,TOI_EPS=1e-10,TAU=Math.PI*2
 const point=(x:number,y:number):Point=>({x,y})
 const dot=(a:Point,b:Point)=>a.x*b.x+a.y*b.y
@@ -203,18 +204,19 @@ export function makePose(input:PoseInput):ImugiPose {
  const worldGeometry:WorldGeometry={parts:parts.map(q=>({id:q.id,shape:q.collider})),tell:(input.tell??[]).map(freezeTell)}
  return freeze({ownerId:input.ownerId,tick:input.tick,parts,worldGeometry,jawOpen,recovering:input.recovering===true})
 }
-export interface Contact {readonly ownerId:number;readonly partId:PartId;readonly t:number;readonly point:Point;readonly normal:Point;readonly distance:number;readonly weakScale:number}
-const priority=(id:PartId)=>id==='head'?0:id==='jaw'?1:PART_IDS.indexOf(id)+2
-function contact(pose:ImugiPose,part:PartPose,center:Point,t:number,distance:number,velocity:Point=point(0,0)):Contact {
+export interface Contact<Id extends string = PartId> {readonly ownerId:number;readonly partId:Id;readonly t:number;readonly point:Point;readonly normal:Point;readonly distance:number;readonly weakScale:number}
+const priority=(id:string)=>id==='head'?0:id==='jaw'?1:PART_IDS.indexOf(id as PartId)+2
+function contact<Id extends string>(pose:ImugiPose<Id>,part:PartPose<Id>,center:Point,t:number,distance:number,velocity:Point=point(0,0)):Contact<Id> {
  const q=closestPoint(center,part.collider),v=sub(center,q),d=Math.hypot(v.x,v.y),back=Math.hypot(velocity.x,velocity.y)
  return{ownerId:pose.ownerId,partId:part.id,t,point:q,normal:d>EPS?point(v.x/d,v.y/d):back>EPS?point(-velocity.x/back,-velocity.y/back):point(1,0),distance,weakScale:part.id==='head'?(pose.recovering?G.recoveryHeadDamage:G.headDamage):1}
 }
-const eligible=(p:PartPose)=>p.alive&&p.visible&&p.targetable&&!p.broken
+const eligible=(p:PartPose<string>)=>p.alive&&p.visible&&p.targetable&&!p.broken
 function reference(s:Primitive):Point{return'center'in s?s.center:s.from}
-export function pickContact(pose:ImugiPose,shape:Shape):Contact|null {
- const attacks=leaves(shape),hits:Contact[]=[]
+/** rank breaks exact distance ties; the default is the imugi order (another giant passes its own). */
+export function pickContact<Id extends string>(pose:ImugiPose<Id>,shape:Shape,rank:(id:Id)=>number=priority):Contact<Id>|null {
+ const attacks=leaves(shape),hits:Contact<Id>[]=[]
  for(const part of pose.parts)if(eligible(part))for(const attack of attacks)if(primitiveOverlap(attack,part.collider)){const at=reference(attack),d=dist(at,closestPoint(at,part.collider));hits.push(contact(pose,part,at,0,d))}
- hits.sort((a,b)=>Math.abs(a.distance-b.distance)>EPS?a.distance-b.distance:priority(a.partId)-priority(b.partId))
+ hits.sort((a,b)=>Math.abs(a.distance-b.distance)>EPS?a.distance-b.distance:rank(a.partId)-rank(b.partId))
  return hits[0]??null
 }
 /** Static fixed-tick collider versus a moving disk. Convex squared-distance derivative
@@ -235,11 +237,11 @@ function sweepPart(from:Point,to:Point,radius:number,shape:Collider):number|null
  for(let i=0;i<80;i++){const mid=(a+b)/2;if(distance(mid)>radius)a=mid;else b=mid}
  return b
 }
-export function sweepContact(pose:ImugiPose,from:Point,to:Point,radius:number):Contact|null {
+export function sweepContact<Id extends string>(pose:ImugiPose<Id>,from:Point,to:Point,radius:number,rank:(id:Id)=>number=priority):Contact<Id>|null {
  if(!validPoint(from)||!validPoint(to)||!finite(radius)||radius<0)throw new RangeError('sweep-input')
- const hits:Contact[]=[],v=sub(to,from)
+ const hits:Contact<Id>[]=[],v=sub(to,from)
  for(const part of pose.parts)if(eligible(part)){leaves(part.collider);const t=sweepPart(from,to,radius,part.collider);if(t!==null)hits.push(contact(pose,part,mix(from,to,t),t,0,v))}
- hits.sort((a,b)=>Math.abs(a.t-b.t)>TOI_EPS?a.t-b.t:priority(a.partId)-priority(b.partId))
+ hits.sort((a,b)=>Math.abs(a.t-b.t)>TOI_EPS?a.t-b.t:rank(a.partId)-rank(b.partId))
  return hits[0]??null
 }
 type EventFailure='invalid-event'|'stale-event'|'unknown-event'|'event-capacity'|'owner-capacity'|'invalid-owner'

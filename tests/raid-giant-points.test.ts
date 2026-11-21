@@ -1,7 +1,7 @@
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
 import {createHaebi,spawnGiant} from '../src/raid/haebi.ts'
-import {beginImugiMove} from '../src/raid/imugi.ts'
+import {beginImugiMove,type ImugiState} from '../src/raid/imugi.ts'
 import {closestPoint,freezeTell} from '../src/raid/giant-core.ts'
 function hasReference(value:unknown,target:object,seen=new Set<object>()):boolean{
  if(value===target)return true
@@ -9,7 +9,7 @@ function hasReference(value:unknown,target:object,seen=new Set<object>()):boolea
  seen.add(value);return Object.values(value).some(v=>hasReference(v,target,seen))
 }
 test('integration: an ACTUAL HaebiRun target never becomes a motion point reference or circular state',()=>{
- const run=createHaebi(257,'stage','sword',{stage:'ford',simRules:'55-IMUGI'}),e=spawnGiant(run)!,g=e.giant!
+ const run=createHaebi(257,'stage','sword',{stage:'ford',simRules:'55-IMUGI'}),e=spawnGiant(run)!,g=e.giant! as ImugiState
  run.x=e.x-200;run.y=e.y;g.phase=3;g.state='recover';g.timer=0
  assert.ok(beginImugiMove(g,e,run,'emerge',1))
  assert.doesNotThrow(()=>JSON.stringify(run))
