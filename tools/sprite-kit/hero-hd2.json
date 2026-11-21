@@ -1,4 +1,23 @@
 {
+ "ara": {
+  "bytes": 1230692,
+  "cell": [
+   464,
+   320
+  ],
+  "cols": 8,
+  "feet": 312,
+  "scale": {
+   "attack": 1.2545,
+   "hdx": 0.8492,
+   "walk": 0.6935
+  },
+  "sources": {
+   "attack": "codex67/attack8_ara.png",
+   "hdx": "codex75/hdx_ara.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/ara-prop20261117-walk.png"
+  }
+ },
  "aw1-ara": {
   "bytes": 1470953,
   "cell": [
@@ -92,6 +111,25 @@
    "attack": "codex70/attack8_aw1-irang.png",
    "hdx": "codex75/hdx_aw1-irang.png",
    "walk": "../flutter/arrow_game_one/tools/sprite-kit/awakened-20261114/intake-20261118/aw1-irang-walk.png"
+  }
+ },
+ "aw1-onjo": {
+  "bytes": 1524401,
+  "cell": [
+   464,
+   320
+  ],
+  "cols": 8,
+  "feet": 312,
+  "scale": {
+   "attack": 1.0739,
+   "hdx": 0.8,
+   "walk": 0.9875
+  },
+  "sources": {
+   "attack": "codex70/attack8_aw1-onjo.png",
+   "hdx": "codex75/hdx_aw1-onjo.png",
+   "walk": "codex68/walk8_aw1-onjo.png"
   }
  },
  "aw1-soseono": {
@@ -225,6 +263,25 @@
    "attack": "codex67/attack8_jinha.png",
    "hdx": "codex75/hdx_jinha.png",
    "walk": "codex67/walk8_jinha.png"
+  }
+ },
+ "onjo": {
+  "bytes": 1499806,
+  "cell": [
+   352,
+   320
+  ],
+  "cols": 11,
+  "feet": 312,
+  "scale": {
+   "attack": 0.9684,
+   "hdx": 0.7841,
+   "walk": 0.9356
+  },
+  "sources": {
+   "attack": "codex70/attack8_onjo.png",
+   "hdx": "codex75/hdx_onjo.png",
+   "walk": "codex68/walk8_onjo.png"
   }
  },
  "soebi": {
