@@ -1,5 +1,5 @@
 // Stage bot full runs. Default rules follow the production stage resolver; RULES=56B preserves the old comparison lane.
-// CLI: [stages] [kits] [seeds]; REACT=.5 SHOP=0 AWAKEN=0|1 RULES=56B|55-IMUGI|56C MAX_STEPS=300000 OUTJSON=path
+// CLI: [stages] [kits] [seeds]; REACT=.5 SHOP=0 AWAKEN=0|1 RULES=56B|55-IMUGI|56C|55-TIGER MAX_STEPS=300000 OUTJSON=path
 import { HAEBI_SHOP, HAEBI_MOBS, HAEBI_STAGES } from '../src/tune/params.ts'
 import { createHaebi, choose, stepHaebi, respite, raidRulesForStage, runDuration, midbossTime, bossTime, giantMob, type HaebiRun, type HaebiOpts, type Mob, type Kit, type Bonus, type StageId } from '../src/raid/haebi.ts'
 import { botChoice, botInput } from '../src/raid/haebi-replay.ts'
@@ -9,19 +9,19 @@ import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { resolve } from 'node:path'
 
-export type ToolRules = '56B' | '55-IMUGI' | '56C'
+export type ToolRules = '56B' | '55-IMUGI' | '56C' | '55-TIGER'
 export function toolPolicy(env: NodeJS.ProcessEnv = process.env) {
   const rules = env['RULES'], awake = env['AWAKEN'] ?? '0', maxOperations = Number(env['MAX_STEPS'] ?? 300000)
-  if (rules !== undefined && rules !== '56B' && rules !== '55-IMUGI' && rules !== '56C') throw new Error('RULES must be 56B, 55-IMUGI or 56C (unset = raidRulesForStage)')
+  if (rules !== undefined && rules !== '56B' && rules !== '55-IMUGI' && rules !== '56C' && rules !== '55-TIGER') throw new Error('RULES must be 56B, 55-IMUGI, 56C or 55-TIGER (unset = raidRulesForStage)')
   if (awake !== '0' && awake !== '1') throw new Error('AWAKEN must be 0 or 1')
   if (!Number.isSafeInteger(maxOperations) || maxOperations < 1) throw new Error('MAX_STEPS must be a positive safe integer')
   return { rules: rules as ToolRules | undefined, awake: awake === '1', maxOperations }
 }
 export function stageToolOpts(stage: StageId, bonus: Partial<Bonus>, rules?: ToolRules, awake = false): HaebiOpts {
   const requested = rules ?? raidRulesForStage(stage)
-  return { stage, bonus, simRules: requested === '55-IMUGI' && stage !== 'ford' || requested === '56C' && stage !== 'palisade' ? '56B' : requested, permanentAwake: awake, appearanceAwake: true }
+  return { stage, bonus, simRules: requested === '55-IMUGI' && stage !== 'ford' || requested === '56C' && stage !== 'palisade' || requested === '55-TIGER' && stage !== 'snow' ? '56B' : requested, permanentAwake: awake, appearanceAwake: true }
 }
-export const toolSourceSha256 = () => Object.fromEntries(['src/raid/haebi.ts', 'src/raid/haebi-replay.ts', 'src/raid/champion.ts', 'src/raid/imugi.ts', 'src/raid/giant-core.ts', 'src/raid/palisade.ts', 'src/tune/params.ts', 'tools/raid-stage-balance.ts', 'tools/raid-ult-dps.ts'].map(path => [path, createHash('sha256').update(readFileSync(new URL(`../${path}`, import.meta.url))).digest('hex')]))
+export const toolSourceSha256 = () => Object.fromEntries(['src/raid/haebi.ts', 'src/raid/haebi-replay.ts', 'src/raid/champion.ts', 'src/raid/imugi.ts', 'src/raid/tiger.ts', 'src/raid/giant.ts', 'src/raid/giant-core.ts', 'src/raid/palisade.ts', 'src/tune/params.ts', 'tools/raid-stage-balance.ts', 'tools/raid-ult-dps.ts'].map(path => [path, createHash('sha256').update(readFileSync(new URL(`../${path}`, import.meta.url))).digest('hex')]))
 
 /** Observe retained owner references, never edit the run. Disappearance alone does not prove a kill. */
 export function trackToolBosses(s: HaebiRun) {

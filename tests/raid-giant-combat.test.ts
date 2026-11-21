@@ -1,14 +1,14 @@
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
 import {createHaebi,stepHaebi,spawnGiant,giantHUD,type Kit,type Missile} from '../src/raid/haebi.ts'
-import {createImugi,imugiCollisionBounds,stepImugi,imugiCandidates,chooseImugiMove,beginImugiMove,imugiShapes,breakImugiPart,commitImugi,updateImugiPose,type ImugiMove,type GiantOwner} from '../src/raid/imugi.ts'
+import {createImugi,imugiCollisionBounds,stepImugi,imugiCandidates,chooseImugiMove,beginImugiMove,imugiShapes,breakImugiPart,commitImugi,updateImugiPose,type ImugiMove,type GiantOwner,type ImugiState} from '../src/raid/imugi.ts'
 import {overlaps,type Shape} from '../src/raid/giant-core.ts'
 import {HAEBI_GIANT as G,HAEBI_RUN as C} from '../src/tune/params.ts'
 function quiet(kit:Kit='sword'){
  const s=createHaebi(257,'stage',kit,{stage:'ford',simRules:'55-IMUGI'})
  s.spawn=s.nextElite=s.nextBarrage=1e9
  for(const k of Object.keys(s.cool)as(keyof typeof s.cool)[])s.cool[k]=1e9
- const e=spawnGiant(s)!,g=e.giant!;g.state='recover';g.timer=5;g.age=G.entrySeconds;updateImugiPose(g,e,0)
+ const e=spawnGiant(s)!,g=e.giant! as ImugiState;g.state='recover';g.timer=5;g.age=G.entrySeconds;updateImugiPose(g,e,0)
  return{s,e,g}
 }
 test('55 every primary kit actually damages one real part and one parent',()=>{

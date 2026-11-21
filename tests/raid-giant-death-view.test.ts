@@ -2,7 +2,7 @@
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
 import {createHaebi,spawnGiant,stepHaebi,type HaebiRun} from '../src/raid/haebi.ts'
-import {updateImugiPose} from '../src/raid/imugi.ts'
+import {updateImugiPose,type ImugiState} from '../src/raid/imugi.ts'
 import {drawField} from '../src/raid/haebi-view.ts'
 import {RaidEnding} from '../src/raid/ending.ts'
 const image=(path:string)=>({path,width:5120,height:256,complete:true}) as unknown as HTMLImageElement
@@ -14,7 +14,7 @@ function canvas(){
 const art=new Map(['anim-px/boss-ford.png','anim-px/bandit-warlord.png','anim-px/bandit-club.png','raid/death-strip.png'].map(p=>[p,image(p)]))
 function lethal(){
  const s=createHaebi(61,'stage','sword',{stage:'ford',simRules:'55-IMUGI'});s.spawn=1e9;s.nextElite=1e9;s.nextBarrage=1e9
- const e=spawnGiant(s);assert.ok(e?.giant);const g=e.giant;e.hp=1;e.poison=1;e.pdps=10000;g.state='recover';g.timer=10;updateImugiPose(g,e,0)
+ const e=spawnGiant(s);assert.ok(e?.giant);const g=e.giant as ImugiState;e.hp=1;e.poison=1;e.pdps=10000;g.state='recover';g.timer=10;updateImugiPose(g,e,0)
  stepHaebi(s,{x:0,y:0},1/120)
  assert.equal(s.state,'won');assert.equal(s.giantFlow?.finalDefeated,true);assert.equal(g.state,'dead');assert.ok(g.pose.parts.every(p=>!p.visible))
  const f=s.fx.find(f=>f.kind==='death'&&f.mob==='boss');assert.ok(f);return{s,f}
