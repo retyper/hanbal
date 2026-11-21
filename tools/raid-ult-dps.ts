@@ -14,7 +14,7 @@ import { writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { resolve } from 'node:path'
 
-// STAGE=ford RULES=55-IMUGI|56B AWAKEN=0|1 MAX_STEPS=300000; default forest remains unchanged.
+// STAGE=ford RULES=55-IMUGI|56B AWAKEN=0|1 MAX_STEPS=300000; default forest follows raidRulesForStage (55-GUMIHO) · RULES=56B keeps the old forest lane.
 export function ultToolConfig(env: NodeJS.ProcessEnv = process.env) {
   const stage = env['STAGE'] ?? 'forest', policy = toolPolicy(env)
   if (!['forest', 'ford', 'palisade', 'snow', 'fortress'].includes(stage)) throw new Error('Unsupported STAGE')
