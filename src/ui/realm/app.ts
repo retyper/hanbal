@@ -1656,7 +1656,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 번쩍 전에는 원래 초상·청동 액자·불꽃 칸을 그대로 둔다. 세로 영상은 번쩍 뒤 별도 무대에만 드러난다.
     const fr = `--bt:${R.ascendFrameTop};--bs:${R.ascendFrameSide};--bb:${R.ascendFrameBot}`
     const title = `<div class="axtitle"><img class="axbrush" src="${FX}brush.png" alt=""><img class="axword" src="${FX}word.png" alt="${tr('wake.asc')}"></div>`
-    const result = `${title}<b class="axname">${esc(h.name)}</b><div class="axstats">${stats}</div>`
+    // 붓글씨·이름·능력치는 한 묶음(.axres) — 세로 화면에선 상자 없이 그대로 쌓이고(display: contents) 가로 폰에선 초상 옆 한 칸으로 (ascend.ts ASCEND_CSS · 형 11-19 ②)
+    const result = `<div class="axres">${title}<b class="axname">${esc(h.name)}</b><div class="axstats">${stats}</div></div>`
     const finalVideo = loopOk ? `<div class="axpost"><div class="axmedia awakening-frame">${after.replace('<video ', '<video data-quiet="1" ')}${awakeningGemHtml(e, ART)}</div>${result}</div>` : ''
     el.innerHTML = `<div class="axveil"></div><img class="axwall" src="${FX}wall.png" alt=""><canvas class="axground"></canvas>`
       + `<img class="axbeast" src="${FX}beast-${E.beast}.png" alt="" onerror="this.classList.add('gone')">${gatherHtml(e, phone ? R.ascendGatherPhone : R.ascendGather, sd, ART, { sec: R.ascendStreakSec, spread: R.ascendStreakSpreadSec, stagger: R.ascendStreakStaggerSec })}<div class="axembers">${embers}</div>`
