@@ -183,4 +183,42 @@ export const ASCEND_CSS = `
 .ap .ascfx.portrait-video .axok { z-index: 8; }
 @keyframes axokin { from { opacity: 0; } to { opacity: 1; pointer-events: auto; } }
 /* 동작 줄이기에서도 모임·소용돌이·번개는 보인다 (형 11-03 맥북 · appstyle 의 .ascfx 줄 참고) */
+/* 붓글씨·이름·능력치 묶음 — 세로 화면에선 상자를 만들지 않는다 (예전처럼 무대·영상 칸에 바로 쌓인다) */
+.ap .axres { display: contents; }
+/* 키가 모자란 화면 (형 11-19 ② · 세로 360×640 · 375×667 · 노트북 가로 1366×768) — 정사각 액자 판의 능력치가 확인 단추 띠에 가렸다.
+   단추 띠 위 칸 가운데에 놓고 붓글씨를 화면 높이에 맞춰 줄인다. 기운이 모이는 자리도 같은 칸 기준. 세로 390×844 같은 보통 폰 · 높이 900 넘는 화면은 그대로 */
+@media (min-aspect-ratio: 54/100) and (max-height: 900px) {
+  .ap .ascfx:not(.portrait-video) { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+  .ap .ascfx:not(.portrait-video) .axtitle { width: min(84vw, 420px, 40dvh); }
+  .ap .ascfx:not(.portrait-video) :is(.axgather, .axcore, .axrings) { top: calc((100% - 76px - env(safe-area-inset-bottom)) * .42); }
+  .ap .ascfx:not(.portrait-video) .axbeast { top: calc((100% - 76px - env(safe-area-inset-bottom)) * .44); }
+}
+/* 가로 폰 (형 11-19 ②: 「초상·각성 글·능력치 알약이 확인 단추에 가림」) — 위아래로 쌓지 않고 옆으로.
+   가운데 초상(번쩍 전 액자 · 번쩍 뒤 영상) · 오른쪽 칸에 붓글씨·이름·능력치 · 그 칸 아래에 확인 단추 (화면 아래 붙박이 · 초상을 가리지 않는다) */
+@media (orientation: landscape) and (max-height: 600px) {
+  .ap .ascfx { --axpad: max(12px, env(safe-area-inset-left), env(safe-area-inset-right)); --axgap: 20px; --axbot: calc(8px + env(safe-area-inset-bottom)); --axbtn: 44px;
+    /* 액자 한 변 — 액자 위로 솟는 불(액자의 26%)까지 화면에 들게 · 아래는 불꽃 칸(59px) · 네모에 가까운 창에서도 오른쪽 칸이 150px 은 남게 */
+    --axc: min(440px, calc((100dvh - var(--axbot) - 59px) / 1.26), calc(100vw - 2 * var(--axpad) - 2 * var(--axgap) - 300px)); --axcy: calc(100% - var(--axbot) - 59px - var(--axc) / 2); }
+  .ap .ascfx:not(.portrait-video) { padding-bottom: 0; }
+  .ap .ascfx .axstage { align-self: end; justify-self: stretch; box-sizing: border-box; margin-bottom: var(--axbot); padding: 0 var(--axpad); grid-template-columns: 1fr var(--axc) 1fr; column-gap: var(--axgap); }
+  .ap .ascfx .axcard { grid-column: 2; grid-row: 1; width: var(--axc); }
+  .ap .ascfx .axslots { grid-column: 2; grid-row: 2; }
+  /* 기운이 모이고 고리가 퍼지는 자리 · 짐승 — 액자 가운데 */
+  .ap .ascfx.evo :is(.axgather, .axcore, .axrings, .axbeast) { top: var(--axcy); }
+  .ap .ascfx .axbeast { width: min(150vw, 980px, 120dvh); }
+  /* 오른쪽 칸 — 붓글씨·이름·능력치를 단추 위 빈칸 가운데에 */
+  .ap .ascfx .axres { display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; width: 100%; min-width: 0; margin-bottom: calc(var(--axbtn) + 12px); }
+  .ap .ascfx .axstage > .axres { grid-column: 3; grid-row: 1 / span 2; align-self: center; }
+  .ap .ascfx.evo .axres .axtitle { width: min(100%, 320px, 60dvh); margin-top: 0; }
+  .ap .ascfx.evo .axres .axname { box-sizing: border-box; max-width: 100%; margin-top: -28px; padding: 3px 22px; font-size: 22px; text-align: center; }
+  .ap .ascfx.evo .axres .axstats { max-width: min(100%, 236px); margin-top: 8px; flex-wrap: wrap; justify-content: center; gap: 4px; } /* 셋·둘 두 줄 (넷·하나로 갈리지 않게) */
+  .ap .ascfx.evo .axres .axst { padding: 2px 7px; font-size: 13px; }
+  /* 번쩍 뒤 영상 판 — 영상은 액자 자리 그대로 · 키는 화면 높이만큼 */
+  .ap .ascfx.portrait-video .axpost { display: grid; grid-template-columns: 1fr var(--axc) 1fr; grid-template-rows: minmax(0, 1fr); column-gap: var(--axgap); align-items: center; justify-items: center; padding: 6px var(--axpad); }
+  .ap .ascfx.portrait-video .axmedia { grid-column: 2; grid-row: 1; width: auto; min-width: 0; height: calc(100% - 2 * var(--awakening-frame-outset, 17px)); }
+  .ap .ascfx.portrait-video .axpost > .axres { grid-column: 3; grid-row: 1; }
+  /* 확인 — 화면 아래 붙박이 그대로 · 오른쪽 칸 밑으로 (초상을 가리지 않는다) */
+  .ap .ascfx .axok { left: calc(50% + var(--axc) / 2 + var(--axgap)); right: var(--axpad); padding: 0 0 var(--axbot); background: none; }
+  .ap .ascfx .axok .btn { box-sizing: border-box; min-width: 0; width: min(100%, 260px); height: var(--axbtn); padding: 0 16px; font-size: 17px; }
+}
 `

@@ -722,6 +722,11 @@ html.duel-open .ap * { animation-play-state: paused !important; }
 .ap .mcard.fulld .cardc.n3 .cimg { width: min(100%, calc(26vh * 1.5)); }
 /* 사건 카드 — 자막 두 줄씩 (누르면 다음) · 다 보면 물음 한 줄 */
 .ap .cardc.story { cursor: pointer; }
+/* 낮은 가로 화면(폰 눕힘) — 넘겨 보는 사건 카드는 그림 왼쪽 · 자막 오른쪽 (위아래로 쌓으니 「누르면 다음」 줄이 화면 아래로 잘렸다 · 가로 화면 점검 11-22) */
+@media (max-height: 520px) and (min-aspect-ratio: 4/3) {
+  .ap .mcard.fulld .cardc.story { flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 14px; }
+  .ap .mcard.fulld .cardc.story .cimg { flex: none; width: min(46%, calc((100dvh - 120px) * 1.5)); }
+}
 .ap .cardc .csub { margin: 8px 0 4px; padding: 12px 14px; min-height: calc(2 * 1.5em + 24px); display: flex; align-items: center; justify-content: center; text-align: center; font-size: 16.5px; line-height: 1.5; color: #fff4dc; background: #0008; border-radius: 10px; animation: csubin .25s ease-out; }
 .ap .cardc .csub.csay { justify-content: flex-start; gap: 12px; text-align: left; padding: 10px 14px 10px 10px; }
 .ap .cardc .csay .cwho { flex: none; width: 64px; display: flex; flex-direction: column; align-items: center; gap: 3px; }

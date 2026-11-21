@@ -612,7 +612,7 @@ ${VILLAGER_ANIM.map((v, k) => `.ap .tvf.v${k} { --ar: ${v.ar.toFixed(4)}; } .ap 
 .ap .tvgo.on { background: #4a3718; color: #ffe2a0; border-color: #ffe2a0; box-shadow: 0 0 0 2px #e0bd78, inset 0 3px 8px #000a; translate: 0 2px; }
 .ap .tvgo[aria-disabled="true"] { background: #2a2016; border-color: #6a5236; color: #a3957a; box-shadow: none; }
 /* 키가 작은 폰(360x640 쯤) — 판 그림을 줄이고 타일은 세 칸 · 이름만 · 누르면 아래에 설명이 떠서, 구르지 않고 여섯 개가 다 보인다 */
-@media (max-height: 700px) and (max-width: 759px) {
+@media (max-height: 700px) and (max-width: 759px) and (orientation: portrait) {
   .ap .tvstage { height: min(calc(100vw * 0.7344), 33dvh); }
   .ap .tvdock { overflow-y: hidden; gap: 5px; padding: 6px 12px; }
   .ap .tvfh { min-height: 24px; } .ap .tvfh > b { font-size: 16px; }
@@ -630,8 +630,9 @@ ${VILLAGER_ANIM.map((v, k) => `.ap .tvf.v${k} { --ar: ${v.ar.toFixed(4)}; } .ap 
   .ap .tvhave { margin-bottom: 3px; }
   .ap .tvgo { min-height: 48px; padding: 4px 12px; }
 }
-/* 넓은 가로 화면 — 아래 칸과 단추가 오른쪽 기둥으로 · 판이 세로를 다 쓴다 */
-@media (min-width: 760px) and (orientation: landscape) {
+/* 넓은 가로 화면 — 아래 칸과 단추가 오른쪽 기둥으로 · 판이 세로를 다 쓴다
+   (가로로 눕힌 폰 740×360 도 · 760 보다 좁으면 세로 틀로 쌓여 판은 손톱만 하고 지을 타일이 아래로 잘렸다 · 가로 화면 점검 11-22) */
+@media (min-width: 560px) and (orientation: landscape) {
   .ap .townv { grid-template-areas: "top dock" "stage dock" "stage bar"; grid-template-columns: 1fr minmax(300px, 36%); grid-template-rows: auto 1fr auto; }
   .ap .townv.hascap { grid-template-areas: "top dock" "band dock" "stage dock" "stage bar"; grid-template-rows: auto auto 1fr auto; } /* 도읍(궁전 띠가 있는 마을)도 같은 두 기둥으로 — 기본 hascap 틀이 이겨 밑으로 쌓였다 */
   .ap .tvstage { height: auto; }
@@ -640,6 +641,11 @@ ${VILLAGER_ANIM.map((v, k) => `.ap .tvf.v${k} { --ar: ${v.ar.toFixed(4)}; } .ap 
   .ap .tvx { position: fixed; top: 12px; right: 14px; z-index: 70; width: auto; height: 44px; padding: 0 18px 0 14px; border-radius: 22px; border-width: 2px; font-size: 16px; font-weight: 700; box-shadow: 0 4px 14px #000c; }
   .ap .tvx::after { content: ' ${tr('town.exit')}'; }
   .ap .tvdock { padding-top: 64px; }
+}
+/* 가로로 눕힌 폰 — 오른쪽 기둥이 좁아 타일 넷이면 효과 글·값이 11px 로 여러 줄이었다 · 셋씩 놓고 12px (가로 화면 점검 11-22) */
+@media (min-width: 560px) and (orientation: landscape) and (max-height: 500px) {
+  .ap .tvtiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ap .tvtile .tveff, .ap .tvtile small .cost, .ap .tvtile small .cost .cg { font-size: 12px; }
 }
 @media (prefers-reduced-motion: reduce) { .ap .tvf, .ap .tvf u, .ap .tvf s, .ap .tvveil, .ap .map.tvdive, .ap .map.tvrise, .ap .townv.fresh, .ap .townv.fresh .tvboard, .ap .townov.out .tvboard, .ap .tvarrow, .ap .tvlot2.sel .tvart, .ap .tvmark, .ap .tvmark polygon, .ap .tvmark u, .ap .tvstamp, .ap .tvpuff { animation: none !important; } }
 .ap.q-low .tvf u, .ap.q-low .tvf s, .ap.q-low .tvf.walk, .ap.q-low .tvf.walkv { animation-play-state: paused; }

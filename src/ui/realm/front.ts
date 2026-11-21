@@ -750,6 +750,12 @@ export const FRONT_CSS = `
 .ap .front.title .tv.tight .fmore { margin-top: 8px; }
 .ap .front.title .tv.tight2 .ltitle { max-height: 15vh; } .ap .front.title .tv.tight2 .fbtns { gap: 5px; } .ap .front.title .tv.tight2 .fbtns > .btn.big { font-size: 14px; padding-top: 1px; padding-bottom: 1px; }
 .ap .front.title .tv.tight2 .cont small { display: none; }
+/* 낮은 가로 화면(폰 눕힘) — 단추를 두 칸씩 나란히 · 이어 하기 카드가 있으면 한 줄로 쌓은 단추에 「더 보기」가 화면 아래로 잘렸다 (740×360 · 가로 화면 점검 11-22) */
+@media (orientation: landscape) and (max-height: 500px) {
+  .ap .front.title .tv .fbtns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(560px, 76vw); }
+  .ap .front.title .tv .fbtns > .btn, .ap .front.title .tv .fbtns > .cont { width: 100%; }
+  .ap .front.title .tv .fbtns > .cont { grid-column: 1 / -1; }
+}
 .ap .front .fmore { text-align: center; margin: 14px 0 0; } .ap .front .fmore > summary { list-style: none; display: inline-flex; cursor: pointer; font-size: 13px; }
 .ap .front .fmore > summary::-webkit-details-marker { display: none; }
 /* 「더 보기」는 첫 화면 위에 뜨는 판으로 — 아래로 펼쳤더니 폰에서 화면 밖으로 넘쳤다 (형 10-28: "시작 화면에 스크롤 쓰지 않은 건 잘했는데") */

@@ -51,5 +51,11 @@ export const THREAT_CSS = `
 .ap .thw .thwgo b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ap .thw .thwgo .face { width: 30px; height: 30px; flex: none; border-radius: 50%; }
 @keyframes thwin { from { opacity: 0; transform: translate(-50%, -14px) scale(.92); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+/* 낮은 가로 화면(폰 눕힘) — 위아래로 쌓으면 카드가 지도 가운데(노리는 우리 고을)를 덮었다 · 넓고 낮게: 머리 한 줄 · 가망과 단추는 한 줄에 (가로 화면 점검 11-22) */
+@media (orientation: landscape) and (max-height: 520px) {
+  .ap .thw { left: calc(50% - var(--rail, 0px) / 2); width: min(calc(100vw - var(--rail, 0px) - 24px), 600px); display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 6px 12px; padding: 7px 12px 9px; }
+  .ap .thw .thwh { grid-column: 1 / -1; }
+  .ap .thw .thwgo { min-height: 40px; }
+}
 @media (prefers-reduced-motion: reduce) { .ap .thw, .ap .thw .thwx { animation: none; } }
 `
