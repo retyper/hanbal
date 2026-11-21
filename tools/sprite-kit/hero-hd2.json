@@ -1,0 +1,40 @@
+{
+ "aw1-haebi": {
+  "bytes": 1585481,
+  "cell": [
+   448,
+   320
+  ],
+  "cols": 9,
+  "feet": 312,
+  "scale": {
+   "attack": 1.0222,
+   "hdx": 0.7775,
+   "walk": 0.9185
+  },
+  "sources": {
+   "attack": "codex70/attack8_aw1-haebi.png",
+   "hdx": "codex75/hdx_aw1-haebi.png",
+   "walk": "codex68/walk8_aw1-haebi.png"
+  }
+ },
+ "haebi": {
+  "bytes": 1285310,
+  "cell": [
+   400,
+   320
+  ],
+  "cols": 10,
+  "feet": 312,
+  "scale": {
+   "attack": 1.0,
+   "hdx": 0.7575,
+   "walk": 0.9619
+  },
+  "sources": {
+   "attack": "codex70/attack8_haebi.png",
+   "hdx": "codex75/hdx_haebi.png",
+   "walk": "codex67/walk8_haebi.png"
+  }
+ }
+}

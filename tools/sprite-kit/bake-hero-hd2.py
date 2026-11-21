@@ -1,0 +1,192 @@
+"""확대 고해상도 2배 띠 (53-A 넓히기 · Codex 75 · 형 「열전에서 확대했을 때 내 캐릭은 해상도 괜찮게」).
+
+지금 띠 public/realm/anim-px/gen-<띠이름>.png 와 **같은 칸 순서 · 같은 발 줄 · 정확히 2배 기하**의 판을 고해상도 원본에서 굽는다 → gen-<띠이름>_hd.png
+  칸 0~3 서기 = 보충 판(codex75 hdx_<띠이름>.png · 3×2) 1~4 · 4~11 걷기 = 걷기 8칸 판(codex71 > 68 > 67) 1~8 ·
+  12~17 공격 = 공격 8칸 판(codex73 > 71 > 70 > 67) 2~7 · 18 맞음 = 보충 5 · 19 쓰러짐 = 보충 6
+맞추는 법 (띠를 만든 셈 그대로 × 2 — 확대해도 자리·크기가 띠와 같다):
+  기준 = 띠 서기 칸 0 의 몸 키 ref_h · 가운데 cx · 발 줄 foot (walk8-intake.idle_ref).
+  걷기: 배율 = 2·ref_h ÷ 걷기 판 키 가운데값 · 칸마다 몸 상자 가운데를 2·cx 에, 바닥을 2·foot 에 (walk8-intake.place 와 같음).
+  공격: 배율 = 2·ref_h ÷ 공격 판 1번 칸 키 · 줄마다 서기 칸(1·8)의 발 가운데와 바닥선을 (2·cx, 2·foot) 에 (attack8-intake.build 와 같음).
+  보충: 배율 = 2·ref_h ÷ 보충 판 1번 칸 키 · 줄마다 서기 칸(1·4)의 발 가운데와 바닥선을 (2·cx, 2·foot) 에 — 숨쉬기 넷이 떨리지 않고 맞음의 젖힘·쓰러짐 자리가 화가 그대로.
+원본 픽셀은 줄이기만 한다(6% 넘게 늘려야 하면 멈춤 · 160 띠는 쓰지 않음). 판 가로는 4096 안으로 접는다(열 수 = 4096 ÷ 칸 가로).
+  py -3 -I tools/sprite-kit/bake-hero-hd2.py <띠이름> [...]           → 미리보기만 (D:/에셋창고/codex75/check/hd-<띠이름>.jpg)
+  py -3 -I tools/sprite-kit/bake-hero-hd2.py --write <띠이름> [...]   → gen-<띠이름>_hd.png + src/raid/hero-hd.ts 등록 + tools/sprite-kit/hero-hd2.json
+"""
+import importlib.util
+import json
+import os
+import re
+import sys
+
+import numpy as np
+from PIL import Image
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+def _load(name, file):
+    spec = importlib.util.spec_from_file_location(name, os.path.join(HERE, file)); m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m); return m
+W8 = _load('walk8_intake', 'walk8-intake.py')
+A8 = _load('attack8_intake', 'attack8-intake.py')
+
+ROOT = W8.ROOT
+PX = os.path.join(ROOT, 'public/realm/anim-px')
+STORE = 'D:/에셋창고'
+WALK_SRC = ('codex71', 'codex68', 'codex67')
+ATTACK_SRC = ('codex73', 'codex71', 'codex70', 'codex67')
+HDX_SRC = ('codex75',)
+ATLAS_MAX = 4096
+SCALE, CELL_H = 2, 320
+UPSCALE_MAX = 1.06   # Codex 고해상도 판(칸 ~440px)은 2배 띠와 거의 같은 크기라 몇 % 늘림은 흐림이 보이지 않는다 · 160 띠를 2배로 늘리는 것과 다르다(그건 금지)
+REGISTRY = os.path.join(HERE, 'hero-hd2.json')
+HD_TS = os.path.join(ROOT, 'src/raid/hero-hd.ts')
+
+
+def find(prefix, key, folders):
+    for f in folders:
+        p = os.path.join(STORE, f, f'{prefix}_{key}.png')
+        if os.path.exists(p) and os.path.getsize(p) > 0:
+            return p
+    raise SystemExit(f'{key}: {prefix} 원본 없음 ({", ".join(folders)})')
+
+
+def keyed(path):
+    img = Image.open(path).convert('RGBA')
+    return img if W8.has_alpha(img) else W8.key_out(img)
+
+
+def grid(img, cols, rows):
+    w, h = img.size; cw, ch = w // cols, h // rows
+    return [np.asarray(img.crop((c * cw, r * ch, (c + 1) * cw, (r + 1) * ch))).copy() for r in range(rows) for c in range(cols)]
+
+
+def put(canvas_cell, arr, scale, ox, oy):
+    """arr(칸 좌표) 를 scale 로 줄여 (ox, oy) 에 놓는다 · 칸 밖으로 나간 px 수를 돌려준다."""
+    im = Image.fromarray(arr)
+    if scale > UPSCALE_MAX:
+        raise SystemExit(f'배율 {scale:.3f} > {UPSCALE_MAX} — 원본이 작아 크게 늘려야 한다(금지)')
+    nw, nh = max(1, round(im.size[0] * scale)), max(1, round(im.size[1] * scale))
+    g = im.resize((nw, nh), Image.LANCZOS)
+    a = np.asarray(g)[:, :, 3] > 64
+    ys, xs = np.nonzero(a)
+    lost = 0
+    if len(xs):
+        W, H = canvas_cell.size
+        lo, hi, top, bot = xs.min() + ox, xs.max() + ox, ys.min() + oy, ys.max() + oy
+        lost = max(0, -lo) + max(0, hi - (W - 1)) + max(0, -top) + max(0, bot - (H - 1))
+    canvas_cell.paste(g, (ox, oy), g)
+    return lost
+
+
+def build(key):
+    base_p = os.path.join(PX, f'gen-{key}.png')
+    strip = Image.open(base_p).convert('RGBA')
+    fw, h, ref_h, foot, cx = W8.idle_ref(strip)
+    if h != 160:
+        raise SystemExit(f'{key}: 띠 칸 높이 {h} (160 이 아님)')
+    cw, ch = fw * SCALE, CELL_H
+    frames = [Image.new('RGBA', (cw, ch), (0, 0, 0, 0)) for _ in range(20)]
+    lost = {}
+    src = {}
+
+    # 걷기 4~11 (walk8-intake.place × 2)
+    wp = find('walk8', key, WALK_SRC); src['walk'] = wp
+    wc = W8.cells_of(keyed(wp), 4, 2)
+    ws = SCALE * ref_h / float(np.median([f.size[1] for f in wc]))
+    for i, f in enumerate(wc):
+        arr = np.asarray(f)
+        nw, nh = max(1, round(f.size[0] * ws)), max(1, round(f.size[1] * ws))
+        lost[4 + i] = put(frames[4 + i], arr, ws, round(SCALE * cx - nw / 2), round(SCALE * foot - nh))
+
+    # 공격 12~17 (attack8-intake.build × 2 · 판 2~7)
+    ap = find('attack8', key, ATTACK_SRC); src['attack'] = ap
+    acells = A8.sheet_cells(keyed(ap))
+    afeet = [A8.foot_of(c) for c in acells]
+    abase = [float(np.median([afeet[i][0] for i in range(r * 4, r * 4 + 4)])) for r in range(2)]
+    aanchor = [afeet[0][1], afeet[7][1]]
+    as_ = SCALE * ref_h / afeet[0][2]
+    for cell_no, f in zip(range(12, 18), range(2, 8)):
+        row = (f - 1) // 4
+        lost[cell_no] = put(frames[cell_no], acells[f - 1], as_, round(SCALE * cx - aanchor[row] * as_), round(SCALE * foot - abase[row] * as_))
+
+    # 보충 0~3 · 18 · 19 (서기 칸 1·4 를 줄마다 기준으로)
+    hp = find('hdx', key, HDX_SRC); src['hdx'] = hp
+    hcells = grid(keyed(hp), 3, 2)
+    for i, c in enumerate(hcells):
+        if (c[:, :, 3] > 64).sum() < 200:
+            raise SystemExit(f'{key}: 보충 판 {i + 1}번 칸이 비었다')
+    hfeet = [A8.foot_of(c) for c in hcells]
+    hs = SCALE * ref_h / hfeet[0][2]
+    rows = [(0, (0, 1, 2)), (3, (3, 4, 5))]   # 줄의 서기 칸 · 그 줄 칸들
+    place = {0: 0, 1: 1, 2: 2, 3: 3, 4: 18, 5: 19}  # 보충 칸(0부터) → 띠 칸
+    for idle_i, members in rows:
+        ay, ax = hfeet[idle_i][0], hfeet[idle_i][1]
+        for m in members:
+            lost[place[m]] = put(frames[place[m]], hcells[m], hs, round(SCALE * cx - ax * hs), round(SCALE * foot - ay * hs))
+
+    cols = max(1, min(20, ATLAS_MAX // cw))
+    rows_n = -(-20 // cols)
+    atlas = Image.new('RGBA', (cw * cols, ch * rows_n), (0, 0, 0, 0))
+    for i, f in enumerate(frames):
+        atlas.paste(f, ((i % cols) * cw, (i // cols) * ch))
+    meta = {'cell': [cw, ch], 'cols': cols, 'feet': SCALE * foot, 'scale': {'walk': round(ws, 4), 'attack': round(as_, 4), 'hdx': round(hs, 4)},
+            'sources': {k: os.path.relpath(v, STORE).replace('\\', '/') for k, v in src.items()}}
+    return strip, atlas, frames, meta, lost
+
+
+def preview(key, strip, frames):
+    """위 = 띠(2배로 키운 것 · 맞춤 확인용) · 아래 = 새 2배 판 · 칸 0 4 8 12 13 14 15 17 18 19"""
+    pick = [0, 1, 4, 8, 12, 13, 14, 15, 17, 18, 19]
+    fw = strip.size[0] // 20
+    cw, ch = frames[0].size
+    out = Image.new('RGBA', (cw * len(pick), ch * 2 + 8), (28, 33, 41, 255))
+    for j, k in enumerate(pick):
+        c = strip.crop((k * fw, 0, (k + 1) * fw, 160)).resize((cw, ch), Image.NEAREST)
+        out.alpha_composite(c, (j * cw, 0))
+        out.alpha_composite(frames[k], (j * cw, ch + 8))
+    os.makedirs(os.path.join(STORE, 'codex75', 'check'), exist_ok=True)
+    p = os.path.join(STORE, 'codex75', 'check', f'hd-{key}.jpg')
+    s = min(1.0, 2400 / out.size[0])
+    out.convert('RGB').resize((int(out.size[0] * s), int(out.size[1] * s))).save(p, quality=88)
+    return p
+
+
+def register(key, meta):
+    reg = json.load(open(REGISTRY, encoding='utf-8')) if os.path.exists(REGISTRY) else {}
+    reg[key] = meta
+    with open(REGISTRY, 'w', encoding='utf-8', newline='') as f:
+        f.write(json.dumps(reg, ensure_ascii=False, indent=1, sort_keys=True) + '\n')
+    ts = open(HD_TS, encoding='utf-8').read()
+    base, hd = f'anim-px/gen-{key}.png', f'anim-px/gen-{key}_hd.png'
+    line_map = f"  '{base}': '{hd}',"
+    line_sheet = f"  '{hd}': {{ cell: [{meta['cell'][0]}, {meta['cell'][1]}], cols: {meta['cols']} }},"
+    ts = re.sub(rf"\n  '{re.escape(base)}': '[^']+',", '', ts)
+    ts = re.sub(rf"\n  '{re.escape(hd)}': \{{[^}}]*\}},", '', ts)
+    ts = ts.replace("export const HERO_HD: Readonly<Record<string, string>> = {\n", "export const HERO_HD: Readonly<Record<string, string>> = {\n" + line_map + '\n', 1)
+    ts = ts.replace("export const HERO_HD_SHEETS: Readonly<Record<string, { cell: readonly [number, number]; cols: number }>> = {\n",
+                    "export const HERO_HD_SHEETS: Readonly<Record<string, { cell: readonly [number, number]; cols: number }>> = {\n" + line_sheet + '\n', 1)
+    if line_map not in ts or line_sheet not in ts:
+        raise SystemExit('hero-hd.ts 에 못 넣음 (틀이 바뀌었나)')
+    with open(HD_TS, 'w', encoding='utf-8', newline='\n') as f:
+        f.write(ts)
+
+
+def main():
+    args = sys.argv[1:]
+    write = '--write' in args
+    keys = [a for a in args if not a.startswith('--')]
+    if not keys:
+        raise SystemExit(__doc__)
+    for key in keys:
+        strip, atlas, frames, meta, lost = build(key)
+        pv = preview(key, strip, frames)
+        bad = {k: v for k, v in lost.items() if v}
+        if write:
+            dst = os.path.join(PX, f'gen-{key}_hd.png')
+            atlas.save(dst, optimize=True)
+            meta['bytes'] = os.path.getsize(dst)
+            register(key, meta)
+        print(f"{key}: 칸 {meta['cell']} · 열 {meta['cols']} · 배율 걷기 {meta['scale']['walk']} 공격 {meta['scale']['attack']} 보충 {meta['scale']['hdx']}"
+              + f" · 칸 밖 {bad or '없음'}" + (' · 씀' if write else '') + f' · {pv}')
+
+
+if __name__ == '__main__':
+    main()
