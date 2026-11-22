@@ -57,6 +57,8 @@ const VOICE = {
 } as const
 type Voice = keyof typeof VOICE
 /** 열전 전투 음악 — 형이 고른 곡 (11-15) */
+/** 쓰러짐 신음(사람 목소리)을 내지 않는 적 — 짐승(개·범·곰)과 거대 두목(구미호·이무기·불가사리·백두 대호·무녀 · 끝 소리가 따로) */
+const NO_GROAN: ReadonlySet<string> = new Set(['dog', 'tiger', 'bear', 'boss'])
 const BGM = R + 'bgm_raid_d1.ogg'
 
 const stored = (key: string) => { try { return localStorage.getItem(key) } catch { return null } }
@@ -265,7 +267,6 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
       const fell = ctx && ctx.currentTime - hitAt >= V.hitGap ? Math.min(V.hitVoices, s.kills - prev.kills) : 0
       if (fell > 0) hitAt = ctx!.currentTime
       for (let i = 0; i < fell; i++) sfx('hit', V.hit * (1 - i * .18), 0, .86 + ((n + i * 3) % 7) * .05)
-      if (fell > 0) sfx('down', V.down, V.downGap, .92 + (n % 5) * .04)
       if (fell > 0) say('die', V.die, V.dieGap)
       // 비기를 누름 — 기합(그대로) + 계단마다 「탁」
       let cast: FeelTier | null = null, skill: FeelTier | null = null, crits = 0
@@ -283,9 +284,11 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
       let hitN = 0, hitD = 0
       // 불의 무녀 장군은 포효 대신 방울을 울린다 (등장 · 막 전환 · 부위 파괴)
       const bells = s.giantFlow?.finalOwner?.giant?.kind === 'shaman' && !s.giantFlow.finalDefeated
-      for (const e of s.fx) if (!seen.has(e)) { seen.add(e); if (e.kind === 'hit' || e.kind === 'death') { hitN++; hitD += e.n ?? 0; if (e.crit) crits++ } if (e.championCue === 'roar') { if (bells) sfx('bell', V.roar, .15); else say('roar', V.roar) }
+      let humanDown = 0   // 11-22 형 「개나 짐승 유닛이 죽는데도 사람 죽는 목소리」 — 신음은 사람 적이 쓰러질 때만 (짐승·거대 두목은 빼고)
+      for (const e of s.fx) if (!seen.has(e)) { seen.add(e); if (e.kind === 'death' && e.mob !== undefined && !NO_GROAN.has(e.mob)) humanDown++; if (e.kind === 'hit' || e.kind === 'death') { hitN++; hitD += e.n ?? 0; if (e.crit) crits++ } if (e.championCue === 'roar') { if (bells) sfx('bell', V.roar, .15); else say('roar', V.roar) }
         if (e.recoveryHit && ctx && ctx.currentTime - championAt >= IMPACT.cooldown) { championAt = ctx.currentTime; const t = tierOf(false); if (!skill || RANK[t] > RANK[skill]) skill = t }
         if (e.kind === 'bolt') sfx('bolt', V.magic, V.magicGap); else if (e.kind === 'spike') sfx('earth', V.magic, V.magicGap); else if (e.kind === 'skill') { const t = tierOf((e.awakened ?? e.tru) === true); if (!skill || RANK[t] > RANK[skill]) skill = t } else if (e.kind === 'thud' || e.kind === 'ult' && e.ult === 'sling') sfx('stone', V.stone, V.stoneGap, .9 + (n % 5) * .05) }
+      if (humanDown > 0) sfx('down', V.down, V.downGap, .92 + (n % 5) * .04)
       // 비기가 터짐(한 프레임에 하나 · 가장 높은 계단) · 크리티컬 「핑」은 한 프레임 한 번 · crit.gap 틈 · 소리 수 한도면 버린다
       if (skill) impact(skill)
       if (crits > 0 && ctx && ctx.currentTime - critAt >= F.crit.gap && room()) { critAt = ctx.currentTime; critHit() }

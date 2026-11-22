@@ -88,6 +88,13 @@ const CSS = `
   transition: opacity var(--ks-fade) ease-in-out; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; touch-action: none; }
 .front.title.ks-replay .kv, .front.title.ks-replay .kv::before, .front.title.ks-replay .tv { animation: none !important; }
 #kstart.ks-out { opacity: 0; }
+#kstart.ks-under { position: absolute; z-index: 0; cursor: default; pointer-events: none; }
+#kstart.ks-under .ks-press { opacity: 0; }
+#kstart.ks-under::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to bottom, #0b0d1000 40%, #0b0d10a6 75%, #0b0d10e6 100%); }
+.ap .front.title.over-gate .kv, .ap .front.title.over-gate .logo { visibility: hidden; }
+.ap .front.title.over-gate .tv { animation: ks-rise .8s .05s cubic-bezier(.2, .7, .2, 1) both; }
+@keyframes ks-rise { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .ap .front.title.over-gate .tv { animation: ks-fadein .4s ease both; } @keyframes ks-fadein { from { opacity: 0; } to { opacity: 1; } } }
 #kstart.ks-go { cursor: default; }
 #kstart .ks-vid, #kstart .ks-cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 #kstart .ks-vid { object-fit: cover; }
@@ -443,11 +450,24 @@ export function openStartGate(kit: StartGateKit): StartGate | null {
     if (!reduced) run() // 번쩍임과 다가감 · 움직임 줄이기는 걷히기만
     const lead = reduced ? 0 : R.startExitDelayMs
     window.setTimeout(() => {
-      el.classList.add('ks-out')
       kit.root.style.visibility = ''
+      // 11-22 형 「기존 시작 화면으로 넘어가지 말고 아무 키나 다음에 바로 단추들이 아래에서 위로 올라오듯 페이드 인」
+      // → 시작 화면(영상·로고·불티)은 그대로 뒤에 깔고, 로비는 바탕·로고를 감춘 채 단추만 올라온다. 로비를 떠나면(새 판·불러오기 …) 걷는다
+      const lobby = kit.root.querySelector<HTMLElement>('.front.title')
+      if (lobby === null) { el.classList.add('ks-out'); window.setTimeout(close, R.startFadeMs + 80); return }
+      // 게임 뿌리(.ap)는 position:fixed 라 제 층을 따로 만든다 — z-index 로는 시작 화면을 로비 밑에 못 깐다. 그래서 로비 안 맨 뒤로 옮긴다
+      const sink = (f: HTMLElement): void => { f.classList.add('over-gate'); if (el.parentElement !== f) { f.prepend(el); playVideo() } }
+      el.classList.add('ks-under')
+      sink(lobby)
       replayLobby(kit.root)
+      const watch = new MutationObserver(() => {
+        const f = kit.root.querySelector<HTMLElement>('.front.title')
+        if (f !== null) { sink(f); return } // 로비를 다시 그렸다 — 그대로 시작 화면 위에
+        watch.disconnect()
+        close() // 로비를 떠났다 (새 판 · 불러오기 …) — 시작 화면은 로비와 함께 걷혔다
+      })
+      watch.observe(kit.root, { childList: true, subtree: true })
     }, lead)
-    window.setTimeout(close, lead + R.startFadeMs + 80)
     return true
   }
   const onKey = (e: KeyboardEvent): void => {
