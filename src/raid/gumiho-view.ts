@@ -87,18 +87,6 @@ function frontTails(g: GumihoState): ReadonlySet<number> {
   const a = g.attack, o = a?.move === 'sweep' && g.state === 'strike' ? a.hits[a.step]?.owners[0] : null
   return o ? new Set([GUMIHO_TAILS.indexOf(o as typeof GUMIHO_TAILS[number])]) : NONE
 }
-const capsulePath = (ctx: CanvasRenderingContext2D, a: Point, b: Point, r: number) => {
-  const t = Math.atan2(b.y - a.y, b.x - a.x), nx = -Math.sin(t) * r, ny = Math.cos(t) * r
-  ctx.beginPath(); ctx.moveTo(a.x + nx, a.y + ny); ctx.lineTo(b.x + nx, b.y + ny); ctx.arc(b.x, b.y, r, t + Math.PI / 2, t - Math.PI / 2, true); ctx.lineTo(a.x - nx, a.y - ny); ctx.arc(a.x, a.y, r, t - Math.PI / 2, t + Math.PI / 2, true); ctx.closePath()
-}
-/** 부서진 팔은 그 둘레만 어둡게 덧칠 (부채가 그을린다) */
-function shadeArms(ctx: CanvasRenderingContext2D, images: ReadonlyMap<string, HTMLImageElement>, g: GumihoState) {
-  for (const id of ['fan-arm', 'claw-arm'] as const) {
-    if (g.partHP[id] > 0) continue
-    const p = g.pose.parts.find(q => q.id === id); if (!p || p.collider.kind !== 'capsule') continue
-    ctx.save(); capsulePath(ctx, p.collider.from, p.collider.to, p.collider.radius * 1.6); ctx.clip(); drawBody(ctx, images, g.pose.frame, g.age, V.brokenShade); ctx.restore()
-  }
-}
 /** 여우불이 일렁이는 시각 — 그리는 함수가 판 시각(age)으로 맞춘다 (화면 시계가 아니다) */
 let clock = 0
 /** 불꽃 꼴 — 둥근 밑동에서 혀 셋(가운데 긴 혀 · 양옆 짧은 혀)이 일렁이며 솟는다 (ph 는 일렁임 박자) */
@@ -151,7 +139,7 @@ export function drawGumiho(ctx: CanvasRenderingContext2D, images: ReadonlyMap<st
   if (f.fade > .01) {
     ctx.save(); ctx.globalAlpha *= f.fade
     drew = drawFigure(ctx, images, f, g.pose.sk, { alpha: behind ? V.behindAlpha : 1, tint: null, partHP: g.partHP, front: frontTails(g), t: g.age })
-    if (drew) shadeArms(ctx, images, g)
+    // 11-23 형 「구미호 상체에 검게 그림자」: 부서진 팔 둘레를 어둡게 덧칠하던 것(shadeArms)이 가슴·어깨까지 덮었다 → 뺌 · 부위 파괴는 글자·그로기 별·(옷 찢김 그림 86)으로
     ctx.restore()
   }
   drawChange(ctx, g, true)
