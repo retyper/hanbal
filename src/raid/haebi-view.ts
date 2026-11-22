@@ -770,6 +770,11 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   if (!decal(ctx, images, 'mark-hero', s.x, s.y, 72, 32, danger ? K.own.heroMarkDim : K.own.heroMark)) { ctx.strokeStyle = '#f9d89788'; ctx.fillStyle = '#ffd97726'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(s.x, s.y, 29, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke() }
   if (aura) drawAuraGround(ctx, aura, auraAt)
   drawOwnZones(ctx, s)
+  // 적이 나를 때릴 자리 · 거대 두목의 패턴 — 땅에 깐다 (몸·효과는 그 위에 선다 · 11-23)
+  drawThreats(ctx, images, s); drawChampionTells(ctx, s)
+  for(const e of s.enemies)if(e.giant?.kind==='imugi'&&e.giant.attack&&(e.giant.state==='tell'||e.giant.state==='strike'))drawImugiThreats(ctx,e.giant.attack.shapes)
+  for(const e of s.enemies)if(e.giant?.kind==='imugi'&&e.giant.environment&&e.giant.state!=='entry'&&e.giant.state!=='dead')drawImugiThreats(ctx,e.giant.environment.shapes)
+  for(const e of s.enemies)if(e.giant?.kind==='tiger')drawTigerThreats(ctx,e.giant);else if(e.giant?.kind==='bulgasari')drawBulgasariThreats(ctx,e.giant);else if(e.giant?.kind==='gumiho')drawGumihoThreats(ctx,e.giant);else if(e.giant?.kind==='shaman')drawShamanThreats(ctx,images,e.giant)
   // 창돌격꾼·범 돌진 · 투창 사냥꾼 겨눔 예고: 겨눈 줄이 점점 진해진다 (투창은 가늘게)
   for (const e of s.enemies) if (chargeLane(e)) {
     const thin = e.kind === 'hunter', k = 1 - e.act / (thin ? M.hunterWind : charge(e.kind)!.wind)
@@ -990,12 +995,8 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
     ctx.restore()
   }
   drawCriticalFinishFrames(ctx, finishFrames, (mob, face) => sprite(ctx, images, warlord(mob, s.stage), 0, 0, artHeight(mob, s.stage), 18, face))
-  // 붉은 예고는 내 FX 뒤에: 실제 원/돌진/탄환 길만 표시하고 안전한 부채 사이를 채우지 않는다.
+  // 붉은 예고(공격이 떨어질 자리)는 이제 땅 표식 차례에 깐다 (형 11-23 「패턴이 인물 위로 그려지는 건 이상하다 · 던파·테일즈위버도 그렇게 안 한다」) — 여기는 실제로 터지는 물줄기만
   for(const e of s.enemies)if(e.giant?.kind==='imugi'&&e.giant.attack&&e.giant.state==='strike')drawImugiWater(ctx,e.giant.attack)
-  drawThreats(ctx, images, s); drawChampionTells(ctx, s)
-  for(const e of s.enemies)if(e.giant?.kind==='imugi'&&e.giant.attack&&(e.giant.state==='tell'||e.giant.state==='strike'))drawImugiThreats(ctx,e.giant.attack.shapes)
-  for(const e of s.enemies)if(e.giant?.kind==='imugi'&&e.giant.environment&&e.giant.state!=='entry'&&e.giant.state!=='dead')drawImugiThreats(ctx,e.giant.environment.shapes)
-  for(const e of s.enemies)if(e.giant?.kind==='tiger')drawTigerThreats(ctx,e.giant);else if(e.giant?.kind==='bulgasari')drawBulgasariThreats(ctx,e.giant);else if(e.giant?.kind==='gumiho')drawGumihoThreats(ctx,e.giant);else if(e.giant?.kind==='shaman')drawShamanThreats(ctx,images,e.giant)
   // 피해 숫자 — 알갱이로 튀어 나간다 (trackNumbers · drawNumbers)
   trackNumbers(s); ctx.save(); drawNumbers(ctx, images, s, s.t + (ending?.effectTime ?? 0)); ctx.restore()
   drawChampionOverlays(ctx, images, s, mobHeight, cam ? fieldView(cam) : undefined)

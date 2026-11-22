@@ -115,7 +115,7 @@ test('53B drawField: ground closed chest is preloaded, large differs, opened/cla
   for (const state of ['opened', 'claimed', 'expired'] as const) { s.chests![0] = { ...chest, state }; assert.ok(!paint(s).some(c => c.method === 'drawImage' && (c.args[0] as { path?: string })?.path === 'chest')) }
 })
 
-test('53B actual field is readonly, keeps53A DPR2xzoom and paints red tells after player FX', () => {
+test('53B actual field is readonly, keeps53A DPR2xzoom and paints red tells on the ground under bodies and player FX (11-23)', () => {
   const { s, e } = champion('dash')
   s.shots.push({ x: 100, y: 100, vx: 100, vy: 0, life: 1, kind: 'arrow', damage: 1, radius: 1, hit: [], angle: 0, tx: 200, ty: 100 })
   const before = JSON.stringify(s), calls = paint(s, { zoom: 1.8, x: C.width / 2, y: C.height / 2 })
@@ -124,7 +124,8 @@ test('53B actual field is readonly, keeps53A DPR2xzoom and paints red tells afte
   assert.deepEqual(transforms[0], [2, 0, 0, 2, 0, 0]); assert.equal(transforms[1]![0], 3.6); assert.equal(transforms.at(-1)![0], 2)
   const ray = calls.findIndex(c => c.method === 'drawImage' && (c.args[0] as { path?: string })?.path === 'arrow')
   const band = lanes(calls, 2 * B.dashWidth).find(c => c.path.some(p => p.method === 'lineTo' && p.args[0] === e.aimX))
-  assert.ok(band); assert.ok(calls.indexOf(band) > ray, 'red telegraph must survive later player FX')
+  // 11-23 형 「패턴이 인물 위로 그려지는 건 이상하다 · 던파·테일즈위버도 그렇게 안 한다」 → 붉은 예고는 땅 표식 차례 (몸·내 효과가 그 위)
+  assert.ok(band); assert.ok(calls.indexOf(band) < ray, 'red telegraph lies on the ground, under later player FX')
 })
 test('53B elite plaque stays above the real lower control lane seen in landscape play', () => {
   const { s, e } = champion('guard'); e.x = C.width * .7; e.y = C.height - 10
