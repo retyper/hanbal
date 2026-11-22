@@ -21,6 +21,7 @@ import type { RaidEnding } from './ending.ts'
 import { FX_PATHS, drawFx } from './fx-art.ts'
 import { drawImpactParticles } from './fx-particles.ts'
 import { drawHitFlare } from './fx-flare.ts'
+import { trackScorch, drawScorch } from './fx-scorch.ts'
 import { HAEBI_HIT_FLARE as HIT_FLARE } from '../tune/params.ts'
 import { HAEBI_FX_ART as FX_ART } from '../tune/params.ts'
 import { CARD_FRAME_PATHS } from './card-skins.ts'
@@ -766,6 +767,8 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   //    적의 것이 늘 위에, 더 진하게 (예전엔 내 발밑 금빛 표식이 적이 던진 돌의 자리를 덮었다 · 11-18 형 플립)
   trackFoeBlasts(s)
   const aura = heroAura(s, images), danger = collectThreats(s)
+  // 그을린 자국 (홍련 부적·뇌화 폭발 자리 · 11-23) — 땅에 먼저
+  trackScorch(s, f => (blastOf.get(f) ?? 0) !== 0); drawScorch(ctx, s)
   // 내 발밑 표식 — 맞을 자리 안에 서 있으면 옅게 물러난다
   if (!decal(ctx, images, 'mark-hero', s.x, s.y, 72, 32, danger ? K.own.heroMarkDim : K.own.heroMark)) { ctx.strokeStyle = '#f9d89788'; ctx.fillStyle = '#ffd97726'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(s.x, s.y, 29, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke() }
   if (aura) drawAuraGround(ctx, aura, auraAt)

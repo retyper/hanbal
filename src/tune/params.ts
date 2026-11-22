@@ -1268,6 +1268,15 @@ export const HAEBI_END = {
 
 /** 낱알·먹·도장은 원본 PNG를 보존하고 화면용 메모리에서만 잘라 한 번 굽는다. */
 /**
+ * 그을린 자국 (raid/fx-scorch.ts · 형 11-23 「홍련 부적 폭발이 너무 짧다 · 탄 흔적을 남겼다 사라지게」) — 화면 전용 · 시간은 판 초.
+ * life 자국이 남는 초 · fadeOut 마지막에 옅어지는 초 · max 한꺼번에 남는 수 · size 폭발 반지름에 견준 크기 · squash 세로 눌림(땅)
+ */
+export const HAEBI_SCORCH = {
+  life: 2.6, fadeOut: 1, max: 40, size: 1.05, squash: .55, alpha: .75, bake: 128,
+  core: 'rgba(20,12,8,.92)', mid: 'rgba(58,34,20,.55)',
+  emberLife: 1.1, embers: 5, emberPx: 3, ember: '#ffb04a', flicker: 18,
+} as const
+/**
  * 타격 섬광 (raid/fx-flare.ts · GAP §15-1 · pixelfx Hit spark·Crit hit 를 보고 새로 씀) — 화면 전용.
  * 시간은 효과 나이(초) · 길이는 판 좌표(px) · px = 도트 한 칸 크기.
  */
