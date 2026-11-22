@@ -4,7 +4,7 @@ import { imugiVisualBounds } from './raid/imugi-view.ts'
 import { fieldPixels, raidLowGraphics } from './raid/surface.ts'
 import { breakthroughText, isBreakthrough } from './realm/vanguard.ts'
 import { HAEBI_RUN as C, HAEBI_STICK as STICK, HAEBI_TREE as TREE, HAEBI_ULT as ULT, HAEBI_AWAKEN as AWK, HAEBI_STAGES as ST, HAEBI_ZOOM as ZOOM, HAEBI_SPEED as SPEED, HAEBI_GIANT as GIANT } from './tune/params.ts'
-import { createHaebi, runDuration, raidRulesForStage, giantMob, giantHUD, championViewNeeded, stepHaebi, barrageArcher, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, usesPermanentAwakening, normalizedRaidOpts, castWallSeconds, nodeText, nodeAt, branchName, wakeReady, ultName, ultOpen, BRANCHES, branchNodes, type Kit, type Power, type Pick, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
+import { createHaebi, runDuration, raidRulesForStage, giantMob, giantHUD, championViewNeeded, stepHaebi, barrageArcher, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, usesPermanentAwakening, normalizedRaidOpts, castWallSeconds, nodeText, nodeAt, branchName, wakeReady, ultName, ultOpen, BRANCHES, branchNodes, type Kit, type Power, type Pick, type Chest, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
 import { startRecord, recInput, gridInput, recPick, recReroll, recQuit, withdrawRun, sealInput, finishRecord, STEP, type Recorder } from './raid/runlog.ts'
 import { runFrame, speedOf, nextSpeed, speedLevel } from './raid/speed.ts'
 import { RaidFeel } from './raid/impact.ts'
@@ -58,6 +58,8 @@ import './raid/keyboard.css'
 import './raid/card-skins.css'
 import './raid/skill-tree-view.css'
 import { nodeOpen, kitPowers } from './raid/haebi.ts'
+import { warmDom, type WarmLayer } from './raid/warm-dom.ts'
+import { HAEBI_WARM as WARM } from './tune/params.ts'
 import { skillTreeHtml, drawTreeLinks, flashTreeParents, highlightTreePath } from './raid/skill-tree-view.ts'
 import { guardMedia } from './ui/media-guard.ts'
 import { haptics } from './ui/haptics.ts'
@@ -156,6 +158,36 @@ function showSkillCutin(wake = false, tru = false) {
   cut.innerHTML = cutBandHtml({ art: import.meta.env.BASE_URL + 'realm/', bg: KIT_BG[kit], hero: cutHeroPath(face), endMs: hit / .88, hitMs: hit,
     title: wake ? `투지 · ${HERO.name}` : usesPermanentAwakening(run) ? K.skill : ultName(kit, tru), ...wake ? {} : { sub: HERO.name }, dim: C.skillCutinDim, grand: wake || awake })
   cut.hidden = false; cutinUntil = run.t + cast + C.skillCutinTail
+}
+/**
+ * 첫 레벨업 카드 창 · 첫 비기 컷인을 미리 한 번 그려 둔다 (11-22 · raid/warm-dom.ts) — 처음 뜰 때만 비싼 글꼴·글자 모양·그림 풀기·셰이더를 싸움 밖에서 치른다.
+ * 카드는 첫 레벨업에 늘 나오는 셋(보조 · 주 무기 · tempo — haebi.ts offer 의 레벨 1) — 모든 칸을 다 깔면 글꼴 조각이 너무 많이 생겨 뒤 카드 창이 도리어 느려졌다 · 띠는 비기 · 진 비기 · 투지 · 각성 비기 이름으로 (판에서 쓰는 cutBandHtml 그대로)
+ */
+const cutinWarmBand = (face: string, title: string, grand: boolean, sub?: string) => cutBandHtml({ art: import.meta.env.BASE_URL + 'realm/', bg: KIT_BG[kit], hero: cutHeroPath(face), endMs: WARM.holdMs, hitMs: WARM.holdMs * .88, title, ...sub === undefined ? {} : { sub }, dim: null, grand })
+/** 처음 쓰는 비기 띠 (보통 비기) */
+const firstCutinLayer = (): WarmLayer => ({ html: cutinWarmBand(HERO.bust, ultName(kit, false), false, HERO.name) })
+function cutinWarmLayers(): WarmLayer[] {
+  const wakeFace = awakening.permanentAwake ? `../awaken-hd/${HERO.bust}` : HERO.bust
+  return [firstCutinLayer(), { html: cutinWarmBand(wakeFace, ultName(kit, true), true, HERO.name) + cutinWarmBand(wakeFace, `투지 · ${HERO.name}`, true) + cutinWarmBand(wakeFace, K.skill, true, HERO.name) }]
+}
+/** 출전 화면 — 카드 창(화면 전체 · #overlay 와 같은 자리)과 띠(글꼴·셰이더) */
+let firstViewsWarm: boolean | null = null
+function warmFirstViews() {
+  const picks: Pick[] = [K.secondary, K.primary, 'tempo'], o = getComputedStyle($('overlay'))   // 숨은 #overlay 도 꼴은 셈해 둔다 — 같은 여백·막·흐림으로
+  warmDom(root, [
+    { html: upgradeHtml(undefined, picks, `리롤 · ${run.rerolls}회 남음 · 첫 갈래를 골라 주세요`), style: `display:flex;align-items:center;justify-content:center;overflow:auto;padding:${o.padding};background:${o.backgroundColor};backdrop-filter:${o.backdropFilter}` },
+    ...cutinWarmLayers(),
+  ]).then(ok => { firstViewsWarm = ok })
+}
+/**
+ * 출전하는 그 틀 — 처음 쓸 비기 띠를 판(#arena) 크기로 배치만 한 번 더 (띠 글자 크기는 판 크기를 따라가 출전 화면의 것과 다르다 · 그 크기의 글자 모양만 · 칠하지 않아 싸다).
+ * 띠 넷을 다 하면 출전 틀이 100~200ms 더 길어져(4배 느린 CPU) 하나만 · 페이지마다 한 번
+ */
+let cutinWarm: boolean | null | undefined
+function warmCutinInArena() {
+  if (cutinWarm !== undefined) return
+  cutinWarm = null
+  warmDom($('arena'), [firstCutinLayer()], true).then(ok => { cutinWarm = ok })
 }
 function skipCutin() { bigCutin.clear(); cutinUntil = 0; if (!$('skill-cutin').hidden) { $('skill-cutin').hidden = true; $('skill-cutin').innerHTML = ''; cutinUntil = 0 } }
 $('pause').insertAdjacentHTML('beforebegin', '<button id="fullscreen">전체화면</button>')
@@ -503,7 +535,7 @@ window.addEventListener('resize', layoutTrial)
 let pendingSeed = vanguardToken ? Number(query.get('seed')) >>> 0 : crypto.getRandomValues(new Uint32Array(1))[0]!
 const notifyVanguardStart = () => { if (vanguardToken) window.parent.postMessage({ type: 'hanbal.haebi.vanguard-start', token: vanguardToken }, location.origin) }
 const base = import.meta.env.BASE_URL + 'realm/'
-Promise.all([...imagePaths, ...heroArtFiles()].map(path => new Promise<void>((resolve, reject) => { const img = new Image(); img.onload = () => { images.set(path, img); resolve() }; img.onerror = reject; img.src = base + path }))).then(async () => { await Promise.all(heroArtFiles().map(p => images.get(p)?.decode().catch(() => {}))); heroWarmKey = ''; prepareHeroRaster(cam.zoom); warmFx(images); baseArtReady = true; $<HTMLButtonElement>('start').disabled = trialEntryClosed(); $('start').textContent = startLabel(); renderStageMenu(); schedule() }).catch(() => { $('start').textContent = '그림을 불러오지 못했어요. 새로고침해 주세요.' })
+Promise.all([...imagePaths, ...heroArtFiles()].map(path => new Promise<void>((resolve, reject) => { const img = new Image(); img.onload = () => { images.set(path, img); resolve() }; img.onerror = reject; img.src = base + path }))).then(async () => { await Promise.all(heroArtFiles().map(p => images.get(p)?.decode().catch(() => {}))); heroWarmKey = ''; prepareHeroRaster(cam.zoom); warmFx(images); baseArtReady = true; $<HTMLButtonElement>('start').disabled = trialEntryClosed(); $('start').textContent = startLabel(); renderStageMenu(); schedule(); setTimeout(warmFirstViews, WARM.afterMs) }).catch(() => { $('start').textContent = '그림을 불러오지 못했어요. 새로고침해 주세요.' })
 function resetInput() { keys.clear(); destination = null; stickEnd(); dashAt = skillAt = wakeAt = -9; acc = 0 }
 async function begin(sameSeed = false) {
   if (beginning || trialEntryClosed()) return
@@ -534,6 +566,7 @@ async function begin(sameSeed = false) {
   followCam(cam, run.x, run.y, 0, true)   // 새 판은 카메라를 곧바로 장수에게
   skipCutin()
   $('menu').hidden = true; $('play').hidden = false; $('overlay').hidden = true; $<HTMLButtonElement>('pause').disabled = false; schedule()
+  warmCutinInArena()   // 판이 보이는 이 틀에 띠를 판 크기로 미리 (첫 비기 컷인 끊김)
   $<HTMLButtonElement>('start').blur(); window.scrollTo(0, 0)
   layoutTrial()
 }
@@ -745,6 +778,10 @@ function chestBurst(id: number) {
   seen.add(id)
   return '<span class="chest-coinburst" aria-hidden="true">' + [[-56,-12],[-35,-26],[-12,-32],[18,-28],[42,-16],[62,0]].map(([x,y]) => `<img src="${import.meta.env.BASE_URL}realm/raid/coins.png" alt="" style="--coin-x:${x}px;--coin-y:${y}px">`).join('') + '</span>'
 }
+/** 레벨업·보물 상자 카드 창 — 판의 카드 창과 미리 그리기(warmFirstViews)가 같이 쓴다 */
+function upgradeHtml(chest: Chest | undefined, offers: readonly Pick[], rerollText: string) {
+  return `<div class="panel upgrade${chest ? ' chest-reward' + (chest.large ? ' large' : '') : ''}"${chest ? ` data-chest-id="${chest.id}" data-choice-left="${run.chestChoice!.left}"` : ''}><div class="lv-head">${haveRow()}<h2 class="lvup">${chest ? `<img class="chest-open" src="${import.meta.env.BASE_URL}realm/raid/chest-open.png" alt="">보물 상자<small>남은 선택 ${run.chestChoice!.left}회</small>${chestBurst(chest.id)}` : '레벨업!'}</h2>${treeButton}</div><div class="choices">${offers.map(card).join('')}</div>${chest ? '' : `<button id="reroll" ${run.rerolls ? '' : 'disabled'}>${rerollText}</button>`}</div>`
+}
 function showOverlay() {
   if (run.state !== 'playing') { rotationBlocked = false; $('rotate-guide').hidden = true }
   if (live) {
@@ -762,7 +799,7 @@ function showOverlay() {
   resetInput()
   if (state.startsWith('upgrade:') || state.startsWith('chest:')) {
     const chest = run.choiceOrigin === 'chest' ? run.chests?.find(c => c.id === run.chestChoice?.id) : undefined, nonce = run.offerNonce
-    overlay.innerHTML = `<div class="panel upgrade${chest ? ' chest-reward' + (chest.large ? ' large' : '') : ''}"${chest ? ` data-chest-id="${chest.id}" data-choice-left="${run.chestChoice!.left}"` : ''}><div class="lv-head">${haveRow()}<h2 class="lvup">${chest ? `<img class="chest-open" src="${import.meta.env.BASE_URL}realm/raid/chest-open.png" alt="">보물 상자<small>남은 선택 ${run.chestChoice!.left}회</small>${chestBurst(chest.id)}` : '레벨업!'}</h2>${treeButton}</div><div class="choices">${run.offers.map(card).join('')}</div>${chest ? '' : `<button id="reroll" ${run.rerolls ? '' : 'disabled'}>리롤 · ${run.rerolls}회 남음</button>`}</div>`
+    overlay.innerHTML = upgradeHtml(chest, run.offers, `리롤 · ${run.rerolls}회 남음`)
     // 고르면 그 룬이 판 밖으로 날아가 HUD 의 그 능력 칸에 박히고, 박히는 순간 「고름」 소리 (A1 · raid/pick-fly.ts)
     overlay.querySelectorAll<HTMLButtonElement>('[data-up]').forEach(b => b.onclick = () => { const pick = b.dataset.up as Pick, log = logging(), from = pickFrom(b); if (choose(run, pick, nonce)) { if (log) { recPick(rec!, pick); saveLog() } shown = ''; showOverlay(); updateHud(); flyPick(from, pick, sound.pick) } })
     const openedArt = overlay.querySelector<HTMLImageElement>('.chest-open')
@@ -1015,7 +1052,7 @@ function fieldChanged(c: { zoom: number; x: number; y: number }): boolean {
 function schedule() { if (!raf && !document.hidden) raf = requestAnimationFrame(frame) }
 updateHud(); schedule()
 // 개발 검수 손잡이 — 헤드리스 시험(tools/raid-*-probe.ts)이 판 상태를 읽고 체력을 깎아 본다 · 배포 빌드엔 없음
-if (import.meta.env.DEV) Object.assign(window, { __raid: () => run, __raidEnd: () => ({ kind: ending.kind, elapsed: ending.elapsed, duration: ending.duration, active: ending.active, ready: ending.ready, stampAt: ending.stampAt, effectTime: ending.effectTime, overlayVisible: !$('overlay').hidden }), __raidFeel: () => ({ time: feel.time, stopRemaining: feel.stopRemaining, shake: feel.shake }), __raidSound: sound, __raidCutin: (wake: boolean, tru = false) => showSkillCutin(wake, tru) })
+if (import.meta.env.DEV) Object.assign(window, { __raid: () => run, __raidEnd: () => ({ kind: ending.kind, elapsed: ending.elapsed, duration: ending.duration, active: ending.active, ready: ending.ready, stampAt: ending.stampAt, effectTime: ending.effectTime, overlayVisible: !$('overlay').hidden }), __raidFeel: () => ({ time: feel.time, stopRemaining: feel.stopRemaining, shake: feel.shake }), __raidSound: sound, __raidCutin: (wake: boolean, tru = false) => showSkillCutin(wake, tru), __raidWarm: () => firstViewsWarm })
 if (import.meta.env.DEV && new URLSearchParams(location.search).has('review')) {
-  import('./raid/haebi-review.ts').then(({ installReview }) => installReview(root, s => { if (s.giantFlow && s.stage === 'snow') void prewarmTigerArt('snow', images, base).then(() => schedule()); if (s.giantFlow && s.stage === 'palisade') void prewarmBulgasariArt('palisade', images, base).then(() => schedule()); if (s.giantFlow && s.stage === 'forest') void prewarmGumihoArt('forest', images, base).then(() => schedule()); if (s.giantFlow && s.stage === 'fortress') void prewarmShamanArt('fortress', images, base).then(() => schedule()); notifyVanguardStart(); run = s; live = true; paused = !s.offers.length; shown = ''; loadoutKey = ''; resetInput(); $('menu').hidden = true; $('play').hidden = false; $<HTMLButtonElement>('pause').disabled = false; layoutTrial(); showOverlay(); updateHud(); schedule() }, mode, kit))
+  import('./raid/haebi-review.ts').then(({ installReview }) => installReview(root, s => { if (s.giantFlow && s.stage === 'snow') void prewarmTigerArt('snow', images, base).then(() => schedule()); if (s.giantFlow && s.stage === 'palisade') void prewarmBulgasariArt('palisade', images, base).then(() => schedule()); if (s.giantFlow && s.stage === 'forest') void prewarmGumihoArt('forest', images, base).then(() => schedule()); if (s.giantFlow && s.stage === 'fortress') void prewarmShamanArt('fortress', images, base).then(() => schedule()); notifyVanguardStart(); run = s; live = true; paused = !s.offers.length; shown = ''; loadoutKey = ''; resetInput(); $('menu').hidden = true; $('play').hidden = false; warmCutinInArena(); $<HTMLButtonElement>('pause').disabled = false; layoutTrial(); showOverlay(); updateHud(); schedule() }, mode, kit))
 }

@@ -143,6 +143,12 @@ export const HAEBI_SPEED = { steps: [1, 2, 3], pop: .32 } as const
 /** 열전 판 기록 (11-19 형: 「열전 플레이데이터도 받고 있지?」) — grid: 이동 입력을 1/grid 칸으로 맞춰 판에 넣고 적는다
  *  (조이스틱 끝까지 54px 이면 한 칸 1.7px · 판을 다시 돌리면 같은 결과가 나오게 · 기록이 짧아지게) */
 export const HAEBI_LOG = { grid: 32 } as const
+/**
+ * 열전 첫 레벨업 카드 창 · 첫 비기 컷인 띠 미리 그리기 (11-22 · 4배 느린 CPU 에서 처음 뜰 때만 90~130ms 끊김) — 출전 화면에서 같은 HTML 을 한 번 그려 둔다.
+ *  처음 비용은 글꼴 조각 받기·글자 모양 잡기·그림 풀기·칠하기 셰이더라 「보이지 않게」(visibility) 깔면 반만 풀린다 — 실제로 칠해지도록 아주 옅게 깐다.
+ *  opacity: 덮는 진하기 (8비트 화면에서 0 으로 떨어지는 값 · 0 이면 브라우저가 칠하지 않는다) · holdMs: 글꼴·그림이 다 온 뒤 칠해질 틈 (미리 그리는 띠 애니 길이도) · afterMs: 출전 화면이 선 뒤 기다림
+ */
+export const HAEBI_WARM = { opacity: .001, holdMs: 1300, afterMs: 400 } as const
 /** Haebi's independent ten-minute run. Combat tuning lives here, not in the renderer. */
 export const HAEBI_RUN = {
   /** 판 길이 · 두목 — 다이센카처럼 20분 (11-16 형 고름 · 예전 600/540 → 900/840 → 1200/1140) · 스테이지마다 length 를 곱한다 */
