@@ -253,6 +253,7 @@ export const loopTakes = (id: string): string[] => [loopFile(id), ...Array.from(
 
 export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   // 11-15 형이 awaken-loop 폴더를 직접 정리(지울 것 지우고 보관은 이름 바꿈) → 남긴 영상은 쓴다
+  'g-101-garak-adogan', // 11-22 Claude 제미나이 Jay(Neon) · 남자 · 얼굴·지팡이 그대로 · 움직임 좋음
   'g-12-silla-youth', 'g-15-shaman-man', 'g-16-goguryeo-gaema-commander', 'g-17-saro-isageum', 'g-18-daegaya-king', 'g-19-sabeol-veteran', 'g-20-samul-sea-lord', 'g-76-mokji-jinha', // 11-15 형이 손으로 (제작실 문안)
   'g-21-baekje-onnuri', 'g-22-ungcheon-gomnae', 'g-23-sangdang-soedal', // 11-15 밤 형이 손으로
   'g-02-goguryeo-archer-prince', 'g-04-jinhan-giant', 'g-06-strategist', 'g-08-veteran', 'g-09-farmer-conscript', 'g-10-buyeo-horse-lord', // 11-13 받아 둔 것 · 형 정리에서 남김
