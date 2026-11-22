@@ -71,6 +71,16 @@ function shadeOf(img: HTMLImageElement): CanvasImageSource {
   x.drawImage(img, 0, 0); x.globalCompositeOperation = 'source-atop'; x.fillStyle = V.brokenShade; x.fillRect(0, 0, c.width, c.height)
   shaded.set(img, c); return c
 }
+/** 외곽선용 한 색 실루엣 (그림마다 한 번 굽는다) */
+const inked = new WeakMap<object, CanvasImageSource>()
+function inkOf(img: HTMLImageElement): CanvasImageSource | null {
+  const hit = inked.get(img); if (hit) return hit
+  if (typeof document === 'undefined') return null
+  const c = document.createElement('canvas'); c.width = img.naturalWidth || img.width; c.height = img.naturalHeight || img.height
+  const x = c.getContext('2d'); if (!x) return null
+  x.drawImage(img, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = V.outlineColor; x.fillRect(0, 0, c.width, c.height)
+  inked.set(img, c); return c
+}
 export interface TigerViewOptions { readonly heroX: number; readonly heroY: number }
 /** 몸 — 돌아서는 순간 가로로 눌렸다 펴지고, 눈 속에 잠기면 땅 아래로 가린다 · 장수가 몸 뒤에 서면 옅게 */
 export function drawTiger(ctx: CanvasRenderingContext2D, images: ReadonlyMap<string, HTMLImageElement>, g: TigerState, o: TigerViewOptions): boolean {
@@ -101,6 +111,19 @@ function drawPose(ctx: CanvasRenderingContext2D, images: ReadonlyMap<string, HTM
     ctx.globalAlpha *= alpha
     ctx.translate(pose.anchor.x, pose.anchor.y + sinkY(pose)); ctx.scale(pose.facing * squash(pose), 1)
     if (pose.sink > 0) { ctx.beginPath(); ctx.rect(-2000, -2000, 4000, 2000 + V.sinkClip * RK - sinkY(pose)); ctx.clip() }
+    // 외곽선: 모든 부위의 어두운 실루엣을 둘레로 먼저 찍고 그 위에 몸 (흰 범이 흰 눈에 묻히지 않게 · GAP §15-6)
+    const a0 = ctx.globalAlpha; ctx.globalAlpha = a0 * V.outlineAlpha
+    for (const it of items) {
+      const ink = inkOf(images.get(TIGER_ART[it.piece])!); if (!ink) break
+      for (let d = 0; d < V.outlineDirs; d++) {
+        const t = d * TAU / V.outlineDirs, ox = Math.cos(t) * V.outlinePx / Math.abs(it.sx), oy = Math.sin(t) * V.outlinePx / Math.abs(it.sy)
+        ctx.save(); ctx.translate(it.at.x, it.at.y); ctx.rotate(it.angle); ctx.scale(it.sx, it.sy)
+        if (it.src) ctx.drawImage(ink, it.src[0], it.src[1], it.src[2], it.src[3], -it.pivot[0] + ox, -it.pivot[1] + oy, it.src[2], it.src[3])
+        else ctx.drawImage(ink, -it.pivot[0] + ox, -it.pivot[1] + oy)
+        ctx.restore()
+      }
+    }
+    ctx.globalAlpha = a0
     for (const it of items) {
       const img = images.get(TIGER_ART[it.piece])!, src: CanvasImageSource = it.shade ? shadeOf(img) : img
       ctx.save(); ctx.translate(it.at.x, it.at.y); ctx.rotate(it.angle); ctx.scale(it.sx, it.sy)

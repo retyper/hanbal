@@ -6,8 +6,7 @@
  */
 import { HAEBI_RUN as C, HAEBI_WIDE as WD } from '../tune/params.ts'
 import type { HaebiRun } from './haebi.ts'
-import { BOARD, WORLD, type Rect } from './wide.ts'
-import { makeRng } from '../core/rng.ts'
+import { BOARD, type Rect } from './wide.ts'
 
 const V = WD.view, TAU = Math.PI * 2
 export const groundPath = (stage: string) => `raid/ground-${stage}.webp`
@@ -51,35 +50,16 @@ export function drawWideGround(ctx: CanvasRenderingContext2D, images: Map<string
   const x = Math.floor(view.left) - 2, y = Math.floor(view.top) - 2, w = Math.ceil(view.right - view.left) + 4, h = Math.ceil(view.bottom - view.top) + 4
   const img = images.get(groundPath(s.stage)), pattern = img ? tilePattern(ctx, img) : null
   ctx.fillStyle = pattern ?? V.base[s.stage]; ctx.fillRect(x, y, w, h)
+  // 가운데 칸도 둘레와 같은 이어지는 바닥 (형 11-22 「가운데만 원본 그림이라 네 모서리 나무·돌이 잘려 있다」) — 바닥 그림이 있으면 결전장 그림을 깔지 않는다 · 바닥이 아직 없을 때만 옛 결전장
+  if (pattern && !V.arenaArt) return
   const a = bg ? arenaCanvas(bg) : null
   if (a) { if (view.right > -a.bleed && view.left < C.width + a.bleed && view.bottom > 0 && view.top < C.height) ctx.drawImage(a.canvas, -a.bleed, 0) }
   else if (bg && view.right > 0 && view.left < C.width && view.bottom > 0 && view.top < C.height) { const sw = bg.height * C.width / C.height; ctx.drawImage(bg, (bg.width - sw) / 2, 0, sw, bg.height, 0, 0, C.width, C.height) }
 }
-/** 이 스테이지의 낱개 장식 (위에서 아래로 그릴 차례에 끼운다 · 지금은 비어 있다) */
-export interface WideProp { sprite: string; x: number; y: number; width: number; height: number }
-export const propPath = (stage: string, index: number) => `raid/props/${stage}-${index}.webp`
-/** 처음에 받아 둘 낱개 장식 그림 (스테이지마다 6~8개) */
-export const PROP_PATHS = Object.entries(V.props).flatMap(([stage, kinds]) => kinds.map((_, i) => propPath(stage, i)))
-/**
- * 스테이지의 장식을 흩는다 — 스테이지 이름과 씨앗으로 늘 같은 자리 (화면만의 일 · 판의 난수와 무관).
- * 발밑(x, y)에서 위로 선 그림 상자가 결전장(가운데 칸 + pad · 안개 문이 닫히는 자리)에 걸치면 버리고, 밑동끼리 gap 안이면 버린다. 키 큰 것(나무·망루)은 덜 뽑는다.
- */
-export function scatterProps(stage: string): WideProp[] {
-  const kinds = V.props[stage] ?? [], S = V.scatter, list: WideProp[] = []
-  if (!kinds.length) return list
-  const rng = makeRng([...stage].reduce<number>((n, c) => (n * 31 + c.charCodeAt(0)) | 0, S.seed))
-  const weight = kinds.map(([, h]) => h > S.tall ? S.tallShare : 1), total = weight.reduce((a, b) => a + b, 0)
-  for (let tries = 0; list.length < S.count && tries < S.count * 40; tries++) {
-    let r = rng.next() * total, k = 0
-    while (k < kinds.length - 1 && r >= weight[k]!) { r -= weight[k]!; k++ }
-    const [w, h] = kinds[k]!
-    const x = Math.round(WORLD.left + S.edge + w / 2 + rng.next() * (WORLD.right - WORLD.left - 2 * S.edge - w)), y = Math.round(WORLD.top + S.edge + h + rng.next() * (WORLD.bottom - WORLD.top - 2 * S.edge - h))
-    if (x + w / 2 > BOARD.left - S.pad && x - w / 2 < BOARD.right + S.pad && y > BOARD.top - S.pad && y - h < BOARD.bottom + S.pad) continue
-    if (list.some(p => Math.hypot(p.x - x, p.y - y) < S.gap)) continue
-    list.push({ sprite: propPath(stage, k), x, y, width: w, height: h })
-  }
-  return list
-}
+export type { WideProp } from './props.ts'
+import type { WideProp } from './props.ts'
+export { propPath, PROP_PATHS, scatterProps } from './props.ts'
+import { scatterProps } from './props.ts'
 let propsOf: { stage: string; list: readonly WideProp[] } | null = null
 export function wideProps(s: HaebiRun) { if (propsOf?.stage !== s.stage) propsOf = { stage: s.stage, list: scatterProps(s.stage) }; return propsOf.list }
 /** 장식 하나 — 발밑(x, y)에서 위로 · 장수가 그 뒤에 서 있으면(그림 상자 안 · 밑동보다 위) 비치게 */

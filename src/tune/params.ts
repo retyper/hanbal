@@ -157,8 +157,23 @@ export const HAEBI_WIDE = {
   screens: 3, spawnMargin: 110, spawnOpen: .5, strayScreens: 1.5,
   huntNear: 1.2, huntFar: 1.8, huntInset: 60, seenInset: 30,
   gateWarn: 20, gateOpen: 6, edge: [10, 20, 10] as const,
+  /**
+   * 61-SOLID 부딪히는 장식 (raid/props.ts · 형 11-22 「장애물을 다 통과하네」 → 「무기는 통과」) — 스테이지마다 장식 종류(view.props 차례)별 [반폭 hw, 두께 반지름 r] · null 이면 지나간다.
+   * 밑동 가로 캡슐: 발밑 y 에서 r × solidLift 만큼 위가 가운데 줄. 나무는 밑동만(잎은 지나감) · 목책·성벽은 넓게.
+   */
+  solidLift: .6,
+  solid: {
+    forest: [[0, 22], [0, 22], [0, 26], [30, 34], [15, 24], null, null, [0, 30]],
+    ford: [null, null, [0, 30], [28, 32], null, [12, 26], null],
+    palisade: [[80, 16], [75, 16], [55, 30], [40, 36], [50, 22], [0, 16]],
+    snow: [[0, 26], [0, 24], [0, 22], [0, 18], [34, 34], null, [24, 26]],
+    fortress: [[110, 18], null, [110, 16], [0, 10], [45, 24], [48, 22]],
+    trial: [],
+  } as Record<string, readonly (readonly [number, number] | null)[]>,
   view: {
     lookAhead: 70, leadEase: 2.5, tileScale: 720 / 810, feather: 90, bleed: 80, cull: 140,
+    /** 가운데 결전장에 옛 스테이지 그림을 깔지 (false = 둘레와 같은 이어지는 바닥 · 11-22 형) */
+    arenaArt: false,
     base: { forest: '#2b3a2a', ford: '#3a4444', palisade: '#4a4133', snow: '#b9c4cc', fortress: '#3b302b', trial: '#2b3a2a' },
     fog: { forest: '#c4d2bd', ford: '#cfe0e6', palisade: '#b9a98c', snow: '#f2f7fb', fortress: '#8a3a1e', trial: '#c4d2bd' },
     fogAlpha: .82, fogEdge: 120, fogPulse: 1.7, fogPulseShare: .12, fogRim: 4, fogRimAlpha: .7, fogFadeIn: .25, camLag: .6,
@@ -172,6 +187,8 @@ export const HAEBI_WIDE = {
       trial: [],
     } as Record<string, readonly (readonly [number, number])[]>,
     scatter: { count: 52, seed: 59, gap: 170, pad: 110, edge: 30, tall: 150, tallShare: .45, behind: .45 },
+    /** 가운데 칸(결전장)에 흩는 몸 없는 장식 — 수 · 한가운데 비우는 반지름 · 서로 띄우는 거리 · 씨앗 */
+    centerScatter: { count: 9, core: 220, gap: 150, seed: 61 },
   },
 } as const
 /** 열전 판 빠르기 (11-19 형: 「×1 누르면 ×2 · 또 누르면 ×3 · 한 번 더 누르면 ×1」) — 우상단 돋보기 옆 단추 · 단축키 X.
@@ -558,6 +575,8 @@ export const HAEBI_TIGER = {
     /** turnSquash 돌아서는 순간 가로로 눌리는 몫 · fallDrift·fallSpin 떨어지는 화살 묶음이 뒤로 밀리는 px·도는 라디안 */
     turnSquash: .7, fallDrift: 40, fallSpin: 1.6,
     behindAlpha: .52, behindPad: 10, brokenShade: 'rgba(38,46,66,.42)',
+    /** 몸 둘레 어두운 외곽선 (GAP §15-6 · 11-22 녹화에서 흰 범이 흰 눈밭에 묻힘) — 그림 px 두께 · 색 · 진하기 · 방향 수 */
+    outlinePx: 5, outlineColor: '#141a26', outlineAlpha: .75, outlineDirs: 8,
     puffEvery: 1.4, puffLife: 1.1, puffRise: 26, puffSize: 18, puffAlpha: .34, puffRecover: .55,
     snowRim: '#eef4ff', moundAlpha: .9, moundWidth: 70, moundHeight: 30, peekHeight: 90, frontAlpha: .85, roarAlpha: .38,
     breakLife: .7, breakSize: 70, fallLife: .8, fallDrop: 150, sinkDepth: 430, sinkClip: 8,

@@ -13,6 +13,7 @@ import { initChampion, stepChampion, championDamageScale, championRecover, spawn
 import { HAEBI_PALISADE as WL } from '../tune/params.ts'
 import { createPalisade, damagePiece, piecesHit, tickPalisade, wallAim, wallMove, wallSettle, type Palisade, type WallPiece } from './palisade.ts'
 import { HAEBI_WIDE as WD } from '../tune/params.ts'
+import { solidsFor, pushOutOfSolids, type Solid } from './props.ts'
 import { newWide, fieldBounds, worldBounds, stepGate, simView, ringSpot, huntSpot, inSimView, strayed, type WideState } from './wide.ts'
 
 /**
@@ -205,6 +206,8 @@ export interface HaebiRun {
   kits?: KitState;
   /** 59-WIDE 넓은 맵 (opts.mapRules · raid/wide.ts) — 없으면 한 장짜리 옛 판 */
   wide?: WideState;
+  /** 61-SOLID 막는 장식 밑동 (opts.blockRules · raid/props.ts) — 없으면 장식은 그림뿐 */
+  solids?: Solid[];
   /** 60-JACKPOT 상자 규칙 (opts.chestRules) — 없으면 옛 고르는 상자 · pity 5개 넘게 못 터진 상자 수 · five·eight 이 판에서 터진 5개·8개 · ranks 상자가 올려 준 칸 수 */
   jackpots?: { pity: number; five: number; eight: number; ranks: number };
 }
@@ -216,13 +219,15 @@ export function random(s: HaebiRun) { const rng = makeRng(s.seed); const n = rng
  * awaken remains the fallback qualification alias. Explicit53B, plus default trial/vanguard, preserve timed-awake rules.
  * mastery: 숲·여울·목책을 다 깬 장수 (막대 절반으로 시작)
  */
-export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' | '55-SHAMAN'; /** 58-KITS 무기 개성 — 스테이지 규칙과 따로 켠다 (판 기록 opts 에 그대로 남아 재생도 같다) */ kitRules?: '58-KITS'; /** 60-JACKPOT 상자 — 정예 상자는 고르지 않고 터지고, 중간 보스 상자는 조합 하나를 고른다 (스테이지 판만 · 판 기록 opts 에 남아 재생도 같다) */ chestRules?: '60-JACKPOT'; /** 59-WIDE 넓은 맵 — 열전 스테이지 판에만 켜진다 (시련·선봉에 넘겨도 한 장짜리 그대로 · 판 기록 opts 에 남아 재생도 같다) */ mapRules?: '59-WIDE' }
+export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' | '55-SHAMAN'; /** 58-KITS 무기 개성 — 스테이지 규칙과 따로 켠다 (판 기록 opts 에 그대로 남아 재생도 같다) */ kitRules?: '58-KITS'; /** 60-JACKPOT 상자 — 정예 상자는 고르지 않고 터지고, 중간 보스 상자는 조합 하나를 고른다 (스테이지 판만 · 판 기록 opts 에 남아 재생도 같다) */ chestRules?: '60-JACKPOT'; /** 59-WIDE 넓은 맵 — 열전 스테이지 판에만 켜진다 (시련·선봉에 넘겨도 한 장짜리 그대로 · 판 기록 opts 에 남아 재생도 같다) */ mapRules?: '59-WIDE'; /** 61-SOLID 넓은 맵의 나무·바위·목책이 장수와 적을 막는다 (무기는 통과 · 59-WIDE 판에서만 · 판 기록 opts 에 남아 재생도 같다) */ blockRules?: '61-SOLID' }
 /** 새 판이 쓰는 무기 규칙 */
 export const KIT_RULES = '58-KITS' as const
 /** 새 스테이지 판이 쓰는 상자 규칙 */
 export const CHEST_RULES = '60-JACKPOT' as const
 /** 새 열전 스테이지 판이 쓰는 맵 규칙 */
 export const MAP_RULES = '59-WIDE' as const
+/** 새 열전 스테이지 판이 쓰는 장애물 규칙 */
+export const SOLID_RULES = '61-SOLID' as const
 export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit = 'axe', opts: HaebiOpts = {}): HaebiRun {
   const bonus = { ...NO_BONUS, ...opts.bonus }, maxHp = C.health + bonus.vigor * SH.vigor.step, stage: StageId = mode === 'trial' ? 'trial' : opts.stage ?? 'forest'
   // 55-IMUGI 는 여울만 · 56C(진짜 목책)는 목책 돌파만 · 55-TIGER(백두 대호)는 설원만 · 57-BULGASARI(진짜 목책 + 불가사리)는 목책 돌파만 · 55-GUMIHO(구미호)는 숲 산길 열전만(각성 시련은 아님) · 55-SHAMAN(불의 무녀 장군)은 불타는 산성만 — 다른 판에 들어오면 56B 그대로
@@ -247,6 +252,7 @@ export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit
   if (rules === '56C' || rules === '57-BULGASARI') s.palisade = createPalisade()
   if (opts.kitRules === KIT_RULES) s.kits = { still: 0, aim: 0, runAim: 0, runT: 0, swing: 0, sealAt: -1, sealLeft: 0, zones: [], mark: 0, step: 0, stepped: false, focused: false, boltIdle: 0 }
   if (opts.mapRules === MAP_RULES && mode === 'stage' && stage !== 'trial') s.wide = newWide()
+  if (s.wide && opts.blockRules === SOLID_RULES) s.solids = solidsFor(stage)
   if (opts.chestRules === CHEST_RULES && mode === 'stage') s.jackpots = { pity: 0, five: 0, eight: 0, ranks: 0 }
   if (mode === 'vanguard') {
     s.level = V.startLevel; s.ranks[k.primary] = 4; s.ranks[k.secondary] = 3; s.ranks.echo = 2; s.ranks.tempo = 1; s.ranks.reach = 1
@@ -1454,6 +1460,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
   const speed = C.speed * (1 + s.bonus.swift * SH.swift.step + s.ranks.nimble * T.nimbleMove) * (s.dash ? C.dashSpeed : 1) * boost.move
   const fromX = s.x, fromY = s.y
   s.x = heroX(s, s.x + dx * speed * dt); s.y = heroY(s, s.y + dy * speed * dt)
+  if (s.solids) pushOutOfSolids(s.solids, s, WL.heroR)
   // 56-C 목책: 성한 마디는 못 지나간다 (막은 마디 쪽으로 밀고 있으면 아래에서 내려친다)
   const pushed = s.palisade ? wallMove(s.palisade, s, fromX, fromY, WL.heroR) : null
   if (s.kits) kitMove(s, dx, dy, dt)
@@ -1611,6 +1618,11 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
     if (d < 26 && !e.cd) { hurt(s, C.contactDamage * threat(s) * (m?.hit ?? 1)); e.cd = 1 }
   }
   if (s.wide) herdWide(s)
+  if (s.solids) {
+    for (const e of s.enemies) if (e.hp > 0 && !e.giant) pushOutOfSolids(s.solids, e, mobRadius(e))
+    for (const d of s.drops) pushOutOfSolids(s.solids, d, 0)
+    for (const c of s.chests ?? []) if (c.state === 'ground') pushOutOfSolids(s.solids, c, 0)
+  }
   // 목책 띠 안에 남은 적이 없게 (부른 졸개 · 여러 밀림이 겹친 때) — 가까운 쪽으로
   if (s.palisade) for (const e of s.enemies) if (e.hp > 0 && !e.giant) wallSettle(s.palisade, e, mobRadius(e))
   // Iterate a snapshot: splitting missiles are simulated starting on the next tick.

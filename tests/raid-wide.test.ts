@@ -306,10 +306,11 @@ test('낱개 장식: 스테이지마다 늘 같은 자리에 흩고 · 결전장
     for (const p of list) {
       assert.ok(p.x - p.width / 2 >= WORLD.left && p.x + p.width / 2 <= WORLD.right && p.y - p.height >= WORLD.top && p.y <= WORLD.bottom, `${stage}: 세계 안 ${p.x},${p.y}`)
       const hitsArena = p.x + p.width / 2 > -S.pad && p.x - p.width / 2 < C.width + S.pad && p.y > -S.pad && p.y - p.height < C.height + S.pad
-      assert.equal(hitsArena, false, `${stage}: 결전장에 걸친 장식 ${p.sprite} @${p.x},${p.y}`)
+      // 11-22: 결전장에는 몸 없는 장식만 (막는 장식 61-SOLID 은 두목과 싸우는 자리에 두지 않는다)
+      if (hitsArena) assert.ok(!(W.solid[stage] ?? [])[p.kind], `${stage}: 결전장에 막는 장식 ${p.sprite} @${p.x},${p.y}`)
       assert.ok(p.height <= 94 * 3 && p.height >= 94 * .4, `${stage}: 장수 키에 견준 크기 ${p.height}`)
     }
-    for (let i = 0; i < list.length; i++) for (let j = 0; j < i; j++) assert.ok(Math.hypot(list[i]!.x - list[j]!.x, list[i]!.y - list[j]!.y) >= S.gap)
+    for (let i = 0; i < list.length; i++) for (let j = 0; j < i; j++) assert.ok(Math.hypot(list[i]!.x - list[j]!.x, list[i]!.y - list[j]!.y) >= Math.min(S.gap, W.view.centerScatter.gap))
     kinds.forEach((_, i) => assert.ok(existsSync(new URL(`../public/realm/${propPath(stage, i)}`, import.meta.url)), `${propPath(stage, i)} 파일`))
   }
   assert.notDeepEqual(scatterProps('forest').map(p => [p.x, p.y]), scatterProps('snow').map(p => [p.x, p.y]), '스테이지마다 다른 자리')

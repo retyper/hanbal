@@ -4,7 +4,7 @@ import { imugiVisualBounds } from './raid/imugi-view.ts'
 import { fieldPixels, raidLowGraphics } from './raid/surface.ts'
 import { breakthroughText, isBreakthrough } from './realm/vanguard.ts'
 import { HAEBI_RUN as C, HAEBI_STICK as STICK, HAEBI_TREE as TREE, HAEBI_ULT as ULT, HAEBI_AWAKEN as AWK, HAEBI_STAGES as ST, HAEBI_ZOOM as ZOOM, HAEBI_SPEED as SPEED, HAEBI_GIANT as GIANT } from './tune/params.ts'
-import { createHaebi, runDuration, raidRulesForStage, KIT_RULES, MAP_RULES, giantMob, giantHUD, championViewNeeded, stepHaebi, barrageArcher, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, usesPermanentAwakening, normalizedRaidOpts, castWallSeconds, nodeText, nodeAt, branchName, wakeReady, ultName, ultOpen, BRANCHES, branchNodes, type Kit, type Power, type Pick, type Chest, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
+import { createHaebi, runDuration, raidRulesForStage, KIT_RULES, MAP_RULES, SOLID_RULES, giantMob, giantHUD, championViewNeeded, stepHaebi, barrageArcher, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, usesPermanentAwakening, normalizedRaidOpts, castWallSeconds, nodeText, nodeAt, branchName, wakeReady, ultName, ultOpen, BRANCHES, branchNodes, type Kit, type Power, type Pick, type Chest, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
 import { startRecord, recInput, gridInput, recPick, recReroll, recQuit, withdrawRun, sealInput, finishRecord, STEP, type Recorder } from './raid/runlog.ts'
 import { runFrame, speedOf, nextSpeed, speedLevel } from './raid/speed.ts'
 import { RaidFeel } from './raid/impact.ts'
@@ -120,7 +120,7 @@ let stage: Exclude<StageId, 'trial'> = pickStage(meta, kit)
 const bossMinute = () => Math.floor(C.bossAt * ST[mode === 'trial' ? 'trial' : stage].length / 60)
 const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`
 /** createHaebi 에 넘기는 판 옵션 — 판 기록에도 이것 그대로 적는다 (다시 돌리기) */
-const runOpts = (): RaidOpts => ({ ...mode === 'stage' ? { stage, bonus: { ...meta.shop } } : {}, ...mode === 'trial' ? { awaken: false, simRules: '53B' as const } : { permanentAwake: awakening.permanentAwake, appearanceAwake: awakening.appearanceAwake, simRules: mode === 'stage' ? raidRulesForStage(stage) : '56B' as const }, mastery, kitRules: KIT_RULES, ...(mode === 'stage' ? { chestRules: CHEST_RULES, mapRules: MAP_RULES } : {}) })
+const runOpts = (): RaidOpts => ({ ...mode === 'stage' ? { stage, bonus: { ...meta.shop } } : {}, ...mode === 'trial' ? { awaken: false, simRules: '53B' as const } : { permanentAwake: awakening.permanentAwake, appearanceAwake: awakening.appearanceAwake, simRules: mode === 'stage' ? raidRulesForStage(stage) : '56B' as const }, mastery, kitRules: KIT_RULES, ...(mode === 'stage' ? { chestRules: CHEST_RULES, mapRules: MAP_RULES, blockRules: SOLID_RULES } : {}) })
 const newRun = (seed: number, opts: RaidOpts = runOpts()) => { const r = createHaebi(seed, mode, kit, opts); if (r.message.endsWith('첫 조합을 향해')) { r.message = ''; r.messageTime = 0 }  /* 시작 군말 띠는 걷는다 (형 11-16) */ return r }
 root.innerHTML = `<header><div><small>장수 열전 · 독립 모드</small><h1>${HERO.name} <em>${K.title}</em></h1></div><div class="head-actions"><button id="pause" disabled aria-label="일시정지">Ⅱ</button></div></header>
 <div id="layout"><aside id="character"><div id="portrait-media"><img id="hero-portrait" src="${import.meta.env.BASE_URL}realm/bust-hd/${HERO.bust}.jpg" alt="${HERO.name} 원화"><video id="hero-video" muted loop playsinline preload="none" hidden aria-label="각성 ${HERO.name} 영상"></video></div><div class="portrait-title"><span>${HERO.home}</span><b id="rank-title">${HERO.name}</b><button id="portrait-toggle" hidden>원화로 보기</button></div><div id="reaction">${weapon} 하나로 시작하는 열전</div><div id="combo-badges"></div><i class="frame-knots"></i></aside>
@@ -489,7 +489,8 @@ const warmAwake = () => {
   void prewarmAwakeUlt(images, kit, path => new Promise<HTMLImageElement>((resolve, reject) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = reject; img.src = import.meta.env.BASE_URL + 'realm/' + path }))
   if (!awakeVoicePrepared) {
     awakeVoicePrepared = true
-    void import('./ui/realm/voice-hero.ts').then(({ heroVoiceDir }) => { const dir = heroVoiceDir(heroId); if (dir) return sound.setAwakeningVoice(import.meta.env.BASE_URL + dir + 'art.ogg'); return false }).catch(() => false)
+    // 각성 비기 목소리: 장수 전용 「art」 대사는 본편에서 군사에게 내리는 명령(「발톱을 세워라 · 먹잇감을 물어라」)이라 열전 기술에 안 맞는다 (형 11-22 「기합만 못함」) → 열전은 기합 그대로 (raid/sound.ts shout) · 장수별 기합을 녹음하면 여기서 setAwakeningVoice 로 건다
+    void sound.setAwakeningVoice(null)
   }
 }
 // 피격 그림도 미리 (처음 맞을 때부터 그림이 뜨게 · 실린 뒤에야 금을 끈다 · ui/hit-portrait.ts)
