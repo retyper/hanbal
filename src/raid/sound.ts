@@ -68,6 +68,14 @@ type Voice = keyof typeof VOICE
 /** 쓰러짐 신음(사람 목소리)을 내지 않는 적 — 짐승(개·범·곰)과 거대 두목(구미호·이무기·불가사리·백두 대호·무녀 · 끝 소리가 따로) */
 const NO_GROAN: ReadonlySet<string> = new Set(['dog', 'tiger', 'bear', 'boss'])
 const BGM = R + 'bgm_raid_d1.ogg'
+/**
+ * 스테이지마다 곡 · 거대 두목이 나오면 두목 곡 (형 11-22 「보스 등장 시에는 보스 음악도 틀어 줘야」).
+ * 제미나이 「음악 만들기」 후보를 형이 고르면 여기 파일 이름만 바꾼다 — 고르기 전에는 모두 지금 곡(BGM)이라 소리가 그대로다.
+ * 스테이지 곡으로 돌아오면 멈춘 자리부터 이어 튼다 (곡마다 오디오 하나).
+ */
+const STAGE_BGM: Partial<Record<HaebiRun['stage'], string>> = {}
+const BOSS_BGM: string | null = null
+const trackFor = (s: HaebiRun) => (BOSS_BGM !== null && s.enemies.some(e => e.kind === 'boss' && e.hp > 0)) ? BOSS_BGM : STAGE_BGM[s.stage] ?? BGM
 
 const stored = (key: string) => { try { return localStorage.getItem(key) } catch { return null } }
 const muted = () => stored('hanbal.realm.mute') === '1' || new URLSearchParams(location.search).has('silent')
@@ -92,6 +100,9 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
   const raw = new Map(mine.map(f => [f, fetch(BASE + f).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)] as const))
   const clips = new Map<string, Clip>(), last = new Map<string, number>()
   let ctx: AudioContext | null = null, music: HTMLAudioElement | null = null, n = 0, voices = 0, hitAt = -9
+  const tracks = new Map<string, HTMLAudioElement>()
+  /** 그 곡의 오디오 (처음이면 만든다 · 돌아오면 멈춘 자리부터) */
+  const track = (path: string) => { let a = tracks.get(path); if (!a) { a = new Audio(BASE + path); a.loop = true; a.preload = 'auto'; tracks.set(path, a) } return a }
   /** 합성 소리 — 노이즈 한 조각(풀 때 한 번) · 「둑」 모아 둔 수·피해 · 「뽁」 연달음 */
   let noise: AudioBuffer | null = null, thudAt = -9, thudN = 0, thudD = 0, popAt = -9, popN = 0, championAt = -9
   /** 기술 소리 묶음 — 울림·종·skill_hit 이 겹쳐도 찢어지지 않게 한 번 눌러 준다 (없는 브라우저는 바로 내보냄) · 크리티컬 「핑」 마지막 때 · 다 풀렸나 */
@@ -231,7 +242,7 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
     // 「둑」·「탁」의 거친 결 — 흰 노이즈 한 조각을 한 번 만들어 돌려 쓴다
     try { const len = Math.ceil(ctx.sampleRate * Math.max(V.thudMs[1], F.castMs) / 1000), d = (noise = ctx.createBuffer(1, len, ctx.sampleRate)).getChannelData(0); for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1 } catch { noise = null }
     try { const k = ctx.createDynamicsCompressor(); k.threshold.value = F.busDb; k.ratio.value = F.busRatio; k.connect(ctx.destination); bus = k } catch { bus = null }
-    music = new Audio(BASE + BGM); music.loop = true; music.preload = 'auto'
+    music = track(BGM)
   }
   return {
     unlock,
@@ -271,6 +282,7 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
         else if (audible && ctx.state === 'suspended') void ctx.resume().catch(() => undefined)
       }
       const on = live && !paused && s.state === 'playing' && !document.hidden && !muted()
+      if (music && live) { const want = track(trackFor(s)); if (want !== music) { if (!music.paused) music.pause(); music = want } }
       if (music) { music.volume = V.bgm * volume('bgm'); if (on && !s.offers.length && !chestHeld) { if (music.paused) void music.play().catch(() => undefined) } else if (!music.paused) music.pause() }
       if (!live) { prev.run = null; pendingHeroVoice = null; return NONE }
       // 판이 바뀐 것은 씨앗이 아니라 판 그 자체로 가린다 (씨앗이 NaN 이면 매 프레임 처음으로 돌아가 비기 외침·신음이 프레임마다 다시 났다 · 형 11-16)
