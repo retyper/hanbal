@@ -44,9 +44,23 @@ jobs:
       # 번들 예산 (GDD 1장 C6). npm run build 가 이미 부르지만 여기서 이름을 드러내
       # 둔다 — Actions 로그에서 "왜 빨간불인가"가 한 줄로 읽혀야 한다.
       - run: npm run budget
-      # Pages 한도 1GB · 사이트 판만 각성 영상을 작게 다시 굽는다 (원본·스팀 판은 그대로)
+      # Pages 한도 1GB · 사이트 판만 줄인다 (원본·스팀 판은 그대로 · 무엇을 왜: tools/pages-shrink.mjs 머리말)
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
-      - run: bash tools/pages-shrink.sh dist
+      # 구운 결과 캐시 · 원본 내용 해시로 찾으니 새로 들어온 파일만 굽는다 (캐시가 없으면 다 새로 굽고 결과는 같다)
+      - id: shrink-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/pages-shrink
+          key: pages-shrink-${{ github.sha }}
+          restore-keys: pages-shrink-
+      - id: shrink
+        run: bash tools/pages-shrink.sh dist
+      # 한도를 넘어 실패하거나 새 푸시로 취소돼도 여기까지 구운 것은 남긴다 (다음 배포가 이어서 굽는다)
+      - if: always() && steps.shrink.outputs.cache-key != '' && steps.shrink.outputs.cache-key != steps.shrink-cache.outputs.cache-matched-key
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/pages-shrink
+          key: ${{ steps.shrink.outputs.cache-key }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
