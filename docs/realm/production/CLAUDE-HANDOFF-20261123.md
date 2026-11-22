@@ -1,0 +1,18 @@
+# Claude 이어 받기 · 2026-11-23 새벽 (11-22 ~ 23 세션)
+
+## 정한 것 (형)
+- 출시 작전 `docs/realm/LAUNCH-PLAN.md`: 대표 얼굴 = 수집형 전략 · 2027-03 출시 · $14.99 · **스팀 페이지(발표일) 전엔 공개 업로드 없음** · 2월 넥스트 페스트(1/10 등록) 노림. 유튜브 게임 채널 UCPG0TQIbj4Vdqohj4Pwih6g(@FirstRealms).
+- 목책 = **산적 본진 함락** · 장애물에 무기는 통과 · 보스 부위 파괴·공격 몸짓·옷 찢김(15세 선) → `docs/realm/RAID-BOSS-SIEGE-20261123.md` 차례.
+
+## 오늘 넣은 것 (모두 배포)
+- 도구: `tools/gamecap.ts`(게임 화면 녹화 · `tools/gamecap-raid-drive.js` 자동 몰기) · `tools/shorts.py --plain` · `tools/devlog-ba.py` · `tools/sprite-kit/walk-steady.py`(걷기 무게중심) · `tools/sprite-kit/rebase-from-hd.py` · `tools/boss-break-probe.ts`.
+- 열전: 타격 섬광(fx-flare) · 장수 테두리 빛 · 61-SOLID 장애물 · 62-ANCHOR 순간이동 없음 · 64-BREAK 부위 파괴·그로기 · 땅 자국(fx-scorch) · 공격 예고를 땅에 · 가운데 칸 이어진 바닥 · 백두 대호 외곽선 · 기술 목소리 = 기합 · 스테이지/두목 곡 바꾸는 틀(sound.ts STAGE_BGM·BOSS_BGM · 곡은 형 고름 뒤).
+- 본편: 궁전 탭 · 표적 출전은 스테이지 고정 · 시작 영상 = 원본 키 아트 고리(Veo 720p 뭉개짐).
+- 공유 설정: skills/prelaunch-marketing · game-youtube-marketing · sprite-sheet-qa 덧.
+
+## 남은 것 (차례)
+1. RAID-BOSS-SIEGE §1 공격 몸짓(구미호부터) → §4 산적 본진(63-SIEGE · Codex 86 그림 주문 먼저) → §3 옷 찢김 → 보스 소리 §6.
+2. 제미나이 곡: 숲·여울·설원 받음(`assets_src/realm/sfx-in/gemini/`) · 산성·보스·목책은 만들었으나 크롬 연속 다운로드 막힘 → 형이 허용하거나 직접 받기 · 다 모이면 형 고르는 화면 → STAGE_BGM 에 이름.
+3. Codex: 84(스팀 대표 그림 셋) · 85(장식 여덟 크로마키 다시) 주문만 · g-spear·w-bow v2 형 판정 대기.
+4. 여울 최저 체력이 장애물 뒤 크게 낮아짐(170→14) — 봇이 몰리는지 확인.
+5. GAP §15 표 4·5·7(적 구분 · 손맛 재기 · 숫자 범벅) 남음.
