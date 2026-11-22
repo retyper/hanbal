@@ -28,19 +28,26 @@ export class RaidGiantHud {
  private trail: HTMLElement
  private meter: HTMLElement
  private memory = new GiantHealthTrail()
+ /** 지난번에 쓴 값 — 같은 값을 틀마다 다시 쓰면(이름 글자는 매번 새 글자 마디) 폰이 스타일·배치를 다시 셈한다 (raid-main setText 와 같은 까닭 · 11-16 플립7 · 11-22) */
+ private shown = { phase: '', enter: '', name: '', now: '', fill: '', trail: '' }
  constructor(host: HTMLElement, phaseCuts: readonly number[]) {
   this.root = document.createElement('div'); this.root.className = 'giant-hud'; this.root.hidden = true
-  this.root.innerHTML = '<b class="giant-name"></b><div class="giant-meter" role="progressbar"><i class="giant-trail"></i><i class="giant-fill"></i></div>'
+  this.root.innerHTML = '<b class="giant-name"></b><div class="giant-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100"><i class="giant-trail"></i><i class="giant-fill"></i></div>'
   this.name = this.root.querySelector('.giant-name')!; this.fill = this.root.querySelector('.giant-fill')!; this.trail = this.root.querySelector('.giant-trail')!; this.meter = this.root.querySelector('.giant-meter')!
   for (const cut of phaseCuts) { const mark = document.createElement('em'); mark.className = 'giant-phase'; mark.style.left = unit(cut) * 100 + '%'; this.meter.appendChild(mark) }
   host.appendChild(this.root)
  }
  update(s: GiantHudFrame | null, activeSeconds: number) {
-  if (!s) { this.root.hidden = true; this.memory.clear(); return }
-  const hp = s.max > 0 ? unit(s.hp / s.max) : 0, lag = this.memory.update(s.id, hp, activeSeconds)
-  this.root.hidden = false; this.root.dataset.phase = String(s.phase); this.root.classList.toggle('enraged', s.enraged)
-  this.root.style.setProperty('--giant-enter', String(unit(s.entry)))
-  this.name.textContent = s.name; this.meter.setAttribute('aria-label', s.name); this.meter.setAttribute('aria-valuemin', '0'); this.meter.setAttribute('aria-valuemax', '100'); this.meter.setAttribute('aria-valuenow', String(Math.round(hp * 100)))
-  this.fill.style.width = (hp * 100).toFixed(2) + '%'; this.trail.style.width = (lag * 100).toFixed(2) + '%'
+  if (!s) { if (!this.root.hidden) this.root.hidden = true; this.memory.clear(); return }
+  const hp = s.max > 0 ? unit(s.hp / s.max) : 0, lag = this.memory.update(s.id, hp, activeSeconds), was = this.shown
+  if (this.root.hidden) this.root.hidden = false
+  this.root.classList.toggle('enraged', s.enraged)
+  const phase = String(s.phase), enter = String(unit(s.entry)), now = String(Math.round(hp * 100)), fill = (hp * 100).toFixed(2) + '%', trail = (lag * 100).toFixed(2) + '%'
+  if (was.phase !== phase) { was.phase = phase; this.root.dataset.phase = phase }
+  if (was.enter !== enter) { was.enter = enter; this.root.style.setProperty('--giant-enter', enter) }
+  if (was.name !== s.name) { was.name = s.name; this.name.textContent = s.name; this.meter.setAttribute('aria-label', s.name) }
+  if (was.now !== now) { was.now = now; this.meter.setAttribute('aria-valuenow', now) }
+  if (was.fill !== fill) { was.fill = fill; this.fill.style.width = fill }
+  if (was.trail !== trail) { was.trail = trail; this.trail.style.width = trail }
  }
 }

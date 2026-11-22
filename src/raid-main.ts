@@ -985,8 +985,10 @@ function frame(now: number) {
     const endCam = zoom ? { zoom: cam.zoom * (1 + END.cameraZoom * zoom), x: cam.x + (run.x - cam.x) * zoom, y: cam.y + (run.y - cam.y) * zoom } : cam
     if (zoom) Object.assign(endCam, clampCenter(endCam.zoom, endCam.x, endCam.y))
     prepareHeroRaster(endCam.zoom)
-    drawField(ctx, images, run, destination, endCam, feel, ending.kind ? ending : undefined, fieldLowGraphics)
-    drawEnding(ctx, ending, endHit, runGold(run), images)
+    if (fieldChanged(endCam)) {
+      drawField(ctx, images, run, destination, endCam, feel, ending.kind ? ending : undefined, fieldLowGraphics)
+      drawEnding(ctx, ending, endHit, runGold(run), images)
+    }
   }
   bigCutin.update(run)
   if (!live || run.t >= cutinUntil) skipCutin()
@@ -994,6 +996,21 @@ function frame(now: number) {
   const felt = sound.frame(run, live, paused || inspecting || rotationBlocked, true)
   if (felt.skill) haptics().skill(felt.skill); else if (felt.crit) haptics().crit()
   updatePortrait(); updateHud(); giantHud.update(live ? giantHUD(run) : null, live && !paused && !inspecting && !rotationBlocked && !run.offers.length && !feel.stopped ? dt : 0); showOverlay(); syncEndingVideo(); schedule()
+}
+/**
+ * 그릴 것이 그대로면 판을 다시 그리지 않는다 (11-22 · 폰 프레임) — 멈춤 창 · 레벨업 카드 · 폰 세로 「가로로 돌려 주세요」 · 능력 설명을 누른 동안
+ * 그대로인 판을 틀마다 새로 그려(4배 느린 CPU 에서 틀마다 5~10ms) 카드 흔들림·날아가기와 CPU·배터리를 나눠 먹었다.
+ * 판·판 시각·손맛 시계·막 내림·카메라·캔버스 크기·받은 그림 수·화질·목적지 가운데 하나라도 바뀌면 그린다 (판 그림은 이것들로만 정해진다)
+ */
+const drawKey: unknown[] = [], drawnKey: unknown[] = []
+canvas.addEventListener('contextrestored', () => { drawnKey.length = 0 })   // GPU 가 판을 잃었다 돌려주면 그대로여도 다시 그린다
+function fieldChanged(c: { zoom: number; x: number; y: number }): boolean {
+  const k = drawKey
+  k[0] = run; k[1] = run.t; k[2] = feel.time; k[3] = ending.kind; k[4] = ending.elapsed; k[5] = ending.effectTime; k[6] = c.zoom; k[7] = c.x; k[8] = c.y
+  k[9] = canvas.width; k[10] = canvas.height; k[11] = images.size; k[12] = fieldLowGraphics; k[13] = destination?.x; k[14] = destination?.y
+  let changed = false
+  for (let i = 0; i < k.length; i++) if (!Object.is(k[i], drawnKey[i])) { drawnKey[i] = k[i]; changed = true }
+  return changed
 }
 function schedule() { if (!raf && !document.hidden) raf = requestAnimationFrame(frame) }
 updateHud(); schedule()

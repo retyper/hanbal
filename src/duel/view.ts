@@ -8,11 +8,11 @@
  */
 import { createDuel, judgeWindows, lateWindow, stepDuel, tierOf, type Cue, type Duel, type DuelEvent, type Outcome, type Tap } from './sim.ts'
 import { P } from '../tune/params.ts'
-import { t as tr } from '../i18n/index.ts'
+import { t as tr, type Key } from '../i18n/index.ts'
 import { makeRng } from '../core/rng.ts'
 import { AWAKEN_ART, AWAKEN_LOOP, loopFile } from '../realm/data/awaken-art.ts'
 import { SPRITE_PX } from '../realm/data/spritePx.ts'
-import { DUEL_ATLASES, LEGACY_ATLAS, fighterMotion, type FighterAnim } from './fighter-motion.ts'
+import { DUEL_ATLASES, LEGACY_ATLAS, fighterMotion, type FighterAnim, type FighterAtlas } from './fighter-motion.ts'
 import { haptics } from '../ui/haptics.ts'
 import { HitClock, drawHitPortrait, hitArtKey, hitArtPath, hitFocusSlide, hitStrength, type HitForm, type HitFrame } from '../ui/hit-portrait.ts'
 
@@ -67,7 +67,9 @@ export function mountDuel(cfg: DuelSetup, root: HTMLElement = document.body): Pr
   const heldVideos = [...document.querySelectorAll('video')].filter((v) => !v.paused && !host.contains(v))
   for (const v of heldVideos) v.pause()
   const canvas = host.querySelector('canvas') as HTMLCanvasElement
-  const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
+  /** 그리는 판 — 늘 화면 판이다. 미리 그려 보기(warmStates)만 잠깐 화면 밖 판으로 바꿨다가 되돌린다 */
+  let ctx = canvas.getContext('2d') as CanvasRenderingContext2D
+  const screenCtx = ctx
   const flagBtn = host.querySelector<HTMLButtonElement>('.dflag')
   const skipBtn = host.querySelector<HTMLButtonElement>('.dskip') as HTMLButtonElement
   const params = new URLSearchParams(location.search)
@@ -295,6 +297,8 @@ let freezeUntil = 0
 let acc = 0
 let last = 0
 let shake = 0
+/** 이 틀의 화면 흔들림 (px) — 0 이 아니면 초상 판을 구운 한 장으로 찍지 않는다 */
+let shakeX = 0, shakeY = 0
 let flash: { rgb: string; t0: number; ms: number; a: number } | null = null
 interface Pop { x: number; y: number; vx: number; vy: number; text: string; color: string; t0: number; size: number }
 interface Spark { x: number; y: number; vx: number; vy: number; t0: number; life: number; color: string }
@@ -320,6 +324,13 @@ let foeAnim: FighterAnim = { kind: 'idle', t0: 0 }
 
 // ── 크기 · 자리
 let W = 0, H = 0, dpr = 1
+/**
+ * 자리 셈은 틀마다 한 번 (11-22 · 열전 기법) — play()·panel() 이 한 틀에 수십 번 불려 그때마다 새 물건을 만들고
+ * 노치 높이(safeProbe.offsetHeight · 화면 배치 읽기)를 다시 쟀다. 노치 높이는 크기가 바뀔 때만 다시 잰다 (-1 = 아직)
+ */
+let frameNo = 0, layAt = -1, safeTopPx = -1
+/** 크기·DPR 이 바뀌어 구운 판을 다 버렸다 — 다음 틀에 미리 굽기(warmNow)를 다시 돈다 */
+let rewarm = false
 /** 폰(손가락 화면)은 DPR 1.5 에서 시작 · 프레임 간격 가운데값이 22ms 를 넘으면 0.5 씩 1 까지 (형 11-10: 폰으로 겨루기할 때 렉이 엄청 · render/scene watchLoad 와 같은 셈) */
 /** ?prof=1 일 때만 도는 구간 재기 — 기본 길엔 비용이 없다 */
 const PROF = params.get('prof') === '1'
@@ -383,10 +394,37 @@ function panelBake(s: number): HTMLCanvasElement | null {
   return cv
 }
 /**
+ * 가만히 있는 초상 판 — 초상 판(panelBake)과 테두리를 화면에 그릴 때와 같은 변환으로, 화면 화소 칸에 맞춘 판 하나에 구운 것 (11-22 · 폰 GPU).
+ * 그 판을 화면에 1:1 로(정수 화소 자리) 찍으니 두 장을 따로 그린 것과 화소가 같다. 판 자리·크기·DPR 이 바뀌면 다시 굽는다.
+ */
+let restCv: HTMLCanvasElement | null = null
+let restKey = ''
+/** 구운 판을 찍을 화면 화소 자리 (panelRest 가 적는다) */
+const restAt = { x: 0, y: 0 }
+function panelRest(pn: Readonly<typeof panelBox>, pb: HTMLCanvasElement, fr: HTMLImageElement): HTMLCanvasElement {
+  const F = pn.s / 0.89, Fh = pn.s / 0.877, cx = pn.x + pn.s / 2, cy = pn.y + pn.s / 2
+  const fx = cx - pn.s / 2 - 0.055 * F, fy = cy - pn.s / 2 - 0.061 * Fh
+  const bx = Math.floor(fx * dpr), by = Math.floor(fy * dpr)
+  const bw = Math.ceil((fx + F) * dpr) - bx, bh = Math.ceil((fy + Fh) * dpr) - by
+  const key = `${bx},${by},${bw},${bh},${pn.s},${dpr},${pb.width},${fr.naturalWidth}`
+  if (restCv === null || restKey !== key) {
+    const cv = restCv ?? document.createElement('canvas')
+    cv.width = Math.max(1, bw); cv.height = Math.max(1, bh)
+    const c = cv.getContext('2d') as CanvasRenderingContext2D
+    c.setTransform(dpr, 0, 0, dpr, -bx, -by); c.translate(cx, cy)
+    c.drawImage(pb, -pn.s / 2, -pn.s / 2, pn.s, pn.s)
+    c.drawImage(scaled(fr, F, Fh), -pn.s / 2 - 0.055 * F, -pn.s / 2 - 0.061 * Fh, F, Fh)
+    restCv = cv; restKey = key
+  }
+  restAt.x = bx; restAt.y = by
+  return restCv
+}
+/**
  * 글자를 바뀔 때만 작은 판에 굽는다 — strokeText 는 글자 윤곽을 매번 선으로 다시 그려 폰에서 무거웠다 (형 11-11).
  * 그릴 땐 drawImage 한 번 · 크기 변화(톡 튀는 효과)는 배율로.
  */
-interface TextSprite { cv: HTMLCanvasElement; w: number; h: number; tw: number; pad: number; by: number }
+/** final: 제 글꼴로 구웠다 (false 면 글꼴 조각이 오는 중이라 대신 글꼴 — 오면 다시 굽는다) */
+interface TextSprite { cv: HTMLCanvasElement; w: number; h: number; tw: number; pad: number; by: number; final: boolean }
 const TXT = new Map<string, TextSprite>()
 function textSprite(text: string, px: number, weight: number, top: string, bottom: string | null, stroke: string, lw: number, mid: boolean): TextSprite {
   px = Math.max(4, Math.round(px))
@@ -405,10 +443,18 @@ function textSprite(text: string, px: number, weight: number, top: string, botto
     c.lineWidth = lw; c.strokeStyle = stroke; c.strokeText(text, pad, by)
     if (bottom !== null) { const g = c.createLinearGradient(0, by - px / 2, 0, by + px / 2); g.addColorStop(0, top); g.addColorStop(1, bottom); c.fillStyle = g } else c.fillStyle = top
     c.fillText(text, pad, by)
-    t = { cv, w, h, tw, pad, by }
+    const final = fontReady(font, text)
+    t = { cv, w, h, tw, pad, by, final }
     TXT.set(key, t)
+    // 글꼴 조각(unicode-range)이 아직 안 온 글자는 대신 글꼴로 구워졌다 — 다 오면 버려 다음에 제 글꼴로 다시 굽는다 (예전엔 대신 글꼴이 그대로 남았다 · 11-22)
+    // 받다 실패하면(오프라인 등) 대신 글꼴 판을 그대로 쓴다 — 틀마다 다시 굽지 않게
+    if (!final) { const mine = t; void document.fonts.load(font, text).then(() => { if (TXT.get(key) === mine && fontReady(font, text)) TXT.delete(key); else mine.final = true }, () => { mine.final = true }) }
   }
   return t
+}
+/** 이 글자들에 맞는 글꼴 조각이 다 와 있나 — 고운바탕은 글자 범위마다 조각 파일이라 처음 쓰는 글자는 그때 받는다 */
+function fontReady(font: string, text: string): boolean {
+  try { return document.fonts.check(font, text) } catch { return true }
 }
 const txtCx = document.createElement('canvas').getContext('2d') as CanvasRenderingContext2D
 /** 구운 글자를 (x, y) 에 — y 는 글자 기준선(또는 middle 이면 가운데) · align 은 x 가 글자의 어느 쪽인가 */
@@ -491,8 +537,9 @@ function bakedBg(): HTMLCanvasElement | null {
   return cv
 }
 function resize(): void {
-  TXT.clear(); SCALED.clear(); GLOWS.clear(); BAR_CV.clear(); panelCv = null
+  TXT.clear(); SCALED.clear(); GLOWS.clear(); BAR_CV.clear(); panelCv = null; restCv = null
   entranceShade = null
+  layAt = -1; safeTopPx = -1; rewarm = true
   dpr = Math.min(dprCap, devicePixelRatio || 1)
   W = innerWidth; H = innerHeight
   canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr)
@@ -505,14 +552,24 @@ const hudTw = (): number => Math.min(150, Math.max(90, Math.min(W * 0.24, H * 0.
 const safeProbe = document.createElement('div')
 safeProbe.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:env(safe-area-inset-top, 0px);pointer-events:none;visibility:hidden'
 host.appendChild(safeProbe)
-const safeTop = (): number => safeProbe.offsetHeight
+const safeTop = (): number => safeTopPx >= 0 ? safeTopPx : (safeTopPx = safeProbe.offsetHeight)
 /** 폰(좁은 화면)은 체력 막대를 시간 판 아래 한 줄에 길게 — 시간 판 옆에 두면 너무 짧았다 (형 11-11) */
 const narrowHud = (): boolean => W < 560
 const hudBarH = (): number => Math.round(Math.max(10, Math.min(20, hudTw() * 0.13)))
 const hudTop = (): number => Math.round(safeTop() + hudTw() * 0.92 + 22 + (narrowHud() ? hudBarH() + 26 : 0))
 const fieldTop = (): number => H * P.duel.fieldTop
+const playBox = { x: 0, y: 0, w: 0, h: 0 }, panelBox = { x: 0, y: 0, s: 0 }
+/** 이 틀의 자리 — 고리 칸(play) · 초상 판(panel). 튜닝 콘솔이 값을 바꿔도 다음 틀에 따라온다 */
+function layout(): void {
+  if (layAt === frameNo) return
+  layAt = frameNo
+  const top = hudTop()
+  playBox.y = top; playBox.w = W; playBox.h = fieldTop() - top
+  const s = Math.min(W - 60, playBox.h - 56) // 테두리 장식이 화면 밖으로 넘치지 않게
+  panelBox.x = (W - s) / 2; panelBox.y = playBox.y + (playBox.h - 36 - s) / 2 + 4; panelBox.s = s
+}
 /** 고리가 서는 칸 — 위 띠와 아래 들판 사이 전부 */
-const play = (): { x: number; y: number; w: number; h: number } => ({ x: 0, y: hudTop(), w: W, h: fieldTop() - hudTop() })
+const play = (): Readonly<typeof playBox> => { layout(); return playBox }
 const toPx = (x: number, y: number): [number, number] => { const p = play(); return [p.x + x * p.w, p.y + y * p.h] }
 const cueR = (): number => P.duel.radius * Math.min(W, play().h)
 
@@ -615,20 +672,18 @@ function drawEnd(now: number): void {
   ctx.save()
   ctx.fillStyle = `rgba(0,0,0,${0.5 * k})`; ctx.fillRect(0, 0, W, H)
   if (age > 200 && age < 700) {
-    const g = ctx.createRadialGradient(W / 2, H * 0.45, 0, W / 2, H * 0.45, Math.min(W, H) * 0.6)
-    const a2 = 0.45 * (1 - (age - 200) / 500)
-    g.addColorStop(0, `rgba(255,230,160,${a2})`); g.addColorStop(1, 'rgba(255,230,160,0)')
-    ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); ctx.globalCompositeOperation = 'source-over'
+    // 터지는 빛 — 구운 둥근 빛 한 장 (틀마다 그라디언트를 새로 지어 화면 가득 더해 칠하던 것 · 고른 빛이라 작게 구워 늘려도 같다)
+    const gr = Math.min(W, H) * 0.6
+    ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.45 * (1 - (age - 200) / 500)
+    ctx.drawImage(glow('255,230,160', gr * P.duel.endGlowRes), W / 2 - gr, H * 0.45 - gr, gr * 2, gr * 2)
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'
   }
   ctx.translate(W / 2, H * 0.45); ctx.scale(sc, sc)
   ctx.globalAlpha = k
-  const fs = Math.round(Math.min(W, H) * 0.2)
-  ctx.font = `900 ${fs}px "Gowun Batang", serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-  ctx.lineWidth = fs * 0.12; ctx.strokeStyle = 'rgba(30,12,4,.95)'; ctx.strokeText(r.word, 0, 0)
-  const gr = ctx.createLinearGradient(0, -fs / 2, 0, fs / 2); gr.addColorStop(0, '#fffaf0'); gr.addColorStop(1, r.col)
-  ctx.fillStyle = gr; ctx.fillText(r.word, 0, 0)
+  // 글자는 구운 판 (틀마다 큰 글자 윤곽을 다시 긋던 것 · 11-22) — 쾅 떨어지는 동안(2.4배→1배)은 두 배로 구운 판을 줄여서
+  const big = age < 260
+  putText(endSprite(r.word, r.col, big ? 2 : 1), 0, 0, 'center', big ? 0.5 : 1)
   ctx.restore()
-  ctx.textBaseline = 'alphabetic'
   if (age > END_MS && cfg.standalone !== true) close()
 }
 /** 시작 — 두 이름판이 양쪽에서 미끄러져 들어와 가운데서 부딪힌다 (짧게 · 첫 고리 전) */
@@ -637,16 +692,18 @@ function drawIntro(now: number): void {
   if (age > 1100) return
   const kIn = Math.min(1, age / 320), e = 1 - (1 - kIn) ** 3
   const fade = age < 800 ? 1 : 1 - (age - 800) / 300
-  const fs = Math.round(Math.min(W, H) * 0.075)
+  const fs = introFs()
   ctx.save(); ctx.globalAlpha = Math.max(0, fade)
-  ctx.font = `900 ${fs}px "Gowun Batang", serif`; ctx.textBaseline = 'middle'; ctx.lineWidth = fs * 0.14; ctx.strokeStyle = 'rgba(20,8,2,.9)'
   const y = H * 0.45
-  ctx.textAlign = 'right'; const lx = W / 2 - fs * 0.6 - (1 - e) * W * 0.6
-  ctx.strokeText(cfg.me.name, lx, y); ctx.fillStyle = '#ffe9b8'; ctx.fillText(cfg.me.name, lx, y)
-  ctx.textAlign = 'left'; const rx = W / 2 + fs * 0.6 + (1 - e) * W * 0.6
-  ctx.strokeText(cfg.foe.name, rx, y); ctx.fillStyle = '#ffb3a6'; ctx.fillText(cfg.foe.name, rx, y)
-  if (kIn >= 1) { ctx.textAlign = 'center'; const s2 = 1 + 0.4 * Math.max(0, 1 - (age - 320) / 200); ctx.font = `900 ${Math.round(fs * 1.2 * s2)}px "Gowun Batang", serif`; ctx.strokeText('⚔', W / 2, y); ctx.fillStyle = '#ffd98a'; ctx.fillText('⚔', W / 2, y) }
-  ctx.restore(); ctx.textBaseline = 'alphabetic'
+  // 글자는 구운 판 (11-22) — 틀마다 이름 윤곽을 다시 긋고, ⚔ 는 틀마다 새 글꼴 크기라 그때마다 글꼴을 새로 그렸다 (겨루기 첫 1초가 끊겼다)
+  putText(introSprite(cfg.me.name, '#ffe9b8'), W / 2 - fs * 0.6 - (1 - e) * W * 0.6, y, 'right')
+  putText(introSprite(cfg.foe.name, '#ffb3a6'), W / 2 + fs * 0.6 + (1 - e) * W * 0.6, y, 'left')
+  if (kIn >= 1) {
+    const s2 = 1 + 0.4 * Math.max(0, 1 - (age - 320) / 200)
+    if (s2 > 1) putText(introSprite('⚔', '#ffd98a', Math.round(fs * 1.2 * 1.4)), W / 2, y, 'center', s2 / 1.4)
+    else putText(introSprite('⚔', '#ffd98a', Math.round(fs * 1.2)), W / 2, y, 'center')
+  }
+  ctx.restore()
 }
 
 // ── 일이 났을 때
@@ -685,7 +742,7 @@ function onEvent(e: DuelEvent, now: number): void {
       marks.push({ x, y, t0: now, kind: 'miss', off: e.off ?? 0 })
       judges.push({ x, y, t0: now, kind: 'miss', when: (e.off ?? 0) < 0 ? 'early' : 'late' })
       slashes.push({ x, y, ang: -0.7 + ((e.t * 13) % 10) / 20, len: Math.min(W, H) * 0.45, t0: now, ms: 260, color: '255,60,40', w: 10 })
-      pop(`−${e.dmgMe}`, '#ff7a6a', 38)
+      pop(`−${e.dmgMe}`, POP.miss[1], POP.miss[0])
       meAnim = { kind: 'hit', t0: now }; foeAnim = { kind: 'attack', t0: now }
       break
     case 'crit':
@@ -694,7 +751,7 @@ function onEvent(e: DuelEvent, now: number): void {
       flash = { rgb: '255,250,235', t0: now, ms: 260, a: 0.75 }
       slashes.push({ x: (x + panel().x + panel().s / 2) / 2, y: (y + panel().y + panel().s / 2) / 2, ang: slashAngle(x, y, e.t), len: Math.hypot(W, H) * 0.85, t0: now + 60, ms: 520, color: '255,255,255', w: 22 })
       burst(W / 2, play().y + play().h * 0.42, 34, '#ffd98a', 12, now)
-      pop(`−${e.dmgFoe}`, '#ffd98a', 64, W / 2, play().y + play().h * 0.3)
+      pop(`−${e.dmgFoe}`, POP.crit[1], POP.crit[0], W / 2, play().y + play().h * 0.3)
       meAnim = { kind: 'attack', t0: now }; foeAnim = { kind: 'hit', t0: now }
       break
     case 'break':
@@ -706,7 +763,7 @@ function onEvent(e: DuelEvent, now: number): void {
       SFX.rushHit(); foeHurtAt = now; rushKickAt = now; foeHit.hit(now, hitStrength(e.dmgFoe, foeHpMax()))
       haptics().buzz(18)
       slashes.push({ x, y, ang: slashAngle(x, y, e.t), len: Math.min(W, H) * 0.32, t0: now, ms: 240, color: '255,255,255', w: 8 })
-      pop(`−${e.dmgFoe}`, '#ffd98a', 26)
+      pop(`−${e.dmgFoe}`, POP.rush[1], POP.rush[0])
       meAnim = { kind: 'attack', t0: now }; foeAnim = { kind: 'hit', t0: now }
       break
     case 'deflect':
@@ -726,31 +783,68 @@ function cover(im: HTMLImageElement, x: number, y: number, w: number, h: number)
   ctx.drawImage(im, x + (w - im.naturalWidth * s) / 2, y + (h - im.naturalHeight * s) / 2, im.naturalWidth * s, im.naturalHeight * s)
 }
 const PX_NAME = /\/(gen-[^/]+)\.png/
-function atlasOf(im: HTMLImageElement) {
-  const key = (PX_NAME.exec(im.src) ?? [])[1]?.slice(4) ?? ''
-  return im.src.includes('/duel/sprites/') ? DUEL_ATLASES[key] ?? LEGACY_ATLAS : LEGACY_ATLAS
+/** 띠 그림의 칸 표 · 도트인가 · 발 줄 — 그림 주소마다 한 번 (틀마다 주소에 정규식·includes 를 네 번씩 돌렸다) · 주소가 바뀌면(없는 그림 → 옛 띠) 다시 */
+interface SprMeta { readonly src: string; readonly atlas: FighterAtlas; readonly px: boolean; readonly feet: number | undefined }
+const SPR_META = new WeakMap<HTMLImageElement, SprMeta>()
+function sprMeta(im: HTMLImageElement): SprMeta {
+  const src = im.src
+  let m = SPR_META.get(im)
+  if (m === undefined || m.src !== src) {
+    const name = (PX_NAME.exec(src) ?? [])[1], sheet = src.includes('/duel/sprites/')
+    m = { src, atlas: sheet ? DUEL_ATLASES[name?.slice(4) ?? ''] ?? LEGACY_ATLAS : LEGACY_ATLAS, px: sheet || src.includes('/anim-px/'), feet: SPRITE_PX[name ?? '']?.feet }
+    SPR_META.set(im, m)
+  }
+  return m
+}
+const atlasOf = (im: HTMLImageElement): FighterAtlas => sprMeta(im).atlas
+/**
+ * 띠를 폰 GPU 텍스처 한도 아래 폭으로 접어 둔 판 (11-22 · 열전 bakedStrip 기법) — 겨루기 띠는 넓이가 4600~5760px 라(251장 중 142장이 4096 넘음)
+ * 한도를 넘으면 폰이 그릴 때마다 조각내 올리거나 줄여 올린다. 칸을 1:1 로 옮겨 여러 줄로 접을 뿐이라 도트는 그대로다.
+ * 옮기는 판은 CPU 캔버스(willReadFrequently) — 넓은 원본을 GPU 로 읽다 줄어들지 않게 · 다 되면 ImageBitmap 으로 굳혀 쥔다.
+ * 칸 폭이 정수가 아닌 띠(칸 수가 그림과 안 맞음)는 옮기면 화소가 번지니 원본 그대로 그린다.
+ */
+interface Fold { src: CanvasImageSource; readonly cols: number }
+const FOLDS = new WeakMap<HTMLImageElement, { readonly src: string; readonly fold: Fold | null }>()
+function folded(im: HTMLImageElement, cells: number): Fold | null {
+  const had = FOLDS.get(im)
+  if (had !== undefined && had.src === im.src) return had.fold
+  const max = P.duel.stripFoldPx, cw = im.naturalWidth / cells, ch = im.naturalHeight
+  let fold: Fold | null = null
+  if (im.naturalWidth > max && Number.isInteger(cw) && cw <= max) {
+    const cols = Math.floor(max / cw)
+    const cv = document.createElement('canvas'); cv.width = cols * cw; cv.height = Math.ceil(cells / cols) * ch
+    const c = cv.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D
+    c.imageSmoothingEnabled = false
+    for (let i = 0; i < cells; i++) c.drawImage(im, i * cw, 0, cw, ch, (i % cols) * cw, Math.floor(i / cols) * ch, cw, ch)
+    const f: Fold = { src: cv, cols }
+    fold = f
+    if (typeof createImageBitmap === 'function') void createImageBitmap(cv).then((bm) => { if (FOLDS.get(im)?.fold === f) f.src = bm; else bm.close() }, () => undefined)
+  }
+  FOLDS.set(im, { src: im.src, fold })
+  return fold
 }
 function sprite(im: HTMLImageElement, frame: number, x: number, base: number, h: number, flip: boolean, tint: string | null): void {
   if (!im.complete || im.naturalWidth === 0) return
-  const isPx = im.src.includes('/anim-px/') || im.src.includes('/duel/sprites/')
-  const cw = im.naturalWidth / atlasOf(im).cells, ch = im.naturalHeight
+  const meta = sprMeta(im), isPx = meta.px, cells = meta.atlas.cells
+  const cw = im.naturalWidth / cells, ch = im.naturalHeight
   // 도트는 정수 배율 · 정수 자리 — 점이 네모로 또렷하게 (옛 띠는 매끄럽게 늘린다) · 발 줄(manifest)이 base 에 닿게 칸을 그만큼 내린다
   const sc = isPx ? Math.max(1, Math.round(Math.min(W, H) * P.duel.pxFill / ch)) : 0 // 화면 짧은 변 기준 (폰 390 → 1배 · 데스크톱 768 → 2배)
   const w = isPx ? cw * sc : h * (cw / ch)
   if (isPx) {
-    const m = SPRITE_PX[(PX_NAME.exec(im.src) ?? [])[1] ?? '']
-    h = ch * sc; x = Math.round(x); base = Math.round(base) + (m !== undefined ? (ch - m.feet) * sc : 0)
+    h = ch * sc; x = Math.round(x); base = Math.round(base) + (meta.feet !== undefined ? (ch - meta.feet) * sc : 0)
   }
+  const fold = folded(im, cells)
+  const src = fold?.src ?? im, sx = fold !== null ? (frame % fold.cols) * cw : frame * cw, sy = fold !== null ? Math.floor(frame / fold.cols) * ch : 0
   ctx.save(); ctx.translate(x, base); if (flip) ctx.scale(-1, 1)
   ctx.imageSmoothingEnabled = !isPx
-  if (tint === null) ctx.drawImage(im, frame * cw, 0, cw, ch, -w / 2, -h, w, h)
+  if (tint === null) ctx.drawImage(src, sx, sy, cw, ch, -w / 2, -h, w, h)
   else {
     // 번쩍임은 장수 모양에만 — 따로 그린 판에서 물들여 옮긴다 (판 위에 바로 칠하면 칸 네모가 통째로 물든다)
     const tw = Math.ceil(cw), th = Math.ceil(ch)
     if (tintCv.width < tw || tintCv.height < th) { tintCv.width = tw; tintCv.height = th }
     tintCx.clearRect(0, 0, tintCv.width, tintCv.height)
     tintCx.imageSmoothingEnabled = !isPx
-    tintCx.globalCompositeOperation = 'source-over'; tintCx.drawImage(im, frame * cw, 0, cw, ch, 0, 0, cw, ch)
+    tintCx.globalCompositeOperation = 'source-over'; tintCx.drawImage(src, sx, sy, cw, ch, 0, 0, cw, ch)
     tintCx.globalCompositeOperation = 'source-atop'; tintCx.fillStyle = tint; tintCx.fillRect(0, 0, cw, ch)
     ctx.drawImage(tintCv, 0, 0, cw, ch, -w / 2, -h, w, h)
   }
@@ -812,11 +906,7 @@ function roundRect(x: number, y: number, w: number, h: number, r: number): void 
   ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath()
 }
 /** 초상 판 — 위 띠와 체간 사이 가운데 정사각 */
-function panel(): { x: number; y: number; s: number } {
-  const p = play()
-  const s = Math.min(W - 60, p.h - 56) // 테두리 장식이 화면 밖으로 넘치지 않게
-  return { x: (W - s) / 2, y: p.y + (p.h - 36 - s) / 2 + 4, s }
-}
+function panel(): Readonly<typeof panelBox> { layout(); return panelBox }
 /** 고리 반지름 — 닿기 전엔 바깥에서 모여들고, 닿은 뒤엔 원 안으로 계속 줄어든다 (형 11-09: 늦은 걸 보기만 해도 알게) */
 function ringR(r: number, off: number, lead = P.duel.lead): number {
   if (off <= 0) return r * (1 + 3.2 * Math.min(1, -off / Math.max(1, lead)))
@@ -865,6 +955,26 @@ function whenSprite(when: 'early' | 'late'): TextSprite {
   const fs2 = Math.round(judgeMax('good') * 0.42)
   return textSprite(tr(when === 'early' ? 'duel.early' : 'duel.late'), fs2, 800, when === 'early' ? '#8fd0ff' : '#ffb070', null, 'rgba(20,10,4,.92)', Math.max(3, fs2 * 0.2), true)
 }
+/** 글자 판 — 그리는 곳과 미리 굽는 곳(queueWarm)이 같은 열쇠를 쓰게 한 곳에 모은다 */
+const hintSprite = (key: Key, heavy: boolean): TextSprite => textSprite(tr(key), Math.min(18, W * 0.038), 800, heavy ? '#ffb2a0' : '#ffebbe', null, '#160c07', 4, false)
+const postureSprite = (): TextSprite => textSprite(tr('duel.posture'), Math.min(13, W * 0.03), 700, '#e9d3a9', null, '#160c07', 3, false)
+/** 고리 안 글 — 막는 폭 안이면 「지금!」 · 아니면 강공격 표시 */
+const cueWordSprite = (inWin: boolean): TextSprite => textSprite(tr(inWin ? 'duel.tap' : 'duel.heavy'), cueR() * 0.58, 900, inWin ? '#ffe7a1' : '#ffb2a0', null, '#240b05', 3, true)
+const orderSprite = (n: number): TextSprite => textSprite(String(n), cueR() * 0.65, 900, '#fff3d5', null, '#21110a', 3, true)
+const namePx = (): number => Math.round(14 * Math.max(1, hudTw() / 100))
+const nameSprite = (name: string): TextSprite => textSprite(name, namePx(), 700, '#f3e3c0', null, 'rgba(0,0,0,.7)', 4, false)
+const timerSprite = (sec: number): TextSprite => textSprite(String(sec), hudTw() * 0.52 * 1.08, 900, sec <= 10 ? '#ff6a5a' : '#ffe2a0', null, 'rgba(0,0,0,.85)', 6, true)
+/** 튀는 피해 숫자 — 크기·빛은 사건마다 (맞음 · 치명 · 연타) */
+const POP = { miss: [38, '#ff7a6a'], crit: [64, '#ffd98a'], rush: [26, '#ffd98a'] } as const
+const popSprite = (text: string, size: number, color: string): TextSprite => textSprite(text, size * 1.7, 900, color, null, 'rgba(0,0,0,.8)', 6, false)
+const rushFs = (): number => Math.round(Math.min(W, panel().s) * 0.16)
+const rushSprite = (): TextSprite => { const fs0 = rushFs(); return textSprite(tr('duel.rush'), fs0 * 1.06, 900, '#fff6d0', '#ffb03a', 'rgba(40,10,0,.9)', Math.max(6, fs0 * 0.14), true) }
+/** 시작 이름판 (형 11-09 · 양쪽에서 미끄러져 와 부딪힘) — 글자 크기 · ⚔ 는 쉴 때와 톡 커질 때(1.4배) 두 판 */
+const introFs = (): number => Math.round(Math.min(W, H) * 0.075)
+const introSprite = (text: string, color: string, px = introFs()): TextSprite => textSprite(text, px, 900, color, null, 'rgba(20,8,2,.9)', introFs() * 0.14, true)
+/** 끝 글 「승리 · 패배 · 비김」 — 쾅 떨어지는 동안(2.4배→1배)은 두 배로 구운 판을 줄여서 · 앉은 뒤는 제 크기 판 */
+const endFs = (): number => Math.round(Math.min(W, H) * 0.2)
+const endSprite = (word: string, col: string, k = 1): TextSprite => textSprite(word, endFs() * k, 900, '#fffaf0', col, 'rgba(30,12,4,.95)', endFs() * 0.12 * k, true)
 function slashSrc(im: HTMLImageElement, len: number, color: string): HTMLCanvasElement {
   const bw = Math.min(512, Math.ceil(len))
   return scaled(im, bw, bw * im.naturalHeight / im.naturalWidth, color === '255,255,255' ? null : `rgba(${color},.6)`)
@@ -1002,14 +1112,10 @@ function drawCue(c: Cue, t: number): void {
   ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI * 2); ctx.stroke()
   // 느낌표만으로는 피해야 하는지 알 수 없다. 강공격도 같은 고리에서 받아친다는 뜻을 쓴다.
   if (c.heavy || inWin) {
-    const label = tr(inWin ? 'duel.tap' : 'duel.heavy')
-    const text = textSprite(label, r * 0.58, 900, inWin ? '#ffe7a1' : '#ffb2a0', null, '#240b05', 3, true)
+    const text = cueWordSprite(inWin)
     putText(text, x, y, 'center', Math.min(1, r * 1.8 / text.w))
   }
-  if (duel.cues.length > 1) {
-    const order = duel.cues.indexOf(c) + 1
-    putText(textSprite(String(order), r * 0.65, 900, '#fff3d5', null, '#21110a', 3, true), x, y - r * 1.55, 'center')
-  }
+  if (duel.cues.length > 1) putText(orderSprite(duel.cues.indexOf(c) + 1), x, y - r * 1.55, 'center')
 }
 
 /** 연타 신호 — 「연타!」 + 단추를 누르는 손 그림 두 장이 파바박 번갈아 (형 11-09) · 남은 시간 띠 */
@@ -1023,9 +1129,8 @@ function rushCue(now: number, d: Duel): void {
   if (im !== null) ctx.drawImage(scaled(im, Math.round(Math.min(W, pn.s) * 0.36), Math.round(Math.min(W, pn.s) * 0.36)), cx - sz / 2, cy - sz / 2, sz, sz)
   else { ctx.fillStyle = beat === 1 ? '#ffd27a' : '#fff1c0'; ctx.beginPath(); ctx.arc(cx, cy, sz * 0.32, 0, Math.PI * 2); ctx.fill() }
   // 「연타!」 — 크게 흔들리며
-  const fs0 = Math.round(Math.min(W, pn.s) * 0.16)
   const ty = cy - sz * 0.62, jx = Math.sin(now / 33) * 3
-  putText(textSprite(tr('duel.rush'), fs0 * 1.06, 900, '#fff6d0', '#ffb03a', 'rgba(40,10,0,.9)', Math.max(6, fs0 * 0.14), true), cx + jx, ty, 'center', (1 + 0.06 * Math.sin(now / 45)) / 1.06)
+  putText(rushSprite(), cx + jx, ty, 'center', (1 + 0.06 * Math.sin(now / 45)) / 1.06)
   // 남은 시간 — 판 아래 금빛 띠가 줄어든다
   const left = Math.max(0, (d.phaseUntil - d.t) / P.duel.rushTicks)
   const bw = pn.s * 0.8
@@ -1056,13 +1161,19 @@ function drawDuel(now: number, fadeIn: number): void {
   const zoom = 1 + (sinceCrit < 500 ? 0.05 * (1 - sinceCrit / 500) : 0)
   ctx.scale(zoom, zoom)
   const pb = panelBake(pn.s)
-  if (pb !== null) { ctx.globalAlpha = fadeIn; ctx.drawImage(pb, -pn.s / 2, -pn.s / 2, pn.s, pn.s); ctx.globalAlpha = 1 }
-  else { roundRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s, pn.s * 0.06); ctx.fillStyle = 'rgba(10,7,5,.55)'; ctx.fill() }
-  if (now - foeHurtAt < 120) { roundRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s, pn.s * 0.06); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(255,240,220,${0.28 * (1 - (now - foeHurtAt) / 120)})`; ctx.fill(); ctx.globalCompositeOperation = 'source-over' } // 맞으면 초상이 잠깐 하얗게 번쩍
-  if (fhit !== null) { ctx.globalAlpha = fadeIn; hitArtDraw(foePanelHitArt, fhit, -pn.s / 2, -pn.s / 2, pn.s, pn.s, false); drawHitPortrait(ctx, fhit, -pn.s / 2, -pn.s / 2, pn.s, pn.s, 'rect', pn.s * 0.06, artReady(foePanelHitArt)); ctx.globalAlpha = 1 } // 맞은 초상: 붉게 · 빛 빠짐 · 피격 그림이 없을 때만 금
   const fr = art('panel-frame')
-  if (fr !== null) { const F = pn.s / 0.89, Fh = pn.s / 0.877; ctx.drawImage(scaled(fr, F, Fh), -pn.s / 2 - 0.055 * F, -pn.s / 2 - 0.061 * Fh, F, Fh) } // 테두리 안쪽 창 = 그림의 5.5~94.5% · 6.1~93.8%
-  else { ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(214,170,90,.85)'; roundRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s, pn.s * 0.06); ctx.stroke() }
+  // 가만히 있는 판(안 맞고 · 안 떨리고 · 다 밝아진 뒤)은 초상+테두리를 화면 화소 자리 그대로 구운 한 장을 1:1 로 (11-22 · 폰 GPU: 큰 그림 둘을 매 틀 겹쳐 칠하던 것)
+  if (pb !== null && fr !== null && fadeIn >= 1 && sinceCrit >= 500 && sinceRush >= 90 && fhit === null && now - foeHurtAt >= 120 && shakeX === 0 && shakeY === 0) {
+    const rest = panelRest(pn, pb, fr)
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(rest, restAt.x, restAt.y)
+  } else {
+    if (pb !== null) { ctx.globalAlpha = fadeIn; ctx.drawImage(pb, -pn.s / 2, -pn.s / 2, pn.s, pn.s); ctx.globalAlpha = 1 }
+    else { roundRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s, pn.s * 0.06); ctx.fillStyle = 'rgba(10,7,5,.55)'; ctx.fill() }
+    if (now - foeHurtAt < 120) { roundRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s, pn.s * 0.06); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(255,240,220,${0.28 * (1 - (now - foeHurtAt) / 120)})`; ctx.fill(); ctx.globalCompositeOperation = 'source-over' } // 맞으면 초상이 잠깐 하얗게 번쩍
+    if (fhit !== null) { ctx.globalAlpha = fadeIn; hitArtDraw(foePanelHitArt, fhit, -pn.s / 2, -pn.s / 2, pn.s, pn.s, false); drawHitPortrait(ctx, fhit, -pn.s / 2, -pn.s / 2, pn.s, pn.s, 'rect', pn.s * 0.06, artReady(foePanelHitArt)); ctx.globalAlpha = 1 } // 맞은 초상: 붉게 · 빛 빠짐 · 피격 그림이 없을 때만 금
+    if (fr !== null) { const F = pn.s / 0.89, Fh = pn.s / 0.877; ctx.drawImage(scaled(fr, F, Fh), -pn.s / 2 - 0.055 * F, -pn.s / 2 - 0.061 * Fh, F, Fh) } // 테두리 안쪽 창 = 그림의 5.5~94.5% · 6.1~93.8%
+    else { ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(214,170,90,.85)'; roundRect(-pn.s / 2, -pn.s / 2, pn.s, pn.s, pn.s * 0.06); ctx.stroke() }
+  }
   ctx.restore()
   pm('panel')
   if (d.phase === 'rush') {
@@ -1151,12 +1262,9 @@ function drawDuel(now: number, fadeIn: number): void {
     let next: Cue | undefined
     for (const c of d.cues) if (c.done === null && d.t >= c.t0) { next = c; break }
     const key = d.phase === 'rush' ? 'duel.break' : d.phase === 'crit' ? 'duel.crit' : next?.heavy === true ? 'duel.heavyHint' : 'duel.guide'
-    const hint = textSprite(tr(key), Math.min(18, W * 0.038), 800, next?.heavy === true ? '#ffb2a0' : '#ffebbe', null, '#160c07', 4, false)
+    const hint = hintSprite(key, next?.heavy === true)
     putText(hint, W / 2, play().y + 6, 'center', Math.min(1, (W - 24) / hint.w))
-    if (d.phase !== 'rush') {
-      const label = textSprite(tr('duel.posture'), Math.min(13, W * 0.03), 700, '#e9d3a9', null, '#160c07', 3, false)
-      putText(label, W / 2, py - 5, 'center')
-    }
+    if (d.phase !== 'rush') putText(postureSprite(), W / 2, py - 5, 'center')
   }
   pm('posture')
   // 위 — 격투 게임처럼: 우리(왼쪽) · 시간(가운데 크게) · 적장(오른쪽)
@@ -1179,6 +1287,7 @@ function drawDuel(now: number, fadeIn: number): void {
   const [jmx, jmy] = jolt(hurtAt), [jfx, jfy] = jolt(foeHurtAt)
   const capMe = bar(bxMe + jmx, by + jmy, bw, bh, d.me.hp / R.hp, now - hurtAt < 200 ? '#ff5a4a' : '#e9c46a', 'left', 'hud-bar')
   const capFoe = bar(bxFoe + jfx, by + jfy, bw, bh, d.foe.hp / Math.round(R.hp * tierOf(d).foeHp), now - foeHurtAt < 200 ? '#ffffff' : '#e76f51', 'right', 'hud-bar')
+  if (capMe !== null) faceCapR = capMe.r
   pm('bars')
   // 둥근 머리 안에 얼굴
   // 맞으면 얼굴도 붉게 · 빛 빠짐 (흔들림은 막대 떨림이 이미 준다) · 피격 그림이 있으면 그 얼굴로 잠깐(얼굴이 보이게 밀어서) · 없으면 금
@@ -1191,12 +1300,11 @@ function drawDuel(now: number, fadeIn: number): void {
     ctx.restore()
     if (hf !== null) drawHitPortrait(ctx, hf, cap.cx - cap.r, cap.cy - cap.r, cap.r * 2, cap.r * 2, 'circle', 0, artReady(hitIm))
   }
-  const namePx = Math.round(14 * Math.max(1, hudS))
   const nameY = by + bh + Math.round(18 * Math.max(1, hudS))
   // 이름은 얼굴(둥근 머리) 옆 아래
   const nxMe = capMe !== null ? capMe.cx + capMe.r * 1.25 : 12, nxFoe = capFoe !== null ? capFoe.cx - capFoe.r * 1.25 : W - 12
-  putText(textSprite(cfg.me.name, namePx, 700, '#f3e3c0', null, 'rgba(0,0,0,.7)', 4, false), nxMe, nameY, 'left')
-  putText(textSprite(cfg.foe.name, namePx, 700, '#f3e3c0', null, 'rgba(0,0,0,.7)', 4, false), nxFoe, nameY, 'right')
+  putText(nameSprite(cfg.me.name), nxMe, nameY, 'left')
+  putText(nameSprite(cfg.foe.name), nxFoe, nameY, 'right')
   pm('faces+names')
   const sec = Math.max(0, Math.ceil((d.end - d.t) / R.hz))
   const plate = art('hud-timer')
@@ -1204,7 +1312,7 @@ function drawDuel(now: number, fadeIn: number): void {
   if (plate !== null) { const ph2 = tw * 0.98, pw2 = ph2 * (plate.naturalWidth / plate.naturalHeight); ctx.drawImage(scaled(plate, pw2, ph2), tcx - pw2 / 2, tcy - ph2 / 2, pw2, ph2) }
   else { ctx.fillStyle = 'rgba(20,12,6,.85)'; ctx.beginPath(); ctx.arc(tcx, tcy, tw * 0.42, 0, Math.PI * 2); ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#c99a4a'; ctx.stroke() }
   const low = sec <= 10
-  putText(textSprite(String(sec), tw * 0.52 * 1.08, 900, low ? '#ff6a5a' : '#ffe2a0', null, 'rgba(0,0,0,.85)', 6, true), tcx, tcy + 2, 'center', (low ? 1 + 0.08 * Math.max(0, Math.sin(now / 80)) : 1) / 1.08)
+  putText(timerSprite(sec), tcx, tcy + 2, 'center', (low ? 1 + 0.08 * Math.max(0, Math.sin(now / 80)) : 1) / 1.08)
   pm('timer')
   // 숫자 — 빠르고 멀리 튄다
   for (let i = pops.length - 1; i >= 0; i--) {
@@ -1213,7 +1321,7 @@ function drawDuel(now: number, fadeIn: number): void {
     const k = age / 620, e = 1 - (1 - Math.min(1, age / 260)) ** 3
     const x = pp.x + pp.vx * e, y = pp.y + pp.vy * e + 60 * Math.max(0, k - 0.4) ** 2
     ctx.globalAlpha = k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4
-    putText(textSprite(pp.text, pp.size * 1.7, 900, pp.color, null, 'rgba(0,0,0,.8)', 6, false), x, y, 'center', (1 + 0.7 * Math.max(0, 1 - age / 90)) / 1.7)
+    putText(popSprite(pp.text, pp.size, pp.color), x, y, 'center', (1 + 0.7 * Math.max(0, 1 - age / 90)) / 1.7)
   }
   ctx.globalAlpha = 1
   pm('pops')
@@ -1245,19 +1353,168 @@ function warmNow(now: number): void {
   for (const [kind, word] of [['perfect', tr('duel.perfect')], ['good', tr('duel.block')], ['miss', tr('duel.hit')]] as const) judgeSprite(kind, word)
   whenSprite('early'); whenSprite('late')
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H)
+  queueWarm()
+}
+/**
+ * 남은 글자는 한 틀에 P.duel.warmPerFrame 개씩 (11-22) — 처음 「연타!」·피해 숫자·초 숫자·고리 안 글이 뜨는 틀마다 글꼴을 새로 그려 끊겼다
+ * (재기: 4배 느린 CPU 에서 첫 치명 50ms · 첫 연타 70~90ms · 첫 맞음 30ms · 첫 고리 20ms). 싸움 전(깃발·등장 컷) 틀에서 먼저 쓸 것부터 굽는다.
+ * 그림은 그대로 — 그릴 때 부르는 같은 함수(같은 열쇠)를 미리 부를 뿐이다.
+ */
+type WarmJob = (() => TextSprite | void) & { tries?: number }
+const warmQ: WarmJob[] = []
+function queueWarm(): void {
+  const q = warmQ
+  q.length = 0
+  warmedIm.clear()
+  // 그림 먼저 — 아직 안 온 그림(피격 그림은 늦게 올 수 있다)이 있으면 뒤로 돌려 다시 · 다 오면(또는 끝내 안 오면) 그리기 꼴도 미리
+  const images: WarmJob = () => {
+    if (warmImages() || (images.tries = (images.tries ?? 0) + 1) >= P.duel.warmImageTries) warmStates(last)
+    else { warmCx.getImageData(0, 0, 1, 1); q.push(images) }
+  }
+  q.push(images)
+  q.push(() => introSprite(cfg.me.name, '#ffe9b8'), () => introSprite(cfg.foe.name, '#ffb3a6'))
+  q.push(() => introSprite('⚔', '#ffd98a', Math.round(introFs() * 1.2 * 1.4)), () => introSprite('⚔', '#ffd98a', Math.round(introFs() * 1.2)))
+  q.push(() => nameSprite(cfg.me.name), () => nameSprite(cfg.foe.name), postureSprite)
+  // 판정 글은 위에서 이미 구웠다 — 글꼴 조각이 늦게 와 다시 구워야 하면 여기서 (이미 제 글꼴이면 찾기만)
+  q.push(() => judgeSprite('perfect', tr('duel.perfect')), () => judgeSprite('good', tr('duel.block')), () => judgeSprite('miss', tr('duel.hit')), () => whenSprite('early'), () => whenSprite('late'))
+  for (const [key, heavy] of [['duel.guide', false], ['duel.heavyHint', true], ['duel.crit', false], ['duel.crit', true], ['duel.break', false], ['duel.break', true]] as const) q.push(() => hintSprite(key, heavy))
+  q.push(() => cueWordSprite(true), () => cueWordSprite(false), () => orderSprite(1), () => orderSprite(2), () => orderSprite(3))
+  const top = Math.ceil(duel.end / P.duel.hz)
+  for (let s = top; s > top - 3 && s >= 0; s--) q.push(() => timerSprite(s))
+  q.push(() => { q.unshift(...damageTexts().map(([text, size, color]) => () => popSprite(text, size, color))) })
+  q.push(rushSprite)
+  // 끝 글은 앉은 판(제 크기)만 — 쾅 떨어지는 두 배 판은 셋 다 구우면 너무 커서(한 장 3~4MB) 결판 나는 틀에 그것 하나만 굽는다
+  for (const r of Object.values(RESULT)) q.push(() => endSprite(r.word, r.col, 1))
+  for (let s = top - 3; s >= 0; s--) q.push(() => timerSprite(s))
+}
+/**
+ * 처음 그리는 그림을 싸움 밖에서 한 번 그려 풀고 GPU 에 올려 둔다 (11-22) — 피격 그림(900px)·얼굴·장수 띠는 처음 그리는 틀 뒤에
+ * 풀기·올리기로 주 스레드가 오래 멈췄다 (재기: 4배 느린 CPU 에서 첫 치명 뒤 147ms 두 번 · 첫 맞음 뒤 67ms · 싸움 첫 틀 120ms).
+ * 화면 밖 작은 판에 그릴 때와 같은 배율로 그리고(넘친 곳은 잘린다) 부르는 쪽이 한 화소를 읽어 그 자리에서 올리게 한다 — 화면에는 그리지 않는다.
+ * 다 그렸으면 true · 아직 안 온 그림이 있으면 false.
+ */
+const warmCv = document.createElement('canvas')
+warmCv.width = 256; warmCv.height = 256
+const warmCx = warmCv.getContext('2d') as CanvasRenderingContext2D
+const warmedIm = new Set<CanvasImageSource>()
+/** 체력 막대 머리(얼굴 창) 반지름 — 그릴 때 적어 두면 warmImages 가 같은 크기로 미리 그린다 */
+let faceCapR = 0
+function warmImages(): boolean {
+  let all = true
+  const put = (im: CanvasImageSource | null, w: number, h: number): void => {
+    if (im === null || warmedIm.has(im)) return
+    if (im instanceof HTMLImageElement && !artReady(im)) { all = false; return }
+    warmCx.setTransform(1, 0, 0, 1, 0, 0); warmCx.drawImage(im, 0, 0, Math.max(1, w * dpr), Math.max(1, h * dpr)); warmedIm.add(im)
+  }
+  if (faceCapR > 0) {
+    put(meFace, faceCapR * 2.3, faceCapR * 2.3); put(foeFace, faceCapR * 2.3, faceCapR * 2.3)
+    put(meFaceHitArt, faceCapR * 2 * FACE_ZOOM, faceCapR * 2 * FACE_ZOOM); put(foeFaceHitArt, faceCapR * 2 * FACE_ZOOM, faceCapR * 2 * FACE_ZOOM)
+  } else all = false
+  put(foePanelHitArt, panel().s, panel().s)
+  // 장수 띠 — 접은 띠는 ImageBitmap 으로 굳은 뒤에 (그 전 판은 곧 바뀐다) · 제 배율(1:1)로
+  for (const im of [sprMe, sprFoe]) {
+    if (!artReady(im)) { all = false; continue }
+    const f = folded(im, atlasOf(im).cells)
+    if (f === null) put(im, im.naturalWidth / dpr, im.naturalHeight / dpr)
+    else if (typeof ImageBitmap !== 'undefined' && f.src instanceof ImageBitmap) put(f.src, f.src.width / dpr, f.src.height / dpr)
+    else all = false
+  }
+  return all
+}
+/**
+ * 무거운 순간(첫 고리 · 치명 · 맞음 · 연타)에 처음 쓰는 그리기 꼴을 싸움 전에 화면 밖 판에 한 번씩 그려 둔다 (11-22) — 사각·원 오림 + 투명도로 그림 그리기 ·
+ * 빛 더하기(lighter)로 돌려 그리기 · 둥근 판 테두리 긋기 · 물들인 장수. 처음 쓰는 꼴은 GPU 가 그 자리에서 그리기 프로그램을 짓느라 멈췄다
+ * (재기: 같은 꼴을 미리 그리면 첫 그리기 멈춤 107~213ms → 0). 그리는 함수는 화면과 같은 것을 부르고 그리는 판(ctx)만 잠깐 바꾼다 · 모양은 이 판 안에 들게 옮긴다.
+ */
+function warmStates(now: number): void {
+  const pn = panel(), s = pn.s, r = faceCapR > 0 ? faceCapR : 20, R = cueR()
+  const f: HitFrame = { dx: 0, dy: 0, red: 0.5, gray: 0.3, crack: 0.5, art: 0.6, seed: 0 }
+  ctx = warmCx
+  try {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    // 첫 고리 — 빛 · 고리 그림 · 막는 띠(evenodd) · 고리 선 · 고리 안 글 (닿기 직전 · 강공격)
+    const c: Cue = { id: 0, x: 0.5, y: 0.5, t0: 0, hitAt: 40, heavy: true, done: null }
+    const [cx, cy] = toPx(c.x, c.y)
+    ctx.save(); ctx.translate(40 - cx, 40 - cy); drawCue(c, 9); drawCue(c, 39); ctx.restore()
+    // 초상 판이 맞을 때 — 둥근 판 빛 더하기 · 사각 오림 + 투명도 피격 그림 · 겉막(둥근 사각 오림 · 금) · 연타 때 판 둘레 굵은 선
+    const pb = panelBake(s)
+    ctx.save(); ctx.translate(20 + s / 2, 20 + s / 2); ctx.scale(1.03, 1.03)
+    if (pb !== null) { ctx.globalAlpha = 0.9; ctx.drawImage(pb, -s / 2, -s / 2, s, s); ctx.globalAlpha = 1 }
+    roundRect(-s / 2, -s / 2, s, s, s * 0.06); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(255,240,220,.2)'; ctx.fill(); ctx.globalCompositeOperation = 'source-over'
+    hitArtDraw(foePanelHitArt, f, -s / 2, -s / 2, s, s, false)
+    drawHitPortrait(ctx, f, -s / 2, -s / 2, s, s, 'rect', s * 0.06, false); drawHitPortrait(ctx, f, -s / 2, -s / 2, s, s, 'rect', s * 0.06, true)
+    ctx.restore()
+    ctx.save(); ctx.lineWidth = 22; ctx.strokeStyle = 'rgba(255,200,90,.1)'; roundRect(20, 20, s, s, s * 0.06); ctx.stroke(); ctx.restore()
+    // 얼굴 창 — 원 오림 + 얼굴 · 투명도 피격 그림 · 원 겉막
+    for (const [face, hit] of [[meFace, meFaceHitArt], [foeFace, foeFaceHitArt]] as const) {
+      ctx.save(); ctx.beginPath(); ctx.arc(60, 60, r, 0, Math.PI * 2); ctx.clip()
+      if (artReady(face)) ctx.drawImage(face, 60 - r * 1.15, 60 - r, r * 2.3, r * 2.3)
+      if (artReady(hit)) { const d = r * 2 * FACE_ZOOM; ctx.globalAlpha = 0.5; ctx.drawImage(hit, 60 - r, 60 - r, d, d); ctx.globalAlpha = 1 }
+      ctx.restore()
+      drawHitPortrait(ctx, f, 60 - r, 60 - r, r * 2, r * 2, 'circle', 0, artReady(hit)); drawHitPortrait(ctx, f, 60 - r, 60 - r, r * 2, r * 2, 'circle', 0, false)
+    }
+    // 챙(막음 · 정확) · 베기(흰 · 붉은) · 불꽃 · 번쩍 — 빛 더하기 · 돌려 그리기 · 투명도
+    clang(60, 60, R * 3.2, 0.8, 0, now); clang(60, 60, R * 2, 0.8, 0.6, now)
+    drawSlash({ x: 60, y: 60, ang: 0.6, len: Math.hypot(W, H) * 0.85, t0: now, ms: 520, color: '255,255,255', w: 22 }, 0.3)
+    drawSlash({ x: 60, y: 60, ang: -0.6, len: Math.min(W, H) * 0.45, t0: now, ms: 260, color: '255,60,40', w: 10 }, 0.7)
+    ctx.strokeStyle = '#ffd98a'; ctx.globalAlpha = 0.6; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(10, 10); ctx.lineTo(50, 30); ctx.stroke(); ctx.globalAlpha = 1
+    ctx.fillStyle = 'rgba(255,250,235,.5)'; ctx.fillRect(0, 0, 80, 80)
+    // 맞아 물든 장수 (우리 · 적장 · 뒤집힘)
+    const sh = (H - fieldTop()) * 0.82
+    sprite(sprMe, 0, 40, 70, sh, false, 'rgba(255,215,205,.75)'); sprite(sprFoe, 0, 40, 70, sh, true, 'rgba(255,255,255,.8)')
+  } finally { ctx = screenCtx }
+  warmCx.getImageData(0, 0, 1, 1)
+}
+function warmMore(): void {
+  // 글꼴 조각을 받는 중이면 기다린다 — 그사이 구우면 대신 글꼴로 구웠다가 다시 굽는다
+  if (document.fonts.status === 'loading') return
+  // 이번 틀에 몇 개 — 뒤로 돌린 일(다시 해 볼 것)을 한 틀에 거듭 돌리지 않게 처음 길이로 묶는다
+  for (let i = 0, n = Math.min(P.duel.warmPerFrame, warmQ.length); i < n; i++) {
+    const job = warmQ.shift() as WarmJob
+    // 미리 굽기는 덤이다 — 하나가 잘못돼도 싸움 틀(rAF)이 끊기지 않게 그 일만 버린다 (없으면 처음 쓸 때 예전처럼 굽는다)
+    let t: TextSprite | void
+    try { t = job() } catch { ctx = screenCtx; continue }
+    if (t !== undefined && !t.final && (job.tries = (job.tries ?? 0) + 1) < 4) warmQ.push(job)
+  }
+}
+/**
+ * 나올 수 있는 피해 숫자 (미리 굽기에만) — 같은 셈(sim)을 그림 쪽에서 따로 두 번 굴려 모은다: 하나도 못 막는 손 · 늘 정확히 받고 연타하는 손.
+ * 판(duel)은 건드리지 않는다 · 빠진 숫자가 있으면 그 숫자만 처음 뜰 때 굽는다 (예전 그대로)
+ */
+function damageTexts(): Array<readonly [string, number, string]> {
+  const out = new Map<string, readonly [string, number, string]>()
+  for (const parry of [false, true]) {
+    const d = createDuel({ seed, muMe, muFoe, tier })
+    while (d.over === null) {
+      let tap: Tap | undefined
+      if (parry && d.phase === 'rush') tap = { x: 0.5, y: 0.5 }
+      else if (parry) for (const c of d.cues) if (c.done === null && c.hitAt === d.t + 1) tap = { x: c.x, y: c.y }
+      stepDuel(d, tap)
+    }
+    for (const e of d.events) {
+      const [size, color] = e.kind === 'miss' ? POP.miss : e.kind === 'crit' ? POP.crit : POP.rush
+      const n = e.kind === 'miss' ? e.dmgMe : e.dmgFoe
+      if (e.kind === 'miss' || e.kind === 'crit' || e.kind === 'rushHit') out.set(`${e.kind}${n}`, [`−${n}`, size, color])
+    }
+  }
+  return [...out.values()]
 }
 function frame(now: number): void {
   raf = 0
   if (document.hidden) return
+  frameNo++
   const dt = last === 0 ? 0 : Math.min(100, now - last)
   last = now
   if (!(PROF && params.get('nowatch') === '1')) watchLoad(dt)
+  if (rewarm) { rewarm = false; warmed = false }
   warmNow(now)
+  if (warmQ.length > 0) warmMore()
   if (PROF) pt = performance.now()
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   if (mode === 'intro' || mode === 'duel' || mode === 'end') ctx.clearRect(0, 0, W, H)
   const sx = shake > 0 ? (((now * 7) % 13) / 13 - 0.5) * shake : 0
   const sy = shake > 0 ? (((now * 11) % 17) / 17 - 0.5) * shake : 0
+  shakeX = sx; shakeY = sy
   shake = Math.max(0, shake - 0.7)
   ctx.save(); ctx.translate(sx, sy)
   if (mode === 'field') drawField(now, 0)
@@ -1336,6 +1593,7 @@ function close(): void {
 if (mode === 'duel') begin()
 wake()
 // 개발 검수 손잡이 — 헤드리스 시험(tools/hit-portrait-probe.ts)이 화면 쪽 사건 하나를 틀어 본다 (판은 그대로) · 배포 빌드엔 없음
-if (import.meta.env?.DEV === true) Object.assign(window, { __duelEvent: (e: DuelEvent): number => { onEvent(e, last); return last }, __duelMode: () => mode })
+// __duel·__duelTap: 프레임 재기(tools/duel-fps-probe.ts)가 고리 닿는 때에 맞춰 눌러 가장 무거운 순간(챙·베기·치명·연타)을 만든다 · __duelWarm: 미리 굽기가 어디까지 왔나
+if (import.meta.env?.DEV === true) Object.assign(window, { __duelEvent: (e: DuelEvent): number => { onEvent(e, last); return last }, __duelMode: () => mode, __duel: () => duel, __duelTap: (x: number, y: number): void => { if (mode === 'duel' && duel.over === null) queued = { x, y } }, __duelWarm: () => ({ warmed, left: warmQ.length, images: warmedIm.size, faceCapR, texts: TXT.size }) })
 return done
 }
