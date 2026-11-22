@@ -49,18 +49,25 @@ export function botChoice(s: HaebiRun, route: Route): Pick {
 const BOT_PICKUP = 260, BOT_PICKUP_HP = .6
 /**
  * 58-KITS 무기마다 걷는 버릇 (봇이 원만 돌면 멈추기·곧게 달리기·버티기를 몰라 숫자가 거짓말을 한다 · 사람이 그 무기로 하는 만큼):
- * 활 = 돌다가 적이 kite 밖이면 stopFor 초씩 멈춰 겨눈다(stopEvery 초마다) · 돌팔매 = 적이 kite 안이면 뭉친 쪽 반대로 물러난다 · 방울 = 체력이 hold 몫 넘으면 버틴다(기세 알도 안 주우러 감) ·
+ * 활 = 적이 kite 안이면 물러나고(가까운 적일수록 세게 · 판 가운데로 center 만큼 당김) · 밖이면 stopFor 초씩 멈춰 겨눈다(stopEvery 초마다) · 돌팔매 = 적이 kite 안이면 물러난다 · 방울 = 체력이 hold 몫 넘으면 버틴다(기세 알도 안 주우러 감) ·
  * 창 = 판을 가로로 오가며(laneSeconds 초마다 반대쪽 · laneX) 곧게 달린다 · 칼 = 체력이 hold 몫 넘으면 가까운 적에게 approach px 까지 다가가 앞을 본다 · 도끼·단검 = 예전 원
  * null = 예전 원 그대로 · 옛 규칙 판은 늘 null (옛 봇 판·재생 SHA 그대로)
  */
-const KIT_BOT = { kite: 150, crowd: 220, stopEvery: 3, stopFor: 1.4, hold: .5, approach: 90, laneSeconds: 6, laneX: [220, 900] as const, laneSway: 150, laneRate: .2, laneSlope: .3 }
+const KIT_BOT = { kite: 150, crowd: 220, center: 1.5, stopEvery: 3, stopFor: 1.4, hold: .5, approach: 90, laneSeconds: 6, laneX: [220, 900] as const, laneSway: 150, laneRate: .2, laneSlope: .3 }
 function kitWalk(s: HaebiRun): { x: number; y: number } | null {
   if (!s.kits) return null
   let nd = Infinity, cx = 0, cy = 0, n = 0, near: HaebiRun['enemies'][number] | undefined
   for (const e of s.enemies) { if (e.hp <= 0) continue; const d = Math.hypot(e.x - s.x, e.y - s.y); if (d < nd) { nd = d; near = e } if (d < KIT_BOT.crowd) { cx += e.x; cy += e.y; n++ } }
   const healthy = s.hp > s.maxHp * KIT_BOT.hold
-  if (s.kit === 'bow') return nd > KIT_BOT.kite && s.t % KIT_BOT.stopEvery < KIT_BOT.stopFor ? { x: 0, y: 0 } : null
-  if (s.kit === 'sling') return nd < KIT_BOT.kite && n ? { x: s.x - cx / n, y: s.y - cy / n } : null
+  // 물러나기: 가까운 적일수록 세게 밀어내는 쪽 + 판 가운데로 당김(벽에 몰리지 않게)
+  const kite = () => {
+    let rx = 0, ry = 0
+    for (const e of s.enemies) { if (e.hp <= 0) continue; const dx = s.x - e.x, dy = s.y - e.y, d = Math.hypot(dx, dy) || 1; if (d < KIT_BOT.crowd) { rx += dx / d / d; ry += dy / d / d } }
+    const len = Math.hypot(rx, ry) || 1
+    return { x: rx / len + (C.width / 2 - s.x) / C.width * KIT_BOT.center, y: ry / len + (C.height / 2 - s.y) / C.height * KIT_BOT.center }
+  }
+  if (s.kit === 'bow') return nd < KIT_BOT.kite ? kite() : s.t % KIT_BOT.stopEvery < KIT_BOT.stopFor ? { x: 0, y: 0 } : null
+  if (s.kit === 'sling') return nd < KIT_BOT.kite && n ? kite() : null
   if (s.kit === 'magic') return healthy ? { x: 0, y: 0 } : null
   if (s.kit === 'spear') { const tx = KIT_BOT.laneX[Math.floor(s.t / KIT_BOT.laneSeconds) % 2]!, ty = C.height / 2 + Math.sin(s.t * KIT_BOT.laneRate) * KIT_BOT.laneSway; return { x: tx - s.x, y: (ty - s.y) * KIT_BOT.laneSlope } }
   if (s.kit === 'sword' && healthy && near) return nd > KIT_BOT.approach ? { x: near.x - s.x, y: near.y - s.y } : { x: 0, y: 0 }
