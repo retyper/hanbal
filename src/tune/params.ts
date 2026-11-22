@@ -1246,6 +1246,32 @@ export const HAEBI_END = {
 } as const
 
 /** 낱알·먹·도장은 원본 PNG를 보존하고 화면용 메모리에서만 잘라 한 번 굽는다. */
+/**
+ * 타격 섬광 (raid/fx-flare.ts · GAP §15-1 · pixelfx Hit spark·Crit hit 를 보고 새로 씀) — 화면 전용.
+ * 시간은 효과 나이(초) · 길이는 판 좌표(px) · px = 도트 한 칸 크기.
+ */
+export const HAEBI_HIT_FLARE = {
+  /** 한 프레임에 그리는 섬광 수 (무리를 한 번에 쓸면 수십이 겹친다) */
+  budget: 10,
+  px: 4, lift: 20, aimJitter: .5, tilt: .16, taper: 1.6,
+  flashTime: .05, afterTime: .1, glowTime: .14, ringTime: .18,
+  glowRadius: 64, glowAlpha: .7, critGlowAlpha: .95,
+  core: 4, afterLen: .55, critScale: 1.55, bigScale: 1.25,
+  ringFrom: 16, ringTo: 80,
+  whiteUntil: .3, paleUntil: .62, warmUntil: .88,
+  /** 연한 노랑 · 노랑 · 주황 (치명타는 더 붉게) */
+  colors: ['#fff3a6', '#ffe26b', '#ff8a2a'],
+  critColors: ['#ffe0a0', '#ffb347', '#f2561d'],
+  /** 십자: 맞는 쪽으로 긴 한 줄 · 뒤로 짧은 하나 · 가로 둘(길이 다름) · 사이 반짝 하나 — a 는 방향(라디안) · len 길이 · vary 흔들림 · w 굵기 */
+  rays: [
+    { a: 0, len: 72, vary: 10, w: 11 },
+    { a: Math.PI, len: 20, vary: 5, w: 11 },
+    { a: -Math.PI / 2, len: 34, vary: 7, w: 13 },
+    { a: Math.PI / 2, len: 24, vary: 5, w: 11 },
+    { a: -Math.PI / 4, len: 15, vary: 4, w: 5 },
+  ],
+} as const
+
 export const HAEBI_FX_ART = {
   alphaProbeMax: 256, alphaThreshold: 16, particleBakeMax: 96, uiBakeMax: 768,
   deathParticles: 7, eliteParticles: 12, particleBudget: 96,

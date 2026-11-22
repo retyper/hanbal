@@ -20,6 +20,8 @@ import type { RaidFeel } from './impact.ts'
 import type { RaidEnding } from './ending.ts'
 import { FX_PATHS, drawFx } from './fx-art.ts'
 import { drawImpactParticles } from './fx-particles.ts'
+import { drawHitFlare } from './fx-flare.ts'
+import { HAEBI_HIT_FLARE as HIT_FLARE } from '../tune/params.ts'
 import { HAEBI_FX_ART as FX_ART } from '../tune/params.ts'
 import { CARD_FRAME_PATHS } from './card-skins.ts'
 import { awakeCastDim, drawAwakeCastDim, drawAwakeUlt } from './awake-ult-view.ts'
@@ -903,6 +905,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   let hitSkip = -C.drawHits, deathSkip = -C.drawDeaths; for (const f of s.fx) if (f.kind === 'hit') hitSkip++; else if (f.kind === 'death') deathSkip++
   const finishFrames = criticalFinishFrames(s, s.fx, time, s.state === 'playing' && !ending?.active, criticalLow, FEEL.criticalFinish)
   let particleBudget = FX_ART.particleBudget
+  let flareBudget = HIT_FLARE.budget
   for (const f of s.fx) {
     if (f.championCue) continue // State-based champion rings below; do not borrow bell-magic artwork.
     if (view && !inView(view, f.x, f.y, WD.view.cull + f.r * 2) && !inView(view, f.x2, f.y2, WD.view.cull)) continue
@@ -910,6 +913,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
     const remaining = f.life - (ending?.effectTime ?? 0); if (remaining <= 0) continue
     const age = 1 - remaining / f.total; ctx.save(); ctx.globalAlpha = Math.min(1, remaining / f.total * 1.5); ctx.strokeStyle = f.color; ctx.fillStyle = f.color; ctx.lineWidth = 3
     if (particleBudget > 0 && (f.kind === 'hit' || f.kind === 'death')) particleBudget -= drawImpactParticles(ctx, images, f, age, particleBudget)
+    if ((f.kind === 'hit' || f.kind === 'death') && flareBudget > 0 && age * f.total < HIT_FLARE.glowTime) { flareBudget--; drawHitFlare(ctx, f, age) }   // 타격 섬광 (GAP §15-1 · 한 방에 쓰러지는 놈이 대부분이라 쓰러짐에도)
     if (f.kind === 'bolt') {
       const img=images.get('raid/lightning-strip.png'),dx=f.x2-f.x,dy=f.y2-f.y
       ctx.translate(f.x,f.y-20);ctx.rotate(Math.atan2(dy,dx))
