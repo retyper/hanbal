@@ -1034,6 +1034,8 @@ export interface Realm {
    * 화면만 읽고 쓴다 (출전 단추 잠금 · 추천). 판의 셈은 읽지 않는다. 옛 저장에는 없다
    */
   raidRuns?: Record<string, { readonly t: number; readonly n: number }>
+  /** 열전 표적을 깨서 평정한 고을 — 고을 id · 깬 턴 · 스테이지 · 장수 (raid-bounty.ts · 형 11-22) · 지도에 깃발 · 옛 저장에는 없다 */
+  raidWins?: { readonly node: string; readonly t: number; readonly stage: 'forest' | 'ford' | 'palisade' | 'snow' | 'fortress'; readonly hero: string }[]
   /** 다음 상단이 올 턴 — 나라마다 */
   marketNext?: Record<string, number>
   /**

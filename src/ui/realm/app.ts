@@ -9,7 +9,9 @@ import { hasDemonSeal, mergeRoster, raidSealed, META_KEY, SEAL_STAGE, type Roste
 /** 각성 시련의 무기 묶음 — 각성 전 전투 그림의 무기로 */
 const trialKit = (x: Parameters<typeof generalSprite>[0] & object) => kitOfSprite(generalSprite({ ...x, ascended: false }))
 import { trialBlock, completeTrial } from '../../realm/awakening-trial.ts'
-import { markRaid, raidCap, raidOpen, raidUsed } from '../../realm/raid-month.ts'
+import { markRaid, raidMonthHeroes, raidMonthOpen, raidOpen, raidUsed } from '../../realm/raid-month.ts'
+import { bountyReward, grantRaidBounty, raidBounty, recentRaidWins, type RaidBounty } from '../../realm/raid-bounty.ts'
+import { RAID_BANNER_CSS, raidBannerHtml } from './raid-banner.ts'
 /**
  * 칠십팔국 — 앱 화면 (docs/realm/FLOW.md §5)
  *
@@ -72,7 +74,7 @@ import type { Approach, Army, BuildWhat, EdgeKind, EnvoyAsk, ExpDest, Good, Hand
 import { HAEBI_RUN, HAEBI_STAGES, P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, noReachWhy, visibleNodes, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
 import { LEGACY_CSS, bringHtml, clearBring, loadBring, toggleBring } from './legacy.ts'
-import { HRING_CSS, mountRing, ringCard, type RingHandle, type RingOpts } from './hero-ring.ts'
+import { HRING_CSS, mountRing, ringCard, ringHtml as heroRingHtml, type RingHandle, type RingOpts } from './hero-ring.ts'
 import { calmMotion, swayCards } from '../fx/sway.ts'
 import { personOf } from '../../realm/person.ts'
 import { TOWN_CSS, townCheer, townVeilHtml, townViewHtml, type TownSlot } from './townview.ts'
@@ -752,7 +754,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + THREAT_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS.replaceAll('__ART__', ART) + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + BOND_CSS + LEGACY_CSS + HRING_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + VOLUME_CSS + MEM_CSS + ASCEND_CSS.replaceAll('__ART__', ART) + HILITE_CSS + TOWN_CSS.replaceAll('__ART__', ART) + RISE_CSS + BOOK_CSS + CROWN_CSS + LEAGUE_CSS + WONDER_CSS + recCss() + LANDSCAPE_MAP_CSS
+  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + THREAT_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS.replaceAll('__ART__', ART) + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + BOND_CSS + LEGACY_CSS + HRING_CSS + RAID_BANNER_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + VOLUME_CSS + MEM_CSS + ASCEND_CSS.replaceAll('__ART__', ART) + HILITE_CSS + TOWN_CSS.replaceAll('__ART__', ART) + RISE_CSS + BOOK_CSS + CROWN_CSS + LEAGUE_CSS + WONDER_CSS + recCss() + LANDSCAPE_MAP_CSS
   document.head.appendChild(style)
   root.classList.add('ap')
   // 그래픽 단계 저사양 · 보통 · 고사양 (quality.ts · 형 10-29: 폰 절전 모드에서 그림이 다 깨졌다)
@@ -954,6 +956,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let bringAsk: { nation: string; region: RegionId; tier: number } | null = null
   /** 그 팝업의 얼굴 링 (58-A) — 팝업을 닫으면 멈춘다 */
   let bringRing: RingHandle | null = null
+  /** 열전 표적 창의 얼굴 고리 · 앞에 선(출전할) 장수 (형 11-22) */
+  let raidRing: RingHandle | null = null
+  let raidPick: string | null = null
   /** 협공 짝을 마지막으로 울린 때 — 같은 고름엔 한 번만 */
   let pinRung = ''
   /** 거둔 소리를 낸 보고 — 같은 달 보고로 지도를 다시 그려도 한 번만 */
@@ -2169,7 +2174,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const hauled = new Map<string, Partial<Record<Good, number>>>()
     for (const l of report?.lines ?? []) if (l.kind === 'haul' && l.faction === me()) hauled.set(l.node, l.goods)
     if (hauled.size > 0 && haulRung !== r.season) { haulRung = r.season; window.setTimeout(() => ding(snd('coins'), P.realm.haulCoinVol), 500) }
-    return mapHtml(r, me(), ART, marches, sel, focus, tokens, targets, fr, stl, burn, going, taken, held, scouts, hauled)
+    // 열전 표적 · 평정한 고을 (realm/raid-bounty.ts · 형 11-22) — 판의 셈은 읽지 않는다 · 화면만
+    const bty = raidBounty(r)
+    const raidMap = { bounty: bty === null ? null : { node: bty.node, stage: bty.stage, open: raidMonthOpen(r) }, pacified: recentRaidWins(r).map((w) => ({ node: w.node, stage: w.stage, fresh: w.t === r.season })) }
+    return mapHtml(r, me(), ART, marches, sel, focus, tokens, targets, fr, stl, burn, going, taken, held, scouts, hauled, raidMap)
   }
 
   /**
@@ -4488,15 +4496,18 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const q = new URLSearchParams({ campaign: token, hero: look.id, name: look.name, home: look.home, bust: look.bust, sprite: look.sprite, kit: look.kit, video: look.video ? '1' : '0', game: String(realm.seed), turn: String(realm.season) })   // game·turn = 열전 판 기록에 적는 본편 판·달 (raid/runlog-store.ts)
     // awake = 각성 전투 띠 이름(겉모습만) · 판 안 각성 자격(도깨비 도장)은 열전 화면이 영웅전 표와 제 기록을 직접 읽는다 (raid/link.ts demonSealed · 각성 v2 가7)
     if (look.awake !== undefined) q.set('awake', look.awake)
+    // 이번 달 열전 표적 — 그 땅에 어울리는 스테이지를 먼저 고르게 (열렸으면) · 이기면 그 고을이 평정된다 (realm/raid-bounty.ts)
+    const bounty = raidBounty(realm)
+    if (bounty !== null) q.set('stage', bounty.stage)
     const ov = openFrame(`${import.meta.env.BASE_URL}raid.html?${q}`, `${h.name}의 열전`, true)
     const frame = ov.querySelector('iframe')!
     frame.allow = 'fullscreen'
-    activeRaid = { campaign: realm, hero: id, token, frame, overlay: ov, counted: false }
+    activeRaid = { campaign: realm, hero: id, token, frame, overlay: ov, counted: false, bounty, paid: false }
     const done = new MutationObserver(() => { if (ov.isConnected) return; done.disconnect(); if (activeRaid?.overlay === ov) activeRaid = null; syncRaidLink(); saveDraft(); paint() })
     done.observe(root, { childList: true })
   }
   /** 본편에서 연 열전 하나 — 출전 알림을 받으면 그 장수의 이번 달 출전으로 적는다 (한 틀에 한 번) */
-  let activeRaid: { campaign: Realm; hero: string; token: string; frame: HTMLIFrameElement; overlay: HTMLDivElement; counted: boolean } | null = null
+  let activeRaid: { campaign: Realm; hero: string; token: string; frame: HTMLIFrameElement; overlay: HTMLDivElement; counted: boolean; bounty: RaidBounty | null; paid: boolean } | null = null
   function countRaid(a: NonNullable<typeof activeRaid>): void {
     if (a.counted || realm === null || realm !== a.campaign) return
     a.counted = true
@@ -4563,6 +4574,20 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (rs?.type === 'hanbal.raid.start') {
       const a = activeRaid
       if (a && a.overlay.isConnected && ev.source === a.frame.contentWindow && rs.token === a.token) countRaid(a)
+      return
+    }
+    // 본편에서 연 열전이 끝났다 — 이겼으면 이번 달 표적 고을이 평정된다 (곡식·쇠 · 지도 깃발 · 형 11-22)
+    if (rs?.type === 'hanbal.raid.result') {
+      const a = activeRaid, res = (ev.data as { result?: string }).result
+      if (!a || !a.overlay.isConnected || ev.source !== a.frame.contentWindow || rs.token !== a.token || realm !== a.campaign || a.paid || a.bounty === null || res !== 'won') return
+      a.paid = true
+      const next = structuredClone(realm)
+      const got = grantRaidBounty(next, a.hero, a.bounty)
+      if (got === null) return
+      const why = host.onCheckpoint ? host.onCheckpoint(next) : null
+      realm = next; a.campaign = next
+      goToast(why ?? tr('rb.won', { place: next.nodes[a.bounty.node]?.name ?? '', grain: got.grain, iron: got.iron }))
+      paint()
       return
     }
     const trial = ev.data as { type?: string; token?: string; result?: string; elapsed?: number }
@@ -4912,16 +4937,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const card = `<div class="trial-card${rqT ? ' rq-on' : ''}" style="padding:14px;border:1px solid #b99a57;margin:12px 0"><b>${esc(x.name)}의 각성 시련 · ${KITS[trialKit(x)].title}</b><p>${x.trialCleared ? '시련 완료 · 각성은 이 캠페인 동안 유지됩니다.' : why ?? `시련 개방 · ${Math.round(HAEBI_RUN.duration * HAEBI_STAGES.trial.length / 60)}분 도전. 실패해도 무료로 다시 도전할 수 있습니다.`}</p>${x.trialCleared ? '' : `<button class="btn${rqT && !why ? ' pri rq-go' : ''}" data-act="haebi-trial" data-id="${x.id}" ${why ? 'disabled' : ''}>각성 시련에 도전${rqT && !why ? rqDot : ''}</button>`}<small>시련 동안 본편 시간은 흐르지 않습니다.</small></div>`
       if (rqT) top = card; else cards += card
     }
-    // 장수 열전 — 이 장수로 독립 열전에 (진각성 그림이 있으면 마지막 스테이지가 진각성 자격 · raid/link.ts)
+    // 장수 열전 — 배너 하나 + 큰 「출전」 (형 11-22 「열전 시작 버튼도 너무 텍스트」) · 한 달에 장수 전체에서 한 번 (raid-month.ts)
     if (ours && bo !== undefined) {
       const sealed = (r.raidSeals ?? []).includes(x.id), stage = HAEBI_STAGES[SEAL_STAGE].name
-      // 장수마다 본편 한 달에 한 번 (형 11-19 · raid-month.ts) — 이번 달 나갔으면 자물쇠 + 「다음 달」 달 그림
-      const rOpen = raidOpen(r, x.id), cap = raidCap(), used = raidUsed(r, x.id), tw2 = turnWord(r), go = rqR && rOpen
-      const line = !rOpen ? `이번 ${tw2} 출전을 마쳤습니다.` : !tw ? '금과 휘장을 모아 판 밖에서 강해집니다.' : sealed ? `${josa(stage, '을', '를')} 깼습니다 · 진각성 자격을 얻었습니다.` : `이 장수로 ${josa(stage, '을', '를')} 깨면 진각성할 수 있습니다.`
+      const rOpen = raidOpen(r, x.id), go = rqR && rOpen
+      const wake = tw && rOpen ? `<small class="mute">${sealed ? `${josa(stage, '을', '를')} 깼습니다 · 진각성 자격을 얻었습니다.` : `이 장수로 ${josa(stage, '을', '를')} 깨면 진각성할 수 있습니다.`}</small>` : ''
       const btn = rOpen
-        ? `<button class="btn${go ? ' pri rq-go' : ''}" data-act="raid-stage" data-id="${x.id}">이 장수로 열전 출전${cap > 1 && used > 0 ? ` · ${cap - used}/${cap}` : ''}${go ? rqDot : ''}</button>`
-        : `<button class="btn rdlk" disabled aria-label="다음 ${tw2}에 다시 출전"><i>🔒</i><b>다음 ${tw2}</b><i>🌙</i></button>`
-      const card = `<div class="trial-card${go ? ' rq-on' : ''}${rOpen ? '' : ' rdone'}" style="padding:14px;border:1px solid #6a5a3a;margin:12px 0"><b>장수 열전 · ${KITS[trialKit(x)].title}</b><p>${line}</p>${btn}<small>${cap > 1 ? `장수마다 한 ${tw2}에 ${cap}번` : `장수마다 한 ${tw2}에 한 번`} · 열전 동안 본편 시간은 흐르지 않습니다.</small></div>`
+        ? `<button class="btn pri rb-go${go ? ' rq-go' : ''}" data-act="raid-stage" data-id="${x.id}">${tr('rb.go')}${go ? rqDot : ''}</button>`
+        : `<div class="rb-lock" role="note"><i>🔒</i>${esc(raidShutText(r))}<i>🌙</i></div>`
+      const card = `<div class="rb-card${go ? ' rq-on' : ''}">${raidBannerFor(r, true)}${btn}${wake}</div>`
       if (go) top = card; else cards += card
     }
     h = h.slice(0, rqAt) + top + h.slice(rqAt) + cards
@@ -5721,6 +5745,50 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     bringRing?.dispose()
     bringRing = null
     root.querySelector('.bringov')?.remove()
+  }
+
+  /** 이번 달 열전을 다녀온 장수 — 「이번 달 열전은 ○○이 다녀왔습니다」 */
+  function raidShutText(r: Realm): string {
+    const name = raidMonthHeroes(r).map((id) => r.heroes[id]?.name).find((x) => x !== undefined) ?? ''
+    return tr('rb.shut', { who: name, turn: turnWord(r) })
+  }
+  /** 배너에 넣을 것 — 이번 달 표적(없으면 숲 · 고을 이름 없이) · 깨면 받을 곡식·쇠 */
+  function raidBannerFor(r: Realm, small = false): string {
+    const b = raidBounty(r), rw = bountyReward(r)
+    return raidBannerHtml(ART, { stage: b?.stage ?? 'forest', place: b !== null ? (r.nodes[b.node]?.name ?? '') : '', grain: rw.grain, iron: rw.iron, grainIcon: GOOD_ICON.grain, ironIcon: GOOD_ICON.iron }, small)
+  }
+  /**
+   * 열전 표적 창 (형 11-22 「한 달에 한 캐릭터만 한 번 · 열전 시작 버튼도 너무 텍스트」) — 얼굴 고리(이번 달 나갈 수 있는 우리 장수)
+   * 위에 표적 배너 · 아래 붙박이 「출전」. 앞에 선 장수가 나간다. start: 장수 판에서 열면 그 장수가 앞에
+   */
+  function raidPopup(start?: string): void {
+    if (realm === null) return
+    const r = realm
+    if (!raidMonthOpen(r)) { goToast(raidShutText(r)); return }
+    const heroes = Object.values(r.heroes).filter((h) => h.faction === r.player && raidLook(r, h) !== null && raidOpen(r, h.id))
+    if (heroes.length === 0) { goToast(tr('rb.none')); return }
+    const has = (id: string | null | undefined): id is string => id != null && heroes.some((h) => h.id === id)
+    raidPick = has(start) ? start : has(raidPick) ? raidPick : heroes[0]!.id
+    const opts: RingOpts = {
+      heroes: heroes.map((h) => ringCard(ART, { id: h.id, name: h.name, nameHtml: nameHtml(h.name), from: r.factions[h.faction]?.name ?? '', lv: null, body: h, awake: awakeningVisible(h) })),
+      max: 1, picked: [raidPick], start: raidPick, top: raidBannerFor(r),
+      text: { title: '', party: '', prev: tr('lc.prev'), next: tr('lc.next'), lv: (n) => tr('dx.drill', { n }) },
+      onToggle: (id) => { raidPick = id; return [id] },
+      onFront: (id) => { raidPick = id },
+      onPicked: DRILL_KIT.voice,
+    }
+    let ov = root.querySelector<HTMLElement>('.rbov')
+    if (ov === null) { root.insertAdjacentHTML('beforeend', '<div class="rbov" role="dialog"></div>'); ov = root.querySelector<HTMLElement>('.rbov')! }
+    ov.setAttribute('aria-label', tr('first.raid.title'))
+    raidRing?.dispose()
+    ov.innerHTML = `<div class="hrgscr">${heroRingHtml(opts)}<div class="hrg-go"><button class="btn pri rb-go" data-act="rb-go">${tr('rb.go')}</button></div></div><button class="rb-x" data-act="rb-x" aria-label="${tr('more.closeAria')}">✕</button>`
+    const ringEl = ov.querySelector<HTMLElement>('.hrg')
+    raidRing = ringEl !== null ? mountRing(ringEl, opts) : null
+  }
+  function raidClose(): void {
+    raidRing?.dispose()
+    raidRing = null
+    root.querySelector('.rbov')?.remove()
   }
 
   /** 「저장 · 불러오기」 창을 (다시) 그린다 — 닫혀 있으면 걷는다 */
@@ -8445,7 +8513,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         syncRaidLink(); paint(); return
       }
       case 'haebi-trial': openHaebiTrial(d['id']!); return
-      case 'raid-stage': openRaidStage(d['id']!); return
+      case 'raid-stage': raidPopup(d['id']); return
+      case 'raid-bounty': raidPopup(); return
+      case 'rb-x': raidClose(); return
+      case 'rb-go': { const id = raidPick; raidClose(); if (id !== null) openRaidStage(id); return }
       case 'spar-open': fmoreOpen = false; openSpar(); return
       case 'contest': openContest(); break
       case 'unwed': heroOrders = heroOrders.filter((o) => !(o.kind === 'wed' && (o.a === d['id'] || o.b === d['id']))); break
