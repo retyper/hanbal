@@ -3532,6 +3532,22 @@ export const en: Partial<Record<Key, string>> = {
   'bd.fold': 'Show less',
   'bd.deepened': 'Bonds have deepened',
   'bd.others': '{n|other|others} also built bonds.',
+  'raid.chest.push': 'PUSH!',
+  'raid.chest.odds': 'Chest odds',
+  'raid.chest.odds.title': 'Treasure Chest',
+  'raid.chest.odds.lead': 'A chest dropped by an elite raises your skills at once, with nothing to pick. A combo whose conditions are met always comes out first.',
+  'raid.chest.odds.fast': 'Elite beaten within {sec}s',
+  'raid.chest.odds.slow': 'Elite beaten later',
+  'raid.chest.odds.count': '{n} up',
+  'raid.chest.odds.none': 'None',
+  'raid.chest.odds.pity': 'Each chest that gives fewer than 5 adds {p}% to the next chest\'s chance of 5. The table shows the odds for your next chest.',
+  'raid.chest.odds.mid': 'The mid-boss chest lets you pick one unopened combo and opens it at once, whatever its conditions.',
+  'raid.chest.odds.close': 'Close',
+  'raid.chest.boss.title': 'Mid-Boss Chest',
+  'raid.chest.boss.open': 'Open one combo right now, whatever its conditions',
+  'raid.chest.boss.up': 'Every combo is open. Raise one by a rank',
+  'raid.chest.record': 'Chests of 5: {five} · of 8: {eight}',
+  'raid.chest.recordTip': 'How many chests of 5 and of 8 this hero has opened',
 }
 
 /** 아직 영어로 안 옮긴 키 — 일부러 비워 둔 것만 (한국어로 나간다) */

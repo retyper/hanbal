@@ -27,9 +27,12 @@ export const SHOP: readonly { key: ShopKey; name: string; glyph: string; desc: (
 export const STAGE_ORDER: readonly Exclude<StageId, 'trial'>[] = ['forest', 'ford', 'palisade', ...(DLC.trueWake ? ['snow', 'fortress'] as const : [])]
 export interface RaidMeta { gold: number; spent: number; shop: Bonus; cleared: Partial<Record<StageId, boolean>>; best: Partial<Record<StageId, number>>; runs: number
   /** 장수마다 깬 스테이지 — 본편 진각성 자격 (link.ts SEAL_STAGE) */
-  heroes: Record<string, StageId[]> }
+  heroes: Record<string, StageId[]>
+  /** 장수마다 보물 상자 대박 횟수 (60-JACKPOT · 다이센카의 캐릭터 기록) — five 5개가 터진 번수 · eight 8개가 터진 번수 */
+  jackpots: Record<string, JackpotRecord> }
+export interface JackpotRecord { five: number; eight: number }
 const KEY = META_KEY
-const fresh = (): RaidMeta => ({ gold: 0, spent: 0, shop: { ...NO_BONUS }, cleared: {}, best: {}, runs: 0, heroes: {} })
+const fresh = (): RaidMeta => ({ gold: 0, spent: 0, shop: { ...NO_BONUS }, cleared: {}, best: {}, runs: 0, heroes: {}, jackpots: {} })
 
 /** 다음 단계 값 — 단계가 오를수록 비싸진다 */
 export const shopCost = (key: ShopKey, lv: number) => Math.round(SH[key].cost * (lv + 1) ** SH.growth)
@@ -60,7 +63,7 @@ export function loadMeta(): RaidMeta {
     const m = JSON.parse(raw) as Partial<RaidMeta>
     const shop = { ...NO_BONUS }
     for (const k of Object.keys(shop) as ShopKey[]) shop[k] = Math.max(0, Math.min(shopMax(k), Math.floor(Number(m.shop?.[k] ?? 0)) || 0))
-    return { gold: Math.max(0, Math.floor(Number(m.gold) || 0)), spent: Math.max(0, Math.floor(Number(m.spent) || 0)), shop, cleared: m.cleared ?? {}, best: m.best ?? {}, runs: Math.max(0, Number(m.runs) || 0), heroes: cleanHeroes(m.heroes) }
+    return { gold: Math.max(0, Math.floor(Number(m.gold) || 0)), spent: Math.max(0, Math.floor(Number(m.spent) || 0)), shop, cleared: m.cleared ?? {}, best: m.best ?? {}, runs: Math.max(0, Number(m.runs) || 0), heroes: cleanHeroes(m.heroes), jackpots: cleanJackpots(m.jackpots) }
   } catch { return fresh() }
 }
 export function saveMeta(m: RaidMeta) { try { localStorage.setItem(KEY, JSON.stringify(m)) } catch { /* 사생활 창 등 — 이번 판만 */ } }
@@ -83,6 +86,20 @@ const cleanHeroes = (x: unknown): Record<string, StageId[]> => {
   const out: Record<string, StageId[]> = {}
   if (x && typeof x === 'object') for (const [id, s] of Object.entries(x)) if (Array.isArray(s)) out[id] = s.filter((v): v is StageId => typeof v === 'string' && v in ST)
   return out
+}
+const count = (v: unknown) => Math.max(0, Math.floor(Number(v)) || 0)
+const cleanJackpots = (x: unknown): Record<string, JackpotRecord> => {
+  const out: Record<string, JackpotRecord> = {}
+  if (x && typeof x === 'object') for (const [id, v] of Object.entries(x)) if (v && typeof v === 'object') out[id] = { five: count((v as Partial<JackpotRecord>).five), eight: count((v as Partial<JackpotRecord>).eight) }
+  return out
+}
+/** 그 장수의 상자 대박 기록 (없으면 0 · 0) */
+export const heroJackpots = (m: RaidMeta, hero: string): JackpotRecord => m.jackpots[hero] ?? { five: 0, eight: 0 }
+/** 이번 판에서 터진 대박을 그 장수 기록에 더한다 (판이 끝날 때 한 번) */
+export function recordJackpots(m: RaidMeta, hero: string, five: number, eight: number) {
+  if (count(five) + count(eight) <= 0) return
+  const r = m.jackpots[hero] ??= { five: 0, eight: 0 }
+  r.five += count(five); r.eight += count(eight)
 }
 /** 판 결과를 적는다 — 받은 금 · 깸(휘장 · 그 장수의 깸) · 가장 오래 버틴 시간. 새로 휘장을 받았으면 first, 이 장수로 처음 깼으면 heroFirst */
 export function record(m: RaidMeta, stage: StageId, gold: number, won: boolean, seconds: number, hero?: string) {

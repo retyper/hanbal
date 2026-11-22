@@ -3544,6 +3544,23 @@ export const ko = {
   'bd.fold': '접기',
   'bd.deepened': '인연이 깊어졌습니다',
   'bd.others': '그 밖에 {n}명도 인연이 쌓였습니다.',
+  // 열전 보물 상자 (60-JACKPOT · docs/realm/RAID-REWARD-MAP-20261122.md) — 연출 위의 글은 「눌러!」 하나뿐
+  'raid.chest.push': '눌러!',
+  'raid.chest.odds': '상자 확률',
+  'raid.chest.odds.title': '보물 상자',
+  'raid.chest.odds.lead': '정예가 떨어뜨린 상자는 고르지 않고 바로 오릅니다. 조건이 찬 조합이 가장 먼저 나옵니다.',
+  'raid.chest.odds.fast': '{sec}초 안에 잡은 상자',
+  'raid.chest.odds.slow': '느리게 잡은 상자',
+  'raid.chest.odds.count': '{n}개',
+  'raid.chest.odds.none': '없음',
+  'raid.chest.odds.pity': '5개 넘게 터지지 않은 상자마다 다음 상자의 5개 확률이 {p}%씩 더해집니다. 위 표는 다음 상자의 확률입니다.',
+  'raid.chest.odds.mid': '중간 보스 상자는 아직 안 연 조합 하나를 골라 조건 없이 바로 엽니다.',
+  'raid.chest.odds.close': '닫기',
+  'raid.chest.boss.title': '중간 보스 상자',
+  'raid.chest.boss.open': '조합 하나를 조건 없이 바로 엽니다',
+  'raid.chest.boss.up': '조합을 모두 열었습니다. 하나를 한 단계 올립니다',
+  'raid.chest.record': '상자 5개 {five}번 · 8개 {eight}번',
+  'raid.chest.recordTip': '이 장수로 연 상자 가운데 5개와 8개가 터진 횟수입니다',
 } as const
 
 export type Key = keyof typeof ko

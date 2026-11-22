@@ -857,7 +857,7 @@ export const HAEBI_CHAMPION = {
  *  burstHold 터진 뒤 첫 룬까지 · burstMs·burstPop 터질 때 상자가 튀는 길이·크기 · glowMs 빛이 켜지는 길이 · edgeMs 화면 가장자리 빛(5개부터 · 저사양은 없음)
  *  runeHold 솟은 룬이 날아가기 전에 머무는 초 · runeMs 솟는 길이 · runeGapMin 룬 사이 가장 짧은 틈 · rowMs 결과 줄에 서는 길이 · tail 끝 여운(초)
  *  mergeSeconds 새로 연 조합의 재료 룬 둘이 합쳐지는 길이 · mergeFrom 재료가 오는 거리(룬 크기 몫)
- *  freezeAt 대박이 멎는 들썩임 번호(0부터) · freezeLag 그 들썩임이 시작되고 멎기까지 · pushSeconds 「눌러!」를 안 눌러도 터지는 초 · pushPx 「눌러!」 흔들림(px) · skipHold 건너뛴 뒤 결과를 보여 주는 초 · frameCap 한 틀에 밀리는 가장 긴 초(끊긴 틀에 연출이 건너뛰지 않게)
+ *  freezeAt 대박이 멎는 들썩임 번호(0부터) · freezeLag 그 들썩임이 시작되고 멎기까지 · pushSeconds 「눌러!」를 안 눌러도 터지는 초 · pushPx 「눌러!」 흔들림(px) · skipGuard 막 열린 뒤 이 초 동안의 누름은 건너뛰기로 안 친다(싸우던 손) · pushGuard 「눌러!」가 뜨고 눌리기까지 · skipHold 건너뛴 뒤 결과를 보여 주는 초 · frameCap 한 틀에 밀리는 가장 긴 초(끊긴 틀에 연출이 건너뛰지 않게)
  *  coins 단계마다 엽전 알 수 · lowCoins 저사양 몫 · coinSize [작게, 크게]px · coinRise·coinSpread·coinFall 솟는 높이·퍼짐·떨어짐(px) · coinMs [짧게, 길게] · coinWave 한 번에 터지는 알 수(나머지는 coinGap ms 뒤에)
  *  chest 상자 그림 크기(px · 화면 짧은 변의 chestShare 몫과 견주어 작은 쪽) · glow 빛 지름(상자 크기 몫 · glowLow 저사양) · rune 솟는 룬 크기(px) · dim 판을 덮는 어둠
  *  소리: drumRate 북이 룬마다 오르는 몫 · drumBase 들썩임 북의 첫 높이 · drumVol·jingleVol·freezeVol 크기 (곡은 raid/sound.ts 의 chest1·chest3·chest5·chest8·chestFreeze 자리 · 형이 고르면 파일만 바꾼다)
@@ -869,9 +869,9 @@ export const HAEBI_JACKPOT = {
     enter: .35, enterDrop: 46, shakes: 3, shakeGap: [.42, .22], shakeMs: 260, shakePx: 7, shakeDeg: 5, shakeGrow: .35,
     burstHold: .3, burstMs: 320, burstPop: 1.35, glowMs: 420, edgeMs: 900,
     runeHold: .45, runeMs: 260, runeGapMin: .25, rowMs: 180, tail: .5, mergeSeconds: .6, mergeFrom: 1.3,
-    freezeAt: 2, freezeLag: .1, pushSeconds: 2.5, pushPx: 5, skipHold: .7, frameCap: .25,
+    freezeAt: 2, freezeLag: .1, pushSeconds: 2.5, pushPx: 5, pushGuard: .2, skipGuard: .5, skipHold: .7, frameCap: .25,
     coins: [6, 14, 28, 48], lowCoins: .35, coinSize: [14, 22], coinRise: 150, coinSpread: 190, coinFall: 120, coinMs: [700, 1150], coinWave: 12, coinGap: 90,
-    chest: 132, chestShare: .34, glow: 2.6, glowLow: 1.6, rune: 56, dim: .62,
+    chest: 200, chestShare: .46, glow: 2, glowLow: 1.3, rune: 72, dim: .62,
     drumRate: 1.122, drumBase: .8, drumVol: .5, jingleVol: .6, freezeVol: .5,
   },
 } as const

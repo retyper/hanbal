@@ -11,11 +11,16 @@ import { RaidFeel } from './raid/impact.ts'
 import { RaidEnding } from './raid/ending.ts'
 import { drawEnding } from './raid/ending-view.ts'
 import { HAEBI_END as END } from './tune/params.ts'
+import { HAEBI_JACKPOT as JACKPOT, HAEBI_CHAMPION as CHAMP } from './tune/params.ts'
+import { ChestShow, chestShowWarmHtml } from './raid/chest-show.ts'
+import './raid/chest-show.css'
+import { CHEST_RULES, jackpotOdds } from './raid/haebi.ts'
+import { t } from './i18n/index.ts'
 import { warmFx } from './raid/fx-art.ts'
 import { putRaidGame, sealLeftovers, unsentRaids, markRaidsSent, type RaidGame, type RaidOpts } from './raid/runlog-store.ts'
 import { pushRaids } from './net/sync.ts'
 import { newCam, followCam, nextLevel, closest, toField, fieldView, clampCenter, bossFrameZoom } from './raid/camera.ts'
-import { loadMeta, saveMeta, buy, refund, refundFee, record, shopCost, shopMax, stageOpen, stageName, pickStage, SHOP, STAGE_ORDER, type ShopKey } from './raid/meta.ts'
+import { loadMeta, saveMeta, buy, refund, refundFee, record, recordJackpots, heroJackpots, shopCost, shopMax, stageOpen, stageName, pickStage, SHOP, STAGE_ORDER, type ShopKey } from './raid/meta.ts'
 import { drawField, imagePaths, setHeroArt, heroArtFiles, heroHdFiles, warmHeroSprites } from './raid/haebi-view.ts'
 import { powerIcon, installPowerHints, comboIcon, rankMark, treeInfo, BRANCH_COLOR } from './raid/power-ui.ts'
 import { KIT_BY_SPRITE } from './raid/kit-table.ts'
@@ -110,7 +115,7 @@ let stage: Exclude<StageId, 'trial'> = pickStage(meta, kit)
 const bossMinute = () => Math.floor(C.bossAt * ST[mode === 'trial' ? 'trial' : stage].length / 60)
 const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`
 /** createHaebi 에 넘기는 판 옵션 — 판 기록에도 이것 그대로 적는다 (다시 돌리기) */
-const runOpts = (): RaidOpts => ({ ...mode === 'stage' ? { stage, bonus: { ...meta.shop } } : {}, ...mode === 'trial' ? { awaken: false, simRules: '53B' as const } : { permanentAwake: awakening.permanentAwake, appearanceAwake: awakening.appearanceAwake, simRules: mode === 'stage' ? raidRulesForStage(stage) : '56B' as const }, mastery, kitRules: KIT_RULES })
+const runOpts = (): RaidOpts => ({ ...mode === 'stage' ? { stage, bonus: { ...meta.shop } } : {}, ...mode === 'trial' ? { awaken: false, simRules: '53B' as const } : { permanentAwake: awakening.permanentAwake, appearanceAwake: awakening.appearanceAwake, simRules: mode === 'stage' ? raidRulesForStage(stage) : '56B' as const }, mastery, kitRules: KIT_RULES, ...(mode === 'stage' ? { chestRules: CHEST_RULES } : {}) })
 const newRun = (seed: number, opts: RaidOpts = runOpts()) => { const r = createHaebi(seed, mode, kit, opts); if (r.message.endsWith('첫 조합을 향해')) { r.message = ''; r.messageTime = 0 }  /* 시작 군말 띠는 걷는다 (형 11-16) */ return r }
 root.innerHTML = `<header><div><small>장수 열전 · 독립 모드</small><h1>${HERO.name} <em>${K.title}</em></h1></div><div class="head-actions"><button id="pause" disabled aria-label="일시정지">Ⅱ</button></div></header>
 <div id="layout"><aside id="character"><div id="portrait-media"><img id="hero-portrait" src="${import.meta.env.BASE_URL}realm/bust-hd/${HERO.bust}.jpg" alt="${HERO.name} 원화"><video id="hero-video" muted loop playsinline preload="none" hidden aria-label="각성 ${HERO.name} 영상"></video></div><div class="portrait-title"><span>${HERO.home}</span><b id="rank-title">${HERO.name}</b><button id="portrait-toggle" hidden>원화로 보기</button></div><div id="reaction">${weapon} 하나로 시작하는 열전</div><div id="combo-badges"></div><i class="frame-knots"></i></aside>
@@ -177,6 +182,8 @@ function warmFirstViews() {
   warmDom(root, [
     { html: upgradeHtml(undefined, picks, `리롤 · ${run.rerolls}회 남음 · 첫 갈래를 골라 주세요`), style: `display:flex;align-items:center;justify-content:center;overflow:auto;padding:${o.padding};background:${o.backgroundColor};backdrop-filter:${o.backdropFilter}` },
     ...cutinWarmLayers(),
+    // 보물 상자 연출 (60-JACKPOT) — 처음 터지는 틀이 끊기지 않게 꼴·그림·칠하기를 미리
+    ...(mode === 'stage' ? [{ html: chestShowWarmHtml(import.meta.env.BASE_URL + 'realm/raid/', powerIcon(K.primary, kit), t('raid.chest.push')) }] : []),
   ]).then(ok => { firstViewsWarm = ok })
 }
 /**
@@ -339,7 +346,7 @@ function renderHeroes() {
       id: h.id, name: h.name, nameHtml: esc(h.name), from: h.home, lv: null, stats: [],
       ...ringFaces(ART, h.bust, aw),
       sprite: ART + genArtOf(aw && h.awake ? h.awake : h.sprite).file,
-      extra: `<b class="rh-kit">${esc(k?.weapon ?? '')}</b>${k ? `<small class="rh-ult">${esc(k.skill)}</small>` : ''}${tw ? `<i class="tw${sealed(h.id) ? ' ok' : ''}">${sealed(h.id) ? '진 ✓' : '진'}</i>` : ''}${won.map(s => `<img class="rh-em" src="${ART}raid/emblem-${s}.png" alt="${esc(stageName(s))}" title="${esc(stageName(s))} 휘장">`).join('')}`,
+      extra: `<b class="rh-kit">${esc(k?.weapon ?? '')}</b>${k ? `<small class="rh-ult">${esc(k.skill)}</small>` : ''}${tw ? `<i class="tw${sealed(h.id) ? ' ok' : ''}">${sealed(h.id) ? '진 ✓' : '진'}</i>` : ''}${jackpotLine(h.id, 'rh-jp', 'small')}${won.map(s => `<img class="rh-em" src="${ART}raid/emblem-${s}.png" alt="${esc(stageName(s))}" title="${esc(stageName(s))} 휘장">`).join('')}`,
       mark: tw ? (sealed(h.id) ? '진 ✓' : '진') : '',
     }
   })
@@ -558,7 +565,7 @@ async function begin(sameSeed = false) {
   if (!sameSeed && !vanguardToken) pendingSeed = crypto.getRandomValues(new Uint32Array(1))[0]!
   closeLog(true)   // 앞 판이 끝을 안 적었으면 (드묾) 「떠남」으로
   const opts = runOpts()
-  endingVideo.clear(); hidePowerHint(); notifyVanguardStart(); restoreGiantZoom(); giantCameraOwner = null; giantHud.update(null, 0); run = newRun(pendingSeed, opts); live = true; paused = false; shown = ''; loadoutKey = ''; resetInput(); last = 0
+  chestShow.finish(); endingVideo.clear(); hidePowerHint(); notifyVanguardStart(); restoreGiantZoom(); giantCameraOwner = null; giantHud.update(null, 0); run = newRun(pendingSeed, opts); live = true; paused = false; shown = ''; loadoutKey = ''; resetInput(); last = 0
   // 판 기록 — 시작 시각은 화면 쪽 벽시계 · 판 옵션은 createHaebi 에 넘긴 그것 (runlog.ts)
   const now = new Date()
   rec = startRecord(run, { id: `${now.getTime().toString(36)}-${pendingSeed.toString(36)}`, started: now.toISOString(), mode, stage: run.stage, hero: heroId, kit, sprite, seed: pendingSeed, opts: normalizedRaidOpts(run, opts), from: fromRealm })
@@ -571,9 +578,12 @@ async function begin(sameSeed = false) {
   layoutTrial()
 }
 $('start').onclick = () => begin()
-function pause() { if (!live || run.state !== 'playing' || run.offers.length || paused && rotationBlocked) return; paused = !paused; resetInput(); shown = ''; showOverlay(); schedule() }
+function pause() { if (!live || run.state !== 'playing' || run.offers.length || chestShow.active || paused && rotationBlocked) return; paused = !paused; resetInput(); shown = ''; showOverlay(); schedule() }
 $('pause').onclick = pause
 window.addEventListener('keydown', e => {
+  // 상자 연출 중 — 아무 키나 누르면 건너뛴다 (멎어 있으면 「눌러!」) · 브라우저 단축키는 그대로 둔다 · 걷는 키(방향·WASD·Shift)는 싸우던 손이라 삼키기만 한다
+  if (chestShow.active) { if (e.ctrlKey || e.metaKey || e.altKey || /^(F\d+|Control|Alt|Meta|Tab|CapsLock)$/.test(e.key)) return; e.preventDefault(); e.stopPropagation(); if (!e.repeat && !/^(Arrow(Up|Down|Left|Right)|[wasdWASD]|Shift)$/.test(e.key)) { chestShow.skip(); schedule() } return }
+  if (oddsBox && !oddsBox.hidden) { if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); closeOdds() } return }
   if (raidShortcut(e, root, pause, closeTree)) return
   if (!live) return
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) || e.key === ' ' && e.target === document.body) e.preventDefault()
@@ -589,10 +599,10 @@ window.addEventListener('blur', () => {
   resetInput()
   // Read-only visual QA can run without stealing focus from the user's other apps.
   const backgroundReview = import.meta.env.DEV && query.has('review') && query.has('background')
-  if (!backgroundReview && live && run.state === 'playing') { paused = true; shown = ''; showOverlay() }
+  if (!backgroundReview && live && run.state === 'playing') { chestShow.finish(); paused = true; shown = ''; showOverlay() }
 })
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) { heroVideo.pause(); mediaKey = ''; cancelAnimationFrame(raf); raf = 0; resetInput(); if (live && run.state === 'playing') paused = true; shown = ''; showOverlay(); sound.frame(run, live, true); saveLog(); syncEndingVideo() }   // 판이 멈춰도 기록은 그 자리까지 남긴다
+  if (document.hidden) { chestShow.finish(); heroVideo.pause(); mediaKey = ''; cancelAnimationFrame(raf); raf = 0; resetInput(); if (live && run.state === 'playing') paused = true; shown = ''; showOverlay(); sound.frame(run, live, true); saveLog(); syncEndingVideo() }   // 판이 멈춰도 기록은 그 자리까지 남긴다
   else { last = 0; schedule() }
 })
 window.addEventListener('pagehide', () => saveLog())
@@ -709,7 +719,7 @@ function levelPips(rank: number, max: number) {
   return `<i class="lv-pips" aria-label="${rank + 1}/${max}단계">${cells}<i class="lv-num">${rank ? `${rank}→` : ''}<i class="to">${rank + 1}</i>/${max}</i></i>`
 }
 /** 레벨업 카드 — 세 갈래 공유 껍데기 · 갈래 끝 표식 · 이름 밑 단계 칸 / 조합은 기존 금테 */
-function card(k: Pick) {
+function card(k: Pick, free = false) {
   if (!isCombo(k)) {
     const p = POWERS[k], t = nodeText(kit, k), at = nodeAt(kit, k)!, cap = at.tier === TREE.tiers.length - 1, color = BRANCH_COLOR[at.branch], rank = run.ranks[k]
     return `<button data-up="${k}" class="branch-card branch-${at.branch}${cap ? ' cap-card' : ''}" aria-label="${t.name}, ${branchName(kit, at.branch)} 갈래, ${rank + 1}/${p.max}단계. ${t.desc}" style="--accent:${cap ? color : p.color};--c:${color}">${cap ? '<i class="ribbon cap">갈래 끝</i>' : ''}<span class="rune">${powerIcon(k, kit)}</span>${rank ? '' : '<small class="gain new">획득</small>'}<b>${t.name}</b>${levelPips(rank, p.max)}<span>${t.desc}</span><em>${routeHint(k)}</em></button>`
@@ -717,7 +727,7 @@ function card(k: Pick) {
   const c = comboOf(k), r = comboRank(run, k), next = r + 1
   const pips = Array.from({ length: TREE.max }, (_, i) => `<i class="${i < r ? 'on' : i === r ? 'new' : ''}"></i>`).join('')
   const ult = next >= TREE.max ? `<span class="ultup"><img src="${import.meta.env.BASE_URL}realm/raid/power-skill.png" alt="">${K.skill} 강화</span>` : ''
-  return `<button data-up="${k}" class="combo-card" style="--accent:#f2c45a"><i class="ribbon">조합</i><span class="rune">${comboIcon(k)}</span><small class="gain${r ? '' : ' new'}">${r ? '+1' : '획득'}</small><b>${c.name}</b><span>${c.desc}</span><em><span class="pips" aria-label="${next}단계">${pips}</span>${ult || recipe(c)}</em></button>`
+  return `<button data-up="${k}" class="combo-card" style="--accent:#f2c45a"><i class="ribbon">조합</i><span class="rune">${comboIcon(k)}</span><small class="gain${r ? '' : ' new'}">${r ? '+1' : '획득'}</small><b>${c.name}</b><span>${c.desc}</span><em><span class="pips" aria-label="${next}단계">${pips}</span>${ult || (free ? '' : recipe(c))}</em></button>`
 }
 /** 레벨업 창 좌상단의 지금 가진 칸 — 갈래 차례(주 무기 · 보조 · 버팀) · 그림 + 단계 배지 · 갈래 빛 테 · 끝 단계는 금빛 배지 · 연 조합은 금테 */
 function haveRow() {
@@ -768,7 +778,7 @@ function settleRun() {
   if (settledRun === run) return
   settledRun = run; closeLog()
   // 결과 저장 시점은 그대로. 연출 중 탭을 닫아도 보상과 판 기록을 잃지 않는다.
-  if (mode === 'stage' && rewarded !== run) { rewarded = run; const gold = runGold(run); reward = { gold, ...record(meta, run.stage, gold, run.state === 'won', run.t, heroId) }; saveMeta(meta); if (run.state === 'won' && run.stage === DEMON_STAGE) { stampDemons(); refreshWakeKind() } }
+  if (mode === 'stage' && rewarded !== run) { rewarded = run; const gold = runGold(run); reward = { gold, ...record(meta, run.stage, gold, run.state === 'won', run.t, heroId) }; if (run.jackpots) recordJackpots(meta, heroId, run.jackpots.five, run.jackpots.eight); saveMeta(meta); if (run.state === 'won' && run.stage === DEMON_STAGE) { stampDemons(); refreshWakeKind() } }
 }
 const chestGoldSeen = new WeakMap<HaebiRun, Set<number>>()
 function chestBurst(id: number) {
@@ -780,7 +790,10 @@ function chestBurst(id: number) {
 }
 /** 레벨업·보물 상자 카드 창 — 판의 카드 창과 미리 그리기(warmFirstViews)가 같이 쓴다 */
 function upgradeHtml(chest: Chest | undefined, offers: readonly Pick[], rerollText: string) {
-  return `<div class="panel upgrade${chest ? ' chest-reward' + (chest.large ? ' large' : '') : ''}"${chest ? ` data-chest-id="${chest.id}" data-choice-left="${run.chestChoice!.left}"` : ''}><div class="lv-head">${haveRow()}<h2 class="lvup">${chest ? `<img class="chest-open" src="${import.meta.env.BASE_URL}realm/raid/chest-open.png" alt="">보물 상자<small>남은 선택 ${run.chestChoice!.left}회</small>${chestBurst(chest.id)}` : '레벨업!'}</h2>${treeButton}</div><div class="choices">${offers.map(card).join('')}</div>${chest ? '' : `<button id="reroll" ${run.rerolls ? '' : 'disabled'}>${rerollText}</button>`}</div>`
+  // 중간 보스 상자 (60-JACKPOT) — 안 연 조합을 조건 없이 여는 큰 창 (금테) · 다 열었으면 한 단계
+  const boss = chest?.boss === true, free = boss && offers.every(k => isCombo(k) && !comboRank(run, k))
+  const title = boss ? t('raid.chest.boss.title') : '보물 상자', note = boss ? t(free ? 'raid.chest.boss.open' : 'raid.chest.boss.up') : chest ? `남은 선택 ${run.chestChoice!.left}회` : ''
+  return `<div class="panel upgrade${chest ? ' chest-reward' + (chest.large ? ' large' : '') + (boss ? ' boss-chest' : '') : ''}"${chest ? ` data-chest-id="${chest.id}" data-choice-left="${run.chestChoice!.left}"` : ''}><div class="lv-head">${haveRow()}<h2 class="lvup">${chest ? `<img class="chest-open" src="${import.meta.env.BASE_URL}realm/raid/chest-open.png" alt="">${title}<small>${note}</small>${chestBurst(chest.id)}` : '레벨업!'}</h2>${treeButton}</div><div class="choices">${offers.map(k => card(k, free)).join('')}</div>${chest ? '' : `<button id="reroll" ${run.rerolls ? '' : 'disabled'}>${rerollText}</button>`}</div>`
 }
 function showOverlay() {
   if (run.state !== 'playing') { rotationBlocked = false; $('rotate-guide').hidden = true }
@@ -789,9 +802,10 @@ function showOverlay() {
     if (ending.kind) settleRun()
     if (ending.active) { shown = ''; $('overlay').hidden = true; closeTree(); return }
   }
-  const state = !live ? '' : run.state !== 'playing' ? run.state : run.offers.length ? (run.choiceOrigin === 'chest' ? 'chest:' + run.chestChoice?.id : 'upgrade') + ':' + run.offerNonce + ':' + run.offers.join(',') : paused ? 'pause' : ''
+  // 상자 연출이 도는 동안은 카드 창·멈춤 창을 띄우지 않는다 (끝나면 뜬다)
+  const state = !live ? '' : run.state !== 'playing' ? run.state : chestShow.active ? '' : run.offers.length ? (run.choiceOrigin === 'chest' ? 'chest:' + run.chestChoice?.id : 'upgrade') + ':' + run.offerNonce + ':' + run.offers.join(',') : paused ? 'pause' : ''
   // 세로에서도 성장·나무·철수는 쓸 수 있다. 전투 재개는 회전 뒤에만 허용한다.
-  $('rotate-guide').hidden = !rotationBlocked || state === 'pause' || state.startsWith('upgrade:') || state.startsWith('chest:')
+  $('rotate-guide').hidden = !rotationBlocked || state === 'pause' || state.startsWith('upgrade:') || state.startsWith('chest:') || chestShow.active
   if (!state) { shown = ''; if (!$('overlay').hidden) $('overlay').hidden = true; closeTree(); return }
   if (state === shown) return
   hidePowerHint(); closeTree()
@@ -811,7 +825,7 @@ function showOverlay() {
     $('tree-open').onclick = openTree
   } else if (state === 'pause') {
     const reason = '폰을 가로로 돌리면 전투를 계속할 수 있습니다.'
-    overlay.innerHTML = `<div class="panel pause-panel" role="dialog" aria-labelledby="pause-title"><div class="pause-heading"><small>장수 열전</small><h2 id="pause-title">일시정지</h2><p id="pause-note" role="status">${rotationBlocked ? reason : '성장과 전투는 그대로 기다립니다.'}</p></div><div class="pause-actions">${treeButton}<button id="quit" title="이번 출전을 마칩니다">출전 화면으로</button></div><label class="pause-short-cutin"><input id="short-cutin" type="checkbox" ${shortCutin ? 'checked' : ''}>연출 짧게</label><div class="pause-confirm"><button id="resume" class="primary" aria-disabled="${rotationBlocked}" title="${rotationBlocked ? reason : '멈춘 곳에서 계속 싸웁니다'}">계속 싸우기</button></div></div>`
+    overlay.innerHTML = `<div class="panel pause-panel" role="dialog" aria-labelledby="pause-title"><div class="pause-heading"><small>장수 열전</small><h2 id="pause-title">일시정지</h2><p id="pause-note" role="status">${rotationBlocked ? reason : '성장과 전투는 그대로 기다립니다.'}</p></div><div class="pause-actions">${treeButton}${run.jackpots ? `<button id="chest-odds"><img src="${import.meta.env.BASE_URL}realm/raid/chest.png" alt="">${t('raid.chest.odds')}</button>` : ''}<button id="quit" title="이번 출전을 마칩니다">출전 화면으로</button></div><label class="pause-short-cutin"><input id="short-cutin" type="checkbox" ${shortCutin ? 'checked' : ''}>연출 짧게</label><div class="pause-confirm"><button id="resume" class="primary" aria-disabled="${rotationBlocked}" title="${rotationBlocked ? reason : '멈춘 곳에서 계속 싸웁니다'}">계속 싸우기</button></div></div>`
     // 터치는 브라우저의 :active 지연을 기다리지 않고 누른 순간 반응한다.
     overlay.querySelectorAll<HTMLButtonElement>('.pause-panel button').forEach(b => {
       const release = () => b.classList.remove('pressed')
@@ -819,6 +833,7 @@ function showOverlay() {
       for (const event of ['pointerup', 'pointercancel', 'pointerleave', 'blur']) b.addEventListener(event, release)
     })
     $('tree-open').onclick = openTree
+    if ($('chest-odds')) $('chest-odds').onclick = openOdds
     $<HTMLInputElement>('short-cutin').onchange = () => { shortCutin = $<HTMLInputElement>('short-cutin').checked; try { localStorage.setItem(SHORT_CUTIN_KEY, shortCutin ? '1' : '0') } catch { /* current window only */ } }
     $('resume').onclick = () => { if (rotationBlocked) { $('pause-note').textContent = reason; return }; paused = false; shown = ''; last = 0; showOverlay() }; $('quit').onclick = menu
     if (vanguardToken) { $('quit').textContent = '지금 확보한 돌파로 귀환'; $('quit').onclick = withdraw }
@@ -827,7 +842,7 @@ function showOverlay() {
   } else {
     // 이겼다 — 결과 판이 뜨는 그 박자에 다다닥 (11-19 형: 「듀오링고처럼 햅틱 막 지랄 나 주면」) · 판마다 한 번 (탭을 다녀와 다시 그려도 또 떨지 않는다)
     // 독립 열전: 판이 끝나면 한 번만 금을 주고 기록한다 (지면 버틴 만큼 · 깨면 휘장 + 깸 금)
-    overlay.innerHTML = `<div class="panel result ${run.state}"><h2>${run.state === 'won' ? mode === 'stage' ? `${stageName(run.stage)} 토벌 완료` : '열전 완수' : run.hp <= 0 ? '도전 실패' : run.t < runDuration(run) ? '철수' : '시간 초과 · 두목 생존'}</h2><p>${Math.floor(run.t / 60)}분 ${Math.floor(run.t % 60)}초 · ${run.kills.toLocaleString()}명 격파 · Lv.${run.level}${mode === 'stage' ? ` · 정예 ${run.elites} <img class="result-chests" src="${import.meta.env.BASE_URL}realm/raid/chest.png" alt="획득 상자"> ${run.chestsClaimed ?? 0}` : ''}</p>${giantResultLine()}<div class="result-combos">${kitCombos(kit).filter(c => run.combos.includes(c.id)).map(c => `<b>${comboIcon(c.id)}${c.name} ${rankMark(comboRank(run, c.id))}</b>`).join('')}</div>${mode === 'stage' ? `<p class="reward">${COIN}<b>+${reward.gold.toLocaleString()}</b> · 보유 ${COIN}${meta.gold.toLocaleString()}${reward.first ? ` · <strong><img class="won-emblem" src="${import.meta.env.BASE_URL}realm/raid/emblem-${run.stage}.png" alt="">${stageName(run.stage)} 휘장 획득</strong>` : ''}${reward.heroFirst && run.stage === SEAL_STAGE && TRUE_WAKE.has(heroId) ? ` · <strong class="tw-open">본편에서 ${josa(HERO.name, '이', '가')} 진각성할 수 있습니다</strong>` : ''}</p>` : ''}${mode === 'stage' ? '' : '<p>본편 병력 손실 없음</p>'}${fromCampaign ? `<div class="result-acts">${window.parent !== window ? '<button id="return" class="primary">본편으로</button>' : ''}</div>` : `<div class="result-acts"><button id="new-run" class="primary">다시 출전</button><div>${mode === 'stage' ? '<button id="to-shop">상점</button>' : ''}<button id="quit">스테이지 고르기</button>${window.parent !== window ? '<button id="return">본편으로</button>' : ''}</div></div>`}</div>`
+    overlay.innerHTML = `<div class="panel result ${run.state}"><h2>${run.state === 'won' ? mode === 'stage' ? `${stageName(run.stage)} 토벌 완료` : '열전 완수' : run.hp <= 0 ? '도전 실패' : run.t < runDuration(run) ? '철수' : '시간 초과 · 두목 생존'}</h2><p>${Math.floor(run.t / 60)}분 ${Math.floor(run.t % 60)}초 · ${run.kills.toLocaleString()}명 격파 · Lv.${run.level}${mode === 'stage' ? ` · 정예 ${run.elites} <img class="result-chests" src="${import.meta.env.BASE_URL}realm/raid/chest.png" alt="획득 상자"> ${run.chestsClaimed ?? 0}` : ''}</p>${giantResultLine()}${jackpotLine(heroId)}<div class="result-combos">${kitCombos(kit).filter(c => run.combos.includes(c.id)).map(c => `<b>${comboIcon(c.id)}${c.name} ${rankMark(comboRank(run, c.id))}</b>`).join('')}</div>${mode === 'stage' ? `<p class="reward">${COIN}<b>+${reward.gold.toLocaleString()}</b> · 보유 ${COIN}${meta.gold.toLocaleString()}${reward.first ? ` · <strong><img class="won-emblem" src="${import.meta.env.BASE_URL}realm/raid/emblem-${run.stage}.png" alt="">${stageName(run.stage)} 휘장 획득</strong>` : ''}${reward.heroFirst && run.stage === SEAL_STAGE && TRUE_WAKE.has(heroId) ? ` · <strong class="tw-open">본편에서 ${josa(HERO.name, '이', '가')} 진각성할 수 있습니다</strong>` : ''}</p>` : ''}${mode === 'stage' ? '' : '<p>본편 병력 손실 없음</p>'}${fromCampaign ? `<div class="result-acts">${window.parent !== window ? '<button id="return" class="primary">본편으로</button>' : ''}</div>` : `<div class="result-acts"><button id="new-run" class="primary">다시 출전</button><div>${mode === 'stage' ? '<button id="to-shop">상점</button>' : ''}<button id="quit">스테이지 고르기</button>${window.parent !== window ? '<button id="return">본편으로</button>' : ''}</div></div>`}</div>`
     if (vanguardToken) {
       overlay.querySelector('h2')!.textContent = run.breaches === 3 ? '길은 열었다. 본대여, 진격하라!' : `${run.breaches}/3 돌파 확보 · 본대로 귀환`
       overlay.querySelector('.result-combos')!.textContent = isBreakthrough(run.breaches) ? breakthroughText(run.breaches) : ''
@@ -854,8 +869,13 @@ function showOverlay() {
   keyHints(root)
 }
 let rewarded: HaebiRun | null = null, reward = { gold: 0, first: false, heroFirst: false }
+/** 그 장수의 상자 대박 기록 한 줄 (5개·8개가 터진 번수 · 한 번도 없으면 빈 글) — 결과 창과 장수 바꾸기 고리가 같이 쓴다 */
+function jackpotLine(id: string, cls = 'result-jackpots', tag = 'p') {
+  const j = heroJackpots(meta, id)
+  return mode === 'stage' && j.five + j.eight > 0 ? `<${tag} class="${cls}" title="${esc(t('raid.chest.recordTip'))}"><img src="${import.meta.env.BASE_URL}realm/raid/chest.png" alt=""> ${esc(t('raid.chest.record', { five: j.five, eight: j.eight }))}</${tag}>` : ''
+}
 function withdraw() { if (logging()) recQuit(rec!); withdrawRun(run); paused = false; shown = ''; showOverlay() }
-function menu() { endingVideo.clear(); cancelBegin(); giantHud.update(null, 0); restoreGiantZoom(); giantCameraOwner = null; closeLog(true); renderStageMenu(); hidePowerHint(); live = false; paused = false; shown = ''; resetInput(); run = newRun(7); loadoutKey = ''; $('menu').hidden = false; $('play').hidden = true; $('overlay').hidden = true; $<HTMLButtonElement>('pause').disabled = true; layoutTrial(); updateHud() }
+function menu() { chestShow.finish(); endingVideo.clear(); cancelBegin(); giantHud.update(null, 0); restoreGiantZoom(); giantCameraOwner = null; closeLog(true); renderStageMenu(); hidePowerHint(); live = false; paused = false; shown = ''; resetInput(); run = newRun(7); loadoutKey = ''; $('menu').hidden = false; $('play').hidden = true; $('overlay').hidden = true; $<HTMLButtonElement>('pause').disabled = true; layoutTrial(); updateHud() }
 /**
  * 본편의 뒤로 가기 (안드로이드 뒤로 단추 · 브라우저 뒤로 · app.ts backOne 이 'hanbal.raid.back' 으로 알린다) — 곧장 본편으로 빠지지 않는다:
  * 묻는 상자·나무·상점이 떠 있으면 그것만 닫고 · 판 중이면 멈춤 창 · 출전 화면이면 「본편으로」와 같다 · 레벨업 카드·결과 화면은 그대로 (그 창의 단추로)
@@ -946,7 +966,7 @@ function updateHud() {
   }
   watchUltOpen()
   // 무료 상자 선택도 능력을 바꾼다. 원시 snapshot 키로 다음 프레임에 갱신한다.
-  const key = `${run.level}:${run.offerNonce ?? 0}:${run.offers.length}`
+  const key = `${run.level}:${run.offerNonce ?? 0}:${run.offers.length}:${run.jackpots?.ranks ?? 0}`
   if (key !== loadoutKey) {
     loadoutKey = key
     hidePowerHint()
@@ -976,6 +996,57 @@ root.addEventListener('pointerdown', e => {
   showOverlay(); schedule()
 }, true)
 root.addEventListener('click', e => { if (performance.now() < skipClickUntil) { e.preventDefault(); e.stopImmediatePropagation() } }, true)
+// 상자 연출 중의 누름은 어디든 「건너뛰기」다 (멎어 있으면 「눌러!」) — 연출 겹은 눌림을 받지 않으므로 창 전체에서 먼저 받는다
+window.addEventListener('pointerdown', e => {
+  if (!chestShow.active) return
+  e.preventDefault(); e.stopImmediatePropagation(); chestShow.skip(); skipClickUntil = performance.now() + END.skipClickMs; schedule()
+}, true)
+/**
+ * 보물 상자 연출 (60-JACKPOT · raid/chest-show.ts) — 판이 적어 둔 상자 결과(chest.jackpot)를 보여 주는 동안 판을 세운다 (판은 읽기만).
+ * 처음 보는 판(출전 · 검수 재생으로 끼운 판)에 이미 있던 상자는 지난 일이라 보여 주지 않는다
+ */
+const jackpotShown = new WeakMap<HaebiRun, Set<number>>()
+function nextJackpot(): Chest | undefined {
+  if (!run.jackpots) return undefined
+  const seen = jackpotShown.get(run)
+  if (!seen) { jackpotShown.set(run, new Set((run.chests ?? []).filter(c => c.jackpot).map(c => c.id))); return undefined }
+  return run.chests?.find(c => c.jackpot !== undefined && !seen.has(c.id))
+}
+const chestShow = new ChestShow(root, {
+  art: import.meta.env.BASE_URL + 'realm/raid/',
+  icon: p => isCombo(p) ? comboIcon(p) : powerIcon(p as Power, kit),
+  color: p => isCombo(p) ? '#f2c45a' : BRANCH_COLOR[nodeAt(kit, p as Power)?.branch ?? 'a'],
+  combo: p => isCombo(p),
+  parts: c => isCombo(c) ? Object.keys(comboOf(c).needs) : [],
+  // 룬이 HUD 칸에 박히는 그 순간에 북 — 룬마다 한 음씩 오른다 (소리 시계에 건다 · pick-fly)
+  fly: (holder, pick, step) => { flyPick(pickFrom(holder), pick, at => sound.chest.drum(step + 1, at)) },
+  shake: step => sound.chest.drum(step, 0, JACKPOT.view.drumBase),
+  burst: tier => { sound.chest.burst(tier); if (tier >= 2) haptics().win(); else haptics().skill('skill') },
+  freeze: () => sound.chest.freeze(),
+  low: () => fieldLowGraphics,
+  label: () => t('raid.chest.push'),
+  done: () => { sound.chest.hold(false); shown = ''; schedule() },
+})
+function beginChestShow(c: Chest) {
+  jackpotShown.get(run)?.add(c.id)
+  if (!c.jackpot || run.state !== 'playing' || document.hidden) return
+  resetInput(); hidePowerHint(); closeTree(); loadoutKey = ''; updateHud()   // HUD 가 새 칸을 단 뒤에 룬이 날아간다
+  sound.chest.hold(true)
+  chestShow.start(c.jackpot)
+}
+/** 상자 확률 — 멈춤 창의 단추로 떴다 사라지는 상자. 표는 「다음 상자」의 확률이다 (판이 굴리는 셈 jackpotOdds 그대로 · 우리 것은 % · docs/realm/ODDS.md) */
+let oddsBox: HTMLElement | null = null
+function closeOdds() { if (oddsBox) oddsBox.hidden = true }
+function openOdds() {
+  if (!oddsBox) { oddsBox = document.createElement('div'); oddsBox.id = 'chest-odds-box'; oddsBox.setAttribute('role', 'dialog'); root.append(oddsBox); oddsBox.onclick = closeOdds }
+  const pct = (p: number) => p > 0 ? `<td><b>${Math.round(p * 100)}%</b></td>` : `<td class="none">${t('raid.chest.odds.none')}</td>`
+  const row = (fast: boolean) => `<tr><td>${fast ? t('raid.chest.odds.fast', { sec: CHAMP.fastSeconds }) : t('raid.chest.odds.slow')}</td>${jackpotOdds(run, fast).map(pct).join('')}</tr>`
+  const art = import.meta.env.BASE_URL + 'realm/raid/'
+  oddsBox.setAttribute('aria-label', t('raid.chest.odds.title'))
+  oddsBox.innerHTML = `<div class="panel"><h2><img src="${art}chest.png" alt="">${t('raid.chest.odds.title')}</h2><p>${t('raid.chest.odds.lead')}</p><table><thead><tr><th></th>${JACKPOT.counts.map((n, i) => `<th style="color:${JACKPOT.view.colors[i]}">${t('raid.chest.odds.count', { n })}</th>`).join('')}</tr></thead><tbody>${row(true)}${row(false)}</tbody></table><p>${t('raid.chest.odds.pity', { p: Math.round(JACKPOT.pityStep * 100) })}</p><p>${t('raid.chest.odds.mid')}</p><button class="primary">${t('raid.chest.odds.close')}</button></div>`
+  oddsBox.hidden = false
+  oddsBox.querySelector<HTMLButtonElement>('button')!.focus()
+}
 function frame(now: number) {
   raf = 0; if (document.hidden) return
   perfTick(now)
@@ -983,8 +1054,8 @@ function frame(now: number) {
   const dt = Math.min(.1, wallDt); last = now
   const endWasActive = ending.active
   feel.observe(run)
-  feel.advance(wallDt, live && !paused && !inspecting && !rotationBlocked && !run.offers.length)
-  if (live && !paused && !inspecting && !rotationBlocked && !feel.stopped && run.state === 'playing' && !run.offers.length) {
+  feel.advance(wallDt, live && !paused && !inspecting && !rotationBlocked && !run.offers.length && !chestShow.active)
+  if (live && !paused && !inspecting && !rotationBlocked && !feel.stopped && run.state === 'playing' && !run.offers.length && !chestShow.active) {
     // 빠르기 ×2·×3 은 한 프레임에 걸음을 더 돌린다 (걸음은 늘 STEP · raid/speed.ts) · 시전·컷인 동안은 ×1
     acc = runFrame(acc, dt, () => run.cast || run.t < cutinUntil ? 1 : speedOf(speed), () => {
       let x = Number(keys.has('d') || keys.has('arrowright')) - Number(keys.has('a') || keys.has('arrowleft')), y = Number(keys.has('s') || keys.has('arrowdown')) - Number(keys.has('w') || keys.has('arrowup'))
@@ -1000,9 +1071,12 @@ function frame(now: number) {
       if (run.wakes > wakesBefore) wakeAt = -9
       // 시전이 새로 섰다 = 각성 또는 비기 (한 번에 하나 · 판이 줄 세운다)
       if (run.cast && run.cast !== castBefore) { showSkillCutin(run.cast.kind === 'wake', run.cast.tru); if (run.cast.kind === 'ult') skillAt = -9 }
-      return !feel.stopped && !run.offers.length && run.state === 'playing'
+      return !feel.stopped && !run.offers.length && run.state === 'playing' && !nextJackpot()   // 상자가 터진 걸음에서 멈춘다 (빠르기 ×2·×3 도)
     })
   }
+  // 상자가 터졌으면 연출을 열고, 열려 있으면 이 틀만큼 민다 (가려진 탭에서는 이 틀이 안 돈다)
+  if (live && !chestShow.active) { const c = nextJackpot(); if (c) beginChestShow(c) }
+  else if (chestShow.active) chestShow.advance(Math.min(wallDt, JACKPOT.view.frameCap))
   if (live) {
     ending.observe(run); ending.advance(wallDt, endWasActive && !rotationBlocked)
     const events = ending.events()
@@ -1032,7 +1106,7 @@ function frame(now: number) {
   // 기술이 터지면 계단마다 떨고(비기 한 번 · 각성 두 박 · 진각성 세 박) 크리티컬은 짧게 한 번 (11-19 형 · HAEBI_FEEL_TIERS · 끄기·가려진 탭은 haptics 가 막음)
   const felt = sound.frame(run, live, paused || inspecting || rotationBlocked, true)
   if (felt.skill) haptics().skill(felt.skill); else if (felt.crit) haptics().crit()
-  updatePortrait(); updateHud(); giantHud.update(live ? giantHUD(run) : null, live && !paused && !inspecting && !rotationBlocked && !run.offers.length && !feel.stopped ? dt : 0); showOverlay(); syncEndingVideo(); schedule()
+  updatePortrait(); updateHud(); giantHud.update(live ? giantHUD(run) : null, live && !paused && !inspecting && !rotationBlocked && !run.offers.length && !chestShow.active && !feel.stopped ? dt : 0); showOverlay(); syncEndingVideo(); schedule()
 }
 /**
  * 그릴 것이 그대로면 판을 다시 그리지 않는다 (11-22 · 폰 프레임) — 멈춤 창 · 레벨업 카드 · 폰 세로 「가로로 돌려 주세요」 · 능력 설명을 누른 동안
@@ -1052,7 +1126,7 @@ function fieldChanged(c: { zoom: number; x: number; y: number }): boolean {
 function schedule() { if (!raf && !document.hidden) raf = requestAnimationFrame(frame) }
 updateHud(); schedule()
 // 개발 검수 손잡이 — 헤드리스 시험(tools/raid-*-probe.ts)이 판 상태를 읽고 체력을 깎아 본다 · 배포 빌드엔 없음
-if (import.meta.env.DEV) Object.assign(window, { __raid: () => run, __raidEnd: () => ({ kind: ending.kind, elapsed: ending.elapsed, duration: ending.duration, active: ending.active, ready: ending.ready, stampAt: ending.stampAt, effectTime: ending.effectTime, overlayVisible: !$('overlay').hidden }), __raidFeel: () => ({ time: feel.time, stopRemaining: feel.stopRemaining, shake: feel.shake }), __raidSound: sound, __raidCutin: (wake: boolean, tru = false) => showSkillCutin(wake, tru), __raidWarm: () => firstViewsWarm })
+if (import.meta.env.DEV) Object.assign(window, { __raid: () => run, __raidEnd: () => ({ kind: ending.kind, elapsed: ending.elapsed, duration: ending.duration, active: ending.active, ready: ending.ready, stampAt: ending.stampAt, effectTime: ending.effectTime, overlayVisible: !$('overlay').hidden }), __raidFeel: () => ({ time: feel.time, stopRemaining: feel.stopRemaining, shake: feel.shake }), __raidSound: sound, __raidCutin: (wake: boolean, tru = false) => showSkillCutin(wake, tru), __raidWarm: () => firstViewsWarm, __chestShow: chestShow })
 if (import.meta.env.DEV && new URLSearchParams(location.search).has('review')) {
   import('./raid/haebi-review.ts').then(({ installReview }) => installReview(root, s => { if (s.giantFlow && s.stage === 'snow') void prewarmTigerArt('snow', images, base).then(() => schedule()); if (s.giantFlow && s.stage === 'palisade') void prewarmBulgasariArt('palisade', images, base).then(() => schedule()); if (s.giantFlow && s.stage === 'forest') void prewarmGumihoArt('forest', images, base).then(() => schedule()); if (s.giantFlow && s.stage === 'fortress') void prewarmShamanArt('fortress', images, base).then(() => schedule()); notifyVanguardStart(); run = s; live = true; paused = !s.offers.length; shown = ''; loadoutKey = ''; resetInput(); $('menu').hidden = true; $('play').hidden = false; warmCutinInArena(); $<HTMLButtonElement>('pause').disabled = false; layoutTrial(); showOverlay(); updateHud(); schedule() }, mode, kit))
 }

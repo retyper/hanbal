@@ -11,7 +11,7 @@
  * 기술 계단(11-19 형: 「기술 쓸 때 사운드·햅틱 · 크리티컬은 핑 · 초반 사운드 너무 심하면 안 됨 · 진각성은 더 임팩트」): 비기 < 각성 비기 < 진각성 비기 · 크리티컬 「핑」 — HAEBI_FEEL_TIERS · 진동은 frame 이 돌려주는 사건으로 화면이 낸다.
  * 소리 끔·크기는 본편 설정(hanbal.realm.mute · hanbal.realm.volume.*)을 따른다. 출처: public/realm/sfx/CREDITS.txt · public/sfx/CREDITS.txt
  */
-import { HAEBI_SOUND as V, HAEBI_IMPACT as IMPACT, HAEBI_FEEL_TIERS as F, HAEBI_ULT as U, HAEBI_AWAKEN_ULT as AC, type FeelTier } from '../tune/params.ts'
+import { HAEBI_SOUND as V, HAEBI_IMPACT as IMPACT, HAEBI_FEEL_TIERS as F, HAEBI_ULT as U, HAEBI_AWAKEN_ULT as AC, HAEBI_JACKPOT as JP, type FeelTier } from '../tune/params.ts'
 import type { HaebiRun, Kit } from './haebi.ts'
 
 /** 한 프레임에 일어난 손맛 사건 — 화면이 진동에 쓴다 (판은 읽기만) · cast 비기를 누름 · skill 비기가 터짐 · crit 크리티컬이 났음 */
@@ -48,7 +48,14 @@ const FILES = {
   whirl: [SLING.whirl], stone: [SLING.impact],
   /** 불의 무녀 장군의 방울 (포효 대신) — 방울 묶음과 같은 소리 */
   bell: [R + 'tap_bell_g1.wav', R + 'tap_bell_g2.wav', R + 'tap_bell_g3.wav'],
+  /**
+   * 보물 상자 연출 (60-JACKPOT · raid/chest-show.ts) — 단계마다 곡 자리 하나: chest1 · chest3 · chest5 · chest8 · 대박이 멎는 순간 chestFreeze.
+   * ★ 지금은 있는 소리를 빌린 임시 값이다 (소리는 형이 고른다). 고른 파일이 오면 이 다섯 줄의 파일만 바꾼다. chestDrum = 들썩임·룬이 박힐 때의 북
+   */
+  chest1: [X + 'level.ogg'], chest3: [X + 'level.ogg'], chest5: [R + 'horn_victory_a.ogg'], chest8: [R + 'horn_victory_a.ogg'], chestFreeze: [X + 'skill_hit.ogg'],
+  chestDrum: [R + 'tap_drum_g1.wav'],
 } as const
+const CHEST_JINGLE = ['chest1', 'chest3', 'chest5', 'chest8'] as const
 /** 목소리 — 자리마다 돌려 쓰는 묶음. 기합은 비기 때만 (평타엔 목소리 없음) */
 const VOICE = {
   hurt_m: [G + 'hurt_m_g2.ogg'], hurt_f: [G + 'hurt_f_g1.ogg', X + 'hurt_f_1.ogg', X + 'hurt_f_2.ogg'],
@@ -88,6 +95,8 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
   let noise: AudioBuffer | null = null, thudAt = -9, thudN = 0, thudD = 0, popAt = -9, popN = 0, championAt = -9
   /** 기술 소리 묶음 — 울림·종·skill_hit 이 겹쳐도 찢어지지 않게 한 번 눌러 준다 (없는 브라우저는 바로 내보냄) · 크리티컬 「핑」 마지막 때 · 다 풀렸나 */
   let bus: AudioNode | null = null, critAt = -9, ready: Promise<void> = Promise.resolve()
+  /** 보물 상자 연출 동안 — 배경음을 멈추고, 그사이 뜬 레벨업 카드의 소리는 연출이 끝난 뒤에 낸다 */
+  let chestHeld = false
   /** 풀면서 앞의 빈 소리를 잰다 (mp3 는 앞에 0.03~0.06초가 비어 있다) */
   async function decode(c: AudioContext, file: string) {
     const bytes = await raw.get(file); if (!bytes) return
@@ -230,6 +239,13 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
     ending: (won: boolean) => sfx(won ? 'win' : 'lose', V.end),
     /** 고른 카드(레벨업 · 보물 상자)의 룬이 HUD 칸에 박히는 그 순간 — 화면(raid/pick-fly.ts)이 날기 시작에 남은 초(at)를 넘겨 소리 시계로 건다 (A1 · 예전엔 고른 다음 프레임) */
     pick: (at = 0) => sfx('pick', V.ui, 0, 1, at),
+    /** 보물 상자 연출 (화면이 부른다 · raid/chest-show.ts) — hold 연출 동안 배경음 멈춤(끝나면 그 자리에서 이어진다) · drum 북(step 만큼 높게 · at 초 뒤) · burst 그 단계의 곡 · freeze 대박이 멎는 순간 */
+    chest: {
+      hold(on: boolean) { chestHeld = on; if (on && music && !music.paused) music.pause() },
+      drum: (step: number, at = 0, base: number = 1) => play('chestDrum', any(FILES.chestDrum), JP.view.drumVol * volume('sfx'), 0, base * JP.view.drumRate ** step, 0, null, at),
+      burst: (tier: number) => { sfx(CHEST_JINGLE[Math.max(0, Math.min(CHEST_JINGLE.length - 1, tier))]!, JP.view.jingleVol); if (tier >= CHEST_JINGLE.length - 1) sfx('skillHit', JP.view.jingleVol) },
+      freeze: () => sfx('chestFreeze', JP.view.freezeVol),
+    },
     /** 파일을 다 풀었나 (들어 보기 · 시험) */
     ready: () => ready,
     /**
@@ -254,7 +270,7 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
         else if (audible && ctx.state === 'suspended') void ctx.resume().catch(() => undefined)
       }
       const on = live && !paused && s.state === 'playing' && !document.hidden && !muted()
-      if (music) { music.volume = V.bgm * volume('bgm'); if (on && !s.offers.length) { if (music.paused) void music.play().catch(() => undefined) } else if (!music.paused) music.pause() }
+      if (music) { music.volume = V.bgm * volume('bgm'); if (on && !s.offers.length && !chestHeld) { if (music.paused) void music.play().catch(() => undefined) } else if (!music.paused) music.pause() }
       if (!live) { prev.run = null; pendingHeroVoice = null; return NONE }
       // 판이 바뀐 것은 씨앗이 아니라 판 그 자체로 가린다 (씨앗이 NaN 이면 매 프레임 처음으로 돌아가 비기 외침·신음이 프레임마다 다시 났다 · 형 11-16)
       if (prev.run !== s) { pendingHeroVoice = null; known = new WeakSet(); dropsWere = 0; chestsWere = s.chests?.length ?? 0; xpWas = s.xp; thudN = thudD = 0; championAt = -9 }
@@ -303,13 +319,15 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
       if (picked > 0 && ctx && ctx.currentTime - popAt >= V.popGap && room()) pop(picked)
       // 판 안 각성(투지) — 외침 + 터짐 (RAID-LINK §1)
       if (s.wakes > prev.wakes) { say(shout, V.skill); sfx('skillHit', V.skillHit) }
-      if (s.offers.length && !prev.offers) sfx('level', V.ui)
+      // 상자 연출 중에 뜬 카드는 연출이 끝난 틀에 소리를 낸다 (chestHeld 동안은 못 본 것으로 둔다)
+      const offers = chestHeld ? 0 : s.offers.length
+      if (offers && !prev.offers) sfx('level', V.ui)
       // 「고름」 소리는 여기서 내지 않는다 — 고른 카드의 룬이 HUD 칸에 박히는 순간 화면이 pick() 을 부른다 (A1 소리 박자 · raid/pick-fly.ts)
       if (barrage < prev.barrage) sfx('arrows', V.arrows, .15)
       if (elites > prev.elites) sfx('elite', V.cry)
       if (s.boss && !prev.boss) { if (bells) sfx('bell', V.roar); else say('roar', V.roar) }
       if (!deferEnding && s.state !== prev.state) sfx(s.state === 'won' ? 'win' : 'lose', V.end)
-      Object.assign(prev, { attack: s.attack, hurt: s.hurt, kills: fell > 0 || !ctx || ctx.currentTime - hitAt >= V.hitGap ? s.kills : prev.kills, skillCd: s.skillCd, offers: s.offers.length, level: s.level, wakes: s.wakes, barrage, elites, boss: s.boss, state: s.state })
+      Object.assign(prev, { attack: s.attack, hurt: s.hurt, kills: fell > 0 || !ctx || ctx.currentTime - hitAt >= V.hitGap ? s.kills : prev.kills, skillCd: s.skillCd, offers, level: s.level, wakes: s.wakes, barrage, elites, boss: s.boss, state: s.state })
       return cast || skill || crits ? { cast, skill, crit: crits > 0 } : NONE
     },
   }
