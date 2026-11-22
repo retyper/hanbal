@@ -139,6 +139,86 @@
    "walk": "../flutter/arrow_game_one/tools/sprite-kit/awakened-20261114/intake-20261118/aw1-base-w-13-young-archer-walk.png"
   }
  },
+ "aw1-base-w-25-bihwa-priestess": {
+  "bytes": 1946663,
+  "cell": [
+   368,
+   320
+  ],
+  "cols": 11,
+  "feet": 312,
+  "scale": {
+   "attack": 1.0821,
+   "hdx": 0.8709,
+   "walk": 0.8464
+  },
+  "sha256": "809bf7e6d10f29bdd00e030c27aab254e0d74f4a8ea1a3b39f08122b089311a1",
+  "sources": {
+   "attack": "codex70/attack8_aw1-base-w-25-bihwa-priestess.png",
+   "hdx": "codex78/hdx_aw1-base-w-25-bihwa-priestess.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/awakened-20261114/intake-20261118/aw1-base-w-25-bihwa-priestess-walk.png"
+  }
+ },
+ "aw1-base-w-29-golpo-janmul": {
+  "bytes": 1559109,
+  "cell": [
+   448,
+   320
+  ],
+  "cols": 9,
+  "feet": 312,
+  "scale": {
+   "attack": 1.1356,
+   "hdx": 0.8323,
+   "walk": 0.7048
+  },
+  "sha256": "05859c2d2c07d54f9dd7c1ac66347a8462993dac89f62065faa90a75a1342b4b",
+  "sources": {
+   "attack": "codex70/attack8_aw1-base-w-29-golpo-janmul.png",
+   "hdx": "codex78/hdx_aw1-base-w-29-golpo-janmul.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/awakened-20261114/intake-20261118/aw1-base-w-29-golpo-janmul-walk.png"
+  }
+ },
+ "aw1-base-w-31-dabeol-dalbit": {
+  "bytes": 1568623,
+  "cell": [
+   384,
+   320
+  ],
+  "cols": 10,
+  "feet": 312,
+  "scale": {
+   "attack": 0.9514,
+   "hdx": 0.7307,
+   "walk": 0.6446
+  },
+  "sha256": "e231de9143cb2bb4708c9b5a29c039051cd307123140be3e4860f7d8e09c5795",
+  "sources": {
+   "attack": "codex70/attack8_aw1-base-w-31-dabeol-dalbit.png",
+   "hdx": "codex78/hdx_aw1-base-w-31-dabeol-dalbit.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/awakened-20261114/intake-20261118/aw1-base-w-31-dabeol-dalbit-walk.png"
+  }
+ },
+ "aw1-base-w-36-baekje-maena": {
+  "bytes": 1437821,
+  "cell": [
+   352,
+   320
+  ],
+  "cols": 11,
+  "feet": 312,
+  "scale": {
+   "attack": 0.989,
+   "hdx": 0.7584,
+   "walk": 0.6267
+  },
+  "sha256": "14b19365c2f3405df66cd9db26c1b8a77315cecca815c01ac160b369589212f5",
+  "sources": {
+   "attack": "codex70/attack8_aw1-base-w-36-baekje-maena.png",
+   "hdx": "codex78/hdx_aw1-base-w-36-baekje-maena.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/awakened-20261114/intake-20261118/aw1-base-w-36-baekje-maena-walk.png"
+  }
+ },
  "aw1-dangung": {
   "bytes": 1547996,
   "cell": [
@@ -677,6 +757,166 @@
    "attack": "codex70/attack8_base-w-24-apdok-queen.png",
    "hdx": "codex78/hdx_base-w-24-apdok-queen.png",
    "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/base-w-24-apdok-queen-prop20261117-walk.png"
+  }
+ },
+ "base-w-25-bihwa-priestess": {
+  "bytes": 1520936,
+  "cell": [
+   432,
+   320
+  ],
+  "cols": 9,
+  "feet": 312,
+  "scale": {
+   "attack": 1.1845,
+   "hdx": 0.7931,
+   "walk": 1.0514
+  },
+  "sha256": "cfe6605b72883fabd2846d36d98ac5b287b6ad38e64557a8dc6dbc39553e8b3d",
+  "sources": {
+   "attack": "codex70/attack8_base-w-25-bihwa-priestess.png",
+   "hdx": "codex78/hdx_base-w-25-bihwa-priestess.png",
+   "walk": "codex68/walk8_base-w-25-bihwa-priestess.png"
+  }
+ },
+ "base-w-26-iseo-tomboy-general": {
+  "bytes": 1207954,
+  "cell": [
+   528,
+   320
+  ],
+  "cols": 7,
+  "feet": 312,
+  "scale": {
+   "attack": 1.2321,
+   "hdx": 0.9231,
+   "walk": 0.6243
+  },
+  "sha256": "75796f600eff4f2461540a62b998307fc3acdd80a36bbf051cc44336c091026d",
+  "sources": {
+   "attack": "codex70/attack8_base-w-26-iseo-tomboy-general.png",
+   "hdx": "codex78/hdx_base-w-26-iseo-tomboy-general.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/base-w-26-iseo-tomboy-general-prop20261117-walk.png"
+  }
+ },
+ "base-w-27-mokji-jinha": {
+  "bytes": 1601642,
+  "cell": [
+   400,
+   320
+  ],
+  "cols": 10,
+  "feet": 312,
+  "scale": {
+   "attack": 1.1646,
+   "hdx": 0.8094,
+   "walk": 0.7862
+  },
+  "sha256": "33f7aa61ad3891249ee8ba02235d5ba52e756dcc2d1a4a990ab82129345e2b22",
+  "sources": {
+   "attack": "codex70/attack8_base-w-27-mokji-jinha.png",
+   "hdx": "codex78/hdx_base-w-27-mokji-jinha.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/base-w-27-mokji-jinha-prop20261117-walk.png"
+  }
+ },
+ "base-w-29-golpo-janmul": {
+  "bytes": 1580086,
+  "cell": [
+   496,
+   320
+  ],
+  "cols": 8,
+  "feet": 312,
+  "scale": {
+   "attack": 1.2212,
+   "hdx": 0.8903,
+   "walk": 0.7315
+  },
+  "sha256": "ba7932b3fa77d24ba1032274ed5a4d58589464f21eff8ded42af1c590767b97b",
+  "sources": {
+   "attack": "codex70/attack8_base-w-29-golpo-janmul.png",
+   "hdx": "codex78/hdx_base-w-29-golpo-janmul.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/base-w-29-golpo-janmul-prop20261117-walk.png"
+  }
+ },
+ "base-w-31-dabeol-dalbit": {
+  "bytes": 1293230,
+  "cell": [
+   416,
+   320
+  ],
+  "cols": 9,
+  "feet": 312,
+  "scale": {
+   "attack": 1.0,
+   "hdx": 0.8023,
+   "walk": 0.9517
+  },
+  "sha256": "82cb30e9ce1399b4d2b49b0fff2d8839297eebf91fd32a35420859fcbc02174f",
+  "sources": {
+   "attack": "codex70/attack8_base-w-31-dabeol-dalbit.png",
+   "hdx": "codex78/hdx_base-w-31-dabeol-dalbit.png",
+   "walk": "codex68/walk8_base-w-31-dabeol-dalbit.png"
+  }
+ },
+ "base-w-34-chopal-deulme": {
+  "bytes": 1671982,
+  "cell": [
+   528,
+   320
+  ],
+  "cols": 7,
+  "feet": 312,
+  "scale": {
+   "attack": 1.1265,
+   "hdx": 0.8364,
+   "walk": 0.6823
+  },
+  "sha256": "0d75e0b07bd835a381b29a57e07fa0172bc2dab3e719e518099b4f91fc977762",
+  "sources": {
+   "attack": "codex70/attack8_base-w-34-chopal-deulme.png",
+   "hdx": "codex78/hdx_base-w-34-chopal-deulme.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/base-w-34-chopal-deulme-prop20261117-walk.png"
+  }
+ },
+ "base-w-36-baekje-maena": {
+  "bytes": 1575872,
+  "cell": [
+   384,
+   320
+  ],
+  "cols": 10,
+  "feet": 312,
+  "scale": {
+   "attack": 1.0909,
+   "hdx": 0.8166,
+   "walk": 0.6551
+  },
+  "sha256": "7429d38b5a33c4a3aa3bc5677c180710d8202c32218c9a20ed15bf8e8b7aaaf4",
+  "sources": {
+   "attack": "codex70/attack8_base-w-36-baekje-maena.png",
+   "hdx": "codex78/hdx_base-w-36-baekje-maena.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/base-w-36-baekje-maena-prop20261117-walk.png"
+  }
+ },
+ "base-w-38-sangdang-bulmae": {
+  "bytes": 1428832,
+  "cell": [
+   400,
+   320
+  ],
+  "cols": 10,
+  "feet": 312,
+  "scale": {
+   "attack": 1.2052,
+   "hdx": 0.7582,
+   "walk": 0.6658
+  },
+  "sha256": "f26adb70f25261473c36abf0b7f4584b1192359c9826a94afba54c4f5cb30597",
+  "sources": {
+   "attack": "codex70/attack8_base-w-38-sangdang-bulmae.png",
+   "hdx": "codex78/hdx_base-w-38-sangdang-bulmae.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/base-w-38-sangdang-bulmae-prop20261117-walk.png"
   }
  },
  "dangung": {

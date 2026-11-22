@@ -1,5 +1,17 @@
 /** Native master rebake only. Missing entries deliberately retain their approved base assets. */
 export const HERO_HD: Readonly<Record<string, string>> = {
+  'anim-px/gen-base-w-38-sangdang-bulmae.png': 'anim-px/gen-base-w-38-sangdang-bulmae_hd.png',
+  'anim-px/gen-base-w-36-baekje-maena.png': 'anim-px/gen-base-w-36-baekje-maena_hd.png',
+  'anim-px/gen-base-w-34-chopal-deulme.png': 'anim-px/gen-base-w-34-chopal-deulme_hd.png',
+  'anim-px/gen-base-w-31-dabeol-dalbit.png': 'anim-px/gen-base-w-31-dabeol-dalbit_hd.png',
+  'anim-px/gen-base-w-29-golpo-janmul.png': 'anim-px/gen-base-w-29-golpo-janmul_hd.png',
+  'anim-px/gen-base-w-27-mokji-jinha.png': 'anim-px/gen-base-w-27-mokji-jinha_hd.png',
+  'anim-px/gen-base-w-26-iseo-tomboy-general.png': 'anim-px/gen-base-w-26-iseo-tomboy-general_hd.png',
+  'anim-px/gen-base-w-25-bihwa-priestess.png': 'anim-px/gen-base-w-25-bihwa-priestess_hd.png',
+  'anim-px/gen-aw1-base-w-36-baekje-maena.png': 'anim-px/gen-aw1-base-w-36-baekje-maena_hd.png',
+  'anim-px/gen-aw1-base-w-31-dabeol-dalbit.png': 'anim-px/gen-aw1-base-w-31-dabeol-dalbit_hd.png',
+  'anim-px/gen-aw1-base-w-29-golpo-janmul.png': 'anim-px/gen-aw1-base-w-29-golpo-janmul_hd.png',
+  'anim-px/gen-aw1-base-w-25-bihwa-priestess.png': 'anim-px/gen-aw1-base-w-25-bihwa-priestess_hd.png',
   'anim-px/gen-base-w-24-apdok-queen.png': 'anim-px/gen-base-w-24-apdok-queen_hd.png',
   'anim-px/gen-base-w-22-dongye-tiger-huntress.png': 'anim-px/gen-base-w-22-dongye-tiger-huntress_hd.png',
   'anim-px/gen-base-w-21-baekje-court-dancer.png': 'anim-px/gen-base-w-21-baekje-court-dancer_hd.png',
@@ -55,6 +67,18 @@ export const HERO_HD: Readonly<Record<string, string>> = {
 
 /** NativeHD atlas stays within4096 before upload: frame order is row-major,20 frames. */
 export const HERO_HD_SHEETS: Readonly<Record<string, { cell: readonly [number, number]; cols: number }>> = {
+  'anim-px/gen-base-w-38-sangdang-bulmae_hd.png': { cell: [400, 320], cols: 10 },
+  'anim-px/gen-base-w-36-baekje-maena_hd.png': { cell: [384, 320], cols: 10 },
+  'anim-px/gen-base-w-34-chopal-deulme_hd.png': { cell: [528, 320], cols: 7 },
+  'anim-px/gen-base-w-31-dabeol-dalbit_hd.png': { cell: [416, 320], cols: 9 },
+  'anim-px/gen-base-w-29-golpo-janmul_hd.png': { cell: [496, 320], cols: 8 },
+  'anim-px/gen-base-w-27-mokji-jinha_hd.png': { cell: [400, 320], cols: 10 },
+  'anim-px/gen-base-w-26-iseo-tomboy-general_hd.png': { cell: [528, 320], cols: 7 },
+  'anim-px/gen-base-w-25-bihwa-priestess_hd.png': { cell: [432, 320], cols: 9 },
+  'anim-px/gen-aw1-base-w-36-baekje-maena_hd.png': { cell: [352, 320], cols: 11 },
+  'anim-px/gen-aw1-base-w-31-dabeol-dalbit_hd.png': { cell: [384, 320], cols: 10 },
+  'anim-px/gen-aw1-base-w-29-golpo-janmul_hd.png': { cell: [448, 320], cols: 9 },
+  'anim-px/gen-aw1-base-w-25-bihwa-priestess_hd.png': { cell: [368, 320], cols: 11 },
   'anim-px/gen-base-w-24-apdok-queen_hd.png': { cell: [368, 320], cols: 11 },
   'anim-px/gen-base-w-22-dongye-tiger-huntress_hd.png': { cell: [480, 320], cols: 8 },
   'anim-px/gen-base-w-21-baekje-court-dancer_hd.png': { cell: [368, 320], cols: 11 },
