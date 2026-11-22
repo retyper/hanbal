@@ -385,3 +385,17 @@ cand/sling_release_3.ogg  Slingshot 2 · renne100 · CC0 · https://freesound.or
 cand/sling_impact_1.ogg  Stone hit · CamoMano · CC0 · https://freesound.org/s/431019/
 cand/sling_impact_2.ogg  Single Rock hit Dirt.wav · worthahep88 · CC0 · https://freesound.org/s/319222/ (0.15초부터 0.6초)
 cand/sling_impact_3.ogg  impact-stone-heavy.wav · kasparsj · CC0 · https://freesound.org/s/513694/
+
+# 열전 타격 소리 (11-22 · 형이 고름: 일반 1·2 · 치명 1·2·3) — sfx/raid/hit_*.ogg · soundbible.com · CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)
+# 가공: 앞뒤 빈 소리 자름 · 끝 0.04초 페이드 · 모노 · 크기 -18 LUFS 맞춤 · ogg 로 바꿈
+raid/hit_n1.ogg  Realistic Punch · Mark DiAngelo · CC BY 3.0 · https://soundbible.com/2069-Realistic-Punch.html
+raid/hit_n2.ogg  Jab · Mike Koenig · CC BY 3.0 · https://soundbible.com/995-Jab.html
+raid/hit_c1.ogg  Strong Punch · Mike Koenig · CC BY 3.0 · https://soundbible.com/1773-Strong-Punch.html
+raid/hit_c2.ogg  Right Cross · Mike Koenig · CC BY 3.0 · https://soundbible.com/992-Right-Cross.html
+raid/hit_c3.ogg  Upper Cut · Mike Koenig · CC BY 3.0 · https://soundbible.com/993-Upper-Cut.html
+# 같은 날 형이 더 고름: 쓰러짐 1·2·3 · 떨어짐 1(상자 떨어질 때) · 터짐 1(기세 알 「뽁」에 얹음) · 같은 가공
+raid/down_1.ogg  Zombie In Pain · Mike Koenig · CC BY 3.0 · https://soundbible.com/1033-Zombie-In-Pain.html
+raid/down_2.ogg  Zombie Long Death · Mike Koenig · CC BY 3.0 · https://soundbible.com/1042-Zombie-Long-Death.html
+raid/down_3.ogg  Dying · Mike Koenig · CC BY 3.0 · https://soundbible.com/810-Dying.html
+raid/fall_1.ogg  Drop Sword · Caroline Ford · CC BY 3.0 · https://soundbible.com/906-Drop-Sword.html
+raid/pop_1.ogg  Blop · Mark DiAngelo · CC BY 3.0 · https://soundbible.com/2067-Blop.html

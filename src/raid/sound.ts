@@ -43,6 +43,8 @@ const FILES = {
   elite: [R + 'war_cry_h1.mp3'], win: [R + 'horn_victory_a.ogg'], lose: [X + 'defeat.ogg'],
   fire: [X + 'fire_1.ogg', X + 'fire_2.ogg', X + 'fire_3.ogg'], wind: [X + 'wind_1.ogg', X + 'wind_2.ogg', X + 'wind_3.ogg'],
   bolt: [X + 'bolt_1.ogg', X + 'bolt_2.ogg'], light: [X + 'light_1.ogg', X + 'light_2.ogg'], earth: [X + 'earth_1.ogg', X + 'earth_2.ogg'], skillHit: [X + 'skill_hit.ogg'],
+  hitN: [X + 'hit_n1.ogg', X + 'hit_n2.ogg'], hitC: [X + 'hit_c1.ogg', X + 'hit_c2.ogg', X + 'hit_c3.ogg'],
+  down: [X + 'down_1.ogg', X + 'down_2.ogg', X + 'down_3.ogg'], fall: [X + 'fall_1.ogg'], popClip: [X + 'pop_1.ogg'],
   whirl: [SLING.whirl], stone: [SLING.impact],
   /** 불의 무녀 장군의 방울 (포효 대신) — 방울 묶음과 같은 소리 */
   bell: [R + 'tap_bell_g1.wav', R + 'tap_bell_g2.wav', R + 'tap_bell_g3.wav'],
@@ -137,6 +139,9 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
       nodes.push(lp, ng)
       return [osc, nz]
     })
+    // 형이 고른 타격 소리를 얹는다 — 「둑」과 같은 크기 몫 · 큰 피해일수록 조금 낮게
+    const mid = (V.thudHz[0] + V.thudHz[1]) / 2
+    play('hitN', any(FILES.hitN), Math.min(1, V.hitClip * k.vol / V.thud) * volume('sfx'), 0, 1 + (k.hz / mid - 1) * V.clipRate, V.maxVoices)
   }
   /** 「뽁」 — 위로 짧게 미끄러지는 사인 · 연달아 먹으면 한 칸씩 올라간다 (듀오링고 콤보) */
   function pop(count: number) {
@@ -147,6 +152,7 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
       const osc = c.createOscillator(); osc.type = 'sine'; osc.frequency.setValueAtTime(hz, t); osc.frequency.exponentialRampToValueAtTime(hz * V.popRise, t + len * .8); osc.connect(out)
       return [osc]
     })
+    play('popClip', any(FILES.popClip), V.popClip * volume('sfx'), 0, (hz / V.popHz) ** V.popRate, V.maxVoices)
   }
   /** 비기를 누를 때 「탁」 — 아래로 꺾이는 세모파 + 띠 노이즈 한 번 (짧고 단단하게) */
   function castTick(tier: FeelTier) {
@@ -197,10 +203,12 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
   const any = (list: readonly string[]) => list[n++ % list.length]!
   const sfx = (slot: keyof typeof FILES, vol: number, gap = 0, rate = 1, at = 0) => play(slot, any(FILES[slot]), vol * volume('sfx'), gap, rate, V.maxVoices, null, at)
   const say = (slot: Voice, vol: number, gap = 0) => play(slot, any(VOICE[slot]), vol * volume('voice'), gap)
+  /** 크리티컬 — 「핑」 + 형이 고른 치명 타격 소리 */
+  const critHit = () => { ping(); sfx('hitC', V.critClip) }
   /** 이미 소리를 낸 투사체·이펙트 (새로 생긴 것만 낸다) */
   const seen = new WeakSet<object>()
   /** 지난 프레임에 판에 있던 기세 알 (사라진 수 = 주운 수 · 새 판이면 비운다) */
-  let known = new WeakSet<object>(), dropsWere = 0, xpWas = 0
+  let known = new WeakSet<object>(), dropsWere = 0, xpWas = 0, chestsWere = 0
   const prev = { attack: 0, hurt: 0, kills: 0, skillCd: 0, offers: 0, level: 1, wakes: 0, barrage: 0, elites: 0, boss: false, state: 'playing' as HaebiRun['state'], run: null as HaebiRun | null }
   /** 첫 손길(출전 단추)에서 부른다 — 브라우저는 손길 뒤에만 소리를 연다. 여기서 전부 풀어 둔다 */
   function unlock() {
@@ -229,7 +237,7 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
     async preview(kind: FeelTier | 'crit', onHit?: () => void): Promise<number> {
       unlock(); await ready
       if (!ctx) return 0
-      if (kind === 'crit') { if (room()) ping(); onHit?.(); return 0 }
+      if (kind === 'crit') { if (room()) critHit(); onHit?.(); return 0 }
       say(shout, V.skill); if (room(F.reserve)) castTick(kind)
       const wait = (kind === 'skill' ? U.cast : U.trueCast) / U.slow * 1000
       setTimeout(() => { impact(kind); onHit?.() }, wait)
@@ -247,7 +255,7 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
       if (music) { music.volume = V.bgm * volume('bgm'); if (on && !s.offers.length) { if (music.paused) void music.play().catch(() => undefined) } else if (!music.paused) music.pause() }
       if (!live) { prev.run = null; pendingHeroVoice = null; return NONE }
       // 판이 바뀐 것은 씨앗이 아니라 판 그 자체로 가린다 (씨앗이 NaN 이면 매 프레임 처음으로 돌아가 비기 외침·신음이 프레임마다 다시 났다 · 형 11-16)
-      if (prev.run !== s) { pendingHeroVoice = null; known = new WeakSet(); dropsWere = 0; xpWas = s.xp; thudN = thudD = 0; championAt = -9 }
+      if (prev.run !== s) { pendingHeroVoice = null; known = new WeakSet(); dropsWere = 0; chestsWere = s.chests?.length ?? 0; xpWas = s.xp; thudN = thudD = 0; championAt = -9 }
       if (prev.run !== s) Object.assign(prev, { attack: 0, hurt: 0, kills: s.kills, skillCd: 0, offers: 0, level: s.level, wakes: s.wakes, barrage: 0, elites: 0, boss: s.boss, state: 'playing', run: s })
       const barrage = s.shots.reduce((k, b) => k + Number(b.kind === 'barrage'), 0), elites = s.enemies.reduce((k, e) => k + Number(e.kind === 'elite'), 0)
       if (s.attack > prev.attack) { play('weapon', any(WEAPON[kit][0]), V.swing * volume('sfx'), 0, WEAPON[kit][1] * (.95 + (n % 5) * .025), V.maxVoices) }  // 평타엔 목소리 없음 (형 11-16: 「기합은 스킬 쓸 때만」)
@@ -257,6 +265,7 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
       const fell = ctx && ctx.currentTime - hitAt >= V.hitGap ? Math.min(V.hitVoices, s.kills - prev.kills) : 0
       if (fell > 0) hitAt = ctx!.currentTime
       for (let i = 0; i < fell; i++) sfx('hit', V.hit * (1 - i * .18), 0, .86 + ((n + i * 3) % 7) * .05)
+      if (fell > 0) sfx('down', V.down, V.downGap, .92 + (n % 5) * .04)
       if (fell > 0) say('die', V.die, V.dieGap)
       // 비기를 누름 — 기합(그대로) + 계단마다 「탁」
       let cast: FeelTier | null = null, skill: FeelTier | null = null, crits = 0
@@ -279,7 +288,7 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
         if (e.kind === 'bolt') sfx('bolt', V.magic, V.magicGap); else if (e.kind === 'spike') sfx('earth', V.magic, V.magicGap); else if (e.kind === 'skill') { const t = tierOf((e.awakened ?? e.tru) === true); if (!skill || RANK[t] > RANK[skill]) skill = t } else if (e.kind === 'thud' || e.kind === 'ult' && e.ult === 'sling') sfx('stone', V.stone, V.stoneGap, .9 + (n % 5) * .05) }
       // 비기가 터짐(한 프레임에 하나 · 가장 높은 계단) · 크리티컬 「핑」은 한 프레임 한 번 · crit.gap 틈 · 소리 수 한도면 버린다
       if (skill) impact(skill)
-      if (crits > 0 && ctx && ctx.currentTime - critAt >= F.crit.gap && room()) { critAt = ctx.currentTime; ping() }
+      if (crits > 0 && ctx && ctx.currentTime - critAt >= F.crit.gap && room()) { critAt = ctx.currentTime; critHit() }
       // 적이 맞는 「둑」 — 이 프레임에 맞은 것을 한 묶음으로 (여럿이면 조금 크게) · thudGap 안이면 다음 묶음에 더한다 · 한도면 버린다
       thudN += hitN; thudD += hitD
       if (thudN > 0 && (!ctx || ctx.currentTime - thudAt >= V.thudGap)) { if (room()) { thudAt = ctx!.currentTime; thud(thudN, thudD / thudN) } thudN = thudD = 0 }
@@ -287,6 +296,7 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
       let kept = 0; for (const d of s.drops) { if (known.has(d)) kept++; else known.add(d) }
       const picked = s.xp > xpWas + 1e-9 ? Math.max(1, dropsWere - kept) : 0
       dropsWere = s.drops.length; xpWas = s.xp
+      const chests = s.chests?.length ?? 0; if (chests > chestsWere) sfx('fall', V.fall); chestsWere = chests
       if (picked > 0 && ctx && ctx.currentTime - popAt >= V.popGap && room()) pop(picked)
       // 판 안 각성(투지) — 외침 + 터짐 (RAID-LINK §1)
       if (s.wakes > prev.wakes) { say(shout, V.skill); sfx('skillHit', V.skillHit) }

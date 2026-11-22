@@ -127,7 +127,7 @@ test('크리티컬 「핑」 — 여럿이 몰려도 한 프레임 한 번 · cr
 test('소리 수 한도 — 다 차면 핑은 건너뛰고, 기술 소리만 reserve 개까지 더 난다', async () => {
   const { snd, s } = await fresh(true)
   for (let i = 0; i < V.maxVoices * 3; i++) { s.fx.push(fxOf('hit', { n: 20 })); clock += V.thudGap * 1.01; snd.frame(s, true, false) }
-  assert.equal(synths.length, V.maxVoices)
+  assert.ok(synths.length >= V.maxVoices / 2 && synths.length <= V.maxVoices)   // 11-22 「둑」마다 형이 고른 타격 소리가 한 자리씩 함께 쓴다
   s.fx.push(fxOf('hit', { n: 20, crit: true })); clock += 1; snd.frame(s, true, false)
   assert.equal(synths.filter(v => v.hz[0] === F.crit.hz).length, 0)
   s.fx.push(fxOf('skill', { tru: true })); clock += 1; snd.frame(s, true, false)

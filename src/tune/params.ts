@@ -42,6 +42,10 @@ export const HAEBI_SOUND = {
    * thudGap 초에 한 묶음(그 사이 맞은 것은 다음 묶음에 더함) · thudMs 길이(작은 피해→큰 피해) · thudHz 높이(작은→큰, 큰 피해가 낮다) · thudDrop 끝 높이 몫
    * thudRef 피해가 이만하면 「큰」 쪽 절반 · thudStack 한 묶음에 하나 더 맞을 때 커지는 몫(thudStackMax 개까지) · thudJitter 높이를 흔드는 몫(귀가 안 지침) · thudNoise 노이즈 몫 · thudCut 노이즈 저역 필터 Hz
    */
+  /** 11-22 형이 고른 타격 소리(sfx/raid/hit_n1·n2 · 치명 hit_c1~3 · CC BY) — 「둑」·「핑」 위에 얹는다 · hitClip 일반 크기 · critClip 치명 크기 · clipRate 피해가 클수록 낮게(「둑」 높이 몫을 이만큼 따라감) */
+  hitClip: .5, critClip: .6, clipRate: .5,
+  /** 형이 더 고른 것 — down 적 쓰러짐 신음(downGap 초에 하나만 · 떼로 죽어도 하나) · fall 상자가 땅에 떨어짐 · popClip 기세 알 「뽁」에 얹는 소리(연달아 먹으면 popRate 몫만큼 높아짐) */
+  down: .3, downGap: .45, fall: .55, popClip: .45, popRate: .5,
   thud: .32, thudGap: .05, thudMs: [30, 60], thudHz: [150, 85], thudDrop: .55, thudRef: 60, thudStack: .12, thudStackMax: 5, thudJitter: .06, thudNoise: .55, thudCut: 900,
   /**
    * 기세 알 줍는 「뽁」 (11-19 형: 「보석인지 템인지는 먹을 때 작은 버블 소리」) — 위로 짧게 미끄러지는 사인.
