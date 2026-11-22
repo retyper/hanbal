@@ -146,7 +146,7 @@ export const HAEBI_LOG = { grid: 32 } as const
 /**
  * 열전 첫 레벨업 카드 창 · 첫 비기 컷인 띠 미리 그리기 (11-22 · 4배 느린 CPU 에서 처음 뜰 때만 90~130ms 끊김) — 출전 화면에서 같은 HTML 을 한 번 그려 둔다.
  *  처음 비용은 글꼴 조각 받기·글자 모양 잡기·그림 풀기·칠하기 셰이더라 「보이지 않게」(visibility) 깔면 반만 풀린다 — 실제로 칠해지도록 아주 옅게 깐다.
- *  opacity: 덮는 진하기 (8비트 화면에서 0 으로 떨어지는 값 · 0 이면 브라우저가 칠하지 않는다) · holdMs: 글꼴·그림이 다 온 뒤 칠해질 틈 · afterMs: 출전 화면이 선 뒤 기다림
+ *  opacity: 덮는 진하기 (8비트 화면에서 0 으로 떨어지는 값 · 0 이면 브라우저가 칠하지 않는다) · holdMs: 글꼴·그림이 다 온 뒤 칠해질 틈 (미리 그리는 띠 애니 길이도) · afterMs: 출전 화면이 선 뒤 기다림
  */
 export const HAEBI_WARM = { opacity: .001, holdMs: 1300, afterMs: 400 } as const
 /** Haebi's independent ten-minute run. Combat tuning lives here, not in the renderer. */

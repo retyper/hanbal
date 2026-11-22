@@ -163,10 +163,12 @@ function showSkillCutin(wake = false, tru = false) {
  * 첫 레벨업 카드 창 · 첫 비기 컷인을 미리 한 번 그려 둔다 (11-22 · raid/warm-dom.ts) — 처음 뜰 때만 비싼 글꼴·글자 모양·그림 풀기·셰이더를 싸움 밖에서 치른다.
  * 카드는 이 묶음의 모든 칸·조합(어떤 카드가 와도 글자가 다 준비되게) · 띠는 비기 · 진 비기 · 투지 · 각성 비기 이름으로 (판에서 쓰는 cutBandHtml 그대로)
  */
+const cutinWarmBand = (face: string, title: string, grand: boolean, sub?: string) => cutBandHtml({ art: import.meta.env.BASE_URL + 'realm/', bg: KIT_BG[kit], hero: cutHeroPath(face), endMs: WARM.holdMs, hitMs: WARM.holdMs * .88, title, ...sub === undefined ? {} : { sub }, dim: null, grand })
+/** 처음 쓰는 비기 띠 (보통 비기) */
+const firstCutinLayer = (): WarmLayer => ({ html: cutinWarmBand(HERO.bust, ultName(kit, false), false, HERO.name) })
 function cutinWarmLayers(): WarmLayer[] {
-  const art = import.meta.env.BASE_URL + 'realm/', wakeFace = awakening.permanentAwake ? `../awaken-hd/${HERO.bust}` : HERO.bust
-  const band = (face: string, title: string, grand: boolean, sub?: string) => cutBandHtml({ art, bg: KIT_BG[kit], hero: cutHeroPath(face), endMs: WARM.holdMs, hitMs: WARM.holdMs * .88, title, ...sub === undefined ? {} : { sub }, dim: null, grand })
-  return [{ html: band(HERO.bust, ultName(kit, false), false, HERO.name) }, { html: band(wakeFace, ultName(kit, true), true, HERO.name) + band(wakeFace, `투지 · ${HERO.name}`, true) + band(wakeFace, K.skill, true, HERO.name) }]
+  const wakeFace = awakening.permanentAwake ? `../awaken-hd/${HERO.bust}` : HERO.bust
+  return [firstCutinLayer(), { html: cutinWarmBand(wakeFace, ultName(kit, true), true, HERO.name) + cutinWarmBand(wakeFace, `투지 · ${HERO.name}`, true) + cutinWarmBand(wakeFace, K.skill, true, HERO.name) }]
 }
 /** 출전 화면 — 카드 창(화면 전체 · #overlay 와 같은 자리)과 띠(글꼴·셰이더) */
 let firstViewsWarm: boolean | null = null
@@ -178,14 +180,14 @@ function warmFirstViews() {
   ]).then(ok => { firstViewsWarm = ok })
 }
 /**
- * 출전하는 그 틀 — 띠를 판(#arena) 크기 그대로 한 번 더 (그림은 그리는 크기마다 따로 풀린다 · 글자 크기는 판 크기에 따라 간다).
- * 화면이 출전 화면에서 판으로 바뀌는 틀이라 눈에 띄지 않는다 · 페이지마다 한 번
+ * 출전하는 그 틀 — 처음 쓸 비기 띠를 판(#arena) 크기로 배치만 한 번 더 (띠 글자 크기는 판 크기를 따라가 출전 화면의 것과 다르다 · 그 크기의 글자 모양만 · 칠하지 않아 싸다).
+ * 띠 넷을 다 하면 출전 틀이 100~200ms 더 길어져(4배 느린 CPU) 하나만 · 페이지마다 한 번
  */
 let cutinWarm: boolean | null | undefined
 function warmCutinInArena() {
   if (cutinWarm !== undefined) return
   cutinWarm = null
-  warmDom($('arena'), cutinWarmLayers(), true).then(ok => { cutinWarm = ok })
+  warmDom($('arena'), [firstCutinLayer()], true).then(ok => { cutinWarm = ok })
 }
 function skipCutin() { bigCutin.clear(); cutinUntil = 0; if (!$('skill-cutin').hidden) { $('skill-cutin').hidden = true; $('skill-cutin').innerHTML = ''; cutinUntil = 0 } }
 $('pause').insertAdjacentHTML('beforebegin', '<button id="fullscreen">전체화면</button>')

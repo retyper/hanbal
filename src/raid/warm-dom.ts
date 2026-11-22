@@ -23,21 +23,22 @@ const shown = (): Promise<void> => !document.hidden ? Promise.resolve() : new Pr
 
 /**
  * host 끝에 겹들을 깔고 · 글꼴·그림이 다 온 뒤 holdMs 동안 칠하게 두었다가 걷는다. 끝나면 true (도중에 잘못돼도 상자는 걷는다).
- * inside: 화면 전체 대신 host 상자 크기로 (컷인 띠처럼 판 안 크기로 그려지는 것 — 그림은 그리는 크기마다 따로 풀린다)
+ * layoutOnly: 칠하지 않고(visibility) 배치만 — host 상자 크기로 (컷인 띠처럼 판 안 크기에 따라 글자 크기가 바뀌는 것 · 그 크기의 글자 모양만 잡는다 · 싸다)
  */
-export async function warmDom(host: HTMLElement, layers: readonly WarmLayer[], inside = false): Promise<boolean> {
+export async function warmDom(host: HTMLElement, layers: readonly WarmLayer[], layoutOnly = false): Promise<boolean> {
   if (!styled) { styled = true; const s = document.createElement('style'); s.dataset['raidWarm'] = '1'; s.textContent = CSS; document.head.append(s) }
   await shown()
   const box = document.createElement('div')
   box.className = 'raid-warm'; box.setAttribute('aria-hidden', 'true'); box.inert = true; box.style.opacity = String(W.opacity)
-  if (inside) box.style.position = 'absolute'
+  if (layoutOnly) { box.style.position = 'absolute'; box.style.visibility = 'hidden' }
   box.innerHTML = layers.map((l) => `<div${l.style ? ` style="${l.style}"` : ''}>${l.html}</div>`).join('')
   host.append(box)
   try {
     void box.offsetHeight   // 지금 배치해 글꼴 조각 받기를 바로 시작한다
-    await Promise.all([...box.querySelectorAll('img')].map((i) => i.decode().catch(() => undefined)))
+    if (!layoutOnly) await Promise.all([...box.querySelectorAll('img')].map((i) => i.decode().catch(() => undefined)))
     await document.fonts.ready
-    await wait(W.holdMs)
+    if (!layoutOnly) await wait(W.holdMs)
+    else void box.offsetHeight   // 글꼴이 온 뒤의 글자 모양까지
     return true
   } catch { return false } finally { box.remove() }
 }
