@@ -889,6 +889,49 @@ export const HAEBI_TREE = { max: 3, rankStep: .4, upgradeChance: .5, ultDamage: 
   },
 } as const
 /**
+ * 58-KITS 무기 개성 (11-22 형 「그래 추천대로해」 · docs/realm/WEAPON-IDENTITY-20261122.md) — 새 규칙(opts.kitRules)으로 켠 판에만 쓴다 · 옛 기록은 위 HAEBI_RUN 그대로.
+ * 몸 둘레 360도는 방울(주술)과 비기·각성 터짐만 · 공용 부적·벽력은 내 무기가 맞힌 데서 붙고 튄다 · 칼 반달만 걷는 쪽으로 (시험).
+ * 피해 몫(damage·share)은 그 무기의 원래 피해에 곱한다 · 거리는 px · 시간은 초.
+ * stillDecay: 걸으면 「멈춰 선 시간」이 초마다 이 배로 준다 (stillCap 초까지만 쌓인다) · runTurn: 이만큼(라디안) 안으로만 꺾으면 「곧게 달리기」가 이어진다
+ * boltIdle: 벽력이 다 돈 뒤 이만큼(초) 큰 한 방이 없으면 다음 무기 맞힘에서 튄다 (큰 한 방이 드문 판에서도 벽력이 놀지 않게)
+ * axe 내려찍기: 박자 cooldown · 피해 damage 배 · 앞 반원(등 뒤 back px까지) · 맞은 적을 knock px 밀고 daze 초 멈춤 · 4단계부터 밀기 rank4Knock 배 · 정예·두목·거구에 rank4Big 배
+ * bow: 화살 피해 base 배 · 겨눔: 멈춰 focus 초 서 있으면 다음 화살이 damage 배 · 모두 꿰뚫음 · 맞는 크기 radius · 그림 크기 size px · 찬 순간 발밑 고리 ring
+ * spear: 찌르기 피해 base 배 · 돌격: 같은 쪽으로 chargeTime 초 달리면 길이 length 배 · 피해 damage 배 · 꿴 적을 앞으로 knock px · 줄 세우기: 꿴 적 하나 더마다 lineBonus (lineMax 까지) · bigPierce 마리 넘게 꿰면 큰 한 방
+ * sword 1-2-3: every 번째 칼마다 반달 검기(피해 waveShare · 맞는 크기 waveRadius 배 · 그림 waveSize px · 수명 waveLife) · 그 칼에 맞은 적 knock px 밀기 · 4단계부터 부채가 arc4 (등 뒤는 비움)
+ * dagger: 찌르기 피해 base 배 · 4단계부터 부채가 넓어짐(arc4 · 등 뒤는 비운다 · 둘레 원은 아니다) · 손 닿는 거리 안의 가장 센 적 · 등 뒤(다른 데 정신 팔림·멈춤·방금 그림자 걸음)면 crit 배 · 독 한 겹 = 피해 × poisonShare(poisonTime 초) · poisonMax 겹(4단계부터 poisonMax4) · bigStacks 겹부터 큰 한 방
+ *   그림자 걸음(빠져나가기): stepRadius 안에 적 stepCrowd 마리 넘게 붙으면 찌를 큰 놈 등 뒤 stepBeside px 로 · 재사용 stepCd
+ * bell 굿판: 멈춰 groundTime 초 서 있으면 둘레가 radius 몫 넓어지고 피해 damage 몫 세짐 (걸으면 줄어든다)
+ * sling: 장수 near px 안의 적은 피해 nearShare 배 · 멀수록 떨어진 둘레 +far 몫(던질 거리 끝에서) · 떨어진 돌이 앞으로 bounce px 한 번 더 튐(피해 bounceShare) · bigHits 마리 넘게 맞히면 큰 한 방
+ * gale 질풍 도끼: 높이 던져 flight 초 뒤 앞 throwMin~throw px 에 떨어짐(둘레 splash · 그림은 arc px 높이 포물선) · 박힌 채 spin 초 돌며(그림 landedSize px) spinEvery 초마다 둘레 spinRadius 를 spinShare 몫으로
+ * rain 화살비: 첫 화살비는 가장 가까운 적(몸을 지킨다) · 나머지는 활 거리 × look 안에서 cluster px 안에 적이 가장 많이 뭉친 곳 (같으면 먼 곳) · 둘째 화살비부터 흩어짐 spreadMore 배
+ * seal 부적: 내 무기가 맞힌 적에 붙어 delay 초 뒤 터짐 (메아리 한 단계마다 한 장 더 · 같은 적에 한 장)
+ * crack 산 가르기(도끼 조합): every 번째 내려찍기마다 앞으로 length · 반폭 width 의 갈라진 땅이 life 초 · tick 초마다 share 몫 피해 · 위의 적 daze 초 멈칫
+ * volley 일제 사격(활 조합): HAEBI_RUN.volleyInterval 초마다 앞 부채 arrows 발(사이 spread 라디안) · 겨눔이 찼으면 모두 꿰뚫음
+ * wall 창벽(창 조합): every 초마다 앞 ahead px 에 창날 spikes 개(사이 gap)가 가로로 life 초 · tick 초마다 피해 · 넘어오는 적은 벽 바깥으로 밀림(반폭 width)
+ * tempest 삼연격(칼 조합): 셋째 칼 반달이 layers 겹(사이 spread 라디안) · 첫째·둘째 칼 피해 +share
+ * mark 표식 사냥(단검 조합): every 초마다 shadowRange 안의 가장 센 적에 표식 · 그림자가 그 적만 벰 · 내 찌르기가 표식에 닿으면 burst 배로 터짐
+ * shard 갈라짐 조각(천 갈래 바람 · 유성 화살비 · 폭렬비도): 앞으로만 spread 라디안 사이 부채
+ */
+export const HAEBI_KITS = {
+  stillDecay: 3, stillCap: 2, runTurn: .45, boltIdle: 1.2,
+  axe: { cooldown: 1.3, damage: 1.9, back: -30, knock: 38, daze: .25, rank4Knock: 2, rank4Big: 1.5 },
+  bow: { base: 1.15, focus: .6, damage: 2.2, radius: 16, ring: 30, size: 60 },
+  spear: { base: 1.3, chargeTime: 1, length: 1.45, damage: 1.35, knock: 34, lineBonus: .08, lineMax: 6, bigPierce: 2 },
+  sword: { every: 3, waveShare: 1.2, waveRadius: 1.5, waveLife: .9, knock: 34, arc4: .7, waveSize: 86 },
+  dagger: { base: 1.2, arc4: -.3, crit: 2, poisonShare: .3, poisonTime: 3, poisonMax: 4, poisonMax4: 8, bigStacks: 3, stepCd: 2, stepCrowd: 3, stepRadius: 60, stepBeside: 34 },
+  bell: { groundTime: 2, radius: .6, damage: .5 },
+  sling: { near: 90, nearShare: .5, far: .4, bounce: 70, bounceShare: .4, bigHits: 2 },
+  gale: { flight: .45, throwMin: 90, throw: 220, splash: 60, spin: 1, spinEvery: .3, spinRadius: 46, spinShare: .4, arc: 90, landedSize: 38 },
+  rain: { look: 1.3, cluster: 90, spreadMore: 2 },
+  seal: { delay: .8 },
+  crack: { every: 3, length: 260, width: 30, life: 1.5, tick: .3, share: .45, daze: .12 },
+  volley: { arrows: 5, spread: .1 },
+  wall: { every: 1.6, spikes: 5, gap: 36, ahead: 95, life: 1.5, tick: .3, width: 22 },
+  tempest: { layers: 2, spread: .16, share: .25 },
+  mark: { every: 1.2, burst: 3 },
+  shard: { spread: .35 },
+} as const
+/**
  * 판 안 각성 (11-17 · RAID-LINK §1 디지몬식) — 적을 잡으면 막대가 차고(잡졸 kill · 정예 elite · 두목 boss 점), 다 차면 sec 초 동안 각성.
  * 막대 크기 = need × (1 + 각성한 수 × needGrowth) · 각성 동안 피해 ×power · 공격 속도 ×tempo · 이동 ×move · 비기 쿨이 ultRate 배로 돈다.
  * 각성할 때 둘레 burstRadius 를 burstDamage(× 힘) 로 치고 밀어낸다 · 본편에서 각성 못 한 장수는 「영웅의 투지」(grit*) — 모습은 그대로, 짧고 작게 · 보호막(gritShield*).
