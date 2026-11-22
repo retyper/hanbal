@@ -4,7 +4,7 @@ import { imugiVisualBounds } from './raid/imugi-view.ts'
 import { fieldPixels, raidLowGraphics } from './raid/surface.ts'
 import { breakthroughText, isBreakthrough } from './realm/vanguard.ts'
 import { HAEBI_RUN as C, HAEBI_STICK as STICK, HAEBI_TREE as TREE, HAEBI_ULT as ULT, HAEBI_AWAKEN as AWK, HAEBI_STAGES as ST, HAEBI_ZOOM as ZOOM, HAEBI_SPEED as SPEED, HAEBI_GIANT as GIANT } from './tune/params.ts'
-import { createHaebi, runDuration, raidRulesForStage, KIT_RULES, MAP_RULES, SOLID_RULES, ANCHOR_RULES, BREAK_RULES, giantMob, giantHUD, championViewNeeded, stepHaebi, barrageArcher, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, usesPermanentAwakening, normalizedRaidOpts, castWallSeconds, nodeText, nodeAt, branchName, wakeReady, ultName, ultOpen, BRANCHES, branchNodes, type Kit, type Power, type Pick, type Chest, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
+import { createHaebi, runDuration, raidRulesForStage, KIT_RULES, MAP_RULES, SOLID_RULES, ANCHOR_RULES, BREAK_RULES, BUILD_RULES, giantMob, giantHUD, championViewNeeded, stepHaebi, barrageArcher, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, usesPermanentAwakening, normalizedRaidOpts, castWallSeconds, nodeText, nodeAt, branchName, wakeReady, ultName, ultOpen, runBranches, branchNodes, type Kit, type Power, type Pick, type Chest, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
 import { startRecord, recInput, gridInput, recPick, recReroll, recQuit, withdrawRun, sealInput, finishRecord, STEP, type Recorder } from './raid/runlog.ts'
 import { runFrame, speedOf, nextSpeed, speedLevel } from './raid/speed.ts'
 import { RaidFeel } from './raid/impact.ts'
@@ -122,7 +122,7 @@ let stageLocked = false   // 본편 표적 출전: 그 땅의 스테이지 하�
 const bossMinute = () => Math.floor(C.bossAt * ST[mode === 'trial' ? 'trial' : stage].length / 60)
 const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`
 /** createHaebi 에 넘기는 판 옵션 — 판 기록에도 이것 그대로 적는다 (다시 돌리기) */
-const runOpts = (): RaidOpts => ({ ...mode === 'stage' ? { stage, bonus: { ...meta.shop } } : {}, ...mode === 'trial' ? { awaken: false, simRules: '53B' as const } : { permanentAwake: awakening.permanentAwake, appearanceAwake: awakening.appearanceAwake, simRules: mode === 'stage' ? raidRulesForStage(stage) : '56B' as const }, mastery, kitRules: KIT_RULES, ...(mode === 'stage' ? { chestRules: CHEST_RULES, mapRules: MAP_RULES, blockRules: SOLID_RULES, anchorRules: ANCHOR_RULES, breakRules: BREAK_RULES } : {}) })
+const runOpts = (): RaidOpts => ({ ...mode === 'stage' ? { stage, bonus: { ...meta.shop } } : {}, ...mode === 'trial' ? { awaken: false, simRules: '53B' as const } : { permanentAwake: awakening.permanentAwake, appearanceAwake: awakening.appearanceAwake, simRules: mode === 'stage' ? raidRulesForStage(stage) : '56B' as const }, mastery, kitRules: KIT_RULES, ...(mode === 'stage' ? { chestRules: CHEST_RULES, mapRules: MAP_RULES, blockRules: SOLID_RULES, anchorRules: ANCHOR_RULES, breakRules: BREAK_RULES, buildRules: BUILD_RULES } : {}) })
 const newRun = (seed: number, opts: RaidOpts = runOpts()) => { const r = createHaebi(seed, mode, kit, opts); if (r.message.endsWith('첫 조합을 향해')) { r.message = ''; r.messageTime = 0 }  /* 시작 군말 띠는 걷는다 (형 11-16) */ return r }
 root.innerHTML = `<header><div><small>장수 열전 · 독립 모드</small><h1>${HERO.name} <em>${K.title}</em></h1></div><div class="head-actions"><button id="pause" disabled aria-label="일시정지">Ⅱ</button></div></header>
 <div id="layout"><aside id="character"><div id="portrait-media"><img id="hero-portrait" src="${import.meta.env.BASE_URL}realm/bust-hd/${HERO.bust}.jpg" alt="${HERO.name} 원화"><video id="hero-video" muted loop playsinline preload="none" hidden aria-label="각성 ${HERO.name} 영상"></video></div><div class="portrait-title"><span>${HERO.home}</span><b id="rank-title">${HERO.name}</b><button id="portrait-toggle" hidden>원화로 보기</button></div><div id="reaction">${weapon} 하나로 시작하는 열전</div><div id="combo-badges"></div><i class="frame-knots"></i></aside>
@@ -743,7 +743,7 @@ function card(k: Pick, free = false) {
 /** 레벨업 창 좌상단의 지금 가진 칸 — 갈래 차례(주 무기 · 보조 · 버팀) · 그림 + 단계 배지 · 갈래 빛 테 · 끝 단계는 금빛 배지 · 연 조합은 금테 */
 function haveRow() {
   const tree = branchNodes(kit)
-  const slots = BRANCHES.flatMap(b => tree[b].flat().filter(p => run.ranks[p] > 0).map(p => `<i class="have${run.ranks[p] >= POWERS[p].max ? ' max' : ''}" style="--c:${BRANCH_COLOR[b]}" title="${nodeText(kit, p).name}">${powerIcon(p, kit)}<b>${run.ranks[p]}</b></i>`))
+  const slots = runBranches(run).flatMap(b => tree[b].flat().filter(p => run.ranks[p] > 0).map(p => `<i class="have${run.ranks[p] >= POWERS[p].max ? ' max' : ''}" style="--c:${BRANCH_COLOR[b]}" title="${nodeText(kit, p).name}">${powerIcon(p, kit)}<b>${run.ranks[p]}</b></i>`))
   const combos = kitCombos(kit).filter(c => run.combos.includes(c.id)).map(c => `<i class="have combo" title="${c.name}">${comboIcon(c.id)}<b>${rankMark(comboRank(run, c.id))}</b></i>`)
   return `<div class="lv-have" aria-label="지금 가진 능력">${[...slots, ...combos].join('')}</div>`
 }

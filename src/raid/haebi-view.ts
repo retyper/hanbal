@@ -23,6 +23,10 @@ import { drawImpactParticles } from './fx-particles.ts'
 import { drawHitFlare } from './fx-flare.ts'
 import { trackScorch, drawScorch } from './fx-scorch.ts'
 import { trackBreaks, drawBreakText, drawGroggy } from './fx-break.ts'
+import { BUILD_PATHS, drawBuildGround, drawStructure } from './fx-build.ts'
+import { HAEBI_BUILD } from '../tune/params.ts'
+const BUILD_VIEW = HAEBI_BUILD.view
+import type { Structure } from './build.ts'
 import { HAEBI_HIT_FLARE as HIT_FLARE } from '../tune/params.ts'
 import { HAEBI_FX_ART as FX_ART } from '../tune/params.ts'
 import { CARD_FRAME_PATHS } from './card-skins.ts'
@@ -49,7 +53,9 @@ export const imagePaths = [...CARD_FRAME_PATHS, genArtOf('haebi').file, genArtOf
   // 11-22 51-2 스테이지마다 새 적 (Codex 67 · tools/sprite-kit/bake-stage-enemies.py)
   ...STAGE_ART_PATHS,
   // 11-22 59-WIDE 넓은 맵: 이어 깔리는 바닥 다섯 (tools/sprite-kit/ground-tile.py) · 낱개 장식 34개 (Codex 80 · tools/sprite-kit/map-props.py)
-  ...GROUND_PATHS, ...PROP_PATHS]
+  ...GROUND_PATHS, ...PROP_PATHS,
+  // 65-BUILD 설치 갈래 — 항아리 그림 (망루·목책은 위 장식 그림을 빌린다)
+  ...BUILD_PATHS]
 /** bar-boss.png 의 투명한 홈 [x0,y0,x1,y1] — tools/raid-ui-kit.py 가 public/realm/raid/ui/kit.json 에 적는 값 */
 const BOSS_WIN = [104, 35, 626, 82] as const
 /**
@@ -589,7 +595,7 @@ function drawOwnZones(ctx: CanvasRenderingContext2D, s: HaebiRun) {
   ctx.fillStyle = O.mote; ctx.globalAlpha = a * O.moteAlpha; ctx.fill(); ctx.globalAlpha = a
 }
 /** 꼬리를 다는 내 투사체 (곧게 나는 것) */
-const OWN_TRAIL = new Set<Missile['kind']>(['arrow', 'javelin', 'knife', 'shard', 'gale', 'ember', 'soul', 'wave'])
+const OWN_TRAIL = new Set<Missile['kind']>(['arrow', 'tower', 'javelin', 'knife', 'shard', 'gale', 'ember', 'soul', 'wave'])
 /** 날아가는 것의 꼬리 — 적의 화살·창은 검붉은 받침에 붉은 줄 · 내 것은 무기 묶음 빛 한 줄. 길 하나씩에 모아 한 번에 긋는다 (투사체가 몇이든 칠하기는 셋) */
 function drawTrails(ctx: CanvasRenderingContext2D, s: HaebiRun) {
   const T = K.trail, a = ctx.globalAlpha
@@ -730,7 +736,7 @@ function drawPalisade(ctx: CanvasRenderingContext2D, images: Map<string, HTMLIma
   }
 }
 /** 그리는 차례 (위에서 아래로) — 판마다 다시 쓰는 배열 · false = 목책 줄 (56-C) */
-const order: (HaebiRun['enemies'][number] | WideProp | null | false)[] = []
+const order: (HaebiRun['enemies'][number] | WideProp | Structure | null | false)[] = []
 /** 59-WIDE 지금 화면 틀 — 틀마다 다시 쓰는 그릇 */
 const WIDE_VIEW = { left: 0, top: 0, right: 0, bottom: 0 }
 /**
@@ -774,6 +780,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   if (!decal(ctx, images, 'mark-hero', s.x, s.y, 72, 32, danger ? K.own.heroMarkDim : K.own.heroMark)) { ctx.strokeStyle = '#f9d89788'; ctx.fillStyle = '#ffd97726'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(s.x, s.y, 29, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke() }
   if (aura) drawAuraGround(ctx, aura, auraAt)
   drawOwnZones(ctx, s)
+  drawBuildGround(ctx, s)   // 65-BUILD 항아리 둘레
   // 적이 나를 때릴 자리 · 거대 두목의 패턴 — 땅에 깐다 (몸·효과는 그 위에 선다 · 11-23)
   drawThreats(ctx, images, s); drawChampionTells(ctx, s)
   for(const e of s.enemies)if(e.giant?.kind==='imugi'&&e.giant.attack&&(e.giant.state==='tell'||e.giant.state==='strike'))drawImugiThreats(ctx,e.giant.attack.shapes)
@@ -803,6 +810,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   const wallY = s.palisade?.y ?? 0
   order.length = 0; for (const e of s.enemies) if (!view || e.giant || inView(view, e.x, e.y)) order.push(e); order.push(null); if (s.palisade) order.push(false)
   if (view) for (const p of wideProps(s)) if (inView(view, p.x, p.y, Math.max(p.height, p.width / 2))) order.push(p)
+  if (s.build) for (const it of s.build.items) if (!view || inView(view, it.x, it.y)) order.push(it)
   order.sort((a, b) => (a ? a.y : a === null ? s.y : wallY) - (b ? b.y : b === null ? s.y : wallY))
   const archer = s.mode === 'stage' ? barrageArcher(s, cam ? fieldView(cam) : undefined) : undefined
   // 적 몸을 그린 뒤 판 변환(위에서 건 카메라·흔들림 그대로)으로 되돌린다 — 적마다 save/restore 하지 않는다
@@ -810,6 +818,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   for (const e of order) {
     if (e === false) { drawPalisade(ctx, images, s, time); continue }
     if (e && 'sprite' in e) { drawWideProp(ctx, images, e, s.x, s.y); continue }
+    if (e && 'born' in e) { drawStructure(ctx, images, s, e); continue }
     if (e) {
       if(e.giant){if(e.giant.kind==='tiger')drawTiger(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else if(e.giant.kind==='bulgasari')drawBulgasari(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else if(e.giant.kind==='gumiho')drawGumiho(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else if(e.giant.kind==='shaman')drawShaman(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else drawImugiParent(ctx,images,e.giant,{bounds:cam?fieldView(cam):{left:0,top:0,right:W,bottom:H},density});drawGroggy(ctx, s, e);continue}   // 64-BREAK 그로기 별
       const big = e.kind === 'boss' || e.kind === 'elite', h = mobHeight(e.kind)
@@ -866,8 +875,9 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
     if (b.kind === 'gale') { const up = s.kits && !b.landed && b.gen !== 1 && b.life > KITS58.gale.spin ? Math.sin(Math.min(1, 1 - (b.life - KITS58.gale.spin) / KITS58.gale.flight) * Math.PI) * KITS58.gale.arc : 0; axe(ctx, images, p.x, p.y - up, b.angle, b.landed ? KITS58.gale.landedSize : 30) }
     else if (b.kind === 'ember') {
       stamp(ctx, images, 'raid/talisman.png', p.x, p.y, 38, Math.atan2(b.vy,b.vx) + Math.PI / 4)
-    } else if (b.kind === 'enemy' || b.kind === 'arrow') {
-      stamp(ctx, images, 'raid/arrow.png', p.x, p.y, b.kind === 'arrow' ? b.big ? KITS58.bow.size : 42 : 48, Math.atan2(b.vy,b.vx))
+    } else if (b.kind === 'enemy' || b.kind === 'arrow' || b.kind === 'tower') {
+      // 65-BUILD 망루 화살은 장수 화살보다 조금 작게
+      stamp(ctx, images, 'raid/arrow.png', p.x, p.y, b.kind === 'arrow' ? b.big ? KITS58.bow.size : 42 : b.kind === 'tower' ? BUILD_VIEW.arrow : 48, Math.atan2(b.vy,b.vx))
     } else if (b.kind === 'javelin') {
       // 투창 전용 그림(H27)이 오기 전에는 화살 그림을 길게
       stamp(ctx, images, images.has('raid/javelin.png') ? 'raid/javelin.png' : 'raid/arrow.png', p.x, p.y, 76, Math.atan2(b.vy,b.vx))

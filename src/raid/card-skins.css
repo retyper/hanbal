@@ -10,6 +10,9 @@
   --crest:url('/realm/raid/ui-card-branch-b-crest.webp');--crest-w:515;--crest-h:214;--crest-top:-122;--base:url('/realm/raid/ui-card-branch-b-base.webp');--base-w:515;--base-h:130;--base-bottom:-26}
 .choices button.branch-c{border-image:url('/realm/raid/ui-card-branch-c.webp') 109 71 90 71/calc(var(--s)*290px) calc(var(--s)*190px) calc(var(--s)*240px) calc(var(--s)*190px) stretch;
   --crest:url('/realm/raid/ui-card-branch-c-crest.webp');--crest-w:364;--crest-h:218;--crest-top:-12;--base:url('/realm/raid/ui-card-branch-c-base.webp');--base-w:364;--base-h:76;--base-bottom:10}
+/* 65-BUILD d 설치 = 버팀(c)의 가는 테를 빌린다 (새 그림 없음 · 바탕 빛은 --c 나무빛) */
+.choices button.branch-d{border-image:url('/realm/raid/ui-card-branch-c.webp') 109 71 90 71/calc(var(--s)*290px) calc(var(--s)*190px) calc(var(--s)*240px) calc(var(--s)*190px) stretch;
+  --crest:url('/realm/raid/ui-card-branch-c-crest.webp');--crest-w:364;--crest-h:218;--crest-top:-12;--base:url('/realm/raid/ui-card-branch-c-base.webp');--base-w:364;--base-h:76;--base-bottom:10}
 /* 위 가운데 장식 — 테 상자 위로 솟는다(칼 고리·물보라) · 갈래 끝 카드는 그 자리에 「갈래 끝」 띠가 있어 그리지 않는다 */
 .choices button.branch-card:not(.cap-card)::before{content:'';position:absolute;pointer-events:none;left:calc(var(--s)*-150px);right:calc(var(--s)*-150px);top:calc(var(--s)*(var(--crest-top)*1px - 191px));height:calc(var(--s)*var(--crest-h)*1px);background:var(--crest) 50% 0/calc(var(--s)*var(--crest-w)*1px) 100% no-repeat}
 /* 아래 가운데 장식 (+ 칼 테의 좌우 가운데 띠) — 테 줄을 맞붙인 이음매를 덮는다 · 상자 = 테 상자 그대로 */

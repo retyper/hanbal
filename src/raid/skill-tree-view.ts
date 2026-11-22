@@ -25,7 +25,9 @@ export function skillTreeHtml(s:HaebiRun):string {
  const heads=m.branches.map(b=>`<h3 data-branch="${b.id}" style="color:${BRANCH_COLOR[b.id]}">${esc(b.name)}</h3>`).join('')
  const branches=m.branches.map(b=>`<section class="skill-branch" data-skill-branch="${b.id}">${b.tiers.map((row,t)=>`<div class="skill-tier" data-tier="${t}">${row.map(node).join('')}</div>`).join('')}</section>`).join('')
  const edges=m.edges.map(e=>`<path class="tree-edge ${e.met?'is-open':'is-closed'}" ${edgeData(e)} style="--edge-color:${byId.get(e.from)!.branch?BRANCH_COLOR[byId.get(e.from)!.branch!]:'#ead298'}"/>`).join('')
- return `<div class="tree-branch-heads skill-branch-heads">${heads}</div><div class="tree-board skill-tree"><svg class="tree-links" aria-hidden="true">${edges}</svg><div class="skill-branches">${branches}</div><div class="skill-combos">${m.combos.map(node).join('')}</div><div class="skill-ultimate">${node(m.ult)}</div></div>`
+ // 65-BUILD 판은 갈래 넷 (설치) — 줄 수는 CSS 가 --branches 로 받는다
+ const cols=` style="--branches:${m.branches.length}"`
+ return `<div class="tree-branch-heads skill-branch-heads"${cols}>${heads}</div><div class="tree-board skill-tree"${cols}><svg class="tree-links" aria-hidden="true">${edges}</svg><div class="skill-branches">${branches}</div><div class="skill-combos">${m.combos.map(node).join('')}</div><div class="skill-ultimate">${node(m.ult)}</div></div>`
 }
 
 /** Real cross-branch combo requirements are local text, never screen-wide buses. */

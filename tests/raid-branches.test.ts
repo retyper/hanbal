@@ -101,7 +101,7 @@ test('레벨업 카드는 찍은 갈래로 끌리고, 하나는 늘 다른 갈�
   const s = quiet('bow'); s.level = 20; s.rerolls = 1e6
   Object.assign(s.ranks, { bow: 8, echo: 3, ember: 2 })   // 주 무기 갈래 13점 · 나머지 0
   assert.equal(mainBranch(s), 'a')
-  const count = { a: 0, b: 0, c: 0 }
+  const count = { a: 0, b: 0, c: 0, d: 0 }
   levelUp(s)
   for (let i = 0; i < 400; i++) {
     const cards = s.offers.filter(p => !isCombo(p)) as Power[]

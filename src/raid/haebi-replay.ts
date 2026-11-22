@@ -9,7 +9,13 @@ const BRANCH_WANTS: Record<Branch, (k: typeof KITS[Kit]) => [Power, number][]> =
   a: k => [[k.primary, 4], ['ember', 2], ['reach', 1], ['capA', 1], ['hone', 3], [k.primary, 10], ['capA', 3], ['reach', 5], ['hone', 5], ['ember', 10]],
   b: k => [[k.secondary, 4], ['echo', 2], ['thunder', 1], ['capB', 1], ['drill', 3], [k.secondary, 10], ['capB', 3], ['echo', 4], ['drill', 5], ['thunder', 10]],
   c: () => [['tempo', 3], ['tough', 3], ['capC', 1], ['stout', 3], ['breath', 3], ['capC', 3], ['tempo', 5], ['tough', 5], ['stout', 5], ['breath', 5], ['nimble', 3]],
+  d: () => BOT_BUILD,
 }
+/** 65-BUILD 설치 칸을 봇이 찍는 차례 — 망루로 치고 → 항아리로 기세 → 목책으로 버팀 (설치 칸이 없는 옛 판에는 카드로 안 나와 봇 길이 그대로) */
+const BOT_BUILD: [Power, number][] = [['tower', 3], ['jar', 2], ['fence', 2], ['tower', 5], ['jar', 4], ['fence', 4], ['jar', 5], ['fence', 5]]
+/** 예전 길(storm·fire·mixed)의 봇은 레벨 BOT_BUILD_EVERY 마다 설치 칸 하나쯤을 찍는다 (새 갈래를 아예 안 찍으면 사람이 하는 판을 못 잰다 · 넷마다는 거대 보스 앞에서 주 무기가 모자랐다) */
+const BOT_BUILD_EVERY = 6
+const botBuild = (s: HaebiRun) => BOT_BUILD.find(([p, n]) => s.offers.includes(p) && s.ranks[p] < n)?.[0]
 /** 고를 카드 중 그 갈래의 바람 차례 (없으면 Infinity) */
 function wantIndex(s: HaebiRun, p: Power) {
   const at = nodeAt(s.kit, p); if (!at) return Infinity
@@ -17,7 +23,7 @@ function wantIndex(s: HaebiRun, p: Power) {
   return i < 0 ? Infinity : i
 }
 /** spread 가 갈래를 견주는 무게 — 버팀은 조금 덜 (공격 없이 버티기만 하면 못 깬다) */
-const SPREAD_WEIGHT: Record<Branch, number> = { a: 1, b: 1, c: .7 }
+const SPREAD_WEIGHT: Record<Branch, number> = { a: 1, b: 1, c: .7, d: .7 }
 function treeChoice(s: HaebiRun, route: 'deepA' | 'deepB' | 'deepC' | 'spread'): Pick {
   const cards = s.offers.filter((p): p is Power => !isCombo(p)), combo = s.offers.find(isCombo)
   const branch = (p: Power) => nodeAt(s.kit, p)!.branch
@@ -44,6 +50,8 @@ export function botChoice(s: HaebiRun, route: Route): Pick {
   const priorities: Record<'storm' | 'fire' | 'mixed', Power[]> = { storm: ['gale', 'axe', 'echo', 'tempo', 'reach', 'thunder', 'ember'], fire: ['ember', 'thunder', 'tempo', 'echo', 'reach', 'gale', 'axe'], mixed: ['gale', 'ember', 'thunder', 'axe', 'echo', 'tempo', 'reach'] }
   const target: Partial<Record<Power, number>> = { axe: 4, gale: 3, ember: 3, thunder: 3, echo: 2, tempo: 3, reach: 3 }
   const order = priorities[route].map(swap), want = (p: Power) => target[p === k.primary ? 'axe' : p === k.secondary ? 'gale' : p] ?? 3
+  if (s.build && (s.ranks.tower ?? 0) + (s.ranks.fence ?? 0) + (s.ranks.jar ?? 0) < Math.floor(s.level / BOT_BUILD_EVERY)) { const b = botBuild(s); if (b) return b }
+  // 65-BUILD: 설치 칸은 위의 레벨 몫으로만 (공격 칸의 바람이 찬 뒤에도 공격 칸을 더 올린다 · 11-23 헤드리스: 남는 카드를 다 설치에 쓰면 주 무기가 덜 커 거대 보스 앞에서 진다)
   return order.find(p => s.offers.includes(p) && s.ranks[p] < want(p)) ?? order.find(p => s.offers.includes(p)) ?? s.offers[0]!
 }
 /** 봇이 주우러 가는 기세 알 거리(px) */

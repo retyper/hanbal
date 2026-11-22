@@ -1,5 +1,5 @@
 import { HAEBI_TREE as T } from '../tune/params.ts'
-import { POWERS, KITS, kitCombos, comboRank, branchName, branchPoints, nodeText, nodeAt, nodeParent, type Branch, type Combo, type Kit, type Power, type HaebiRun } from './haebi.ts'
+import { POWERS, KITS, kitCombos, comboRank, branchName, branchPoints, tierNeed, nodeText, nodeAt, nodeParent, type Branch, type Combo, type Kit, type Power, type HaebiRun } from './haebi.ts'
 import { ICON_READY } from './icon-ready.ts'
 import { renderTree } from './tree-view.ts'
 const BASE = import.meta.env?.BASE_URL ?? '/'
@@ -17,6 +17,8 @@ const icons: Record<Power, string> = {
   tough: 'raid/shop-armor.png', breath: 'raid/shop-regen.png', nimble: 'raid/shop-swift.png', stout: 'raid/shop-vigor.png',
   // 묶음마다 다른 칸 — 아래 KIT_ART 가 덮는다 (없을 때만 이것)
   hone: 'raid/shop-might.png', drill: 'raid/shop-haste.png', capA: 'raid/power-skill.png', capB: 'raid/power-skill.png', capC: own('node-counter', 'fx/shield.png'),
+  // 65-BUILD 설치 갈래 — 넓은 맵 목책 판의 망루·목책 장식 · 본편 장 항아리 그림을 빌린다 (새 그림 없음)
+  tower: 'raid/props/palisade-2.webp', fence: 'raid/props/palisade-0.webp', jar: 'icon/good-soybean-jar.png',
 }
 /**
  * 묶음마다 다른 칸의 그림 — 전용 그림(H59~H61)이 없으면 가까운 그림을 빌려 빛깔(tint)로 가른다.
@@ -52,8 +54,8 @@ export const comboSrc = (id: Combo) => `${BASE}realm/${comboArt(id)}`
 export const comboIcon = (id: Combo) => `<img src="${comboSrc(id)}" alt="" draggable="false">`
 /** 단계 표시 — Ⅰ Ⅱ Ⅲ */
 export const rankMark = (n: number) => ['', 'Ⅰ', 'Ⅱ', 'Ⅲ'][n] ?? String(n)
-/** 갈래 빛깔 — 주 무기 금 · 보조 물 · 버팀 보라 (나무·카드·띠 모두 같은 빛) */
-export const BRANCH_COLOR: Record<Branch, string> = { a: '#f2c45a', b: '#6fd8c4', c: '#c7a3ff' }
+/** 갈래 빛깔 — 주 무기 금 · 보조 물 · 버팀 보라 · 설치 나무빛 (나무·카드·띠 모두 같은 빛) */
+export const BRANCH_COLOR: Record<Branch, string> = { a: '#f2c45a', b: '#6fd8c4', c: '#c7a3ff', d: '#e39a5a' }
 
 /** Responsive tree; the name stays stable for existing callers. */
 export function treeSvg(s: HaebiRun) {
@@ -64,7 +66,7 @@ export function treeInfo(s: HaebiRun, el: Element) {
   const node = el.getAttribute('data-node') as Power | null, combo = el.getAttribute('data-combo') as Combo | null
   if (node) {
     const t = nodeText(s.kit, node)
-    const at = nodeAt(s.kit, node)!, left = Math.max(0, T.tiers[at.tier]! - branchPoints(s, at.branch)), parent = nodeParent(s.kit, node)
+    const at = nodeAt(s.kit, node)!, left = Math.max(0, tierNeed(at.branch, at.tier) - branchPoints(s, at.branch)), parent = nodeParent(s.kit, node)
     return `<b>${t.name}</b> ${s.ranks[node]}/${POWERS[node].max} · ${t.desc}${left && (!parent || s.ranks[parent] >= 1) ? ` · 이 갈래를 ${left}번 더 고르면 열립니다` : ''}`
   }
   if (combo) { const c = kitCombos(s.kit).find(x => x.id === combo)!; return `<b>${c.name}</b> ${comboRank(s, combo)}/${T.max} · ${c.desc}` }

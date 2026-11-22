@@ -15,6 +15,8 @@ import { createPalisade, damagePiece, piecesHit, tickPalisade, wallAim, wallMove
 import { HAEBI_WIDE as WD } from '../tune/params.ts'
 import { solidsFor, pushOutOfSolids, type Solid } from './props.ts'
 import { newWide, fieldBounds, worldBounds, stepGate, simView, ringSpot, huntSpot, inSimView, strayed, type WideState } from './wide.ts'
+import { HAEBI_BUILD as BU } from '../tune/params.ts'
+import { BUILD_KINDS, isBuildKind, newBuild, buildCount, buildLife, buildSpot, towerShare, fenceHp, standing, pushOutOfFences, fenceTouching, jarBonusAt, type BuildState } from './build.ts'
 
 /**
  * 장수 열전 — 다이센카식 20분 판 (11-16 형: 「스테이지·판 밖 상점·휘장 · 무기 10단계 · 적 단계업」).
@@ -22,7 +24,7 @@ import { newWide, fieldBounds, worldBounds, stepGate, simView, ringSpot, huntSpo
  * 판(mode): stage = 독립 열전(스테이지 · 상점 강화 bonus) · trial = 본편 각성 시련(짧고 쉬움) · vanguard = 본편 선봉.
  */
 export type Kit = 'axe' | 'bow' | 'spear' | 'sword' | 'dagger' | 'magic' | 'sling'
-export type Power = 'axe' | 'gale' | 'ember' | 'thunder' | 'echo' | 'tempo' | 'reach' | 'bow' | 'rain' | 'spear' | 'javelin' | 'sword' | 'wave' | 'dagger' | 'knife' | 'bell' | 'soul' | 'sling' | 'skip' | 'hone' | 'drill' | 'tough' | 'breath' | 'nimble' | 'stout' | 'capA' | 'capB' | 'capC'
+export type Power = 'axe' | 'gale' | 'ember' | 'thunder' | 'echo' | 'tempo' | 'reach' | 'bow' | 'rain' | 'spear' | 'javelin' | 'sword' | 'wave' | 'dagger' | 'knife' | 'bell' | 'soul' | 'sling' | 'skip' | 'hone' | 'drill' | 'tough' | 'breath' | 'nimble' | 'stout' | 'capA' | 'capB' | 'capC' | 'tower' | 'fence' | 'jar'
 export const POWERS: Record<Power, { name: string; icon: string; max: number; color: string; desc: string }> = {
   axe: { name: '파쇄 도끼', icon: '斧', max: 10, color: '#f5c578', desc: '느리고 크게 앞을 내려찍어 맞은 적을 밀어내고 멈칫하게 함' },
   gale: { name: '질풍 도끼', icon: '風', max: 10, color: '#96e9cf', desc: '도끼를 높이 던져 앞에 떨어뜨림 · 박힌 도끼가 잠시 돌며 둘레를 벰' },
@@ -53,6 +55,10 @@ export const POWERS: Record<Power, { name: string; icon: string; max: number; co
   capA: { name: '주 무기 끝', icon: '極', max: 3, color: '#ffd36a', desc: '' },
   capB: { name: '보조 끝', icon: '極', max: 3, color: '#7fe8d8', desc: '' },
   capC: { name: '되받아치기', icon: '反', max: 3, color: '#d0a8ff', desc: '' },
+  // ── 65-BUILD 설치 갈래 (네 번째 갈래 · 규칙이 켜진 판에만 카드·나무에 나온다) ──
+  tower: { name: '화살 망루', icon: '樓', max: BU.max, color: '#e8b46a', desc: '쿨타임마다 곁에 망루가 서서 가까운 적에게 화살을 쏩니다' },
+  fence: { name: '목책 바리케이드', icon: '柵', max: BU.max, color: '#c98f5a', desc: '쿨타임마다 적 쪽에 목책이 섭니다. 닿은 잡졸은 멈춰 서서 목책을 부숩니다' },
+  jar: { name: '기세 항아리', icon: '甕', max: BU.max, color: '#e7c27a', desc: '쿨타임마다 곁에 항아리가 섭니다. 둘레에서 쓰러진 적이 기세를 더 줍니다' },
 }
 export const KITS: Record<Kit, { primary: Power; secondary: Power; title: string; weapon: string; skill: string }> = {
   axe: { primary: 'axe', secondary: 'gale', title: '폭풍을 가르는 도끼', weapon: '도끼', skill: '천지개벽' },
@@ -64,13 +70,17 @@ export const KITS: Record<Kit, { primary: Power; secondary: Power; title: string
   sling: { primary: 'sling', secondary: 'skip', title: '하늘을 가르는 돌팔매', weapon: '돌팔매', skill: '돌벼락' },
 }
 // ── 기술 나무: 갈래 셋 × 네 층 (11-17 밤 · RAID-LINK §2 · D2 식 — 층은 그 갈래에 찍은 점으로 열린다 · HAEBI_TREE.tiers) ──
-/** a 주 무기 갈래 · b 보조 갈래 · c 버팀 갈래 */
-export type Branch = 'a' | 'b' | 'c'
+/** a 주 무기 갈래 · b 보조 갈래 · c 버팀 갈래 · d 설치 갈래 (65-BUILD 판에만) */
+export type Branch = 'a' | 'b' | 'c' | 'd'
+/** 무기 나무의 세 갈래 — 설치 갈래(d)는 규칙이 켜진 판에만 runBranches 가 더한다 (옛 판의 카드 뽑기·나무는 그대로) */
 export const BRANCHES: readonly Branch[] = ['a', 'b', 'c']
+const ALL_BRANCHES: readonly Branch[] = ['a', 'b', 'c', 'd']
+/** 이 판의 갈래 — 65-BUILD 판은 넷 */
+export const runBranches = (s: HaebiRun): readonly Branch[] => s.build ? ALL_BRANCHES : BRANCHES
 /** 갈래마다 층(0~3)의 칸 — 확산(범위)·부적은 주 무기 갈래, 메아리(보조 수)·벽력은 보조 갈래, 기세는 버팀 갈래 · 조합은 늘 두 갈래를 잇는다 */
 export function branchNodes(kit: Kit): Record<Branch, Power[][]> {
   const k = KITS[kit]
-  return { a: [[k.primary], ['reach', 'ember'], ['hone'], ['capA']], b: [[k.secondary], ['echo', 'thunder'], ['drill'], ['capB']], c: [['tough', 'tempo'], ['breath', 'nimble'], ['stout'], ['capC']] }
+  return { a: [[k.primary], ['reach', 'ember'], ['hone'], ['capA']], b: [[k.secondary], ['echo', 'thunder'], ['drill'], ['capB']], c: [['tough', 'tempo'], ['breath', 'nimble'], ['stout'], ['capC']], d: BUILD_KINDS.map(k => [k]) }
 }
 /** 묶음마다 갈래 이름과 이름이 바뀌는 칸 (벼리기·숙련·갈래 끝) — 설명은 늘 「합니다」 */
 export const NODE_TEXT: Record<Kit, { a: string; b: string } & Partial<Record<Power, { name: string; desc: string }>>> = {
@@ -89,7 +99,7 @@ export const NODE_TEXT: Record<Kit, { a: string; b: string } & Partial<Record<Po
   sling: { a: '팔매', b: '물수제비', hone: { name: '팔매 벼리기', desc: '돌팔매의 피해가 커집니다' }, drill: { name: '연환석 숙련', desc: '연환석이 더 세고 더 자주 날아갑니다' },
     capA: { name: '땅울림', desc: '돌이 떨어진 둘레의 적이 잠시 어질어질 멈춥니다' }, capB: { name: '연쇄격', desc: '연환석이 훨씬 많이 튀고 튈 때마다 세집니다' } },
 }
-export const branchName = (kit: Kit, b: Branch) => b === 'c' ? '버팀' : NODE_TEXT[kit][b]
+export const branchName = (kit: Kit, b: Branch) => b === 'c' ? '버팀' : b === 'd' ? '설치' : NODE_TEXT[kit][b]
 /** 칸 이름·설명 — 묶음마다 다른 칸은 NODE_TEXT · 되받아치기는 그 묶음 비기 이름으로 */
 export function nodeText(kit: Kit, p: Power) {
   if (p === 'capC') return { name: '되받아치기', desc: `맞으면 ${josa(KITS[kit].skill, '이', '가')} 작게 터집니다` }
@@ -98,17 +108,27 @@ export function nodeText(kit: Kit, p: Power) {
 }
 /** 그 묶음에서 고를 수 있는 칸 — 갈래 a·b·c 차례 */
 export const kitPowers = (kit: Kit): Power[] => BRANCHES.flatMap(b => branchNodes(kit)[b].flat())
+/** 65-BUILD 설치 칸 가운데 지금 카드로 나올 수 있는 것 — 종류 칸(HAEBI_BUILD.kinds)이 다 차면 가진 종류만 */
+export function buildChoices(s: HaebiRun): Power[] {
+  if (!s.build) return []
+  const held = BUILD_KINDS.filter(k => (s.ranks[k] ?? 0) > 0)
+  return held.length >= BU.kinds ? held : [...BUILD_KINDS]
+}
+/** 이 판에서 고를 수 있는 칸 — 무기 나무 + (65-BUILD 판) 설치 칸 */
+export const runPowers = (s: HaebiRun): Power[] => s.build ? [...kitPowers(s.kit), ...buildChoices(s)] : kitPowers(s.kit)
 export const attackPowers = (kit: Kit): Power[] => [KITS[kit].primary, KITS[kit].secondary, 'ember', 'thunder']
 /** 칸이 선 갈래와 층 (그 묶음에 없는 칸은 null) */
 export function nodeAt(kit: Kit, p: Power): { branch: Branch; tier: number } | null {
   const t = branchNodes(kit)
-  for (const branch of BRANCHES) { const tier = t[branch].findIndex(row => row.includes(p)); if (tier >= 0) return { branch, tier } }
+  for (const branch of ALL_BRANCHES) { const tier = t[branch].findIndex(row => row.includes(p)); if (tier >= 0) return { branch, tier } }
   return null
 }
 /** 그 갈래에 찍은 점 (주 무기 첫 단계도 1점 · 조합은 세지 않는다) */
-export const branchPoints = (s: HaebiRun, b: Branch) => branchNodes(s.kit)[b].flat().reduce((n, p) => n + s.ranks[p], 0)
+export const branchPoints = (s: HaebiRun, b: Branch) => branchNodes(s.kit)[b].flat().reduce((n, p) => n + (s.ranks[p] ?? 0), 0)
+/** 층이 열리는 점 — 설치 갈래(d)는 층 문턱이 없다 (셋 다 처음부터 열림) */
+export const tierNeed = (b: Branch, tier: number) => b === 'd' ? 0 : T.tiers[tier]!
 /** Branch thresholds are retained alongside the real parent after the 52 fixed-seed comparison. */
-export const tierOpen = (s: HaebiRun, b: Branch, tier: number) => branchPoints(s, b) >= T.tiers[tier]!
+export const tierOpen = (s: HaebiRun, b: Branch, tier: number) => branchPoints(s, b) >= tierNeed(b, tier)
 /** 52: four roots, then one real parent per ordinary power, plus the existing branch threshold. */
 export function powerParents(kit: Kit): Partial<Record<Power, Power>> {
   const k = KITS[kit]
@@ -119,10 +139,10 @@ export function powerParents(kit: Kit): Partial<Record<Power, Power>> {
 export const nodeParent = (kit: Kit, p: Power): Power | null => powerParents(kit)[p] ?? null
 export function nodeOpen(s: HaebiRun, p: Power) {
   const parent = nodeParent(s.kit, p), at = nodeAt(s.kit, p)
-  return !!at && (!parent || s.ranks[parent] >= 1) && tierOpen(s, at.branch, at.tier)
+  return !!at && (at.branch !== 'd' || !!s.build) && (!parent || s.ranks[parent] >= 1) && tierOpen(s, at.branch, at.tier)
 }
 /** 가장 많이 찍은 갈래 (같으면 a → b → c) */
-export function mainBranch(s: HaebiRun): Branch { let best: Branch = 'a'; for (const b of BRANCHES) if (branchPoints(s, b) > branchPoints(s, best)) best = b; return best }
+export function mainBranch(s: HaebiRun): Branch { let best: Branch = 'a'; for (const b of runBranches(s)) if (branchPoints(s, b) > branchPoints(s, best)) best = b; return best }
 /** 그 묶음 나무를 다 채우는 점 (칸 끝 단계 합 + 조합 끝 단계) — 한 판 점(레벨 44 → 43점)의 두 배를 넘게 둔다 */
 export const treeTotal = (kit: Kit) => kitPowers(kit).reduce((n, p) => n + POWERS[p].max, 0) + kitCombos(kit).length * T.max
 /** 갈래 끝 단계가 곱하는 몫 (share + step × (단계−1)) */
@@ -162,7 +182,7 @@ export interface Chest { id: number; eliteId: number; x: number; y: number; born
   /** 60-JACKPOT: boss = 중간 보스 상자(조합 하나를 고른다) · jackpot = 정예 상자가 터뜨린 것 */ boss?: boolean; jackpot?: ChestJackpot }
 /** 60-JACKPOT 정예 상자가 터뜨린 것 — count 단계(1·3·5·8) · picks 오른 칸(차례대로) · opened 그 가운데 새로 연 조합 · bonus 올릴 칸이 없어 엽전으로 바뀐 금 */
 export interface ChestJackpot { count: number; picks: Pick[]; opened: Combo[]; bonus: number }
-export interface Missile { x: number; y: number; vx: number; vy: number; life: number; kind: 'gale' | 'ember' | 'shard' | 'enemy' | 'arrow' | 'rain' | 'javelin' | 'wave' | 'barrage' | 'stone' | 'flame' | 'knife' | 'soul' | 'hurl' | 'pebble' | 'skip' | 'boulder'; damage: number; radius: number; hit: number[]; angle: number; tx: number; ty: number; gen?: number; source?: number; championShot?: boolean;
+export interface Missile { x: number; y: number; vx: number; vy: number; life: number; kind: 'gale' | 'ember' | 'shard' | 'enemy' | 'arrow' | 'rain' | 'javelin' | 'wave' | 'barrage' | 'stone' | 'flame' | 'knife' | 'soul' | 'hurl' | 'pebble' | 'skip' | 'boulder' | 'tower'; damage: number; radius: number; hit: number[]; angle: number; tx: number; ty: number; gen?: number; source?: number; championShot?: boolean;
   /** 58-KITS: big = 큰 한 방(겨눔 화살 · 셋째 칼 반달 · 모두 꿰뚫음 · 벽력이 튐) · landed = 떨어져 박힌 질풍 도끼 · tick = 박힌 도끼가 다시 치기까지 · ember 의 source = 부적이 붙은 적 */
   big?: boolean; landed?: boolean; tick?: number }
 /** 58-KITS 땅에 남는 것 — crack 산 가르기(갈라진 땅) · wall 창벽(가로 창날 줄) · (x,y) 에서 (cos,sin) 쪽 · 남은 life · 다음 치기까지 tick */
@@ -212,6 +232,8 @@ export interface HaebiRun {
   anchored?: boolean;
   /** 64-BREAK 부위 파괴 규칙 (opts.breakRules) */
   breakOn?: boolean;
+  /** 65-BUILD 설치 갈래 (opts.buildRules · raid/build.ts) — 없으면 세 갈래 옛 판 (설치 칸의 단계도 ranks 에 없다) */
+  build?: BuildState;
   /** 60-JACKPOT 상자 규칙 (opts.chestRules) — 없으면 옛 고르는 상자 · pity 5개 넘게 못 터진 상자 수 · five·eight 이 판에서 터진 5개·8개 · ranks 상자가 올려 준 칸 수 */
   jackpots?: { pity: number; five: number; eight: number; ranks: number };
 }
@@ -223,7 +245,7 @@ export function random(s: HaebiRun) { const rng = makeRng(s.seed); const n = rng
  * awaken remains the fallback qualification alias. Explicit53B, plus default trial/vanguard, preserve timed-awake rules.
  * mastery: 숲·여울·목책을 다 깬 장수 (막대 절반으로 시작)
  */
-export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' | '55-SHAMAN'; /** 58-KITS 무기 개성 — 스테이지 규칙과 따로 켠다 (판 기록 opts 에 그대로 남아 재생도 같다) */ kitRules?: '58-KITS'; /** 60-JACKPOT 상자 — 정예 상자는 고르지 않고 터지고, 중간 보스 상자는 조합 하나를 고른다 (스테이지 판만 · 판 기록 opts 에 남아 재생도 같다) */ chestRules?: '60-JACKPOT'; /** 59-WIDE 넓은 맵 — 열전 스테이지 판에만 켜진다 (시련·선봉에 넘겨도 한 장짜리 그대로 · 판 기록 opts 에 남아 재생도 같다) */ mapRules?: '59-WIDE'; /** 61-SOLID 넓은 맵의 나무·바위·목책이 장수와 적을 막는다 (무기는 통과 · 59-WIDE 판에서만 · 판 기록 opts 에 남아 재생도 같다) */ blockRules?: '61-SOLID'; /** 62-ANCHOR 장수는 제 발로만 움직인다 — 단검의 그림자 걸음·환영난무가 장수를 순간이동시키지 않는다 (형 11-23 「때리다가 갑자기 순간이동 · 보스전에서 원하지 않는 곳으로」 · 판 기록 opts 에 남는다) */ anchorRules?: '62-ANCHOR'; /** 64-BREAK 부위 파괴가 느껴지게 — 몸통 피해가 가까운 부위로 번지고 · 부위 체력 낮춤 · 부서지면 그로기와 더 큰 피해 (판 기록 opts 에 남는다) */ breakRules?: '64-BREAK' }
+export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' | '55-SHAMAN'; /** 58-KITS 무기 개성 — 스테이지 규칙과 따로 켠다 (판 기록 opts 에 그대로 남아 재생도 같다) */ kitRules?: '58-KITS'; /** 60-JACKPOT 상자 — 정예 상자는 고르지 않고 터지고, 중간 보스 상자는 조합 하나를 고른다 (스테이지 판만 · 판 기록 opts 에 남아 재생도 같다) */ chestRules?: '60-JACKPOT'; /** 59-WIDE 넓은 맵 — 열전 스테이지 판에만 켜진다 (시련·선봉에 넘겨도 한 장짜리 그대로 · 판 기록 opts 에 남아 재생도 같다) */ mapRules?: '59-WIDE'; /** 61-SOLID 넓은 맵의 나무·바위·목책이 장수와 적을 막는다 (무기는 통과 · 59-WIDE 판에서만 · 판 기록 opts 에 남아 재생도 같다) */ blockRules?: '61-SOLID'; /** 62-ANCHOR 장수는 제 발로만 움직인다 — 단검의 그림자 걸음·환영난무가 장수를 순간이동시키지 않는다 (형 11-23 「때리다가 갑자기 순간이동 · 보스전에서 원하지 않는 곳으로」 · 판 기록 opts 에 남는다) */ anchorRules?: '62-ANCHOR'; /** 64-BREAK 부위 파괴가 느껴지게 — 몸통 피해가 가까운 부위로 번지고 · 부위 체력 낮춤 · 부서지면 그로기와 더 큰 피해 (판 기록 opts 에 남는다) */ breakRules?: '64-BREAK'; /** 65-BUILD 레벨업 카드의 네 번째 갈래 「설치」 — 망루·목책·항아리가 장수 곁에 저절로 선다 (판 기록 opts 에 남는다) */ buildRules?: '65-BUILD' }
 /** 새 판이 쓰는 무기 규칙 */
 export const KIT_RULES = '58-KITS' as const
 /** 새 스테이지 판이 쓰는 상자 규칙 */
@@ -236,12 +258,16 @@ export const SOLID_RULES = '61-SOLID' as const
 export const ANCHOR_RULES = '62-ANCHOR' as const
 /** 새 판이 쓰는 부위 파괴 규칙 */
 export const BREAK_RULES = '64-BREAK' as const
+/** 새 판이 쓰는 설치 갈래 규칙 */
+export const BUILD_RULES = '65-BUILD' as const
 export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit = 'axe', opts: HaebiOpts = {}): HaebiRun {
   const bonus = { ...NO_BONUS, ...opts.bonus }, maxHp = C.health + bonus.vigor * SH.vigor.step, stage: StageId = mode === 'trial' ? 'trial' : opts.stage ?? 'forest'
   // 55-IMUGI 는 여울만 · 56C(진짜 목책)는 목책 돌파만 · 55-TIGER(백두 대호)는 설원만 · 57-BULGASARI(진짜 목책 + 불가사리)는 목책 돌파만 · 55-GUMIHO(구미호)는 숲 산길 열전만(각성 시련은 아님) · 55-SHAMAN(불의 무녀 장군)은 불타는 산성만 — 다른 판에 들어오면 56B 그대로
   const rules = opts.simRules === '55-IMUGI' && (mode !== 'stage' || stage !== 'ford') || (opts.simRules === '56C' || opts.simRules === '57-BULGASARI') && (mode !== 'stage' || stage !== 'palisade') || opts.simRules === '55-TIGER' && (mode !== 'stage' || stage !== 'snow') || opts.simRules === '55-GUMIHO' && (mode !== 'stage' || stage !== 'forest') || opts.simRules === '55-SHAMAN' && (mode !== 'stage' || stage !== 'fortress') ? '56B' : opts.simRules
   const k = KITS[kit]
-  const ranks = Object.fromEntries((Object.keys(POWERS) as Power[]).map(p => [p, 0])) as Record<Power, number>
+  // 65-BUILD 가 꺼진 판은 설치 칸을 ranks 에 넣지 않는다 (옛 판 상태·기록이 글자 하나까지 같게)
+  const build = opts.buildRules === BUILD_RULES
+  const ranks = Object.fromEntries((Object.keys(POWERS) as Power[]).filter(p => build || !isBuildKind(p)).map(p => [p, 0])) as Record<Power, number>
   // 평타(주 무기)만 들고 시작한다 (11-19 형: 「시작은 평타만」) — 보조 공격은 첫 레벨업 카드(맨 앞)로 · 비기는 첫 레벨업에서 열린다 (ultOpen)
   ranks[k.primary] = T.startPrimary; ranks[k.secondary] = T.startSecondary
   const s: HaebiRun = { mode, stage, bonus, maxHp, revives: bonus.revive, elites: 0, kit, breaches: 0, captains: 0, seed, t: 0, x: C.width / 2, y: C.height / 2, hp: maxHp, face: 1, moving: false,
@@ -263,6 +289,7 @@ export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit
   if (s.wide && opts.blockRules === SOLID_RULES) s.solids = solidsFor(stage)
   if (opts.anchorRules === ANCHOR_RULES) s.anchored = true
   if (opts.breakRules === BREAK_RULES) s.breakOn = true
+  if (build) s.build = newBuild()
   if (opts.chestRules === CHEST_RULES && mode === 'stage') s.jackpots = { pity: 0, five: 0, eight: 0, ranks: 0 }
   if (mode === 'vanguard') {
     s.level = V.startLevel; s.ranks[k.primary] = 4; s.ranks[k.secondary] = 3; s.ranks.echo = 2; s.ranks.tempo = 1; s.ranks.reach = 1
@@ -349,7 +376,7 @@ export function comboChoices(s: HaebiRun) {
 }
 /** 레벨업 카드 셋 — 층이 열렸고 끝 단계가 아닌 칸에서 · 조합(금테)은 맨 끝 자리 · 첫 고름은 갈래마다 하나 */
 function offer(s: HaebiRun) {
-  const pool = kitPowers(s.kit).filter(k => s.ranks[k] < POWERS[k].max && nodeOpen(s, k))
+  const pool = runPowers(s).filter(k => s.ranks[k] < POWERS[k].max && nodeOpen(s, k))
   const { fresh, more } = comboChoices(s)
   if (!pool.length && !fresh.length && !more.length || s.level >= C.maxLevel) return
   if (s.mode === 'stage') { s.choiceOrigin = 'level'; s.offerNonce = (s.offerNonce ?? 0) + 1 }
@@ -363,7 +390,8 @@ function offer(s: HaebiRun) {
 function powerOffers(s: HaebiRun, pool: Power[]) {
   s.offers = []
   const branch = (p: Power) => nodeAt(s.kit, p)!.branch
-  const points = { a: branchPoints(s, 'a'), b: branchPoints(s, 'b'), c: branchPoints(s, 'c') }, total = points.a + points.b + points.c || 1
+  // 설치 갈래(d)는 65-BUILD 판에만 점이 있다 (꺼진 판은 0 이라 무게가 예전 그대로)
+  const points = { a: branchPoints(s, 'a'), b: branchPoints(s, 'b'), c: branchPoints(s, 'c'), d: s.build ? branchPoints(s, 'd') : 0 }, total = points.a + points.b + points.c + points.d || 1
   const weight = (p: Power) => 1 + T.lean * points[branch(p)] / total
   const draw = (from: Power[]) => {
     let r = random(s) * from.reduce((n, p) => n + weight(p), 0)
@@ -450,6 +478,8 @@ function applyPick(s: HaebiRun, key: Pick, force = false) {
   } else {
     // 남의 묶음 칸 · 잠긴 층 · 끝 단계는 못 고른다
     if (!POWERS[key] || s.ranks[key] >= POWERS[key].max || !nodeOpen(s, key)) return false
+    // 65-BUILD 종류 칸이 다 찼으면 새 종류는 못 고른다
+    if (isBuildKind(key) && !buildChoices(s).includes(key)) return false
     s.ranks[key]++
     if (key === 'stout') { s.maxHp += T.stout; s.hp += T.stout }
     const at = nodeAt(s.kit, key)!
@@ -597,7 +627,9 @@ function hit(s: HaebiRun, e: Mob, amount: number, knock = true, origin: { x: num
     const gold = Math.floor(G.perElite * ST[s.stage].gold * (1 + s.bonus.greed * SH.greed.step))
     s.chests!.push({ id: s.nextChestId!++, eliteId: e.id, x: e.x, y: e.y, bornAt: s.t, state: 'ground', choicesRemaining: s.jackpots ? e.bossRole === 'midboss' ? 1 : 0 : large ? 2 : 1, gold, large, ...(s.jackpots && e.bossRole === 'midboss' ? { boss: true } : {}) })
   }
-  const value = e.kind === 'boss' ? 100 : e.kind === 'elite' ? 45 : M[e.kind].xp
+  let value = e.kind === 'boss' ? 100 : e.kind === 'elite' ? 45 : M[e.kind].xp
+  // 65-BUILD 기세 항아리: 둘레에서 쓰러진 적은 기세를 더 준다
+  if (s.build) { const k = jarBonusAt(s.build, s.ranks.jar, e.x, e.y, BU.flash); s.build.jarXp += value * (k - 1); value *= k }
   // 판 위 기세 알이 끝까지 차면 가장 가까운 알에 보탠다 (그냥 주면 멀리서도 먹힌다)
   if (s.drops.length >= C.maxDrops) { let best = s.drops[0]!, bd = Infinity; for (const d of s.drops) { const n = Math.hypot(d.x - e.x, d.y - e.y); if (n < bd) { bd = n; best = d } } best.value += value; best.age = 0 }
   else s.drops.push({ x: e.x, y: e.y, value, age: 0 })
@@ -662,11 +694,11 @@ function nearest(s: HaebiRun, x: number, y: number, excluded: number[] = [], rad
   for (const e of s.enemies) { if (e.hp <= 0 || excluded.includes(e.id)) continue; if (e.giant && !giantHasTarget(e.giant)) continue; if (seen && !aimable(s, e)) continue; const n = mobDistance(e, x, y); if (n < d) { d = n; best = e } }
   return best
 }
-const SPEED: Partial<Record<Missile['kind'], number>> = { pebble: 0, skip: C.skipSpeed, boulder: C.boulderSpeed, enemy: C.enemyShotSpeed, arrow: C.bowSpeed, javelin: C.javelinSpeed, wave: C.waveSpeed, rain: 0, barrage: 0, stone: 0, flame: 0, knife: C.knifeSpeed, soul: C.soulSpeed, hurl: M.hunterSpeed }
-const LIFE: Partial<Record<Missile['kind'], number>> = { pebble: C.slingFlight, enemy: C.enemyShotLife, skip: C.skipLife, boulder: C.boulderLife, arrow: C.bowLife, javelin: C.javelinLife, wave: C.waveLife, rain: C.rainDelay, barrage: C.barrageDelay, stone: M.lobDelay, flame: M.flameLife, knife: C.knifeLife, soul: C.soulLife, hurl: M.hunterLife }
+const SPEED: Partial<Record<Missile['kind'], number>> = { pebble: 0, skip: C.skipSpeed, boulder: C.boulderSpeed, enemy: C.enemyShotSpeed, arrow: C.bowSpeed, javelin: C.javelinSpeed, wave: C.waveSpeed, rain: 0, barrage: 0, stone: 0, flame: 0, knife: C.knifeSpeed, soul: C.soulSpeed, hurl: M.hunterSpeed, tower: BU.tower.speed }
+const LIFE: Partial<Record<Missile['kind'], number>> = { pebble: C.slingFlight, enemy: C.enemyShotLife, skip: C.skipLife, boulder: C.boulderLife, arrow: C.bowLife, javelin: C.javelinLife, wave: C.waveLife, rain: C.rainDelay, barrage: C.barrageDelay, stone: M.lobDelay, flame: M.flameLife, knife: C.knifeLife, soul: C.soulLife, hurl: M.hunterLife, tower: BU.tower.life0 }
 /** 투사체 종류의 처음 수명(초) — 보는 쪽이 발사 직후 손끝 보정을 잴 때 같은 값을 쓴다 */
 export const missileLife = (kind: Missile['kind']) => LIFE[kind] ?? C.galeLife
-const RADIUS: Partial<Record<Missile['kind'], number>> = { skip: 14, boulder: C.boulderRadius, gale: 25, wave: C.waveRadius, javelin: 16, arrow: 10, barrage: C.barrageRadius, stone: M.lobRadius, flame: M.flameRadius, knife: 12, soul: 16 }
+const RADIUS: Partial<Record<Missile['kind'], number>> = { skip: 14, boulder: C.boulderRadius, gale: 25, wave: C.waveRadius, javelin: 16, arrow: 10, barrage: C.barrageRadius, stone: M.lobRadius, flame: M.flameRadius, knife: 12, soul: 16, tower: BU.tower.radius }
 function shoot(s: HaebiRun, kind: Missile['kind'], angle: number, damage: number, x = s.x, y = s.y, tx = x, ty = y, gen = 0) {
   if (s.shots.length >= C.maxShots) return undefined
   const speed = SPEED[kind] ?? C.galeSpeed
@@ -676,6 +708,7 @@ function shoot(s: HaebiRun, kind: Missile['kind'], angle: number, damage: number
 }
 /** 한 번 꿰뚫고 멈추는 수 — 도끼 묶음(gale·shard)은 예전 그대로 */
 function pierce(s: HaebiRun, b: Missile) {
+  if (b.kind === 'tower') return 1   // 65-BUILD 망루 화살은 첫 적에서 멈춘다
   if (b.big && b.kind === 'arrow') return Infinity   // 58-KITS 겨눔 화살 · 일제 사격
   if (b.kind === 'knife') return C.knifePierce + Math.floor(s.ranks.knife / 3)
   if (b.kind === 'soul') return 1
@@ -1461,6 +1494,52 @@ function herdWide(s: HaebiRun) {
   for (const c of s.chests ?? []) if (c.state === 'ground') { c.x = heroX(s, c.x); c.y = heroY(s, c.y) }
   if (closing) for (const d of s.drops) { d.x = heroX(s, d.x); d.y = heroY(s, d.y) }
 }
+// ── 65-BUILD 설치 갈래 (raid/build.ts) ──
+/** 놓을 자리를 받는 그릇 (판 상태가 아니다) */
+const BSPOT = { x: 0, y: 0 }
+/** 한 종류를 한 묶음 놓는다 — 장수 곁 (판 밖·장애물 밖으로 맞춘다) · 넘치면 그 종류의 오래된 것부터 걷힌다 */
+function placeBuild(s: HaebiRun, kind: BuildState['items'][number]['kind'], rank: number) {
+  const b = s.build!, n = buildCount(kind, rank), life = buildLife(kind, rank)
+  const t = nearest(s, s.x, s.y, undefined, Infinity, true), at = t ? aimAt(t, s.x, s.y) : null
+  const aim = at ? Math.atan2(at.y - s.y, at.x - s.x) : s.face < 0 ? Math.PI : 0
+  for (let i = 0; i < n; i++) {
+    buildSpot(kind, i, n, b.waves, s.x, s.y, aim, BSPOT)
+    BSPOT.x = heroX(s, BSPOT.x); BSPOT.y = heroY(s, BSPOT.y)
+    if (s.solids) pushOutOfSolids(s.solids, BSPOT, kind === 'fence' ? BU.fence.r : 0)
+    const max = kind === 'fence' ? fenceHp(rank) * threat(s) : 0
+    b.items.push({ id: b.nextId++, kind, x: BSPOT.x, y: BSPOT.y, born: s.t, life, total: life, hp: max, max, cd: 0, flash: 0 })
+  }
+  b.waves++
+  let over = b.items.reduce((k, it) => k + Number(it.kind === kind), 0) - n
+  if (over > 0) b.items = b.items.filter(it => it.kind !== kind || over-- <= 0)
+}
+/** 망루 화살 한 발의 피해 — 그때 잡졸 체력의 towerShare 몫 */
+export const towerShot = (s: HaebiRun) => mobHp(s) * towerShare(s.ranks.tower ?? 0)
+/** 설치물 한 걸음 — 수명 · 망루 화살 · 무너진 목책 · 종류마다 쿨타임이 차면 놓기 */
+function buildStep(s: HaebiRun, dt: number, tempo: number) {
+  const b = s.build!
+  for (const it of b.items) {
+    it.life -= dt; it.flash = Math.max(0, it.flash - dt)
+    if (it.kind !== 'tower' || it.life <= 0) continue
+    it.cd -= dt
+    if (it.cd > 0) continue
+    const t = nearest(s, it.x, it.y, undefined, BU.tower.range)
+    if (!t) { it.cd = 0; continue }
+    const at = aimAt(t, it.x, it.y)
+    shoot(s, 'tower', Math.atan2(at.y - it.y, at.x - it.x), towerShot(s), it.x, it.y)
+    it.cd = BU.tower.fire / tempo; it.flash = BU.flash
+  }
+  // 부서진 목책은 흙먼지와 함께 걷힌다 (수명이 다한 것은 조용히)
+  for (const it of b.items) if (it.kind === 'fence' && it.life > 0 && it.hp <= 0) fx(s, 'thud', it.x, it.y, BU.fence.r * 2, '#c9a27a')
+  if (b.items.some(it => !standing(it))) b.items = b.items.filter(standing)
+  for (const kind of BUILD_KINDS) {
+    const rank = s.ranks[kind]
+    if (!rank) continue
+    b.cd[kind] = Math.max(0, b.cd[kind] - dt)
+    if (b.cd[kind] > 0) continue
+    placeBuild(s, kind, rank); b.cd[kind] = BU[kind].every
+  }
+}
 export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
   if (s.state !== 'playing' || s.offers.length) return
   dt = Math.max(0, Math.min(.05, dt))
@@ -1552,6 +1631,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
     }
   }
   if (s.kits) aura58(s, aimAngle, power, area, dt); else aura(s, power, area)
+  if (s.build) buildStep(s, dt, tempo)
   s.spawn -= dt
   const rate = s.mode === 'vanguard' ? V.spawnEarly + (V.spawnLate - V.spawnEarly) * s.t / V.duration : paced(s) < 120 ? C.spawnEarly + paced(s) / 70 : paced(s) < 300 ? C.spawnMid + (paced(s) - 120) / 45 : paced(s) < 480 ? C.spawnLate + (paced(s) - 300) / 35 : C.spawnFeast
   if (s.spawn <= 0) { if (s.enemies.length < C.maxEnemies) spawnMob(s); s.spawn = 1 / (rate * ST[s.stage].spawn * (respite(s) ? C.respiteSpawn : 1)) }
@@ -1601,6 +1681,8 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
     }
     const x = s.x - e.x, y = s.y - e.y, d = Math.hypot(x, y) || 1
     const kind = e.kind, m = kind === 'elite' || kind === 'boss' ? null : M[kind]
+    // 65-BUILD 목책: 닿은 잡졸은 멈춰 서서 목책을 친다 (그동안 걷지도 장수를 치지도 않는다)
+    if (s.build && m) { const f = fenceTouching(s.build, e, mobRadius(e)); if (f) { f.hp -= C.contactDamage * threat(s) * (m.hit ?? 1) * BU.fence.bite * dt; f.flash = BU.flash; continue } }
     const v = (C.mobSpeed + s.t * C.speedTimeScale) * (m?.speed ?? 1) * (e.buff > 0 ? M.shamanSpeed : 1) * (kind === 'berserker' && e.hp < e.max / 2 ? M.berserkSpeed : 1)
     const ch = charge(kind)
     // 56-C 목책: 걷는 방향만 문 쪽으로 돈다 (거리·겨눔·돌진은 그대로 장수 쪽 · 돌진은 목책에 박힌다)
@@ -1643,6 +1725,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
     if (d < 26 && !e.cd) { hurt(s, C.contactDamage * threat(s) * (m?.hit ?? 1)); e.cd = 1 }
   }
   if (s.wide) herdWide(s)
+  if (s.build) for (const e of s.enemies) if (e.hp > 0 && !e.giant && !e.champion && e.kind !== 'boss' && e.kind !== 'elite') pushOutOfFences(s.build, e, mobRadius(e))
   if (s.solids) {
     for (const e of s.enemies) if (e.hp > 0 && !e.giant) pushOutOfSolids(s.solids, e, mobRadius(e))
     for (const d of s.drops) pushOutOfSolids(s.solids, d, 0)
@@ -1753,7 +1836,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
           break
         }
         hit(s, e, b.damage * (e.kind === 'shield' ? M.shieldBlock : 1), true, { x: b.x - b.vx * dt, y: b.y - b.vy * dt }, contact ?? undefined, false, primaryShotDirection(b)); b.hit.push(e.id)
-        if (s.kits) addOns(s, [e], !!b.big)
+        if (s.kits && b.kind !== 'tower') addOns(s, [e], !!b.big)
         if (b.kind === 'boulder' && e.hp > 0 && !steady(e)) { const v = Math.hypot(b.vx, b.vy) || 1; pushMob(s, e, b.vx / v * C.boulderKnock, b.vy / v * C.boulderKnock) }
         if (b.kind === 'skip') {
           // 연환석: 맞힌 적 곁의 다음 적으로 튄다 · 진탕격이면 멈춰 세운다 (두목·정예·철갑·곰은 버틴다)
