@@ -2600,18 +2600,20 @@ html[data-lang="en"] .ap .wr.b0 .whelp::after { content: 'Details'; } html[data-
   .ap .wfield .wside-loss, .ap .wfield .wflag-morale { animation: wloss-static 1.1s linear var(--bd) both !important; }
 }
 @keyframes wloss-static { 0%, 85% { opacity: 1; } 100% { opacity: 0; } }
-.ap .wf-who { position: absolute; bottom: 6px; z-index: 80; font-size: clamp(10px, 2.6cqw, 13px); font-weight: 800; padding: 2px 8px; border-radius: 9px; background: #3f8f3acc; color: #eaffe0; text-shadow: 0 1px 2px #000; pointer-events: none; max-width: 42%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ap .wf-who { position: absolute; bottom: 6px; z-index: 80; font-size: clamp(12px, 2.6cqw, 13px); font-weight: 800; padding: 2px 8px; border-radius: 9px; background: #3f8f3acc; color: #eaffe0; text-shadow: 0 1px 2px #000; pointer-events: none; max-width: 42%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ap .wf-who.us { left: 6px; } .ap .wf-who.foe { right: 6px; background: #8a3a2acc; color: #ffe3dc; }
 /* 머릿수 잣대 (troops.ts) — 큰 병사 · 깃발 병사 · 무리마다 정확한 수 · 맨 아래 가운데 잣대 */
 .ap .wf2s .tk.tb2 { filter: drop-shadow(0 0 3px #ffd27a) drop-shadow(0 2px 2px #000c); }
 .ap .wf2s .tkban { position: absolute; left: 4%; top: -16%; width: 34%; height: 40%; border-left: 2px solid #3a2a18; pointer-events: none; }
 .ap .wf2s .tkban img { position: absolute; left: 0; top: 0; width: 100%; height: 70%; object-fit: contain; }
 .ap .wf2s .tk.tkd .tkban { display: none; }
-.ap .wgct { position: absolute; z-index: 95; translate: -50% 0; display: inline-flex; align-items: center; gap: 2px; padding: 1px 6px 1px 2px; border-radius: 9px; background: #000b; border: 1px solid #7cc4ff99; color: #fff; font-size: clamp(10px, 2.8cqw, 13px); font-weight: 800; line-height: 1.2; white-space: nowrap; pointer-events: none; text-shadow: 0 1px 2px #000; }
+.ap .wgct { position: absolute; z-index: 95; translate: -50% 0; display: inline-flex; align-items: center; gap: 2px; padding: 1px 6px 1px 2px; border-radius: 9px; background: #000b; border: 1px solid #7cc4ff99; color: #fff; font-size: clamp(12px, 2.8cqw, 13px); font-weight: 800; line-height: 1.2; white-space: nowrap; pointer-events: none; text-shadow: 0 1px 2px #000; }
 .ap .wgct img { height: 1.5em; width: auto; }
 .ap .wf2s.foe .wgct { transform: scaleX(-1); border-color: #ff6a5a99; }
 .ap .wgct.none { opacity: .4; }
-.ap .wleg { position: absolute; left: 50%; bottom: 5px; translate: -50% 0; z-index: 80; display: flex; align-items: flex-end; gap: 6px; padding: 1px 7px; border-radius: 9px; background: #000a; color: #f6ead2; font-size: clamp(10px, 2.6cqw, 12px); font-weight: 800; line-height: 1; white-space: nowrap; pointer-events: none; }
+.ap .wleg { position: absolute; left: 50%; bottom: 5px; translate: -50% 0; z-index: 80; display: flex; align-items: flex-end; gap: 6px; padding: 1px 7px; border-radius: 9px; background: #000a; color: #f6ead2; font-size: 12px; font-weight: 800; line-height: 1; white-space: nowrap; pointer-events: none; }
+/* 좁은 전장(폭 400 아래)에선 아래 줄이 우리·적 이름표로 차서 잣대가 적 이름표에 겹친다(11-22 · 글자 12px 뒤) → 위 왼쪽(오른쪽 위는 「속을 모른다」 상자) */
+@container (max-width: 400px) { .ap .wleg { bottom: auto; top: 6px; left: 6px; translate: none; } }
 .ap .wleg span { display: inline-flex; align-items: flex-end; gap: 1px; } .ap .wleg img { width: auto; height: 12px; } .ap .wleg .l1 img { height: 19px; } .ap .wleg .l2 img { height: 25px; }
 @media (max-width: 520px) { .ap .wf-who { max-width: 33%; } }
 /* 동작 그림 — 8컷 띠를 칸씩 넘긴다 (steps). 바깥(.tk)은 자리·밀기, 안(.spf)은 컷 */
@@ -3041,7 +3043,7 @@ html[data-lang="en"] .ap .wr.b0 .whelp::after { content: 'Details'; } html[data-
 .ap .wtc span { display: flex; flex-direction: column; line-height: 1.12; white-space: nowrap; }
 .ap .wtc b { font-size: 12px; font-weight: 800; color: #f6e2b8; text-shadow: 0 1px 2px #000; }
 .ap .wtc small { font-size: 10.5px; font-weight: 700; color: #c8bca8; } .ap .wtc.us small { color: #9fe08a; } .ap .wtc.foe small { color: #ff9a80; }
-@media (max-width: 520px) { .ap .wterr { gap: 3px; margin-top: 6px; } .ap .wtc { padding: 1px 6px 1px 2px; gap: 3px; } .ap .wtc img { width: 20px; height: 20px; } .ap .wtc b { font-size: 11px; } .ap .wtc small { font-size: 9.5px; } }
+@media (max-width: 520px) { .ap .wterr { gap: 3px; margin-top: 6px; } .ap .wtc { padding: 1px 6px 1px 2px; gap: 3px; } .ap .wtc img { width: 20px; height: 20px; } .ap .wtc b { font-size: 12px; } .ap .wtc small { font-size: 12px; } }
 .ap .wfhint { margin: 2px 2px 8px; font-size: 12.5px; color: var(--mute); line-height: 1.45; } .ap .wfhint b { color: #e8d4a8; font-weight: 700; }
 /* 정보창 — 손가락·커서 곁 */
 .ap .wtip { position: fixed; z-index: 95; box-sizing: border-box; width: min(270px, calc(100vw - 24px)); padding: 9px 11px; border-radius: 12px; background: #17110cf4; border: 1px solid #a0802a; box-shadow: 0 10px 30px #000c; color: #f3e8d2; font-size: 13px; line-height: 1.45; pointer-events: none; opacity: 0; visibility: hidden; transform: scale(.96); transition: opacity .12s, transform .12s, visibility 0s .12s; }
