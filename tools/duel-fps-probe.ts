@@ -11,6 +11,10 @@
  *          (11-18 형 플립7: 「3:35 폭풍의 진격」·「4:46 힘의 결합 늑대 떼」) → 키보드로 원을 그리며 걷고 비기·투지를 쓴다 (체력은 반 아래로 안 떨어지게).
  *          폰 세로는 판이 「가로로 돌려 주세요」로 멈춘 채 그려진다 (게임이 그렇게 한다).
  *  - giant: 지금 본편의 각성 길(목책 돌파를 깨면 각성 · 11-21) — 독립 열전 STAGE=palisade 의 거대 두목(불가사리)이 막 나온 판.
+ *  - raid: 독립 열전 처음 판(STAGE=forest) — 첫 레벨업 카드 창(60틀) · 첫 비기 컷인 띠(170틀) · 둘째 카드(400) · 둘째 비기(520) (11-22 · 폰 가로 844x390 으로).
+ *          사건마다 그 틀부터 25틀의 가장 긴 틀 간격·16.7ms 넘은 수를 적는다 · RAID_DELAY=틀 로 사건을 늦춘다 · 찍을 땐 CSS 애니를 그 틀 자리에 세운다.
+ *  - TRACE=1: 렌더러 주 스레드·GPU 의 긴 일(LONG=ms 넘는)을 몇 번째 틀인지와 함께 이름별로 나눈다 (스타일·배치·글자 모양·그림 풀기·칠하기)
+ *  - PRE=파일.js: 재기 전에 판 창에서 한 번 돌린다 (가설 견주기)
  *
  * 적는 것 (한 줄 JSON + 표):
  *  - 틀 간격(진짜 rAF) p50·p95·최대 · 16.7ms 넘은 틀 수 · 틀마다 페이지 스크립트 시간(우리 rAF 콜백) p50·p95·최대 · 무거운 틀만 따로
@@ -26,7 +30,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-const SCENE = process.argv[2] === 'trial' ? 'trial' : process.argv[2] === 'giant' ? 'giant' : 'duel'
+const SCENE = process.argv[2] === 'trial' ? 'trial' : process.argv[2] === 'giant' ? 'giant' : process.argv[2] === 'raid' ? 'raid' : 'duel'
 const [VW, VH] = (process.argv[3] ?? '390x844').split('x').map(Number) as [number, number]
 const THROTTLE = Number(process.argv[4] ?? 4)
 const FRAMES = Number(process.argv[5] ?? 900)
@@ -36,7 +40,7 @@ const DPR = Number(env('DPR') || 3)
 const COUNT = env('COUNT') === '1', PROFILE = env('PROFILE') === '1', WATCH = env('WATCH') === '1'
 const SHOTS = env('SHOTS'), TAG = env('TAG') || 'now', CMP = env('CMP')
 const QUERY = env('QUERY') || 'me=aryeong&foe=haebi&muMe=5&muFoe=7&tier=2&seed=1'
-const UNTIL = Number(env('UNTIL') || 286), KIT = env('KIT') || 'bow', STAGE = env('STAGE') || 'palisade'
+const UNTIL = Number(env('UNTIL') || 286), KIT = env('KIT') || 'bow', STAGE = env('STAGE') || (SCENE === 'raid' ? 'forest' : 'palisade')
 const CHROMES = ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe']
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))
 const exe = CHROMES.find((p) => existsSync(p))
@@ -63,7 +67,7 @@ const LOCK = `(() => {
     prev = ts
     if (L.on && !L.hold && !L.stop) {
       L.t += L.step
-      const n = L.n++
+      const n = L.n++; if (L.stamp) console.timeStamp("f" + n)
       try { L.before?.(n) } catch (e) { L.err = String(e && e.stack || e) }
       const cbs = [...L.q.values()]; L.q.clear()
       const a = realNow(); for (const f of cbs) f(L.t); const b = realNow()
@@ -183,6 +187,46 @@ const TRIAL_SCENE = `(() => {
   L.tag = () => { const r = window.__raid?.(); return r ? r.enemies.length : 0 }
 })()`
 const TRIAL_SHOTS: ReadonlyArray<readonly [string, string, number]> = [['start', 'start', 30], ['crowd', 'start', 110], ['skill', 'skill', 20]]
+/**
+ * raid: 독립 열전(STAGE=forest) 처음 판 — 첫 레벨업 카드 창 · 첫 비기 컷인 띠가 뜨는 틀 (11-22 · 폰에서 90~130ms · 70~100ms 끊김).
+ * 판은 레벨 1 · 아직 카드가 한 번도 안 뜬 채로 짓는다 (검수 재생은 판 셈만 · 카드 창은 이 판에서 처음 뜬다).
+ */
+const RAID_BUILD = `(async () => {
+  const H = await import('/src/raid/haebi.ts'), R = await import('/src/raid/haebi-replay.ts')
+  const stage = '${STAGE}', s = H.createHaebi(7, 'stage', '${KIT}', { stage, simRules: H.raidRulesForStage(stage) })
+  for (let n = 0; n < 120 * 8 && s.state === 'playing' && !s.offers.length && s.xp < H.xpNeeded(s) * .6; n++) { H.stepHaebi(s, R.botInput(s), 1 / 120); s.hp = s.maxHp }
+  Object.assign(window.__raid(), s); window.__probeH = H
+  // 검수 재생은 고를 카드가 없으면 멈춤 창으로 연다 — 계속 싸우기
+  document.getElementById('resume')?.click()
+  return { t: Math.round(s.t), level: s.level, xp: Math.round(s.xp), need: H.xpNeeded(s), offers: s.offers.length, enemies: s.enemies.length, overlay: !!document.querySelector('#overlay .choices') }
+})()`
+/** 열전 손 — 걷기 · 60틀: 경험치를 채워 첫 레벨업 카드 · 40틀 뒤 첫 카드 · 170틀: 첫 비기 · 400틀: 둘째 카드 · 520틀: 둘째 비기 (재사용을 비워) */
+const RAID_SCENE = `(() => {
+  const L = window.__lock, DIRS = [['d'], ['d', 's'], ['s'], ['s', 'a'], ['a'], ['a', 'w'], ['w'], ['w', 'd']]
+  const S = window.__scene = { held: [], marks: {}, offerSeen: 0, offerAt: -1 }
+  L.marksOf = () => ({ ...S.marks })
+  const key = (type, k) => window.dispatchEvent(new KeyboardEvent(type, { key: k, bubbles: true }))
+  L.before = (n) => {
+    const r = window.__raid?.(), H = window.__probeH
+    if (!r || r.state !== 'playing') return
+    r.hp = r.maxHp
+    const d = ${Number(env('RAID_DELAY') || 0)}   // RAID_DELAY=틀: 사건을 그만큼 늦춘다 (미리 그린 것이 오래 지나도 남아 있나)
+    if (n === 60 + d || n === 400 + d) r.xp = Math.max(r.xp, H.xpNeeded(r))
+    if (r.offers.length) {
+      if (S.offerAt < 0) { S.offerAt = n; S.offerSeen++; S.marks['offer' + S.offerSeen] = n - 1 }
+      if (n >= S.offerAt + 40) { document.querySelector('#overlay .choices button')?.click(); S.offerAt = -1 }
+      return
+    }
+    const want = DIRS[Math.floor(n / 20) % DIRS.length]
+    for (const k of S.held) if (!want.includes(k)) key('keyup', k)
+    for (const k of want) if (!S.held.includes(k)) key('keydown', k)
+    S.held = want
+    if (n === 170 + d || n === 520 + d) { if (n === 520 + d) r.skillCd = 0; key('keydown', ' '); key('keyup', ' '); S.marks[n === 170 + d ? 'cast1' : 'cast2'] = n }
+  }
+  L.tag = () => { const r = window.__raid?.(); return r ? (r.cast ? 2 : 1) : 0 }
+})()`
+/** 열전 찍을 때 — 카드 창은 뜬 뒤 12틀 · 컷인은 띠가 들어온 뒤(8틀)·한가운데(30틀) (CSS 애니는 찍는 틀의 판 시각에 묶는다) */
+const RAID_SHOTS: ReadonlyArray<readonly [string, string, number]> = [['offer1', 'offer1', 12], ['cut1-a', 'cast1', 8], ['cut1-b', 'cast1', 30], ['offer2', 'offer2', 12], ['cut2-b', 'cast2', 30]]
 
 function stats(a: number[]): { n: number; p50: number; p95: number; max: number; mean: number } {
   const s = [...a].sort((x, y) => x - y), n = s.length
@@ -206,7 +250,12 @@ try {
     if (o.method === 'Runtime.exceptionThrown') console.log('  페이지 예외', String(o.params.exceptionDetails?.exception?.description ?? o.params.exceptionDetails?.text).slice(0, 300))
     if (o.method === 'Inspector.targetCrashed') { console.log('  페이지가 죽었다 (targetCrashed)'); crashed = true; for (const w of waits.values()) w({ error: 'closed' }); waits.clear() }
     if (o.id !== undefined) { waits.get(o.id)?.(o.result ?? o.error); waits.delete(o.id) }
+    if (o.method === 'Tracing.dataCollected') traceEvents.push(...o.params.value)
+    if (o.method === 'Tracing.tracingComplete') traceDone?.()
   }
+  // TRACE=1: 재는 동안 렌더러 주 스레드를 적어 두고 · 긴 일(40ms 넘는 한 덩이)마다 그 안을 이름별로 나눠 보인다 (스타일·배치·그림 풀기·칠하기 …)
+  const traceEvents: any[] = []
+  let traceDone: (() => void) | null = null
   // 크롬이 죽거나 답이 없으면 기다리지 않고 끝낸다 (판이 멈춘 채 몇 분씩 걸려 있었다)
   ws.onclose = () => { for (const w of waits.values()) w({ error: 'closed' }); waits.clear() }
   const call = (method: string, params: object = {}): Promise<any> => new Promise((r, j) => {
@@ -231,9 +280,9 @@ try {
    * 열전 판을 끼운다 — 시계를 먼저 묶어 세운 채(진짜 틀이 판을 앞으로 돌리지 않게) 검수 재생으로 판을 열고 · 판을 지어 덮고 ·
    * 화면이 돌아온 척(visibilitychange) 해 열전의 지난 틀 시각을 비운다 → 첫 틀부터 전후가 같은 판 (판 시각이 진짜 시계에 흔들리지 않는다)
    */
-  const raidInstall = async (build: string, settleMs: number): Promise<void> => {
+  const raidInstall = async (build: string, settleMs: number, hand = TRIAL_SCENE, until = 0): Promise<void> => {
     await ev(`(() => { const L = window.__lock; L.on = true; L.hold = true })()`)
-    await ev(`document.querySelector('button[data-until="0"]').click()`)
+    await ev(`document.querySelector('button[data-until="${until}"]').click()`)
     for (let i = 0; i < 240 && await ev(`document.getElementById('play').hidden`) !== false; i++) await sleep(250)
     step('판 열림')
     await ev(`[...document.querySelectorAll('.review-tools button')].find(b => b.textContent === '검수 도구 닫기')?.click()`)
@@ -241,7 +290,7 @@ try {
     step('판 지음 ' + JSON.stringify(built))
     await sleep(settleMs)
     await ev(`document.dispatchEvent(new Event('visibilitychange'))`)
-    await ev(TRIAL_SCENE)
+    await ev(hand)
   }
   await call('Emulation.setDeviceMetricsOverride', { width: VW, height: VH, deviceScaleFactor: DPR, mobile: true })
   await call('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 })
@@ -266,6 +315,14 @@ try {
     await call('Page.navigate', { url: `${ROOT}/raid.html?review&background&stage=${STAGE}&kit=${KIT}` })
     for (let i = 0; i < 120 && await ev(`!!document.querySelector('button[data-until="0"]')`) !== true; i++) await sleep(250)
     await raidInstall(GIANT_BUILD, 2500)   // 거대 두목 그림 미리 받기(prewarm*Art)가 끝나게
+  } else if (SCENE === 'raid') {
+    await call('Page.navigate', { url: `${ROOT}/raid.html?review&background&stage=${STAGE}&kit=${KIT}` })
+    for (let i = 0; i < 120 && await ev(`!!document.querySelector('button[data-until="60"]')`) !== true; i++) await sleep(250)
+    // 출전 화면의 미리 그리기(warmFirstViews · 있으면)가 끝나기를 — 사람이 출전 화면을 보는 동안 끝나는 일
+    for (let i = 0; i < 80 && await ev(`window.__raidWarm === undefined || window.__raidWarm() !== null`) !== true; i++) await sleep(250)
+    console.log('  미리 그리기: ' + await ev(`window.__raidWarm === undefined ? '없음' : String(window.__raidWarm())`))
+    // 「첫 성장까지」는 카드 창을 연 채 끝나 첫 창이 재기 전에 지나간다 — 1분 재생(판 셈만)으로 열고 레벨 1 판으로 덮는다
+    await raidInstall(RAID_BUILD, Number(env('SETTLE') || 2500), RAID_SCENE, 60)
   } else {
     // 위 창은 스크립트 없는 같은 곳 문서(그림 한 장)로 — 본편처럼 틀 안에서만 판이 돈다
     await call('Page.navigate', { url: `${ROOT}/favicon-32.png` })
@@ -278,13 +335,15 @@ try {
     step('검수 단추 보임 · ' + await ev(`location.search + ' · ' + (window.__lock?.doc === document ? '시계 있음' : '시계 없음')`))
     await raidInstall(TRIAL_BUILD, 1500)
   }
+  // PRE=파일.js: 재기 전에 판 창에서 한 번 돌린다 (가설 견주기 — 미리 굽기를 손으로 흉내 내 보기 등)
+  if (env('PRE')) console.log('  pre: ' + JSON.stringify(await ev(readFileSync(env('PRE'), 'utf8'))))
   // 시계를 묶는다 — 걸려 있던 진짜 rAF 하나가 묶인 줄로 들어오게 잠깐 세웠다가 푼다
   await ev(`(() => { const L = window.__lock; L.hold = true; L.on = true })()`)
   await sleep(300)
   if (THROTTLE > 1) await call('Emulation.setCPUThrottlingRate', { rate: THROTTLE })
   if (PROFILE) { await call('Profiler.enable'); await call('Profiler.setSamplingInterval', { interval: 250 }); await call('Profiler.start') }
   if (COUNT) await ev(`(() => { const L = window.__lock, C = window.__cnt, tag0 = L.tag; L.tag = (n) => { C.frames.push(C.cur); C.reset(); return tag0 ? tag0(n) : 0 }; C.reset() })()`)
-  const shotList = SHOTS ? (SCENE === 'duel' ? DUEL_SHOTS : TRIAL_SHOTS) : []
+  const shotList = SHOTS ? (SCENE === 'duel' ? DUEL_SHOTS : SCENE === 'raid' ? RAID_SHOTS : TRIAL_SHOTS) : []
   const shotsTaken: Record<string, string> = {}
   if (shotList.length) await ev(`window.__lock.shots = ${JSON.stringify(shotList)}`)
   // PROFAT=780,160: 그 틀(앞뒤 한 틀씩)만 따로 프로파일 — 가장 무거운 틀이 무엇에 시간을 쓰나
@@ -296,6 +355,8 @@ try {
   await call('Performance.enable')
   const metrics = async (): Promise<Record<string, number>> => Object.fromEntries(((await call('Performance.getMetrics')).metrics ?? []).map((m: { name: string; value: number }) => [m.name, m.value]))
   const m0 = await metrics()
+  const TRACE = env('TRACE') === '1'
+  if (TRACE) { await call('Tracing.start', { categories: 'toplevel,devtools.timeline,disabled-by-default-devtools.timeline,blink,cc,gpu,v8', transferMode: 'ReportEvents' }); await ev('window.__lock.stamp = true') }
   await ev(`window.__lock.hold = false`)
   const t0 = Date.now()
   let lastN = -1, lastMove = Date.now()
@@ -327,7 +388,11 @@ try {
     if (shotList.length && st.hold && st.shotNow) {
       // 페이지가 그 틀을 그린 뒤 멈춰 있다 — 위 창 전체를 찍는다 (같은 틀에 둘이면 같은 그림)
       mkdirSync(SHOTS, { recursive: true })
+      // 열전: CSS 애니(컷인 띠·카드 들어오기)는 진짜 시계로 돈다 — 찍는 동안 모두 세워 「사건 뒤 몇 틀 × 1/60초」 자리에 둔다 (전후가 같은 자세)
+      const off = shotList.find((s) => (st.shotNow as string[]).includes(s[0]))?.[2] ?? 0
+      if (SCENE === 'raid') await ev(`(() => { window.__pinned = document.getAnimations(); for (const a of window.__pinned) { try { a.pause(); a.currentTime = ${off * 1000 / 60} } catch {} } return new Promise(r => setTimeout(r, 300)) })()`)
       const { data } = await call('Page.captureScreenshot', { format: 'png' })
+      if (SCENE === 'raid') await ev(`(() => { for (const a of window.__pinned ?? []) { try { a.play() } catch {} } window.__pinned = null })()`)
       for (const name of st.shotNow as string[]) { const file = join(SHOTS, `${SCENE}-${VW}x${VH}-${name}-${TAG}.png`); writeFileSync(file, Buffer.from(data, 'base64')); shotsTaken[name] = file }
       await ev(`(() => { const L = window.__lock; L.shotNow = null; L.hold = false })()`)
       continue
@@ -336,10 +401,39 @@ try {
   }
   await ev(`window.__lock.stop = true`)
   const m1 = await metrics()
+  if (TRACE) {
+    await new Promise<void>((r) => { traceDone = r; void call('Tracing.end') })
+    const main = new Set<string>(), others = new Map<string, string>()
+    for (const e of traceEvents) if (e.ph === 'M' && e.name === 'thread_name') { if (e.args.name === 'CrRendererMain') main.add(e.pid + ':' + e.tid); else others.set(e.pid + ':' + e.tid, e.args.name) }
+    const onMain = traceEvents.filter((e) => e.ph === 'X' && e.dur && main.has(e.pid + ':' + e.tid)).sort((a, b) => a.ts - b.ts)
+    const longs = onMain.filter((e) => e.name === 'ThreadControllerImpl::RunTask' && e.dur > Number(env('LONG') || 40) * 1000)
+    // 몇 번째 틀의 일인가 — 시계가 틀마다 console.timeStamp('f<n>') 을 남긴다
+    const stamps = traceEvents.filter((e) => e.name === 'TimeStamp').sort((a, b) => a.ts - b.ts)
+    for (const t of longs.slice(0, Number(env('LONGN') || 12))) {
+      const sum = new Map<string, number>()
+      for (const e of onMain) if (e !== t && e.ts >= t.ts && e.ts + e.dur <= t.ts + t.dur && e.name !== 'ThreadControllerImpl::RunTask') sum.set(e.name, (sum.get(e.name) ?? 0) + e.dur / 1000)
+      // 배치(Layout)·스타일 다시 셈이 몇 개를 건드렸나 — 판 전체를 다시 잡는지
+      const lay = onMain.filter((e) => e.ts >= t.ts && e.ts + e.dur <= t.ts + t.dur && (e.name === 'Layout' || e.name === 'UpdateLayoutTree') && e.dur > 3000).map((e) => `${e.name} ${(e.dur / 1000).toFixed(0)}ms ${JSON.stringify(e.args?.beginData ?? {}).slice(0, 120)}${e.args?.elementCount !== undefined ? ' els ' + e.args.elementCount : ''}`)
+      if (lay.length) console.log('    ' + lay.join(' | '))
+      console.log(`long task ${(t.dur / 1000).toFixed(0)}ms @${stamps.filter((s) => s.ts <= t.ts + t.dur).pop()?.args?.data?.message ?? '?'}: ` + [...sum].sort((a, b) => b[1] - a[1]).slice(0, Number(env('LONGK') || 14)).map(([k, v]) => `${k} ${v.toFixed(1)}`).join(' · '))
+    }
+    // 다른 스레드(그림 풀기·칠하기)에서 오래 걸린 것
+    const off = new Map<string, number>()
+    for (const e of traceEvents) if (e.ph === 'X' && e.dur > 8000 && !main.has(e.pid + ':' + e.tid)) { const k = (others.get(e.pid + ':' + e.tid) ?? '?') + ' ' + e.name; off.set(k, Math.max(off.get(k) ?? 0, e.dur / 1000)) }
+    console.log('off-main longest: ' + [...off].sort((a, b) => b[1] - a[1]).slice(0, 12).map(([k, v]) => `${k} ${v.toFixed(0)}`).join(' · '))
+    // GPU 쪽(칠하기·그림 올리기)의 긴 일 — 몇 번째 틀 뒤인가 · 안을 이름별로
+    const gpu = new Set([...others].filter(([, n]) => n === 'CrGpuMain' || n === 'VizCompositorThread').map(([k]) => k))
+    const onGpu = traceEvents.filter((e) => e.ph === 'X' && e.dur && gpu.has(e.pid + ':' + e.tid)).sort((a, b) => a.ts - b.ts)
+    for (const t of onGpu.filter((e) => e.name === 'ThreadControllerImpl::RunTask' && e.dur > Number(env('LONG') || 40) * 1000).slice(0, 10)) {
+      const sum = new Map<string, number>()
+      for (const e of onGpu) if (e !== t && e.ts >= t.ts && e.ts + e.dur <= t.ts + t.dur && e.pid + ':' + e.tid === t.pid + ':' + t.tid) sum.set(e.name, (sum.get(e.name) ?? 0) + e.dur / 1000)
+      console.log(`gpu task ${(t.dur / 1000).toFixed(0)}ms @${stamps.filter((s) => s.ts <= t.ts).pop()?.args?.data?.message ?? '?'}: ` + [...sum].sort((a, b) => b[1] - a[1]).slice(0, Number(env('LONGK') || 14)).map(([k, v]) => `${k} ${v.toFixed(1)}`).join(' · '))
+    }
+  }
   if (THROTTLE > 1) await call('Emulation.setCPUThrottlingRate', { rate: 1 })
   const rec: Array<[number, number, number]> = await ev(`window.__lock.rec`)
   const scene = await ev(SCENE === 'duel' ? `(() => { const d = window.__duel(), S = window.__scene; return { stats: d.stats, over: d.over, t: d.t, duelAt: S.duelAt, marks: S.marks, dpr: +(document.querySelector('.duelx canvas:last-of-type').width / innerWidth).toFixed(2), warm: [S.warmAtDuel ?? null, window.__duelWarm?.() ?? null] } })()`
-    : `(() => { const r = window.__raid(), S = window.__scene; return { t: +r.t.toFixed(1), state: r.state, mode: r.mode, kills: r.kills, enemies: r.enemies.length, fx: r.fx.length, marks: S.marks, canvas: document.getElementById('field').width + 'x' + document.getElementById('field').height, rotate: !document.getElementById('rotate-guide').hidden } })()`)
+    : `(() => { const r = window.__raid(), S = window.__scene; return { t: +r.t.toFixed(1), state: r.state, mode: r.mode, kills: r.kills, enemies: r.enemies.length, fx: r.fx.length, marks: S.marks, canvas: document.getElementById('field').width + 'x' + document.getElementById('field').height, rotate: !document.getElementById('rotate-guide').hidden, arena: (b => [b.left, b.top, b.width, b.height].map(Math.round).join(','))(document.getElementById('arena').getBoundingClientRect()), view: innerWidth + 'x' + innerHeight } })()`)
   // 겨루기는 겨루기 화면이 선 뒤의 틀만 (들어오는 암전·이름판 1초도 넣는다) · 시련은 첫 30틀(판 갈아 끼운 뒤 첫 굽기)을 뺀다
   const from = SCENE === 'duel' ? Math.max(0, (scene.duelAt as number) + 1) : 30
   const body = rec.slice(from)
@@ -362,6 +456,12 @@ try {
   console.log('slowest: ' + body.map((r, i) => [i + from, r[1], r[0]] as const).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([n, s, g]) => `#${n} ${s.toFixed(1)}ms/${g.toFixed(0)}ms ${near(n)}`).join(' · '))
   // 틀 간격이 가장 길었던 곳 — 간격은 그 앞 틀이 끝난 뒤부터 이 틀까지 (앞 틀의 일 · 그 사이 GC·그림 풀기 등)
   console.log('longest gaps: ' + body.map((r, i) => [i + from, r[0], body[i - 1]?.[1] ?? 0] as const).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([n, g, prevS]) => `#${n} ${g.toFixed(0)}ms (앞 틀 ${prevS.toFixed(1)}ms) ${near(n - 1)}`).join(' · '))
+  // 열전: 사건마다 그 틀부터 25틀 — 가장 긴 틀 간격 · 가장 긴 스크립트 · 16.7ms 넘은 틀 수 (사건 틀의 일은 다음 틀 간격에 잡힌다)
+  if (SCENE === 'raid') for (const [k, m] of Object.entries(marksOf).sort((a, b) => a[1] - b[1])) {
+    const w = rec.slice(m, m + 26), g = w.slice(1).map((r) => r[0])
+    const at = g.indexOf(Math.max(...g))
+    console.log(`event ${k} @${m}: gap max ${Math.max(...g).toFixed(1)}ms (+${at + 1}) · script max ${Math.max(...w.map((r) => r[1])).toFixed(1)}ms · over16 ${g.filter((x) => x > 16.7 + 0.5).length} · gaps ${g.slice(0, 6).map((x) => x.toFixed(0)).join(',')}`)
+  }
   if (COUNT) {
     const frames: Array<{ vis: Record<string, number>; off: Record<string, number>; visPx: number; offPx: number }> = (await ev(`window.__cnt.frames`)).slice(from)
     const px = DPR * DPR, screen = VW * VH * px
