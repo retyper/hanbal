@@ -78,6 +78,18 @@ function bakedStrip(img: HTMLImageElement, height: number, warmWhite = false, la
   return b
 }
 const whiteStrips = new WeakMap<object, HTMLCanvasElement>()
+const tintStrips = new Map<string, WeakMap<object, HTMLCanvasElement>>()
+/** 그림 띠의 실루엣을 한 색으로 (테두리 빛 · 한 번 굽고 다시 씀) */
+function tintStrip(src: CanvasImageSource, width: number, height: number, color: string) {
+  let m = tintStrips.get(color); if (!m) { m = new WeakMap(); tintStrips.set(color, m) }
+  let c = m.get(src as object)
+  if (!c && typeof document !== 'undefined') {
+    c = document.createElement('canvas'); c.width = width; c.height = height
+    const g = c.getContext('2d')!; g.drawImage(src, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = color; g.fillRect(0, 0, width, height)
+    m.set(src as object, c)
+  }
+  return c
+}
 function whiteStrip(src: CanvasImageSource, width: number, height: number) {
   let white = whiteStrips.get(src)
   if (!white && typeof document !== 'undefined') {
@@ -87,7 +99,7 @@ function whiteStrip(src: CanvasImageSource, width: number, height: number) {
   }
   return white
 }
-export function sprite(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, path: string, x: number, y: number, height: number, frame: number, face = 1, flash: boolean | 'white' = false, density?: number) {
+export function sprite(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, path: string, x: number, y: number, height: number, frame: number, face = 1, flash: boolean | 'white' = false, density?: number, rim = 0) {
   const img = images.get(path); if (!img) return
   const layout = HERO_HD_SHEETS[path], nativeH = layout?.cell[1] ?? img.height
   const b = bakedStrip(img, density === undefined ? height : heroCacheHeight(height, density, nativeH), density !== undefined, layout)
@@ -99,6 +111,15 @@ export function sprite(ctx: CanvasRenderingContext2D, images: Map<string, HTMLIm
   const tx = Math.round(x), ty = Math.round(y), dx = -Math.round(dw / 2)
   const smooth = ctx.imageSmoothingEnabled
   ctx.translate(tx, ty); if (face !== 1) ctx.scale(face, 1); ctx.imageSmoothingEnabled = false
+  if (rim > 0) {
+    // 테두리 빛: 한 색 실루엣을 둘레로 몇 번 찍고 그 위에 본 그림 (GAP §15-2)
+    const tinted = tintStrip(src, b ? b.cols * b.fw : img.width, b ? Math.ceil(20 / b.cols) * b.fh : img.height, C.heroRimColor)
+    if (tinted) {
+      const a = ctx.globalAlpha; ctx.globalAlpha = a * C.heroRimAlpha
+      for (let i = 0; i < C.heroRimDirs; i++) { const t = i * Math.PI * 2 / C.heroRimDirs; ctx.drawImage(tinted, sx, sy, sw, sh, dx + Math.round(Math.cos(t) * rim), -dh + Math.round(Math.sin(t) * rim), dw, dh) }
+      ctx.globalAlpha = a
+    }
+  }
   ctx.drawImage(src, sx, sy, sw, sh, dx, -dh, dw, dh)
   if (flash === 'white') {
     const white = whiteStrip(src, b ? b.cols * b.fw : img.width, b ? Math.ceil(20 / b.cols) * b.fh : img.height)
@@ -192,7 +213,7 @@ function drawHero(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageEl
     for (let i = pose.ghosts; i >= 1; i--) { ctx.globalAlpha = a * pose.ghostAlpha * (1 - (i - 1) / pose.ghosts); sprite(ctx, images, path, ox + pose.ghostStep * i, oy, h, pose.ghostFrame, pose.face, false, density) }
     ctx.globalAlpha = a
   }
-  sprite(ctx, images, path, ox, oy, h, pose.frame, pose.face, s.hurt > 0, density)
+  sprite(ctx, images, path, ox, oy, h, pose.frame, pose.face, s.hurt > 0, density, C.heroRim)
   if (awakenedLook(s)) {
     // 각성: 몸이 금빛으로 맥박친다 (같은 그림을 빛으로 한 번 더)
     const op = ctx.globalCompositeOperation; ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .16 + .12 * Math.sin(s.t * 7)
