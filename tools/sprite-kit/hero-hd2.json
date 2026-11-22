@@ -659,6 +659,66 @@
    "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/base-g-38-chopal-palmae-prop20261117-walk.png"
   }
  },
+ "base-g-59-yangmaek-maekson": {
+  "bytes": 1173278,
+  "cell": [
+   352,
+   320
+  ],
+  "cols": 11,
+  "feet": 312,
+  "scale": {
+   "attack": 0.6287,
+   "hdx": 0.5923,
+   "walk": 0.6026
+  },
+  "sha256": "3785e8608733652ffab97e0fbf549e1fc646b5ddfa69802c4a77e9d5344b0a50",
+  "sources": {
+   "attack": "codex83/attack8_base-g-59-yangmaek-maekson.png",
+   "hdx": "codex83/hdx_base-g-59-yangmaek-maekson.png",
+   "walk": "codex83/walk8_base-g-59-yangmaek-maekson.png"
+  }
+ },
+ "base-g-61-heomcheuk-bawi": {
+  "bytes": 1561837,
+  "cell": [
+   432,
+   320
+  ],
+  "cols": 9,
+  "feet": 312,
+  "scale": {
+   "attack": 0.6509,
+   "hdx": 0.633,
+   "walk": 0.6533
+  },
+  "sha256": "f946dff6b5afb7b62171631cb0aa7eb0717463fb5601de69653862876c7a8566",
+  "sources": {
+   "attack": "codex83/attack8_base-g-61-heomcheuk-bawi.png",
+   "hdx": "codex83/hdx_base-g-61-heomcheuk-bawi.png",
+   "walk": "codex83/walk8_base-g-61-heomcheuk-bawi.png"
+  }
+ },
+ "base-g-62-beonye-hanul": {
+  "bytes": 1289885,
+  "cell": [
+   480,
+   320
+  ],
+  "cols": 8,
+  "feet": 312,
+  "scale": {
+   "attack": 0.6587,
+   "hdx": 0.6,
+   "walk": 0.6195
+  },
+  "sha256": "d300e9b41901d86faec6865b12098bd2efd590ba8ae952cd8623f816f084f64e",
+  "sources": {
+   "attack": "codex83/attack8_base-g-62-beonye-hanul.png",
+   "hdx": "codex83/hdx_base-g-62-beonye-hanul.png",
+   "walk": "codex83/walk8_base-g-62-beonye-hanul.png"
+  }
+ },
  "base-w-02-goguryeo-lady": {
   "bytes": 1339199,
   "cell": [
@@ -1099,6 +1159,26 @@
    "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/base-w-38-sangdang-bulmae-prop20261117-walk.png"
   }
  },
+ "base-w-39-gosaburi-galmae": {
+  "bytes": 1257073,
+  "cell": [
+   384,
+   320
+  ],
+  "cols": 10,
+  "feet": 312,
+  "scale": {
+   "attack": 0.6464,
+   "hdx": 0.6066,
+   "walk": 0.6259
+  },
+  "sha256": "d13449a24446e22d6cab3cefe578d57d633f390fb766f38dd07477950faf3fa5",
+  "sources": {
+   "attack": "codex83/attack8_base-w-39-gosaburi-galmae.png",
+   "hdx": "codex83/hdx_base-w-39-gosaburi-galmae.png",
+   "walk": "codex83/walk8_base-w-39-gosaburi-galmae.png"
+  }
+ },
  "base-w-40-mujin-munui": {
   "bytes": 1777670,
   "cell": [
@@ -1457,6 +1537,26 @@
    "attack": "codex70/attack8_base-w-83-gyeonji-beodeul.png",
    "hdx": "codex78/hdx_base-w-83-gyeonji-beodeul.png",
    "walk": "codex68/walk8_base-w-83-gyeonji-beodeul.png"
+  }
+ },
+ "dalbit": {
+  "bytes": 1090926,
+  "cell": [
+   416,
+   320
+  ],
+  "cols": 9,
+  "feet": 312,
+  "scale": {
+   "attack": 0.654,
+   "hdx": 0.6359,
+   "walk": 0.6188
+  },
+  "sha256": "2bebb30d483f6a0c87e39a224be93bc44eb12a3824ab528bed949b0833f5e615",
+  "sources": {
+   "attack": "codex83/attack8_dalbit.png",
+   "hdx": "codex83/hdx_dalbit.png",
+   "walk": "codex83/walk8_dalbit.png"
   }
  },
  "dangung": {

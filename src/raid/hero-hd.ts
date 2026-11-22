@@ -1,5 +1,10 @@
 /** Native master rebake only. Missing entries deliberately retain their approved base assets. */
 export const HERO_HD: Readonly<Record<string, string>> = {
+  'anim-px/gen-base-w-39-gosaburi-galmae.png': 'anim-px/gen-base-w-39-gosaburi-galmae_hd.png',
+  'anim-px/gen-dalbit.png': 'anim-px/gen-dalbit_hd.png',
+  'anim-px/gen-base-g-59-yangmaek-maekson.png': 'anim-px/gen-base-g-59-yangmaek-maekson_hd.png',
+  'anim-px/gen-base-g-62-beonye-hanul.png': 'anim-px/gen-base-g-62-beonye-hanul_hd.png',
+  'anim-px/gen-base-g-61-heomcheuk-bawi.png': 'anim-px/gen-base-g-61-heomcheuk-bawi_hd.png',
   'anim-px/gen-base-w-83-gyeonji-beodeul.png': 'anim-px/gen-base-w-83-gyeonji-beodeul_hd.png',
   'anim-px/gen-base-w-81-byeokjin-byeolbit.png': 'anim-px/gen-base-w-81-byeokjin-byeolbit_hd.png',
   'anim-px/gen-base-w-80-usan-gangchi.png': 'anim-px/gen-base-w-80-usan-gangchi_hd.png',
@@ -94,6 +99,11 @@ export const HERO_HD: Readonly<Record<string, string>> = {
 
 /** NativeHD atlas stays within4096 before upload: frame order is row-major,20 frames. */
 export const HERO_HD_SHEETS: Readonly<Record<string, { cell: readonly [number, number]; cols: number }>> = {
+  'anim-px/gen-base-w-39-gosaburi-galmae_hd.png': { cell: [384, 320], cols: 10 },
+  'anim-px/gen-dalbit_hd.png': { cell: [416, 320], cols: 9 },
+  'anim-px/gen-base-g-59-yangmaek-maekson_hd.png': { cell: [352, 320], cols: 11 },
+  'anim-px/gen-base-g-62-beonye-hanul_hd.png': { cell: [480, 320], cols: 8 },
+  'anim-px/gen-base-g-61-heomcheuk-bawi_hd.png': { cell: [432, 320], cols: 9 },
   'anim-px/gen-base-w-83-gyeonji-beodeul_hd.png': { cell: [448, 320], cols: 9 },
   'anim-px/gen-base-w-81-byeokjin-byeolbit_hd.png': { cell: [464, 320], cols: 8 },
   'anim-px/gen-base-w-80-usan-gangchi_hd.png': { cell: [480, 320], cols: 8 },

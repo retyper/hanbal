@@ -30,9 +30,11 @@ A8 = _load('attack8_intake', 'attack8-intake.py')
 ROOT = W8.ROOT
 PX = os.path.join(ROOT, 'public/realm/anim-px')
 STORE = 'D:/에셋창고'
-WALK_SRC = ('codex76', 'codex71', 'codex68', 'codex67')   # 76 = 확대 전용 걷기(띠 걷기가 옛 길이라 고해상도 판이 없던 장수)
-ATTACK_SRC = ('codex73', 'codex71', 'codex70', 'codex67')
-HDX_SRC = ('codex78', 'codex75')   # 78 = 나머지 224장 (11-22 형 「다 시켜」)
+WALK_SRC = ('codex83', 'codex76', 'codex71', 'codex68', 'codex67')   # 83 = 4.5등신으로 다시 그린 장수(형 11-22 79 판정)   # 76 = 확대 전용 걷기(띠 걷기가 옛 길이라 고해상도 판이 없던 장수)
+ATTACK_SRC = ('codex83', 'codex73', 'codex71', 'codex70', 'codex67')
+# 옛 띠가 표준 규격이 아닌 장수 → 표준 칸 가로 (79·83 · 형 11-22 「dalbit 심각하게 다름」)
+OVERRIDE = {'dalbit': 208}
+HDX_SRC = ('codex83', 'codex78', 'codex75')   # 78 = 나머지 224장 (11-22 형 「다 시켜」)
 ATLAS_MAX = 4096
 SCALE, CELL_H = 2, 320
 UPSCALE_MAX = 1.3    # Codex 고해상도 판(칸 ~440px)은 2배 띠와 거의 같은 크기라 15% 안 늘림은 흐림이 거의 보이지 않는다(각성 소서노 1.16 · 진하 1.21 · 아라 1.26 처럼 공격·걷기 판 인물이 작은 장수가 있다 · 배율은 hero-hd2.json 에 남아 나중에 큰 원본을 다시 받을 장수를 고를 수 있다) · 160 띠를 2배로 늘리는 것과 다르다(그건 금지)
@@ -133,8 +135,14 @@ def report_walk(key, strip, frames, lost, fw, foot):
 
 def build(key):
     base_p = os.path.join(PX, f'gen-{key}.png')
-    strip = Image.open(base_p).convert('RGBA')
-    fw, h, ref_h, foot, cx = W8.idle_ref(strip)
+    if key in OVERRIDE:
+        # 옛 띠가 표준 규격이 아니다(달빛: 칸 96×72 · 몸 72) → 표준 규격(칸 160 · 몸 키 138 · 발 156)에 맞춰 새로 굽는다
+        fw, h, ref_h, foot = OVERRIDE[key], 160, 138, 156
+        cx = fw / 2
+        strip = Image.new('RGBA', (fw * 20, h), (0, 0, 0, 0))
+    else:
+        strip = Image.open(base_p).convert('RGBA')
+        fw, h, ref_h, foot, cx = W8.idle_ref(strip)
     if h != 160:
         raise SystemExit(f'{key}: 띠 칸 높이 {h} (160 이 아님)')
     cw, ch = fw * SCALE, CELL_H
