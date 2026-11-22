@@ -152,7 +152,7 @@ export class ChestShow {
     this.low = this.hooks.low()
     const doc = this.host.ownerDocument, win = doc.defaultView, v = this.v, tier = this.plan.tier
     const short = win ? Math.min(win.innerWidth, win.innerHeight) : v.chest / v.chestShare
-    const size = Math.round(Math.min(v.chest, short * v.chestShare))
+    const size = Math.round(Math.min(v.chest, short * v.chestShare) * (v.tierScale[tier] ?? 1))
     const el = this.el = doc.createElement('div')
     el.id = 'chest-show'; el.className = `t${tier}${this.low ? ' low' : ''}`
     el.style.cssText = `--cs-c:${v.colors[tier]};--cs-size:${size}px;--cs-rune:${Math.round(v.rune * size / v.chest)}px;--cs-dim:${v.dim};--cs-glow:${this.low ? v.glowLow : v.glow};--cs-push:${v.pushPx}px`

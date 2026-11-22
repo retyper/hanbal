@@ -52,7 +52,8 @@ const FILES = {
    * 보물 상자 연출 (60-JACKPOT · raid/chest-show.ts) — 단계마다 곡 자리 하나: chest1 · chest3 · chest5 · chest8 · 대박이 멎는 순간 chestFreeze.
    * ★ 지금은 있는 소리를 빌린 임시 값이다 (소리는 형이 고른다). 고른 파일이 오면 이 다섯 줄의 파일만 바꾼다. chestDrum = 들썩임·룬이 박힐 때의 북
    */
-  chest1: [X + 'level.ogg'], chest3: [X + 'level.ogg'], chest5: [R + 'horn_victory_a.ogg'], chest8: [R + 'horn_victory_a.ogg'], chestFreeze: [X + 'skill_hit.ogg'],
+  // 11-22 Claude(형 「알아서 결정해 봐」): 단계가 오를수록 북이 커지고, 대박이 멎는 순간 징 (war_bell_c5 공유마당 「징소리B」 CC BY · 출처 CREDITS) — 형 귀에 별로면 이 줄만 바꾼다
+  chest1: [R + 'war_drum_c4.ogg'], chest3: [R + 'war_drums_c.ogg'], chest5: [R + 'war_drums_a.ogg'], chest8: [R + 'war_drums_b.ogg'], chestFreeze: [R + 'war_bell_c5.ogg'],
   chestDrum: [R + 'tap_drum_g1.wav'],
 } as const
 const CHEST_JINGLE = ['chest1', 'chest3', 'chest5', 'chest8'] as const
