@@ -99,6 +99,46 @@
    "walk": "../flutter/arrow_game_one/tools/sprite-kit/awakened-20261114/intake-20261118/aw1-base-w-06-buyeo-huntress-walk.png"
   }
  },
+ "aw1-base-w-08-mahan-warrior": {
+  "bytes": 1311861,
+  "cell": [
+   448,
+   320
+  ],
+  "cols": 9,
+  "feet": 312,
+  "scale": {
+   "attack": 1.0498,
+   "hdx": 0.759,
+   "walk": 0.7164
+  },
+  "sha256": "e5d6fbda99896e08c5e305e71f78194d323976adeef2e1f18ef19ec13b3b1890",
+  "sources": {
+   "attack": "codex70/attack8_aw1-base-w-08-mahan-warrior.png",
+   "hdx": "codex78/hdx_aw1-base-w-08-mahan-warrior.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/awakened-20261114/intake-20261118/aw1-base-w-08-mahan-warrior-walk.png"
+  }
+ },
+ "aw1-base-w-13-young-archer": {
+  "bytes": 1342047,
+  "cell": [
+   400,
+   320
+  ],
+  "cols": 10,
+  "feet": 312,
+  "scale": {
+   "attack": 0.9583,
+   "hdx": 0.7797,
+   "walk": 0.6531
+  },
+  "sha256": "54fd395c6b2d9cc0809c1182f8bb0bd3194e1bb7012226eca7e2d2370e9cd345",
+  "sources": {
+   "attack": "codex70/attack8_aw1-base-w-13-young-archer.png",
+   "hdx": "codex78/hdx_aw1-base-w-13-young-archer.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/awakened-20261114/intake-20261118/aw1-base-w-13-young-archer-walk.png"
+  }
+ },
  "aw1-dangung": {
   "bytes": 1547996,
   "cell": [
@@ -439,6 +479,26 @@
    "walk": "codex68/walk8_base-w-08-mahan-warrior.png"
   }
  },
+ "base-w-10-pirate-captain": {
+  "bytes": 1390780,
+  "cell": [
+   528,
+   320
+  ],
+  "cols": 7,
+  "feet": 312,
+  "scale": {
+   "attack": 1.0824,
+   "hdx": 0.7931,
+   "walk": 0.6925
+  },
+  "sha256": "a630931f1f0378544cff13113b7dcb40645741dcf6bdecfc83d5aac19060ee0d",
+  "sources": {
+   "attack": "codex70/attack8_base-w-10-pirate-captain.png",
+   "hdx": "codex78/hdx_base-w-10-pirate-captain.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/base-w-10-pirate-captain-prop20261117-walk.png"
+  }
+ },
  "base-w-102-garak-dana": {
   "bytes": 1088257,
   "cell": [
@@ -457,6 +517,166 @@
    "attack": "codex70/attack8_base-w-102-garak-dana.png",
    "hdx": "codex75/hdx_base-w-102-garak-dana.png",
    "walk": "codex68/walk8_base-w-102-garak-dana.png"
+  }
+ },
+ "base-w-12-court-dancer": {
+  "bytes": 1323352,
+  "cell": [
+   368,
+   320
+  ],
+  "cols": 11,
+  "feet": 312,
+  "scale": {
+   "attack": 0.9169,
+   "hdx": 0.7645,
+   "walk": 0.9154
+  },
+  "sha256": "29e55d5f5d020200c94d377e71f7e2b956b7c8b86c979bdf32b96727c5a587f1",
+  "sources": {
+   "attack": "codex70/attack8_base-w-12-court-dancer.png",
+   "hdx": "codex78/hdx_base-w-12-court-dancer.png",
+   "walk": "codex68/walk8_base-w-12-court-dancer.png"
+  }
+ },
+ "base-w-13-young-archer": {
+  "bytes": 1223275,
+  "cell": [
+   416,
+   320
+  ],
+  "cols": 9,
+  "feet": 312,
+  "scale": {
+   "attack": 1.0575,
+   "hdx": 0.8,
+   "walk": 0.9169
+  },
+  "sha256": "e3d1429359621d170056acafa18b6db3fca576850d00e61d52772e1d05d3d306",
+  "sources": {
+   "attack": "codex70/attack8_base-w-13-young-archer.png",
+   "hdx": "codex78/hdx_base-w-13-young-archer.png",
+   "walk": "codex68/walk8_base-w-13-young-archer.png"
+  }
+ },
+ "base-w-14-feast-spy": {
+  "bytes": 1101818,
+  "cell": [
+   400,
+   320
+  ],
+  "cols": 10,
+  "feet": 312,
+  "scale": {
+   "attack": 1.1311,
+   "hdx": 0.7624,
+   "walk": 0.9452
+  },
+  "sha256": "785ccb42afd87217a766596143bedb566c8efa594bcd8ce169c3855fc3f0323f",
+  "sources": {
+   "attack": "codex70/attack8_base-w-14-feast-spy.png",
+   "hdx": "codex78/hdx_base-w-14-feast-spy.png",
+   "walk": "codex68/walk8_base-w-14-feast-spy.png"
+  }
+ },
+ "base-w-17-mahan-pearl-diver": {
+  "bytes": 1169464,
+  "cell": [
+   448,
+   320
+  ],
+  "cols": 9,
+  "feet": 312,
+  "scale": {
+   "attack": 1.0575,
+   "hdx": 0.8166,
+   "walk": 0.6383
+  },
+  "sha256": "5f61b21bcce9a36c0ab55288dbf5e4ab10f9e594993f1797a149899397237b14",
+  "sources": {
+   "attack": "codex70/attack8_base-w-17-mahan-pearl-diver.png",
+   "hdx": "codex78/hdx_base-w-17-mahan-pearl-diver.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/base-w-17-mahan-pearl-diver-prop20261117-walk.png"
+  }
+ },
+ "base-w-18-jinhan-salt-widow": {
+  "bytes": 1273434,
+  "cell": [
+   416,
+   320
+  ],
+  "cols": 9,
+  "feet": 312,
+  "scale": {
+   "attack": 1.1174,
+   "hdx": 0.8118,
+   "walk": 0.7959
+  },
+  "sha256": "661d30022a87335fd4e2178220aebed79e27a7ac6deb4ee1e486bddb16a75c67",
+  "sources": {
+   "attack": "codex70/attack8_base-w-18-jinhan-salt-widow.png",
+   "hdx": "codex78/hdx_base-w-18-jinhan-salt-widow.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/base-w-18-jinhan-salt-widow-prop20261117-walk.png"
+  }
+ },
+ "base-w-21-baekje-court-dancer": {
+  "bytes": 1402040,
+  "cell": [
+   368,
+   320
+  ],
+  "cols": 11,
+  "feet": 312,
+  "scale": {
+   "attack": 1.0299,
+   "hdx": 0.7886,
+   "walk": 0.7598
+  },
+  "sha256": "571dd1294237c860e85435eaffdeccfdbbe243b3f71e1331c8fa58077ffcc2b4",
+  "sources": {
+   "attack": "codex70/attack8_base-w-21-baekje-court-dancer.png",
+   "hdx": "codex78/hdx_base-w-21-baekje-court-dancer.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/base-w-21-baekje-court-dancer-prop20261117-walk.png"
+  }
+ },
+ "base-w-22-dongye-tiger-huntress": {
+  "bytes": 1544237,
+  "cell": [
+   480,
+   320
+  ],
+  "cols": 8,
+  "feet": 312,
+  "scale": {
+   "attack": 1.2052,
+   "hdx": 0.7908,
+   "walk": 0.7462
+  },
+  "sha256": "ae30bb7de569f93c1876a2cabe05f07a28a8ddeed9419f55dc8c4eb7c85bbf9d",
+  "sources": {
+   "attack": "codex70/attack8_base-w-22-dongye-tiger-huntress.png",
+   "hdx": "codex78/hdx_base-w-22-dongye-tiger-huntress.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/base-w-22-dongye-tiger-huntress-prop20261117-walk.png"
+  }
+ },
+ "base-w-24-apdok-queen": {
+  "bytes": 1401803,
+  "cell": [
+   368,
+   320
+  ],
+  "cols": 11,
+  "feet": 312,
+  "scale": {
+   "attack": 1.0909,
+   "hdx": 0.7775,
+   "walk": 0.7573
+  },
+  "sha256": "74ed572ce9cfb1494bad37e2aa3554bd8879d32bb94b1dff7a6934366d8a4ffc",
+  "sources": {
+   "attack": "codex70/attack8_base-w-24-apdok-queen.png",
+   "hdx": "codex78/hdx_base-w-24-apdok-queen.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/base-w-24-apdok-queen-prop20261117-walk.png"
   }
  },
  "dangung": {
