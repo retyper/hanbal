@@ -51,7 +51,10 @@
 
 ## 4-1. 쇼츠 기준 (11-22 · 사례를 읽고 고침)
 
-첫 다섯 편(각성 초상 루프 + 이름 + 로고)은 감으로 만든 것이라 **올리지 않는다** — 뽑기 게임 광고처럼 보이고, AI 초상만 보이면 「AI 슬롭」 소리를 듣기 쉽다.
+**두 갈래로 간다 (형 11-22 결정).**
+1. **각성 홍보:** 각성 영상 그대로 + 후반부(6초) 하단에 「열국군웅전」 로고만 페이드 인 (`tools/shorts.py --plain <그림 id>`). 훅 글·이름·자막을 얹지 않는다. 첫 다섯 편 = 소서노 · 쇠비 · 해비 · 허황옥 · 바리공주 (`D:/에셋창고/shorts/`).
+2. **개발 과정(데브로그):** 아래 사례대로 게임 화면·고치기 전후·1인 개발 이야기.
+
 읽은 것: [Zukowski · TikTok 일곱 가지](https://howtomarketagame.com/2022/02/07/seven-great-tips-for-marketing-your-indie-game-on-tiktok/) · [바이럴 사례 넷](https://howtomarketagame.com/2022/02/14/how-to-go-viral-on-tiktok/) · [presskit.gg 2026](https://presskit.gg/field-guides/tiktok-indie-game-marketing) · [Game Developer 2021](https://www.gamedeveloper.com/business/tiktok-guide-for-indie-game-devs)
 
 - **게임이 움직이는 화면**이 기본. 한 편에 **요점 하나**(무기 하나·장면 하나) · 15초 안팎 · 요점이 끝나면 바로 끝.
