@@ -752,6 +752,9 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   order.length = 0; for (const e of s.enemies) order.push(e); order.push(null); if (s.palisade) order.push(false)
   order.sort((a, b) => (a ? a.y : a === null ? s.y : wallY) - (b ? b.y : b === null ? s.y : wallY))
   const archer = s.mode === 'stage' ? barrageArcher(s, cam ? fieldView(cam) : undefined) : undefined
+  // 적 몸을 그린 뒤 판 변환(위에서 건 카메라·흔들림 그대로)으로 되돌린다 — 적마다 save/restore 하지 않는다
+  // (11-22 · 11-17 sprite 와 같은 길: 목책 거대 두목 판은 적이 200명 넘어 save 가 틀마다 200번 넘었다)
+  const camOn = z !== 1 && !!cam, bz = camOn ? z : 1, bx = camOn ? W / 2 - cam!.x * z + qx : quake ? qx : 0, by = camOn ? H / 2 - cam!.y * z + qy : quake ? qy : 0
   for (const e of order) {
     if (e === false) { drawPalisade(ctx, images, s, time); continue }
     if (e) {
@@ -767,13 +770,14 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       const steady = !!e.champion || e.kind === 'boss' || e.kind === 'iron' || e.kind === 'bear'
       const lag = steady ? 0 : Math.sign(e.x - s.x) * C.knockback * recoil
       const jitter = recoil * FEEL.mobJitter * Math.sin(time * FEEL.mobJitterHz + e.id)
-      ctx.save(); ctx.translate(e.x + jitter - lag, e.y)
-      if (wave >= 0) { ctx.globalAlpha *= 1 - wave; ctx.translate(Math.sign(e.x - ending!.boss.x) * wave * FEEL.deathDistance, -Math.sin(wave * Math.PI) * FEEL.deathLift); ctx.rotate(Math.sign(e.x - ending!.boss.x) * wave * FEEL.deathSpin) }
+      const a0 = ctx.globalAlpha
+      ctx.translate(e.x + jitter - lag, e.y)
+      if (wave >= 0) { ctx.globalAlpha = a0 * (1 - wave); ctx.translate(Math.sign(e.x - ending!.boss.x) * wave * FEEL.deathDistance, -Math.sin(wave * Math.PI) * FEEL.deathLift); ctx.rotate(Math.sign(e.x - ending!.boss.x) * wave * FEEL.deathSpin) }
       const recovery = championRecovery(e)
       if (recovery > 0) ctx.rotate((s.x < e.x ? -1 : 1) * B.view.recoveryLean * recovery)
       ctx.scale(1 + (FEEL.squashX - 1) * recoil, 1 + (FEEL.squashY - 1) * recoil)
       sprite(ctx, images, warlord(e.kind, s.stage), 0, 0, artHeight(e.kind, s.stage), wave >= 0 || white ? 18 : championPose(e) ?? (e.wind > 0 ? 13 : archerFrame(s, e) ?? 4 + Math.floor(s.t * 8 + e.id) % 8), championFacing(e, s.x < e.x ? -1 : 1), white ? 'white' : e.flash > 0)
-      ctx.restore()
+      fieldTransform(ctx, bz, bx, by); ctx.globalAlpha = a0
       if (e === archer) {
         // 적대 공격의 주체: 머리 위 붉은 화살촉. 원형 붉은 고리는 쓰지 않는다.
         const x = e.x, y = e.y - h - C.barrageMarkLift, w = C.barrageMarkWidth / 2, mh = C.barrageMarkHeight

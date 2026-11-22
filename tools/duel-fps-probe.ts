@@ -1,7 +1,7 @@
 /**
  * 겨루기 · 각성 시련 프레임 재기 (11-19 형 ③: 「각성 시련·겨루기(엘든링식) 프레임 최적화 · 열전 기법 옮기기」).
  *
- *   node --experimental-strip-types tools/duel-fps-probe.ts [duel|trial] [390x844] [THROTTLE 4] [FRAMES 900] [ROOT http://127.0.0.1:5195]
+ *   node --experimental-strip-types tools/duel-fps-probe.ts [duel|trial|giant] [390x844] [THROTTLE 4] [FRAMES 900] [ROOT http://127.0.0.1:5195]
  *
  * 헤드리스 크롬을 폰 크기(DPR 3)로 띄우고 CPU 를 THROTTLE 배 느리게 한 채 판 시계를 「한 틀 = 1/60초」로 묶어 돌린다 (lockstep):
  * 진짜 rAF 가 한 번 돌 때마다 페이지의 rAF·performance.now 를 정확히 1/60초씩 민다 → 고치기 전과 뒤가 똑같은 틀을 그린다 (재는 값만 다르다).
@@ -10,6 +10,7 @@
  *  - trial: raid.html 을 본편처럼 틀(iframe ?trial=) 안에 연다 → 검수 재생으로 판을 연 뒤 시련 판(활 묶음 · 화살비·유성)을 UNTIL 초까지 돌려 끼운다
  *          (11-18 형 플립7: 「3:35 폭풍의 진격」·「4:46 힘의 결합 늑대 떼」) → 키보드로 원을 그리며 걷고 비기·투지를 쓴다 (체력은 반 아래로 안 떨어지게).
  *          폰 세로는 판이 「가로로 돌려 주세요」로 멈춘 채 그려진다 (게임이 그렇게 한다).
+ *  - giant: 지금 본편의 각성 길(목책 돌파를 깨면 각성 · 11-21) — 독립 열전 STAGE=palisade 의 거대 두목(불가사리)이 막 나온 판.
  *
  * 적는 것 (한 줄 JSON + 표):
  *  - 틀 간격(진짜 rAF) p50·p95·최대 · 16.7ms 넘은 틀 수 · 틀마다 페이지 스크립트 시간(우리 rAF 콜백) p50·p95·최대 · 무거운 틀만 따로
@@ -25,7 +26,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-const SCENE = process.argv[2] === 'trial' ? 'trial' : 'duel'
+const SCENE = process.argv[2] === 'trial' ? 'trial' : process.argv[2] === 'giant' ? 'giant' : 'duel'
 const [VW, VH] = (process.argv[3] ?? '390x844').split('x').map(Number) as [number, number]
 const THROTTLE = Number(process.argv[4] ?? 4)
 const FRAMES = Number(process.argv[5] ?? 900)
@@ -35,7 +36,7 @@ const DPR = Number(env('DPR') || 3)
 const COUNT = env('COUNT') === '1', PROFILE = env('PROFILE') === '1', WATCH = env('WATCH') === '1'
 const SHOTS = env('SHOTS'), TAG = env('TAG') || 'now', CMP = env('CMP')
 const QUERY = env('QUERY') || 'me=aryeong&foe=haebi&muMe=5&muFoe=7&tier=2&seed=1'
-const UNTIL = Number(env('UNTIL') || 286), KIT = env('KIT') || 'bow'
+const UNTIL = Number(env('UNTIL') || 286), KIT = env('KIT') || 'bow', STAGE = env('STAGE') || 'palisade'
 const CHROMES = ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe']
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))
 const exe = CHROMES.find((p) => existsSync(p))
@@ -87,7 +88,7 @@ const COUNTER = `(() => {
   const C = window.__cnt = { cur: null, frames: [], reset() { this.cur = { vis: {}, off: {}, visPx: 0, offPx: 0 } } }
   C.reset()
   const P = CanvasRenderingContext2D.prototype
-  const bump = (ctx, k, px, who) => { const vis = ctx.canvas.isConnected, s = vis ? C.cur.vis : C.cur.off; s[k] = (s[k] ?? 0) + 1; if (px) { if (vis) { C.cur.visPx += px; if (who) { const b = C.cur.by ??= {}; b[who] = (b[who] ?? 0) + px } } else C.cur.offPx += px } }
+  const bump = (ctx, k, px, who) => { const vis = ctx.canvas.isConnected, s = vis ? C.cur.vis : C.cur.off; s[k] = (s[k] ?? 0) + 1; if (vis && who) { const n = C.cur.n ??= {}; n[who] = (n[who] ?? 0) + 1 } if (px) { if (vis) { C.cur.visPx += px; if (who) { const b = C.cur.by ??= {}; b[who] = (b[who] ?? 0) + px } } else C.cur.offPx += px } }
   const area = (ctx, w, h) => { const t = ctx.getTransform(); return Math.abs(w * h * (t.a * t.d - t.b * t.c)) }
   // 칠한 넓이를 누가 먹나 — 그림 이름(또는 구운 판 크기) · 섞기가 lighter 면 + · 겹친 투명도가 1 아래면 ~
   const who = (ctx, img) => (img instanceof HTMLImageElement ? (img.src.split('/').pop() || '?').split('?')[0] : img instanceof HTMLVideoElement ? 'video' : 'cv' + img.width + 'x' + img.height) + (ctx.globalCompositeOperation === 'lighter' ? '+' : '') + (ctx.globalAlpha < 1 ? '~' : '')
@@ -148,6 +149,18 @@ const TRIAL_BUILD = `(async () => {
   Object.assign(window.__raid(), s)
   return { t: Math.round(s.t), kills: s.kills, level: s.level, mode: s.mode, enemies: s.enemies.length, combos: s.combos.join(',') }
 })()`
+/**
+ * giant: 거대 두목 판 — 지금 본편의 각성 길(11-21 형 「목책 깨면 각성」 · 시련 모드는 본편에서 닫혔다): 목책 돌파 불가사리 (STAGE 로 다른 거대 두목).
+ * 두목이 오기 3초 앞으로 건너뛰어 판을 지은 뒤 봇이 8초 싸운다 (체력은 채움) → 열린 판에 끼운다. 판은 독립 열전(raid.html?review&stage=) 그대로.
+ */
+const GIANT_BUILD = `(async () => {
+  const H = await import('/src/raid/haebi.ts'), R = await import('/src/raid/haebi-replay.ts')
+  const stage = '${STAGE}', s = H.createHaebi(7, 'stage', '${KIT}', { stage, simRules: H.raidRulesForStage(stage) })
+  s.t = H.bossTime(s) - 3
+  for (let n = 0; n < 120 * 8 && s.state === 'playing'; n++) { if (s.offers.length) H.choose(s, s.offers[0]); else { H.stepHaebi(s, R.botInput(s), 1 / 120); s.hp = s.maxHp } }
+  Object.assign(window.__raid(), s)
+  return { t: Math.round(s.t), giant: s.enemies.filter(e => e.giant).map(e => e.giant.kind).join(','), enemies: s.enemies.length, stage: s.stage }
+})()`
 /** 시련 손 — 20틀마다 여덟 방향을 돌며 걷고 · 레벨업이면 첫 카드 · 240틀마다 비기 · 투지가 차면 쓴다 · 체력은 반 아래로 안 떨어지게 */
 const TRIAL_SCENE = `(() => {
   const L = window.__lock, DIRS = [['d'], ['d', 's'], ['s'], ['s', 'a'], ['a'], ['a', 'w'], ['w'], ['w', 'd']]
@@ -157,7 +170,7 @@ const TRIAL_SCENE = `(() => {
   L.before = (n) => {
     const r = window.__raid?.()
     if (!r || r.state !== 'playing') return
-    r.hp = Math.max(r.hp, r.maxHp * .5)
+    r.hp = r.maxHp
     if (r.offers.length) { document.querySelector('#overlay .choices button')?.click(); if (!('offer' in S.marks)) S.marks.offer = n; return }
     const want = DIRS[Math.floor(n / 20) % DIRS.length]
     for (const k of S.held) if (!want.includes(k)) key('keyup', k)
@@ -210,10 +223,26 @@ try {
     else if (r.result === undefined) console.log('  CDP 오류', JSON.stringify(r).slice(0, 300), expression.slice(0, 80))
     return r.result?.value
   }
-  /** 판이 사는 창 — 겨루기는 이 창 · 시련은 틀 안 창 */
+  /** 판이 사는 창 — 겨루기·거대 두목은 이 창 · 시련은 틀 안 창 */
   const WIN = SCENE === 'trial' ? `document.querySelector('iframe').contentWindow` : 'window'
   /** 판이 사는 창의 realm 에서 돌린다 (그 창의 document·window 로) */
   const ev = (src: string): Promise<any> => evTop(`${WIN}.eval(${JSON.stringify(src)})`)
+  /**
+   * 열전 판을 끼운다 — 시계를 먼저 묶어 세운 채(진짜 틀이 판을 앞으로 돌리지 않게) 검수 재생으로 판을 열고 · 판을 지어 덮고 ·
+   * 화면이 돌아온 척(visibilitychange) 해 열전의 지난 틀 시각을 비운다 → 첫 틀부터 전후가 같은 판 (판 시각이 진짜 시계에 흔들리지 않는다)
+   */
+  const raidInstall = async (build: string, settleMs: number): Promise<void> => {
+    await ev(`(() => { const L = window.__lock; L.on = true; L.hold = true })()`)
+    await ev(`document.querySelector('button[data-until="0"]').click()`)
+    for (let i = 0; i < 240 && await ev(`document.getElementById('play').hidden`) !== false; i++) await sleep(250)
+    step('판 열림')
+    await ev(`[...document.querySelectorAll('.review-tools button')].find(b => b.textContent === '검수 도구 닫기')?.click()`)
+    built = await ev(build)
+    step('판 지음 ' + JSON.stringify(built))
+    await sleep(settleMs)
+    await ev(`document.dispatchEvent(new Event('visibilitychange'))`)
+    await ev(TRIAL_SCENE)
+  }
   await call('Emulation.setDeviceMetricsOverride', { width: VW, height: VH, deviceScaleFactor: DPR, mobile: true })
   await call('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 })
   await call('Emulation.setFocusEmulationEnabled', { enabled: true })
@@ -233,6 +262,10 @@ try {
     // 재는 판만: DPR 고정(전후 같은 해상도) · 체간 끝을 낮춰 연타가 일찍 온다 (판 셈 자체는 그대로 · 전후 같은 판)
     await ev(`import('/src/tune/params.ts').then(m => { ${WATCH ? '' : 'm.P.duel.dprDropMs = 1e9;'} m.P.duel.posture = ${Number(env('POSTURE') || 40)} })`)
     await ev(DUEL_SCENE)
+  } else if (SCENE === 'giant') {
+    await call('Page.navigate', { url: `${ROOT}/raid.html?review&background&stage=${STAGE}&kit=${KIT}` })
+    for (let i = 0; i < 120 && await ev(`!!document.querySelector('button[data-until="0"]')`) !== true; i++) await sleep(250)
+    await raidInstall(GIANT_BUILD, 2500)   // 거대 두목 그림 미리 받기(prewarm*Art)가 끝나게
   } else {
     // 위 창은 스크립트 없는 같은 곳 문서(그림 한 장)로 — 본편처럼 틀 안에서만 판이 돈다
     await call('Page.navigate', { url: `${ROOT}/favicon-32.png` })
@@ -240,15 +273,10 @@ try {
     await evTop(`(() => { document.documentElement.innerHTML = '<head><style>html,body{margin:0;height:100%;overflow:hidden;background:#000}iframe{position:fixed;inset:0;width:100vw;height:100vh;border:0}</style></head><body><iframe src="/raid.html?trial=probe&review&background&kit=${KIT}"></iframe></body>' })()`)
     step('틀 열림')
     for (let i = 0; i < 120 && await evTop(`!!document.querySelector('iframe')?.contentDocument?.querySelector('button[data-until="0"]')`) !== true; i++) await sleep(250)
-    step('검수 단추 보임 · ' + await ev(`location.search + ' · ' + (window.__lock ? '시계 있음' : '시계 없음')`))
-    await ev(`document.querySelector('button[data-until="0"]').click()`)
-    for (let i = 0; i < 240 && await ev(`document.getElementById('play').hidden`) !== false; i++) await sleep(250)
-    step('판 열림')
-    await ev(`[...document.querySelectorAll('.review-tools button')].find(b => b.textContent === '검수 도구 닫기')?.click()`)
-    built = await ev(TRIAL_BUILD)
-    step('판 지음 ' + JSON.stringify(built))
-    await sleep(1500)
-    await ev(TRIAL_SCENE)
+    // 틀은 처음 빈 문서의 창을 물려받아 새 문서에 시계가 안 심길 때가 있다 (빈 문서의 시계가 남아 판이 멈췄다) — 이 문서에 다시 심는다 (이미 이 문서 것이면 그대로)
+    await ev(LOCK)
+    step('검수 단추 보임 · ' + await ev(`location.search + ' · ' + (window.__lock?.doc === document ? '시계 있음' : '시계 없음')`))
+    await raidInstall(TRIAL_BUILD, 1500)
   }
   // 시계를 묶는다 — 걸려 있던 진짜 rAF 하나가 묶인 줄로 들어오게 잠깐 세웠다가 푼다
   await ev(`(() => { const L = window.__lock; L.hold = true; L.on = true })()`)
@@ -270,10 +298,13 @@ try {
   const m0 = await metrics()
   await ev(`window.__lock.hold = false`)
   const t0 = Date.now()
+  let lastN = -1, lastMove = Date.now()
   for (;;) {
     const st = await ev(`(() => { const L = window.__lock, S = window.__scene; return { n: L.n, hold: L.hold, shotNow: L.shotNow ?? null, marks: S.marks, duelAt: S.duelAt ?? 0, over: S.over ?? -1, err: L.err ?? '' } })()`)
     if (st === undefined || st === null) { console.log('  판 창을 못 읽었다'); break }
     if (st.err) { console.log('  손 오류', st.err.slice(0, 300)); break }
+    // 틀이 20초 넘게 안 넘어가면 멈춘 것 — 기다리지 않고 끝낸다
+    if (st.n !== lastN || st.hold) { lastN = st.n; lastMove = Date.now() } else if (Date.now() - lastMove > 20000) { console.log(`  틀이 ${st.n} 에서 멈췄다 (시계가 안 돈다)`); break }
     if (st.n % 100 < 8) step(`틀 ${st.n}`)
     if (profAt.length) {
       const target = profAt[0]!
@@ -342,6 +373,8 @@ try {
     console.log(`fill (screens of ${VW}x${VH}@${DPR}): visible mean ${vis.mean} p95 ${vis.p95} max ${vis.max} · offscreen mean ${off.mean} max ${off.max}`)
     const by = new Map<string, number>(); for (const f of frames as Array<{ by?: Record<string, number> }>) for (const [k, v] of Object.entries(f.by ?? {})) by.set(k, (by.get(k) ?? 0) + v)
     console.log('fill by source (screens/frame): ' + [...by].sort((a, b) => b[1] - a[1]).slice(0, 16).map(([k, v]) => `${k} ${(v / frames.length / screen).toFixed(3)}`).join(' · '))
+    const cnt = new Map<string, number>(); for (const f of frames as Array<{ n?: Record<string, number> }>) for (const [k, v] of Object.entries(f.n ?? {})) cnt.set(k, (cnt.get(k) ?? 0) + v)
+    console.log('draws by source (calls/frame): ' + [...cnt].sort((a, b) => b[1] - a[1]).slice(0, 18).map(([k, v]) => `${k} ${(v / frames.length).toFixed(1)}`).join(' · '))
   }
   if (PROFILE) {
     const { profile } = await call('Profiler.stop')
