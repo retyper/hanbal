@@ -1647,8 +1647,9 @@ export const LANDSCAPE_MAP_CSS = `
   .ap:not(.choosing) .back { right: calc(var(--rail) + env(safe-area-inset-right)); bottom: 0; }
 }
 /* 낮은 가로 화면의 아래 판 (형 11-21: 「너무 좁아 보임」) — 손잡이는 얇게, 장수 목록은 두 줄로, 군대가 둘 이상이면 두 칸,
-   징병은 머리(징병·철 알림·알아서 뽑기)를 한 줄로, 장수 자세히는 얼굴·이름·능력치 왼쪽 · 나머지 오른쪽 */
-@media (orientation: landscape) and (max-height: 600px) {
+   징병은 머리(징병·철 알림·알아서 뽑기)를 한 줄로, 장수 자세히는 얼굴·이름·능력치 왼쪽 · 나머지 오른쪽.
+   폭 900 이상이면 아래 판이 오른쪽 440px 곁판이라(위 min-width: 900px) 두 칸이 비좁다 → 그때는 예전 그대로 */
+@media (orientation: landscape) and (max-height: 600px) and (max-width: 899px) {
   .ap:not(.choosing) .sheet .grip { height: 12px; margin-bottom: 2px; } .ap:not(.choosing) .sheet .grip::after { top: 4px; }
   .ap:not(.choosing) .sheet:is(:has(> .hrow), :has(> .acard ~ .acard)) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 8px; align-content: start; }
   .ap:not(.choosing) .sheet:is(:has(> .hrow), :has(> .acard ~ .acard)) > :not(.hrow, .acard) { grid-column: 1 / -1; }
