@@ -44,7 +44,7 @@ test('새 규칙은 열전 스테이지 판에만 켜지고 판 기록 opts 에 
   const old = createHaebi(7, 'stage', 'axe', { stage: 'forest', simRules: '55-GUMIHO', kitRules: KIT_RULES })
   assert.equal(usesWideMap(old), false); assert.equal('wide' in old, false); assert.equal(normalizedRaidOpts(old, {}).mapRules, undefined)
   // 봇 도구: 기본은 옛 셈 · wide 를 켜야 넓은 맵
-  assert.equal(stageToolOpts('snow', {}).mapRules, undefined); assert.equal(stageToolOpts('snow', {}, undefined, false, true, true).mapRules, MAP_RULES)
+  assert.equal(stageToolOpts('snow', {}).mapRules, undefined); assert.equal(stageToolOpts('snow', {}, undefined, false, true, false, true).mapRules, MAP_RULES)
 })
 
 // 넓은 맵 작업 전(561210dd) 같은 입력으로 잰 판 상태 SHA — 규칙을 안 켠 판은 바이트까지 같다 (봇 걸음 포함)

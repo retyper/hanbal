@@ -8,6 +8,7 @@ import { closestPoint, type Contact, type Shape, type Point } from './giant-core
 import { createGiant, stepGiant, commitGiant, syncGiantPose, giantStruck, endGiant, giantContact as contactOf, giantSweep, giantAimParts, giantHasTarget, giantPart, giantRecoveryHit, giantPoisonFromLastHit, giantName, giantEntrySeconds, giantMidHpScale, giantMaxHp, type GiantKind, type GiantState } from './giant.ts'
 import { HAEBI_AWAKEN_ULT as AC } from '../tune/params.ts'
 import { HAEBI_KITS as K } from '../tune/params.ts'
+import { HAEBI_JACKPOT as JP } from '../tune/params.ts'
 import { initChampion, stepChampion, championDamageScale, championRecover, spawnView, type ChampionHooks, type ChampionPattern, type ChampionState, type SpawnView } from './champion.ts'
 import { HAEBI_PALISADE as WL } from '../tune/params.ts'
 import { createPalisade, damagePiece, piecesHit, tickPalisade, wallAim, wallMove, wallSettle, type Palisade, type WallPiece } from './palisade.ts'
@@ -156,7 +157,10 @@ export type Bonus = Record<Exclude<keyof typeof SH, 'growth'>, number>
 export const NO_BONUS: Bonus = { might: 0, vigor: 0, armor: 0, regen: 0, haste: 0, swift: 0, magnet: 0, wisdom: 0, revive: 0, reroll: 0, greed: 0, luck: 0 }
 /** daze: 진탕격에 맞아 멈춘 남은 시간 · act: 창돌격꾼·범 예고(+)·돌진(−) 시간 · 투창 사냥꾼 겨눔(+) · 방화꾼 다음 불바닥까지 · vx·vy: 돌진·던질 방향 · buff: 무당이 북돋운 남은 시간 */
 export interface Mob { id: number; x: number; y: number; hp: number; max: number; kind: MobKind; cd: number; flash: number; wind: number; aimX: number; aimY: number; act: number; vx: number; vy: number; buff: number; poison: number; pdps: number; daze: number; bornAt?: number; /** 59-WIDE 큰 놈 사냥: 아직 장수 화면에 들어온 적 없는 정예 (그동안 bornAt 을 지금으로 밀어 「빨리 잡기」가 처음 본 때부터 세어진다) */ unseen?: boolean; /** 58-KITS 단검 독 겹 */ stack?: number; phase?: 1 | 2 | 3; pattern?: ChampionPattern | null; patternSeq?: number; recovery?: number; champion?: ChampionState; bossRole?: 'midboss' | 'giant'; giant?: GiantState }
-export interface Chest { id: number; eliteId: number; x: number; y: number; bornAt: number; pickedAt?: number; state: 'ground' | 'opened' | 'claimed' | 'expired'; choicesRemaining: number; gold: number; large: boolean }
+export interface Chest { id: number; eliteId: number; x: number; y: number; bornAt: number; pickedAt?: number; state: 'ground' | 'opened' | 'claimed' | 'expired'; choicesRemaining: number; gold: number; large: boolean;
+  /** 60-JACKPOT: boss = 중간 보스 상자(조합 하나를 고른다) · jackpot = 정예 상자가 터뜨린 것 */ boss?: boolean; jackpot?: ChestJackpot }
+/** 60-JACKPOT 정예 상자가 터뜨린 것 — count 단계(1·3·5·8) · picks 오른 칸(차례대로) · opened 그 가운데 새로 연 조합 · bonus 올릴 칸이 없어 엽전으로 바뀐 금 */
+export interface ChestJackpot { count: number; picks: Pick[]; opened: Combo[]; bonus: number }
 export interface Missile { x: number; y: number; vx: number; vy: number; life: number; kind: 'gale' | 'ember' | 'shard' | 'enemy' | 'arrow' | 'rain' | 'javelin' | 'wave' | 'barrage' | 'stone' | 'flame' | 'knife' | 'soul' | 'hurl' | 'pebble' | 'skip' | 'boulder'; damage: number; radius: number; hit: number[]; angle: number; tx: number; ty: number; gen?: number; source?: number; championShot?: boolean;
   /** 58-KITS: big = 큰 한 방(겨눔 화살 · 셋째 칼 반달 · 모두 꿰뚫음 · 벽력이 튐) · landed = 떨어져 박힌 질풍 도끼 · tick = 박힌 도끼가 다시 치기까지 · ember 의 source = 부적이 붙은 적 */
   big?: boolean; landed?: boolean; tick?: number }
@@ -201,6 +205,8 @@ export interface HaebiRun {
   kits?: KitState;
   /** 59-WIDE 넓은 맵 (opts.mapRules · raid/wide.ts) — 없으면 한 장짜리 옛 판 */
   wide?: WideState;
+  /** 60-JACKPOT 상자 규칙 (opts.chestRules) — 없으면 옛 고르는 상자 · pity 5개 넘게 못 터진 상자 수 · five·eight 이 판에서 터진 5개·8개 · ranks 상자가 올려 준 칸 수 */
+  jackpots?: { pity: number; five: number; eight: number; ranks: number };
 }
 export interface RunInput { x: number; y: number; dash?: boolean; skill?: boolean; wake?: boolean; shortCutin?: boolean; /** 실제 카메라 안 발사자 ID, 0=없음. 생략한 봇·옛 기록은 전체 판. */ barrageSource?: number; viewBounds?: SpawnView }
 export interface CastState { kind: 'ult' | 'wake'; t: number; total: number; tru: boolean; awakened?: boolean; empowered?: boolean; slow?: number; seq?: number }
@@ -210,9 +216,11 @@ export function random(s: HaebiRun) { const rng = makeRng(s.seed); const n = rng
  * awaken remains the fallback qualification alias. Explicit53B, plus default trial/vanguard, preserve timed-awake rules.
  * mastery: 숲·여울·목책을 다 깬 장수 (막대 절반으로 시작)
  */
-export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' | '55-SHAMAN'; /** 58-KITS 무기 개성 — 스테이지 규칙과 따로 켠다 (판 기록 opts 에 그대로 남아 재생도 같다) */ kitRules?: '58-KITS'; /** 59-WIDE 넓은 맵 — 열전 스테이지 판에만 켜진다 (시련·선봉에 넘겨도 한 장짜리 그대로 · 판 기록 opts 에 남아 재생도 같다) */ mapRules?: '59-WIDE' }
+export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' | '55-SHAMAN'; /** 58-KITS 무기 개성 — 스테이지 규칙과 따로 켠다 (판 기록 opts 에 그대로 남아 재생도 같다) */ kitRules?: '58-KITS'; /** 60-JACKPOT 상자 — 정예 상자는 고르지 않고 터지고, 중간 보스 상자는 조합 하나를 고른다 (스테이지 판만 · 판 기록 opts 에 남아 재생도 같다) */ chestRules?: '60-JACKPOT'; /** 59-WIDE 넓은 맵 — 열전 스테이지 판에만 켜진다 (시련·선봉에 넘겨도 한 장짜리 그대로 · 판 기록 opts 에 남아 재생도 같다) */ mapRules?: '59-WIDE' }
 /** 새 판이 쓰는 무기 규칙 */
 export const KIT_RULES = '58-KITS' as const
+/** 새 스테이지 판이 쓰는 상자 규칙 */
+export const CHEST_RULES = '60-JACKPOT' as const
 /** 새 열전 스테이지 판이 쓰는 맵 규칙 */
 export const MAP_RULES = '59-WIDE' as const
 export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit = 'axe', opts: HaebiOpts = {}): HaebiRun {
@@ -239,6 +247,7 @@ export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit
   if (rules === '56C' || rules === '57-BULGASARI') s.palisade = createPalisade()
   if (opts.kitRules === KIT_RULES) s.kits = { still: 0, aim: 0, runAim: 0, runT: 0, swing: 0, sealAt: -1, sealLeft: 0, zones: [], mark: 0, step: 0, stepped: false, focused: false, boltIdle: 0 }
   if (opts.mapRules === MAP_RULES && mode === 'stage' && stage !== 'trial') s.wide = newWide()
+  if (opts.chestRules === CHEST_RULES && mode === 'stage') s.jackpots = { pity: 0, five: 0, eight: 0, ranks: 0 }
   if (mode === 'vanguard') {
     s.level = V.startLevel; s.ranks[k.primary] = 4; s.ranks[k.secondary] = 3; s.ranks.echo = 2; s.ranks.tempo = 1; s.ranks.reach = 1
     s.combos = kitCombos(kit).filter(c => c.kit === kit).map(c => c.id); s.message = '선봉에 서기 · 전위대장 3명을 돌파하라'
@@ -250,13 +259,15 @@ export const usesPermanentAwakening = (s: HaebiRun) => s.permanentAwake !== unde
 export const usesKitRules = (s: HaebiRun) => s.kits !== undefined
 /** 59-WIDE 넓은 맵으로 도는 판 */
 export const usesWideMap = (s: HaebiRun) => s.wide !== undefined
+/** 60-JACKPOT 상자 규칙으로 도는 판 */
+export const usesJackpot = (s: HaebiRun) => s.jackpots !== undefined
 export const usesAwakenedCast = (s: HaebiRun) => s.awakenedCasts !== undefined
 export const castSlow = (c?: CastState | null) => c?.slow ?? U.slow
 export const castWallSeconds = (c?: CastState | null) => c ? c.total / castSlow(c) : 0
 export const isPermanentAwake = (s: HaebiRun) => s.permanentAwake === true
 /** Snapshot external qualification/preferences once; replay never consults current storage. */
 export function normalizedRaidOpts(s: HaebiRun, opts: HaebiOpts): HaebiOpts {
-  return { ...opts, ...(opts.bonus ? { bonus: { ...opts.bonus } } : {}), ...(usesPermanentAwakening(s) ? { simRules: usesGiantBoss(s) ? giantRules(s) : usesPalisade(s) ? '56C' as const : usesAwakenedCast(s) ? '56B' as const : '56A' as const, permanentAwake: isPermanentAwake(s), appearanceAwake: s.appearanceAwake !== false } : {}), ...(usesKitRules(s) ? { kitRules: KIT_RULES } : {}), ...(usesWideMap(s) ? { mapRules: MAP_RULES } : {}) }
+  return { ...opts, ...(opts.bonus ? { bonus: { ...opts.bonus } } : {}), ...(usesPermanentAwakening(s) ? { simRules: usesGiantBoss(s) ? giantRules(s) : usesPalisade(s) ? '56C' as const : usesAwakenedCast(s) ? '56B' as const : '56A' as const, permanentAwake: isPermanentAwake(s), appearanceAwake: s.appearanceAwake !== false } : {}), ...(usesKitRules(s) ? { kitRules: KIT_RULES } : {}), ...(usesJackpot(s) ? { chestRules: CHEST_RULES } : {}), ...(usesWideMap(s) ? { mapRules: MAP_RULES } : {}) }
 }
 /** 이 판의 거대 보스 — 거대 보스 흐름이 선 판은 여울(이무기) · 설원(백두 대호) · 목책 돌파(불가사리) · 숲 산길(구미호) · 불타는 산성(불의 무녀 장군)이라 스테이지로 갈린다 */
 export const giantKind = (s: HaebiRun): GiantKind => s.stage === 'snow' ? 'tiger' : s.stage === 'palisade' ? 'bulgasari' : s.stage === 'forest' ? 'gumiho' : s.stage === 'fortress' ? 'shaman' : 'imugi'
@@ -316,7 +327,8 @@ const cp = (s: HaebiRun, id: Combo) => 1 + (comboRank(s, id) - 1) * T.rankStep
 export const ultUpgraded = (s: HaebiRun) => kitCombos(s.kit).some(c => comboRank(s, c.id) >= T.max)
 /** 레벨업 카드로 나올 수 있는 조합 — 조건이 찼고 아직 T.max 아래 · fresh = 아직 안 연 것 */
 export function comboChoices(s: HaebiRun) {
-  const ready = kitCombos(s.kit).filter(c => comboReady(s, c) && comboRank(s, c.id) < T.max)
+  // 60-JACKPOT: 이미 연 조합은 조건이 안 차도 다음 단계가 나온다 (중간 보스 상자가 조건 없이 열어 준 조합)
+  const ready = kitCombos(s.kit).filter(c => (comboReady(s, c) || s.jackpots !== undefined && comboRank(s, c.id) > 0) && comboRank(s, c.id) < T.max)
   return { fresh: ready.filter(c => !comboRank(s, c.id)).map(c => c.id), more: ready.filter(c => comboRank(s, c.id) > 0).map(c => c.id) }
 }
 /** 레벨업 카드 셋 — 층이 열렸고 끝 단계가 아닌 칸에서 · 조합(금테)은 맨 끝 자리 · 첫 고름은 갈래마다 하나 */
@@ -349,13 +361,39 @@ function powerOffers(s: HaebiRun, pool: Power[]) {
   }
 }
 export function reroll(s: HaebiRun) { if (s.state !== 'playing' || s.choiceOrigin === 'chest' || s.level === 1 || !s.offers.length || s.rerolls <= 0) return false; s.rerolls--; offer(s); return true }
-function chestOffers(s: HaebiRun, chest: Chest) {
+/** 상자가 올리는 차례 — ① 조건이 찬 새 조합 ② 연 조합의 다음 단계 ③ 높은 층 기술부터 (같은 층이면 많이 찍은 갈래) */
+function chestOrder(s: HaebiRun): Pick[] {
   const { fresh, more } = comboChoices(s)
   const powers = kitPowers(s.kit).filter(p => nodeOpen(s, p) && s.ranks[p] < POWERS[p].max).sort((a, b) => {
     const x = nodeAt(s.kit, a)!, y = nodeAt(s.kit, b)!
     return y.tier - x.tier || branchPoints(s, y.branch) - branchPoints(s, x.branch)
   })
-  s.offers = [...fresh, ...more, ...powers].slice(0, 3)
+  return [...fresh, ...more, ...powers]
+}
+/** 60-JACKPOT 이번 상자의 단계 몫 [1개, 3개, 5개, 8개] — 5개 넘게 못 터진 상자마다 5개 몫이 오르고 그만큼 가장 낮은 단계에서 뺀다 (화면의 확률 표와 판의 굴림이 같은 셈) */
+export function jackpotOdds(s: HaebiRun, fast: boolean): [number, number, number, number] {
+  const base = fast ? JP.fast : JP.slow, p8 = base[3], p5 = Math.min(1 - p8, base[2] + (s.jackpots?.pity ?? 0) * JP.pityStep)
+  const rest = Math.max(0, 1 - p8 - p5), p3 = base[0] > 0 ? Math.min(base[1], rest) : rest
+  return [rest - p3, p3, p5, p8]
+}
+/** 60-JACKPOT 정예 상자 — 고르지 않고 터진다. 단계는 판의 시드 난수 한 번, 칸은 chestOrder 의 맨 앞을 하나 올릴 때마다 다시 셈한다. 올릴 칸이 없으면 엽전 */
+function openJackpot(s: HaebiRun, chest: Chest) {
+  const j = s.jackpots!, [p1, , p5, p8] = jackpotOdds(s, chest.large), r = random(s)
+  const count = JP.counts[r < p8 ? 3 : r < p8 + p5 ? 2 : p1 > 0 && r >= 1 - p1 ? 0 : 1]
+  const out: ChestJackpot = { count, picks: [], opened: [], bonus: 0 }
+  for (let i = 0; i < count; i++) {
+    const pick = chestOrder(s)[0], fresh = pick !== undefined && isCombo(pick) && !comboRank(s, pick)
+    if (pick === undefined || !applyPick(s, pick)) { out.bonus += Math.floor(JP.spareGold * ST[s.stage].gold * (1 + s.bonus.greed * SH.greed.step)); continue }
+    out.picks.push(pick); if (fresh) out.opened.push(pick as Combo)
+  }
+  if (count >= JP.counts[2]) { j.pity = 0; if (count >= JP.counts[3]) j.eight++; else j.five++ } else j.pity++
+  j.ranks += out.picks.length; s.chestGold = (s.chestGold ?? 0) + out.bonus
+  chest.jackpot = out; chest.state = 'claimed'; chest.choicesRemaining = 0
+}
+function chestOffers(s: HaebiRun, chest: Chest) {
+  // 60-JACKPOT 중간 보스 상자: 이 묶음의 아직 안 연 조합 셋까지 · 고르면 조건 없이 바로 열린다 (다 열었으면 아래 옛 차례대로 한 단계)
+  const closed = chest.boss ? kitCombos(s.kit).filter(c => !comboRank(s, c.id)).map(c => c.id) : []
+  s.offers = closed.length ? closed.slice(0, 3) : chestOrder(s).slice(0, 3)
   if (!s.offers.length) { chest.state = 'claimed'; chest.choicesRemaining = 0; return false }
   s.choiceOrigin = 'chest'; s.offerNonce = (s.offerNonce ?? 0) + 1
   s.chestChoice = { id: chest.id, left: chest.choicesRemaining, nonce: s.offerNonce }
@@ -370,6 +408,7 @@ function pendingChest(s: HaebiRun) {
 function collectChests(s: HaebiRun) {
   for (const c of s.chests ?? []) if (c.state === 'ground' && Math.hypot(c.x - s.x, c.y - s.y) < CH.chestRadius) {
     c.state = 'opened'; c.pickedAt = s.t; s.chestGold = (s.chestGold ?? 0) + c.gold; s.chestsClaimed = (s.chestsClaimed ?? 0) + 1
+    if (s.jackpots && !c.boss) openJackpot(s, c)
   }
   pendingChest(s)
 }
@@ -380,10 +419,13 @@ export function expireChests(s: HaebiRun) {
   if (usesAwakenedCast(s)) s.ultReleaseSeq = 0
 }
 /** 카드 고르기 — 능력은 한 단계 · 조합은 처음이면 열고(금테) 다시 고르면 단계를 올린다 (자동 개방 없음) */
-function applyPick(s: HaebiRun, key: Pick) {
+function applyPick(s: HaebiRun, key: Pick, force = false) {
   if (isCombo(key)) {
     const c = comboOf(key), rank = comboRank(s, key)
-    if (rank >= T.max || !kitCombos(s.kit).some(x => x.id === key) || !comboReady(s, c)) return false
+    // force = 60-JACKPOT 중간 보스 상자 (조건 없이 연다) · 그렇게 연 조합은 조건이 안 차도 다음 단계를 올린다
+    if (rank >= T.max || !kitCombos(s.kit).some(x => x.id === key) || !(comboReady(s, c) || force && !rank || s.jackpots !== undefined && rank > 0)) return false
+    // 조건 없이 열 때, 그 조합이 얹히는 무기가 아예 없으면 1단계로 같이 준다 (없는 무기 위의 조합은 아무 일도 안 한다)
+    if (force && !rank) for (const p of Object.keys(c.needs) as Power[]) if (!s.ranks[p]) s.ranks[p] = 1
     if (!rank) s.combos.push(key)
     s.comboRanks[key] = rank + 1
     // 옛 규칙 판(기록 재생)은 옛 조합 이름 그대로 알린다 (판 상태가 바뀌지 않게 · old)
@@ -402,7 +444,7 @@ function applyPick(s: HaebiRun, key: Pick) {
 export function choose(s: HaebiRun, key: Pick, nonce?: number) {
   if (s.state !== 'playing' || !s.offers.includes(key) || nonce !== undefined && nonce !== (s.offerNonce ?? 0)) return false
   const chest = s.choiceOrigin === 'chest' ? s.chests?.find(c => c.id === s.chestChoice?.id && c.state === 'opened' && c.choicesRemaining > 0) : null
-  if (s.choiceOrigin === 'chest' && !chest || !chest && s.level >= C.maxLevel || !applyPick(s, key)) return false
+  if (s.choiceOrigin === 'chest' && !chest || !chest && s.level >= C.maxLevel || !applyPick(s, key, chest?.boss === true)) return false
   s.offers = []
   if (chest) {
     chest.choicesRemaining--
@@ -525,7 +567,7 @@ function hit(s: HaebiRun, e: Mob, amount: number, knock = true, origin: { x: num
   if (s.mode === 'stage' && (e.kind === 'elite' || e.bossRole === 'midboss')) {
     const large = e.bornAt !== undefined && s.t - e.bornAt <= CH.fastSeconds
     const gold = Math.floor(G.perElite * ST[s.stage].gold * (1 + s.bonus.greed * SH.greed.step))
-    s.chests!.push({ id: s.nextChestId!++, eliteId: e.id, x: e.x, y: e.y, bornAt: s.t, state: 'ground', choicesRemaining: large ? 2 : 1, gold, large })
+    s.chests!.push({ id: s.nextChestId!++, eliteId: e.id, x: e.x, y: e.y, bornAt: s.t, state: 'ground', choicesRemaining: s.jackpots ? e.bossRole === 'midboss' ? 1 : 0 : large ? 2 : 1, gold, large, ...(s.jackpots && e.bossRole === 'midboss' ? { boss: true } : {}) })
   }
   const value = e.kind === 'boss' ? 100 : e.kind === 'elite' ? 45 : M[e.kind].xp
   // 판 위 기세 알이 끝까지 차면 가장 가까운 알에 보탠다 (그냥 주면 멀리서도 먹힌다)
@@ -1377,7 +1419,8 @@ function herdWide(s: HaebiRun) {
   for (const e of s.enemies) {
     if (e.hp <= 0 || e.giant) continue
     if (e.unseen) { if (inSimView(s, e.x, e.y, WD.seenInset)) delete e.unseen; else e.bornAt = s.t }
-    if (closing) { e.x = Math.max(w.left + ex, Math.min(w.right - ex, e.x)); e.y = Math.max(w.top + et, Math.min(w.bottom - eb, e.y)) }
+    // 지금 땅 안으로 (열려 있을 땐 세계 끝 · 밀려난 적이 세계 밖에 서지 않게 · 닫히는 동안은 고리가 민다)
+    e.x = Math.max(w.left + ex, Math.min(w.right - ex, e.x)); e.y = Math.max(w.top + et, Math.min(w.bottom - eb, e.y))
     if (e.champion || e.kind === 'elite' || e.kind === 'boss' || !strayed(s, e.x, e.y)) continue
     const dx = s.x - e.x, dy = s.y - e.y
     ringSpot(s, Math.abs(dx) * C.height > Math.abs(dy) * C.width ? dx > 0 ? 1 : 0 : dy > 0 ? 3 : 2, random(s), SPOT)

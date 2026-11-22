@@ -1,0 +1,63 @@
+/*
+ * 열전 보물 상자 (60-JACKPOT · raid/chest-show.ts) — 터지는 연출 한 겹 · 중간 보스 상자 카드 · 상자 확률 상자.
+ * 연출 겹은 눌림을 받지 않는다(pointer-events:none): 룬이 날아갈 HUD 칸이 「덮이지 않은 칸」으로 보여야 한다 (pick-fly). 누름은 raid-main 이 판 전체에서 받아 건너뛴다.
+ * 움직이는 것은 작은 것의 transform·opacity 뿐 · 화면 가득한 filter·그라디언트 애니는 없다 (폰 GPU).
+ */
+#chest-show{position:fixed;inset:0;z-index:7;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;--cs-n:#e8c98a}
+#chest-show .cs-dim{position:absolute;inset:0;background:#050d13;opacity:var(--cs-dim)}
+#chest-show.frozen .cs-dim{opacity:calc(var(--cs-dim) + .2)}
+#chest-show .cs-edge{position:absolute;inset:0;box-shadow:inset 0 0 70px 6px var(--cs-c);opacity:0}
+#chest-show .cs-stage{position:relative;width:var(--cs-size);height:var(--cs-size);margin-top:calc(var(--cs-rune)*.7)}
+#chest-show .cs-glow{position:absolute;left:50%;top:50%;width:calc(var(--cs-size)*var(--cs-glow));height:calc(var(--cs-size)*var(--cs-glow));margin:calc(var(--cs-size)*var(--cs-glow)/-2) 0 0 calc(var(--cs-size)*var(--cs-glow)/-2);border-radius:50%;background:radial-gradient(circle,var(--cs-n) 0,transparent 62%);opacity:.18}
+#chest-show.open .cs-glow{background:radial-gradient(circle,#fffbe8 0,var(--cs-c) 22%,transparent 64%);opacity:.72}
+#chest-show .cs-chest{position:relative;display:block;width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
+#chest-show .cs-runes{position:absolute;left:50%;bottom:84%;width:var(--cs-rune);height:var(--cs-rune);margin-left:calc(var(--cs-rune)/-2)}
+#chest-show .cs-r{position:absolute;inset:0;display:grid;place-items:center;padding:4px;border:2px solid var(--c,#a18b5f);border-radius:9px;background:#0d1612f2;box-shadow:0 0 12px color-mix(in srgb,var(--c,#a18b5f) 60%,transparent)}
+#chest-show .cs-r .rune{display:grid;place-items:center;width:100%;height:100%}
+#chest-show .cs-r img{display:block;width:100%;height:100%;object-fit:contain}
+#chest-show .cs-r.combo{border-color:#f2c45a;background:linear-gradient(#3a2c10,#140f06);box-shadow:0 0 0 1px #6b4a14,0 0 16px #f2c45acc}
+#chest-show .cs-row{position:relative;display:flex;flex-wrap:wrap;justify-content:center;gap:5px;min-height:34px;max-width:min(92vw,360px)}
+#chest-show .cs-row .cs-r{position:relative;inset:auto;width:34px;height:34px;padding:2px;border-radius:6px;box-shadow:none}
+/* 엽전 한 알 — 둥근 금빛에 네모 구멍 */
+#chest-show .cs-coin{position:absolute;left:50%;top:38%;margin:-9px 0 0 -9px;border-radius:50%;background:#e9b949;border:2px solid #7a4c0c;box-shadow:inset 0 0 0 1px #ffe9a8}
+#chest-show .cs-coin::after{content:'';position:absolute;left:50%;top:50%;width:34%;height:34%;margin:-17% 0 0 -17%;background:#3a2408}
+/* 「눌러!」 — 연출 위의 하나뿐인 글 · 이것만 눌림을 받는다 */
+#chest-show .cs-push{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:auto;min-width:min(60vw,240px);padding:18px 34px;font:700 clamp(30px,9vmin,54px)/1 var(--display,var(--serif,serif));letter-spacing:.06em;color:#2a1206;background:radial-gradient(circle at 50% 35%,#fff6cf,#ffd36a 55%,#e09a2a);border:4px solid #fff3c8;border-radius:999px;box-shadow:0 0 0 4px #8a5a12,0 0 34px var(--cs-c),0 8px 0 #6b3d0a;animation:cs-push .16s linear infinite}
+#chest-show .cs-push[hidden]{display:none}
+@keyframes cs-push{0%{transform:translate(-50%,-50%) rotate(-2deg)}25%{transform:translate(calc(-50% + var(--cs-push)),calc(-50% - var(--cs-push)*.6)) rotate(2deg)}50%{transform:translate(calc(-50% - var(--cs-push)*.7),calc(-50% + var(--cs-push)*.5)) rotate(-1deg)}75%{transform:translate(calc(-50% + var(--cs-push)*.5),calc(-50% + var(--cs-push)*.7)) rotate(2deg)}100%{transform:translate(-50%,-50%) rotate(-2deg)}}
+@media(prefers-reduced-motion:reduce){#chest-show .cs-push{animation:none}}
+
+/* 중간 보스 상자 — 한 판에 한 번, 조합 하나를 고르는 큰 창 (금테) */
+.panel.upgrade.boss-chest{border:3px solid #f2c45a;box-shadow:0 0 0 1px #6b4a14,0 0 34px #f2c45a88,inset 0 0 40px #f2c45a22,0 20px 80px #000a;background:linear-gradient(145deg,#3a2f17f5,#16130af8)}
+.panel.upgrade.boss-chest h2.lvup{color:#fff3c8;text-shadow:0 0 18px #ffcf6a,0 2px 0 #2a1a08}
+.panel.upgrade.boss-chest .lvup>small{flex-basis:100%;font:600 14px var(--num,system-ui);color:#f6dc9c;white-space:normal}
+.panel.upgrade.boss-chest .chest-open{width:104px;height:104px}
+.panel.upgrade.boss-chest .choices button{box-shadow:0 0 0 1px #6b4a14,inset 0 0 22px #f2c45a66,0 0 22px #f2c45a88}
+/* 큰 화면에서만 룬을 키운다 (폰은 카드 꼴이 달라 그대로 둔다) */
+@media(min-width:701px) and (min-height:601px){.panel.upgrade.boss-chest .choices .rune img{width:clamp(56px,9vmin,84px);height:clamp(56px,9vmin,84px)}}
+@media(orientation:landscape) and (max-height:600px){.panel.upgrade.boss-chest .chest-open{width:52px;height:52px}.panel.upgrade.boss-chest .lvup>small{font-size:12px}}
+@media(orientation:portrait) and (max-width:700px){.panel.upgrade.boss-chest .chest-open{width:64px;height:64px}.panel.upgrade.boss-chest .lvup>small{font-size:12px}}
+
+/* 상자 확률 — 멈춤 창의 단추로 떴다 사라지는 상자 (우리 것은 % · docs/realm/ODDS.md) */
+#chest-odds-box{position:fixed;inset:0;z-index:9;display:flex;align-items:center;justify-content:center;padding:12px;background:#050d13d9}
+#chest-odds-box[hidden]{display:none}
+#chest-odds-box .panel{width:min(100%,520px);padding:18px 20px;text-align:left;display:flex;flex-direction:column;gap:10px;max-height:100%;overflow:auto}
+#chest-odds-box h2{display:flex;align-items:center;gap:8px;margin:0;font-size:22px;color:#ffe3a0}
+#chest-odds-box h2 img{width:36px;height:36px;object-fit:contain;image-rendering:pixelated}
+#chest-odds-box p{margin:0;font-size:13px;line-height:1.55;color:#d9d0b8}
+#chest-odds-box table{width:100%;border-collapse:collapse;font-family:var(--num,system-ui);font-variant-numeric:tabular-nums}
+#chest-odds-box th,#chest-odds-box td{padding:7px 6px;border-bottom:1px solid #6b5a3a88;text-align:center;font-size:15px}
+#chest-odds-box th:first-child,#chest-odds-box td:first-child{text-align:left;font-size:13px;color:#e8dfc7;font-weight:400}
+#chest-odds-box thead th{font-size:13px;font-weight:700}
+#chest-odds-box td.none{color:#8f937f;font-size:12px}
+#chest-odds-box td b{font-weight:700}
+#chest-odds-box .primary{align-self:stretch;height:44px;margin:2px 0 0}
+@media(max-height:420px){#chest-odds-box .panel{padding:10px 16px;gap:6px}#chest-odds-box h2{font-size:18px}#chest-odds-box h2 img{width:26px;height:26px}#chest-odds-box p{font-size:12px;line-height:1.4}#chest-odds-box th,#chest-odds-box td{padding:4px 6px;font-size:14px}#chest-odds-box .primary{height:38px}}
+/* 멈춤 창의 「상자 확률」 단추 — 낮은 화면은 스킬 트리 옆에 나란히 (단추가 하나 늘어도 창이 굴러가지 않게) */
+.panel.pause-panel #chest-odds img{width:24px;height:24px;object-fit:contain;image-rendering:pixelated}
+@media(max-width:600px),(max-height:600px){.pause-actions:has(#chest-odds){grid-template-columns:1fr 1fr}.pause-actions:has(#chest-odds) #quit{grid-column:1/-1}}
+/* 장수 바꾸기 고리의 상자 기록 */
+#shop .rh-jp{display:inline-flex;align-items:center;gap:4px;color:#f6d48a;font-family:var(--num,system-ui)}
+#shop .rh-jp img{width:18px;height:18px;object-fit:contain;image-rendering:pixelated}
+.result-jackpots{margin:4px 0 0;font-size:clamp(13px,2.2vh,16px);color:#f6d48a;font-family:var(--num,system-ui)}
+.result-jackpots img{width:22px;height:22px;object-fit:contain;vertical-align:middle;image-rendering:pixelated}

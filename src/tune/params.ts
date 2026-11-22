@@ -875,6 +875,34 @@ export const HAEBI_CHAMPION = {
   },
 } as const
 
+/**
+ * 60-JACKPOT 상자 (RAID-REWARD-MAP §3-1·3-2 · 형 11-22 「추천대로」 · 다이센카 틀) — 정예 상자는 고르지 않고 터진다.
+ * counts 단계마다 오르는 칸 수 · slow 느리게 잡은 상자의 단계 몫 · fast 빨리 잡은(HAEBI_CHAMPION.fastSeconds 안) 상자의 단계 몫 (counts 와 같은 차례 · 합 1)
+ * pityStep 5개 넘게 못 터진 상자마다 다음 상자의 5개 몫에 더하는 값 (가장 낮은 단계 몫에서 뺀다 · 5개 넘게 터지면 0 으로) · 8개 몫은 그대로
+ * spareGold 올릴 칸이 없어 엽전으로 바뀌는 한 칸 값 (스테이지 금 몫·전리품을 곱한다)
+ * view: 연출 (화면만 · 판의 셈은 멈춰 있다) — seconds 단계마다 길이(초) · colors 단계마다 빛(본편 유물 상자의 흔함·귀함·보배 + 대박 보라)
+ *  enter 상자가 가운데로 오는 초 · enterDrop 떨어져 내리는 높이(px) · shakes 들썩이는 번수 · shakeGap [첫 틈, 끝 틈](초 · 빨라진다) · shakeMs 한 번 들썩이는 길이 · shakePx·shakeDeg 들썩임 · shakeGrow 번마다 커지는 몫
+ *  burstHold 터진 뒤 첫 룬까지 · burstMs·burstPop 터질 때 상자가 튀는 길이·크기 · glowMs 빛이 켜지는 길이 · edgeMs 화면 가장자리 빛(5개부터 · 저사양은 없음)
+ *  runeHold 솟은 룬이 날아가기 전에 머무는 초 · runeMs 솟는 길이 · runeGapMin 룬 사이 가장 짧은 틈 · rowMs 결과 줄에 서는 길이 · tail 끝 여운(초)
+ *  mergeSeconds 새로 연 조합의 재료 룬 둘이 합쳐지는 길이 · mergeFrom 재료가 오는 거리(룬 크기 몫)
+ *  freezeAt 대박이 멎는 들썩임 번호(0부터) · freezeLag 그 들썩임이 시작되고 멎기까지 · pushSeconds 「눌러!」를 안 눌러도 터지는 초 · pushPx 「눌러!」 흔들림(px) · skipGuard 막 열린 뒤 이 초 동안의 누름은 건너뛰기로 안 친다(싸우던 손) · pushGuard 「눌러!」가 뜨고 눌리기까지 · skipHold 건너뛴 뒤 결과를 보여 주는 초 · frameCap 한 틀에 밀리는 가장 긴 초(끊긴 틀에 연출이 건너뛰지 않게)
+ *  coins 단계마다 엽전 알 수 · lowCoins 저사양 몫 · coinSize [작게, 크게]px · coinRise·coinSpread·coinFall 솟는 높이·퍼짐·떨어짐(px) · coinMs [짧게, 길게] · coinWave 한 번에 터지는 알 수(나머지는 coinGap ms 뒤에)
+ *  chest 상자 그림 크기(px · 화면 짧은 변의 chestShare 몫과 견주어 작은 쪽) · glow 빛 지름(상자 크기 몫 · glowLow 저사양) · rune 솟는 룬 크기(px) · dim 판을 덮는 어둠
+ *  소리: drumRate 북이 룬마다 오르는 몫 · drumBase 들썩임 북의 첫 높이 · drumVol·jingleVol·freezeVol 크기 (곡은 raid/sound.ts 의 chest1·chest3·chest5·chest8·chestFreeze 자리 · 형이 고르면 파일만 바꾼다)
+ */
+export const HAEBI_JACKPOT = {
+  counts: [1, 3, 5, 8], slow: [.9, .08, .02, 0], fast: [0, .85, .12, .03], pityStep: .05, spareGold: 25,
+  view: {
+    seconds: [3, 5, 8, 12], colors: ['#e0a85a', '#7ac0ff', '#ffd27a', '#c78bff'],
+    enter: .35, enterDrop: 46, shakes: 3, shakeGap: [.42, .22], shakeMs: 260, shakePx: 7, shakeDeg: 5, shakeGrow: .35,
+    burstHold: .3, burstMs: 320, burstPop: 1.35, glowMs: 420, edgeMs: 900,
+    runeHold: .45, runeMs: 260, runeGapMin: .25, rowMs: 180, tail: .5, mergeSeconds: .6, mergeFrom: 1.3,
+    freezeAt: 2, freezeLag: .1, pushSeconds: 2.5, pushPx: 5, pushGuard: .2, skipGuard: .5, skipHold: .7, frameCap: .25,
+    coins: [6, 14, 28, 48], lowCoins: .35, coinSize: [14, 22], coinRise: 150, coinSpread: 190, coinFall: 120, coinMs: [700, 1150], coinWave: 12, coinGap: 90,
+    chest: 200, chestShare: .46, glow: 2, glowLow: 1.3, rune: 72, dim: .62,
+    drumRate: 1.122, drumBase: .8, drumVol: .5, jingleVol: .6, freezeVol: .5,
+  },
+} as const
 export const HAEBI_TREE = { max: 3, rankStep: .4, upgradeChance: .5, ultDamage: 1.4, ultArea: 1.25, ultCooldown: .8,
   /**
    * 갈래 셋 (11-17 밤 형: 「다 찍을 정도로 레벨 올리는 건 의미 없지 않아? 몇 개만 몰빵하거나 여러 개를 일단 찍거나」 · D2 식).
@@ -3621,6 +3649,11 @@ export const SPEC = {
     recBurstMs: k(650, 200, 1500, 50, '추천 점: 누르면 터지는 금빛 고리·불티가 머무는 시간(ms)', 'ms'),
     // 장수 열전은 장수마다 본편 한 달에 이만큼 (형 11-19 「한 달에 장수들 열전 다 하고 다음 달」 · realm/raid-month.ts · 옛 계절 시계 판은 한 계절에)
     raidPerMonth: k(1, 1, 5, 1, '장수 열전: 본편에서 한 장수가 한 달(턴)에 출전할 수 있는 횟수 · 출전 단추를 눌러 판이 시작될 때 센다'),
+    // 11-22 형 「열전은 한 달에 한 캐릭터만 한 번」 — 장수 전체에서 한 달에 이만큼 (그 한 번은 지도 위 열전 표적 · realm/raid-bounty.ts)
+    raidMonthAll: k(1, 1, 10, 1, '장수 열전: 본편 한 달(턴)에 장수 전체가 출전할 수 있는 횟수 · 그 한 번은 지도 위 열전 표적', '번'),
+    raidBountyGrain: k(120, 0, 2000, 10, '열전 표적을 깨면 곳간에 드는 곡식 (판 크기 realmScale 를 곱함)'),
+    raidBountyIron: k(30, 0, 500, 5, '열전 표적을 깨면 곳간에 드는 쇠 (판 크기 realmScale 를 곱함)'),
+    raidPacifyMonths: k(6, 1, 36, 1, '열전 표적을 깬 고을이 「평정」 깃발을 달고 표적에서 빠지는 달 수', '달'),
     attackWarnWin: k(0.4, 0.1, 0.7, 0.05, '출정 확인 — 보이는 최악 승률이 이 밑이면 「승산이 N%뿐입니다. 그래도 치시겠습니까?」를 한 번 묻는다 (PLAYTEST-1112 TOP 1: 5판 모두 큰 패배로 접었다)'),    idleRecSeasons: k(3, 1, 8, 1, '판을 바꾸는 명령 없이 이만큼 계절이 지나면 추천 딱지를 셋까지 늘려 할 일을 권한다 (PLAYTEST-1112 TOP 2)'),    idleArmyMen: k(400, 100, 2000, 50, '이만큼 이상의 군대가 한 고을에서 idleRecSeasons 계절 놀면 「군사 N명이 놀고 있습니다」를 권한다 (PLAYTEST-1112 TOP 2)'),
     mapAskEveryS: k(10, 4, 40, 1, '지도: 할 일 없는 우리 군대 위 「명령?」이 몇 초마다 한 번 2초쯤 떴다 사라지나 (군대마다 때가 어긋난다)'),
     mapMoraleLow: k(0.8, 0.3, 1.2, 0.05, '지도: 군대 말 밑 사기 막대가 이 밑이면 붉은 주황으로'),

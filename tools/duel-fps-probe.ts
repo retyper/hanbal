@@ -14,6 +14,7 @@
  *  - raid: 독립 열전 처음 판(STAGE=forest) — 첫 레벨업 카드 창(60틀) · 첫 비기 컷인 띠(170틀) · 둘째 카드(400) · 둘째 비기(520) (11-22 · 폰 가로 844x390 으로).
  *          사건마다 그 틀부터 25틀의 가장 긴 틀 간격·16.7ms 넘은 수를 적는다 · RAID_DELAY=틀 로 사건을 늦춘다 · 찍을 땐 CSS 애니를 그 틀 자리에 세운다.
  *  - crowd: 독립 열전(STAGE=forest) 몰려오는 판(UNTIL 초까지 봇이 돌린 판)에서 넓게 네모로 걷는다 — MAP=off 한 장짜리 옛 판 · 기본 59-WIDE 넓은 맵 (넓은 맵 프레임 견주기 · 11-22)
+ *          CHEST=1|3|5|8: 240틀에 그 단계의 보물 상자가 터진다 (60-JACKPOT 연출 · chest 연출이 열리는 틀 · burst 뚜껑이 터지는 틀 · rune 첫 룬이 솟는 틀 · close 걷히는 틀) — 연출이 도는 동안 다른 사건은 쉰다.
  *  - TRACE=1: 렌더러 주 스레드·GPU 의 긴 일(LONG=ms 넘는)을 몇 번째 틀인지와 함께 이름별로 나눈다 (스타일·배치·글자 모양·그림 풀기·칠하기)
  *  - PRE=파일.js: 재기 전에 판 창에서 한 번 돌린다 (가설 견주기)
  *
@@ -42,6 +43,8 @@ const COUNT = env('COUNT') === '1', PROFILE = env('PROFILE') === '1', WATCH = en
 const SHOTS = env('SHOTS'), TAG = env('TAG') || 'now', CMP = env('CMP')
 const QUERY = env('QUERY') || 'me=aryeong&foe=haebi&muMe=5&muFoe=7&tier=2&seed=1'
 const UNTIL = Number(env('UNTIL') || (SCENE === 'crowd' ? 480 : 286)), KIT = env('KIT') || 'bow', STAGE = env('STAGE') || (SCENE === 'raid' || SCENE === 'crowd' ? 'forest' : 'palisade')
+/** 열전 장면에서 터뜨릴 보물 상자 단계 (0 = 없음) */
+const CHEST = [1, 3, 5, 8].includes(Number(env('CHEST'))) ? Number(env('CHEST')) : 0
 const CHROMES = ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe']
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))
 const exe = CHROMES.find((p) => existsSync(p))
@@ -194,7 +197,7 @@ const TRIAL_SHOTS: ReadonlyArray<readonly [string, string, number]> = [['start',
  */
 const RAID_BUILD = `(async () => {
   const H = await import('/src/raid/haebi.ts'), R = await import('/src/raid/haebi-replay.ts')
-  const stage = '${STAGE}', s = H.createHaebi(7, 'stage', '${KIT}', { stage, simRules: H.raidRulesForStage(stage) })
+  const stage = '${STAGE}', s = H.createHaebi(7, 'stage', '${KIT}', { stage, simRules: H.raidRulesForStage(stage)${CHEST ? ', chestRules: H.CHEST_RULES' : ''} })
   for (let n = 0; n < 120 * 8 && s.state === 'playing' && !s.offers.length && s.xp < H.xpNeeded(s) * .6; n++) { H.stepHaebi(s, R.botInput(s), 1 / 120); s.hp = s.maxHp }
   Object.assign(window.__raid(), s); window.__probeH = H
   // 검수 재생은 고를 카드가 없으면 멈춤 창으로 연다 — 계속 싸우기
@@ -212,6 +215,22 @@ const RAID_SCENE = `(() => {
     if (!r || r.state !== 'playing') return
     r.hp = r.maxHp
     const d = ${Number(env('RAID_DELAY') || 0)}   // RAID_DELAY=틀: 사건을 그만큼 늦춘다 (미리 그린 것이 오래 지나도 남아 있나)
+    // CHEST=단계: 240틀에 그 단계의 상자가 「이미 터진 채」 판에 들어온다 → 화면이 그것을 보고 연출을 연다 (진짜 화면 길 · 판의 셈은 그대로)
+    const chest = ${CHEST}, show = window.__chestShow
+    if (chest && n === 240 + d && r.jackpots && !r.offers.length) {
+      const picks = ['cyclone', 'cyclone', 'hone', 'reach', 'capA', 'echo', 'drill', 'thunder'].slice(0, chest)
+      for (const p of picks) { if (p in r.ranks) r.ranks[p]++; else { if (!r.combos.includes(p)) r.combos.push(p); r.comboRanks[p] = (r.comboRanks[p] ?? 0) + 1 } }
+      r.jackpots.ranks += picks.length
+      r.chests.push({ id: 9001, eliteId: 0, x: r.x, y: r.y, bornAt: r.t, pickedAt: r.t, state: 'claimed', choicesRemaining: 0, gold: 0, large: true, jackpot: { count: chest, picks, opened: chest >= 3 ? ['cyclone'] : [], bonus: 0 } })
+      S.marks.chest = n
+    }
+    if (chest && show) {
+      if (show.active && S.marks.burst === undefined && document.querySelector('#chest-show.open')) S.marks.burst = n - 1
+      if (show.active && S.marks.rune === undefined && document.querySelector('#chest-show .cs-runes .cs-r')) S.marks.rune = n - 1
+      if (!show.active && S.marks.chest !== undefined && S.marks.close === undefined && n > S.marks.chest + 2) S.marks.close = n - 1
+      // 연출이 도는 동안 아무 키도 누르지 않는다 (아무 키나 누르면 건너뛴다)
+      if (show.active) { for (const k of S.held) key('keyup', k); S.held = []; return }
+    }
     if (n === 60 + d || n === 400 + d) r.xp = Math.max(r.xp, H.xpNeeded(r))
     if (r.offers.length) {
       if (S.offerAt < 0) { S.offerAt = n; S.offerSeen++; S.marks['offer' + S.offerSeen] = n - 1 }
