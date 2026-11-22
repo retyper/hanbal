@@ -161,7 +161,7 @@ function showSkillCutin(wake = false, tru = false) {
 }
 /**
  * 첫 레벨업 카드 창 · 첫 비기 컷인을 미리 한 번 그려 둔다 (11-22 · raid/warm-dom.ts) — 처음 뜰 때만 비싼 글꼴·글자 모양·그림 풀기·셰이더를 싸움 밖에서 치른다.
- * 카드는 이 묶음의 모든 칸·조합(어떤 카드가 와도 글자가 다 준비되게) · 띠는 비기 · 진 비기 · 투지 · 각성 비기 이름으로 (판에서 쓰는 cutBandHtml 그대로)
+ * 카드는 첫 레벨업에 늘 나오는 셋(보조 · 주 무기 · tempo — haebi.ts offer 의 레벨 1) — 모든 칸을 다 깔면 글꼴 조각이 너무 많이 생겨 뒤 카드 창이 도리어 느려졌다 · 띠는 비기 · 진 비기 · 투지 · 각성 비기 이름으로 (판에서 쓰는 cutBandHtml 그대로)
  */
 const cutinWarmBand = (face: string, title: string, grand: boolean, sub?: string) => cutBandHtml({ art: import.meta.env.BASE_URL + 'realm/', bg: KIT_BG[kit], hero: cutHeroPath(face), endMs: WARM.holdMs, hitMs: WARM.holdMs * .88, title, ...sub === undefined ? {} : { sub }, dim: null, grand })
 /** 처음 쓰는 비기 띠 (보통 비기) */
@@ -173,7 +173,7 @@ function cutinWarmLayers(): WarmLayer[] {
 /** 출전 화면 — 카드 창(화면 전체 · #overlay 와 같은 자리)과 띠(글꼴·셰이더) */
 let firstViewsWarm: boolean | null = null
 function warmFirstViews() {
-  const picks: Pick[] = [...kitPowers(kit), ...kitCombos(kit).map(c => c.id)], o = getComputedStyle($('overlay'))   // 숨은 #overlay 도 꼴은 셈해 둔다 — 같은 여백·막·흐림으로
+  const picks: Pick[] = [K.secondary, K.primary, 'tempo'], o = getComputedStyle($('overlay'))   // 숨은 #overlay 도 꼴은 셈해 둔다 — 같은 여백·막·흐림으로
   warmDom(root, [
     { html: upgradeHtml(undefined, picks, `리롤 · ${run.rerolls}회 남음 · 첫 갈래를 골라 주세요`), style: `display:flex;align-items:center;justify-content:center;overflow:auto;padding:${o.padding};background:${o.backgroundColor};backdrop-filter:${o.backdropFilter}` },
     ...cutinWarmLayers(),

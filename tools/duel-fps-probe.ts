@@ -226,7 +226,7 @@ const RAID_SCENE = `(() => {
   L.tag = () => { const r = window.__raid?.(); return r ? (r.cast ? 2 : 1) : 0 }
 })()`
 /** 열전 찍을 때 — 카드 창은 뜬 뒤 12틀 · 컷인은 띠가 들어온 뒤(8틀)·한가운데(30틀) (CSS 애니는 찍는 틀의 판 시각에 묶는다) */
-const RAID_SHOTS: ReadonlyArray<readonly [string, string, number]> = [['offer1', 'offer1', 12], ['cut1-a', 'cast1', 8], ['cut1-b', 'cast1', 30], ['offer2', 'offer2', 12], ['cut2-b', 'cast2', 30]]
+const RAID_SHOTS: ReadonlyArray<readonly [string, string, number]> = [['offer1', 'offer1', 12], ['cut1-a', 'cast1', 8], ['cut1-b', 'cast1', 30], ['offer2', 'offer2', 12], ['offer3', 'offer3', 12], ['cut2-b', 'cast2', 30]]
 
 function stats(a: number[]): { n: number; p50: number; p95: number; max: number; mean: number } {
   const s = [...a].sort((x, y) => x - y), n = s.length
