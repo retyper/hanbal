@@ -679,6 +679,16 @@ export const HAEBI_SHAMAN = {
 } as const
 
 /**
+ * 64-BREAK 부위 파괴가 느껴지게 (docs/realm/RAID-BOSS-SIEGE-20261123.md §2 · 형 11-23 「그로기도 없고 · 부위보다 보스가 먼저 죽음」) — 거대 보스 다섯 모두.
+ * spill 몸통(체력 칸 없는 조각)에 맞은 피해 가운데 가장 가까운 성한 부위로도 가는 몫 · partScale 부위 체력 배수 · groggy 큰 부위(보스 체력의 majorShare 이상)가 부서진 순간 멈춰 선 초 · groggyMinor 작은 부위 · groggyDamage 그동안 받는 피해 배수
+ */
+export const HAEBI_BREAK = { spill: .4, partScale: .7, groggy: 2.5, groggyMinor: .8, majorShare: .04, groggyDamage: 1.5, crackAt: .3 } as const
+/** 부위 파괴 화면 (raid/fx-break.ts) — 「부위 파괴!」 글자 · 그로기 별 */
+export const HAEBI_BREAK_VIEW = {
+  text: '부위 파괴!', size: 54, stroke: 8, fill: '#ffd34a', edge: '#3a1406', textLife: 1.4, fadeTime: .4, popTime: .12, popScale: 1.9, lift: 90, rise: 26,
+  stars: 4, spin: 4.5, orbit: 46, starSize: 11, star: '#ffe27a', starLift: 40, bodyLift: 160,
+} as const
+/**
  * 55 숲 산길 거대 보스 「구미호」 (docs/realm/BOSS.md 구미호 표 · 성인 여성 · 형: 「섹시한 여성 인간형 보스」) — 규칙 55-GUMIHO 의 숲 산길 판에만 쓴다.
  * 막 1 은 부채를 든 여인 · 막 2 에 반여우로 변하며 꼬리 아홉이 하나씩 터져 나온다 · 막 3 에 아홉 꼬리 지연 찌르기가 열린다.
  * 막·분노·시간 예산·안전로 3P·머리 배율·환경 피해 박자는 HAEBI_GIANT 의 공통 계약을 그대로 쓰고, 여기엔 구미호만의 값만 둔다.

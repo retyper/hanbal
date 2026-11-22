@@ -4,12 +4,12 @@
  * 불가사리(57)만 목책을 넘겨받는다 (등장 길 · 박힘 · 지하 질주 출현).
  */
 import { HAEBI_GIANT as GI, HAEBI_TIGER as TG, HAEBI_BULGASARI as BG, HAEBI_GUMIHO as GM, HAEBI_SHAMAN as SH } from '../tune/params.ts'
-import { pickContact, sweepContact, type Contact, type PartId, type PartPose, type Point, type Shape } from './giant-core.ts'
+import { pickContact, sweepContact, closestPoint, type Contact, type PartId, type PartPose, type Point, type Shape } from './giant-core.ts'
 import { breakImugiPart, commitImugi, createImugi, endImugi, stepImugi, updateImugiPose, type GiantOwner, type ImugiState } from './imugi.ts'
-import { commitTiger, createTiger, damageTigerPart, endTiger, staggerTiger, stepTiger, tigerContact, tigerLiveParts, tigerPoseStale, tigerSweep, updateTigerPose, type TigerPartId, type TigerState } from './tiger.ts'
-import { bulgasariContact, bulgasariLiveParts, bulgasariPoseStale, bulgasariSweep, commitBulgasari, createBulgasari, damageBulgasariPart, endBulgasari, staggerBulgasari, stepBulgasari, updateBulgasariPose, type BulgasariPartId, type BulgasariState } from './bulgasari.ts'
-import { commitGumiho, createGumiho, damageGumihoPart, endGumiho, gumihoContact, gumihoLiveParts, gumihoPoseStale, gumihoSweep, staggerGumiho, stepGumiho, updateGumihoPose, type GumihoPartId, type GumihoState } from './gumiho.ts'
-import { commitShaman, createShaman, damageShamanPart, endShaman, shamanContact, shamanLiveParts, shamanPoseStale, shamanSweep, staggerShaman, stepShaman, updateShamanPose, type ShamanPartId, type ShamanState } from './shaman.ts'
+import { commitTiger, createTiger, damageTigerPart, endTiger, tigerHpOf, staggerTiger, stepTiger, tigerContact, tigerLiveParts, tigerPoseStale, tigerSweep, updateTigerPose, type TigerPartId, type TigerState } from './tiger.ts'
+import { bulgasariContact, bulgasariHpOf, bulgasariLiveParts, bulgasariPoseStale, bulgasariSweep, commitBulgasari, createBulgasari, damageBulgasariPart, endBulgasari, staggerBulgasari, stepBulgasari, updateBulgasariPose, type BulgasariPartId, type BulgasariState } from './bulgasari.ts'
+import { commitGumiho, createGumiho, damageGumihoPart, endGumiho, gumihoHpOf, gumihoContact, gumihoLiveParts, gumihoPoseStale, gumihoSweep, staggerGumiho, stepGumiho, updateGumihoPose, type GumihoPartId, type GumihoState } from './gumiho.ts'
+import { commitShaman, createShaman, damageShamanPart, endShaman, shamanHpOf, shamanContact, shamanLiveParts, shamanPoseStale, shamanSweep, staggerShaman, stepShaman, updateShamanPose, type ShamanPartId, type ShamanState } from './shaman.ts'
 import type { Palisade } from './palisade.ts'
 
 export type GiantState = ImugiState | TigerState | BulgasariState | GumihoState | ShamanState
@@ -33,6 +33,25 @@ export const giantSweep = (g: GiantState, from: Point, to: Point, radius: number
 export const giantAimParts = (g: GiantState): readonly PartPose<string>[] => giantLiveParts(g).filter(p => p.targetable && !p.broken)
 export const giantHasTarget = (g: GiantState) => (g.pose.parts as readonly PartPose<string>[]).some(p => p.targetable && !p.broken)
 export const giantPart = (g: GiantState, id: string): PartPose<string> | undefined => (g.pose.parts as readonly PartPose<string>[]).find(p => p.id === id)
+/** 부위 체력 칸의 이름 (몸통·뿌리처럼 체력 칸이 없는 조각은 null) — 64-BREAK 몸통 피해 번짐 */
+export function giantHpKey(g: GiantState, id: string): string | null {
+  if (g.kind === 'tiger') return tigerHpOf(id as TigerPartId)
+  if (g.kind === 'bulgasari') return bulgasariHpOf(id as BulgasariPartId)
+  if (g.kind === 'gumiho') return gumihoHpOf(id as GumihoPartId)
+  if (g.kind === 'shaman') return shamanHpOf(id as ShamanPartId)
+  return id in g.partHP ? id : null
+}
+/** 맞은 자리에서 가장 가까운, 아직 성한 부위 조각 (없으면 null) */
+export function nearestLiveHpPart(g: GiantState, at: Point): { id: string; d: number } | null {
+  let best: { id: string; d: number } | null = null
+  const hp = g.partHP as Record<string, number>
+  for (const p of g.pose.parts as readonly PartPose<string>[]) {
+    const key = giantHpKey(g, p.id); if (key === null || !(hp[key]! > 0) || !p.visible) continue
+    const q = closestPoint(at, p.collider), d = Math.hypot(q.x - at.x, q.y - at.y)
+    if (!best || d < best.d) best = { id: p.id, d }
+  }
+  return best
+}
 /** 맞은 부위를 깎는다 · 처음 부서지면 true (백두 대호 · 불가사리 · 구미호 · 불의 무녀 장군 · 아파서 포효한다) */
 export function giantStruck(g: GiantState, id: string, amount: number): boolean {
   if (g.kind === 'shaman') return damageShamanPart(g, id as ShamanPartId, amount)

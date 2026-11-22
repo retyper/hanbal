@@ -22,6 +22,7 @@ import { FX_PATHS, drawFx } from './fx-art.ts'
 import { drawImpactParticles } from './fx-particles.ts'
 import { drawHitFlare } from './fx-flare.ts'
 import { trackScorch, drawScorch } from './fx-scorch.ts'
+import { trackBreaks, drawBreakText, drawGroggy } from './fx-break.ts'
 import { HAEBI_HIT_FLARE as HIT_FLARE } from '../tune/params.ts'
 import { HAEBI_FX_ART as FX_ART } from '../tune/params.ts'
 import { CARD_FRAME_PATHS } from './card-skins.ts'
@@ -810,7 +811,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
     if (e === false) { drawPalisade(ctx, images, s, time); continue }
     if (e && 'sprite' in e) { drawWideProp(ctx, images, e, s.x, s.y); continue }
     if (e) {
-      if(e.giant){if(e.giant.kind==='tiger')drawTiger(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else if(e.giant.kind==='bulgasari')drawBulgasari(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else if(e.giant.kind==='gumiho')drawGumiho(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else if(e.giant.kind==='shaman')drawShaman(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else drawImugiParent(ctx,images,e.giant,{bounds:cam?fieldView(cam):{left:0,top:0,right:W,bottom:H},density});continue}
+      if(e.giant){if(e.giant.kind==='tiger')drawTiger(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else if(e.giant.kind==='bulgasari')drawBulgasari(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else if(e.giant.kind==='gumiho')drawGumiho(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else if(e.giant.kind==='shaman')drawShaman(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else drawImugiParent(ctx,images,e.giant,{bounds:cam?fieldView(cam):{left:0,top:0,right:W,bottom:H},density});drawGroggy(ctx, s, e);continue}   // 64-BREAK 그로기 별
       const big = e.kind === 'boss' || e.kind === 'elite', h = mobHeight(e.kind)
       const target = s.mode === 'vanguard' && e.kind === 'boss'
       const wave = ending?.kind === 'victory' && e.kind !== 'boss' ? (ending.elapsed - ending.freeze - Math.hypot(e.x - ending.boss.x, e.y - ending.boss.y) * END.waveDelay) / END.mobFallLife : -1
@@ -1002,6 +1003,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   for(const e of s.enemies)if(e.giant?.kind==='imugi'&&e.giant.attack&&e.giant.state==='strike')drawImugiWater(ctx,e.giant.attack)
   // 피해 숫자 — 알갱이로 튀어 나간다 (trackNumbers · drawNumbers)
   trackNumbers(s); ctx.save(); drawNumbers(ctx, images, s, s.t + (ending?.effectTime ?? 0)); ctx.restore()
+  trackBreaks(s); drawBreakText(ctx, s)   // 64-BREAK 「부위 파괴!」
   drawChampionOverlays(ctx, images, s, mobHeight, cam ? fieldView(cam) : undefined)
   // 여기부터 화면에 붙은 것 — 확대해도 그대로 (흔들림만)
   if (camOn) fieldTransform(ctx, 1, qx, qy)

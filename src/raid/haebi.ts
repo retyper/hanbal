@@ -5,12 +5,12 @@ import { josa } from '../core/josa.ts'
 import { HAEBI_CHAMPION as CH } from '../tune/params.ts'
 import { HAEBI_GIANT as GI } from '../tune/params.ts'
 import { closestPoint, type Contact, type Shape, type Point } from './giant-core.ts'
-import { createGiant, stepGiant, commitGiant, syncGiantPose, giantStruck, endGiant, giantContact as contactOf, giantSweep, giantAimParts, giantHasTarget, giantPart, giantRecoveryHit, giantPoisonFromLastHit, giantName, giantEntrySeconds, giantMidHpScale, giantMaxHp, type GiantKind, type GiantState } from './giant.ts'
+import { createGiant, stepGiant, commitGiant, syncGiantPose, giantStruck, endGiant, giantContact as contactOf, giantHpKey, nearestLiveHpPart, giantSweep, giantAimParts, giantHasTarget, giantPart, giantRecoveryHit, giantPoisonFromLastHit, giantName, giantEntrySeconds, giantMidHpScale, giantMaxHp, type GiantKind, type GiantState } from './giant.ts'
 import { HAEBI_AWAKEN_ULT as AC } from '../tune/params.ts'
 import { HAEBI_KITS as K } from '../tune/params.ts'
 import { HAEBI_JACKPOT as JP } from '../tune/params.ts'
 import { initChampion, stepChampion, championDamageScale, championRecover, spawnView, type ChampionHooks, type ChampionPattern, type ChampionState, type SpawnView } from './champion.ts'
-import { HAEBI_PALISADE as WL } from '../tune/params.ts'
+import { HAEBI_PALISADE as WL, HAEBI_BREAK as BR } from '../tune/params.ts'
 import { createPalisade, damagePiece, piecesHit, tickPalisade, wallAim, wallMove, wallSettle, type Palisade, type WallPiece } from './palisade.ts'
 import { HAEBI_WIDE as WD } from '../tune/params.ts'
 import { solidsFor, pushOutOfSolids, type Solid } from './props.ts'
@@ -173,7 +173,7 @@ export interface KitZone { kind: 'crack' | 'wall'; x: number; y: number; cos: nu
  * sealAt·sealLeft 이번 공격에 더 붙일 부적 · boltIdle 벽력이 준비된 채 기다린 시간 · mark 표식 적(0 = 없음) · step 그림자 걸음 재사용 · stepped 방금 그림자 걸음(다음 찌르기는 등 뒤) · focused 겨눔이 찼다고 알렸나
  */
 export interface KitState { still: number; aim: number; runAim: number; runT: number; swing: number; sealAt: number; sealLeft: number; zones: KitZone[]; mark: number; step: number; stepped: boolean; focused: boolean; boltIdle: number }
-export interface Effect { x: number; y: number; x2: number; y2: number; r: number; angle: number; life: number; total: number; kind: 'hit' | 'slash' | 'blast' | 'bolt' | 'skill' | 'ult' | 'death' | 'spike' | 'thrust' | 'buff' | 'ring' | 'thud'; color: string; mob?: Mob['kind']; face?: number; n?: number; crit?: boolean; ult?: Kit; tru?: boolean; awakened?: boolean; empowered?: boolean; awakenedRelease?: boolean; castSeq?: number; championCue?: 'enter' | 'roar' | 'recovery' | 'quake'; recoveryHit?: boolean }
+export interface Effect { x: number; y: number; x2: number; y2: number; r: number; angle: number; life: number; total: number; kind: 'hit' | 'slash' | 'blast' | 'bolt' | 'skill' | 'ult' | 'death' | 'spike' | 'thrust' | 'buff' | 'ring' | 'thud'; color: string; mob?: Mob['kind']; face?: number; n?: number; crit?: boolean; ult?: Kit; tru?: boolean; awakened?: boolean; empowered?: boolean; awakenedRelease?: boolean; castSeq?: number; championCue?: 'enter' | 'roar' | 'recovery' | 'quake'; recoveryHit?: boolean; /** 64-BREAK 부위가 부서진 순간 (화면이 「부위 파괴!」) */ partBreak?: boolean }
 /** 이어지는 비기(용오름 창의 솟음 · 환영난무의 순간 이동 · 돌벼락의 물결) — 남은 수 n · 다음까지 t 초 · 처음 자리 · 이미 벤 적 · k 힘 몫(되받아치기는 작게) */
 export interface UltState { n: number; t: number; x: number; y: number; used: number[]; k: number }
 export interface Drop { x: number; y: number; value: number; age: number }
@@ -210,6 +210,8 @@ export interface HaebiRun {
   solids?: Solid[];
   /** 62-ANCHOR 장수가 순간이동하지 않는다 (opts.anchorRules) */
   anchored?: boolean;
+  /** 64-BREAK 부위 파괴 규칙 (opts.breakRules) */
+  breakOn?: boolean;
   /** 60-JACKPOT 상자 규칙 (opts.chestRules) — 없으면 옛 고르는 상자 · pity 5개 넘게 못 터진 상자 수 · five·eight 이 판에서 터진 5개·8개 · ranks 상자가 올려 준 칸 수 */
   jackpots?: { pity: number; five: number; eight: number; ranks: number };
 }
@@ -221,7 +223,7 @@ export function random(s: HaebiRun) { const rng = makeRng(s.seed); const n = rng
  * awaken remains the fallback qualification alias. Explicit53B, plus default trial/vanguard, preserve timed-awake rules.
  * mastery: 숲·여울·목책을 다 깬 장수 (막대 절반으로 시작)
  */
-export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' | '55-SHAMAN'; /** 58-KITS 무기 개성 — 스테이지 규칙과 따로 켠다 (판 기록 opts 에 그대로 남아 재생도 같다) */ kitRules?: '58-KITS'; /** 60-JACKPOT 상자 — 정예 상자는 고르지 않고 터지고, 중간 보스 상자는 조합 하나를 고른다 (스테이지 판만 · 판 기록 opts 에 남아 재생도 같다) */ chestRules?: '60-JACKPOT'; /** 59-WIDE 넓은 맵 — 열전 스테이지 판에만 켜진다 (시련·선봉에 넘겨도 한 장짜리 그대로 · 판 기록 opts 에 남아 재생도 같다) */ mapRules?: '59-WIDE'; /** 61-SOLID 넓은 맵의 나무·바위·목책이 장수와 적을 막는다 (무기는 통과 · 59-WIDE 판에서만 · 판 기록 opts 에 남아 재생도 같다) */ blockRules?: '61-SOLID'; /** 62-ANCHOR 장수는 제 발로만 움직인다 — 단검의 그림자 걸음·환영난무가 장수를 순간이동시키지 않는다 (형 11-23 「때리다가 갑자기 순간이동 · 보스전에서 원하지 않는 곳으로」 · 판 기록 opts 에 남는다) */ anchorRules?: '62-ANCHOR' }
+export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' | '55-SHAMAN'; /** 58-KITS 무기 개성 — 스테이지 규칙과 따로 켠다 (판 기록 opts 에 그대로 남아 재생도 같다) */ kitRules?: '58-KITS'; /** 60-JACKPOT 상자 — 정예 상자는 고르지 않고 터지고, 중간 보스 상자는 조합 하나를 고른다 (스테이지 판만 · 판 기록 opts 에 남아 재생도 같다) */ chestRules?: '60-JACKPOT'; /** 59-WIDE 넓은 맵 — 열전 스테이지 판에만 켜진다 (시련·선봉에 넘겨도 한 장짜리 그대로 · 판 기록 opts 에 남아 재생도 같다) */ mapRules?: '59-WIDE'; /** 61-SOLID 넓은 맵의 나무·바위·목책이 장수와 적을 막는다 (무기는 통과 · 59-WIDE 판에서만 · 판 기록 opts 에 남아 재생도 같다) */ blockRules?: '61-SOLID'; /** 62-ANCHOR 장수는 제 발로만 움직인다 — 단검의 그림자 걸음·환영난무가 장수를 순간이동시키지 않는다 (형 11-23 「때리다가 갑자기 순간이동 · 보스전에서 원하지 않는 곳으로」 · 판 기록 opts 에 남는다) */ anchorRules?: '62-ANCHOR'; /** 64-BREAK 부위 파괴가 느껴지게 — 몸통 피해가 가까운 부위로 번지고 · 부위 체력 낮춤 · 부서지면 그로기와 더 큰 피해 (판 기록 opts 에 남는다) */ breakRules?: '64-BREAK' }
 /** 새 판이 쓰는 무기 규칙 */
 export const KIT_RULES = '58-KITS' as const
 /** 새 스테이지 판이 쓰는 상자 규칙 */
@@ -232,6 +234,8 @@ export const MAP_RULES = '59-WIDE' as const
 export const SOLID_RULES = '61-SOLID' as const
 /** 새 판이 쓰는 「순간이동 없음」 규칙 */
 export const ANCHOR_RULES = '62-ANCHOR' as const
+/** 새 판이 쓰는 부위 파괴 규칙 */
+export const BREAK_RULES = '64-BREAK' as const
 export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit = 'axe', opts: HaebiOpts = {}): HaebiRun {
   const bonus = { ...NO_BONUS, ...opts.bonus }, maxHp = C.health + bonus.vigor * SH.vigor.step, stage: StageId = mode === 'trial' ? 'trial' : opts.stage ?? 'forest'
   // 55-IMUGI 는 여울만 · 56C(진짜 목책)는 목책 돌파만 · 55-TIGER(백두 대호)는 설원만 · 57-BULGASARI(진짜 목책 + 불가사리)는 목책 돌파만 · 55-GUMIHO(구미호)는 숲 산길 열전만(각성 시련은 아님) · 55-SHAMAN(불의 무녀 장군)은 불타는 산성만 — 다른 판에 들어오면 56B 그대로
@@ -258,6 +262,7 @@ export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit
   if (opts.mapRules === MAP_RULES && mode === 'stage' && stage !== 'trial') s.wide = newWide()
   if (s.wide && opts.blockRules === SOLID_RULES) s.solids = solidsFor(stage)
   if (opts.anchorRules === ANCHOR_RULES) s.anchored = true
+  if (opts.breakRules === BREAK_RULES) s.breakOn = true
   if (opts.chestRules === CHEST_RULES && mode === 'stage') s.jackpots = { pity: 0, five: 0, eight: 0, ranks: 0 }
   if (mode === 'vanguard') {
     s.level = V.startLevel; s.ranks[k.primary] = 4; s.ranks[k.secondary] = 3; s.ranks.echo = 2; s.ranks.tempo = 1; s.ranks.reach = 1
@@ -560,8 +565,20 @@ function hit(s: HaebiRun, e: Mob, amount: number, knock = true, origin: { x: num
   const crit = !periodic && s.bonus.luck > 0 && random(s) < s.bonus.luck * SH.luck.step
   amount *= guard(e) * (crit ? 2 : 1) * championDamageScale(e, origin)
   if (e.giant && contact) {
+    // 64-BREAK: 부서져 멈춰 선 동안 더 아프다
+    if (s.breakOn && e.daze > 0) amount *= BR.groggyDamage
     // 부위가 처음 부서지면(백두 대호) 아파서 포효한다 — 맞은 자리에 등장·포효와 같은 큰 반응
-    if (giantStruck(e.giant, contact.partId, amount)) { fx(s, 'ring', contact.point.x, contact.point.y, 65, '#e8dcc0'); s.fx[s.fx.length - 1]!.championCue = 'roar' }
+    let brokeId: string | null = giantStruck(e.giant, contact.partId, amount) ? contact.partId : null
+    // 64-BREAK: 몸통(체력 칸 없는 조각)에 맞으면 가장 가까운 성한 부위로도 번진다 — 범위 공격만으로도 부위가 깨진다
+    if (s.breakOn && !periodic && giantHpKey(e.giant, contact.partId) === null) { const near = nearestLiveHpPart(e.giant, contact.point); if (near && giantStruck(e.giant, near.id, amount * BR.spill)) brokeId = near.id }
+    if (brokeId !== null) {
+      fx(s, 'ring', contact.point.x, contact.point.y, 65, '#e8dcc0'); s.fx[s.fx.length - 1]!.championCue = 'roar'
+      if (s.breakOn) {
+        // 큰 부위(머리·팔·다리)는 그로기 · 작은 부위(꼬리 마디 등)는 잠깐 휘청 — 꼬리마다 멈추면 보스가 너무 자주 선다
+        const key = giantHpKey(e.giant, brokeId), max = key === null ? 0 : (e.giant.partMax as Record<string, number>)[key] ?? 0
+        e.daze = Math.max(e.daze, max >= e.max * BR.majorShare ? BR.groggy : BR.groggyMinor); s.fx[s.fx.length - 1]!.partBreak = true
+      }
+    }
     amount *= contact.weakScale
   }
   s.damage += Math.min(e.hp, amount); e.hp -= amount; e.flash = .12
@@ -698,6 +715,7 @@ export function spawnGiant(s: HaebiRun, view?: SpawnView): Mob | undefined {
   const kind = giantKind(s), hp = giantMaxHp(kind), bounds = spawnView(view), e: Mob = { id: s.next++, x: (bounds.left + bounds.right) / 2, y: (bounds.top + bounds.bottom) / 2, hp, max: hp, kind: 'boss', cd: 0, flash: 0, wind: 0, aimX: 0, aimY: 0, act: 0, vx: 0, vy: 0, buff: 0, poison: 0, pdps: 0, daze: 0, bornAt: s.t, bossRole: 'giant' }
   // 불가사리는 목책의 큰 문으로 들어온다 (목책 · 장수 쪽을 넘긴다 · 다른 거대 보스는 쓰지 않는다)
   e.giant = kind === 'bulgasari' ? createGiant(kind, e, Math.round(s.t * 120), s.palisade, s.x) : createGiant(kind, e, Math.round(s.t * 120)); s.enemies.push(e)
+  if (s.breakOn) { const hp = e.giant.partHP as Record<string, number>, max = (e.giant as { partMax?: Record<string, number> }).partMax; for (const k of Object.keys(hp)) { hp[k] = hp[k]! * BR.partScale; if (max && k in max) max[k] = max[k]! * BR.partScale } }
   s.giantFlow.finalSpawned = true; s.giantFlow.finalOwner = e; s.boss = true
   fx(s, 'ring', e.x, e.y, 65, '#e8dcc0'); s.fx[s.fx.length - 1]!.championCue = 'enter'
   return e
