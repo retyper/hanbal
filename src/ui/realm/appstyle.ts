@@ -551,7 +551,7 @@ html.duel-open .ap * { animation-play-state: paused !important; }
 .ap .deeds .dd span { flex: none; color: var(--mute); font-size: 12px; min-width: 4.4em; } .ap .deeds .dd.good { border-color: var(--good); } .ap .deeds .dd.bad { border-color: var(--bad); } .ap .deeds .dd.us { border-color: var(--gold); }
 .ap .deeds .btn { margin-top: 4px; }
 /* 이름 앞 칭호 — 성처럼 읽히지 않게 작고 흐리게 · 이름만 들은 장수 표 */
-.ap .ttl { font-size: .72em; color: var(--mute); font-weight: 500; margin-right: .3em; letter-spacing: -.02em; }
+.ap .ttl { font-size: max(min(12px, 1em), .72em); color: var(--mute); font-weight: 500; margin-right: .3em; letter-spacing: -.02em; }
 .ap .heard { font-size: 11px; color: #c9b98f; border: 1px solid #5a5040; border-radius: 8px; padding: 0 6px; margin-left: 4px; font-weight: 500; white-space: nowrap; }
 .ap .heardp { font-size: 13px; color: #d8c89a; background: #2a2a22; border-left: 3px solid #8a7a50; padding: 6px 8px; border-radius: 6px; }
 .ap .fbtn { border: 0; padding: 0; background: none; cursor: pointer; border-radius: 50%; }
@@ -726,6 +726,19 @@ html.duel-open .ap * { animation-play-state: paused !important; }
 @media (max-height: 520px) and (min-aspect-ratio: 4/3) {
   .ap .mcard.fulld .cardc.story { flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 14px; }
   .ap .mcard.fulld .cardc.story .cimg { flex: none; width: min(46%, calc((100dvh - 120px) * 1.5)); }
+  /* 고르는 단계 — 그림은 물음 곁에 작게, 답은 화면 폭 한 줄에 나란히. 세로로 쌓은 셋은 둘째·셋째 답이 화면 아래로 밀려 굴려야 했다 (형 11-21 가로) */
+  .ap .mcard.fulld .cardc:not(.story) { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 6px 14px; }
+  .ap .mcard.fulld .cardc:not(.story) .cimg { grid-column: 1; grid-row: 1 / span 2; width: auto; height: min(90px, 22dvh); }
+  .ap .mcard.fulld .cardc:not(.story) .cb { display: contents; }
+  .ap .mcard.fulld .cardc:not(.story) .cb > :not(.copts) { grid-column: 2; }
+  .ap .mcard.fulld .cardc:not(.story) .cask { margin: 0; }
+  .ap .mcard.fulld .cardc:not(.story) .copts { grid-column: 1 / -1; }
+  .ap .mcard.fulld .cardc.n3 .copts { grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); grid-template-columns: none; }
+  .ap .mcard.fulld .cardc.n3 .copt { flex-direction: column; text-align: center; }
+  .ap .mcard.fulld .cardc.n3 .copt .cot { align-items: center; }
+  .ap .mcard.fulld .cardc.n3 .copt .cfx { justify-content: center; }
+  .ap .mcard.fulld .cardc .copt, .ap .mcard.fulld .cardc.n3 .copt { min-height: 0; padding: 6px 8px; }
+  .ap .mcard.fulld .cardc .copt .cof, .ap .mcard.fulld .cardc.n3 .copt .cof { width: 44px; height: 44px; }
 }
 .ap .cardc .csub { margin: 8px 0 4px; padding: 12px 14px; min-height: calc(2 * 1.5em + 24px); display: flex; align-items: center; justify-content: center; text-align: center; font-size: 16.5px; line-height: 1.5; color: #fff4dc; background: #0008; border-radius: 10px; animation: csubin .25s ease-out; }
 .ap .cardc .csub.csay { justify-content: flex-start; gap: 12px; text-align: left; padding: 10px 14px 10px 10px; }
@@ -966,7 +979,7 @@ html.duel-open .ap * { animation-play-state: paused !important; }
 .ap .seg.wrap { flex-wrap: wrap; } .ap .seg.wrap button { flex: 1 0 30%; }
 /* 외교의 손 — 보낼 사람 (VICTORY §2-2) */
 .ap .hands { display: flex; align-items: center; gap: 10px; margin: 6px 0 8px; padding: 8px 10px; border-radius: 12px; background: #1f1710; border: 1px solid #6a5236; }
-.ap .hands .hf { display: flex; flex: none; } .ap .hands .hf span { margin-right: -8px; transition: opacity .2s; } .ap .hands .hf span.used { opacity: .3; }
+.ap .hands .hf { display: flex; flex: 0 1 auto; flex-wrap: wrap; gap: 4px 6px; min-width: 0; } .ap .hands .hf span { margin-right: 0; transition: opacity .2s; } .ap .hands .hf span.used { opacity: .3; }
 .ap .hands .hface { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 2px solid #8a7040; background: #3a2c1e; display: block; }
 .ap .hands .ht { display: flex; flex-direction: column; margin-left: 8px; min-width: 0; } .ap .hands .ht b { font-size: 14.5px; } .ap .hands .ht span { font-size: 12px; color: var(--mute); }
 /* 이기는 길 — 정복 · 맹주 (VICTORY §1) */
@@ -1096,7 +1109,7 @@ html.duel-open .ap * { animation-play-state: paused !important; }
 .ap .srow .pin.on { filter: none; border-color: #e0b04a; background: #3a2c14; box-shadow: 0 0 8px #e0b04a66; }
 /* 보낼 사람 줄 — 얼굴 밑에 맡은 일 · 쉬는 이는 「쉰다」 */
 .ap .hands .hf > span { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; vertical-align: top; }
-.ap .hands .hf > span small { font-size: 10.5px; line-height: 1.1; max-width: 64px; text-align: center; color: #9fd18b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ap .hands .hf > span small { font-size: 12px; line-height: 1.15; max-width: 76px; text-align: center; color: #9fd18b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ap .hands .hf > span.used small { color: #e8c88a; }
 /* 누가 가나 — 다른 일을 맡은 이 */
 .ap .wg.off { opacity: .55; filter: grayscale(.6); cursor: default; } .ap .wg .busyw { font-style: normal; font-size: 11px; color: #e8a08a; }
@@ -1632,5 +1645,27 @@ export const LANDSCAPE_MAP_CSS = `
   .ap:not(.choosing) .sheet { right: calc(var(--rail) + env(safe-area-inset-right) + 6px); bottom: env(safe-area-inset-bottom); max-height: calc(100% - var(--toph) - 12px); }
   .ap:not(.choosing) .sheet :is(h3, .grip) { flex-shrink: 0; }
   .ap:not(.choosing) .back { right: calc(var(--rail) + env(safe-area-inset-right)); bottom: 0; }
+}
+/* 낮은 가로 화면의 아래 판 (형 11-21: 「너무 좁아 보임」) — 손잡이는 얇게, 장수 목록은 두 줄로, 군대가 둘 이상이면 두 칸,
+   징병은 머리(징병·철 알림·알아서 뽑기)를 한 줄로, 장수 자세히는 얼굴·이름·능력치 왼쪽 · 나머지 오른쪽.
+   폭 900 이상이면 아래 판이 오른쪽 440px 곁판이라(위 min-width: 900px) 두 칸이 비좁다 → 그때는 예전 그대로 */
+@media (orientation: landscape) and (max-height: 600px) and (max-width: 899px) {
+  .ap:not(.choosing) .sheet .grip { height: 12px; margin-bottom: 2px; } .ap:not(.choosing) .sheet .grip::after { top: 4px; }
+  .ap:not(.choosing) .sheet:is(:has(> .hrow), :has(> .acard ~ .acard)) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 8px; align-content: start; }
+  .ap:not(.choosing) .sheet:is(:has(> .hrow), :has(> .acard ~ .acard)) > :not(.hrow, .acard) { grid-column: 1 / -1; }
+  .ap:not(.choosing) .sheet > .hrow { margin: 3px 0; }
+  .ap:not(.choosing) .sheet:has(> .draftc) { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 8px; align-items: center; align-content: start; }
+  .ap:not(.choosing) .sheet:has(> .draftc) > * { grid-column: 1 / -1; }
+  .ap:not(.choosing) .sheet:has(> .draftc) > .sech { grid-column: 1; margin: 4px 0; }
+  .ap:not(.choosing) .sheet:has(> .draftc) > .banner { grid-column: 2; margin: 4px 0; }
+  .ap:not(.choosing) .sheet:has(> .draftc) > .btns { grid-column: 3; margin: 4px 0; }
+  .ap:not(.choosing) .sheet .hcard { display: flow-root; --hlw: 200px; }
+  .ap:not(.choosing) .sheet .hcard > :is(.hpic, .hn, div.mute, svg, .tr3) { float: left; clear: left; box-sizing: border-box; width: var(--hlw); margin: 0 0 4px; text-align: center; }
+  .ap:not(.choosing) .sheet .hcard > .hpic { width: auto; margin-left: calc((var(--hlw) - 154px) / 2); }
+  .ap:not(.choosing) .sheet .hcard > .hpic.framed { margin-left: calc((var(--hlw) - 178px) / 2); }
+  .ap:not(.choosing) .sheet .hcard > svg { width: 190px; margin-left: calc((var(--hlw) - 190px) / 2); }
+  .ap:not(.choosing) .sheet .hcard > .tr3 { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; }
+  .ap:not(.choosing) .sheet .hcard > :not(.hpic, .hn, div.mute, svg, .tr3) { box-sizing: border-box; width: auto; max-width: none; margin: 0 0 8px calc(var(--hlw) + 14px); }
+  .ap:not(.choosing) .sheet .hcard > .trial-card { margin: 0 0 8px calc(var(--hlw) + 14px) !important; } /* 열전·각성 카드는 글 속 style 로 margin 을 적어 둔다 */
 }
 `

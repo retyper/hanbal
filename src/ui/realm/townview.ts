@@ -500,7 +500,7 @@ export const TOWN_CSS = `
 .ap .tvlot2 .tvsp { grid-area: 1 / 1; width: 100%; height: auto; display: block; }
 .ap .tvlot2 .tvic { grid-area: 1 / 1; width: 34%; height: auto; margin-bottom: 14%; filter: drop-shadow(0 4px 6px #000a); }
 .ap .tvlot2 .tvsc2 { grid-area: 1 / 1; width: 70%; margin-bottom: 8%; opacity: .95; }
-.ap .tvlot2 .tvl { position: absolute; left: 50%; bottom: 0; translate: -50% 50%; z-index: 5; background: #1c1610e8; border: 1px solid #c9a45a; border-radius: 10px; padding: 2px 8px; color: #f3e6c8; font-size: clamp(11px, 1.2cqw + 6px, 14px); white-space: nowrap; }
+.ap .tvlot2 .tvl { position: absolute; left: 50%; bottom: 0; translate: -50% 50%; z-index: 5; background: #1c1610e8; border: 1px solid #c9a45a; border-radius: 10px; padding: 2px 8px; color: #f3e6c8; font-size: clamp(12px, 1.2cqw + 6px, 14px); white-space: nowrap; }
 .ap .tvlot2 .tvl i { font-style: normal; color: #f3d48a; }
 .ap .tvlot2 .tvl .tvpb { display: block; height: 4px; margin: 3px 0 1px; border-radius: 2px; background: #000a; }
 .ap .tvlot2 .tvl .tvpb i { display: block; height: 100%; width: var(--p); border-radius: 2px; background: #f3d48a; }
