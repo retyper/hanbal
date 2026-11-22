@@ -160,7 +160,7 @@ export const HAEBI_WIDE = {
     base: { forest: '#2b3a2a', ford: '#3a4444', palisade: '#4a4133', snow: '#b9c4cc', fortress: '#3b302b', trial: '#2b3a2a' },
     fog: { forest: '#c4d2bd', ford: '#cfe0e6', palisade: '#b9a98c', snow: '#f2f7fb', fortress: '#8a3a1e', trial: '#c4d2bd' },
     fogAlpha: .82, fogEdge: 120, fogPulse: 1.7, fogPulseShare: .12, fogRim: 4, fogRimAlpha: .7, fogFadeIn: .25, camLag: .6,
-    arrow: { inset: 46, top: 150, bottom: 185, size: 20, badge: 30, face: .8, bob: 4, bobRate: 5, max: 6, foe: '#ff5a4a', loot: '#ffd66a', arena: '#fff3d0', rim: '#1a1210' },
+    arrow: { inset: 46, top: 215, bottom: 185, size: 20, badge: 30, face: .8, bob: 4, bobRate: 5, max: 6, foe: '#ff5a4a', loot: '#ffd66a', arena: '#fff3d0', rim: '#1a1210' },
     props: [] as readonly { stage: string; sprite: string; x: number; y: number; height: number }[],
   },
 } as const
