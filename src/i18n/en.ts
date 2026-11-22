@@ -558,6 +558,7 @@ export const en: Partial<Record<Key, string>> = {
   'rep.nextOne': 'Pick one and the next follows · {n} left',
   'rep.nextNews': 'Pick one and this {turn}\'s news follows',
   'rep.quietMonth': 'A quiet month',
+  'tply.skip': 'Tap to skip',
   'rep.decideDone': 'To decide this {turn} · all chosen',
   'rep.quietLine': 'A quiet {turn}.',
   'rep.going': '{army} is on the way: {when}',

@@ -570,6 +570,7 @@ export const ko = {
   'rep.nextOne': '고르면 다음 것이 이어진다 · 남은 {n}',
   'rep.nextNews': '고르면 이 {turn}의 소식이 이어진다',
   'rep.quietMonth': '조용한 달이었다',
+  'tply.skip': '누르면 바로 넘어갑니다',
   'rep.decideDone': '이번 {turn} 정할 것 · 다 골랐다',
   'rep.quietLine': '조용한 {turn|이었다/였다}.',
   'rep.going': '{army|이/가} 가는 중: {when}',

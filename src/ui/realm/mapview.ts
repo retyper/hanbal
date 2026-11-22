@@ -1279,6 +1279,8 @@ export interface MapTarget {
 
 /** 고을 그림의 너비 — 지도 너비의 몫 (CSS .nd width 8.5% 와 같은 값) */
 const ICON_W = 0.085
+/** 고을에 머무는 말 줄(.toks)이 고을 한가운데서 오른쪽으로 비켜 서는 몫 — 지도 너비의 몫 (turnplay 가 걷는 군대를 같은 자리에 세운다) */
+export const tokAnchorDx = (region: RegionId): number => ICON_W * REGION_ART[region].nodeScale * 0.5
 /** 이름 글자 크기 — 지도 높이의 몫 (CSS 2.1cqh 와 같은 값) */
 const LABEL_EM = 0.021
 

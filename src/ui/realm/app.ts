@@ -23,7 +23,7 @@ import { RAID_BANNER_CSS, raidBannerHtml } from './raid-banner.ts'
 import { faceFile, noteAscended } from './face.ts'
 import { aiOrders, strikeLive } from '../../realm/ai.ts'
 import { headcount, strength, type Equip, type UnitKind } from '../../realm/battle.ts'
-import { bustOf, generalSprite, CUSTOM_ICON, FACTION_ART, GOOD_ICON, MIGRANT_ANIM, SEASON_ICON, UNIT_ICON, flagIcon, kidBust, nodeIcon, nodePos, noteGrowing, noteKids } from '../../realm/data/art.ts'
+import { bustOf, generalSprite, CUSTOM_ICON, FACTION_ART, GOOD_ICON, MIGRANT_ANIM, REGION_ART, SEASON_ICON, UNIT_ICON, flagIcon, kidBust, nodeIcon, nodePos, noteGrowing, noteKids } from '../../realm/data/art.ts'
 import { AWAKEN2_LOOP, AWAKEN_ART, AWAKEN_LOOP, loopFile, loopTakes, loopTakes2 } from '../../realm/data/awaken-art.ts'
 import { LOCKED_TRUE_WAKE_PREVIEW, TRUE_WAKE } from '../../realm/data/awaken2.ts'
 import { NATIONS, type NationInfo } from '../../realm/data/nations.ts'
@@ -70,9 +70,11 @@ import { DESTS, DEST_IDS, EXP_SEASONS, destReachable, expAmount, expBlock, expOd
 import { foundable, joinable, partiesOf, partyCost, partyMoves, partyRoute, partySize } from '../../realm/parties.ts'
 import { ascendNeed, canCohabit, canWed, heroJobOf, heroSeen, honeyLeft, idleHeroOrders, together, inheritOf, isRuler, postHero, rulerOf, tieOf, wanderersFor, wedCost, wooable } from '../../realm/heroes.ts'
 import { guardOptions } from '../../realm/council.ts'
-import type { Approach, Army, BuildWhat, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, Party, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic, WooApproach } from '../../realm/types.ts'
+import type { Approach, Army, BuildWhat, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, Party, PlotOp, Ration, Realm, REdge, RegionId, Report, ReportLine, Tactic, WooApproach } from '../../realm/types.ts'
 import { HAEBI_RUN, HAEBI_STAGES, P } from '../../tune/params.ts'
-import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, noReachWhy, visibleNodes, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
+import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, noReachWhy, tokAnchorDx, visibleNodes, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
+import { TURNPLAY_CSS, planTurn, playTurn, type TpItem, type TpLook, type TurnPlayer } from './turnplay.ts'
+import { boardRoutes } from './roadlayout.ts'
 import { LEGACY_CSS, bringHtml, clearBring, loadBring, toggleBring } from './legacy.ts'
 import { HRING_CSS, mountRing, ringCard, ringHtml as heroRingHtml, type RingHandle, type RingOpts } from './hero-ring.ts'
 import { calmMotion, swayCards } from '../fx/sway.ts'
@@ -754,7 +756,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + THREAT_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS.replaceAll('__ART__', ART) + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + BOND_CSS + LEGACY_CSS + HRING_CSS + RAID_BANNER_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + VOLUME_CSS + MEM_CSS + ASCEND_CSS.replaceAll('__ART__', ART) + HILITE_CSS + TOWN_CSS.replaceAll('__ART__', ART) + RISE_CSS + BOOK_CSS + CROWN_CSS + LEAGUE_CSS + WONDER_CSS + recCss() + LANDSCAPE_MAP_CSS
+  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + THREAT_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS.replaceAll('__ART__', ART) + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + BOND_CSS + LEGACY_CSS + HRING_CSS + RAID_BANNER_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + VOLUME_CSS + MEM_CSS + ASCEND_CSS.replaceAll('__ART__', ART) + HILITE_CSS + TOWN_CSS.replaceAll('__ART__', ART) + RISE_CSS + BOOK_CSS + CROWN_CSS + LEAGUE_CSS + WONDER_CSS + recCss() + LANDSCAPE_MAP_CSS + TURNPLAY_CSS
   document.head.appendChild(style)
   root.classList.add('ap')
   // 그래픽 단계 저사양 · 보통 · 고사양 (quality.ts · 형 10-29: 폰 절전 모드에서 그림이 다 깨졌다)
@@ -854,6 +856,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let fresh = new Set<string>()
   let report: Report | null = null
   let showReport = false
+  /** 「다음 달」 지도 연출 (turnplay.ts) — 도는 동안 보고판은 기다린다 · 지도에서 이미 보여 준 줄은 보고판이 다시 적지 않는다 */
+  let tp: TurnPlayer | null = null
+  let tpShown: ReadonlySet<ReportLine> = new Set()
+  /** 방금 지도 연출을 마쳤다 — 보고판이 계절 띠를 기다리는 늦춤(.late)을 또 걸지 않는다 */
+  let tpJust = false
   /** 판 바깥의 화면 — 처음엔 첫 화면 */
   let front: Front | null = { kind: 'title' }
   /** 옛 무덤 — 고른 상자가 떨리는 중 (그동안 다른 누름은 먹지 않는다) */
@@ -5880,7 +5887,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     root.querySelector('.tabtoast')?.remove()
     root.insertAdjacentHTML('beforeend', `<div class="tabtoast"><b>${tr('tab.unlocked', { name: esc(name) })}</b><span>${esc(line)}</span></div>`)
     const el = root.querySelector<HTMLElement>('.tabtoast')!
-    const gone = (): void => { el.remove(); if (newTab !== '') { newTab = ''; paint() } }
+    // 지도 연출 중이면 다시 그리기는 연출 끝(onEnd 의 paint)에 맡긴다 — 한가운데서 판 전체를 다시 그리면 걷는 군대가 끊겼다
+    const gone = (): void => { el.remove(); if (newTab !== '') { newTab = ''; if (tp === null) paint() } }
     el.addEventListener('click', gone)
     window.setTimeout(gone, TAB_TOAST_MS)
   }
@@ -6477,6 +6485,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       return endingHtml(KIT, r, host.history(), opened + badge + endBondsHtml(DEX_KIT, r) + tombStripHtml(RELIC_KIT, r) + drillStrip(r), `${epi}<p class="mute retainnote">${tr('rep.retain')}</p><p class="retainnote"><button class="btn ghost sm" data-act="export">${tr('more.export')}</button></p>`)
     }
     if (!showReport || before === null || report === null) return ''
+    if (tp !== null) return '' // 지도 연출이 도는 동안은 기다린다 — 끝나면 다시 그린다 (turnplay.ts)
     const season = seasonOf(r)
     // 우리가 낀 싸움은 카드로 한 판씩 풀어 보이고, 글 줄에서는 뺀다
     // 전장에서 직접 본 싸움은 다시 적지 않는다 — 결과·옥·획득에 이어 소식판이 같은 싸움을 세 번째로 적었다 (긴급 위원회 11-04)
@@ -6490,7 +6499,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const onUs = report.lines.filter((l): l is Rel => isWar(l) && (l.a === me() || l.b === me()) && l.by !== undefined && l.by !== me() && heard(l))
     const between = report.lines.filter((l): l is Rel => isWar(l) && l.a !== me() && l.b !== me() && heard(l))
     const lines = report.lines
-      .filter((l, i) => cards[i] === '' && heard(l) && !onUs.includes(l as Rel) && !between.includes(l as Rel))
+      // 지도 연출에서 이미 보인 줄(걸어서 닿음 · 거둔 것 · 새 군사 …)은 다시 적지 않는다 — 보고판은 짧게, 답할 것과 싸움 카드는 그대로
+      .filter((l, i) => cards[i] === '' && heard(l) && !onUs.includes(l as Rel) && !between.includes(l as Rel) && !(l.kind !== 'battle' && tpShown.has(l)))
       .map((l) => ({ l, x: reportText(before!, r, l, me()) }))
       .filter((y): y is { l: ReportLine; x: string } => y.x !== null)
     // 차례 — 나라가 무너졌으면 그것부터, 그다음 싸움 카드, 그다음 소식이 한 줄씩 올라와 쌓인다
@@ -6523,7 +6533,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 달 시계의 조용한 달 — 빈 보고 판을 띄우지 않고 지도 위 한 줄로 (FOCUS (I) 초반은 빨리 넘어가야 · 한 계절에 세 번 누르는데 빈 판을 세 번 닫게 하지 않는다)
     if (monthly(r) && decide === '' && cards.every((c) => c === '') && onUs.length === 0 && between.length === 0 && lines.length === 0 && fallen(before, r).length === 0 && sceneOf(before, r, report) === '') {
       showReport = false
-      window.setTimeout(() => goToast(`<b>${esc(seasonLabel(r))}</b> ${tr('rep.quietMonth')}`), 0)
+      // 지도에서 다 보여 준 달이면 「조용한 달」이라 하지 않는다 — 그냥 지도로
+      if (tpShown.size === 0) window.setTimeout(() => goToast(`<b>${esc(seasonLabel(r))}</b> ${tr('rep.quietMonth')}`), 0)
       return ''
     }
     let h = `<div class="mcard" data-act="rep-fast"><div class="mt">${icon(SEASON_ICON[season], 'sic')}<b>${esc(seasonLabel(r))}</b><span>${esc(SEASON_LINE[season])}</span></div>`
@@ -7558,7 +7569,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const r = realm
     if (r === null || front !== null || r.region === 'tutorial' || r.outcome || warOn || document.visibilityState !== 'visible' || root.querySelector('.thw') !== null) return
     // 보고판·큰 장면·전장·회의·담판·마을 안 · 처음 한 번 알림이 떠 있으면 걷힌 뒤 다시 본다 (두 상자가 한꺼번에 뜨지 않게)
-    if (root.classList.contains('modal-open') || root.querySelector('.cere, .ascfx, .gnpop, .wr, .stov, .dpov, .townov, .fhint') !== null) { threatTimer = window.setTimeout(threatCheck, P.realm.firstHintDelayMs); return }
+    if (root.classList.contains('modal-open') || root.classList.contains('tply-on') || root.querySelector('.cere, .ascfx, .gnpop, .wr, .stov, .dpov, .townov, .fhint') !== null) { threatTimer = window.setTimeout(threatCheck, P.realm.firstHintDelayMs); return }
     const vis = visibleNodes(r, me())
     const busy = new Set(ordersNow().flatMap((o) => ('army' in o && typeof o.army === 'string' ? [o.army] : [])))
     const key = (x: { to: string; foe: string }): string => `${r.seed}|${r.season}|${x.to}|${x.foe}`
@@ -7609,7 +7620,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 배우는 판은 제 띠가 가르친다 · 큰 장면·전장·회의·담판 위에는 띄우지 않는다 · 숨은 탭에서는 쉰다 (절대 규칙 4)
     if (realm === null || realm.region === 'tutorial' || warOn || firstOn !== null || document.visibilityState !== 'visible' || FIRSTS.every((f) => firstsSeen.has(f.id))) return
     // 가려 있으면 걷힌 뒤 다시 본다 — 보고판이 떠 있는 채 판을 열면 그 뒤로 다시 그리지 않아 놓쳤다
-    if (root.classList.contains('modal-open') || root.querySelector('.cere, .ascfx, .gnpop, .wr, .stov, .dpov, .thw') !== null) { firstTimer = window.setTimeout(firstCheck, P.realm.firstHintDelayMs); return }
+    if (root.classList.contains('modal-open') || root.classList.contains('tply-on') || root.querySelector('.cere, .ascfx, .gnpop, .wr, .stov, .dpov, .thw') !== null) { firstTimer = window.setTimeout(firstCheck, P.realm.firstHintDelayMs); return }
     const f = nextFirst(firstsSeen, (s) => firstEl(s) !== null, realm.season)
     if (f === null) {
       // 그려져 있는데 아직 안 보이면(판이 미끄러지는 중 · 굴려야 보이는 자리) 보일 때까지 · 아니면 몇 번만 더 (때가 안 된 것은 기다리지 않는다)
@@ -7765,7 +7776,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       // 다음 계절 바탕을 미리 — 계절이 넘어갈 때 새 그림을 그제야 받느라 깜빡였다 (형 10-23). 그린 뒤 한숨 돌리고
       const rg = r.region ?? 'byeonhan-mini'
       const next = seasonOf(r, r.season + 1)
-      window.setTimeout(() => warmNextSeason(ART, rg, next), WARM_MS)
+      // 「다음 달」 지도 연출 중이면 그 뒤로 — 큰 그림을 푸느라 걷는 군대가 끊겼다 (폰 4배 느림 180ms · turnplay.ts)
+      const warm = (): void => { if (tp !== null) { window.setTimeout(warm, WARM_MS); return } warmNextSeason(ART, rg, next) }
+      window.setTimeout(warm, WARM_MS)
     }
     // 둘레 단추 — 지도 판 안에 (끌고 당기면 고을과 함께 간다). 지도를 다시 깔지 않고 이것만 갈아 끼운다 · 새 고을을 열 때만 퐁
     const rh = ring !== '' ? ringHtml(r) : ''
@@ -7783,6 +7796,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     lastMapRing = mh
     lastRing = rh
     lastRingId = ring
+    tp?.attach(mapEl) // 지도를 고쳐 깔면 연출 층이 빠진다 — 다시 붙인다 (turnplay.ts)
     zoom.apply(first ? undefined : keep)
     paintMapCanvas(wrap) // 땅·길·안개 캔버스 — 판이 바뀌었을 때만 다시 그린다
     // 이름표 비키기를 다음 프레임으로 미루면 한 프레임은 겹친 채 보였다가 튄다 — 곧바로
@@ -7879,7 +7893,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       box.classList.toggle('fast', fastNext)
       // 새 계절의 보고는 계절 띠가 걷힌 뒤에 (형: "계절먼저 넘어가게 보이고 그다음에 천천히 다음꺼 띄워줘라")
-      box.classList.toggle('late', !fastNext)
+      // 지도 연출을 막 마쳤으면 계절 띠는 이미 걷혔다 — 띠가 아직 떠 있을 때만 기다린다
+      box.classList.toggle('late', !fastNext && (!tpJust || root.querySelector('.seasonfx') !== null))
       const card = box.querySelector('.mcard')
       if (card !== null && fastNext) card.scrollTop = keepScroll
     }
@@ -8006,6 +8021,106 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     window.setTimeout(tick, 400)
   }
 
+  // ───────── 「다음 달」 지도 연출 (turnplay.ts · 형 11-22: "본게임이 너무 정적 · 인스턴트 먹다가 풀 뜯어먹는 기분")
+  /** 이번 달을 지도에서 펼칠까 — 끈 설정 · 숨은 탭 · 판 끝 화면 · 지도가 없는 화면이면 곧장 보고 */
+  function turnPlayOk(next: Realm): boolean {
+    if (P.realm.turnPlayback < 0.5 || document.visibilityState !== 'visible' || front !== null || prologue !== null) return false
+    if (next.outcome && !next.endless) return false
+    return root.querySelector('.mapwrap .map') !== null
+  }
+  /** 걷는 군대의 생김 — 지도 말과 같은 그림띠 (우리 군대는 이끄는 장수의 띠 · 모르는 적은 병사 띠) · 그 나라 군기 빛 */
+  function tpLook(a: Army, r: Realm): TpLook {
+    const known = a.faction === me() || foeKnown(r, a)
+    const kinds = (Object.entries(a.mix) as Array<[UnitKind, number]>).filter(([, v]) => v > 0).sort((x, y) => y[1] - x[1]).map(([k]) => k)
+    const hero = known && a.hero !== null ? r.heroes[a.hero] : undefined
+    const k = nationKit(a.faction)
+    return { squad: mapSquad(known ? kinds : [], hero, ART), c: k.c, c2: k.c2 }
+  }
+  /** 우리가 거둔 것 한 줄 → 어느 고을 위에 무엇을 (철광·포구는 지도의 「+n」 표를 그 박자에) */
+  function tpGoods(r: Realm, l: ReportLine, fought: ReadonlySet<string>): { node: string; items: TpItem[]; haul?: boolean } | null {
+    const cap = r.factions[me()]?.capital
+    switch (l.kind) {
+      case 'haul': return l.faction === me() ? { node: l.node, items: [], haul: true } : null
+      case 'harvest': return l.faction === me() && cap !== undefined && l.grain >= 1 ? { node: cap, items: [{ icon: GOOD_ICON.grain, n: Math.round(l.grain) }] } : null
+      case 'market': return (l.a === me() || l.b === me()) && cap !== undefined && l.grain >= 1 ? { node: cap, items: [{ icon: GOOD_ICON.grain, n: Math.round(l.grain) }] } : null
+      case 'draft': return l.faction === me() && l.n > 0 ? { node: l.node, items: [{ icon: UNIT_ICON[l.unit], n: l.n }] } : null
+      case 'settle': return l.faction === me() && l.n > 0 ? { node: l.to, items: [{ icon: 'unit-porters', n: l.n }] } : null
+      case 'take': return l.faction === me() && !fought.has(l.node) ? { node: l.node, items: [{ icon: flagIcon(me()) ?? 'settle-besieged', n: 0 }] } : null
+      default: return null
+    }
+  }
+  /** 우리 고을로 오는 보인 적 · 우리 고을을 칠 채비를 한 적 — 그 고을들 */
+  function tpThreatened(r: Realm): Set<string> {
+    const vis = visibleNodes(r, me())
+    const out = new Set<string>()
+    for (const a of seenMarches(r, me())) if (a.march !== null && a.lent?.to !== me() && r.nodes[a.march.to]?.owner === me()) out.add(a.march.to)
+    for (const a of Object.values(r.armies)) if (a.faction !== me() && a.strike !== undefined && strikeLive(r, a) && r.nodes[a.strike.node]?.owner === me() && vis.has(a.at)) out.add(a.strike.node)
+    return out
+  }
+  /** 지도는 이미 새 판으로 그려졌다 — 그 위에서 지난 한 달을 펼치고, 끝나면 보고판 (판은 읽기만) */
+  function startTurnPlay(prev: Realm, next: Realm, rep: Report, band: boolean, afterPlay: () => void): void {
+    // 싸움을 맡겨 빨리 끝냈으면 그 싸움의 여는 장면(.wopen)이 아직 지도를 덮고 있다 — 싸움은 끝났으니 걷는다 (누르면 스스로 걷힌다)
+    root.querySelector<HTMLElement>('.wopen')?.click()
+    const region = next.region ?? 'byeonhan-mini'
+    const { w: W, h: H } = REGION_ART[region]
+    const routes = boardRoutes(next)
+    const edges = new Map<string, REdge>()
+    for (const ed of [...Object.values(prev.edges), ...Object.values(next.edges)]) { edges.set(`${ed.a}|${ed.b}`, ed); edges.set(`${ed.b}|${ed.a}`, ed) }
+    const visA = visibleNodes(next, me())
+    const visB = visibleNodes(prev, me())
+    const seen = (n: string): boolean => visA.has(n) || visB.has(n)
+    const heard = (l: ReportLine): boolean => next.known === undefined || Object.values(l).every((v) => typeof v !== 'string' || next.factions[v] === undefined || met(next, me(), v))
+    const foes = new Set<string>()
+    for (const a of [...seenMarches(next, me()), ...seenScoutedStationary(next, me()), ...seenMarches(prev, me())]) if (a.lent?.to !== me()) foes.add(a.id)
+    for (const l of rep.lines) {
+      if (l.kind !== 'battle' || !seen(l.node) || !heard(l)) continue
+      for (const id of [l.attacker, ...l.allies]) { const a = next.armies[id] ?? prev.armies[id]; if (a !== undefined && a.faction !== me()) foes.add(id) }
+    }
+    const fought = new Set(rep.lines.flatMap((l) => (l.kind === 'battle' ? [l.node] : [])))
+    const was = tpThreatened(prev)
+    let plan
+    try {
+      plan = planTurn({
+        before: prev, after: next, lines: rep.lines, me: me(), seen, heard, foes, look: tpLook,
+        geo: {
+          pos: (id) => nodePos(region, id),
+          route: (a, b) => {
+            const ed = edges.get(`${a}|${b}`)
+            const pts = ed !== undefined ? routes.get(ed.id) : undefined
+            if (ed === undefined) return null // 길이 없으면 곧게 (turnplay 가 그린다)
+            if (pts === undefined || pts.length < 2) { const p = nodePos(region, a); const q = nodePos(region, b); return p !== undefined && q !== undefined ? [p, q] : null }
+            const f = pts.map(([x, y]) => [x / W, y / H] as const)
+            return ed.a === a ? f : f.reverse()
+          },
+        },
+        goods: (l) => tpGoods(next, l, fought),
+        threats: [...tpThreatened(next)].filter((n) => !was.has(n)).sort(),
+      })
+    } catch (e) {
+      // 연출이 막혀도 달은 넘어갔다 — 기록만 남기고 곧장 보고
+      failNote(e)
+      tp = null
+      afterPlay()
+      paint()
+      return
+    }
+    const still = root.classList.contains('q-low') || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
+    const p = playTurn(plan, {
+      root, art: ART, tokDx: tokAnchorDx(region), short: still,
+      lead: band ? P.realm.tpSeasonLeadMs : P.realm.tpLeadMs / Math.max(0.1, P.realm.tpSpeed),
+      hint: tr('tply.skip'),
+      sound: (what, vol) => { if (document.visibilityState === 'visible') ding(snd(what === 'clash' ? 'battle_clash' : 'tap_coin'), vol) },
+      onEnd: (shown) => {
+        tpShown = shown
+        tp = null
+        tpJust = true
+        afterPlay()
+        paint()
+      },
+    })
+    if (p.active()) tp = p
+  }
+
   /** 계절을 넘긴다 — 우리 명령(전장의 명령 줄 포함) + AI 명령. 막히면 까닭을 띄운다 */
   /** 마지막으로 달을 넘긴 때 (performance.now) — 그 뒤 nextLockMs 동안 「다음 달」 누름은 버린다 */
   let nextDoneAt = -Infinity
@@ -8019,11 +8134,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       failNote(e)
       return
     }
+    tp?.finish() // 앞 달 연출이 아직 돌고 있으면 끝 상태로 (보통은 누름이 먼저 끝낸다)
     resetTurn()
     sheet = null
     before = prev
     report = res.report
     showReport = true
+    tpShown = new Set()
+    tpJust = false
     realm = res.next
     if (prev.region !== 'tutorial') res.next.idle = nextIdle(prev, mine, me(), prev.idle) // 놀고 있는 계절 셈 — 추천 딱지가 쓴다 (PLAYTEST-1112 TOP 2)
     fresh = new Set(knownOf(res.next, me()).filter((f) => met(res.next, me(), f) && !met(prev, me(), f))) // 소개된 나라만 (discovery.stepMeet)
@@ -8032,24 +8150,36 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 판을 이기면 다음 판이 열린다 (unlock.ts)
     if (res.next.outcome?.kind === 'win' && prev.outcome == null) markWon(res.next.region ?? 'byeonhan-mini', res.next.tier ?? 1, me())
     host.onAdvance(res.next, res.report, all, mine)
-    dexToast(recordDex(res.next))
+    const dex = recordDex(res.next)
     engraveNow(res.next) // 판이 끝났다 — 이기든 지든 장수마다 공을 판 밖 단련 공으로 (drill.ts)
-    backToast(backNotes(prev, res.next, mine))
-    doneToast(res.next, res.report.lines)
-    leagueToast(res.next, res.report.lines) // 합종이 섰다·칼을 뽑았다·깼다 (승리가 가깝다는 알림이 있으면 그것이 덮는다)
-    nearWinToast(prev, res.next)
-    crownQueue = newCrowns(prev, res.next, me())
-    diploToast(prev, res.next)
-    queueAscend(res.next, res.report.lines)
-    if (isSeasonStart(res.next)) seasonFx(res.next) // 계절이 바뀔 때만 (달 시계면 계절의 첫 달)
+    const backs = backNotes(prev, res.next, mine)
+    const crowns = newCrowns(prev, res.next, me())
+    const band = isSeasonStart(res.next)
+    if (band) seasonFx(res.next) // 계절이 바뀔 때만 (달 시계면 계절의 첫 달)
     noteFaces(res.next) // 갓 난 아이 얼굴 — 보고·장면·장수 판 어디서나 (형 10-23: "하늬도 이미지가 없어 보이네 애기 태어날 때")
-    ceremonyFx(prev, res.next, res.report)
-    // 우리가 낀 싸움이면 북, 아니면 이 계절 머리 장면의 소리 (혼인·아이·동맹…) — 종이 잦아든 뒤
-    const ourWar = res.report.lines.some((l) => l.kind === 'battle' && (l.atkFaction === me() || l.defender === me()))
-    const ev = /event\/([\w-]+)\.jpg/.exec(sceneOf(prev, res.next, res.report))?.[1]
-    const cue = ourWar ? 'war_drums' : ev !== undefined ? SCENE_SOUND[ev] : undefined
-    if (cue !== undefined) window.setTimeout(() => { if (document.visibilityState === 'visible') ding(snd(cue), 0.4) }, SCENE_CUE_MS)
+    // 알림 · 큰 장면 · 머리 장면 소리 — 지도 연출이 끝난 뒤에 (연출 위를 덮지 않게 · 형 11-22 "본게임이 너무 정적")
+    const afterPlay = (): void => {
+      dexToast(dex)
+      backToast(backs)
+      doneToast(res.next, res.report.lines)
+      leagueToast(res.next, res.report.lines) // 합종이 섰다·칼을 뽑았다·깼다 (승리가 가깝다는 알림이 있으면 그것이 덮는다)
+      nearWinToast(prev, res.next)
+      crownQueue = crowns
+      diploToast(prev, res.next)
+      queueAscend(res.next, res.report.lines)
+      ceremonyFx(prev, res.next, res.report)
+      // 우리가 낀 싸움이면 북, 아니면 이 계절 머리 장면의 소리 (혼인·아이·동맹…) — 종이 잦아든 뒤
+      const ourWar = res.report.lines.some((l) => l.kind === 'battle' && (l.atkFaction === me() || l.defender === me()))
+      const ev = /event\/([\w-]+)\.jpg/.exec(sceneOf(prev, res.next, res.report))?.[1]
+      const cue = ourWar ? 'war_drums' : ev !== undefined ? SCENE_SOUND[ev] : undefined
+      if (cue !== undefined) window.setTimeout(() => { if (document.visibilityState === 'visible') ding(snd(cue), 0.4) }, SCENE_CUE_MS)
+    }
+    const play = turnPlayOk(res.next)
+    tp = null
+    if (!play) afterPlay()
+    else tp = { finish: () => {}, attach: () => {}, shown: new Set(), active: () => true } // 자리표 — 아래 paint 가 보고판을 아직 띄우지 않게
     paint()
+    if (play) startTurnPlay(prev, res.next, res.report, band, afterPlay)
     queueHowWin(lossOf(prev, res.next, res.report, me()))
     queueGain(res.next, res.report)
     // 넘긴 뒤 잠깐 「다음 달」을 잠근다 — 그 사이 누름은 먹지 않는다 (형 11-01: "결과 창 뜰 때까지 비활 · 자꾸 두세 번 누르게 됨")
@@ -8221,6 +8351,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       return true
     }
     if (prologue !== null) return true
+    if (tp !== null) { tp.finish(); return true } // 「다음 달」 지도 연출 중 — 뒤로가기는 연출만 건너뛴다
     if (showReport && root.classList.contains('modal-open')) showReport = false
     else if (layersOpen) layersOpen = false
     else if (roadOpen) roadOpen = false
