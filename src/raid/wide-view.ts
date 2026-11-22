@@ -1,12 +1,13 @@
 /**
  * 59-WIDE 넓은 맵을 그린다 (docs/realm/RAID-REWARD-MAP-20261122.md 4-2 · 4-4) — 그리기만 (판은 읽기만 한다 · 수치 HAEBI_WIDE.view).
  * 세 겹: ① 이어 깔리는 바닥(public/realm/raid/ground-<스테이지>.webp · tools/sprite-kit/ground-tile.py) ② 가운데 「결전장」 = 지금 스테이지 그림(가장자리를 바닥에 섞는다)
- * ③ 낱개 장식(HAEBI_WIDE.view.props · 그림이 오면 적는다). 그 위에 안개 문(닫히는 고리)과 화면 가장자리 화살표(정예 · 땅의 상자 · 결전장).
+ * ③ 낱개 장식(public/realm/raid/props/ · 씨앗으로 흩는다 · HAEBI_WIDE.view.props · scatter). 그 위에 안개 문(닫히는 고리)과 화면 가장자리 화살표(정예 · 땅의 상자 · 결전장).
  * 보이는 것만 그린다: 바닥은 화면만큼만 칠하고, 결전장·안개·장식은 화면에 걸칠 때만.
  */
 import { HAEBI_RUN as C, HAEBI_WIDE as WD } from '../tune/params.ts'
 import type { HaebiRun } from './haebi.ts'
-import { BOARD, type Rect } from './wide.ts'
+import { BOARD, WORLD, type Rect } from './wide.ts'
+import { makeRng } from '../core/rng.ts'
 
 const V = WD.view, TAU = Math.PI * 2
 export const groundPath = (stage: string) => `raid/ground-${stage}.webp`
@@ -55,8 +56,40 @@ export function drawWideGround(ctx: CanvasRenderingContext2D, images: Map<string
   else if (bg && view.right > 0 && view.left < C.width && view.bottom > 0 && view.top < C.height) { const sw = bg.height * C.width / C.height; ctx.drawImage(bg, (bg.width - sw) / 2, 0, sw, bg.height, 0, 0, C.width, C.height) }
 }
 /** 이 스테이지의 낱개 장식 (위에서 아래로 그릴 차례에 끼운다 · 지금은 비어 있다) */
-let propsOf: { stage: string; list: readonly (typeof V.props)[number][] } | null = null
-export function wideProps(s: HaebiRun) { if (propsOf?.stage !== s.stage) propsOf = { stage: s.stage, list: V.props.filter(p => p.stage === s.stage) }; return propsOf.list }
+export interface WideProp { sprite: string; x: number; y: number; width: number; height: number }
+export const propPath = (stage: string, index: number) => `raid/props/${stage}-${index}.webp`
+/** 처음에 받아 둘 낱개 장식 그림 (스테이지마다 6~8개) */
+export const PROP_PATHS = Object.entries(V.props).flatMap(([stage, kinds]) => kinds.map((_, i) => propPath(stage, i)))
+/**
+ * 스테이지의 장식을 흩는다 — 스테이지 이름과 씨앗으로 늘 같은 자리 (화면만의 일 · 판의 난수와 무관).
+ * 발밑(x, y)에서 위로 선 그림 상자가 결전장(가운데 칸 + pad · 안개 문이 닫히는 자리)에 걸치면 버리고, 밑동끼리 gap 안이면 버린다. 키 큰 것(나무·망루)은 덜 뽑는다.
+ */
+export function scatterProps(stage: string): WideProp[] {
+  const kinds = V.props[stage] ?? [], S = V.scatter, list: WideProp[] = []
+  if (!kinds.length) return list
+  const rng = makeRng([...stage].reduce<number>((n, c) => (n * 31 + c.charCodeAt(0)) | 0, S.seed))
+  const weight = kinds.map(([, h]) => h > S.tall ? S.tallShare : 1), total = weight.reduce((a, b) => a + b, 0)
+  for (let tries = 0; list.length < S.count && tries < S.count * 40; tries++) {
+    let r = rng.next() * total, k = 0
+    while (k < kinds.length - 1 && r >= weight[k]!) { r -= weight[k]!; k++ }
+    const [w, h] = kinds[k]!
+    const x = Math.round(WORLD.left + S.edge + w / 2 + rng.next() * (WORLD.right - WORLD.left - 2 * S.edge - w)), y = Math.round(WORLD.top + S.edge + h + rng.next() * (WORLD.bottom - WORLD.top - 2 * S.edge - h))
+    if (x + w / 2 > BOARD.left - S.pad && x - w / 2 < BOARD.right + S.pad && y > BOARD.top - S.pad && y - h < BOARD.bottom + S.pad) continue
+    if (list.some(p => Math.hypot(p.x - x, p.y - y) < S.gap)) continue
+    list.push({ sprite: propPath(stage, k), x, y, width: w, height: h })
+  }
+  return list
+}
+let propsOf: { stage: string; list: readonly WideProp[] } | null = null
+export function wideProps(s: HaebiRun) { if (propsOf?.stage !== s.stage) propsOf = { stage: s.stage, list: scatterProps(s.stage) }; return propsOf.list }
+/** 장식 하나 — 발밑(x, y)에서 위로 · 장수가 그 뒤에 서 있으면(그림 상자 안 · 밑동보다 위) 비치게 */
+export function drawWideProp(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, p: WideProp, heroX: number, heroY: number) {
+  const img = images.get(p.sprite); if (!img) return
+  const hidden = heroY < p.y && heroY > p.y - p.height && Math.abs(heroX - p.x) < p.width / 2, a = ctx.globalAlpha
+  if (hidden) ctx.globalAlpha = a * V.scatter.behind
+  ctx.drawImage(img, p.x - p.width / 2, p.y - p.height, p.width, p.height)
+  if (hidden) ctx.globalAlpha = a
+}
 
 // ── 안개 문 ──
 /** 닫히는 고리 — 설 수 있는 땅 밖을 스테이지 빛 안개로 덮고, 안쪽으로 fogEdge 만큼 번진다 (땅 차례 · 몸보다 먼저 = 적이 안개에서 걸어 나온다) */

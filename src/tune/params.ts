@@ -149,7 +149,9 @@ export const HAEBI_ZOOM = { levels: [1, 1.35, 1.8], follow: 7, ease: 9, pop: .32
  *        base 바닥 그림이 오기 전 민무늬 색 · fog 안개 문의 색(스테이지마다 · 화면만) · fogAlpha 바깥 진하기 · fogEdge 안쪽으로 번지는 폭(px) · fogPulse 일렁임(초당 라디안) · fogPulseShare 그 몫 · fogRim 고리 끝의 밝은 줄 굵기(px · 진하기 fogRimAlpha) · fogFadeIn 문이 이만큼 닫힐 때까지 안개가 서서히 짙어진다
  *        camLag 안개 문이 이만큼 닫힐 때까지는 카메라가 세계 끝까지 본다(다가오는 안개가 화면에 보인다) · 그 뒤로 조여 다 닫히면 결전장에 맞는다
  *        arrow 화면 가장자리 화살표: inset 가장자리에서 떨어진 px(위는 HUD 를 피해 top · 아래는 bottom) · size 화살촉 · badge 그림 원 반지름 · face 원 안에 얼굴이 오게 발을 내리는 몫(그림 키의) · bob 까딱임(px · 초당 라디안 bobRate) · max 한 번에 그리는 수 · 색(적 · 상자 · 결전장 · 테)
- *        props 낱개 장식을 놓는 자리 {stage, sprite, x, y, height} — 그림이 오면 여기에 적는다 (지금은 비어 있다 · 몸과 같이 위에서 아래로 그린다 · 부딪히지 않는다)
+ *        props 낱개 장식 (Codex 80 · tools/sprite-kit/map-props.py 가 자른 public/realm/raid/props/<스테이지>-<번호>.webp) — 스테이지마다 번호 차례로 [화면 폭, 화면 키](px · 장수 94px 에 견줘 나무 2~3배 · 바위·덤불 0.5~1배 · 그 도구가 찍어 준 줄 그대로). 몸과 같이 위에서 아래로 그린다 · 부딪히지 않는다
+ *        scatter 장식 흩기(화면 쪽이 씨앗으로 정한다 · 판의 셈과 무관): count 스테이지마다 놓는 수 · seed 씨앗 · gap 밑동끼리 떨어지는 거리(px) · pad 결전장(가운데 칸 · 안개 문이 닫히는 자리)에서 그림 상자를 띄우는 여유 · edge 세계 끝에서 띄움
+ *                tall 이 키를 넘는 것(나무·망루)은 tallShare 몫으로 덜 놓는다 · behind 장수가 그 뒤에 서면 이 진하기로 비친다
  */
 export const HAEBI_WIDE = {
   screens: 3, spawnMargin: 110, spawnOpen: .5, strayScreens: 1.5,
@@ -161,7 +163,15 @@ export const HAEBI_WIDE = {
     fog: { forest: '#c4d2bd', ford: '#cfe0e6', palisade: '#b9a98c', snow: '#f2f7fb', fortress: '#8a3a1e', trial: '#c4d2bd' },
     fogAlpha: .82, fogEdge: 120, fogPulse: 1.7, fogPulseShare: .12, fogRim: 4, fogRimAlpha: .7, fogFadeIn: .25, camLag: .6,
     arrow: { inset: 46, top: 215, bottom: 185, size: 20, badge: 30, face: .8, bob: 4, bobRate: 5, max: 6, foe: '#ff5a4a', loot: '#ffd66a', arena: '#fff3d0', rim: '#1a1210' },
-    props: [] as readonly { stage: string; sprite: string; x: number; y: number; height: number }[],
+    props: {
+      forest: [[201, 250], [188, 260], [245, 270], [167, 90], [101, 55], [117, 70], [130, 55], [90, 85]],
+      ford: [[144, 94], [103, 76], [307, 280], [143, 80], [121, 60], [90, 52], [146, 60]],
+      palisade: [[196, 115], [188, 110], [203, 210], [153, 120], [154, 90], [91, 120]],
+      snow: [[305, 250], [222, 265], [252, 240], [95, 165], [129, 80], [145, 42], [107, 52]],
+      fortress: [[278, 130], [80, 80], [279, 110], [91, 165], [150, 70], [147, 95]],
+      trial: [],
+    } as Record<string, readonly (readonly [number, number])[]>,
+    scatter: { count: 52, seed: 59, gap: 170, pad: 110, edge: 30, tall: 150, tallShare: .45, behind: .45 },
   },
 } as const
 /** 열전 판 빠르기 (11-19 형: 「×1 누르면 ×2 · 또 누르면 ×3 · 한 번 더 누르면 ×1」) — 우상단 돋보기 옆 단추 · 단축키 X.

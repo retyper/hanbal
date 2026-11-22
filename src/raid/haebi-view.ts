@@ -24,7 +24,7 @@ import { HAEBI_FX_ART as FX_ART } from '../tune/params.ts'
 import { CARD_FRAME_PATHS } from './card-skins.ts'
 import { awakeCastDim, drawAwakeCastDim, drawAwakeUlt } from './awake-ult-view.ts'
 import { HAEBI_WIDE as WD } from '../tune/params.ts'
-import { GROUND_PATHS, drawWideGround, drawWideFog, edgeArrows, drawEdgeArrows, inView, wideProps } from './wide-view.ts'
+import { GROUND_PATHS, PROP_PATHS, drawWideGround, drawWideFog, edgeArrows, drawEdgeArrows, inView, wideProps, drawWideProp, type WideProp } from './wide-view.ts'
 
 /** 돌팔매 묶음의 돌 · 바위 (전용 그림 H56~H58 이 오기 전엔 본편 바위 그림을 빌린다) */
 const ROCK = 'fx/rock.png'
@@ -44,8 +44,8 @@ export const imagePaths = [...CARD_FRAME_PATHS, genArtOf('haebi').file, genArtOf
   ...['boss-ford', 'boss-palisade', 'boss-snow', 'boss-fortress', ...Object.values(MOB_ART), 'elite-forest', 'elite-ford', 'elite-palisade', 'elite-snow', 'elite-fortress'].map(n => `anim-px/${n}.png`), 'raid/snow.webp', 'raid/fortress.webp', ...FX_PATHS,
   // 11-22 51-2 스테이지마다 새 적 (Codex 67 · tools/sprite-kit/bake-stage-enemies.py)
   ...STAGE_ART_PATHS,
-  // 11-22 59-WIDE 넓은 맵: 이어 깔리는 바닥 다섯 (tools/sprite-kit/ground-tile.py) · 낱개 장식(그림이 오면 HAEBI_WIDE.view.props 에 적는다)
-  ...GROUND_PATHS, ...new Set(WD.view.props.map(p => p.sprite))]
+  // 11-22 59-WIDE 넓은 맵: 이어 깔리는 바닥 다섯 (tools/sprite-kit/ground-tile.py) · 낱개 장식 34개 (Codex 80 · tools/sprite-kit/map-props.py)
+  ...GROUND_PATHS, ...PROP_PATHS]
 /** bar-boss.png 의 투명한 홈 [x0,y0,x1,y1] — tools/raid-ui-kit.py 가 public/realm/raid/ui/kit.json 에 적는 값 */
 const BOSS_WIN = [104, 35, 626, 82] as const
 /**
@@ -706,8 +706,7 @@ function drawPalisade(ctx: CanvasRenderingContext2D, images: Map<string, HTMLIma
 }
 /** 그리는 차례 (위에서 아래로) — 판마다 다시 쓰는 배열 · false = 목책 줄 (56-C) */
 const order: (HaebiRun['enemies'][number] | WideProp | null | false)[] = []
-/** 59-WIDE 낱개 장식 (HAEBI_WIDE.view.props) · 지금 화면 틀 — 틀마다 다시 쓰는 그릇 */
-type WideProp = typeof WD.view.props[number]
+/** 59-WIDE 지금 화면 틀 — 틀마다 다시 쓰는 그릇 */
 const WIDE_VIEW = { left: 0, top: 0, right: 0, bottom: 0 }
 /**
  * cam: 확대 카메라 (raid/camera.ts · 11-19 돋보기 단추) — 화면 가운데의 판 좌표와 배율. 판 위의 것(땅·몸·효과·피해 숫자·오라)은 판과 함께 커지고,
@@ -771,14 +770,14 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   // 위에서 아래로 그린다 (null = 장수 · false = 목책 줄) — 판마다 새 배열을 만들지 않는다
   const wallY = s.palisade?.y ?? 0
   order.length = 0; for (const e of s.enemies) if (!view || e.giant || inView(view, e.x, e.y)) order.push(e); order.push(null); if (s.palisade) order.push(false)
-  if (view) for (const p of wideProps(s)) if (inView(view, p.x, p.y, p.height)) order.push(p)
+  if (view) for (const p of wideProps(s)) if (inView(view, p.x, p.y, Math.max(p.height, p.width / 2))) order.push(p)
   order.sort((a, b) => (a ? a.y : a === null ? s.y : wallY) - (b ? b.y : b === null ? s.y : wallY))
   const archer = s.mode === 'stage' ? barrageArcher(s, cam ? fieldView(cam) : undefined) : undefined
   // 적 몸을 그린 뒤 판 변환(위에서 건 카메라·흔들림 그대로)으로 되돌린다 — 적마다 save/restore 하지 않는다
   // (11-22 · 11-17 sprite 와 같은 길: 목책 거대 두목 판은 적이 200명 넘어 save 가 틀마다 200번 넘었다)
   for (const e of order) {
     if (e === false) { drawPalisade(ctx, images, s, time); continue }
-    if (e && 'sprite' in e) { const img = images.get(e.sprite); if (img) { const w = e.height * img.width / img.height; ctx.drawImage(img, e.x - w / 2, e.y - e.height, w, e.height) } continue }
+    if (e && 'sprite' in e) { drawWideProp(ctx, images, e, s.x, s.y); continue }
     if (e) {
       if(e.giant){if(e.giant.kind==='tiger')drawTiger(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else if(e.giant.kind==='bulgasari')drawBulgasari(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else if(e.giant.kind==='gumiho')drawGumiho(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else if(e.giant.kind==='shaman')drawShaman(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else drawImugiParent(ctx,images,e.giant,{bounds:cam?fieldView(cam):{left:0,top:0,right:W,bottom:H},density});continue}
       const big = e.kind === 'boss' || e.kind === 'elite', h = mobHeight(e.kind)

@@ -9,7 +9,8 @@ import { botInput, botChoice } from '../src/raid/haebi-replay.ts'
 import { startRecord, recInput, recPick, sealInput, replayRaid } from '../src/raid/runlog.ts'
 import { newCam, followCam, clampCenter, toField, fieldView, cameraBounds } from '../src/raid/camera.ts'
 import { drawField } from '../src/raid/haebi-view.ts'
-import { edgeArrows } from '../src/raid/wide-view.ts'
+import { edgeArrows, scatterProps, propPath } from '../src/raid/wide-view.ts'
+import { existsSync } from 'node:fs'
 import { stageToolOpts } from '../tools/raid-stage-balance.ts'
 
 const hash = (x: unknown) => createHash('sha256').update(JSON.stringify(x)).digest('hex')
@@ -292,4 +293,36 @@ test('그리기: 화면에 걸친 적만 그리고 · 카메라 옮김이 1배�
   assert.ok(wide.calls.some(c => c.method === 'setTransform' && c.args[4] === C.width / 2 - cam.x && c.args[5] === C.height / 2 - cam.y), '카메라 옮김')
   const old = quiet(ONE); const plain = canvas(); drawField(plain.ctx, images, old, null, newCam())
   assert.ok(plain.calls.filter(c => c.method === 'setTransform').every(c => c.args[4] === 0 && c.args[5] === 0), '옛 판 1배는 옮김 없음')
+})
+
+test('낱개 장식: 스테이지마다 늘 같은 자리에 흩고 · 결전장과 안개 문 자리는 비우고 · 그림 파일이 다 있다', () => {
+  const S = W.view.scatter
+  for (const stage of ['forest', 'ford', 'palisade', 'snow', 'fortress']) {
+    const list = scatterProps(stage)
+    assert.deepEqual(scatterProps(stage), list, `${stage}: 같은 씨앗이면 같은 자리`)
+    assert.ok(list.length >= S.count * .8, `${stage}: ${list.length}개`)
+    const kinds = W.view.props[stage]!
+    assert.ok(new Set(list.map(p => p.sprite)).size === kinds.length, `${stage}: 낱개마다 한 번은 놓인다`)
+    for (const p of list) {
+      assert.ok(p.x - p.width / 2 >= WORLD.left && p.x + p.width / 2 <= WORLD.right && p.y - p.height >= WORLD.top && p.y <= WORLD.bottom, `${stage}: 세계 안 ${p.x},${p.y}`)
+      const hitsArena = p.x + p.width / 2 > -S.pad && p.x - p.width / 2 < C.width + S.pad && p.y > -S.pad && p.y - p.height < C.height + S.pad
+      assert.equal(hitsArena, false, `${stage}: 결전장에 걸친 장식 ${p.sprite} @${p.x},${p.y}`)
+      assert.ok(p.height <= 94 * 3 && p.height >= 94 * .4, `${stage}: 장수 키에 견준 크기 ${p.height}`)
+    }
+    for (let i = 0; i < list.length; i++) for (let j = 0; j < i; j++) assert.ok(Math.hypot(list[i]!.x - list[j]!.x, list[i]!.y - list[j]!.y) >= S.gap)
+    kinds.forEach((_, i) => assert.ok(existsSync(new URL(`../public/realm/${propPath(stage, i)}`, import.meta.url)), `${propPath(stage, i)} 파일`))
+  }
+  assert.notDeepEqual(scatterProps('forest').map(p => [p.x, p.y]), scatterProps('snow').map(p => [p.x, p.y]), '스테이지마다 다른 자리')
+  assert.deepEqual(scatterProps('trial'), [])
+  // 화면에 걸친 장식만 그리고 · 장수가 뒤에 서면 비친다
+  const s = quiet(), p = scatterProps('forest').find(q => q.height > S.tall)!
+  s.x = p.x; s.y = p.y - 40
+  const images = new Map([[p.sprite, image(100, 100)], ['raid/forest.webp', image(1440, 810)]])
+  const cam = newCam(); followCam(cam, s.x, s.y, 0, true, undefined, fieldBounds(s))
+  const x = canvas(); let alpha = 1
+  const ctx = new Proxy(x.ctx, { get: (o, k) => k === 'drawImage' ? (...a: unknown[]) => { if ((a[0] as { width: number }).width === 100 && a[1] === p.x - p.width / 2 && a[2] === p.y - p.height) alpha = (o as unknown as { globalAlpha: number }).globalAlpha; return (o as unknown as Record<string, (...b: unknown[]) => unknown>)['drawImage']!(...a) } : Reflect.get(o, k), set: (o, k, v) => Reflect.set(o, k, v) })
+  drawField(ctx, images, s, null, cam)
+  const drawn = x.calls.filter(c => c.method === 'drawImage' && (c.args[0] as { width: number }).width === 100)
+  assert.ok(drawn.length >= 1 && drawn.length < 6, `화면에 걸친 것만 (${drawn.length})`); assert.ok(drawn.some(c => c.args[1] === p.x - p.width / 2 && c.args[2] === p.y - p.height && c.args[3] === p.width && c.args[4] === p.height), '그 나무가 발밑에서 위로')
+  assert.equal(alpha, S.behind, '장수가 뒤에 서면 비친다')
 })
