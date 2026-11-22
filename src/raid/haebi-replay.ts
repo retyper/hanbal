@@ -1,6 +1,7 @@
 // Deterministic, ordinary-input bot for balance probes and the dev review page.
 import { HAEBI_RUN as C, HAEBI_MOBS as M } from '../tune/params.ts'
 import { createHaebi, choose, stepHaebi, isCombo, KITS, nodeAt, branchPoints, wakeReady, ultOpen, type Branch, type HaebiRun, type Kit, type Pick, type Power, type RunInput } from './haebi.ts'
+import { fieldBounds } from './wide.ts'
 /** storm·fire·mixed: 예전 길(능력 이름 차례) · deepA/B/C: 한 갈래에 몰빵(그 갈래 칸이 있으면 늘 그것 · 끝 칸 먼저) · spread: 가장 덜 찍은 갈래부터 고르게 */
 export type Route = 'storm' | 'fire' | 'mixed' | 'deepA' | 'deepB' | 'deepC' | 'spread'
 /** 갈래 안에서 봇이 찍는 차례 — [칸, 이 단계까지] 를 앞에서부터 (공격을 먼저 세우고 → 갈래 끝 → 나머지를 채운다 · 사람이 몰빵할 때의 흔한 길) */
@@ -64,12 +65,18 @@ function kitWalk(s: HaebiRun): { x: number; y: number } | null {
     let rx = 0, ry = 0
     for (const e of s.enemies) { if (e.hp <= 0) continue; const dx = s.x - e.x, dy = s.y - e.y, d = Math.hypot(dx, dy) || 1; if (d < KIT_BOT.crowd) { rx += dx / d / d; ry += dy / d / d } }
     const len = Math.hypot(rx, ry) || 1
-    return { x: rx / len + (C.width / 2 - s.x) / C.width * KIT_BOT.center, y: ry / len + (C.height / 2 - s.y) / C.height * KIT_BOT.center }
+    // 설 수 있는 땅의 가운데로 당긴다 — 한 장짜리 판은 예전 그대로 · 59-WIDE 는 땅이 넓어 당김이 약하다(물러날 땅이 생긴다 · 안개 문이 닫히면 옛 판과 같다)
+    const f = fieldBounds(s)
+    return { x: rx / len + ((f.left + f.right) / 2 - s.x) / (f.right - f.left) * KIT_BOT.center, y: ry / len + ((f.top + f.bottom) / 2 - s.y) / (f.bottom - f.top) * KIT_BOT.center }
   }
   if (s.kit === 'bow') return nd < KIT_BOT.kite ? kite() : s.t % KIT_BOT.stopEvery < KIT_BOT.stopFor ? { x: 0, y: 0 } : null
   if (s.kit === 'sling') return nd < KIT_BOT.kite && n ? kite() : null
   if (s.kit === 'magic') return healthy ? { x: 0, y: 0 } : null
-  if (s.kit === 'spear') { const tx = KIT_BOT.laneX[Math.floor(s.t / KIT_BOT.laneSeconds) % 2]!, ty = C.height / 2 + Math.sin(s.t * KIT_BOT.laneRate) * KIT_BOT.laneSway; return { x: tx - s.x, y: (ty - s.y) * KIT_BOT.laneSlope } }
+  if (s.kit === 'spear') {
+    // 59-WIDE: 오가는 길을 지금 땅의 폭에 맞춰 늘린다 (곧게 달릴 길이 길어진다)
+    const f = fieldBounds(s), lane = KIT_BOT.laneX[Math.floor(s.t / KIT_BOT.laneSeconds) % 2]!, tx = s.wide ? f.left + lane / C.width * (f.right - f.left) : lane, ty = (f.top + f.bottom) / 2 + Math.sin(s.t * KIT_BOT.laneRate) * KIT_BOT.laneSway
+    return { x: tx - s.x, y: (ty - s.y) * KIT_BOT.laneSlope }
+  }
   if (s.kit === 'sword' && healthy && near) return nd > KIT_BOT.approach ? { x: near.x - s.x, y: near.y - s.y } : { x: 0, y: 0 }
   return null
 }

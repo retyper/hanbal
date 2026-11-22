@@ -11,6 +11,8 @@ import { HAEBI_KITS as K } from '../tune/params.ts'
 import { initChampion, stepChampion, championDamageScale, championRecover, spawnView, type ChampionHooks, type ChampionPattern, type ChampionState, type SpawnView } from './champion.ts'
 import { HAEBI_PALISADE as WL } from '../tune/params.ts'
 import { createPalisade, damagePiece, piecesHit, tickPalisade, wallAim, wallMove, wallSettle, type Palisade, type WallPiece } from './palisade.ts'
+import { HAEBI_WIDE as WD } from '../tune/params.ts'
+import { newWide, fieldBounds, worldBounds, stepGate, simView, ringSpot, huntSpot, inSimView, strayed, type WideState } from './wide.ts'
 
 /**
  * 장수 열전 — 다이센카식 20분 판 (11-16 형: 「스테이지·판 밖 상점·휘장 · 무기 10단계 · 적 단계업」).
@@ -153,7 +155,7 @@ export type StageId = keyof typeof ST
 export type Bonus = Record<Exclude<keyof typeof SH, 'growth'>, number>
 export const NO_BONUS: Bonus = { might: 0, vigor: 0, armor: 0, regen: 0, haste: 0, swift: 0, magnet: 0, wisdom: 0, revive: 0, reroll: 0, greed: 0, luck: 0 }
 /** daze: 진탕격에 맞아 멈춘 남은 시간 · act: 창돌격꾼·범 예고(+)·돌진(−) 시간 · 투창 사냥꾼 겨눔(+) · 방화꾼 다음 불바닥까지 · vx·vy: 돌진·던질 방향 · buff: 무당이 북돋운 남은 시간 */
-export interface Mob { id: number; x: number; y: number; hp: number; max: number; kind: MobKind; cd: number; flash: number; wind: number; aimX: number; aimY: number; act: number; vx: number; vy: number; buff: number; poison: number; pdps: number; daze: number; bornAt?: number; /** 58-KITS 단검 독 겹 */ stack?: number; phase?: 1 | 2 | 3; pattern?: ChampionPattern | null; patternSeq?: number; recovery?: number; champion?: ChampionState; bossRole?: 'midboss' | 'giant'; giant?: GiantState }
+export interface Mob { id: number; x: number; y: number; hp: number; max: number; kind: MobKind; cd: number; flash: number; wind: number; aimX: number; aimY: number; act: number; vx: number; vy: number; buff: number; poison: number; pdps: number; daze: number; bornAt?: number; /** 59-WIDE 큰 놈 사냥: 아직 장수 화면에 들어온 적 없는 정예 (그동안 bornAt 을 지금으로 밀어 「빨리 잡기」가 처음 본 때부터 세어진다) */ unseen?: boolean; /** 58-KITS 단검 독 겹 */ stack?: number; phase?: 1 | 2 | 3; pattern?: ChampionPattern | null; patternSeq?: number; recovery?: number; champion?: ChampionState; bossRole?: 'midboss' | 'giant'; giant?: GiantState }
 export interface Chest { id: number; eliteId: number; x: number; y: number; bornAt: number; pickedAt?: number; state: 'ground' | 'opened' | 'claimed' | 'expired'; choicesRemaining: number; gold: number; large: boolean }
 export interface Missile { x: number; y: number; vx: number; vy: number; life: number; kind: 'gale' | 'ember' | 'shard' | 'enemy' | 'arrow' | 'rain' | 'javelin' | 'wave' | 'barrage' | 'stone' | 'flame' | 'knife' | 'soul' | 'hurl' | 'pebble' | 'skip' | 'boulder'; damage: number; radius: number; hit: number[]; angle: number; tx: number; ty: number; gen?: number; source?: number; championShot?: boolean;
   /** 58-KITS: big = 큰 한 방(겨눔 화살 · 셋째 칼 반달 · 모두 꿰뚫음 · 벽력이 튐) · landed = 떨어져 박힌 질풍 도끼 · tick = 박힌 도끼가 다시 치기까지 · ember 의 source = 부적이 붙은 적 */
@@ -197,6 +199,8 @@ export interface HaebiRun {
   chests?: Chest[]; chestChoice?: { id: number; left: number; nonce: number }; choiceOrigin?: 'level' | 'chest'; offerNonce?: number; chestGold?: number; chestsClaimed?: number; nextChestId?: number;
   /** 58-KITS 무기 개성 규칙 (opts.kitRules) — 없으면 옛 셈 */
   kits?: KitState;
+  /** 59-WIDE 넓은 맵 (opts.mapRules · raid/wide.ts) — 없으면 한 장짜리 옛 판 */
+  wide?: WideState;
 }
 export interface RunInput { x: number; y: number; dash?: boolean; skill?: boolean; wake?: boolean; shortCutin?: boolean; /** 실제 카메라 안 발사자 ID, 0=없음. 생략한 봇·옛 기록은 전체 판. */ barrageSource?: number; viewBounds?: SpawnView }
 export interface CastState { kind: 'ult' | 'wake'; t: number; total: number; tru: boolean; awakened?: boolean; empowered?: boolean; slow?: number; seq?: number }
@@ -206,9 +210,11 @@ export function random(s: HaebiRun) { const rng = makeRng(s.seed); const n = rng
  * awaken remains the fallback qualification alias. Explicit53B, plus default trial/vanguard, preserve timed-awake rules.
  * mastery: 숲·여울·목책을 다 깬 장수 (막대 절반으로 시작)
  */
-export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' | '55-SHAMAN'; /** 58-KITS 무기 개성 — 스테이지 규칙과 따로 켠다 (판 기록 opts 에 그대로 남아 재생도 같다) */ kitRules?: '58-KITS' }
+export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' | '55-SHAMAN'; /** 58-KITS 무기 개성 — 스테이지 규칙과 따로 켠다 (판 기록 opts 에 그대로 남아 재생도 같다) */ kitRules?: '58-KITS'; /** 59-WIDE 넓은 맵 — 열전 스테이지 판에만 켜진다 (시련·선봉에 넘겨도 한 장짜리 그대로 · 판 기록 opts 에 남아 재생도 같다) */ mapRules?: '59-WIDE' }
 /** 새 판이 쓰는 무기 규칙 */
 export const KIT_RULES = '58-KITS' as const
+/** 새 열전 스테이지 판이 쓰는 맵 규칙 */
+export const MAP_RULES = '59-WIDE' as const
 export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit = 'axe', opts: HaebiOpts = {}): HaebiRun {
   const bonus = { ...NO_BONUS, ...opts.bonus }, maxHp = C.health + bonus.vigor * SH.vigor.step, stage: StageId = mode === 'trial' ? 'trial' : opts.stage ?? 'forest'
   // 55-IMUGI 는 여울만 · 56C(진짜 목책)는 목책 돌파만 · 55-TIGER(백두 대호)는 설원만 · 57-BULGASARI(진짜 목책 + 불가사리)는 목책 돌파만 · 55-GUMIHO(구미호)는 숲 산길 열전만(각성 시련은 아님) · 55-SHAMAN(불의 무녀 장군)은 불타는 산성만 — 다른 판에 들어오면 56B 그대로
@@ -232,6 +238,7 @@ export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit
   // 57 은 56C 의 진짜 목책을 그대로 세우고 그 위에 거대 보스 흐름을 얹는다
   if (rules === '56C' || rules === '57-BULGASARI') s.palisade = createPalisade()
   if (opts.kitRules === KIT_RULES) s.kits = { still: 0, aim: 0, runAim: 0, runT: 0, swing: 0, sealAt: -1, sealLeft: 0, zones: [], mark: 0, step: 0, stepped: false, focused: false, boltIdle: 0 }
+  if (opts.mapRules === MAP_RULES && mode === 'stage' && stage !== 'trial') s.wide = newWide()
   if (mode === 'vanguard') {
     s.level = V.startLevel; s.ranks[k.primary] = 4; s.ranks[k.secondary] = 3; s.ranks.echo = 2; s.ranks.tempo = 1; s.ranks.reach = 1
     s.combos = kitCombos(kit).filter(c => c.kit === kit).map(c => c.id); s.message = '선봉에 서기 · 전위대장 3명을 돌파하라'
@@ -241,13 +248,15 @@ export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit
 export const usesPermanentAwakening = (s: HaebiRun) => s.permanentAwake !== undefined
 /** 58-KITS 무기 개성 규칙으로 도는 판 */
 export const usesKitRules = (s: HaebiRun) => s.kits !== undefined
+/** 59-WIDE 넓은 맵으로 도는 판 */
+export const usesWideMap = (s: HaebiRun) => s.wide !== undefined
 export const usesAwakenedCast = (s: HaebiRun) => s.awakenedCasts !== undefined
 export const castSlow = (c?: CastState | null) => c?.slow ?? U.slow
 export const castWallSeconds = (c?: CastState | null) => c ? c.total / castSlow(c) : 0
 export const isPermanentAwake = (s: HaebiRun) => s.permanentAwake === true
 /** Snapshot external qualification/preferences once; replay never consults current storage. */
 export function normalizedRaidOpts(s: HaebiRun, opts: HaebiOpts): HaebiOpts {
-  return { ...opts, ...(opts.bonus ? { bonus: { ...opts.bonus } } : {}), ...(usesPermanentAwakening(s) ? { simRules: usesGiantBoss(s) ? giantRules(s) : usesPalisade(s) ? '56C' as const : usesAwakenedCast(s) ? '56B' as const : '56A' as const, permanentAwake: isPermanentAwake(s), appearanceAwake: s.appearanceAwake !== false } : {}), ...(usesKitRules(s) ? { kitRules: KIT_RULES } : {}) }
+  return { ...opts, ...(opts.bonus ? { bonus: { ...opts.bonus } } : {}), ...(usesPermanentAwakening(s) ? { simRules: usesGiantBoss(s) ? giantRules(s) : usesPalisade(s) ? '56C' as const : usesAwakenedCast(s) ? '56B' as const : '56A' as const, permanentAwake: isPermanentAwake(s), appearanceAwake: s.appearanceAwake !== false } : {}), ...(usesKitRules(s) ? { kitRules: KIT_RULES } : {}), ...(usesWideMap(s) ? { mapRules: MAP_RULES } : {}) }
 }
 /** 이 판의 거대 보스 — 거대 보스 흐름이 선 판은 여울(이무기) · 설원(백두 대호) · 목책 돌파(불가사리) · 숲 산길(구미호) · 불타는 산성(불의 무녀 장군)이라 스테이지로 갈린다 */
 export const giantKind = (s: HaebiRun): GiantKind => s.stage === 'snow' ? 'tiger' : s.stage === 'palisade' ? 'bulgasari' : s.stage === 'forest' ? 'gumiho' : s.stage === 'fortress' ? 'shaman' : 'imugi'
@@ -276,7 +285,9 @@ export const tierOf = (s: HaebiRun) => Math.min(4, Math.floor(s.t / bossTime(s) 
 export const respite = (s: HaebiRun) => s.mode === 'stage' && s.t % (C.surgeSeconds + C.respiteSeconds) >= C.surgeSeconds
 export const rangedMob = (kind: MobKind) => ['archer', 'slinger', 'firearcher', 'hunter', 'torch', 'shaman'].includes(kind)
 /** 발(판 좌표)이 실제 화면 안에 있는 살아 있는 궁수. 카메라를 읽는 쪽에서 범위를 넘긴다. */
-export function barrageArcher(s: HaebiRun, view: { left: number; top: number; right: number; bottom: number } = { left: 0, top: 0, right: C.width, bottom: C.height }) {
+/** 59-WIDE: 봇·옛 부름처럼 범위를 안 넘기면 장수 화면(1배) 틀로 잰다 */
+const SIM_VIEW = { left: 0, top: 0, right: 0, bottom: 0 }
+export function barrageArcher(s: HaebiRun, view: { left: number; top: number; right: number; bottom: number } = s.wide ? simView(s, SIM_VIEW) : { left: 0, top: 0, right: C.width, bottom: C.height }) {
   return s.enemies.find(e => e.kind === 'archer' && e.hp > 0 && e.x >= view.left && e.x <= view.right && e.y >= view.top && e.y <= view.bottom)
 }
 /** 판이 끝나고 받는 금 (형 11-16: 「중간 패배는 적게, 다 깨면 클리어로 더 많이」) · 시련·선봉은 없음 */
@@ -462,7 +473,8 @@ const guard = (e: Mob) => e.buff > 0 ? 1 - M.shamanArmor : 1
 /** 밀리지 않는 적 — 두목 · 철갑 · 반달곰 */
 const steady = (e: Mob) => !!e.champion || e.kind === 'boss' || e.kind === 'iron' || e.kind === 'bear'
 /** 장수가 설 수 있는 판 안 */
-const heroX = (x: number) => Math.max(32, Math.min(C.width - 32, x)), heroY = (y: number) => Math.max(65, Math.min(C.height - 24, y))
+/** 장수가 설 수 있는 자리로 — 한 장짜리 판은 예전 그대로(32 ~ 폭−32 · 65 ~ 높이−24) · 59-WIDE 는 지금 땅(안개 문이 닫히면 줄어든다)에 같은 여유 */
+const heroX = (s: HaebiRun, x: number) => { const f = fieldBounds(s); return Math.max(f.left + 32, Math.min(f.right - 32, x)) }, heroY = (s: HaebiRun, y: number) => { const f = fieldBounds(s); return Math.max(f.top + 65, Math.min(f.bottom - 24, y)) }
 const disk = (x: number, y: number, radius: number): Shape => ({ kind: 'circle', center: { x, y }, radius })
 const lineShape = (x: number, y: number, cos: number, sin: number, length: number, width: number, back = width / 2): Shape => ({ kind: 'box', center: { x: x + cos * (length - back) / 2, y: y + sin * (length - back) / 2 }, halfX: (length + back) / 2, halfY: width, angle: Math.atan2(sin, cos) })
 function giantContact(e: Mob, shape: Shape): Contact<string> | null {
@@ -602,6 +614,8 @@ function pierce(s: HaebiRun, b: Missile) {
 }
 /** 잡졸 체력 — 시간이 갈수록 두꺼워진다 (스테이지 hp 배수) */
 const mobHp = (s: HaebiRun) => C.mobHp * (1 + s.t * C.hpTimeScale + (s.t / 60) ** 2 * C.hpTimeCurve) * ST[s.stage].hp
+/** 59-WIDE 자리 셈을 받는 그릇 (판 상태가 아니다) */
+const SPOT = { x: 0, y: 0 }
 export function spawnMob(s: HaebiRun, kind?: Mob['kind'], view?: SpawnView, single = false) {
   const side = Math.floor(random(s) * 4), p = random(s)
   if (s.mode === 'vanguard') kind ??= random(s) < C.archerShare + s.t * C.archerTimeShare ? 'archer' : 'club'
@@ -610,11 +624,15 @@ export function spawnMob(s: HaebiRun, kind?: Mob['kind'], view?: SpawnView, sing
   // 산들개는 한쪽에서 떼로 몰려온다
   const pack = kind === 'dog' && !single ? M.dogPack : 1
   const bounds = s.mode === 'stage' && (kind === 'elite' || kind === 'boss') ? spawnView(view) : spawnView()
+  // 59-WIDE: 잡졸은 장수 화면 바로 밖 둘레에 · 정예는 멀리(큰 놈 사냥 · 화살표가 가리킨다) · 두목(중간 보스)은 닫힌 결전장에 예전 그대로
+  const hunt = !!s.wide && kind === 'elite', spot = !!s.wide && kind !== 'boss'
+  if (hunt) huntSpot(s, (side + p) * Math.PI / 2, random(s), SPOT); else if (spot) ringSpot(s, side, p, SPOT)
   for (let i = 0; i < pack; i++) {
-    const e: Mob = { id: s.next++, x: (side === 0 ? bounds.left + 15 : side === 1 ? bounds.right - 15 : bounds.left + p * (bounds.right - bounds.left)) + i * 9,
-      y: (side === 2 ? bounds.top + 24 : side === 3 ? bounds.bottom - 15 : bounds.top + 40 + p * (bounds.bottom - bounds.top - 55)) + (i % 2) * 14,
+    const e: Mob = { id: s.next++, x: (spot ? SPOT.x : side === 0 ? bounds.left + 15 : side === 1 ? bounds.right - 15 : bounds.left + p * (bounds.right - bounds.left)) + i * 9,
+      y: (spot ? SPOT.y : side === 2 ? bounds.top + 24 : side === 3 ? bounds.bottom - 15 : bounds.top + 40 + p * (bounds.bottom - bounds.top - 55)) + (i % 2) * 14,
       hp, max: hp, kind, cd: 2, flash: 0, wind: 0, aimX: 0, aimY: 0, act: 0, vx: 0, vy: 0, buff: 0, poison: 0, pdps: 0, daze: 0 }
     initChampion(s, e); s.enemies.push(e)
+    if (hunt) e.unseen = true
     if (s.palisade) wallSettle(s.palisade, e, mobRadius(e))   // 목책 띠 안에서 태어나면 가까운 쪽으로
     if (e.champion) { fx(s, 'ring', e.x, e.y - 20, 65, '#e8dcc0'); s.fx[s.fx.length - 1]!.championCue = 'enter' }
   }
@@ -1023,7 +1041,7 @@ function primary58(s: HaebiRun, target: Mob, angle: number, dist: number, power:
     const pick = marked && mobDistance(marked, s.x, s.y) < reach ? marked : strongest(s, s.x, s.y, reach) ?? target
     if (!k.step && crowdNear(s, P.stepRadius * area) >= P.stepCrowd) {
       const at = aimAt(pick, s.x, s.y), d = Math.hypot(at.x - s.x, at.y - s.y) || 1, px = s.x, py = s.y
-      s.x = heroX(at.x + (at.x - px) / d * P.stepBeside); s.y = heroY(at.y + (at.y - py) / d * P.stepBeside)
+      s.x = heroX(s, at.x + (at.x - px) / d * P.stepBeside); s.y = heroY(s, at.y + (at.y - py) / d * P.stepBeside)
       if (s.palisade) wallSettle(s.palisade, s, WL.heroR)
       k.step = P.stepCd; k.stepped = true; s.inv = Math.max(s.inv, C.dashInv)
       fx(s, 'slash', px, py, 40, '#b48cff', angle)
@@ -1131,7 +1149,7 @@ function secondary58(s: HaebiRun, target: Mob, angle: number, dist: number, powe
     const P = K.gale, count = 1 + Math.ceil(s.ranks.gale / 2) + s.ranks.echo, far = Math.max(P.throwMin, Math.min(P.throw, dist)) * KC.area
     s.cool.gale = C.galeCooldown / tempo
     for (let i = 0; i < count; i++) {
-      const a = angle + (i - (count - 1) / 2) * .24, tx = heroX(s.x + Math.cos(a) * far), ty = heroY(s.y + Math.sin(a) * far)
+      const a = angle + (i - (count - 1) / 2) * .24, tx = heroX(s, s.x + Math.cos(a) * far), ty = heroY(s, s.y + Math.sin(a) * far)
       const b = shoot(s, 'gale', a, (C.galeDamage + C.galeRankDamage * s.ranks.gale) * power, s.x, s.y, tx, ty)
       if (b) { b.vx = (tx - s.x) / P.flight; b.vy = (ty - s.y) / P.flight; b.life = P.flight + P.spin }
     }
@@ -1262,7 +1280,7 @@ function ultimate(s: HaebiRun, mx: number, my: number, power: number, area: numb
     let angle = s.kit === 'sword' ? bestAim(s, length, width, damage, moveAim, U.sword.cone) : bestAim(s, length, width, damage)
     if (s.kit === 'sword') {
       // 판 밖으로는 못 나간다 — 실제로 내달린 거리·방향만큼만 벤다
-      const ex = heroX(x0 + Math.cos(angle) * length), ey = heroY(y0 + Math.sin(angle) * length)
+      const ex = heroX(s, x0 + Math.cos(angle) * length), ey = heroY(s, y0 + Math.sin(angle) * length)
       length = Math.hypot(ex - x0, ey - y0); if (length > 1) angle = Math.atan2(ey - y0, ex - x0)
     }
     const cos = Math.cos(angle), sin = Math.sin(angle)
@@ -1283,7 +1301,7 @@ function ultimate(s: HaebiRun, mx: number, my: number, power: number, area: numb
   } else if (s.kit === 'sling') {
     // 돌벼락: range 안에서 가장 많이 걸리는 자리(가까운 적 몇 곳을 대 봄)를 골라, 그 둘레 radius 에 돌이 물결 지어 쏟아진다
     const p = U.sling, R = p.radius * area, one = p.damage * power
-    let cx = heroX(s.x + (s.face < 0 ? -1 : 1) * R), cy = s.y, most = 0
+    let cx = heroX(s, s.x + (s.face < 0 ? -1 : 1) * R), cy = s.y, most = 0
     const near = s.enemies.filter(e => e.hp > 0 && mobDistance(e, s.x, s.y) < p.range * area).sort((a, b) => Math.hypot(a.x - s.x, a.y - s.y) - Math.hypot(b.x - s.x, b.y - s.y) || a.id - b.id).slice(0, U.aimTries)
     for (const c of near) {
       let sum = 0
@@ -1327,7 +1345,7 @@ function ultTick(s: HaebiRun, dt: number, power: number, area: number) {
       if (!e) u.n = 1
       else {
         const at = aimAt(e, s.x, s.y), side = s.x < at.x ? -1 : 1, px = s.x, py = s.y, r = p.splash * area
-        s.x = heroX(at.x + side * p.beside); s.y = heroY(at.y); s.face = -side; u.used.push(e.id)
+        s.x = heroX(s, at.x + side * p.beside); s.y = heroY(s, at.y); s.face = -side; u.used.push(e.id)
         if (s.palisade) wallSettle(s.palisade, s, WL.heroR)   // 그림자 걸음은 목책을 넘지만 마디 속에 서지는 않는다
         ultFx(s, false, at.x, at.y, r, i, px, py)
         for (const o of s.enemies) if (o.hp > 0 && inRadius(o, at.x, at.y, r)) hit(s, o, p.damage * power, true, undefined, disk(at.x, at.y, r))
@@ -1340,12 +1358,40 @@ function ultTick(s: HaebiRun, dt: number, power: number, area: number) {
   if (s.kit === 'dagger') { ultFx(s, false, u.x, u.y, 0, 0, s.x, s.y); s.x = u.x; s.y = u.y }   // 처음 자리로 돌아옴
   s.ult = null
 }
+// ── 59-WIDE 넓은 맵 (raid/wide.ts · 수치 HAEBI_WIDE · 새 규칙 판만 · docs/realm/RAID-REWARD-MAP-20261122.md 4장) ──
+/** 일제 사격 발사자가 화면에 있나 — 한 장짜리 판은 판 안 · 넓은 맵은 장수 화면(1배)에 둘레 여유를 더한 틀(카메라가 앞서 보는 만큼) */
+const onField = (s: HaebiRun, e: Mob) => s.wide ? inSimView(s, e.x, e.y, -WD.spawnMargin) : e.x >= 0 && e.x <= C.width && e.y >= 0 && e.y <= C.height
+/** 안개 문 — 보스 gateWarn 초 전부터 세계 끝에서 결전장으로 닫힌다 · 닫히기 시작하면 포효로 알린다 (화면이 결전장 쪽 화살표를 띄운다) */
+function gateStep(s: HaebiRun, dt: number) {
+  const mid = s.giantFlow && !s.giantFlow.midDefeated ? midbossTime(s) : null
+  if (stepGate(s.wide!, s.t, dt, mid, bossTime(s))) { fx(s, 'ring', s.x, s.y, 65, '#e8dcc0'); s.fx[s.fx.length - 1]!.championCue = 'roar' }
+}
+/**
+ * 넓은 맵의 적·알·상자를 걸음마다 — 정예가 장수 화면에 처음 들어온 때를 적고(그 전엔 bornAt 을 지금으로 민다 = 「빨리 잡기」는 본 때부터) ·
+ * 안개 문이 닫히는 동안은 고리가 안으로 밀고(적 · 알 · 땅의 상자 · 피해 없음) · 뒤처진 잡졸은 장수가 가는 쪽 둘레로 옮긴다(정예·두목은 걸어서 온다).
+ */
+function herdWide(s: HaebiRun) {
+  const w = s.wide!, [ex, et, eb] = WD.edge, closing = w.gate > 0
+  for (const e of s.enemies) {
+    if (e.hp <= 0 || e.giant) continue
+    if (e.unseen) { if (inSimView(s, e.x, e.y, WD.seenInset)) delete e.unseen; else e.bornAt = s.t }
+    if (closing) { e.x = Math.max(w.left + ex, Math.min(w.right - ex, e.x)); e.y = Math.max(w.top + et, Math.min(w.bottom - eb, e.y)) }
+    if (e.champion || e.kind === 'elite' || e.kind === 'boss' || !strayed(s, e.x, e.y)) continue
+    const dx = s.x - e.x, dy = s.y - e.y
+    ringSpot(s, Math.abs(dx) * C.height > Math.abs(dy) * C.width ? dx > 0 ? 1 : 0 : dy > 0 ? 3 : 2, random(s), SPOT)
+    e.x = SPOT.x; e.y = SPOT.y; e.act = 0; e.wind = 0
+  }
+  // 상자는 늘 장수가 닿는 자리에 (땅 끝 띠 안에서 쓰러진 정예) · 알은 고리가 밀 때만
+  for (const c of s.chests ?? []) if (c.state === 'ground') { c.x = heroX(s, c.x); c.y = heroY(s, c.y) }
+  if (closing) for (const d of s.drops) { d.x = heroX(s, d.x); d.y = heroY(s, d.y) }
+}
 export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
   if (s.state !== 'playing' || s.offers.length) return
   dt = Math.max(0, Math.min(.05, dt))
   // 시전 동안 판이 느려진다 (컷인을 보고 → 터지는 것을 본다 · 11-17 형)
   if (s.cast) dt *= castSlow(s.cast)
   s.t += dt
+  if (s.wide) gateStep(s, dt)
   const boost = formBoost(s)
   for (const key of ['attack', 'hurt', 'inv', 'dash', 'dashCd', 'messageTime', 'streakTime'] as const) s[key] = Math.max(0, s[key] - dt)
   s.skillCd = Math.max(0, s.skillCd - dt * boost.ult)
@@ -1362,7 +1408,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
   if (s.dash && !len) dx = s.face
   const speed = C.speed * (1 + s.bonus.swift * SH.swift.step + s.ranks.nimble * T.nimbleMove) * (s.dash ? C.dashSpeed : 1) * boost.move
   const fromX = s.x, fromY = s.y
-  s.x = heroX(s.x + dx * speed * dt); s.y = heroY(s.y + dy * speed * dt)
+  s.x = heroX(s, s.x + dx * speed * dt); s.y = heroY(s, s.y + dy * speed * dt)
   // 56-C 목책: 성한 마디는 못 지나간다 (막은 마디 쪽으로 밀고 있으면 아래에서 내려친다)
   const pushed = s.palisade ? wallMove(s.palisade, s, fromX, fromY, WL.heroR) : null
   if (s.kits) kitMove(s, dx, dy, dt)
@@ -1440,7 +1486,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
     spawnMob(s, 'boss'); s.captains++
     announce(s, `제${s.captains} 전위대장 출현 · 금빛 표적을 향해 돌파하라`)
   }
-  const source = s.mode === 'stage' ? input.barrageSource === undefined ? barrageArcher(s) : s.enemies.find(e => e.id === input.barrageSource && e.kind === 'archer' && e.hp > 0 && e.x >= 0 && e.x <= C.width && e.y >= 0 && e.y <= C.height) : undefined
+  const source = s.mode === 'stage' ? input.barrageSource === undefined ? barrageArcher(s) : s.enemies.find(e => e.id === input.barrageSource && e.kind === 'archer' && e.hp > 0 && onField(s, e)) : undefined
   // 발사자가 안 보이는 동안 밀린 사격을 쌓아 두지 않는다.
   if (s.mode === 'stage' && !source) s.nextBarrage = Math.max(s.nextBarrage, s.t)
   if (s.mode !== 'vanguard' && (s.mode !== 'stage' || source) && s.t >= s.nextBarrage) {
@@ -1448,7 +1494,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
     const k = Math.min(1, s.t / bossTime(s)), damage = C.barrageDamage * (1 + s.t * C.barrageTimeScale)
     const fire = (x: number, y: number) => { const b = shoot(s, 'barrage', 0, damage, x, y); if (b && source) b.source = source.id }
     fire(s.x, s.y)
-    for (let i = 0; i < Math.floor(k * C.barrageExtra + .5); i++) { const a = random(s) * Math.PI * 2, d = C.barrageRadius * (1.4 + random(s) * 1.6); fire(Math.max(32, Math.min(C.width - 32, s.x + Math.cos(a) * d)), Math.max(65, Math.min(C.height - 24, s.y + Math.sin(a) * d))) }
+    for (let i = 0; i < Math.floor(k * C.barrageExtra + .5); i++) { const a = random(s) * Math.PI * 2, d = C.barrageRadius * (1.4 + random(s) * 1.6); fire(heroX(s, s.x + Math.cos(a) * d), heroY(s, s.y + Math.sin(a) * d)) }
     s.nextBarrage += C.barrageEvery + (C.barrageEveryLate - C.barrageEvery) * k
   }
   for (const e of s.enemies) {
@@ -1468,7 +1514,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
         hurt: amount => hurt(s, amount),
         fan: angle => { const b = shoot(s, 'enemy', angle, CH.fanDamage, e.x, e.y); if (b) { b.vx = Math.cos(angle) * CH.fanSpeed; b.vy = Math.sin(angle) * CH.fanSpeed; b.life = CH.fanLife; b.championShot = true } },
         // 부른 졸개는 목책 너머에 생기지 않는다 (부른 자리에서 잰다)
-        summon: (kind, x, y) => { if (s.enemies.length < C.maxEnemies) { const at = s.enemies.length; spawnMob(s, kind, undefined, true); for (const child of s.enemies.slice(at)) { child.x = Math.max(20, Math.min(C.width - 20, x)); child.y = Math.max(30, Math.min(C.height - 20, y)); if (s.palisade) wallMove(s.palisade, child, e.x, e.y, mobRadius(child)) } } },
+        summon: (kind, x, y) => { if (s.enemies.length < C.maxEnemies) { const at = s.enemies.length; spawnMob(s, kind, undefined, true); for (const child of s.enemies.slice(at)) { const f = fieldBounds(s); child.x = Math.max(f.left + 20, Math.min(f.right - 20, x)); child.y = Math.max(f.top + 30, Math.min(f.bottom - 20, y)); if (s.palisade) wallMove(s.palisade, child, e.x, e.y, mobRadius(child)) } } },
         cue: cue => { fx(s, 'ring', e.x, e.y - 20, 65, '#e8dcc0'); s.fx[s.fx.length - 1]!.championCue = cue },
       }
       // 56-C: 정예는 문으로 돌아 오고 · 두목은 목책을 부수며 곧장 온다 (돌진은 둘 다 박힌다)
@@ -1493,7 +1539,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
       e.act -= dt; if (e.act <= 0) e.act = -ch.dash
     } else if (ch && e.act < 0) {
       e.act = Math.min(0, e.act + dt); e.x += e.vx * v * ch.speed * dt; e.y += e.vy * v * ch.speed * dt
-      e.x = Math.max(10, Math.min(C.width - 10, e.x)); e.y = Math.max(20, Math.min(C.height - 10, e.y)); if (!e.act) e.cd = ch.cd
+      const f = fieldBounds(s); e.x = Math.max(f.left + 10, Math.min(f.right - 10, e.x)); e.y = Math.max(f.top + 20, Math.min(f.bottom - 10, e.y)); if (!e.act) e.cd = ch.cd
     } else if (ch && d < ch.range && !e.cd) { e.act = ch.wind; e.vx = x / d; e.vy = y / d; e.aimX = e.x + e.vx * ch.range * 1.4; e.aimY = e.y + e.vy * ch.range * 1.4 }
     else if (kind === 'hunter' && e.act > 0) {
       // 맥족 투창: 붉은 줄로 겨눈 쪽으로 빠른 창 한 자루
@@ -1519,6 +1565,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
     }
     if (d < 26 && !e.cd) { hurt(s, C.contactDamage * threat(s) * (m?.hit ?? 1)); e.cd = 1 }
   }
+  if (s.wide) herdWide(s)
   // 목책 띠 안에 남은 적이 없게 (부른 졸개 · 여러 밀림이 겹친 때) — 가까운 쪽으로
   if (s.palisade) for (const e of s.enemies) if (e.hp > 0 && !e.giant) wallSettle(s.palisade, e, mobRadius(e))
   // Iterate a snapshot: splitting missiles are simulated starting on the next tick.
@@ -1556,7 +1603,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
           const hits = collect(land); addOns(s, hits, hits.length >= K.sling.bigHits)
           // 58-KITS: 떨어진 돌이 앞으로 한 번 더 튄다 (튄 돌은 다시 안 튄다)
           if (!b.gen) {
-            const nx = heroX(b.tx + Math.cos(b.angle) * K.sling.bounce * area), ny = heroY(b.ty + Math.sin(b.angle) * K.sling.bounce * area)
+            const nx = heroX(s, b.tx + Math.cos(b.angle) * K.sling.bounce * area), ny = heroY(s, b.ty + Math.sin(b.angle) * K.sling.bounce * area)
             const o = shoot(s, 'pebble', b.angle, b.damage * K.sling.bounceShare, b.tx, b.ty, nx, ny, 1)
             if (o) { o.vx = (nx - b.tx) / C.slingFlight; o.vy = (ny - b.ty) / C.slingFlight; o.radius = b.radius }
           }
@@ -1648,7 +1695,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
   }
   if (s.giantFlow) for (const e of s.enemies) if (e.giant) {
     // 백두 대호 포효(눈보라)는 띠 안의 장수를 바깥으로 밀어낸다 · 불가사리 흡수는 끌어당긴다 (장수가 설 수 있는 판 안까지 · 성한 목책은 넘지 않는다)
-    commitGiant(e.giant, e, s, amount => hurt(s, amount), e.daze > 0, (dx, dy) => { const ox = s.x, oy = s.y; s.x = heroX(s.x + dx); s.y = heroY(s.y + dy); if (s.palisade) wallMove(s.palisade, s, ox, oy, WL.heroR) })
+    commitGiant(e.giant, e, s, amount => hurt(s, amount), e.daze > 0, (dx, dy) => { const ox = s.x, oy = s.y; s.x = heroX(s, s.x + dx); s.y = heroY(s, s.y + dy); if (s.palisade) wallMove(s.palisade, s, ox, oy, WL.heroR) })
     syncGiantPose(e.giant, e, Math.round(s.t * 120))
   }
   for (const d of s.drops) {
@@ -1659,7 +1706,8 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
     else if (d.age > C.dropLife) d.value = 0
   }
   s.drops = s.drops.filter(d => d.value > 0); s.enemies = s.enemies.filter(e => e.hp > 0)
-  s.shots = s.shots.filter(b => b.life > 0 && b.x > -60 && b.x < C.width + 60 && b.y > -60 && b.y < C.height + 60 && (s.mode !== 'stage' || b.kind !== 'barrage' || s.enemies.some(e => e.id === b.source && e.hp > 0)))
+  const edge = worldBounds(s)
+  s.shots = s.shots.filter(b => b.life > 0 && b.x > edge.left - 60 && b.x < edge.right + 60 && b.y > edge.top - 60 && b.y < edge.bottom + 60 && (s.mode !== 'stage' || b.kind !== 'barrage' || s.enemies.some(e => e.id === b.source && e.hp > 0)))
   for (const f of s.fx) f.life -= dt
   s.fx = s.fx.filter(f => f.life > 0)
   // 되살아나기 (상점 「부활」) — 체력 반으로, 잠깐 무적, 날아오던 것을 지운다

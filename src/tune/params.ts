@@ -136,6 +136,34 @@ export const HAEBI_STICK = { radius: 54, dead: 7, follow: 1, queue: .15 } as con
 /** 열전 전투판 확대 (11-19 형: 「우상단에 돋보기 · 탭 확대 · 탭 확대 · 탭 원래대로」) — 화면만 바뀐다 (판의 셈은 그대로).
  *  levels 단계마다 배율(처음은 1배) · follow 카메라가 장수를 따라가는 빠르기(초당 · 클수록 바짝) · ease 배율이 바뀌는 빠르기(초당) · pop 단추가 튀는 초 */
 export const HAEBI_ZOOM = { levels: [1, 1.35, 1.8], follow: 7, ease: 9, pop: .32 } as const
+/**
+ * 59-WIDE 넓은 맵 (11-22 형 「맵이 너무 좁다」 · 「추천대로 해줘」 · docs/realm/RAID-REWARD-MAP-20261122.md 4장) — 새 규칙(opts.mapRules)으로 켠 열전 스테이지 판에만 쓴다 · 옛 기록은 한 장짜리 판 그대로.
+ * 세계 = 원래 판(0~width × 0~height · 「결전장」)을 가운데 칸으로 둔 가로세로 screens 장. 원래 판의 좌표는 그대로라 거대 보스·중간 보스·목책 코드는 손대지 않는다.
+ *  spawnMargin 적이 나오는 둘레: 장수 화면(1배) 밖 이만큼(px · 카메라가 앞서 보는 lookAhead + 몸 반 폭보다 크게) · spawnOpen 그 둘레가 세계 끝에 눌려도 이 몫은 남아야 「화면 밖」으로 친다(아니면 반대쪽에서 나온다)
+ *  strayScreens 뒤처진 적: 장수에게서 화면 이만큼(가로는 판 폭 · 세로는 판 높이의 배수) 넘게 멀면 앞쪽 둘레로 옮긴다 (뱀서 방식 · 한쪽으로 달려도 밀도가 유지된다)
+ *  huntNear~huntFar 큰 놈 사냥: 정예가 나오는 거리(화면 수) · huntInset 세계 끝에서 이만큼 안쪽 · seenInset 화면 안으로 이만큼 들어와야 「봤다」(빨리 잡기 20초는 그때부터 센다)
+ *  gateWarn 안개 문: 보스 이 초 전부터 세계 끝에서 결전장으로 닫힌다(밀어 넣기만 · 피해 없음) · gateOpen 중간 보스가 쓰러지면 이 초에 걸쳐 다시 열린다
+ *  edge 고리가 적·알·상자를 안으로 미는 여유(px · 옆 · 위 · 아래 = 옛 판의 돌진 끝 10·20·10 그대로)
+ *  view: lookAhead 카메라가 걷는 쪽을 앞서 보는 px · leadEase 그 빠르기(초당) · tileScale 바닥 무늬 한 화소가 판에서 차지하는 px(결전장 그림과 같은 배율 = 판 높이 ÷ 그림 높이 810)
+ *        feather 결전장 그림 가장자리를 바닥에 섞는 폭(px · 가로는 그림의 숨은 옆 폭 bleed 를 먼저 쓴다) · cull 화면 밖 이만큼까지는 그린다(몸·효과 반 폭)
+ *        base 바닥 그림이 오기 전 민무늬 색 · fog 안개 문의 색(스테이지마다 · 화면만) · fogAlpha 바깥 진하기 · fogEdge 안쪽으로 번지는 폭(px) · fogPulse 일렁임(초당 라디안) · fogPulseShare 그 몫 · fogRim 고리 끝의 밝은 줄 굵기(px · 진하기 fogRimAlpha) · fogFadeIn 문이 이만큼 닫힐 때까지 안개가 서서히 짙어진다
+ *        camLag 안개 문이 이만큼 닫힐 때까지는 카메라가 세계 끝까지 본다(다가오는 안개가 화면에 보인다) · 그 뒤로 조여 다 닫히면 결전장에 맞는다
+ *        arrow 화면 가장자리 화살표: inset 가장자리에서 떨어진 px(위는 HUD 를 피해 top · 아래는 bottom) · size 화살촉 · badge 그림 원 반지름 · face 원 안에 얼굴이 오게 발을 내리는 몫(그림 키의) · bob 까딱임(px · 초당 라디안 bobRate) · max 한 번에 그리는 수 · 색(적 · 상자 · 결전장 · 테)
+ *        props 낱개 장식을 놓는 자리 {stage, sprite, x, y, height} — 그림이 오면 여기에 적는다 (지금은 비어 있다 · 몸과 같이 위에서 아래로 그린다 · 부딪히지 않는다)
+ */
+export const HAEBI_WIDE = {
+  screens: 3, spawnMargin: 110, spawnOpen: .5, strayScreens: 1.5,
+  huntNear: 1.2, huntFar: 1.8, huntInset: 60, seenInset: 30,
+  gateWarn: 20, gateOpen: 6, edge: [10, 20, 10] as const,
+  view: {
+    lookAhead: 70, leadEase: 2.5, tileScale: 720 / 810, feather: 90, bleed: 80, cull: 140,
+    base: { forest: '#2b3a2a', ford: '#3a4444', palisade: '#4a4133', snow: '#b9c4cc', fortress: '#3b302b', trial: '#2b3a2a' },
+    fog: { forest: '#c4d2bd', ford: '#cfe0e6', palisade: '#b9a98c', snow: '#f2f7fb', fortress: '#8a3a1e', trial: '#c4d2bd' },
+    fogAlpha: .82, fogEdge: 120, fogPulse: 1.7, fogPulseShare: .12, fogRim: 4, fogRimAlpha: .7, fogFadeIn: .25, camLag: .6,
+    arrow: { inset: 46, top: 150, bottom: 185, size: 20, badge: 30, face: .8, bob: 4, bobRate: 5, max: 6, foe: '#ff5a4a', loot: '#ffd66a', arena: '#fff3d0', rim: '#1a1210' },
+    props: [] as readonly { stage: string; sprite: string; x: number; y: number; height: number }[],
+  },
+} as const
 /** 열전 판 빠르기 (11-19 형: 「×1 누르면 ×2 · 또 누르면 ×3 · 한 번 더 누르면 ×1」) — 우상단 돋보기 옆 단추 · 단축키 X.
  *  steps 단계마다 배수: 판의 걸음(1/120초)은 그대로 두고 한 프레임에 걸음을 이만큼 더 돌린다 (A1 · 판 기록은 걸음마다라 빠르기와 상관없다).
  *  비기·각성 시전(컷인) 동안은 ×1 로 돈다 — 컷인 띠·기합·터짐이 세 배로 짧아지지 않게. pop 단추가 튀는 초 */

@@ -1,5 +1,6 @@
 import { HAEBI_RUN as C, HAEBI_CHAMPION as B, HAEBI_STAGES as ST } from '../tune/params.ts'
 import type { HaebiRun, Mob, MobKind } from './haebi.ts'
+import { fieldBounds } from './wide.ts'
 
 export type ChampionPattern = 'dash' | 'slam' | 'fan' | 'summon' | 'guard'
 export interface SpawnView { left: number; top: number; right: number; bottom: number }
@@ -71,7 +72,9 @@ export function stepChampion(s: HaebiRun, e: Mob, dt: number, hooks: ChampionHoo
   if (c.mode === 'dash') {
     const speed = B.dashSpeed * (e.phase! >= 2 ? B.phaseMove : 1), distance = Math.min(c.remaining, speed * dt), x0 = e.x, y0 = e.y
     const nx = x0 + c.dx * distance, ny = y0 + c.dy * distance
-    e.x = Math.max(10, Math.min(C.width - 10, nx)); e.y = Math.max(20, Math.min(C.height - 10, ny)); c.remaining -= distance
+    // 설 수 있는 땅 끝에서 멈춘다 — 한 장짜리 판은 예전 그대로(판 끝) · 59-WIDE 는 지금 땅(닫힌 결전장이면 판 끝과 같다)
+    const f = fieldBounds(s)
+    e.x = Math.max(f.left + 10, Math.min(f.right - 10, nx)); e.y = Math.max(f.top + 20, Math.min(f.bottom - 10, ny)); c.remaining -= distance
     if (!c.dashHit && segmentDistance(s.x, s.y, x0, y0, e.x, e.y) < B.dashWidth) { c.dashHit = true; hooks.hurt(B.dashDamage) }
     if (e.x !== nx || e.y !== ny || c.remaining <= 0) recover()
     return
@@ -96,8 +99,9 @@ export function stepChampion(s: HaebiRun, e: Mob, dt: number, hooks: ChampionHoo
     if (e.pattern === 'guard') { c.mode = 'guard'; c.t = B.guardSeconds; return }
     c.mode = 'tell'; e.wind = championWindup(e.pattern)
     if (e.pattern === 'dash') {
-      const wallX = c.dx > 0 ? (C.width - 10 - e.x) / c.dx : c.dx < 0 ? (10 - e.x) / c.dx : Infinity
-      const wallY = c.dy > 0 ? (C.height - 10 - e.y) / c.dy : c.dy < 0 ? (20 - e.y) / c.dy : Infinity
+      const f = fieldBounds(s)
+      const wallX = c.dx > 0 ? (f.right - 10 - e.x) / c.dx : c.dx < 0 ? (f.left + 10 - e.x) / c.dx : Infinity
+      const wallY = c.dy > 0 ? (f.bottom - 10 - e.y) / c.dy : c.dy < 0 ? (f.top + 20 - e.y) / c.dy : Infinity
       c.range = Math.max(0, Math.min(B.dashRange, wallX, wallY))
       e.aimX = e.x + c.dx * c.range; e.aimY = e.y + c.dy * c.range; c.dashHit = false
     }
