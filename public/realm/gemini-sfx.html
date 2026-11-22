@@ -1,0 +1,28 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>제미나이 타격음 고르기</title>
+<style>
+  :root { color-scheme: dark; }
+  body { background:#171c23; color:#e2dbcd; margin:0; padding:20px 16px 60px; font-family:"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; }
+  h1 { font-size:20px; margin:0 0 6px; } h2 { font-size:15px; color:#ffb347; margin:24px 0 6px; }
+  p { color:#95a1ae; font-size:13px; line-height:1.7; max-width:760px; margin:6px 0 10px; }
+  .row { display:flex; flex-wrap:wrap; gap:10px; }
+  button { font:inherit; min-width:110px; padding:12px 14px; border-radius:10px; border:1px solid #4a5363; background:#2a313c; color:#e2dbcd; cursor:pointer; display:flex; flex-direction:column; gap:3px; align-items:center; }
+  button b { font-size:16px; } button small { color:#8f99a5; font-size:11px; }
+  button.on { background:#a57a31; border-color:#e0bd78; color:#fff; }
+</style></head><body>
+<h1>제미나이 타격음 고르기 (1차)</h1>
+<p>열전에서 칠 때 나는 소리 후보입니다. 제미나이 「음악 만들기」로 국악 타악기(북·징) 곡을 만들고, 그 안에서 한 번씩 치는 소리를 잘라 냈습니다. 마음에 드는 번호를 말해 주세요 (예: 「보통 타격 low-05 · 큰 타격 big-02」). 다 별로면 「다시」라고 해 주세요.</p>
+<h2>큰 타격 (치명타 · 정예 · 보스)</h2><div class="row" id="big"></div>
+<h2>보통 타격 (낮은 북)</h2><div class="row" id="low"></div>
+<h2>높은 소리 (징 · 쇠)</h2><div class="row" id="high"></div>
+<h2>원곡 전체 (참고)</h2><div class="row" id="full"></div>
+<script>
+const files = { big: ['g01-big-01', 'g01-big-02', 'g01-big-03'], low: ['g01-low-04', 'g01-low-05', 'g01-low-06', 'g01-low-07'], high: ['g01-high-08'], full: ['g01-full'] }
+let cur = null
+for (const [k, list] of Object.entries(files)) for (const f of list) {
+  const b = document.createElement('button'); b.innerHTML = `<b>${f.replace('g01-', '')}</b><small>${k === 'full' ? '2분 40초' : '누르면 재생'}</small>`
+  b.onclick = () => { if (cur) { cur.pause(); document.querySelectorAll('button.on').forEach(x => x.classList.remove('on')) } cur = new Audio(`sfx/cand/${f}.${k === 'full' ? 'mp3' : 'ogg'}`); b.classList.add('on'); cur.onended = () => b.classList.remove('on'); cur.play() }
+  document.getElementById(k).append(b)
+}
+</script></body></html>
