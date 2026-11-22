@@ -32,7 +32,7 @@ PX = os.path.join(ROOT, 'public/realm/anim-px')
 STORE = 'D:/에셋창고'
 WALK_SRC = ('codex76', 'codex71', 'codex68', 'codex67')   # 76 = 확대 전용 걷기(띠 걷기가 옛 길이라 고해상도 판이 없던 장수)
 ATTACK_SRC = ('codex73', 'codex71', 'codex70', 'codex67')
-HDX_SRC = ('codex75',)
+HDX_SRC = ('codex78', 'codex75')   # 78 = 나머지 224장 (11-22 형 「다 시켜」)
 ATLAS_MAX = 4096
 SCALE, CELL_H = 2, 320
 UPSCALE_MAX = 1.3    # Codex 고해상도 판(칸 ~440px)은 2배 띠와 거의 같은 크기라 15% 안 늘림은 흐림이 거의 보이지 않는다(각성 소서노 1.16 · 진하 1.21 · 아라 1.26 처럼 공격·걷기 판 인물이 작은 장수가 있다 · 배율은 hero-hd2.json 에 남아 나중에 큰 원본을 다시 받을 장수를 고를 수 있다) · 160 띠를 2배로 늘리는 것과 다르다(그건 금지)

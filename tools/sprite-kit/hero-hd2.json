@@ -59,6 +59,46 @@
    "walk": "../flutter/arrow_game_one/tools/sprite-kit/awakened-20261114/intake-20261118/aw1-base-g-38-chopal-palmae-walk.png"
   }
  },
+ "aw1-base-w-02-goguryeo-lady": {
+  "bytes": 1483721,
+  "cell": [
+   368,
+   320
+  ],
+  "cols": 11,
+  "feet": 312,
+  "scale": {
+   "attack": 1.1713,
+   "hdx": 0.8099,
+   "walk": 0.6562
+  },
+  "sha256": "854596d8d5b7d2e2737be88b555f6fcc2def1090f4ad9fa5d94092b78d0b6581",
+  "sources": {
+   "attack": "codex70/attack8_aw1-base-w-02-goguryeo-lady.png",
+   "hdx": "codex78/hdx_aw1-base-w-02-goguryeo-lady.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/awakened-20261114/intake-20261118/aw1-base-w-02-goguryeo-lady-walk.png"
+  }
+ },
+ "aw1-base-w-06-buyeo-huntress": {
+  "bytes": 1717731,
+  "cell": [
+   464,
+   320
+  ],
+  "cols": 8,
+  "feet": 312,
+  "scale": {
+   "attack": 1.0806,
+   "hdx": 0.7283,
+   "walk": 0.734
+  },
+  "sha256": "4d299f3e9c9a80e71bace8c522099a55ae19dfc50bd7ab583f233c718194699a",
+  "sources": {
+   "attack": "codex70/attack8_aw1-base-w-06-buyeo-huntress.png",
+   "hdx": "codex78/hdx_aw1-base-w-06-buyeo-huntress.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/awakened-20261114/intake-20261118/aw1-base-w-06-buyeo-huntress-walk.png"
+  }
+ },
  "aw1-dangung": {
   "bytes": 1547996,
   "cell": [
@@ -317,6 +357,86 @@
    "attack": "codex70/attack8_base-g-38-chopal-palmae.png",
    "hdx": "codex75/hdx_base-g-38-chopal-palmae.png",
    "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/base-g-38-chopal-palmae-prop20261117-walk.png"
+  }
+ },
+ "base-w-02-goguryeo-lady": {
+  "bytes": 1339199,
+  "cell": [
+   432,
+   320
+  ],
+  "cols": 9,
+  "feet": 312,
+  "scale": {
+   "attack": 1.1358,
+   "hdx": 0.7841,
+   "walk": 0.9805
+  },
+  "sha256": "6691a148f09f368ed7f40deb5bc9e022a27278320fdc0f14dfd6cd77ecfd426b",
+  "sources": {
+   "attack": "codex70/attack8_base-w-02-goguryeo-lady.png",
+   "hdx": "codex78/hdx_base-w-02-goguryeo-lady.png",
+   "walk": "codex68/walk8_base-w-02-goguryeo-lady.png"
+  }
+ },
+ "base-w-05-baekje-queen": {
+  "bytes": 1387868,
+  "cell": [
+   384,
+   320
+  ],
+  "cols": 10,
+  "feet": 312,
+  "scale": {
+   "attack": 0.9964,
+   "hdx": 0.7439,
+   "walk": 0.7185
+  },
+  "sha256": "704d700569ff97c2bd24d04ed2ce6a187633a41d5a404f3753e792aa99cab152",
+  "sources": {
+   "attack": "codex70/attack8_base-w-05-baekje-queen.png",
+   "hdx": "codex78/hdx_base-w-05-baekje-queen.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/base-w-05-baekje-queen-prop20261117-walk.png"
+  }
+ },
+ "base-w-06-buyeo-huntress": {
+  "bytes": 1685510,
+  "cell": [
+   480,
+   320
+  ],
+  "cols": 8,
+  "feet": 312,
+  "scale": {
+   "attack": 1.2837,
+   "hdx": 0.7459,
+   "walk": 0.736
+  },
+  "sha256": "6133b4334f7bf664205f9d99f53e81166d12e923cab8d1320caebd9d5ec1e312",
+  "sources": {
+   "attack": "codex70/attack8_base-w-06-buyeo-huntress.png",
+   "hdx": "codex78/hdx_base-w-06-buyeo-huntress.png",
+   "walk": "../flutter/arrow_game_one/tools/sprite-kit/nonawakened-20261113/base-w-06-buyeo-huntress-prop20261117-walk.png"
+  }
+ },
+ "base-w-08-mahan-warrior": {
+  "bytes": 1216470,
+  "cell": [
+   480,
+   320
+  ],
+  "cols": 8,
+  "feet": 312,
+  "scale": {
+   "attack": 1.0376,
+   "hdx": 0.8,
+   "walk": 0.9857
+  },
+  "sha256": "d81f484aabca0d64fec028c4c3eaa649b8c9fd8f18bcc1583eaf1bcc47bd72bb",
+  "sources": {
+   "attack": "codex70/attack8_base-w-08-mahan-warrior.png",
+   "hdx": "codex78/hdx_base-w-08-mahan-warrior.png",
+   "walk": "codex68/walk8_base-w-08-mahan-warrior.png"
   }
  },
  "base-w-102-garak-dana": {
