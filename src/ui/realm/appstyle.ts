@@ -726,6 +726,19 @@ html.duel-open .ap * { animation-play-state: paused !important; }
 @media (max-height: 520px) and (min-aspect-ratio: 4/3) {
   .ap .mcard.fulld .cardc.story { flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 14px; }
   .ap .mcard.fulld .cardc.story .cimg { flex: none; width: min(46%, calc((100dvh - 120px) * 1.5)); }
+  /* 고르는 단계 — 그림은 물음 곁에 작게, 답은 화면 폭 한 줄에 나란히. 세로로 쌓은 셋은 둘째·셋째 답이 화면 아래로 밀려 굴려야 했다 (형 11-21 가로) */
+  .ap .mcard.fulld .cardc:not(.story) { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 6px 14px; }
+  .ap .mcard.fulld .cardc:not(.story) .cimg { grid-column: 1; grid-row: 1 / span 2; width: auto; height: min(90px, 22dvh); }
+  .ap .mcard.fulld .cardc:not(.story) .cb { display: contents; }
+  .ap .mcard.fulld .cardc:not(.story) .cb > :not(.copts) { grid-column: 2; }
+  .ap .mcard.fulld .cardc:not(.story) .cask { margin: 0; }
+  .ap .mcard.fulld .cardc:not(.story) .copts { grid-column: 1 / -1; }
+  .ap .mcard.fulld .cardc.n3 .copts { grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); grid-template-columns: none; }
+  .ap .mcard.fulld .cardc.n3 .copt { flex-direction: column; text-align: center; }
+  .ap .mcard.fulld .cardc.n3 .copt .cot { align-items: center; }
+  .ap .mcard.fulld .cardc.n3 .copt .cfx { justify-content: center; }
+  .ap .mcard.fulld .cardc .copt, .ap .mcard.fulld .cardc.n3 .copt { min-height: 0; padding: 6px 8px; }
+  .ap .mcard.fulld .cardc .copt .cof, .ap .mcard.fulld .cardc.n3 .copt .cof { width: 44px; height: 44px; }
 }
 .ap .cardc .csub { margin: 8px 0 4px; padding: 12px 14px; min-height: calc(2 * 1.5em + 24px); display: flex; align-items: center; justify-content: center; text-align: center; font-size: 16.5px; line-height: 1.5; color: #fff4dc; background: #0008; border-radius: 10px; animation: csubin .25s ease-out; }
 .ap .cardc .csub.csay { justify-content: flex-start; gap: 12px; text-align: left; padding: 10px 14px 10px 10px; }

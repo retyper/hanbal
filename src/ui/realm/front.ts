@@ -755,6 +755,11 @@ export const FRONT_CSS = `
   .ap .front.title .tv .fbtns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(560px, 76vw); }
   .ap .front.title .tv .fbtns > .btn, .ap .front.title .tv .fbtns > .cont { width: 100%; }
   .ap .front.title .tv .fbtns > .cont { grid-column: 1 / -1; }
+  /* 나라 자세히 — 얼굴은 화면 높이에 맞게 작게, 「이 나라로 시작」은 얼굴 칸 밑 화면 아래에 붙인다 (온 폭으로 붙으니 설명 아래쪽 · 세기 줄을 덮었다 · 형 11-21 가로) */
+  .ap .front.detail .dcard { --dfw: min(220px, 30vw, calc(100dvh - 150px)); flex-wrap: nowrap; margin-top: 4px; padding-bottom: 12px; }
+  .ap .front.detail .dface { flex: none; align-self: flex-start; width: var(--dfw); height: var(--dfw); } /* 줄 높이로 늘어나 화면 밑까지 길었다 */
+  .ap .front.detail .db .dstart { position: fixed; left: max(14px, calc((100vw - 760px) / 2), env(safe-area-inset-left)); bottom: 0; width: var(--dfw); padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px)); background: none; }
+  .ap .front.detail .db .dstart .btn { padding-left: 8px; padding-right: 8px; }
 }
 .ap .front .fmore { text-align: center; margin: 14px 0 0; } .ap .front .fmore > summary { list-style: none; display: inline-flex; cursor: pointer; font-size: 13px; }
 .ap .front .fmore > summary::-webkit-details-marker { display: none; }
