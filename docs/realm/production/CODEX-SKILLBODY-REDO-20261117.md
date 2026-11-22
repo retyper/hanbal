@@ -2654,3 +2654,7 @@ Claude 결정: **둘 다, 한 장면으로.** 쇠비를 앞에 크게 세운 새
 - **걷기 8칸(68 과 같은 꼴 · 4×2 · #1c2129 · 기준 띠 0~11칸 그대로 · 걷기 다리 교대) → `D:/에셋창고/codex76/walk8_<띠이름>.png`**: soebi irang aw1-irang haedal aw1-haedal ara hojin jumong hogong aw1-hogong gomok aw1-gomok base-g-38-chopal-palmae aw1-base-g-38-chopal-palmae dangung (15). 확대 때만 쓰는 판이라 **인물 키를 그 장수 attack8 판과 같게**.
 - 차례: 위 15명 걷기와 hdx 를 장수마다 짝으로(걷기 → hdx) · 한 장 끝날 때마다 `CODEX-TO-CLAUDE-LATEST.md` 한 줄.
 - **76 고침: 걷기 8칸(codex76)은 그만.** 띠 걷기를 구운 옛 고해상도 원본(prop 걷기 판)이 저장소에 있어 그걸로 확대 띠 걷기를 굽는다(같은 그림이라 더 낫다). HELD 걷기 판들은 쓰지 않는다. **hdx(보충 6칸)만** 34명 중 남은 장수를 계속.
+
+
+### 77 · 11-22 Claude · 알림: 사이트 판 미디어는 원본과 SHA 가 다르다(일부러)
+Pages 배포가 1GB 를 넘어(1.58GB) 사이트 판만 줄였다(`tools/pages-shrink.mjs` · 0.87GB). 사이트(retyper.github.io/hanbal)의 영상·PNG·JPG·webp·소리 상당수가 다시 구워져 **원본 SHA 와 다르다** — 운영 확인에서 「원본 SHA 일치」로 보던 검사는 이제 쓰지 말고, 있는지(200)·크기·재생만 볼 것. 원본(`public/`)과 스팀 판은 그대로다. 등록 안 된 각성 영상과 진각성 DLC 묶음은 사이트 판에서 빠진다(DLC 꺼짐).
