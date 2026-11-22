@@ -13,6 +13,7 @@
  */
 import { HAEBI_SOUND as V, HAEBI_IMPACT as IMPACT, HAEBI_FEEL_TIERS as F, HAEBI_ULT as U, HAEBI_AWAKEN_ULT as AC, HAEBI_JACKPOT as JP, type FeelTier } from '../tune/params.ts'
 import type { HaebiRun, Kit } from './haebi.ts'
+import { slamWatcher } from './slam-watch.ts'
 
 /** 한 프레임에 일어난 손맛 사건 — 화면이 진동에 쓴다 (판은 읽기만) · cast 비기를 누름 · skill 비기가 터짐 · crit 크리티컬이 났음 */
 export interface FeelEvents { cast: FeelTier | null; skill: FeelTier | null; crit: boolean }
@@ -151,6 +152,22 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
     srcs[0]!.onended = () => { voices--; for (const x of [...srcs, ...nodes]) x.disconnect() }
     for (const x of srcs) { x.start(t); x.stop(t + len + .01) }
   }
+  /** 보스 「쿵」 — 배를 울리는 낮은 사인이 더 낮게 꺼지고 땅 노이즈가 길게 · 땅 소리를 낮게 얹는다 (big=false 는 장수급 적 내려찍기) */
+  let quakeAt = -9
+  function quake(big: boolean) {
+    const c = ctx!; if (c.currentTime - quakeAt < V.quakeGap) return
+    quakeAt = c.currentTime
+    const k = big ? 1 : V.slamSmall, len = V.quakeS * (big ? 1 : .6)
+    voice(c, len, V.quake * k * volume('sfx'), (out, t, nodes) => {
+      const osc = c.createOscillator(); osc.type = 'sine'; osc.frequency.setValueAtTime(V.quakeHz[0], t); osc.frequency.exponentialRampToValueAtTime(V.quakeHz[1], t + len); osc.connect(out)
+      if (!noise) return [osc]
+      const nz = c.createBufferSource(), lp = c.createBiquadFilter(), ng = c.createGain()
+      nz.buffer = noise; nz.loop = true; lp.type = 'lowpass'; lp.frequency.value = V.quakeCut; ng.gain.value = V.quakeNoise; nz.connect(lp).connect(ng).connect(out)
+      nodes.push(lp, ng)
+      return [osc, nz]
+    })
+    play('quakeClip', any(FILES.earth), V.quakeClip * k * volume('sfx'), 0, V.quakeClipRate * (big ? 1 : 1.3), V.maxVoices + 2)
+  }
   /** 「둑」 — 낮은 사인이 아래로 떨어지고 거친 노이즈가 한 번 (적이 맞음) */
   function thud(count: number, damage: number) {
     const c = ctx!, k = thudShape(count, damage, Math.random() * 2 - 1)
@@ -230,6 +247,7 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
   const critHit = () => { ping(); sfx('hitC', V.critClip) }
   /** 이미 소리를 낸 투사체·이펙트 (새로 생긴 것만 낸다) */
   const seen = new WeakSet<object>()
+  const slams = slamWatcher()
   /** 지난 프레임에 판에 있던 기세 알 (사라진 수 = 주운 수 · 새 판이면 비운다) */
   let known = new WeakSet<object>(), dropsWere = 0, xpWas = 0, chestsWere = 0
   const prev = { attack: 0, hurt: 0, kills: 0, skillCd: 0, offers: 0, level: 1, wakes: 0, barrage: 0, elites: 0, boss: false, state: 'playing' as HaebiRun['state'], run: null as HaebiRun | null }
@@ -318,6 +336,7 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
         if (e.recoveryHit && ctx && ctx.currentTime - championAt >= IMPACT.cooldown) { championAt = ctx.currentTime; const t = tierOf(false); if (!skill || RANK[t] > RANK[skill]) skill = t }
         if (e.kind === 'bolt') sfx('bolt', V.magic, V.magicGap); else if (e.kind === 'spike') sfx('earth', V.magic, V.magicGap); else if (e.kind === 'skill') { const t = tierOf((e.awakened ?? e.tru) === true); if (!skill || RANK[t] > RANK[skill]) skill = t } else if (e.kind === 'thud' || e.kind === 'ult' && e.ult === 'sling') sfx('stone', V.stone, V.stoneGap, .9 + (n % 5) * .05) }
       if (humanDown > 0) sfx('down', V.down, V.downGap, .92 + (n % 5) * .04)
+      const slam = slams(s); if (slam.length && room(2)) quake(slam.some(q => q.boss))
       // 비기가 터짐(한 프레임에 하나 · 가장 높은 계단) · 크리티컬 「핑」은 한 프레임 한 번 · crit.gap 틈 · 소리 수 한도면 버린다
       if (skill) impact(skill)
       if (crits > 0 && ctx && ctx.currentTime - critAt >= F.crit.gap && room()) { critAt = ctx.currentTime; critHit() }

@@ -47,6 +47,8 @@ export const HAEBI_SOUND = {
   /** 형이 더 고른 것 — down 적 쓰러짐 신음(downGap 초에 하나만 · 떼로 죽어도 하나) · fall 상자가 땅에 떨어짐 · popClip 기세 알 「뽁」에 얹는 소리(연달아 먹으면 popRate 몫만큼 높아짐) */
   down: .3, downGap: .45, fall: .55, popClip: .45, popRate: .5,
   thud: .32, thudGap: .05, thudMs: [30, 60], thudHz: [150, 85], thudDrop: .55, thudRef: 60, thudStack: .12, thudStackMax: 5, thudJitter: .06, thudNoise: .55, thudCut: 900,
+  /** 보스 「쿵」(형 11-23 「보스가 쿵 하면 쿵 소리」 · src/raid/slam-watch.ts): 아주 낮은 사인이 더 낮게 떨어짐 + 땅 노이즈 + 땅 소리 낮게 얹기 · 장수급 적 내려찍기는 slamSmall 몫 */
+  quake: .95, quakeS: 1.1, quakeHz: [58, 24], quakeNoise: .8, quakeCut: 260, quakeClip: .75, quakeClipRate: .55, quakeGap: .15, slamSmall: .55,
   /**
    * 기세 알 줍는 「뽁」 (11-19 형: 「보석인지 템인지는 먹을 때 작은 버블 소리」) — 위로 짧게 미끄러지는 사인.
    * popHz 첫 높이 · popRise 끝 높이 몫 · popMs 길이 · popGap 묶음 틈(초) · popCombo 이 초 안에 또 먹으면 한 칸 오름 · popStep 한 칸(반음 몫) · popSteps 몇 칸까지
@@ -1283,6 +1285,8 @@ export const HAEBI_END = {
  */
 export const HAEBI_SCORCH = {
   life: 2.6, fadeOut: 1, max: 40, size: 1.05, squash: .55, alpha: .75, bake: 128,
+  /** 보스 땅 울림 자국 반지름(판의 고리는 작아서 따로) · 장수급 적 내려찍기는 그 예고 원 그대로 */
+  quakeR: 130, waveLife: .45, waveGrow: 1.5, waveWidth: 7, waveAlpha: .8, waveColor: '#e8d8b0',
   core: 'rgba(20,12,8,.92)', mid: 'rgba(58,34,20,.55)',
   emberLife: 1.1, embers: 5, emberPx: 3, ember: '#ffb04a', flicker: 18,
   /** 흙 자국 (불 아닌 폭발·내려찍기·돌팔매·가시) — 너무 작은 것(minR 아래)은 남기지 않고 큰 것은 maxR 로 자른다 */

@@ -5,11 +5,13 @@
  */
 import { HAEBI_SCORCH as S } from '../tune/params.ts'
 import type { Effect, HaebiRun } from './haebi.ts'
+import { slamWatcher } from './slam-watch.ts'
 
-interface Mark { x: number; y: number; r: number; t: number; seed: number; burn: boolean }
+interface Mark { x: number; y: number; r: number; t: number; seed: number; burn: boolean; wave?: boolean }
 let marks: Mark[] = []
 let runOf: HaebiRun | null = null
 let seen = new WeakSet<Effect>()
+const slams = slamWatcher()   // 보스 「쿵」 · 장수급 적 내려찍기 자리 (11-23 형 「보스가 쿵」)
 let stamp: HTMLCanvasElement | null = null, crater: HTMLCanvasElement | null = null
 
 /** 따뜻한 빛(불)인가 — 찬 빛(화살비·혼불)은 자국을 남기지 않는다 */
@@ -28,6 +30,7 @@ export function trackScorch(s: HaebiRun, foe: (f: Effect) => boolean) {
     const burn = f.kind === 'blast' && !foe(f) && warm(f.color)
     marks.push({ x: f.x, y: f.y, r: Math.min(f.r, S.maxR), t: s.t, seed: (Math.abs(Math.round(f.x * 7 + f.y * 13)) % 997) / 997, burn })
   }
+  for (const q of slams(s)) marks.push({ x: q.x, y: q.y, r: Math.min(q.boss ? S.quakeR : q.r, S.maxR), t: s.t, seed: (Math.abs(Math.round(q.x * 7 + q.y * 13)) % 997) / 997, burn: false, wave: true })
   while (marks.length && (s.t - marks[0]!.t > S.life || marks.length > S.max)) marks.shift()
 }
 
@@ -66,6 +69,12 @@ export function drawScorch(ctx: CanvasRenderingContext2D, s: HaebiRun) {
     const w = m.r * S.size, h = w * S.squash
     ctx.globalAlpha = a0 * (m.burn ? S.alpha : S.dirtAlpha) * fade
     ctx.drawImage(img, m.x - w, m.y - h, w * 2, h * 2)
+    // 땅 울림 충격파: 흙빛 고리가 퍼지며 가늘어진다 (보스 「쿵」 · 내려찍기)
+    if (m.wave && age < S.waveLife) {
+      const k = age / S.waveLife, rr = m.r * (.4 + k * S.waveGrow)
+      ctx.globalAlpha = a0 * (1 - k) * S.waveAlpha; ctx.strokeStyle = S.waveColor; ctx.lineWidth = S.waveWidth * (1 - k) + 1
+      ctx.beginPath(); ctx.ellipse(m.x, m.y, rr, rr * S.squash, 0, 0, Math.PI * 2); ctx.stroke()
+    }
     // 불씨: 자국 안 몇 점이 깜빡이다 꺼진다
     if (m.burn && age < S.emberLife) {
       const k = 1 - age / S.emberLife

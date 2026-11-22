@@ -1,4 +1,5 @@
 import type { HaebiRun } from './haebi.ts'
+import { slamWatcher } from './slam-watch.ts'
 import { HAEBI_IMPACT as F } from '../tune/params.ts'
 /** Wall-time presentation state; observe never mutates the simulation. */
 export class RaidFeel {
@@ -13,6 +14,7 @@ export class RaidFeel {
   private hurt = 0
   private elites = 0
   private bossHp = 0
+  private slams = slamWatcher()   // 장수급 적 내려찍기도 흔들린다 (보스 「쿵」은 아래 quake 고리로)
   get stopped() { return this.time < this.stopUntil }
   get stopRemaining() { return Math.max(0, this.stopUntil - this.time) }
   get shake() { return Math.min(F.shakeMax, this.strength * Math.max(0, (this.shakeUntil - this.time) / F.shakeLife)) }
@@ -31,6 +33,7 @@ export class RaidFeel {
       if (f.championCue === 'enter' || f.championCue === 'roar' || f.championCue === 'quake') { stop = Math.max(stop, F.eliteStop); shake = Math.max(shake, F.shakeElite) }
       if (f.recoveryHit || f.awakenedRelease) { stop = Math.max(stop, F.bossSkillStop); shake = Math.max(shake, F.shakeSkill) }
     }
+    if (this.slams(run).some(q => !q.boss)) shake = Math.max(shake, F.shakeElite)
     if (run.elites > this.elites) { stop = Math.max(stop, F.eliteStop); shake = Math.max(shake, F.shakeElite) }
     if (run.hp < this.hp || run.hurt > this.hurt) { stop = Math.max(stop, F.hurtStop); shake = Math.max(shake, F.shakeHurt) }
     // Multi-beat ultimates can hit after their opening effect was first observed.
