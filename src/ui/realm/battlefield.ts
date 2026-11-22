@@ -2332,8 +2332,9 @@ html[data-lang="en"] .ap .wr.b0 .whelp::after { content: 'Details'; } html[data-
   .ap .wtop .ws { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 6px; align-items: center; text-align: left; }
   .ap .wtop .ws .wpf { --pf: 60px; grid-row: 1 / span 2; grid-column: 1; }
   .ap .wtop .ws > b { grid-column: 2; grid-row: 1; margin: 0; font-size: 14px; align-self: end; }
-  .ap .wtop .ws .wnat { grid-column: 2; grid-row: 2; justify-self: start; align-self: start; font-size: 11.5px; min-height: 18px; padding: 0 7px 0 3px; max-width: 100%; overflow: hidden; white-space: nowrap; }
+  .ap .wtop .ws .wnat { grid-column: 2; grid-row: 2; justify-self: start; align-self: start; font-size: 12px; min-height: 18px; padding: 0 7px 0 3px; max-width: 100%; overflow: hidden; white-space: nowrap; }
   .ap .wtop .ws .wnat img { width: 16px; height: 16px; }
+  .ap .wtop .ws .wnat { gap: 2px; padding-right: 4px; } .ap .wtop .ws .wnat .wrole { padding: 0 3px; margin-right: 1px; letter-spacing: 0; } /* 공격·수비 칩을 12px 로 키운 만큼 안쪽을 줄여 나라 이름이 안 잘리게 (360 폭) */
   .ap .wtop .ws .wbar, .ap .wtop .ws .wn { grid-column: 1 / -1; }
   .ap .wtop .ws .wbar { margin-top: 14px; height: 10px; }
   .ap .wtop .ws .wn { font-size: 11px; line-height: 1.25; text-align: center; justify-self: center; padding: 0 6px; }
@@ -2385,8 +2386,9 @@ html[data-lang="en"] .ap .wr.b0 .whelp::after { content: 'Details'; } html[data-
 .ap .wfield .wrv-gloss { opacity: .6; }
 @media (prefers-reduced-motion: reduce) { .ap .wfield .wrv-rip { animation: none; opacity: .5; } }
 /* 공격·수비 꼬리 */
-.ap .wrole { display: inline-block; font-style: normal; font-size: .82em; font-weight: 900; padding: 0 5px; margin-right: 4px; border-radius: 6px; vertical-align: 1px; letter-spacing: .04em; }
+.ap .wrole { display: inline-block; font-style: normal; font-size: max(12px, .82em); font-weight: 900; padding: 0 5px; margin-right: 4px; border-radius: 6px; vertical-align: 1px; letter-spacing: .04em; }
 .ap .wrole.atk { background: #c8402a; color: #fff; } .ap .wrole.def { background: #3a6ab0; color: #fff; }
+.ap .wf-who .wrole { font-size: .82em; } /* 전장 바닥 이름표(세로 화면) 안은 이름표 글과 같은 결로 — 12px 로 키우면 무리 수 칩에 닿는다 */
 .ap .wfield.play .wf-mid-terr { transform-origin: 50% 62%; animation: wpushin 1.5s cubic-bezier(.2, .7, .3, 1) calc(var(--hd) - .25s) both; }
 .ap .wf2s .tk { position: absolute; left: calc(var(--x) + var(--dx, 0%)); top: calc(60% + var(--oy) * var(--sy, 1) + var(--dy, 0%)); height: clamp(28px, 7.4cqw, 50px); width: auto;
   transform: translate(-50%, -100%) scale(var(--sc, 1)); transform-origin: 50% 100%; rotate: var(--rot, 0deg);
@@ -3352,7 +3354,7 @@ html[data-lang="en"] .ap .wr.b0 .whelp::after { content: 'Details'; } html[data-
 /* 해시계 (형 10-26) — 머리 밑 때 줄: 지난 때 흐리게 · 지금 때 빛나게 · 남은 합을 말로 · 마지막 때는 붉게 */
 .ap .wclk { position: relative; z-index: 3; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px 8px; margin: 0 0 6px; }
 .ap .wclk ol { display: flex; gap: 3px; margin: 0; padding: 0; list-style: none; }
-.ap .wclk li { padding: 1px 8px; border-radius: 10px; font-size: 11.5px; line-height: 1.5; color: #d8cfbf; background: #241a10cc; border: 1px solid #6a5236; text-shadow: 0 1px 2px #000; white-space: nowrap; }
+.ap .wclk li { padding: 1px 8px; border-radius: 10px; font-size: 12px; line-height: 1.5; color: #d8cfbf; background: #241a10cc; border: 1px solid #6a5236; text-shadow: 0 1px 2px #000; white-space: nowrap; }
 .ap .wclk li.ck-past { opacity: .45; }
 .ap .wclk li.ck-now { color: #1a1206; background: linear-gradient(#ffe7a8, #e8b860); border-color: #fff3c8; font-weight: 800; box-shadow: 0 0 10px #ffd27acc; animation: wclknow 1.2s ease-in-out infinite alternate; }
 .ap .wclk li.ck-dark { background: #141a2ccc; border-color: #4a5a8a; color: #c8d4f0; }
@@ -3361,10 +3363,10 @@ html[data-lang="en"] .ap .wr.b0 .whelp::after { content: 'Details'; } html[data-
 .ap .wclk > b { font-size: 13px; color: #ffe7b0; text-shadow: 0 1px 3px #000, 0 0 8px #000c; white-space: nowrap; }
 .ap .wclk.last > b { color: #ff8a6a; animation: wclklast .8s ease-in-out infinite alternate; }
 .ap .wclk.ask > b { color: #ffd27a; font-size: 15px; }
-.ap .wclk .wclk-m { font-style: normal; font-size: 11px; font-weight: 800; padding: 0 6px; border-radius: 8px; color: #e0e8ff; background: #223060; border: 1px solid #8fa4e0; }
+.ap .wclk .wclk-m { font-style: normal; font-size: 12px; font-weight: 800; padding: 0 6px; border-radius: 8px; color: #e0e8ff; background: #223060; border: 1px solid #8fa4e0; }
 @keyframes wclknow { to { box-shadow: 0 0 16px #ffd27a; } }
 @keyframes wclklast { to { text-shadow: 0 1px 3px #000, 0 0 12px #ff5a3a; transform: scale(1.06); } }
-@media (max-width: 520px) { .ap .wclk li { padding: 0 6px; font-size: 10.5px; } .ap .wclk > b { font-size: 12px; } }
+@media (max-width: 520px) { .ap .wclk li { padding: 0 6px; font-size: 12px; } .ap .wclk > b { font-size: 12px; } }
 /* 해시계의 하늘 — 어둠 속 합 · 해질녘 노을 · 새벽빛 (그림은 읽기만) */
 .ap .wbg.dk-night { --wdim: .7; --wtint: #05081a; }
 .ap .wbg.dk-night::after { background: radial-gradient(ellipse at 50% 20%, #1a2a5a55, #05081acc 75%); }
@@ -3524,6 +3526,7 @@ html[data-lang="en"] .ap .wr.b0 .whelp::after { content: 'Details'; } html[data-
   .ap .wr .wtop > .wfield { grid-column: 2; grid-row: 3; min-height: 0; height: auto !important; margin: 0; border-radius: 4px; }
   .ap .wr .wfield .wf-who { display: none; }
   .ap .wr .wfield .wleg { top: 5px; bottom: auto; }
+  .ap .wr .wf-omen small { font-size: 12px; }
   /* 아래 띠 — 무리 칩 · 맡긴다 · 전투 개시를 한 줄로 */
   .ap .wr .wready { flex-direction: row; justify-content: center; gap: 10px; box-sizing: border-box; height: var(--wlb); padding: 4px var(--wlx) calc(4px + env(safe-area-inset-bottom)); background: #0d0a07f2; }
   .ap .wr .wrchips { flex: 0 1 auto; flex-wrap: nowrap; justify-content: flex-end; gap: 5px; min-width: 0; max-width: none; }

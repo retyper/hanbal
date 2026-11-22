@@ -551,7 +551,7 @@ html.duel-open .ap * { animation-play-state: paused !important; }
 .ap .deeds .dd span { flex: none; color: var(--mute); font-size: 12px; min-width: 4.4em; } .ap .deeds .dd.good { border-color: var(--good); } .ap .deeds .dd.bad { border-color: var(--bad); } .ap .deeds .dd.us { border-color: var(--gold); }
 .ap .deeds .btn { margin-top: 4px; }
 /* 이름 앞 칭호 — 성처럼 읽히지 않게 작고 흐리게 · 이름만 들은 장수 표 */
-.ap .ttl { font-size: .72em; color: var(--mute); font-weight: 500; margin-right: .3em; letter-spacing: -.02em; }
+.ap .ttl { font-size: max(min(12px, 1em), .72em); color: var(--mute); font-weight: 500; margin-right: .3em; letter-spacing: -.02em; }
 .ap .heard { font-size: 11px; color: #c9b98f; border: 1px solid #5a5040; border-radius: 8px; padding: 0 6px; margin-left: 4px; font-weight: 500; white-space: nowrap; }
 .ap .heardp { font-size: 13px; color: #d8c89a; background: #2a2a22; border-left: 3px solid #8a7a50; padding: 6px 8px; border-radius: 6px; }
 .ap .fbtn { border: 0; padding: 0; background: none; cursor: pointer; border-radius: 50%; }
@@ -979,7 +979,7 @@ html.duel-open .ap * { animation-play-state: paused !important; }
 .ap .seg.wrap { flex-wrap: wrap; } .ap .seg.wrap button { flex: 1 0 30%; }
 /* 외교의 손 — 보낼 사람 (VICTORY §2-2) */
 .ap .hands { display: flex; align-items: center; gap: 10px; margin: 6px 0 8px; padding: 8px 10px; border-radius: 12px; background: #1f1710; border: 1px solid #6a5236; }
-.ap .hands .hf { display: flex; flex: none; } .ap .hands .hf span { margin-right: -8px; transition: opacity .2s; } .ap .hands .hf span.used { opacity: .3; }
+.ap .hands .hf { display: flex; flex: 0 1 auto; flex-wrap: wrap; gap: 4px 6px; min-width: 0; } .ap .hands .hf span { margin-right: 0; transition: opacity .2s; } .ap .hands .hf span.used { opacity: .3; }
 .ap .hands .hface { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 2px solid #8a7040; background: #3a2c1e; display: block; }
 .ap .hands .ht { display: flex; flex-direction: column; margin-left: 8px; min-width: 0; } .ap .hands .ht b { font-size: 14.5px; } .ap .hands .ht span { font-size: 12px; color: var(--mute); }
 /* 이기는 길 — 정복 · 맹주 (VICTORY §1) */
@@ -1109,7 +1109,7 @@ html.duel-open .ap * { animation-play-state: paused !important; }
 .ap .srow .pin.on { filter: none; border-color: #e0b04a; background: #3a2c14; box-shadow: 0 0 8px #e0b04a66; }
 /* 보낼 사람 줄 — 얼굴 밑에 맡은 일 · 쉬는 이는 「쉰다」 */
 .ap .hands .hf > span { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; vertical-align: top; }
-.ap .hands .hf > span small { font-size: 10.5px; line-height: 1.1; max-width: 64px; text-align: center; color: #9fd18b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ap .hands .hf > span small { font-size: 12px; line-height: 1.15; max-width: 76px; text-align: center; color: #9fd18b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ap .hands .hf > span.used small { color: #e8c88a; }
 /* 누가 가나 — 다른 일을 맡은 이 */
 .ap .wg.off { opacity: .55; filter: grayscale(.6); cursor: default; } .ap .wg .busyw { font-style: normal; font-size: 11px; color: #e8a08a; }
