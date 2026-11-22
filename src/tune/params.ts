@@ -48,6 +48,8 @@ export const HAEBI_SOUND = {
   down: .3, downGap: .45, fall: .55, popClip: .45, popRate: .5,
   thud: .32, thudGap: .05, thudMs: [30, 60], thudHz: [150, 85], thudDrop: .55, thudRef: 60, thudStack: .12, thudStackMax: 5, thudJitter: .06, thudNoise: .55, thudCut: 900,
   /** 보스 「쿵」(형 11-23 「보스가 쿵 하면 쿵 소리」 · src/raid/slam-watch.ts): 아주 낮은 사인이 더 낮게 떨어짐 + 땅 노이즈 + 땅 소리 낮게 얹기 · 장수급 적 내려찍기는 slamSmall 몫 */
+  /** 치명타 마무리(홈런) 소리: 「둑」 짧고 굵은 저음(finishThud · Hz 떨어짐 · S 길이) → 멈춤(hold) 뒤 「팡」 비기 터짐 소리 높게(finishPop · popRate) + 맑은 종 꼬리(finishTail · tailS 길이) · 한 묶음 틈 finishGap */
+  finishThud: .7, finishThudHz: [130, 48], finishThudS: .2, finishPop: .5, finishPopRate: 1.35, finishTail: .22, finishTailS: 1.1, finishGap: .08,
   quake: .95, quakeS: 1.1, quakeHz: [58, 24], quakeNoise: .8, quakeCut: 260, quakeClip: .75, quakeClipRate: .55, quakeGap: .15, slamSmall: .55,
   /**
    * 기세 알 줍는 「뽁」 (11-19 형: 「보석인지 템인지는 먹을 때 작은 버블 소리」) — 위로 짧게 미끄러지는 사인.
@@ -1216,8 +1218,9 @@ export const HAEBI_IMPACT = {
   numberPop: 1.6, numberPopTime: .08, numberCriticalPop: 1.85,
   deathDistance: 60, deathEliteDistance: 100, deathLift: 48, deathBounce: 13,
   deathBounceAt: .65, deathSpin: 2.7, deathFadeAt: .65,
-  //60 presentation only: first .035s holds, then a brief accelerating exit. Proposed values await actual visual QA.
-  criticalFinish: { life: .24, hold: .035, distance: 420, lift: 84, endScale: .12, spin: 1.9, trailAlpha: .18, trailOffsets: [.022, .045], maxBodies: 4, lowMaxBodies: 2 },
+  // 치명타 마무리 「홈런」 (11-23 형 「너무 빠르고 소리도 별로 · 클라우드 메도우의 둑, 팡~~ 이 안 느껴진다」 · 옛 .24초 → 세 박자):
+  // hold 초 맞은 자리에서 부풀며 멈춤(「둑」) → 위로 크게 떠 멀리 날아가며 작아짐(빨리 떠서 느려짐 · 「팡」) → starAt 몫부터 반짝 별이 터지며 사라짐(「~~」)
+  criticalFinish: { life: .95, hold: .1, holdScale: 1.12, distance: 560, lift: 170, endScale: .2, spin: 4.2, fadeAt: .72, starAt: .7, starSize: 34, starColor: '#fff2b0', trailAlpha: .2, trailOffsets: [.03, .06], maxBodies: 4, lowMaxBodies: 2 },
 } as const
 
 /**

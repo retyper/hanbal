@@ -14,6 +14,7 @@
 import { HAEBI_SOUND as V, HAEBI_IMPACT as IMPACT, HAEBI_FEEL_TIERS as F, HAEBI_ULT as U, HAEBI_AWAKEN_ULT as AC, HAEBI_JACKPOT as JP, type FeelTier } from '../tune/params.ts'
 import type { HaebiRun, Kit } from './haebi.ts'
 import { slamWatcher } from './slam-watch.ts'
+import { criticalFinishEvent } from './critical-finish.ts'
 
 /** 한 프레임에 일어난 손맛 사건 — 화면이 진동에 쓴다 (판은 읽기만) · cast 비기를 누름 · skill 비기가 터짐 · crit 크리티컬이 났음 */
 export interface FeelEvents { cast: FeelTier | null; skill: FeelTier | null; crit: boolean }
@@ -144,13 +145,30 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
   /** 합성 소리를 낼 수 있나 — 꺼짐 · 가려진 탭 · 소리 수 한도면 못 낸다 */
   const room = (extra = 0) => !!ctx && !muted() && !document.hidden && voices < V.maxVoices + extra
   /** 짧은 소리 한 번 — 노드들을 이어 out 에 모으고, 끝나면 풀어 소리 수에서 뺀다 */
-  function voice(c: AudioContext, len: number, vol: number, build: (out: GainNode, t: number, nodes: AudioNode[]) => AudioScheduledSourceNode[], dest: AudioNode | null = null) {
-    const t = c.currentTime, out = c.createGain(), nodes: AudioNode[] = [out]
+  function voice(c: AudioContext, len: number, vol: number, build: (out: GainNode, t: number, nodes: AudioNode[]) => AudioScheduledSourceNode[], dest: AudioNode | null = null, delay = 0) {
+    const t = c.currentTime + delay, out = c.createGain(), nodes: AudioNode[] = [out]
     out.gain.setValueAtTime(0, t); out.gain.linearRampToValueAtTime(vol, t + .004); out.gain.exponentialRampToValueAtTime(.001, t + len)
     out.connect(dest ?? c.destination)
     const srcs = build(out, t, nodes); voices++
     srcs[0]!.onended = () => { voices--; for (const x of [...srcs, ...nodes]) x.disconnect() }
     for (const x of srcs) { x.start(t); x.stop(t + len + .01) }
+  }
+  /** 치명타 마무리 「홈런」 — 「둑」(짧고 굵은 저음) → 멈춤(hold) 뒤 「팡」(비기 터짐 소리를 높게) + 맑은 종 꼬리 「~~」 (11-23 형 · 클라우드 메도우) */
+  let finishAt = -9
+  function finish() {
+    const c = ctx!; if (c.currentTime - finishAt < V.finishGap) return
+    finishAt = c.currentTime
+    const hold = IMPACT.criticalFinish.hold
+    voice(c, V.finishThudS, V.finishThud * volume('sfx'), (out, t, nodes) => {
+      const osc = c.createOscillator(); osc.type = 'sine'; osc.frequency.setValueAtTime(V.finishThudHz[0], t); osc.frequency.exponentialRampToValueAtTime(V.finishThudHz[1], t + V.finishThudS); osc.connect(out)
+      if (!noise) return [osc]
+      const nz = c.createBufferSource(), lp = c.createBiquadFilter(), ng = c.createGain()
+      nz.buffer = noise; lp.type = 'lowpass'; lp.frequency.value = V.thudCut; ng.gain.value = V.thudNoise; nz.connect(lp).connect(ng).connect(out)
+      nodes.push(lp, ng)
+      return [osc, nz]
+    })
+    play('finishPop', any(FILES.skillHit), V.finishPop * volume('sfx'), 0, V.finishPopRate, V.maxVoices + 2, null, hold)
+    chime(F.tailHz, F.tailRatios, V.finishTailS, V.finishTail * volume('sfx'), null, hold)
   }
   /** 보스 「쿵」 — 배를 울리는 낮은 사인이 더 낮게 꺼지고 땅 노이즈가 길게 · 땅 소리를 낮게 얹는다 (big=false 는 장수급 적 내려찍기) */
   let quakeAt = -9
@@ -219,7 +237,7 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
     }, bus)
   }
   /** 쇳소리 — 어긋난 배음 몇 개를 겹친 사인 · 높은 배음일수록 작고 빨리 사라진다 (진각성 종 꼬리 · 크리티컬 핑) */
-  function chime(base: number, ratios: readonly number[], len: number, vol: number, dest: AudioNode | null) {
+  function chime(base: number, ratios: readonly number[], len: number, vol: number, dest: AudioNode | null, delay = 0) {
     const c = ctx!
     voice(c, len, vol, (out, t, nodes) => ratios.map((r, i) => {
       const o = c.createOscillator(), g = c.createGain(), w = 1 / (1 + i * F.chimeFall)
@@ -227,7 +245,7 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
       g.gain.value = w; g.gain.exponentialRampToValueAtTime(.001, t + len / (1 + i))
       o.connect(g).connect(out); nodes.push(g)
       return o
-    }), dest)
+    }), dest, delay)
   }
   /** 비기가 터짐 — 계단마다 skill_hit 크기 · 울림 · 종 꼬리 (기술 소리는 maxVoices 위로 reserve 개까지) */
   function impact(tier: FeelTier) {
@@ -331,11 +349,13 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
       let hitN = 0, hitD = 0
       // 불의 무녀 장군은 포효 대신 방울을 울린다 (등장 · 막 전환 · 부위 파괴)
       const bells = s.giantFlow?.finalOwner?.giant?.kind === 'shaman' && !s.giantFlow.finalDefeated
+      let finishes = 0   // 치명타 마무리(홈런)로 날아가는 적 수
       let humanDown = 0   // 11-22 형 「개나 짐승 유닛이 죽는데도 사람 죽는 목소리」 — 신음은 사람 적이 쓰러질 때만 (짐승·거대 두목은 빼고)
-      for (const e of s.fx) if (!seen.has(e)) { seen.add(e); if (e.kind === 'death' && e.mob !== undefined && !NO_GROAN.has(e.mob)) humanDown++; if (e.kind === 'hit' || e.kind === 'death') { hitN++; hitD += e.n ?? 0; if (e.crit) crits++ } if (e.championCue === 'roar') { if (bells) sfx('bell', V.roar, .15); else say('roar', V.roar) }
+      for (const e of s.fx) if (!seen.has(e)) { seen.add(e); if (e.kind === 'death' && e.mob !== undefined && !NO_GROAN.has(e.mob)) humanDown++; if (e.kind === 'hit' || e.kind === 'death') { hitN++; hitD += e.n ?? 0; if (e.crit) crits++ } if (e.kind === 'death' && criticalFinishEvent(e)) finishes++; if (e.championCue === 'roar') { if (bells) sfx('bell', V.roar, .15); else say('roar', V.roar) }
         if (e.recoveryHit && ctx && ctx.currentTime - championAt >= IMPACT.cooldown) { championAt = ctx.currentTime; const t = tierOf(false); if (!skill || RANK[t] > RANK[skill]) skill = t }
         if (e.kind === 'bolt') sfx('bolt', V.magic, V.magicGap); else if (e.kind === 'spike') sfx('earth', V.magic, V.magicGap); else if (e.kind === 'skill') { const t = tierOf((e.awakened ?? e.tru) === true); if (!skill || RANK[t] > RANK[skill]) skill = t } else if (e.kind === 'thud' || e.kind === 'ult' && e.ult === 'sling') sfx('stone', V.stone, V.stoneGap, .9 + (n % 5) * .05) }
       if (humanDown > 0) sfx('down', V.down, V.downGap, .92 + (n % 5) * .04)
+      if (finishes > 0 && room(3)) finish()
       const slam = slams(s); if (slam.length && room(2)) quake(slam.some(q => q.boss))
       // 비기가 터짐(한 프레임에 하나 · 가장 높은 계단) · 크리티컬 「핑」은 한 프레임 한 번 · crit.gap 틈 · 소리 수 한도면 버린다
       if (skill) impact(skill)
