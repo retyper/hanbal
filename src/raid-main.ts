@@ -83,6 +83,8 @@ const mode = query.has('vanguard') ? 'vanguard' : trialToken ? 'trial' : 'stage'
  * 출전하면 본편에 알리고(그 달은 쓴 것) · 끝나면 「본편으로」만 · 장수 바꾸기도 숨긴다. 주소로 따로 연 열전(본편 틀 밖)은 그대로 연습판이다
  */
 const campaignToken = window.parent !== window && mode === 'stage' ? query.get('campaign') : null
+/** 본편에 열전 결과를 알렸나 (한 판에 한 번 · showOverlay) */
+let campaignReported = false
 /** 본편에서 연 판 (열전 · 각성 시련 · 선봉) — 결과 화면에 「다시 출전」이 없다 */
 const fromCampaign = campaignToken !== null || trialToken !== null || vanguardToken !== null
 let campaignBegun = false
@@ -111,6 +113,8 @@ const trialEntryClosed = () => mode === 'trial' && !legacyAwakeningOpen()
 const mastery = (['forest', 'ford', 'palisade'] as const).every(id => (meta.heroes[heroId] ?? []).includes(id))
 /** 골라 두는 스테이지 — 열렸고 아직 못 깬 첫 스테이지 · 목책의 벽 앞이면 여울 (meta.pickStage · 각성 v2 가9) */
 let stage: Exclude<StageId, 'trial'> = pickStage(meta, kit)
+// 본편 지도의 열전 표적에서 왔으면 그 땅에 어울리는 스테이지를 먼저 — 아직 안 열렸으면 늘 고르던 대로 (형 11-22 · realm/raid-bounty.ts)
+{ const want = query.get('stage'); if (campaignToken && want !== null && (STAGE_ORDER as readonly string[]).includes(want) && stageOpen(meta, want as Exclude<StageId, 'trial'>)) stage = want as Exclude<StageId, 'trial'> }
 /** 두목이 오는 때(분) — 수치에서 읽는다: 스테이지 19분(판은 20분30초) · 각성 시련 7분(판은 8분) */
 const bossMinute = () => Math.floor(C.bossAt * ST[mode === 'trial' ? 'trial' : stage].length / 60)
 const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`
@@ -851,6 +855,8 @@ function showOverlay() {
     if ($('new-run')) $('new-run').onclick = () => begin()
     if ($('quit')) $('quit').onclick = menu
     if ($('to-shop')) $('to-shop').onclick = () => { menu(); renderShop(); $('shop').hidden = false }
+    // 본편에서 연 열전이 끝났다 — 결과를 한 번 알린다 (이기면 본편 지도의 열전 표적이 평정된다 · app.ts 'hanbal.raid.result')
+    if (campaignToken && !campaignReported && (run.state === 'won' || run.state === 'lost')) { campaignReported = true; window.parent.postMessage({ type: 'hanbal.raid.result', token: campaignToken, result: run.state, stage, elapsed: run.t }, location.origin) }
     if ($('return')) {
       const back = $<HTMLButtonElement>('return')
       if (vanguardToken) {
