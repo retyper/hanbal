@@ -4,7 +4,7 @@ import { imugiVisualBounds } from './raid/imugi-view.ts'
 import { fieldPixels, raidLowGraphics } from './raid/surface.ts'
 import { breakthroughText, isBreakthrough } from './realm/vanguard.ts'
 import { HAEBI_RUN as C, HAEBI_STICK as STICK, HAEBI_TREE as TREE, HAEBI_ULT as ULT, HAEBI_AWAKEN as AWK, HAEBI_STAGES as ST, HAEBI_ZOOM as ZOOM, HAEBI_SPEED as SPEED, HAEBI_GIANT as GIANT } from './tune/params.ts'
-import { createHaebi, runDuration, raidRulesForStage, KIT_RULES, giantMob, giantHUD, championViewNeeded, stepHaebi, barrageArcher, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, usesPermanentAwakening, normalizedRaidOpts, castWallSeconds, nodeText, nodeAt, branchName, wakeReady, ultName, ultOpen, BRANCHES, branchNodes, type Kit, type Power, type Pick, type Chest, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
+import { createHaebi, runDuration, raidRulesForStage, KIT_RULES, MAP_RULES, giantMob, giantHUD, championViewNeeded, stepHaebi, barrageArcher, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, usesPermanentAwakening, normalizedRaidOpts, castWallSeconds, nodeText, nodeAt, branchName, wakeReady, ultName, ultOpen, BRANCHES, branchNodes, type Kit, type Power, type Pick, type Chest, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
 import { startRecord, recInput, gridInput, recPick, recReroll, recQuit, withdrawRun, sealInput, finishRecord, STEP, type Recorder } from './raid/runlog.ts'
 import { runFrame, speedOf, nextSpeed, speedLevel } from './raid/speed.ts'
 import { RaidFeel } from './raid/impact.ts'
@@ -14,7 +14,8 @@ import { HAEBI_END as END } from './tune/params.ts'
 import { warmFx } from './raid/fx-art.ts'
 import { putRaidGame, sealLeftovers, unsentRaids, markRaidsSent, type RaidGame, type RaidOpts } from './raid/runlog-store.ts'
 import { pushRaids } from './net/sync.ts'
-import { newCam, followCam, nextLevel, closest, toField, fieldView, clampCenter, bossFrameZoom } from './raid/camera.ts'
+import { newCam, followCam, nextLevel, closest, toField, fieldView, clampCenter, bossFrameZoom, cameraBounds } from './raid/camera.ts'
+import { fieldBounds } from './raid/wide.ts'
 import { loadMeta, saveMeta, buy, refund, refundFee, record, shopCost, shopMax, stageOpen, stageName, pickStage, SHOP, STAGE_ORDER, type ShopKey } from './raid/meta.ts'
 import { drawField, imagePaths, setHeroArt, heroArtFiles, heroHdFiles, warmHeroSprites } from './raid/haebi-view.ts'
 import { powerIcon, installPowerHints, comboIcon, rankMark, treeInfo, BRANCH_COLOR } from './raid/power-ui.ts'
@@ -110,7 +111,7 @@ let stage: Exclude<StageId, 'trial'> = pickStage(meta, kit)
 const bossMinute = () => Math.floor(C.bossAt * ST[mode === 'trial' ? 'trial' : stage].length / 60)
 const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`
 /** createHaebi 에 넘기는 판 옵션 — 판 기록에도 이것 그대로 적는다 (다시 돌리기) */
-const runOpts = (): RaidOpts => ({ ...mode === 'stage' ? { stage, bonus: { ...meta.shop } } : {}, ...mode === 'trial' ? { awaken: false, simRules: '53B' as const } : { permanentAwake: awakening.permanentAwake, appearanceAwake: awakening.appearanceAwake, simRules: mode === 'stage' ? raidRulesForStage(stage) : '56B' as const }, mastery, kitRules: KIT_RULES })
+const runOpts = (): RaidOpts => ({ ...mode === 'stage' ? { stage, bonus: { ...meta.shop } } : {}, ...mode === 'trial' ? { awaken: false, simRules: '53B' as const } : { permanentAwake: awakening.permanentAwake, appearanceAwake: awakening.appearanceAwake, simRules: mode === 'stage' ? raidRulesForStage(stage) : '56B' as const }, mastery, kitRules: KIT_RULES, ...mode === 'stage' ? { mapRules: MAP_RULES } : {} })
 const newRun = (seed: number, opts: RaidOpts = runOpts()) => { const r = createHaebi(seed, mode, kit, opts); if (r.message.endsWith('첫 조합을 향해')) { r.message = ''; r.messageTime = 0 }  /* 시작 군말 띠는 걷는다 (형 11-16) */ return r }
 root.innerHTML = `<header><div><small>장수 열전 · 독립 모드</small><h1>${HERO.name} <em>${K.title}</em></h1></div><div class="head-actions"><button id="pause" disabled aria-label="일시정지">Ⅱ</button></div></header>
 <div id="layout"><aside id="character"><div id="portrait-media"><img id="hero-portrait" src="${import.meta.env.BASE_URL}realm/bust-hd/${HERO.bust}.jpg" alt="${HERO.name} 원화"><video id="hero-video" muted loop playsinline preload="none" hidden aria-label="각성 ${HERO.name} 영상"></video></div><div class="portrait-title"><span>${HERO.home}</span><b id="rank-title">${HERO.name}</b><button id="portrait-toggle" hidden>원화로 보기</button></div><div id="reaction">${weapon} 하나로 시작하는 열전</div><div id="combo-badges"></div><i class="frame-knots"></i></aside>
@@ -199,6 +200,8 @@ $('fullscreen').onclick = () => { if (document.fullscreenElement) void document.
  */
 const ZOOM_KEY = 'hanbal.raid.zoom'
 const cam = newCam((() => { try { return Number(localStorage.getItem(ZOOM_KEY) ?? 0) } catch { return 0 } })())
+/** 59-WIDE 넓은 맵이면 카메라가 장수를 따라간다 (세계 안 · 안개 문이 다 닫히면 결전장 · 한 장짜리 판은 예전 그대로 = undefined) */
+const camBounds = () => cameraBounds(run)
 const zoomSvg = (minus: boolean) => `<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="13.5" cy="13.5" r="9" fill="#0d1a17aa" stroke="currentColor" stroke-width="3"/><path d="M20.6 20.6 28 28" stroke="currentColor" stroke-width="4.4" stroke-linecap="round"/><path d="M9.2 13.5h8.6${minus ? '' : 'M13.5 9.2v8.6'}" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg>`
 $('fullscreen').insertAdjacentHTML('beforebegin', '<button id="zoom"></button>')
 const zoomBtn = $<HTMLButtonElement>('zoom')
@@ -563,7 +566,7 @@ async function begin(sameSeed = false) {
   const now = new Date()
   rec = startRecord(run, { id: `${now.getTime().toString(36)}-${pendingSeed.toString(36)}`, started: now.toISOString(), mode, stage: run.stage, hero: heroId, kit, sprite, seed: pendingSeed, opts: normalizedRaidOpts(run, opts), from: fromRealm })
   saveLog()
-  followCam(cam, run.x, run.y, 0, true)   // 새 판은 카메라를 곧바로 장수에게
+  followCam(cam, run.x, run.y, 0, true, undefined, camBounds())   // 새 판은 카메라를 곧바로 장수에게
   skipCutin()
   $('menu').hidden = true; $('play').hidden = false; $('overlay').hidden = true; $<HTMLButtonElement>('pause').disabled = false; schedule()
   warmCutinInArena()   // 판이 보이는 이 틀에 띠를 판 크기로 미리 (첫 비기 컷인 끊김)
@@ -601,7 +604,8 @@ function point(e: PointerEvent) {
   // object-fit:contain may letterbox the canvas on short or narrow landscape screens.
   // 확대 중이면 화면 자리를 카메라로 되돌려 판 자리로 (raid/camera.ts toField)
   const at = toField(cam, (e.clientX - r.left - (r.width - C.width * scale) / 2) / scale, (e.clientY - r.top - (r.height - C.height * scale) / 2) / scale)
-  destination = { x: Math.max(0, Math.min(C.width, at.x)), y: Math.max(0, Math.min(C.height, at.y)) }
+  const land = fieldBounds(run)   // 59-WIDE 는 지금 설 수 있는 땅까지 (한 장짜리 판은 판 안)
+  destination = { x: Math.max(land.left, Math.min(land.right, at.x)), y: Math.max(land.top, Math.min(land.bottom, at.y)) }
 }
 const stickEl = $('stick'), knobEl = stickEl.querySelector('i')!
 document.body.append(stickEl)   // 화면 기준으로 띄운다 (초상 판에서도 · #stick 은 position:fixed)
@@ -1015,12 +1019,12 @@ function frame(now: number) {
     if (boss && boss !== giantCameraOwner) { giantCameraOwner = boss; giantZoomRestore = cam.level; giantAutoFraming = true; giantFitZoom = GIANT.cameraZoom; cam.level = 0; paintZoom() }
     const bossFrame = giantAutoFraming && boss?.giant && !ending.active ? bossFrameZoom(boss.giant.kind === 'tiger' ? tigerVisualBounds(boss.giant) : boss.giant.kind === 'bulgasari' ? bulgasariVisualBounds(boss.giant) : boss.giant.kind === 'gumiho' ? gumihoVisualBounds(boss.giant) : boss.giant.kind === 'shaman' ? shamanVisualBounds(boss.giant) : imugiVisualBounds(boss.giant.pose), GIANT.cameraZoom) : null
     if (bossFrame !== null) giantFitZoom = Math.min(giantFitZoom, bossFrame)
-    followCam(cam, run.x, run.y, feel.stopped || ending.active ? 0 : dt, false, bossFrame !== null ? giantFitZoom : undefined)
+    followCam(cam, run.x, run.y, feel.stopped || ending.active ? 0 : dt, false, bossFrame !== null ? giantFitZoom : undefined, camBounds())
     // Entry eases out while the boss arrives; later overhangs must fit on the same displayed/input camera.
-    if (bossFrame !== null && boss!.giant!.age >= giantEntrySeconds(boss!.giant!)) { cam.zoom = Math.min(cam.zoom, giantFitZoom); Object.assign(cam, clampCenter(cam.zoom, cam.x, cam.y)) }
+    if (bossFrame !== null && boss!.giant!.age >= giantEntrySeconds(boss!.giant!)) { cam.zoom = Math.min(cam.zoom, giantFitZoom); Object.assign(cam, clampCenter(cam.zoom, cam.x, cam.y, camBounds())) }
     const zoom = ending.kind === 'victory' ? Math.min(1, Math.max(0, ending.elapsed - ending.freeze) / END.cameraTime) : 0
     const endCam = zoom ? { zoom: cam.zoom * (1 + END.cameraZoom * zoom), x: cam.x + (run.x - cam.x) * zoom, y: cam.y + (run.y - cam.y) * zoom } : cam
-    if (zoom) Object.assign(endCam, clampCenter(endCam.zoom, endCam.x, endCam.y))
+    if (zoom) Object.assign(endCam, clampCenter(endCam.zoom, endCam.x, endCam.y, camBounds()))
     prepareHeroRaster(endCam.zoom)
     if (fieldChanged(endCam)) {
       drawField(ctx, images, run, destination, endCam, feel, ending.kind ? ending : undefined, fieldLowGraphics)

@@ -23,6 +23,8 @@ import { drawImpactParticles } from './fx-particles.ts'
 import { HAEBI_FX_ART as FX_ART } from '../tune/params.ts'
 import { CARD_FRAME_PATHS } from './card-skins.ts'
 import { awakeCastDim, drawAwakeCastDim, drawAwakeUlt } from './awake-ult-view.ts'
+import { HAEBI_WIDE as WD } from '../tune/params.ts'
+import { GROUND_PATHS, drawWideGround, drawWideFog, edgeArrows, drawEdgeArrows, inView, wideProps } from './wide-view.ts'
 
 /** 돌팔매 묶음의 돌 · 바위 (전용 그림 H56~H58 이 오기 전엔 본편 바위 그림을 빌린다) */
 const ROCK = 'fx/rock.png'
@@ -41,7 +43,9 @@ export const imagePaths = [...CARD_FRAME_PATHS, genArtOf('haebi').file, genArtOf
   // 11-22 53-B 스테이지 정예 다섯 (Codex 67 · tools/sprite-kit/bake-elite-strips.py)
   ...['boss-ford', 'boss-palisade', 'boss-snow', 'boss-fortress', ...Object.values(MOB_ART), 'elite-forest', 'elite-ford', 'elite-palisade', 'elite-snow', 'elite-fortress'].map(n => `anim-px/${n}.png`), 'raid/snow.webp', 'raid/fortress.webp', ...FX_PATHS,
   // 11-22 51-2 스테이지마다 새 적 (Codex 67 · tools/sprite-kit/bake-stage-enemies.py)
-  ...STAGE_ART_PATHS]
+  ...STAGE_ART_PATHS,
+  // 11-22 59-WIDE 넓은 맵: 이어 깔리는 바닥 다섯 (tools/sprite-kit/ground-tile.py) · 낱개 장식(그림이 오면 HAEBI_WIDE.view.props 에 적는다)
+  ...GROUND_PATHS, ...new Set(WD.view.props.map(p => p.sprite))]
 /** bar-boss.png 의 투명한 홈 [x0,y0,x1,y1] — tools/raid-ui-kit.py 가 public/realm/raid/ui/kit.json 에 적는 값 */
 const BOSS_WIN = [104, 35, 626, 82] as const
 /**
@@ -701,7 +705,10 @@ function drawPalisade(ctx: CanvasRenderingContext2D, images: Map<string, HTMLIma
   }
 }
 /** 그리는 차례 (위에서 아래로) — 판마다 다시 쓰는 배열 · false = 목책 줄 (56-C) */
-const order: (HaebiRun['enemies'][number] | null | false)[] = []
+const order: (HaebiRun['enemies'][number] | WideProp | null | false)[] = []
+/** 59-WIDE 낱개 장식 (HAEBI_WIDE.view.props) · 지금 화면 틀 — 틀마다 다시 쓰는 그릇 */
+type WideProp = typeof WD.view.props[number]
+const WIDE_VIEW = { left: 0, top: 0, right: 0, bottom: 0 }
 /**
  * cam: 확대 카메라 (raid/camera.ts · 11-19 돋보기 단추) — 화면 가운데의 판 좌표와 배율. 판 위의 것(땅·몸·효과·피해 숫자·오라)은 판과 함께 커지고,
  * 화면에 붙은 것(맞을 때 붉은 테 · 두목 막대)은 그대로 · 없으면 1배
@@ -709,17 +716,30 @@ const order: (HaebiRun['enemies'][number] | null | false)[] = []
 export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, destination: { x: number; y: number } | null, cam?: { zoom: number; x: number; y: number }, feel?: RaidFeel, ending?: RaidEnding, criticalLow = false) {
   const W = C.width, H = C.height
   fieldTransform(ctx)   // 그림마다 옮겼다 되돌리는 셈의 작은 오차가 판마다 쌓이지 않게 (sprite·stamp 는 save/restore 없이 · 11-17)
-  ctx.fillStyle = '#273c35'; ctx.fillRect(0, 0, W, H)
+  if (!s.wide) { ctx.fillStyle = '#273c35'; ctx.fillRect(0, 0, W, H) }   // 59-WIDE 는 바닥이 화면을 다 덮는다 (한 번 덜 칠한다)
   const endShake = ending?.active ? END.shake * Math.max(0, 1 - ending.elapsed / END.shakeLife) : 0
   const quake = Math.max(endShake, Math.min(FEEL.shakeMax, Math.max(shakeOf(s), feel?.shake ?? 0, s.palisade ? palisadeQuake(s) : 0))), time = ending?.active ? ending.elapsed : feel?.time ?? s.t
   const qx = quake ? Math.round(Math.sin(time * FEEL.shakeXHz) * quake) : 0, qy = quake ? Math.round(Math.cos(time * FEEL.shakeYHz) * quake * FEEL.shakeYShare) : 0
   const z = cam?.zoom ?? 1, density = z * Math.max((ctx.canvas?.width ?? W) / W, (ctx.canvas?.height ?? H) / H)
-  if (z !== 1 && cam) fieldTransform(ctx, z, W / 2 - cam.x * z + qx, H / 2 - cam.y * z + qy)
-  else if (quake) fieldTransform(ctx, 1, qx, qy)
+  // 카메라가 1배·판 가운데가 아니면 그 변환으로 그린다 — 확대 중 · 59-WIDE 넓은 맵은 1배에서도 장수를 따라간다 (한 장짜리 판의 1배는 예전 그대로 변환 없음)
+  const camOn = !!cam && (z !== 1 || cam.x !== W / 2 || cam.y !== H / 2), bz = camOn ? z : 1
+  // 넓은 맵은 옮김을 캔버스 화소에 맞춘다 (따라가는 동안 바닥·몸이 반 화소씩 번지지 않게)
+  const px = (ctx.canvas?.width ?? W) / W, py = (ctx.canvas?.height ?? H) / H
+  const ox = camOn ? s.wide ? Math.round((W / 2 - cam!.x * z) * px) / px : W / 2 - cam!.x * z : 0, oy = camOn ? s.wide ? Math.round((H / 2 - cam!.y * z) * py) / py : H / 2 - cam!.y * z : 0
+  const bx = ox + qx, by = oy + qy
+  if (camOn || quake) fieldTransform(ctx, bz, bx, by)
   const bg = images.get('raid/' + ST[s.stage].bg) ?? images.get('raid/forest.webp')
-  const baked = bg && fieldBackdrop(bg, W, H)
-  if (baked) ctx.drawImage(baked, 0, 0)
-  else { if (bg) { const sw = bg.height * W / H; ctx.drawImage(bg, (bg.width - sw) / 2, 0, sw, bg.height, 0, 0, W, H) } ctx.fillStyle = '#11281b25'; ctx.fillRect(0, 0, W, H) }
+  // 59-WIDE: 지금 화면(판 좌표)에 걸친 것만 그린다 · 한 장짜리 판은 거르지 않는다(null)
+  const view = s.wide ? WIDE_VIEW : null
+  if (view) {
+    // 흔들림까지 넣은 실제 화면 틀 (바닥을 이만큼 칠하고 · 이 밖은 거른다)
+    view.left = -bx / bz; view.top = -by / bz; view.right = (W - bx) / bz; view.bottom = (H - by) / bz
+    drawWideGround(ctx, images, s, bg, view); drawWideFog(ctx, s, view, time, criticalLow)
+  } else {
+    const baked = bg && fieldBackdrop(bg, W, H)
+    if (baked) ctx.drawImage(baked, 0, 0)
+    else { if (bg) { const sw = bg.height * W / H; ctx.drawImage(bg, (bg.width - sw) / 2, 0, sw, bg.height, 0, 0, W, H) } ctx.fillStyle = '#11281b25'; ctx.fillRect(0, 0, W, H) }
+  }
   // ── 땅 표식 (모든 몸보다 먼저) ── 아래부터: 내 발밑 표식 · 내 오라 고리 · 내 기술이 떨어질 자리 → 적의 겨눔 줄 · 적이 나를 때릴 자리.
   //    적의 것이 늘 위에, 더 진하게 (예전엔 내 발밑 금빛 표식이 적이 던진 돌의 자리를 덮었다 · 11-18 형 플립)
   trackFoeBlasts(s)
@@ -736,12 +756,12 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   }
   // 두목·곰 내려찍기 · 돌·불 던지기 · 일제 사격이 떨어질 자리 · 타는 불바닥 — 모두 같은 붉은 말
   // 못 주운 기세는 마지막 1초에 옅어지며 사라진다 (dropLife)
-  for (const d of s.drops) { const fade = Math.min(1, C.dropLife - d.age); if (fade < 1) ctx.globalAlpha = Math.max(0, fade); stamp(ctx, images, d.value > 2 ? 'raid/essence-large.png' : 'raid/essence.png', d.x, d.y, d.value > 2 ? 23 : 15); if (fade < 1) ctx.globalAlpha = 1 }
+  for (const d of s.drops) { if (view && !inView(view, d.x, d.y, 30)) continue; const fade = Math.min(1, C.dropLife - d.age); if (fade < 1) ctx.globalAlpha = Math.max(0, fade); stamp(ctx, images, d.value > 2 ? 'raid/essence-large.png' : 'raid/essence.png', d.x, d.y, d.value > 2 ? 23 : 15); if (fade < 1) ctx.globalAlpha = 1 }
   drawGroundChests(ctx, images, s)
   if (destination) decal(ctx, images, 'mark-move', destination.x, destination.y, 30, 26, .85)
   // 발밑 그림자는 길 하나로 한 번에 칠한다 (적마다 fill 하던 것 · 폰 프레임 11-17) — 땅이라 모든 몸보다 먼저 그려도 된다
   ctx.fillStyle = '#07181655'; ctx.beginPath()
-  for (const e of s.enemies) { if(e.giant)continue; const rx = e.kind === 'boss' || e.kind === 'elite' ? 24 : 16; ctx.moveTo(e.x + rx, e.y + 2); ctx.ellipse(e.x, e.y + 2, rx, 6, 0, 0, Math.PI * 2) }
+  for (const e of s.enemies) { if(e.giant)continue; if (view && !inView(view, e.x, e.y, 30)) continue; const rx = e.kind === 'boss' || e.kind === 'elite' ? 24 : 16; ctx.moveTo(e.x + rx, e.y + 2); ctx.ellipse(e.x, e.y + 2, rx, 6, 0, 0, Math.PI * 2) }
   ctx.fill()
   // 백두 대호의 큰 그림자 · 잠행 눈 더미 (땅 표식 차례) · 이긴 막 내림 동안 쓰러지는 몸 (판에서는 이미 사라졌다)
   for (const e of s.enemies) if (e.giant?.kind === 'tiger') drawTigerGround(ctx, images, e.giant); else if (e.giant?.kind === 'bulgasari') drawBulgasariGround(ctx, e.giant); else if (e.giant?.kind === 'gumiho') drawGumihoGround(ctx, images, e.giant); else if (e.giant?.kind === 'shaman') drawShamanGround(ctx, images, e.giant)
@@ -750,14 +770,15 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   if (s.palisade) drawPalisadeShadow(ctx, s)
   // 위에서 아래로 그린다 (null = 장수 · false = 목책 줄) — 판마다 새 배열을 만들지 않는다
   const wallY = s.palisade?.y ?? 0
-  order.length = 0; for (const e of s.enemies) order.push(e); order.push(null); if (s.palisade) order.push(false)
+  order.length = 0; for (const e of s.enemies) if (!view || e.giant || inView(view, e.x, e.y)) order.push(e); order.push(null); if (s.palisade) order.push(false)
+  if (view) for (const p of wideProps(s)) if (inView(view, p.x, p.y, p.height)) order.push(p)
   order.sort((a, b) => (a ? a.y : a === null ? s.y : wallY) - (b ? b.y : b === null ? s.y : wallY))
   const archer = s.mode === 'stage' ? barrageArcher(s, cam ? fieldView(cam) : undefined) : undefined
   // 적 몸을 그린 뒤 판 변환(위에서 건 카메라·흔들림 그대로)으로 되돌린다 — 적마다 save/restore 하지 않는다
   // (11-22 · 11-17 sprite 와 같은 길: 목책 거대 두목 판은 적이 200명 넘어 save 가 틀마다 200번 넘었다)
-  const camOn = z !== 1 && !!cam, bz = camOn ? z : 1, bx = camOn ? W / 2 - cam!.x * z + qx : quake ? qx : 0, by = camOn ? H / 2 - cam!.y * z + qy : quake ? qy : 0
   for (const e of order) {
     if (e === false) { drawPalisade(ctx, images, s, time); continue }
+    if (e && 'sprite' in e) { const img = images.get(e.sprite); if (img) { const w = e.height * img.width / img.height; ctx.drawImage(img, e.x - w / 2, e.y - e.height, w, e.height) } continue }
     if (e) {
       if(e.giant){if(e.giant.kind==='tiger')drawTiger(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else if(e.giant.kind==='bulgasari')drawBulgasari(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else if(e.giant.kind==='gumiho')drawGumiho(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else if(e.giant.kind==='shaman')drawShaman(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else drawImugiParent(ctx,images,e.giant,{bounds:cam?fieldView(cam):{left:0,top:0,right:W,bottom:H},density});continue}
       const big = e.kind === 'boss' || e.kind === 'elite', h = mobHeight(e.kind)
@@ -808,6 +829,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   // 날아가는 것의 꼬리 (적 = 붉은 줄 · 내 것 = 무기 묶음 빛) — 그림보다 먼저
   drawTrails(ctx, s)
   for (const b of s.shots) {
+    if (view && !inView(view, b.x, b.y, WD.view.cull * 2.5)) continue   // 내리꽂히는 화살·포물선 돌은 땅 자리보다 높이 그린다
     const p = projectileAnchor(b)
     // 58-KITS 질풍 도끼는 높이 던져 떨어진다 (날아가는 동안 포물선으로 떠 있다 · 박힌 뒤·돌아올 때는 땅 높이)
     if (b.kind === 'gale') { const up = s.kits && !b.landed && b.gen !== 1 && b.life > KITS58.gale.spin ? Math.sin(Math.min(1, 1 - (b.life - KITS58.gale.spin) / KITS58.gale.flight) * Math.PI) * KITS58.gale.arc : 0; axe(ctx, images, p.x, p.y - up, b.angle, b.landed ? KITS58.gale.landedSize : 30) }
@@ -884,6 +906,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   let particleBudget = FX_ART.particleBudget
   for (const f of s.fx) {
     if (f.championCue) continue // State-based champion rings below; do not borrow bell-magic artwork.
+    if (view && !inView(view, f.x, f.y, WD.view.cull + f.r * 2) && !inView(view, f.x2, f.y2, WD.view.cull)) continue
     if (f.kind === 'hit' ? hitSkip-- > 0 : f.kind === 'death' && deathSkip-- > 0) continue   // 쓰러지는 몸도 새것 drawDeaths 개만
     const remaining = f.life - (ending?.effectTime ?? 0); if (remaining <= 0) continue
     const age = 1 - remaining / f.total; ctx.save(); ctx.globalAlpha = Math.min(1, remaining / f.total * 1.5); ctx.strokeStyle = f.color; ctx.fillStyle = f.color; ctx.lineWidth = 3
@@ -953,7 +976,12 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   trackNumbers(s); ctx.save(); drawNumbers(ctx, images, s, s.t + (ending?.effectTime ?? 0)); ctx.restore()
   drawChampionOverlays(ctx, images, s, mobHeight, cam ? fieldView(cam) : undefined)
   // 여기부터 화면에 붙은 것 — 확대해도 그대로 (흔들림만)
-  if (z !== 1) fieldTransform(ctx, 1, qx, qy)
+  if (camOn) fieldTransform(ctx, 1, qx, qy)
+  // 59-WIDE 화면 가장자리 화살표: 화면 밖 정예(큰 놈 사냥) · 땅의 상자 · 닫히는 결전장 — 판 안의 그림을 작게 (글 없음)
+  if (s.wide && cam && !ending?.active) drawEdgeArrows(ctx, edgeArrows(s, cam), time, (kind, x, y, r) => {
+    if (kind === 'chest') { const img = images.get('raid/chest.png'); if (img) ctx.drawImage(img, x - r * .85, y - r * .85, r * 1.7, r * 1.7) }
+    else { const mob = kind === 'elite' ? 'elite' : 'boss', h = artHeight(mob, s.stage); sprite(ctx, images, warlord(mob, s.stage), x, y + h * WD.view.arrow.face, h, 4, 1) }
+  })
   if (s.hurt > 0) { ctx.strokeStyle = '#ff735a99'; ctx.lineWidth = 12; ctx.strokeRect(0, 0, W, H) }
   const boss = s.enemies.find(e => e.kind === 'boss' && !e.giant)
   if (boss) {

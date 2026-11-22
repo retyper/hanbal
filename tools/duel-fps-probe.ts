@@ -13,6 +13,7 @@
  *  - giant: 지금 본편의 각성 길(목책 돌파를 깨면 각성 · 11-21) — 독립 열전 STAGE=palisade 의 거대 두목(불가사리)이 막 나온 판.
  *  - raid: 독립 열전 처음 판(STAGE=forest) — 첫 레벨업 카드 창(60틀) · 첫 비기 컷인 띠(170틀) · 둘째 카드(400) · 둘째 비기(520) (11-22 · 폰 가로 844x390 으로).
  *          사건마다 그 틀부터 25틀의 가장 긴 틀 간격·16.7ms 넘은 수를 적는다 · RAID_DELAY=틀 로 사건을 늦춘다 · 찍을 땐 CSS 애니를 그 틀 자리에 세운다.
+ *  - crowd: 독립 열전(STAGE=forest) 몰려오는 판(UNTIL 초까지 봇이 돌린 판)에서 넓게 네모로 걷는다 — MAP=off 한 장짜리 옛 판 · 기본 59-WIDE 넓은 맵 (넓은 맵 프레임 견주기 · 11-22)
  *  - TRACE=1: 렌더러 주 스레드·GPU 의 긴 일(LONG=ms 넘는)을 몇 번째 틀인지와 함께 이름별로 나눈다 (스타일·배치·글자 모양·그림 풀기·칠하기)
  *  - PRE=파일.js: 재기 전에 판 창에서 한 번 돌린다 (가설 견주기)
  *
@@ -30,7 +31,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-const SCENE = process.argv[2] === 'trial' ? 'trial' : process.argv[2] === 'giant' ? 'giant' : process.argv[2] === 'raid' ? 'raid' : 'duel'
+const SCENE = process.argv[2] === 'trial' ? 'trial' : process.argv[2] === 'giant' ? 'giant' : process.argv[2] === 'raid' ? 'raid' : process.argv[2] === 'crowd' ? 'crowd' : 'duel'
 const [VW, VH] = (process.argv[3] ?? '390x844').split('x').map(Number) as [number, number]
 const THROTTLE = Number(process.argv[4] ?? 4)
 const FRAMES = Number(process.argv[5] ?? 900)
@@ -40,7 +41,7 @@ const DPR = Number(env('DPR') || 3)
 const COUNT = env('COUNT') === '1', PROFILE = env('PROFILE') === '1', WATCH = env('WATCH') === '1'
 const SHOTS = env('SHOTS'), TAG = env('TAG') || 'now', CMP = env('CMP')
 const QUERY = env('QUERY') || 'me=aryeong&foe=haebi&muMe=5&muFoe=7&tier=2&seed=1'
-const UNTIL = Number(env('UNTIL') || 286), KIT = env('KIT') || 'bow', STAGE = env('STAGE') || (SCENE === 'raid' ? 'forest' : 'palisade')
+const UNTIL = Number(env('UNTIL') || (SCENE === 'crowd' ? 480 : 286)), KIT = env('KIT') || 'bow', STAGE = env('STAGE') || (SCENE === 'raid' || SCENE === 'crowd' ? 'forest' : 'palisade')
 const CHROMES = ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe']
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))
 const exe = CHROMES.find((p) => existsSync(p))
@@ -225,6 +226,44 @@ const RAID_SCENE = `(() => {
   }
   L.tag = () => { const r = window.__raid?.(); return r ? (r.cast ? 2 : 1) : 0 }
 })()`
+/**
+ * crowd: 독립 열전(STAGE=forest)의 몰려오는 판 — 봇이 UNTIL 초까지 돌린 판(체력은 채움)을 끼우고 넓게 네모로 걷는다 (11-22 59-WIDE 넓은 맵 프레임).
+ * MAP=off 면 한 장짜리 옛 판 · 기본은 넓은 맵 (같은 씨앗·같은 손 · 판 규칙만 다르다 → 넓은 맵이 틀 시간을 늘리는지 견준다).
+ */
+const CROWD_BUILD = `(async () => {
+  const H = await import('/src/raid/haebi.ts'), R = await import('/src/raid/haebi-replay.ts')
+  const stage = '${STAGE}', s = H.createHaebi(7, 'stage', '${KIT}', { stage, simRules: H.raidRulesForStage(stage), kitRules: H.KIT_RULES${env('MAP') === 'off' ? '' : ', mapRules: H.MAP_RULES'} })
+  for (let n = 0; s.t < ${UNTIL} && s.state === 'playing'; n++) {
+    if (s.offers.length) H.choose(s, R.botChoice(s, 'storm')); else { H.stepHaebi(s, R.botInput(s), 1 / 120); s.hp = s.maxHp }
+    if (n % 2400 === 0) await new Promise(r => setTimeout(r, 0))
+  }
+  const r = window.__raid()
+  for (const k of Object.keys(r)) if (!(k in s)) delete r[k]   // 열려 있던 판에만 있던 칸(넓은 맵 등)을 남기지 않는다
+  Object.assign(r, s)
+  document.getElementById('resume')?.click()
+  return { t: Math.round(s.t), kills: s.kills, level: s.level, enemies: s.enemies.length, wide: !!s.wide, combos: s.combos.join(',') }
+})()`
+/** 몰려오는 판의 손 — 오른쪽 220틀 · 아래 140틀 · 왼쪽 220틀 · 위 140틀 (넓은 맵이면 결전장 밖까지 나갔다 돌아온다) · 레벨업이면 첫 카드 · 240틀마다 비기 · 체력은 채움 */
+const CROWD_SCENE = `(() => {
+  const L = window.__lock, LEGS = [['d'], ['s'], ['a'], ['w']], LEN = [220, 140, 220, 140]
+  const S = window.__scene = { held: [], marks: {} }
+  L.marksOf = () => ({ ...S.marks, start: 0 })
+  const key = (type, k) => window.dispatchEvent(new KeyboardEvent(type, { key: k, bubbles: true }))
+  L.before = (n) => {
+    const r = window.__raid?.()
+    if (!r || r.state !== 'playing') return
+    r.hp = r.maxHp
+    if (r.offers.length) { document.querySelector('#overlay .choices button')?.click(); return }
+    let m = n % 720, i = 0
+    while (m >= LEN[i]) { m -= LEN[i]; i++ }
+    const want = LEGS[i]
+    for (const k of S.held) if (!want.includes(k)) key('keyup', k)
+    for (const k of want) if (!S.held.includes(k)) key('keydown', k)
+    S.held = want
+    if (n % 240 === 120) { key('keydown', ' '); key('keyup', ' ') }
+  }
+  L.tag = () => { const r = window.__raid?.(); return r ? r.enemies.length : 0 }
+})()`
 /** 열전 찍을 때 — 카드 창은 뜬 뒤 12틀 · 컷인은 띠가 들어온 뒤(8틀)·한가운데(30틀) (CSS 애니는 찍는 틀의 판 시각에 묶는다) */
 const RAID_SHOTS: ReadonlyArray<readonly [string, string, number]> = [['offer1', 'offer1', 12], ['cut1-a', 'cast1', 8], ['cut1-b', 'cast1', 30], ['offer2', 'offer2', 12], ['offer3', 'offer3', 12], ['cut2-b', 'cast2', 30]]
 
@@ -315,6 +354,10 @@ try {
     await call('Page.navigate', { url: `${ROOT}/raid.html?review&background&stage=${STAGE}&kit=${KIT}` })
     for (let i = 0; i < 120 && await ev(`!!document.querySelector('button[data-until="0"]')`) !== true; i++) await sleep(250)
     await raidInstall(GIANT_BUILD, 2500)   // 거대 두목 그림 미리 받기(prewarm*Art)가 끝나게
+  } else if (SCENE === 'crowd') {
+    await call('Page.navigate', { url: `${ROOT}/raid.html?review&background&stage=${STAGE}&kit=${KIT}` })
+    for (let i = 0; i < 120 && await ev(`!!document.querySelector('button[data-until="60"]')`) !== true; i++) await sleep(250)
+    await raidInstall(CROWD_BUILD, 2500, CROWD_SCENE, 60)
   } else if (SCENE === 'raid') {
     await call('Page.navigate', { url: `${ROOT}/raid.html?review&background&stage=${STAGE}&kit=${KIT}` })
     for (let i = 0; i < 120 && await ev(`!!document.querySelector('button[data-until="60"]')`) !== true; i++) await sleep(250)
