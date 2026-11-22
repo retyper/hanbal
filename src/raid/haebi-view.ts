@@ -136,13 +136,14 @@ function drawGhosts(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImage
   ctx.restore()
 }
 /** 열전에 선 장수의 전투 그림 — 기본은 해비 · 각성 그림이 없으면 조합을 완성해도 기본 그림 그대로 (raid-main 이 장수마다 정함) */
-const heroArt = { base: genArtOf('haebi').file, awake: genArtOf('aw1-haebi').file, body: genArtOf('haebi').body, grow: genArtOf('haebi').body / genArtOf('aw1-haebi').body }
-export function setHeroArt(baseKey: string, awakeKey?: string) { const b = genArtOf(baseKey), a = awakeKey ? genArtOf(awakeKey) : b; heroArt.base = b.file; heroArt.awake = a.file; heroArt.body = b.body; heroArt.grow = b.body / a.body }
+const fitOf = (body: number) => Math.min(C.heroFit[1], Math.max(C.heroFit[0], C.heroBodyRef / body))
+const heroArt = { base: genArtOf('haebi').file, awake: genArtOf('aw1-haebi').file, body: genArtOf('haebi').body, fit: fitOf(genArtOf('haebi').body), fitAwake: fitOf(genArtOf('aw1-haebi').body) }
+export function setHeroArt(baseKey: string, awakeKey?: string) { const b = genArtOf(baseKey), a = awakeKey ? genArtOf(awakeKey) : b; heroArt.base = b.file; heroArt.awake = a.file; heroArt.body = b.body; heroArt.fit = fitOf(b.body); heroArt.fitAwake = fitOf(a.body) }
 /**
  * 장수 그림 키 — 각성 그림은 큰 관·깃털 때문에 칸 안에 몸이 작게 그려진 판이 있다(칸 160 에 다 못 담음 · tools/sprite-kit/aw1-intake.py).
  * 그만큼 키워 몸 키(정수리~발)를 보통 모습과 같게 한다 — 본편 전장이 genArtOf().body 로 맞추는 것과 같은 법. 몸 비가 같으면 그대로다
  */
-const heroH = (s: HaebiRun) => awakenedLook(s) ? C.heroPx * heroArt.grow : C.heroPx
+const heroH = (s: HaebiRun) => C.heroPx * (awakenedLook(s) ? heroArt.fitAwake : heroArt.fit)   // 11-22 정수리 기준 (각성 그림도 제 몸 비로 · 예전 grow 와 같은 뜻)
 export const heroArtFiles = () => [...new Set([heroArt.base, heroArt.awake])]
 /** 판 안 각성(디지몬식) 동안만 각성 그림 — 조합을 열어도 모습은 그대로 (RAID-LINK §1) */
 const heroSprite = (s: HaebiRun, images?: Map<string, HTMLImageElement>, density = 1) => {
@@ -152,7 +153,7 @@ const heroSprite = (s: HaebiRun, images?: Map<string, HTMLImageElement>, density
 export function heroHdFiles(density: number): string[] { return wantsHeroHd(density) ? [...new Set([heroArt.base, heroArt.awake].flatMap(p => HERO_HD[p] ? [HERO_HD[p]!] : []))] : [] }
 /** Decode happens in the loader; masks are painted without pixel readback before first HIT. */
 export function warmHeroSprites(images: Map<string, HTMLImageElement>, density: number) {
-  for (const [path, height] of [[heroArt.base, C.heroPx], [heroArt.awake, C.heroPx * heroArt.grow]] as const) {
+  for (const [path, height] of [[heroArt.base, C.heroPx * heroArt.fit], [heroArt.awake, C.heroPx * heroArt.fitAwake]] as const) {
     const hd = HERO_HD[path], use = hd && wantsHeroHd(density) && images.has(hd) ? hd : path, img = images.get(use)
     if (!img) continue
     const layout = HERO_HD_SHEETS[use]
