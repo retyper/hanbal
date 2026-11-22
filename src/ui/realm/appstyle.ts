@@ -1646,4 +1646,25 @@ export const LANDSCAPE_MAP_CSS = `
   .ap:not(.choosing) .sheet :is(h3, .grip) { flex-shrink: 0; }
   .ap:not(.choosing) .back { right: calc(var(--rail) + env(safe-area-inset-right)); bottom: 0; }
 }
+/* 낮은 가로 화면의 아래 판 (형 11-21: 「너무 좁아 보임」) — 손잡이는 얇게, 장수 목록은 두 줄로, 군대가 둘 이상이면 두 칸,
+   징병은 머리(징병·철 알림·알아서 뽑기)를 한 줄로, 장수 자세히는 얼굴·이름·능력치 왼쪽 · 나머지 오른쪽 */
+@media (orientation: landscape) and (max-height: 600px) {
+  .ap:not(.choosing) .sheet .grip { height: 12px; margin-bottom: 2px; } .ap:not(.choosing) .sheet .grip::after { top: 4px; }
+  .ap:not(.choosing) .sheet:is(:has(> .hrow), :has(> .acard ~ .acard)) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 8px; align-content: start; }
+  .ap:not(.choosing) .sheet:is(:has(> .hrow), :has(> .acard ~ .acard)) > :not(.hrow, .acard) { grid-column: 1 / -1; }
+  .ap:not(.choosing) .sheet > .hrow { margin: 3px 0; }
+  .ap:not(.choosing) .sheet:has(> .draftc) { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 8px; align-items: center; align-content: start; }
+  .ap:not(.choosing) .sheet:has(> .draftc) > * { grid-column: 1 / -1; }
+  .ap:not(.choosing) .sheet:has(> .draftc) > .sech { grid-column: 1; margin: 4px 0; }
+  .ap:not(.choosing) .sheet:has(> .draftc) > .banner { grid-column: 2; margin: 4px 0; }
+  .ap:not(.choosing) .sheet:has(> .draftc) > .btns { grid-column: 3; margin: 4px 0; }
+  .ap:not(.choosing) .sheet .hcard { display: flow-root; --hlw: 200px; }
+  .ap:not(.choosing) .sheet .hcard > :is(.hpic, .hn, div.mute, svg, .tr3) { float: left; clear: left; box-sizing: border-box; width: var(--hlw); margin: 0 0 4px; text-align: center; }
+  .ap:not(.choosing) .sheet .hcard > .hpic { width: auto; margin-left: calc((var(--hlw) - 154px) / 2); }
+  .ap:not(.choosing) .sheet .hcard > .hpic.framed { margin-left: calc((var(--hlw) - 178px) / 2); }
+  .ap:not(.choosing) .sheet .hcard > svg { width: 190px; margin-left: calc((var(--hlw) - 190px) / 2); }
+  .ap:not(.choosing) .sheet .hcard > .tr3 { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; }
+  .ap:not(.choosing) .sheet .hcard > :not(.hpic, .hn, div.mute, svg, .tr3) { box-sizing: border-box; width: auto; max-width: none; margin: 0 0 8px calc(var(--hlw) + 14px); }
+  .ap:not(.choosing) .sheet .hcard > .trial-card { margin: 0 0 8px calc(var(--hlw) + 14px) !important; } /* 열전·각성 카드는 글 속 style 로 margin 을 적어 둔다 */
+}
 `
