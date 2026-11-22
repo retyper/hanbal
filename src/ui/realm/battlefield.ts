@@ -737,7 +737,8 @@ function tickerHtml(lines: ReadonlyArray<readonly [string, number]>, key: string
   if (lines.length === 0) return ''
   const R = P.realm
   const ls = [...lines].sort((x, y) => x[1] - y[1])
-  const step = R.warTickLineH + R.warTickGap
+  // 한 줄씩 밀어 올리는 걸음은 CSS 값(--th 줄 높이 + --tg 줄 사이)으로 — 가로 폰에선 줄 높이만 바꿔(--thl) 두 줄이 아래 띠 자리에 든다
+  const step = (n: number): string => `calc((var(--th) + var(--tg)) * ${-n})`
   const end = ls[ls.length - 1]![1] + R.warTickMove + 0.05
   const pc = (t: number): string => `${Math.min(100, Math.max(0, (t / end) * 100)).toFixed(2)}%`
   let fr = '0%{transform:translateY(0)}'
@@ -745,11 +746,11 @@ function tickerHtml(lines: ReadonlyArray<readonly [string, number]>, key: string
   ls.forEach(([, t], i) => {
     if (i < 2) return
     const at = Math.max(t, was)
-    fr += `${pc(at)}{transform:translateY(${-(i - 2) * step}px)}${pc(at + R.warTickMove)}{transform:translateY(${-(i - 1) * step}px)}`
+    fr += `${pc(at)}{transform:translateY(${step(i - 2)})}${pc(at + R.warTickMove)}{transform:translateY(${step(i - 1)})}`
     was = at + R.warTickMove
   })
-  fr += `100%{transform:translateY(${-Math.max(0, ls.length - 2) * step}px)}`
-  return `<div class="wtick" style="--th:${R.warTickLineH}px;--tg:${R.warTickGap}px"><style>@keyframes ${key}{${fr}}</style><div class="wtk" style="animation:${key} ${end.toFixed(2)}s linear both">`
+  fr += `100%{transform:translateY(${step(Math.max(0, ls.length - 2))})}`
+  return `<div class="wtick" style="--th:${R.warTickLineH}px;--tg:${R.warTickGap}px;--thl:${R.warTickLineHLand}px"><style>@keyframes ${key}{${fr}}</style><div class="wtk" style="animation:${key} ${end.toFixed(2)}s linear both">`
     + ls.map(([h, t]) => `<div class="wtl" style="--t:${t.toFixed(2)}s">${h}</div>`).join('') + '</div></div>'
 }
 
@@ -1897,8 +1898,9 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   // 위 카드는 그 싸움터를 무대로 — 길·성문·물가·눈밭·밤 (형 10-23: "길에서 마주치거나 수성하거나 공성할 때는 그 위치에 맞게 배경")
   // 머리 카드도 같은 하늘 — 그림 위에 한 겹 (어둠 · 노을 · 새벽빛)
   const skyLayer = sky === ' dk-night' ? 'linear-gradient(#0a1440aa, #05081add), ' : sky === ' dk-dusk' ? 'linear-gradient(#ff7a2a77, #a0302a44 50%, #1a0a0a88), ' : sky === ' dk-dawn' ? 'linear-gradient(#ffd8a866, #8aa0d044 50%, #0d0f1366), ' : ''
+  // 때(해시계)는 이름 띠(.wrh) 안 맨 끝에 — 세로·컴퓨터 판에선 예전처럼 단추 줄 밑에 서고, 가로 폰에선 이름 띠 한 줄에 들어가 전장이 그만큼 커진다 (형 11-21)
   const speeds = `<div class="wspeed" role="group" aria-label="${tr('war.warhtml.16')}">${BATTLE_SPEEDS.map((n) => `<button type="button" data-war="speed" data-speed="${n}" aria-pressed="${n === speed}">${tr('war.warhtml.15', { n })}</button>`).join('')}</div>`
-  h += `<div class="wtop" style="--wtbg:${skyLayer}url('${warBg(art, ground, !weAtk)}')"><div class="wrh"><span class="wrk">${((k) => `<i class="wkind ${k.us ? 'us' : 'foe'}">${esc(k.word)}</i>`)(warKind(prev, l, me))}<b>${esc(warName(after, l))}</b></span>${left > 1 ? `<span class="mute">${tr('war.warhtml.17', { turnWord: turnWord(after), left })}</span>` : ''}<div class="wrbt"><button class="wsgb" data-war="mu" aria-label="${tr('war.warhtml.20')}">${tr('war.warhtml.21')}</button>${`<button class="wlogb${rounds.length > 0 ? '' : ' off'}" data-war="log" aria-label="${tr('war.warhtml.18')}"${rounds.length > 0 ? '' : ' disabled'}>${tr('war.warhtml.19')}</button>`}${speeds}</div><button class="whelp" data-war="help" aria-label="${tr('war.warhtml.22')}">?</button></div>${clockHtml(l, shown)}`
+  h += `<div class="wtop" style="--wtbg:${skyLayer}url('${warBg(art, ground, !weAtk)}')"><div class="wrh"><span class="wrk">${((k) => `<i class="wkind ${k.us ? 'us' : 'foe'}">${esc(k.word)}</i>`)(warKind(prev, l, me))}<b>${esc(warName(after, l))}</b></span>${left > 1 ? `<span class="mute">${tr('war.warhtml.17', { turnWord: turnWord(after), left })}</span>` : ''}<div class="wrbt"><button class="wsgb" data-war="mu" aria-label="${tr('war.warhtml.20')}">${tr('war.warhtml.21')}</button>${`<button class="wlogb${rounds.length > 0 ? '' : ' off'}" data-war="log" aria-label="${tr('war.warhtml.18')}"${rounds.length > 0 ? '' : ' disabled'}>${tr('war.warhtml.19')}</button>`}${speeds}</div><button class="whelp" data-war="help" aria-label="${tr('war.warhtml.22')}">?</button>${clockHtml(l, shown)}</div>`
   // 땅 띠 — 전장 바로 위 제 자리에 (형 10-26: "목책이랑 나루 둘다 가운데 설명 '우리에게 유리' 이게 다른거랑 겹쳐짐")
   const terr = terrChips(prev, l, me, fname(foeF)).map((c) => terrChipHtml(art, c, 'wtc')).join('')
   h += `<div class="wvs">${side(ourI, ourHero, ourF, ourName, 'us')}<img class="vs" src="${art}ui/vs.png" alt="VS">${side(foeI, foeHero, foeF, foeName, 'foe')}</div>${terr !== '' ? `<div class="wterr">${terr}</div>` : ''}${fieldHtml()}</div>`
@@ -2125,6 +2127,9 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   return h
 }
 
+/** 가로 폰 전투판 — CSS(WAR_CSS 끝의 가로 칸)와 깃발 판 자리(placePop)가 같은 조건을 본다 (형 11-21 가로) */
+const WAR_LAND_MQ = `(orientation: landscape) and (max-height: ${P.realm.warLandMaxH}px) and (max-width: ${P.realm.warLandMaxW}px)`
+
 export const WAR_CSS = `
 /* 화면을 굴리지 않는다 (형 10-28: "합 할 때마다 슬라이드로 내려가며 설명 보게 하지 말고 · 하스스톤은 팝업 · 터치하면 뜨는 상자") —
    마지막 합은 전장 위 상자로 떴다 사라지고(--pd 뒤), 지난 합들은 「기록」을 누르면 뜨는 판 안에. 끝난 판의 결과는 화면 아래에 붙는다 */
@@ -2279,9 +2284,11 @@ html[data-lang="en"] .ap .wr.b0 .whelp::after { content: 'Details'; } html[data-
 .ap .wrh .wkind { font-style: normal; font-size: 13px; font-weight: 800; letter-spacing: .02em; padding: 2px 9px; border-radius: 9px; text-shadow: none; white-space: nowrap; }
 .ap .wrh .wkind.us { background: #2f5a8acc; color: #e6f2ff; border: 1px solid #8ab8e8; } .ap .wrh .wkind.foe { background: #8a2a1ecc; color: #ffe3dc; border: 1px solid #e8907a; }
 .ap .wrh { position: relative; z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 0; color: var(--gold); font-size: 21px; margin: -6px 0 4px; }
-.ap .wrh b { padding: 2px 18px 3px; border-radius: 4px; background: linear-gradient(#2a1c0ee6, #1a1008e6); border: 1px solid #8a6a3a; box-shadow: 0 2px 8px #000c; }
+.ap .wrh .wrk > b { padding: 2px 18px 3px; border-radius: 4px; background: linear-gradient(#2a1c0ee6, #1a1008e6); border: 1px solid #8a6a3a; box-shadow: 0 2px 8px #000c; }
 .ap .wrh .mute { font-size: 12px; margin-top: 2px; }
-.ap .wrh b { font-family: 'Gowun Batang', serif; letter-spacing: 1px; }
+.ap .wrh .wrk > b { font-family: 'Gowun Batang', serif; letter-spacing: 1px; }
+/* 때(해시계)는 이름 띠 안 맨 끝 — 예전 자리 그대로 (단추 줄 밑 4px · 때 밑 6px = 2px + 이름 띠 밑 4px) · 이름 띠의 그림자·글꼴을 물려받지 않게 */
+.ap .wrh > .wclk { margin: 4px 0 2px; text-shadow: none; }
 .ap .wvs { display: flex; align-items: flex-start; gap: 8px; }
 .ap .wvs .vs { font-style: normal; font-weight: 800; color: #c8402a; font-size: 20px; align-self: center; }
 .ap .ws { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; }
@@ -3477,6 +3484,114 @@ html[data-lang="en"] .ap .wr.b0 .whelp::after { content: 'Details'; } html[data-
   .ap .wopen .wofoot > .wocd { box-sizing: border-box; width: 48px; height: 48px; margin-top: 8px; }
 }
 
+/* 폰 가로 (높이 600 이하) — 컴퓨터 판처럼 초상·막대는 양옆 칸, 전장은 가운데에 남은 높이만큼 (형 11-21: "가로 플레이할 때 너무 좁아 보임").
+   세로로 쌓던 판(이름 띠·때·초상·막대·땅 띠·전장)이 844×390 에서 전장을 화면 밑(479~649)으로 밀어 냈고, 고르는 동안엔 굴리지도 못해 전장이 아예 안 보였다.
+   아래 띠(무리 칩·맡긴다·전투 개시)는 한 줄로 화면 맨 아래에 붙고, 위 카드는 그 띠 위까지만 (--wlb) */
+@media ${WAR_LAND_MQ} {
+  .ap .wr { --wlb: calc(52px + env(safe-area-inset-bottom)); --wls: clamp(128px, 18vw, 180px); --wlx: max(14px, env(safe-area-inset-left), env(safe-area-inset-right)); }
+  .ap .wr .wrbox { max-width: none; padding: 0; }
+  .ap .wr .wtop { display: grid; grid-template-columns: var(--wls) minmax(0, 1fr) var(--wls); grid-template-rows: auto auto minmax(0, 1fr); column-gap: 8px; box-sizing: border-box;
+    height: calc(100dvh - var(--wlb)); min-height: 0; margin: 0; padding: max(10px, env(safe-area-inset-top)) var(--wlx) 12px; }
+  .ap .wr .wtop::after { border-width: 12px; border-image-width: 12px; }
+  /* 이름 띠 한 줄 — 상성 · 싸움 이름 · 때(해시계) · 기록 · 빠르기. 자리가 모자라면 싸움 이름이 줄어든다(…) */
+  .ap .wr .wtop > .wrh { grid-column: 1 / -1; grid-row: 1; flex-direction: row; align-items: center; gap: 6px; min-width: 0; margin: 0 0 4px; font-size: 16px; }
+  .ap .wr .wrh .wrbt { display: contents; }
+  .ap .wr .wrh .wsgb { order: 1; }
+  .ap .wr .wrh .wrk { order: 2; flex: 0 1 auto; flex-wrap: nowrap; min-width: 0; gap: 5px; }
+  .ap .wr .wrh .wrk > b { min-width: 0; padding: 1px 9px 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ap .wr .wrh .wkind { padding: 2px 7px; }
+  .ap .wr .wrh > .wclk { order: 3; flex: none; flex-wrap: nowrap; margin: 0 auto; gap: 5px; }
+  .ap .wr .wrh > .mute { order: 4; flex: none; margin: 0; font-size: 12px; }
+  .ap .wr .wrh .wlogb { order: 5; margin-left: 0; }
+  .ap .wr .wrh .wspeed { order: 6; margin-left: 0; }
+  .ap .wr .wrh .wspeed button { min-width: 32px; min-height: 28px; }
+  .ap .wr .wclk ol { gap: 2px; }
+  .ap .wr .wclk li { padding: 0 6px; font-size: 12px; line-height: 1.45; }
+  /* 양옆 칸 — 초상은 칸 폭만큼, 남는 높이(이름·나라·막대 둘 ≈ 141px 를 뺀)가 모자라면 그만큼 작게 */
+  .ap .wr .wtop > .wvs { display: contents; }
+  .ap .wr .wtop .wvs > .vs { display: none; }
+  .ap .wr .wtop .wvs > .ws.us { grid-column: 1; grid-row: 2 / 4; align-self: center; }
+  .ap .wr .wtop .wvs > .ws.foe { grid-column: 3; grid-row: 2 / 4; align-self: center; }
+  .ap .wr .wtop .wpf { --pf: min(calc(var(--wls) - 12px), calc(100dvh - var(--wlb) - 206px)); }
+  /* 땅 띠 — 이름과 유불리를 한 줄로 (두 줄 칩은 높이를 먹는다) */
+  .ap .wr .wtop > .wterr { grid-column: 2; grid-row: 2; margin: 0 0 4px; gap: 3px 4px; }
+  .ap .wr .wtc { padding: 1px 7px 1px 2px; gap: 3px; }
+  .ap .wr .wtc img { width: 20px; height: 20px; }
+  .ap .wr .wtc span { flex-direction: row; align-items: baseline; gap: 4px; }
+  .ap .wr .wtc b, .ap .wr .wtc small { font-size: 12px; }
+  /* 전장 — 가운데 칸의 남은 높이 다. 「공격 우리 ○○ · 수비 적 ○○」 이름표는 바로 옆 칸의 초상·나라 띠와 같은 말이라 빼고(무리 수 칩과 겹쳤다),
+     잣대(10·100)는 무리 수 칩이 늘어서는 바닥 대신 위 가운데로 */
+  .ap .wr .wtop > .wfield { grid-column: 2; grid-row: 3; min-height: 0; height: auto !important; margin: 0; border-radius: 4px; }
+  .ap .wr .wfield .wf-who { display: none; }
+  .ap .wr .wfield .wleg { top: 5px; bottom: auto; }
+  /* 아래 띠 — 무리 칩 · 맡긴다 · 전투 개시를 한 줄로 */
+  .ap .wr .wready { flex-direction: row; justify-content: center; gap: 10px; box-sizing: border-box; height: var(--wlb); padding: 4px var(--wlx) calc(4px + env(safe-area-inset-bottom)); background: #0d0a07f2; }
+  .ap .wr .wrchips { flex: 0 1 auto; flex-wrap: nowrap; justify-content: flex-end; gap: 5px; min-width: 0; max-width: none; }
+  .ap .wr .wrc { flex: none; white-space: nowrap; }
+  .ap .wr .wrc:not(.none) > b { display: none; } /* 고른 무리는 무리 그림 + 고른 깃발 — 이름까지 넣으면 칩이 「창병·방 / 패병」처럼 두 줄로 깨졌다 */
+  .ap .wr .wrrow { flex: 0 1 380px; width: auto; min-width: 0; }
+  .ap .wr .wrrow .wrgo { height: 42px; padding: 0 12px; font-size: 17px; white-space: nowrap; }
+  /* 처음 싸움의 손가락 — 단추 왼쪽(맡긴다 위)이 아니라 단추 위에서 아래로 가리킨다 */
+  .ap .wr.b0 .wrgo:not(:disabled):not([aria-disabled="true"])::before { content: '👇'; right: auto; left: 50%; top: auto; bottom: 100%; margin: 0 0 -4px -15px; font-size: 26px; animation-name: b0pointd; }
+  .ap .wr .wrrow .wrauto { height: 42px; padding: 0 10px; }
+  .ap .wr .wrrow .wrauto small { font-size: 12px; }
+  /* 합이 풀리는 상자 — 가운데 아래에 통째로 뜨면 전장 높이의 반 넘게(844×390 에서 57%) 가렸다.
+     머리(합 이름·양쪽 깃발·원군)는 위 땅 띠 자리에 한 줄로, 두 줄 창은 화면 아래 띠 자리에 (줄 높이 --thl = params warTickLineHLand) ·
+     상자를 옮기지(transform) 않아야 두 줄 창이 화면 아래에 따로 붙는다 → 뜨고 걷힘은 투명도로만 */
+  .ap .wr:not(.logopen) .wlog .wrd.slow { inset: 0; width: auto; max-height: none; overflow: visible; transform: none; flex-flow: row wrap; justify-content: center; align-content: flex-start; gap: 4px 8px;
+    padding: calc(max(10px, env(safe-area-inset-top)) + 40px) var(--wlx) 0; animation: wrpinland .25s ease-out both, wrpoutland .45s ease-in var(--pd, 4s) forwards; }
+  .ap .wr.slow:not(.choosing) .wtop > .wterr { visibility: hidden; } /* 합이 풀리는 동안 그 자리는 합 머리 차지 (자리는 그대로 · 고를 때 다시 보인다) */
+  .ap .wr:not(.logopen) .wlog .wrd.slow > .wcmds { flex: none; max-width: 100%; }
+  .ap .wr:not(.logopen) .wlog .wrd.slow > .wcmds > .wc { flex: 0 1 auto; }
+  .ap .wr:not(.logopen) .wlog .wrd.slow > .wrelief { order: 2; margin: 0; }
+  .ap .wr:not(.logopen) .wlog .wrd.slow .wtick { --th: var(--thl) !important; position: absolute; left: 50%; bottom: calc(2px + env(safe-area-inset-bottom)); width: min(620px, calc(100vw - 2 * var(--wlx))); translate: -50% 0; }
+  .ap .wr:not(.logopen) .wlog .wrd.slow .wtick .wtl > * { padding: 2px 10px; }
+  .ap .wr:not(.logopen) .wlog .wrd.slow .wtick .wact img { width: 20px; height: 20px; }
+  /* 싸움 끝 판 — 화면 폭 띠로 초상·전장 위쪽을 덮고 확인 단추가 화면 가운데 떴다. 가운데 칸 폭으로 화면 아래에 붙인다 (확인 단추는 아래 붙박이 · 양옆 막대의 마지막 수는 보인다) */
+  .ap .wr .wsc, .ap .wr.ready .wsc { padding-bottom: 0; }
+  .ap .wr .wend { position: fixed; left: 50%; bottom: calc(6px + env(safe-area-inset-bottom)); box-sizing: border-box; width: min(600px, calc(100vw - 2 * var(--wls) - 2 * var(--wlx))); max-height: calc(100dvh - 56px); overflow-y: auto; margin: 0; padding: 8px 12px; translate: -50% 0;
+    z-index: 71; } /* 눌러 빨리 넘기면 끝 판이 아직 안 걷힌 두 줄 창(z 70)과 함께 떠 확인 단추 글을 덮었다 — 끝 판이 위 */
+  /* 해질녘 물음 — 고름 셋을 한 줄로 (세로로 쌓으면 높이 72vh 안에 하나만 보이고 굴려야 했다) · 머리(해·글)는 낮게 */
+  .ap .wr .wdusk { bottom: calc(6px + env(safe-area-inset-bottom)); width: min(780px, calc(100vw - 2 * var(--wlx))); max-height: calc(100dvh - 12px); padding-top: 0; padding-bottom: 6px; }
+  .ap .wr .wdusk .wdk-sky { height: 44px; }
+  .ap .wr .wdusk .wdk-sky i { top: 6px; width: 34px; height: 34px; margin-left: -17px; }
+  .ap .wr .wdusk .wdk-h { margin-top: 12px; font-size: 24px; letter-spacing: 2px; }
+  .ap .wr .wdusk .wdk-s { margin: 0 0 2px; }
+  .ap .wr .wdusk .wdk-now { margin: 0 0 6px; }
+  .ap .wr .wdusk .wdkg { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+  .ap .wr .wdkb img.wflag { width: 36px; }
+  .ap .wr .wdkb .wct { flex-flow: row wrap; align-items: center; gap: 3px 4px; } .ap .wr .wdkb .wct > :is(b, small) { flex-basis: 100%; } /* 값 알약(곡식·사기·가망)은 한 줄에 이어서 */
+  .ap .wr .wdkb small { font-size: 12px; line-height: 1.3; }
+  .ap .wr .wdusk .wdk-n { margin-top: 6px; font-size: 12px; }
+  /* 깃발 상성 판 — 고리 그림 옆에 줄들 (세로로 쌓으면 고리 밑의 줄이 판 아래로 잘려 안 보였다) */
+  .ap .wr .wsg { padding-top: max(8px, env(safe-area-inset-top)); }
+  .ap .wr .wsg-c { width: min(720px, 100%); max-height: calc(100dvh - 16px); }
+  .ap .wr .wsg-p { display: block; }
+  .ap .wr .wsg-ring { float: left; width: min(260px, 42%); margin: 0 12px 0 0; }
+  .ap .wr .wsg-row { margin-bottom: 4px; }
+  .ap .wr .wsg-tabs { margin: 6px 0; } .ap .wr .wsg-t { min-height: 32px; } .ap .wr .wsg-me img { height: 28px; }
+  /* 무리 깃발 판 — 오른쪽(적 쪽) 칸에 선다 (placePop 의 side) · 키는 아래 띠 위까지 */
+  .ap .wr .wfpop.side { max-height: calc(100dvh - var(--wlb) - 16px); overflow-y: auto; padding: 6px 8px; }
+  .ap .wr .wfpop.lead.side { width: min(330px, calc(100vw - 16px)); } /* 넓으면 왼쪽 우리 진까지 덮었다 */
+  .ap .wr .wfpop.side .wfph { margin-bottom: 4px; }
+  .ap .wr .wfpop.lead.side .wfph .wgi.f, .ap .wr .wfpop.lead.side .wfph .wgi.f .wf, .ap .wr .wfpop.lead.side .wfph .wgi.f img { width: 40px; height: 46px; border-radius: 8px; }
+  .ap .wr .wfpop.side .wfpg { gap: 4px; }
+  .ap .wr .wfpop.side .wcmd.mini { min-height: 40px; }
+  .ap .wr .wfpop.side .wfplook { margin-top: 4px; }
+  /* 장수 판은 얼굴·판세·누가 나서나 줄까지 있어 높이가 모자라다 — 줄인 판(tight)처럼 깃발을 한 줄에 작게 세우고 도움말 줄은 뺀다 */
+  .ap .wr .wfpop.lead.side .wfphint { display: none; }
+  .ap .wr .wfpop.lead.side .wfpg { grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); }
+  .ap .wr .wfpop.lead.side .wcmd.mini { flex-direction: column; justify-content: center; min-height: 0; padding: 4px 2px 3px; gap: 1px; text-align: center; }
+  .ap .wr .wfpop.lead.side .wcmd.mini .wflag { width: 24px; }
+  .ap .wr .wfpop.lead.side .wcmd.mini .wct, .ap .wr .wfpop.lead.side .wcmd.mini .wct:has(> .wodd) { flex-direction: column; align-items: center; gap: 0; width: 100%; }
+  .ap .wr .wfpop.lead.side .wcmd.mini .wct > b { max-width: 100%; font-size: 12px; line-height: 1.2; }
+  .ap .wr .wfpop.lead.side .wcmd.mini .wct > .wodd { font-size: 12px; line-height: 1.1; }
+  .ap .wr .wfpop.lead.side .wcmd.mini .wct > em.rec { position: absolute; right: 2px; top: 2px; }
+}
+@keyframes b0pointd { from { transform: translateY(0); } to { transform: translateY(-8px); } }
+@keyframes wrpinland { from { opacity: 0; } to { opacity: 1; } }
+@keyframes wrpoutland { to { opacity: 0; visibility: hidden; } }
+
 `
 
 /** 싸움이 열리는 판 — 싸움터 그림 · 양쪽 깃발과 장수 · 이름 · 누가 쳐들어왔나 · 세기 막대 · 어느 나라와 싸우는 중인가 */
@@ -4234,6 +4349,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   pop.className = 'wfpop'
   pop.hidden = true
   ov.appendChild(pop)
+  /** 가로 폰 전투판인가 — 깃발 판을 오른쪽 칸에 세운다 (placePop) */
+  const landMq = window.matchMedia(WAR_LAND_MQ)
   /**
    * 다 골랐다 — 화면 아래에 크게: 무리마다 고른 깃발 한 줄 + 「전투 개시」 (형 10-27 지인: "전투 개시 버튼을 스스로 찾아야 해 불편 · 내가 뭘 골랐는지 모르겠다").
    * 하나라도 비면 걷힌다
@@ -4489,6 +4606,13 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   }
   /** 깃발을 놓으면 쓰이는 곳 — 깃발 판(없으면 아래 띠)보다 위면 어디든 (형 10-28: "드랍할 곳이 너무 팍팍해 · 깃발 창보다 위 전투판이면") */
   const overField = (x: number, y: number): boolean => {
+    // 가로 폰 — 판이 오른쪽(적 쪽) 칸에 서 있다(placePop): 아래 띠보다 위이고 판 밖이면 어디든
+    if (!pop.hidden && pop.classList.contains('side')) {
+      const q = pop.getBoundingClientRect()
+      const g = P.realm.warDropGap
+      const bottom = !ready.hidden ? ready.getBoundingClientRect().top : window.innerHeight
+      return x >= 0 && x <= window.innerWidth && y >= 0 && y < bottom - g && (x < q.left - g || y < q.top - g)
+    }
     const top = !pop.hidden ? pop.getBoundingClientRect().top : !ready.hidden ? ready.getBoundingClientRect().top : window.innerHeight
     return x >= 0 && x <= window.innerWidth && y >= 0 && y < top - P.realm.warDropGap
   }
@@ -4605,6 +4729,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     showLook(grid.querySelector<HTMLElement>('[data-war="pick"].on') ?? grid.querySelector<HTMLElement>('[data-war="pick"].rec') ?? grid.querySelector<HTMLElement>('[data-war="pick"]')) // 처음엔 고른 것 · 없으면 ★권함
 
     pop.classList.remove('tight')
+    pop.classList.toggle('side', landMq.matches)
     pop.hidden = false
     pop.classList.toggle('lead', g === 'lead')
     popG = g
@@ -4624,6 +4749,13 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const left = Math.max(edge, Math.min(vw - pw - edge, q.left + q.width / 2 - pw / 2))
     // 화면 아래쪽에 — 아래 띠 바로 위 (형 10-28: "깃발 선택 창이 너무 위로 가지 않게 아래에") · 띠가 없으면 무리 밑
     const bar = ready.hidden ? null : ready.getBoundingClientRect()
+    // 가로 폰 — 오른쪽(적 쪽) 칸에 세운다. 아래에 붙이면 전장 아래쪽(우리 진·무리 수)과 왼쪽 막대를 덮었다 · 바닥은 아래 띠 바로 위 (형 11-21 가로)
+    if (pop.classList.contains('side')) {
+      const padR = parseFloat(getComputedStyle(sc.querySelector<HTMLElement>('.wtop') ?? ov).paddingRight) || edge
+      pop.style.left = `${Math.round(Math.max(edge, vw - pw - padR))}px`
+      pop.style.top = `${Math.round(Math.max(edge, (bar !== null ? bar.top : vh) - ph - edge))}px`
+      return
+    }
     let top = bar !== null ? bar.top - ph + 14 : q.bottom + 8
     if (top + ph > vh - 8) top = Math.max(8, vh - ph - 8)
     // 전장(깃발을 끌어다 놓는 곳)을 가리면 화면 맨 아래로 내려 아래 띠를 덮고, 그래도 가리면 판을 줄인다
@@ -4837,7 +4969,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     }
     const b = tg.closest<HTMLElement>('[data-war]')
     // 위 단추 줄(상성·기록·배속)의 틈·테두리를 누른 것은 건너뛰기가 아니다 — 폰에서 배속 단추를 살짝 비껴 누르면 싸움이 통째로 끝까지 넘어가 멈춘 듯하다가 대승이 떴다 (형 11-10)
-    if (b === null && tg.closest('.wrbt, .wrh') !== null) return
+    if (b === null && tg.closest('.wrbt, .wrh') !== null && tg.closest('.wclk') === null) return // 때(해시계)는 이름 띠 안에 있어도 예전처럼 누르면 건너뛴다
     if (b === null) {
       // 맡긴 싸움을 풀어 보이는 중이면 끝까지 건너뛴다
       if (chain.length > 0) {
@@ -4854,7 +4986,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       ov.querySelector('.wcut')?.remove()
       ov.querySelector('.wsk')?.remove()
       // 진을 되돌리는 타이머도 걷혔다 — 다음 합을 고를 판이면 바로 고르는 진으로 (재검토 10-25: 연출 상태로 굳었다)
-      if (t.line?.pending !== undefined) syncField(true)
+      // 아래 띠(무리 칩·전투 개시)도 — 합이 끝나면 걸던 타이머(syncField + syncReady)가 걷혀 띠가 안 돌아오고, 숨어 있던 옛 깃발 칸이 화면 밑에 드러났다
+      if (t.line?.pending !== undefined) { syncField(true); syncReady() }
       return
     }
     // 상성 판 — 싸움이 풀리는 중에도 · 판 안을 눌러도 건너뛰지 않는다
