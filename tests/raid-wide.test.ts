@@ -232,6 +232,19 @@ test('일제 사격 발사자는 장수 화면 안의 궁수만 (봇은 판의 �
   a.x = s.x + 200; a.y = s.y + 100; assert.equal(barrageArcher(s), a)
 })
 
+test('장수는 화면 밖 먼 적을 저절로 쏘지 않는다 (넓은 맵만 · 화면에 들어오면 쏜다)', () => {
+  for (const kit of ['bow', 'axe', 'magic'] as Kit[]) {
+    const s = quiet(WIDE, kit); s.level = 6; s.ranks.ember = 2; s.ranks.thunder = 2
+    spawnMob(s, 'club', undefined, true); const e = s.enemies[0]!
+    e.x = s.x + 1500; e.y = s.y; e.cd = 1e9; e.hp = e.max = 1e9
+    run(s, 3)
+    assert.equal(s.damage, 0, `${kit}: 화면 밖 적은 안 맞는다`); assert.equal(s.shots.length, 0, `${kit}: 쏜 것도 없다`)
+    e.x = s.x + 260; e.y = s.y
+    run(s, 4)
+    assert.ok(s.damage > 0, `${kit}: 화면에 들어오면 친다`)
+  }
+})
+
 test('카메라: 1배에서도 장수를 따라가고 · 걷는 쪽을 앞서 보고 · 세계 끝에서 멈추고 · 누른 자리가 판 자리로 맞게 돌아온다', () => {
   // 옛 판(땅을 안 넘김)은 1배에서 판 가운데 고정 그대로
   const old = newCam(); followCam(old, 40, 40, 1, false); assert.deepEqual({ x: old.x, y: old.y }, { x: C.width / 2, y: C.height / 2 })

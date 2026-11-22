@@ -585,9 +585,11 @@ function blast(s: HaebiRun, x: number, y: number, radius: number, damage: number
   for (const e of s.enemies) if (inRadius(e, x, y, radius)) hit(s, e, damage, true, { x, y }, disk(x, y, radius))
   if (s.palisade) wallHit(s, disk(x, y, radius), 'splash')
 }
-function nearest(s: HaebiRun, x: number, y: number, excluded: number[] = [], radius = Infinity) {
+/** 59-WIDE: 장수가 겨눌 수 있는 적 — 장수 화면(1배)에 둘레 여유를 더한 틀 안 (화면 밖 먼 적을 저절로 쏘지 않는다 · 한 장짜리 판은 판 전체 = 예전 그대로 · 거대 보스는 늘) */
+const aimable = (s: HaebiRun, e: Mob) => !s.wide || !!e.giant || inSimView(s, e.x, e.y, -WD.spawnMargin)
+function nearest(s: HaebiRun, x: number, y: number, excluded: number[] = [], radius = Infinity, seen = false) {
   let best: Mob | undefined, d = radius
-  for (const e of s.enemies) { if (e.hp <= 0 || excluded.includes(e.id)) continue; if (e.giant && !giantHasTarget(e.giant)) continue; const n = mobDistance(e, x, y); if (n < d) { d = n; best = e } }
+  for (const e of s.enemies) { if (e.hp <= 0 || excluded.includes(e.id)) continue; if (e.giant && !giantHasTarget(e.giant)) continue; if (seen && !aimable(s, e)) continue; const n = mobDistance(e, x, y); if (n < d) { d = n; best = e } }
   return best
 }
 const SPEED: Partial<Record<Missile['kind'], number>> = { pebble: 0, skip: C.skipSpeed, boulder: C.boulderSpeed, enemy: C.enemyShotSpeed, arrow: C.bowSpeed, javelin: C.javelinSpeed, wave: C.waveSpeed, rain: 0, barrage: 0, stone: 0, flame: 0, knife: C.knifeSpeed, soul: C.soulSpeed, hurl: M.hunterSpeed }
@@ -1444,7 +1446,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
   // 되받아치기 (버팀 끝): 맞은 다음 걸음에 비기가 작게 · 이어지는 비기가 도는 중이면 건너뛴다
   if (s.counterDue) { s.counterDue = false; if (!s.ult) { s.trueUlt = false; if (usesPermanentAwakening(s)) { s.ultAwakened = isPermanentAwake(s); s.ultEmpowered = false }; ultimate(s, dx, dy, uPower, uArea, true, T.counter + T.counterStep * (s.ranks.capC - 1)) } }
   if (s.ult) ultTick(s, dt, uPower * (ultEmpowered(s) ? U.trueDamage : 1), uArea * (ultEmpowered(s) ? U.trueArea : 1))
-  const target = nearest(s, s.x, s.y)
+  const target = nearest(s, s.x, s.y, undefined, Infinity, true)
   let aimAngle: number | null = null
   if (s.kits) { KC.power = power; KC.area = area; KC.tempo = tempo }
   if (target && s.kits) {
@@ -1459,7 +1461,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
     secondary(s, target, angle, power, tempo)
     if (s.ranks.ember && !s.cool.ember) {
       s.cool.ember = C.emberCooldown / tempo
-      const targets = s.enemies.filter(e => e.hp > 0)
+      const targets = s.enemies.filter(e => e.hp > 0 && aimable(s, e))
       for (let i = 0; i < 1 + s.ranks.echo; i++) { const e = i ? targets[Math.floor(random(s) * targets.length)] : target; if (e) { const at = aimAt(e, s.x, s.y); shoot(s, 'ember', Math.atan2(at.y - s.y, at.x - s.x), (C.emberDamage + C.emberRankDamage * s.ranks.ember) * power, s.x, s.y, at.x, at.y) } }
     }
     if (s.ranks.thunder && !s.cool.thunder) {
