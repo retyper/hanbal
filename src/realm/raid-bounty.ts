@@ -11,6 +11,7 @@ import { P } from '../tune/params.ts'
 import { neighbors } from './season.ts'
 import { seasonOf } from './calendar.ts'
 import { realmScale } from './scale.ts'
+import { DLC } from './dlc.ts'
 
 /** 열전 스테이지 (raid HAEBI_STAGES 의 다섯 · 시련 빼고) */
 export type RaidStage = 'forest' | 'ford' | 'palisade' | 'snow' | 'fortress'
@@ -23,10 +24,11 @@ const has = (n: RNode, ...tags: Tag[]): boolean => tags.some((t) => n.tags.inclu
 
 /** 고을 꼴에 어울리는 스테이지 — 도읍·토성은 산성 · 성채·목책은 목책 · 물가는 여울 · 높은 땅·겨울은 설원 · 나머지는 숲 */
 export function stageForNode(r: Realm, n: RNode): RaidStage {
-  if (n.kind === 'capital' || has(n, 'earthwall')) return 'fortress'
+  // 설원·산성은 진각성 묶음(DLC)에만 있다 — 꺼져 있으면 본편의 비슷한 판으로 (11-23 형 「의성 설원 고개로 뜨는데 출전하면 다 고를 수 있다」: 없는 판을 표적으로 띄웠다)
+  if (n.kind === 'capital' || has(n, 'earthwall')) return DLC.trueWake ? 'fortress' : 'palisade'
   if (n.kind === 'fort' || has(n, 'palisade', 'moat')) return 'palisade'
   if (n.kind === 'port' || has(n, 'shallows', 'reeds')) return 'ford'
-  if (has(n, 'high') || seasonOf(r) === 'winter') return 'snow'
+  if (DLC.trueWake && (has(n, 'high') || seasonOf(r) === 'winter')) return 'snow'
   return 'forest'
 }
 

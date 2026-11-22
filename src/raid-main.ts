@@ -116,8 +116,8 @@ const mastery = (['forest', 'ford', 'palisade'] as const).every(id => (meta.hero
 let stage: Exclude<StageId, 'trial'> = pickStage(meta, kit)
 // 본편 지도의 열전 표적에서 왔으면 그 땅에 어울리는 스테이지를 먼저 — 아직 안 열렸으면 늘 고르던 대로 (형 11-22 · realm/raid-bounty.ts)
 /** 표적으로 왔으면 그 스테이지로 묶는다 — 출전 화면에서 다른 스테이지를 고르지 않는다 (형 11-23 「본편 지도에 의성 숲 산길로 뜨는데 출전하면 스테이지를 고를 수 있는 게 이상」) */
-let stageLocked = false
-{ const want = query.get('stage'); if (campaignToken && want !== null && (STAGE_ORDER as readonly string[]).includes(want) && stageOpen(meta, want as Exclude<StageId, 'trial'>)) { stage = want as Exclude<StageId, 'trial'>; stageLocked = true } }
+let stageLocked = false   // 본편 표적 출전: 그 땅의 스테이지 하나만 (11-23 형 「의성 설원 고개로 뜨는데 출전하면 다 고를 수 있다」 · 표적이 그 스테이지를 연다 · 앞 스테이지 깸과 상관없이)
+{ const want = query.get('stage'); if (campaignToken && want !== null && (STAGE_ORDER as readonly string[]).includes(want)) { stage = want as Exclude<StageId, 'trial'>; stageLocked = true } }
 /** 두목이 오는 때(분) — 수치에서 읽는다: 스테이지 19분(판은 20분30초) · 각성 시련 7분(판은 8분) */
 const bossMinute = () => Math.floor(C.bossAt * ST[mode === 'trial' ? 'trial' : stage].length / 60)
 const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`
@@ -302,7 +302,7 @@ function renderStageMenu() {
   menu.querySelector('p')!.textContent = giantTitle ? `${Math.floor(C.bossAt * ST[stage].length * GIANT.midFraction / 60)}분의 중간 보스를 넘고 ${bossMinute()}분에 나타나는 ${josa(giantTitle, '을', '를')} 쓰러뜨리면 휘장을 받습니다. 쓰러져도 버틴 만큼 금을 받아 상점에서 영구 강화를 삽니다.` : `${bossMinute()}분을 버틴 뒤 오는 두목을 쓰러뜨리면 휘장과 많은 금을 받습니다. 쓰러져도 버틴 만큼 금을 받아 상점에서 영구 강화를 삽니다.`
   const pick = menu.querySelector('.journey')!; pick.className = 'journey stage-pick'
   pick.innerHTML = STAGE_ORDER.filter(id => !stageLocked || id === stage).map(id => {
-    const open = stageOpen(meta, id), best = meta.best[id]
+    const open = stageOpen(meta, id) || stageLocked, best = meta.best[id]
     return `<button data-stage="${id}" class="${id === stage ? 'on' : ''}" ${open ? '' : 'disabled title="앞 스테이지를 깨면 열립니다"'} aria-pressed="${id === stage}"><img class="emblem ${meta.cleared[id] ? 'got' : ''}" src="${import.meta.env.BASE_URL}realm/raid/emblem-${id}.png" alt="${STAGE_GLYPH[id]}"><b>${stageName(id)}</b><small>${!open ? '앞을 깨면 열립니다' : meta.cleared[id] ? '휘장 획득' : best ? `최고 ${clock(best)} 버팀` : '첫 도전'}</small></button>`
   }).join('')
   pick.querySelectorAll<HTMLButtonElement>('[data-stage]').forEach(b => b.onclick = () => { cancelBegin(); stage = b.dataset.stage as typeof stage; run = newRun(7); if (baseArtReady && !beginning) $<HTMLButtonElement>('start').disabled = trialEntryClosed(); renderStageMenu() })
