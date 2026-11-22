@@ -15,7 +15,7 @@ import { WALK_CYCLE } from './walk-cycle.ts'
 import { attackFrame, attackRole, heroPose, idleFrame, type HeroPose } from './hero-motion.ts'
 import { HAEBI_ANIM as ANIM } from '../tune/params.ts'
 import { AURA_ART, drawAura, drawAuraBurst, drawAuraGround, type AuraArt, type AuraAt, type AuraKind } from './fx-aura.ts'
-import { HAEBI_IMPACT as FEEL, HAEBI_END as END } from '../tune/params.ts'
+import { HAEBI_IMPACT as FEEL, HAEBI_END as END, HAEBI_KITS as KITS58 } from '../tune/params.ts'
 import type { RaidFeel } from './impact.ts'
 import type { RaidEnding } from './ending.ts'
 import { FX_PATHS, drawFx } from './fx-art.ts'
@@ -809,11 +809,12 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   drawTrails(ctx, s)
   for (const b of s.shots) {
     const p = projectileAnchor(b)
-    if (b.kind === 'gale') axe(ctx, images, p.x, p.y, b.angle, 30)
+    // 58-KITS 질풍 도끼는 높이 던져 떨어진다 (날아가는 동안 포물선으로 떠 있다 · 박힌 뒤·돌아올 때는 땅 높이)
+    if (b.kind === 'gale') { const up = s.kits && !b.landed && b.gen !== 1 && b.life > KITS58.gale.spin ? Math.sin(Math.min(1, 1 - (b.life - KITS58.gale.spin) / KITS58.gale.flight) * Math.PI) * KITS58.gale.arc : 0; axe(ctx, images, p.x, p.y - up, b.angle, b.landed ? KITS58.gale.landedSize : 30) }
     else if (b.kind === 'ember') {
       stamp(ctx, images, 'raid/talisman.png', p.x, p.y, 38, Math.atan2(b.vy,b.vx) + Math.PI / 4)
     } else if (b.kind === 'enemy' || b.kind === 'arrow') {
-      stamp(ctx, images, 'raid/arrow.png', p.x, p.y, b.kind === 'arrow' ? 42 : 48, Math.atan2(b.vy,b.vx))
+      stamp(ctx, images, 'raid/arrow.png', p.x, p.y, b.kind === 'arrow' ? b.big ? KITS58.bow.size : 42 : 48, Math.atan2(b.vy,b.vx))
     } else if (b.kind === 'javelin') {
       // 투창 전용 그림(H27)이 오기 전에는 화살 그림을 길게
       stamp(ctx, images, images.has('raid/javelin.png') ? 'raid/javelin.png' : 'raid/arrow.png', p.x, p.y, 76, Math.atan2(b.vy,b.vx))
@@ -852,7 +853,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
     } else if (b.kind === 'soul') {
       stamp(ctx, images, 'raid/soul.png', p.x, p.y, 44, Math.atan2(b.vy, b.vx))
     } else if (b.kind === 'wave') {
-      stamp(ctx, images, images.has('raid/sword-wave.png') ? 'raid/sword-wave.png' : 'raid/wind-blade.png', p.x, p.y, b.gen ? 40 : 58, Math.atan2(b.vy,b.vx))
+      stamp(ctx, images, images.has('raid/sword-wave.png') ? 'raid/sword-wave.png' : 'raid/wind-blade.png', p.x, p.y, b.gen ? 40 : b.big ? KITS58.sword.waveSize : 58, Math.atan2(b.vy,b.vx))
     } else if (b.kind === 'barrage') {
       // 산적 일제 사격: 화살이 붉은 줄을 끌며 내리꽂힌다 (떨어질 자리 표식은 땅 차례에 · 두목 내려찍기·던진 돌과 같은 붉은 말)
       const k = Math.max(0, b.life) / C.barrageDelay, r = C.barrageRadius

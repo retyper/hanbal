@@ -47,14 +47,35 @@ export function botChoice(s: HaebiRun, route: Route): Pick {
 }
 /** 봇이 주우러 가는 기세 알 거리(px) */
 const BOT_PICKUP = 260, BOT_PICKUP_HP = .6
+/**
+ * 58-KITS 무기마다 걷는 버릇 (봇이 원만 돌면 멈추기·곧게 달리기·버티기를 몰라 숫자가 거짓말을 한다 · 사람이 그 무기로 하는 만큼):
+ * 활 = 돌다가 적이 kite 밖이면 stopFor 초씩 멈춰 겨눈다(stopEvery 초마다) · 돌팔매 = 적이 kite 안이면 뭉친 쪽 반대로 물러난다 · 방울 = 체력이 hold 몫 넘으면 버틴다(기세 알도 안 주우러 감) ·
+ * 창 = 판을 가로로 오가며(laneSeconds 초마다 반대쪽 · laneX) 곧게 달린다 · 칼 = 체력이 hold 몫 넘으면 가까운 적에게 approach px 까지 다가가 앞을 본다 · 도끼·단검 = 예전 원
+ * null = 예전 원 그대로 · 옛 규칙 판은 늘 null (옛 봇 판·재생 SHA 그대로)
+ */
+const KIT_BOT = { kite: 150, crowd: 220, stopEvery: 3, stopFor: 1.4, hold: .5, approach: 90, laneSeconds: 6, laneX: [220, 900] as const, laneSway: 150, laneRate: .2, laneSlope: .3 }
+function kitWalk(s: HaebiRun): { x: number; y: number } | null {
+  if (!s.kits) return null
+  let nd = Infinity, cx = 0, cy = 0, n = 0, near: HaebiRun['enemies'][number] | undefined
+  for (const e of s.enemies) { if (e.hp <= 0) continue; const d = Math.hypot(e.x - s.x, e.y - s.y); if (d < nd) { nd = d; near = e } if (d < KIT_BOT.crowd) { cx += e.x; cy += e.y; n++ } }
+  const healthy = s.hp > s.maxHp * KIT_BOT.hold
+  if (s.kit === 'bow') return nd > KIT_BOT.kite && s.t % KIT_BOT.stopEvery < KIT_BOT.stopFor ? { x: 0, y: 0 } : null
+  if (s.kit === 'sling') return nd < KIT_BOT.kite && n ? { x: s.x - cx / n, y: s.y - cy / n } : null
+  if (s.kit === 'magic') return healthy ? { x: 0, y: 0 } : null
+  if (s.kit === 'spear') { const tx = KIT_BOT.laneX[Math.floor(s.t / KIT_BOT.laneSeconds) % 2]!, ty = C.height / 2 + Math.sin(s.t * KIT_BOT.laneRate) * KIT_BOT.laneSway; return { x: tx - s.x, y: (ty - s.y) * KIT_BOT.laneSlope } }
+  if (s.kit === 'sword' && healthy && near) return nd > KIT_BOT.approach ? { x: near.x - s.x, y: near.y - s.y } : { x: 0, y: 0 }
+  return null
+}
 /** react: 고리·돌진 예고를 알아채기까지 걸리는 초 (0 = 완벽 · 사람은 .4~.6 쯤) */
 export function botInput(s: HaebiRun, react = 0): RunInput {
   // Circle gently inside the arena; approach the boss after it arrives.
   const boss = s.enemies.find(e => e.kind === 'boss')
   const a = s.t * .14, tx = boss ? boss.x + Math.cos(a) * 120 : C.width / 2 + Math.cos(a) * 155, ty = boss ? boss.y + Math.sin(a) * 120 : C.height / 2 + Math.sin(a) * 120
   let x = tx - s.x, y = ty - s.y
-  // 떨어진 기세 줍기: 두목 전 · 체력이 넉넉할 때(BOT_PICKUP_HP) 가까운 알(BOT_PICKUP 안) 쪽으로 걷는다 (사람도 줍는다 · 11-17 끌어오기 둘레 밖은 안 날아옴)
-  if (!boss && s.hp > s.maxHp * BOT_PICKUP_HP) { let best = BOT_PICKUP, bx = 0, by = 0; for (const d of s.drops) { const n = Math.hypot(d.x - s.x, d.y - s.y); if (n < best) { best = n; bx = d.x; by = d.y } } if (best < BOT_PICKUP) { x = bx - s.x; y = by - s.y } }
+  const walk = kitWalk(s)
+  if (walk) { x = walk.x; y = walk.y }
+  // 떨어진 기세 줍기: 두목 전 · 체력이 넉넉할 때(BOT_PICKUP_HP) 가까운 알(BOT_PICKUP 안) 쪽으로 걷는다 (사람도 줍는다 · 11-17 끌어오기 둘레 밖은 안 날아옴) · 버티는 방울은 줍지 않는다
+  if (!boss && s.hp > s.maxHp * BOT_PICKUP_HP && !(walk && s.kit === 'magic')) { let best = BOT_PICKUP, bx = 0, by = 0; for (const d of s.drops) { const n = Math.hypot(d.x - s.x, d.y - s.y); if (n < best) { best = n; bx = d.x; by = d.y } } if (best < BOT_PICKUP) { x = bx - s.x; y = by - s.y } }
   const danger = s.enemies.find(e => e.wind > 0 && Math.hypot(s.x - e.aimX, s.y - e.aimY) < C.bossRadius + 20)
   if (danger) { x = s.x - danger.aimX || 1; y = s.y - danger.aimY || 1 }
   // 일제 사격의 붉은 고리에서 비켜난다 (보통 사람도 하는 만큼)
