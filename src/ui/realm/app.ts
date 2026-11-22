@@ -3337,7 +3337,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<button data-act="dn" data-node="${n.id}" data-d="${step}">+</button><span class="mute">${tr('dc.max', { n: lim })}</span>${lim < militiaMen(r, n.id) ? limWhyHtml(draftWhy(r, me(), n.id, unit), unit) : ''}${costHtml({ grain: Math.ceil(dp.grain), ...(dp.iron > 0 ? { iron: dp.iron } : {}) })}`
       h += `${hhLoss > 0 ? `<span class="cost"><b class="cg" title="${tr('dc.hh', { n: hhLoss })}"><i>▼</i>${icon('settle-farm-village', 'cgi')}${hhLoss}</b></span>` : ''}</div>`
       // 뽑기 단추는 숫자 줄 밑에 크게 한 줄 — 이게 뽑는 단추라고 바로 알게 (형 10-27)
-      h += `<div class="btns"><button class="btn pri men wide" data-act="draft" data-node="${n.id}"${want <= 0 ? noBtn(lim > 0 ? tr('dc.pickN') : unitWhy(unit)) : ''}>${tr('dc.draftN', { n: want })}</button></div>`
+      h += `<div class="btns dgo"><button class="btn pri men wide" data-act="draft" data-node="${n.id}"${want <= 0 ? noBtn(lim > 0 ? tr('dc.pickN') : unitWhy(unit)) : ''}>${tr('dc.draftN', { n: want })}</button></div>`
       h += mine()
       h += `</div>`
     }
