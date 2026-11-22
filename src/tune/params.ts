@@ -1275,6 +1275,9 @@ export const HAEBI_SCORCH = {
   life: 2.6, fadeOut: 1, max: 40, size: 1.05, squash: .55, alpha: .75, bake: 128,
   core: 'rgba(20,12,8,.92)', mid: 'rgba(58,34,20,.55)',
   emberLife: 1.1, embers: 5, emberPx: 3, ember: '#ffb04a', flicker: 18,
+  /** 흙 자국 (불 아닌 폭발·내려찍기·돌팔매·가시) — 너무 작은 것(minR 아래)은 남기지 않고 큰 것은 maxR 로 자른다 */
+  minR: 18, maxR: 140, dirtAlpha: .55,
+  dirtCore: 'rgba(40,30,20,.75)', dirtMid: 'rgba(70,52,34,.45)', dirtRim: 'rgba(150,120,80,.28)',
 } as const
 /**
  * 타격 섬광 (raid/fx-flare.ts · GAP §15-1 · pixelfx Hit spark·Crit hit 를 보고 새로 씀) — 화면 전용.

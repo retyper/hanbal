@@ -6,11 +6,11 @@
 import { HAEBI_SCORCH as S } from '../tune/params.ts'
 import type { Effect, HaebiRun } from './haebi.ts'
 
-interface Mark { x: number; y: number; r: number; t: number; seed: number }
+interface Mark { x: number; y: number; r: number; t: number; seed: number; burn: boolean }
 let marks: Mark[] = []
 let runOf: HaebiRun | null = null
 let seen = new WeakSet<Effect>()
-let stamp: HTMLCanvasElement | null = null
+let stamp: HTMLCanvasElement | null = null, crater: HTMLCanvasElement | null = null
 
 /** 따뜻한 빛(불)인가 — 찬 빛(화살비·혼불)은 자국을 남기지 않는다 */
 const warm = (hex: string) => { const n = parseInt(hex.slice(1, 7), 16); return ((n >> 16) & 255) > ((n & 255) + 40) }
@@ -19,10 +19,14 @@ const warm = (hex: string) => { const n = parseInt(hex.slice(1, 7), 16); return 
 export function trackScorch(s: HaebiRun, foe: (f: Effect) => boolean) {
   if (runOf !== s || (marks.length && s.t < marks[marks.length - 1]!.t)) { runOf = s; marks = []; seen = new WeakSet() }
   for (const f of s.fx) {
-    if (f.kind !== 'blast' || seen.has(f)) continue
+    if (seen.has(f)) continue
+    // 땅을 때린 것만: 폭발(blast) · 기술 내려찍기(skill · 각성 아닌 ult) · 돌팔매 떨어짐(thud) · 솟는 가시(spike) (11-23 형 「폭발·파괴 기술은 다 땅에 자국을」)
+    const ground = f.kind === 'blast' || f.kind === 'thud' || f.kind === 'spike' || f.kind === 'skill' || (f.kind === 'ult' && !f.awakened && !f.tru)
+    if (!ground) continue
     seen.add(f)
-    if (foe(f) || !warm(f.color)) continue
-    marks.push({ x: f.x, y: f.y, r: f.r, t: s.t, seed: (Math.abs(Math.round(f.x * 7 + f.y * 13)) % 997) / 997 })
+    if (f.r < S.minR) continue
+    const burn = f.kind === 'blast' && !foe(f) && warm(f.color)
+    marks.push({ x: f.x, y: f.y, r: Math.min(f.r, S.maxR), t: s.t, seed: (Math.abs(Math.round(f.x * 7 + f.y * 13)) % 997) / 997, burn })
   }
   while (marks.length && (s.t - marks[0]!.t > S.life || marks.length > S.max)) marks.shift()
 }
@@ -39,19 +43,31 @@ function scorchStamp(): HTMLCanvasElement | null {
   stamp = c; return c
 }
 
+/** 패인 흙 자국 (가운데 어두운 흙 · 가장자리 밝은 흙 고리 · 한 번 굽는다) */
+function craterStamp(): HTMLCanvasElement | null {
+  if (crater) return crater
+  if (typeof document === 'undefined') return null
+  const c = document.createElement('canvas'); c.width = c.height = S.bake
+  const g = c.getContext('2d')!, h = S.bake / 2
+  const grad = g.createRadialGradient(h, h, 0, h, h, h)
+  grad.addColorStop(0, S.dirtCore); grad.addColorStop(.6, S.dirtMid); grad.addColorStop(.82, S.dirtRim); grad.addColorStop(1, 'rgba(0,0,0,0)')
+  g.fillStyle = grad; g.fillRect(0, 0, S.bake, S.bake)
+  crater = c; return c
+}
 /** 땅 표식 차례에 — 오래될수록 옅어진다 · 처음 얼마 동안 불씨가 깜빡이며 꺼진다 */
 export function drawScorch(ctx: CanvasRenderingContext2D, s: HaebiRun) {
   if (!marks.length) return
-  const img = scorchStamp(); if (!img) return
+  const burnImg = scorchStamp(), dirtImg = craterStamp(); if (!burnImg || !dirtImg) return
   const a0 = ctx.globalAlpha
   for (const m of marks) {
+    const img = m.burn ? burnImg : dirtImg
     const age = s.t - m.t; if (age < 0) continue
     const fade = age < S.life - S.fadeOut ? 1 : Math.max(0, (S.life - age) / S.fadeOut)
     const w = m.r * S.size, h = w * S.squash
-    ctx.globalAlpha = a0 * S.alpha * fade
+    ctx.globalAlpha = a0 * (m.burn ? S.alpha : S.dirtAlpha) * fade
     ctx.drawImage(img, m.x - w, m.y - h, w * 2, h * 2)
     // 불씨: 자국 안 몇 점이 깜빡이다 꺼진다
-    if (age < S.emberLife) {
+    if (m.burn && age < S.emberLife) {
       const k = 1 - age / S.emberLife
       ctx.fillStyle = S.ember
       for (let i = 0; i < S.embers; i++) {

@@ -65,3 +65,18 @@ test('61-SOLID: same seed and inputs give the same run (determinism)', () => {
   // 규칙이 다르면 판이 갈린다 (막힘이 실제로 판에 들어간다)
   assert.notEqual(hash(play(BASE, 30)), hash(play(SOLID, 30)))
 })
+
+// 62-ANCHOR (형 11-23 「때리다가 갑자기 순간이동 · 보스전에서 원하지 않는 곳으로 자꾸」) — 단검이 장수를 옮기지 않는다
+test('62-ANCHOR: dagger shadow step and shadow dance never move the hero', async () => {
+  const { ANCHOR_RULES } = await import('../src/raid/haebi.ts')
+  for (const anchored of [false, true]) {
+    const s = createHaebi(5, 'stage', 'dagger', { ...BASE, ...(anchored ? { anchorRules: ANCHOR_RULES } : {}) })
+    s.spawn = 1e9; s.enemies.length = 0; s.inv = 99
+    for (let i = 0; i < 12; i++) { spawnMob(s, 'runner'); const e = s.enemies[s.enemies.length - 1]!; e.x = s.x + Math.cos(i) * 45; e.y = s.y + Math.sin(i) * 45; e.hp = e.max = 1e7 }
+    const x0 = s.x, y0 = s.y
+    let moved = false
+    for (let t = 0; t < 240; t++) { if (s.offers.length) choose(s, s.offers[0]!); stepHaebi(s, { x: 0, y: 0 }, 1 / 120); if (Math.hypot(s.x - x0, s.y - y0) > 1) moved = true }
+    if (anchored) assert.equal(moved, false, 'anchored hero stays put without input')
+    else assert.equal(moved, true, 'old rule: the shadow step still teleports (replays unchanged)')
+  }
+})

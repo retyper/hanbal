@@ -1,7 +1,7 @@
 // Stage bot full runs. Default rules follow the production stage resolver; RULES=56B preserves the old comparison lane.
 // CLI: [stages] [kits] [seeds]; KITS=58|off (CLI 기본 58 = 새 판의 무기 개성 규칙 · off = 옛 무기 셈) JACKPOT=on|off (CLI 기본 on = 새 판의 잭팟 상자 · off = 옛 고르는 상자) MAP=wide|off (CLI 기본 wide = 새 판의 59-WIDE 넓은 맵 · off = 한 장짜리 옛 판) REACT=.5 SHOP=0 AWAKEN=0|1 RULES=56B|55-IMUGI|56C|55-TIGER|57-BULGASARI|55-GUMIHO|55-SHAMAN MAX_STEPS=300000 OUTJSON=path
 import { HAEBI_SHOP, HAEBI_MOBS, HAEBI_STAGES, HAEBI_WIDE } from '../src/tune/params.ts'
-import { createHaebi, choose, stepHaebi, respite, KIT_RULES, CHEST_RULES, MAP_RULES, SOLID_RULES, raidRulesForStage, runDuration, midbossTime, bossTime, giantMob, type HaebiRun, type HaebiOpts, type Mob, type Kit, type Bonus, type StageId } from '../src/raid/haebi.ts'
+import { createHaebi, choose, stepHaebi, respite, KIT_RULES, CHEST_RULES, MAP_RULES, SOLID_RULES, ANCHOR_RULES, raidRulesForStage, runDuration, midbossTime, bossTime, giantMob, type HaebiRun, type HaebiOpts, type Mob, type Kit, type Bonus, type StageId } from '../src/raid/haebi.ts'
 import { botChoice, botInput } from '../src/raid/haebi-replay.ts'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
@@ -20,7 +20,7 @@ export function toolPolicy(env: NodeJS.ProcessEnv = process.env) {
 /** kits: 58-KITS 무기 개성 규칙을 켠다 (부르는 쪽 기본은 옛 셈 · CLI 는 KITS 로 고른다) · jackpot: 60-JACKPOT 상자 규칙을 켠다 (CLI 는 JACKPOT 으로) · wide: 59-WIDE 넓은 맵 (CLI 는 MAP 으로) · solid: 61-SOLID 막는 장식 (CLI 는 SOLID=on|off · 기본 on) */
 export function stageToolOpts(stage: StageId, bonus: Partial<Bonus>, rules?: ToolRules, awake = false, kits = false, jackpot = false, wide = false, solid = false): HaebiOpts {
   const requested = rules ?? raidRulesForStage(stage)
-  return { stage, bonus, simRules: requested === '55-IMUGI' && stage !== 'ford' || (requested === '56C' || requested === '57-BULGASARI') && stage !== 'palisade' || requested === '55-TIGER' && stage !== 'snow' || requested === '55-GUMIHO' && stage !== 'forest' || requested === '55-SHAMAN' && stage !== 'fortress' ? '56B' : requested, permanentAwake: awake, appearanceAwake: true, ...(kits ? { kitRules: KIT_RULES } : {}), ...(jackpot ? { chestRules: CHEST_RULES } : {}), ...(wide ? { mapRules: MAP_RULES } : {}), ...(wide && solid ? { blockRules: SOLID_RULES } : {}) }
+  return { stage, bonus, simRules: requested === '55-IMUGI' && stage !== 'ford' || (requested === '56C' || requested === '57-BULGASARI') && stage !== 'palisade' || requested === '55-TIGER' && stage !== 'snow' || requested === '55-GUMIHO' && stage !== 'forest' || requested === '55-SHAMAN' && stage !== 'fortress' ? '56B' : requested, permanentAwake: awake, appearanceAwake: true, ...(kits ? { kitRules: KIT_RULES } : {}), ...(jackpot ? { chestRules: CHEST_RULES } : {}), ...(wide ? { mapRules: MAP_RULES } : {}), ...(wide && solid ? { blockRules: SOLID_RULES } : {}), ...(kits ? { anchorRules: ANCHOR_RULES } : {}) }
 }
 export const toolSourceSha256 = () => Object.fromEntries(['src/raid/haebi.ts', 'src/raid/haebi-replay.ts', 'src/raid/champion.ts', 'src/raid/imugi.ts', 'src/raid/tiger.ts', 'src/raid/bulgasari.ts', 'src/raid/gumiho.ts', 'src/raid/shaman.ts', 'src/raid/giant.ts', 'src/raid/giant-core.ts', 'src/raid/palisade.ts', 'src/raid/wide.ts', 'src/tune/params.ts', 'tools/raid-stage-balance.ts', 'tools/raid-ult-dps.ts'].map(path => [path, createHash('sha256').update(readFileSync(new URL(`../${path}`, import.meta.url))).digest('hex')]))
 
