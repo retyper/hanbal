@@ -490,7 +490,7 @@ const PLOT_ICON: Readonly<Record<PlotOp, string>> = {
 const recSt = (): string => `<i class="recst">${tr('rec.badge')}</i>`
 /** 아래 탭 — more 는 길게 누르면 뜨는 말 (tips.ts) */
 /** 탭 한 칸 — 이름과 긴 설명은 말 표에서 (그릴 때 읽는다) */
-const tabDef = <I extends 'army' | 'draft' | 'people' | 'diplo' | 'heroes' | 'nation'>(id: I, ic: string) => ({
+const tabDef = <I extends 'army' | 'draft' | 'people' | 'diplo' | 'heroes' | 'nation' | 'palace'>(id: I, ic: string) => ({
   id, icon: ic,
   get name(): string { return tr(`tab.${id}`) },
   get more(): string { return tr(`tab.${id}.more`) },
@@ -504,6 +504,8 @@ const TABS = [
   // 장수 탭 — 첫 칸 「명령」에 장수에게 시키는 일을 모았다 (형 10-25: "명령 탭은 장수 탭이어야 하는 거 아님?")
   tabDef('heroes', 'unit-general'),
   tabDef('nation', 'settle-capital'),
+  // 궁전 — 도읍 마을을 거치지 않고 곧바로 궁궐·조정·큰 공사·큰 잔치 (형 11-23 「아직도 도읍 마을 안 들어가야 궁전이 보인다」 · HANDOFF A13)
+  tabDef('palace', 'treasure-silla-crown'),
 ] as const
 
 /**
@@ -528,7 +530,7 @@ const RULER_LEAD_TIP = tr('cmdj.rulerLead')
  * (형 10-24: 동료 플레이 "정보가 한 번에 많이 들어와서 뭐가 뭔지 전혀 이해가 안 됨" · 문명처럼 하나씩).
  * 한 판이라도 이긴 사람(배우는 판 빼고)은 처음부터 다 열린다.
  */
-const TAB_OPEN_AT: Readonly<Record<(typeof TABS)[number]['id'], number>> = { army: 0, draft: 0, nation: 0, heroes: 1, diplo: 2, people: 3 }
+const TAB_OPEN_AT: Readonly<Record<(typeof TABS)[number]['id'], number>> = { army: 0, draft: 0, nation: 0, palace: 0, heroes: 1, diplo: 2, people: 3 }
 /** 새로 열린 탭의 한 줄 (없으면 빈 글) */
 const tabNewLine = (id: (typeof TABS)[number]['id']): string => (id === 'heroes' || id === 'diplo' || id === 'people' ? tr(`tab.new.${id}`) : '')
 
@@ -7835,6 +7837,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const rqTab = rqNow.length > 0 && sheet?.kind !== 'heroes' && sheet?.kind !== 'hero'
     for (const t of TABS) {
       const wait = tabWait(r, t.id)
+      if (t.id === 'palace') { const cap = r.factions[me()]?.capital; if (cap === undefined || r.nodes[cap]?.owner !== me()) { const why = tr('tab.palace.nocap'); tabs += `<button class="locked" data-act="locktab" aria-label="${esc(why)}"${noBtn(why)}>${icon(t.icon, 'tic')}<span>${esc(t.name)}</span></button>`; continue } }
       if (wait > 0) { const why = tr('tab.locked', { name: t.name, turns: turnsLabel(r, wait) }); tabs += `<button class="locked" data-act="locktab" aria-label="${esc(why)}"${noBtn(why)}><i class="tab-lock" aria-hidden="true">🔒</i>${icon(t.icon, 'tic')}<span>${t.name}</span></button>`; continue }
       const dot = dotKeys(r, t.id).some((k) => !seenKeys.has(k))
       tabs += `<button class="${sheet?.kind === t.id ? 'on' : ''}${newTab === t.id ? ' fresh' : ''}" data-act="tab" data-tab="${t.id}" aria-label="${esc(t.name)}${rec.has(t.id) ? ` · ${esc(rec.get(t.id)!)}` : t.id === 'heroes' && rqTab ? ` · ${tr('rec.badge')}` : ''}" data-tip="${t.name}" data-more="${t.more}">${icon(t.icon, 'tic')}<span>${t.name}</span>${dot ? '<i class="dot"></i>' : ''}${t.id === 'heroes' && rqTab ? recDot(tr('rec.badge')) : ''}${rec.has(t.id) ? `<i class="rec" title="${esc(rec.get(t.id)!)}" data-why="${esc(rec.get(t.id)!)}">${tr('rec.badge')}</i>` : ''}</button>`
@@ -8754,6 +8757,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'close': sheet = null; paint(); return
       case 'tab': {
+        if (d['tab'] === 'palace') {
+          // 궁전 탭 = 도읍 판을 궁전 쪽으로 곧바로 (palace-go 와 같은 길)
+          const cap = realm?.factions[me()]?.capital
+          if (cap === undefined || realm?.nodes[cap]?.owner !== me()) return
+          sheet = null; townIn = cap; palaceOn = true; townFresh = true; townPick = null; ring = ''
+          break
+        }
         if (d['tab'] === 'heroes' && realm !== null) {
           cmdJob = null
           // 빨간 점이 켜진 까닭이 있는 칸으로 (형 10-25: 떠돌이가 와서 불은 켜졌는데 명령 칸이 열려 안 보였다)
