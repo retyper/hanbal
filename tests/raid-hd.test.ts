@@ -10,6 +10,7 @@ import { RaidEnding } from '../src/raid/ending.ts'
 import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { HERO_HD_SHEETS } from '../src/raid/hero-hd.ts'
+import { readdirSync } from 'node:fs'
 
 function context() {
   const transforms: number[][] = []
@@ -35,7 +36,9 @@ test('53-A actual CSS content controls backing, low tier uses DPR1, pointer logi
   assert.equal(wantsHeroHd(1.3), false); assert.equal(wantsHeroHd(1.3001), true)
   setHeroArt('jumong', 'aw1-jumong')
   assert.deepEqual(heroHdFiles(1), []); assert.deepEqual(heroHdFiles(1.8), ['anim-px/gen-jumong_hd.png', 'anim-px/gen-aw1-jumong_hd.png'], '11-22: 각성 주몽도 2배 띠(bake-hero-hd2)')
-  setHeroArt('base-w-13-young-archer')
+  // 2배 띠가 아직 없는 장수 하나를 그때그때 고른다 (Codex 78 로 하나씩 늘어난다 · 11-22)
+  const noHd = readdirSync('public/realm/anim-px').map(f => /^gen-(.+)\.png$/.exec(f)?.[1]).find(k => k && !k.endsWith('_hd') && !k.startsWith('aw1-') && !(`anim-px/gen-${k}_hd.png` in HERO_HD_SHEETS))!
+  setHeroArt(noHd)
   assert.deepEqual(heroHdFiles(4), [], 'a hero without a baked 2x strip never asks for one (11-22: Dana now has one)')
 })
 test('53-A density cache preserves logical size, folds wideHD, prewarms white without getImageData', () => {
