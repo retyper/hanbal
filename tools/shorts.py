@@ -9,6 +9,8 @@
   py -3 -I tools/shorts.py <그림 id> <이름> [--hook "한 줄"] [--cta "한 줄"] [--voice 소리.ogg --line "대사"] [--title "유튜브 제목"]
     목소리: public/realm/voice/hero/<장수 id>/art.ogg (외침) · 장수 id ↔ 그림 id 는 src/realm/data/hero-bust.ts · 대사는 src/ui/realm/voice-hero*.ts 의 art
     → D:/에셋창고/shorts/<그림 id>.mp4 · 같은 이름 .txt (올릴 제목·설명)
+  각성 홍보는 --plain (형 11-22: 「각성 영상 그대로 · 열국군웅전만 후반부 하단에 페이드 인」):
+    py -3 -I tools/shorts.py --plain l-L2-soseono.2
   예) py -3 -I tools/shorts.py l-L2-soseono.2 소서노 --hook "뽑기 없이, 싸워서 얻는 장수"
 
 15세 선: assets_r19 로 뺀 장수(R19)는 굽지 않는다 (메모리 rating-15-steam).
@@ -31,6 +33,8 @@ GOLD, CREAM = (255, 214, 120), (243, 232, 210)
 DEFAULT_HOOK = '뽑기 없이, 싸워서 사로잡는다'
 DEFAULT_CTA = '스팀 출시 준비 중'
 ZOOM = 1.15
+# --plain: 로고만 · 6초에 1초 동안 떠오름 · 세로 72% 자리(쇼츠 아래 제목·채널 글 띠 바로 위)
+PLAIN_LOGO_W, PLAIN_LOGO_Y, PLAIN_LOGO_AT = 620, 1390, 6.0
 ZW, ZH = round(W * ZOOM / 2) * 2, round(H * ZOOM / 2) * 2
 
 
@@ -125,15 +129,50 @@ def build(key, name, hook, cta, voice, line=''):
     return out
 
 
+def build_plain(key):
+    """형 11-22 「각성 영상 그대로 · 열국군웅전만 후반부 하단에 페이드 인」 — 글·이름·자막 없음 · 영상 소리 그대로."""
+    if key.startswith(R19):
+        raise SystemExit(f'{key}: 15세 선 밖(assets_r19) — 쇼츠로 굽지 않는다')
+    src = os.path.join(ROOT, 'public/realm/awaken-loop', f'{key}.mp4')
+    if not os.path.exists(src):
+        raise SystemExit(f'{key}: 각성 영상 없음 ({src})')
+    os.makedirs(OUT, exist_ok=True)
+    layer = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    logo = Image.open(os.path.join(ROOT, 'public/realm/logo/title.png')).convert('RGBA')
+    logo = logo.crop(logo.getbbox())
+    lw = PLAIN_LOGO_W
+    logo = logo.resize((lw, round(logo.size[1] * lw / logo.size[0])), Image.LANCZOS)
+    ly = PLAIN_LOGO_Y
+    sh = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    ImageDraw.Draw(sh).ellipse((W / 2 - lw * .62, ly - 40, W / 2 + lw * .62, ly + logo.size[1] + 40), fill=(0, 0, 0, 120))
+    layer.alpha_composite(sh.filter(ImageFilter.GaussianBlur(40)))
+    layer.alpha_composite(logo, ((W - lw) // 2, ly))
+    lp = os.path.join(OUT, f'.{key}.logo.png')
+    layer.save(lp)
+    out = os.path.join(OUT, f'{key}.mp4')
+    vf = (f'[0:v]scale={ZW}:{ZH}:flags=lanczos,crop={W}:{H}:({ZW}-{W})/2:0,fps=30,setsar=1[v];'
+          f'[1:v]format=rgba,fade=in:st={PLAIN_LOGO_AT}:d=1.0:alpha=1[l];'
+          '[v][l]overlay=0:0:shortest=1,format=yuv420p[o]')
+    subprocess.run([ffmpeg(), '-v', 'error', '-y', '-i', src, '-loop', '1', '-framerate', '30', '-i', lp,
+                    '-filter_complex', vf, '-map', '[o]', '-map', '0:a?', '-t', '10',
+                    '-c:v', 'libx264', '-crf', '18', '-preset', 'slow', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', out], check=True)
+    os.remove(lp)
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('key'); ap.add_argument('name')
+    ap.add_argument('key'); ap.add_argument('name', nargs='?', default='')
+    ap.add_argument('--plain', action='store_true', help='각성 영상 그대로 + 후반부 하단 로고 페이드 인만 (형 11-22 기본)')
     ap.add_argument('--hook', default=DEFAULT_HOOK)
     ap.add_argument('--cta', default=DEFAULT_CTA)
     ap.add_argument('--voice')
     ap.add_argument('--line', default='', help='장수 한마디 자막 (--voice 의 대사)')
     ap.add_argument('--title')
     a = ap.parse_args()
+    if a.plain:
+        print(build_plain(a.key))
+        return
     out = build(a.key, a.name, a.hook, a.cta, a.voice, a.line)
     title = a.title or f'{a.name} 각성 | 열국군웅전 #shorts'
     with open(out[:-4] + '.txt', 'w', encoding='utf-8', newline='\n') as f:
