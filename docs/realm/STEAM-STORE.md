@@ -84,7 +84,7 @@ Strategy · Turn-Based Strategy · Grand Strategy · Historical · Collectathon 
 ## 7. 쇼츠 (형 11-11: "견지쇠비 같은 10초짜리 띄워 주면 사람들 엄청 올 것")
 
 - 세로 각성 영상 10초 그대로 + 위: 장수 이름 · 아래: 제목 + 「스팀 찜하기」 + 주소. 장수 한 명에 한 편, 하루 한 편.
-- 도구: `tools/shorts.mjs` (ffmpeg 로 글자 얹기) — 만들 차례. 주소는 상점 페이지가 생기면 넣는다.
+- 도구: `tools/shorts.py` (ffmpeg 로 글자 얹기) — 만들 차례. 주소는 상점 페이지가 생기면 넣는다.
 - 15세 선: 쇼츠도 15세 판 영상만 (assets_r19 장수는 빼거나 15세 판 다시 구운 뒤).
 
 ## 8. AI 사용 신고 (스팀 「콘텐츠 설문」 AI 항목 초안)
