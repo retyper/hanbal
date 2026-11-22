@@ -1470,7 +1470,10 @@ function warmMore(): void {
   if (document.fonts.status === 'loading') return
   // 이번 틀에 몇 개 — 뒤로 돌린 일(다시 해 볼 것)을 한 틀에 거듭 돌리지 않게 처음 길이로 묶는다
   for (let i = 0, n = Math.min(P.duel.warmPerFrame, warmQ.length); i < n; i++) {
-    const job = warmQ.shift() as WarmJob, t = job()
+    const job = warmQ.shift() as WarmJob
+    // 미리 굽기는 덤이다 — 하나가 잘못돼도 싸움 틀(rAF)이 끊기지 않게 그 일만 버린다 (없으면 처음 쓸 때 예전처럼 굽는다)
+    let t: TextSprite | void
+    try { t = job() } catch { ctx = screenCtx; continue }
     if (t !== undefined && !t.final && (job.tries = (job.tries ?? 0) + 1) < 4) warmQ.push(job)
   }
 }
