@@ -847,6 +847,34 @@ export const HAEBI_CHAMPION = {
   },
 } as const
 
+/**
+ * 60-JACKPOT 상자 (RAID-REWARD-MAP §3-1·3-2 · 형 11-22 「추천대로」 · 다이센카 틀) — 정예 상자는 고르지 않고 터진다.
+ * counts 단계마다 오르는 칸 수 · slow 느리게 잡은 상자의 단계 몫 · fast 빨리 잡은(HAEBI_CHAMPION.fastSeconds 안) 상자의 단계 몫 (counts 와 같은 차례 · 합 1)
+ * pityStep 5개 넘게 못 터진 상자마다 다음 상자의 5개 몫에 더하는 값 (가장 낮은 단계 몫에서 뺀다 · 5개 넘게 터지면 0 으로) · 8개 몫은 그대로
+ * spareGold 올릴 칸이 없어 엽전으로 바뀌는 한 칸 값 (스테이지 금 몫·전리품을 곱한다)
+ * view: 연출 (화면만 · 판의 셈은 멈춰 있다) — seconds 단계마다 길이(초) · colors 단계마다 빛(본편 유물 상자의 흔함·귀함·보배 + 대박 보라)
+ *  enter 상자가 가운데로 오는 초 · enterDrop 떨어져 내리는 높이(px) · shakes 들썩이는 번수 · shakeGap [첫 틈, 끝 틈](초 · 빨라진다) · shakeMs 한 번 들썩이는 길이 · shakePx·shakeDeg 들썩임 · shakeGrow 번마다 커지는 몫
+ *  burstHold 터진 뒤 첫 룬까지 · burstMs·burstPop 터질 때 상자가 튀는 길이·크기 · glowMs 빛이 켜지는 길이 · edgeMs 화면 가장자리 빛(5개부터 · 저사양은 없음)
+ *  runeHold 솟은 룬이 날아가기 전에 머무는 초 · runeMs 솟는 길이 · runeGapMin 룬 사이 가장 짧은 틈 · rowMs 결과 줄에 서는 길이 · tail 끝 여운(초)
+ *  mergeSeconds 새로 연 조합의 재료 룬 둘이 합쳐지는 길이 · mergeFrom 재료가 오는 거리(룬 크기 몫)
+ *  freezeAt 대박이 멎는 들썩임 번호(0부터) · freezeLag 그 들썩임이 시작되고 멎기까지 · pushSeconds 「눌러!」를 안 눌러도 터지는 초 · pushPx 「눌러!」 흔들림(px) · skipHold 건너뛴 뒤 결과를 보여 주는 초 · frameCap 한 틀에 밀리는 가장 긴 초(끊긴 틀에 연출이 건너뛰지 않게)
+ *  coins 단계마다 엽전 알 수 · lowCoins 저사양 몫 · coinSize [작게, 크게]px · coinRise·coinSpread·coinFall 솟는 높이·퍼짐·떨어짐(px) · coinMs [짧게, 길게] · coinWave 한 번에 터지는 알 수(나머지는 coinGap ms 뒤에)
+ *  chest 상자 그림 크기(px · 화면 짧은 변의 chestShare 몫과 견주어 작은 쪽) · glow 빛 지름(상자 크기 몫 · glowLow 저사양) · rune 솟는 룬 크기(px) · dim 판을 덮는 어둠
+ *  소리: drumRate 북이 룬마다 오르는 몫 · drumBase 들썩임 북의 첫 높이 · drumVol·jingleVol·freezeVol 크기 (곡은 raid/sound.ts 의 chest1·chest3·chest5·chest8·chestFreeze 자리 · 형이 고르면 파일만 바꾼다)
+ */
+export const HAEBI_JACKPOT = {
+  counts: [1, 3, 5, 8], slow: [.9, .08, .02, 0], fast: [0, .85, .12, .03], pityStep: .05, spareGold: 25,
+  view: {
+    seconds: [3, 5, 8, 12], colors: ['#e0a85a', '#7ac0ff', '#ffd27a', '#c78bff'],
+    enter: .35, enterDrop: 46, shakes: 3, shakeGap: [.42, .22], shakeMs: 260, shakePx: 7, shakeDeg: 5, shakeGrow: .35,
+    burstHold: .3, burstMs: 320, burstPop: 1.35, glowMs: 420, edgeMs: 900,
+    runeHold: .45, runeMs: 260, runeGapMin: .25, rowMs: 180, tail: .5, mergeSeconds: .6, mergeFrom: 1.3,
+    freezeAt: 2, freezeLag: .1, pushSeconds: 2.5, pushPx: 5, skipHold: .7, frameCap: .25,
+    coins: [6, 14, 28, 48], lowCoins: .35, coinSize: [14, 22], coinRise: 150, coinSpread: 190, coinFall: 120, coinMs: [700, 1150], coinWave: 12, coinGap: 90,
+    chest: 132, chestShare: .34, glow: 2.6, glowLow: 1.6, rune: 56, dim: .62,
+    drumRate: 1.122, drumBase: .8, drumVol: .5, jingleVol: .6, freezeVol: .5,
+  },
+} as const
 export const HAEBI_TREE = { max: 3, rankStep: .4, upgradeChance: .5, ultDamage: 1.4, ultArea: 1.25, ultCooldown: .8,
   /**
    * 갈래 셋 (11-17 밤 형: 「다 찍을 정도로 레벨 올리는 건 의미 없지 않아? 몇 개만 몰빵하거나 여러 개를 일단 찍거나」 · D2 식).
