@@ -1374,6 +1374,23 @@ export const HAEBI_IMPACT = {
  * 지금까지 친 거리 안(× anticReach + anticPad px)일 때만. 빗나가면(쿨다운이 끝났는데 안 침) anticCancel 초 준비 칸에 머물다 선다.
  * 그래서 첫 한 방에는 예비가 없다 — 그것까지 맞추려면 판이 피해를 늦춰야 한다(판 셈 바꿈 · 이번엔 안 함).
  */
+/**
+ * 열전 장수 서기 계획 (형 11-23 「숨쉬는 건 너무 등산하는 숨쉬기 · 기본 idle 은 서 있는 자세 2컷으로 텀 길게 움직이다가 가끔씩 큰 숨 · 테일즈위버·던파처럼 개성 있게」 ·
+ * 같은 날 「idle 누가 코드로 짜랬냐 · 몸이 막 잘리잖아」 → 칸 고르기만 · 몸을 누르거나 옮기지 않는다). 화면만 (raid/hero-idle.ts · 판 상태에 쓰지 않는다).
+ * 띠마다 계획 plans[띠 이름(gen- 뒤)] — 없으면 예전 그대로 HAEBI_ANIM.idle 을 idleTime 초마다 (판 시각).
+ *   cells 띠 칸 수 (20 칸 넘는 띠도 · 그리는 쪽이 칸 폭을 이것으로 나눈다 · 없으면 20) · base 서기 칸들을 hold 초씩 · blink 눈 감는 칸 · breath 큰 숨 칸들 · quirk 버릇 칸들 (20 넘어도 된다)
+ * 때는 쉬기 시작한 뒤(걷기·공격·맞음·시전이 끝난 때부터)의 시계 — 눈 깜빡임 blinkEvery 초 사이마다 blinkTime 초 · 큰 숨 breathEvery 사이마다 breathTime 초(칸 여럿이면 나눠서) ·
+ *   버릇 quirkEvery 사이마다 칸마다 quirkStep 초. 셋은 겹치지 않는다(앞 일이 끝나고 gap 초 뒤에야 다음) · 사이는 띠 이름과 시각으로만 정해 장수마다 어긋난다(난수 없음) ·
+ *   cycle 초마다 새 차례(오래 서 있어도 셈이 늘지 않게) · 움직임 줄이기(기기 설정)면 base 만
+ * 새 띠 차례: 0~19 정규 · 20·21 쓰러짐 가운데 두 칸 · 22~25 버릇 네 칸.
+ * 범(beom) 띠: 0·1 서기(같은 그림) · 2 눈 감음 · 3 큰 숨 · 「손톱 살피기」 네 칸이 22~25 로 붙으면 cells: 26 · quirk: [22, 23, 24, 25] 를 더한다
+ */
+export const HAEBI_IDLE = {
+  blinkTime: .18, blinkEvery: [3.2, 5.6], breathTime: .7, breathEvery: [9, 14], quirkStep: .22, quirkEvery: [6, 10], gap: .6, cycle: 60,
+  plans: {
+    beom: { cells: 20, base: [0, 1], hold: 2.4, blink: 2, breath: [3] },
+  },
+} as const
 export const HAEBI_ANIM = {
   /** 판이 공격 때 세우는 attack 값(haebi.ts 의 s.attack = .3) — 공격 칸 시계의 길이 */
   window: .3,

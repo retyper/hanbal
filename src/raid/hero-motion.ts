@@ -8,6 +8,7 @@
  */
 import { HAEBI_ANIM as A, HAEBI_RUN as C } from '../tune/params.ts'
 import { KITS, type HaebiRun, type Kit } from './haebi.ts'
+import { planFrame, type IdlePlan } from './hero-idle.ts'
 
 /** 공격 칸 역할 한 벌 (params HAEBI_ANIM.roles) */
 export type AttackRole = (typeof A.roles)[keyof typeof A.roles]
@@ -26,6 +27,8 @@ export interface PoseOptions {
   stride: number; cells: number
   /** 맞은 순간 멈춤 중(RaidFeel.stopped) · 몸 변형 끔(움직임 줄이기 설정·판 끝 연출) · 저사양(잔상 끔) */
   stopped?: boolean; still?: boolean; low?: boolean
+  /** 띠의 서기 계획과 씨앗 (hero-idle.ts · 없으면 예전 서기) · calm 움직임 줄이기 — 서기 base 칸만 */
+  idle?: { plan: IdlePlan; seed: number } | undefined; calm?: boolean
 }
 
 interface Memo {
@@ -36,10 +39,12 @@ interface Memo {
   cool: number; struckAt: number; aim: number; reach: number
   /** 맞은 순간 멈춤에 맞힘 칸을 이미 보인 공격(시작 판 시각) · 예비를 마지막으로 보인 판 시각 */
   heldStart: number; anticAt: number
+  /** 마지막으로 서기가 아닌 그림(걷기·공격·맞음·시전·예비·멈춰 서기)을 보인 판 시각 — 서기 시계는 여기서부터 · idling 이번 그림이 서기였나 */
+  busyAt: number; idling: boolean
 }
 const memos = new WeakMap<HaebiRun, Memo>()
 const fresh = (s: HaebiRun): Memo => ({ t: s.t, x: s.x, y: s.y, phase: 0, lean: 0, movedAt: -Infinity, walkFrame: -1, walkSy: 1,
-  cool: primaryCool(s), struckAt: -Infinity, aim: s.face, reach: 0, heldStart: -Infinity, anticAt: -Infinity })
+  cool: primaryCool(s), struckAt: -Infinity, aim: s.face, reach: 0, heldStart: -Infinity, anticAt: -Infinity, busyAt: -Infinity, idling: false })
 /** 주 무기 쿨다운 — 쿨다운 칸 이름은 주 무기 이름과 같다(KITS[kit].primary · 방울은 bell) */
 function primaryCool(s: HaebiRun) { return s.cool[KITS[s.kit].primary as keyof HaebiRun['cool']] }
 /** 판이 겨누는 적(가장 가까운 산 적)과 거리 — 판의 nearest 와 같은 셈(가운데 거리) */
@@ -92,7 +97,9 @@ const neutral = (frame: number, face: number, lean: number): HeroPose => ({ fram
 /** 판 상태 → 이 프레임의 장수 그림. 기억(걷기 바퀴·기울기·예비)은 판 시각이 흐를 때만 고친다 */
 export function heroPose(s: HaebiRun, o: PoseOptions): HeroPose {
   const m = observe(s, o.stride), role = attackRole(s.kit)
+  m.idling = false
   const pose = heroPoseOf(s, m, role, o)
+  if (!m.idling) m.busyAt = s.t
   if (o.still) { pose.dx = 0; pose.sx = pose.sy = 1; pose.lean = 0; pose.ghosts = 0 }
   if (o.low) pose.ghosts = 0
   return pose
@@ -140,5 +147,7 @@ function heroPoseOf(s: HaebiRun, m: Memo, role: AttackRole, o: PoseOptions): Her
   // 멈춤: 한 박 늦게 서기 — 마지막 걸음 칸에 머물며 출렁을 거둔다
   const since = s.t - m.movedAt
   if (m.walkFrame >= 0 && since < A.settle) return { ...neutral(m.walkFrame, s.face, m.lean), sy: 1 + (m.walkSy - 1) * (1 - since / A.settle) }
-  return neutral(idleFrame(s.t), s.face, m.lean)
+  m.idling = true
+  // 서기 계획이 있는 띠는 쉬기 시작한 뒤 시계로 (멈추자마자 버릇이 튀지 않게) · 없으면 예전 그대로 판 시각
+  return neutral(o.idle ? planFrame(o.idle.plan, o.idle.seed, m.busyAt > -Infinity ? s.t - m.busyAt : s.t, o.calm) : idleFrame(s.t), s.face, m.lean)
 }

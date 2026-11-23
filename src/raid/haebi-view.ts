@@ -13,6 +13,7 @@ import { areaScale, awakenedLook, barrageArcher, charge, missileLife, slamRadius
 import { fieldView } from './camera.ts'
 import { WALK_CYCLE } from './walk-cycle.ts'
 import { attackFrame, attackRole, heroPose, idleFrame, type HeroPose } from './hero-motion.ts'
+import { idlePlan, idleSeed, planFrame, spriteName, stripCells } from './hero-idle.ts'
 import { HAEBI_ANIM as ANIM } from '../tune/params.ts'
 import { AURA_ART, drawAura, drawAuraBurst, drawAuraGround, type AuraArt, type AuraAt, type AuraKind } from './fx-aura.ts'
 import { HAEBI_IMPACT as FEEL, HAEBI_END as END, HAEBI_KITS as KITS58 } from '../tune/params.ts'
@@ -67,19 +68,20 @@ const BOSS_WIN = [104, 35, 626, 82] as const
  */
 type Baked = { c: CanvasImageSource; fw: number; fh: number; cols: number }
 const bakedStrips = new Map<HTMLImageElement, Map<number, Baked | null>>()
-function bakedStrip(img: HTMLImageElement, height: number, warmWhite = false, layout?: { cell: readonly [number, number]; cols: number }): Baked | null {
+function bakedStrip(img: HTMLImageElement, height: number, warmWhite = false, layout?: { cell: readonly [number, number]; cols: number }, cells = 20): Baked | null {
   // 찾기 먼저 (판마다 200번 불린다 — 그림의 width·height 읽기도 값이 든다)
   const fh = Math.max(1, Math.round(height)), per = bakedStrips.get(img), had = per?.get(fh)
   if (had !== undefined) return had
   if (typeof document === 'undefined' || !img.width || !img.height || !img.complete) return null
-  if (!per) { bakedStrips.set(img, new Map()); return bakedStrip(img, height, warmWhite, layout) }
-  const nativeH = layout?.cell[1] ?? img.height, sourceCols = layout?.cols ?? 20
-  const sw = layout?.cell[0] ?? img.width / 20, fw = Math.max(1, Math.round(sw * fh / nativeH))
+  if (!per) { bakedStrips.set(img, new Map()); return bakedStrip(img, height, warmWhite, layout, cells) }
+  // cells 띠 칸 수 (hero-idle.ts stripCells · 20 칸 넘는 띠도)
+  const nativeH = layout?.cell[1] ?? img.height, sourceCols = layout?.cols ?? cells
+  const sw = layout?.cell[0] ?? img.width / cells, fw = Math.max(1, Math.round(sw * fh / nativeH))
   if (fh >= nativeH && img.width <= C.spriteBakeMax) { per.set(fh, null); return null }   // 키우는 그림(초상 판 등)은 굽지 않는다
-  const cols = Math.max(1, Math.min(20, Math.floor(C.spriteBakeMax / fw))), rows = Math.ceil(20 / cols)
+  const cols = Math.max(1, Math.min(cells, Math.floor(C.spriteBakeMax / fw))), rows = Math.ceil(cells / cols)
   const c = document.createElement('canvas'); c.width = cols * fw; c.height = rows * fh
   const g = c.getContext('2d')!; g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'
-  for (let i = 0; i < 20; i++) g.drawImage(img, (i % sourceCols) * sw, Math.floor(i / sourceCols) * nativeH, sw, nativeH, (i % cols) * fw, Math.floor(i / cols) * fh, fw, fh)
+  for (let i = 0; i < cells; i++) g.drawImage(img, (i % sourceCols) * sw, Math.floor(i / sourceCols) * nativeH, sw, nativeH, (i % cols) * fw, Math.floor(i / cols) * fh, fw, fh)
   const b: Baked = { c, fw, fh, cols }; per.set(fh, b)
   if (warmWhite) whiteStrip(c, c.width, c.height)
   while (per.size > 3) { const key = per.keys().next().value!; const old = per.get(key); if (old && 'close' in old.c) (old.c as ImageBitmap).close(); per.delete(key) }
@@ -111,19 +113,19 @@ function whiteStrip(src: CanvasImageSource, width: number, height: number) {
 }
 export function sprite(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, path: string, x: number, y: number, height: number, frame: number, face = 1, flash: boolean | 'white' = false, density?: number, rim = 0) {
   const img = images.get(path); if (!img) return
-  const layout = HERO_HD_SHEETS[path], nativeH = layout?.cell[1] ?? img.height
-  const b = bakedStrip(img, density === undefined ? height : heroCacheHeight(height, density, nativeH), density !== undefined, layout)
+  const layout = HERO_HD_SHEETS[path], nativeH = layout?.cell[1] ?? img.height, n = stripCells(path)
+  const b = bakedStrip(img, density === undefined ? height : heroCacheHeight(height, density, nativeH), density !== undefined, layout, n)
   let src: CanvasImageSource = img, sx: number, sy = 0, sw: number, sh: number, dw: number, dh: number
   if (b) { src = b.c; sx = (frame % b.cols) * b.fw; sy = Math.floor(frame / b.cols) * b.fh; sw = b.fw; sh = b.fh; dh = density === undefined ? b.fh : height; dw = density === undefined ? b.fw : b.fw * height / b.fh }
-  else { sw = layout?.cell[0] ?? img.width / 20; sh = nativeH; sx = (frame % (layout?.cols ?? 20)) * sw; sy = Math.floor(frame / (layout?.cols ?? 20)) * sh; dh = height; dw = height * sw / sh }
-  if (density !== undefined) dw = Math.round(height * (layout?.cell[0] ?? img.width / 20) / nativeH)
+  else { sw = layout?.cell[0] ?? img.width / n; sh = nativeH; sx = (frame % (layout?.cols ?? n)) * sw; sy = Math.floor(frame / (layout?.cols ?? n)) * sh; dh = height; dw = height * sw / sh }
+  if (density !== undefined) dw = Math.round(height * (layout?.cell[0] ?? img.width / n) / nativeH)
   // 폰 프레임 (11-17): save/restore 대신 옮긴 만큼 되돌린다 — 적 230 명마다 save 가 판 그리기의 8% 를 먹었다
   const tx = Math.round(x), ty = Math.round(y), dx = -Math.round(dw / 2)
   const smooth = ctx.imageSmoothingEnabled
   ctx.translate(tx, ty); if (face !== 1) ctx.scale(face, 1); ctx.imageSmoothingEnabled = false
   if (rim > 0) {
     // 테두리 빛: 한 색 실루엣을 둘레로 몇 번 찍고 그 위에 본 그림 (GAP §15-2)
-    const tinted = tintStrip(src, b ? b.cols * b.fw : img.width, b ? Math.ceil(20 / b.cols) * b.fh : img.height, C.heroRimColor)
+    const tinted = tintStrip(src, b ? b.cols * b.fw : img.width, b ? Math.ceil(n / b.cols) * b.fh : img.height, C.heroRimColor)
     if (tinted) {
       const a = ctx.globalAlpha; ctx.globalAlpha = a * C.heroRimAlpha
       for (let i = 0; i < C.heroRimDirs; i++) { const t = i * Math.PI * 2 / C.heroRimDirs; ctx.drawImage(tinted, sx, sy, sw, sh, dx + Math.round(Math.cos(t) * rim), -dh + Math.round(Math.sin(t) * rim), dw, dh) }
@@ -132,7 +134,7 @@ export function sprite(ctx: CanvasRenderingContext2D, images: Map<string, HTMLIm
   }
   ctx.drawImage(src, sx, sy, sw, sh, dx, -dh, dw, dh)
   if (flash === 'white') {
-    const white = whiteStrip(src, b ? b.cols * b.fw : img.width, b ? Math.ceil(20 / b.cols) * b.fh : img.height)
+    const white = whiteStrip(src, b ? b.cols * b.fw : img.width, b ? Math.ceil(n / b.cols) * b.fh : img.height)
     if (white) ctx.drawImage(white, sx, sy, sw, sh, dx, -dh, dw, dh)
   }
   // 맞은 번쩍: 같은 그림을 한 번 더 빛으로 더한다 — ctx.filter 는 폰에서 그림마다 소프트웨어로 돌아 프레임을 크게 깎았다 (11-16 플립7 20프레임)
@@ -154,7 +156,7 @@ function trackGhosts(s: HaebiRun, path: string, frame: number) {
 function drawGhosts(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, height: number) {
   if (!ghosts.length) return
   const img = images.get(ghosts[0]!.path); if (!img) return
-  const layout = HERO_HD_SHEETS[ghosts[0]!.path], fw = layout?.cell[0] ?? img.width / 20, fh = layout?.cell[1] ?? img.height
+  const layout = HERO_HD_SHEETS[ghosts[0]!.path], n = stripCells(ghosts[0]!.path), fw = layout?.cell[0] ?? img.width / n, fh = layout?.cell[1] ?? img.height
   tint ??= document.createElement('canvas')
   if (tint.width !== fw || tint.height !== fh) { tint.width = fw; tint.height = fh }
   const t = tint.getContext('2d')!; t.imageSmoothingEnabled = false
@@ -163,7 +165,7 @@ function drawGhosts(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImage
   for (const g of ghosts) {
     const k = 1 - (s.t - g.t) / C.ghostLife; if (k <= 0) continue
     for (const [color, dx, a] of [['#ff2bd6', C.ghostSplit, .55], ['#18e8ff', -C.ghostSplit * .5, 1]] as const) {
-      t.globalCompositeOperation = 'copy'; t.drawImage(img, (g.frame % (layout?.cols ?? 20)) * fw, Math.floor(g.frame / (layout?.cols ?? 20)) * fh, fw, fh, 0, 0, fw, fh)
+      t.globalCompositeOperation = 'copy'; t.drawImage(img, (g.frame % (layout?.cols ?? n)) * fw, Math.floor(g.frame / (layout?.cols ?? n)) * fh, fw, fh, 0, 0, fw, fh)
       t.globalCompositeOperation = 'source-in'; t.fillStyle = color; t.fillRect(0, 0, fw, fh)
       ctx.globalAlpha = C.ghostAlpha * a * k * k
       ctx.save(); ctx.translate(Math.round(g.x + dx * (2 - k)), Math.round(g.y)); ctx.scale(g.face, 1)
@@ -194,21 +196,24 @@ export function warmHeroSprites(images: Map<string, HTMLImageElement>, density: 
     const hd = HERO_HD[path], use = hd && wantsHeroHd(density) && images.has(hd) ? hd : path, img = images.get(use)
     if (!img) continue
     const layout = HERO_HD_SHEETS[use]
-    const b = bakedStrip(img, heroCacheHeight(height, density, layout?.cell[1] ?? img.height), true, layout)
+    const b = bakedStrip(img, heroCacheHeight(height, density, layout?.cell[1] ?? img.height), true, layout, stripCells(use))
     if (!b) whiteStrip(img, img.width, img.height)
   }
 }
 /** 몸놀림(hero-motion.ts) 재료 — 걷기 칸은 실제로 움직인 거리 ÷ 한 바퀴 보폭(몸 키 비례)으로 넘긴다 · 띠마다 걷기 칸 수 */
-const poseOptions = (s: HaebiRun) => ({ stride: C.walkStride * C.heroPx * heroArt.body, cells: WALK_CYCLE[heroSprite(s)] ?? 8 })
-/** 움직임 줄이기(기기 설정)면 몸 변형(런지·늘임·출렁·기울기·잔상)을 끈다 — 칸 박자는 그대로 */
+/** 움직임 줄이기(기기 설정)면 몸 변형(런지·늘임·출렁·기울기·잔상)을 끈다 — 칸 박자는 그대로 · 서기는 base 칸만 */
 const calmMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+/** 띠의 서기 계획 (hero-idle.ts · 없으면 undefined — 예전 서기) */
+const idleOf = (path: string) => { const plan = idlePlan(path); return plan ? { plan, seed: idleSeed(spriteName(path)) } : undefined }
+const poseOptions = (s: HaebiRun) => ({ stride: C.walkStride * C.heroPx * heroArt.body, cells: WALK_CYCLE[heroSprite(s)] ?? 8, idle: idleOf(heroSprite(s)), calm: calmMotion })
 /** 장수 칸 — 초상(portrait)은 판 상태만으로(걷지 않음 · 기억 없음) · 판 위는 heroPose 와 같다 */
 export function heroFrame(s: HaebiRun, portrait = false, menuTime = 0) {
   if (!portrait) return heroPose(s, poseOptions(s)).frame
   if (s.hurt > 0) return ANIM.hurtCell
   if (s.cast?.kind === 'ult') return ANIM.castCell   // 비기 시전: 기를 모으는 자세
-  if (s.attack > 0) return attackFrame(attackRole(s.kit), ANIM.window - s.attack) ?? idleFrame(menuTime || s.t)
-  return idleFrame(menuTime || s.t)
+  const idle = idleOf(heroSprite(s)), rest = (t: number) => idle ? planFrame(idle.plan, idle.seed, t, calmMotion) : idleFrame(t)
+  if (s.attack > 0) return attackFrame(attackRole(s.kit), ANIM.window - s.attack) ?? rest(menuTime || s.t)
+  return rest(menuTime || s.t)
 }
 /**
  * 장수 몸 (62-A) — 몸놀림의 변형(런지 dx · 가로/세로 늘임 · 기울기)을 발 자리에 한 번 걸고 잔상 → 몸 → 각성 빛을 같은 변형으로 그린다.
