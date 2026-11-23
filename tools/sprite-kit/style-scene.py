@@ -71,7 +71,7 @@ def motion_scene(identity, pose_sheet, out, style_ref='soseono', Z=4, CELL=640, 
     o.save(out); print(out, o.size)
 
 
-def motion8_scene(identity, rig_a, rig_b, out, style_ref='soseono', Z=3, CW=384, CH=640):
+def motion8_scene(identity, rig_a, rig_b, out, style_ref='soseono', Z=3, CW=384, CH=640, root=.5):
     """걷기 여덟 칸 장면(1920x1280 · 5x2 칸 · 칸 384x640 · 게임 화소의 3배): 왼쪽 줄 = [그 장수 서기] · [승인 띠] · 오른쪽 4x2 = 윗줄 A 넷 · 아랫줄 B 넷(코드 인형).
     앞·뒤 절반을 한 번에 그리게 해 옷 색이 갈리지 않게 하고 생성 횟수도 절반으로.
       py -3 -I tools/sprite-kit/style-scene.py motion8 <합격한 서기.png> <인형 A.png> <인형 B.png> <나갈.png>"""
@@ -88,6 +88,7 @@ def motion8_scene(identity, rig_a, rig_b, out, style_ref='soseono', Z=3, CW=384,
             im = im.crop(((im.size[0] - CW + 12) // 2, 0, (im.size[0] + CW - 12) // 2, im.size[1]))
         o.paste(im, ((CW - im.size[0]) // 2, j * CH + CH - 40 - im.size[1]), im)
     s = .92 * Z / 4   # 인형은 게임 화소의 4배 · 대머리
+    roots = []   # 칸마다 뿌리의 장면 x (11-23 형 「서 있는 것으로 프레임을 꽉 채우면 안 됨 · 그래서 지진 난 듯 흔들린다」 → 몸의 뿌리를 모든 칸에서 같은 자리에)
     for j, path in enumerate((rig_a, rig_b)):
         sh = Image.open(path).convert('RGB')
         W, Hs = sh.size
@@ -101,7 +102,11 @@ def motion8_scene(identity, rig_a, rig_b, out, style_ref='soseono', Z=3, CW=384,
             fig = fig.resize((round(fig.size[0] * s), round(fig.size[1] * s)), Image.LANCZOS)
             cx = (xs.min() + xs.max()) / 2 / (W / 2)
             x0 = CW * (1 + k) + round(CW / 2 + (cx - .5) * (W / 2) * s - fig.size[0] / 2)
-            o.paste(fig, (max(CW * (1 + k) + 4, min(CW * (2 + k) - 4 - fig.size[0], x0)), j * CH + CH - 40 - fig.size[1]), fig)
+            x0 = max(CW * (1 + k) + 4, min(CW * (2 + k) - 4 - fig.size[0], x0))
+            o.paste(fig, (x0, j * CH + CH - 40 - fig.size[1]), fig)
+            roots.append(round(x0 + (root * (W / 2) - xs.min()) * s, 1))   # 인형의 뿌리 = 인형 칸의 root 몫(기본 한가운데 = 골반)
+    import json
+    json.dump(dict(cw=CW, ch=CH, z=Z, roots=roots), open(out.replace('.png', '.roots.json'), 'w'))
     o.save(out)
     print(out, o.size)
 

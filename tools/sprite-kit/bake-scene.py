@@ -120,7 +120,25 @@ def motion(path, name, tag, scene=None, zoom=Z, rows=False):
         print(msg)
 
 
-def motion8(path, name, tags=('walk-a', 'walk-b'), norm=True):
+ROOT_X = 104   # 칸(폭 208) 안에서 몸의 뿌리가 서는 자리 — 모든 동작·모든 칸이 같다
+
+
+def register(art, rig, reach=45, band=.20):
+    """그림 덩어리(art)가 인형(rig)에서 가로로 얼마나 밀려 그려졌나.
+    다리·발만 본다(바닥에서 인형 키의 band 몫): 망토·머리카락은 뒤로 길게 날려 몸 전체 겹침을 한쪽으로 끈다(처음에 그렇게 재서 -33px 이 나왔다).
+    두 실루엣의 바닥 줄을 맞춘 뒤, 그 띠에서 서로 다른 화소(XOR)가 가장 적은 밀림을 고른다."""
+    ay, ry = np.nonzero(art.any(1))[0], np.nonzero(rig.any(1))[0]
+    if len(ay) == 0 or len(ry) == 0:
+        return 0
+    h = int((ry.max() - ry.min() + 1) * band)
+    a = art[ay.max() - h + 1:ay.max() + 1]
+    r = rig[ry.max() - h + 1:ry.max() + 1]
+    cost = np.array([int((a ^ np.roll(r, dx, axis=1)).sum()) for dx in range(-reach, reach + 1)])
+    ok = np.nonzero(cost <= cost.min() * 1.02 + 2)[0]
+    return int(round(float(np.median(ok)))) - reach
+
+
+def motion8(path, name, tags=('walk-a', 'walk-b'), norm=True, scene=None):
     """걷기 여덟 칸 장면(5x2 칸 · 왼쪽 줄은 견본) -> <이름>-walk-a-1..4 · <이름>-walk-b-1..4 (사람은 덩어리째 · 칸 금으로 자르지 않는다)
       py -3 -I tools/sprite-kit/bake-scene.py motion8 <받은 장면.png> <이름>"""
     out = Image.open(path).convert('RGB')
@@ -149,6 +167,15 @@ def motion8(path, name, tags=('walk-a', 'walk-b'), norm=True):
                 hs.append(bb[7] - bb[6])
         row_k[j] = (ref_h * 1.015 / float(np.median(hs))) if (ref_h and hs and norm) else 1.0   # 공격처럼 칸마다 키가 다른 판은 norm=False
         print(f'줄{j + 1} 크기 맞춤 x{row_k[j]:.3f}')
+    roots = None
+    if scene:
+        import json, os
+        side = scene.replace('.png', '.roots.json')
+        if os.path.exists(side):
+            roots = json.load(open(side))['roots']
+            sc_img = Image.open(scene).convert('RGB')
+            kx = W / sc_img.size[0]
+            rigmask = np.asarray(Image.fromarray((key(sc_img)[..., 3] > 60).astype(np.uint8) * 255).resize((W, H), Image.NEAREST)) > 127
     for j, tag in enumerate(tags):
         for k in range(4):
             gx0 = cw * (1 + k)
@@ -165,9 +192,23 @@ def motion8(path, name, tags=('walk-a', 'walk-b'), norm=True):
             g2 = g.crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
             cell = Image.new('RGBA', (CELL_W, CELL), (0, 0, 0, 0))
             ox = round(CELL_W / 2 + (bcx - (gx0 + cw / 2)) * scale * row_k[j] - g2.size[0] / 2)
+            note = ''
+            if roots is not None:   # 뿌리 맞춤: 인형과 겹쳐 밀림을 재고, 뿌리를 ROOT_X 에
+                y0c, y1c = int(ch * j), int(ch * (j + 1))
+                x0c, x1c = max(0, int(gx0 - cw * .25)), min(W, int(gx0 + cw * 1.25))
+                art = (lab[y0c:y1c, x0c:x1c] == bi)
+                rg = rigmask[y0c:y1c, x0c:x1c].copy()
+                rg[:, :max(0, int(gx0) - x0c)] = False
+                rg[:, int(gx0 + cw) - x0c:] = False
+                dx = register(art, rg)
+                root_art = roots[j * 4 + k] * kx + dx
+                ox = round(ROOT_X - (root_art - bx0) * scale * row_k[j])
+                note = f' · 그림이 인형에서 {dx:+d}px 밀림 → 뿌리 맞춤'
+                if ox < 0 or ox + g2.size[0] > CELL_W:
+                    note += ' ← 칸 밖으로 나감!'
             cell.alpha_composite(g2, (max(0, min(CELL_W - g2.size[0], ox)), FOOT - g2.size[1]))
             cell.save(f'{PXD}/{name}-{tag}-{k + 1}.png')
-            print(f'{tag} 칸{k + 1} 게임 키 {g2.size[1]} 폭 {g2.size[0]}')
+            print(f'{tag} 칸{k + 1} 게임 키 {g2.size[1]} 폭 {g2.size[0]}{note}')
 
 
 def fall(path, name, scene, tag='down', k4=1.0, flip4=False):
@@ -237,10 +278,13 @@ if __name__ == '__main__':
         fall(sys.argv[2], sys.argv[3], sys.argv[4], k4=float(nums[0]) if nums else 1.0, flip4='flip4' in sys.argv[5:])
         sys.exit()
     if sys.argv[1] == 'motion8':   # motion8 <받은 장면> <이름> [꼬리표A 꼬리표B = 공격 판: 키 맞춤 없이]
-        if len(sys.argv) > 5:
-            motion8(sys.argv[2], sys.argv[3], (sys.argv[4], sys.argv[5]), norm=False)
+        # motion8 <받은 장면> <이름> [꼬리표A 꼬리표B] [scene=<보낸 장면.png> — 뿌리 곁파일이 있으면 뿌리 맞춤]
+        sc_arg = next((a[6:] for a in sys.argv[4:] if a.startswith('scene=')), None)
+        rest = [a for a in sys.argv[4:] if not a.startswith('scene=')]
+        if len(rest) >= 2:
+            motion8(sys.argv[2], sys.argv[3], (rest[0], rest[1]), norm=False, scene=sc_arg)
         else:
-            motion8(sys.argv[2], sys.argv[3])
+            motion8(sys.argv[2], sys.argv[3], scene=sc_arg)
         sys.exit()
     if sys.argv[1] == 'stand': stand(sys.argv[2], sys.argv[3], int(sys.argv[4]) if len(sys.argv) > 4 else 3)
     else:
