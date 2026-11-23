@@ -132,8 +132,17 @@ def figure(phase, swing_near, pose=None):
     lean = (S['lean'] if pose is None else pose.get('lean', 0)) * Z             # 걷는 몸은 앞으로 기운다(결마다 다르게)
     sh_n, sh_f = (cx - 3 * Z + lean, sh_y + 1 * Z), (cx + 5 * Z + lean, sh_y - 1 * Z)
     # 팔은 같은 쪽 다리와 반대로
-    arm_n = (-near['th'] * .9 * S['arm'], -near['th'] * .9 * S['arm'] + S['elbow'])
-    arm_f = (-far['th'] * .9 * S['arm'], -far['th'] * .9 * S['arm'] + S['elbow'])
+    # 팔 흔듦 (11-23 형 「어깨가 일부 컷에서 삐걱거림 · 팔도 제대로」): 예전에는 팔을 같은 쪽 넓적다리 각도에 묶어, 여덟 칸 가운데 한 칸에서
+    #   팔이 맨 앞(+23도)에서 맨 뒤(-23도)로 튀었다. → 한 바퀴에 한 번 고르게 오가는 물결로: 같은 쪽 다리가 가장 앞(딛음)일 때 팔은 가장 뒤.
+    kk = ('pass', 'reach', 'contact', 'down').index(phase or 'pass') + (0 if swing_near else 4)
+    sw = math.cos(2 * math.pi * (kk - 2) / 8)          # +1 = 가까운 다리가 가장 앞
+    A = 26 * S['arm']
+    an, af = -A * sw, A * sw
+    arm_n = (an, an + S['elbow'] + 16 * max(0.0, an / max(A, 1)))   # 앞으로 나갈수록 팔꿈치가 더 굽는다
+    arm_f = (af, af + S['elbow'] + 16 * max(0.0, af / max(A, 1)))
+    if pose is None:   # 어깨는 팔을 따라 아주 조금 돈다(가까운 팔이 앞이면 가까운 어깨도 앞으로 1.5px)
+        tw = -1.5 * Z * sw
+        sh_n, sh_f = (sh_n[0] + tw, sh_n[1]), (sh_f[0] - tw, sh_f[1])
     if pose is not None:
         arm_n, arm_f = pose['near_arm'], pose['far_arm']
     elif PROP['kind'] == 'bow':
