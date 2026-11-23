@@ -61,8 +61,20 @@ def measure(m):
     if crotch:
         y = min(H - 1, crotch + int(H * .04)); xs = np.nonzero(m[y])[0]; runs = np.split(xs, np.nonzero(np.diff(xs) > 2)[0] + 1)
         legs = sorted((len(r) for r in runs if len(r) > W * .06), reverse=True)[:2]; thigh = np.mean(legs) if legs else 0
+    # 종아리: 가랑이~발바닥의 62~80% 구간에서 다리 한쪽의 가장 굵은 폭 · 무릎: 45~55% 구간의 가장 가는 폭 (다리가 한 줄로 이어지는지 본다)
+    calf = knee = tmax = 0
+    if crotch:
+        def leg_w(y):
+            xs = np.nonzero(m[y])[0]
+            if len(xs) == 0: return 0
+            runs = np.split(xs, np.nonzero(np.diff(xs) > 2)[0] + 1); legs = sorted((len(r) for r in runs if len(r) > W * .04), reverse=True)[:2]
+            return float(np.mean(legs)) if legs else 0
+        L = H - crotch
+        calf = max(leg_w(y) for y in range(crotch + int(L * .56), crotch + int(L * .74)))
+        knee = min(leg_w(y) for y in range(crotch + int(L * .40), crotch + int(L * .54)))
+        tmax = max(leg_w(y) for y in range(crotch + int(L * .05), crotch + int(L * .38)))   # 허벅지 가장 굵은 곳 (무릎 위에서 부푸는지)
     f = lambda v: round(v * s, 1)
-    return dict(등신=round(H / head, 2), 머리=f(head), 어깨=f(shoulder), 가슴통=f(chest), 허리=f(waist), 골반=f(hip), 허벅지=f(thigh), 가랑이=f(crotch or 0))
+    return dict(종아리=f(calf), 무릎=f(knee), 허벅지최대=f(tmax), 다리비=round(calf / thigh, 2) if thigh else 0, 등신=round(H / head, 2), 머리=f(head), 어깨=f(shoulder), 가슴통=f(chest), 허리=f(waist), 골반=f(hip), 허벅지=f(thigh), 가랑이=f(crotch or 0))
 
 
 if __name__ == '__main__' and not (len(sys.argv) > 2 and sys.argv[1] == 'gate'):
@@ -78,10 +90,12 @@ SPEC = {
     #            머리(±1.5)  어깨        허리        골반        허벅지
     # 여자는 축 셋(11-23 형 「살해 범은 몸은 평범한데 가슴은 큰 스타일 · 허벅지 너무 큼」): 뼈대(가냘픈·표준·우람한) × 가슴(작은·보통·큰·아주 큰) × 허벅지(보통·튼실한)
     # 가슴 크기는 실루엣 폭으로 재기 어렵다(팔에 가림) → 가슴 표는 눈으로 · 나머지 폭은 그 뼈대의 합격선을 그대로 지켜야 한다
-    'f-slender':  dict(머리=32, 어깨=(27, 31), 허리=(12, 15), 골반=(23, 27), 허벅지=(8, 10.5)),
-    'f-standard': dict(머리=32, 어깨=(33, 38), 허리=(15, 19), 골반=(29, 34), 허벅지=(10.5, 12.5)),
-    'f-sturdy':   dict(머리=32, 어깨=(42, 48), 허리=(20, 25), 골반=(34, 40), 허벅지=(12.5, 15)),
-    'f-thick':    dict(머리=32, 어깨=(33, 38), 허리=(15, 19), 골반=(33, 38), 허벅지=(13.5, 16)),   # 표준 뼈대 + 튼실한 허벅지
+    # 다리 상한(11-23 형 「여자 허벅지가 괴물처럼 일부만 두꺼워지는 건 다시」): 4.3등신은 다리가 짧아 조금만 굵어도 통나무가 된다.
+    #   합격한 표준 몸 = 허벅지최대 13.8 · 무릎 9.3 · 종아리 8.8 → 가슴·뼈대가 달라져도 여자 다리는 이 근처에 머문다. 「튼실한」도 +1 안팎까지만.
+    'f-slender':  dict(머리=32, 어깨=(27, 31), 허리=(12, 15), 골반=(23, 27), 허벅지=(8, 10.5), 허벅지최대=(9.5, 12), 무릎=(7, 8.8), 종아리=(6.5, 8.4)),
+    'f-standard': dict(머리=32, 어깨=(33, 38), 허리=(15, 19), 골반=(29, 34), 허벅지=(10.5, 12.5), 허벅지최대=(12, 14), 무릎=(8.3, 9.9), 종아리=(7.8, 9.4)),
+    'f-sturdy':   dict(머리=32, 어깨=(42, 48), 허리=(20, 25), 골반=(33, 38), 허벅지=(11.5, 13.5), 허벅지최대=(13, 14.5), 무릎=(8.8, 10.4), 종아리=(8.3, 9.9)),
+    'f-thick':    dict(머리=32, 어깨=(33, 38), 허리=(15, 19), 골반=(31, 36), 허벅지=(12, 13.5), 허벅지최대=(14, 15.2), 무릎=(8.8, 10.4), 종아리=(8.3, 9.9)),   # 표준 뼈대 + 튼실한 허벅지(조금만)
     'm-lean':     dict(머리=31, 어깨=(34, 39), 허리=(15, 19), 골반=(24, 29), 허벅지=(9, 12)),
     'm-standard': dict(머리=31, 어깨=(42, 48), 허리=(19, 24), 골반=(29, 34), 허벅지=(11, 13.5)),
     'm-muscular': dict(머리=31, 어깨=(50, 57), 허리=(21, 26), 골반=(33, 39), 허벅지=(12.5, 15.5)),
@@ -104,4 +118,4 @@ if __name__ == '__main__' and len(sys.argv) > 2 and sys.argv[1] == 'gate':
     kinds = sys.argv[3].split(',')
     for i, (m, kind) in enumerate(zip(figures(sys.argv[2]), kinds)):
         d = measure(m); bad = gate(d, kind)
-        print(f"{kind:11} {'합격' if not bad else '불합격'}  등신 {d['등신']} 머리 {d['머리']} 어깨 {d['어깨']} 허리 {d['허리']} 골반 {d['골반']} 허벅지 {d['허벅지']}" + ('' if not bad else '  ← ' + ' · '.join(bad)))
+        print(f"{kind:11} {'합격' if not bad else '불합격'}  등신 {d['등신']} 머리 {d['머리']} 어깨 {d['어깨']} 허리 {d['허리']} 골반 {d['골반']} 허벅지 {d['허벅지']}/{d['허벅지최대']} 무릎 {d['무릎']} 종아리 {d['종아리']}" + ('' if not bad else '  ← ' + ' · '.join(bad)))
