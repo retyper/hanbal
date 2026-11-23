@@ -34,7 +34,7 @@ HEROES = {
     'maehwa': dict(strip='gen-maehwa', atk='bow', atk8=False),
     'dalbit': dict(strip='gen-base-w-31-dabeol-dalbit', atk='bow', atk8=False),
     'haebi': dict(strip='gen-haebi', atk='chop', atk8=True, act=True),   # act = 공격 여덟 칸이 넓은 동작 칸(240×224 · 뿌리 92 · 발 줄 216)
-    'areum': dict(strip='gen-areum', atk='slam', atk8=True, act=True),
+    'areum': dict(strip='gen-areum', atk='slam', atk8=True, act=True, lock='42,32,30,47'),   # lock = 머리 상자(왼,오,위,아래): 메가 머리 뒤로 지나가 머리만 묶으면 메가 네모나게 잘린다(11-24 형 「머리에 포스터 붙이고 다니는 것 같아」) → 머리+메+어깨를 통째로
 }
 
 
@@ -60,7 +60,8 @@ def walk(name, ref='walk-a-3'):
         raise SystemExit(f'{scene} 의 뿌리 곁파일(.roots.json)이 없다 — style-scene.py motion8 로 장면을 다시 만든다(그림은 같고 곁파일만 생긴다)')
     run('bake-scene.py', 'motion8', sheet, name, f'scene={scene}')
     run('walk-anchor.py', name)
-    run('head-lock.py', name, ref, 'walk-a', 'walk-b', show=False)
+    lk = HEROES[name].get('lock')
+    run('head-lock.py', name, ref, 'walk-a', 'walk-b', *([f'box={lk}'] if lk else []), show=False)
     ims = [Image.open(f'{PX}/{name}-walk-{t}-{i}.png').convert('RGBA') for t in 'ab' for i in (3, 4, 1, 2)]
     z, x0, x1 = 4, 40, 170
     row = Image.new('RGB', ((x1 - x0) * z * 8, CH * z), BG)
@@ -97,6 +98,21 @@ def attack(name):
     f = [on_bg(i, 3) for i in ims]
     f[0].save(f'{OUT}/{name}-3-{h["atk"]}8.gif', save_all=True, append_images=f[1:], duration=[90, 80, 110, 50, 150, 70, 80, 120], loop=0)
     print(f'눈으로 볼 것(앞발이 여덟 칸 같은 자리인가 · 두 손이 자루를 쥐었나 · 무기가 하나인가): {OUT}/chk-{name}-{h["atk"]}8.png · {name}-3-{h["atk"]}8.gif')
+
+
+def quirk(name):
+    """개성 동작 네 칸(STD/out-<장수>-quirk.png + scene-<장수>-quirk.png · 인형 2×2) 굽기 → 서기 옆에 늘어놓는다"""
+    run('bake-scene.py', 'motion', f'{STD}/out-{name}-quirk.png', name, 'quirk', f'{STD}/scene-{name}-quirk.png')
+    st = Image.open(f'{PX}/{name}-stand-game.png').convert('RGBA')
+    ims = [Image.open(f'{PX}/{name}-quirk-{i}.png').convert('RGBA') for i in (1, 2, 3, 4)]
+    z = 3
+    row = Image.new('RGB', (CW * z * 5, CH * z), BG)
+    sc = Image.new('RGBA', (CW, CH), (0, 0, 0, 0))
+    sc.alpha_composite(st, ((CW - st.size[0]) // 2, FOOT_Y - st.size[1]))
+    for k, im in enumerate([sc] + ims):
+        row.paste(on_bg(im, z), (k * CW * z, 0))
+    row.save(f'{OUT}/chk-{name}-quirk.png')
+    print(f'눈으로 볼 것(첫 칸이 서기 / 발이 네 칸 같은 자리 / 물건이 하나): {OUT}/chk-{name}-quirk.png')
 
 
 def act_cells(name):
@@ -205,10 +221,12 @@ def strip_act(name, install=False):
 
 if __name__ == '__main__':
     a = sys.argv[1:]
-    if not a or a[0] not in ('walk', 'strip', 'check', 'attack'):
+    if not a or a[0] not in ('walk', 'strip', 'check', 'attack', 'quirk'):
         raise SystemExit(__doc__)
     if a[0] == 'attack':
         attack(a[1])
+    elif a[0] == 'quirk':
+        quirk(a[1])
     elif a[0] == 'walk':
         walk(a[1], a[2] if len(a) > 2 else 'walk-a-3')
     elif a[0] == 'strip':

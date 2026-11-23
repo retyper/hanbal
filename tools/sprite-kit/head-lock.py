@@ -5,6 +5,8 @@
   머리 자리 맞춤: 가로 = 머리 윗부분 화소의 가운데 · 세로 = 얼굴 살빛(머리 위 46줄 안)의 가운데 (머리카락 끝은 칸마다 흔들려 믿을 수 없다)
   py -3 -I tools/sprite-kit/head-lock.py <이름> <기준 칸: walk-a-3 처럼> <꼬리표 ...>      예) dalbit walk-a-3 walk-a walk-b
   상자: 머리 꼭대기 위 4줄 ~ 턱 아래(얼굴 가운데 + CHIN) · 가로는 얼굴 가운데에서 LEFT/RIGHT
+  box=왼,오,위,아래 를 주면 상자를 바꾼다 — 머리 곁으로 물건이 지나가는 장수(어깨에 멘 메)는 머리 상자가 물건을 네모나게 자른다
+    (11-24 형 「머리에 포스터 붙이고 다니는 것 같아」) → 머리 + 물건 + 어깨를 통째로 묶는다(걷는 윗몸은 한 그림이다): 예) box=42,32,30,30
 """
 import sys
 import numpy as np
@@ -49,4 +51,7 @@ def lock(name, ref, tags):
 
 
 if __name__ == '__main__':
-    lock(sys.argv[1], sys.argv[2], sys.argv[3:])
+    args = sys.argv[3:]
+    for a in [a for a in args if a.startswith('box=')]:
+        LEFT, RIGHT, UP, CHIN = [int(v) for v in a[4:].split(',')]
+    lock(sys.argv[1], sys.argv[2], [a for a in args if not a.startswith('box=')])

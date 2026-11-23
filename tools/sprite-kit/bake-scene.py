@@ -33,6 +33,24 @@ def blobs(rgba):
     return [f for _, f in sorted(out, key=lambda t: t[0])]
 
 
+def defringe(rgb, alpha):
+    """자홍 바탕이 테두리에 물든 화소를 걷는다 (11-24 형 「걸을 때 귀신 같다」 — 재 보니 동작 칸마다 테두리의 14%(70~115 화소)가 보랏빛이었다).
+    테두리 한 겹에서 자홍 기(빨강·파랑이 초록보다 뚜렷이 높고 파랑이 빨강의 0.55 이상 — 검붉은 끈·옷은 파랑이 낮아 안 걸린다)가 도는 화소를
+    가장 가까운 물들지 않은 화소의 색으로 바꾼다. rgb = (h, w, 3) uint8 · alpha = (h, w) bool"""
+    c = rgb.astype(np.int16)
+    edge = alpha & ~ndimage.binary_erosion(alpha, iterations=1)
+    tint = edge & (c[..., 0] > c[..., 1] + 18) & (c[..., 2] > c[..., 1] + 14) & (c[..., 2] > c[..., 0] * .55)
+    if not tint.any():
+        return rgb, 0
+    good = alpha & ~tint
+    if not good.any():
+        return rgb, 0
+    idx = ndimage.distance_transform_edt(~good, return_distances=False, return_indices=True)
+    out = rgb.copy()
+    out[tint] = rgb[idx[0][tint], idx[1][tint]]
+    return out, int(tint.sum())
+
+
 def game(im, scale, colors=32):
     """면적 평균으로 줄이고(알파 곱) 또렷하게 → 32색"""
     size = (max(1, round(im.size[0] * scale)), max(1, round(im.size[1] * scale)))
@@ -42,8 +60,10 @@ def game(im, scale, colors=32):
     rgb = np.where(A[..., None] > 5, rgb / np.maximum(A[..., None] / 255, .02), 0).clip(0, 255)
     s = Image.fromarray(np.dstack([rgb, A]).astype(np.uint8)).filter(ImageFilter.UnsharpMask(radius=1, percent=90, threshold=2))
     b = np.asarray(s); alpha = np.where(b[..., 3] > 110, 255, 0).astype(np.uint8)
-    q = Image.fromarray(b[..., :3].copy()).quantize(colors=colors, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).convert('RGB')
-    return Image.fromarray(np.dstack([np.asarray(q), alpha]))
+    clean, _ = defringe(b[..., :3].copy(), alpha > 0)
+    q = Image.fromarray(clean).quantize(colors=colors, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).convert('RGB')
+    q2, _ = defringe(np.asarray(q).copy(), alpha > 0)   # 색을 줄이며 다시 생긴 보랏빛도 한 번 더
+    return Image.fromarray(np.dstack([q2, alpha]))
 
 
 def stand(path, name, idx=3, height=N):
