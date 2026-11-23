@@ -69,4 +69,10 @@ export const RAID_BANNER_CSS = `
 .ap .rbov .rb-x { position: absolute; z-index: 9; right: max(4px, env(safe-area-inset-right)); top: calc(env(safe-area-inset-top) + 2px); width: 44px; height: 44px; border: 0; background: none; color: #e9dcc0; font-size: 20px; text-shadow: 0 1px 4px #000; cursor: pointer; }
 .ap .rbov .hrg-top .rb-ban { margin-right: 40px; max-width: 520px; }
 .ap .rbov .hrg-go .rb-go { font-size: 19px; font-weight: 800; }
+/* 폰 가로: 배너가 왼쪽 큰 초상의 얼굴을 가렸다(11-23 형 「가로 화면 이거 머리 가리는데」) → 오른쪽 얼굴 고리 위 빈자리로 · 고리는 그만큼 내림 */
+@media (orientation: landscape) {
+  .ap .rbov .hrg-top { left: calc(50cqw + 12px); right: 56px; width: auto; }
+  .ap .rbov .hrg-top .rb-ban { margin-right: 0; min-height: 76px; max-width: none; }
+  .ap .rbov .hrg-wheel { padding-top: calc(env(safe-area-inset-top) + 104px); }
+}
 `
