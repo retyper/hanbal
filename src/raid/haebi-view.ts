@@ -221,7 +221,7 @@ function drawHero(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageEl
     for (let i = pose.ghosts; i >= 1; i--) { ctx.globalAlpha = a * pose.ghostAlpha * (1 - (i - 1) / pose.ghosts); sprite(ctx, images, path, ox + pose.ghostStep * i, oy, h, pose.ghostFrame, pose.face, false, density) }
     ctx.globalAlpha = a
   }
-  sprite(ctx, images, path, ox, oy, h, pose.frame, pose.face, s.hurt > 0, density, C.heroRim)
+  sprite(ctx, images, path, ox, oy, h, pose.frame, pose.face, s.hurt > 0, density, s.inv > 0 ? C.heroRim : 0)   // 11-23 형 「던파 슈퍼아머도 아닌데 왜 상시 노란 테두리」 → 무적(회피) 동안만
   if (awakenedLook(s)) {
     // 각성: 몸이 금빛으로 맥박친다 (같은 그림을 빛으로 한 번 더)
     const op = ctx.globalCompositeOperation; ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .16 + .12 * Math.sin(s.t * 7)

@@ -255,7 +255,8 @@ export const HAEBI_RUN = {
    *  걷기 칸은 시간이 아니라 실제로 움직인 거리로 넘긴다: 발이 바닥에서 미끄러지지 않게 (형 11-16 「이동이 부자연스럽다」) */
   heroPx: 94, walkStride: .78,
   /** 장수 테두리 빛 (GAP §15-2 · 11-22 녹화에서 해비가 갈색 무리에 묻힘) — 판 px 두께 · 색 · 진하기 · 방향 수(4 = 상하좌우 · 8 = 대각선까지) */
-  heroRim: 2, heroRimColor: '#ffe9a8', heroRimAlpha: .85, heroRimDirs: 8,
+  heroRim: 2, // 11-23 무적(s.inv · 회피) 동안만 켠다 · 늘 켜 두면 던파의 슈퍼아머처럼 읽혀 뜻이 흐려진다 · 평소 장수 구분은 발밑 금빛 고리
+  heroRimColor: '#ffe9a8', heroRimAlpha: .85, heroRimDirs: 8,
   /** 11-22 형 「키 기준은 이미지 전체 높이가 아니라 머리 정수리 기준」 — 장수마다 정수리~발(+신장 HERO_CM)을 같은 자로: 그림 키 = heroPx × heroBodyRef ÷ 그 장수 body · heroBodyRef 는 관·깃털 없는 165cm 장수의 몸 비(138÷160) · 너무 크게·작게 그리지 않게 heroFit 범위 */
   heroBodyRef: 138 / 160, heroFit: [.8, 1.3] as const,
   /** 비기를 쓴 뒤 무적 시간(초) — 비기 꼴·피해·재사용은 HAEBI_ULT */
