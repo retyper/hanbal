@@ -764,13 +764,20 @@ export const HAEBI_BUILDUP = { max: 5, dmgStep: .12, rateStep: .08, minInterval:
  *   레벨마다 힘 levelPower · 레벨업 회복 levelHeal 도 43/49 배라, 같은 시각의 힘·회복은 예전과 같고 고르는 카드만 여섯 장 늘어난다.
  * 그 뒤로 기세 막대가 다시 찰 때마다 막대를 비우고 최대 체력의 heal 몫을 되찾고 판 금 gold(스테이지 금 배수 · 상점 「탐욕」 몫을 곱한다)를 받는다 · ring 받을 때 장수 둘레 빛 고리
  */
+/**
+ * 70-AWAKECAP 각성 장수 최고 레벨 60 (형 11-23 「각성하면 만렙이 10 오르게 하는 건 어때?」) — 영구 각성(permanentAwake)으로 들어온 66-CAP 판만 · 겉모습 각성(appearanceAwake)은 상관없다.
+ * 후반은 이미 쉬워(형 판 기록) 51~60 은 그냥 주는 힘이 아니다:
+ *   다음 레벨까지 = 66-CAP 곡선 × (1 + xpRise × (L − 49)) (L = 50~59 · 봇 판이 마지막 두목 무렵에야 60) · 레벨마다 카드는 그대로 고른다 ·
+ *   레벨마다 힘 levelPower 는 powerShare 몫만 · 60 뒤 넘침 보상(회복 + 판 금)은 66 판의 50 뒤와 같은 막대마다.
+ */
+export const HAEBI_CAP60 = { capLevel: 60, xpRise: .15, powerShare: .5 } as const
 export const HAEBI_CAP = { capLevel: 50, xpBase: -1.13, xpPerLevel: 5.39, xpCurve: .541, levelPower: .0395, levelHeal: 24.6, heal: .2, gold: 8, ring: 70 } as const
 /**
  * 최고 레벨 화면 (raid/fx-cap.ts · 규칙과 상관없이 화면만) — 처음 닿은 순간 큰 글자 banner (「부위 파괴!」와 같은 결 · bannerLife 초 · popTime 동안 popScale 배에서 줄어듦 · lift 장수 위 · rise 떠오름) ·
- * 66-CAP 보상마다 작은 「+금 · 회복」 글자 (popSize · popLife 초 · popLift · popRise) · 빛 fill · 테 edge · 테 두께 stroke · 막대 끝 「MAX」
+ * 70-AWAKECAP 각성 장수가 50 을 넘는 순간 한 번 beyond 글자 (같은 결 · 같은 크기·시간) · 66-CAP 보상마다 작은 「+금 · 회복」 글자 (popSize · popLife 초 · popLift · popRise) · 빛 fill · 테 edge · 테 두께 stroke · 막대 끝 「MAX」
  */
 export const HAEBI_CAP_VIEW = {
-  banner: '수련을 모두 마쳤습니다', size: 46, stroke: 8, fill: '#ffd34a', edge: '#3a1406', bannerLife: 2.6, fadeTime: .5, popTime: .14, popScale: 1.8, lift: 120, rise: 20,
+  banner: '수련을 모두 마쳤습니다', beyond: '한계를 넘어섭니다', size: 46, stroke: 8, fill: '#ffd34a', edge: '#3a1406', bannerLife: 2.6, fadeTime: .5, popTime: .14, popScale: 1.8, lift: 120, rise: 20,
   popSize: 24, popStroke: 5, popLife: 1.1, popLift: 70, popRise: 34, popFill: '#ffe9a8', max: 'MAX',
 } as const
 /** 부위 파괴 화면 (raid/fx-break.ts) — 「부위 파괴!」 글자 · 그로기 별 */

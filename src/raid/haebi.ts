@@ -17,7 +17,7 @@ import { solidsFor, pushOutOfSolids, type Solid } from './props.ts'
 import type { Structure } from './build.ts'
 import { newWide, fieldBounds, worldBounds, stepGate, simView, ringSpot, huntSpot, inSimView, strayed, type WideState } from './wide.ts'
 import { HAEBI_BUILD as BU, HAEBI_CAP as CP } from '../tune/params.ts'
-import { HAEBI_BUILD2 as B2, HAEBI_BOSS_CHEST as BC, HAEBI_BUILDUP as B3 } from '../tune/params.ts'
+import { HAEBI_BUILD2 as B2, HAEBI_BOSS_CHEST as BC, HAEBI_BUILDUP as B3, HAEBI_CAP60 as C60 } from '../tune/params.ts'
 import { BUILD_KINDS, ALL_BUILD_KINDS, isBuild2Kind, hasHp, rebuildOf, aggroOf, aggroNear, sotdaeRadius, sotdaeSlow, wellRadius, wellHeal, beaconEvery, beaconRadius, beaconShare, catapultEvery, catapultRadius, catapultShare, totemLineShare, segmentDistance, totemLinks, isBuildKind, newBuild, buildUnits, buildSpot, towerShare, towerFire, buildHp, standing, bodyR, pushOutOfBuild, touchingBuild, separateBuild, fenceTouching, jarBonusAt, BUILD_UPS, isBuildUp, FIRE_KINDS, TIMED_KINDS, firepowerMul, reloadInterval, type BuildKind, type BuildState } from './build.ts'
 
 /**
@@ -255,7 +255,7 @@ export interface HaebiRun {
   /** 65-BUILD 설치 갈래 (opts.buildRules · raid/build.ts) — 없으면 세 갈래 옛 판 (설치 칸의 단계도 ranks 에 없다) */
   build?: BuildState;
   /** 66-CAP 최고 레벨 뒤 보상 (opts.capRules) — n 받은 수 · gold 그렇게 받은 판 금 */
-  cap?: { n: number; gold: number };
+  cap?: { n: number; gold: number; /** 70-AWAKECAP 영구 각성 판의 최고 레벨 (HAEBI_CAP60.capLevel · 없으면 HAEBI_CAP.capLevel) */ top?: number };
   /** 68-BOSSCHEST 중간 보스 상자가 늘 카드 셋 (opts.bossChestRules · 60-JACKPOT 판에만) */
   bossChest?: true;
   /** 60-JACKPOT 상자 규칙 (opts.chestRules) — 없으면 옛 고르는 상자 · pity 5개 넘게 못 터진 상자 수 · five·eight 이 판에서 터진 5개·8개 · ranks 상자가 올려 준 칸 수 */
@@ -269,7 +269,7 @@ export function random(s: HaebiRun) { const rng = makeRng(s.seed); const n = rng
  * awaken remains the fallback qualification alias. Explicit53B, plus default trial/vanguard, preserve timed-awake rules.
  * mastery: 숲·여울·목책을 다 깬 장수 (막대 절반으로 시작)
  */
-export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' | '55-SHAMAN'; /** 58-KITS 무기 개성 — 스테이지 규칙과 따로 켠다 (판 기록 opts 에 그대로 남아 재생도 같다) */ kitRules?: '58-KITS'; /** 60-JACKPOT 상자 — 정예 상자는 고르지 않고 터지고, 중간 보스 상자는 조합 하나를 고른다 (스테이지 판만 · 판 기록 opts 에 남아 재생도 같다) */ chestRules?: '60-JACKPOT'; /** 59-WIDE 넓은 맵 — 열전 스테이지 판에만 켜진다 (시련·선봉에 넘겨도 한 장짜리 그대로 · 판 기록 opts 에 남아 재생도 같다) */ mapRules?: '59-WIDE'; /** 61-SOLID 넓은 맵의 나무·바위·목책이 장수와 적을 막는다 (무기는 통과 · 59-WIDE 판에서만 · 판 기록 opts 에 남아 재생도 같다) */ blockRules?: '61-SOLID'; /** 62-ANCHOR 장수는 제 발로만 움직인다 — 단검의 그림자 걸음·환영난무가 장수를 순간이동시키지 않는다 (형 11-23 「때리다가 갑자기 순간이동 · 보스전에서 원하지 않는 곳으로」 · 판 기록 opts 에 남는다) */ anchorRules?: '62-ANCHOR'; /** 64-BREAK 부위 파괴가 느껴지게 — 몸통 피해가 가까운 부위로 번지고 · 부위 체력 낮춤 · 부서지면 그로기와 더 큰 피해 (판 기록 opts 에 남는다) */ breakRules?: '64-BREAK'; /** 66-CAP 최고 레벨 뒤 기세 막대가 다시 차면 회복과 판 금으로 바꾼다 (HAEBI_CAP · 판 기록 opts 에 남는다) */ capRules?: '66-CAP'; /** 68-BOSSCHEST 중간 보스 상자가 늘 카드 셋 (안 연 조합 → 조합 단계 → 갈래 끝·주 무기 두 단계 · HAEBI_BOSS_CHEST · 판 기록 opts 에 남는다) */ bossChestRules?: '68-BOSSCHEST'; /** 69-BUILDUP 설치 갈래에 화력·장전 칸 (종류 칸을 쓰지 않는다 · 얹힐 설치물을 가진 판에만 나온다 · HAEBI_BUILDUP · 65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ buildUpRules?: '69-BUILDUP'; /** 67-BUILD2 설치 갈래에 장승·솟대·봉수대·포차·우물을 더한다 (65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ build2Rules?: '67-BUILD2'; /** 65-BUILD 레벨업 카드의 네 번째 갈래 「설치」 — 고르면 망루·목책·항아리가 장수 앞에 서서 판 끝까지 남는다 · 장수·적은 지나가지 못하고 장수가 몸으로 밀어 옮긴다 (판 기록 opts 에 남는다) */ buildRules?: '65-BUILD' }
+export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' | '55-SHAMAN'; /** 58-KITS 무기 개성 — 스테이지 규칙과 따로 켠다 (판 기록 opts 에 그대로 남아 재생도 같다) */ kitRules?: '58-KITS'; /** 60-JACKPOT 상자 — 정예 상자는 고르지 않고 터지고, 중간 보스 상자는 조합 하나를 고른다 (스테이지 판만 · 판 기록 opts 에 남아 재생도 같다) */ chestRules?: '60-JACKPOT'; /** 59-WIDE 넓은 맵 — 열전 스테이지 판에만 켜진다 (시련·선봉에 넘겨도 한 장짜리 그대로 · 판 기록 opts 에 남아 재생도 같다) */ mapRules?: '59-WIDE'; /** 61-SOLID 넓은 맵의 나무·바위·목책이 장수와 적을 막는다 (무기는 통과 · 59-WIDE 판에서만 · 판 기록 opts 에 남아 재생도 같다) */ blockRules?: '61-SOLID'; /** 62-ANCHOR 장수는 제 발로만 움직인다 — 단검의 그림자 걸음·환영난무가 장수를 순간이동시키지 않는다 (형 11-23 「때리다가 갑자기 순간이동 · 보스전에서 원하지 않는 곳으로」 · 판 기록 opts 에 남는다) */ anchorRules?: '62-ANCHOR'; /** 64-BREAK 부위 파괴가 느껴지게 — 몸통 피해가 가까운 부위로 번지고 · 부위 체력 낮춤 · 부서지면 그로기와 더 큰 피해 (판 기록 opts 에 남는다) */ breakRules?: '64-BREAK'; /** 66-CAP 최고 레벨 뒤 기세 막대가 다시 차면 회복과 판 금으로 바꾼다 (HAEBI_CAP · 판 기록 opts 에 남는다) */ capRules?: '66-CAP'; /** 68-BOSSCHEST 중간 보스 상자가 늘 카드 셋 (안 연 조합 → 조합 단계 → 갈래 끝·주 무기 두 단계 · HAEBI_BOSS_CHEST · 판 기록 opts 에 남는다) */ bossChestRules?: '68-BOSSCHEST'; /** 70-AWAKECAP 영구 각성(permanentAwake)으로 들어온 판은 최고 레벨 60 · 51~60 은 막대가 더 길고 레벨 힘은 반 (겉모습 각성 appearanceAwake 는 상관없다 · HAEBI_CAP60 · 66-CAP 판에서만 · 판 기록 opts 에 남는다) */ awakeCapRules?: '70-AWAKECAP'; /** 69-BUILDUP 설치 갈래에 화력·장전 칸 (종류 칸을 쓰지 않는다 · 얹힐 설치물을 가진 판에만 나온다 · HAEBI_BUILDUP · 65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ buildUpRules?: '69-BUILDUP'; /** 67-BUILD2 설치 갈래에 장승·솟대·봉수대·포차·우물을 더한다 (65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ build2Rules?: '67-BUILD2'; /** 65-BUILD 레벨업 카드의 네 번째 갈래 「설치」 — 고르면 망루·목책·항아리가 장수 앞에 서서 판 끝까지 남는다 · 장수·적은 지나가지 못하고 장수가 몸으로 밀어 옮긴다 (판 기록 opts 에 남는다) */ buildRules?: '65-BUILD' }
 /** 새 판이 쓰는 무기 규칙 */
 export const KIT_RULES = '58-KITS' as const
 /** 새 스테이지 판이 쓰는 상자 규칙 */
@@ -288,6 +288,8 @@ export const BUILD_RULES = '65-BUILD' as const
 export const BUILD2_RULES = '67-BUILD2' as const
 /** 새 판이 쓰는 설치물 강화 칸(화력·장전) 규칙 */
 export const BUILDUP_RULES = '69-BUILDUP' as const
+/** 새 판이 쓰는 각성 최고 레벨 60 규칙 */
+export const AWAKECAP_RULES = '70-AWAKECAP' as const
 /** 새 판이 쓰는 중간 보스 상자 규칙 */
 export const BOSSCHEST_RULES = '68-BOSSCHEST' as const
 /** 새 판이 쓰는 최고 레벨 뒤 보상 규칙 */
@@ -326,6 +328,7 @@ export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit
   if (build2) s.build!.v2 = true
   if (buildUp) s.build!.up = true
   if (opts.capRules === CAP_RULES) s.cap = { n: 0, gold: 0 }
+  if (s.cap && opts.awakeCapRules === AWAKECAP_RULES && s.permanentAwake === true) s.cap.top = C60.capLevel
   if (opts.chestRules === CHEST_RULES && mode === 'stage') s.jackpots = { pity: 0, five: 0, eight: 0, ranks: 0 }
   if (opts.bossChestRules === BOSSCHEST_RULES && s.jackpots) s.bossChest = true
   if (mode === 'vanguard') {
@@ -389,9 +392,16 @@ export function runGold(s: HaebiRun) {
 }
 
 /** 최고 레벨 — 66-CAP 판은 HAEBI_CAP.capLevel(50) · 끈 판은 예전 44 */
-export const maxLevel = (s: HaebiRun) => s.cap ? CP.capLevel : C.maxLevel
-export const xpNeeded = (s: HaebiRun) => s.cap ? CP.xpBase + s.level * CP.xpPerLevel + s.level ** 2 * CP.xpCurve : C.xpBase + s.level * C.xpPerLevel + s.level ** 2 * C.xpCurve
-export const powerScale = (s: HaebiRun) => (1 + (s.level - 1) * (s.cap ? CP.levelPower : C.levelPower)) * (1 + s.bonus.might * SH.might.step)
+export const maxLevel = (s: HaebiRun) => s.cap ? s.cap.top ?? CP.capLevel : C.maxLevel
+/** 66-CAP 다음 레벨까지의 막대 (레벨 L) */
+const capXp = (L: number) => CP.xpBase + L * CP.xpPerLevel + L ** 2 * CP.xpCurve
+/**
+ * 다음 레벨까지의 막대 — 70-AWAKECAP 판의 50~59 는 66 곡선 × (1 + xpRise × (L − 49)) ·
+ * 60 뒤 넘침 보상은 66 판의 50 뒤와 같은 막대(capXp(50))마다 (회복·금이 나오는 빠르기가 같다)
+ */
+export const xpNeeded = (s: HaebiRun) => s.cap ? s.cap.top ? s.level >= s.cap.top ? capXp(CP.capLevel) : s.level >= CP.capLevel ? capXp(s.level) * (1 + C60.xpRise * (s.level - CP.capLevel + 1)) : capXp(s.level) : CP.xpBase + s.level * CP.xpPerLevel + s.level ** 2 * CP.xpCurve : C.xpBase + s.level * C.xpPerLevel + s.level ** 2 * C.xpCurve
+/** 레벨 힘 — 70-AWAKECAP 판의 51~60 은 레벨마다 levelPower × powerShare 만 */
+export const powerScale = (s: HaebiRun) => (s.cap?.top ? 1 + (Math.min(s.level, CP.capLevel) - 1) * CP.levelPower + Math.max(0, s.level - CP.capLevel) * CP.levelPower * C60.powerShare : 1 + (s.level - 1) * (s.cap ? CP.levelPower : C.levelPower)) * (1 + s.bonus.might * SH.might.step)
 export const areaScale = (s: HaebiRun) => 1 + s.ranks.reach * C.reachStep
 /** 떨어진 기세를 끌어오는 둘레. 끝10단은 유한한 판 대각선으로 모든 자리를 덮는다. */
 export const magnetRadius = (s: HaebiRun) => s.bonus.magnet >= SH.magnet.max ? Math.hypot(C.width, C.height) : C.dropMagnet * (1 + s.bonus.magnet * SH.magnet.step)
