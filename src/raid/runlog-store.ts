@@ -123,3 +123,17 @@ export function markRaidsSent(ids: readonly string[]): void {
   for (const g of games) if (set.has(g.id)) g.up = true
   saveRaidGames(games)
 }
+
+/**
+ * 못 올린 열전 판을 다 올린다 (11-23 · 11-19 부터 서버 규칙이 열전 칸을 막아 한 판도 안 올라갔는데 조용히 넘겼다 — 형 「내 기록 읽은 척만 한 거야?」).
+ * push 는 한 번에 몇 판씩만 올리므로 남은 것이 없을 때까지 되풀이 · 올라간 수를 돌려준다 · 실패는 던진다(부르는 쪽이 알린다)
+ */
+export async function sendAllRaids(push: (list: readonly RaidGame[]) => Promise<string[]>): Promise<number> {
+  let sent = 0
+  for (let round = 0; round < 50; round++) {
+    const list = unsentRaids(); if (list.length === 0) break
+    const ids = await push(list); if (ids.length === 0) break
+    markRaidsSent(ids); sent += ids.length
+  }
+  return sent
+}

@@ -17,7 +17,7 @@ import './raid/chest-show.css'
 import { CHEST_RULES, jackpotOdds } from './raid/haebi.ts'
 import { t } from './i18n/index.ts'
 import { warmFx } from './raid/fx-art.ts'
-import { putRaidGame, sealLeftovers, unsentRaids, markRaidsSent, type RaidGame, type RaidOpts } from './raid/runlog-store.ts'
+import { putRaidGame, sealLeftovers, sendAllRaids, type RaidGame, type RaidOpts } from './raid/runlog-store.ts'
 import { pushRaids } from './net/sync.ts'
 import { newCam, followCam, nextLevel, closest, toField, fieldView, clampCenter, bossFrameZoom, cameraBounds } from './raid/camera.ts'
 import { fieldBounds } from './raid/wide.ts'
@@ -466,7 +466,7 @@ let sending = false
 async function sendRaids() {
   if (sending) return
   sending = true
-  try { markRaidsSent(await pushRaids(unsentRaids())) } catch (e) { console.warn('[열전 기록] 서버에 못 올렸다 · 다음에 다시:', e) } finally { sending = false }
+  try { await sendAllRaids(pushRaids) } catch (e) { console.warn('[열전 기록] 서버에 못 올렸다 · 다음에 다시:', e) } finally { sending = false }
 }
 // 열 때: 지난번에 판 가운데 닫힌 판은 「떠남」으로 닫고, 못 올린 판을 올린다
 sealLeftovers(new Date().toISOString()); void sendRaids()

@@ -28,8 +28,8 @@ import { clanHeroes } from './ui/realm/dex.ts'
 import { applyBonds } from './realm/bonds.ts'
 import { bondMemory } from './ui/realm/bonds.ts'
 import { account, deleteAccount, finishSignIn, signIn, signOut } from './net/auth.ts'
-import { canSync, makeSync } from './net/sync.ts'
-import { loadRaidGames } from './raid/runlog-store.ts'
+import { canSync, makeSync, pushRaids } from './net/sync.ts'
+import { loadRaidGames, sendAllRaids } from './raid/runlog-store.ts'
 import { bringRetainers } from './realm/legacy.ts'
 import { drillRealm } from './realm/drill.ts'
 import { loadDrill } from './ui/realm/drill.ts'
@@ -379,6 +379,8 @@ const sync = makeSync({
     return true
   },
 }, () => app.cloudChanged())
+// 열전 판 기록도 본편이 열릴 때 올린다 (형은 본편부터 연다 · 열전 화면에서만 올리면 폰에 쌓인 채 남는다 · 11-23)
+setTimeout(() => { void sendAllRaids(pushRaids).then((n) => { if (n > 0) console.info(`[열전 기록] ${n}판 올림`) }, (e) => console.warn('[열전 기록] 서버에 못 올렸다 · 다음에 다시:', e)) }, 4000)
 
 const root = document.getElementById('realm')!
 /** 시작 화면 「아무 키나 누르세요」 — 스플래시 밑에 깔려 있다가 스플래시가 걷히기 시작하면 움직이고 누름을 받는다 (startgate.ts) */
