@@ -34,7 +34,7 @@ HEROES = {
     'maehwa': dict(strip='gen-maehwa', atk='bow', atk8=False),
     'dalbit': dict(strip='gen-base-w-31-dabeol-dalbit', atk='bow', atk8=False),
     'haebi': dict(strip='gen-haebi', atk='chop', atk8=True, act=True),   # act = 공격 여덟 칸이 넓은 동작 칸(240×224 · 뿌리 92 · 발 줄 216)
-    'areum': dict(strip='gen-areum', atk='slam', atk8=True, act=True, lock='42,32,30,47'),   # lock = 머리 상자(왼,오,위,아래): 메가 머리 뒤로 지나가 머리만 묶으면 메가 네모나게 잘린다(11-24 형 「머리에 포스터 붙이고 다니는 것 같아」) → 머리+메+어깨를 통째로
+    'areum': dict(strip='gen-areum', atk='slam', atk8=True, act=True, lock='face'),   # lock='face': 메가 머리 뒤로 지나간다 — 머리 상자는 메를 자르고(「포스터」), 윗몸을 통째로 묶으면 떠다닌다(11-24 형) → 얼굴 안쪽만 묶는다
 }
 
 
@@ -61,7 +61,7 @@ def walk(name, ref='walk-a-3'):
     run('bake-scene.py', 'motion8', sheet, name, f'scene={scene}')
     run('walk-anchor.py', name)
     lk = HEROES[name].get('lock')
-    run('head-lock.py', name, ref, 'walk-a', 'walk-b', *([f'box={lk}'] if lk else []), show=False)
+    run('head-lock.py', name, ref, 'walk-a', 'walk-b', *(['face'] if lk == 'face' else [f'box={lk}'] if lk else []), show=(lk == 'face'))
     ims = [Image.open(f'{PX}/{name}-walk-{t}-{i}.png').convert('RGBA') for t in 'ab' for i in (3, 4, 1, 2)]
     z, x0, x1 = 4, 40, 170
     row = Image.new('RGB', ((x1 - x0) * z * 8, CH * z), BG)
@@ -196,7 +196,10 @@ def strip_act(name, install=False):
     e = Image.open(ext).convert('RGBA')
     main, extra = f'{TRY}/{h["strip"]}.png', f'{TRY}/{h["strip"]}-x.png'
     e.crop((0, 0, CW * 20, CH)).save(main)
-    old = [e.crop((i * CW, 0, (i + 1) * CW, CH)) for i in range(20, e.size[0] // CW)]   # 쓰러짐 2 (+ 개성 4)
+    # 쓰러짐 2 (+ 개성 4) 만 — strip-build 는 개성 동작이 있으면 여덟 칸 공격도 좁은 칸에 붙여 내는데(잘린 그림), 넓은 칸 장수는 그것을 쓰지 않는다.
+    #   11-24: 이것을 안 걸러 덧띠에 잘린 공격 8칸이 끼어 들어갔고, 그 칸으로 이어 보기 GIF 를 만들어 형에게 보냈다(공격이 바닥 밑으로 꺼진 그림).
+    n_old = 2 + (4 if os.path.exists(f'{PX}/{name}-quirk-1.png') else 0)
+    old = [e.crop((i * CW, 0, (i + 1) * CW, CH)) for i in range(20, 20 + n_old)]
     xs = [to_act(c) for c in old] + [Image.open(f'{PX}/{name}-{h["atk"]}8-{t}-{i}.png').convert('RGBA') for t in 'ab' for i in (1, 2, 3, 4)]
     xstrip = Image.new('RGBA', (ACT['cw'] * len(xs), ACT['ch']), (0, 0, 0, 0))
     for i, c in enumerate(xs):
@@ -206,10 +209,26 @@ def strip_act(name, install=False):
     grp = ['stand:stand:0-3', 'walk:walk:4-11', 'attack:attack:12-17'] + (['quirk:misc:22-25'] if len(old) >= 6 else []) + [f'attack8:attack:{a0}-{a0 + 7}']
     ok = check(name, main, extra, grp)
     cells = [e.crop((i * CW, 0, (i + 1) * CW, CH)) for i in range(20)]
-    wide = lambda c: on_bg(to_act(c), 3)
-    seq = [(wide(cells[0]), 600)] + [(wide(cells[i]), 110) for i in range(4, 12)] * 2 + [(wide(cells[0]), 500)] + [(on_bg(c, 3), t) for c, t in zip(xs[-8:], [90, 80, 110, 50, 150, 70, 80, 120])] + [(wide(cells[0]), 700)]
-    seq[0][0].save(f'{OUT}/{h["strip"]}-flow.gif', save_all=True, append_images=[f for f, _ in seq[1:]], duration=[t for _, t in seq], loop=0)
-    print(f'이어 보기: {OUT}/{h["strip"]}-flow.gif')
+    st = to_act(cells[0])
+    seq = [(st, 700)] + [(to_act(cells[i]), 110) for i in range(4, 12)] * 2 + [(st, 600)]
+    if n_old >= 6:
+        seq += [(c, t) for c, t in zip(xs[2:6], (300, 320, 400, 280))] + [(st, 600)]
+    seq += [(c, t) for c, t in zip(xs[-8:], [90, 80, 110, 50, 150, 70, 80, 120])] + [(st, 800)]
+    fr = [on_bg(c, 3) for c, _ in seq]
+    fr[0].save(f'{OUT}/{h["strip"]}-flow.gif', save_all=True, append_images=fr[1:], duration=[t for _, t in seq], loop=0)
+    # 낱칸 판: GIF 에 들어간 칸을 차례대로(걷기는 한 바퀴만) · 뿌리 선·바닥 줄 — 보내기 전에 이것을 본다
+    uniq = [seq[0]] + seq[1:9] + seq[17:]
+    z, cols = 2, 8
+    rows = (len(uniq) + cols - 1) // cols
+    sheet = Image.new('RGB', (cols * ACT['cw'] * z, rows * ACT['ch'] * z), (40, 40, 40))
+    d = ImageDraw.Draw(sheet)
+    for k, (c, _) in enumerate(uniq):
+        x0, y0 = (k % cols) * ACT['cw'] * z, (k // cols) * ACT['ch'] * z
+        sheet.paste(on_bg(c, z), (x0, y0))
+        d.line([(x0 + ACT['root'] * z, y0), (x0 + ACT['root'] * z, y0 + ACT['ch'] * z)], fill=(0, 255, 255), width=1)
+        d.line([(x0, y0 + ACT['foot'] * z), (x0 + ACT['cw'] * z, y0 + ACT['foot'] * z)], fill=(0, 200, 200), width=1)
+    sheet.save(f'{OUT}/chk-{h["strip"]}-flowframes.png')
+    print(f'이어 보기: {OUT}/{h["strip"]}-flow.gif · 낱칸 판(보내기 전에 본다): {OUT}/chk-{h["strip"]}-flowframes.png')
     print(f"params.ts 계획: cells: {20 + len(xs)}, fall: [18, 20, 21, 19], attack cells: [{', '.join(str(a0 + i) for i in range(8))}], xGeom: {{ h: {ACT['ch']}, root: {ACT['root']}, foot: {ACT['foot']} }}")
     if install:
         if not ok:
