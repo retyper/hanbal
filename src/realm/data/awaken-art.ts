@@ -181,6 +181,7 @@ export const AWAKEN_ART: ReadonlySet<string> = new Set([
   'g-99-goguryeo-maro',
   'g-100-buyeo-old-daeso',
   'g-67-buyeo-daeso',
+  'g-106-garak-ocheongan', // 11-23 Claude 제미나이 Jay(Neon) · 남자 · 얼굴·노 그대로 · 웃음 좋음
   'g-65-goguryeo-damul',
   'g-66-buyeo-geumha',
   'g-68-baekje-onnuri',
