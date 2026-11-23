@@ -6,14 +6,14 @@
          → STD/px/<이름>-stand.png(원본 크기 · 투명 · 다음 장면의 「누구인가」 견본) + STD/px/<이름>-stand-game.png
          키는 장면 첫째 사람(승인 띠 · 원래 키를 안다)과의 비로 정한다.
   동작:  py -3 -I tools/sprite-kit/bake-scene.py motion <받은 장면.png> <이름> <꼬리표: walk-a 등> [원래 장면.png]
-         → STD/px/<이름>-<꼬리표>-1..4.png (게임 크기 · 칸 크기 160 · 발바닥 줄 고정) · 원래 장면을 주면 자세 겹침 숫자도 낸다
+         → STD/px/<이름>-<꼬리표>-1..4.png (게임 크기 · 칸 208×160 · 발바닥 줄 155) · 원래 장면을 주면 자세 겹침 숫자도 낸다
 """
 import os, sys
 import numpy as np
 from PIL import Image, ImageFilter
 from scipy import ndimage
 
-PXD = 'D:/에셋창고/STD/px'; N = 137; Z = 4; CELL = 160; FOOT = 150; LEG_MAX = 14
+PXD = 'D:/에셋창고/STD/px'; N = 137; Z = 4; CELL_W = 208; CELL = 160; FOOT = 155; LEG_MAX = 14   # 띠 규격: 칸 208×160 · 발바닥 줄 155 (gen-*.png 20칸 띠와 같다)
 
 
 def key(im):
@@ -61,9 +61,10 @@ def motion(path, name, tag, scene=None):
     for n, (j, i) in enumerate(((0, 0), (0, 1), (1, 0), (1, 1))):
         c = key(out.crop((round(cw * (1 + i)), round(ch * j), round(cw * (2 + i)), round(ch * (j + 1))))); m = c[..., 3] > 60
         g = game(Image.fromarray(c), scale); gm = np.asarray(g)[..., 3] > 0; ys, xs = np.nonzero(gm)
-        cell = Image.new('RGBA', (CELL, CELL), (0, 0, 0, 0)); g2 = g.crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
-        cx = round((xs.min() + xs.max()) / 2); ox = CELL // 2 - (cx - xs.min()) + round((cx - g.size[0] / 2))   # 칸 안의 가로 자리를 지킨다
-        cell.alpha_composite(g2, (max(0, min(CELL - g2.size[0], ox)), FOOT - g2.size[1])); cell.save(f'{PXD}/{name}-{tag}-{n + 1}.png')
+        cell = Image.new('RGBA', (CELL_W, CELL), (0, 0, 0, 0)); g2 = g.crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
+        cx = round((xs.min() + xs.max()) / 2); ox = CELL_W // 2 - (cx - xs.min()) + round((cx - g.size[0] / 2))   # 칸 안의 가로 자리를 지킨다
+        if g2.size[0] > CELL_W: g2 = g2.crop(((g2.size[0] - CELL_W) // 2, 0, (g2.size[0] + CELL_W) // 2, g2.size[1]))
+        cell.alpha_composite(g2, (max(0, min(CELL_W - g2.size[0], ox)), FOOT - g2.size[1])); cell.save(f'{PXD}/{name}-{tag}-{n + 1}.png')
         msg = f'칸{n + 1} 게임 키 {g2.size[1]}'
         # 앞다리·뒷다리 밝기 (11-23 형 「다른 쪽 다리를 딛는 게 없어」 → 「한쪽 다리가 걸을 때만 스타킹 신은 것처럼」)
         #   ※ 판정 아님 · 귀띔만: 살빛 가르기가 망토 털·가죽 신발 색을 못 걸러 낸다(11-23 Codex 지적 · 살빛을 맞춘 판도 +20~+47). 스타킹처럼 보이는지는 눈으로 본다.

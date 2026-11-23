@@ -1,0 +1,42 @@
+# -*- coding: utf-8 -*-
+"""뼈대 방식으로 구운 칸들을 20칸 띠로 묶는다 (11-23 · ART-SKELETON 양산 방식의 마지막 걸음).
+띠 규격(옛 gen-*.png 와 같다): 칸 208×160 · 발바닥 줄 155 · 서기 0~3 · 걷기 4~11 · 공격 12~17 · 맞음 18 · 쓰러짐 19.
+  서기 = 서 있는 한 장에 코드로 숨(윗몸을 0·1·2·1 px 내려앉힘 · 발은 그대로)
+  걷기 = A3 A4 A1 A2 B3 B4 B1 B2 (지나감 → 뻗음 → 딛음 → 내려앉음 · 반대 다리로 한 번 더)
+  공격 = 네 칸을 여섯 자리에: 1 1 2 3 3 4 (준비 둘 · 뻗음 · 지나감 둘 · 되돌아옴)
+  맞음 = 쓰러짐 판 칸1 · 쓰러짐 = 쓰러짐 판 칸4
+  py -3 -I tools/sprite-kit/strip-build.py <이름> <공격 꼬리표: claw 등> <나갈 png>
+"""
+import sys
+import numpy as np
+from PIL import Image
+
+PXD = 'D:/에셋창고/STD/px'; CW, CH, FOOT, CX = 208, 160, 155, 104; HIP = .52
+
+
+def place(im):
+    c = Image.new('RGBA', (CW, CH), (0, 0, 0, 0)); im = im.crop(im.getchannel('A').getbbox())
+    c.alpha_composite(im, (CX - im.size[0] // 2, FOOT - im.size[1])); return c
+
+
+def breathe(cell, d):
+    if d == 0: return cell
+    a = np.asarray(cell).copy(); ys = np.nonzero((a[..., 3] > 40).any(1))[0]; top, bot = ys.min(), ys.max(); hip = int(top + (bot - top) * HIP)
+    up = a[:hip].copy(); out = a.copy(); out[:hip] = 0
+    out[d:hip + d] = np.where(up[..., 3:4] > 0, up, out[d:hip + d]); return Image.fromarray(out)
+
+
+def main(name, atk, out):
+    cell = lambda tag, i: Image.open(f'{PXD}/{name}-{tag}-{i}.png').convert('RGBA')
+    stand = place(Image.open(f'{PXD}/{name}-stand-game.png').convert('RGBA'))
+    frames = [breathe(stand, d) for d in (0, 1, 2, 1)]
+    frames += [cell('walk-a', i) for i in (3, 4, 1, 2)] + [cell('walk-b', i) for i in (3, 4, 1, 2)]
+    frames += [cell(atk, i) for i in (1, 1, 2, 3, 3, 4)]
+    frames += [cell('down', 1), cell('down', 4)]
+    strip = Image.new('RGBA', (CW * 20, CH), (0, 0, 0, 0))
+    for i, f in enumerate(frames): strip.alpha_composite(f, (i * CW, 0))
+    strip.save(out); print(out, strip.size)
+
+
+if __name__ == '__main__':
+    main(sys.argv[1], sys.argv[2], sys.argv[3])
