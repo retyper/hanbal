@@ -77,11 +77,41 @@ def arm(d, sh, up_a, fore_a, fill):
     limb(d, sh, el, 6.5, fill)
     limb(d, el, wr, 5.5, fill)
     d.ellipse([wr[0] - HAND * Z, wr[1] - HAND * Z, wr[0] + HAND * Z, wr[1] + HAND * Z], fill=fill, outline=LINE, width=3)
+    return wr
 
 
-def figure(phase, swing_near):
+# 소품 (11-23 형 「매화 활을 제대로 잡고 있지도 않은데」): 빈손 자세에 활을 얹게 하면 제대로 못 쥔다 -> 인형이 활을 쥐고 있다.
+#   활은 먼 쪽 손(활 잡는 손)에 세로로 서고, 시위는 양 끝을 잇거나 당기는 손(가까운 쪽)까지 온다.
+PROP = dict(kind=None)
+WOOD, STRING = (150, 105, 60), (240, 240, 240)
+
+
+def wrist(sh, up_a, fore_a):
+    el = pt(sh[0], sh[1], up_a, UPPER * Z)
+    return pt(el[0], el[1], fore_a, FORE * Z)
+
+
+def bow_points(hand):
+    L = 30 * Z
+    top, bot = (hand[0] - 4 * Z, hand[1] - L), (hand[0] - 4 * Z, hand[1] + L)
+    return top, bot, [top, (hand[0] + 3 * Z, hand[1] - L * .5), (hand[0] + 5 * Z, hand[1]), (hand[0] + 3 * Z, hand[1] + L * .5), bot]
+
+
+def bow_stick(d, hand):
+    top, bot, pts = bow_points(hand)
+    d.line(pts, fill=LINE, width=int(3.2 * Z) + 6, joint='curve')
+    d.line(pts, fill=WOOD, width=int(3.2 * Z), joint='curve')
+
+
+def bow_string(d, hand, pull=None):
+    top, bot, _ = bow_points(hand)
+    d.line([top, pull, bot] if pull else [top, bot], fill=LINE, width=7)
+    d.line([top, pull, bot] if pull else [top, bot], fill=STRING, width=3)
+
+
+def figure(phase, swing_near, pose=None):
     """한 칸. swing_near = 지금 앞으로 나가는(흔드는) 다리가 가까운 쪽인가"""
-    P0 = HALF[phase]; S = STYLE
+    P0 = HALF[phase or 'pass']; S = STYLE
     P = dict(sw=(P0['sw'][0] * S['stride'], P0['sw'][1] * (S['lift'] if phase == 'pass' else S['stride'])), st=(P0['st'][0] * S['stride'], P0['st'][1] * S['stride']),
              drop=P0['drop'] * S['bob'], sw_toe=P0['sw_toe'], st_toe=P0['st_toe'])
     im = Image.new('RGB', (CELL, CELL), (255, 0, 255))
@@ -89,19 +119,32 @@ def figure(phase, swing_near):
     cx = CELL / 2
     near = dict(th=P['sw'][0], sh=P['sw'][1], toe=P['sw_toe']) if swing_near else dict(th=P['st'][0], sh=P['st'][1], toe=P['st_toe'])
     far = dict(th=P['st'][0], sh=P['st'][1], toe=P['st_toe']) if swing_near else dict(th=P['sw'][0], sh=P['sw'][1], toe=P['sw_toe'])
+    if pose is not None:   # 걷기가 아닌 자세(활 쏘기 등): 다리·팔 각도를 그대로 받는다
+        near, far = dict(pose['near_leg']), dict(pose['far_leg'])
     # 골반 높이: 두 발 가운데 더 낮은 쪽이 땅(칸 바닥 위 50px)에 닿게
     hip_y = 0.0
     low = max(leg(d, (cx, hip_y), near['th'], near['sh'], near['toe'], NEAR, False), leg(d, (cx, hip_y), far['th'], far['sh'], far['toe'], FAR, False))
-    hip_y = (CELL - 50) - low + (P['drop'] - P0['drop']) * Z
-    cx += S['hip'] * Z * (1 if swing_near else -1) * (1 if phase in ('contact', 'down') else -.5)   # 골반 흔듦
+    hip_y = (CELL - 50) - low + ((P['drop'] - P0['drop']) * Z if pose is None else 0)
+    if pose is None:
+        cx += S['hip'] * Z * (1 if swing_near else -1) * (1 if phase in ('contact', 'down') else -.5)   # 골반 흔듦
     hip_n, hip_f = (cx - 2 * Z, hip_y + 1 * Z), (cx + 3 * Z, hip_y - 1 * Z)       # 3/4 각도: 먼 쪽 골반·어깨가 조금 앞·위
     sh_y = hip_y - TORSO * Z
-    lean = S['lean'] * Z                                                        # 걷는 몸은 앞으로 기운다(결마다 다르게)
+    lean = (S['lean'] if pose is None else pose.get('lean', 0)) * Z             # 걷는 몸은 앞으로 기운다(결마다 다르게)
     sh_n, sh_f = (cx - 3 * Z + lean, sh_y + 1 * Z), (cx + 5 * Z + lean, sh_y - 1 * Z)
     # 팔은 같은 쪽 다리와 반대로
     arm_n = (-near['th'] * .9 * S['arm'], -near['th'] * .9 * S['arm'] + S['elbow'])
     arm_f = (-far['th'] * .9 * S['arm'], -far['th'] * .9 * S['arm'] + S['elbow'])
-    # 먼 쪽부터: 먼 팔 · 먼 다리 → 몸통 · 머리 → 가까운 다리 · 가까운 팔
+    if pose is not None:
+        arm_n, arm_f = pose['near_arm'], pose['far_arm']
+    elif PROP['kind'] == 'bow':
+        arm_f = (22, 58)   # 활 든 팔은 걸을 때 흔들지 않는다 — 활이 늘 몸 앞에 보이게(뒤로 가면 몸에 가려 칸마다 생겼다 사라진다)
+    # 먼 쪽부터: (활대) · 먼 팔 · 먼 다리 → 몸통 · 머리 → 가까운 다리 · 가까운 팔 → (시위)
+    hand_f = wrist(sh_f, arm_f[0], arm_f[1])
+    pulled = pose is not None and bool(pose.get('pull'))
+    if PROP['kind'] == 'bow':
+        bow_stick(d, hand_f)
+        if not pulled:
+            bow_string(d, hand_f)   # 당기지 않은 시위는 활과 함께 몸 뒤에
     arm(d, sh_f, arm_f[0], arm_f[1], FAR)
     leg(d, hip_f, far['th'], far['sh'], far['toe'], FAR)
     d.polygon([(sh_n[0] - 9 * Z, sh_y), (sh_f[0] + 6 * Z, sh_y - 2 * Z), (hip_f[0] + 8 * Z, hip_y + 5 * Z), (hip_n[0] - 9 * Z, hip_y + 6 * Z)], fill=BODY, outline=LINE)
@@ -118,7 +161,9 @@ def figure(phase, swing_near):
     d.ellipse([hc[0] + 7 * Z, hc[1] - 2 * Z, hc[0] + 10 * Z, hc[1] + 2 * Z], fill=LINE)                                 # 눈(오른쪽을 본다)
     d.polygon([(hc[0] + HEAD_R * Z - 2, hc[1] + 1 * Z), (hc[0] + HEAD_R * Z + 3 * Z, hc[1] + 4 * Z), (hc[0] + HEAD_R * Z - 2, hc[1] + 6 * Z)], fill=NEAR, outline=LINE)   # 코
     leg(d, hip_n, near['th'], near['sh'], near['toe'], NEAR)
-    arm(d, sh_n, arm_n[0], arm_n[1], NEAR)
+    hand_n = arm(d, sh_n, arm_n[0], arm_n[1], NEAR)
+    if PROP['kind'] == 'bow' and pulled:
+        bow_string(d, hand_f, hand_n)   # 당긴 시위만 몸 앞으로 지나간다
     return im
 
 
@@ -129,16 +174,42 @@ def sheet(swing_near):
     return o
 
 
+# 활 쏘기 네 칸: 메김 -> 당김 -> 놓음 -> 내림. 다리는 선 채(먼 쪽 발이 앞), 활은 먼 쪽 손, 시위는 가까운 쪽 손.
+BOW_STANCE = dict(near_leg=dict(th=-14, sh=-14, toe=0), far_leg=dict(th=14, sh=4, toe=0))
+BOW_POSES = [
+    dict(near_arm=(25, 75), far_arm=(45, 62), lean=1),                 # 1 화살을 메겨 활을 비스듬히 내려 듦
+    dict(near_arm=(-150, 60), far_arm=(90, 90), lean=-1, pull=True),   # 2 활을 들어 시위를 뺨까지 당김(팔꿈치는 어깨 뒤 위로)
+    dict(near_arm=(-120, -100), far_arm=(90, 90), lean=0),             # 3 놓음: 당기던 손이 뒤로 펴짐
+    dict(near_arm=(-8, 22), far_arm=(34, 48), lean=1),                 # 4 활을 내림
+]
+
+
+def bow_sheet():
+    o = Image.new('RGB', (CELL * 2, CELL * 2), (255, 0, 255))
+    for k, ps in enumerate(BOW_POSES):
+        o.paste(figure(None, True, dict(BOW_STANCE, **ps)), ((k % 2) * CELL, (k // 2) * CELL))
+    return o
+
+
 def main():
     import sys
     order = [(True, 'pass'), (True, 'reach'), (True, 'contact'), (True, 'down'), (False, 'pass'), (False, 'reach'), (False, 'contact'), (False, 'down')]
-    if len(sys.argv) > 1 and sys.argv[1] == 'walk':   # py pose-rig.py walk <걸음 결> <가슴 S|M|L|XL>
+    if len(sys.argv) > 1 and sys.argv[1] == 'bow':    # py pose-rig.py bow <가슴> -> rig-f-bow-<가슴>.png (활 쏘기 네 칸)
+        SHAPE['bust'] = sys.argv[2]
+        PROP['kind'] = 'bow'
+        bow_sheet().save(f'{STD}/rig-f-bow-{sys.argv[2]}.png')
+        print('bow', sys.argv[2])
+        return
+    if len(sys.argv) > 1 and sys.argv[1] == 'walk':   # py pose-rig.py walk <걸음 결> <가슴 S|M|L|XL> [bow = 먼 쪽 손에 활을 쥐고 걷는다]
         key, bust = sys.argv[2], sys.argv[3]
+        if len(sys.argv) > 4 and sys.argv[4] == 'bow':
+            PROP['kind'] = 'bow'
         STYLE.clear()
         STYLE.update(STYLES[key])
         SHAPE['bust'] = bust
-        sheet(True).save(f'{STD}/rig-f-walk-{key}-{bust}-a.png')
-        sheet(False).save(f'{STD}/rig-f-walk-{key}-{bust}-b.png')
+        tag = f"{key}-{bust}{'-bow' if PROP['kind'] == 'bow' else ''}"
+        sheet(True).save(f'{STD}/rig-f-walk-{tag}-a.png')
+        sheet(False).save(f'{STD}/rig-f-walk-{tag}-b.png')
         print('walk', key, bust)
         return
     if len(sys.argv) > 1 and sys.argv[1] == 'styles':   # 걸음 결마다 판 둘 + 한눈에 보는 표
