@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """뼈대 방식으로 구운 칸들을 20칸 띠로 묶는다 (11-23 · ART-SKELETON 양산 방식의 마지막 걸음).
 띠 규격(옛 gen-*.png 와 같다): 칸 208×160 · 발바닥 줄 155 · 서기 0~3 · 걷기 4~11 · 공격 12~17 · 맞음 18 · 쓰러짐 19.
-  서기 = 서 있는 한 장에 코드로 숨(윗몸을 0·1·2·1 px 내려앉힘 · 발은 그대로)
+  서기 = 그린 서기 판 네 칸(없으면 서 있는 한 장을 네 번 · 코드로 몸을 밀지 않는다)
   걷기 = A3 A4 A1 A2 B3 B4 B1 B2 (지나감 → 뻗음 → 딛음 → 내려앉음 · 반대 다리로 한 번 더)
   공격 = 네 칸을 여섯 자리에: 1 1 2 3 3 4 (준비 둘 · 뻗음 · 지나감 둘 · 되돌아옴)
   맞음 = 쓰러짐 판 칸1 · 쓰러짐 = 쓰러짐 판 칸4
@@ -29,7 +29,9 @@ def breathe(cell, d):
 def main(name, atk, out):
     cell = lambda tag, i: Image.open(f'{PXD}/{name}-{tag}-{i}.png').convert('RGBA')
     stand = place(Image.open(f'{PXD}/{name}-stand-game.png').convert('RGBA'))
-    frames = [breathe(stand, d) for d in (0, 1, 2, 1)]
+    # 서기: 코드로 윗몸을 밀지 않는다 (11-23 형 「idle 누가 코드로 짜랬냐 · 몸이 막 잘리잖아」). 그린 서기 판(<이름>-idle-1..4)이 있으면 그것, 없으면 네 칸 모두 같은 그림.
+    import os
+    frames = [cell('idle', i) for i in (1, 2, 3, 4)] if os.path.exists(f'{PXD}/{name}-idle-1.png') else [stand] * 4
     frames += [cell('walk-a', i) for i in (3, 4, 1, 2)] + [cell('walk-b', i) for i in (3, 4, 1, 2)]
     frames += [cell(atk, i) for i in (1, 1, 2, 3, 3, 4)]
     frames += [cell('down', 1), cell('down', 4)]

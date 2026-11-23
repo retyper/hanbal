@@ -58,12 +58,27 @@ def motion(path, name, tag, scene=None):
     out = Image.open(path).convert('RGB'); W, H = out.size; cw, ch = W / 3, H / 2; scale = 1 / Z * (640 / cw)
     src = None
     if scene: src = Image.open(scene).convert('RGB'); sw, sh = src.size[0] / 3, src.size[1] / 2
+    # 사람을 칸 금으로 자르지 않는다 (11-23 형 「쓰러짐 마지막 프레임은 머리카락이 잘렸고 그 잘린 게 발밑에 가 있다」 — 누운 사람의 머리카락이
+    # 칸 금을 넘어가 옆 칸으로 잘려 들어갔다). 그림 전체에서 덩어리를 찾아, 한가운데가 그 칸에 든 가장 큰 덩어리를 통째로 쓴다.
+    full = key(out); solid = full[..., 3] > 60
+    lab, nlab = ndimage.label(ndimage.binary_closing(solid, iterations=3))
+    blobs = []
+    for bi in range(1, nlab + 1):
+        ys_b, xs_b = np.nonzero((lab == bi) & solid)
+        if len(xs_b) > 400: blobs.append((bi, len(xs_b), (xs_b.min() + xs_b.max()) / 2, (ys_b.min() + ys_b.max()) / 2, xs_b.min(), xs_b.max() + 1, ys_b.min(), ys_b.max() + 1))
     for n, (j, i) in enumerate(((0, 0), (0, 1), (1, 0), (1, 1))):
-        c = key(out.crop((round(cw * (1 + i)), round(ch * j), round(cw * (2 + i)), round(ch * (j + 1))))); m = c[..., 3] > 60
-        g = game(Image.fromarray(c), scale); gm = np.asarray(g)[..., 3] > 0; ys, xs = np.nonzero(gm)
+        gx0, gy0 = round(cw * (1 + i)), round(ch * j)
+        c = key(out.crop((gx0, gy0, round(cw * (2 + i)), round(ch * (j + 1))))); m = c[..., 3] > 60   # 판정(자세 겹침)은 칸 그대로
+        mine = [b for b in blobs if cw * (1 + i) <= b[2] < cw * (2 + i) and ch * j <= b[3] < ch * (j + 1)]
+        if not mine: print(f'칸{n + 1}: 사람을 못 찾음'); continue
+        bi, _, bcx, _, bx0, bx1, by0, by1 = max(mine, key=lambda b: b[1])
+        whole = full[by0:by1, bx0:bx1].copy(); whole[..., 3] = np.where(lab[by0:by1, bx0:bx1] == bi, whole[..., 3], 0)
+        g = game(Image.fromarray(whole), scale); gm = np.asarray(g)[..., 3] > 0; ys, xs = np.nonzero(gm)
         cell = Image.new('RGBA', (CELL_W, CELL), (0, 0, 0, 0)); g2 = g.crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
-        cx = round((xs.min() + xs.max()) / 2); ox = CELL_W // 2 - (cx - xs.min()) + round((cx - g.size[0] / 2))   # 칸 안의 가로 자리를 지킨다
-        if g2.size[0] > CELL_W: g2 = g2.crop(((g2.size[0] - CELL_W) // 2, 0, (g2.size[0] + CELL_W) // 2, g2.size[1]))
+        off = (bcx - (gx0 + cw / 2)) * scale                                   # 칸 한가운데에서 벗어난 만큼(게임 화소) — 칸 안의 가로 자리를 지킨다
+        ox = round(CELL_W / 2 + off - g2.size[0] / 2)
+        if bx0 < gx0 - 2 or bx1 > gx0 + cw + 2: print(f'  칸{n + 1}: 사람이 칸 금을 넘어가 있음(통째로 살림)')
+        if g2.size[0] > CELL_W: print(f'  칸{n + 1}: 폭 {g2.size[0]} > 칸 {CELL_W} — 줄여 넣음'); g2 = g2.resize((CELL_W, round(g2.size[1] * CELL_W / g2.size[0])), Image.BOX)
         cell.alpha_composite(g2, (max(0, min(CELL_W - g2.size[0], ox)), FOOT - g2.size[1])); cell.save(f'{PXD}/{name}-{tag}-{n + 1}.png')
         msg = f'칸{n + 1} 게임 키 {g2.size[1]}'
         # 앞다리·뒷다리 밝기 (11-23 형 「다른 쪽 다리를 딛는 게 없어」 → 「한쪽 다리가 걸을 때만 스타킹 신은 것처럼」)
