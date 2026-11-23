@@ -113,7 +113,7 @@ if __name__ == '__main__':
 BODY_TYPES = {
     'f-slender':  ('여 · 가냘픈',  F, dict(shoulder_w=30, chest_w=24, waist_w=17, hip_w=26, thigh=9,  calf=7,  arm=6, bust=4)),
     'f-standard': ('여 · 표준',    F, dict(bust=6)),
-    'f-glamour':  ('여 · 글래머',  F, dict(shoulder_w=33, chest_w=30, waist_w=18, hip_w=34, thigh=12, calf=8,  arm=7, bust=9)),
+    'f-glamour':  ('여 · 글래머',  F, dict(shoulder_w=34, chest_w=36, waist_w=18, hip_w=38, thigh=13, calf=8,  arm=7, bust=14)),   # 11-23 형 「가슴 제일 큰 건 진짜 커도 된다 · 지금 제일 큰 게 별로 안 커 보임」
     'f-athletic': ('여 · 탄탄한',  F, dict(shoulder_w=35, chest_w=29, waist_w=21, hip_w=33, thigh=14, calf=10, arm=8, bust=6)),
     'f-sturdy':   ('여 · 우람한',  F, dict(shoulder_w=39, chest_w=33, waist_w=25, hip_w=34, thigh=14, calf=10, arm=10, bust=7)),
     'm-lean':     ('남 · 마른',    M, dict(shoulder_w=36, chest_w=30, waist_w=23, hip_w=28, thigh=11, calf=8,  arm=7)),
