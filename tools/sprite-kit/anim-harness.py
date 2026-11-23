@@ -35,7 +35,8 @@ HEROES = {
     'dalbit': dict(strip='gen-base-w-31-dabeol-dalbit', atk='bow', atk8=False),
     'archer': dict(strip='gen-base-w-13-young-archer', atk='bow', atk8=False),   # 앳된 궁수
     'pirate': dict(strip='gen-base-w-10-pirate-captain', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 해적 두목(작살) · 끝까지 찌른 칸은 좁은 칸에 안 들어가 당기는 칸으로
-    'diver': dict(strip='gen-base-w-17-mahan-pearl-diver', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 해녀(작살)
+    'diver': dict(strip='gen-base-w-17-mahan-pearl-diver', atk='thrust', atk8=True, act=True, legacy=(('a', 1), ('a', 2), ('a', 3), ('a', 1)),
+                  cells8=[('a', 1), ('a', 2), ('a', 3), ('a', 4), ('a', 4), ('a', 3), ('a', 2), ('a', 1)]),   # 해녀(작살) · 뒤 판 b 는 그림 도구가 거절 → 앞 판으로: 타격 = 넷째(a4) · wire-hero hit=3
     'huntress': dict(strip='gen-base-w-06-buyeo-huntress', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 부여 사냥꾼(창)
     'dallae': dict(strip='gen-base-w-64-miri-dallae', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 미리 군주 달래(창)
     'ara': dict(strip='gen-ara', atk='slash', atk8=True, act=True),   # 가야 검사 아라(한 손 칼)
@@ -87,12 +88,18 @@ def walk(name, ref='walk-a-3'):
     print(f'눈으로 볼 것(다리가 번갈아 나가나 · 손이 무기를 쥐었나 · 얼굴): {OUT}/chk-{name}-legs.png · chk-{name}-walk-zoom.png · {name}-2-walk.gif')
 
 
+def cells8(h):
+    """공격 여덟 칸의 출처(판, 칸) — 기본은 a1~a4 · b1~b4. 뒤 판(b)을 못 받은 장수는 HEROES 의 cells8 로 앞 판만으로 짠다
+    (11-24: 해녀 찌르기 b 를 그림 도구가 거절 — 우회하지 않고, 넘어오는 칸 a4 를 타격·버팀으로 쓰고 a3·a1 로 거둔다)."""
+    return h.get('cells8', [(t, i) for t in 'ab' for i in (1, 2, 3, 4)])
+
+
 def attack(name):
     """넓은 칸 공격 두 판(STD/out-<장수>-<꼬리표>-a/b.png + scene-…)을 굽고 여덟 칸을 뿌리 선과 함께 늘어놓는다"""
     h = HEROES[name]
-    for half in 'ab':
+    for half in sorted({t for t, _ in cells8(h)}):
         run('bake-scene.py', 'attack4', f'{STD}/out-{name}-{h["atk"]}-{half}.png', name, f'{h["atk"]}8-{half}', f'{STD}/scene-{name}-{h["atk"]}-{half}.png')
-    ims = [Image.open(f'{PX}/{name}-{h["atk"]}8-{t}-{i}.png').convert('RGBA') for t in 'ab' for i in (1, 2, 3, 4)]
+    ims = [Image.open(f'{PX}/{name}-{h["atk"]}8-{t}-{i}.png').convert('RGBA') for t, i in cells8(h)]
     z = 3
     row = Image.new('RGB', (ACT['cw'] * z * 4, ACT['ch'] * z * 2), BG)
     d = ImageDraw.Draw(row)
@@ -208,7 +215,7 @@ def strip_act(name, install=False):
     #   11-24: 이것을 안 걸러 덧띠에 잘린 공격 8칸이 끼어 들어갔고, 그 칸으로 이어 보기 GIF 를 만들어 형에게 보냈다(공격이 바닥 밑으로 꺼진 그림).
     n_old = 2 + (4 if os.path.exists(f'{PX}/{name}-quirk-1.png') else 0)
     old = [e.crop((i * CW, 0, (i + 1) * CW, CH)) for i in range(20, 20 + n_old)]
-    xs = [to_act(c) for c in old] + [Image.open(f'{PX}/{name}-{h["atk"]}8-{t}-{i}.png').convert('RGBA') for t in 'ab' for i in (1, 2, 3, 4)]
+    xs = [to_act(c) for c in old] + [Image.open(f'{PX}/{name}-{h["atk"]}8-{t}-{i}.png').convert('RGBA') for t, i in cells8(h)]
     xstrip = Image.new('RGBA', (ACT['cw'] * len(xs), ACT['ch']), (0, 0, 0, 0))
     for i, c in enumerate(xs):
         xstrip.alpha_composite(c, (i * ACT['cw'], 0))
