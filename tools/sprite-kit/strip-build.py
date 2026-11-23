@@ -49,10 +49,26 @@ def main(name, atk, out):
     frames += [cell('down', 1), cell('down', 4)]
     # 덧칸 (형 11-23: 쓰러짐을 KO 처럼 오래·느리게·당겨서 · 서기에 개성 동작): 20·21 = 쓰러지는 가운데 두 칸(주저앉음 · 손 짚고 눕는 중) · 22~25 = 개성 동작 네 칸
     #   넷째 값에 ext 를 주면 붙인다. 게임이 20칸 넘는 띠를 읽게 된 뒤에만 넣는다.
-    if len(sys.argv) > 4 and sys.argv[4] == 'ext':
+    if 'ext' in sys.argv[4:]:
         frames += [cell('down', 2), cell('down', 3)]
         if os.path.exists(f'{PXD}/{name}-quirk-1.png'):
             frames += [feet_fixed(cell('quirk', i)) for i in (1, 2, 3, 4)]
+    # align: 서기·공격 칸의 머리 가로 자리를 걷기 칸에 맞춘다 (활처럼 한쪽으로 뻗은 물건을 든 장수는 테두리 가운데와 몸 가운데가 다르다)
+    if 'align' in sys.argv[4:]:
+        def head_x(im):
+            a = np.asarray(im)[..., 3] > 0
+            ys = np.nonzero(a.any(1))[0]
+            return float(np.nonzero(a[ys.min() + 10:ys.min() + 40])[1].mean())
+        def shift(im, d):
+            o = Image.new('RGBA', im.size, (0, 0, 0, 0))
+            o.alpha_composite(im.crop((max(0, -d), 0, im.size[0] - max(0, d), im.size[1])), (max(0, d), 0))
+            return o
+        hw = float(np.median([head_x(f) for f in frames[4:12]]))
+        d0 = int(round(hw - head_x(frames[0])))
+        d1 = int(round(hw - head_x(frames[12])))
+        frames[0:4] = [shift(f, d0) for f in frames[0:4]]
+        frames[12:18] = [shift(f, d1) for f in frames[12:18]]
+        print('머리 맞춤: 서기', d0, '공격', d1)
     strip = Image.new('RGBA', (CW * len(frames), CH), (0, 0, 0, 0))
     for i, f in enumerate(frames): strip.alpha_composite(f, (i * CW, 0))
     strip.save(out); print(out, strip.size)

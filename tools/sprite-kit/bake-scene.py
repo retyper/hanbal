@@ -170,7 +170,7 @@ def motion8(path, name):
             print(f'{tag} 칸{k + 1} 게임 키 {g2.size[1]} 폭 {g2.size[0]}')
 
 
-def fall(path, name, scene, tag='down'):
+def fall(path, name, scene, tag='down', k4=1.0):
     """쓰러짐 장면(style-scene.py fall 배치) 굽기 -> <이름>-down-1..4. 구역 안의 덩어리를 전부 모은다(떨어진 두건·머리카락 조각도 버리지 않는다).
     누운 칸은 옆 칸이 없어 잘릴 수 없다. 구역 금에 8px 안으로 닿으면 알린다.
       py -3 -I tools/sprite-kit/bake-scene.py fall <받은 장면.png> <이름> <보낸 장면.png>"""
@@ -215,7 +215,7 @@ def fall(path, name, scene, tag='down'):
         gap = min(bx0 - x0, x1 - bx1, by0 - y0)
         whole = full[by0:by1, bx0:bx1].copy()
         whole[..., 3] = np.where(m[by0:by1, bx0:bx1], whole[..., 3], 0)
-        g = game(Image.fromarray(whole), scale)
+        g = game(Image.fromarray(whole), scale * (k4 if n == 3 else 1.0))   # k4: 누운 칸만의 배율(견본의 누운 사람이 작게 들어갔을 때)
         gm = np.asarray(g)[..., 3] > 0
         gy, gx = np.nonzero(gm)
         g2 = g.crop((gx.min(), gy.min(), gx.max() + 1, gy.max() + 1))
@@ -231,7 +231,7 @@ def fall(path, name, scene, tag='down'):
 
 if __name__ == '__main__':
     if sys.argv[1] == 'fall':
-        fall(sys.argv[2], sys.argv[3], sys.argv[4])
+        fall(sys.argv[2], sys.argv[3], sys.argv[4], k4=float(sys.argv[5]) if len(sys.argv) > 5 else 1.0)
         sys.exit()
     if sys.argv[1] == 'motion8':
         motion8(sys.argv[2], sys.argv[3])
