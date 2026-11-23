@@ -730,7 +730,15 @@ export const HAEBI_BUILD = {
  * 포차 catapult: 망루처럼 체력이 있고 끌린다 (aggroR · 셋에 하나) · every − everyStep × (단계−1) 초마다 minRange~range 안에서 cluster px 안에 적이 가장 많은 곳(같으면 먼 곳)으로 바위를 던진다
  *   (flight 초 날아감 · 둘레 radius + radiusStep × (단계−1) · 피해 그때 잡졸 체력 × (share + shareStep × (단계−1)) · 그을린 자국과 패인 자국을 남긴다).
  * 우물 well: 무적 · 장수가 둘레 radius + radiusStep × (단계−1) 안에 서 있으면 초마다 heal + healStep × (단계−1) 회복 (우물이 여럿이어도 한 번).
- * view: 그림 (화면만) — 높이 h · 혼줄 빛 line(두께 lineW · 진하기 lineAlpha) · 솟대 고리 sotdaeRing · 우물 고리 wellRing · 물방울 drops · 새 깡충 hop · 연기 smoke · 화살비 화살 수 arrows · 바위 크기 rock · 포물선 높이 arc
+ * view: 그림 (화면만) — 높이 h(체력 띠 자리 · 포차는 조립한 그림 높이) · 혼줄 빛 line(두께 lineW · 진하기 lineAlpha) · 솟대 고리 sotdaeRing · 우물 고리 wellRing · 물방울 drops · 새 깡충 hop · 연기 smoke · 화살비 화살 수 arrows · 바위 크기 rock · 포물선 높이 arc ·
+ *   throwOut 포차 팔이 장전 자리에서 넘어가는 초.
+ * view.pocha 포차 부품 조립 (형 11-23 「포차는 부품마다 에셋」 「돌이 바닥에서 시작해서 던져져야」) — 부품 크기·축 자리는 public/realm/raid/pocha/pocha.json (2배 그림 px) 그대로 · scale 게임 px 몫(.5) ·
+ *   wheelLift 받침 발이 땅 위로 뜬 몫(바퀴 반지름 몫) · arm.len·tail 축에서 팔 끝·꼬리까지(게임 px) · rockLift 바위가 주머니 자리에서 뜨는 px · rockSpin 날며 도는 몫 ·
+ *   팔 각(도 · 팔 끝이 가리키는 쪽 · 0 = 던지는 쪽 · 위가 +): rest 장전(주머니가 뒤쪽 바닥) → 쏘면 throwOut 초 동안 가속하며 위로 넘어가 over 에 닿고 · release 를 지날 때 바위가 떠난다 ·
+ *   hold 초 넘어간 채 → wind 초(쏘는 간격의 windShare 몫을 넘지 않게 · 적어도 windMin)에 걸쳐 감아 내린다 · 다 내려오면 새 바위 ·
+ *   매달린 주머니·추는 팔 끝·꼬리의 가로 빠르기 × lag 만큼 뒤처지고(lagMax 라디안까지) · 넘어간 뒤 sway 라디안으로 swayHz 번 흔들리다 swayDecay 초로 잦아든다 ·
+ *   쏘면 recoil px 뒤로 밀렸다 recoilTime 초에 돌아오고 바퀴가 그만큼 구른다(wheelRock 몫) · 쏘거나 맞으면 축에 빛(glow 진하기 · glowR 반지름) · 발밑 그림자 반폭 shadow ·
+ *   무너지면 부품이 발밑 둘레에 흩어진다 scatter[부품] = [x, y(위가 −), 돌림, 세로 눌림] (id 로 좌우를 뒤집고 jitter px 흔든다) · 다시 서기 전 assemble 초 동안 제자리로 모인다
  */
 export const HAEBI_BUILD2 = {
   totem: { ahead: 80, r: 22, hp: 640, hpStep: 220, rebuild: 12, aggroR: 190, aggroEvery: 2, touch: 6, bite: 1, link: 420, lineW: 16, lineShare: .45, lineStep: .15, lineSlow: .55, lineSlowT: .6 },
@@ -739,13 +747,30 @@ export const HAEBI_BUILD2 = {
   catapult: { ahead: 100, r: 32, hp: 320, hpStep: 110, rebuild: 12, aggroR: 140, aggroEvery: 3, touch: 6, bite: 1, every: 5.5, everyStep: .4, minRange: 170, range: 640, cluster: 110, flight: 1.1, radius: 125, radiusStep: 10, share: 1.3, shareStep: .35 },
   well: { ahead: 70, r: 26, radius: 120, radiusStep: 12, heal: 3, healStep: 1.5 },
   view: {
-    h: { totem: 92, sotdae: 84, beacon: 92, catapult: 70, well: 40 }, shadow: 1.1,
+    h: { totem: 92, sotdae: 84, beacon: 92, catapult: 104, well: 40 }, shadow: 1.1,
     line: '#9fe8ff', lineW: 4, lineAlpha: .55, lineGlow: 12,
     sotdaeRing: '#d8f0ff', sotdaeAlpha: .22, wellRing: '#7fc8ff', wellAlpha: .3, wellFill: .08,
     drops: { n: 5, size: 3, rise: 26, color: '#bfe6ff' }, hop: { height: 5, hz: 2.2 },
     smoke: { n: 5, size: 14, rise: 70, color: '#5d5550', alpha: .5, life: 2.2 },
     arrows: 5, arrow: 38, fall: 260, mark: '#ffd77a', markAlpha: .5,
-    rock: 26, arc: 160, wheel: 11, arm: 46, throwOut: .25, throwBack: .6, armRest: -2.3, armSwing: 1.9,
+    rock: 26, arc: 160, throwOut: .25,
+    pocha: {
+      scale: .5, wheelLift: .9, rockLift: 3, rockSpin: 9,
+      frame: { size: [210, 147], axle: [105, 11.1], wheelL: [34.3, 133.1], wheelR: [175.7, 133.1], foot: [105, 143.1] },
+      arm: { size: [196, 29], axle: [57.9, 13.1], len: 66.2, tail: 27.8 },
+      pouch: { size: [49, 76], hang: [23.8, 2.5], seat: [23.8, 57.5] },
+      wheel: { size: [65, 65], hub: [31.9, 31.9] },
+      weight: { size: [56, 71], hang: [27.5, 5.8] },
+      rock: { size: [55, 54], c: [27.5, 26.9] },
+      plankA: { size: [69, 30] }, plankB: { size: [52, 31] },
+      rest: -150, over: 35, release: 75, hold: .35, wind: 1.6, windMin: .3, windShare: .8,
+      lag: .0015, lagMax: .6, sway: .3, swayHz: 1.6, swayDecay: .45, recoil: 5, recoilTime: .4, wheelRock: 1,
+      glow: .5, glowR: 16, shadow: 50, assemble: 2.5, jitter: 5,
+      scatter: {
+        frame: [-6, -26, -.5, 1], arm: [10, -7, .05, 1], weight: [36, -14, 1.2, 1], pouch: [58, -8, 1.5, 1], rock: [66, -12, 0, 1],
+        wheelL: [-46, -6, 0, .35], wheelR: [-30, -16, .4, 1], plankA: [22, -4, .25, 1], plankB: [-18, -3, -.4, 1],
+      },
+    },
   },
 } as const
 /**

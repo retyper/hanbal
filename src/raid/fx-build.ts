@@ -36,7 +36,7 @@ export function drawStructure(ctx: CanvasRenderingContext2D, images: Map<string,
   const rubble = it.down > 0, two = isBuild2Kind(it.kind), k = it.kind as 'tower' | 'fence' | 'jar'
   const img = two ? undefined : images.get(rubble && k === 'fence' ? ART.rubble : ART[k]), a = ctx.globalAlpha, glow = it.flash / B.flash
   // 발밑 그림자 (67 다섯은 몸 반지름으로)
-  ctx.fillStyle = '#07181655'; ctx.beginPath(); ctx.ellipse(it.x, it.y + 2, two ? B2.view.shadow * bodyR(it) : (k === 'jar' ? V.jarH : k === 'fence' ? V.fenceW : V.towerH) * V.shadow[k], V.shadow.h, 0, 0, Math.PI * 2); ctx.fill()
+  ctx.fillStyle = '#07181655'; ctx.beginPath(); ctx.ellipse(it.x, it.y + 2, it.kind === 'catapult' ? B2.view.pocha.shadow : two ? B2.view.shadow * bodyR(it) : (k === 'jar' ? V.jarH : k === 'fence' ? V.fenceW : V.towerH) * V.shadow[k], V.shadow.h, 0, 0, Math.PI * 2); ctx.fill()
   // 밀리는 동안 발밑 흙먼지 (알마다 판 시각으로 흔들린다)
   if (it.push > 0) {
     const D = V.dust, k = it.push / B.pushDust
