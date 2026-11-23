@@ -44,7 +44,7 @@ test('겨루기: 쓰러짐은 끝난 뒤 시계로 칸을 넘기고 · 시계가
   assert.equal(fighterMotion(atlas, { kind: 'idle', t0: 0 }, 0, false, 'dead', (E.defeat.freeze + fallTime([atlas.hit, atlas.dead])) * 1000).frame, atlas.dead)
   const beom = pxAtlas('beom')
   assert.equal(beom.hit, LEGACY_ATLAS.hit); assert.equal(beom.dead, LEGACY_ATLAS.dead); assert.ok(beom.plan)
-  assert.equal(pxAtlas('haebi'), LEGACY_ATLAS, '계획 없는 띠는 정규 칸 표 그대로')
+  assert.equal(pxAtlas('gamsil'), LEGACY_ATLAS, '계획 없는 띠는 정규 칸 표 그대로')
   assert.equal(beom.cells, 20, '본 띠는 20칸'); assert.deepEqual(beom.fall, [18, 20, 21, 19])
   assert.equal(pxAtlas('beom', false).fall, undefined, '덧 띠가 아직이면 18 → 19')
   const seq = new Set<number>(); for (let t = 0; t < 4000; t += 20) seq.add(fighterMotion(beom, { kind: 'idle', t0: 0 }, 0, false, 'dead', t).frame)

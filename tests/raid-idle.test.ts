@@ -16,11 +16,11 @@ const evenQuirk: IdlePlan = { cells: 26, base: [0, 1], hold: 2.4, quirk: [22, 23
 test('계획이 없는 띠는 예전 서기 그대로 (칸마다)', () => {
   for (let i = 0; i <= 3000; i++) {
     const t = i * .01, old = A.idle[Math.floor(t / A.idleTime) % A.idle.length]
-    assert.equal(planFrame(DEFAULT_IDLE, idleSeed('haebi'), t), old, `${t}`)
+    assert.equal(planFrame(DEFAULT_IDLE, idleSeed('gamsil'), t), old, `${t}`)
     assert.equal(idleFrame(t), old)
   }
-  assert.equal(idlePlan('anim-px/gen-haebi.png'), null)
-  assert.equal(stripCells('anim-px/gen-haebi.png'), 20); assert.equal(stripCells('anim-px/gen-dalbit_hd.png'), 20)
+  assert.equal(idlePlan('anim-px/gen-gamsil.png'), null)
+  assert.equal(stripCells('anim-px/gen-gamsil.png'), 20); assert.equal(stripCells('anim-px/gen-dalbit_hd.png'), 20)
   assert.equal(spriteName('anim-px/gen-base-g-62-beonye-hanul_hd.png'), 'base-g-62-beonye-hanul')
   assert.equal(stripCells('anim-px/gen-beom.png'), STRIP_CELLS, '본 띠는 늘 20칸')
 })

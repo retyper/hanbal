@@ -1,6 +1,6 @@
 /** Native master rebake only. Missing entries deliberately retain their approved base assets. */
 export const HERO_HD: Readonly<Record<string, string>> = {
-  // 새 길로 다시 그린 본 띠(범 · 매화 · 달빛 base-w-31-dabeol-dalbit · 11-23)는 옛 2배 띠를 잇지 않는다 — 다시 구울 때까지 본 띠로 그린다 (옛 _hd 그림은 그대로 둔다)
+  // 새 길로 다시 그린 본 띠(범 · 매화 · 달빛 base-w-31-dabeol-dalbit · 11-23 · 해비 · 아룸 11-24)는 옛 2배 띠를 잇지 않는다 — 다시 구울 때까지 본 띠로 그린다 (옛 _hd 그림은 그대로 둔다)
   'anim-px/gen-base-w-39-gosaburi-galmae.png': 'anim-px/gen-base-w-39-gosaburi-galmae_hd.png',
   'anim-px/gen-dalbit.png': 'anim-px/gen-dalbit_hd.png',
   'anim-px/gen-base-g-59-yangmaek-maekson.png': 'anim-px/gen-base-g-59-yangmaek-maekson_hd.png',
@@ -32,7 +32,6 @@ export const HERO_HD: Readonly<Record<string, string>> = {
   'anim-px/gen-aw1-base-w-53-hwanna-gabi.png': 'anim-px/gen-aw1-base-w-53-hwanna-gabi_hd.png',
   'anim-px/gen-aw1-base-w-38-sangdang-bulmae.png': 'anim-px/gen-aw1-base-w-38-sangdang-bulmae_hd.png',
   'anim-px/gen-aryeong.png': 'anim-px/gen-aryeong_hd.png',
-  'anim-px/gen-areum.png': 'anim-px/gen-areum_hd.png',
   'anim-px/gen-base-w-38-sangdang-bulmae.png': 'anim-px/gen-base-w-38-sangdang-bulmae_hd.png',
   'anim-px/gen-base-w-36-baekje-maena.png': 'anim-px/gen-base-w-36-baekje-maena_hd.png',
   'anim-px/gen-base-w-34-chopal-deulme.png': 'anim-px/gen-base-w-34-chopal-deulme_hd.png',
@@ -94,7 +93,6 @@ export const HERO_HD: Readonly<Record<string, string>> = {
   'anim-px/gen-aw1-soseono.png': 'anim-px/gen-aw1-soseono_hd.png',
   'anim-px/gen-aw1-gamsil.png': 'anim-px/gen-aw1-gamsil_hd.png',
   'anim-px/gen-aw1-haebi.png': 'anim-px/gen-aw1-haebi_hd.png',
-  'anim-px/gen-haebi.png': 'anim-px/gen-haebi_hd.png',
 }
 
 /** NativeHD atlas stays within4096 before upload: frame order is row-major,20 frames. */
@@ -131,6 +129,7 @@ export const HERO_HD_SHEETS: Readonly<Record<string, { cell: readonly [number, n
   'anim-px/gen-aw1-base-w-38-sangdang-bulmae_hd.png': { cell: [336, 320], cols: 12 },
   'anim-px/gen-aryeong_hd.png': { cell: [608, 320], cols: 6 },
   'anim-px/gen-areum_hd.png': { cell: [464, 320], cols: 8 },
+  'anim-px/gen-haebi_hd.png': { cell: [400, 320], cols: 10 },
   'anim-px/gen-base-w-38-sangdang-bulmae_hd.png': { cell: [400, 320], cols: 10 },
   'anim-px/gen-base-w-36-baekje-maena_hd.png': { cell: [384, 320], cols: 10 },
   'anim-px/gen-base-w-34-chopal-deulme_hd.png': { cell: [528, 320], cols: 7 },
@@ -193,5 +192,4 @@ export const HERO_HD_SHEETS: Readonly<Record<string, { cell: readonly [number, n
   'anim-px/gen-aw1-soseono_hd.png': { cell: [544, 320], cols: 7 },
   'anim-px/gen-aw1-gamsil_hd.png': { cell: [368, 320], cols: 11 },
   'anim-px/gen-aw1-haebi_hd.png': { cell: [448, 320], cols: 9 },
-  'anim-px/gen-haebi_hd.png': { cell: [400, 320], cols: 10 },
 }
