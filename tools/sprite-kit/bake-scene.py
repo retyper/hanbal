@@ -72,11 +72,16 @@ def game(im, scale, colors=32):
     return Image.fromarray(np.dstack([q2, alpha]))
 
 
-def stand(path, name, idx=3, height=N):
+def stand(path, name, idx=3, height=N, target=None):
     figs = blobs(key(Image.open(path))); me = figs[idx - 1]
     ref = Image.open('public/realm/anim-px/gen-soseono.png').convert('RGBA'); fw = ref.size[0] // 20; ref = ref.crop((0, 0, fw, ref.size[1])); refh = ref.crop(ref.getchannel('A').getbbox()).size[1]
     scale = refh / figs[0].size[1]   # 첫째 사람 = 승인 띠 소서노(원래 키를 안다)
-    os.makedirs(PXD, exist_ok=True); me.save(f'{PXD}/{name}-stand.png'); g = game(me, scale); g.save(f'{PXD}/{name}-stand-game.png')
+    os.makedirs(PXD, exist_ok=True); me.save(f'{PXD}/{name}-stand.png'); g = game(me, scale)
+    # 서기의 키를 동작 칸과 맞춘다 (11-24): 걷기·공격 장면은 서기 그림을 늘 키 137 로 넣으므로 동작 칸은 138~140 으로 나온다.
+    #   서기가 옆 사람보다 작게 그려져(아룸·궁수 133) 그대로 구우면 서기 → 걷기에서 몸이 4.5% 커졌다. 서기를 target 키로 다시 굽는다.
+    if target and abs(g.size[1] - target) > 1:
+        was = g.size[1]; g = game(me, scale * target / was); print(f'  서기 키 {was} → {g.size[1]} (동작 칸과 맞춤)')
+    g.save(f'{PXD}/{name}-stand-game.png')
     print(f'{name}: 사람 {len(figs)}명 중 {idx}째 · 원본 {me.size} → 게임 {g.size} (소서노 {refh}px 기준)')
 
 
@@ -398,7 +403,10 @@ if __name__ == '__main__':
         else:
             motion8(sys.argv[2], sys.argv[3], scene=sc_arg)
         sys.exit()
-    if sys.argv[1] == 'stand': stand(sys.argv[2], sys.argv[3], int(sys.argv[4]) if len(sys.argv) > 4 else 3)
+    if sys.argv[1] == 'stand':   # stand <장면> <이름> [몇째 사람=3] [h=138 — 서기 키를 이 값으로 맞춰 굽는다]
+        tg = next((int(a[2:]) for a in sys.argv[4:] if a.startswith('h=')), None)
+        nums = [a for a in sys.argv[4:] if not a.startswith('h=')]
+        stand(sys.argv[2], sys.argv[3], int(nums[0]) if nums else 3, target=tg)
     else:
         rest = [a for a in sys.argv[5:] if a not in ('z3', 'rows')]
         motion(sys.argv[2], sys.argv[3], sys.argv[4], rest[0] if rest else None, 3 if 'z3' in sys.argv[5:] else Z, 'rows' in sys.argv[5:])

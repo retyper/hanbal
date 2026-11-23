@@ -14,6 +14,7 @@
   윗몸 흔들림 걷기 칸마다 윗몸(위 4~45%)을 첫 걷기 칸에 겹쳐 가장 잘 맞는 밀림 → 가로 폭 ÷ 키 (1.5% 안 합격 · 3% 넘으면 불합격)
   출렁임      같은 밀림의 세로 폭 ÷ 키 (참고: 0 이면 미끄러지듯, 4% 넘으면 튄다)
   서기↔걷기   서기 윗몸과 걷기 윗몸의 가로 어긋남 ÷ 키 (2% 안)
+  서기↔걷기 키 걷기 칸의 키(가운데 값)와 서기 키의 차 ÷ 키 (1.8% 안 · 3% 넘으면 불합격 — 걷기 시작할 때 몸이 커졌다 작아진다)
   보폭        걷기에서 두 발 띠의 가장 넓은 폭 ÷ 키 (참고)
   뻗음        공격에서 뿌리 앞으로 가장 멀리 나간 화소와 남은 앞 여백 (여백 6px 밑이면 경고)
   공격 끝     공격 마지막 칸의 윗몸이 서기로 돌아왔나 (6% 안)
@@ -152,6 +153,9 @@ def main(argv):
                 s0 = register(ref, stand_ref)
                 mid = s0[0] + (max(s[0] for s in sh) + min(s[0] for s in sh)) / 2
                 say(name, f'서기↔걷기 윗몸 어긋남 {mid:+.1f}px = 키의 {abs(mid) / H * 100:.1f}%', 2 if abs(mid) / H > .04 else 1 if abs(mid) / H > .02 else 0)
+            hs = [b[3] - b[2] + 1 for b in bx]
+            dh = float(np.median(hs)) - H
+            say(name, f'서기↔걷기 키: 걷기 가운데 값 {np.median(hs):.0f} · 서기 {H} · 차 {dh:+.0f}px = 키의 {abs(dh) / H * 100:.1f}%', 2 if abs(dh) / H > .03 else 1 if abs(dh) / H > .018 else 0)
             w = [feet_band(al[i]) for i in idx]
             say(name, f'보폭: 발 띠 폭 {min(b - a for a, b in w)}~{max(b - a for a, b in w)}px = 키의 {max(b - a for a, b in w) / H * 100:.0f}% 까지 · 칸 수 {len(idx)}')
         if kind == 'attack':
