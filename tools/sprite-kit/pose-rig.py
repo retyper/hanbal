@@ -191,9 +191,34 @@ def bow_sheet():
     return o
 
 
+# 개성 동작(서기 가끔) — 발은 네 칸 같은 자리. 그림 도구가 그린 자세 판은 머리가 작아지고(5등신) 손이 바뀌었다(11-23) -> 인형으로.
+STAND = dict(near_leg=dict(th=-6, sh=-6, toe=0), far_leg=dict(th=7, sh=7, toe=0))
+QUIRKS = {
+    # 범 「손톱 살피기」: 가까운 쪽 손을 얼굴 앞으로 들어 봄 -> 입가로 가져가 훅 붊 -> 손을 앞으로 털며 턱을 듦 -> 팔을 내림. 먼 쪽 손은 허리에.
+    'claw': [
+        dict(near_arm=(70, 150), far_arm=(-18, 62), lean=0),
+        dict(near_arm=(75, 170), far_arm=(-18, 62), lean=1),
+        dict(near_arm=(105, 75), far_arm=(-18, 62), lean=-1),
+        dict(near_arm=(40, 55), far_arm=(-10, 40), lean=0),
+    ],
+}
+
+
+def quirk_sheet(kind):
+    o = Image.new('RGB', (CELL * 2, CELL * 2), (255, 0, 255))
+    for k, ps in enumerate(QUIRKS[kind]):
+        o.paste(figure(None, True, dict(STAND, **ps)), ((k % 2) * CELL, (k // 2) * CELL))
+    return o
+
+
 def main():
     import sys
     order = [(True, 'pass'), (True, 'reach'), (True, 'contact'), (True, 'down'), (False, 'pass'), (False, 'reach'), (False, 'contact'), (False, 'down')]
+    if len(sys.argv) > 1 and sys.argv[1] == 'quirk':  # py pose-rig.py quirk <이름> <가슴> -> rig-f-quirk-<이름>-<가슴>.png
+        SHAPE['bust'] = sys.argv[3]
+        quirk_sheet(sys.argv[2]).save(f'{STD}/rig-f-quirk-{sys.argv[2]}-{sys.argv[3]}.png')
+        print('quirk', sys.argv[2], sys.argv[3])
+        return
     if len(sys.argv) > 1 and sys.argv[1] == 'bow':    # py pose-rig.py bow <가슴> -> rig-f-bow-<가슴>.png (활 쏘기 네 칸)
         SHAPE['bust'] = sys.argv[2]
         PROP['kind'] = 'bow'
