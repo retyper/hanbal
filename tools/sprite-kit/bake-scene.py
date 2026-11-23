@@ -170,7 +170,69 @@ def motion8(path, name):
             print(f'{tag} 칸{k + 1} 게임 키 {g2.size[1]} 폭 {g2.size[0]}')
 
 
+def fall(path, name, scene, tag='down'):
+    """쓰러짐 장면(style-scene.py fall 배치) 굽기 -> <이름>-down-1..4. 구역 안의 덩어리를 전부 모은다(떨어진 두건·머리카락 조각도 버리지 않는다).
+    누운 칸은 옆 칸이 없어 잘릴 수 없다. 구역 금에 8px 안으로 닿으면 알린다.
+      py -3 -I tools/sprite-kit/bake-scene.py fall <받은 장면.png> <이름> <보낸 장면.png>"""
+    out = Image.open(path).convert('RGB')
+    W, H = out.size
+    k = W / 1920
+    scale = 1 / (3 * k)
+    full = key(out)
+    solid = full[..., 3] > 60
+    lab, nlab = ndimage.label(solid)
+    # 윗줄 세 구역의 금은 보낸 장면에서 읽는다: 세 자세 사이 틈의 한가운데
+    sc_ = key(Image.open(scene).convert('RGB'))
+    cols = (sc_[:640, 384:, 3] > 60).any(0)
+    runs = []
+    start = None
+    for xi, v in enumerate(list(cols) + [False]):
+        if v and start is None:
+            start = xi
+        elif not v and start is not None:
+            if xi - start > 40:
+                runs.append((start + 384, xi + 384))
+            start = None
+    assert len(runs) == 3, f'윗줄 자세가 셋이 아니다: {runs}'
+    cut1, cut2 = (runs[0][1] + runs[1][0]) / 2, (runs[1][1] + runs[2][0]) / 2
+    regions = [(384, 0, cut1, 640), (cut1, 0, cut2, 640), (cut2, 0, 1920, 640), (384, 640, 1920, 1280)]
+    for n, (x0, y0, x1, y1) in enumerate(regions):
+        x0, y0, x1, y1 = [round(v * k) for v in (x0, y0, x1, y1)]
+        ids = []
+        for bi in range(1, nlab + 1):
+            ys_b, xs_b = np.nonzero(lab == bi)
+            if len(xs_b) < 40:
+                continue
+            cx_b, cy_b = (xs_b.min() + xs_b.max()) / 2, (ys_b.min() + ys_b.max()) / 2
+            if x0 <= cx_b < x1 and y0 <= cy_b < y1:
+                ids.append(bi)
+        if not ids:
+            print(f'칸{n + 1}: 사람을 못 찾음')
+            continue
+        m = np.isin(lab, ids)
+        ys, xs = np.nonzero(m)
+        bx0, bx1, by0, by1 = xs.min(), xs.max() + 1, ys.min(), ys.max() + 1
+        gap = min(bx0 - x0, x1 - bx1, by0 - y0)
+        whole = full[by0:by1, bx0:bx1].copy()
+        whole[..., 3] = np.where(m[by0:by1, bx0:bx1], whole[..., 3], 0)
+        g = game(Image.fromarray(whole), scale)
+        gm = np.asarray(g)[..., 3] > 0
+        gy, gx = np.nonzero(gm)
+        g2 = g.crop((gx.min(), gy.min(), gx.max() + 1, gy.max() + 1))
+        note = ''
+        if g2.size[0] > CELL_W:
+            note = f' · 폭 {g2.size[0]} > 칸 {CELL_W} (줄여 넣음)'
+            g2 = g2.resize((CELL_W, round(g2.size[1] * CELL_W / g2.size[0])), Image.BOX)
+        cell = Image.new('RGBA', (CELL_W, CELL), (0, 0, 0, 0))
+        cell.alpha_composite(g2, ((CELL_W - g2.size[0]) // 2, FOOT - g2.size[1]))
+        cell.save(f'{PXD}/{name}-{tag}-{n + 1}.png')
+        print(f"칸{n + 1} 게임 키 {g2.size[1]} 폭 {g2.size[0]} · 덩어리 {len(ids)} · 구역 금까지 {gap}px{' ← 금에 닿음!' if gap < 8 else ''}{note}")
+
+
 if __name__ == '__main__':
+    if sys.argv[1] == 'fall':
+        fall(sys.argv[2], sys.argv[3], sys.argv[4])
+        sys.exit()
     if sys.argv[1] == 'motion8':
         motion8(sys.argv[2], sys.argv[3])
         sys.exit()

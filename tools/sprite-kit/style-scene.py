@@ -30,7 +30,7 @@ def main(body, out, male=False):
     o.save(out); print(out, o.size)
 
 
-if __name__ == '__main__' and sys.argv[1] not in ('motion', 'motion8'):
+if __name__ == '__main__' and sys.argv[1] not in ('motion', 'motion8', 'fall'):
     main(sys.argv[1], sys.argv[2], len(sys.argv) > 3 and sys.argv[3] == 'm')
 
 
@@ -106,6 +106,59 @@ def motion8_scene(identity, rig_a, rig_b, out, style_ref='soseono', Z=3, CW=384,
     print(out, o.size)
 
 
+def fall_scene(identity, pose_sheet, out, style_ref='soseono', Z=3):
+    """쓰러짐 장면 (11-23 형: 누워 있는 마지막 컷이 항상 머리 부분이랑 같이 잘린다 · 2행 1열과 2행 2열 사이).
+    누운 사람 옆에 다른 칸을 두지 않는다. 1920x1280 · 윗줄 = [그 장수 서기 384] + 자세 1·2·3 (같은 틈으로) · 아랫줄 = [승인 띠 384] + 누운 자세 혼자(폭 1536 한가운데).
+      py -3 -I tools/sprite-kit/style-scene.py fall <합격한 서기.png> <쓰러짐 자세 판 2x2.png> <나갈.png>"""
+    import numpy as np
+    from scipy import ndimage as nd
+    LW, CWD, CH_, W_, H_ = 384, 512, 640, 1920, 1280
+    o = Image.new('RGB', (W_, H_), (255, 0, 255))
+    H = N * Z
+    idn = Image.open(identity).convert('RGBA')
+    idn = idn.crop(idn.getchannel('A').getbbox())
+    idn = idn.resize((round(idn.size[0] * H / idn.size[1]), H), Image.LANCZOS)
+    ref = cell0(style_ref)
+    ref = ref.resize((ref.size[0] * Z, ref.size[1] * Z), Image.NEAREST)
+    for j, im in enumerate((idn, ref)):
+        if im.size[0] > LW - 12:
+            im = im.crop(((im.size[0] - LW + 12) // 2, 0, (im.size[0] + LW - 12) // 2, im.size[1]))
+        o.paste(im, ((LW - im.size[0]) // 2, j * CH_ + CH_ - 40 - im.size[1]), im)
+    sh = Image.open(pose_sheet).convert('RGB')
+    W, Hs = sh.size
+    figs = []
+    for k in range(4):
+        c = sh.crop(((k % 2) * W // 2, (k // 2) * Hs // 2, (k % 2 + 1) * W // 2, (k // 2 + 1) * Hs // 2))
+        a = np.asarray(c).astype(np.int16)
+        kk = np.minimum(a[..., 0], a[..., 2]) - a[..., 1]
+        al = np.clip((90 - kk.astype(np.float32)) * 255 / 50, 0, 255).astype(np.uint8)
+        lab, n = nd.label(al > 60)
+        if n > 1:
+            al = np.where(lab == (1 + int(np.argmax(nd.sum(al > 60, lab, range(1, n + 1))))), al, 0).astype(np.uint8)
+        ys, xs = np.nonzero(al > 60)
+        figs.append(Image.fromarray(np.dstack([a.astype(np.uint8), al])).crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1)))
+    m = np.asarray(figs[0])[..., 3] > 60
+    h = m.shape[0]
+    wid = m.sum(1)
+    skull = int(h * .12) + int(np.argmin(wid[int(h * .12):int(h * .38)]))
+    sc = (H * .92 * 32 / 137) / skull   # 첫 칸(서 있는 자세)의 머리뼈로 배율을 한 번만
+    figs = [f.resize((round(f.size[0] * sc), round(f.size[1] * sc)), Image.LANCZOS) for f in figs]
+    # 윗줄 세 자세는 폭이 제각각(셋째는 길게 기대앉는다) -> 같은 틈으로 늘어놓는다. 틈이 60px 아래면 알린다.
+    gap = (W_ - LW - sum(figs[k].size[0] for k in range(3))) // 4
+    x = LW + gap
+    for k in range(3):
+        f = figs[k]
+        o.paste(f, (x, CH_ - 40 - f.size[1]), f)
+        x += f.size[0] + gap
+    print('윗줄 틈', gap, '' if gap >= 60 else '← 좁다')
+    f = figs[3]
+    o.paste(f, (LW + (W_ - LW - f.size[0]) // 2, H_ - 60 - f.size[1]), f)
+    o.save(out)
+    print(out, o.size, '누운 사람 양옆 여백', (W_ - LW - f.size[0]) // 2)
+
+
+if __name__ == '__main__' and sys.argv[1] == 'fall':
+    fall_scene(sys.argv[2], sys.argv[3], sys.argv[4])
 if __name__ == '__main__' and sys.argv[1] == 'motion8':
     motion8_scene(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
 if __name__ == '__main__' and sys.argv[1] == 'motion':
