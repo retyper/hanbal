@@ -3,6 +3,7 @@
 게임과 무관한 몸통이다(경로·장수 이름 없음). 같은 파일이 공용 설정 skills/sprite-anim-harness/scripts/ 에도 있다 — 고치면 둘 다.
 
   py -3 -I anim-check.py <띠.png> [x=<덧띠.png>] [cw=208 ch=160 root=104 foot=155 h=137] [묶음 …] [out=<검사판 앞머리>]
+  덧띠가 본 띠와 다른 칸(넓은 동작 칸)이면 xcw= xch= xroot= xfoot= 를 준다 — 두 띠를 뿌리·발 줄에 맞춰 한 칸 규격으로 옮긴 뒤 잰다(잘림은 옮기기 전 제 칸에서 본다)
   묶음 = 이름:종류:칸   종류 = stand | walk | attack | misc   칸 = 0-3 또는 4,5,6 (덧띠의 칸은 본 띠 칸 수 뒤로 이어 센다)
   묶음을 안 주면 우리 띠 규격: stand:stand:0-3 walk:walk:4-11 attack:attack:12-17
 
@@ -48,7 +49,7 @@ def register(a, r, reach=14):
 
 
 def main(argv):
-    opt = dict(cw=208, ch=160, root=104, foot=155, h=0)
+    opt = dict(cw=208, ch=160, root=104, foot=155, h=0, xcw=0, xch=0, xroot=0, xfoot=0)
     strip, extra, groups, out = None, None, [], None
     for a in argv:
         if a.startswith('x='):
@@ -67,9 +68,29 @@ def main(argv):
         groups = [('stand', 'stand', [0, 1, 2, 3]), ('walk', 'walk', list(range(4, 12))), ('attack', 'attack', list(range(12, 18)))]
     im = Image.open(strip).convert('RGBA')
     cells = [im.crop((i * cw, 0, (i + 1) * cw, ch)) for i in range(im.size[0] // cw)]
+    clipped = set()   # 제 칸의 가장자리에 닿은 칸(옮기기 전에 본다)
+
+    def touch(c):
+        m = np.asarray(c)[..., 3] > 40
+        return bool(m[0].any() or m[:, 0].any() or m[:, -1].any())
+    clipped |= {i for i, c in enumerate(cells) if touch(c)}
     if extra:
         e = Image.open(extra).convert('RGBA')
-        cells += [e.crop((i * cw, 0, (i + 1) * cw, ch)) for i in range(e.size[0] // cw)]
+        xcw, xch, xroot, xfoot = opt['xcw'] or cw, opt['xch'] or ch, opt['xroot'] or root, opt['xfoot'] or foot
+        xc = [e.crop((i * xcw, 0, (i + 1) * xcw, xch)) for i in range(e.size[0] // xcw)]
+        clipped |= {len(cells) + i for i, c in enumerate(xc) if touch(c)}
+        if (xcw, xch, xroot, xfoot) != (cw, ch, root, foot):   # 두 규격을 뿌리·발 줄에 맞춰 한 칸으로
+            R_, F_ = max(root, xroot), max(foot, xfoot)
+            W_, H_ = R_ + max(cw - root, xcw - xroot), F_ + max(ch - foot, xch - xfoot)
+
+            def move(c, r, f):
+                o = Image.new('RGBA', (W_, H_), (0, 0, 0, 0))
+                o.alpha_composite(c, (R_ - r, F_ - f))
+                return o
+            cells = [move(c, root, foot) for c in cells]
+            xc = [move(c, xroot, xfoot) for c in xc]
+            cw, ch, root, foot = W_, H_, R_, F_
+        cells += xc
     al = [np.asarray(c)[..., 3] > 40 for c in cells]
 
     def box(m):
@@ -107,7 +128,7 @@ def main(argv):
             say(name, '칸이 없다', 2)
             continue
         bx = [box(al[i]) for i in idx]
-        clip = [i for i, b in zip(idx, bx) if b[0] <= 0 or b[1] >= cw - 1 or b[2] <= 0]
+        clip = [i for i in idx if i in clipped]
         if clip:
             say(name, f'잘림: 칸 {clip} 이 가장자리에 닿았다', 2)
         if kind in ('stand', 'walk'):

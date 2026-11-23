@@ -328,6 +328,7 @@ def fall(path, name, scene, tag='down', k4=1.0, flip4=False):
 if __name__ == '__main__':
     if sys.argv[1] == 'attack4':
         attack4(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+        sys.exit()
     if sys.argv[1] == 'fall':
         nums = [a for a in sys.argv[5:] if a != 'flip4']
         fall(sys.argv[2], sys.argv[3], sys.argv[4], k4=float(nums[0]) if nums else 1.0, flip4='flip4' in sys.argv[5:])

@@ -5,6 +5,8 @@
 
   py -3 -X utf8 -I tools/sprite-kit/anim-harness.py walk  <장수> [머리 기준 칸=walk-a-3]
       STD/out-<장수>-walk8.png + STD/scene-<장수>-walk8.png(.roots.json) → 뿌리 맞춰 굽기 → 윗몸 한자리 → 머리 고정 → 확대판·다리 확대·GIF
+  py -3 -X utf8 -I tools/sprite-kit/anim-harness.py attack <장수>
+      넓은 칸 공격 두 판(STD/out-<장수>-<꼬리표>-a/b.png · scene-… .roots.json) → 뿌리 맞춰 굽기 → 여덟 칸 확대판·GIF  (act 장수만)
   py -3 -X utf8 -I tools/sprite-kit/anim-harness.py strip <장수> [install]
       띠를 짓고(서기·걷기·공격·쓰러짐 + 덧띠) anim-check 로 판정. 합격이고 install 을 주면 public/realm/anim-px 에 넣는다(불합격이면 안 넣는다)
   py -3 -X utf8 -I tools/sprite-kit/anim-harness.py check <장수|all>
@@ -23,15 +25,16 @@ PX = STD + '/px'
 OUT = ROOT + '/tools/out/lineup'
 TRY = ROOT + '/tools/out/strip/try'
 GAME = ROOT + '/public/realm/anim-px'
-CW, CH, ROOT_X = 208, 160, 104
+CW, CH, ROOT_X, FOOT_Y = 208, 160, 104, 155
+ACT = dict(cw=240, ch=224, root=92, foot=216)   # bake-scene.py ACT 와 같은 값
 BG = (96, 104, 72)
 
 HEROES = {
     'beom': dict(strip='gen-beom', atk='claw', atk8=True),
     'maehwa': dict(strip='gen-maehwa', atk='bow', atk8=False),
     'dalbit': dict(strip='gen-base-w-31-dabeol-dalbit', atk='bow', atk8=False),
-    'haebi': dict(strip='gen-haebi', atk='axe', atk8=False),      # 걷기만 있음 — 공격·쓰러짐이 오면 strip
-    'areum': dict(strip='gen-areum', atk='hammer', atk8=False),   # 〃
+    'haebi': dict(strip='gen-haebi', atk='chop', atk8=True, act=True),   # act = 공격 여덟 칸이 넓은 동작 칸(240×224 · 뿌리 92 · 발 줄 216)
+    'areum': dict(strip='gen-areum', atk='slam', atk8=True, act=True),
 }
 
 
@@ -76,6 +79,43 @@ def walk(name, ref='walk-a-3'):
     print(f'눈으로 볼 것(다리가 번갈아 나가나 · 손이 무기를 쥐었나 · 얼굴): {OUT}/chk-{name}-legs.png · chk-{name}-walk-zoom.png · {name}-2-walk.gif')
 
 
+def attack(name):
+    """넓은 칸 공격 두 판(STD/out-<장수>-<꼬리표>-a/b.png + scene-…)을 굽고 여덟 칸을 뿌리 선과 함께 늘어놓는다"""
+    h = HEROES[name]
+    for half in 'ab':
+        run('bake-scene.py', 'attack4', f'{STD}/out-{name}-{h["atk"]}-{half}.png', name, f'{h["atk"]}8-{half}', f'{STD}/scene-{name}-{h["atk"]}-{half}.png')
+    ims = [Image.open(f'{PX}/{name}-{h["atk"]}8-{t}-{i}.png').convert('RGBA') for t in 'ab' for i in (1, 2, 3, 4)]
+    z = 3
+    row = Image.new('RGB', (ACT['cw'] * z * 4, ACT['ch'] * z * 2), BG)
+    d = ImageDraw.Draw(row)
+    for k, im in enumerate(ims):
+        x0, y0 = (k % 4) * ACT['cw'] * z, (k // 4) * ACT['ch'] * z
+        row.paste(on_bg(im, z), (x0, y0))
+        d.line([(x0 + ACT['root'] * z, y0 + ACT['foot'] * z - 30), (x0 + ACT['root'] * z, y0 + ACT['foot'] * z + 16)], fill=(0, 255, 255), width=2)
+        d.rectangle([x0, y0, x0 + ACT['cw'] * z - 1, y0 + ACT['ch'] * z - 1], outline=(70, 76, 54))
+    row.save(f'{OUT}/chk-{name}-{h["atk"]}8.png')
+    f = [on_bg(i, 3) for i in ims]
+    f[0].save(f'{OUT}/{name}-3-{h["atk"]}8.gif', save_all=True, append_images=f[1:], duration=[90, 80, 110, 50, 150, 70, 80, 120], loop=0)
+    print(f'눈으로 볼 것(앞발이 여덟 칸 같은 자리인가 · 두 손이 자루를 쥐었나 · 무기가 하나인가): {OUT}/chk-{name}-{h["atk"]}8.png · {name}-3-{h["atk"]}8.gif')
+
+
+def act_cells(name):
+    """넓은 칸 공격 여덟 칸 → 본 띠용 좁은 칸 넷(<꼬리표>-1..4 = 준비2 · 넘어옴 · 내림 · 거둠) — 뿌리·발 줄을 맞춰 잘라 낸다. 본편 전장처럼 20칸만 읽는 곳이 쓴다"""
+    h = HEROES[name]
+    src = [f'{PX}/{name}-{h["atk"]}8-{t}-{i}.png' for t, i in (('a', 2), ('a', 4), ('b', 1), ('b', 4))]
+    for k, sp in enumerate(src):
+        im = Image.open(sp).convert('RGBA')
+        o = Image.new('RGBA', (CW, CH), (0, 0, 0, 0))
+        o.alpha_composite(im, (ROOT_X - ACT['root'], FOOT_Y - ACT['foot']))   # 넘치는 곳(머리 위로 든 무기)은 잘린다 — anim-check 가 알린다
+        o.save(f'{PX}/{name}-{h["atk"]}-{k + 1}.png')
+
+
+def to_act(c):
+    o = Image.new('RGBA', (ACT['cw'], ACT['ch']), (0, 0, 0, 0))
+    o.alpha_composite(c, (ACT['root'] - ROOT_X, ACT['foot'] - FOOT_Y))
+    return o
+
+
 def groups(h, ncell):
     g = ['stand:stand:0-3', 'walk:walk:4-11', 'attack:attack:12-17']
     if ncell >= 26:
@@ -85,15 +125,19 @@ def groups(h, ncell):
     return g
 
 
-def check(name, main=None, extra=None):
+def check(name, main=None, extra=None, grp=None):
     h = HEROES[name]
     main = main or f'{GAME}/{h["strip"]}.png'
     extra = extra or f'{GAME}/{h["strip"]}-x.png'
     if not os.path.exists(main):
         print(f'{name}: 띠가 아직 없다 ({main})')
         return None
-    n = Image.open(main).size[0] // CW + (Image.open(extra).size[0] // CW if os.path.exists(extra) else 0)
-    args = [main] + ([f'x={extra}'] if os.path.exists(extra) else []) + groups(h, n) + [f'out={OUT}/chk-{h["strip"]}']
+    n = Image.open(main).size[0] // CW + (Image.open(extra).size[0] // (ACT['cw'] if h.get('act') else CW) if os.path.exists(extra) else 0)
+    xg = [f'xcw={ACT["cw"]}', f'xch={ACT["ch"]}', f'xroot={ACT["root"]}', f'xfoot={ACT["foot"]}'] if h.get('act') else []
+    if h.get('act') and grp is None and os.path.exists(extra):   # 게임에 든 띠를 다시 볼 때: 덧띠 = 쓰러짐 2 (+ 개성 4) + 공격 8
+        nx = Image.open(extra).size[0] // ACT['cw']
+        grp = ['stand:stand:0-3', 'walk:walk:4-11', 'attack:attack:12-17'] + (['quirk:misc:22-25'] if nx >= 14 else []) + [f'attack8:attack:{20 + nx - 8}-{20 + nx - 1}']
+    args = [main] + ([f'x={extra}'] + xg if os.path.exists(extra) else []) + (grp or groups(h, n)) + [f'out={OUT}/chk-{h["strip"]}']
     return run('anim-check.py', *args).returncode == 0
 
 
@@ -101,6 +145,8 @@ def strip(name, install=False):
     h = HEROES[name]
     os.makedirs(TRY, exist_ok=True)
     ext = f'{TRY}/{h["strip"]}-ext.png'
+    if h.get('act'):
+        return strip_act(name, install)
     run('strip-build.py', name, h['atk'], ext, 'align', 'ext')
     e = Image.open(ext)
     main, extra = f'{TRY}/{h["strip"]}.png', f'{TRY}/{h["strip"]}-x.png'
@@ -124,11 +170,46 @@ def strip(name, install=False):
         print('게임에 넣음:', f'{GAME}/{h["strip"]}.png')
 
 
+def strip_act(name, install=False):
+    """넓은 동작 칸 장수: 본 띠(208×160 · 20칸) + 덧띠(240×224 · 쓰러짐 2 [+ 개성 4] + 공격 8)"""
+    import shutil
+    h = HEROES[name]
+    act_cells(name)
+    ext = f'{TRY}/{h["strip"]}-ext.png'
+    run('strip-build.py', name, h['atk'], ext, 'align', 'rooted', 'ext')
+    e = Image.open(ext).convert('RGBA')
+    main, extra = f'{TRY}/{h["strip"]}.png', f'{TRY}/{h["strip"]}-x.png'
+    e.crop((0, 0, CW * 20, CH)).save(main)
+    old = [e.crop((i * CW, 0, (i + 1) * CW, CH)) for i in range(20, e.size[0] // CW)]   # 쓰러짐 2 (+ 개성 4)
+    xs = [to_act(c) for c in old] + [Image.open(f'{PX}/{name}-{h["atk"]}8-{t}-{i}.png').convert('RGBA') for t in 'ab' for i in (1, 2, 3, 4)]
+    xstrip = Image.new('RGBA', (ACT['cw'] * len(xs), ACT['ch']), (0, 0, 0, 0))
+    for i, c in enumerate(xs):
+        xstrip.alpha_composite(c, (i * ACT['cw'], 0))
+    xstrip.save(extra)
+    a0 = 20 + len(old)
+    grp = ['stand:stand:0-3', 'walk:walk:4-11', 'attack:attack:12-17'] + (['quirk:misc:22-25'] if len(old) >= 6 else []) + [f'attack8:attack:{a0}-{a0 + 7}']
+    ok = check(name, main, extra, grp)
+    cells = [e.crop((i * CW, 0, (i + 1) * CW, CH)) for i in range(20)]
+    wide = lambda c: on_bg(to_act(c), 3)
+    seq = [(wide(cells[0]), 600)] + [(wide(cells[i]), 110) for i in range(4, 12)] * 2 + [(wide(cells[0]), 500)] + [(on_bg(c, 3), t) for c, t in zip(xs[-8:], [90, 80, 110, 50, 150, 70, 80, 120])] + [(wide(cells[0]), 700)]
+    seq[0][0].save(f'{OUT}/{h["strip"]}-flow.gif', save_all=True, append_images=[f for f, _ in seq[1:]], duration=[t for _, t in seq], loop=0)
+    print(f'이어 보기: {OUT}/{h["strip"]}-flow.gif')
+    print(f"params.ts 계획: cells: {20 + len(xs)}, fall: [18, 20, 21, 19], attack cells: [{', '.join(str(a0 + i) for i in range(8))}], xGeom: {{ h: {ACT['ch']}, root: {ACT['root']}, foot: {ACT['foot']} }}")
+    if install:
+        if not ok:
+            raise SystemExit('불합격 — 게임에 넣지 않았다')
+        shutil.copyfile(main, f'{GAME}/{h["strip"]}.png')
+        shutil.copyfile(extra, f'{GAME}/{h["strip"]}-x.png')
+        print('게임에 넣음:', f'{GAME}/{h["strip"]}.png · -x.png  (SPRITE_PX 를 다시 재야 한다: node tools/sprite-kit/headgear.mjs · 계획에 xGeom)')
+
+
 if __name__ == '__main__':
     a = sys.argv[1:]
-    if not a or a[0] not in ('walk', 'strip', 'check'):
+    if not a or a[0] not in ('walk', 'strip', 'check', 'attack'):
         raise SystemExit(__doc__)
-    if a[0] == 'walk':
+    if a[0] == 'attack':
+        attack(a[1])
+    elif a[0] == 'walk':
         walk(a[1], a[2] if len(a) > 2 else 'walk-a-3')
     elif a[0] == 'strip':
         strip(a[1], 'install' in a[2:])

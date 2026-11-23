@@ -81,7 +81,7 @@ def main(name, atk, out):
         su = upper(frames[0])
         ds = [reg(upper(f), su) for f in frames[4:12]]
         d0 = int(round((max(ds) + min(ds)) / 2))
-        d1 = int(round(hw - head_x(frames[12])))
+        d1 = 0 if 'rooted' in sys.argv[4:] else int(round(hw - head_x(frames[12])))   # rooted: 공격 칸은 뿌리에 맞춰 구운 것(attack4) — 다시 밀면 뿌리가 깨진다
         frames[0:4] = [shift(f, d0) for f in frames[0:4]]
         frames[12:18] = [shift(f, d1) for f in frames[12:18]]
         if len(frames) >= 26:   # 개성 동작 네 칸(22~25)도 서기에서 이어진다 → 첫 칸의 윗몸을 (옮긴 뒤의) 서기에 맞춘다
