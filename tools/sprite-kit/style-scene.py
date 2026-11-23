@@ -106,7 +106,7 @@ def motion8_scene(identity, rig_a, rig_b, out, style_ref='soseono', Z=3, CW=384,
     print(out, o.size)
 
 
-def fall_scene(identity, pose_sheet, out, style_ref='soseono', Z=3):
+def fall_scene(identity, pose_sheet, out, style_ref='soseono', Z=3, sc_fixed=None):
     """쓰러짐 장면 (11-23 형: 누워 있는 마지막 컷이 항상 머리 부분이랑 같이 잘린다 · 2행 1열과 2행 2열 사이).
     누운 사람 옆에 다른 칸을 두지 않는다. 1920x1280 · 윗줄 = [그 장수 서기 384] + 자세 1·2·3 (같은 틈으로) · 아랫줄 = [승인 띠 384] + 누운 자세 혼자(폭 1536 한가운데).
       py -3 -I tools/sprite-kit/style-scene.py fall <합격한 서기.png> <쓰러짐 자세 판 2x2.png> <나갈.png>"""
@@ -142,6 +142,9 @@ def fall_scene(identity, pose_sheet, out, style_ref='soseono', Z=3):
     wid = m.sum(1)
     skull = int(h * .12) + int(np.argmin(wid[int(h * .12):int(h * .38)]))
     sc = (H * .92 * 32 / 137) / skull   # 첫 칸(서 있는 자세)의 머리뼈로 배율을 한 번만
+    if sc_fixed:   # 첫 칸이 숙인 자세라 머리뼈를 못 재는 판(e2)은 배율을 직접 준다
+        sc = sc_fixed
+    print('자세 배율', round(sc, 4))
     figs = [f.resize((round(f.size[0] * sc), round(f.size[1] * sc)), Image.LANCZOS) for f in figs]
     # 윗줄 세 자세는 폭이 제각각(셋째는 길게 기대앉는다) -> 같은 틈으로 늘어놓는다. 틈이 60px 아래면 알린다.
     gap = (W_ - LW - sum(figs[k].size[0] for k in range(3))) // 4
@@ -158,7 +161,7 @@ def fall_scene(identity, pose_sheet, out, style_ref='soseono', Z=3):
 
 
 if __name__ == '__main__' and sys.argv[1] == 'fall':
-    fall_scene(sys.argv[2], sys.argv[3], sys.argv[4])
+    fall_scene(sys.argv[2], sys.argv[3], sys.argv[4], sc_fixed=float(sys.argv[5]) if len(sys.argv) > 5 else None)
 if __name__ == '__main__' and sys.argv[1] == 'motion8':
     motion8_scene(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
 if __name__ == '__main__' and sys.argv[1] == 'motion':

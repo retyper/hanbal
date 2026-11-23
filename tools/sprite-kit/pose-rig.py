@@ -210,6 +210,20 @@ QUIRKS = {
         dict(near_arm=(105, 75), far_arm=(-18, 62), lean=-1),
         dict(near_arm=(40, 55), far_arm=(-10, 40), lean=0),
     ],
+    # 매화 「깃털 매만지기」: 가까운 손을 머리 위 깃털로 올림 -> 깃털을 쓸어 세움 -> 손을 뺨 옆으로 내리며 윙크 -> 팔을 내림. 먼 쪽 손은 활을 쥔 채.
+    'feather': [
+        dict(near_arm=(120, 185), far_arm=(22, 58), lean=0),
+        dict(near_arm=(135, 195), far_arm=(22, 58), lean=0),
+        dict(near_arm=(85, 165), far_arm=(22, 58), lean=1),
+        dict(near_arm=(35, 50), far_arm=(22, 58), lean=0),
+    ],
+    # 달빛 「머리카락 넘기기」: 가까운 손을 귀 옆으로 -> 머리카락을 뒤로 쓸어 넘김(팔꿈치가 높이 들림) -> 손이 목덜미를 타고 내려옴 -> 팔을 내림.
+    'hairflip': [
+        dict(near_arm=(95, 180), far_arm=(22, 58), lean=0),
+        dict(near_arm=(150, 215), far_arm=(22, 58), lean=-1),
+        dict(near_arm=(110, 235), far_arm=(22, 58), lean=-1),
+        dict(near_arm=(30, 45), far_arm=(22, 58), lean=0),
+    ],
 }
 
 
@@ -225,6 +239,8 @@ def main():
     order = [(True, 'pass'), (True, 'reach'), (True, 'contact'), (True, 'down'), (False, 'pass'), (False, 'reach'), (False, 'contact'), (False, 'down')]
     if len(sys.argv) > 1 and sys.argv[1] == 'quirk':  # py pose-rig.py quirk <이름> <가슴> -> rig-f-quirk-<이름>-<가슴>.png
         SHAPE['bust'] = sys.argv[3]
+        if 'bow' in sys.argv[4:]:
+            PROP['kind'] = 'bow'   # 먼 쪽 손에 활을 쥔 채
         quirk_sheet(sys.argv[2]).save(f'{STD}/rig-f-quirk-{sys.argv[2]}-{sys.argv[3]}.png')
         print('quirk', sys.argv[2], sys.argv[3])
         return
