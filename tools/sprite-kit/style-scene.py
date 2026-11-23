@@ -34,7 +34,7 @@ if __name__ == '__main__' and sys.argv[1] != 'motion':
     main(sys.argv[1], sys.argv[2], len(sys.argv) > 3 and sys.argv[3] == 'm')
 
 
-def motion_scene(identity, pose_sheet, out, style_ref='soseono', Z=4, CELL=640, far=False):
+def motion_scene(identity, pose_sheet, out, style_ref='soseono', Z=4, CELL=640, far=False, rig=False):
     """동작 판용 장면(3×2 · 칸 640): 왼쪽 줄 = [그 장수의 합격한 서기 그림(누구인가 + 결)] · [승인 띠(결)] · 오른쪽 2×2 = 대머리 자세 네 칸.
     자세 칸은 머리뼈 크기가 서기 그림과 맞게 줄인다(머리뼈 = 대머리 서기 키의 32/137 · 대머리 서기 키 = 장수 키의 92%).
       py -3 -I tools/sprite-kit/style-scene.py motion <합격한 서기.png(투명)> <자세 판.png> <나갈.png> [far]   (far = 먼 쪽 팔다리를 파랗게 칠한 안내)"""
@@ -45,7 +45,7 @@ def motion_scene(identity, pose_sheet, out, style_ref='soseono', Z=4, CELL=640, 
     for j, im in enumerate((idn, ref)):
         if im.size[0] > CELL - 20: im = im.crop(((im.size[0] - CELL + 20) // 2, 0, (im.size[0] + CELL - 20) // 2, im.size[1]))
         o.paste(im, ((CELL - im.size[0]) // 2, j * CELL + CELL - 40 - im.size[1]), im)
-    sh = Image.open(pose_sheet).convert('RGB'); W, Hs = sh.size; scale = [None]
+    sh = Image.open(pose_sheet).convert('RGB'); W, Hs = sh.size; scale = [.92 * Z / 4 if rig else None]   # 코드 인형(pose-rig.py · 게임 화소의 4배 · 대머리)은 치수를 아니까 배율을 바로 정한다
     for j in range(2):
         for i in range(2):
             c = sh.crop((i * W // 2, j * Hs // 2, (i + 1) * W // 2, (j + 1) * Hs // 2)); a = np.asarray(c).astype(np.int16)
@@ -72,4 +72,4 @@ def motion_scene(identity, pose_sheet, out, style_ref='soseono', Z=4, CELL=640, 
 
 
 if __name__ == '__main__' and sys.argv[1] == 'motion':
-    motion_scene(sys.argv[2], sys.argv[3], sys.argv[4], far=len(sys.argv) > 5 and sys.argv[5] == 'far')
+    motion_scene(sys.argv[2], sys.argv[3], sys.argv[4], far=len(sys.argv) > 5 and sys.argv[5] == 'far', rig=len(sys.argv) > 5 and sys.argv[5] == 'rig')
