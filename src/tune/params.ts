@@ -749,6 +749,14 @@ export const HAEBI_BUILD2 = {
   },
 } as const
 /**
+ * 69-BUILDUP 설치물 강화 칸 둘 (형 11-23 「설치물들의 공격력이나 공격속도 올려주는 것도 따로 만들어야 할 것 같고」) — 설치 갈래의 칸이지만 설치물 종류가 아니라 종류 칸(HAEBI_BUILD.kinds 셋)을 쓰지 않는다
+ *   (갈래 끝·버팀 칸처럼 가진 것을 세게 하는 칸 · 종류 칸은 「무엇을 세우나」의 고름으로 남긴다).
+ * 화력 firepower: 공격하는 설치물(망루 화살 · 봉수대 화살비 · 포차 바위 · 장승 혼줄)의 피해 × (1 + dmgStep × 단계) · 넷 가운데 하나라도 가져야 카드·나무에 나온다.
+ * 장전 reload: 때마다 쏘는 설치물(망루 · 봉수대 · 포차)의 쏘는 빠르기 × (1 + rateStep × 단계) · 간격 = 예전 간격(맹공으로 나눈 것) ÷ 그 배수, 그래도 minInterval 초 아래로는 줄지 않는다 · 셋 가운데 하나라도 가져야 나온다.
+ * max 끝 단계 · 11-23 헤드리스 (tools/raid-stage-balance.ts BUILDUP=on|off) 로 맞춘다
+ */
+export const HAEBI_BUILDUP = { max: 5, dmgStep: .12, rateStep: .08, minInterval: .3 } as const
+/**
  * 66-CAP 최고 레벨 (형 11-23 「레벨은 왜 44가 맥스지? 맥스 찍었다는 걸 유저가 알기도 어려운데」 · 「44 는 이상하고 사사(死死)로 읽힌다 → 50」).
  * 이 규칙 판은 최고 레벨이 capLevel (끈 판·옛 기록은 HAEBI_RUN.maxLevel 44 그대로).
  * 50 에 닿는 때가 예전 44 에 닿던 때와 같게 기세 막대를 늘인다 — 예전 곡선(xpBase + xpPerLevel·L + xpCurve·L²)을 43/49 배로 눌러 편 것:

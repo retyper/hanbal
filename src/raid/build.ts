@@ -6,7 +6,7 @@
  * 67-BUILD2 (형 11-23 「건설물 여러가지 더 · 창의적이게」): 장승 · 솟대 · 봉수대 · 포차 · 우물 다섯을 더해 여덟 종류 · 종류 칸은 그대로 셋.
  * 수치는 모두 HAEBI_BUILD · HAEBI_BUILD2 (tune/params.ts).
  */
-import { HAEBI_BUILD as B, HAEBI_BUILD2 as B2 } from '../tune/params.ts'
+import { HAEBI_BUILD as B, HAEBI_BUILD2 as B2, HAEBI_BUILDUP as B3 } from '../tune/params.ts'
 
 export type BuildKind = 'tower' | 'fence' | 'jar' | 'totem' | 'sotdae' | 'beacon' | 'catapult' | 'well'
 /** 65-BUILD 의 셋 — 카드·나무에 서는 차례 (망루 → 목책 → 항아리) */
@@ -28,7 +28,7 @@ export const rebuildOf = (k: BuildKind) => k === 'tower' ? B.tower.rebuild : k =
  */
 export interface Structure { id: number; kind: BuildKind; x: number; y: number; hp: number; max: number; down: number; cd: number; flash: number; push: number }
 /** items 선 것(놓인 차례) · nextId · jarXp 항아리가 더 얹어 준 기세(기록) */
-export interface BuildState { items: Structure[]; nextId: number; jarXp: number; /** 67-BUILD2 판 (여덟 종류) */ v2?: true }
+export interface BuildState { items: Structure[]; nextId: number; jarXp: number; /** 67-BUILD2 판 (여덟 종류) */ v2?: true; /** 69-BUILDUP 판 (화력·장전 칸) */ up?: true }
 export const newBuild = (): BuildState => ({ items: [], nextId: 1, jarXp: 0 })
 
 /** 그 단계에서 서 있는 수 — 1 + extraAt 에 이른 수 (단계 0 이면 0) */
@@ -146,3 +146,18 @@ export function totemLinks(b: BuildState): [Structure, Structure][] {
   }
   return out
 }
+/**
+ * 69-BUILDUP 설치물 강화 칸 — 화력(공격하는 설치물의 피해) · 장전(때마다 쏘는 설치물의 빠르기).
+ * 설치물 종류가 아니라 종류 칸을 쓰지 않는다 · 얹힐 설치물을 하나라도 가져야 카드·나무에 나온다 (수치는 HAEBI_BUILDUP)
+ */
+export type BuildUp = 'firepower' | 'reload'
+export const BUILD_UPS: readonly BuildUp[] = ['firepower', 'reload']
+export const isBuildUp = (k: string): k is BuildUp => k === 'firepower' || k === 'reload'
+/** 화력이 얹히는 종류 — 피해를 주는 설치물 (망루 화살 · 장승 혼줄 · 봉수대 화살비 · 포차 바위) */
+export const FIRE_KINDS: readonly BuildKind[] = ['tower', 'totem', 'beacon', 'catapult']
+/** 장전이 얹히는 종류 — 때마다 쏘는 설치물 (망루 · 봉수대 · 포차) */
+export const TIMED_KINDS: readonly BuildKind[] = ['tower', 'beacon', 'catapult']
+/** 화력 단계의 피해 배수 */
+export const firepowerMul = (rank: number) => 1 + B3.dmgStep * rank
+/** 장전 단계를 얹은 쏘는 간격 — 예전 간격(맹공으로 나눈 것) ÷ (1 + rateStep × 단계) · minInterval 초 아래로는 줄지 않는다 (단계 0 이면 예전 간격 그대로) */
+export const reloadInterval = (interval: number, rank: number) => rank > 0 ? Math.max(B3.minInterval, interval / (1 + B3.rateStep * rank)) : interval

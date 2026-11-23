@@ -17,7 +17,9 @@ const BOT_BUILD: [Power, number][] = [['tower', 3], ['jar', 2], ['fence', 2], ['
 const BOT_BUILD_EVERY = 6
 /** 67-BUILD2 판(여덟 종류)의 봇 차례 — 새 다섯을 앞에 두어 밸런스 판이 새 종류를 고루 고른다 (카드에 나온 것 가운데 앞에서부터 · 종류 칸 셋이 차면 가진 것만 나온다) */
 const BOT_BUILD2: [Power, number][] = [['totem', 3], ['beacon', 3], ['catapult', 3], ['well', 2], ['sotdae', 2], ['tower', 3], ['jar', 2], ['fence', 2], ['totem', 5], ['beacon', 5], ['catapult', 5], ['well', 4], ['sotdae', 4], ['tower', 5], ['jar', 4], ['fence', 4]]
-const botBuild = (s: HaebiRun) => (s.build?.v2 ? BOT_BUILD2 : BOT_BUILD).find(([p, n]) => s.offers.includes(p) && s.ranks[p] < n)?.[0]
+/** 69-BUILDUP 판의 봇 차례 — 67 차례에 화력·장전을 공격 설치물 셋 다음과 끝에 끼운다 (규칙이 꺼진 판은 예전 차례 그대로) */
+const BOT_BUILD3: [Power, number][] = [...BOT_BUILD2.slice(0, 3), ['firepower', 2], ['reload', 2], ...BOT_BUILD2.slice(3, 11), ['firepower', 5], ['reload', 5], ...BOT_BUILD2.slice(11)]
+const botBuild = (s: HaebiRun) => (s.build?.up ? BOT_BUILD3 : s.build?.v2 ? BOT_BUILD2 : BOT_BUILD).find(([p, n]) => s.offers.includes(p) && s.ranks[p] < n)?.[0]
 /** 고를 카드 중 그 갈래의 바람 차례 (없으면 Infinity) */
 function wantIndex(s: HaebiRun, p: Power) {
   const at = nodeAt(s.kit, p); if (!at) return Infinity
