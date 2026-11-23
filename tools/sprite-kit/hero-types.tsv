@@ -1,0 +1,218 @@
+heroId	bustId	strip	sex	frame	bust	thigh	face	mood	note
+chief	g-94-golpo-maenun	maenun	m	standard	-	-	face-m-sharp	근엄한	갑옷 궁수 · 굳은 눈매
+guya-1	g-11-gaya-iron-general	geota	m	muscular	-	-	face-m-rugged	근엄한	넓은 갑옷 어깨 · 염소수염 굳은 얼굴
+guya-2	g-04-jinhan-giant	base-g-04-jinhan-giant	m	heavy	-	-	face-m-rugged	쾌활한	큰 배·고기 뜯음 · 턱수염
+anya-1	w-04-gaya-swordswoman	ara	f	standard	M	normal	face-f-sharp	차가운	갑옷 검사 · 단발 매서운 눈
+anya-2	w-13-young-archer	base-w-13-young-archer	f	standard	M	thick	face-f-cute	순박한	활 쏘는 다리 굵음 · 주근깨 앳된 얼굴
+miri-1	g-07-drunk-warrior	base-g-07-drunk-warrior	m	heavy	-	-	face-m-rugged	쾌활한	드러난 뱃살·술독 · 수염
+goja-1	g-03-sea-trader	base-g-03-sea-trader	m	muscular	-	-	face-m-gentle	쾌활한	드러난 굵은 팔 · 웃는 순한 얼굴
+dokro-1	w-10-pirate-captain	base-w-10-pirate-captain	f	standard	M	thick	face-f-sharp	도도한	그을린 해적 · 각성에 굵은 허벅지 · 비웃음
+us-ruler	w-63-us-haesol	haesol	f	slender	S	normal	face-f-soft	온화한	가는 약초꾼 · 부드러운 미소
+guya-ruler	g-69-guya-soebo	soebo	m	muscular	-	-	face-m-rugged	쾌활한	대장장이 굵은 팔 · 수염 왕관
+anya-ruler	g-40-anya-adan	base-g-40-anya-adan	m	standard	-	-	face-m-gentle	온화한	젊은 웃음 · 순한 눈
+miri-ruler	w-64-miri-dallae	base-w-64-miri-dallae	f	standard	M	normal	face-f-cute	순박한	농사 바구니 · 둥근 볼 활짝 웃음
+goja-ruler	g-41-goja-bau	base-g-41-goja-bau	m	standard	-	-	face-m-sharp	도도한	장사꾼 · 교활한 웃음
+dokro-ruler	g-42-dokro-garam	base-g-42-dokro-garam	m	standard	-	-	face-m-gentle	온화한	콧수염 웃음 · 순한 얼굴
+us-1	g-09-farmer-conscript	base-g-09-farmer-conscript	m	lean	-	-	face-m-gentle	순박한	마른 농민 · 앳되고 겁먹은 얼굴
+miri-2	w-02-goguryeo-lady	base-w-02-goguryeo-lady	f	slender	S	normal	face-f-cute	순박한	작은 체구 · 둥근 앳된 얼굴
+goja-2	w-17-mahan-pearl-diver	base-w-17-mahan-pearl-diver	f	standard	M	normal	face-f-cute	쾌활한	해녀(초상은 보통 가슴) · 앳된 웃음
+dokro-2	g-08-veteran	base-g-08-veteran	m	muscular	-	-	face-m-rugged	근엄한	굵은 팔·갑옷 · 각진 턱 수염
+wander-01	w-18-jinhan-salt-widow	base-w-18-jinhan-salt-widow	f	standard	XL	normal	face-f-mature	요염한	초상부터 아주 큰 가슴 · 가는 눈 미소
+wander-02	w-03-goguryeo-archer	maehwa	f	standard	M	normal	face-f-cute	쾌활한	궁수 · 윙크 웃음
+wander-03	w-12-court-dancer	base-w-12-court-dancer	f	slender	M	normal	face-f-soft	요염한	가는 허리 춤꾼 · 눈웃음
+wander-04	w-11-assassin	sori	f	slender	S	normal	face-f-sharp	차가운	가늘고 마른 자객 · 매서운 눈
+wander-05	w-83-gyeonji-beodeul	base-w-83-gyeonji-beodeul	f	slender	S	normal	face-f-cute	순박한	작은 체구 농사 소녀 · 둥근 앳된 얼굴
+wander-06	w-06-buyeo-huntress	base-w-06-buyeo-huntress	f	standard	M	normal	face-f-sharp	차가운	털옷 사냥꾼 · 차가운 눈
+wander-07	w-19-buyeo-fur-princess	gaon	f	slender	S	normal	face-f-cute	순박한	작은 체구 털옷 · 둥근 얼굴 큰 눈
+wander-08	w-22-dongye-tiger-huntress	base-w-22-dongye-tiger-huntress	f	standard	M	normal	face-f-sharp	사나운	범가죽 탄탄 · 얼굴 칠 매서운 눈
+wander-09	w-05-baekje-queen	base-w-05-baekje-queen	f	standard	L	normal	face-f-mature	요염한	초상도 풍만 · 길고 차분한 얼굴
+wander-10	w-21-baekje-court-dancer	base-w-21-baekje-court-dancer	f	slender	S	normal	face-f-cute	쾌활한	가는 춤꾼 몸 · 쌍갈래 앳된 웃음
+wander-11	g-61-heomcheuk-bawi	base-g-61-heomcheuk-bawi	m	heavy	-	-	face-m-gentle	순박한	드러난 큰 배·주먹밥 · 웃음
+wander-12	g-88-wander-soeul	base-g-88-wander-soeul	m	muscular	-	-	face-m-sharp	차가운	대장장이 굵은 팔 · 매서운 눈
+wander-13	w-14-feast-spy	base-w-14-feast-spy	f	slender	M	normal	face-f-sharp	요염한	가는 몸 첩자·술잔 · 교활한 눈
+wander-14	g-60-eupcha-hangyeol	base-g-60-eupcha-hangyeol	m	standard	-	-	face-m-rugged	근엄한	깃발 · 짧은 수염 각진 턱
+wander-15	w-98-byeonhan-danbi	bdanbi	f	standard	M	normal	face-f-cute	쾌활한	농사 아낙 · 둥근 볼 크게 웃음
+wander-16	w-20-gaya-smith-daughter	areum	f	sturdy	M	thick	face-f-sharp	쾌활한	굵은 팔·넓은 어깨 대장장이 · 굵은 허벅지
+wander-17	g-12-silla-youth	base-g-12-silla-youth	m	lean	-	-	face-m-gentle	순박한	가는 소년 몸 · 고운 얼굴
+wander-18	w-01-silla-princess	goeun	f	standard	M	normal	face-f-sharp	도도한	초상은 보통 가슴 · 치켜 뜬 눈 미소
+wander-19	g-15-shaman-man	base-g-15-shaman-man	m	lean	-	-	face-m-old	근엄한	마른 무당 · 흰머리 주름
+wander-20	w-08-mahan-warrior	base-w-08-mahan-warrior	f	sturdy	M	normal	face-f-soft	쾌활한	넓은 어깨·문신 굵은 팔 · 활짝 웃음
+wander-21	w-84-salhae-dallae	dallae2	f	standard	M	normal	face-f-sharp	도도한	쌍검 탄탄한 팔 · 비웃는 눈매
+wander-22	w-85-sinji-neoul	sinneoul	f	standard	XL	normal	face-f-sharp	요염한	초상도 큰 가슴 해녀 · 젖은 머리 요염한 눈
+wander-23	g-62-beonye-hanul	base-g-62-beonye-hanul	m	lean	-	-	face-m-gentle	온화한	가는 몸 궁수 · 고운 미소
+wander-24	g-63-heomcheuk-beogeum	base-g-63-heomcheuk-beogeum	m	muscular	-	-	face-m-gentle	쾌활한	웃통 벗은 씨름꾼 근육 · 웃음
+wander-25	g-84-wander-seoneul	base-g-84-wander-seoneul	m	lean	-	-	face-m-sharp	차가운	가는 몸·단검 · 날 선 눈
+wander-26	g-85-wander-ure	base-g-85-wander-ure	m	muscular	-	-	face-m-gentle	쾌활한	풀어헤친 근육 가슴 · 웃는 얼굴
+saro-ruler	g-17-saro-isageum	base-g-17-saro-isageum	m	standard	-	-	face-m-gentle	쾌활한	떡 든 웃음 · 순한 얼굴
+daegaya-ruler	g-18-daegaya-king	base-g-18-daegaya-king	m	standard	-	-	face-m-old	온화한	금관 · 긴 흰수염
+dabeol-ruler	g-35-dabeol-dalgu	base-g-35-dabeol-dalgu	m	heavy	-	-	face-m-old	쾌활한	통통한 몸 · 희끗한 수염 주름
+sabeol-ruler	g-19-sabeol-veteran	base-g-19-sabeol-veteran	m	muscular	-	-	face-m-rugged	사나운	털옷 넓은 어깨·도끼 · 희끗한 수염
+usisan-ruler	w-23-usisan-whale-queen	base-w-23-usisan-whale-queen	f	sturdy	M	thick	face-f-mature	근엄한	넓은 어깨·굵은 근육 팔·두꺼운 하체 · 그을린 긴 얼굴
+bihwa-ruler	w-25-bihwa-priestess	base-w-25-bihwa-priestess	f	slender	S	normal	face-f-mature	온화한	가는 무녀 · 긴 얼굴 가는 눈
+jomun-ruler	w-59-jomun-irang	irang	f	standard	M	normal	face-f-sharp	차가운	문신 탄탄한 팔·단검 · 매서운 눈
+golbeol-ruler	w-60-golbeol-beom	beom	f	standard	L	normal	face-f-sharp	사나운	(기준점) 몸은 평범·가슴 큼 · 짐승 같은 눈매 얼굴 칠
+apdok-ruler	w-24-apdok-queen	base-w-24-apdok-queen	f	standard	M	normal	face-f-soft	온화한	균형 잡힌 왕비 · 부드러운 미소
+iseo-ruler	w-61-iseo-sinae	base-w-61-iseo-sinae	f	slender	S	normal	face-f-soft	온화한	가는 문사 몸 · 차분한 순한 얼굴
+byeokjin-ruler	w-62-byeokjin-byeol	byeol	f	standard	M	normal	face-f-cute	쾌활한	대장장이 앞치마 · 그을음 앳된 웃음
+gammun-ruler	g-36-gammun-gamdol	base-g-36-gammun-gamdol	m	lean	-	-	face-m-gentle	온화한	긴 머리 가는 몸 · 순한 미소
+samul-ruler	g-20-samul-sea-lord	base-g-20-samul-sea-lord	m	muscular	-	-	face-m-rugged	쾌활한	문신 굵은 팔 · 수염 웃음
+eumjeup-ruler	g-37-eumjeup-jeup	base-g-37-eumjeup-jeup	m	heavy	-	-	face-m-gentle	순박한	둥근 얼굴 통통 · 웃음
+chopal-ruler	g-38-chopal-palmae	base-g-38-chopal-palmae	m	lean	-	-	face-m-sharp	차가운	가는 몸 · 날 선 눈매
+saro-1	g-55-saro-bakdal	base-g-55-saro-bakdal	m	standard	-	-	face-m-sharp	차가운	창·방패 · 날 선 눈
+saro-2	w-66-saro-noeul	noeul	f	standard	M	normal	face-f-cute	순박한	궁수 · 둥근 볼 큰 눈 미소
+daegaya-1	w-75-daegaya-soemoe	base-w-75-daegaya-soemoe	f	sturdy	M	normal	face-f-sharp	도도한	대장장이 굵은 팔 · 단발 비웃음
+sabeol-1	w-77-sabeol-malgalgi	malgalgi	f	standard	M	normal	face-f-soft	쾌활한	채찍 기수 균형 · 환한 미소
+dabeol-1	g-45-dabeol-deulgae	base-g-45-dabeol-deulgae	m	heavy	-	-	face-m-rugged	쾌활한	통통 거구·고기 · 수염
+usisan-1	g-01-master-smith	base-g-01-master-smith	m	muscular	-	-	face-m-rugged	근엄한	맨팔 근육·대장장이 · 수염 흰머리 섞임
+jomun-1	g-93-jomun-solgae	base-g-93-jomun-solgae	m	lean	-	-	face-m-sharp	차가운	가는 몸 궁수 · 날 선 눈
+iseo-1	w-26-iseo-tomboy-general	base-w-26-iseo-tomboy-general	f	sturdy	M	thick	face-f-cute	쾌활한	굵은 팔 알통·굵은 허벅지 · 단발 웃음
+samul-1	w-73-samul-sagong	sagong	f	standard	M	normal	face-f-soft	쾌활한	노 메는 그을린 팔 · 미소
+bihwa-1	g-57-bihwa-neup	base-g-57-bihwa-neup	m	lean	-	-	face-m-rugged	순박한	마른 늪사람 · 덥수룩 머리 수염
+eumjeup-1	w-72-eumjeup-beol	base-w-72-eumjeup-beol	f	sturdy	M	normal	face-f-mature	근엄한	넓고 두꺼운 체구 · 각진 성숙한 얼굴
+jm-jumong	g-64-jumong	jumong	m	standard	-	-	face-m-gentle	쾌활한	젊은 궁수 · 웃는 얼굴
+jm-oi	g-16-goguryeo-gaema-commander	oi	m	standard	-	-	face-m-sharp	사나운	투구 갑옷 · 날 선 눈
+jm-mari	g-92-goguryeo-mari	mari	m	muscular	-	-	face-m-rugged	순박한	굵은 팔·밧줄 · 수염
+jm-hyeopbo	g-06-strategist	hyeopbo	m	lean	-	-	face-m-sharp	차가운	가는 몸·책사 · 가는 눈 콧수염
+jm-songyang	g-91-biryu-songyang	songyang	m	standard	-	-	face-m-sharp	도도한	예복 궁수 · 가는 눈 수염
+jm-songbi	w-52-biryuna-songbi	songbi	f	standard	M	normal	face-f-soft	온화한	균형 잡힌 궁수 · 부드러운 얼굴
+jm-daeso	g-67-buyeo-daeso	daeso	m	lean	-	-	face-m-sharp	도도한	가는 몸 왕자 · 거만한 눈매
+jm-haedal	w-67-buyeo-haedal	haedal	f	slender	M	normal	face-f-mature	차가운	가는 궁수 털망토 · 차분한 긴 얼굴
+jm-haengin-ruler	g-90-haengin-gomok	gomok	m	standard	-	-	face-m-old	근엄한	털옷 지팡이 · 희끗한 긴 수염
+jm-haengin-1	w-96-haengin-neoul	hneoul	f	slender	S	normal	face-f-sharp	차가운	가는 궁수 털망토 · 고양이 눈
+jm-okjeo-ruler	g-34-bukokjeo-duman	duman	m	standard	-	-	face-m-sharp	차가운	털모자 창병 · 가는 눈
+jm-okjeo-1	w-70-bukokjeo-mulbeom	mulbeom	f	standard	S	normal	face-f-mature	근엄한	작살꾼 마른 복근 · 주근깨 그을린 긴 얼굴
+mh-onjo	g-71-baekje-onjo	onjo	m	lean	-	-	face-m-gentle	근엄한	가는 왕자 · 고운 얼굴
+mh-eureum	g-73-baekje-eureum	eureum	m	lean	-	-	face-m-sharp	차가운	책사 · 가는 눈 염소수염
+mh-ogan	g-13-baekje-general	ogan	m	standard	-	-	face-m-sharp	근엄한	갑옷 궁수 · 매서운 눈
+mh-soseono	l-L2-soseono	soseono	f	standard	L	normal	face-f-mature	도도한	초상도 가슴 굴곡 · 차분한 눈 붉은 입술 여왕
+mh-jinwang	g-76-mokji-jinha	jinha	f	standard	M	normal	face-f-mature	근엄한	(g-지만 여인) 초상은 예복 보통 가슴 · 긴 얼굴 여왕
+mh-mahan-1	g-83-mokji-keundol	keundol	m	heavy	-	-	face-m-rugged	사나운	두꺼운 몸·쌍망치 · 수염 고함
+mh-mahan-2	w-94-mokji-dallae	mdallae	f	standard	M	normal	face-f-soft	온화한	창 · 부드러운 미소
+mh-mahan-3	g-86-mokji-geumbawi	geumbawi	m	heavy	-	-	face-m-rugged	근엄한	팔짱 낀 거구 · 수염 각진 턱
+sr-hyeokgeose	g-74-saro-hyeokgeose	hyeokgeose	m	lean	-	-	face-m-gentle	온화한	가는 몸 흰옷 · 고운 얼굴
+sr-aryeong	l-L7-aryeong	aryeong	f	standard	M	normal	face-f-soft	온화한	균형 잡힌 몸 · 둥근 얼굴 미소
+sr-hogong	g-75-saro-hogong	hogong	m	standard	-	-	face-m-gentle	온화한	호리병 · 온화한 웃음
+sr-danbi	w-90-saro-danbi	danbi	f	slender	S	normal	face-f-sharp	차가운	가는 궁수 · 겨누는 날 선 눈
+sr-alpyeong	g-78-saro-alpyeong	alpyeong	m	lean	-	-	face-m-gentle	온화한	가는 몸 문사 · 순한 얼굴
+sr-sobeol	g-77-saro-sobeol	sobeol	m	lean	-	-	face-m-old	온화한	마른 노인 · 긴 흰수염
+sr-jibaekho	g-79-saro-jibaekho	jibaekho	m	muscular	-	-	face-m-rugged	사나운	범가죽 거구·창 · 수염
+sr-guryema	g-80-saro-guryema	guryema	m	standard	-	-	face-m-rugged	차가운	두건 궁수 · 수염
+sr-jita	g-81-saro-jita	jita	m	heavy	-	-	face-m-gentle	도도한	통통한 상인 · 웃음
+sr-hojin	g-82-saro-hojin	hojin	m	muscular	-	-	face-m-rugged	사나운	털옷 거구·도끼 · 수염 찡그림
+sr-yangsan-1	w-91-saro-mulsae	mulsae	f	slender	S	normal	face-f-cute	쾌활한	가는 팔 창 · 활짝 웃는 앳된 얼굴
+sr-goya-1	w-92-saro-dallae	sdallae	f	standard	M	normal	face-f-mature	요염한	털옷 궁수 · 나른한 긴 얼굴 화살 깃 입에
+sr-jinji-1	w-93-saro-beomi	beomi	f	sturdy	M	normal	face-f-cute	쾌활한	넓은 어깨 굵은 팔 범가죽 · 단발 장난 웃음
+sr-wae-ruler	g-87-wae-chief	waechief	m	lean	-	-	face-m-sharp	사나운	가는 몸·흉터 · 비웃는 눈매
+gj-suro	g-96-garak-suro	suro	m	lean	-	-	face-m-gentle	온화한	가는 몸 흰옷 · 고운 얼굴
+gj-heo	l-L3-heo-hwangok	heo	f	standard	L	normal	face-f-soft	온화한	초상에 가슴골 · 부드러운 얼굴
+gj-musoe	g-107-garak-musoe	musoe	m	muscular	-	-	face-m-sharp	차가운	굵은 맨팔·쇠망치 · 매서운 눈 짧은 수염
+gj-dana	w-102-garak-dana	base-w-102-garak-dana	f	standard	XL	normal	face-f-cute	쾌활한	초상도 큰 가슴 · 앳된 웃음
+gj-adogan	g-101-garak-adogan	adogan	m	lean	-	-	face-m-old	온화한	마른 장로 · 긴 수염 주름
+gj-yeodogan	g-102-garak-yeodogan	yeodogan	m	standard	-	-	face-m-rugged	쾌활한	볏단 · 웃는 수염 얼굴
+gj-pidogan	g-103-garak-pidogan	pidogan	m	muscular	-	-	face-m-rugged	사나운	털옷·도끼 · 굳은 수염 얼굴
+gj-odogan	g-104-garak-odogan	odogan	m	standard	-	-	face-m-gentle	쾌활한	상인 웃음 · 순한 눈
+gj-yusugan	g-105-garak-yusugan	yusugan	m	lean	-	-	face-m-gentle	순박한	가는 몸 어부 · 순한 얼굴
+gj-yucheongan	w-99-garak-yucheongan	yucheongan	f	standard	XL	thick	face-f-mature	온화한	초상부터 아주 큰 가슴·각성 넓은 골반 · 성숙한 미소
+gj-sincheongan	w-100-garak-sincheongan	sincheongan	f	standard	M	normal	face-f-mature	근엄한	초상은 보통 체구 무녀 · 긴 얼굴 가는 눈
+gj-ocheongan	g-106-garak-ocheongan	ocheongan	m	muscular	-	-	face-m-rugged	쾌활한	문신 굵은 팔 · 수염 웃음
+gj-singwigan	w-101-garak-singwigan	singwigan	f	standard	M	normal	face-f-soft	쾌활한	해녀 · 환한 웃음
+gj-tahae	g-97-tahae	tahae	m	standard	-	-	face-m-sharp	도도한	털옷 · 비웃는 눈매
+gj-tahae-1	w-103-tahae-neoul	tneoul	f	standard	L	normal	face-f-soft	온화한	초상에 가슴골·문신 · 부드러운 미소
+dm-daemusin	g-95-goguryeo-daemusin	daemusin	m	standard	-	-	face-m-sharp	도도한	젊은 왕 갑옷 · 날 선 눈
+dm-gwaeyu	g-98-goguryeo-gwaeyu	gwaeyu	m	muscular	-	-	face-m-rugged	사나운	거구 털옷·큰칼 · 수염 각진 턱
+dm-maro	g-99-goguryeo-maro	maro	m	standard	-	-	face-m-gentle	쾌활한	창·밧줄 · 웃는 얼굴
+dm-mir	w-97-goguryeo-mir	mir	f	standard	M	normal	face-f-sharp	도도한	초상은 갑옷 옷깃 보통 · 화살 든 비웃음
+dm-daeso	g-100-buyeo-old-daeso	olddaeso	m	standard	-	-	face-m-old	근엄한	예복 · 긴 흰수염 노인
+dm-buyeo-1	g-10-buyeo-horse-lord	horselord	m	standard	-	-	face-m-sharp	도도한	털옷 기마 · 날 선 눈매
+dm-buyeo-2	w-104-buyeo-darae	darae	f	standard	M	normal	face-f-sharp	도도한	털옷 매사냥꾼(각성 과장 깎음) · 치켜 눈
+tut-onjo	g-71-baekje-onjo	onjo	m	lean	-	-	face-m-gentle	근엄한	가는 왕자 · 고운 얼굴
+tut-biryu	g-28-goguryeo-damul	biryu	m	muscular	-	-	face-m-sharp	도도한	민소매 굵은 팔 · 잘생긴 매서운 얼굴
+tut-ogan	g-13-baekje-general	ogan	m	standard	-	-	face-m-sharp	근엄한	갑옷 궁수 · 매서운 눈
+tut-malgalgi	w-77-sabeol-malgalgi	malgalgi	f	standard	M	normal	face-f-soft	쾌활한	채찍 기수 균형 · 환한 미소
+tut-maryeo	g-89-baekje-maryeo	maryeo	m	standard	-	-	face-m-gentle	순박한	농군 낫 · 웃는 얼굴
+tut-haebi	w-95-michuhol-haebi	haebi	f	standard	M	normal	face-f-cute	쾌활한	도끼 탄탄한 팔 · 앳된 웃음
+baekje-ruler	g-68-baekje-onnuri	base-g-68-baekje-onnuri	m	lean	-	-	face-m-gentle	온화한	예복 문신(文臣) · 온화한 얼굴
+mokji-ruler	w-27-mokji-jinha	base-w-27-mokji-jinha	f	slender	S	normal	face-f-mature	도도한	가는 구슬 무녀 · 눈화장 가는 눈
+michuhol-ruler	w-28-michuhol-bira	bira	f	sturdy	M	thick	face-f-soft	쾌활한	땅딸막 넓은 어깨 굵은 팔 · 환한 웃음
+ungcheon-ruler	g-22-ungcheon-gomnae	base-g-22-ungcheon-gomnae	m	muscular	-	-	face-m-rugged	도도한	맨팔 근육·곰가죽 · 수염
+sangdang-ruler	g-23-sangdang-soedal	base-g-23-sangdang-soedal	m	muscular	-	-	face-m-rugged	사나운	굵은 팔·칼 · 수염 거친 얼굴
+geonma-ruler	w-46-geonma-maru	base-w-46-geonma-maru	f	standard	M	normal	face-f-soft	온화한	균형 잡힌 농사 왕비 · 부드러운 미소
+wansan-ruler	g-24-wansan-onsan	base-g-24-wansan-onsan	m	lean	-	-	face-m-gentle	온화한	가는 몸·피리 · 고운 얼굴
+gosaburi-ruler	w-47-gosaburi-baram	baram	f	standard	M	normal	face-f-mature	도도한	스카프 첩보 · 아는 듯한 긴 얼굴
+balla-ruler	g-25-balla-keunmoe	base-g-25-balla-keunmoe	m	lean	-	-	face-m-rugged	근엄한	마른 무당 · 긴 검은 수염
+mujin-ruler	w-48-mujin-mudeung	base-w-48-mujin-mudeung	f	sturdy	M	normal	face-f-mature	근엄한	넓고 단단한 체구 털옷 · 희끗한 나이 든 얼굴
+gampyeong-ruler	g-26-gampyeong-gaetbeol	base-g-26-gampyeong-gaetbeol	m	standard	-	-	face-m-gentle	쾌활한	어민 웃음 · 순한 얼굴
+goryong-ruler	w-49-goryong-gureum	gureum	f	standard	M	normal	face-f-cute	쾌활한	초상은 보통 가슴 · 윙크 둥근 얼굴
+maek-ruler	g-27-maek-maekdol	base-g-27-maek-maekdol	m	muscular	-	-	face-m-sharp	사나운	표범가죽 · 매서운 눈 긴 머리
+siljik-ruler	w-50-siljik-mulga	base-w-50-siljik-mulga	f	standard	M	normal	face-f-mature	도도한	구슬 상인 · 나이 든 긴 얼굴 셈 빠른 미소
+haseulla-ruler	w-51-haseulla-dangung	dangung	f	standard	M	thick	face-f-sharp	도도한	활 궁수 · 각성 넓은 골반 · 치켜 뜬 눈
+baekje-1	g-53-baekje-haeru	base-g-53-baekje-haeru	m	lean	-	-	face-m-sharp	차가운	가는 몸 관리 · 가는 콧수염 눈매
+mokji-1	g-54-mokji-mahan	base-g-54-mokji-mahan	m	standard	-	-	face-m-old	근엄한	흰 콧수염 · 주름진 얼굴
+wansan-1	w-78-wansan-wan	wan	f	slender	S	normal	face-f-mature	차가운	가는 궁수 · 차분한 긴 얼굴
+balla-1	w-74-balla-dokmudeom	dokmudeom	f	slender	M	normal	face-f-sharp	차가운	가는 몸 독 무녀 · 검은 입술 가는 눈
+maek-1	w-68-maek-beombal	beombal	f	standard	M	normal	face-f-sharp	사나운	범가죽 탄탄한 팔·단검 · 얼굴 칠 비웃음
+haseulla-1	g-56-haseulla-gwahama	base-g-56-haseulla-gwahama	m	standard	-	-	face-m-gentle	쾌활한	말 곁 궁수 · 웃는 얼굴
+gampyeong-1	w-76-gampyeong-baetsagong	base-w-76-gampyeong-baetsagong	f	standard	XL	thick	face-f-sharp	요염한	초상부터 아주 큰 가슴·각성 굵은 허벅지 문신 · 비웃음
+goguryeo-ruler	g-65-goguryeo-damul	damul	m	muscular	-	-	face-m-rugged	근엄한	넓은 어깨 범가죽 · 긴 수염
+goguryeo-1	g-49-goguryeo-sona	base-g-49-goguryeo-sona	m	muscular	-	-	face-m-rugged	사나운	갑옷 거구·도끼 · 수염 각진 턱
+goguryeo-2	w-65-goguryeo-hwalmi	hwalmi	f	standard	M	normal	face-f-sharp	도도한	갑옷 궁수 · 또렷한 치켜 눈
+biryuna-ruler	w-52-biryuna-songbi	songbi	f	standard	M	normal	face-f-soft	온화한	균형 잡힌 궁수 · 부드러운 얼굴
+biryuna-1	g-51-biryuna-mulgyeol	base-g-51-biryuna-mulgyeol	m	lean	-	-	face-m-gentle	온화한	가는 몸 미소년 · 고운 얼굴
+yeonna-ruler	g-29-yeonna-myeongsol	base-g-29-yeonna-myeongsol	m	lean	-	-	face-m-sharp	차가운	수염 쓰다듬는 책사 · 교활한 눈
+yeonna-1	w-71-yeonna-neoul	base-w-71-yeonna-neoul	f	slender	S	normal	face-f-soft	온화한	가는 창병 · 부드러운 얼굴
+hwanna-ruler	w-53-hwanna-gabi	base-w-53-hwanna-gabi	f	standard	L	normal	face-f-mature	도도한	초상도 풍만 털목도리 · 가는 눈 긴 얼굴
+hwanna-1	g-43-hwanna-amnok	base-g-43-hwanna-amnok	m	lean	-	-	face-m-gentle	순박한	가는 뱃사공 · 앳된 미소
+gwanna-ruler	g-30-gwanna-soemoe	base-g-30-gwanna-soemoe	m	muscular	-	-	face-m-rugged	사나운	거대한 팔·망치 · 덥수룩 수염 각진 턱
+gwanna-1	g-48-gwanna-musoe	base-g-48-gwanna-musoe	m	muscular	-	-	face-m-sharp	사나운	대장장이 굵은 팔 · 매서운 눈
+buyeo-ruler	g-66-buyeo-geumha	geumha	m	standard	-	-	face-m-sharp	근엄한	예복 왕 · 가는 눈 긴 염소수염
+buyeo-1	w-67-buyeo-haedal	haedal	f	slender	M	normal	face-f-mature	차가운	가는 궁수 털망토 · 차분한 긴 얼굴
+maga-ruler	w-54-maga-dalli	dalli	f	sturdy	M	normal	face-f-soft	온화한	넓은 어깨 굵은 근육 팔 · 순한 미소
+maga-1	g-44-maga-malgup	base-g-44-maga-malgup	m	heavy	-	-	face-m-rugged	쾌활한	땅딸막 넓은 몸 · 수염
+uga-ruler	g-32-uga-sodu	base-g-32-uga-sodu	m	heavy	-	-	face-m-gentle	쾌활한	둥글고 큰 몸 · 활짝 웃는 얼굴
+uga-1	g-46-uga-nureongso	base-g-46-uga-nureongso	m	heavy	-	-	face-m-gentle	쾌활한	둥근 거구 털옷 · 함박웃음
+jeoga-ruler	g-33-jeoga-metdol	base-g-33-jeoga-metdol	m	heavy	-	-	face-m-rugged	사나운	거구 털옷 · 덥수룩 수염
+jeoga-1	w-69-jeoga-eomni	eomni	f	standard	M	normal	face-f-sharp	차가운	창 사냥꾼 · 매서운 눈
+guga-ruler	w-55-guga-nuri	nuri	f	slender	S	normal	face-f-soft	온화한	가는 몸·흰 강아지 · 눈 감은 순한 얼굴
+guga-1	g-47-guga-sanyanggae	base-g-47-guga-sanyanggae	m	lean	-	-	face-m-sharp	도도한	가는 몸·늑대 · 날 선 눈
+dongokjeo-ruler	w-56-dongokjeo-sogeum	base-w-56-dongokjeo-sogeum	f	standard	XL	normal	face-f-mature	요염한	초상부터 아주 큰 가슴 소금 상인 · 아치 눈썹
+dongokjeo-1	g-05-mahan-chieftain	base-g-05-mahan-chieftain	m	lean	-	-	face-m-old	근엄한	마른 체구 · 흰머리·흰수염
+bukokjeo-ruler	g-34-bukokjeo-duman	duman	m	standard	-	-	face-m-sharp	차가운	털모자 창병 · 가는 눈
+bukokjeo-1	w-70-bukokjeo-mulbeom	mulbeom	f	standard	S	normal	face-f-mature	근엄한	작살꾼 마른 복근 · 주근깨 그을린 긴 얼굴
+bullae-ruler	w-57-bullae-bakdal	bakdal	f	standard	M	normal	face-f-soft	온화한	범가죽 궁수 균형 · 부드러운 얼굴
+bullae-1	g-50-bullae-gwaha	base-g-50-bullae-gwaha	m	lean	-	-	face-m-old	온화한	마른 노인 · 흰 염소수염 주름
+tamna-ruler	w-58-tamna-halla	halla	f	standard	M	normal	face-f-mature	근엄한	꽃관 무녀 · 긴 얼굴 깊은 눈
+tamna-1	g-52-tamna-oreum	base-g-52-tamna-oreum	m	muscular	-	-	face-m-rugged	쾌활한	넓은 어깨·철퇴 · 수염 웃음
+usan-ruler	g-58-usan-uhae	base-g-58-usan-uhae	m	muscular	-	-	face-m-rugged	쾌활한	굵은 팔·몽둥이 · 수염
+yangmaek-ruler	g-59-yangmaek-maekson	base-g-59-yangmaek-maekson	m	standard	-	-	face-m-sharp	차가운	활 겨눔 · 매서운 눈
+yangmaek-1	w-79-yangmaek-solmae	base-w-79-yangmaek-solmae	f	standard	M	normal	face-f-sharp	차가운	털조끼 궁수 · 찌푸린 매서운 눈
+usan-1	w-80-usan-gangchi	base-w-80-usan-gangchi	f	standard	M	normal	face-f-soft	쾌활한	그을린 탄탄 팔 작살 · 활짝 웃음
+us-2	w-29-golpo-janmul	base-w-29-golpo-janmul	f	standard	M	normal	face-f-soft	쾌활한	노 젓는 그을린 팔 · 활짝 웃음
+guya-3	w-30-guya-soebi	soebi	f	sturdy	L	normal	face-f-sharp	도도한	넓은 어깨·큰 망치 굵은 팔 · 붉은 입술 비웃음
+dabeol-2	w-31-dabeol-dalbit	base-w-31-dabeol-dalbit	f	standard	XL	normal	face-f-soft	요염한	초상부터 아주 큰 가슴 궁수 · 나른한 눈웃음
+golbeol-2	w-32-golbeol-budeul	budeul	f	standard	L	normal	face-f-cute	쾌활한	단발 그을린 탄탄 어깨 · 장난스런 웃음
+gammun-2	w-33-gammun-gamsil	gamsil	f	standard	XL	thick	face-f-soft	요염한	초상부터 아주 큰 가슴·넓은 골반 · 부드러운 미소
+chopal-2	w-34-chopal-deulme	base-w-34-chopal-deulme	f	sturdy	L	normal	face-f-sharp	사나운	굵은 근육 팔·털옷 창 · 매서운 눈
+jomun-2	w-35-jomun-odi	odi	f	standard	XL	normal	face-f-cute	쾌활한	초상부터 아주 큰 가슴 · 둥근 볼 활짝 웃음
+baekje-2	w-36-baekje-maena	base-w-36-baekje-maena	f	standard	L	normal	face-f-sharp	차가운	매사냥꾼 · 차가운 눈매
+michuhol-2	w-37-michuhol-gaennae	gaennae	f	slender	L	normal	face-f-sharp	요염한	가는 몸에 큰 가슴 도둑 · 교활한 눈웃음
+sangdang-2	w-38-sangdang-bulmae	base-w-38-sangdang-bulmae	f	sturdy	M	normal	face-f-soft	쾌활한	대장장이 굵은 팔·넓은 어깨 · 그을음 웃음
+gosaburi-2	w-39-gosaburi-galmae	base-w-39-gosaburi-galmae	f	standard	XL	thick	face-f-cute	쾌활한	초상도 큰 가슴·각성 허벅지 굵음 · 활짝 웃음
+mujin-2	w-40-mujin-munui	base-w-40-mujin-munui	f	slender	M	normal	face-f-soft	요염한	가는 팔 춤 무녀 · 눈 감은 황홀한 얼굴
+hwanna-2	w-41-hwanna-beodeul	base-w-41-hwanna-beodeul	f	standard	L	thick	face-f-sharp	도도한	초상도 큰 가슴·굵은 허벅지 궁수 · 비웃음
+gwanna-2	w-42-gwanna-soenun	soenun	f	sturdy	M	normal	face-f-mature	근엄한	갑옷 넓은 어깨 근육 팔 · 긴 얼굴 굳은 턱
+uga-2	w-43-uga-nuri	base-w-43-uga-nuri	f	standard	XL	normal	face-f-soft	온화한	초상도 큰 가슴·송아지 · 둥근 얼굴
+dongokjeo-2	w-44-okjeo-sogeumbi	sogeumbi	f	standard	M	normal	face-f-soft	쾌활한	소금 짐꾼 · 크게 웃음
+tamna-2	w-45-tamna-oreumbi	base-w-45-tamna-oreumbi	f	standard	L	thick	face-f-soft	쾌활한	초상도 큰 가슴·말 타는 허벅지 · 환한 미소
+golbeol-1	g-60-golbeol-golgae	base-g-60-golbeol-golgae	m	muscular	-	-	face-m-rugged	사나운	갑옷 거구 · 찡그린 수염 얼굴
+apdok-1	g-61-apdok-ap	base-g-61-apdok-ap	m	heavy	-	-	face-m-rugged	근엄한	넓적한 얼굴 땅딸막 · 콧수염 각진 턱
+gammun-1	g-62-gammun-gamnamu	base-g-62-gammun-gamnamu	m	lean	-	-	face-m-sharp	차가운	가는 몸 · 날 선 눈 염소수염
+chopal-1	g-63-chopal-yeoul	base-g-63-chopal-yeoul	m	standard	-	-	face-m-sharp	차가운	창병 · 덥수룩 머리 가는 눈
+michuhol-1	g-64-michuhol-sogeumkkun	base-g-64-michuhol-sogeumkkun	m	lean	-	-	face-m-rugged	순박한	마른 소금꾼 · 그을린 수염
+sangdang-1	g-65-sangdang-soemangchi	base-g-65-sangdang-soemangchi	m	muscular	-	-	face-m-rugged	사나운	문신 굵은 팔·망치 · 수염 각진 턱
+geonma-1	g-66-geonma-malbalgup	base-g-66-geonma-malbalgup	m	standard	-	-	face-m-rugged	사나운	투구 · 거친 수염
+gosaburi-1	g-67-gosaburi-buri	base-g-67-gosaburi-buri	m	standard	-	-	face-m-sharp	사나운	갑옷 궁수 · 매서운 눈
+mujin-1	g-68-mujin-bitgoeul	base-g-68-mujin-bitgoeul	m	standard	-	-	face-m-sharp	도도한	구슬 갑옷 · 날 선 눈
+goryong-1	g-69-goryong-yong	base-g-69-goryong-yong	m	standard	-	-	face-m-old	근엄한	창병 · 희끗한 긴 수염·주름
+siljik-1	g-70-siljik-pado	base-g-70-siljik-pado	m	standard	-	-	face-m-rugged	순박한	털옷 어부 · 그을린 수염
+byeokjin-1	w-81-byeokjin-byeolbit	base-w-81-byeokjin-byeolbit	f	standard	M	normal	face-f-soft	온화한	갑옷 균형 · 부드러운 미소
+ungcheon-1	w-82-ungcheon-gom	gom	f	sturdy	M	normal	face-f-soft	쾌활한	곰가죽·몽둥이 넓은 어깨 굵은 팔 · 크게 웃음
