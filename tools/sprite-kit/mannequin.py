@@ -1,133 +1,107 @@
 # -*- coding: utf-8 -*-
-"""mannequin.py — 걸음 교본대로 관절 각도를 넣어 그리는 색 마네킹 (11-12 형: 「걸음 프레임이 똑바르지 못하면 성의 없어 보인다 · 정확하게 필요한 프레임 똑바로」
-· 「우아하고 고고한 캐릭터는 걷기, 활달하고 튼튼한 캐릭터는 달리기」)
+"""비율 인형 · 색 견본표 (형 11-23 「베이스라인을 뼈대나 인형같이 · 소서노 자체가 머리카락이나 옷이 풍성해서 그림체·크기·색감이 전부 오해된다」).
+머리카락·옷 없는 회색 인형에 관절 높이 눈금을 박는다 → 그림 주문의 「비율」 견본. 그림 결·색은 따로 견본표 한 장.
+잰 값: 소서노·감실·진하 정수리~발 135~137 · 정수리~턱 35~39 (기준서 §5) · 다리(가랑이~발) 키의 0.30(옷 짧은 아룸).
+  py -3 -I tools/sprite-kit/mannequin.py → D:/에셋창고/STD/mannequin-f.png · mannequin-m.png · mannequin-guide.png · style-swatch.png
+"""
+import os
+from PIL import Image, ImageDraw, ImageFont
 
-견본 그림(CC0 산책)은 보폭이 작고 달리기가 없었다 → 각도를 직접 넣는다. 옆모습 · 오른쪽으로 · 7등신.
-앞다리(보는 사람 쪽) 보라 · 뒷다리 파랑 · 앞팔 빨강 · 뒷팔 주황 · 몸통 회색 · 머리 파랑. 발은 늘 땅줄에(달리기 공중 칸만 뜬다).
-  걷기 8: 1 닿음(앞다리 앞) 2 내려앉음 3 지나감 4 솟음 5~8 = 다리만 바꿔 되풀이
-  달리기 8: 1 디딤 2 눌림 3 박참 4 공중 5~8 = 다리만 바꿔 되풀이
-  py -3 -X utf8 tools/sprite-kit/mannequin.py      → tools/sprite-kit/quad/ref-walk4.png · ref-run4.png (1:1 2×2 · 1~4 칸 · 4번 칸 왼쪽)
-                                                     · D:/tmp-node/mannequin-walk.gif · mannequin-run.gif (8컷 돌려 보기)"""
-import math
+OUT = 'D:/에셋창고/STD'
+S = 4          # 4배로 그리고 줄인다 (부드러운 가장자리)
+CELL = (208, 160)
+FEET = 155     # 칸 안 발바닥 줄 (지금 띠와 같음)
 
-from PIL import Image, ImageDraw
+# 관절 높이 (정수리에서 px · 키 137 기준) — 여자 기준 · 남자는 키 142 · 어깨·허리 넓게
+F = dict(height=137, head=37, neck=40, shoulder=44, chest=60, waist=72, hip=86, crotch=96, knee=117, ankle=132,
+         shoulder_w=34, chest_w=28, waist_w=20, hip_w=30, thigh=11, calf=8, arm=7)
+M = dict(height=142, head=37, neck=40, shoulder=45, chest=63, waist=76, hip=89, crotch=99, knee=121, ankle=137,
+         shoulder_w=42, chest_w=36, waist_w=27, hip_w=32, thigh=13, calf=10, arm=9)
 
-GREEN = (0, 255, 0)
-NEAR_LEG, FAR_LEG = (138, 63, 176), (60, 95, 176)
-NEAR_ARM, FAR_ARM = (200, 50, 50), (225, 140, 50)
-TORSO, HEAD = (95, 95, 100), (80, 140, 200)
-
-# 키 7 머리 · 머리 단위 길이
-THIGH, SHIN, FOOT = 1.75, 1.6, 0.55
-UARM, FARM = 1.3, 1.15
-HIP_UP = 3.5          # 땅에서 엉덩이까지 (다리 곧을 때)
-SHOULDER_UP = 2.25     # 엉덩이에서 어깨까지
-HEAD_D = 0.92
-
-# (넓적다리 각 θ: 앞으로 + · 무릎 굽힘 φ) — 앞다리 기준 8컷 · 뒷다리는 4컷 밀어서
-WALK = [(26, 4), (16, 18), (0, 6), (-14, 6), (-22, 12), (-12, 48), (16, 68), (30, 22)]
-RUN = [(24, 16), (6, 42), (-26, 10), (-34, 58), (-8, 112), (26, 100), (46, 62), (36, 24)]
-GAIT = {
-    'walk': dict(legs=WALK, lean=3, arm=22, elbow=(14, 26), hover=[0] * 8),
-    'run': dict(legs=RUN, lean=12, arm=38, elbow=(88, 96), hover=[0, 0, 0, 0.22, 0, 0, 0, 0.22]),
-}
+CLAY, CLAY_D, LINE, GUIDE = (176, 168, 160, 255), (138, 130, 124, 255), (60, 38, 30, 255), (200, 60, 60, 255)
 
 
-def rad(d):
-    return math.radians(d)
+def doll(P, female=True):
+    W, H = CELL[0] * S, CELL[1] * S
+    im = Image.new('RGBA', (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
+    top = (FEET - P['height']) * S; cx = W // 2
+    y = lambda v: top + v * S
+    def limb(x0, y0, x1, y1, w):
+        d.line([(x0, y0), (x1, y1)], fill=CLAY, width=int(w * S)); d.ellipse([x1 - w * S / 2, y1 - w * S / 2, x1 + w * S / 2, y1 + w * S / 2], fill=CLAY)
+    # 다리 (두 발로 디디고 어깨너비보다 조금 좁게 벌림 · 오른쪽을 보는 3/4 라 앞다리가 조금 앞)
+    for side, dx in ((-1, -9), (1, 9)):
+        hx = cx + side * 7 * S
+        limb(hx, y(P['crotch'] - 4), cx + dx * S, y(P['knee']), P['thigh'])
+        limb(cx + dx * S, y(P['knee']), cx + (dx + side * 2) * S, y(P['ankle']), P['calf'])
+        fx = cx + (dx + side * 2) * S
+        d.rounded_rectangle([fx - 5 * S, y(P['ankle']) - 2 * S, fx + 9 * S, y(P['height'])], radius=3 * S, fill=CLAY_D)
+    # 몸통 (어깨 → 가슴 → 허리 → 엉덩이)
+    pts = [(-P['shoulder_w'] / 2, P['shoulder']), (-P['chest_w'] / 2, P['chest']), (-P['waist_w'] / 2, P['waist']), (-P['hip_w'] / 2, P['hip']), (-P['hip_w'] / 2 + 3, P['crotch']),
+           (P['hip_w'] / 2 - 3, P['crotch']), (P['hip_w'] / 2, P['hip']), (P['waist_w'] / 2, P['waist']), (P['chest_w'] / 2, P['chest']), (P['shoulder_w'] / 2, P['shoulder'])]
+    d.polygon([(cx + px * S, y(py)) for px, py in pts], fill=CLAY)
+    if female:
+        for side in (-1, 1): d.ellipse([cx + side * 8 * S - 6 * S, y(P['chest'] - 9), cx + side * 8 * S + 6 * S, y(P['chest'] + 1)], fill=CLAY_D)
+    # 팔 (몸 곁에 살짝 벌려 내림 · 손목은 엉덩이 높이)
+    for side in (-1, 1):
+        sx = cx + side * (P['shoulder_w'] / 2 - 2) * S
+        ex, ey = sx + side * 6 * S, y(P['waist'] - 2)
+        limb(sx, y(P['shoulder'] + 2), ex, ey, P['arm'])
+        limb(ex, ey, ex + side * 4 * S, y(P['hip'] + 4), P['arm'] - 1)
+    # 목 · 머리 (머리 = 정수리~턱 · 머리카락 없음 · 얼굴은 오른쪽을 본다)
+    d.rectangle([cx - 5 * S, y(P['head'] - 3), cx + 5 * S, y(P['neck'] + 4)], fill=CLAY_D)
+    hw = P['head'] * .78
+    d.ellipse([cx - hw / 2 * S, y(0), cx + hw / 2 * S, y(P['head'])], fill=CLAY)
+    d.ellipse([cx + 3 * S, y(P['head'] * .5), cx + 7 * S, y(P['head'] * .5 + 3)], fill=LINE)   # 눈 한 점 (보는 쪽)
+    im = im.resize(CELL, Image.LANCZOS)
+    # 바깥 윤곽 1px (기준 밤색)
+    a = im.getchannel('A'); edge = Image.new('RGBA', CELL, (0, 0, 0, 0)); ed = edge.load(); al = a.load()
+    for yy in range(1, CELL[1] - 1):
+        for xx in range(1, CELL[0] - 1):
+            if al[xx, yy] < 60 and max(al[xx + 1, yy], al[xx - 1, yy], al[xx, yy + 1], al[xx, yy - 1]) >= 128: ed[xx, yy] = LINE
+    edge.alpha_composite(im); return edge
 
 
-def leg(hip, th, ph, u):
-    """엉덩이 → 무릎 → 발목 → 발끝 (화면 좌표 · 아래가 +y)"""
-    kx, ky = hip[0] + THIGH * u * math.sin(rad(th)), hip[1] + THIGH * u * math.cos(rad(th))
-    sa = th - ph
-    ax, ay = kx + SHIN * u * math.sin(rad(sa)), ky + SHIN * u * math.cos(rad(sa))
-    # 발은 늘 앞(오른쪽)을 본다 · 정강이에 직각 · 뒤에 남은 다리(넓적다리가 뒤)는 발끝을 아래로 꺾어 발끝으로 선다
-    b = rad(sa) - rad(min(45.0, max(0.0, -th * 1.4)))
-    tx, ty = ax + FOOT * u * math.cos(b), ay - FOOT * u * math.sin(b)
-    return (kx, ky), (ax, ay), (tx, ty)
+def guide(f, m):
+    sc = 3; W = CELL[0] * 2 * sc + 260; Hh = CELL[1] * sc + 40
+    g = Image.new('RGBA', (W, Hh), (236, 232, 222, 255)); d = ImageDraw.Draw(g)
+    try: font = ImageFont.truetype('C:/Windows/Fonts/malgun.ttf', 15)
+    except Exception: font = ImageFont.load_default()
+    for i, (doll_im, P, name) in enumerate(((f, F, '여자 · 키 137 · 머리 37 (3.7머리)'), (m, M, '남자 · 키 142 · 머리 37 (3.8머리)'))):
+        x0 = 230 + i * CELL[0] * sc
+        g.alpha_composite(doll_im.resize((CELL[0] * sc, CELL[1] * sc), Image.NEAREST), (x0, 20))
+        top = 20 + (FEET - P['height']) * sc
+        for key, label in (('head', '턱'), ('shoulder', '어깨'), ('waist', '허리'), ('crotch', '가랑이'), ('knee', '무릎'), ('height', '발바닥')):
+            yy = top + P[key] * sc; d.line([(x0 + 20, yy), (x0 + CELL[0] * sc - 20, yy)], fill=GUIDE, width=1)
+            if i == 0: d.text((10, yy - 9), f'{label}  ({P[key]}px)', fill=(120, 30, 30), font=font)
+        d.line([(x0 + 20, top), (x0 + CELL[0] * sc - 20, top)], fill=GUIDE, width=2)
+        d.text((x0 + 30, Hh - 22), name, fill=(40, 30, 20), font=font)
+    d.text((10, top - 18), '정수리 (머리카락·관 빼고)', fill=(120, 30, 30), font=font)
+    return g
 
 
-def pose(gait, i, u):
-    g = GAIT[gait]
-    near = g['legs'][i % 8]
-    far = g['legs'][(i + 4) % 8]
-    hip = (0.0, 0.0)
-    nl = leg(hip, *near, u)
-    fl = leg(hip, *far, u)
-    low = max(nl[1][1], nl[2][1], fl[1][1], fl[2][1])  # 가장 낮은 발이 땅
-    lean = rad(g['lean'])
-    sh = (hip[0] + SHOULDER_UP * u * math.sin(lean), hip[1] - SHOULDER_UP * u * math.cos(lean))
-    head = (sh[0] + 0.25 * u * math.sin(lean), sh[1] - (0.2 + HEAD_D / 2) * u)
-    # 팔: 앞팔은 앞다리와 반대로 흔든다
-    sw = -g['arm'] * math.cos(2 * math.pi * i / 8)
-    arms = []
-    for k, s in ((0, sw), (1, -sw)):
-        e = g['elbow'][0] + (g['elbow'][1] - g['elbow'][0]) * (0.5 + 0.5 * math.sin(2 * math.pi * i / 8 + k * math.pi))
-        ex, ey = sh[0] + UARM * u * math.sin(rad(s)), sh[1] + UARM * u * math.cos(rad(s))
-        fa = s + e
-        hx, hy = ex + FARM * u * math.sin(rad(fa)), ey + FARM * u * math.cos(rad(fa))
-        arms.append(((ex, ey), (hx, hy)))
-    return dict(hip=hip, near=nl, far=fl, sh=sh, head=head, arms=arms, low=low, hover=g['hover'][i % 8] * u)
+def swatch():
+    """그림 결 견본표 — 윤곽 · 피부 · 명암 단계 · 채도 (소서노에서 잰 값 · 기준서 §2)"""
+    sw = Image.new('RGBA', (720, 300), (236, 232, 222, 255)); d = ImageDraw.Draw(sw)
+    try: font = ImageFont.truetype('C:/Windows/Fonts/malgun.ttf', 15)
+    except Exception: font = ImageFont.load_default()
+    rows = [('바깥 윤곽 (검정 아님 · 1px · 그늘 쪽만 2px)', ['#38241C', '#3C261E', '#43291F']),
+            ('피부 4단 (그늘 → 바탕 → 밝음 → 반짝)', ['#C88A6E', '#E8B090', '#F8C8A8', '#FDE6D4']),
+            ('붉은 옷 4단 (채도 높게)', ['#4A1418', '#7A1F24', '#A8343A', '#D8625A']),
+            ('금장 4단 + 1px 반사', ['#5A3A12', '#9A6A22', '#D4A23C', '#FFF0B0']),
+            ('찬 옷도 같은 결 (남빛 4단)', ['#1C2238', '#2E3A5E', '#46598A', '#7E93C2'])]
+    for i, (label, cols) in enumerate(rows):
+        yy = 14 + i * 56; d.text((12, yy + 14), label, fill=(40, 30, 20), font=font)
+        for j, c in enumerate(cols): d.rectangle([380 + j * 82, yy, 452 + j * 82, yy + 44], fill=c, outline=(60, 38, 30))
+    return sw
 
 
-def draw(gait, i, W, H, figh, x_center, ground):
-    u = figh / 7.0
-    p = pose(gait, i, u)
-    oy = ground - p['low'] - p['hover']
-    ox = x_center
-    T = lambda pt: (ox + pt[0], oy + pt[1])
-    img = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-
-    def limb(pts, col, w):
-        pts = [T(q) for q in pts]
-        d.line(pts, fill=col, width=int(w), joint='curve')
-        for q in pts:
-            r = w / 2
-            d.ellipse((q[0] - r, q[1] - r, q[0] + r, q[1] + r), fill=col)
-    # 뒤 → 앞 차례
-    limb([p['sh'], *p['arms'][1]], FAR_ARM, 0.2 * u)
-    limb([p['hip'], *p['far']], FAR_LEG, 0.3 * u)
-    tw = 0.7 * u
-    hx, hy = T(p['hip'])
-    sx, sy = T(p['sh'])
-    d.polygon([(hx - tw * 0.45, hy), (hx + tw * 0.45, hy), (sx + tw * 0.5, sy), (sx - tw * 0.5, sy)], fill=TORSO)
-    hc = T(p['head'])
-    r = HEAD_D * u / 2
-    d.ellipse((hc[0] - r * 0.85, hc[1] - r, hc[0] + r * 0.85, hc[1] + r), fill=HEAD)
-    limb([p['hip'], *p['near']], NEAR_LEG, 0.32 * u)
-    limb([p['sh'], *p['arms'][0]], NEAR_ARM, 0.2 * u)
-    return img
-
-
-def sheet(gait, out):
-    W = H = 1024
-    CW = CH = 512
-    s = Image.new('RGBA', (W, H), GREEN + (255,))
-    for j in range(4):
-        r, c = divmod(j, 2)
-        x = c * CW + (CW * 0.36 if j == 3 else CW * 0.5)  # 4번 칸은 왼쪽 (우하단 귀 = 워터마크 자리)
-        fig = draw(gait, j, CW, CH, CH * 0.78, x - c * CW, CH * 0.94)
-        s.alpha_composite(fig, (c * CW, r * CH))
-    s.convert('RGB').save(out)
-
-
-def gif(gait, out):
-    fr = []
-    for i in range(8):
-        f = Image.new('RGBA', (300, 300), (60, 70, 55, 255))
-        f.alpha_composite(draw(gait, i, 300, 300, 240, 150, 285))
-        fr.append(f.convert('RGB'))
-    fr[0].save(out, save_all=True, append_images=fr[1:], duration=110 if gait == 'run' else 140, loop=0)
+def main():
+    os.makedirs(OUT, exist_ok=True)
+    f, m = doll(F, True), doll(M, False)
+    f.save(f'{OUT}/mannequin-f.png'); m.save(f'{OUT}/mannequin-m.png')
+    guide(f, m).save(f'{OUT}/mannequin-guide.png'); swatch().save(f'{OUT}/style-swatch.png')
+    print('ok', OUT)
 
 
 if __name__ == '__main__':
-    for g in ('walk', 'run'):
-        sheet(g, f'tools/sprite-kit/quad/ref-{g}4.png')
-        gif(g, f'D:/tmp-node/mannequin-{g}.gif')
-        strip = Image.new('RGB', (8 * 200, 260), (60, 70, 55))
-        for i in range(8):
-            strip.paste(draw(g, i, 200, 260, 220, 100, 250), (i * 200, 0), draw(g, i, 200, 260, 220, 100, 250))
-        strip.save(f'D:/tmp-node/mannequin-{g}-strip.png')
-    print('ok')
+    main()
