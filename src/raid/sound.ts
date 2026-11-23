@@ -75,8 +75,9 @@ const BGM = R + 'bgm_raid_d1.ogg'
  * 제미나이 「음악 만들기」 후보를 형이 고르면 여기 파일 이름만 바꾼다 — 고르기 전에는 모두 지금 곡(BGM)이라 소리가 그대로다.
  * 스테이지 곡으로 돌아오면 멈춘 자리부터 이어 튼다 (곡마다 오디오 하나).
  */
-const STAGE_BGM: Partial<Record<HaebiRun['stage'], string>> = {}
-const BOSS_BGM: string | null = null
+// 11-23 형 「니가 다 만들고」: 제미나이 「음악 만들기」 곡을 -18 LUFS ogg 로 구워 넣음 (원본 assets_src/realm/sfx-in/gemini · 목책은 다시 만드는 중이라 옛 곡)
+const STAGE_BGM: Partial<Record<HaebiRun['stage'], string>> = { forest: R + 'bgm_raid_forest.ogg', ford: R + 'bgm_raid_ford.ogg', snow: R + 'bgm_raid_snow.ogg', fortress: R + 'bgm_raid_fortress.ogg' }
+const BOSS_BGM: string | null = R + 'bgm_raid_boss.ogg'
 const trackFor = (s: HaebiRun) => (BOSS_BGM !== null && s.enemies.some(e => e.kind === 'boss' && e.hp > 0)) ? BOSS_BGM : STAGE_BGM[s.stage] ?? BGM
 
 const stored = (key: string) => { try { return localStorage.getItem(key) } catch { return null } }
