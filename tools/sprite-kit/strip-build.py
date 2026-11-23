@@ -67,10 +67,27 @@ def main(name, atk, out):
             o.alpha_composite(im.crop((max(0, -d), 0, im.size[0] - max(0, d), im.size[1])), (max(0, d), 0))
             return o
         hw = float(np.median([head_x(f) for f in frames[4:12]]))
-        d0 = int(round(hw - head_x(frames[0])))
+        # 서기는 머리 평균이 아니라 윗몸(위 4~45%)을 걷기 칸에 겹쳐 맞춘다 — 머리카락·깃털이 한쪽으로 길면 평균이 끌려간다 (anim-check 가 범에서 9.5px 어긋남을 잡았다 · 11-23)
+        def upper(im):
+            a = np.asarray(im)[..., 3] > 40
+            ys = np.nonzero(a.any(1))[0]
+            h = ys.max() - ys.min() + 1
+            u = np.zeros_like(a)
+            u[ys.min() + int(h * .04):ys.min() + int(h * .45)] = a[ys.min() + int(h * .04):ys.min() + int(h * .45)]
+            return u
+        def reg(a, r, reach=20):
+            c = [int((a ^ np.roll(r, dx, axis=1)).sum()) for dx in range(-reach, reach + 1)]
+            return int(np.argmin(c)) - reach
+        su = upper(frames[0])
+        ds = [reg(upper(f), su) for f in frames[4:12]]
+        d0 = int(round((max(ds) + min(ds)) / 2))
         d1 = int(round(hw - head_x(frames[12])))
         frames[0:4] = [shift(f, d0) for f in frames[0:4]]
         frames[12:18] = [shift(f, d1) for f in frames[12:18]]
+        if len(frames) >= 26:   # 개성 동작 네 칸(22~25)도 서기에서 이어진다 → 첫 칸의 윗몸을 (옮긴 뒤의) 서기에 맞춘다
+            dq = reg(upper(frames[0]), upper(frames[22]))
+            frames[22:26] = [shift(f, dq) for f in frames[22:26]]
+            print('개성 동작 맞춤', dq)
         print('머리 맞춤: 서기', d0, '공격', d1)
     strip = Image.new('RGBA', (CW * len(frames), CH), (0, 0, 0, 0))
     for i, f in enumerate(frames): strip.alpha_composite(f, (i * CW, 0))
