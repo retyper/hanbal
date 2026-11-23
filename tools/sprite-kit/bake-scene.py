@@ -66,6 +66,7 @@ def motion(path, name, tag, scene=None):
         cell.alpha_composite(g2, (max(0, min(CELL - g2.size[0], ox)), FOOT - g2.size[1])); cell.save(f'{PXD}/{name}-{tag}-{n + 1}.png')
         msg = f'칸{n + 1} 게임 키 {g2.size[1]}'
         # 앞다리·뒷다리 밝기 (11-23 형 「다른 쪽 다리를 딛는 게 없어」 → 「한쪽 다리가 걸을 때만 스타킹 신은 것처럼」)
+        #   ※ 판정 아님 · 귀띔만: 살빛 가르기가 망토 털·가죽 신발 색을 못 걸러 낸다(11-23 Codex 지적 · 살빛을 맞춘 판도 +20~+47). 스타킹처럼 보이는지는 눈으로 본다.
         #   먼 다리는 살빛 그대로에 아주 옅은 그늘만: 차이가 LEG_MAX 를 넘으면 스타킹처럼 보인다. 부호는 어느 다리가 앞인지의 귀띔(A 는 + · B 는 −)일 뿐 — 다리가 겹친 칸은 재지 않는다.
         ys_, xs_ = np.nonzero(m); top_, bot_ = ys_.min(), ys_.max(); leg = np.zeros_like(m); leg[int(bot_ - (bot_ - top_) * .30):] = True
         rr, gg2, bb = c[..., 0].astype(np.int16), c[..., 1].astype(np.int16), c[..., 2].astype(np.int16)
@@ -76,7 +77,7 @@ def motion(path, name, tag, scene=None):
                 mid = (sx.min() + sx.max()) / 2; lum_ = rr * .299 + gg2 * .587 + bb * .114; cols = np.arange(m.shape[1])[None, :]
                 fr, bk = skin & (cols > mid), skin & (cols <= mid)
                 if fr.sum() > 60 and bk.sum() > 60:
-                    dl = lum_[fr].mean() - lum_[bk].mean(); msg += f"  앞다리−뒷다리 밝기 {dl:+.0f}{' ← 스타킹처럼 보임(차이 ' + str(LEG_MAX) + ' 넘음)' if abs(dl) > LEG_MAX else ''}"
+                    dl = lum_[fr].mean() - lum_[bk].mean(); msg += f"  앞다리−뒷다리 밝기 {dl:+.0f}{' (귀띔: 차이 큼 · 눈으로 확인)' if abs(dl) > LEG_MAX else ''}"
             else: msg += '  (다리가 겹친 칸 · 밝기는 눈으로)'
         if src is not None:
             b = key(src.crop((round(sw * (1 + i)), round(sh * j), round(sw * (2 + i)), round(sh * (j + 1))))); bm = np.asarray(Image.fromarray(b[..., 3]).resize((c.shape[1], c.shape[0]))) > 100
