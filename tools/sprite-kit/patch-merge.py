@@ -71,3 +71,55 @@ if __name__ == '__main__':
         only = next((tuple(int(v) for v in a[5:].split(',')) for a in sys.argv[5:] if a.startswith('only=')), None)   # only=줄,칸 (0부터)
         lay = next((a for a in sys.argv[5:] if not a.startswith('only=')), '5x2')
         merge_face(sys.argv[2], sys.argv[3], sys.argv[4], lay, only)
+
+
+def merge_legs(orig, edit, out, layout='5x2'):
+    """다리 살빛 보정 합치기: 사람마다 아래 50% 에서, 원본보다 밝아졌고 고친 그림에서 살빛인 화소만 가져온다(가죽 치마·장화·윤곽은 원본 그대로).
+      py -3 -I tools/sprite-kit/patch-merge.py legs <원본.png> <고친.png> <나갈.png> [5x2]"""
+    A, B = Image.open(orig).convert('RGB'), Image.open(edit).convert('RGB')
+    if B.size != A.size:
+        B = B.resize(A.size, Image.LANCZOS)
+    a, b = np.asarray(A).astype(np.int16), np.asarray(B).astype(np.int16)
+    W, H = A.size
+    cols, rows = (int(v) for v in layout.split('x'))
+    cw, ch = W / cols, H / rows
+    fg = lambda x: ~((x[..., 0] > 200) & (x[..., 1] < 90) & (x[..., 2] > 200))
+    lum = lambda x: x[..., 0] * .299 + x[..., 1] * .587 + x[..., 2] * .114
+    ma = fg(a)
+    res = a.copy()
+    for j in range(rows):
+        for k in range(1, cols):
+            x0, x1, y0, y1 = int(cw * k), int(cw * (k + 1)), int(ch * j), int(ch * (j + 1))
+            sa = ma[y0:y1, x0:x1]
+            if sa.sum() < 500:
+                continue
+            ra, rb = a[y0:y1, x0:x1], b[y0:y1, x0:x1]
+            ys = np.nonzero(sa.any(1))[0]
+            top, bot = ys.min(), ys.max()
+            mid = top + int((bot - top) * .50)
+            # 다리 구역에서 두 그림의 밀림(±5)
+            ga, gb = lum(ra)[mid:bot], lum(rb)
+            best = None
+            for dy in range(-5, 6):
+                for dx in range(-5, 6):
+                    w = np.roll(np.roll(gb, -dy, axis=0), -dx, axis=1)[mid:bot]
+                    c = float(np.abs(w - ga).sum())
+                    if best is None or c < best[0]:
+                        best = (c, dx, dy)
+            _, dx, dy = best
+            src = np.roll(np.roll(rb, -dy, axis=0), -dx, axis=1)
+            zone = np.zeros_like(sa)
+            zone[mid:bot + 1] = True
+            skin_b = (src[..., 0] > 175) & (src[..., 0] - src[..., 2] > 45) & (src[..., 1] > 110)
+            m = zone & sa & skin_b & (lum(src) - lum(ra) > 14)
+            m = ndimage.binary_opening(m, iterations=1)
+            m = ndimage.binary_dilation(m, iterations=1) & sa & zone
+            soft = np.minimum(1, ndimage.gaussian_filter(m.astype(np.float32), 1.0) * 1.6)[..., None] * sa[..., None]
+            res[y0:y1, x0:x1] = (ra * (1 - soft) + src * soft).astype(np.int16)
+            print(f'줄{j + 1} 칸{k}: 밀림 ({dx:+d},{dy:+d}) · 밝힌 살 {int(m.sum())}px')
+    Image.fromarray(res.clip(0, 255).astype(np.uint8)).save(out)
+    print(out)
+
+
+if __name__ == '__main__' and sys.argv[1] == 'legs':
+    merge_legs(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5] if len(sys.argv) > 5 else '5x2')
