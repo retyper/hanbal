@@ -100,3 +100,14 @@ test('69 on: 같은 씨앗이면 판이 같다 · 봇이 화력·장전을 고�
   assert.ok(a.s.ranks.firepower + a.s.ranks.reload > 0, `봇이 강화 칸을 골랐다 (${a.s.ranks.firepower}/${a.s.ranks.reload})`)
   assert.equal(hash(replayRaid(JSON.parse(JSON.stringify(a.game)))), hash(a.s))
 })
+
+test('69 옛 기록: 규칙 69-BUILDUP 으로 적힌 판은 처음 수치(v1) 그대로 · 새 판(69B)은 지금 수치', () => {
+  const old = createHaebi(5, 'stage', 'axe', { stage: 'forest', simRules: '56B', kitRules: KIT_RULES, buildRules: BUILD_RULES, build2Rules: BUILD2_RULES, buildUpRules: '69-BUILDUP' })
+  old.spawn = 1e9; old.nextElite = 1e9; old.nextBarrage = 1e9
+  pick(old, 'tower'); const base = towerShot(old); pick(old, 'firepower'); pick(old, 'firepower')
+  assert.equal(old.build!.upV1, true)
+  assert.ok(Math.abs(towerShot(old) - base * (1 + 2 * B3.v1.dmgStep)) < 1e-9)
+  assert.equal(reloadInterval(1.3, 2, true), 1.3 / (1 + 2 * B3.v1.rateStep))
+  const now = quiet(); assert.equal(now.build!.upV1, undefined); assert.equal(BUILDUP_RULES, '69B-BUILDUP')
+  pick(now, 'tower'); pick(now, 'firepower'); assert.ok(Math.abs(towerShot(now) - base * (1 + B3.dmgStep)) < 1e-9)
+})

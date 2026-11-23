@@ -255,7 +255,7 @@ export interface HaebiRun {
   /** 65-BUILD 설치 갈래 (opts.buildRules · raid/build.ts) — 없으면 세 갈래 옛 판 (설치 칸의 단계도 ranks 에 없다) */
   build?: BuildState;
   /** 66-CAP 최고 레벨 뒤 보상 (opts.capRules) — n 받은 수 · gold 그렇게 받은 판 금 */
-  cap?: { n: number; gold: number; /** 70-AWAKECAP 영구 각성 판의 최고 레벨 (HAEBI_CAP60.capLevel · 없으면 HAEBI_CAP.capLevel) */ top?: number };
+  cap?: { n: number; gold: number; /** 70-AWAKECAP 영구 각성 판의 최고 레벨 (HAEBI_CAP60.capLevel · 없으면 HAEBI_CAP.capLevel) */ top?: number; /** 처음 낸 70-AWAKECAP 판(옛 기록) — HAEBI_CAP60.v1 막대 */ v1?: true };
   /** 68-BOSSCHEST 중간 보스 상자가 늘 카드 셋 (opts.bossChestRules · 60-JACKPOT 판에만) */
   bossChest?: true;
   /** 71-BOSSDUEL 보스전은 보스와 겨루게 (opts.bossDuelRules · 스테이지 판만) */
@@ -271,7 +271,7 @@ export function random(s: HaebiRun) { const rng = makeRng(s.seed); const n = rng
  * awaken remains the fallback qualification alias. Explicit53B, plus default trial/vanguard, preserve timed-awake rules.
  * mastery: 숲·여울·목책을 다 깬 장수 (막대 절반으로 시작)
  */
-export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' | '55-SHAMAN'; /** 58-KITS 무기 개성 — 스테이지 규칙과 따로 켠다 (판 기록 opts 에 그대로 남아 재생도 같다) */ kitRules?: '58-KITS'; /** 60-JACKPOT 상자 — 정예 상자는 고르지 않고 터지고, 중간 보스 상자는 조합 하나를 고른다 (스테이지 판만 · 판 기록 opts 에 남아 재생도 같다) */ chestRules?: '60-JACKPOT'; /** 59-WIDE 넓은 맵 — 열전 스테이지 판에만 켜진다 (시련·선봉에 넘겨도 한 장짜리 그대로 · 판 기록 opts 에 남아 재생도 같다) */ mapRules?: '59-WIDE'; /** 61-SOLID 넓은 맵의 나무·바위·목책이 장수와 적을 막는다 (무기는 통과 · 59-WIDE 판에서만 · 판 기록 opts 에 남아 재생도 같다) */ blockRules?: '61-SOLID'; /** 62-ANCHOR 장수는 제 발로만 움직인다 — 단검의 그림자 걸음·환영난무가 장수를 순간이동시키지 않는다 (형 11-23 「때리다가 갑자기 순간이동 · 보스전에서 원하지 않는 곳으로」 · 판 기록 opts 에 남는다) */ anchorRules?: '62-ANCHOR'; /** 64-BREAK 부위 파괴가 느껴지게 — 몸통 피해가 가까운 부위로 번지고 · 부위 체력 낮춤 · 부서지면 그로기와 더 큰 피해 (판 기록 opts 에 남는다) */ breakRules?: '64-BREAK'; /** 66-CAP 최고 레벨 뒤 기세 막대가 다시 차면 회복과 판 금으로 바꾼다 (HAEBI_CAP · 판 기록 opts 에 남는다) */ capRules?: '66-CAP'; /** 68-BOSSCHEST 중간 보스 상자가 늘 카드 셋 (안 연 조합 → 조합 단계 → 갈래 끝·주 무기 두 단계 · HAEBI_BOSS_CHEST · 판 기록 opts 에 남는다) */ bossChestRules?: '68-BOSSCHEST'; /** 71-BOSSDUEL 보스전 잡졸을 줄인다 — 마지막 두목이 살아 있으면 저절로 나오는 잡졸 bossSpawn 배·적 상한 bossCap · 중간 보스면 midbossSpawn 배 · 마지막 두목이 나오는 순간 보통 잡졸은 달아나 사라진다 (HAEBI_BOSS_DUEL · 스테이지 판만 · 판 기록 opts 에 남는다) */ bossDuelRules?: '71-BOSSDUEL'; /** 70-AWAKECAP 영구 각성(permanentAwake)으로 들어온 판은 최고 레벨 60 · 51~60 은 막대가 더 길고 레벨 힘은 반 (겉모습 각성 appearanceAwake 는 상관없다 · HAEBI_CAP60 · 66-CAP 판에서만 · 판 기록 opts 에 남는다) */ awakeCapRules?: '70-AWAKECAP'; /** 69-BUILDUP 설치 갈래에 화력·장전 칸 (종류 칸을 쓰지 않는다 · 얹힐 설치물을 가진 판에만 나온다 · HAEBI_BUILDUP · 65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ buildUpRules?: '69-BUILDUP'; /** 67-BUILD2 설치 갈래에 장승·솟대·봉수대·포차·우물을 더한다 (65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ build2Rules?: '67-BUILD2'; /** 65-BUILD 레벨업 카드의 네 번째 갈래 「설치」 — 고르면 망루·목책·항아리가 장수 앞에 서서 판 끝까지 남는다 · 장수·적은 지나가지 못하고 장수가 몸으로 밀어 옮긴다 (판 기록 opts 에 남는다) */ buildRules?: '65-BUILD' }
+export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' | '55-SHAMAN'; /** 58-KITS 무기 개성 — 스테이지 규칙과 따로 켠다 (판 기록 opts 에 그대로 남아 재생도 같다) */ kitRules?: '58-KITS'; /** 60-JACKPOT 상자 — 정예 상자는 고르지 않고 터지고, 중간 보스 상자는 조합 하나를 고른다 (스테이지 판만 · 판 기록 opts 에 남아 재생도 같다) */ chestRules?: '60-JACKPOT'; /** 59-WIDE 넓은 맵 — 열전 스테이지 판에만 켜진다 (시련·선봉에 넘겨도 한 장짜리 그대로 · 판 기록 opts 에 남아 재생도 같다) */ mapRules?: '59-WIDE'; /** 61-SOLID 넓은 맵의 나무·바위·목책이 장수와 적을 막는다 (무기는 통과 · 59-WIDE 판에서만 · 판 기록 opts 에 남아 재생도 같다) */ blockRules?: '61-SOLID'; /** 62-ANCHOR 장수는 제 발로만 움직인다 — 단검의 그림자 걸음·환영난무가 장수를 순간이동시키지 않는다 (형 11-23 「때리다가 갑자기 순간이동 · 보스전에서 원하지 않는 곳으로」 · 판 기록 opts 에 남는다) */ anchorRules?: '62-ANCHOR'; /** 64-BREAK 부위 파괴가 느껴지게 — 몸통 피해가 가까운 부위로 번지고 · 부위 체력 낮춤 · 부서지면 그로기와 더 큰 피해 (판 기록 opts 에 남는다) */ breakRules?: '64-BREAK'; /** 66-CAP 최고 레벨 뒤 기세 막대가 다시 차면 회복과 판 금으로 바꾼다 (HAEBI_CAP · 판 기록 opts 에 남는다) */ capRules?: '66-CAP'; /** 68-BOSSCHEST 중간 보스 상자가 늘 카드 셋 (안 연 조합 → 조합 단계 → 갈래 끝·주 무기 두 단계 · HAEBI_BOSS_CHEST · 판 기록 opts 에 남는다) */ bossChestRules?: '68-BOSSCHEST'; /** 71-BOSSDUEL 보스전 잡졸을 줄인다 — 마지막 두목이 살아 있으면 저절로 나오는 잡졸 bossSpawn 배·적 상한 bossCap · 중간 보스면 midbossSpawn 배 · 마지막 두목이 나오는 순간 보통 잡졸은 달아나 사라진다 (HAEBI_BOSS_DUEL · 스테이지 판만 · 판 기록 opts 에 남는다) */ bossDuelRules?: '71-BOSSDUEL'; /** 70-AWAKECAP 영구 각성(permanentAwake)으로 들어온 판은 최고 레벨 60 · 51~60 은 막대가 더 길고 레벨 힘은 반 (겉모습 각성 appearanceAwake 는 상관없다 · HAEBI_CAP60 · 66-CAP 판에서만 · 판 기록 opts 에 남는다) */ awakeCapRules?: '70-AWAKECAP' | '70B-AWAKECAP'; /** 69-BUILDUP 설치 갈래에 화력·장전 칸 (종류 칸을 쓰지 않는다 · 얹힐 설치물을 가진 판에만 나온다 · HAEBI_BUILDUP · 65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ buildUpRules?: '69-BUILDUP' | '69B-BUILDUP'; /** 67-BUILD2 설치 갈래에 장승·솟대·봉수대·포차·우물을 더한다 (65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ build2Rules?: '67-BUILD2'; /** 65-BUILD 레벨업 카드의 네 번째 갈래 「설치」 — 고르면 망루·목책·항아리가 장수 앞에 서서 판 끝까지 남는다 · 장수·적은 지나가지 못하고 장수가 몸으로 밀어 옮긴다 (판 기록 opts 에 남는다) */ buildRules?: '65-BUILD' }
 /** 새 판이 쓰는 무기 규칙 */
 export const KIT_RULES = '58-KITS' as const
 /** 새 스테이지 판이 쓰는 상자 규칙 */
@@ -289,11 +289,11 @@ export const BUILD_RULES = '65-BUILD' as const
 /** 새 판이 쓰는 설치 다섯 종류 더 규칙 */
 export const BUILD2_RULES = '67-BUILD2' as const
 /** 새 판이 쓰는 설치물 강화 칸(화력·장전) 규칙 */
-export const BUILDUP_RULES = '69-BUILDUP' as const
+export const BUILDUP_RULES = '69B-BUILDUP' as const
 /** 새 판이 쓰는 보스전 잡졸 줄임 규칙 */
 export const BOSSDUEL_RULES = '71-BOSSDUEL' as const
 /** 새 판이 쓰는 각성 최고 레벨 60 규칙 */
-export const AWAKECAP_RULES = '70-AWAKECAP' as const
+export const AWAKECAP_RULES = '70B-AWAKECAP' as const
 /** 새 판이 쓰는 중간 보스 상자 규칙 */
 export const BOSSCHEST_RULES = '68-BOSSCHEST' as const
 /** 새 판이 쓰는 최고 레벨 뒤 보상 규칙 */
@@ -304,7 +304,7 @@ export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit
   const rules = opts.simRules === '55-IMUGI' && (mode !== 'stage' || stage !== 'ford') || (opts.simRules === '56C' || opts.simRules === '57-BULGASARI') && (mode !== 'stage' || stage !== 'palisade') || opts.simRules === '55-TIGER' && (mode !== 'stage' || stage !== 'snow') || opts.simRules === '55-GUMIHO' && (mode !== 'stage' || stage !== 'forest') || opts.simRules === '55-SHAMAN' && (mode !== 'stage' || stage !== 'fortress') ? '56B' : opts.simRules
   const k = KITS[kit]
   // 65-BUILD 가 꺼진 판은 설치 칸을 ranks 에 넣지 않는다 (옛 판 상태·기록이 글자 하나까지 같게)
-  const build = opts.buildRules === BUILD_RULES, build2 = build && opts.build2Rules === BUILD2_RULES, buildUp = build && opts.buildUpRules === BUILDUP_RULES
+  const build = opts.buildRules === BUILD_RULES, build2 = build && opts.build2Rules === BUILD2_RULES, buildUp = build && (opts.buildUpRules === BUILDUP_RULES || opts.buildUpRules === '69-BUILDUP')
   // 67-BUILD2 가 꺼진 판은 새 다섯 칸을 ranks 에 넣지 않는다 (65-BUILD 판도 글자 하나까지 같게)
   const ranks = Object.fromEntries((Object.keys(POWERS) as Power[]).filter(p => isBuildUp(p) ? buildUp : isBuildKind(p) ? build && (build2 || !isBuild2Kind(p)) : true).map(p => [p, 0])) as Record<Power, number>
   // 평타(주 무기)만 들고 시작한다 (11-19 형: 「시작은 평타만」) — 보조 공격은 첫 레벨업 카드(맨 앞)로 · 비기는 첫 레벨업에서 열린다 (ultOpen)
@@ -331,8 +331,10 @@ export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit
   if (build) s.build = newBuild()
   if (build2) s.build!.v2 = true
   if (buildUp) s.build!.up = true
+  // 처음 낸 69-BUILDUP 판(옛 기록)은 처음 수치 그대로 (HAEBI_BUILDUP.v1)
+  if (buildUp && opts.buildUpRules === '69-BUILDUP') s.build!.upV1 = true
   if (opts.capRules === CAP_RULES) s.cap = { n: 0, gold: 0 }
-  if (s.cap && opts.awakeCapRules === AWAKECAP_RULES && s.permanentAwake === true) s.cap.top = C60.capLevel
+  if (s.cap && (opts.awakeCapRules === AWAKECAP_RULES || opts.awakeCapRules === '70-AWAKECAP') && s.permanentAwake === true) { s.cap.top = C60.capLevel; if (opts.awakeCapRules === '70-AWAKECAP') s.cap.v1 = true }
   if (opts.chestRules === CHEST_RULES && mode === 'stage') s.jackpots = { pity: 0, five: 0, eight: 0, ranks: 0 }
   if (opts.bossChestRules === BOSSCHEST_RULES && s.jackpots) s.bossChest = true
   if (opts.bossDuelRules === BOSSDUEL_RULES && mode === 'stage') s.duel = true
@@ -404,7 +406,7 @@ const capXp = (L: number) => CP.xpBase + L * CP.xpPerLevel + L ** 2 * CP.xpCurve
  * 다음 레벨까지의 막대 — 70-AWAKECAP 판의 50~59 는 66 곡선 × (1 + xpRise × (L − 49)) ·
  * 60 뒤 넘침 보상은 66 판의 50 뒤와 같은 막대(capXp(50))마다 (회복·금이 나오는 빠르기가 같다)
  */
-export const xpNeeded = (s: HaebiRun) => s.cap ? s.cap.top ? s.level >= s.cap.top ? capXp(CP.capLevel) : s.level >= CP.capLevel ? capXp(s.level) * (1 + C60.xpRise * (s.level - CP.capLevel + 1)) : capXp(s.level) : CP.xpBase + s.level * CP.xpPerLevel + s.level ** 2 * CP.xpCurve : C.xpBase + s.level * C.xpPerLevel + s.level ** 2 * C.xpCurve
+export const xpNeeded = (s: HaebiRun) => s.cap ? s.cap.top ? s.level >= s.cap.top ? capXp(CP.capLevel) : s.level >= CP.capLevel ? capXp(s.level) * (1 + (s.cap.v1 ? C60.v1.xpRise : C60.xpRise) * (s.level - CP.capLevel + 1)) : capXp(s.level) : CP.xpBase + s.level * CP.xpPerLevel + s.level ** 2 * CP.xpCurve : C.xpBase + s.level * C.xpPerLevel + s.level ** 2 * C.xpCurve
 /** 레벨 힘 — 70-AWAKECAP 판의 51~60 은 레벨마다 levelPower × powerShare 만 */
 export const powerScale = (s: HaebiRun) => (s.cap?.top ? 1 + (Math.min(s.level, CP.capLevel) - 1) * CP.levelPower + Math.max(0, s.level - CP.capLevel) * CP.levelPower * C60.powerShare : 1 + (s.level - 1) * (s.cap ? CP.levelPower : C.levelPower)) * (1 + s.bonus.might * SH.might.step)
 export const areaScale = (s: HaebiRun) => 1 + s.ranks.reach * C.reachStep
@@ -1633,9 +1635,9 @@ function heroPush(s: HaebiRun, fromX: number, fromY: number) {
 /** 망루 화살 한 발의 피해 — 그때 잡졸 체력의 towerShare 몫 */
 export const towerShot = (s: HaebiRun) => mobHp(s) * towerShare(s.ranks.tower ?? 0) * fireMul(s)
 /** 69-BUILDUP 화력 배수 (규칙이 꺼진 판은 1 그대로) */
-const fireMul = (s: HaebiRun) => s.build?.up ? firepowerMul(s.ranks.firepower ?? 0) : 1
+const fireMul = (s: HaebiRun) => s.build?.up ? firepowerMul(s.ranks.firepower ?? 0, s.build.upV1) : 1
 /** 69-BUILDUP 장전을 얹은 쏘는 간격 (규칙이 꺼진 판은 그대로) */
-const reloadIv = (s: HaebiRun, interval: number) => s.build?.up ? reloadInterval(interval, s.ranks.reload ?? 0) : interval
+const reloadIv = (s: HaebiRun, interval: number) => s.build?.up ? reloadInterval(interval, s.ranks.reload ?? 0, s.build.upV1) : interval
 /**
  * 망루에 끌린 잡졸 한 걸음 — 끌린 망루가 무너졌으면 장수에게 돌아가고 · aggroR 안에 서 있는 망루가 있으면 끌린다 ·
  * 끌렸으면 그 망루로 걸어가(닿으면) 친다. 끌려 있는 동안 true (장수를 쫓지도 치지도 않는다)

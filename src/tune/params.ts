@@ -778,9 +778,12 @@ export const HAEBI_BUILD2 = {
  *   (갈래 끝·버팀 칸처럼 가진 것을 세게 하는 칸 · 종류 칸은 「무엇을 세우나」의 고름으로 남긴다).
  * 화력 firepower: 공격하는 설치물(망루 화살 · 봉수대 화살비 · 포차 바위 · 장승 혼줄)의 피해 × (1 + dmgStep × 단계) · 넷 가운데 하나라도 가져야 카드·나무에 나온다.
  * 장전 reload: 때마다 쏘는 설치물(망루 · 봉수대 · 포차)의 쏘는 빠르기 × (1 + rateStep × 단계) · 간격 = 예전 간격(맹공으로 나눈 것) ÷ 그 배수, 그래도 minInterval 초 아래로는 줄지 않는다 · 셋 가운데 하나라도 가져야 나온다.
- * max 끝 단계 · 11-23 헤드리스 (tools/raid-stage-balance.ts BUILDUP=on|off) 로 맞춘다
+ * max 끝 단계.
+ * 11-23 헤드리스 (설치 몰빵 봇 · 레벨 셋마다 설치 갈래 한 칸 · 5판 × 7무기 × 씨앗 둘 = 70판 · 상점 절반): 강화 칸 없이 45/70 승 · 설치 피해 몫 29.3% —
+ *   처음 수치(+12% · +8%)는 강화 칸이 종류 단계(3·5단계에 하나 더 서는 것)를 밀어내 35/70 · 몫 25.3% (카드 값을 못 했다) → +25% · +15% 에서 39~41/70 · 몫 29.9% (몰빵해도 강화 칸 없는 판을 넘지 않는다)
+ * v1 처음 낸 수치 — 규칙 69-BUILDUP 으로 적힌 옛 판 기록은 이 수치로 다시 돈다 (새 판은 69B-BUILDUP)
  */
-export const HAEBI_BUILDUP = { max: 5, dmgStep: .12, rateStep: .08, minInterval: .3 } as const
+export const HAEBI_BUILDUP = { max: 5, dmgStep: .25, rateStep: .15, minInterval: .3, v1: { dmgStep: .12, rateStep: .08 } } as const
 /**
  * 66-CAP 최고 레벨 (형 11-23 「레벨은 왜 44가 맥스지? 맥스 찍었다는 걸 유저가 알기도 어려운데」 · 「44 는 이상하고 사사(死死)로 읽힌다 → 50」).
  * 이 규칙 판은 최고 레벨이 capLevel (끈 판·옛 기록은 HAEBI_RUN.maxLevel 44 그대로).
@@ -803,8 +806,11 @@ export const HAEBI_BOSS_DUEL = { bossSpawn: .2, midbossSpawn: .5, bossCap: 75, f
  * 후반은 이미 쉬워(형 판 기록) 51~60 은 그냥 주는 힘이 아니다:
  *   다음 레벨까지 = 66-CAP 곡선 × (1 + xpRise × (L − 49)) (L = 50~59 · 봇 판이 마지막 두목 무렵에야 60) · 레벨마다 카드는 그대로 고른다 ·
  *   레벨마다 힘 levelPower 는 powerShare 몫만 · 60 뒤 넘침 보상(회복 + 판 금)은 66 판의 50 뒤와 같은 막대마다.
+ * 11-23 헤드리스 (영구 각성 봇 · 70판 · 상점 절반 · 50 에 닿는 때 평균 16:02 · 마지막 두목 19:00): 50 상한 53/70 승 · 끝 레벨 47.3 ·
+ *   xpRise .15 는 60 이 3판(18:53)뿐 · 끝 레벨 51.7 · 55/70 승 → .05 는 60 이 15판(평균 18:31 · 설원 18:17 · 목책 18:58) · 끝 레벨 52.5 · 57/70 승 (빨리 크는 판만 두목 무렵 60)
+ * v1 처음 낸 막대 — 규칙 70-AWAKECAP 으로 적힌 옛 판 기록은 이 막대로 다시 돈다 (새 판은 70B-AWAKECAP)
  */
-export const HAEBI_CAP60 = { capLevel: 60, xpRise: .15, powerShare: .5 } as const
+export const HAEBI_CAP60 = { capLevel: 60, xpRise: .05, powerShare: .5, v1: { xpRise: .15 } } as const
 export const HAEBI_CAP = { capLevel: 50, xpBase: -1.13, xpPerLevel: 5.39, xpCurve: .541, levelPower: .0395, levelHeal: 24.6, heal: .2, gold: 8, ring: 70 } as const
 /**
  * 최고 레벨 화면 (raid/fx-cap.ts · 규칙과 상관없이 화면만) — 처음 닿은 순간 큰 글자 banner (「부위 파괴!」와 같은 결 · bannerLife 초 · popTime 동안 popScale 배에서 줄어듦 · lift 장수 위 · rise 떠오름) ·

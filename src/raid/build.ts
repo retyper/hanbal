@@ -28,7 +28,7 @@ export const rebuildOf = (k: BuildKind) => k === 'tower' ? B.tower.rebuild : k =
  */
 export interface Structure { id: number; kind: BuildKind; x: number; y: number; hp: number; max: number; down: number; cd: number; flash: number; push: number }
 /** items 선 것(놓인 차례) · nextId · jarXp 항아리가 더 얹어 준 기세(기록) */
-export interface BuildState { items: Structure[]; nextId: number; jarXp: number; /** 67-BUILD2 판 (여덟 종류) */ v2?: true; /** 69-BUILDUP 판 (화력·장전 칸) */ up?: true }
+export interface BuildState { items: Structure[]; nextId: number; jarXp: number; /** 67-BUILD2 판 (여덟 종류) */ v2?: true; /** 69-BUILDUP 판 (화력·장전 칸) */ up?: true; /** 처음 낸 69-BUILDUP 판(옛 기록) — HAEBI_BUILDUP.v1 수치 */ upV1?: true }
 export const newBuild = (): BuildState => ({ items: [], nextId: 1, jarXp: 0 })
 
 /** 그 단계에서 서 있는 수 — 1 + extraAt 에 이른 수 (단계 0 이면 0) */
@@ -158,6 +158,6 @@ export const FIRE_KINDS: readonly BuildKind[] = ['tower', 'totem', 'beacon', 'ca
 /** 장전이 얹히는 종류 — 때마다 쏘는 설치물 (망루 · 봉수대 · 포차) */
 export const TIMED_KINDS: readonly BuildKind[] = ['tower', 'beacon', 'catapult']
 /** 화력 단계의 피해 배수 */
-export const firepowerMul = (rank: number) => 1 + B3.dmgStep * rank
+export const firepowerMul = (rank: number, v1 = false) => 1 + (v1 ? B3.v1.dmgStep : B3.dmgStep) * rank
 /** 장전 단계를 얹은 쏘는 간격 — 예전 간격(맹공으로 나눈 것) ÷ (1 + rateStep × 단계) · minInterval 초 아래로는 줄지 않는다 (단계 0 이면 예전 간격 그대로) */
-export const reloadInterval = (interval: number, rank: number) => rank > 0 ? Math.max(B3.minInterval, interval / (1 + B3.rateStep * rank)) : interval
+export const reloadInterval = (interval: number, rank: number, v1 = false) => rank > 0 ? Math.max(B3.minInterval, interval / (1 + (v1 ? B3.v1.rateStep : B3.rateStep) * rank)) : interval

@@ -19,8 +19,11 @@ function nearBoss(on: boolean) {
 }
 const club = (s: HaebiRun, x: number, y: number): Mob => { spawnMob(s, 'club', undefined, true); const e = s.enemies[s.enemies.length - 1]!; e.x = x; e.y = y; e.hp = e.max = 1e6; e.cd = 9; return e }
 
-/** 71 을 넣기 전 코드(커밋 326cf56b)로 잰 숲 도끼 봇 판(상점 절반 · 19:19 승) — 마지막 두목 뒤 10초 · 판 끝 상태 SHA */
-const BEFORE_71 = { boss: '100b94d9a04da12a811c99857b76ceecf0161361a4ccd904e5ba61ea2f2817b1', end: 'b67c23cc2da5ebb21c4c58e5e94833ea9aa1e020f9e0e08b0701ea255fdc9570' }
+/**
+ * 71 을 끈 숲 도끼 봇 판(상점 절반 · 19:22 승) — 마지막 두목 뒤 10초 · 판 끝 상태 SHA.
+ * 71 을 넣기 전 코드(커밋 326cf56b)와 같은 값이었고, 뒤에 69-BUILDUP 수치(+25% · +15%)를 바꿔 다시 쟀다 (이 판의 봇이 화력·장전을 고른다)
+ */
+const BEFORE_71 = { boss: '719192eb5f12edd9ac76225a8026e86f329930d453a44c5171400ac7a162c074', end: '84e98d799cfaadde110e0524e7840f4ad0c5b8fddd37b763de18ef82f8a769e2' }
 test('71-BOSSDUEL off: 마지막 두목을 지난 판이 넣기 전과 같다', () => {
   const s = createHaebi(7, 'stage', 'axe', prod(false))
   let atBoss = ''

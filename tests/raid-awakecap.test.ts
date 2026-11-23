@@ -78,3 +78,11 @@ test('70 on: 판 기록 opts 에 남고 기록 재생이 같다', () => {
   assert.equal(game.opts.awakeCapRules, AWAKECAP_RULES); assert.equal(s.cap!.top, C60.capLevel)
   assert.equal(hash(replayRaid(JSON.parse(JSON.stringify(game)))), hash(s))
 })
+
+test('70 옛 기록: 규칙 70-AWAKECAP 으로 적힌 판은 처음 막대(v1) 그대로 · 새 판(70B)은 지금 막대', () => {
+  const old = createHaebi(5, 'stage', 'axe', { stage: 'forest', simRules: '56B', kitRules: KIT_RULES, capRules: CAP_RULES, permanentAwake: true, awakeCapRules: '70-AWAKECAP' })
+  assert.equal(maxLevel(old), C60.capLevel); assert.equal(old.cap!.v1, true)
+  old.level = 52; assert.ok(Math.abs(xpNeeded(old) - capXp(52) * (1 + C60.v1.xpRise * 3)) < 1e-9)
+  const now = quiet(true); now.level = 52; assert.equal(now.cap!.v1, undefined); assert.equal(AWAKECAP_RULES, '70B-AWAKECAP')
+  assert.ok(Math.abs(xpNeeded(now) - capXp(52) * (1 + C60.xpRise * 3)) < 1e-9)
+})
