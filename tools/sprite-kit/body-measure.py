@@ -125,12 +125,19 @@ if __name__ == '__main__' and len(sys.argv) > 2 and sys.argv[1] == 'motion':
     # 동작 판(대머리 기본 몸 · 2×2)의 칸마다 머리 크기 — 자세가 달라도 머리는 흐르면 안 된다
     #   py -3 -I tools/sprite-kit/body-measure.py motion <판.png> [가로 칸=2] [세로 칸=2] [기준 머리=32]
     cols = int(sys.argv[3]) if len(sys.argv) > 3 else 2; rows = int(sys.argv[4]) if len(sys.argv) > 4 else 2; want = float(sys.argv[5]) if len(sys.argv) > 5 else 32
+    # 여섯째 값 = 잴 칸(예: 1 또는 1,2) — 주저앉거나 누운 칸은 「키에 견준 머리」가 뜻이 없다(11-23 Codex 지적). 그런 칸은 머리 지름을 화소로만 적는다.
+    only = [int(v) for v in sys.argv[6].split(',')] if len(sys.argv) > 6 else None
     im = Image.open(sys.argv[2]).convert('RGB'); W, H = im.size; ok = 0; hs = []
     for j in range(rows):
         for i in range(cols):
             a = np.asarray(im.crop((i * W // cols, j * H // rows, (i + 1) * W // cols, (j + 1) * H // rows))).astype(np.int16)
             mk, gk = np.minimum(a[..., 0], a[..., 2]) - a[..., 1], a[..., 1] - np.maximum(a[..., 0], a[..., 2]); m = (mk if mk.mean() > gk.mean() else gk) < 60
             ys, xs = np.nonzero(m); m = m[ys.min():ys.max() + 1, xs.min():xs.max() + 1]; h = m.shape[0]; wid = m.sum(1)
+            n_ = j * cols + i + 1
+            if only is not None and n_ not in only:
+                # 머리 = 가장 큰 둥근 살빛 덩어리로 어림: 실루엣 안에 들어가는 가장 큰 원의 지름(머리가 몸통보다 굵은 4.3등신이라 통한다)
+                from scipy import ndimage as _nd
+                print(f"칸{n_} (자세 칸 · 판정 안 함)  가장 큰 원 지름 {_nd.distance_transform_edt(m).max() * 2:.0f}px  키 {h}px  폭 {m.shape[1]}px"); continue
             lo, hi = int(h * .12), int(h * .38); head = (lo + int(np.argmin(wid[lo:hi]))) * 137 / h; good = abs(head - want) <= HEAD_TOL; ok += good; hs.append(h)
             print(f"칸{j * cols + i + 1} {'합격' if good else '불합격'}  머리 {head:.1f} (기준 {want}±{HEAD_TOL})  등신 {137 / head:.2f}  키 {h}px  발 높이 {ys.max() / (H / rows):.2f}")
-    print(f"{ok}/{cols * rows} 합격 · 칸 사이 키 차 {max(hs) - min(hs)}px ({(max(hs) - min(hs)) / max(hs) * 100:.1f}%)")
+    print(f"{ok}/{len(hs)} 합격 · 칸 사이 키 차 {max(hs) - min(hs)}px ({(max(hs) - min(hs)) / max(hs) * 100:.1f}%)")

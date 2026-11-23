@@ -13,7 +13,7 @@ import numpy as np
 from PIL import Image, ImageFilter
 from scipy import ndimage
 
-PXD = 'D:/에셋창고/STD/px'; N = 137; Z = 4; CELL = 160; FOOT = 150
+PXD = 'D:/에셋창고/STD/px'; N = 137; Z = 4; CELL = 160; FOOT = 150; LEG_MAX = 14
 
 
 def key(im):
@@ -65,13 +65,19 @@ def motion(path, name, tag, scene=None):
         cx = round((xs.min() + xs.max()) / 2); ox = CELL // 2 - (cx - xs.min()) + round((cx - g.size[0] / 2))   # 칸 안의 가로 자리를 지킨다
         cell.alpha_composite(g2, (max(0, min(CELL - g2.size[0], ox)), FOOT - g2.size[1])); cell.save(f'{PXD}/{name}-{tag}-{n + 1}.png')
         msg = f'칸{n + 1} 게임 키 {g2.size[1]}'
-        # 앞다리·뒷다리 밝기 (11-23 형 「한쪽 다리를 뻗긴 했는데 다른 쪽 다리를 딛는 게 없어」 — 실루엣은 같아도 가까운 다리/먼 다리가 뒤바뀌면 같은 발만 딛는다)
+        # 앞다리·뒷다리 밝기 (11-23 형 「다른 쪽 다리를 딛는 게 없어」 → 「한쪽 다리가 걸을 때만 스타킹 신은 것처럼」)
+        #   먼 다리는 살빛 그대로에 아주 옅은 그늘만: 차이가 LEG_MAX 를 넘으면 스타킹처럼 보인다. 부호는 어느 다리가 앞인지의 귀띔(A 는 + · B 는 −)일 뿐 — 다리가 겹친 칸은 재지 않는다.
         ys_, xs_ = np.nonzero(m); top_, bot_ = ys_.min(), ys_.max(); leg = np.zeros_like(m); leg[int(bot_ - (bot_ - top_) * .30):] = True
-        rr, gg2, bb = c[..., 0].astype(np.int16), c[..., 1].astype(np.int16), c[..., 2].astype(np.int16); skin = m & leg & (rr > 120) & (rr - bb > 30) & (rr > gg2)
+        rr, gg2, bb = c[..., 0].astype(np.int16), c[..., 1].astype(np.int16), c[..., 2].astype(np.int16)
+        skin = m & leg & (rr > 70) & (rr - bb > 22) & (rr > gg2 + 8) & (gg2 > bb)
         if skin.sum() > 200:
-            sx = np.nonzero(skin)[1]; mid = (sx.min() + sx.max()) / 2; lum_ = rr * .299 + gg2 * .587 + bb * .114; cols = np.arange(m.shape[1])[None, :]
-            fr, bk = skin & (cols > mid), skin & (cols <= mid)
-            if fr.sum() > 60 and bk.sum() > 60: msg += f'  앞다리−뒷다리 밝기 {lum_[fr].mean() - lum_[bk].mean():+.0f}'
+            sx = np.nonzero(skin)[1]; spread = (sx.max() - sx.min()) / (bot_ - top_)
+            if spread > .30:
+                mid = (sx.min() + sx.max()) / 2; lum_ = rr * .299 + gg2 * .587 + bb * .114; cols = np.arange(m.shape[1])[None, :]
+                fr, bk = skin & (cols > mid), skin & (cols <= mid)
+                if fr.sum() > 60 and bk.sum() > 60:
+                    dl = lum_[fr].mean() - lum_[bk].mean(); msg += f"  앞다리−뒷다리 밝기 {dl:+.0f}{' ← 스타킹처럼 보임(차이 ' + str(LEG_MAX) + ' 넘음)' if abs(dl) > LEG_MAX else ''}"
+            else: msg += '  (다리가 겹친 칸 · 밝기는 눈으로)'
         if src is not None:
             b = key(src.crop((round(sw * (1 + i)), round(sh * j), round(sw * (2 + i)), round(sh * (j + 1))))); bm = np.asarray(Image.fromarray(b[..., 3]).resize((c.shape[1], c.shape[0]))) > 100
             def feet(mm):
