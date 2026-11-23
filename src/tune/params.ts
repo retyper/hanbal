@@ -28,7 +28,7 @@ export const HAEBI_VANGUARD = {
 
 /** 열전 소리 크기(0~1)와 같은 소리가 겹치지 않게 두는 틈(초) — src/raid/sound.ts (형 11-15: 기합·신음) */
 export const HAEBI_SOUND = {
-  bgm: .2, swing: .3, hurt: .6, groan: .7, groanGap: .5,
+  bgm: .2, swing: .3, hurt: .6, buy: .7, groan: .7, groanGap: .5,
   hit: .24, hitVoices: 4, die: .3, dieGap: 1.2, skill: .85, skillHit: .6, magic: .28, magicGap: .2, ui: .5, arrows: .4, cry: .55, roar: .8, end: .7, silence: .012,
   /** 돌팔매 묶음: 팔매 돌리는 바람(비기·바위) · 돌 떨어짐(같은 프레임에 여럿이면 stoneGap 초 틈) */
   whirl: .55, stone: .32, stoneGap: .05,
@@ -698,23 +698,44 @@ export const HAEBI_BREAK = { spill: .4, partScale: .7, groggy: 2.5, groggyMinor:
  * 밀기: 장수가 몸으로 밀면 장수 빠르기의 pushShare 몫으로 함께 미끄러진다 (장수도 그만큼 느려진다) · 적은 밀지 못한다 · 서로·장식 밑동 밖으로 · 설 수 있는 땅 안으로.
  *   pushDust 밀린 뒤 발밑 흙먼지가 남는 초 · settlePasses 설치물끼리 겹친 것을 푸는 되풀이 수.
  * 망루 tower: 장수 앞 ahead px · range 안의 가장 가까운 적에게 fire × (1 − fireStep × (단계−1)) 초마다 화살 한 발 (빠르기 speed · 수명 life0 초 · 맞는 둘레 radius · 맹공으로 빨라진다)
- *   피해 = 그때 잡졸 체력 × (share + shareStep × (단계−1)) · 첫 적에서 멈춘다 · 부적·번개는 붙지 않는다 · 무적.
+ *   피해 = 그때 잡졸 체력 × (share + shareStep × (단계−1)) · 첫 적에서 멈춘다 · 부적·번개는 붙지 않는다.
+ *   어그로 (형 11-23 「망루나 건물들은 적이 일정거리에서 어그로 끌리거나 부서지는거」): 가까이 붙어 싸우는 잡졸(활·돌·불 던지는 적 · 정예 · 두목 · 거대 보스는 빼고) 가운데
+ *   id 가 aggroEvery 의 배수인 놈(셋에 하나 · 장수도 계속 몰린다)이 망루 aggroR px 안에 들면 그 망루로 걸어가 친다 (몸 피해 × bite / 초 · 닿는 여유 touch px) · 망루가 무너지면 다시 장수에게.
+ *   체력 (hp + hpStep × (단계−1)) × 판의 위협 배수 · 무너지면 rebuild 초 동안 잔해(막지도 쏘지도 않는다) → 같은 자리에 체력을 다 채워 다시 선다.
  * 목책 fence: 장수 앞 ahead px · 닿은 잡졸(touch px 안)은 멈춰 목책을 친다 (그 적의 몸 피해 × bite / 초)
  *   체력 (hp + hpStep × (단계−1)) × 판의 위협 배수(시간) · 부서지면 rebuild 초 동안 잔해(지나갈 수 있다) → 같은 자리에 체력을 다 채워 다시 선다.
- * 항아리 jar: 장수 앞 ahead px · 둘레 radius + radiusStep × (단계−1) 안에서 쓰러진 적의 기세가 1 + bonus + bonusStep × (단계−1) 배 · 무적.
+ * 항아리 jar: 장수 앞 ahead px · 둘레 radius + radiusStep × (단계−1) 안에서 쓰러진 적의 기세가 1 + bonus + bonusStep × (단계−1) 배 · 무적 (살림살이라 적이 노리지 않는다).
  * flash 쏘거나 맞거나 기세를 더한 설치물이 반짝이는 초.
  * 11-23 헤드리스: 망루가 장수 힘 몫을 곱한 고정 피해(18 + 6/단계)일 때는 20분 판 피해의 2% 남짓이라 카드 한 장 값을 못 했다 → 잡졸 체력 몫.
  * view: 그림 (화면만 읽는다) — 망루 높이 towerH · 망루 화살 크기 arrow · 목책 폭 fenceW (발밑을 fenceLift 만큼 내림 · 다친 목책 위 체력 띠 폭 hpBar · 띄움 hpLift · 두께 hpH) · 항아리 높이 jarH ·
  *   항아리 둘레 고리 빛 ring(진하기 ringAlpha · 안 칠 ringFill · 점선 dash) · 반짝임 빛 glow(진하기 glowAlpha · 자리·크기 glowAt = [그림 높이 몫, 반지름 몫]) · 발밑 그림자 반폭 shadow(그림 크기 몫 · 높이 h px) ·
- *   밀릴 때 흙먼지 dust(알 수 n · 퍼짐 spread px · 크기 size · 빛 color · 진하기 alpha) · 잔해의 다시 서기 고리(반지름 rebuildR · 두께 rebuildW · 빛 rebuildColor)
+ *   밀릴 때 흙먼지 dust(알 수 n · 퍼짐 spread px · 크기 size · 빛 color · 진하기 alpha) · 잔해의 다시 서기 고리(반지름 rebuildR · 두께 rebuildW · 빛 rebuildColor) ·
+ *   무너진 망루는 같은 그림을 rubbleAlpha 진하기 · rubbleSquash 높이 몫으로 주저앉혀 그린다
  */
 export const HAEBI_BUILD = {
   kinds: 3, max: 5, flash: .35, extraAt: [3, 5], spread: .75, pushShare: .35, pushDust: .2, shove: 420, settlePasses: 6,
-  tower: { ahead: 95, r: 36, range: 380, fire: 1.3, fireStep: .08, share: .4, shareStep: .1, speed: 620, life0: 1, radius: 10 },
+  tower: { ahead: 95, r: 36, range: 380, fire: 1.3, fireStep: .08, share: .4, shareStep: .1, speed: 620, life0: 1, radius: 10, hp: 260, hpStep: 90, rebuild: 10, aggroR: 140, aggroEvery: 3, touch: 6, bite: 1 },
   fence: { ahead: 85, r: 30, touch: 6, hp: 220, hpStep: 80, bite: 1, rebuild: 8 },
   jar: { ahead: 60, r: 16, radius: 190, radiusStep: 12, bonus: 1, bonusStep: .25 },
   view: { towerH: 104, arrow: 34, fenceW: 96, fenceLift: 12, jarH: 46, ring: '#ffd77a', ringAlpha: .32, ringFill: .07, glow: '#ffe7a0', glowAlpha: .8, glowAt: { tower: [.72, .14], jar: [.82, .32] }, shadow: { tower: .32, fence: .5, jar: .45, h: 7 }, dash: [10, 8], hpBar: 44, hpH: 5, hpLift: 8,
-    dust: { n: 4, spread: 18, size: 7, color: '#c9a27a', alpha: .45 }, rebuildR: 16, rebuildW: 3, rebuildColor: '#ffd77a' },
+    dust: { n: 4, spread: 18, size: 7, color: '#c9a27a', alpha: .45 }, rebuildR: 16, rebuildW: 3, rebuildColor: '#ffd77a', rubbleAlpha: .45, rubbleSquash: .55 },
+} as const
+/**
+ * 66-CAP 최고 레벨 (형 11-23 「레벨은 왜 44가 맥스지? 맥스 찍었다는 걸 유저가 알기도 어려운데」 · 「44 는 이상하고 사사(死死)로 읽힌다 → 50」).
+ * 이 규칙 판은 최고 레벨이 capLevel (끈 판·옛 기록은 HAEBI_RUN.maxLevel 44 그대로).
+ * 50 에 닿는 때가 예전 44 에 닿던 때와 같게 기세 막대를 늘인다 — 예전 곡선(xpBase + xpPerLevel·L + xpCurve·L²)을 43/49 배로 눌러 편 것:
+ *   다음 레벨까지 = xpBase + xpPerLevel × L + xpCurve × L² (첫 레벨은 예전과 같은 4.8 · 1→50 합이 예전 1→44 합과 같다).
+ *   레벨마다 힘 levelPower · 레벨업 회복 levelHeal 도 43/49 배라, 같은 시각의 힘·회복은 예전과 같고 고르는 카드만 여섯 장 늘어난다.
+ * 그 뒤로 기세 막대가 다시 찰 때마다 막대를 비우고 최대 체력의 heal 몫을 되찾고 판 금 gold(스테이지 금 배수 · 상점 「탐욕」 몫을 곱한다)를 받는다 · ring 받을 때 장수 둘레 빛 고리
+ */
+export const HAEBI_CAP = { capLevel: 50, xpBase: -1.13, xpPerLevel: 5.39, xpCurve: .541, levelPower: .0395, levelHeal: 24.6, heal: .2, gold: 8, ring: 70 } as const
+/**
+ * 최고 레벨 화면 (raid/fx-cap.ts · 규칙과 상관없이 화면만) — 처음 닿은 순간 큰 글자 banner (「부위 파괴!」와 같은 결 · bannerLife 초 · popTime 동안 popScale 배에서 줄어듦 · lift 장수 위 · rise 떠오름) ·
+ * 66-CAP 보상마다 작은 「+금 · 회복」 글자 (popSize · popLife 초 · popLift · popRise) · 빛 fill · 테 edge · 테 두께 stroke · 막대 끝 「MAX」
+ */
+export const HAEBI_CAP_VIEW = {
+  banner: '수련을 모두 마쳤습니다', size: 46, stroke: 8, fill: '#ffd34a', edge: '#3a1406', bannerLife: 2.6, fadeTime: .5, popTime: .14, popScale: 1.8, lift: 120, rise: 20,
+  popSize: 24, popStroke: 5, popLife: 1.1, popLift: 70, popRise: 34, popFill: '#ffe9a8', max: 'MAX',
 } as const
 /** 부위 파괴 화면 (raid/fx-break.ts) — 「부위 파괴!」 글자 · 그로기 별 */
 export const HAEBI_BREAK_VIEW = {
@@ -5089,3 +5110,10 @@ export function flatKnobs(): Array<{ path: string; group: string; knob: Knob }> 
   }
   return out
 }
+
+/**
+ * 판 밖 상점에서 살 때의 손맛 (11-23 형 「상점 구매할 때도 제대로 사는 기분 뜨게」 · src/raid/shop-juice.ts · 화면 전용).
+ * coins 동전 수(단계가 오를수록 maxExtra 개까지 더) · stagger 동전 사이 초 · fly 날아가는 초 · arc 위로 휘는 px · count 금 숫자가 줄어드는 초
+ * pop 칸이 부푸는 배 · popMs 그 길이 · rise 「Lv」 글자가 솟는 px · lift 그 글자가 머무는 초
+ */
+export const HAEBI_SHOP_FX = { coins: 6, maxExtra: 6, stagger: .045, fly: .42, arc: 70, count: .5, pop: 1.2, popMs: 420, rise: 46, lift: .9 } as const

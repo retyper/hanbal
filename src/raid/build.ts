@@ -12,7 +12,7 @@ export type BuildKind = 'tower' | 'fence' | 'jar'
 export const BUILD_KINDS: readonly BuildKind[] = ['tower', 'fence', 'jar']
 export const isBuildKind = (k: string): k is BuildKind => k === 'tower' || k === 'fence' || k === 'jar'
 /**
- * 선 설치물 하나 — hp·max 목책 체력(망루·항아리는 무적이라 0) · down 부서진 목책이 다시 서기까지 남은 초(0 = 서 있음) ·
+ * 선 설치물 하나 — hp·max 망루·목책 체력(항아리는 무적이라 0) · down 무너진 망루·목책이 다시 서기까지 남은 초(0 = 서 있음) ·
  * cd 망루 다음 화살까지 · flash 쏘거나 맞거나 기세를 더한 반짝임 · push 장수에게 밀린 뒤 흙먼지가 남는 초
  */
 export interface Structure { id: number; kind: BuildKind; x: number; y: number; hp: number; max: number; down: number; cd: number; flash: number; push: number }
@@ -28,11 +28,23 @@ export const towerShare = (rank: number) => B.tower.share + B.tower.shareStep * 
 export const towerFire = (rank: number) => B.tower.fire * (1 - B.tower.fireStep * (rank - 1))
 /** 목책 체력 (판의 위협 배수를 곱하기 전) */
 export const fenceHp = (rank: number) => B.fence.hp + B.fence.hpStep * (rank - 1)
+/** 망루 체력 (판의 위협 배수를 곱하기 전) */
+export const towerHp = (rank: number) => B.tower.hp + B.tower.hpStep * (rank - 1)
+/** 체력이 있는 종류(망루·목책)의 그 단계 체력 */
+export const buildHp = (kind: BuildKind, rank: number) => kind === 'tower' ? towerHp(rank) : kind === 'fence' ? fenceHp(rank) : 0
 export const jarRadius = (rank: number) => B.jar.radius + B.jar.radiusStep * (rank - 1)
 /** 항아리 둘레에서 쓰러진 적의 기세 배수 */
 export const jarShare = (rank: number) => 1 + B.jar.bonus + B.jar.bonusStep * (rank - 1)
-/** 서 있는 것 — 부서진 목책(잔해)은 지나갈 수 있고 막지도 않는다 */
-export const standing = (it: Structure) => it.down <= 0 && (it.kind !== 'fence' || it.hp > 0)
+/** 서 있는 것 — 무너진 망루·목책(잔해)은 지나갈 수 있고 막지도 쏘지도 않는다 */
+export const standing = (it: Structure) => it.down <= 0 && (it.kind === 'jar' || it.hp > 0)
+/** 이 잡졸이 망루에 끌리는 몫인가 — id 가 aggroEvery 의 배수 (난수 없이 늘 같은 놈) */
+export const aggroShare = (id: number) => id % B.tower.aggroEvery === 0
+/** 몸에서 aggroR 안의 가장 가까운 서 있는 망루 */
+export function towerNear(b: BuildState, body: { x: number; y: number }) {
+  let best: Structure | undefined, d: number = B.tower.aggroR
+  for (const it of b.items) if (it.kind === 'tower' && standing(it)) { const n = Math.hypot(body.x - it.x, body.y - it.y); if (n < d) { d = n; best = it } }
+  return best
+}
 /** 몸 반지름 */
 export const bodyR = (it: Structure) => B[it.kind].r
 

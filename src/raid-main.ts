@@ -4,7 +4,7 @@ import { imugiVisualBounds } from './raid/imugi-view.ts'
 import { fieldPixels, raidLowGraphics } from './raid/surface.ts'
 import { breakthroughText, isBreakthrough } from './realm/vanguard.ts'
 import { HAEBI_RUN as C, HAEBI_STICK as STICK, HAEBI_TREE as TREE, HAEBI_ULT as ULT, HAEBI_AWAKEN as AWK, HAEBI_STAGES as ST, HAEBI_ZOOM as ZOOM, HAEBI_SPEED as SPEED, HAEBI_GIANT as GIANT } from './tune/params.ts'
-import { createHaebi, runDuration, raidRulesForStage, KIT_RULES, MAP_RULES, SOLID_RULES, ANCHOR_RULES, BREAK_RULES, BUILD_RULES, giantMob, giantHUD, championViewNeeded, stepHaebi, barrageArcher, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, usesPermanentAwakening, normalizedRaidOpts, castWallSeconds, nodeText, nodeAt, branchName, wakeReady, ultName, ultOpen, runBranches, branchNodes, type Kit, type Power, type Pick, type Chest, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
+import { createHaebi, runDuration, raidRulesForStage, KIT_RULES, MAP_RULES, SOLID_RULES, ANCHOR_RULES, BREAK_RULES, BUILD_RULES, CAP_RULES, giantMob, giantHUD, championViewNeeded, stepHaebi, barrageArcher, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, usesPermanentAwakening, normalizedRaidOpts, castWallSeconds, nodeText, nodeAt, branchName, wakeReady, ultName, ultOpen, runBranches, branchNodes, maxLevel, type Kit, type Power, type Pick, type Chest, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
 import { startRecord, recInput, gridInput, recPick, recReroll, recQuit, withdrawRun, sealInput, finishRecord, STEP, type Recorder } from './raid/runlog.ts'
 import { runFrame, speedOf, nextSpeed, speedLevel } from './raid/speed.ts'
 import { RaidFeel } from './raid/impact.ts'
@@ -12,11 +12,13 @@ import { RaidEnding } from './raid/ending.ts'
 import { drawEnding } from './raid/ending-view.ts'
 import { HAEBI_END as END } from './tune/params.ts'
 import { HAEBI_JACKPOT as JACKPOT, HAEBI_CHAMPION as CHAMP } from './tune/params.ts'
+import { HAEBI_CAP_VIEW as CAP_VIEW } from './tune/params.ts'
 import { ChestShow, chestShowWarmHtml } from './raid/chest-show.ts'
 import './raid/chest-show.css'
 import { CHEST_RULES, jackpotOdds } from './raid/haebi.ts'
 import { t } from './i18n/index.ts'
 import { warmFx } from './raid/fx-art.ts'
+import { playBuyFx, buyArrive } from './raid/shop-juice.ts'
 import { putRaidGame, sealLeftovers, sendAllRaids, type RaidGame, type RaidOpts } from './raid/runlog-store.ts'
 import { pushRaids } from './net/sync.ts'
 import { newCam, followCam, nextLevel, closest, toField, fieldView, clampCenter, bossFrameZoom, cameraBounds } from './raid/camera.ts'
@@ -122,12 +124,12 @@ let stageLocked = false   // 본편 표적 출전: 그 땅의 스테이지 하�
 const bossMinute = () => Math.floor(C.bossAt * ST[mode === 'trial' ? 'trial' : stage].length / 60)
 const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`
 /** createHaebi 에 넘기는 판 옵션 — 판 기록에도 이것 그대로 적는다 (다시 돌리기) */
-const runOpts = (): RaidOpts => ({ ...mode === 'stage' ? { stage, bonus: { ...meta.shop } } : {}, ...mode === 'trial' ? { awaken: false, simRules: '53B' as const } : { permanentAwake: awakening.permanentAwake, appearanceAwake: awakening.appearanceAwake, simRules: mode === 'stage' ? raidRulesForStage(stage) : '56B' as const }, mastery, kitRules: KIT_RULES, ...(mode === 'stage' ? { chestRules: CHEST_RULES, mapRules: MAP_RULES, blockRules: SOLID_RULES, anchorRules: ANCHOR_RULES, breakRules: BREAK_RULES, buildRules: BUILD_RULES } : {}) })
+const runOpts = (): RaidOpts => ({ ...mode === 'stage' ? { stage, bonus: { ...meta.shop } } : {}, ...mode === 'trial' ? { awaken: false, simRules: '53B' as const } : { permanentAwake: awakening.permanentAwake, appearanceAwake: awakening.appearanceAwake, simRules: mode === 'stage' ? raidRulesForStage(stage) : '56B' as const }, mastery, kitRules: KIT_RULES, ...(mode === 'stage' ? { chestRules: CHEST_RULES, mapRules: MAP_RULES, blockRules: SOLID_RULES, anchorRules: ANCHOR_RULES, breakRules: BREAK_RULES, buildRules: BUILD_RULES, capRules: CAP_RULES } : {}) })
 const newRun = (seed: number, opts: RaidOpts = runOpts()) => { const r = createHaebi(seed, mode, kit, opts); if (r.message.endsWith('첫 조합을 향해')) { r.message = ''; r.messageTime = 0 }  /* 시작 군말 띠는 걷는다 (형 11-16) */ return r }
 root.innerHTML = `<header><div><small>장수 열전 · 독립 모드</small><h1>${HERO.name} <em>${K.title}</em></h1></div><div class="head-actions"><button id="pause" disabled aria-label="일시정지">Ⅱ</button></div></header>
 <div id="layout"><aside id="character"><div id="portrait-media"><img id="hero-portrait" src="${import.meta.env.BASE_URL}realm/bust-hd/${HERO.bust}.jpg" alt="${HERO.name} 원화"><video id="hero-video" muted loop playsinline preload="none" hidden aria-label="각성 ${HERO.name} 영상"></video></div><div class="portrait-title"><span>${HERO.home}</span><b id="rank-title">${HERO.name}</b><button id="portrait-toggle" hidden>원화로 보기</button></div><div id="reaction">${weapon} 하나로 시작하는 열전</div><div id="combo-badges"></div><i class="frame-knots"></i></aside>
 <main><section id="menu"><span class="eyebrow">장수 열전</span><h2>${HERO.name}<em>${K.title}</em></h2><p>능력을 고르고 두 힘을 묶어, ${bossMinute()}분을 버틴 뒤 오는 두목을 쓰러뜨리세요.</p><div class="journey"><span><b>01</b> 붉은 고리를 피하고</span><span><b>02</b> 두 힘을 묶어</span><span><b>03</b> 두목을 잡습니다</span></div><button id="start" class="primary" disabled aria-label="불러오는 중"><i class="load-dots" aria-hidden="true"><b></b><b></b><b></b></i></button><p class="controls">이동 WASD·방향키·화면 누르기 · 회피 Shift · 비기 Space · 투지 E · 배속 X · 일시정지 Esc</p><p class="note">본편의 병력과 따로인 한 판입니다.</p></section>
-<section id="play" hidden><div id="arena"><canvas id="field" width="${C.width}" height="${C.height}" aria-label="${HERO.name} 토벌 전장. 클릭 또는 드래그로 이동"></canvas><div id="combat-hud"><div class="health-line"><b>${HERO.name}</b><span id="health">180 / 180</span></div><div class="bar hp"><span class="hp-track"><i id="hp-fill"></i><em id="hp-chunk"></em><b id="hp-ward" hidden></b></span></div><div id="wake-bar" class="grit" aria-label="투지 막대"><i id="wake-fill"></i></div><div id="loadout" aria-label="획득한 전투 능력"></div></div><div id="hud"><small id="phase"></small><b id="clock"></b></div><div id="score"><b id="kills"></b><small>격파</small><b id="level"></b></div><div class="bar xp"><i id="xp-fill"></i></div><div id="announcement" aria-live="polite"></div><div id="streak"></div><footer><button id="wake" class="grit" hidden aria-label="투지 E"><b>투지</b><small>E</small></button><span id="hint">자동 공격 · 화면을 끌면 그쪽으로 이동 · 능력 아이콘을 누르고 있으면 설명</span><button id="dash">회피 Shift</button><button id="skill" class="primary" data-kit="${kit}">${K.skill} Space</button></footer><div id="stick" hidden aria-hidden="true"><i></i></div><i class="frame-knots"></i></div></section></main></div><div id="power-tooltip" role="tooltip" hidden></div><div id="overlay" hidden></div>`
+<section id="play" hidden><div id="arena"><canvas id="field" width="${C.width}" height="${C.height}" aria-label="${HERO.name} 토벌 전장. 클릭 또는 드래그로 이동"></canvas><div id="combat-hud"><div class="health-line"><b>${HERO.name}</b><span id="health">180 / 180</span></div><div class="bar hp"><span class="hp-track"><i id="hp-fill"></i><em id="hp-chunk"></em><b id="hp-ward" hidden></b></span></div><div id="wake-bar" class="grit" aria-label="투지 막대"><i id="wake-fill"></i></div><div id="loadout" aria-label="획득한 전투 능력"></div></div><div id="hud"><small id="phase"></small><b id="clock"></b></div><div id="score"><b id="kills"></b><small>격파</small><b id="level"></b></div><div id="xp-bar" class="bar xp" data-max="${CAP_VIEW.max}"><i id="xp-fill"></i></div><div id="announcement" aria-live="polite"></div><div id="streak"></div><footer><button id="wake" class="grit" hidden aria-label="투지 E"><b>투지</b><small>E</small></button><span id="hint">자동 공격 · 화면을 끌면 그쪽으로 이동 · 능력 아이콘을 누르고 있으면 설명</span><button id="dash">회피 Shift</button><button id="skill" class="primary" data-kit="${kit}">${K.skill} Space</button></footer><div id="stick" hidden aria-hidden="true"><i></i></div><i class="frame-knots"></i></div></section></main></div><div id="power-tooltip" role="tooltip" hidden></div><div id="overlay" hidden></div>`
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T
 const endingMediaHost = document.createElement('div')
 root.appendChild(endingMediaHost)
@@ -399,7 +401,15 @@ function renderShop() {
   }).join('')}</div><div class="shop-actions"><button id="refund" class="${refundPoor ? 'poor' : ''}" ${meta.spent ? '' : 'disabled'} ${refundPoor ? 'aria-disabled="true"' : ''} aria-label="전부 되돌리기 · 값 금 ${fee}${refundPoor ? ' · 모자람' : ''}"><i class="rf-ic" aria-hidden="true">↺</i>전부 되돌리기 <em>${COIN}${fee.toLocaleString()}${refundPoor ? ' · 모자람' : ''}</em></button><button id="close-shop" class="primary">닫기</button></div>${refundAsk(fee)}</div>`
   // 금이 모자란 칸·되돌리기를 누르면 흔들린다 (못 하는 까닭 · 값 옆 「모자람」)
   const nudge = (b: HTMLElement) => { b.classList.remove('nudge'); void b.offsetWidth; b.classList.add('nudge') }
-  $('shop').querySelectorAll<HTMLButtonElement>('[data-buy]').forEach(b => b.onclick = () => { if (buy(meta, b.dataset.buy as ShopKey)) { saveMeta(meta); run = newRun(7); renderShop(); renderStageMenu(); $('shop').querySelector(`[data-buy="${b.dataset.buy}"]`)?.classList.add('bought') } else if (b.classList.contains('poor')) nudge(b) })
+  $('shop').querySelectorAll<HTMLButtonElement>('[data-buy]').forEach(b => b.onclick = () => {
+    const key = b.dataset.buy as ShopKey, oldGold = meta.gold, from = $('shop').querySelector('.panel.shop h2')!.getBoundingClientRect()
+    if (!buy(meta, key)) { if (b.classList.contains('poor')) nudge(b); return }
+    saveMeta(meta); run = newRun(7); renderShop(); renderStageMenu()
+    // 11-23 형 「상점 구매할 때도 제대로 사는 기분」 — 동전이 날아가 박히고 · 칸이 번쩍 · 금 숫자가 줄어든다 · 짤랑 (raid/shop-juice.ts)
+    const to = $('shop').querySelector<HTMLElement>(`[data-buy="${key}"]`), level = meta.shop[key], maxed = level >= shopMax(key)
+    if (to) playBuyFx({ host: $('shop'), from, to, goldEl: $('shop').querySelector('.panel.shop h2'), oldGold, newGold: meta.gold, coinHtml: COIN, label: SHOP.find(it => it.key === key)?.name ?? '', level, maxed })
+    sound.unlock(); sound.buy(buyArrive(level), maxed)
+  })
   $('shop').querySelectorAll<HTMLElement>('[data-buy], #refund').forEach(b => b.addEventListener('animationend', e => { if (e.animationName === 'skill-nudge') b.classList.remove('nudge') }))
   // 되돌리기 (11-19 형: 「무료로 하지 말고 돈 써서」) — 한 번 묻고(게임 안 상자) 값을 낸다
   $('refund').onclick = () => { if (refundPoor) { nudge($('refund')); return } $('refund-ask').hidden = false; $('refund-yes').focus() }
@@ -753,7 +763,7 @@ root.append(treeView)
 const treeResize = new ResizeObserver(() => { if (!treeView.hidden) drawTreeLinks(treeView, run) })
 function openTree() {
   treeResize.disconnect()
-  treeView.innerHTML = `<div class="panel tree-panel"><div class="tree-head"><button class="tree-close primary">돌아가기</button><h2>${weapon} 스킬 트리</h2><small>레벨 ${run.level} · 앞으로 레벨업 ${Math.max(0, C.maxLevel - run.level)}번</small></div>${skillTreeHtml(run)}<p class="tree-info" aria-live="polite">칸을 누르거나 가리키면 설명이 나옵니다</p></div>`
+  treeView.innerHTML = `<div class="panel tree-panel"><div class="tree-head"><button class="tree-close primary">돌아가기</button><h2>${weapon} 스킬 트리</h2><small>레벨 ${run.level} · 앞으로 레벨업 ${Math.max(0, maxLevel(run) - run.level)}번</small></div>${skillTreeHtml(run)}<p class="tree-info" aria-live="polite">칸을 누르거나 가리키면 설명이 나옵니다</p></div>`
   treeView.hidden = false
   drawTreeLinks(treeView, run)
   treeResize.observe(treeView.querySelector('.tree-board')!)
@@ -961,8 +971,10 @@ function updateHud() {
   // 격파 수·연속 격파 글자는 C.hudCountEvery 초에 한 번만 (늑대 떼에 프레임마다 바뀌어 그림자 진 큰 글자를 매번 다시 칠했다 · 11-18 플립7)
   const countNow = performance.now() / 1000, countDue = countNow - hudCountAt >= C.hudCountEvery || run.comboKills < 15
   if (countDue) { hudCountAt = countNow; setText('kills', run.kills.toLocaleString()) }
-  setText('level', `Lv.${run.level}`)
-  setWidth('xp-fill', run.level >= C.maxLevel ? 100 : Math.min(100, run.xp / xpNeeded(run) * 100), C.hudBarStep)
+  // 최고 레벨 (형 11-23 「맥스 찍었다는 걸 유저가 알기도 어려운데」) — 「Lv.44 MAX」 · 기세 막대는 금빛으로 가득 차고 「MAX」 (규칙과 상관없이 화면만)
+  const maxed = run.level >= maxLevel(run)
+  setText('level', maxed ? `Lv.${run.level} ${CAP_VIEW.max}` : `Lv.${run.level}`); setFlag('xp-bar', 'xp-max', maxed)
+  setWidth('xp-fill', maxed ? 100 : Math.min(100, run.xp / xpNeeded(run) * 100), C.hudBarStep)
   // 각성 막대 — 차는 동안 · 각성(투지) 동안은 남은 시간이 줄어든다 (바뀔 때만 씀)
   setWidth('wake-fill', gaugeRatio(run) * 100, C.hudBarStep); setFlag('wake-bar', 'on', run.form !== 'normal')
   setText('rank-title', awakenedLook(run) ? `각성 · ${HERO.name}` : HERO.name)

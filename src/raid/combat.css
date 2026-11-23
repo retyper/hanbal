@@ -52,6 +52,9 @@ header{position:absolute;right:22px;top:20px;z-index:3;pointer-events:none}heade
 .bar.hp i{height:100%;background-color:#101810}
 .bar.xp{--bh:16px;bottom:calc(var(--fk)*.48);left:calc(var(--fk)*.6);right:calc(var(--fk)*.6);height:var(--bh);background:transparent;padding:calc(var(--bh)*12/39) calc(var(--bh)*65/39) calc(var(--bh)*13/39)}
 .bar.xp:after{content:'';position:absolute;inset:0;pointer-events:none;border-style:solid;border-color:transparent;border-image:url('/realm/raid/ui/bar-xp.png') 0 65 fill / 0 calc(var(--bh)*65/39) round stretch}
+/* 최고 레벨 (형 11-23) · 기세 막대가 금빛으로 가득 차고 가운데 「MAX」 (글은 data-max · params HAEBI_CAP_VIEW.max) */
+.bar.xp.xp-max i{background:linear-gradient(90deg,#b07a22,#ffe08a 50%,#b07a22)}
+.bar.xp.xp-max::before{content:attr(data-max);position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1;pointer-events:none;font:800 11px/1 system-ui,sans-serif;letter-spacing:.14em;color:#fff3c4;text-shadow:0 0 3px #3a1406,0 1px 2px #000}
 /* 단추 판(9분할, 모서리 고정) · 아이콘 */
 footer button{background:none;border:0;border-image:url('/realm/raid/ui/btn.png') 58 fill / 15px stretch;box-shadow:none;text-shadow:0 1px 3px #000}
 footer .primary{background:none;border-image-source:url('/realm/raid/ui/btn-primary.png');color:#fff3cf}
@@ -435,3 +438,16 @@ img.coin{display:inline-block;width:1.5em;height:1.5em;vertical-align:-.38em;mar
 @media(prefers-reduced-motion:reduce){.chest-coinburst>img{animation:none}}
 /* 56-A: 요청된 출전 모습 스위치. 힘은 항상 유지된다. */
 #awakening-choice{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}#awakening-choice[hidden]{display:none}#awakening-choice small{font-size:11px;line-height:1.4;color:#c8c0a8}#awakening-look{padding:6px 12px;font-size:12px}#awakening-look[aria-checked=true]{border-color:#d5ba71;color:#ffe7ab}#awakening-error{flex-basis:100%;color:#ffce98}
+/* 상점 「샀다!」 (raid/shop-juice.ts · 11-23) — 동전이 날아가 박히고 · 칸이 부풀며 번쩍 · 글자가 솟는다 */
+.sjx-coin{position:fixed;z-index:400;width:36px;height:36px;margin:-18px 0 0 -18px;pointer-events:none;animation-name:sjx-fly;animation-timing-function:cubic-bezier(.35,0,.65,1);animation-fill-mode:both}
+.sjx-coin img{width:100%;height:100%}
+@keyframes sjx-fly{0%{transform:translate(0,0) scale(.6);opacity:0}12%{opacity:1;transform:translate(calc(var(--dx)*.12),calc(var(--dy)*.12 + var(--arc)*.5)) scale(1.15)}55%{transform:translate(calc(var(--dx)*.55),calc(var(--dy)*.55 + var(--arc))) scale(1)}100%{transform:translate(var(--dx),var(--dy)) scale(.5);opacity:.9}}
+.shop-grid .sjx-pop{animation:sjx-pop var(--sjx-ms,420ms) cubic-bezier(.2,1.6,.4,1);position:relative;z-index:2}
+.shop-grid .sjx-pop::after{content:'';position:absolute;inset:-4px;border-radius:inherit;pointer-events:none;box-shadow:0 0 0 3px #ffe08a,0 0 34px 8px #ffc94acc;animation:sjx-flash calc(var(--sjx-ms,420ms)*1.6) ease-out both}
+@keyframes sjx-pop{0%{transform:scale(1)}35%{transform:scale(var(--sjx-pop,1.2))}100%{transform:scale(1)}}
+@keyframes sjx-flash{0%{opacity:1}100%{opacity:0}}
+.sjx-rise{position:fixed;z-index:401;transform:translate(-50%,0);pointer-events:none;white-space:nowrap;font-weight:900;font-size:26px;color:#fff3c4;text-shadow:0 0 12px #ffb52e,0 2px 0 #6a3a00,0 3px 8px #000;animation-name:sjx-rise;animation-timing-function:cubic-bezier(.2,1.4,.4,1);animation-fill-mode:both}
+.sjx-rise.max{font-size:28px;color:#ffe066;text-shadow:0 0 16px #ff8a00,0 2px 0 #6a2a00,0 4px 10px #000}
+@keyframes sjx-rise{0%{opacity:0;transform:translate(-50%,10px) scale(.6)}20%{opacity:1;transform:translate(-50%,0) scale(1.25)}35%{transform:translate(-50%,0) scale(1)}100%{opacity:0;transform:translate(-50%,var(--rise))}}
+.sjx-minus{position:fixed;z-index:401;transform:translate(0,-50%);pointer-events:none;font-weight:800;font-size:18px;color:#ff7a6a;text-shadow:0 2px 6px #000;animation:sjx-minus .9s ease-out both}
+@keyframes sjx-minus{0%{opacity:0;transform:translate(0,-50%)}15%{opacity:1}100%{opacity:0;transform:translate(0,-160%)}}

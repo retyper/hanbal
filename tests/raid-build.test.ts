@@ -2,11 +2,11 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { HAEBI_BUILD as B, HAEBI_MOBS as M, HAEBI_RUN as C, HAEBI_PALISADE as WL } from '../src/tune/params.ts'
-import { createHaebi, stepHaebi, choose, spawnMob, towerShot, nodeAt, runBranches, KIT_RULES, CHEST_RULES, MAP_RULES, SOLID_RULES, ANCHOR_RULES, BREAK_RULES, BUILD_RULES, raidRulesForStage, type HaebiOpts, type HaebiRun, type StageId, type Kit } from '../src/raid/haebi.ts'
+import { HAEBI_BUILD as B, HAEBI_MOBS as M, HAEBI_RUN as C, HAEBI_PALISADE as WL, HAEBI_CAP as CP, HAEBI_CAP_VIEW as CV } from '../src/tune/params.ts'
+import { createHaebi, stepHaebi, choose, spawnMob, towerShot, nodeAt, runBranches, KIT_RULES, CHEST_RULES, MAP_RULES, SOLID_RULES, ANCHOR_RULES, BREAK_RULES, BUILD_RULES, CAP_RULES, xpNeeded, runGold, maxLevel, raidRulesForStage, type HaebiOpts, type HaebiRun, type StageId, type Kit } from '../src/raid/haebi.ts'
 import { botInput, botChoice } from '../src/raid/haebi-replay.ts'
 import { startRecord, recInput, recPick, sealInput, replayRaid } from '../src/raid/runlog.ts'
-import { BUILD_KINDS, jarShare, fenceTouching, type BuildKind } from '../src/raid/build.ts'
+import { BUILD_KINDS, jarShare, fenceTouching, aggroShare, type BuildKind } from '../src/raid/build.ts'
 import { treeModel } from '../src/raid/tree-model.ts'
 
 const hash = (x: unknown) => createHash('sha256').update(JSON.stringify(x)).digest('hex')
@@ -26,6 +26,8 @@ function quiet(kit: Kit = 'axe') {
   return s
 }
 const club = (s: HaebiRun, x: number, y: number, hp: number) => { spawnMob(s, 'club', undefined, true); const e = s.enemies[s.enemies.length - 1]!; e.x = x; e.y = y; e.hp = e.max = hp; e.cd = 9; return e }
+/** 망루에 끌리는 몫(aggro = true)이거나 아닌 잡졸 — id 를 그 몫에 맞춘다 (판은 id 로만 가른다) */
+const clubOf = (s: HaebiRun, aggro: boolean, x: number, y: number, hp: number) => { const e = club(s, x, y, hp); e.id = s.next * B.tower.aggroEvery + (aggro ? 0 : 1); s.next++; assert.equal(aggroShare(e.id), aggro); return e }
 
 /**
  * 65-BUILD 를 넣기 전 코드(커밋 72e5b433)로 잰 판 상태 SHA — 지금 열전 규칙 그대로 build 만 끈 60초 봇 판.
@@ -97,16 +99,71 @@ test('65-BUILD: 장수는 설치물을 지나가지 못하고 몸으로 밀면 �
   const y0 = s.y; step(s, .5, { x: 0, y: 1 }); assert.ok(s.y - y0 > C.speed * .45, '비켜 걸으면 제 빠르기')
 })
 
-test('65-BUILD: 적은 설치물을 지나가지 못하고(밀지도 못하고) · 망루·항아리는 깎이지 않는다', () => {
+test('65-BUILD: 적은 설치물을 지나가지 못하고(밀지도 못하고) · 끌리지 않은 잡졸은 망루·항아리를 깎지 않는다', () => {
   const s = quiet(); pick(s, 'tower'); pick(s, 'jar')
   const t = items(s, 'tower')[0]!, tx = t.x, ty = t.y
-  const e = club(s, t.x + 45, t.y + 3, 1e6)
+  const e = clubOf(s, false, t.x + 45, t.y + 3, 1e6)
   for (let i = 0; i < 3 * 120; i++) {
     stepHaebi(s, { x: 0, y: 0 }, 1 / 120)
     for (const it of items(s)) assert.ok(Math.hypot(e.x - it.x, e.y - it.y) >= B[it.kind].r + 10 - 1e-6, '잡졸이 설치물 몸 안에 들지 않는다')
   }
   assert.ok(Math.hypot(t.x - tx, t.y - ty) < 1e-9, '적은 밀지 못한다')
-  assert.ok(items(s).every(it => it.hp === 0 && it.down === 0), '망루·항아리는 체력이 없다 (무적)')
+  assert.ok(t.hp === t.max && t.down === 0, '끌리지 않은 잡졸은 망루를 치지 않는다')
+  assert.ok(items(s, 'jar').every(it => it.hp === 0 && it.max === 0 && it.down === 0), '항아리는 체력이 없다 (무적)')
+})
+
+test('65-BUILD 어그로: 끌리는 몫은 id 로만 정해져 같은 씨앗이면 늘 같다 (셋에 하나)', () => {
+  const ids = Array.from({ length: 30 }, (_, i) => i + 1)
+  assert.equal(ids.filter(aggroShare).length, 30 / B.tower.aggroEvery)
+  assert.deepEqual(ids.filter(aggroShare), ids.filter(aggroShare))
+  // 같은 판 두 번: 끌린 잡졸·망루 체력이 같다
+  const run = () => { const s = quiet(); pick(s, 'tower'); const t = items(s, 'tower')[0]!; for (let i = 0; i < 6; i++) club(s, t.x + 100 + i * 7, t.y - 60 + i * 20, 1e6); step(s, 3); return { aggro: s.enemies.map(e => e.aggro ?? 0), hp: t.hp } }
+  assert.deepEqual(run(), run())
+})
+
+test('65-BUILD 어그로: 끌린 잡졸만 망루로 가서 치고 · 무너지면 잔해(막지·쏘지 않음) → 장수에게 돌아가고 → rebuild 초 뒤 다시 선다 · 항아리는 무적', () => {
+  const s = quiet(); pick(s, 'tower'); pick(s, 'jar')
+  const t = items(s, 'tower')[0]!, j = items(s, 'jar')[0]!, tx = t.x, ty = t.y
+  const free = clubOf(s, false, t.x + 120, t.y + 70, 1e6), hit = clubOf(s, true, t.x + 110, t.y - 70, 1e6)
+  assert.ok(t.max > 0 && t.hp === t.max, '망루는 체력이 있다')
+  step(s, 4)
+  assert.equal(hit.aggro, t.id, '끌린 잡졸이 망루를 노린다'); assert.equal(free.aggro, undefined, '다른 잡졸은 장수를 노린다')
+  assert.ok(Math.hypot(hit.x - t.x, hit.y - t.y) < B.tower.aggroR * .6, `망루 곁으로 갔다 (망루 화살에 밀려도 다시 붙는다 · ${Math.hypot(hit.x - t.x, hit.y - t.y).toFixed(0)}px)`)
+  assert.ok(t.hp < t.max, '망루가 깎였다')
+  t.hp = 1e-6; for (let i = 0; i < 3 * 120 && t.down <= 0; i++) stepHaebi(s, { x: 0, y: 0 }, 1 / 120)
+  assert.ok(t.down > 0, '무너져 잔해'); assert.equal(hit.aggro, undefined, '망루가 무너지면 장수에게 돌아간다')
+  step(s, 1); assert.equal(s.shots.filter(b => b.kind === 'tower').length, 0, '잔해는 쏘지 않는다')
+  step(s, B.tower.rebuild)
+  assert.equal(t.down, 0); assert.ok(t.hp > 0 && t.hp <= t.max)
+  assert.ok(Math.hypot(t.x - tx, t.y - ty) < 40, '거의 같은 자리에 다시 선다')
+  assert.ok(j.hp === 0 && j.down === 0, '항아리는 그대로 (무적)')
+})
+
+// ── 66-CAP 최고 레벨 뒤 ──
+const capRun = (on: boolean) => { const s = createHaebi(5, 'stage', 'axe', { stage: 'forest', simRules: '56B', kitRules: KIT_RULES, ...(on ? { capRules: CAP_RULES } : {}) }); s.spawn = 1e9; s.nextElite = 1e9; s.nextBarrage = 1e9; return s }
+test('66-CAP on: 최고 레벨 뒤 기세 막대가 차면 비우고 회복·판 금으로 · 레벨은 그대로', () => {
+  const s = capRun(true)
+  assert.equal(maxLevel(s), CP.capLevel); assert.equal(CP.capLevel, 50)
+  s.level = CP.capLevel - 1; s.offers = []; s.xp = 0; s.offers = ['tempo']; assert.ok(choose(s, 'tempo')); assert.equal(s.level, CP.capLevel, '49 → 50 은 카드로')
+  s.offers = []; s.xp = 1e9; stepHaebi(s, { x: 0, y: 0 }, 1 / 120); assert.equal(s.offers.length, 0, '50 에서는 카드가 더 안 나온다'); assert.equal(s.level, CP.capLevel)
+  s.hp = 40; s.xp = xpNeeded(s) * 2.5; s.cap!.n = 0; s.cap!.gold = 0; s.fx = []
+  const gold0 = runGold(s)
+  stepHaebi(s, { x: 0, y: 0 }, 1 / 120)
+  assert.equal(s.level, CP.capLevel); assert.equal(s.offers.length, 0)
+  assert.equal(s.cap!.n, 2, '두 번 찼다'); assert.ok(s.xp < xpNeeded(s) && s.xp > 0, '남은 기세는 다음 막대로')
+  assert.ok(s.hp >= Math.min(s.maxHp, 40 + 2 * CP.heal * s.maxHp) - 1, `회복 (${s.hp.toFixed(1)})`)
+  assert.ok(s.cap!.gold > 0 && runGold(s) === gold0 + s.cap!.gold, '판 금에 더해진다')
+  assert.equal(s.fx.filter(f => f.capGold !== undefined).length, 2, '보상마다 화면이 「+금 · 회복」을 띄울 표식')
+  // 같은 판 두 번이면 같다
+  const twice = () => { const r = capRun(true); r.level = CP.capLevel; r.hp = 40; r.xp = xpNeeded(r) * 2.5; stepHaebi(r, { x: 0, y: 0 }, 1 / 120); return hash(r) }
+  assert.equal(twice(), twice())
+})
+test('66-CAP off: 최고 레벨 뒤 기세는 예전처럼 쌓이기만 한다', () => {
+  const s = capRun(false)
+  assert.equal(maxLevel(s), 44, '끈 판은 예전 44')
+  s.level = C.maxLevel; s.hp = 40; const xp = xpNeeded(s) * 2.5; s.xp = xp
+  stepHaebi(s, { x: 0, y: 0 }, 1 / 120)
+  assert.equal(s.cap, undefined); assert.equal(s.level, 44); assert.ok(s.xp >= xp - 1e-9); assert.ok(s.hp < 41)
 })
 
 test('65-BUILD: 목책 앞의 잡졸은 서서 목책을 깎고 · 부서지면 잔해(지나감) → rebuild 초 뒤 같은 자리에 다시 선다', () => {
@@ -140,8 +197,9 @@ test('65-BUILD: 항아리 둘레에서 쓰러진 적은 기세를 jarShare 배 �
 
 test('65-BUILD: 같은 씨앗이면 자리·판이 같다 · 봇이 설치 카드를 고르고 설치물이 선다 · 판 기록 재생도 같다', () => {
   const run = (seed: number) => {
-    const s = createHaebi(seed, 'stage', 'bow', prod('forest', true))
-    const r = startRecord(s, { id: 'build65', started: '2026-11-23T00:00:00Z', mode: 'stage', stage: 'forest', hero: 'ara', kit: 'bow', sprite: 'ara', seed, opts: prod('forest', true), from: null })
+    const opts: HaebiOpts = { ...prod('forest', true), capRules: CAP_RULES }
+    const s = createHaebi(seed, 'stage', 'bow', opts)
+    const r = startRecord(s, { id: 'build65', started: '2026-11-23T00:00:00Z', mode: 'stage', stage: 'forest', hero: 'ara', kit: 'bow', sprite: 'ara', seed, opts, from: null })
     for (let i = 0; i < 150 * 120 && s.state === 'playing'; i++) {
       while (s.offers.length) { const p = botChoice(s, 'spread'); choose(s, p); recPick(r, p) }
       stepHaebi(s, recInput(r, botInput(s, .5)), 1 / 120)
@@ -149,6 +207,7 @@ test('65-BUILD: 같은 씨앗이면 자리·판이 같다 · 봇이 설치 카�
     return { s, game: sealInput(r) }
   }
   const a = run(31), b = run(31)
+  assert.equal(a.game.opts.capRules, CAP_RULES, '66-CAP 도 판 기록 opts 에 남는다')
   assert.equal(hash(a.s), hash(b.s))
   assert.ok(BUILD_KINDS.some(k => a.s.ranks[k] > 0) && a.s.build!.items.length > 0, '봇이 설치 카드를 골랐고 설치물이 서 있다')
   assert.deepEqual(a.s.build!.items.map(it => [it.kind, it.x, it.y]), b.s.build!.items.map(it => [it.kind, it.x, it.y]))
@@ -177,7 +236,16 @@ test('65-BUILD 그리기: 망루·목책·항아리가 몸 차례에 · 부서�
   const drawn = (calls: typeof c.calls, x: HTMLImageElement) => calls.some(k => k.method === 'drawImage' && k.args[0] === x)
   assert.ok(drawn(c.calls, tower) && drawn(c.calls, fence) && drawn(c.calls, jar) && !drawn(c.calls, rubble))
   assert.equal(hash(s), before, '그리기가 판을 바꾸지 않는다')
-  items(s, 'fence')[0]!.down = 3
+  items(s, 'fence')[0]!.down = 3; items(s, 'tower')[0]!.down = 3
   const d = canvas(); drawField(d.ctx, images, s, null)
-  assert.ok(drawn(d.calls, rubble) && !drawn(d.calls, fence), '잔해 그림')
+  assert.ok(drawn(d.calls, rubble) && !drawn(d.calls, fence), '목책 잔해 그림')
+  const towerDraw = d.calls.find(k => k.method === 'drawImage' && k.args[0] === tower)!
+  assert.ok((towerDraw.args[4] as number) < B.view.towerH * .9, '망루 잔해는 주저앉혀 그린다')
+  // 최고 레벨 — 처음 닿은 판에서 큰 글자 (이 판은 66-CAP 이 꺼져 최고 레벨 44)
+  s.level = maxLevel(s)
+  const e = canvas(); drawField(e.ctx, images, s, null)
+  assert.ok(e.calls.some(k => k.method === 'fillText' && k.args[0] === CV.banner), '「수련을 모두 마쳤습니다」')
+  s.fx.push({ kind: 'ring', x: s.x, y: s.y, x2: s.x, y2: s.y, r: CP.ring, angle: 0, life: .3, total: .3, color: '#ffd66b', capGold: 8 })
+  const g = canvas(); drawField(g.ctx, images, s, null)
+  assert.ok(g.calls.some(k => k.method === 'fillText' && k.args[0] === '+8금 · 회복'), '보상마다 작은 「+금 · 회복」')
 })

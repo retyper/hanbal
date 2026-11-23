@@ -42,6 +42,8 @@ const FILES = {
   hurt: [R + 'duel/hurt_h.mp3'],
   arrows: [R + 'arrow_volley_c3.ogg'],
   level: [X + 'level.ogg'], pick: [R + 'ui_order_b.ogg'],
+  /** 판 밖 상점에서 살 때 (11-23 형 「상점 구매할 때도 제대로 사는 기분」) — 동전 쏟는 소리 · 칸에 박히는 「짤랑」 */
+  coins: [R + 'coins_a.ogg', R + 'coins_b.ogg', R + 'coins_c.ogg'], coinTap: [R + 'tap_coin_g1.wav', R + 'tap_coin_g2.wav', R + 'tap_coin_g3.wav'],
   elite: [R + 'war_cry_h1.mp3'], win: [R + 'horn_victory_a.ogg'], lose: [X + 'defeat.ogg'],
   fire: [X + 'fire_1.ogg', X + 'fire_2.ogg', X + 'fire_3.ogg'], wind: [X + 'wind_1.ogg', X + 'wind_2.ogg', X + 'wind_3.ogg'],
   bolt: [X + 'bolt_1.ogg', X + 'bolt_2.ogg'], light: [X + 'light_1.ogg', X + 'light_2.ogg'], earth: [X + 'earth_1.ogg', X + 'earth_2.ogg'], skillHit: [X + 'skill_hit.ogg'],
@@ -288,6 +290,13 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
     ending: (won: boolean) => sfx(won ? 'win' : 'lose', V.end),
     /** 고른 카드(레벨업 · 보물 상자)의 룬이 HUD 칸에 박히는 그 순간 — 화면(raid/pick-fly.ts)이 날기 시작에 남은 초(at)를 넘겨 소리 시계로 건다 (A1 · 예전엔 고른 다음 프레임) */
     pick: (at = 0) => sfx('pick', V.ui, 0, 1, at),
+    /** 상점 구매 — 동전 쏟음 · 날아간 동전이 칸에 박히는 짤랑(at 초 뒤) · 다 올렸으면 레벨 종 + 징 */
+    buy: (arrive: number, maxed: boolean) => {
+      sfx('coins', V.buy)
+      for (let i = 0; i < 3; i++) sfx('coinTap', V.buy * .7, 0, 1 + i * .08, arrive + i * .06)
+      sfx('level', V.buy, 0, 1, arrive + .1)
+      if (maxed) sfx('chestFreeze', V.buy, 0, 1, arrive + .25)
+    },
     /** 보물 상자 연출 (화면이 부른다 · raid/chest-show.ts) — hold 연출 동안 배경음 멈춤(끝나면 그 자리에서 이어진다) · drum 북(step 만큼 높게 · at 초 뒤) · burst 그 단계의 곡 · freeze 대박이 멎는 순간 */
     chest: {
       hold(on: boolean) { chestHeld = on; if (on && music && !music.paused) music.pause() },
