@@ -123,3 +123,48 @@ def merge_legs(orig, edit, out, layout='5x2'):
 
 if __name__ == '__main__' and sys.argv[1] == 'legs':
     merge_legs(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5] if len(sys.argv) > 5 else '5x2')
+
+
+def merge_tip(orig, edit, out, layout='3x2'):
+    """무기 끝 보정 합치기 (11-24 사냥꾼 찌르기 b: 창끝을 안내 잿빛 네모 그대로 그려 왔다 → 창끝만 고친 판에서 그 자리만 가져온다).
+    칸마다(왼쪽 줄 견본 빼고) 원본의 잿빛 네모를 찾아, 그 둘레(가로 70 · 세로 30px)에서 두 판이 크게 다른 덩어리만 고친 판의 화소로 바꾼다(몸은 원본 그대로).
+      py -3 -I tools/sprite-kit/patch-merge.py tip <원본.png> <고친.png> <나갈.png> [3x2]"""
+    A, B = Image.open(orig).convert('RGB'), Image.open(edit).convert('RGB')
+    if B.size != A.size:
+        B = B.resize(A.size, Image.LANCZOS)
+    a, b = np.asarray(A).astype(np.int16), np.asarray(B).astype(np.int16)
+    W, H = A.size
+    cols, rows = (int(v) for v in layout.split('x'))
+    cw, ch = W / cols, H / rows
+    res = a.copy()
+    for j in range(rows):
+        for k in range(1, cols):
+            x0, x1, y0, y1 = int(cw * k), int(cw * (k + 1)), int(ch * j), int(ch * (j + 1))
+            ra, rb = a[y0:y1, x0:x1], b[y0:y1, x0:x1]
+            gray = (np.abs(ra[..., 0] - ra[..., 1]) < 14) & (np.abs(ra[..., 1] - ra[..., 2]) < 14) & (ra[..., 0] > 110) & (ra[..., 0] < 215)
+            lab, n = ndimage.label(ndimage.binary_opening(gray, iterations=2))
+            if n == 0:
+                print(f'줄{j + 1} 칸{k}: 잿빛 네모 없음 — 그대로')
+                continue
+            box = lab == 1 + int(np.argmax(ndimage.sum(gray, lab, range(1, n + 1))))
+            ys, xs = np.nonzero(box)
+            zone = np.zeros_like(box)
+            zone[max(0, ys.min() - 30):ys.max() + 31, max(0, xs.min() - 70):xs.max() + 71] = True
+            diff = (np.abs(ra - rb).sum(2) > 60) & zone
+            m = ndimage.binary_fill_holes(ndimage.binary_closing(diff, iterations=3))
+            lab2, n2 = ndimage.label(m)
+            near = ndimage.binary_dilation(box, iterations=6)
+            keep = np.zeros_like(m)
+            for i in range(1, n2 + 1):
+                c = lab2 == i
+                if (c & near).any():
+                    keep |= c
+            keep = ndimage.binary_dilation(keep, iterations=2) & zone
+            res[y0:y1, x0:x1][keep] = rb[keep]
+            print(f'줄{j + 1} 칸{k}: 잿빛 네모 {int(box.sum())}px · 바꾼 넓이 {int(keep.sum())}px')
+    Image.fromarray(res.clip(0, 255).astype(np.uint8)).save(out)
+    print(out, '· 원본과 다른 화소', int((np.abs(res - a).sum(2) > 0).sum()), '/', W * H)
+
+
+if __name__ == '__main__' and sys.argv[1] == 'tip':
+    merge_tip(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5] if len(sys.argv) > 5 else '3x2')
