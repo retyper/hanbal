@@ -4,7 +4,7 @@ import { imugiVisualBounds } from './raid/imugi-view.ts'
 import { fieldPixels, raidLowGraphics } from './raid/surface.ts'
 import { breakthroughText, isBreakthrough } from './realm/vanguard.ts'
 import { HAEBI_RUN as C, HAEBI_STICK as STICK, HAEBI_TREE as TREE, HAEBI_ULT as ULT, HAEBI_AWAKEN as AWK, HAEBI_STAGES as ST, HAEBI_ZOOM as ZOOM, HAEBI_SPEED as SPEED, HAEBI_GIANT as GIANT } from './tune/params.ts'
-import { createHaebi, runDuration, raidRulesForStage, KIT_RULES, MAP_RULES, SOLID_RULES, ANCHOR_RULES, BREAK_RULES, BUILD_RULES, BUILD2_RULES, CAP_RULES, giantMob, giantHUD, championViewNeeded, stepHaebi, barrageArcher, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, usesPermanentAwakening, normalizedRaidOpts, castWallSeconds, nodeText, nodeAt, branchName, wakeReady, ultName, ultOpen, runBranches, branchNodes, maxLevel, type Kit, type Power, type Pick, type Chest, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
+import { createHaebi, runDuration, raidRulesForStage, KIT_RULES, MAP_RULES, SOLID_RULES, ANCHOR_RULES, BREAK_RULES, BUILD_RULES, BUILD2_RULES, CAP_RULES, BOSSCHEST_RULES, bossLootOpen, giantMob, giantHUD, championViewNeeded, stepHaebi, barrageArcher, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, usesPermanentAwakening, normalizedRaidOpts, castWallSeconds, nodeText, nodeAt, branchName, wakeReady, ultName, ultOpen, runBranches, branchNodes, maxLevel, type Kit, type Power, type Pick, type Chest, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
 import { startRecord, recInput, gridInput, recPick, recReroll, recQuit, withdrawRun, sealInput, finishRecord, STEP, type Recorder } from './raid/runlog.ts'
 import { runFrame, speedOf, nextSpeed, speedLevel } from './raid/speed.ts'
 import { RaidFeel } from './raid/impact.ts'
@@ -12,7 +12,7 @@ import { RaidEnding } from './raid/ending.ts'
 import { drawEnding } from './raid/ending-view.ts'
 import { HAEBI_END as END } from './tune/params.ts'
 import { HAEBI_JACKPOT as JACKPOT, HAEBI_CHAMPION as CHAMP } from './tune/params.ts'
-import { HAEBI_CAP_VIEW as CAP_VIEW } from './tune/params.ts'
+import { HAEBI_CAP_VIEW as CAP_VIEW, HAEBI_BOSS_CHEST as BOSS_CHEST } from './tune/params.ts'
 import { ChestShow, chestShowWarmHtml } from './raid/chest-show.ts'
 import './raid/chest-show.css'
 import { CHEST_RULES, jackpotOdds } from './raid/haebi.ts'
@@ -124,7 +124,7 @@ let stageLocked = false   // 본편 표적 출전: 그 땅의 스테이지 하�
 const bossMinute = () => Math.floor(C.bossAt * ST[mode === 'trial' ? 'trial' : stage].length / 60)
 const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`
 /** createHaebi 에 넘기는 판 옵션 — 판 기록에도 이것 그대로 적는다 (다시 돌리기) */
-const runOpts = (): RaidOpts => ({ ...mode === 'stage' ? { stage, bonus: { ...meta.shop } } : {}, ...mode === 'trial' ? { awaken: false, simRules: '53B' as const } : { permanentAwake: awakening.permanentAwake, appearanceAwake: awakening.appearanceAwake, simRules: mode === 'stage' ? raidRulesForStage(stage) : '56B' as const }, mastery, kitRules: KIT_RULES, ...(mode === 'stage' ? { chestRules: CHEST_RULES, mapRules: MAP_RULES, blockRules: SOLID_RULES, anchorRules: ANCHOR_RULES, breakRules: BREAK_RULES, buildRules: BUILD_RULES, build2Rules: BUILD2_RULES, capRules: CAP_RULES } : {}) })
+const runOpts = (): RaidOpts => ({ ...mode === 'stage' ? { stage, bonus: { ...meta.shop } } : {}, ...mode === 'trial' ? { awaken: false, simRules: '53B' as const } : { permanentAwake: awakening.permanentAwake, appearanceAwake: awakening.appearanceAwake, simRules: mode === 'stage' ? raidRulesForStage(stage) : '56B' as const }, mastery, kitRules: KIT_RULES, ...(mode === 'stage' ? { chestRules: CHEST_RULES, mapRules: MAP_RULES, blockRules: SOLID_RULES, anchorRules: ANCHOR_RULES, breakRules: BREAK_RULES, buildRules: BUILD_RULES, build2Rules: BUILD2_RULES, capRules: CAP_RULES, bossChestRules: BOSSCHEST_RULES } : {}) })
 const newRun = (seed: number, opts: RaidOpts = runOpts()) => { const r = createHaebi(seed, mode, kit, opts); if (r.message.endsWith('첫 조합을 향해')) { r.message = ''; r.messageTime = 0 }  /* 시작 군말 띠는 걷는다 (형 11-16) */ return r }
 root.innerHTML = `<header><div><small>장수 열전 · 독립 모드</small><h1>${HERO.name} <em>${K.title}</em></h1></div><div class="head-actions"><button id="pause" disabled aria-label="일시정지">Ⅱ</button></div></header>
 <div id="layout"><aside id="character"><div id="portrait-media"><img id="hero-portrait" src="${import.meta.env.BASE_URL}realm/bust-hd/${HERO.bust}.jpg" alt="${HERO.name} 원화"><video id="hero-video" muted loop playsinline preload="none" hidden aria-label="각성 ${HERO.name} 영상"></video></div><div class="portrait-title"><span>${HERO.home}</span><b id="rank-title">${HERO.name}</b><button id="portrait-toggle" hidden>원화로 보기</button></div><div id="reaction">${weapon} 하나로 시작하는 열전</div><div id="combo-badges"></div><i class="frame-knots"></i></aside>
@@ -735,15 +735,20 @@ function routeHint(k: Power) {
   return recipes + unlockHint(k, recipes !== '')
 }
 /** 기술 단계 칸 — 지금 단계는 채움 · 이번에 오를 한 칸은 금빛 반짝 · 남은 칸은 빈 칸 · 숫자는 작게 (11-19 형: 「+1」로는 이 기술이 몇 단계인지 안 보였다) */
-function levelPips(rank: number, max: number) {
-  const cells = Array.from({ length: max }, (_, i) => `<i class="${i < rank ? 'on' : i === rank ? 'up' : ''}"></i>`).join('')
-  return `<i class="lv-pips" aria-label="${rank + 1}/${max}단계">${cells}<i class="lv-num">${rank ? `${rank}→` : ''}<i class="to">${rank + 1}</i>/${max}</i></i>`
+function levelPips(rank: number, max: number, up = 1) {
+  const to = Math.min(max, rank + up)
+  const cells = Array.from({ length: max }, (_, i) => `<i class="${i < rank ? 'on' : i < to ? 'up' : ''}"></i>`).join('')
+  return `<i class="lv-pips" aria-label="${to}/${max}단계">${cells}<i class="lv-num">${rank ? `${rank}→` : ''}<i class="to">${to}</i>/${max}</i></i>`
 }
+/** 68-BOSSCHEST 보스 전리품 띠 글 — 「보스 전리품 · 두 단계」 (단계 수는 HAEBI_BOSS_CHEST.ranks) */
+const lootRibbon = () => `보스 전리품 · ${['', '한', '두', '세', '네'][BOSS_CHEST.ranks] ?? BOSS_CHEST.ranks} 단계`
 /** 레벨업 카드 — 세 갈래 공유 껍데기 · 갈래 끝 표식 · 이름 밑 단계 칸 / 조합은 기존 금테 */
 function card(k: Pick, free = false) {
   if (!isCombo(k)) {
     const p = POWERS[k], t = nodeText(kit, k), at = nodeAt(kit, k)!, cap = at.branch !== 'd' && at.tier === TREE.tiers.length - 1, color = BRANCH_COLOR[at.branch], rank = run.ranks[k]
-    return `<button data-up="${k}" class="branch-card branch-${at.branch}${cap ? ' cap-card' : ''}" aria-label="${t.name}, ${branchName(kit, at.branch)} 갈래, ${rank + 1}/${p.max}단계. ${t.desc}" style="--accent:${cap ? color : p.color};--c:${color}">${cap ? '<i class="ribbon cap">갈래 끝</i>' : ''}<span class="rune">${powerIcon(k, kit)}</span>${rank ? '' : '<small class="gain new">획득</small>'}<b>${t.name}</b>${levelPips(rank, p.max)}<span>${t.desc}</span><em>${routeHint(k)}</em></button>`
+    // 68-BOSSCHEST 보스 전리품 칸은 한꺼번에 여러 단계 — 금빛 띠 (조합 카드의 금테 띠와 같은 결)
+    const loot = bossLootOpen(run), up = loot ? BOSS_CHEST.ranks : 1
+    return `<button data-up="${k}" class="branch-card branch-${at.branch}${cap ? ' cap-card' : ''}${loot ? ' boss-loot-card' : ''}" aria-label="${t.name}, ${branchName(kit, at.branch)} 갈래, ${Math.min(p.max, rank + up)}/${p.max}단계. ${t.desc}" style="--accent:${cap ? color : p.color};--c:${color}">${loot ? `<i class="ribbon boss-loot">${lootRibbon()}</i>` : cap ? '<i class="ribbon cap">갈래 끝</i>' : ''}<span class="rune">${powerIcon(k, kit)}</span>${rank ? '' : '<small class="gain new">획득</small>'}<b>${t.name}</b>${levelPips(rank, p.max, up)}<span>${t.desc}</span><em>${routeHint(k)}</em></button>`
   }
   const c = comboOf(k), r = comboRank(run, k), next = r + 1
   const pips = Array.from({ length: TREE.max }, (_, i) => `<i class="${i < r ? 'on' : i === r ? 'new' : ''}"></i>`).join('')
@@ -813,7 +818,7 @@ function chestBurst(id: number) {
 function upgradeHtml(chest: Chest | undefined, offers: readonly Pick[], rerollText: string) {
   // 중간 보스 상자 (60-JACKPOT) — 안 연 조합을 조건 없이 여는 큰 창 (금테) · 다 열었으면 한 단계
   const boss = chest?.boss === true, free = boss && offers.every(k => isCombo(k) && !comboRank(run, k))
-  const title = boss ? t('raid.chest.boss.title') : '보물 상자', note = boss ? t(free ? 'raid.chest.boss.open' : 'raid.chest.boss.up') : chest ? `남은 선택 ${run.chestChoice!.left}회` : ''
+  const title = boss ? t('raid.chest.boss.title') : '보물 상자', note = boss ? t(bossLootOpen(run) ? 'raid.chest.boss.loot' : free ? 'raid.chest.boss.open' : 'raid.chest.boss.up') : chest ? `남은 선택 ${run.chestChoice!.left}회` : ''
   return `<div class="panel upgrade${chest ? ' chest-reward' + (chest.large ? ' large' : '') + (boss ? ' boss-chest' : '') : ''}"${chest ? ` data-chest-id="${chest.id}" data-choice-left="${run.chestChoice!.left}"` : ''}><div class="lv-head">${haveRow()}<h2 class="lvup">${chest ? `<img class="chest-open" src="${import.meta.env.BASE_URL}realm/raid/chest-open.png" alt="">${title}<small>${note}</small>${chestBurst(chest.id)}` : '레벨업!'}</h2>${treeButton}</div><div class="choices">${offers.map(k => card(k, free)).join('')}</div>${chest ? '' : `<button id="reroll" ${run.rerolls ? '' : 'disabled'}>${rerollText}</button>`}</div>`
 }
 function showOverlay() {

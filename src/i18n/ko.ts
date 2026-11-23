@@ -3567,6 +3567,7 @@ export const ko = {
   'raid.chest.boss.title': '중간 보스 상자',
   'raid.chest.boss.open': '조합 하나를 조건 없이 바로 엽니다',
   'raid.chest.boss.up': '조합을 모두 열었습니다. 하나를 한 단계 올립니다',
+  'raid.chest.boss.loot': '보스 전리품을 하나 고르세요. 능력 칸은 한꺼번에 두 단계 오릅니다',
   'raid.chest.record': '상자 5개 {five}번 · 8개 {eight}번',
   'raid.chest.recordTip': '이 장수로 연 상자 가운데 5개와 8개가 터진 횟수입니다',
 } as const

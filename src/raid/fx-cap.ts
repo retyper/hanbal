@@ -6,7 +6,7 @@
 import { HAEBI_CAP_VIEW as V } from '../tune/params.ts'
 import { maxLevel, type Effect, type HaebiRun } from './haebi.ts'
 
-interface Pop { x: number; y: number; t: number; gold: number }
+interface Pop { x: number; y: number; t: number; gold: number; boss?: boolean }
 let runOf: HaebiRun | null = null
 /** 큰 글자를 띄운 판 시각 (없으면 null) */
 let bannerAt: number | null = null
@@ -16,8 +16,8 @@ let seen = new WeakSet<Effect>()
 export function trackCap(s: HaebiRun) {
   if (runOf !== s) { runOf = s; bannerAt = null; pops = []; seen = new WeakSet() }
   if (bannerAt === null && s.level >= maxLevel(s)) bannerAt = s.t
-  for (const f of s.fx) if (f.capGold !== undefined && !seen.has(f)) { seen.add(f); pops.push({ x: f.x, y: f.y, t: s.t, gold: f.capGold }) }
-  while (pops.length && s.t - pops[0]!.t > V.popLife) pops.shift()
+  for (const f of s.fx) if ((f.capGold !== undefined || f.bossGold !== undefined) && !seen.has(f)) { seen.add(f); pops.push({ x: f.x, y: f.y, t: s.t, gold: f.capGold ?? f.bossGold!, boss: f.bossGold !== undefined }) }
+  while (pops.length && s.t - pops[0]!.t > (pops[0]!.boss ? V.bannerLife : V.popLife)) pops.shift()
 }
 
 function text(ctx: CanvasRenderingContext2D, line: string, x: number, y: number, size: number, stroke: number, fill: string, alpha: number, scale: number) {
@@ -42,6 +42,8 @@ export function drawCap(ctx: CanvasRenderingContext2D, s: HaebiRun) {
   }
   for (const p of pops) {
     const age = s.t - p.t; if (age < 0) continue
+    // 68-BOSSCHEST 올릴 것이 없던 보스 상자의 금 — 크게 · 오래
+    if (p.boss) { if (age < V.bannerLife) text(ctx, `보스 전리품 +${p.gold}금`, p.x, p.y - V.lift - age * V.rise, V.size, V.stroke, V.fill, Math.min(1, (V.bannerLife - age) / V.fadeTime), age < V.popTime ? V.popScale - (V.popScale - 1) * age / V.popTime : 1); continue }
     text(ctx, `+${p.gold}금 · 회복`, p.x, p.y - V.popLift - age / V.popLife * V.popRise, V.popSize, V.popStroke, V.popFill, Math.max(0, 1 - age / V.popLife), 1)
   }
 }

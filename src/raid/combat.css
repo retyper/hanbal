@@ -264,6 +264,8 @@ svg.tree .need.ok text{fill:#ffe2a0}
 .tint-cap-glow{filter:drop-shadow(0 0 4px #c7a3ff) drop-shadow(0 0 2px #c7a3ff)}
 /* 갈래 끝 상태 표식 — 갈래 껍데기는 card-skins.css */
 .choices button.cap-card{border:2px solid var(--c);border-image:none;border-radius:6px;background:linear-gradient(#262a3af5,#0c0f16fa);box-shadow:0 0 0 1px #00000088,inset 0 0 18px color-mix(in srgb,var(--c) 40%,transparent),0 0 16px color-mix(in srgb,var(--c) 50%,transparent)}
+/* 68-BOSSCHEST 보스 전리품 띠 · 조합 카드 금테 띠와 같은 금빛 */
+.choices .ribbon.boss-loot{position:absolute;top:-2px;left:50%;transform:translateX(-50%);z-index:2;white-space:nowrap;padding:1px 14px;font-style:normal;font-size:11px;font-weight:bold;letter-spacing:.12em;color:#2a1a06;background:linear-gradient(#ffe7a0,#d8a640);border-radius:0 0 8px 8px}
 .choices .ribbon.cap{position:absolute;top:-2px;left:50%;transform:translateX(-50%);padding:1px 14px;font-style:normal;font-size:11px;font-weight:bold;letter-spacing:.2em;color:#10140f;background:var(--c);border-radius:0 0 8px 8px}
 .choices button.cap-card b{color:var(--c)}
 /* 기술 단계 칸 — 채운 칸 = 지금 단계 · 금빛 반짝 칸 = 이번에 오를 단계 · 빈 칸 = 남은 단계 */

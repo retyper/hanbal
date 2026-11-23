@@ -1015,6 +1015,12 @@ export const HAEBI_CHAMPION = {
  *  chest 상자 그림 크기(px · 화면 짧은 변의 chestShare 몫과 견주어 작은 쪽) · glow 빛 지름(상자 크기 몫 · glowLow 저사양) · rune 솟는 룬 크기(px) · dim 판을 덮는 어둠
  *  소리: drumRate 북이 룬마다 오르는 몫 · drumBase 들썩임 북의 첫 높이 · drumVol·jingleVol·freezeVol 크기 (곡은 raid/sound.ts 의 chest1·chest3·chest5·chest8·chestFreeze 자리 · 형이 고르면 파일만 바꾼다)
  */
+/**
+ * 68-BOSSCHEST 중간 보스 상자 (형 11-23 「템이 너무 잘 나와서 중간보스 잡은 보상이 뇌화연옥밖에 없던 적이 너무 많음」) — 늘 서로 다른 카드 셋:
+ * ① 안 연 조합(뇌화 연옥도 · 혼자만 나오지는 않는다) ② 연 조합의 다음 단계 ③ 갈래 끝 → 주 무기 → 나머지 칸 · 조합 아닌 칸은 고르면 ranks 단계를 한꺼번에 (끝 단계에서 멈춘다).
+ * 올릴 것이 정말 하나도 없으면 카드 대신 판 금 gold (스테이지 금 배수 · 상점 「탐욕」 몫을 곱한다 · 화면에 「보스 전리품」 금빛 글자)
+ */
+export const HAEBI_BOSS_CHEST = { ranks: 2, gold: 150 } as const
 export const HAEBI_JACKPOT = {
   counts: [1, 3, 5, 8], slow: [.9, .08, .02, 0], fast: [0, .85, .12, .03], pityStep: .05, spareGold: 25,
   view: {

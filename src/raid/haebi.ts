@@ -17,7 +17,7 @@ import { solidsFor, pushOutOfSolids, type Solid } from './props.ts'
 import type { Structure } from './build.ts'
 import { newWide, fieldBounds, worldBounds, stepGate, simView, ringSpot, huntSpot, inSimView, strayed, type WideState } from './wide.ts'
 import { HAEBI_BUILD as BU, HAEBI_CAP as CP } from '../tune/params.ts'
-import { HAEBI_BUILD2 as B2 } from '../tune/params.ts'
+import { HAEBI_BUILD2 as B2, HAEBI_BOSS_CHEST as BC } from '../tune/params.ts'
 import { BUILD_KINDS, ALL_BUILD_KINDS, isBuild2Kind, hasHp, rebuildOf, aggroOf, aggroNear, sotdaeRadius, sotdaeSlow, wellRadius, wellHeal, beaconEvery, beaconRadius, beaconShare, catapultEvery, catapultRadius, catapultShare, totemLineShare, segmentDistance, totemLinks, isBuildKind, newBuild, buildUnits, buildSpot, towerShare, towerFire, buildHp, standing, bodyR, pushOutOfBuild, touchingBuild, separateBuild, fenceTouching, jarBonusAt, type BuildKind, type BuildState } from './build.ts'
 
 /**
@@ -208,7 +208,7 @@ export interface KitZone { kind: 'crack' | 'wall'; x: number; y: number; cos: nu
  * sealAt·sealLeft 이번 공격에 더 붙일 부적 · boltIdle 벽력이 준비된 채 기다린 시간 · mark 표식 적(0 = 없음) · step 그림자 걸음 재사용 · stepped 방금 그림자 걸음(다음 찌르기는 등 뒤) · focused 겨눔이 찼다고 알렸나
  */
 export interface KitState { still: number; aim: number; runAim: number; runT: number; swing: number; sealAt: number; sealLeft: number; zones: KitZone[]; mark: number; step: number; stepped: boolean; focused: boolean; boltIdle: number }
-export interface Effect { x: number; y: number; x2: number; y2: number; r: number; angle: number; life: number; total: number; kind: 'hit' | 'slash' | 'blast' | 'bolt' | 'skill' | 'ult' | 'death' | 'spike' | 'thrust' | 'buff' | 'ring' | 'thud'; color: string; mob?: Mob['kind']; face?: number; n?: number; crit?: boolean; ult?: Kit; tru?: boolean; awakened?: boolean; empowered?: boolean; awakenedRelease?: boolean; castSeq?: number; championCue?: 'enter' | 'roar' | 'recovery' | 'quake'; recoveryHit?: boolean; /** 64-BREAK 부위가 부서진 순간 (화면이 「부위 파괴!」) */ partBreak?: boolean; /** 66-CAP 최고 레벨 뒤 보상으로 받은 금 (화면이 「+금 · 회복」) */ capGold?: number }
+export interface Effect { x: number; y: number; x2: number; y2: number; r: number; angle: number; life: number; total: number; kind: 'hit' | 'slash' | 'blast' | 'bolt' | 'skill' | 'ult' | 'death' | 'spike' | 'thrust' | 'buff' | 'ring' | 'thud'; color: string; mob?: Mob['kind']; face?: number; n?: number; crit?: boolean; ult?: Kit; tru?: boolean; awakened?: boolean; empowered?: boolean; awakenedRelease?: boolean; castSeq?: number; championCue?: 'enter' | 'roar' | 'recovery' | 'quake'; recoveryHit?: boolean; /** 64-BREAK 부위가 부서진 순간 (화면이 「부위 파괴!」) */ partBreak?: boolean; /** 66-CAP 최고 레벨 뒤 보상으로 받은 금 (화면이 「+금 · 회복」) */ capGold?: number; /** 68-BOSSCHEST 올릴 것이 없어 금으로 받은 보스 전리품 */ bossGold?: number }
 /** 이어지는 비기(용오름 창의 솟음 · 환영난무의 순간 이동 · 돌벼락의 물결) — 남은 수 n · 다음까지 t 초 · 처음 자리 · 이미 벤 적 · k 힘 몫(되받아치기는 작게) */
 export interface UltState { n: number; t: number; x: number; y: number; used: number[]; k: number }
 export interface Drop { x: number; y: number; value: number; age: number }
@@ -251,6 +251,8 @@ export interface HaebiRun {
   build?: BuildState;
   /** 66-CAP 최고 레벨 뒤 보상 (opts.capRules) — n 받은 수 · gold 그렇게 받은 판 금 */
   cap?: { n: number; gold: number };
+  /** 68-BOSSCHEST 중간 보스 상자가 늘 카드 셋 (opts.bossChestRules · 60-JACKPOT 판에만) */
+  bossChest?: true;
   /** 60-JACKPOT 상자 규칙 (opts.chestRules) — 없으면 옛 고르는 상자 · pity 5개 넘게 못 터진 상자 수 · five·eight 이 판에서 터진 5개·8개 · ranks 상자가 올려 준 칸 수 */
   jackpots?: { pity: number; five: number; eight: number; ranks: number };
 }
@@ -262,7 +264,7 @@ export function random(s: HaebiRun) { const rng = makeRng(s.seed); const n = rng
  * awaken remains the fallback qualification alias. Explicit53B, plus default trial/vanguard, preserve timed-awake rules.
  * mastery: 숲·여울·목책을 다 깬 장수 (막대 절반으로 시작)
  */
-export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' | '55-SHAMAN'; /** 58-KITS 무기 개성 — 스테이지 규칙과 따로 켠다 (판 기록 opts 에 그대로 남아 재생도 같다) */ kitRules?: '58-KITS'; /** 60-JACKPOT 상자 — 정예 상자는 고르지 않고 터지고, 중간 보스 상자는 조합 하나를 고른다 (스테이지 판만 · 판 기록 opts 에 남아 재생도 같다) */ chestRules?: '60-JACKPOT'; /** 59-WIDE 넓은 맵 — 열전 스테이지 판에만 켜진다 (시련·선봉에 넘겨도 한 장짜리 그대로 · 판 기록 opts 에 남아 재생도 같다) */ mapRules?: '59-WIDE'; /** 61-SOLID 넓은 맵의 나무·바위·목책이 장수와 적을 막는다 (무기는 통과 · 59-WIDE 판에서만 · 판 기록 opts 에 남아 재생도 같다) */ blockRules?: '61-SOLID'; /** 62-ANCHOR 장수는 제 발로만 움직인다 — 단검의 그림자 걸음·환영난무가 장수를 순간이동시키지 않는다 (형 11-23 「때리다가 갑자기 순간이동 · 보스전에서 원하지 않는 곳으로」 · 판 기록 opts 에 남는다) */ anchorRules?: '62-ANCHOR'; /** 64-BREAK 부위 파괴가 느껴지게 — 몸통 피해가 가까운 부위로 번지고 · 부위 체력 낮춤 · 부서지면 그로기와 더 큰 피해 (판 기록 opts 에 남는다) */ breakRules?: '64-BREAK'; /** 66-CAP 최고 레벨 뒤 기세 막대가 다시 차면 회복과 판 금으로 바꾼다 (HAEBI_CAP · 판 기록 opts 에 남는다) */ capRules?: '66-CAP'; /** 67-BUILD2 설치 갈래에 장승·솟대·봉수대·포차·우물을 더한다 (65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ build2Rules?: '67-BUILD2'; /** 65-BUILD 레벨업 카드의 네 번째 갈래 「설치」 — 고르면 망루·목책·항아리가 장수 앞에 서서 판 끝까지 남는다 · 장수·적은 지나가지 못하고 장수가 몸으로 밀어 옮긴다 (판 기록 opts 에 남는다) */ buildRules?: '65-BUILD' }
+export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' | '55-SHAMAN'; /** 58-KITS 무기 개성 — 스테이지 규칙과 따로 켠다 (판 기록 opts 에 그대로 남아 재생도 같다) */ kitRules?: '58-KITS'; /** 60-JACKPOT 상자 — 정예 상자는 고르지 않고 터지고, 중간 보스 상자는 조합 하나를 고른다 (스테이지 판만 · 판 기록 opts 에 남아 재생도 같다) */ chestRules?: '60-JACKPOT'; /** 59-WIDE 넓은 맵 — 열전 스테이지 판에만 켜진다 (시련·선봉에 넘겨도 한 장짜리 그대로 · 판 기록 opts 에 남아 재생도 같다) */ mapRules?: '59-WIDE'; /** 61-SOLID 넓은 맵의 나무·바위·목책이 장수와 적을 막는다 (무기는 통과 · 59-WIDE 판에서만 · 판 기록 opts 에 남아 재생도 같다) */ blockRules?: '61-SOLID'; /** 62-ANCHOR 장수는 제 발로만 움직인다 — 단검의 그림자 걸음·환영난무가 장수를 순간이동시키지 않는다 (형 11-23 「때리다가 갑자기 순간이동 · 보스전에서 원하지 않는 곳으로」 · 판 기록 opts 에 남는다) */ anchorRules?: '62-ANCHOR'; /** 64-BREAK 부위 파괴가 느껴지게 — 몸통 피해가 가까운 부위로 번지고 · 부위 체력 낮춤 · 부서지면 그로기와 더 큰 피해 (판 기록 opts 에 남는다) */ breakRules?: '64-BREAK'; /** 66-CAP 최고 레벨 뒤 기세 막대가 다시 차면 회복과 판 금으로 바꾼다 (HAEBI_CAP · 판 기록 opts 에 남는다) */ capRules?: '66-CAP'; /** 68-BOSSCHEST 중간 보스 상자가 늘 카드 셋 (안 연 조합 → 조합 단계 → 갈래 끝·주 무기 두 단계 · HAEBI_BOSS_CHEST · 판 기록 opts 에 남는다) */ bossChestRules?: '68-BOSSCHEST'; /** 67-BUILD2 설치 갈래에 장승·솟대·봉수대·포차·우물을 더한다 (65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ build2Rules?: '67-BUILD2'; /** 65-BUILD 레벨업 카드의 네 번째 갈래 「설치」 — 고르면 망루·목책·항아리가 장수 앞에 서서 판 끝까지 남는다 · 장수·적은 지나가지 못하고 장수가 몸으로 밀어 옮긴다 (판 기록 opts 에 남는다) */ buildRules?: '65-BUILD' }
 /** 새 판이 쓰는 무기 규칙 */
 export const KIT_RULES = '58-KITS' as const
 /** 새 스테이지 판이 쓰는 상자 규칙 */
@@ -279,6 +281,8 @@ export const BREAK_RULES = '64-BREAK' as const
 export const BUILD_RULES = '65-BUILD' as const
 /** 새 판이 쓰는 설치 다섯 종류 더 규칙 */
 export const BUILD2_RULES = '67-BUILD2' as const
+/** 새 판이 쓰는 중간 보스 상자 규칙 */
+export const BOSSCHEST_RULES = '68-BOSSCHEST' as const
 /** 새 판이 쓰는 최고 레벨 뒤 보상 규칙 */
 export const CAP_RULES = '66-CAP' as const
 export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit = 'axe', opts: HaebiOpts = {}): HaebiRun {
@@ -315,6 +319,7 @@ export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit
   if (build2) s.build!.v2 = true
   if (opts.capRules === CAP_RULES) s.cap = { n: 0, gold: 0 }
   if (opts.chestRules === CHEST_RULES && mode === 'stage') s.jackpots = { pity: 0, five: 0, eight: 0, ranks: 0 }
+  if (opts.bossChestRules === BOSSCHEST_RULES && s.jackpots) s.bossChest = true
   if (mode === 'vanguard') {
     s.level = V.startLevel; s.ranks[k.primary] = 4; s.ranks[k.secondary] = 3; s.ranks.echo = 2; s.ranks.tempo = 1; s.ranks.reach = 1
     s.combos = kitCombos(kit).filter(c => c.kit === kit).map(c => c.id); s.message = '선봉에 서기 · 전위대장 3명을 돌파하라'
@@ -460,11 +465,32 @@ function openJackpot(s: HaebiRun, chest: Chest) {
   j.ranks += out.picks.length; s.chestGold = (s.chestGold ?? 0) + out.bonus
   chest.jackpot = out; chest.state = 'claimed'; chest.choicesRemaining = 0
 }
+/**
+ * 68-BOSSCHEST 보스 전리품 — 서로 다른 카드 셋까지: ① 안 연 조합(묶음 차례 · 뇌화 연옥 포함) ② 연 조합의 다음 단계 ③ 갈래 끝(capA·capB·capC) → 주 무기 → 나머지 칸 (상자 차례)
+ * 셋 가운데 조합만 하나라도 다른 카드로 채워지니 뇌화 연옥 혼자 나오는 일은 올릴 칸이 하나도 남지 않았을 때뿐이다
+ */
+export function bossLoot(s: HaebiRun): Pick[] {
+  const combos = kitCombos(s.kit), k = KITS[s.kit]
+  const closed = combos.filter(c => !comboRank(s, c.id)).map(c => c.id)
+  const more = combos.filter(c => comboRank(s, c.id) > 0 && comboRank(s, c.id) < T.max).map(c => c.id)
+  const order = (p: Power) => p === 'capA' || p === 'capB' || p === 'capC' ? 0 : p === k.primary ? 1 : 2
+  const powers = (chestOrder(s).filter(p => !isCombo(p)) as Power[]).map((p, i) => ({ p, i })).sort((a, b) => order(a.p) - order(b.p) || a.i - b.i).map(x => x.p)
+  return [...closed, ...more, ...powers].slice(0, 3)
+}
+/** 지금 고르는 것이 68-BOSSCHEST 보스 전리품 창인가 (화면이 「보스 전리품 · 두 단계」 띠를 붙인다) */
+export const bossLootOpen = (s: HaebiRun) => !!s.bossChest && s.choiceOrigin === 'chest' && !!s.chests?.find(c => c.id === s.chestChoice?.id)?.boss
 function chestOffers(s: HaebiRun, chest: Chest) {
   // 60-JACKPOT 중간 보스 상자: 이 묶음의 아직 안 연 조합 셋까지 · 고르면 조건 없이 바로 열린다 (다 열었으면 아래 옛 차례대로 한 단계)
-  const closed = chest.boss ? kitCombos(s.kit).filter(c => !comboRank(s, c.id)).map(c => c.id) : []
-  s.offers = closed.length ? closed.slice(0, 3) : chestOrder(s).slice(0, 3)
-  if (!s.offers.length) { chest.state = 'claimed'; chest.choicesRemaining = 0; return false }
+  const closed = chest.boss && !s.bossChest ? kitCombos(s.kit).filter(c => !comboRank(s, c.id)).map(c => c.id) : []
+  s.offers = chest.boss && s.bossChest ? bossLoot(s) : closed.length ? closed.slice(0, 3) : chestOrder(s).slice(0, 3)
+  if (!s.offers.length) {
+    // 68-BOSSCHEST: 올릴 것이 하나도 없으면 큰 금 (빈 창을 띄우지 않는다)
+    if (chest.boss && s.bossChest) {
+      const gold = Math.floor(BC.gold * ST[s.stage].gold * (1 + s.bonus.greed * SH.greed.step))
+      s.chestGold = (s.chestGold ?? 0) + gold; fx(s, 'ring', s.x, s.y, CP.ring, '#ffd66b'); s.fx[s.fx.length - 1]!.bossGold = gold
+    }
+    chest.state = 'claimed'; chest.choicesRemaining = 0; return false
+  }
   s.choiceOrigin = 'chest'; s.offerNonce = (s.offerNonce ?? 0) + 1
   s.chestChoice = { id: chest.id, left: chest.choicesRemaining, nonce: s.offerNonce }
   return true
@@ -518,6 +544,8 @@ export function choose(s: HaebiRun, key: Pick, nonce?: number) {
   if (s.state !== 'playing' || !s.offers.includes(key) || nonce !== undefined && nonce !== (s.offerNonce ?? 0)) return false
   const chest = s.choiceOrigin === 'chest' ? s.chests?.find(c => c.id === s.chestChoice?.id && c.state === 'opened' && c.choicesRemaining > 0) : null
   if (s.choiceOrigin === 'chest' && !chest || !chest && s.level >= maxLevel(s) || !applyPick(s, key, chest?.boss === true)) return false
+  // 68-BOSSCHEST: 보스 전리품의 칸(조합 아님)은 한꺼번에 BC.ranks 단계 (끝 단계에서 멈춘다)
+  if (chest?.boss && s.bossChest && !isCombo(key)) for (let i = 1; i < BC.ranks; i++) applyPick(s, key, true)
   s.offers = []
   if (chest) {
     chest.choicesRemaining--

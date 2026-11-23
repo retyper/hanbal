@@ -3554,6 +3554,7 @@ export const en: Partial<Record<Key, string>> = {
   'raid.chest.boss.title': 'Mid-Boss Chest',
   'raid.chest.boss.open': 'Open one combo right now, whatever its conditions',
   'raid.chest.boss.up': 'Every combo is open. Raise one by a rank',
+  'raid.chest.boss.loot': 'Pick one boss spoil. Skills rise two ranks at once',
   'raid.chest.record': 'Chests of 5: {five} · of 8: {eight}',
   'raid.chest.recordTip': 'How many chests of 5 and of 8 this hero has opened',
 }
