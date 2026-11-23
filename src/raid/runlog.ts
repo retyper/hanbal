@@ -82,12 +82,13 @@ export function finishRecord(r: Recorder, gold: number, at: string, left = false
 }
 
 /** 기록 한 장(씨앗 + 판 옵션 + 입력)으로 판을 처음부터 다시 돌린다 — 입력을 덜어 낸 기록(cut)은 못 돌린다 */
-export function replayRaid(g: RaidGame): HaebiRun {
+/** tick: 걸음마다 판을 들여다본다(분석 도구 tools/raid-records.ts · 판은 바꾸지 않는다) */
+export function replayRaid(g: RaidGame, tick?: (s: HaebiRun) => void): HaebiRun {
   const s = createHaebi(g.seed, g.mode, g.kit, { ...g.opts, simRules: g.rules === '55-IMUGI' ? '55-IMUGI' : g.rules === '55-TIGER' ? '55-TIGER' : g.rules === '57-BULGASARI' ? '57-BULGASARI' : g.rules === '55-GUMIHO' ? '55-GUMIHO' : g.rules === '55-SHAMAN' ? '55-SHAMAN' : g.rules === '56C' ? '56C' : g.rules === '56B' ? '56B' : g.rules === '56A' ? '56A' : '53B' })
   let inp = inputOf(0, 0, 0, g.grid)
   for (const tok of g.input.split(' ')) {
     const m = /^([0-9a-z]+)(.*)$/.exec(tok); if (!m) continue
-    for (let i = parseInt(m[1]!, 36); i > 0; i--) stepHaebi(s, inp, STEP)
+    for (let i = parseInt(m[1]!, 36); i > 0; i--) { stepHaebi(s, inp, STEP); tick?.(s) }
     const rest = m[2]!
     if (rest.startsWith(',')) { const [controls, view = ''] = rest.slice(1).split('|'), [x, y, f, source] = controls!.split(','); inp = inputOf(parseInt(x!, 36), parseInt(y!, 36), Number(f), g.grid, source === undefined ? -1 : parseInt(source, 36), view) }
     else if (rest.startsWith('=')) choose(s, rest.slice(1) as Pick)

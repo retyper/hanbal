@@ -359,3 +359,20 @@ export function makeSync(host: SyncHost, onChange: (s: SyncState) => void): {
     forget() { remember(null); clearTimer(); pending = false; again = false; chooseRemote = null; set({ kind: 'off' }) },
   }
 }
+
+/**
+ * 서버에 올라간 열전 판을 다 받는다 (records.html 판 기록 읽기 · 11-23 형 「내 플레이 기록 감안해서 확인해」).
+ * 로그인 안 했으면 null · 판마다 gzip 을 풀어 그대로 돌려준다(꼴은 runlog-store 의 RaidGame).
+ */
+export async function pullRaids(): Promise<unknown[] | null> {
+  const a = account(); if (a === null || !canSync()) return null
+  const token = await idToken(); if (token === null) return null
+  const ids = await listIds(`users/${a.uid}/raids`, token), out: unknown[] = []
+  for (const id of ids) {
+    const doc = await getDoc(`users/${a.uid}/raids/${id}`, token)
+    const data = doc?.fields['data']
+    if (!(data instanceof Uint8Array)) continue
+    try { out.push(JSON.parse(await gunzip(data))) } catch { /* 깨진 판은 건너뛴다 */ }
+  }
+  return out
+}
