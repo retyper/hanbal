@@ -138,12 +138,15 @@ def figure(phase, swing_near, pose=None):
     #   팔이 맨 앞(+23도)에서 맨 뒤(-23도)로 튀었다. → 한 바퀴에 한 번 고르게 오가는 물결로: 같은 쪽 다리가 가장 앞(딛음)일 때 팔은 가장 뒤.
     kk = ('pass', 'reach', 'contact', 'down').index(phase or 'pass') + (0 if swing_near else 4)
     sw = math.cos(2 * math.pi * (kk - 2) / 8)          # +1 = 가까운 다리가 가장 앞
-    A = 26 * S['arm']
+    # 11-23 밤 · 던파 여귀검사 걷기 칸을 브라우저로 직접 봄: 윗몸(머리·몸통)은 여덟 칸이 거의 같은 그림이고 팔은 엉덩이 곁에서 조금만 흔들린다.
+    #   우리 인형은 팔을 ±26도로 크게 휘둘러 어색했다(형 「팔 흔들리는 것도 어색」) → ±11도 · 팔꿈치는 거의 편 채.
+    A = 11 * S['arm']
     an, af = -A * sw, A * sw
-    arm_n = (an, an + S['elbow'] + 16 * max(0.0, an / max(A, 1)))   # 앞으로 나갈수록 팔꿈치가 더 굽는다
-    arm_f = (af, af + S['elbow'] + 16 * max(0.0, af / max(A, 1)))
+    eb = min(S['elbow'], 14)
+    arm_n = (an, an + eb + 6 * max(0.0, an / max(A, 1)))   # 팔꿈치는 조금만 굽는다
+    arm_f = (af, af + eb + 6 * max(0.0, af / max(A, 1)))
     if pose is None:   # 어깨는 팔을 따라 아주 조금 돈다(가까운 팔이 앞이면 가까운 어깨도 앞으로 1.5px)
-        tw = -1.5 * Z * sw
+        tw = -0.5 * Z * sw   # 어깨는 거의 돌지 않는다(윗몸은 한 그림처럼)
         sh_n, sh_f = (sh_n[0] + tw, sh_n[1]), (sh_f[0] - tw, sh_f[1])
     if pose is not None:
         arm_n, arm_f = pose['near_arm'], pose['far_arm']
