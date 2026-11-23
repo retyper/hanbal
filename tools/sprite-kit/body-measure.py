@@ -77,7 +77,7 @@ def measure(m):
     return dict(종아리=f(calf), 무릎=f(knee), 허벅지최대=f(tmax), 다리비=round(calf / thigh, 2) if thigh else 0, 등신=round(H / head, 2), 머리=f(head), 어깨=f(shoulder), 가슴통=f(chest), 허리=f(waist), 골반=f(hip), 허벅지=f(thigh), 가랑이=f(crotch or 0))
 
 
-if __name__ == '__main__' and not (len(sys.argv) > 2 and sys.argv[1] == 'gate'):
+if __name__ == '__main__' and not (len(sys.argv) > 2 and sys.argv[1] in ('gate', 'motion')):
     for p in sys.argv[1:]:
         for i, m in enumerate(figures(p)):
             d = measure(m); print(p.split('/')[-1][:28].ljust(28), i, ' '.join(f'{k} {v}' for k, v in d.items()))
@@ -119,3 +119,18 @@ if __name__ == '__main__' and len(sys.argv) > 2 and sys.argv[1] == 'gate':
     for i, (m, kind) in enumerate(zip(figures(sys.argv[2]), kinds)):
         d = measure(m); bad = gate(d, kind)
         print(f"{kind:11} {'합격' if not bad else '불합격'}  등신 {d['등신']} 머리 {d['머리']} 어깨 {d['어깨']} 허리 {d['허리']} 골반 {d['골반']} 허벅지 {d['허벅지']}/{d['허벅지최대']} 무릎 {d['무릎']} 종아리 {d['종아리']}" + ('' if not bad else '  ← ' + ' · '.join(bad)))
+
+
+if __name__ == '__main__' and len(sys.argv) > 2 and sys.argv[1] == 'motion':
+    # 동작 판(대머리 기본 몸 · 2×2)의 칸마다 머리 크기 — 자세가 달라도 머리는 흐르면 안 된다
+    #   py -3 -I tools/sprite-kit/body-measure.py motion <판.png> [가로 칸=2] [세로 칸=2] [기준 머리=32]
+    cols = int(sys.argv[3]) if len(sys.argv) > 3 else 2; rows = int(sys.argv[4]) if len(sys.argv) > 4 else 2; want = float(sys.argv[5]) if len(sys.argv) > 5 else 32
+    im = Image.open(sys.argv[2]).convert('RGB'); W, H = im.size; ok = 0; hs = []
+    for j in range(rows):
+        for i in range(cols):
+            a = np.asarray(im.crop((i * W // cols, j * H // rows, (i + 1) * W // cols, (j + 1) * H // rows))).astype(np.int16)
+            mk, gk = np.minimum(a[..., 0], a[..., 2]) - a[..., 1], a[..., 1] - np.maximum(a[..., 0], a[..., 2]); m = (mk if mk.mean() > gk.mean() else gk) < 60
+            ys, xs = np.nonzero(m); m = m[ys.min():ys.max() + 1, xs.min():xs.max() + 1]; h = m.shape[0]; wid = m.sum(1)
+            lo, hi = int(h * .12), int(h * .38); head = (lo + int(np.argmin(wid[lo:hi]))) * 137 / h; good = abs(head - want) <= HEAD_TOL; ok += good; hs.append(h)
+            print(f"칸{j * cols + i + 1} {'합격' if good else '불합격'}  머리 {head:.1f} (기준 {want}±{HEAD_TOL})  등신 {137 / head:.2f}  키 {h}px  발 높이 {ys.max() / (H / rows):.2f}")
+    print(f"{ok}/{cols * rows} 합격 · 칸 사이 키 차 {max(hs) - min(hs)}px ({(max(hs) - min(hs)) / max(hs) * 100:.1f}%)")

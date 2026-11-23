@@ -48,7 +48,8 @@ def main():
     faces = cut(f'{STD}/face-types-group.png')
     names = ['face-f-soft', 'face-f-sharp', 'face-f-cute', 'face-f-mature', 'face-m-gentle', 'face-m-sharp', 'face-m-rugged', 'face-m-old']
     assert len(faces) == 8, len(faces)
-    for im, n in zip(faces, names): im.save(f'{KIT}/{n}.png')
+    for im, n in zip(faces, names):
+        if n != 'face-f-mature': im.save(f'{KIT}/{n}.png')   # 11-23 형 「마귀할멈 같은 얼굴」 폐기 · 여자 얼굴형은 글로만
     H = 330; W = 190
     o = Image.new('RGB', (W * len(tiles), H + 52), (236, 232, 222)); dr = ImageDraw.Draw(o)
     for i, (im, label, nums) in enumerate(tiles):
