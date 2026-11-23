@@ -16,6 +16,7 @@
 import os
 import subprocess
 import sys
+import numpy as np
 from PIL import Image, ImageDraw
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -205,6 +206,40 @@ def strip(name, install=False):
         print('게임에 넣음:', f'{GAME}/{h["strip"]}.png')
 
 
+def _upper(im):
+    a = np.asarray(im)[..., 3] > 40
+    ys = np.nonzero(a.any(1))[0]
+    h = ys.max() - ys.min() + 1
+    u = np.zeros_like(a)
+    u[ys.min() + int(h * .04):ys.min() + int(h * .45)] = a[ys.min() + int(h * .04):ys.min() + int(h * .45)]
+    return u
+
+
+def _reg(a, r, reach=30):
+    """a 가 r 에서 가로로 얼마나 밀렸나(세로 ±8 도 함께 본다)"""
+    best, at = None, 0
+    for dy in range(-8, 9):
+        ry = np.roll(r, dy, axis=0)
+        for dx in range(-reach, reach + 1):
+            c = int((a ^ np.roll(ry, dx, axis=1)).sum())
+            if best is None or c < best or (c == best and abs(dx) < abs(at)):
+                best, at = c, dx
+    return at
+
+
+def _shift(im, d):
+    o = Image.new('RGBA', im.size, (0, 0, 0, 0))
+    o.alpha_composite(im, (d, 0))
+    return o
+
+
+def _room(im):
+    """그림이 칸 안에서 왼쪽·오른쪽으로 더 갈 수 있는 화소(가장자리 2px 는 남긴다)"""
+    a = np.asarray(im)[..., 3] > 40
+    xs = np.nonzero(a.any(0))[0]
+    return int(xs.min()) - 2, im.size[0] - 3 - int(xs.max())
+
+
 def strip_act(name, install=False):
     """넓은 동작 칸 장수: 본 띠(208×160 · 20칸) + 덧띠(240×224 · 쓰러짐 2 [+ 개성 4] + 공격 8)"""
     import shutil
@@ -220,6 +255,23 @@ def strip_act(name, install=False):
     n_old = 2 + (4 if os.path.exists(f'{PX}/{name}-quirk-1.png') else 0)
     old = [e.crop((i * CW, 0, (i + 1) * CW, CH)) for i in range(20, 20 + n_old)]
     xs = [to_act(c) for c in old] + [Image.open(f'{PX}/{name}-{h["atk"]}8-{t}-{i}.png').convert('RGBA') for t, i in cells8(h)]
+    # 공격 묶음을 서기에 잇는다 (11-24): 공격 여덟 칸은 앞발 끝으로, 서기·걷기는 윗몸으로 맞춰서, 그림의 보폭이 인형보다 넓은 장수는
+    #   서기 → 공격 첫 칸 · 공격 끝 칸 → 서기에서 몸이 9~16px 옆으로 튀었다(해비 15 · 사냥꾼 16 · 해녀 15). 여덟 칸을 **같은 만큼** 옮겨
+    #   끝 칸(거둔 자세)의 윗몸을 서기에 맞춘다 — 여덟 칸 사이의 앞발 고정은 그대로다. 좁은 칸 공격(12~17)도 같은 만큼.
+    st_act = to_act(e.crop((0, 0, CW, CH)))
+    d = -_reg(_upper(xs[-1]), _upper(st_act))
+    narrow = [e.crop((i * CW, 0, (i + 1) * CW, CH)) for i in range(12, 18)]
+    lo = max(-min(_room(c)[0] for c in xs[-8:] + narrow), -40)
+    hi = min(min(_room(c)[1] for c in xs[-8:] + narrow), 40)
+    d = max(lo, min(hi, d))
+    if abs(d) >= 2:
+        xs[-8:] = [_shift(c, d) for c in xs[-8:]]
+        m2 = Image.open(main).convert('RGBA')
+        for k, c in enumerate(narrow):
+            m2.paste(_shift(c, d), ((12 + k) * CW, 0))
+        m2.save(main)
+        e.paste(m2, (0, 0))
+        print(f'공격 묶음을 서기에 이음: 여덟 칸 {d:+d}px')
     xstrip = Image.new('RGBA', (ACT['cw'] * len(xs), ACT['ch']), (0, 0, 0, 0))
     for i, c in enumerate(xs):
         xstrip.alpha_composite(c, (i * ACT['cw'], 0))
