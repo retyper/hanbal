@@ -9,13 +9,15 @@ const BRANCH_WANTS: Record<Branch, (k: typeof KITS[Kit]) => [Power, number][]> =
   a: k => [[k.primary, 4], ['ember', 2], ['reach', 1], ['capA', 1], ['hone', 3], [k.primary, 10], ['capA', 3], ['reach', 5], ['hone', 5], ['ember', 10]],
   b: k => [[k.secondary, 4], ['echo', 2], ['thunder', 1], ['capB', 1], ['drill', 3], [k.secondary, 10], ['capB', 3], ['echo', 4], ['drill', 5], ['thunder', 10]],
   c: () => [['tempo', 3], ['tough', 3], ['capC', 1], ['stout', 3], ['breath', 3], ['capC', 3], ['tempo', 5], ['tough', 5], ['stout', 5], ['breath', 5], ['nimble', 3]],
-  d: () => BOT_BUILD,
+  d: () => [...BOT_BUILD, ...BOT_BUILD2.filter(([p]) => !BOT_BUILD.some(([q]) => q === p))],
 }
 /** 65-BUILD 설치 칸을 봇이 찍는 차례 — 망루로 치고 → 항아리로 기세 → 목책으로 버팀 (설치 칸이 없는 옛 판에는 카드로 안 나와 봇 길이 그대로) */
 const BOT_BUILD: [Power, number][] = [['tower', 3], ['jar', 2], ['fence', 2], ['tower', 5], ['jar', 4], ['fence', 4], ['jar', 5], ['fence', 5]]
 /** 예전 길(storm·fire·mixed)의 봇은 레벨 BOT_BUILD_EVERY 마다 설치 칸 하나쯤을 찍는다 (새 갈래를 아예 안 찍으면 사람이 하는 판을 못 잰다 · 넷마다는 거대 보스 앞에서 주 무기가 모자랐다) */
 const BOT_BUILD_EVERY = 6
-const botBuild = (s: HaebiRun) => BOT_BUILD.find(([p, n]) => s.offers.includes(p) && s.ranks[p] < n)?.[0]
+/** 67-BUILD2 판(여덟 종류)의 봇 차례 — 새 다섯을 앞에 두어 밸런스 판이 새 종류를 고루 고른다 (카드에 나온 것 가운데 앞에서부터 · 종류 칸 셋이 차면 가진 것만 나온다) */
+const BOT_BUILD2: [Power, number][] = [['totem', 3], ['beacon', 3], ['catapult', 3], ['well', 2], ['sotdae', 2], ['tower', 3], ['jar', 2], ['fence', 2], ['totem', 5], ['beacon', 5], ['catapult', 5], ['well', 4], ['sotdae', 4], ['tower', 5], ['jar', 4], ['fence', 4]]
+const botBuild = (s: HaebiRun) => (s.build?.v2 ? BOT_BUILD2 : BOT_BUILD).find(([p, n]) => s.offers.includes(p) && s.ranks[p] < n)?.[0]
 /** 고를 카드 중 그 갈래의 바람 차례 (없으면 Infinity) */
 function wantIndex(s: HaebiRun, p: Power) {
   const at = nodeAt(s.kit, p); if (!at) return Infinity

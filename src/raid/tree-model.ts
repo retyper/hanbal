@@ -1,5 +1,5 @@
 import { HAEBI_TREE as T } from '../tune/params.ts'
-import { runBranches, tierNeed, POWERS, KITS, branchNodes, branchName, branchPoints, nodeOpen, nodeParent, nodeText, kitCombos, comboRank, comboReady, ultUpgraded, type HaebiRun, type Branch, type Power, type Pick } from './haebi.ts'
+import { runBranches, runBranchNodes, tierNeed, POWERS, KITS, branchName, branchPoints, nodeOpen, nodeParent, nodeText, kitCombos, comboRank, comboReady, ultUpgraded, type HaebiRun, type Branch, type Power, type Pick } from './haebi.ts'
 
 export type TreeRequirement = { kind: 'power' | 'combo'; from: string; have: number; need: number; met: boolean }
 export type TreeNode = {
@@ -15,7 +15,7 @@ export function treeModel(s: HaebiRun) {
   // 65-BUILD 판은 네 갈래(설치) — 칸 자리 x 는 갈래 수로 나눈다
   const columns = runBranches(s), branches = columns.map((b, column) => ({
     id: b, name: branchName(s.kit, b),
-    tiers: branchNodes(s.kit)[b].map((row, tier) => row.map((p, i): TreeNode => {
+    tiers: runBranchNodes(s)[b].map((row, tier) => row.map((p, i): TreeNode => {
       const parent = nodeParent(s.kit, p)
       return { id: p, kind: 'power', name: nodeText(s.kit, p).name, rank: s.ranks[p], max: POWERS[p].max,
         branch: b, x: (column + .5) * 100 / columns.length + (row.length === 2 ? (i ? 6.3 : -6.3) : 0), y: 7 + tier * 19,

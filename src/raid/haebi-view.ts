@@ -25,6 +25,7 @@ import { trackScorch, drawScorch } from './fx-scorch.ts'
 import { trackBreaks, drawBreakText, drawGroggy } from './fx-break.ts'
 import { trackCap, drawCap } from './fx-cap.ts'
 import { BUILD_PATHS, drawBuildGround, drawStructure } from './fx-build.ts'
+import { BUILD2_PATHS, drawBuild2Ground, drawSignal, drawLob } from './fx-build2.ts'
 import { HAEBI_BUILD } from '../tune/params.ts'
 const BUILD_VIEW = HAEBI_BUILD.view
 import type { Structure } from './build.ts'
@@ -56,7 +57,7 @@ export const imagePaths = [...CARD_FRAME_PATHS, genArtOf('haebi').file, genArtOf
   // 11-22 59-WIDE 넓은 맵: 이어 깔리는 바닥 다섯 (tools/sprite-kit/ground-tile.py) · 낱개 장식 34개 (Codex 80 · tools/sprite-kit/map-props.py)
   ...GROUND_PATHS, ...PROP_PATHS,
   // 65-BUILD 설치 갈래 — 항아리 그림 (망루·목책은 위 장식 그림을 빌린다)
-  ...BUILD_PATHS]
+  ...BUILD_PATHS, ...BUILD2_PATHS]
 /** bar-boss.png 의 투명한 홈 [x0,y0,x1,y1] — tools/raid-ui-kit.py 가 public/realm/raid/ui/kit.json 에 적는 값 */
 const BOSS_WIN = [104, 35, 626, 82] as const
 /**
@@ -782,6 +783,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   if (aura) drawAuraGround(ctx, aura, auraAt)
   drawOwnZones(ctx, s)
   drawBuildGround(ctx, s)   // 65-BUILD 항아리 둘레
+  drawBuild2Ground(ctx, s)   // 67-BUILD2 솟대·우물 둘레 · 혼줄 · 봉수대 표식
   // 적이 나를 때릴 자리 · 거대 두목의 패턴 — 땅에 깐다 (몸·효과는 그 위에 선다 · 11-23)
   drawThreats(ctx, images, s); drawChampionTells(ctx, s)
   for(const e of s.enemies)if(e.giant?.kind==='imugi'&&e.giant.attack&&(e.giant.state==='tell'||e.giant.state==='strike'))drawImugiThreats(ctx,e.giant.attack.shapes)
@@ -885,6 +887,8 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
     } else if (b.kind === 'hurl') {
       // 맥족 사냥꾼의 창 — 투창 그림 그대로
       stamp(ctx, images, 'raid/javelin.png', p.x, p.y, 68, Math.atan2(b.vy, b.vx))
+    } else if (b.kind === 'signal') { drawSignal(ctx, images, b)
+    } else if (b.kind === 'lob') { drawLob(ctx, images, b)
     } else if (b.kind === 'flame') {
       // 불바닥은 땅 표식 차례에 그렸다 (drawThreats)
     } else if (b.kind === 'stone') {

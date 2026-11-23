@@ -14,9 +14,11 @@ import { HAEBI_PALISADE as WL, HAEBI_BREAK as BR } from '../tune/params.ts'
 import { createPalisade, damagePiece, piecesHit, tickPalisade, wallAim, wallMove, wallSettle, type Palisade, type WallPiece } from './palisade.ts'
 import { HAEBI_WIDE as WD } from '../tune/params.ts'
 import { solidsFor, pushOutOfSolids, type Solid } from './props.ts'
+import type { Structure } from './build.ts'
 import { newWide, fieldBounds, worldBounds, stepGate, simView, ringSpot, huntSpot, inSimView, strayed, type WideState } from './wide.ts'
 import { HAEBI_BUILD as BU, HAEBI_CAP as CP } from '../tune/params.ts'
-import { BUILD_KINDS, isBuildKind, newBuild, buildUnits, buildSpot, towerShare, towerFire, buildHp, aggroShare, towerNear, standing, bodyR, pushOutOfBuild, touchingBuild, separateBuild, fenceTouching, jarBonusAt, type BuildKind, type BuildState } from './build.ts'
+import { HAEBI_BUILD2 as B2 } from '../tune/params.ts'
+import { BUILD_KINDS, ALL_BUILD_KINDS, isBuild2Kind, hasHp, rebuildOf, aggroOf, aggroNear, sotdaeRadius, sotdaeSlow, wellRadius, wellHeal, beaconEvery, beaconRadius, beaconShare, catapultEvery, catapultRadius, catapultShare, totemLineShare, segmentDistance, totemLinks, isBuildKind, newBuild, buildUnits, buildSpot, towerShare, towerFire, buildHp, standing, bodyR, pushOutOfBuild, touchingBuild, separateBuild, fenceTouching, jarBonusAt, type BuildKind, type BuildState } from './build.ts'
 
 /**
  * 장수 열전 — 다이센카식 20분 판 (11-16 형: 「스테이지·판 밖 상점·휘장 · 무기 10단계 · 적 단계업」).
@@ -24,7 +26,7 @@ import { BUILD_KINDS, isBuildKind, newBuild, buildUnits, buildSpot, towerShare, 
  * 판(mode): stage = 독립 열전(스테이지 · 상점 강화 bonus) · trial = 본편 각성 시련(짧고 쉬움) · vanguard = 본편 선봉.
  */
 export type Kit = 'axe' | 'bow' | 'spear' | 'sword' | 'dagger' | 'magic' | 'sling'
-export type Power = 'axe' | 'gale' | 'ember' | 'thunder' | 'echo' | 'tempo' | 'reach' | 'bow' | 'rain' | 'spear' | 'javelin' | 'sword' | 'wave' | 'dagger' | 'knife' | 'bell' | 'soul' | 'sling' | 'skip' | 'hone' | 'drill' | 'tough' | 'breath' | 'nimble' | 'stout' | 'capA' | 'capB' | 'capC' | 'tower' | 'fence' | 'jar'
+export type Power = 'axe' | 'gale' | 'ember' | 'thunder' | 'echo' | 'tempo' | 'reach' | 'bow' | 'rain' | 'spear' | 'javelin' | 'sword' | 'wave' | 'dagger' | 'knife' | 'bell' | 'soul' | 'sling' | 'skip' | 'hone' | 'drill' | 'tough' | 'breath' | 'nimble' | 'stout' | 'capA' | 'capB' | 'capC' | 'tower' | 'fence' | 'jar' | 'totem' | 'sotdae' | 'beacon' | 'catapult' | 'well'
 export const POWERS: Record<Power, { name: string; icon: string; max: number; color: string; desc: string }> = {
   axe: { name: '파쇄 도끼', icon: '斧', max: 10, color: '#f5c578', desc: '느리고 크게 앞을 내려찍어 맞은 적을 밀어내고 멈칫하게 함' },
   gale: { name: '질풍 도끼', icon: '風', max: 10, color: '#96e9cf', desc: '도끼를 높이 던져 앞에 떨어뜨림 · 박힌 도끼가 잠시 돌며 둘레를 벰' },
@@ -58,6 +60,12 @@ export const POWERS: Record<Power, { name: string; icon: string; max: number; co
   // ── 65-BUILD 설치 갈래 (네 번째 갈래 · 규칙이 켜진 판에만 카드·나무에 나온다) ──
   tower: { name: '화살 망루', icon: '樓', max: BU.max, color: '#e8b46a', desc: '장수 앞에 망루가 서서 가까운 적에게 화살을 쏩니다. 몸으로 밀어 옮길 수 있고, 3단계와 5단계에 하나씩 더 섭니다' },
   fence: { name: '목책 바리케이드', icon: '柵', max: BU.max, color: '#c98f5a', desc: '장수 앞에 목책이 섭니다. 적은 지나가지 못하고 멈춰 서서 목책을 부수며, 부서져도 잠시 뒤 다시 섭니다' },
+  // ── 67-BUILD2 설치 갈래 다섯 (규칙이 켜진 판에만 카드·나무에 나온다) ──
+  totem: { name: '장승', icon: '將', max: BU.max, color: '#d9a46a', desc: '장수 앞에 장승이 서서 둘레의 적을 끌어모읍니다. 장승 둘 사이에 이어진 혼줄을 지나는 적은 다치고 느려집니다' },
+  sotdae: { name: '솟대', icon: '鳥', max: BU.max, color: '#cfe6f5', desc: '장수 앞에 솟대가 섭니다. 둘레에 들어온 적이 느려집니다' },
+  beacon: { name: '봉수대', icon: '烽', max: BU.max, color: '#ff9a5a', desc: '장수 앞에 봉수대가 섭니다. 때마다 연기를 올려 적이 가장 많이 뭉친 곳에 화살비를 부릅니다' },
+  catapult: { name: '포차', icon: '砲', max: BU.max, color: '#c8a070', desc: '장수 앞에 포차가 섭니다. 멀리 뭉친 적에게 큰 바위를 던지고, 부서지면 잠시 뒤 다시 섭니다' },
+  well: { name: '우물', icon: '井', max: BU.max, color: '#8fd0ff', desc: '장수 앞에 우물이 섭니다. 곁에 서 있으면 체력이 차오릅니다' },
   jar: { name: '기세 항아리', icon: '甕', max: BU.max, color: '#e7c27a', desc: '장수 앞에 항아리가 섭니다. 둘레에서 쓰러진 적이 기세를 더 줍니다. 몸으로 밀어 옮길 수 있습니다' },
 }
 export const KITS: Record<Kit, { primary: Power; secondary: Power; title: string; weapon: string; skill: string }> = {
@@ -80,7 +88,7 @@ export const runBranches = (s: HaebiRun): readonly Branch[] => s.build ? ALL_BRA
 /** 갈래마다 층(0~3)의 칸 — 확산(범위)·부적은 주 무기 갈래, 메아리(보조 수)·벽력은 보조 갈래, 기세는 버팀 갈래 · 조합은 늘 두 갈래를 잇는다 */
 export function branchNodes(kit: Kit): Record<Branch, Power[][]> {
   const k = KITS[kit]
-  return { a: [[k.primary], ['reach', 'ember'], ['hone'], ['capA']], b: [[k.secondary], ['echo', 'thunder'], ['drill'], ['capB']], c: [['tough', 'tempo'], ['breath', 'nimble'], ['stout'], ['capC']], d: BUILD_KINDS.map(k => [k]) }
+  return { a: [[k.primary], ['reach', 'ember'], ['hone'], ['capA']], b: [[k.secondary], ['echo', 'thunder'], ['drill'], ['capB']], c: [['tough', 'tempo'], ['breath', 'nimble'], ['stout'], ['capC']], d: [['tower', 'totem'], ['fence', 'sotdae'], ['jar', 'beacon'], ['catapult', 'well']] }
 }
 /** 묶음마다 갈래 이름과 이름이 바뀌는 칸 (벼리기·숙련·갈래 끝) — 설명은 늘 「합니다」 */
 export const NODE_TEXT: Record<Kit, { a: string; b: string } & Partial<Record<Power, { name: string; desc: string }>>> = {
@@ -108,11 +116,18 @@ export function nodeText(kit: Kit, p: Power) {
 }
 /** 그 묶음에서 고를 수 있는 칸 — 갈래 a·b·c 차례 */
 export const kitPowers = (kit: Kit): Power[] => BRANCHES.flatMap(b => branchNodes(kit)[b].flat())
+/** 이 판의 설치 종류 — 65-BUILD 판은 셋 · 67-BUILD2 판은 여덟 */
+export const runKinds = (s: HaebiRun): readonly Power[] => s.build?.v2 ? ALL_BUILD_KINDS : BUILD_KINDS
+/** 이 판의 갈래 칸 — 설치 갈래(d)는 이 판의 설치 종류만 (빈 층은 뺀다) */
+export function runBranchNodes(s: HaebiRun): Record<Branch, Power[][]> {
+  const t = branchNodes(s.kit), kinds = runKinds(s)
+  return { ...t, d: t.d.map(row => row.filter(p => kinds.includes(p))).filter(row => row.length) }
+}
 /** 65-BUILD 설치 칸 가운데 지금 카드로 나올 수 있는 것 — 종류 칸(HAEBI_BUILD.kinds)이 다 차면 가진 종류만 */
 export function buildChoices(s: HaebiRun): Power[] {
   if (!s.build) return []
-  const held = BUILD_KINDS.filter(k => (s.ranks[k] ?? 0) > 0)
-  return held.length >= BU.kinds ? held : [...BUILD_KINDS]
+  const kinds = runKinds(s), held = kinds.filter(k => (s.ranks[k] ?? 0) > 0)
+  return held.length >= BU.kinds ? held : [...kinds]
 }
 /** 이 판에서 고를 수 있는 칸 — 무기 나무 + (65-BUILD 판) 설치 칸 */
 export const runPowers = (s: HaebiRun): Power[] => s.build ? [...kitPowers(s.kit), ...buildChoices(s)] : kitPowers(s.kit)
@@ -139,7 +154,7 @@ export function powerParents(kit: Kit): Partial<Record<Power, Power>> {
 export const nodeParent = (kit: Kit, p: Power): Power | null => powerParents(kit)[p] ?? null
 export function nodeOpen(s: HaebiRun, p: Power) {
   const parent = nodeParent(s.kit, p), at = nodeAt(s.kit, p)
-  return !!at && (at.branch !== 'd' || !!s.build) && (!parent || s.ranks[parent] >= 1) && tierOpen(s, at.branch, at.tier)
+  return !!at && (at.branch !== 'd' || !!s.build && (!isBuild2Kind(p) || !!s.build.v2)) && (!parent || s.ranks[parent] >= 1) && tierOpen(s, at.branch, at.tier)
 }
 /** 가장 많이 찍은 갈래 (같으면 a → b → c) */
 export function mainBranch(s: HaebiRun): Branch { let best: Branch = 'a'; for (const b of runBranches(s)) if (branchPoints(s, b) > branchPoints(s, best)) best = b; return best }
@@ -177,12 +192,12 @@ export type StageId = keyof typeof ST
 export type Bonus = Record<Exclude<keyof typeof SH, 'growth'>, number>
 export const NO_BONUS: Bonus = { might: 0, vigor: 0, armor: 0, regen: 0, haste: 0, swift: 0, magnet: 0, wisdom: 0, revive: 0, reroll: 0, greed: 0, luck: 0 }
 /** daze: 진탕격에 맞아 멈춘 남은 시간 · act: 창돌격꾼·범 예고(+)·돌진(−) 시간 · 투창 사냥꾼 겨눔(+) · 방화꾼 다음 불바닥까지 · vx·vy: 돌진·던질 방향 · buff: 무당이 북돋운 남은 시간 */
-export interface Mob { id: number; x: number; y: number; hp: number; max: number; kind: MobKind; cd: number; flash: number; wind: number; aimX: number; aimY: number; act: number; vx: number; vy: number; buff: number; poison: number; pdps: number; daze: number; bornAt?: number; /** 59-WIDE 큰 놈 사냥: 아직 장수 화면에 들어온 적 없는 정예 (그동안 bornAt 을 지금으로 밀어 「빨리 잡기」가 처음 본 때부터 세어진다) */ unseen?: boolean; /** 58-KITS 단검 독 겹 */ stack?: number; /** 65-BUILD 끌려가 치고 있는 망루 id (없으면 장수) */ aggro?: number; phase?: 1 | 2 | 3; pattern?: ChampionPattern | null; patternSeq?: number; recovery?: number; champion?: ChampionState; bossRole?: 'midboss' | 'giant'; giant?: GiantState }
+export interface Mob { id: number; x: number; y: number; hp: number; max: number; kind: MobKind; cd: number; flash: number; wind: number; aimX: number; aimY: number; act: number; vx: number; vy: number; buff: number; poison: number; pdps: number; daze: number; bornAt?: number; /** 59-WIDE 큰 놈 사냥: 아직 장수 화면에 들어온 적 없는 정예 (그동안 bornAt 을 지금으로 밀어 「빨리 잡기」가 처음 본 때부터 세어진다) */ unseen?: boolean; /** 58-KITS 단검 독 겹 */ stack?: number; /** 65-BUILD 끌려가 치고 있는 망루 id (없으면 장수) */ aggro?: number; /** 67-BUILD2 혼줄에 닿아 느려진 남은 초 */ slow?: number; phase?: 1 | 2 | 3; pattern?: ChampionPattern | null; patternSeq?: number; recovery?: number; champion?: ChampionState; bossRole?: 'midboss' | 'giant'; giant?: GiantState }
 export interface Chest { id: number; eliteId: number; x: number; y: number; bornAt: number; pickedAt?: number; state: 'ground' | 'opened' | 'claimed' | 'expired'; choicesRemaining: number; gold: number; large: boolean;
   /** 60-JACKPOT: boss = 중간 보스 상자(조합 하나를 고른다) · jackpot = 정예 상자가 터뜨린 것 */ boss?: boolean; jackpot?: ChestJackpot }
 /** 60-JACKPOT 정예 상자가 터뜨린 것 — count 단계(1·3·5·8) · picks 오른 칸(차례대로) · opened 그 가운데 새로 연 조합 · bonus 올릴 칸이 없어 엽전으로 바뀐 금 */
 export interface ChestJackpot { count: number; picks: Pick[]; opened: Combo[]; bonus: number }
-export interface Missile { x: number; y: number; vx: number; vy: number; life: number; kind: 'gale' | 'ember' | 'shard' | 'enemy' | 'arrow' | 'rain' | 'javelin' | 'wave' | 'barrage' | 'stone' | 'flame' | 'knife' | 'soul' | 'hurl' | 'pebble' | 'skip' | 'boulder' | 'tower'; damage: number; radius: number; hit: number[]; angle: number; tx: number; ty: number; gen?: number; source?: number; championShot?: boolean;
+export interface Missile { x: number; y: number; vx: number; vy: number; life: number; kind: 'gale' | 'ember' | 'shard' | 'enemy' | 'arrow' | 'rain' | 'javelin' | 'wave' | 'barrage' | 'stone' | 'flame' | 'knife' | 'soul' | 'hurl' | 'pebble' | 'skip' | 'boulder' | 'tower' | 'signal' | 'lob'; damage: number; radius: number; hit: number[]; angle: number; tx: number; ty: number; gen?: number; source?: number; championShot?: boolean;
   /** 58-KITS: big = 큰 한 방(겨눔 화살 · 셋째 칼 반달 · 모두 꿰뚫음 · 벽력이 튐) · landed = 떨어져 박힌 질풍 도끼 · tick = 박힌 도끼가 다시 치기까지 · ember 의 source = 부적이 붙은 적 */
   big?: boolean; landed?: boolean; tick?: number }
 /** 58-KITS 땅에 남는 것 — crack 산 가르기(갈라진 땅) · wall 창벽(가로 창날 줄) · (x,y) 에서 (cos,sin) 쪽 · 남은 life · 다음 치기까지 tick */
@@ -247,7 +262,7 @@ export function random(s: HaebiRun) { const rng = makeRng(s.seed); const n = rng
  * awaken remains the fallback qualification alias. Explicit53B, plus default trial/vanguard, preserve timed-awake rules.
  * mastery: 숲·여울·목책을 다 깬 장수 (막대 절반으로 시작)
  */
-export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' | '55-SHAMAN'; /** 58-KITS 무기 개성 — 스테이지 규칙과 따로 켠다 (판 기록 opts 에 그대로 남아 재생도 같다) */ kitRules?: '58-KITS'; /** 60-JACKPOT 상자 — 정예 상자는 고르지 않고 터지고, 중간 보스 상자는 조합 하나를 고른다 (스테이지 판만 · 판 기록 opts 에 남아 재생도 같다) */ chestRules?: '60-JACKPOT'; /** 59-WIDE 넓은 맵 — 열전 스테이지 판에만 켜진다 (시련·선봉에 넘겨도 한 장짜리 그대로 · 판 기록 opts 에 남아 재생도 같다) */ mapRules?: '59-WIDE'; /** 61-SOLID 넓은 맵의 나무·바위·목책이 장수와 적을 막는다 (무기는 통과 · 59-WIDE 판에서만 · 판 기록 opts 에 남아 재생도 같다) */ blockRules?: '61-SOLID'; /** 62-ANCHOR 장수는 제 발로만 움직인다 — 단검의 그림자 걸음·환영난무가 장수를 순간이동시키지 않는다 (형 11-23 「때리다가 갑자기 순간이동 · 보스전에서 원하지 않는 곳으로」 · 판 기록 opts 에 남는다) */ anchorRules?: '62-ANCHOR'; /** 64-BREAK 부위 파괴가 느껴지게 — 몸통 피해가 가까운 부위로 번지고 · 부위 체력 낮춤 · 부서지면 그로기와 더 큰 피해 (판 기록 opts 에 남는다) */ breakRules?: '64-BREAK'; /** 66-CAP 최고 레벨 뒤 기세 막대가 다시 차면 회복과 판 금으로 바꾼다 (HAEBI_CAP · 판 기록 opts 에 남는다) */ capRules?: '66-CAP'; /** 65-BUILD 레벨업 카드의 네 번째 갈래 「설치」 — 고르면 망루·목책·항아리가 장수 앞에 서서 판 끝까지 남는다 · 장수·적은 지나가지 못하고 장수가 몸으로 밀어 옮긴다 (판 기록 opts 에 남는다) */ buildRules?: '65-BUILD' }
+export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' | '55-SHAMAN'; /** 58-KITS 무기 개성 — 스테이지 규칙과 따로 켠다 (판 기록 opts 에 그대로 남아 재생도 같다) */ kitRules?: '58-KITS'; /** 60-JACKPOT 상자 — 정예 상자는 고르지 않고 터지고, 중간 보스 상자는 조합 하나를 고른다 (스테이지 판만 · 판 기록 opts 에 남아 재생도 같다) */ chestRules?: '60-JACKPOT'; /** 59-WIDE 넓은 맵 — 열전 스테이지 판에만 켜진다 (시련·선봉에 넘겨도 한 장짜리 그대로 · 판 기록 opts 에 남아 재생도 같다) */ mapRules?: '59-WIDE'; /** 61-SOLID 넓은 맵의 나무·바위·목책이 장수와 적을 막는다 (무기는 통과 · 59-WIDE 판에서만 · 판 기록 opts 에 남아 재생도 같다) */ blockRules?: '61-SOLID'; /** 62-ANCHOR 장수는 제 발로만 움직인다 — 단검의 그림자 걸음·환영난무가 장수를 순간이동시키지 않는다 (형 11-23 「때리다가 갑자기 순간이동 · 보스전에서 원하지 않는 곳으로」 · 판 기록 opts 에 남는다) */ anchorRules?: '62-ANCHOR'; /** 64-BREAK 부위 파괴가 느껴지게 — 몸통 피해가 가까운 부위로 번지고 · 부위 체력 낮춤 · 부서지면 그로기와 더 큰 피해 (판 기록 opts 에 남는다) */ breakRules?: '64-BREAK'; /** 66-CAP 최고 레벨 뒤 기세 막대가 다시 차면 회복과 판 금으로 바꾼다 (HAEBI_CAP · 판 기록 opts 에 남는다) */ capRules?: '66-CAP'; /** 67-BUILD2 설치 갈래에 장승·솟대·봉수대·포차·우물을 더한다 (65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ build2Rules?: '67-BUILD2'; /** 65-BUILD 레벨업 카드의 네 번째 갈래 「설치」 — 고르면 망루·목책·항아리가 장수 앞에 서서 판 끝까지 남는다 · 장수·적은 지나가지 못하고 장수가 몸으로 밀어 옮긴다 (판 기록 opts 에 남는다) */ buildRules?: '65-BUILD' }
 /** 새 판이 쓰는 무기 규칙 */
 export const KIT_RULES = '58-KITS' as const
 /** 새 스테이지 판이 쓰는 상자 규칙 */
@@ -262,6 +277,8 @@ export const ANCHOR_RULES = '62-ANCHOR' as const
 export const BREAK_RULES = '64-BREAK' as const
 /** 새 판이 쓰는 설치 갈래 규칙 */
 export const BUILD_RULES = '65-BUILD' as const
+/** 새 판이 쓰는 설치 다섯 종류 더 규칙 */
+export const BUILD2_RULES = '67-BUILD2' as const
 /** 새 판이 쓰는 최고 레벨 뒤 보상 규칙 */
 export const CAP_RULES = '66-CAP' as const
 export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit = 'axe', opts: HaebiOpts = {}): HaebiRun {
@@ -270,8 +287,9 @@ export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit
   const rules = opts.simRules === '55-IMUGI' && (mode !== 'stage' || stage !== 'ford') || (opts.simRules === '56C' || opts.simRules === '57-BULGASARI') && (mode !== 'stage' || stage !== 'palisade') || opts.simRules === '55-TIGER' && (mode !== 'stage' || stage !== 'snow') || opts.simRules === '55-GUMIHO' && (mode !== 'stage' || stage !== 'forest') || opts.simRules === '55-SHAMAN' && (mode !== 'stage' || stage !== 'fortress') ? '56B' : opts.simRules
   const k = KITS[kit]
   // 65-BUILD 가 꺼진 판은 설치 칸을 ranks 에 넣지 않는다 (옛 판 상태·기록이 글자 하나까지 같게)
-  const build = opts.buildRules === BUILD_RULES
-  const ranks = Object.fromEntries((Object.keys(POWERS) as Power[]).filter(p => build || !isBuildKind(p)).map(p => [p, 0])) as Record<Power, number>
+  const build = opts.buildRules === BUILD_RULES, build2 = build && opts.build2Rules === BUILD2_RULES
+  // 67-BUILD2 가 꺼진 판은 새 다섯 칸을 ranks 에 넣지 않는다 (65-BUILD 판도 글자 하나까지 같게)
+  const ranks = Object.fromEntries((Object.keys(POWERS) as Power[]).filter(p => isBuildKind(p) ? build && (build2 || !isBuild2Kind(p)) : true).map(p => [p, 0])) as Record<Power, number>
   // 평타(주 무기)만 들고 시작한다 (11-19 형: 「시작은 평타만」) — 보조 공격은 첫 레벨업 카드(맨 앞)로 · 비기는 첫 레벨업에서 열린다 (ultOpen)
   ranks[k.primary] = T.startPrimary; ranks[k.secondary] = T.startSecondary
   const s: HaebiRun = { mode, stage, bonus, maxHp, revives: bonus.revive, elites: 0, kit, breaches: 0, captains: 0, seed, t: 0, x: C.width / 2, y: C.height / 2, hp: maxHp, face: 1, moving: false,
@@ -294,6 +312,7 @@ export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit
   if (opts.anchorRules === ANCHOR_RULES) s.anchored = true
   if (opts.breakRules === BREAK_RULES) s.breakOn = true
   if (build) s.build = newBuild()
+  if (build2) s.build!.v2 = true
   if (opts.capRules === CAP_RULES) s.cap = { n: 0, gold: 0 }
   if (opts.chestRules === CHEST_RULES && mode === 'stage') s.jackpots = { pity: 0, five: 0, eight: 0, ranks: 0 }
   if (mode === 'vanguard') {
@@ -491,7 +510,7 @@ function applyPick(s: HaebiRun, key: Pick, force = false) {
     if (s.build && isBuildKind(key)) buildPicked(s, key)
     if (key === 'stout') { s.maxHp += T.stout; s.hp += T.stout }
     const at = nodeAt(s.kit, key)!
-    if (at.tier === T.tiers.length - 1 && s.ranks[key] === 1) announce(s, `갈래 끝 · ${nodeText(s.kit, key).name}`)
+    if (at.branch !== 'd' && at.tier === T.tiers.length - 1 && s.ranks[key] === 1) announce(s, `갈래 끝 · ${nodeText(s.kit, key).name}`)
   }
   return true
 }
@@ -711,7 +730,7 @@ function nearest(s: HaebiRun, x: number, y: number, excluded: number[] = [], rad
   for (const e of s.enemies) { if (e.hp <= 0 || excluded.includes(e.id)) continue; if (e.giant && !giantHasTarget(e.giant)) continue; if (seen && !aimable(s, e)) continue; const n = mobDistance(e, x, y); if (n < d) { d = n; best = e } }
   return best
 }
-const SPEED: Partial<Record<Missile['kind'], number>> = { pebble: 0, skip: C.skipSpeed, boulder: C.boulderSpeed, enemy: C.enemyShotSpeed, arrow: C.bowSpeed, javelin: C.javelinSpeed, wave: C.waveSpeed, rain: 0, barrage: 0, stone: 0, flame: 0, knife: C.knifeSpeed, soul: C.soulSpeed, hurl: M.hunterSpeed, tower: BU.tower.speed }
+const SPEED: Partial<Record<Missile['kind'], number>> = { pebble: 0, skip: C.skipSpeed, boulder: C.boulderSpeed, enemy: C.enemyShotSpeed, arrow: C.bowSpeed, javelin: C.javelinSpeed, wave: C.waveSpeed, rain: 0, barrage: 0, stone: 0, flame: 0, knife: C.knifeSpeed, soul: C.soulSpeed, hurl: M.hunterSpeed, tower: BU.tower.speed, signal: 0, lob: 0 }
 const LIFE: Partial<Record<Missile['kind'], number>> = { pebble: C.slingFlight, enemy: C.enemyShotLife, skip: C.skipLife, boulder: C.boulderLife, arrow: C.bowLife, javelin: C.javelinLife, wave: C.waveLife, rain: C.rainDelay, barrage: C.barrageDelay, stone: M.lobDelay, flame: M.flameLife, knife: C.knifeLife, soul: C.soulLife, hurl: M.hunterLife, tower: BU.tower.life0 }
 /** 투사체 종류의 처음 수명(초) — 보는 쪽이 발사 직후 손끝 보정을 잴 때 같은 값을 쓴다 */
 export const missileLife = (kind: Missile['kind']) => LIFE[kind] ?? C.galeLife
@@ -1566,24 +1585,82 @@ export const towerShot = (s: HaebiRun) => mobHp(s) * towerShare(s.ranks.tower ??
 function towerAggro(s: HaebiRun, e: Mob, bite: number, v: number, dt: number) {
   const b = s.build!
   let t = e.aggro === undefined ? undefined : b.items.find(it => it.id === e.aggro && standing(it))
-  if (!t) { delete e.aggro; t = towerNear(b, e); if (!t) return false; e.aggro = t.id }
-  const dx = t.x - e.x, dy = t.y - e.y, d = Math.hypot(dx, dy) || 1
-  if (d > bodyR(t) + mobRadius(e) + BU.tower.touch) {
+  if (!t) { delete e.aggro; t = aggroNear(b, e, e.id); if (!t) return false; e.aggro = t.id }
+  const a = aggroOf(t.kind)!, dx = t.x - e.x, dy = t.y - e.y, d = Math.hypot(dx, dy) || 1
+  if (d > bodyR(t) + mobRadius(e) + a.touch) {
     const ox = e.x, oy = e.y
     e.x += dx / d * v * dt; e.y += dy / d * v * dt
     if (s.palisade) wallMove(s.palisade, e, ox, oy, mobRadius(e))
-  } else { t.hp -= C.contactDamage * threat(s) * bite * BU.tower.bite * dt; t.flash = BU.flash }
+  } else { t.hp -= C.contactDamage * threat(s) * bite * a.bite * dt; t.flash = BU.flash }
   return true
 }
-/** 설치물 한 걸음 — 망루 화살 · 무너진 망루·목책은 잔해로 rebuild 초 뒤 같은 자리에 다시 선다 (항아리는 무적) */
+/** 67-BUILD2 적이 느려지는 몫 — 혼줄에 닿은 뒤 lineSlowT 초 · 솟대 둘레 안 (가장 센 것 하나만) */
+function mobSlow(s: HaebiRun, e: Mob) {
+  let k: number = (e.slow ?? 0) > 0 ? B2.totem.lineSlow : 1
+  const r = s.ranks.sotdae ?? 0
+  if (r) for (const it of s.build!.items) if (it.kind === 'sotdae' && Math.hypot(e.x - it.x, e.y - it.y) < sotdaeRadius(r)) { k = Math.min(k, 1 - sotdaeSlow(r)); break }
+  return k
+}
+/** 67-BUILD2 cluster px 안에 적이 가장 많이 뭉친 적 (거대 보스 빼고 · ok 로 거른다) — 같으면 from 에서 먼 것 (from 이 없으면 먼저 것) */
+function denseSpot(s: HaebiRun, ok: (e: Mob) => boolean, cluster: number, from?: { x: number; y: number }) {
+  let best: Mob | undefined, bn = 0, bd = -1
+  for (const e of s.enemies) {
+    if (e.hp <= 0 || e.giant || !ok(e)) continue
+    let n = 0
+    for (const o of s.enemies) if (o.hp > 0 && !o.giant && Math.hypot(o.x - e.x, o.y - e.y) < cluster) n++
+    const d = from ? Math.hypot(e.x - from.x, e.y - from.y) : 0
+    if (n > bn || n === bn && d > bd) { best = e; bn = n; bd = d }
+  }
+  return best
+}
+/** 67-BUILD2 봉수대 — 장수 화면에서 가장 뭉친 곳에 delay 초 뒤 화살비 (금빛 표식이 먼저) */
+function beaconStep(s: HaebiRun, it: Structure, dt: number, tempo: number) {
+  it.cd -= dt
+  if (it.cd > 0) return
+  const rank = s.ranks.beacon, t = denseSpot(s, e => aimable(s, e), B2.beacon.cluster)
+  if (!t) { it.cd = 0; return }
+  const m = shoot(s, 'signal', 0, mobHp(s) * beaconShare(rank), t.x, t.y)
+  if (m) { m.life = B2.beacon.delay; m.radius = beaconRadius(rank) }
+  it.cd = beaconEvery(rank) / tempo; it.flash = BU.flash
+}
+/** 67-BUILD2 포차 — minRange~range 안에서 가장 뭉친 곳(같으면 먼 곳)으로 바위를 던진다 (flight 초 뒤 떨어진다) */
+function catapultStep(s: HaebiRun, it: Structure, dt: number, tempo: number) {
+  it.cd -= dt
+  if (it.cd > 0) return
+  const rank = s.ranks.catapult, C2 = B2.catapult
+  const t = denseSpot(s, e => { const d = Math.hypot(e.x - it.x, e.y - it.y); return d >= C2.minRange && d <= C2.range }, C2.cluster, it)
+  if (!t) { it.cd = 0; return }
+  const m = shoot(s, 'lob', Math.atan2(t.y - it.y, t.x - it.x), mobHp(s) * catapultShare(rank), it.x, it.y, t.x, t.y)
+  if (m) { m.life = C2.flight; m.vx = (t.x - it.x) / C2.flight; m.vy = (t.y - it.y) / C2.flight; m.radius = catapultRadius(rank) }
+  it.cd = catapultEvery(rank) / tempo; it.flash = BU.flash
+}
+/** 67-BUILD2 판마다 — 혼줄(장승 둘 사이)을 지나는 적이 다치고 느려진다 · 우물 곁의 장수가 회복한다 (우물이 여럿이어도 한 번) */
+function build2Step(s: HaebiRun, dt: number) {
+  const b = s.build!
+  for (const e of s.enemies) if (e.slow) e.slow = Math.max(0, e.slow - dt)
+  const links = totemLinks(b)
+  if (links.length) {
+    const dps = mobHp(s) * totemLineShare(s.ranks.totem)
+    for (const e of s.enemies) {
+      if (e.hp <= 0 || e.giant) continue
+      for (const [p, q] of links) if (segmentDistance(e.x, e.y, p.x, p.y, q.x, q.y) < B2.totem.lineW + mobRadius(e)) { e.slow = B2.totem.lineSlowT; hit(s, e, dps * dt, false, null, undefined, true); break }
+    }
+  }
+  const w = s.ranks.well ?? 0
+  if (w && b.items.some(it => it.kind === 'well' && Math.hypot(s.x - it.x, s.y - it.y) < wellRadius(w))) s.hp = Math.min(s.maxHp, s.hp + wellHeal(w) * dt)
+}
+/** 설치물 한 걸음 — 망루 화살 · 봉수대·포차 (67) · 무너진 것은 잔해로 rebuild 초 뒤 같은 자리에 다시 선다 (항아리·솟대·봉수대·우물은 무적) */
 function buildStep(s: HaebiRun, dt: number, tempo: number) {
   const b = s.build!
   let rebuilt = false
   for (const it of b.items) {
     it.flash = Math.max(0, it.flash - dt); it.push = Math.max(0, it.push - dt)
-    if (it.kind === 'jar') continue
-    if (it.down > 0) { it.down -= dt; if (it.down <= 0) { it.down = 0; it.max = buildHp(it.kind, s.ranks[it.kind]) * threat(s); it.hp = it.max; rebuilt = true } continue }
-    if (it.hp <= 0) { it.hp = 0; it.down = BU[it.kind].rebuild; fx(s, 'thud', it.x, it.y, BU[it.kind].r * 2, '#c9a27a'); continue }
+    if (hasHp(it.kind)) {
+      if (it.down > 0) { it.down -= dt; if (it.down <= 0) { it.down = 0; it.max = buildHp(it.kind, s.ranks[it.kind]) * threat(s); it.hp = it.max; rebuilt = true } continue }
+      if (it.hp <= 0) { it.hp = 0; it.down = rebuildOf(it.kind); fx(s, 'thud', it.x, it.y, bodyR(it) * 2, '#c9a27a'); continue }
+    }
+    if (it.kind === 'beacon') { beaconStep(s, it, dt, tempo); continue }
+    if (it.kind === 'catapult') { catapultStep(s, it, dt, tempo); continue }
     if (it.kind !== 'tower') continue
     it.cd -= dt
     if (it.cd > 0) continue
@@ -1594,6 +1671,7 @@ function buildStep(s: HaebiRun, dt: number, tempo: number) {
     it.cd = towerFire(s.ranks.tower) / tempo; it.flash = BU.flash
   }
   if (rebuilt) settleBuild(s)
+  if (b.v2) build2Step(s, dt)
 }
 export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
   if (s.state !== 'playing' || s.offers.length) return
@@ -1739,9 +1817,9 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
     const kind = e.kind, m = kind === 'elite' || kind === 'boss' ? null : M[kind]
     // 65-BUILD 목책: 닿은 잡졸은 멈춰 서서 목책을 친다 (그동안 걷지도 장수를 치지도 않는다)
     if (s.build && m) { const f = fenceTouching(s.build, e, mobRadius(e)); if (f) { f.hp -= C.contactDamage * threat(s) * (m.hit ?? 1) * BU.fence.bite * dt; f.flash = BU.flash; continue } }
-    const v = (C.mobSpeed + s.t * C.speedTimeScale) * (m?.speed ?? 1) * (e.buff > 0 ? M.shamanSpeed : 1) * (kind === 'berserker' && e.hp < e.max / 2 ? M.berserkSpeed : 1)
+    const v = (C.mobSpeed + s.t * C.speedTimeScale) * (m?.speed ?? 1) * (e.buff > 0 ? M.shamanSpeed : 1) * (kind === 'berserker' && e.hp < e.max / 2 ? M.berserkSpeed : 1) * (s.build?.v2 ? mobSlow(s, e) : 1)
     // 65-BUILD 망루 어그로: 붙어 싸우는 잡졸 셋에 하나가 가까운 망루로 끌려가 친다
-    if (s.build && m && !rangedMob(kind) && aggroShare(e.id) && towerAggro(s, e, m.hit ?? 1, v, dt)) continue
+    if (s.build && m && !rangedMob(kind) && towerAggro(s, e, m.hit ?? 1, v, dt)) continue
     const ch = charge(kind)
     // 56-C 목책: 걷는 방향만 문 쪽으로 돈다 (거리·겨눔·돌진은 그대로 장수 쪽 · 돌진은 목책에 박힌다)
     let mx = x / d, my = y / d
@@ -1843,6 +1921,12 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
         }
         if (s.palisade) wallHit(s, disk(b.tx, b.ty, b.radius), 'melee')   // 떨어진 돌은 그 자리 목책도 친다
       }
+    } else if (b.kind === 'signal') {
+      // 67-BUILD2 봉수대 화살비: 금빛 표식 뒤 그 자리에 떨어진다 (부적·번개는 붙지 않는다)
+      if (b.life <= 0) blast(s, b.x, b.y, b.radius, b.damage, '#cfe3ff')
+    } else if (b.kind === 'lob') {
+      // 67-BUILD2 포차 바위: 포물선으로 날아 떨어진 자리 둘레를 친다 (그을린 자국 · 패인 자국)
+      if (b.life <= 0) { blast(s, b.tx, b.ty, b.radius, b.damage, '#ff9a55'); fx(s, 'thud', b.tx, b.ty, b.radius, '#c9a27a') }
     } else if (b.kind === 'barrage') {
       if (s.mode === 'stage' && (!source || b.source !== source.id || source.hp <= 0)) { b.life = 0; continue }
       if (b.life <= 0) { fx(s, 'blast', b.x, b.y, C.barrageRadius, '#ff8a5c'); if (Math.hypot(b.x - s.x, b.y - s.y) < C.barrageRadius) hurt(s, b.damage) }

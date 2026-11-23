@@ -5,9 +5,10 @@
  * 땅 차례(drawBuildGround): 항아리가 기세를 더하는 둘레를 옅은 금빛 고리로 (규칙이 보이게).
  * 몸 차례(drawStructure): 위에서 아래로 그리는 줄에 끼어 적·장수와 앞뒤가 맞는다.
  */
-import { HAEBI_BUILD as B } from '../tune/params.ts'
+import { HAEBI_BUILD as B, HAEBI_BUILD2 as B2 } from '../tune/params.ts'
 import type { HaebiRun } from './haebi.ts'
-import { jarRadius, type Structure } from './build.ts'
+import { jarRadius, isBuild2Kind, hasHp, rebuildOf, bodyR, type Structure } from './build.ts'
+import { drawStructure2 } from './fx-build2.ts'
 
 const V = B.view
 const ART = { tower: 'raid/props/palisade-2.webp', fence: 'raid/props/palisade-0.webp', rubble: 'raid/props/palisade-1.webp', jar: 'icon/good-soybean-jar.png' } as const
@@ -32,11 +33,10 @@ export function drawBuildGround(ctx: CanvasRenderingContext2D, s: HaebiRun) {
 
 /** 설치물 하나 — 발밑(x, y)에서 위로 */
 export function drawStructure(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, it: Structure) {
-  const rubble = it.down > 0
-  const img = images.get(rubble && it.kind === 'fence' ? ART.rubble : ART[it.kind]), a = ctx.globalAlpha, glow = it.flash / B.flash
-  // 발밑 그림자
-  const size = it.kind === 'jar' ? V.jarH : it.kind === 'fence' ? V.fenceW : V.towerH
-  ctx.fillStyle = '#07181655'; ctx.beginPath(); ctx.ellipse(it.x, it.y + 2, size * V.shadow[it.kind], V.shadow.h, 0, 0, Math.PI * 2); ctx.fill()
+  const rubble = it.down > 0, two = isBuild2Kind(it.kind), k = it.kind as 'tower' | 'fence' | 'jar'
+  const img = two ? undefined : images.get(rubble && k === 'fence' ? ART.rubble : ART[k]), a = ctx.globalAlpha, glow = it.flash / B.flash
+  // 발밑 그림자 (67 다섯은 몸 반지름으로)
+  ctx.fillStyle = '#07181655'; ctx.beginPath(); ctx.ellipse(it.x, it.y + 2, two ? B2.view.shadow * bodyR(it) : (k === 'jar' ? V.jarH : k === 'fence' ? V.fenceW : V.towerH) * V.shadow[k], V.shadow.h, 0, 0, Math.PI * 2); ctx.fill()
   // 밀리는 동안 발밑 흙먼지 (알마다 판 시각으로 흔들린다)
   if (it.push > 0) {
     const D = V.dust, k = it.push / B.pushDust
@@ -48,25 +48,26 @@ export function drawStructure(ctx: CanvasRenderingContext2D, images: Map<string,
     }
     ctx.fill(); ctx.globalAlpha = a
   }
-  if (img) {
+  if (two) drawStructure2(ctx, images, s, it)
+  else if (img) {
     const h = it.kind === 'tower' ? V.towerH : it.kind === 'jar' ? V.jarH : V.fenceW * img.height / img.width, w = h * img.width / img.height
     const foot = it.y + (it.kind === 'fence' ? V.fenceLift : 0)
     if (rubble && it.kind === 'tower') { ctx.globalAlpha = a * V.rubbleAlpha; ctx.drawImage(img, it.x - w / 2, foot - h * V.rubbleSquash, w, h * V.rubbleSquash); ctx.globalAlpha = a }
     else ctx.drawImage(img, it.x - w / 2, foot - h, w, h)
     // 쏘거나 기세를 더한 순간 — 망루 꼭대기 · 항아리 아가리에 빛이 번진다
-    if (glow > 0 && it.kind !== 'fence') {
-      const [at, r] = V.glowAt[it.kind]
+    if (glow > 0 && k !== 'fence') {
+      const [at, r] = V.glowAt[k]
       ctx.globalAlpha = a * glow * V.glowAlpha; ctx.fillStyle = V.glow
       ctx.beginPath(); ctx.arc(it.x, foot - h * at, h * r, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = a
     }
   }
-  if (it.kind === 'jar') { ctx.globalAlpha = a; return }
-  const top = it.kind === 'tower' ? it.y - V.towerH * (rubble ? V.rubbleSquash : 1) - V.hpLift : it.y + V.fenceLift - (img ? V.fenceW * img.height / img.width : V.fenceW) - V.hpLift
+  if (!hasHp(it.kind)) { ctx.globalAlpha = a; return }
+  const top = two ? it.y - B2.view.h[it.kind as keyof typeof B2.view.h] * (rubble ? V.rubbleSquash : 1) - V.hpLift : it.kind === 'tower' ? it.y - V.towerH * (rubble ? V.rubbleSquash : 1) - V.hpLift : it.y + V.fenceLift - (img ? V.fenceW * img.height / img.width : V.fenceW) - V.hpLift
   // 잔해 — 다시 서기까지 고리가 차오른다
   if (rubble) {
     ctx.strokeStyle = '#111c'; ctx.lineWidth = V.rebuildW + 2; ctx.beginPath(); ctx.arc(it.x, top, V.rebuildR, 0, Math.PI * 2); ctx.stroke()
     ctx.strokeStyle = V.rebuildColor; ctx.lineWidth = V.rebuildW; ctx.beginPath()
-    ctx.arc(it.x, top, V.rebuildR, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - it.down / B[it.kind].rebuild)); ctx.stroke()
+    ctx.arc(it.x, top, V.rebuildR, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - it.down / rebuildOf(it.kind))); ctx.stroke()
   } else if (it.hp < it.max) {
     // 다친 망루·목책 — 머리 위 체력 띠
     const w = V.hpBar

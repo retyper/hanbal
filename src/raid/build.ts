@@ -3,21 +3,32 @@
  * 레벨업 카드의 네 번째 갈래 (docs/realm/QUESTIONS-20261122.md §2 A ★). 소환물이 아니라 건물이다 (형 11-23 · 다이센카):
  * 처음 고른 순간 장수 앞에 하나 서서 판 끝까지 남고 · 3·5단계에 하나씩 더 선다 · 장수·적이 지나가지 못하고 · 장수가 몸으로 천천히 밀어 옮긴다.
  * 자리는 난수를 쓰지 않는다 — 장수 자리 · 가장 가까운 적 쪽 · 그 종류의 몇째인지로만 정해져 같은 씨앗이면 늘 같은 자리.
- * 수치는 모두 HAEBI_BUILD (tune/params.ts).
+ * 67-BUILD2 (형 11-23 「건설물 여러가지 더 · 창의적이게」): 장승 · 솟대 · 봉수대 · 포차 · 우물 다섯을 더해 여덟 종류 · 종류 칸은 그대로 셋.
+ * 수치는 모두 HAEBI_BUILD · HAEBI_BUILD2 (tune/params.ts).
  */
-import { HAEBI_BUILD as B } from '../tune/params.ts'
+import { HAEBI_BUILD as B, HAEBI_BUILD2 as B2 } from '../tune/params.ts'
 
-export type BuildKind = 'tower' | 'fence' | 'jar'
-/** 카드·나무에 서는 차례 (망루 → 목책 → 항아리) */
+export type BuildKind = 'tower' | 'fence' | 'jar' | 'totem' | 'sotdae' | 'beacon' | 'catapult' | 'well'
+/** 65-BUILD 의 셋 — 카드·나무에 서는 차례 (망루 → 목책 → 항아리) */
 export const BUILD_KINDS: readonly BuildKind[] = ['tower', 'fence', 'jar']
-export const isBuildKind = (k: string): k is BuildKind => k === 'tower' || k === 'fence' || k === 'jar'
+/** 67-BUILD2 가 더하는 다섯 (장승 · 솟대 · 봉수대 · 포차 · 우물) */
+export const BUILD2_KINDS: readonly BuildKind[] = ['totem', 'sotdae', 'beacon', 'catapult', 'well']
+export const ALL_BUILD_KINDS: readonly BuildKind[] = [...BUILD_KINDS, ...BUILD2_KINDS]
+export const isBuildKind = (k: string): k is BuildKind => (ALL_BUILD_KINDS as readonly string[]).includes(k)
+export const isBuild2Kind = (k: string): k is BuildKind => (BUILD2_KINDS as readonly string[]).includes(k)
+/** 종류마다 놓는 거리 ahead · 몸 반지름 r */
+const KP: Record<BuildKind, { ahead: number; r: number }> = { tower: B.tower, fence: B.fence, jar: B.jar, totem: B2.totem, sotdae: B2.sotdae, beacon: B2.beacon, catapult: B2.catapult, well: B2.well }
+/** 체력이 있어 무너지는 종류 (망루 · 목책 · 장승 · 포차) — 나머지는 무적 */
+export const hasHp = (k: BuildKind) => k === 'tower' || k === 'fence' || k === 'totem' || k === 'catapult'
+/** 무너진 뒤 다시 서기까지 */
+export const rebuildOf = (k: BuildKind) => k === 'tower' ? B.tower.rebuild : k === 'fence' ? B.fence.rebuild : k === 'totem' ? B2.totem.rebuild : B2.catapult.rebuild
 /**
  * 선 설치물 하나 — hp·max 망루·목책 체력(항아리는 무적이라 0) · down 무너진 망루·목책이 다시 서기까지 남은 초(0 = 서 있음) ·
  * cd 망루 다음 화살까지 · flash 쏘거나 맞거나 기세를 더한 반짝임 · push 장수에게 밀린 뒤 흙먼지가 남는 초
  */
 export interface Structure { id: number; kind: BuildKind; x: number; y: number; hp: number; max: number; down: number; cd: number; flash: number; push: number }
 /** items 선 것(놓인 차례) · nextId · jarXp 항아리가 더 얹어 준 기세(기록) */
-export interface BuildState { items: Structure[]; nextId: number; jarXp: number }
+export interface BuildState { items: Structure[]; nextId: number; jarXp: number; /** 67-BUILD2 판 (여덟 종류) */ v2?: true }
 export const newBuild = (): BuildState => ({ items: [], nextId: 1, jarXp: 0 })
 
 /** 그 단계에서 서 있는 수 — 1 + extraAt 에 이른 수 (단계 0 이면 0) */
@@ -30,23 +41,46 @@ export const towerFire = (rank: number) => B.tower.fire * (1 - B.tower.fireStep 
 export const fenceHp = (rank: number) => B.fence.hp + B.fence.hpStep * (rank - 1)
 /** 망루 체력 (판의 위협 배수를 곱하기 전) */
 export const towerHp = (rank: number) => B.tower.hp + B.tower.hpStep * (rank - 1)
-/** 체력이 있는 종류(망루·목책)의 그 단계 체력 */
-export const buildHp = (kind: BuildKind, rank: number) => kind === 'tower' ? towerHp(rank) : kind === 'fence' ? fenceHp(rank) : 0
+/** 체력이 있는 종류의 그 단계 체력 (판의 위협 배수를 곱하기 전 · 무적이면 0) */
+export const buildHp = (kind: BuildKind, rank: number) => kind === 'tower' ? towerHp(rank) : kind === 'fence' ? fenceHp(rank) : kind === 'totem' ? B2.totem.hp + B2.totem.hpStep * (rank - 1) : kind === 'catapult' ? B2.catapult.hp + B2.catapult.hpStep * (rank - 1) : 0
+/** 단계 몫 (base + step × (단계−1)) */
+const at = (base: number, step: number, rank: number) => base + step * (rank - 1)
+export const sotdaeRadius = (rank: number) => at(B2.sotdae.radius, B2.sotdae.radiusStep, rank)
+export const sotdaeSlow = (rank: number) => at(B2.sotdae.slow, B2.sotdae.slowStep, rank)
+export const wellRadius = (rank: number) => at(B2.well.radius, B2.well.radiusStep, rank)
+export const wellHeal = (rank: number) => at(B2.well.heal, B2.well.healStep, rank)
+export const beaconEvery = (rank: number) => B2.beacon.every - B2.beacon.everyStep * (rank - 1)
+export const beaconRadius = (rank: number) => at(B2.beacon.radius, B2.beacon.radiusStep, rank)
+export const beaconShare = (rank: number) => at(B2.beacon.share, B2.beacon.shareStep, rank)
+export const catapultEvery = (rank: number) => B2.catapult.every - B2.catapult.everyStep * (rank - 1)
+export const catapultRadius = (rank: number) => at(B2.catapult.radius, B2.catapult.radiusStep, rank)
+export const catapultShare = (rank: number) => at(B2.catapult.share, B2.catapult.shareStep, rank)
+export const totemLineShare = (rank: number) => at(B2.totem.lineShare, B2.totem.lineStep, rank)
 export const jarRadius = (rank: number) => B.jar.radius + B.jar.radiusStep * (rank - 1)
 /** 항아리 둘레에서 쓰러진 적의 기세 배수 */
 export const jarShare = (rank: number) => 1 + B.jar.bonus + B.jar.bonusStep * (rank - 1)
-/** 서 있는 것 — 무너진 망루·목책(잔해)은 지나갈 수 있고 막지도 쏘지도 않는다 */
-export const standing = (it: Structure) => it.down <= 0 && (it.kind === 'jar' || it.hp > 0)
+/** 서 있는 것 — 무너진 것(잔해)은 지나갈 수 있고 막지도 쏘지도 않는다 */
+export const standing = (it: Structure) => it.down <= 0 && (!hasHp(it.kind) || it.hp > 0)
 /** 이 잡졸이 망루에 끌리는 몫인가 — id 가 aggroEvery 의 배수 (난수 없이 늘 같은 놈) */
 export const aggroShare = (id: number) => id % B.tower.aggroEvery === 0
-/** 몸에서 aggroR 안의 가장 가까운 서 있는 망루 */
-export function towerNear(b: BuildState, body: { x: number; y: number }) {
-  let best: Structure | undefined, d: number = B.tower.aggroR
-  for (const it of b.items) if (it.kind === 'tower' && standing(it)) { const n = Math.hypot(body.x - it.x, body.y - it.y); if (n < d) { d = n; best = it } }
+/** 끄는 종류의 끌림 수치 (망루 · 포차 · 장승) — 그 밖은 null */
+export const aggroOf = (k: BuildKind) => k === 'tower' ? B.tower : k === 'catapult' ? B2.catapult : k === 'totem' ? B2.totem : null
+/**
+ * 이 잡졸(id)을 끄는, 몸에서 가장 가까운 서 있는 설치물 — 망루·포차는 id 가 셋의 배수일 때 aggroR 안 · 장승은 둘의 배수일 때 더 넓은 aggroR 안
+ * (65-BUILD 판에는 망루뿐이라 예전 셈 그대로)
+ */
+export function aggroNear(b: BuildState, body: { x: number; y: number }, id: number) {
+  let best: Structure | undefined, d = Infinity
+  for (const it of b.items) {
+    const a = aggroOf(it.kind)
+    if (!a || !standing(it) || id % a.aggroEvery !== 0) continue
+    const n = Math.hypot(body.x - it.x, body.y - it.y)
+    if (n < a.aggroR && n < d) { d = n; best = it }
+  }
   return best
 }
 /** 몸 반지름 */
-export const bodyR = (it: Structure) => B[it.kind].r
+export const bodyR = (it: Structure) => KP[it.kind].r
 
 /**
  * 놓을 자리 — 장수 앞 ahead px (aim 가장 가까운 적 쪽 · 없으면 보는 쪽) · 그 종류의 i 째(0·1·2)는 0 · −spread · +spread 만큼 옆으로 돌린다.
@@ -54,7 +88,7 @@ export const bodyR = (it: Structure) => B[it.kind].r
  */
 export function buildSpot(kind: BuildKind, i: number, x: number, y: number, aim: number, out: { x: number; y: number }) {
   const a = aim + (i === 0 ? 0 : i === 1 ? -B.spread : B.spread)
-  out.x = x + Math.cos(a) * B[kind].ahead; out.y = y + Math.sin(a) * B[kind].ahead
+  out.x = x + Math.cos(a) * KP[kind].ahead; out.y = y + Math.sin(a) * KP[kind].ahead
   return out
 }
 /** 몸(둘레 radius)을 서 있는 설치물 밖으로 민다 — 겹친 깊이만큼 가운데에서 먼 쪽으로 (미끄러지듯 비켜 간다) · skip 은 건너뛸 설치물 */
@@ -96,4 +130,19 @@ export function jarBonusAt(b: BuildState, rank: number, x: number, y: number, fl
   const r = jarRadius(rank)
   for (const j of b.items) if (j.kind === 'jar' && Math.hypot(x - j.x, y - j.y) < r) { j.flash = flash; return jarShare(rank) }
   return 1
+}
+/** 점(x, y)에서 선분 (ax, ay)–(bx, by) 까지 거리 */
+export function segmentDistance(x: number, y: number, ax: number, ay: number, bx: number, by: number) {
+  const dx = bx - ax, dy = by - ay, l = dx * dx + dy * dy, k = l ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / l)) : 0
+  return Math.hypot(x - ax - dx * k, y - ay - dy * k)
+}
+/** 67-BUILD2 혼줄 — 서 있는 장승마다 link 안의 가장 가까운 다른 장승과 잇는다 (같은 쌍은 한 번 · 놓인 차례대로) */
+export function totemLinks(b: BuildState): [Structure, Structure][] {
+  const list = b.items.filter(it => it.kind === 'totem' && standing(it)), out: [Structure, Structure][] = []
+  for (const p of list) {
+    let best: Structure | undefined, d: number = B2.totem.link
+    for (const q of list) if (q !== p) { const n = Math.hypot(p.x - q.x, p.y - q.y); if (n < d) { d = n; best = q } }
+    if (best && !out.some(([a, c]) => a === best && c === p || a === p && c === best)) out.push([p, best])
+  }
+  return out
 }

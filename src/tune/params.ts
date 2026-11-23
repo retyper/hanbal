@@ -721,6 +721,34 @@ export const HAEBI_BUILD = {
     dust: { n: 4, spread: 18, size: 7, color: '#c9a27a', alpha: .45 }, rebuildR: 16, rebuildW: 3, rebuildColor: '#ffd77a', rubbleAlpha: .45, rubbleSquash: .55 },
 } as const
 /**
+ * 67-BUILD2 설치 갈래 다섯 종류 더 (형 11-23 「건설물 여러가지 더 만드는 것도 해줘. 창의적이게」) — 설치 갈래가 여덟 종류가 되고 종류 칸은 그대로 셋이라 「어느 셋을 고르나」가 판의 길이 된다.
+ * 놓기·남기·막기·밀기·3·5단계에 하나 더는 HAEBI_BUILD 와 같다 (ahead 장수 앞 거리 · r 몸 반지름). 체력이 있는 것은 (hp + hpStep × (단계−1)) × 판의 위협 배수 · 무너지면 rebuild 초 잔해 뒤 다시 선다.
+ * 장승 totem: 망루보다 세게 끈다 — 붙어 싸우는 잡졸 가운데 id 가 aggroEvery 의 배수(둘에 하나)가 aggroR 안이면 장승을 친다 (닿는 여유 touch · 몸 피해 × bite / 초).
+ *   장승이 둘 넘게 서면 저마다 가장 가까운 장승과 「혼줄」로 이어진다 (link px 안) · 줄 반폭 lineW 안에 든 적은 초마다 그때 잡졸 체력 × (lineShare + lineStep × (단계−1)) 를 잃고 lineSlowT 초 동안 빠르기가 lineSlow 배.
+ * 솟대 sotdae: 무적 · 둘레 radius + radiusStep × (단계−1) 안의 적이 slow + slowStep × (단계−1) 만큼 느려진다 (가장 센 것 하나만 · 혼줄 느려짐과도 겹치지 않는다).
+ * 봉수대 beacon: 무적 · every − everyStep × (단계−1) 초마다 연기를 올리고, 장수 화면에서 cluster px 안에 적이 가장 많이 뭉친 곳에 delay 초 뒤 화살비 (금빛 표식 먼저 · 둘레 radius + radiusStep × (단계−1) · 피해 그때 잡졸 체력 × (share + shareStep × (단계−1))).
+ * 포차 catapult: 망루처럼 체력이 있고 끌린다 (aggroR · 셋에 하나) · every − everyStep × (단계−1) 초마다 minRange~range 안에서 cluster px 안에 적이 가장 많은 곳(같으면 먼 곳)으로 바위를 던진다
+ *   (flight 초 날아감 · 둘레 radius + radiusStep × (단계−1) · 피해 그때 잡졸 체력 × (share + shareStep × (단계−1)) · 그을린 자국과 패인 자국을 남긴다).
+ * 우물 well: 무적 · 장수가 둘레 radius + radiusStep × (단계−1) 안에 서 있으면 초마다 heal + healStep × (단계−1) 회복 (우물이 여럿이어도 한 번).
+ * view: 그림 (화면만) — 높이 h · 혼줄 빛 line(두께 lineW · 진하기 lineAlpha) · 솟대 고리 sotdaeRing · 우물 고리 wellRing · 물방울 drops · 새 깡충 hop · 연기 smoke · 화살비 화살 수 arrows · 바위 크기 rock · 포물선 높이 arc
+ */
+export const HAEBI_BUILD2 = {
+  totem: { ahead: 80, r: 22, hp: 640, hpStep: 220, rebuild: 12, aggroR: 190, aggroEvery: 2, touch: 6, bite: 1, link: 420, lineW: 16, lineShare: .45, lineStep: .15, lineSlow: .55, lineSlowT: .6 },
+  sotdae: { ahead: 70, r: 12, radius: 150, radiusStep: 15, slow: .25, slowStep: .06 },
+  beacon: { ahead: 90, r: 26, every: 8, everyStep: .6, delay: 1, cluster: 120, radius: 115, radiusStep: 10, share: 1, shareStep: .3 },
+  catapult: { ahead: 100, r: 32, hp: 320, hpStep: 110, rebuild: 12, aggroR: 140, aggroEvery: 3, touch: 6, bite: 1, every: 5.5, everyStep: .4, minRange: 170, range: 640, cluster: 110, flight: 1.1, radius: 125, radiusStep: 10, share: 1.3, shareStep: .35 },
+  well: { ahead: 70, r: 26, radius: 120, radiusStep: 12, heal: 3, healStep: 1.5 },
+  view: {
+    h: { totem: 92, sotdae: 84, beacon: 92, catapult: 70, well: 40 }, shadow: 1.1,
+    line: '#9fe8ff', lineW: 4, lineAlpha: .55, lineGlow: 12,
+    sotdaeRing: '#d8f0ff', sotdaeAlpha: .22, wellRing: '#7fc8ff', wellAlpha: .3, wellFill: .08,
+    drops: { n: 5, size: 3, rise: 26, color: '#bfe6ff' }, hop: { height: 5, hz: 2.2 },
+    smoke: { n: 5, size: 14, rise: 70, color: '#5d5550', alpha: .5, life: 2.2 },
+    arrows: 5, arrow: 38, fall: 260, mark: '#ffd77a', markAlpha: .5,
+    rock: 26, arc: 160, wheel: 11, arm: 46, throwOut: .25, throwBack: .6, armRest: -2.3, armSwing: 1.9,
+  },
+} as const
+/**
  * 66-CAP 최고 레벨 (형 11-23 「레벨은 왜 44가 맥스지? 맥스 찍었다는 걸 유저가 알기도 어려운데」 · 「44 는 이상하고 사사(死死)로 읽힌다 → 50」).
  * 이 규칙 판은 최고 레벨이 capLevel (끈 판·옛 기록은 HAEBI_RUN.maxLevel 44 그대로).
  * 50 에 닿는 때가 예전 44 에 닿던 때와 같게 기세 막대를 늘인다 — 예전 곡선(xpBase + xpPerLevel·L + xpCurve·L²)을 43/49 배로 눌러 편 것:

@@ -6,7 +6,7 @@ import { HAEBI_BUILD as B, HAEBI_MOBS as M, HAEBI_RUN as C, HAEBI_PALISADE as WL
 import { createHaebi, stepHaebi, choose, spawnMob, towerShot, nodeAt, runBranches, KIT_RULES, CHEST_RULES, MAP_RULES, SOLID_RULES, ANCHOR_RULES, BREAK_RULES, BUILD_RULES, CAP_RULES, xpNeeded, runGold, maxLevel, raidRulesForStage, type HaebiOpts, type HaebiRun, type StageId, type Kit } from '../src/raid/haebi.ts'
 import { botInput, botChoice } from '../src/raid/haebi-replay.ts'
 import { startRecord, recInput, recPick, sealInput, replayRaid } from '../src/raid/runlog.ts'
-import { BUILD_KINDS, jarShare, fenceTouching, aggroShare, type BuildKind } from '../src/raid/build.ts'
+import { BUILD_KINDS, jarShare, fenceTouching, aggroShare, bodyR, type BuildKind } from '../src/raid/build.ts'
 import { treeModel } from '../src/raid/tree-model.ts'
 
 const hash = (x: unknown) => createHash('sha256').update(JSON.stringify(x)).digest('hex')
@@ -75,7 +75,7 @@ test('65-BUILD: 고르면 장수 앞에 하나 서서 예전 수명이 지나도
   pick(s, 'tower'); assert.equal(items(s, 'tower').length, 1, '2단계는 세지기만')
   pick(s, 'tower'); assert.equal(items(s, 'tower').length, 2, '3단계에 하나 더')
   pick(s, 'tower'); pick(s, 'tower'); assert.equal(items(s, 'tower').length, 3, '5단계에 셋')
-  for (const p of items(s)) for (const q of items(s)) if (p !== q) assert.ok(Math.hypot(p.x - q.x, p.y - q.y) >= B[p.kind].r + B[q.kind].r - .5, '설치물끼리 겹치지 않는다')
+  for (const p of items(s)) for (const q of items(s)) if (p !== q) assert.ok(Math.hypot(p.x - q.x, p.y - q.y) >= bodyR(p) + bodyR(q) - .5, '설치물끼리 겹치지 않는다')
 })
 
 test('65-BUILD: 망루가 멀리 있는 적을 화살로 친다 (피해 = 잡졸 체력 × 몫)', () => {
@@ -105,7 +105,7 @@ test('65-BUILD: 적은 설치물을 지나가지 못하고(밀지도 못하고) 
   const e = clubOf(s, false, t.x + 45, t.y + 3, 1e6)
   for (let i = 0; i < 3 * 120; i++) {
     stepHaebi(s, { x: 0, y: 0 }, 1 / 120)
-    for (const it of items(s)) assert.ok(Math.hypot(e.x - it.x, e.y - it.y) >= B[it.kind].r + 10 - 1e-6, '잡졸이 설치물 몸 안에 들지 않는다')
+    for (const it of items(s)) assert.ok(Math.hypot(e.x - it.x, e.y - it.y) >= bodyR(it) + 10 - 1e-6, '잡졸이 설치물 몸 안에 들지 않는다')
   }
   assert.ok(Math.hypot(t.x - tx, t.y - ty) < 1e-9, '적은 밀지 못한다')
   assert.ok(t.hp === t.max && t.down === 0, '끌리지 않은 잡졸은 망루를 치지 않는다')
