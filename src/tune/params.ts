@@ -1381,15 +1381,24 @@ export const HAEBI_IMPACT = {
  *   cells 띠 칸 수 (20 칸 넘는 띠도 · 그리는 쪽이 칸 폭을 이것으로 나눈다 · 없으면 20) · base 서기 칸들을 hold 초씩 · blink 눈 감는 칸 · breath 큰 숨 칸들 · quirk 버릇 칸들 (20 넘어도 된다)
  * 때는 쉬기 시작한 뒤(걷기·공격·맞음·시전이 끝난 때부터)의 시계 — 눈 깜빡임 blinkEvery 초 사이마다 blinkTime 초 · 큰 숨 breathEvery 사이마다 breathTime 초(칸 여럿이면 나눠서) ·
  *   버릇 quirkEvery 사이마다 칸마다 quirkStep 초(계획에 quirkTimes 가 있으면 칸마다 그 초). 셋은 겹치지 않는다(앞 일이 끝나고 gap 초 뒤에야 다음) · 사이는 띠 이름과 시각으로만 정해 장수마다 어긋난다(난수 없음) ·
- *   cycle 초마다 새 차례(오래 서 있어도 셈이 늘지 않게) · 움직임 줄이기(기기 설정)면 base 만
+ *   cycle 초마다 새 차례(오래 서 있어도 셈이 늘지 않게) · 움직임 줄이기(기기 설정)면 base 만 ·
+ *   싸움 자세(계획 stance · 참고 연구: 잘 만든 2D 액션은 적이 있으면 다른 서기 자세): 장수 stanceR px 안에 산 적이 있거나 떠난 뒤 stanceLinger 초까지 base 대신 stance 칸 · 깜빡임만 (아직 쓰는 띠 없음) ·
+ *   attack 공격 칸 계획 (raid/attack-plan.ts · HAEBI_ANIM 주석)
  * 새 띠 차례: 0~19 정규(본 띠 gen-X.png · 늘 20칸) · 20 부터는 덧 띠 gen-X-x.png — 20·21 쓰러짐 가운데 두 칸 · 22~25 버릇 네 칸 (cells = 본 띠 20 + 덧 띠 칸).
  * 범(beom) 띠: 0·1 서기(같은 그림) · 2 눈 감음 · 3 큰 숨 · 덧 띠 20 앉음 · 21 돌아누우며 한 손 짚음 · 쓰러짐 18 → 20 → 21 → 19 ·
- *   버릇 「손톱 살피기」 덧 띠 22~25 (손톱을 들여다봄 · 손끝을 훅 붊 · 씩 웃으며 손을 털음 · 팔을 내림 · 발은 서기 칸 자리 그대로) — 느린 몸짓이라 칸마다 quirkTimes 초 (셋째 칸에 조금 더 머문다)
+ * 매화(maehwa) 띠: 0~3 서기(같은 그림 · 깜빡임·큰 숨 칸 아직 없음) · 덧 띠 20·21 쓰러짐 가운데 · 버릇 「깃털 매만지기」 22~25 (모자 깃털에 손을 뻗음 · 매만짐 · 볼에 손 대고 윙크 · 팔을 내림 · 먼 손은 늘 활을 쥔다)
+ * 달빛(base-w-31-dabeol-dalbit) 띠: 0~3 서기(같은 그림) · 덧 띠 20·21 쓰러짐 가운데 · 버릇 「머리카락 넘기기」 22~25 (머리 한 가닥을 쥠 · 팔꿈치를 높이 들어 넘김 · 손이 목덜미를 타고 내려옴 · 팔을 내림)
+ *   범 할퀴기 덧 띠 26~33 (26 웅크림 · 27 팔을 멀리 뒤로 · 28 머리 위로 들며 내디딤 · 29 맞힘(팔을 뻗고 손을 크게) · 30 팔이 내려감 · 31 팔이 뒤로 · 32 일어섬 · 33 서기로)
+ *   — attack: 26·27 은 쿨다운 끝 예비 · 28 휘두름 · 29 맞힘이 예전 맞힘 때에 제 초 그대로 · 30~33 은 공격 시계 남은 시간에 줄여 넣는다(raid/attack-plan.ts) · 칸 안에서 몸이 내닫아 코드 런지·늘임·잔상은 끈다
+ *   범 버릇 「손톱 살피기」 덧 띠 22~25 (손톱을 들여다봄 · 손끝을 훅 붊 · 씩 웃으며 손을 털음 · 팔을 내림 · 발은 서기 칸 자리 그대로) — 느린 몸짓이라 칸마다 quirkTimes 초 (셋째 칸에 조금 더 머문다)
  */
 export const HAEBI_IDLE = {
-  blinkTime: .18, blinkEvery: [3.2, 5.6], breathTime: .7, breathEvery: [9, 14], quirkStep: .28, quirkEvery: [7, 11], gap: .6, cycle: 60,
+  blinkTime: .18, blinkEvery: [3.2, 5.6], breathTime: .7, breathEvery: [9, 14], quirkStep: .28, quirkEvery: [7, 11], gap: .6, cycle: 60, stanceR: 260, stanceLinger: 1.5,
   plans: {
-    beom: { cells: 26, base: [0, 1], hold: 2.4, blink: 2, breath: [3], fall: [18, 20, 21, 19], quirk: [22, 23, 24, 25], quirkTimes: [.3, .3, .38, .25] },
+    beom: { cells: 34, base: [0, 1], hold: 2.4, blink: 2, breath: [3], fall: [18, 20, 21, 19], quirk: [22, 23, 24, 25], quirkTimes: [.3, .3, .38, .25],
+      attack: { cells: [26, 27, 28, 29, 30, 31, 32, 33], times: [.08, .07, .05, .07, .06, .07, .08, .12], hit: 3 } },
+    maehwa: { cells: 26, base: [0, 1], hold: 2.4, fall: [18, 20, 21, 19], quirk: [22, 23, 24, 25], quirkTimes: [.28, .3, .42, .25] },
+    'base-w-31-dabeol-dalbit': { cells: 26, base: [0, 1], hold: 2.4, fall: [18, 20, 21, 19], quirk: [22, 23, 24, 25], quirkTimes: [.28, .42, .3, .25] },
   },
 } as const
 export const HAEBI_ANIM = {

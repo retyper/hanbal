@@ -4,9 +4,14 @@
  * 계획이 없는 띠는 예전 그대로(HAEBI_ANIM.idle 을 idleTime 초마다 · 판 시각). 수치는 HAEBI_IDLE.
  */
 import { HAEBI_ANIM as A, HAEBI_IDLE as I } from '../tune/params.ts'
+import type { AttackPlan } from './attack-plan.ts'
 
 /** 띠 하나의 서기 계획 — cells 띠 칸 수 · base 서기 칸들(hold 초씩) · blink 눈 감는 칸 · breath 큰 숨 칸들 · quirk 버릇 칸들(quirkTimes 칸마다 초 · 없으면 HAEBI_IDLE.quirkStep) · fall 쓰러지는 칸 차례(raid/ko.ts · 없으면 18 → 19) */
-export interface IdlePlan { cells: number; base: readonly number[]; hold: number; blink?: number; breath?: readonly number[]; quirk?: readonly number[]; quirkTimes?: readonly number[]; fall?: readonly number[] }
+export interface IdlePlan { cells: number; base: readonly number[]; hold: number; blink?: number; breath?: readonly number[]; quirk?: readonly number[]; quirkTimes?: readonly number[]; fall?: readonly number[]
+  /** 공격 칸 계획 (attack-plan.ts · 없으면 HAEBI_ANIM.roles 그대로) */
+  attack?: AttackPlan
+  /** 싸움 자세 — 가까이 적이 있으면(HAEBI_IDLE.stanceR · 떠난 뒤 stanceLinger 초까지) base 대신 이 칸들 · 그동안 깜빡임만 (큰 숨·버릇 없음) */
+  stance?: readonly number[] }
 export type IdleEventKind = 'blink' | 'breath' | 'quirk'
 export interface IdleEvent { kind: IdleEventKind; at: number; end: number }
 
@@ -89,13 +94,13 @@ export function idleEventAt(plan: IdlePlan, seed: number, tau: number): { e: Idl
 }
 /**
  * 쉬기 시작한 뒤 tau 초의 칸 — 일(깜빡임·큰 숨·버릇)이 있으면 그 칸 · 없으면 base 를 hold 초씩.
- * calm(움직임 줄이기)이면 base 만
+ * calm(움직임 줄이기)이면 base 만 · stance(싸움 자세)면 base 대신 plan.stance 를 같은 박자로 · 깜빡임만 (큰 숨·버릇은 쉰다)
  */
-export function planFrame(plan: IdlePlan, seed: number, tau: number, calm = false): number {
-  const t = Math.max(0, tau)
+export function planFrame(plan: IdlePlan, seed: number, tau: number, calm = false, stance = false): number {
+  const t = Math.max(0, tau), base = stance && plan.stance?.length ? plan.stance : plan.base
   if (!calm) {
     const now = idleEventAt(plan, seed, t)
-    if (now) {
+    if (now && (!stance || base === plan.base || now.e.kind === 'blink')) {
       const { e, age } = now
       if (e.kind === 'blink') return plan.blink!
       if (e.kind === 'breath') return plan.breath![Math.min(plan.breath!.length - 1, Math.floor(age / (I.breathTime / plan.breath!.length)))]!
@@ -104,5 +109,5 @@ export function planFrame(plan: IdlePlan, seed: number, tau: number, calm = fals
       return plan.quirk![plan.quirk!.length - 1]!
     }
   }
-  return plan.base[Math.floor(t / plan.hold) % plan.base.length]!
+  return base[Math.floor(t / plan.hold) % base.length]!
 }

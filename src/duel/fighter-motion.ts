@@ -1,4 +1,5 @@
-import { P, HAEBI_END as E } from '../tune/params.ts'
+import { P, HAEBI_END as E, HAEBI_ANIM as RA } from '../tune/params.ts'
+import { planAttackCell } from '../raid/attack-plan.ts'
 import { fallCells, koFrame } from '../raid/ko.ts'
 import { idlePlan, idleSeed, planFrame, usablePlan, type IdlePlan } from '../raid/hero-idle.ts'
 import { GENERATED_DUEL_KEYS } from '../realm/data/duelGenerated.ts'
@@ -78,6 +79,12 @@ export function fighterMotion(atlas: FighterAtlas, anim: FighterAnim, now: numbe
   }
   if (rush) return { frame: atlas.stagger[Math.floor(now / R.fighterStaggerMs) % atlas.stagger.length]!, dx: 0 }
   if (anim.kind === 'windup') return { frame: atlas.windup[age < R.fighterWindupMs ? 0 : atlas.windup.length - 1]!, dx: 0 }
+  if (anim.kind === 'attack' && atlas.plan?.attack && age < R.fighterAttackMs) {
+    // 띠의 공격 계획 — 맞힘 칸이 예전 맞힘 칸(정규 띠 15)이 보이던 때에 서게 (그 앞은 줄이고 · 뒤는 남은 시간 안에 · 모자라면 마지막 칸)
+    const at = atlas.attack.indexOf(RA.roles.strike.contact), hitAt = (at >= 0 ? at : Math.floor(atlas.attack.length / 2)) / atlas.attack.length * R.fighterAttackMs
+    // 그린 공격은 칸 안에서 몸이 내닫는다 — 코드 런지(dx)를 겹치지 않는다
+    return { frame: planAttackCell(atlas.plan.attack, age / 1000, hitAt / 1000, R.fighterAttackMs / 1000) ?? atlas.plan.attack.cells[atlas.plan.attack.cells.length - 1]!, dx: 0 }
+  }
   if (anim.kind === 'attack' && age < R.fighterAttackMs) {
     const i = Math.min(atlas.attack.length - 1, Math.floor(age / R.fighterAttackMs * atlas.attack.length))
     return { frame: atlas.attack[i]!, dx: R.fighterLunge * Math.sin(Math.min(1, age / R.fighterLungeMs) * Math.PI) }

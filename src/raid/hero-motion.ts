@@ -6,13 +6,24 @@
  *   판은 공격이 서는 걸음에 곧바로 피해를 주므로 서는 순간이 휘두름이다. 예비는 다음 공격 직전에만(한 번 친 뒤 · 서 있을 때).
  * - 걷기: 걸은 거리로 넘기는 칸(발 미끄러짐 없음 · 공격 중에도 거리를 센다) + 걸음에 맞춘 출렁 · 걷는 쪽 기울기 · 멈출 때 한 박 늦게 서기.
  */
-import { HAEBI_ANIM as A, HAEBI_RUN as C } from '../tune/params.ts'
+import { HAEBI_ANIM as A, HAEBI_RUN as C, HAEBI_IDLE as I } from '../tune/params.ts'
 import { KITS, type HaebiRun, type Kit } from './haebi.ts'
 import { planFrame, type IdlePlan } from './hero-idle.ts'
+import { planAttackCell, type AttackPlan } from './attack-plan.ts'
 
-/** 공격 칸 역할 한 벌 (params HAEBI_ANIM.roles) */
-export type AttackRole = (typeof A.roles)[keyof typeof A.roles]
-export const attackRole = (kit: Kit): AttackRole => (A.drawKits as readonly string[]).includes(kit) ? A.roles.draw : A.roles.strike
+/**
+ * 공격 칸 역할 한 벌 (params HAEBI_ANIM.roles) — plan 이 있으면 띠의 공격 계획(attack-plan.ts)에서 만든 역할:
+ * 맞힘 앞 마지막 칸이 휘두름(공격 시계 안) · 그 앞 칸들이 예비(쿨다운 끝 · 기존 예비 자리) · 맞힘 칸 · 뒤 칸들이 마무리
+ */
+export interface AttackRole { readonly ready: number; readonly antic: readonly number[]; readonly swing: readonly number[]; readonly contact: number; readonly recover: readonly number[]; readonly anticTime: number; readonly stretch: number; readonly plan?: AttackPlan }
+export const attackRole = (kit: Kit, plan?: AttackPlan): AttackRole => {
+  const base: AttackRole = (A.drawKits as readonly string[]).includes(kit) ? A.roles.draw : A.roles.strike
+  if (!plan) return base
+  const h = Math.max(0, Math.min(plan.cells.length - 1, plan.hit))
+  return { ...base, antic: plan.cells.slice(0, Math.max(0, h - 1)), swing: h ? [plan.cells[h - 1]!] : [], contact: plan.cells[h]!, recover: plan.cells.slice(h + 1), plan }
+}
+/** 공격 시계에서 맞힘 칸이 머무는 판 초 — 계획이 있으면 그 칸의 초 · 없으면 HAEBI_ANIM.contact */
+const contactTime = (role: AttackRole) => role.plan ? role.plan.times[Math.max(0, Math.min(role.plan.cells.length - 1, role.plan.hit))]! : A.contact
 
 /** 한 프레임의 장수 그림 — 칸과 그릴 때만 쓰는 몸 변형. 판 좌표·그림자·맞는 자리는 그대로 */
 export interface HeroPose {
@@ -41,10 +52,12 @@ interface Memo {
   heldStart: number; anticAt: number
   /** 마지막으로 서기가 아닌 그림(걷기·공격·맞음·시전·예비·멈춰 서기)을 보인 판 시각 — 서기 시계는 여기서부터 · idling 이번 그림이 서기였나 */
   busyAt: number; idling: boolean
+  /** 마지막으로 가까이(HAEBI_IDLE.stanceR 안) 적이 있던 판 시각 — 싸움 자세(계획 stance)를 그 뒤 stanceLinger 초까지 */
+  nearAt: number
 }
 const memos = new WeakMap<HaebiRun, Memo>()
 const fresh = (s: HaebiRun): Memo => ({ t: s.t, x: s.x, y: s.y, phase: 0, lean: 0, movedAt: -Infinity, walkFrame: -1, walkSy: 1,
-  cool: primaryCool(s), struckAt: -Infinity, aim: s.face, reach: 0, heldStart: -Infinity, anticAt: -Infinity, busyAt: -Infinity, idling: false })
+  cool: primaryCool(s), struckAt: -Infinity, aim: s.face, reach: 0, heldStart: -Infinity, anticAt: -Infinity, busyAt: -Infinity, idling: false, nearAt: -Infinity })
 /** 주 무기 쿨다운 — 쿨다운 칸 이름은 주 무기 이름과 같다(KITS[kit].primary · 방울은 bell) */
 function primaryCool(s: HaebiRun) { return s.cool[KITS[s.kit].primary as keyof HaebiRun['cool']] }
 /** 판이 겨누는 적(가장 가까운 산 적)과 거리 — 판의 nearest 와 같은 셈(가운데 거리) */
@@ -84,7 +97,12 @@ function observe(s: HaebiRun, stride: number): Memo {
 
 /** 공격 칸 — 서고 나서 age 판 초. moving 이면 마무리를 줄이고, 그 뒤는 null(걷기로) */
 export function attackFrame(role: AttackRole, age: number, moving = false, held = false): number | null {
-  const sw = role.swing.length ? A.swing : 0, c1 = sw + A.contact
+  const sw = role.swing.length ? A.swing : 0, c1 = sw + contactTime(role)
+  if (role.plan) {
+    // 띠의 공격 계획 — 공격 시계 안에는 휘두름(맞힘 앞 마지막 칸) · 맞힘 · 마무리만 (예비 칸은 쿨다운 끝에 이미 보였다) · 맞힘 칸은 예전 맞힘 때(sw)에 선다
+    const p = role.plan, h = Math.max(0, Math.min(p.cells.length - 1, p.hit)), from = Math.max(0, h - 1)
+    return planAttackCell({ cells: p.cells.slice(from), times: p.times.slice(from), hit: h - from }, age, sw, moving ? Math.min(A.window, c1 + A.moveRecover) : A.window, held)
+  }
   if (age < sw && !held) return role.swing[Math.min(role.swing.length - 1, Math.floor(age / sw * role.swing.length))]!
   if (age < c1) return role.contact
   const end = moving ? Math.min(A.window, c1 + A.moveRecover) : A.window
@@ -96,10 +114,13 @@ export function attackFrame(role: AttackRole, age: number, moving = false, held 
 const neutral = (frame: number, face: number, lean: number): HeroPose => ({ frame, dx: 0, sx: 1, sy: 1, lean, face, ghostFrame: -1, ghosts: 0, ghostAlpha: 0, ghostStep: 0 })
 /** 판 상태 → 이 프레임의 장수 그림. 기억(걷기 바퀴·기울기·예비)은 판 시각이 흐를 때만 고친다 */
 export function heroPose(s: HaebiRun, o: PoseOptions): HeroPose {
-  const m = observe(s, o.stride), role = attackRole(s.kit)
+  const m = observe(s, o.stride), role = attackRole(s.kit, o.idle?.plan.attack)
   m.idling = false
+  if (o.idle?.plan.stance?.length) { const foe = nearestFoe(s); if (foe && foe.d < I.stanceR) m.nearAt = s.t }
   const pose = heroPoseOf(s, m, role, o)
   if (!m.idling) m.busyAt = s.t
+  // 그린 공격(계획)은 칸 안에서 몸이 이미 내닫는다 — 코드 런지·늘임·잔상을 겹치지 않는다 (예비 젖힘도)
+  if (role.plan && role.plan.cells.includes(pose.frame)) { pose.dx = 0; pose.sx = pose.sy = 1; pose.ghosts = 0 }
   if (o.still) { pose.dx = 0; pose.sx = pose.sy = 1; pose.lean = 0; pose.ghosts = 0 }
   if (o.low) pose.ghosts = 0
   return pose
@@ -107,7 +128,7 @@ export function heroPose(s: HaebiRun, o: PoseOptions): HeroPose {
 function heroPoseOf(s: HaebiRun, m: Memo, role: AttackRole, o: PoseOptions): HeroPose {
   if (s.hurt > 0) return neutral(A.hurtCell, s.face, m.lean)
   if (s.cast?.kind === 'ult') return neutral(A.castCell, s.face, m.lean)
-  const age = A.window - s.attack, start = s.t - age, sw = role.swing.length ? A.swing : 0, c1 = sw + A.contact
+  const age = A.window - s.attack, start = s.t - age, sw = role.swing.length ? A.swing : 0, c1 = sw + contactTime(role)
   // 이번 공격이 주 무기로 선 것이면 그때 적 쪽 · 아니면(비기 끝 등) 판의 방향
   const aim = s.attack > 0 && Math.abs(m.struckAt - start) < SAME ? m.aim : s.face
   if (s.attack > 0 && age < c1) {
@@ -121,7 +142,7 @@ function heroPoseOf(s: HaebiRun, m: Memo, role: AttackRole, o: PoseOptions): Her
   }
   // 다음 공격 예비 — 한 번 친 뒤 · 서 있고 · 쿨다운 끝 무렵 · 가장 가까운 적이 친 적 있는 거리 안
   const cool = primaryCool(s)
-  if (!s.moving && !s.dash && s.state === 'playing' && cool > 0 && cool <= role.anticTime && m.struckAt > -Infinity) {
+  if (role.antic.length && !s.moving && !s.dash && s.state === 'playing' && cool > 0 && cool <= role.anticTime && m.struckAt > -Infinity) {
     const foe = nearestFoe(s)
     if (foe && foe.d <= m.reach * A.anticReach + A.anticPad) {
       const k = 1 - cool / role.anticTime, face = Math.sign(foe.x - s.x) || s.face
@@ -149,5 +170,5 @@ function heroPoseOf(s: HaebiRun, m: Memo, role: AttackRole, o: PoseOptions): Her
   if (m.walkFrame >= 0 && since < A.settle) return { ...neutral(m.walkFrame, s.face, m.lean), sy: 1 + (m.walkSy - 1) * (1 - since / A.settle) }
   m.idling = true
   // 서기 계획이 있는 띠는 쉬기 시작한 뒤 시계로 (멈추자마자 버릇이 튀지 않게) · 없으면 예전 그대로 판 시각
-  return neutral(o.idle ? planFrame(o.idle.plan, o.idle.seed, m.busyAt > -Infinity ? s.t - m.busyAt : s.t, o.calm) : idleFrame(s.t), s.face, m.lean)
+  return neutral(o.idle ? planFrame(o.idle.plan, o.idle.seed, m.busyAt > -Infinity ? s.t - m.busyAt : s.t, o.calm, s.t - m.nearAt < I.stanceLinger) : idleFrame(s.t), s.face, m.lean)
 }

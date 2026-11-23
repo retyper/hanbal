@@ -233,7 +233,7 @@ export function heroFrame(s: HaebiRun, portrait = false, menuTime = 0) {
   if (s.hurt > 0) return ANIM.hurtCell
   if (s.cast?.kind === 'ult') return ANIM.castCell   // 비기 시전: 기를 모으는 자세
   const idle = idleOf(heroSprite(s)), rest = (t: number) => idle ? planFrame(idle.plan, idle.seed, t, calmMotion) : idleFrame(t)
-  if (s.attack > 0) return attackFrame(attackRole(s.kit), ANIM.window - s.attack) ?? rest(menuTime || s.t)
+  if (s.attack > 0) return attackFrame(attackRole(s.kit, idle?.plan.attack), ANIM.window - s.attack) ?? rest(menuTime || s.t)
   return rest(menuTime || s.t)
 }
 /**
