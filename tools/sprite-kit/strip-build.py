@@ -31,7 +31,8 @@ def main(name, atk, out):
     stand = place(Image.open(f'{PXD}/{name}-stand-game.png').convert('RGBA'))
     # 서기: 코드로 윗몸을 밀지 않는다 (11-23 형 「idle 누가 코드로 짜랬냐 · 몸이 막 잘리잖아」). 그린 서기 판(<이름>-idle-1..4)이 있으면 그것, 없으면 네 칸 모두 같은 그림.
     import os
-    frames = [cell('idle', i) for i in (1, 2, 3, 4)] if os.path.exists(f'{PXD}/{name}-idle-1.png') else [stand] * 4
+    # 그린 서기 판의 칸: 1 바로 섬 · 2 들이쉼 · 3 한 다리에 무게(발 자리가 달라 숨쉬기에는 안 쓴다) · 4 내쉼 → 띠에는 들이쉼 · 바로 · 내쉼 · 바로
+    frames = [cell('idle', i) for i in (2, 1, 4, 1)] if os.path.exists(f'{PXD}/{name}-idle-1.png') else [stand] * 4
     frames += [cell('walk-a', i) for i in (3, 4, 1, 2)] + [cell('walk-b', i) for i in (3, 4, 1, 2)]
     frames += [cell(atk, i) for i in (1, 1, 2, 3, 3, 4)]
     frames += [cell('down', 1), cell('down', 4)]
