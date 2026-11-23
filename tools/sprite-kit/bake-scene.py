@@ -216,7 +216,10 @@ ACT = dict(cw=240, ch=224, root=92, foot=216)   # 동작 칸(덧띠): 폭·높�
 
 def attack4(path, name, tag, scene):
     """넓은 칸 공격 장면(style-scene.py attack4 · 2×2) 굽기 -> <이름>-<꼬리표>-1..4 (칸 ACT · 뿌리 맞춤).
-    칸 구역 안의 덩어리를 전부 모은다(손에서 떨어져 그려진 무기 조각도). 다리·발 띠를 인형과 겹쳐 가로 밀림을 재고 뿌리를 ACT.root 에, 발바닥을 ACT.foot 에.
+    칸 구역 안의 덩어리를 전부 모은다(손에서 떨어져 그려진 무기 조각도).
+    가로 자리는 **앞발(인형의 파란 발 = 먼 쪽 발)의 발끝**으로 맞춘다 — 참고 게임: 공격 내내 앞발이 바닥의 같은 자리에 박혀 있다(ART-SKELETON §12).
+      다리·발 띠를 통째로 겹치는 방법은 그림의 보폭이 인형보다 넓으면 칸마다 뒷발에 맞았다 앞발에 맞았다 했다(해비 도끼: 넷째 칸만 15px 앞으로 · 11-24).
+      차례: ① 네 칸의 통째 겹침 밀림의 가운데 값 = 대강의 자리 ② 그림의 바닥 띠에서 발끝이 인형 앞발 끝에 가장 가까운 덩이를 골라 발끝을 맞춘다 ③ 못 찾으면 ①.
       py -3 -I tools/sprite-kit/bake-scene.py attack4 <받은 장면.png> <이름> <꼬리표> <보낸 장면.png>"""
     import json
     meta = json.load(open(scene.replace('.png', '.roots.json')))
@@ -228,7 +231,11 @@ def attack4(path, name, tag, scene):
     full = key(out)
     solid = full[..., 3] > 60
     lab, nlab = ndimage.label(ndimage.binary_closing(solid, iterations=3))
-    rigmask = np.asarray(Image.fromarray((key(sc_img)[..., 3] > 60).astype(np.uint8) * 255).resize((W, H), Image.NEAREST)) > 127
+    sc_small = sc_img.resize((W, H), Image.NEAREST)
+    rigmask = key(sc_small)[..., 3] > 60
+    ra = np.asarray(sc_small).astype(np.int16)
+    blue = (ra[..., 2] > 170) & (ra[..., 0] < 120) & (ra[..., 2] - ra[..., 0] > 90)   # 인형의 먼 쪽 팔다리
+    found = []
     for k, c in enumerate(meta['cells']):
         x0, y0, x1, y1 = int(c['x'] * kx), int(c['y'] * kx), int((c['x'] + c['w']) * kx), int((c['y'] + c['h']) * kx)
         ids = []
@@ -238,20 +245,43 @@ def attack4(path, name, tag, scene):
                 ids.append(bi)
         if not ids:
             print(f'{tag} 칸{k + 1}: 사람을 못 찾음')
+            found.append(None)
             continue
         m = np.isin(lab, ids) & solid
+        found.append((m, ids, register(m[y0:y1, x0:x1], rigmask[y0:y1, x0:x1])))
+    coarse = float(np.median([f[2] for f in found if f])) if any(found) else 0.0
+    band = max(4, int(round(5 / scale)))    # 바닥 띠 두께(받은 그림 화소) = 게임 5px
+    for k, c in enumerate(meta['cells']):
+        if not found[k]:
+            continue
+        m, ids, dx_all = found[k]
+        x0, y0, x1, y1 = int(c['x'] * kx), int(c['y'] * kx), int((c['x'] + c['w']) * kx), int((c['y'] + c['h']) * kx)
         ys, xs = np.nonzero(m)
         bx0, bx1, by0, by1 = xs.min(), xs.max() + 1, ys.min(), ys.max() + 1
         edge = min(bx0 - x0, x1 - bx1, by0 - y0)
+        dx, how = coarse, '가운데 값'
+        ry, rx = np.nonzero(blue[y0:y1, x0:x1])
+        if len(ry):
+            gy = ry.max()
+            toe_rig = x0 + rx[ry >= gy - band].max()                       # 인형 앞발의 발끝(받은 그림 좌표)
+            cols = np.nonzero(m[by1 - band:by1, :].any(0))[0]
+            runs, st = [], None
+            for a_, b_ in zip(cols, list(cols[1:]) + [None]):
+                st = a_ if st is None else st
+                if b_ is None or b_ - a_ > 2:
+                    runs.append((st, a_))
+                    st = None
+            runs = [r for r in runs if (r[1] - r[0] + 1) * scale >= 5]
+            if runs:
+                best = min(runs, key=lambda r: abs(r[1] - (toe_rig + coarse)))
+                if abs(best[1] - (toe_rig + coarse)) * scale <= 26:
+                    dx, how = float(best[1] - toe_rig), '앞발 끝'
         whole = full[by0:by1, bx0:bx1].copy()
         whole[..., 3] = np.where(m[by0:by1, bx0:bx1], whole[..., 3], 0)
         g = game(Image.fromarray(whole), scale)
         gm = np.asarray(g)[..., 3] > 0
-        gy, gx = np.nonzero(gm)
-        g2 = g.crop((gx.min(), gy.min(), gx.max() + 1, gy.max() + 1))
-        art = m[y0:y1, x0:x1]
-        rg = rigmask[y0:y1, x0:x1]
-        dx = register(art, rg)
+        gy_, gx_ = np.nonzero(gm)
+        g2 = g.crop((gx_.min(), gy_.min(), gx_.max() + 1, gy_.max() + 1))
         root_art = c['root'] * kx + dx
         ox = round(ACT['root'] - (root_art - bx0) * scale)
         oy = ACT['foot'] - g2.size[1]
@@ -261,7 +291,7 @@ def attack4(path, name, tag, scene):
         cell = Image.new('RGBA', (ACT['cw'], ACT['ch']), (0, 0, 0, 0))
         cell.alpha_composite(g2, (max(0, min(ACT['cw'] - g2.size[0], ox)), max(0, oy)))
         cell.save(f'{PXD}/{name}-{tag}-{k + 1}.png')
-        print(f'{tag} 칸{k + 1} 게임 키 {g2.size[1]} 폭 {g2.size[0]} · 덩어리 {len(ids)} · 인형에서 {dx:+d}px · 뿌리 앞 {ox + g2.size[0] - ACT["root"]}px 뒤 {ACT["root"] - ox}px · 장면 칸 금까지 {edge}px{note}')
+        print(f'{tag} 칸{k + 1} 게임 키 {g2.size[1]} 폭 {g2.size[0]} · 덩어리 {len(ids)} · 인형에서 {dx:+.0f}px({how} · 통째 겹침 {dx_all:+d}) · 뿌리 앞 {ox + g2.size[0] - ACT["root"]}px 뒤 {ACT["root"] - ox}px · 장면 칸 금까지 {edge}px{note}')
 
 
 def fall(path, name, scene, tag='down', k4=1.0, flip4=False):
