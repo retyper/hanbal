@@ -43,6 +43,11 @@ export const GUMIHO_TAIL_BONE: Readonly<Record<GumihoTailArt, { readonly base: r
   'tail-8': { base: [70, 290], tip: [213, 5] },
   'tail-9': { base: [72, 275], tip: [257, 5] },
 }
+/** 그로기 동작 칸 (Codex 86 덧 · 형 11-23 「그로기 때 그로기 모습이 아니다 · 던파 여성형 보스처럼」) — tools/sprite-kit/bake-gm.py 로 구움 · 칸마다 발이 feet 자리 · 원래 자세 그림과 같은 축척 */
+export const GUMIHO_GROGGY = {
+  intact: { path: `${DIR}gm_groggy.png`, frames: 8, cell: [328, 471], feet: [163, 465] },
+  torn: { path: `${DIR}gm_groggy-t3.png`, frames: 8, cell: [334, 471], feet: [176, 464] },
+} as const
 const pending = new WeakMap<Map<string, HTMLImageElement>, Promise<boolean>>()
 export const gumihoArtReady = (images: ReadonlyMap<string, HTMLImageElement>) => GUMIHO_PIECES.every(key => { const i = images.get(GUMIHO_ART[key]), d = GUMIHO_SOURCE[key].size; return !!i && i.complete && (i.naturalWidth || i.width) === d[0] && (i.naturalHeight || i.height) === d[1] })
 /** 숲 산길 출전 전에 미리 데운다. 실패하면 false 이고 일부만 넣지 않는다. */

@@ -799,6 +799,8 @@ export const HAEBI_GUMIHO = {
    */
   view: {
     behindAlpha: .55, behindPad: 10, brokenShade: 'rgba(36,20,44,.5)',
+    /** 그로기 동작 칸(gm_groggy · 11-23): 칸 0~3 을 fall 초씩 한 번(휘청 → 주저앉음) · 4~7 을 breath 초씩 되풀이(땅 짚고 숨) · 그동안 꼬리는 tailAlpha 로 옅게(무릎 꿇은 몸 위에 떠 보이지 않게) · 큰 부위가 하나라도 깨졌으면 찢긴 판 · 시작 때 남은 멈춤이 minDaze 초 넘을 때만(도끼 멈칫·작은 휘청은 옛 자세) */
+    groggy: { fall: .14, breath: .3, tailAlpha: .25, minDaze: 1.2 },
     sway: { amp: 4, hz: .55, wave: 1, from: .2, peak: .72, to: .9, strips: 28, upper: .25 },
     shadow: { alpha: .32, width: 150, height: 26, lift: .006 },
     fire: { core: '#f4fbff', glow: '#8fd3ff', violet: '#b9a6ff', size: 15 },

@@ -5,7 +5,7 @@
  */
 import { HAEBI_GUMIHO as F, HAEBI_GIANT as G, HAEBI_FX as FX, HAEBI_RUN as C } from '../tune/params.ts'
 import type { Point, Shape } from './giant-core.ts'
-import { GUMIHO_ART, GUMIHO_SOURCE, GUMIHO_TAIL_ART, GUMIHO_TAIL_BONE, type GumihoPoseArt } from './gumiho-art.ts'
+import { GUMIHO_ART, GUMIHO_GROGGY, GUMIHO_SOURCE, GUMIHO_TAIL_ART, GUMIHO_TAIL_BONE, type GumihoPoseArt } from './gumiho-art.ts'
 import { GUMIHO_TAILS, gumihoAngle, gumihoSkeleton, gumihoSquash, gumihoWorld, type GumihoFrame, type GumihoHp, type GumihoPoseId, type GumihoSkeleton, type GumihoState, type GumihoTail } from './gumiho.ts'
 import { drawImugiThreats } from './imugi-view.ts'
 
@@ -57,6 +57,14 @@ function drawBody(ctx: CanvasRenderingContext2D, images: ReadonlyMap<string, HTM
   const fox = f.fox >= .5
   if (f.pose !== f.pose2 && f.mix > .01 && f.mix < .99) return layer(fox, f.pose, 1 - f.mix * f.mix) && layer(fox, f.pose2, f.mix)
   return layer(fox, lead, 1)
+}
+/** 꼬리만 (그로기 동안 몸 뒤에 옅게) */
+function drawFigureTails(ctx: CanvasRenderingContext2D, images: ReadonlyMap<string, HTMLImageElement>, f: GumihoFrame, sk: GumihoSkeleton, partHP: Readonly<Record<GumihoHp, number>>) {
+  for (let i = GUMIHO_TAILS.length - 1; i >= 0; i--) {
+    const tt = sk.tails[i]!, img = images.get(GUMIHO_ART[GUMIHO_TAIL_ART[i]!])
+    if (tt.shown <= 0 || partHP[GUMIHO_TAILS[i]!] <= 0 || !img) continue
+    drawTail(ctx, img, i, tt, f.facing)
+  }
 }
 /** 꼬리 하나 — 그림의 뿌리→끝 줄을 꼬리 뼈에 맞춘다 (왼쪽을 보면 그 줄을 따라 뒤집는다) */
 function drawTail(ctx: CanvasRenderingContext2D, src: CanvasImageSource, i: number, t: GumihoTail, facing: 1 | -1) {
@@ -126,7 +134,33 @@ export function gumihoVisualBounds(g: GumihoState): Rect | null {
   sk.tails.forEach((t, i) => { if (t.shown <= 0 || g.partHP[GUMIHO_TAILS[i]!] <= 0) return; const r = t.length * .35; for (const p of [t.base, t.tip]) pts.push(point(p.x - r, p.y - r), point(p.x + r, p.y + r)) })
   return { left: Math.min(...pts.map(p => p.x)), top: Math.min(...pts.map(p => p.y)), right: Math.max(...pts.map(p => p.x)), bottom: Math.max(...pts.map(p => p.y)) }
 }
-export interface GumihoViewOptions { readonly heroX: number; readonly heroY: number }
+export interface GumihoViewOptions { readonly heroX: number; readonly heroY: number; readonly daze?: number }
+/** 그로기 칸 그림 — 처음 쓸 때 한 번 받는다(없거나 아직 안 왔으면 옛 자세로 그린다) · 판 상태는 읽기만 */
+const groggyImg = new Map<string, HTMLImageElement>()
+function groggyArt(path: string): HTMLImageElement | null {
+  if (typeof document === 'undefined') return null
+  let img = groggyImg.get(path)
+  if (!img) { img = new Image(); img.src = (import.meta.env?.BASE_URL ?? '/') + 'realm/' + path; groggyImg.set(path, img) }
+  return img.complete && img.naturalWidth > 0 ? img : null
+}
+/** 그로기가 시작된 판 시각 — 구미호마다 (그로기가 끝나면 지운다) */
+const groggyAt = new WeakMap<GumihoState, { at: number; big: boolean }>()
+/** 그로기 동작 칸: 휘청 → 주저앉음(한 번) → 땅 짚고 숨(되풀이) · 큰 부위(머리·팔)가 깨졌으면 옷이 찢긴 판 · 그렸으면 true */
+function drawGroggyBody(ctx: CanvasRenderingContext2D, g: GumihoState, f: GumihoFrame, daze: number): boolean {
+  if (daze <= 0) { groggyAt.delete(g); return false }
+  if (!groggyAt.has(g)) groggyAt.set(g, { at: g.age, big: daze >= V.groggy.minDaze })   // 도끼 멈칫(.25초)·작은 부위 휘청은 옛 자세 그대로
+  const G0 = groggyAt.get(g)!
+  if (!G0.big) return false
+  const torn = g.partHP['head'] <= 0 || g.partHP['fan-arm'] <= 0 || g.partHP['claw-arm'] <= 0
+  const A = torn ? GUMIHO_GROGGY.torn : GUMIHO_GROGGY.intact, img = groggyArt(A.path)
+  if (!img) return false
+  const T = V.groggy, age = g.age - G0.at
+  const frame = age < 4 * T.fall ? Math.floor(age / T.fall) : 4 + Math.floor((age - 4 * T.fall) / T.breath) % 4
+  const feet = gumihoWorld(f, { x: 0, y: 0 } as Point)
+  ctx.save(); ctx.translate(feet.x, feet.y); ctx.scale(K * f.facing, K)
+  ctx.drawImage(img, frame * A.cell[0], 0, A.cell[0], A.cell[1], -A.feet[0], -A.feet[1], A.cell[0], A.cell[1])
+  ctx.restore(); return true
+}
 /** 몸 — 환영 둘(있으면) · 진짜(장수가 몸 뒤에 서면 옅게) · 변신 빛 · 부서짐 · 부위 체력 */
 export function drawGumiho(ctx: CanvasRenderingContext2D, images: ReadonlyMap<string, HTMLImageElement>, g: GumihoState, o: GumihoViewOptions): boolean {
   if (g.state === 'dead') return false
@@ -138,7 +172,12 @@ export function drawGumiho(ctx: CanvasRenderingContext2D, images: ReadonlyMap<st
   let drew = true
   if (f.fade > .01) {
     ctx.save(); ctx.globalAlpha *= f.fade
-    drew = drawFigure(ctx, images, f, g.pose.sk, { alpha: behind ? V.behindAlpha : 1, tint: null, partHP: g.partHP, front: frontTails(g), t: g.age })
+    // 11-23 형 「그로기 때 그로기 모습이 아니다」: 그로기 동안은 동작 칸(gm_groggy) · 꼬리는 옅게 뒤에
+    const dazed = (o.daze ?? 0) > 0
+    if (!dazed) groggyAt.delete(g)
+    const groggy = dazed && drawGroggyBody(ctx, g, f, o.daze!)
+    if (groggy) { ctx.save(); ctx.globalAlpha *= V.groggy.tailAlpha; drawFigureTails(ctx, images, f, g.pose.sk, g.partHP); ctx.restore() }
+    else drew = drawFigure(ctx, images, f, g.pose.sk, { alpha: behind ? V.behindAlpha : 1, tint: null, partHP: g.partHP, front: frontTails(g), t: g.age })
     // 11-23 형 「구미호 상체에 검게 그림자」: 부서진 팔 둘레를 어둡게 덧칠하던 것(shadeArms)이 가슴·어깨까지 덮었다 → 뺌 · 부위 파괴는 글자·그로기 별·(옷 찢김 그림 86)으로
     ctx.restore()
   }
