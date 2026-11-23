@@ -2799,3 +2799,13 @@ Pages 배포가 1GB 를 넘어(1.58GB) 사이트 판만 줄였다(`tools/pages-s
 - `sm_hurt.png` 휘청 2칸 · `sm_groggy.png` 무릎 꿇고 숨 몰아쉼 2칸
 **87-B 구미호 옷 찢김 (마영전식 · RAID-BOSS-SIEGE §3 · 15세 선)** — 86-B 를 받아 넣은 뒤. `gm_idle.png` · `gm_walk.png` · `gm_fan.png` · `gm_groggy.png` 의 **같은 자세·같은 칸**으로 `-torn` 판: 소매 끝 · 치맛자락 · 털 목도리가 찢겨 짧아지고 자락 끝이 너덜너덜. **비침·유두 윤곽 없음 · 가슴·엉덩이 더 드러내지 않음**(어깨·다리 아래쪽이 조금 더 보이는 정도까지). 찢겨 떨어지는 천 조각 6개를 따로 `gm_cloth.png`(1×6 · 초록 바탕).
 저장 `D:/에셋창고/codex87/<이름>.png`. 먼저 `sm_bell.png` 한 장 → Claude 검수 → 나머지. 장마다 다시 그리기 한 번까지. 한 장 끝날 때마다 `CODEX-TO-CLAUDE-LATEST.md` 한 줄.
+
+### 88 · 11-23 Claude · ★ 전투 그림 기준서 · 그림체·비율 다른 장수 열여덟 (86·87 사이에 끼움)
+형 11-23: 「전투 에셋 그림체 다르거나 동작 어색한 것 더 고쳐야 · 프롬프트 제대로 써야 일관성 · 크기도 분위기도 비율도 다 따로 놀면 유저들이 절대 게임 안 한다」.
+**이제부터 모든 전투 그림 주문은 `docs/realm/production/BATTLE-ART-BIBLE.md` 를 먼저 읽고, §6 문안 틀을 그대로 앞에 붙인다.** 기준 그림 `D:/에셋창고/codex88/STD-gen-{soseono,gamsil,jinha}.png` (서기 칸 0 · 가로 20칸 띠) 를 **IMAGE 1** 로 · 그 장수의 지금 띠 `REF-gen-<이름>.png` 를 **IMAGE 2** 로.
+기준 셋 260개 띠를 줄 세워 잰 결과(Claude 검수) — 아래 열여덟이 기준과 다른 화가처럼 보이거나 꼬마 체형이다.
+- **그림체가 다름:** `dalbit`(무늬 없는 평면 색칠 · LPC 시험 그림) · `alpyeong`(검정 윤곽 · 채도 반 · 찬 회청) · `adogan`(바랜 베이지·청 · 실사 늙은 얼굴 · 머리 큼) · `baram`(탁한 청록·회 · 실사 긴 다리 · 장식 적음)
+- **머리가 너무 큼(꼬마 체형 · 정수리~턱 47~55px · 기준 35~39):** `base-g-09-farmer-conscript` · `base-w-71-yeonna-neoul` · `nuri` · `guryema` · `jita` · `base-g-61-heomcheuk-bawi`(얼굴 폭·짧은 다리) · `base-g-63-heomcheuk-beogeum` · `base-g-44-maga-malgup`(난쟁이 꼴) · `ocheongan` · `base-g-26-gampyeong-gaetbeol` · `base-g-37-eumjeup-jeup` · `base-w-29-golpo-janmul` · `base-w-38-sangdang-bulmae` · `hyeopbo`
+**길:** 장수마다 **먼저 서 있는 한 장**(`stand88_<이름>.png` · 민무늬 #1c2129 · 오른쪽 보는 3/4 · 무기는 몸 앞 대각선) → Claude 가 기준 셋 옆에 같은 키로 세워 검수(lineup) → 합격하면 그 한 장을 IMAGE 3 으로 붙여 20칸(`quad` 2×2 네 장 · 11-12 표준 · sprite-cells-wide-few). **얼굴·머리 모양·옷·장신구·무기는 IMAGE 2 그대로, 바뀌는 것은 그림체·비율뿐**(형은 다른 사람이 되면 바로 안다).
+차례: 86-B gm_fan 한 장 → **88 서 있는 한 장 넷(dalbit·alpyeong·adogan·baram)** → 86-A → 88 나머지 → 86-B 나머지 → 86-C → 87. 장마다 다시 그리기 한 번까지. 한 장 끝날 때마다 `CODEX-TO-CLAUDE-LATEST.md` 한 줄.
+(병사 틀 g-bow·g-spear·g-sword·w-bow·w-spear·mount 는 저해상 도트로 결이 아예 다르다 — g-spear·w-bow v2 를 형이 판정한 뒤 같이 정한다. 말 탄 장수·다물은 이 줄 세우기로 판정이 안 돼 따로 본다.)
