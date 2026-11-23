@@ -76,7 +76,7 @@ def main(name, atk, out):
             u = np.zeros_like(a)
             u[ys.min() + int(h * .04):ys.min() + int(h * .45)] = a[ys.min() + int(h * .04):ys.min() + int(h * .45)]
             return u
-        def reg(a, r, reach=20):
+        def reg(a, r, reach=40):   # 11-24: 20 이면 사냥꾼(서기는 창 때문에 뿌리 −11 · 걷기는 +11)에서 탐색 끝(20)에 막혀 13px 가 남았다
             # 가로·세로를 함께 본다(anim-check 와 같은 셈) — 가로만 보면 서기와 걷기의 키가 1~2px 다를 때 엉뚱한 자리에 맞는다(궁수: 2px 로 맞췄는데 검사는 6.5px 어긋남 · 11-24)
             best, at = None, 0
             for dy in range(-7, 8):
