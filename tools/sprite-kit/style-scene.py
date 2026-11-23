@@ -147,6 +147,8 @@ def fall_scene(identity, pose_sheet, out, style_ref='soseono', Z=3, sc_fixed=Non
     wid = m.sum(1)
     skull = int(h * .12) + int(np.argmin(wid[int(h * .12):int(h * .38)]))
     sc = (H * .92 * 32 / 137) / skull   # 첫 칸(서 있는 자세)의 머리뼈로 배율을 한 번만
+    if not sc_fixed and 'down-e2' in pose_sheet:   # e2 판은 늘 이 배율(달빛 합격 판과 같은 크기) — 빠뜨려서 아룸 장면이 1.39배 크게 나갔다(11-23 · Codex 가 잡음)
+        sc_fixed = .7572
     if sc_fixed:   # 첫 칸이 숙인 자세라 머리뼈를 못 재는 판(e2)은 배율을 직접 준다
         sc = sc_fixed
     print('자세 배율', round(sc, 4))
