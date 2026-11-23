@@ -268,6 +268,17 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .cere.hire .cw { animation-delay: 1.86s; } .ap .cere.hire .cw > b { color: #fff4d8; text-shadow: 0 0 22px var(--gc), 0 3px 6px #000; }
 .ap .cere.hire .hname { font-size: clamp(22px, 6vw, 30px); font-weight: 800; color: #fff; text-shadow: 0 2px 8px #000; }
 .ap .cere.hire em { font-style: normal; font-family: var(--display); font-size: clamp(18px, 5vw, 24px); color: #ffe6b0; text-shadow: 0 2px 8px #000; opacity: 0; animation: wrin .6s ease-out 2.26s both; }
+/* 폰 가로(높이 낮음) 등용 — 세로 쌓기로는 액자 위아래·단추가 잘린다(11-23 형 「폰 가로 화면 등용 시 배치 잘못됨」) → 초상은 왼쪽 · 글은 오른쪽 */
+@media (orientation: landscape) and (max-height: 520px) {
+  .ap .cere.hire { flex-direction: row; gap: clamp(28px, 6vw, 80px); padding: 0 max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left)); }
+  .ap .cere.hire .hframe { --hw: min(42dvh, 26vw); flex: none; margin: calc(var(--hw) * .3) calc(var(--hw) * .46) calc(var(--hw) * .2); }
+  .ap .cere.hire .cw { max-width: min(54vw, 560px); gap: 2px; }
+  .ap .cere.hire .cw > b { font-size: clamp(34px, 10dvh, 52px); letter-spacing: 4px; }
+  .ap .cere.hire .cw .hname { font-size: clamp(20px, 6dvh, 28px); }
+  .ap .cere.hire .cw span { font-size: clamp(13px, 3.6dvh, 16px); }
+  .ap .cere.hire em { font-size: clamp(14px, 4.2dvh, 18px); line-height: 1.4; }
+  .ap .cere.hire .cok { margin-top: 6px; }
+}
 .ap .cere.hire .ctr { border-color: var(--g); opacity: 0; animation: wrin .4s ease-out both; }
 @media (prefers-reduced-motion: reduce) { .ap .cere.hire .cflash, .ap .cere.hire .cmote, .ap .cere.hire .cglow, .ap .cere.hire .hbands { display: none; } }
 @keyframes cin { from { opacity: 0; } to { opacity: 1; } } @keyframes cout { to { opacity: 0; } }
