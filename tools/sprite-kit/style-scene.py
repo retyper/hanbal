@@ -30,5 +30,33 @@ def main(body, out, male=False):
     o.save(out); print(out, o.size)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__' and sys.argv[1] != 'motion':
     main(sys.argv[1], sys.argv[2], len(sys.argv) > 3 and sys.argv[3] == 'm')
+
+
+def motion_scene(identity, pose_sheet, out, style_ref='soseono', Z=4, CELL=640):
+    """동작 판용 장면(3×2 · 칸 640): 왼쪽 줄 = [그 장수의 합격한 서기 그림(누구인가 + 결)] · [승인 띠(결)] · 오른쪽 2×2 = 대머리 자세 네 칸.
+    자세 칸은 머리뼈 크기가 서기 그림과 맞게 줄인다(머리뼈 = 대머리 서기 키의 32/137 · 대머리 서기 키 = 장수 키의 92%).
+      py -3 -I tools/sprite-kit/style-scene.py motion <합격한 서기.png(투명)> <자세 판.png> <나갈.png>"""
+    import numpy as np
+    o = Image.new('RGB', (CELL * 3, CELL * 2), (255, 0, 255)); H = N * Z
+    idn = Image.open(identity).convert('RGBA'); idn = idn.crop(idn.getchannel('A').getbbox()); idn = idn.resize((round(idn.size[0] * H / idn.size[1]), H), Image.LANCZOS)
+    ref = cell0(style_ref); ref = ref.resize((ref.size[0] * Z, ref.size[1] * Z), Image.NEAREST)
+    for j, im in enumerate((idn, ref)):
+        if im.size[0] > CELL - 20: im = im.crop(((im.size[0] - CELL + 20) // 2, 0, (im.size[0] + CELL - 20) // 2, im.size[1]))
+        o.paste(im, ((CELL - im.size[0]) // 2, j * CELL + CELL - 40 - im.size[1]), im)
+    sh = Image.open(pose_sheet).convert('RGB'); W, Hs = sh.size
+    for j in range(2):
+        for i in range(2):
+            c = sh.crop((i * W // 2, j * Hs // 2, (i + 1) * W // 2, (j + 1) * Hs // 2)); a = np.asarray(c).astype(np.int16)
+            k = np.minimum(a[..., 0], a[..., 2]) - a[..., 1]; al = np.clip((90 - k.astype(np.float32)) * 255 / 50, 0, 255).astype(np.uint8); ys, xs = np.nonzero(al > 60)
+            fig = Image.fromarray(np.dstack([a.astype(np.uint8), al])).crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
+            m = np.asarray(fig)[..., 3] > 60; h = m.shape[0]; wid = m.sum(1); lo, hi = int(h * .12), int(h * .38); skull = lo + int(np.argmin(wid[lo:hi]))
+            s = (H * .92 * 32 / 137) / skull; fig = fig.resize((round(fig.size[0] * s), round(fig.size[1] * s)), Image.LANCZOS)
+            cx = (xs.min() + xs.max()) / 2 / (W / 2)   # 칸 안의 가로 자리는 지킨다
+            o.paste(fig, (CELL * (1 + i) + round(cx * CELL - fig.size[0] / 2), j * CELL + CELL - 40 - fig.size[1]), fig)
+    o.save(out); print(out, o.size)
+
+
+if __name__ == '__main__' and sys.argv[1] == 'motion':
+    motion_scene(sys.argv[2], sys.argv[3], sys.argv[4])
