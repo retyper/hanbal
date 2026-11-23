@@ -790,6 +790,15 @@ export const HAEBI_BUILDUP = { max: 5, dmgStep: .12, rateStep: .08, minInterval:
  * 그 뒤로 기세 막대가 다시 찰 때마다 막대를 비우고 최대 체력의 heal 몫을 되찾고 판 금 gold(스테이지 금 배수 · 상점 「탐욕」 몫을 곱한다)를 받는다 · ring 받을 때 장수 둘레 빛 고리
  */
 /**
+ * 71-BOSSDUEL 보스전은 보스와 겨루게 (형 11-23 「보스전에서는 졸병이 꼭 나와야 하나 · 보스가 부를 때 나오는 건 그렇다 쳐도 잡몹이 최종 보스전 할 때 너무 많이 나옴」) — 스테이지 판만.
+ * 마지막 두목(옛 두목 · 거대 보스)이 살아 있는 동안 저절로 나오는 잡졸이 bossSpawn 배 · 판 위 적이 bossCap 을 넘으면 더 나오지 않는다 (우두머리가 부르는 졸개는 그대로 · 상한도 HAEBI_RUN.maxEnemies)
+ * 중간 보스가 살아 있는 동안 midbossSpawn 배.
+ * 마지막 두목이 나오는 순간 판 위 보통 잡졸(정예 · 우두머리 · 부른 졸개 · 중간 보스 빼고)이 장수에게서 등 돌려 flee 초 동안 잡졸 빠르기 × fleeSpeed 로 달아나 사라진다 —
+ *   쓰러뜨린 것이 아니라 기세·금·처치 수·처치 효과가 없고 · 달아나는 동안 치지도 맞지도 않는다 · 사라진 자리에 흙먼지 고리(반지름 puff · 빛 puffColor) ·
+ *   두목이 스스로 등장 고리를 띄우지 않으면(옛 두목) 포효 고리(반지름 roar · 빛 roarColor) 하나 · 거대 보스는 제 등장 고리를 그대로 쓴다
+ */
+export const HAEBI_BOSS_DUEL = { bossSpawn: .2, midbossSpawn: .5, bossCap: 75, flee: 1.4, fleeSpeed: 1.8, puff: 26, puffColor: '#c9a27a', roar: 120, roarColor: '#e8dcc0' } as const
+/**
  * 70-AWAKECAP 각성 장수 최고 레벨 60 (형 11-23 「각성하면 만렙이 10 오르게 하는 건 어때?」) — 영구 각성(permanentAwake)으로 들어온 66-CAP 판만 · 겉모습 각성(appearanceAwake)은 상관없다.
  * 후반은 이미 쉬워(형 판 기록) 51~60 은 그냥 주는 힘이 아니다:
  *   다음 레벨까지 = 66-CAP 곡선 × (1 + xpRise × (L − 49)) (L = 50~59 · 봇 판이 마지막 두목 무렵에야 60) · 레벨마다 카드는 그대로 고른다 ·
