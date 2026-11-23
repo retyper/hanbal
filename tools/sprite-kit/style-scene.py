@@ -109,4 +109,5 @@ def motion8_scene(identity, rig_a, rig_b, out, style_ref='soseono', Z=3, CW=384,
 if __name__ == '__main__' and sys.argv[1] == 'motion8':
     motion8_scene(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
 if __name__ == '__main__' and sys.argv[1] == 'motion':
-    motion_scene(sys.argv[2], sys.argv[3], sys.argv[4], far=len(sys.argv) > 5 and sys.argv[5] == 'far', rig=len(sys.argv) > 5 and sys.argv[5] == 'rig')
+    # 끝에 z3 을 붙이면 장면 전체를 게임 화소의 3배로(기본 4배) — 누운 자세처럼 넓은 사람이 칸 금에 닿을 때 (11-23 Codex 지적)
+    motion_scene(sys.argv[2], sys.argv[3], sys.argv[4], far='far' in sys.argv[5:], rig='rig' in sys.argv[5:], Z=3 if 'z3' in sys.argv[5:] else 4)
