@@ -40,7 +40,8 @@ def doll(P, female=True):
            (P['hip_w'] / 2 - 3, P['crotch']), (P['hip_w'] / 2, P['hip']), (P['waist_w'] / 2, P['waist']), (P['chest_w'] / 2, P['chest']), (P['shoulder_w'] / 2, P['shoulder'])]
     d.polygon([(cx + px * S, y(py)) for px, py in pts], fill=CLAY)
     if female:
-        for side in (-1, 1): d.ellipse([cx + side * 8 * S - 6 * S, y(P['chest'] - 9), cx + side * 8 * S + 6 * S, y(P['chest'] + 1)], fill=CLAY_D)
+        b = P.get('bust', 6)
+        for side in (-1, 1): d.ellipse([cx + side * 8 * S - b * S, y(P['chest'] - 4 - b), cx + side * 8 * S + b * S, y(P['chest'] - 4 + b * .8)], fill=CLAY_D)
     # 팔 (몸 곁에 살짝 벌려 내림 · 손목은 엉덩이 높이)
     for side in (-1, 1):
         sx = cx + side * (P['shoulder_w'] / 2 - 2) * S
@@ -105,3 +106,45 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+# ── 체형 (11-23 형 「여자 체형별로 나눠야 · 가냘픈 · 허벅지 튼실한 · 가슴 큰 · 다양하잖아」) ──
+# 키·머리·관절 높이는 같고 폭만 다르다 (그래서 머리 크기·얼굴 결은 모든 장수가 같다)
+BODY_TYPES = {
+    'f-slender':  ('여 · 가냘픈',  F, dict(shoulder_w=30, chest_w=24, waist_w=17, hip_w=26, thigh=9,  calf=7,  arm=6, bust=4)),
+    'f-standard': ('여 · 표준',    F, dict(bust=6)),
+    'f-glamour':  ('여 · 글래머',  F, dict(shoulder_w=33, chest_w=30, waist_w=18, hip_w=34, thigh=12, calf=8,  arm=7, bust=9)),
+    'f-athletic': ('여 · 탄탄한',  F, dict(shoulder_w=35, chest_w=29, waist_w=21, hip_w=33, thigh=14, calf=10, arm=8, bust=6)),
+    'f-sturdy':   ('여 · 우람한',  F, dict(shoulder_w=39, chest_w=33, waist_w=25, hip_w=34, thigh=14, calf=10, arm=10, bust=7)),
+    'm-lean':     ('남 · 마른',    M, dict(shoulder_w=36, chest_w=30, waist_w=23, hip_w=28, thigh=11, calf=8,  arm=7)),
+    'm-standard': ('남 · 표준',    M, dict()),
+    'm-muscular': ('남 · 근육질',  M, dict(shoulder_w=50, chest_w=44, waist_w=30, hip_w=34, thigh=15, calf=12, arm=12)),
+    'm-heavy':    ('남 · 육중한',  M, dict(shoulder_w=48, chest_w=46, waist_w=44, hip_w=40, thigh=16, calf=12, arm=12, belly=12)),
+}
+
+
+def doll_type(base, over, female):
+    P = dict(base); P.update(over)
+    im = doll(P, female)
+    if P.get('belly'):  # 배가 나온 육중한 몸 — 허리 둘레를 더 부풀린 판을 덧그린다
+        big = dict(P); big['waist_w'] = P['waist_w'] + P['belly']; big['chest_w'] = P['chest_w'] + P['belly'] // 2
+        im = doll(big, female)
+    return im
+
+
+def types_sheet():
+    sc = 2; n = len(BODY_TYPES); W = CELL[0] * sc * n; Hh = CELL[1] * sc + 40
+    g = Image.new('RGBA', (W, Hh), (236, 232, 222, 255)); d = ImageDraw.Draw(g)
+    try: font = ImageFont.truetype('C:/Windows/Fonts/malgun.ttf', 14)
+    except Exception: font = ImageFont.load_default()
+    for i, (key, (label, base, over)) in enumerate(BODY_TYPES.items()):
+        im = doll_type(base, over, key.startswith('f'))
+        im.save(f'{OUT}/mannequin-{key}.png')
+        g.alpha_composite(im.resize((CELL[0] * sc, CELL[1] * sc), Image.NEAREST), (i * CELL[0] * sc, 10))
+        P = dict(base); P.update(over)
+        d.text((i * CELL[0] * sc + 30, Hh - 26), f"{label}  어깨{P['shoulder_w']} 허리{P['waist_w']} 골반{P['hip_w']} 허벅지{P['thigh']}", fill=(40, 30, 20), font=font)
+    g.save(f'{OUT}/body-types.png')
+
+
+if __name__ == '__main__' and os.environ.get('TYPES') == '1':
+    os.makedirs(OUT, exist_ok=True); types_sheet(); print('types ok')
