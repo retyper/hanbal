@@ -16,12 +16,18 @@ export function koFrame(cells: readonly number[], t: number): number {
   const p = 1 - (1 - t / d) ** K.ease
   return cells[Math.min(n - 1, Math.floor(p * (n - 1)))]!
 }
-/** 카메라가 다가간 몫 0..1 (쓰러지기 시작한 뒤 t 초 · 부드럽게) · calm(움직임 줄이기)이면 0 */
+/** 카메라가 다가간 몫 (쓰러지기 시작한 뒤 t 초 · zoomTime 초에 1 · 가는 길에 overshoot 만큼 살짝 지나쳤다 돌아온다) · calm(움직임 줄이기)이면 0 */
 export function koZoom(t: number, calm = false) {
   if (calm || !(t > 0)) return 0
-  const k = Math.min(1, t / K.zoomTime)
-  return k * k * (3 - 2 * k)
+  const k = Math.min(1, t / K.zoomTime) - 1, c = K.overshoot
+  return 1 + (c + 1) * k ** 3 + c * k * k
 }
+/**
+ * KO 가까이 배율 — 누운 몸 폭(그리는 키 height × lieWidth)이 보이는 폭(viewWidth 판 px)의 fill 몫이 되게 ·
+ * 지금 배율(base)보다 줄이지 않고 max 를 넘지 않는다 (머리칼까지 화면 안)
+ */
+export const koTargetZoom = (base: number, height: number, viewWidth: number, fill: number = K.fill, max: number = K.maxZoom) =>
+  Math.max(base, Math.min(max, fill * viewWidth / Math.max(1, height * K.lieWidth)))
 /** 열전 쓰러짐 막 길이 — 맞은 멈춤 + 가장 긴 쓰러짐(maxCells 칸) + 마지막 칸 멈춤 */
 export const koDuration = () => E.defeat.freeze + K.fallStep * (K.maxCells - 1) + K.hold
 /** 열전 쓰러짐의 「패배」 띠가 찍히는 막 시각 */

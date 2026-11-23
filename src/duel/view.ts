@@ -14,7 +14,8 @@ import { AWAKEN_ART, AWAKEN_LOOP, loopFile } from '../realm/data/awaken-art.ts'
 import { SPRITE_PX } from '../realm/data/spritePx.ts'
 import { DUEL_ATLASES, LEGACY_ATLAS, fighterMotion, pxAtlas, type FighterAnim, type FighterAtlas } from './fighter-motion.ts'
 import { HAEBI_KO as KO, HAEBI_END as KO_END } from '../tune/params.ts'
-import { fallCells, fallTime, koSkippable, koZoom } from '../raid/ko.ts'
+import { fallCells, fallTime, koSkippable, koTargetZoom, koZoom } from '../raid/ko.ts'
+import { STRIP_CELLS, usesCompanion } from '../raid/hero-idle.ts'
 import { haptics } from '../ui/haptics.ts'
 import { HitClock, drawHitPortrait, hitArtKey, hitArtPath, hitFocusSlide, hitStrength, type HitForm, type HitFrame } from '../ui/hit-portrait.ts'
 
@@ -808,7 +809,28 @@ function sprMeta(im: HTMLImageElement): SprMeta {
   }
   return m
 }
-const atlasOf = (im: HTMLImageElement): FighterAtlas => sprMeta(im).atlas
+/**
+ * 덧 띠 (anim-px/gen-X-x.png · 20 칸부터 · 열전과 같은 길) — 계획이 20 칸 넘게 쓰는 도트 띠만 한 번 받는다 · 못 받으면 null.
+ * 아직 안 왔으면 그 칸을 쓰는 일(쓰러짐 넷 · 버릇)을 뺀 칸 표로 (빈 칸을 그리지 않는다)
+ */
+const COMPANIONS = new WeakMap<HTMLImageElement, HTMLImageElement | null>()
+function companionImg(im: HTMLImageElement): HTMLImageElement | null {
+  if (COMPANIONS.has(im)) return COMPANIONS.get(im) ?? null
+  const m = sprMeta(im), name = (PX_NAME.exec(m.src) ?? [])[1]
+  const c = m.px && name !== undefined && usesCompanion(m.atlas.plan ?? null) ? img(`realm/anim-px/${name}-x.png`) : null
+  COMPANIONS.set(im, c)
+  return c
+}
+const ready = (im: HTMLImageElement | null): im is HTMLImageElement => im !== null && im.complete && im.naturalWidth > 0
+const LEAN = new WeakMap<FighterAtlas, FighterAtlas>()
+/** 지금 그릴 수 있는 칸 표 — 덧 띠가 아직이면 20 칸 넘는 칸을 뺀다 */
+function atlasOf(im: HTMLImageElement): FighterAtlas {
+  const a = sprMeta(im).atlas
+  if (!a.plan || !usesCompanion(a.plan) || ready(companionImg(im))) return a
+  let lean = LEAN.get(a)
+  if (lean === undefined) { lean = pxAtlas((PX_NAME.exec(im.src) ?? [])[1]?.slice(4) ?? '', false); LEAN.set(a, lean) }
+  return lean
+}
 /**
  * 띠를 폰 GPU 텍스처 한도 아래 폭으로 접어 둔 판 (11-22 · 열전 bakedStrip 기법) — 겨루기 띠는 넓이가 4600~5760px 라(251장 중 142장이 4096 넘음)
  * 한도를 넘으면 폰이 그릴 때마다 조각내 올리거나 줄여 올린다. 칸을 1:1 로 옮겨 여러 줄로 접을 뿐이라 도트는 그대로다.
@@ -835,9 +857,21 @@ function folded(im: HTMLImageElement, cells: number): Fold | null {
   FOLDS.set(im, { src: im.src, fold })
   return fold
 }
+/** 띠가 실제로 그려지는 키 — 도트 띠는 정수 배율(칸 키 × 배율) · 옛 띠는 h 그대로 (sprite 와 같은 셈) */
+function drawnHeight(im: HTMLImageElement, h: number): number {
+  if (!im.complete || im.naturalWidth === 0 || !sprMeta(im).px) return h
+  const ch = im.naturalHeight
+  return ch * Math.max(1, Math.round(Math.min(W, H) * P.duel.pxFill / ch))
+}
 function sprite(im: HTMLImageElement, frame: number, x: number, base: number, h: number, flip: boolean, tint: string | null): void {
   if (!im.complete || im.naturalWidth === 0) return
-  const meta = sprMeta(im), isPx = meta.px, cells = meta.atlas.cells
+  const meta = sprMeta(im), isPx = meta.px
+  // 20 칸부터는 덧 띠에서 (발 줄·배율은 본 띠 그대로) · 아직 없으면 누운 칸
+  let cells = meta.atlas.cells
+  if (frame >= STRIP_CELLS) {
+    const c = companionImg(im)
+    if (ready(c) && meta.atlas.plan) { im = c; cells = Math.max(1, meta.atlas.plan.cells - STRIP_CELLS); frame -= STRIP_CELLS } else frame = meta.atlas.dead
+  }
   const cw = im.naturalWidth / cells, ch = im.naturalHeight
   // 도트는 정수 배율 · 정수 자리 — 점이 네모로 또렷하게 (옛 띠는 매끄럽게 늘린다) · 발 줄(manifest)이 base 에 닿게 칸을 그만큼 내린다
   const sc = isPx ? Math.max(1, Math.round(Math.min(W, H) * P.duel.pxFill / ch)) : 0 // 화면 짧은 변 기준 (폰 390 → 1배 · 데스크톱 768 → 2배)
@@ -872,8 +906,8 @@ function fieldFighters(now: number, base: number, h: number, gapPx: number, cx: 
   const foeEnd = mode === 'end' && (d.over === 'ko' || d.over === 'win') ? (d.over === 'ko' ? 'dead' : 'hurt') : null
   // 쓰러짐(KO)은 끝난 뒤 시계로 쓰러지는 칸을 차례로 (raid/ko.ts)
   const endAge = mode === 'end' ? now - endAt : undefined
-  const me = fighterMotion(atlasOf(sprMe), meAnim, now, false, meEnd, endAge)
-  const foe = fighterMotion(atlasOf(sprFoe), foeAnim, now, d.phase === 'rush', foeEnd, endAge)
+  const me = fighterMotion(atlasOf(sprMe), meAnim, now, false, meEnd, endAge, calmMotion)
+  const foe = fighterMotion(atlasOf(sprFoe), foeAnim, now, d.phase === 'rush', foeEnd, endAge, calmMotion)
   const mf = me.frame, mdx = me.dx * gapPx, ff = foe.frame, fdx = -foe.dx * gapPx
   ctx.fillStyle = 'rgba(0,0,0,.35)'
   for (const x of [meX, foeX]) { ctx.beginPath(); ctx.ellipse(x, base + 2, h * 0.22, h * 0.05, 0, 0, Math.PI * 2); ctx.fill() }
@@ -1262,7 +1296,9 @@ function drawDuel(now: number, fadeIn: number): void {
   const kz = koSide ? koZoom((now - endAt) / 1000 - KO_END.defeat.freeze, calmMotion) : 0
   if (kz > 0) {
     ctx.fillStyle = `rgba(6,4,3,${KO.duelDim * kz})`; ctx.fillRect(0, 0, W, H)
-    const fx = W / 2 + koSide * gap / 2, fy = fbase - fh * 0.25, z = 1 + (KO.duelZoom - 1) * kz
+    // 쓰러진 쪽 누운 몸이 화면 폭의 duelFill 몫이 되게 (그리는 키 = 도트 배율을 반영한 실제 키)
+    const fallen = duel.over === 'ko' ? sprFoe : sprMe, fx = W / 2 + koSide * gap / 2, fy = fbase - fh * 0.25
+    const z = 1 + (koTargetZoom(1, drawnHeight(fallen, fh), W, KO.duelFill, KO.duelMaxZoom) - 1) * kz
     ctx.save(); ctx.translate(fx + (W / 2 - fx) * kz, fy + (H * 0.55 - fy) * kz); ctx.scale(z, z); ctx.translate(-fx, -fy)
     fieldFighters(now, fbase, fh, gap, W / 2)
     ctx.restore()
@@ -1617,6 +1653,6 @@ if (mode === 'duel') begin()
 wake()
 // 개발 검수 손잡이 — 헤드리스 시험(tools/hit-portrait-probe.ts)이 화면 쪽 사건 하나를 틀어 본다 (판은 그대로) · 배포 빌드엔 없음
 // __duel·__duelTap: 프레임 재기(tools/duel-fps-probe.ts)가 고리 닿는 때에 맞춰 눌러 가장 무거운 순간(챙·베기·치명·연타)을 만든다 · __duelWarm: 미리 굽기가 어디까지 왔나
-if (import.meta.env?.DEV === true) Object.assign(window, { __duelEvent: (e: DuelEvent): number => { onEvent(e, last); return last }, __duelMode: () => mode, __duel: () => duel, __duelTap: (x: number, y: number): void => { if (mode === 'duel' && duel.over === null) queued = { x, y } }, __duelWarm: () => ({ warmed, left: warmQ.length, images: warmedIm.size, faceCapR, texts: TXT.size }) })
+if (import.meta.env?.DEV === true) Object.assign(window, { __duelEvent: (e: DuelEvent): number => { onEvent(e, last); return last }, __duelMode: () => mode, __duel: () => duel, __duelTap: (x: number, y: number): void => { if (mode === 'duel' && duel.over === null) queued = { x, y } }, /** 개발 검수: 지금 겨루기를 쓰러짐으로 끝낸다 (foe = 상대가 쓰러짐 · me = 내가 쓰러짐 · KO 연출 찍기) */ __duelKo: (who: 'me' | 'foe'): void => { if (mode !== 'duel' || duel.over !== null) return; duel.over = who === 'foe' ? 'ko' : 'kod'; mode = 'end'; endAt = performance.now(); for (const id of [...risers.keys()]) riserCut(id) }, __duelWarm: () => ({ warmed, left: warmQ.length, images: warmedIm.size, faceCapR, texts: TXT.size }) })
 return done
 }

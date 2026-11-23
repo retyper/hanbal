@@ -5,8 +5,8 @@
  */
 import { HAEBI_ANIM as A, HAEBI_IDLE as I } from '../tune/params.ts'
 
-/** 띠 하나의 서기 계획 — cells 띠 칸 수 · base 서기 칸들(hold 초씩) · blink 눈 감는 칸 · breath 큰 숨 칸들 · quirk 버릇 칸들 · fall 쓰러지는 칸 차례(raid/ko.ts · 없으면 18 → 19) */
-export interface IdlePlan { cells: number; base: readonly number[]; hold: number; blink?: number; breath?: readonly number[]; quirk?: readonly number[]; fall?: readonly number[] }
+/** 띠 하나의 서기 계획 — cells 띠 칸 수 · base 서기 칸들(hold 초씩) · blink 눈 감는 칸 · breath 큰 숨 칸들 · quirk 버릇 칸들(quirkTimes 칸마다 초 · 없으면 HAEBI_IDLE.quirkStep) · fall 쓰러지는 칸 차례(raid/ko.ts · 없으면 18 → 19) */
+export interface IdlePlan { cells: number; base: readonly number[]; hold: number; blink?: number; breath?: readonly number[]; quirk?: readonly number[]; quirkTimes?: readonly number[]; fall?: readonly number[] }
 export type IdleEventKind = 'blink' | 'breath' | 'quirk'
 export interface IdleEvent { kind: IdleEventKind; at: number; end: number }
 
@@ -16,12 +16,31 @@ export const STRIP_CELLS = 20
 /** 계획이 없는 띠 — 예전 서기 그대로 */
 export const DEFAULT_IDLE: IdlePlan = { cells: STRIP_CELLS, base: A.idle, hold: A.idleTime }
 
-/** 그림 길(anim-px/gen-beom.png · _hd 판 포함) → 띠 이름(beom) */
-export function spriteName(path: string) { const m = /gen-([^/]+?)(?:_hd)?\.png$/.exec(path); return m ? m[1]! : '' }
+/**
+ * 덧 띠 — 본 띠(gen-X.png · 칸 0~19)는 늘 20칸 그대로 두고, 20 칸부터는 곁 그림 gen-X-x.png 에 잇는다 (같은 칸 크기·발 줄 · 칸 n 은 덧 띠의 n − 20 째).
+ * 본편 전장·장수 고리처럼 20칸을 가정하는 곳은 본 띠만 읽어 그대로다 (11-23)
+ */
+export const isCompanion = (path: string) => /-x\.png$/.test(path)
+/** 그림 길 → 그 띠의 덧 띠 길 (2배 _hd 판도 보통 덧 띠를 쓴다 · 그리는 키가 같아 섞여도 크기가 맞다) */
+export const companionOf = (path: string) => path.replace(/(?:_hd)?(?:-x)?\.png$/, '-x.png')
+/** 그림 길(anim-px/gen-beom.png · _hd 판 · 덧 띠 -x 포함) → 띠 이름(beom) */
+export function spriteName(path: string) { const m = /gen-([^/]+?)(?:_hd)?(?:-x)?\.png$/.exec(path); return m ? m[1]! : '' }
 /** 그 띠의 서기 계획 (없으면 null — 예전 서기) */
 export const idlePlan = (path: string): IdlePlan | null => PLANS[spriteName(path)] ?? null
-/** 그 띠의 칸 수 — 계획에 적힌 cells · 없으면 20 (칸 폭 = 그림 폭 ÷ 이것) */
-export const stripCells = (path: string) => idlePlan(path)?.cells ?? STRIP_CELLS
+/** 그림 한 장의 칸 수 — 본 띠는 늘 20 · 덧 띠는 계획 cells − 20 (칸 폭 = 그림 폭 ÷ 이것) */
+export const stripCells = (path: string) => isCompanion(path) ? Math.max(1, (idlePlan(path)?.cells ?? STRIP_CELLS) - STRIP_CELLS) : STRIP_CELLS
+/** 계획이 덧 띠 칸(20 부터)을 쓰나 */
+export const usesCompanion = (plan: IdlePlan | null) => !!plan && plan.cells > STRIP_CELLS
+/**
+ * 지금 그릴 수 있는 계획 — 덧 띠가 아직 없거나 못 받았으면(ready = false) 20 칸 넘는 칸을 쓰는 일을 뺀다:
+ * 쓰러짐은 18 → 19 · 버릇은 없음 (빈 칸을 그리지 않는다)
+ */
+export function usablePlan(plan: IdlePlan, ready: boolean): IdlePlan {
+  if (ready || !usesCompanion(plan)) return plan
+  const ok = (c: readonly number[] | undefined): c is readonly number[] => c !== undefined && c.every(n => n < STRIP_CELLS)
+  const { fall, quirk, breath, blink, ...rest } = plan
+  return { ...rest, cells: STRIP_CELLS, ...(ok(fall) ? { fall } : {}), ...(ok(quirk) ? { quirk } : {}), ...(ok(breath) ? { breath } : {}), ...(blink !== undefined && blink < STRIP_CELLS ? { blink } : {}) }
+}
 
 /** 띠 이름 → 정수 씨앗 (FNV-1a) — 장수마다 깜빡임·숨이 어긋나게 */
 export function idleSeed(name: string) { let h = 2166136261; for (let i = 0; i < name.length; i++) h = Math.imul(h ^ name.charCodeAt(i), 16777619); return h >>> 0 }
@@ -32,7 +51,9 @@ function unit(seed: number, cycle: number, k: number) {
   return (a >>> 0) / 4294967296
 }
 const span = (r: readonly number[], u: number) => r[0]! + (r[1]! - r[0]!) * u
-const lengthOf = (plan: IdlePlan, kind: IdleEventKind) => kind === 'blink' ? I.blinkTime : kind === 'breath' ? I.breathTime : (plan.quirk?.length ?? 0) * I.quirkStep
+/** 버릇 칸 i 의 초 */
+const quirkTime = (plan: IdlePlan, i: number) => plan.quirkTimes?.[i] ?? I.quirkStep
+const lengthOf = (plan: IdlePlan, kind: IdleEventKind) => kind === 'blink' ? I.blinkTime : kind === 'breath' ? I.breathTime : (plan.quirk ?? []).reduce((n, _, i) => n + quirkTime(plan, i), 0)
 const everyOf = (kind: IdleEventKind) => kind === 'blink' ? I.blinkEvery : kind === 'breath' ? I.breathEvery : I.quirkEvery
 
 const cache = new Map<string, readonly IdleEvent[]>()
@@ -77,8 +98,10 @@ export function planFrame(plan: IdlePlan, seed: number, tau: number, calm = fals
     if (now) {
       const { e, age } = now
       if (e.kind === 'blink') return plan.blink!
-      const cells = e.kind === 'breath' ? plan.breath! : plan.quirk!, step = e.kind === 'breath' ? I.breathTime / cells.length : I.quirkStep
-      return cells[Math.min(cells.length - 1, Math.floor(age / step))]!
+      if (e.kind === 'breath') return plan.breath![Math.min(plan.breath!.length - 1, Math.floor(age / (I.breathTime / plan.breath!.length)))]!
+      let left = age
+      for (let i = 0; i < plan.quirk!.length; i++) { left -= quirkTime(plan, i); if (left < 0) return plan.quirk![i]! }
+      return plan.quirk![plan.quirk!.length - 1]!
     }
   }
   return plan.base[Math.floor(t / plan.hold) % plan.base.length]!

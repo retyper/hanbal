@@ -15,9 +15,9 @@ test('victory waits 3.8 visible seconds; one stamp and no sim mutation', () => {
   assert.equal(end.ready, false); end.advance(1.7, true); assert.equal(end.ready, true)
   assert.equal(JSON.stringify(s), snapshot)
 })
-test('defeat is the KO sequence (3.7s) and retreat 2s without stamp; skip and new run reset', () => {
+test('defeat is the KO sequence (3.85s) and retreat 2s without stamp; skip and new run reset', () => {
   const s = createHaebi(49, 'stage', 'bow'), end = new RaidEnding()
-  s.hp = 0; s.state = 'lost'; end.observe(s); assert.equal(end.kind, 'defeat'); assert.equal(end.duration, koDuration()); assert.ok(Math.abs(koDuration() - 3.7) < 1e-9)
+  s.hp = 0; s.state = 'lost'; end.observe(s); assert.equal(end.kind, 'defeat'); assert.equal(end.duration, koDuration()); assert.ok(Math.abs(koDuration() - 3.85) < 1e-9)
   end.skip(); assert.equal(end.ready, true)
   const next = createHaebi(50, 'stage', 'bow'); end.observe(next); assert.equal(end.kind, null)
   next.state = 'lost'; end.observe(next); assert.equal(end.kind, 'retreat')

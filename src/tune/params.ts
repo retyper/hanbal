@@ -1380,15 +1380,16 @@ export const HAEBI_IMPACT = {
  * 띠마다 계획 plans[띠 이름(gen- 뒤)] — 없으면 예전 그대로 HAEBI_ANIM.idle 을 idleTime 초마다 (판 시각).
  *   cells 띠 칸 수 (20 칸 넘는 띠도 · 그리는 쪽이 칸 폭을 이것으로 나눈다 · 없으면 20) · base 서기 칸들을 hold 초씩 · blink 눈 감는 칸 · breath 큰 숨 칸들 · quirk 버릇 칸들 (20 넘어도 된다)
  * 때는 쉬기 시작한 뒤(걷기·공격·맞음·시전이 끝난 때부터)의 시계 — 눈 깜빡임 blinkEvery 초 사이마다 blinkTime 초 · 큰 숨 breathEvery 사이마다 breathTime 초(칸 여럿이면 나눠서) ·
- *   버릇 quirkEvery 사이마다 칸마다 quirkStep 초. 셋은 겹치지 않는다(앞 일이 끝나고 gap 초 뒤에야 다음) · 사이는 띠 이름과 시각으로만 정해 장수마다 어긋난다(난수 없음) ·
+ *   버릇 quirkEvery 사이마다 칸마다 quirkStep 초(계획에 quirkTimes 가 있으면 칸마다 그 초). 셋은 겹치지 않는다(앞 일이 끝나고 gap 초 뒤에야 다음) · 사이는 띠 이름과 시각으로만 정해 장수마다 어긋난다(난수 없음) ·
  *   cycle 초마다 새 차례(오래 서 있어도 셈이 늘지 않게) · 움직임 줄이기(기기 설정)면 base 만
- * 새 띠 차례: 0~19 정규 · 20·21 쓰러짐 가운데 두 칸 · 22~25 버릇 네 칸.
- * 범(beom) 띠: 0·1 서기(같은 그림) · 2 눈 감음 · 3 큰 숨 · 「손톱 살피기」 네 칸이 22~25 로 붙으면 cells: 26 · quirk: [22, 23, 24, 25] 를 더한다
+ * 새 띠 차례: 0~19 정규(본 띠 gen-X.png · 늘 20칸) · 20 부터는 덧 띠 gen-X-x.png — 20·21 쓰러짐 가운데 두 칸 · 22~25 버릇 네 칸 (cells = 본 띠 20 + 덧 띠 칸).
+ * 범(beom) 띠: 0·1 서기(같은 그림) · 2 눈 감음 · 3 큰 숨 · 덧 띠 20 앉음 · 21 돌아누우며 한 손 짚음 · 쓰러짐 18 → 20 → 21 → 19 ·
+ *   버릇 「손톱 살피기」 덧 띠 22~25 (손톱을 들여다봄 · 손끝을 훅 붊 · 씩 웃으며 손을 털음 · 팔을 내림 · 발은 서기 칸 자리 그대로) — 느린 몸짓이라 칸마다 quirkTimes 초 (셋째 칸에 조금 더 머문다)
  */
 export const HAEBI_IDLE = {
-  blinkTime: .18, blinkEvery: [3.2, 5.6], breathTime: .7, breathEvery: [9, 14], quirkStep: .22, quirkEvery: [6, 10], gap: .6, cycle: 60,
+  blinkTime: .18, blinkEvery: [3.2, 5.6], breathTime: .7, breathEvery: [9, 14], quirkStep: .28, quirkEvery: [7, 11], gap: .6, cycle: 60,
   plans: {
-    beom: { cells: 20, base: [0, 1], hold: 2.4, blink: 2, breath: [3] },
+    beom: { cells: 26, base: [0, 1], hold: 2.4, blink: 2, breath: [3], fall: [18, 20, 21, 19], quirk: [22, 23, 24, 25], quirkTimes: [.3, .3, .38, .25] },
   },
 } as const
 export const HAEBI_ANIM = {
@@ -1432,15 +1433,19 @@ export const HAEBI_ANIM = {
  *   새 띠는 18 뒤로 물러섬 → 20 무릎이 꺾여 앉음 → 21 돌아누우며 한 손 짚음 → 19 옆으로 누움(끝).
  * 칸은 맞은 멈춤(HAEBI_END.defeat.freeze) 뒤 fallStep × (칸 수 − 1) 초에 걸쳐 넘어간다 — 1 − (1 − k)^ease 로 앞 칸은 빨리 · 마지막 넘어감은 느리게.
  * 마지막 칸에서 hold 초 멈춘 뒤 결과 창 · 누름 건너뛰기는 minSkip 초 뒤부터 (잘못 눌러 넘기지 않게) · 띠 칸은 길어야 maxCells 칸(막 길이를 정한다).
- * 카메라: 쓰러지는 동안 zoomTime 초에 걸쳐 zoom 배로 장수에게 다가간다(발 위 focusLift px 를 가운데로 · 누운 몸 약 150px 가 화면 안) ·
- *   둘레는 장수 둘레 clearR px 밖에서 dimR px 까지 gray 몫만큼 빛을 빼고 dark 몫만큼 어둡게 (장수는 또렷이).
+ * 카메라 (11-23 검수: 1.75배는 누운 몸이 화면 폭의 13% 뿐 → KO 가까이): 누운 몸 폭(장수 그리는 키 × lieWidth · 범 누운 칸을 열전 화면에서 잰 값 약 1.2)이 판 화면 폭의 fill 몫이 되는 배율로
+ *   zoomTime 초에 걸쳐 다가간다(살짝 overshoot 만큼 지나쳤다 돌아옴 · 발 위 focusLift px 를 가운데로) · 지금 배율보다 줄이지 않고 maxZoom 을 넘지 않는다(머리칼까지 화면 안 · fill 이 40% 밑이라 양옆 여백).
+ *   장수는 적보다 위에 그리고 · 장수 둘레 fadeR px 안의 적은 가까울수록 fadeNear 몫까지 옅게 (누운 몸을 가리지 않게).
+ *   둘레는 누운 몸 화면 폭 × clearR 반지름 밖에서 그 dimR 배까지 gray 몫만큼 빛을 빼고 dark 몫만큼 어둡게 (장수는 또렷이).
  * 「패배」 띠는 끝나기 stampLead 초 전에 화면 높이 stampY 몫 자리에 (누운 장수를 가리지 않게) · 땅에 닿을 때 낮은 「쿵」(맞음 소리를 thudRate 배로 낮춰).
- * 움직임 줄이기(기기 설정)면 다가감·흐려짐 없이 칸과 멈춤만. 겨루기(duel): 같은 칸·박자 · 쓰러진 쪽으로 duelZoom 배 · duelDim 만큼 어둡게 · 결과 글은 쓰러짐이 끝난 뒤.
+ * 움직임 줄이기(기기 설정)면 다가감·흐려짐 없이 칸과 멈춤만. 겨루기(duel): 같은 칸·박자 · 쓰러진 쪽 누운 몸이 화면 폭의 duelFill 몫이 되게(duelMaxZoom 까지) · duelDim 만큼 어둡게 · 결과 글은 쓰러짐이 끝난 뒤.
+ * 쓰러짐 칸은 칸 넘어감마다 fallStep 초 (네 칸이면 1.05초) · 마지막 칸 hold 초 그대로.
  */
 export const HAEBI_KO = {
-  fall: [18, 19], fallStep: .3, ease: 2.2, maxCells: 4, hold: 2.5, minSkip: 1.2,
-  zoom: 1.75, zoomTime: .9, focusLift: 40, clearR: 120, dimR: 420, gray: .6, dark: .35,
-  stampY: .8, stampLead: .9, thudRate: .6, duelZoom: 1.6, duelDim: .35,
+  fall: [18, 19], fallStep: .35, ease: 2.2, maxCells: 4, hold: 2.5, minSkip: 1.2,
+  fill: .37, lieWidth: 1.2, maxZoom: 6, zoomTime: 1.1, overshoot: .6, focusLift: 30, fadeR: 170, fadeNear: .85,
+  clearR: .7, dimR: 2.6, gray: .6, dark: .35,
+  stampY: .8, stampLead: .9, thudRate: .6, duelFill: .5, duelMaxZoom: 4, duelDim: .35,
 } as const
 export const HAEBI_END = {
   defeat: { freeze: .3, slow: 1.2 },

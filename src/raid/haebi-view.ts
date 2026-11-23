@@ -13,8 +13,9 @@ import { areaScale, awakenedLook, barrageArcher, charge, missileLife, slamRadius
 import { fieldView } from './camera.ts'
 import { WALK_CYCLE } from './walk-cycle.ts'
 import { attackFrame, attackRole, heroPose, idleFrame, type HeroPose } from './hero-motion.ts'
-import { idlePlan, idleSeed, planFrame, spriteName, stripCells } from './hero-idle.ts'
-import { fallCells, koFrame } from './ko.ts'
+import { companionOf, idlePlan, idleSeed, isCompanion, planFrame, spriteName, stripCells, usablePlan, usesCompanion, STRIP_CELLS } from './hero-idle.ts'
+import { fallCells, koFrame, koZoom } from './ko.ts'
+import { HAEBI_KO as KO } from '../tune/params.ts'
 import { HAEBI_ANIM as ANIM } from '../tune/params.ts'
 import { AURA_ART, drawAura, drawAuraBurst, drawAuraGround, type AuraArt, type AuraAt, type AuraKind } from './fx-aura.ts'
 import { HAEBI_IMPACT as FEEL, HAEBI_END as END, HAEBI_KITS as KITS58 } from '../tune/params.ts'
@@ -113,6 +114,12 @@ function whiteStrip(src: CanvasImageSource, width: number, height: number) {
   return white
 }
 export function sprite(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, path: string, x: number, y: number, height: number, frame: number, face = 1, flash: boolean | 'white' = false, density?: number, rim = 0) {
+  // 20 칸부터는 덧 띠(gen-X-x.png)에서 — 아직 없으면 누운 칸 19 (빈 칸을 그리지 않는다 · 부르는 쪽은 usablePlan 으로 미리 거른다)
+  if (frame >= STRIP_CELLS && !isCompanion(path)) {
+    const cp = companionOf(path)
+    if (companionReady(images, cp)) return sprite(ctx, images, cp, x, y, height, frame - STRIP_CELLS, face, flash, density, rim)
+    frame = KO.fall[1]
+  }
   const img = images.get(path); if (!img) return
   const layout = HERO_HD_SHEETS[path], nativeH = layout?.cell[1] ?? img.height, n = stripCells(path)
   const b = bakedStrip(img, density === undefined ? height : heroCacheHeight(height, density, nativeH), density !== undefined, layout, n)
@@ -154,6 +161,8 @@ function trackGhosts(s: HaebiRun, path: string, frame: number) {
   if (s.dash > 0 && s.t - ghostAt >= C.ghostEvery) { ghosts.push({ x: s.x, y: s.y, frame, face: s.face, t: s.t, path }); ghostAt = s.t }
   while (ghosts.length && s.t - ghosts[0]!.t > C.ghostLife) ghosts.shift()
 }
+/** 덧 띠를 받았나 (다 내려받고 크기가 있다) */
+const companionReady = (images: Map<string, HTMLImageElement> | null, path: string) => { const im = images?.get(path); return !!im && im.complete && im.naturalWidth > 0 }
 function drawGhosts(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, height: number) {
   if (!ghosts.length) return
   const img = images.get(ghosts[0]!.path); if (!img) return
@@ -164,7 +173,7 @@ function drawGhosts(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImage
   const w = height * fw / fh
   ctx.save(); ctx.imageSmoothingEnabled = false   // 밝은 땅에서 하얗게 날지 않게 덧칠(lighter 아님)
   for (const g of ghosts) {
-    const k = 1 - (s.t - g.t) / C.ghostLife; if (k <= 0) continue
+    const k = 1 - (s.t - g.t) / C.ghostLife; if (k <= 0 || g.frame >= n) continue   // 덧 띠 칸은 잔상을 남기지 않는다 (잔상은 회피 걸음뿐)
     for (const [color, dx, a] of [['#ff2bd6', C.ghostSplit, .55], ['#18e8ff', -C.ghostSplit * .5, 1]] as const) {
       t.globalCompositeOperation = 'copy'; t.drawImage(img, (g.frame % (layout?.cols ?? n)) * fw, Math.floor(g.frame / (layout?.cols ?? n)) * fh, fw, fh, 0, 0, fw, fh)
       t.globalCompositeOperation = 'source-in'; t.fillStyle = color; t.fillRect(0, 0, fw, fh)
@@ -185,17 +194,26 @@ export function setHeroArt(baseKey: string, awakeKey?: string) { const b = genAr
  */
 const heroH = (s: HaebiRun) => C.heroPx * (awakenedLook(s) ? heroArt.fitAwake : heroArt.fit)   // 11-22 정수리 기준 (각성 그림도 제 몸 비로 · 예전 grow 와 같은 뜻)
 export const heroArtFiles = () => [...new Set([heroArt.base, heroArt.awake])]
+/** 계획이 20 칸 넘게 쓰는 장수의 덧 띠 (없어도 판은 돈다 — 부르는 쪽이 실패를 삼킨다) */
+export const heroCompanionFiles = () => heroArtFiles().filter(p => usesCompanion(idlePlan(p))).map(companionOf)
+/** 마지막으로 판을 그린 그림 묶음 — 덧 띠가 왔는지 보려고 (화면 쪽 기억) */
+let viewImages: Map<string, HTMLImageElement> | null = null
+/** 지금 그릴 수 있는 계획 — 덧 띠가 아직이면 20 칸 넘는 칸을 뺀다 (hero-idle.ts usablePlan) */
+const planOf = (path: string) => { const plan = idlePlan(path); return plan ? usablePlan(plan, companionReady(viewImages, companionOf(path))) : null }
 /** 판 안 각성(디지몬식) 동안만 각성 그림 — 조합을 열어도 모습은 그대로 (RAID-LINK §1) */
 const heroSprite = (s: HaebiRun, images?: Map<string, HTMLImageElement>, density = 1) => {
   const normal = awakenedLook(s) ? heroArt.awake : heroArt.base, hd = HERO_HD[normal]
   return hd && wantsHeroHd(density) && images?.has(hd) ? hd : normal
 }
 /** 이 판 장수 띠의 쓰러지는 칸 차례 (raid/ko.ts · 계획에 없으면 18 → 19) */
-export const heroFallCells = (s: HaebiRun) => fallCells(idlePlan(heroSprite(s))?.fall)
+export const heroFallCells = (s: HaebiRun) => fallCells(planOf(heroSprite(s))?.fall)
+/** 장수를 그리는 키(판 px · 정수리~발) — 쓰러짐 KO 카메라가 누운 몸 폭을 셈한다 */
+export const heroDrawHeight = (s: HaebiRun) => heroH(s)
 export function heroHdFiles(density: number): string[] { return wantsHeroHd(density) ? [...new Set([heroArt.base, heroArt.awake].flatMap(p => HERO_HD[p] ? [HERO_HD[p]!] : []))] : [] }
 /** Decode happens in the loader; masks are painted without pixel readback before first HIT. */
 export function warmHeroSprites(images: Map<string, HTMLImageElement>, density: number) {
-  for (const [path, height] of [[heroArt.base, C.heroPx * heroArt.fit], [heroArt.awake, C.heroPx * heroArt.fitAwake]] as const) {
+  viewImages = images
+  for (const [path, height] of [[heroArt.base, C.heroPx * heroArt.fit], [heroArt.awake, C.heroPx * heroArt.fitAwake], ...heroCompanionFiles().map(p => [p, C.heroPx * heroArt.fit] as const)] as const) {
     const hd = HERO_HD[path], use = hd && wantsHeroHd(density) && images.has(hd) ? hd : path, img = images.get(use)
     if (!img) continue
     const layout = HERO_HD_SHEETS[use]
@@ -207,7 +225,7 @@ export function warmHeroSprites(images: Map<string, HTMLImageElement>, density: 
 /** 움직임 줄이기(기기 설정)면 몸 변형(런지·늘임·출렁·기울기·잔상)을 끈다 — 칸 박자는 그대로 · 서기는 base 칸만 */
 const calmMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
 /** 띠의 서기 계획 (hero-idle.ts · 없으면 undefined — 예전 서기) */
-const idleOf = (path: string) => { const plan = idlePlan(path); return plan ? { plan, seed: idleSeed(spriteName(path)) } : undefined }
+const idleOf = (path: string) => { const plan = planOf(path); return plan ? { plan, seed: idleSeed(spriteName(path)) } : undefined }
 const poseOptions = (s: HaebiRun) => ({ stride: C.walkStride * C.heroPx * heroArt.body, cells: WALK_CYCLE[heroSprite(s)] ?? 8, idle: idleOf(heroSprite(s)), calm: calmMotion })
 /** 장수 칸 — 초상(portrait)은 판 상태만으로(걷지 않음 · 기억 없음) · 판 위는 heroPose 와 같다 */
 export function heroFrame(s: HaebiRun, portrait = false, menuTime = 0) {
@@ -755,6 +773,7 @@ const WIDE_VIEW = { left: 0, top: 0, right: 0, bottom: 0 }
  */
 export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, destination: { x: number; y: number } | null, cam?: { zoom: number; x: number; y: number }, feel?: RaidFeel, ending?: RaidEnding, criticalLow = false) {
   const W = C.width, H = C.height
+  viewImages = images
   fieldTransform(ctx)   // 그림마다 옮겼다 되돌리는 셈의 작은 오차가 판마다 쌓이지 않게 (sprite·stamp 는 save/restore 없이 · 11-17)
   if (!s.wide) { ctx.fillStyle = '#273c35'; ctx.fillRect(0, 0, W, H) }   // 59-WIDE 는 바닥이 화면을 다 덮는다 (한 번 덜 칠한다)
   const endShake = ending?.active ? END.shake * Math.max(0, 1 - ending.elapsed / END.shakeLife) : 0
@@ -822,7 +841,9 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   order.length = 0; for (const e of s.enemies) if (!view || e.giant || inView(view, e.x, e.y)) order.push(e); order.push(null); if (s.palisade) order.push(false)
   if (view) for (const p of wideProps(s)) if (inView(view, p.x, p.y, Math.max(p.height, p.width / 2))) order.push(p)
   if (s.build) for (const it of s.build.items) if (!view || inView(view, it.x, it.y)) order.push(it)
-  order.sort((a, b) => (a ? a.y : a === null ? s.y : wallY) - (b ? b.y : b === null ? s.y : wallY))
+  // 쓰러짐 KO 동안 장수는 적보다 위에 (누운 몸을 가리지 않게) · 둘레 적은 옅게 (koNear)
+  const ko = ending?.kind === 'defeat' ? Math.min(1, koZoom(ending.elapsed - END.defeat.freeze)) : 0, heroKey = ko ? Infinity : s.y
+  order.sort((a, b) => (a ? a.y : a === null ? heroKey : wallY) - (b ? b.y : b === null ? heroKey : wallY))
   const archer = s.mode === 'stage' ? barrageArcher(s, cam ? fieldView(cam) : undefined) : undefined
   // 적 몸을 그린 뒤 판 변환(위에서 건 카메라·흔들림 그대로)으로 되돌린다 — 적마다 save/restore 하지 않는다
   // (11-22 · 11-17 sprite 와 같은 길: 목책 거대 두목 판은 적이 200명 넘어 save 가 틀마다 200번 넘었다)
@@ -844,6 +865,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       const lag = steady ? 0 : Math.sign(e.x - s.x) * C.knockback * recoil
       const jitter = recoil * FEEL.mobJitter * Math.sin(time * FEEL.mobJitterHz + e.id)
       const a0 = ctx.globalAlpha
+      if (ko) ctx.globalAlpha = a0 * (1 - ko * KO.fadeNear * Math.max(0, 1 - Math.hypot(e.x - s.x, e.y - s.y) / KO.fadeR))
       ctx.translate(e.x + jitter - lag, e.y)
       if (wave >= 0) { ctx.globalAlpha = a0 * (1 - wave); ctx.translate(Math.sign(e.x - ending!.boss.x) * wave * FEEL.deathDistance, -Math.sin(wave * Math.PI) * FEEL.deathLift); ctx.rotate(Math.sign(e.x - ending!.boss.x) * wave * FEEL.deathSpin) }
       const recovery = championRecovery(e)
@@ -870,7 +892,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       // 몸놀림은 한 프레임에 한 번만 묻는다 (회피 잔상·몸·각성 빛이 같은 칸) — 맞은 순간 멈춤 · 움직임 줄이기 · 판 끝 연출 · 저사양을 함께 넘긴다
       const heroPath = heroSprite(s, images, density), pose = heroPose(s, { ...poseOptions(s), stopped: feel?.stopped ?? false, still: calmMotion || !!ending?.active, low: criticalLow })
       // 쓰러짐 KO — 맞은 멈춤 뒤 띠의 쓰러지는 칸을 차례로 (raid/ko.ts · 끝 칸에 머문다) · 막이 끝나 결과 창 뒤에도 누운 채
-      if (ending?.kind === 'defeat') { pose.frame = koFrame(fallCells(idlePlan(heroPath)?.fall), ending.elapsed - END.defeat.freeze); pose.ghosts = 0 }
+      if (ending?.kind === 'defeat') { pose.frame = koFrame(fallCells(planOf(heroPath)?.fall), ending.elapsed - END.defeat.freeze); pose.ghosts = 0 }
       trackGhosts(s, heroPath, pose.frame); drawGhosts(ctx, images, s, heroH(s))
       // 오라: 뒤 겹(몸 뒤 빛 · 뒤 가닥) → 몸 → 앞 겹(앞 가닥 · 불티) · 발밑 고리와 표식은 땅 표식 차례에 이미 그렸다
       if (aura) drawAura(ctx, aura, false, auraAt)

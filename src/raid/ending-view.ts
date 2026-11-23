@@ -7,14 +7,14 @@ import { drawFx } from './fx-art.ts'
 
 /**
  * Canvas composites only; no CSS filter or extra compositor layer.
- * focus 쓰러진 장수의 화면 자리(판 논리 좌표 · 발 위)와 카메라 배율 — 쓰러짐 KO 는 장수 둘레를 남기고 둘레만 빛을 빼고 어둡게 (HAEBI_KO)
+ * focus 쓰러진 장수의 화면 자리(판 논리 좌표 · 발 위)와 누운 몸의 화면 폭 — 쓰러짐 KO 는 장수 둘레를 남기고 둘레만 빛을 빼고 어둡게 (HAEBI_KO)
  */
-export function drawEnding(ctx: CanvasRenderingContext2D, end: RaidEnding, gold: number, images: Map<string, HTMLImageElement>, focus?: { x: number; y: number; zoom: number }) {
+export function drawEnding(ctx: CanvasRenderingContext2D, end: RaidEnding, gold: number, images: Map<string, HTMLImageElement>, focus?: { x: number; y: number; width: number }) {
   if (!end.active) return
   const w = C.width, h = C.height, age = end.elapsed
   ctx.save(); fieldTransform(ctx)
   if (end.kind === 'defeat' && focus) {
-    const k = Math.min(1, Math.max(0, age - end.freeze) / E.defeat.slow), r0 = K.clearR * focus.zoom, r1 = K.dimR * focus.zoom
+    const k = Math.min(1, Math.max(0, age - end.freeze) / E.defeat.slow), r0 = K.clearR * focus.width, r1 = r0 * K.dimR
     const hole = (color: string) => { const g = ctx.createRadialGradient(focus.x, focus.y, r0, focus.x, focus.y, r1); g.addColorStop(0, color + '00'); g.addColorStop(1, color + 'ff'); return g }
     ctx.globalCompositeOperation = 'saturation'; ctx.globalAlpha = k * K.gray; ctx.fillStyle = hole('#888888'); ctx.fillRect(0, 0, w, h)
     ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = k * K.dark; ctx.fillStyle = hole('#111827'); ctx.fillRect(0, 0, w, h)

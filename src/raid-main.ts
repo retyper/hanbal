@@ -24,8 +24,8 @@ import { pushRaids } from './net/sync.ts'
 import { newCam, followCam, nextLevel, closest, toField, fieldView, clampCenter, bossFrameZoom, cameraBounds } from './raid/camera.ts'
 import { fieldBounds } from './raid/wide.ts'
 import { loadMeta, saveMeta, buy, refund, refundFee, record, recordJackpots, heroJackpots, shopCost, shopMax, stageOpen, stageName, pickStage, SHOP, STAGE_ORDER, type ShopKey } from './raid/meta.ts'
-import { drawField, imagePaths, setHeroArt, heroArtFiles, heroHdFiles, warmHeroSprites, heroFallCells } from './raid/haebi-view.ts'
-import { fallTime, koSkippable, koZoom } from './raid/ko.ts'
+import { drawField, imagePaths, setHeroArt, heroArtFiles, heroHdFiles, heroCompanionFiles, warmHeroSprites, heroFallCells, heroDrawHeight } from './raid/haebi-view.ts'
+import { fallTime, koSkippable, koTargetZoom, koZoom } from './raid/ko.ts'
 import { HAEBI_KO as KO } from './tune/params.ts'
 import { powerIcon, installPowerHints, comboIcon, rankMark, treeInfo, BRANCH_COLOR } from './raid/power-ui.ts'
 import { KIT_BY_SPRITE } from './raid/kit-table.ts'
@@ -432,7 +432,8 @@ let heroWarmKey = ''
 function prepareHeroRaster(zoom: number) {
   const density = zoom * Math.max(canvas.width / C.width, canvas.height / C.height), key = Math.ceil(density * 16) + ''
   if (key !== heroWarmKey) { heroWarmKey = key; warmHeroSprites(images, density) }
-  for (const path of heroHdFiles(density)) if (!hdRequested.has(path)) {
+  // 덧 띠(gen-X-x.png · 20 칸부터)는 없어도 판이 돈다 — 오면 굽고, 못 받으면 쓰러짐 18 → 19 그대로
+  for (const path of [...heroHdFiles(density), ...heroCompanionFiles()]) if (!hdRequested.has(path)) {
     hdRequested.add(path); const img = new Image()
     img.onload = () => { void img.decode().catch(() => {}).then(() => { images.set(path, img); heroWarmKey = ''; prepareHeroRaster(cam.zoom) }) }
     img.onerror = () => {} // Optional HD failure keeps approved base art.
@@ -1134,12 +1135,12 @@ function frame(now: number) {
     // 쓰러짐 KO — 쓰러지는 동안 장수(발 위 focusLift)에게 다가간다 (움직임 줄이기면 그대로)
     const ko = ending.kind === 'defeat' ? koZoom(ending.elapsed - END.defeat.freeze, calmEnd) : 0, koY = run.y - KO.focusLift
     const endCam = zoom ? { zoom: cam.zoom * (1 + END.cameraZoom * zoom), x: cam.x + (run.x - cam.x) * zoom, y: cam.y + (run.y - cam.y) * zoom }
-      : ko ? { zoom: cam.zoom * (1 + (KO.zoom - 1) * ko), x: cam.x + (run.x - cam.x) * ko, y: cam.y + (koY - cam.y) * ko } : cam
+      : ko ? { zoom: cam.zoom + (koTargetZoom(cam.zoom, heroDrawHeight(run), C.width) - cam.zoom) * ko, x: cam.x + (run.x - cam.x) * Math.min(1, ko), y: cam.y + (koY - cam.y) * Math.min(1, ko) } : cam
     if (zoom || ko) Object.assign(endCam, clampCenter(endCam.zoom, endCam.x, endCam.y, camBounds()))
     prepareHeroRaster(endCam.zoom)
     if (fieldChanged(endCam)) {
       drawField(ctx, images, run, destination, endCam, feel, ending.kind ? ending : undefined, fieldLowGraphics)
-      drawEnding(ctx, ending, runGold(run), images, ending.kind === 'defeat' && !calmEnd ? { x: C.width / 2 + (run.x - endCam.x) * endCam.zoom, y: C.height / 2 + (koY - endCam.y) * endCam.zoom, zoom: endCam.zoom } : undefined)
+      drawEnding(ctx, ending, runGold(run), images, ending.kind === 'defeat' && !calmEnd ? { x: C.width / 2 + (run.x - endCam.x) * endCam.zoom, y: C.height / 2 + (koY - endCam.y) * endCam.zoom, width: heroDrawHeight(run) * KO.lieWidth * endCam.zoom } : undefined)
     }
   }
   bigCutin.update(run)

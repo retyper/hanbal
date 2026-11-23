@@ -1,6 +1,6 @@
 import { P, HAEBI_END as E } from '../tune/params.ts'
 import { fallCells, koFrame } from '../raid/ko.ts'
-import { idlePlan, idleSeed, planFrame, type IdlePlan } from '../raid/hero-idle.ts'
+import { idlePlan, idleSeed, planFrame, usablePlan, type IdlePlan } from '../raid/hero-idle.ts'
 import { GENERATED_DUEL_KEYS } from '../realm/data/duelGenerated.ts'
 import { DRAWN_IDLE } from '../realm/data/drawnIdle.ts'
 import { FULL20_ATLASES } from '../realm/data/full20Generated.ts'
@@ -18,7 +18,7 @@ export interface FighterAtlas {
   stagger: readonly number[]
   hit: number
   dead: number
-  /** 도트 띠(anim-px)의 서기 계획·씨앗 (raid/hero-idle.ts · 열전과 같은 서기) · 쓰러지는 칸 차례 (raid/ko.ts · 없으면 hit → dead) */
+  /** 도트 띠(anim-px)의 서기 계획·씨앗 (raid/hero-idle.ts · 열전과 같은 서기 · cells 는 본 띠+덧 띠) · 쓰러지는 칸 차례 (raid/ko.ts · 없으면 hit → dead) */
   plan?: IdlePlan
   seed?: number
   fall?: readonly number[]
@@ -27,10 +27,15 @@ export const LEGACY_ATLAS: FighterAtlas = {
   cells: 20, idle: [0,1,2,3], attack: [12,13,14,15,16,17], windup: [12,13],
   guard: [13], stagger: [18], hit: 18, dead: 19,
 }
-/** 도트 띠(public/realm/anim-px/gen-<이름>.png)의 칸 표 — 정규 20칸(LEGACY_ATLAS)에 띠마다 서기 계획·칸 수·쓰러지는 칸을 얹는다 (열전과 같은 표 · HAEBI_IDLE.plans) */
-export function pxAtlas(name: string): FighterAtlas {
-  const plan = idlePlan(`anim-px/gen-${name}.png`)
-  return plan ? { ...LEGACY_ATLAS, cells: plan.cells, plan, seed: idleSeed(name), ...(plan.fall ? { fall: plan.fall } : {}) } : LEGACY_ATLAS
+/**
+ * 도트 띠(public/realm/anim-px/gen-<이름>.png)의 칸 표 — 정규 20칸(LEGACY_ATLAS · 본 띠는 늘 20칸)에 띠마다 서기 계획·쓰러지는 칸을 얹는다 (열전과 같은 표 · HAEBI_IDLE.plans).
+ * 20 칸부터는 덧 띠(gen-<이름>-x.png) — companion = false 면 아직 안 와서 그 칸을 뺀 계획 (쓰러짐 18 → 19 · 버릇 없음)
+ */
+export function pxAtlas(name: string, companion = true): FighterAtlas {
+  const full = idlePlan(`anim-px/gen-${name}.png`)
+  if (!full) return LEGACY_ATLAS
+  const plan = usablePlan(full, companion)
+  return { ...LEGACY_ATLAS, plan, seed: idleSeed(name), ...(plan.fall ? { fall: plan.fall } : {}) }
 }
 // Source pose 7 has an incomplete spear; it is deliberately never selected.
 const BASE_DUEL_ATLASES: Readonly<Record<string, FighterAtlas>> = {
@@ -59,7 +64,7 @@ export const DUEL_ATLASES: Readonly<Record<string,FighterAtlas>> = Object.fromEn
  * endAge 끝난 뒤 ms — 쓰러짐(dead)은 맞은 멈춤(HAEBI_END.defeat.freeze) 뒤 쓰러지는 칸을 차례로 (raid/ko.ts · 열전 KO 와 같은 박자) · 없으면 바로 누운 칸
  */
 export function fighterMotion(atlas: FighterAtlas, anim: FighterAnim, now: number, rush: boolean,
-  ending: 'dead' | 'hurt' | null = null, endAge?: number): { frame: number; dx: number } {
+  ending: 'dead' | 'hurt' | null = null, endAge?: number, calm = false): { frame: number; dx: number } {
   const R = P.duel, age = Math.max(0, now - anim.t0)
   if (ending === 'dead' && endAge !== undefined) return { frame: koFrame(fallCells(atlas.fall, atlas.hit, atlas.dead), endAge / 1000 - E.defeat.freeze), dx: 0 }
   if (ending !== null) return { frame: ending === 'dead' ? atlas.dead : atlas.hit, dx: 0 }
@@ -77,6 +82,7 @@ export function fighterMotion(atlas: FighterAtlas, anim: FighterAnim, now: numbe
     const i = Math.min(atlas.attack.length - 1, Math.floor(age / R.fighterAttackMs * atlas.attack.length))
     return { frame: atlas.attack[i]!, dx: R.fighterLunge * Math.sin(Math.min(1, age / R.fighterLungeMs) * Math.PI) }
   }
-  if (atlas.plan) return { frame: planFrame(atlas.plan, atlas.seed ?? 0, now / 1000), dx: 0 }
+  // 서기 계획(도트 띠) — 움직임 줄이기(calm)면 base 칸만 (열전과 같다)
+  if (atlas.plan) return { frame: planFrame(atlas.plan, atlas.seed ?? 0, now / 1000, calm), dx: 0 }
   return { frame: atlas.idle[Math.floor(now / (atlas.idleMs ?? R.fighterIdleMs)) % atlas.idle.length]!, dx: 0 }
 }
