@@ -158,6 +158,21 @@ def solve2(S, T, a, b, want):
     return best[1], best[2]
 
 
+def blade(d, hand, deg, length=42):
+    """한 손 칼: 손에서 deg 방향으로 칼날 · 반대쪽으로 짧은 자루 끝 · 손 앞에 가로 코등이"""
+    r = math.radians(deg)
+    ux, uy = math.cos(r), -math.sin(r)
+    tip = (hand[0] + ux * length * Z, hand[1] + uy * length * Z)
+    pom = (hand[0] - ux * 5 * Z, hand[1] - uy * 5 * Z)
+    g0 = (hand[0] + ux * 3 * Z, hand[1] + uy * 3 * Z)
+    d.line([pom, tip], fill=LINE, width=int(4.2 * Z) + 6)
+    d.line([pom, g0], fill=WOOD, width=int(3.2 * Z))
+    d.line([g0, tip], fill=IRON, width=int(4.2 * Z))
+    px, py = -uy, ux
+    d.line([(g0[0] + px * 4.5 * Z, g0[1] + py * 4.5 * Z), (g0[0] - px * 4.5 * Z, g0[1] - py * 4.5 * Z)], fill=LINE, width=int(2.4 * Z) + 4)
+    d.line([(g0[0] + px * 4.5 * Z, g0[1] + py * 4.5 * Z), (g0[0] - px * 4.5 * Z, g0[1] - py * 4.5 * Z)], fill=WOOD, width=int(2.4 * Z))
+
+
 def figure(phase, swing_near, pose=None):
     """한 칸. swing_near = 지금 앞으로 나가는(흔드는) 다리가 가까운 쪽인가"""
     P0 = HALF[phase or 'pass']; S = STYLE
@@ -222,6 +237,8 @@ def figure(phase, swing_near, pose=None):
         arm_n, arm_f = (12, 72), (48, 104)
     elif PROP['kind'] == 'shoulder':  # 가까운 손으로 자루를 어깨에 메고 걷는다 — 멘 팔은 고정, 먼 팔만 작게 흔든다(아룸의 망치)
         arm_n = (-34, 118)
+    elif PROP['kind'] == 'sword':     # 가까운 손에 칼을 내려 쥐고 걷는다 — 칼 쥔 팔은 고정, 먼 팔만 흔든다(아라)
+        arm_n = (4, 26)
     elif PROP['kind'] == 'bow':
         arm_f = (22, 58)   # 활 든 팔은 걸을 때 흔들지 않는다 — 활이 늘 몸 앞에 보이게(뒤로 가면 몸에 가려 칸마다 생겼다 사라진다)
     # 먼 쪽부터: (활대) · 먼 팔 · 먼 다리 → 몸통 · 머리 → 가까운 다리 · 가까운 팔 → (시위)
@@ -260,6 +277,9 @@ def figure(phase, swing_near, pose=None):
     hand_n = arm(d, sh_n, arm_n[0], arm_n[1], NEAR)
     if PROP['kind'] == 'bow' and pulled:
         bow_string(d, hand_f, hand_n)   # 당긴 시위만 몸 앞으로 지나간다
+    if PROP['kind'] == 'sword':
+        blade(d, hand_n, (pose or {}).get('blade', -38))
+        d.ellipse([hand_n[0] - HAND * Z, hand_n[1] - HAND * Z, hand_n[0] + HAND * Z, hand_n[1] + HAND * Z], fill=NEAR, outline=LINE, width=3)   # 칼자루를 쥔 손
     return im
 
 
@@ -329,6 +349,13 @@ IK_QUIRKS = {
         dict(_ik((0, 0), (2, 70), (16, 88), **_S), prop='pole2'),
     ],
 }
+# 아라 「칼날 살피기」(한 손 칼): 서기 -> 칼을 얼굴 앞에 곧게 세움 -> 먼 손가락으로 칼등을 쓸어 올림 -> 칼을 탁 털어 내림
+IK_QUIRKS['inspect'] = [
+    dict(_ik((0, 0), (6, 62), (10, 64), **_S), prop='sword', blade=-38),
+    dict(_ik((0, 0), (16, 92), (10, 64), **_S), prop='sword', blade=86),
+    dict(_ik((0, 0), (16, 94), (22, 112), **_S), prop='sword', blade=90),
+    dict(_ik((0, 0), (10, 62), (10, 64), **_S), prop='sword', blade=-58),
+]
 # 아룸 「메 고쳐 메기」(어깨에 멘 채 · shoulder): 메를 어깨에서 툭 들썩임 -> 도로 내려앉히며 먼 손을 허리에 -> 그대로 목을 한 번 꺾음 -> 서기
 QUIRKS['reshoulder'] = [
     dict(near_arm=(-46, 130), far_arm=(10, 24), lean=0),
@@ -401,6 +428,17 @@ IK_ATTACKS = {
         _ik((9, -11), (16, 78), (42, 83), bend=16, **_L),
         _ik((0, -1), (15, 77), (34, 91), lean=1),
     ],
+    # 아라 「뛰어들며 내려베기」(한 손 칼 · sword): 칼을 뒤로 당김 -> 들어 올림 -> 어깨 뒤 끝까지 -> [궤적] 뛰어들며 머리 위 앞으로 -> [타격] 앞 아래로 끝까지 벰 -> 유지 -> 유지(거두기 시작) -> 거둠
+    'slash': [
+        dict(_ik((-4, -4), (-14, 84), (16, 78), lean=-1), blade=125),
+        dict(_ik((-7, -6), (-10, 112), (16, 80), lean=-2), blade=105),
+        dict(_ik((-9, -3), (-16, 122), (14, 82), bend=-5), blade=150),
+        dict(_ik((6, -9), (30, 116), (-4, 78), bend=10, **_L), blade=58),
+        dict(_ik((10, -14), (61, 70), (-8, 76), bend=26, **_L), blade=-20),
+        dict(_ik((11, -16), (59, 60), (-8, 74), bend=30, **_L), blade=-38),
+        dict(_ik((8, -11), (40, 64), (-2, 72), bend=16, **_L), blade=-46),
+        dict(_ik((0, -1), (6, 62), (10, 64), lean=1), blade=-38),
+    ],
     # 아룸 「머리 위 수직 내려찍기」(무겁게 · 넓게 선 채 · 두 발은 여덟 칸 같은 자리): 낮게 쥠 -> 들어 올림 -> 머리 위 끝까지(살짝 젖힘) -> [궤적] 앞 위에서 내려옴 -> [타격] 바닥을 찍음 -> 유지(더 깊이) -> 유지 -> 거둠
     'slam': [
         _ik((0, -8), (4, 60), (22, 66), bend=8, **_W),
@@ -415,10 +453,13 @@ IK_ATTACKS = {
 }
 
 
+IK_PROP = {'slash': 'sword'}   # 공격마다 쥔 물건(없으면 두 손 긴 자루)
+
+
 def ik_attack_sheets(kind):
     """넓은 칸 2×2 판 둘(앞 넷 · 뒤 넷) + 한 줄 미리 보기"""
     big_canvas()
-    PROP['kind'] = 'pole2'
+    PROP['kind'] = IK_PROP.get(kind, 'pole2')
     figs = [figure(None, True, ps) for ps in IK_ATTACKS[kind]]
     w, h = figs[0].size
     out = []
@@ -481,7 +522,7 @@ def main():
         return
     if len(sys.argv) > 1 and sys.argv[1] == 'walk':   # py pose-rig.py walk <걸음 결> <가슴 S|M|L|XL> [bow = 먼 쪽 손에 활을 쥐고 걷는다]
         key, bust = sys.argv[2], sys.argv[3]
-        if len(sys.argv) > 4 and sys.argv[4] in ('bow', 'pole2', 'shoulder'):
+        if len(sys.argv) > 4 and sys.argv[4] in ('bow', 'pole2', 'shoulder', 'sword'):
             PROP['kind'] = sys.argv[4]
         STYLE.clear()
         STYLE.update(STYLES[key])

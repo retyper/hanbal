@@ -35,6 +35,10 @@ HEROES = {
     'dalbit': dict(strip='gen-base-w-31-dabeol-dalbit', atk='bow', atk8=False),
     'archer': dict(strip='gen-base-w-13-young-archer', atk='bow', atk8=False),   # 앳된 궁수
     'pirate': dict(strip='gen-base-w-10-pirate-captain', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 해적 두목(작살) · 끝까지 찌른 칸은 좁은 칸에 안 들어가 당기는 칸으로
+    'diver': dict(strip='gen-base-w-17-mahan-pearl-diver', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 해녀(작살)
+    'huntress': dict(strip='gen-base-w-06-buyeo-huntress', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 부여 사냥꾼(창)
+    'dallae': dict(strip='gen-base-w-64-miri-dallae', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 미리 군주 달래(창)
+    'ara': dict(strip='gen-ara', atk='slash', atk8=True, act=True),   # 가야 검사 아라(한 손 칼)
     'haebi': dict(strip='gen-haebi', atk='chop', atk8=True, act=True),   # act = 공격 여덟 칸이 넓은 동작 칸(240×224 · 뿌리 92 · 발 줄 216)
     'areum': dict(strip='gen-areum', atk='slam', atk8=True, act=True, lock='none'),   # 받은 그림 그대로(얼굴을 떠다 붙이지 않는다 — 11-24: 뭉친 얼굴이 여덟 칸에 퍼졌다) · 옛 lock='face': 메가 머리 뒤로 지나간다 — 머리 상자는 메를 자르고(「포스터」), 윗몸을 통째로 묶으면 떠다닌다(11-24 형) → 얼굴 안쪽만 묶는다
 }
