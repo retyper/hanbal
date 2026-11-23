@@ -120,6 +120,20 @@ def motion8(path, name):
         ys_b, xs_b = np.nonzero((lab == bi) & solid)
         if len(xs_b) > 300:
             blobs.append((bi, len(xs_b), (xs_b.min() + xs_b.max()) / 2, (ys_b.min() + ys_b.max()) / 2, xs_b.min(), xs_b.max() + 1, ys_b.min(), ys_b.max() + 1))
+    # 줄마다 크기가 달리 그려질 수 있다(11-23: 아랫줄이 5% 컸다) -> 줄의 가운데 키를 왼쪽 위 서기 그림의 키에 맞춘다
+    ident = [b for b in blobs if b[2] < cw and b[3] < ch]
+    ref_h = max(ident, key=lambda b: b[1])[7] - max(ident, key=lambda b: b[1])[6] if ident else None
+    row_k = {}
+    for j in range(2):
+        hs = []
+        for k in range(4):
+            gx = cw * (1 + k)
+            m_ = [b for b in blobs if gx <= b[2] < gx + cw and ch * j <= b[3] < ch * (j + 1)]
+            if m_:
+                bb = max(m_, key=lambda b: b[1])
+                hs.append(bb[7] - bb[6])
+        row_k[j] = (ref_h * 1.015 / float(np.median(hs))) if (ref_h and hs) else 1.0
+        print(f'줄{j + 1} 크기 맞춤 x{row_k[j]:.3f}')
     for j, tag in enumerate(('walk-a', 'walk-b')):
         for k in range(4):
             gx0 = cw * (1 + k)
@@ -130,12 +144,12 @@ def motion8(path, name):
             bi, _, bcx, _, bx0, bx1, by0, by1 = max(mine, key=lambda b: b[1])
             whole = full[by0:by1, bx0:bx1].copy()
             whole[..., 3] = np.where(lab[by0:by1, bx0:bx1] == bi, whole[..., 3], 0)
-            g = game(Image.fromarray(whole), scale)
+            g = game(Image.fromarray(whole), scale * row_k[j])
             gm = np.asarray(g)[..., 3] > 0
             ys, xs = np.nonzero(gm)
             g2 = g.crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
             cell = Image.new('RGBA', (CELL_W, CELL), (0, 0, 0, 0))
-            ox = round(CELL_W / 2 + (bcx - (gx0 + cw / 2)) * scale - g2.size[0] / 2)
+            ox = round(CELL_W / 2 + (bcx - (gx0 + cw / 2)) * scale * row_k[j] - g2.size[0] / 2)
             cell.alpha_composite(g2, (max(0, min(CELL_W - g2.size[0], ox)), FOOT - g2.size[1]))
             cell.save(f'{PXD}/{name}-{tag}-{k + 1}.png')
             print(f'{tag} 칸{k + 1} 게임 키 {g2.size[1]} 폭 {g2.size[0]}')
