@@ -102,11 +102,12 @@ SPEC = {
     'm-heavy':    dict(머리=31, 어깨=(50, 58), 허리=(32, 40), 골반=(38, 46), 허벅지=(13.5, 17)),
 }
 HEAD_TOL = 1.5
+HEAD_LO = 2.0   # 아래쪽 여유: 합격해서 쓰는 kit 표준 몸 자체가 30.5 로 재진다(자세에 따라 목 줄이 1px 쯤 오르내린다) — 30.4 를 0.1 차로 떨어뜨리지 않으려고 (11-23)
 
 
 def gate(d, kind):
     sp = SPEC[kind]; bad = []
-    if abs(d['머리'] - sp['머리']) > HEAD_TOL: bad.append(f"머리 {d['머리']} (기준 {sp['머리']}±{HEAD_TOL} · {'작다' if d['머리'] < sp['머리'] else '크다'} {abs(round((d['머리'] / sp['머리'] - 1) * 100))}%)")
+    if not (sp['머리'] - HEAD_LO <= d['머리'] <= sp['머리'] + HEAD_TOL): bad.append(f"머리 {d['머리']} (기준 {sp['머리']}±{HEAD_TOL} · {'작다' if d['머리'] < sp['머리'] else '크다'} {abs(round((d['머리'] / sp['머리'] - 1) * 100))}%)")
     for k, v in sp.items():
         if k == '머리': continue
         if not (v[0] <= d[k] <= v[1]): bad.append(f"{k} {d[k]} (기준 {v[0]}~{v[1]})")
@@ -132,12 +133,14 @@ if __name__ == '__main__' and len(sys.argv) > 2 and sys.argv[1] == 'motion':
         for i in range(cols):
             a = np.asarray(im.crop((i * W // cols, j * H // rows, (i + 1) * W // cols, (j + 1) * H // rows))).astype(np.int16)
             mk, gk = np.minimum(a[..., 0], a[..., 2]) - a[..., 1], a[..., 1] - np.maximum(a[..., 0], a[..., 2]); m = (mk if mk.mean() > gk.mean() else gk) < 60
+            lab_, n_lab = ndimage.label(m)   # 외딴 색점이 테두리를 늘리지 않게 가장 큰 덩어리만 (11-23 Codex 지적)
+            if n_lab > 1: m = lab_ == (1 + int(np.argmax(ndimage.sum(m, lab_, range(1, n_lab + 1)))))
             ys, xs = np.nonzero(m); m = m[ys.min():ys.max() + 1, xs.min():xs.max() + 1]; h = m.shape[0]; wid = m.sum(1)
             n_ = j * cols + i + 1
             if only is not None and n_ not in only:
                 # 머리 = 가장 큰 둥근 살빛 덩어리로 어림: 실루엣 안에 들어가는 가장 큰 원의 지름(머리가 몸통보다 굵은 4.3등신이라 통한다)
                 from scipy import ndimage as _nd
                 print(f"칸{n_} (자세 칸 · 판정 안 함)  가장 큰 원 지름 {_nd.distance_transform_edt(m).max() * 2:.0f}px  키 {h}px  폭 {m.shape[1]}px"); continue
-            lo, hi = int(h * .12), int(h * .38); head = (lo + int(np.argmin(wid[lo:hi]))) * 137 / h; good = abs(head - want) <= HEAD_TOL; ok += good; hs.append(h)
-            print(f"칸{j * cols + i + 1} {'합격' if good else '불합격'}  머리 {head:.1f} (기준 {want}±{HEAD_TOL})  등신 {137 / head:.2f}  키 {h}px  발 높이 {ys.max() / (H / rows):.2f}")
+            lo, hi = int(h * .12), int(h * .38); head = (lo + int(np.argmin(wid[lo:hi]))) * 137 / h; good = want - HEAD_LO <= head <= want + HEAD_TOL; ok += good; hs.append(h)
+            print(f"칸{j * cols + i + 1} {'합격' if good else '불합격'}  머리 {head:.1f} (기준 {want - HEAD_LO}~{want + HEAD_TOL})  등신 {137 / head:.2f}  키 {h}px  발 높이 {ys.max() / (H / rows):.2f}")
     print(f"{ok}/{len(hs)} 합격 · 칸 사이 키 차 {max(hs) - min(hs)}px ({(max(hs) - min(hs)) / max(hs) * 100:.1f}%)")

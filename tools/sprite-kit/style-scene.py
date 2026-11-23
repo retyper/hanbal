@@ -49,7 +49,11 @@ def motion_scene(identity, pose_sheet, out, style_ref='soseono', Z=4, CELL=640, 
     for j in range(2):
         for i in range(2):
             c = sh.crop((i * W // 2, j * Hs // 2, (i + 1) * W // 2, (j + 1) * Hs // 2)); a = np.asarray(c).astype(np.int16)
-            k = np.minimum(a[..., 0], a[..., 2]) - a[..., 1]; al = np.clip((90 - k.astype(np.float32)) * 255 / 50, 0, 255).astype(np.uint8); ys, xs = np.nonzero(al > 60)
+            k = np.minimum(a[..., 0], a[..., 2]) - a[..., 1]; al = np.clip((90 - k.astype(np.float32)) * 255 / 50, 0, 255).astype(np.uint8)
+            from scipy import ndimage as _nd
+            lab_, n_lab = _nd.label(al > 60)   # 외딴 색점은 버린다 (가장 큰 덩어리만)
+            if n_lab > 1: al = np.where(lab_ == (1 + int(np.argmax(_nd.sum(al > 60, lab_, range(1, n_lab + 1))))), al, 0).astype(np.uint8)
+            ys, xs = np.nonzero(al > 60)
             fig = Image.fromarray(np.dstack([a.astype(np.uint8), al])).crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
             if far:   # 먼 쪽 팔다리(자세 판에서 한 단계 어두운 살빛)를 파랗게 — 그림 도구가 앞뒤 다리를 헷갈리지 않게 (11-23 형 「다른 쪽 다리를 딛는 게 없어」)
                 fa = np.asarray(fig).astype(np.int16).copy(); r_, g_, b_ = fa[..., 0], fa[..., 1], fa[..., 2]; lum = r_ * .299 + g_ * .587 + b_ * .114
