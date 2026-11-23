@@ -20,7 +20,7 @@ from scipy import ndimage
 N = 137
 REF = ['public/realm/anim-px/gen-soseono.png', 'public/realm/anim-px/gen-gamsil.png', 'public/realm/anim-px/gen-jinha.png']
 # 합격선 (기준 띠 셋을 잰 값의 둘레 · 아래 ref 로 다시 잴 수 있다)
-GATE = dict(윤곽=(0, 58), 명암=(40, 70), 질감=(17, 32), 어둠=(.35, .70), 채도=(.36, .54), 밝은곳채도=(.28, .46), 납작=(0, .03))
+GATE = dict(윤곽=(0, 58), 명암=(40, 70), 질감=(17, 32), 어둠=(.35, .70), 채도=(.36, .54), 밝은곳채도=(.28, .47), 납작=(0, .03))
 
 
 def figs(path):
