@@ -818,7 +818,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   for (const e of order) {
     if (e === false) { drawPalisade(ctx, images, s, time); continue }
     if (e && 'sprite' in e) { drawWideProp(ctx, images, e, s.x, s.y); continue }
-    if (e && 'born' in e) { drawStructure(ctx, images, s, e); continue }
+    if (e && 'push' in e) { drawStructure(ctx, images, s, e); continue }
     if (e) {
       if(e.giant){if(e.giant.kind==='tiger')drawTiger(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else if(e.giant.kind==='bulgasari')drawBulgasari(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else if(e.giant.kind==='gumiho')drawGumiho(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else if(e.giant.kind==='shaman')drawShaman(ctx,images,e.giant,{heroX:s.x,heroY:s.y});else drawImugiParent(ctx,images,e.giant,{bounds:cam?fieldView(cam):{left:0,top:0,right:W,bottom:H},density});drawGroggy(ctx, s, e);continue}   // 64-BREAK 그로기 별
       const big = e.kind === 'boss' || e.kind === 'elite', h = mobHeight(e.kind)

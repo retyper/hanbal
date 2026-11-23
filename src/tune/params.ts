@@ -689,25 +689,31 @@ export const HAEBI_SHAMAN = {
 export const HAEBI_BREAK = { spill: .4, partScale: .7, groggy: 2.5, groggyMinor: .8, majorShare: .04, groggyDamage: 1.5, crackAt: .3 } as const
 /**
  * 65-BUILD 설치 갈래 — 레벨업 카드의 네 번째 갈래 (docs/realm/QUESTIONS-20261122.md §2 A ★ · 형 11-23 「왜 아직 구현이 안 돼 있어」).
- * 설치물은 손으로 놓지 않는다 — 고른 종류마다 제 쿨타임(every 초)이 차면 장수 곁에 저절로 선다. 종류 칸은 kinds 개까지 (다 차면 가진 종류만 카드로 나온다).
- * 단계(1~max)마다: 한 번에 놓는 수이자 한꺼번에 서는 수 count[단계−1] (넘치면 오래된 것부터 걷힌다) · 수명 life + lifeStep × (단계−1) 초.
- * 망루 tower: 장수 둘레 ring px 에 (놓을 때마다 황금각만큼 돌려) 선다 · range 안의 가장 가까운 적에게 fire 초마다 화살 한 발 (빠르기 speed · 수명 life0 초 · 맞는 둘레 radius)
- *   (피해 = 그때 잡졸 체력 × (share + shareStep × (단계−1)) — 판이 길어져 잡졸이 두꺼워져도 같은 몫을 깎는다 · 맹공으로 빨라진다 · 첫 적에서 멈춘다 · 부적·번개는 붙지 않는다).
- *   11-23 헤드리스: 장수 힘 몫을 곱하던 고정 피해(18 + 6/단계)는 20분 판 피해의 2% 남짓이라 카드 한 장 값을 못 했다 (raid-stage-balance 여울·목책 승이 6→3 · 5→1).
- * 목책 fence: 장수와 가장 가까운 적 사이, 장수에게서 ahead px 앞에 선다 (여럿이면 spread 라디안씩 벌려 부채꼴) · 둘레 r 안으로 잡졸이 못 들어오고,
- *   닿은 잡졸(touch px 안)은 멈춰 목책을 친다 (그 적의 몸 피해 × bite / 초) · 체력 (hp + hpStep × (단계−1)) × 판의 위협 배수(시간). 거대 보스·정예·두목은 그냥 지나간다.
- * 항아리 jar: 장수 곁 ring px 에 선다 · 둘레 radius + radiusStep × (단계−1) 안에서 쓰러진 적의 기세가 1 + bonus + bonusStep × (단계−1) 배.
+ * 11-23 형이 해 보고: 「설치물은 소환물이 아니라 그대로 있어야 · 떴다 사라지면 별로 · 다 통과하는 건 말이 안 됨 · 다이센카처럼 한 번 놓으면 그대로, 몸으로 천천히 밀어 옮긴다」
+ *   (Brotato 포탑은 판 내내 무적으로 서 있고 · Monsters are Coming! 건물은 놓은 자리에 남고 · Endless Dungeon 은 포탑을 못 옮겨 욕먹었다 → 남고 + 밀린다).
+ * 처음 고른 순간 장수 앞(가장 가까운 적 쪽 · 없으면 보는 쪽)에 하나가 서서 판 끝까지 남는다 · 단계 extraAt(3·5)에 이르면 그 순간 장수 앞에 하나 더 (종류마다 셋까지 · 둘째·셋째는 spread 라디안씩 옆으로).
+ * 종류 칸은 kinds 개까지 (다 차면 가진 종류만 카드로 나온다). 단계는 그 종류 모두를 세게 한다.
+ * 몸 r: 장수·적이 지나가지 못한다 (무기·화살은 지나간다 · 61-SOLID 와 같은 말) · 거대 보스는 막히지 않고 shove px/초로 밀쳐 낸다.
+ * 밀기: 장수가 몸으로 밀면 장수 빠르기의 pushShare 몫으로 함께 미끄러진다 (장수도 그만큼 느려진다) · 적은 밀지 못한다 · 서로·장식 밑동 밖으로 · 설 수 있는 땅 안으로.
+ *   pushDust 밀린 뒤 발밑 흙먼지가 남는 초 · settlePasses 설치물끼리 겹친 것을 푸는 되풀이 수.
+ * 망루 tower: 장수 앞 ahead px · range 안의 가장 가까운 적에게 fire × (1 − fireStep × (단계−1)) 초마다 화살 한 발 (빠르기 speed · 수명 life0 초 · 맞는 둘레 radius · 맹공으로 빨라진다)
+ *   피해 = 그때 잡졸 체력 × (share + shareStep × (단계−1)) · 첫 적에서 멈춘다 · 부적·번개는 붙지 않는다 · 무적.
+ * 목책 fence: 장수 앞 ahead px · 닿은 잡졸(touch px 안)은 멈춰 목책을 친다 (그 적의 몸 피해 × bite / 초)
+ *   체력 (hp + hpStep × (단계−1)) × 판의 위협 배수(시간) · 부서지면 rebuild 초 동안 잔해(지나갈 수 있다) → 같은 자리에 체력을 다 채워 다시 선다.
+ * 항아리 jar: 장수 앞 ahead px · 둘레 radius + radiusStep × (단계−1) 안에서 쓰러진 적의 기세가 1 + bonus + bonusStep × (단계−1) 배 · 무적.
  * flash 쏘거나 맞거나 기세를 더한 설치물이 반짝이는 초.
- * view: 그림 (화면만 읽는다) — 망루 높이 towerH · 망루 화살 크기 arrow · 목책 폭 fenceW (발밑을 fenceLift 만큼 내림 · 체력 half 몫 아래면 부서진 목책 그림 · 다친 목책 위 체력 띠 폭 hpBar · 띄움 hpLift) · 항아리 높이 jarH ·
- *   놓일 때 pop 초 동안 popFrom 배에서 커진다 · 걷힐 때 옅어지는 fade 초 · 항아리 둘레 고리 빛 ring(진하기 ringAlpha · 안 칠 ringFill · 점선 dash) ·
- *   반짝임 빛 glow(진하기 glowAlpha · 자리·크기 glowAt = [그림 높이 몫, 반지름 몫]) · 발밑 그림자 반폭 shadow(그림 크기 몫 · 높이 h px) · 체력 띠 두께 hpH
+ * 11-23 헤드리스: 망루가 장수 힘 몫을 곱한 고정 피해(18 + 6/단계)일 때는 20분 판 피해의 2% 남짓이라 카드 한 장 값을 못 했다 → 잡졸 체력 몫.
+ * view: 그림 (화면만 읽는다) — 망루 높이 towerH · 망루 화살 크기 arrow · 목책 폭 fenceW (발밑을 fenceLift 만큼 내림 · 다친 목책 위 체력 띠 폭 hpBar · 띄움 hpLift · 두께 hpH) · 항아리 높이 jarH ·
+ *   항아리 둘레 고리 빛 ring(진하기 ringAlpha · 안 칠 ringFill · 점선 dash) · 반짝임 빛 glow(진하기 glowAlpha · 자리·크기 glowAt = [그림 높이 몫, 반지름 몫]) · 발밑 그림자 반폭 shadow(그림 크기 몫 · 높이 h px) ·
+ *   밀릴 때 흙먼지 dust(알 수 n · 퍼짐 spread px · 크기 size · 빛 color · 진하기 alpha) · 잔해의 다시 서기 고리(반지름 rebuildR · 두께 rebuildW · 빛 rebuildColor)
  */
 export const HAEBI_BUILD = {
-  kinds: 3, max: 5, flash: .35,
-  tower: { every: 14, life: 9, lifeStep: 1.5, count: [1, 1, 2, 2, 3], ring: 95, range: 380, fire: 1.3, share: .4, shareStep: .1, speed: 620, life0: 1, radius: 10 },
-  fence: { every: 15, life: 11, lifeStep: 1.5, count: [1, 1, 2, 2, 3], ahead: 85, spread: .75, r: 30, touch: 6, hp: 220, hpStep: 80, bite: 1 },
-  jar: { every: 15, life: 12, lifeStep: 2, count: [1, 1, 1, 2, 2], ring: 55, radius: 190, radiusStep: 12, bonus: 1, bonusStep: .25 },
-  view: { towerH: 104, arrow: 34, fenceW: 96, fenceLift: 12, jarH: 46, pop: .25, popFrom: .55, fade: .45, half: .5, ring: '#ffd77a', ringAlpha: .32, ringFill: .07, glow: '#ffe7a0', glowAlpha: .8, glowAt: { tower: [.72, .14], jar: [.82, .32] }, shadow: { tower: .32, fence: .5, jar: .45, h: 7 }, dash: [10, 8], hpBar: 44, hpH: 5, hpLift: 8 },
+  kinds: 3, max: 5, flash: .35, extraAt: [3, 5], spread: .75, pushShare: .35, pushDust: .2, shove: 420, settlePasses: 6,
+  tower: { ahead: 95, r: 36, range: 380, fire: 1.3, fireStep: .08, share: .4, shareStep: .1, speed: 620, life0: 1, radius: 10 },
+  fence: { ahead: 85, r: 30, touch: 6, hp: 220, hpStep: 80, bite: 1, rebuild: 8 },
+  jar: { ahead: 60, r: 16, radius: 190, radiusStep: 12, bonus: 1, bonusStep: .25 },
+  view: { towerH: 104, arrow: 34, fenceW: 96, fenceLift: 12, jarH: 46, ring: '#ffd77a', ringAlpha: .32, ringFill: .07, glow: '#ffe7a0', glowAlpha: .8, glowAt: { tower: [.72, .14], jar: [.82, .32] }, shadow: { tower: .32, fence: .5, jar: .45, h: 7 }, dash: [10, 8], hpBar: 44, hpH: 5, hpLift: 8,
+    dust: { n: 4, spread: 18, size: 7, color: '#c9a27a', alpha: .45 }, rebuildR: 16, rebuildW: 3, rebuildColor: '#ffd77a' },
 } as const
 /** 부위 파괴 화면 (raid/fx-break.ts) — 「부위 파괴!」 글자 · 그로기 별 */
 export const HAEBI_BREAK_VIEW = {
