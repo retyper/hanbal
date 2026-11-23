@@ -16,22 +16,23 @@ async function main() {
   const byId = new Map<string, RaidGame>(); for (const g of [...server, ...local]) byId.set(g.id, g)
   const games = [...byId.values()].sort((a, b) => a.started < b.started ? -1 : 1)
   $('msg').textContent = `이 기기 ${local.length}판 · 서버 ${server.length}판 · 합쳐 ${games.length}판. 판마다 다시 돌려 셉니다.`
-  const head = ['시작', '모드', '스테이지', '무기', '결과', '끝(분)', '끝 레벨', '5분', '10분', '15분', '만렙(분)', '최저 체력', '찍은 점', '만렙 칸', '상점']
+  const head = ['시작', '모드', '스테이지', '무기', '기록 결과', '기록 끝(분)', '기록 레벨', '다시 돌림', '돌린 끝(분)', '5분', '10분', '15분', '만렙(분)', '최저 체력', '찍은 점', '만렙 칸', '상점', '걸음 기록/돌림', '규칙']
   const t = $('t'); t.innerHTML = `<tr>${head.map((h) => `<th>${h}</th>`).join('')}</tr>`
   for (const g of games) {
     await new Promise((r) => setTimeout(r, 0))
-    const cells: (string | number)[] = [g.started.slice(2, 16).replace('T', ' '), g.mode, g.stage, g.kit]
-    if (!g.input || g.cut) { cells.push(g.end?.result ?? '-', ((g.end?.t ?? 0) / 60).toFixed(1), g.end?.level ?? '', '', '', '', '', '', g.picks.length, '(입력 잘림)', shop(g.opts.bonus as never)) }
+    const cells: (string | number)[] = [g.started.slice(2, 16).replace('T', ' '), g.mode, g.stage, g.kit, g.end?.result ?? '-', ((g.end?.t ?? g.snap?.t ?? 0) / 60).toFixed(1), g.end?.level ?? g.snap?.level ?? '']
+    if (!g.input || g.cut) { cells.push('(입력 잘림)', '', '', '', '', '', '', g.picks.length, '', shop(g.opts.bonus as never), `${g.steps}/-`, g.rules ?? '') }
     else {
-      const at: Record<number, number> = {}; let capAt = -1, minHp = Infinity
+      const at: Record<number, number> = {}; let capAt = -1, minHp = Infinity, steps = 0
       const s = replayRaid(g, (r) => {
+        steps++
         for (const m of [5, 10, 15]) if (at[m] === undefined && r.t >= m * 60) at[m] = r.level
         if (capAt < 0 && r.level >= maxLevel(r)) capAt = r.t
         if (r.state === 'playing' && r.hp < minHp) minHp = r.hp
       })
       const ranks = Object.entries(s.ranks).filter(([k]) => k in POWERS) as [keyof typeof POWERS, number][]
       const pts = ranks.reduce((n, [, v]) => n + v, 0), maxed = ranks.filter(([k, v]) => v > 0 && v >= POWERS[k].max).map(([k]) => POWERS[k].name)
-      cells.push(s.state, (s.t / 60).toFixed(1), s.level, at[5] ?? '', at[10] ?? '', at[15] ?? '', capAt < 0 ? '' : (capAt / 60).toFixed(1), Math.round(minHp), pts, maxed.join(' '), shop(g.opts.bonus as never))
+      cells.push(s.state, (s.t / 60).toFixed(1), at[5] ?? '', at[10] ?? '', at[15] ?? '', capAt < 0 ? '' : (capAt / 60).toFixed(1), Number.isFinite(minHp) ? Math.round(minHp) : '', pts, maxed.join(' '), shop(g.opts.bonus as never), `${g.steps}/${steps}`, g.rules ?? '')
     }
     const tr = document.createElement('tr'); tr.className = String(cells[4]); tr.innerHTML = cells.map((c) => `<td>${c}</td>`).join(''); t.appendChild(tr)
   }
