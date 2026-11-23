@@ -170,7 +170,7 @@ def motion8(path, name):
             print(f'{tag} 칸{k + 1} 게임 키 {g2.size[1]} 폭 {g2.size[0]}')
 
 
-def fall(path, name, scene, tag='down', k4=1.0):
+def fall(path, name, scene, tag='down', k4=1.0, flip4=False):
     """쓰러짐 장면(style-scene.py fall 배치) 굽기 -> <이름>-down-1..4. 구역 안의 덩어리를 전부 모은다(떨어진 두건·머리카락 조각도 버리지 않는다).
     누운 칸은 옆 칸이 없어 잘릴 수 없다. 구역 금에 8px 안으로 닿으면 알린다.
       py -3 -I tools/sprite-kit/bake-scene.py fall <받은 장면.png> <이름> <보낸 장면.png>"""
@@ -223,6 +223,8 @@ def fall(path, name, scene, tag='down', k4=1.0):
         if g2.size[0] > CELL_W:
             note = f' · 폭 {g2.size[0]} > 칸 {CELL_W} (줄여 넣음)'
             g2 = g2.resize((CELL_W, round(g2.size[1] * CELL_W / g2.size[0])), Image.BOX)
+        if n == 3 and flip4:   # 누운 칸 좌우 뒤집기 (11-23 형 「눕는 방향 x축 180도 돌려야」 — 셋째 칸과 다리 방향이 이어지게)
+            g2 = g2.transpose(Image.FLIP_LEFT_RIGHT)
         cell = Image.new('RGBA', (CELL_W, CELL), (0, 0, 0, 0))
         cell.alpha_composite(g2, ((CELL_W - g2.size[0]) // 2, FOOT - g2.size[1]))
         cell.save(f'{PXD}/{name}-{tag}-{n + 1}.png')
@@ -231,7 +233,8 @@ def fall(path, name, scene, tag='down', k4=1.0):
 
 if __name__ == '__main__':
     if sys.argv[1] == 'fall':
-        fall(sys.argv[2], sys.argv[3], sys.argv[4], k4=float(sys.argv[5]) if len(sys.argv) > 5 else 1.0)
+        nums = [a for a in sys.argv[5:] if a != 'flip4']
+        fall(sys.argv[2], sys.argv[3], sys.argv[4], k4=float(nums[0]) if nums else 1.0, flip4='flip4' in sys.argv[5:])
         sys.exit()
     if sys.argv[1] == 'motion8':
         motion8(sys.argv[2], sys.argv[3])
