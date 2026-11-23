@@ -16,6 +16,7 @@ import { DUEL_ATLASES, LEGACY_ATLAS, fighterMotion, pxAtlas, type FighterAnim, t
 import { HAEBI_KO as KO, HAEBI_END as KO_END } from '../tune/params.ts'
 import { fallCells, fallTime, koSkippable, koTargetZoom, koZoom } from '../raid/ko.ts'
 import { STRIP_CELLS, usesCompanion } from '../raid/hero-idle.ts'
+import { companionPlace } from '../raid/strip-geom.ts'
 import { haptics } from '../ui/haptics.ts'
 import { HitClock, drawHitPortrait, hitArtKey, hitArtPath, hitFocusSlide, hitStrength, type HitForm, type HitFrame } from '../ui/hit-portrait.ts'
 
@@ -868,22 +869,28 @@ function sprite(im: HTMLImageElement, frame: number, x: number, base: number, h:
   const meta = sprMeta(im), isPx = meta.px
   // 20 칸부터는 덧 띠에서 (발 줄·배율은 본 띠 그대로) · 아직 없으면 누운 칸
   let cells = meta.atlas.cells
+  const mainCh0 = im.naturalHeight
+  let xg = meta.atlas.plan?.xGeom
   if (frame >= STRIP_CELLS) {
     const c = companionImg(im)
-    if (ready(c) && meta.atlas.plan) { im = c; cells = Math.max(1, meta.atlas.plan.cells - STRIP_CELLS); frame -= STRIP_CELLS } else frame = meta.atlas.dead
-  }
+    if (ready(c) && meta.atlas.plan) { im = c; cells = Math.max(1, meta.atlas.plan.cells - STRIP_CELLS); frame -= STRIP_CELLS } else { frame = meta.atlas.dead; xg = undefined }
+  } else xg = undefined
   const cw = im.naturalWidth / cells, ch = im.naturalHeight
+  const mainCh = xg !== undefined ? mainCh0 : ch   // 배율·발 줄은 본 띠 칸 높이로 (xGeom 덧 띠만 — 칸 높이가 달라도 몸 크기가 같게 · 없으면 예전 그대로)
   // 도트는 정수 배율 · 정수 자리 — 점이 네모로 또렷하게 (옛 띠는 매끄럽게 늘린다) · 발 줄(manifest)이 base 에 닿게 칸을 그만큼 내린다
-  const sc = isPx ? Math.max(1, Math.round(Math.min(W, H) * P.duel.pxFill / ch)) : 0 // 화면 짧은 변 기준 (폰 390 → 1배 · 데스크톱 768 → 2배)
+  const sc = isPx ? Math.max(1, Math.round(Math.min(W, H) * P.duel.pxFill / mainCh)) : 0 // 화면 짧은 변 기준 (폰 390 → 1배 · 데스크톱 768 → 2배)
   const w = isPx ? cw * sc : h * (cw / ch)
+  let ox = -w / 2, oy = -h
   if (isPx) {
-    h = ch * sc; x = Math.round(x); base = Math.round(base) + (meta.feet !== undefined ? (ch - meta.feet) * sc : 0)
+    h = ch * sc; x = Math.round(x); base = Math.round(base) + (meta.feet !== undefined ? (mainCh - meta.feet) * sc : 0); oy = -h
+    // 덧 띠 자기 규격(xGeom): (뿌리, 발 줄) 점을 본 띠 칸의 (한가운데, 발 줄) 점 자리에 (strip-geom.ts · base 는 이미 본 띠 발 줄 + (칸 높이 − 발 줄) · sc 아래)
+    if (xg !== undefined && meta.feet !== undefined) { const p = companionPlace(cw, ch, sc, meta.feet, xg); ox = p.left; oy = p.top - (mainCh - meta.feet) * sc; h = p.h }
   }
   const fold = folded(im, cells)
   const src = fold?.src ?? im, sx = fold !== null ? (frame % fold.cols) * cw : frame * cw, sy = fold !== null ? Math.floor(frame / fold.cols) * ch : 0
   ctx.save(); ctx.translate(x, base); if (flip) ctx.scale(-1, 1)
   ctx.imageSmoothingEnabled = !isPx
-  if (tint === null) ctx.drawImage(src, sx, sy, cw, ch, -w / 2, -h, w, h)
+  if (tint === null) ctx.drawImage(src, sx, sy, cw, ch, ox, oy, w, h)
   else {
     // 번쩍임은 장수 모양에만 — 따로 그린 판에서 물들여 옮긴다 (판 위에 바로 칠하면 칸 네모가 통째로 물든다)
     const tw = Math.ceil(cw), th = Math.ceil(ch)
@@ -892,7 +899,7 @@ function sprite(im: HTMLImageElement, frame: number, x: number, base: number, h:
     tintCx.imageSmoothingEnabled = !isPx
     tintCx.globalCompositeOperation = 'source-over'; tintCx.drawImage(src, sx, sy, cw, ch, 0, 0, cw, ch)
     tintCx.globalCompositeOperation = 'source-atop'; tintCx.fillStyle = tint; tintCx.fillRect(0, 0, cw, ch)
-    ctx.drawImage(tintCv, 0, 0, cw, ch, -w / 2, -h, w, h)
+    ctx.drawImage(tintCv, 0, 0, cw, ch, ox, oy, w, h)
   }
   ctx.restore()
 }

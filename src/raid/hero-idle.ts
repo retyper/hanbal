@@ -7,11 +7,15 @@ import { HAEBI_ANIM as A, HAEBI_IDLE as I } from '../tune/params.ts'
 import type { AttackPlan } from './attack-plan.ts'
 
 /** 띠 하나의 서기 계획 — cells 띠 칸 수 · base 서기 칸들(hold 초씩) · blink 눈 감는 칸 · breath 큰 숨 칸들 · quirk 버릇 칸들(quirkTimes 칸마다 초 · 없으면 HAEBI_IDLE.quirkStep) · fall 쓰러지는 칸 차례(raid/ko.ts · 없으면 18 → 19) */
+/** 덧 띠 자기 칸 규격 — h 칸 높이 px · root 뿌리(발 딛는 자리)의 가로 px(칸 왼쪽에서) · foot 발바닥 줄 px(칸 위에서) · 칸 폭은 그림 폭 ÷ 칸 수 (strip-geom.ts) */
+export interface XGeom { h: number; root: number; foot: number }
 export interface IdlePlan { cells: number; base: readonly number[]; hold: number; blink?: number; breath?: readonly number[]; quirk?: readonly number[]; quirkTimes?: readonly number[]; fall?: readonly number[]
   /** 공격 칸 계획 (attack-plan.ts · 없으면 HAEBI_ANIM.roles 그대로) */
   attack?: AttackPlan
   /** 싸움 자세 — 가까이 적이 있으면(HAEBI_IDLE.stanceR · 떠난 뒤 stanceLinger 초까지) base 대신 이 칸들 · 그동안 깜빡임만 (큰 숨·버릇 없음) */
-  stance?: readonly number[] }
+  stance?: readonly number[]
+  /** 덧 띠(20 칸부터)의 칸 규격 — 없으면 본 띠와 같은 칸 높이·발 줄·한가운데 뿌리 (strip-geom.ts) */
+  xGeom?: XGeom }
 export type IdleEventKind = 'blink' | 'breath' | 'quirk'
 export interface IdleEvent { kind: IdleEventKind; at: number; end: number }
 
@@ -43,7 +47,7 @@ export const usesCompanion = (plan: IdlePlan | null) => !!plan && plan.cells > S
 export function usablePlan(plan: IdlePlan, ready: boolean): IdlePlan {
   if (ready || !usesCompanion(plan)) return plan
   const ok = (c: readonly number[] | undefined): c is readonly number[] => c !== undefined && c.every(n => n < STRIP_CELLS)
-  const { fall, quirk, breath, blink, ...rest } = plan
+  const { fall, quirk, breath, blink, xGeom: _x, ...rest } = plan
   return { ...rest, cells: STRIP_CELLS, ...(ok(fall) ? { fall } : {}), ...(ok(quirk) ? { quirk } : {}), ...(ok(breath) ? { breath } : {}), ...(blink !== undefined && blink < STRIP_CELLS ? { blink } : {}) }
 }
 

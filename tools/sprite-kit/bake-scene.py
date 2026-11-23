@@ -211,6 +211,59 @@ def motion8(path, name, tags=('walk-a', 'walk-b'), norm=True, scene=None):
             print(f'{tag} 칸{k + 1} 게임 키 {g2.size[1]} 폭 {g2.size[0]}{note}')
 
 
+ACT = dict(cw=240, ch=224, root=92, foot=216)   # 동작 칸(덧띠): 폭·높이 · 뿌리 x · 발 줄 y — ART-SKELETON §12 (앞 148px · 뒤 92px · 머리 위 79px)
+
+
+def attack4(path, name, tag, scene):
+    """넓은 칸 공격 장면(style-scene.py attack4 · 2×2) 굽기 -> <이름>-<꼬리표>-1..4 (칸 ACT · 뿌리 맞춤).
+    칸 구역 안의 덩어리를 전부 모은다(손에서 떨어져 그려진 무기 조각도). 다리·발 띠를 인형과 겹쳐 가로 밀림을 재고 뿌리를 ACT.root 에, 발바닥을 ACT.foot 에.
+      py -3 -I tools/sprite-kit/bake-scene.py attack4 <받은 장면.png> <이름> <꼬리표> <보낸 장면.png>"""
+    import json
+    meta = json.load(open(scene.replace('.png', '.roots.json')))
+    out = Image.open(path).convert('RGB')
+    W, H = out.size
+    sc_img = Image.open(scene).convert('RGB')
+    kx = W / sc_img.size[0]
+    scale = sc_img.size[0] / (meta['z'] * W)   # 받은 그림 화소 -> 게임 화소
+    full = key(out)
+    solid = full[..., 3] > 60
+    lab, nlab = ndimage.label(ndimage.binary_closing(solid, iterations=3))
+    rigmask = np.asarray(Image.fromarray((key(sc_img)[..., 3] > 60).astype(np.uint8) * 255).resize((W, H), Image.NEAREST)) > 127
+    for k, c in enumerate(meta['cells']):
+        x0, y0, x1, y1 = int(c['x'] * kx), int(c['y'] * kx), int((c['x'] + c['w']) * kx), int((c['y'] + c['h']) * kx)
+        ids = []
+        for bi in range(1, nlab + 1):
+            ys_b, xs_b = np.nonzero((lab == bi) & solid)
+            if len(xs_b) > 150 and x0 <= (xs_b.min() + xs_b.max()) / 2 < x1 and y0 <= (ys_b.min() + ys_b.max()) / 2 < y1:
+                ids.append(bi)
+        if not ids:
+            print(f'{tag} 칸{k + 1}: 사람을 못 찾음')
+            continue
+        m = np.isin(lab, ids) & solid
+        ys, xs = np.nonzero(m)
+        bx0, bx1, by0, by1 = xs.min(), xs.max() + 1, ys.min(), ys.max() + 1
+        edge = min(bx0 - x0, x1 - bx1, by0 - y0)
+        whole = full[by0:by1, bx0:bx1].copy()
+        whole[..., 3] = np.where(m[by0:by1, bx0:bx1], whole[..., 3], 0)
+        g = game(Image.fromarray(whole), scale)
+        gm = np.asarray(g)[..., 3] > 0
+        gy, gx = np.nonzero(gm)
+        g2 = g.crop((gx.min(), gy.min(), gx.max() + 1, gy.max() + 1))
+        art = m[y0:y1, x0:x1]
+        rg = rigmask[y0:y1, x0:x1]
+        dx = register(art, rg)
+        root_art = c['root'] * kx + dx
+        ox = round(ACT['root'] - (root_art - bx0) * scale)
+        oy = ACT['foot'] - g2.size[1]
+        note = ''
+        if ox < 0 or ox + g2.size[0] > ACT['cw'] or oy < 0:
+            note = ' ← 칸 밖으로 나감!'
+        cell = Image.new('RGBA', (ACT['cw'], ACT['ch']), (0, 0, 0, 0))
+        cell.alpha_composite(g2, (max(0, min(ACT['cw'] - g2.size[0], ox)), max(0, oy)))
+        cell.save(f'{PXD}/{name}-{tag}-{k + 1}.png')
+        print(f'{tag} 칸{k + 1} 게임 키 {g2.size[1]} 폭 {g2.size[0]} · 덩어리 {len(ids)} · 인형에서 {dx:+d}px · 뿌리 앞 {ox + g2.size[0] - ACT["root"]}px 뒤 {ACT["root"] - ox}px · 장면 칸 금까지 {edge}px{note}')
+
+
 def fall(path, name, scene, tag='down', k4=1.0, flip4=False):
     """쓰러짐 장면(style-scene.py fall 배치) 굽기 -> <이름>-down-1..4. 구역 안의 덩어리를 전부 모은다(떨어진 두건·머리카락 조각도 버리지 않는다).
     누운 칸은 옆 칸이 없어 잘릴 수 없다. 구역 금에 8px 안으로 닿으면 알린다.
@@ -273,6 +326,8 @@ def fall(path, name, scene, tag='down', k4=1.0, flip4=False):
 
 
 if __name__ == '__main__':
+    if sys.argv[1] == 'attack4':
+        attack4(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
     if sys.argv[1] == 'fall':
         nums = [a for a in sys.argv[5:] if a != 'flip4']
         fall(sys.argv[2], sys.argv[3], sys.argv[4], k4=float(nums[0]) if nums else 1.0, flip4='flip4' in sys.argv[5:])

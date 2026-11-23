@@ -130,27 +130,71 @@ def pole(d, a, b, head_at_b=True, back=10, front=22):
                (h[0] - px * w * .5 + ux * l, h[1] - py * w * .5 + uy * l), (h[0] - px * w * .5 - ux * l, h[1] - py * w * .5 - uy * l)], fill=IRON, outline=LINE)
 
 
+# 칸(인형 화소 = 게임 화소 × Z): 폭·높이 · 뿌리의 가로 자리 · 바닥 줄. 걷기·옛 자세는 기본값(정사각 칸 · 뿌리 한가운데).
+#   공격처럼 멀리·높이 뻗는 동작은 big_canvas() 로 넓은 칸을 쓴다 (11-23 · ART-SKELETON §12: 참고 게임은 칸 폭 = 키의 1.7~2배 · 뿌리는 왼쪽 0.33~0.41).
+CANVAS = dict(w=CELL, h=CELL, cx=CELL / 2, ground=CELL - 50)
+
+
+def big_canvas(w=240, h=208, root=92, foot=200):
+    """게임 화소로: 칸 w×h · 뿌리 x · 발바닥 줄 y"""
+    CANVAS.update(w=w * Z, h=h * Z, cx=root * Z, ground=foot * Z)
+
+
+def solve2(S, T, a, b, want):
+    """두 마디(a·b)로 S 에서 T 까지: (첫 마디 각, 둘째 마디 각) — 각은 pt() 와 같은 뜻. want = fwd(가운데 관절이 앞으로 · 무릎) | down(아래로 · 팔꿈치) | up | back"""
+    dx, dy = T[0] - S[0], T[1] - S[1]
+    dist = max(abs(a - b) + 1e-3, min(a + b - 1e-3, math.hypot(dx, dy)))
+    base = math.atan2(dx, dy)
+    al = math.acos(max(-1.0, min(1.0, (a * a + dist * dist - b * b) / (2 * a * dist))))
+    best = None
+    for sg in (1, -1):
+        u = base + sg * al
+        ex, ey = S[0] + math.sin(u) * a, S[1] + math.cos(u) * a
+        tx, ty = S[0] + math.sin(base) * dist, S[1] + math.cos(base) * dist
+        v = math.atan2(tx - ex, ty - ey)
+        score = dict(fwd=ex, back=-ex, down=ey, up=-ey)[want]
+        if best is None or score > best[0]:
+            best = (score, math.degrees(u), math.degrees(v))
+    return best[1], best[2]
+
+
 def figure(phase, swing_near, pose=None):
     """한 칸. swing_near = 지금 앞으로 나가는(흔드는) 다리가 가까운 쪽인가"""
     P0 = HALF[phase or 'pass']; S = STYLE
     P = dict(sw=(P0['sw'][0] * S['stride'], P0['sw'][1] * (S['lift'] if phase == 'pass' else S['stride'])), st=(P0['st'][0] * S['stride'], P0['st'][1] * S['stride']),
              drop=P0['drop'] * S['bob'], sw_toe=P0['sw_toe'], st_toe=P0['st_toe'])
-    im = Image.new('RGB', (CELL, CELL), (255, 0, 255))
+    im = Image.new('RGB', (int(CANVAS['w']), int(CANVAS['h'])), (255, 0, 255))
     d = ImageDraw.Draw(im)
-    cx = CELL / 2
+    cx = CANVAS['cx']
     near = dict(th=P['sw'][0], sh=P['sw'][1], toe=P['sw_toe']) if swing_near else dict(th=P['st'][0], sh=P['st'][1], toe=P['st_toe'])
     far = dict(th=P['st'][0], sh=P['st'][1], toe=P['st_toe']) if swing_near else dict(th=P['sw'][0], sh=P['sw'][1], toe=P['sw_toe'])
     if pose is not None:   # 걷기가 아닌 자세(활 쏘기 등): 다리·팔 각도를 그대로 받는다
-        near, far = dict(pose['near_leg']), dict(pose['far_leg'])
+        ik = pose.get('ik')
+        if ik:   # 손·발 자리로 주는 자세(게임 화소 · 뿌리가 원점 · 앞 = +x · 위 = +y): 두 발은 바닥의 그 자리에 박히고 골반이 움직인다
+            pv = ik.get('pelvis', (0, 0))
+            cx += pv[0] * Z
+            hip_ik = CANVAS['ground'] - (THIGH + SHIN + FOOT_H) * Z - 3 - pv[1] * Z
+
+            def leg_ik(hip, foot):
+                ank = (CANVAS['cx'] + foot[0] * Z, CANVAS['ground'] - foot[1] * Z - FOOT_H * Z - 3)
+                th, sh_ = solve2(hip, ank, THIGH * Z, SHIN * Z, 'fwd')
+                return dict(th=th, sh=sh_, toe=foot[2] if len(foot) > 2 else 0)
+            near, far = leg_ik((cx - 2 * Z, hip_ik + 1 * Z), ik['near_foot']), leg_ik((cx + 3 * Z, hip_ik - 1 * Z), ik['far_foot'])
+        else:
+            near, far = dict(pose['near_leg']), dict(pose['far_leg'])
     # 골반 높이: 두 발 가운데 더 낮은 쪽이 땅(칸 바닥 위 50px)에 닿게
     hip_y = 0.0
     low = max(leg(d, (cx, hip_y), near['th'], near['sh'], near['toe'], NEAR, False), leg(d, (cx, hip_y), far['th'], far['sh'], far['toe'], FAR, False))
-    hip_y = (CELL - 50) - low + ((P['drop'] - P0['drop']) * Z if pose is None else 0)
+    hip_y = CANVAS['ground'] - low + ((P['drop'] - P0['drop']) * Z if pose is None else 0)
+    if pose is not None and pose.get('ik'):
+        hip_y = hip_ik
     if pose is None:
         cx += S['hip'] * Z * (1 if swing_near else -1) * (1 if phase in ('contact', 'down') else -.5)   # 골반 흔듦
     hip_n, hip_f = (cx - 2 * Z, hip_y + 1 * Z), (cx + 3 * Z, hip_y - 1 * Z)       # 3/4 각도: 먼 쪽 골반·어깨가 조금 앞·위
-    sh_y = hip_y - TORSO * Z
+    bend = math.radians(pose.get('bend', 0)) if pose is not None else 0.0   # 윗몸을 앞으로 숙이는 각: 어깨가 앞으로 나가며 낮아진다
+    sh_y = hip_y - TORSO * Z * math.cos(bend)
     lean = (S['lean'] if pose is None else pose.get('lean', 0)) * Z             # 걷는 몸은 앞으로 기운다(결마다 다르게)
+    lean += TORSO * Z * math.sin(bend)
     sh_n, sh_f = (cx - 3 * Z + lean, sh_y + 1 * Z), (cx + 5 * Z + lean, sh_y - 1 * Z)
     # 팔은 같은 쪽 다리와 반대로
     # 팔 흔듦 (11-23 형 「어깨가 일부 컷에서 삐걱거림 · 팔도 제대로」): 예전에는 팔을 같은 쪽 넓적다리 각도에 묶어, 여덟 칸 가운데 한 칸에서
@@ -167,7 +211,12 @@ def figure(phase, swing_near, pose=None):
     if pose is None:   # 어깨는 팔을 따라 아주 조금 돈다(가까운 팔이 앞이면 가까운 어깨도 앞으로 1.5px)
         tw = -0.5 * Z * sw   # 어깨는 거의 돌지 않는다(윗몸은 한 그림처럼)
         sh_n, sh_f = (sh_n[0] + tw, sh_n[1]), (sh_f[0] - tw, sh_f[1])
-    if pose is not None:
+    if pose is not None and pose.get('ik'):
+        ik = pose['ik']
+        hand = lambda h: (CANVAS['cx'] + h[0] * Z, CANVAS['ground'] - h[1] * Z)
+        arm_n = solve2(sh_n, hand(ik['near_hand']), UPPER * Z, FORE * Z, ik.get('near_elbow', 'down'))
+        arm_f = solve2(sh_f, hand(ik['far_hand']), UPPER * Z, FORE * Z, ik.get('far_elbow', 'down'))
+    elif pose is not None:
         arm_n, arm_f = pose['near_arm'], pose['far_arm']
     elif PROP['kind'] == 'pole2':    # 두 손으로 긴 자루를 몸 앞에 비스듬히 든 채 걷는다 — 두 팔 모두 고정(해비의 도끼)
         arm_n, arm_f = (12, 72), (48, 104)
@@ -204,7 +253,7 @@ def figure(phase, swing_near, pose=None):
     leg(d, hip_n, near['th'], near['sh'], near['toe'], NEAR)
     if PROP['kind'] == 'pole2':
         hn = wrist(sh_n, arm_n[0], arm_n[1])
-        pole(d, hn, hand_f)
+        pole(d, hn, hand_f, back=(14 if pose is not None and pose.get('ik') else 10), front=(34 if pose is not None and pose.get('ik') else 22))
         d.ellipse([hand_f[0] - HAND * Z, hand_f[1] - HAND * Z, hand_f[0] + HAND * Z, hand_f[1] + HAND * Z], fill=FAR, outline=LINE, width=3)   # 먼 손이 자루를 쥔 자리
     hand_n = arm(d, sh_n, arm_n[0], arm_n[1], NEAR)
     if PROP['kind'] == 'bow' and pulled:
@@ -292,6 +341,57 @@ ATTACKS = {
 }
 
 
+def _ik(pelvis, near_hand, far_hand, bend=0, lean=0, near_foot=(-18, 0), far_foot=(12, 0), **kw):
+    return dict(ik=dict(pelvis=pelvis, near_hand=near_hand, far_hand=far_hand, near_foot=near_foot, far_foot=far_foot, **kw), bend=bend, lean=lean)
+
+
+_W = dict(near_foot=(-20, 0), far_foot=(17, 0))    # 넓게 선 발
+_L = dict(near_foot=(-28, 0, -18), far_foot=(12, 0))   # 뛰어든 발: 앞발은 그대로 박혀 있고 뒷발이 뒤로 뻗는다(참고 게임: 뒷다리가 키의 0.34 뒤로)
+# 두 손 긴 자루(pole2): 가까운 손 = 자루 끝 · 먼 손 = 쇠머리 쪽. 앞발(먼 쪽 발)은 여덟 칸 같은 자리.
+IK_ATTACKS = {
+    # 해비 「뛰어들며 사선 내려찍기」(가볍고 빠르게): 뒤로 당김 -> 어깨 뒤로 올림 -> 등 뒤 높이(몸을 젖힘) -> [궤적] 머리 위 앞으로 -> [타격] 앞 아래로 찍음 -> 유지 -> 유지(당기기 시작) -> 거둠
+    'chop': [
+        _ik((-4, -4), (-12, 80), (8, 96), lean=-1),
+        _ik((-7, -6), (-4, 104), (-16, 122), lean=-2),
+        _ik((-9, -3), (-8, 118), (-24, 128), bend=-5),
+        _ik((6, -9), (20, 106), (34, 120), bend=10, **_L),
+        _ik((10, -15), (32, 60), (48, 48), bend=30, **_L),
+        _ik((11, -17), (32, 57), (49, 44), bend=33, **_L),
+        _ik((8, -12), (26, 70), (42, 64), bend=22, **_L),
+        _ik((0, -1), (15, 77), (34, 91), lean=1),
+    ],
+    # 아룸 「머리 위 수직 내려찍기」(무겁게 · 넓게 선 채 · 두 발은 여덟 칸 같은 자리): 낮게 쥠 -> 들어 올림 -> 머리 위 끝까지(살짝 젖힘) -> [궤적] 앞 위에서 내려옴 -> [타격] 바닥을 찍음 -> 유지(더 깊이) -> 유지 -> 거둠
+    'slam': [
+        _ik((0, -8), (4, 60), (22, 66), bend=8, **_W),
+        _ik((-3, -4), (4, 98), (16, 116), **_W),
+        _ik((-6, 0), (-6, 122), (-12, 134), bend=-6, **_W),
+        _ik((2, -6), (22, 110), (34, 122), bend=10, **_W),
+        _ik((6, -9), (30, 56), (44, 44), bend=40, **_W),
+        _ik((6, -11), (30, 52), (44, 39), bend=43, **_W),
+        _ik((4, -8), (26, 64), (41, 54), bend=28, **_W),
+        _ik((0, -3), (10, 74), (28, 84), bend=4, **_W),
+    ],
+}
+
+
+def ik_attack_sheets(kind):
+    """넓은 칸 2×2 판 둘(앞 넷 · 뒤 넷) + 한 줄 미리 보기"""
+    big_canvas()
+    PROP['kind'] = 'pole2'
+    figs = [figure(None, True, ps) for ps in IK_ATTACKS[kind]]
+    w, h = figs[0].size
+    out = []
+    for half in (0, 1):
+        o = Image.new('RGB', (w * 2, h * 2), (255, 0, 255))
+        for k in range(4):
+            o.paste(figs[half * 4 + k], ((k % 2) * w, (k // 2) * h))
+        out.append(o)
+    row = Image.new('RGB', ((w // 4) * 8, h // 4), (255, 0, 255))
+    for i, f in enumerate(figs):
+        row.paste(f.resize((w // 4, h // 4), Image.LANCZOS), (i * (w // 4), 0))
+    return out[0], out[1], row
+
+
 def attack_sheets(kind):
     out = []
     for half in (0, 1):
@@ -305,6 +405,14 @@ def attack_sheets(kind):
 def main():
     import sys
     order = [(True, 'pass'), (True, 'reach'), (True, 'contact'), (True, 'down'), (False, 'pass'), (False, 'reach'), (False, 'contact'), (False, 'down')]
+    if len(sys.argv) > 1 and sys.argv[1] == 'attack' and sys.argv[2] in IK_ATTACKS:   # 넓은 칸 · 두 손 긴 자루: rig-f-atk-<이름>-<가슴>-a/b.png (2×2 · 칸 240×208) + tools/out/lineup/rig-atk-<이름>.png
+        SHAPE['bust'] = sys.argv[3]
+        a, b, row = ik_attack_sheets(sys.argv[2])
+        a.save(f'{STD}/rig-f-atk-{sys.argv[2]}-{sys.argv[3]}-a.png')
+        b.save(f'{STD}/rig-f-atk-{sys.argv[2]}-{sys.argv[3]}-b.png')
+        row.save(f'tools/out/lineup/rig-atk-{sys.argv[2]}.png')
+        print('attack(넓은 칸)', sys.argv[2], sys.argv[3], a.size)
+        return
     if len(sys.argv) > 1 and sys.argv[1] == 'attack':  # py pose-rig.py attack <이름> <가슴> -> rig-f-atk-<이름>-<가슴>-a/b.png (앞 넷 · 뒤 넷)
         SHAPE['bust'] = sys.argv[3]
         a, b = attack_sheets(sys.argv[2])

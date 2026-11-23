@@ -13,6 +13,8 @@ import { areaScale, awakenedLook, barrageArcher, charge, missileLife, slamRadius
 import { fieldView } from './camera.ts'
 import { WALK_CYCLE } from './walk-cycle.ts'
 import { attackFrame, attackRole, heroPose, idleFrame, type HeroPose } from './hero-motion.ts'
+import { companionPlace, companionScale } from './strip-geom.ts'
+import { SPRITE_PX } from '../realm/data/spritePx.ts'
 import { companionOf, idlePlan, idleSeed, isCompanion, planFrame, spriteName, stripCells, usablePlan, usesCompanion, STRIP_CELLS } from './hero-idle.ts'
 import { fallCells, koFrame, koZoom } from './ko.ts'
 import { HAEBI_KO as KO } from '../tune/params.ts'
@@ -113,11 +115,19 @@ function whiteStrip(src: CanvasImageSource, width: number, height: number) {
   }
   return white
 }
-export function sprite(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, path: string, x: number, y: number, height: number, frame: number, face = 1, flash: boolean | 'white' = false, density?: number, rim = 0) {
+/** 덧 띠 자리 계산(strip-geom.ts)에 쓰는 본 띠 정보 — 본 띠 칸 높이 · 발 줄 (SPRITE_PX) · 덧 띠 규격 (둘 다 있어야 · 없으면 예전 자리) */
+function xGeomOf(path: string) { const xg = idlePlan(path)?.xGeom, main = SPRITE_PX[`gen-${spriteName(path)}`]; return xg && main ? { xg, ch: main.cell[1], feet: main.feet } : null }
+export function sprite(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, path: string, x: number, y: number, height: number, frame: number, face = 1, flash: boolean | 'white' = false, density?: number, rim = 0, at?: { left: number; top: number }) {
   // 20 칸부터는 덧 띠(gen-X-x.png)에서 — 아직 없으면 누운 칸 19 (빈 칸을 그리지 않는다 · 부르는 쪽은 usablePlan 으로 미리 거른다)
   if (frame >= STRIP_CELLS && !isCompanion(path)) {
     const cp = companionOf(path)
-    if (companionReady(images, cp)) return sprite(ctx, images, cp, x, y, height, frame - STRIP_CELLS, face, flash, density, rim)
+    if (companionReady(images, cp)) {
+      const g = xGeomOf(path)
+      if (!g) return sprite(ctx, images, cp, x, y, height, frame - STRIP_CELLS, face, flash, density, rim)
+      // 덧 띠 자기 규격: 본 띠와 같은 배율 k 로 · (뿌리, 발 줄) 점이 본 띠 칸 (한가운데, 발 줄) 점 자리에 (본 띠는 칸 아래 모서리가 y — 발 줄은 그 위 (칸 높이 − 발 줄) · k)
+      const k = height / g.ch, p = companionPlace(images.get(cp)!.width / stripCells(cp), g.xg.h, k, g.feet, g.xg)
+      return sprite(ctx, images, cp, x, y, p.h, frame - STRIP_CELLS, face, flash, density, rim, { left: p.left, top: p.top - (g.ch - g.feet) * k })
+    }
     frame = KO.fall[1]
   }
   const img = images.get(path); if (!img) return
@@ -128,7 +138,7 @@ export function sprite(ctx: CanvasRenderingContext2D, images: Map<string, HTMLIm
   else { sw = layout?.cell[0] ?? img.width / n; sh = nativeH; sx = (frame % (layout?.cols ?? n)) * sw; sy = Math.floor(frame / (layout?.cols ?? n)) * sh; dh = height; dw = height * sw / sh }
   if (density !== undefined) dw = Math.round(height * (layout?.cell[0] ?? img.width / n) / nativeH)
   // 폰 프레임 (11-17): save/restore 대신 옮긴 만큼 되돌린다 — 적 230 명마다 save 가 판 그리기의 8% 를 먹었다
-  const tx = Math.round(x), ty = Math.round(y), dx = -Math.round(dw / 2)
+  const tx = Math.round(x), ty = Math.round(y), dx = at ? Math.round(at.left) : -Math.round(dw / 2), top = at ? Math.round(at.top) : -dh
   const smooth = ctx.imageSmoothingEnabled
   ctx.translate(tx, ty); if (face !== 1) ctx.scale(face, 1); ctx.imageSmoothingEnabled = false
   if (rim > 0) {
@@ -136,17 +146,17 @@ export function sprite(ctx: CanvasRenderingContext2D, images: Map<string, HTMLIm
     const tinted = tintStrip(src, b ? b.cols * b.fw : img.width, b ? Math.ceil(n / b.cols) * b.fh : img.height, C.heroRimColor)
     if (tinted) {
       const a = ctx.globalAlpha; ctx.globalAlpha = a * C.heroRimAlpha
-      for (let i = 0; i < C.heroRimDirs; i++) { const t = i * Math.PI * 2 / C.heroRimDirs; ctx.drawImage(tinted, sx, sy, sw, sh, dx + Math.round(Math.cos(t) * rim), -dh + Math.round(Math.sin(t) * rim), dw, dh) }
+      for (let i = 0; i < C.heroRimDirs; i++) { const t = i * Math.PI * 2 / C.heroRimDirs; ctx.drawImage(tinted, sx, sy, sw, sh, dx + Math.round(Math.cos(t) * rim), top + Math.round(Math.sin(t) * rim), dw, dh) }
       ctx.globalAlpha = a
     }
   }
-  ctx.drawImage(src, sx, sy, sw, sh, dx, -dh, dw, dh)
+  ctx.drawImage(src, sx, sy, sw, sh, dx, top, dw, dh)
   if (flash === 'white') {
     const white = whiteStrip(src, b ? b.cols * b.fw : img.width, b ? Math.ceil(n / b.cols) * b.fh : img.height)
-    if (white) ctx.drawImage(white, sx, sy, sw, sh, dx, -dh, dw, dh)
+    if (white) ctx.drawImage(white, sx, sy, sw, sh, dx, top, dw, dh)
   }
   // 맞은 번쩍: 같은 그림을 한 번 더 빛으로 더한다 — ctx.filter 는 폰에서 그림마다 소프트웨어로 돌아 프레임을 크게 깎았다 (11-16 플립7 20프레임)
-  if (flash === true) { const op = ctx.globalCompositeOperation, a = ctx.globalAlpha; ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = a * C.flashAdd; ctx.drawImage(src, sx, sy, sw, sh, dx, -dh, dw, dh); ctx.globalCompositeOperation = op; ctx.globalAlpha = a }
+  if (flash === true) { const op = ctx.globalCompositeOperation, a = ctx.globalAlpha; ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = a * C.flashAdd; ctx.drawImage(src, sx, sy, sw, sh, dx, top, dw, dh); ctx.globalCompositeOperation = op; ctx.globalAlpha = a }
   if (face !== 1) ctx.scale(face, 1); ctx.translate(-tx, -ty); ctx.imageSmoothingEnabled = smooth
 }
 /**
@@ -195,6 +205,8 @@ export function setHeroArt(baseKey: string, awakeKey?: string) { const b = genAr
 const heroH = (s: HaebiRun) => C.heroPx * (awakenedLook(s) ? heroArt.fitAwake : heroArt.fit)   // 11-22 정수리 기준 (각성 그림도 제 몸 비로 · 예전 grow 와 같은 뜻)
 export const heroArtFiles = () => [...new Set([heroArt.base, heroArt.awake])]
 /** 계획이 20 칸 넘게 쓰는 장수의 덧 띠 (없어도 판은 돈다 — 부르는 쪽이 실패를 삼킨다) */
+/** 덧 띠를 굽는 키 배율 (그림 높이 ÷ 본 띠 칸 높이 · 규격 없으면 1) */
+const xScale = (path: string) => { const g = xGeomOf(path); return g ? companionScale(g.ch, g.xg) : 1 }
 export const heroCompanionFiles = () => heroArtFiles().filter(p => usesCompanion(idlePlan(p))).map(companionOf)
 /** 마지막으로 판을 그린 그림 묶음 — 덧 띠가 왔는지 보려고 (화면 쪽 기억) */
 let viewImages: Map<string, HTMLImageElement> | null = null
@@ -213,7 +225,7 @@ export function heroHdFiles(density: number): string[] { return wantsHeroHd(dens
 /** Decode happens in the loader; masks are painted without pixel readback before first HIT. */
 export function warmHeroSprites(images: Map<string, HTMLImageElement>, density: number) {
   viewImages = images
-  for (const [path, height] of [[heroArt.base, C.heroPx * heroArt.fit], [heroArt.awake, C.heroPx * heroArt.fitAwake], ...heroCompanionFiles().map(p => [p, C.heroPx * heroArt.fit] as const)] as const) {
+  for (const [path, height] of [[heroArt.base, C.heroPx * heroArt.fit], [heroArt.awake, C.heroPx * heroArt.fitAwake], ...heroCompanionFiles().map(p => [p, C.heroPx * heroArt.fit * xScale(p)] as const)] as const) {
     const hd = HERO_HD[path], use = hd && wantsHeroHd(density) && images.has(hd) ? hd : path, img = images.get(use)
     if (!img) continue
     const layout = HERO_HD_SHEETS[use]

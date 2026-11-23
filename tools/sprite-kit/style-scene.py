@@ -30,7 +30,7 @@ def main(body, out, male=False):
     o.save(out); print(out, o.size)
 
 
-if __name__ == '__main__' and sys.argv[1] not in ('motion', 'motion8', 'fall'):
+if __name__ == '__main__' and sys.argv[1] not in ('motion', 'motion8', 'fall', 'attack4'):
     main(sys.argv[1], sys.argv[2], len(sys.argv) > 3 and sys.argv[3] == 'm')
 
 
@@ -111,6 +111,43 @@ def motion8_scene(identity, rig_a, rig_b, out, style_ref='soseono', Z=3, CW=384,
     print(out, o.size)
 
 
+RIG_ROOT, RIG_FOOT = 92, 200   # pose-rig.big_canvas() 의 뿌리 x · 발 줄 y (게임 화소) — 바꾸면 둘 다
+
+
+def attack4_scene(identity, rig_sheet, out, style_ref='soseono', Z=3):
+    """넓은 칸 공격 장면 (11-23 · ART-SKELETON §12: 참고 게임은 칸이 넉넉하고 뿌리가 왼쪽 — 도끼·망치를 머리 위로 들어도 안 잘리게).
+    1920x1280 · 왼쪽 줄 384 = [그 장수 서기 / 승인 띠] · 오른쪽 = 2×2 칸(768×640) 에 코드 인형(pose-rig attack <chop|slam> · 칸 240×208 · 뿌리 왼쪽 0.38).
+    여덟 칸 공격은 판 둘(a = 준비 3 + 궤적 · b = 타격 + 유지 2 + 회수). 칸마다 뿌리·바닥 자리를 곁파일(.roots.json)에 적는다 → bake-scene.py attack4 가 쓴다.
+      py -3 -I tools/sprite-kit/style-scene.py attack4 <합격한 서기.png> <인형 판 2x2.png> <나갈.png>"""
+    import json
+    LW, CWD, CH_, W_, H_ = 384, 768, 640, 1920, 1280
+    o = Image.new('RGB', (W_, H_), (255, 0, 255))
+    H = N * Z
+    idn = Image.open(identity).convert('RGBA')
+    idn = idn.crop(idn.getchannel('A').getbbox())
+    idn = idn.resize((round(idn.size[0] * H / idn.size[1]), H), Image.LANCZOS)
+    ref = cell0(style_ref)
+    ref = ref.resize((ref.size[0] * Z, ref.size[1] * Z), Image.NEAREST)
+    for j, im in enumerate((idn, ref)):
+        if im.size[0] > LW - 12:
+            im = im.crop(((im.size[0] - LW + 12) // 2, 0, (im.size[0] + LW - 12) // 2, im.size[1]))
+        o.paste(im, ((LW - im.size[0]) // 2, j * CH_ + CH_ - 40 - im.size[1]), im)
+    sh = Image.open(rig_sheet).convert('RGB')
+    rw, rh = sh.size[0] // 2, sh.size[1] // 2
+    s = .92 * Z / 4   # 인형은 게임 화소의 4배 · 대머리 (걷기 장면과 같은 배율)
+    cells = []
+    for k in range(4):
+        c = sh.crop(((k % 2) * rw, (k // 2) * rh, (k % 2 + 1) * rw, (k // 2 + 1) * rh))
+        c = c.resize((round(rw * s), round(rh * s)), Image.LANCZOS)
+        x0 = LW + (k % 2) * CWD + (CWD - c.size[0]) // 2
+        y0 = (k // 2) * CH_ + CH_ - 16 - c.size[1]
+        o.paste(c, (x0, y0))
+        cells.append(dict(x=LW + (k % 2) * CWD, y=(k // 2) * CH_, w=CWD, h=CH_, root=round(x0 + RIG_ROOT * 4 * s, 1), ground=round(y0 + RIG_FOOT * 4 * s, 1)))
+    json.dump(dict(kind='attack4', z=Z, s=s, cells=cells), open(out.replace('.png', '.roots.json'), 'w'))
+    o.save(out)
+    print(out, o.size, '칸마다 뿌리', [c['root'] for c in cells])
+
+
 def fall_scene(identity, pose_sheet, out, style_ref='soseono', Z=3, sc_fixed=None):
     """쓰러짐 장면 (11-23 형: 누워 있는 마지막 컷이 항상 머리 부분이랑 같이 잘린다 · 2행 1열과 2행 2열 사이).
     누운 사람 옆에 다른 칸을 두지 않는다. 1920x1280 · 윗줄 = [그 장수 서기 384] + 자세 1·2·3 (같은 틈으로) · 아랫줄 = [승인 띠 384] + 누운 자세 혼자(폭 1536 한가운데).
@@ -167,6 +204,8 @@ def fall_scene(identity, pose_sheet, out, style_ref='soseono', Z=3, sc_fixed=Non
     print(out, o.size, '누운 사람 양옆 여백', (W_ - LW - f.size[0]) // 2)
 
 
+if __name__ == '__main__' and sys.argv[1] == 'attack4':
+    attack4_scene(sys.argv[2], sys.argv[3], sys.argv[4])
 if __name__ == '__main__' and sys.argv[1] == 'fall':
     fall_scene(sys.argv[2], sys.argv[3], sys.argv[4], sc_fixed=float(sys.argv[5]) if len(sys.argv) > 5 else None)
 if __name__ == '__main__' and sys.argv[1] == 'motion8':
