@@ -148,8 +148,8 @@ def figure(phase, swing_near, pose=None):
     arm(d, sh_f, arm_f[0], arm_f[1], FAR)
     leg(d, hip_f, far['th'], far['sh'], far['toe'], FAR)
     d.polygon([(sh_n[0] - 9 * Z, sh_y), (sh_f[0] + 6 * Z, sh_y - 2 * Z), (hip_f[0] + 8 * Z, hip_y + 5 * Z), (hip_n[0] - 9 * Z, hip_y + 6 * Z)], fill=BODY, outline=LINE)
-    d.ellipse([cx - 10 * Z, hip_y - 6 * Z, cx + 11 * Z, hip_y + 12 * Z], fill=BODY, outline=LINE, width=4)            # 골반
-    d.ellipse([cx - 13 * Z, hip_y - 7 * Z, cx + 6 * Z, hip_y + 13 * Z], fill=BODY, outline=LINE, width=4)   # 엉덩이(뒤로 둥글게)
+    d.ellipse([cx - 10 * Z, hip_y - 10 * Z, cx + 11 * Z, hip_y + 6 * Z], fill=BODY, outline=LINE, width=4)            # 골반 (11-23 형 「허리가 길어 보인다」: 골반 덩어리가 엉덩관절 아래 12 까지 내려가 가랑이가 낮게 읽혔다 → 6 까지만)
+    d.ellipse([cx - 13 * Z, hip_y - 11 * Z, cx + 6 * Z, hip_y + 7 * Z], fill=BODY, outline=LINE, width=4)   # 엉덩이(뒤로 둥글게)
     b = BUST[SHAPE['bust']] * Z   # 가슴: 몸통 앞으로 도드라진다 (먼 쪽 먼저 · 가까운 쪽이 덮는다)
     bx, by = cx + lean + 5 * Z, sh_y + 13 * Z
     d.ellipse([bx + 3 * Z - b * .9, by - 1 * Z - b * .9, bx + 3 * Z + b * .9, by - 1 * Z + b * .9], fill=(150, 150, 150), outline=LINE, width=3)
