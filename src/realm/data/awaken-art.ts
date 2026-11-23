@@ -181,6 +181,7 @@ export const AWAKEN_ART: ReadonlySet<string> = new Set([
   'g-99-goguryeo-maro',
   'g-100-buyeo-old-daeso',
   'g-67-buyeo-daeso',
+  'g-60-golbeol-golgae', // 11-23 Claude 제미나이 Jay(Neon) · 남자 · 다시 만든 판(첫 판은 망치가 둘 · 에셋창고 take1) · 망치 하나 낮게
   'g-107-garak-musoe', // 11-23 Claude 제미나이 Jay(Neon) · 남자 · 다시 만든 판(첫 판은 망치가 튐 · 에셋창고 take1) · 망치 어깨에 그대로
   'g-106-garak-ocheongan', // 11-23 Claude 제미나이 Jay(Neon) · 남자 · 얼굴·노 그대로 · 웃음 좋음
   'g-65-goguryeo-damul',
