@@ -53,44 +53,46 @@ def lock(name, ref, tags):
 
 def face_lock(name, ref, tags, half=(9, 11, 9, 10)):
     """얼굴만 묶는다 (11-24 형 「상체에 포스터 붙인 듯이 떠다닌다」 — 메가 잘리는 것을 막겠다고 윗몸을 통째로 굳혀 붙였더니 종이처럼 떠다녔다).
-    머리 곁으로 물건이 지나가는 장수: 윤곽(머리카락·물건·어깨·팔)은 받은 그림 그대로 두고, **얼굴 안쪽(눈·코·입)** 작은 상자만 기준 칸 것으로 바꾼다 → 표정·시선만 같아진다.
-    자리는 살빛 가운데가 아니라 **머리 둘레의 밝기 무늬를 기준 칸에 겹쳐**(±4px) 찾는다 — 그 칸의 머리가 있는 바로 그 자리에 얹힌다(떠다니지 않는다).
-    상자가 그 칸의 얼굴 살 밖으로 나가는 화소는 건드리지 않는다(윤곽을 바꾸지 않는다)."""
+    윤곽(머리카락·물건·어깨·팔)은 받은 그림 그대로 두고, **얼굴 안쪽(눈·코·입)** 작은 상자만 기준 칸 것으로 바꾼다 → 표정·시선만 같아진다.
+    기준 칸은 다른 동작의 칸이어도 된다(예: quirk-1 — 걷기 판의 얼굴이 게임 크기에서 뭉쳤을 때 깨끗한 얼굴을 빌린다 · 11-24 형 「얼굴이 고양이인지 뭔지」).
+    자리: 그 칸의 얼굴 살 가운데에서 시작해, **머리 둘레의 밝기 무늬를 기준 칸에 겹쳐**(±4px) 다듬는다 — 그 칸의 머리가 있는 바로 그 자리에 얹힌다.
+    상자 안에서 두 칸 모두 불투명한 화소만 바꾼다(윤곽을 바꾸지 않는다). 살 겹침이 적으면(다른 각도의 얼굴) 건드리지 않는다."""
     L, Rr, U, D = half
     rim = Image.open(f'{PXD}/{name}-{ref}.png').convert('RGBA')
     rx, ry = anchor(rim)
     ra = np.asarray(rim).astype(np.int16)
     gray = lambda a: (a[..., 0] * 3 + a[..., 1] * 6 + a[..., 2]) // 10 * (a[..., 3] > 0)
-    win = (slice(ry - 26, ry + 16), slice(rx - 24, rx + 22))   # 머리 둘레(겹쳐 볼 창)
-    rg = gray(ra)[win]
+    rg = gray(ra)[ry - 26:ry + 16, rx - 24:rx + 22]   # 머리 둘레(겹쳐 볼 창)
     patch = ra[ry - U:ry + D, rx - L:rx + Rr].copy()
+    skin = lambda q: (q[..., 3] > 0) & (q[..., 0] > 150) & (q[..., 0] - q[..., 2] > 30)
     for tag in tags:
         for i in (1, 2, 3, 4):
             if f'{tag}-{i}' == ref:
                 continue
             p = f'{PXD}/{name}-{tag}-{i}.png'
-            a = np.asarray(Image.open(p).convert('RGBA')).astype(np.int16)
+            im = Image.open(p).convert('RGBA')
+            fx, fy = anchor(im)
+            a = np.pad(np.asarray(im).astype(np.int16), ((40, 40), (40, 40), (0, 0)))
+            fx, fy = fx + 40, fy + 40
             g = gray(a)
             best, at = None, (0, 0)
             for dy in range(-4, 5):
                 for dx in range(-4, 5):
-                    w = g[win[0].start + dy:win[0].stop + dy, win[1].start + dx:win[1].stop + dx]
+                    w = g[fy - 26 + dy:fy + 16 + dy, fx - 24 + dx:fx + 22 + dx]
                     c = int(np.abs(w - rg).sum())
                     if best is None or c < best:
                         best, at = c, (dx, dy)
             dx, dy = at
-            y0, x0 = ry - U + dy, rx - L + dx
+            y0, x0 = fy - U + dy, fx - L + dx
             tgt = a[y0:y0 + U + D, x0:x0 + L + Rr]
-            skin = lambda q: (q[..., 3] > 0) & (q[..., 0] > 150) & (q[..., 0] - q[..., 2] > 30)
-            # 두 칸 모두 얼굴 안쪽인 화소만(살이거나 살에 둘러싸인 눈·입): 상자 안에서 그 칸의 불투명 화소 ∩ 기준 칸의 불투명 화소
             ok = (tgt[..., 3] > 0) & (patch[..., 3] > 0)
             n_skin = int((skin(tgt) & skin(patch)).sum())
             if n_skin < ok.sum() * .35:
                 print(f'{tag}-{i}: 얼굴이 안 맞는다(살 겹침 {n_skin}/{int(ok.sum())}) — 건드리지 않음')
                 continue
             tgt[ok] = patch[ok]
-            Image.fromarray(a.astype(np.uint8)).save(p)
-            print(f'{tag}-{i}: 얼굴 자리 밀림 ({dx:+d},{dy:+d}) · 바꾼 화소 {int(ok.sum())}')
+            Image.fromarray(a[40:-40, 40:-40].astype(np.uint8)).save(p)
+            print(f'{tag}-{i}: 얼굴 자리 ({fx - 40 + dx},{fy - 40 + dy}) ← 기준 ({rx},{ry}) · 다듬음 ({dx:+d},{dy:+d}) · 바꾼 화소 {int(ok.sum())} · 살 겹침 {n_skin}')
 
 
 if __name__ == '__main__':

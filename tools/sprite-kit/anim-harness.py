@@ -34,7 +34,7 @@ HEROES = {
     'maehwa': dict(strip='gen-maehwa', atk='bow', atk8=False),
     'dalbit': dict(strip='gen-base-w-31-dabeol-dalbit', atk='bow', atk8=False),
     'haebi': dict(strip='gen-haebi', atk='chop', atk8=True, act=True),   # act = 공격 여덟 칸이 넓은 동작 칸(240×224 · 뿌리 92 · 발 줄 216)
-    'areum': dict(strip='gen-areum', atk='slam', atk8=True, act=True, lock='face'),   # lock='face': 메가 머리 뒤로 지나간다 — 머리 상자는 메를 자르고(「포스터」), 윗몸을 통째로 묶으면 떠다닌다(11-24 형) → 얼굴 안쪽만 묶는다
+    'areum': dict(strip='gen-areum', atk='slam', atk8=True, act=True, lock='none'),   # 받은 그림 그대로(얼굴을 떠다 붙이지 않는다 — 11-24: 뭉친 얼굴이 여덟 칸에 퍼졌다) · 옛 lock='face': 메가 머리 뒤로 지나간다 — 머리 상자는 메를 자르고(「포스터」), 윗몸을 통째로 묶으면 떠다닌다(11-24 형) → 얼굴 안쪽만 묶는다
 }
 
 
@@ -61,7 +61,8 @@ def walk(name, ref='walk-a-3'):
     run('bake-scene.py', 'motion8', sheet, name, f'scene={scene}')
     run('walk-anchor.py', name)
     lk = HEROES[name].get('lock')
-    run('head-lock.py', name, ref, 'walk-a', 'walk-b', *(['face'] if lk == 'face' else [f'box={lk}'] if lk else []), show=(lk == 'face'))
+    if lk != 'none':   # 'none' = 받은 그림 그대로(얼굴이 여덟 칸 같게 그려졌을 때)
+        run('head-lock.py', name, ref, 'walk-a', 'walk-b', *(['face'] if lk == 'face' else [f'box={lk}'] if lk else []), show=(lk == 'face'))
     ims = [Image.open(f'{PX}/{name}-walk-{t}-{i}.png').convert('RGBA') for t in 'ab' for i in (3, 4, 1, 2)]
     z, x0, x1 = 4, 40, 170
     row = Image.new('RGB', ((x1 - x0) * z * 8, CH * z), BG)
