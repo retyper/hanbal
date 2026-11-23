@@ -1,28 +1,30 @@
 import { fieldTransform } from './surface.ts'
 import { HAEBI_RUN as C } from '../tune/params.ts'
-import { HAEBI_END as E, HAEBI_IMPACT as F } from '../tune/params.ts'
+import { HAEBI_END as E, HAEBI_IMPACT as F, HAEBI_KO as K } from '../tune/params.ts'
 import type { RaidEnding } from './ending.ts'
 import { HAEBI_FX_ART as A } from '../tune/params.ts'
 import { drawFx } from './fx-art.ts'
 
-/** Canvas composites only; no CSS filter or extra compositor layer. */
-export function drawEnding(ctx: CanvasRenderingContext2D, end: RaidEnding, portrait: HTMLImageElement | null, gold: number, images: Map<string, HTMLImageElement>) {
+/**
+ * Canvas composites only; no CSS filter or extra compositor layer.
+ * focus 쓰러진 장수의 화면 자리(판 논리 좌표 · 발 위)와 카메라 배율 — 쓰러짐 KO 는 장수 둘레를 남기고 둘레만 빛을 빼고 어둡게 (HAEBI_KO)
+ */
+export function drawEnding(ctx: CanvasRenderingContext2D, end: RaidEnding, gold: number, images: Map<string, HTMLImageElement>, focus?: { x: number; y: number; zoom: number }) {
   if (!end.active) return
   const w = C.width, h = C.height, age = end.elapsed
   ctx.save(); fieldTransform(ctx)
-  if (end.kind !== 'victory') {
+  if (end.kind === 'defeat' && focus) {
+    const k = Math.min(1, Math.max(0, age - end.freeze) / E.defeat.slow), r0 = K.clearR * focus.zoom, r1 = K.dimR * focus.zoom
+    const hole = (color: string) => { const g = ctx.createRadialGradient(focus.x, focus.y, r0, focus.x, focus.y, r1); g.addColorStop(0, color + '00'); g.addColorStop(1, color + 'ff'); return g }
+    ctx.globalCompositeOperation = 'saturation'; ctx.globalAlpha = k * K.gray; ctx.fillStyle = hole('#888888'); ctx.fillRect(0, 0, w, h)
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = k * K.dark; ctx.fillStyle = hole('#111827'); ctx.fillRect(0, 0, w, h)
+  } else if (end.kind !== 'victory') {
     const gray = Math.min(1, Math.max(0, age - end.freeze) / E.defeat.slow) * E.grayMax
     ctx.globalCompositeOperation = 'saturation'; ctx.globalAlpha = gray; ctx.fillStyle = '#888'; ctx.fillRect(0, 0, w, h)
     ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = gray; ctx.fillStyle = '#111827'; ctx.fillRect(0, 0, w, h)
   }
   ctx.globalAlpha = 1
   if (age < E.flashTime && end.kind !== 'retreat') { ctx.globalAlpha = E.flashAlpha * (1 - age / E.flashTime); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); ctx.globalAlpha = 1 }
-  if (end.kind === 'defeat' && age >= E.defeat.portraitAt && portrait?.complete && portrait.naturalWidth) {
-    const fade = Math.min(1, (age - E.defeat.portraitAt) / E.stampSettle)
-    const scale = Math.min(w * E.portraitWidth / portrait.naturalWidth, h * E.portraitHeight / portrait.naturalHeight)
-    const pw = portrait.naturalWidth * scale, ph = portrait.naturalHeight * scale
-    ctx.globalAlpha = fade; ctx.drawImage(portrait, (w - pw) / 2, h * (1 - E.portraitHeight) / 2, pw, ph); ctx.globalAlpha = 1
-  }
   if (end.kind === 'victory') {
     for (let i = 0; i < E.sparkCount; i++) {
       const k = (age * E.slowRate + i / E.sparkCount) % 1
@@ -35,7 +37,7 @@ export function drawEnding(ctx: CanvasRenderingContext2D, end: RaidEnding, portr
   if (age >= end.stampAt) {
     const t = age - end.stampAt, scale = 1 + E.stampOvershoot * Math.max(0, 1 - t / E.stampSettle)
     const shake = Math.max(0, 1 - t / E.shakeLife) * E.shake
-    ctx.translate(w / 2 + Math.sin(t * F.shakeXHz) * shake, h / 2 + Math.cos(t * F.shakeYHz) * shake)
+    ctx.translate(w / 2 + Math.sin(t * F.shakeXHz) * shake, h * (end.kind === 'defeat' ? K.stampY : .5) + Math.cos(t * F.shakeYHz) * shake)
     ctx.scale(scale, scale)
     const won = end.kind === 'victory'
     ctx.globalAlpha = won ? A.victoryBandAlpha : A.bandAlpha

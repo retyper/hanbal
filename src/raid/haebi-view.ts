@@ -14,6 +14,7 @@ import { fieldView } from './camera.ts'
 import { WALK_CYCLE } from './walk-cycle.ts'
 import { attackFrame, attackRole, heroPose, idleFrame, type HeroPose } from './hero-motion.ts'
 import { idlePlan, idleSeed, planFrame, spriteName, stripCells } from './hero-idle.ts'
+import { fallCells, koFrame } from './ko.ts'
 import { HAEBI_ANIM as ANIM } from '../tune/params.ts'
 import { AURA_ART, drawAura, drawAuraBurst, drawAuraGround, type AuraArt, type AuraAt, type AuraKind } from './fx-aura.ts'
 import { HAEBI_IMPACT as FEEL, HAEBI_END as END, HAEBI_KITS as KITS58 } from '../tune/params.ts'
@@ -189,6 +190,8 @@ const heroSprite = (s: HaebiRun, images?: Map<string, HTMLImageElement>, density
   const normal = awakenedLook(s) ? heroArt.awake : heroArt.base, hd = HERO_HD[normal]
   return hd && wantsHeroHd(density) && images?.has(hd) ? hd : normal
 }
+/** 이 판 장수 띠의 쓰러지는 칸 차례 (raid/ko.ts · 계획에 없으면 18 → 19) */
+export const heroFallCells = (s: HaebiRun) => fallCells(idlePlan(heroSprite(s))?.fall)
 export function heroHdFiles(density: number): string[] { return wantsHeroHd(density) ? [...new Set([heroArt.base, heroArt.awake].flatMap(p => HERO_HD[p] ? [HERO_HD[p]!] : []))] : [] }
 /** Decode happens in the loader; masks are painted without pixel readback before first HIT. */
 export function warmHeroSprites(images: Map<string, HTMLImageElement>, density: number) {
@@ -866,6 +869,8 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       }
       // 몸놀림은 한 프레임에 한 번만 묻는다 (회피 잔상·몸·각성 빛이 같은 칸) — 맞은 순간 멈춤 · 움직임 줄이기 · 판 끝 연출 · 저사양을 함께 넘긴다
       const heroPath = heroSprite(s, images, density), pose = heroPose(s, { ...poseOptions(s), stopped: feel?.stopped ?? false, still: calmMotion || !!ending?.active, low: criticalLow })
+      // 쓰러짐 KO — 맞은 멈춤 뒤 띠의 쓰러지는 칸을 차례로 (raid/ko.ts · 끝 칸에 머문다) · 막이 끝나 결과 창 뒤에도 누운 채
+      if (ending?.kind === 'defeat') { pose.frame = koFrame(fallCells(idlePlan(heroPath)?.fall), ending.elapsed - END.defeat.freeze); pose.ghosts = 0 }
       trackGhosts(s, heroPath, pose.frame); drawGhosts(ctx, images, s, heroH(s))
       // 오라: 뒤 겹(몸 뒤 빛 · 뒤 가닥) → 몸 → 앞 겹(앞 가닥 · 불티) · 발밑 고리와 표식은 땅 표식 차례에 이미 그렸다
       if (aura) drawAura(ctx, aura, false, auraAt)

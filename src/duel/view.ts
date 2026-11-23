@@ -12,7 +12,9 @@ import { t as tr, type Key } from '../i18n/index.ts'
 import { makeRng } from '../core/rng.ts'
 import { AWAKEN_ART, AWAKEN_LOOP, loopFile } from '../realm/data/awaken-art.ts'
 import { SPRITE_PX } from '../realm/data/spritePx.ts'
-import { DUEL_ATLASES, LEGACY_ATLAS, fighterMotion, type FighterAnim, type FighterAtlas } from './fighter-motion.ts'
+import { DUEL_ATLASES, LEGACY_ATLAS, fighterMotion, pxAtlas, type FighterAnim, type FighterAtlas } from './fighter-motion.ts'
+import { HAEBI_KO as KO, HAEBI_END as KO_END } from '../tune/params.ts'
+import { fallCells, fallTime, koSkippable, koZoom } from '../raid/ko.ts'
 import { haptics } from '../ui/haptics.ts'
 import { HitClock, drawHitPortrait, hitArtKey, hitArtPath, hitFocusSlide, hitStrength, type HitForm, type HitFrame } from '../ui/hit-portrait.ts'
 
@@ -95,9 +97,11 @@ const crowdBack = [1, 2, 3, 4, 5, 6].map((i) => img(`realm/duel/crowd/f${i}.png`
 const crowdFront = [1, 2, 3, 4, 5, 6].map((i) => img(`realm/duel/crowd/b${i}.png`)) // 등을 보이는 군사 낱장
 const crowdReady = (set: HTMLImageElement[]): boolean => set.every((im) => im.complete && im.naturalWidth > 0)
 const pxMode = cfg.px !== false && params.get('px') !== '0'
+/** 겨루기 전용 옛 띠(duel/sprites) 대신 열전과 같은 도트 띠(anim-px)를 쓰는 장수 — 두 판에서 같은 모습 · 서기 계획·쓰러지는 칸도 같다 (11-23 범) */
+const PX_DUEL: ReadonlySet<string> = new Set(['beom'])
 /** 띠 그림 — 기본은 anim-px(도트 규격) 먼저, 없으면 옛 띠로 (img 의 onerror 가 갈아 끼운다) */
 const strip = (s: string): HTMLImageElement => pxMode
-  ? DUEL_ATLASES[s] !== undefined ? img(`realm/duel/sprites/gen-${s}.png`, `realm/anim-px/gen-${s}.png`)
+  ? DUEL_ATLASES[s] !== undefined && !PX_DUEL.has(s) ? img(`realm/duel/sprites/gen-${s}.png`, `realm/anim-px/gen-${s}.png`)
     : img(`realm/anim-px/gen-${s}.png`, `realm/anim2/gen-${s}.png`)
   : img(`realm/anim2/gen-${s}.png`)
 const sprMe = strip(cfg.me.sprite)
@@ -577,7 +581,7 @@ const cueR = (): number => P.duel.radius * Math.min(W, play().h)
 canvas.addEventListener('pointerdown', (e) => {
   e.preventDefault()
   if (mode === 'intro') { fight(); return }
-  if (mode === 'end' && cfg.standalone === true && performance.now() - endAt > 900) { seed = (seed + 1) >>> 0; begin(); return }
+  if (mode === 'end' && cfg.standalone === true && performance.now() - endAt > 900 && koSkippable((performance.now() - endAt) / 1000)) { seed = (seed + 1) >>> 0; begin(); return }
   if (mode !== 'duel' || duel.over !== null) return
   audio()
   const p = play()
@@ -663,9 +667,16 @@ const RESULT: Record<string, { word: string; col: string }> = {
 }
 let endAt = 0
 const END_MS = 1500
+/** 쓰러짐 KO 막 길이(ms) — 끝이 쓰러짐(ko · kod)이면 맞은 멈춤 + 쓰러지는 칸 + 누운 채 멈춤 뒤에 결과 글 (HAEBI_KO) · 그 밖은 0 */
+function koMs(): number {
+  if (duel.over !== 'ko' && duel.over !== 'kod') return 0
+  const a = atlasOf(duel.over === 'ko' ? sprFoe : sprMe)
+  return (KO_END.defeat.freeze + fallTime(fallCells(a.fall, a.hit, a.dead)) + KO.hold) * 1000
+}
 function drawEnd(now: number): void {
   const r = RESULT[duel.over ?? 'draw'] as { word: string; col: string }
-  const age = now - endAt
+  const age = now - endAt - koMs()
+  if (age < 0) return
   const k = Math.min(1, age / 260)
   // 하스스톤처럼 — 크게 떨어져 쾅 박히고(살짝 눌렸다 튐) 빛이 터진다
   const sc = age < 260 ? 2.4 - 1.4 * (1 - (1 - k) ** 3) : 1 + 0.06 * Math.max(0, Math.sin((age - 260) / 60)) * Math.max(0, 1 - (age - 260) / 400)
@@ -791,7 +802,8 @@ function sprMeta(im: HTMLImageElement): SprMeta {
   let m = SPR_META.get(im)
   if (m === undefined || m.src !== src) {
     const name = (PX_NAME.exec(src) ?? [])[1], sheet = src.includes('/duel/sprites/')
-    m = { src, atlas: sheet ? DUEL_ATLASES[name?.slice(4) ?? ''] ?? LEGACY_ATLAS : LEGACY_ATLAS, px: sheet || src.includes('/anim-px/'), feet: SPRITE_PX[name ?? '']?.feet }
+    const px = src.includes('/anim-px/')
+    m = { src, atlas: sheet ? DUEL_ATLASES[name?.slice(4) ?? ''] ?? LEGACY_ATLAS : px ? pxAtlas(name?.slice(4) ?? '') : LEGACY_ATLAS, px: sheet || px, feet: SPRITE_PX[name ?? '']?.feet }
     SPR_META.set(im, m)
   }
   return m
@@ -858,8 +870,10 @@ function fieldFighters(now: number, base: number, h: number, gapPx: number, cx: 
   const meX = cx - gapPx / 2, foeX = cx + gapPx / 2
   const meEnd = mode === 'end' && (d.over === 'kod' || d.over === 'lose') ? (d.over === 'kod' ? 'dead' : 'hurt') : null
   const foeEnd = mode === 'end' && (d.over === 'ko' || d.over === 'win') ? (d.over === 'ko' ? 'dead' : 'hurt') : null
-  const me = fighterMotion(atlasOf(sprMe), meAnim, now, false, meEnd)
-  const foe = fighterMotion(atlasOf(sprFoe), foeAnim, now, d.phase === 'rush', foeEnd)
+  // 쓰러짐(KO)은 끝난 뒤 시계로 쓰러지는 칸을 차례로 (raid/ko.ts)
+  const endAge = mode === 'end' ? now - endAt : undefined
+  const me = fighterMotion(atlasOf(sprMe), meAnim, now, false, meEnd, endAge)
+  const foe = fighterMotion(atlasOf(sprFoe), foeAnim, now, d.phase === 'rush', foeEnd, endAge)
   const mf = me.frame, mdx = me.dx * gapPx, ff = foe.frame, fdx = -foe.dx * gapPx
   ctx.fillStyle = 'rgba(0,0,0,.35)'
   for (const x of [meX, foeX]) { ctx.beginPath(); ctx.ellipse(x, base + 2, h * 0.22, h * 0.05, 0, 0, Math.PI * 2); ctx.fill() }
@@ -1242,8 +1256,17 @@ function drawDuel(now: number, fadeIn: number): void {
   ctx.globalAlpha = 1
   pm('spark')
   // 아래 — 같은 전장 위에서 작은 두 장수가 따라 싸운다 (따로 깐 배경 없음)
-  const fh = (H - ft) * 0.82
-  fieldFighters(now, H - 6 - H * P.duel.fighterLift, fh, W * P.duel.fighterGapW, W / 2)
+  const fh = (H - ft) * 0.82, fbase = H - 6 - H * P.duel.fighterLift, gap = W * P.duel.fighterGapW
+  // 쓰러짐 KO — 쓰러진 쪽으로 다가가고 둘레를 어둡게 (장수들은 그 위에 또렷이 · 움직임 줄이기면 그대로)
+  const koSide = mode === 'end' ? duel.over === 'ko' ? 1 : duel.over === 'kod' ? -1 : 0 : 0
+  const kz = koSide ? koZoom((now - endAt) / 1000 - KO_END.defeat.freeze, calmMotion) : 0
+  if (kz > 0) {
+    ctx.fillStyle = `rgba(6,4,3,${KO.duelDim * kz})`; ctx.fillRect(0, 0, W, H)
+    const fx = W / 2 + koSide * gap / 2, fy = fbase - fh * 0.25, z = 1 + (KO.duelZoom - 1) * kz
+    ctx.save(); ctx.translate(fx + (W / 2 - fx) * kz, fy + (H * 0.55 - fy) * kz); ctx.scale(z, z); ctx.translate(-fx, -fy)
+    fieldFighters(now, fbase, fh, gap, W / 2)
+    ctx.restore()
+  } else fieldFighters(now, fbase, fh, gap, W / 2)
   pm('fighters')
   // 앞줄 — 등을 보이는 군사들이 장수 앞 맨 아래에서 함성 (치명엔 들썩임 두 배)
   if (crowdReady(crowdFront)) {

@@ -24,7 +24,9 @@ import { pushRaids } from './net/sync.ts'
 import { newCam, followCam, nextLevel, closest, toField, fieldView, clampCenter, bossFrameZoom, cameraBounds } from './raid/camera.ts'
 import { fieldBounds } from './raid/wide.ts'
 import { loadMeta, saveMeta, buy, refund, refundFee, record, recordJackpots, heroJackpots, shopCost, shopMax, stageOpen, stageName, pickStage, SHOP, STAGE_ORDER, type ShopKey } from './raid/meta.ts'
-import { drawField, imagePaths, setHeroArt, heroArtFiles, heroHdFiles, warmHeroSprites } from './raid/haebi-view.ts'
+import { drawField, imagePaths, setHeroArt, heroArtFiles, heroHdFiles, warmHeroSprites, heroFallCells } from './raid/haebi-view.ts'
+import { fallTime, koSkippable, koZoom } from './raid/ko.ts'
+import { HAEBI_KO as KO } from './tune/params.ts'
 import { powerIcon, installPowerHints, comboIcon, rankMark, treeInfo, BRANCH_COLOR } from './raid/power-ui.ts'
 import { KIT_BY_SPRITE } from './raid/kit-table.ts'
 import { cutBandHtml, cutHeroPath, ensureCutinBandCss, type CutBg } from './ui/cutin-band.ts'
@@ -1019,10 +1021,15 @@ function perfTick(now: number) {
 }
 const feel = new RaidFeel()
 const ending = new RaidEnding()
-let endHit: HTMLImageElement | null = null, skipClickUntil = 0
+let skipClickUntil = 0
+/** 움직임 줄이기(기기 설정) — 쓰러짐 KO 는 다가감·흐려짐 없이 칸과 멈춤만 */
+const calmEnd = matchMedia('(prefers-reduced-motion: reduce)').matches
 root.addEventListener('pointerdown', e => {
   if (!live || !ending.active) return
-  e.preventDefault(); e.stopImmediatePropagation(); ending.skip(); skipCutin(); skipClickUntil = performance.now() + END.skipClickMs
+  e.preventDefault(); e.stopImmediatePropagation()
+  // 쓰러짐 KO 는 minSkip 초 뒤부터 건너뛴다 (쓰러지는 순간을 잘못 눌러 넘기지 않게)
+  if (ending.kind === 'defeat' && !koSkippable(ending.elapsed)) return
+  ending.skip(); skipCutin(); skipClickUntil = performance.now() + END.skipClickMs
   showOverlay(); schedule()
 }, true)
 root.addEventListener('click', e => { if (performance.now() < skipClickUntil) { e.preventDefault(); e.stopImmediatePropagation() } }, true)
@@ -1112,7 +1119,8 @@ function frame(now: number) {
     const events = ending.events()
     if (events.start) {
       skipCutin(); resetInput()
-      if (ending.kind === 'defeat') { haptics().hurt(1); endHit = new Image(); endHit.src = hitArtUrl(awakenedLook(run)).url ?? import.meta.env.BASE_URL + 'realm/bust-hd/' + HERO.bust + '.jpg' }
+      // 쓰러짐 KO — 떨림 · 땅에 닿는 때(맞은 멈춤 + 쓰러지는 칸) 낮은 「쿵」
+      if (ending.kind === 'defeat') { haptics().hurt(1); sound.knockdown(END.defeat.freeze + fallTime(heroFallCells(run))) }
     }
     if (events.stamp && ending.kind !== 'retreat') { sound.ending(ending.kind === 'victory'); if (ending.kind === 'victory') haptics().win() }
     const boss = giantMob(run)
@@ -1123,12 +1131,15 @@ function frame(now: number) {
     // Entry eases out while the boss arrives; later overhangs must fit on the same displayed/input camera.
     if (bossFrame !== null && boss!.giant!.age >= giantEntrySeconds(boss!.giant!)) { cam.zoom = Math.min(cam.zoom, giantFitZoom); Object.assign(cam, clampCenter(cam.zoom, cam.x, cam.y, camBounds())) }
     const zoom = ending.kind === 'victory' ? Math.min(1, Math.max(0, ending.elapsed - ending.freeze) / END.cameraTime) : 0
-    const endCam = zoom ? { zoom: cam.zoom * (1 + END.cameraZoom * zoom), x: cam.x + (run.x - cam.x) * zoom, y: cam.y + (run.y - cam.y) * zoom } : cam
-    if (zoom) Object.assign(endCam, clampCenter(endCam.zoom, endCam.x, endCam.y, camBounds()))
+    // 쓰러짐 KO — 쓰러지는 동안 장수(발 위 focusLift)에게 다가간다 (움직임 줄이기면 그대로)
+    const ko = ending.kind === 'defeat' ? koZoom(ending.elapsed - END.defeat.freeze, calmEnd) : 0, koY = run.y - KO.focusLift
+    const endCam = zoom ? { zoom: cam.zoom * (1 + END.cameraZoom * zoom), x: cam.x + (run.x - cam.x) * zoom, y: cam.y + (run.y - cam.y) * zoom }
+      : ko ? { zoom: cam.zoom * (1 + (KO.zoom - 1) * ko), x: cam.x + (run.x - cam.x) * ko, y: cam.y + (koY - cam.y) * ko } : cam
+    if (zoom || ko) Object.assign(endCam, clampCenter(endCam.zoom, endCam.x, endCam.y, camBounds()))
     prepareHeroRaster(endCam.zoom)
     if (fieldChanged(endCam)) {
       drawField(ctx, images, run, destination, endCam, feel, ending.kind ? ending : undefined, fieldLowGraphics)
-      drawEnding(ctx, ending, endHit, runGold(run), images)
+      drawEnding(ctx, ending, runGold(run), images, ending.kind === 'defeat' && !calmEnd ? { x: C.width / 2 + (run.x - endCam.x) * endCam.zoom, y: C.height / 2 + (koY - endCam.y) * endCam.zoom, zoom: endCam.zoom } : undefined)
     }
   }
   bigCutin.update(run)

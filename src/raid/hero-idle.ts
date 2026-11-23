@@ -5,8 +5,8 @@
  */
 import { HAEBI_ANIM as A, HAEBI_IDLE as I } from '../tune/params.ts'
 
-/** 띠 하나의 서기 계획 — cells 띠 칸 수 · base 서기 칸들(hold 초씩) · blink 눈 감는 칸 · breath 큰 숨 칸들 · quirk 버릇 칸들 */
-export interface IdlePlan { cells: number; base: readonly number[]; hold: number; blink?: number; breath?: readonly number[]; quirk?: readonly number[] }
+/** 띠 하나의 서기 계획 — cells 띠 칸 수 · base 서기 칸들(hold 초씩) · blink 눈 감는 칸 · breath 큰 숨 칸들 · quirk 버릇 칸들 · fall 쓰러지는 칸 차례(raid/ko.ts · 없으면 18 → 19) */
+export interface IdlePlan { cells: number; base: readonly number[]; hold: number; blink?: number; breath?: readonly number[]; quirk?: readonly number[]; fall?: readonly number[] }
 export type IdleEventKind = 'blink' | 'breath' | 'quirk'
 export interface IdleEvent { kind: IdleEventKind; at: number; end: number }
 

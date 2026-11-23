@@ -11,7 +11,7 @@
  * 기술 계단(11-19 형: 「기술 쓸 때 사운드·햅틱 · 크리티컬은 핑 · 초반 사운드 너무 심하면 안 됨 · 진각성은 더 임팩트」): 비기 < 각성 비기 < 진각성 비기 · 크리티컬 「핑」 — HAEBI_FEEL_TIERS · 진동은 frame 이 돌려주는 사건으로 화면이 낸다.
  * 소리 끔·크기는 본편 설정(hanbal.realm.mute · hanbal.realm.volume.*)을 따른다. 출처: public/realm/sfx/CREDITS.txt · public/sfx/CREDITS.txt
  */
-import { HAEBI_SOUND as V, HAEBI_IMPACT as IMPACT, HAEBI_FEEL_TIERS as F, HAEBI_ULT as U, HAEBI_AWAKEN_ULT as AC, HAEBI_JACKPOT as JP, type FeelTier } from '../tune/params.ts'
+import { HAEBI_SOUND as V, HAEBI_IMPACT as IMPACT, HAEBI_FEEL_TIERS as F, HAEBI_ULT as U, HAEBI_AWAKEN_ULT as AC, HAEBI_JACKPOT as JP, HAEBI_KO as KO, type FeelTier } from '../tune/params.ts'
 import type { HaebiRun, Kit } from './haebi.ts'
 import { slamWatcher } from './slam-watch.ts'
 import { criticalFinishEvent } from './critical-finish.ts'
@@ -288,6 +288,8 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
     setAwakeningVoice,
     /** 막 내림의 도장이 찍히는 박자. 음소거·음량은 기존 sfx 경로를 따른다. */
     ending: (won: boolean) => sfx(won ? 'win' : 'lose', V.end),
+    /** 쓰러짐 KO — 땅에 닿는 낮은 「쿵」(맞음 소리를 HAEBI_KO.thudRate 배로 낮춰 · at 초 뒤) */
+    knockdown: (at = 0) => sfx('hurt', V.hurt, 0, KO.thudRate, at),
     /** 고른 카드(레벨업 · 보물 상자)의 룬이 HUD 칸에 박히는 그 순간 — 화면(raid/pick-fly.ts)이 날기 시작에 남은 초(at)를 넘겨 소리 시계로 건다 (A1 · 예전엔 고른 다음 프레임) */
     pick: (at = 0) => sfx('pick', V.ui, 0, 1, at),
     /** 상점 구매 — 동전 쏟음 · 날아간 동전이 칸에 박히는 짤랑(at 초 뒤) · 다 올렸으면 레벨 종 + 징 */

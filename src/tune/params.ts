@@ -1426,11 +1426,27 @@ export const HAEBI_ANIM = {
   bob: .018, bobCells: 4, bobRich: .4, lean: .03, leanTau: .08, settle: .08,
 } as const
 
+/**
+ * 쓰러짐 KO 연출 (형 11-23 「쓰러진 자세는 조금 오래 유지되거나 슬로우되거나 줌 되거나 · 1:1 대전 게임의 KO 처럼 · 엘든링식 전투(겨루기)에도」) — 화면만 (판·규칙 그대로).
+ * 우리 장수는 쓰러질 뿐이다(글은 「쓰러짐」). 쓰러지는 칸: 띠마다 계획(HAEBI_IDLE.plans[띠].fall) · 없으면 fall(맞음 18 → 누움 19).
+ *   새 띠는 18 뒤로 물러섬 → 20 무릎이 꺾여 앉음 → 21 돌아누우며 한 손 짚음 → 19 옆으로 누움(끝).
+ * 칸은 맞은 멈춤(HAEBI_END.defeat.freeze) 뒤 fallStep × (칸 수 − 1) 초에 걸쳐 넘어간다 — 1 − (1 − k)^ease 로 앞 칸은 빨리 · 마지막 넘어감은 느리게.
+ * 마지막 칸에서 hold 초 멈춘 뒤 결과 창 · 누름 건너뛰기는 minSkip 초 뒤부터 (잘못 눌러 넘기지 않게) · 띠 칸은 길어야 maxCells 칸(막 길이를 정한다).
+ * 카메라: 쓰러지는 동안 zoomTime 초에 걸쳐 zoom 배로 장수에게 다가간다(발 위 focusLift px 를 가운데로 · 누운 몸 약 150px 가 화면 안) ·
+ *   둘레는 장수 둘레 clearR px 밖에서 dimR px 까지 gray 몫만큼 빛을 빼고 dark 몫만큼 어둡게 (장수는 또렷이).
+ * 「패배」 띠는 끝나기 stampLead 초 전에 화면 높이 stampY 몫 자리에 (누운 장수를 가리지 않게) · 땅에 닿을 때 낮은 「쿵」(맞음 소리를 thudRate 배로 낮춰).
+ * 움직임 줄이기(기기 설정)면 다가감·흐려짐 없이 칸과 멈춤만. 겨루기(duel): 같은 칸·박자 · 쓰러진 쪽으로 duelZoom 배 · duelDim 만큼 어둡게 · 결과 글은 쓰러짐이 끝난 뒤.
+ */
+export const HAEBI_KO = {
+  fall: [18, 19], fallStep: .3, ease: 2.2, maxCells: 4, hold: 2.5, minSkip: 1.2,
+  zoom: 1.75, zoomTime: .9, focusLift: 40, clearR: 120, dimR: 420, gray: .6, dark: .35,
+  stampY: .8, stampLead: .9, thudRate: .6, duelZoom: 1.6, duelDim: .35,
+} as const
 export const HAEBI_END = {
-  defeat: { duration: 3.2, freeze: .3, slow: 1.2, portraitAt: 1.5, stampAt: 2.2 },
+  defeat: { freeze: .3, slow: 1.2 },
   victory: { duration: 3.8, freeze: .4, stampAt: 2.1, coinAt: 2.35 },
   retreatDuration: 2, slowRate: .25, flashTime: .12, flashAlpha: .88,
-  shake: 12, shakeLife: .35, grayMax: .86, portraitHeight: .75, portraitWidth: .8,
+  shake: 12, shakeLife: .35, grayMax: .86,
   stampSize: .24, stampOvershoot: .8, stampSettle: .24, bandWidth: .84, bandHeight: .24,
   cameraZoom: .22, cameraTime: 1.5, waveDelay: .0013, mobFallLife: .65,
   coinCount: 12, coinSize: 18, coinTravel: .6, sparkCount: 24, sparkSize: 3,

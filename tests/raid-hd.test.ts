@@ -60,7 +60,7 @@ test('53-A density cache preserves logical size, folds wideHD, prewarms white wi
 test('53-A ending overlay also restores backing transform while using logical dimensions', () => {
   const { ctx, transforms } = context(), end = new RaidEnding(), s = createHaebi(53)
   s.state = 'lost'; end.observe(s); end.advance(.4, true)
-  drawEnding(ctx, end, null, 0, new Map())
+  drawEnding(ctx, end, 0, new Map())
   assert.deepEqual(transforms[0], [2, 0, 0, 2, 0, 0])
 })
 test('53-A shipped nativeHD itself fits4096, and folded frame18 uses row1 without changing20-frame order', () => {
