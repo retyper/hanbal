@@ -15,6 +15,13 @@ async function main() {
   try { server = ((await pullRaids()) ?? []) as RaidGame[] } catch (e) { $('msg').textContent = `서버 기록을 못 읽었습니다: ${String(e)}` }
   const byId = new Map<string, RaidGame>(); for (const g of [...server, ...local]) byId.set(g.id, g)
   const games = [...byId.values()].sort((a, b) => a.started < b.started ? -1 : 1)
+  // 기록 파일로 받기 (11-23 형 허락 · Claude 가 이 PC 에서 다시 돌려 어디서 판이 갈렸는지 찾는다)
+  const dl = $('dl') as HTMLButtonElement; dl.disabled = false
+  dl.onclick = () => {
+    const url = URL.createObjectURL(new Blob([JSON.stringify(games)], { type: 'application/json' }))
+    const a = document.createElement('a'); a.href = url; a.download = `raid-records-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}.json`; a.click()
+    setTimeout(() => URL.revokeObjectURL(url), 5000)
+  }
   $('msg').textContent = `이 기기 ${local.length}판 · 서버 ${server.length}판 · 합쳐 ${games.length}판. 판마다 다시 돌려 셉니다.`
   const head = ['시작', '모드', '스테이지', '무기', '기록 결과', '기록 끝(분)', '기록 레벨', '다시 돌림', '돌린 끝(분)', '5분', '10분', '15분', '만렙(분)', '최저 체력', '찍은 점', '만렙 칸', '상점', '걸음 기록/돌림', '규칙', '처음 막힌 곳']
   const t = $('t'); t.innerHTML = `<tr>${head.map((h) => `<th>${h}</th>`).join('')}</tr>`
