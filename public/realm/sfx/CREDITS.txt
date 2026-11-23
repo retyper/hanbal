@@ -399,4 +399,4 @@ raid/down_2.ogg  Zombie Long Death · Mike Koenig · CC BY 3.0 · https://soundb
 raid/down_3.ogg  Dying · Mike Koenig · CC BY 3.0 · https://soundbible.com/810-Dying.html
 raid/fall_1.ogg  Drop Sword · Caroline Ford · CC BY 3.0 · https://soundbible.com/906-Drop-Sword.html
 raid/pop_1.ogg  Blop · Mark DiAngelo · CC BY 3.0 · https://soundbible.com/2067-Blop.html
-bgm_raid_forest.ogg · bgm_raid_ford.ogg · bgm_raid_snow.ogg · bgm_raid_fortress.ogg · bgm_raid_boss.ogg  Google Gemini 음악 만들기(Lyria)로 만든 곡 · 2026-11-22~23 · 열전 스테이지·두목 곡 · -18 LUFS
+bgm_raid_palisade.ogg · bgm_raid_forest.ogg · bgm_raid_ford.ogg · bgm_raid_snow.ogg · bgm_raid_fortress.ogg · bgm_raid_boss.ogg  Google Gemini 음악 만들기(Lyria)로 만든 곡 · 2026-11-22~23 · 열전 스테이지·두목 곡 · -18 LUFS
