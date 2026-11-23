@@ -1,5 +1,6 @@
 /** Native master rebake only. Missing entries deliberately retain their approved base assets. */
 export const HERO_HD: Readonly<Record<string, string>> = {
+  // 새 길로 다시 그린 본 띠(범 · 매화 · 달빛 base-w-31-dabeol-dalbit · 11-23)는 옛 2배 띠를 잇지 않는다 — 다시 구울 때까지 본 띠로 그린다 (옛 _hd 그림은 그대로 둔다)
   'anim-px/gen-base-w-39-gosaburi-galmae.png': 'anim-px/gen-base-w-39-gosaburi-galmae_hd.png',
   'anim-px/gen-dalbit.png': 'anim-px/gen-dalbit_hd.png',
   'anim-px/gen-base-g-59-yangmaek-maekson.png': 'anim-px/gen-base-g-59-yangmaek-maekson_hd.png',
@@ -35,7 +36,6 @@ export const HERO_HD: Readonly<Record<string, string>> = {
   'anim-px/gen-base-w-38-sangdang-bulmae.png': 'anim-px/gen-base-w-38-sangdang-bulmae_hd.png',
   'anim-px/gen-base-w-36-baekje-maena.png': 'anim-px/gen-base-w-36-baekje-maena_hd.png',
   'anim-px/gen-base-w-34-chopal-deulme.png': 'anim-px/gen-base-w-34-chopal-deulme_hd.png',
-  'anim-px/gen-base-w-31-dabeol-dalbit.png': 'anim-px/gen-base-w-31-dabeol-dalbit_hd.png',
   'anim-px/gen-base-w-29-golpo-janmul.png': 'anim-px/gen-base-w-29-golpo-janmul_hd.png',
   'anim-px/gen-base-w-27-mokji-jinha.png': 'anim-px/gen-base-w-27-mokji-jinha_hd.png',
   'anim-px/gen-base-w-26-iseo-tomboy-general.png': 'anim-px/gen-base-w-26-iseo-tomboy-general_hd.png',

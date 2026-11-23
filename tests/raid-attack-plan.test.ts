@@ -122,3 +122,15 @@ test('범 할퀴기(덧 띠 26~33): 26·27 예비 · 28 휘두름 · 29 맞힘�
   const atlas = pxAtlas('beom'), ms = P.duel.fighterAttackMs, hitAt = LEGACY_ATLAS.attack.indexOf(15) / LEGACY_ATLAS.attack.length * ms
   assert.deepEqual(fighterMotion(atlas, { kind: 'attack', t0: 0 }, hitAt + 1, false), { frame: 29, dx: 0 })
 })
+
+test('새 길로 다시 그린 띠(범 · 매화 · 달빛)는 옛 2배 띠를 잇지 않고 · 발 줄·키는 새 그림 실측', async () => {
+  const { HERO_HD } = await import('../src/raid/hero-hd.ts')
+  const { SPRITE_PX } = await import('../src/realm/data/spritePx.ts')
+  for (const k of ['beom', 'maehwa', 'base-w-31-dabeol-dalbit']) {
+    assert.equal(HERO_HD[`anim-px/gen-${k}.png`], undefined, k)
+    const px = SPRITE_PX[`gen-${k}`]!
+    assert.deepEqual(px.cell, [208, 160]); assert.equal(px.feet, 154, k)
+  }
+  assert.equal(SPRITE_PX['gen-beom']!.bodyPx, 136); assert.equal(SPRITE_PX['gen-base-w-31-dabeol-dalbit']!.bodyPx, 139)
+  assert.equal(SPRITE_PX['gen-maehwa']!.bodyPx, 131, '매화 139 에서 깃털 모자 8 (headgear.json) 을 뺀 키')
+})
