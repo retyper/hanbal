@@ -26,7 +26,8 @@ class FakeCtx {
 }
 const g = globalThis as Record<string, unknown>
 let hidden = false
-g['fetch'] = () => Promise.resolve({ ok: false })
+const fetched: string[] = []
+g['fetch'] = (u: string) => { fetched.push(String(u)); return Promise.resolve({ ok: false }) }
 g['location'] = { search: '' }
 g['document'] = { get hidden() { return hidden } }
 g['localStorage'] = { getItem: () => null, setItem: () => undefined }
@@ -99,4 +100,9 @@ test('가려진 탭에서는 안 낸다 (절대 규칙 4)', () => {
   s.fx.push(hitFx(10)); clock += 1; frame(snd, s)
   s.drops = []; s.xp += 3; clock += 1; frame(snd, s)
   assert.equal(made.length, 0)
+})
+
+test('여자 보스 목소리 파일은 꺼져 있는 동안 부르지 않는다 (404 없음)', () => {
+  fetched.length = 0; raidSound(true, 'bow')
+  assert.ok(fetched.length > 0 && !fetched.some(u => u.includes('boss_f_')))
 })

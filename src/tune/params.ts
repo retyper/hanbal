@@ -58,6 +58,18 @@ export const HAEBI_SOUND = {
   pop: .16, popHz: 620, popRise: 1.7, popMs: 55, popGap: .045, popCombo: .5, popStep: 1.0595, popSteps: 12,
 } as const
 /**
+ * 여자 보스 목소리 (11-23 형 「구미호는 공격할 때 웃는 소리」 · 11-24 「웃음·피격소리 왜 안 넣었어 · 꼬리 잘릴 때 남자 비명」) — src/raid/boss-voice.ts 가 쓴다.
+ * on: 파일 묶음(boss_f_laugh_1~3 · boss_f_hurt_1~3 · boss_f_scream_1~2 · public/realm/sfx/raid/)이 들어왔나. 들어오면 true 로 켠다 — 꺼져 있으면 파일을 부르지 않고(404 없음) 소리도 없다
+ * laugh/hurt/scream: 크기(목소리 채널) · laughGap/hurtGap/screamGap: 같은 소리 사이 틈(초)
+ * hurtShare: 보스 체력의 이 몫만큼 깎이면 한 번 (그 사이 깎인 양을 모은다 · 매 타마다 내지 않는다)
+ * who: 보스 종류별 [웃음, 피격, 비명] — 무녀는 방울(웃음 없음)을 그대로 두고 피격·비명만 여자 목소리 · 이무기·백두 대호·불가사리는 이번 일이 아니다
+ */
+export const HAEBI_BOSS_VOICE = {
+  on: false,
+  laugh: .85, laughGap: 4, hurt: .7, hurtGap: 1.6, hurtShare: .03, scream: .9, screamGap: .6,
+  who: { gumiho: { laugh: true, hurt: true, scream: true }, shaman: { laugh: false, hurt: true, scream: true } } as Readonly<Record<string, { laugh: boolean; hurt: boolean; scream: boolean }>>,
+} as const
+/**
  * 열전 기술·크리티컬 소리와 진동 계단 (11-19 형: 「기술 쓸 때 사운드랑 햅틱 · 크리티컬은 핑 · 각성 기술은 더 강해야 하니 초반 사운드 너무 심하면 안 됨 · 진각성은 더 임팩트」).
  * 소리는 src/raid/sound.ts 가 WebAudio 로 합성(skill_hit.ogg 만 파일) · 진동은 src/ui/haptics.ts skill(tier)·crit().
  * tiers 한 줄에 한 계단 — skill 비기(평상) · awake 각성 비기(판 안 각성 중 「진」 비기) · true 진각성 비기(DLC · src/realm/dlc.ts 가 켜질 때)
