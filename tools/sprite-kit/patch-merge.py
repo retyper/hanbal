@@ -2,7 +2,7 @@
 """부분 보정 합치기 — 그림 도구에게 「여기만 고쳐라」고 한 그림에서 **그 부분만** 원본에 얹는다 (11-24).
 그림 도구는 부분만 고치라고 해도 나머지 화소를 조금씩 바꾼다(「한 화소도 바꾸지 않는」 조건을 못 지킨다). 새로 그리게 하면 몸이 달라진다
 (아룸 걷기: 얼굴을 단순하게 다시 그리게 했더니 가슴 폭 47 → 38px · 다른 사람). → 원본 그대로 넣어 부분만 고치게 하고, 고친 그림에서 그 부분만 가져온다.
-  py -3 -I tools/sprite-kit/patch-merge.py face <원본 장면.png> <고친 장면.png> <나갈.png> [칸 배치: 5x2(걷기 여덟 칸 · 왼쪽 줄 견본) | 3x2 | all]
+  py -3 -I tools/sprite-kit/patch-merge.py face <원본 장면.png> <고친 장면.png> <나갈.png> [칸 배치: 5x2(걷기 여덟 칸 · 왼쪽 줄 견본) | 4x1 …] [only=줄,칸 — 그 칸의 사람만(0부터)]
   face = 사람마다 얼굴 살 덩어리(머리 위 구역의 가장 큰 살빛 덩어리)를 메우고 2px 넓힌 곳 · 가장자리는 부드럽게 · 고친 그림의 밀림(±6px)은 겹쳐서 잰다
 """
 import sys
@@ -11,8 +11,11 @@ from PIL import Image
 from scipy import ndimage
 
 
-def merge_face(orig, edit, out, layout='5x2'):
+def merge_face(orig, edit, out, layout='5x2', only=None):
     A, B = Image.open(orig).convert('RGB'), Image.open(edit).convert('RGB')
+    if B.size != A.size:   # 그림 도구가 크기를 한두 화소 바꿔 돌려주기도 한다(2122×741 → 2124×742)
+        print('고친 그림 크기', B.size, '→ 원본 크기', A.size, '로 맞춤')
+        B = B.resize(A.size, Image.LANCZOS)
     a, b = np.asarray(A).astype(np.int16), np.asarray(B).astype(np.int16)
     W, H = A.size
     cols, rows = (int(v) for v in layout.split('x')) if 'x' in layout else (1, 1)
@@ -21,7 +24,9 @@ def merge_face(orig, edit, out, layout='5x2'):
     ma = fg(a)
     res = a.copy()
     for j in range(rows):
-        for k in range(1 if cols > 1 else 0, cols):   # 왼쪽 줄은 견본
+        for k in range(0 if only else (1 if cols > 1 else 0), cols):   # 왼쪽 줄은 견본(only 로 한 칸을 찍으면 그 칸만)
+            if only and (j, k) != only:
+                continue
             x0, x1, y0, y1 = int(cw * k), int(cw * (k + 1)), int(ch * j), int(ch * (j + 1))
             sa = ma[y0:y1, x0:x1]
             if sa.sum() < 500:
@@ -63,4 +68,6 @@ def merge_face(orig, edit, out, layout='5x2'):
 
 if __name__ == '__main__':
     if sys.argv[1] == 'face':
-        merge_face(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5] if len(sys.argv) > 5 else '5x2')
+        only = next((tuple(int(v) for v in a[5:].split(',')) for a in sys.argv[5:] if a.startswith('only=')), None)   # only=줄,칸 (0부터)
+        lay = next((a for a in sys.argv[5:] if not a.startswith('only=')), '5x2')
+        merge_face(sys.argv[2], sys.argv[3], sys.argv[4], lay, only)
