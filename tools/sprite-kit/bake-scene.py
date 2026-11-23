@@ -54,7 +54,7 @@ def stand(path, name, idx=3, height=N):
     print(f'{name}: 사람 {len(figs)}명 중 {idx}째 · 원본 {me.size} → 게임 {g.size} (소서노 {refh}px 기준)')
 
 
-def motion(path, name, tag, scene=None, zoom=Z):
+def motion(path, name, tag, scene=None, zoom=Z, rows=False):
     out = Image.open(path).convert('RGB'); W, H = out.size; cw, ch = W / 3, H / 2; scale = 1 / zoom * (640 / cw)   # zoom = 장면을 만든 배(기본 4 · z3 장면은 3)
     src = None
     if scene: src = Image.open(scene).convert('RGB'); sw, sh = src.size[0] / 3, src.size[1] / 2
@@ -66,6 +66,21 @@ def motion(path, name, tag, scene=None, zoom=Z):
     for bi in range(1, nlab + 1):
         ys_b, xs_b = np.nonzero((lab == bi) & solid)
         if len(xs_b) > 400: blobs.append((bi, len(xs_b), (xs_b.min() + xs_b.max()) / 2, (ys_b.min() + ys_b.max()) / 2, xs_b.min(), xs_b.max() + 1, ys_b.min(), ys_b.max() + 1))
+    # rows: 서 있는 자세만 든 판(서기 숨쉬기)은 줄마다 가운데 키를 왼쪽 위 서기 그림에 맞춘다 — 그림 도구가 아랫줄을 5~6% 크게 그린다(11-23)
+    row_k = {0: 1.0, 1: 1.0}
+    if rows:
+        ident = [b for b in blobs if b[2] < cw and b[3] < ch]
+        ref_h = (max(ident, key=lambda b: b[1])[7] - max(ident, key=lambda b: b[1])[6]) if ident else None
+        for jj in range(2):
+            hs = []
+            for ii in range(2):
+                m_ = [b for b in blobs if cw * (1 + ii) <= b[2] < cw * (2 + ii) and ch * jj <= b[3] < ch * (jj + 1)]
+                if m_:
+                    bb = max(m_, key=lambda b: b[1])
+                    hs.append(bb[7] - bb[6])
+            if ref_h and hs:
+                row_k[jj] = ref_h * 1.005 / float(np.median(hs))
+            print(f'줄{jj + 1} 크기 맞춤 x{row_k[jj]:.3f}')
     for n, (j, i) in enumerate(((0, 0), (0, 1), (1, 0), (1, 1))):
         gx0, gy0 = round(cw * (1 + i)), round(ch * j)
         c = key(out.crop((gx0, gy0, round(cw * (2 + i)), round(ch * (j + 1))))); m = c[..., 3] > 60   # 판정(자세 겹침)은 칸 그대로
@@ -73,9 +88,9 @@ def motion(path, name, tag, scene=None, zoom=Z):
         if not mine: print(f'칸{n + 1}: 사람을 못 찾음'); continue
         bi, _, bcx, _, bx0, bx1, by0, by1 = max(mine, key=lambda b: b[1])
         whole = full[by0:by1, bx0:bx1].copy(); whole[..., 3] = np.where(lab[by0:by1, bx0:bx1] == bi, whole[..., 3], 0)
-        g = game(Image.fromarray(whole), scale); gm = np.asarray(g)[..., 3] > 0; ys, xs = np.nonzero(gm)
+        g = game(Image.fromarray(whole), scale * row_k[j]); gm = np.asarray(g)[..., 3] > 0; ys, xs = np.nonzero(gm)
         cell = Image.new('RGBA', (CELL_W, CELL), (0, 0, 0, 0)); g2 = g.crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
-        off = (bcx - (gx0 + cw / 2)) * scale                                   # 칸 한가운데에서 벗어난 만큼(게임 화소) — 칸 안의 가로 자리를 지킨다
+        off = (bcx - (gx0 + cw / 2)) * scale * row_k[j]                                   # 칸 한가운데에서 벗어난 만큼(게임 화소) — 칸 안의 가로 자리를 지킨다
         ox = round(CELL_W / 2 + off - g2.size[0] / 2)
         if bx0 < gx0 - 2 or bx1 > gx0 + cw + 2: print(f'  칸{n + 1}: 사람이 칸 금을 넘어가 있음(통째로 살림)')
         if g2.size[0] > CELL_W: print(f'  칸{n + 1}: 폭 {g2.size[0]} > 칸 {CELL_W} — 줄여 넣음'); g2 = g2.resize((CELL_W, round(g2.size[1] * CELL_W / g2.size[0])), Image.BOX)
@@ -161,5 +176,5 @@ if __name__ == '__main__':
         sys.exit()
     if sys.argv[1] == 'stand': stand(sys.argv[2], sys.argv[3], int(sys.argv[4]) if len(sys.argv) > 4 else 3)
     else:
-        rest = [a for a in sys.argv[5:] if a != 'z3']
-        motion(sys.argv[2], sys.argv[3], sys.argv[4], rest[0] if rest else None, 3 if 'z3' in sys.argv[5:] else Z)
+        rest = [a for a in sys.argv[5:] if a not in ('z3', 'rows')]
+        motion(sys.argv[2], sys.argv[3], sys.argv[4], rest[0] if rest else None, 3 if 'z3' in sys.argv[5:] else Z, 'rows' in sys.argv[5:])

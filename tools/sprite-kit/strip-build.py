@@ -32,7 +32,16 @@ def main(name, atk, out):
     # 서기: 코드로 윗몸을 밀지 않는다 (11-23 형 「idle 누가 코드로 짜랬냐 · 몸이 막 잘리잖아」). 그린 서기 판(<이름>-idle-1..4)이 있으면 그것, 없으면 네 칸 모두 같은 그림.
     import os
     # 그린 서기 판의 칸: 1 바로 섬 · 2 들이쉼 · 3 한 다리에 무게(발 자리가 달라 숨쉬기에는 안 쓴다) · 4 내쉼 → 띠에는 들이쉼 · 바로 · 내쉼 · 바로
-    frames = [cell('idle', i) for i in (2, 1, 4, 1)] if os.path.exists(f'{PXD}/{name}-idle-1.png') else [stand] * 4
+    def feet_fixed(im):
+        # 서기 칸은 발이 한자리에: 발바닥 띠의 가운데를 칸 한가운데(CX)에 맞춘다 (칸마다 5px 씩 어긋나 있었다 · 11-23)
+        a = np.asarray(im)[..., 3] > 0
+        ys, xs = np.nonzero(a)
+        fx = np.nonzero(a[ys.max() - 6:ys.max() + 1])[1]
+        d = int(round(CX - (fx.min() + fx.max()) / 2))
+        o = Image.new('RGBA', im.size, (0, 0, 0, 0))
+        o.alpha_composite(im.crop((max(0, -d), 0, im.size[0] - max(0, d), im.size[1])), (max(0, d), 0))
+        return o
+    frames = [feet_fixed(cell('idle', i)) for i in (2, 1, 4, 1)] if os.path.exists(f'{PXD}/{name}-idle-1.png') else [stand] * 4
     frames += [cell('walk-a', i) for i in (3, 4, 1, 2)] + [cell('walk-b', i) for i in (3, 4, 1, 2)]
     frames += [cell(atk, i) for i in (1, 1, 2, 3, 3, 4)]
     frames += [cell('down', 1), cell('down', 4)]
