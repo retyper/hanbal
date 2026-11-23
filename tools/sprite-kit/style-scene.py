@@ -34,10 +34,10 @@ if __name__ == '__main__' and sys.argv[1] != 'motion':
     main(sys.argv[1], sys.argv[2], len(sys.argv) > 3 and sys.argv[3] == 'm')
 
 
-def motion_scene(identity, pose_sheet, out, style_ref='soseono', Z=4, CELL=640):
+def motion_scene(identity, pose_sheet, out, style_ref='soseono', Z=4, CELL=640, far=False):
     """동작 판용 장면(3×2 · 칸 640): 왼쪽 줄 = [그 장수의 합격한 서기 그림(누구인가 + 결)] · [승인 띠(결)] · 오른쪽 2×2 = 대머리 자세 네 칸.
     자세 칸은 머리뼈 크기가 서기 그림과 맞게 줄인다(머리뼈 = 대머리 서기 키의 32/137 · 대머리 서기 키 = 장수 키의 92%).
-      py -3 -I tools/sprite-kit/style-scene.py motion <합격한 서기.png(투명)> <자세 판.png> <나갈.png>"""
+      py -3 -I tools/sprite-kit/style-scene.py motion <합격한 서기.png(투명)> <자세 판.png> <나갈.png> [far]   (far = 먼 쪽 팔다리를 파랗게 칠한 안내)"""
     import numpy as np
     o = Image.new('RGB', (CELL * 3, CELL * 2), (255, 0, 255)); H = N * Z
     idn = Image.open(identity).convert('RGBA'); idn = idn.crop(idn.getchannel('A').getbbox()); idn = idn.resize((round(idn.size[0] * H / idn.size[1]), H), Image.LANCZOS)
@@ -51,6 +51,11 @@ def motion_scene(identity, pose_sheet, out, style_ref='soseono', Z=4, CELL=640):
             c = sh.crop((i * W // 2, j * Hs // 2, (i + 1) * W // 2, (j + 1) * Hs // 2)); a = np.asarray(c).astype(np.int16)
             k = np.minimum(a[..., 0], a[..., 2]) - a[..., 1]; al = np.clip((90 - k.astype(np.float32)) * 255 / 50, 0, 255).astype(np.uint8); ys, xs = np.nonzero(al > 60)
             fig = Image.fromarray(np.dstack([a.astype(np.uint8), al])).crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
+            if far:   # 먼 쪽 팔다리(자세 판에서 한 단계 어두운 살빛)를 파랗게 — 그림 도구가 앞뒤 다리를 헷갈리지 않게 (11-23 형 「다른 쪽 다리를 딛는 게 없어」)
+                fa = np.asarray(fig).astype(np.int16).copy(); r_, g_, b_ = fa[..., 0], fa[..., 1], fa[..., 2]; lum = r_ * .299 + g_ * .587 + b_ * .114
+                rows = np.arange(fa.shape[0])[:, None] > fa.shape[0] * .30
+                sel = (fa[..., 3] > 120) & (r_ > 170) & (r_ - g_ > 28) & (r_ - b_ > 45) & (lum < 198) & rows
+                fa[sel] = (70, 120, 235, 255); fig = Image.fromarray(fa.astype(np.uint8))
             m = np.asarray(fig)[..., 3] > 60; h = m.shape[0]; wid = m.sum(1); lo, hi = int(h * .12), int(h * .38); skull = lo + int(np.argmin(wid[lo:hi]))
             s = (H * .92 * 32 / 137) / skull; fig = fig.resize((round(fig.size[0] * s), round(fig.size[1] * s)), Image.LANCZOS)
             cx = (xs.min() + xs.max()) / 2 / (W / 2)   # 칸 안의 가로 자리는 지킨다
@@ -59,4 +64,4 @@ def motion_scene(identity, pose_sheet, out, style_ref='soseono', Z=4, CELL=640):
 
 
 if __name__ == '__main__' and sys.argv[1] == 'motion':
-    motion_scene(sys.argv[2], sys.argv[3], sys.argv[4])
+    motion_scene(sys.argv[2], sys.argv[3], sys.argv[4], far=len(sys.argv) > 5 and sys.argv[5] == 'far')

@@ -65,6 +65,13 @@ def motion(path, name, tag, scene=None):
         cx = round((xs.min() + xs.max()) / 2); ox = CELL // 2 - (cx - xs.min()) + round((cx - g.size[0] / 2))   # 칸 안의 가로 자리를 지킨다
         cell.alpha_composite(g2, (max(0, min(CELL - g2.size[0], ox)), FOOT - g2.size[1])); cell.save(f'{PXD}/{name}-{tag}-{n + 1}.png')
         msg = f'칸{n + 1} 게임 키 {g2.size[1]}'
+        # 앞다리·뒷다리 밝기 (11-23 형 「한쪽 다리를 뻗긴 했는데 다른 쪽 다리를 딛는 게 없어」 — 실루엣은 같아도 가까운 다리/먼 다리가 뒤바뀌면 같은 발만 딛는다)
+        ys_, xs_ = np.nonzero(m); top_, bot_ = ys_.min(), ys_.max(); leg = np.zeros_like(m); leg[int(bot_ - (bot_ - top_) * .30):] = True
+        rr, gg2, bb = c[..., 0].astype(np.int16), c[..., 1].astype(np.int16), c[..., 2].astype(np.int16); skin = m & leg & (rr > 120) & (rr - bb > 30) & (rr > gg2)
+        if skin.sum() > 200:
+            sx = np.nonzero(skin)[1]; mid = (sx.min() + sx.max()) / 2; lum_ = rr * .299 + gg2 * .587 + bb * .114; cols = np.arange(m.shape[1])[None, :]
+            fr, bk = skin & (cols > mid), skin & (cols <= mid)
+            if fr.sum() > 60 and bk.sum() > 60: msg += f'  앞다리−뒷다리 밝기 {lum_[fr].mean() - lum_[bk].mean():+.0f}'
         if src is not None:
             b = key(src.crop((round(sw * (1 + i)), round(sh * j), round(sw * (2 + i)), round(sh * (j + 1))))); bm = np.asarray(Image.fromarray(b[..., 3]).resize((c.shape[1], c.shape[0]))) > 100
             def feet(mm):
