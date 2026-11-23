@@ -10,7 +10,7 @@ CELL = int(sys.argv[1]) if len(sys.argv) > 1 else 0
 PER = int(sys.argv[2]) if len(sys.argv) > 2 else 24
 H = 180          # 정수리~발을 이 높이로
 BOX = (120, 230)  # 한 사람 자리
-REF = ['soseono', 'gamsil', 'jinha']
+REF = ['soseono', 'gamsil', 'jinha']   # 앞의 소서노가 기준(11-23 형 「베이스라인 하나로」) · 감실·진하는 같은 결 예
 gear = {k: v for k, v in json.load(open('tools/sprite-kit/headgear.json', encoding='utf-8')).items() if not k.startswith('_')}
 os.makedirs('tools/out/lineup', exist_ok=True)
 
