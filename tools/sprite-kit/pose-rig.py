@@ -172,7 +172,7 @@ def figure(phase, swing_near, pose=None):
     elif PROP['kind'] == 'pole2':    # 두 손으로 긴 자루를 몸 앞에 비스듬히 든 채 걷는다 — 두 팔 모두 고정(해비의 도끼)
         arm_n, arm_f = (12, 72), (48, 104)
     elif PROP['kind'] == 'shoulder':  # 가까운 손으로 자루를 어깨에 메고 걷는다 — 멘 팔은 고정, 먼 팔만 작게 흔든다(아룸의 망치)
-        arm_n = (-28, 150)
+        arm_n = (-34, 118)
     elif PROP['kind'] == 'bow':
         arm_f = (22, 58)   # 활 든 팔은 걸을 때 흔들지 않는다 — 활이 늘 몸 앞에 보이게(뒤로 가면 몸에 가려 칸마다 생겼다 사라진다)
     # 먼 쪽부터: (활대) · 먼 팔 · 먼 다리 → 몸통 · 머리 → 가까운 다리 · 가까운 팔 → (시위)
@@ -184,6 +184,10 @@ def figure(phase, swing_near, pose=None):
             bow_string(d, hand_f)   # 당기지 않은 시위는 활과 함께 몸 뒤에
     arm(d, sh_f, arm_f[0], arm_f[1], FAR)
     leg(d, hip_f, far['th'], far['sh'], far['toe'], FAR)
+    if PROP['kind'] == 'shoulder':   # 어깨에 멘 자루: 가까운 손(어깨 앞)에서 머리 뒤를 지나 먼 쪽 어깨 너머로 — 무기 머리는 서기 그림처럼 앞쪽(오른쪽) 위
+        hn = wrist(sh_n, arm_n[0], arm_n[1])   # (11-23: 머리를 등 뒤로 그렸더니 서기 그림과 어긋나 망치 머리가 둘이 됐다)
+        r28 = math.radians(24)
+        pole(d, hn, (hn[0] + math.cos(r28) * 22 * Z, hn[1] - math.sin(r28) * 22 * Z), back=6, front=14)
     d.polygon([(sh_n[0] - 9 * Z, sh_y), (sh_f[0] + 6 * Z, sh_y - 2 * Z), (hip_f[0] + 8 * Z, hip_y + 5 * Z), (hip_n[0] - 9 * Z, hip_y + 6 * Z)], fill=BODY, outline=LINE)
     d.ellipse([cx - 10 * Z, hip_y - 10 * Z, cx + 11 * Z, hip_y + 6 * Z], fill=BODY, outline=LINE, width=4)            # 골반 (11-23 형 「허리가 길어 보인다」: 골반 덩어리가 엉덩관절 아래 12 까지 내려가 가랑이가 낮게 읽혔다 → 6 까지만)
     d.ellipse([cx - 13 * Z, hip_y - 11 * Z, cx + 6 * Z, hip_y + 7 * Z], fill=BODY, outline=LINE, width=4)   # 엉덩이(뒤로 둥글게)
@@ -202,10 +206,6 @@ def figure(phase, swing_near, pose=None):
         hn = wrist(sh_n, arm_n[0], arm_n[1])
         pole(d, hn, hand_f)
         d.ellipse([hand_f[0] - HAND * Z, hand_f[1] - HAND * Z, hand_f[0] + HAND * Z, hand_f[1] + HAND * Z], fill=FAR, outline=LINE, width=3)   # 먼 손이 자루를 쥔 자리
-    if PROP['kind'] == 'shoulder':
-        hn = wrist(sh_n, arm_n[0], arm_n[1])
-        r35 = math.radians(28)
-        pole(d, hn, (hn[0] - math.cos(r35) * 20 * Z, hn[1] - math.sin(r35) * 20 * Z), back=12, front=16)
     hand_n = arm(d, sh_n, arm_n[0], arm_n[1], NEAR)
     if PROP['kind'] == 'bow' and pulled:
         bow_string(d, hand_f, hand_n)   # 당긴 시위만 몸 앞으로 지나간다
