@@ -39,7 +39,11 @@ HEROES = {
                   cells8=[('a', 1), ('a', 2), ('a', 3), ('a', 4), ('a', 4), ('a', 3), ('a', 2), ('a', 1)]),   # 해녀(작살) · 뒤 판 b 는 그림 도구가 거절 → 앞 판으로: 타격 = 넷째(a4) · wire-hero hit=3
     'huntress': dict(strip='gen-base-w-06-buyeo-huntress', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 부여 사냥꾼(창)
     'dallae': dict(strip='gen-base-w-64-miri-dallae', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 미리 군주 달래(창)
-    'ara': dict(strip='gen-ara', atk='slash', atk8=True, act=True),   # 가야 검사 아라(한 손 칼)
+    'ara': dict(strip='gen-ara', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 가야 검사 아라(한 손 칼) · 좁은 칸: 머리 위로 곧게 세운 a2 는 위가, 끝까지 벤 b1 은 앞이 넘친다
+    'dtiger': dict(strip='gen-base-w-22-dongye-tiger-huntress', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 동예 범 사냥꾼(창)
+    'noeul': dict(strip='gen-noeul', atk='bow', atk8=False),   # 사로 노을(활)
+    'sagong': dict(strip='gen-sagong', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 사물 사공(두 손 노 · 찌르기)
+    'songbi': dict(strip='gen-songbi', atk='bow', atk8=False),   # 비류나 송비(활)
     'haebi': dict(strip='gen-haebi', atk='chop', atk8=True, act=True),   # act = 공격 여덟 칸이 넓은 동작 칸(240×224 · 뿌리 92 · 발 줄 216)
     'areum': dict(strip='gen-areum', atk='slam', atk8=True, act=True, lock='none'),   # 받은 그림 그대로(얼굴을 떠다 붙이지 않는다 — 11-24: 뭉친 얼굴이 여덟 칸에 퍼졌다) · 옛 lock='face': 메가 머리 뒤로 지나간다 — 머리 상자는 메를 자르고(「포스터」), 윗몸을 통째로 묶으면 떠다닌다(11-24 형) → 얼굴 안쪽만 묶는다
 }
