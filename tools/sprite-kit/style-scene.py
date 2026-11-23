@@ -45,7 +45,7 @@ def motion_scene(identity, pose_sheet, out, style_ref='soseono', Z=4, CELL=640, 
     for j, im in enumerate((idn, ref)):
         if im.size[0] > CELL - 20: im = im.crop(((im.size[0] - CELL + 20) // 2, 0, (im.size[0] + CELL - 20) // 2, im.size[1]))
         o.paste(im, ((CELL - im.size[0]) // 2, j * CELL + CELL - 40 - im.size[1]), im)
-    sh = Image.open(pose_sheet).convert('RGB'); W, Hs = sh.size
+    sh = Image.open(pose_sheet).convert('RGB'); W, Hs = sh.size; scale = [None]
     for j in range(2):
         for i in range(2):
             c = sh.crop((i * W // 2, j * Hs // 2, (i + 1) * W // 2, (j + 1) * Hs // 2)); a = np.asarray(c).astype(np.int16)
@@ -57,9 +57,13 @@ def motion_scene(identity, pose_sheet, out, style_ref='soseono', Z=4, CELL=640, 
                 sel = (fa[..., 3] > 120) & (r_ > 170) & (r_ - g_ > 28) & (r_ - b_ > 45) & (lum < 198) & rows
                 fa[sel] = (70, 120, 235, 255); fig = Image.fromarray(fa.astype(np.uint8))
             m = np.asarray(fig)[..., 3] > 60; h = m.shape[0]; wid = m.sum(1); lo, hi = int(h * .12), int(h * .38); skull = lo + int(np.argmin(wid[lo:hi]))
-            s = (H * .92 * 32 / 137) / skull; fig = fig.resize((round(fig.size[0] * s), round(fig.size[1] * s)), Image.LANCZOS)
+            # 배율은 첫 칸(서 있는 자세)의 머리뼈로 한 번만 정해 네 칸에 똑같이 쓴다 — 앉거나 누운 칸은 머리뼈를 못 재서 엄청 커졌다(11-23 Codex 지적)
+            if scale[0] is None: scale[0] = (H * .92 * 32 / 137) / skull
+            s = scale[0]; fig = fig.resize((round(fig.size[0] * s), round(fig.size[1] * s)), Image.LANCZOS)
+            if fig.size[0] > CELL - 8: fig = fig.resize((CELL - 8, round(fig.size[1] * (CELL - 8) / fig.size[0])), Image.LANCZOS)
             cx = (xs.min() + xs.max()) / 2 / (W / 2)   # 칸 안의 가로 자리는 지킨다
-            o.paste(fig, (CELL * (1 + i) + round(cx * CELL - fig.size[0] / 2), j * CELL + CELL - 40 - fig.size[1]), fig)
+            x0 = max(CELL * (1 + i) + 4, min(CELL * (2 + i) - 4 - fig.size[0], CELL * (1 + i) + round(cx * CELL - fig.size[0] / 2)))   # 칸 밖으로 나가지 않게
+            o.paste(fig, (x0, j * CELL + CELL - 40 - fig.size[1]), fig)
     o.save(out); print(out, o.size)
 
 

@@ -252,6 +252,19 @@ export function mountRing(host: HTMLElement, o: RingOpts): RingHandle {
   /** 움직임 줄이기면 기울지 않는다 */
   const still = (): boolean => reduce || host.closest('.q-calm') !== null
 
+  /**
+   * 위 덩이(.hrg-top · 제목·배너)가 큰 초상과 겹치면 초상을 그 아래에서 시작하게 한다 — 얼굴을 가리지 않게
+   * (11-23 형 「가로 화면 이거 머리 가리는데」 → 「세로일 때도 얼굴 가리는 거」). 겹치지 않으면(가로에서 배너가 옆 칸으로 간 때) 0.
+   */
+  const topEl = host.querySelector<HTMLElement>('.hrg-top')
+  const heroEl = host.querySelector<HTMLElement>('.hrg-hero')
+  function fitTop(): void {
+    if (topEl === null || heroEl === null) return
+    const a = topEl.getBoundingClientRect()
+    const b = heroEl.getBoundingClientRect()
+    const over = a.width > 0 && a.right > b.left + 1 && a.left < b.right - 1 && a.bottom > b.top
+    heroEl.style.setProperty('--hrg-toph', over ? `${Math.round(a.bottom - b.top)}px` : '0px')
+  }
   function measure(): void {
     if (ring === null || disc === null) return
     const w = ring.clientWidth
@@ -542,8 +555,9 @@ export function mountRing(host: HTMLElement, o: RingOpts): RingHandle {
   // 쉼(q-rest)에서 깨어나면 서기 숨도 다시
   host.addEventListener('pointerdown', wake)
   const seen = ring ?? cv
-  const ro = typeof ResizeObserver !== 'undefined' && seen !== null ? new ResizeObserver(() => { measure(); layout(); wake() }) : null
+  const ro = typeof ResizeObserver !== 'undefined' && seen !== null ? new ResizeObserver(() => { fitTop(); measure(); layout(); wake() }) : null
   if (seen !== null) ro?.observe(seen)
+  if (topEl !== null) ro?.observe(topEl)
 
   function dispose(): void {
     if (!alive) return
@@ -563,6 +577,7 @@ export function mountRing(host: HTMLElement, o: RingOpts): RingHandle {
     const alt = first.bigAlt
     pic.onerror = (): void => { pic.onerror = null; pic.src = alt }
   }
+  fitTop()
   measure()
   layout()
   paintPicked()
@@ -594,7 +609,7 @@ const RING_CSS = `
 @S .hrg-go > p { flex: 1 0 100%; margin: 0; text-align: center; font-size: 13px; font-weight: 700; line-height: 1.3; color: #ffd27a; }
 @S .hrg { position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden; container-type: size; color: #efe6d4; background: #120f0c; }
 @S .hrg-hero { position: relative; flex: 1 1 auto; min-height: 42cqh; overflow: hidden; }
-@S .hrg-pic { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 12%; transition: opacity .18s; }
+@S .hrg-pic { position: absolute; left: 0; right: 0; bottom: 0; top: var(--hrg-toph, 0px); width: 100%; height: calc(100% - var(--hrg-toph, 0px)); object-fit: cover; object-position: 50% 12%; transition: opacity .18s; }
 @S .hrg-pic.swap { opacity: 0; }
 @S .hrg-fade { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(150% 100% at 50% 0%, #120f0c00 58%, #120f0cd0 84%, #120f0c 100%); }
 @S .hrg-info { position: absolute; left: 14px; bottom: 8px; width: min(52cqw, 300px); display: flex; flex-direction: column; align-items: flex-start; gap: .3em; z-index: 3; font-size: 12.5px; text-shadow: 0 1px 3px #000, 0 0 10px #000; }
@@ -638,7 +653,7 @@ const RING_CSS = `
 @S .hrg-sbar { position: relative; display: block; height: 4px; border-radius: 2px; background: #ffffff1c; }
 @S .hrg-sbar s { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: #e3b45c99; }
 @S .hrg-sbar i { position: absolute; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #f6d48a; box-shadow: 0 0 8px #e3b45c; }
-@S .hrg-top { position: absolute; left: 14px; right: 52px; top: calc(env(safe-area-inset-top) + 8px); z-index: 6; text-shadow: 0 1px 3px #000, 0 0 8px #000; }
+@S .hrg-top { position: absolute; left: 14px; right: 52px; top: calc(env(safe-area-inset-top) + 8px); padding-bottom: 6px; z-index: 6; text-shadow: 0 1px 3px #000, 0 0 8px #000; }
 @S .hrg.hrg-own .hrg-top { right: 14px; }
 @S .hrg-title { margin: 0; font-family: var(--serif); font-size: clamp(19px, 5.6cqw, 28px); color: #f6d48a; font-weight: 700; }
 @S .hrg-title small { font-family: var(--body); font-size: .62em; color: #d6c8a8; font-weight: 400; margin-left: .3em; }
