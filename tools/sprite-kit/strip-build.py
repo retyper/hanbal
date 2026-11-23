@@ -41,7 +41,9 @@ def main(name, atk, out):
         o = Image.new('RGBA', im.size, (0, 0, 0, 0))
         o.alpha_composite(im.crop((max(0, -d), 0, im.size[0] - max(0, d), im.size[1])), (max(0, d), 0))
         return o
-    frames = [feet_fixed(cell('idle', i)) for i in (2, 1, 4, 1)] if os.path.exists(f'{PXD}/{name}-idle-1.png') else [stand] * 4
+    # 형 11-23: 「숨쉬는 거는 너무 등산하는 숨쉬기 · 기본 idle 은 서 있는 자세 2컷으로 텀 길게 · 가끔씩 큰 숨」
+    # 게임은 서기 칸을 0·1·2·1 차례로 같은 박자로 돌린다 -> 0·1 = 바로 선 그림, 2 = 눈을 감은 칸(느린 깜빡임), 3 = 큰 숨(들이쉼 · 서기 틀이 바뀌면 가끔만 쓴다)
+    frames = [feet_fixed(cell('idle', i)) for i in (1, 1, 4, 2)] if os.path.exists(f'{PXD}/{name}-idle-1.png') else [stand] * 4
     frames += [cell('walk-a', i) for i in (3, 4, 1, 2)] + [cell('walk-b', i) for i in (3, 4, 1, 2)]
     frames += [cell(atk, i) for i in (1, 1, 2, 3, 3, 4)]
     frames += [cell('down', 1), cell('down', 4)]
