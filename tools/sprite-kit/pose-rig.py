@@ -231,6 +231,8 @@ def figure(phase, swing_near, pose=None):
         bow_stick(d, hand_f)
         if not pulled:
             bow_string(d, hand_f)   # 당기지 않은 시위는 활과 함께 몸 뒤에
+    if PROP['kind'] == 'pole1':   # 먼 손으로 세워 짚은 긴 자루: 자루 끝이 바닥에 닿고 쇠머리가 위
+        pole(d, (hand_f[0] - 1 * Z, CANVAS['ground'] - 6 * Z), (hand_f[0] + 2 * Z, hand_f[1] - 20 * Z), back=0, front=14)
     arm(d, sh_f, arm_f[0], arm_f[1], FAR)
     leg(d, hip_f, far['th'], far['sh'], far['toe'], FAR)
     if PROP['kind'] == 'shoulder':   # 어깨에 멘 자루: 가까운 손(어깨 앞)에서 머리 뒤를 지나 먼 쪽 어깨 너머로 — 무기 머리는 서기 그림처럼 앞쪽(오른쪽) 위
@@ -312,6 +314,38 @@ QUIRKS = {
 }
 
 
+def _ik(pelvis, near_hand, far_hand, bend=0, lean=0, near_foot=(-18, 0), far_foot=(12, 0), **kw):
+    return dict(ik=dict(pelvis=pelvis, near_hand=near_hand, far_hand=far_hand, near_foot=near_foot, far_foot=far_foot, **kw), bend=bend, lean=lean)
+
+
+_S = dict(near_foot=(-7, 0), far_foot=(9, 0))   # 선 발
+# 큰 무기를 든 장수의 개성 동작 — 칸마다 소품 쥐는 법이 다를 수 있다(prop). 발은 네 칸 같은 자리 · 움직이는 것은 가까운 쪽 팔 하나(참고 게임: 서기 변형은 팔 하나만).
+IK_QUIRKS = {
+    # 해비 「머리끈 고쳐 매기」: 도끼를 세워 짚으며 손을 뗌 -> 묶은 머리의 끈을 잡아 당겨 조임 -> 머리채를 뒤로 탁 넘김 -> 손을 자루로 되돌림
+    'retie': [
+        dict(_ik((0, 0), (4, 66), (16, 90), **_S), prop='pole2'),
+        dict(_ik((0, 0), (-9, 124), (18, 84), near_elbow='back', **_S), prop='pole1'),
+        dict(_ik((0, 0), (-17, 114), (18, 84), near_elbow='back', **_S), prop='pole1'),
+        dict(_ik((0, 0), (2, 70), (16, 88), **_S), prop='pole2'),
+    ],
+}
+# 아룸 「메 고쳐 메기」(어깨에 멘 채 · shoulder): 메를 어깨에서 툭 들썩임 -> 도로 내려앉히며 먼 손을 허리에 -> 그대로 목을 한 번 꺾음 -> 서기
+QUIRKS['reshoulder'] = [
+    dict(near_arm=(-46, 130), far_arm=(10, 24), lean=0),
+    dict(near_arm=(-28, 110), far_arm=(34, -50), lean=0),
+    dict(near_arm=(-34, 118), far_arm=(34, -50), lean=0),
+    dict(near_arm=(-34, 118), far_arm=(10, 24), lean=0),
+]
+
+
+def ik_quirk_sheet(kind):
+    o = Image.new('RGB', (CELL * 2, CELL * 2), (255, 0, 255))
+    for k, ps in enumerate(IK_QUIRKS[kind]):
+        PROP['kind'] = ps.get('prop')
+        o.paste(figure(None, True, ps), ((k % 2) * CELL, (k // 2) * CELL))
+    return o
+
+
 def quirk_sheet(kind):
     o = Image.new('RGB', (CELL * 2, CELL * 2), (255, 0, 255))
     for k, ps in enumerate(QUIRKS[kind]):
@@ -339,10 +373,6 @@ ATTACKS = {
         _p((-6, -6), (7, 7), (10, 35), (-10, 40), 0),
     ],
 }
-
-
-def _ik(pelvis, near_hand, far_hand, bend=0, lean=0, near_foot=(-18, 0), far_foot=(12, 0), **kw):
-    return dict(ik=dict(pelvis=pelvis, near_hand=near_hand, far_hand=far_hand, near_foot=near_foot, far_foot=far_foot, **kw), bend=bend, lean=lean)
 
 
 _W = dict(near_foot=(-20, 0), far_foot=(17, 0))    # 넓게 선 발
@@ -422,8 +452,13 @@ def main():
         return
     if len(sys.argv) > 1 and sys.argv[1] == 'quirk':  # py pose-rig.py quirk <이름> <가슴> -> rig-f-quirk-<이름>-<가슴>.png
         SHAPE['bust'] = sys.argv[3]
-        if 'bow' in sys.argv[4:]:
-            PROP['kind'] = 'bow'   # 먼 쪽 손에 활을 쥔 채
+        if sys.argv[2] in IK_QUIRKS:
+            ik_quirk_sheet(sys.argv[2]).save(f'{STD}/rig-f-quirk-{sys.argv[2]}-{sys.argv[3]}.png')
+            print('quirk(손·발 자리)', sys.argv[2], sys.argv[3])
+            return
+        for kd in ('bow', 'shoulder'):
+            if kd in sys.argv[4:]:
+                PROP['kind'] = kd   # 먼 쪽 손에 활 · 어깨에 멘 자루
         quirk_sheet(sys.argv[2]).save(f'{STD}/rig-f-quirk-{sys.argv[2]}-{sys.argv[3]}.png')
         print('quirk', sys.argv[2], sys.argv[3])
         return
