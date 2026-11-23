@@ -34,7 +34,7 @@ HEROES = {
     'maehwa': dict(strip='gen-maehwa', atk='bow', atk8=False),
     'dalbit': dict(strip='gen-base-w-31-dabeol-dalbit', atk='bow', atk8=False),
     'archer': dict(strip='gen-base-w-13-young-archer', atk='bow', atk8=False),   # 앳된 궁수
-    'pirate': dict(strip='gen-base-w-10-pirate-captain', atk='thrust', atk8=True, act=True),   # 해적 두목(작살)
+    'pirate': dict(strip='gen-base-w-10-pirate-captain', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 해적 두목(작살) · 끝까지 찌른 칸은 좁은 칸에 안 들어가 당기는 칸으로
     'haebi': dict(strip='gen-haebi', atk='chop', atk8=True, act=True),   # act = 공격 여덟 칸이 넓은 동작 칸(240×224 · 뿌리 92 · 발 줄 216)
     'areum': dict(strip='gen-areum', atk='slam', atk8=True, act=True, lock='none'),   # 받은 그림 그대로(얼굴을 떠다 붙이지 않는다 — 11-24: 뭉친 얼굴이 여덟 칸에 퍼졌다) · 옛 lock='face': 메가 머리 뒤로 지나간다 — 머리 상자는 메를 자르고(「포스터」), 윗몸을 통째로 묶으면 떠다닌다(11-24 형) → 얼굴 안쪽만 묶는다
 }
@@ -121,7 +121,8 @@ def quirk(name):
 def act_cells(name):
     """넓은 칸 공격 여덟 칸 → 본 띠용 좁은 칸 넷(<꼬리표>-1..4 = 준비2 · 넘어옴 · 내림 · 거둠) — 뿌리·발 줄을 맞춰 잘라 낸다. 본편 전장처럼 20칸만 읽는 곳이 쓴다"""
     h = HEROES[name]
-    src = [f'{PX}/{name}-{h["atk"]}8-{t}-{i}.png' for t, i in (('a', 2), ('a', 4), ('b', 1), ('b', 4))]
+    # 본 띠의 좁은 칸(208)은 뿌리 앞으로 104px 까지만 담는다 — 멀리 찌르는 칸은 잘린다(해적 두목 작살 119px) → 장수마다 좁은 칸에 들어가는 칸을 고른다(legacy)
+    src = [f'{PX}/{name}-{h["atk"]}8-{t}-{i}.png' for t, i in h.get('legacy', (('a', 2), ('a', 4), ('b', 1), ('b', 4)))]
     for k, sp in enumerate(src):
         im = Image.open(sp).convert('RGBA')
         o = Image.new('RGBA', (CW, CH), (0, 0, 0, 0))

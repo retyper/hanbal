@@ -76,8 +76,15 @@ def main(name, atk, out):
             u[ys.min() + int(h * .04):ys.min() + int(h * .45)] = a[ys.min() + int(h * .04):ys.min() + int(h * .45)]
             return u
         def reg(a, r, reach=20):
-            c = [int((a ^ np.roll(r, dx, axis=1)).sum()) for dx in range(-reach, reach + 1)]
-            return int(np.argmin(c)) - reach
+            # 가로·세로를 함께 본다(anim-check 와 같은 셈) — 가로만 보면 서기와 걷기의 키가 1~2px 다를 때 엉뚱한 자리에 맞는다(궁수: 2px 로 맞췄는데 검사는 6.5px 어긋남 · 11-24)
+            best, at = None, 0
+            for dy in range(-7, 8):
+                ry = np.roll(r, dy, axis=0)
+                for dx in range(-reach, reach + 1):
+                    c = int((a ^ np.roll(ry, dx, axis=1)).sum())
+                    if best is None or c < best or (c == best and abs(dx) < abs(at)):
+                        best, at = c, dx
+            return at
         su = upper(frames[0])
         ds = [reg(upper(f), su) for f in frames[4:12]]
         d0 = int(round((max(ds) + min(ds)) / 2))
