@@ -30,7 +30,7 @@ def main(body, out, male=False):
     o.save(out); print(out, o.size)
 
 
-if __name__ == '__main__' and sys.argv[1] != 'motion':
+if __name__ == '__main__' and sys.argv[1] not in ('motion', 'motion8'):
     main(sys.argv[1], sys.argv[2], len(sys.argv) > 3 and sys.argv[3] == 'm')
 
 
@@ -71,5 +71,42 @@ def motion_scene(identity, pose_sheet, out, style_ref='soseono', Z=4, CELL=640, 
     o.save(out); print(out, o.size)
 
 
+def motion8_scene(identity, rig_a, rig_b, out, style_ref='soseono', Z=3, CW=384, CH=640):
+    """걷기 여덟 칸 장면(1920x1280 · 5x2 칸 · 칸 384x640 · 게임 화소의 3배): 왼쪽 줄 = [그 장수 서기] · [승인 띠] · 오른쪽 4x2 = 윗줄 A 넷 · 아랫줄 B 넷(코드 인형).
+    앞·뒤 절반을 한 번에 그리게 해 옷 색이 갈리지 않게 하고 생성 횟수도 절반으로.
+      py -3 -I tools/sprite-kit/style-scene.py motion8 <합격한 서기.png> <인형 A.png> <인형 B.png> <나갈.png>"""
+    import numpy as np
+    o = Image.new('RGB', (CW * 5, CH * 2), (255, 0, 255))
+    H = N * Z
+    idn = Image.open(identity).convert('RGBA')
+    idn = idn.crop(idn.getchannel('A').getbbox())
+    idn = idn.resize((round(idn.size[0] * H / idn.size[1]), H), Image.LANCZOS)
+    ref = cell0(style_ref)
+    ref = ref.resize((ref.size[0] * Z, ref.size[1] * Z), Image.NEAREST)
+    for j, im in enumerate((idn, ref)):
+        if im.size[0] > CW - 12:
+            im = im.crop(((im.size[0] - CW + 12) // 2, 0, (im.size[0] + CW - 12) // 2, im.size[1]))
+        o.paste(im, ((CW - im.size[0]) // 2, j * CH + CH - 40 - im.size[1]), im)
+    s = .92 * Z / 4   # 인형은 게임 화소의 4배 · 대머리
+    for j, path in enumerate((rig_a, rig_b)):
+        sh = Image.open(path).convert('RGB')
+        W, Hs = sh.size
+        for k in range(4):
+            c = sh.crop(((k % 2) * W // 2, (k // 2) * Hs // 2, (k % 2 + 1) * W // 2, (k // 2 + 1) * Hs // 2))
+            a = np.asarray(c).astype(np.int16)
+            kk = np.minimum(a[..., 0], a[..., 2]) - a[..., 1]
+            al = np.clip((90 - kk.astype(np.float32)) * 255 / 50, 0, 255).astype(np.uint8)
+            ys, xs = np.nonzero(al > 60)
+            fig = Image.fromarray(np.dstack([a.astype(np.uint8), al])).crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
+            fig = fig.resize((round(fig.size[0] * s), round(fig.size[1] * s)), Image.LANCZOS)
+            cx = (xs.min() + xs.max()) / 2 / (W / 2)
+            x0 = CW * (1 + k) + round(CW / 2 + (cx - .5) * (W / 2) * s - fig.size[0] / 2)
+            o.paste(fig, (max(CW * (1 + k) + 4, min(CW * (2 + k) - 4 - fig.size[0], x0)), j * CH + CH - 40 - fig.size[1]), fig)
+    o.save(out)
+    print(out, o.size)
+
+
+if __name__ == '__main__' and sys.argv[1] == 'motion8':
+    motion8_scene(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
 if __name__ == '__main__' and sys.argv[1] == 'motion':
     motion_scene(sys.argv[2], sys.argv[3], sys.argv[4], far=len(sys.argv) > 5 and sys.argv[5] == 'far', rig=len(sys.argv) > 5 and sys.argv[5] == 'rig')

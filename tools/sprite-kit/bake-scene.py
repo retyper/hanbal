@@ -105,6 +105,45 @@ def motion(path, name, tag, scene=None):
         print(msg)
 
 
+def motion8(path, name):
+    """걷기 여덟 칸 장면(5x2 칸 · 왼쪽 줄은 견본) -> <이름>-walk-a-1..4 · <이름>-walk-b-1..4 (사람은 덩어리째 · 칸 금으로 자르지 않는다)
+      py -3 -I tools/sprite-kit/bake-scene.py motion8 <받은 장면.png> <이름>"""
+    out = Image.open(path).convert('RGB')
+    W, H = out.size
+    cw, ch = W / 5, H / 2
+    scale = 1 / 3 * (384 / cw)
+    full = key(out)
+    solid = full[..., 3] > 60
+    lab, nlab = ndimage.label(ndimage.binary_closing(solid, iterations=3))
+    blobs = []
+    for bi in range(1, nlab + 1):
+        ys_b, xs_b = np.nonzero((lab == bi) & solid)
+        if len(xs_b) > 300:
+            blobs.append((bi, len(xs_b), (xs_b.min() + xs_b.max()) / 2, (ys_b.min() + ys_b.max()) / 2, xs_b.min(), xs_b.max() + 1, ys_b.min(), ys_b.max() + 1))
+    for j, tag in enumerate(('walk-a', 'walk-b')):
+        for k in range(4):
+            gx0 = cw * (1 + k)
+            mine = [b for b in blobs if gx0 <= b[2] < gx0 + cw and ch * j <= b[3] < ch * (j + 1)]
+            if not mine:
+                print(f'{tag} 칸{k + 1}: 사람을 못 찾음')
+                continue
+            bi, _, bcx, _, bx0, bx1, by0, by1 = max(mine, key=lambda b: b[1])
+            whole = full[by0:by1, bx0:bx1].copy()
+            whole[..., 3] = np.where(lab[by0:by1, bx0:bx1] == bi, whole[..., 3], 0)
+            g = game(Image.fromarray(whole), scale)
+            gm = np.asarray(g)[..., 3] > 0
+            ys, xs = np.nonzero(gm)
+            g2 = g.crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
+            cell = Image.new('RGBA', (CELL_W, CELL), (0, 0, 0, 0))
+            ox = round(CELL_W / 2 + (bcx - (gx0 + cw / 2)) * scale - g2.size[0] / 2)
+            cell.alpha_composite(g2, (max(0, min(CELL_W - g2.size[0], ox)), FOOT - g2.size[1]))
+            cell.save(f'{PXD}/{name}-{tag}-{k + 1}.png')
+            print(f'{tag} 칸{k + 1} 게임 키 {g2.size[1]} 폭 {g2.size[0]}')
+
+
 if __name__ == '__main__':
+    if sys.argv[1] == 'motion8':
+        motion8(sys.argv[2], sys.argv[3])
+        sys.exit()
     if sys.argv[1] == 'stand': stand(sys.argv[2], sys.argv[3], int(sys.argv[4]) if len(sys.argv) > 4 else 3)
     else: motion(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5] if len(sys.argv) > 5 else None)

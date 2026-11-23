@@ -39,6 +39,9 @@ STYLES = {
     'bouncy': dict(label='통통 튀는',  stride=.95,  lift=1.5, arm=1.3, lean=2,  bob=.4,  elbow=55, hip=1),     # 발랄하게 (앳된 · 쾌활한)
 }
 STYLE = dict(STYLES['plain'])
+# 몸매: 인형이 납작하면 그림 도구가 그 납작함까지 따라 그린다 -> 가슴·엉덩이를 장수 표(hero-types.tsv 의 bust)대로 인형에 그려 준다
+BUST = {'S': 5, 'M': 7.5, 'L': 10.5, 'XL': 13.5}
+SHAPE = dict(bust='M')
 
 
 def pt(x, y, ang, ln):
@@ -103,7 +106,11 @@ def figure(phase, swing_near):
     leg(d, hip_f, far['th'], far['sh'], far['toe'], FAR)
     d.polygon([(sh_n[0] - 9 * Z, sh_y), (sh_f[0] + 6 * Z, sh_y - 2 * Z), (hip_f[0] + 8 * Z, hip_y + 5 * Z), (hip_n[0] - 9 * Z, hip_y + 6 * Z)], fill=BODY, outline=LINE)
     d.ellipse([cx - 10 * Z, hip_y - 6 * Z, cx + 11 * Z, hip_y + 12 * Z], fill=BODY, outline=LINE, width=4)            # 골반
-    d.ellipse([cx + lean - 1 * Z, sh_y - 2 * Z, cx + lean + 13 * Z, sh_y + 14 * Z], fill=(150, 150, 150), outline=LINE, width=3)   # 가슴(앞을 알린다)
+    d.ellipse([cx - 13 * Z, hip_y - 7 * Z, cx + 6 * Z, hip_y + 13 * Z], fill=BODY, outline=LINE, width=4)   # 엉덩이(뒤로 둥글게)
+    b = BUST[SHAPE['bust']] * Z   # 가슴: 몸통 앞으로 도드라진다 (먼 쪽 먼저 · 가까운 쪽이 덮는다)
+    bx, by = cx + lean + 5 * Z, sh_y + 13 * Z
+    d.ellipse([bx + 3 * Z - b * .9, by - 1 * Z - b * .9, bx + 3 * Z + b * .9, by - 1 * Z + b * .9], fill=(150, 150, 150), outline=LINE, width=3)
+    d.ellipse([bx - b, by - b, bx + b, by + b], fill=(185, 185, 185), outline=LINE, width=3)
     neck_x = cx + lean + 1 * Z
     d.rectangle([neck_x - 3.5 * Z, sh_y - NECK * Z - 4, neck_x + 3.5 * Z, sh_y + 4], fill=BODY, outline=LINE, width=3)
     hc = (neck_x + 2 * Z, sh_y - NECK * Z - HEAD_R * Z + 2 * Z)
@@ -125,6 +132,15 @@ def sheet(swing_near):
 def main():
     import sys
     order = [(True, 'pass'), (True, 'reach'), (True, 'contact'), (True, 'down'), (False, 'pass'), (False, 'reach'), (False, 'contact'), (False, 'down')]
+    if len(sys.argv) > 1 and sys.argv[1] == 'walk':   # py pose-rig.py walk <걸음 결> <가슴 S|M|L|XL>
+        key, bust = sys.argv[2], sys.argv[3]
+        STYLE.clear()
+        STYLE.update(STYLES[key])
+        SHAPE['bust'] = bust
+        sheet(True).save(f'{STD}/rig-f-walk-{key}-{bust}-a.png')
+        sheet(False).save(f'{STD}/rig-f-walk-{key}-{bust}-b.png')
+        print('walk', key, bust)
+        return
     if len(sys.argv) > 1 and sys.argv[1] == 'styles':   # 걸음 결마다 판 둘 + 한눈에 보는 표
         rows = []
         for key, st in STYLES.items():
