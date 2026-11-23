@@ -47,7 +47,13 @@ def main(name, atk, out):
     frames += [cell('walk-a', i) for i in (3, 4, 1, 2)] + [cell('walk-b', i) for i in (3, 4, 1, 2)]
     frames += [cell(atk, i) for i in (1, 1, 2, 3, 3, 4)]
     frames += [cell('down', 1), cell('down', 4)]
-    strip = Image.new('RGBA', (CW * 20, CH), (0, 0, 0, 0))
+    # 덧칸 (형 11-23: 쓰러짐을 KO 처럼 오래·느리게·당겨서 · 서기에 개성 동작): 20·21 = 쓰러지는 가운데 두 칸(주저앉음 · 손 짚고 눕는 중) · 22~25 = 개성 동작 네 칸
+    #   넷째 값에 ext 를 주면 붙인다. 게임이 20칸 넘는 띠를 읽게 된 뒤에만 넣는다.
+    if len(sys.argv) > 4 and sys.argv[4] == 'ext':
+        frames += [cell('down', 2), cell('down', 3)]
+        if os.path.exists(f'{PXD}/{name}-quirk-1.png'):
+            frames += [feet_fixed(cell('quirk', i)) for i in (1, 2, 3, 4)]
+    strip = Image.new('RGBA', (CW * len(frames), CH), (0, 0, 0, 0))
     for i, f in enumerate(frames): strip.alpha_composite(f, (i * CW, 0))
     strip.save(out); print(out, strip.size)
 
