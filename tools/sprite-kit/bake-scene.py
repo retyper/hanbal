@@ -120,7 +120,7 @@ def motion(path, name, tag, scene=None, zoom=Z, rows=False):
         print(msg)
 
 
-def motion8(path, name):
+def motion8(path, name, tags=('walk-a', 'walk-b'), norm=True):
     """걷기 여덟 칸 장면(5x2 칸 · 왼쪽 줄은 견본) -> <이름>-walk-a-1..4 · <이름>-walk-b-1..4 (사람은 덩어리째 · 칸 금으로 자르지 않는다)
       py -3 -I tools/sprite-kit/bake-scene.py motion8 <받은 장면.png> <이름>"""
     out = Image.open(path).convert('RGB')
@@ -147,9 +147,9 @@ def motion8(path, name):
             if m_:
                 bb = max(m_, key=lambda b: b[1])
                 hs.append(bb[7] - bb[6])
-        row_k[j] = (ref_h * 1.015 / float(np.median(hs))) if (ref_h and hs) else 1.0
+        row_k[j] = (ref_h * 1.015 / float(np.median(hs))) if (ref_h and hs and norm) else 1.0   # 공격처럼 칸마다 키가 다른 판은 norm=False
         print(f'줄{j + 1} 크기 맞춤 x{row_k[j]:.3f}')
-    for j, tag in enumerate(('walk-a', 'walk-b')):
+    for j, tag in enumerate(tags):
         for k in range(4):
             gx0 = cw * (1 + k)
             mine = [b for b in blobs if gx0 <= b[2] < gx0 + cw and ch * j <= b[3] < ch * (j + 1)]
@@ -236,8 +236,11 @@ if __name__ == '__main__':
         nums = [a for a in sys.argv[5:] if a != 'flip4']
         fall(sys.argv[2], sys.argv[3], sys.argv[4], k4=float(nums[0]) if nums else 1.0, flip4='flip4' in sys.argv[5:])
         sys.exit()
-    if sys.argv[1] == 'motion8':
-        motion8(sys.argv[2], sys.argv[3])
+    if sys.argv[1] == 'motion8':   # motion8 <받은 장면> <이름> [꼬리표A 꼬리표B = 공격 판: 키 맞춤 없이]
+        if len(sys.argv) > 5:
+            motion8(sys.argv[2], sys.argv[3], (sys.argv[4], sys.argv[5]), norm=False)
+        else:
+            motion8(sys.argv[2], sys.argv[3])
         sys.exit()
     if sys.argv[1] == 'stand': stand(sys.argv[2], sys.argv[3], int(sys.argv[4]) if len(sys.argv) > 4 else 3)
     else:

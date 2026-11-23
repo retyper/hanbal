@@ -236,9 +236,48 @@ def quirk_sheet(kind):
     return o
 
 
+# 공격 여덟 칸 (11-23 조사: 잘 만든 2D 액션은 한 타에 9~11칸 · 우리는 4칸을 6자리에 늘렸다)
+#   준비 2 · 휘두름 3(가운데 = 타격 칸 · 때리는 손을 과장) · 지나감 2 · 거둠 1. 때리는 팔은 가까운 쪽.
+def _p(nl, fl, na, fa, lean):
+    return dict(near_leg=dict(th=nl[0], sh=nl[1], toe=nl[2] if len(nl) > 2 else 0), far_leg=dict(th=fl[0], sh=fl[1], toe=fl[2] if len(fl) > 2 else 0),
+                near_arm=na, far_arm=fa, lean=lean)
+
+
+ATTACKS = {
+    # 범 「할퀴기」: 웅크려 팔을 뒤로 뺌 -> 더 깊이 -> 뛰어들며 팔이 머리 위로 -> [타격] 앞으로 쭉 내리침 -> 팔이 아래로 지나감 -> 뒤로 흘러감 -> 몸을 세움 -> 서기
+    'claw': [
+        _p((10, -16), (20, -4), (-55, -15), (35, 85), -2),
+        _p((18, -28), (28, -12), (-115, -70), (55, 105), -5),
+        _p((-14, -36, -20), (40, 12), (150, 125), (-15, 45), 6),
+        _p((-34, -46, -30), (50, 2), (98, 86), (-35, 20), 12),
+        _p((-34, -46, -30), (50, 2), (45, 25), (-30, 30), 14),
+        _p((-28, -40, -24), (44, 4), (-12, -30), (-10, 45), 10),
+        _p((-15, -24, -10), (30, 2), (-22, 12), (5, 45), 5),
+        _p((-6, -6), (7, 7), (10, 35), (-10, 40), 0),
+    ],
+}
+
+
+def attack_sheets(kind):
+    out = []
+    for half in (0, 1):
+        o = Image.new('RGB', (CELL * 2, CELL * 2), (255, 0, 255))
+        for k in range(4):
+            o.paste(figure(None, True, ATTACKS[kind][half * 4 + k]), ((k % 2) * CELL, (k // 2) * CELL))
+        out.append(o)
+    return out
+
+
 def main():
     import sys
     order = [(True, 'pass'), (True, 'reach'), (True, 'contact'), (True, 'down'), (False, 'pass'), (False, 'reach'), (False, 'contact'), (False, 'down')]
+    if len(sys.argv) > 1 and sys.argv[1] == 'attack':  # py pose-rig.py attack <이름> <가슴> -> rig-f-atk-<이름>-<가슴>-a/b.png (앞 넷 · 뒤 넷)
+        SHAPE['bust'] = sys.argv[3]
+        a, b = attack_sheets(sys.argv[2])
+        a.save(f'{STD}/rig-f-atk-{sys.argv[2]}-{sys.argv[3]}-a.png')
+        b.save(f'{STD}/rig-f-atk-{sys.argv[2]}-{sys.argv[3]}-b.png')
+        print('attack', sys.argv[2], sys.argv[3])
+        return
     if len(sys.argv) > 1 and sys.argv[1] == 'quirk':  # py pose-rig.py quirk <이름> <가슴> -> rig-f-quirk-<이름>-<가슴>.png
         SHAPE['bust'] = sys.argv[3]
         if 'bow' in sys.argv[4:]:
