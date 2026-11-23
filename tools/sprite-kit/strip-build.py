@@ -53,6 +53,9 @@ def main(name, atk, out):
         frames += [cell('down', 2), cell('down', 3)]
         if os.path.exists(f'{PXD}/{name}-quirk-1.png'):
             frames += [feet_fixed(cell('quirk', i)) for i in (1, 2, 3, 4)]
+        # 26~33 = 여덟 칸 공격(준비 2 · 휘두름 3 · 지나감 2 · 거둠 1 · 타격 칸 = 넷째) — 개성 동작 네 칸이 있어야 번호가 맞는다
+        if os.path.exists(f'{PXD}/{name}-{atk}8-a-1.png') and os.path.exists(f'{PXD}/{name}-quirk-1.png'):
+            frames += [cell(atk + '8-a', i) for i in (1, 2, 3, 4)] + [cell(atk + '8-b', i) for i in (1, 2, 3, 4)]
     # align: 서기·공격 칸의 머리 가로 자리를 걷기 칸에 맞춘다 (활처럼 한쪽으로 뻗은 물건을 든 장수는 테두리 가운데와 몸 가운데가 다르다)
     if 'align' in sys.argv[4:]:
         def head_x(im):
