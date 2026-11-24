@@ -257,6 +257,8 @@ export const loopTakes = (id: string): string[] => [loopFile(id), ...Array.from(
 
 export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   // 11-15 형이 awaken-loop 폴더를 직접 정리(지울 것 지우고 보관은 이름 바꿈) → 남긴 영상은 쓴다
+  'g-67-buyeo-daeso', // 11-24 Claude Flow u/2 (Omni 1.1 · 10초) · 남자 · 잔을 내렸다 다시 듦 · 얼굴 그대로 · 움직임 좋음
+  'g-68-baekje-onnuri', // 11-24 Claude Flow u/2 · 남자 · 칼 하나 끝까지 손에 · 자루 술이 잠깐 보이는 정도
   'g-65-goguryeo-damul', // 11-23 Claude 제미나이 Jay(Neon) · 남자 · 얼굴·칼·깃털 관 그대로 · 움직임 좋음
   'g-101-garak-adogan', // 11-22 Claude 제미나이 Jay(Neon) · 남자 · 얼굴·지팡이 그대로 · 움직임 좋음
   'g-102-garak-yeodogan', // 11-22 Claude Flow u/0 (Omni 1.1 · 10초) · 남자 · 얼굴·볏단 그대로 · 움직임 좋음
