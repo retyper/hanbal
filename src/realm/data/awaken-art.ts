@@ -267,6 +267,7 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'g-81-saro-jita', // 11-24 저녁 두 판 모두(형 「만든 남자 2개씩 다 써 · 둘 다 쓸 만하니까」)
   'g-78-saro-alpyeong', // 11-24 저녁 두 판 모두
   'g-68-mujin-bitgoeul', // 11-24 저녁 Claude Flow u/4 hepastosian (다시 만들기 1회) · 남자 · 칼 하나 끝까지 손에 · 얼굴 그대로·입 다묾 · .2 = 제미나이 판(2.9초 뒤 멈춤 · 판 수에 안 넣음)
+  'g-73-baekje-eureum', // 11-24 밤 Claude 제미나이 Jay Neon · crop916 입력 · 얼굴 그대로·두루마리 끝까지 왼손·손짓·독수리 흐름
   'g-65-goguryeo-damul', // 11-23 Claude 제미나이 Jay(Neon) · 남자 · 얼굴·칼·깃털 관 그대로 · 움직임 좋음
   'g-101-garak-adogan', // 11-22 Claude 제미나이 Jay(Neon) · 남자 · 얼굴·지팡이 그대로 · 움직임 좋음
   'g-102-garak-yeodogan', // 11-22 Claude Flow u/0 (Omni 1.1 · 10초) · 남자 · 얼굴·볏단 그대로 · 움직임 좋음
