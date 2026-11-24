@@ -102,6 +102,7 @@ HEROES = {
     'mulbeom': dict(hit=True, strip='gen-mulbeom', atk='thrust', src='thrust2', actw=264, refoot=True, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4)), cells8=[('a', 1), ('a', 2), ('a', 3), ('a', 4), ('a', 4), ('a', 4), ('b', 3), ('b', 4)]),   # 북옥저 물범(작살) · 열째 묶음(API)
     'mulsae': dict(hit=True, strip='gen-mulsae', atk='thrust', src='thrust2', actw=264, refoot=True, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4)), cells8=[('a', 1), ('a', 2), ('a', 3), ('a', 4), ('a', 4), ('a', 4), ('b', 3), ('b', 4)]),   # 사로 물새 · 열째 묶음(API)
     'nuri': dict(hit=True, strip='gen-nuri', atk='thrust', src='thrust2', actw=264, refoot=True, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4)), cells8=[('a', 1), ('a', 2), ('a', 3), ('a', 4), ('a', 4), ('a', 4), ('b', 3), ('b', 4)]),   # 구가 누리 · 열째 묶음(API)
+    'bihwa': dict(hit=True, strip='gen-base-w-25-bihwa-priestess', atk='cast', actw=264, atk8=True, act=True, legacy=(('a', 1), ('b', 3), ('b', 3), ('b', 4))),   # 비화 무녀(방울 지팡이 · 가슴 M) · 무녀 묶음(11-25 밤) · 시전 cast(방울 흔들고 손바닥 밀기)
     'haebi': dict(hit=True, strip='gen-haebi', atk='chop', atk8=True, act=True),   # act = 공격 여덟 칸이 넓은 동작 칸(240×224 · 뿌리 92 · 발 줄 216)
     'areum': dict(hit=True, strip='gen-areum', atk='slam', atk8=True, act=True, lock='none'),   # 받은 그림 그대로(얼굴을 떠다 붙이지 않는다 — 11-24: 뭉친 얼굴이 여덟 칸에 퍼졌다) · 옛 lock='face': 메가 머리 뒤로 지나간다 — 머리 상자는 메를 자르고(「포스터」), 윗몸을 통째로 묶으면 떠다닌다(11-24 형) → 얼굴 안쪽만 묶는다
 }

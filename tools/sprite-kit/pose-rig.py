@@ -277,6 +277,8 @@ def figure(phase, swing_near, pose=None):
     elif PROP['kind'] == 'sword' and BLADE['len'] >= 30:     # 가까운 손에 칼을 내려 쥐고 걷는다 — 칼 쥔 팔은 고정, 먼 팔만 흔든다(아라)
         arm_n = (4, 26)
     # 단검(BLADE 짧음)은 팔을 고정하지 않는다 — 11-24 형 「단검 애들은 걷기할 때 팔이 부자연스럽다」 · 참고: 던파 도적(로그) 걷기는 주먹을 허리 높이에 두고 두 팔을 적당히 흔든다
+    elif PROP['kind'] == 'staff':   # 가까운 손에 방울 지팡이를 쥐고 걷는다 — 쥔 팔은 한 손 칼처럼 고정, 먼 팔만 흔든다(무녀 · 11-25)
+        arm_n = (28, 50)   # 손은 몸 앞 허리 높이(서기 그림처럼 지팡이가 몸 앞 옆에 섬 · 얼굴·몸통을 가로지르지 않게)
     elif PROP['kind'] == 'bow':
         arm_f = (22, 58)   # 활 든 팔은 걸을 때 흔들지 않는다 — 활이 늘 몸 앞에 보이게(뒤로 가면 몸에 가려 칸마다 생겼다 사라진다)
     # 먼 쪽부터: (활대) · 먼 팔 · 먼 다리 → 몸통 · 머리 → 가까운 다리 · 가까운 팔 → (시위)
@@ -326,7 +328,7 @@ def figure(phase, swing_near, pose=None):
         if pose is not None and pose.get('palm', True):
             fingers(d, hand_f, arm_f[1])
             d.ellipse([hand_f[0] - HAND * 1.4 * Z, hand_f[1] - HAND * 1.4 * Z, hand_f[0] + HAND * 1.4 * Z, hand_f[1] + HAND * 1.4 * Z], fill=FAR, outline=LINE, width=3)
-        staff(d, hand_n, (pose or {}).get('blade', 90), (pose or {}).get('sback'), (pose or {}).get('sfront'))
+        staff(d, hand_n, (pose or {}).get('blade', 90), (pose or {}).get('sback', 40 if pose is None else None), (pose or {}).get('sfront', 70 if pose is None else None))   # 걷기(pose 없음)는 쥔 자리 아래 40 · 위 70 = 길이 110
         d.ellipse([hand_n[0] - HAND * Z, hand_n[1] - HAND * Z, hand_n[0] + HAND * Z, hand_n[1] + HAND * Z], fill=NEAR, outline=LINE, width=3)
     return im
 
@@ -429,6 +431,13 @@ IK_QUIRKS['hit_staff'] = [
     dict(_ik((3, -6), (-14, 74), (14, 98), bend=-42, near_foot=(-24, 0), far_foot=(8, 0)), prop='staff', blade=125),
     dict(_ik((-4, -54), (16, 34), (22, 44), bend=12, near_foot=(-30, 0), far_foot=(18, 0)), prop='staff', blade=84, palm=False),
     dict(_ik((0, -12), (14, 60), (16, 70), bend=8, near_foot=(-24, 0), far_foot=(20, 0)), prop='staff', blade=66),
+]
+# 무녀 「방울 흔들기」(방울 지팡이 · 11-25): 지팡이를 가슴 앞에 세움 -> 오른쪽(앞)으로 기울임 -> 왼쪽(뒤)으로 기울임(방울이 울림) -> 서기. 다리 고정 · 움직이는 것은 쥔 손과 지팡이 각도(±15도)
+IK_QUIRKS['shake'] = [
+    dict(_ik((0, 0), (26, 86), (12, 66), **_S), prop='staff', blade=90, sback=40, sfront=60),
+    dict(_ik((0, 0), (27, 88), (12, 66), **_S), prop='staff', blade=75, sback=40, sfront=60, palm=False),
+    dict(_ik((0, 0), (25, 88), (12, 66), **_S), prop='staff', blade=105, sback=40, sfront=60, palm=False),
+    dict(_ik((0, -1), (28, 60), (10, 64), lean=1), prop='staff', blade=84, palm=False),
 ]
 IK_QUIRKS['hit_none'] = [dict({k: v for k, v in d.items() if k not in ('prop', 'blade')}) for d in IK_QUIRKS['hit_sword']]   # 맨손(범 할퀴기)
 IK_QUIRKS['hit_bow'] = [
@@ -655,7 +664,7 @@ def main():
         return
     if len(sys.argv) > 1 and sys.argv[1] == 'walk':   # py pose-rig.py walk <걸음 결> <가슴 S|M|L|XL> [bow = 먼 쪽 손에 활을 쥐고 걷는다]
         key, bust = sys.argv[2], sys.argv[3]
-        if len(sys.argv) > 4 and sys.argv[4] in ('bow', 'pole2', 'shoulder', 'sword'):
+        if len(sys.argv) > 4 and sys.argv[4] in ('bow', 'pole2', 'shoulder', 'sword', 'staff'):
             PROP['kind'] = sys.argv[4]
         STYLE.clear()
         STYLE.update(STYLES[key])
