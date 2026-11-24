@@ -44,23 +44,23 @@ HEROES = {
     'archer': dict(hit=True, strip='gen-base-w-13-young-archer', atk='bow', atk8=False),   # 앳된 궁수
     'pirate': dict(hit=True, strip='gen-base-w-10-pirate-captain', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 해적 두목(작살) · 끝까지 찌른 칸은 좁은 칸에 안 들어가 당기는 칸으로
     'diver': dict(hit=True, strip='gen-base-w-17-mahan-pearl-diver', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 해녀(작살) · 11-24 새 찌르기 인형으로 b 까지 받음(예전엔 b 가 거절돼 앞 판만 썼다)
-    'huntress': dict(strip='gen-base-w-06-buyeo-huntress', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 부여 사냥꾼(창)
-    'dallae': dict(strip='gen-base-w-64-miri-dallae', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 미리 군주 달래(창)
+    'huntress': dict(hit=True, strip='gen-base-w-06-buyeo-huntress', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 부여 사냥꾼(창)
+    'dallae': dict(hit=True, strip='gen-base-w-64-miri-dallae', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 미리 군주 달래(창)
     'ara': dict(hit=True, atkk=1.05, strip='gen-ara', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 가야 검사 아라(한 손 칼) · 좁은 칸: 머리 위로 곧게 세운 a2 는 위가, 끝까지 벤 b1 은 앞이 넘친다
-    'dtiger': dict(strip='gen-base-w-22-dongye-tiger-huntress', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 동예 범 사냥꾼(창)
+    'dtiger': dict(hit=True, strip='gen-base-w-22-dongye-tiger-huntress', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 동예 범 사냥꾼(창)
     'noeul': dict(hit=True, strip='gen-noeul', atk='bow', atk8=False),   # 사로 노을(활)
-    'sagong': dict(strip='gen-sagong', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 사물 사공(두 손 노 · 찌르기)
+    'sagong': dict(hit=True, strip='gen-sagong', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 사물 사공(두 손 노 · 찌르기)
     'songbi': dict(strip='gen-songbi', atk='bow', atk8=False),   # 비류나 송비(활)
     'sinneoul': dict(hit=True, strip='gen-sinneoul', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 신지 너울(두 손 갈고리 장대 · 가슴 XL)
-    'heo': dict(strip='gen-heo', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 가락 허황옥(금빛 창 · 가슴 L)
+    'heo': dict(hit=True, strip='gen-heo', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 가락 허황옥(금빛 창 · 가슴 L)
     'mwarrior': dict(hit=True, strip='gen-base-w-08-mahan-warrior', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 마한 전사(창 · 우람한 뼈대)
     'whaleq': dict(hit=True, strip='gen-base-w-23-usisan-whale-queen', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 우시산 고래 여왕(미늘 작살 · 우람한 뼈대)
-    'tomboy': dict(strip='gen-base-w-26-iseo-tomboy-general', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 이서 말괄량이 장군(창 · 우람한 뼈대)
+    'tomboy': dict(hit=True, strip='gen-base-w-26-iseo-tomboy-general', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 이서 말괄량이 장군(창 · 우람한 뼈대)
     'beol': dict(hit=True, strip='gen-base-w-72-eumjeup-beol', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 음즙 벌(한 손 칼 · 우람한 뼈대) · 좁은 칸은 아라처럼 덜 뻗은 칸
-    'tneoul': dict(strip='gen-tneoul', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4)), lock='face'),   # 탐라 너울(두 손 나무 노 · 가슴 L) · 머리 상자 묶기는 b-2 에서 얼굴 자리를 잘못 잡아 머리가 둘이 됐다(11-24) → 얼굴 안쪽만
-    'baetsa': dict(strip='gen-base-w-76-gampyeong-baetsagong', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('a', 1)), cells8=[('a', 1), ('a', 2), ('a', 3), ('a', 4), ('b', 1), ('b', 2), ('b', 3), ('a', 1)]),   # 감평 뱃사공(두 손 나무 노 · 가슴 XL) · 찌르기 b 칸4 가 서기보다 14% 크게 그려져(키 158 · 다시 그리기 한 번 씀) 끝 칸을 a1 로
-    'odi': dict(strip='gen-odi', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 조문 오디(창 · 가슴 XL)
-    'deulme': dict(strip='gen-base-w-34-chopal-deulme', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 초팔 들메(창 · 우람한 뼈대 · 가슴 L)
+    'tneoul': dict(hit=True, strip='gen-tneoul', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4)), lock='face'),   # 탐라 너울(두 손 나무 노 · 가슴 L) · 머리 상자 묶기는 b-2 에서 얼굴 자리를 잘못 잡아 머리가 둘이 됐다(11-24) → 얼굴 안쪽만
+    'baetsa': dict(hit=True, strip='gen-base-w-76-gampyeong-baetsagong', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('a', 1)), cells8=[('a', 1), ('a', 2), ('a', 3), ('a', 4), ('b', 1), ('b', 2), ('b', 3), ('a', 1)]),   # 감평 뱃사공(두 손 나무 노 · 가슴 XL) · 찌르기 b 칸4 가 서기보다 14% 크게 그려져(키 158 · 다시 그리기 한 번 씀) 끝 칸을 a1 로
+    'odi': dict(hit=True, strip='gen-odi', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 조문 오디(창 · 가슴 XL)
+    'deulme': dict(hit=True, strip='gen-base-w-34-chopal-deulme', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 초팔 들메(창 · 우람한 뼈대 · 가슴 L)
     'dana': dict(hit=True, strip='gen-base-w-102-garak-dana', atk='bow', atk8=False),   # 가락 다나(활 · 가슴 XL)
     'maena': dict(hit=True, strip='gen-base-w-36-baekje-maena', atk='bow', atk8=False),   # 백제 매나(활 · 가슴 L)
     'sogeum': dict(hit=True, strip='gen-base-w-56-dongokjeo-sogeum', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 동옥저 소금 상인(단검 · 가슴 XL) · 좁은 칸은 아라처럼 덜 뻗은 칸
