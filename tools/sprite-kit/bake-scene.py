@@ -294,7 +294,12 @@ def attack4(path, name, tag, scene):
         ry, rx = np.nonzero(blue[y0:y1, x0:x1])
         if len(ry):
             gy = ry.max()
-            toe_rig = x0 + rx[ry >= gy - band].max()                       # 인형 앞발의 발끝(받은 그림 좌표)
+            # 인형 앞발의 발끝(받은 그림 좌표) = 맨 아래 두 줄에서 가장 긴 파란 줄의 오른쪽 끝.
+            #   바닥 띠 전체에서 가장 오른쪽 파란 점을 쓰면, 깊이 주저앉는 칸은 낮게 누운 정강이·무릎이 발끝보다 앞이라 14px 어긋났다(11-24 새 찌르기 인형)
+            fc = np.unique(rx[ry >= gy - 1])
+            cut = np.nonzero(np.diff(fc) > 2)[0]
+            segs = [(int(a_[0]), int(a_[-1])) for a_ in np.split(fc, cut + 1)]
+            toe_rig = x0 + max(segs, key=lambda r_: r_[1] - r_[0])[1]
             cols = np.nonzero(m[by1 - band:by1, :].any(0))[0]
             runs, st = [], None
             for a_, b_ in zip(cols, list(cols[1:]) + [None]):
@@ -387,7 +392,10 @@ def fall(path, name, scene, tag='down', k4=1.0, flip4=False):
 
 
 if __name__ == '__main__':
-    if sys.argv[1] == 'attack4':
+    if sys.argv[1] == 'attack4':   # … [cw=288] 깊이 찌르는 장수는 동작 칸을 넓힌다(뿌리·발 줄은 그대로 · 게임은 덧띠 폭 ÷ 칸 수로 칸 폭을 안다)
+        for a in sys.argv[6:]:
+            if a.startswith('cw='):
+                ACT['cw'] = int(a[3:])
         attack4(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
         sys.exit()
     if sys.argv[1] == 'fall':

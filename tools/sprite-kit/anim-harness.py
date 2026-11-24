@@ -28,6 +28,13 @@ TRY = ROOT + '/tools/out/strip/try'
 GAME = ROOT + '/public/realm/anim-px'
 CW, CH, ROOT_X, FOOT_Y = 208, 160, 104, 155
 ACT = dict(cw=240, ch=224, root=92, foot=216)   # bake-scene.py ACT 와 같은 값
+
+
+def use(h):
+    """장수의 동작 칸 폭(actw · 기본 240) — 낮게 깊이 찌르는 새 창 인형은 뿌리 앞으로 160px 까지 나가 240 칸(앞 148)에 안 들어간다 → 그 장수만 288"""
+    ACT['cw'] = h.get('actw', 240)
+    return h
+
 BG = (96, 104, 72)
 
 HEROES = {
@@ -35,7 +42,7 @@ HEROES = {
     'maehwa': dict(strip='gen-maehwa', atk='bow', atk8=False),
     'dalbit': dict(strip='gen-base-w-31-dabeol-dalbit', atk='bow', atk8=False),
     'archer': dict(strip='gen-base-w-13-young-archer', atk='bow', atk8=False),   # 앳된 궁수
-    'pirate': dict(strip='gen-base-w-10-pirate-captain', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 해적 두목(작살) · 끝까지 찌른 칸은 좁은 칸에 안 들어가 당기는 칸으로
+    'pirate': dict(strip='gen-base-w-10-pirate-captain', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 해적 두목(작살) · 끝까지 찌른 칸은 좁은 칸에 안 들어가 당기는 칸으로
     'diver': dict(strip='gen-base-w-17-mahan-pearl-diver', atk='thrust', atk8=True, act=True, legacy=(('a', 1), ('a', 2), ('a', 3), ('a', 1)),
                   cells8=[('a', 1), ('a', 2), ('a', 3), ('a', 4), ('a', 4), ('a', 3), ('a', 2), ('a', 1)]),   # 해녀(작살) · 뒤 판 b 는 그림 도구가 거절 → 앞 판으로: 타격 = 넷째(a4) · wire-hero hit=3
     'huntress': dict(strip='gen-base-w-06-buyeo-huntress', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 부여 사냥꾼(창)
@@ -57,6 +64,11 @@ HEROES = {
     'deulme': dict(strip='gen-base-w-34-chopal-deulme', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 초팔 들메(창 · 우람한 뼈대 · 가슴 L)
     'dana': dict(strip='gen-base-w-102-garak-dana', atk='bow', atk8=False),   # 가락 다나(활 · 가슴 XL)
     'maena': dict(strip='gen-base-w-36-baekje-maena', atk='bow', atk8=False),   # 백제 매나(활 · 가슴 L)
+    'sogeum': dict(strip='gen-base-w-56-dongokjeo-sogeum', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 동옥저 소금 상인(단검 · 가슴 XL) · 좁은 칸은 아라처럼 덜 뻗은 칸
+    'budeul': dict(strip='gen-budeul', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 골벌 부들(단검 · 가슴 L)
+    'gabi': dict(strip='gen-base-w-53-hwanna-gabi', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 환나 가비(단검 · 가슴 L)
+    'saltw': dict(strip='gen-base-w-18-jinhan-salt-widow', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 진한 소금 과부(단검 · 가슴 XL)
+    'beombal': dict(strip='gen-beombal', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 맥 범발(단검 · 가슴 M)
     'haebi': dict(strip='gen-haebi', atk='chop', atk8=True, act=True),   # act = 공격 여덟 칸이 넓은 동작 칸(240×224 · 뿌리 92 · 발 줄 216)
     'areum': dict(strip='gen-areum', atk='slam', atk8=True, act=True, lock='none'),   # 받은 그림 그대로(얼굴을 떠다 붙이지 않는다 — 11-24: 뭉친 얼굴이 여덟 칸에 퍼졌다) · 옛 lock='face': 메가 머리 뒤로 지나간다 — 머리 상자는 메를 자르고(「포스터」), 윗몸을 통째로 묶으면 떠다닌다(11-24 형) → 얼굴 안쪽만 묶는다
 }
@@ -113,9 +125,10 @@ def cells8(h):
 
 def attack(name):
     """넓은 칸 공격 두 판(STD/out-<장수>-<꼬리표>-a/b.png + scene-…)을 굽고 여덟 칸을 뿌리 선과 함께 늘어놓는다"""
-    h = HEROES[name]
+    h = use(HEROES[name])
     for half in sorted({t for t, _ in cells8(h)}):
-        run('bake-scene.py', 'attack4', f'{STD}/out-{name}-{h["atk"]}-{half}.png', name, f'{h["atk"]}8-{half}', f'{STD}/scene-{name}-{h["atk"]}-{half}.png')
+        src = h.get('src', h['atk'])   # 다시 그린 판(예: thrust2)은 src 로 가리킨다 — 굽는 이름은 그대로
+        run('bake-scene.py', 'attack4', f'{STD}/out-{name}-{src}-{half}.png', name, f'{h["atk"]}8-{half}', f'{STD}/scene-{name}-{src}-{half}.png', f'cw={ACT["cw"]}')
     ims = [Image.open(f'{PX}/{name}-{h["atk"]}8-{t}-{i}.png').convert('RGBA') for t, i in cells8(h)]
     z = 3
     row = Image.new('RGB', (ACT['cw'] * z * 4, ACT['ch'] * z * 2), BG)
@@ -148,7 +161,7 @@ def quirk(name):
 
 def act_cells(name):
     """넓은 칸 공격 여덟 칸 → 본 띠용 좁은 칸 넷(<꼬리표>-1..4 = 준비2 · 넘어옴 · 내림 · 거둠) — 뿌리·발 줄을 맞춰 잘라 낸다. 본편 전장처럼 20칸만 읽는 곳이 쓴다"""
-    h = HEROES[name]
+    h = use(HEROES[name])
     # 본 띠의 좁은 칸(208)은 뿌리 앞으로 104px 까지만 담는다 — 멀리 찌르는 칸은 잘린다(해적 두목 작살 119px) → 장수마다 좁은 칸에 들어가는 칸을 고른다(legacy)
     src = [f'{PX}/{name}-{h["atk"]}8-{t}-{i}.png' for t, i in h.get('legacy', (('a', 2), ('a', 4), ('b', 1), ('b', 4)))]
     for k, sp in enumerate(src):
@@ -174,7 +187,7 @@ def groups(h, ncell):
 
 
 def check(name, main=None, extra=None, grp=None):
-    h = HEROES[name]
+    h = use(HEROES[name])
     main = main or f'{GAME}/{h["strip"]}.png'
     extra = extra or f'{GAME}/{h["strip"]}-x.png'
     if not os.path.exists(main):
@@ -190,7 +203,7 @@ def check(name, main=None, extra=None, grp=None):
 
 
 def strip(name, install=False):
-    h = HEROES[name]
+    h = use(HEROES[name])
     os.makedirs(TRY, exist_ok=True)
     ext = f'{TRY}/{h["strip"]}-ext.png'
     if h.get('act'):
@@ -255,7 +268,7 @@ def _room(im):
 def strip_act(name, install=False):
     """넓은 동작 칸 장수: 본 띠(208×160 · 20칸) + 덧띠(240×224 · 쓰러짐 2 [+ 개성 4] + 공격 8)"""
     import shutil
-    h = HEROES[name]
+    h = use(HEROES[name])
     act_cells(name)
     ext = f'{TRY}/{h["strip"]}-ext.png'
     run('strip-build.py', name, h['atk'], ext, 'align', 'rooted', 'ext')
