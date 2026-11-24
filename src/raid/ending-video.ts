@@ -7,6 +7,7 @@ const clips:Record<string,Partial<Record<'victory'|'defeat',string>>>={
  'w-102-garak-dana':{victory:'victory_w-102-garak-dana',defeat:'defeat_w-102-garak-dana'},
  // 11-21 Claude Flow(Omni 1.1 · 4초) · tools/veo/ending-install.py 로 넣음 · 쇠비는 덩이쇠를 지킨 v2 판
  'w-30-guya-soebi':{victory:'victory_w-30-guya-soebi',defeat:'defeat_w-30-guya-soebi'},
+ // 11-24 아라 승·패 · 호진 패배는 다시 구운 판(스킬바디 전신에서 시작 · 형 「일단 만든 건 넣어 · 나중에 후순위로 다시」 — 원래대로 원화에서 다시 굽기가 남음)
  'w-04-gaya-swordswoman':{victory:'victory_w-04-gaya-swordswoman',defeat:'defeat_w-04-gaya-swordswoman'},
  'l-L2-soseono':{victory:'victory_l-L2-soseono',defeat:'defeat_l-L2-soseono'},
  'w-27-mokji-jinha':{victory:'victory_w-27-mokji-jinha',defeat:'defeat_w-27-mokji-jinha'},
