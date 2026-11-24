@@ -330,14 +330,14 @@ def attack4(path, name, tag, scene):
         print(f'{tag} 칸{k + 1} 게임 키 {g2.size[1]} 폭 {g2.size[0]} · 덩어리 {len(ids)} · 인형에서 {dx:+.0f}px({how} · 통째 겹침 {dx_all:+d}) · 뿌리 앞 {ox + g2.size[0] - ACT["root"]}px 뒤 {ACT["root"] - ox}px · 장면 칸 금까지 {edge}px{note}')
 
 
-def fall(path, name, scene, tag='down', k4=1.0, flip4=False):
+def fall(path, name, scene, tag='down', k4=1.0, flip4=False, kall=1.0):
     """쓰러짐 장면(style-scene.py fall 배치) 굽기 -> <이름>-down-1..4. 구역 안의 덩어리를 전부 모은다(떨어진 두건·머리카락 조각도 버리지 않는다).
     누운 칸은 옆 칸이 없어 잘릴 수 없다. 구역 금에 8px 안으로 닿으면 알린다.
       py -3 -I tools/sprite-kit/bake-scene.py fall <받은 장면.png> <이름> <보낸 장면.png>"""
     out = Image.open(path).convert('RGB')
     W, H = out.size
     k = W / 1920
-    scale = 1 / (3 * k)
+    scale = kall / (3 * k)   # kall: 네 칸 모두의 배율 (11-24 매화·달빛: 받은 그림의 사람이 인형보다 크게 그려져 쓰러짐 칸이 서기보다 커 보였다)
     full = key(out)
     solid = full[..., 3] > 60
     lab, nlab = ndimage.label(solid)
@@ -399,8 +399,9 @@ if __name__ == '__main__':
         attack4(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
         sys.exit()
     if sys.argv[1] == 'fall':
-        nums = [a for a in sys.argv[5:] if a != 'flip4']
-        fall(sys.argv[2], sys.argv[3], sys.argv[4], k4=float(nums[0]) if nums else 1.0, flip4='flip4' in sys.argv[5:])
+        nums = [a for a in sys.argv[5:] if a != 'flip4' and not a.startswith('k=')]
+        kall = next((float(a[2:]) for a in sys.argv[5:] if a.startswith('k=')), 1.0)   # … [k=0.87] 네 칸 모두 줄임
+        fall(sys.argv[2], sys.argv[3], sys.argv[4], k4=float(nums[0]) if nums else 1.0, flip4='flip4' in sys.argv[5:], kall=kall)
         sys.exit()
     if sys.argv[1] == 'motion8':   # motion8 <받은 장면> <이름> [꼬리표A 꼬리표B = 공격 판: 키 맞춤 없이]
         # motion8 <받은 장면> <이름> [꼬리표A 꼬리표B] [scene=<보낸 장면.png> — 뿌리 곁파일이 있으면 뿌리 맞춤]
