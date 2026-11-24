@@ -1,6 +1,6 @@
 // 열전 초반 압박 시험 (11-25 · journey-study 카드 0) — 가만히 서 있는 봇이 앞 몇 분에 얼마나 맞나
 //   node --experimental-strip-types tools/raid-early.ts [stage forest] [kits axe,bow,dagger,sword] [seeds 7,11,13]
-//   환경: MIN=5 (몇 분까지) · SHOP=0 (상점 몫 0~1) · STILL=1 (1=서 있음 · 0=기본 봇 원 돌기) · WALL=off (75-WALL 을 끈 옛 판)
+//   환경: MIN=5 (몇 분까지) · SHOP=0 (상점 몫 0~1) · STILL=1 (1=서 있음 · 0=기본 봇 원 돌기) · WALL=off (75-WALL 을 끈 옛 판) · PACE=off (76-PACE 를 끈 옛 곡선)
 //   한 줄: 판 최저 체력(평균·최악) · 죽은 판 · 맞은 수 평균 · 처치 · 레벨 · 분마다 체력 평균
 import { HAEBI_SHOP } from '../src/tune/params.ts'
 import { createHaebi, choose, stepHaebi, type Kit, type StageId, type Bonus } from '../src/raid/haebi.ts'

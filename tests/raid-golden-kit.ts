@@ -5,7 +5,7 @@ import { ALL_BUILD_KINDS } from '../src/raid/build.ts'
 const rules = (stage: StageId): HaebiOpts => ({ stage, bonus: {}, simRules: raidRulesForStage(stage), permanentAwake: false, appearanceAwake: true, kitRules: KIT_RULES, chestRules: CHEST_RULES, mapRules: MAP_RULES, blockRules: SOLID_RULES, anchorRules: ANCHOR_RULES, phantomRules: PHANTOM_RULES, breakRules: BREAK_RULES, buildRules: BUILD_RULES, build2Rules: BUILD2_RULES, capRules: CAP_RULES, bossChestRules: BOSSCHEST_RULES, buildUpRules: BUILDUP_RULES, awakeCapRules: AWAKECAP_RULES, bossDuelRules: BOSSDUEL_RULES })
 export function goldenRun(stage: StageId, kit: Kit, seed: number, seconds: number, extra: Partial<HaebiOpts> = {}) {
   const s = createHaebi(seed, 'stage', kit, { ...rules(stage), ...extra })
-  for (const k of ALL_BUILD_KINDS) { s.offers = [k]; s.xp = 0; choose(s, k) }
+  for (const k of ALL_BUILD_KINDS) { s.offers = [k]; s.xp = 0; choose(s, k); s.offers = [] }   // 종류 칸이 차서 못 고른 마지막 종류가 남으면 시간이 안 간다
   for (let i = 0; i < seconds * 60 && s.state === 'playing'; i++) {
     if (s.offers.length) choose(s, s.offers[0]!)
     stepHaebi(s, { x: Math.sin(i / 90), y: Math.cos(i / 140) }, 1 / 60)

@@ -5408,3 +5408,14 @@ export const HAEBI_BREAKABLE = {
   rebuild: { jar: 8, sotdae: 8, beacon: 12, well: 12 },
   touch: 6, bite: 1, championBite: 1.5,
 } as const
+
+/**
+ * 76-PACE 초반 곡선 (형 11-25 「초반이 적들을 피할 이유도 없이 쉬움」 · journey-study 카드 2).
+ * 새 판만. 5계단 적 표(HAEBI_STAGES.tiers)는 그대로 두고 생성 속도·첫 정예·숲 앞 몇 분의 밀도와 걸음만 손본다.
+ * 옛 곡선은 1.5→3.2 · 5→9 · 13→18 · 23 으로 토막 사이가 계단으로 뛰었다 (3.2→5 · 9→13 · 18→23).
+ * rampPaced 세 계단을 한쪽 끝에서 다른 쪽으로 이어 가는 길이(예전 10분 시각 · 계단 뒤쪽으로 이 길이만큼).
+ * eliteFirst 첫 정예가 나오는 때(판 길이 곱 · 옛 150초 = HAEBI_RUN.eliteEvery) — 그 뒤는 eliteEvery 간격 그대로.
+ * stageBoost 스테이지별 앞부분 생성 속도 가산(1 + 값 × 줄어듦) · speedBoost 같은 모양의 잡졸 걸음 가산 · boostPaced 가산이 0 으로 줄어드는 때(예전 10분 시각 · 480 = 16분쯤) — 숲만 올린다(여울·목책은 계단만 잇는다).
+ * 값은 시작 값 (tools/raid-early.ts 서 있는 봇 12판 · docs/BALANCE.md 「76-PACE」).
+ */
+export const HAEBI_PACE = { rampPaced: 30, eliteFirst: 60, stageBoost: { forest: 1.5 }, speedBoost: { forest: .5 }, boostPaced: 480 } as const
