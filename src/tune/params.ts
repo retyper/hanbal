@@ -825,6 +825,12 @@ export const HAEBI_BUILDUP = { max: 5, dmgStep: .25, rateStep: .15, minInterval:
  *   쓰러뜨린 것이 아니라 기세·금·처치 수·처치 효과가 없고 · 달아나는 동안 치지도 맞지도 않는다 · 사라진 자리에 흙먼지 고리(반지름 puff · 빛 puffColor) ·
  *   두목이 스스로 등장 고리를 띄우지 않으면(옛 두목) 포효 고리(반지름 roar · 빛 roarColor) 하나 · 거대 보스는 제 등장 고리를 그대로 쓴다
  */
+/**
+ * 72-BOSSHIT 보스의 예고된 큰 공격은 맞으면 아프다 (11-24 형 「보스 공격은 구태여 피할 필요도 없게 느껴짐」 · 형의 판: 마지막 두목 한 방이 최대 체력의 10~18% · 상점이 없으면 회복이 더 빨라 덮였다).
+ * 거대 보스 공격 하나의 피해가 from 이상이면(환경 피해 8 은 아니다) 맞은 몫이 최대 체력 × share × (그 공격의 기본 피해 ÷ ref) 아래로 내려가지 않는다 —
+ * 상점·레벨로 체력이 늘어도 한 방의 무게가 같다. 투지 보호막이 먼저 받고 · 단련(tough)이 줄인다 · 맞은 뒤 무적(hitInv)·구르기는 그대로. 규칙이 꺼진 판(옛 기록)은 안 쓴다.
+ */
+export const HAEBI_BOSS_HIT = { from: 14, ref: 30, share: .55 }
 export const HAEBI_BOSS_DUEL = { bossSpawn: .2, midbossSpawn: .5, bossCap: 75, flee: 1.4, fleeSpeed: 1.8, puff: 26, puffColor: '#c9a27a', roar: 120, roarColor: '#e8dcc0' } as const
 /**
  * 70-AWAKECAP 각성 장수 최고 레벨 60 (형 11-23 「각성하면 만렙이 10 오르게 하는 건 어때?」) — 영구 각성(permanentAwake)으로 들어온 66-CAP 판만 · 겉모습 각성(appearanceAwake)은 상관없다.
