@@ -70,13 +70,13 @@ export const HAEBI_BOSS_VOICE = {
   who: { gumiho: { laugh: true, hurt: false, scream: true }, shaman: { laugh: false, hurt: false, scream: true } } as Readonly<Record<string, { laugh: boolean; hurt: boolean; scream: boolean }>>,
 } as const
 /**
- * 짐승·괴물 보스의 고유 소리 (11-24 형 「비인간형 보스는 소리를 찾아야지」 · 고른 것 「321 122 1 · 나머지 2개는 불가사리에 못 씀」) — src/raid/boss-voice.ts 가 쓴다.
+ * 짐승·괴물 보스의 고유 소리 (11-24 형 「비인간형 보스는 소리를 찾아야지」 · 고른 것 「321 122 1」 · 불가사리 공격·끊길 때는 다시 찾아 「공격2 부위1」) — src/raid/boss-voice.ts 가 쓴다.
  * who: 보스 종류별로 파일이 있는 칸 — roar 등장·막 전환 · attack 공격 예고(tell)에 들어갈 때 · hurt 부위가 끊길 때. 없는 칸은 예전 그대로(포효 파일 · 공격 소리 없음).
  * 파일: public/realm/sfx/raid/boss_<종류>_<칸>.ogg (출처 CREDITS.txt) · roar/attack/hurt 크기 · attackGap/hurtGap 같은 소리 사이 틈(초)
  */
 export const HAEBI_BOSS_BEAST = {
   roar: .95, attack: .7, hurt: .85, attackGap: 2.5, hurtGap: .6,
-  who: { tiger: { roar: true, attack: true, hurt: true }, imugi: { roar: true, attack: true, hurt: true }, bulgasari: { roar: true, attack: false, hurt: false } } as Readonly<Record<string, { roar: boolean; attack: boolean; hurt: boolean }>>,
+  who: { tiger: { roar: true, attack: true, hurt: true }, imugi: { roar: true, attack: true, hurt: true }, bulgasari: { roar: true, attack: true, hurt: true } } as Readonly<Record<string, { roar: boolean; attack: boolean; hurt: boolean }>>,
 } as const
 /**
  * 열전 기술·크리티컬 소리와 진동 계단 (11-19 형: 「기술 쓸 때 사운드랑 햅틱 · 크리티컬은 핑 · 각성 기술은 더 강해야 하니 초반 사운드 너무 심하면 안 됨 · 진각성은 더 임팩트」).
