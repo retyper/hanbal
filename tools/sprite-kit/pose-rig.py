@@ -181,11 +181,12 @@ STAFF = dict(back=32, front=78)   # 방울 지팡이(한 손): 쥔 자리 뒤 32
 BRONZE, RIBBON = (214, 170, 70), ((205, 60, 55), (70, 110, 200), (235, 200, 60))   # 방울 청동 · 오방색 띠(적·청·황)
 
 
-def staff(d, hand, deg, back=None):
+def staff(d, hand, deg, back=None, front=None):
     """방울 지팡이: 손에서 deg 방향이 끝(방울이 달린 쪽) · 반대쪽이 밑동. 끝에 청동 방울 셋 + 오방색 띠 셋"""
     r = math.radians(deg)
     ux, uy = math.cos(r), -math.sin(r)
-    tip = (hand[0] + ux * STAFF['front'] * Z, hand[1] + uy * STAFF['front'] * Z)
+    fr = STAFF['front'] if front is None else front
+    tip = (hand[0] + ux * fr * Z, hand[1] + uy * fr * Z)
     bk = STAFF['back'] if back is None else back
     butt = (hand[0] - ux * bk * Z, hand[1] - uy * bk * Z)
     d.line([butt, tip], fill=LINE, width=int(3.2 * Z) + 6)
@@ -325,7 +326,7 @@ def figure(phase, swing_near, pose=None):
         if pose is not None and pose.get('palm', True):
             fingers(d, hand_f, arm_f[1])
             d.ellipse([hand_f[0] - HAND * 1.4 * Z, hand_f[1] - HAND * 1.4 * Z, hand_f[0] + HAND * 1.4 * Z, hand_f[1] + HAND * 1.4 * Z], fill=FAR, outline=LINE, width=3)
-        staff(d, hand_n, (pose or {}).get('blade', 90), (pose or {}).get('sback'))
+        staff(d, hand_n, (pose or {}).get('blade', 90), (pose or {}).get('sback'), (pose or {}).get('sfront'))
         d.ellipse([hand_n[0] - HAND * Z, hand_n[1] - HAND * Z, hand_n[0] + HAND * Z, hand_n[1] + HAND * Z], fill=NEAR, outline=LINE, width=3)
     return im
 
@@ -550,19 +551,20 @@ IK_ATTACKS['stab'] = [
     dict(_ik((0, -8), (16, 78), (20, 84), bend=6), blade=6),
     dict(_ik((0, -1), (6, 62), (10, 64), lean=1), blade=-38),
 ]
-# 주술 「기운 모아 내지르기」 — 한 손 방울 지팡이(가까운 손) + 먼 손 손바닥 (11-24 · 본 것은 ART-SKELETON §14 · 던파 무녀·엘레멘탈마스터는 못 봄)
-#   1 겨눔(지팡이는 몸 앞 옆에 세움) 2 지팡이를 머리 위로 들어 올림 3 [모음 · 머묾] 지팡이를 머리 위·뒤로 젖혀 들고 먼 손바닥을 가슴 앞에 폄 · 윗몸이 뒤로 젖힘
-#   4 [내지름 · 맞는 순간] 머리 위에서 앞 아래로 호를 그려 내리침: 쥔 손이 어깨 높이 앞으로 나가 방울이 몸 앞 위쪽에서 멈춤(자루가 얼굴을 가로지르지 않음) · 손바닥은 그 아래 가슴 높이에서 앞으로 5 뻗은 채(손바닥이 더 나감) 6 거둠 7 겨눔 8 서기
-#   발은 앞 일곱 칸 같은 자리(참고 게임: 시전은 하체가 안 움직임) · 내지를 때만 뒷발이 조금 뒤로
+# 주술 「방울 흔들고 손바닥으로 밀기」 (11-24 형 판정 「방울 흔들고 손바닥으로 미는 쪽」 · 창 찌르기로 읽히는 길을 없앰)
+#   지팡이는 늘 머리 옆 위쪽(쥔 손이 머리 높이)에서 좌우로 기울어 방울이 흔들린다 · 주인공은 먼 손바닥. 본 것은 CAST-RIG-20261124.md §1.
+#   1 겨눔(지팡이 몸 앞 옆에 세움) 2 지팡이를 머리 위로 · 먼 손이 가슴 앞으로 3 [모음 · 머묾] 무릎을 굽혀 낮추고 윗몸 뒤로 · 먼 손바닥을 가슴 옆으로 당김 · 지팡이는 머리 위에서 뒤로 기움
+#   4 [밀어냄 · 맞는 순간] 먼 손바닥이 어깨 높이로 팔 끝까지 앞으로 · 윗몸 앞으로 17도 · 앞발 반 걸음 · 지팡이는 앞으로 기움 5 뻗은 채 · 지팡이는 반대로(뒤로) 흔들림 6 손바닥 거두며 지팡이를 내림 7 겨눔 8 서기
 _C = dict(near_foot=(-18, 0), far_foot=(14, 0))
+_P = dict(sback=58, sfront=52)   # 머리 높이로 쥔 지팡이: 쥔 자리 아래 58 · 위 52 (끝이 칸 위로 안 잘리게)
 IK_ATTACKS['cast'] = [
-    dict(_ik((-2, -8), (26, 64), (10, 74), bend=4, **_C), blade=80),
-    dict(_ik((-5, -12), (14, 106), (28, 94), bend=-4, lean=-1, **_C), blade=94, sback=22),
-    dict(_ik((-10, -15), (24, 122), (30, 108), bend=-16, lean=-2, **_C), blade=104, sback=22),
-    dict(_ik((11, -16), (58, 84), (96, 96), bend=30, near_foot=(-21, 0, -10), far_foot=(14, 0)), blade=36, sback=12),
-    dict(_ik((13, -17), (62, 80), (98, 94), bend=26, near_foot=(-21, 0, -10), far_foot=(14, 0)), blade=26, sback=12),
-    dict(_ik((8, -12), (42, 86), (64, 92), bend=16, **_C), blade=64, sback=16),
-    dict(_ik((0, -6), (26, 66), (18, 80), bend=4, **_C), blade=84),
+    dict(_ik((-2, -8), (26, 64), (14, 74), bend=4, **_C), blade=80),
+    dict(_ik((-5, -12), (-26, 116), (24, 90), bend=-2, **_C), blade=92, **_P),
+    dict(_ik((-8, -22), (-38, 120), (10, 84), bend=-12, lean=-2, **_C), blade=114, **_P),
+    dict(_ik((6, -14), (0, 124), (62, 84), bend=17, near_foot=(-18, 0), far_foot=(20, 0)), blade=68, **_P),
+    dict(_ik((7, -15), (2, 122), (64, 86), bend=19, near_foot=(-18, 0), far_foot=(20, 0)), blade=110, **_P),
+    dict(_ik((2, -10), (-20, 112), (36, 86), bend=6, **_C), blade=90, **_P),
+    dict(_ik((0, -6), (26, 66), (18, 78), bend=4, **_C), blade=84),
     dict(_ik((0, -1), (28, 60), (10, 64), lean=1), blade=84),
 ]
 IK_PROP = {'slash': 'sword', 'stab': 'sword', 'cast': 'staff'}   # 공격마다 쥔 물건(없으면 두 손 긴 자루)
