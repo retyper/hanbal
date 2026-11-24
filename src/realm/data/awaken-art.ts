@@ -257,6 +257,11 @@ export const loopTakes = (id: string): string[] => [loopFile(id), ...Array.from(
 
 export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   // 11-15 형이 awaken-loop 폴더를 직접 정리(지울 것 지우고 보관은 이름 바꿈) → 남긴 영상은 쓴다
+  // 11-24 형 「일단 다 넣어봐」 — 흠이 있어 미뤘던 넷 · 후순위로 다시 굽기(인수인계 「영상 후순위 다시 굽기」)
+  'w-99-garak-yucheongan', // 끝에 말하는 입 · 중간 얼굴 변형 · 항아리 사라짐
+  'g-66-geonma-malbalgup', // 칼이 2.9~8.8초 화면 밖
+  'g-65-sangdang-soemangchi', // 망치 각도 튐 · 자루 사슬 생겼다 사라짐
+  'g-67-gosaburi-buri', // 활이 사라졌다 다시 나타남
   'g-67-buyeo-daeso', // 11-24 Claude Flow u/2 (Omni 1.1 · 10초) · 남자 · 잔을 내렸다 다시 듦 · 얼굴 그대로 · 움직임 좋음
   'g-68-baekje-onnuri', // 11-24 Claude Flow u/2 · 남자 · 칼 하나 끝까지 손에 · 자루 술이 잠깐 보이는 정도
   'g-65-goguryeo-damul', // 11-23 Claude 제미나이 Jay(Neon) · 남자 · 얼굴·칼·깃털 관 그대로 · 움직임 좋음
