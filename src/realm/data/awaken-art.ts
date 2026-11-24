@@ -251,7 +251,7 @@ export const AWAKEN_LOOP_SQ: ReadonlySet<string> = new Set<string>() // 11-08 �
  */
 export const loopFile = (id: string): string => `awaken-loop/${id}${AWAKEN_LOOP_SQ.has(id) ? '.sq' : ''}.mp4`
 /** 1차 각성 영상의 판 수 (없으면 1) — 번갈아 돈다 */
-export const AWAKEN_TAKES: Readonly<Record<string, number>> = { 'l-L2-soseono': 2, 'l-L4-bari-gongju': 2, 'w-95-michuhol-haebi': 2, 'l-L3-heo-hwangok': 2 } // 바리·해비 .2 = 11-09 Veo (형: 둘 다 괜찮으니 둘 다 쓰자) · 허황옥 .2 = 11-10 Flow Omni (형: 만든 김에 둘 다)
+export const AWAKEN_TAKES: Readonly<Record<string, number>> = { 'l-L2-soseono': 2, 'l-L4-bari-gongju': 2, 'w-95-michuhol-haebi': 2, 'l-L3-heo-hwangok': 2, 'g-68-mujin-bitgoeul': 2, 'g-81-saro-jita': 2, 'g-78-saro-alpyeong': 2 } // 바리·해비 .2 = 11-09 Veo (형: 둘 다 괜찮으니 둘 다 쓰자) · 허황옥 .2 = 11-10 Flow Omni (형: 만든 김에 둘 다)
 /** 1차 각성 영상의 모든 판 — 첫 판이 기본 */
 export const loopTakes = (id: string): string[] => [loopFile(id), ...Array.from({ length: Math.max(0, (AWAKEN_TAKES[id] ?? 1) - 1) }, (_, i) => `awaken-loop/${id}.${i + 2}.mp4`)]
 
@@ -264,6 +264,8 @@ export const AWAKEN_LOOP: ReadonlySet<string> = new Set([
   'g-67-gosaburi-buri', // 활이 사라졌다 다시 나타남
   'g-67-buyeo-daeso', // 11-24 Claude Flow u/2 (Omni 1.1 · 10초) · 남자 · 잔을 내렸다 다시 듦 · 얼굴 그대로 · 움직임 좋음
   'g-68-baekje-onnuri', // 11-24 Claude Flow u/2 · 남자 · 칼 하나 끝까지 손에 · 자루 술이 잠깐 보이는 정도
+  'g-81-saro-jita', // 11-24 저녁 두 판 모두(형 「만든 남자 2개씩 다 써 · 둘 다 쓸 만하니까」)
+  'g-78-saro-alpyeong', // 11-24 저녁 두 판 모두
   'g-68-mujin-bitgoeul', // 11-24 저녁 Claude Flow u/4 hepastosian (다시 만들기 1회) · 남자 · 칼 하나 끝까지 손에 · 얼굴 그대로·입 다묾 · .2 = 제미나이 판(2.9초 뒤 멈춤 · 판 수에 안 넣음)
   'g-65-goguryeo-damul', // 11-23 Claude 제미나이 Jay(Neon) · 남자 · 얼굴·칼·깃털 관 그대로 · 움직임 좋음
   'g-101-garak-adogan', // 11-22 Claude 제미나이 Jay(Neon) · 남자 · 얼굴·지팡이 그대로 · 움직임 좋음
