@@ -99,7 +99,7 @@ HEROES = {
     'haesol': dict(hit=True, strip='gen-haesol', atk='thrust', src='thrust3', backfoot=True, atkk=0.94, actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 우시산 해솔(가는 창 · 가슴 M) · 여덟째 묶음
     'soenun': dict(hit=True, strip='gen-soenun', atk='thrust', src='thrust3', backfoot=True, actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 관나 쇠눈(비늘 갑옷 · 창) · 여덟째 묶음
     'mdallae': dict(hit=True, strip='gen-mdallae', atk='thrust', src='thrust3', backfoot=True, atkk=0.96, actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 목지 달래 · 열째 묶음(API)
-    'mulbeom': dict(hit=True, strip='gen-mulbeom', atk='thrust', src='thrust2', actw=264, refoot=True, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4)), cells8=[('a', 1), ('a', 2), ('a', 3), ('a', 4), ('a', 4), ('a', 4), ('b', 3), ('b', 4)]),   # 북옥저 물범(작살) · 열째 묶음(API)
+    'mulbeom': dict(hit=True, strip='gen-mulbeom', atk='thrust', src='thrust3', backfoot=True, actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 북옥저 물범(작살) · 열째 묶음(API)
     'mulsae': dict(hit=True, strip='gen-mulsae', atk='thrust', src='thrust3', backfoot=True, actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 사로 물새 · 열째 묶음(API)
     'nuri': dict(hit=True, strip='gen-nuri', atk='thrust', src='thrust3', backfoot=True, atkk=0.96, actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 구가 누리 · 열째 묶음(API)
     'bihwa': dict(hit=True, strip='gen-base-w-25-bihwa-priestess', atk='cast', actw=264, atk8=True, act=True, legacy=(('a', 1), ('b', 3), ('b', 3), ('b', 4))),   # 비화 무녀(방울 지팡이 · 가슴 M) · 무녀 묶음(11-25 밤) · 시전 cast(방울 흔들고 손바닥 밀기)
