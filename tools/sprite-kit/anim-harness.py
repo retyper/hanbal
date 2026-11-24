@@ -58,7 +58,7 @@ HEROES = {
     'whaleq': dict(strip='gen-base-w-23-usisan-whale-queen', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 우시산 고래 여왕(미늘 작살 · 우람한 뼈대)
     'tomboy': dict(strip='gen-base-w-26-iseo-tomboy-general', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 이서 말괄량이 장군(창 · 우람한 뼈대)
     'beol': dict(strip='gen-base-w-72-eumjeup-beol', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 음즙 벌(한 손 칼 · 우람한 뼈대) · 좁은 칸은 아라처럼 덜 뻗은 칸
-    'tneoul': dict(strip='gen-tneoul', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 탐라 너울(두 손 나무 노 · 가슴 L) · 머리 상자 묶기는 b-2 에서 얼굴 자리를 잘못 잡아 머리가 둘이 됐다(11-24) → 얼굴 안쪽만
+    'tneoul': dict(strip='gen-tneoul', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4)), lock='face'),   # 탐라 너울(두 손 나무 노 · 가슴 L) · 머리 상자 묶기는 b-2 에서 얼굴 자리를 잘못 잡아 머리가 둘이 됐다(11-24) → 얼굴 안쪽만
     'baetsa': dict(strip='gen-base-w-76-gampyeong-baetsagong', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 감평 뱃사공(두 손 나무 노 · 가슴 XL)
     'odi': dict(strip='gen-odi', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 조문 오디(창 · 가슴 XL)
     'deulme': dict(strip='gen-base-w-34-chopal-deulme', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 초팔 들메(창 · 우람한 뼈대 · 가슴 L)
