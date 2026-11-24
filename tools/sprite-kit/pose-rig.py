@@ -177,6 +177,37 @@ def blade(d, hand, deg, length=None):
     d.line([(g0[0] + px * 4.5 * Z, g0[1] + py * 4.5 * Z), (g0[0] - px * 4.5 * Z, g0[1] - py * 4.5 * Z)], fill=WOOD, width=int(2.4 * Z))
 
 
+STAFF = dict(back=32, front=78)   # 방울 지팡이(한 손): 쥔 자리 뒤 32 · 앞 78 = 길이 110(키 137의 0.8)
+BRONZE, RIBBON = (214, 170, 70), ((205, 60, 55), (70, 110, 200), (235, 200, 60))   # 방울 청동 · 오방색 띠(적·청·황)
+
+
+def staff(d, hand, deg):
+    """방울 지팡이: 손에서 deg 방향이 끝(방울이 달린 쪽) · 반대쪽이 밑동. 끝에 청동 방울 셋 + 오방색 띠 셋"""
+    r = math.radians(deg)
+    ux, uy = math.cos(r), -math.sin(r)
+    tip = (hand[0] + ux * STAFF['front'] * Z, hand[1] + uy * STAFF['front'] * Z)
+    butt = (hand[0] - ux * STAFF['back'] * Z, hand[1] - uy * STAFF['back'] * Z)
+    d.line([butt, tip], fill=LINE, width=int(3.2 * Z) + 6)
+    d.line([butt, tip], fill=WOOD, width=int(3.2 * Z))
+    px, py = -uy, ux
+    for k, (off, col) in enumerate(zip((-1, 0, 1), RIBBON)):   # 띠: 끝에서 아래로 늘어진다
+        a = (tip[0] - ux * 4 * Z + px * off * 2.5 * Z, tip[1] - uy * 4 * Z + py * off * 2.5 * Z)
+        b = (a[0] - ux * 9 * Z + px * off * 2 * Z, a[1] - uy * 9 * Z + py * off * 2 * Z + 3 * Z)
+        d.line([a, b], fill=LINE, width=int(2.2 * Z) + 4)
+        d.line([a, b], fill=col, width=int(2.2 * Z))
+    for k in (-1, 0, 1):   # 방울 셋(끝 가까이 가로로)
+        c = (tip[0] + px * k * 4.2 * Z, tip[1] + py * k * 4.2 * Z)
+        d.ellipse([c[0] - 3 * Z, c[1] - 3 * Z, c[0] + 3 * Z, c[1] + 3 * Z], fill=BRONZE, outline=LINE, width=3)
+
+
+def fingers(d, hand, fore_a):
+    """펴진 손바닥: 아래팔 방향으로 손가락 넷이 부채꼴로"""
+    for k in (-1.5, -.5, .5, 1.5):
+        e = pt(hand[0], hand[1], fore_a + k * 13, 14 * Z)
+        d.line([hand, e], fill=LINE, width=int(2.4 * Z) + 4)
+        d.line([hand, e], fill=FAR, width=int(2.4 * Z))
+
+
 def figure(phase, swing_near, pose=None):
     """한 칸. swing_near = 지금 앞으로 나가는(흔드는) 다리가 가까운 쪽인가"""
     P0 = HALF[phase or 'pass']; S = STYLE
@@ -289,6 +320,12 @@ def figure(phase, swing_near, pose=None):
     if PROP['kind'] == 'sword':
         blade(d, hand_n, (pose or {}).get('blade', -38))
         d.ellipse([hand_n[0] - HAND * Z, hand_n[1] - HAND * Z, hand_n[0] + HAND * Z, hand_n[1] + HAND * Z], fill=NEAR, outline=LINE, width=3)   # 칼자루를 쥔 손
+    if PROP['kind'] == 'staff':   # 가까운 손이 방울 지팡이를 쥐고 · 먼 손은 손바닥을 편다 (주술 시전 · 무녀)
+        if pose is not None and pose.get('palm', True):
+            fingers(d, hand_f, arm_f[1])
+            d.ellipse([hand_f[0] - HAND * 1.4 * Z, hand_f[1] - HAND * 1.4 * Z, hand_f[0] + HAND * 1.4 * Z, hand_f[1] + HAND * 1.4 * Z], fill=FAR, outline=LINE, width=3)
+        staff(d, hand_n, (pose or {}).get('blade', 90))
+        d.ellipse([hand_n[0] - HAND * Z, hand_n[1] - HAND * Z, hand_n[0] + HAND * Z, hand_n[1] + HAND * Z], fill=NEAR, outline=LINE, width=3)
     return im
 
 
@@ -383,6 +420,13 @@ IK_QUIRKS['hit_sword'] = [
     dict(_ik((3, -6), (-14, 74), (14, 98), bend=-42, near_foot=(-24, 0), far_foot=(8, 0)), prop='sword', blade=-130),
     dict(_ik((-4, -54), (16, 34), (22, 44), bend=12, near_foot=(-30, 0), far_foot=(18, 0)), prop='sword', blade=-85),
     dict(_ik((0, -12), (14, 70), (16, 74), bend=8, near_foot=(-24, 0), far_foot=(20, 0)), prop='sword', blade=25),
+]
+# 한 손 방울 지팡이 맞음 네 칸 (hit_sword 를 본뜸 · 지팡이는 칼보다 길어 휘두르는 대신 몸에 붙임 / 젖혀질 땐 뒤로 쏠림)
+IK_QUIRKS['hit_staff'] = [
+    dict(_ik((-3, -8), (8, 66), (14, 72), bend=20, near_foot=(-10, 0), far_foot=(10, 0)), prop='staff', blade=70, palm=False),
+    dict(_ik((3, -6), (-14, 74), (14, 98), bend=-42, near_foot=(-24, 0), far_foot=(8, 0)), prop='staff', blade=125),
+    dict(_ik((-4, -54), (16, 34), (22, 44), bend=12, near_foot=(-30, 0), far_foot=(18, 0)), prop='staff', blade=84, palm=False),
+    dict(_ik((0, -12), (14, 60), (16, 70), bend=8, near_foot=(-24, 0), far_foot=(20, 0)), prop='staff', blade=66),
 ]
 IK_QUIRKS['hit_none'] = [dict({k: v for k, v in d.items() if k not in ('prop', 'blade')}) for d in IK_QUIRKS['hit_sword']]   # 맨손(범 할퀴기)
 IK_QUIRKS['hit_bow'] = [
@@ -505,7 +549,22 @@ IK_ATTACKS['stab'] = [
     dict(_ik((0, -8), (16, 78), (20, 84), bend=6), blade=6),
     dict(_ik((0, -1), (6, 62), (10, 64), lean=1), blade=-38),
 ]
-IK_PROP = {'slash': 'sword', 'stab': 'sword'}   # 공격마다 쥔 물건(없으면 두 손 긴 자루)
+# 주술 「기운 모아 내지르기」 — 한 손 방울 지팡이(가까운 손) + 먼 손 손바닥 (11-24 · 본 것은 ART-SKELETON §14 · 던파 무녀·엘레멘탈마스터는 못 봄)
+#   1 겨눔 2 지팡이를 들어 올리며 먼 손이 따라 오름 3 [모음 · 머묾] 지팡이를 머리 위로 곧게 세우고 먼 손바닥을 얼굴 앞에 펴 기운을 모음 · 윗몸이 뒤로 젖힘
+#   4 [내지름 · 맞는 순간] 윗몸이 앞으로 꺾이며 지팡이 끝과 손바닥이 함께 앞으로 5 뻗은 채(손바닥이 더 나감) 6 거둠 7 겨눔 8 서기
+#   발은 앞 일곱 칸 같은 자리(참고 게임: 시전은 하체가 안 움직임) · 내지를 때만 뒷발이 조금 뒤로
+_C = dict(near_foot=(-18, 0), far_foot=(14, 0))
+IK_ATTACKS['cast'] = [
+    dict(_ik((-2, -8), (12, 70), (10, 74), bend=4, **_C), blade=78),
+    dict(_ik((-5, -12), (10, 94), (26, 92), bend=-4, lean=-1, **_C), blade=86),
+    dict(_ik((-10, -15), (8, 98), (30, 112), bend=-16, lean=-2, **_C), blade=104),
+    dict(_ik((11, -16), (42, 94), (94, 92), bend=30, near_foot=(-24, 0, -12), far_foot=(14, 0)), blade=44),
+    dict(_ik((13, -17), (46, 90), (96, 94), bend=24, near_foot=(-24, 0, -12), far_foot=(14, 0)), blade=36),
+    dict(_ik((8, -12), (32, 88), (60, 92), bend=16, **_C), blade=58),
+    dict(_ik((0, -6), (14, 76), (18, 80), bend=4, **_C), blade=70),
+    dict(_ik((0, -1), (6, 62), (10, 64), lean=1), blade=90),
+]
+IK_PROP = {'slash': 'sword', 'stab': 'sword', 'cast': 'staff'}   # 공격마다 쥔 물건(없으면 두 손 긴 자루)
 
 
 def ik_attack_sheets(kind):
