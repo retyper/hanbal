@@ -85,8 +85,8 @@ def stand(path, name, idx=3, height=N, target=None):
     print(f'{name}: 사람 {len(figs)}명 중 {idx}째 · 원본 {me.size} → 게임 {g.size} (소서노 {refh}px 기준)')
 
 
-def motion(path, name, tag, scene=None, zoom=Z, rows=False):
-    out = Image.open(path).convert('RGB'); W, H = out.size; cw, ch = W / 3, H / 2; scale = 1 / zoom * (640 / cw)   # zoom = 장면을 만든 배(기본 4 · z3 장면은 3)
+def motion(path, name, tag, scene=None, zoom=Z, rows=False, kall=1.0):
+    out = Image.open(path).convert('RGB'); W, H = out.size; cw, ch = W / 3, H / 2; scale = kall / zoom * (640 / cw)   # kall: 네 칸 모두의 배율 (11-24 맞음 판이 서기보다 작게 그려졌을 때)   # zoom = 장면을 만든 배(기본 4 · z3 장면은 3)
     src = None
     if scene: src = Image.open(scene).convert('RGB'); sw, sh = src.size[0] / 3, src.size[1] / 2
     # 사람을 칸 금으로 자르지 않는다 (11-23 형 「쓰러짐 마지막 프레임은 머리카락이 잘렸고 그 잘린 게 발밑에 가 있다」 — 누운 사람의 머리카락이
@@ -421,4 +421,5 @@ if __name__ == '__main__':
         stand(sys.argv[2], sys.argv[3], int(nums[0]) if nums else 3, target=tg)
     else:
         rest = [a for a in sys.argv[5:] if a not in ('z3', 'rows')]
-        motion(sys.argv[2], sys.argv[3], sys.argv[4], rest[0] if rest else None, 3 if 'z3' in sys.argv[5:] else Z, 'rows' in sys.argv[5:])
+        motion(sys.argv[2], sys.argv[3], sys.argv[4], rest[0] if rest else None, 3 if 'z3' in sys.argv[5:] else Z, 'rows' in sys.argv[5:],
+               next((float(a[2:]) for a in sys.argv[5:] if a.startswith('k=')), 1.0))   # … [k=1.12] 네 칸 모두 키움·줄임

@@ -93,20 +93,20 @@ test('싸움 자세: 가까이 적이 있으면 stance 칸 · 떠난 뒤 stanceL
 
 test('매화 계획과 덧 띠 · 겨루기도 도트 띠', () => {
   const m = idlePlan('anim-px/gen-maehwa.png')!
-  assert.equal(m.cells, 26); assert.deepEqual(m.fall, [18, 20, 21, 19]); assert.deepEqual(m.quirk, [22, 23, 24, 25]); assert.deepEqual(m.quirkTimes, [.28, .3, .42, .25])
+  assert.equal(m.cells, 30); assert.deepEqual(m.hurt, [26, 27]); assert.deepEqual(m.rise, [28, 29]); assert.deepEqual(m.fall, [18, 20, 21, 19]); assert.deepEqual(m.quirk, [22, 23, 24, 25]); assert.deepEqual(m.quirkTimes, [.28, .3, .42, .25])
   const png = readFileSync(new URL('../public/realm/anim-px/gen-maehwa-x.png', import.meta.url)), main = readFileSync(new URL('../public/realm/anim-px/gen-maehwa.png', import.meta.url))
-  assert.equal(png.readUInt32BE(16), main.readUInt32BE(16) / 20 * 6); assert.equal(png.readUInt32BE(20), main.readUInt32BE(20))
+  assert.equal(png.readUInt32BE(16), main.readUInt32BE(16) / 20 * 10); assert.equal(png.readUInt32BE(20), main.readUInt32BE(20))
   assert.deepEqual(pxAtlas('maehwa').fall, [18, 20, 21, 19])
   // 달빛 (덧 띠 「머리카락 넘기기」)
   const d = idlePlan('anim-px/gen-base-w-31-dabeol-dalbit.png')!
-  assert.equal(d.cells, 26); assert.deepEqual(d.quirk, [22, 23, 24, 25]); assert.deepEqual(d.quirkTimes, [.28, .42, .3, .25]); assert.deepEqual(d.fall, [18, 20, 21, 19])
+  assert.equal(d.cells, 30); assert.deepEqual(d.hurt, [26, 27]); assert.deepEqual(d.quirk, [22, 23, 24, 25]); assert.deepEqual(d.quirkTimes, [.28, .42, .3, .25]); assert.deepEqual(d.fall, [18, 20, 21, 19])
   const dx = readFileSync(new URL('../public/realm/anim-px/gen-base-w-31-dabeol-dalbit-x.png', import.meta.url)), dm = readFileSync(new URL('../public/realm/anim-px/gen-base-w-31-dabeol-dalbit.png', import.meta.url))
-  assert.equal(dx.readUInt32BE(16), dm.readUInt32BE(16) / 20 * 6); assert.equal(dx.readUInt32BE(20), dm.readUInt32BE(20))
+  assert.equal(dx.readUInt32BE(16), dm.readUInt32BE(16) / 20 * 10); assert.equal(dx.readUInt32BE(20), dm.readUInt32BE(20))
 })
 
 test('범 할퀴기(덧 띠 26~33): 26·27 예비 · 28 휘두름 · 29 맞힘이 예전 맞힘 때 · 코드 런지·늘임·잔상은 끈다 · 겨루기도', () => {
   const beom = idlePlan('anim-px/gen-beom.png')!
-  assert.equal(beom.cells, 34); assert.deepEqual(beom.attack!.cells, [26, 27, 28, 29, 30, 31, 32, 33]); assert.equal(beom.attack!.hit, 3)
+  assert.equal(beom.cells, 38); assert.deepEqual(beom.hurt, [34, 35]); assert.deepEqual(beom.attack!.cells, [26, 27, 28, 29, 30, 31, 32, 33]); assert.equal(beom.attack!.hit, 3)
   const role = attackRole('dagger', beom.attack)
   assert.deepEqual(role.antic, [26, 27]); assert.deepEqual(role.swing, [28]); assert.equal(role.contact, 29); assert.deepEqual(role.recover, [30, 31, 32, 33])
   assert.equal(attackFrame(role, 0), 28); assert.equal(attackFrame(role, A.swing), 29); assert.equal(attackFrame(role, A.swing + .07 - 1e-9), 29, '맞힘 칸 .07초 그대로')
