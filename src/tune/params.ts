@@ -1459,6 +1459,8 @@ export const HAEBI_ANIM = {
   idle: [0, 1, 2, 1], idleTime: .65, walkCell: 4, hurtCell: 18, castCell: 12,
   /** 계획에 맞음 두 칸(hurt)이 있는 띠: 깎인 체력이 최대 체력의 hurtStrong 몫 이상이면 크게 맞음 — 움츠림을 hurtSnap 초 보인 뒤 젖혀짐 (판의 맞음 시계 .3 초 안) */
   hurtStrong: .06, hurtSnap: .08,
+  /** 계획에 일어남 두 칸(rise)이 있는 띠: 되살아난 뒤 riseTime 초 동안 한 무릎(앞 riseSplit 몫) → 넓게 섬 (판의 무적 2 초 안 · 화면만) */
+  riseTime: .55, riseSplit: .6,
   /**
    * 공격 칸 역할 — 열전 띠(anim-px 정규 20칸)의 공격은 모든 장수가 12..17 이다(대결 원본 틀 [9..13,0] 같은 번호와 다르다 · codex62 PREP).
    * ready 준비(빗나간 예비를 거둘 때) · antic 예비 · swing 휘두름 · contact 맞힘·쏨 · recover 마무리(서기로).

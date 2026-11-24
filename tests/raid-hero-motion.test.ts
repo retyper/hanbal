@@ -133,3 +133,15 @@ test('맞음 두 칸(계획 hurt): 약하게 맞으면 움츠림만 · 크게 �
   hit(old, A.hurtStrong * 2)
   assert.equal(heroPose(old, opts).frame, A.hurtCell, '계획에 맞음 칸이 없으면 예전 그대로')
 })
+
+test('일어남 두 칸(계획 rise): 되살아난 직후 riseTime 초 동안 한 무릎 → 넓게 섬 · 그 뒤 예전대로 (11-24)', () => {
+  const plan = { cells: 38, base: [0, 1], hold: 2.4, hurt: [34, 35], rise: [36, 37] }
+  const o = { ...opts, idle: { plan, seed: 1 } }
+  const s = createHaebi(7, 'stage', 'spear'); s.spawn = 99; s.revives = 1; heroPose(s, o)
+  s.t += 1 / 120; s.revives = 0; s.hp = s.maxHp / 2; s.hurt = 0
+  assert.equal(heroPose(s, o).frame, 36, '한 무릎')
+  s.t += A.riseTime * A.riseSplit + .01
+  assert.equal(heroPose(s, o).frame, 37, '넓게 섬')
+  s.t += A.riseTime
+  assert.ok(![36, 37].includes(heroPose(s, o).frame), '그 뒤엔 서기')
+})

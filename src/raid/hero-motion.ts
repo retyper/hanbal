@@ -56,11 +56,13 @@ interface Memo {
   nearAt: number
   /** 지난 관측의 체력 · 맞음 시계 · 이번 맞음이 시작된 판 시각 · 크게 맞았나(깎인 체력 ≥ HAEBI_ANIM.hurtStrong × 최대 체력) */
   hp: number; hurt: number; hurtAt: number; strong: boolean
+  /** 남은 되살아남 수(지난 관측) · 마지막으로 되살아난 판 시각 — 일어남 두 칸(계획 rise)을 그때부터 HAEBI_ANIM.riseTime 초 */
+  revives: number; revAt: number
 }
 const memos = new WeakMap<HaebiRun, Memo>()
 const fresh = (s: HaebiRun): Memo => ({ t: s.t, x: s.x, y: s.y, phase: 0, lean: 0, movedAt: -Infinity, walkFrame: -1, walkSy: 1,
   cool: primaryCool(s), struckAt: -Infinity, aim: s.face, reach: 0, heldStart: -Infinity, anticAt: -Infinity, busyAt: -Infinity, idling: false, nearAt: -Infinity,
-  hp: s.hp, hurt: s.hurt, hurtAt: -Infinity, strong: false })
+  hp: s.hp, hurt: s.hurt, hurtAt: -Infinity, strong: false, revives: s.revives, revAt: -Infinity })
 /** 주 무기 쿨다운 — 쿨다운 칸 이름은 주 무기 이름과 같다(KITS[kit].primary · 방울은 bell) */
 function primaryCool(s: HaebiRun) { return s.cool[KITS[s.kit].primary as keyof HaebiRun['cool']] }
 /** 판이 겨누는 적(가장 가까운 산 적)과 거리 — 판의 nearest 와 같은 셈(가운데 거리) */
@@ -95,7 +97,8 @@ function observe(s: HaebiRun, stride: number): Memo {
     if (foe) m.reach = Math.max(m.reach, foe.d)
   }
   if (s.hurt > m.hurt + 1e-9) { m.hurtAt = s.t; m.strong = m.hp - s.hp >= A.hurtStrong * s.maxHp }   // 새로 맞음 (판이 hurt 를 다시 채웠다)
-  m.hp = s.hp; m.hurt = s.hurt
+  if (s.revives < m.revives) m.revAt = s.t   // 되살아남 (판이 체력을 절반으로 채우고 바로 세운다)
+  m.hp = s.hp; m.hurt = s.hurt; m.revives = s.revives
   m.cool = cool; m.t = s.t; m.x = s.x; m.y = s.y
   return m
 }
@@ -131,6 +134,9 @@ export function heroPose(s: HaebiRun, o: PoseOptions): HeroPose {
   return pose
 }
 function heroPoseOf(s: HaebiRun, m: Memo, role: AttackRole, o: PoseOptions): HeroPose {
+  // 되살아난 직후: 한 무릎 세워 앉음 → 넓게 섬 (계획 rise · 참고: 던파 일어남 2칸) — 판은 이미 서 있고 무적이다
+  const rc = o.idle?.plan.rise, sinceRev = s.t - m.revAt
+  if (rc && rc.length >= 2 && sinceRev < A.riseTime) return neutral(sinceRev < A.riseTime * A.riseSplit ? rc[0]! : rc[1]!, s.face, m.lean)
   if (s.hurt > 0) {
     // 계획에 맞음 두 칸이 있으면: 약하게 맞음 = 움츠림 · 크게 맞음 = 움츠림 hurtSnap 초 → 젖혀짐 (참고: 던파 맞음 2칸 · ART-SKELETON §12)
     const hc = o.idle?.plan.hurt
