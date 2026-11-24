@@ -53,7 +53,6 @@ export const HERO_HD: Readonly<Record<string, string>> = {
   'anim-px/gen-maenun.png': 'anim-px/gen-maenun_hd.png',
   'anim-px/gen-jumong.png': 'anim-px/gen-jumong_hd.png',
   'anim-px/gen-dangung.png': 'anim-px/gen-dangung_hd.png',
-  'anim-px/gen-base-w-102-garak-dana.png': 'anim-px/gen-base-w-102-garak-dana_hd.png',
   'anim-px/gen-aw1-hogong.png': 'anim-px/gen-aw1-hogong_hd.png',
   'anim-px/gen-hogong.png': 'anim-px/gen-hogong_hd.png',
   'anim-px/gen-aw1-gomok.png': 'anim-px/gen-aw1-gomok_hd.png',
