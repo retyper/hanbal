@@ -12,7 +12,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
-const MODEL = process.env.GPT_IMAGE_MODEL || 'chatgpt-image-latest'
+const MODEL = process.env.GPT_IMAGE_MODEL || 'gpt-image-2'   // 11-24 시험: chatgpt-image-latest 흐림 · 2.6-sunburst 검은 바탕 · gpt-image-2 가 Codex 결과 같다
 const QUALITY = process.env.GPT_IMAGE_QUALITY || 'high'
 const LEDGER = path.resolve('tools/out/api-ledger.tsv')
 
