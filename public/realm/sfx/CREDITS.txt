@@ -409,3 +409,13 @@ raid/boss_imugi_roar.ogg  Freesound · https://freesound.org/people/Bikkit99/sou
 raid/boss_imugi_attack.ogg  Freesound · https://freesound.org/people/xoiziox/sounds/553374/ · "Snake Hiss" · xoiziox · CC0 · 일부(0.38~2.78초)를 잘라 크기를 맞춤
 raid/boss_imugi_hurt.ogg  Freesound · https://freesound.org/people/Garuda1982/sounds/541656/ · "hissing snake sound effect" · Garuda1982 · CC BY 4.0 · 일부(0.27~1.16초)를 잘라 크기를 맞춤
 raid/boss_bulgasari_roar.ogg  Freesound · https://freesound.org/people/Rotaredom/sounds/640805/ · "Mechanical_Roar.wav" · Rotaredom · CC0 · 일부(0.02~3.8초)를 잘라 크기를 맞춤
+
+# 불가사리 소리 후보 (고르지 않은 것은 나중에 지운다)
+cand/raid/raid_boss_bulgasari_attack_h1.ogg  Freesound · https://freesound.org/people/JoelEleven/sounds/719353/ · "Giant Monster Stomp" · JoelEleven · CC0 · 일부(0~1.3초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_bulgasari_attack_h2.ogg  Freesound · https://freesound.org/people/LucasDuff/sounds/467701/ · "monster bite" · LucasDuff · CC0 · 일부(0.30~1.9초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_bulgasari_attack_h3.ogg  Freesound · https://freesound.org/people/OGsoundFX/sounds/423010/ · "Monster Bite on Armor WAV" · OGsoundFX · CC BY 4.0 · 일부(0.10~1.9초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_bulgasari_attack_h4.ogg  Freesound · https://freesound.org/people/magnuswaker/sounds/531862/ · "Seismic Slam" · magnuswaker · CC0 · 일부(0~2.2초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_bulgasari_hurt_h1.ogg  Freesound · https://freesound.org/people/xkeril/sounds/703247/ · "Big falling debris (crash)" · xkeril · CC0 · 일부(0~2.5초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_bulgasari_hurt_h2.ogg  Freesound · https://freesound.org/people/Sclolex/sounds/178202/ · "CrashingMetalObjects.wav" · Sclolex · CC0 · 일부(0.05~2.6초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_bulgasari_hurt_h3.ogg  Freesound · https://freesound.org/people/zenosounds/sounds/877700/ · "Steelwire Rupture" · zenosounds · CC BY 4.0 · 일부(0~1.8초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_bulgasari_hurt_h4.ogg  Freesound · https://freesound.org/people/Artninja/sounds/847085/ · "custom_metal_crash_with_glass_debris_03022026" · Artninja · CC BY 4.0 · 일부(0.80~3.0초)를 잘라 크기를 맞춤
