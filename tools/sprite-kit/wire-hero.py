@@ -53,7 +53,7 @@ def main(argv):
     j = s.index('\n  },\n} as const', i)
     block = s[i:j]
     name = key if re.fullmatch(r'[a-z0-9]+', key) else f"'{key}'"
-    has_quirk = xcells >= 6
+    has_quirk = xcells - (8 if 'atk8' in argv else 0) - (4 if 'hit' in argv else 0) >= 6   # 덧띠 = 쓰러짐 2 [+ 개성 4] + 공격 8 [+ 맞음 4] — 개성 동작이 거절된 장수(11-24 소금비)는 2 + 8 = 10 이라 덧띠 칸 수만으로는 못 가린다
     parts = [f'cells: {cells}', 'base: [0, 1]', 'hold: 2.4', 'fall: [18, 20, 21, 19]']
     if has_quirk:
         parts += ['quirk: [22, 23, 24, 25]', 'quirkTimes: [%s]' % ', '.join(opt.get('quirk', '.28,.3,.42,.25').split(','))]

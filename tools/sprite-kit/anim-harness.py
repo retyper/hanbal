@@ -69,7 +69,7 @@ HEROES = {
     'saltw': dict(hit=True, strip='gen-base-w-18-jinhan-salt-widow', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 진한 소금 과부(단검 · 가슴 XL)
     'beombal': dict(hit=True, strip='gen-beombal', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 맥 범발(단검 · 가슴 M)
     'irang': dict(hit=True, strip='gen-irang', atk='slash', atk8=True, act=True, legacy=(('b', 3), ('b', 1), ('b', 2), ('b', 4)), cells8=[('b', 4), ('b', 3), ('b', 3), ('b', 1), ('b', 1), ('b', 2), ('b', 3), ('b', 4)]),   # 조문 이랑(단검 · 가슴 M) · 내려베기 a 판은 그림 도구가 거절 → b 판 넷으로 여덟 칸(거둠 칸을 당김으로 · 찌르는 칸 넷째)
-    'sogeumbi': dict(strip='gen-sogeumbi', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 옥저 소금비(한 손 칼 · 가슴 M)
+    'sogeumbi': dict(hit=True, strip='gen-sogeumbi', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 옥저 소금비(한 손 칼 · 가슴 M)
     'baram': dict(strip='gen-baram', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 고사부리 바람(단검 · 가슴 M)
     'byeol': dict(strip='gen-byeol', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 벽진 별(한 손 칼 · 가슴 M · 달군 칼날은 불빛 없이)
     'haebi': dict(hit=True, strip='gen-haebi', atk='chop', atk8=True, act=True),   # act = 공격 여덟 칸이 넓은 동작 칸(240×224 · 뿌리 92 · 발 줄 216)
