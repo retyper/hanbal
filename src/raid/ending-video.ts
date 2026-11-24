@@ -18,7 +18,7 @@ const clips:Record<string,Partial<Record<'victory'|'defeat',string>>>={
  'g-71-baekje-onjo':{victory:'victory_g-71-baekje-onjo',defeat:'defeat_g-71-baekje-onjo'},
  'g-94-golpo-maenun':{victory:'victory_g-94-golpo-maenun',defeat:'defeat_g-94-golpo-maenun'},
  'g-11-gaya-iron-general':{victory:'victory_g-11-gaya-iron-general',defeat:'defeat_g-11-gaya-iron-general'},
-// 11-22 Claude Flow(Omni 1.1 · 4초) · 호진 승리는 도끼가 사라진 첫 판 대신 v2(도끼 끝까지 손에)
+// 11-22 Claude Flow(Omni 1.1 · 4초) · 호진 승리는 11-24 v3(전신 그림에서 시작 · 도끼 하나 끝까지 손에)
 'g-82-saro-hojin':{victory:'victory_g-82-saro-hojin',defeat:'defeat_g-82-saro-hojin'},
 'g-75-saro-hogong':{victory:'victory_g-75-saro-hogong',defeat:'defeat_g-75-saro-hogong'},
 }

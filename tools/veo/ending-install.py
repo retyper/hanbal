@@ -2,13 +2,14 @@
 
   py -3 -I tools/veo/ending-install.py <그림 id> [<그림 id> ...]
 
-D:/에셋창고/{victory,defeat}_<id>_flow-*.mp4 가운데 가장 새 판(이름에 -v2 가 있으면 그것)을
+D:/에셋창고/{victory,defeat}_<id>_flow-*.mp4 가운데 가장 새 판(이름에 -v2·-v3 … 이 있으면 번호가 가장 큰 것)을
 public/realm/raid/ending/<kind>_<id>.mp4 로 복사하고, 마지막 장면을 같은 이름 .jpg 포스터로 굽는다.
 이미 있는 파일은 덮어쓰지 않는다(옛 판은 손으로 보관한 뒤 지울 것). 끝에 src/raid/ending-video.ts 의
 clips 표에 넣을 줄을 찍는다.
 """
 import glob
 import os
+import re
 import shutil
 import sys
 
@@ -22,8 +23,11 @@ def pick(kind, hero):
     found = sorted(glob.glob(f'{STORE}/{kind}_{hero}_flow-*.mp4'), key=os.path.getmtime)
     if not found:
         return None
-    v2 = [f for f in found if '-v2' in f]
-    return (v2 or found)[-1]
+    # 다시 구운 판(-v2 · -v3 …)이 있으면 번호가 가장 큰 것
+    def ver(f):
+        m = re.search(r'-v(\d+)\.mp4$', f)
+        return int(m.group(1)) if m else 1
+    return max(found, key=ver) if any(ver(f) > 1 for f in found) else found[-1]
 
 
 def poster(src: str, dst: str) -> None:
