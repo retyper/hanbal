@@ -68,6 +68,11 @@ HEROES = {
     'solmae': dict(strip='gen-base-w-79-yangmaek-solmae', atk='bow', atk8=False),   # 양맥 솔매(활 · 가슴 M) · API
     'dalli': dict(strip='gen-dalli', atk='bow', atk8=False),   # 마가 달리(활 · 우람한 뼈대) · API
     'danbi': dict(strip='gen-danbi', atk='bow', atk8=False),   # 사로 단비(활 · 가는 뼈대 → M 장면) · API
+    'bakdal': dict(hit=True, strip='gen-bakdal', atk='bow', atk8=False),   # 불래 박달(활 · 가슴 M) · 아홉째 묶음
+    'darae': dict(hit=True, strip='gen-darae', atk='bow', atk8=False),   # 부여 다래(활 · 가슴 M) · 아홉째 묶음
+    'haedal': dict(strip='gen-haedal', atk='bow', atk8=False),   # 부여 해달(활 · 가슴 M) · 아홉째 묶음
+    'hwalmi': dict(strip='gen-hwalmi', atk='bow', atk8=False),   # 고구려 활미(활 · 가슴 M) · 아홉째 묶음
+    'wan': dict(strip='gen-wan', atk='bow', atk8=False),   # 완산 완(활 · 가슴 M) · 아홉째 묶음
     'sogeum': dict(hit=True, strip='gen-base-w-56-dongokjeo-sogeum', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 동옥저 소금 상인(단검 · 가슴 XL) · 좁은 칸은 아라처럼 덜 뻗은 칸
     'budeul': dict(hit=True, strip='gen-budeul', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 골벌 부들(단검 · 가슴 L)
     'gabi': dict(hit=True, strip='gen-base-w-53-hwanna-gabi', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 환나 가비(단검 · 가슴 L)
@@ -203,7 +208,7 @@ def to_act(c):
 
 def groups(h, ncell):
     g = ['stand:stand:0-3', 'walk:walk:4-11', 'attack:attack:12-17']
-    if ncell >= 26:
+    if ncell - (4 if h.get('hit') else 0) >= 26:   # 맞음 네 칸이 붙은 개성 동작 없는 장수(20+쓰러짐 2+맞음 4=26)를 개성 동작으로 세지 않는다
         g.append('quirk:misc:22-25')
     if h['atk8'] and ncell >= 34:
         g.append('attack8:attack:26-33')
