@@ -106,6 +106,13 @@ HEROES = {
     'sincheongan': dict(hit=True, strip='gen-sincheongan', atk='cast', actw=264, atk8=True, act=True, legacy=(('a', 1), ('b', 3), ('b', 3), ('b', 4))),   # 가락 신청간(방울 지팡이 · 가슴 M) · 무녀 묶음(11-25 밤) · 시전 cast(방울 흔들고 손바닥 밀기)
     'munui': dict(hit=True, strip='gen-base-w-40-mujin-munui', atk='cast', actw=264, atk8=True, act=True, legacy=(('a', 1), ('b', 3), ('b', 3), ('b', 4))),   # 무진 문의(방울 지팡이 · 가슴 M) · 무녀 묶음(11-25 밤) · 시전 cast(방울 흔들고 손바닥 밀기)
     'halla': dict(hit=True, strip='gen-halla', atk='cast', actw=264, atk8=True, act=True, legacy=(('a', 1), ('b', 3), ('b', 3), ('b', 4))),   # 탐라 한라(갈고리 방울 지팡이 · 가슴 M) · 무녀 묶음(11-25 밤) · 시전 cast(방울 흔들고 손바닥 밀기)
+    'yucheongan': dict(hit=True, strip='gen-yucheongan', atk='cast', actw=264, atk8=True, act=True, legacy=(('a', 1), ('b', 3), ('b', 3), ('b', 4))),   # 유청간(갈고리 지팡이 · 방울 없음 · 가슴 XL) · 주술 둘째 묶음(11-25 밤)
+    'gulady': dict(hit=True, strip='gen-base-w-02-goguryeo-lady', atk='cast', actw=264, atk8=True, act=True, legacy=(('a', 1), ('b', 3), ('b', 3), ('b', 4))),   # 고구려 귀부인(방울 막대 · 맨손 시전 hand) · 주술 둘째 묶음(11-25 밤)
+    'gaon': dict(hit=True, strip='gen-gaon', atk='cast', actw=264, atk8=True, act=True, legacy=(('a', 1), ('b', 3), ('b', 3), ('b', 4))),   # 가온(눈꽃 · 두 손바닥 hand2) · 주술 둘째 묶음(11-25 밤)
+    'apdok': dict(hit=True, strip='gen-base-w-24-apdok-queen', atk='cast', actw=264, atk8=True, act=True, legacy=(('a', 1), ('b', 3), ('b', 3), ('b', 4))),   # 압독 왕비(볏단 · 가까운 손바닥 handn) · 주술 둘째 묶음(11-25 밤)
+    'iseo': dict(hit=True, strip='gen-base-w-61-iseo-sinae', atk='cast', actw=264, atk8=True, act=True, legacy=(('a', 1), ('b', 3), ('b', 3), ('b', 4))),   # 이서 시내(산가지 · hand) · 주술 둘째 묶음(11-25 밤)
+    'goeun': dict(hit=True, strip='gen-goeun', atk='cast', actw=264, atk8=True, act=True, legacy=(('a', 1), ('b', 3), ('b', 3), ('b', 4))),   # 고은(부채 · handf) · 주술 둘째 묶음(11-25 밤)
+    'baekjeq': dict(hit=True, strip='gen-base-w-05-baekje-queen', atk='cast', actw=264, atk8=True, act=True, legacy=(('a', 1), ('b', 3), ('b', 3), ('b', 4))),   # 백제 왕비(향로 · hand · 가슴 L) · 주술 둘째 묶음(11-25 밤)
     'haebi': dict(hit=True, strip='gen-haebi', atk='chop', atk8=True, act=True),   # act = 공격 여덟 칸이 넓은 동작 칸(240×224 · 뿌리 92 · 발 줄 216)
     'areum': dict(hit=True, strip='gen-areum', atk='slam', atk8=True, act=True, lock='none'),   # 받은 그림 그대로(얼굴을 떠다 붙이지 않는다 — 11-24: 뭉친 얼굴이 여덟 칸에 퍼졌다) · 옛 lock='face': 메가 머리 뒤로 지나간다 — 머리 상자는 메를 자르고(「포스터」), 윗몸을 통째로 묶으면 떠다닌다(11-24 형) → 얼굴 안쪽만 묶는다
 }

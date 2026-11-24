@@ -202,12 +202,12 @@ def staff(d, hand, deg, back=None, front=None):
         d.ellipse([c[0] - 3 * Z, c[1] - 3 * Z, c[0] + 3 * Z, c[1] + 3 * Z], fill=BRONZE, outline=LINE, width=3)
 
 
-def fingers(d, hand, fore_a):
+def fingers(d, hand, fore_a, fill=None):
     """펴진 손바닥: 아래팔 방향으로 손가락 넷이 부채꼴로"""
     for k in (-1.5, -.5, .5, 1.5):
         e = pt(hand[0], hand[1], fore_a + k * 13, 14 * Z)
         d.line([hand, e], fill=LINE, width=int(2.4 * Z) + 4)
-        d.line([hand, e], fill=FAR, width=int(2.4 * Z))
+        d.line([hand, e], fill=(FAR if fill is None else fill), width=int(2.4 * Z))
 
 
 def figure(phase, swing_near, pose=None):
@@ -279,6 +279,10 @@ def figure(phase, swing_near, pose=None):
     # 단검(BLADE 짧음)은 팔을 고정하지 않는다 — 11-24 형 「단검 애들은 걷기할 때 팔이 부자연스럽다」 · 참고: 던파 도적(로그) 걷기는 주먹을 허리 높이에 두고 두 팔을 적당히 흔든다
     elif PROP['kind'] == 'staff':   # 가까운 손에 방울 지팡이를 쥐고 걷는다 — 쥔 팔은 한 손 칼처럼 고정, 먼 팔만 흔든다(무녀 · 11-25)
         arm_n = (28, 50)   # 손은 몸 앞 허리 높이(서기 그림처럼 지팡이가 몸 앞 옆에 섬 · 얼굴·몸통을 가로지르지 않게)
+    elif PROP['kind'] == 'holdn':   # 맨손 주술 · 가까운 손에 물건(부채·향로·방울 막대) — 쥔 팔은 몸 앞에 고정, 먼 팔만 흔든다 (11-25 밤)
+        arm_n = (28, 50)
+    elif PROP['kind'] == 'holdf':   # 먼 팔에 물건(볏단)을 끼고 걷는다 — 먼 팔 고정, 가까운 팔만 흔든다
+        arm_f = (22, 58)
     elif PROP['kind'] == 'bow':
         arm_f = (22, 58)   # 활 든 팔은 걸을 때 흔들지 않는다 — 활이 늘 몸 앞에 보이게(뒤로 가면 몸에 가려 칸마다 생겼다 사라진다)
     # 먼 쪽부터: (활대) · 먼 팔 · 먼 다리 → 몸통 · 머리 → 가까운 다리 · 가까운 팔 → (시위)
@@ -330,6 +334,11 @@ def figure(phase, swing_near, pose=None):
             d.ellipse([hand_f[0] - HAND * 1.4 * Z, hand_f[1] - HAND * 1.4 * Z, hand_f[0] + HAND * 1.4 * Z, hand_f[1] + HAND * 1.4 * Z], fill=FAR, outline=LINE, width=3)
         staff(d, hand_n, (pose or {}).get('blade', 90), (pose or {}).get('sback', 40 if pose is None else None), (pose or {}).get('sfront', 70 if pose is None else None))   # 걷기(pose 없음)는 쥔 자리 아래 40 · 위 70 = 길이 110
         d.ellipse([hand_n[0] - HAND * Z, hand_n[1] - HAND * Z, hand_n[0] + HAND * Z, hand_n[1] + HAND * Z], fill=NEAR, outline=LINE, width=3)
+    if PROP['kind'] == 'none' and pose is not None and pose.get('palms'):   # 맨손 주술: 펼친 손바닥(near · far) — 물건은 인형에 그리지 않는다(11-25 밤)
+        for w_, h_, fa_ in (('far', hand_f, arm_f[1]), ('near', hand_n, arm_n[1])):
+            if w_ in pose['palms']:
+                fingers(d, h_, fa_, FAR if w_ == 'far' else NEAR)
+                d.ellipse([h_[0] - HAND * 1.4 * Z, h_[1] - HAND * 1.4 * Z, h_[0] + HAND * 1.4 * Z, h_[1] + HAND * 1.4 * Z], fill=FAR if w_ == 'far' else NEAR, outline=LINE, width=3)
     return im
 
 
@@ -438,6 +447,12 @@ IK_QUIRKS['shake'] = [
     dict(_ik((0, 0), (27, 88), (12, 66), **_S), prop='staff', blade=75, sback=40, sfront=60, palm=False),
     dict(_ik((0, 0), (25, 88), (12, 66), **_S), prop='staff', blade=105, sback=40, sfront=60, palm=False),
     dict(_ik((0, -1), (28, 60), (10, 64), lean=1), prop='staff', blade=84, palm=False),
+]
+IK_QUIRKS['wave'] = [   # 맨손·손 물건 개성 동작: 가까운 손(물건)을 가슴 앞으로 올려 살랑 흔든다 (11-25 밤)
+    dict(_ik((0, 0), (26, 86), (12, 66), **_S)),
+    dict(_ik((0, 0), (30, 98), (12, 66), **_S)),
+    dict(_ik((0, 0), (22, 96), (12, 66), **_S)),
+    dict(_ik((0, -1), (28, 60), (10, 64), lean=1)),
 ]
 IK_QUIRKS['hit_none'] = [dict({k: v for k, v in d.items() if k not in ('prop', 'blade')}) for d in IK_QUIRKS['hit_sword']]   # 맨손(범 할퀴기)
 IK_QUIRKS['hit_bow'] = [
@@ -582,6 +597,39 @@ IK_ATTACKS['cast'] = [
 #   찌름 셋(a4 · b1 · b2): **뒷발(near_foot · 잿빛)은 준비에서 디딘 그 자리(_R3)에 박혀 있고(뒤꿈치만 들림) 앞발(far_foot · 파랑)이 앞으로 내딛는다** — 뒷발이 바닥을 밀어 힘을 낸다.
 #   거둠 둘(b3 · b4): 앞발이 돌아온다 · 마지막은 서기. 옛 thrust 는 앞발을 여덟 칸 박고 뒷발이 뒤로 미끄러졌다(그래서 힘이 빠져 보임).
 _R3 = -30   # 뒷발 가로 자리(뿌리 기준 · 준비 첫 칸 ~ 거둠 첫 칸 같은 값)
+# 맨손·손 물건 주술 「기운을 모아 손바닥으로 밀기」(11-25 밤 · cast 를 본뜸 · 지팡이 없음). 물건(부채·향로·방울 막대·산가지·볏단·눈꽃)은 인형이 안 그린다 — Codex 가 서기 그림대로 쥔다.
+#   cast_hand = 먼 손바닥이 민다 · 가까운 손은 물건을 몸 앞(허리~가슴)에 든다 | cast_hand2 = 두 손바닥이 함께 민다(눈꽃) | cast_handn = 가까운 손이 민다(부채 휘두름 · 먼 손은 허리에 물건)
+_PN = ['far']
+IK_ATTACKS['cast_hand'] = [
+    dict(_ik((-2, -8), (28, 62), (14, 74), bend=4, **_C), palms=_PN),
+    dict(_ik((-5, -12), (26, 70), (24, 86), bend=-2, **_C), palms=_PN),
+    dict(_ik((-8, -22), (20, 80), (10, 84), bend=-12, lean=-2, **_C), palms=_PN),
+    dict(_ik((6, -14), (24, 76), (62, 84), bend=17, near_foot=(-18, 0), far_foot=(20, 0)), palms=_PN),
+    dict(_ik((7, -15), (24, 76), (64, 86), bend=19, near_foot=(-18, 0), far_foot=(20, 0)), palms=_PN),
+    dict(_ik((2, -10), (24, 72), (36, 86), bend=6, **_C), palms=_PN),
+    dict(_ik((0, -6), (28, 64), (18, 78), bend=4, **_C), palms=_PN),
+    dict(_ik((0, -1), (28, 60), (10, 64), lean=1)),
+]
+IK_ATTACKS['cast_hand2'] = [
+    dict(_ik((-2, -8), (24, 70), (16, 74), bend=4, **_C), palms=['far', 'near']),
+    dict(_ik((-5, -12), (22, 80), (20, 86), bend=-2, **_C), palms=['far', 'near']),
+    dict(_ik((-8, -22), (12, 84), (8, 84), bend=-12, lean=-2, **_C), palms=['far', 'near']),
+    dict(_ik((6, -14), (54, 82), (62, 86), bend=17, near_foot=(-18, 0), far_foot=(20, 0)), palms=['far', 'near']),
+    dict(_ik((7, -15), (56, 82), (64, 86), bend=19, near_foot=(-18, 0), far_foot=(20, 0)), palms=['far', 'near']),
+    dict(_ik((2, -10), (34, 82), (36, 86), bend=6, **_C), palms=['far', 'near']),
+    dict(_ik((0, -6), (26, 72), (18, 78), bend=4, **_C), palms=['far', 'near']),
+    dict(_ik((0, -1), (28, 60), (10, 64), lean=1)),
+]
+IK_ATTACKS['cast_handn'] = [
+    dict(_ik((-2, -8), (26, 64), (12, 66), bend=4, **_C), palms=['near']),
+    dict(_ik((-5, -12), (24, 86), (12, 66), bend=-2, **_C), palms=['near']),
+    dict(_ik((-8, -22), (14, 86), (10, 66), bend=-12, lean=-2, **_C), palms=['near']),
+    dict(_ik((6, -14), (62, 84), (12, 64), bend=17, near_foot=(-18, 0), far_foot=(20, 0)), palms=['near']),
+    dict(_ik((7, -15), (64, 86), (12, 64), bend=19, near_foot=(-18, 0), far_foot=(20, 0)), palms=['near']),
+    dict(_ik((2, -10), (36, 86), (12, 66), bend=6, **_C), palms=['near']),
+    dict(_ik((0, -6), (22, 74), (12, 66), bend=4, **_C), palms=['near']),
+    dict(_ik((0, -1), (28, 60), (10, 64), lean=1)),
+]
 IK_ATTACKS['thrust3'] = [
     _ik((-14, -8), (-24, 58), (0, 61), bend=-2, lean=-2, near_foot=(_R3, 0), far_foot=(8, 0)),
     _ik((-17, -12), (-28, 54), (-1, 58), bend=-3, lean=-2, near_foot=(_R3, 0), far_foot=(9, 0)),
@@ -592,7 +640,7 @@ IK_ATTACKS['thrust3'] = [
     _ik((-2, -14), (34, 74), (54, 78), bend=22, near_foot=(_R3, 0, -12), far_foot=(16, 0)),
     _ik((0, -1), (15, 77), (34, 91), lean=1),
 ]
-IK_PROP = {'slash': 'sword', 'stab': 'sword', 'cast': 'staff'}   # 공격마다 쥔 물건(없으면 두 손 긴 자루)
+IK_PROP = {'slash': 'sword', 'stab': 'sword', 'cast': 'staff', 'cast_hand': 'none', 'cast_hand2': 'none', 'cast_handn': 'none'}   # 공격마다 쥔 물건(없으면 두 손 긴 자루)
 
 
 def ik_attack_sheets(kind):
@@ -664,7 +712,7 @@ def main():
         return
     if len(sys.argv) > 1 and sys.argv[1] == 'walk':   # py pose-rig.py walk <걸음 결> <가슴 S|M|L|XL> [bow = 먼 쪽 손에 활을 쥐고 걷는다]
         key, bust = sys.argv[2], sys.argv[3]
-        if len(sys.argv) > 4 and sys.argv[4] in ('bow', 'pole2', 'shoulder', 'sword', 'staff'):
+        if len(sys.argv) > 4 and sys.argv[4] in ('bow', 'pole2', 'shoulder', 'sword', 'staff', 'holdn', 'holdf', 'none'):
             PROP['kind'] = sys.argv[4]
         STYLE.clear()
         STYLE.update(STYLES[key])

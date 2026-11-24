@@ -35,12 +35,15 @@ def main(name, kind, style, fall, bust='M', idx='3'):
     axe = kind == 'axe'   # 도끼·망치 = 두 손 긴 자루 인형 · 공격은 내려찍기(chop) · 11-25
     if axe:
         kind = 'pole2'
-    prop = kind if kind in ('pole2', 'sword', 'staff') else 'bow'
+    handk = {'hand': ('holdn', 'cast_hand'), 'hand2': ('none', 'cast_hand2'), 'handn': ('holdf', 'cast_handn'), 'handf': ('holdn', 'cast_handn')}.get(kind)   # 맨손·손 물건 주술(11-25 밤): 걷기 · 공격
+    prop = handk[0] if handk else kind if kind in ('pole2', 'sword', 'staff') else 'bow'
     run('pose-rig.py', 'walk', style, bust, prop, *short)
     run('style-scene.py', 'motion8', st, f'{S}rig-f-walk-{style}-{bust}-{prop}-a.png', f'{S}rig-f-walk-{style}-{bust}-{prop}-b.png', f'{S}scene-{name}-walk8.png')
     made.append(f'scene-{name}-walk8.png')
-    if kind in ('pole2', 'sword', 'staff'):
-        atk, qk = (('chop' if axe else 'thrust'), 'retie') if kind == 'pole2' else ('cast', 'shake') if kind == 'staff' else ('stab' if dagger else 'slash', 'inspect')
+    if handk or kind in ('pole2', 'sword', 'staff'):
+        atk, qk = (handk[1], 'wave') if handk else (None, None)
+        if not handk:
+            atk, qk = (('chop' if axe else 'thrust'), 'retie') if kind == 'pole2' else ('cast', 'shake') if kind == 'staff' else ('stab' if dagger else 'slash', 'inspect')
         run('pose-rig.py', 'attack', atk, bust, *short)
         for h in 'ab':
             run('style-scene.py', 'attack4', st, f'{S}rig-f-atk-{atk}-{bust}-{h}.png', f'{S}scene-{name}-{atk}-{h}.png')
@@ -54,9 +57,10 @@ def main(name, kind, style, fall, bust='M', idx='3'):
         run('pose-rig.py', 'quirk', 'hairflip', bust, 'bow')
         run('style-scene.py', 'motion', st, f'{S}rig-f-quirk-hairflip-{bust}.png', f'{S}scene-{name}-quirk.png', 'rig')
     made.append(f'scene-{name}-quirk.png')
-    if kind == 'staff':   # 맞음·일어남 네 칸 인형(hit_staff) — 지팡이 장수는 그림 API 가 아니라 Codex 로 받는다
-        run('pose-rig.py', 'quirk', 'hit_staff', bust)
-        run('style-scene.py', 'motion', st, f'{S}rig-f-quirk-hit_staff-{bust}.png', f'{S}scene-{name}-hit.png', 'rig')
+    if kind == 'staff' or handk:   # 맞음·일어남 네 칸 인형(hit_staff) — 지팡이 장수는 그림 API 가 아니라 Codex 로 받는다
+        hq = 'hit_none' if handk else 'hit_staff'
+        run('pose-rig.py', 'quirk', hq, bust)
+        run('style-scene.py', 'motion', st, f'{S}rig-f-quirk-{hq}-{bust}.png', f'{S}scene-{name}-hit.png', 'rig')
         made.append(f'scene-{name}-hit.png')
     print(run('style-scene.py', 'fall', st, f'{S}motion-f-down-{fall}.png', f'{S}scene-{name}-fall-{fall}.png'))
     made.append(f'scene-{name}-fall-{fall}.png')
