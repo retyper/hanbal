@@ -18,11 +18,11 @@ const icons: Record<Power, string> = {
   // 묶음마다 다른 칸 — 아래 KIT_ART 가 덮는다 (없을 때만 이것)
   hone: 'raid/shop-might.png', drill: 'raid/shop-haste.png', capA: 'raid/power-skill.png', capB: 'raid/power-skill.png', capC: own('node-counter', 'fx/shield.png'),
   // 65-BUILD 설치 갈래 — 넓은 맵 목책 판의 망루·목책 장식 · 본편 장 항아리 그림을 빌린다 (새 그림 없음)
-  tower: 'raid/props/palisade-2.webp', fence: 'raid/props/palisade-0.webp', jar: 'icon/good-soybean-jar.png',
+  tower: 'raid/prop-tower.png', fence: 'raid/prop-fence.png', jar: 'icon/good-soybean-jar.png',
   // 67-BUILD2 — 본편 길·고을 아이콘(장승·솟대·봉수) · 바위 조합 그림(포차) · 회복 상점 그림(우물)을 빌린다
-  totem: 'icon/route-jangseung.png', sotdae: 'icon/route-sotdae.png', beacon: 'icon/settle-beacon.png', catapult: 'raid/boulder.png', well: 'raid/shop-regen.png',
+  totem: 'icon/route-jangseung.png', sotdae: 'icon/route-sotdae.png', beacon: 'icon/settle-beacon.png', catapult: 'raid/prop-catapult.png', well: 'raid/prop-well.png',
   // 69-BUILDUP — 화력은 화살 그림에 불빛(벼리기와 같은 빛깔) · 장전은 상점 「빠르기」 그림을 빌린다
-  firepower: 'raid/arrow.png', reload: 'raid/shop-haste.png',
+  firepower: 'raid/prop-firepower.png', reload: 'raid/prop-reload.png',
 }
 /**
  * 묶음마다 다른 칸의 그림 — 전용 그림(H59~H61)이 없으면 가까운 그림을 빌려 빛깔(tint)로 가른다.
@@ -46,7 +46,7 @@ export function nodeArt(kit: Kit | undefined, key: Power): { src: string; tint: 
   if (key === 'drill') return ICON_READY.has('node-drill') ? { src: 'raid/node-drill.png', tint: '' } : { src: icons[k.secondary], tint: 'drill' }
   if (key === 'capA' || key === 'capB') return { src: capArt(kit, key), tint: key === 'capA' ? 'cap-a' : 'cap-b' }
   if (key === 'capC') return { src: icons.capC, tint: ICON_READY.has('node-counter') ? 'cap-glow' : 'cap-c' }
-  if (key === 'firepower') return { src: icons.firepower, tint: 'hone' }
+  if (key === 'firepower') return { src: icons.firepower, tint: '' }
   return { src: icons[key], tint: '' }
 }
 export function powerIcon(key: Power, kit?: Kit) {
