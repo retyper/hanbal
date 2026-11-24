@@ -5,24 +5,14 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { createHaebi, stepHaebi, choose, KIT_RULES, CHEST_RULES, MAP_RULES, SOLID_RULES, ANCHOR_RULES, PHANTOM_RULES, BREAK_RULES, BUILD_RULES, BUILD2_RULES, CAP_RULES, BOSSCHEST_RULES, BUILDUP_RULES, AWAKECAP_RULES, BOSSDUEL_RULES, raidRulesForStage, type HaebiOpts, type Kit, type StageId } from '../src/raid/haebi.ts'
-import { ALL_BUILD_KINDS } from '../src/raid/build.ts'
+import { goldenRun } from './raid-golden-kit.ts'
 
 const sha = (x: unknown) => createHash('sha256').update(JSON.stringify(x)).digest('hex')
-const rules = (stage: StageId): HaebiOpts => ({ stage, bonus: {}, simRules: raidRulesForStage(stage), permanentAwake: false, appearanceAwake: true, kitRules: KIT_RULES, chestRules: CHEST_RULES, mapRules: MAP_RULES, blockRules: SOLID_RULES, anchorRules: ANCHOR_RULES, phantomRules: PHANTOM_RULES, breakRules: BREAK_RULES, buildRules: BUILD_RULES, build2Rules: BUILD2_RULES, capRules: CAP_RULES, bossChestRules: BOSSCHEST_RULES, buildUpRules: BUILDUP_RULES, awakeCapRules: AWAKECAP_RULES, bossDuelRules: BOSSDUEL_RULES })
-export function goldenRun(stage: StageId, kit: Kit, seed: number, seconds: number, extra: Partial<HaebiOpts> = {}) {
-  const s = createHaebi(seed, 'stage', kit, { ...rules(stage), ...extra })
-  for (const k of ALL_BUILD_KINDS) { s.offers = [k]; s.xp = 0; choose(s, k) }
-  for (let i = 0; i < seconds * 60 && s.state === 'playing'; i++) {
-    if (s.offers.length) choose(s, s.offers[0]!)
-    stepHaebi(s, { x: Math.sin(i / 90), y: Math.cos(i / 140) }, 1 / 60)
-  }
-  return s
-}
 const GOLDEN = {
   'forest axe 7': '265afe60e95c87aa05390853070d5d6710799d089ac37cb9edac37532cc2aecc',
   'ford bow 11': 'd765d69ceb9807c5b71302bb64eef39947fd0d3185fc400d22ff400c845ac130',
 } as const
+import type { Kit, StageId } from '../src/raid/haebi.ts'
 const cases: [string, StageId, Kit, number][] = [['forest axe 7', 'forest', 'axe', 7], ['ford bow 11', 'ford', 'bow', 11]]
 for (const [name, stage, kit, seed] of cases) {
   test(`골든 ${name} 90초 · 옛 규칙 판은 글자 하나까지 같다`, () => {

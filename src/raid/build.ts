@@ -6,7 +6,7 @@
  * 67-BUILD2 (형 11-23 「건설물 여러가지 더 · 창의적이게」): 장승 · 솟대 · 봉수대 · 포차 · 우물 다섯을 더해 여덟 종류 · 종류 칸은 그대로 셋.
  * 수치는 모두 HAEBI_BUILD · HAEBI_BUILD2 (tune/params.ts).
  */
-import { HAEBI_BUILD as B, HAEBI_BUILD2 as B2, HAEBI_BUILDUP as B3 } from '../tune/params.ts'
+import { HAEBI_BUILD as B, HAEBI_BUILD2 as B2, HAEBI_BUILDUP as B3, HAEBI_BREAKABLE as HW } from '../tune/params.ts'
 
 export type BuildKind = 'tower' | 'fence' | 'jar' | 'totem' | 'sotdae' | 'beacon' | 'catapult' | 'well'
 /** 65-BUILD 의 셋 — 카드·나무에 서는 차례 (망루 → 목책 → 항아리) */
@@ -14,21 +14,25 @@ export const BUILD_KINDS: readonly BuildKind[] = ['tower', 'fence', 'jar']
 /** 67-BUILD2 가 더하는 다섯 (장승 · 솟대 · 봉수대 · 포차 · 우물) */
 export const BUILD2_KINDS: readonly BuildKind[] = ['totem', 'sotdae', 'beacon', 'catapult', 'well']
 export const ALL_BUILD_KINDS: readonly BuildKind[] = [...BUILD_KINDS, ...BUILD2_KINDS]
+/** 75-WALL 이 체력을 주는 넷 */
+export type WallKind = 'jar' | 'sotdae' | 'beacon' | 'well'
 export const isBuildKind = (k: string): k is BuildKind => (ALL_BUILD_KINDS as readonly string[]).includes(k)
 export const isBuild2Kind = (k: string): k is BuildKind => (BUILD2_KINDS as readonly string[]).includes(k)
 /** 종류마다 놓는 거리 ahead · 몸 반지름 r */
 const KP: Record<BuildKind, { ahead: number; r: number }> = { tower: B.tower, fence: B.fence, jar: B.jar, totem: B2.totem, sotdae: B2.sotdae, beacon: B2.beacon, catapult: B2.catapult, well: B2.well }
 /** 체력이 있어 무너지는 종류 (망루 · 목책 · 장승 · 포차) — 나머지는 무적 */
 export const hasHp = (k: BuildKind) => k === 'tower' || k === 'fence' || k === 'totem' || k === 'catapult'
+/** 75-WALL 판의 항아리·솟대·봉수대·우물은 체력을 가진다 (it.w) — 그 판의 모든 설치물이 체력을 가진 셈 */
+export const bearsHp = (it: { kind: BuildKind; w?: true }) => hasHp(it.kind) || it.w === true
 /** 무너진 뒤 다시 서기까지 */
-export const rebuildOf = (k: BuildKind) => k === 'tower' ? B.tower.rebuild : k === 'fence' ? B.fence.rebuild : k === 'totem' ? B2.totem.rebuild : B2.catapult.rebuild
+export const rebuildOf = (k: BuildKind) => k === 'tower' ? B.tower.rebuild : k === 'fence' ? B.fence.rebuild : k === 'totem' ? B2.totem.rebuild : k === 'catapult' ? B2.catapult.rebuild : HW.rebuild[k]
 /**
  * 선 설치물 하나 — hp·max 망루·목책 체력(항아리는 무적이라 0) · down 무너진 망루·목책이 다시 서기까지 남은 초(0 = 서 있음) ·
  * cd 망루 다음 화살까지 · flash 쏘거나 맞거나 기세를 더한 반짝임 · push 장수에게 밀린 뒤 흙먼지가 남는 초
  */
-export interface Structure { id: number; kind: BuildKind; x: number; y: number; hp: number; max: number; down: number; cd: number; flash: number; push: number }
+export interface Structure { id: number; kind: BuildKind; x: number; y: number; hp: number; max: number; down: number; cd: number; flash: number; push: number; /** 75-WALL 판에서 놓인 무적이던 네 종류 — 체력이 있다 */ w?: true }
 /** items 선 것(놓인 차례) · nextId · jarXp 항아리가 더 얹어 준 기세(기록) */
-export interface BuildState { items: Structure[]; nextId: number; jarXp: number; /** 67-BUILD2 판 (여덟 종류) */ v2?: true; /** 69-BUILDUP 판 (화력·장전 칸) */ up?: true; /** 처음 낸 69-BUILDUP 판(옛 기록) — HAEBI_BUILDUP.v1 수치 */ upV1?: true }
+export interface BuildState { items: Structure[]; nextId: number; jarXp: number; /** 67-BUILD2 판 (여덟 종류) */ v2?: true; /** 69-BUILDUP 판 (화력·장전 칸) */ up?: true; /** 처음 낸 69-BUILDUP 판(옛 기록) — HAEBI_BUILDUP.v1 수치 */ upV1?: true; /** 75-WALL 판 (항아리·솟대·봉수대·우물도 체력이 있어 부서진다) */ wall?: true }
 export const newBuild = (): BuildState => ({ items: [], nextId: 1, jarXp: 0 })
 
 /** 그 단계에서 서 있는 수 — 1 + extraAt 에 이른 수 (단계 0 이면 0) · 우물만 늘 하나 (단계가 오르면 개수 대신 채우는 몫·쿨타임이 좋아진다) */
@@ -42,7 +46,7 @@ export const fenceHp = (rank: number) => B.fence.hp + B.fence.hpStep * (rank - 1
 /** 망루 체력 (판의 위협 배수를 곱하기 전) */
 export const towerHp = (rank: number) => B.tower.hp + B.tower.hpStep * (rank - 1)
 /** 체력이 있는 종류의 그 단계 체력 (판의 위협 배수를 곱하기 전 · 무적이면 0) */
-export const buildHp = (kind: BuildKind, rank: number) => kind === 'tower' ? towerHp(rank) : kind === 'fence' ? fenceHp(rank) : kind === 'totem' ? B2.totem.hp + B2.totem.hpStep * (rank - 1) : kind === 'catapult' ? B2.catapult.hp + B2.catapult.hpStep * (rank - 1) : 0
+export const buildHp = (kind: BuildKind, rank: number, wall = false) => kind === 'tower' ? towerHp(rank) : kind === 'fence' ? fenceHp(rank) : kind === 'totem' ? B2.totem.hp + B2.totem.hpStep * (rank - 1) : kind === 'catapult' ? B2.catapult.hp + B2.catapult.hpStep * (rank - 1) : wall ? HW.hp[kind as WallKind] === undefined ? 0 : HW.hp[kind as WallKind] + HW.hpStep[kind as WallKind] * (Math.max(1, rank) - 1) : 0
 /** 단계 몫 (base + step × (단계−1)) */
 const at = (base: number, step: number, rank: number) => base + step * (rank - 1)
 export const sotdaeRadius = (rank: number) => at(B2.sotdae.radius, B2.sotdae.radiusStep, rank)
@@ -63,7 +67,7 @@ export const jarRadius = (rank: number) => B.jar.radius + B.jar.radiusStep * (ra
 /** 항아리 둘레에서 쓰러진 적의 기세 배수 */
 export const jarShare = (rank: number) => 1 + B.jar.bonus + B.jar.bonusStep * (rank - 1)
 /** 서 있는 것 — 무너진 것(잔해)은 지나갈 수 있고 막지도 쏘지도 않는다 */
-export const standing = (it: Structure) => it.down <= 0 && (!hasHp(it.kind) || it.hp > 0)
+export const standing = (it: Structure) => it.down <= 0 && (!bearsHp(it) || it.hp > 0)
 /** 이 잡졸이 망루에 끌리는 몫인가 — id 가 aggroEvery 의 배수 (난수 없이 늘 같은 놈) */
 export const aggroShare = (id: number) => id % B.tower.aggroEvery === 0
 /** 끄는 종류의 끌림 수치 (망루 · 포차 · 장승) — 그 밖은 null */
@@ -131,7 +135,7 @@ export function fenceTouching(b: BuildState, body: { x: number; y: number }, rad
 export function jarBonusAt(b: BuildState, rank: number, x: number, y: number, flash: number) {
   if (rank <= 0) return 1
   const r = jarRadius(rank)
-  for (const j of b.items) if (j.kind === 'jar' && Math.hypot(x - j.x, y - j.y) < r) { j.flash = flash; return jarShare(rank) }
+  for (const j of b.items) if (j.kind === 'jar' && standing(j) && Math.hypot(x - j.x, y - j.y) < r) { j.flash = flash; return jarShare(rank) }
   return 1
 }
 /** 점(x, y)에서 선분 (ax, ay)–(bx, by) 까지 거리 */
@@ -164,3 +168,9 @@ export const TIMED_KINDS: readonly BuildKind[] = ['tower', 'beacon', 'catapult']
 export const firepowerMul = (rank: number, v1 = false) => 1 + (v1 ? B3.v1.dmgStep : B3.dmgStep) * rank
 /** 장전 단계를 얹은 쏘는 간격 — 예전 간격(맹공으로 나눈 것) ÷ (1 + rateStep × 단계) · minInterval 초 아래로는 줄지 않는다 (단계 0 이면 예전 간격 그대로) */
 export const reloadInterval = (interval: number, rank: number, v1 = false) => rank > 0 ? Math.max(B3.minInterval, interval / (1 + (v1 ? B3.v1.rateStep : B3.rateStep) * rank)) : interval
+/** 75-WALL 몸이 닿은 서 있는 체력 설치물 전부 (잡졸·정예가 멈춰 문다) — 닿는 여유 HAEBI_BREAKABLE.touch */
+export function wallTouching(b: BuildState, body: { x: number; y: number }, radius: number) {
+  const out: Structure[] = []
+  for (const it of b.items) if (bearsHp(it) && standing(it) && Math.hypot(body.x - it.x, body.y - it.y) < bodyR(it) + radius + HW.touch) out.push(it)
+  return out
+}

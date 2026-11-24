@@ -1,18 +1,17 @@
 // 열전 초반 압박 시험 (11-25 · journey-study 카드 0) — 가만히 서 있는 봇이 앞 몇 분에 얼마나 맞나
 //   node --experimental-strip-types tools/raid-early.ts [stage forest] [kits axe,bow,dagger,sword] [seeds 7,11,13]
-//   환경: MIN=5 (몇 분까지) · SHOP=0 (상점 몫 0~1) · STILL=1 (1=서 있음 · 0=기본 봇 원 돌기) · TAG=75-WALL (켤 새 규칙 · 비우면 지금 판)
+//   환경: MIN=5 (몇 분까지) · SHOP=0 (상점 몫 0~1) · STILL=1 (1=서 있음 · 0=기본 봇 원 돌기) · WALL=off (75-WALL 을 끈 옛 판)
 //   한 줄: 판 최저 체력(평균·최악) · 죽은 판 · 맞은 수 평균 · 처치 · 레벨 · 분마다 체력 평균
 import { HAEBI_SHOP } from '../src/tune/params.ts'
 import { createHaebi, choose, stepHaebi, type Kit, type StageId, type Bonus } from '../src/raid/haebi.ts'
 import { botChoice, botInput } from '../src/raid/haebi-replay.ts'
 import { stageToolOpts } from './raid-stage-balance.ts'
-import { extraRules } from './raid-wall-kit.ts'
 import { fileURLToPath } from 'node:url'
 import { resolve } from 'node:path'
 
 export function earlyRun(stage: StageId, kit: Kit, seed: number, minutes: number, share: number, still: boolean) {
   const bonus = Object.fromEntries(Object.entries(HAEBI_SHOP).filter(([k]) => k !== 'growth').map(([k, v]) => [k, Math.round((v as { max: number }).max * share)])) as Bonus
-  const s = createHaebi(seed, 'stage', kit, { ...stageToolOpts(stage, bonus, undefined, false, true, true, true, true, true, true, true, true, true, true, true), ...extraRules() })
+  const s = createHaebi(seed, 'stage', kit, { ...stageToolOpts(stage, bonus, undefined, false, true, true, true, true, true, true, true, true, true, true, true) })
   let low = 1, hits = 0, prev = 0
   const perMin: number[] = []
   while (s.state === 'playing' && s.t < minutes * 60) {

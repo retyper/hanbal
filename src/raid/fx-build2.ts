@@ -41,6 +41,7 @@ export function drawBuild2Ground(ctx: CanvasRenderingContext2D, s: HaebiRun) {
   if (!b?.v2) return
   const a = ctx.globalAlpha
   for (const it of b.items) {
+    if (!standing(it)) continue
     if (it.kind === 'sotdae') ring(ctx, it.x, it.y, sotdaeRadius(s.ranks.sotdae), V.sotdaeRing, V.sotdaeAlpha, V.sotdaeAlpha / 3)
     else if (it.kind === 'well') { const k = wellFull(s, it); ring(ctx, it.x, it.y, wellRadius(s.ranks.well), V.wellRing, V.wellAlpha * (k >= 1 ? 1 : V.wellCold), V.wellFill * (k >= 1 ? 1 : V.wellCold)) }
   }
@@ -88,6 +89,17 @@ function stand(ctx: CanvasRenderingContext2D, img: HTMLImageElement | undefined,
 /** 설치물 하나 (67 다섯) — 발밑(x, y)에서 위로 · 잔해·체력 띠·흙먼지·그림자는 fx-build 가 함께 그린다 */
 export function drawStructure2(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, it: Structure) {
   const h = V.h[it.kind as keyof typeof V.h], a = ctx.globalAlpha, down = !standing(it)
+  if (down && it.kind !== 'totem' && it.kind !== 'catapult') {
+    // 75-WALL 부서진 항아리·솟대·봉수대·우물 — 납작한 잔해 (우물은 물이 말라 있다 · 효과가 끊긴 것이 보이게)
+    const x = it.x, y = it.y, sq = B.view.rubbleSquash
+    ctx.save(); ctx.translate(x, y); ctx.scale(1, sq); ctx.translate(-x, -y); ctx.globalAlpha = a * B.view.rubbleAlpha
+    if (it.kind === 'sotdae') stand(ctx, images.get(ART.sotdae), x, y, h)
+    else if (it.kind === 'beacon') stand(ctx, images.get(ART.beacon), x, y, h)
+    else if (WELL_NAMES.every(n => images.get(WELL_ART[n]))) drawWellArt(ctx, images, s, it)
+    else drawWell(ctx, s, it, h)
+    ctx.restore(); ctx.globalAlpha = a
+    return
+  }
   if (it.kind === 'totem') {
     if (down) { ctx.globalAlpha = a * B.view.rubbleAlpha; stand(ctx, images.get(ART.totem), it.x, it.y, h, B.view.rubbleSquash); ctx.globalAlpha = a; return }
     stand(ctx, images.get(ART.totem), it.x, it.y, h)
@@ -230,7 +242,7 @@ export function drawLob(ctx: CanvasRenderingContext2D, images: Map<string, HTMLI
 }
 
 /** 우물이 얼마나 찼나 0~1 (1 = 쿨타임이 끝나 쓸 수 있다) — 판의 쿨타임을 읽기만 한다 */
-const wellFull = (s: HaebiRun, it: Structure) => it.cd <= 0 ? 1 : Math.max(0, Math.min(1, 1 - it.cd / wellCool(s.ranks.well)))
+const wellFull = (s: HaebiRun, it: Structure) => !standing(it) ? 0 : it.cd <= 0 ? 1 : Math.max(0, Math.min(1, 1 - it.cd / wellCool(s.ranks.well)))
 
 /** 우물 (캔버스 · 그림이 아직 안 떴을 때) — 돌 둘레 · 물은 쿨타임 동안 바닥에서 차오르고 다 차면 번쩍이며 물방울이 솟는다 (쿨타임 중에는 빈 바닥) */
 function drawWell(ctx: CanvasRenderingContext2D, s: HaebiRun, it: Structure, h: number) {

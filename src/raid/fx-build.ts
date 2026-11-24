@@ -7,7 +7,7 @@
  */
 import { HAEBI_BUILD as B, HAEBI_BUILD2 as B2 } from '../tune/params.ts'
 import type { HaebiRun } from './haebi.ts'
-import { jarRadius, isBuild2Kind, hasHp, rebuildOf, bodyR, type Structure } from './build.ts'
+import { jarRadius, isBuild2Kind, bearsHp, standing, rebuildOf, bodyR, type Structure } from './build.ts'
 import { drawStructure2 } from './fx-build2.ts'
 
 const V = B.view
@@ -21,7 +21,7 @@ export function drawBuildGround(ctx: CanvasRenderingContext2D, s: HaebiRun) {
   if (!b || !b.items.length) return
   const r = jarRadius(s.ranks.jar), a = ctx.globalAlpha
   for (const it of b.items) {
-    if (it.kind !== 'jar') continue
+    if (it.kind !== 'jar' || !standing(it)) continue
     const glow = it.flash / B.flash
     ctx.globalAlpha = a * V.ringFill * (1 + glow); ctx.fillStyle = V.ring
     ctx.beginPath(); ctx.arc(it.x, it.y, r, 0, Math.PI * 2); ctx.fill()
@@ -52,7 +52,7 @@ export function drawStructure(ctx: CanvasRenderingContext2D, images: Map<string,
   else if (img) {
     const h = it.kind === 'tower' ? V.towerH : it.kind === 'jar' ? V.jarH : V.fenceW * img.height / img.width, w = h * img.width / img.height
     const foot = it.y + (it.kind === 'fence' ? V.fenceLift : 0)
-    if (rubble && it.kind === 'tower') { ctx.globalAlpha = a * V.rubbleAlpha; ctx.drawImage(img, it.x - w / 2, foot - h * V.rubbleSquash, w, h * V.rubbleSquash); ctx.globalAlpha = a }
+    if (rubble && (it.kind === 'tower' || it.kind === 'jar')) { ctx.globalAlpha = a * V.rubbleAlpha; ctx.drawImage(img, it.x - w / 2, foot - h * V.rubbleSquash, w, h * V.rubbleSquash); ctx.globalAlpha = a }
     else ctx.drawImage(img, it.x - w / 2, foot - h, w, h)
     // 쏘거나 기세를 더한 순간 — 망루 꼭대기 · 항아리 아가리에 빛이 번진다
     if (glow > 0 && k !== 'fence') {
@@ -61,8 +61,8 @@ export function drawStructure(ctx: CanvasRenderingContext2D, images: Map<string,
       ctx.beginPath(); ctx.arc(it.x, foot - h * at, h * r, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = a
     }
   }
-  if (!hasHp(it.kind)) { ctx.globalAlpha = a; return }
-  const top = two ? it.y - B2.view.h[it.kind as keyof typeof B2.view.h] * (rubble ? V.rubbleSquash : 1) - V.hpLift : it.kind === 'tower' ? it.y - V.towerH * (rubble ? V.rubbleSquash : 1) - V.hpLift : it.y + V.fenceLift - (img ? V.fenceW * img.height / img.width : V.fenceW) - V.hpLift
+  if (!bearsHp(it)) { ctx.globalAlpha = a; return }
+  const top = two ? it.y - B2.view.h[it.kind as keyof typeof B2.view.h] * (rubble ? V.rubbleSquash : 1) - V.hpLift : it.kind === 'tower' ? it.y - V.towerH * (rubble ? V.rubbleSquash : 1) - V.hpLift : it.kind === 'jar' ? it.y - V.jarH * (rubble ? V.rubbleSquash : 1) - V.hpLift : it.y + V.fenceLift - (img ? V.fenceW * img.height / img.width : V.fenceW) - V.hpLift
   // 잔해 — 다시 서기까지 고리가 차오른다
   if (rubble) {
     ctx.strokeStyle = '#111c'; ctx.lineWidth = V.rebuildW + 2; ctx.beginPath(); ctx.arc(it.x, top, V.rebuildR, 0, Math.PI * 2); ctx.stroke()

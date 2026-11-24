@@ -5388,3 +5388,13 @@ export function flatKnobs(): Array<{ path: string; group: string; knob: Knob }> 
  * pop 칸이 부푸는 배 · popMs 그 길이 · rise 「Lv」 글자가 솟는 px · lift 그 글자가 머무는 초
  */
 export const HAEBI_SHOP_FX = { coins: 6, maxExtra: 6, stagger: .045, fly: .42, arc: 70, count: .5, pop: 1.2, popMs: 420, rise: 46, lift: .9 } as const
+/**
+ * 75-WALL 건물은 모두 부서진다 (형 11-25 「건물들은 다 부서지긴 해야겠던데 · 막혀서 적이 공격을 못 하는 꼼수」).
+ * 항아리·솟대·봉수대·우물에 체력 (hp + hpStep × (단계−1)) × 판의 위협 배수 · 무너지면 rebuild 초 잔해 뒤 다시 선다 (잔해 동안 효과가 끊긴다 · 우물 쿨타임도 멈춘다).
+ * 잡졸은 닿은 설치물 전부를 문다 (touch 닿는 여유 · bite 몸 피해 배) · 정예·두목은 막히면 문다 (championBite 몸 피해 배).
+ */
+export const HAEBI_BREAKABLE = {
+  hp: { jar: 120, sotdae: 100, beacon: 260, well: 300 }, hpStep: { jar: 40, sotdae: 40, beacon: 90, well: 100 },
+  rebuild: { jar: 8, sotdae: 8, beacon: 12, well: 12 },
+  touch: 6, bite: 1, championBite: 1.5,
+} as const
