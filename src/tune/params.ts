@@ -1425,7 +1425,7 @@ export const HAEBI_IDLE = {
     maehwa: { cells: 26, base: [0, 1], hold: 2.4, fall: [18, 20, 21, 19], quirk: [22, 23, 24, 25], quirkTimes: [.28, .3, .42, .25] },
     'base-w-31-dabeol-dalbit': { cells: 26, base: [0, 1], hold: 2.4, fall: [18, 20, 21, 19], quirk: [22, 23, 24, 25], quirkTimes: [.28, .42, .3, .25] },
     'base-w-13-young-archer': { cells: 26, base: [0, 1], hold: 2.4, fall: [18, 20, 21, 19], quirk: [22, 23, 24, 25], quirkTimes: [.28, .3, .42, .25] },
-    'base-w-10-pirate-captain': { cells: 34, base: [0, 1], hold: 2.4, fall: [18, 20, 21, 19], quirk: [22, 23, 24, 25], quirkTimes: [.3, .32, .4, .28], attack: { cells: [26, 27, 28, 29, 30, 31, 32, 33], times: [.09, .08, .11, .05, .15, .07, .08, .12], hit: 4 }, xGeom: { h: 224, root: 92, foot: 216 } },
+    'base-w-10-pirate-captain': { cells: 38, base: [0, 1], hold: 2.4, fall: [18, 20, 21, 19], quirk: [22, 23, 24, 25], quirkTimes: [.3, .32, .4, .28], attack: { cells: [26, 27, 28, 29, 30, 31, 32, 33], times: [.09, .08, .11, .05, .15, .07, .08, .12], hit: 4 }, hurt: [34, 35], rise: [36, 37], xGeom: { h: 224, root: 92, foot: 216 } },
     'base-w-17-mahan-pearl-diver': { cells: 34, base: [0, 1], hold: 2.4, fall: [18, 20, 21, 19], quirk: [22, 23, 24, 25], quirkTimes: [.3, .32, .4, .28], attack: { cells: [26, 27, 28, 29, 30, 31, 32, 33], times: [.09, .08, .11, .12, .12, .08, .08, .12], hit: 3 }, xGeom: { h: 224, root: 92, foot: 216 } },
     'base-w-06-buyeo-huntress': { cells: 34, base: [0, 1], hold: 2.4, fall: [18, 20, 21, 19], quirk: [22, 23, 24, 25], quirkTimes: [.3, .32, .4, .28], attack: { cells: [26, 27, 28, 29, 30, 31, 32, 33], times: [.09, .08, .11, .05, .15, .07, .08, .12], hit: 4 }, xGeom: { h: 224, root: 92, foot: 216 } },
     'base-w-64-miri-dallae': { cells: 34, base: [0, 1], hold: 2.4, fall: [18, 20, 21, 19], quirk: [22, 23, 24, 25], quirkTimes: [.3, .32, .4, .28], attack: { cells: [26, 27, 28, 29, 30, 31, 32, 33], times: [.09, .08, .11, .05, .15, .07, .08, .12], hit: 4 }, xGeom: { h: 224, root: 92, foot: 216 } },
@@ -1457,6 +1457,8 @@ export const HAEBI_ANIM = {
   window: .3,
   /** 열전 띠 칸: 서기(idleTime 초마다 다음) · 걷기 첫 칸 · 맞음 · 비기 시전(기를 모으는 자세) */
   idle: [0, 1, 2, 1], idleTime: .65, walkCell: 4, hurtCell: 18, castCell: 12,
+  /** 계획에 맞음 두 칸(hurt)이 있는 띠: 깎인 체력이 최대 체력의 hurtStrong 몫 이상이면 크게 맞음 — 움츠림을 hurtSnap 초 보인 뒤 젖혀짐 (판의 맞음 시계 .3 초 안) */
+  hurtStrong: .06, hurtSnap: .08,
   /**
    * 공격 칸 역할 — 열전 띠(anim-px 정규 20칸)의 공격은 모든 장수가 12..17 이다(대결 원본 틀 [9..13,0] 같은 번호와 다르다 · codex62 PREP).
    * ready 준비(빗나간 예비를 거둘 때) · antic 예비 · swing 휘두름 · contact 맞힘·쏨 · recover 마무리(서기로).

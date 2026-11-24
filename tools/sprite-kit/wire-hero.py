@@ -57,9 +57,12 @@ def main(argv):
     parts = [f'cells: {cells}', 'base: [0, 1]', 'hold: 2.4', 'fall: [18, 20, 21, 19]']
     if has_quirk:
         parts += ['quirk: [22, 23, 24, 25]', 'quirkTimes: [%s]' % ', '.join(opt.get('quirk', '.28,.3,.42,.25').split(','))]
+    hit = 'hit' in argv   # 덧띠 끝에 맞음 둘 + 일어남 둘 (anim-harness HEROES hit=True)
     if 'atk8' in argv:
-        a0 = cells - 8
+        a0 = cells - 8 - (4 if hit else 0)
         parts.append('attack: { cells: [%s], times: [%s], hit: %s }' % (', '.join(str(a0 + k) for k in range(8)), ', '.join(opt.get('times', '.09,.08,.11,.05,.15,.07,.08,.12').split(',')), opt.get('hit', '4')))
+    if hit:
+        parts += ['hurt: [%d, %d]' % (cells - 4, cells - 3), 'rise: [%d, %d]' % (cells - 2, cells - 1)]
     if act:
         parts.append('xGeom: { h: %d, root: %d, foot: %d }' % (ACT['ch'], ACT['root'], ACT['foot']))
     line = f'    {name}: {{ {", ".join(parts)} }},'

@@ -12,6 +12,9 @@ export interface XGeom { h: number; root: number; foot: number }
 export interface IdlePlan { cells: number; base: readonly number[]; hold: number; blink?: number; breath?: readonly number[]; quirk?: readonly number[]; quirkTimes?: readonly number[]; fall?: readonly number[]
   /** 공격 칸 계획 (attack-plan.ts · 없으면 HAEBI_ANIM.roles 그대로) */
   attack?: AttackPlan
+  /** 맞음 두 칸 [움츠림, 젖혀짐] (덧 띠 · 없으면 HAEBI_ANIM.hurtCell 하나) · 일어남 두 칸 [한 무릎, 넓게 섬] — 11-24 형 「피격들도 한 컷씩 · 필수 컷은 최대한」 */
+  hurt?: readonly number[]
+  rise?: readonly number[]
   /** 싸움 자세 — 가까이 적이 있으면(HAEBI_IDLE.stanceR · 떠난 뒤 stanceLinger 초까지) base 대신 이 칸들 · 그동안 깜빡임만 (큰 숨·버릇 없음) */
   stance?: readonly number[]
   /** 덧 띠(20 칸부터)의 칸 규격 — 없으면 본 띠와 같은 칸 높이·발 줄·한가운데 뿌리 (strip-geom.ts) */
@@ -47,8 +50,8 @@ export const usesCompanion = (plan: IdlePlan | null) => !!plan && plan.cells > S
 export function usablePlan(plan: IdlePlan, ready: boolean): IdlePlan {
   if (ready || !usesCompanion(plan)) return plan
   const ok = (c: readonly number[] | undefined): c is readonly number[] => c !== undefined && c.every(n => n < STRIP_CELLS)
-  const { fall, quirk, breath, blink, xGeom: _x, ...rest } = plan
-  return { ...rest, cells: STRIP_CELLS, ...(ok(fall) ? { fall } : {}), ...(ok(quirk) ? { quirk } : {}), ...(ok(breath) ? { breath } : {}), ...(blink !== undefined && blink < STRIP_CELLS ? { blink } : {}) }
+  const { fall, quirk, breath, blink, hurt, rise, xGeom: _x, ...rest } = plan
+  return { ...rest, cells: STRIP_CELLS, ...(ok(fall) ? { fall } : {}), ...(ok(quirk) ? { quirk } : {}), ...(ok(hurt) ? { hurt } : {}), ...(ok(rise) ? { rise } : {}), ...(ok(breath) ? { breath } : {}), ...(blink !== undefined && blink < STRIP_CELLS ? { blink } : {}) }
 }
 
 /** 띠 이름 → 정수 씨앗 (FNV-1a) — 장수마다 깜빡임·숨이 어긋나게 */

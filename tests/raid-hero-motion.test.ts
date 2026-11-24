@@ -114,3 +114,22 @@ test('62-A 그리는 쪽은 판 상태를 바꾸지 않는다 (몸놀림을 물�
   assert.deepEqual(a, b)
   assert.ok(C.heroPx > 0)
 })
+
+test('맞음 두 칸(계획 hurt): 약하게 맞으면 움츠림만 · 크게 맞으면 움츠림 hurtSnap 초 뒤 젖혀짐 · 계획 없으면 예전 맞음 칸 (11-24)', () => {
+  const plan = { cells: 38, base: [0, 1], hold: 2.4, hurt: [34, 35], rise: [36, 37] }
+  const o = { ...opts, idle: { plan, seed: 1 } }
+  const hit = (s: HaebiRun, share: number) => { s.t += 1 / 120; s.hp -= s.maxHp * share; s.hurt = .3 }
+  const light = createHaebi(7, 'stage', 'spear'); light.spawn = 99; heroPose(light, o)
+  hit(light, A.hurtStrong / 2)
+  assert.equal(heroPose(light, o).frame, 34, '약하게 맞음 = 움츠림')
+  light.t += A.hurtSnap + .02; light.hurt = .1
+  assert.equal(heroPose(light, o).frame, 34, '약하게 맞으면 끝까지 움츠림')
+  const strong = createHaebi(7, 'stage', 'spear'); strong.spawn = 99; heroPose(strong, o)
+  hit(strong, A.hurtStrong * 2)
+  assert.equal(heroPose(strong, o).frame, 34, '크게 맞아도 처음엔 움츠림')
+  strong.t += A.hurtSnap + .02; strong.hurt = .2
+  assert.equal(heroPose(strong, o).frame, 35, '그다음 젖혀짐')
+  const old = createHaebi(7, 'stage', 'spear'); old.spawn = 99; heroPose(old, opts)
+  hit(old, A.hurtStrong * 2)
+  assert.equal(heroPose(old, opts).frame, A.hurtCell, '계획에 맞음 칸이 없으면 예전 그대로')
+})

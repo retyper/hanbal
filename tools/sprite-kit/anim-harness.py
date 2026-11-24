@@ -42,7 +42,7 @@ HEROES = {
     'maehwa': dict(strip='gen-maehwa', atk='bow', atk8=False),
     'dalbit': dict(strip='gen-base-w-31-dabeol-dalbit', atk='bow', atk8=False),
     'archer': dict(strip='gen-base-w-13-young-archer', atk='bow', atk8=False),   # 앳된 궁수
-    'pirate': dict(strip='gen-base-w-10-pirate-captain', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 해적 두목(작살) · 끝까지 찌른 칸은 좁은 칸에 안 들어가 당기는 칸으로
+    'pirate': dict(hit=True, strip='gen-base-w-10-pirate-captain', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 해적 두목(작살) · 끝까지 찌른 칸은 좁은 칸에 안 들어가 당기는 칸으로
     'diver': dict(strip='gen-base-w-17-mahan-pearl-diver', atk='thrust', atk8=True, act=True, legacy=(('a', 1), ('a', 2), ('a', 3), ('a', 1)),
                   cells8=[('a', 1), ('a', 2), ('a', 3), ('a', 4), ('a', 4), ('a', 3), ('a', 2), ('a', 1)]),   # 해녀(작살) · 뒤 판 b 는 그림 도구가 거절 → 앞 판으로: 타격 = 넷째(a4) · wire-hero hit=3
     'huntress': dict(strip='gen-base-w-06-buyeo-huntress', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 부여 사냥꾼(창)
@@ -199,7 +199,9 @@ def check(name, main=None, extra=None, grp=None):
     xg = [f'xcw={ACT["cw"]}', f'xch={ACT["ch"]}', f'xroot={ACT["root"]}', f'xfoot={ACT["foot"]}'] if h.get('act') else []
     if h.get('act') and grp is None and os.path.exists(extra):   # 게임에 든 띠를 다시 볼 때: 덧띠 = 쓰러짐 2 (+ 개성 4) + 공격 8
         nx = Image.open(extra).size[0] // ACT['cw']
-        grp = ['stand:stand:0-3', 'walk:walk:4-11', 'attack:attack:12-17'] + (['quirk:misc:22-25'] if nx >= 14 else []) + [f'attack8:attack:{20 + nx - 8}-{20 + nx - 1}']
+        hx = 4 if h.get('hit') else 0   # 맞음·일어남 네 칸이 공격 뒤에 붙은 장수(11-24)
+        nx -= hx
+        grp = (['hit:attack:%d-%d' % (20 + nx, 20 + nx + 3)] if hx else []) + ['stand:stand:0-3', 'walk:walk:4-11', 'attack:attack:12-17'] + (['quirk:misc:22-25'] if nx >= 14 else []) + [f'attack8:attack:{20 + nx - 8}-{20 + nx - 1}']
     args = [main] + ([f'x={extra}'] + xg if os.path.exists(extra) else []) + (grp or groups(h, n)) + [f'out={OUT}/chk-{h["strip"]}']
     return run('anim-check.py', *args).returncode == 0
 
@@ -282,17 +284,20 @@ def strip_act(name, install=False):
     n_old = 2 + (4 if os.path.exists(f'{PX}/{name}-quirk-1.png') else 0)
     old = [e.crop((i * CW, 0, (i + 1) * CW, CH)) for i in range(20, 20 + n_old)]
     xs = [to_act(c) for c in old] + [Image.open(f'{PX}/{name}-{h["atk"]}8-{t}-{i}.png').convert('RGBA') for t, i in cells8(h)]
+    A8 = slice(len(old), len(old) + 8)   # 공격 여덟 칸 자리 (뒤에 맞음 네 칸이 붙을 수 있어 「마지막 8칸」으로 세지 않는다)
+    if h.get('hit'):   # 맞음 둘(움츠림 · 젖혀짐) + 일어남 둘(한 무릎 · 넓게 섬) — bake-scene motion <out-…-hit> <이름> hit <scene-…-hit>
+        xs += [to_act(Image.open(f'{PX}/{name}-hit-{i}.png').convert('RGBA')) for i in (1, 2, 3, 4)]
     # 공격 묶음을 서기에 잇는다 (11-24): 공격 여덟 칸은 앞발 끝으로, 서기·걷기는 윗몸으로 맞춰서, 그림의 보폭이 인형보다 넓은 장수는
     #   서기 → 공격 첫 칸 · 공격 끝 칸 → 서기에서 몸이 9~16px 옆으로 튀었다(해비 15 · 사냥꾼 16 · 해녀 15). 여덟 칸을 **같은 만큼** 옮겨
     #   끝 칸(거둔 자세)의 윗몸을 서기에 맞춘다 — 여덟 칸 사이의 앞발 고정은 그대로다. 좁은 칸 공격(12~17)도 같은 만큼.
     st_act = to_act(e.crop((0, 0, CW, CH)))
     d = -_reg(_upper(xs[-1]), _upper(st_act))
     narrow = [e.crop((i * CW, 0, (i + 1) * CW, CH)) for i in range(12, 18)]
-    lo = max(-min(_room(c)[0] for c in xs[-8:] + narrow), -40)
-    hi = min(min(_room(c)[1] for c in xs[-8:] + narrow), 40)
+    lo = max(-min(_room(c)[0] for c in xs[A8] + narrow), -40)
+    hi = min(min(_room(c)[1] for c in xs[A8] + narrow), 40)
     d = max(lo, min(hi, d))
     if abs(d) >= 2:
-        xs[-8:] = [_shift(c, d) for c in xs[-8:]]
+        xs[A8] = [_shift(c, d) for c in xs[A8]]
         m2 = Image.open(main).convert('RGBA')
         for k, c in enumerate(narrow):
             m2.paste(_shift(c, d), ((12 + k) * CW, 0))
@@ -304,14 +309,17 @@ def strip_act(name, install=False):
         xstrip.alpha_composite(c, (i * ACT['cw'], 0))
     xstrip.save(extra)
     a0 = 20 + len(old)
-    grp = ['stand:stand:0-3', 'walk:walk:4-11', 'attack:attack:12-17'] + (['quirk:misc:22-25'] if len(old) >= 6 else []) + [f'attack8:attack:{a0}-{a0 + 7}']
+    grp = ['stand:stand:0-3', 'walk:walk:4-11', 'attack:attack:12-17'] + (['quirk:misc:22-25'] if len(old) >= 6 else []) + [f'attack8:attack:{a0}-{a0 + 7}'] + ([f'hit:attack:{a0 + 8}-{a0 + 11}'] if h.get('hit') else [])
     ok = check(name, main, extra, grp)
     cells = [e.crop((i * CW, 0, (i + 1) * CW, CH)) for i in range(20)]
     st = to_act(cells[0])
     seq = [(st, 700)] + [(to_act(cells[i]), 110) for i in range(4, 12)] * 2 + [(st, 600)]
     if n_old >= 6:
         seq += [(c, t) for c, t in zip(xs[2:6], (300, 320, 400, 280))] + [(st, 600)]
-    seq += [(c, t) for c, t in zip(xs[-8:], [90, 80, 110, 50, 150, 70, 80, 120])] + [(st, 800)]
+    seq += [(c, t) for c, t in zip(xs[A8], [90, 80, 110, 50, 150, 70, 80, 120])] + [(st, 800)]
+    if h.get('hit'):
+        hc = xs[len(old) + 8:]
+        seq += [(hc[0], 140), (st, 500), (hc[0], 90), (hc[1], 260), (hc[2], 600), (hc[3], 350), (st, 700)]
     fr = [on_bg(c, 3) for c, _ in seq]
     fr[0].save(f'{OUT}/{h["strip"]}-flow.gif', save_all=True, append_images=fr[1:], duration=[t for _, t in seq], loop=0)
     # 낱칸 판: GIF 에 들어간 칸을 차례대로(걷기는 한 바퀴만) · 뿌리 선·바닥 줄 — 보내기 전에 이것을 본다
