@@ -16,6 +16,9 @@ const MODEL = process.env.GPT_IMAGE_MODEL || 'gpt-image-2'   // 11-24 시험: ch
 const QUALITY = process.env.GPT_IMAGE_QUALITY || 'high'
 const LEDGER = path.resolve('tools/out/api-ledger.tsv')
 
+// 11-24 밤 형 「챗지피티 api 는 5달러 남았네. 이제 챗지피티 api 는 그만 써」 — 형이 다시 쓰라고 할 때까지 멈춘다(GPT_IMAGE_ALLOW=1 은 형이 허락한 때만).
+if (process.env.GPT_IMAGE_ALLOW !== '1') { console.error('그림 API 멈춤: 형이 11-24 밤 그만 쓰라고 했다(남은 크레딧 5달러). 그림은 Codex(NOW/LATEST)로.'); process.exit(2) }
+
 function key() {
   // 키 찾는 차례: 환경 변수 OPENAI_API_KEY → ~/.keys/챗지피티키.txt → ~/Downloads/챗지피티키.txt (11-24 형이 Downloads 에서 치운 뒤 「따로 안전하게 저장 안 해 놨어?」 — 저장소 밖 ~/.keys 를 쓴다 · 키를 찍거나 옮기지 않는다)
   if (process.env.OPENAI_API_KEY) return process.env.OPENAI_API_KEY.trim()
