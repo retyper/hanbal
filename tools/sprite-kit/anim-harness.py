@@ -53,7 +53,7 @@ HEROES = {
     'songbi': dict(strip='gen-songbi', atk='bow', atk8=False),   # 비류나 송비(활)
     'sinneoul': dict(hit=True, strip='gen-sinneoul', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 신지 너울(두 손 갈고리 장대 · 가슴 XL)
     'heo': dict(strip='gen-heo', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 가락 허황옥(금빛 창 · 가슴 L)
-    'mwarrior': dict(strip='gen-base-w-08-mahan-warrior', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 마한 전사(창 · 우람한 뼈대)
+    'mwarrior': dict(hit=True, strip='gen-base-w-08-mahan-warrior', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 마한 전사(창 · 우람한 뼈대)
     'whaleq': dict(hit=True, strip='gen-base-w-23-usisan-whale-queen', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 우시산 고래 여왕(미늘 작살 · 우람한 뼈대)
     'tomboy': dict(strip='gen-base-w-26-iseo-tomboy-general', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 이서 말괄량이 장군(창 · 우람한 뼈대)
     'beol': dict(hit=True, strip='gen-base-w-72-eumjeup-beol', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 음즙 벌(한 손 칼 · 우람한 뼈대) · 좁은 칸은 아라처럼 덜 뻗은 칸
