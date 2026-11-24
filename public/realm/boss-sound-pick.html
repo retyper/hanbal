@@ -1,0 +1,57 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>보스 소리 고르기</title>
+<style>
+  :root { color-scheme: dark; }
+  body { background:#171c23; color:#e2dbcd; margin:0; padding:20px 16px 60px; font-family:"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; }
+  h1 { font-size:20px; margin:0 0 6px; }
+  h2 { font-size:16px; color:#ffb347; margin:28px 0 2px; }
+  h3 { font-size:13px; color:#ccd6e0; margin:14px 0 6px; font-weight:600; }
+  p { color:#95a1ae; font-size:13px; line-height:1.7; max-width:760px; margin:6px 0 10px; }
+  .row { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px; max-width:560px; }
+  button { font:inherit; min-height:60px; padding:10px 6px; border-radius:10px; border:1px solid #4a5363; background:#2a313c; color:#e2dbcd; cursor:pointer; display:flex; flex-direction:column; gap:4px; align-items:center; justify-content:center; transition:transform .08s; -webkit-tap-highlight-color:transparent; }
+  button b { font-size:15px; word-break:keep-all; text-align:center; line-height:1.3; }
+  button small { color:#8f99a5; font-size:10px; line-height:1.3; word-break:break-all; text-align:center; }
+  button:active { transform:scale(.95); }
+  button.on { background:#a57a31; border-color:#e0bd78; color:#fff; }
+  button.on small { color:#fff4dc; }
+</style></head><body>
+<h1>보스 소리 고르기</h1>
+<p>사람이 아닌 보스 셋(백두 대호 · 이무기 · 불가사리)의 소리 후보입니다. 사람 목소리를 합성한 것이 아니라 실제로 녹음된 효과음(공유마당 · Freesound)에서 한 덩어리씩 잘랐습니다. 단추를 누르면 소리가 나고, 다시 누르면 멈춥니다. 마음에 드는 것을 이름으로 말해 주세요 (예: 「대호 포효는 2 · 이무기 공격은 3」). 다 별로면 「다시」라고 해 주세요.</p>
+<p>단추 아래 작은 글씨는 원래 제목, 만든 이, 출처, 이용 조건, 길이입니다. 칸마다 후보가 셋입니다.</p>
+<div id="app"></div>
+<script>
+const ITEMS = [{"boss": "tiger", "kind": "roar", "n": 1, "file": "raid_boss_tiger_roar_g1.ogg", "label": "대호 포효 1", "title": "동물_호랑이와 사자_서울대공원 동물원_사육장에서 포효하는 소리(단체음)_96khz_Mono", "who": "JICA", "site": "공유마당", "lic": "공공누리 제1유형", "dur": 4.08}, {"boss": "tiger", "kind": "roar", "n": 2, "file": "raid_boss_tiger_roar_g2.ogg", "label": "대호 포효 2", "title": "Tiger Roar", "who": "lauramellis", "site": "Freesound", "lic": "CC0", "dur": 2.03}, {"boss": "tiger", "kind": "roar", "n": 3, "file": "raid_boss_tiger_roar_g3.ogg", "label": "대호 포효 3", "title": "tiger, roar, growl, wild", "who": "FALL-E", "site": "Freesound", "lic": "CC0", "dur": 3.57}, {"boss": "tiger", "kind": "attack", "n": 1, "file": "raid_boss_tiger_attack_g1.ogg", "label": "대호 공격 1", "title": "TigerGrowl.wav", "who": "SophieMezaM", "site": "Freesound", "lic": "CC BY 3.0", "dur": 1.56}, {"boss": "tiger", "kind": "attack", "n": 2, "file": "raid_boss_tiger_attack_g2.ogg", "label": "대호 공격 2", "title": "Tiger roar female", "who": "eZZin", "site": "Freesound", "lic": "CC0", "dur": 0.9}, {"boss": "tiger", "kind": "attack", "n": 3, "file": "raid_boss_tiger_attack_g3.ogg", "label": "대호 공격 3", "title": "Loud tiger roar", "who": "mokasza", "site": "Freesound", "lic": "CC BY 4.0", "dur": 2.04}, {"boss": "tiger", "kind": "hurt", "n": 1, "file": "raid_boss_tiger_hurt_g1.ogg", "label": "대호 끊길 때 1", "title": "Low and Short Monster Growl or Purr", "who": "djlprojects", "site": "Freesound", "lic": "CC BY 4.0", "dur": 1.33}, {"boss": "tiger", "kind": "hurt", "n": 2, "file": "raid_boss_tiger_hurt_g2.ogg", "label": "대호 끊길 때 2", "title": "Beast Breath", "who": "NearTheAtmoshphere", "site": "Freesound", "lic": "CC0", "dur": 0.84}, {"boss": "tiger", "kind": "hurt", "n": 3, "file": "raid_boss_tiger_hurt_g3.ogg", "label": "대호 끊길 때 3", "title": "tiger_roar.wav", "who": "Vaporpup", "site": "Freesound", "lic": "CC0", "dur": 1.05}, {"boss": "imugi", "kind": "roar", "n": 1, "file": "raid_boss_imugi_roar_g1.ogg", "label": "이무기 포효 1", "title": "Sea Creature Roar", "who": "Bikkit99", "site": "Freesound", "lic": "CC0", "dur": 4.08}, {"boss": "imugi", "kind": "roar", "n": 2, "file": "raid_boss_imugi_roar_g2.ogg", "label": "이무기 포효 2", "title": "Dragon Moan", "who": "qubodup", "site": "Freesound", "lic": "CC BY 4.0", "dur": 2.06}, {"boss": "imugi", "kind": "roar", "n": 3, "file": "raid_boss_imugi_roar_g3.ogg", "label": "이무기 포효 3", "title": "Dragon growl.wav", "who": "Antimsounds", "site": "Freesound", "lic": "CC0", "dur": 2.72}, {"boss": "imugi", "kind": "attack", "n": 1, "file": "raid_boss_imugi_attack_g1.ogg", "label": "이무기 공격 1", "title": "산_명성산_등룡폭포 장마 뒤 엄청난 수량으로 떨어지는 소리", "who": "JICA", "site": "공유마당", "lic": "공공누리 제1유형", "dur": 2.58}, {"boss": "imugi", "kind": "attack", "n": 2, "file": "raid_boss_imugi_attack_g2.ogg", "label": "이무기 공격 2", "title": "Snake Hiss", "who": "xoiziox", "site": "Freesound", "lic": "CC0", "dur": 2.4}, {"boss": "imugi", "kind": "attack", "n": 3, "file": "raid_boss_imugi_attack_g3.ogg", "label": "이무기 공격 3", "title": "Big Water Splash", "who": "qubodup", "site": "Freesound", "lic": "CC0", "dur": 2.09}, {"boss": "imugi", "kind": "hurt", "n": 1, "file": "raid_boss_imugi_hurt_g1.ogg", "label": "이무기 끊길 때 1", "title": "Hisss 2.m4a", "who": "Zeval34", "site": "Freesound", "lic": "CC0", "dur": 2.08}, {"boss": "imugi", "kind": "hurt", "n": 2, "file": "raid_boss_imugi_hurt_g2.ogg", "label": "이무기 끊길 때 2", "title": "hissing snake sound effect", "who": "Garuda1982", "site": "Freesound", "lic": "CC BY 4.0", "dur": 0.89}, {"boss": "imugi", "kind": "hurt", "n": 3, "file": "raid_boss_imugi_hurt_g3.ogg", "label": "이무기 끊길 때 3", "title": "가축_고양이_성묘 암컷이 영역다툼할 때 내는 날카로운 경계음_96khz_Mono", "who": "JICA", "site": "공유마당", "lic": "공공누리 제1유형", "dur": 1.48}, {"boss": "bulgasari", "kind": "roar", "n": 1, "file": "raid_boss_bulgasari_roar_g1.ogg", "label": "불가사리 포효 1", "title": "Mechanical_Roar.wav", "who": "Rotaredom", "site": "Freesound", "lic": "CC0", "dur": 3.79}, {"boss": "bulgasari", "kind": "roar", "n": 2, "file": "raid_boss_bulgasari_roar_g2.ogg", "label": "불가사리 포효 2", "title": "Robotic Monster Roar", "who": "ItsThatRoboGuy", "site": "Freesound", "lic": "CC0", "dur": 1.41}, {"boss": "bulgasari", "kind": "roar", "n": 3, "file": "raid_boss_bulgasari_roar_g3.ogg", "label": "불가사리 포효 3", "title": "Growl or groan of a synthetic monster 7.wav", "who": "Wax_vibe", "site": "Freesound", "lic": "CC0", "dur": 0.95}, {"boss": "bulgasari", "kind": "attack", "n": 1, "file": "raid_boss_bulgasari_attack_g1.ogg", "label": "불가사리 공격 1", "title": "양양대장간_망치", "who": "JICA", "site": "공유마당", "lic": "공공누리 제1유형", "dur": 2.58}, {"boss": "bulgasari", "kind": "attack", "n": 2, "file": "raid_boss_bulgasari_attack_g2.ogg", "label": "불가사리 공격 2", "title": "일터_가구공방_끌망치질_쇠망치_MKH418_ST_192", "who": "(재)전주정보문화산업진흥원", "site": "공유마당", "lic": "공공누리 제1유형", "dur": 0.81}, {"boss": "bulgasari", "kind": "attack", "n": 3, "file": "raid_boss_bulgasari_attack_g3.ogg", "label": "불가사리 공격 3", "title": "철_업소용통대형_들고내려놓다(무거운통)_나무탁자_음원거리20cm_MKH8060_M", "who": "(재)전주정보문화산업진흥원", "site": "공유마당", "lic": "공공누리 제1유형", "dur": 0.97}, {"boss": "bulgasari", "kind": "hurt", "n": 1, "file": "raid_boss_bulgasari_hurt_g1.ogg", "label": "불가사리 끊길 때 1", "title": "crushed-metal.aif", "who": "esmayorga", "site": "Freesound", "lic": "CC0", "dur": 2.05}, {"boss": "bulgasari", "kind": "hurt", "n": 2, "file": "raid_boss_bulgasari_hurt_g2.ogg", "label": "불가사리 끊길 때 2", "title": "주거_쇠창살문_열다_닫다_강하게_MKH8060_ST_192", "who": "(재)전주정보문화산업진흥원", "site": "공유마당", "lic": "공공누리 제1유형", "dur": 1.31}, {"boss": "bulgasari", "kind": "hurt", "n": 3, "file": "raid_boss_bulgasari_hurt_g3.ogg", "label": "불가사리 끊길 때 3", "title": "Tin can crush and tear", "who": "lreeve", "site": "Freesound", "lic": "CC0", "dur": 2.08}]
+const BOSSES = [['tiger', '백두 대호 (거대한 범)'], ['imugi', '이무기 (용이 못 된 큰 구렁이)'], ['bulgasari', '불가사리 (쇠를 먹는 괴물)']]
+const KINDS = [['roar', '포효'], ['attack', '공격'], ['hurt', '부위가 끊길 때']]
+let cur = null, curBtn = null
+function stop() { if (cur) cur.pause(); if (curBtn) curBtn.classList.remove('on'); cur = null; curBtn = null }
+function mk(it) {
+  const b = document.createElement('button')
+  const t = it.title.length > 30 ? it.title.slice(0, 30) + '…' : it.title
+  b.innerHTML = '<b></b><small></small>'
+  b.children[0].textContent = it.label
+  b.children[1].textContent = t + ' · ' + it.who + ' · ' + it.site + ' · ' + it.lic + ' · ' + it.dur + '초'
+  b.onclick = () => {
+    const same = curBtn === b
+    stop()
+    if (same) return
+    const a = new Audio('sfx/cand/raid/' + it.file)
+    cur = a; curBtn = b; b.classList.add('on')
+    a.onended = () => { if (curBtn === b) stop() }
+    a.onerror = () => { if (curBtn === b) stop() }
+    a.play().catch(() => { if (curBtn === b) stop() })
+  }
+  return b
+}
+const app = document.getElementById('app')
+for (const [bk, bname] of BOSSES) {
+  const h = document.createElement('h2'); h.textContent = bname; app.append(h)
+  for (const [kk, kname] of KINDS) {
+    const h3 = document.createElement('h3'); h3.textContent = kname
+    const row = document.createElement('div'); row.className = 'row'
+    for (const it of ITEMS.filter(x => x.boss === bk && x.kind === kk)) row.append(mk(it))
+    app.append(h3, row)
+  }
+}
+</script></body></html>

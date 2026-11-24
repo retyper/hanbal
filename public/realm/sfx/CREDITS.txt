@@ -400,3 +400,32 @@ raid/down_3.ogg  Dying · Mike Koenig · CC BY 3.0 · https://soundbible.com/810
 raid/fall_1.ogg  Drop Sword · Caroline Ford · CC BY 3.0 · https://soundbible.com/906-Drop-Sword.html
 raid/pop_1.ogg  Blop · Mark DiAngelo · CC BY 3.0 · https://soundbible.com/2067-Blop.html
 bgm_raid_palisade.ogg · bgm_raid_forest.ogg · bgm_raid_ford.ogg · bgm_raid_snow.ogg · bgm_raid_fortress.ogg · bgm_raid_boss.ogg  Google Gemini 음악 만들기(Lyria)로 만든 곡 · 2026-11-22~23 · 열전 스테이지·두목 곡 · -18 LUFS
+
+# 보스 소리 후보 (2026-11-24 · 고르지 않은 후보는 나중에 지운다 · 파일 cand/raid/raid_boss_<보스>_<칸>_g<번호>.ogg)
+cand/raid/raid_boss_tiger_roar_g1.ogg  공유마당 · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13371956&menuNo=200020 · "동물_호랑이와 사자_서울대공원 동물원_사육장에서 포효하는 소리(단체음)_96khz_Mono" · JICA · 공공누리 제1유형 출처표시 · 일부(7.88~11.96초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_tiger_roar_g2.ogg  Freesound · https://freesound.org/people/lauramellis/sounds/263115/ · "Tiger Roar" · lauramellis · CC0 · 일부(0.88~2.91초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_tiger_roar_g3.ogg  Freesound · https://freesound.org/people/FALL-E/sounds/696476/ · "tiger, roar, growl, wild" · FALL-E · CC0 · 일부(14.46~18.03초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_tiger_attack_g1.ogg  Freesound · https://freesound.org/people/SophieMezaM/sounds/446064/ · "TigerGrowl.wav" · SophieMezaM · CC BY 3.0 · 일부(0~1.56초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_tiger_attack_g2.ogg  Freesound · https://freesound.org/people/eZZin/sounds/811790/ · "Tiger roar female" · eZZin · CC0 · 일부(0~0.9초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_tiger_attack_g3.ogg  Freesound · https://freesound.org/people/mokasza/sounds/810173/ · "Loud tiger roar" · mokasza · CC BY 4.0 · 일부(0.15~2.19초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_tiger_hurt_g1.ogg  Freesound · https://freesound.org/people/djlprojects/sounds/398254/ · "Low and Short Monster Growl or Purr" · djlprojects · CC BY 4.0 · 일부(0~1.33초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_tiger_hurt_g2.ogg  Freesound · https://freesound.org/people/NearTheAtmoshphere/sounds/676477/ · "Beast Breath" · NearTheAtmoshphere · CC0 · 일부(0~0.84초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_tiger_hurt_g3.ogg  Freesound · https://freesound.org/people/Vaporpup/sounds/571288/ · "tiger_roar.wav" · Vaporpup · CC0 · 일부(0.05~1.09초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_imugi_roar_g1.ogg  Freesound · https://freesound.org/people/Bikkit99/sounds/837799/ · "Sea Creature Roar" · Bikkit99 · CC0 · 일부(2.55~6.63초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_imugi_roar_g2.ogg  Freesound · https://freesound.org/people/qubodup/sounds/221501/ · "Dragon Moan" · qubodup · CC BY 4.0 · 일부(0~2.06초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_imugi_roar_g3.ogg  Freesound · https://freesound.org/people/Antimsounds/sounds/556048/ · "Dragon growl.wav" · Antimsounds · CC0 · 일부(1.09~3.81초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_imugi_attack_g1.ogg  공유마당 · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13372564&menuNo=200020 · "산_명성산_등룡폭포 장마 뒤 엄청난 수량으로 떨어지는 소리" · JICA · 공공누리 제1유형 출처표시 · 일부(38.27~40.85초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_imugi_attack_g2.ogg  Freesound · https://freesound.org/people/xoiziox/sounds/553374/ · "Snake Hiss" · xoiziox · CC0 · 일부(0.38~2.78초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_imugi_attack_g3.ogg  Freesound · https://freesound.org/people/qubodup/sounds/442773/ · "Big Water Splash" · qubodup · CC0 · 일부(0~2.09초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_imugi_hurt_g1.ogg  Freesound · https://freesound.org/people/Zeval34/sounds/578484/ · "Hisss 2.m4a" · Zeval34 · CC0 · 일부(1.38~3.46초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_imugi_hurt_g2.ogg  Freesound · https://freesound.org/people/Garuda1982/sounds/541656/ · "hissing snake sound effect" · Garuda1982 · CC BY 4.0 · 일부(0.27~1.16초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_imugi_hurt_g3.ogg  공유마당 · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13371931&menuNo=200020 · "가축_고양이_성묘 암컷이 영역다툼할 때 내는 날카로운 경계음_96khz_Mono" · JICA · 공공누리 제1유형 출처표시 · 일부(16.4~17.88초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_bulgasari_roar_g1.ogg  Freesound · https://freesound.org/people/Rotaredom/sounds/640805/ · "Mechanical_Roar.wav" · Rotaredom · CC0 · 일부(0.02~3.8초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_bulgasari_roar_g2.ogg  Freesound · https://freesound.org/people/ItsThatRoboGuy/sounds/528772/ · "Robotic Monster Roar" · ItsThatRoboGuy · CC0 · 일부(0.08~1.49초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_bulgasari_roar_g3.ogg  Freesound · https://freesound.org/people/Wax_vibe/sounds/556882/ · "Growl or groan of a synthetic monster 7.wav" · Wax_vibe · CC0 · 일부(0.1~1.05초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_bulgasari_attack_g1.ogg  공유마당 · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13372071&menuNo=200020 · "양양대장간_망치" · JICA · 공공누리 제1유형 출처표시 · 일부(54.65~57.23초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_bulgasari_attack_g2.ogg  공유마당 · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287669&menuNo=200020 · "일터_가구공방_끌망치질_쇠망치_MKH418_ST_192" · (재)전주정보문화산업진흥원 · 공공누리 제1유형 출처표시 · 일부(32.0~32.81초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_bulgasari_attack_g3.ogg  공유마당 · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13316641&menuNo=200020 · "철_업소용통대형_들고내려놓다(무거운통)_나무탁자_음원거리20cm_MKH8060_M" · (재)전주정보문화산업진흥원 · 공공누리 제1유형 출처표시 · 일부(23.2~24.17초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_bulgasari_hurt_g1.ogg  Freesound · https://freesound.org/people/esmayorga/sounds/371539/ · "crushed-metal.aif" · esmayorga · CC0 · 일부(0~2.05초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_bulgasari_hurt_g2.ogg  공유마당 · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287685&menuNo=200020 · "주거_쇠창살문_열다_닫다_강하게_MKH8060_ST_192" · (재)전주정보문화산업진흥원 · 공공누리 제1유형 출처표시 · 일부(35.23~36.54초)를 잘라 크기를 맞춤
+cand/raid/raid_boss_bulgasari_hurt_g3.ogg  Freesound · https://freesound.org/people/lreeve/sounds/862893/ · "Tin can crush and tear" · lreeve · CC0 · 일부(48.27~50.35초)를 잘라 크기를 맞춤
