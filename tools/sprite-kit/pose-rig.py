@@ -376,6 +376,20 @@ IK_QUIRKS['hit_pole2'] = [
     dict(_ik((0, -12), (2, 64), (16, 82), bend=8, near_foot=(-24, 0), far_foot=(20, 0)), prop='pole2'),
 ]
 
+# 같은 네 칸 — 한 손 칼·단검(가까운 손 · blade 각도) · 활(먼 손)
+IK_QUIRKS['hit_sword'] = [
+    dict(_ik((-3, -8), (8, 66), (14, 72), bend=20, near_foot=(-10, 0), far_foot=(10, 0)), prop='sword', blade=-60),
+    dict(_ik((3, -6), (-14, 74), (14, 98), bend=-42, near_foot=(-24, 0), far_foot=(8, 0)), prop='sword', blade=-130),
+    dict(_ik((-4, -54), (16, 34), (22, 44), bend=12, near_foot=(-30, 0), far_foot=(18, 0)), prop='sword', blade=-85),
+    dict(_ik((0, -12), (14, 70), (16, 74), bend=8, near_foot=(-24, 0), far_foot=(20, 0)), prop='sword', blade=25),
+]
+IK_QUIRKS['hit_bow'] = [
+    dict(_ik((-3, -8), (6, 66), (14, 70), bend=20, near_foot=(-10, 0), far_foot=(10, 0)), prop='bow'),
+    dict(_ik((3, -6), (-14, 74), (16, 98), bend=-42, near_foot=(-24, 0), far_foot=(8, 0)), prop='bow'),
+    dict(_ik((-4, -54), (10, 32), (26, 52), bend=12, near_foot=(-30, 0), far_foot=(18, 0)), prop='bow'),
+    dict(_ik((0, -12), (6, 66), (24, 72), bend=8, near_foot=(-24, 0), far_foot=(20, 0)), prop='bow'),
+]
+
 # 아룸 「메 고쳐 메기」(어깨에 멘 채 · shoulder): 메를 어깨에서 툭 들썩임 -> 도로 내려앉히며 먼 손을 허리에 -> 그대로 목을 한 번 꺾음 -> 서기
 QUIRKS['reshoulder'] = [
     dict(near_arm=(-46, 130), far_arm=(10, 24), lean=0),
