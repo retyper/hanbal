@@ -4,6 +4,7 @@
   py -3 -X utf8 -I tools/sprite-kit/scene-pack.py <이름> pole2 <걸음 결: plain|proud|sway|heavy|prowl|bouncy> <쓰러짐 판: e|e2> [가슴=M] [서기 장면의 몇째 사람=3]
     pole2 = 두 손 긴 자루(창·작살·도끼): 걷기(pole2) · 찌르기 여덟 칸(thrust a·b) · 개성 동작(retie = 자루를 세워 짚고 머리를 만짐)
     sword = 한 손 칼: 걷기(sword) · 내려베기 여덟 칸(slash a·b) · 개성 동작(inspect = 칼날 살피기)
+    dagger = 단검: 한 손 칼과 같은 인형에 짧은 칼날
   py … scene-pack.py <이름> bow <걸음 결> <쓰러짐 판> [가슴]      활: 걷기(bow) · 활 쏘기 네 칸 · 개성 동작(hairflip)
 """
 import subprocess
@@ -25,17 +26,20 @@ def main(name, kind, style, fall, bust='M', idx='3'):
     print(run('bake-scene.py', 'stand', f'{S}out-{name}-stand.png', name, idx, 'h=138'))
     st = f'{S}px/{name}-stand.png'
     made = []
+    short = ['short'] if kind == 'dagger' else []   # 단검 = 한 손 칼 인형 + 짧은 칼날
+    if kind == 'dagger':
+        kind = 'sword'
     prop = kind if kind in ('pole2', 'sword') else 'bow'
-    run('pose-rig.py', 'walk', style, bust, prop)
+    run('pose-rig.py', 'walk', style, bust, prop, *short)
     run('style-scene.py', 'motion8', st, f'{S}rig-f-walk-{style}-{bust}-{prop}-a.png', f'{S}rig-f-walk-{style}-{bust}-{prop}-b.png', f'{S}scene-{name}-walk8.png')
     made.append(f'scene-{name}-walk8.png')
     if kind in ('pole2', 'sword'):
         atk, qk = ('thrust', 'retie') if kind == 'pole2' else ('slash', 'inspect')
-        run('pose-rig.py', 'attack', atk, bust)
+        run('pose-rig.py', 'attack', atk, bust, *short)
         for h in 'ab':
             run('style-scene.py', 'attack4', st, f'{S}rig-f-atk-{atk}-{bust}-{h}.png', f'{S}scene-{name}-{atk}-{h}.png')
             made.append(f'scene-{name}-{atk}-{h}.png')
-        run('pose-rig.py', 'quirk', qk, bust)
+        run('pose-rig.py', 'quirk', qk, bust, *short)
         run('style-scene.py', 'motion', st, f'{S}rig-f-quirk-{qk}-{bust}.png', f'{S}scene-{name}-quirk.png', 'rig')
     else:
         run('pose-rig.py', 'bow', bust)

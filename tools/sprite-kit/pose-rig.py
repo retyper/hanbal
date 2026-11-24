@@ -158,8 +158,12 @@ def solve2(S, T, a, b, want):
     return best[1], best[2]
 
 
-def blade(d, hand, deg, length=42):
+BLADE = dict(len=42)   # 한 손 칼날 길이(게임 화소) — 명령 줄에 short 를 주면 단검(24)
+
+
+def blade(d, hand, deg, length=None):
     """한 손 칼: 손에서 deg 방향으로 칼날 · 반대쪽으로 짧은 자루 끝 · 손 앞에 가로 코등이"""
+    length = length or BLADE['len']
     r = math.radians(deg)
     ux, uy = math.cos(r), -math.sin(r)
     tip = (hand[0] + ux * length * Z, hand[1] + uy * length * Z)
@@ -492,6 +496,9 @@ def attack_sheets(kind):
 
 def main():
     import sys
+    if 'short' in sys.argv:   # 단검: 한 손 칼 인형에 짧은 칼날
+        BLADE['len'] = 24
+        sys.argv.remove('short')
     order = [(True, 'pass'), (True, 'reach'), (True, 'contact'), (True, 'down'), (False, 'pass'), (False, 'reach'), (False, 'contact'), (False, 'down')]
     if len(sys.argv) > 1 and sys.argv[1] == 'attack' and sys.argv[2] in IK_ATTACKS:   # 넓은 칸 · 두 손 긴 자루: rig-f-atk-<이름>-<가슴>-a/b.png (2×2 · 칸 240×208) + tools/out/lineup/rig-atk-<이름>.png
         SHAPE['bust'] = sys.argv[3]
