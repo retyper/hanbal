@@ -1462,8 +1462,8 @@ export const HAEBI_ANIM = {
    * draw: 활 — 13 메김 · 14 당김을 예비로, 15 놓음이 맞힘 칸(화살이 그 걸음에 나간다) · 휘두름 칸 없음.
    */
   roles: {
-    strike: { ready: 12, antic: [13], swing: [14], contact: 15, recover: [16, 17], anticTime: .1, stretch: .06 },
-    draw: { ready: 12, antic: [13, 14], swing: [], contact: 15, recover: [16, 17], anticTime: .14, stretch: 0 },
+    strike: { ready: 12, antic: [13], swing: [14], contact: 15, recover: [16, 17], anticTime: .3, stretch: .06 },
+    draw: { ready: 12, antic: [13, 14], swing: [], contact: 15, recover: [16, 17], anticTime: .36, stretch: 0 },
   },
   /** draw 역할을 쓰는 무기 묶음 (나머지는 strike) */
   drawKits: ['bow'],
@@ -1473,6 +1473,12 @@ export const HAEBI_ANIM = {
   moveRecover: .06,
   /** 예비 거두기 · 예비 거리(지금까지 친 순간 가장 가까운 적 거리의 최댓값 × anticReach + anticPad px) · 예비 때 뒤로 젖히는 px */
   anticCancel: .06, anticReach: 1.05, anticPad: 6, anticPull: 2,
+  /**
+   * 힘을 다 모은 칸(예비의 마지막 칸 · 활은 시위를 끝까지 당긴 칸)에 머무는 몫 — 예비 시간(anticTime)의 이만큼을 그 칸에 쓰고 앞 칸들은 나머지를 나눈다.
+   * 11-24 형 「타격감을 위해 열전에서는 시위 당겼을 때랑 공격 직전 에너지를 최대한 모았을 때의 동작이 약간 더 텀이 있어야 힘주어 때리는 타격감」
+   *   → anticTime 을 .1/.14 에서 .3/.36 으로 늘리고 그 절반 남짓을 마지막 칸에. 피해 시각(판)은 그대로 — 예비는 쿨다운 끝에서 미리 보인다.
+   */
+  anticHold: .55,
   /** 런지(px · 그림만 · 판 좌표·그림자·맞는 자리는 그대로) — 맞힐 때 적 쪽으로 밀었다 마무리 동안 돌아온다 · 음수는 뒤로 반동(활) */
   lunge: { axe: 5, sword: 5, spear: 7, dagger: 4, magic: 0, bow: -2, sling: 2 },
   /** 휘두름 잔상 — 휘두름 칸을 옅게 낱낱이(몸 뒤로 ghostGap px 씩) · 개수 · 첫 진하기 (저사양 0) */

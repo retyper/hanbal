@@ -146,8 +146,10 @@ function heroPoseOf(s: HaebiRun, m: Memo, role: AttackRole, o: PoseOptions): Her
     const foe = nearestFoe(s)
     if (foe && foe.d <= m.reach * A.anticReach + A.anticPad) {
       const k = 1 - cool / role.anticTime, face = Math.sign(foe.x - s.x) || s.face
+      // 힘을 다 모은 마지막 칸에 anticHold 몫만큼 머문다(앞 칸들은 나머지를 나눔) — 다 모은 채 잠깐 멈췄다 치는 맛
+      const n = role.antic.length, lead = 1 - A.anticHold, i = n === 1 || k >= lead ? n - 1 : Math.min(n - 2, Math.floor(k / lead * (n - 1)))
       m.anticAt = s.t
-      return { ...neutral(role.antic[Math.min(role.antic.length - 1, Math.floor(k * role.antic.length))]!, face, m.lean), dx: -face * A.anticPull * k }
+      return { ...neutral(role.antic[i]!, face, m.lean), dx: -face * A.anticPull * Math.min(1, k / lead) }
     }
   }
   if (s.attack > 0) {

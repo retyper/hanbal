@@ -17,7 +17,8 @@ const hash = (a: number[]) => createHash('sha256').update(a.join(',')).digest('h
 
 test('계획이 없으면 예전과 칸·몸 변형이 같다 (넣기 전 코드로 잰 봇 판 · 겨루기 칸)', () => {
   // 넣기 전 코드(커밋 6b569ca9)로 잰 값 — 숲 90초 봇 판의 heroPose 칸·런지·늘임
-  const BEFORE = { axe: '14a376d3294dd69edfce415b6863688406e57fd836ce69612e1a969a1ffe3fae', bow: 'fa46b33d28707d9c395479ac40f80a8338594d9db3b9bb828ca7fe5faca4b2d3', spear: '3a09dcd126a6e9163c4a315c670af716e4d2bc4153ecf8cb5e81d59c602bdac9' }
+  // 11-24 활만 다시 잼: 형 「시위 당겼을 때 텀이 있어야 타격감」 → 예비 시간 .14 → .36 · 다 당긴 칸에 anticHold 몫 (도끼·창은 이 봇 판에서 예비가 안 보여 그대로)
+  const BEFORE = { axe: '14a376d3294dd69edfce415b6863688406e57fd836ce69612e1a969a1ffe3fae', bow: '4b20d613de220d1ecb844818273bca37979b9d16f0269316bd393879b9667544', spear: '3a09dcd126a6e9163c4a315c670af716e4d2bc4153ecf8cb5e81d59c602bdac9' }
   for (const kit of ['axe', 'bow', 'spear'] as const) {
     const s = createHaebi(11, 'stage', kit, { stage: 'forest', simRules: '56B', kitRules: KIT_RULES }), frames: number[] = []
     for (let i = 0; i < 90 * 120 && s.state === 'playing'; i++) {

@@ -78,7 +78,8 @@ test('62-A 예비: 한 번 친 뒤 다음 쿨다운 끝에만 · 첫 한 방엔 
   untilStrike(s); assert.equal(heroPose(s, opts).frame, 14)
   // 적이 사라지면: 예비 → 쿨다운 끝 → 준비 칸 잠깐 → 서기
   const g = fight('axe'); heroPose(g, opts); untilStrike(g)
-  while (g.cool[key] > A.roles.strike.anticTime * .3) { stepHaebi(g, idle, 1 / 120); heroPose(g, opts) }
+  // 적이 사라진 뒤 남은 쿨다운이 anticCancel 보다 짧아야 준비 칸이 보인다 (11-24 예비 시간을 늘려 .3 몫으로는 모자람)
+  while (g.cool[key] > Math.min(A.roles.strike.anticTime * .3, A.anticCancel * .5)) { stepHaebi(g, idle, 1 / 120); heroPose(g, opts) }
   assert.equal(heroPose(g, opts).frame, 13)
   g.enemies.length = 0
   while (g.cool[key] > 0) { stepHaebi(g, idle, 1 / 120); heroPose(g, opts) }
