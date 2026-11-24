@@ -1454,6 +1454,12 @@ export const HAEBI_IDLE = {
     sogeumbi: { cells: 34, base: [0, 1], hold: 2.4, fall: [18, 20, 21, 19], attack: { cells: [22, 23, 24, 25, 26, 27, 28, 29], times: [.09, .08, .11, .05, .15, .07, .08, .12], hit: 4 }, hurt: [30, 31], rise: [32, 33], xGeom: { h: 224, root: 92, foot: 216 } },
     baram: { cells: 34, base: [0, 1], hold: 2.4, fall: [18, 20, 21, 19], quirk: [22, 23, 24, 25], quirkTimes: [.3, .32, .4, .28], attack: { cells: [26, 27, 28, 29, 30, 31, 32, 33], times: [.09, .08, .11, .12, .12, .08, .08, .12], hit: 3 }, xGeom: { h: 224, root: 92, foot: 216 } },
     byeol: { cells: 38, base: [0, 1], hold: 2.4, fall: [18, 20, 21, 19], quirk: [22, 23, 24, 25], quirkTimes: [.3, .32, .4, .28], attack: { cells: [26, 27, 28, 29, 30, 31, 32, 33], times: [.09, .08, .11, .05, .15, .07, .08, .12], hit: 4 }, hurt: [34, 35], rise: [36, 37], xGeom: { h: 224, root: 92, foot: 216 } },
+    'base-w-71-yeonna-neoul': { cells: 38, base: [0, 1], hold: 2.4, fall: [18, 20, 21, 19], quirk: [22, 23, 24, 25], quirkTimes: [.3, .32, .4, .28], attack: { cells: [26, 27, 28, 29, 30, 31, 32, 33], times: [.09, .08, .11, .05, .15, .07, .08, .12], hit: 4 }, hurt: [34, 35], rise: [36, 37], xGeom: { h: 224, root: 92, foot: 216 } },
+    'base-w-39-gosaburi-galmae': { cells: 26, base: [0, 1], hold: 2.4, fall: [18, 20, 21, 19], quirk: [22, 23, 24, 25], quirkTimes: [.28, .3, .42, .25] },
+    'base-w-41-hwanna-beodeul': { cells: 26, base: [0, 1], hold: 2.4, fall: [18, 20, 21, 19], quirk: [22, 23, 24, 25], quirkTimes: [.28, .3, .42, .25] },
+    'base-w-79-yangmaek-solmae': { cells: 26, base: [0, 1], hold: 2.4, fall: [18, 20, 21, 19], quirk: [22, 23, 24, 25], quirkTimes: [.28, .3, .42, .25] },
+    'base-w-46-geonma-maru': { cells: 38, base: [0, 1], hold: 2.4, fall: [18, 20, 21, 19], quirk: [22, 23, 24, 25], quirkTimes: [.3, .32, .4, .28], attack: { cells: [26, 27, 28, 29, 30, 31, 32, 33], times: [.09, .08, .11, .12, .12, .08, .08, .12], hit: 3 }, hurt: [34, 35], rise: [36, 37], xGeom: { h: 224, root: 92, foot: 216 } },
+    'base-w-48-mujin-mudeung': { cells: 38, base: [0, 1], hold: 2.4, fall: [18, 20, 21, 19], quirk: [22, 23, 24, 25], quirkTimes: [.3, .32, .4, .28], attack: { cells: [26, 27, 28, 29, 30, 31, 32, 33], times: [.09, .08, .11, .12, .12, .08, .08, .12], hit: 3 }, hurt: [34, 35], rise: [36, 37], xGeom: { h: 224, root: 92, foot: 216 } },
   },
 } as const
 export const HAEBI_ANIM = {

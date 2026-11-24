@@ -1,7 +1,6 @@
 /** Native master rebake only. Missing entries deliberately retain their approved base assets. */
 export const HERO_HD: Readonly<Record<string, string>> = {
   // 새 길로 다시 그린 본 띠(범 · 매화 · 달빛 base-w-31-dabeol-dalbit · 11-23 · 해비 · 아룸 11-24)는 옛 2배 띠를 잇지 않는다 — 다시 구울 때까지 본 띠로 그린다 (옛 _hd 그림은 그대로 둔다)
-  'anim-px/gen-base-w-39-gosaburi-galmae.png': 'anim-px/gen-base-w-39-gosaburi-galmae_hd.png',
   'anim-px/gen-dalbit.png': 'anim-px/gen-dalbit_hd.png',
   'anim-px/gen-base-g-59-yangmaek-maekson.png': 'anim-px/gen-base-g-59-yangmaek-maekson_hd.png',
   'anim-px/gen-base-g-62-beonye-hanul.png': 'anim-px/gen-base-g-62-beonye-hanul_hd.png',
@@ -9,16 +8,11 @@ export const HERO_HD: Readonly<Record<string, string>> = {
   'anim-px/gen-base-w-83-gyeonji-beodeul.png': 'anim-px/gen-base-w-83-gyeonji-beodeul_hd.png',
   'anim-px/gen-base-w-81-byeokjin-byeolbit.png': 'anim-px/gen-base-w-81-byeokjin-byeolbit_hd.png',
   'anim-px/gen-base-w-80-usan-gangchi.png': 'anim-px/gen-base-w-80-usan-gangchi_hd.png',
-  'anim-px/gen-base-w-79-yangmaek-solmae.png': 'anim-px/gen-base-w-79-yangmaek-solmae_hd.png',
   'anim-px/gen-base-w-75-daegaya-soemoe.png': 'anim-px/gen-base-w-75-daegaya-soemoe_hd.png',
-  'anim-px/gen-base-w-71-yeonna-neoul.png': 'anim-px/gen-base-w-71-yeonna-neoul_hd.png',
   'anim-px/gen-base-w-61-iseo-sinae.png': 'anim-px/gen-base-w-61-iseo-sinae_hd.png',
   'anim-px/gen-base-w-50-siljik-mulga.png': 'anim-px/gen-base-w-50-siljik-mulga_hd.png',
-  'anim-px/gen-base-w-48-mujin-mudeung.png': 'anim-px/gen-base-w-48-mujin-mudeung_hd.png',
-  'anim-px/gen-base-w-46-geonma-maru.png': 'anim-px/gen-base-w-46-geonma-maru_hd.png',
   'anim-px/gen-base-w-45-tamna-oreumbi.png': 'anim-px/gen-base-w-45-tamna-oreumbi_hd.png',
   'anim-px/gen-base-w-43-uga-nuri.png': 'anim-px/gen-base-w-43-uga-nuri_hd.png',
-  'anim-px/gen-base-w-41-hwanna-beodeul.png': 'anim-px/gen-base-w-41-hwanna-beodeul_hd.png',
   'anim-px/gen-base-w-40-mujin-munui.png': 'anim-px/gen-base-w-40-mujin-munui_hd.png',
   'anim-px/gen-bakdal.png': 'anim-px/gen-bakdal_hd.png',
   'anim-px/gen-aw1-base-w-83-gyeonji-beodeul.png': 'anim-px/gen-aw1-base-w-83-gyeonji-beodeul_hd.png',
