@@ -45,7 +45,7 @@ HEROES = {
     'pirate': dict(strip='gen-base-w-10-pirate-captain', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 해적 두목(작살) · 끝까지 찌른 칸은 좁은 칸에 안 들어가 당기는 칸으로
     'diver': dict(strip='gen-base-w-17-mahan-pearl-diver', atk='thrust', atk8=True, act=True, legacy=(('a', 1), ('a', 2), ('a', 3), ('a', 1)),
                   cells8=[('a', 1), ('a', 2), ('a', 3), ('a', 4), ('a', 4), ('a', 3), ('a', 2), ('a', 1)]),   # 해녀(작살) · 뒤 판 b 는 그림 도구가 거절 → 앞 판으로: 타격 = 넷째(a4) · wire-hero hit=3
-    'huntress': dict(strip='gen-base-w-06-buyeo-huntress', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 부여 사냥꾼(창)
+    'huntress': dict(strip='gen-base-w-06-buyeo-huntress', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 부여 사냥꾼(창)
     'dallae': dict(strip='gen-base-w-64-miri-dallae', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 미리 군주 달래(창)
     'ara': dict(strip='gen-ara', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 가야 검사 아라(한 손 칼) · 좁은 칸: 머리 위로 곧게 세운 a2 는 위가, 끝까지 벤 b1 은 앞이 넘친다
     'dtiger': dict(strip='gen-base-w-22-dongye-tiger-huntress', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 동예 범 사냥꾼(창)
