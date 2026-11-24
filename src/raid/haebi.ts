@@ -250,6 +250,8 @@ export interface HaebiRun {
   solids?: Solid[];
   /** 62-ANCHOR 장수가 순간이동하지 않는다 (opts.anchorRules) */
   anchored?: boolean;
+  /** 73-PHANTOM 환영난무는 장수가 직접 적에서 적으로 옮겨 다니고 끝나면 처음 자리로 돌아온다 (opts.phantomRules) */
+  phantom?: true;
   /** 64-BREAK 부위 파괴 규칙 (opts.breakRules) */
   breakOn?: boolean;
   /** 65-BUILD 설치 갈래 (opts.buildRules · raid/build.ts) — 없으면 세 갈래 옛 판 (설치 칸의 단계도 ranks 에 없다) */
@@ -273,7 +275,7 @@ export function random(s: HaebiRun) { const rng = makeRng(s.seed); const n = rng
  * awaken remains the fallback qualification alias. Explicit53B, plus default trial/vanguard, preserve timed-awake rules.
  * mastery: 숲·여울·목책을 다 깬 장수 (막대 절반으로 시작)
  */
-export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' | '55-SHAMAN'; /** 58-KITS 무기 개성 — 스테이지 규칙과 따로 켠다 (판 기록 opts 에 그대로 남아 재생도 같다) */ kitRules?: '58-KITS'; /** 60-JACKPOT 상자 — 정예 상자는 고르지 않고 터지고, 중간 보스 상자는 조합 하나를 고른다 (스테이지 판만 · 판 기록 opts 에 남아 재생도 같다) */ chestRules?: '60-JACKPOT'; /** 59-WIDE 넓은 맵 — 열전 스테이지 판에만 켜진다 (시련·선봉에 넘겨도 한 장짜리 그대로 · 판 기록 opts 에 남아 재생도 같다) */ mapRules?: '59-WIDE'; /** 61-SOLID 넓은 맵의 나무·바위·목책이 장수와 적을 막는다 (무기는 통과 · 59-WIDE 판에서만 · 판 기록 opts 에 남아 재생도 같다) */ blockRules?: '61-SOLID'; /** 62-ANCHOR 장수는 제 발로만 움직인다 — 단검의 그림자 걸음·환영난무가 장수를 순간이동시키지 않는다 (형 11-23 「때리다가 갑자기 순간이동 · 보스전에서 원하지 않는 곳으로」 · 판 기록 opts 에 남는다) */ anchorRules?: '62-ANCHOR'; /** 64-BREAK 부위 파괴가 느껴지게 — 몸통 피해가 가까운 부위로 번지고 · 부위 체력 낮춤 · 부서지면 그로기와 더 큰 피해 (판 기록 opts 에 남는다) */ breakRules?: '64-BREAK'; /** 66-CAP 최고 레벨 뒤 기세 막대가 다시 차면 회복과 판 금으로 바꾼다 (HAEBI_CAP · 판 기록 opts 에 남는다) */ capRules?: '66-CAP'; /** 68-BOSSCHEST 중간 보스 상자가 늘 카드 셋 (안 연 조합 → 조합 단계 → 갈래 끝·주 무기 두 단계 · HAEBI_BOSS_CHEST · 판 기록 opts 에 남는다) */ bossChestRules?: '68-BOSSCHEST'; /** 71-BOSSDUEL 보스전 잡졸을 줄인다 — 마지막 두목이 살아 있으면 저절로 나오는 잡졸 bossSpawn 배·적 상한 bossCap · 중간 보스면 midbossSpawn 배 · 마지막 두목이 나오는 순간 보통 잡졸은 달아나 사라진다 (HAEBI_BOSS_DUEL · 스테이지 판만 · 판 기록 opts 에 남는다) */ bossDuelRules?: '71-BOSSDUEL'; /** 72-BOSSHIT 거대 보스의 큰 공격은 맞으면 최대 체력의 큰 몫이 깎인다 (HAEBI_BOSS_HIT · 스테이지 판만 · 판 기록 opts 에 남는다) */ bossHitRules?: '72-BOSSHIT'; /** 70-AWAKECAP 영구 각성(permanentAwake)으로 들어온 판은 최고 레벨 60 · 51~60 은 막대가 더 길고 레벨 힘은 반 (겉모습 각성 appearanceAwake 는 상관없다 · HAEBI_CAP60 · 66-CAP 판에서만 · 판 기록 opts 에 남는다) */ awakeCapRules?: '70-AWAKECAP' | '70B-AWAKECAP'; /** 69-BUILDUP 설치 갈래에 화력·장전 칸 (종류 칸을 쓰지 않는다 · 얹힐 설치물을 가진 판에만 나온다 · HAEBI_BUILDUP · 65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ buildUpRules?: '69-BUILDUP' | '69B-BUILDUP'; /** 67-BUILD2 설치 갈래에 장승·솟대·봉수대·포차·우물을 더한다 (65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ build2Rules?: '67-BUILD2'; /** 65-BUILD 레벨업 카드의 네 번째 갈래 「설치」 — 고르면 망루·목책·항아리가 장수 앞에 서서 판 끝까지 남는다 · 장수·적은 지나가지 못하고 장수가 몸으로 밀어 옮긴다 (판 기록 opts 에 남는다) */ buildRules?: '65-BUILD' }
+export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' | '55-SHAMAN'; /** 58-KITS 무기 개성 — 스테이지 규칙과 따로 켠다 (판 기록 opts 에 그대로 남아 재생도 같다) */ kitRules?: '58-KITS'; /** 60-JACKPOT 상자 — 정예 상자는 고르지 않고 터지고, 중간 보스 상자는 조합 하나를 고른다 (스테이지 판만 · 판 기록 opts 에 남아 재생도 같다) */ chestRules?: '60-JACKPOT'; /** 59-WIDE 넓은 맵 — 열전 스테이지 판에만 켜진다 (시련·선봉에 넘겨도 한 장짜리 그대로 · 판 기록 opts 에 남아 재생도 같다) */ mapRules?: '59-WIDE'; /** 61-SOLID 넓은 맵의 나무·바위·목책이 장수와 적을 막는다 (무기는 통과 · 59-WIDE 판에서만 · 판 기록 opts 에 남아 재생도 같다) */ blockRules?: '61-SOLID'; /** 62-ANCHOR 장수는 제 발로만 움직인다 — 단검의 그림자 걸음·환영난무가 장수를 순간이동시키지 않는다 (형 11-23 「때리다가 갑자기 순간이동 · 보스전에서 원하지 않는 곳으로」 · 판 기록 opts 에 남는다) */ anchorRules?: '62-ANCHOR'; /** 73-PHANTOM 환영난무는 장수가 직접 옮겨 다니며 벤다 (62-ANCHOR 위에 얹는다) */ phantomRules?: '73-PHANTOM'; /** 64-BREAK 부위 파괴가 느껴지게 — 몸통 피해가 가까운 부위로 번지고 · 부위 체력 낮춤 · 부서지면 그로기와 더 큰 피해 (판 기록 opts 에 남는다) */ breakRules?: '64-BREAK'; /** 66-CAP 최고 레벨 뒤 기세 막대가 다시 차면 회복과 판 금으로 바꾼다 (HAEBI_CAP · 판 기록 opts 에 남는다) */ capRules?: '66-CAP'; /** 68-BOSSCHEST 중간 보스 상자가 늘 카드 셋 (안 연 조합 → 조합 단계 → 갈래 끝·주 무기 두 단계 · HAEBI_BOSS_CHEST · 판 기록 opts 에 남는다) */ bossChestRules?: '68-BOSSCHEST'; /** 71-BOSSDUEL 보스전 잡졸을 줄인다 — 마지막 두목이 살아 있으면 저절로 나오는 잡졸 bossSpawn 배·적 상한 bossCap · 중간 보스면 midbossSpawn 배 · 마지막 두목이 나오는 순간 보통 잡졸은 달아나 사라진다 (HAEBI_BOSS_DUEL · 스테이지 판만 · 판 기록 opts 에 남는다) */ bossDuelRules?: '71-BOSSDUEL'; /** 72-BOSSHIT 거대 보스의 큰 공격은 맞으면 최대 체력의 큰 몫이 깎인다 (HAEBI_BOSS_HIT · 스테이지 판만 · 판 기록 opts 에 남는다) */ bossHitRules?: '72-BOSSHIT'; /** 70-AWAKECAP 영구 각성(permanentAwake)으로 들어온 판은 최고 레벨 60 · 51~60 은 막대가 더 길고 레벨 힘은 반 (겉모습 각성 appearanceAwake 는 상관없다 · HAEBI_CAP60 · 66-CAP 판에서만 · 판 기록 opts 에 남는다) */ awakeCapRules?: '70-AWAKECAP' | '70B-AWAKECAP'; /** 69-BUILDUP 설치 갈래에 화력·장전 칸 (종류 칸을 쓰지 않는다 · 얹힐 설치물을 가진 판에만 나온다 · HAEBI_BUILDUP · 65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ buildUpRules?: '69-BUILDUP' | '69B-BUILDUP'; /** 67-BUILD2 설치 갈래에 장승·솟대·봉수대·포차·우물을 더한다 (65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ build2Rules?: '67-BUILD2'; /** 65-BUILD 레벨업 카드의 네 번째 갈래 「설치」 — 고르면 망루·목책·항아리가 장수 앞에 서서 판 끝까지 남는다 · 장수·적은 지나가지 못하고 장수가 몸으로 밀어 옮긴다 (판 기록 opts 에 남는다) */ buildRules?: '65-BUILD' }
 /** 새 판이 쓰는 무기 규칙 */
 export const KIT_RULES = '58-KITS' as const
 /** 새 스테이지 판이 쓰는 상자 규칙 */
@@ -284,6 +286,8 @@ export const MAP_RULES = '59-WIDE' as const
 export const SOLID_RULES = '61-SOLID' as const
 /** 새 판이 쓰는 「순간이동 없음」 규칙 */
 export const ANCHOR_RULES = '62-ANCHOR' as const
+/** 새 판이 쓰는 「환영난무는 장수가 직접 순간이동」 규칙 (62-ANCHOR 위에 얹는다) */
+export const PHANTOM_RULES = '73-PHANTOM' as const
 /** 새 판이 쓰는 부위 파괴 규칙 */
 export const BREAK_RULES = '64-BREAK' as const
 /** 새 판이 쓰는 설치 갈래 규칙 */
@@ -330,6 +334,7 @@ export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit
   if (opts.mapRules === MAP_RULES && mode === 'stage' && stage !== 'trial') s.wide = newWide()
   if (s.wide && opts.blockRules === SOLID_RULES) s.solids = solidsFor(stage)
   if (opts.anchorRules === ANCHOR_RULES) s.anchored = true
+  if (opts.phantomRules === PHANTOM_RULES && s.anchored) s.phantom = true
   if (opts.breakRules === BREAK_RULES) s.breakOn = true
   if (build) s.build = newBuild()
   if (build2) s.build!.v2 = true
@@ -1550,9 +1555,12 @@ function ultTick(s: HaebiRun, dt: number, power: number, area: number) {
       else {
         const at = aimAt(e, s.x, s.y), side = s.x < at.x ? -1 : 1, px = s.x, py = s.y, r = p.splash * area
         // 62-ANCHOR: 장수는 제자리 · 그림자 분신만 날아가 벤다 (화면은 px,py → 적 자리의 그림자 길로 같다)
-        if (!s.anchored) { s.x = heroX(s, at.x + side * p.beside); s.y = heroY(s, at.y); s.face = -side } else s.face = side < 0 ? 1 : -1
+        // 73-PHANTOM: 62-ANCHOR 위에서도 환영난무만은 장수가 직접 옮겨 다니며 벤다 (그동안 무적)
+        const hop = !s.anchored || !!s.phantom
+        if (hop) { s.x = heroX(s, at.x + side * p.beside); s.y = heroY(s, at.y); s.face = -side } else s.face = side < 0 ? 1 : -1
+        if (s.phantom) s.inv = Math.max(s.inv, U.phantom.inv)
         u.used.push(e.id)
-        if (s.palisade && !s.anchored) wallSettle(s.palisade, s, WL.heroR)   // 그림자 걸음은 목책을 넘지만 마디 속에 서지는 않는다
+        if (s.palisade && hop) wallSettle(s.palisade, s, WL.heroR)   // 그림자 걸음은 목책을 넘지만 마디 속에 서지는 않는다
         ultFx(s, false, at.x, at.y, r, i, px, py)
         for (const o of s.enemies) if (o.hp > 0 && inRadius(o, at.x, at.y, r)) hit(s, o, p.damage * power, true, undefined, disk(at.x, at.y, r))
         if (s.palisade) wallHit(s, disk(at.x, at.y, r), 'skill')
@@ -1562,6 +1570,7 @@ function ultTick(s: HaebiRun, dt: number, power: number, area: number) {
   }
   if (u.n > 0) return
   if (s.kit === 'dagger') { ultFx(s, false, u.x, u.y, 0, 0, s.x, s.y); s.x = u.x; s.y = u.y }   // 처음 자리로 돌아옴
+  if (s.phantom && s.kit === 'dagger') s.inv = Math.max(s.inv, U.phantom.landInv)   // 착지 무적
   s.ult = null
 }
 // ── 59-WIDE 넓은 맵 (raid/wide.ts · 수치 HAEBI_WIDE · 새 규칙 판만 · docs/realm/RAID-REWARD-MAP-20261122.md 4장) ──

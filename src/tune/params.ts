@@ -439,6 +439,8 @@ export const HAEBI_ULT = {
   spear: { cooldown: 13, damage: 140, pulses: 3, gap: .15, r0: 130, r1: 285, knock: 40, fx: .5 },
   sword: { cooldown: 13, damage: 430, length: 500, width: 110, cone: 1.57, fx: .5 },
   dagger: { cooldown: 13, damage: 110, targets: 8, range: 320, gap: .07, splash: 40, beside: 24, fx: .38 },
+  /** 73-PHANTOM 환영난무 동안 장수가 옮겨 다니는 사이 무적(초 · 걸음마다 이만큼 채움) · 처음 자리로 돌아온 뒤 착지 무적(초 · 돌아온 자리가 보스 큰 공격 예고 안이어도 이 동안은 안 맞는다) */
+  phantom: { inv: .25, landInv: .3 },
   magic: { cooldown: 13, damage: 23, bolts: 40, fx: .5 },
   sling: { cooldown: 13, damage: 60, waves: 4, stones: 7, gap: .12, radius: 165, splash: 46, range: 480, fx: .5 },
   /** 줄 비기(도끼·활·칼)가 견줘 보는 방향 수 — 가까운 적 이만큼 쪽으로 줄을 대 보고 가장 많이 걸리는 쪽 */
