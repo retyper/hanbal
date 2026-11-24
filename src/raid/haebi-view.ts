@@ -30,6 +30,7 @@ import { trackScorch, drawScorch } from './fx-scorch.ts'
 import { trackBreaks, drawBreakText, drawGroggy } from './fx-break.ts'
 import { trackCap, drawCap } from './fx-cap.ts'
 import { BUILD_PATHS, drawBuildGround, drawStructure } from './fx-build.ts'
+import { drawFoeStatus, drawHeroWater } from './fx-status.ts'
 import { BUILD2_PATHS, drawBuild2Ground, drawSignal, drawLob, drawWellHeal } from './fx-build2.ts'
 import { HAEBI_BUILD } from '../tune/params.ts'
 const BUILD_VIEW = HAEBI_BUILD.view
@@ -894,7 +895,9 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       // 진탕격: 머리 위를 도는 별 둘
       if (e.daze > 0) for (let i = 0; i < 2; i++) { const a = s.t * 7 + i * Math.PI; stamp(ctx, images, 'raid/hit.png', e.x + Math.cos(a) * 14, e.y - h - 4 + Math.sin(a) * 4, 14, a) }
       if (target) decal(ctx, images, 'mark-arrow', e.x, e.y - h - 26 + Math.sin(s.t * 4) * 4, 22, 39)
-      if (big && !(e.champion && e.kind === 'elite')) { ctx.fillStyle = '#111c'; ctx.fillRect(e.x - 28, e.y - h, 56, 5); ctx.fillStyle = '#ef9873'; ctx.fillRect(e.x - 28, e.y - h, 56 * e.hp / e.max, 5) }
+      const hasBar = big && !(e.champion && e.kind === 'elite')
+      if (hasBar) { ctx.fillStyle = '#111c'; ctx.fillRect(e.x - 28, e.y - h, 56, 5); ctx.fillStyle = '#ef9873'; ctx.fillRect(e.x - 28, e.y - h, 56 * e.hp / e.max, 5) }
+      if (s.buffs) drawFoeStatus(ctx, s, e, h, hasBar ? { left: e.x - 28 } : null)   // 74-BUFF 디버프 줄 (체력 띠 위 왼쪽 · 띠 없는 잡졸은 몸 위)
     } else {
       if (ending?.kind === 'victory' && ending.elapsed > ending.freeze) {
         ctx.save(); ctx.globalAlpha = FX_ART.rayAlpha * Math.min(1, (ending.elapsed - ending.freeze) / END.cameraTime)
@@ -1063,7 +1066,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   // 피해 숫자 — 알갱이로 튀어 나간다 (trackNumbers · drawNumbers)
   trackNumbers(s); ctx.save(); drawNumbers(ctx, images, s, s.t + (ending?.effectTime ?? 0)); ctx.restore()
   trackBreaks(s); drawBreakText(ctx, s)   // 64-BREAK 「부위 파괴!」
-  drawWellHeal(ctx, s); trackCap(s); drawCap(ctx, s)   // 최고 레벨 「수련을 모두 마쳤습니다」 · 66-CAP 「+금 · 회복」
+  drawWellHeal(ctx, s); drawHeroWater(ctx, s); trackCap(s); drawCap(ctx, s)   // 최고 레벨 「수련을 모두 마쳤습니다」 · 66-CAP 「+금 · 회복」
   drawChampionOverlays(ctx, images, s, mobHeight, cam ? fieldView(cam) : undefined)
   // 여기부터 화면에 붙은 것 — 확대해도 그대로 (흔들림만)
   if (camOn) fieldTransform(ctx, 1, qx, qy)

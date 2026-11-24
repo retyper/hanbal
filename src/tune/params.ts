@@ -775,7 +775,7 @@ export const HAEBI_BUILD2 = {
   sotdae: { ahead: 70, r: 12, radius: 150, radiusStep: 15, slow: .25, slowStep: .06 },
   beacon: { ahead: 90, r: 26, every: 8, everyStep: .6, delay: 1, cluster: 120, radius: 115, radiusStep: 10, share: 1, shareStep: .3 },
   catapult: { ahead: 100, r: 32, hp: 320, hpStep: 110, rebuild: 12, aggroR: 140, aggroEvery: 3, touch: 6, bite: 1, every: 5.5, everyStep: .4, minRange: 170, range: 640, cluster: 110, flight: 1.1, radius: 125, radiusStep: 10, share: 1.3, shareStep: .35 },
-  well: { ahead: 70, r: 26, radius: 120, radiusStep: 12, share: .25, shareStep: .09, cool: 30, coolStep: 3.5 },
+  well: { ahead: 70, r: 26, radius: 120, radiusStep: 12, share: .25, shareStep: .09, cool: 30, coolStep: 3.5, time: 5, pulse: 1, buffMul: .4 },
   view: {
     h: { totem: 92, sotdae: 84, beacon: 92, catapult: 104, well: 40 }, shadow: 1.1,
     line: '#9fe8ff', lineW: 4, lineAlpha: .55, lineGlow: 12,
@@ -814,6 +814,20 @@ export const HAEBI_BUILD2 = {
       },
     },
   },
+} as const
+/**
+ * 74-BUFF 상태 효과 (장수 버프 · 적 디버프) — 판은 src/raid/status.ts · 화면만 읽는다.
+ * 우물의 물기운(water)은 HAEBI_BUILD2.well 의 time 초 동안 총량(share)을 고르게 채운다 · pulse 초마다 초록 숫자 하나.
+ * 줄: 체력 띠 바로 위 왼쪽 끝에서 오른쪽으로 작게 (장수는 DOM · 적은 체력 띠 위, 띠 없는 잡졸은 몸 위) · icon 한 칸 px · gap 간격 · max 최대 개수 (넘치면 뒤는 생략) ·
+ * ring 남은 시간 고리 굵기 · ref 고리가 가득이던 시간(초) · 겹친 수가 2 이상이면 작은 숫자.
+ */
+export const HAEBI_STATUS = {
+  hero: { icon: 14, gap: 3, max: 6, ring: 2 },
+  foe: { icon: 9, gap: 2, max: 3, ring: 1.5, lift: 4, crowd: 18 },
+  ref: { water: 5, poison: 4, slow: .6, daze: .9 },
+  color: { water: '#7fd0ff', poison: '#8fd04a', slow: '#9fe8ff', daze: '#ffd77a' },
+  drops: { n: 6, size: 2.6, rise: 44, round: 24, life: 1.2, color: '#bfe6ff' },
+  num: { life: .9, rise: 30, size: 15, fill: '#9dffc4', edge: '#06231a' },
 } as const
 /**
  * 69-BUILDUP 설치물 강화 칸 둘 (형 11-23 「설치물들의 공격력이나 공격속도 올려주는 것도 따로 만들어야 할 것 같고」) — 설치 갈래의 칸이지만 설치물 종류가 아니라 종류 칸(HAEBI_BUILD.kinds 셋)을 쓰지 않는다
