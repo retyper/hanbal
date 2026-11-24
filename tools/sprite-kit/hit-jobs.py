@@ -19,7 +19,7 @@ spec = importlib.util.spec_from_file_location('harness', HERE + '/anim-harness.p
 H = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(H)
 
-BUST = dict(gaennae='L', galmae='XL', beodeul='L', heo='L', deulme='L', tneoul='L', budeul='L', gabi='L', baetsa='XL', odi='XL', sinneoul='XL', dana='XL', sogeum='XL', saltw='XL')
+BUST = dict(soebi='L', gaennae='L', galmae='XL', beodeul='L', heo='L', deulme='L', tneoul='L', budeul='L', gabi='L', baetsa='XL', odi='XL', sinneoul='XL', dana='XL', sogeum='XL', saltw='XL')
 KIND = dict(thrust='pole2', chop='pole2', slam='pole2', slash='sword', stab='sword', bow='bow', claw='none')
 
 WEAPON = {
