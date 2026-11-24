@@ -20,7 +20,7 @@ H = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(H)
 
 BUST = dict(heo='L', deulme='L', tneoul='L', budeul='L', gabi='L', baetsa='XL', odi='XL', sinneoul='XL', dana='XL', sogeum='XL', saltw='XL')
-KIND = dict(thrust='pole2', chop='pole2', slam='pole2', slash='sword', bow='bow', claw='none')
+KIND = dict(thrust='pole2', chop='pole2', slam='pole2', slash='sword', stab='sword', bow='bow', claw='none')
 
 WEAPON = {
     'pole2': ('The brown stick with a grey square only MARKS where her weapon is: draw her real two-handed weapon exactly as in the top-left reference '

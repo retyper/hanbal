@@ -70,8 +70,8 @@ HEROES = {
     'beombal': dict(hit=True, strip='gen-beombal', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 맥 범발(단검 · 가슴 M)
     'irang': dict(hit=True, strip='gen-irang', atk='slash', atk8=True, act=True, legacy=(('b', 3), ('b', 1), ('b', 2), ('b', 4)), cells8=[('b', 4), ('b', 3), ('b', 3), ('b', 1), ('b', 1), ('b', 2), ('b', 3), ('b', 4)]),   # 조문 이랑(단검 · 가슴 M) · 내려베기 a 판은 그림 도구가 거절 → b 판 넷으로 여덟 칸(거둠 칸을 당김으로 · 찌르는 칸 넷째)
     'sogeumbi': dict(hit=True, strip='gen-sogeumbi', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 옥저 소금비(한 손 칼 · 가슴 M)
-    'baram': dict(strip='gen-baram', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 고사부리 바람(단검 · 가슴 M)
-    'byeol': dict(strip='gen-byeol', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 벽진 별(한 손 칼 · 가슴 M · 달군 칼날은 불빛 없이)
+    'baram': dict(strip='gen-baram', atk='stab', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 1), ('b', 2)), cells8=[('a', 1), ('a', 2), ('a', 3), ('a', 4), ('b', 1), ('b', 2), ('a', 1), ('b', 4)]),   # 고사부리 바람(단검 · 가슴 M) · 11-24 새 단검 인형 찌르기(stab · 타격 a4) · 좁은 칸은 뿌리 앞 104 까지라 a4(108) 대신 버팀 b1(98) · b3 이 팔을 다시 뻗어 두 번 찌르듯 보여(독립 검수) 일곱째 칸은 낮은 겨눔 a1 · b1 머리칼의 자홍 점 여섯은 이웃 색으로 메움(px)
+    'byeol': dict(strip='gen-byeol', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 벽진 별(한 손 칼 · 가슴 M · 달군 칼날은 불빛 없이) · 11-24 G4(내려베기 a)만 받음 · G5(b) 거절 → 보류
     'haebi': dict(hit=True, strip='gen-haebi', atk='chop', atk8=True, act=True),   # act = 공격 여덟 칸이 넓은 동작 칸(240×224 · 뿌리 92 · 발 줄 216)
     'areum': dict(hit=True, strip='gen-areum', atk='slam', atk8=True, act=True, lock='none'),   # 받은 그림 그대로(얼굴을 떠다 붙이지 않는다 — 11-24: 뭉친 얼굴이 여덟 칸에 퍼졌다) · 옛 lock='face': 메가 머리 뒤로 지나간다 — 머리 상자는 메를 자르고(「포스터」), 윗몸을 통째로 묶으면 떠다닌다(11-24 형) → 얼굴 안쪽만 묶는다
 }
