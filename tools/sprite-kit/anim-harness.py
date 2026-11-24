@@ -77,11 +77,11 @@ HEROES = {
     'sogeumbi': dict(hit=True, strip='gen-sogeumbi', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 옥저 소금비(한 손 칼 · 가슴 M)
     'baram': dict(strip='gen-baram', atk='stab', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 1), ('b', 2)), cells8=[('a', 1), ('a', 2), ('a', 3), ('a', 4), ('b', 1), ('b', 2), ('a', 1), ('b', 4)]),   # 고사부리 바람(단검 · 가슴 M) · 11-24 새 단검 인형 찌르기(stab · 타격 a4) · 좁은 칸은 뿌리 앞 104 까지라 a4(108) 대신 버팀 b1(98) · b3 이 팔을 다시 뻗어 두 번 찌르듯 보여(독립 검수) 일곱째 칸은 낮은 겨눔 a1 · b1 머리칼의 자홍 점 여섯은 이웃 색으로 메움(px)
     'byeol': dict(hit=True, strip='gen-byeol', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 벽진 별(한 손 칼 · 가슴 M · 달군 칼날은 불빛 없이) · 11-24 G4(내려베기 a)만 받음 · G5(b) 거절 → 보류
-    'maru': dict(hit=True, strip='gen-base-w-46-geonma-maru', atk='thrust', src='thrust2', actw=264, refoot=True, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 건마 마루(짧은 창 · 가슴 M) · 여섯째 묶음 · refoot: 찌르기 b 가 인형보다 넓게 뻗어 통째 겹침이 -42px 밀려 b3·b4 의 발을 잘못 잡았다(bake-scene attack4)
-    'mudeung': dict(hit=True, strip='gen-base-w-48-mujin-mudeung', atk='thrust', src='thrust2', actw=264, refoot=True, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('a', 1)), cells8=[('a', 1), ('a', 2), ('a', 3), ('a', 4), ('b', 1), ('b', 2), ('b', 3), ('a', 1)]),   # 무진 무등(깃털 단 창 · 우람한 뼈대 · 나이 든 얼굴) · 여섯째 묶음 · 찌르기 b 칸4 가 서기보다 9% 크게 그려져(키 150 · 다시 그리기 한 번 씀) 끝 칸을 a1 로(뱃사공과 같은 길)
+    'maru': dict(hit=True, strip='gen-base-w-46-geonma-maru', atk='thrust', src='thrust2', actw=264, refoot=True, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4)), cells8=[('a', 1), ('a', 2), ('a', 3), ('a', 4), ('a', 4), ('a', 4), ('b', 3), ('b', 4)]),   # 건마 마루(짧은 창 · 가슴 M) · 여섯째 묶음 · refoot: 찌르기 b 가 인형보다 넓게 뻗어 통째 겹침이 -42px 밀려 b3·b4 의 발을 잘못 잡았다(bake-scene attack4)
+    'mudeung': dict(hit=True, strip='gen-base-w-48-mujin-mudeung', atk='thrust', src='thrust2', actw=264, refoot=True, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('a', 1)), cells8=[('a', 1), ('a', 2), ('a', 3), ('a', 4), ('a', 4), ('a', 4), ('a', 3), ('a', 1)]),   # 무진 무등(깃털 단 창 · 우람한 뼈대 · 나이 든 얼굴) · 여섯째 묶음 · 찌르기 b 칸4 가 서기보다 9% 크게 그려져(키 150 · 다시 그리기 한 번 씀) 끝 칸을 a1 로(뱃사공과 같은 길)
     'yneoul': dict(hit=True, strip='gen-base-w-71-yeonna-neoul', atk='thrust', src='thrust2', actw=264, refoot=True, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 연나 너울(창 · 가슴 M) · 여섯째 묶음
-    'gangchi': dict(strip='gen-base-w-80-usan-gangchi', atk='thrust', src='thrust2', actw=264, refoot=True, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 우산 강치(미늘창 · 가슴 M) · 여섯째 묶음
-    'byeolbit': dict(strip='gen-base-w-81-byeokjin-byeolbit', atk='thrust', src='thrust2', actw=264, refoot=True, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 벽진 별빛(창 · 비늘 갑옷 · 가슴 M) · 여섯째 묶음
+    'gangchi': dict(pending=True, hit=True, strip='gen-base-w-80-usan-gangchi', atk='thrust', src='thrust2', actw=264, refoot=True, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 우산 강치(미늘창 · 가슴 M) · 여섯째 묶음
+    'byeolbit': dict(pending=True, hit=True, strip='gen-base-w-81-byeokjin-byeolbit', atk='thrust', src='thrust2', actw=264, refoot=True, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 벽진 별빛(창 · 비늘 갑옷 · 가슴 M) · 여섯째 묶음
     'haebi': dict(hit=True, strip='gen-haebi', atk='chop', atk8=True, act=True),   # act = 공격 여덟 칸이 넓은 동작 칸(240×224 · 뿌리 92 · 발 줄 216)
     'areum': dict(hit=True, strip='gen-areum', atk='slam', atk8=True, act=True, lock='none'),   # 받은 그림 그대로(얼굴을 떠다 붙이지 않는다 — 11-24: 뭉친 얼굴이 여덟 칸에 퍼졌다) · 옛 lock='face': 메가 머리 뒤로 지나간다 — 머리 상자는 메를 자르고(「포스터」), 윗몸을 통째로 묶으면 떠다닌다(11-24 형) → 얼굴 안쪽만 묶는다
 }
@@ -382,5 +382,5 @@ if __name__ == '__main__':
     elif a[0] == 'strip':
         strip(a[1], 'install' in a[2:])
     else:
-        bad = [n for n in (HEROES if a[1] == 'all' else [a[1]]) if check(n) is False]
+        bad = [n for n in ([k for k, v in HEROES.items() if not v.get('pending')] if a[1] == 'all' else [a[1]]) if check(n) is False]   # pending = 줄만 있고 아직 게임에 안 넣은 장수(게임엔 옛 띠) — all 에서 뺀다
         raise SystemExit(1 if bad else 0)
