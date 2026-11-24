@@ -383,6 +383,7 @@ IK_QUIRKS['hit_sword'] = [
     dict(_ik((-4, -54), (16, 34), (22, 44), bend=12, near_foot=(-30, 0), far_foot=(18, 0)), prop='sword', blade=-85),
     dict(_ik((0, -12), (14, 70), (16, 74), bend=8, near_foot=(-24, 0), far_foot=(20, 0)), prop='sword', blade=25),
 ]
+IK_QUIRKS['hit_none'] = [dict({k: v for k, v in d.items() if k not in ('prop', 'blade')}) for d in IK_QUIRKS['hit_sword']]   # 맨손(범 할퀴기)
 IK_QUIRKS['hit_bow'] = [
     dict(_ik((-3, -8), (6, 66), (14, 70), bend=20, near_foot=(-10, 0), far_foot=(10, 0)), prop='bow'),
     dict(_ik((3, -6), (-14, 74), (16, 98), bend=-42, near_foot=(-24, 0), far_foot=(8, 0)), prop='bow'),
