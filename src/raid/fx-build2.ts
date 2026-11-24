@@ -13,7 +13,10 @@ const ART = { totem: 'raid/props/snow-3.webp', sotdae: 'icon/route-sotdae.png', 
 /** 포차 부품 그림 (2배 크기 · view.pocha.scale 로 줄여 그린다) */
 const POCHA_ART = { frame: 'raid/pocha/frame.png', arm: 'raid/pocha/arm.png', pouch: 'raid/pocha/pouch.png', wheel: 'raid/pocha/wheel.png', weight: 'raid/pocha/weight.png', rock: 'raid/pocha/rock.png', plankA: 'raid/pocha/plankA.png', plankB: 'raid/pocha/plankB.png' } as const
 /** 미리 받아 둘 그림 — 장승·봉수대는 넓은 맵 장식(PROP_PATHS)에 이미 있어 솟대 아이콘과 포차 부품만 */
-export const BUILD2_PATHS = [ART.sotdae, ...Object.values(POCHA_ART)]
+/** 우물 부품 그림 (2배 크기 · view.wellArt.scale 로 줄여 그린다 · 하나라도 아직 안 떴으면 캔버스 우물로 그린다) */
+const WELL_NAMES = ['rimBack', 'rimFront', 'waterFull', 'waterDry', 'post', 'roof', 'beam', 'pulley', 'bucket'] as const
+const WELL_ART = Object.fromEntries(WELL_NAMES.map(n => [n, `raid/well/${n}.png`])) as Record<typeof WELL_NAMES[number], string>
+export const BUILD2_PATHS = [ART.sotdae, ...Object.values(POCHA_ART), ...Object.values(WELL_ART)]
 
 /** 쏜 순간(cd 가 다시 찬 때)을 화면 쪽에서 기억한다 — 봉수대 연기 · 포차 팔 */
 const lastCd = new WeakMap<Structure, number>(), firedAt = new WeakMap<Structure, number>()
@@ -105,7 +108,10 @@ export function drawStructure2(ctx: CanvasRenderingContext2D, images: Map<string
     ctx.globalAlpha = a
   } else if (it.kind === 'catapult') {
     drawCatapult(ctx, images, s, it, fired(s, it))
-  } else if (it.kind === 'well') drawWell(ctx, s, it, h)
+  } else if (it.kind === 'well') {
+    if (WELL_NAMES.every(n => images.get(WELL_ART[n]))) drawWellArt(ctx, images, s, it)
+    else drawWell(ctx, s, it, h)
+  }
 }
 
 // ── 포차 (부품 그림 조립 · 형 11-23 「포차는 부품마다 에셋 만들어 입혀야」 「돌이 바닥에서 시작해서 던져져야」) ──
@@ -226,7 +232,7 @@ export function drawLob(ctx: CanvasRenderingContext2D, images: Map<string, HTMLI
 /** 우물이 얼마나 찼나 0~1 (1 = 쿨타임이 끝나 쓸 수 있다) — 판의 쿨타임을 읽기만 한다 */
 const wellFull = (s: HaebiRun, it: Structure) => it.cd <= 0 ? 1 : Math.max(0, Math.min(1, 1 - it.cd / wellCool(s.ranks.well)))
 
-/** 우물 (캔버스) — 돌 둘레 · 물은 쿨타임 동안 바닥에서 차오르고 다 차면 번쩍이며 물방울이 솟는다 (쿨타임 중에는 빈 바닥) */
+/** 우물 (캔버스 · 그림이 아직 안 떴을 때) — 돌 둘레 · 물은 쿨타임 동안 바닥에서 차오르고 다 차면 번쩍이며 물방울이 솟는다 (쿨타임 중에는 빈 바닥) */
 function drawWell(ctx: CanvasRenderingContext2D, s: HaebiRun, it: Structure, h: number) {
   const rx = B2.well.r, ry = rx * .55, top = it.y - h * .5, a = ctx.globalAlpha, W = V.water, k = wellFull(s, it), ready = k >= 1
   ctx.fillStyle = '#6f6a62'; ctx.beginPath(); ctx.ellipse(it.x, it.y - 4, rx, ry, 0, 0, Math.PI * 2); ctx.fill()
@@ -252,6 +258,102 @@ function drawWell(ctx: CanvasRenderingContext2D, s: HaebiRun, it: Structure, h: 
     ctx.beginPath(); ctx.arc(it.x + Math.sin(i * 2.1 + s.t) * rx * .5, top - u * D.rise, D.size, 0, Math.PI * 2); ctx.fill()
   }
   ctx.globalAlpha = a
+}
+
+// ── 우물 (부품 그림 조립 · 형 11-25 「우물은 왜 에셋 안 만들고 있지」 · 포차와 같은 길) ──
+// 수치는 HAEBI_BUILD2.view.wellArt (부품 크기·축 자리는 public/realm/raid/well/well.json 의 2배 그림 px 를 그대로 옮긴 것)
+const WA = V.wellArt
+type WellPart = typeof WELL_NAMES[number]
+/** 채운 순간(쿨타임이 다시 찬 때) · 다 찬 순간(쿨타임이 0 이 된 때)을 화면 쪽에서 기억한다 */
+const wellFillAt = new WeakMap<Structure, number>(), wellReadyAt = new WeakMap<Structure, number>(), wellSeen = new WeakMap<Structure, { cd: number }>()
+function wellClock(s: HaebiRun, it: Structure) {
+  const last = wellSeen.get(it)
+  if (last) {
+    if (it.cd > last.cd + 1e-6) { wellFillAt.set(it, s.t); wellReadyAt.delete(it) }
+    else if (last.cd > 0 && it.cd <= 0) wellReadyAt.set(it, s.t)
+    last.cd = it.cd
+  } else wellSeen.set(it, { cd: it.cd })
+  const f = wellFillAt.get(it), r = wellReadyAt.get(it)
+  return { fill: f === undefined || s.t < f ? Infinity : s.t - f, ready: r === undefined || s.t < r ? Infinity : s.t - r }
+}
+/** 번호 · 낱알로 정해지는 0~1 값 (판 시각 말고는 아무것도 안 읽는다 · 같은 판이면 늘 같게) */
+function wellRand(id: number, k: number, j: number) { const x = Math.sin(id * 12.9898 + k * 78.233 + j * 37.719) * 43758.5453; return x - Math.floor(x) }
+const easeOut = (u: number) => 1 - (1 - u) * (1 - u), easeIn = (u: number) => u * u
+function putWell(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, name: WellPart, x: number, y: number, pivot: readonly number[], rot = 0, flip = 1) {
+  const img = images.get(WELL_ART[name]); if (!img) return
+  const m = WA[name], w = m.size[0] * WA.scale, h = m.size[1] * WA.scale
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.scale(flip, 1); ctx.drawImage(img, -pivot[0]! * WA.scale, -pivot[1]! * WA.scale, w, h); ctx.restore()
+}
+/** 물방울 하나 — 둥근 방울 + 흰 점 (낱낱이 날아간다) */
+function drop(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, color: string, light: string, alpha: number) {
+  ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill()
+  ctx.fillStyle = light; ctx.beginPath(); ctx.arc(x - r * .3, y - r * .3, r * .35, 0, Math.PI * 2); ctx.fill()
+}
+/** 우물 (부품 조립) — 물은 쿨타임만큼 입구 바닥에서 차오르고 · 두레박이 물에 얹혀 오른다 · 채우면 두레박이 당겨졌다 떨어지며 줄이 출렁이고 물방울이 튄다 · 다 차면 번쩍 */
+function drawWellArt(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, it: Structure) {
+  const a = ctx.globalAlpha, c = wellClock(s, it), Pl = WA.pull, Rd = WA.ready, Sp = WA.spray, Rp = WA.rope
+  const [orx, ory] = WA.open, cy = WA.cy, seed = Math.floor((wellFillAt.get(it) ?? 0) * 100) + it.id
+  // 물 높이 — 채운 직후에는 물이 빠져 내려간다 (drain 초) · 그 뒤로 쿨타임만큼 차오른다
+  const k = wellFull(s, it), kd = c.fill < WA.drain ? 1 - easeOut(c.fill / WA.drain) : k
+  ctx.save(); ctx.translate(it.x, it.y)
+  // 두레박 자리 — 물에 얹혀 오르내린다 + 채울 때 위로 당겨졌다 떨어지며 튕긴다 + 흔들린다
+  let lift = 0, sway = 0
+  const tL = Pl.upT + Pl.dropT
+  if (c.fill < Infinity) {
+    const u = c.fill
+    if (u < Pl.upT) lift = Pl.up * easeOut(u / Pl.upT)
+    else if (u < tL) lift = Pl.up * (1 - easeIn((u - Pl.upT) / Pl.dropT))
+    else lift = Pl.bounce * Math.exp(-(u - tL) / Pl.decay) * Math.abs(Math.sin((u - tL) * Pl.hz * Math.PI))
+    sway = Pl.sway * Math.exp(-u / Pl.swayDecay) * Math.sin(u * Pl.swayHz * Math.PI * 2)
+  }
+  if (c.ready < Infinity) sway += Rd.sway * Math.exp(-c.ready / Rd.swayDecay) * Math.sin(c.ready * Rd.swayHz * Math.PI * 2)
+  if (kd >= 1) sway += WA.idleSway * Math.sin(s.t * 1.7 + it.id)
+  const attachX = -WA.pulleyR, attachY = WA.pulleyY
+  const baseY = WA.restY + WA.sink * (1 - kd), hangY = baseY - lift, hangX = attachX + Math.sin(sway) * Math.max(6, hangY - attachY) * .5
+  // 뒤: 기둥 · 둘레 뒤 반쪽 · 빈 바닥 · 물(입구 안에서만)
+  for (const side of [-1, 1]) putWell(ctx, images, 'post', side * WA.postX, WA.postFootY, WA.post.foot, 0, side)
+  putWell(ctx, images, 'rimBack', 0, cy, WA.rimBack.c)
+  putWell(ctx, images, 'waterDry', 0, cy, WA.waterDry.c)
+  ctx.save(); ctx.beginPath(); ctx.ellipse(0, cy, orx, ory, 0, 0, Math.PI * 2); ctx.clip()
+  if (kd > 0) putWell(ctx, images, 'waterFull', 0, cy + WA.depth * (1 - kd), WA.waterFull.c)
+  // 다 찼을 때 번쩍 — 입구 안쪽만 밝아졌다 가라앉는다
+  if (c.ready < Rd.flash) { const g = 1 - c.ready / Rd.flash; ctx.globalAlpha = a * Rd.flashAlpha * g; ctx.fillStyle = V.water.shine; ctx.fillRect(-orx, cy - ory, orx * 2, ory * 2); ctx.globalAlpha = a }
+  ctx.restore()
+  // 들보 · 도르래 · 줄 · 두레박
+  putWell(ctx, images, 'beam', 0, WA.beamY, WA.beam.c)
+  putWell(ctx, images, 'pulley', 0, WA.pulleyY, WA.pulley.hub, (hangY - attachY) / WA.pulleyR)
+  const len = hangY - attachY, u2 = c.fill - tL, slack = u2 > 0 && u2 < Infinity ? Pl.slack * Math.exp(-u2 / Pl.slackDecay) * Math.sin(u2 * Pl.slackHz * Math.PI * 2) : 0
+  const endY = attachY + Math.max(3, WA.ropeMax - len), rx = WA.pulleyR
+  ctx.lineCap = 'round'
+  for (const [col, w] of [[Rp.dark, Rp.w + 1.6], [Rp.color, Rp.w]] as const) {
+    ctx.strokeStyle = col; ctx.lineWidth = w
+    ctx.beginPath(); ctx.moveTo(attachX, attachY); ctx.quadraticCurveTo((attachX + hangX) / 2 + slack, (attachY + hangY) / 2, hangX, hangY + 1); ctx.stroke()
+    ctx.beginPath(); ctx.moveTo(rx, attachY); ctx.quadraticCurveTo(rx - slack * .5, (attachY + endY) / 2, rx + sway * 4, endY); ctx.stroke()
+  }
+  ctx.fillStyle = Rp.dark; ctx.beginPath(); ctx.arc(rx + sway * 4, endY + 1, Rp.knot, 0, Math.PI * 2); ctx.fill()
+  putWell(ctx, images, 'bucket', hangX, hangY, WA.bucket.hang, sway)
+  // 앞: 둘레 앞 반쪽 · 지붕
+  putWell(ctx, images, 'rimFront', 0, cy, WA.rimFront.c)
+  putWell(ctx, images, 'roof', 0, WA.roofY, WA.roof.base)
+  // 물방울 낱낱 — 당겨 올린 두레박에서 튀고 · 떨어질 때 입구에서 튄다 · 다 차면 반짝이가 인다
+  const ox = attachX, oy = WA.restY - Pl.up
+  for (let i = 0; i < Sp.n; i++) {
+    const u = c.fill - Pl.upT; if (!(u >= 0 && u <= Sp.life)) break
+    const ang = -Math.PI / 2 + (wellRand(it.id, seed, i) - .5) * Sp.spread * Math.PI, v = Sp.speed * (.55 + .45 * wellRand(it.id, seed, i + 40))
+    drop(ctx, ox + Math.cos(ang) * v * u, oy + Math.sin(ang) * v * u + Sp.gravity * u * u / 2, Sp.size * (.6 + .6 * wellRand(it.id, seed, i + 80)), Sp.color, Sp.light, a * (1 - u / Sp.life))
+  }
+  for (let i = 0; i < Sp.land; i++) {
+    const u = c.fill - tL; if (!(u >= 0 && u <= Sp.landLife)) break
+    const ang = -Math.PI / 2 + (wellRand(it.id, seed, i + 120) - .5) * 2.2, v = Sp.landSpeed * (.5 + .5 * wellRand(it.id, seed, i + 160))
+    drop(ctx, hangX + Math.cos(ang) * v * u, cy + Math.sin(ang) * v * u * .6 + Sp.gravity * .25 * u * u, Sp.size * .8, Sp.color, Sp.light, a * (1 - u / Sp.landLife))
+  }
+  if (kd >= 1) for (let i = 0; i < Rd.sparks; i++) {
+    const u = (s.t / Rd.sparkLife + i / Rd.sparks) % 1, sx = (wellRand(it.id, i, 7) - .5) * orx * 1.5, sy = cy - ory * .2 - u * 14, r = Rd.sparkSize * Math.sin(u * Math.PI)
+    ctx.globalAlpha = a * Math.sin(u * Math.PI); ctx.fillStyle = V.water.shine
+    ctx.beginPath(); ctx.moveTo(sx, sy - r); ctx.lineTo(sx + r * .3, sy); ctx.lineTo(sx, sy + r); ctx.lineTo(sx - r * .3, sy); ctx.closePath(); ctx.fill()
+    ctx.beginPath(); ctx.moveTo(sx - r, sy); ctx.lineTo(sx, sy + r * .3); ctx.lineTo(sx + r, sy); ctx.lineTo(sx, sy - r * .3); ctx.closePath(); ctx.fill()
+  }
+  ctx.restore(); ctx.globalAlpha = a
 }
 
 /** 채운 순간의 물보라와 「+N」 — 판의 효과(wellHeal)를 한 번씩 읽어 장수 둘레에 그린다 (시계는 판 시각 s.t · 판은 읽기만) */

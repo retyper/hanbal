@@ -757,6 +757,11 @@ export const HAEBI_BUILD = {
  * view: 그림 (화면만) — 높이 h(체력 띠 자리 · 포차는 조립한 그림 높이) · 혼줄 빛 line(두께 lineW · 진하기 lineAlpha) · 솟대 고리 sotdaeRing · 우물 고리 wellRing(쿨타임 동안은 wellCold 배로 옅다) · 우물 물 water(찬 물빛 · 빈 바닥 dry · 찼을 때 번쩍 glow) · 물방울 drops(찼을 때만 솟는다) ·
  *   heal 채우는 순간(장수에게 튀는 물보라 splash n개 · 크기 size · 퍼짐 spread · 솟음 rise · 색 color · 「+N」 글자 life 초 · lift 장수 위 · rise 떠오름 · size · stroke · fill · edge · ring 퍼지는 고리 반지름 · color) · 새 깡충 hop · 연기 smoke · 화살비 화살 수 arrows · 바위 크기 rock · 포물선 높이 arc ·
  *   throwOut 포차 팔이 장전 자리에서 넘어가는 초.
+ * view.wellArt 우물 부품 조립 (형 11-25 「우물은 왜 에셋 안 만들고 있지」) — 부품 크기·축 자리는 public/realm/raid/well/well.json (2배 그림 px) 그대로 · scale 게임 px 몫 · 발밑(it.x, it.y) 기준 위가 − ·
+ *   cy 입구 타원 가운데 높이 · postX 기둥 가로 자리 · postFootY 기둥 발 · beamY 들보 · pulleyY 도르래 축 · roofY 지붕 밑 · pulleyR 도르래 반지름(줄이 걸리는 곳) · restY 두레박 걸림 자리(물이 가득일 때) · sink 물이 빌 때 두레박이 가라앉는 px ·
+ *   depth 물 높이가 입구 높이만큼 오르내리는 px · ropeMax 두레박이 가장 가라앉았을 때 줄 길이(반대쪽 끝이 그만큼 올라간다) · open 입구 타원 반지름 [가로, 세로] · drain 채운 뒤 물이 빠지는 초 ·
+ *   pull 채우는 순간: 두레박이 up px 위로 당겨졌다(upT 초) dropT 초에 떨어지며 bounce px 튕기고(hz · decay 초) 줄이 slack px 출렁이고(slackHz · slackDecay) 두레박이 sway 라디안 흔들린다(swayHz · swayDecay) ·
+ *   ready 다 찼을 때: 번쩍 flash 초(진하기 flashAlpha) · 두레박 sway · 반짝이 sparks 개(크기 sparkSize · sparkLife 초) · spray 물방울 낱낱(n개 · 속도 speed · 퍼짐 spread · 중력 gravity · 수명 life · 크기 size · 색 color/light · 떨어질 때 land 개)
  * view.pocha 포차 부품 조립 (형 11-23 「포차는 부품마다 에셋」 「돌이 바닥에서 시작해서 던져져야」) — 부품 크기·축 자리는 public/realm/raid/pocha/pocha.json (2배 그림 px) 그대로 · scale 게임 px 몫(.5) ·
  *   wheelLift 받침 발이 땅 위로 뜬 몫(바퀴 반지름 몫) · arm.len·tail 축에서 팔 끝·꼬리까지(게임 px) · rockLift 바위가 주머니 자리에서 뜨는 px · rockSpin 날며 도는 몫 ·
  *   팔 각(도 · 팔 끝이 가리키는 쪽 · 0 = 던지는 쪽 · 위가 +): rest 장전(주머니가 뒤쪽 바닥) → 쏘면 throwOut 초 동안 가속하며 위로 넘어가 over 에 닿고 · release 를 지날 때 바위가 떠난다 ·
@@ -781,6 +786,16 @@ export const HAEBI_BUILD2 = {
     smoke: { n: 5, size: 14, rise: 70, color: '#5d5550', alpha: .5, life: 2.2 },
     arrows: 5, arrow: 38, fall: 260, mark: '#ffd77a', markAlpha: .5,
     rock: 26, arc: 160, throwOut: .25,
+    wellArt: {
+      scale: .5, cy: -18, postX: 35, postFootY: -16, beamY: -66, pulleyY: -56, roofY: -70, pulleyR: 13, restY: -30, sink: 20, depth: 25, ropeMax: 36, idleSway: .03,
+      rimBack: { size: [132, 37], c: [65.6, 34.4] }, rimFront: { size: [136, 75], c: [68.1, 1.9] }, waterFull: { size: [103, 54], c: [51.2, 26.9] }, waterDry: { size: [103, 54], c: [51.2, 26.9] },
+      post: { size: [22, 108], foot: [10, 103.8] }, roof: { size: [204, 65], base: [100, 56.9] }, beam: { size: [154, 25], c: [76.2, 11.9] }, pulley: { size: [54, 52], hub: [26.2, 25.6] }, bucket: { size: [50, 66], hang: [24.4, 10.6] },
+      open: [23, 11.5], drain: .45,
+      pull: { up: 12, upT: .18, dropT: .2, bounce: 5, hz: 2.2, decay: .5, sway: .35, swayHz: 1.8, swayDecay: .7, slack: 7, slackHz: 2.4, slackDecay: .5 },
+      ready: { flash: .9, flashAlpha: .55, sway: .22, swayHz: 2, swayDecay: .8, sparks: 5, sparkSize: 5, sparkLife: 1 },
+      spray: { n: 14, speed: 68, spread: .9, gravity: 300, life: .85, size: 2.6, color: '#bfe6ff', light: '#ffffff', land: 8, landSpeed: 40, landLife: .6 },
+      rope: { color: '#9a7a48', dark: '#2e2013', w: 2.4, knot: 3 },
+    },
     pocha: {
       scale: .5, wheelLift: .9, rockLift: 3, rockSpin: 9,
       frame: { size: [210, 147], axle: [105, 11.1], wheelL: [34.3, 133.1], wheelR: [175.7, 133.1], foot: [105, 143.1] },
