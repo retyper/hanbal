@@ -750,8 +750,10 @@ export const HAEBI_BUILD = {
  * 봉수대 beacon: 무적 · every − everyStep × (단계−1) 초마다 연기를 올리고, 장수 화면에서 cluster px 안에 적이 가장 많이 뭉친 곳에 delay 초 뒤 화살비 (금빛 표식 먼저 · 둘레 radius + radiusStep × (단계−1) · 피해 그때 잡졸 체력 × (share + shareStep × (단계−1))).
  * 포차 catapult: 망루처럼 체력이 있고 끌린다 (aggroR · 셋에 하나) · every − everyStep × (단계−1) 초마다 minRange~range 안에서 cluster px 안에 적이 가장 많은 곳(같으면 먼 곳)으로 바위를 던진다
  *   (flight 초 날아감 · 둘레 radius + radiusStep × (단계−1) · 피해 그때 잡졸 체력 × (share + shareStep × (단계−1)) · 그을린 자국과 패인 자국을 남긴다).
- * 우물 well: 무적 · 장수가 둘레 radius + radiusStep × (단계−1) 안에 서 있으면 초마다 heal + healStep × (단계−1) 회복 (우물이 여럿이어도 한 번).
- * view: 그림 (화면만) — 높이 h(체력 띠 자리 · 포차는 조립한 그림 높이) · 혼줄 빛 line(두께 lineW · 진하기 lineAlpha) · 솟대 고리 sotdaeRing · 우물 고리 wellRing · 물방울 drops · 새 깡충 hop · 연기 smoke · 화살비 화살 수 arrows · 바위 크기 rock · 포물선 높이 arc ·
+ * 우물 well: 무적 · 판에 하나만 선다 (3·5단계에도 더 안 놓는다) · 쿨타임(cd)이 찼고 체력이 가득이 아닐 때 장수가 둘레 radius + radiusStep × (단계−1) 안에 들어오면 최대 체력의 share + shareStep × (단계−1) 몫을 한 번에 채우고,
+ *   cool − coolStep × (단계−1) 초 뒤에야 다시 채운다 (곁에 서 있는다고 계속 차오르지 않는다 · 체력이 가득이면 쿨타임을 쓰지 않는다).
+ * view: 그림 (화면만) — 높이 h(체력 띠 자리 · 포차는 조립한 그림 높이) · 혼줄 빛 line(두께 lineW · 진하기 lineAlpha) · 솟대 고리 sotdaeRing · 우물 고리 wellRing(쿨타임 동안은 wellCold 배로 옅다) · 우물 물 water(찬 물빛 · 빈 바닥 dry · 찼을 때 번쩍 glow) · 물방울 drops(찼을 때만 솟는다) ·
+ *   heal 채우는 순간(장수에게 튀는 물보라 splash n개 · 크기 size · 퍼짐 spread · 솟음 rise · 색 color · 「+N」 글자 life 초 · lift 장수 위 · rise 떠오름 · size · stroke · fill · edge · ring 퍼지는 고리 반지름 · color) · 새 깡충 hop · 연기 smoke · 화살비 화살 수 arrows · 바위 크기 rock · 포물선 높이 arc ·
  *   throwOut 포차 팔이 장전 자리에서 넘어가는 초.
  * view.pocha 포차 부품 조립 (형 11-23 「포차는 부품마다 에셋」 「돌이 바닥에서 시작해서 던져져야」) — 부품 크기·축 자리는 public/realm/raid/pocha/pocha.json (2배 그림 px) 그대로 · scale 게임 px 몫(.5) ·
  *   wheelLift 받침 발이 땅 위로 뜬 몫(바퀴 반지름 몫) · arm.len·tail 축에서 팔 끝·꼬리까지(게임 px) · rockLift 바위가 주머니 자리에서 뜨는 px · rockSpin 날며 도는 몫 ·
@@ -766,11 +768,13 @@ export const HAEBI_BUILD2 = {
   sotdae: { ahead: 70, r: 12, radius: 150, radiusStep: 15, slow: .25, slowStep: .06 },
   beacon: { ahead: 90, r: 26, every: 8, everyStep: .6, delay: 1, cluster: 120, radius: 115, radiusStep: 10, share: 1, shareStep: .3 },
   catapult: { ahead: 100, r: 32, hp: 320, hpStep: 110, rebuild: 12, aggroR: 140, aggroEvery: 3, touch: 6, bite: 1, every: 5.5, everyStep: .4, minRange: 170, range: 640, cluster: 110, flight: 1.1, radius: 125, radiusStep: 10, share: 1.3, shareStep: .35 },
-  well: { ahead: 70, r: 26, radius: 120, radiusStep: 12, heal: 3, healStep: 1.5 },
+  well: { ahead: 70, r: 26, radius: 120, radiusStep: 12, share: .25, shareStep: .05, cool: 30, coolStep: 3 },
   view: {
     h: { totem: 92, sotdae: 84, beacon: 92, catapult: 104, well: 40 }, shadow: 1.1,
     line: '#9fe8ff', lineW: 4, lineAlpha: .55, lineGlow: 12,
-    sotdaeRing: '#d8f0ff', sotdaeAlpha: .22, wellRing: '#7fc8ff', wellAlpha: .3, wellFill: .08,
+    sotdaeRing: '#d8f0ff', sotdaeAlpha: .22, wellRing: '#7fc8ff', wellAlpha: .3, wellFill: .08, wellCold: .35,
+    water: { full: '#3f9fd6', shine: '#d6f4ff', dry: '#120d09', glow: .5 },
+    heal: { ring: 70, color: '#8fe3ff', life: 1, lift: 46, rise: 34, size: 20, stroke: 4, fill: '#9dffc4', edge: '#06231a', splash: { n: 12, size: 3.5, spread: 36, rise: 48, color: '#bfe6ff' } },
     drops: { n: 5, size: 3, rise: 26, color: '#bfe6ff' }, hop: { height: 5, hz: 2.2 },
     smoke: { n: 5, size: 14, rise: 70, color: '#5d5550', alpha: .5, life: 2.2 },
     arrows: 5, arrow: 38, fall: 260, mark: '#ffd77a', markAlpha: .5,
@@ -1473,6 +1477,8 @@ export const HAEBI_IDLE = {
     mulsae: { cells: 38, base: [0, 1], hold: 2.4, fall: [18, 20, 21, 19], quirk: [22, 23, 24, 25], quirkTimes: [.3, .32, .4, .28], attack: { cells: [26, 27, 28, 29, 30, 31, 32, 33], times: [.09, .08, .11, .12, .12, .08, .08, .12], hit: 3 }, hurt: [34, 35], rise: [36, 37], xGeom: { h: 224, root: 92, foot: 216 } },
     bakdal: { cells: 26, base: [0, 1], hold: 2.4, fall: [18, 20, 21, 19], hurt: [22, 23], rise: [24, 25] },
     darae: { cells: 30, base: [0, 1], hold: 2.4, fall: [18, 20, 21, 19], quirk: [22, 23, 24, 25], quirkTimes: [.28, .3, .42, .25], hurt: [26, 27], rise: [28, 29] },
+    sori: { cells: 38, base: [0, 1], hold: 2.4, fall: [18, 20, 21, 19], attack: { cells: [22, 23, 24, 25, 26, 27, 28, 29], times: [.09, .08, .11, .12, .12, .08, .08, .12], hit: 3 }, hurt: [34, 35], rise: [36, 37], xGeom: { h: 224, root: 92, foot: 216 } },
+    'base-w-12-court-dancer': { cells: 38, base: [0, 1], hold: 2.4, fall: [18, 20, 21, 19], attack: { cells: [22, 23, 24, 25, 26, 27, 28, 29], times: [.09, .08, .11, .12, .12, .08, .08, .12], hit: 3 }, hurt: [34, 35], rise: [36, 37], xGeom: { h: 224, root: 92, foot: 216 } },
     hwalmi: { cells: 30, base: [0, 1], hold: 2.4, fall: [18, 20, 21, 19], quirk: [22, 23, 24, 25], quirkTimes: [.28, .3, .42, .25], hurt: [26, 27], rise: [28, 29] },
   },
 } as const
