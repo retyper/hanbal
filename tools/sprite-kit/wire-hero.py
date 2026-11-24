@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """새 전투 띠를 게임에 잇기 — 그림을 넣은 뒤(anim-harness.py strip <장수> install) 코드 쪽 네 곳을 맞춘다 (11-24 · 같은 일을 세 번째 손으로 해서 묶음).
-  py -3 -X utf8 -I tools/sprite-kit/wire-hero.py <띠 열쇠: haebi · base-w-13-young-archer …> [quirk=.28,.3,.42,.25] [atk8 hit=4 times=.09,.08,.11,.05,.15,.07,.08,.12] [act]
+  py -3 -X utf8 -I tools/sprite-kit/wire-hero.py <띠 열쇠: haebi · base-w-13-young-archer …> [quirk=.28,.3,.42,.25] [atk8 hit=4 times=.09,.08,.11,.05,.15,.07,.08,.12] [act] [actw=264]
 하는 일
   1. public/realm/anim-px/manifest.json: gen-<열쇠> 의 칸(208×160) · 발 줄 · 몸 키를 **그림에서 재서** 적는다(서기 칸 0 의 맨 위·맨 아래 불투명 줄).
      → 그 뒤 node tools/sprite-kit/headgear.mjs 를 돌려 src/realm/data/spritePx.ts 를 다시 쓴다(이 스크립트가 부른다).
@@ -32,7 +32,7 @@ def main(argv):
     ys = np.nonzero(a.any(1))[0]
     feet, body = int(ys.max()), int(ys.max() - ys.min() + 1)
     xim = Image.open(strip.replace('.png', '-x.png'))
-    xcells = xim.size[0] // (ACT['cw'] if act else 208)
+    xcells = xim.size[0] // (int(opt.get('actw', ACT['cw'])) if act else 208)   # actw=264: 동작 칸을 넓힌 장수(anim-harness HEROES actw)
     cells = 20 + xcells
 
     # 1. manifest
