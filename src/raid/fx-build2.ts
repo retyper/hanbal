@@ -5,8 +5,8 @@
  * 땅 차례(drawBuild2Ground): 솟대 둘레 고리 · 우물 둘레 고리 · 혼줄 · 봉수대 화살비가 떨어질 금빛 표식.
  */
 import { HAEBI_BUILD as B, HAEBI_BUILD2 as B2 } from '../tune/params.ts'
-import type { HaebiRun, Missile } from './haebi.ts'
-import { sotdaeRadius, wellRadius, totemLinks, standing, type Structure } from './build.ts'
+import type { Effect, HaebiRun, Missile } from './haebi.ts'
+import { sotdaeRadius, wellRadius, wellCool, totemLinks, standing, type Structure } from './build.ts'
 
 const V = B2.view
 const ART = { totem: 'raid/props/snow-3.webp', sotdae: 'icon/route-sotdae.png', beacon: 'raid/props/palisade-5.webp' } as const
@@ -39,7 +39,7 @@ export function drawBuild2Ground(ctx: CanvasRenderingContext2D, s: HaebiRun) {
   const a = ctx.globalAlpha
   for (const it of b.items) {
     if (it.kind === 'sotdae') ring(ctx, it.x, it.y, sotdaeRadius(s.ranks.sotdae), V.sotdaeRing, V.sotdaeAlpha, V.sotdaeAlpha / 3)
-    else if (it.kind === 'well') ring(ctx, it.x, it.y, wellRadius(s.ranks.well), V.wellRing, V.wellAlpha, V.wellFill)
+    else if (it.kind === 'well') { const k = wellFull(s, it); ring(ctx, it.x, it.y, wellRadius(s.ranks.well), V.wellRing, V.wellAlpha * (k >= 1 ? 1 : V.wellCold), V.wellFill * (k >= 1 ? 1 : V.wellCold)) }
   }
   // 혼줄 — 장승 둘 사이의 푸른 빛줄 (출렁인다)
   const links = totemLinks(b)
@@ -223,21 +223,57 @@ export function drawLob(ctx: CanvasRenderingContext2D, images: Map<string, HTMLI
   put(ctx, images, 'rock', { cx: gx, cy: gy - h, rot: face * v * P.rockSpin, sy: 1 })
 }
 
-/** 우물 (캔버스) — 돌 둘레 · 검푸른 물 · 장수가 곁에 있으면 물방울이 솟는다 */
+/** 우물이 얼마나 찼나 0~1 (1 = 쿨타임이 끝나 쓸 수 있다) — 판의 쿨타임을 읽기만 한다 */
+const wellFull = (s: HaebiRun, it: Structure) => it.cd <= 0 ? 1 : Math.max(0, Math.min(1, 1 - it.cd / wellCool(s.ranks.well)))
+
+/** 우물 (캔버스) — 돌 둘레 · 물은 쿨타임 동안 바닥에서 차오르고 다 차면 번쩍이며 물방울이 솟는다 (쿨타임 중에는 빈 바닥) */
 function drawWell(ctx: CanvasRenderingContext2D, s: HaebiRun, it: Structure, h: number) {
-  const rx = B2.well.r, ry = rx * .55, top = it.y - h * .5, a = ctx.globalAlpha
+  const rx = B2.well.r, ry = rx * .55, top = it.y - h * .5, a = ctx.globalAlpha, W = V.water, k = wellFull(s, it), ready = k >= 1
   ctx.fillStyle = '#6f6a62'; ctx.beginPath(); ctx.ellipse(it.x, it.y - 4, rx, ry, 0, 0, Math.PI * 2); ctx.fill()
   ctx.fillStyle = '#8d877d'; ctx.fillRect(it.x - rx, top, rx * 2, it.y - 4 - top)
   ctx.beginPath(); ctx.ellipse(it.x, top, rx, ry, 0, 0, Math.PI * 2); ctx.fill()
-  ctx.fillStyle = '#1d3d52'; ctx.beginPath(); ctx.ellipse(it.x, top, rx * .72, ry * .62, 0, 0, Math.PI * 2); ctx.fill()
+  // 우물 속 — 빈 바닥 위에 물이 k 만큼 차오른다 (깊이가 얕아지는 모양으로 안쪽 타원이 커진다)
+  ctx.fillStyle = W.dry; ctx.beginPath(); ctx.ellipse(it.x, top, rx * .72, ry * .62, 0, 0, Math.PI * 2); ctx.fill()
+  if (k > 0) {
+    ctx.fillStyle = W.full; ctx.beginPath(); ctx.ellipse(it.x, top + ry * .62 * (1 - k) * .6, rx * .72 * (.35 + .65 * k), ry * .62 * (.35 + .65 * k), 0, 0, Math.PI * 2); ctx.fill()
+  }
+  if (ready) {
+    const pulse = .5 + .5 * Math.sin(s.t * 4)
+    ctx.globalAlpha = a * W.glow * (.6 + .4 * pulse); ctx.fillStyle = W.shine
+    ctx.beginPath(); ctx.ellipse(it.x - rx * .15, top - ry * .1, rx * .42, ry * .3, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = a
+  }
   ctx.strokeStyle = '#4e483f'; ctx.lineWidth = 2; for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(it.x + i * rx * .6, top + ry * .6); ctx.lineTo(it.x + i * rx * .6, it.y - 6); ctx.stroke() }
   // 두레박 기둥과 들보
   ctx.strokeStyle = '#6b4a2e'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(it.x - rx * .9, top); ctx.lineTo(it.x - rx * .9, top - h * .7); ctx.lineTo(it.x + rx * .9, top - h * .7); ctx.lineTo(it.x + rx * .9, top); ctx.stroke()
-  const near = Math.hypot(s.x - it.x, s.y - it.y) < wellRadius(s.ranks.well), D = V.drops
-  if (near) for (let i = 0; i < D.n; i++) {
+  const D = V.drops
+  if (ready) for (let i = 0; i < D.n; i++) {
     const u = (s.t * .9 + i / D.n) % 1
     ctx.globalAlpha = a * (1 - u); ctx.fillStyle = D.color
     ctx.beginPath(); ctx.arc(it.x + Math.sin(i * 2.1 + s.t) * rx * .5, top - u * D.rise, D.size, 0, Math.PI * 2); ctx.fill()
   }
   ctx.globalAlpha = a
+}
+
+/** 채운 순간의 물보라와 「+N」 — 판의 효과(wellHeal)를 한 번씩 읽어 장수 둘레에 그린다 (시계는 판 시각 s.t · 판은 읽기만) */
+interface HealPop { x: number; y: number; t: number; n: number; seed: number }
+let healRun: HaebiRun | null = null, healPops: HealPop[] = [], healSeen = new WeakSet<Effect>()
+export function drawWellHeal(ctx: CanvasRenderingContext2D, s: HaebiRun) {
+  if (healRun !== s) { healRun = s; healPops = []; healSeen = new WeakSet() }
+  for (const f of s.fx) if (f.wellHeal !== undefined && !healSeen.has(f)) { healSeen.add(f); healPops.push({ x: f.x, y: f.y, t: s.t, n: f.wellHeal, seed: healPops.length }) }
+  const H = V.heal, S = H.splash
+  while (healPops.length && s.t - healPops[0]!.t > H.life) healPops.shift()
+  for (const p of healPops) {
+    const age = s.t - p.t; if (age < 0) continue
+    const u = age / H.life, fade = Math.max(0, 1 - u)
+    ctx.save()
+    ctx.fillStyle = S.color
+    for (let i = 0; i < S.n; i++) {
+      const ang = (i / S.n) * Math.PI * 2 + p.seed, d = S.spread * Math.min(1, u * 2.2), up = Math.sin(Math.min(1, u * 1.6) * Math.PI) * S.rise * (.6 + .4 * Math.sin(i * 2.3))
+      ctx.globalAlpha = fade; ctx.beginPath(); ctx.arc(p.x + Math.cos(ang) * d, p.y - 10 + Math.sin(ang) * d * .4 - up, S.size * (1 - u * .5), 0, Math.PI * 2); ctx.fill()
+    }
+    ctx.globalAlpha = fade; ctx.font = `900 ${H.size}px "Noto Serif KR", serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+    ctx.lineWidth = H.stroke; ctx.strokeStyle = H.edge; ctx.strokeText(`+${p.n}`, p.x, p.y - H.lift - u * H.rise)
+    ctx.fillStyle = H.fill; ctx.fillText(`+${p.n}`, p.x, p.y - H.lift - u * H.rise)
+    ctx.restore()
+  }
 }

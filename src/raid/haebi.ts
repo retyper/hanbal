@@ -17,8 +17,8 @@ import { solidsFor, pushOutOfSolids, type Solid } from './props.ts'
 import type { Structure } from './build.ts'
 import { newWide, fieldBounds, worldBounds, stepGate, simView, ringSpot, huntSpot, inSimView, strayed, type WideState } from './wide.ts'
 import { HAEBI_BUILD as BU, HAEBI_CAP as CP } from '../tune/params.ts'
-import { HAEBI_BUILD2 as B2, HAEBI_BOSS_CHEST as BC, HAEBI_BUILDUP as B3, HAEBI_CAP60 as C60, HAEBI_BOSS_DUEL as BD } from '../tune/params.ts'
-import { BUILD_KINDS, ALL_BUILD_KINDS, isBuild2Kind, hasHp, rebuildOf, aggroOf, aggroNear, sotdaeRadius, sotdaeSlow, wellRadius, wellHeal, beaconEvery, beaconRadius, beaconShare, catapultEvery, catapultRadius, catapultShare, totemLineShare, segmentDistance, totemLinks, isBuildKind, newBuild, buildUnits, buildSpot, towerShare, towerFire, buildHp, standing, bodyR, pushOutOfBuild, touchingBuild, separateBuild, fenceTouching, jarBonusAt, BUILD_UPS, isBuildUp, FIRE_KINDS, TIMED_KINDS, firepowerMul, reloadInterval, type BuildKind, type BuildState } from './build.ts'
+import { HAEBI_BUILD2 as B2, HAEBI_BOSS_CHEST as BC, HAEBI_BUILDUP as B3, HAEBI_CAP60 as C60, HAEBI_BOSS_DUEL as BD, HAEBI_BOSS_HIT as BH } from '../tune/params.ts'
+import { BUILD_KINDS, ALL_BUILD_KINDS, isBuild2Kind, hasHp, rebuildOf, aggroOf, aggroNear, sotdaeRadius, sotdaeSlow, wellRadius, wellShare, wellCool, beaconEvery, beaconRadius, beaconShare, catapultEvery, catapultRadius, catapultShare, totemLineShare, segmentDistance, totemLinks, isBuildKind, newBuild, buildUnits, buildSpot, towerShare, towerFire, buildHp, standing, bodyR, pushOutOfBuild, touchingBuild, separateBuild, fenceTouching, jarBonusAt, BUILD_UPS, isBuildUp, FIRE_KINDS, TIMED_KINDS, firepowerMul, reloadInterval, type BuildKind, type BuildState } from './build.ts'
 
 /**
  * 장수 열전 — 다이센카식 20분 판 (11-16 형: 「스테이지·판 밖 상점·휘장 · 무기 10단계 · 적 단계업」).
@@ -65,7 +65,7 @@ export const POWERS: Record<Power, { name: string; icon: string; max: number; co
   sotdae: { name: '솟대', icon: '鳥', max: BU.max, color: '#cfe6f5', desc: '장수 앞에 솟대가 섭니다. 둘레에 들어온 적이 느려집니다' },
   beacon: { name: '봉수대', icon: '烽', max: BU.max, color: '#ff9a5a', desc: '장수 앞에 봉수대가 섭니다. 때마다 연기를 올려 적이 가장 많이 뭉친 곳에 화살비를 부릅니다' },
   catapult: { name: '포차', icon: '砲', max: BU.max, color: '#c8a070', desc: '장수 앞에 포차가 섭니다. 멀리 뭉친 적에게 큰 바위를 던지고, 부서지면 잠시 뒤 다시 섭니다' },
-  well: { name: '우물', icon: '井', max: BU.max, color: '#8fd0ff', desc: '장수 앞에 우물이 섭니다. 곁에 서 있으면 체력이 차오릅니다' },
+  well: { name: '우물', icon: '井', max: BU.max, color: '#8fd0ff', desc: '장수 앞에 우물이 섭니다. 가까이 가면 체력을 한 번에 크게 채우고, 물이 다시 차오를 때까지 기다립니다' },
   jar: { name: '기세 항아리', icon: '甕', max: BU.max, color: '#e7c27a', desc: '장수 앞에 항아리가 섭니다. 둘레에서 쓰러진 적이 기세를 더 줍니다. 몸으로 밀어 옮길 수 있습니다' },
   // ── 69-BUILDUP 설치물 강화 칸 (종류 칸을 쓰지 않는다 · 얹힐 설치물을 가진 판에만 카드·나무에 나온다) ──
   firepower: { name: '화력', icon: '烈', max: B3.max, color: '#ff8a4a', desc: '망루 화살, 봉수대 화살비, 포차 바위, 장승 혼줄의 피해가 커집니다. 설치물 종류 칸을 쓰지 않습니다' },
@@ -213,7 +213,7 @@ export interface KitZone { kind: 'crack' | 'wall'; x: number; y: number; cos: nu
  * sealAt·sealLeft 이번 공격에 더 붙일 부적 · boltIdle 벽력이 준비된 채 기다린 시간 · mark 표식 적(0 = 없음) · step 그림자 걸음 재사용 · stepped 방금 그림자 걸음(다음 찌르기는 등 뒤) · focused 겨눔이 찼다고 알렸나
  */
 export interface KitState { still: number; aim: number; runAim: number; runT: number; swing: number; sealAt: number; sealLeft: number; zones: KitZone[]; mark: number; step: number; stepped: boolean; focused: boolean; boltIdle: number }
-export interface Effect { x: number; y: number; x2: number; y2: number; r: number; angle: number; life: number; total: number; kind: 'hit' | 'slash' | 'blast' | 'bolt' | 'skill' | 'ult' | 'death' | 'spike' | 'thrust' | 'buff' | 'ring' | 'thud'; color: string; mob?: Mob['kind']; face?: number; n?: number; crit?: boolean; ult?: Kit; tru?: boolean; awakened?: boolean; empowered?: boolean; awakenedRelease?: boolean; castSeq?: number; championCue?: 'enter' | 'roar' | 'recovery' | 'quake'; recoveryHit?: boolean; /** 64-BREAK 부위가 부서진 순간 (화면이 「부위 파괴!」) */ partBreak?: boolean; /** 66-CAP 최고 레벨 뒤 보상으로 받은 금 (화면이 「+금 · 회복」) */ capGold?: number; /** 68-BOSSCHEST 올릴 것이 없어 금으로 받은 보스 전리품 */ bossGold?: number }
+export interface Effect { x: number; y: number; x2: number; y2: number; r: number; angle: number; life: number; total: number; kind: 'hit' | 'slash' | 'blast' | 'bolt' | 'skill' | 'ult' | 'death' | 'spike' | 'thrust' | 'buff' | 'ring' | 'thud'; color: string; mob?: Mob['kind']; face?: number; n?: number; crit?: boolean; ult?: Kit; tru?: boolean; awakened?: boolean; empowered?: boolean; awakenedRelease?: boolean; castSeq?: number; championCue?: 'enter' | 'roar' | 'recovery' | 'quake'; recoveryHit?: boolean; /** 64-BREAK 부위가 부서진 순간 (화면이 「부위 파괴!」) */ partBreak?: boolean; /** 66-CAP 최고 레벨 뒤 보상으로 받은 금 (화면이 「+금 · 회복」) */ capGold?: number; /** 68-BOSSCHEST 올릴 것이 없어 금으로 받은 보스 전리품 */ bossGold?: number; /** 67-BUILD2 우물이 한 번에 채운 체력 (화면이 물보라와 「+N」) */ wellHeal?: number }
 /** 이어지는 비기(용오름 창의 솟음 · 환영난무의 순간 이동 · 돌벼락의 물결) — 남은 수 n · 다음까지 t 초 · 처음 자리 · 이미 벤 적 · k 힘 몫(되받아치기는 작게) */
 export interface UltState { n: number; t: number; x: number; y: number; used: number[]; k: number }
 export interface Drop { x: number; y: number; value: number; age: number }
@@ -260,6 +260,8 @@ export interface HaebiRun {
   bossChest?: true;
   /** 71-BOSSDUEL 보스전은 보스와 겨루게 (opts.bossDuelRules · 스테이지 판만) */
   duel?: true;
+  /** 72-BOSSHIT 거대 보스의 큰 공격은 최대 체력의 몫 아래로 안 내려간다 (opts.bossHitRules · 스테이지 판만) */
+  bossHit?: true;
   /** 60-JACKPOT 상자 규칙 (opts.chestRules) — 없으면 옛 고르는 상자 · pity 5개 넘게 못 터진 상자 수 · five·eight 이 판에서 터진 5개·8개 · ranks 상자가 올려 준 칸 수 */
   jackpots?: { pity: number; five: number; eight: number; ranks: number };
 }
@@ -271,7 +273,7 @@ export function random(s: HaebiRun) { const rng = makeRng(s.seed); const n = rng
  * awaken remains the fallback qualification alias. Explicit53B, plus default trial/vanguard, preserve timed-awake rules.
  * mastery: 숲·여울·목책을 다 깬 장수 (막대 절반으로 시작)
  */
-export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' | '55-SHAMAN'; /** 58-KITS 무기 개성 — 스테이지 규칙과 따로 켠다 (판 기록 opts 에 그대로 남아 재생도 같다) */ kitRules?: '58-KITS'; /** 60-JACKPOT 상자 — 정예 상자는 고르지 않고 터지고, 중간 보스 상자는 조합 하나를 고른다 (스테이지 판만 · 판 기록 opts 에 남아 재생도 같다) */ chestRules?: '60-JACKPOT'; /** 59-WIDE 넓은 맵 — 열전 스테이지 판에만 켜진다 (시련·선봉에 넘겨도 한 장짜리 그대로 · 판 기록 opts 에 남아 재생도 같다) */ mapRules?: '59-WIDE'; /** 61-SOLID 넓은 맵의 나무·바위·목책이 장수와 적을 막는다 (무기는 통과 · 59-WIDE 판에서만 · 판 기록 opts 에 남아 재생도 같다) */ blockRules?: '61-SOLID'; /** 62-ANCHOR 장수는 제 발로만 움직인다 — 단검의 그림자 걸음·환영난무가 장수를 순간이동시키지 않는다 (형 11-23 「때리다가 갑자기 순간이동 · 보스전에서 원하지 않는 곳으로」 · 판 기록 opts 에 남는다) */ anchorRules?: '62-ANCHOR'; /** 64-BREAK 부위 파괴가 느껴지게 — 몸통 피해가 가까운 부위로 번지고 · 부위 체력 낮춤 · 부서지면 그로기와 더 큰 피해 (판 기록 opts 에 남는다) */ breakRules?: '64-BREAK'; /** 66-CAP 최고 레벨 뒤 기세 막대가 다시 차면 회복과 판 금으로 바꾼다 (HAEBI_CAP · 판 기록 opts 에 남는다) */ capRules?: '66-CAP'; /** 68-BOSSCHEST 중간 보스 상자가 늘 카드 셋 (안 연 조합 → 조합 단계 → 갈래 끝·주 무기 두 단계 · HAEBI_BOSS_CHEST · 판 기록 opts 에 남는다) */ bossChestRules?: '68-BOSSCHEST'; /** 71-BOSSDUEL 보스전 잡졸을 줄인다 — 마지막 두목이 살아 있으면 저절로 나오는 잡졸 bossSpawn 배·적 상한 bossCap · 중간 보스면 midbossSpawn 배 · 마지막 두목이 나오는 순간 보통 잡졸은 달아나 사라진다 (HAEBI_BOSS_DUEL · 스테이지 판만 · 판 기록 opts 에 남는다) */ bossDuelRules?: '71-BOSSDUEL'; /** 70-AWAKECAP 영구 각성(permanentAwake)으로 들어온 판은 최고 레벨 60 · 51~60 은 막대가 더 길고 레벨 힘은 반 (겉모습 각성 appearanceAwake 는 상관없다 · HAEBI_CAP60 · 66-CAP 판에서만 · 판 기록 opts 에 남는다) */ awakeCapRules?: '70-AWAKECAP' | '70B-AWAKECAP'; /** 69-BUILDUP 설치 갈래에 화력·장전 칸 (종류 칸을 쓰지 않는다 · 얹힐 설치물을 가진 판에만 나온다 · HAEBI_BUILDUP · 65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ buildUpRules?: '69-BUILDUP' | '69B-BUILDUP'; /** 67-BUILD2 설치 갈래에 장승·솟대·봉수대·포차·우물을 더한다 (65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ build2Rules?: '67-BUILD2'; /** 65-BUILD 레벨업 카드의 네 번째 갈래 「설치」 — 고르면 망루·목책·항아리가 장수 앞에 서서 판 끝까지 남는다 · 장수·적은 지나가지 못하고 장수가 몸으로 밀어 옮긴다 (판 기록 opts 에 남는다) */ buildRules?: '65-BUILD' }
+export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' | '55-SHAMAN'; /** 58-KITS 무기 개성 — 스테이지 규칙과 따로 켠다 (판 기록 opts 에 그대로 남아 재생도 같다) */ kitRules?: '58-KITS'; /** 60-JACKPOT 상자 — 정예 상자는 고르지 않고 터지고, 중간 보스 상자는 조합 하나를 고른다 (스테이지 판만 · 판 기록 opts 에 남아 재생도 같다) */ chestRules?: '60-JACKPOT'; /** 59-WIDE 넓은 맵 — 열전 스테이지 판에만 켜진다 (시련·선봉에 넘겨도 한 장짜리 그대로 · 판 기록 opts 에 남아 재생도 같다) */ mapRules?: '59-WIDE'; /** 61-SOLID 넓은 맵의 나무·바위·목책이 장수와 적을 막는다 (무기는 통과 · 59-WIDE 판에서만 · 판 기록 opts 에 남아 재생도 같다) */ blockRules?: '61-SOLID'; /** 62-ANCHOR 장수는 제 발로만 움직인다 — 단검의 그림자 걸음·환영난무가 장수를 순간이동시키지 않는다 (형 11-23 「때리다가 갑자기 순간이동 · 보스전에서 원하지 않는 곳으로」 · 판 기록 opts 에 남는다) */ anchorRules?: '62-ANCHOR'; /** 64-BREAK 부위 파괴가 느껴지게 — 몸통 피해가 가까운 부위로 번지고 · 부위 체력 낮춤 · 부서지면 그로기와 더 큰 피해 (판 기록 opts 에 남는다) */ breakRules?: '64-BREAK'; /** 66-CAP 최고 레벨 뒤 기세 막대가 다시 차면 회복과 판 금으로 바꾼다 (HAEBI_CAP · 판 기록 opts 에 남는다) */ capRules?: '66-CAP'; /** 68-BOSSCHEST 중간 보스 상자가 늘 카드 셋 (안 연 조합 → 조합 단계 → 갈래 끝·주 무기 두 단계 · HAEBI_BOSS_CHEST · 판 기록 opts 에 남는다) */ bossChestRules?: '68-BOSSCHEST'; /** 71-BOSSDUEL 보스전 잡졸을 줄인다 — 마지막 두목이 살아 있으면 저절로 나오는 잡졸 bossSpawn 배·적 상한 bossCap · 중간 보스면 midbossSpawn 배 · 마지막 두목이 나오는 순간 보통 잡졸은 달아나 사라진다 (HAEBI_BOSS_DUEL · 스테이지 판만 · 판 기록 opts 에 남는다) */ bossDuelRules?: '71-BOSSDUEL'; /** 72-BOSSHIT 거대 보스의 큰 공격은 맞으면 최대 체력의 큰 몫이 깎인다 (HAEBI_BOSS_HIT · 스테이지 판만 · 판 기록 opts 에 남는다) */ bossHitRules?: '72-BOSSHIT'; /** 70-AWAKECAP 영구 각성(permanentAwake)으로 들어온 판은 최고 레벨 60 · 51~60 은 막대가 더 길고 레벨 힘은 반 (겉모습 각성 appearanceAwake 는 상관없다 · HAEBI_CAP60 · 66-CAP 판에서만 · 판 기록 opts 에 남는다) */ awakeCapRules?: '70-AWAKECAP' | '70B-AWAKECAP'; /** 69-BUILDUP 설치 갈래에 화력·장전 칸 (종류 칸을 쓰지 않는다 · 얹힐 설치물을 가진 판에만 나온다 · HAEBI_BUILDUP · 65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ buildUpRules?: '69-BUILDUP' | '69B-BUILDUP'; /** 67-BUILD2 설치 갈래에 장승·솟대·봉수대·포차·우물을 더한다 (65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ build2Rules?: '67-BUILD2'; /** 65-BUILD 레벨업 카드의 네 번째 갈래 「설치」 — 고르면 망루·목책·항아리가 장수 앞에 서서 판 끝까지 남는다 · 장수·적은 지나가지 못하고 장수가 몸으로 밀어 옮긴다 (판 기록 opts 에 남는다) */ buildRules?: '65-BUILD' }
 /** 새 판이 쓰는 무기 규칙 */
 export const KIT_RULES = '58-KITS' as const
 /** 새 스테이지 판이 쓰는 상자 규칙 */
@@ -292,6 +294,7 @@ export const BUILD2_RULES = '67-BUILD2' as const
 export const BUILDUP_RULES = '69B-BUILDUP' as const
 /** 새 판이 쓰는 보스전 잡졸 줄임 규칙 */
 export const BOSSDUEL_RULES = '71-BOSSDUEL' as const
+export const BOSSHIT_RULES = '72-BOSSHIT' as const
 /** 새 판이 쓰는 각성 최고 레벨 60 규칙 */
 export const AWAKECAP_RULES = '70B-AWAKECAP' as const
 /** 새 판이 쓰는 중간 보스 상자 규칙 */
@@ -338,6 +341,7 @@ export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit
   if (opts.chestRules === CHEST_RULES && mode === 'stage') s.jackpots = { pity: 0, five: 0, eight: 0, ranks: 0 }
   if (opts.bossChestRules === BOSSCHEST_RULES && s.jackpots) s.bossChest = true
   if (opts.bossDuelRules === BOSSDUEL_RULES && mode === 'stage') s.duel = true
+  if (opts.bossHitRules === BOSSHIT_RULES && mode === 'stage') s.bossHit = true
   if (mode === 'vanguard') {
     s.level = V.startLevel; s.ranks[k.primary] = 4; s.ranks[k.secondary] = 3; s.ranks.echo = 2; s.ranks.tempo = 1; s.ranks.reach = 1
     s.combos = kitCombos(kit).filter(c => c.kit === kit).map(c => c.id); s.message = '선봉에 서기 · 전위대장 3명을 돌파하라'
@@ -852,10 +856,12 @@ export const charge = (kind: MobKind) => kind === 'runner' || kind === 'tiger' ?
 /** 내려찍기(wind) 범위 · 준비 시간 — 두목·정예 · 반달곰 */
 export const slamRadius = (kind: MobKind) => kind === 'bear' ? M.bearRadius : C.bossRadius
 export const slamWindup = (kind: MobKind) => kind === 'bear' ? M.bearWind : C.bossWindup
-function hurt(s: HaebiRun, amount: number) {
+function hurt(s: HaebiRun, amount: number, floor = 0) {
   // 무적: 회피·비기 뒤 · 시전 중 · 각성 동안 (11-17 형: 「각성하면 무적」)
   if (s.inv > 0 || s.cast || !usesPermanentAwakening(s) && s.form === 'awake') return
   let loss = Math.max(1, amount * ST[s.stage].damage * (1 - s.ranks.tough * T.tough) - s.bonus.armor * SH.armor.step); s.inv = C.hitInv
+  // 72-BOSSHIT 보스의 큰 공격: 최대 체력의 몫 아래로 안 내려간다 (단련은 그대로 줄인다)
+  if (floor > 0) loss = Math.max(loss, floor * s.maxHp * (1 - s.ranks.tough * T.tough))
   // 영웅의 투지 보호막이 먼저 받는다 · 다 깎이면 깨지는 빛
   if (s.ward > 0) { const took = Math.min(s.ward, loss); s.ward -= took; loss -= took; if (s.ward <= 0) { s.ward = 0; fx(s, 'ring', s.x, s.y, A.gritShieldBurst, '#bfe8ff') } }
   if (loss > 0) { s.hp -= loss; s.hurt = .3 }
@@ -1089,7 +1095,7 @@ const KC = { power: 1, area: 1, tempo: 1 }
 /** 무기 한 번이 맞힌 적을 모으는 그릇 (collect 동안만 · 판 상태가 아니다) */
 const COLLECT = { on: false, hits: [] as Mob[] }
 /** 헤드리스 도구가 읽는 설치물 피해 셈 (판 상태가 아니다 · 판·재생에 아무 일도 하지 않는다) — src 지금 치는 것이 설치물(망루 화살 · 봉수대 화살비 · 포차 바위 · 장승 혼줄) · dealt 그렇게 깎은 체력 합 (도구가 0 으로 되돌린다) */
-export const BUILD_TALLY = { src: false, dealt: 0 }
+export const BUILD_TALLY = { src: false, dealt: 0, healed: 0 }
 /** run 안에서 hit 이 실제로 맞힌 적 (같은 적은 한 번 · 맞힌 차례) */
 function collect(run: () => void): Mob[] {
   if (COLLECT.on) { run(); return [] }
@@ -1616,7 +1622,7 @@ function placeBuild(s: HaebiRun, kind: BuildKind, i: number) {
 function buildPicked(s: HaebiRun, kind: BuildKind) {
   const rank = s.ranks[kind]
   if (kind !== 'jar') for (const f of s.build!.items) if (f.kind === kind) { const max = buildHp(kind, rank) * threat(s); if (f.down <= 0) f.hp += max - f.max; f.max = max }
-  for (let i = buildUnits(rank - 1); i < buildUnits(rank); i++) placeBuild(s, kind, i)
+  for (let i = buildUnits(rank - 1, kind); i < buildUnits(rank, kind); i++) placeBuild(s, kind, i)
 }
 /** 장수가 설치물을 몸으로 민다 (다이센카) — 겹치면 이번 걸음이 pushShare 몫으로 줄고, 겹친 설치물은 장수 몸 밖으로 미끄러진다 · 못 가는 설치물(장식·땅 끝)이면 장수가 막힌다 */
 function heroPush(s: HaebiRun, fromX: number, fromY: number) {
@@ -1712,7 +1718,7 @@ function fleeStep(s: HaebiRun, e: Mob, dt: number) {
   e.x += x / d * v * dt; e.y += y / d * v * dt; e.flee = e.flee! - dt
   if (e.flee <= 0) { fx(s, 'ring', e.x, e.y, BD.puff, BD.puffColor); e.hp = 0 }
 }
-/** 67-BUILD2 판마다 — 혼줄(장승 둘 사이)을 지나는 적이 다치고 느려진다 · 우물 곁의 장수가 회복한다 (우물이 여럿이어도 한 번) */
+/** 67-BUILD2 판마다 — 혼줄(장승 둘 사이)을 지나는 적이 다치고 느려진다 · 우물은 쿨타임이 찼을 때 장수가 곁에 오면 체력을 한 번에 채우고 쿨타임이 돈다 (우물은 판에 하나) */
 function build2Step(s: HaebiRun, dt: number) {
   const b = s.build!
   for (const e of s.enemies) if (e.slow) e.slow = Math.max(0, e.slow - dt)
@@ -1725,7 +1731,14 @@ function build2Step(s: HaebiRun, dt: number) {
     }
   }
   const w = s.ranks.well ?? 0
-  if (w && b.items.some(it => it.kind === 'well' && Math.hypot(s.x - it.x, s.y - it.y) < wellRadius(w))) s.hp = Math.min(s.maxHp, s.hp + wellHeal(w) * dt)
+  if (w) for (const it of b.items) {
+    if (it.kind !== 'well') continue
+    it.cd = Math.max(0, it.cd - dt)
+    if (it.cd > 0 || s.hp >= s.maxHp || Math.hypot(s.x - it.x, s.y - it.y) >= wellRadius(w)) continue
+    const h0 = s.hp; s.hp = Math.min(s.maxHp, s.hp + s.maxHp * wellShare(w)); BUILD_TALLY.healed += s.hp - h0
+    it.cd = wellCool(w); it.flash = BU.flash
+    fx(s, 'ring', s.x, s.y, B2.view.heal.ring, B2.view.heal.color); s.fx[s.fx.length - 1]!.wellHeal = Math.round(s.hp - h0)
+  }
 }
 /** 설치물 한 걸음 — 망루 화살 · 봉수대·포차 (67) · 무너진 것은 잔해로 rebuild 초 뒤 같은 자리에 다시 선다 (항아리·솟대·봉수대·우물은 무적) */
 function buildStep(s: HaebiRun, dt: number, tempo: number) {
@@ -2093,7 +2106,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
   BUILD_TALLY.src = false
   if (s.giantFlow) for (const e of s.enemies) if (e.giant) {
     // 백두 대호 포효(눈보라)는 띠 안의 장수를 바깥으로 밀어낸다 · 불가사리 흡수는 끌어당긴다 (장수가 설 수 있는 판 안까지 · 성한 목책은 넘지 않는다)
-    commitGiant(e.giant, e, s, amount => hurt(s, amount), e.daze > 0, (dx, dy) => { const ox = s.x, oy = s.y; s.x = heroX(s, s.x + dx); s.y = heroY(s, s.y + dy); if (s.palisade) wallMove(s.palisade, s, ox, oy, WL.heroR) })
+    commitGiant(e.giant, e, s, amount => hurt(s, amount, s.bossHit && amount >= BH.from ? BH.share * amount / BH.ref : 0), e.daze > 0, (dx, dy) => { const ox = s.x, oy = s.y; s.x = heroX(s, s.x + dx); s.y = heroY(s, s.y + dy); if (s.palisade) wallMove(s.palisade, s, ox, oy, WL.heroR) })
     syncGiantPose(e.giant, e, Math.round(s.t * 120))
   }
   for (const d of s.drops) {

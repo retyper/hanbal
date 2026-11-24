@@ -768,7 +768,7 @@ export const HAEBI_BUILD2 = {
   sotdae: { ahead: 70, r: 12, radius: 150, radiusStep: 15, slow: .25, slowStep: .06 },
   beacon: { ahead: 90, r: 26, every: 8, everyStep: .6, delay: 1, cluster: 120, radius: 115, radiusStep: 10, share: 1, shareStep: .3 },
   catapult: { ahead: 100, r: 32, hp: 320, hpStep: 110, rebuild: 12, aggroR: 140, aggroEvery: 3, touch: 6, bite: 1, every: 5.5, everyStep: .4, minRange: 170, range: 640, cluster: 110, flight: 1.1, radius: 125, radiusStep: 10, share: 1.3, shareStep: .35 },
-  well: { ahead: 70, r: 26, radius: 120, radiusStep: 12, share: .25, shareStep: .05, cool: 30, coolStep: 3 },
+  well: { ahead: 70, r: 26, radius: 120, radiusStep: 12, share: .25, shareStep: .09, cool: 30, coolStep: 3.5 },
   view: {
     h: { totem: 92, sotdae: 84, beacon: 92, catapult: 104, well: 40 }, shadow: 1.1,
     line: '#9fe8ff', lineW: 4, lineAlpha: .55, lineGlow: 12,

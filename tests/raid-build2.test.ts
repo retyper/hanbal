@@ -6,7 +6,7 @@ import { HAEBI_BUILD2 as B2 } from '../src/tune/params.ts'
 import { createHaebi, stepHaebi, choose, spawnMob, runBranches, runBranchNodes, buildChoices, KIT_RULES, CHEST_RULES, MAP_RULES, SOLID_RULES, ANCHOR_RULES, BREAK_RULES, BUILD_RULES, BUILD2_RULES, CAP_RULES, raidRulesForStage, type HaebiOpts, type HaebiRun, type StageId, type Kit, type Mob } from '../src/raid/haebi.ts'
 import { botInput, botChoice } from '../src/raid/haebi-replay.ts'
 import { startRecord, recInput, recPick, sealInput, replayRaid } from '../src/raid/runlog.ts'
-import { BUILD_KINDS, BUILD2_KINDS, ALL_BUILD_KINDS, sotdaeSlow, wellHeal, beaconRadius, catapultRadius, type BuildKind } from '../src/raid/build.ts'
+import { BUILD_KINDS, BUILD2_KINDS, ALL_BUILD_KINDS, sotdaeSlow, wellShare, wellCool, wellRadius, beaconRadius, catapultRadius, type BuildKind } from '../src/raid/build.ts'
 import { treeModel } from '../src/raid/tree-model.ts'
 
 const hash = (x: unknown) => createHash('sha256').update(JSON.stringify(x)).digest('hex')
@@ -119,19 +119,32 @@ test('67 포차: 먼 뭉치에 바위 · flight 초 뒤 큰 둘레를 친다 · 
   c.hp = 1e-9; step(s, .05); assert.ok(c.down > 0)
 })
 
-test('67 우물: 곁에 서 있으면 초마다 회복 · 우물이 둘이어도 한 번', () => {
-  const heal = (wells: number) => {
-    const s = quiet(); for (let i = 0; i < wells; i++) pick(s, 'well')
-    s.hp = 50
-    step(s, 1)
-    return s.hp
-  }
-  const none = heal(0), one = heal(1), three = heal(5)
-  assert.ok(Math.abs(one - none - wellHeal(1)) < .2, `${(one - none).toFixed(2)} ≈ ${wellHeal(1)}`)
-  assert.ok(Math.abs(three - none - wellHeal(5)) < .2, '셋이 서도 다섯 단계 한 번만')
-  // 멀리 걸어가면 회복이 없다
-  const s = quiet(); pick(s, 'well'); step(s, 1.5, { x: -1, y: 0 }); s.hp = 50; step(s, 1)
-  assert.ok(s.hp - 50 < wellHeal(1) * .5)
+test('67 우물: 판에 하나만 선다 · 단계가 올라도 늘지 않는다', () => {
+  const s = quiet(); for (let r = 1; r <= 5; r++) { pick(s, 'well'); assert.equal(items(s, 'well').length, 1, `단계 ${r}`) }
+})
+
+test('67 우물: 가까이 가면 한 번에 채우고 · 쿨타임 동안은 안 채우고 · 가득이면 쿨타임을 쓰지 않는다', () => {
+  const s = quiet(); pick(s, 'well'); const w = items(s, 'well')[0]!
+  // 가득이면 곁에 서 있어도 쿨타임이 돌지 않는다
+  step(s, 1); assert.equal(s.hp, s.maxHp); assert.equal(w.cd, 0)
+  // 다치면 곁에서 한 번에 maxHp × share 를 채운다
+  s.hp = s.maxHp * .2; step(s, .05)
+  assert.ok(Math.abs(s.hp - s.maxHp * (.2 + wellShare(1))) < 1, `${s.hp} 한 번에`)
+  assert.ok(w.cd > wellCool(1) - .2 && w.cd <= wellCool(1))
+  // 쿨타임 동안은 곁에 서 있어도 안 채운다
+  const after = s.hp = s.maxHp * .2; step(s, wellCool(1) - 1)
+  const bare = quiet(); bare.hp = bare.maxHp * .2; step(bare, wellCool(1) - 1)
+  assert.ok(Math.abs((s.hp - after) - (bare.hp - bare.maxHp * .2)) < 1e-6, '쿨타임 동안은 우물 없는 판과 같다 (저절로 느는 몫뿐)')
+  // 쿨타임이 끝나면 다시 한 번
+  step(s, 1.2); assert.ok(s.hp - after - (bare.hp - bare.maxHp * .2) > s.maxHp * wellShare(1) * .9, '쿨타임 뒤 다시')
+  // 단계가 오르면 몫은 늘고 쿨타임은 준다
+  assert.ok(wellShare(5) > wellShare(1) && wellCool(5) < wellCool(1))
+})
+
+test('67 우물: 멀리 있으면 안 채운다 · 판의 쿨타임은 우물이 아닌 판 시계로만', () => {
+  const s = quiet(); pick(s, 'well'); const w = items(s, 'well')[0]!
+  s.x = w.x + wellRadius(1) + 40; s.hp = 50; step(s, 1)
+  assert.ok(s.hp - 50 < 2); assert.equal(w.cd, 0)
 })
 
 test('67-BUILD2: 같은 씨앗이면 판이 같다 · 봇이 새 다섯을 고른다 · 판 기록 재생도 같다', () => {

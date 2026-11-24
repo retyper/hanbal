@@ -1,7 +1,7 @@
 /**
  * 65-BUILD 설치 갈래 — 망루 · 목책 · 항아리 (판 쪽 셈 · 화면은 fx-build.ts 가 읽어 그린다).
  * 레벨업 카드의 네 번째 갈래 (docs/realm/QUESTIONS-20261122.md §2 A ★). 소환물이 아니라 건물이다 (형 11-23 · 다이센카):
- * 처음 고른 순간 장수 앞에 하나 서서 판 끝까지 남고 · 3·5단계에 하나씩 더 선다 · 장수·적이 지나가지 못하고 · 장수가 몸으로 천천히 밀어 옮긴다.
+ * 처음 고른 순간 장수 앞에 하나 서서 판 끝까지 남고 · 3·5단계에 하나씩 더 선다 (우물만 늘 하나) · 장수·적이 지나가지 못하고 · 장수가 몸으로 천천히 밀어 옮긴다.
  * 자리는 난수를 쓰지 않는다 — 장수 자리 · 가장 가까운 적 쪽 · 그 종류의 몇째인지로만 정해져 같은 씨앗이면 늘 같은 자리.
  * 67-BUILD2 (형 11-23 「건설물 여러가지 더 · 창의적이게」): 장승 · 솟대 · 봉수대 · 포차 · 우물 다섯을 더해 여덟 종류 · 종류 칸은 그대로 셋.
  * 수치는 모두 HAEBI_BUILD · HAEBI_BUILD2 (tune/params.ts).
@@ -31,8 +31,8 @@ export interface Structure { id: number; kind: BuildKind; x: number; y: number; 
 export interface BuildState { items: Structure[]; nextId: number; jarXp: number; /** 67-BUILD2 판 (여덟 종류) */ v2?: true; /** 69-BUILDUP 판 (화력·장전 칸) */ up?: true; /** 처음 낸 69-BUILDUP 판(옛 기록) — HAEBI_BUILDUP.v1 수치 */ upV1?: true }
 export const newBuild = (): BuildState => ({ items: [], nextId: 1, jarXp: 0 })
 
-/** 그 단계에서 서 있는 수 — 1 + extraAt 에 이른 수 (단계 0 이면 0) */
-export const buildUnits = (rank: number) => rank > 0 ? 1 + B.extraAt.filter(r => rank >= r).length : 0
+/** 그 단계에서 서 있는 수 — 1 + extraAt 에 이른 수 (단계 0 이면 0) · 우물만 늘 하나 (단계가 오르면 개수 대신 채우는 몫·쿨타임이 좋아진다) */
+export const buildUnits = (rank: number, kind?: BuildKind) => rank > 0 ? (kind === 'well' ? 1 : 1 + B.extraAt.filter(r => rank >= r).length) : 0
 /** 망루 화살 한 발이 그때 잡졸 체력의 몇 몫을 깎나 */
 export const towerShare = (rank: number) => B.tower.share + B.tower.shareStep * (rank - 1)
 /** 망루가 다시 쏘기까지 (맹공을 나누기 전) */
@@ -48,7 +48,10 @@ const at = (base: number, step: number, rank: number) => base + step * (rank - 1
 export const sotdaeRadius = (rank: number) => at(B2.sotdae.radius, B2.sotdae.radiusStep, rank)
 export const sotdaeSlow = (rank: number) => at(B2.sotdae.slow, B2.sotdae.slowStep, rank)
 export const wellRadius = (rank: number) => at(B2.well.radius, B2.well.radiusStep, rank)
-export const wellHeal = (rank: number) => at(B2.well.heal, B2.well.healStep, rank)
+/** 우물이 한 번에 채우는 최대 체력의 몫 */
+export const wellShare = (rank: number) => at(B2.well.share, B2.well.shareStep, rank)
+/** 한 번 채운 뒤 다시 찰 때까지 (초) */
+export const wellCool = (rank: number) => B2.well.cool - B2.well.coolStep * (rank - 1)
 export const beaconEvery = (rank: number) => B2.beacon.every - B2.beacon.everyStep * (rank - 1)
 export const beaconRadius = (rank: number) => at(B2.beacon.radius, B2.beacon.radiusStep, rank)
 export const beaconShare = (rank: number) => at(B2.beacon.share, B2.beacon.shareStep, rank)
