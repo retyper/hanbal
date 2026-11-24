@@ -47,13 +47,13 @@ HEROES = {
                   cells8=[('a', 1), ('a', 2), ('a', 3), ('a', 4), ('a', 4), ('a', 3), ('a', 2), ('a', 1)]),   # 해녀(작살) · 뒤 판 b 는 그림 도구가 거절 → 앞 판으로: 타격 = 넷째(a4) · wire-hero hit=3
     'huntress': dict(strip='gen-base-w-06-buyeo-huntress', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 부여 사냥꾼(창)
     'dallae': dict(strip='gen-base-w-64-miri-dallae', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 미리 군주 달래(창)
-    'ara': dict(strip='gen-ara', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 가야 검사 아라(한 손 칼) · 좁은 칸: 머리 위로 곧게 세운 a2 는 위가, 끝까지 벤 b1 은 앞이 넘친다
+    'ara': dict(atkk=1.05, strip='gen-ara', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 가야 검사 아라(한 손 칼) · 좁은 칸: 머리 위로 곧게 세운 a2 는 위가, 끝까지 벤 b1 은 앞이 넘친다
     'dtiger': dict(strip='gen-base-w-22-dongye-tiger-huntress', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 동예 범 사냥꾼(창)
     'noeul': dict(strip='gen-noeul', atk='bow', atk8=False),   # 사로 노을(활)
     'sagong': dict(strip='gen-sagong', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 사물 사공(두 손 노 · 찌르기)
     'songbi': dict(strip='gen-songbi', atk='bow', atk8=False),   # 비류나 송비(활)
     'sinneoul': dict(strip='gen-sinneoul', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 신지 너울(두 손 갈고리 장대 · 가슴 XL)
-    'heo': dict(strip='gen-heo', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 가락 허황옥(금빛 창 · 가슴 L)
+    'heo': dict(strip='gen-heo', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 가락 허황옥(금빛 창 · 가슴 L)
     'mwarrior': dict(strip='gen-base-w-08-mahan-warrior', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 마한 전사(창 · 우람한 뼈대)
     'whaleq': dict(strip='gen-base-w-23-usisan-whale-queen', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 우시산 고래 여왕(미늘 작살 · 우람한 뼈대)
     'tomboy': dict(strip='gen-base-w-26-iseo-tomboy-general', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 이서 말괄량이 장군(창 · 우람한 뼈대)
@@ -61,7 +61,7 @@ HEROES = {
     'tneoul': dict(strip='gen-tneoul', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4)), lock='face'),   # 탐라 너울(두 손 나무 노 · 가슴 L) · 머리 상자 묶기는 b-2 에서 얼굴 자리를 잘못 잡아 머리가 둘이 됐다(11-24) → 얼굴 안쪽만
     'baetsa': dict(strip='gen-base-w-76-gampyeong-baetsagong', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 감평 뱃사공(두 손 나무 노 · 가슴 XL)
     'odi': dict(strip='gen-odi', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 조문 오디(창 · 가슴 XL)
-    'deulme': dict(strip='gen-base-w-34-chopal-deulme', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 초팔 들메(창 · 우람한 뼈대 · 가슴 L)
+    'deulme': dict(strip='gen-base-w-34-chopal-deulme', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 초팔 들메(창 · 우람한 뼈대 · 가슴 L)
     'dana': dict(strip='gen-base-w-102-garak-dana', atk='bow', atk8=False),   # 가락 다나(활 · 가슴 XL)
     'maena': dict(strip='gen-base-w-36-baekje-maena', atk='bow', atk8=False),   # 백제 매나(활 · 가슴 L)
     'sogeum': dict(strip='gen-base-w-56-dongokjeo-sogeum', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 동옥저 소금 상인(단검 · 가슴 XL) · 좁은 칸은 아라처럼 덜 뻗은 칸
@@ -130,7 +130,7 @@ def attack(name):
     h = use(HEROES[name])
     for half in sorted({t for t, _ in cells8(h)}):
         src = h.get('src', h['atk'])   # 다시 그린 판(예: thrust2)은 src 로 가리킨다 — 굽는 이름은 그대로
-        run('bake-scene.py', 'attack4', f'{STD}/out-{name}-{src}-{half}.png', name, f'{h["atk"]}8-{half}', f'{STD}/scene-{name}-{src}-{half}.png', f'cw={ACT["cw"]}')
+        run('bake-scene.py', 'attack4', f'{STD}/out-{name}-{src}-{half}.png', name, f'{h["atk"]}8-{half}', f'{STD}/scene-{name}-{src}-{half}.png', f'cw={ACT["cw"]}', f'k={h.get("atkk", 1.0)}')
     ims = [Image.open(f'{PX}/{name}-{h["atk"]}8-{t}-{i}.png').convert('RGBA') for t, i in cells8(h)]
     z = 3
     row = Image.new('RGB', (ACT['cw'] * z * 4, ACT['ch'] * z * 2), BG)
