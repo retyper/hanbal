@@ -243,6 +243,7 @@ def motion8(path, name, tags=('walk-a', 'walk-b'), norm=True, scene=None):
 
 
 ACT = dict(cw=240, ch=224, root=92, foot=216)
+REFOOT = [False]   # attack4 … refoot: 대강의 자리를 앞발로 다시 잡는다(아래 attack4 · 켠 장수만 · 다른 장수의 굽기는 바이트까지 그대로)
 KATK = [1.0]   # attack4 … k=1.09 로 바꾼다   # 동작 칸(덧띠): 폭·높이 · 뿌리 x · 발 줄 y — ART-SKELETON §12 (앞 148px · 뒤 92px · 머리 위 79px)
 
 
@@ -283,6 +284,41 @@ def attack4(path, name, tag, scene):
         found.append((m, ids, register(m[y0:y1, x0:x1], rigmask[y0:y1, x0:x1])))
     coarse = float(np.median([f[2] for f in found if f])) if any(found) else 0.0
     band = max(4, int(round(5 / scale)))    # 바닥 띠 두께(받은 그림 화소) = 게임 5px
+
+    def foot(k, ref):
+        """칸 k 의 그림 앞발 끝 - 인형 앞발 끝(받은 그림 화소) · 대강의 자리 ref 에서 26 게임 px 안의 발 덩이 · 못 찾으면 None"""
+        c = meta['cells'][k]
+        m = found[k][0]
+        x0, y0, x1, y1 = int(c['x'] * kx), int(c['y'] * kx), int((c['x'] + c['w']) * kx), int((c['y'] + c['h']) * kx)
+        by1 = np.nonzero(m)[0].max() + 1
+        ry, rx = np.nonzero(blue[y0:y1, x0:x1])
+        if not len(ry):
+            return None
+        gy = ry.max()
+        # 인형 앞발의 발끝(받은 그림 좌표) = 맨 아래 두 줄에서 가장 긴 파란 줄의 오른쪽 끝.
+        #   바닥 띠 전체에서 가장 오른쪽 파란 점을 쓰면, 깊이 주저앉는 칸은 낮게 누운 정강이·무릎이 발끝보다 앞이라 14px 어긋났다(11-24 새 찌르기 인형)
+        fc = np.unique(rx[ry >= gy - 1])
+        cut = np.nonzero(np.diff(fc) > 2)[0]
+        segs = [(int(a_[0]), int(a_[-1])) for a_ in np.split(fc, cut + 1)]
+        toe_rig = x0 + max(segs, key=lambda r_: r_[1] - r_[0])[1]
+        cols = np.nonzero(m[by1 - band:by1, :].any(0))[0]
+        runs, st = [], None
+        for a_, b_ in zip(cols, list(cols[1:]) + [None]):
+            st = a_ if st is None else st
+            if b_ is None or b_ - a_ > 2:
+                runs.append((st, a_))
+                st = None
+        runs = [r for r in runs if (r[1] - r[0] + 1) * scale >= 5]
+        if not runs:
+            return None
+        best = min(runs, key=lambda r: abs(r[1] - (toe_rig + ref)))
+        return float(best[1] - toe_rig) if abs(best[1] - (toe_rig + ref)) * scale <= 26 else None
+
+    # 대강의 자리를 두 번 잡는다 (11-24 마루 찌르기 b): 통째 겹침은 그림이 인형보다 넓게 뻗으면(긴 창 · 뒤로 길게 뻗은 다리) 칸마다 -42px 쯤 밀려
+    #   발을 못 찾거나(b3) 뒷발을 앞발로 잡았다(b4 -98px). 첫 판에서 앞발로 맞춘 칸들의 가운데 값을 대강의 자리로 다시 잡고 모든 칸을 다시 찾는다.
+    #   첫 판에서 발을 다 찾고 그 값이 통째 겹침과 가까운 장수는 결과가 같다.
+    first = [foot(k, coarse) if found[k] else None for k in range(len(meta['cells']))]
+    ref = float(np.median([d for d in first if d is not None])) if REFOOT[0] and any(d is not None for d in first) else coarse
     for k, c in enumerate(meta['cells']):
         if not found[k]:
             continue
@@ -292,27 +328,9 @@ def attack4(path, name, tag, scene):
         bx0, bx1, by0, by1 = xs.min(), xs.max() + 1, ys.min(), ys.max() + 1
         edge = min(bx0 - x0, x1 - bx1, by0 - y0)
         dx, how = coarse, '가운데 값'
-        ry, rx = np.nonzero(blue[y0:y1, x0:x1])
-        if len(ry):
-            gy = ry.max()
-            # 인형 앞발의 발끝(받은 그림 좌표) = 맨 아래 두 줄에서 가장 긴 파란 줄의 오른쪽 끝.
-            #   바닥 띠 전체에서 가장 오른쪽 파란 점을 쓰면, 깊이 주저앉는 칸은 낮게 누운 정강이·무릎이 발끝보다 앞이라 14px 어긋났다(11-24 새 찌르기 인형)
-            fc = np.unique(rx[ry >= gy - 1])
-            cut = np.nonzero(np.diff(fc) > 2)[0]
-            segs = [(int(a_[0]), int(a_[-1])) for a_ in np.split(fc, cut + 1)]
-            toe_rig = x0 + max(segs, key=lambda r_: r_[1] - r_[0])[1]
-            cols = np.nonzero(m[by1 - band:by1, :].any(0))[0]
-            runs, st = [], None
-            for a_, b_ in zip(cols, list(cols[1:]) + [None]):
-                st = a_ if st is None else st
-                if b_ is None or b_ - a_ > 2:
-                    runs.append((st, a_))
-                    st = None
-            runs = [r for r in runs if (r[1] - r[0] + 1) * scale >= 5]
-            if runs:
-                best = min(runs, key=lambda r: abs(r[1] - (toe_rig + coarse)))
-                if abs(best[1] - (toe_rig + coarse)) * scale <= 26:
-                    dx, how = float(best[1] - toe_rig), '앞발 끝'
+        fd = (first[k] if first[k] is not None and abs(first[k] - ref) * scale <= 26 else foot(k, ref)) if REFOOT[0] else first[k]   # 첫 판 값이 다른 칸들과 맞으면 그대로(같은 자세로 버티는 칸끼리 같은 발)
+        if fd is not None:
+            dx, how = fd, '앞발 끝'
         whole = full[by0:by1, bx0:bx1].copy()
         whole[..., 3] = np.where(m[by0:by1, bx0:bx1], whole[..., 3], 0)
         g = game(Image.fromarray(whole), scale)
@@ -399,6 +417,8 @@ if __name__ == '__main__':
                 ACT['cw'] = int(a[3:])
             if a.startswith('k='):
                 KATK[0] = float(a[2:])
+            if a == 'refoot':
+                REFOOT[0] = True
         attack4(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
         sys.exit()
     if sys.argv[1] == 'fall':
