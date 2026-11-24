@@ -52,6 +52,7 @@ HEROES = {
     'sagong': dict(hit=True, strip='gen-sagong', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 사물 사공(두 손 노 · 찌르기)
     'songbi': dict(strip='gen-songbi', atk='bow', atk8=False),   # 비류나 송비(활)
     'sinneoul': dict(hit=True, strip='gen-sinneoul', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 신지 너울(두 손 갈고리 장대 · 가슴 XL)
+    'sinneoul3': dict(hit=True, strip='gen-sinneoul-t3', atk='thrust', src='thrust3', actw=264, backfoot=True, atk8=True, act=True, pending=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 시험 줄(11-24 밤 · 형 「준비 동작 어정쩡 · 뒷발이 미끄러져 힘 빠져」): 신지 너울을 thrust3(뒷발 박힘 · 앞발 내딛음)로 · 게임엔 안 넣는다 · px 칸은 sinneoul 것을 sinneoul3-* 로 복사해 쓴다 · 굽기 backfoot = 가로 자리를 뒷발로
     'heo': dict(hit=True, strip='gen-heo', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 가락 허황옥(금빛 창 · 가슴 L)
     'mwarrior': dict(hit=True, strip='gen-base-w-08-mahan-warrior', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 마한 전사(창 · 우람한 뼈대)
     'whaleq': dict(hit=True, strip='gen-base-w-23-usisan-whale-queen', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 우시산 고래 여왕(미늘 작살 · 우람한 뼈대)
@@ -157,7 +158,7 @@ def attack(name):
     h = use(HEROES[name])
     for half in sorted({t for t, _ in cells8(h)}):
         src = h.get('src', h['atk'])   # 다시 그린 판(예: thrust2)은 src 로 가리킨다 — 굽는 이름은 그대로
-        run('bake-scene.py', 'attack4', f'{STD}/out-{name}-{src}-{half}.png', name, f'{h["atk"]}8-{half}', f'{STD}/scene-{name}-{src}-{half}.png', f'cw={ACT["cw"]}', f'k={h.get("atkk", 1.0)}', *(['refoot'] if h.get('refoot') else []))
+        run('bake-scene.py', 'attack4', f'{STD}/out-{name}-{src}-{half}.png', name, f'{h["atk"]}8-{half}', f'{STD}/scene-{name}-{src}-{half}.png', f'cw={ACT["cw"]}', f'k={h.get("atkk", 1.0)}', *(['refoot'] if h.get('refoot') else []), *(['backfoot'] if h.get('backfoot') else []))
     ims = [Image.open(f'{PX}/{name}-{h["atk"]}8-{t}-{i}.png').convert('RGBA') for t, i in cells8(h)]
     z = 3
     row = Image.new('RGB', (ACT['cw'] * z * 4, ACT['ch'] * z * 2), BG)

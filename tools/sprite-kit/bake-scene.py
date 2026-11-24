@@ -244,6 +244,7 @@ def motion8(path, name, tags=('walk-a', 'walk-b'), norm=True, scene=None):
 
 ACT = dict(cw=240, ch=224, root=92, foot=216)
 REFOOT = [False]   # attack4 … refoot: 대강의 자리를 앞발로 다시 잡는다(아래 attack4 · 켠 장수만 · 다른 장수의 굽기는 바이트까지 그대로)
+BACKFOOT = [False]   # attack4 … backfoot: 가로 자리를 **뒷발**(인형의 잿빛 발 = 가까운 쪽 발)로 맞춘다 — 찌르기 thrust3(뒷발이 박혀 있고 앞발이 내딛는 인형 · 11-24 밤 신지 너울 시제품). 끄면 앞발(파란 발) 길 그대로
 KATK = [1.0]   # attack4 … k=1.09 로 바꾼다   # 동작 칸(덧띠): 폭·높이 · 뿌리 x · 발 줄 y — ART-SKELETON §12 (앞 148px · 뒤 92px · 머리 위 79px)
 
 
@@ -268,6 +269,9 @@ def attack4(path, name, tag, scene):
     rigmask = key(sc_small)[..., 3] > 60
     ra = np.asarray(sc_small).astype(np.int16)
     blue = (ra[..., 2] > 170) & (ra[..., 0] < 120) & (ra[..., 2] - ra[..., 0] > 90)   # 인형의 먼 쪽 팔다리
+    if BACKFOOT[0]:   # 인형의 가까운 쪽 팔다리(밝은 회색 205) — 가장 낮은 회색 덩이 = 뒷발(찌르기에선 손·머리가 발보다 낮지 않다)
+        spread = ra.max(axis=2) - ra.min(axis=2)
+        blue = (ra.min(axis=2) > 185) & (ra.max(axis=2) < 232) & (spread < 14)
     found = []
     for k, c in enumerate(meta['cells']):
         x0, y0, x1, y1 = int(c['x'] * kx), int(c['y'] * kx), int((c['x'] + c['w']) * kx), int((c['y'] + c['h']) * kx)
@@ -419,6 +423,9 @@ if __name__ == '__main__':
                 KATK[0] = float(a[2:])
             if a == 'refoot':
                 REFOOT[0] = True
+            if a == 'backfoot':
+                BACKFOOT[0] = True
+                REFOOT[0] = True   # 뒷발 길은 두 번 잡기(refoot)와 함께 쓴다
         attack4(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
         sys.exit()
     if sys.argv[1] == 'fall':
