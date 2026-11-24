@@ -63,6 +63,11 @@ HEROES = {
     'deulme': dict(hit=True, strip='gen-base-w-34-chopal-deulme', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 초팔 들메(창 · 우람한 뼈대 · 가슴 L)
     'dana': dict(hit=True, strip='gen-base-w-102-garak-dana', atk='bow', atk8=False),   # 가락 다나(활 · 가슴 XL)
     'maena': dict(hit=True, strip='gen-base-w-36-baekje-maena', atk='bow', atk8=False),   # 백제 매나(활 · 가슴 L)
+    'galmae': dict(strip='gen-base-w-39-gosaburi-galmae', atk='bow', atk8=False),   # 가오사부리 갈매(활 · 가슴 XL) · 일곱째 묶음 = 그림 API 만으로
+    'beodeul': dict(strip='gen-base-w-41-hwanna-beodeul', atk='bow', atk8=False),   # 환나 버들(활 · 가슴 L) · API
+    'solmae': dict(strip='gen-base-w-79-yangmaek-solmae', atk='bow', atk8=False),   # 양맥 솔매(활 · 가슴 M) · API
+    'dalli': dict(strip='gen-dalli', atk='bow', atk8=False),   # 마가 달리(활 · 우람한 뼈대) · API
+    'danbi': dict(strip='gen-danbi', atk='bow', atk8=False),   # 사로 단비(활 · 가는 뼈대 → M 장면) · API
     'sogeum': dict(hit=True, strip='gen-base-w-56-dongokjeo-sogeum', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 동옥저 소금 상인(단검 · 가슴 XL) · 좁은 칸은 아라처럼 덜 뻗은 칸
     'budeul': dict(hit=True, strip='gen-budeul', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 골벌 부들(단검 · 가슴 L)
     'gabi': dict(hit=True, strip='gen-base-w-53-hwanna-gabi', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 환나 가비(단검 · 가슴 L)
@@ -71,7 +76,10 @@ HEROES = {
     'irang': dict(hit=True, strip='gen-irang', atk='slash', atk8=True, act=True, legacy=(('b', 3), ('b', 1), ('b', 2), ('b', 4)), cells8=[('b', 4), ('b', 3), ('b', 3), ('b', 1), ('b', 1), ('b', 2), ('b', 3), ('b', 4)]),   # 조문 이랑(단검 · 가슴 M) · 내려베기 a 판은 그림 도구가 거절 → b 판 넷으로 여덟 칸(거둠 칸을 당김으로 · 찌르는 칸 넷째)
     'sogeumbi': dict(hit=True, strip='gen-sogeumbi', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 옥저 소금비(한 손 칼 · 가슴 M)
     'baram': dict(strip='gen-baram', atk='stab', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 1), ('b', 2)), cells8=[('a', 1), ('a', 2), ('a', 3), ('a', 4), ('b', 1), ('b', 2), ('a', 1), ('b', 4)]),   # 고사부리 바람(단검 · 가슴 M) · 11-24 새 단검 인형 찌르기(stab · 타격 a4) · 좁은 칸은 뿌리 앞 104 까지라 a4(108) 대신 버팀 b1(98) · b3 이 팔을 다시 뻗어 두 번 찌르듯 보여(독립 검수) 일곱째 칸은 낮은 겨눔 a1 · b1 머리칼의 자홍 점 여섯은 이웃 색으로 메움(px)
-    'byeol': dict(strip='gen-byeol', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 벽진 별(한 손 칼 · 가슴 M · 달군 칼날은 불빛 없이) · 11-24 G4(내려베기 a)만 받음 · G5(b) 거절 → 보류
+    'byeol': dict(hit=True, strip='gen-byeol', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 벽진 별(한 손 칼 · 가슴 M · 달군 칼날은 불빛 없이) · 11-24 G4(내려베기 a)만 받음 · G5(b) 거절 → 보류
+    'maru': dict(strip='gen-base-w-46-geonma-maru', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 건마 마루(짧은 창 · 가슴 M) · 여섯째 묶음
+    'mudeung': dict(strip='gen-base-w-48-mujin-mudeung', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 무진 무등(깃털 단 창 · 우람한 뼈대 · 나이 든 얼굴) · 여섯째 묶음
+    'yneoul': dict(strip='gen-base-w-71-yeonna-neoul', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 연나 너울(창 · 가슴 M) · 여섯째 묶음
     'haebi': dict(hit=True, strip='gen-haebi', atk='chop', atk8=True, act=True),   # act = 공격 여덟 칸이 넓은 동작 칸(240×224 · 뿌리 92 · 발 줄 216)
     'areum': dict(hit=True, strip='gen-areum', atk='slam', atk8=True, act=True, lock='none'),   # 받은 그림 그대로(얼굴을 떠다 붙이지 않는다 — 11-24: 뭉친 얼굴이 여덟 칸에 퍼졌다) · 옛 lock='face': 메가 머리 뒤로 지나간다 — 머리 상자는 메를 자르고(「포스터」), 윗몸을 통째로 묶으면 떠다닌다(11-24 형) → 얼굴 안쪽만 묶는다
 }
