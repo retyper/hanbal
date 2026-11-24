@@ -17,7 +17,10 @@ const QUALITY = process.env.GPT_IMAGE_QUALITY || 'high'
 const LEDGER = path.resolve('tools/out/api-ledger.tsv')
 
 function key() {
-  const p = path.join(os.homedir(), 'Downloads', '챗지피티키.txt')
+  // 키 찾는 차례: 환경 변수 OPENAI_API_KEY → ~/.keys/챗지피티키.txt → ~/Downloads/챗지피티키.txt (11-24 형이 Downloads 에서 치운 뒤 「따로 안전하게 저장 안 해 놨어?」 — 저장소 밖 ~/.keys 를 쓴다 · 키를 찍거나 옮기지 않는다)
+  if (process.env.OPENAI_API_KEY) return process.env.OPENAI_API_KEY.trim()
+  const p = [path.join(os.homedir(), '.keys', '챗지피티키.txt'), path.join(os.homedir(), 'Downloads', '챗지피티키.txt')].find(f => fs.existsSync(f))
+  if (!p) throw new Error('키가 없다: 환경 변수 OPENAI_API_KEY 또는 ~/.keys/챗지피티키.txt')
   const k = fs.readFileSync(p, 'utf8').replace(/^\uFEFF/, '').trim()
   if (!k.startsWith('sk-')) throw new Error('키 파일 모양이 다르다(내용은 찍지 않음)')
   return k

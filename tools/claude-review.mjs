@@ -28,7 +28,10 @@ Do not nitpick tiny pixel differences. Be concrete about which cell and what.
 Answer ONLY with JSON: {"rows":[{"name":"<label written at the top-left of the row, or '-'>","ok":true|false,"problems":[{"cell":<1-based index of the new cell>,"kind":"identity|size|weapon|anatomy|pose|rendering","what":"<short, concrete>"}]}]}`
 
 function apiKey() {
-  const p = path.join(os.homedir(), 'Downloads', '클로드키.txt')
+  // 키 찾는 차례: 환경 변수 HANBAL_CLAUDE_KEY(ANTHROPIC_API_KEY 는 쓰지 않는다 — 걸어 두면 Claude Code 가 구독 대신 그 키로 돈을 낸다) → ~/.keys/클로드키.txt → ~/Downloads/클로드키.txt (11-24 형이 Downloads 에서 치운 뒤 「따로 안전하게 저장 안 해 놨어?」 — 저장소 밖 ~/.keys 를 쓴다 · 키를 찍거나 옮기지 않는다)
+  if (process.env.HANBAL_CLAUDE_KEY) return process.env.HANBAL_CLAUDE_KEY.trim()
+  const p = [path.join(os.homedir(), '.keys', '클로드키.txt'), path.join(os.homedir(), 'Downloads', '클로드키.txt')].find(f => fs.existsSync(f))
+  if (!p) throw new Error('키가 없다: 환경 변수 HANBAL_CLAUDE_KEY 또는 ~/.keys/클로드키.txt')
   const k = fs.readFileSync(p, 'utf8').replace(/^﻿/, '').trim()
   if (!k.startsWith('sk-ant-')) throw new Error('키 파일 모양이 다르다(내용은 찍지 않음)')
   return k
