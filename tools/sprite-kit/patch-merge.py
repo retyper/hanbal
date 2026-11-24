@@ -3,6 +3,7 @@
 그림 도구는 부분만 고치라고 해도 나머지 화소를 조금씩 바꾼다(「한 화소도 바꾸지 않는」 조건을 못 지킨다). 새로 그리게 하면 몸이 달라진다
 (아룸 걷기: 얼굴을 단순하게 다시 그리게 했더니 가슴 폭 47 → 38px · 다른 사람). → 원본 그대로 넣어 부분만 고치게 하고, 고친 그림에서 그 부분만 가져온다.
   py -3 -I tools/sprite-kit/patch-merge.py face <원본 장면.png> <고친 장면.png> <나갈.png> [칸 배치: 5x2(걷기 여덟 칸 · 왼쪽 줄 견본) | 4x1 …] [only=줄,칸 — 그 칸의 사람만(0부터)]
+  py -3 -I tools/sprite-kit/patch-merge.py cell <원본 판.png> <고친 판.png> <나갈.png> [3x2] [at=0,2] — 한 칸 통째(시위처럼 가는 줄 · 아래 merge_cell)
   face = 사람마다 얼굴 살 덩어리(머리 위 구역의 가장 큰 살빛 덩어리)를 메우고 2px 넓힌 곳 · 가장자리는 부드럽게 · 고친 그림의 밀림(±6px)은 겹쳐서 잰다
 """
 import sys
@@ -168,3 +169,41 @@ def merge_tip(orig, edit, out, layout='3x2'):
 
 if __name__ == '__main__' and sys.argv[1] == 'tip':
     merge_tip(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5] if len(sys.argv) > 5 else '3x2')
+
+
+def merge_cell(orig, edit, out, layout='3x2', at=(0, 2)):
+    """한 칸 통째 보정 합치기 (11-24 일곱째 묶음 활 쏘기 칸2: 시위만 고친 판에서 그 칸만 가져온다 — 시위는 활 끝·손가락·화살을 잇는 가는 줄이라
+    덩어리로 골라낼 수 없다). 칸 안 사람의 밀림(±8px)을 몸 윤곽으로 재서 맞춘 뒤, 그 칸의 사각형만 고친 판의 화소로 바꾼다(다른 칸은 원본 그대로).
+      py -3 -I tools/sprite-kit/patch-merge.py cell <원본.png> <고친.png> <나갈.png> [3x2] [at=줄,칸 — 0부터 · 기본 0,2 = 오른쪽 위]"""
+    A, B = Image.open(orig).convert('RGB'), Image.open(edit).convert('RGB')
+    if B.size != A.size:
+        print('고친 그림 크기', B.size, '→ 원본 크기', A.size, '로 맞춤')
+        B = B.resize(A.size, Image.LANCZOS)
+    a, b = np.asarray(A).astype(np.int16), np.asarray(B).astype(np.int16)
+    W, H = A.size
+    cols, rows = (int(v) for v in layout.split('x'))
+    cw, ch = W / cols, H / rows
+    j, k = at
+    x0, x1, y0, y1 = int(cw * k), int(cw * (k + 1)), int(ch * j), int(ch * (j + 1))
+    fg = lambda x: ~((x[..., 0] > 200) & (x[..., 1] < 90) & (x[..., 2] > 200))
+    ra, rb = a[y0:y1, x0:x1], b[y0:y1, x0:x1]
+    ma, mb = fg(ra), fg(rb)
+    best = None
+    for dy in range(-8, 9):
+        for dx in range(-8, 9):
+            c = int((ma ^ np.roll(np.roll(mb, -dy, axis=0), -dx, axis=1)).sum())
+            if best is None or c < best[0]:
+                best = (c, dx, dy)
+    c, dx, dy = best
+    src = np.roll(np.roll(rb, -dy, axis=0), -dx, axis=1)
+    res = a.copy()
+    res[y0:y1, x0:x1] = src
+    Image.fromarray(res.clip(0, 255).astype(np.uint8)).save(out)
+    print(f'줄{j + 1} 칸{k}: 고친 그림의 밀림 ({dx:+d},{dy:+d}) · 겹친 뒤 윤곽 차 {c}px · 원본과 다른 화소', int((np.abs(res - a).sum(2) > 0).sum()), '/', W * H)
+    print(out)
+
+
+if __name__ == '__main__' and sys.argv[1] == 'cell':
+    at = next((tuple(int(v) for v in x[3:].split(',')) for x in sys.argv[5:] if x.startswith('at=')), (0, 2))
+    lay = next((x for x in sys.argv[5:] if not x.startswith('at=')), '3x2')
+    merge_cell(sys.argv[2], sys.argv[3], sys.argv[4], lay, at)
