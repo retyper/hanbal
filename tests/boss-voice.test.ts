@@ -32,13 +32,13 @@ test('구미호가 공격 예고(tell)에 들어간 틀 — boss_f_laugh 하나 
   run(m, { boss: gum('strike'), now: 105 })
   assert.deepEqual(run(m, { boss: gum('tell'), now: 101 + BV.laughGap + .1 }), ['boss_f_laugh'])
 })
-test('등장·막 전환 — 구미호는 웃음(파일이 없으면 포효) · 이무기 같은 다른 보스는 늘 포효', () => {
+test('등장·막 전환 — 구미호는 웃음(파일이 없으면 포효) · 이무기는 제 포효·제 아픈 소리 (11-24 형이 고른 소리)', () => {
   assert.deepEqual(run(newVoiceMemory(), { boss: gum(), start: true }), ['boss_f_laugh'])
   assert.deepEqual(run(newVoiceMemory(), { boss: gum(), start: true, on: false }), ['roar'])
   assert.deepEqual(run(newVoiceMemory(), { boss: gum('roar'), fx: [{ kind: 'ring', championCue: 'roar' }] }), ['boss_f_laugh'])
   const imugi: VoiceBoss = { kind: 'imugi', state: 'tell', hp: 1000, max: 1000 }
-  assert.deepEqual(run(newVoiceMemory(), { boss: imugi, start: true }), ['roar'])
-  assert.deepEqual(run(newVoiceMemory(), { boss: imugi, fx: tailBreak }), ['roar'])   // 그 보스들은 이번 일이 아니다 (지금 그대로)
+  assert.deepEqual(run(newVoiceMemory(), { boss: imugi, start: true }), ['beast_roar'])   // 등장과 겹친 공격 예고는 포효만
+  assert.deepEqual(run(newVoiceMemory(), { boss: imugi, fx: tailBreak }), ['beast_hurt', 'beast_attack'])   // 부위가 끊긴 틀 + 처음 본 공격 예고
 })
 test('불의 무녀 — 등장은 포효 자리(방울) 그대로 · 부위가 끊기면 여자 비명', () => {
   const sh: VoiceBoss = { kind: 'shaman', state: 'body', hp: 1000, max: 1000 }
@@ -59,4 +59,27 @@ test('파일 목록이 꺼져 있으면 여자 보스 목소리는 아무것도 
   const m = newVoiceMemory()
   run(m, { boss: gum('body', 1000), on: false, now: 0 })
   assert.deepEqual(run(m, { boss: gum('tell', 500), on: false, now: 50 }), [])
+})
+
+// 짐승·괴물 보스의 고유 소리 (11-24 형 「비인간형 보스는 소리를 찾아야지」 · 고른 것: 대호·이무기는 포효·공격·끊길 때 · 불가사리는 포효만)
+const beast = (kind: string, state = 'body', hp = 1000): VoiceBoss => ({ kind, state, hp, max: 1000 })
+test('백두 대호 — 등장은 제 포효 · 공격 예고에 들어가면 제 공격 소리(틈 안에는 다시 없음) · 부위가 끊기면 제 아픈 소리', () => {
+  const m = newVoiceMemory()
+  assert.deepEqual(run(m, { boss: beast('tiger'), start: true, now: 0 }), ['beast_roar'])
+  assert.deepEqual(run(m, { boss: beast('tiger', 'tell'), now: 5 }), ['beast_attack'])
+  run(m, { boss: beast('tiger', 'strike'), now: 5.5 })
+  assert.deepEqual(run(m, { boss: beast('tiger', 'tell'), now: 6 }), [])   // attackGap 안
+  run(m, { boss: beast('tiger', 'body'), now: 7 })
+  assert.deepEqual(run(m, { boss: beast('tiger', 'tell'), now: 5 + 9 }), ['beast_attack'])
+  assert.deepEqual(run(m, { fx: tailBreak, boss: beast('tiger'), now: 30 }), ['beast_hurt'])
+})
+test('불가사리 — 포효만 제 소리 · 공격 예고엔 소리 없음 · 부위가 끊기면 (제 아픈 소리가 없어) 제 포효', () => {
+  const m = newVoiceMemory()
+  assert.deepEqual(run(m, { boss: beast('bulgasari'), start: true, now: 0 }), ['beast_roar'])
+  assert.deepEqual(run(m, { boss: beast('bulgasari', 'tell'), now: 5 }), [])
+  assert.deepEqual(run(m, { fx: tailBreak, boss: beast('bulgasari'), now: 30 }), ['beast_roar'])
+})
+test('표에 없는 보스·구미호는 짐승 소리를 내지 않는다', () => {
+  assert.deepEqual(run(newVoiceMemory(), { boss: beast('gumiho', 'body'), start: true, now: 0 }), ['boss_f_laugh'])
+  assert.deepEqual(run(newVoiceMemory(), { boss: beast('shaman', 'body'), start: true, now: 0 }), ['roar'])
 })

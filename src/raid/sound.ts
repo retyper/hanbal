@@ -11,11 +11,11 @@
  * 기술 계단(11-19 형: 「기술 쓸 때 사운드·햅틱 · 크리티컬은 핑 · 초반 사운드 너무 심하면 안 됨 · 진각성은 더 임팩트」): 비기 < 각성 비기 < 진각성 비기 · 크리티컬 「핑」 — HAEBI_FEEL_TIERS · 진동은 frame 이 돌려주는 사건으로 화면이 낸다.
  * 소리 끔·크기는 본편 설정(hanbal.realm.mute · hanbal.realm.volume.*)을 따른다. 출처: public/realm/sfx/CREDITS.txt · public/sfx/CREDITS.txt
  */
-import { HAEBI_SOUND as V, HAEBI_IMPACT as IMPACT, HAEBI_FEEL_TIERS as F, HAEBI_ULT as U, HAEBI_AWAKEN_ULT as AC, HAEBI_JACKPOT as JP, HAEBI_KO as KO, HAEBI_BOSS_VOICE as BV, type FeelTier } from '../tune/params.ts'
+import { HAEBI_SOUND as V, HAEBI_IMPACT as IMPACT, HAEBI_FEEL_TIERS as F, HAEBI_ULT as U, HAEBI_AWAKEN_ULT as AC, HAEBI_JACKPOT as JP, HAEBI_KO as KO, HAEBI_BOSS_VOICE as BV, HAEBI_BOSS_BEAST as BB, type FeelTier } from '../tune/params.ts'
 import type { HaebiRun, Kit } from './haebi.ts'
 import { slamWatcher } from './slam-watch.ts'
 import { criticalFinishEvent } from './critical-finish.ts'
-import { NO_GROAN, newVoiceMemory, voiceCalls, type VoiceBoss, type VoiceFx } from './boss-voice.ts'
+import { NO_GROAN, newVoiceMemory, voiceCalls, type VoiceBoss, type VoiceFx, beastKind } from './boss-voice.ts'
 
 /** 한 프레임에 일어난 손맛 사건 — 화면이 진동에 쓴다 (판은 읽기만) · cast 비기를 누름 · skill 비기가 터짐 · crit 크리티컬이 났음 */
 export interface FeelEvents { cast: FeelTier | null; skill: FeelTier | null; crit: boolean }
@@ -79,6 +79,9 @@ const VOICE = {
 } as const
 type Voice = keyof typeof VOICE
 const BOSS_F: ReadonlySet<Voice> = new Set(['boss_f_laugh', 'boss_f_hurt', 'boss_f_scream'])
+/** 짐승·괴물 보스의 고유 소리 파일 (HAEBI_BOSS_BEAST.who 에 켜진 칸만) — boss_<종류>_<칸>.ogg */
+const beastFile = (kind: string | null, slot: 'roar' | 'attack' | 'hurt') => kind && BB.who[kind]?.[slot] ? `${X}boss_${kind}_${slot}.ogg` : null
+const BEAST_FILES = Object.keys(BB.who).flatMap(k => (['roar', 'attack', 'hurt'] as const).map(sl => beastFile(k, sl))).filter((f): f is string => f !== null)
 /** 그 자리의 파일 묶음 — 여자 보스 자리는 params 가 꺼 두면 비어 있다 */
 const voiceFiles = (slot: Voice): readonly string[] => BOSS_F.has(slot) && !BV.on ? [] : VOICE[slot]
 /** 열전 전투 음악 — 형이 고른 곡 (11-15) */
@@ -111,7 +114,7 @@ export const popHz = (step: number) => V.popHz * V.popStep ** Math.min(V.popStep
  */
 export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = () => false) {
   const ouch: Voice = female ? 'hurt_f' : 'hurt_m', shout: Voice = female ? 'skill_f' : 'skill_m'
-  const mine = [...new Set([...WEAPON[kit][0], ...Object.values(FILES).flat(), ...[ouch, shout, 'die' as const, 'roar' as const].flatMap(k => voiceFiles(k)), ...[...BOSS_F].flatMap(k => voiceFiles(k))])]
+  const mine = [...new Set([...WEAPON[kit][0], ...Object.values(FILES).flat(), ...[ouch, shout, 'die' as const, 'roar' as const].flatMap(k => voiceFiles(k)), ...[...BOSS_F].flatMap(k => voiceFiles(k)), ...BEAST_FILES])]
   // 화면이 열리자마자 받아 둔다 (풀기는 손길 뒤 — 브라우저 규칙)
   const raw = new Map(mine.map(f => [f, fetch(BASE + f).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)] as const))
   const clips = new Map<string, Clip>(), last = new Map<string, number>()
@@ -384,6 +387,10 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
       for (const c of voiceCalls(voiceMem, { fx: fresh, fell, boss, bossStart: s.boss && !prev.boss, now: ctx?.currentTime ?? 0, filesOn: BV.on })) {
         if (c === 'die') say('die', V.die, V.dieGap)
         else if (c === 'roar') { if (bells) sfx('bell', V.roar, .15); else say('roar', V.roar) }
+        else if (c === 'beast_roar' || c === 'beast_attack' || c === 'beast_hurt') {
+          const slot = c === 'beast_roar' ? 'roar' : c === 'beast_attack' ? 'attack' : 'hurt', f = beastFile(beastKind(voiceMem, boss), slot)
+          if (f) play(c as never, f, BB[slot] * volume('voice'), 0); else if (c !== 'beast_attack') say('roar', V.roar)
+        }
         else say(c, c === 'boss_f_laugh' ? BV.laugh : c === 'boss_f_hurt' ? BV.hurt : BV.scream)
       }
       if (humanDown > 0) sfx('down', V.down, V.downGap, .92 + (n % 5) * .04)
