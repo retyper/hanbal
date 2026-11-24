@@ -68,6 +68,10 @@ HEROES = {
     'gabi': dict(hit=True, strip='gen-base-w-53-hwanna-gabi', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 환나 가비(단검 · 가슴 L)
     'saltw': dict(hit=True, strip='gen-base-w-18-jinhan-salt-widow', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 진한 소금 과부(단검 · 가슴 XL)
     'beombal': dict(hit=True, strip='gen-beombal', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 맥 범발(단검 · 가슴 M)
+    'irang': dict(hit=True, strip='gen-irang', atk='slash', atk8=True, act=True, legacy=(('b', 3), ('b', 1), ('b', 2), ('b', 4)), cells8=[('b', 4), ('b', 3), ('b', 3), ('b', 1), ('b', 1), ('b', 2), ('b', 3), ('b', 4)]),   # 조문 이랑(단검 · 가슴 M) · 내려베기 a 판은 그림 도구가 거절 → b 판 넷으로 여덟 칸(거둠 칸을 당김으로 · 찌르는 칸 넷째)
+    'sogeumbi': dict(strip='gen-sogeumbi', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 옥저 소금비(한 손 칼 · 가슴 M)
+    'baram': dict(strip='gen-baram', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 고사부리 바람(단검 · 가슴 M)
+    'byeol': dict(strip='gen-byeol', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 벽진 별(한 손 칼 · 가슴 M · 달군 칼날은 불빛 없이)
     'haebi': dict(hit=True, strip='gen-haebi', atk='chop', atk8=True, act=True),   # act = 공격 여덟 칸이 넓은 동작 칸(240×224 · 뿌리 92 · 발 줄 216)
     'areum': dict(hit=True, strip='gen-areum', atk='slam', atk8=True, act=True, lock='none'),   # 받은 그림 그대로(얼굴을 떠다 붙이지 않는다 — 11-24: 뭉친 얼굴이 여덟 칸에 퍼졌다) · 옛 lock='face': 메가 머리 뒤로 지나간다 — 머리 상자는 메를 자르고(「포스터」), 윗몸을 통째로 묶으면 떠다닌다(11-24 형) → 얼굴 안쪽만 묶는다
 }
@@ -302,7 +306,7 @@ def strip_act(name, install=False):
     #   서기 → 공격 첫 칸 · 공격 끝 칸 → 서기에서 몸이 9~16px 옆으로 튀었다(해비 15 · 사냥꾼 16 · 해녀 15). 여덟 칸을 **같은 만큼** 옮겨
     #   끝 칸(거둔 자세)의 윗몸을 서기에 맞춘다 — 여덟 칸 사이의 앞발 고정은 그대로다. 좁은 칸 공격(12~17)도 같은 만큼.
     st_act = to_act(e.crop((0, 0, CW, CH)))
-    d = -_reg(_upper(xs[-1]), _upper(st_act))
+    d = -_reg(_upper(xs[A8][-1]), _upper(st_act))   # 공격 끝 칸 — xs[-1] 은 맞음 칸이 붙으면 넓게 선 칸이 된다(11-24 이랑: 끝 칸 윗몸 -18px)
     narrow = [e.crop((i * CW, 0, (i + 1) * CW, CH)) for i in range(12, 18)]
     lo = max(-min(_room(c)[0] for c in xs[A8] + narrow), -40)
     hi = min(min(_room(c)[1] for c in xs[A8] + narrow), 40)

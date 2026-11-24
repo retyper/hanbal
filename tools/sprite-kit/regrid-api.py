@@ -76,6 +76,12 @@ def main(argv):
     if not os.path.exists(raw) and kept(bl, W, H):
         print('자리를 지킨 판 — 그대로', out)
         return
+    big = [b for b in bl[:5] if b['n'] > bl[0]['n'] * .3]
+    if len(big) >= 5:   # 서기 견본까지 다시 그려 사람이 다섯(11-24 별): 왼쪽 위의 견본을 뺀다(한 무릎 칸이 왼쪽 아래에 오기도 해 kept 가 못 본다)
+        refs = [b for b in big if b['cx'] < W / 3 and b['cy'] < H / 2]
+        if len(refs) == 1:
+            bl = [b for b in bl if b is not refs[0]]
+            print('서기 견본까지 다시 그린 판 — 왼쪽 위 견본은 뺌')
     figs = bl[:4]
     if len(figs) < 4:
         raise SystemExit(f'사람을 넷 못 찾음({len(figs)})')
