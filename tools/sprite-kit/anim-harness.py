@@ -82,6 +82,11 @@ HEROES = {
     'yneoul': dict(hit=True, strip='gen-base-w-71-yeonna-neoul', atk='thrust', src='thrust2', actw=264, refoot=True, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 연나 너울(창 · 가슴 M) · 여섯째 묶음
     'gangchi': dict(hit=True, strip='gen-base-w-80-usan-gangchi', atk='thrust', src='thrust2', actw=264, refoot=True, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 우산 강치(미늘창 · 가슴 M) · 여섯째 묶음
     'byeolbit': dict(hit=True, strip='gen-base-w-81-byeokjin-byeolbit', atk='thrust', src='thrust2', actw=264, refoot=True, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4)), cells8=[('a', 1), ('a', 2), ('a', 3), ('a', 4), ('a', 4), ('a', 4), ('b', 3), ('b', 4)]),   # 벽진 별빛(창 · 비늘 갑옷 · 가슴 M) · 여섯째 묶음
+    'beomi': dict(hit=True, strip='gen-beomi', atk='thrust', src='thrust2', actw=264, refoot=True, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4)), cells8=[('a', 1), ('a', 2), ('a', 3), ('a', 4), ('a', 4), ('a', 4), ('b', 3), ('b', 4)]),   # 사로 범이(범가죽 · 창 · 우람한 뼈대) · 여덟째 묶음
+    'eomni': dict(hit=True, strip='gen-eomni', atk='thrust', src='thrust2', actw=264, refoot=True, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 저가 엄니(털 망토 · 창 · 가슴 M) · 여덟째 묶음
+    'gureum': dict(hit=True, strip='gen-gureum', atk='thrust', src='thrust2', actw=264, refoot=True, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 고룡 구름(창 · 가슴 M) · 여덟째 묶음
+    'haesol': dict(hit=True, strip='gen-haesol', atk='thrust', src='thrust2', actw=264, refoot=True, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 우시산 해솔(가는 창 · 가슴 M) · 여덟째 묶음
+    'soenun': dict(hit=True, strip='gen-soenun', atk='thrust', src='thrust2', actw=264, refoot=True, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 관나 쇠눈(비늘 갑옷 · 창) · 여덟째 묶음
     'haebi': dict(hit=True, strip='gen-haebi', atk='chop', atk8=True, act=True),   # act = 공격 여덟 칸이 넓은 동작 칸(240×224 · 뿌리 92 · 발 줄 216)
     'areum': dict(hit=True, strip='gen-areum', atk='slam', atk8=True, act=True, lock='none'),   # 받은 그림 그대로(얼굴을 떠다 붙이지 않는다 — 11-24: 뭉친 얼굴이 여덟 칸에 퍼졌다) · 옛 lock='face': 메가 머리 뒤로 지나간다 — 머리 상자는 메를 자르고(「포스터」), 윗몸을 통째로 묶으면 떠다닌다(11-24 형) → 얼굴 안쪽만 묶는다
 }
