@@ -46,7 +46,7 @@ HEROES = {
     'diver': dict(hit=True, strip='gen-base-w-17-mahan-pearl-diver', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 해녀(작살) · 11-24 새 찌르기 인형으로 b 까지 받음(예전엔 b 가 거절돼 앞 판만 썼다)
     'huntress': dict(hit=True, strip='gen-base-w-06-buyeo-huntress', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 부여 사냥꾼(창)
     'dallae': dict(hit=True, strip='gen-base-w-64-miri-dallae', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 미리 군주 달래(창)
-    'ara': dict(hit=True, atkk=1.05, strip='gen-ara', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 가야 검사 아라(한 손 칼) · 좁은 칸: 머리 위로 곧게 세운 a2 는 위가, 끝까지 벤 b1 은 앞이 넘친다
+    'ara': dict(hit=True, atkk=1.05, strip='gen-ara', atk='slash', src='slash2', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 가야 검사 아라(한 손 칼) · 좁은 칸: 머리 위로 곧게 세운 a2 는 위가, 끝까지 벤 b1 은 앞이 넘친다
     'dtiger': dict(hit=True, strip='gen-base-w-22-dongye-tiger-huntress', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 동예 범 사냥꾼(창)
     'noeul': dict(hit=True, strip='gen-noeul', atk='bow', atk8=False),   # 사로 노을(활)
     'sagong': dict(hit=True, strip='gen-sagong', atk='thrust', src='thrust2', actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 사물 사공(두 손 노 · 찌르기)
