@@ -64,16 +64,18 @@ const FILES = {
 const CHEST_JINGLE = ['chest1', 'chest3', 'chest5', 'chest8'] as const
 /** 목소리 — 자리마다 돌려 쓰는 묶음. 기합은 비기 때만 (평타엔 목소리 없음) */
 const VOICE = {
-  hurt_m: [G + 'hurt_m_g2.ogg'], hurt_f: [G + 'hurt_f_g1.ogg', X + 'hurt_f_1.ogg', X + 'hurt_f_2.ogg'],
+  hurt_m: [G + 'hurt_m_g2.ogg'], hurt_f: [G + 'hurt_f_g1.ogg', X + 'hurt_f_1.ogg', X + 'hurt_f_2.ogg',
+    // 11-24 형: 「(구미호 후보의) 맞는 소리는 한 음원에 2번 있는 건 잘라 쓰면서 다른 여자 장수 피격 소리로」 — tools/boss-voice-pick.py 가 덩어리마다 자른 것(b6 은 숨소리뿐이라 뺌)
+    ...[1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13].map(n => `${X}hurt_f_b${n}.ogg`)],
   skill_m: [G + 'skill_m_g2.ogg'], skill_f: [X + 'kiai_f_2.ogg'],   // 형 11-16: 여자 비명 후보는 쓸데없음 · 고른 여자 기합으로
   die: [G + 'die_m_g3.ogg'], roar: [G + 'boss_roar_g1.ogg'],
   /**
    * 여자 보스 목소리 (11-24 형 「여자 보스 웃음소리랑 피격소리」) — 파일은 다른 작업자가 뽑는 중이라 아직 없다.
    * 켜는 법: 파일을 public/realm/sfx/raid/ 에 넣고 params.ts HAEBI_BOSS_VOICE.on 을 true 로. 꺼져 있으면 파일을 부르지 않고(404 없음) 소리도 없다.
    */
-  boss_f_laugh: [X + 'boss_f_laugh_1.ogg', X + 'boss_f_laugh_2.ogg', X + 'boss_f_laugh_3.ogg'],
-  boss_f_hurt: [X + 'boss_f_hurt_1.ogg', X + 'boss_f_hurt_2.ogg', X + 'boss_f_hurt_3.ogg'],
-  boss_f_scream: [X + 'boss_f_scream_1.ogg', X + 'boss_f_scream_2.ogg'],
+  boss_f_laugh: [1, 2, 3, 4, 5, 6].map(n => `${X}boss_f_laugh_${n}.ogg`),   // 1~3 루미 · 4~6 레다 (11-24 형 「어떤 건 루미 어떤 건 레다」)
+  boss_f_hurt: [] as string[],   // 11-24 형 「여자 보스는 맞을 때마다 신음할 필요가 없어」 — 파일을 두지 않는다(who 의 hurt 도 꺼 둠)
+  boss_f_scream: [X + 'boss_f_scream_1.ogg', X + 'boss_f_scream_2.ogg'],   // 레다 (11-24 형 「꼬리만 레다로」)
 } as const
 type Voice = keyof typeof VOICE
 const BOSS_F: ReadonlySet<Voice> = new Set(['boss_f_laugh', 'boss_f_hurt', 'boss_f_scream'])

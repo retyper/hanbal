@@ -102,7 +102,11 @@ test('가려진 탭에서는 안 낸다 (절대 규칙 4)', () => {
   assert.equal(made.length, 0)
 })
 
-test('여자 보스 목소리 파일은 꺼져 있는 동안 부르지 않는다 (404 없음)', () => {
+test('여자 보스 목소리 — 고른 웃음·비명 파일만 부르고(피격 신음은 없다) 부르는 파일은 다 있다 (404 없음)', async () => {
+  const { existsSync } = await import('node:fs')
   fetched.length = 0; raidSound(true, 'bow')
-  assert.ok(fetched.length > 0 && !fetched.some(u => u.includes('boss_f_')))
+  const boss = fetched.filter(u => u.includes('boss_f_'))
+  assert.ok(boss.some(u => u.includes('boss_f_laugh_')) && boss.some(u => u.includes('boss_f_scream_')))
+  assert.ok(!boss.some(u => u.includes('boss_f_hurt')))
+  for (const u of fetched.filter(u => u.includes('boss_f_') || u.includes('hurt_f_b'))) assert.ok(existsSync('public/' + u.replace(/^\.?\//, '')), u)
 })

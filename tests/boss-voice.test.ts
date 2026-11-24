@@ -46,17 +46,16 @@ test('불의 무녀 — 등장은 포효 자리(방울) 그대로 · 부위가 �
   assert.deepEqual(run(newVoiceMemory(), { boss: sh, fx: tailBreak }), ['boss_f_scream'])
   assert.deepEqual(run(newVoiceMemory(), { boss: sh, fx: tailBreak, on: false }), ['roar'])
 })
-test('피격 — 한 번에 깎인 양이 쌓여 문턱을 넘을 때만 · 틈 안에는 다시 없음 · 구미호가 쓰러지면 비명', () => {
+test('피격 — 여자 보스는 맞을 때 신음하지 않는다 (11-24 형) · 구미호가 쓰러지면 비명', () => {
   const m = newVoiceMemory(), hp = (n: number) => gum('body', n)
+  assert.equal(BV.who.gumiho!.hurt, false)
   run(m, { boss: hp(1000), now: 10 })
-  assert.deepEqual(run(m, { boss: hp(1000 - 1000 * BV.hurtShare * .4), now: 10.1 }), [])        // 문턱 아래
-  assert.deepEqual(run(m, { boss: hp(1000 - 1000 * BV.hurtShare * 1.1), now: 10.2 }), ['boss_f_hurt'])
-  assert.deepEqual(run(m, { boss: hp(500), now: 10.3 }), [])                                       // 틈 안
-  assert.deepEqual(run(m, { boss: hp(400), now: 10.3 + BV.hurtGap }), ['boss_f_hurt'])
+  assert.deepEqual(run(m, { boss: hp(1000 - 1000 * BV.hurtShare * 1.1), now: 10.2 }), [])   // 문턱을 넘겨 깎여도 조용하다
+  assert.deepEqual(run(m, { boss: hp(400), now: 10.3 + BV.hurtGap }), [])
   assert.deepEqual(run(m, { fx: [death('boss')], fell: 1, boss: null, now: 99 }), ['boss_f_scream'])
 })
-test('파일 목록이 꺼져 있으면 여자 보스 목소리는 아무것도 안 낸다 (params 기본값도 꺼짐)', () => {
-  assert.equal(BV.on, false)
+test('파일 목록이 꺼져 있으면 여자 보스 목소리는 아무것도 안 낸다 (11-24 형이 목소리를 골라 params 는 켜져 있다)', () => {
+  assert.equal(BV.on, true)
   const m = newVoiceMemory()
   run(m, { boss: gum('body', 1000), on: false, now: 0 })
   assert.deepEqual(run(m, { boss: gum('tell', 500), on: false, now: 50 }), [])
