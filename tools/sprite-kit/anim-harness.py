@@ -58,7 +58,7 @@ HEROES = {
     'whaleq': dict(strip='gen-base-w-23-usisan-whale-queen', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 우시산 고래 여왕(미늘 작살 · 우람한 뼈대)
     'tomboy': dict(strip='gen-base-w-26-iseo-tomboy-general', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 이서 말괄량이 장군(창 · 우람한 뼈대)
     'beol': dict(strip='gen-base-w-72-eumjeup-beol', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 음즙 벌(한 손 칼 · 우람한 뼈대) · 좁은 칸은 아라처럼 덜 뻗은 칸
-    'tneoul': dict(strip='gen-tneoul', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4)), lock='face'),   # 탐라 너울(두 손 나무 노 · 가슴 L) · 머리 상자 묶기는 b-2 에서 얼굴 자리를 잘못 잡아 머리가 둘이 됐다(11-24) → 얼굴 안쪽만
+    'tneoul': dict(strip='gen-tneoul', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 탐라 너울(두 손 나무 노 · 가슴 L) · 머리 상자 묶기는 b-2 에서 얼굴 자리를 잘못 잡아 머리가 둘이 됐다(11-24) → 얼굴 안쪽만
     'baetsa': dict(strip='gen-base-w-76-gampyeong-baetsagong', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 감평 뱃사공(두 손 나무 노 · 가슴 XL)
     'odi': dict(strip='gen-odi', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 조문 오디(창 · 가슴 XL)
     'deulme': dict(strip='gen-base-w-34-chopal-deulme', atk='thrust', atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 초팔 들메(창 · 우람한 뼈대 · 가슴 L)
@@ -96,8 +96,10 @@ def walk(name, ref='walk-a-3'):
         raise SystemExit(f'{scene} 의 뿌리 곁파일(.roots.json)이 없다 — style-scene.py motion8 로 장면을 다시 만든다(그림은 같고 곁파일만 생긴다)')
     run('bake-scene.py', 'motion8', sheet, name, f'scene={scene}')
     run('walk-anchor.py', name)
-    lk = HEROES[name].get('lock')
-    if lk != 'none':   # 'none' = 받은 그림 그대로(얼굴이 여덟 칸 같게 그려졌을 때)
+    # 머리 덮어씌우기는 기본으로 끈다 (11-24 형 「portrait 부분을 따로 잘라서 걸을 때 붙여 넣은 거임? 포스터 얼굴에 붙이고 걸어다니는 거 같잖아」 · 범·벌·해녀
+    #   · 매나는 상자 금에서 어깨·가슴이 잘렸다). 기준 칸의 머리 상자를 다른 칸에 얹으면 머리가 몸과 따로 논다. 받은 그림 그대로 두고, 흔들림은 anim-check 숫자로 본다.
+    lk = HEROES[name].get('lock', 'none')
+    if lk != 'none':   # 'face' · 상자 = 형이 따로 허락한 장수만
         run('head-lock.py', name, ref, 'walk-a', 'walk-b', *(['face'] if lk == 'face' else [f'box={lk}'] if lk else []), show=(lk == 'face'))
     ims = [Image.open(f'{PX}/{name}-walk-{t}-{i}.png').convert('RGBA') for t in 'ab' for i in (3, 4, 1, 2)]
     z, x0, x1 = 4, 40, 170
