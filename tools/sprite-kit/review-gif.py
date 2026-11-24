@@ -15,7 +15,7 @@ spec = importlib.util.spec_from_file_location('harness', HERE + '/anim-harness.p
 H = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(H)
 OUT = os.path.dirname(os.path.dirname(HERE)) + '/tools/out/review'
-W, HT, ROOT, FOOT = 264, 224, 92, 216   # 판 하나: 가장 넓은 동작 칸에 맞춘다
+W, HT, ROOT, FOOT = 276, 224, 104, 216   # 판 하나: 본 띠(뿌리 104)·넓은 동작 칸(뿌리 92 · 폭 264) 어느 쪽도 잘리지 않게 — 11-24 처음엔 뿌리 92 로 둬서 본 띠 칸 왼쪽 12px 이 잘렸다(범 누운 머리)
 
 
 def place(c, root, foot):

@@ -242,7 +242,8 @@ def motion8(path, name, tags=('walk-a', 'walk-b'), norm=True, scene=None):
             print(f'{tag} 칸{k + 1} 게임 키 {g2.size[1]} 폭 {g2.size[0]}{note}')
 
 
-ACT = dict(cw=240, ch=224, root=92, foot=216)   # 동작 칸(덧띠): 폭·높이 · 뿌리 x · 발 줄 y — ART-SKELETON §12 (앞 148px · 뒤 92px · 머리 위 79px)
+ACT = dict(cw=240, ch=224, root=92, foot=216)
+KATK = [1.0]   # attack4 … k=1.09 로 바꾼다   # 동작 칸(덧띠): 폭·높이 · 뿌리 x · 발 줄 y — ART-SKELETON §12 (앞 148px · 뒤 92px · 머리 위 79px)
 
 
 def attack4(path, name, tag, scene):
@@ -258,7 +259,7 @@ def attack4(path, name, tag, scene):
     W, H = out.size
     sc_img = Image.open(scene).convert('RGB')
     kx = W / sc_img.size[0]
-    scale = sc_img.size[0] / (meta['z'] * W)   # 받은 그림 화소 -> 게임 화소
+    scale = KATK[0] * sc_img.size[0] / (meta['z'] * W)   # 받은 그림 화소 -> 게임 화소 (KATK: 받은 그림의 사람이 서기보다 작게·크게 그려졌을 때 · 11-24 아라 0.91배 → 1.09)
     full = key(out)
     solid = full[..., 3] > 60
     lab, nlab = ndimage.label(ndimage.binary_closing(solid, iterations=3))
@@ -396,6 +397,8 @@ if __name__ == '__main__':
         for a in sys.argv[6:]:
             if a.startswith('cw='):
                 ACT['cw'] = int(a[3:])
+            if a.startswith('k='):
+                KATK[0] = float(a[2:])
         attack4(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
         sys.exit()
     if sys.argv[1] == 'fall':
