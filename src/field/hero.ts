@@ -7,8 +7,8 @@
  * sim 쪽 파일이다: 난수·시계·DOM·삼각함수·** 없음 (tests/field/purity.test.ts). 사건 줄은 읽기용이다(셈에 되먹이지 않는다).
  */
 import { P } from '../tune/params.ts'
-import { clamp, dist2, idiv, nearestDir } from './num.ts'
-import { bladeLine, heroGap2, hitArc, m, mul, perTickAt, rankCmp, ticksOf, walk, type Kit } from './sim.ts'
+import { clamp, dist2, idiv, isqrt, nearestDir } from './num.ts'
+import { banks, bladeLine, heroGap2, hitArc, m, mul, perTickAt, rankCmp, shove, ticksOf, walk, type Kit } from './sim.ts'
 import { HERO_DIR, HIT_GOOD, LOSS_ART, LOSS_HERO, OP_ATTACK, OP_AUTO, OP_DASH, OP_HERO_DIR, OP_MOVE, OP_SKILL, WHY_BUSY, WHY_COOL, WHY_DOWN, WHY_FAR, WHY_NO_ART, WHY_NO_TARGET, WHY_NONE } from './types.ts'
 import type { FieldEvent, FieldInput, FieldState, Hero, MoraleCause, Point, Squad } from './types.ts'
 
@@ -302,11 +302,14 @@ export function heroMove(s: FieldState, K: Kit, asleep: (side: 0 | 1) => boolean
       continue
     }
     const goal = heroGoal(s, h)
-    if (!goal || asleep(h.side)) continue
+    // 도움닫기 (3차-나) — 손으로 몰아 걸은 거리를 1초 걸음까지 쌓고, 안 걸으면 1초에 다 뺀다
+    const drain = (): void => { h.runIn = Math.max(0, h.runIn - perTickAt(heroSpeed(), s.tick)) }
+    if (!goal || asleep(h.side)) { drain(); continue }
     const p = walk(s, K, h.side, h.u, h.v, goal, perTickAt(heroSpeed(), s.tick))
-    if (blocked(s, h, p)) continue
+    if (blocked(s, h, p)) { wallBang(s, h, p); drain(); continue }
     const f = nearestDir(p.u - h.u, p.v - h.v)
     if (f >= 0) h.face = f
+    if (h.manual === 1) h.runIn = Math.min(heroSpeed(), h.runIn + isqrt(dist2(h.u, h.v, p.u, p.v))); else h.runIn = 0
     h.u = p.u; h.v = p.v
   }
 }
@@ -347,4 +350,27 @@ export function gritTick(s: FieldState, sideMorale: (side: 0 | 1) => number): vo
     const per = idiv(P.field.gritPerSec * Math.min(gap, P.field.gritGapCapPermille), 100)
     h.grit = Math.min(MILLI, h.grit + per)
   }
+}
+
+/**
+ * 걸어서 적 줄에 닿음 = 밀침 (3차-나 · 쾅과 같은 결) — heroBangCdSec 마다 한 번 · 닿은 적 대 사기 heroBangShock · heroBangPushCells 밀어냄 · impact(how 1).
+ * 「장수로 걸어 들어가 줄을 깬다」가 맞기만 하는 함정이던 것 (뛰어드는 장수 봇 200판 · 40초 안 쓰러짐 32%)
+ */
+function wallBang(s: FieldState, h: Hero, p: Point): void {
+  if (P.field.heroBangShock <= 0 || (h.bangTick >= 0 && s.tick - h.bangTick < ticksOf(P.field.heroBangCdSec))) return
+  // 손으로 몰아 heroRunInCells 넘게 걸어 닿았을 때만 (물러섰다가 다시 들어가는 손맛 · 0 이면 늘)
+  if (P.field.heroRunInCells > 0 && (h.manual !== 1 || h.runIn * 10 < P.field.heroRunInCells * 10 * P.field.unit)) return
+  let best: Squad | null = null, bd = 0
+  for (const q of s.squads) {
+    if (q.side === h.side || q.men <= 0 || q.flee === 1 || heroGap2(p, q) > 0) continue
+    const d = heroGap2(h, q)
+    if (best === null || d < bd || (d === bd && rankCmp(s, q, best) < 0)) { best = q; bd = d }
+  }
+  if (!best) return
+  h.bangTick = s.tick
+  addShock(s, best, P.field.heroBangShock, 'hero')
+  shove(s, best, { u: h.u, v: h.v }, P.field.heroBangPushCells * P.field.unit, banks(s))
+  h.runIn = 0
+  emit(s, { kind: 'heroBash', side: h.side, id: -1, u: idiv(h.u + best.u, 2), v: idiv(h.v + best.v, 2), n: Math.max(0, nearestDir(best.u - h.u, best.v - h.v)), to: best.id })
+  emit(s, { kind: 'impact', side: h.side, id: -1, u: idiv(h.u + best.u, 2), v: idiv(h.v + best.v, 2), n: best.men, to: best.id, how: HIT_GOOD })
 }

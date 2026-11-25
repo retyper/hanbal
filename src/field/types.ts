@@ -242,6 +242,10 @@ export interface Hero {
   grit: number
   /** 투지로 한 번 더 쓴 횟수 (gritUses 에 닿으면 더 안 찬다 · 양쪽이 번갈아 차서 때를 다 쓰던 판) */
   gritN: number
+  /** 걸어서 적 줄에 닿아 밀친 마지막 틱 (-1 없음 · heroBangCdSec 마다 한 번 · 3차-나) */
+  bangTick: number
+  /** 손으로 몰아 걸어 온 거리 (단위 · 1초 걸음까지만 쌓이고 멈추면 1초에 다 빠진다) — heroRunInCells 넘게 걸어 닿아야 밀침이 난다 (도움닫기 · 3차-나) */
+  runIn: number
 }
 
 export interface FieldInput { tick: number; g: InputGroup; op: number; u: number; v: number }
@@ -255,13 +259,14 @@ export interface FieldInput { tick: number; g: InputGroup; op: number; u: number
  * 사기 문턱: 처음 사기의 P.field.waverPermille(70%) 아래 = 흔들림 · P.realm.tacBreakMorale(55%) 아래 = 무너짐(rout · flee).
  * 줄은 끝없이 자라지 않는다: 마지막 eventKeepSec 초만 남긴다 (화면은 읽은 마지막 틱 뒤의 줄만 읽는다)
  */
-export type FieldEventKind = 'heroDash' | 'heroSkill' | 'heroDown' | 'heroUp' | 'impact' | 'rout' | 'gateBreak' | 'volley' | 'loss' | 'omen' | 'flankHit' | 'artHit' | 'sideBreak' | 'stand' | 'regroup'
+export type FieldEventKind = 'heroDash' | 'heroSkill' | 'heroDown' | 'heroUp' | 'impact' | 'rout' | 'gateBreak' | 'volley' | 'loss' | 'omen' | 'flankHit' | 'artHit' | 'sideBreak' | 'stand' | 'regroup' | 'heroBash'
 /**
  * (C2 판의 법칙 묶음 · 52 §6 · 검수 B5) sideBreak 편이 무너짐 — 편 사기(또는 사람)가 문턱 아래로 간 틱에 한 번 · id -1 · (u, v) = 그 편 산 대의 가운데 ·
  *   n = 1 사람 · 2 사기 · 그 뒤 P.field.sideBreakSec 동안 그 편의 남은 대가 모두 달아나고 나서 판이 끝난다 (end · winner 는 그때 선다).
  * stand 버팀 — 편 사기가 문턱 바로 위(standAbovePermille)로 내려온 순간 장수 곁(heroArtCells)의 대들 사기가 한 번 되오른다 (판마다 편에 한 번) ·
  *   id -1 · (u, v) = 장수 자리 · n = 되오른 대 수 · r = 범위(단위).
  * regroup 달아난 대가 제 장수 곁(regroupCells)에 와서 다시 선다 (대마다 판에 한 번) · id = 그 대 · n = 되오른 사기(천분율).
+ * heroBash 장수가 걸어 들어가 적 줄에 닿아 밀침 (3차-나) — to = 밀린 적 대 id · (u, v) = 닿은 자리 · n = 밀린 방향 번호(HERO_DIR · 장수에서 그 대 쪽) · id -1 (같은 틱에 impact how 1 도 난다).
  * heroSkill 은 r = 비기가 닿는 범위(단위 · 닿은 대가 없어도 낸다 · 큰 외침은 (u, v) = 장수 자리).
  */
 /** loss 사건의 종류 (FieldEvent.how) — 0 칼 · 1 화살 · 2 장수 · 3 비기 · 4 부딪힘 */

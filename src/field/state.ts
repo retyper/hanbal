@@ -52,7 +52,7 @@ export function hashField(s: FieldState): string {
     h = mix(h, e.mu); h = mix(h, e.tong); h = mix(h, e.dir); h = mix(h, e.face); h = mix(h, e.foe); h = mix(h, e.atk); h = mix(h, e.dash); h = mix(h, e.dashDir); h = mix(h, e.dashCd)
     h = hs(h, e.art); h = mix(h, e.artCd); h = mix(h, e.artOn); h = mix(h, e.why); h = mix(h, e.whyTick)
     h = mix(h, e.hitIds.length); for (const n of e.hitIds) h = mix(h, n)
-    h = mix(h, e.grit); h = mix(h, e.gritN)
+    h = mix(h, e.grit); h = mix(h, e.gritN); h = mix(h, e.bangTick); h = mix(h, e.runIn)
   }
   return (h >>> 0).toString(16)
 }

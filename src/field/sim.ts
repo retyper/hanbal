@@ -138,7 +138,7 @@ export function createField(setup: LiveSetup): FieldState {
       const hp0 = place('front', 0, 1)
       const hero: Hero = { side, id: ls.hero.id, u: clamp(hp0.u, 0, lastU(map)), v: clamp(hp0.v, 0, lastV(map)), goal: null, manual: 0, grp: -1, stun: 0, hp: P.field.heroHp, rem: 0,
         mu: ls.hero.mu, tong: ls.hero.tong ?? ls.hero.mu, dir: -1, face: side === 0 ? 0 : HERO_DIRS / 2, foe: -1, atk: -1, dash: 0, dashDir: 0, dashCd: 0,
-        art: ls.hero.art ?? HERO_ART_DEFAULT, artCd: 0, artOn: 0, why: WHY_NONE, whyTick: -1, hitIds: [], grit: 0, gritN: 0 }
+        art: ls.hero.art ?? HERO_ART_DEFAULT, artCd: 0, artOn: 0, why: WHY_NONE, whyTick: -1, hitIds: [], grit: 0, gritN: 0, bangTick: -1, runIn: 0 }
       s.heroes.push(hero)
     }
   }
@@ -982,7 +982,7 @@ function runImpacts(s: FieldState): boolean[] {
 }
 
 /** mover 를 from 에서 멀어지는 쪽으로 len 만큼 민다 (막힘 칸·물가·지키는 한계는 지금 걸음 규칙 그대로 · 걸음을 나눠 찍는다) */
-function shove(s: FieldState, mover: Squad, from: Point, len: number, bank: readonly [number | null, number | null]): void {
+export function shove(s: FieldState, mover: Squad, from: Point, len: number, bank: readonly [number | null, number | null]): void {
   let du = mover.u - from.u, dv = mover.v - from.v
   if (du === 0 && dv === 0) du = -fwd(mover.side)
   const d2 = du * du + dv * dv, root = isqrt(d2), l = root * root === d2 ? root : root + 1

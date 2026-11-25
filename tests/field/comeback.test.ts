@@ -110,3 +110,18 @@ test('기병 날개는 장수가 앞서 걸어도 실제 앞줄보다 앞서지 
   }
   assert.ok(worst <= P.field.unit, `기병이 앞줄보다 ${(worst / P.field.unit).toFixed(1)}칸 앞`)
 })
+
+test('장수 밀침: 손으로 몰아 heroRunInCells 넘게 걸어 적 줄에 닿으면 heroBash (to · 방향) · 그 대 사기 heroBangShock (3차-나)', () => {
+  const s = createField(plainSetup(1, 1200))
+  stepField(s, [{ tick: 0, g: 3, op: 5, u: 0, v: 1 }])
+  let ev: { to?: number; n: number } | undefined
+  const shock0 = s.squads.map(q => q.shock)
+  while (s.tick < 400 && !ev) { stepField(s); ev = s.log.events.find(e => e.kind === 'heroBash' && e.side === 0) }
+  assert.ok(ev, '밀침이 난다')
+  const q = s.squads[ev!.to!]!
+  assert.equal(q.side, 1)
+  assert.ok(q.shock - shock0[q.id]! >= P.field.heroBangShock)
+  assert.ok(ev!.n >= 0 && ev!.n < 16)
+  // 입력 없는 장수(적 AI)는 밀치지 않는다
+  assert.ok(!s.log.events.some(e => e.kind === 'heroBash' && e.side === 1))
+})
