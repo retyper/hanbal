@@ -81,12 +81,12 @@ export function ingestHits(cur: VModel, hits: readonly VLoss[], clk: number, rea
   for (const e of eventsOf(cur)) {
     if (e.kind === 'impact') {
       const a = cur.squads[e.id]
-      const vic = e.to ?? (a === undefined ? -1 : a.aim)
-      noteImpact(cur, e.id, vic, e.how ?? 0, hero, clk)
-    } else if (e.kind === 'flankHit' && e.to !== undefined) {
+      const vic = e.to >= 0 ? e.to : a === undefined ? -1 : a.aim
+      noteImpact(cur, e.id, vic, e.how, hero, clk)
+    } else if (e.kind === 'flankHit' && e.to >= 0) {
       const v = cur.squads[e.to], a = cur.squads[e.id]
       if (v !== undefined && a !== undefined) good(cur, a, v, clk)
-    } else if (e.kind === 'artHit' && e.to !== undefined) {
+    } else if (e.kind === 'artHit' && e.to >= 0) {
       const v = cur.squads[e.to]
       if (v !== undefined) { good(cur, undefined, v, clk); pops.push({ at: clk, n: Math.round(e.n / 10), gold: true, ...flagPos(v) }); if (pops.length > F.moralePopMax) pops.shift() }
     }
@@ -205,7 +205,7 @@ export function drawPops(ctx: CanvasRenderingContext2D, clk: number, zoom: numbe
 interface Omen { at: number; pts: { u: number; v: number }[] }
 const omens: Omen[] = []
 export function noteOmens(cur: VModel, clk: number): void {
-  for (const e of eventsOf(cur)) if (e.kind === 'omen' && e.pts !== undefined && e.pts.length >= 2) {
+  for (const e of eventsOf(cur)) if (e.kind === 'omen' && e.pts.length >= 2) {
     omens.push({ at: clk, pts: e.pts.map(p => ({ u: p.u, v: p.v })) })
     if (omens.length > 4) omens.shift()
   }

@@ -10,7 +10,7 @@ import { fieldView, inView, type Cam, type Viewport } from './viewCamera.ts'
 import { ATTACK0, ATTACK_N, DOWN, HIT, RUN_N, STAND0, STAND_N, WALK0, WALK_N, heroKey, heroStrip, pieceImg, holdStripFor, runStripFor, sheetOf, stripFor, type Art, type Strip } from './viewArt.ts'
 import { dotPh, hash2 } from './viewDots.ts'
 import { dotDied, dotsOf, offU, offV, peekDots, resetForm, rowCount, rowOfDot, stepDots } from './viewForm.ts'
-import { FORM_HOLD, FORM_SCATTER, moraleOf, sx } from './viewFxRead.ts'
+import { FORM_HOLD, FORM_SCATTER, moraleOf } from './viewFxRead.ts'
 import { drawDash, queueDash, resetDash } from './viewDash.ts'
 import { FLAG_FALLEN, bracedAt, drawOmens, drawPops, noteOmens, flagTilt, ingestHits, kickOf, resetHit, scatterOf, sc, shake, shakeAt, viewClock } from './viewHit.ts'
 import { computePairs, coolPress, dotMelee, drawParticles, flinchOf, isFront, maxFwdOf, minFwdOf, mo, noteLoss, partnerOf, resetMelee, spawn, swingChance, swings } from './viewMelee.ts'
@@ -51,9 +51,7 @@ interface Slots { N: number; dead: Set<number> }
 interface Shot { x0: number; y0: number; x1: number; y1: number; t0: number; side: 0 | 1 }
 /** 그리는 쪽 기억 — 점 수가 줄면 쓰러진 병사를 남기고 대의 마지막 방향을 기억한다 */
 const fx = { counts: new Map<number, number>(), menMax: new Map<number, number>(), face: new Map<number, 1 | -1>(), corpses: [] as Corpse[], tick: -1, slots: new Map<number, Slots>(), lastHit: new Map<number, { src: number; how: number }>(), shots: [] as Shot[], nowMs: 0, attackers: 0, routeAt: [-1, -1, -1, -1, -1, -1] as number[], dustAt: new Map<number, number>(), sparkAt: new Map<number, number>() }
-const form0Hold = (q: VSquad): boolean => q.grp === 'front' && q.form === FORM_HOLD && (sx(q).flee ?? 0) !== 1
-/** 대 걸음의 기본 칸/초 (달림 어림용) */
-const walkCps = (g: string): number => g === 'front' ? P.field.speedFrontCellsPerSec : g === 'bows' ? P.field.speedBowsCellsPerSec : P.field.speedHorseCellsPerSec
+const form0Hold = (q: VSquad): boolean => q.grp === 'front' && q.form === FORM_HOLD && q.flee !== 1
 /** 시험용 읽기: 지금 쓰러진 점 수 · 쓰러지기를 기다리는(앞날 born) 점 수 · 이번 장에서 치는 모습으로 그린 점 수 */
 export function fxStats(): { dead: number; pending: number; attackers: number; alive: number } {
   let dead = 0, alive = 0
@@ -394,15 +392,14 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
       const face = fx.face.get(q.id) ?? (side === 0 ? 1 : -1)
       const qu = pq === undefined ? q.u : mix(pq.u, q.u, alpha), qv = pq === undefined ? q.v : mix(pq.v, q.v, alpha)
       const strip = stripFor(art, q.grp, q.kind)
-      const ranX = sx(q).ran
-      const running = cur.end === null && moving && (ranX !== undefined ? ranX > 0 || (sx(q).flee ?? 0) === 1 : pq !== undefined && Math.hypot(q.u - pq.u, q.v - pq.v) / F.unit * F.hz > walkCps(q.grp) * F.runRatioPermille / 1000)
+      const running = cur.end === null && moving && (q.ran > 0 || q.flee === 1)
       const holdStrip = form0Hold(q) ? holdStripFor(art, q.grp, q.kind) : null
       const braced = holdStrip !== null && bracedAt(q.id, nowMs)
       const runStrip = running ? runStripFor(art, q.grp, q.kind) : null
       const sH = q.grp === 'horse' ? baseH * F.horseBodyPermille / 1000 : baseH
       const sl = settleDots(q, n, N0, cur, nowMs, qu, qv, strip, face === -1, sH, world.h)
       if (n === 0) continue
-      const form = (sx(q).flee ?? 0) === 1 ? FORM_SCATTER : q.grp === 'front' ? q.form : 0
+      const form = q.flee === 1 ? FORM_SCATTER : q.grp === 'front' ? q.form : 0
       const dd = dotsOf(q.id, sl.N, form, face, nowMs, sl.dead, q.grp === 'horse' ? F.horseSpaceMul : q.grp === 'bows' ? F.bowsSpaceMul : 1, q.grp === 'front' ? F.depthFront : q.grp === 'bows' ? F.depthBows : F.depthHorse)
       const kickCells = kickOf(q.id, nowMs)
       if (running && nowMs - (fx.dustAt.get(-1 - q.id) ?? -1e9) > F.runDustMs) {
