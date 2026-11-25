@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """창병(spear) 달리기 안내 인형 + 장면 (11-25 · A1 카드 · 새 칸은 덧띠 spear-x.png 로).
 pose-rig.py 를 고치지 않고 불러다 쓴다. 병사 띠 칸은 본 띠(public/realm/anim-px/spear.png · 칸 438x128 · 서기 0~3) 그대로.
-  py -3 -X utf8 -I tools/sprite-kit/run-rig.py run a <나갈.png>   달리기 앞 네 칸(2x2): 땅 닿음 · 딛고 모음 · 뜸(뒷발 차고 앞무릎 듦) · 뜸(두 발 모임)
+  py -3 -X utf8 -I tools/sprite-kit/run-rig.py run a|b <나갈.png>   달리기 앞 네 칸(a) · 뒤 네 칸(b = 다리 맞바꿈)(2x2): 땅 닿음 · 딛고 모음 · 뜸(뒷발 차고 앞무릎 듦) · 뜸(두 발 모임)
 장면 = 1920x1280 자홍 · 왼쪽 줄 384 = [본 띠 서기 / 본 띠 걷기 한 칸] 2배 · 오른쪽 2x2 인형 칸(768x640) · 곁파일 .roots.json.  병사 키 126 · 인형 키 137 → 0.92 배로 줄여 같은 키."""
 import importlib.util, json, sys
 import numpy as np
@@ -23,10 +23,12 @@ RUN = {
 }
 
 
-def cell(n):
+def cell(n, swap=False):
     pr.big_canvas()
     pr.PROP['kind'] = 'pole2'
-    p = RUN[n]
+    p = dict(RUN[n])
+    if swap:   # 뒤 반 주기: 가까운 발과 먼 발의 자리를 맞바꾼다 (다리 교대)
+        p['near_foot'], p['far_foot'] = p['far_foot'], p['near_foot']
     ps = pr._ik(p['pelvis'], (4, 56), (32, 66), bend=20, lean=3, near_foot=p['near_foot'], far_foot=p['far_foot'])
     im = pr.figure(None, True, ps)                     # 960x832 (게임 화소 4배)
     k = 0.5 * 126 / 137                                # 게임 화소 2배 · 병사 키에 맞춤
@@ -52,7 +54,7 @@ def scene(group, out):
     rec = []
     for k, n in enumerate((1, 2, 3, 4)):
         x0, y0 = LW + (k % 2) * CWD, (k // 2) * CH_
-        o.paste(cell(n), (x0, y0))
+        o.paste(cell(n, group == 'b'), (x0, y0))
         rec.append(dict(x=x0, y=y0, w=CWD, h=CH_, root=x0 + RX, ground=y0 + GY))
     json.dump(dict(kind='run4', cells=rec), open(out.replace('.png', '.roots.json'), 'w'))
     o.save(out)
