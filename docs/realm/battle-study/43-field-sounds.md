@@ -36,3 +36,7 @@
 
 깃발 돌격 `cmd_charge` · 방진 `cmd_hold` · 길 트기 `cmd_open` · 기병 `cmd_horse` · 이동 `ui_order` · 함성 `war_cry` · 북 `war_drums` · 기병 질주 시작 `horses` · 화살비 `arrow_volley` · 맞붙는 쇳소리 `battle_clash` · 문 부서짐 `cmd_gate` · 이김 `horn_victory` · 짐 `defeat`.
 없는 자리(조용): 걷는 발소리 · 달리는 발소리 · 말발굽 걷기 · 말발굽 질주 · 부딪힘 쾅 · 무너지는 함성(`rout`).
+
+## 받음 (11-25 저녁 · 형 허락)
+
+표의 후보 18개를 받아 다듬었다(비명 둘은 공공누리 1유형을 저작물 쪽에서 다시 확인). 말발굽 셋째 자리와 고른 뒤 넣을 자리는 mainSound.ts 의 FIELD_FILE 에 한 줄씩 넣는다. 파일은 public/realm/sfx/field_자리_후보.ogg, 고르는 판은 public/realm/field-sounds.html. 원본·받은 날·자른 구간은 assets_src/realm/sfx-in/gongu/manifest.tsv (저장소 밖 무시 폴더). 나는 소리를 못 들었다.

@@ -14,8 +14,8 @@ import type { Slot } from '../ui/realm/sound.ts'
 import type { FieldState } from './types.ts'
 import type { Cam, Rect, Viewport } from './viewCamera.ts'
 import { fitZoom } from './viewCamera.ts'
-import { eventsFromDiff, flagEvent, newSoundState, stepSound } from './mainSoundModel.ts'
-import type { FieldSlot, FlagKind, Play, SoundCam, SoundEvent, SoundFrame, SoundState } from './mainSoundModel.ts'
+import { eventsFromDiff, flagEvent, loopTargets, newSoundState, stepSound } from './mainSoundModel.ts'
+import type { FieldSlot, FlagKind, LoopTarget, Play, SoundCam, SoundEvent, SoundFrame, SoundState } from './mainSoundModel.ts'
 
 /**
  * 자리 → 본편 소리 표의 자리 (파일 이름은 PICK 에서 읽는다 — 여기서 손으로 박지 않는다).
@@ -26,6 +26,23 @@ export const PICKED: Readonly<Record<FieldSlot, Slot | null>> = {
   war_cry: 'war_cry', war_drums: 'war_drums', horse_start: 'horses', arrow_volley: 'arrow_volley', clash: 'battle_clash',
   gate: 'cmd_gate', end_win: 'horn_victory', end_lose: 'defeat',
   impact: null, rout: null, step_walk: null, step_run: null, hoof_walk: null, hoof_gallop: null,
+}
+
+/**
+ * 고른 뒤 넣을 자리 — 형이 public/realm/field-sounds.html 에서 고르면 이 표에 한 줄씩 넣는다 (예: step_walk: 'sfx/field_step_walk_a.ogg').
+ * 본편 소리 표(PICK)에 없는 새 파일이라 파일 길을 바로 적는다. 비어 있으면(지금) 그 자리는 조용하다. PICKED 보다 먼저 본다.
+ * 이어지는 소리(step_walk · step_run · hoof_walk · hoof_gallop)는 돌아가며(loop) 계속 울리고 재생 빠르기가 박자 배율을 따른다.
+ */
+export const FIELD_FILE: Readonly<Partial<Record<FieldSlot, string>>> = {}
+
+/** 이 자리에서 낼 파일의 주소 (없으면 null = 조용) */
+export function fileOf(slot: FieldSlot, base: string, files: Readonly<Partial<Record<FieldSlot, string>>> = FIELD_FILE): string | null {
+  const own = files[slot]
+  if (own !== undefined) return base + 'realm/' + own
+  const p = PICKED[slot]
+  if (p === null) return null
+  const name = snd(p)
+  return base + name.replace(/#t=[\d.]+$/, '')
 }
 
 /** 판 읽기 (FieldState → 소리 모델이 읽는 모양) — 읽기만 한다. edge 는 readField(state).edge */
@@ -88,11 +105,13 @@ export function createFieldSound(base: string = import.meta.env?.BASE_URL ?? '/'
   }
 
   function play(c: AudioContext, p: Play): void {
+    if (p.loop) return // 이어지는 소리는 아래 syncLoops 가 돌린다
+    const own = FIELD_FILE[p.slot]
     const slot = PICKED[p.slot]
-    if (slot === null) return // 형이 아직 안 고른 자리 — 조용하다
+    if (own === undefined && slot === null) return // 형이 아직 안 고른 자리 — 조용하다
     const sfx = soundVolume('sfx')
     if (sfx <= 0 || live >= P.field.soundVoicesMax) return
-    const name = snd(slot)
+    const name = own !== undefined ? 'realm/' + own : snd(slot as Slot)
     const m = /#t=([\d.]+)$/.exec(name)
     const from = m !== null ? Number(m[1]) : 0
     const url = base + (m !== null ? name.slice(0, m.index) : name)
@@ -117,6 +136,52 @@ export function createFieldSound(base: string = import.meta.env?.BASE_URL ?? '/'
     })
   }
 
+  /** 돌아가는 이어지는 소리 — 자리마다 하나 · 크기·좌우·재생 빠르기를 매 프레임 따라간다 */
+  interface Running { src: AudioBufferSourceNode; gain: GainNode; pan: StereoPannerNode | null }
+  const running = new Map<FieldSlot, Running>()
+  const starting = new Set<FieldSlot>()
+  function stopLoops(c: AudioContext | null, except?: ReadonlySet<FieldSlot>): void {
+    for (const [slot, r] of running) {
+      if (except?.has(slot)) continue
+      running.delete(slot)
+      try { r.gain.gain.setTargetAtTime(0, c?.currentTime ?? 0, 0.05); r.src.stop((c?.currentTime ?? 0) + 0.3) } catch { /* 이미 멈춤 */ }
+      r.src.onended = () => { r.src.disconnect(); r.gain.disconnect(); r.pan?.disconnect() }
+    }
+  }
+  function syncLoops(c: AudioContext, targets: readonly LoopTarget[]): void {
+    const sfx = soundVolume('sfx')
+    const on = new Set<FieldSlot>()
+    for (const t of targets) {
+      const url = fileOf(t.slot, base)
+      if (url === null || sfx <= 0) continue
+      on.add(t.slot)
+      const r = running.get(t.slot)
+      if (r !== undefined) {
+        const now = c.currentTime
+        r.gain.gain.setTargetAtTime(Math.min(1, t.gain * sfx), now, 0.08)
+        r.src.playbackRate.setTargetAtTime(t.rate, now, 0.1)
+        r.pan?.pan.setTargetAtTime(t.pan, now, 0.08)
+      } else if (!starting.has(t.slot)) {
+        starting.add(t.slot)
+        void bufferOf(c, url).then(buf => {
+          starting.delete(t.slot)
+          if (buf === null || document.hidden || running.has(t.slot)) return
+          const src = c.createBufferSource(), gain = c.createGain()
+          src.buffer = buf; src.loop = true
+          src.playbackRate.value = t.rate
+          gain.gain.value = 0
+          gain.gain.setTargetAtTime(Math.min(1, t.gain * sfx), c.currentTime, 0.08)
+          let pan: StereoPannerNode | null = null, tail: AudioNode = gain
+          if (typeof c.createStereoPanner === 'function') { pan = c.createStereoPanner(); pan.pan.value = t.pan; gain.connect(pan); tail = pan }
+          src.connect(gain); tail.connect(c.destination)
+          src.start()
+          running.set(t.slot, { src, gain, pan })
+        })
+      }
+    }
+    stopLoops(c, on)
+  }
+
   return {
     unlock() {
       unlocked = true
@@ -129,14 +194,15 @@ export function createFieldSound(base: string = import.meta.env?.BASE_URL ?? '/'
       pending = []
       const out = stepSound(st, frame, cam, ev, nowMs, hidden)
       st = out.state
-      if (!unlocked || hidden || muted()) return
+      if (!unlocked || hidden || muted()) { stopLoops(ctx); return }
       const c = audio()
       if (c === null) return
       if (c.state === 'suspended') void c.resume().catch(() => {})
       for (const p of out.plays) play(c, p)
+      syncLoops(c, loopTargets(out.loops))
     },
     order(kind) { pending.push(flagEvent(kind)) },
     end(win) { pending.push({ kind: 'end', win }) },
-    stop() { st = newSoundState(); pending = [] },
+    stop() { st = newSoundState(); pending = []; stopLoops(ctx) },
   }
 }

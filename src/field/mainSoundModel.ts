@@ -198,6 +198,13 @@ function nearestFoeCells(cur: SoundFrame, q: SoundSquad): number {
   return best
 }
 
+/** 이어지는 소리 파일을 돌리는 목표 — 크기 · 좌우 · 재생 빠르기(박자 배율이 그대로 먹되 하한·상한 안에서) */
+export interface LoopTarget { slot: FieldSlot; gain: number; pan: number; rate: number }
+export function loopTargets(loops: readonly LoopInfo[]): LoopTarget[] {
+  const f = F()
+  return loops.map(l => ({ slot: l.slot, gain: l.vol * f.soundMasterPct / 100, pan: l.pan, rate: clamp(l.beatMul, f.soundLoopRateMinPct / 100, f.soundLoopRateMaxPct / 100) }))
+}
+
 interface Cand { play: Play; pri: number; at: number }
 
 /**

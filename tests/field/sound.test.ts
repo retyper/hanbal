@@ -242,3 +242,32 @@ test('안 고른 자리는 조용하다 · 고른 자리는 본편 표의 이름
   const { PICK } = await import('../../src/ui/realm/sound.ts')
   for (const v of Object.values(PICKED)) if (v !== null) assert.ok(v in PICK, String(v))
 })
+
+test('이어지는 소리 파일의 재생 빠르기는 박자 배율을 따른다 (하한·상한 안에서)', async () => {
+  const { loopTargets } = await import('../../src/field/mainSoundModel.ts')
+  const a = loopTargets(horseLoop(5).loops).find(t => t.slot === 'hoof_gallop')!
+  const b = loopTargets(horseLoop(7.5).loops).find(t => t.slot === 'hoof_gallop')!
+  assert.ok(Math.abs(b.rate / a.rate - 1.5) < 1e-6)
+  const slow = loopTargets(horseLoop(1).loops)[0]!, fast = loopTargets(horseLoop(30).loops)[0]!
+  assert.equal(slow.rate, P.field.soundLoopRateMinPct / 100)
+  assert.equal(fast.rate, P.field.soundLoopRateMaxPct / 100)
+  assert.ok(a.gain > 0 && a.gain <= 1)
+})
+
+test('파일 길: 고른 자리만 주소가 나오고 안 고른 자리는 null', async () => {
+  const { fileOf, FIELD_FILE, PICKED } = await import('../../src/field/mainSound.ts')
+  assert.deepEqual(FIELD_FILE, {})
+  for (const s of ['step_walk', 'step_run', 'hoof_walk', 'hoof_gallop', 'impact', 'rout'] as const) assert.equal(fileOf(s, '/'), null)
+  assert.ok(String(fileOf('war_cry', '/hanbal/')).startsWith('/hanbal/realm/sfx/war_cry_'))
+  assert.equal(fileOf('hoof_walk', '/hanbal/', { hoof_walk: 'sfx/field_hoof_walk_a.ogg' }), '/hanbal/realm/sfx/field_hoof_walk_a.ogg')
+  assert.equal(PICKED.impact, null)
+})
+
+test('고르기 판이 가리키는 소리 파일이 모두 있고 0바이트가 아니다', () => {
+  const root = path.resolve(import.meta.dirname, '../../public/realm')
+  const html = fs.readFileSync(path.join(root, 'field-sounds.html'), 'utf8')
+  const names = new Set<string>()
+  for (const m of html.matchAll(/(?:N|E)\('[^']*', '([^']+)'/g)) names.add(m[1]!)
+  assert.ok(names.size >= 25)
+  for (const n of names) assert.ok(fs.statSync(path.join(root, 'sfx', n)).size > 1000, n)
+})
