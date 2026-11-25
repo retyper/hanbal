@@ -75,7 +75,8 @@ test('두 편이 걸어 서로 다가간다 (대 수는 무리마다 4 이하, �
     const full = runField(setup)
     // 도망치는 대(사기가 꺾여 제 진영 쪽으로 달아남 · army.ts)는 빼고 본다
     // 활은 칼날 든 적이 다가오면 물러난다 (bowsBackoffCells) — 앞줄·기병을 본다
-    assert.ok(full.squads.filter(q => q.side === 0 && q.flee === 0 && q.men > 0 && q.grp !== 'bows').every(q => q.u > s0.squads[q.id]!.u), '앞으로 나아갔다')
+    // 달아났다가 장수 곁에서 다시 선 대(regroup)도 뺀다 — 진영 쪽으로 달아난 뒤 다시 선 자리라 처음보다 뒤일 수 있다
+    assert.ok(full.squads.filter(q => q.side === 0 && q.flee === 0 && q.regrouped === 0 && q.men > 0 && q.grp !== 'bows').every(q => q.u > s0.squads[q.id]!.u), '앞으로 나아갔다')
   }
 })
 

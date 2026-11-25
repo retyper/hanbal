@@ -36,14 +36,14 @@ export function hashField(s: FieldState): string {
   for (const n of s.grpWhy) h = mix(h, n); for (const n of s.grpWhyTick) h = mix(h, n)
   for (const k of [0, 1] as const) { h = mix(h, s.stats.flankHits[k]); h = mix(h, s.stats.artMorale[k]); h = mix(h, s.stats.killed[k]); h = mix(h, s.stats.lost[k]); h = mix(h, s.planTick[k]); h = mix(h, s.frontLockTick[k])
     const mb = s.stats.moraleBy[k]; h = mix(h, mb.arrows); h = mix(h, mb.melee); h = mix(h, mb.flank); h = mix(h, mb.hero); h = mix(h, mb.domino); h = mix(h, mb.push)
-    h = mix(h, s.lineup[k]); h = mix(h, s.breakTick[k]); h = mix(h, s.breakWhy[k]); h = mix(h, s.stood[k]); h = mix(h, s.standTick[k]) }
+    h = mix(h, s.lineup[k]); h = mix(h, s.breakTick[k]); h = mix(h, s.breakWhy[k]); h = mix(h, s.stood[k]); h = mix(h, s.standTick[k]); h = mix(h, s.bladeTick[k]) }
   for (const q of s.squads) {
     h = hs(h, q.kind); h = hs(h, q.grp); h = mix(h, q.morale0); h = mix(h, q.flank); h = mix(h, q.homeU); h = mix(h, q.homeV)
     h = mix(h, q.id); h = mix(h, q.side); h = mix(h, q.men); h = mix(h, q.menMax); h = mix(h, q.fresh)
     h = mix(h, q.u); h = mix(h, q.v); h = mix(h, q.goal ? q.goal.u : -1); h = mix(h, q.goal ? q.goal.v : -1)
     h = mix(h, q.manual); h = mix(h, q.target); h = mix(h, q.hp); h = mix(h, q.morale); h = mix(h, q.stance); h = mix(h, q.shock); h = mix(h, q.lock); h = mix(h, q.sleep)
     h = mix(h, q.daze); h = mix(h, q.rem); h = mix(h, q.held); h = mix(h, q.foe); h = mix(h, q.calm); h = mix(h, q.form); h = mix(h, q.cmd); h = mix(h, q.reach); h = mix(h, q.aim)
-    h = mix(h, q.order); h = mix(h, q.orderTick); h = mix(h, q.orderAt ? q.orderAt.u : -1); h = mix(h, q.orderAt ? q.orderAt.v : -1); h = mix(h, q.ran); h = mix(h, q.bonus); h = mix(h, q.hitTick); h = mix(h, q.flee) ; h = mix(h, q.bw); h = mix(h, q.bd); h = mix(h, q.face); h = mix(h, q.pushed); h = mix(h, q.regrouped)
+    h = mix(h, q.order); h = mix(h, q.orderTick); h = mix(h, q.orderAt ? q.orderAt.u : -1); h = mix(h, q.orderAt ? q.orderAt.v : -1); h = mix(h, q.ran); h = mix(h, q.bonus); h = mix(h, q.hitTick); h = mix(h, q.flee) ; h = mix(h, q.bw); h = mix(h, q.bd); h = mix(h, q.face); h = mix(h, q.pushed); h = mix(h, q.regrouped); h = mix(h, q.countered)
   }
   for (const e of s.heroes) {
     h = hs(h, e.id)
@@ -70,6 +70,7 @@ export function snapshot(s: FieldState): FieldState {
     breakWhy: [...s.breakWhy] as FieldState['breakWhy'],
     stood: [s.stood[0], s.stood[1]],
     standTick: [...s.standTick] as FieldState['standTick'],
+    bladeTick: [...s.bladeTick] as FieldState['bladeTick'],
     planTick: [...s.planTick] as FieldState['planTick'],
     frontLockTick: [...s.frontLockTick] as FieldState['frontLockTick'],
     anchor: s.anchor.map(p => ({ ...p })),

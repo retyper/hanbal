@@ -97,6 +97,7 @@ export function mirror(s: FieldState): void {
   s.breakWhy = [s.breakWhy[1], s.breakWhy[0]]
   s.stood = [s.stood[1], s.stood[0]]
   s.standTick = [s.standTick[1], s.standTick[0]]
+  s.bladeTick = [s.bladeTick[1], s.bladeTick[0]]
   s.stats.moraleBy = [s.stats.moraleBy[1], s.stats.moraleBy[0]]
   for (const q of s.squads) if (q.orderAt) q.orderAt = fp(q.orderAt)
 }

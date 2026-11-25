@@ -300,6 +300,12 @@ function place(s: FieldState, side: 0 | 1): void {
     qs.forEach((q, i) => {
       const o = slotOf(q, i, qs.length, frontHalf, s.lineup[side])
       const slot = { u: clamp(anchor.u + o.u, 0, lastU(s.map)), v: clamp(anchor.v + o.v, 0, lastV(s.map)) }
+      // 기병 날개는 실제 앞줄보다 앞서지 않는다 — 장수가 앞서 걸으면 기준점이 앞줄보다 빨리 가서(따라붙기) 빠른 기병만 기준점 자리로 달려가
+      // 앞줄보다 먼저 적 줄에 혼자 닿았다 (우리 기병만 날개 싸움에서 지던 까닭 · 입력 없는 장수는 앞줄을 앞지르지 않아 안 났다)
+      if (q.grp === 'horse' && fqs.length > 0 && P.field.horseBehindFront === 1) {
+        const fc = centerOf(fqs), back = cells(s.lineup[side] === LINE_WINGS ? P.field.lineWingsBackCells : P.field.wingBackCells) + idiv(frontD, 2)
+        if ((slot.u - (fc.u - f * back)) * f > 0) slot.u = clamp(fc.u - f * back, 0, lastU(s.map))
+      }
       if (q.flee === 1) { q.target = -1; q.goal = { u: clamp(campU(s, side) - f * cells(P.field.fleeBackCells), 0, lastU(s.map)), v: q.v }; return }
       if (q.order === ORD_CHARGE) {
         // 돌격 — 가장 가까운 적 (앞줄 먼저) 에게 달려간다

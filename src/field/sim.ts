@@ -102,7 +102,7 @@ function invalidSetup(s: LiveSetup): boolean {
 export function createField(setup: LiveSetup): FieldState {
   // 목책이 부서지면 칸이 바뀌므로 판은 지도 사본(칸 · 조각)을 쥔다 — 같은 지도로 다시 시작해도 안 변한다
   const map: FieldMap = { ...setup.map, cells: setup.map.cells.slice(), pieces: setup.map.pieces.map(p => ({ ...p, rem: 0 })) }
-  const s: FieldState = { tick: 0, seed: setup.seed, map, squads: [], heroes: [], anchor: [], route: [[], [], [], [], [], []], grpWhy: [0, 0, 0], grpWhyTick: [-1, -1, -1], stats: { flankHits: [0, 0], artMorale: [0, 0], killed: [0, 0], lost: [0, 0], moraleBy: [noCause(), noCause()] }, lineup: [0, 0], breakTick: [-1, -1], breakWhy: [0, 0], stood: [0, 0], standTick: [-1, -1], planTick: [-1, -1], frontLockTick: [-1, -1], used: [0, 0, 0, 0], broken: [0, 0], end: null, winner: -1, log: { dropped: 0, accepted: [], events: [] } }
+  const s: FieldState = { tick: 0, seed: setup.seed, map, squads: [], heroes: [], anchor: [], route: [[], [], [], [], [], []], grpWhy: [0, 0, 0], grpWhyTick: [-1, -1, -1], stats: { flankHits: [0, 0], artMorale: [0, 0], killed: [0, 0], lost: [0, 0], moraleBy: [noCause(), noCause()] }, lineup: [0, 0], breakTick: [-1, -1], breakWhy: [0, 0], stood: [0, 0], standTick: [-1, -1], bladeTick: [0, 0], planTick: [-1, -1], frontLockTick: [-1, -1], used: [0, 0, 0, 0], broken: [0, 0], end: null, winner: -1, log: { dropped: 0, accepted: [], events: [] } }
   if (invalidSetup(setup)) { s.end = 'invalid'; return s }
   const unit = P.field.unit
   const jit = P.field.spawnJitterCells * unit
@@ -131,7 +131,7 @@ export function createField(setup: LiveSetup): FieldState {
         const stance = (P.field.stanceStart === 1 ? STANCE_NONE : Math.floor(roll(s.seed, 0, `stance:${id}`) * 3)) as 0 | 1 | 2 | 3
         s.squads.push({ id, side, grp, kind: parts[i]!.kind, men: cnt, menMax: cnt, fresh: men > 0 ? idiv(fresh * cnt, men) : 0, u, v, homeU: u, homeV: v, lock: -1, sleep: ticksOf(cp.asleep ?? 0), daze: 0, rem: 0, held: 0, flank: 0, stance, morale0: ls.morale, shock: 0, goal: null, manual: 0, target: -1, hp: cnt * MILLI, morale: ls.morale, foe: -1, calm: 0, form: 0, cmd: -1, reach: grp === 'bows' ? P.field.bowRangeCells * unit : 0, aim: -1,
           order: ORD_NONE, orderTick: -1, orderAt: null, ran: 0, bonus: 0, hitTick: -1, flee: 0,
-          bw: P.field.bodyWCells * unit, bd: (grp === 'horse' ? P.field.horseBodyDCells : P.field.bodyDCells) * unit, face: side === 0 ? 0 : HERO_DIRS / 2, pushed: 0, regrouped: 0 })
+          bw: P.field.bodyWCells * unit, bd: (grp === 'horse' ? P.field.horseBodyDCells : P.field.bodyDCells) * unit, face: side === 0 ? 0 : HERO_DIRS / 2, pushed: 0, regrouped: 0, countered: 0 })
       }
     })
     if (ls.hero) {
@@ -429,7 +429,15 @@ export function walk(s: FieldState, K: Kit, side: 0 | 1, u: number, v: number, g
  * 진영 닿음은 막힘 칸(목책)을 가로지르지 못한다 — 두 점 사이를 반 칸 이하 간격으로 찍어 본다 (화살은 넘는다 · 45 §2-12).
  * gate 가 참이면(칼날 · 장수 맞음) 서 있는 문 칸은 막지 않는다 — 칼날은 문 앞에서만 닿는다: 문을 사이에 두고 양쪽이 맞붙고, 마디 너머로는 안 닿는다 (44 §2-1)
  */
+/** 막힘 칸이 하나라도 있는 지도인가 (막힘 칸은 늘지 않는다 — 목책이 부서지면 줄 뿐 · 없으면 clearLine 이 늘 참이라 건너뛴다) */
+const blockless = new WeakMap<Uint8Array, boolean>()
+function noBlock(map: FieldMap): boolean {
+  let v = blockless.get(map.cells)
+  if (v === undefined) { v = !map.cells.includes(G_BLOCK); blockless.set(map.cells, v) }
+  return v
+}
 function clearLine(map: FieldMap, a: Point, b: Point, gate = false): boolean {
+  if (noBlock(map)) return true
   const unit = P.field.unit
   const span = Math.max(Math.abs(b.u - a.u), Math.abs(b.v - a.v))
   const n = Math.max(4, idiv(2 * span + unit - 1, unit))
@@ -560,6 +568,8 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
     if (q.lock < 0 || lock0[q.id]! >= 0 || struck[q.id]) continue
     const e = s.squads[q.lock]!
     emit(s, { kind: 'impact', side: q.side, id: q.id, u: idiv(q.u + e.u, 2), v: idiv(q.v + e.v, 2), n: q.men + e.men, to: e.id, how: beatsKind(q.kind, e.kind) ? HIT_GOOD : HIT_PLAIN })
+    // 상성에 진 첫 맞물림 — 진 쪽 대 사기 kindFirstShock (대마다 한 번 · 금빛 숫자)
+    if (beatsKind(q.kind, e.kind)) counterShock(s, e, 'melee')
   }
   // 활의 닿는 거리 (화면이 읽는 칸 · 높은 터 위면 bowHighReachPermille 배)
   for (const q of s.squads) if (q.grp === 'bows') q.reach = groundAt(s.map, q.u, q.v) === G_HIGH ? mul(K.bowR, P.field.bowHighReachPermille) : K.bowR
@@ -647,6 +657,8 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
     dmg[e.id]! += v
     if (fl) sideV[e.id]! += v
     hits[e.id]!.push(q.id, q.grp === 'bows' ? LOSS_ARROW : LOSS_BLADE, v)
+    // 상성에 진 첫 화살 (활 → 창 · 쇠뇌 → 방패)
+    if (q.grp === 'bows' && v > 0 && beatsKind(q.kind, e.kind)) counterShock(s, e, 'arrows')
   }
   for (const q of s.squads) if (q.men > 0 && q.lock >= 0) contact[q.side] = true
   // 지금 싸우는 상대 (읽기용 · 화면의 「공격 중」) — 친 적 → 맞물린 적 → 없음
@@ -777,10 +789,13 @@ export function sideMorale(s: FieldState, side: 0 | 1): number {
 function judge(s: FieldState): void {
   const downs: [number, number] = [0, 0]   // 0 = 안 무너짐 · 1 = 사람 · 2 = 사기
   const tot = [sideTotals(s, 0), sideTotals(s, 1)]
+  for (const side of [0, 1] as const) if (s.squads.some(q => q.side === side && q.men > 0 && q.flee === 0 && q.grp !== 'bows')) s.bladeTick[side] = s.tick
   for (const side of [0, 1] as const) {
     const t = tot[side]!
     if (t.morale0 > 0 && t.morale * MILLI < t.morale0 * m(P.realm.tacBreakMorale)) downs[side] = 2
     else if (t.men * MILLI < t.menMax * m(P.realm.tacBreakMen)) downs[side] = 1
+    // 칼 든 대(앞줄·기병)가 breakNoBladesSec 내내 다 달아났거나 없으면 편이 무너진다 — 활만 남아 서로 쏘며 때를 다 쓰던 판 (2차)
+    else if (P.field.breakNoBladesSec > 0 && s.tick - s.bladeTick[side] >= ticksOf(P.field.breakNoBladesSec)) downs[side] = 2
   }
   // 편이 무너짐 (검수 B5) — 문턱 아래로 간 틱에 sideBreak 하나 · 그 뒤 sideBreakSec 동안 그 편의 대가 모두 달아나고(armyTick) 나서 끝난다
   for (const side of [0, 1] as const) {
@@ -1159,7 +1174,8 @@ export function hitArc(e: Squad, q: Point): number {
 function turnFaces(s: FieldState): void {
   for (const q of s.squads) {
     if (q.men <= 0) continue
-    const every = q.grp === 'horse' ? P.field.turnHorseTicks : P.field.turnFrontTicks
+    // 틱 수는 10Hz 기준 — hz 가 바뀌어도 1초에 도는 각이 같게 (20Hz 에서 두 배로 돌아 판 길이가 갈렸다 · 2차)
+    const every = idiv((q.grp === 'horse' ? P.field.turnHorseTicks : P.field.turnFrontTicks) * P.field.hz, 10)
     if (s.tick % Math.max(1, every) !== 0) continue
     if (q.lock >= 0 && q.flee === 0 && hitArc(q, s.squads[q.lock]!) === 0) continue
     // 칼날로 맞닿은 적이 있을 때만 그쪽으로 돈다 (활이 멀리서 쏘는 적이나 다가오는 기병 쪽으로 미리 돌면 옆치기가 서지 않는다 · 진의 향은 적 쪽)
@@ -1225,4 +1241,11 @@ export const beatsKind = (a: string, b: string): boolean => (KIND_BEATS[a as Uni
 /** a 가 b 를 칠 때의 배수 (‰) — 이기면 counterUp · 지면 counterDown · 아니면 1 */
 function kindMul(K: Kit, a: string, b: string): number {
   return beatsKind(a, b) ? K.kindUp : beatsKind(b, a) ? K.kindDown : MILLI
+}
+
+/** 상성에 진 첫 맞물림·첫 화살 — 대마다 판에 한 번 사기 kindFirstShock (51 §3 · 읽히는 상성) */
+function counterShock(s: FieldState, e: Squad, cause: 'melee' | 'arrows'): void {
+  if (e.countered === 1 || e.men <= 0 || P.field.kindFirstShock <= 0) return
+  e.countered = 1
+  addShock(s, e, P.field.kindFirstShock, cause)
 }

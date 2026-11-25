@@ -183,6 +183,8 @@ export interface Squad {
   pushed: number
   /** 달아났다가 장수 곁에서 다시 선 적이 있으면 1 (regroup · 대마다 판에 한 번) */
   regrouped: 0 | 1
+  /** 상성에 진 첫 맞물림·첫 화살을 이미 맞았으면 1 (kindFirstShock 은 대마다 한 번) */
+  countered: 0 | 1
 }
 
 /** 장수 (C2: 플레이어가 직접 조종 · 입력이 없으면 임시 AI) */
@@ -394,6 +396,8 @@ export interface FieldState {
   stood: [0 | 1, 0 | 1]
   /** 버팀이 선 틱 (-1 아직) — 이 틱부터 P.field.standSec 동안 그 편 장수 곁(heroArtCells)의 대가 덜 꺾인다 */
   standTick: [number, number]
+  /** 칼 든 대(앞줄·기병)가 안 달아나고 마지막으로 있던 틱 — breakNoBladesSec 넘게 없으면 편이 무너진다 */
+  bladeTick: [number, number]
   /** 적의 큰 수 (입력 없는 편의 옆치기 · 51 §7) — 그 편이 옆치기를 거는 틱 (-1 없음 · 판을 만들 때 씨앗으로 정한다) */
   planTick: [number, number]
   /** 편마다 앞줄 대가 마지막으로 맞물린 틱 (-1 없음) — 맞물려 있으면 진의 기준점이 언다 (52 §1-3 · F 로 풀린다) */

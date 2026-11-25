@@ -87,3 +87,26 @@ test('진이 앞줄 병종과 기병 자리를 바꾼다 (병종을 안 주면)'
   const a = horse(LINE_SHIELD), b = horse(LINE_WINGS)
   assert.ok(b.out > a.out && b.u > a.u, `날개 ${JSON.stringify(a)} → ${JSON.stringify(b)}`)
 })
+
+test('상성에 진 첫 맞물림·첫 화살은 대마다 한 번 kindFirstShock (2차)', () => {
+  const s = createField(withForms(2, LINE_WEDGE, LINE_SHIELD))
+  const shock0 = s.squads.map(q => q.shock)
+  while (s.end === null && s.tick < 400) stepField(s)
+  const hit = s.squads.filter(q => q.countered === 1)
+  assert.ok(hit.length > 0, '상성 첫 맞음이 난다')
+  for (const q of hit) assert.ok(q.shock - shock0[q.id]! >= P.field.kindFirstShock, `대 ${q.id} 충격 ${q.shock}`)
+})
+
+test('기병 날개는 장수가 앞서 걸어도 실제 앞줄보다 앞서지 않는다 (우리 기병만 혼자 먼저 닿던 것 · 2차)', () => {
+  const s = createField(withForms(1, LINE_SHIELD, LINE_SHIELD))
+  // 장수를 적 쪽으로 곧장 몬다 (방향 0 = +u)
+  stepField(s, [{ tick: 0, g: 3, op: 5, u: 0, v: 1 }])
+  let worst = -Infinity
+  while (s.tick < 140) {
+    stepField(s)
+    const fr = s.squads.filter(q => q.side === 0 && q.grp === 'front' && q.men > 0)
+    const fu = fr.reduce((a, q) => a + q.u, 0) / fr.length
+    for (const q of s.squads) if (q.side === 0 && q.grp === 'horse' && q.lock < 0) worst = Math.max(worst, q.u - fu)
+  }
+  assert.ok(worst <= P.field.unit, `기병이 앞줄보다 ${(worst / P.field.unit).toFixed(1)}칸 앞`)
+})
