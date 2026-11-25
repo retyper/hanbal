@@ -14,7 +14,7 @@ import { P } from '../tune/params.ts'
 import { clamp, dist2, idiv, isqrt, stepToward } from './num.ts'
 import { emit } from './hero.ts'
 import { alarmed, avgU, banks, campU, detour, fwd, lastU, lastV, leash, m, mul, nearestFoe, perTickAt, rankCmp, ticksOf } from './sim.ts'
-import { CMD_FIRE, CMD_HEIGHT, FORM_AUTO, FORM_CHARGE, FORM_HOLD, FORM_OPEN, GRPS, OP_RALLY, OP_STANCE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_NONE, ORD_VOLLEY, STANCE_CHARGE, STANCE_HOLD, WHY_NO_MEN, WHY_NONE, WHY_NOT_YET } from './types.ts'
+import { ORD_ATTACK, CMD_FIRE, CMD_HEIGHT, FORM_AUTO, FORM_CHARGE, FORM_HOLD, FORM_OPEN, GRPS, OP_RALLY, OP_STANCE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_NONE, ORD_VOLLEY, STANCE_CHARGE, STANCE_HOLD, WHY_NO_MEN, WHY_NONE, WHY_NOT_YET } from './types.ts'
 import type { FieldInput, FieldState, Grp, Hero, Point, Squad } from './types.ts'
 
 const MILLI = 1000
@@ -170,7 +170,12 @@ export const broken = (q: Squad): boolean => q.morale * MILLI < q.morale0 * brea
  * 장수를 따르는 편의 대만 여기서 목표를 정한다 (손으로 몬 대·적을 쳐라 받은 대는 sim.ts 가 그대로 본다).
  */
 export function armyTick(s: FieldState, full: boolean): void {
-  for (const q of s.squads) q.flee = q.men > 0 && broken(q) ? 1 : 0
+  // 무너진 대는 달아난다 · 편이 무너졌으면(sideBreak) 그 편의 남은 대가 모두 손을 놓고 달아난다 (검수 B5)
+  for (const q of s.squads) {
+    const fall = s.breakTick[q.side] >= 0
+    q.flee = q.men > 0 && (broken(q) || fall) ? 1 : 0
+    if (fall && q.manual === 1) { q.manual = 0; q.foe = -1 }
+  }
   // 진 자리·목표는 retargetMs 마다(입력이 들어온 틱에는 곧바로) · 예고·명령 끝은 틱마다
   for (const side of [0, 1] as const) if (follows(s, side)) { enemyPlan(s, side); expire(s, side); moveAnchor(s, side); if (full) { place(s, side); holdCamp(s, side) } }
 }
@@ -201,7 +206,9 @@ function expire(s: FieldState, side: 0 | 1): void {
       const t = q0.target >= 0 ? s.squads[q0.target]! : null
       const hit = qs.reduce((a, q) => q.hitTick >= 0 && (a < 0 || q.hitTick < a) ? q.hitTick : a, -1)
       if (!t || t.men <= 0 || age >= ticksOf(P.field.flankMaxSec) || (hit >= 0 && s.tick - hit >= ticksOf(P.field.flankStaySec))) setOrder(s, side, g, ORD_NONE, null)
-    } else if (q0.order === ORD_CHARGE && age >= ticksOf(P.field.chargeMaxSec) && !qs.some(q => q.lock >= 0)) setOrder(s, side, g, ORD_NONE, null)
+    } else if (q0.order === ORD_CHARGE && (age >= ticksOf(P.field.chargeMaxSec) || live(qs).every(q => q.lock >= 0))) setOrder(s, side, g, ORD_NONE, null)
+    // 돌격은 산 대가 모두 맞물리면 끝 (자세는 그대로 · 검수 W7) · 「적을 쳐라」는 그 적이 사라지면 끝
+    else if (q0.order === ORD_ATTACK && qs.every(q => q.foe < 0)) setOrder(s, side, g, ORD_NONE, null)
   }
 }
 

@@ -92,6 +92,11 @@ export function mirror(s: FieldState): void {
   s.route = [...s.route.slice(3), ...s.route.slice(0, 3)].map(r => r.map(fp))
   s.planTick = [s.planTick[1], s.planTick[0]]
   s.frontLockTick = [s.frontLockTick[1], s.frontLockTick[0]]
+  s.lineup = [s.lineup[1], s.lineup[0]]
+  s.breakTick = [s.breakTick[1], s.breakTick[0]]
+  s.breakWhy = [s.breakWhy[1], s.breakWhy[0]]
+  s.stood = [s.stood[1], s.stood[0]]
+  s.stats.moraleBy = [s.stats.moraleBy[1], s.stats.moraleBy[0]]
   for (const q of s.squads) if (q.orderAt) q.orderAt = fp(q.orderAt)
 }
 

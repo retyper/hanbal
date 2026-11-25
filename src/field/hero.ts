@@ -10,7 +10,7 @@ import { P } from '../tune/params.ts'
 import { clamp, dist2, idiv, nearestDir } from './num.ts'
 import { bladeLine, heroGap2, hitArc, m, mul, perTickAt, rankCmp, ticksOf, walk, type Kit } from './sim.ts'
 import { HERO_DIR, HIT_GOOD, LOSS_ART, LOSS_HERO, OP_ATTACK, OP_AUTO, OP_DASH, OP_HERO_DIR, OP_MOVE, OP_SKILL, WHY_BUSY, WHY_COOL, WHY_DOWN, WHY_FAR, WHY_NO_ART, WHY_NO_TARGET, WHY_NONE } from './types.ts'
-import type { FieldEvent, FieldInput, FieldState, Hero, Point, Squad } from './types.ts'
+import type { FieldEvent, FieldInput, FieldState, Hero, MoraleCause, Point, Squad } from './types.ts'
 
 const MILLI = 1000
 const sq = (x: number): number => x * x
@@ -20,6 +20,13 @@ const lastV = (s: FieldState): number => s.map.w * P.field.unit - 1
 /** 사건 줄에 하나 (읽기용) */
 export function emit(s: FieldState, e: Omit<FieldEvent, 'tick'>): void {
   s.log.events.push({ tick: s.tick, ...e })
+}
+
+/** 대의 사기를 깎는다 (누적 충격) — 까닭별 몫을 편 통계에 센다 (stats.moraleBy · 천분율 × 사람 · 검수 B5) */
+export function addShock(s: FieldState, q: Squad, amt: number, cause: MoraleCause): void {
+  if (amt <= 0) return
+  q.shock += amt
+  s.stats.moraleBy[q.side][cause] += amt * q.menMax
 }
 
 /** 마지막 eventKeepSec 초만 남긴다 (끝없이 자라지 않게 · 1초에 한 번 자른다) */
@@ -113,7 +120,7 @@ export function hurtHero(s: FieldState, h: Hero, d: number, byHero = false): voi
   h.dash = 0; h.artOn = 0; h.dir = h.manual === 1 ? -1 : h.dir
   // 적장이 쓰러뜨렸으면 heroSlainShock (51 §6 「적장을 쓰러뜨리면 적 전체 사기 뚝」) · 아니면 heroDownMorale
   const shock = byHero ? P.field.heroSlainShock : P.field.heroDownMorale
-  for (const q of s.squads) if (q.side === h.side) { q.shock += shock; if (byHero) s.stats.artMorale[1 - h.side as 0 | 1] += shock }
+  for (const q of s.squads) if (q.side === h.side) addShock(s, q, shock, 'hero')
   emit(s, { kind: 'heroDown', side: h.side, id: -1, u: h.u, v: h.v, n: 0 })
 }
 
@@ -124,7 +131,9 @@ export function hurtHero(s: FieldState, h: Hero, d: number, byHero = false): voi
 export function trySkill(s: FieldState, h: Hero, tu: number, tv: number): void {
   if (h.art === 'none') return refuse(s, h, WHY_NO_ART)
   if (h.stun > 0) return refuse(s, h, WHY_DOWN)
-  if (h.artCd > 0) return refuse(s, h, WHY_COOL)
+  // 투지가 찼으면 쿨타임이 돌고 있어도 한 번 더 (투지는 0 으로 · 쿨은 그대로 돈다)
+  const extra = h.artCd > 0 && h.grit >= MILLI
+  if (h.artCd > 0 && !extra) return refuse(s, h, WHY_COOL)
   if (h.dash > 0) return refuse(s, h, WHY_BUSY)
   const unit = P.field.unit
   const near = (q: Squad, cells: number): boolean => dist2(h.u, h.v, q.u, q.v) <= sq(cells * unit)
@@ -135,7 +144,7 @@ export function trySkill(s: FieldState, h: Hero, tu: number, tv: number): void {
     // 명궁의 한 발 — 적장 다침 + 적 사기 −tacArtShot (적장이 이미 쓰러져 있으면 사기만)
     hurtHero(s, e, P.field.heroSnipeHp, true)
     const shock = mul(m(P.realm.tacArtShot), P.field.heroSnipeShockPermille)
-    for (const q of s.squads) if (q.side !== h.side) q.shock += shock
+    for (const q of s.squads) if (q.side !== h.side && q.men > 0) { addShock(s, q, shock, 'hero'); s.stats.artMorale[h.side] += shock }
   } else if (h.art === 'shout') {
     // 큰 외침 — 곁의 무리 사기 +tacArtRally (처음 사기를 넘을 수 있다 · 사기 상한 1000)
     const up = mul(m(P.realm.tacArtRally), P.field.heroRallyPermille)
@@ -154,9 +163,13 @@ export function trySkill(s: FieldState, h: Hero, tu: number, tv: number): void {
     h.artOn = h.dash
     h.hitIds = []
   }
-  h.artCd = ticksOf(artCdSec(h))
+  if (extra) h.grit = 0
+  else h.artCd = ticksOf(artCdSec(h))
   h.why = WHY_NONE; h.whyTick = s.tick
-  emit(s, { kind: 'heroSkill', side: h.side, id: -1, u: tu, v: tv, n: 0, art: h.art })
+  // 범위(단위)를 싣는다 — 닿은 대가 없어도 낸다 (검수 B2) · 곁에 퍼지는 비기(큰 외침·버텨라)는 장수 자리
+  const round = h.art === 'shout' || h.art === 'stand'
+  const r = h.art === 'snipe' ? P.field.heroSnipeCells * unit : h.art === 'vanguard' ? P.field.heroVanguardCells * unit : P.field.heroArtCells * unit
+  emit(s, { kind: 'heroSkill', side: h.side, id: -1, u: round ? h.u : tu, v: round ? h.v : tv, n: 0, art: h.art, r })
 }
 
 /** 이 틱에 장수가 걸어갈 곳 — 적을 쳐라 → 방향 → 찍은 자리(또는 임시 AI 가 정한 곳) */
@@ -230,8 +243,7 @@ export function heroStrike(s: FieldState, dmg: number[], hits: number[][]): numb
       const base = hitArc(best, h) === 0 ? P.field.heroSwingShock : P.field.heroSwingSideShock
       const anvil = best.lock >= 0 && s.squads[best.lock]!.side === h.side
       const k = anvil ? mul(base, P.field.heroAnvilPermille) : base
-      best.shock += k
-      s.stats.artMorale[h.side] += k
+      addShock(s, best, k, 'hero')
     }
   }
   return toHero
@@ -302,7 +314,7 @@ export function heroMove(s: FieldState, K: Kit, asleep: (side: 0 | 1) => boolean
 /** 비기에 맞은 적 대 — 사기가 그 자리에서 heroArtFoeShock 뚝 (통계 · artHit 사건) */
 function artHit(s: FieldState, h: Hero, q: Squad, shock: number): void {
   if (shock <= 0) return
-  q.shock += shock
+  addShock(s, q, shock, 'hero')
   s.stats.artMorale[h.side] += shock
   emit(s, { kind: 'artHit', side: h.side, id: -1, u: q.u, v: q.v, n: shock, to: q.id, art: h.art })
 }
@@ -316,7 +328,6 @@ function dashHit(s: FieldState, h: Hero, p: Point): void {
     if (best === null || d < bd || (d === bd && rankCmp(s, q, best) < 0)) { best = q; bd = d }
   }
   if (!best) return
-  best.shock += P.field.heroDashShock
-  s.stats.artMorale[h.side] += P.field.heroDashShock
+  addShock(s, best, P.field.heroDashShock, 'hero')
   emit(s, { kind: 'impact', side: h.side, id: -1, u: idiv(h.u + best.u, 2), v: idiv(h.v + best.v, 2), n: best.men, to: best.id, how: HIT_GOOD })
 }

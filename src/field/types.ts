@@ -179,6 +179,8 @@ export interface Squad {
   face: number
   /** 밀려난 거리의 누적 (단위 · 2칸 밀릴 때마다 사기가 꺾인다 · 읽기용이기도 하다) */
   pushed: number
+  /** 달아났다가 장수 곁에서 다시 선 적이 있으면 1 (regroup · 대마다 판에 한 번) */
+  regrouped: 0 | 1
 }
 
 /** 장수 (C2: 플레이어가 직접 조종 · 입력이 없으면 임시 AI) */
@@ -225,6 +227,11 @@ export interface Hero {
   whyTick: number
   /** 이번 선봉 내닫기에 이미 맞은 적 대 id (한 번 내닫기에 대마다 한 번만 사기가 뚝) */
   hitIds: number[]
+  /**
+   * 투지 0~1000 (52 §6-2 · 1000 이면 찼다) — 제 편 사기가 적보다 낮을수록 빨리 찬다 · 찬 채로 비기를 쓰면 쿨타임이 돌고 있어도 한 번 더 쓴다(투지는 0 으로).
+   * 화면은 찬 정도(÷ 1000)와 「찼다」(= 1000)를 읽는다
+   */
+  grit: number
 }
 
 export interface FieldInput { tick: number; g: InputGroup; op: number; u: number; v: number }
@@ -238,7 +245,15 @@ export interface FieldInput { tick: number; g: InputGroup; op: number; u: number
  * 사기 문턱: 처음 사기의 P.field.waverPermille(70%) 아래 = 흔들림 · P.realm.tacBreakMorale(55%) 아래 = 무너짐(rout · flee).
  * 줄은 끝없이 자라지 않는다: 마지막 eventKeepSec 초만 남긴다 (화면은 읽은 마지막 틱 뒤의 줄만 읽는다)
  */
-export type FieldEventKind = 'heroDash' | 'heroSkill' | 'heroDown' | 'heroUp' | 'impact' | 'rout' | 'gateBreak' | 'volley' | 'loss' | 'omen' | 'flankHit' | 'artHit'
+export type FieldEventKind = 'heroDash' | 'heroSkill' | 'heroDown' | 'heroUp' | 'impact' | 'rout' | 'gateBreak' | 'volley' | 'loss' | 'omen' | 'flankHit' | 'artHit' | 'sideBreak' | 'stand' | 'regroup'
+/**
+ * (C2 판의 법칙 묶음 · 52 §6 · 검수 B5) sideBreak 편이 무너짐 — 편 사기(또는 사람)가 문턱 아래로 간 틱에 한 번 · id -1 · (u, v) = 그 편 산 대의 가운데 ·
+ *   n = 1 사람 · 2 사기 · 그 뒤 P.field.sideBreakSec 동안 그 편의 남은 대가 모두 달아나고 나서 판이 끝난다 (end · winner 는 그때 선다).
+ * stand 버팀 — 편 사기가 문턱 바로 위(standAbovePermille)로 내려온 순간 장수 곁(heroArtCells)의 대들 사기가 한 번 되오른다 (판마다 편에 한 번) ·
+ *   id -1 · (u, v) = 장수 자리 · n = 되오른 대 수 · r = 범위(단위).
+ * regroup 달아난 대가 제 장수 곁(regroupCells)에 와서 다시 선다 (대마다 판에 한 번) · id = 그 대 · n = 되오른 사기(천분율).
+ * heroSkill 은 r = 비기가 닿는 범위(단위 · 닿은 대가 없어도 낸다 · 큰 외침은 (u, v) = 장수 자리).
+ */
 /** loss 사건의 종류 (FieldEvent.how) — 0 칼 · 1 화살 · 2 장수 · 3 비기 · 4 부딪힘 */
 export const LOSS_BLADE = 0, LOSS_ARROW = 1, LOSS_HERO = 2, LOSS_ART = 3, LOSS_IMPACT = 4
 export interface FieldEvent {
@@ -259,7 +274,22 @@ export interface FieldEvent {
   art?: HeroArt
   /** omen(적 큰 수 예고 · omenSec 전): 올 길의 점들 · id = 올 대 하나 */
   pts?: Point[]
+  /** heroSkill · stand: 닿는 범위 (단위 · 반지름) */
+  r?: number
 }
+
+/** 진 (52 §6-1 · 준비 화면에서 고른다) — 0 방패 벽(방패 가운데 · 버팀에 덤) · 1 창 쐐기(창 가운데 · 돌격에 덤) · 2 넓은 날개(기병이 더 바깥·앞 · 옆치기가 빨리 닿음) */
+export const LINE_SHIELD = 0, LINE_WEDGE = 1, LINE_WINGS = 2
+export const LINES = 3
+/**
+ * 편의 사기를 깎은 몫 — 까닭별 합 (검수 B5 · 결과 한 장의 「가장 큰 까닭」) · 단위는 천분율 × 사람
+ * (÷ 그 편 처음 사람 수 = 편 사기에서 깎인 천분율 · 되오른 몫은 빼지 않은 깎인 몫만).
+ * arrows 화살 · melee 맞붙음(정면 칼날 · 돌격의 쾅 · 방진에 막힘 · 목책·진영 무너짐) · flank 옆·뒤 맞음(옆치기 들이침 포함) ·
+ * hero 적장(칼 · 휘두름 · 내닫기 · 비기 · 장수가 쓰러짐) · domino 곁의 대가 무너지고 달아남 · push 전선이 밀림
+ */
+export interface MoraleBy { arrows: number; melee: number; flank: number; hero: number; domino: number; push: number }
+export type MoraleCause = keyof MoraleBy
+export const MORALE_CAUSES: readonly MoraleCause[] = ['arrows', 'melee', 'flank', 'hero', 'domino', 'push']
 
 export interface LiveSide {
   men: Readonly<Record<Grp, number>>
@@ -274,6 +304,8 @@ export interface LiveSide {
   hero: { id: string; mu: number; tong?: number; art?: HeroArt } | null
   player: boolean
   seen: boolean
+  /** 진 LINE_* (52 §6-1) — 없으면 씨앗으로 셋 가운데 하나 (우리 편은 화면이 늘 넘긴다 · 안 고르면 0) · 병종(kinds)이 없으면 진이 병종을 정한다 */
+  form?: 0 | 1 | 2
 }
 
 /** 바닥 종류 — 0 평지 · 1 얕은 물(느림) · 2 깊은 물(못 걸음) · 3 막힘(못 걸음) · 4 높은 터(위에 선 활이 세고, 올라오는 적은 느리다) */
@@ -348,7 +380,14 @@ export interface FieldState {
   grpWhy: [number, number, number]
   grpWhyTick: [number, number, number]
   /** 결과 통계 (편마다 · 끝 상자) — 먹힌 옆치기 수 · 비기로 깎은 적 사기 합(천분율 × 대) · 쓰러뜨린 적 사람 · 잃은 사람 */
-  stats: { flankHits: [number, number]; artMorale: [number, number]; killed: [number, number]; lost: [number, number] }
+  stats: { flankHits: [number, number]; artMorale: [number, number]; killed: [number, number]; lost: [number, number]; moraleBy: [MoraleBy, MoraleBy] }
+  /** 편마다의 진 LINE_* (LiveSide.form · 없으면 씨앗) — 화면은 lineup[1] 로 적 진을 읽는다 */
+  lineup: [number, number]
+  /** 편이 무너진 틱 (sideBreak · -1 아직) · 무너진 까닭 1 사람 · 2 사기 (0 아직) — 무너진 뒤 sideBreakSec 에 끝난다 */
+  breakTick: [number, number]
+  breakWhy: [number, number]
+  /** 버팀을 쓴 편 (stand · 판마다 한 번) */
+  stood: [0 | 1, 0 | 1]
   /** 적의 큰 수 (입력 없는 편의 옆치기 · 51 §7) — 그 편이 옆치기를 거는 틱 (-1 없음 · 판을 만들 때 씨앗으로 정한다) */
   planTick: [number, number]
   /** 편마다 앞줄 대가 마지막으로 맞물린 틱 (-1 없음) — 맞물려 있으면 진의 기준점이 언다 (52 §1-3 · F 로 풀린다) */
