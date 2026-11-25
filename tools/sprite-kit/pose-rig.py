@@ -8,6 +8,7 @@
   py -3 -I tools/sprite-kit/pose-rig.py   → D:/에셋창고/STD/rig-f-walk-a.png · rig-f-walk-b.png · rig-f-walk8.png(한 줄 미리 보기)
 """
 import math
+import os
 from PIL import Image, ImageDraw
 
 STD = 'D:/에셋창고/STD'
@@ -43,6 +44,14 @@ STYLES = {
 STYLE = dict(STYLES['plain'])
 # 몸매: 인형이 납작하면 그림 도구가 그 납작함까지 따라 그린다 -> 가슴·엉덩이를 장수 표(hero-types.tsv 의 bust)대로 인형에 그려 준다
 BUST = {'S': 5, 'M': 7.5, 'L': 10.5, 'XL': 13.5}
+# 남자 몸 (11-25 · 남장수 다시 그리기 시험 판): 머리뼈·키·관절 높이는 여자 인형과 같고 폭만 넓다(ART-SKELETON 남 표준 어깨 42~48 · 허리 19~24 · 골반 29~34 / 근육질 50~57 · 21~26 · 33~39).
+#   sw 어깨 · cw 가슴통(몸통 윗폭) · ww 허리 · hw 골반 · lw 다리 굵기 · aw 팔 굵기. 가슴(bust)은 그리지 않는다.
+MALE_TYPES = {'std': dict(sw=3.2, cw=1.1, ww=1.2, hw=0.0, lw=0.5, aw=1.0), 'big': dict(sw=5.6, cw=2.0, ww=3.5, hw=1.5, lw=2.0, aw=2.5)}   # 여자 인형 대비 폭 비: 표준 어깨 1.2 · 우람 1.45 (kit 판에서 잰 남 표준 43 · 근육질 52 ÷ 여 표준 36)
+MALE = dict(on=False, sw=0, cw=0, ww=0, hw=0, lw=0, aw=0)
+
+
+def set_male(kind):
+    MALE.update(on=True, **MALE_TYPES[kind])
 SHAPE = dict(bust='M')
 
 
@@ -67,8 +76,8 @@ def leg(d, hip, thigh_a, shin_a, toe_a, fill, draw=True):
     toe = (ankle[0] + math.cos(r) * FOOT_L * Z, ankle[1] + FOOT_H * Z * .5 - math.sin(r) * FOOT_L * Z)
     heel = (ankle[0] - math.cos(r) * 3 * Z, ankle[1] + FOOT_H * Z * .5 + math.sin(r) * 3 * Z)
     if draw:
-        limb(d, hip, knee, 11.5, fill)
-        limb(d, knee, ankle, 8.5, fill)
+        limb(d, hip, knee, 11.5 + MALE['lw'], fill)
+        limb(d, knee, ankle, 8.5 + MALE['lw'] * .7, fill)
         limb(d, heel, toe, FOOT_H, fill)
     return max(toe[1], heel[1]) + FOOT_H * Z / 2 + 3
 
@@ -76,8 +85,8 @@ def leg(d, hip, thigh_a, shin_a, toe_a, fill, draw=True):
 def arm(d, sh, up_a, fore_a, fill):
     el = pt(sh[0], sh[1], up_a, UPPER * Z)
     wr = pt(el[0], el[1], fore_a, FORE * Z)
-    limb(d, sh, el, 6.5, fill)
-    limb(d, el, wr, 5.5, fill)
+    limb(d, sh, el, 6.5 + MALE['aw'], fill)
+    limb(d, el, wr, 5.5 + MALE['aw'] * .8, fill)
     d.ellipse([wr[0] - HAND * Z, wr[1] - HAND * Z, wr[0] + HAND * Z, wr[1] + HAND * Z], fill=fill, outline=LINE, width=3)
     return wr
 
@@ -355,15 +364,19 @@ def figure(phase, swing_near, pose=None):
         hn = wrist(sh_n, arm_n[0], arm_n[1])   # (11-23: 머리를 등 뒤로 그렸더니 서기 그림과 어긋나 망치 머리가 둘이 됐다)
         r28 = math.radians(24)
         pole(d, hn, (hn[0] + math.cos(r28) * 22 * Z, hn[1] - math.sin(r28) * 22 * Z), back=6, front=14)
-    d.polygon([(sh_n[0] - 9 * Z, sh_y), (sh_f[0] + 6 * Z, sh_y - 2 * Z), (hip_f[0] + 8 * Z, hip_y + 5 * Z), (hip_n[0] - 9 * Z, hip_y + 6 * Z)], fill=BODY, outline=LINE)
-    d.ellipse([cx - 10 * Z, hip_y - 10 * Z, cx + 11 * Z, hip_y + 6 * Z], fill=BODY, outline=LINE, width=4)            # 골반 (11-23 형 「허리가 길어 보인다」: 골반 덩어리가 엉덩관절 아래 12 까지 내려가 가랑이가 낮게 읽혔다 → 6 까지만)
-    d.ellipse([cx - 13 * Z, hip_y - 11 * Z, cx + 6 * Z, hip_y + 7 * Z], fill=BODY, outline=LINE, width=4)   # 엉덩이(뒤로 둥글게)
-    b = BUST[SHAPE['bust']] * Z   # 가슴: 몸통 앞으로 도드라진다 (먼 쪽 먼저 · 가까운 쪽이 덮는다)
+    M_ = MALE; d.polygon([(sh_n[0] - (9 + M_['sw'] + M_['cw']) * Z, sh_y), (sh_f[0] + (6 + M_['sw'] + M_['cw']) * Z, sh_y - 2 * Z), (hip_f[0] + (8 + M_['ww']) * Z, hip_y + 5 * Z), (hip_n[0] - (9 + M_['ww']) * Z, hip_y + 6 * Z)], fill=BODY, outline=LINE)
+    if M_['on']:   # 남자: 어깨선을 넓게 · 어깨 둥근 끝 두 개
+        for sx_, sy_ in ((sh_n[0] - (4 + M_['sw']) * Z, sh_y + 2 * Z), (sh_f[0] + (2 + M_['sw']) * Z, sh_y)):
+            d.ellipse([sx_ - 5 * Z, sy_ - 5 * Z, sx_ + 5 * Z, sy_ + 5 * Z], fill=BODY, outline=LINE, width=3)
+    hw_ = MALE['hw'] * Z
+    d.ellipse([cx - 10 * Z - hw_, hip_y - 10 * Z, cx + 11 * Z + hw_, hip_y + 6 * Z], fill=BODY, outline=LINE, width=4)            # 골반 (11-23 형 「허리가 길어 보인다」: 골반 덩어리가 엉덩관절 아래 12 까지 내려가 가랑이가 낮게 읽혔다 → 6 까지만)
+    d.ellipse([cx - 13 * Z - hw_, hip_y - 11 * Z, cx + 6 * Z + hw_, hip_y + 7 * Z], fill=BODY, outline=LINE, width=4)   # 엉덩이(뒤로 둥글게)
+    b = (0 if MALE['on'] else BUST[SHAPE['bust']]) * Z   # 가슴: 몸통 앞으로 도드라진다 (먼 쪽 먼저 · 가까운 쪽이 덮는다)
     bx, by = cx + lean + 5 * Z, sh_y + 13 * Z
-    d.ellipse([bx + 3 * Z - b * .9, by - 1 * Z - b * .9, bx + 3 * Z + b * .9, by - 1 * Z + b * .9], fill=(150, 150, 150), outline=LINE, width=3)
-    d.ellipse([bx - b, by - b, bx + b, by + b], fill=(185, 185, 185), outline=LINE, width=3)
+    if b: d.ellipse([bx + 3 * Z - b * .9, by - 1 * Z - b * .9, bx + 3 * Z + b * .9, by - 1 * Z + b * .9], fill=(150, 150, 150), outline=LINE, width=3)
+    if b: d.ellipse([bx - b, by - b, bx + b, by + b], fill=(185, 185, 185), outline=LINE, width=3)
     neck_x = cx + lean + 1 * Z
-    d.rectangle([neck_x - 3.5 * Z, sh_y - NECK * Z - 4, neck_x + 3.5 * Z, sh_y + 4], fill=BODY, outline=LINE, width=3)
+    d.rectangle([neck_x - (3.5 + MALE['on'] * 1.5) * Z, sh_y - NECK * Z - 4, neck_x + 3.5 * Z, sh_y + 4], fill=BODY, outline=LINE, width=3)
     hc = (neck_x + 2 * Z, sh_y - NECK * Z - HEAD_R * Z + 2 * Z)
     d.ellipse([hc[0] - HEAD_R * Z, hc[1] - HEAD_R * Z, hc[0] + HEAD_R * Z, hc[1] + HEAD_R * Z], fill=NEAR, outline=LINE, width=4)
     d.ellipse([hc[0] + 7 * Z, hc[1] - 2 * Z, hc[0] + 10 * Z, hc[1] + 2 * Z], fill=LINE)                                 # 눈(오른쪽을 본다)
@@ -829,6 +842,14 @@ def attack_sheets(kind):
 
 def main():
     import sys
+    if len(sys.argv) > 2 and sys.argv[1] == 'male':   # py pose-rig.py male <std|big> -> tools/out/male/rig-m-<종류>-stand.png (서기 한 칸) + rig-m-<종류>-walk8.png (걷기 한 줄)
+        set_male(sys.argv[2]); os.makedirs('tools/out/male', exist_ok=True)
+        st = dict(STAND, near_arm=(3, 8), far_arm=(-3, 5))
+        figure(None, True, st).save(f'tools/out/male/rig-m-{sys.argv[2]}-stand.png')
+        order = [(True, 'pass'), (True, 'reach'), (True, 'contact'), (True, 'down'), (False, 'pass'), (False, 'reach'), (False, 'contact'), (False, 'down')]
+        row = Image.new('RGB', (CELL * 8, CELL), (255, 0, 255))
+        for i, (sn, ph) in enumerate(order): row.paste(figure(ph, sn), (i * CELL, 0))
+        row.save(f'tools/out/male/rig-m-{sys.argv[2]}-walk8.png'); print('male', sys.argv[2]); return
     if 'short' in sys.argv:   # 단검: 한 손 칼 인형에 짧은 칼날
         BLADE['len'] = 24
         sys.argv.remove('short')
