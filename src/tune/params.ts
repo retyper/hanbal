@@ -1224,7 +1224,7 @@ export const HAEBI_TREE = { max: 3, rankStep: .4, upgradeChance: .5, ultDamage: 
  * wall 창벽(창 조합): every 초마다 앞 ahead px 에 창날 spikes 개(사이 gap)가 가로로 life 초 · tick 초마다 피해 · 넘어오는 적은 벽 바깥으로 밀림(반폭 width)
  * tempest 삼연격(칼 조합): 셋째 칼 반달이 layers 겹(사이 spread 라디안) · 첫째·둘째 칼 피해 +share
  * mark 표식 사냥(단검 조합): every 초마다 shadowRange 안의 가장 센 적에 표식 · 그림자가 그 적만 벰 · 내 찌르기가 표식에 닿으면 burst 배로 터짐
- * whip 말채찍: 피해 base 배 · 줄을 길이로 나눠 몸쪽 rootPart 는 root 배 · 끝 tipPart 는 tip 배 + daze 초 멈칫 · 가운데는 1배 · 4단계부터 back2 초 뒤 줄이 되돌아와 back2Share 몫으로 한 번 더 · 끝에 bigTip 마리 이상 맞히면 큰 한 방 (시작값 · 카드 W7 에서 잰다)
+ * whip 말채찍: 피해 base 배 · 줄을 길이로 나눠 몸쪽 rootPart 는 root 배 · 끝 tipPart 는 tip 배 + daze 초 멈칫 · 가운데는 1배 · back2Rank 단계부터 back2 초 뒤 줄이 되돌아와 back2Share 몫으로 한 번 더 · 끝에 bigTip 마리 이상 맞히면 큰 한 방 (시작값 · 카드 W7 에서 잰다)
  * shard 갈라짐 조각(천 갈래 바람 · 유성 화살비 · 폭렬비도): 앞으로만 spread 라디안 사이 부채
  */
 export const HAEBI_KITS = {
@@ -1236,7 +1236,7 @@ export const HAEBI_KITS = {
   dagger: { base: 1.2, arc4: -.3, crit: 2, poisonShare: .3, poisonTime: 3, poisonMax: 4, poisonMax4: 8, bigStacks: 3, stepCd: 2, stepCrowd: 3, stepRadius: 60, stepBeside: 34 },
   bell: { groundTime: 2, radius: .6, damage: .5 },
   sling: { near: 90, nearShare: .5, far: .4, bounce: 70, bounceShare: .4, bigHits: 2 },
-  whip: { base: 1.15, rootPart: .3, tipPart: .35, root: .6, tip: 1.8, daze: .2, back2: .22, back2Share: .5, bigTip: 3 },
+  whip: { base: 1.15, rootPart: .3, tipPart: .35, root: .6, tip: 1.8, daze: .2, back2: .22, back2Share: .5, back2Rank: 4, bigTip: 3 },
   gale: { flight: .45, throwMin: 90, throw: 220, splash: 60, spin: 1, spinEvery: .3, spinRadius: 46, spinShare: .4, arc: 90, landedSize: 38 },
   rain: { look: 1.3, cluster: 90, spreadMore: 2 },
   seal: { delay: .8 },

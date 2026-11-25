@@ -920,6 +920,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   drawTrails(ctx, s)
   for (const b of s.shots) {
     if (view && !inView(view, b.x, b.y, WD.view.cull * 2.5)) continue   // 내리꽂히는 화살·포물선 돌은 땅 자리보다 높이 그린다
+    if (b.kind === 'lash') continue   // 말채찍 되감기 자리표 (줄은 칸 그림 · 줄 그리기는 카드 W5)
     const p = projectileAnchor(b)
     // 58-KITS 질풍 도끼는 높이 던져 떨어진다 (날아가는 동안 포물선으로 떠 있다 · 박힌 뒤·돌아올 때는 땅 높이)
     if (b.kind === 'gale') { const up = s.kits && !b.landed && b.gen !== 1 && b.life > KITS58.gale.spin ? Math.sin(Math.min(1, 1 - (b.life - KITS58.gale.spin) / KITS58.gale.flight) * Math.PI) * KITS58.gale.arc : 0; axe(ctx, images, p.x, p.y - up, b.angle, b.landed ? KITS58.gale.landedSize : 30) }

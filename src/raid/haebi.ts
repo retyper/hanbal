@@ -353,7 +353,8 @@ export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit
   if (rules === '55-IMUGI' || rules === '55-TIGER' || rules === '57-BULGASARI' || rules === '55-GUMIHO' || rules === '55-SHAMAN') s.giantFlow = { midSpawned: false, midDefeated: false, finalSpawned: false, finalDefeated: false }
   // 57 은 56C 의 진짜 목책을 그대로 세우고 그 위에 거대 보스 흐름을 얹는다
   if (rules === '56C' || rules === '57-BULGASARI') s.palisade = createPalisade()
-  if (opts.kitRules === KIT_RULES) s.kits = { still: 0, aim: 0, runAim: 0, runT: 0, swing: 0, sealAt: -1, sealLeft: 0, zones: [], mark: 0, step: 0, stepped: false, focused: false, boltIdle: 0 }
+  // 채찍(whip)은 옛 셈이 없다 — 규칙을 안 켠 채 만들어도 늘 새 셈(옛 primary 길에는 채찍 가지가 없다)
+  if (opts.kitRules === KIT_RULES || kit === 'whip') s.kits = { still: 0, aim: 0, runAim: 0, runT: 0, swing: 0, sealAt: -1, sealLeft: 0, zones: [], mark: 0, step: 0, stepped: false, focused: false, boltIdle: 0 }
   if (opts.mapRules === MAP_RULES && mode === 'stage' && stage !== 'trial') s.wide = newWide()
   if (s.wide && opts.blockRules === SOLID_RULES) s.solids = solidsFor(stage)
   if (opts.anchorRules === ANCHOR_RULES) s.anchored = true
@@ -1207,6 +1208,27 @@ function addOns(s: HaebiRun, hits: Mob[], big: boolean) {
 }
 /** 장수 둘레 radius 안의 적 수 (거구 빼고) */
 const crowdNear = (s: HaebiRun, radius: number) => s.enemies.reduce((n, e) => n + (e.hp > 0 && !e.giant && Math.hypot(e.x - s.x, e.y - s.y) < radius ? 1 : 0), 0)
+/**
+ * 말채찍 한 번 휘두름 (58 · whip) — 줄(길이 length · 반폭 width)을 몸쪽·가운데·끝 셋으로 나눠 맞은 자리마다 피해가 다르다:
+ * ends 이면 몸쪽 rootPart 는 root 배 · 끝 tipPart 는 tip 배 + 멈칫 · ends 가 아니면(되감기) 모두 같은 몫. 끝에 맞힌 수를 함께 돌려준다.
+ */
+function lashSweep(s: HaebiRun, angle: number, length: number, width: number, damage: number, ends: boolean) {
+  const P = K.whip, cos = Math.cos(angle), sin = Math.sin(angle), shape = lineShape(s.x, s.y, cos, sin, length, width), side = cos < 0 ? -1 : 1
+  let tip = 0
+  const hits = collect(() => {
+    for (const e of s.enemies) {
+      if (e.hp <= 0) continue
+      let along: number
+      if (e.giant) { const c = giantContact(e, shape); if (!c) continue; along = (c.point.x - s.x) * cos + (c.point.y - s.y) * sin }
+      else { if (!inLine(s.x, s.y, e, cos, sin, length, width)) continue; along = (e.x - s.x) * cos + (e.y - s.y) * sin }
+      const frac = along / length, atTip = ends && frac >= 1 - P.tipPart, atRoot = ends && frac < P.rootPart
+      hit(s, e, damage * (atTip ? P.tip : atRoot ? P.root : 1), true, undefined, shape, false, side)
+      if (atTip) { tip++; if (e.hp > 0 && !steady(e)) e.daze = Math.max(e.daze, P.daze) }
+    }
+  })
+  if (s.palisade) wallHit(s, shape, 'melee')
+  return { hits, tip }
+}
 /** 주 무기 (58) — 묶음마다 하나의 문법 · 4단계가 몸 둘레 원으로 바뀌지 않는다 */
 function primary58(s: HaebiRun, target: Mob, angle: number, dist: number, power: number, area: number, tempo: number) {
   const k = s.kits!, cos = Math.cos(angle), sin = Math.sin(angle), cap = s.ranks.capA, side = (c: number) => c < 0 ? -1 : 1
@@ -1332,6 +1354,16 @@ function primary58(s: HaebiRun, target: Mob, angle: number, dist: number, power:
       const b = shoot(s, 'pebble', Math.atan2(at.y - s.y, at.x - s.x), damage, s.x, s.y, at.x, at.y)
       if (b) { b.vx = (at.x - s.x) / C.slingFlight; b.vy = (at.y - s.y) / C.slingFlight; b.radius = (C.slingSplash + C.slingRankSplash * s.ranks.sling) * area * (s.ranks.sling >= 4 ? C.slingWide : 1) * (1 + P.far * Math.min(1, d / range)); tagPrimaryShot(b) }
     }
+  } else if (s.kit === 'whip') {
+    // 말채찍: 가까운 적 쪽으로 곧게 한 줄 · 줄 끝에 맞을수록 세고 몸쪽은 약하다 (거리를 일부러 벌려 끝을 맞힌다) · 4단계부터 줄이 되돌아와 한 번 더 · 둘레 원이 되지 않는다
+    const P = K.whip, r = s.ranks.lash, length = (C.whipLength + C.whipRankLength * r) * area, width = C.whipWidth * area
+    if (s.cool.lash || dist >= length) return
+    s.cool.lash = C.whipCooldown / tempo; s.attack = .3; s.face = side(cos)
+    const damage = (C.whipDamage + C.whipRankDamage * r) * power * P.base
+    fx(s, 'thrust', s.x, s.y, length, '#d9b27a', angle)
+    const { hits, tip } = lashSweep(s, angle, length, width, damage, true)
+    if (r >= P.back2Rank) { const b = shoot(s, 'lash', angle, damage * P.back2Share, s.x, s.y); if (b) { b.vx = 0; b.vy = 0; b.radius = length; b.life = P.back2 } }
+    addOns(s, hits, tip >= P.bigTip)
   } else if (s.kit === 'magic') {
     // 방울: 둘레가 내 땅 · 한자리에 서 있을수록 굿판이 넓고 세다 (걸으면 줄어든다) · 굿판이 다 차면 큰 한 방
     const P = K.bell, g = Math.min(1, k.still / P.groundTime), r = (C.bellRadius + C.bellRankRadius * s.ranks.bell) * area * (1 + P.radius * g)
@@ -2095,6 +2127,9 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
         // 폭우 (화살비 갈래 끝): 같은 자리에 한 번 더 (두 번째는 다시 안 부른다)
         if (!b.gen && s.kit === 'bow' && s.ranks.capB) { const c = T.cap.bow.b, again = shoot(s, 'rain', 0, b.damage * capShare(s.ranks.capB, c), b.x, b.y, b.x, b.y, 1); if (again) again.life = c.delay }
       }
+    } else if (b.kind === 'lash') {
+      // 말채찍 되감기(4단계~): 줄이 같은 쪽으로 돌아오며 한 번 더 — 끝 가산 없이 모두 같은 몫 · 장수는 그 사이 걸었어도 지금 자리에서
+      if (b.life <= 0) { fx(s, 'thrust', s.x, s.y, b.radius, '#d9b27a', b.angle); addOns(s, lashSweep(s, b.angle, b.radius, C.whipWidth * area, b.damage, false).hits, false) }
     } else if (s.kits && b.kind === 'gale' && b.gen !== 1) {
       // 58-KITS 질풍 도끼: 높이 던져 날아가는 동안은 치지 않고 · 떨어지면 둘레를 치고 박힌 채 돌며 · 질풍회륜(갈래 끝)이면 장수 쪽으로 돌아오며 벤다
       const P = K.gale

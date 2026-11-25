@@ -1,0 +1,89 @@
+// 열전 채찍 묶음 (11-25 형: 「채찍 좋은데 · 무기 전용 스킬이랑 스킬트리」 · docs/realm/WEAPON-KITS-SPECIAL-20261125.md 5절)
+// W2 말채찍(줄 끝이 세다) · W3 올가미는 아래에 이어 붙는다
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { HAEBI_RUN as C, HAEBI_KITS as K } from '../src/tune/params.ts'
+import { createHaebi, stepHaebi, spawnMob, powerScale, KITS, kitPowers, POWERS, type HaebiRun, type Mob } from '../src/raid/haebi.ts'
+import { replay } from '../src/raid/haebi-replay.ts'
+
+const DT = 1 / 120
+const IDLE = { x: 0, y: 0 }
+/** 적이 저절로 나오지 않는 판 */
+function field(x = 300, y = C.height / 2) {
+  const s = createHaebi(7, 'stage', 'whip', { simRules: '56B' }); s.spawn = 1e9; s.nextElite = 1e9; s.nextBarrage = 1e9; s.x = x; s.y = y
+  return s
+}
+function place(s: HaebiRun, dx: number, dy: number, kind: Mob['kind'] = 'club', hp = 1e6) {
+  spawnMob(s, 'club'); const e = s.enemies[s.enemies.length - 1]!
+  Object.assign(e, { kind, x: s.x + dx, y: s.y + dy, hp, max: hp, cd: 99 })
+  return e
+}
+const hurt = (e: Mob) => e.max - e.hp
+const dist = (s: HaebiRun, e: Mob) => Math.hypot(e.x - s.x, e.y - s.y)
+/** 그 쿨만 남기고 나머지 공격은 쉬게 */
+function only(s: HaebiRun, keep: (keyof HaebiRun['cool'])[]) { for (const k of Object.keys(s.cool) as (keyof HaebiRun['cool'])[]) if (!keep.includes(k)) s.cool[k] = 99 }
+const step = (s: HaebiRun, keep: (keyof HaebiRun['cool'])[] = []) => { only(s, keep); stepHaebi(s, IDLE, DT) }
+
+test('채찍 묶음: 말채찍으로 시작 · 첫 고름은 갈래마다 하나(올가미·말채찍·기세) · 칸 16개 · 같은 판 규칙(58-KITS)이 저절로 켜진다', () => {
+  const s = createHaebi(7, 'trial', 'whip')
+  assert.ok(s.kits, '채찍은 옛 셈이 없다 — 규칙 없이 만들어도 새 셈')
+  assert.equal(s.ranks.lash, 1); assert.equal(s.ranks.axe, 0)
+  assert.equal(s.cool.lash, 0)
+  s.xp = 999; stepHaebi(s, IDLE, .01)
+  assert.deepEqual(s.offers, ['lasso', 'lash', 'tempo'])
+  const powers = kitPowers('whip')
+  assert.equal(powers.length, 16)
+  assert.ok(powers.includes('lash') && powers.includes('lasso') && !powers.includes('dagger'))
+  assert.equal(KITS.whip.weapon, '채찍'); assert.equal(POWERS.lash.name, '말채찍'); assert.equal(POWERS.lasso.name, '올가미')
+  // 다른 묶음 판은 채찍 칸을 아예 안 만든다 (옛 판 상태가 글자 하나까지 같게)
+  const d = createHaebi(7, 'stage', 'dagger')
+  assert.ok(!('lash' in d.ranks) && !('lasso' in d.ranks) && !('lash' in d.cool) && !('snare' in d.cool))
+})
+
+test('말채찍: 줄 끝의 적은 몸쪽 적의 3배 · 가운데는 1배 · 줄 밖은 안 맞는다', () => {
+  const s = field(), root = place(s, 20, 0), mid = place(s, 110, 0), tip = place(s, 190, 0), out = place(s, 300, 0), side = place(s, 100, 120)
+  step(s, ['lash'])
+  assert.ok(s.cool.lash > 0, '휘둘렀다')
+  const base = (C.whipDamage + C.whipRankDamage) * powerScale(s) * K.whip.base
+  assert.ok(Math.abs(hurt(root) - base * K.whip.root) < 1e-6, `몸쪽 ${hurt(root)}`)
+  assert.ok(Math.abs(hurt(mid) - base) < 1e-6, `가운데 ${hurt(mid)}`)
+  assert.ok(Math.abs(hurt(tip) - base * K.whip.tip) < 1e-6, `끝 ${hurt(tip)}`)
+  const ratio = hurt(tip) / hurt(root)
+  assert.ok(Math.abs(ratio - 3) < .15, `끝 ÷ 몸쪽 = ${ratio}`)
+  assert.equal(hurt(out), 0, '길이 밖'); assert.equal(hurt(side), 0, '줄 폭 밖')
+  assert.ok(tip.daze >= K.whip.daze - DT, '끝에 맞으면 멈칫'); assert.equal(mid.daze, 0)
+})
+
+test('말채찍: 단계마다 길어지고(14px) 세진다 · 4단계부터 줄이 되돌아와 한 번 더(0.5배 · 끝 가산 없음)', () => {
+  const s = field(); s.ranks.lash = 3
+  const near = place(s, 150, 0), far = place(s, 225, 0)   // 3단계 길이 232 · 끝 구간은 232×0.65 부터
+  step(s, ['lash'])
+  assert.ok(hurt(near) > 0 && hurt(far) > 0, '3단계 길이 안')
+  const t = createHaebi(7, 'stage', 'whip', { simRules: '56B' }); t.spawn = 1e9; t.nextElite = 1e9; t.nextBarrage = 1e9; t.x = 300; t.y = C.height / 2; t.ranks.lash = 4
+  const e = place(t, 60, 0)
+  step(t, ['lash'])
+  const first = hurt(e), base = (C.whipDamage + C.whipRankDamage * 4) * powerScale(t) * K.whip.base
+  assert.ok(Math.abs(first - base * K.whip.root) < 1e-6, `첫 줄 몸쪽 ${first}`)
+  for (let i = 0; i < Math.ceil(K.whip.back2 / DT) + 3; i++) step(t)
+  assert.ok(Math.abs(hurt(e) - first - base * K.whip.back2Share) < 1e-6, `되감기 ${hurt(e) - first}`)
+  for (let i = 0; i < 60; i++) step(t)
+  assert.ok(Math.abs(hurt(e) - first - base * K.whip.back2Share) < 1e-6, '되감기는 한 번만')
+})
+
+test('말채찍: 끝에 셋 맞히면 큰 한 방 — 벽력이 튀고, 부적은 맞은 적에 붙는다', () => {
+  const s = field(); s.ranks.ember = 1; s.ranks.thunder = 1
+  place(s, 150, -14); place(s, 170, 0); place(s, 190, 14); place(s, 20, 0)
+  step(s, ['lash', 'ember', 'thunder'])
+  assert.ok(s.cool.thunder > 0, '벽력이 돌았다')
+  assert.ok(s.shots.some(b => b.kind === 'ember' && b.source !== undefined), '부적이 붙었다')
+  const u = field(); u.ranks.thunder = 1
+  place(u, 110, 0)
+  step(u, ['lash', 'thunder'])
+  assert.equal(u.cool.thunder, 0, '끝에 못 맞히면 큰 한 방이 아니다')
+})
+
+test('말채찍: 같은 씨앗이면 같은 판 (2회 재생이 같다)', () => {
+  const a = replay(5, 90, 'storm', undefined, 'whip'), b = replay(5, 90, 'storm', undefined, 'whip')
+  assert.equal(JSON.stringify(a), JSON.stringify(b))
+  assert.ok(a.damage > 0, '실제로 싸웠다')
+})
