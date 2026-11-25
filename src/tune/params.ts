@@ -1237,7 +1237,9 @@ export const HAEBI_KITS = {
   dagger: { base: 1.2, arc4: -.3, crit: 2, poisonShare: .3, poisonTime: 3, poisonMax: 4, poisonMax4: 8, bigStacks: 3, stepCd: 2, stepCrowd: 3, stepRadius: 60, stepBeside: 34 },
   bell: { groundTime: 2, radius: .6, damage: .5 },
   sling: { near: 90, nearShare: .5, far: .4, bounce: 70, bounceShare: .4, bigHits: 2 },
-  whip: { base: 1.15, rootPart: .3, tipPart: .35, root: .6, tip: 1.8, daze: .2, back2: .22, back2Share: .5, back2Rank: 4, bigTip: 3, lassoFlight: 1.5 },
+  whip: { base: 1.15, rootPart: .3, tipPart: .35, root: .6, tip: 1.8, daze: .2, back2: .22, back2Share: .5, back2Rank: 4, bigTip: 3, lassoFlight: 1.5,
+    /** 말투 (opts.whipStyle · 판 기록에 남음): crack 딱 = 끝 구간이 길고 세다 · 올가미는 약하게 끈다 / noose 올가미 = 끝은 약하고 올가미가 빠르고 세게 끌며 느려짐이 길다 (시작값 · 카드 W7) */
+    styles: { crack: { tip: 2.1, tipPart: .4, pull: .85, cool: 1, slow: 0 }, noose: { tip: 1.5, tipPart: .35, pull: 1.25, cool: .8, slow: .5 } } },
   gale: { flight: .45, throwMin: 90, throw: 220, splash: 60, spin: 1, spinEvery: .3, spinRadius: 46, spinShare: .4, arc: 90, landedSize: 38 },
   rain: { look: 1.3, cluster: 90, spreadMore: 2 },
   seal: { delay: .8 },

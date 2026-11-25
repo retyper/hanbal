@@ -168,3 +168,39 @@ test('올가미: 거구(거대 보스)는 맞아도 끌려오지 않는다 · �
   assert.equal(e.pull, undefined)
   assert.ok(Math.hypot(e.x - ox, e.y - oy) < 60, `거구가 끌려오지 않음 (${Math.hypot(e.x - ox, e.y - oy).toFixed(1)}px)`)
 })
+
+// ── W6 · 옛 기록과 말투 (설계 5-6 · 5-8) ──
+import { createHash } from 'node:crypto'
+import { goldenRun } from './raid-golden-kit.ts'
+import { normalizedRaidOpts } from '../src/raid/haebi.ts'
+import { KIT_BY_SPRITE } from '../src/raid/kit-table.ts'
+import { whipStyleOf, WHIP_SPRITES } from '../src/raid/whip-style.ts'
+const sha = (x: unknown) => createHash('sha256').update(JSON.stringify(x)).digest('hex')
+
+test('말갈기의 옛 기록(kit:dagger)은 채찍 묶음이 들어온 뒤에도 글자 하나 안 바뀐다 (채찍 이전 HEAD 에서 구운 해시)', () => {
+  assert.equal(sha(goldenRun('forest', 'dagger', 7, 90)), '884597cc718187b3b86e4bd1c627e485711dbf7f407df96280f34c99863d596e')
+  assert.equal(sha(goldenRun('palisade', 'dagger', 11, 90)), '249006bf43ac9f1f9c550f4c227e5fba8fc5e971f26a8e5149d44d3e39dbd960')
+})
+
+test('표를 켜기 전: 채찍 그림의 여섯 장수는 아직 단검 묶음이다 (형의 판은 계속 단검) · 말투 표는 여섯 모두 안다', () => {
+  assert.equal(WHIP_SPRITES.length, 6)
+  for (const key of WHIP_SPRITES) assert.equal(KIT_BY_SPRITE[key], 'dagger', key)
+  assert.deepEqual(WHIP_SPRITES.map(whipStyleOf), ['crack', 'crack', 'crack', 'noose', 'noose', 'noose'])
+  assert.equal(whipStyleOf('haebi'), 'crack')
+})
+
+test('말투: 판 기록 opts 에 남고(normalizedRaidOpts) 그 기록으로 다시 만든 판이 같다 · crack 은 끝이 더 세고 noose 는 올가미가 빠르다', () => {
+  const make = (style?: 'crack' | 'noose') => { const s = createHaebi(7, 'stage', 'whip', { simRules: '56B', ...(style ? { whipStyle: style } : {}) }); s.spawn = 1e9; s.nextElite = 1e9; s.nextBarrage = 1e9; s.x = 300; s.y = C.height / 2; return s }
+  const a = make('noose'), rec = normalizedRaidOpts(a, { simRules: '56B', whipStyle: 'noose' })
+  assert.equal(rec.whipStyle, 'noose')
+  assert.equal(normalizedRaidOpts(make(), {}).whipStyle, undefined, '말투를 안 준 판은 기록도 없다')
+  const again = createHaebi(7, 'stage', 'whip', rec); assert.equal(again.whipStyle, 'noose')
+  const tipHurt = (style?: 'crack' | 'noose') => { const s = make(style), e = place(s, 190, 0), r = place(s, 20, 0); step(s, ['lash']); return hurt(e) / hurt(r) }
+  assert.ok(Math.abs(tipHurt('crack') - K.whip.styles.crack.tip / K.whip.root) < .01, `crack ${tipHurt('crack')}`)
+  assert.ok(Math.abs(tipHurt('noose') - K.whip.styles.noose.tip / K.whip.root) < .01)
+  assert.ok(tipHurt('crack') > tipHurt() && tipHurt() > tipHurt('noose'))
+  const cool = (style: 'crack' | 'noose') => { const s = make(style); s.ranks.lasso = 1; place(s, 200, 0); step(s, ['lasso']); return s.cool.lasso }
+  assert.ok(cool('noose') < cool('crack') * .85, `noose ${cool('noose')} crack ${cool('crack')}`)
+  const pulled = (style: 'crack' | 'noose') => { const s = make(style); s.ranks.lasso = 1; s.ranks.lash = 0; const e = place(s, 200, 0); for (let i = 0; i < 400 && !e.pull; i++) step(s, i ? [] : ['lasso']); return e.pull?.t ?? 0 }
+  assert.ok(pulled('noose') < pulled('crack'), '올가미 말투가 더 빨리 끌어당긴다')
+})

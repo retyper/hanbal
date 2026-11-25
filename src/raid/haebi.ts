@@ -4,6 +4,7 @@ import { makeRng } from '../core/rng.ts'
 import { josa } from '../core/josa.ts'
 import { HAEBI_CHAMPION as CH } from '../tune/params.ts'
 import { HAEBI_GIANT as GI } from '../tune/params.ts'
+import type { WhipStyle } from './whip-style.ts'
 import { closestPoint, type Contact, type Shape, type Point } from './giant-core.ts'
 import { createGiant, stepGiant, commitGiant, syncGiantPose, giantStruck, endGiant, giantContact as contactOf, giantHpKey, nearestLiveHpPart, giantSweep, giantAimParts, giantHasTarget, giantPart, giantRecoveryHit, giantPoisonFromLastHit, giantName, giantEntrySeconds, giantMidHpScale, giantMaxHp, type GiantKind, type GiantState } from './giant.ts'
 import { HAEBI_AWAKEN_ULT as AC } from '../tune/params.ts'
@@ -253,6 +254,8 @@ export interface HaebiRun {
   chests?: Chest[]; chestChoice?: { id: number; left: number; nonce: number }; choiceOrigin?: 'level' | 'chest'; offerNonce?: number; chestGold?: number; chestsClaimed?: number; nextChestId?: number;
   /** 58-KITS 무기 개성 규칙 (opts.kitRules) — 없으면 옛 셈 */
   kits?: KitState;
+  /** 채찍 묶음의 말투 (opts.whipStyle · 없으면 기본 수치) */
+  whipStyle?: WhipStyle;
   /** 59-WIDE 넓은 맵 (opts.mapRules · raid/wide.ts) — 없으면 한 장짜리 옛 판 */
   wide?: WideState;
   /** 61-SOLID 막는 장식 밑동 (opts.blockRules · raid/props.ts) — 없으면 장식은 그림뿐 */
@@ -290,7 +293,7 @@ export function random(s: HaebiRun) { const rng = makeRng(s.seed); const n = rng
  * awaken remains the fallback qualification alias. Explicit53B, plus default trial/vanguard, preserve timed-awake rules.
  * mastery: 숲·여울·목책을 다 깬 장수 (막대 절반으로 시작)
  */
-export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' | '55-SHAMAN'; /** 58-KITS 무기 개성 — 스테이지 규칙과 따로 켠다 (판 기록 opts 에 그대로 남아 재생도 같다) */ kitRules?: '58-KITS'; /** 60-JACKPOT 상자 — 정예 상자는 고르지 않고 터지고, 중간 보스 상자는 조합 하나를 고른다 (스테이지 판만 · 판 기록 opts 에 남아 재생도 같다) */ chestRules?: '60-JACKPOT'; /** 59-WIDE 넓은 맵 — 열전 스테이지 판에만 켜진다 (시련·선봉에 넘겨도 한 장짜리 그대로 · 판 기록 opts 에 남아 재생도 같다) */ mapRules?: '59-WIDE'; /** 61-SOLID 넓은 맵의 나무·바위·목책이 장수와 적을 막는다 (무기는 통과 · 59-WIDE 판에서만 · 판 기록 opts 에 남아 재생도 같다) */ blockRules?: '61-SOLID'; /** 62-ANCHOR 장수는 제 발로만 움직인다 — 단검의 그림자 걸음·환영난무가 장수를 순간이동시키지 않는다 (형 11-23 「때리다가 갑자기 순간이동 · 보스전에서 원하지 않는 곳으로」 · 판 기록 opts 에 남는다) */ anchorRules?: '62-ANCHOR'; /** 73-PHANTOM 환영난무는 장수가 직접 옮겨 다니며 벤다 (62-ANCHOR 위에 얹는다) */ phantomRules?: '73-PHANTOM'; /** 74-BUFF 우물이 지속 회복 버프(물기운)가 된다 — 쿨타임이 찼을 때 닿으면 HAEBI_BUILD2.well.time 초 동안 총량을 고르게 채운다 (67-BUILD2 판에서만 · 판 기록 opts 에 남는다) */ buffRules?: '74-BUFF'; /** 64-BREAK 부위 파괴가 느껴지게 — 몸통 피해가 가까운 부위로 번지고 · 부위 체력 낮춤 · 부서지면 그로기와 더 큰 피해 (판 기록 opts 에 남는다) */ breakRules?: '64-BREAK'; /** 66-CAP 최고 레벨 뒤 기세 막대가 다시 차면 회복과 판 금으로 바꾼다 (HAEBI_CAP · 판 기록 opts 에 남는다) */ capRules?: '66-CAP'; /** 68-BOSSCHEST 중간 보스 상자가 늘 카드 셋 (안 연 조합 → 조합 단계 → 갈래 끝·주 무기 두 단계 · HAEBI_BOSS_CHEST · 판 기록 opts 에 남는다) */ bossChestRules?: '68-BOSSCHEST'; /** 71-BOSSDUEL 보스전 잡졸을 줄인다 — 마지막 두목이 살아 있으면 저절로 나오는 잡졸 bossSpawn 배·적 상한 bossCap · 중간 보스면 midbossSpawn 배 · 마지막 두목이 나오는 순간 보통 잡졸은 달아나 사라진다 (HAEBI_BOSS_DUEL · 스테이지 판만 · 판 기록 opts 에 남는다) */ bossDuelRules?: '71-BOSSDUEL'; /** 72-BOSSHIT 거대 보스의 큰 공격은 맞으면 최대 체력의 큰 몫이 깎인다 (HAEBI_BOSS_HIT · 스테이지 판만 · 판 기록 opts 에 남는다) */ bossHitRules?: '72-BOSSHIT'; /** 70-AWAKECAP 영구 각성(permanentAwake)으로 들어온 판은 최고 레벨 60 · 51~60 은 막대가 더 길고 레벨 힘은 반 (겉모습 각성 appearanceAwake 는 상관없다 · HAEBI_CAP60 · 66-CAP 판에서만 · 판 기록 opts 에 남는다) */ awakeCapRules?: '70-AWAKECAP' | '70B-AWAKECAP'; /** 69-BUILDUP 설치 갈래에 화력·장전 칸 (종류 칸을 쓰지 않는다 · 얹힐 설치물을 가진 판에만 나온다 · HAEBI_BUILDUP · 65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ buildUpRules?: '69-BUILDUP' | '69B-BUILDUP'; /** 67-BUILD2 설치 갈래에 장승·솟대·봉수대·포차·우물을 더한다 (65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ build2Rules?: '67-BUILD2'; /** 65-BUILD 레벨업 카드의 네 번째 갈래 「설치」 — 고르면 망루·목책·항아리가 장수 앞에 서서 판 끝까지 남는다 · 장수·적은 지나가지 못하고 장수가 몸으로 밀어 옮긴다 (판 기록 opts 에 남는다) */ buildRules?: '65-BUILD'; /** 75-WALL 항아리·솟대·봉수대·우물도 체력이 있어 잡졸·정예가 물어 부순다 · 부서진 것은 효과가 끊긴다 (65-BUILD 판에서만 · HAEBI_BREAKABLE · 판 기록 opts 에 남는다) */ wallRules?: '75-WALL'; /** 76-PACE 초반 곡선 — 생성 속도 계단을 잇고 첫 정예를 당긴다 (HAEBI_PACE · 스테이지 판만 · 판 기록 opts 에 남는다) */ paceRules?: '76-PACE'; /** 78-GAP 건물은 구석을 봉하지 못한다 — 건물끼리·건물과 땅 끝·고체 사이는 적 한 명이 지나갈 틈보다 가까이 못 붙는다 (65-BUILD 판에서만 · HAEBI_GAP · 판 기록 opts 에 남는다) */ gapRules?: '78-GAP' }
+export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' | '55-SHAMAN'; /** 58-KITS 무기 개성 — 스테이지 규칙과 따로 켠다 (판 기록 opts 에 그대로 남아 재생도 같다) */ kitRules?: '58-KITS'; /** 60-JACKPOT 상자 — 정예 상자는 고르지 않고 터지고, 중간 보스 상자는 조합 하나를 고른다 (스테이지 판만 · 판 기록 opts 에 남아 재생도 같다) */ chestRules?: '60-JACKPOT'; /** 59-WIDE 넓은 맵 — 열전 스테이지 판에만 켜진다 (시련·선봉에 넘겨도 한 장짜리 그대로 · 판 기록 opts 에 남아 재생도 같다) */ mapRules?: '59-WIDE'; /** 61-SOLID 넓은 맵의 나무·바위·목책이 장수와 적을 막는다 (무기는 통과 · 59-WIDE 판에서만 · 판 기록 opts 에 남아 재생도 같다) */ blockRules?: '61-SOLID'; /** 62-ANCHOR 장수는 제 발로만 움직인다 — 단검의 그림자 걸음·환영난무가 장수를 순간이동시키지 않는다 (형 11-23 「때리다가 갑자기 순간이동 · 보스전에서 원하지 않는 곳으로」 · 판 기록 opts 에 남는다) */ anchorRules?: '62-ANCHOR'; /** 73-PHANTOM 환영난무는 장수가 직접 옮겨 다니며 벤다 (62-ANCHOR 위에 얹는다) */ phantomRules?: '73-PHANTOM'; /** 74-BUFF 우물이 지속 회복 버프(물기운)가 된다 — 쿨타임이 찼을 때 닿으면 HAEBI_BUILD2.well.time 초 동안 총량을 고르게 채운다 (67-BUILD2 판에서만 · 판 기록 opts 에 남는다) */ buffRules?: '74-BUFF'; /** 64-BREAK 부위 파괴가 느껴지게 — 몸통 피해가 가까운 부위로 번지고 · 부위 체력 낮춤 · 부서지면 그로기와 더 큰 피해 (판 기록 opts 에 남는다) */ breakRules?: '64-BREAK'; /** 66-CAP 최고 레벨 뒤 기세 막대가 다시 차면 회복과 판 금으로 바꾼다 (HAEBI_CAP · 판 기록 opts 에 남는다) */ capRules?: '66-CAP'; /** 68-BOSSCHEST 중간 보스 상자가 늘 카드 셋 (안 연 조합 → 조합 단계 → 갈래 끝·주 무기 두 단계 · HAEBI_BOSS_CHEST · 판 기록 opts 에 남는다) */ bossChestRules?: '68-BOSSCHEST'; /** 71-BOSSDUEL 보스전 잡졸을 줄인다 — 마지막 두목이 살아 있으면 저절로 나오는 잡졸 bossSpawn 배·적 상한 bossCap · 중간 보스면 midbossSpawn 배 · 마지막 두목이 나오는 순간 보통 잡졸은 달아나 사라진다 (HAEBI_BOSS_DUEL · 스테이지 판만 · 판 기록 opts 에 남는다) */ bossDuelRules?: '71-BOSSDUEL'; /** 72-BOSSHIT 거대 보스의 큰 공격은 맞으면 최대 체력의 큰 몫이 깎인다 (HAEBI_BOSS_HIT · 스테이지 판만 · 판 기록 opts 에 남는다) */ bossHitRules?: '72-BOSSHIT'; /** 70-AWAKECAP 영구 각성(permanentAwake)으로 들어온 판은 최고 레벨 60 · 51~60 은 막대가 더 길고 레벨 힘은 반 (겉모습 각성 appearanceAwake 는 상관없다 · HAEBI_CAP60 · 66-CAP 판에서만 · 판 기록 opts 에 남는다) */ awakeCapRules?: '70-AWAKECAP' | '70B-AWAKECAP'; /** 69-BUILDUP 설치 갈래에 화력·장전 칸 (종류 칸을 쓰지 않는다 · 얹힐 설치물을 가진 판에만 나온다 · HAEBI_BUILDUP · 65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ buildUpRules?: '69-BUILDUP' | '69B-BUILDUP'; /** 67-BUILD2 설치 갈래에 장승·솟대·봉수대·포차·우물을 더한다 (65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ build2Rules?: '67-BUILD2'; /** 65-BUILD 레벨업 카드의 네 번째 갈래 「설치」 — 고르면 망루·목책·항아리가 장수 앞에 서서 판 끝까지 남는다 · 장수·적은 지나가지 못하고 장수가 몸으로 밀어 옮긴다 (판 기록 opts 에 남는다) */ buildRules?: '65-BUILD'; /** 75-WALL 항아리·솟대·봉수대·우물도 체력이 있어 잡졸·정예가 물어 부순다 · 부서진 것은 효과가 끊긴다 (65-BUILD 판에서만 · HAEBI_BREAKABLE · 판 기록 opts 에 남는다) */ wallRules?: '75-WALL'; /** 76-PACE 초반 곡선 — 생성 속도 계단을 잇고 첫 정예를 당긴다 (HAEBI_PACE · 스테이지 판만 · 판 기록 opts 에 남는다) */ paceRules?: '76-PACE'; /** 78-GAP 건물은 구석을 봉하지 못한다 — 건물끼리·건물과 땅 끝·고체 사이는 적 한 명이 지나갈 틈보다 가까이 못 붙는다 (65-BUILD 판에서만 · HAEBI_GAP · 판 기록 opts 에 남는다) */ gapRules?: '78-GAP'; /** 채찍 묶음의 말투 — crack 딱 · noose 올가미 (whip 판에만 · 판 기록 opts 에 남아 재생도 같다) */ whipStyle?: WhipStyle }
 /** 새 판이 쓰는 무기 규칙 */
 export const KIT_RULES = '58-KITS' as const
 /** 새 스테이지 판이 쓰는 상자 규칙 */
@@ -355,6 +358,7 @@ export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit
   if (rules === '56C' || rules === '57-BULGASARI') s.palisade = createPalisade()
   // 채찍(whip)은 옛 셈이 없다 — 규칙을 안 켠 채 만들어도 늘 새 셈(옛 primary 길에는 채찍 가지가 없다)
   if (opts.kitRules === KIT_RULES || kit === 'whip') s.kits = { still: 0, aim: 0, runAim: 0, runT: 0, swing: 0, sealAt: -1, sealLeft: 0, zones: [], mark: 0, step: 0, stepped: false, focused: false, boltIdle: 0 }
+  if (kit === 'whip' && opts.whipStyle) s.whipStyle = opts.whipStyle
   if (opts.mapRules === MAP_RULES && mode === 'stage' && stage !== 'trial') s.wide = newWide()
   if (s.wide && opts.blockRules === SOLID_RULES) s.solids = solidsFor(stage)
   if (opts.anchorRules === ANCHOR_RULES) s.anchored = true
@@ -394,7 +398,7 @@ export const castWallSeconds = (c?: CastState | null) => c ? c.total / castSlow(
 export const isPermanentAwake = (s: HaebiRun) => s.permanentAwake === true
 /** Snapshot external qualification/preferences once; replay never consults current storage. */
 export function normalizedRaidOpts(s: HaebiRun, opts: HaebiOpts): HaebiOpts {
-  return { ...opts, ...(opts.bonus ? { bonus: { ...opts.bonus } } : {}), ...(usesPermanentAwakening(s) ? { simRules: usesGiantBoss(s) ? giantRules(s) : usesPalisade(s) ? '56C' as const : usesAwakenedCast(s) ? '56B' as const : '56A' as const, permanentAwake: isPermanentAwake(s), appearanceAwake: s.appearanceAwake !== false } : {}), ...(usesKitRules(s) ? { kitRules: KIT_RULES } : {}), ...(usesJackpot(s) ? { chestRules: CHEST_RULES } : {}), ...(usesWideMap(s) ? { mapRules: MAP_RULES } : {}) }
+  return { ...opts, ...(opts.bonus ? { bonus: { ...opts.bonus } } : {}), ...(usesPermanentAwakening(s) ? { simRules: usesGiantBoss(s) ? giantRules(s) : usesPalisade(s) ? '56C' as const : usesAwakenedCast(s) ? '56B' as const : '56A' as const, permanentAwake: isPermanentAwake(s), appearanceAwake: s.appearanceAwake !== false } : {}), ...(usesKitRules(s) ? { kitRules: KIT_RULES } : {}), ...(s.whipStyle ? { whipStyle: s.whipStyle } : {}), ...(usesJackpot(s) ? { chestRules: CHEST_RULES } : {}), ...(usesWideMap(s) ? { mapRules: MAP_RULES } : {}) }
 }
 /** 이 판의 거대 보스 — 거대 보스 흐름이 선 판은 여울(이무기) · 설원(백두 대호) · 목책 돌파(불가사리) · 숲 산길(구미호) · 불타는 산성(불의 무녀 장군)이라 스테이지로 갈린다 */
 export const giantKind = (s: HaebiRun): GiantKind => s.stage === 'snow' ? 'tiger' : s.stage === 'palisade' ? 'bulgasari' : s.stage === 'forest' ? 'gumiho' : s.stage === 'fortress' ? 'shaman' : 'imugi'
@@ -1213,7 +1217,8 @@ const crowdNear = (s: HaebiRun, radius: number) => s.enemies.reduce((n, e) => n 
  * ends 이면 몸쪽 rootPart 는 root 배 · 끝 tipPart 는 tip 배 + 멈칫 · ends 가 아니면(되감기) 모두 같은 몫. 끝에 맞힌 수를 함께 돌려준다.
  */
 function lashSweep(s: HaebiRun, angle: number, length: number, width: number, damage: number, ends: boolean) {
-  const P = K.whip, cos = Math.cos(angle), sin = Math.sin(angle), shape = lineShape(s.x, s.y, cos, sin, length, width), side = cos < 0 ? -1 : 1
+  const P = K.whip, st = s.whipStyle ? P.styles[s.whipStyle] : null, tipMul = st?.tip ?? P.tip, tipPart = st?.tipPart ?? P.tipPart
+  const cos = Math.cos(angle), sin = Math.sin(angle), shape = lineShape(s.x, s.y, cos, sin, length, width), side = cos < 0 ? -1 : 1
   let tip = 0
   const hits = collect(() => {
     for (const e of s.enemies) {
@@ -1221,8 +1226,8 @@ function lashSweep(s: HaebiRun, angle: number, length: number, width: number, da
       let along: number
       if (e.giant) { const c = giantContact(e, shape); if (!c) continue; along = (c.point.x - s.x) * cos + (c.point.y - s.y) * sin }
       else { if (!inLine(s.x, s.y, e, cos, sin, length, width)) continue; along = (e.x - s.x) * cos + (e.y - s.y) * sin }
-      const frac = along / length, atTip = ends && frac >= 1 - P.tipPart, atRoot = ends && frac < P.rootPart
-      hit(s, e, damage * (atTip ? P.tip : atRoot ? P.root : 1), true, undefined, shape, false, side)
+      const frac = along / length, atTip = ends && frac >= 1 - tipPart, atRoot = ends && frac < P.rootPart
+      hit(s, e, damage * (atTip ? tipMul : atRoot ? P.root : 1), true, undefined, shape, false, side)
       if (atTip) { tip++; if (e.hp > 0 && !steady(e)) e.daze = Math.max(e.daze, P.daze) }
     }
   })
@@ -1422,14 +1427,15 @@ function rainSpot(s: HaebiRun, fallback: Mob) {
  * 정예·두목·철갑·곰·거구는 끌려오지 않고 느려지기만 한다 (lassoSlow 초 · 걸음 lassoSlowMul 배)
  */
 function lassoHit(s: HaebiRun, e: Mob, damage: number, contact: Contact<string> | null, from: Point) {
+  const st = s.whipStyle ? K.whip.styles[s.whipStyle] : null, pullTime = C.lassoPull / (st?.pull ?? 1)
   hit(s, e, damage, true, from, contact ?? undefined)
   if (s.kits) addOns(s, [e], false)
   if (e.hp <= 0 || e.giant) return
-  e.lasso = C.lassoSlow
+  e.lasso = C.lassoSlow + (st?.slow ?? 0)
   if (bigFoe(e) || steady(e)) return
-  e.daze = Math.max(e.daze, C.lassoPull + C.lassoDaze)
+  e.daze = Math.max(e.daze, pullTime + C.lassoDaze)
   const dx = e.x - s.x, dy = e.y - s.y, d = Math.hypot(dx, dy) || 1
-  if (d > C.lassoPullTo) e.pull = { c: dx / d, n: dy / d, t: C.lassoPull }
+  if (d > C.lassoPullTo) e.pull = { c: dx / d, n: dy / d, t: pullTime }
 }
 /** 끌려오는 한 걸음 — 장수 앞 목표점까지 남은 시간에 비례해 다가온다 (마지막 걸음에 정확히 닿는다 · 목책은 못 넘는다) */
 function pullStep(s: HaebiRun, e: Mob, dt: number) {
@@ -1450,7 +1456,7 @@ function secondary58(s: HaebiRun, target: Mob, angle: number, dist: number, powe
       const at = aimAt(e, s.x, s.y), a = Math.atan2(at.y - s.y, at.x - s.x), b = shoot(s, 'lasso', a, (C.lassoDamage + C.lassoRankDamage * s.ranks.lasso) * power, s.x, s.y, at.x, at.y)
       if (b) { b.source = e.id; b.vx = Math.cos(a) * C.lassoSpeed; b.vy = Math.sin(a) * C.lassoSpeed; b.life = range / C.lassoSpeed * K.whip.lassoFlight }
     }
-    if (used.length) { s.cool.lasso = C.lassoCooldown / tempo; s.attack = .3; s.face = Math.cos(angle) < 0 ? -1 : 1 }
+    if (used.length) { s.cool.lasso = C.lassoCooldown * (s.whipStyle ? K.whip.styles[s.whipStyle].cool : 1) / tempo; s.attack = .3; s.face = Math.cos(angle) < 0 ? -1 : 1 }
     return
   }
   if (s.kit !== 'axe' && s.kit !== 'bow' && s.kit !== 'sword') { secondary(s, target, angle, power, tempo); return }
