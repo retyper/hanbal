@@ -28,14 +28,28 @@ BRACE = {
     12: dict(pelvis=(0, -20), near_foot=(-16, 0), far_foot=(20, 0), hands=((-6, 32), (34, 60)), bend=30),
 }
 
+# 병종별 덧: shield(방패 몸 앞) · pike(긴 창 앞 아래로 박음) — 같은 인형에 손 자리와 쥔 물건만 다르다 (11-25 밤 · 형 「창병만 보임」)
+KIND = dict(
+    spear=dict(strip='spear', cw=438, prop='pole2'),
+    shield=dict(strip='shield', cw=254, prop='none', run_hands=((18, 50), (30, 56)), run_bend=24),
+    pike=dict(strip='pike', cw=380, prop='pole2'),
+)
+BRACE.update({
+    21: dict(pelvis=(2, -17), near_foot=(-12, 0), far_foot=(18, 0), hands=((14, 40), (26, 46)), bend=26),   # 방패 벽: 무릎 낮춤 · 두 팔을 앞 아래로(방패를 땅에 붙여 세움)
+    22: dict(pelvis=(0, -23), near_foot=(-14, 0), far_foot=(20, 0), hands=((14, 34), (26, 40)), bend=34),   # 부딪힘을 받는 순간 더 낮춤
+    31: dict(pelvis=(2, -16), near_foot=(-14, 0), far_foot=(20, 0), hands=((6, 56), (36, 34)), bend=24),    # 긴 창을 앞 아래로 비스듬히 박아 받침(창끝이 땅쪽)
+    32: dict(pelvis=(0, -20), near_foot=(-16, 0), far_foot=(22, 0), hands=((6, 52), (38, 28)), bend=30),
+})
+CUR = dict(KIND['spear'])
+
 
 def cell(n, swap=False):
     pr.big_canvas()
-    pr.PROP['kind'] = 'pole2'
+    pr.PROP['kind'] = None if CUR['prop'] == 'none' else CUR['prop']
     p = dict(RUN.get(n) or BRACE[n])
     if swap:   # 뒤 반 주기: 가까운 발과 먼 발의 자리를 맞바꾼다 (다리 교대)
         p['near_foot'], p['far_foot'] = p['far_foot'], p['near_foot']
-    hands, bend = p.get('hands', ((4, 56), (32, 66))), p.get('bend', 20)
+    hands, bend = p.get('hands', CUR.get('run_hands', ((4, 56), (32, 66)))), p.get('bend', CUR.get('run_bend', 20))
     ps = pr._ik(p['pelvis'], hands[0], hands[1], bend=bend, lean=3, near_foot=p['near_foot'], far_foot=p['far_foot'])
     im = pr.figure(None, True, ps)                     # 960x832 (게임 화소 4배)
     k = 0.5 * 126 / 137                                # 게임 화소 2배 · 병사 키에 맞춤
@@ -47,7 +61,7 @@ def cell(n, swap=False):
 
 
 def ref(i):
-    im = Image.open(ROOT + 'public/realm/anim-px/spear.png').convert('RGBA').crop((i * 438, 0, (i + 1) * 438, 128))
+    im = Image.open(ROOT + 'public/realm/anim-px/' + CUR['strip'] + '.png').convert('RGBA').crop((i * CUR['cw'], 0, (i + 1) * CUR['cw'], 128))
     im = im.crop(im.getchannel('A').getbbox())
     k = min(2.0, (LW - 12) / im.width)
     return im.resize((round(im.width * k), round(im.height * k)), Image.NEAREST)
@@ -59,7 +73,8 @@ def scene(group, out):
         r = ref(i)
         o.paste(r, ((LW - r.width) // 2, j * CH_ + CH_ - 40 - r.height), r)
     rec = []
-    for k, n in enumerate((11, 12) if group == 'hold' else (1, 2, 3, 4)):
+    cells = {'hold': (11, 12), 'shold': (21, 22), 'phold': (31, 32)}.get(group, (1, 2, 3, 4))
+    for k, n in enumerate(cells):
         x0, y0 = LW + (k % 2) * CWD, (k // 2) * CH_
         o.paste(cell(n, group == 'b'), (x0, y0))
         rec.append(dict(x=x0, y=y0, w=CWD, h=CH_, root=x0 + RX, ground=y0 + GY))
@@ -69,4 +84,6 @@ def scene(group, out):
 
 
 if __name__ == '__main__' and sys.argv[1] == 'run':
+    if len(sys.argv) > 4:
+        CUR.update(KIND[sys.argv[4]])   # run a|b|shold|phold <나갈.png> [spear|shield|pike]
     scene(sys.argv[2], sys.argv[3])
