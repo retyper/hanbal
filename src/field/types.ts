@@ -185,6 +185,10 @@ export interface Squad {
   regrouped: 0 | 1
   /** 상성에 진 첫 맞물림·첫 화살을 이미 맞았으면 1 (kindFirstShock 은 대마다 한 번) */
   countered: 0 | 1
+  /** 돌격의 쾅에 밀려 남은 거리 (단위 · u·v) 와 남은 틱 — shoveTicks 틱에 나눠 대 모양째 옮긴다 (한 틱에 1칸 뛰면 화면에서 앞줄이 튀어 흩어져 보였다 · 3차) */
+  shoveU: number
+  shoveV: number
+  shoveN: number
 }
 
 /** 장수 (C2: 플레이어가 직접 조종 · 입력이 없으면 임시 AI) */

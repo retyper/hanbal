@@ -75,7 +75,7 @@ export function run(s: FieldState, ticks: number): FieldState {
 export function mirror(s: FieldState): void {
   const mp = s.map, L = mp.u * P.field.unit
   const f = (u: number): number => L - 1 - u
-  for (const q of s.squads) { q.side = (1 - q.side) as 0 | 1; q.face = (HERO_DIRS - q.face + HERO_DIRS / 2) % HERO_DIRS; q.u = f(q.u); q.homeU = f(q.homeU); if (q.goal) q.goal = { u: f(q.goal.u), v: q.goal.v } }
+  for (const q of s.squads) { q.side = (1 - q.side) as 0 | 1; q.face = (HERO_DIRS - q.face + HERO_DIRS / 2) % HERO_DIRS; q.u = f(q.u); q.shoveU = -q.shoveU; q.homeU = f(q.homeU); if (q.goal) q.goal = { u: f(q.goal.u), v: q.goal.v } }
   for (const h of s.heroes) { h.side = (1 - h.side) as 0 | 1; h.u = f(h.u); if (h.goal) h.goal = { u: f(h.goal.u), v: h.goal.v } }
   const cells = new Uint8Array(mp.cells.length)
   for (let cu = 0; cu < mp.u; cu++) for (let cv = 0; cv < mp.w; cv++) cells[(mp.u - 1 - cu) * mp.w + cv] = mp.cells[cu * mp.w + cv]!

@@ -43,7 +43,7 @@ export function hashField(s: FieldState): string {
     h = mix(h, q.u); h = mix(h, q.v); h = mix(h, q.goal ? q.goal.u : -1); h = mix(h, q.goal ? q.goal.v : -1)
     h = mix(h, q.manual); h = mix(h, q.target); h = mix(h, q.hp); h = mix(h, q.morale); h = mix(h, q.stance); h = mix(h, q.shock); h = mix(h, q.lock); h = mix(h, q.sleep)
     h = mix(h, q.daze); h = mix(h, q.rem); h = mix(h, q.held); h = mix(h, q.foe); h = mix(h, q.calm); h = mix(h, q.form); h = mix(h, q.cmd); h = mix(h, q.reach); h = mix(h, q.aim)
-    h = mix(h, q.order); h = mix(h, q.orderTick); h = mix(h, q.orderAt ? q.orderAt.u : -1); h = mix(h, q.orderAt ? q.orderAt.v : -1); h = mix(h, q.ran); h = mix(h, q.bonus); h = mix(h, q.hitTick); h = mix(h, q.flee) ; h = mix(h, q.bw); h = mix(h, q.bd); h = mix(h, q.face); h = mix(h, q.pushed); h = mix(h, q.regrouped); h = mix(h, q.countered)
+    h = mix(h, q.order); h = mix(h, q.orderTick); h = mix(h, q.orderAt ? q.orderAt.u : -1); h = mix(h, q.orderAt ? q.orderAt.v : -1); h = mix(h, q.ran); h = mix(h, q.bonus); h = mix(h, q.hitTick); h = mix(h, q.flee) ; h = mix(h, q.bw); h = mix(h, q.bd); h = mix(h, q.face); h = mix(h, q.pushed); h = mix(h, q.regrouped); h = mix(h, q.countered); h = mix(h, q.shoveU); h = mix(h, q.shoveV); h = mix(h, q.shoveN)
   }
   for (const e of s.heroes) {
     h = hs(h, e.id)

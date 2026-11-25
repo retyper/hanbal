@@ -131,7 +131,7 @@ export function createField(setup: LiveSetup): FieldState {
         const stance = (P.field.stanceStart === 1 ? STANCE_NONE : Math.floor(roll(s.seed, 0, `stance:${id}`) * 3)) as 0 | 1 | 2 | 3
         s.squads.push({ id, side, grp, kind: parts[i]!.kind, men: cnt, menMax: cnt, fresh: men > 0 ? idiv(fresh * cnt, men) : 0, u, v, homeU: u, homeV: v, lock: -1, sleep: ticksOf(cp.asleep ?? 0), daze: 0, rem: 0, held: 0, flank: 0, stance, morale0: ls.morale, shock: 0, goal: null, manual: 0, target: -1, hp: cnt * MILLI, morale: ls.morale, foe: -1, calm: 0, form: 0, cmd: -1, reach: grp === 'bows' ? P.field.bowRangeCells * unit : 0, aim: -1,
           order: ORD_NONE, orderTick: -1, orderAt: null, ran: 0, bonus: 0, hitTick: -1, flee: 0,
-          bw: P.field.bodyWCells * unit, bd: (grp === 'horse' ? P.field.horseBodyDCells : P.field.bodyDCells) * unit, face: side === 0 ? 0 : HERO_DIRS / 2, pushed: 0, regrouped: 0, countered: 0 })
+          bw: P.field.bodyWCells * unit, bd: (grp === 'horse' ? P.field.horseBodyDCells : P.field.bodyDCells) * unit, face: side === 0 ? 0 : HERO_DIRS / 2, pushed: 0, regrouped: 0, countered: 0, shoveU: 0, shoveV: 0, shoveN: 0 })
       }
     })
     if (ls.hero) {
@@ -854,6 +854,7 @@ export function stepField(s: FieldState, inputs: readonly FieldInput[] = NO_INPU
   const retick = s.tick % Math.max(1, idiv(P.field.retargetMs * P.field.hz, MILLI)) === 0
   armyTick(s, retick || s.log.accepted.length > took)
   if (retick) retarget(s)
+  shoves(s)
   const K = kit()
   const contact = fight(s, K)
   const bank = banks(s)
@@ -985,14 +986,28 @@ function shove(s: FieldState, mover: Squad, from: Point, len: number, bank: read
   let du = mover.u - from.u, dv = mover.v - from.v
   if (du === 0 && dv === 0) du = -fwd(mover.side)
   const d2 = du * du + dv * dv, root = isqrt(d2), l = root * root === d2 ? root : root + 1
-  const goal = { u: clamp(mover.u + idiv(du * len, Math.max(1, l)), 0, lastU(s.map)), v: clamp(mover.v + idiv(dv * len, Math.max(1, l)), 0, lastV(s.map)) }
-  const unit = P.field.unit
-  const steps = Math.max(1, idiv(len + unit - 1, unit))
-  for (let k = 0; k < steps; k++) {
-    const p = stepToward(mover.u, mover.v, goal.u, goal.v, idiv(len * (k + 1), steps) - idiv(len * k, steps))
-    if (!walkable(groundAt(s.map, p.u, p.v)) || !holdOk(s, mover, p.u, p.v, bank)) break
-    mover.u = p.u; mover.v = p.v
-  }
+  // 밀림은 shoveTicks 틱에 나눠 옮긴다 (shoveStep · 3차) — 여기서는 남은 몫만 쌓는다
+  mover.shoveU += idiv(du * len, Math.max(1, l)); mover.shoveV += idiv(dv * len, Math.max(1, l))
+  mover.shoveN = Math.max(1, P.field.shoveTicks)
+  if (P.field.shoveTicks <= 1) shoveStep(s, mover, bank)
+}
+
+/** 밀림 한 틱 몫 — 남은 거리를 남은 틱으로 나눠 대 모양째 옮긴다 (막힘 칸·물가·지키는 한계면 남은 몫을 버린다) */
+function shoveStep(s: FieldState, q: Squad, bank: readonly [number | null, number | null]): void {
+  if (q.shoveN <= 0) return
+  const du = idiv(q.shoveU, q.shoveN), dv = idiv(q.shoveV, q.shoveN)
+  q.shoveU -= du; q.shoveV -= dv; q.shoveN--
+  const p = { u: clamp(q.u + du, 0, lastU(s.map)), v: clamp(q.v + dv, 0, lastV(s.map)) }
+  if (!walkable(groundAt(s.map, p.u, p.v)) || !holdOk(s, q, p.u, p.v, bank)) { q.shoveU = 0; q.shoveV = 0; q.shoveN = 0; return }
+  q.u = p.u; q.v = p.v
+  if (q.shoveN === 0) { q.shoveU = 0; q.shoveV = 0 }
+}
+
+/** 이번 틱의 밀림 (fight 앞 · 틱마다 · 대마다 제 몫만 옮겨 차례에 안 기댄다) */
+function shoves(s: FieldState): void {
+  if (!s.squads.some(q => q.shoveN > 0)) return
+  const bank = banks(s)
+  for (const q of s.squads) if (q.shoveN > 0) shoveStep(s, q, bank)
 }
 
 /**
