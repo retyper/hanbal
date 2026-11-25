@@ -3795,6 +3795,9 @@ export const SPEC = {
     noteMs: k(2200, 800, 6000, 100, '까닭·알림 상자가 떠 있는 시간', 'ms'),
     flagBarPx: k(64, 48, 96, 2, '아래 띠 칸의 높이 (손 닿는 곳 44 이상)', 'px'),
     markPoleCells: k(3, 1, 8, 0.5, '맵 위 깃발 표시의 장대 높이', '칸'),
+    shieldSpaceMul: k(0.85, 0.5, 1.5, 0.05, '방패 대: 줄·열 간격 (방패를 맞댄 촘촘한 벽)'), /*vfx*/
+    crossbowSpaceMul: k(1.25, 0.8, 2, 0.05, '쇠뇌 대: 줄·열 간격 (활보다 성기게)'), /*vfx*/
+    crossbowDropPermille: k(940, 700, 1000, 10, '쇠뇌: 몸을 낮춰 그린다 (키의 천분율)'), /*vfx*/
     /** 싸움 그림 (src/field/viewForm·viewMelee·viewFlag·viewFx*.ts · 51 시제품 §2·§4·§5·§8) — 그리는 쪽만 읽는다 */ /*vfx*/
     braceMs: k(300, 100, 1000, 50, '방진 앞 열: 부딪히는 순간 더 낮춰 받는 칸이 보이는 시간', 'ms'), /*vfx*/
     slotsFront: k(15, 3, 30, 1, '앞줄 대 하나가 그리는 병사 칸 수 (3열 × 5줄 · 사람 수와 묶지 않는다)'), /*vfx*/

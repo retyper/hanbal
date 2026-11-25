@@ -91,9 +91,13 @@ export function stripByKey(art: Art, key: string): Strip | null { return stripFi
 export function extraStrip(art: Art, baseKey: string, n: number, suffix = 'x'): Strip | null { return stripFile(art, `${baseKey}-${suffix}`, baseKey, n) }
 /** 방진으로 버티는 창병 두 칸 (칸 1 버팀 · 칸 2 더 낮춰 받음) — 창병만 */
 export const HOLD_N = 2
-export const holdStripFor = (art: Art, grp: string, kind: string): Strip | null => stripKey(art, grp, kind) === 'spear' ? extraStrip(art, 'spear', HOLD_N, 'hold') : null
+export const HAS_HOLD_STRIP: ReadonlySet<string> = new Set(['spear', 'shield', 'pike'])
+export function holdStripFor(art: Art, grp: string, kind: string): Strip | null {
+  const k = stripKey(art, grp, kind)
+  return HAS_HOLD_STRIP.has(k) ? extraStrip(art, k, HOLD_N, 'hold') : null
+}
 /** 덧띠가 있는 병종 */
-export const HAS_RUN_STRIP: ReadonlySet<string> = new Set(['spear', 'horse'])
+export const HAS_RUN_STRIP: ReadonlySet<string> = new Set(['spear', 'horse', 'shield'])
 
 function stripFile(art: Art, key: string, specKey: string, n: number): Strip | null {
   const had = art.strips.get(key)

@@ -7,7 +7,7 @@
  */
 import { P } from '../tune/params.ts'
 import { fieldView, inView, type Cam, type Viewport } from './viewCamera.ts'
-import { ATTACK0, ATTACK_N, DOWN, HIT, RUN_N, STAND0, STAND_N, WALK0, WALK_N, heroKey, heroStrip, pieceImg, holdStripFor, runStripFor, sheetOf, stripFor, type Art, type Strip } from './viewArt.ts'
+import { ATTACK0, ATTACK_N, DOWN, HIT, RUN_N, STAND0, STAND_N, WALK0, WALK_N, heroKey, heroStrip, pieceImg, holdStripFor, runStripFor, sheetOf, stripFor, stripKey, type Art, type Strip } from './viewArt.ts'
 import { dotPh, hash2 } from './viewDots.ts'
 import { dotDied, dotsOf, offU, offV, peekDots, resetForm, rowCount, rowOfDot, stepDots } from './viewForm.ts'
 import { FORM_HOLD, FORM_SCATTER, moraleOf } from './viewFxRead.ts'
@@ -435,6 +435,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
       const face = fx.face.get(q.id) ?? (side === 0 ? 1 : -1)
       const qu = pq === undefined ? q.u : mix(pq.u, q.u, alpha), qv = pq === undefined ? q.v : mix(pq.v, q.v, alpha)
       const strip = stripFor(art, q.grp, q.kind)
+      const kk = stripKey(art, q.grp, q.kind)
       const running = cur.end === null && moving && (q.ran > 0 || q.flee === 1)
       const holdStrip = form0Hold(q) ? holdStripFor(art, q.grp, q.kind) : null
       const braced = holdStrip !== null && bracedAt(q.id, nowMs)
@@ -443,7 +444,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
       const sl = settleDots(q, n, N0, cur, nowMs, qu, qv, strip, face === -1, sH, world.h)
       if (n === 0) continue
       const form = q.flee === 1 ? FORM_SCATTER : q.grp === 'front' ? q.form : 0
-      const dd = dotsOf(q.id, sl.N, form, face, nowMs, sl.dead, q.grp === 'horse' ? F.horseSpaceMul : q.grp === 'bows' ? F.bowsSpaceMul : 1, q.grp === 'front' ? F.depthFront : q.grp === 'bows' ? F.depthBows : F.depthHorse, q.bw / F.unit, q.bd / F.unit)
+      const dd = dotsOf(q.id, sl.N, form, face, nowMs, sl.dead, (q.grp === 'horse' ? F.horseSpaceMul : q.grp === 'bows' ? F.bowsSpaceMul : 1) * (kk === 'shield' ? F.shieldSpaceMul : kk === 'crossbow' ? F.crossbowSpaceMul : 1), q.grp === 'front' ? F.depthFront : q.grp === 'bows' ? F.depthBows : F.depthHorse, q.bw / F.unit, q.bd / F.unit)
       const kickCells = kickOf(q.id, nowMs)
       if (running && nowMs - (fx.dustAt.get(-1 - q.id) ?? -1e9) > F.runDustMs) {
         fx.dustAt.set(-1 - q.id, nowMs)
@@ -516,7 +517,8 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
           // 방진: 맨 앞 열은 버팀 칸(부딪히면 더 낮춰) · 뒤 열은 서기 칸에 창을 세운 채
           if (row === 0) { if (holdStrip !== null) { d.strip = holdStrip; d.frame = braced ? 1 : 0 } else d.frame = ATTACK0 }
           d.h = sH * F.holdDropPermille / 1000
-        }
+        } else if (kk === 'pike' && !moving && !gathering && !fighting && !running) d.frame = ATTACK0 // 긴 창: 뒤 열 창도 앞 열 어깨 위로 숲처럼
+        if (kk === 'crossbow') d.h *= F.crossbowDropPermille / 1000
         if (fighting && front && swing) fx.attackers++
         drawn++
         if (fighting && q.grp === 'bows' && aq !== undefined) {
