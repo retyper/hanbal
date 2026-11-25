@@ -47,3 +47,19 @@ export function sideDotCounts(men: readonly number[], lowShare = 1000): number[]
   }
   return out
 }
+
+/** 점 자리·걸음 몫을 대마다 한 번 계산해 표로 둔다 (프레임마다 해시를 다시 돌리지 않는다) — 같은 (id, k) 는 dotOffset·dotPhase 와 같은 값 */
+const table = new Map<number, Float64Array>()
+function rowOf(squadId: number): Float64Array {
+  let t = table.get(squadId)
+  if (t === undefined) {
+    const n = P.field.dotsPerSquadMax
+    t = new Float64Array(n * 3)
+    for (let k = 0; k < n; k++) { const o = dotOffset(squadId, k); t[k * 3] = o.du; t[k * 3 + 1] = o.dv; t[k * 3 + 2] = dotPhase(squadId, k) }
+    table.set(squadId, t)
+  }
+  return t
+}
+export const dotDu = (squadId: number, k: number): number => rowOf(squadId)[k * 3]!
+export const dotDv = (squadId: number, k: number): number => rowOf(squadId)[k * 3 + 1]!
+export const dotPh = (squadId: number, k: number): number => rowOf(squadId)[k * 3 + 2]!

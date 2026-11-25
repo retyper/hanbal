@@ -45,7 +45,7 @@ html,body{margin:0;height:100%;background:#10140d;overflow:hidden;font-family:sy
 document.head.append(style)
 
 const cv = document.getElementById('fd-cv') as HTMLCanvasElement
-const ctx = cv.getContext('2d') as CanvasRenderingContext2D
+const ctx = cv.getContext('2d', { alpha: false }) as CanvasRenderingContext2D
 const rotate = document.getElementById('fd-rotate') as HTMLDivElement
 
 const art = loadArt(import.meta.env.BASE_URL + 'realm/')
@@ -112,7 +112,10 @@ let cam = newCam(vp, bounds())
 
 function resize(): void {
   vp = { w: Math.max(1, innerWidth), h: Math.max(1, innerHeight) }
-  dpr = Math.min(devicePixelRatio || 1, low ? 1 : 2)
+  dpr = Math.min(devicePixelRatio || 1, low ? 1 : P.field.dprMax)
+  // 화소 수 상한: 큰 화면에서 캔버스가 수천만 화소가 되지 않게 (4K 에서 프레임이 20ms 를 넘던 것)
+  if (vp.w * vp.h * dpr * dpr > P.field.canvasPixelsMax) dpr = Math.sqrt(P.field.canvasPixelsMax / (vp.w * vp.h))
+  paintKey.x = NaN
   cv.width = Math.round(vp.w * dpr); cv.height = Math.round(vp.h * dpr)
   blocked = innerWidth <= P.field.portraitMaxW && innerHeight > innerWidth
   rotate.hidden = !blocked
@@ -165,13 +168,19 @@ function restart(): void {
 }
 
 const gaps: number[] = []
+/** 마지막으로 그린 때의 카메라·고른 칸·깃발 표시 (멈춤·끝·가로 안내 중에 같으면 다시 안 그린다) */
+const paintKey = { x: NaN, y: NaN, z: NaN, sel: -2, epoch: -1 }
+let markEpoch = 0
 function watchLoad(dtMs: number): void {
   if (low || dtMs <= 0 || dtMs > 500) return
   gaps.push(dtMs)
   if (gaps.length < 60) return
   const mid = [...gaps].sort((a, b) => a - b)[30]!
+  let long = 0
+  for (const g of gaps) if (g > P.field.lowLongMs) long++
   gaps.length = 0
-  if (mid > P.field.lowFrameMs) { low = true; resetFx(); resize() }
+  // 가운데값이 느리거나, 긴 프레임이 잦으면(들쭉날쭉) 저사양으로 내린다
+  if (mid > P.field.lowFrameMs || long * 1000 > P.field.lowLongPermille * 60) { low = true; resetFx(); resize() }
 }
 
 // ---- 깃발 (F5a): 칸 고르기 → 맵 누르기·길게·끌기 → 입력 줄 ----
@@ -212,6 +221,7 @@ function commit(r: Translated, now: number, goal: { u: number; v: number } | nul
     queue.push(...r.inputs)
     if (r.inputs.some(i => i.op === OP_MOVE)) lastMove[r.g] = state.tick
   }
+  markEpoch++
   if (goal !== null) { lastGoal[r.g] = goal; lastIntent[r.g] = r.intent }
   else if (r.intent === 'auto') lastGoal[r.g] = null
   else if (r.intent !== 'move') lastIntent[r.g] = r.intent
@@ -312,10 +322,16 @@ function onUp(e: PointerEvent): void {
 
 function paint(now: number, alpha: number): void {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-  drawField(ctx, vp, cam, cur, prev, alpha, viewMs, art, low, heroPick)
   const live = press === null ? null : pressNow(now, press.cx, press.cy)
-  const from = ui.sel >= 0 ? fromOf(ui.sel) : null
-  drawMarks(ctx, vp, cam, marks(), from, live === null ? null : live.mg)
+  // 멈춤·끝(잠잠해진 뒤)·가로 안내 중에는 바뀐 것이 없으면 다시 안 그린다
+  const calm = paused || frozen(now)
+  const k = paintKey
+  const same = calm && live === null && k.x === cam.x && k.y === cam.y && k.z === cam.zoom && k.sel === ui.sel && k.epoch === markEpoch
+  if (!blocked && !same) {
+    drawField(ctx, vp, cam, cur, prev, alpha, viewMs, art, low, heroPick)
+    drawMarks(ctx, vp, cam, marks(), ui.sel >= 0 ? fromOf(ui.sel) : null, live === null ? null : live.mg)
+    k.x = cam.x; k.y = cam.y; k.z = cam.zoom; k.sel = ui.sel; k.epoch = markEpoch
+  }
   flags.live(live === null ? null : live.r.why !== null ? whyText(live.r.g, live.r.why) : intentText(live.r.g, live.r.intent))
   flags.frame(now)
   flags.sync(cur, ui, usedNow(), frontStanceNow())
@@ -323,6 +339,9 @@ function paint(now: number, alpha: number): void {
   hud.frame(now)
   hud.showEnd(endAt > 0 && now - endAt >= P.field.endBoxMs ? cur : null)
 }
+
+/** 끝나고 쓰러진 병사까지 사라진 뒤에는 그림이 더 안 바뀐다 */
+const frozen = (now: number): boolean => endAt > 0 && now - endAt > P.field.endSlowMs + P.field.corpseMs + 600
 
 function frame(now: number): void {
   raf = 0
@@ -346,7 +365,7 @@ function frame(now: number): void {
   if (!blocked && ui.phase === 'play' && introLeft > 0) introLeft = Math.max(0, introLeft - Math.min(dtMs, 100))
   const dt = Math.min(dtMs, 100)
   if ((padTick++ & 15) === 0) measurePads()
-  if (!paused && !blocked) viewMs += endAt > 0 && now - endAt < P.field.endSlowMs ? dt * P.field.endSlowPermille / 1000 : dt
+  if (!paused && !blocked && !frozen(now)) viewMs += endAt > 0 && now - endAt < P.field.endSlowMs ? dt * P.field.endSlowPermille / 1000 : dt
   followTarget(dt / 1000)
   paint(now, blocked ? 1 : Math.min(1, acc / stepMs))
 }
@@ -354,7 +373,8 @@ function frame(now: number): void {
 function wake(): void {
   if (raf === 0 && !document.hidden) { last = 0; acc = 0; raf = requestAnimationFrame(frame) }
 }
-document.addEventListener('visibilitychange', wake)
+// 탭에 돌아오면 밀린 시간을 몰아 돌리지 않는다 (rAF 가 이미 예약돼 있어도 시계를 새로 시작한다)
+document.addEventListener('visibilitychange', () => { last = 0; acc = 0; paintKey.x = NaN; wake() })
 addEventListener('resize', () => { resize(); wake() })
 cv.addEventListener('pointerdown', onDown)
 cv.addEventListener('pointermove', onMove)
@@ -393,5 +413,14 @@ hud.setZoom(0)
 flags = mountFlags(root, import.meta.env.BASE_URL + 'realm/', handlers)
 root.append(document.getElementById('fd-rotate') as HTMLElement)
 resize()
+/** 화면 배율(dpr)이 바뀌면(창을 다른 화면으로 옮김 · 확대) 다시 맞춘다 */
+let dprQuery: MediaQueryList | null = null
+function watchDpr(): void {
+  dprQuery?.removeEventListener('change', onDprChange)
+  dprQuery = matchMedia(`(resolution: ${devicePixelRatio}dppx)`)
+  dprQuery.addEventListener('change', onDprChange)
+}
+function onDprChange(): void { resize(); wake(); watchDpr() }
+watchDpr()
 wake()
 ;(window as unknown as Record<string, unknown>)['__fieldPads'] = (): { padTop: number; padBottom: number; zoom: number; vp: Viewport } => ({ padTop, padBottom, zoom: cam.zoom, vp })

@@ -8,7 +8,7 @@
 import { P } from '../tune/params.ts'
 import { fieldView, inView, type Cam, type Viewport } from './viewCamera.ts'
 import { ATTACK0, ATTACK_N, DOWN, HIT, STAND0, STAND_N, WALK0, WALK_N, heroStrip, pieceImg, sheetOf, stripFor, type Art, type Strip } from './viewArt.ts'
-import { dotOffset, dotPhase, hash2, sideDotCounts } from './viewDots.ts'
+import { dotDu, dotDv, dotPh, hash2, sideDotCounts } from './viewDots.ts'
 import { drawTerrain } from './viewTerrain.ts'
 import { TEAM_RGB } from './viewTint.ts'
 import type { VModel } from './viewRead.ts'
@@ -27,6 +27,8 @@ const pool: Item[] = []
 const order: Item[] = []
 let used = 0
 
+/** 프레임마다 새로 만들지 않는 작업 배열 */
+const arrowBuf: number[] = [], flagBuf: number[] = [], mine: VModel['squads'] = [], menOf: number[] = []
 const byY = (a: Item, b: Item): number => a.y - b.y
 function nextItem(): Item {
   if (used === pool.length) pool.push({ y: 0, x: 0, kind: 0, strip: null, frame: 0, flip: false, side: 0, h: 0, img: null, alpha: 1, hero: false })
@@ -117,22 +119,38 @@ function addProps(m: VModel, art: Art, view: ReturnType<typeof fieldView>): void
  */
 function drawBanners(ctx: CanvasRenderingContext2D, at: readonly number[], zoom: number, baseH: number): void {
   const F = P.field
+  if (at.length === 0) return
   ctx.lineJoin = 'round'
-  for (let i = 0; i < at.length; i += 4) {
-    const x = at[i]!, y = at[i + 1]!, side = at[i + 2] as 0 | 1, kind = at[i + 3]!
-    const hero = kind > 0
+  ctx.strokeStyle = ARROW_COLOR
+  ctx.lineWidth = Math.max(1, 1.4 / zoom)
+  const geom = (i: number): { x: number; y: number; sz: number; top: number; hero: boolean } => {
+    const hero = at[i + 3]! > 0
     const sz = Math.max(baseH * (hero ? 0.4 : 0.3), (hero ? F.heroFlagMinPx : F.flagMinPx) / zoom)
-    const top = y - baseH * (hero ? 1.9 : 1.5) - sz * 1.2
-    ctx.strokeStyle = ARROW_COLOR
-    ctx.lineWidth = Math.max(1, 1.4 / zoom)
-    ctx.beginPath(); ctx.moveTo(x, y - baseH * (hero ? 1.5 : 1.1)); ctx.lineTo(x, top); ctx.stroke()
-    ctx.beginPath()
-    ctx.moveTo(x, top)
-    if (side === 0) { ctx.lineTo(x + sz, top); ctx.lineTo(x + sz, top + sz * 0.8); ctx.lineTo(x, top + sz * 0.8) }
-    else { ctx.lineTo(x + sz, top); ctx.lineTo(x + sz * 0.62, top + sz * 0.4); ctx.lineTo(x + sz, top + sz * 0.8); ctx.lineTo(x, top + sz * 0.8) }
-    ctx.closePath()
-    if (kind !== 2) { ctx.fillStyle = SIDE_COLOR[side]!; ctx.fill() }
-    ctx.stroke()
+    const y = at[i + 1]!
+    return { x: at[i]!, y, sz, top: y - baseH * (hero ? 1.9 : 1.5) - sz * 1.2, hero }
+  }
+  // 장대: 한 경로
+  ctx.beginPath()
+  for (let i = 0; i < at.length; i += 4) { const g = geom(i); ctx.moveTo(g.x, g.y - baseH * (g.hero ? 1.5 : 1.1)); ctx.lineTo(g.x, g.top) }
+  ctx.stroke()
+  // 깃: 편마다 채우는 것(성한 것) 한 경로 · 속 빈 것(쓰러진 장수) 한 경로
+  for (const side of [0, 1] as const) {
+    for (const hollow of [false, true]) {
+      ctx.beginPath()
+      let any = false
+      for (let i = 0; i < at.length; i += 4) {
+        if (at[i + 2] !== side || (at[i + 3] === 2) !== hollow) continue
+        const g = geom(i), x = g.x, top = g.top, sz = g.sz
+        any = true
+        ctx.moveTo(x, top)
+        if (side === 0) { ctx.lineTo(x + sz, top); ctx.lineTo(x + sz, top + sz * 0.8); ctx.lineTo(x, top + sz * 0.8) }
+        else { ctx.lineTo(x + sz, top); ctx.lineTo(x + sz * 0.62, top + sz * 0.4); ctx.lineTo(x + sz, top + sz * 0.8); ctx.lineTo(x, top + sz * 0.8) }
+        ctx.closePath()
+      }
+      if (!any) continue
+      if (!hollow) { ctx.fillStyle = SIDE_COLOR[side]!; ctx.fill() }
+      ctx.stroke()
+    }
   }
 }
 
@@ -161,7 +179,9 @@ function drawItem(ctx: CanvasRenderingContext2D, d: Item): void {
 }
 
 /** 병사 그림자: 편마다 한 경로로 모아 한 번에 칠한다 (점마다 칠하면 호출이 점 수에 그대로 비례한다) */
-function drawShadows(ctx: CanvasRenderingContext2D, count: number, low: boolean): void {
+function drawShadows(ctx: CanvasRenderingContext2D, count: number, low: boolean, zoom: number, baseH: number): void {
+  // 아주 멀리서는(타원 짧은 반지름이 화면 1.5px 아래) 타원 대신 작은 네모로 — 모양이 안 보이는 크기라 같은 점으로 읽히고 훨씬 싸다
+  const tiny = baseH * 0.08 * zoom < P.field.shadowRectPx
   for (const side of [0, 1] as const) {
     ctx.beginPath()
     let any = false
@@ -169,7 +189,8 @@ function drawShadows(ctx: CanvasRenderingContext2D, count: number, low: boolean)
       const d = pool[i]!
       if (d.kind !== 0 || d.hero || d.side !== side) continue
       const rx = d.h * 0.26
-      ctx.moveTo(d.x + rx, d.y); ctx.ellipse(d.x, d.y, rx, d.h * 0.08, 0, 0, FULL_TURN)
+      if (tiny) ctx.rect(d.x - rx, d.y - d.h * 0.08, rx * 2, d.h * 0.16)
+      else { ctx.moveTo(d.x + rx, d.y); ctx.ellipse(d.x, d.y, rx, d.h * 0.08, 0, 0, FULL_TURN) }
       any = true
     }
     if (!any) continue
@@ -205,14 +226,16 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
   const baseH = F.soldierCells * F.cellPx
   const pad = baseH * 3
   const lowShare = low ? F.lowDotsShare : 1000
-  const arrows: number[] = []
+  const arrows = arrowBuf; arrows.length = 0
   /** 대 깃 자리 (x · y · 편 · 장수면 1) — 끝에서 한꺼번에 그린다 */
-  const flagsAt: number[] = []
+  const flagsAt = flagBuf; flagsAt.length = 0
   let drawn = 0
   for (const side of [0, 1] as const) {
-    const mine = cur.squads.filter(q => q.side === side)
-    const counts = sideDotCounts(mine.map(q => q.men), lowShare)
-    mine.forEach((q, i) => {
+    mine.length = 0; menOf.length = 0
+    for (const q of cur.squads) if (q.side === side) { mine.push(q); menOf.push(q.men) }
+    const counts = sideDotCounts(menOf, lowShare)
+    for (let i = 0; i < mine.length; i++) {
+      const q = mine[i]!
       const n = counts[i]!
       const was = fx.counts.get(q.id) ?? n
       fx.counts.set(q.id, n)
@@ -233,18 +256,16 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
       const strip = stripFor(art, q.grp, q.kind)
       // 줄어든 점은 쓰러진 병사로 남는다
       for (let k = n; k < was; k++) {
-        const o = dotOffset(q.id, k)
-        const x = unitsToPx(qu) + o.du * F.cellPx, y = unitsToPx(qv) + o.dv * F.cellPx
+        const x = unitsToPx(qu) + dotDu(q.id, k) * F.cellPx, y = unitsToPx(qv) + dotDv(q.id, k) * F.cellPx
         fx.corpses.push({ x, y, side, flip: face === -1, strip, h: baseH, born: nowMs })
       }
-      if (n === 0) return
+      if (n === 0) continue
       flagsAt.push(unitsToPx(qu), unitsToPx(qv) - baseH * 0.2, side, 0)
       const tqu = tq === undefined ? 0 : unitsToPx(tq.u), tqv = tq === undefined ? 0 : unitsToPx(tq.v)
       for (let k = 0; k < n; k++) {
-        const o = dotOffset(q.id, k)
-        const x = unitsToPx(qu) + o.du * F.cellPx, y = Math.min(world.h, Math.max(0, unitsToPx(qv) + o.dv * F.cellPx))
+        const x = unitsToPx(qu) + dotDu(q.id, k) * F.cellPx, y = Math.min(world.h, Math.max(0, unitsToPx(qv) + dotDv(q.id, k) * F.cellPx))
         if (!inView(view, x, y, pad)) continue
-        const ph = dotPhase(q.id, k)
+        const ph = dotPh(q.id, k)
         const d = nextItem()
         d.kind = 0; d.x = x; d.y = y; d.strip = strip; d.side = side; d.flip = face === -1; d.h = baseH
         d.frame = pose(nowMs, ph, moving, attacking)
@@ -252,12 +273,12 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
         if (attacking && q.grp === 'bows' && tq !== undefined && cur.end === null) {
           const cyc = F.arrowCycleMs, tt = (nowMs + ph * cyc) % cyc
           if (tt < F.arrowFlightMs) {
-            const idx = Math.floor((nowMs + ph * cyc) / cyc), to = dotOffset(tq.id, (k + idx) % F.dotsPerSquadMax)
-            arrows.push(x, y - baseH * 0.5, tqu + to.du * F.cellPx, tqv + to.dv * F.cellPx - baseH * 0.4, tt / F.arrowFlightMs)
+            const idx = Math.floor((nowMs + ph * cyc) / cyc), tk = (k + idx) % F.dotsPerSquadMax
+            arrows.push(x, y - baseH * 0.5, tqu + dotDu(tq.id, tk) * F.cellPx, tqv + dotDv(tq.id, tk) * F.cellPx - baseH * 0.4, tt / F.arrowFlightMs)
           }
         }
       }
-    })
+    }
   }
   // 쓰러진 병사: 오래된 것을 버리고 남은 것은 누운 칸(쓰러짐)으로 그리다 끝에서 옅어진다
   const cs = fx.corpses
@@ -296,7 +317,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
 
   order.length = 0
   for (let i = 0; i < used; i++) order.push(pool[i]!)
-  drawShadows(ctx, used, low)
+  drawShadows(ctx, used, low, cam.zoom, baseH)
   order.sort(byY)
   for (const d of order) drawItem(ctx, d)
 
