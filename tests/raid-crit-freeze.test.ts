@@ -101,18 +101,29 @@ test('그림: 큰 마무리는 얼어 있는 동안 제 자리에서 부풀고 �
 // ── 카메라 당김 · 몸 크기 · 숫자 숨김 · 잔상 (코디네이터 11-25 「그놈이 한눈에」) ──
 import { criticalFinishFocus, criticalFinishPoses } from '../src/raid/critical-finish.ts'
 import { HAEBI_MOBS as MOBS } from '../src/tune/params.ts'
-test('카메라 당김: 얼어 있는 동안 bigZoom 의 90% 이상 · 처음 3프레임에 다 들어가고 · 풀린 뒤 .2초 안에 1배 · 그놈의 화면 키 ≥ 48px', () => {
-  const s = quiet(3), f = mark(s, 100)
-  const at = (t: number) => criticalFinishFocus(criticalFinishFrames(s, s.fx, t, true, false, CF, () => true), CF)
+test('카메라 당김(손잡이를 켰을 때의 틀): 얼어 있는 동안 bigZoom 의 90% 이상 · 처음 3프레임에 다 들어가고 · 풀린 뒤 .2초 안에 1배 · 그놈의 화면 키 ≥ 48px', () => {
+  // 11-25 밤 형: 「확대되는건 하지마. 잘 보이지도 않고 어지러워」 → 내보내는 값은 bigZoom 1(꺼짐). 틀은 손잡이 1.35 로 지킨다.
+  const s = quiet(3), f = mark(s, 100), Z = { ...CF, bigZoom: 1.35 }
+  const at = (t: number) => criticalFinishFocus(criticalFinishFrames(s, s.fx, t, true, false, Z, () => true), Z)
   at(0)
-  assert.ok(at(CF.zoomIn)!.k >= 1 + (CF.bigZoom - 1) * .99, '처음 zoomIn 초(3프레임)에 다 들어감')
+  assert.ok(at(CF.zoomIn)!.k >= 1 + (Z.bigZoom - 1) * .99, '처음 zoomIn 초(3프레임)에 다 들어감')
   let focusMid = at(CF.zoomIn)!
-  for (const t of [CF.zoomIn, CF.bigHold * .5, CF.bigHold * .99]) { const g = at(t)!; if (t === CF.bigHold * .5) focusMid = g; assert.ok(g.k >= 1 + (CF.bigZoom - 1) * .9, `얼어 있는 동안 ${t}`) }
+  for (const t of [CF.zoomIn, CF.bigHold * .5, CF.bigHold * .99]) { const g = at(t)!; if (t === CF.bigHold * .5) focusMid = g; assert.ok(g.k >= 1 + (Z.bigZoom - 1) * .9, `얼어 있는 동안 ${t}`) }
   const justOut = at(CF.bigHold + .001)!.k; assert.ok(at(CF.bigHold + CF.zoomOut * .5)!.k < justOut, '풀리자마자 줄기 시작')
   assert.equal(at(CF.bigHold + .2), null, '풀린 뒤 .2초 안에 1배')
   assert.equal(focusMid.x, f.x); assert.equal(focusMid.y, f.y)
-  const body = MOBS.club.height * CF.holdScaleBig * CF.bigZoom
+  const body = MOBS.club.height * CF.holdScaleBig * CF.bigZoom // 내보내는 값(확대 꺼짐)으로도 넘어야 한다
   assert.ok(body >= 48, `맞은 놈 화면 키 ${body}px`)
+})
+
+test('내보내는 값은 확대가 꺼져 있다(bigZoom 1) — 얼어 있는 동안에도 카메라가 안 움직인다', () => {
+  assert.equal(CF.bigZoom, 1)
+  const s = quiet(3); mark(s, 100)
+  for (const t of [0, CF.zoomIn, CF.bigHold * .5, CF.bigHold + .05]) {
+    const g = criticalFinishFocus(criticalFinishFrames(s, s.fx, t, true, false, CF, () => true), CF)
+    assert.ok(g === null || Math.abs(g.k - 1) < 1e-9, `t=${t}`)
+  }
+
 })
 test('얼어 있는 동안 몸은 부풀어 holdScaleBig 에 닿고 · 날아가는 길엔 잔상이 낱낱이 점점 옅게 남는다', () => {
   const s = quiet(3), f = mark(s, 100), ev = criticalFinishEvent(f)!
