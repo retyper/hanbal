@@ -1150,8 +1150,9 @@ function frame(now: number) {
   bigCutin.update(run)
   if (!live || run.t >= cutinUntil) skipCutin()
   // 기술이 터지면 계단마다 떨고(비기 한 번 · 각성 두 박 · 진각성 세 박) 크리티컬은 짧게 한 번 (11-19 형 · HAEBI_FEEL_TIERS · 끄기·가려진 탭은 haptics 가 막음)
-  const felt = sound.frame(run, live, paused || inspecting || rotationBlocked, true)
+  const felt = sound.frame(run, live, paused || inspecting || rotationBlocked, true, feel.isBig)
   if (felt.skill) haptics().skill(felt.skill); else if (felt.crit) haptics().crit()
+  if (feel.consumePop()) haptics().crit()   // 얼었다가 펑 하는 큰 마무리는 풀리는 순간에 한 번
   updatePortrait(); updateHud(); giantHud.update(live ? giantHUD(run) : null, live && !paused && !inspecting && !rotationBlocked && !run.offers.length && !chestShow.active && !feel.stopped ? dt : 0); showOverlay(); syncEndingVideo(); schedule()
 }
 /**

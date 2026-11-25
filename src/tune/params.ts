@@ -1433,13 +1433,24 @@ export const HAEBI_IMPACT = {
   criticalStop: .04, eliteStop: .08, bossSkillStop: .12, hurtStop: .08, cooldown: .25,
   shakeLife: .2, shakeCritical: 2, shakeElite: 4, shakeHurt: 4, shakeSkill: 7, shakeMax: 8,
   shakeXHz: 91, shakeYHz: 77, shakeYShare: .6,
+  /** 치명 마무리가 얼음에서 풀려 펑 하는 순간의 흔들림 (shakeMax 안에서 · 시작값) */
+  shakeFinish: 6,
   mobFlash: .12, whiteTime: .05, mobJitter: 2.5, mobJitterHz: 83, squashX: 1.15, squashY: .9,
   numberPop: 1.6, numberPopTime: .08, numberCriticalPop: 1.85,
   deathDistance: 60, deathEliteDistance: 100, deathLift: 48, deathBounce: 13,
   deathBounceAt: .65, deathSpin: 2.7, deathFadeAt: .65,
   // 치명타 마무리 「홈런」 (11-23 형 「너무 빠르고 소리도 별로 · 클라우드 메도우의 둑, 팡~~ 이 안 느껴진다」 · 옛 .24초 → 세 박자):
   // hold 초 맞은 자리에서 부풀며 멈춤(「둑」) → 위로 크게 떠 멀리 날아가며 작아짐(빨리 떠서 느려짐 · 「팡」) → starAt 몫부터 반짝 별이 터지며 사라짐(「~~」)
-  criticalFinish: { life: .95, hold: .1, holdScale: 1.12, distance: 560, lift: 170, endScale: .2, spin: 4.2, fadeAt: .72, starAt: .7, starSize: 34, starColor: '#fff2b0', trailAlpha: .2, trailOffsets: [.03, .06], maxBodies: 4, lowMaxBodies: 2 },
+  criticalFinish: { life: .95, hold: .1, holdScale: 1.12, distance: 560, lift: 170, endScale: .2, spin: 4.2, fadeAt: .72, starAt: .7, starSize: 34, starColor: '#fff2b0', trailAlpha: .2, trailOffsets: [.03, .06], maxBodies: 4, lowMaxBodies: 2,
+    /**
+     * 큰 마무리 (11-25 형: 「크리티컬 킬은 스매시브라더스 참고 · 전체 맵상에 움직이던 것들이 아주 잠깐 얼었다가 재생되는, 그러면서 펑 하고 날라가는 녀석이 부각」 · docs/realm/RAID-CRIT-KILL-20261125.md):
+     * 죽이는 치명타가 나면 장수·적·투사체·이펙트가 모두 bigHold 초 딱 멈췄다가 제 속도로 돈다 (판 걸음을 세운다 · 판 셈·기록은 그대로).
+     * 길이 .25초 = 60프레임 기준 15프레임 — 스매시의 타격 멈춤이 피해 15% 짜리 공격에서 15프레임이다(자료 SmashWiki Hitlag · 상한 30프레임 = .5초의 절반 아래로 시작)
+     * 얼어 있는 동안 맞은 놈만 살아 있다: 나머지는 dim 몫만큼 어둡게 가라앉고(맞은 놈 아래에 반투명 한 겹 · filter 없음) · 맞은 놈은 하얗게 번쩍(flash 에서 flashPart 몫 동안 옅어짐)하며 holdScaleBig 배로 살짝 커진다
+     * 풀리는 순간 「펑」: 하얀 테 하나가 popRing 반지름에서 popLife 초 동안 퍼지고 낱낱 알갱이 popDots 개가 popDotDistance 까지 튄다(햇살·붉은 원 없음) · 화면 흔들림 shakeFinish · 소리·진동도 이 순간
+     * 잦기: 큰 마무리는 마지막 큰 것 뒤 bigGap 초가 지나야 다시 난다(그 사이 치명 마무리는 예전처럼 가볍게 `hold`) · 한 걸음에 여럿이 죽으면 가장 센 한 놈만 · 헤드리스(여덟 묶음·숲·씨앗 셋·4분·행운 최대): 치명 마무리는 분당 11~21번인데 큰 것은 분당 3.5~5.1번(12~17초에 한 번) · 판이 얼어 있는 몫 3.1~3.9% · 행운이 없으면 마무리 자체가 0(단검 등 뒤 치명만 있고 주 무기 마무리가 아니다)
+     */
+    bigHold: .25, holdScaleBig: 1.22, bigGap: 8, dim: .5, dimColor: '#05070b', flash: .9, flashPart: .6, popLife: .32, popRingFrom: 22, popRingTo: 130, popRingWidth: 5, popRingColor: '#fff6dc', popDots: 10, popDotDistance: 150, popDotSize: 5 },
 } as const
 
 /**

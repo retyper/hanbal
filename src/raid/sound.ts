@@ -174,10 +174,10 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
   }
   /** 치명타 마무리 「홈런」 — 「둑」(짧고 굵은 저음) → 멈춤(hold) 뒤 「팡」(비기 터짐 소리를 높게) + 맑은 종 꼬리 「~~」 (11-23 형 · 클라우드 메도우) */
   let finishAt = -9
-  function finish() {
+  function finish(big = false) {
     const c = ctx!; if (c.currentTime - finishAt < V.finishGap) return
     finishAt = c.currentTime
-    const hold = IMPACT.criticalFinish.hold
+    const hold = big ? IMPACT.criticalFinish.bigHold : IMPACT.criticalFinish.hold   // 큰 마무리는 얼어 있는 만큼 뒤에 「팡」
     voice(c, V.finishThudS, V.finishThud * volume('sfx'), (out, t, nodes) => {
       const osc = c.createOscillator(); osc.type = 'sine'; osc.frequency.setValueAtTime(V.finishThudHz[0], t); osc.frequency.exponentialRampToValueAtTime(V.finishThudHz[1], t + V.finishThudS); osc.connect(out)
       if (!noise) return [osc]
@@ -273,8 +273,6 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
     if (k.boom > 0 && room(F.reserve)) boom(tier)
     if (k.tail > 0 && room(F.reserve)) chime(F.tailHz, F.tailRatios, k.tailMs / 1000, k.tail * volume('sfx'), bus)
   }
-  /** 크리티컬 「핑」 */
-  const ping = () => chime(F.crit.hz, F.pingRatios, F.crit.ms / 1000, F.crit.ping * volume('sfx'), null)
   /** 판 안 각성 중 「진」 비기 — 진각성한 장수면 진각성 계단 */
   const tierOf = (tru: boolean): FeelTier => tru ? trueWake() ? 'true' : 'awake' : 'skill'
   const any = (list: readonly string[]) => list[n++ % list.length]!
@@ -282,7 +280,7 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
   const say = (slot: Voice, vol: number, gap = 0) => { const list = voiceFiles(slot); if (list.length) play(slot, any(list), vol * volume('voice'), gap) }
   const voiceMem = newVoiceMemory()
   /** 크리티컬 — 「핑」 + 형이 고른 치명 타격 소리 */
-  const critHit = () => { ping(); sfx('hitC', V.critClip) }
+  const critHit = (at = 0) => { chime(F.crit.hz, F.pingRatios, F.crit.ms / 1000, F.crit.ping * volume('sfx'), null, at); sfx('hitC', V.critClip, 0, 1, at) }
   /** 이미 소리를 낸 투사체·이펙트 (새로 생긴 것만 낸다) */
   const seen = new WeakSet<object>()
   const slams = slamWatcher()
@@ -338,7 +336,8 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
       setTimeout(() => { impact(kind); onHit?.() }, wait)
       return wait
     },
-    frame(s: HaebiRun, live: boolean, paused: boolean, deferEnding = false): FeelEvents {
+    /** isBig: 얼었다가 펑 하는 큰 마무리인가 (RaidFeel.isBig) — 큰 마무리의 치명 소리는 얼음이 풀리는 순간으로 미룬다 */
+    frame(s: HaebiRun, live: boolean, paused: boolean, deferEnding = false, isBig?: (e: object) => boolean): FeelEvents {
       // Keep an already-started line at the same sample while paused/hidden.
       // Terminal-state SFX use this context too, so state !== playing does not mute endings.
       if (ctx) {
@@ -362,7 +361,7 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
       if (fell > 0) hitAt = ctx!.currentTime
       for (let i = 0; i < fell; i++) sfx('hit', V.hit * (1 - i * .18), 0, .86 + ((n + i * 3) % 7) * .05)
       // 비기를 누름 — 기합(그대로) + 계단마다 「탁」
-      let cast: FeelTier | null = null, skill: FeelTier | null = null, crits = 0
+      let cast: FeelTier | null = null, skill: FeelTier | null = null, crits = 0, bigFinish = false
       if (s.skillCd > prev.skillCd) {
         cast = tierOf(s.cast?.kind === 'ult' && (s.cast.awakened ?? s.cast.tru))
         if (s.cast?.kind === 'ult' && s.cast.awakened && s.cast.seq !== undefined && heroVoiceFile && clips.has(heroVoiceFile)) pendingHeroVoice = { cast: s.cast, file: heroVoiceFile }
@@ -380,7 +379,7 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
       let finishes = 0   // 치명타 마무리(홈런)로 날아가는 적 수
       let humanDown = 0   // 11-22 형 「개나 짐승 유닛이 죽는데도 사람 죽는 목소리」 — 신음은 사람 적이 쓰러질 때만 (짐승·거대 두목은 빼고)
       const fresh: VoiceFx[] = []
-      for (const e of s.fx) if (!seen.has(e)) { seen.add(e); fresh.push(e); if (e.kind === 'death' && e.mob !== undefined && !NO_GROAN.has(e.mob)) humanDown++; if (e.kind === 'hit' || e.kind === 'death') { hitN++; hitD += e.n ?? 0; if (e.crit) crits++ } if (e.kind === 'death' && criticalFinishEvent(e)) finishes++; 
+      for (const e of s.fx) if (!seen.has(e)) { seen.add(e); fresh.push(e); if (e.kind === 'death' && e.mob !== undefined && !NO_GROAN.has(e.mob)) humanDown++; if (e.kind === 'hit' || e.kind === 'death') { hitN++; hitD += e.n ?? 0; if (e.crit) { if (e.kind === 'death' && isBig?.(e)) bigFinish = true; else crits++ } } if (e.kind === 'death' && criticalFinishEvent(e)) finishes++; 
         if (e.recoveryHit && ctx && ctx.currentTime - championAt >= IMPACT.cooldown) { championAt = ctx.currentTime; const t = tierOf(false); if (!skill || RANK[t] > RANK[skill]) skill = t }
         if (e.kind === 'bolt') sfx('bolt', V.magic, V.magicGap); else if (e.kind === 'spike') sfx('earth', V.magic, V.magicGap); else if (e.kind === 'skill') { const t = tierOf((e.awakened ?? e.tru) === true); if (!skill || RANK[t] > RANK[skill]) skill = t } else if (e.kind === 'thud' || e.kind === 'ult' && e.ult === 'sling') sfx('stone', V.stone, V.stoneGap, .9 + (n % 5) * .05) }
       // 목소리 고르기 (boss-voice.ts) — 남자 비명은 사람 적이 쓰러질 때만 · 여자 보스는 웃음·피격·비명 · 포효는 방울 무녀면 방울로
@@ -396,7 +395,8 @@ export function raidSound(female: boolean, kit: Kit, trueWake: () => boolean = (
         else say(c, c === 'boss_f_laugh' ? BV.laugh : c === 'boss_f_hurt' ? BV.hurt : BV.scream)
       }
       if (humanDown > 0) sfx('down', V.down, V.downGap, .92 + (n % 5) * .04)
-      if (finishes > 0 && room(3)) finish()
+      if (finishes > 0 && room(3)) finish(bigFinish)
+      if (bigFinish && ctx && room()) critHit(IMPACT.criticalFinish.bigHold)   // 치명 「핑」+ 형이 고른 치명 소리는 풀리는 순간에
       const slam = slams(s); if (slam.length && room(2)) quake(slam.some(q => q.boss))
       // 비기가 터짐(한 프레임에 하나 · 가장 높은 계단) · 크리티컬 「핑」은 한 프레임 한 번 · crit.gap 틈 · 소리 수 한도면 버린다
       if (skill) impact(skill)

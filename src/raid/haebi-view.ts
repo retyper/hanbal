@@ -1000,7 +1000,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   }
   // 맞은 불꽃(hit)은 새것 drawHits 개만 — 화살이 무리를 꿰면 한 프레임에 수백 개가 쌓여 폰이 버벅였다 (11-17 형 「이쯤 오면 렉」)
   let hitSkip = -C.drawHits, deathSkip = -C.drawDeaths; for (const f of s.fx) if (f.kind === 'hit') hitSkip++; else if (f.kind === 'death') deathSkip++
-  const finishFrames = criticalFinishFrames(s, s.fx, time, s.state === 'playing' && !ending?.active, criticalLow, FEEL.criticalFinish)
+  const finishFrames = criticalFinishFrames(s, s.fx, time, s.state === 'playing' && !ending?.active, criticalLow, FEEL.criticalFinish, feel?.isBig)
   let particleBudget = FX_ART.particleBudget
   let flareBudget = HIT_FLARE.budget
   for (const f of s.fx) {
@@ -1065,7 +1065,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
     } else stamp(ctx, images, 'raid/hit.png', f.x, f.y, 30 * (1 - age * .5))
     ctx.restore()
   }
-  drawCriticalFinishFrames(ctx, finishFrames, (mob, face) => sprite(ctx, images, warlord(mob, s.stage), 0, 0, artHeight(mob, s.stage), 18, face), { size: FEEL.criticalFinish.starSize, color: FEEL.criticalFinish.starColor })
+  drawCriticalFinishFrames(ctx, finishFrames, (mob, face) => sprite(ctx, images, warlord(mob, s.stage), 0, 0, artHeight(mob, s.stage), 18, face), { size: FEEL.criticalFinish.starSize, color: FEEL.criticalFinish.starColor }, criticalLow ? undefined : { view: view ?? { left: -W, top: -H, right: 2 * W, bottom: 2 * H }, p: FEEL.criticalFinish })
   // 붉은 예고(공격이 떨어질 자리)는 이제 땅 표식 차례에 깐다 (형 11-23 「패턴이 인물 위로 그려지는 건 이상하다 · 던파·테일즈위버도 그렇게 안 한다」) — 여기는 실제로 터지는 물줄기만
   for(const e of s.enemies)if(e.giant?.kind==='imugi'&&e.giant.attack&&e.giant.state==='strike')drawImugiWater(ctx,e.giant.attack)
   // 피해 숫자 — 알갱이로 튀어 나간다 (trackNumbers · drawNumbers)
