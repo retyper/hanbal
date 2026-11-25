@@ -794,6 +794,11 @@ for _n in ('whip2', 'lasso'):
     IK_QUIRKS['hit_' + _n + 'f'] = [_swap_hands(q) for q in IK_QUIRKS['hit_' + _n]]
 
 
+# 방울 막대를 먼 손(파란 팔 · 3/4 로 돌아선 몸의 그림 오른쪽 손)에 쥐는 장수(목지 진하 · 11-25): 개성 동작·맞음의 가까운 손·먼 손 자리를 맞바꾼다
+IK_QUIRKS['wavef'] = [_swap_hands(q) for q in IK_QUIRKS['wave']]
+IK_QUIRKS['hit_nonef'] = [_swap_hands(q) for q in IK_QUIRKS['hit_none']]
+
+
 def ik_attack_sheets(kind):
     """넓은 칸 2×2 판 둘(앞 넷 · 뒤 넷) + 한 줄 미리 보기"""
     big_canvas()
