@@ -6,7 +6,7 @@
  */
 import { P } from '../tune/params.ts'
 import { dotDu, dotDv, hash2 } from './viewDots.ts'
-import { FORM_CHARGE, FORM_HOLD, FORM_SCATTER } from './viewFxRead.ts'
+import { FORM_CHARGE, FORM_HOLD, FORM_SCATTER, FORM_WALL } from './viewFxRead.ts'
 
 interface Layout { uSpan: number; vSpan: number; rows: number; rowOf: Int16Array; fwd: Float32Array; side: Float32Array; behind: Int16Array }
 const layouts = new Map<number, Layout>()
@@ -21,8 +21,8 @@ function layoutOf(form: number, N: number, depth: number): Layout {
   let rows: number
   if (form !== FORM_CHARGE) {
     // 줄 선 덩어리: 열(깊이) 2~3 × 줄 4~6 · 방진은 더 촘촘하다
-    const hold = form === FORM_HOLD, maxRows = hold ? F.holdRows : depth
-    const uSp = hold ? F.holdUCells : F.lineUCells, vSp = hold ? F.holdVCells : F.lineVCells
+    const wall = form === FORM_WALL, hold = form === FORM_HOLD || wall, maxRows = hold ? F.holdRows : depth
+    const uSp = wall ? F.shieldHoldUCells : hold ? F.holdUCells : F.lineUCells, vSp = wall ? F.shieldHoldVCells : hold ? F.holdVCells : F.lineVCells
     rows = Math.max(1, Math.min(maxRows, Math.floor(N / 2)))
     const cols = Math.ceil(N / rows)
     for (let s = 0; s < N; s++) {

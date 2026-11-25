@@ -31,6 +31,8 @@ export interface Strip {
   cw: number; ch: number; cols: number; feet: number; bodyPx: number
   /** 병사 띠면 편 색을 입힌다 */
   soldier: boolean
+  /** 방패 띠면 방패 면도 편 색을 입힌다 */
+  shield: boolean
   /** [보통, 뒤집힘] */
   plain: [Sheet, Sheet]
   base: HTMLCanvasElement
@@ -115,7 +117,7 @@ function stripFile(art: Art, key: string, specKey: string, n: number): Strip | n
     const lay = bakeLayout(e.cell[0], e.cell[1], n, wantH, F.bakeMaxPx)
     const r = lay.fh / e.cell[1]
     const base = bakeSheet(img, e.cell[0], e.cell[1], n, lay, false)
-    const st: Strip = { cw: lay.fw, ch: lay.fh, cols: lay.cols, feet: e.feet * r, bodyPx: e.bodyPx * r, soldier, plain: [base, bakeSheet(img, e.cell[0], e.cell[1], n, lay, true)], base, tint: [[null, null], [null, null]], n }
+    const st: Strip = { cw: lay.fw, ch: lay.fh, cols: lay.cols, feet: e.feet * r, bodyPx: e.bodyPx * r, soldier, shield: specKey === 'shield', plain: [base, bakeSheet(img, e.cell[0], e.cell[1], n, lay, true)], base, tint: [[null, null], [null, null]], n }
     solidify(base, b => { st.plain[0] = b })
     solidify(st.plain[1] as HTMLCanvasElement, b => { st.plain[1] = b })
     slot.strip = st; slot.ready = true
@@ -130,7 +132,7 @@ export function sheetOf(s: Strip, side: -1 | 0 | 1, flip: boolean): Sheet {
   const row = s.tint[side as 0 | 1]!
   if (row[f] === null) {
     const lay = { fw: s.cw, fh: s.ch, cols: s.cols, rows: Math.ceil(s.n / s.cols) }
-    const t = teamTint(s.base, side as 0 | 1)
+    const t = teamTint(s.base, side as 0 | 1, s.shield ? { cw: s.cw, ch: s.ch, cols: s.cols, n: s.n } : undefined)
     row[0] = t
     const m = document.createElement('canvas'); m.width = t.width; m.height = t.height
     const g = m.getContext('2d') as CanvasRenderingContext2D

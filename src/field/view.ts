@@ -10,7 +10,7 @@ import { fieldView, inView, type Cam, type Viewport } from './viewCamera.ts'
 import { ATTACK0, ATTACK_N, DOWN, HIT, RUN_N, STAND0, STAND_N, WALK0, WALK_N, heroKey, heroStrip, pieceImg, holdStripFor, runStripFor, sheetOf, stripFor, stripKey, type Art, type Strip } from './viewArt.ts'
 import { dotPh, hash2 } from './viewDots.ts'
 import { dotDied, dotsOf, offU, offV, peekDots, resetForm, rowCount, rowOfDot, stepDots } from './viewForm.ts'
-import { FORM_HOLD, FORM_SCATTER, moraleOf } from './viewFxRead.ts'
+import { FORM_HOLD, FORM_SCATTER, FORM_WALL, moraleOf } from './viewFxRead.ts'
 import { drawDash, queueDash, resetDash } from './viewDash.ts'
 import { FLAG_FALLEN, bracedAt, drawOmens, drawPops, noteOmens, flagTilt, ingestHits, kickOf, resetHit, scatterOf, sc, shake, shakeAt, viewClock } from './viewHit.ts'
 import { computePairs, coolPress, notePush, dotMelee, drawParticles, flinchOf, isFront, maxFwdOf, minFwdOf, mo, noteLoss, partnerOf, resetMelee, spawn, swingChance, swings } from './viewMelee.ts'
@@ -444,7 +444,8 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
       const sl = settleDots(q, n, N0, cur, nowMs, qu, qv, strip, face === -1, sH, world.h)
       if (n === 0) continue
       const form = q.flee === 1 ? FORM_SCATTER : q.grp === 'front' ? q.form : 0
-      const dd = dotsOf(q.id, sl.N, form, face, nowMs, sl.dead, (q.grp === 'horse' ? F.horseSpaceMul : q.grp === 'bows' ? F.bowsSpaceMul : 1) * (kk === 'shield' ? F.shieldSpaceMul : kk === 'crossbow' ? F.crossbowSpaceMul : 1), q.grp === 'front' ? F.depthFront : q.grp === 'bows' ? F.depthBows : F.depthHorse, q.bw / F.unit, q.bd / F.unit)
+      const wall = kk === 'shield' && form === FORM_HOLD
+      const dd = dotsOf(q.id, sl.N, wall ? FORM_WALL : form, face, nowMs, sl.dead, wall ? 1 : (q.grp === 'horse' ? F.horseSpaceMul : q.grp === 'bows' ? F.bowsSpaceMul : 1) * (kk === 'shield' ? F.shieldSpaceMul : kk === 'crossbow' ? F.crossbowSpaceMul : 1), q.grp === 'front' ? F.depthFront : q.grp === 'bows' ? F.depthBows : F.depthHorse, wall ? 0 : q.bw / F.unit, wall ? 0 : q.bd / F.unit)
       const kickCells = kickOf(q.id, nowMs)
       if (running && nowMs - (fx.dustAt.get(-1 - q.id) ?? -1e9) > F.runDustMs) {
         fx.dustAt.set(-1 - q.id, nowMs)
