@@ -3614,6 +3614,8 @@ export const en: Partial<Record<Key, string>> = {
   'field.cam.hero': 'The view follows your hero',
   'field.cam.fight': 'The view follows the fight',
   // Field test arena top bar and end box (src/field/mainHud.ts)
+  'field.res.killed': 'Enemies defeated: {n}',
+  'field.res.lost': 'Soldiers lost: {n}',
   'field.again': 'Again',
   'field.again.sure': 'Press once more',
   'field.pause': 'Pause',

@@ -3627,6 +3627,8 @@ export const ko = {
   'field.cam.hero': '화면이 장수를 따라갑니다',
   'field.cam.fight': '화면이 싸움을 따라갑니다',
   // 전장 시험장 위 띠·끝 상자 (src/field/mainHud.ts)
+  'field.res.killed': '쓰러뜨린 적 {n}명',
+  'field.res.lost': '잃은 병사 {n}명',
   'field.again': '다시',
   'field.again.sure': '한 번 더 누르세요',
   'field.pause': '멈춤',

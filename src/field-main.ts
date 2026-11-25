@@ -103,6 +103,9 @@ const lastShape: MarkShape[] = ['move', 'move', 'move', 'move']
 const cmdNow: number[] = [-1, -1, -1]
 let sentGroup = false
 let usedCharge = false
+/** 이번에 판이 보인 큰 부딪힘의 종류 (상성이 맞음 · 막힘) · 판이 시작할 때의 편별 사람 수 (끝 상자의 숫자) */
+let fxGold = false, fxBlocked = false
+let startMen: [number, number] | null = null
 /** 찍는 큰 수: 2 화살비 · 3 옆치기 (찍을 때까지 판이 느려진다) · 누르고 있는 동안만 고른 무리(숫자키) · 마우스 올린 무리 */
 let aiming = -1, aimSince = 0
 let heldPick = -1
@@ -215,7 +218,7 @@ function restart(): void {
   resetFx()
   introLeft = P.field.introMs
   fsnd.stop(); soundTick = -1; soundEpoch = markEpoch
-  endAt = 0; viewMs = 0; pan = null; tgt = null; lossAcc = []; hist.length = 0
+  startMen = null; endAt = 0; viewMs = 0; pan = null; tgt = null; lossAcc = []; hist.length = 0
   ui.phase = 'ready'; ui.sel = [3]
   queue = []; plan = []
   lastGoal.fill(null); lastShape.fill('move'); nudgeAt.fill(0)
@@ -624,9 +627,10 @@ function paint(now: number, alpha: number): void {
   tutorial(now)
   const pb = padBtns()
   pad.sync(!blocked && ui.phase === 'play' && cur.end === null, touchMode, touchMode && !heroOrdered && playMs < 3000, pb.dash, pb.skill)
-  hud.sync(lagged(now))
+  hud.sync(lagged(now), { gold: fxGold, blocked: fxBlocked })
+  fxGold = false; fxBlocked = false
   hud.frame(now)
-  hud.showEnd(endAt > 0 && now - endAt >= P.field.endBoxMs ? cur : null)
+  hud.showEnd(endAt > 0 && now - endAt >= P.field.endBoxMs ? cur : null, endStats())
   const h = heroNow()
   const s = h === undefined ? null : toScreen(cam, vp, pxOf(h.u), pxOf(h.v))
   first.sync(!blocked && s !== null && !heroOrdered && ui.phase !== 'end' && cur.end === null && !helpOpen, s?.x ?? 0, s?.y ?? 0, touchMode, vp.w, vp.h)
@@ -675,6 +679,12 @@ function lagged(now: number): VModel {
   while (hist.length > 1 && hist[1]!.t <= now - P.field.numLagMs) hist.shift()
   return cur.end !== null ? cur : hist[0]!.m
 }
+const menOf = (m: VModel, side: number): number => m.squads.reduce((a, q) => a + (q.side === side ? q.men : 0), 0)
+/** 끝 상자의 숫자: 쓰러뜨린 적 · 잃은 우리 병사 (처음 사람 수와 지금 사람 수의 차) */
+function endStats(): { killed: number; lost: number } | undefined {
+  if (startMen === null || cur.end === null) return undefined
+  return { killed: Math.max(0, startMen[1] - menOf(cur, 1)), lost: Math.max(0, startMen[0] - menOf(cur, 0)) }
+}
 function heroMovedNow(): boolean {
   const h = heroNow()
   if (h === undefined || heroStart === null) return false
@@ -692,6 +702,7 @@ function frame(now: number): void {
   last = now
   watchLoad(dtMs)
   const stepMs = 1000 / P.field.hz
+  if (startMen === null) startMen = [menOf(cur, 0), menOf(cur, 1)]
   if (heroStart === null) { const h = heroNow(); if (h !== undefined) heroStart = { u: h.u, v: h.v } }
   if (aiming !== -1 && now - aimSince > P.field.aimMs) cancelAim()
   const simMs = aiming !== -1 ? dtMs * P.field.aimSlowPermille / 1000 : slow ? dtMs * P.field.slowPermille / 1000 : dtMs
@@ -704,6 +715,7 @@ function frame(now: number): void {
       if (queue.length > 0) queue = queue.filter(q => q.tick >= state.tick)
       prev = cur; cur = readField(state)
       if (cur.loss.length > 0) lossAcc.push(...cur.loss)
+      for (const ev of cur.events) if (ev.kind === 'impact') { if (ev.how === 1) fxGold = true; else if (ev.how === 2) fxBlocked = true }
     }
     if (cur.end !== null) { ui.phase = 'end'; drag = null; endAt = now; fsnd.end(cur.winner === 0) }
   }
@@ -785,7 +797,7 @@ addEventListener('keydown', e => {
     case 'pause':
       if (aiming !== -1) { cancelAim(); break }
       paused = !paused; hud.setPaused(paused); break
-    case 'go': goBattle(); break
+    case 'go': if (ui.phase === 'end') restart(); else goBattle(); break
     case 'help': toggleHelp(); break
     case 'dash': doDash(); break
     case 'skillQ': doSkill(); break

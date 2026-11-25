@@ -9,14 +9,18 @@ import { P } from '../tune/params.ts'
 import type { VModel } from './viewRead.ts'
 
 export interface HudHandlers { onZoom(): void; onPause(): void; onAgain(): void; onHelp(): void }
+/** 이번에 판이 보인 큰 부딪힘 — gold 상성이 맞음(막대 테두리가 금빛으로 번쩍) · blocked 막힘 */
+export interface HudFx { gold: boolean; blocked: boolean }
+/** 끝 상자의 숫자: 쓰러뜨린 적 · 잃은 우리 병사 */
+export interface EndStats { killed: number; lost: number }
 export interface Hud {
   setZoom(level: number): void
   setPaused(paused: boolean): void
   hide(hidden: boolean): void
   /** 위 띠를 지금 판으로 고친다 · ready 면 사기 띠는 가득 */
-  sync(m: VModel): void
+  sync(m: VModel, fx?: HudFx): void
   /** 끝 상자 (null 이면 닫는다) */
-  showEnd(m: VModel | null): void
+  showEnd(m: VModel | null, stats?: EndStats): void
   frame(nowMs: number): void
 }
 
@@ -38,6 +42,15 @@ const CSS = `
 #fd-edge .bar i.b{left:0;background:#c43e30}
 #fd-edge .bar.low{animation:fd-low .5s steps(1) infinite}
 @keyframes fd-low{50%{opacity:.35}}
+#fd-edge .chip{position:absolute;top:8px;width:9px;height:9px;pointer-events:none;animation:fd-fall .3s ease-in forwards}
+#fd-edge .chip.a{background:#2f8cff}
+#fd-edge .chip.b{background:#c43e30}
+#fd-edge .chip.big{width:14px;height:14px}
+@keyframes fd-fall{to{transform:translateY(26px) rotate(40deg);opacity:0}}
+#fd-edge .bar.sh{animation:fd-sh .15s linear}
+@keyframes fd-sh{25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
+#fd-edge .bar.gold{box-shadow:0 0 0 2px #ffd27a}
+#fd-end .st{display:flex;gap:18px;justify-content:center;margin:0 0 8px;font-size:15px;font-weight:700}
 #fd-end{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom));display:flex;justify-content:center;pointer-events:none}
 #fd-end[hidden]{display:none}
 #fd-end>div{background:#000d;border:1px solid #ffd27a88;border-radius:10px;padding:12px 26px;text-align:center;pointer-events:auto}
@@ -58,17 +71,30 @@ export function mountHud(root: HTMLElement, h: HudHandlers): Hud {
   edge.innerHTML = `<span class="bar" id="fd-b0"><i class="a"></i><b id="fd-n0"></b></span><span class="bar" id="fd-b1"><i class="b"></i><b id="fd-n1"></b></span>`
   const end = document.createElement('div')
   end.id = 'fd-end'; end.hidden = true
-  end.innerHTML = `<div><h2 id="fd-endtext"></h2><p id="fd-why"></p><button id="fd-again2" type="button"></button></div>`
+  end.innerHTML = `<div><h2 id="fd-endtext"></h2><div class="st" id="fd-endstats"></div><p id="fd-why"></p><button id="fd-again2" type="button"></button></div>`
   root.append(edge, hud, end)
   const $ = (id: string): HTMLElement => document.getElementById(id) as HTMLElement
   const zoom = $('fd-zoom'), pause = $('fd-pause'), again = $('fd-again'), again2 = $('fd-again2')
   const n0 = $('fd-n0'), n1 = $('fd-n1'), b0 = $('fd-b0'), b1 = $('fd-b1')
   const fa = b0.firstElementChild as HTMLElement, fb = b1.firstElementChild as HTMLElement
-  const endText = $('fd-endtext'), endWhy = $('fd-why')
+  const endText = $('fd-endtext'), endWhy = $('fd-why'), endStats = $('fd-endstats')
   zoom.hidden = true // 시제품: 확대 단추는 뺀다 (51 §2) · 장수 따라가기 한 가지 배율
   again.textContent = again2.textContent = t('field.again')
   pause.textContent = t('field.pause')
   let armUntil = 0
+  let goldUntil = 0
+  const prevEdge = [-1, -1]
+  const edgeBox = edge
+  const chip = (bar: HTMLElement, share: number, side: 0 | 1, big: boolean): void => {
+    const r = bar.getBoundingClientRect(), o = edgeBox.getBoundingClientRect()
+    const x = r.left - o.left + r.width * (side === 0 ? 1 - share / 1000 : share / 1000)
+    const c = document.createElement('i')
+    c.className = `chip ${side === 0 ? 'a' : 'b'}${big ? ' big' : ''}`
+    c.style.left = `${Math.round(x - 4)}px`
+    edgeBox.append(c)
+    c.addEventListener('animationend', () => c.remove())
+    bar.classList.remove('sh'); void bar.offsetWidth; bar.classList.add('sh')
+  }
   let key = ''
   zoom.addEventListener('click', () => h.onZoom())
   pause.addEventListener('pointerdown', e => { e.preventDefault(); h.onPause() })
@@ -85,7 +111,14 @@ export function mountHud(root: HTMLElement, h: HudHandlers): Hud {
     setZoom(level) { zoom.textContent = t(`field.zoom.${level}` as Key); zoom.classList.toggle('on', level > 0) },
     setPaused(p) { pause.textContent = t(p ? 'field.resume' : 'field.pause'); pause.classList.toggle('on', p) },
     hide(hidden) { hud.hidden = hidden; edge.hidden = hidden },
-    sync(m) {
+    sync(m, fx) {
+      // 막대가 크게 줄면 그 끝에서 조각이 떨어진다 (상성이 맞으면 막대 테두리가 금빛으로 번쩍)
+      for (const sd of [0, 1] as const) {
+        const was = prevEdge[sd]!
+        if (was >= 0 && m.edge[sd] < was - P.field.chipDropPermille) chip(sd === 0 ? b0 : b1, m.edge[sd], sd, was - m.edge[sd] >= P.field.chipDropPermille * 3)
+        prevEdge[sd] = m.edge[sd]
+      }
+      if (fx !== undefined && fx.gold) { goldUntil = performance.now() + P.field.goldFlashMs; b0.classList.add('gold'); b1.classList.add('gold') }
       const k = `${m.edge[0]}|${m.edge[1]}|${men(m, 0)}|${men(m, 1)}`
       if (k === key) return
       key = k
@@ -96,13 +129,15 @@ export function mountHud(root: HTMLElement, h: HudHandlers): Hud {
       b0.classList.toggle('low', m.edge[0] < P.field.edgeLowPermille)
       b1.classList.toggle('low', m.edge[1] < P.field.edgeLowPermille)
     },
-    showEnd(m) {
+    showEnd(m, stats) {
       if (m === null || m.end === null) { end.hidden = true; return }
       end.hidden = false
+      endStats.innerHTML = stats === undefined ? '' : `<span>${t('field.res.killed', { n: stats.killed.toLocaleString() })}</span><span>${t('field.res.lost', { n: stats.lost.toLocaleString() })}</span>`
       endText.textContent = t(m.winner === 0 ? 'field.end.win' : m.winner === 1 ? 'field.end.lose' : 'field.end.draw')
       endWhy.textContent = t(`field.endwhy.${m.end}` as Key)
     },
     frame(nowMs) {
+      if (goldUntil > 0 && performance.now() >= goldUntil) { goldUntil = 0; b0.classList.remove('gold'); b1.classList.remove('gold') }
       if (armUntil > 0 && nowMs >= armUntil) { armUntil = 0; again.className = ''; again.textContent = t('field.again') }
     },
   }
