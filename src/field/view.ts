@@ -13,7 +13,7 @@ import { dotDied, dotsOf, offU, offV, peekDots, resetForm, rowCount, rowOfDot, s
 import { FORM_HOLD, FORM_SCATTER, FORM_WALL, ORD_VOLLEY, moraleOf } from './viewFxRead.ts'
 import { drawRain, resetRain } from './viewRain.ts'
 import { drawDash, queueDash, resetDash } from './viewDash.ts'
-import { FLAG_FALLEN, bracedAt, drawOmens, drawRegroupZone, drawShouts, drawStands, isShouting, liftOf, noteShouts, raisedAt, riseTilt, standingAt, drawPops, noteOmens, flagTilt, ingestHits, kickOf, resetHit, scatterOf, sc, shake, shakeAt, viewClock } from './viewHit.ts'
+import { FLAG_FALLEN, bashDirOf, bashPoseOf, knockOf, knockSide, bracedAt, drawOmens, drawRegroupZone, drawShouts, drawStands, isShouting, liftOf, noteShouts, raisedAt, riseTilt, standingAt, drawPops, noteOmens, flagTilt, ingestHits, kickOf, resetHit, scatterOf, sc, shake, shakeAt, viewClock } from './viewHit.ts'
 import { computePairs, coolPress, notePush, dotMelee, drawParticles, flinchOf, isFront, maxFwdOf, minFwdOf, mo, noteLoss, partnerOf, resetMelee, spawn, swingChance, swings } from './viewMelee.ts'
 import { drawTerrain } from './viewTerrain.ts'
 import { TEAM_RGB } from './viewTint.ts'
@@ -32,7 +32,7 @@ const FULL_TURN = 6.2832
 const STAKE_VARIANTS = 17
 
 type Kind = 0 | 1 | 2 // 0 병사 · 1 쓰러진 병사 · 2 소품(목책 말뚝·문)
-interface Item { y: number; x: number; kind: Kind; strip: Strip | null; frame: number; flip: boolean; side: 0 | 1; h: number; img: HTMLImageElement | null; alpha: number; hero: boolean; rot: number; lift: number; grit: number }
+interface Item { y: number; x: number; kind: Kind; strip: Strip | null; frame: number; flip: boolean; side: 0 | 1; h: number; img: HTMLImageElement | null; alpha: number; hero: boolean; rot: number; lift: number; grit: number; ready: boolean }
 const pool: Item[] = []
 const order: Item[] = []
 let used = 0
@@ -41,9 +41,9 @@ let used = 0
 const arrowBuf: number[] = [], flagBuf: number[] = [], trimBuf: number[] = [], standBuf: number[] = [], mine: VModel['squads'] = []
 const byY = (a: Item, b: Item): number => a.y - b.y
 function nextItem(): Item {
-  if (used === pool.length) pool.push({ y: 0, x: 0, kind: 0, strip: null, frame: 0, flip: false, side: 0, h: 0, img: null, alpha: 1, hero: false, rot: 0, lift: 0, grit: 0 })
+  if (used === pool.length) pool.push({ y: 0, x: 0, kind: 0, strip: null, frame: 0, flip: false, side: 0, h: 0, img: null, alpha: 1, hero: false, rot: 0, lift: 0, grit: 0, ready: false })
   const d = pool[used++]!
-  d.img = null; d.strip = null; d.alpha = 1; d.hero = false; d.rot = 0; d.lift = 0; d.grit = 0
+  d.img = null; d.strip = null; d.alpha = 1; d.hero = false; d.rot = 0; d.lift = 0; d.grit = 0; d.ready = false
   return d
 }
 
@@ -383,6 +383,13 @@ function drawItem(ctx: CanvasRenderingContext2D, d: Item): void {
       ctx.beginPath(); ctx.ellipse(d.x, d.y, d.h * 0.3, d.h * 0.1, 0, -Math.PI / 2, -Math.PI / 2 + FULL_TURN * d.grit / 1000)
       ctx.globalAlpha = 0.95; ctx.lineWidth = base * 1.7; ctx.stroke()
     }
+    if (d.ready) {
+      // 도움닫기가 찼다 (지금 적 줄에 닿으면 밀친다): 고른 고리(금빛)보다 크게 · 금빛 굵은 테 위에 흰 속테가 빠르게 뛴다
+      const pulse = 0.5 + 0.5 * Math.sin(drawNow / 90)
+      ctx.beginPath(); ctx.ellipse(d.x, d.y, d.h * (0.44 + 0.04 * pulse), d.h * (0.15 + 0.013 * pulse), 0, 0, FULL_TURN)
+      ctx.globalAlpha = 0.85; ctx.strokeStyle = TRIM_COLOR; ctx.lineWidth = base * 2.6; ctx.stroke()
+      ctx.globalAlpha = 0.6 + 0.4 * pulse; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = base * 1.1; ctx.stroke()
+    }
     ctx.globalAlpha = 1
   }
   const s = d.strip
@@ -590,6 +597,9 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
           d.h = sH * F.holdDropPermille / 1000
         } else if (kk === 'pike' && !moving && !gathering && !fighting && !running) d.frame = ATTACK0 // 긴 창: 뒤 열 창도 앞 열 어깨 위로 숲처럼
         if (kk === 'crossbow') d.h *= F.crossbowDropPermille / 1000
+        // 장수에게 밀친 대: 몇이 뒤로 넘어졌다가(맞음 → 누움) 일어난다
+        const kn = knockOf(q.id, k, nowMs)
+        if (kn >= 0 && kn < 0.85) { d.frame = kn < 0.2 ? HIT : DOWN; d.x += knockSide.dir * F.heroBashKnockCells * F.cellPx * Math.min(1, kn * 4) }
         if (fighting && front && swing) fx.attackers++
         drawn++
         if (fighting && q.grp === 'bows' && aq !== undefined) {
@@ -647,6 +657,20 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
     d.kind = 0; d.hero = true; d.x = x; d.y = y; d.strip = heroStrip(art, e.id, heroPick); d.side = e.side
     d.flip = (moved ? e.u < (pe?.u ?? e.u) : faceU < 0); d.h = baseH * F.heroScale / 100
     d.frame = e.stun > 0 ? DOWN : isShouting(e.side, nowMs) ? ATTACK0 + 2 : pose(nowMs, 0, moved, cur.end === null && fighting && e.stun === 0)
+    // 밀침: 그 쪽으로 크게 내딛으며 휘두른다 (공격 칸을 끝까지 · 그림이 잠깐 커진다)
+    const bash = e.stun > 0 ? -1 : bashPoseOf(e.side, nowMs)
+    if (bash >= 0) {
+      const bd = bashDirOf(e.side), sw = Math.sin(bash * Math.PI)
+      d.frame = ATTACK0 + Math.min(ATTACK_N - 1, Math.floor(bash * ATTACK_N)); d.flip = bd < 0
+      d.h *= 1 + F.heroBashSwingScale * sw; d.x += bd * F.heroBashLungeCells * F.cellPx * sw
+    }
+    // 도움닫기가 찼다: 손으로 heroRunInCells 넘게 걸어 왔고 밀침 쿨이 돌았다 — 고리가 밝아지고 발밑에 흙먼지 꼬리
+    d.ready = e.stun === 0 && cur.end === null && e.runIn >= F.heroRunInCells * F.unit && (e.bangTick < 0 || cur.tick - e.bangTick >= F.heroBangCdSec * F.hz)
+    if (d.ready && moved && nowMs - (fx.dustAt.get(-1000 - e.side) ?? -1e9) > F.runInDustMs) {
+      fx.dustAt.set(-1000 - e.side, nowMs)
+      const mdx = e.u - pe!.u, mdy = e.v - pe!.v, ml = Math.max(1, Math.hypot(mdx, mdy)), hh = hash2(e.side * 5 + 3, Math.floor(nowMs / F.runInDustMs))
+      for (let j = 0; j < 2; j++) spawn(0, x - mdx / ml * F.cellPx * (0.4 + j * 0.3), y - mdy / ml * F.cellPx * 0.3 + (j - 0.5) * F.cellPx * 0.3, -mdx / ml * (20 + hh % 15), -mdy / ml * 12 - 6 - hh % 6, nowMs, F.runDustLife, F.cellPx * 0.3)
+    }
     drawn++
     if (e.dash > 0 && e.stun === 0) {
       const hk = heroKey(art, e.id, heroPick), me = hk === null ? undefined : art.manifest?.[hk]

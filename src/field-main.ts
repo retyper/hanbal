@@ -131,9 +131,14 @@ let hoverG = -1
 let aimCur: HTMLImageElement
 /** 첫 판 안내 (처음 세 걸음 · 이기는 법 한 줄) — 다 하면 저장하고 다시 안 뜬다 */
 const TUT_KEY = 'field.tutorial.v1'
-const readTut = (): boolean => { try { return localStorage.getItem(TUT_KEY) === '1' } catch { return false } }
-let tutDone = readTut()
-const stepOk = [false, false, false]
+/** 넷째 걸음(밀침)은 뒤에 붙었다 — 앞 셋을 마친 사람에게는 넷째만 뜬다 */
+const TUT4_KEY = 'field.tutorial.bash'
+const readKey = (k: string): boolean => { try { return localStorage.getItem(k) === '1' } catch { return false } }
+const tut3 = readKey(TUT_KEY)
+let tutDone = tut3 && readKey(TUT4_KEY)
+const stepOk = [tut3, tut3, tut3, false]
+/** 이 판에서 우리 장수가 밀친 수 (결과 한 장 · 넷째 걸음) · 넷째 걸음이 떴나 */
+let bashN = 0, step4Latched = false
 let flashStep = -1, flashAt = 0, playMs = 0
 let steps: Steps
 let pad: Pad
@@ -272,7 +277,7 @@ function restart(): void {
   resetFx()
   introLeft = P.field.introMs
   fsnd.stop(); soundTick = -1; soundEpoch = markEpoch
-  endAt = 0; viewMs = 0; pan = null; tgt = null; lossAcc = []; hist.length = 0; flyQ.length = 0; breakMor = null
+  endAt = 0; viewMs = 0; pan = null; tgt = null; lossAcc = []; hist.length = 0; flyQ.length = 0; breakMor = null; bashN = 0
   ui.phase = 'ready'; ui.sel = [3]
   queue = []; plan = []
   lastGoal.fill(null); lastShape.fill('move'); nudgeAt.fill(0)
@@ -784,16 +789,19 @@ function tutorial(now: number): void {
   if (play && !stepOk[1] && usedCharge) { stepOk[1] = true; stepOk[0] = true; flashStep = 1; flashAt = now }
   const hz0 = heroNow()
   if (play && !stepOk[2] && hz0 !== undefined && hz0.artCd > 0) { stepOk[2] = true; stepOk[0] = true; stepOk[1] = true; flashStep = 2; flashAt = now }
+  if (play && !stepOk[3] && bashN > 0) { stepOk[3] = true; stepOk[0] = stepOk[1] = stepOk[2] = true; flashStep = 3; flashAt = now }
   const flashing = flashStep >= 0 && now - flashAt < P.field.stepFlashMs
   const next = stepOk.indexOf(false)
   // 셋째 걸음은 적 대가 비기 범위 안에 든 뒤에야 뜨고, 한 번 뜨면 쓰기 전에는 안 사라진다
   if (next === 2 && !step3Latched && step3Ready()) step3Latched = true
+  // 넷째 걸음(밀침)도 적 대가 곁에 들어온 뒤에 뜬다
+  if (next === 3 && !step4Latched && step3Ready()) step4Latched = true
   if (next === -1 && !flashing) {
     tutDone = true
-    try { localStorage.setItem(TUT_KEY, '1') } catch { /* 저장 못 해도 이 판에서만 */ }
+    try { localStorage.setItem(TUT_KEY, '1'); localStorage.setItem(TUT4_KEY, '1') } catch { /* 저장 못 해도 이 판에서만 */ }
     steps.sync(false, null, false); return
   }
-  const showStep = ui.phase === 'end' || cur.end !== null ? -1 : flashing ? flashStep : next === 2 && !step3Latched ? -1 : next
+  const showStep = ui.phase === 'end' || cur.end !== null ? -1 : flashing ? flashStep : (next === 2 && !step3Latched) || (next === 3 && !step4Latched) ? -1 : next
   steps.sync(ui.phase !== 'end' && cur.end === null && playMs < P.field.goalMs, showStep < 0 ? null : showStep === 1 ? t(touchMode ? 'field.step.2.touch' : 'field.step.2', { k: firstKeyLabel('cmd1') }) : showStep === 2 ? t(touchMode ? 'field.step.3.touch' : 'field.step.3', { k: firstKeyLabel('skillQ'), art: artLabel() }) : t(`field.step.${showStep + 1}` as Key), flashing)
 }
 /** 위쪽 숫자·사기 띠가 읽는 판 — 점이 먼저 쓰러지고 숫자가 따라가도록 numLagMs 전의 것 (판 값은 안 바꾼다) */
@@ -832,7 +840,7 @@ function endStats(): EndStats | undefined {
   if (cur.end === null) return undefined
   const st = cur.stats
   const h = heroNow()
-  return { killed: st.killed[0], lost: st.lost[0], flank: st.flankHits[0], art: Math.round(st.artMorale[0] / 10), stand: cur.stood[0], regroup: cur.squads.filter(q => q.side === 0 && q.regrouped === 1).length, grit: h?.gritN ?? 0 }
+  return { killed: st.killed[0], lost: st.lost[0], flank: st.flankHits[0], art: Math.round(st.artMorale[0] / 10), stand: cur.stood[0], regroup: cur.squads.filter(q => q.side === 0 && q.regrouped === 1).length, grit: h?.gritN ?? 0, bash: bashN }
 }
 /** 그 무리의 지금 명령 ORD_* (엔진이 정한 것 · 대마다 같다) */
 function ordOf(grp: string): number {
@@ -889,6 +897,7 @@ function frame(now: number): void {
       for (const ev of cur.events) {
         if (ev.kind === 'impact') { if (ev.how === 1) fxGold = true; else if (ev.how === 2) fxBlocked = true }
         else if (ev.kind === 'regroup') flyQ.push({ id: ev.id, n: ev.n })
+        else if (ev.kind === 'heroBash' && ev.side === 0) bashN++
       }
       noteBreak()
     }

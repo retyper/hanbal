@@ -32,7 +32,7 @@ export const pops: Pop[] = []
 export const clockSt = { stopUntil: 0, last: -1, clk: 0, shAt: -1e9, shPx: 0, shMs: 1 }
 
 export function resetHit(): void {
-  braces.clear(); raised.clear(); rises.clear(); tilts.clear(); scats.clear(); kicks.clear(); omens.length = 0; lastImpact.clear(); pends.length = 0; pops.length = 0
+  braces.clear(); raised.clear(); rises.clear(); knocks.clear(); bashAt[0] = bashAt[1] = -1e9; tilts.clear(); scats.clear(); kicks.clear(); omens.length = 0; lastImpact.clear(); pends.length = 0; pops.length = 0
   clockSt.stopUntil = 0; clockSt.last = -1; clockSt.clk = 0; clockSt.shAt = -1e9
 }
 
@@ -92,6 +92,8 @@ export function ingestHits(cur: VModel, hits: readonly VLoss[], clk: number, rea
       noteStand(cur, e.side, e.u, e.v, e.r, clk)
     } else if (e.kind === 'regroup') {
       noteRegroup(cur, e.id, clk)
+    } else if (e.kind === 'heroBash') {
+      noteBash(cur, e.side, e.to, e.u, e.v, clk, real)
     } else if (e.kind === 'heroDown') {
       noteHeroDown(cur, prev, e.side, e.u, e.v, clk, real)
     } else if (e.kind === 'artHit' && e.to >= 0) {
@@ -372,6 +374,50 @@ export function noteHeroDown(cur: VModel, prev: VModel | null, side: 0 | 1, u: n
   clockSt.stopUntil = Math.max(clockSt.stopUntil, real + F.slainStopMs)
   clockSt.shAt = real; clockSt.shPx = F.slainShakePx; clockSt.shMs = F.slainShakeMs
 }
+// ───────── 장수 밀침 (heroBash): 장수가 크게 휘두르고 · 밀린 대가 대 모양째 튕기며 몇이 뒤로 넘어지고 · 금빛 「−N」 ─────────
+/** 밀린 대마다 넘어짐이 시작된 시각과 넘어지는 쪽(+u 1 · -u -1) */
+const knocks = new Map<number, { at: number; dir: number }>()
+/** 편마다 장수가 밀친 시각과 그 쪽 */
+const bashAt = [-1e9, -1e9], bashDir = [1, 1]
+/**
+ * 밀침 한 번 — 쾅(impact how 1 · id -1)은 같은 틱에 같이 오지만 noteImpact 가 장수 것(id -1)을 안 받으므로 두 번 터지지 않는다.
+ * 숫자는 엔진 값 heroBangShock 그대로 (천분율 → %p)
+ */
+export function noteBash(cur: VModel, side: 0 | 1, to: number, u: number, v: number, clk: number, real: number): void {
+  const F = P.field, q = cur.squads[to], h = cur.heroes.find(e => e.side === side)
+  if (q === undefined || q.men <= 0) return
+  const dir = h === undefined ? (side === 0 ? cur.face : -cur.face) : q.u >= h.u ? 1 : -1
+  kicks.set(q.id, { at: clk, dir, cells: F.heroBashKickCells })
+  knocks.set(q.id, { at: clk, dir })
+  addTilt(q.id, F.flagTiltDeg * DEG, dir, clk)
+  bashAt[side] = clk; bashDir[side] = dir
+  const n = Math.round(F.heroBangShock / 10)
+  if (n >= 1) { pops.push({ at: clk, n, gold: true, ...flagPos(q) }); if (pops.length > F.moralePopMax) pops.shift() }
+  const x = px(u), y = px(v)
+  for (let i = 0; i < F.heroBashDust; i++) {
+    const hh = hash2((clk | 0) + i, 17), ang = (hh % 628) / 100, sp = 30 + (hh >>> 9) % 50
+    spawn(0, x + Math.cos(ang) * 4, y + Math.sin(ang) * 3, Math.cos(ang) * sp + dir * 25, Math.sin(ang) * sp * 0.5 - 8, clk, F.burstMs, F.cellPx * 0.18)
+  }
+  clockSt.stopUntil = Math.max(clockSt.stopUntil, real + F.heroBashStopMs)
+  clockSt.shAt = real; clockSt.shPx = F.heroBashShakePx; clockSt.shMs = F.heroBashShakeMs
+}
+/** 밀린 대의 이 점이 넘어져 있는 중이면 0~1 (넘어짐 → 누움 → 일어남) · 아니면 -1 · knockSide 에 넘어지는 쪽 */
+export const knockSide = { dir: 1 }
+export function knockOf(id: number, k: number, clk: number): number {
+  const kn = knocks.get(id)
+  if (kn === undefined) return -1
+  const t = (clk - kn.at) / P.field.heroBashKnockMs
+  if (t < 0 || t >= 1 || hash2(id * 41 + 7, k) % 1000 >= P.field.heroBashKnockPermille) return -1
+  knockSide.dir = kn.dir
+  return t
+}
+/** 이 편 장수가 밀치며 휘두르는 중이면 0~1 · 아니면 -1 · 쪽은 bashDirOf */
+export function bashPoseOf(side: 0 | 1, clk: number): number {
+  const t = (clk - bashAt[side]!) / P.field.heroBashSwingMs
+  return t >= 0 && t < 1 ? t : -1
+}
+export const bashDirOf = (side: 0 | 1): number => bashDir[side]!
+
 /** 무기를 치켜드는 중인가 */
 export const raisedAt = (id: number, clk: number): boolean => { const t = raised.get(id); return t !== undefined && clk - t >= 0 && clk - t < P.field.standRaiseMs }
 /**

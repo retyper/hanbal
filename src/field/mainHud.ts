@@ -37,8 +37,8 @@ export function bladeLeftOf(m: VModel, side: 0 | 1): number {
   if (F.breakNoBladesSec <= 0 || m.end !== null || m.breakTick[side] >= 0 || gap < F.bladeShowSec * F.hz) return -1
   return Math.max(0, Math.ceil((F.breakNoBladesSec * F.hz - gap) / F.hz))
 }
-/** 끝 상자의 숫자: 쓰러뜨린 적 · 잃은 우리 병사 · 먹힌 옆치기 · 비기로 깎은 사기 · 버팀 · 다시 선 대 · 투지 발동 (모두 지난 일) */
-export interface EndStats { killed: number; lost: number; flank: number; art: number; stand?: number; regroup?: number; grit?: number }
+/** 끝 상자의 숫자: 쓰러뜨린 적 · 잃은 우리 병사 · 먹힌 옆치기 · 비기로 깎은 사기 · 버팀 · 다시 선 대 · 투지 발동 · 밀침 (모두 지난 일) */
+export interface EndStats { killed: number; lost: number; flank: number; art: number; stand?: number; regroup?: number; grit?: number; bash?: number }
 /** by = 까닭별 몫 · won = 이겼나 · morale = 판이 갈린 순간(먼저 무너진 틱)의 편 사기 둘(천분율) */
 export interface EndWhy { by: Readonly<Record<Cause, number>>; won: boolean; morale: readonly [number, number] }
 export interface Hud {
@@ -280,7 +280,7 @@ export function mountHud(root: HTMLElement, h: HudHandlers, base = ''): Hud {
       endStats.innerHTML = stats === undefined ? '' : sp('field.res.killed', stats.killed) + sp('field.res.lost', stats.lost)
         + (stats.flank > 0 ? sp('field.res.flank', stats.flank) : '') + (stats.art > 0 ? sp('field.res.art', stats.art) : '')
         + ((stats.stand ?? 0) > 0 ? sp('field.res.stand', stats.stand ?? 0) : '') + ((stats.regroup ?? 0) > 0 ? sp('field.res.regroup', stats.regroup ?? 0) : '')
-        + ((stats.grit ?? 0) > 0 ? sp('field.res.grit', stats.grit ?? 0) : '')
+        + ((stats.grit ?? 0) > 0 ? sp('field.res.grit', stats.grit ?? 0) : '') + ((stats.bash ?? 0) > 0 ? sp('field.res.bash', stats.bash ?? 0) : '')
       const top = why === undefined ? null : topCause(why.by)
       endWhy.textContent = top === null || why === undefined ? '' : t(`field.cause.${why.won ? 'win' : 'lose'}.${top}` as Key)
     },
