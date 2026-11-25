@@ -9,13 +9,15 @@ import type { FieldState } from './types.ts'
 /** aim = 지금 싸우는 상대(대 id · 없으면 -1 · 손으로 몰았든 알아서든 같은 뜻) · foe = 「적을 쳐라」로 받은 적 · form = 앞줄 모양 FORM_* · cmd = 활·기병 명령 · lock = 맞물린 적 대 */
 export interface VSquad { id: number; side: 0 | 1; grp: string; kind: string; men: number; fresh: number; u: number; v: number; target: number; goal: { u: number; v: number } | null; stance: number; manual: number; aim: number; foe: number; form: number; cmd: number; lock: number; morale: number; morale0: number; order: number; orderTick: number; orderAt: { u: number; v: number } | null; ran: number; bonus: number; hitTick: number; flee: number; bw: number; bd: number; face: number; pushed: number }
 /** dir 걷는 방향 · face 보는 쪽 · dash 내닫는 남은 틱 · dashCd/artCd 쿨타임 남은 틱 · artOn 비기 이어지는 틱 · why/whyTick 마지막으로 못 쓴 까닭 · atk 이번 틱에 친 것 · art 비기 이름 · mu/tong 능력치 */
-export interface VHero { side: 0 | 1; id: string; u: number; v: number; stun: number; goal: { u: number; v: number } | null; dir: number; face: number; dash: number; dashDir: number; dashCd: number; art: string; artCd: number; artOn: number; why: number; whyTick: number; atk: number; mu: number; tong: number }
+export interface VHero { side: 0 | 1; id: string; u: number; v: number; stun: number; goal: { u: number; v: number } | null; dir: number; face: number; dash: number; dashDir: number; dashCd: number; art: string; artCd: number; artOn: number; why: number; whyTick: number; atk: number; mu: number; tong: number; grit: number }
 /** 바닥에 놓인 조각 (목책 마디·문) — 칸 단위 · hp 0 이하면 부서진 것 */
 export interface VPiece { id: number; kind: 'stake' | 'gate'; u0: number; v0: number; u1: number; v1: number; hp: number }
 /** 방금 돈 틱에 난 부딪힘·무너짐·활 한 번 (kind impact 처음 맞물림 · rout 사기가 꺾임 · volley 활이 쏨 · how 는 impact 의 상성 구분 · 0 보통 1 맞음 2 막힘 · 없으면 0) */
-export interface VEvent { kind: 'impact' | 'rout' | 'volley' | 'omen' | 'flankHit' | 'artHit'; side: 0 | 1; id: number; u: number; v: number; n: number; how: number; to: number; pts: { u: number; v: number }[] }
+export interface VEvent { kind: 'impact' | 'rout' | 'volley' | 'omen' | 'flankHit' | 'artHit' | 'sideBreak' | 'stand' | 'regroup' | 'heroSkill'; side: 0 | 1; id: number; u: number; v: number; n: number; how: number; to: number; pts: { u: number; v: number }[]; r: number }
 /** 친 대 id(장수면 -1) · 맞은 대 id · 줄어든 사람 수 · 종류 */
 export interface VLoss { from: number; to: number; n: number; how: number }
+/** 편마다 깎인 사기의 까닭별 몫 (천분율 × 사람 · 그 편 menMax 합으로 나누면 깎인 사기 천분율) */
+export interface VMoraleBy { arrows: number; melee: number; flank: number; hero: number; domino: number; push: number }
 export interface VModel {
   tick: number
   /** 맵 길이·폭 (칸) */
@@ -40,7 +42,12 @@ export interface VModel {
   loss: VLoss[]
   events: VEvent[]
   /** 결과 통계 (편마다) · 적의 큰 수를 거는 틱 (편마다 · -1 없음) */
-  stats: { flankHits: [number, number]; artMorale: [number, number]; killed: [number, number]; lost: [number, number] }
+  stats: { flankHits: [number, number]; artMorale: [number, number]; killed: [number, number]; lost: [number, number]; moraleBy: [VMoraleBy, VMoraleBy] }
+  /** 편마다 진 LINE_* (0 방패 벽 · 1 창 쐐기 · 2 넓은 날개) · 무너진 틱(-1 아직)과 까닭(1 사람 · 2 사기) · 달아났다 다시 선 적이 있는가 */
+  lineup: [number, number]
+  breakTick: [number, number]
+  breakWhy: [number, number]
+  stood: [number, number]
   planTick: [number, number]
   /** 편마다 앞줄이 마지막으로 맞물린 틱 (진 기준점이 얼어 있는가) */
   frontLockTick: [number, number]
@@ -82,7 +89,7 @@ function tickEvents(s: FieldState): VEvent[] {
   const ev = s.log.events
   for (let i = ev.length - 1; i >= 0 && ev[i]!.tick >= s.tick - 1; i--) {
     const e = ev[i]!
-    if (e.kind === 'impact' || e.kind === 'rout' || e.kind === 'volley' || e.kind === 'omen' || e.kind === 'flankHit' || e.kind === 'artHit') out.push({ kind: e.kind, side: e.side, id: e.id, u: e.u, v: e.v, n: e.n, how: e.how ?? 0, to: e.to ?? -1, pts: e.pts === undefined ? [] : e.pts.map(p => ({ u: p.u, v: p.v })) })
+    if (e.kind === 'impact' || e.kind === 'rout' || e.kind === 'volley' || e.kind === 'omen' || e.kind === 'flankHit' || e.kind === 'artHit' || e.kind === 'sideBreak' || e.kind === 'stand' || e.kind === 'regroup' || e.kind === 'heroSkill') out.push({ kind: e.kind, side: e.side, id: e.id, u: e.u, v: e.v, n: e.n, how: e.how ?? 0, to: e.to ?? -1, pts: e.pts === undefined ? [] : e.pts.map(p => ({ u: p.u, v: p.v })), r: e.r ?? 0 })
   }
   return out.reverse()
 }
@@ -100,11 +107,12 @@ export function readField(s: FieldState): VModel {
     cells: s.map.cells,
     rule: s.map.rule,
     squads: s.squads.map(q => ({ id: q.id, side: q.side, grp: q.grp, kind: q.kind, men: q.men, fresh: q.fresh, u: q.u, v: q.v, target: q.target, goal: q.goal === null ? null : { u: q.goal.u, v: q.goal.v }, stance: q.stance, manual: q.manual, aim: q.aim, foe: q.foe, form: q.form, cmd: q.cmd, lock: q.lock, morale: q.morale, morale0: q.morale0, order: q.order, orderTick: q.orderTick, orderAt: q.orderAt === null ? null : { u: q.orderAt.u, v: q.orderAt.v }, ran: q.ran, bonus: q.bonus, hitTick: q.hitTick, flee: q.flee, bw: q.bw, bd: q.bd, face: q.face, pushed: q.pushed })),
-    heroes: s.heroes.map(e => ({ side: e.side, id: e.id, u: e.u, v: e.v, stun: e.stun, goal: e.goal === null ? null : { u: e.goal.u, v: e.goal.v }, dir: e.dir, face: e.face, dash: e.dash, dashDir: e.dashDir, dashCd: e.dashCd, art: e.art, artCd: e.artCd, artOn: e.artOn, why: e.why, whyTick: e.whyTick, atk: e.atk, mu: e.mu, tong: e.tong })),
+    heroes: s.heroes.map(e => ({ side: e.side, id: e.id, u: e.u, v: e.v, stun: e.stun, goal: e.goal === null ? null : { u: e.goal.u, v: e.goal.v }, dir: e.dir, face: e.face, dash: e.dash, dashDir: e.dashDir, dashCd: e.dashCd, art: e.art, artCd: e.artCd, artOn: e.artOn, why: e.why, whyTick: e.whyTick, atk: e.atk, mu: e.mu, tong: e.tong, grit: e.grit })),
     loss: tickLoss(s),
     events: tickEvents(s),
     anchor: s.anchor.map(p => ({ u: p.u, v: p.v })),
-    stats: { flankHits: [s.stats.flankHits[0], s.stats.flankHits[1]], artMorale: [s.stats.artMorale[0], s.stats.artMorale[1]], killed: [s.stats.killed[0], s.stats.killed[1]], lost: [s.stats.lost[0], s.stats.lost[1]] },
+    lineup: [s.lineup[0], s.lineup[1]], breakTick: [s.breakTick[0], s.breakTick[1]], breakWhy: [s.breakWhy[0], s.breakWhy[1]], stood: [s.stood[0], s.stood[1]],
+    stats: { flankHits: [s.stats.flankHits[0], s.stats.flankHits[1]], artMorale: [s.stats.artMorale[0], s.stats.artMorale[1]], killed: [s.stats.killed[0], s.stats.killed[1]], lost: [s.stats.lost[0], s.stats.lost[1]], moraleBy: [{ ...s.stats.moraleBy[0] }, { ...s.stats.moraleBy[1] }] },
     planTick: [s.planTick[0], s.planTick[1]],
     frontLockTick: [s.frontLockTick[0], s.frontLockTick[1]],
     route: s.route.map(r => r.map(p => ({ u: p.u, v: p.v }))),
