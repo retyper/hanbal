@@ -127,6 +127,7 @@ HEROES = {
     'base-w-45-tamna-oreumbi': dict(hit=True, strip='gen-base-w-45-tamna-oreumbi', atk='whip', src='lassof', actw=288, backfoot=True, atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 3), ('b', 4))),   # 탐라 오름비(밧줄 올가미 · 먼 손에 쥠 · 가슴 L) · 11-25 밧줄 퍼뜨리기(lassof)
     'dallae2': dict(hit=True, strip='gen-dallae2', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 살해 달래(굽은 단검 둘 · 가슴 M) · 11-25 열넷째 묶음
     'aryeong': dict(hit=True, strip='gen-aryeong', atk='thrust', src='thrust3', backfoot=True, actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 사로 아령(창 · 가슴 M) · 11-25 열넷째 묶음
+    'janmul': dict(hit=True, strip='gen-base-w-29-golpo-janmul', atk='thrust', src='thrust3', backfoot=True, actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 골포 잔물(주걱 노 · 가슴 M) · 11-25 열넷째 묶음
     'areum': dict(hit=True, strip='gen-areum', atk='slam', atk8=True, act=True, lock='none'),   # 받은 그림 그대로(얼굴을 떠다 붙이지 않는다 — 11-24: 뭉친 얼굴이 여덟 칸에 퍼졌다) · 옛 lock='face': 메가 머리 뒤로 지나간다 — 머리 상자는 메를 자르고(「포스터」), 윗몸을 통째로 묶으면 떠다닌다(11-24 형) → 얼굴 안쪽만 묶는다
 }
 
