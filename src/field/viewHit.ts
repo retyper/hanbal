@@ -24,12 +24,13 @@ const tilts = new Map<number, Tilt>()
 const scats = new Map<number, Scat>()
 const kicks = new Map<number, Kick>()
 const lastImpact = new Map<number, number>()
+const braces = new Map<number, number>()
 const pends: Pend[] = []
 export const pops: Pop[] = []
 export const clockSt = { stopUntil: 0, last: -1, clk: 0, shAt: -1e9, shPx: 0, shMs: 1 }
 
 export function resetHit(): void {
-  tilts.clear(); scats.clear(); kicks.clear(); omens.length = 0; lastImpact.clear(); pends.length = 0; pops.length = 0
+  braces.clear(); tilts.clear(); scats.clear(); kicks.clear(); omens.length = 0; lastImpact.clear(); pends.length = 0; pops.length = 0
   clockSt.stopUntil = 0; clockSt.last = -1; clockSt.clk = 0; clockSt.shAt = -1e9
 }
 
@@ -131,6 +132,7 @@ function land(cur: VModel, p: { att: number; vic: number; how: number }, nearest
     return
   }
   kicks.set(p.vic, { at: clk, dir, cells: horse ? F.kickHorseCells : F.kickFrontCells })
+  braces.set(p.vic, clk)
   if (p.how === HIT_GOOD) good(cur, a, v, clk)
   if (nearest) {
     clockSt.stopUntil = Math.max(clockSt.stopUntil, real + (horse ? F.stopHorseMs : F.stopFrontMs))
@@ -242,3 +244,6 @@ export function drawOmens(ctx: CanvasRenderingContext2D, clk: number, zoom: numb
   }
   ctx.globalAlpha = 1
 }
+
+/** 방진 앞 열이 부딪힘을 받아 더 낮춰 버티는 동안인가 (임팩트 뒤 braceMs) */
+export const bracedAt = (id: number, clk: number): boolean => { const t = braces.get(id); return t !== undefined && clk - t >= 0 && clk - t < P.field.braceMs }

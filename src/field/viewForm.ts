@@ -12,8 +12,8 @@ interface Layout { rows: number; rowOf: Int16Array; fwd: Float32Array; side: Flo
 const layouts = new Map<number, Layout>()
 
 /** (자세, 점 자리 수)의 자리표: 줄 0 이 맨 앞 */
-function layoutOf(form: number, N: number): Layout {
-  const key = form * 1000 + N
+function layoutOf(form: number, N: number, depth: number): Layout {
+  const key = (form * 100 + depth) * 1000 + N
   let L = layouts.get(key)
   if (L !== undefined) return L
   const F = P.field
@@ -21,9 +21,9 @@ function layoutOf(form: number, N: number): Layout {
   let rows: number
   if (form !== FORM_CHARGE) {
     // 줄 선 덩어리: 열(깊이) 2~3 × 줄 4~6 · 방진은 더 촘촘하다
-    const hold = form === FORM_HOLD, maxRows = hold ? F.holdRows : F.lineRows
+    const hold = form === FORM_HOLD, maxRows = hold ? F.holdRows : depth
     const uSp = hold ? F.holdUCells : F.lineUCells, vSp = hold ? F.holdVCells : F.lineVCells
-    rows = N <= 3 ? 1 : N <= maxRows * 2 ? 2 : maxRows
+    rows = Math.max(1, Math.min(maxRows, Math.floor(N / 2)))
     const cols = Math.ceil(N / rows)
     for (let s = 0; s < N; s++) {
       const r = Math.floor(s / cols), c = s % cols
@@ -47,7 +47,7 @@ function layoutOf(form: number, N: number): Layout {
 
 /** 대 하나의 점 자리 기억 */
 export interface Dots {
-  N: number; form: number; face: number; lastT: number; mul: number
+  N: number; form: number; face: number; lastT: number; mul: number; depth: number
   /** 지금 자리(칸) */
   cu: Float32Array; cv: Float32Array
   /** 점 → 자리 번호(모양이 있을 때) · 자리 → 점 */
@@ -64,7 +64,7 @@ const idx: number[] = []
 export function resetForm(): void { states.clear() }
 
 function make(N: number): Dots {
-  return { N, mul: 1, form: 0, face: 1, lastT: -1, cu: new Float32Array(N), cv: new Float32Array(N), slot: new Int16Array(N).fill(-1), occ: new Int16Array(N).fill(-1), hold: new Float64Array(N), gap: new Float32Array(N), wasDead: new Uint8Array(N), fills: [], formAt: -1e9 }
+  return { N, depth: 3, mul: 1, form: 0, face: 1, lastT: -1, cu: new Float32Array(N), cv: new Float32Array(N), slot: new Int16Array(N).fill(-1), occ: new Int16Array(N).fill(-1), hold: new Float64Array(N), gap: new Float32Array(N), wasDead: new Uint8Array(N), fills: [], formAt: -1e9 }
 }
 
 /** 줄 맞춘 자리는 점마다 ±lineJitterPx 만 흩는다 (칸 단위로 바꿔 더한다) */
@@ -72,7 +72,7 @@ const jitter = (id: number, k: number, salt: number): number => ((hash2(id * 3 +
 function targetOf(d: Dots, id: number, k: number, out: { u: number; v: number }): void {
   const s = d.slot[k]!
   if (d.form === FORM_SCATTER || s < 0) { out.u = dotDu(id, k); out.v = dotDv(id, k); return }
-  const L = layoutOf(d.form, d.N)
+  const L = layoutOf(d.form, d.N, d.depth)
   out.u = L.fwd[s]! * d.face * d.mul + jitter(id, k, 1); out.v = L.side[s]! * d.mul + jitter(id, k, 2)
 }
 const tgt = { u: 0, v: 0 }
@@ -85,7 +85,7 @@ function assign(d: Dots, dead: ReadonlySet<number>): void {
   for (let k = 0; k < d.N; k++) if (!dead.has(k)) idx.push(k)
   const f = d.face
   idx.sort((a, b) => (d.cu[b]! - d.cu[a]!) * f || d.cv[a]! - d.cv[b]!)
-  const L = layoutOf(d.form, d.N)
+  const L = layoutOf(d.form, d.N, d.depth)
   // 줄마다 위에서 아래로 다시 정렬
   let s = 0
   while (s < idx.length) {
@@ -99,11 +99,11 @@ function assign(d: Dots, dead: ReadonlySet<number>): void {
 }
 
 /** 대의 점 기억 (N 이 바뀌면 새로) — 처음 만들 때는 자리에 바로 앉는다 */
-export function dotsOf(id: number, N: number, form: number, face: number, now: number, dead: ReadonlySet<number>, mul = 1): Dots {
+export function dotsOf(id: number, N: number, form: number, face: number, now: number, dead: ReadonlySet<number>, mul = 1, depth = 3): Dots {
   let d = states.get(id)
   const fresh = d === undefined || d.N !== N
   if (fresh) {
-    d = make(N); states.set(id, d); d.mul = mul
+    d = make(N); states.set(id, d); d.mul = mul; d.depth = depth
     d.form = form; d.face = face; d.lastT = now
     for (let k = 0; k < N; k++) { d.cu[k] = dotDu(id, k); d.cv[k] = dotDv(id, k) }
     assign(d, dead)
@@ -129,7 +129,7 @@ export function dotDied(d: Dots, k: number, now: number): void {
 }
 
 function fillChain(d: Dots, s0: number): void {
-  const L = layoutOf(d.form, d.N)
+  const L = layoutOf(d.form, d.N, d.depth)
   let s = s0
   for (;;) {
     const b = L.behind[s]!
@@ -170,9 +170,9 @@ export function stepDots(d: Dots, id: number, dead: ReadonlySet<number>, now: nu
 export function rowOfDot(d: Dots, k: number): number {
   if (d.form === FORM_SCATTER) return -1
   const s = d.slot[k]!
-  return s < 0 ? -1 : layoutOf(d.form, d.N).rowOf[s]!
+  return s < 0 ? -1 : layoutOf(d.form, d.N, d.depth).rowOf[s]!
 }
-export const rowCount = (d: Dots): number => d.form === FORM_SCATTER ? 0 : layoutOf(d.form, d.N).rows
+export const rowCount = (d: Dots): number => d.form === FORM_SCATTER ? 0 : layoutOf(d.form, d.N, d.depth).rows
 /** 지금 점 자리 (모양 기억이 있으면 그것 · 없으면 옛 흩어짐) */
 export const offU = (id: number, k: number): number => states.get(id)?.cu[k] ?? dotDu(id, k)
 export const offV = (id: number, k: number): number => states.get(id)?.cv[k] ?? dotDv(id, k)

@@ -88,7 +88,10 @@ export function stripByKey(art: Art, key: string): Strip | null { return stripFi
  * 덧띠(달리기·질주): 규격(칸 크기·발 줄·몸 키)은 본 띠 baseKey 의 것을 빌리고 파일만 <baseKey>-x.png (n 칸).
  * manifest.json 은 고치지 않는다. 파일이 아직 없으면 null — 그림이 생기면 새로 열 때 저절로 쓴다.
  */
-export function extraStrip(art: Art, baseKey: string, n: number): Strip | null { return stripFile(art, `${baseKey}-x`, baseKey, n) }
+export function extraStrip(art: Art, baseKey: string, n: number, suffix = 'x'): Strip | null { return stripFile(art, `${baseKey}-${suffix}`, baseKey, n) }
+/** 방진으로 버티는 창병 두 칸 (칸 1 버팀 · 칸 2 더 낮춰 받음) — 창병만 */
+export const HOLD_N = 2
+export const holdStripFor = (art: Art, grp: string, kind: string): Strip | null => stripKey(art, grp, kind) === 'spear' ? extraStrip(art, 'spear', HOLD_N, 'hold') : null
 /** 덧띠가 있는 병종 */
 export const HAS_RUN_STRIP: ReadonlySet<string> = new Set(['spear', 'horse'])
 
