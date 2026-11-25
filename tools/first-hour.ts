@@ -15,11 +15,15 @@
  *    시련 한 판(8분)과 연출 시간을 더한다. 잰 값이 아니라 보정이다. --pass-trial 0 이면 보정을 끈다(11-18 이전의 표와 같은 판이 된다).
  *  - --trial 0 (각성 v2 · 시련을 본편 관문에서 걷음): 불꽃이 차는 싸움 끝에 곧바로 힘이 붙으니 그 줄은 「첫 투지」가 된다.
  *    각성 모습은 열전 「목책 돌파」의 도깨비 뒤라 본편 셈으로는 못 잰다.
+ *
+ * 열전 목책이 각성의 문인 지금 규칙(legacyAwakeningOpen 0 · 11-25): 불꽃 줄(kindle · ascend)을 판의 셈이 안 내므로 「첫 불꽃 참」·「첫 각성」은
+ * 이 도구로 못 잰다 — 0% 대신 「열전 목책 뒤 · tools/raid-first-awaken.ts 로 잼」을 찍는다. 옛 각성 길을 켠 돌림(--set legacyAwakeningOpen=1)은 예전처럼 잰다.
+ * 끝에 「보상 사이 가장 긴 빈 구간」: 첫 60분 안, 본편 셈으로 잴 수 있는 보상 사건(첫 싸움·생포·등용·사건 카드·만남·승리조건 진척)의 처음 때 사이 간격.
  */
 import { aiOrders, decide, type Brain } from '../src/realm/ai.ts'
 import { startRegion } from '../src/realm/data/regions/index.ts'
 import { advance } from '../src/realm/season.ts'
-import { ascendTrialOpen } from '../src/realm/trial-rules.ts'
+import { ascendTrialOpen, legacyAwakeningOpen } from '../src/realm/trial-rules.ts'
 import { COSTS, MILES, headFlags, mileName, noCounts, passTrials, scanReport, trialSeconds, turnSeconds, type Mile } from './first-hour-lib.ts'
 import { goalState } from '../src/realm/scenario.ts'
 import { P } from '../src/tune/params.ts'
@@ -103,6 +107,16 @@ function play(board: RegionId, seed: number): Run {
   return run
 }
 
+/** 본편 셈으로 잴 수 있는 줄인가 — 각성 줄 둘은 옛 각성 길이 열려야 판의 셈이 낸다 */
+const MEASURABLE = (m: Mile): boolean => (m !== 'flameFull' && m !== 'ascend') || legacyAwakeningOpen()
+const REWARDS: readonly Mile[] = ['battle', 'duel', 'capture', 'recruit', 'card', 'discover', 'goal']
+/** 한 판의 첫 60분 안에서 보상 사건 사이 가장 긴 빈 구간(분) — 시작(0분)과 60분 끝도 가장자리로 센다 */
+function longestGap(x: Run): number {
+  const ts = [0, ...REWARDS.flatMap((m) => { const v = x[m]?.min.mid; return v !== undefined && v <= 60 ? [v] : [] }), 60].sort((a, b) => a - b)
+  let best = 0
+  for (let i = 1; i < ts.length; i++) best = Math.max(best, ts[i]! - ts[i - 1]!)
+  return best
+}
 const pct = (xs: number[], p: number): number => { const s = [...xs].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.floor(p * s.length))]! }
 
 const trialMin = `${(COSTS.mid.trial / 60).toFixed(0)}분(낮음 ${(COSTS.lo.trial / 60).toFixed(1)}분)`
@@ -122,6 +136,7 @@ for (const board of BOARDS) {
   console.log('사건'.padEnd(18) + '일어난 판  턴 p25/중간/p75   계절(중간)  분 중간(낮음~높음)   60분 안')
   for (const m of MILES) {
     const name = mileName(m, TRIAL_OPEN, PASS)
+    if (!MEASURABLE(m)) { console.log(name.padEnd(16) + '  열전 목책 뒤 · tools/raid-first-awaken.ts 로 잼 (본편 셈으로는 못 잼)'); continue }
     const hit = runs.map((x) => x[m]).filter((x): x is Seen => x !== undefined)
     if (hit.length === 0) { console.log(name.padEnd(16) + '   0%  (상한 안에 한 번도 없음)'); continue }
     const ts = hit.map((x) => x.turn)
@@ -139,4 +154,6 @@ for (const board of BOARDS) {
   const gaps = runs.flatMap((x) => x.flameFull !== undefined && x.ascend !== undefined ? [x.ascend.min.mid - x.flameFull.min.mid] : [])
   const trials = runs.map((x) => x.trials)
   if (PASS && gaps.length > 0 && Math.max(...trials) > 0) console.log(`불꽃 참에서 각성까지(가운데 가정): 중간 ${pct(gaps, 0.5).toFixed(0)}분 (${Math.min(...gaps).toFixed(0)}~${Math.max(...gaps).toFixed(0)}) · 한 판에 넘긴 시련 수: 중간 ${pct(trials, 0.5)} (${Math.min(...trials)}~${Math.max(...trials)}) · 시련은 이겼다 친 보정이다`)
+  const lg = runs.map(longestGap)
+  console.log(`보상 사이 가장 긴 빈 구간(첫 60분 · 시작과 60분 끝 포함): 가운데 ${pct(lg, 0.5).toFixed(0)}분 · 가장 나쁜 판 ${Math.max(...lg).toFixed(0)}분 (본편 셈으로 잰 보상: 싸움·겨루기·생포·등용·사건 카드·만남·승리조건 진척)`)
 }
