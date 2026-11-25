@@ -99,7 +99,7 @@ function invalidSetup(s: LiveSetup): boolean {
 export function createField(setup: LiveSetup): FieldState {
   // 목책이 부서지면 칸이 바뀌므로 판은 지도 사본(칸 · 조각)을 쥔다 — 같은 지도로 다시 시작해도 안 변한다
   const map: FieldMap = { ...setup.map, cells: setup.map.cells.slice(), pieces: setup.map.pieces.map(p => ({ ...p, rem: 0 })) }
-  const s: FieldState = { tick: 0, seed: setup.seed, map, squads: [], heroes: [], anchor: [], route: [[], [], [], [], [], []], grpWhy: [0, 0, 0], grpWhyTick: [-1, -1, -1], stats: { flankHits: [0, 0], artMorale: [0, 0], killed: [0, 0], lost: [0, 0] }, planTick: [-1, -1], used: [0, 0, 0, 0], broken: [0, 0], end: null, winner: -1, log: { dropped: 0, accepted: [], events: [] } }
+  const s: FieldState = { tick: 0, seed: setup.seed, map, squads: [], heroes: [], anchor: [], route: [[], [], [], [], [], []], grpWhy: [0, 0, 0], grpWhyTick: [-1, -1, -1], stats: { flankHits: [0, 0], artMorale: [0, 0], killed: [0, 0], lost: [0, 0] }, planTick: [-1, -1], frontLockTick: [-1, -1], used: [0, 0, 0, 0], broken: [0, 0], end: null, winner: -1, log: { dropped: 0, accepted: [], events: [] } }
   if (invalidSetup(setup)) { s.end = 'invalid'; return s }
   const unit = P.field.unit
   const jit = P.field.spawnJitterCells * unit
@@ -124,7 +124,8 @@ export function createField(setup: LiveSetup): FieldState {
         const u = clamp(cp.axis === 1 ? p.u + j : p.u, 0, lastU(map)), v = clamp(cp.axis === 0 ? p.v + j : p.v, 0, lastV(map))
         const stance = Math.floor(roll(s.seed, 0, `stance:${id}`) * 3) as 0 | 1 | 2
         s.squads.push({ id, side, grp, kind: grp, men: cnt, menMax: cnt, fresh: men > 0 ? idiv(fresh * cnt, men) : 0, u, v, homeU: u, homeV: v, lock: -1, sleep: ticksOf(cp.asleep ?? 0), daze: 0, rem: 0, held: 0, flank: 0, stance, morale0: ls.morale, shock: 0, goal: null, manual: 0, target: -1, hp: cnt * MILLI, morale: ls.morale, foe: -1, calm: 0, form: 0, cmd: -1, reach: grp === 'bows' ? P.field.bowRangeCells * unit : 0, aim: -1,
-          order: ORD_NONE, orderTick: -1, orderAt: null, ran: 0, bonus: 0, hitTick: -1, flee: 0 })
+          order: ORD_NONE, orderTick: -1, orderAt: null, ran: 0, bonus: 0, hitTick: -1, flee: 0,
+          bw: P.field.bodyWCells * unit, bd: (grp === 'horse' ? P.field.horseBodyDCells : P.field.bodyDCells) * unit, face: side === 0 ? 0 : HERO_DIRS / 2, pushed: 0 })
       }
     })
     if (ls.hero) {

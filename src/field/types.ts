@@ -165,6 +165,13 @@ export interface Squad {
   hitTick: number
   /** 사기가 꺾여(무너짐 문턱 아래) 도망치는 중이면 1 — 치지 않고 제 진영 쪽으로 달리며, 지나가는 곁의 우리 대 사기를 깎는다 (도미노) */
   flee: 0 | 1
+  /** 몸 (C2 묶음 3 · 화면은 이 네모 안에 병사를 줄 세운다) — 줄 방향(v) 폭 bw · 앞뒤(u) 깊이 bd (단위 · 1칸 = P.field.unit) · 네모의 가운데는 (u, v) */
+  bw: number
+  bd: number
+  /** 향 — 방향 번호 0~15 (HERO_DIR · 처음은 편의 앞: 편 0 은 0 · 편 1 은 8) · 옆·뒤에서 맞는지는 이것으로 가른다 (몸 네모는 늘 편의 축에 맞춘다) */
+  face: number
+  /** 밀려난 거리의 누적 (단위 · 2칸 밀릴 때마다 사기가 꺾인다 · 읽기용이기도 하다) */
+  pushed: number
 }
 
 /** 장수 (C2: 플레이어가 직접 조종 · 입력이 없으면 임시 AI) */
@@ -335,6 +342,8 @@ export interface FieldState {
   stats: { flankHits: [number, number]; artMorale: [number, number]; killed: [number, number]; lost: [number, number] }
   /** 적의 큰 수 (입력 없는 편의 옆치기 · 51 §7) — 그 편이 옆치기를 거는 틱 (-1 없음 · 판을 만들 때 씨앗으로 정한다) */
   planTick: [number, number]
+  /** 편마다 앞줄 대가 마지막으로 맞물린 틱 (-1 없음) — 맞물려 있으면 진의 기준점이 언다 (52 §1-3 · F 로 풀린다) */
+  frontLockTick: [number, number]
   /** (C2 에서 명령 수 제한을 걷어냈다 · 늘 0 — 화면이 이 칸을 걷어내면 다음 카드에서 지운다) */
   used: [number, number, number, number]
   /** 진영이 무너진 편 (적이 진영 자리까지 들어오면 한 번 · 사기가 꺾인다) */
