@@ -78,6 +78,7 @@ let hud: Hud
 /** 소리 (F3e) — 첫 손짓 뒤에만 나고 · 멈춤·숨은 탭에서는 안 부른다 */
 const fsnd = createFieldSound()
 let soundTick = -1, soundEpoch = 0
+let hitStopUntil = 0
 let acc = 0
 let last = 0
 let raf = 0
@@ -377,7 +378,10 @@ function frame(now: number): void {
   if (!blocked && ui.phase === 'play' && introLeft > 0) introLeft = Math.max(0, introLeft - Math.min(dtMs, 100))
   const dt = Math.min(dtMs, 100)
   if ((padTick++ & 15) === 0) measurePads()
-  if (!paused && !blocked && !frozen(now)) viewMs += endAt > 0 && now - endAt < P.field.endSlowMs ? dt * P.field.endSlowPermille / 1000 : dt
+  // 우리 장수가 쓰러지는 틱에 그리는 시계가 잠깐 멈칫한다 (가장 큰 사건)
+  const h0 = cur.heroes.find(e => e.side === 0), p0 = prev?.heroes.find(e => e.side === 0)
+  if (h0 !== undefined && p0 !== undefined && h0.stun > 0 && p0.stun === 0) hitStopUntil = now + P.field.heroDownStopMs
+  if (!paused && !blocked && !frozen(now) && now >= hitStopUntil) viewMs += endAt > 0 && now - endAt < P.field.endSlowMs ? dt * P.field.endSlowPermille / 1000 : dt
   followTarget(dt / 1000)
   paint(now, blocked ? 1 : Math.min(1, acc / stepMs))
 }

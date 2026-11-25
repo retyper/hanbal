@@ -274,7 +274,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
           const cyc = F.arrowCycleMs, tt = (nowMs + ph * cyc) % cyc
           if (tt < F.arrowFlightMs) {
             const idx = Math.floor((nowMs + ph * cyc) / cyc), tk = (k + idx) % F.dotsPerSquadMax
-            arrows.push(x, y - baseH * 0.5, tqu + dotDu(tq.id, tk) * F.cellPx, tqv + dotDv(tq.id, tk) * F.cellPx - baseH * 0.4, tt / F.arrowFlightMs)
+            arrows.push(x, y - baseH * 0.5, tqu + dotDu(tq.id, tk) * F.cellPx, tqv + dotDv(tq.id, tk) * F.cellPx - baseH * 0.4, tt / F.arrowFlightMs, side)
           }
         }
       }
@@ -323,20 +323,26 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
 
   drawBanners(ctx, flagsAt, cam.zoom, baseH)
 
-  // 화살: 낱낱의 짧은 선 (호를 그리며 난다)
+  // 화살: 낱낱의 짧은 선 (호를 그리며 난다) — 몸은 크림색 한 경로, 꼬리 3분의 1 은 쏜 편 색으로 편마다 한 경로 (누구 화살인지 읽히게)
   if (arrows.length > 0) {
-    ctx.strokeStyle = ARROW_COLOR
-    ctx.lineWidth = Math.max(1.2, 1.6 / cam.zoom)
+    ctx.lineWidth = Math.max(1.2, 1.2 / cam.zoom)
     ctx.lineCap = 'round'
-    ctx.beginPath()
     const len = F.arrowLenCells * F.cellPx, arc = F.arrowArcCells * F.cellPx
-    for (let i = 0; i < arrows.length; i += 5) {
-      const x0 = arrows[i]!, y0 = arrows[i + 1]!, x1 = arrows[i + 2]!, y1 = arrows[i + 3]!, t = arrows[i + 4]!
-      const dist = Math.max(1, Math.abs(x1 - x0) + Math.abs(y1 - y0)), t0 = Math.max(0, t - len / dist)
-      const px = (u: number): number => mix(x0, x1, u), py = (u: number): number => mix(y0, y1, u) - 4 * u * (1 - u) * arc
-      ctx.moveTo(px(t0), py(t0)); ctx.lineTo(px(t), py(t))
+    for (let pass = 0; pass < 3; pass++) {
+      if (pass === 0) ctx.strokeStyle = ARROW_COLOR
+      else ctx.strokeStyle = SIDE_COLOR[pass - 1]!
+      ctx.beginPath()
+      for (let i = 0; i < arrows.length; i += 6) {
+        if (pass > 0 && arrows[i + 5] !== pass - 1) continue
+        const x0 = arrows[i]!, y0 = arrows[i + 1]!, x1 = arrows[i + 2]!, y1 = arrows[i + 3]!, t = arrows[i + 4]!
+        const dist = Math.max(1, Math.abs(x1 - x0) + Math.abs(y1 - y0)), t0 = Math.max(0, t - len / dist)
+        const tm = t0 + (t - t0) / 3 // 꼬리 쪽 3분의 1
+        const ua = pass === 0 ? tm : t0, ub = pass === 0 ? t : tm
+        ctx.moveTo(mix(x0, x1, ua), mix(y0, y1, ua) - 4 * ua * (1 - ua) * arc)
+        ctx.lineTo(mix(x0, x1, ub), mix(y0, y1, ub) - 4 * ub * (1 - ub) * arc)
+      }
+      ctx.stroke()
     }
-    ctx.stroke()
   }
   ctx.restore()
   return drawn
