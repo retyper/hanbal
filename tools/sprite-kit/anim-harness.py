@@ -50,7 +50,7 @@ HEROES = {
     'dtiger': dict(hit=True, strip='gen-base-w-22-dongye-tiger-huntress', atk='thrust', src='thrust3', backfoot=True, actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 동예 범 사냥꾼(창)
     'noeul': dict(hit=True, strip='gen-noeul', atk='bow', atk8=False),   # 사로 노을(활)
     'sagong': dict(hit=True, strip='gen-sagong', atk='thrust', src='thrust3', backfoot=True, actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 사물 사공(두 손 노 · 찌르기)
-    'songbi': dict(strip='gen-songbi', atk='bow', atk8=False),   # 비류나 송비(활)
+    'songbi': dict(hit=True, strip='gen-songbi', atk='bow', atk8=False),   # 비류나 송비(활)
     'sinneoul': dict(hit=True, strip='gen-sinneoul', atk='thrust', src='thrust3', actw=264, backfoot=True, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 신지 너울(두 손 갈고리 장대 · 가슴 XL)
     'sinneoul3': dict(hit=True, strip='gen-sinneoul-t3', atk='thrust', src='thrust3', actw=264, backfoot=True, atk8=True, act=True, pending=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 시험 줄(11-24 밤 · 형 「준비 동작 어정쩡 · 뒷발이 미끄러져 힘 빠져」): 신지 너울을 thrust3(뒷발 박힘 · 앞발 내딛음)로 · 게임엔 안 넣는다 · px 칸은 sinneoul 것을 sinneoul3-* 로 복사해 쓴다 · 굽기 backfoot = 가로 자리를 뒷발로
     'heo': dict(hit=True, strip='gen-heo', atk='thrust', src='thrust3', backfoot=True, atkk=0.96, actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 가락 허황옥(금빛 창 · 가슴 L)
