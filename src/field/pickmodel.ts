@@ -87,3 +87,24 @@ export function boxPick(cands: readonly PickCand[], x0: number, y0: number, x1: 
   if (groups.size > 0) return [...groups].sort((a, b) => a - b)
   return hero ? [3] : []
 }
+
+/**
+ * 찍는 큰 수의 상태 기계 (51 §2) — aiming: -1 아님 · 2 화살비 · 3 옆치기. 화면은 이 함수만 부른다.
+ * 단추 누름 → 찍는 중 → 맵 누름 = 확정(왼쪽·터치) / 취소(오른쪽 · Esc) · 같은 단추 다시 = 취소 · 오래 두면 취소 · 확정하면 고름은 장수로.
+ */
+export type AimAct = 'direct' | 'start' | 'cancel' | 'confirm' | 'none'
+/** 큰 수 단추 i(0 돌격 · 1 방진 · 2 화살비 · 3 옆치기)를 눌렀다 */
+export function aimPress(aiming: number, i: number): { aiming: number; act: AimAct } {
+  if (i < 2) return { aiming: -1, act: 'direct' }
+  if (aiming === i) return { aiming: -1, act: 'cancel' }
+  return { aiming: i, act: 'start' }
+}
+/** 찍는 중에 맵을 눌렀다 (confirm 왼쪽·터치 · cancel 오른쪽) — 찍는 중이 아니면 아무 일도 없다 */
+export function aimTap(aiming: number, kind: 'confirm' | 'cancel'): { aiming: number; act: AimAct } {
+  if (aiming < 2) return { aiming, act: 'none' }
+  return { aiming: -1, act: kind }
+}
+/** 찍는 중으로 maxMs 가 지났는가 */
+export const aimExpired = (aiming: number, since: number, now: number, maxMs: number): boolean => aiming >= 2 && now - since > maxMs
+/** 확정한 뒤 고름 (명령 하나를 내리면 장수로 돌아온다) */
+export const AFTER_ORDER: readonly InputGroup[] = [3]

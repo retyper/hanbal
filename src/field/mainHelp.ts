@@ -23,7 +23,9 @@ const CSS = `
 @media (max-width:700px){#fd-help .cols{gap:10px}#fd-help p{font-size:12px}}
 #fd-first{position:absolute;left:0;top:0;display:flex;align-items:center;gap:8px;pointer-events:none;z-index:4;font-size:15px;font-weight:700;color:#fff;text-shadow:0 1px 3px #000,0 0 8px #000;white-space:nowrap}
 #fd-first[hidden]{display:none}
-#fd-first svg{width:34px;height:44px;flex:none}
+#fd-first .keys{display:grid;grid-template-columns:repeat(3,26px);grid-template-rows:repeat(2,26px);gap:3px;flex:none}
+#fd-first .keys b{display:flex;align-items:center;justify-content:center;background:#0b1a2ecc;border:2px solid #f3ecd8;border-radius:5px;font-size:13px;text-shadow:none;animation:fd-blink .8s steps(1) infinite}
+#fd-first .keys .up{grid-column:2}
 #fd-first .rb{animation:fd-blink .8s steps(1) infinite}
 #fd-first .tap{width:30px;height:30px;border:3px solid ${GOLD};border-radius:50%;flex:none;animation:fd-blink .8s steps(1) infinite}
 @keyframes fd-blink{50%{opacity:.25}}
@@ -77,7 +79,7 @@ export function mountFirst(root: HTMLElement): First {
         mode = m
         el.innerHTML = touch
           ? `<span class="tap"></span><span>${t('field.first.touch')}</span>`
-          : `<svg viewBox="0 0 34 44" aria-hidden="true"><rect x="2" y="2" width="30" height="40" rx="15" fill="#0b1a2ecc" stroke="#f3ecd8" stroke-width="2.5"/><path class="rb" d="M17 2 H17 A15 15 0 0 1 32 17 V18 H17 Z" fill="${GOLD}"/><path d="M17 2 V18 M2 18 H32" stroke="#f3ecd8" stroke-width="2" fill="none"/></svg><span>${t('field.first.pc')}</span>`
+          : `<span class="keys"><b class="up">W</b><b>A</b><b>S</b><b>D</b></span><span>${t('field.first.pc')}</span>`
       }
       el.hidden = false
       if (el.dataset['m'] !== m) { el.dataset['m'] = m; w = el.offsetWidth || 220; h = el.offsetHeight || 44 }

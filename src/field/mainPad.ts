@@ -14,13 +14,18 @@ export interface Pad { sync(show: boolean, touch: boolean, shake: boolean, dash:
 const GOLD = '#ffd27a'
 const R = 15.9155
 const CSS = `
-#fd-stick{position:absolute;left:calc(14px + env(safe-area-inset-left));bottom:calc(var(--fd-bar,64px) + 84px + env(safe-area-inset-bottom));width:${HAEBI_STICK.radius * 2}px;height:${HAEBI_STICK.radius * 2}px;border-radius:50%;background:#0b1a2e66;border:2px solid #f3ecd855;touch-action:none;z-index:6;display:none}
+#fd-stick{position:absolute;left:calc(34px + env(safe-area-inset-left));bottom:calc(34px + env(safe-area-inset-bottom));width:${HAEBI_STICK.radius * 2}px;height:${HAEBI_STICK.radius * 2}px;border-radius:50%;background:#0b1a2e66;border:2px solid #f3ecd855;touch-action:none;z-index:6;display:none}
 #fd-stick.on{display:block}
 #fd-stick i{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:#f3ecd8aa;border:2px solid #fff;pointer-events:none}
 #fd-stick.shake{animation:fd-shake .5s 2}
 @keyframes fd-shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 #fd-pad{position:absolute;right:calc(10px + env(safe-area-inset-right));bottom:calc(var(--fd-bar,64px) + 14px + env(safe-area-inset-bottom));display:flex;gap:10px;z-index:6}
 #fd-pad[hidden]{display:none}
+.touch #fd-pad{bottom:calc(14px + env(safe-area-inset-bottom))}
+.fd-arw{position:absolute;left:0;top:0;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;border:2px solid #4aa3ff;background:#0b1a2ee6;padding:0;z-index:6;display:flex;align-items:center;justify-content:center}
+.fd-arw[hidden]{display:none}
+.fd-arw img{width:26px;height:26px;object-fit:contain;pointer-events:none}
+.fd-arw s{position:absolute;left:50%;top:50%;width:0;height:0;border:6px solid transparent;border-left:10px solid #4aa3ff;margin:-6px 0 0 -5px;pointer-events:none;text-decoration:none}
 .fd-pb{position:relative;width:64px;height:64px;border-radius:50%;box-sizing:border-box;font:inherit;color:#f3ecd8;background:#0b1a2ee6;border:2px solid ${GOLD};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:0;transition:transform .08s}
 .fd-pb:active{transform:scale(1.12)}
 .fd-pb img{width:26px;height:26px;object-fit:contain;pointer-events:none}
@@ -84,6 +89,36 @@ export function mountPad(root: HTMLElement, base: string, h: PadHandlers): Pad {
       stick.classList.toggle('on', show && touch)
       stick.classList.toggle('shake', shake)
       if (show) { paint(0, dash); paint(1, skill) }
+    },
+  }
+}
+
+/** 화면 밖에 있는 우리 무리의 가장자리 화살표 (누르면 그 무리를 고른다) — rot 는 화면 가운데에서 그 무리 쪽 방향(라디안) */
+export interface ArrowItem { g: number; x: number; y: number; rot: number; icon: string }
+export interface Arrows { sync(items: readonly ArrowItem[]): void }
+export function mountArrows(root: HTMLElement, base: string, onPick: (g: number) => void): Arrows {
+  const els: HTMLButtonElement[] = []
+  for (let g = 0; g < 3; g++) {
+    const b = document.createElement('button')
+    b.className = 'fd-arw'; b.type = 'button'; b.hidden = true; b.dataset['g'] = String(g)
+    b.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); onPick(g) })
+    root.append(b); els.push(b)
+  }
+  const sigs = ['', '', '']
+  return {
+    sync(items) {
+      for (let g = 0; g < 3; g++) {
+        const it = items.find(i => i.g === g), el = els[g]!
+        if (it === undefined) { if (!el.hidden) el.hidden = true; sigs[g] = ''; continue }
+        el.hidden = false
+        const sig = `${Math.round(it.x)}|${Math.round(it.y)}|${Math.round(it.rot * 20)}`
+        if (sig === sigs[g]) continue
+        sigs[g] = sig
+        if (el.firstElementChild === null) el.innerHTML = `<img src="${base}${it.icon}" alt=""><s></s>`
+        el.style.transform = `translate(${Math.round(it.x)}px,${Math.round(it.y)}px)`
+        const a = el.querySelector('s') as HTMLElement
+        a.style.transform = `rotate(${it.rot.toFixed(2)}rad) translateX(30px)`
+      }
     },
   }
 }

@@ -114,3 +114,20 @@ test('여러 씨앗·병력에서도 아래 칸은 넷 이하 (300판)', () => {
     assert.ok(normalizeSel(m, sel).length >= 1)
   }
 })
+
+test('찍는 큰 수 상태 기계: 단추 → 찍는 중 → 맵 누름 확정 · 같은 단추 = 취소 · 오른쪽 = 취소 · 오래 두면 취소 · 확정 뒤 장수', async () => {
+  const { AFTER_ORDER, aimExpired, aimPress, aimTap } = await import('../../src/field/pickmodel.ts')
+  assert.deepEqual(aimPress(-1, 0), { aiming: -1, act: 'direct' }, '돌격은 바로')
+  assert.deepEqual(aimPress(-1, 1), { aiming: -1, act: 'direct' }, '방진도 바로')
+  assert.deepEqual(aimPress(-1, 2), { aiming: 2, act: 'start' })
+  assert.deepEqual(aimPress(2, 2), { aiming: -1, act: 'cancel' }, '같은 단추 다시 = 취소')
+  assert.deepEqual(aimPress(2, 3), { aiming: 3, act: 'start' }, '다른 찍는 수로 바꾼다')
+  assert.deepEqual(aimPress(2, 0), { aiming: -1, act: 'direct' }, '찍는 중에 돌격을 누르면 찍기는 풀리고 돌격')
+  assert.deepEqual(aimTap(3, 'confirm'), { aiming: -1, act: 'confirm' })
+  assert.deepEqual(aimTap(3, 'cancel'), { aiming: -1, act: 'cancel' })
+  assert.deepEqual(aimTap(-1, 'confirm'), { aiming: -1, act: 'none' }, '안 찍는 중의 누름은 그냥 지나간다')
+  assert.equal(aimExpired(2, 1000, 4999, 4000), false)
+  assert.equal(aimExpired(2, 1000, 5001, 4000), true)
+  assert.equal(aimExpired(-1, 0, 99999, 4000), false)
+  assert.deepEqual([...AFTER_ORDER], [3])
+})

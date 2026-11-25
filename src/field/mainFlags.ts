@@ -52,7 +52,12 @@ const CSS = `
 .fd-cell.on .fd-ck{display:none}
 .fd-kb{position:absolute;left:4px;top:2px;font-size:11px;line-height:1;color:#f3ecd8aa;font-style:normal}
 @media (pointer:coarse){.fd-kb{display:none}}
-.fd-pop{position:absolute;left:0;bottom:calc(100% + 6px);display:flex;gap:6px;background:#000d;border:1px solid ${GOLD}88;border-radius:10px;padding:6px;z-index:3}
+#fd-big{position:absolute;left:calc(8px + env(safe-area-inset-left));bottom:calc(var(--fd-bar,64px) + 12px + env(safe-area-inset-bottom));display:flex;gap:6px;background:#000d;border:1px solid ${GOLD}88;border-radius:10px;padding:6px;z-index:3}
+#fd-big[hidden]{display:none}
+.touch .fd-cells{display:none}
+.touch #fd-strip{min-height:0}
+.touch #fd-big{left:auto;right:calc(10px + env(safe-area-inset-right));bottom:calc(88px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(2,64px);padding:4px}
+.touch .fd-opt{min-width:64px}
 .fd-opt{font:inherit;color:#f3ecd8;background:#0b1a2ecc;border:2px solid #2f8cff88;border-radius:8px;min-width:60px;min-height:56px;padding:3px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative;font-size:13px;transition:transform .08s}
 .fd-opt:active{transform:scale(1.12)}
 .fd-opt img{width:30px;height:30px;object-fit:contain}
@@ -87,27 +92,29 @@ export function mountFlags(root: HTMLElement, base: string, h: FlagsHandlers): F
   const hint = document.createElement('div'); hint.id = 'fd-hint'; hint.hidden = true
   root.style.setProperty('--fd-bar', `${P.field.flagBarPx}px`)
   const tip = document.createElement('div'); tip.id = 'fd-tip'; tip.hidden = true
-  root.append(hint, say, tip, strip)
+  const big = document.createElement('div'); big.id = 'fd-big'; big.hidden = true
+  root.append(hint, say, tip, big, strip)
   const cells = strip.querySelector('.fd-cells') as HTMLDivElement
   const go = strip.querySelector('.fd-go') as HTMLButtonElement
   go.addEventListener('click', () => h.onGo())
-  cells.addEventListener('click', e => {
+  const wire = (box: HTMLElement): void => box.addEventListener('click', e => {
     const el = (e.target as HTMLElement).closest('[data-act]') as HTMLElement | null
     if (el === null) return
     const act = el.dataset['act']
     if (act === 'cell') h.onCell(Number(el.dataset['g']) as InputGroup)
     else if (act === 'big') h.onBig(Number(el.dataset['i']))
   })
+  wire(cells); wire(big)
 
   /** 명령 단추를 누르고 있는 중 (오래 누르면 뜻 한 줄 · 그때 뗀 손은 명령으로 치지 않는다) */
   let hold: { name: string; t0: number } | null = null
   let tipShown = false
-  cells.addEventListener('pointerdown', e => {
+  big.addEventListener('pointerdown', e => {
     const el = (e.target as HTMLElement).closest('.fd-opt') as HTMLElement | null
     if (el !== null) { hold = { name: el.dataset['n'] ?? '', t0: e.timeStamp }; tipShown = false }
   })
-  for (const ev of ['pointerup', 'pointercancel', 'pointerleave'] as const) cells.addEventListener(ev, () => { hold = null; tip.hidden = true })
-  cells.addEventListener('click', e => { if (tipShown) { tipShown = false; e.stopImmediatePropagation() } }, true)
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave'] as const) big.addEventListener(ev, () => { hold = null; tip.hidden = true })
+  big.addEventListener('click', e => { if (tipShown) { tipShown = false; e.stopImmediatePropagation() } }, true)
   let sig = ''
   let sayUntil = 0
   let sayText = ''
@@ -133,13 +140,11 @@ export function mountFlags(root: HTMLElement, base: string, h: FlagsHandlers): F
       for (const g of [0, 1, 2, 3] as const) {
         const live = shown.includes(g)
         const on = ui.sel.includes(g)
-        let pop = ''
-        if (g === 0 && bigOn) {
-          pop = '<div class="fd-pop">' + BIG_ARTS.map((name, i) => `<button class="fd-opt${(i < 2 && c.front === i) || (i === 2 && c.volley) || (i === 3 && c.flank) || c.aiming === i ? ' on' : ''}" type="button" data-act="big" data-i="${i}" data-n="${name}" title="${t(`war.cmdShort.${name}` as Key)}"><i>${firstKeyLabel(CMD_ACTION[i]!)}</i><img class="fd-who" src="${base}${CELL_ICON[BIG_WHO[i]!]!}" alt="">${img(`flag/flag-${name}.png`)}<span>${t(`war.cmdName.${name}` as Key)}</span></button>`).join('') + '</div>'
-        }
-        html += `<div class="fd-slot"><button class="fd-cell${on ? ' on' : ''}${live ? '' : ' no'}" type="button" data-act="cell" data-g="${g}" aria-pressed="${on}" aria-label="${t(`field.g.${g}`)}"><i class="fd-kb">${firstKeyLabel(CELL_ACTION[g]!)}</i>${img(CELL_ICON[g]!)}<b>${t(`field.g.${g}`)}</b><em class="fd-ck">✓</em></button>${pop}</div>`
+        html += `<div class="fd-slot"><button class="fd-cell${on ? ' on' : ''}${live ? '' : ' no'}" type="button" data-act="cell" data-g="${g}" aria-pressed="${on}" aria-label="${t(`field.g.${g}`)}"><i class="fd-kb">${firstKeyLabel(CELL_ACTION[g]!)}</i>${img(CELL_ICON[g]!)}<b>${t(`field.g.${g}`)}</b><em class="fd-ck">✓</em></button></div>`
       }
       cells.innerHTML = html
+      big.hidden = !bigOn
+      big.innerHTML = !bigOn ? '' : BIG_ARTS.map((name, i) => `<button class="fd-opt${(i < 2 && c.front === i) || (i === 2 && c.volley) || (i === 3 && c.flank) || c.aiming === i ? ' on' : ''}" type="button" data-act="big" data-i="${i}" data-n="${name}" title="${t(`war.cmdShort.${name}` as Key)}"><i>${firstKeyLabel(CMD_ACTION[i]!)}</i><img class="fd-who" src="${base}${CELL_ICON[BIG_WHO[i]!]!}" alt="">${img(`flag/flag-${name}.png`)}<span>${t(`war.cmdName.${name}` as Key)}</span></button>`).join('')
       // 한 줄 안내: 처음 무리를 보내기 전까지만 (자세 단추가 떠 있으면 그 자리를 비운다)
       const line = ui.phase === 'ready' ? t(c.touch ? 'field.hint.ready.touch' : 'field.hint.ready.pc') : !c.sentGroup ? t(c.touch ? 'field.hint.group.touch' : 'field.hint.group.pc') : ''
       const showHint = ui.phase !== 'end' && m.end === null && !bigOn && line !== ''

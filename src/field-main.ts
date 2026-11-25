@@ -13,9 +13,9 @@ import { createField, stepField } from './field/sim.ts'
 import { t, type Key } from './i18n/index.ts'
 import { aimInput, attackInputs, cmdInput, dashInput, frontInput, rallyInput, heroDirInput, keysDir, mergePlan, nearestFoe, sendInputs, skillInput, BIG_ARTS, CMDS, type CmdGroup, type InputCtx } from './field/input.ts'
 import { actionOf, firstKeyLabel, KEYS } from './field/actions.ts'
-import { ALL_GROUPS, cellWhy, GRP_OF, normalizeSel, pickAt, type PickCand, type UiState } from './field/pickmodel.ts'
+import { AFTER_ORDER, ALL_GROUPS, aimExpired, aimPress, aimTap, cellWhy, GRP_OF, normalizeSel, pickAt, type PickCand, type UiState } from './field/pickmodel.ts'
 import { mountFlags, type FlagsView } from './field/mainFlags.ts'
-import { mountPad, type Pad, type PadBtn } from './field/mainPad.ts'
+import { mountArrows, mountPad, type Arrows, type Pad, type PadBtn } from './field/mainPad.ts'
 import { mountFirst, mountHelp, mountSteps, type First, type Help, type Steps } from './field/mainHelp.ts'
 import { drawMarks, type Band, type Box, type Mark, type MarkShape, type Ring } from './field/mainFlagMarks.ts'
 import { OP_AUTO, OP_MOVE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_VOLLEY, type FieldInput, type InputGroup } from './field/types.ts'
@@ -104,6 +104,8 @@ const cmdNow: number[] = [-1, -1, -1]
 let sentGroup = false
 let usedCharge = false
 let leadK = 1
+/** 싸움 중 어떤 입력이든 한 번 들어가면 처음 안내는 걷힌다 */
+let firstDone = false
 /** 이번에 판이 보인 큰 부딪힘의 종류 (상성이 맞음 · 막힘) · 판이 시작할 때의 편별 사람 수 (끝 상자의 숫자) */
 let fxGold = false, fxBlocked = false
 /** 찍는 큰 수: 2 화살비 · 3 옆치기 (찍을 때까지 판이 느려진다) · 누르고 있는 동안만 고른 무리(숫자키) · 마우스 올린 무리 */
@@ -119,6 +121,7 @@ const stepOk = [false, false, false]
 let flashStep = -1, flashAt = 0, playMs = 0
 let steps: Steps
 let pad: Pad
+let arrows: Arrows
 /** 장수 걷기: 마지막으로 보낸 방향(없으면 -1) · 손가락 스틱의 방향 · 「적을 쳐라」로 찍힌 적에게 뜨는 표적 테 · 마지막으로 읽은 못 쓴 까닭 */
 let heroDirSent = -1, padDir = -1
 const foeFlash: { id: number; at: number }[] = []
@@ -133,7 +136,9 @@ let camFree = false
 let camFight = false
 let helpOpen = false
 let slow = false
-let touchMode = matchMedia('(pointer: coarse)').matches
+/** ?touch=1 은 폰 배치를 강제한다 (헤드리스·PC 에서 폰 화면을 볼 때) */
+const forceTouch = query.has('touch')
+let touchMode = forceTouch || matchMedia('(pointer: coarse)').matches
 const keysHeld = new Set<string>()
 const mouse = { x: 0, y: 0, in: false }
 let flags: FlagsView
@@ -249,7 +254,7 @@ function restart(): void {
   queue = []; plan = []
   lastGoal.fill(null); lastShape.fill('move'); nudgeAt.fill(0)
   heroDirSent = -1; padDir = -1; foeFlash.length = 0; lastWhyTick = 0; lastGrpWhyTick.fill(0)
-  leadK = 1; cmdNow.fill(-1); sentGroup = false; usedCharge = false; aiming = -1; flashStep = -1; playMs = 0; heroOrdered = false; heroStart = null
+  leadK = 1; cmdNow.fill(-1); sentGroup = false; usedCharge = false; aiming = -1; flashStep = -1; playMs = 0; heroOrdered = false; firstDone = false; heroStart = null
   camFree = false; camFight = false; cam.level = 0; hud.setZoom(0)
   hud.showEnd(null)
   markEpoch++
@@ -294,7 +299,7 @@ function setSel(g: readonly InputGroup[]): void {
 function accept(inputs: readonly FieldInput[]): void {
   if (inputs.length === 0) return
   if (ui.phase === 'ready') plan = mergePlan(plan, inputs)
-  else queue.push(...inputs)
+  else { queue.push(...inputs); firstDone = true }
   markEpoch++
 }
 
@@ -358,14 +363,15 @@ function sendAt(px: number, py: number, now: number): void {
 /** 큰 수 넷 (Z 돌격 · X 방진 · C 화살비 · V 옆치기) — 앞의 둘은 바로 · 뒤의 둘은 누르면 땅을 찍을 때까지 판이 느려진다 */
 function pressBig(i: number): void {
   const now = performance.now()
-  if (i < 2) { pressCmd(0, i); return }
-  if (aiming === i) { cancelAim(); return }
+  const r = aimPress(aiming, i)
+  if (r.act === 'direct') { cancelAim(); pressCmd(0, i); return }
+  if (r.act === 'cancel') { cancelAim(); return }
   const g = i === 2 ? 1 : 2
   const why = cellWhy(cur, g as InputGroup)
   if (why !== null) { flags.say(t(`field.why.${why}` as Key, { g: gName(g) }), 'why', now); return }
-  aiming = i; aimSince = now; markEpoch++
+  aiming = r.aiming; aimSince = now; markEpoch++
   aimCur.src = `${import.meta.env.BASE_URL}realm/flag/flag-${BIG_ARTS[i]}.png`
-  cv.style.cursor = 'none'
+  if (!touchMode) cv.style.cursor = 'none'
 }
 function cancelAim(): void { if (aiming === -1) return; aiming = -1; markEpoch++; cv.style.cursor = ''; aimCur.hidden = true }
 /** 찍어서 확정: 그 자리에 가장 가까운 적 대가 표적 (엔진의 OP_AIM 이 오면 그것으로 바꾼다 · 그 전에는 명령을 고르고 그 적을 쳐라) */
@@ -380,7 +386,7 @@ function confirmAim(px: number, py: number, now: number): void {
   fsnd.order((g === 2 ? 'horse' : 'move') as FlagKind)
   flags.say(t('field.say.cmd', { g: gName(g), c: t(`war.cmdName.${name}` as Key), s: t(`war.cmdShort.${name}` as Key) }), 'ok', now)
   cancelAim()
-  setSel([3])
+  setSel([...AFTER_ORDER])
 }
 
 /** 명령 단추 (또는 Z X C V) — g 무리의 idx 번째 명령 · 같은 명령을 다시 누르면 알아서 */
@@ -556,10 +562,10 @@ function midOf(): { x: number; y: number } {
 }
 function onDown(e: PointerEvent): void {
   if (blocked || ui.phase === 'end' || cur.end !== null || helpOpen) return
-  touchMode = e.pointerType !== 'mouse'
+  if (!forceTouch) touchMode = e.pointerType !== 'mouse'
   if (aiming !== -1) {
-    if (e.pointerType === 'mouse' && e.button === 2) cancelAim()
-    else if (e.pointerType !== 'mouse' || e.button === 0) confirmAim(e.clientX, e.clientY, e.timeStamp)
+    const kind = e.pointerType === 'mouse' && e.button === 2 ? 'cancel' : e.pointerType !== 'mouse' || e.button === 0 ? 'confirm' : null
+    if (kind !== null) { const r = aimTap(aiming, kind); if (r.act === 'cancel') cancelAim(); else if (r.act === 'confirm') confirmAim(e.clientX, e.clientY, e.timeStamp) }
     return
   }
   ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY })
@@ -651,6 +657,8 @@ function paint(now: number, alpha: number): void {
   flags.frame(now)
   flags.sync(cur, ui, { front: ordOf('front') === ORD_CHARGE ? 0 : ordOf('front') === ORD_HOLD ? 1 : -1, volley: ordOf('bows') === ORD_VOLLEY, flank: ordOf('horse') === ORD_FLANK, aiming, sentGroup, touch: touchMode })
   tutorial(now)
+  root.classList.toggle('touch', touchMode)
+  arrows.sync(offscreenArrows())
   const pb = padBtns()
   pad.sync(!blocked && ui.phase === 'play' && cur.end === null, touchMode, touchMode && !heroOrdered && playMs < 3000, pb.dash, pb.skill)
   hud.sync(lagged(now), { gold: fxGold, blocked: fxBlocked })
@@ -659,7 +667,7 @@ function paint(now: number, alpha: number): void {
   hud.showEnd(endAt > 0 && now - endAt >= P.field.endBoxMs ? cur : null, endStats())
   const h = heroNow()
   const s = h === undefined ? null : toScreen(cam, vp, pxOf(h.u), pxOf(h.v))
-  first.sync(!blocked && s !== null && !heroOrdered && (ui.phase === 'ready' || playMs < P.field.firstHintMs) && ui.phase !== 'end' && cur.end === null && !helpOpen, s?.x ?? 0, s?.y ?? 0, touchMode, vp.w, vp.h)
+  first.sync(!blocked && s !== null && !firstDone && !heroOrdered && (ui.phase === 'ready' || playMs < P.field.firstHintMs) && ui.phase !== 'end' && cur.end === null && !helpOpen, s?.x ?? 0, s?.y ?? 0, touchMode, vp.w, vp.h)
 }
 /** 활 사거리 띠 (활 대마다 반원) — 적 대가 그 안에 들면 밝아지고, 겨눈 적에게는 가는 줄 */
 function bandsNow(): Band[] {
@@ -712,6 +720,22 @@ function ordOf(grp: string): number {
   const q = cur.squads.find(e => e.side === 0 && e.grp === grp && e.men > 0)
   return q === undefined ? 0 : q.order
 }
+/** 화면 밖에 있는 우리 무리의 가장자리 화살표 자리 */
+function offscreenArrows(): { g: number; x: number; y: number; rot: number; icon: string }[] {
+  const out: { g: number; x: number; y: number; rot: number; icon: string }[] = []
+  if (blocked || ui.phase === 'end' || cur.end !== null) return out
+  const m = 36, cx = vp.w / 2, cy = (padTop + vp.h - padBottom) / 2
+  for (const g of [0, 1, 2] as const) {
+    const mine = squadsOf(g)
+    if (mine.length === 0) continue
+    const s = toScreen(cam, vp, pxOf(mine.reduce((a, q) => a + q.u, 0) / mine.length), pxOf(mine.reduce((a, q) => a + q.v, 0) / mine.length))
+    if (s.x >= 0 && s.x <= vp.w && s.y >= padTop && s.y <= vp.h - padBottom) continue
+    const dx = s.x - cx, dy = s.y - cy
+    const k = Math.min((cx - m) / Math.max(1, Math.abs(dx)), ((vp.h - padBottom - padTop) / 2 - m) / Math.max(1, Math.abs(dy)))
+    out.push({ g, x: cx + dx * k, y: cy + dy * k, rot: Math.atan2(dy, dx), icon: ['icon/unit-spear.png', 'icon/unit-archer.png', 'icon/unit-buyeo-cavalry.png'][g]! })
+  }
+  return out
+}
 function heroMovedNow(): boolean {
   const h = heroNow()
   if (h === undefined || heroStart === null) return false
@@ -730,7 +754,7 @@ function frame(now: number): void {
   watchLoad(dtMs)
   const stepMs = 1000 / P.field.hz
   if (heroStart === null) { const h = heroNow(); if (h !== undefined) heroStart = { u: h.u, v: h.v } }
-  if (aiming !== -1 && now - aimSince > P.field.aimMs) cancelAim()
+  if (aimExpired(aiming, aimSince, now, P.field.aimMs)) cancelAim()
   const simMs = (aiming !== -1 ? dtMs * P.field.aimSlowPermille / 1000 : slow ? dtMs * P.field.slowPermille / 1000 : dtMs)
   if (!paused && !helpOpen && !blocked && cur.end === null && ui.phase === 'play') {
     const a = advance(acc, simMs, P.field.hz, P.field.maxCatchUpTicks)
@@ -865,6 +889,7 @@ hud.setZoom(0)
 flags = mountFlags(root, import.meta.env.BASE_URL + 'realm/', handlers)
 help = mountHelp(root)
 first = mountFirst(root)
+arrows = mountArrows(root, import.meta.env.BASE_URL + 'realm/', g => { const gg = g as InputGroup; if (cellWhy(cur, gg) === null) setSel([gg]) })
 aimCur = document.createElement('img')
 aimCur.id = 'fd-aimcur'; aimCur.hidden = true; aimCur.alt = ''
 aimCur.style.cssText = 'position:absolute;left:0;top:0;width:48px;height:48px;object-fit:contain;pointer-events:none;z-index:7'
