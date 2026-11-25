@@ -12,7 +12,7 @@ export interface HudHandlers { onZoom(): void; onPause(): void; onAgain(): void;
 /** 이번에 판이 보인 큰 부딪힘 — gold 상성이 맞음(막대 테두리가 금빛으로 번쩍) · blocked 막힘 */
 export interface HudFx { gold: boolean; blocked: boolean }
 /** 끝 상자의 숫자: 쓰러뜨린 적 · 잃은 우리 병사 */
-export interface EndStats { killed: number; lost: number }
+export interface EndStats { killed: number; lost: number; flank: number; art: number }
 export interface Hud {
   setZoom(level: number): void
   setPaused(paused: boolean): void
@@ -50,7 +50,7 @@ const CSS = `
 #fd-edge .bar.sh{animation:fd-sh .15s linear}
 @keyframes fd-sh{25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
 #fd-edge .bar.gold{box-shadow:0 0 0 2px #ffd27a}
-#fd-end .st{display:flex;gap:18px;justify-content:center;margin:0 0 8px;font-size:15px;font-weight:700}
+#fd-end .st{display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:center;margin:0 0 8px;font-size:15px;font-weight:700}
 #fd-end{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom));display:flex;justify-content:center;pointer-events:none}
 #fd-end[hidden]{display:none}
 #fd-end>div{background:#000d;border:1px solid #ffd27a88;border-radius:10px;padding:12px 26px;text-align:center;pointer-events:auto}
@@ -132,7 +132,7 @@ export function mountHud(root: HTMLElement, h: HudHandlers): Hud {
     showEnd(m, stats) {
       if (m === null || m.end === null) { end.hidden = true; return }
       end.hidden = false
-      endStats.innerHTML = stats === undefined ? '' : `<span>${t('field.res.killed', { n: stats.killed.toLocaleString() })}</span><span>${t('field.res.lost', { n: stats.lost.toLocaleString() })}</span>`
+      endStats.innerHTML = stats === undefined ? '' : `<span>${t('field.res.killed', { n: stats.killed.toLocaleString() })}</span><span>${t('field.res.lost', { n: stats.lost.toLocaleString() })}</span><span>${t('field.res.flank', { n: stats.flank })}</span><span>${t('field.res.art', { n: stats.art })}</span>`
       endText.textContent = t(m.winner === 0 ? 'field.end.win' : m.winner === 1 ? 'field.end.lose' : 'field.end.draw')
       endWhy.textContent = t(`field.endwhy.${m.end}` as Key)
     },

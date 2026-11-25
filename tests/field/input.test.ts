@@ -156,3 +156,18 @@ test('큰 수 넷과 찍은 자리의 적 고르기', async () => {
   assert.equal(nearestFoe(sq, 55, 10), 3, '산 적 가운데 가장 가까운 것 (쓰러진 대·우리 편은 안 센다)')
   assert.equal(nearestFoe(sq.slice(0, 1), 5, 5), -1)
 })
+
+test('큰 수 입력: 화살비·옆치기는 OP_AIM 으로 찍은 자리 · 앞줄은 OP_STANCE · F 는 OP_RALLY — 엔진이 받는다', async () => {
+  const { aimInput, frontInput, rallyInput } = await import('../../src/field/input.ts')
+  const { OP_AIM, OP_RALLY, OP_STANCE, ORD_VOLLEY, ORD_HOLD } = await import('../../src/field/types.ts')
+  assert.deepEqual(aimInput(1, 70 * U, 20 * U, ctx({ tick: 0 })), { tick: 0, g: 1, op: OP_AIM, u: 70 * U, v: 20 * U })
+  assert.deepEqual(frontInput(1, ctx()), { tick: 100, g: 0, op: OP_STANCE, u: 1, v: 0 })
+  assert.equal(rallyInput(ctx()).op, OP_RALLY)
+  const s = createField(plainSetup(3, 1200))
+  stepField(s, [aimInput(1, 120 * U, 20 * U, ctx({ tick: 0 })), frontInput(1, ctx({ tick: 0 }))])
+  assert.equal(s.log.dropped, 0)
+  assert.equal(s.squads.find(q => q.side === 0 && q.grp === 'bows')!.order, ORD_VOLLEY)
+  assert.equal(s.squads.find(q => q.side === 0 && q.grp === 'front')!.order, ORD_HOLD)
+  stepField(s, [rallyInput(ctx({ tick: 1 }))])
+  assert.equal(s.squads.find(q => q.side === 0 && q.grp === 'bows')!.order, 0)
+})

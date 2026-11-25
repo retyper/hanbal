@@ -5,7 +5,7 @@
  * 적 위를 찍어도 엔진에 「그 적을 쳐라」(OP_ATTACK)가 오기 전에는 그 적의 자리로 가는 입력(OP_MOVE)을 낸다.
  */
 import { nearestDir } from './num.ts'
-import { OP_ATTACK, OP_AUTO, OP_DASH, OP_HERO_DIR, OP_MOVE, OP_SKILL, OP_STANCE, type FieldInput, type InputGroup } from './types.ts'
+import { OP_AIM, OP_ATTACK, OP_AUTO, OP_DASH, OP_HERO_DIR, OP_MOVE, OP_RALLY, OP_SKILL, OP_STANCE, type FieldInput, type InputGroup } from './types.ts'
 
 /**
  * 무리마다 제 명령 (본편 전투 화면의 그 명령들 · 이름·그림은 war.cmdName.* 와 flag/flag-<이름>.png). 순서가 곧 OP_STANCE 의 u 이다:
@@ -65,11 +65,18 @@ export function nearestFoe(squads: readonly { id: number; side: number; men: num
   let best = -1, bd = Infinity
   for (const q of squads) {
     if (q.side !== 1 || q.men <= 0) continue
-    const d = (q.u - u) ** 2 + (q.v - v) ** 2
+    const d = (q.u - u) * (q.u - u) + (q.v - v) * (q.v - v)
     if (d < bd) { bd = d; best = q.id }
   }
   return best
 }
+
+/** 찍는 큰 수 (C 화살비 g1 · V 옆치기 g2) — 찍은 땅 (u, v) · 엔진이 가장 가까운 적 대를 고른다 */
+export const aimInput = (g: 1 | 2, u: number, v: number, ctx: InputCtx): FieldInput => ({ tick: ctx.tick, g, op: OP_AIM, u: clampInt(u, ctx.mapUUnits), v: clampInt(v, ctx.mapVUnits) })
+/** 앞줄 큰 수 (Z 돌격 u0 · X 방진 u1) — 같은 것을 한 번 더 보내면 엔진이 푼다 */
+export const frontInput = (u: 0 | 1, ctx: InputCtx): FieldInput => ({ tick: ctx.tick, g: 0, op: OP_STANCE, u, v: 0 })
+/** F: 전부 장수 곁으로 */
+export const rallyInput = (ctx: InputCtx): FieldInput => ({ tick: ctx.tick, g: 3, op: OP_RALLY, u: 0, v: 0 })
 
 /** 입력 줄에서 같은 무리의 같은 갈래를 새 입력으로 바꾼다 (시작 화면에서 꽂아 둔 것 · 알아서는 그 무리의 자리·자세를 비운다) */
 export function mergePlan(plan: readonly FieldInput[], add: readonly FieldInput[]): FieldInput[] {

@@ -3629,6 +3629,8 @@ export const ko = {
   // 전장 시험장 위 띠·끝 상자 (src/field/mainHud.ts)
   'field.res.killed': '쓰러뜨린 적 {n}명',
   'field.res.lost': '잃은 병사 {n}명',
+  'field.res.flank': '먹힌 옆치기 {n}번',
+  'field.res.art': '비기로 깎은 사기 {n}',
   'field.again': '다시',
   'field.again.sure': '한 번 더 누르세요',
   'field.pause': '멈춤',

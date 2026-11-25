@@ -11,14 +11,14 @@ import { plainSetup } from './field/scenario.ts'
 import { crossMap, highMap, ambushMap, meetMap, stakeMap } from './field/map.ts'
 import { createField, stepField } from './field/sim.ts'
 import { t, type Key } from './i18n/index.ts'
-import { attackInputs, cmdInput, dashInput, heroDirInput, keysDir, mergePlan, nearestFoe, sendInputs, skillInput, BIG_ARTS, CMDS, type CmdGroup, type InputCtx } from './field/input.ts'
+import { aimInput, attackInputs, cmdInput, dashInput, frontInput, rallyInput, heroDirInput, keysDir, mergePlan, nearestFoe, sendInputs, skillInput, BIG_ARTS, CMDS, type CmdGroup, type InputCtx } from './field/input.ts'
 import { actionOf, firstKeyLabel, KEYS } from './field/actions.ts'
 import { ALL_GROUPS, cellWhy, GRP_OF, normalizeSel, pickAt, type PickCand, type UiState } from './field/pickmodel.ts'
 import { mountFlags, type FlagsView } from './field/mainFlags.ts'
 import { mountPad, type Pad, type PadBtn } from './field/mainPad.ts'
 import { mountFirst, mountHelp, mountSteps, type First, type Help, type Steps } from './field/mainHelp.ts'
 import { drawMarks, type Band, type Box, type Mark, type MarkShape, type Ring } from './field/mainFlagMarks.ts'
-import { OP_AUTO, OP_MOVE, OP_STANCE, type FieldInput, type InputGroup } from './field/types.ts'
+import { OP_AUTO, OP_MOVE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_VOLLEY, type FieldInput, type InputGroup } from './field/types.ts'
 import { serialize } from './field/rec.ts'
 import { mountHud, type Hud } from './field/mainHud.ts'
 import { createFieldSound, soundCamOf, soundFrameOf } from './field/mainSound.ts'
@@ -67,7 +67,7 @@ const makeMap = () => {
 }
 let low = query.get('gfx') === 'low'
 let seed = num('seed', 7)
-const men = num('men', 2000)
+const men = num('men', 1200)
 let state = createField(plainSetup(seed, men, true, makeMap()))
 let cur: VModel = readField(state)
 let prev: VModel | null = null
@@ -105,7 +105,6 @@ let sentGroup = false
 let usedCharge = false
 /** 이번에 판이 보인 큰 부딪힘의 종류 (상성이 맞음 · 막힘) · 판이 시작할 때의 편별 사람 수 (끝 상자의 숫자) */
 let fxGold = false, fxBlocked = false
-let startMen: [number, number] | null = null
 /** 찍는 큰 수: 2 화살비 · 3 옆치기 (찍을 때까지 판이 느려진다) · 누르고 있는 동안만 고른 무리(숫자키) · 마우스 올린 무리 */
 let aiming = -1, aimSince = 0
 let heldPick = -1
@@ -218,7 +217,7 @@ function restart(): void {
   resetFx()
   introLeft = P.field.introMs
   fsnd.stop(); soundTick = -1; soundEpoch = markEpoch
-  startMen = null; endAt = 0; viewMs = 0; pan = null; tgt = null; lossAcc = []; hist.length = 0
+  endAt = 0; viewMs = 0; pan = null; tgt = null; lossAcc = []; hist.length = 0
   ui.phase = 'ready'; ui.sel = [3]
   queue = []; plan = []
   lastGoal.fill(null); lastShape.fill('move'); nudgeAt.fill(0)
@@ -347,8 +346,7 @@ function confirmAim(px: number, py: number, now: number): void {
   const g = (aiming === 2 ? 1 : 2) as CmdGroup, name = BIG_ARTS[aiming]!
   const w = toField(cam, vp, px, py), u = unitsOf(w.x), v = unitsOf(w.y)
   const foeId = nearestFoe(cur.squads, u, v)
-  const ic = inputCtx()
-  accept([{ tick: ic.tick, g, op: OP_STANCE, u: 0, v: 0 }, ...(foeId >= 0 ? attackInputs([g], foeId, ic) : sendInputs([g], u, v, ic))])
+  accept([aimInput(g as 1 | 2, u, v, inputCtx())])
   if (foeId >= 0) foeFlash.push({ id: foeId, at: now })
   lastGoal[g] = { u: Math.max(0, Math.min(cur.mapUUnits, u)), v: Math.max(0, Math.min(cur.mapVUnits, v)) }; lastShape[g] = 'move'
   sentGroup = true
@@ -365,7 +363,8 @@ function pressCmd(g: CmdGroup, idx: number): void {
   if (why !== null) { flags.say(t(`field.why.${why}` as Key, { g: gName(g) }), 'why', now); return }
   const name = CMDS[g]![idx]
   if (name === undefined) return
-  const i = cmdInput(g, idx, cmdNow[g]!, inputCtx())
+  // 앞줄 큰 수는 같은 것을 한 번 더 보내면 엔진이 푼다 (화면이 따로 알아서를 보내지 않는다)
+  const i = g === 0 && idx < 2 ? frontInput(idx as 0 | 1, inputCtx()) : cmdInput(g, idx, cmdNow[g]!, inputCtx())
   accept([i])
   if (g === 0 && idx === 0 && ui.phase === 'play') usedCharge = true
   if (i.op === OP_AUTO) {
@@ -623,7 +622,7 @@ function paint(now: number, alpha: number): void {
     k.x = cam.x; k.y = cam.y; k.z = cam.zoom; k.sel = selKey; k.epoch = markEpoch
   }
   flags.frame(now)
-  flags.sync(cur, ui, { front: cmdNow[0]!, aiming, sentGroup, touch: touchMode })
+  flags.sync(cur, ui, { front: ordOf('front') === ORD_CHARGE ? 0 : ordOf('front') === ORD_HOLD ? 1 : -1, volley: ordOf('bows') === ORD_VOLLEY, flank: ordOf('horse') === ORD_FLANK, aiming, sentGroup, touch: touchMode })
   tutorial(now)
   const pb = padBtns()
   pad.sync(!blocked && ui.phase === 'play' && cur.end === null, touchMode, touchMode && !heroOrdered && playMs < 3000, pb.dash, pb.skill)
@@ -679,11 +678,16 @@ function lagged(now: number): VModel {
   while (hist.length > 1 && hist[1]!.t <= now - P.field.numLagMs) hist.shift()
   return cur.end !== null ? cur : hist[0]!.m
 }
-const menOf = (m: VModel, side: number): number => m.squads.reduce((a, q) => a + (q.side === side ? q.men : 0), 0)
 /** 끝 상자의 숫자: 쓰러뜨린 적 · 잃은 우리 병사 (처음 사람 수와 지금 사람 수의 차) */
-function endStats(): { killed: number; lost: number } | undefined {
-  if (startMen === null || cur.end === null) return undefined
-  return { killed: Math.max(0, startMen[1] - menOf(cur, 1)), lost: Math.max(0, startMen[0] - menOf(cur, 0)) }
+function endStats(): { killed: number; lost: number; flank: number; art: number } | undefined {
+  if (cur.end === null) return undefined
+  const st = cur.stats
+  return { killed: st.killed[0], lost: st.lost[0], flank: st.flankHits[0], art: Math.round(st.artMorale[0] / 10) }
+}
+/** 그 무리의 지금 명령 ORD_* (엔진이 정한 것 · 대마다 같다) */
+function ordOf(grp: string): number {
+  const q = cur.squads.find(e => e.side === 0 && e.grp === grp && e.men > 0)
+  return q === undefined ? 0 : q.order
 }
 function heroMovedNow(): boolean {
   const h = heroNow()
@@ -702,10 +706,9 @@ function frame(now: number): void {
   last = now
   watchLoad(dtMs)
   const stepMs = 1000 / P.field.hz
-  if (startMen === null) startMen = [menOf(cur, 0), menOf(cur, 1)]
   if (heroStart === null) { const h = heroNow(); if (h !== undefined) heroStart = { u: h.u, v: h.v } }
   if (aiming !== -1 && now - aimSince > P.field.aimMs) cancelAim()
-  const simMs = aiming !== -1 ? dtMs * P.field.aimSlowPermille / 1000 : slow ? dtMs * P.field.slowPermille / 1000 : dtMs
+  const simMs = (aiming !== -1 ? dtMs * P.field.aimSlowPermille / 1000 : slow ? dtMs * P.field.slowPermille / 1000 : dtMs)
   if (!paused && !helpOpen && !blocked && cur.end === null && ui.phase === 'play') {
     const a = advance(acc, simMs, P.field.hz, P.field.maxCatchUpTicks)
     acc = a.acc
@@ -788,8 +791,7 @@ addEventListener('keydown', e => {
     }
     case 'rally': {
       // 전부 장수 곁으로 (엔진의 「모여라」가 오기 전에는 무리 셋을 알아서로)
-      const ic = inputCtx()
-      accept(([0, 1, 2] as const).filter(g => cellWhy(cur, g) === null).map(g => ({ tick: ic.tick, g, op: OP_AUTO, u: 0, v: 0 })))
+      accept([rallyInput(inputCtx())])
       cmdNow.fill(-1); lastGoal[0] = null; lastGoal[1] = null; lastGoal[2] = null
       break
     }

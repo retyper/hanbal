@@ -22,7 +22,7 @@ export interface FlagsHandlers {
 export type Tone = 'ok' | 'why'
 /** 아래 띠가 알아야 하는 바깥 사정 — cmd: 앞줄·활·기병이 지금 고른 명령 번호(알아서면 -1) · sentGroup: 무리를 한 번이라도 보냈는가 · touch: 손으로 쓰는 화면인가 */
 /** big: 앞줄이 지금 고른 명령 번호(0 돌격 · 1 방진 · 없으면 -1) · aiming: 찍는 중인 큰 수 번호(2 화살비 · 3 옆치기 · 아니면 -1) */
-export interface FlagsCtx { front: number; aiming: number; sentGroup: boolean; touch: boolean }
+export interface FlagsCtx { front: number; volley: boolean; flank: boolean; aiming: number; sentGroup: boolean; touch: boolean }
 export interface FlagsView {
   sync(m: VModel, ui: UiState, c: FlagsCtx): void
   say(text: string, tone: Tone, nowMs: number): void
@@ -119,7 +119,7 @@ export function mountFlags(root: HTMLElement, base: string, h: FlagsHandlers): F
   return {
     sync(m, ui, c) {
       const alive = [0, 1, 2, 3].map(g => cellWhy(m, g as InputGroup) === null ? 1 : 0)
-      const key = [ui.phase, ui.sel.join(''), alive.join(''), c.front, c.aiming, c.sentGroup ? 1 : 0, c.touch ? 1 : 0, m.end === null ? 0 : 1].join('|')
+      const key = [ui.phase, ui.sel.join(''), alive.join(''), c.front, c.volley ? 1 : 0, c.flank ? 1 : 0, c.aiming, c.sentGroup ? 1 : 0, c.touch ? 1 : 0, m.end === null ? 0 : 1].join('|')
       if (key === sig) return
       sig = key
       strip.hidden = ui.phase === 'end' || m.end !== null
@@ -132,7 +132,7 @@ export function mountFlags(root: HTMLElement, base: string, h: FlagsHandlers): F
         const on = ui.sel.includes(g)
         let pop = ''
         if (g === 0 && bigOn) {
-          pop = '<div class="fd-pop">' + BIG_ARTS.map((name, i) => `<button class="fd-opt${(i < 2 && c.front === i) || c.aiming === i ? ' on' : ''}" type="button" data-act="big" data-i="${i}" data-n="${name}" title="${t(`war.cmdShort.${name}` as Key)}"><i>${firstKeyLabel(CMD_ACTION[i]!)}</i>${img(`flag/flag-${name}.png`)}<span>${t(`war.cmdName.${name}` as Key)}</span></button>`).join('') + '</div>'
+          pop = '<div class="fd-pop">' + BIG_ARTS.map((name, i) => `<button class="fd-opt${(i < 2 && c.front === i) || (i === 2 && c.volley) || (i === 3 && c.flank) || c.aiming === i ? ' on' : ''}" type="button" data-act="big" data-i="${i}" data-n="${name}" title="${t(`war.cmdShort.${name}` as Key)}"><i>${firstKeyLabel(CMD_ACTION[i]!)}</i>${img(`flag/flag-${name}.png`)}<span>${t(`war.cmdName.${name}` as Key)}</span></button>`).join('') + '</div>'
         }
         html += `<div class="fd-slot"><button class="fd-cell${on ? ' on' : ''}${live ? '' : ' no'}" type="button" data-act="cell" data-g="${g}" aria-pressed="${on}" aria-label="${t(`field.g.${g}`)}"><i class="fd-kb">${firstKeyLabel(CELL_ACTION[g]!)}</i>${img(CELL_ICON[g]!)}<b>${t(`field.g.${g}`)}</b><em class="fd-ck">✓</em></button>${pop}</div>`
       }

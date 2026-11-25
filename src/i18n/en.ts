@@ -3616,6 +3616,8 @@ export const en: Partial<Record<Key, string>> = {
   // Field test arena top bar and end box (src/field/mainHud.ts)
   'field.res.killed': 'Enemies defeated: {n}',
   'field.res.lost': 'Soldiers lost: {n}',
+  'field.res.flank': 'Flank hits: {n}',
+  'field.res.art': 'Morale cut by arts: {n}',
   'field.again': 'Again',
   'field.again.sure': 'Press once more',
   'field.pause': 'Pause',
