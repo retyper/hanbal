@@ -25,9 +25,9 @@ const FULL_TURN = 6.2832
 const SEL_POLE_SCALE = 1.35
 const RING_FILL_ALPHA = 0.14
 const NUDGE_GROW = 0.5
-const BAND_WIDTH_CELLS = 0.8
-const BAND_ALPHA = [0.1, 0.32, 0.5] as const
+const BAND_ALPHA = 0.3
 const HALF_TURN = 3.1416
+const BAND_HALF = HALF_TURN / 3
 
 function pennant(ctx: CanvasRenderingContext2D, x: number, y: number, h: number, shape: MarkShape, sel: boolean, z: number): void {
   const w = h * 0.55, top = y - h
@@ -55,23 +55,15 @@ export function drawMarks(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
   ctx.scale(z, z)
   ctx.translate(-cam.x, -cam.y)
   ctx.lineJoin = 'round'
-  // 사거리 띠: 안 고른 것 · 고른 것 · 적이 든 것 세 단계를 단계마다 한 경로로 (낱낱 점선이 아니라 옅은 띠 한 겹)
+  // 사거리: 무리 하나에 호 하나 (가는 흰 선 · 편의 앞쪽 120° 만) — 찍는 동안과 활 무리를 고른 동안에만 나온다
   if (bands.length > 0) {
-    ctx.strokeStyle = BAND_COLOR; ctx.lineWidth = BAND_WIDTH_CELLS * P.field.cellPx
-    for (let lvl = 0; lvl < 3; lvl++) {
-      ctx.beginPath()
-      let any = false
-      for (const b of bands) {
-        if ((b.lit ? 2 : b.sel ? 1 : 0) !== lvl) continue
-        const a0 = b.face === 1 ? -HALF_TURN / 2 : HALF_TURN / 2
-        ctx.moveTo(b.x + Math.cos(a0) * b.r, b.y + Math.sin(a0) * b.r)
-        ctx.arc(b.x, b.y, b.r, a0, a0 + HALF_TURN, false)
-        any = true
-      }
-      if (any) { ctx.globalAlpha = BAND_ALPHA[lvl]!; ctx.stroke() }
+    ctx.strokeStyle = BAND_COLOR; ctx.lineWidth = Math.max(1.5, 2 / z); ctx.globalAlpha = BAND_ALPHA
+    ctx.beginPath()
+    for (const b of bands) {
+      const a0 = b.face === 1 ? -BAND_HALF : HALF_TURN - BAND_HALF
+      ctx.moveTo(b.x + Math.cos(a0) * b.r, b.y + Math.sin(a0) * b.r)
+      ctx.arc(b.x, b.y, b.r, a0, a0 + BAND_HALF * 2, false)
     }
-    ctx.globalAlpha = 0.8; ctx.lineWidth = Math.max(1, 1.5 / z); ctx.beginPath()
-    for (const b of bands) if (b.aim) { ctx.moveTo(b.x, b.y); ctx.lineTo(b.tx, b.ty) }
     ctx.stroke()
     ctx.globalAlpha = 1
   }

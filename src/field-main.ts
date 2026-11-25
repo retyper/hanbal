@@ -103,6 +103,7 @@ const lastShape: MarkShape[] = ['move', 'move', 'move', 'move']
 const cmdNow: number[] = [-1, -1, -1]
 let sentGroup = false
 let usedCharge = false
+let leadK = 1
 /** 이번에 판이 보인 큰 부딪힘의 종류 (상성이 맞음 · 막힘) · 판이 시작할 때의 편별 사람 수 (끝 상자의 숫자) */
 let fxGold = false, fxBlocked = false
 /** 찍는 큰 수: 2 화살비 · 3 옆치기 (찍을 때까지 판이 느려진다) · 누르고 있는 동안만 고른 무리(숫자키) · 마우스 올린 무리 */
@@ -203,12 +204,38 @@ function followTarget(dt: number, snap = false): void {
     else raw = clusterCenter(f.xs, f.ys, P.field.clusterCells * P.field.cellPx) ?? { x: box.x, y: box.y }
   } else {
     direct = true
-    raw = { x: pxOf(hero.u) + cur.face * vp.w * P.field.camLeadPermille / 1000 / cam.zoom, y: pxOf(hero.v) }
+    // 맞붙기 전에는 전선 쪽 앞을 비추고, 우리 대가 맞물리거나 적 대가 가까우면 앞쪽 치우침을 풀고 장수에 가장 가까운 싸움을 본다
+    const fight = nearestFight(hero)
+    leadK += ((fight === null ? 1 : 0) - leadK) * (1 - Math.exp(-dt / P.field.camLeadEaseSec))
+    raw = { x: pxOf(hero.u) + cur.face * leadK * vp.w * P.field.camLeadPermille / 1000 / cam.zoom, y: pxOf(hero.v) }
+    if (fight !== null) {
+      // 장수가 화면 가운데 40% 안에 남게 (싸움이 멀어 화면 밖이면 장수를 따라간다)
+      const hx = pxOf(hero.u), hy = pxOf(hero.v), mx = 0.2 * vp.w / cam.zoom, my = 0.2 * vp.h / cam.zoom
+      raw = { x: Math.max(hx - mx, Math.min(hx + mx, pxOf(fight.u))), y: Math.max(hy - my, Math.min(hy + my, pxOf(fight.v))) }
+    }
   }
   if (pan !== null) raw = { x: pan.x, y: pan.y }
   if (tgt === null || snap || pan !== null || direct) tgt = raw
   else { const k = 1 - Math.exp(-P.field.camTargetRate * dt); tgt = { x: tgt.x + (raw.x - tgt.x) * k, y: tgt.y + (raw.y - tgt.y) * k } }
   followCam(cam, tgt.x, tgt.y, dt, vp, b, snap, zt)
+}
+
+/** 장수에 가장 가까운 맞물림(우리 대가 싸우는 중이거나 적 대가 engageCells 안)의 가운데 · 없으면 null */
+function nearestFight(hero: { u: number; v: number }): { u: number; v: number } | null {
+  const r = P.field.engageCells * P.field.unit, r2 = r * r
+  let best: VModel['squads'][number] | null = null, bd = Infinity
+  for (const q of cur.squads) {
+    if (q.side !== 0 || q.men <= 0) continue
+    const engaged = q.aim >= 0 || cur.squads.some(e => e.side === 1 && e.men > 0 && (e.u - q.u) * (e.u - q.u) + (e.v - q.v) * (e.v - q.v) <= r2)
+    if (!engaged) continue
+    const d = (q.u - hero.u) * (q.u - hero.u) + (q.v - hero.v) * (q.v - hero.v)
+    if (d < bd) { bd = d; best = q }
+  }
+  if (best === null) return null
+  const c = P.field.clusterCells * P.field.unit, c2 = c * c
+  let su = 0, sv = 0, n = 0
+  for (const q of cur.squads) if (q.side === 0 && q.men > 0 && (q.u - best.u) * (q.u - best.u) + (q.v - best.v) * (q.v - best.v) <= c2) { su += q.u; sv += q.v; n++ }
+  return { u: su / n, v: sv / n }
 }
 
 function restart(): void {
@@ -222,7 +249,7 @@ function restart(): void {
   queue = []; plan = []
   lastGoal.fill(null); lastShape.fill('move'); nudgeAt.fill(0)
   heroDirSent = -1; padDir = -1; foeFlash.length = 0; lastWhyTick = 0; lastGrpWhyTick.fill(0)
-  cmdNow.fill(-1); sentGroup = false; usedCharge = false; aiming = -1; stepOk.fill(false); flashStep = -1; playMs = 0; heroOrdered = false; heroStart = null
+  leadK = 1; cmdNow.fill(-1); sentGroup = false; usedCharge = false; aiming = -1; flashStep = -1; playMs = 0; heroOrdered = false; heroStart = null
   camFree = false; camFight = false; cam.level = 0; hud.setZoom(0)
   hud.showEnd(null)
   markEpoch++
@@ -632,20 +659,16 @@ function paint(now: number, alpha: number): void {
   hud.showEnd(endAt > 0 && now - endAt >= P.field.endBoxMs ? cur : null, endStats())
   const h = heroNow()
   const s = h === undefined ? null : toScreen(cam, vp, pxOf(h.u), pxOf(h.v))
-  first.sync(!blocked && s !== null && !heroOrdered && ui.phase !== 'end' && cur.end === null && !helpOpen, s?.x ?? 0, s?.y ?? 0, touchMode, vp.w, vp.h)
+  first.sync(!blocked && s !== null && !heroOrdered && (ui.phase === 'ready' || playMs < P.field.firstHintMs) && ui.phase !== 'end' && cur.end === null && !helpOpen, s?.x ?? 0, s?.y ?? 0, touchMode, vp.w, vp.h)
 }
 /** 활 사거리 띠 (활 대마다 반원) — 적 대가 그 안에 들면 밝아지고, 겨눈 적에게는 가는 줄 */
 function bandsNow(): Band[] {
-  const out: Band[] = []
-  const r = P.field.bowRangeCells * P.field.unit, r2 = r * r
-  for (const q of cur.squads) {
-    if (q.side !== 0 || q.grp !== 'bows' || q.men <= 0) continue
-    const tq = q.target >= 0 ? cur.squads[q.target] : undefined
-    const aim = tq !== undefined && tq.men > 0 && (tq.u - q.u) ** 2 + (tq.v - q.v) ** 2 <= r2
-    const lit = aim || cur.squads.some(e => e.side === 1 && e.men > 0 && (e.u - q.u) ** 2 + (e.v - q.v) ** 2 <= r2)
-    out.push({ x: pxOf(q.u), y: pxOf(q.v), r: P.field.bowRangeCells * P.field.cellPx, face: cur.face, sel: ui.sel.includes(1), lit, aim, tx: aim ? pxOf(tq.u) : 0, ty: aim ? pxOf(tq.v) : 0 })
-  }
-  return out
+  // 평소에는 안 그린다 — 화살비를 찍는 동안과 활 무리를 고른 동안만 · 무리 가운데 기준 호 하나
+  if (aiming !== 2 && !ui.sel.includes(1)) return []
+  const bows = squadsOf(1)
+  if (bows.length === 0) return []
+  const u = bows.reduce((a, q) => a + q.u, 0) / bows.length, v = bows.reduce((a, q) => a + q.v, 0) / bows.length
+  return [{ x: pxOf(u), y: pxOf(v), r: P.field.bowRangeCells * P.field.cellPx, face: cur.face, sel: true, lit: false, tx: 0, ty: 0, aim: false }]
 }
 /** 적장 머리 위 표적 자리 (작은 세모) */
 function foeMarks(): { x: number; y: number }[] {
@@ -659,9 +682,9 @@ function tutorial(now: number): void {
   if (tutDone) { steps.sync(false, null, false); return }
   const play = ui.phase === 'play'
   if (play && !stepOk[0] && heroOrdered && heroMovedNow()) { stepOk[0] = true; flashStep = 0; flashAt = now }
-  if (play && !stepOk[1] && usedCharge) { stepOk[1] = true; flashStep = 1; flashAt = now }
+  if (play && !stepOk[1] && usedCharge) { stepOk[1] = true; stepOk[0] = true; flashStep = 1; flashAt = now }
   const hz0 = heroNow()
-  if (play && !stepOk[2] && hz0 !== undefined && hz0.artCd > 0) { stepOk[2] = true; flashStep = 2; flashAt = now }
+  if (play && !stepOk[2] && hz0 !== undefined && hz0.artCd > 0) { stepOk[2] = true; stepOk[0] = true; stepOk[1] = true; flashStep = 2; flashAt = now }
   const flashing = flashStep >= 0 && now - flashAt < P.field.stepFlashMs
   const next = stepOk.indexOf(false)
   if (next === -1 && !flashing) {

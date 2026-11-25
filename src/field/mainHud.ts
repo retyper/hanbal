@@ -42,6 +42,12 @@ const CSS = `
 #fd-edge .bar i.b{left:0;background:#c43e30}
 #fd-edge .bar.low{animation:fd-low .5s steps(1) infinite}
 @keyframes fd-low{50%{opacity:.35}}
+#fd-edge>b{min-width:44px;font-size:14px}
+#fd-edge>b:first-child{text-align:right}
+#fd-edge .tug{width:min(40vw,380px);height:18px}
+#fd-edge .tug i.a{left:0;right:auto;background:#2f8cff}
+#fd-edge .tug i.b{right:0;left:auto;background:#c43e30}
+#fd-edge .tug u{position:absolute;top:-2px;bottom:-2px;width:2px;background:#f3ecd8;opacity:.85;text-decoration:none}
 #fd-edge .chip{position:absolute;top:8px;width:9px;height:9px;pointer-events:none;animation:fd-fall .3s ease-in forwards}
 #fd-edge .chip.a{background:#2f8cff}
 #fd-edge .chip.b{background:#c43e30}
@@ -68,26 +74,34 @@ export function mountHud(root: HTMLElement, h: HudHandlers): Hud {
   hud.innerHTML = `<button id="fd-zoom" type="button"></button><button id="fd-pause" type="button"></button><button id="fd-helpbtn" type="button" aria-label="?">?</button><span style="flex:1"></span><button id="fd-again" type="button"></button>`
   const edge = document.createElement('div')
   edge.id = 'fd-edge'
-  edge.innerHTML = `<span class="bar" id="fd-b0"><i class="a"></i><b id="fd-n0"></b></span><span class="bar" id="fd-b1"><i class="b"></i><b id="fd-n1"></b></span>`
+  // 줄다리기 막대 한 줄: 왼쪽 우리(파랑) · 오른쪽 적 · 가운데서 밀고, 양쪽 눈금은 한쪽 사기가 무너지는 선(처음의 55%)에서 막대가 서는 자리 — 글 없이 양 끝에 사람 수만
+  const edgeLine = Math.round(P.realm.tacBreakMorale / (P.realm.tacBreakMorale + 1) * 1000) / 10
+  edge.innerHTML = `<b id="fd-n0"></b><span class="bar tug" id="fd-b0"><i class="a"></i><i class="b"></i><u style="left:${edgeLine}%"></u><u style="left:${(100 - edgeLine).toFixed(1)}%"></u></span><b id="fd-n1"></b>`
   const end = document.createElement('div')
   end.id = 'fd-end'; end.hidden = true
   end.innerHTML = `<div><h2 id="fd-endtext"></h2><div class="st" id="fd-endstats"></div><p id="fd-why"></p><button id="fd-again2" type="button"></button></div>`
   root.append(edge, hud, end)
   const $ = (id: string): HTMLElement => document.getElementById(id) as HTMLElement
   const zoom = $('fd-zoom'), pause = $('fd-pause'), again = $('fd-again'), again2 = $('fd-again2')
-  const n0 = $('fd-n0'), n1 = $('fd-n1'), b0 = $('fd-b0'), b1 = $('fd-b1')
-  const fa = b0.firstElementChild as HTMLElement, fb = b1.firstElementChild as HTMLElement
+  const n0 = $('fd-n0'), n1 = $('fd-n1'), b0 = $('fd-b0'), b1 = b0
+  const fa = b0.querySelector('i.a') as HTMLElement, fb = b0.querySelector('i.b') as HTMLElement
   const endText = $('fd-endtext'), endWhy = $('fd-why'), endStats = $('fd-endstats')
   zoom.hidden = true // 시제품: 확대 단추는 뺀다 (51 §2) · 장수 따라가기 한 가지 배율
   again.textContent = again2.textContent = t('field.again')
   pause.textContent = t('field.pause')
   let armUntil = 0
   let goldUntil = 0
-  const prevEdge = [-1, -1]
+  let prevPush = -1
+  /** 한 편의 사기 비율 (사람 수로 무게 · 처음 사기 대비) */
+  const moraleShare = (m: VModel, side: number): number => {
+    let num = 0, den = 0
+    for (const q of m.squads) if (q.side === side && q.men > 0) { num += q.morale * q.men; den += q.morale0 * q.men }
+    return den <= 0 ? 0 : num / den
+  }
   const edgeBox = edge
-  const chip = (bar: HTMLElement, share: number, side: 0 | 1, big: boolean): void => {
+  const chip = (bar: HTMLElement, push: number, side: 0 | 1, big: boolean): void => {
     const r = bar.getBoundingClientRect(), o = edgeBox.getBoundingClientRect()
-    const x = r.left - o.left + r.width * (side === 0 ? 1 - share / 1000 : share / 1000)
+    const x = r.left - o.left + r.width * push / 1000
     const c = document.createElement('i')
     c.className = `chip ${side === 0 ? 'a' : 'b'}${big ? ' big' : ''}`
     c.style.left = `${Math.round(x - 4)}px`
@@ -100,9 +114,7 @@ export function mountHud(root: HTMLElement, h: HudHandlers): Hud {
   pause.addEventListener('pointerdown', e => { e.preventDefault(); h.onPause() })
   $('fd-helpbtn').addEventListener('click', () => h.onHelp())
   again.addEventListener('click', () => {
-    if (armUntil > 0) { armUntil = 0; again.className = ''; again.textContent = t('field.again'); h.onAgain(); return }
-    armUntil = performance.now() + P.field.noteMs
-    again.className = 'arm'; again.textContent = t('field.again.sure')
+    h.onAgain() // 확인 상자 없이 곧바로 새 판
   })
   again2.addEventListener('click', () => h.onAgain())
   const men = (m: VModel, side: number): number => m.squads.reduce((a, q) => a + (q.side === side ? q.men : 0), 0)
@@ -113,21 +125,20 @@ export function mountHud(root: HTMLElement, h: HudHandlers): Hud {
     hide(hidden) { hud.hidden = hidden; edge.hidden = hidden },
     sync(m, fx) {
       // 막대가 크게 줄면 그 끝에서 조각이 떨어진다 (상성이 맞으면 막대 테두리가 금빛으로 번쩍)
-      for (const sd of [0, 1] as const) {
-        const was = prevEdge[sd]!
-        if (was >= 0 && m.edge[sd] < was - P.field.chipDropPermille) chip(sd === 0 ? b0 : b1, m.edge[sd], sd, was - m.edge[sd] >= P.field.chipDropPermille * 3)
-        prevEdge[sd] = m.edge[sd]
-      }
+      // 우리 밀기 = 우리 사기 비율 / (우리 + 적) — 크게 밀리면 밀린 쪽 끝에서 조각이 떨어진다
+      const r0 = moraleShare(m, 0), r1 = moraleShare(m, 1)
+      const push = r0 + r1 <= 0 ? 500 : Math.round(r0 * 1000 / (r0 + r1))
+      if (prevPush >= 0 && Math.abs(push - prevPush) > P.field.chipDropPermille) chip(b0, push, push < prevPush ? 0 : 1, Math.abs(push - prevPush) >= P.field.chipDropPermille * 3)
+      prevPush = push
       if (fx !== undefined && fx.gold) { goldUntil = performance.now() + P.field.goldFlashMs; b0.classList.add('gold'); b1.classList.add('gold') }
-      const k = `${m.edge[0]}|${m.edge[1]}|${men(m, 0)}|${men(m, 1)}`
+      const k = `${push}|${m.edge[0]}|${m.edge[1]}|${men(m, 0)}|${men(m, 1)}`
       if (k === key) return
       key = k
       n0.textContent = men(m, 0).toLocaleString()
       n1.textContent = men(m, 1).toLocaleString()
-      fa.style.left = `${100 - m.edge[0] / 10}%`
-      fb.style.right = `${100 - m.edge[1] / 10}%`
-      b0.classList.toggle('low', m.edge[0] < P.field.edgeLowPermille)
-      b1.classList.toggle('low', m.edge[1] < P.field.edgeLowPermille)
+      fa.style.width = `${push / 10}%`
+      fb.style.width = `${100 - push / 10}%`
+      b0.classList.toggle('low', m.edge[0] < P.field.edgeLowPermille || m.edge[1] < P.field.edgeLowPermille)
     },
     showEnd(m, stats) {
       if (m === null || m.end === null) { end.hidden = true; return }
