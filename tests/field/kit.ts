@@ -121,11 +121,14 @@ export function shuffleWithinSides(seed: number): (qs: Squad[]) => Squad[] {
   }
 }
 
-/** 대를 처음 번호로 찾게 kind 에 이름을 적는다 (sim 은 kind 를 안 읽는다) */
-export const tag = (s: FieldState): void => { for (const q of s.squads) q.kind = `k${q.id}` }
+
+/** 처음 번호 이름표 — 대 객체에 붙여 둔다 (C2 병종 묶음부터 sim 이 kind 를 읽어 kind 칸에 적을 수 없다) */
+const TAGS = new WeakMap<Squad, string>()
+export const tag = (s: FieldState): void => { for (const q of s.squads) TAGS.set(q, `k${q.id}`) }
+const tagOf = (q: Squad): string => TAGS.get(q) ?? `?${q.id}`
 /** 대 상태의 글자 (id·lock·target 은 처음 번호로 바꿔 차례와 무관하게 견준다) */
 export function squadKey(s: FieldState): string {
-  const name = (id: number): string => id >= 0 ? s.squads[id]!.kind : '-'
-  return [...s.squads].sort((a, b) => a.kind < b.kind ? -1 : a.kind > b.kind ? 1 : 0)
-    .map(q => [q.kind, q.side, q.u, q.v, q.hp, q.morale, q.shock, q.flank, q.sleep, q.daze, q.rem, q.held, name(q.lock), name(q.target), q.goal ? `${q.goal.u},${q.goal.v}` : '-'].join(':')).join('|')
+  const name = (id: number): string => id >= 0 ? tagOf(s.squads[id]!) : '-'
+  return [...s.squads].sort((a, b) => tagOf(a) < tagOf(b) ? -1 : tagOf(a) > tagOf(b) ? 1 : 0)
+    .map(q => [tagOf(q), q.kind, q.side, q.u, q.v, q.hp, q.morale, q.shock, q.flank, q.sleep, q.daze, q.rem, q.held, name(q.lock), name(q.target), q.goal ? `${q.goal.u},${q.goal.v}` : '-'].join(':')).join('|')
 }

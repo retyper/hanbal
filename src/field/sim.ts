@@ -21,8 +21,8 @@ import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { clamp, dist2, idiv, isqrt, nearestDir, stepToward } from './num.ts'
 import { campPointU, groundAt, walkable } from './map.ts'
-import { G_BLOCK, G_HIGH, G_PLAIN, G_SHALLOW, GRPS, HERO_ART_DEFAULT, HERO_ARTS, HERO_DIR, HERO_DIRS, OP_ATTACK, OP_AUTO, OP_DASH, OP_HERO_DIR, OP_MOVE, OP_RETREAT, OP_SKILL, OP_STANCE, STANCE_CHARGE, STANCE_HOLD, STANCE_OPEN, WHY_NONE, CMD_COUNTER, CMD_HEIGHT, OP_AIM, OP_RALLY, ORD_ATTACK, ORD_CHARGE, ORD_FLANK, ORD_MOVE, ORD_NONE, ORD_VOLLEY, HIT_PLAIN, HIT_GOOD, HIT_BLOCKED, LOSS_ARROW, LOSS_BLADE } from './types.ts'
-import type { FieldInput, FieldMap, FieldState, Grp, Hero, LiveSetup, Point, Squad } from './types.ts'
+import { G_BLOCK, G_HIGH, G_PLAIN, G_SHALLOW, GRPS, HERO_ART_DEFAULT, HERO_ARTS, HERO_DIR, HERO_DIRS, OP_ATTACK, OP_AUTO, OP_DASH, OP_HERO_DIR, OP_MOVE, OP_RETREAT, OP_SKILL, OP_STANCE, STANCE_CHARGE, STANCE_HOLD, STANCE_OPEN, WHY_NONE, CMD_COUNTER, CMD_HEIGHT, OP_AIM, OP_RALLY, ORD_ATTACK, ORD_CHARGE, ORD_FLANK, ORD_MOVE, ORD_NONE, ORD_VOLLEY, HIT_PLAIN, HIT_GOOD, HIT_BLOCKED, LOSS_ARROW, LOSS_BLADE, KIND_BEATS } from './types.ts'
+import type { FieldInput, FieldMap, FieldState, Grp, Hero, LiveSetup, Point, Squad, UnitKind } from './types.ts'
 import { auraOf, emit, heroInput, heroMove, heroStrike, heroTakeHits, pruneEvents, standOf } from './hero.ts'
 import { armyInit, armyInput, armyTick, follows, runMul } from './army.ts'
 
@@ -115,15 +115,16 @@ export function createField(setup: LiveSetup): FieldState {
     }
     GRPS.forEach(grp => {
       const men = ls.men[grp], n = squadCount(men)
+      const parts = groupKinds(ls, grp, n)
       const fresh = Math.min(men, Math.max(0, ls.fresh?.[grp] ?? 0))
       for (let i = 0; i < n; i++) {
         const id = s.squads.length
-        const cnt = idiv(men, n) + (i < men % n ? 1 : 0)
+        const cnt = parts[i]!.men
         const j = jit > 0 ? Math.floor(roll(s.seed, 0, `spawn:${id}`) * (2 * jit + 1)) - jit : 0
         const p = place(grp, i, n)
         const u = clamp(cp.axis === 1 ? p.u + j : p.u, 0, lastU(map)), v = clamp(cp.axis === 0 ? p.v + j : p.v, 0, lastV(map))
         const stance = Math.floor(roll(s.seed, 0, `stance:${id}`) * 3) as 0 | 1 | 2
-        s.squads.push({ id, side, grp, kind: grp, men: cnt, menMax: cnt, fresh: men > 0 ? idiv(fresh * cnt, men) : 0, u, v, homeU: u, homeV: v, lock: -1, sleep: ticksOf(cp.asleep ?? 0), daze: 0, rem: 0, held: 0, flank: 0, stance, morale0: ls.morale, shock: 0, goal: null, manual: 0, target: -1, hp: cnt * MILLI, morale: ls.morale, foe: -1, calm: 0, form: 0, cmd: -1, reach: grp === 'bows' ? P.field.bowRangeCells * unit : 0, aim: -1,
+        s.squads.push({ id, side, grp, kind: parts[i]!.kind, men: cnt, menMax: cnt, fresh: men > 0 ? idiv(fresh * cnt, men) : 0, u, v, homeU: u, homeV: v, lock: -1, sleep: ticksOf(cp.asleep ?? 0), daze: 0, rem: 0, held: 0, flank: 0, stance, morale0: ls.morale, shock: 0, goal: null, manual: 0, target: -1, hp: cnt * MILLI, morale: ls.morale, foe: -1, calm: 0, form: 0, cmd: -1, reach: grp === 'bows' ? P.field.bowRangeCells * unit : 0, aim: -1,
           order: ORD_NONE, orderTick: -1, orderAt: null, ran: 0, bonus: 0, hitTick: -1, flee: 0,
           bw: P.field.bodyWCells * unit, bd: (grp === 'horse' ? P.field.horseBodyDCells : P.field.bodyDCells) * unit, face: side === 0 ? 0 : HERO_DIRS / 2, pushed: 0 })
       }
@@ -446,7 +447,7 @@ function kit() {
     takenCharge: m(R.tacTakenCharge), takenHold: m(R.tacTakenHold), takenVolley: m(R.tacTakenVolley),
     triTakeWin: m(R.tacTriTakeWin), triTakeLose: m(R.tacTriTakeLose),
     volleyHold: m(R.tacVolleyHold), volleyCharge: m(R.tacVolleyCharge),
-    height: m(R.tacHeight), ford: m(R.tacFordCharge), counterCut: m(R.tacCounterCut), punchHold: m(R.tacPunchHoldTake), horseBows: m(R.tacFlank2), edge: F.edgeMulPermille, water: F.waterSpeedPermille, climb: F.highClimbPermille,
+    height: m(R.tacHeight), ford: m(R.tacFordCharge), counterCut: m(R.tacCounterCut), kindUp: m(R.counterUp), kindDown: m(R.counterDown), punchHold: m(R.tacPunchHoldTake), horseBows: m(R.tacFlank2), edge: F.edgeMulPermille, water: F.waterSpeedPermille, climb: F.highClimbPermille,
     meleeR2: sq(F.meleeRangeCells * F.unit), bowR2: sq(F.bowRangeCells * F.unit), bowR: F.bowRangeCells * F.unit, flankV: F.flankVCells * F.unit,
     /** 틱 나눔: 초당 백만분의 일 → 틱당 천분의 일 */
     perTickDen: MILLI * F.hz,
@@ -549,7 +550,7 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
   for (const q of s.squads) {
     if (q.lock < 0 || lock0[q.id]! >= 0 || struck[q.id]) continue
     const e = s.squads[q.lock]!
-    emit(s, { kind: 'impact', side: q.side, id: q.id, u: idiv(q.u + e.u, 2), v: idiv(q.v + e.v, 2), n: q.men + e.men, to: e.id, how: HIT_PLAIN })
+    emit(s, { kind: 'impact', side: q.side, id: q.id, u: idiv(q.u + e.u, 2), v: idiv(q.v + e.v, 2), n: q.men + e.men, to: e.id, how: beatsKind(q.kind, e.kind) ? HIT_GOOD : HIT_PLAIN })
   }
   // 활의 닿는 거리 (화면이 읽는 칸 · 높은 터 위면 bowHighReachPermille 배)
   for (const q of s.squads) if (q.grp === 'bows') q.reach = groundAt(s.map, q.u, q.v) === G_HIGH ? mul(K.bowR, P.field.bowHighReachPermille) : K.bowR
@@ -615,6 +616,8 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
     if (q.grp === 'horse' && e.grp === 'front' && e.stance === STANCE_HOLD) v = mul(v, P.field.horseVsHoldPermille)
     if (q.grp === 'front' && q.stance === STANCE_HOLD && e.grp === 'horse') v = mul(v, K.punchHold)
     if (q.grp === 'horse' && e.grp === 'bows') v = mul(v, K.horseBows)
+    // 본편 병종 상성 (battle.ts BEATS · 화살에도) — 이기면 ×counterUp · 지면 ×counterDown (방패는 화살을 덜 맞고 쇠뇌는 방패를 뚫고 활은 창을 잘 잡는다)
+    v = mul(v, kindMul(K, q.kind, e.kind))
     // 화살비(찍은 자리)에 몰아 쏨 · 돌격 덤 (부딪힌 순간 chargeImpactPermille → chargeBonusSec 에 걸쳐 1)
     if (focus[q.id]) v = mul(v, P.field.volleyFocusPermille)
     if (q.bonus > 0) v = mul(v, MILLI + idiv((P.field.chargeImpactPermille - MILLI) * q.bonus, Math.max(1, ticksOf(P.field.chargeBonusSec))))
@@ -633,7 +636,7 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
   for (const q of s.squads) q.aim = q.men > 0 && q.sleep <= 0 && aim[q.id]! >= 0 ? aim[q.id]! : q.lock
   // 활이 쏜다 (읽기용 · volleyEventSec 마다 한 줄)
   if (s.tick % ticksOf(P.field.volleyEventSec) === 0) {
-    for (const q of s.squads) if (q.grp === 'bows' && q.men > 0 && q.sleep <= 0 && aim[q.id]! >= 0) { const e = s.squads[aim[q.id]!]!; emit(s, { kind: 'volley', side: q.side, id: q.id, u: e.u, v: e.v, n: q.men, to: e.id }) }
+    for (const q of s.squads) if (q.grp === 'bows' && q.men > 0 && q.sleep <= 0 && aim[q.id]! >= 0) { const e = s.squads[aim[q.id]!]!; emit(s, { kind: 'volley', side: q.side, id: q.id, u: e.u, v: e.v, n: q.men, to: e.id, how: beatsKind(q.kind, e.kind) ? HIT_GOOD : HIT_PLAIN }) }
   }
   // 장수의 칼 (같은 틱에 한꺼번에) · 버텨라 (곁의 우리 대가 받는 피해 배수)
   const toHero = heroStrike(s, dmg, hits)
@@ -883,7 +886,8 @@ function runImpacts(s: FieldState): boolean[] {
     if (q.ran < min) { q.ran = 0; continue }
     q.ran = 0
     out[q.id] = true
-    const blocked = q.grp === 'horse' && e.grp === 'front' && e.stance === STANCE_HOLD
+    // 방진이거나 긴 창이면 기병 들이침이 막힌다 (긴 창은 방진이 아니어도 · C2 병종)
+    const blocked = q.grp === 'horse' && e.grp === 'front' && (e.stance === STANCE_HOLD || e.kind === 'pike')
     const mover = blocked ? q : e
     const away = blocked ? e : q
     const push = (blocked ? P.field.bounceCells : q.grp === 'horse' ? P.field.pushHorseCells : P.field.pushFrontCells) * P.field.unit
@@ -1112,3 +1116,46 @@ function turnFaces(s: FieldState): void {
  * 편마다 같은 쪽으로 내리면 가운데가 1 단위 어긋나 문턱(도는 길의 점 닿음 등)이 갈린다 (C2 · 거울 시험)
  */
 export const avgU = (sum: number, n: number, side: 0 | 1): number => side === 0 ? idiv(sum, n) : idiv(sum + n - 1, n)
+
+/** 무리 안의 줄 자리 차례 — 가운데부터 (n = 4 면 1 · 2 · 0 · 3) */
+const centerOut = (n: number): number[] => Array.from({ length: n }, (_, i) => i).sort((a, b) => Math.abs(2 * a - (n - 1)) - Math.abs(2 * b - (n - 1)) || a - b)
+
+/**
+ * 무리의 대 n 개를 병종으로 가른다 (C2 병종 묶음) — 병종별 사람 수(LiveSide.kinds · 없거나 합이 안 맞으면 앞줄 방패·창 반반 · 활 4분의 3 활 · 4분의 1 쇠뇌).
+ * 몫이 8분의 1 을 넘는 병종은 대 하나 이상 · 그 아래 병종의 사람은 가장 큰 병종에 붙인다.
+ * 줄 자리: 앞줄은 방패가 가운데 · 창이 그 옆 · 긴 창이 끝 / 활 줄은 활이 가운데 · 쇠뇌가 끝 (돌려주는 배열의 차례 = 시작 줄의 차례).
+ */
+export function groupKinds(ls: LiveSetup['sides'][number], grp: Grp, n: number): Array<{ kind: UnitKind; men: number }> {
+  const men = ls.men[grp]
+  if (n <= 0) return []
+  const order: UnitKind[] = grp === 'front' ? ['shield', 'spear', 'pike'] : grp === 'bows' ? ['bow', 'crossbow'] : ['horse']
+  let want = order.map(k => Math.max(0, ls.kinds?.[k] ?? 0))
+  if (want.reduce((a, b) => a + b, 0) !== men) {
+    want = grp === 'front' ? [idiv(men, 2), men - idiv(men, 2), 0] : grp === 'bows' ? [men - idiv(men, 4), idiv(men, 4)] : [men]
+  }
+  // 8분의 1 아래 병종은 가장 큰 병종에 붙인다
+  const big = want.indexOf(Math.max(...want))
+  for (let k = 0; k < want.length; k++) if (k !== big && want[k]! > 0 && want[k]! * 8 <= men) { want[big]! += want[k]!; want[k] = 0 }
+  // 대 수 — 몫대로 (내림 뒤 남는 대는 나머지가 큰 차례 · 사람이 있는 병종은 하나 이상)
+  const cnt = want.map(w => w > 0 ? Math.max(1, idiv(w * n, men)) : 0)
+  let sum = cnt.reduce((a, b) => a + b, 0)
+  const byRem = want.map((_w, k) => k).sort((a, b) => ((want[b]! * n) % men) - ((want[a]! * n) % men) || a - b)
+  for (let j = 0; sum < n; j++) { const k = byRem[j % byRem.length]!; if (want[k]! > 0) { cnt[k]!++; sum++ } }
+  for (let j = 0; sum > n; j++) { const k = cnt.indexOf(Math.max(...cnt)); cnt[k]!--; sum-- }
+  // 가운데부터 앞 병종 차례로 채운다
+  const slots = centerOut(n)
+  const out = new Array<{ kind: UnitKind; men: number }>(n)
+  let at = 0
+  order.forEach((kind, k) => {
+    const c = cnt[k]!
+    for (let j = 0; j < c; j++) out[slots[at++]!] = { kind, men: idiv(want[k]!, c) + (j < want[k]! % c ? 1 : 0) }
+  })
+  return out
+}
+
+/** 병종 상성 (KIND_BEATS = 본편 battle.ts BEATS) — a 가 b 를 이기나 */
+export const beatsKind = (a: string, b: string): boolean => (KIND_BEATS[a as UnitKind] ?? []).includes(b as UnitKind)
+/** a 가 b 를 칠 때의 배수 (‰) — 이기면 counterUp · 지면 counterDown · 아니면 1 */
+function kindMul(K: Kit, a: string, b: string): number {
+  return beatsKind(a, b) ? K.kindUp : beatsKind(b, a) ? K.kindDown : MILLI
+}

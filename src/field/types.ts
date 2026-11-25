@@ -9,6 +9,13 @@
 export type Grp = 'front' | 'bows' | 'horse'
 export const GRPS: readonly Grp[] = ['front', 'bows', 'horse']
 
+/** 본편 병종 (src/realm/battle.ts:12 UnitKind 에서 배를 뺀 여섯 · 전장의 대마다 하나) — 무리(grp)는 앞줄 = spear·pike·shield · 활 = bow·crossbow · 기병 = horse */
+export type UnitKind = 'spear' | 'pike' | 'shield' | 'bow' | 'crossbow' | 'horse'
+export const UNIT_KINDS: readonly UnitKind[] = ['spear', 'pike', 'shield', 'bow', 'crossbow', 'horse']
+export const KIND_GRP: Readonly<Record<UnitKind, Grp>> = { spear: 'front', pike: 'front', shield: 'front', bow: 'bows', crossbow: 'bows', horse: 'horse' }
+/** 본편 상성 표 (src/realm/battle.ts:69 BEATS 그대로 · 배 뺌) — 행이 이기는 병종 · 이기면 ×P.realm.counterUp · 지면 ×counterDown */
+export const KIND_BEATS: Readonly<Record<UnitKind, readonly UnitKind[]>> = { spear: ['horse', 'shield'], bow: ['spear'], pike: ['horse'], shield: ['bow'], horse: ['bow'], crossbow: ['shield'] }
+
 /** 입력의 g: 0 앞줄 · 1 활 · 2 기병 · 3 장수 */
 export type InputGroup = 0 | 1 | 2 | 3
 /** 입력의 op: 0 = 그 무리를 (u, v) 로 보냄(손으로 몰기) · 1 = 손을 떼고 임시 AI 에 맡김 (자세·비기 같은 갈래는 뒤 카드가 더한다) */
@@ -104,7 +111,7 @@ export interface Squad {
   id: number
   side: 0 | 1
   grp: Grp
-  /** 본편 병종 이름표 (그림·말에 쓴다. 이 sim 은 grp 만 본다) */
+  /** 병종 (UnitKind · C2 병종 묶음부터 grp 이름이 아니라 진짜 병종 — 화면은 이것으로 병종별 띠를 그린다 · 무리를 가를 때는 grp 를 쓴다) */
   kind: string
   men: number
   menMax: number
@@ -256,6 +263,8 @@ export interface FieldEvent {
 
 export interface LiveSide {
   men: Readonly<Record<Grp, number>>
+  /** 병종별 사람 수 (있으면 무리 안의 대를 이 비율로 가른다 · 무리별 합은 men[grp] 와 같아야 한다 · 없으면 앞줄 방패·창 반반 · 활 4분의 3 활 · 4분의 1 쇠뇌) */
+  kinds?: Readonly<Partial<Record<UnitKind, number>>>
   /** 이번 달 새로 뽑은 사람 수 (무리별 · 없으면 0) */
   fresh?: Readonly<Partial<Record<Grp, number>>>
   F: number
