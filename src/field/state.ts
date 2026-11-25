@@ -34,12 +34,14 @@ export function hashField(s: FieldState): string {
   for (const p of s.anchor) { h = mix(h, p.u); h = mix(h, p.v) }
   for (const r of s.route) { h = mix(h, r.length); for (const p of r) { h = mix(h, p.u); h = mix(h, p.v) } }
   for (const n of s.grpWhy) h = mix(h, n); for (const n of s.grpWhyTick) h = mix(h, n)
+  for (const k of [0, 1] as const) { h = mix(h, s.stats.flankHits[k]); h = mix(h, s.stats.artMorale[k]); h = mix(h, s.stats.killed[k]); h = mix(h, s.stats.lost[k]); h = mix(h, s.planTick[k]) }
   for (const q of s.squads) {
     h = hs(h, q.kind); h = hs(h, q.grp); h = mix(h, q.morale0); h = mix(h, q.flank); h = mix(h, q.homeU); h = mix(h, q.homeV)
     h = mix(h, q.id); h = mix(h, q.side); h = mix(h, q.men); h = mix(h, q.menMax); h = mix(h, q.fresh)
     h = mix(h, q.u); h = mix(h, q.v); h = mix(h, q.goal ? q.goal.u : -1); h = mix(h, q.goal ? q.goal.v : -1)
     h = mix(h, q.manual); h = mix(h, q.target); h = mix(h, q.hp); h = mix(h, q.morale); h = mix(h, q.stance); h = mix(h, q.shock); h = mix(h, q.lock); h = mix(h, q.sleep)
     h = mix(h, q.daze); h = mix(h, q.rem); h = mix(h, q.held); h = mix(h, q.foe); h = mix(h, q.calm); h = mix(h, q.form); h = mix(h, q.cmd); h = mix(h, q.reach); h = mix(h, q.aim)
+    h = mix(h, q.order); h = mix(h, q.orderTick); h = mix(h, q.orderAt ? q.orderAt.u : -1); h = mix(h, q.orderAt ? q.orderAt.v : -1); h = mix(h, q.ran); h = mix(h, q.bonus); h = mix(h, q.hitTick); h = mix(h, q.flee)
   }
   for (const e of s.heroes) {
     h = hs(h, e.id)
@@ -47,6 +49,7 @@ export function hashField(s: FieldState): string {
     h = mix(h, e.grp); h = mix(h, e.stun); h = mix(h, e.hp); h = mix(h, e.manual); h = mix(h, e.rem)
     h = mix(h, e.mu); h = mix(h, e.tong); h = mix(h, e.dir); h = mix(h, e.face); h = mix(h, e.foe); h = mix(h, e.atk); h = mix(h, e.dash); h = mix(h, e.dashDir); h = mix(h, e.dashCd)
     h = hs(h, e.art); h = mix(h, e.artCd); h = mix(h, e.artOn); h = mix(h, e.why); h = mix(h, e.whyTick)
+    h = mix(h, e.hitIds.length); for (const n of e.hitIds) h = mix(h, n)
   }
   return (h >>> 0).toString(16)
 }
@@ -56,8 +59,10 @@ export function snapshot(s: FieldState): FieldState {
   return {
     ...s,
     map: { ...s.map, cells: s.map.cells.slice(), pieces: s.map.pieces.map(p => ({ ...p })) },
-    squads: s.squads.map(q => ({ ...q, goal: q.goal ? { ...q.goal } : null })),
-    heroes: s.heroes.map(e => ({ ...e, goal: e.goal ? { ...e.goal } : null })),
+    squads: s.squads.map(q => ({ ...q, goal: q.goal ? { ...q.goal } : null, orderAt: q.orderAt ? { ...q.orderAt } : null })),
+    heroes: s.heroes.map(e => ({ ...e, goal: e.goal ? { ...e.goal } : null, hitIds: [...e.hitIds] })),
+    stats: { flankHits: [...s.stats.flankHits], artMorale: [...s.stats.artMorale], killed: [...s.stats.killed], lost: [...s.stats.lost] } as FieldState['stats'],
+    planTick: [...s.planTick] as FieldState['planTick'],
     anchor: s.anchor.map(p => ({ ...p })),
     route: s.route.map(r => r.map(p => ({ ...p }))),
     grpWhy: [...s.grpWhy] as FieldState['grpWhy'],

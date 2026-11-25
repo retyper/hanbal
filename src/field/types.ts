@@ -41,6 +41,13 @@ export const OP_HERO_DIR = 5
 export const OP_DASH = 6
 /** 비기 (Q 한 칸): g 3 · u, v = 겨눈 자리 (단위 · 겨눔이 없는 비기면 장수 자리를 보낸다) */
 export const OP_SKILL = 7
+/**
+ * 찍는 큰 수 (51 §2 · C2 묶음 2): g 1 = 화살비 — 땅을 찍는다 (u, v 둘레의 적에게 몰아 쏜다 · 닿지 않으면 닿을 때까지 다가간다) ·
+ * g 2 = 기병 옆치기 — 적 무리를 찍는다 (u, v 에 가장 가까운 적 대의 옆·뒤로 돌아 들이치고 flankStaySec 뒤 알아서 빠져 장수 곁으로)
+ */
+export const OP_AIM = 8
+/** 전부 장수 곁으로 (F · g 는 아무거나) — 우리 무리 셋의 명령을 모두 풀고 기본 행동(장수 따라 진 맞춰 옴)으로 */
+export const OP_RALLY = 9
 
 /** 방향 번호의 수 */
 export const HERO_DIRS = 16
@@ -79,6 +86,14 @@ export const FORM_AUTO = 0, FORM_CHARGE = 1, FORM_HOLD = 2, FORM_OPEN = 3
 /** 활 명령 · 기병 명령 (Squad.cmd · -1 이면 알아서) */
 export const CMD_VOLLEY = 0, CMD_COUNTER = 1, CMD_FIRE = 2, CMD_HEIGHT = 3
 export const CMD_FLANK = 0, CMD_PUNCH = 1, CMD_PURSUE = 2, CMD_GUARD = 3
+/**
+ * 무리 명령 (Squad.order · 51 §2) — 0 기본 행동(명령 없음: 장수를 따라 진을 맞춰 오고 닿는 적과 알아서 맞붙는다) ·
+ * 1 돌격(쐐기로 달려 들이침) · 2 방진(멈춰 촘촘한 네모 · 쫓지 않는다) · 3 화살비(찍은 자리) · 4 옆치기(도는 길 → 들이침 → 빠짐) ·
+ * 5 따로 보냄(OP_MOVE · 그 자리에 선다) · 6 적을 쳐라(OP_ATTACK)
+ */
+export const ORD_NONE = 0, ORD_CHARGE = 1, ORD_HOLD = 2, ORD_VOLLEY = 3, ORD_FLANK = 4, ORD_MOVE = 5, ORD_ATTACK = 6
+/** impact 사건의 how — 0 보통 · 1 상성이 맞음(돌격 덤·옆치기·기병이 활을 침) · 2 막힘(방진에 막힌 기병·돌격 — 친 쪽이 튕겨 난다) */
+export const HIT_PLAIN = 0, HIT_GOOD = 1, HIT_BLOCKED = 2
 
 export type EndWhy = 'morale' | 'men' | 'time' | 'retreat' | 'invalid'
 
@@ -139,6 +154,17 @@ export interface Squad {
   reach: number
   /** 지금 싸우는 상대 — 이번 틱에 친 적 대 id (없으면 맞물린 적) · 없으면 -1 · 손으로 몰았든 알아서든 같은 뜻 (target 은 가려는 적이라 손으로 몬 대는 -1 이다) */
   aim: number
+  /** 무리 명령 ORD_* (같은 무리의 대는 같은 값) · 그 명령을 받은 틱 */
+  order: number
+  orderTick: number
+  /** 화살비의 찍은 자리 · 옆치기의 겨눈 적 자리 (없으면 null) */
+  orderAt: Point | null
+  /** 돌격·옆치기: 달린 거리 (단위 · 도움닫기 · 맞붙으면 0) · 돌격 덤이 남은 틱 · 옆치기가 처음 닿은 틱(-1) */
+  ran: number
+  bonus: number
+  hitTick: number
+  /** 사기가 꺾여(무너짐 문턱 아래) 도망치는 중이면 1 — 치지 않고 제 진영 쪽으로 달리며, 지나가는 곁의 우리 대 사기를 깎는다 (도미노) */
+  flee: 0 | 1
 }
 
 /** 장수 (C2: 플레이어가 직접 조종 · 입력이 없으면 임시 AI) */
@@ -183,6 +209,8 @@ export interface Hero {
   /** 마지막으로 못 쓴 까닭 (WHY_*) 과 그 틱 · 먹히면 WHY_NONE */
   why: number
   whyTick: number
+  /** 이번 선봉 내닫기에 이미 맞은 적 대 id (한 번 내닫기에 대마다 한 번만 사기가 뚝) */
+  hitIds: number[]
 }
 
 export interface FieldInput { tick: number; g: InputGroup; op: number; u: number; v: number }
@@ -192,9 +220,11 @@ export interface FieldInput { tick: number; g: InputGroup; op: number; u: number
  * heroDash 내닫기 · heroSkill 비기(art) · heroDown/heroUp 장수 쓰러짐/일어남 · impact 처음 맞물림(n = 붙은 사람 수) ·
  * rout 대의 사기가 꺾임(무너짐 문턱 아래로) · gateBreak 목책 문 부서짐(id = 조각 id) · volley 활이 쏨(n = 쏜 사람 수 · volleyEventSec 마다) ·
  * loss 이 틱에 누가 누구를 깎았나(id = 친 대 · 장수면 -1 · to = 맞은 대 · n = 실제로 줄어든 사람 수 · 0 이면 안 적음 · how = LOSS_*).
+ * omen 적 큰 수 예고(pts = 올 길) · flankHit 옆치기가 먹힘(id = 친 기병 대 · to = 맞은 대) · artHit 비기에 맞은 적 대(to · n = 깎은 사기 천분율).
+ * 사기 문턱: 처음 사기의 P.field.waverPermille(70%) 아래 = 흔들림 · P.realm.tacBreakMorale(55%) 아래 = 무너짐(rout · flee).
  * 줄은 끝없이 자라지 않는다: 마지막 eventKeepSec 초만 남긴다 (화면은 읽은 마지막 틱 뒤의 줄만 읽는다)
  */
-export type FieldEventKind = 'heroDash' | 'heroSkill' | 'heroDown' | 'heroUp' | 'impact' | 'rout' | 'gateBreak' | 'volley' | 'loss'
+export type FieldEventKind = 'heroDash' | 'heroSkill' | 'heroDown' | 'heroUp' | 'impact' | 'rout' | 'gateBreak' | 'volley' | 'loss' | 'omen' | 'flankHit' | 'artHit'
 /** loss 사건의 종류 (FieldEvent.how) — 0 칼 · 1 화살 · 2 장수 · 3 비기 · 4 부딪힘 */
 export const LOSS_BLADE = 0, LOSS_ARROW = 1, LOSS_HERO = 2, LOSS_ART = 3, LOSS_IMPACT = 4
 export interface FieldEvent {
@@ -213,6 +243,8 @@ export interface FieldEvent {
   how?: number
   /** heroSkill 의 비기 종류 */
   art?: HeroArt
+  /** omen(적 큰 수 예고 · omenSec 전): 올 길의 점들 · id = 올 대 하나 */
+  pts?: Point[]
 }
 
 export interface LiveSide {
@@ -299,6 +331,10 @@ export interface FieldState {
   /** 우리 무리(앞줄·활·기병)가 마지막으로 못 받은 명령의 까닭 WHY_* 과 그 틱 (받으면 WHY_NONE) */
   grpWhy: [number, number, number]
   grpWhyTick: [number, number, number]
+  /** 결과 통계 (편마다 · 끝 상자) — 먹힌 옆치기 수 · 비기로 깎은 적 사기 합(천분율 × 대) · 쓰러뜨린 적 사람 · 잃은 사람 */
+  stats: { flankHits: [number, number]; artMorale: [number, number]; killed: [number, number]; lost: [number, number] }
+  /** 적의 큰 수 (입력 없는 편의 옆치기 · 51 §7) — 그 편이 옆치기를 거는 틱 (-1 없음 · 판을 만들 때 씨앗으로 정한다) */
+  planTick: [number, number]
   /** (C2 에서 명령 수 제한을 걷어냈다 · 늘 0 — 화면이 이 칸을 걷어내면 다음 카드에서 지운다) */
   used: [number, number, number, number]
   /** 진영이 무너진 편 (적이 진영 자리까지 들어오면 한 번 · 사기가 꺾인다) */

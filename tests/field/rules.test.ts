@@ -202,7 +202,9 @@ test('hz 10·20·30 에서 한 판 길이가 같고(±10%) 목책을 깨는 시�
   const was = P.field.hz
   const at = <T>(hz: number, fn: () => T): T => { (P.field as { hz: number }).hz = hz; try { return fn() } finally { (P.field as { hz: number }).hz = was } }
   for (const [name, mk] of MAPS.filter(([n]) => n === 'meet' || n === 'hold' || n === 'stake')) {
-    const secs = (hz: number): number => at(hz, () => { let t = 0; for (let seed = 1; seed <= 12; seed++) t += runField(plainSetup(seed, 1300, true, mk())).tick / hz; return t / 12 })
+    // 목책은 문이 깨지느냐로 판 길이가 두 갈래라 씨앗 12개로는 흔들림이 ±10% 를 넘는다 (C2 · 장수 곁의 기운으로 판이 길어진 뒤 12씨앗 65.5/78.9초 · 48씨앗 73.4/72.6초) → 48
+    const N = name === 'stake' ? 48 : 12
+    const secs = (hz: number): number => at(hz, () => { let t = 0; for (let seed = 1; seed <= N; seed++) t += runField(plainSetup(seed, 1300, true, mk())).tick / hz; return t / N })
     const base = secs(10)
     for (const hz of [20, 30]) { const x = secs(hz); assert.ok(Math.abs(x - base) / base < 0.1, `${name} ${hz}Hz ${x.toFixed(1)}초 · 10Hz ${base.toFixed(1)}초`) }
   }

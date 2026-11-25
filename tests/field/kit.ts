@@ -85,6 +85,12 @@ export function mirror(s: FieldState): void {
   m.pieces = mp.pieces.map(p => ({ ...p, u0: mp.u - p.u1, u1: mp.u - p.u0, owner: (1 - p.owner) as 0 | 1 }))
   m.highOwner = mp.highOwner < 0 ? -1 : 1 - mp.highOwner
   s.broken = [s.broken[1], s.broken[0]]
+  // 편마다의 칸 (army.ts) — 편 차례를 바꾸고 u 를 뒤집는다
+  const fp = (p: { u: number; v: number }) => ({ u: f(p.u), v: p.v })
+  s.anchor = [...s.anchor.slice(3), ...s.anchor.slice(0, 3)].map(fp)
+  s.route = [...s.route.slice(3), ...s.route.slice(0, 3)].map(r => r.map(fp))
+  s.planTick = [s.planTick[1], s.planTick[0]]
+  for (const q of s.squads) if (q.orderAt) q.orderAt = fp(q.orderAt)
 }
 
 /** 배열 차례 바꾸기 — order(대들) 이 새 차례. id 는 새 자리 번호로, lock·target 은 따라 옮긴다 · 장수 배열도 뒤집는다 */
