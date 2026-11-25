@@ -341,6 +341,11 @@ export const HAEBI_RUN = {
   skipDamage: 28, skipRankDamage: 14, skipSpeed: 620, skipCooldown: 1.6, skipLife: .9, skipBounces: 2, skipRange: 210,
   //   굴러가는 바위(조합): boulderInterval 초마다 가장 많이 걸리는 줄로 · 어지럼 돌(조합): 물수제비에 맞으면 dazeTime 초 멈춤
   boulderInterval: 2.4, boulderDamage: 95, boulderSpeed: 260, boulderLife: 2.4, boulderRadius: 44, boulderKnock: 22, dazeTime: .9,
+  // 채찍 (11-25 형: 「채찍 좋은데 · 무기 전용 스킬이랑 스킬트리」 · 말갈기·마가 말굽·늙은 대소·비라·누리·오름비): 곧게 뻗은 한 줄 + 가장 센 적을 끌어당기는 올가미 · 58-KITS 판에만 (docs/realm/WEAPON-KITS-SPECIAL-20261125.md 5절)
+  //   말채찍: 길이 whipLength(+단계마다) · 줄 폭 whipWidth(반폭) · 박자 whipCooldown · 피해 (whipDamage + 단계 × whipRankDamage) — 시작값 · 창(78×1.3/0.9초) 1단계 한 줄과 같게 잡았다 · raid-winrate 로 재 보기(카드 W7)
+  whipDamage: 62, whipRankDamage: 22, whipLength: 190, whipRankLength: 14, whipWidth: 26, whipCooldown: 1,
+  //   올가미: 사정 lassoRange(+단계마다) 안의 가장 센 적에게 lassoSpeed 로 날아감 · 장수 앞 lassoPullTo px 까지 lassoPull 초 동안 끌려옴 · 느려짐 lassoSlow 초(걸음 lassoSlowMul 배) · 어지럼 lassoDaze 초 — 시작값 · 카드 W7 에서 잰다
+  lassoDamage: 30, lassoRankDamage: 14, lassoRange: 300, lassoRankRange: 12, lassoSpeed: 380, lassoCooldown: 2.6, lassoPullTo: 70, lassoPull: .2, lassoSlow: 1.5, lassoSlowMul: .5, lassoDaze: .35,
 } as const
 /**
  * 열전 그리기의 말 — 누구 것인가 (11-18 형 플립: 「적 공격 이펙트랑 내 공격 이펙트가 헷갈림 · 내 발밑에 노란 원 생기다 불 나오던데 내가 맞는 공격 맞지?」).
@@ -443,6 +448,8 @@ export const HAEBI_ULT = {
   phantom: { inv: .25, landInv: .3 },
   magic: { cooldown: 13, damage: 23, bolts: 40, fx: .5 },
   sling: { cooldown: 13, damage: 60, waves: 4, stones: 7, gap: .12, radius: 165, splash: 46, range: 480, fx: .5 },
+  /** whip 휘몰이(카드 W4 에서 짓는다 · 그때까지는 환영난무와 같은 값을 빌려 둔다 — 아직 아무도 채찍 묶음으로 열전을 못 고른다) */
+  whip: { cooldown: 13, damage: 110, targets: 8, range: 320, gap: .07, splash: 40, beside: 24, fx: .38 },
   /** 줄 비기(도끼·활·칼)가 견줘 보는 방향 수 — 가까운 적 이만큼 쪽으로 줄을 대 보고 가장 많이 걸리는 쪽 */
   aimTries: 16,
   /**
@@ -1191,6 +1198,8 @@ export const HAEBI_TREE = { max: 3, rankStep: .4, upgradeChance: .5, ultDamage: 
     dagger: { a: { share: .5, step: .15, poison: 2.5 }, b: { share: .35, step: .15, shards: 3 } },
     magic: { a: { share: .7, step: .2 }, b: { share: .55, step: .2, split: 3 } },
     sling: { a: { daze: .45, daStep: .2 }, b: { bounces: 2, grow: .1 } },
+    /** 채찍 a 이어치기 · b 휘감아 끌기 — 카드 W4 에서 짓는다(처음 값은 자리만) */
+    whip: { a: { share: .5, step: .2 }, b: { share: .5, step: .2 } },
   },
 } as const
 /**
@@ -1215,6 +1224,7 @@ export const HAEBI_TREE = { max: 3, rankStep: .4, upgradeChance: .5, ultDamage: 
  * wall 창벽(창 조합): every 초마다 앞 ahead px 에 창날 spikes 개(사이 gap)가 가로로 life 초 · tick 초마다 피해 · 넘어오는 적은 벽 바깥으로 밀림(반폭 width)
  * tempest 삼연격(칼 조합): 셋째 칼 반달이 layers 겹(사이 spread 라디안) · 첫째·둘째 칼 피해 +share
  * mark 표식 사냥(단검 조합): every 초마다 shadowRange 안의 가장 센 적에 표식 · 그림자가 그 적만 벰 · 내 찌르기가 표식에 닿으면 burst 배로 터짐
+ * whip 말채찍: 피해 base 배 · 줄을 길이로 나눠 몸쪽 rootPart 는 root 배 · 끝 tipPart 는 tip 배 + daze 초 멈칫 · 가운데는 1배 · 4단계부터 back2 초 뒤 줄이 되돌아와 back2Share 몫으로 한 번 더 · 끝에 bigTip 마리 이상 맞히면 큰 한 방 (시작값 · 카드 W7 에서 잰다)
  * shard 갈라짐 조각(천 갈래 바람 · 유성 화살비 · 폭렬비도): 앞으로만 spread 라디안 사이 부채
  */
 export const HAEBI_KITS = {
@@ -1226,6 +1236,7 @@ export const HAEBI_KITS = {
   dagger: { base: 1.2, arc4: -.3, crit: 2, poisonShare: .3, poisonTime: 3, poisonMax: 4, poisonMax4: 8, bigStacks: 3, stepCd: 2, stepCrowd: 3, stepRadius: 60, stepBeside: 34 },
   bell: { groundTime: 2, radius: .6, damage: .5 },
   sling: { near: 90, nearShare: .5, far: .4, bounce: 70, bounceShare: .4, bigHits: 2 },
+  whip: { base: 1.15, rootPart: .3, tipPart: .35, root: .6, tip: 1.8, daze: .2, back2: .22, back2Share: .5, bigTip: 3 },
   gale: { flight: .45, throwMin: 90, throw: 220, splash: 60, spin: 1, spinEvery: .3, spinRadius: 46, spinShare: .4, arc: 90, landedSize: 38 },
   rain: { look: 1.3, cluster: 90, spreadMore: 2 },
   seal: { delay: .8 },
@@ -1363,7 +1374,7 @@ export const HAEBI_GOLD = { perKill: .05, perElite: 12, perMinute: 6, clear: 400
  *  - 단검 .64: 52% 에서도 한 판은 1:56, 62% 는 이김과 3:35. 14 의 표에서 단검 봇이 목책을 처음 깬 가장 낮은 몫이 64%
  * 씨앗 둘짜리 봇 값이다. 사람 손으로 잰 뒤(가10) 다시 본다.
  */
-export const HAEBI_WALL = { stage: 'palisade', survive: 180, shop: { axe: .12, sword: .12, spear: .12, magic: .32, sling: .5, bow: .5, dagger: .64 } } as const
+export const HAEBI_WALL = { stage: 'palisade', survive: 180, shop: { axe: .12, sword: .12, spear: .12, magic: .32, sling: .5, bow: .5, dagger: .64, whip: .5 } } as const
 /**
  * 56-C 목책을 진짜로 (11-21 형: 「3스테이지 목책이 오브젝트도 아니라서 다 그림 밟고 온다」) — 목책 돌파 판(규칙 56C)에만 선다.
  * 판을 가로지르는 목책 줄을 마디(축에 맞춘 상자)로 세운다. 장수도 적도 성한 마디에 막힌다 · 화살·던진 것은 넘어간다.
@@ -1580,7 +1591,7 @@ export const HAEBI_ANIM = {
    */
   anticHold: .55,
   /** 런지(px · 그림만 · 판 좌표·그림자·맞는 자리는 그대로) — 맞힐 때 적 쪽으로 밀었다 마무리 동안 돌아온다 · 음수는 뒤로 반동(활) */
-  lunge: { axe: 5, sword: 5, spear: 7, dagger: 4, magic: 0, bow: -2, sling: 2 },
+  lunge: { axe: 5, sword: 5, spear: 7, dagger: 4, magic: 0, bow: -2, sling: 2, whip: 3 },
   /** 휘두름 잔상 — 휘두름 칸을 옅게 낱낱이(몸 뒤로 ghostGap px 씩) · 개수 · 첫 진하기 (저사양 0) */
   ghosts: 2, ghostGap: 8, ghostAlpha: .42,
   /**

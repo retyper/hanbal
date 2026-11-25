@@ -94,7 +94,7 @@ test('canvas dim is accepted-manual awake sequence and cast progress only', () =
   assert.equal(awakeCastDim({ ...c, seq: 0 }), 0)
 })
 test('shipped seven particle PNGs are byte-identical native RAW, not cropped or regenerated', () => {
-  const sha: Record<Kit, string> = {
+  const sha: Partial<Record<Kit, string>> = {
     sword: '27a88ff1c9a570707534bcbee4fd5bc5014945ef825f2a4a39dbb899e9b40b21', axe: 'ddffa5b99608aee44d2a87cdd183a0311cd8c34453ee984e2add557318f17aba',
     bow: '6d5c9ba70b7a8ee3f323abcd1249c4bf8096e1dae49651e519256fa183eea020', spear: '38207ee7b6869f0dfaf584ce446e8a0c00e03ad18bd1c41ff8ab1792b3cfa98d',
     dagger: '558d843db202441dba215af9899423b6db53ee9cb28d65f076e858697fa06896', magic: '6d9ca3ce05a1f0b537289048631783dcacc9a2ef21f489ca7e1b1993142fe691',

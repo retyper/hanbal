@@ -8,6 +8,8 @@ const BOUNDS: Record<Kit, readonly [number, number, number, number, number, numb
   bow: [1024, 1536, 444, 114, 136, 1308], spear: [1024, 1536, 370, 83, 282, 1336],
   dagger: [2172, 724, 665, 159, 853, 402], magic: [1024, 1536, 273, 132, 479, 1189],
   sling: [1254, 1254, 271, 359, 755, 567],
+  // 채찍(whip)은 각성 컷인 그림이 아직 없다 — 그림이 없으면 막히지 않으니 칸만 단검 것을 빌려 둔다 (카드 W8)
+  whip: [2172, 724, 665, 159, 853, 402],
 }
 const TAU = Math.PI * 2, clamp = (x: number) => Math.max(0, Math.min(1, x))
 export type AwakeUltGeometry = { kind: 'line'; length: number; radius: number; burst: number } | { kind: 'disc'; radius: number } | { kind: 'target' } | { kind: 'none' }

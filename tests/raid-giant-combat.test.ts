@@ -13,7 +13,7 @@ function quiet(kit:Kit='sword'){
 }
 test('55 every primary kit actually damages one real part and one parent',()=>{
  for(const kit of ['axe','bow','spear','sword','dagger','magic','sling']as Kit[]){
-  const{s,e,g}=quiet(kit);s.x=e.x+50;s.y=e.y;s.cool[{axe:'axe',bow:'bow',spear:'spear',sword:'sword',dagger:'dagger',magic:'bell',sling:'sling'}[kit]as keyof typeof s.cool]=0
+  const{s,e,g}=quiet(kit);s.x=e.x+50;s.y=e.y;s.cool[{axe:'axe',bow:'bow',spear:'spear',sword:'sword',dagger:'dagger',magic:'bell',sling:'sling'}[kit as Exclude<Kit,'whip'>]as keyof typeof s.cool]=0
   const before=e.hp,parts={...g.partHP}
   for(let i=0;i<75&&e.hp===before;i++)stepHaebi(s,{x:0,y:0},1/120)
   assert.ok(e.hp<before,kit+' primary missed')

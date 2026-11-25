@@ -334,9 +334,9 @@ function effectStrip(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImag
   ctx.drawImage(img,impactFrame(age)*256,0,256,256,-radius,-radius,radius*2,radius*2);ctx.restore()
 }
 /** 비기 빛깔 — 묶음마다 (도끼 흙불 · 활 하늘 · 창 은빛 · 칼 번개 · 단검 그림자 · 방울 신령 금빛) */
-const ULT_COLOR: Record<Kit, string> = { axe: '#ffb04a', bow: '#d4ecff', spear: '#eef3ff', sword: '#8fd0ff', dagger: '#b48cff', magic: '#ffe27a', sling: '#e6cfa2' }
+const ULT_COLOR: Record<Kit, string> = { axe: '#ffb04a', bow: '#d4ecff', spear: '#eef3ff', sword: '#8fd0ff', dagger: '#b48cff', magic: '#ffe27a', sling: '#e6cfa2', whip: '#d9b27a' }
 /** 진 비기(각성 중) 빛깔 — 묶음 빛에 금을 섞어 더 뜨겁게 (11-17 형: 「진 하늘굿처럼」) */
-const TRUE_COLOR: Record<Kit, string> = { axe: '#ffd25a', bow: '#fff1b0', spear: '#ffe9a8', sword: '#ffe27a', dagger: '#ffc6f0', magic: '#fff3b8', sling: '#ffd98a' }
+const TRUE_COLOR: Record<Kit, string> = { axe: '#ffd25a', bow: '#fff1b0', spear: '#ffe9a8', sword: '#ffe27a', dagger: '#ffc6f0', magic: '#fff3b8', sling: '#ffd98a', whip: '#f0d29a' }
 /** 진 비기가 터지는 자리: 금빛 충격 고리 둘 + 사방으로 뻗는 빛살 (lighter · 그라디언트·필터 없이 선만) */
 function trueFlare(ctx: CanvasRenderingContext2D, x: number, y: number, age: number) {
   const op = ctx.globalCompositeOperation, a = ctx.globalAlpha

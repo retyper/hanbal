@@ -37,6 +37,8 @@ const WEAPON: Record<Kit, readonly [readonly string[], number]> = {
   dagger: [[X + 'swing_3.ogg', X + 'swing_4.ogg'], 1.6],
   magic: [[R + 'tap_bell_g1.wav', R + 'tap_bell_g2.wav', R + 'tap_bell_g3.wav'], 1],
   sling: [[SLING.release], 1],
+  // 채찍 소리 후보는 형이 고른다 (카드 W8) — 그때까지는 칼 휘두름을 높게 빌린다
+  whip: [[X + 'swing_3.ogg', X + 'swing_4.ogg'], 1.4],
 }
 const FILES = {
   hit: [R + 'duel/rushHit_h1.mp3', R + 'duel/rushHit_h2.mp3', R + 'duel/rushHit_h3.mp3'],

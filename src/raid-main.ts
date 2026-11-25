@@ -154,7 +154,7 @@ function restoreGiantZoom() { giantAutoFraming = false; if (giantZoomRestore !==
 const giantResultLine = () => { const g = giantHUD(run); return run.state === 'lost' && g ? `<p>보스 남은 체력 ${Math.ceil(100 * Math.max(0, g.hp) / g.max)}%</p>` : '' }
 root.insertAdjacentHTML('beforeend', `<div id="rotate-guide" hidden><div><span style="font-size:44px">↻</span><h2>폰을 가로로 돌려 주세요</h2><p>확대 ${josa(HERO.name, '과', '와')} 전장을 함께 보며 싸웁니다.<br>회전하는 동안 전투는 멈춰 있습니다.</p></div></div>`)
 /** 비기 컷인 띠의 기운 바탕 — 묶음마다 (fx/skill/bg/<결>.webp) */
-const KIT_BG: Record<Kit, CutBg> = { axe: 'earth', bow: 'arrow', spear: 'wind', sword: 'bolt', dagger: 'shadow', magic: 'spirit', sling: 'earth' }
+const KIT_BG: Record<Kit, CutBg> = { axe: 'earth', bow: 'arrow', spear: 'wind', sword: 'bolt', dagger: 'shadow', magic: 'spirit', sling: 'earth', whip: 'wind' }
 ensureCutinBandCss()
 $('arena').insertAdjacentHTML('beforeend', '<div id="skill-cutin" hidden aria-hidden="true"></div>')
 let cutinUntil = 0

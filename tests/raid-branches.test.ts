@@ -5,7 +5,8 @@ import { HAEBI_TREE as T, HAEBI_RUN as C } from '../src/tune/params.ts'
 import { createHaebi, stepHaebi, choose, reroll, xpNeeded, spawnMob, kitPowers, kitCombos, branchNodes, branchPoints, nodeAt, nodeOpen, mainBranch, treeTotal, nodeText, POWERS, BRANCHES, KITS, isCombo, type HaebiRun, type Kit, type Power } from '../src/raid/haebi.ts'
 import { replay, botInput, botChoice } from '../src/raid/haebi-replay.ts'
 
-const KIT_LIST = Object.keys(KITS) as Kit[]
+// 채찍(whip)의 갈래 끝은 카드 W4 에서 짓는다 — 그때까지 이 목록에서 뺀다
+const KIT_LIST = (Object.keys(KITS) as Kit[]).filter(k => k !== 'whip')
 const idle = { x: 0, y: 0 }
 const DT = 1 / 120
 /** 적이 안 나오는 판 */

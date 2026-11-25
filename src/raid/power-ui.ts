@@ -13,6 +13,8 @@ const icons: Record<Power, string> = {
   dagger: 'raid/power-dagger.png', knife: 'raid/power-knife.png', bell: 'raid/power-bell.png', soul: 'raid/power-soul.png',
   // 돌팔매 묶음 (11-16 · H56·H57) — 없으면 본편의 투석병·징검돌 아이콘
   sling: own('power-sling', 'icon/unit-slingers.png'), skip: own('power-skip', 'icon/route-steppingstones.png'),
+  // 채찍 묶음 (11-25) — 전용 그림 전엔 본편 밧줄 그림을 빌려 빛깔로 가른다 (카드 W8)
+  lash: own('power-lash', 'raid/rope.png'), lasso: own('power-lasso', 'raid/rope.png'),
   // 버팀 갈래 (11-17 밤) — 상점 영구 강화와 같은 물건 그림 (같은 뜻: 갑옷·회복·발·체력)
   tough: 'raid/shop-armor.png', breath: 'raid/shop-regen.png', nimble: 'raid/shop-swift.png', stout: 'raid/shop-vigor.png',
   // 묶음마다 다른 칸 — 아래 KIT_ART 가 덮는다 (없을 때만 이것)
@@ -36,6 +38,7 @@ const BORROWED: Record<Kit, { capA: string; capB: string }> = {
   dagger: { capA: 'raid/power-dagger.png', capB: 'raid/knife.png' },
   magic: { capA: 'raid/soul.png', capB: 'raid/power-soul.png' },
   sling: { capA: 'fx/rock.png', capB: 'icon/route-steppingstones.png' },
+  whip: { capA: 'raid/rope.png', capB: 'raid/rope.png' },
 }
 const capArt = (kit: Kit, key: 'capA' | 'capB') => own(`cap-${kit}-${key === 'capA' ? 'a' : 'b'}`, BORROWED[kit][key])
 /** 칸 그림 (public/realm/ 아래) · tint 빛깔 이름 (combat.css .tint-*) · 전용 그림이면 빛깔을 바꾸지 않는다 (갈래 끝의 테두리 빛만) */

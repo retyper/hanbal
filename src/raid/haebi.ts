@@ -26,8 +26,8 @@ import { BUILD_KINDS, ALL_BUILD_KINDS, isBuild2Kind, hasHp, bearsHp, wallTouchin
  * 무기 묶음(Kit) = 주 무기 + 그 무기 전용 보조 공격 + 공용 부적·번개 + 보조 능력 셋 + 조합 둘(묶음 전용) + 뇌화 연옥(공용).
  * 판(mode): stage = 독립 열전(스테이지 · 상점 강화 bonus) · trial = 본편 각성 시련(짧고 쉬움) · vanguard = 본편 선봉.
  */
-export type Kit = 'axe' | 'bow' | 'spear' | 'sword' | 'dagger' | 'magic' | 'sling'
-export type Power = 'axe' | 'gale' | 'ember' | 'thunder' | 'echo' | 'tempo' | 'reach' | 'bow' | 'rain' | 'spear' | 'javelin' | 'sword' | 'wave' | 'dagger' | 'knife' | 'bell' | 'soul' | 'sling' | 'skip' | 'hone' | 'drill' | 'tough' | 'breath' | 'nimble' | 'stout' | 'capA' | 'capB' | 'capC' | 'tower' | 'fence' | 'jar' | 'totem' | 'sotdae' | 'beacon' | 'catapult' | 'well' | 'firepower' | 'reload'
+export type Kit = 'axe' | 'bow' | 'spear' | 'sword' | 'dagger' | 'magic' | 'sling' | 'whip'
+export type Power = 'axe' | 'gale' | 'ember' | 'thunder' | 'echo' | 'tempo' | 'reach' | 'bow' | 'rain' | 'spear' | 'javelin' | 'sword' | 'wave' | 'dagger' | 'knife' | 'bell' | 'soul' | 'sling' | 'skip' | 'lash' | 'lasso' | 'hone' | 'drill' | 'tough' | 'breath' | 'nimble' | 'stout' | 'capA' | 'capB' | 'capC' | 'tower' | 'fence' | 'jar' | 'totem' | 'sotdae' | 'beacon' | 'catapult' | 'well' | 'firepower' | 'reload'
 export const POWERS: Record<Power, { name: string; icon: string; max: number; color: string; desc: string }> = {
   axe: { name: '파쇄 도끼', icon: '斧', max: 10, color: '#f5c578', desc: '느리고 크게 앞을 내려찍어 맞은 적을 밀어내고 멈칫하게 함' },
   gale: { name: '질풍 도끼', icon: '風', max: 10, color: '#96e9cf', desc: '도끼를 높이 던져 앞에 떨어뜨림 · 박힌 도끼가 잠시 돌며 둘레를 벰' },
@@ -48,6 +48,8 @@ export const POWERS: Record<Power, { name: string; icon: string; max: number; co
   soul: { name: '혼불', icon: '魂', max: 10, color: '#9fd8ff', desc: '적을 쫓아가 터지는 푸른 혼불을 띄움' },
   sling: { name: '돌팔매', icon: '石', max: 10, color: '#dcc8a0', desc: '멀리 던진 돌이 떨어진 둘레를 치고 한 번 더 튐 · 너무 가까운 적엔 약함' },
   skip: { name: '연환석', icon: '跳', max: 10, color: '#9fd0e0', desc: '맞힌 적에게서 곁의 적으로 튀어 가며 여러 번 치는 돌' },
+  lash: { name: '말채찍', icon: '鞭', max: 10, color: '#d9b27a', desc: '곧게 뻗은 줄 끝으로 딱 침 · 줄 끝에 맞을수록 세고 몸쪽은 약함' },
+  lasso: { name: '올가미', icon: '索', max: 10, color: '#c8b48a', desc: '가장 센 적에게 고리를 던져 장수 앞으로 끌어당기고 느리게 함 · 정예·두목·거구는 느려지기만 함' },
   // ── 갈래 칸 (11-17 밤 · 이름·설명은 묶음마다 NODE_TEXT 가 덮는다) ──
   hone: { name: '벼리기', icon: '鍊', max: 5, color: '#f5b85a', desc: '주 무기 피해 증가' },
   drill: { name: '숙련', icon: '熟', max: 5, color: '#8fdcc4', desc: '보조 공격 피해와 공격 속도 증가' },
@@ -80,6 +82,7 @@ export const KITS: Record<Kit, { primary: Power; secondary: Power; title: string
   dagger: { primary: 'dagger', secondary: 'knife', title: '그림자를 걷는 단검', weapon: '단검', skill: '환영난무' },
   magic: { primary: 'bell', secondary: 'soul', title: '혼을 부르는 방울', weapon: '방울', skill: '천벌' },
   sling: { primary: 'sling', secondary: 'skip', title: '하늘을 가르는 돌팔매', weapon: '돌팔매', skill: '돌벼락' },
+  whip: { primary: 'lash', secondary: 'lasso', title: '휘감아 당기는 채찍', weapon: '채찍', skill: '휘몰이' },
 }
 // ── 기술 나무: 갈래 셋 × 네 층 (11-17 밤 · RAID-LINK §2 · D2 식 — 층은 그 갈래에 찍은 점으로 열린다 · HAEBI_TREE.tiers) ──
 /** a 주 무기 갈래 · b 보조 갈래 · c 버팀 갈래 · d 설치 갈래 (65-BUILD 판에만) */
@@ -110,6 +113,8 @@ export const NODE_TEXT: Record<Kit, { a: string; b: string } & Partial<Record<Po
     capA: { name: '신령 부르기', desc: '방울이 울릴 때마다 혼불 신령이 날아가 적을 쫓습니다' }, capB: { name: '분열혼불', desc: '혼불이 터지면 작은 혼불로 갈라져 또 쫓아갑니다' } },
   sling: { a: '팔매', b: '물수제비', hone: { name: '팔매 벼리기', desc: '돌팔매의 피해가 커집니다' }, drill: { name: '연환석 숙련', desc: '연환석이 더 세고 더 자주 날아갑니다' },
     capA: { name: '땅울림', desc: '돌이 떨어진 둘레의 적이 잠시 어질어질 멈춥니다' }, capB: { name: '연쇄격', desc: '연환석이 훨씬 많이 튀고 튈 때마다 세집니다' } },
+  whip: { a: '말채찍', b: '올가미', hone: { name: '가죽 꼬기', desc: '말채찍의 피해가 커집니다' }, drill: { name: '올가미 다루기', desc: '올가미가 더 세고 더 자주 날아갑니다' },
+    capA: { name: '이어치기', desc: '줄 끝에 맞은 적이 쓰러지면, 채찍이 곧장 곁의 적에게 한 번 더 딱 칩니다' }, capB: { name: '휘감아 끌기', desc: '올가미 줄에 걸린 곁의 적도 함께 끌려옵니다' } },
 }
 export const branchName = (kit: Kit, b: Branch) => b === 'c' ? '버팀' : b === 'd' ? '설치' : NODE_TEXT[kit][b]
 /** 칸 이름·설명 — 묶음마다 다른 칸은 NODE_TEXT · 되받아치기는 그 묶음 비기 이름으로 */
@@ -184,6 +189,8 @@ export const COMBOS = [
   { id: 'soulstorm', kit: 'magic', name: '혼불 회오리', needs: { soul: 3, reach: 2 }, desc: '혼불이 몸 둘레를 돌며 닿는 적을 태웁니다.' },
   { id: 'boulder', kit: 'sling', name: '거암돌진', needs: { sling: 4, skip: 3 }, desc: '큰 바위가 굴러가며 한 줄의 적을 모두 짓이기고 밀어냅니다.' },
   { id: 'daze', kit: 'sling', name: '진탕격', needs: { skip: 3, reach: 2 }, desc: '연환석에 맞은 적이 잠시 어질어질 멈춰 섭니다.' },
+  { id: 'drive', kit: 'whip', name: '당겨 치기', needs: { lash: 4, lasso: 3 }, desc: '올가미에 끌려온 적은 다음 한 번의 말채찍이 늘 끝 구간으로 칩니다.' },
+  { id: 'noose', kit: 'whip', name: '조임 고리', needs: { lasso: 3, reach: 2 }, desc: '올가미가 닿은 자리에 줄 고리가 3초 남아, 밟는 적이 느려지고 천천히 깎입니다.' },
 ] as const
 export type Combo = typeof COMBOS[number]['id']
 export const kitCombos = (kit: Kit) => COMBOS.filter(c => c.kit === null || c.kit === kit)
@@ -203,7 +210,7 @@ export interface Chest { id: number; eliteId: number; x: number; y: number; born
   /** 60-JACKPOT: boss = 중간 보스 상자(조합 하나를 고른다) · jackpot = 정예 상자가 터뜨린 것 */ boss?: boolean; jackpot?: ChestJackpot }
 /** 60-JACKPOT 정예 상자가 터뜨린 것 — count 단계(1·3·5·8) · picks 오른 칸(차례대로) · opened 그 가운데 새로 연 조합 · bonus 올릴 칸이 없어 엽전으로 바뀐 금 */
 export interface ChestJackpot { count: number; picks: Pick[]; opened: Combo[]; bonus: number }
-export interface Missile { x: number; y: number; vx: number; vy: number; life: number; kind: 'gale' | 'ember' | 'shard' | 'enemy' | 'arrow' | 'rain' | 'javelin' | 'wave' | 'barrage' | 'stone' | 'flame' | 'knife' | 'soul' | 'hurl' | 'pebble' | 'skip' | 'boulder' | 'tower' | 'signal' | 'lob'; damage: number; radius: number; hit: number[]; angle: number; tx: number; ty: number; gen?: number; source?: number; championShot?: boolean;
+export interface Missile { x: number; y: number; vx: number; vy: number; life: number; kind: 'gale' | 'ember' | 'shard' | 'enemy' | 'arrow' | 'rain' | 'javelin' | 'wave' | 'barrage' | 'stone' | 'flame' | 'knife' | 'soul' | 'hurl' | 'pebble' | 'skip' | 'boulder' | 'tower' | 'signal' | 'lob' | 'lash' | 'lasso'; damage: number; radius: number; hit: number[]; angle: number; tx: number; ty: number; gen?: number; source?: number; championShot?: boolean;
   /** 58-KITS: big = 큰 한 방(겨눔 화살 · 셋째 칼 반달 · 모두 꿰뚫음 · 벽력이 튐) · landed = 떨어져 박힌 질풍 도끼 · tick = 박힌 도끼가 다시 치기까지 · ember 의 source = 부적이 붙은 적 */
   big?: boolean; landed?: boolean; tick?: number }
 /** 58-KITS 땅에 남는 것 — crack 산 가르기(갈라진 땅) · wall 창벽(가로 창날 줄) · (x,y) 에서 (cos,sin) 쪽 · 남은 life · 다음 치기까지 tick */
@@ -218,11 +225,12 @@ export interface Effect { x: number; y: number; x2: number; y2: number; r: numbe
 /** 이어지는 비기(용오름 창의 솟음 · 환영난무의 순간 이동 · 돌벼락의 물결) — 남은 수 n · 다음까지 t 초 · 처음 자리 · 이미 벤 적 · k 힘 몫(되받아치기는 작게) */
 export interface UltState { n: number; t: number; x: number; y: number; used: number[]; k: number }
 export interface Drop { x: number; y: number; value: number; age: number }
-type Cool = 'counter' | 'axe' | 'gale' | 'ember' | 'thunder' | 'orbit' | 'bow' | 'rain' | 'volley' | 'spear' | 'javelin' | 'grove' | 'sword' | 'wave' | 'tempest' | 'dagger' | 'knife' | 'shadow' | 'bell' | 'soul' | 'rite' | 'storm' | 'sling' | 'skip' | 'boulder'
+type Cool = 'counter' | 'axe' | 'gale' | 'ember' | 'thunder' | 'orbit' | 'bow' | 'rain' | 'volley' | 'spear' | 'javelin' | 'grove' | 'sword' | 'wave' | 'tempest' | 'dagger' | 'knife' | 'shadow' | 'bell' | 'soul' | 'rite' | 'storm' | 'sling' | 'skip' | 'boulder' | 'lash' | 'lasso' | 'snare'
 export interface HaebiRun {
   mode: 'stage' | 'trial' | 'vanguard'; stage: StageId; bonus: Bonus; maxHp: number; revives: number; elites: number; kit: Kit; breaches: number; captains: number;
   seed: number; t: number; x: number; y: number; hp: number; face: number; moving: boolean;
   attack: number; hurt: number; inv: number; dash: number; dashCd: number; skillCd: number;
+  /** lash·lasso·snare 는 채찍 묶음(whip) 판에만 있다 — 다른 묶음 판은 이 키를 아예 만들지 않는다 (옛 판 상태가 글자 하나까지 같게) */
   cool: Record<Cool, number>; ult: UltState | null;
   /** combos = 연 조합 (고른 차례) · comboRanks = 그 단계 1~T.max (없으면 1) */
   ranks: Record<Power, number>; combos: Combo[]; comboRanks: Partial<Record<Combo, number>>; xp: number; level: number; offers: Pick[]; rerolls: number;
@@ -328,12 +336,12 @@ export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit
   // 65-BUILD 가 꺼진 판은 설치 칸을 ranks 에 넣지 않는다 (옛 판 상태·기록이 글자 하나까지 같게)
   const build = opts.buildRules === BUILD_RULES, build2 = build && opts.build2Rules === BUILD2_RULES, buildUp = build && (opts.buildUpRules === BUILDUP_RULES || opts.buildUpRules === '69-BUILDUP')
   // 67-BUILD2 가 꺼진 판은 새 다섯 칸을 ranks 에 넣지 않는다 (65-BUILD 판도 글자 하나까지 같게)
-  const ranks = Object.fromEntries((Object.keys(POWERS) as Power[]).filter(p => isBuildUp(p) ? buildUp : isBuildKind(p) ? build && (build2 || !isBuild2Kind(p)) : true).map(p => [p, 0])) as Record<Power, number>
+  const ranks = Object.fromEntries((Object.keys(POWERS) as Power[]).filter(p => p === 'lash' || p === 'lasso' ? kit === 'whip' : isBuildUp(p) ? buildUp : isBuildKind(p) ? build && (build2 || !isBuild2Kind(p)) : true).map(p => [p, 0])) as Record<Power, number>
   // 평타(주 무기)만 들고 시작한다 (11-19 형: 「시작은 평타만」) — 보조 공격은 첫 레벨업 카드(맨 앞)로 · 비기는 첫 레벨업에서 열린다 (ultOpen)
   ranks[k.primary] = T.startPrimary; ranks[k.secondary] = T.startSecondary
   const s: HaebiRun = { mode, stage, bonus, maxHp, revives: bonus.revive, elites: 0, kit, breaches: 0, captains: 0, seed, t: 0, x: C.width / 2, y: C.height / 2, hp: maxHp, face: 1, moving: false,
     attack: 0, hurt: 0, inv: 0, dash: 0, dashCd: 0, skillCd: 0, ult: null,
-    cool: { counter: 0, axe: 0, gale: 0, ember: 0, thunder: 0, orbit: 0, bow: 0, rain: 0, volley: 0, spear: 0, javelin: 0, grove: 0, sword: 0, wave: 0, tempest: 0, dagger: 0, knife: 0, shadow: 0, bell: 0, soul: 0, rite: 0, storm: 0, sling: 0, skip: 0, boulder: 0 },
+    cool: { counter: 0, axe: 0, gale: 0, ember: 0, thunder: 0, orbit: 0, bow: 0, rain: 0, volley: 0, spear: 0, javelin: 0, grove: 0, sword: 0, wave: 0, tempest: 0, dagger: 0, knife: 0, shadow: 0, bell: 0, soul: 0, rite: 0, storm: 0, sling: 0, skip: 0, boulder: 0, ...(kit === 'whip' ? { lash: 0, lasso: 0, snare: 0 } : {}) } as HaebiRun['cool'],
     ranks, combos: [], comboRanks: {}, counterDue: false, cast: null, trueUlt: false,
     gauge: opts.mastery ? A.need * A.mastery : 0, form: 'normal', formT: 0, wakes: 0, canAwaken: !!opts.awaken, ward: 0,
     xp: 0, level: 1, offers: [], rerolls: 3 + bonus.reroll, enemies: [], shots: [], fx: [], drops: [],
@@ -1548,7 +1556,8 @@ function ultimate(s: HaebiRun, mx: number, my: number, power: number, area: numb
     s.ult = { n: p.waves, t: 0, x: cx, y: cy, used: [], k }
   } else {
     s.ult = { n: s.kit === 'spear' ? U.spear.pulses : U.dagger.targets, t: 0, x: s.x, y: s.y, used: [], k }
-    if (s.kit === 'dagger') ultFx(s, true, s.x, s.y, 0)   // 그림자로 사라짐
+    // 채찍(whip)의 휘몰이는 카드 W4 에서 짓는다 — 그때까지는 환영난무 길을 빌려 판이 멈추지 않게 한다
+    if (s.kit === 'dagger' || s.kit === 'whip') ultFx(s, true, s.x, s.y, 0)   // 그림자로 사라짐
   }
 }
 /** 돌벼락의 돌이 고르게 퍼지는 각 (해바라기 씨 배열) */
@@ -1596,7 +1605,7 @@ function ultTick(s: HaebiRun, dt: number, power: number, area: number) {
     u.n--; u.t += s.kit === 'spear' ? U.spear.gap : s.kit === 'sling' ? U.sling.gap : U.dagger.gap
   }
   if (u.n > 0) return
-  if (s.kit === 'dagger') { ultFx(s, false, u.x, u.y, 0, 0, s.x, s.y); s.x = u.x; s.y = u.y }   // 처음 자리로 돌아옴
+  if (s.kit === 'dagger' || s.kit === 'whip') { ultFx(s, false, u.x, u.y, 0, 0, s.x, s.y); s.x = u.x; s.y = u.y }   // 처음 자리로 돌아옴
   if (s.phantom && s.kit === 'dagger') s.inv = Math.max(s.inv, U.phantom.landInv)   // 착지 무적
   s.ult = null
 }
