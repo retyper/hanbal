@@ -33,3 +33,14 @@ test('화면 좌표 → 판 좌표는 화면 가운데가 카메라 가운데', 
   const p = toField(cam, VP, VP.w / 2, VP.h / 2)
   assert.ok(Math.abs(p.x - cam.x) < 1e-9 && Math.abs(p.y - cam.y) < 1e-9)
 })
+
+test('frameBox: 점이 없으면 null · 있으면 모두 담고 배율은 맞춤 이상', async () => {
+  const { frameBox, wholeZoom } = await import('../../src/field/viewCamera.ts')
+  assert.equal(frameBox(VP, B, [], [], 10), null)
+  const f = frameBox(VP, B, [1000, 1200], [400, 500], 20)!
+  assert.ok(f.zoom >= fitZoom(VP, B) - 1e-9)
+  assert.equal(f.x, 1100)
+  assert.ok(wholeZoom(VP, B) <= fitZoom(VP, B))
+  const v = fieldView({ level: 0, zoom: f.zoom, x: f.x, y: f.y }, VP)
+  assert.ok(v.left <= 1000 && v.right >= 1200)
+})

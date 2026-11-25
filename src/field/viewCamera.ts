@@ -40,8 +40,8 @@ export function clampCenter(z: number, x: number, y: number, vp: Viewport, bound
 }
 
 /** (tx, ty) 를 따라간다 — dt 화면 초 · snap 이면 곧바로 */
-export function followCam(cam: Cam, tx: number, ty: number, dt: number, vp: Viewport, bounds: Readonly<Rect>, snap = false): void {
-  const zt = levelZoom(vp, bounds, cam.level)
+export function followCam(cam: Cam, tx: number, ty: number, dt: number, vp: Viewport, bounds: Readonly<Rect>, snap = false, zoomTarget?: number): void {
+  const zt = zoomTarget ?? levelZoom(vp, bounds, cam.level)
   cam.zoom = snap ? zt : zt + (cam.zoom - zt) * Math.exp(-P.field.camEase * dt)
   if (Math.abs(cam.zoom - zt) < 1e-3 * zt) cam.zoom = zt
   const want = clampCenter(cam.zoom, tx, ty, vp, bounds)
@@ -61,3 +61,19 @@ export const fieldView = (cam: Cam, vp: Viewport): Rect =>
 /** 화면 안(여유 pad 판 px)에 드는가 */
 export const inView = (r: Readonly<Rect>, x: number, y: number, pad: number): boolean =>
   x >= r.left - pad && x <= r.right + pad && y >= r.top - pad && y <= r.bottom + pad
+
+/** 판 전체가 한 화면에 드는 배율 (위아래·좌우가 남으면 가운데에 놓인다) */
+export const wholeZoom = (vp: Viewport, bounds: Readonly<Rect>): number => Math.min(vp.w / (bounds.right - bounds.left), vp.h / (bounds.bottom - bounds.top))
+
+/**
+ * 점들(판 px)을 모두 담는 가운데와 배율. 배율은 맞춤 배율 이상 · 맞춤 × zoomNear 이하로 눌린다. 점이 없으면 null.
+ * margin 은 둘레 여유(판 px).
+ */
+export function frameBox(vp: Viewport, bounds: Readonly<Rect>, xs: readonly number[], ys: readonly number[], margin: number): { x: number; y: number; zoom: number } | null {
+  if (xs.length === 0) return null
+  let x0 = xs[0]!, x1 = x0, y0 = ys[0]!, y1 = y0
+  for (let i = 1; i < xs.length; i++) { const x = xs[i]!, y = ys[i]!; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y }
+  const fit = fitZoom(vp, bounds), want = Math.min(vp.w / (x1 - x0 + 2 * margin), vp.h / (y1 - y0 + 2 * margin))
+  const zoom = Math.min(fit * (levelMuls()[levelMuls().length - 1] ?? 1), Math.max(fit, want))
+  return { x: (x0 + x1) / 2, y: (y0 + y1) / 2, zoom }
+}
