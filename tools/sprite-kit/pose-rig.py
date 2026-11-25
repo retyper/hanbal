@@ -206,7 +206,7 @@ WHIP_LEN = 84   # 채찍 길이(게임 화소 · 손잡이 끝에서 끝까지) 
 WHIPC = (150, 98, 60)
 
 
-def whip_curve(d, hand, segs):
+def whip_curve(d, hand, segs, loop=False):
     """채찍: 갈색 짧은 손잡이 + 가는 한 줄 곡선(끝에 잿빛 점). segs = [(방향 도, 길이)] — 0도 = 앞(오른쪽) · 90도 = 위. 손에서 첫 방향으로 이어진다."""
     x, y = hand
     pts = [(x, y)]
@@ -228,6 +228,12 @@ def whip_curve(d, hand, segs):
     d.line(pts, fill=WHIPC, width=int(1.7 * Z), joint='curve')
     e = pts[-1]
     d.ellipse([e[0] - 1.8 * Z, e[1] - 1.8 * Z, e[0] + 1.8 * Z, e[1] + 1.8 * Z], fill=(170, 170, 176), outline=LINE, width=2)
+    if loop:   # 올가미: 줄 끝에 둥근 고리(지름 22 · 줄이 가던 방향 앞쪽에 열린 채) — 밧줄 장수(11-25)
+        r = math.radians(segs[-1][0])
+        c = (e[0] + math.cos(r) * 11 * Z, e[1] - math.sin(r) * 11 * Z)
+        box = [c[0] - 11 * Z, c[1] - 11 * Z, c[0] + 11 * Z, c[1] + 11 * Z]
+        d.ellipse(box, outline=LINE, width=int(1.7 * Z) + 6)
+        d.ellipse(box, outline=WHIPC, width=int(1.7 * Z))
 
 
 def whip_coil(d, hand):
@@ -378,7 +384,7 @@ def figure(phase, swing_near, pose=None):
     if PROP['kind'] == 'whip':   # 가까운 손이 채찍 손잡이를 쥔다: 포즈에 whip(방향 도 · 길이 목록)이 있으면 곡선 · 없으면 감아 쥠
         wp = (pose or {}).get('whip')
         if wp and wp != 'coil':
-            whip_curve(d, hand_n, wp)
+            whip_curve(d, hand_n, wp, **({'loop': True} if pose.get('loop') else {}))
         else:
             whip_coil(d, hand_n)
         d.ellipse([hand_n[0] - HAND * Z, hand_n[1] - HAND * Z, hand_n[0] + HAND * Z, hand_n[1] + HAND * Z], fill=NEAR, outline=LINE, width=3)
@@ -726,6 +732,38 @@ IK_QUIRKS['hit_whip'] = [
     dict(_ik((-4, -54), (16, 30), (22, 44), bend=12, near_foot=(-30, 0), far_foot=(18, 0)), prop='whip', whip=[(-80, 20), (-95, 20), (-120, 20)]),
     dict(_ik((0, -12), (14, 52), (16, 74), bend=8, near_foot=(-24, 0), far_foot=(20, 0)), prop='whip', whip=[(-60, 28), (-80, 28), (-100, 28)]),
 ]
+
+
+# 밧줄 변형(11-25 · 말갈기 시제품에서 잰 값: Codex 가 그린 채찍은 서기 고리와 같은 약 130px 였다 — 인형 84 는 짧았다). 기존 whip 인형은 그대로 두고 새 이름으로 더한다.
+#   whip2 = 길이 130 의 줄(고리 없음 · 우가 누리) · lasso = 길이 112 + 끝에 올가미 고리(지름 22 · 비라 · 탐라 오름비). 길게 늘어지는 칸은 칸 밖으로 안 나가게 줄이 아래로 처지게 다시 짠 곡선이다.
+_WS2 = [   # whip2 곡선(칸마다 · 인형 칸 240 안에 들어가게 안내 길이는 약 95~100 — 모양과 방향만 알려 주고 줄 전체 길이는 서기 그림의 고리를 펴 준 길이로 그리게 한다 · 말갈기에서 Codex 는 안내(84)보다 길게 130 으로 그렸다)
+    [(210, 26), (235, 26), (250, 22)],     # a1 풀어 뒤 아래: 줄이 바닥을 끈다
+    [(130, 30), (170, 34), (245, 36)],     # a2 팔 머리 위 뒤: 등 뒤로 늘어짐
+    [(100, 28), (150, 34), (250, 38)],     # a3 힘 모음
+    [(135, 30), (170, 34), (235, 34)],     # a4 머리 위를 넘는 큰 호(줄이 따라온다)
+    [(4, 32), (0, 30), (-5, 30)],          # b1 타격: 곧게
+    [(8, 32), (-6, 30), (-30, 30)],        # b2 되감기 시작
+    [(40, 28), (75, 34), (150, 38)],       # b3 당겨 거둠
+    'coil',
+]
+
+
+def _variant(src, curves, k, loop):
+    out = []
+    for ps, cv in zip(IK_ATTACKS[src], curves):
+        q = dict(ps)
+        q['whip'] = cv if cv == 'coil' else [(a_, l_ * k) for a_, l_ in cv]
+        if loop and cv != 'coil':
+            q['loop'] = True
+        out.append(q)
+    return out
+
+
+for _n, _k, _lp, _qk in (("whip2", 1.0, False, 0.6), ("lasso", 0.78, True, 0.35)):
+    IK_ATTACKS[_n] = _variant('whip', _WS2, _k, _lp)
+    IK_PROP[_n] = 'whip'
+    IK_QUIRKS['flick_' + _n] = [dict(q, **({} if q.get('whip') == 'coil' else dict(whip=[(a_, l_ * _qk) for a_, l_ in q['whip']], **({'loop': True} if _lp else {})))) for q in IK_QUIRKS['flick']]
+    IK_QUIRKS['hit_' + _n] = [dict(q, **({} if q.get('whip') == 'coil' else dict(whip=[(a_, l_ * _qk) for a_, l_ in q['whip']], **({'loop': True} if _lp else {})))) for q in IK_QUIRKS['hit_whip']]
 
 
 def ik_attack_sheets(kind):
