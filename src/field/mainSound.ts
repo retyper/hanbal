@@ -71,7 +71,7 @@ function recentEvents(s: FieldState): SoundEngineEvent[] {
 }
 
 /** 판 읽기 (FieldState → 소리 모델이 읽는 모양) — 읽기만 한다. edge 는 readField(state).edge */
-export function soundFrameOf(s: FieldState, edge: readonly [number, number], morale?: readonly [number, number]): SoundFrame {
+export function soundFrameOf(s: FieldState, edge: readonly [number, number], morale?: readonly [number, number], blade?: readonly [number, number]): SoundFrame {
   const h = s.heroes.find(e => e.side === 0), foe = s.heroes.find(e => e.side === 1)
   return {
     tick: s.tick,
@@ -80,7 +80,7 @@ export function soundFrameOf(s: FieldState, edge: readonly [number, number], mor
     edge, end: s.end, winner: s.winner,
     events: recentEvents(s),
     hero: h === undefined ? undefined : { grit: h.grit, gritN: h.gritN, stun: h.stun, foeStun: foe?.stun ?? 0 },
-    morale,
+    morale, blade,
   }
 }
 

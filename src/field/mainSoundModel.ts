@@ -29,14 +29,14 @@ export interface SoundEngineEvent { tick: number; kind: string; side: number; id
 export interface SoundPiece { id: number; kind: 'stake' | 'gate'; hp: number }
 /** 한 프레임의 읽기 — 좌표는 sim 단위(1칸 = P.field.unit) */
 /** hero = 우리 장수의 투지 (0~1000) · 투지로 한 번 더 쓴 횟수 · 두 장수의 쓰러진 틱(stun) — 투지가 차는 순간·쓰는 순간 · 장수가 쓰러지는 순간에 소리를 낸다 (없으면 안 낸다) */
-export interface SoundFrame { tick: number; squads: readonly SoundSquad[]; pieces: readonly SoundPiece[]; edge: readonly [number, number]; end: string | null; winner: number; events?: readonly SoundEngineEvent[]; hero?: { grit: number; gritN: number; stun: number; foeStun: number } | undefined; morale?: readonly [number, number] | undefined }
+export interface SoundFrame { tick: number; squads: readonly SoundSquad[]; pieces: readonly SoundPiece[]; edge: readonly [number, number]; end: string | null; winner: number; events?: readonly SoundEngineEvent[]; hero?: { grit: number; gritN: number; stun: number; foeStun: number } | undefined; morale?: readonly [number, number] | undefined; blade?: readonly [number, number] | undefined }
 /** 카메라 — x, y 는 화면 가운데의 판 좌표(px) · zoom 은 화면 px / 판 px · zoomRel 은 맞춤 배율에 대한 몫(1 이상) */
 export interface SoundCam { x: number; y: number; zoom: number; vpW: number; vpH: number; zoomRel: number }
 
 export type FlagKind = 'charge' | 'hold' | 'open' | 'horse' | 'move'
 /** u, v 가 없으면 화면 소리(깃발·끝)라 가운데에서 늘 같은 크기로 난다 */
 export interface SoundEvent {
-  kind: 'impact' | 'impactGood' | 'clash' | 'volley' | 'arrowHit' | 'gateBreak' | 'rout' | 'heroDash' | 'heroSkill' | 'artHit' | 'sideBreak' | 'stand' | 'regroup' | 'heroDown' | 'gritFull' | 'gritUse' | 'foeNear' | 'flag' | 'end'
+  kind: 'impact' | 'impactGood' | 'clash' | 'volley' | 'arrowHit' | 'gateBreak' | 'rout' | 'heroDash' | 'heroSkill' | 'artHit' | 'sideBreak' | 'stand' | 'regroup' | 'heroDown' | 'gritFull' | 'gritUse' | 'foeNear' | 'bladeWarn' | 'flag' | 'end'
   u?: number; v?: number
   /** 부딪힘 세기 0~1000 · clash 에서는 맞붙은 대 수 */
   power?: number
@@ -144,6 +144,12 @@ export function eventsFromDiff(prev: SoundFrame | null, cur: SoundFrame): SoundE
   if (prev.morale !== undefined && cur.morale !== undefined) {
     const thr = P.realm.tacBreakMorale * 1000, near = (m: number): boolean => m >= thr && m < thr + F().standAbovePermille
     if (near(cur.morale[1]) && !near(prev.morale[1])) ev.push({ kind: 'foeNear' })
+  }
+  // 칼 든 대가 다 달아났다 (blade = 편마다 무너지기까지 남은 초 · -1 안 뜸): 우리 편은 bladeDrumSec 아래로 올 때 · 적 편은 칼 그림이 뜨는 순간 북 한 번
+  if (prev.blade !== undefined && cur.blade !== undefined) {
+    const d = F().bladeDrumSec
+    if (cur.blade[0] >= 0 && cur.blade[0] < d && (prev.blade[0] < 0 || prev.blade[0] >= d)) ev.push({ kind: 'bladeWarn' })
+    if (cur.blade[1] >= 0 && prev.blade[1] < 0) ev.push({ kind: 'foeNear' })
   }
   // 맞붙은 동안의 쇳소리 — 맞붙은 대마다 주기 틱에 한 번 (대 수가 많으면 더 자주 · 소리 쪽 간격이 상한)
   const first = Math.max(prev.tick + 1, cur.tick - F().maxCatchUpTicks + 1)
@@ -290,6 +296,7 @@ export function stepSound(st: SoundState, frame: SoundFrame, cam: SoundCam, even
       case 'gritFull': add('war_drums', 0.7, undefined, undefined); break // 투지가 찼다: 북 한 번 (단추가 금빛으로 부를 때)
       case 'gritUse': add('war_cry', 0.8, undefined, undefined); break // 투지로 한 번 더: 비기 소리 위에 함성
       case 'foeNear': add('war_drums', 0.8, undefined, undefined); break // 적이 무너지기 직전: 북 한 번 (기회)
+      case 'bladeWarn': add('war_drums', 0.9, undefined, undefined); break // 우리 칼 든 대가 다 달아나 무너지기 직전: 북 한 번
       case 'heroDash': add('hero_dash', 0.5, e.u, e.v); break
       case 'heroSkill': add('hero_art', 0.7, e.u, e.v); break
       case 'artHit': add('impact', 0.7, e.u, e.v); break

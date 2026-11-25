@@ -20,7 +20,7 @@ import { mountFirst, mountHelp, mountSteps, type First, type Help, type Steps } 
 import { drawMarks, type Band, type Box, type Mark, type MarkShape, type Ring } from './field/mainFlagMarks.ts'
 import { OP_AUTO, OP_MOVE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_VOLLEY, type FieldInput, type InputGroup } from './field/types.ts'
 import { serialize } from './field/rec.ts'
-import { mountHud, type EndStats, type EndWhy, type Hud } from './field/mainHud.ts'
+import { bladeLeftOf, mountHud, type EndStats, type EndWhy, type Hud } from './field/mainHud.ts'
 import { createFieldSound, soundCamOf, soundFrameOf } from './field/mainSound.ts'
 import type { FlagKind } from './field/mainSoundModel.ts'
 import { advance } from './field/viewLoop.ts'
@@ -897,7 +897,7 @@ function frame(now: number): void {
   // 틱이 바뀌었거나 깃발을 새로 꽂았을 때 한 번 (시작 화면에서 꽂은 깃발 소리도 바로 나게)
   if (!paused && !blocked && (state.tick !== soundTick || markEpoch !== soundEpoch)) {
     soundTick = state.tick; soundEpoch = markEpoch
-    fsnd.frame(soundFrameOf(state, cur.edge, cur.morale), soundCamOf(cam, vp, bounds()), null, now)
+    fsnd.frame(soundFrameOf(state, cur.edge, cur.morale, [bladeLeftOf(cur, 0), bladeLeftOf(cur, 1)]), soundCamOf(cam, vp, bounds()), null, now)
   }
   if (ui.phase === 'play' && !paused && !helpOpen) playMs += Math.min(dtMs, 100)
   if (!blocked && ui.phase === 'play' && introLeft > 0) introLeft = Math.max(0, introLeft - Math.min(dtMs, 100))

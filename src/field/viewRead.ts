@@ -41,6 +41,8 @@ export interface VModel {
   edge: [number, number]
   /** 편마다 편 사기 — 처음 사기에 견준 천분율 (sim 의 sideMorale 그대로 · 끝 판정과 같은 셈 · 이것이 P.realm.tacBreakMorale 아래로 가면 그 편이 무너진다) */
   morale: [number, number]
+  /** 편마다 칼 든 대(앞줄·기병)가 마지막으로 서 있던 틱 — 지금 틱과의 차가 P.field.breakNoBladesSec 에 닿으면 그 편이 무너진다 */
+  bladeTick: [number, number]
   /** 방금 돈 틱에 누가 누구를 깎았나 (loss 사건 · how 0 칼 1 화살 2 장수 3 비기 4 부딪힘) · 기병이 도는 길 · 무리가 마지막으로 못 받은 명령의 까닭과 틱 */
   loss: VLoss[]
   events: VEvent[]
@@ -106,6 +108,7 @@ export function readField(s: FieldState): VModel {
     used,
     edge: [edgeOf(s, 0), edgeOf(s, 1)],
     morale: [sideMorale(s, 0), sideMorale(s, 1)],
+    bladeTick: [s.bladeTick[0], s.bladeTick[1]],
     face: s.map.camps[0].face,
     mapUUnits: s.map.u * unit, mapVUnits: s.map.w * unit,
     tick: s.tick,

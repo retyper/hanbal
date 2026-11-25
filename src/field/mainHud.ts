@@ -28,6 +28,15 @@ export function barOf(morale: number): number {
   const thr = P.realm.tacBreakMorale
   return Math.round(Math.max(0, Math.min(1, (morale / 1000 - thr) / (1 - thr))) * 1000)
 }
+/**
+ * 칼 든 대(앞줄·기병)가 다 달아난 편이 무너지기까지 남은 초 — 다 달아난 지 bladeShowSec 이 안 됐거나 · 엔진 규칙이 꺼졌거나 · 이미 무너졌으면 -1.
+ * 엔진(judge)과 같은 셈: 지금 틱 − bladeTick 이 breakNoBladesSec 에 닿으면 그 편이 무너진다
+ */
+export function bladeLeftOf(m: VModel, side: 0 | 1): number {
+  const F = P.field, gap = m.tick - m.bladeTick[side]
+  if (F.breakNoBladesSec <= 0 || m.end !== null || m.breakTick[side] >= 0 || gap < F.bladeShowSec * F.hz) return -1
+  return Math.max(0, Math.ceil((F.breakNoBladesSec * F.hz - gap) / F.hz))
+}
 /** 끝 상자의 숫자: 쓰러뜨린 적 · 잃은 우리 병사 · 먹힌 옆치기 · 비기로 깎은 사기 · 버팀 · 다시 선 대 · 투지 발동 (모두 지난 일) */
 export interface EndStats { killed: number; lost: number; flank: number; art: number; stand?: number; regroup?: number; grit?: number }
 /** by = 까닭별 몫 · won = 이겼나 · morale = 판이 갈린 순간(먼저 무너진 틱)의 편 사기 둘(천분율) */
@@ -66,6 +75,11 @@ const CSS = `
 #fd-edge .fd-side i.gh{background:#fff;opacity:.75;transition:width .35s ease-in}
 #fd-edge .fd-s0 i.fill{background:#2f8cff}
 #fd-edge .fd-s1 i.fill{background:#c43e30}
+#fd-edge .fd-bl{position:absolute;left:50%;top:0;bottom:0;transform:translateX(-50%);display:flex;align-items:center;gap:3px;padding:0 6px;background:#000c;border-radius:8px;font-size:13px;font-weight:800;line-height:1;color:#fff;z-index:1}
+#fd-edge .fd-s0 .fd-bl{color:#ff8a7a}
+#fd-edge .fd-bl[hidden]{display:none}
+#fd-edge .fd-bl svg{width:13px;height:13px;filter:drop-shadow(0 0 1px #000)}
+#fd-edge .fd-side.blade{animation:fd-danger .5s ease-in-out infinite;border-color:#ff5a4a}
 #fd-edge .fd-side.danger{animation:fd-danger .6s ease-in-out infinite;border-color:#ff5a4a}
 @keyframes fd-danger{50%{box-shadow:0 0 0 3px #ff3b2b,0 0 10px #ff3b2b}}
 #fd-edge .fd-side.near{animation:fd-near .42s linear}
@@ -100,6 +114,9 @@ const CSS = `
 #fd-end button{min-width:180px;min-height:56px;font-size:20px;font-weight:700;border-color:#ffd27a;color:#1a1305;background:#ffd27a}
 `
 
+/** 작은 칼 (곧은 날 · 코등이 · 자루) — 칼 든 대가 없다는 표시 */
+const SWORD = '<svg viewBox="0 0 16 16"><path d="M8 1 L9.2 3 V10 H6.8 V3 Z" fill="#f3ecd8" stroke="#1a1208" stroke-width=".8"/><rect x="4.5" y="10" width="7" height="1.6" fill="#c9a24a" stroke="#1a1208" stroke-width=".6"/><rect x="7.2" y="11.6" width="1.6" height="3.2" fill="#6b4a2a" stroke="#1a1208" stroke-width=".5"/></svg>'
+
 export function mountHud(root: HTMLElement, h: HudHandlers, base = ''): Hud {
   const style = document.createElement('style')
   style.textContent = CSS
@@ -110,7 +127,7 @@ export function mountHud(root: HTMLElement, h: HudHandlers, base = ''): Hud {
   const edge = document.createElement('div')
   edge.id = 'fd-edge'
   // 막대 둘: 우리는 왼쪽 끝에서 · 적은 오른쪽 끝에서 줄어든다 (잔상 gh 가 채움 fill 뒤에 있다) · 바깥 끝에 편 사기 %
-  edge.innerHTML = `<b class="fd-p0"></b><span class="fd-side fd-s0"><i class="gh"></i><i class="fill"></i></span><span class="fd-vs"></span><span class="fd-side fd-s1"><i class="gh"></i><i class="fill"></i></span><b class="fd-p1"></b>`
+  edge.innerHTML = `<b class="fd-p0"></b><span class="fd-side fd-s0"><i class="gh"></i><i class="fill"></i><b class="fd-bl" hidden>${SWORD}<span></span></b></span><span class="fd-vs"></span><span class="fd-side fd-s1"><i class="gh"></i><i class="fill"></i><b class="fd-bl" hidden>${SWORD}<span></span></b></span><b class="fd-p1"></b>`
   const end = document.createElement('div')
   end.id = 'fd-end'; end.hidden = true
   end.innerHTML = `<div><h2 id="fd-endtext"></h2><p class="l1" id="fd-l1"></p><p class="l2" id="fd-l2"></p><div class="st" id="fd-endstats"></div><p class="cz" id="fd-why"></p><button id="fd-again2" type="button"></button></div>`
@@ -122,6 +139,9 @@ export function mountHud(root: HTMLElement, h: HudHandlers, base = ''): Hud {
   const fills = [q('.fd-s0 .fill'), q('.fd-s1 .fill')] as const
   const ghosts = [q('.fd-s0 .gh'), q('.fd-s1 .gh')] as const
   const pcts = [q('.fd-p0'), q('.fd-p1')] as const
+  /** 칼 그림 (칼 든 대가 다 달아난 편 막대 위 · 무너지기까지 남은 초) · 직전 남은 초(-1 안 뜸) */
+  const blades = [q('.fd-s0 .fd-bl'), q('.fd-s1 .fd-bl')] as const
+  const bladeLeft = [-1, -1]
   const endText = $('fd-endtext'), endL1 = $('fd-l1'), endL2 = $('fd-l2'), endWhy = $('fd-why'), endStats = $('fd-endstats')
   zoom.hidden = true // 시제품: 확대 단추는 뺀다 (51 §2) · 장수 따라가기 한 가지 배율
   again.textContent = again2.textContent = t('field.again')
@@ -202,6 +222,16 @@ export function mountHud(root: HTMLElement, h: HudHandlers, base = ''): Hud {
         if (side === 0) bars[0].classList.toggle('danger', near)
         else if (near && !wasNear[1]) restart(bars[1], 'near')
         wasNear[side] = near
+      }
+      // 칼 든 대가 다 달아났다: 막대 위에 칼 그림과 남은 초 · 우리 편은 붉게 뛰고 · 적 편은 뜨는 순간과 bladeDrumSec 아래로 올 때 희게 번쩍 (다시 서면 걷힌다)
+      for (const side of [0, 1] as const) {
+        const left = bladeLeftOf(m, side), was = bladeLeft[side]!
+        if (left === was) continue
+        bladeLeft[side] = left
+        blades[side].hidden = left < 0
+        ;(blades[side].lastElementChild as HTMLElement).textContent = left < 0 ? '' : String(left)
+        if (side === 0) bars[0].classList.toggle('blade', left >= 0)
+        else if (left >= 0 && (was < 0 || (left < P.field.bladeDrumSec && was >= P.field.bladeDrumSec))) restart(bars[1], 'near')
       }
       // 편이 무너지면 그 편 막대에 조각 여럿이 차례로 떨어진다
       if (fx !== undefined && fx.breakSide >= 0 && breakSeen !== fx.breakSide) {
