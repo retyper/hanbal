@@ -8,7 +8,10 @@
 import { P } from '../tune/params.ts'
 import { fieldView, inView, type Cam, type Viewport } from './viewCamera.ts'
 import { ATTACK0, ATTACK_N, DOWN, HIT, STAND0, STAND_N, WALK0, WALK_N, heroStrip, pieceImg, sheetOf, stripFor, type Art, type Strip } from './viewArt.ts'
-import { dotDu, dotDv, dotPh, hash2, sideDotCounts } from './viewDots.ts'
+import { dotPh, hash2, sideDotCounts } from './viewDots.ts'
+import { dotDied, dotsOf, offU, offV, peekDots, resetForm, rowCount, rowOfDot, stepDots } from './viewForm.ts'
+import { FORM_HOLD, moraleOf } from './viewFxRead.ts'
+import { addStain, computePairs, coolPress, dotMelee, drawParticles, drawStains, flinchOf, isFront, maxFwdOf, minFwdOf, mo, noteLoss, partnerOf, resetMelee, spawn, swingChance, swings } from './viewMelee.ts'
 import { drawTerrain } from './viewTerrain.ts'
 import { TEAM_RGB } from './viewTint.ts'
 import type { VLoss, VModel, VSquad } from './viewRead.ts'
@@ -38,13 +41,13 @@ function nextItem(): Item {
 }
 
 /** born 이 앞날이면 아직 서 있다가 그때 맞음 칸 → 쓰러짐 칸으로 간다 (치는 쪽이 맞히는 순간에 맞춘다) · ph 는 서 있는 동안의 걸음 몫 */
-interface Corpse { x: number; y: number; side: 0 | 1; flip: boolean; strip: Strip | null; h: number; born: number; ph: number }
+interface Corpse { x: number; y: number; side: 0 | 1; flip: boolean; strip: Strip | null; h: number; born: number; ph: number; stained: boolean }
 /** 대마다 점 자리(칸) 수와 쓰러진 자리 — 줄어들 점은 아무 데서나가 아니라 적과 맞닿은 쪽에서 고른다 */
 interface Slots { N: number; dead: Set<number> }
 /** 활이 쏜 한 대 — 맞는 점이 쓰러지는 순간(t0 + 나는 시간)에 닿는다 */
 interface Shot { x0: number; y0: number; x1: number; y1: number; t0: number; side: 0 | 1 }
 /** 그리는 쪽 기억 — 점 수가 줄면 쓰러진 병사를 남기고 대의 마지막 방향을 기억한다 */
-const fx = { counts: new Map<number, number>(), face: new Map<number, 1 | -1>(), corpses: [] as Corpse[], tick: -1, slots: new Map<number, Slots>(), lastHit: new Map<number, { src: number; how: number }>(), shots: [] as Shot[], nowMs: 0, attackers: 0 }
+const fx = { counts: new Map<number, number>(), face: new Map<number, 1 | -1>(), corpses: [] as Corpse[], tick: -1, slots: new Map<number, Slots>(), lastHit: new Map<number, { src: number; how: number }>(), shots: [] as Shot[], nowMs: 0, attackers: 0, routeAt: [-1, -1, -1, -1, -1, -1] as number[], dustAt: new Map<number, number>(), sparkAt: new Map<number, number>() }
 /** 시험용 읽기: 지금 쓰러진 점 수 · 쓰러지기를 기다리는(앞날 born) 점 수 · 이번 장에서 치는 모습으로 그린 점 수 */
 export function fxStats(): { dead: number; pending: number; attackers: number; alive: number } {
   let dead = 0, alive = 0
@@ -52,7 +55,7 @@ export function fxStats(): { dead: number; pending: number; attackers: number; a
   return { dead, alive, pending: fx.corpses.filter(c => c.born > fx.nowMs).length, attackers: fx.attackers }
 }
 /** 새 판이 시작되면 부른다 */
-export function resetFx(): void { fx.counts.clear(); fx.face.clear(); fx.corpses.length = 0; fx.tick = -1; fx.slots.clear(); fx.lastHit.clear(); fx.shots.length = 0 }
+export function resetFx(): void { fx.counts.clear(); fx.face.clear(); fx.corpses.length = 0; fx.tick = -1; fx.slots.clear(); fx.lastHit.clear(); fx.shots.length = 0; fx.routeAt.fill(-1); fx.dustAt.clear(); fx.sparkAt.clear(); resetForm(); resetMelee() }
 
 const mix = (a: number, b: number, t: number): number => a + (b - a) * t
 /** sim 단위 → 판 px */
@@ -96,19 +99,22 @@ function strikeDelay(foe: VSquad, vx: number, vy: number, how: number, nowMs: nu
   const n = sl === undefined ? 0 : sl.N
   for (let k = 0; k < n; k++) {
     if (sl!.dead.has(k)) continue
-    if (how !== 1 && dotDu(foe.id, k) * dir < 0) continue
-    const dx = fx0 + dotDu(foe.id, k) * cp - vx, dy = fy0 + dotDv(foe.id, k) * cp - vy, d = dx * dx + dy * dy
+    if (how !== 1 && offU(foe.id, k) * dir < 0) continue
+    const dx = fx0 + offU(foe.id, k) * cp - vx, dy = fy0 + offV(foe.id, k) * cp - vy, d = dx * dx + dy * dy
     if (d < bd) { bd = d; bk = k }
   }
   if (bk < 0) return 0
   if (how === 1) {
-    fx.shots.push({ x0: fx0 + dotDu(foe.id, bk) * cp, y0: fy0 + dotDv(foe.id, bk) * cp - F.soldierCells * cp * 0.5, x1: vx, y1: vy - F.soldierCells * cp * 0.4, t0: nowMs, side: foe.side })
+    fx.shots.push({ x0: fx0 + offU(foe.id, bk) * cp, y0: fy0 + offV(foe.id, bk) * cp - F.soldierCells * cp * 0.5, x1: vx, y1: vy - F.soldierCells * cp * 0.4, t0: nowMs, side: foe.side })
     return F.arrowFlightMs
   }
   if (how !== 0 && how !== 4) return 0
-  const x0 = nowMs / F.animAttackMs + dotPh(foe.id, bk) * ATTACK_N, fl = Math.floor(x0)
-  const wait = (((F.attackHitFrame - fl) % ATTACK_N) + ATTACK_N) % ATTACK_N
-  return wait === 0 ? 0 : (fl + wait - x0) * F.animAttackMs
+  // 치는 점이 칼을 내는 휘두름 칸의 맞히는 칸에 맞춘다 (칼을 안 내는 칸은 건너뛴다)
+  const x0 = nowMs / F.animAttackMs + dotPh(foe.id, bk) * ATTACK_N, chance = swingChance(foe.id)
+  let cyc = Math.floor(x0 / ATTACK_N)
+  if (cyc * ATTACK_N + F.attackHitFrame + 1 <= x0) cyc++
+  for (let i = 0; i < 6 && !swings(foe.id, bk, cyc, chance); i++) cyc++
+  return Math.max(0, (cyc * ATTACK_N + F.attackHitFrame - x0) * F.animAttackMs)
 }
 
 /** 점 수를 판의 사람 수에 맞춘다: 늘면 쓰러진 자리부터 살리고 · 줄면 적과 맞닿은 쪽 점이 쓰러진다 (쓰러짐은 strikeDelay 만큼 뒤) */
@@ -126,12 +132,14 @@ function settleDots(q: VSquad, n: number, cur: VModel, nowMs: number, qu: number
   const cp = P.field.cellPx
   for (; alive > n; alive--) {
     let bk = -1, bv = -Infinity
-    for (let k = 0; k < sl.N; k++) { if (sl.dead.has(k)) continue; const v = dotDu(q.id, k) * dirU; if (v > bv) { bv = v; bk = k } }
+    for (let k = 0; k < sl.N; k++) { if (sl.dead.has(k)) continue; const v = offU(q.id, k) * dirU; if (v > bv) { bv = v; bk = k } }
     if (bk < 0) break
     sl.dead.add(bk)
-    const x = unitsToPx(qu) + dotDu(q.id, bk) * cp, y = Math.min(worldH, Math.max(0, unitsToPx(qv) + dotDv(q.id, bk) * cp))
+    const x = unitsToPx(qu) + offU(q.id, bk) * cp, y = Math.min(worldH, Math.max(0, unitsToPx(qv) + offV(q.id, bk) * cp))
+    const pd = peekDots(q.id)
+    if (pd !== undefined) dotDied(pd, bk, nowMs)
     const delay = hit !== undefined && foe !== undefined && foe.men > 0 ? strikeDelay(foe, x, y, hit.how, nowMs) : 0
-    fx.corpses.push({ x, y, side: q.side, flip, strip, h: baseH, born: nowMs + delay, ph: dotPh(q.id, bk) })
+    fx.corpses.push({ x, y, side: q.side, flip, strip, h: baseH, born: nowMs + delay, ph: dotPh(q.id, bk), stained: false })
   }
   return sl
 }
@@ -185,10 +193,10 @@ function drawBanners(ctx: CanvasRenderingContext2D, at: readonly number[], zoom:
   ctx.strokeStyle = ARROW_COLOR
   ctx.lineWidth = Math.max(1, 1.4 / zoom)
   const geom = (i: number): { x: number; y: number; sz: number; top: number; hero: boolean } => {
-    const hero = at[i + 3]! > 0
-    const sz = Math.max(baseH * (hero ? 0.4 : 0.3), (hero ? F.heroFlagMinPx : F.flagMinPx) / zoom)
+    const kd = at[i + 3]!, hero = kd > 0, grp = kd === 3
+    const sz = Math.max(baseH * (grp ? 0.34 : hero ? 0.4 : 0.3), (hero ? F.heroFlagMinPx : F.flagMinPx) / zoom)
     const y = at[i + 1]!
-    return { x: at[i]!, y, sz, top: y - baseH * (hero ? 1.9 : 1.5) - sz * 1.2, hero }
+    return { x: at[i]!, y, sz, top: y - baseH * (grp ? 1.7 : hero ? 1.9 : 1.5) - sz * 1.2, hero }
   }
   // 장대: 한 경로
   ctx.beginPath()
@@ -212,6 +220,42 @@ function drawBanners(ctx: CanvasRenderingContext2D, at: readonly number[], zoom:
       if (!hollow) { ctx.fillStyle = SIDE_COLOR[side]!; ctx.fill() }
       ctx.stroke()
     }
+  }
+}
+
+/** 기병이 도는 길: 낱낱 점선 (길이 새로 정해진 뒤 routeMs 동안 · 끝에서 옅어져 걷힌다) */
+function drawRoutes(ctx: CanvasRenderingContext2D, m: VModel, nowMs: number, zoom: number): void {
+  const F = P.field, step = F.routeDashCells * F.cellPx, r = Math.max(1.6, 2.2 / zoom)
+  for (let i = 0; i < m.route.length && i < 6; i++) {
+    const rt = m.route[i]!
+    if (rt.length < 2) { fx.routeAt[i] = -1; continue }
+    if (fx.routeAt[i]! < 0) fx.routeAt[i] = nowMs
+    const age = nowMs - fx.routeAt[i]!
+    if (age > F.routeMs) continue
+    ctx.globalAlpha = Math.min(0.85, (F.routeMs - age) / (F.routeMs * 0.25) * 0.85)
+    ctx.fillStyle = SIDE_COLOR[i < 3 ? 0 : 1]!
+    ctx.beginPath()
+    let carry = 0
+    for (let j = 1; j < rt.length; j++) {
+      const ax = unitsToPx(rt[j - 1]!.u), ay = unitsToPx(rt[j - 1]!.v), bx = unitsToPx(rt[j]!.u), by = unitsToPx(rt[j]!.v)
+      const len = Math.hypot(bx - ax, by - ay)
+      for (let d = carry; d < len; d += step) { const x = ax + (bx - ax) * d / len, y = ay + (by - ay) * d / len; ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, FULL_TURN) }
+      carry = ((carry - len) % step + step) % step
+    }
+    ctx.fill()
+  }
+  ctx.globalAlpha = 1
+}
+
+/** 무리 깃: 무리 기준 점(anchor)에 한 자루씩 — 우리 편 무리만 (적의 것은 대 깃으로 읽힌다) */
+function addGroupFlags(m: VModel, at: number[]): void {
+  if (m.anchor.length < 3) return
+  const GRPS = ['front', 'bows', 'horse']
+  for (let g = 0; g < 3; g++) {
+    let any = false
+    for (const q of m.squads) if (q.side === 0 && q.grp === GRPS[g] && q.men > 0) { any = true; break }
+    const a = m.anchor[g]
+    if (any && a !== undefined) at.push(unitsToPx(a.u), unitsToPx(a.v), 0, 3)
   }
 }
 
@@ -270,9 +314,11 @@ function drawShadows(ctx: CanvasRenderingContext2D, count: number, low: boolean,
 export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam, cur: VModel, prev: VModel | null, alpha: number, nowMs: number, art: Art, low: boolean, heroPick: string | null = null, hits: readonly VLoss[] = cur.loss): number {
   const F = P.field
   if (cur.tick < fx.tick) resetFx()
+  const tickNew = cur.tick !== fx.tick
   fx.tick = cur.tick
   fx.nowMs = nowMs; fx.attackers = 0
-  for (const h of hits) fx.lastHit.set(h.to, { src: h.from, how: h.how })
+  for (const h of hits) { fx.lastHit.set(h.to, { src: h.from, how: h.how }); noteLoss(h, nowMs) }
+  if (tickNew) coolPress(1000 / F.hz)
   const world = worldSize(cur)
   const view = fieldView(cam, vp)
   ctx.save()
@@ -283,6 +329,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
   ctx.translate(-cam.x, -cam.y)
   drawGround(ctx, art, view)
   drawTerrain(ctx, cur, world.w, world.h)
+  drawStains(ctx, nowMs, F.soldierCells * F.cellPx)
 
   used = 0
   addProps(cur, art, view)
@@ -314,25 +361,64 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
       const strip = stripFor(art, q.grp, q.kind)
       const sl = settleDots(q, n, cur, nowMs, qu, qv, strip, face === -1, baseH, world.h)
       if (n === 0) continue
+      const form = q.grp === 'front' ? q.form : 0
+      const dd = dotsOf(q.id, sl.N, form, face, nowMs, sl.dead)
+      stepDots(dd, q.id, sl.dead, nowMs)
       flagsAt.push(unitsToPx(qu), unitsToPx(qv) - baseH * 0.2, side, 0)
       const tqu = aq === undefined ? 0 : unitsToPx(aq.u), tqv = aq === undefined ? 0 : unitsToPx(aq.v)
+      const od = aq === undefined ? undefined : peekDots(aq.id), osl = aq === undefined ? undefined : fx.slots.get(aq.id)
+      const melee = fighting && q.grp !== 'bows'
+      let chance = 0, flinch = 0, mor = 1, mf = 0, mn = 0
+      if (melee) {
+        if (tickNew) computePairs(q.id, dd, sl.dead, face, od, osl?.dead)
+        chance = swingChance(q.id); flinch = flinchOf(q.id, nowMs); mor = moraleOf(q)
+        mf = maxFwdOf(dd, sl.dead, face); mn = minFwdOf(dd, sl.dead, face)
+        if (q.id % 2 === side && nowMs - (fx.dustAt.get(q.id) ?? -1e9) > F.dustEveryMs) {
+          fx.dustAt.set(q.id, nowMs)
+          const lines = Math.max(1, Math.round(dd.N / F.dustLineCells))
+          for (let j = 0; j < lines; j++) {
+            const hh = hash2(q.id * 7 + j, Math.floor(nowMs / F.dustEveryMs))
+            const kk = hh % dd.N
+            if (sl.dead.has(kk)) continue
+            const px = unitsToPx(qu) + dd.cu[kk]! * F.cellPx + face * F.cellPx * 0.6
+            spawn(0, px, unitsToPx(qv) + dd.cv[kk]! * F.cellPx, face * (4 + hh % 7), -6 - hh % 9, nowMs, F.dustMs, F.cellPx * 0.14)
+          }
+        }
+      }
       for (let k = 0; k < sl.N; k++) {
         if (sl.dead.has(k)) continue
-        const x = unitsToPx(qu) + dotDu(q.id, k) * F.cellPx, y = Math.min(world.h, Math.max(0, unitsToPx(qv) + dotDv(q.id, k) * F.cellPx))
+        const x = unitsToPx(qu) + dd.cu[k]! * F.cellPx, y = Math.min(world.h, Math.max(0, unitsToPx(qv) + dd.cv[k]! * F.cellPx))
         if (!inView(view, x, y, pad)) continue
         const ph = dotPh(q.id, k)
         const d = nextItem()
         // 적과 닿는 쪽 줄의 병사가 치고 뒷줄은 서 있는다 (활은 모두 쏜다)
-        const front = q.grp === 'bows' || dotDu(q.id, k) * face >= 0
-        d.kind = 0; d.x = x; d.y = y; d.strip = strip; d.side = side; d.flip = face === -1; d.h = baseH
-        d.frame = pose(nowMs, ph, moving, fighting && front)
-        if (fighting && front) fx.attackers++
+        const row = rowOfDot(dd, k)
+        const front = q.grp === 'bows' || (melee ? isFront(dd, k, face, mf) : row >= 0 ? row === 0 : dd.cu[k]! * face >= 0)
+        const gathering = dd.gap[k]! > F.formGatherCells
+        let ox = 0, oy = 0, swing = fighting && front, flipDot = face === -1
+        if (melee) {
+          const pk = partnerOf(q.id, k)
+          const rear = row >= 0 ? row >= 1 && row === rowCount(dd) - 1 : dd.cu[k]! * face <= mn + F.frontBandCells
+          dotMelee(q.id, k, ph, face, front, rear && !front, true, mor, nowMs, x, y, pk >= 0 && aq !== undefined ? tqu + offU(aq.id, pk) * F.cellPx : NaN, pk >= 0 && aq !== undefined ? tqv + offV(aq.id, pk) * F.cellPx : NaN, chance, flinch)
+          ox = mo.x; oy = mo.y; swing = mo.swing
+          if (mo.turn) flipDot = !flipDot
+          if (mo.hitFrame && hash2(q.id * 3 + k, Math.floor(nowMs / F.animAttackMs)) % F.sparkEveryHits === 0 && aq !== undefined && nowMs - (fx.sparkAt.get(q.id * 64 + k) ?? -1e9) > F.animAttackMs * ATTACK_N * 0.8) {
+            fx.sparkAt.set(q.id * 64 + k, nowMs)
+            const sx0 = x + face * F.cellPx * 0.5, hh = hash2(k, Math.floor(nowMs))
+            for (let j = 0; j < 2; j++) spawn(1, sx0, y - baseH * 0.45, face * 40 + (hh % 60) - 30, -60 - ((hh >> 4) % 40) + j * 30, nowMs, F.sparkMs, 1)
+          }
+        }
+        d.kind = 0; d.x = x + ox; d.y = y + oy; d.strip = strip; d.side = side; d.flip = flipDot; d.h = baseH
+        d.frame = pose(nowMs, ph, moving || gathering || (melee && mo.back === 1), fighting && front && swing)
+        // 방진: 창을 앞으로 내민 채(공격 첫 칸 고정) 몸을 살짝 낮춘다
+        if (form === FORM_HOLD && !gathering && !fighting) { if (row >= 0 && row <= 1) d.frame = ATTACK0; d.h = baseH * F.holdDropPermille / 1000 }
+        if (fighting && front && swing) fx.attackers++
         drawn++
         if (fighting && q.grp === 'bows' && aq !== undefined) {
           const cyc = F.arrowCycleMs, tt = (nowMs + ph * cyc) % cyc
           if (tt < F.arrowFlightMs) {
             const idx = Math.floor((nowMs + ph * cyc) / cyc), tk = (k + idx) % F.dotsPerSquadMax
-            arrows.push(x, y - baseH * 0.5, tqu + dotDu(aq.id, tk) * F.cellPx, tqv + dotDv(aq.id, tk) * F.cellPx - baseH * 0.4, tt / F.arrowFlightMs, side)
+            arrows.push(x, y - baseH * 0.5, tqu + offU(aq.id, tk) * F.cellPx, tqv + offV(aq.id, tk) * F.cellPx - baseH * 0.4, tt / F.arrowFlightMs, side)
           }
         }
       }
@@ -356,6 +442,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
   for (const c of cs) {
     if (!inView(view, c.x, c.y, pad)) continue
     const age = (nowMs - c.born) / F.corpseMs
+    if (age >= 0 && !c.stained) { c.stained = true; addStain(c.x, c.y, c.born) }
     const d = nextItem()
     if (age < 0) { d.kind = 0; d.x = c.x; d.y = c.y; d.strip = c.strip; d.side = c.side; d.flip = c.flip; d.h = c.h; d.frame = pose(nowMs, c.ph, false, false); continue }
     d.kind = 1; d.x = c.x; d.y = c.y; d.strip = c.strip; d.side = c.side; d.flip = c.flip; d.h = c.h; d.frame = nowMs - c.born < F.hitFrameMs ? HIT : DOWN
@@ -389,6 +476,9 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
   order.sort(byY)
   for (const d of order) drawItem(ctx, d)
 
+  drawRoutes(ctx, cur, nowMs, cam.zoom)
+  addGroupFlags(cur, flagsAt)
+  drawParticles(ctx, nowMs, cam.zoom)
   drawBanners(ctx, flagsAt, cam.zoom, baseH)
 
   // 화살: 낱낱의 짧은 선 (호를 그리며 난다) — 몸은 크림색 한 경로, 꼬리 3분의 1 은 쏜 편 색으로 편마다 한 경로 (누구 화살인지 읽히게)
