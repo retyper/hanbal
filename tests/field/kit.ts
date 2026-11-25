@@ -7,6 +7,7 @@ import { stepField } from '../../src/field/sim.ts'
 import { ambushMap, crossMap, highMap, holdMap, meetMap, stakeMap } from '../../src/field/map.ts'
 import { P } from '../../src/tune/params.ts'
 import type { FieldMap, FieldState, Grp, Squad } from '../../src/field/types.ts'
+import { HERO_DIRS } from '../../src/field/types.ts'
 
 export const U = (cells: number): number => cells * P.field.unit
 
@@ -74,7 +75,7 @@ export function run(s: FieldState, ticks: number): FieldState {
 export function mirror(s: FieldState): void {
   const mp = s.map, L = mp.u * P.field.unit
   const f = (u: number): number => L - 1 - u
-  for (const q of s.squads) { q.side = (1 - q.side) as 0 | 1; q.u = f(q.u); q.homeU = f(q.homeU); if (q.goal) q.goal = { u: f(q.goal.u), v: q.goal.v } }
+  for (const q of s.squads) { q.side = (1 - q.side) as 0 | 1; q.face = (HERO_DIRS - q.face + HERO_DIRS / 2) % HERO_DIRS; q.u = f(q.u); q.homeU = f(q.homeU); if (q.goal) q.goal = { u: f(q.goal.u), v: q.goal.v } }
   for (const h of s.heroes) { h.side = (1 - h.side) as 0 | 1; h.u = f(h.u); if (h.goal) h.goal = { u: f(h.goal.u), v: h.goal.v } }
   const cells = new Uint8Array(mp.cells.length)
   for (let cu = 0; cu < mp.u; cu++) for (let cv = 0; cv < mp.w; cv++) cells[(mp.u - 1 - cu) * mp.w + cv] = mp.cells[cu * mp.w + cv]!
@@ -90,6 +91,7 @@ export function mirror(s: FieldState): void {
   s.anchor = [...s.anchor.slice(3), ...s.anchor.slice(0, 3)].map(fp)
   s.route = [...s.route.slice(3), ...s.route.slice(0, 3)].map(r => r.map(fp))
   s.planTick = [s.planTick[1], s.planTick[0]]
+  s.frontLockTick = [s.frontLockTick[1], s.frontLockTick[0]]
   for (const q of s.squads) if (q.orderAt) q.orderAt = fp(q.orderAt)
 }
 

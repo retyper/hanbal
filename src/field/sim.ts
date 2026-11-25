@@ -19,9 +19,9 @@
  */
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
-import { clamp, dist2, idiv, isqrt, stepToward } from './num.ts'
+import { clamp, dist2, idiv, isqrt, nearestDir, stepToward } from './num.ts'
 import { campPointU, groundAt, walkable } from './map.ts'
-import { G_BLOCK, G_HIGH, G_PLAIN, G_SHALLOW, GRPS, HERO_ART_DEFAULT, HERO_ARTS, HERO_DIRS, OP_ATTACK, OP_AUTO, OP_DASH, OP_HERO_DIR, OP_MOVE, OP_RETREAT, OP_SKILL, OP_STANCE, STANCE_CHARGE, STANCE_HOLD, STANCE_OPEN, WHY_NONE, CMD_COUNTER, CMD_HEIGHT, OP_AIM, OP_RALLY, ORD_ATTACK, ORD_CHARGE, ORD_FLANK, ORD_MOVE, ORD_NONE, ORD_VOLLEY, HIT_PLAIN, HIT_GOOD, HIT_BLOCKED, LOSS_ARROW, LOSS_BLADE } from './types.ts'
+import { G_BLOCK, G_HIGH, G_PLAIN, G_SHALLOW, GRPS, HERO_ART_DEFAULT, HERO_ARTS, HERO_DIR, HERO_DIRS, OP_ATTACK, OP_AUTO, OP_DASH, OP_HERO_DIR, OP_MOVE, OP_RETREAT, OP_SKILL, OP_STANCE, STANCE_CHARGE, STANCE_HOLD, STANCE_OPEN, WHY_NONE, CMD_COUNTER, CMD_HEIGHT, OP_AIM, OP_RALLY, ORD_ATTACK, ORD_CHARGE, ORD_FLANK, ORD_MOVE, ORD_NONE, ORD_VOLLEY, HIT_PLAIN, HIT_GOOD, HIT_BLOCKED, LOSS_ARROW, LOSS_BLADE } from './types.ts'
 import type { FieldInput, FieldMap, FieldState, Grp, Hero, LiveSetup, Point, Squad } from './types.ts'
 import { auraOf, emit, heroInput, heroMove, heroStrike, heroTakeHits, pruneEvents, standOf } from './hero.ts'
 import { armyInit, armyInput, armyTick, follows, runMul } from './army.ts'
@@ -507,35 +507,6 @@ function breakCamps(s: FieldState): void {
   }
 }
 
-/** 같은 편 대끼리 겹치지 않게 작은 걸음으로 밀어낸다 (한꺼번에 계산해 차례에 안 따른다 · 한 점에 겹치면 시작 자리로 방향을 정한다) */
-function separate(s: FieldState, bank: readonly [number | null, number | null]): void {
-  const sep2 = sq(P.field.sepCells * P.field.unit), push = perTickAt(P.field.pushPerSec, s.tick)
-  const n = s.squads.length
-  const du = new Array<number>(n).fill(0), dv = new Array<number>(n).fill(0)
-  for (let i = 0; i < n; i++) {
-    const a = s.squads[i]!
-    if (a.men <= 0) continue
-    for (let j = i + 1; j < n; j++) {
-      const b = s.squads[j]!
-      if (b.men <= 0 || b.side !== a.side) continue
-      const d2 = dist2(a.u, a.v, b.u, b.v)
-      if (d2 >= sep2) continue
-      if (d2 === 0) {
-        const c = rankCmp(s, a, b)
-        if (c < 0) { dv[i]! -= push; dv[j]! += push } else if (c > 0) { dv[i]! += push; dv[j]! -= push }
-        continue
-      }
-      const root = isqrt(d2), len = root * root === d2 ? root : root + 1
-      const ux = idiv((b.u - a.u) * push, len), uy = idiv((b.v - a.v) * push, len)
-      du[i]! -= ux; dv[i]! -= uy; du[j]! += ux; dv[j]! += uy
-    }
-  }
-  for (const q of s.squads) {
-    const x = q.u + du[q.id]!, y = q.v + dv[q.id]!
-    if ((x !== q.u || y !== q.v) && walkable(groundAt(s.map, x, y)) && holdOk(s, q, x, y, bank)) { q.u = x; q.v = y }
-  }
-}
-
 /**
  * 목책이 지키는 쪽에게 주는 것 (44 §2-1): 문이 서 있는 동안 목책 너머(주인 진영 쪽)에 선 대는 밖에서 쏜 화살을 안 맞는다 —
  * 지키는 쪽 활만 넘겨 쏘고, 치는 쪽 칼날은 문 앞에서만(clearLine) 닿는다. 문이 부서지면 덮개도 없다.
@@ -551,22 +522,6 @@ function covered(s: FieldState, shooter: Squad, t: Squad): boolean {
   }
   return false
 }
-
-/**
- * 옆구리 — 맞는 대 e 가 보는 쪽(f)을 기준으로 친 대 q 가 앞 90° 밖이고, 보는 줄에서 flankV 넘게 비켜났거나 뒤에서 쳤으면 옆구리다 (44 §3-c).
- * 거울·차례에 안 기댄다 (외적은 절댓값 · 내적).
- */
-function flankHit(e: Squad, q: Squad, f: Squad, flankV: number): boolean {
-  const fu = f.u - e.u, fv = f.v - e.v, au = q.u - e.u, av = q.v - e.v
-  const f2 = fu * fu + fv * fv
-  if (f2 === 0) return false
-  const dot = fu * au + fv * av, cross = Math.abs(fu * av - fv * au)
-  if (cross <= dot) return false
-  if (dot < 0) return true
-  const root = isqrt(f2), len = root * root === f2 ? root : root + 1
-  return cross > flankV * len
-}
-
 /** 맞붙기 — 모든 대가 한꺼번에 치고 (순서에 안 따른다) 피해와 옆구리 맞음을 모았다가 한 번에 깎는다. 돌려주는 값: 편마다 칼날이 닿았나 (같이 닿기) */
 function fight(s: FieldState, K: Kit): [boolean, boolean] {
   const n = s.squads.length
@@ -585,11 +540,11 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
   for (const q of s.squads) {
     q.lock = -1
     if (q.men <= 0 || q.grp !== 'front' || q.flee === 1) continue
-    const t = nearestFoe(s, q, (t, d) => t.grp !== 'bows' && d <= K.meleeR2 && bladeLine(s.map, q, t))
+    const t = nearestFoe(s, q, (t) => t.grp !== 'bows' && touching(q, t) && bladeLine(s.map, q, t))
     if (t) q.lock = t.id
   }
   // 돌격의 쾅 — 도움닫기를 한 대가 겨눈 적에 닿은 순간 (51 §8): 맞은 대가 밀려나고 덤이 붙는다 · 방진에 막힌 기병은 튕겨 나고 사기를 잃는다
-  const struck = runImpacts(s, K)
+  const struck = runImpacts(s)
   // 처음 맞물린 순간 (세기 = 붙은 사람 수 · 돌격의 쾅으로 이미 적은 대는 빼고)
   for (const q of s.squads) {
     if (q.lock < 0 || lock0[q.id]! >= 0 || struck[q.id]) continue
@@ -602,8 +557,8 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
   const aim = new Array<number>(n).fill(-1)
   for (const q of s.squads) {
     if (q.men <= 0 || q.sleep > 0 || q.flee === 1) continue
-    const r2 = q.grp === 'bows' ? q.reach * q.reach : K.meleeR2
-    const t = nearestFoe(s, q, (t, d) => d <= r2 && (q.grp === 'bows' ? !covered(s, q, t) : bladeLine(s.map, q, t)))
+    const r2 = q.reach * q.reach
+    const t = q.grp === 'bows' ? nearestFoe(s, q, (t, d) => d <= r2 && !covered(s, q, t)) : nearestFoe(s, q, t => touching(q, t) && bladeLine(s.map, q, t))
     if (t) aim[q.id] = t.id
   }
   // 맞쏘기 — 활은 사거리 안의 적 활 가운데 우리 편을 쏘고 있는 것을 앞줄보다 먼저 겨눈다 (알아서) · 맞쏘기 명령이면 적 활부터 (쏘든 안 쏘든)
@@ -631,18 +586,11 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
   // 적을 쳐라 — 받은 적이 닿는 거리에 있으면 그 적을 먼저 친다 (활은 맞쏘기보다 먼저)
   for (const q of s.squads) {
     if (q.men <= 0 || q.sleep > 0 || q.foe < 0 || q.flee === 1) continue
-    const t = s.squads[q.foe]!, r2 = q.grp === 'bows' ? q.reach * q.reach : K.meleeR2
-    if (t.men > 0 && dist2(q.u, q.v, t.u, t.v) <= r2 && (q.grp === 'bows' ? !covered(s, q, t) : bladeLine(s.map, q, t))) aim[q.id] = t.id
+    const t = s.squads[q.foe]!, r2 = q.reach * q.reach
+    if (t.men > 0 && (q.grp === 'bows' ? dist2(q.u, q.v, t.u, t.v) <= r2 && !covered(s, q, t) : touching(q, t) && bladeLine(s.map, q, t))) aim[q.id] = t.id
   }
-  // 맞는 대가 보는 쪽 — 맞물린 적 → 노리는 적 → (손으로 몬 대처럼 둘 다 없으면) 가장 가까운 적 (45 §2-7)
-  const facing = new Array<Squad | null | undefined>(n).fill(undefined)
-  const facingOf = (e: Squad): Squad | null => {
-    if (facing[e.id] === undefined) {
-      const t = e.target >= 0 ? s.squads[e.target]! : null
-      facing[e.id] = e.lock >= 0 ? s.squads[e.lock]! : t && t.men > 0 ? t : nearestFoe(s, e, () => true)
-    }
-    return facing[e.id]!
-  }
+  // 맞물림 상한 (52 §1-2) — 한 적 대를 칼날로 치는 대는 foeCapPerSquad 까지 (맞물린 대 → 몸이 가까운 차례 → 시작 자리) · 남는 대는 기다린다
+  capMelee(s, aim)
   for (const q of s.squads) {
     if (q.men <= 0 || q.sleep > 0 || aim[q.id]! < 0) continue
     const e = s.squads[aim[q.id]!]!
@@ -672,9 +620,10 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
     if (q.bonus > 0) v = mul(v, MILLI + idiv((P.field.chargeImpactPermille - MILLI) * q.bonus, Math.max(1, ticksOf(P.field.chargeBonusSec))))
     // 첫 칼 — 자는 대 · 깬 뒤 edgeSec 동안
     if (e.sleep > 0 || e.daze > 0) v = mul(v, K.edge)
+    // 향 (52 §1-1) — 맞는 대가 보는 쪽 기준 앞 90° 는 정면(×1) · 뒤 90° 는 rearHitPermille · 나머지 옆은 sideHitPermille (칼날만 · 옆·뒤면 옆구리를 센다)
     if (q.grp !== 'bows') {
-      const f = facingOf(e)
-      if (f && f.id !== q.id && flankHit(e, q, f, K.flankV)) { v = mul(v, K.flank); flanked[e.id]!++ }
+      const k = hitArc(e, q)
+      if (k > 0) { v = mul(v, k === 2 ? P.field.rearHitPermille : P.field.sideHitPermille); flanked[e.id]!++ }
     }
     dmg[e.id]! += v
     hits[e.id]!.push(q.id, q.grp === 'bows' ? LOSS_ARROW : LOSS_BLADE, v)
@@ -687,7 +636,7 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
     for (const q of s.squads) if (q.grp === 'bows' && q.men > 0 && q.sleep <= 0 && aim[q.id]! >= 0) { const e = s.squads[aim[q.id]!]!; emit(s, { kind: 'volley', side: q.side, id: q.id, u: e.u, v: e.v, n: q.men, to: e.id }) }
   }
   // 장수의 칼 (같은 틱에 한꺼번에) · 버텨라 (곁의 우리 대가 받는 피해 배수)
-  const toHero = heroStrike(s, K, dmg, hits)
+  const toHero = heroStrike(s, dmg, hits)
   for (const q of s.squads) if (dmg[q.id]! > 0) dmg[q.id] = mul(dmg[q.id]!, standOf(s, q))
   for (const q of s.squads) {
     if (q.men <= 0) continue
@@ -701,30 +650,35 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
     if (dmg[q.id]! > 0 && q.sleep > 0) { q.sleep = 0; q.daze = ticksOf(P.field.edgeSec) }
     if (men0 > q.men) lossEvents(s, q, men0 - q.men, hits[q.id]!)
   }
-  afterHits(s, dmg, aim)
+  afterHits(s, K, aim)
   hitPieces(s, K)
   breakCamps(s)
   // 장수 — 곁의 적 앞줄·기병 사람 수와 적장의 칼에 깎인다 · 쓰러지면 몇 초 못 움직인다 (죽지 않는다 · hero.ts)
-  heroTakeHits(s, K, toHero)
+  heroTakeHits(s, toHero)
   // 죽은 대를 가리키는 맞물림·목표는 그 틱에 푼다 (45 §2-19)
   for (const q of s.squads) {
     if (q.lock >= 0 && s.squads[q.lock]!.men <= 0) q.lock = -1
     if (q.target >= 0 && s.squads[q.target]!.men <= 0) q.target = -1
     if (q.foe >= 0 && s.squads[q.foe]!.men <= 0) q.foe = -1
   }
-  // 목책 문이 안 부서진 동안 그 안의 편은 잃은 몫에 덜 꺾인다 (본편 tacWallSteady). 부서진 뒤는 그때까지 덜 꺾인 몫(held)을 그대로 둔다
+  // 도미노 — 도망치는 대 곁의 우리 대 사기가 깎인다
   panic(s)
+  // 목책 문이 안 부서진 동안 그 안의 편은 잃은 몫에 덜 꺾인다 (본편 tacWallSteady). 부서진 뒤는 그때까지 덜 꺾인 몫(held)을 그대로 둔다
   // 장수 곁의 기운 — 곁의 우리 대는 이 틱에 꺾인 몫의 auraOf 만큼 덜 꺾인다 (calm 에 쌓는다 · 본편 「격려」의 자리 · 30 §6 규칙 2)
   const walled = [0, 1].map(side => s.map.pieces.some(p => p.owner === side && p.kind === 'gate' && p.hp > 0))
   const breakLine = m(P.realm.tacBreakMorale)
+  const routed: Squad[] = []
   for (const q of s.squads) {
     const raw = rawLoss(q, walled[q.side]!)
     const drop = raw - raw0[q.id]!
     if (drop > 0 && q.men > 0) q.calm += drop * auraOf(s, q)
     const before = q.morale
     q.morale = clamp(q.morale0 - raw + idiv(q.calm, MILLI), 0, MILLI)
-    if (q.men > 0 && before * MILLI >= q.morale0 * breakLine && q.morale * MILLI < q.morale0 * breakLine) emit(s, { kind: 'rout', side: q.side, id: q.id, u: q.u, v: q.v, n: q.men })
+    if (q.men > 0 && before * MILLI >= q.morale0 * breakLine && q.morale * MILLI < q.morale0 * breakLine) { emit(s, { kind: 'rout', side: q.side, id: q.id, u: q.u, v: q.v, n: q.men }); routed.push(q) }
   }
+  // 깨짐 (52 §1-5) — 한 대가 무너지면 곁(routNeighborCells)의 같은 편 대 사기가 routNeighborShock 뚝 (도미노 · 다음 틱 사기에 든다)
+  const nr2 = sq(P.field.routNeighborCells * P.field.unit)
+  for (const r of routed) for (const q of s.squads) if (q !== r && q.side === r.side && q.men > 0 && q.flee === 0 && dist2(q.u, q.v, r.u, r.v) <= nr2) q.shock += P.field.routNeighborShock
   return contact
 }
 
@@ -817,8 +771,9 @@ export function stepField(s: FieldState, inputs: readonly FieldInput[] = NO_INPU
     applyInput(s, i)
     if (s.end !== null) return
   }
-  armyTick(s)
-  if (s.tick % Math.max(1, idiv(P.field.retargetMs * P.field.hz, MILLI)) === 0) retarget(s)
+  const retick = s.tick % Math.max(1, idiv(P.field.retargetMs * P.field.hz, MILLI)) === 0
+  armyTick(s, retick || s.log.accepted.length > took)
+  if (retick) retarget(s)
   const K = kit()
   const contact = fight(s, K)
   const bank = banks(s)
@@ -830,7 +785,7 @@ export function stepField(s: FieldState, inputs: readonly FieldInput[] = NO_INPU
     if (q.lock >= 0 && q.manual === 0) return null
     if (q.manual === 0 && q.target >= 0) {
       const e = s.squads[q.target]!
-      if (dist2(q.u, q.v, e.u, e.v) <= (q.grp === 'bows' ? q.reach * q.reach : K.meleeR2) && (q.grp === 'bows' || bladeLine(s.map, q, e))) return null
+      if ((q.grp === 'bows' ? dist2(q.u, q.v, e.u, e.v) <= q.reach * q.reach : touching(q, e)) && (q.grp === 'bows' || bladeLine(s.map, q, e))) return null
     }
     // 같이 닿기 — 맡긴 대는 제 편 칼날이 닿기 전까지 가장 느린 무리 걸음으로 간다 (기병 혼자 먼저 닿지 않게 · 「적을 쳐라」를 받은 대는 제 걸음)
     // 장수를 따르는 편은 진 자리로 제 걸음 · 돌격·옆치기 들이침은 달리고 무너진 대는 도망친다 (army.ts runMul)
@@ -838,7 +793,9 @@ export function stepField(s: FieldState, inputs: readonly FieldInput[] = NO_INPU
     const base = q.manual === 0 && q.foe < 0 && !fol && !contact[q.side] ? Math.min(speedPerSec(q.grp), march[q.side]!) : speedPerSec(q.grp)
     const rm = fol ? runMul(s, q) : MILLI
     run[q.id] = rm > MILLI
-    return walk(s, K, q.side, q.u, q.v, q.goal, perTickAt(mul(base, rm), s.tick))
+    const p = walk(s, K, q.side, q.u, q.v, q.goal, perTickAt(mul(base, rm), s.tick))
+    // 몸 — 적 몸 앞 가장자리에서 멈추고 우리 몸과는 겹치지 않게 (틱 처음 자리 기준 · 차례에 안 기댄다)
+    return bodyStep(s, q, p)
   })
   for (const q of s.squads) {
     const p = moves[q.id]
@@ -848,7 +805,8 @@ export function stepField(s: FieldState, inputs: readonly FieldInput[] = NO_INPU
       q.u = p.u; q.v = p.v
     }
   }
-  separate(s, bank)
+  unstack(s, bank)
+  turnFaces(s)
   for (const q of s.squads) {
     if (q.sleep > 0) q.sleep--
     if (q.daze > 0) q.daze--
@@ -890,17 +848,18 @@ export function groupCenter(s: FieldState, side: 0 | 1, g: Grp): Point {
  * 적이 없으면 제자리.
  */
 function aiHeroGoal(s: FieldState, h: Hero): Point | null {
-  let best: Squad | null = null, bd = 0
-  for (const q of s.squads) {
-    if (q.side === h.side || q.men <= 0 || q.flee === 1) continue
-    const d = dist2(h.u, h.v, q.u, q.v)
-    if (best === null || d < bd || (d === bd && rankCmp(s, q, best) < 0)) { best = q; bd = d }
-  }
-  if (!best || !alarmed(s, h.side)) return null
-  const r = P.field.aiHeroHoldCells * P.field.unit
-  if (bd <= r * r) return null
-  const root = isqrt(bd), len = root * root === bd ? root : root + 1
-  return { u: best.u - idiv((best.u - h.u) * r, len), v: best.v - idiv((best.v - h.v) * r, len) }
+  // 적 앞줄(없으면 산 적 전부)의 가운데 쪽으로 — 앞뒤(u)로 aiHeroHoldCells 앞에서 선다 (적 줄의 틈으로 파고들지 않게 대 하나가 아니라 가운데를 본다)
+  const foes = s.squads.filter(q => q.side !== h.side && q.men > 0 && q.flee === 0)
+  const fr = foes.filter(q => q.grp === 'front')
+  const use = fr.length > 0 ? fr : foes
+  if (use.length === 0 || !alarmed(s, h.side)) return null
+  const cu = avgU(use.reduce((a, q) => a + q.u, 0), use.length, h.side), cv = idiv(use.reduce((a, q) => a + q.v, 0), use.length)
+  const r = P.field.aiHeroHoldCells * P.field.unit, f = fwd(h.side)
+  // 제 앞줄을 앞지르지 않는다 — 진 기준점(앞줄 가운데)보다 (followFrontCells − anchorSlackCells − 1) 칸 뒤까지만 (기준점이 그만큼 앞서 장수를 끌어간다)
+  const F = s.anchor[h.side * 3]!
+  const cap = F.u - f * P.field.unit * Math.max(0, P.field.followFrontCells - P.field.anchorSlackCells - 1)
+  const u = (cu - f * r - cap) * f > 0 ? cap : cu - f * r
+  return (u - h.u) * f > 0 ? { u, v: cv } : null
 }
 
 /** 앞줄 돌격 · 기병 옆치기 들이침인가 (도움닫기 덤을 받는 대) */
@@ -911,15 +870,15 @@ const runner = (s: FieldState, q: Squad): boolean => (q.grp === 'front' && q.ord
  * 맞음 → 맞은 대가 pushFrontCells · pushHorseCells 밀려나고 친 대에 덤(chargeBonusSec) · impact how 1 /
  * 기병이 방진에 막힘 → 친 대가 bounceCells 튕겨 나고 사기 blockedShock · impact how 2. 돌려주는 값: 이 틱에 쾅을 적은 대.
  */
-function runImpacts(s: FieldState, K: Kit): boolean[] {
+function runImpacts(s: FieldState): boolean[] {
   const out = new Array<boolean>(s.squads.length).fill(false)
-  // 밀어내기는 모두 정한 뒤 한꺼번에 (판 차례에 안 기댄다)
+  // 밀어내기는 모두 정한 뒤 한꺼번에 (판 차례에 안 기댄다 — 미는 대·친 대의 시작 자리 차례로)
   const shoves: Array<{ mover: Squad; from: Point; len: number; by: Squad }> = []
   const bank = banks(s)
   for (const q of s.squads) {
     if (q.men <= 0 || q.flee === 1 || !runner(s, q) || q.target < 0) continue
     const e = s.squads[q.target]!
-    if (e.men <= 0 || dist2(q.u, q.v, e.u, e.v) > K.meleeR2 || !bladeLine(s.map, q, e)) continue
+    if (e.men <= 0 || !touching(q, e) || !bladeLine(s.map, q, e)) continue
     const min = (q.grp === 'front' ? P.field.chargeMinRunCells : P.field.flankMinRunCells) * P.field.unit
     if (q.ran < min) { q.ran = 0; continue }
     q.ran = 0
@@ -930,7 +889,7 @@ function runImpacts(s: FieldState, K: Kit): boolean[] {
     const push = (blocked ? P.field.bounceCells : q.grp === 'horse' ? P.field.pushHorseCells : P.field.pushFrontCells) * P.field.unit
     shoves.push({ mover, from: { u: away.u, v: away.v }, len: push, by: q })
     if (blocked) q.shock += P.field.blockedShock
-    else q.bonus = ticksOf(P.field.chargeBonusSec)
+    else { q.bonus = ticksOf(P.field.chargeBonusSec); e.shock += q.grp === 'horse' ? P.field.flankHitShock : P.field.chargeHitShock }
     emit(s, { kind: 'impact', side: q.side, id: q.id, u: idiv(q.u + e.u, 2), v: idiv(q.v + e.v, 2), n: q.men + e.men, to: e.id, how: blocked ? HIT_BLOCKED : HIT_GOOD })
   }
   // 다른 대를 미는 것끼리는 서로 안 걸린다 — 같은 대를 여럿이 밀 때만 친 대의 시작 자리 차례 (같은 편끼리라 거울·차례에 안 기댄다)
@@ -957,28 +916,41 @@ function shove(s: FieldState, mover: Squad, from: Point, len: number, bank: read
 /**
  * 맞은 뒤 (피해를 깎은 다음) — 돌격 덤 세기 · 옆치기가 먹힘(무리마다 한 번 · 통계) · 전선 밀림(맞물린 앞줄 가운데 더 깎인 쪽이 frontPushPerSec 로 밀린다).
  */
-function afterHits(s: FieldState, dmg: readonly number[], aim: readonly number[]): void {
+function afterHits(s: FieldState, K: Kit, aim: readonly number[]): void {
   for (const q of s.squads) if (q.bonus > 0) q.bonus--
   for (const q of s.squads) {
     if (q.men <= 0 || q.grp !== 'horse' || q.order !== ORD_FLANK || q.hitTick >= 0 || aim[q.id] !== q.target || q.target < 0) continue
+    const e = s.squads[q.target]!
+    // 옆·뒤에서 닿은 것만 옆치기가 먹힌 것 (52 §1-1)
+    if (hitArc(e, q) === 0) continue
     const first = !s.squads.some(o => o.side === q.side && o.grp === 'horse' && o.hitTick >= 0)
     q.hitTick = s.tick
     if (!first) continue
     s.stats.flankHits[q.side]++
-    const e = s.squads[q.target]!
     emit(s, { kind: 'flankHit', side: q.side, id: q.id, u: e.u, v: e.v, n: q.men, to: e.id })
   }
+  // 밀기 (52 §1-4) — 맞물린 앞줄 둘 가운데 약한 쪽이 pushCellsPerSec × (강 − 약)/(강 + 약) 로 밀린다 · pushShockCells 밀릴 때마다 사기 pushShock
   const bank = banks(s)
-  const step = perTickAt(P.field.frontPushPerSec, s.tick)
-  if (step <= 0) return
+  const power = (q: Squad): number => mul(q.men * MILLI, K.grp[q.grp])
   const pushed: Array<Point | null> = s.squads.map(q => {
-    if (q.men <= 0 || q.grp !== 'front' || q.lock < 0) return null
+    if (q.men <= 0 || q.grp !== 'front' || q.lock < 0 || q.flee === 1) return null
     const e = s.squads[q.lock]!
-    if (e.grp !== 'front' || dmg[q.id]! <= dmg[e.id]!) return null
+    const a = power(q), b = power(e)
+    if (e.grp !== 'front' || b <= a) return null
+    const step = perTickAt(idiv(P.field.pushCellsPerSec * (b - a), a + b), s.tick)
+    if (step <= 0) return null
     const p = { u: clamp(q.u - fwd(q.side) * step, 0, lastU(s.map)), v: q.v }
     return walkable(groundAt(s.map, p.u, p.v)) && holdOk(s, q, p.u, p.v, bank) ? p : null
   })
-  for (const q of s.squads) { const p = pushed[q.id]; if (p) { q.u = p.u; q.v = p.v } }
+  const per = P.field.pushShockCells * P.field.unit
+  for (const q of s.squads) {
+    const p = pushed[q.id]
+    if (!p) continue
+    const before = idiv(q.pushed, per)
+    q.pushed += Math.abs(p.u - q.u)
+    if (idiv(q.pushed, per) > before) q.shock += P.field.pushShock
+    q.u = p.u; q.v = p.v
+  }
 }
 
 /** 도미노 (51 §7) — 도망치는 대 곁 routPanicCells 안의 우리 대는 1초에 routPanicPerSec 씩 사기를 잃는다 (곁의 기운이 덜어 준다 · calm) */
@@ -986,8 +958,153 @@ function panic(s: FieldState): void {
   const r2 = sq(P.field.routPanicCells * P.field.unit)
   const per = perTickAt(P.field.routPanicPerSec, s.tick)
   if (per <= 0) return
-  const hit = s.squads.map(q => q.men > 0 && q.flee === 0 && s.squads.some(f => f.side === q.side && f.flee === 1 && f.men > 0 && f.id !== q.id && dist2(f.u, f.v, q.u, q.v) <= r2))
+  const runs = s.squads.filter(f => f.flee === 1 && f.men > 0)
+  if (runs.length === 0) return
+  const hit = s.squads.map(q => q.men > 0 && q.flee === 0 && runs.some(f => f.side === q.side && dist2(f.u, f.v, q.u, q.v) <= r2))
   for (const q of s.squads) if (hit[q.id]) q.shock += per
+}
+
+// ── 몸 (C2 묶음 3) — 대는 축에 맞춘 네모 (가운데 (u, v) · 폭 bw · 깊이 bd). 달아나는 대(flee)만 몸이 없다
+/** 두 몸 사이 틈의 제곱 (겹치면 0) — a 를 (au, av) 에 둔 셈 */
+export function boxGap2At(a: Squad, au: number, av: number, b: Squad): number {
+  const du = Math.max(0, Math.abs(au - b.u) - idiv(a.bd + b.bd, 2)), dv = Math.max(0, Math.abs(av - b.v) - idiv(a.bw + b.bw, 2))
+  return du * du + dv * dv
+}
+/** 두 몸이 겹친 넓이 (단위²) — a 를 (au, av) 에 둔 셈 */
+export function overlapAt(a: Squad, au: number, av: number, b: Squad): number {
+  const ou = idiv(a.bd + b.bd, 2) - Math.abs(au - b.u), ov = idiv(a.bw + b.bw, 2) - Math.abs(av - b.v)
+  return ou > 0 && ov > 0 ? ou * ov : 0
+}
+/** 맞닿음 — 두 몸 사이 틈이 touchPermille 칸 안 (맞붙어 친다) */
+export const touching = (a: Squad, b: Squad): boolean => boxGap2At(a, a.u, a.v, b) <= sq(mul(P.field.unit, P.field.touchPermille))
+/** 장수(점 + 반 크기 heroBoxPermille)와 대 몸 사이 틈의 제곱 */
+export function heroGap2(h: Point, q: Squad): number {
+  const r = mul(P.field.unit, P.field.heroBoxPermille)
+  const du = Math.max(0, Math.abs(h.u - q.u) - idiv(q.bd, 2) - r), dv = Math.max(0, Math.abs(h.v - q.v) - idiv(q.bw, 2) - r)
+  return du * du + dv * dv
+}
+const solid = (q: Squad): boolean => q.men > 0 && q.flee === 0
+
+/**
+ * 몸에 막히나 (틱 처음 자리 기준 · 차례에 안 기댄다) — 적 대 몸이나 적장 몸과 더 겹치는 걸음 (우리 대 몸은 부드러워 막지 않는다 · unstack 이 천천히 벌린다).
+ * 달아나는 대는 막히지 않는다.
+ */
+function bodyBlocked(s: FieldState, q: Squad, p: Point): boolean {
+  if (q.flee === 1) return false
+
+  for (const e of s.squads) {
+    if (e === q || !solid(e)) continue
+    const now = overlapAt(q, q.u, q.v, e), then = overlapAt(q, p.u, p.v, e)
+    if (then <= now) continue
+    if (e.side !== q.side) return true
+  }
+  const r = mul(P.field.unit, P.field.heroBoxPermille)
+  for (const h of s.heroes) {
+    if (h.side === q.side) continue
+    const inside = (u: number, v: number): boolean => Math.abs(u - h.u) < idiv(q.bd, 2) + r && Math.abs(v - h.v) < idiv(q.bw, 2) + r
+    if (inside(p.u, p.v) && !inside(q.u, q.v)) return true
+  }
+  return false
+}
+
+/** 막히면 걸음을 줄여(¾ · ½ · ¼) 보고, 그래도 막히면 한 축으로 미끄러진다 — 맞닿은 가장자리에서 멈추고 옆 대를 돌아 들어간다 */
+function bodyStep(s: FieldState, q: Squad, p: Point): Point | null {
+  if (!bodyBlocked(s, q, p)) return p
+  const du = p.u - q.u, dv = p.v - q.v
+  for (const k of [3, 2, 1]) { const c = { u: q.u + idiv(du * k, 4), v: q.v + idiv(dv * k, 4) }; if ((c.u !== q.u || c.v !== q.v) && !bodyBlocked(s, q, c)) return c }
+  for (const c of [{ u: p.u, v: q.v }, { u: q.u, v: p.v }]) if ((c.u !== q.u || c.v !== q.v) && walkable(groundAt(s.map, c.u, c.v)) && !bodyBlocked(s, q, c)) return c
+  return null
+}
+
+/**
+ * 겹친 몸 풀기 (걸음 뒤 · 한꺼번에 셈해 차례에 안 기댄다) — 적끼리는 앞뒤(u)로, 우리끼리는 덜 겹친 축으로 서로 반씩 민다.
+ * bodyPushPasses 번 되풀이한다 (사슬로 겹친 대). 막힘 칸·물가·지키는 한계는 걸음 규칙 그대로 (못 가면 그 몫은 남는다).
+ */
+function unstack(s: FieldState, bank: readonly [number | null, number | null]): void {
+  const n = s.squads.length
+  const soft = Math.max(1, idiv(perTickAt(P.field.allyPushCellsPerSec * P.field.unit, s.tick), 2))
+  for (let pass = 0; pass < P.field.bodyPushPasses; pass++) {
+    const du = new Array<number>(n).fill(0), dv = new Array<number>(n).fill(0)
+    let any = false
+    for (let i = 0; i < n; i++) {
+      const a = s.squads[i]!
+      if (!solid(a)) continue
+      for (let j = i + 1; j < n; j++) {
+        const b = s.squads[j]!
+        if (!solid(b)) continue
+        const ou = idiv(a.bd + b.bd, 2) - Math.abs(a.u - b.u), ov = idiv(a.bw + b.bw, 2) - Math.abs(a.v - b.v)
+        if (ou <= 0 || ov <= 0) continue
+        any = true
+        // 적끼리는 앞뒤로 · 우리끼리는 덜 겹친 축으로 · 같은 자리면 시작 자리 차례로 방향을 정한다
+        const alongU = a.side !== b.side || ou < ov
+        const sgn = alongU ? (a.u !== b.u ? (a.u < b.u ? -1 : 1) : a.side !== b.side ? -fwd(a.side) : (rankCmp(s, a, b) < 0 ? -1 : 1) * fwd(a.side))
+          : (a.v !== b.v ? (a.v < b.v ? -1 : 1) : rankCmp(s, a, b) < 0 ? -1 : 1)
+        // 적끼리는 겹친 만큼 반씩 (딱딱하다) · 우리끼리는 1초에 allyPushCellsPerSec 까지 (부드럽다 · 움직이는 동안 겹쳐도 된다 · 52 §1-1)
+        const half = a.side !== b.side ? idiv((alongU ? ou : ov) + 1, 2) : Math.min(idiv((alongU ? ou : ov) + 1, 2), soft)
+        if (alongU) { du[i]! += sgn * half; du[j]! -= sgn * half } else { dv[i]! += sgn * half; dv[j]! -= sgn * half }
+      }
+    }
+    if (!any) return
+    // 새 자리는 모두 정한 뒤 한꺼번에 — 우리끼리 벌어지느라 적 몸에 더 파고드는 몫은 버린다 (틱 처음 자리 기준)
+    const to = s.squads.map(q => {
+      const x = clamp(q.u + du[q.id]!, 0, lastU(s.map)), y = clamp(q.v + dv[q.id]!, 0, lastV(s.map))
+      if (x === q.u && y === q.v) return null
+      if (!walkable(groundAt(s.map, x, y)) || !holdOk(s, q, x, y, bank) || bodyBlocked(s, q, { u: x, v: y })) return null
+      return { u: x, v: y }
+    })
+    for (const q of s.squads) { const p = to[q.id]; if (p) { q.u = p.u; q.v = p.v } }
+  }
+}
+
+/** 칼날 겨눔 상한 — 적 대마다 따로 가른다 (판 차례에 안 기댄다) */
+function capMelee(s: FieldState, aim: number[]): void {
+  const by = new Map<number, Squad[]>()
+  for (const q of s.squads) {
+    if (q.men <= 0 || q.grp === 'bows' || aim[q.id]! < 0) continue
+    const t = aim[q.id]!
+    const l = by.get(t)
+    if (l) l.push(q); else by.set(t, [q])
+  }
+  for (const [t, qs] of by) {
+    if (qs.length <= P.field.foeCapPerSquad) continue
+    const e = s.squads[t]!
+    qs.sort((a, b) => (b.lock === t ? 1 : 0) - (a.lock === t ? 1 : 0) || boxGap2At(a, a.u, a.v, e) - boxGap2At(b, b.u, b.v, e) || rankCmp(s, a, b))
+    for (const q of qs.slice(P.field.foeCapPerSquad)) aim[q.id] = -1
+  }
+}
+
+/** 친 대 q 가 맞는 대 e 의 어디에 있나 — 0 앞(보는 쪽 ±45°) · 2 뒤(반대쪽 ±45°) · 1 옆 (정수 내적 · 삼각함수 없음) */
+export function hitArc(e: Squad, q: Point): number {
+  const du = q.u - e.u, dv = q.v - e.v
+  const d2 = du * du + dv * dv
+  if (d2 === 0) return 0
+  const fd = HERO_DIR[e.face]!
+  const dot = fd[0] * du + fd[1] * dv
+  const root = isqrt(d2), len = root * root === d2 ? root : root + 1
+  const c45 = HERO_DIR[2]![0]
+  return dot >= c45 * len ? 0 : dot <= -c45 * len ? 2 : 1
+}
+
+/**
+ * 향 돌리기 (52 §1-1) — 겨눈(친) 적 → 가는 목표 → 편의 앞 쪽으로, 보병·활은 turnFrontTicks · 기병은 turnHorseTicks 마다 한 눈금.
+ * 정면으로 맞물린 대(맞물린 적이 앞 90° 안)는 돌지 못한다 · 달아나는 대는 달아나는 쪽을 본다.
+ */
+function turnFaces(s: FieldState): void {
+  for (const q of s.squads) {
+    if (q.men <= 0) continue
+    const every = q.grp === 'horse' ? P.field.turnHorseTicks : P.field.turnFrontTicks
+    if (s.tick % Math.max(1, every) !== 0) continue
+    if (q.lock >= 0 && q.flee === 0 && hitArc(q, s.squads[q.lock]!) === 0) continue
+    const t = q.aim >= 0 ? s.squads[q.aim]! : null
+    const want = t ? nearestDir(t.u - q.u, t.v - q.v)
+      : q.goal && dist2(q.u, q.v, q.goal.u, q.goal.v) > sq(P.field.unit) ? nearestDir(q.goal.u - q.u, q.goal.v - q.v)
+      : fwd(q.side) > 0 ? 0 : HERO_DIRS / 2
+    if (want < 0 || want === q.face) continue
+    const cw = (want - q.face + HERO_DIRS) % HERO_DIRS
+    // 꼭 반대쪽이면 편 0 은 +v 쪽 · 편 1 은 −v 쪽으로 돈다 (거울 판이 정확히 뒤집히게)
+    const up = cw < HERO_DIRS / 2 || (cw === HERO_DIRS / 2 && q.side === 0)
+    q.face = (q.face + (up ? 1 : HERO_DIRS - 1)) % HERO_DIRS
+  }
 }
 
 /**

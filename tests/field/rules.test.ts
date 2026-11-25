@@ -16,23 +16,24 @@ test('맞물림: 앞줄은 맞붙는 거리의 적 앞줄과 맞물려 지나쳐
   const s = createField(plainSetup(1, 1300, false))
   const A = pick(s, 0, 'front'), B = pick(s, 1, 'front')
   keepOnly(s, [A, B])
-  place(A, 50, 20); place(B, 51, 20)
+  place(A, 50, 20); place(B, 52, 20) // 몸이 맞닿는 거리 (깊이 2 + 2 의 반)
   Object.assign(A, { manual: 0, goal: { u: U(100), v: U(20) }, target: B.id }); Object.assign(B, { manual: 0 })
   const u0 = A.u
   run(s, 10)
   assert.equal(A.lock, B.id)
   assert.equal(B.lock, A.id)
   assert.equal(A.u, u0, '맞물린 대는 걷지 않는다')
-  A.manual = 1
+  // 몸이 있어 적 쪽으로는 못 뚫는다 — 손으로 뒤로 몰면 한 걸음 빠져나간다
+  A.manual = 1; A.goal = { u: 0, v: U(20) }
   run(s, 1)
-  assert.equal(A.u - u0, Math.trunc(P.field.speedFrontCellsPerSec * P.field.unit / P.field.hz), '손으로 몰면 한 걸음 빠져나간다')
+  assert.equal(u0 - A.u, Math.trunc(P.field.speedFrontCellsPerSec * P.field.unit / P.field.hz), '손으로 몰면 한 걸음 빠져나간다')
 })
 
 test('기병은 맞물리지 않는다 (옆으로 돌아간다)', () => {
   const s = createField(plainSetup(1, 1300, false))
   const H = pick(s, 0, 'horse'), B = pick(s, 1, 'front')
   keepOnly(s, [H, B])
-  place(H, 50, 20); place(B, 51, 20)
+  place(H, 50, 20); place(B, 52.5, 20) // 몸이 맞닿는 거리 (기병 깊이 3 · 앞줄 2 의 반)
   run(s, 1)
   assert.equal(H.lock, -1)
   assert.equal(B.lock, H.id, '앞줄은 적 기병과 맞물린다')
@@ -259,6 +260,8 @@ test('편 사기는 오르지 않고 사람 수는 틱마다 늘지 않는다 (�
 test('9,000명 판이 시간 끝까지 가도 정수 범위 안이다', () => {
   const s = createField(plainSetup(3, 9000))
   for (const q of s.squads) { q.manual = 1; q.goal = null }
+  // 장수도 세워 둔다 (C2 부터 입력 없는 장수는 적 쪽으로 걸어가 칼을 쓴다 — 이 시험은 맞붙지 않는 판의 정수 범위를 본다)
+  for (const h of s.heroes) { h.manual = 1; h.goal = null }
   finish(s)
   assert.equal(s.end, 'time')
   assert.equal(s.winner, -1)

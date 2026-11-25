@@ -8,8 +8,8 @@
  */
 import { P } from '../tune/params.ts'
 import { clamp, dist2, idiv, nearestDir } from './num.ts'
-import { bladeLine, m, mul, perTickAt, rankCmp, ticksOf, walk, type Kit } from './sim.ts'
-import { HERO_DIR, LOSS_ART, LOSS_HERO, OP_ATTACK, OP_AUTO, OP_DASH, OP_HERO_DIR, OP_MOVE, OP_SKILL, WHY_BUSY, WHY_COOL, WHY_DOWN, WHY_FAR, WHY_NO_ART, WHY_NO_TARGET, WHY_NONE } from './types.ts'
+import { bladeLine, heroGap2, hitArc, m, mul, perTickAt, rankCmp, ticksOf, walk, type Kit } from './sim.ts'
+import { HERO_DIR, HIT_GOOD, LOSS_ART, LOSS_HERO, OP_ATTACK, OP_AUTO, OP_DASH, OP_HERO_DIR, OP_MOVE, OP_SKILL, WHY_BUSY, WHY_COOL, WHY_DOWN, WHY_FAR, WHY_NO_ART, WHY_NO_TARGET, WHY_NONE } from './types.ts'
 import type { FieldEvent, FieldInput, FieldState, Hero, Point, Squad } from './types.ts'
 
 const MILLI = 1000
@@ -58,6 +58,8 @@ export function standOf(s: FieldState, q: Squad): number {
 }
 
 const foeHero = (s: FieldState, h: Hero): Hero | null => s.heroes.find(e => e.side !== h.side) ?? null
+/** 장수의 칼이 닿는 틈의 제곱 (장수 몸 가장자리에서 적 몸까지) */
+const reach2 = (): number => sq(P.field.heroReachCells * P.field.unit)
 const vanguarding = (h: Hero): boolean => h.art === 'vanguard' && h.artOn > 0 && h.dash > 0
 
 /** 우리 장수에게 온 입력 (g = 3) — 꼴은 sim.ts inputOk 가 이미 봤다 */
@@ -138,7 +140,7 @@ export function trySkill(s: FieldState, h: Hero, tu: number, tv: number): void {
     const up = mul(m(P.realm.tacArtRally), P.field.heroRallyPermille)
     for (const q of s.squads) if (q.side === h.side && q.men > 0 && near(q, P.field.heroArtCells)) q.calm += up * MILLI
     // 곁의 적 대는 사기가 뚝 (51 §6 · heroArtFoeShock)
-    for (const q of s.squads) if (q.side !== h.side && q.men > 0 && near(q, P.field.heroArtCells)) artHit(s, h, q)
+    for (const q of s.squads) if (q.side !== h.side && q.men > 0 && near(q, P.field.heroArtCells)) artHit(s, h, q, P.field.heroShoutFoeShock)
   } else if (h.art === 'stand') {
     // 버텨라 — heroStandSec 동안 곁의 무리 손실 ×tacArtStand (standOf)
     h.artOn = ticksOf(P.field.heroStandSec)
@@ -162,7 +164,7 @@ export function heroGoal(s: FieldState, h: Hero): Point | null {
     const e = s.squads[h.foe]
     if (!e || e.men <= 0) { h.foe = -1; return h.goal }
     // 닿는 거리에 들면 멈춘다 (붙어 친다)
-    if (dist2(h.u, h.v, e.u, e.v) <= sq(P.field.heroReachCells * P.field.unit) && bladeLine(s.map, h, e)) return null
+    if (heroGap2(h, e) <= reach2() && bladeLine(s.map, h, e)) return null
     return { u: e.u, v: e.v }
   }
   if (h.dir >= 0) return along(s, h, h.dir, heroSpeed())
@@ -181,30 +183,30 @@ function along(s: FieldState, h: Hero, dir: number, perSec: number): Point {
  * dmg 는 대마다 이 틱의 피해(백만분의 일 명/초 · sim.ts fight 와 같은 단위) · hits 는 loss 사건을 나누는 몫. 돌려주는 값: 적장에게 준 피해(장수마다).
  * 선봉 내닫기 중이면 칼 대신 곁의 적 대 모두에 heroVanguardHitPermillePerSec.
  */
-export function heroStrike(s: FieldState, K: Kit, dmg: number[], hits: number[][]): number[] {
+export function heroStrike(s: FieldState, dmg: number[], hits: number[][]): number[] {
   const toHero = s.heroes.map(() => 0)
-  const reach2 = sq(P.field.heroReachCells * P.field.unit)
+  const r2 = reach2()
   for (const h of s.heroes) {
     h.atk = -1
     if (h.stun > 0) continue
     if (vanguarding(h)) {
       for (const q of s.squads) {
-        if (q.side === h.side || q.men <= 0 || dist2(h.u, h.v, q.u, q.v) > K.meleeR2) continue
+        if (q.side === h.side || q.men <= 0 || heroGap2(h, q) > reach2()) continue
         const v = q.hp * P.field.heroVanguardHitPermillePerSec
         dmg[q.id]! += v; hits[q.id]!.push(-1 - h.side, LOSS_ART, v)
-        if (!h.hitIds.includes(q.id)) { h.hitIds.push(q.id); artHit(s, h, q) }
+        if (!h.hitIds.includes(q.id)) { h.hitIds.push(q.id); artHit(s, h, q, P.field.heroArtFoeShock) }
       }
       continue
     }
     if (h.dash > 0) continue
     let best: Squad | null = null, bd = 0
     const fo = h.foe >= 0 ? s.squads[h.foe]! : null
-    if (fo && fo.men > 0 && dist2(h.u, h.v, fo.u, fo.v) <= reach2 && bladeLine(s.map, h, fo)) { best = fo; bd = -1 }
+    if (fo && fo.men > 0 && heroGap2(h, fo) <= r2 && bladeLine(s.map, h, fo)) { best = fo; bd = -1 }
     else {
       for (const q of s.squads) {
         if (q.side === h.side || q.men <= 0) continue
-        const d = dist2(h.u, h.v, q.u, q.v)
-        if (d > reach2 || !bladeLine(s.map, h, q)) continue
+        const d = heroGap2(h, q)
+        if (d > r2 || !bladeLine(s.map, h, q)) continue
         // 동점은 자리로 (배열 차례가 아니다 · 45 §1-2)
         const fq = (q.u - h.u) * (h.side === 0 ? 1 : -1), fb = best ? (best.u - h.u) * (h.side === 0 ? 1 : -1) : 0
         // 같은 자리에 선 두 대도 시작 자리로 가른다 (배열 차례가 아니다 · 차례 섞기 시험 stake/2100/1)
@@ -213,7 +215,7 @@ export function heroStrike(s: FieldState, K: Kit, dmg: number[], hits: number[][
     }
     const e = foeHero(s, h)
     const ed = e && e.stun <= 0 && e.dash <= 0 ? dist2(h.u, h.v, e.u, e.v) : -1
-    if (e && ed >= 0 && ed <= reach2 && bladeLine(s.map, h, e) && (best === null || (bd >= 0 && ed < bd))) {
+    if (e && ed >= 0 && ed <= r2 + sq(2 * mul(P.field.unit, P.field.heroBoxPermille)) && bladeLine(s.map, h, e) && (best === null || (bd >= 0 && ed < bd))) {
       toHero[s.heroes.indexOf(e)]! += h.mu * P.field.heroAtkHeroPerSecPerMu
       h.atk = -2
       continue
@@ -222,6 +224,14 @@ export function heroStrike(s: FieldState, K: Kit, dmg: number[], hits: number[][
     const v = h.mu * P.field.heroAtkPerSecPerMu
     dmg[best.id]! += v; hits[best.id]!.push(-1 - h.side, LOSS_HERO, v)
     h.atk = best.id
+    // 휘두름 (52 §1-5) — heroSwingMs 마다 그 대 사기를 정면 heroSwingShock · 옆·뒤 heroSwingSideShock · 그 대가 이미 우리 대와 맞물려 있으면 모루와 망치 heroAnvilPermille 배
+    if (s.tick % Math.max(1, idiv(P.field.heroSwingMs * P.field.hz, MILLI)) === 0) {
+      const base = hitArc(best, h) === 0 ? P.field.heroSwingShock : P.field.heroSwingSideShock
+      const anvil = best.lock >= 0 && s.squads[best.lock]!.side === h.side
+      const k = anvil ? mul(base, P.field.heroAnvilPermille) : base
+      best.shock += k
+      s.stats.artMorale[h.side] += k
+    }
   }
   return toHero
 }
@@ -230,7 +240,7 @@ export function heroStrike(s: FieldState, K: Kit, dmg: number[], hits: number[][
  * 장수가 맞는다 — 곁(막힘 칸 너머 말고)의 깬 적 앞줄·기병 사람 수에 비례 + 적장의 칼. 내닫는 동안은 안 맞는다.
  * 쓰러져 있는 동안은 틱을 센다 (다 세면 일어남 사건).
  */
-export function heroTakeHits(s: FieldState, K: Kit, fromHero: readonly number[]): void {
+export function heroTakeHits(s: FieldState, fromHero: readonly number[]): void {
   const heroDen = P.field.squadMenRef * P.field.hz
   s.heroes.forEach((h, k) => {
     if (h.stun > 0) {
@@ -240,7 +250,10 @@ export function heroTakeHits(s: FieldState, K: Kit, fromHero: readonly number[])
     }
     if (h.dash > 0) return
     let men = 0
-    for (const t of s.squads) if (t.side !== h.side && t.men > 0 && t.grp !== 'bows' && t.sleep <= 0 && dist2(h.u, h.v, t.u, t.v) <= K.meleeR2 && bladeLine(s.map, h, t)) men += t.men
+    // 장수를 치는 적 대는 heroFoeCap 까지 (가까운 차례 · 같으면 시작 자리 · 52 §1-2)
+    const near = s.squads.filter(t => t.side !== h.side && t.men > 0 && t.flee === 0 && t.grp !== 'bows' && t.sleep <= 0 && heroGap2(h, t) <= reach2() && bladeLine(s.map, h, t))
+    near.sort((a, b) => heroGap2(h, a) - heroGap2(h, b) || rankCmp(s, a, b))
+    for (const t of near.slice(0, P.field.heroFoeCap)) men += t.men
     // 대에게 맞은 몫(squadMenRef 명마다 heroHitPerSec)과 적장의 칼(초당 체력)을 같은 분모로 모아 나머지를 들고 간다
     const num = men * P.field.heroHitPerSec + fromHero[k]! * P.field.squadMenRef + h.rem
     const d = idiv(num, heroDen)
@@ -249,14 +262,10 @@ export function heroTakeHits(s: FieldState, K: Kit, fromHero: readonly number[])
   })
 }
 
-/** 장수가 대에 막히나 (내닫기는 적 대를 뚫지 못한다) — 적 대 곁 heroBodyCells 안으로 더 다가가는 걸음 */
+/** 장수가 대에 막히나 — 적 대 몸을 뚫지 못한다 (걷기·내닫기 · 선봉만 뚫는다) */
 function blocked(s: FieldState, h: Hero, p: Point): boolean {
-  const r2 = sq(P.field.heroBodyCells * P.field.unit)
-  for (const q of s.squads) {
-    if (q.side === h.side || q.men <= 0) continue
-    const d = dist2(p.u, p.v, q.u, q.v)
-    if (d <= r2 && d < dist2(h.u, h.v, q.u, q.v)) return true
-  }
+  // 장수 몸(heroBoxPermille)이 적 대 몸(달아나는 대 빼고)과 새로 겹치는 걸음
+  for (const q of s.squads) if (q.side !== h.side && q.men > 0 && q.flee === 0 && heroGap2(p, q) === 0 && heroGap2(h, q) > 0) return true
   return false
 }
 
@@ -273,13 +282,16 @@ export function heroMove(s: FieldState, K: Kit, asleep: (side: 0 | 1) => boolean
       const p = walk(s, K, h.side, h.u, h.v, along(s, h, h.dashDir, sp * P.field.hz), sp)
       h.dash--
       if (van) h.artOn = h.dash
-      if ((p.u === h.u && p.v === h.v) || (!van && blocked(s, h, p))) { h.dash = 0; if (van) h.artOn = 0; continue }
+      if (p.u === h.u && p.v === h.v) { h.dash = 0; if (van) h.artOn = 0; continue }
+      // 내닫기로 적 몸에 닿음 = 들이침 (52 §1-5) — 그 대 사기 heroDashShock · 쾅 사건 · 내닫기는 거기서 멈춘다
+      if (!van && blocked(s, h, p)) { dashHit(s, h, p); h.dash = 0; continue }
       h.u = p.u; h.v = p.v
       continue
     }
     const goal = heroGoal(s, h)
     if (!goal || asleep(h.side)) continue
     const p = walk(s, K, h.side, h.u, h.v, goal, perTickAt(heroSpeed(), s.tick))
+    if (blocked(s, h, p)) continue
     const f = nearestDir(p.u - h.u, p.v - h.v)
     if (f >= 0) h.face = f
     h.u = p.u; h.v = p.v
@@ -287,8 +299,23 @@ export function heroMove(s: FieldState, K: Kit, asleep: (side: 0 | 1) => boolean
 }
 
 /** 비기에 맞은 적 대 — 사기가 그 자리에서 heroArtFoeShock 뚝 (통계 · artHit 사건) */
-function artHit(s: FieldState, h: Hero, q: Squad): void {
-  q.shock += P.field.heroArtFoeShock
-  s.stats.artMorale[h.side] += P.field.heroArtFoeShock
-  emit(s, { kind: 'artHit', side: h.side, id: -1, u: q.u, v: q.v, n: P.field.heroArtFoeShock, to: q.id, art: h.art })
+function artHit(s: FieldState, h: Hero, q: Squad, shock: number): void {
+  if (shock <= 0) return
+  q.shock += shock
+  s.stats.artMorale[h.side] += shock
+  emit(s, { kind: 'artHit', side: h.side, id: -1, u: q.u, v: q.v, n: shock, to: q.id, art: h.art })
+}
+
+/** 내닫기로 닿은 적 대 (몸이 새로 겹칠 대 가운데 가장 가까운 것) — 사기 heroDashShock 뚝 · impact(how 1) */
+function dashHit(s: FieldState, h: Hero, p: Point): void {
+  let best: Squad | null = null, bd = 0
+  for (const q of s.squads) {
+    if (q.side === h.side || q.men <= 0 || q.flee === 1 || heroGap2(p, q) > 0) continue
+    const d = heroGap2(h, q)
+    if (best === null || d < bd || (d === bd && rankCmp(s, q, best) < 0)) { best = q; bd = d }
+  }
+  if (!best) return
+  best.shock += P.field.heroDashShock
+  s.stats.artMorale[h.side] += P.field.heroDashShock
+  emit(s, { kind: 'impact', side: h.side, id: -1, u: idiv(h.u + best.u, 2), v: idiv(h.v + best.v, 2), n: best.men, to: best.id, how: HIT_GOOD })
 }

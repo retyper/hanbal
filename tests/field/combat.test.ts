@@ -61,35 +61,29 @@ test('많은 쪽이 이기고 사기는 잃은 몫을 따라 줄기만 한다', 
   assert.ok(t.B.morale < t.A.morale)
 })
 
-test('옆구리: 맞는 대가 보는 쪽을 기준으로 옆·뒤에서 치면 tacFlankMul 만큼 더 깎고 사기가 더 꺾인다 (앞에서·서로 마주 보면 아니다)', () => {
-  /** 우리(0) 앞줄 A1 이 정면 · 기병 A2 가 정면(front) · 옆(side) · 뒤(rear) 에서 적 앞줄 B 를 친다 */
+test('향 (52 §1-1): 맞는 대가 보는 쪽 기준 앞 90° 는 정면 · 옆은 sideHitPermille · 뒤 90° 는 rearHitPermille 로 더 깎고 옆구리를 센다', () => {
+  /** 적 앞줄 B (편 1 · −u 를 본다) 를 우리 기병 A2 가 정면 · 옆 · 뒤에서 친다 (몸이 맞닿는 자리) */
   const build = (at: 'front' | 'side' | 'rear') => {
     const s = createField(plainSetup(1, 1300, false))
-    const A1 = pick(s, 0, 'front'), A2 = pick(s, 0, 'horse'), B = pick(s, 1, 'front')
-    keepOnly(s, [A1, A2, B])
-    for (const q of [A1, A2, B]) { Object.assign(q, { goal: null, manual: 1, stance: 1, men: 600, menMax: 600, hp: 600000 }) }
+    const A2 = pick(s, 0, 'horse'), B = pick(s, 1, 'front')
+    keepOnly(s, [A2, B])
+    for (const q of [A2, B]) Object.assign(q, { goal: null, manual: 1, stance: 1, men: 600, menMax: 600, hp: 600000 })
     B.u = U(50); B.v = U(20)
-    A1.u = B.u - U(1) / 2; A1.v = B.v
-    if (at === 'side') { A2.u = B.u; A2.v = B.v + U(P.field.flankVCells) + 1 }
-    else if (at === 'rear') { A2.u = B.u + U(1); A2.v = B.v }
-    else { A2.u = B.u - U(1); A2.v = B.v + 1 }
+    if (at === 'front') { A2.u = B.u - U(2.5); A2.v = B.v }
+    else if (at === 'side') { A2.u = B.u; A2.v = B.v + U(3) }
+    else { A2.u = B.u + U(2.5); A2.v = B.v }
     return { s, B }
   }
-  // 같은 편 대끼리 밀어내기가 자리를 바꾸기 전 몇 틱만 본다
-  const ticks = 4
+  // B 가 돌기 전 몇 틱만 본다 (보병은 turnFrontTicks 마다 한 눈금)
+  const ticks = 3
   const front = build('front'), side = build('side'), rear = build('rear')
   run(front.s, ticks); run(side.s, ticks); run(rear.s, ticks)
   assert.equal(front.B.flank, 0)
   assert.equal(side.B.flank, ticks)
-  assert.equal(rear.B.flank, ticks, '뒤에서 친 것도 옆구리다')
-  const extra = (side.B.menMax * 1000 - side.B.hp) / (front.B.menMax * 1000 - front.B.hp)
-  assert.ok(extra > 1 && extra < P.realm.tacFlankMul, `옆에서 친 쪽이 더 깎는다 ${extra.toFixed(3)}`)
+  assert.equal(rear.B.flank, ticks)
+  const lost = (x: { B: Squad }): number => x.B.menMax * 1000 - x.B.hp
+  assert.ok(lost(side) > lost(front) && lost(rear) > lost(side), `${lost(front)} < ${lost(side)} < ${lost(rear)}`)
   assert.ok(side.B.morale < front.B.morale)
-  // 서로 옆에 선 둘은 (맞는 대가 서로를 보고 있으니) 옆구리가 아니다
-  const mutual = duel({ stance: 1 }, { stance: 1 })
-  mutual.B.u = mutual.A.u; mutual.B.v = mutual.A.v + U(P.field.flankVCells) + 1
-  run(mutual.s, 30)
-  assert.equal(mutual.A.flank + mutual.B.flank, 0)
 })
 
 test('손으로 몬 대(목표 없음)도 옆구리를 맞는다 — 보는 쪽은 가장 가까운 적', () => {
@@ -123,7 +117,8 @@ test('장수: 곁의 적에 사람 수 비례로 깎여 쓰러지면 몇 초 못
     run(t.s, 30)
     return P.field.heroHp - e.hp
   }
-  assert.equal(hit(400), 4 * hit(100))
+  // 사람 수 비례 (틱마다 내림이라 ±4 안 · heroHitPerSec 90 부터 100명 몫이 소수)
+  assert.ok(Math.abs(hit(400) - 4 * hit(100)) <= 4, `${hit(400)} · 4 × ${hit(100)}`)
   assert.equal(hit(400), Math.trunc(400 * P.field.heroHitPerSec * 30 / (P.field.squadMenRef * P.field.hz)))
 })
 
