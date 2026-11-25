@@ -53,6 +53,12 @@ export interface Squad {
   lock: number
   /** 잠든 남은 틱 (먹힌 기습 · 맞으면 0) */
   sleep: number
+  /** 자다가 맞아 깬 뒤 첫 칼(edgeMulPermille)이 걸리는 남은 틱 (edgeSec) */
+  daze: number
+  /** 깎다 남은 피해 (천분의 일 명보다 작은 몫 · 틱마다 내리지 않고 들고 간다 — hz 를 바꿔도 같은 피해) */
+  rem: number
+  /** 목책 문이 서 있는 동안 덜 꺾인 사기 몫 — 문이 부서진 틱에 굳힌다 (부서지는 틱에 위안이 한꺼번에 사라지는 숨은 충격을 막는다) */
+  held: number
   /** 옆구리를 맞은 틱 수 (사기는 이것에서 바로 셈해 hz 를 바꿔도 같다) */
   flank: number
   /** 손으로 몰고 있으면 1 (임시 AI 가 목표를 안 바꾼다) */
@@ -79,6 +85,8 @@ export interface Hero {
   /** 쓰러져 못 움직이는 남은 틱 */
   stun: number
   hp: number
+  /** 깎다 남은 피해 (틱마다 내리지 않고 들고 간다) */
+  rem: number
 }
 
 export interface FieldInput { tick: number; g: InputGroup; op: number; u: number; v: number }
@@ -112,8 +120,12 @@ export interface Camp {
   asleep?: number
 }
 
-/** 맵 조각 — 목책 마디와 문 (칸 단위 · hp 를 깎아 길을 여는 규칙은 F2b) */
-export interface Piece { id: number; kind: 'stake' | 'gate'; u0: number; v0: number; u1: number; v1: number; hp: number; owner: 0 | 1 }
+/**
+ * 맵 조각 — 목책 마디와 문 (칸 단위 · 칸은 [u0, u1) × [v0, v1) 반열림).
+ * 맵의 hp 는 치는 편(주인이 아닌 편) 사람 1,000명마다의 체력이고, 판을 만들 때 치는 편 사람 수를 곱한다 (F2c-1).
+ * rem 은 판 사본에서만 쓰는 깎다 남은 몫이다 (맵을 지을 때는 없다).
+ */
+export interface Piece { id: number; kind: 'stake' | 'gate'; u0: number; v0: number; u1: number; v1: number; hp: number; owner: 0 | 1; rem?: number }
 
 /** 맵의 규칙 이름 — 지어진 것만 (공성·수상은 mapFor 가 null) · hold 는 평지에서 한 편이 지키는 비교용 */
 export type MapRule = 'meet' | 'cross' | 'stake' | 'ambush' | 'high' | 'hold'

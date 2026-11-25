@@ -120,12 +120,23 @@ export function mapFor(meta: MapMeta): FieldMap | null {
   return meetMap()
 }
 
-/** (u, v) 단위 좌표의 바닥 — O(1) · 판 밖은 막힘 */
+/**
+ * (u, v) 단위 좌표의 바닥 — O(1) · 판 밖은 막힘.
+ * 판 안은 [0, 칸 수 × unit - 1] 이다 (칸은 반열림). 그래야 u 를 L-1-u 로 뒤집을 때 칸과 판 끝이 정확히 뒤집힌다 (45 §1-6).
+ */
 export function groundAt(map: FieldMap, u: number, v: number): Ground {
   const unit = P.field.unit
-  if (u < 0 || v < 0 || u > map.u * unit || v > map.w * unit) return G_BLOCK
-  const cu = Math.min(idiv(u, unit), map.u - 1), cv = Math.min(idiv(v, unit), map.w - 1)
-  return map.cells[cu * map.w + cv] as Ground
+  if (u < 0 || v < 0 || u >= map.u * unit || v >= map.w * unit) return G_BLOCK
+  return map.cells[idiv(u, unit) * map.w + idiv(v, unit)] as Ground
+}
+
+/**
+ * 진영 경계 u = b(칸 수)의 단위 점 — 경계에서 제 편 뒤쪽 첫 단위 (편 0 은 앞쪽이 +u 라 b × unit - 1 · 편 1 은 b × unit).
+ * 1단위 규약 하나 (45 §1-6): u 를 L-1-u 로 뒤집고 편을 바꾸면 경계는 칸 수 - b 로, 이 점도 정확히 그 점으로 간다.
+ * 앞의 목책 칸(stakeFromFrontCells)은 늘 진영 점 앞에 남는다. v 는 뒤집지 않으므로 b × unit 그대로.
+ */
+export function campPointU(b: number, side: 0 | 1): number {
+  return b * P.field.unit - (side === 0 ? 1 : 0)
 }
 
 export const walkable = (g: Ground): boolean => g !== G_DEEP && g !== G_BLOCK

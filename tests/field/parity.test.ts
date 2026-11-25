@@ -10,6 +10,7 @@ import { plainSetup } from '../../src/field/scenario.ts'
 import { P } from '../../src/tune/params.ts'
 import type { Cmd } from '../../src/realm/types.ts'
 import type { Squad } from '../../src/field/types.ts'
+import { assertInts, keepOnly } from './kit.ts'
 
 const EVEN = { spear: 34, bow: 33, shield: 33 }
 const side = (F: number, player = false): Side => ({ F, mix: EVEN, morale: 1, hero: { id: player ? 'me' : 'foe', mu: 5, ryak: 5, coward: false }, hungry: false, specials: [], water: false, player, seen: true })
@@ -20,10 +21,11 @@ function fieldLoss(men: number, a: number, d: number): [number, number] {
   const s = createField(plainSetup(1, 1300, false))
   const pick = (sd: 0 | 1): Squad => s.squads.find(q => q.side === sd && q.grp === 'front')!
   const A = pick(0), B = pick(1)
-  for (const q of s.squads) if (q !== A && q !== B) { q.men = 0; q.hp = 0; q.menMax = 0 }
+  keepOnly(s, [A, B])
   for (const q of [A, B]) { q.men = men; q.menMax = men; q.hp = men * 1000; q.manual = 1; q.goal = null; q.v = U(20); q.u = U(50) }
   B.u = U(51); A.stance = a as 0 | 1 | 2; B.stance = d as 0 | 1 | 2
   for (let i = 0; i < 60 && s.end === null; i++) stepField(s)
+  assertInts(s)
   return [1 - A.hp / (A.menMax * 1000), 1 - B.hp / (B.menMax * 1000)]
 }
 
@@ -51,7 +53,7 @@ test('병력이 클수록 이기고, 같은 자세끼리는 많은 쪽이 이긴
   }
   const s = createField(plainSetup(1, 1300, false))
   const A = s.squads.find(q => q.side === 0 && q.grp === 'front')!, B = s.squads.find(q => q.side === 1 && q.grp === 'front')!
-  for (const q of s.squads) if (q !== A && q !== B) { q.men = 0; q.hp = 0; q.menMax = 0 }
+  keepOnly(s, [A, B])
   for (const [q, n] of [[A, 900], [B, 500]] as const) { q.men = n; q.menMax = n; q.hp = n * 1000; q.manual = 1; q.goal = null; q.v = U(20); q.u = U(50); q.stance = 1 }
   B.u = U(51)
   for (let i = 0; i < 80; i++) stepField(s)

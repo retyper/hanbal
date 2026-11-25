@@ -1,11 +1,14 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { createField, runField, stepField } from '../../src/field/sim.ts'
+import { createField, runField as runFieldRaw, stepField } from '../../src/field/sim.ts'
+import { assertInts } from './kit.ts'
 import { plainSetup } from '../../src/field/scenario.ts'
 import { hashField } from '../../src/field/state.ts'
 import { P } from '../../src/tune/params.ts'
 import type { FieldState } from '../../src/field/types.ts'
 
+/** 끝 판 정수 검사를 거치는 runField (모든 시험 판 끝 정수 검사) */
+const runField: typeof runFieldRaw = (...a) => { const s = runFieldRaw(...a); assertInts(s); return s }
 const MAX = (): number => P.field.timesMax * P.field.timeSec * P.field.hz
 
 test('임시 AI 끼리 판은 사기나 사람으로 때를 다 쓰기 전에 끝나고 이긴 편이 있다 (사람 수 600~9000)', () => {

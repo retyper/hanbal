@@ -1,14 +1,15 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createField, runField, stepField } from '../../src/field/sim.ts'
-import { hashField } from '../../src/field/state.ts'
+import { hashField, snapshot } from '../../src/field/state.ts'
 import { parse, serialize } from '../../src/field/rec.ts'
 import { plainSetup } from '../../src/field/scenario.ts'
+import { MAPS as MAP_LIST, assertInts, U } from './kit.ts'
 import { P } from '../../src/tune/params.ts'
+import { stakeMap } from '../../src/field/map.ts'
 import type { FieldInput, FieldState, InputGroup } from '../../src/field/types.ts'
 
 const SIZES = [600, 1300, 2100]
-const U = (cells: number): number => cells * P.field.unit
 
 /** 씨앗마다 다른 손질 열 — 한 때 상한(3)을 넘겨 버려지는 것도 섞인다 */
 function inputsFor(seed: number): FieldInput[] {
@@ -24,16 +25,11 @@ function inputsFor(seed: number): FieldInput[] {
   return out
 }
 
-function integersOnly(s: FieldState): void {
-  for (const q of s.squads) for (const n of [q.u, q.v, q.men, q.hp, q.morale, q.target]) assert.ok(Number.isInteger(n) && !Object.is(n, -0))
-  for (const e of s.heroes) for (const n of [e.u, e.v, e.hp, e.stun]) assert.ok(Number.isInteger(n) && !Object.is(n, -0))
-}
-
-test('빈 판 200씨앗 (1,000씨앗은 tools/field-bench.ts): 같은 씨앗 두 번 = 같은 해시 · 입력 기록 재생 = 같은 해시', () => {
+test('빈 판 200씨앗 · 모든 맵 (1,000씨앗은 tools/field-bench.ts): 같은 씨앗 두 번 = 같은 해시 · 입력 기록 재생 = 같은 해시 · 끝 판 정수', () => {
   const seen = new Set<string>()
   let dropped = 0, retreats = 0, stances = 0
   for (let seed = 1; seed <= 200; seed++) {
-    const setup = plainSetup(seed, SIZES[seed % 3]!)
+    const setup = plainSetup(seed, SIZES[seed % 3]!, true, MAP_LIST[seed % MAP_LIST.length]![1]())
     const inputs = seed % 2 === 0 ? inputsFor(seed) : []
     const a = runField(setup, inputs)
     const b = runField(setup, inputs)
@@ -42,7 +38,7 @@ test('빈 판 200씨앗 (1,000씨앗은 tools/field-bench.ts): 같은 씨앗 두
     const replay = parse(serialize(a.log.accepted))
     assert.ok(replay)
     assert.equal(hashField(runField(setup, replay)), hashField(a), `재생 seed ${seed}`)
-    if (seed <= 3 || seed === 200) integersOnly(a)
+    assertInts(a, `seed ${seed}`)
     seen.add(hashField(a))
     dropped += a.log.dropped
     if (a.end === 'retreat') retreats++
@@ -90,9 +86,51 @@ test('한 때에 무리당 입력 3개까지 · 넘치면 버리고 센다 · �
   assert.equal(w.log.dropped, 2)
 })
 
-test('손으로 몬 무리는 그 자리로 간다', () => {
-  const s = runField(plainSetup(3, 1300), [{ tick: 1, g: 0, op: 0, u: U(50), v: U(10) }], 600)
-  for (const q of s.squads.filter(q => q.side === 0 && q.grp === 'front')) assert.ok(Math.abs(q.u - U(50)) <= U(P.field.sepCells) && Math.abs(q.v - U(10)) <= U(P.field.sepCells), '그 자리 곁에 선다 (같은 편끼리는 밀려난다)')
+test('손으로 몬 무리는 그 자리로 간다 — 대마다 시작 줄의 상대 자리를 지키고 줄 가운데가 누른 곳이다 (판 밖으로 나가면 가운데를 당긴다)', () => {
+  for (const [tu, tv] of [[50, 20], [50, 3]] as const) {
+    const s = runField(plainSetup(3, 1300, false), [{ tick: 1, g: 0, op: 0, u: U(tu), v: U(tv) }], 600)
+    const front = s.squads.filter(q => q.side === 0 && q.grp === 'front')
+    const cu = Math.trunc(front.reduce((a, q) => a + q.homeU, 0) / front.length), cv = Math.trunc(front.reduce((a, q) => a + q.homeV, 0) / front.length)
+    for (const q of front) {
+      assert.equal(q.goal!.u - U(tu), q.homeU - cu, '앞뒤 자리')
+      assert.ok(q.goal!.v >= 0 && q.goal!.v < U(s.map.w), '판 안')
+      assert.ok(Math.abs(q.u - q.goal!.u) <= U(P.field.sepCells) && Math.abs(q.v - q.goal!.v) <= U(P.field.sepCells), '제 목표 곁에 선다')
+    }
+    const gv = front.map(q => q.goal!.v - (q.homeV - cv))
+    assert.equal(new Set(gv).size, 1, '줄 모양 그대로 한 가운데')
+    if (tv === 20) assert.equal(gv[0], U(tv))
+    else assert.ok(gv[0]! > U(tv), '판 끝 가까이 누르면 줄이 판 안에 들어오게 가운데를 당긴다')
+    assertInts(s)
+  }
+})
+
+test('물러남은 op 만 본다 (무리 번호·자리가 이상해도) · 같은 틱 뒤 입력은 끝난 판을 안 바꾼다 · 틱이 정수가 아닌 입력은 버리고 뒤 입력은 산다', () => {
+  const setup = plainSetup(4, 1300)
+  const a = runField(setup, [{ tick: 30, g: 7 as InputGroup, op: 3, u: 0.5, v: NaN }, { tick: 30, g: 0, op: 0, u: U(80), v: U(5) }])
+  assert.equal(a.end, 'retreat')
+  assert.equal(a.tick, 30)
+  assert.deepEqual(a.log.accepted, [{ tick: 30, g: 0, op: 3, u: 0, v: 0 }])
+  assert.ok(a.squads.every(q => q.manual === 0), '물러난 뒤 입력은 안 받았다')
+  assert.equal(hashField(runField(setup, parse(serialize(a.log.accepted))!)), hashField(a), '기록 재생')
+  const b = runField(setup, [{ tick: NaN, g: 0, op: 0, u: 0, v: 0 }, { tick: 5, g: 0, op: 0, u: U(40), v: U(20) }], 20)
+  assert.equal(b.log.dropped, 1)
+  assert.equal(b.log.accepted.length, 1, '틱 NaN 뒤의 입력이 사라지지 않는다')
+})
+
+test('해시는 소수·NaN 을 정수와 같게 보지 않는다 · snapshot 은 지도·조각·broken 을 떼어 낸다', () => {
+  const s = createField(plainSetup(1, 1300))
+  const h = hashField(s)
+  s.squads[0]!.morale = NaN
+  assert.notEqual(hashField(s), h)
+  s.squads[0]!.morale = 700.5
+  const h2 = hashField(s)
+  s.squads[0]!.morale = 700
+  assert.notEqual(hashField(s), h2)
+  const t = createField(plainSetup(1, 1300, true, stakeMap()))
+  const snap = snapshot(t)
+  const hs = hashField(snap)
+  t.map.cells[0] = 3; t.map.pieces[0]!.hp = 0; t.broken[0] = 1
+  assert.equal(hashField(snap), hs, '판이 바뀌어도 사본은 그대로')
 })
 
 test('무효 시작은 던지지 않고 invalid 로 끝난다 (음수 · 빈 편 · 소수 · 몸 수 상한)', () => {

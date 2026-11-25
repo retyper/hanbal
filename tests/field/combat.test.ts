@@ -2,17 +2,16 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createField, stepField } from '../../src/field/sim.ts'
 import { plainSetup } from '../../src/field/scenario.ts'
+import { stakeMap } from '../../src/field/map.ts'
 import { P } from '../../src/tune/params.ts'
 import type { FieldState, Grp, Squad } from '../../src/field/types.ts'
+import { assertInts, keepOnly, pick, place, run, U } from './kit.ts'
 
-const U = (cells: number): number => cells * P.field.unit
-
-/** 두 대만 남기고(나머지는 사람 0) 손으로 세운 한 판 — 목표 없이 제자리에서 맞붙는다 */
+/** 두 대만 남기고(나머지는 배열에서 뺀다) 손으로 세운 한 판 — 목표 없이 제자리에서 맞붙는다 */
 function duel(a: Partial<Squad> & { grp?: Grp }, b: Partial<Squad> & { grp?: Grp }, men = 1300, hero = false): { s: FieldState; A: Squad; B: Squad } {
   const s = createField(plainSetup(1, 1300, hero))
-  const pick = (side: 0 | 1, grp: Grp): Squad => s.squads.find(q => q.side === side && q.grp === grp)!
-  const A = pick(0, a.grp ?? 'front'), B = pick(1, b.grp ?? 'front')
-  for (const q of s.squads) if (q !== A && q !== B) { q.men = 0; q.hp = 0; q.menMax = 0 }
+  const A = pick(s, 0, a.grp ?? 'front'), B = pick(s, 1, b.grp ?? 'front')
+  keepOnly(s, [A, B])
   for (const [q, o] of [[A, a], [B, b]] as const) {
     Object.assign(q, { men: men, menMax: men, hp: men * 1000, goal: null, manual: 1 }, o)
     q.hp = q.men * 1000
@@ -22,7 +21,6 @@ function duel(a: Partial<Squad> & { grp?: Grp }, b: Partial<Squad> & { grp?: Grp
   if (b.u === undefined) B.u = U(51)
   return { s, A, B }
 }
-const run = (s: FieldState, ticks: number): void => { for (let i = 0; i < ticks && s.end === null; i++) stepField(s) }
 const lostShare = (q: Squad): number => 1 - q.hp / (q.menMax * 1000)
 
 test('맞붙는 거리 안은 서로 치고 밖은 안 친다', () => {
@@ -58,27 +56,34 @@ test('많은 쪽이 이기고 사기는 잃은 몫을 따라 줄기만 한다', 
     assert.ok(t.B.morale <= prev, '사기가 오르지 않는다')
     prev = t.B.morale
   }
+  assertInts(t.s)
   assert.ok(lostShare(t.B) > lostShare(t.A))
   assert.ok(t.B.morale < t.A.morale)
 })
 
-test('옆구리: 다른 적과 맞물린 대를 옆에서 치면 더 잃고 사기가 더 꺾인다 (서로 옆에 서면 맞지 않는다)', () => {
-  /** 우리(0) 앞줄 A1 이 정면 · 기병 A2 가 정면(du) 또는 옆(dv)에서 적 앞줄 B 를 친다 */
-  const build = (sideOn: boolean) => {
+test('옆구리: 맞는 대가 보는 쪽을 기준으로 옆·뒤에서 치면 tacFlankMul 만큼 더 깎고 사기가 더 꺾인다 (앞에서·서로 마주 보면 아니다)', () => {
+  /** 우리(0) 앞줄 A1 이 정면 · 기병 A2 가 정면(front) · 옆(side) · 뒤(rear) 에서 적 앞줄 B 를 친다 */
+  const build = (at: 'front' | 'side' | 'rear') => {
     const s = createField(plainSetup(1, 1300, false))
-    const pick = (side: 0 | 1, grp: Grp): Squad => s.squads.find(q => q.side === side && q.grp === grp)!
-    const A1 = pick(0, 'front'), A2 = pick(0, 'horse'), B = pick(1, 'front')
-    for (const q of s.squads) if (q !== A1 && q !== A2 && q !== B) { q.men = 0; q.hp = 0; q.menMax = 0 }
+    const A1 = pick(s, 0, 'front'), A2 = pick(s, 0, 'horse'), B = pick(s, 1, 'front')
+    keepOnly(s, [A1, A2, B])
     for (const q of [A1, A2, B]) { Object.assign(q, { goal: null, manual: 1, stance: 1, men: 600, menMax: 600, hp: 600000 }) }
     B.u = U(50); B.v = U(20)
     A1.u = B.u - U(1) / 2; A1.v = B.v
-    if (sideOn) { A2.u = B.u; A2.v = B.v + U(P.field.flankVCells) + 1 } else { A2.u = B.u - U(1); A2.v = B.v + 1 }
+    if (at === 'side') { A2.u = B.u; A2.v = B.v + U(P.field.flankVCells) + 1 }
+    else if (at === 'rear') { A2.u = B.u + U(1); A2.v = B.v }
+    else { A2.u = B.u - U(1); A2.v = B.v + 1 }
     return { s, B }
   }
-  const front = build(false), side = build(true)
-  run(front.s, 30); run(side.s, 30)
-  assert.ok(side.B.hp < front.B.hp, '옆에서 친 쪽이 더 깎는다')
-  assert.ok(side.B.flank > 0 && front.B.flank === 0)
+  // 같은 편 대끼리 밀어내기가 자리를 바꾸기 전 몇 틱만 본다
+  const ticks = 4
+  const front = build('front'), side = build('side'), rear = build('rear')
+  run(front.s, ticks); run(side.s, ticks); run(rear.s, ticks)
+  assert.equal(front.B.flank, 0)
+  assert.equal(side.B.flank, ticks)
+  assert.equal(rear.B.flank, ticks, '뒤에서 친 것도 옆구리다')
+  const extra = (side.B.menMax * 1000 - side.B.hp) / (front.B.menMax * 1000 - front.B.hp)
+  assert.ok(extra > 1 && extra < P.realm.tacFlankMul, `옆에서 친 쪽이 더 깎는다 ${extra.toFixed(3)}`)
   assert.ok(side.B.morale < front.B.morale)
   // 서로 옆에 선 둘은 (맞는 대가 서로를 보고 있으니) 옆구리가 아니다
   const mutual = duel({ stance: 1 }, { stance: 1 })
@@ -87,7 +92,17 @@ test('옆구리: 다른 적과 맞물린 대를 옆에서 치면 더 잃고 사�
   assert.equal(mutual.A.flank + mutual.B.flank, 0)
 })
 
-test('장수는 곁의 적 앞줄에 깎여 쓰러지면 몇 초 못 움직이고 죽지 않는다 (그 편 사기가 꺾인다)', () => {
+test('손으로 몬 대(목표 없음)도 옆구리를 맞는다 — 보는 쪽은 가장 가까운 적', () => {
+  const s = createField(plainSetup(1, 1300, false))
+  const a = pick(s, 0, 'bows'), f = pick(s, 1, 'front'), h = pick(s, 1, 'horse')
+  keepOnly(s, [a, f, h])
+  place(a, 50, 20); place(f, 51, 20); place(h, 50, 20 + P.field.flankVCells + 0.5)
+  a.target = -1
+  run(s, 10)
+  assert.ok(a.flank > 0, '정면 앞줄을 보는 활이 옆 기병에게 옆구리를 맞는다')
+})
+
+test('장수: 곁의 적에 사람 수 비례로 깎여 쓰러지면 몇 초 못 움직이고 죽지 않는다 (그 편 사기가 꺾인다)', () => {
   const d = duel({}, {}, 1300, true)
   const h = d.s.heroes[0]!
   h.u = d.B.u; h.v = d.B.v; h.manual = 1; h.goal = null
@@ -97,7 +112,42 @@ test('장수는 곁의 적 앞줄에 깎여 쓰러지면 몇 초 못 움직이�
     assert.ok(h.hp > 0, '죽지 않는다')
     if (h.stun === (P.field.heroStunSec * P.field.hz)) { downs++; assert.equal(h.hp, P.field.heroHp) }
   }
+  assertInts(d.s)
   assert.ok(downs >= 1, `쓰러졌다 ${downs}`)
+  // 사람 수 비례: 곁의 적 100 명과 400 명은 4배
+  const hit = (men: number): number => {
+    const t = duel({}, { men }, 1300, true)
+    const e = t.s.heroes[0]!
+    e.u = t.B.u - U(1); e.v = t.B.v; e.manual = 1; e.goal = null
+    t.A.u = U(20)
+    run(t.s, 30)
+    return P.field.heroHp - e.hp
+  }
+  assert.equal(hit(400), 4 * hit(100))
+  assert.equal(hit(400), Math.trunc(400 * P.field.heroHitPerSec * 30 / (P.field.squadMenRef * P.field.hz)))
+})
+
+test('장수는 멀쩡한 목책 너머·잠든 대에게는 안 맞는다', () => {
+  const s = createField(plainSetup(1, 1300, true, stakeMap()))
+  const wall = s.map.pieces[0]!
+  const B = pick(s, 1, 'front')
+  keepOnly(s, [pick(s, 0, 'front'), B])
+  const h = s.heroes.find(e => e.side === 0)!
+  Object.assign(h, { u: U(wall.u0) - 1, v: U(wall.v0 + 2), manual: 1, goal: null })
+  place(B, wall.u0 + 1, wall.v0 + 2)
+  B.u = U(wall.u1)
+  s.squads[0]!.u = U(20)
+  run(s, 30)
+  assert.equal(h.hp, P.field.heroHp, '목책 너머')
+  const t = createField(plainSetup(1, 1300, true))
+  const C = pick(t, 1, 'front')
+  keepOnly(t, [pick(t, 0, 'front'), C])
+  const g = t.heroes.find(e => e.side === 0)!
+  Object.assign(g, { u: U(60), v: U(20), manual: 1, goal: null })
+  place(C, 61, 20); C.sleep = 100
+  t.squads[0]!.u = U(20)
+  run(t, 30)
+  assert.equal(g.hp, P.field.heroHp, '잠든 대')
 })
 
 test('입력: 자세 바꿈은 우리 편 무리만, 범위 밖 자세는 버린다', () => {
