@@ -50,8 +50,8 @@ test('대시하는 동안 대시 칸이 있는 장수는 그 한 칸을 그린�
 })
 
 test('대시 칸이 없는 장수는 대시 동안에도 예전과 같은 그리기 호출', () => {
-  setHeroArt('adogan')   // 옛 방식 장수(대시 칸 아직 없음 · 새 방식 장수는 칸이 모이면 표에 들어가므로 옛 방식으로 둔다)
-  assert.equal(dashPathOf('anim-px/gen-adogan.png'), null)
+  setHeroArt('eureum')   // 옛 방식 장수(대시 칸 아직 없음 · 새 방식 장수는 칸이 모이면 표에 들어가므로 옛 방식으로 둔다)
+  assert.equal(dashPathOf('anim-px/gen-eureum.png'), null)
   const withDashImage = images('anim-px/dash/gen-haebi.png'), plain = images()
   const s = field(); s.dash = C.dashTime * .6
   const a = recorder(), b = recorder(); drawField(a.ctx, withDashImage, s, null); drawField(b.ctx, plain, s, null)
