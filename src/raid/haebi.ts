@@ -17,10 +17,10 @@ import { HAEBI_WIDE as WD } from '../tune/params.ts'
 import { solidsFor, pushOutOfSolids, type Solid } from './props.ts'
 import type { Structure } from './build.ts'
 import { newWide, fieldBounds, worldBounds, stepGate, simView, ringSpot, huntSpot, inSimView, strayed, type WideState } from './wide.ts'
-import { HAEBI_BUILD as BU, HAEBI_CAP as CP } from '../tune/params.ts'
+import { HAEBI_BUILD as BU, HAEBI_CAP as CP, HAEBI_FIRM as FM } from '../tune/params.ts'
 import { HAEBI_BREAKABLE as HW, HAEBI_BUILD2 as B2, HAEBI_BOSS_CHEST as BC, HAEBI_BUILDUP as B3, HAEBI_CAP60 as C60, HAEBI_BOSS_DUEL as BD, HAEBI_BOSS_HIT as BH, HAEBI_PACE as PC, HAEBI_GAP as GP } from '../tune/params.ts'
 import { addStatus, tickStatuses, type Status } from './status.ts'
-import { BUILD_KINDS, ALL_BUILD_KINDS, isBuild2Kind, hasHp, bearsHp, wallTouching, rebuildOf, aggroOf, aggroNear, sotdaeRadius, sotdaeSlow, wellRadius, wellShare, wellCool, beaconEvery, beaconRadius, beaconShare, catapultEvery, catapultRadius, catapultShare, totemLineShare, segmentDistance, totemLinks, isBuildKind, newBuild, buildUnits, buildSpot, towerShare, towerFire, buildHp, standing, bodyR, pushOutOfBuild, touchingBuild, separateBuild, gapBuild, fenceTouching, jarBonusAt, BUILD_UPS, isBuildUp, FIRE_KINDS, TIMED_KINDS, firepowerMul, reloadInterval, type BuildKind, type BuildState } from './build.ts'
+import { BUILD_KINDS, ALL_BUILD_KINDS, isBuild2Kind, hasHp, bearsHp, wallTouching, rebuildOf, aggroOf, aggroNear, sotdaeRadius, sotdaeSlow, wellRadius, wellShare, wellCool, beaconEvery, beaconRadius, beaconShare, catapultEvery, catapultRadius, catapultShare, totemLineShare, segmentDistance, totemLinks, isBuildKind, newBuild, buildUnits, buildSpot, towerShare, towerFire, buildHp, standing, bodyR, pushOutOfBuild, touchingBuild, separateBuild, separateFirm, boxGap, pushBoxOut, fixTarget, gapBuild, fenceTouching, jarBonusAt, BUILD_UPS, isBuildUp, FIRE_KINDS, TIMED_KINDS, firepowerMul, reloadInterval, type BuildKind, type BuildState } from './build.ts'
 
 /**
  * 장수 열전 — 다이센카식 20분 판 (11-16 형: 「스테이지·판 밖 상점·휘장 · 무기 10단계 · 적 단계업」).
@@ -285,7 +285,7 @@ export interface HaebiRun {
   /** 60-JACKPOT 상자 규칙 (opts.chestRules) — 없으면 옛 고르는 상자 · pity 5개 넘게 못 터진 상자 수 · five·eight 이 판에서 터진 5개·8개 · ranks 상자가 올려 준 칸 수 */
   jackpots?: { pity: number; five: number; eight: number; ranks: number };
 }
-export interface RunInput { x: number; y: number; dash?: boolean; skill?: boolean; wake?: boolean; shortCutin?: boolean; /** 실제 카메라 안 발사자 ID, 0=없음. 생략한 봇·옛 기록은 전체 판. */ barrageSource?: number; viewBounds?: SpawnView }
+export interface RunInput { x: number; y: number; dash?: boolean; skill?: boolean; wake?: boolean; shortCutin?: boolean; /** 79-FIRM 다시 세우기를 누르고 있다 (키 F · 폰은 잔해 위 단추) */ fix?: boolean; /** 실제 카메라 안 발사자 ID, 0=없음. 생략한 봇·옛 기록은 전체 판. */ barrageSource?: number; viewBounds?: SpawnView }
 export interface CastState { kind: 'ult' | 'wake'; t: number; total: number; tru: boolean; awakened?: boolean; empowered?: boolean; slow?: number; seq?: number }
 export function random(s: HaebiRun) { const rng = makeRng(s.seed); const n = rng.next(); s.seed = rng.state(); return n }
 /**
@@ -293,7 +293,7 @@ export function random(s: HaebiRun) { const rng = makeRng(s.seed); const n = rng
  * awaken remains the fallback qualification alias. Explicit53B, plus default trial/vanguard, preserve timed-awake rules.
  * mastery: 숲·여울·목책을 다 깬 장수 (막대 절반으로 시작)
  */
-export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' | '55-SHAMAN'; /** 58-KITS 무기 개성 — 스테이지 규칙과 따로 켠다 (판 기록 opts 에 그대로 남아 재생도 같다) */ kitRules?: '58-KITS'; /** 60-JACKPOT 상자 — 정예 상자는 고르지 않고 터지고, 중간 보스 상자는 조합 하나를 고른다 (스테이지 판만 · 판 기록 opts 에 남아 재생도 같다) */ chestRules?: '60-JACKPOT'; /** 59-WIDE 넓은 맵 — 열전 스테이지 판에만 켜진다 (시련·선봉에 넘겨도 한 장짜리 그대로 · 판 기록 opts 에 남아 재생도 같다) */ mapRules?: '59-WIDE'; /** 61-SOLID 넓은 맵의 나무·바위·목책이 장수와 적을 막는다 (무기는 통과 · 59-WIDE 판에서만 · 판 기록 opts 에 남아 재생도 같다) */ blockRules?: '61-SOLID'; /** 62-ANCHOR 장수는 제 발로만 움직인다 — 단검의 그림자 걸음·환영난무가 장수를 순간이동시키지 않는다 (형 11-23 「때리다가 갑자기 순간이동 · 보스전에서 원하지 않는 곳으로」 · 판 기록 opts 에 남는다) */ anchorRules?: '62-ANCHOR'; /** 73-PHANTOM 환영난무는 장수가 직접 옮겨 다니며 벤다 (62-ANCHOR 위에 얹는다) */ phantomRules?: '73-PHANTOM'; /** 74-BUFF 우물이 지속 회복 버프(물기운)가 된다 — 쿨타임이 찼을 때 닿으면 HAEBI_BUILD2.well.time 초 동안 총량을 고르게 채운다 (67-BUILD2 판에서만 · 판 기록 opts 에 남는다) */ buffRules?: '74-BUFF'; /** 64-BREAK 부위 파괴가 느껴지게 — 몸통 피해가 가까운 부위로 번지고 · 부위 체력 낮춤 · 부서지면 그로기와 더 큰 피해 (판 기록 opts 에 남는다) */ breakRules?: '64-BREAK'; /** 66-CAP 최고 레벨 뒤 기세 막대가 다시 차면 회복과 판 금으로 바꾼다 (HAEBI_CAP · 판 기록 opts 에 남는다) */ capRules?: '66-CAP'; /** 68-BOSSCHEST 중간 보스 상자가 늘 카드 셋 (안 연 조합 → 조합 단계 → 갈래 끝·주 무기 두 단계 · HAEBI_BOSS_CHEST · 판 기록 opts 에 남는다) */ bossChestRules?: '68-BOSSCHEST'; /** 71-BOSSDUEL 보스전 잡졸을 줄인다 — 마지막 두목이 살아 있으면 저절로 나오는 잡졸 bossSpawn 배·적 상한 bossCap · 중간 보스면 midbossSpawn 배 · 마지막 두목이 나오는 순간 보통 잡졸은 달아나 사라진다 (HAEBI_BOSS_DUEL · 스테이지 판만 · 판 기록 opts 에 남는다) */ bossDuelRules?: '71-BOSSDUEL'; /** 72-BOSSHIT 거대 보스의 큰 공격은 맞으면 최대 체력의 큰 몫이 깎인다 (HAEBI_BOSS_HIT · 스테이지 판만 · 판 기록 opts 에 남는다) */ bossHitRules?: '72-BOSSHIT'; /** 70-AWAKECAP 영구 각성(permanentAwake)으로 들어온 판은 최고 레벨 60 · 51~60 은 막대가 더 길고 레벨 힘은 반 (겉모습 각성 appearanceAwake 는 상관없다 · HAEBI_CAP60 · 66-CAP 판에서만 · 판 기록 opts 에 남는다) */ awakeCapRules?: '70-AWAKECAP' | '70B-AWAKECAP'; /** 69-BUILDUP 설치 갈래에 화력·장전 칸 (종류 칸을 쓰지 않는다 · 얹힐 설치물을 가진 판에만 나온다 · HAEBI_BUILDUP · 65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ buildUpRules?: '69-BUILDUP' | '69B-BUILDUP'; /** 67-BUILD2 설치 갈래에 장승·솟대·봉수대·포차·우물을 더한다 (65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ build2Rules?: '67-BUILD2'; /** 65-BUILD 레벨업 카드의 네 번째 갈래 「설치」 — 고르면 망루·목책·항아리가 장수 앞에 서서 판 끝까지 남는다 · 장수·적은 지나가지 못하고 장수가 몸으로 밀어 옮긴다 (판 기록 opts 에 남는다) */ buildRules?: '65-BUILD'; /** 75-WALL 항아리·솟대·봉수대·우물도 체력이 있어 잡졸·정예가 물어 부순다 · 부서진 것은 효과가 끊긴다 (65-BUILD 판에서만 · HAEBI_BREAKABLE · 판 기록 opts 에 남는다) */ wallRules?: '75-WALL'; /** 76-PACE 초반 곡선 — 생성 속도 계단을 잇고 첫 정예를 당긴다 (HAEBI_PACE · 스테이지 판만 · 판 기록 opts 에 남는다) */ paceRules?: '76-PACE'; /** 78-GAP 건물은 구석을 봉하지 못한다 — 건물끼리·건물과 땅 끝·고체 사이는 적 한 명이 지나갈 틈보다 가까이 못 붙는다 (65-BUILD 판에서만 · HAEBI_GAP · 판 기록 opts 에 남는다) */ gapRules?: '78-GAP'; /** 채찍 묶음의 말투 — crack 딱 · noose 올가미 (whip 판에만 · 판 기록 opts 에 남아 재생도 같다) */ whipStyle?: WhipStyle }
+export interface HaebiOpts { stage?: StageId; bonus?: Partial<Bonus>; awaken?: boolean; mastery?: boolean; permanentAwake?: boolean; appearanceAwake?: boolean; simRules?: '53B' | '56A' | '56B' | '55-IMUGI' | '56C' | '55-TIGER' | '57-BULGASARI' | '55-GUMIHO' | '55-SHAMAN'; /** 58-KITS 무기 개성 — 스테이지 규칙과 따로 켠다 (판 기록 opts 에 그대로 남아 재생도 같다) */ kitRules?: '58-KITS'; /** 60-JACKPOT 상자 — 정예 상자는 고르지 않고 터지고, 중간 보스 상자는 조합 하나를 고른다 (스테이지 판만 · 판 기록 opts 에 남아 재생도 같다) */ chestRules?: '60-JACKPOT'; /** 59-WIDE 넓은 맵 — 열전 스테이지 판에만 켜진다 (시련·선봉에 넘겨도 한 장짜리 그대로 · 판 기록 opts 에 남아 재생도 같다) */ mapRules?: '59-WIDE'; /** 61-SOLID 넓은 맵의 나무·바위·목책이 장수와 적을 막는다 (무기는 통과 · 59-WIDE 판에서만 · 판 기록 opts 에 남아 재생도 같다) */ blockRules?: '61-SOLID'; /** 62-ANCHOR 장수는 제 발로만 움직인다 — 단검의 그림자 걸음·환영난무가 장수를 순간이동시키지 않는다 (형 11-23 「때리다가 갑자기 순간이동 · 보스전에서 원하지 않는 곳으로」 · 판 기록 opts 에 남는다) */ anchorRules?: '62-ANCHOR'; /** 73-PHANTOM 환영난무는 장수가 직접 옮겨 다니며 벤다 (62-ANCHOR 위에 얹는다) */ phantomRules?: '73-PHANTOM'; /** 74-BUFF 우물이 지속 회복 버프(물기운)가 된다 — 쿨타임이 찼을 때 닿으면 HAEBI_BUILD2.well.time 초 동안 총량을 고르게 채운다 (67-BUILD2 판에서만 · 판 기록 opts 에 남는다) */ buffRules?: '74-BUFF'; /** 64-BREAK 부위 파괴가 느껴지게 — 몸통 피해가 가까운 부위로 번지고 · 부위 체력 낮춤 · 부서지면 그로기와 더 큰 피해 (판 기록 opts 에 남는다) */ breakRules?: '64-BREAK'; /** 66-CAP 최고 레벨 뒤 기세 막대가 다시 차면 회복과 판 금으로 바꾼다 (HAEBI_CAP · 판 기록 opts 에 남는다) */ capRules?: '66-CAP'; /** 68-BOSSCHEST 중간 보스 상자가 늘 카드 셋 (안 연 조합 → 조합 단계 → 갈래 끝·주 무기 두 단계 · HAEBI_BOSS_CHEST · 판 기록 opts 에 남는다) */ bossChestRules?: '68-BOSSCHEST'; /** 71-BOSSDUEL 보스전 잡졸을 줄인다 — 마지막 두목이 살아 있으면 저절로 나오는 잡졸 bossSpawn 배·적 상한 bossCap · 중간 보스면 midbossSpawn 배 · 마지막 두목이 나오는 순간 보통 잡졸은 달아나 사라진다 (HAEBI_BOSS_DUEL · 스테이지 판만 · 판 기록 opts 에 남는다) */ bossDuelRules?: '71-BOSSDUEL'; /** 72-BOSSHIT 거대 보스의 큰 공격은 맞으면 최대 체력의 큰 몫이 깎인다 (HAEBI_BOSS_HIT · 스테이지 판만 · 판 기록 opts 에 남는다) */ bossHitRules?: '72-BOSSHIT'; /** 70-AWAKECAP 영구 각성(permanentAwake)으로 들어온 판은 최고 레벨 60 · 51~60 은 막대가 더 길고 레벨 힘은 반 (겉모습 각성 appearanceAwake 는 상관없다 · HAEBI_CAP60 · 66-CAP 판에서만 · 판 기록 opts 에 남는다) */ awakeCapRules?: '70-AWAKECAP' | '70B-AWAKECAP'; /** 69-BUILDUP 설치 갈래에 화력·장전 칸 (종류 칸을 쓰지 않는다 · 얹힐 설치물을 가진 판에만 나온다 · HAEBI_BUILDUP · 65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ buildUpRules?: '69-BUILDUP' | '69B-BUILDUP'; /** 67-BUILD2 설치 갈래에 장승·솟대·봉수대·포차·우물을 더한다 (65-BUILD 판에서만 · 판 기록 opts 에 남는다) */ build2Rules?: '67-BUILD2'; /** 65-BUILD 레벨업 카드의 네 번째 갈래 「설치」 — 고르면 망루·목책·항아리가 장수 앞에 서서 판 끝까지 남는다 · 장수·적은 지나가지 못하고 장수가 몸으로 밀어 옮긴다 (판 기록 opts 에 남는다) */ buildRules?: '65-BUILD'; /** 75-WALL 항아리·솟대·봉수대·우물도 체력이 있어 잡졸·정예가 물어 부순다 · 부서진 것은 효과가 끊긴다 (65-BUILD 판에서만 · HAEBI_BREAKABLE · 판 기록 opts 에 남는다) */ wallRules?: '75-WALL'; /** 76-PACE 초반 곡선 — 생성 속도 계단을 잇고 첫 정예를 당긴다 (HAEBI_PACE · 스테이지 판만 · 판 기록 opts 에 남는다) */ paceRules?: '76-PACE'; /** 78-GAP 건물은 구석을 봉하지 못한다 — 건물끼리·건물과 땅 끝·고체 사이는 적 한 명이 지나갈 틈보다 가까이 못 붙는다 (65-BUILD 판에서만 · HAEBI_GAP · 판 기록 opts 에 남는다) */ gapRules?: '78-GAP'; /** 79-FIRM 설치물은 단단하다 — 틈 없이 맞닿고 · 몸은 그림 발치대로 네모 · 밀면 민 걸음 그대로 따라오고 · 무너진 것은 장수가 곁에서 눌러 다시 세운다 (65-BUILD 판에서만 · 78-GAP 보다 먼저 · HAEBI_FIRM · 판 기록 opts 에 남는다) */ firmRules?: '79-FIRM'; /** 채찍 묶음의 말투 — crack 딱 · noose 올가미 (whip 판에만 · 판 기록 opts 에 남아 재생도 같다) */ whipStyle?: WhipStyle }
 /** 새 판이 쓰는 무기 규칙 */
 export const KIT_RULES = '58-KITS' as const
 /** 새 스테이지 판이 쓰는 상자 규칙 */
@@ -315,6 +315,8 @@ export const WALL_RULES = '75-WALL' as const
 export const PACE_RULES = '76-PACE' as const
 /** 새 판이 쓰는 「건물 틈」 규칙 (65-BUILD 위에 얹는다) */
 export const GAP_RULES = '78-GAP' as const
+/** 새 판이 쓰는 「설치물은 단단하다」 규칙 (65-BUILD 위에 얹는다 · 78-GAP 을 덮는다) */
+export const FIRM_RULES = '79-FIRM' as const
 export const BREAK_RULES = '64-BREAK' as const
 /** 새 판이 쓰는 설치 갈래 규칙 */
 export const BUILD_RULES = '65-BUILD' as const
@@ -369,6 +371,7 @@ export function createHaebi(seed = 7, mode: HaebiRun['mode'] = 'stage', kit: Kit
   if (build2 && opts.buffRules === BUFF_RULES) s.buffs = []
   if (build && opts.wallRules === WALL_RULES) s.build!.wall = true
   if (build && opts.gapRules === GAP_RULES) s.build!.gap = true
+  if (build && opts.firmRules === FIRM_RULES) s.build!.firm = true
   if (buildUp) s.build!.up = true
   // 처음 낸 69-BUILDUP 판(옛 기록)은 처음 수치 그대로 (HAEBI_BUILDUP.v1)
   if (buildUp && opts.buildUpRules === '69-BUILDUP') s.build!.upV1 = true
@@ -1776,15 +1779,48 @@ const BSPOT = { x: 0, y: 0 }
 function settleBuild(s: HaebiRun, dt?: number) {
   const b = s.build!
   // 78-GAP 틈 — 놓는 순간(dt 없음)은 곧바로 · 그 밖(장수가 밀 때 · 걸음마다)은 rate × dt 만큼씩
-  if (b.gap) { gapBuild(b, dt === undefined ? Infinity : GP.rate * dt); gapEdges(s) } else separateBuild(b)
+  // 79-FIRM 은 틈 없이 맞닿기까지만 (네모 몸) · 땅 끝은 장수가 설 수 있는 끝까지 · 고체 밑동은 몸이 닿기까지
+  if (b.firm) separateFirm(b)
+  else if (b.gap) { gapBuild(b, dt === undefined ? Infinity : GP.rate * dt); gapEdges(s) } else separateBuild(b)
   for (const it of b.items) {
     if (!standing(it)) continue
     const ox = it.x, oy = it.y
-    if (s.solids) pushOutOfSolids(s.solids, it, bodyR(it) + (b.gap ? GP.gap : 0))
-    if (!b.gap) { it.x = heroX(s, it.x); it.y = heroY(s, it.y) }
-    if (s.palisade) wallMove(s.palisade, it, ox, oy, bodyR(it))
+    if (b.firm) { if (s.solids) for (const o of s.solids) pushBoxOut(it, Math.max(o.x0, Math.min(o.x1, it.x)), o.y, o.r) }
+    else if (s.solids) pushOutOfSolids(s.solids, it, bodyR(it) + (b.gap ? GP.gap : 0))
+    if (!b.gap || b.firm) { it.x = heroX(s, it.x); it.y = heroY(s, it.y) }
+    if (s.palisade) wallMove(s.palisade, it, ox, oy, b.firm ? FM.body[it.kind].w : bodyR(it))
   }
   pushOutOfBuild(b, s, WL.heroR)
+}
+/** 79-FIRM 밀린 쪽을 받는 그릇 (판 상태가 아니다) */
+const PN = { x: 0, y: 0 }
+/**
+ * 79-FIRM 장수가 민다 — 겹치면 이번 걸음이 pushShare 몫으로 줄고, 장수가 몸 쪽으로 걸었으면 설치물이 장수가 간 그대로 같은 방향으로 따라간다
+ * (겹친 만큼도 그 방향으로 더 민다 · 모서리에 걸려 옆으로 빠지지 않는다) · 못 가는 설치물(장식·땅 끝·다른 건물)이면 장수가 막힌다
+ */
+function heroPushFirm(s: HaebiRun, fromX: number, fromY: number, dt: number) {
+  const b = s.build!
+  if (!touchingBuild(b, s, WL.heroR)) return
+  s.x = fromX + (s.x - fromX) * BU.pushShare; s.y = fromY + (s.y - fromY) * BU.pushShare
+  const mx = s.x - fromX, my = s.y - fromY, ml = Math.hypot(mx, my)
+  if (ml > 1e-9) for (const it of b.items) {
+    if (!standing(it)) continue
+    const g = boxGap(it, s.x, s.y, WL.heroR, PN)
+    if (g >= 0 || mx * PN.x + my * PN.y >= 0) continue   // 겹치지 않았거나 몸 쪽으로 걷지 않았다
+    it.x += mx + mx / ml * -g; it.y += my + my / ml * -g; it.push = BU.pushDust
+  }
+  settleBuild(s, dt)
+}
+/** 79-FIRM 다시 세우기 — 누르고 있는 동안 손 닿는 가장 가까운 잔해가 fix 초에 걸쳐 선다 (고리가 찬다 · 떼면 찬 만큼 남는다) · 선 순간 체력이 다 찬다 */
+function fixStep(s: HaebiRun, held: boolean, dt: number) {
+  if (!held) return
+  const b = s.build!, it = fixTarget(b, s, WL.heroR)
+  if (!it) return
+  it.down -= rebuildOf(it.kind) * dt / FM.fix; it.push = BU.pushDust
+  if (it.down > 0) return
+  it.down = 0; it.max = buildHp(it.kind, s.ranks[it.kind], !!b.wall) * threat(s); it.hp = it.max; it.flash = BU.flash
+  fx(s, 'ring', it.x, it.y - FM.body[it.kind].lift, FM.body[it.kind].w * 2, BU.view.rebuildColor)
+  settleBuild(s)
 }
 /** 78-GAP 건물 몸을 땅 끝에서 gap 만큼 띄운다 (장수가 설 수 있는 땅 안쪽 끝보다도 안쪽 · 건물이 땅 끝을 봉하지 못한다) */
 function gapEdges(s: HaebiRun) {
@@ -1814,6 +1850,7 @@ function buildPicked(s: HaebiRun, kind: BuildKind) {
 /** 장수가 설치물을 몸으로 민다 (다이센카) — 겹치면 이번 걸음이 pushShare 몫으로 줄고, 겹친 설치물은 장수 몸 밖으로 미끄러진다 · 못 가는 설치물(장식·땅 끝)이면 장수가 막힌다 */
 function heroPush(s: HaebiRun, fromX: number, fromY: number, dt: number) {
   const b = s.build!
+  if (b.firm) { heroPushFirm(s, fromX, fromY, dt); return }
   if (!touchingBuild(b, s, WL.heroR)) return
   s.x = fromX + (s.x - fromX) * BU.pushShare; s.y = fromY + (s.y - fromY) * BU.pushShare
   for (const it of b.items) {
@@ -1840,7 +1877,7 @@ function towerAggro(s: HaebiRun, e: Mob, bite: number, v: number, dt: number) {
   let t = e.aggro === undefined ? undefined : b.items.find(it => it.id === e.aggro && standing(it))
   if (!t) { delete e.aggro; t = aggroNear(b, e, e.id); if (!t) return false; e.aggro = t.id }
   const a = aggroOf(t.kind)!, dx = t.x - e.x, dy = t.y - e.y, d = Math.hypot(dx, dy) || 1
-  if (d > bodyR(t) + mobRadius(e) + a.touch) {
+  if (b.firm ? boxGap(t, e.x, e.y, mobRadius(e)) > a.touch : d > bodyR(t) + mobRadius(e) + a.touch) {
     const ox = e.x, oy = e.y
     e.x += dx / d * v * dt; e.y += dy / d * v * dt
     if (s.palisade) wallMove(s.palisade, e, ox, oy, mobRadius(e))
@@ -1930,14 +1967,14 @@ function build2Step(s: HaebiRun, dt: number) {
     fx(s, 'ring', s.x, s.y, B2.view.heal.ring, B2.view.heal.color); s.fx[s.fx.length - 1]!.wellHeal = Math.round(s.hp - h0)
   }
 }
-/** 설치물 한 걸음 — 망루 화살 · 봉수대·포차 (67) · 무너진 것은 잔해로 rebuild 초 뒤 같은 자리에 다시 선다 (항아리·솟대·봉수대·우물은 무적) */
+/** 설치물 한 걸음 — 망루 화살 · 봉수대·포차 (67) · 무너진 것은 잔해로 rebuild 초 뒤 같은 자리에 다시 선다 (항아리·솟대·봉수대·우물은 무적 · 79-FIRM 은 저절로 서지 않고 장수가 다시 세운다 fixStep) */
 function buildStep(s: HaebiRun, dt: number, tempo: number) {
   const b = s.build!
   let rebuilt = false
   for (const it of b.items) {
     it.flash = Math.max(0, it.flash - dt); it.push = Math.max(0, it.push - dt)
     if (bearsHp(it)) {
-      if (it.down > 0) { it.down -= dt; if (it.down <= 0) { it.down = 0; it.max = buildHp(it.kind, s.ranks[it.kind], !!b.wall) * threat(s); it.hp = it.max; rebuilt = true } continue }
+      if (it.down > 0) { if (b.firm) continue; it.down -= dt; if (it.down <= 0) { it.down = 0; it.max = buildHp(it.kind, s.ranks[it.kind], !!b.wall) * threat(s); it.hp = it.max; rebuilt = true } continue }
       if (it.hp <= 0) { it.hp = 0; it.down = rebuildOf(it.kind); fx(s, 'thud', it.x, it.y, bodyR(it) * 2, '#c9a27a'); continue }
     }
     if (it.kind === 'beacon') { beaconStep(s, it, dt, tempo); continue }
@@ -2046,7 +2083,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
     }
   }
   if (s.kits) aura58(s, aimAngle, power, area, dt); else aura(s, power, area)
-  if (s.build) buildStep(s, dt, tempo)
+  if (s.build) { if (s.build.firm) fixStep(s, !!input.fix, dt); buildStep(s, dt, tempo) }
   s.spawn -= dt
   const rate = s.mode === 'vanguard' ? V.spawnEarly + (V.spawnLate - V.spawnEarly) * s.t / V.duration : spawnRate(s)
   if (s.spawn <= 0) { if (s.enemies.length < (s.duel ? duelCap(s) : C.maxEnemies)) spawnMob(s); s.spawn = 1 / (rate * ST[s.stage].spawn * (respite(s) ? C.respiteSpawn : 1) * (s.duel ? duelSpawn(s) : 1)) }
@@ -2153,12 +2190,12 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
     for (const e of s.enemies) if (e.hp > 0 && !e.giant) pushOutOfBuild(s.build, e, mobRadius(e))
     let shoved = false
     for (const e of s.enemies) if (e.giant && e.hp > 0) for (const it of s.build.items) {
-      if (!standing(it) || !giantContact(e, disk(it.x, it.y, bodyR(it)))) continue
+      if (!standing(it) || !giantContact(e, s.build.firm ? { kind: 'box', center: { x: it.x, y: it.y - FM.body[it.kind].lift }, halfX: FM.body[it.kind].w, halfY: FM.body[it.kind].d, angle: 0 } : disk(it.x, it.y, bodyR(it)))) continue
       const dx = it.x - e.x, dy = it.y - e.y, d = Math.hypot(dx, dy) || 1
       it.x += dx / d * BU.shove * dt; it.y += dy / d * BU.shove * dt; it.push = BU.pushDust; shoved = true
     }
     if (shoved) settleBuild(s, dt)
-    else if (s.build.gap) settleBuild(s, dt)   // 78-GAP 서 있는 건물끼리 걸음마다 조금씩 틈을 되찾는다
+    else if (s.build.gap || s.build.firm) settleBuild(s, dt)   // 78-GAP 서 있는 건물끼리 걸음마다 조금씩 틈을 되찾는다 · 79-FIRM 은 겹친 것을 맞닿기까지 푼다
   }
   if (s.solids) {
     for (const e of s.enemies) if (e.hp > 0 && !e.giant) pushOutOfSolids(s.solids, e, mobRadius(e))

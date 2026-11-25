@@ -5962,3 +5962,20 @@ export const HAEBI_PACE = { rampPaced: 30, eliteFirst: 60, stageBoost: { forest:
  * 값은 시작 값 (tools/raid-wall.ts · docs/BALANCE.md 「78-GAP」).
  */
 export const HAEBI_GAP = { gap: 90, rate: 120 } as const
+
+/**
+ * 79-FIRM 설치물은 단단하다 (형 11-26 「설치물 사이에 보이지 않는 이격거리 엄청 짜증 · 밀 때 자꾸 미끄러짐 · 자동 재건설 너무 빠름 · 무너진 건 근처에서 상호작용으로」).
+ * 78-GAP 틈을 없앤다 — 건물끼리 · 건물과 땅 끝 · 고체 사이가 몸이 맞닿을 때까지 붙는다.
+ * 몸은 그림의 바닥 모양대로 네모다 (둥근 몸 r 대신): body[종류] = { w 가로 반폭 · d 세로 반깊이 · lift 가운데가 발밑(it.y)보다 위로 뜬 px } — 그림 발치를 재어 잡았다(브라우저에서 그림 알파로).
+ *   장수가 밀면 그 걸음 그대로 따라온다 (민 방향이 몸 쪽이면 장수가 간 만큼 같은 방향으로 · 모서리에 걸려 옆으로 빠지지 않는다 · 걸음은 HAEBI_BUILD.pushShare 로 줄어든 그대로).
+ * 무너진 것은 잔해로 남고 저절로 서지 않는다 — 장수 몸 가장자리가 잔해 몸에서 reach px 안일 때 다시 세우기(키 F · 폰은 잔해 위 단추)를 누르고 있으면 fix 초에 다시 선다 (떼면 찬 만큼 남는다 · 가장 가까운 잔해 하나씩).
+ * view (화면만): 손이 닿는 잔해의 고리 빛 near · 숨쉬는 빠르기 pulse(Hz) · 부푸는 몫 grow · 바깥 빛 두께 glow · 폰 단추 지름 btn(css px · 고리 자리 위로 뜬다)
+ */
+export const HAEBI_FIRM = {
+  reach: 30, fix: 1.5,
+  body: {
+    tower: { w: 30, d: 12, lift: 18 }, fence: { w: 40, d: 8, lift: 4 }, jar: { w: 13, d: 7, lift: 6 },
+    totem: { w: 14, d: 8, lift: 6 }, sotdae: { w: 8, d: 6, lift: 4 }, beacon: { w: 22, d: 12, lift: 12 }, catapult: { w: 44, d: 14, lift: 10 }, well: { w: 32, d: 18, lift: 6 },
+  },
+  view: { near: '#fff2b0', pulse: 2.2, grow: .18, glow: 7, btn: 46 },
+} as const

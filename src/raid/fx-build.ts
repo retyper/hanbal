@@ -5,9 +5,9 @@
  * 땅 차례(drawBuildGround): 항아리가 기세를 더하는 둘레를 옅은 금빛 고리로 (규칙이 보이게).
  * 몸 차례(drawStructure): 위에서 아래로 그리는 줄에 끼어 적·장수와 앞뒤가 맞는다.
  */
-import { HAEBI_BUILD as B, HAEBI_BUILD2 as B2 } from '../tune/params.ts'
+import { HAEBI_BUILD as B, HAEBI_BUILD2 as B2, HAEBI_FIRM as FM, HAEBI_PALISADE as WL } from '../tune/params.ts'
 import type { HaebiRun } from './haebi.ts'
-import { jarRadius, isBuild2Kind, bearsHp, standing, rebuildOf, bodyR, type Structure } from './build.ts'
+import { jarRadius, isBuild2Kind, bearsHp, standing, rebuildOf, bodyR, fixTarget, type Structure } from './build.ts'
 import { drawStructure2 } from './fx-build2.ts'
 
 const V = B.view
@@ -62,9 +62,15 @@ export function drawStructure(ctx: CanvasRenderingContext2D, images: Map<string,
     }
   }
   if (!bearsHp(it)) { ctx.globalAlpha = a; return }
-  const top = two ? it.y - B2.view.h[it.kind as keyof typeof B2.view.h] * (rubble ? V.rubbleSquash : 1) - V.hpLift : it.kind === 'tower' ? it.y - V.towerH * (rubble ? V.rubbleSquash : 1) - V.hpLift : it.kind === 'jar' ? it.y - V.jarH * (rubble ? V.rubbleSquash : 1) - V.hpLift : it.y + V.fenceLift - (img ? V.fenceW * img.height / img.width : V.fenceW) - V.hpLift
+  const top = barTop(it, img)
   // 잔해 — 다시 서기까지 고리가 차오른다
   if (rubble) {
+    // 79-FIRM 손이 닿는 잔해 — 고리가 숨쉬듯 부풀며 빛난다 (다시 세울 수 있다는 것이 글 없이 보이게)
+    if (s.build?.firm && fixTarget(s.build, s, WL.heroR) === it) {
+      const F = FM.view, k = .5 + .5 * Math.sin(s.t * F.pulse * Math.PI * 2)
+      ctx.globalAlpha = a * (.55 + .45 * k); ctx.strokeStyle = F.near; ctx.lineWidth = F.glow
+      ctx.beginPath(); ctx.arc(it.x, top, V.rebuildR * (1 + F.grow * k) + F.glow / 2, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = a
+    }
     ctx.strokeStyle = '#111c'; ctx.lineWidth = V.rebuildW + 2; ctx.beginPath(); ctx.arc(it.x, top, V.rebuildR, 0, Math.PI * 2); ctx.stroke()
     ctx.strokeStyle = V.rebuildColor; ctx.lineWidth = V.rebuildW; ctx.beginPath()
     ctx.arc(it.x, top, V.rebuildR, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - it.down / rebuildOf(it.kind))); ctx.stroke()
@@ -76,3 +82,10 @@ export function drawStructure(ctx: CanvasRenderingContext2D, images: Map<string,
   }
   ctx.globalAlpha = a
 }
+/** 체력 띠·다시 서기 고리가 서는 높이 (설치물 그림 위 · 잔해는 주저앉은 높이 위) — img 는 목책 그림(없으면 폭으로) */
+function barTop(it: Structure, img?: HTMLImageElement) {
+  const rubble = it.down > 0, sq = rubble ? V.rubbleSquash : 1
+  return isBuild2Kind(it.kind) ? it.y - B2.view.h[it.kind as keyof typeof B2.view.h] * sq - V.hpLift : it.kind === 'tower' ? it.y - V.towerH * sq - V.hpLift : it.kind === 'jar' ? it.y - V.jarH * sq - V.hpLift : it.y + V.fenceLift - (img ? V.fenceW * img.height / img.width : V.fenceW) - V.hpLift
+}
+/** 79-FIRM 잔해의 다시 서기 고리 자리 (판 자리) — 화면의 다시 세우기 단추가 고리 위에 겹쳐 뜬다 */
+export const rebuildRingAt = (images: Map<string, HTMLImageElement>, it: Structure) => barTop(it, it.kind === 'fence' ? images.get(ART.rubble) : undefined)

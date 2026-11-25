@@ -6,7 +6,7 @@
  * 67-BUILD2 (형 11-23 「건설물 여러가지 더 · 창의적이게」): 장승 · 솟대 · 봉수대 · 포차 · 우물 다섯을 더해 여덟 종류 · 종류 칸은 그대로 셋.
  * 수치는 모두 HAEBI_BUILD · HAEBI_BUILD2 (tune/params.ts).
  */
-import { HAEBI_BUILD as B, HAEBI_BUILD2 as B2, HAEBI_BUILDUP as B3, HAEBI_BREAKABLE as HW, HAEBI_GAP as GP } from '../tune/params.ts'
+import { HAEBI_BUILD as B, HAEBI_BUILD2 as B2, HAEBI_BUILDUP as B3, HAEBI_BREAKABLE as HW, HAEBI_GAP as GP, HAEBI_FIRM as FM } from '../tune/params.ts'
 
 export type BuildKind = 'tower' | 'fence' | 'jar' | 'totem' | 'sotdae' | 'beacon' | 'catapult' | 'well'
 /** 65-BUILD 의 셋 — 카드·나무에 서는 차례 (망루 → 목책 → 항아리) */
@@ -32,7 +32,7 @@ export const rebuildOf = (k: BuildKind) => k === 'tower' ? B.tower.rebuild : k =
  */
 export interface Structure { id: number; kind: BuildKind; x: number; y: number; hp: number; max: number; down: number; cd: number; flash: number; push: number; /** 75-WALL 판에서 놓인 무적이던 네 종류 — 체력이 있다 */ w?: true }
 /** items 선 것(놓인 차례) · nextId · jarXp 항아리가 더 얹어 준 기세(기록) */
-export interface BuildState { items: Structure[]; nextId: number; jarXp: number; /** 67-BUILD2 판 (여덟 종류) */ v2?: true; /** 69-BUILDUP 판 (화력·장전 칸) */ up?: true; /** 처음 낸 69-BUILDUP 판(옛 기록) — HAEBI_BUILDUP.v1 수치 */ upV1?: true; /** 75-WALL 판 (항아리·솟대·봉수대·우물도 체력이 있어 부서진다) */ wall?: true; /** 78-GAP 판 (건물끼리 · 건물과 땅 끝·고체 사이는 적 한 명이 지나갈 틈보다 가까이 못 붙는다) */ gap?: true }
+export interface BuildState { items: Structure[]; nextId: number; jarXp: number; /** 67-BUILD2 판 (여덟 종류) */ v2?: true; /** 69-BUILDUP 판 (화력·장전 칸) */ up?: true; /** 처음 낸 69-BUILDUP 판(옛 기록) — HAEBI_BUILDUP.v1 수치 */ upV1?: true; /** 75-WALL 판 (항아리·솟대·봉수대·우물도 체력이 있어 부서진다) */ wall?: true; /** 78-GAP 판 (건물끼리 · 건물과 땅 끝·고체 사이는 적 한 명이 지나갈 틈보다 가까이 못 붙는다) */ gap?: true; /** 79-FIRM 판 (틈 없음 · 네모 몸 · 밀면 그대로 따라옴 · 잔해는 장수가 다시 세운다 · HAEBI_FIRM · 78-GAP 보다 먼저) */ firm?: true }
 export const newBuild = (): BuildState => ({ items: [], nextId: 1, jarXp: 0 })
 
 /** 그 단계에서 서 있는 수 — 1 + extraAt 에 이른 수 (단계 0 이면 0) · 우물만 늘 하나 (단계가 오르면 개수 대신 채우는 몫·쿨타임이 좋아진다) */
@@ -98,10 +98,42 @@ export function buildSpot(kind: BuildKind, i: number, x: number, y: number, aim:
   out.x = x + Math.cos(a) * KP[kind].ahead; out.y = y + Math.sin(a) * KP[kind].ahead
   return out
 }
-/** 몸(둘레 radius)을 서 있는 설치물 밖으로 민다 — 겹친 깊이만큼 가운데에서 먼 쪽으로 (미끄러지듯 비켜 간다) · skip 은 건너뛸 설치물 */
+/** 밀어낼 쪽을 받는 그릇 (판 상태가 아니다) */
+const N = { x: 0, y: 0 }
+/**
+ * 79-FIRM 네모 몸(그림 발치 · HAEBI_FIRM.body)과 둘레 radius 인 몸(가운데 px, py) 사이 빈 거리 — 겹치면 음수.
+ * out 에 네모에서 그 몸 쪽으로 향한 단위 방향을 적는다 (가운데가 네모 안이면 가장 얕은 면 쪽 · 한가운데면 아래(앞)로)
+ */
+export function boxGap(it: Structure, px: number, py: number, radius: number, out: { x: number; y: number } = N) {
+  const k = FM.body[it.kind], dx = px - it.x, dy = py - (it.y - k.lift), ox = Math.abs(dx) - k.w, oy = Math.abs(dy) - k.d
+  if (ox > 0 || oy > 0) {
+    const ex = Math.max(ox, 0), ey = Math.max(oy, 0), d = Math.hypot(ex, ey)
+    out.x = Math.sign(dx) * ex / d; out.y = Math.sign(dy) * ey / d
+    return d - radius
+  }
+  if (ox > oy) { out.x = Math.sign(dx) || 1; out.y = 0; return ox - radius }
+  out.x = 0; out.y = Math.sign(dy) || 1; return oy - radius
+}
+/** 79-FIRM 네모 몸을 점(px, py · 둘레 radius) 밖으로 민다 — 고체 밑동 · 땅 끝 같은 못 움직이는 것에서 */
+export function pushBoxOut(it: Structure, px: number, py: number, radius: number) {
+  const g = boxGap(it, px, py, radius)
+  if (g < 0) { it.x += N.x * g; it.y += N.y * g }
+}
+/** 79-FIRM 장수 몸(둘레 radius)이 손 닿는(reach) 가장 가까운 잔해 — 다시 세울 것 (없으면 undefined) */
+export function fixTarget(b: BuildState, body: { x: number; y: number }, radius: number) {
+  let best: Structure | undefined, d: number = FM.reach
+  for (const it of b.items) {
+    if (it.down <= 0 || !bearsHp(it)) continue
+    const g = boxGap(it, body.x, body.y, radius)
+    if (g < d) { d = g; best = it }
+  }
+  return best
+}
+/** 몸(둘레 radius)을 서 있는 설치물 밖으로 민다 — 겹친 깊이만큼 가운데에서 먼 쪽으로 (미끄러지듯 비켜 간다 · 79-FIRM 은 네모 몸의 가까운 면 밖으로) · skip 은 건너뛸 설치물 */
 export function pushOutOfBuild(b: BuildState, body: { x: number; y: number }, radius: number, skip?: Structure) {
   for (const it of b.items) {
     if (it === skip || !standing(it)) continue
+    if (b.firm) { const g = boxGap(it, body.x, body.y, radius); if (g < 0) { body.x -= N.x * g; body.y -= N.y * g } continue }
     const reach = bodyR(it) + radius, dx = body.x - it.x, dy = body.y - it.y, d = Math.hypot(dx, dy)
     if (d >= reach) continue
     if (d < 1e-6) { body.y = it.y + reach; continue }   // 한가운데 — 아래(앞)로
@@ -109,7 +141,25 @@ export function pushOutOfBuild(b: BuildState, body: { x: number; y: number }, ra
   }
 }
 /** 장수가 밀고 있는 설치물이 있나 — 몸이 겹친 서 있는 설치물 */
-export const touchingBuild = (b: BuildState, body: { x: number; y: number }, radius: number) => b.items.some(it => standing(it) && Math.hypot(body.x - it.x, body.y - it.y) < bodyR(it) + radius)
+export const touchingBuild = (b: BuildState, body: { x: number; y: number }, radius: number) => b.items.some(it => standing(it) && (b.firm ? boxGap(it, body.x, body.y, radius) < 0 : Math.hypot(body.x - it.x, body.y - it.y) < bodyR(it) + radius))
+/** 79-FIRM 네모 몸끼리 겹치면 덜 겹친 쪽(가로·세로)으로 반씩 벌린다 — 맞닿기까지만 (틈 없음) · 놓인 차례대로 settlePasses 번까지 */
+export function separateFirm(b: BuildState) {
+  const list = b.items
+  for (let pass = 0; pass < B.settlePasses; pass++) {
+    let moved = false
+    for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
+      const p = list[i]!, q = list[j]!
+      if (!standing(p) || !standing(q)) continue
+      const kp = FM.body[p.kind], kq = FM.body[q.kind], dx = q.x - p.x, dy = q.y - kq.lift - (p.y - kp.lift)
+      const ox = kp.w + kq.w - Math.abs(dx), oy = kp.d + kq.d - Math.abs(dy)
+      if (ox <= 0 || oy <= 0) continue
+      if (ox < oy) { const h = (Math.sign(dx) || 1) * ox / 2; p.x -= h; q.x += h }
+      else { const h = (Math.sign(dy) || 1) * oy / 2; p.y -= h; q.y += h }
+      moved = true
+    }
+    if (!moved) return
+  }
+}
 /** 설치물끼리 겹치면 반씩 벌린다 (놓인 차례대로 · 같은 자리면 뒤의 것을 아래로) — 줄줄이 붙은 것이 다 풀리도록 settlePasses 번까지 되풀이 */
 export function separateBuild(b: BuildState) {
   const list = b.items
@@ -128,7 +178,7 @@ export function separateBuild(b: BuildState) {
 }
 /** 몸이 닿은 성한 목책 (없으면 undefined) */
 export function fenceTouching(b: BuildState, body: { x: number; y: number }, radius: number) {
-  for (const f of b.items) if (f.kind === 'fence' && standing(f) && Math.hypot(body.x - f.x, body.y - f.y) < B.fence.r + radius + B.fence.touch) return f
+  for (const f of b.items) if (f.kind === 'fence' && standing(f) && (b.firm ? boxGap(f, body.x, body.y, radius) < B.fence.touch : Math.hypot(body.x - f.x, body.y - f.y) < B.fence.r + radius + B.fence.touch)) return f
   return undefined
 }
 /** 이 자리에서 쓰러진 적의 기세 배수 — 둘레 안 항아리가 있으면 jarShare (여럿이 겹쳐도 한 번) · 그 항아리가 반짝인다 */
@@ -171,7 +221,7 @@ export const reloadInterval = (interval: number, rank: number, v1 = false) => ra
 /** 75-WALL 몸이 닿은 서 있는 체력 설치물 전부 (잡졸·정예가 멈춰 문다) — 닿는 여유 HAEBI_BREAKABLE.touch */
 export function wallTouching(b: BuildState, body: { x: number; y: number }, radius: number) {
   const out: Structure[] = []
-  for (const it of b.items) if (bearsHp(it) && standing(it) && Math.hypot(body.x - it.x, body.y - it.y) < bodyR(it) + radius + HW.touch) out.push(it)
+  for (const it of b.items) if (bearsHp(it) && standing(it) && (b.firm ? boxGap(it, body.x, body.y, radius) < HW.touch : Math.hypot(body.x - it.x, body.y - it.y) < bodyR(it) + radius + HW.touch)) out.push(it)
   return out
 }
 /**

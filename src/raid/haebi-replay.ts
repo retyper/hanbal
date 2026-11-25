@@ -2,6 +2,7 @@
 import { HAEBI_RUN as C, HAEBI_MOBS as M } from '../tune/params.ts'
 import { createHaebi, choose, stepHaebi, isCombo, KITS, nodeAt, branchPoints, wakeReady, ultOpen, type Branch, type HaebiRun, type Kit, type Pick, type Power, type RunInput } from './haebi.ts'
 import { fieldBounds } from './wide.ts'
+import { bearsHp } from './build.ts'
 /** storm·fire·mixed: 예전 길(능력 이름 차례) · deepA/B/C: 한 갈래에 몰빵(그 갈래 칸이 있으면 늘 그것 · 끝 칸 먼저) · spread: 가장 덜 찍은 갈래부터 고르게 */
 export type Route = 'storm' | 'fire' | 'mixed' | 'deepA' | 'deepB' | 'deepC' | 'spread'
 /** 갈래 안에서 봇이 찍는 차례 — [칸, 이 단계까지] 를 앞에서부터 (공격을 먼저 세우고 → 갈래 끝 → 나머지를 채운다 · 사람이 몰빵할 때의 흔한 길) */
@@ -60,6 +61,8 @@ export function botChoice(s: HaebiRun, route: Route): Pick {
 }
 /** 봇이 주우러 가는 기세 알 거리(px) */
 const BOT_PICKUP = 260, BOT_PICKUP_HP = .6
+/** 79-FIRM 봇이 다시 세우러 걸어가는 잔해까지의 거리 (사람도 무너진 우물·망루를 세우러 간다) */
+const BOT_FIX = 400
 /**
  * 58-KITS 무기마다 걷는 버릇 (봇이 원만 돌면 멈추기·곧게 달리기·버티기를 몰라 숫자가 거짓말을 한다 · 사람이 그 무기로 하는 만큼):
  * 활 = 적이 kite 안이면 물러나고(가까운 적일수록 세게 · 판 가운데로 center 만큼 당김) · 밖이면 stopFor 초씩 멈춰 겨눈다(stopEvery 초마다) · 돌팔매 = 적이 kite 안이면 물러난다 · 방울 = 체력이 hold 몫 넘으면 버틴다(기세 알도 안 주우러 감) ·
@@ -104,6 +107,8 @@ export function botInput(s: HaebiRun, react = 0): RunInput {
   if (walk) { x = walk.x; y = walk.y }
   // 떨어진 기세 줍기: 두목 전 · 체력이 넉넉할 때(BOT_PICKUP_HP) 가까운 알(BOT_PICKUP 안) 쪽으로 걷는다 (사람도 줍는다 · 11-17 끌어오기 둘레 밖은 안 날아옴) · 버티는 방울은 줍지 않는다
   if (!boss && s.hp > s.maxHp * BOT_PICKUP_HP && !(walk && s.kit === 'magic')) { let best = BOT_PICKUP, bx = 0, by = 0; for (const d of s.drops) { const n = Math.hypot(d.x - s.x, d.y - s.y); if (n < best) { best = n; bx = d.x; by = d.y } } if (best < BOT_PICKUP) { x = bx - s.x; y = by - s.y } }
+  // 79-FIRM 다시 세우기: 두목 전 · BOT_FIX 안의 가장 가까운 잔해 곁으로 걷는다 (우물은 체력이 모자랄 때도 · 그 밖은 체력이 넉넉할 때) · 누름은 늘 (손이 닿을 때만 선다)
+  if (!boss && s.build?.firm) { let best: number = BOT_FIX, fx = 0, fy = 0; for (const it of s.build.items) { if (it.down <= 0 || !bearsHp(it) || it.kind !== 'well' && s.hp <= s.maxHp * BOT_PICKUP_HP) continue; const n = Math.hypot(it.x - s.x, it.y - s.y); if (n < best) { best = n; fx = it.x; fy = it.y } } if (best < BOT_FIX) { x = fx - s.x; y = fy - s.y } }
   const danger = s.enemies.find(e => e.wind > 0 && Math.hypot(s.x - e.aimX, s.y - e.aimY) < C.bossRadius + 20)
   if (danger) { x = s.x - danger.aimX || 1; y = s.y - danger.aimY || 1 }
   // 일제 사격의 붉은 고리에서 비켜난다 (보통 사람도 하는 만큼)
@@ -119,7 +124,7 @@ export function botInput(s: HaebiRun, react = 0): RunInput {
   if (lane && !danger && !ring) { x = -lane.vy; y = lane.vx }
   const len = Math.hypot(x, y) || 1
   // 각성 막대가 차면 바로 누른다 (사람도 단추가 뜨면 누른다 · 11-17 각성 단추)
-  return { x: x / len, y: y / len, skill: ultOpen(s) && s.skillCd === 0 && s.enemies.some(e => Math.hypot(e.x - s.x, e.y - s.y) < 230), dash: !!danger && s.dashCd === 0, wake: wakeReady(s) }
+  return { x: x / len, y: y / len, skill: ultOpen(s) && s.skillCd === 0 && s.enemies.some(e => Math.hypot(e.x - s.x, e.y - s.y) < 230), dash: !!danger && s.dashCd === 0, wake: wakeReady(s), ...(s.build?.firm ? { fix: true } : {}) }
 }
 export function replay(seed = 7, until: number = C.duration, route: Route = 'storm', onMinute?: (s: HaebiRun) => void, kit: Kit = 'axe', opts: Parameters<typeof createHaebi>[3] = {}) {
   const s = createHaebi(seed, 'stage', kit, opts); let minute = 1

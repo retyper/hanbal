@@ -5,14 +5,18 @@ import { fieldPixels, raidLowGraphics } from './raid/surface.ts'
 import { heroStatusRow } from './raid/fx-status.ts'
 import { breakthroughText, isBreakthrough } from './realm/vanguard.ts'
 import { HAEBI_RUN as C, HAEBI_STICK as STICK, HAEBI_TREE as TREE, HAEBI_ULT as ULT, HAEBI_AWAKEN as AWK, HAEBI_STAGES as ST, HAEBI_ZOOM as ZOOM, HAEBI_SPEED as SPEED, HAEBI_GIANT as GIANT } from './tune/params.ts'
-import { createHaebi, runDuration, raidRulesForStage, KIT_RULES, MAP_RULES, SOLID_RULES, ANCHOR_RULES, PHANTOM_RULES, BUFF_RULES, BREAK_RULES, BUILD_RULES, BUILD2_RULES, CAP_RULES, BOSSCHEST_RULES, BUILDUP_RULES, AWAKECAP_RULES, BOSSDUEL_RULES, BOSSHIT_RULES, WALL_RULES, GAP_RULES, PACE_RULES, bossLootOpen, giantMob, giantHUD, championViewNeeded, stepHaebi, barrageArcher, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, usesPermanentAwakening, normalizedRaidOpts, castWallSeconds, nodeText, nodeAt, branchName, wakeReady, ultName, ultOpen, runBranches, branchNodes, maxLevel, type Kit, type Power, type Pick, type Chest, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
+import { createHaebi, runDuration, raidRulesForStage, KIT_RULES, MAP_RULES, SOLID_RULES, ANCHOR_RULES, PHANTOM_RULES, BUFF_RULES, BREAK_RULES, BUILD_RULES, BUILD2_RULES, CAP_RULES, BOSSCHEST_RULES, BUILDUP_RULES, AWAKECAP_RULES, BOSSDUEL_RULES, BOSSHIT_RULES, WALL_RULES, GAP_RULES, FIRM_RULES, PACE_RULES, bossLootOpen, giantMob, giantHUD, championViewNeeded, stepHaebi, barrageArcher, choose, reroll, POWERS, kitCombos, KITS, xpNeeded, phase, runGold, isCombo, comboOf, comboRank, gaugeRatio, awakenedLook, usesPermanentAwakening, normalizedRaidOpts, castWallSeconds, nodeText, nodeAt, branchName, wakeReady, ultName, ultOpen, runBranches, branchNodes, maxLevel, type Kit, type Power, type Pick, type Chest, type HaebiRun, type RunInput, type StageId } from './raid/haebi.ts'
 import { startRecord, recInput, gridInput, recPick, recReroll, recQuit, withdrawRun, sealInput, finishRecord, STEP, type Recorder } from './raid/runlog.ts'
 import { runFrame, speedOf, nextSpeed, speedLevel } from './raid/speed.ts'
 import { RaidFeel } from './raid/impact.ts'
 import { RaidEnding } from './raid/ending.ts'
 import { drawEnding } from './raid/ending-view.ts'
 import { HAEBI_END as END } from './tune/params.ts'
-import { HAEBI_JACKPOT as JACKPOT, HAEBI_CHAMPION as CHAMP } from './tune/params.ts'
+import { HAEBI_JACKPOT as JACKPOT, HAEBI_CHAMPION as CHAMP, HAEBI_FIRM as FIRM, HAEBI_PALISADE } from './tune/params.ts'
+import { fixTarget, rebuildOf } from './raid/build.ts'
+import { rebuildRingAt } from './raid/fx-build.ts'
+/** 장수 몸 둘레 (판의 셈과 같은 값 · 다시 세울 잔해를 찾을 때) */
+const WALL_R = HAEBI_PALISADE.heroR
 import { HAEBI_CAP_VIEW as CAP_VIEW, HAEBI_BOSS_CHEST as BOSS_CHEST } from './tune/params.ts'
 import { ChestShow, chestShowWarmHtml } from './raid/chest-show.ts'
 import './raid/chest-show.css'
@@ -128,12 +132,12 @@ let stageLocked = false   // 본편 표적 출전: 그 땅의 스테이지 하�
 const bossMinute = () => Math.floor(C.bossAt * ST[mode === 'trial' ? 'trial' : stage].length / 60)
 const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`
 /** createHaebi 에 넘기는 판 옵션 — 판 기록에도 이것 그대로 적는다 (다시 돌리기) */
-const runOpts = (): RaidOpts => ({ ...mode === 'stage' ? { stage, bonus: { ...meta.shop } } : {}, ...mode === 'trial' ? { awaken: false, simRules: '53B' as const } : { permanentAwake: awakening.permanentAwake, appearanceAwake: awakening.appearanceAwake, simRules: mode === 'stage' ? raidRulesForStage(stage) : '56B' as const }, mastery, kitRules: KIT_RULES, ...(kit === 'whip' ? { whipStyle: whipStyleOf(sprite) } : {}), ...(mode === 'stage' ? { chestRules: CHEST_RULES, mapRules: MAP_RULES, blockRules: SOLID_RULES, anchorRules: ANCHOR_RULES, phantomRules: PHANTOM_RULES, buffRules: BUFF_RULES, breakRules: BREAK_RULES, buildRules: BUILD_RULES, build2Rules: BUILD2_RULES, capRules: CAP_RULES, bossChestRules: BOSSCHEST_RULES, buildUpRules: BUILDUP_RULES, awakeCapRules: AWAKECAP_RULES, bossDuelRules: BOSSDUEL_RULES, bossHitRules: BOSSHIT_RULES, wallRules: WALL_RULES, paceRules: PACE_RULES, gapRules: GAP_RULES } : {}) })
+const runOpts = (): RaidOpts => ({ ...mode === 'stage' ? { stage, bonus: { ...meta.shop } } : {}, ...mode === 'trial' ? { awaken: false, simRules: '53B' as const } : { permanentAwake: awakening.permanentAwake, appearanceAwake: awakening.appearanceAwake, simRules: mode === 'stage' ? raidRulesForStage(stage) : '56B' as const }, mastery, kitRules: KIT_RULES, ...(kit === 'whip' ? { whipStyle: whipStyleOf(sprite) } : {}), ...(mode === 'stage' ? { chestRules: CHEST_RULES, mapRules: MAP_RULES, blockRules: SOLID_RULES, anchorRules: ANCHOR_RULES, phantomRules: PHANTOM_RULES, buffRules: BUFF_RULES, breakRules: BREAK_RULES, buildRules: BUILD_RULES, build2Rules: BUILD2_RULES, capRules: CAP_RULES, bossChestRules: BOSSCHEST_RULES, buildUpRules: BUILDUP_RULES, awakeCapRules: AWAKECAP_RULES, bossDuelRules: BOSSDUEL_RULES, bossHitRules: BOSSHIT_RULES, wallRules: WALL_RULES, paceRules: PACE_RULES, gapRules: GAP_RULES, firmRules: FIRM_RULES } : {}) })
 const newRun = (seed: number, opts: RaidOpts = runOpts()) => { const r = createHaebi(seed, mode, kit, opts); if (r.message.endsWith('첫 조합을 향해')) { r.message = ''; r.messageTime = 0 }  /* 시작 군말 띠는 걷는다 (형 11-16) */ return r }
 root.innerHTML = `<header><div><small>장수 열전 · 독립 모드</small><h1>${HERO.name} <em>${K.title}</em></h1></div><div class="head-actions"><button id="pause" disabled aria-label="일시정지">Ⅱ</button></div></header>
 <div id="layout"><aside id="character"><div id="portrait-media"><img id="hero-portrait" src="${import.meta.env.BASE_URL}realm/bust-hd/${HERO.bust}.jpg" alt="${HERO.name} 원화"><video id="hero-video" muted loop playsinline preload="none" hidden aria-label="각성 ${HERO.name} 영상"></video></div><div class="portrait-title"><span>${HERO.home}</span><b id="rank-title">${HERO.name}</b><button id="portrait-toggle" hidden>원화로 보기</button></div><div id="reaction">${weapon} 하나로 시작하는 열전</div><div id="combo-badges"></div><i class="frame-knots"></i></aside>
 <main><section id="menu"><span class="eyebrow">장수 열전</span><h2>${HERO.name}<em>${K.title}</em></h2><p>능력을 고르고 두 힘을 묶어, ${bossMinute()}분을 버틴 뒤 오는 두목을 쓰러뜨리세요.</p><div class="journey"><span><b>01</b> 붉은 고리를 피하고</span><span><b>02</b> 두 힘을 묶어</span><span><b>03</b> 두목을 잡습니다</span></div><button id="start" class="primary" disabled aria-label="불러오는 중"><i class="load-dots" aria-hidden="true"><b></b><b></b><b></b></i></button><p class="controls">이동 WASD·방향키·화면 누르기 · 회피 Shift · 비기 Space · 투지 E · 배속 X · 일시정지 Esc</p><p class="note">본편의 병력과 따로인 한 판입니다.</p></section>
-<section id="play" hidden><div id="arena"><canvas id="field" width="${C.width}" height="${C.height}" aria-label="${HERO.name} 토벌 전장. 클릭 또는 드래그로 이동"></canvas><div id="combat-hud"><div class="health-line"><b>${HERO.name}</b><span id="health">180 / 180</span></div><div id="buff-row" hidden></div><div class="bar hp"><span class="hp-track"><i id="hp-fill"></i><em id="hp-chunk"></em><b id="hp-ward" hidden></b></span></div><div id="wake-bar" class="grit" aria-label="투지 막대"><i id="wake-fill"></i></div><div id="loadout" aria-label="획득한 전투 능력"></div></div><div id="hud"><small id="phase"></small><b id="clock"></b></div><div id="score"><b id="kills"></b><small>격파</small><b id="level"></b></div><div id="xp-bar" class="bar xp" data-max="${CAP_VIEW.max}"><i id="xp-fill"></i></div><div id="announcement" aria-live="polite"></div><div id="streak"></div><footer><button id="wake" class="grit" hidden aria-label="투지 E"><b>투지</b><small>E</small></button><span id="hint">자동 공격 · 화면을 끌면 그쪽으로 이동 · 능력 아이콘을 누르고 있으면 설명</span><button id="dash">회피 Shift</button><button id="skill" class="primary" data-kit="${kit}">${K.skill} Space</button></footer><div id="stick" hidden aria-hidden="true"><i></i></div><i class="frame-knots"></i></div></section></main></div><div id="power-tooltip" role="tooltip" hidden></div><div id="overlay" hidden></div>`
+<section id="play" hidden><div id="arena"><canvas id="field" width="${C.width}" height="${C.height}" aria-label="${HERO.name} 토벌 전장. 클릭 또는 드래그로 이동"></canvas><div id="combat-hud"><div class="health-line"><b>${HERO.name}</b><span id="health">180 / 180</span></div><div id="buff-row" hidden></div><div class="bar hp"><span class="hp-track"><i id="hp-fill"></i><em id="hp-chunk"></em><b id="hp-ward" hidden></b></span></div><div id="wake-bar" class="grit" aria-label="투지 막대"><i id="wake-fill"></i></div><div id="loadout" aria-label="획득한 전투 능력"></div></div><div id="hud"><small id="phase"></small><b id="clock"></b></div><div id="score"><b id="kills"></b><small>격파</small><b id="level"></b></div><div id="xp-bar" class="bar xp" data-max="${CAP_VIEW.max}"><i id="xp-fill"></i></div><div id="announcement" aria-live="polite"></div><div id="streak"></div><footer><button id="wake" class="grit" hidden aria-label="투지 E"><b>투지</b><small>E</small></button><span id="hint">자동 공격 · 화면을 끌면 그쪽으로 이동 · 능력 아이콘을 누르고 있으면 설명</span><button id="dash">회피 Shift</button><button id="skill" class="primary" data-kit="${kit}">${K.skill} Space</button></footer><div id="stick" hidden aria-hidden="true"><i></i></div><button id="fix" hidden aria-label="다시 세우기 F"><i></i><small>F</small></button><i class="frame-knots"></i></div></section></main></div><div id="power-tooltip" role="tooltip" hidden></div><div id="overlay" hidden></div>`
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T
 const endingMediaHost = document.createElement('div')
 root.appendChild(endingMediaHost)
@@ -569,7 +573,9 @@ let pendingSeed = vanguardToken ? Number(query.get('seed')) >>> 0 : crypto.getRa
 const notifyVanguardStart = () => { if (vanguardToken) window.parent.postMessage({ type: 'hanbal.haebi.vanguard-start', token: vanguardToken }, location.origin) }
 const base = import.meta.env.BASE_URL + 'realm/'
 Promise.all([...imagePaths, ...heroArtFiles()].map(path => new Promise<void>((resolve, reject) => { const img = new Image(); img.onload = () => { images.set(path, img); resolve() }; img.onerror = reject; img.src = base + path }))).then(async () => { await Promise.all(heroArtFiles().map(p => images.get(p)?.decode().catch(() => {}))); heroWarmKey = ''; prepareHeroRaster(cam.zoom); warmFx(images); baseArtReady = true; $<HTMLButtonElement>('start').disabled = trialEntryClosed(); $('start').textContent = startLabel(); renderStageMenu(); schedule(); setTimeout(warmFirstViews, WARM.afterMs) }).catch(() => { $('start').textContent = '그림을 불러오지 못했어요. 새로고침해 주세요.' })
-function resetInput() { keys.clear(); destination = null; stickEnd(); dashAt = skillAt = wakeAt = -9; acc = 0 }
+/** 79-FIRM 다시 세우기를 누르고 있나 (잔해 위 단추 · 키보드는 F) */
+let fixHeld = false
+function resetInput() { keys.clear(); destination = null; stickEnd(); dashAt = skillAt = wakeAt = -9; acc = 0; fixHeld = false }
 async function begin(sameSeed = false) {
   if (beginning || trialEntryClosed()) return
   sound.unlock() // Keep audio activation inside the actual start gesture, before optional asset loading.
@@ -714,6 +720,28 @@ for (const kind of ['dash', 'skill', 'wake'] as const) {
     b.classList.add('pressed'); window.setTimeout(() => b.classList.remove('pressed'), 140)
   })
   b.addEventListener('click', e => { if (e.detail === 0) press(kind); b.blur() })   // 키보드로 단추를 눌렀을 때만 (손가락·마우스는 pointerdown 에서 이미)
+}
+/**
+ * 79-FIRM 다시 세우기 단추 — 손이 닿는 잔해의 다시 서기 고리 자리에 뜬다 (그 설치물 그림 · 누르고 있으면 둘레 고리가 찬다 · 다른 손가락이 조이스틱을 잡고 있어도).
+ * 떼거나 손이 닿는 잔해가 없어지면 멈춘다 (찬 만큼은 잔해에 남는다). 키보드는 F 를 누르고 있는다.
+ */
+const fixBtn = $<HTMLButtonElement>('fix')
+fixBtn.style.setProperty('--s', FIRM.view.btn + 'px')
+let fixKind = '', fixPos = ''
+fixBtn.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); try { fixBtn.setPointerCapture(e.pointerId) } catch { /* 이미 떨어진 손가락 */ } fixHeld = true; fixBtn.classList.add('pressed') })
+for (const type of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) fixBtn.addEventListener(type, () => { fixHeld = false; fixBtn.classList.remove('pressed') })
+fixBtn.addEventListener('click', e => { e.preventDefault(); fixBtn.blur() })
+function placeFix(c: { zoom: number; x: number; y: number }) {
+  const b = run.build, it = live && !paused && run.state === 'playing' && b?.firm ? fixTarget(b, run, WALL_R) : undefined
+  if (!it) { if (!fixBtn.hidden) { fixBtn.hidden = true; fixHeld = false; fixBtn.classList.remove('pressed') } return }
+  if (fixKind !== it.kind) { fixKind = it.kind; fixBtn.querySelector('i')!.innerHTML = powerIcon(it.kind, kit) }
+  const r = canvas.getBoundingClientRect(), a = $('arena').getBoundingClientRect(), k = Math.min(r.width / C.width, r.height / C.height)
+  const x = r.left - a.left + (r.width - C.width * k) / 2 + (C.width / 2 + (it.x - c.x) * c.zoom) * k
+  const y = r.top - a.top + (r.height - C.height * k) / 2 + (C.height / 2 + (rebuildRingAt(images, it) - c.y) * c.zoom) * k
+  const pos = `${x.toFixed(0)},${y.toFixed(0)}`
+  if (pos !== fixPos) { fixPos = pos; fixBtn.style.left = x.toFixed(0) + 'px'; fixBtn.style.top = y.toFixed(0) + 'px' }
+  fixBtn.style.setProperty('--p', (1 - it.down / rebuildOf(it.kind)).toFixed(3))
+  if (fixBtn.hidden) fixBtn.hidden = false
 }
 /** 조합 길 — 글 대신 그림 셈: [능력 그림 ×단계] + [능력 그림 ×단계] = [조합 그림] (형 11-16: 「텍스트로 하지 말고 아이콘3 + 아이콘3 = 아이콘」) · 이미 채운 단계는 밝게 */
 const recipe = (c: ReturnType<typeof kitCombos>[number], me?: Power) => {
@@ -1108,7 +1136,7 @@ function frame(now: number) {
       else if (destination) { const dx = destination.x - run.x, dy = destination.y - run.y, len = Math.hypot(dx, dy); if (len < 5) destination = null; else { x = dx / len; y = dy / len } }
       const castBefore = run.cast, dashBefore = run.dashCd, wakesBefore = run.wakes
       // 맡아 둔 누름: 누른 지 STICK.queue 초 안이면 계속 넣는다 (재사용이 그 안에 풀리면 나간다) · 나가면 지운다
-      stepHaebi(run, feed({ x, y, ...(championViewNeeded(run, STEP) ? { viewBounds: fieldView(cam) } : {}), ...(run.mode === 'stage' ? { barrageSource: barrageArcher(run, fieldView(cam))?.id ?? 0 } : {}), dash: run.t - dashAt <= STICK.queue, skill: run.t - skillAt <= STICK.queue, wake: run.t - wakeAt <= STICK.queue, shortCutin }), STEP)   // 판 기록이 이동을 격자에 맞춰 적고 그 값을 넣는다 (runlog.ts)
+      stepHaebi(run, feed({ x, y, ...(championViewNeeded(run, STEP) ? { viewBounds: fieldView(cam) } : {}), ...(run.mode === 'stage' ? { barrageSource: barrageArcher(run, fieldView(cam))?.id ?? 0 } : {}), dash: run.t - dashAt <= STICK.queue, skill: run.t - skillAt <= STICK.queue, wake: run.t - wakeAt <= STICK.queue, fix: fixHeld || keys.has('f'), shortCutin }), STEP)   // 판 기록이 이동을 격자에 맞춰 적고 그 값을 넣는다 (runlog.ts)
       feel.observe(run)
       if (run.dashCd > dashBefore) dashAt = -9
       if (run.wakes > wakesBefore) wakeAt = -9
@@ -1142,7 +1170,7 @@ function frame(now: number) {
     const endCam = zoom ? { zoom: cam.zoom * (1 + END.cameraZoom * zoom), x: cam.x + (run.x - cam.x) * zoom, y: cam.y + (run.y - cam.y) * zoom }
       : ko ? { zoom: cam.zoom + (koTargetZoom(cam.zoom, heroDrawHeight(run), C.width) - cam.zoom) * ko, x: cam.x + (run.x - cam.x) * Math.min(1, ko), y: cam.y + (koY - cam.y) * Math.min(1, ko) } : cam
     if (zoom || ko) Object.assign(endCam, clampCenter(endCam.zoom, endCam.x, endCam.y, camBounds()))
-    prepareHeroRaster(endCam.zoom)
+    prepareHeroRaster(endCam.zoom); placeFix(endCam)
     if (fieldChanged(endCam)) {
       drawField(ctx, images, run, destination, endCam, feel, ending.kind ? ending : undefined, fieldLowGraphics)
       drawEnding(ctx, ending, runGold(run), images, ending.kind === 'defeat' && !calmEnd ? { x: C.width / 2 + (run.x - endCam.x) * endCam.zoom, y: C.height / 2 + (koY - endCam.y) * endCam.zoom, width: heroDrawHeight(run) * KO.lieWidth * endCam.zoom } : undefined)

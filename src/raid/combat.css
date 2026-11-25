@@ -459,3 +459,12 @@ img.coin{display:inline-block;width:1.5em;height:1.5em;vertical-align:-.38em;mar
 .buff-ic{position:relative;display:block;flex:none}
 .buff-ic svg{display:block}
 .buff-ic b{position:absolute;right:-2px;bottom:-3px;font-size:8px;line-height:1;color:#fff;text-shadow:0 1px 2px #000}
+/* 79-FIRM 다시 세우기 단추 — 손이 닿는 잔해 위 (누르고 있으면 둘레가 금빛으로 찬다 · 손가락 판은 키 글자 없이) */
+#fix{position:absolute;z-index:3;width:var(--s,46px);height:var(--s,46px);margin:0;padding:0;min-width:0;transform:translate(-50%,-90%);border-radius:50%;border:0;background:conic-gradient(#ffd77a calc(var(--p,0)*1turn),#0b1410cc 0);box-shadow:0 0 0 2px #4a2a06,0 0 10px #ffd77a88,0 3px 8px #000a;touch-action:none;-webkit-user-select:none;user-select:none;display:flex;align-items:center;justify-content:center;cursor:pointer;animation:fix-beat 1.1s ease-in-out infinite}
+#fix[hidden]{display:none}
+#fix i{width:76%;height:76%;border-radius:50%;background:#16241cf0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+#fix i img{width:82%;height:82%;object-fit:contain}
+#fix small{position:absolute;right:-5px;bottom:-5px;font:bold 11px/1.4 sans-serif;color:#3a1c02;background:#ffe08a;border-radius:4px;padding:0 4px;pointer-events:none}
+#fix.pressed{filter:brightness(1.3)}
+@keyframes fix-beat{50%{box-shadow:0 0 0 2px #4a2a06,0 0 20px #ffd77acc,0 3px 8px #000a}}
+@media (pointer:coarse){#fix small{display:none}}
