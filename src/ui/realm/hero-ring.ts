@@ -24,6 +24,10 @@ import { P, UI_SWAY } from '../../tune/params.ts'
 import { swayBody, swayStep } from '../fx/sway.ts'
 import { SPRITE_PX } from '../../realm/data/spritePx.ts'
 import { bustOf, genArtOf, generalSprite } from '../../realm/data/art.ts'
+import { standingCell, standsWithCompanion } from '../../raid/idle-pose.ts'
+import { companionOf, idlePlan, stripCells, STRIP_CELLS } from '../../raid/hero-idle.ts'
+import { companionPlace } from '../../raid/strip-geom.ts'
+import { HAEBI_IDLE } from '../../tune/params.ts'
 import { AWAKEN_ART } from '../../realm/data/awaken-art.ts'
 import { STAT_NAME } from '../../realm/data/prose.ts'
 import type { Hero } from '../../realm/types.ts'
@@ -372,11 +376,14 @@ export function mountRing(host: HTMLElement, o: RingOpts): RingHandle {
     const ch = im.naturalHeight
     const feet = m?.feet ?? ch
     const body = m?.bodyPx ?? ch * 0.86
+    const xim = standsWithCompanion(h.sprite ?? '') ? stripOf(companionOf(h.sprite ?? ''), wake) : null
+    const xReady = xim !== null && xim.complete && xim.naturalWidth > 0
     let frame = IDLE[0] ?? 0
     if (attackAt !== null && now - attackAt < R.ringAttackMs) frame = ATTACK[Math.min(ATTACK.length - 1, Math.floor(((now - attackAt) / R.ringAttackMs) * ATTACK.length))] ?? frame
     else {
       attackAt = null
-      if (!calm()) frame = IDLE[Math.floor(now / R.ringIdleMs) % IDLE.length] ?? frame
+      // 열전 판 안과 같은 서 있는 움직임 (숨쉬기 · 눈 깜빡임 · 개성 동작 · raid/idle-pose.ts) — 앞 장수가 바뀐 뒤의 시각으로
+      frame = standingCell(h.sprite ?? '', (now - since) / 1000, xReady, calm())
     }
     // 도트는 또렷하게 — 칸 그대로 늘리고(이웃 화소를 섞지 않는다) 두 배 넘으면 반 배 단위로
     let s = Math.min((H * 0.88) / body, W / cw)
@@ -388,7 +395,14 @@ export function mountRing(host: HTMLElement, o: RingOpts): RingHandle {
     ctx.ellipse(W / 2, base, body * s * 0.24, body * s * 0.05, 0, 0, Math.PI * 2)
     ctx.fill()
     const w = cw * s
-    ctx.drawImage(im, frame * cw, 0, cw, ch, Math.round(W / 2 - w / 2), Math.round(base - feet * s), w, ch * s)
+    if (frame >= STRIP_CELLS && xim !== null && xReady) {
+      // 덧 띠 칸 — 본 띠와 같은 배율 s 로 (뿌리, 발 줄) 점이 발 자리에 오게 (열전 haebi-view 와 같은 strip-geom)
+      const xw = xim.naturalWidth / stripCells(companionOf(h.sprite ?? ''))
+      const p = companionPlace(xw, xim.naturalHeight, s, feet, idlePlan(h.sprite ?? '')?.xGeom)
+      ctx.drawImage(xim, (frame - STRIP_CELLS) * xw, 0, xw, xim.naturalHeight, Math.round(W / 2 + p.left), Math.round(base + p.top), p.w, p.h)
+      return
+    }
+    ctx.drawImage(im, Math.min(frame, STRIP_CELLS - 1) * cw, 0, cw, ch, Math.round(W / 2 - w / 2), Math.round(base - feet * s), w, ch * s)
   }
 
   function tick(t: number): void {
@@ -420,7 +434,8 @@ export function mountRing(host: HTMLElement, o: RingOpts): RingHandle {
     if (moving || pos !== target || attackAt !== null || bigShown !== shown || leaning) { raf = requestAnimationFrame(tick); return }
     last = 0
     // 가만히 있을 땐 서기 숨 한 컷마다 한 번만 깬다 (rAF 를 계속 돌리지 않는다)
-    if (!calm()) timer = window.setTimeout(() => { timer = 0; wake() }, R.ringIdleMs - (t % R.ringIdleMs) + 4)
+    // 계획이 있는 띠는 눈 깜빡임(blinkTime)을 놓치지 않게 그 반 박자마다 · 예전 띠는 서기 숨 한 컷마다
+    if (!calm()) timer = window.setTimeout(() => { timer = 0; wake() }, idlePlan(hs[shown]?.sprite ?? '') !== null ? Math.round(HAEBI_IDLE.blinkTime * 500) : R.ringIdleMs - (t % R.ringIdleMs) + 4)
   }
 
   function wake(): void {
