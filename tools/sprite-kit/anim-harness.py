@@ -129,6 +129,7 @@ HEROES = {
     'aryeong': dict(hit=True, strip='gen-aryeong', atk='thrust', src='thrust3', backfoot=True, actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 사로 아령(창 · 가슴 M) · 11-25 열넷째 묶음
     'janmul': dict(hit=True, strip='gen-base-w-29-golpo-janmul', atk='thrust', src='thrust3', backfoot=True, actw=264, atk8=True, act=True, legacy=(('a', 2), ('a', 3), ('b', 3), ('b', 4))),   # 골포 잔물(주걱 노 · 가슴 M) · 11-25 열넷째 묶음
     'mjinha': dict(hit=True, strip='gen-base-w-27-mokji-jinha', atk='cast', actw=264, atk8=True, act=True, legacy=(('a', 1), ('b', 3), ('b', 3), ('b', 4))),   # 목지 진하(방울 막대 · 맨손 시전 hand · 가슴 M) · 11-25 열넷째 묶음
+    'soebi2': dict(hit=True, strip='gen-soebi', atk='chop', backfoot=True, atk8=True, act=True, legacy=(('a', 1), ('b', 3), ('b', 3), ('b', 4))),   # 견지 쇠비 새 서기(SB1 · 갸름한 몸 · 작은 망치) · 11-25 저녁
     'areum': dict(hit=True, strip='gen-areum', atk='slam', atk8=True, act=True, lock='none'),   # 받은 그림 그대로(얼굴을 떠다 붙이지 않는다 — 11-24: 뭉친 얼굴이 여덟 칸에 퍼졌다) · 옛 lock='face': 메가 머리 뒤로 지나간다 — 머리 상자는 메를 자르고(「포스터」), 윗몸을 통째로 묶으면 떠다닌다(11-24 형) → 얼굴 안쪽만 묶는다
 }
 
