@@ -1479,10 +1479,10 @@ export const HAEBI_IMPACT = {
     bigHold: .25, holdScaleBig: 1.6, bigRise: .3, bigGap: 8, dim: .58, dimColor: '#05070b', flash: .9, flashPart: 1.6, popLife: .32, popRingFrom: 22, popRingTo: 130, popRingWidth: 9, popRingColor: '#fff6dc', popDots: 10, popDotDistance: 150, popDotSize: 5,
     /**
      * 얼어 있는 동안 카메라가 맞은 놈 쪽으로 당겨 들어간다 (스매시의 마무리 확대 · 캔버스 변환 · 조작 단추는 그대로): 처음 zoomIn 초(60프레임 기준 3프레임)에 bigZoom 배까지 들어가
-     * 풀리는 순간 zoomOut 초 안에 1배로 튕겨 돌아온다 · 1 이면 꺼짐. 몸은 bigRise 몫 시간에 holdScaleBig 배까지 커진다(넓은 화면에서도 화면 키 48px 이상이 되게 · 시험).
+     * 풀리는 순간 zoomOut 초 안에 1배로 튕겨 돌아온다 · 1 이면 꺼짐(11-25 밤 형: 「확대되는건 하지마. 잘 보이지도 않고 어지러워」 → 1 로 끔 · 다시 켜지 않는다). 몸은 bigRise 몫 시간에 holdScaleBig 배까지 커진다(넓은 화면에서도 화면 키 48px 이상이 되게 · 시험).
      * 날아가는 길에 낱낱 잔상 bigTrail 초 늦은 자리마다 한 장씩(점점 옅게 · 처음 bigTrailAlpha)
      */
-    bigZoom: 1.35, zoomIn: .05, zoomOut: .15, bigTrail: [.03, .06, .09, .12], bigTrailAlpha: .32 },
+    bigZoom: 1, zoomIn: .05, zoomOut: .15, bigTrail: [.03, .06, .09, .12], bigTrailAlpha: .32 },
 } as const
 
 /**
