@@ -61,7 +61,7 @@ export function fxStats(): { dead: number; pending: number; attackers: number; a
   return { dead, alive, pending: fx.corpses.filter(c => c.born > fx.nowMs).length, attackers: fx.attackers }
 }
 /** 새 판이 시작되면 부른다 */
-export function resetFx(): void { fx.pushed.clear(); fx.counts.clear(); fx.menMax.clear(); fx.face.clear(); fx.corpses.length = 0; fx.tick = -1; fx.slots.clear(); fx.lastHit.clear(); fx.shots.length = 0; fx.routeAt.fill(-1); fx.dustAt.clear(); fx.sparkAt.clear(); resetForm(); resetMelee(); resetHit(); resetDash() }
+export function resetFx(): void { fx.pushed.clear(); fx.counts.clear(); fx.menMax.clear(); fx.face.clear(); fx.corpses.length = 0; fx.tick = -1; fx.slots.clear(); fx.lastHit.clear(); fx.shots.length = 0; fx.routeAt.fill(-1); fx.dustAt.clear(); fx.sparkAt.clear(); flagSpot.clear(); flagLast = -1; resetForm(); resetMelee(); resetHit(); resetDash() }
 
 const mix = (a: number, b: number, t: number): number => a + (b - a) * t
 /** sim 단위 → 판 px */
@@ -261,22 +261,59 @@ function drawRoutes(ctx: CanvasRenderingContext2D, m: VModel, nowMs: number, zoo
   ctx.globalAlpha = 1
 }
 
+/** 깃을 붙일 대를 고르는 임시 목록 (프레임마다 새로 만들지 않는다) */
+const spotBuf: VSquad[] = []
+/** 무리 깃이 선 자리의 그리는 쪽 기억 (자리·옮겨 가는 부드러움) — 키 편×3+무리 */
+const flagSpot = new Map<number, { x: number; y: number }>()
+let flagLast = -1
 /**
- * 무리 깃: 편마다 무리(앞줄·활·기병)마다 하나 — 무리 가운데에서 제 진영 쪽으로 뒤에 선다.
+ * 무리 깃 자리 (sim 단위): 깃은 무리의 가운데가 아니라 그 무리의 대 하나의 뒤 가장자리 바로 뒤에 붙는다 —
+ * 앞줄 = 위에서 둘째 대 · 활 = 위에서 둘째 대 · 기병 = 위쪽 날개의 앞 대 (그 대가 없어지면 살아 있는 다음 대로).
+ * 대의 몸(bd)이 오기 전에는 2칸으로 본다. 살아 있는 대가 없으면 false.
+ */
+export function bannerSpot(m: VModel, side: 0 | 1, grp: string, out: { u: number; v: number; id: number }): boolean {
+  const F = P.field
+  spotBuf.length = 0
+  for (const q of m.squads) if (q.side === side && q.grp === grp && q.men > 0) spotBuf.push(q)
+  if (spotBuf.length === 0) return false
+  spotBuf.sort((x, y) => x.v - y.v)
+  const enemyDir = side === 0 ? m.face : -m.face
+  let q: VSquad
+  if (grp === 'horse') {
+    // 위쪽 날개 (위 절반) 가운데 적에 가까운 앞 대
+    const half = Math.max(1, Math.ceil(spotBuf.length / 2))
+    q = spotBuf[0]!
+    for (let i = 1; i < half; i++) if (spotBuf[i]!.u * enemyDir > q.u * enemyDir) q = spotBuf[i]!
+  } else q = spotBuf[Math.min(1, spotBuf.length - 1)]!
+  const depth = q.bd > 0 ? q.bd : 2 * F.unit
+  out.u = q.u - enemyDir * (depth / 2 + F.flagBackCells * F.unit); out.v = q.v; out.id = q.id
+  return true
+}
+
+/**
+ * 무리 깃: 편마다 무리(앞줄·활·기병)마다 하나 — bannerSpot 의 자리에 서고 대가 바뀌면 0.3초에 걸쳐 미끄러진다.
  * 깃 꺾임·기운 채·떨어짐은 이 깃에 건다 (사기는 무리의 사람 수로 가중 평균 · 꺾임은 무리 안 대 가운데 가장 큰 것)
  */
+const spot = { u: 0, v: 0, id: 0 }
 function addGroupFlags(m: VModel, at: number[], nowMs: number): void {
-  const F = P.field, GRPS = ['front', 'bows', 'horse']
+  const GRPS = ['front', 'bows', 'horse']
+  const dt = flagLast < 0 || nowMs < flagLast ? 1000 : Math.min(200, nowMs - flagLast)
+  flagLast = nowMs
+  const ease = 1 - Math.exp(-dt / 100)
   for (const side of [0, 1] as const) {
     const enemyDir = side === 0 ? m.face : -m.face
-    for (const grp of GRPS) {
-      let men = 0, cu = 0, cv = 0, mor = 0
-      for (const q of m.squads) if (q.side === side && q.grp === grp && q.men > 0) { men += q.men; cu += q.u * q.men; cv += q.v * q.men; mor += moraleOf(q) * q.men }
-      if (men === 0) continue
+    for (let g = 0; g < 3; g++) {
+      const grp = GRPS[g]!
+      if (!bannerSpot(m, side, grp, spot)) { flagSpot.delete(side * 3 + g); continue }
+      let men = 0, mor = 0
+      for (const q of m.squads) if (q.side === side && q.grp === grp && q.men > 0) { men += q.men; mor += moraleOf(q) * q.men }
       mor /= men
       let tilt = 0
       for (const q of m.squads) if (q.side === side && q.grp === grp && q.men > 0) { const v = flagTilt(q.id, mor, enemyDir, nowMs, P.realm.tacBreakMorale); if (Math.abs(v) > Math.abs(tilt)) tilt = v }
-      at.push(unitsToPx(cu / men) - enemyDir * F.flagBackCells * F.cellPx, unitsToPx(cv / men), side, 3, tilt)
+      const tx = unitsToPx(spot.u), ty = unitsToPx(spot.v)
+      let s = flagSpot.get(side * 3 + g)
+      if (s === undefined) { s = { x: tx, y: ty }; flagSpot.set(side * 3 + g, s) } else { s.x += (tx - s.x) * ease; s.y += (ty - s.y) * ease }
+      at.push(s.x, s.y, side, 3, tilt)
     }
   }
 }

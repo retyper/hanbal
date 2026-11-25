@@ -3815,7 +3815,7 @@ export const SPEC = {
     horseSpaceMul: k(1.6, 1, 3, 0.1, '기병은 말이 있어 줄·열 간격을 이만큼 벌린다'), /*vfx*/
     flagBaseCells: k(2.2, 1, 4, 0.1, '무리 깃 크기·장대의 기준 키 (병사가 작아져도 깃은 옛 크기 그대로)', '칸'), /*vfx*/
     flagGroupPermille: k(1300, 800, 2500, 50, '무리 깃은 옛 대 깃의 이만큼 크게 (천분율)'), /*vfx*/
-    flagBackCells: k(3, 0, 12, 1, '무리 깃은 무리 가운데에서 제 진영 쪽으로 이만큼 뒤에 선다', '칸'), /*vfx*/
+    flagBackCells: k(1, 0, 8, 1, '무리 깃은 붙은 대의 뒤 가장자리에서 제 진영 쪽으로 이만큼 더 뒤에 선다', '칸'), /*vfx*/
     /** 싸움 그림 (src/field/viewForm·viewMelee·viewFlag·viewFx*.ts · 51 시제품 §2·§4·§5·§8) — 그리는 쪽만 읽는다 */ /*vfx*/
     holdRows: k(3, 1, 5, 1, '방진: 점이 서는 줄 수 상한 (점이 적으면 줄어든다)'), /*vfx*/
     holdUCells: k(0.55, 0.2, 2, 0.05, '방진: 열 사이 (앞뒤) 간격 · 틈 없이 촘촘', '칸'), /*vfx*/
