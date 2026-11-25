@@ -8,7 +8,7 @@
  */
 import { P } from '../tune/params.ts'
 import { clamp, dist2, idiv, nearestDir } from './num.ts'
-import { bladeLine, m, mul, perTickAt, ticksOf, walk, type Kit } from './sim.ts'
+import { bladeLine, m, mul, perTickAt, rankCmp, ticksOf, walk, type Kit } from './sim.ts'
 import { HERO_DIR, LOSS_ART, LOSS_HERO, OP_ATTACK, OP_AUTO, OP_DASH, OP_HERO_DIR, OP_MOVE, OP_SKILL, WHY_BUSY, WHY_COOL, WHY_DOWN, WHY_FAR, WHY_NO_ART, WHY_NO_TARGET, WHY_NONE } from './types.ts'
 import type { FieldEvent, FieldInput, FieldState, Hero, Point, Squad } from './types.ts'
 
@@ -206,7 +206,9 @@ export function heroStrike(s: FieldState, K: Kit, dmg: number[], hits: number[][
         const d = dist2(h.u, h.v, q.u, q.v)
         if (d > reach2 || !bladeLine(s.map, h, q)) continue
         // 동점은 자리로 (배열 차례가 아니다 · 45 §1-2)
-        if (best === null || d < bd || (d === bd && (q.v < best.v || (q.v === best.v && (q.u - h.u) * (h.side === 0 ? 1 : -1) > (best.u - h.u) * (h.side === 0 ? 1 : -1))))) { best = q; bd = d }
+        const fq = (q.u - h.u) * (h.side === 0 ? 1 : -1), fb = best ? (best.u - h.u) * (h.side === 0 ? 1 : -1) : 0
+        // 같은 자리에 선 두 대도 시작 자리로 가른다 (배열 차례가 아니다 · 차례 섞기 시험 stake/2100/1)
+        if (best === null || d < bd || (d === bd && (q.v < best.v || (q.v === best.v && (fq > fb || (fq === fb && rankCmp(s, q, best) < 0)))))) { best = q; bd = d }
       }
     }
     const e = foeHero(s, h)

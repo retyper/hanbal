@@ -881,7 +881,7 @@ export function runField(setup: LiveSetup, inputs: readonly FieldInput[] = NO_IN
 export function groupCenter(s: FieldState, side: 0 | 1, g: Grp): Point {
   let su = 0, sv = 0, n = 0
   for (const q of s.squads) if (q.side === side && q.grp === g && q.men > 0) { su += q.u; sv += q.v; n++ }
-  return n > 0 ? { u: idiv(su, n), v: idiv(sv, n) } : { u: campU(s, side), v: campV(s, side) }
+  return n > 0 ? { u: avgU(su, n, side), v: idiv(sv, n) } : { u: campU(s, side), v: campV(s, side) }
 }
 
 
@@ -913,6 +913,8 @@ const runner = (s: FieldState, q: Squad): boolean => (q.grp === 'front' && q.ord
  */
 function runImpacts(s: FieldState, K: Kit): boolean[] {
   const out = new Array<boolean>(s.squads.length).fill(false)
+  // 밀어내기는 모두 정한 뒤 한꺼번에 (판 차례에 안 기댄다)
+  const shoves: Array<{ mover: Squad; from: Point; len: number; by: Squad }> = []
   const bank = banks(s)
   for (const q of s.squads) {
     if (q.men <= 0 || q.flee === 1 || !runner(s, q) || q.target < 0) continue
@@ -926,11 +928,14 @@ function runImpacts(s: FieldState, K: Kit): boolean[] {
     const mover = blocked ? q : e
     const away = blocked ? e : q
     const push = (blocked ? P.field.bounceCells : q.grp === 'horse' ? P.field.pushHorseCells : P.field.pushFrontCells) * P.field.unit
-    shove(s, mover, away, push, bank)
+    shoves.push({ mover, from: { u: away.u, v: away.v }, len: push, by: q })
     if (blocked) q.shock += P.field.blockedShock
     else q.bonus = ticksOf(P.field.chargeBonusSec)
     emit(s, { kind: 'impact', side: q.side, id: q.id, u: idiv(q.u + e.u, 2), v: idiv(q.v + e.v, 2), n: q.men + e.men, to: e.id, how: blocked ? HIT_BLOCKED : HIT_GOOD })
   }
+  // 다른 대를 미는 것끼리는 서로 안 걸린다 — 같은 대를 여럿이 밀 때만 친 대의 시작 자리 차례 (같은 편끼리라 거울·차례에 안 기댄다)
+  shoves.sort((a, b) => a.mover === b.mover ? rankCmp(s, a.by, b.by) : a.mover.id - b.mover.id)
+  for (const x of shoves) shove(s, x.mover, x.from, x.len, bank)
   return out
 }
 
@@ -984,3 +989,9 @@ function panic(s: FieldState): void {
   const hit = s.squads.map(q => q.men > 0 && q.flee === 0 && s.squads.some(f => f.side === q.side && f.flee === 1 && f.men > 0 && f.id !== q.id && dist2(f.u, f.v, q.u, q.v) <= r2))
   for (const q of s.squads) if (hit[q.id]) q.shock += per
 }
+
+/**
+ * u 의 평균 (양수 합) — 편 0 은 내림 · 편 1 은 올림. 거울(u → L−1−u · 편 바꿈)에서 내림의 짝은 올림이라,
+ * 편마다 같은 쪽으로 내리면 가운데가 1 단위 어긋나 문턱(도는 길의 점 닿음 등)이 갈린다 (C2 · 거울 시험)
+ */
+export const avgU = (sum: number, n: number, side: 0 | 1): number => side === 0 ? idiv(sum, n) : idiv(sum + n - 1, n)

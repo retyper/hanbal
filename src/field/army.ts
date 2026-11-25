@@ -13,7 +13,7 @@ import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { clamp, dist2, idiv, isqrt } from './num.ts'
 import { emit } from './hero.ts'
-import { alarmed, banks, campU, detour, fwd, lastU, lastV, leash, m, mul, nearestFoe, rankCmp, ticksOf } from './sim.ts'
+import { alarmed, avgU, banks, campU, detour, fwd, lastU, lastV, leash, m, mul, nearestFoe, rankCmp, ticksOf } from './sim.ts'
 import { CMD_FIRE, CMD_HEIGHT, FORM_AUTO, FORM_CHARGE, FORM_HOLD, FORM_OPEN, GRPS, OP_RALLY, OP_STANCE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_NONE, ORD_VOLLEY, STANCE_CHARGE, STANCE_HOLD, WHY_NO_MEN, WHY_NONE, WHY_NOT_YET } from './types.ts'
 import type { FieldInput, FieldState, Grp, Hero, Point, Squad } from './types.ts'
 
@@ -147,7 +147,8 @@ export function armyInput(s: FieldState, i: FieldInput): void {
   if (t) startFlank(s, 0, t)
 }
 
-const centerOf = (qs: readonly Squad[]): Point => qs.length ? { u: idiv(qs.reduce((a, q) => a + q.u, 0), qs.length), v: idiv(qs.reduce((a, q) => a + q.v, 0), qs.length) } : { u: 0, v: 0 }
+/** 대들의 가운데 — u 는 편마다 반대로 반올림한다 (거울 판에서 정확히 뒤집히게 · avgU) */
+const centerOf = (qs: readonly Squad[]): Point => qs.length ? { u: avgU(qs.reduce((a, q) => a + q.u, 0), qs.length, qs[0]!.side), v: idiv(qs.reduce((a, q) => a + q.v, 0), qs.length) } : { u: 0, v: 0 }
 
 /** p 에 가장 가까운 side 편 산 대 (동점은 자리 · 시작 자리) */
 function nearestTo(s: FieldState, side: 0 | 1, p: Point, ok: (q: Squad) => boolean): Squad | null {
