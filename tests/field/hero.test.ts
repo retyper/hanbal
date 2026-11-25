@@ -98,12 +98,15 @@ test('큰 외침: 곁의 우리 대 사기가 오르고 쿨이 돈다 · 선봉:
   const s = lone('shout')
   const h = hero0(s), q = s.squads[0]!
   place(q, 41, 20)
+  // 되오른 사기는 처음 사기까지만 (moraleCapPermille · 판의 법칙 묶음) — 먼저 꺾어 두고 외친다
+  q.shock = 200
+  stepField(s)
   const m0 = q.morale
-  stepField(s, [{ tick: 0, g: 3, op: OP_SKILL, u: h.u, v: h.v }])
+  stepField(s, [{ tick: 1, g: 3, op: OP_SKILL, u: h.u, v: h.v }])
   stepField(s)
   assert.equal(h.why, WHY_NONE)
   assert.ok(q.morale > m0, `${q.morale} > ${m0}`)
-  assert.equal(h.artCd, P.field.heroCdShoutSec * P.field.hz - 2)
+  assert.equal(h.artCd, P.field.heroCdShoutSec * P.field.hz - 2, '쿨')
   assert.ok(s.log.events.some(e => e.kind === 'heroSkill' && e.art === 'shout'))
   const t = lone('vanguard')
   const g = hero0(t), e = t.squads[1]!

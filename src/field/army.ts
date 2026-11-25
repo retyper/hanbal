@@ -12,9 +12,10 @@
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { clamp, dist2, idiv, isqrt, stepToward } from './num.ts'
-import { emit } from './hero.ts'
-import { alarmed, avgU, banks, campU, detour, fwd, lastU, lastV, leash, m, mul, nearestFoe, perTickAt, rankCmp, ticksOf } from './sim.ts'
+import { emit, trySkill } from './hero.ts'
+import { sideMorale, alarmed, avgU, banks, campU, detour, fwd, lastU, lastV, leash, m, mul, nearestFoe, perTickAt, rankCmp, ticksOf } from './sim.ts'
 import { ORD_ATTACK, CMD_FIRE, CMD_HEIGHT, FORM_AUTO, FORM_CHARGE, FORM_HOLD, FORM_OPEN, GRPS, OP_RALLY, OP_STANCE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_NONE, ORD_VOLLEY, STANCE_CHARGE, STANCE_HOLD, WHY_NO_MEN, WHY_NONE, WHY_NOT_YET } from './types.ts'
+import { LINE_SHIELD, LINE_WEDGE, LINE_WINGS } from './types.ts'
 import type { FieldInput, FieldState, Grp, Hero, Point, Squad } from './types.ts'
 
 const MILLI = 1000
@@ -114,37 +115,38 @@ function flankRoute(s: FieldState, side: 0 | 1, t: Squad, steps: number): Point[
 }
 
 /** 큰 수·무리 명령 (OP_STANCE · OP_AIM · OP_RALLY) — 꼴은 sim.ts inputOk 가 이미 봤다 · 받을 수 없으면 까닭만 남긴다 */
-export function armyInput(s: FieldState, i: FieldInput): void {
-  if (i.op === OP_RALLY) { for (const g of GRPS) setOrder(s, 0, g, ORD_NONE, null); s.frontLockTick[0] = -1; return }
+export function armyInput(s: FieldState, i: FieldInput, side: 0 | 1 = 0): void {
+  const foe = (1 - side) as 0 | 1
+  if (i.op === OP_RALLY) { for (const g of GRPS) setOrder(s, side, g, ORD_NONE, null); s.frontLockTick[side] = -1; return }
   const g = GRPS[i.g]!
   const gi = i.g as 0 | 1 | 2
-  const why = (w: number): void => { s.grpWhy[gi] = w; s.grpWhyTick[gi] = s.tick }
-  if (live(groupOf(s, 0, g)).length === 0) return why(WHY_NO_MEN)
+  const why = (w: number): void => { if (side === 0) { s.grpWhy[gi] = w; s.grpWhyTick[gi] = s.tick } }
+  if (live(groupOf(s, side, g)).length === 0) return why(WHY_NO_MEN)
   if (i.op === OP_STANCE && g !== 'front' && (i.u === CMD_FIRE || i.u === CMD_HEIGHT)) return why(WHY_NOT_YET)
   why(WHY_NONE)
   if (i.op === OP_STANCE && g === 'front') {
-    const qs = groupOf(s, 0, 'front')
+    const qs = groupOf(s, side, 'front')
     for (const q of qs) q.stance = i.u as 0 | 1 | 2
-    if (i.u === STANCE_CHARGE) setOrder(s, 0, 'front', ORD_CHARGE, null)
+    if (i.u === STANCE_CHARGE) setOrder(s, side, 'front', ORD_CHARGE, null)
     else if (i.u === STANCE_HOLD) {
       // 방진은 한 번 더 누르면 풀린다 (기본 행동으로)
       const on = qs.some(q => q.order === ORD_HOLD)
-      setOrder(s, 0, 'front', on ? ORD_NONE : ORD_HOLD, on ? null : centerOf(live(qs)))
+      setOrder(s, side, 'front', on ? ORD_NONE : ORD_HOLD, on ? null : centerOf(live(qs)))
     } else { for (const q of qs) q.form = FORM_OPEN }
     return
   }
   if (i.op === OP_STANCE) {
-    for (const q of groupOf(s, 0, g)) q.cmd = i.u
+    for (const q of groupOf(s, side, g)) q.cmd = i.u
     // 활 0 · 기병 0 은 찍지 않고 눌러도 된다: 화살비는 가장 가까운 적 앞줄 자리에 · 옆치기는 적 활에
-    if (g === 'bows' && i.u === 0) { const t = nearestTo(s, 1, centerOf(live(groupOf(s, 0, g))), q => q.grp === 'front'); if (t) setOrder(s, 0, g, ORD_VOLLEY, { u: t.u, v: t.v }) }
-    if (g === 'horse' && i.u === 0) { const t = nearestTo(s, 1, centerOf(live(groupOf(s, 0, g))), q => q.grp === 'bows') ?? nearestTo(s, 1, centerOf(live(groupOf(s, 0, g))), () => true); if (t) startFlank(s, 0, t) }
+    if (g === 'bows' && i.u === 0) { const t = nearestTo(s, foe, centerOf(live(groupOf(s, side, g))), q => q.grp === 'front'); if (t) setOrder(s, side, g, ORD_VOLLEY, { u: t.u, v: t.v }) }
+    if (g === 'horse' && i.u === 0) { const t = nearestTo(s, foe, centerOf(live(groupOf(s, side, g))), q => q.grp === 'bows') ?? nearestTo(s, foe, centerOf(live(groupOf(s, side, g))), () => true); if (t) startFlank(s, side, t) }
     return
   }
   // OP_AIM — 화살비는 찍은 자리 · 옆치기는 찍은 자리에 가장 가까운 적 대
   const at = { u: clamp(i.u, 0, lastU(s.map)), v: clamp(i.v, 0, lastV(s.map)) }
-  if (g === 'bows') { setOrder(s, 0, g, ORD_VOLLEY, at); return }
-  const t = nearestTo(s, 1, at, () => true)
-  if (t) startFlank(s, 0, t)
+  if (g === 'bows') { setOrder(s, side, g, ORD_VOLLEY, at); return }
+  const t = nearestTo(s, foe, at, () => true)
+  if (t) startFlank(s, side, t)
 }
 
 /** 대들의 가운데 — u 는 편마다 반대로 반올림한다 (거울 판에서 정확히 뒤집히게 · avgU) */
@@ -177,7 +179,10 @@ export function armyTick(s: FieldState, full: boolean): void {
     if (fall && q.manual === 1) { q.manual = 0; q.foe = -1 }
   }
   // 진 자리·목표는 retargetMs 마다(입력이 들어온 틱에는 곧바로) · 예고·명령 끝은 틱마다
-  for (const side of [0, 1] as const) if (follows(s, side)) { enemyPlan(s, side); expire(s, side); moveAnchor(s, side); if (full) { place(s, side); holdCamp(s, side) } }
+  for (const side of [0, 1] as const) if (follows(s, side)) { enemyPlan(s, side); expire(s, side) }
+  // 적 AI 의 수는 두 편 다 같은 틱 상태로 먼저 정하고 나서 건다 (한 편이 먼저 건 수를 다른 편이 같은 틱에 읽으면 거울 판이 어긋난다)
+  if (full) { const acts = ([0, 1] as const).flatMap(side => follows(s, side) ? aiTactics(s, side) : []); for (const a of acts) a() }
+  for (const side of [0, 1] as const) if (follows(s, side)) { moveAnchor(s, side); if (full) { place(s, side); holdCamp(s, side) } }
 }
 
 /** 입력 없는 편의 큰 수 하나 — planTick 에 적 앞줄 가운데 사람이 가장 많은 대에 옆치기 · omenSec 전에 예고 (올 길) */
@@ -192,6 +197,41 @@ function enemyPlan(s: FieldState, side: 0 | 1): void {
   if (!t || hs.length === 0) return
   if (s.tick === at) { startFlank(s, side, t); return }
   emit(s, { kind: 'omen', side, id: t.id, u: t.u, v: t.v, n: hs.reduce((a, q) => a + q.men, 0), pts: [centerOf(hs), ...flankRoute(s, side, t, 2), { u: t.u, v: t.v }] })
+}
+
+/**
+ * 입력 없는 편의 큰 수 (검수 W10 · 진에 따라 갈린다 — 진은 씨앗) — 판 상태로만 가른다 (굴림 없음 · 거울 판이 정확히 뒤집힌다):
+ * 적 기병 옆치기가 우리 대 aiHoldCells 안까지 오거나(방패 벽 진이면 적 앞줄 돌격이 와도) 앞줄 방진 · 위협이 aiHoldSec 없으면 푼다 ·
+ * 적 활이 우리 앞줄 활 사거리 안으로 몰려 오거나(창 쐐기 진이면 적 앞줄이 aiChargeCells 안이면) 앞줄 돌격 · 장수는 곁에 적이 들면 비기(aiSkill).
+ */
+function aiTactics(s: FieldState, side: 0 | 1): Array<() => void> {
+  const acts: Array<() => void> = []
+  const h = heroOf(s, side)
+  if (!h || h.manual === 1 || s.breakTick[side] >= 0) return acts
+  const foe = (1 - side) as 0 | 1
+  // 큰 외침은 제 편 사기가 적보다 낮을 때만 (aiSkill 2 면 늘) — 앞선 쪽이 더 굳히지 않게
+  const behind = P.field.aiSkill === 2 || sideMorale(s, side) < sideMorale(s, foe)
+  if (P.field.aiSkill >= 1 && behind && h.art === 'shout' && h.stun === 0 && h.dash === 0 && (h.artCd === 0 || h.grit >= MILLI)
+    && s.squads.some(q => q.side === foe && q.men > 0 && q.flee === 0 && dist2(q.u, q.v, h.u, h.v) <= sq(cells(P.field.heroArtCells)))) acts.push(() => trySkill(s, h, h.u, h.v))
+  const fr = live(groupOf(s, side, 'front'))
+  if (fr.length === 0) return acts
+  const ord = fr[0]!.order, fc = centerOf(fr), r2 = sq(cells(P.field.aiHoldCells))
+  const ffr = live(groupOf(s, foe, 'front')), fbw = live(groupOf(s, foe, 'bows'))
+  const ffc = ffr.length ? centerOf(ffr) : null
+  // 진마다 한 가지 버릇 (진은 씨앗) — 방패 벽은 방진으로 받고 · 창 쐐기는 먼저 돌격하고 · 넓은 날개는 적 활이 몰려 오면 돌격한다
+  const threat = s.lineup[side] === LINE_SHIELD && s.squads.some(q => q.side === foe && q.men > 0 && q.grp === 'horse' && q.order === ORD_FLANK && q.target >= 0 && s.squads[q.target]!.side === side && dist2(q.u, q.v, s.squads[q.target]!.u, s.squads[q.target]!.v) <= r2)
+    || (s.lineup[side] === LINE_SHIELD && ffc !== null && ffr[0]!.order === ORD_CHARGE && dist2(fc.u, fc.v, ffc.u, ffc.v) <= r2)
+  const locked = fr.some(q => q.lock >= 0)
+  if (threat && ord === ORD_NONE) { acts.push(() => { for (const q of fr) q.stance = STANCE_HOLD; setOrder(s, side, 'front', ORD_HOLD, fc) }); return acts }
+  if (ord === ORD_HOLD) { if (!threat && s.tick - fr[0]!.orderTick >= ticksOf(P.field.aiHoldSec)) acts.push(() => setOrder(s, side, 'front', ORD_NONE, null)); return acts }
+  if (ord !== ORD_NONE || locked) return acts
+  const fbc = fbw.length ? centerOf(fbw) : null
+  const reach = cells(P.field.bowRangeCells)
+  // 적 활이 몰려 옴 = 적 활이 적 앞줄보다 우리 앞줄에 가깝고 활 사거리 안 (화살비로 앞으로 나온 활)
+  const crowd = s.lineup[side] === LINE_WINGS && fbc !== null && dist2(fc.u, fc.v, fbc.u, fbc.v) <= reach * reach && (ffc === null || dist2(fc.u, fc.v, fbc.u, fbc.v) < dist2(fc.u, fc.v, ffc.u, ffc.v))
+  const rush = s.lineup[side] === LINE_WEDGE && ffc !== null && dist2(fc.u, fc.v, ffc.u, ffc.v) <= sq(cells(P.field.aiChargeCells))
+  if (crowd || rush) acts.push(() => { for (const q of fr) q.stance = STANCE_CHARGE; setOrder(s, side, 'front', ORD_CHARGE, null) })
+  return acts
 }
 
 /** 명령이 끝났나 — 돌격은 겨눈 적이 없어지면 · 화살비는 volleySec · 옆치기는 닿고 flankStaySec 뒤(또는 flankMaxSec) */

@@ -71,8 +71,8 @@ const reach2 = (): number => sq(P.field.heroReachCells * P.field.unit)
 const vanguarding = (h: Hero): boolean => h.art === 'vanguard' && h.artOn > 0 && h.dash > 0
 
 /** 우리 장수에게 온 입력 (g = 3) — 꼴은 sim.ts inputOk 가 이미 봤다 */
-export function heroInput(s: FieldState, i: FieldInput): void {
-  const h = s.heroes.find(e => e.side === 0)
+export function heroInput(s: FieldState, i: FieldInput, side: 0 | 1 = 0): void {
+  const h = s.heroes.find(e => e.side === side)
   if (!h) return
   switch (i.op) {
     case OP_MOVE:

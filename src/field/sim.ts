@@ -688,6 +688,9 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
     const drop = raw - raw0[q.id]!
     if (drop > 0 && q.men > 0) q.calm += drop * auraOf(s, q)
     const before = q.morale
+    // 되오른 몫(곁의 기운·큰 외침·버팀)은 처음 사기의 moraleCapPermille 까지만 — 넘는 몫은 쌓아 두지 않는다 (둘 다 외치면 사기가 안 내려가 때를 다 쓰던 판)
+    const top = Math.min(MILLI, mul(q.morale0, P.field.moraleCapPermille)), want = q.morale0 - raw + idiv(q.calm, MILLI)
+    if (want > top) q.calm -= (want - top) * MILLI
     q.morale = clamp(q.morale0 - raw + idiv(q.calm, MILLI), 0, MILLI)
     if (q.men > 0 && before * MILLI >= q.morale0 * breakLine && q.morale * MILLI < q.morale0 * breakLine) { emit(s, { kind: 'rout', side: q.side, id: q.id, u: q.u, v: q.v, n: q.men }); routed.push(q) }
   }
@@ -751,9 +754,16 @@ function sideTotals(s: FieldState, side: 0 | 1): { men: number; menMax: number; 
     menMax += q.menMax
     m0 = q.morale0
     men += q.men
-    mw += q.menMax * q.morale
+    // 달아나는 대는 싸움에서 빠진 몫이다 — 사기를 fleeCountPermille 만 센다 (달아난 대가 멀리서 편 사기를 받쳐 끝나지 않던 판 · 판의 법칙 묶음)
+    mw += q.menMax * (q.flee === 1 ? mul(q.morale, P.field.fleeCountPermille) : q.morale)
   }
   return { men, menMax, morale: menMax > 0 ? idiv(mw, menMax) : 0, morale0: m0 }
+}
+
+/** 편 사기 — 처음 사기에 견준 천분율 (끝 판정과 같은 셈 · 달아나는 대는 fleeCountPermille 만 · 투지·적 AI 가 읽는다) */
+export function sideMorale(s: FieldState, side: 0 | 1): number {
+  const t = sideTotals(s, side)
+  return t.morale0 > 0 ? idiv(t.morale * MILLI, t.morale0) : 0
 }
 
 /** 끝 판정 — 사기가 문턱 아래로 가면 바로 끝난다 (30 §6 규칙 3). 문턱은 본편 P.realm.tacBreakMen/tacBreakMorale 그대로 */

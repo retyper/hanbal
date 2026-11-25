@@ -6,7 +6,7 @@ import assert from 'node:assert/strict'
 import { createField, runField, stepField, ticksOf } from '../../src/field/sim.ts'
 import { plainSetup } from '../../src/field/scenario.ts'
 import { P } from '../../src/tune/params.ts'
-import { MORALE_CAUSES, OP_SKILL, OP_STANCE, ORD_CHARGE, ORD_NONE, STANCE_CHARGE } from '../../src/field/types.ts'
+import { MORALE_CAUSES, OP_SKILL, OP_STANCE, ORD_CHARGE, ORD_HOLD, ORD_NONE, STANCE_CHARGE } from '../../src/field/types.ts'
 
 test('편이 무너지면 sideBreak 하나 · sideBreakSec 동안 그 편의 산 대가 모두 달아난 뒤 끝나고 무너진 편이 진다', () => {
   for (const seed of [3, 5, 8]) {
@@ -63,4 +63,16 @@ test('끝난 명령은 ORD_NONE 으로 — 돌격은 산 대가 모두 맞물리
   let off = -1
   while (s.end === null && off < 0) { stepField(s); if (front() === ORD_NONE) off = s.tick }
   assert.ok(off > 0 && off < ticksOf(P.field.chargeMaxSec) + 5, `돌격이 끝난 틱 ${off}`)
+})
+
+test('입력 없는 편(적 AI)이 진에 따라 방진·돌격을 쓴다 (검수 W10)', () => {
+  let hold = 0, charge = 0
+  for (let seed = 1; seed <= 12; seed++) {
+    const s = createField(plainSetup(seed, 1300))
+    const seen = new Set<number>()
+    while (s.end === null) { stepField(s); for (const q of s.squads) if (q.grp === 'front' && q.men > 0) seen.add(q.order) }
+    if (seen.has(ORD_HOLD)) hold++
+    if (seen.has(ORD_CHARGE)) charge++
+  }
+  assert.ok(hold >= 2 && charge >= 2, `방진을 쓴 판 ${hold} · 돌격을 쓴 판 ${charge} (12판)`)
 })
