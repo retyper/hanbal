@@ -24,6 +24,7 @@ const CSS = `
 #fd-hud{position:absolute;left:calc(8px + env(safe-area-inset-left));right:calc(8px + env(safe-area-inset-right));top:calc(6px + env(safe-area-inset-top));display:flex;gap:10px;align-items:flex-start;font-size:14px;pointer-events:none}
 #fd-hud[hidden]{display:none}
 #fd-hud>*{pointer-events:auto}
+#fd-hud button[hidden]{display:none}
 #fd-hud button,#fd-end button{font:inherit;color:inherit;background:#0009;border:1px solid #fff4;border-radius:8px;padding:12px 14px;min-height:44px;min-width:44px;transition:transform .08s}
 #fd-hud button:active,#fd-end button:active{transform:scale(.94)}
 #fd-hud button.on{border-color:#ffd27a;color:#ffd27a}
@@ -64,6 +65,7 @@ export function mountHud(root: HTMLElement, h: HudHandlers): Hud {
   const n0 = $('fd-n0'), n1 = $('fd-n1'), b0 = $('fd-b0'), b1 = $('fd-b1')
   const fa = b0.firstElementChild as HTMLElement, fb = b1.firstElementChild as HTMLElement
   const endText = $('fd-endtext'), endWhy = $('fd-why')
+  zoom.hidden = true // 시제품: 확대 단추는 뺀다 (51 §2) · 장수 따라가기 한 가지 배율
   again.textContent = again2.textContent = t('field.again')
   pause.textContent = t('field.pause')
   let armUntil = 0

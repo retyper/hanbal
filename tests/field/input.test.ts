@@ -121,3 +121,30 @@ test('입력 번역은 sim 쪽 규칙을 지킨다 (난수·시계·삼각함수
     assert.deepEqual(text.match(/Math\.(random|sin|cos|atan2?|hypot|sqrt)|Date\.now|performance\.now|\bdocument\b|\bwindow\b|localStorage/g) ?? [], [], f)
   }
 })
+
+test('장수 조작: WASD·스틱 → 16방위 번호 · 바뀔 때만 보내는 입력 · 적을 쳐라 · 내닫기·비기', async () => {
+  const { attackInputs, dashInput, heroDirInput, keysDir, skillInput, stickDir } = await import('../../src/field/input.ts')
+  const { OP_ATTACK, OP_DASH, OP_HERO_DIR, OP_SKILL } = await import('../../src/field/types.ts')
+  assert.equal(keysDir(false, false, false, true), 0, 'D = +u')
+  assert.equal(keysDir(false, true, false, false), 4, 'S = +v (아래)')
+  assert.equal(keysDir(false, false, true, false), 8, 'A = -u')
+  assert.equal(keysDir(true, false, false, false), 12, 'W = -v (위)')
+  assert.equal(keysDir(false, true, false, true), 2, 'D+S 대각선')
+  assert.equal(keysDir(true, true, false, false), -1, '마주 누르면 멈춤')
+  assert.equal(keysDir(false, false, false, false), -1)
+  assert.equal(stickDir(3, 2, 7), -1, '죽은 구간')
+  assert.equal(stickDir(40, 1, 7), 0)
+  assert.equal(stickDir(0, -40, 7), 12)
+  assert.deepEqual(heroDirInput(4, -1, ctx()), { tick: 100, g: 3, op: OP_HERO_DIR, u: 4, v: 1 })
+  assert.deepEqual(heroDirInput(-1, 4, ctx()), { tick: 100, g: 3, op: OP_HERO_DIR, u: 4, v: 0 })
+  assert.deepEqual(attackInputs([2, 3], 17, ctx()), [{ tick: 100, g: 2, op: OP_ATTACK, u: 17, v: 0 }, { tick: 100, g: 3, op: OP_ATTACK, u: 17, v: 0 }])
+  assert.equal(dashInput(-1, ctx()).op, OP_DASH)
+  assert.deepEqual([skillInput(5, 6, ctx()).op, skillInput(5, 6, ctx()).u], [OP_SKILL, 5])
+  // 엔진에서 받아들여져 장수가 그쪽으로 걷는다
+  const s = createField(plainSetup(3, 1200))
+  const u0 = s.heroes.find(e => e.side === 0)!.u
+  stepField(s, [heroDirInput(0, -1, ctx({ tick: 0 }))])
+  for (let i = 0; i < 20; i++) stepField(s)
+  assert.ok(s.heroes.find(e => e.side === 0)!.u > u0)
+  assert.equal(s.log.dropped, 0)
+})

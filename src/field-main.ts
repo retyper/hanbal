@@ -11,10 +11,11 @@ import { plainSetup } from './field/scenario.ts'
 import { crossMap, highMap, ambushMap, meetMap, stakeMap } from './field/map.ts'
 import { createField, stepField } from './field/sim.ts'
 import { t, type Key } from './i18n/index.ts'
-import { cmdInput, mergePlan, sendInputs, CMDS, type CmdGroup, type InputCtx } from './field/input.ts'
-import { actionOf, KEYS } from './field/actions.ts'
+import { attackInputs, cmdInput, dashInput, heroDirInput, keysDir, mergePlan, sendInputs, skillInput, CMDS, type CmdGroup, type InputCtx } from './field/input.ts'
+import { actionOf, firstKeyLabel, KEYS } from './field/actions.ts'
 import { ALL_GROUPS, boxPick, cellWhy, cmdGroup, GRP_OF, normalizeSel, pickAt, type PickCand, type UiState } from './field/pickmodel.ts'
 import { mountFlags, type FlagsView } from './field/mainFlags.ts'
+import { mountPad, type Pad, type PadBtn } from './field/mainPad.ts'
 import { mountFirst, mountHelp, mountSteps, type First, type Help, type Steps } from './field/mainHelp.ts'
 import { drawMarks, type Band, type Box, type Mark, type MarkShape, type Ring } from './field/mainFlagMarks.ts'
 import { OP_AUTO, OP_MOVE, type FieldInput, type InputGroup } from './field/types.ts'
@@ -23,7 +24,7 @@ import { mountHud, type Hud } from './field/mainHud.ts'
 import { createFieldSound, soundCamOf, soundFrameOf } from './field/mainSound.ts'
 import type { FlagKind } from './field/mainSoundModel.ts'
 import { advance } from './field/viewLoop.ts'
-import { readField, type VModel } from './field/viewRead.ts'
+import { readField, type VLoss, type VModel } from './field/viewRead.ts'
 import { clusterCenter, fitZoom, followCam, frameBox, newCam, nextLevel, toField, toScreen, wholeZoom, type Rect, type Viewport } from './field/viewCamera.ts'
 import { loadArt } from './field/viewArt.ts'
 import { drawField, focusPoints, resetFx, worldSize } from './field/view.ts'
@@ -70,6 +71,9 @@ const men = num('men', 2000)
 let state = createField(plainSetup(seed, men, true, makeMap()))
 let cur: VModel = readField(state)
 let prev: VModel | null = null
+/** 아직 그림이 못 읽은 깎임 사건 (한 프레임에 틱이 여럿 돌아도 안 빠진다) · 위쪽 숫자를 늦춰 보이려는 판 기록 */
+let lossAcc: VLoss[] = []
+const hist: { t: number; m: VModel }[] = []
 let paused = false
 /** 그리는 시계 (멈추면 서고 · 끝나면 잠깐 느려진다) · 끝난 시각 · 끌어서 옮긴 카메라 · 목표를 한 번 더 늦춘 자리 */
 let viewMs = 0
@@ -103,9 +107,15 @@ let sentFront = false
 const TUT_KEY = 'field.tutorial.v1'
 const readTut = (): boolean => { try { return localStorage.getItem(TUT_KEY) === '1' } catch { return false } }
 let tutDone = readTut()
-const stepOk = [false, false]
+const stepOk = [false, false, false]
 let flashStep = -1, flashAt = 0, playMs = 0
 let steps: Steps
+let pad: Pad
+/** 장수 걷기: 마지막으로 보낸 방향(없으면 -1) · 손가락 스틱의 방향 · 「적을 쳐라」로 찍힌 적에게 뜨는 표적 테 · 마지막으로 읽은 못 쓴 까닭 */
+let heroDirSent = -1, padDir = -1
+const foeFlash: { id: number; at: number }[] = []
+let lastWhyTick = 0
+const lastGrpWhyTick = [0, 0, 0]
 let heroOrdered = false
 /** 장수가 처음 선 자리 (움직였는지 보려고) · 무리 곁을 지날 때 튀는 고리의 시작 시각 */
 let heroStart: { u: number; v: number } | null = null
@@ -200,10 +210,11 @@ function restart(): void {
   resetFx()
   introLeft = P.field.introMs
   fsnd.stop(); soundTick = -1; soundEpoch = markEpoch
-  endAt = 0; viewMs = 0; pan = null; tgt = null
+  endAt = 0; viewMs = 0; pan = null; tgt = null; lossAcc = []; hist.length = 0
   ui.phase = 'ready'; ui.sel = [3]
   queue = []; plan = []
   lastGoal.fill(null); lastShape.fill('move'); nudgeAt.fill(0)
+  heroDirSent = -1; padDir = -1; foeFlash.length = 0; lastWhyTick = 0; lastGrpWhyTick.fill(0)
   cmdNow.fill(-1); sentGroup = false; sentFront = false; stepOk.fill(false); flashStep = -1; playMs = 0; heroOrdered = false; heroStart = null
   camFree = false; camFight = false; cam.level = 0; hud.setZoom(0)
   hud.showEnd(null)
@@ -275,20 +286,20 @@ function pickCands(): PickCand[] {
 }
 
 /** 누른 곳(화면 px) 가까이의 적 대·적장의 자리 (sim 단위) · 없으면 null */
-function enemyAt(px: number, py: number): { u: number; v: number } | null {
-  let best: { u: number; v: number } | null = null, bestD2 = Infinity
+function enemyAt(px: number, py: number): { u: number; v: number; id: number } | null {
+  let best: { u: number; v: number; id: number } | null = null, bestD2 = Infinity
   const reach = P.field.spreadVCells * P.field.cellPx * cam.zoom
   for (const q of cur.squads) {
     if (q.side !== 1 || q.men <= 0) continue
     const s = toScreen(cam, vp, pxOf(q.u), pxOf(q.v))
     const d2 = (s.x - px) ** 2 + (s.y - py) ** 2, r = P.field.sendAttackPx + reach
-    if (d2 <= r * r && d2 < bestD2) { bestD2 = d2; best = { u: q.u, v: q.v } }
+    if (d2 <= r * r && d2 < bestD2) { bestD2 = d2; best = { u: q.u, v: q.v, id: q.id } }
   }
   for (const e of cur.heroes) {
     if (e.side !== 1) continue
     const s = toScreen(cam, vp, pxOf(e.u), pxOf(e.v))
     const d2 = (s.x - px) ** 2 + (s.y - py) ** 2, r = P.field.sendAttackPx
-    if (d2 <= r * r && d2 < bestD2) { bestD2 = d2; best = { u: e.u, v: e.v } }
+    if (d2 <= r * r && d2 < bestD2) { bestD2 = d2; best = { u: e.u, v: e.v, id: -1 } }
   }
   return best
 }
@@ -299,7 +310,8 @@ function sendAt(px: number, py: number, now: number): void {
   const foe = enemyAt(px, py)
   const u = foe === null ? unitsOf(w.x) : foe.u, v = foe === null ? unitsOf(w.y) : foe.v
   const sel = ui.sel
-  accept(sendInputs(sel, u, v, inputCtx()))
+  if (foe !== null && foe.id >= 0) { accept(attackInputs(sel, foe.id, inputCtx())); foeFlash.push({ id: foe.id, at: now }) }
+  else accept(sendInputs(sel, u, v, inputCtx()))
   const goal = { u: Math.max(0, Math.min(cur.mapUUnits, u)), v: Math.max(0, Math.min(cur.mapVUnits, v)) }
   for (const g of sel) { lastGoal[g] = goal; if (g !== 0 || cmdNow[0]! < 0) lastShape[g] = 'move' }
   if (sel.includes(0) && ui.phase === 'play') sentFront = true
@@ -328,6 +340,48 @@ function pressCmd(g: CmdGroup, idx: number): void {
     fsnd.order((g === 0 ? name : g === 2 ? 'horse' : 'move') as FlagKind)
     // 엔진이 이 명령을 아직 안 받아도 입력은 보내고, 그 명령의 뜻을 한 줄로 보인다
     flags.say(t('field.say.cmd', { g: gName(g), c: t(`war.cmdName.${name}` as Key), s: t(`war.cmdShort.${name}` as Key) }), 'ok', now)
+  }
+}
+
+/** 장수 입력 (싸우는 중에만 · 입력 줄로) */
+function heroInput(i: FieldInput): void {
+  if (ui.phase !== 'play') return
+  queue.push(i); heroOrdered = true; markEpoch++
+}
+const artCdSec = (a: string): number => a === 'shout' ? P.field.heroCdShoutSec : a === 'stand' ? P.field.heroCdStandSec : a === 'snipe' ? P.field.heroCdSnipeSec : P.field.heroCdVanguardSec
+function doDash(): void { heroInput(dashInput(heroDirSent, inputCtx())) }
+function doSkill(): void {
+  const h = heroNow()
+  if (h === undefined) return
+  const foe = cur.heroes.find(e => e.side === 1)
+  const at = h.art === 'snipe' && foe !== undefined ? foe : h
+  heroInput(skillInput(at.u, at.v, inputCtx()))
+}
+/** WASD 와 스틱 가운데 지금 가려는 방향 · 바뀔 때만 입력을 보낸다 */
+function walkHero(): void {
+  if (ui.phase !== 'play' || paused || helpOpen) return
+  const held = (names: readonly string[]): boolean => names.some(n => keysHeld.has(n))
+  const k = keysDir(held(KEYS.heroUp), held(KEYS.heroDown), held(KEYS.heroLeft), held(KEYS.heroRight))
+  const want = k >= 0 ? k : padDir
+  if (want !== heroDirSent) { heroInput(heroDirInput(want, heroDirSent, inputCtx())); heroDirSent = want }
+}
+/** 장수·무리가 못 받은 까닭을 한 줄로 */
+function watchWhy(now: number): void {
+  const h = heroNow()
+  if (h !== undefined && h.why !== 0 && h.whyTick !== lastWhyTick) { lastWhyTick = h.whyTick; flags.say(t(`field.herowhy.${h.why}` as Key), 'why', now) }
+  for (const g of [0, 1, 2] as const) {
+    if (cur.grpWhy[g] !== 0 && cur.grpWhyTick[g] !== lastGrpWhyTick[g]) { lastGrpWhyTick[g] = cur.grpWhyTick[g]; flags.say(`${gName(g)} ${t(`field.herowhy.${cur.grpWhy[g]}` as Key)}`, 'why', now) }
+  }
+}
+function padBtns(): { dash: PadBtn; skill: PadBtn } {
+  const h = heroNow()
+  const hz = P.field.hz
+  const dashMax = Math.max(1, P.field.heroDashCdSec * hz)
+  const art = h?.art ?? 'none'
+  const artMax = Math.max(1, artCdSec(art) * hz)
+  return {
+    dash: { frac: h === undefined ? 0 : Math.min(1, h.dashCd / dashMax), sec: h === undefined ? 0 : Math.ceil(h.dashCd / hz), label: t('field.dash'), key: firstKeyLabel('dash'), icon: 'flag/flag-charge.png' },
+    skill: { frac: h === undefined ? 0 : Math.min(1, h.artCd / artMax), sec: h === undefined ? 0 : Math.ceil(h.artCd / hz), label: art === 'none' ? '-' : t(`war.artName.${art}` as Key), key: firstKeyLabel('skillQ'), icon: art === 'none' ? '' : `flag/flag-art-${art}.png` },
   }
 }
 
@@ -364,6 +418,19 @@ function ringsNow(now: number): Ring[] {
       const h = heroNow()
       if (h !== undefined) out.push({ x: pxOf(h.u), y: pxOf(h.v), rx: P.field.ringHeroCells * c, ry: P.field.ringHeroCells * c * 0.45, kind: 'sel', phase: 0 })
     } else for (const q of squadsOf(g)) out.push({ x: pxOf(q.u), y: pxOf(q.v), rx: (P.field.spreadUCells + 2) * c, ry: (P.field.spreadVCells + 1.5) * c, kind: 'sel', phase: 0 })
+  }
+  for (let i = foeFlash.length - 1; i >= 0; i--) {
+    const fl = foeFlash[i]!
+    const ph = (now - fl.at) / P.field.foeFlashMs
+    const q = cur.squads[fl.id]
+    if (ph >= 1 || q === undefined || q.men <= 0) { foeFlash.splice(i, 1); continue }
+    out.push({ x: pxOf(q.u), y: pxOf(q.v), rx: (P.field.spreadUCells + 2) * c, ry: (P.field.spreadVCells + 1.5) * c, kind: 'foe', phase: ph })
+  }
+  const hh = heroNow()
+  if (hh !== undefined && ui.phase === 'play' && hh.stun === 0) {
+    const ar = P.field.heroAuraCells * c, r2 = (P.field.heroAuraCells * P.field.unit) ** 2
+    out.push({ x: pxOf(hh.u), y: pxOf(hh.v), rx: ar, ry: ar * 0.6, kind: 'aura', phase: 0 })
+    for (const q of cur.squads) if (q.side === 0 && q.men > 0 && (q.u - hh.u) ** 2 + (q.v - hh.v) ** 2 <= r2) out.push({ x: pxOf(q.u), y: pxOf(q.v), rx: c * 1.4, ry: c * 0.8, kind: 'glow', phase: 0 })
   }
   if (ui.phase === 'play' && !sentGroup) {
     for (const g of [0, 1, 2] as const) {
@@ -514,14 +581,17 @@ function paint(now: number, alpha: number): void {
   const selKey = ui.sel.join('')
   const same = calm && box === null && k.x === cam.x && k.y === cam.y && k.z === cam.zoom && k.sel === selKey && k.epoch === markEpoch
   if (!blocked && !same) {
-    drawField(ctx, vp, cam, cur, prev, alpha, viewMs, art, low, heroPick)
+    drawField(ctx, vp, cam, cur, prev, alpha, viewMs, art, low, heroPick, lossAcc)
+    lossAcc = []
     drawMarks(ctx, vp, cam, marks(), ALL_GROUPS.map(g => ui.sel.includes(g) ? fromOf(g) : null), ringsNow(now), box, bandsNow(), foeMarks())
     k.x = cam.x; k.y = cam.y; k.z = cam.zoom; k.sel = selKey; k.epoch = markEpoch
   }
   flags.frame(now)
   flags.sync(cur, ui, { cmd: cmdNow, sentGroup, touch: touchMode })
   tutorial(now)
-  hud.sync(cur)
+  const pb = padBtns()
+  pad.sync(!blocked && ui.phase === 'play' && cur.end === null, touchMode, touchMode && !heroOrdered && playMs < 3000, pb.dash, pb.skill)
+  hud.sync(lagged(now))
   hud.frame(now)
   hud.showEnd(endAt > 0 && now - endAt >= P.field.endBoxMs ? cur : null)
   const h = heroNow()
@@ -554,6 +624,8 @@ function tutorial(now: number): void {
   const play = ui.phase === 'play'
   if (play && !stepOk[0] && heroOrdered && heroMovedNow()) { stepOk[0] = true; flashStep = 0; flashAt = now }
   if (play && !stepOk[1] && sentFront) { stepOk[1] = true; flashStep = 1; flashAt = now }
+  const hz0 = heroNow()
+  if (play && !stepOk[2] && hz0 !== undefined && hz0.artCd > 0) { stepOk[2] = true; flashStep = 2; flashAt = now }
   const flashing = flashStep >= 0 && now - flashAt < P.field.stepFlashMs
   const next = stepOk.indexOf(false)
   if (next === -1 && !flashing) {
@@ -563,6 +635,12 @@ function tutorial(now: number): void {
   }
   const showStep = ui.phase === 'end' || cur.end !== null ? -1 : flashing ? flashStep : next
   steps.sync(ui.phase !== 'end' && cur.end === null && playMs < P.field.goalMs, showStep < 0 ? null : t(`field.step.${showStep + 1}` as Key), flashing)
+}
+/** 위쪽 숫자·사기 띠가 읽는 판 — 점이 먼저 쓰러지고 숫자가 따라가도록 numLagMs 전의 것 (판 값은 안 바꾼다) */
+function lagged(now: number): VModel {
+  if (hist.length === 0 || hist[hist.length - 1]!.m !== cur) hist.push({ t: now, m: cur })
+  while (hist.length > 1 && hist[1]!.t <= now - P.field.numLagMs) hist.shift()
+  return cur.end !== null ? cur : hist[0]!.m
 }
 function heroMovedNow(): boolean {
   const h = heroNow()
@@ -591,6 +669,7 @@ function frame(now: number): void {
       // 이번 틱에 들어간 입력은 줄에서 뺀다 (sim 이 틱 번호가 같은 것만 받는다)
       if (queue.length > 0) queue = queue.filter(q => q.tick >= state.tick)
       prev = cur; cur = readField(state)
+      if (cur.loss.length > 0) lossAcc.push(...cur.loss)
     }
     if (cur.end !== null) { ui.phase = 'end'; drag = null; endAt = now; fsnd.end(cur.winner === 0) }
   }
@@ -607,6 +686,8 @@ function frame(now: number): void {
   const keep = normalizeSel(cur, ui.sel)
   if (keep !== ui.sel) { ui.sel = keep; markEpoch++ }
   watchNudge(now)
+  walkHero()
+  watchWhy(now)
   // 우리 장수가 쓰러지는 틱에 그리는 시계가 잠깐 멈칫한다 (가장 큰 사건)
   const h0 = cur.heroes.find(e => e.side === 0), p0 = prev?.heroes.find(e => e.side === 0)
   if (h0 !== undefined && p0 !== undefined && h0.stun > 0 && p0.stun === 0) hitStopUntil = now + P.field.heroDownStopMs
@@ -671,6 +752,8 @@ addEventListener('keydown', e => {
     case 'pause': paused = !paused; hud.setPaused(paused); break
     case 'go': goBattle(); break
     case 'help': toggleHelp(); break
+    case 'dash': doDash(); break
+    case 'skillQ': doSkill(); break
     default: break // 장수 기술·내닫기·걷기 키는 엔진의 입력 계약이 온 뒤 (묶음 나)
   }
 })
@@ -707,6 +790,7 @@ hud.setZoom(0)
 flags = mountFlags(root, import.meta.env.BASE_URL + 'realm/', handlers)
 help = mountHelp(root)
 first = mountFirst(root)
+pad = mountPad(root, import.meta.env.BASE_URL + 'realm/', { onDir: d => { padDir = d }, onDash: doDash, onSkill: doSkill })
 steps = mountSteps(root)
 root.append(document.getElementById('fd-rotate') as HTMLElement)
 resize()
