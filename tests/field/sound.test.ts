@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { P } from '../../src/tune/params.ts'
 import { audible, eventsFromDiff, newSoundState, stepSound } from '../../src/field/mainSoundModel.ts'
-import type { SoundCam, SoundEvent, SoundFrame, SoundSquad } from '../../src/field/mainSoundModel.ts'
+import type { SoundCam, SoundEngineEvent, SoundEvent, SoundFrame, SoundSquad } from '../../src/field/mainSoundModel.ts'
 
 const U = P.field.unit
 const cell = (c: number): number => c * U
@@ -12,10 +12,12 @@ const cell = (c: number): number => c * U
 const px = (c: number): number => c * P.field.cellPx
 
 function sq(id: number, side: 0 | 1, grp: SoundSquad['grp'], uCells: number, vCells: number, o: Partial<SoundSquad> = {}): SoundSquad {
-  return { id, side, grp, men: 400, u: cell(uCells), v: cell(vCells), stance: 0, lock: -1, target: -1, ...o }
+  return { id, side, grp, men: 400, u: cell(uCells), v: cell(vCells), stance: 0, lock: -1, target: -1, ran: 0, flee: 0, aim: -1, order: 0, ...o }
 }
 const frame = (tick: number, squads: SoundSquad[], o: Partial<SoundFrame> = {}): SoundFrame =>
   ({ tick, squads, pieces: [], edge: [1000, 1000], end: null, winner: -1, ...o })
+/** 엔진 사건 한 칸 (tick = 사건이 난 틱) */
+const ee = (tick: number, kind: string, o: Partial<SoundEngineEvent> = {}): SoundEngineEvent => ({ tick, kind, side: 0, id: 0, u: cell(41), v: cell(10), n: 0, to: -1, how: 0, ...o })
 /** 화면 가운데가 u 칸 · v 칸인 카메라 (폭 844 × 390 · 맞춤 배율) */
 const camAt = (uCells: number, vCells: number, zoomRel = 1): SoundCam => ({ x: px(uCells), y: px(vCells), zoom: 1 * zoomRel, vpW: 844, vpH: 390, zoomRel })
 
@@ -33,8 +35,9 @@ function run(st = newSoundState(), steps: { f: SoundFrame; cam: SoundCam; ev?: S
 }
 
 test('돌격이 처음 맞물린 틱에 같은 프레임으로 부딪힘 쾅 요청이 나온다', () => {
-  const a0 = frame(0, [sq(0, 0, 'front', 40, 10), sq(1, 1, 'front', 43, 10)])
-  const a1 = frame(1, [sq(0, 0, 'front', 40, 10, { lock: 1 }), sq(1, 1, 'front', 43, 10, { lock: 0 })])
+  const sqs = [sq(0, 0, 'front', 40, 10), sq(1, 1, 'front', 43, 10)]
+  const a0 = frame(0, sqs)
+  const a1 = frame(1, [sq(0, 0, 'front', 40, 10, { aim: 1, lock: 1 }), sq(1, 1, 'front', 43, 10, { aim: 0, lock: 0 })], { events: [ee(0, 'impact', { id: 0, n: 800 })] })
   const cam = camAt(41, 10)
   const [o0, o1] = run(newSoundState(), [{ f: a0, cam, now: 0 }, { f: a1, cam, now: 100 }])
   assert.equal(o0!.plays.filter(p => p.slot === 'impact').length, 0)
@@ -43,22 +46,47 @@ test('돌격이 처음 맞물린 틱에 같은 프레임으로 부딪힘 쾅 요
   assert.ok(hit[0]!.vol > 0)
 })
 
-test('쾅의 세기는 사람 수에 비례한다', () => {
-  const mk = (men: number) => {
-    const a0 = frame(0, [sq(0, 0, 'front', 40, 10, { men }), sq(1, 1, 'front', 43, 10, { men })])
-    const a1 = frame(1, [sq(0, 0, 'front', 40, 10, { men, lock: 1 }), sq(1, 1, 'front', 43, 10, { men, lock: 0 })])
+test('쾅의 세기는 사건의 사람 수에 비례한다', () => {
+  const mk = (n: number) => {
+    const a0 = frame(0, [sq(0, 0, 'front', 40, 10)]), a1 = frame(1, [sq(0, 0, 'front', 40, 10)], { events: [ee(0, 'impact', { n })] })
     return run(newSoundState(), [{ f: a0, cam: camAt(41, 10), now: 0 }, { f: a1, cam: camAt(41, 10), now: 100 }])[1]!.plays.find(p => p.slot === 'impact')!.vol
   }
   assert.ok(mk(50) < mk(300))
   assert.ok(mk(300) <= mk(1500))
 })
 
-test('방진끼리 맞물리면 쾅이 아니라 쇳소리다', () => {
-  const a0 = frame(0, [sq(0, 0, 'front', 40, 10, { stance: 1 }), sq(1, 1, 'front', 43, 10, { stance: 1 })])
-  const a1 = frame(1, [sq(0, 0, 'front', 40, 10, { stance: 1, lock: 1 }), sq(1, 1, 'front', 43, 10, { stance: 1, lock: 0 })])
-  const ev = eventsFromDiff(a0, a1)
-  assert.equal(ev.filter(e => e.kind === 'impact').length, 0)
-  assert.equal(ev.filter(e => e.kind === 'clash').length, 1)
+test('쾅의 세 가지: 보통은 쾅만 · 상성이 맞으면 세게 + 북 한 번 · 막히면 같은 소리를 낮고 작게', () => {
+  const one = (how: number) => {
+    const a0 = frame(0, [sq(0, 0, 'front', 40, 10)]), a1 = frame(1, [sq(0, 0, 'front', 40, 10)], { events: [ee(0, 'impact', { n: 600, how })] })
+    return run(newSoundState(), [{ f: a0, cam: camAt(41, 10), now: 0 }, { f: a1, cam: camAt(41, 10), now: 100 }])[1]!.plays
+  }
+  const normal = one(0), good = one(1), blocked = one(2)
+  assert.equal(normal.filter(p => p.slot === 'war_drums').length, 0)
+  assert.equal(good.filter(p => p.slot === 'war_drums').length, 1)
+  assert.equal(blocked.filter(p => p.slot === 'war_drums').length, 0)
+  const nv = normal.find(p => p.slot === 'impact')!, bv = blocked.find(p => p.slot === 'impact')!
+  assert.ok(bv.vol < nv.vol)
+  assert.ok(bv.rate < nv.rate)
+  assert.equal(nv.rate, 1)
+})
+
+test('같은 무리의 쾅은 impactRepeatMs 뒤에야 다시 나고 다른 무리는 곧바로', () => {
+  const sqs = [sq(0, 0, 'front', 40, 10), sq(1, 1, 'front', 43, 10)]
+  const tick = (t: number, id: number) => frame(t, sqs, { events: [ee(t - 1, 'impact', { id, n: 400 })] })
+  const rep = Math.round(P.field.impactRepeatMs * P.field.hz / 1000)
+  const cam = camAt(41, 10)
+  const outs = run(newSoundState(), [
+    { f: frame(0, sqs), cam, ev: [], now: 0 },
+    { f: tick(1, 0), cam, now: 1000 },
+    { f: tick(2, 0), cam, now: 5000 },          // 같은 무리 · 틱으로 보면 1 틱 뒤 · 소리 쪽 간격은 지났다
+    { f: tick(2 + rep, 0), cam, now: 9000 },    // 같은 무리 · 충분히 뒤
+    { f: tick(3 + rep, 1), cam, now: 13000 },   // 다른 무리
+  ])
+  const n = (i: number) => outs[i]!.plays.filter(p => p.slot === 'impact').length
+  assert.equal(n(1), 1)
+  assert.equal(n(2), 0)
+  assert.equal(n(3), 1)
+  assert.equal(n(4), 1)
 })
 
 test('동시 소리 수는 상한을 넘지 않는다', () => {
@@ -90,10 +118,10 @@ test('같은 소리는 최소 간격 안에 되풀이되지 않는다', () => {
 })
 
 /** 기병 한 대가 한 틱에 cellsPerSec 로 가는 두 프레임 */
-function horseLoop(cellsPerSec: number) {
+function horseLoop(cellsPerSec: number, ran = 1) {
   const step = cellsPerSec * U / P.field.hz
   const f0 = frame(0, [sq(0, 0, 'horse', 10, 10), sq(1, 1, 'front', 100, 10)])
-  const f1 = frame(1, [sq(0, 0, 'horse', 10, 10, { u: cell(10) + step }), sq(1, 1, 'front', 100, 10)])
+  const f1 = frame(1, [sq(0, 0, 'horse', 10, 10, { u: cell(10) + step, ran }), sq(1, 1, 'front', 100, 10)])
   const cam = camAt(10, 10)
   return run(newSoundState(), [{ f: f0, cam, ev: [], now: 0 }, { f: f1, cam, ev: [], now: 100 }])[1]!
 }
@@ -106,30 +134,32 @@ test('기병 걸음 빠르기가 2배면 말발굽 박자 배율도 2배', () =>
   assert.ok(Math.abs(ls.beatMs / lf.beatMs - 2) < 1e-6)
 })
 
-test('기병은 느리고 먼 데서는 걷는 발굽, 빠르면 질주 발굽', () => {
-  assert.ok(horseLoop(2).loops.some(l => l.slot === 'hoof_walk'))
-  assert.ok(horseLoop(8).loops.some(l => l.slot === 'hoof_gallop'))
+test('기병은 걸을 때 걷는 발굽, 돌격으로 달리면(ran) 질주 발굽, 달아나도 질주', () => {
+  assert.ok(horseLoop(2, 0).loops.some(l => l.slot === 'hoof_walk'))
+  assert.ok(horseLoop(2, 1).loops.some(l => l.slot === 'hoof_gallop'))
+  assert.ok(horseLoop(8, 0).loops.some(l => l.slot === 'hoof_walk'))
 })
 
 test('질주가 시작되는 순간 말 울음(horse_start)이 한 번', () => {
   const step = 8 * U / P.field.hz
-  const mk = (t: number, du: number) => frame(t, [sq(0, 0, 'horse', 10, 10, { u: cell(10) + du }), sq(1, 1, 'front', 100, 10)])
+  const mk = (t: number, ran: number) => frame(t, [sq(0, 0, 'horse', 10, 10, { u: cell(10) + t * step, ran }), sq(1, 1, 'front', 100, 10)])
   const cam = camAt(10, 10)
   const outs = run(newSoundState(), [
-    { f: mk(0, 0), cam, ev: [], now: 0 }, { f: mk(1, step), cam, ev: [], now: 100 }, { f: mk(2, 2 * step), cam, ev: [], now: 200 },
+    { f: mk(0, 0), cam, ev: [], now: 0 }, { f: mk(1, 1), cam, ev: [], now: 100 }, { f: mk(2, 1), cam, ev: [], now: 200 },
   ])
   assert.equal(outs[1]!.plays.filter(p => p.slot === 'horse_start').length, 1)
   assert.equal(outs[2]!.plays.filter(p => p.slot === 'horse_start').length, 0)
 })
 
-test('걷는 보병과 돌격 보병은 다른 이어지는 소리', () => {
+test('걷는 보병과 달리는(ran) 보병 · 달아나는(flee) 보병은 다른 이어지는 소리', () => {
   const step = 3 * U / P.field.hz
-  const mk = (t: number, stance: number) => frame(t, [sq(0, 0, 'front', 10, 10, { u: cell(10) + t * step, stance }), sq(1, 1, 'front', 100, 10)])
+  const mk = (t: number, o: Partial<SoundSquad>) => frame(t, [sq(0, 0, 'front', 10, 10, { u: cell(10) + t * step, ...o }), sq(1, 1, 'front', 100, 10)])
   const cam = camAt(10, 10)
-  const walk = run(newSoundState(), [{ f: mk(0, 1), cam, ev: [], now: 0 }, { f: mk(1, 1), cam, ev: [], now: 100 }])[1]!
-  const charge = run(newSoundState(), [{ f: mk(0, 0), cam, ev: [], now: 0 }, { f: mk(1, 0), cam, ev: [], now: 100 }])[1]!
+  const at = (o: Partial<SoundSquad>) => run(newSoundState(), [{ f: mk(0, o), cam, ev: [], now: 0 }, { f: mk(1, o), cam, ev: [], now: 100 }])[1]!
+  const walk = at({}), ran = at({ ran: 1 }), flee = at({ flee: 1 })
   assert.ok(walk.loops.some(l => l.base === 'step_walk') && !walk.loops.some(l => l.base === 'step_run'))
-  assert.ok(charge.loops.some(l => l.base === 'step_run') && !charge.loops.some(l => l.base === 'step_walk'))
+  assert.ok(ran.loops.some(l => l.base === 'step_run') && !ran.loops.some(l => l.base === 'step_walk'))
+  assert.ok(flee.loops.some(l => l.base === 'step_run'))
 })
 
 test('걷는 사람이 많을수록 이어지는 소리가 커진다 (상한 안에서)', () => {
@@ -192,24 +222,34 @@ test('같은 입력 두 번 → 같은 목록 (결정론)', () => {
 
 test('쾅이 나면 이어지는 소리가 잠깐 낮아진다', () => {
   const step = 3 * U / P.field.hz
-  const mk = (t: number, lock: boolean) => frame(t, [sq(0, 0, 'front', 10, 10, { u: cell(10) + t * step, stance: 1 }), sq(1, 1, 'front', 100, 10), sq(2, 0, 'front', 40, 10, { lock: lock ? 3 : -1 }), sq(3, 1, 'front', 43, 10, { lock: lock ? 2 : -1 })])
+  const mk = (t: number, events: SoundEngineEvent[]) => frame(t, [sq(0, 0, 'front', 10, 10, { u: cell(10) + t * step, stance: 1 }), sq(90, 1, 'front', 100, 10)], { events })
   const cam = camAt(25, 10)
-  const quiet = run(newSoundState(), [{ f: mk(0, false), cam, ev: [], now: 0 }, { f: mk(1, false), cam, ev: [], now: 100 }])[1]!.loops.find(l => l.base === 'step_walk')!.vol
-  const ducked = run(newSoundState(), [{ f: mk(0, false), cam, ev: [], now: 0 }, { f: mk(1, true), cam, now: 100 }])[1]!
-  const d = ducked.loops.find(l => l.base === 'step_walk')!.vol
-  assert.ok(d < quiet)
+  const quiet = run(newSoundState(), [{ f: mk(0, []), cam, ev: [], now: 0 }, { f: mk(1, []), cam, ev: [], now: 100 }])[1]!.loops.find(l => l.base === 'step_walk')!.vol
+  const ducked = run(newSoundState(), [{ f: mk(0, []), cam, ev: [], now: 0 }, { f: mk(1, [ee(0, 'impact', { n: 500, u: cell(40), v: cell(10) })]), cam, now: 100 }])[1]!
+  assert.ok(ducked.loops.find(l => l.base === 'step_walk')!.vol < quiet)
   assert.ok(ducked.plays.some(p => p.slot === 'impact'))
 })
 
-test('문 부서짐 · 사기 꺾임 · 끝은 차이에서 사건이 된다', () => {
-  const s = [sq(0, 0, 'front', 40, 10), sq(1, 1, 'front', 60, 10)]
-  const a = frame(0, s, { pieces: [{ id: 7, kind: 'gate', hp: 100 }, { id: 8, kind: 'stake', hp: 50 }] })
-  const b = frame(1, s, { pieces: [{ id: 7, kind: 'gate', hp: 0 }, { id: 8, kind: 'stake', hp: 0 }], edge: [1000, P.field.edgeLowPermille] })
-  const kinds = eventsFromDiff(a, b).map(e => e.kind).sort()
-  assert.deepEqual(kinds, ['gateBreak', 'rout'])
-  const c = frame(2, s, { pieces: b.pieces, edge: b.edge, end: 'morale', winner: 0 })
-  const e = eventsFromDiff(b, c)
-  assert.deepEqual(e, [{ kind: 'end', win: true }])
+test('엔진 사건이 소리 사건이 된다: 문 부서짐 · 무너짐 · 화살 · 장수 · 끝 (예고 omen 은 소리 없음)', () => {
+  const s0 = [sq(0, 0, 'front', 40, 10), sq(1, 1, 'front', 60, 10)]
+  const a = frame(0, s0)
+  const b = frame(1, s0, { events: [ee(0, 'gateBreak'), ee(0, 'rout'), ee(0, 'volley'), ee(0, 'heroDash'), ee(0, 'heroSkill'), ee(0, 'artHit'), ee(0, 'omen'), ee(0, 'heroDown'), ee(0, 'loss', { to: 1, how: 0 })] })
+  assert.deepEqual(eventsFromDiff(a, b).map(e => e.kind).sort(), ['artHit', 'gateBreak', 'heroDash', 'heroSkill', 'rout', 'volley'])
+  const c = frame(2, s0, { end: 'morale', winner: 0 })
+  assert.deepEqual(eventsFromDiff(b, c), [{ kind: 'end', win: true }])
+  // 앞뒤 틱 밖의 사건은 읽지 않는다 (이미 소리 낸 것을 되풀이하지 않는다)
+  const d = frame(5, s0, { events: [ee(0, 'rout'), ee(3, 'volley'), ee(5, 'rout')] })
+  assert.deepEqual(eventsFromDiff(b, d).map(e => e.kind), ['volley'])
+})
+
+test('사건은 형이 고른 소리 자리로 간다 (같은 프레임 · 한 프레임 소리 상한 때문에 둘로 나눠 본다)', () => {
+  const s0 = [sq(0, 0, 'front', 40, 10), sq(1, 1, 'front', 41, 10)]
+  const cam = camAt(41, 10)
+  const slots = (evs: SoundEngineEvent[]) => run(newSoundState(), [{ f: frame(0, s0), cam, ev: [], now: 0 }, { f: frame(1, s0, { events: evs }), cam, now: 100 }])[1]!.plays.map(p => p.slot)
+  const A = slots([ee(0, 'gateBreak'), ee(0, 'rout'), ee(0, 'volley'), ee(0, 'heroDash')])
+  for (const w of ['gate', 'rout', 'arrow_volley', 'hero_dash']) assert.ok(A.includes(w as never), w)
+  const B = slots([ee(0, 'heroSkill'), ee(0, 'loss', { to: 1, how: 1 }), ee(0, 'flankHit')])
+  for (const w of ['hero_art', 'arrow_hit', 'war_drums']) assert.ok(B.includes(w as never), w)
 })
 
 test('틱이 안 바뀐 프레임에는 사건이 없다 (같은 틱을 두 번 읽어도 쾅은 한 번)', () => {
@@ -217,16 +257,15 @@ test('틱이 안 바뀐 프레임에는 사건이 없다 (같은 틱을 두 번 
   assert.deepEqual(eventsFromDiff(a, a), [])
 })
 
-test('활은 겨누는 동안 화살비 사건이 주기마다 나온다', () => {
-  const cycle = Math.round(P.field.arrowCycleMs * P.field.hz / 1000)
-  let n = 0
-  let prev = frame(0, [sq(0, 0, 'bows', 40, 10, { target: 1 }), sq(1, 1, 'front', 60, 10)])
-  for (let t = 1; t <= cycle * 3; t++) {
-    const cur = frame(t, prev.squads.map(q => ({ ...q })))
-    n += eventsFromDiff(prev, cur).filter(e => e.kind === 'volley').length
-    prev = cur
+test('화살이 맞은 대(loss 화살)에서 꽂히는 소리 · 칼 몫은 소리가 없다', () => {
+  const s0 = [sq(0, 0, 'bows', 40, 10, { target: 1 }), sq(1, 1, 'front', 60, 10)]
+  const hit = (how: number) => {
+    const [, o] = run(newSoundState(), [{ f: frame(0, s0), cam: camAt(50, 10), ev: [], now: 0 }, { f: frame(1, s0, { events: [ee(0, 'loss', { id: 0, to: 1, how, n: 5 })] }), cam: camAt(50, 10), now: 100 }])
+    return o!.plays.filter(p => p.slot === 'arrow_hit')
   }
-  assert.equal(n, 3)
+  assert.equal(hit(1).length, 1)
+  assert.equal(hit(0).length, 0)
+  assert.ok(hit(1)[0]!.pan > 0)  // 맞은 대(60칸)는 화면 가운데(50칸)보다 오른쪽
 })
 
 test('모델 파일에 난수·시계·DOM 이 없다', () => {
@@ -240,7 +279,7 @@ test('이어지는 소리 파일의 재생 빠르기는 박자 배율을 따른�
   const a = loopTargets(horseLoop(5).loops).find(t => t.slot === 'hoof_gallop')!
   const b = loopTargets(horseLoop(7.5).loops).find(t => t.slot === 'hoof_gallop')!
   assert.ok(Math.abs(b.rate / a.rate - 1.5) < 1e-6)
-  const slow = loopTargets(horseLoop(1).loops)[0]!, fast = loopTargets(horseLoop(30).loops)[0]!
+  const slow = loopTargets(horseLoop(1, 0).loops)[0]!, fast = loopTargets(horseLoop(30).loops)[0]!
   assert.ok(Math.abs(slow.rate - P.field.soundLoopRateMinPct / 100 * P.field.soundHoofWalkRatePct / 100) < 1e-9)
   assert.equal(fast.rate, P.field.soundLoopRateMaxPct / 100)
   assert.ok(a.gain > 0 && a.gain <= 1)
@@ -274,7 +313,7 @@ test('고르기 판이 가리키는 소리 파일이 모두 있고 0바이트가
 /** 한 줄로 걷는 보병 한 대 (men 명) 가 두 틱 걸은 프레임 쌍 */
 function walkers(men: number, stance = 1, n = 1) {
   const step = 3 * U / P.field.hz
-  const mk = (t: number) => frame(t, [...Array.from({ length: n }, (_, i) => sq(i, 0, 'front', 10 + i, 10, { u: cell(10 + i) + t * step, stance, men })), sq(90, 1, 'front', 100, 10)])
+  const mk = (t: number) => frame(t, [...Array.from({ length: n }, (_, i) => sq(i, 0, 'front', 10 + i, 10, { u: cell(10 + i) + t * step, stance, men, ran: stance === 0 ? 1 : 0 })), sq(90, 1, 'front', 100, 10)])
   return { a: mk(0), b: mk(1), c: mk(2), d: mk(3) }
 }
 const tierOfWalk = (men: number, n = 1): number | undefined => {
@@ -320,7 +359,7 @@ test('단계가 바뀌는 동안 두 고리가 겹쳐 나가고 그 뒤에는 �
   assert.ok(t0 > t1)
 })
 
-test('발소리 크기는 사람 수에 따르고 단계 파일 이름은 자리 이름이다', () => {
+test('발소리 단계 파일 이름은 자리 이름이다 (달리는 보병 100명 = 적음)', () => {
   const w = walkers(100, 0)
   const o = run(newSoundState(), [{ f: w.a, cam: camAt(10, 10), ev: [], now: 0 }, { f: w.b, cam: camAt(10, 10), ev: [], now: 100 }])[1]!
   assert.equal(o.loops[0]!.slot, 'step_run_few')
@@ -328,32 +367,82 @@ test('발소리 크기는 사람 수에 따르고 단계 파일 이름은 자리
 
 test('말발굽 걷기는 질주보다 느리고 작게 같은 파일에서 나온다', async () => {
   const { loopTargets } = await import('../../src/field/mainSoundModel.ts')
-  const walk = loopTargets(horseLoop(2).loops).find(t => t.slot === 'hoof_walk')!
-  const gal = loopTargets(horseLoop(8).loops).find(t => t.slot === 'hoof_gallop')!
+  const walk = loopTargets(horseLoop(2, 0).loops).find(t => t.slot === 'hoof_walk')!
+  const gal = loopTargets(horseLoop(8, 1).loops).find(t => t.slot === 'hoof_gallop')!
   assert.ok(walk.rate < gal.rate)
   assert.ok(walk.gain < gal.gain)
 })
 
-test('꽂히는 화살은 쏜 뒤 화살이 닿는 때에 맞은 대 자리에서 주기마다 한 번', () => {
-  const cycle = P.field.arrowCycleMs, flight = P.field.arrowFlightMs
-  const sqs = [sq(0, 0, 'bows', 40, 10, { target: 1 }), sq(1, 1, 'front', 60, 10)]
-  const cam = camAt(50, 10)
-  let st = newSoundState(), hits = 0
-  const times: number[] = []
-  for (let t = 0, tick = 0; t <= cycle * 4; t += 33, tick = Math.floor(t * P.field.hz / 1000)) {
-    const o = stepSound(st, frame(tick, sqs), cam, [], 1000 + t, false)
-    st = o.state
-    for (const p of o.plays) if (p.slot === 'arrow_hit') { hits++; times.push(t) }
+test('다그닥다그닥 … 쾅: 질주가 접촉 직전에 가장 크고 쾅 프레임에서 질주 고리가 빠지며 꼬리가 150ms 이하', () => {
+  const cam = camAt(20, 10), step = 8 * U / P.field.hz
+  // 기병이 적에게 다가간다 (한 틱에 8칸/초) · 마지막에 맞물려 쾅
+  const mk = (t: number, contact: boolean, events: SoundEngineEvent[] = []) => frame(t, [
+    sq(0, 0, 'horse', 10, 10, { u: cell(10) + t * step, ran: contact ? 0 : 1, aim: contact ? 1 : -1, lock: contact ? 1 : -1 }),
+    sq(1, 1, 'front', 40, 10),
+  ], { events })
+  const steps = [{ f: mk(0, false), cam, ev: [] as SoundEvent[], now: 0 }]
+  for (let t = 1; t <= 18; t++) steps.push({ f: mk(t, false), cam, ev: [], now: t * 100 })
+  steps.push({ f: mk(19, true, [ee(18, 'impact', { n: 800, how: 0, id: 0 })]), cam, ev: undefined as never, now: 1900 })
+  const outs = run(newSoundState(), steps.map(x => (x.ev === undefined ? { f: x.f, cam: x.cam, now: x.now } : x)))
+  const vols = outs.slice(1, 19).map(o => o.loops.find(l => l.slot === 'hoof_gallop')?.vol ?? 0)
+  for (let i = 1; i < vols.length; i++) assert.ok(vols[i]! >= vols[i - 1]! - 1e-9, vols.join())
+  assert.ok(vols[vols.length - 1]! > vols[0]!)
+  const last = outs[19]!
+  assert.ok(last.plays.some(p => p.slot === 'impact'))
+  assert.equal(last.loops.find(l => l.slot === 'hoof_gallop'), undefined)
+  assert.ok(P.field.soundLoopTailMs <= 150)
+})
+
+test('맞붙은 대 수에 비례해 쇳소리가 커진다 (상한 있음) · 난투 함성은 드문드문', () => {
+  const melee = (n: number) => Array.from({ length: n }, (_, i) => sq(i, (i % 2) as 0 | 1, 'front', 40 + (i % 2), 10 + i, { aim: i ^ 1, lock: i ^ 1 }))
+  const clashVol = (n: number) => {
+    let st = newSoundState(), best = 0
+    const cam = camAt(40, 10)
+    st = stepSound(st, frame(0, melee(n)), cam, [], 0, false).state
+    for (let t = 1; t <= P.field.soundClashEveryTicks; t++) {
+      const f = frame(t, melee(n))
+      const o = stepSound(st, f, cam, eventsFromDiff(st.last, f), 1000 + t * 100, false)
+      st = o.state
+      for (const p of o.plays) if (p.slot === 'clash') best = Math.max(best, p.vol)
+    }
+    return best
   }
-  assert.ok(hits >= 3 && hits <= 5, String(hits))
-  for (let i = 1; i < times.length; i++) assert.ok(Math.abs(times[i]! - times[i - 1]! - cycle) <= 34 + 1, times.join())
-  // 겨누지 않으면 나지 않는다
-  let st2 = newSoundState(), n2 = 0
-  for (let t = 0; t <= cycle * 3; t += 33) {
-    const o = stepSound(st2, frame(0, [sq(0, 0, 'bows', 40, 10), sq(1, 1, 'front', 60, 10)]), cam, [], 1000 + t, false)
-    st2 = o.state
-    n2 += o.plays.filter(p => p.slot === 'arrow_hit').length
+  assert.ok(clashVol(2) > 0)
+  assert.ok(clashVol(2) < clashVol(6))
+  assert.ok(clashVol(6) <= clashVol(12) + 1e-9)
+  assert.equal(clashVol(P.field.soundMeleeCountCap), clashVol(P.field.soundMeleeCountCap * 2))
+  // 난투 함성: 맞붙은 대가 문턱 이상이면 한 번 · 간격 전에는 다시 안 난다 · 문턱 아래면 안 난다
+  const cry = (n: number, at: number[]) => {
+    let st = newSoundState(), c = 0
+    for (const now of at) {
+      const o = stepSound(st, frame(1, melee(n)), camAt(40, 10), [], now, false)
+      st = o.state
+      c += o.plays.filter(p => p.slot === 'war_cry').length
+    }
+    return c
   }
-  assert.equal(n2, 0)
-  assert.ok(flight < cycle)
+  assert.equal(cry(P.field.soundMeleeCryMinEngaged, [0, 100, 200]), 1)
+  assert.equal(cry(P.field.soundMeleeCryMinEngaged, [0, P.field.soundMeleeCryEveryMs + 100]), 2)
+  assert.equal(cry(P.field.soundMeleeCryMinEngaged - 1, [0, 100]), 0)
+})
+
+test('무너짐 함성은 도미노로 여럿이 무너져도 soundGapRoutMs 간격으로만', () => {
+  const s0 = [sq(0, 0, 'front', 40, 10)]
+  const cam = camAt(40, 10)
+  const rout = (tick: number) => frame(tick, s0, { events: [ee(tick - 1, 'rout', { id: 0 }), ee(tick - 1, 'rout', { id: 1 })] })
+  const gap = P.field.soundGapRoutMs
+  const outs = run(newSoundState(), [
+    { f: frame(0, s0), cam, ev: [], now: 0 }, { f: rout(1), cam, now: 1000 }, { f: rout(2), cam, now: 1000 + gap - 100 }, { f: rout(3), cam, now: 1000 + gap + 50 },
+  ])
+  const n = (i: number) => outs[i]!.plays.filter(p => p.slot === 'rout').length
+  assert.deepEqual([n(1), n(2), n(3)], [1, 0, 1])
+})
+
+test('엔진 한 판(seed 3)을 소리 모델에 흘려도 같은 판은 같은 소리 기록 · 달리기·쾅·무너짐이 난다', async () => {
+  const { soundLog } = await import('../../tools/field-sound-log.ts')
+  const a = soundLog(3, 1200), b = soundLog(3, 1200)
+  assert.equal(a.text, b.text)
+  assert.ok((a.counts.impact ?? 0) > 0)
+  assert.ok((a.counts.step_run ?? 0) > 0 || (a.counts.hoof_gallop ?? 0) > 0)
+  assert.ok(a.maxPlays <= P.field.soundVoicesMax)
 })

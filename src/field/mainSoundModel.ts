@@ -14,7 +14,7 @@ import { P } from '../tune/params.ts'
 /** 소리 자리 이름 — 어떤 파일을 붙일지는 mainSound.ts 의 표가 정한다 (여기는 모른다) */
 export type FieldSlot =
   | 'flag_charge' | 'flag_hold' | 'flag_open' | 'flag_move' | 'flag_horse'
-  | 'war_cry' | 'war_drums' | 'horse_start' | 'arrow_volley' | 'arrow_hit' | 'clash' | 'impact' | 'gate' | 'rout' | 'end_win' | 'end_lose'
+  | 'war_cry' | 'war_drums' | 'horse_start' | 'arrow_volley' | 'arrow_hit' | 'hero_dash' | 'hero_art' | 'clash' | 'impact' | 'gate' | 'rout' | 'end_win' | 'end_lose'
   | 'step_walk_few' | 'step_walk_mid' | 'step_walk_many' | 'step_run_few' | 'step_run_mid' | 'step_run_many' | 'hoof_walk' | 'hoof_gallop'
 
 /** 이어지는 소리의 종류 — 발소리는 사람 수에 따라 세 단계(few · mid · many) 가운데 하나로 나간다 */
@@ -22,20 +22,25 @@ export type LoopBase = 'step_walk' | 'step_run' | 'hoof_walk' | 'hoof_gallop'
 const TIERS = ['few', 'mid', 'many'] as const
 const tierSlot = (base: LoopBase, tier: number): FieldSlot => (base === 'hoof_walk' || base === 'hoof_gallop' ? base : `${base}_${TIERS[tier]}`) as FieldSlot
 
-export interface SoundSquad { id: number; side: 0 | 1; grp: 'front' | 'bows' | 'horse'; men: number; u: number; v: number; stance: number; lock: number; target: number }
+/** ran 달리는 중(돌격·옆치기의 달린 거리 · 0 이면 걷기) · flee 달아남 · aim 지금 싸우는 상대(없으면 -1) · order 무리 명령 ORD_* */
+export interface SoundSquad { id: number; side: 0 | 1; grp: 'front' | 'bows' | 'horse'; men: number; u: number; v: number; stance: number; lock: number; target: number; ran: number; flee: number; aim: number; order: number }
+/** 엔진 사건 줄의 한 칸 (src/field/types.ts FieldEvent 에서 소리에 쓰는 것만 · tick 은 사건이 난 틱 = 돌기 전 틱 번호) */
+export interface SoundEngineEvent { tick: number; kind: string; side: number; id: number; u: number; v: number; n: number; to: number; how: number }
 export interface SoundPiece { id: number; kind: 'stake' | 'gate'; hp: number }
 /** 한 프레임의 읽기 — 좌표는 sim 단위(1칸 = P.field.unit) */
-export interface SoundFrame { tick: number; squads: readonly SoundSquad[]; pieces: readonly SoundPiece[]; edge: readonly [number, number]; end: string | null; winner: number }
+export interface SoundFrame { tick: number; squads: readonly SoundSquad[]; pieces: readonly SoundPiece[]; edge: readonly [number, number]; end: string | null; winner: number; events?: readonly SoundEngineEvent[] }
 /** 카메라 — x, y 는 화면 가운데의 판 좌표(px) · zoom 은 화면 px / 판 px · zoomRel 은 맞춤 배율에 대한 몫(1 이상) */
 export interface SoundCam { x: number; y: number; zoom: number; vpW: number; vpH: number; zoomRel: number }
 
 export type FlagKind = 'charge' | 'hold' | 'open' | 'horse' | 'move'
 /** u, v 가 없으면 화면 소리(깃발·끝)라 가운데에서 늘 같은 크기로 난다 */
 export interface SoundEvent {
-  kind: 'impact' | 'clash' | 'volley' | 'gateBreak' | 'rout' | 'flag' | 'end'
+  kind: 'impact' | 'impactGood' | 'clash' | 'volley' | 'arrowHit' | 'gateBreak' | 'rout' | 'heroDash' | 'heroSkill' | 'artHit' | 'flag' | 'end'
   u?: number; v?: number
-  /** 부딪힘 세기 0~1000 */
+  /** 부딪힘 세기 0~1000 · clash 에서는 맞붙은 대 수 */
   power?: number
+  /** impact 의 상성 구분 0 보통 · 1 맞음 · 2 막힘 · 사건이 난 틱 · 친 대 */
+  how?: number; tick?: number; id?: number
   flag?: FlagKind
   win?: boolean
 }
@@ -54,8 +59,11 @@ export interface SoundState {
   xfade: Readonly<Record<string, { from: number; at: number }>>
   lastNow: number
   duckUntil: number
+  /** 무리마다 마지막으로 쾅을 낸 틱 (같은 무리는 soundImpactRepeatMs 뒤에야 다시) · 마지막 난전 함성 시각 */
+  impactAt: Readonly<Record<number, number>>
+  meleeCryAt: number
 }
-export const newSoundState = (): SoundState => ({ last: null, speeds: {}, gallop: {}, lastAt: {}, tiers: {}, xfade: {}, lastNow: -1, duckUntil: -1 })
+export const newSoundState = (): SoundState => ({ last: null, speeds: {}, gallop: {}, lastAt: {}, tiers: {}, xfade: {}, lastNow: -1, duckUntil: -1, impactAt: {}, meleeCryAt: -1 })
 
 export interface SoundOut { state: SoundState; plays: Play[]; loops: LoopInfo[] }
 
@@ -88,61 +96,44 @@ const centerOf = (qs: readonly SoundSquad[]): { u: number; v: number } | null =>
   return n === 0 ? null : { u: Math.trunc(su / n), v: Math.trunc(sv / n) }
 }
 
+const isMelee = (q: SoundSquad): boolean => q.men > 0 && q.grp !== 'bows' && (q.aim >= 0 || q.lock >= 0)
+
 /**
- * 앞뒤 프레임의 차이에서 사건을 뽑는다 (임시 · F2c 의 정식 사건 줄이 오면 이 함수만 갈아 끼운다).
- * 틱이 몇 칸 건너뛰었어도 주기 사건(화살비 · 쇳소리)은 건너뛴 틱마다 본다 (상한: maxCatchUpTicks).
+ * 앞뒤 프레임에서 소리 사건을 뽑는다. 엔진의 사건 줄(cur.events · F2c)에서 [prev.tick, cur.tick) 틱 몫을 읽고,
+ * 맞붙은 대는 주기마다 쇳소리 사건을 낸다 (대 수에 비례해 크게 · 건너뛴 틱마다 보되 maxCatchUpTicks 까지). 끝은 앞뒤 차이로 본다.
+ * 엔진 사건 → 소리: impact(how) 쾅 · flankHit 상성 북 · rout 무너짐 · volley 활 · loss 가운데 화살(how 1) 꽂힘 · gateBreak · heroDash · heroSkill · artHit.
+ * omen(적 큰 수 예고)은 소리를 정하지 않았다 (형이 고른 소리 가운데 경고로 쓸 것이 없다).
  */
 export function eventsFromDiff(prev: SoundFrame | null, cur: SoundFrame): SoundEvent[] {
   if (prev === null || cur.tick === prev.tick) return []
   const ev: SoundEvent[] = []
   const byId = new Map<number, SoundSquad>()
   for (const q of cur.squads) byId.set(q.id, q)
-  const prevOf = new Map<number, SoundSquad>()
-  for (const q of prev.squads) prevOf.set(q.id, q)
-  const seen = new Set<number>()
-  for (const q of cur.squads) {
-    const p = prevOf.get(q.id)
-    if (q.men <= 0 || p === undefined) continue
-    // 처음 맞물린 순간 (한 쌍에 한 번)
-    if (p.lock < 0 && q.lock >= 0) {
-      const o = byId.get(q.lock)
-      if (o !== undefined) {
-        const key = Math.min(q.id, o.id) * 1000 + Math.max(q.id, o.id)
-        if (!seen.has(key)) {
-          seen.add(key)
-          const charging = (s: SoundSquad): boolean => s.grp === 'horse' || (s.grp === 'front' && s.stance === 0)
-          const power = clamp(Math.trunc((q.men + o.men) * 1000 / F().soundImpactRefMen), 0, 1000)
-          ev.push({ kind: charging(q) || charging(o) ? 'impact' : 'clash', u: Math.trunc((q.u + o.u) / 2), v: Math.trunc((q.v + o.v) / 2), power })
-        }
+  for (const e of cur.events ?? []) {
+    if (e.tick < prev.tick || e.tick >= cur.tick) continue
+    const pos = { u: e.u, v: e.v }
+    switch (e.kind) {
+      case 'impact': ev.push({ kind: 'impact', ...pos, power: clamp(Math.trunc(e.n * 1000 / F().soundImpactRefMen), 0, 1000), how: e.how, tick: e.tick, id: e.id }); break
+      case 'flankHit': ev.push({ kind: 'impactGood', ...pos, tick: e.tick, id: e.id }); break
+      case 'rout': ev.push({ kind: 'rout', ...pos, id: e.id }); break
+      case 'volley': ev.push({ kind: 'volley', ...pos }); break
+      case 'gateBreak': ev.push({ kind: 'gateBreak', ...pos }); break
+      case 'artHit': ev.push({ kind: 'artHit', ...pos }); break
+      case 'heroDash': ev.push({ kind: 'heroDash', ...pos }); break
+      case 'heroSkill': ev.push({ kind: 'heroSkill', ...pos }); break
+      case 'loss': {
+        const to = byId.get(e.to)
+        if (e.how === 1 && to !== undefined) ev.push({ kind: 'arrowHit', u: to.u, v: to.v })
+        break
       }
     }
   }
-  const cycle = Math.max(1, Math.round(F().arrowCycleMs * F().hz / 1000))
+  // 맞붙은 동안의 쇳소리 — 맞붙은 대마다 주기 틱에 한 번 (대 수가 많으면 더 자주 · 소리 쪽 간격이 상한)
   const first = Math.max(prev.tick + 1, cur.tick - F().maxCatchUpTicks + 1)
-  const pairSeen = new Set<number>()
-  for (let t = first; t <= cur.tick; t++) {
-    for (const q of cur.squads) {
-      if (q.men <= 0) continue
-      if (q.grp === 'bows' && q.target >= 0 && (t + q.id) % cycle === 0) ev.push({ kind: 'volley', u: q.u, v: q.v })
-      if (q.lock >= 0 && (t + q.id) % F().soundClashEveryTicks === 0) {
-        const o = byId.get(q.lock)
-        const key = o === undefined ? -1 : Math.min(q.id, o.id) * 1000 + Math.max(q.id, o.id) + t * 1000000
-        if (o !== undefined && pairSeen.has(key)) continue
-        pairSeen.add(key)
-        ev.push({ kind: 'clash', u: o === undefined ? q.u : Math.trunc((q.u + o.u) / 2), v: o === undefined ? q.v : Math.trunc((q.v + o.v) / 2), power: 0 })
-      }
-    }
-  }
-  const hp0 = new Map<number, number>()
-  for (const p of prev.pieces) hp0.set(p.id, p.hp)
-  for (const p of cur.pieces) {
-    if (p.kind === 'gate' && (hp0.get(p.id) ?? 0) > 0 && p.hp <= 0) ev.push({ kind: 'gateBreak' })
-  }
-  for (const side of [0, 1] as const) {
-    const low = F().edgeLowPermille
-    if (prev.edge[side] > low && cur.edge[side] <= low) {
-      const c = centerOf(cur.squads.filter(q => q.side === side))
-      ev.push(c === null ? { kind: 'rout' } : { kind: 'rout', u: c.u, v: c.v })
+  const n = cur.squads.filter(isMelee).length
+  if (n > 0) {
+    for (let t = first; t <= cur.tick; t++) {
+      for (const q of cur.squads) if (isMelee(q) && (t + q.id) % F().soundClashEveryTicks === 0) ev.push({ kind: 'clash', u: q.u, v: q.v, power: n })
     }
   }
   if (prev.end === null && cur.end !== null) ev.push({ kind: 'end', win: cur.winner === 0 })
@@ -154,15 +145,15 @@ export const flagEvent = (flag: FlagKind): SoundEvent => ({ kind: 'flag', flag }
 
 const GAP: Readonly<Record<FieldSlot, () => number>> = {
   flag_charge: () => 0, flag_hold: () => 0, flag_open: () => 0, flag_move: () => 0, flag_horse: () => 0,
-  war_cry: () => F().soundGapCryMs, war_drums: () => F().soundGapDrumsMs, horse_start: () => F().soundGapCryMs,
+  war_cry: () => F().soundGapCryMs, war_drums: () => F().soundGapDrumsMs, horse_start: () => F().soundGapCryMs, hero_dash: () => F().soundGapMs, hero_art: () => F().soundGapMs,
   arrow_volley: () => F().soundGapVolleyMs, arrow_hit: () => F().soundGapArrowHitMs, clash: () => F().soundGapClashMs, impact: () => F().soundGapImpactMs,
-  gate: () => F().soundGapMs, rout: () => F().soundGapCryMs, end_win: () => F().soundGapEndMs, end_lose: () => F().soundGapEndMs,
+  gate: () => F().soundGapMs, rout: () => F().soundGapRoutMs, end_win: () => F().soundGapEndMs, end_lose: () => F().soundGapEndMs,
   step_walk_few: () => 0, step_walk_mid: () => 0, step_walk_many: () => 0, step_run_few: () => 0, step_run_mid: () => 0, step_run_many: () => 0, hoof_walk: () => 0, hoof_gallop: () => 0,
 }
 const PRIORITY: Readonly<Record<FieldSlot, number>> = {
   end_win: 0, end_lose: 0, impact: 1, gate: 2, war_cry: 3, rout: 3,
   flag_charge: 4, flag_hold: 4, flag_open: 4, flag_move: 4, flag_horse: 4,
-  horse_start: 5, war_drums: 5, arrow_volley: 6, arrow_hit: 6, clash: 7, hoof_gallop: 8, step_run_few: 8, step_run_mid: 8, step_run_many: 8,
+  horse_start: 5, war_drums: 5, hero_dash: 5, hero_art: 5, arrow_volley: 6, arrow_hit: 6, clash: 7, hoof_gallop: 8, step_run_few: 8, step_run_mid: 8, step_run_many: 8,
   hoof_walk: 9, step_walk_few: 9, step_walk_mid: 9, step_walk_many: 9,
 }
 const FLAG_SLOT: Readonly<Record<FlagKind, FieldSlot>> = { charge: 'flag_charge', hold: 'flag_hold', open: 'flag_open', horse: 'flag_horse', move: 'flag_move' }
@@ -176,14 +167,6 @@ export function tierOf(prev: number | undefined, men: number): number {
 }
 /** 이보다 작게 들리는 소리는 내지 않는다 */
 const AUDIBLE_MIN = 0.02
-
-/** 박 번호에서 −1~1 (같은 입력은 같은 값) */
-function hashUnit(key: string, n: number): number {
-  let h = 2166136261
-  for (let i = 0; i < key.length; i++) h = Math.imul(h ^ key.charCodeAt(i), 16777619)
-  h = Math.imul(h ^ n, 2654435761) >>> 0
-  return (h % 2001) / 1000 - 1
-}
 
 function refSpeed(g: SoundSquad['grp']): number {
   return g === 'front' ? F().speedFrontCellsPerSec : g === 'bows' ? F().speedBowsCellsPerSec : F().speedHorseCellsPerSec
@@ -245,29 +228,45 @@ export function stepSound(st: SoundState, frame: SoundFrame, cam: SoundCam, even
   }
 
   let duckUntil = st.duckUntil
-  // 기병 질주 시작 — 달리는 빠르기가 문턱을 넘었거나 적 대에 가까이 달려드는 순간 (한 번)
+  // 기병 질주 시작 — 돌격·옆치기로 달리기 시작한 순간 (한 번 · ran) · 달아나는 기병도 달린다
   const gallop: Record<number, 1> = {}
   for (const q of frame.squads) {
-    if (q.grp !== 'horse' || q.men <= 0 || q.lock >= 0) continue
-    const sp = speeds[q.id] ?? 0
-    if (sp > 0 && (sp >= f.soundGallopMinCellsPerSec || nearestFoeCells(frame, q) <= f.soundGallopRangeCells)) {
+    if (q.grp !== 'horse' || q.men <= 0 || q.lock >= 0 || q.aim >= 0) continue
+    if (q.ran > 0 || q.flee === 1) {
       gallop[q.id] = 1
       if (st.gallop[q.id] === undefined) add('horse_start', 0.6, q.u, q.v)
     }
   }
+  const impactAt: Record<number, number> = { ...st.impactAt }
+  const repeatTicks = Math.round(f.impactRepeatMs * f.hz / 1000)
   for (const e of events) {
     switch (e.kind) {
       case 'impact': {
+        // 무리마다 첫 접촉에만 (같은 무리는 soundImpactRepeatMs 뒤에야 다시)
+        if (e.id !== undefined && e.tick !== undefined) {
+          const last = impactAt[e.id]
+          if (last !== undefined && e.tick - last < repeatTicks && e.tick >= last) break
+          impactAt[e.id] = e.tick
+        }
         const power = clamp(e.power ?? 0, 0, 1000)
-        add('impact', 0.5 + 0.5 * power / 1000, e.u, e.v)
-        add('war_drums', 0.4, e.u, e.v)
+        const how = e.how ?? 0
+        if (how === 2) add('impact', (0.5 + 0.5 * power / 1000) * f.soundBlockedGainPct / 100, e.u, e.v, false, f.soundBlockedRatePct / 100) // 막힘: 같은 소리를 낮은 세기·낮은 빠르기로
+        else {
+          add('impact', 0.5 + 0.5 * power / 1000, e.u, e.v)
+          if (how === 1) add('war_drums', 0.6, e.u, e.v) // 상성이 맞음: 세게 + 형이 고른 북 한 번
+        }
         duckUntil = nowMs + f.soundDuckMs
         break
       }
-      case 'clash': add('clash', 0.5, e.u, e.v); break
+      case 'impactGood': add('war_drums', 0.6, e.u, e.v); break
+      case 'clash': add('clash', 0.3 + 0.5 * Math.min(1, (e.power ?? 1) / f.soundMeleeCountCap), e.u, e.v); break
       case 'volley': add('arrow_volley', 0.5, e.u, e.v); break
+      case 'arrowHit': add('arrow_hit', 0.5, e.u, e.v); break
       case 'gateBreak': add('gate', 0.8, e.u, e.v); break
       case 'rout': add('rout', 0.7, e.u, e.v); break
+      case 'heroDash': add('hero_dash', 0.5, e.u, e.v); break
+      case 'heroSkill': add('hero_art', 0.7, e.u, e.v); break
+      case 'artHit': add('impact', 0.7, e.u, e.v); break
       case 'end': add(e.win === true ? 'end_win' : 'end_lose', 0.9, undefined, undefined); break
       case 'flag': {
         const k = e.flag ?? 'move'
@@ -277,27 +276,28 @@ export function stepSound(st: SoundState, frame: SoundFrame, cam: SoundCam, even
       }
     }
   }
-
-  // 꽂히는 화살 — 겨누는 활마다 주기(arrowCycleMs)에 한 번, 쏜 지 arrowFlightMs 뒤에 맞은 대 자리에서
-  if (st.lastNow >= 0 && nowMs > st.lastNow && nowMs - st.lastNow < 2 * f.arrowCycleMs && frame.end === null) {
-    for (const q of frame.squads) {
-      if (q.grp !== 'bows' || q.men <= 0 || q.target < 0) continue
-      const tq = frame.squads.find(e => e.id === q.target)
-      if (tq === undefined || tq.men <= 0) continue
-      const ph = (hashUnit('arrow', q.id) + 1) / 2 * f.arrowCycleMs
-      if (Math.floor((nowMs + ph - f.arrowFlightMs) / f.arrowCycleMs) > Math.floor((st.lastNow + ph - f.arrowFlightMs) / f.arrowCycleMs)) add('arrow_hit', 0.5, tq.u, tq.v)
-    }
+  // 난투 함성 — 맞붙은 대가 일정 수 이상이면 드문드문 한 번 (대 수에 비례해 커진다)
+  const melee = frame.squads.filter(isMelee)
+  let meleeCryAt = st.meleeCryAt
+  if (melee.length >= f.soundMeleeCryMinEngaged && (meleeCryAt < 0 || nowMs - meleeCryAt >= f.soundMeleeCryEveryMs)) {
+    const c = centerOf(melee)
+    if (c !== null) { add('war_cry', 0.3 + 0.4 * Math.min(1, melee.length / f.soundMeleeCountCap), c.u, c.v); meleeCryAt = nowMs }
   }
+
   // 이어지는 소리 — 종류마다 한 줄 · 대마다 사람 수와 들림을 더하고, 걸음 빠르기는 박자 배율로 낸다
   // 발소리는 한 명분 토막을 여러 겹으로 미리 구운 파일 세 단계(적음 · 보통 · 많음)가 있어 걷는 사람 수에 따라 하나를 고른다
   const duck = nowMs < duckUntil ? f.soundDuckPct / 100 : 1
   const groups = new Map<LoopBase, { w: number; pan: number; mul: number; men: number }>()
   for (const q of frame.squads) {
     const sp = speeds[q.id] ?? 0
-    if (q.men <= 0 || q.lock >= 0 || sp <= 0) continue
-    const base: LoopBase = q.grp === 'horse' ? (gallop[q.id] === 1 ? 'hoof_gallop' : 'hoof_walk') : q.grp === 'front' && q.stance === 0 ? 'step_run' : 'step_walk'
+    if (q.men <= 0 || q.lock >= 0 || (q.grp !== 'bows' && q.aim >= 0) || (sp <= 0 && q.ran <= 0)) continue
+    // 달리는 발소리 = 돌격·옆치기로 달리는 중(ran)이거나 달아나는 중(flee) · 아니면 걷는 발소리 · 기병은 질주 발굽과 걷기 발굽
+    const running = q.ran > 0 || q.flee === 1
+    const base: LoopBase = q.grp === 'horse' ? (gallop[q.id] === 1 ? 'hoof_gallop' : 'hoof_walk') : running ? 'step_run' : 'step_walk'
     const a = audible(cam, q.u, q.v)
-    const w = q.men * a.gain
+    // 질주는 적 가까이 갈수록 커져 접촉 직전에 가장 크다 (접촉하면 맞붙음으로 빠져 곧바로 끊긴다 · 꼬리 soundLoopTailMs)
+    const near = base === 'hoof_gallop' ? f.soundGallopFarPct / 100 + (1 - f.soundGallopFarPct / 100) * clamp(1 - nearestFoeCells(frame, q) / f.soundGallopRangeCells, 0, 1) : 1
+    const w = q.men * a.gain * near
     const g = groups.get(base) ?? { w: 0, pan: 0, mul: 0, men: 0 }
     g.w += w; g.pan += w * a.pan; g.mul += w * (sp / refSpeed(q.grp)); g.men += a.inView ? q.men : 0
     groups.set(base, g)
@@ -334,6 +334,6 @@ export function stepSound(st: SoundState, frame: SoundFrame, cam: SoundCam, even
     lastAt[c.play.slot] = nowMs
     plays.push(c.play)
   }
-  const next: SoundState = { last: advanced ? frame : st.last, speeds, gallop, lastAt, tiers, xfade, lastNow: nowMs, duckUntil }
+  const next: SoundState = { last: advanced ? frame : st.last, speeds, gallop, lastAt, tiers, xfade, lastNow: nowMs, duckUntil, impactAt, meleeCryAt }
   return { state: next, plays, loops }
 }

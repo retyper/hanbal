@@ -15,7 +15,7 @@ import type { FieldState } from './types.ts'
 import type { Cam, Rect, Viewport } from './viewCamera.ts'
 import { fitZoom } from './viewCamera.ts'
 import { eventsFromDiff, flagEvent, loopTargets, newSoundState, stepSound } from './mainSoundModel.ts'
-import type { FieldSlot, FlagKind, LoopTarget, Play, SoundCam, SoundEvent, SoundFrame, SoundState } from './mainSoundModel.ts'
+import type { FieldSlot, FlagKind, LoopTarget, Play, SoundCam, SoundEngineEvent, SoundEvent, SoundFrame, SoundState } from './mainSoundModel.ts'
 
 /**
  * 자리 → 본편 소리 표의 자리 (파일 이름은 PICK 에서 읽는다 — 여기서 손으로 박지 않는다).
@@ -28,6 +28,8 @@ export const PICKED: Readonly<Record<FieldSlot, Slot | null>> = {
   // 형이 고른 본편 소리 (11-25 저녁 고르기 판): 부딪힘 쾅 = 본편 필살 맞부딪힘 g3 · 무너지는 함성 = 본편 함성 h1
   impact: 'battle_crit', rout: 'war_cry',
   // 아래는 본편 표에 없는 새 파일이라 FIELD_FILE 에 있다
+  // 장수: 내닫기 = 본편 결투 베기(cmd_duel) · 비기 = 본편 기술 깃발(cmd_art) — 본편 표에 이미 있는 자리만 쓴다
+  hero_dash: 'cmd_duel', hero_art: 'cmd_art',
   arrow_hit: null, step_walk_few: null, step_walk_mid: null, step_walk_many: null, step_run_few: null, step_run_mid: null, step_run_many: null, hoof_walk: null, hoof_gallop: null,
 }
 
@@ -56,13 +58,26 @@ export function fileOf(slot: FieldSlot, base: string, files: Readonly<Partial<Re
   return base + name.replace(/#t=[\d.]+$/, '')
 }
 
+/** 엔진 사건 줄에서 최근 몇 틱 몫 (소리 모델이 앞 프레임 이후 것만 고른다 · 그리기 사이에 틱이 몇 번 돌아도 놓치지 않게) */
+const EVENT_KINDS: ReadonlySet<string> = new Set(['impact', 'rout', 'volley', 'gateBreak', 'loss', 'flankHit', 'artHit', 'heroDash', 'heroSkill'])
+function recentEvents(s: FieldState): SoundEngineEvent[] {
+  const out: SoundEngineEvent[] = []
+  const from = s.tick - P.field.maxCatchUpTicks * 2
+  for (let i = s.log.events.length - 1; i >= 0 && s.log.events[i]!.tick >= from; i--) {
+    const e = s.log.events[i]!
+    if (EVENT_KINDS.has(e.kind)) out.push({ tick: e.tick, kind: e.kind, side: e.side, id: e.id, u: e.u, v: e.v, n: e.n, to: e.to ?? -1, how: e.how ?? 0 })
+  }
+  return out.reverse()
+}
+
 /** 판 읽기 (FieldState → 소리 모델이 읽는 모양) — 읽기만 한다. edge 는 readField(state).edge */
 export function soundFrameOf(s: FieldState, edge: readonly [number, number]): SoundFrame {
   return {
     tick: s.tick,
-    squads: s.squads.map(q => ({ id: q.id, side: q.side, grp: q.grp, men: q.men, u: q.u, v: q.v, stance: q.stance, lock: q.lock, target: q.target })),
+    squads: s.squads.map(q => ({ id: q.id, side: q.side, grp: q.grp, men: q.men, u: q.u, v: q.v, stance: q.stance, lock: q.lock, target: q.target, ran: q.ran, flee: q.flee, aim: q.aim, order: q.order })),
     pieces: s.map.pieces.map(p => ({ id: p.id, kind: p.kind, hp: p.hp })),
     edge, end: s.end, winner: s.winner,
+    events: recentEvents(s),
   }
 }
 
@@ -155,7 +170,9 @@ export function createFieldSound(base: string = import.meta.env?.BASE_URL ?? '/'
     for (const [slot, r] of running) {
       if (except?.has(slot)) continue
       running.delete(slot)
-      try { r.gain.gain.setTargetAtTime(0, c?.currentTime ?? 0, 0.05); r.src.stop((c?.currentTime ?? 0) + 0.3) } catch { /* 이미 멈춤 */ }
+      // 끊길 때 꼬리 soundLoopTailMs (쾅과 함께 질주가 끊긴다) — 시간 상수는 꼬리의 1/3, 꼬리의 2배 뒤에 멈춘다
+      const tail = P.field.soundLoopTailMs / 1000
+      try { r.gain.gain.setTargetAtTime(0, c?.currentTime ?? 0, tail / 3); r.src.stop((c?.currentTime ?? 0) + tail * 2 + 0.02) } catch { /* 이미 멈춤 */ }
       r.src.onended = () => { r.src.disconnect(); r.gain.disconnect(); r.pan?.disconnect() }
     }
   }
