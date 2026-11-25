@@ -118,7 +118,7 @@ import { paintMapCanvas } from './mapcanvas.ts'
 import { declutter } from './declutter.ts'
 import { rehearse, type BattleLine } from '../../realm/warroom.ts'
 import { BATTLE_CSS, battleCard } from './battlecard.ts'
-import { AP_CHIP, APPROACH_DOES, APPROACH_NAME as APPROACH_NAME_KO, B0_KEY, HARD_LINE, WAR_CSS, b0On, openWar } from './battlefield.ts'
+import { AP_CHIP, APPROACH_DOES, APPROACH_NAME as APPROACH_NAME_KO, HARD_LINE, WAR_CSS, openWar } from './battlefield.ts'
 import { SKFX_CSS } from './skillfx.ts'
 import { MEM_CSS, memRowHtml } from './memrow.ts'
 import { attachZoom } from './zoom.ts'
@@ -8787,7 +8787,6 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'gfx': if (front !== null) fmoreOpen = true; setGfxPref(d['v']); paint(); return
       case 'perf-copy': { const t = perfText(); void navigator.clipboard?.writeText(t).then(() => goToast(tr('toast.perfCopied')), () => goToast(tr('toast.copyBlocked'))); return }
       case 'perf-clear': perfClear(); paint(); return
-      case 'b0-toggle': fmoreOpen = true; try { localStorage.setItem(B0_KEY, b0On() ? '0' : '1') } catch { /* 저장이 막히면 못 켠다 */ } paint(); return
       case 'acct-in': host.cloud?.signIn(); return
       case 'acct-out': host.cloud?.signOut(); acctArmed = false; paint(); return
       case 'acct-sync': host.cloud?.syncNow(); return

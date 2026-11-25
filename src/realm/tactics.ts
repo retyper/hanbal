@@ -202,12 +202,6 @@ export interface ClockOpt {
 }
 
 export const GRPS: readonly Grp[] = ['front', 'bows', 'horse']
-/** 앞줄의 두 기본 명령 — 세모의 한 변 */
-export const BASIC: readonly Cmd[] = ['charge', 'volley', 'hold']
-/** 세모 — 열쇠가 값을 이긴다 (돌격 > 화살비 > 방진 > 돌격) */
-export const BEATS: Readonly<Partial<Record<Cmd, Cmd>>> = { charge: 'volley', volley: 'hold', hold: 'charge' }
-/** 값을 이기는 명령 */
-export const COUNTER: Readonly<Partial<Record<Cmd, Cmd>>> = { volley: 'charge', hold: 'volley', charge: 'hold' }
 
 /** 앞줄 명령 가운데 버티는 것 · 들이치는 것 */
 const HOLDS: ReadonlySet<Cmd> = new Set(['hold', 'ford', 'rocks'])

@@ -515,14 +515,6 @@ const STAGE_S = [0, 1.1, 2.4] as const
 /** 「?」 설명 펼침 — 이 기기에서만 기억 */
 const HELP_KEY = 'hanbal.realm.warHelp'
 const SPEED_KEY = 'hanbal.realm.warSpeed'
-/**
- * 새 전투 시험 (BATTLE-LIVE 0번 · 형 10-28: 지금 전투에 바로 넣지 말고 켜고 끄며 지인과 해 본다) — 첫 화면 단추로 이 기기에서만 켠다.
- * 켜면: 손가락이 권하는 깃발·「전투 개시」를 가리키고 · 고르면 큰 깃발이 뜨고 진이 움찔하고 · 숫자 표는 「자세히」 안으로
- */
-export const B0_KEY = 'hanbal.realm.battle0'
-export function b0On(): boolean {
-  try { return localStorage.getItem(B0_KEY) === '1' } catch { return false }
-}
 const ROUND_KEYS = ['war.round.1', 'war.round.2', 'war.round.3', 'war.round.4', 'war.round.5', 'war.round.6'] as const
 /** 장수를 골라야 하는 깃발 — 비기(누가 쓰나) · 겨루기(누가 나서나) · 사로잡기(누구를 잡나) */
 const WHO_KINDS = ['art', 'duel', 'capture'] as const
