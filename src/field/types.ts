@@ -46,6 +46,9 @@ export interface Squad {
   morale0: number
   /** 옆구리·장수 쓰러짐으로 누적된 사기 꺾임 (천분율) */
   shock: number
+  /** 시작 자리 (지키는 편은 여기서 leashCells 안에서만 움직인다) */
+  homeU: number
+  homeV: number
   /** 손으로 몰고 있으면 1 (임시 AI 가 목표를 안 바꾼다) */
   manual: 0 | 1
   /** 지금 노리는 적 대의 id · 없으면 -1 */
@@ -86,8 +89,41 @@ export interface LiveSide {
   seen: boolean
 }
 
-/** 지도 — F1a 는 길이와 폭뿐 (지형·마디·진영은 F2a) */
-export interface FieldMap { v: 1; u: number; w: number }
+/** 바닥 종류 — 0 평지 · 1 얕은 물(느림) · 2 깊은 물(못 걸음) · 3 막힘(못 걸음) · 4 높은 터(위에 선 활이 세고, 올라오는 적은 느리다) */
+export type Ground = 0 | 1 | 2 | 3 | 4
+export const G_PLAIN = 0, G_SHALLOW = 1, G_DEEP = 2, G_BLOCK = 3, G_HIGH = 4
+
+/** 진영 (칸 단위) — axis 0: 줄이 폭(v)으로 퍼지고 뒷줄은 u 쪽 뒤 · axis 1: 줄이 u 로 퍼지고 뒷줄은 v 쪽 뒤 (기습처럼 옆에서 시작) */
+export interface Camp {
+  u: number
+  v: number
+  face: 1 | -1
+  spread: number
+  axis: 0 | 1
+  /** 참이면 그 편은 시작 자리에서 leashCells 밖으로는 안 나간다 (지키는 쪽) */
+  hold: boolean
+  /** 잠든 채 시작하는 틱 (효과는 F2b) */
+  asleep?: number
+}
+
+/** 맵 조각 — 목책 마디와 문 (칸 단위 · hp 를 깎아 길을 여는 규칙은 F2b) */
+export interface Piece { id: number; kind: 'stake' | 'gate'; u0: number; v0: number; u1: number; v1: number; hp: number; owner: 0 | 1 }
+
+/** 맵의 규칙 이름 — 지어진 것만 (공성·수상은 mapFor 가 null) · hold 는 평지에서 한 편이 지키는 비교용 */
+export type MapRule = 'meet' | 'cross' | 'stake' | 'ambush' | 'high' | 'hold'
+
+/** 지도 — cells[cu * w + cv] 가 칸마다 바닥 종류 (u, w 는 칸 수). JSON 을 거치지 않는다(Uint8Array) */
+export interface FieldMap {
+  v: 1
+  u: number
+  w: number
+  cells: Uint8Array
+  camps: readonly [Camp, Camp]
+  pieces: readonly Piece[]
+  rule: MapRule
+  /** 높은 터를 가진 편 · 없으면 -1 */
+  highOwner: -1 | 0 | 1
+}
 
 export interface LiveSetup {
   v: 1

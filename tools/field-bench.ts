@@ -1,37 +1,85 @@
 /**
- * 전장 sim 벤치 (docs/realm/battle-study/40-cards.md F1b) — 씨앗 n 판의 한 판 시간 · 끝난 까닭 · 걸음 수 + 같은 씨앗 두 번의 해시 일치.
+ * 전장 sim 벤치 (docs/realm/battle-study/40-cards.md F1b · F2a)
  *   node --experimental-strip-types tools/field-bench.ts [--n 1000] [--men 600,1300,2100,5000,9000]
- * 합격선은 해시 일치 하나. 속도(중앙값 ≤ 30ms)는 함께 재서 보고만 한다 (performance.now 는 도구에서만).
+ *   node --experimental-strip-types tools/field-bench.ts --map meet,hold,cross,stake,high,ambush [--n 500] [--men 1300]
+ * 합격선은 같은 씨앗 두 번의 해시 일치 하나. 속도(중앙값 ≤ 30ms)·끝 까닭·맵별 승률(편 0 = 치는 쪽)·첫 접촉 시각은 함께 재서 보고만 한다.
+ * performance.now 는 도구에서만 쓴다.
  */
-import { runField } from '../src/field/sim.ts'
+import { runField, createField, stepField } from '../src/field/sim.ts'
 import { plainSetup } from '../src/field/scenario.ts'
 import { hashField } from '../src/field/state.ts'
+import { ambushMap, crossMap, highMap, holdMap, meetMap, stakeMap } from '../src/field/map.ts'
+import { dist2 } from '../src/field/num.ts'
+import { P } from '../src/tune/params.ts'
+import type { FieldMap, FieldState } from '../src/field/types.ts'
 
 const arg = (k: string, d: string): string => { const i = process.argv.indexOf(`--${k}`); return i >= 0 ? process.argv[i + 1]! : d }
 const n = Number(arg('n', '1000'))
-const sizes = arg('men', '600,1300,2100,5000,9000').split(',').map(Number)
+const MAPS: Record<string, () => FieldMap> = { meet: meetMap, hold: holdMap, cross: crossMap, stake: stakeMap, high: highMap, ambush: () => ambushMap(true), ambushFail: () => ambushMap(false) }
 let bad = 0
-for (const men of sizes) {
-  const ms: number[] = [], steps: number[] = [], why: Record<string, number> = {}, win: Record<string, number> = {}
-  let mismatch = 0
-  for (let seed = 1; seed <= n; seed++) {
-    const setup = plainSetup(seed, men)
-    const t0 = performance.now()
-    const a = runField(setup)
-    ms.push(performance.now() - t0)
-    const b = runField(setup)
-    if (hashField(a) !== hashField(b)) mismatch++
-    steps.push(a.tick)
-    const key = `${a.end}`
-    why[key] = (why[key] ?? 0) + 1
-    win[`${a.winner}`] = (win[`${a.winner}`] ?? 0) + 1
+
+/** 첫 접촉: 서로 다른 편의 두 대가 처음 사거리 안에 든 틱 */
+function firstContact(s: FieldState): number {
+  const mr2 = (P.field.meleeRangeCells * P.field.unit) ** 2, br2 = (P.field.bowRangeCells * P.field.unit) ** 2
+  for (const q of s.squads) for (const e of s.squads) {
+    if (q.side !== 0 || e.side !== 1 || q.men <= 0 || e.men <= 0) continue
+    const d = dist2(q.u, q.v, e.u, e.v)
+    if (d <= (q.grp === 'bows' || e.grp === 'bows' ? br2 : mr2)) return 1
   }
-  bad += mismatch
-  ms.sort((x, y) => x - y)
-  const q = (p: number): number => ms[Math.min(ms.length - 1, Math.floor(ms.length * p))]!
-  const avg = steps.reduce((x, y) => x + y, 0) / steps.length
-  const sorted = [...steps].sort((x, y) => x - y)
-  console.log(`men=${men} n=${n} 중앙값 ${q(0.5).toFixed(2)}ms p95 ${q(0.95).toFixed(2)}ms 최대 ${q(1).toFixed(1)}ms | 평균 걸음 ${avg.toFixed(0)} (중앙 ${sorted[sorted.length >> 1]}) | 끝 ${JSON.stringify(why)} 이긴 편 ${JSON.stringify(win)} | 해시 불일치 ${mismatch}`)
+  return 0
+}
+
+const mapNames = arg('map', '')
+if (mapNames) {
+  const men = Number(arg('men', '1300'))
+  const rows: string[] = []
+  let base = 0.5
+  for (const name of mapNames.split(',')) {
+    const mk = MAPS[name]
+    if (!mk) { console.log(`모르는 맵 ${name}`); continue }
+    let w0 = 0, mismatch = 0, contacts: number[] = [], steps = 0
+    const why: Record<string, number> = {}
+    for (let seed = 1; seed <= n; seed++) {
+      const setup = plainSetup(seed, men, true, mk())
+      const s = createField(setup)
+      let contact = -1
+      while (s.end === null) { stepField(s); if (contact < 0 && firstContact(s)) contact = s.tick }
+      if (hashField(s) !== hashField(runField(setup))) mismatch++
+      if (s.winner === 0) w0++
+      contacts.push(contact < 0 ? NaN : contact)
+      steps += s.tick
+      why[`${s.end}`] = (why[`${s.end}`] ?? 0) + 1
+    }
+    bad += mismatch
+    const c = contacts.filter(x => !Number.isNaN(x)).sort((a, b) => a - b)
+    const rate = w0 / n
+    if (name === 'meet') base = rate
+    rows.push(`${name.padEnd(10)} 편0(치는 쪽) 승률 ${(rate * 100).toFixed(1)}%  대로 대비 ${((rate - base) * 100).toFixed(1)}%p  첫 접촉 ${c.length ? (c[c.length >> 1]! / P.field.hz).toFixed(1) : '-'}초  평균 걸음 ${(steps / n).toFixed(0)}  끝 ${JSON.stringify(why)}  해시 불일치 ${mismatch}`)
+  }
+  console.log(`men=${men} n=${n}\n` + rows.join('\n'))
+} else {
+  const sizes = arg('men', '600,1300,2100,5000,9000').split(',').map(Number)
+  for (const men of sizes) {
+    const ms: number[] = [], steps: number[] = [], why: Record<string, number> = {}, win: Record<string, number> = {}
+    let mismatch = 0
+    for (let seed = 1; seed <= n; seed++) {
+      const setup = plainSetup(seed, men)
+      const t0 = performance.now()
+      const a = runField(setup)
+      ms.push(performance.now() - t0)
+      const b = runField(setup)
+      if (hashField(a) !== hashField(b)) mismatch++
+      steps.push(a.tick)
+      why[`${a.end}`] = (why[`${a.end}`] ?? 0) + 1
+      win[`${a.winner}`] = (win[`${a.winner}`] ?? 0) + 1
+    }
+    bad += mismatch
+    ms.sort((x, y) => x - y)
+    const q = (p: number): number => ms[Math.min(ms.length - 1, Math.floor(ms.length * p))]!
+    const avg = steps.reduce((x, y) => x + y, 0) / steps.length
+    const sorted = [...steps].sort((x, y) => x - y)
+    console.log(`men=${men} n=${n} 중앙값 ${q(0.5).toFixed(2)}ms p95 ${q(0.95).toFixed(2)}ms 최대 ${q(1).toFixed(1)}ms | 평균 걸음 ${avg.toFixed(0)} (중앙 ${sorted[sorted.length >> 1]}) | 끝 ${JSON.stringify(why)} 이긴 편 ${JSON.stringify(win)} | 해시 불일치 ${mismatch}`)
+  }
 }
 console.log(bad === 0 ? '합격: 같은 씨앗 같은 해시' : `불합격: 해시 불일치 ${bad}`)
 process.exit(bad === 0 ? 0 : 1)

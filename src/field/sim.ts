@@ -15,8 +15,9 @@
  */
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
-import { clamp, dist2, idiv, stepToward } from './num.ts'
-import { GRPS, OP_AUTO, OP_MOVE, OP_RETREAT, OP_STANCE, STANCE_CHARGE, STANCE_HOLD, STANCE_OPEN } from './types.ts'
+import { clamp, dist2, idiv, isqrt, stepToward } from './num.ts'
+import { groundAt, walkable } from './map.ts'
+import { G_HIGH, G_SHALLOW, GRPS, OP_AUTO, OP_MOVE, OP_RETREAT, OP_STANCE, STANCE_CHARGE, STANCE_HOLD, STANCE_OPEN } from './types.ts'
 import type { FieldInput, FieldState, Grp, Hero, LiveSetup, Point, Squad } from './types.ts'
 
 const NO_INPUTS: readonly FieldInput[] = []
@@ -68,23 +69,29 @@ export function createField(setup: LiveSetup): FieldState {
   const jit = P.field.spawnJitterCells * unit
   for (const side of [0, 1] as const) {
     const ls = setup.sides[side]
+    const cp = setup.map.camps[side]
+    // 진영: 줄은 spread 로 퍼지고 뒷줄(활·기병)은 face 반대쪽으로 rowGap 만큼씩 물러난다 (axis 0 은 u 쪽, axis 1 은 v 쪽)
+    const place = (grp: Grp, i: number, n: number): Point => {
+      const along = idiv(((2 * i + 1) - n) * cp.spread * unit, 2 * n)
+      const back = cp.face * ROW[grp] * P.field.rowGapCells * unit
+      return cp.axis === 0 ? { u: cp.u * unit - back, v: cp.v * unit + along } : { u: cp.u * unit + along, v: cp.v * unit - back }
+    }
     GRPS.forEach(grp => {
       const men = ls.men[grp], n = squadCount(men)
       const fresh = Math.min(men, Math.max(0, ls.fresh?.[grp] ?? 0))
-      const row = (P.field.startMarginCells - ROW[grp] * P.field.rowGapCells) * unit
-      const u = side === 0 ? Math.max(0, row) : Math.min(setup.map.u * unit, setup.map.u * unit - row)
       for (let i = 0; i < n; i++) {
         const id = s.squads.length
         const cnt = idiv(men, n) + (i < men % n ? 1 : 0)
         const j = jit > 0 ? Math.floor(roll(s.seed, 0, `spawn:${id}`) * (2 * jit + 1)) - jit : 0
-        const v = clamp(idiv(setup.map.w * unit * (2 * i + 1), 2 * n) + j, 0, setup.map.w * unit)
+        const p = place(grp, i, n)
+        const u = clamp(cp.axis === 1 ? p.u + j : p.u, 0, setup.map.u * unit), v = clamp(cp.axis === 0 ? p.v + j : p.v, 0, setup.map.w * unit)
         const stance = Math.floor(roll(s.seed, 0, `stance:${id}`) * 3) as 0 | 1 | 2
-        s.squads.push({ id, side, grp, kind: grp, men: cnt, menMax: cnt, fresh: men > 0 ? idiv(fresh * cnt, men) : 0, u, v, stance, morale0: ls.morale, shock: 0, goal: null, manual: 0, target: -1, hp: cnt * MILLI, morale: ls.morale })
+        s.squads.push({ id, side, grp, kind: grp, men: cnt, menMax: cnt, fresh: men > 0 ? idiv(fresh * cnt, men) : 0, u, v, homeU: u, homeV: v, stance, morale0: ls.morale, shock: 0, goal: null, manual: 0, target: -1, hp: cnt * MILLI, morale: ls.morale })
       }
     })
     if (ls.hero) {
-      const row = P.field.startMarginCells * unit
-      const hero: Hero = { side, id: ls.hero.id, u: side === 0 ? row : setup.map.u * unit - row, v: idiv(setup.map.w * unit, 2), goal: null, manual: 0, grp: -1, stun: 0, hp: P.field.heroHp }
+      const hp0 = place('front', 0, 1)
+      const hero: Hero = { side, id: ls.hero.id, u: hp0.u, v: hp0.v, goal: null, manual: 0, grp: -1, stun: 0, hp: P.field.heroHp }
       s.heroes.push(hero)
     }
   }
@@ -131,7 +138,8 @@ function retarget(s: FieldState): void {
     }
     q.target = best
     const e = best < 0 ? null : s.squads[best]!
-    q.goal = e ? { u: e.u, v: e.v } : null
+    // 지키는 편은 시작 자리에서 leashCells 안까지만 나가 맞선다
+    q.goal = e ? leash(s, q, detour(s, q, e)) : null
   }
   for (const h of s.heroes) {
     if (h.manual === 1) continue
@@ -144,6 +152,41 @@ function retarget(s: FieldState): void {
   }
 }
 
+/** 지키는 편(hold)의 목표를 시작 자리에서 leashCells 안으로 자른다 (활은 제자리 · 정수 제곱근으로 줄여 가까운 점) */
+function leash(s: FieldState, q: Squad, goal: Point): Point {
+  if (!s.map.camps[q.side].hold) return goal
+  const r = q.grp === 'bows' ? 0 : P.field.leashCells * P.field.unit
+  const dx = goal.u - q.homeU, dy = goal.v - q.homeV
+  const d2 = dx * dx + dy * dy
+  if (d2 <= r * r) return goal
+  const root = isqrt(d2)
+  const len = root * root === d2 ? root : root + 1
+  return { u: q.homeU + idiv(dx * r, len), v: q.homeV + idiv(dy * r, len) }
+}
+
+/** 목책 줄이 둘 사이에 있으면 문으로 돌아간다 (간단한 길 찾기: 줄 한쪽에서 반대쪽 목표를 보면 문 가운데가 목표) */
+function detour(s: FieldState, q: Squad, e: Squad): Point {
+  const gate = s.map.pieces.find(p => p.kind === 'gate')
+  if (gate) {
+    const wallX = gate.u0 * P.field.unit + idiv(P.field.unit, 2)
+    if ((q.u < wallX) !== (e.u < wallX)) return { u: wallX, v: idiv((gate.v0 + gate.v1) * P.field.unit, 2) }
+  }
+  return { u: e.u, v: e.v }
+}
+
+/** 땅을 보고 걷는다 — 얕은 물과 올라가는 높은 터는 느리고, 깊은 물·막힘 칸에는 못 들어간다 (막히면 한 축으로 미끄러진다) */
+function walk(s: FieldState, K: Kit, side: 0 | 1, u: number, v: number, goal: Point, speed: number): Point {
+  const slow = (g: number): number => g === G_SHALLOW ? K.water : g === G_HIGH && s.map.highOwner !== side ? K.climb : MILLI
+  const full = stepToward(u, v, goal.u, goal.v, speed)
+  const f = Math.min(slow(groundAt(s.map, u, v)), slow(groundAt(s.map, full.u, full.v)))
+  const p = f === MILLI ? full : stepToward(u, v, goal.u, goal.v, mul(speed, f))
+  if (walkable(groundAt(s.map, p.u, p.v))) return p
+  const alongU = { u: p.u, v }, alongV = { u, v: p.v }
+  const first = Math.abs(p.u - u) >= Math.abs(p.v - v) ? [alongU, alongV] : [alongV, alongU]
+  for (const c of first) if ((c.u !== u || c.v !== v) && walkable(groundAt(s.map, c.u, c.v))) return c
+  return { u, v }
+}
+
 /** 한 틱의 값표 (P.realm.tac* · P.field 를 ‰ 정수로 — 튜닝 콘솔이 값을 바꿔도 바로 따른다) */
 function kit() {
   const R = P.realm, F = P.field
@@ -153,6 +196,7 @@ function kit() {
     up: m(R.tacTriUp), down: m(R.tacTriDown), flank: m(R.tacFlankMul),
     takenCharge: m(R.tacTakenCharge), takenHold: m(R.tacTakenHold),
     volleyHold: m(R.tacVolleyHold), volleyCharge: m(R.tacVolleyCharge),
+    height: m(R.tacHeight), water: F.waterSpeedPermille, climb: F.highClimbPermille,
     meleeR2: (F.meleeRangeCells * F.unit) ** 2, bowR2: (F.bowRangeCells * F.unit) ** 2, flankV: F.flankVCells * F.unit,
   }
 }
@@ -179,6 +223,7 @@ function fight(s: FieldState, K: Kit): void {
     // 길 트기의 앞줄 약화(tacOpenFront)는 방진 앞에서는 걸지 않는다 — 세모에서 길 트기가 방진을 이기게 (본편은 합 단위 승패로 정하고 여기는 틱 피해라 이렇게 옮겼다)
     if (q.grp === 'front') v = mul(v, q.stance === STANCE_CHARGE ? K.charge : q.stance === STANCE_HOLD ? K.hold : e.grp === 'front' && e.stance === STANCE_HOLD ? MILLI : K.open)
     if (q.grp === 'bows' && openFront[q.side]) v = mul(v, K.openVolley)
+    if (q.grp === 'bows' && groundAt(s.map, q.u, q.v) === G_HIGH) v = mul(v, K.height)
     if (q.grp === 'front' && e.grp === 'front') {
       if (beats(q.stance, e.stance)) v = mul(v, K.up)
       else if (beats(e.stance, q.stance)) v = mul(v, K.down)
@@ -270,7 +315,7 @@ export function stepField(s: FieldState, inputs: readonly FieldInput[] = NO_INPU
       const e = s.squads[q.target]!
       if (dist2(q.u, q.v, e.u, e.v) <= (q.grp === 'bows' ? K.bowR2 : K.meleeR2)) return null
     }
-    return stepToward(q.u, q.v, q.goal.u, q.goal.v, speedPerTick(q.grp))
+    return walk(s, K, q.side, q.u, q.v, q.goal, speedPerTick(q.grp))
   })
   for (const q of s.squads) {
     const p = moves[q.id]
@@ -278,7 +323,7 @@ export function stepField(s: FieldState, inputs: readonly FieldInput[] = NO_INPU
   }
   for (const h of s.heroes) {
     if (h.stun > 0 || !h.goal) continue
-    const p = stepToward(h.u, h.v, h.goal.u, h.goal.v, speedPerTick('front'))
+    const p = walk(s, K, h.side, h.u, h.v, h.goal, speedPerTick('front'))
     h.u = p.u; h.v = p.v
   }
   s.tick++
