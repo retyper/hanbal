@@ -3,7 +3,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { HAEBI_RUN as C, HAEBI_KITS as K } from '../src/tune/params.ts'
-import { createHaebi, stepHaebi, spawnMob, powerScale, KITS, kitPowers, POWERS, type HaebiRun, type Mob } from '../src/raid/haebi.ts'
+import { createHaebi, stepHaebi, spawnMob, spawnGiant, powerScale, KITS, kitPowers, POWERS, type HaebiRun, type Mob } from '../src/raid/haebi.ts'
 import { replay } from '../src/raid/haebi-replay.ts'
 
 const DT = 1 / 120
@@ -86,4 +86,85 @@ test('말채찍: 같은 씨앗이면 같은 판 (2회 재생이 같다)', () => 
   const a = replay(5, 90, 'storm', undefined, 'whip'), b = replay(5, 90, 'storm', undefined, 'whip')
   assert.equal(JSON.stringify(a), JSON.stringify(b))
   assert.ok(a.damage > 0, '실제로 싸웠다')
+})
+
+test('올가미: 가장 센 적에게 고리가 날아가 맞으면 장수 앞 70px 까지 끌려오고 어지러워 선다 · 느려진다', () => {
+  const s = field(), weak = place(s, 150, 40), target = place(s, 230, -30, 'club', 5e6)   // 더 센(체력 많은) 쪽이 표적
+  s.ranks.lasso = 1; s.ranks.lash = 0
+  step(s, ['lasso'])
+  const ring = s.shots.find(b => b.kind === 'lasso')
+  assert.ok(ring, '고리를 던짐'); assert.equal(ring.source, target.id); assert.ok(s.cool.lasso > 0)
+  let done = -1, pulling = false
+  for (let i = 0; i < 300 && done < 0; i++) { step(s); if (target.pull) pulling = true; else if (pulling) done = dist(s, target) }
+  assert.ok(pulling, '끌려옴')
+  assert.ok(Math.abs(done - C.lassoPullTo) <= 8, `장수 앞 ${done}px`)
+  assert.ok(target.daze > 0, '어지러워 서 있다'); assert.ok((target.lasso ?? 0) > 0, '느려짐')
+  assert.ok(hurt(target) > 0 && Math.abs(hurt(weak)) < 1e6)
+  assert.ok(hurt(target) >= (C.lassoDamage + C.lassoRankDamage) * powerScale(s) - 1e-6)
+})
+
+test('올가미: 정예·두목·철갑은 끌려오지 않고 느려지기만 한다 (자리는 제 걸음대로)', () => {
+  for (const kind of ['boss', 'elite', 'iron'] as const) {
+    const run = (cast: boolean) => {
+      const s = field(); s.ranks.lash = 0; s.ranks.lasso = cast ? 1 : 0
+      const e = place(s, 200, 0, kind, 5e6)
+      for (let i = 0; i < 120; i++) step(s, ['lasso'])
+      return { s, e }
+    }
+    const lassoed = run(true), control = run(false)
+    assert.equal(lassoed.e.pull, undefined, `${kind} 끌리지 않음`)
+    assert.ok(hurt(lassoed.e) > 0, `${kind} 고리에 맞음`)
+    assert.ok(dist(lassoed.s, lassoed.e) >= dist(control.s, control.e) - 1e-6, `${kind} 느려졌지 가까워지지 않음 (${dist(lassoed.s, lassoed.e)} ≥ ${dist(control.s, control.e)})`)
+    assert.equal(lassoed.e.daze, 0, `${kind} 어지러워 서지 않음`)
+  }
+})
+
+test('올가미: 이미 장수 앞(70px 안)의 적은 더 멀리 밀지 않고 부적이 붙는다', () => {
+  const s = field(); s.ranks.lash = 0; s.ranks.lasso = 1; s.ranks.ember = 1
+  const e = place(s, 50, 0)
+  step(s, ['lasso', 'ember'])
+  let hit = false
+  for (let i = 0; i < 120 && !hit; i++) { step(s, ['ember']); hit = hurt(e) > 0 }
+  assert.ok(hit); assert.equal(e.pull, undefined)
+  assert.ok(dist(s, e) < C.lassoPullTo, '더 멀어지지 않음')
+  assert.ok(s.shots.some(b => b.kind === 'ember' && b.source === e.id), '올가미가 맞힌 적에도 부적이 붙는다')
+})
+
+test('올가미: 정예(챔피언)도 끌려오지 않고 걸음이 느려진다 · 철갑 고리에 맞은 적도 느려진다', () => {
+  const run = (cast: boolean) => {
+    const s = field(); s.ranks.lash = 0; s.ranks.lasso = cast ? 1 : 0
+    spawnMob(s, 'elite'); const e = s.enemies[s.enemies.length - 1]!
+    Object.assign(e, { x: s.x + 260, y: s.y, hp: 5e6, max: 5e6 })
+    assert.ok(e.champion, '정예는 챔피언 걸음')
+    if (e.champion) { e.champion.mode = 'chase'; e.champion.t = 99 }
+    for (let i = 0; i < 360; i++) step(s, ['lasso'])
+    return { s, e }
+  }
+  const a = run(true), b = run(false)
+  assert.equal(a.e.pull, undefined)
+  assert.ok(hurt(a.e) > 0, '고리에 맞음')
+  assert.ok(dist(a.s, a.e) > dist(b.s, b.e), `느려져 더 멀다 (${dist(a.s, a.e).toFixed(1)} > ${dist(b.s, b.e).toFixed(1)})`)
+})
+
+test('올가미: 단계 4마다 고리 하나 더 (서로 다른 적에게) · 닿기 전에 표적이 쓰러지면 고리가 사라진다', () => {
+  const s = field(); s.ranks.lash = 0; s.ranks.lasso = 4
+  const a = place(s, 200, 0), b = place(s, 210, 60), c = place(s, 220, -60)
+  step(s, ['lasso'])
+  const rings = s.shots.filter(x => x.kind === 'lasso')
+  assert.equal(rings.length, 2, '4단계는 고리 둘')
+  assert.equal(new Set(rings.map(x => x.source)).size, 2)
+  a.hp = 0; b.hp = 0; c.hp = 0
+  step(s); assert.equal(s.shots.filter(x => x.kind === 'lasso').length, 0)
+})
+
+test('올가미: 거구(거대 보스)는 맞아도 끌려오지 않는다 · 말채찍 줄은 거구에도 닿는다', () => {
+  const s = createHaebi(257, 'stage', 'whip', { stage: 'ford', simRules: '55-IMUGI' })
+  s.spawn = s.nextElite = s.nextBarrage = 1e9
+  const e = spawnGiant(s)!
+  s.x = e.x + 150; s.y = e.y; s.ranks.lasso = 1; s.ranks.lash = 1
+  const before = e.hp, ox = e.x, oy = e.y
+  for (let i = 0; i < 240; i++) { only(s, ['lasso', 'lash']); stepHaebi(s, IDLE, DT) }
+  assert.ok(e.hp < before, '맞았다')
+  assert.equal(e.pull, undefined)
+  assert.ok(Math.hypot(e.x - ox, e.y - oy) < 60, `거구가 끌려오지 않음 (${Math.hypot(e.x - ox, e.y - oy).toFixed(1)}px)`)
 })

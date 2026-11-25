@@ -108,7 +108,7 @@ export function stepChampion(s: HaebiRun, e: Mob, dt: number, hooks: ChampionHoo
     return
   }
   if (d > 100) {
-    const speed = (C.mobSpeed + s.t * C.speedTimeScale) * (e.phase! >= 2 ? B.phaseMove : 1)
+    const speed = (C.mobSpeed + s.t * C.speedTimeScale) * (e.phase! >= 2 ? B.phaseMove : 1) * (e.lasso ? C.lassoSlowMul : 1)   // 채찍 올가미에 걸리면 느려진다
     if (walk) { const wx = walk.x - e.x, wy = walk.y - e.y, wd = Math.hypot(wx, wy) || 1; e.x += wx / wd * speed * dt; e.y += wy / wd * speed * dt }
     else { e.x += x / d * speed * dt; e.y += y / d * speed * dt }
   }

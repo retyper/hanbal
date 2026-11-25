@@ -977,6 +977,10 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       for (let i = 0; i < 5; i++) { const x = b.x + Math.cos(i * 2.4) * r * .5, y = b.y + Math.sin(i * 2.4) * r * .35 - 24 - k * 260 - i * 16; ctx.moveTo(x, y); ctx.lineTo(x, y - K.trail.foeLen) }
       ctx.stroke()
       for (let i = 0; i < 5; i++) stamp(ctx, images, 'raid/arrow.png', b.x + Math.cos(i * 2.4) * r * .5, b.y + Math.sin(i * 2.4) * r * .35 - 14 - k * 260 - i * 16, 38, Math.PI / 2)
+    } else if (b.kind === 'lasso') {
+      // 올가미: 장수 손에서 고리까지 삼 밧줄 한 줄 + 고리 (줄 그리기는 카드 W5 에서 다듬는다)
+      ctx.strokeStyle = ULT_COLOR[s.kit]; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(s.x, s.y - C.heroShotHeight); ctx.lineTo(p.x, p.y); ctx.stroke()
+      stamp(ctx, images, 'raid/rope.png', p.x, p.y, 34, b.angle)
     } else if (b.kind === 'rain') {
       // 화살비: 남은 시간만큼 위에서 화살 셋이 무기 묶음 빛을 끌며 내려온다 (떨어질 자리의 금빛 테는 땅 차례에 · 판정은 땅 좌표 그대로)
       const k = Math.max(0, b.life) / C.rainDelay

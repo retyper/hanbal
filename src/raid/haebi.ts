@@ -205,7 +205,7 @@ export type StageId = keyof typeof ST
 export type Bonus = Record<Exclude<keyof typeof SH, 'growth'>, number>
 export const NO_BONUS: Bonus = { might: 0, vigor: 0, armor: 0, regen: 0, haste: 0, swift: 0, magnet: 0, wisdom: 0, revive: 0, reroll: 0, greed: 0, luck: 0 }
 /** daze: 진탕격에 맞아 멈춘 남은 시간 · act: 창돌격꾼·범 예고(+)·돌진(−) 시간 · 투창 사냥꾼 겨눔(+) · 방화꾼 다음 불바닥까지 · vx·vy: 돌진·던질 방향 · buff: 무당이 북돋운 남은 시간 */
-export interface Mob { id: number; x: number; y: number; hp: number; max: number; kind: MobKind; cd: number; flash: number; wind: number; aimX: number; aimY: number; act: number; vx: number; vy: number; buff: number; poison: number; pdps: number; daze: number; bornAt?: number; /** 59-WIDE 큰 놈 사냥: 아직 장수 화면에 들어온 적 없는 정예 (그동안 bornAt 을 지금으로 밀어 「빨리 잡기」가 처음 본 때부터 세어진다) */ unseen?: boolean; /** 58-KITS 단검 독 겹 */ stack?: number; /** 65-BUILD 끌려가 치고 있는 망루 id (없으면 장수) */ aggro?: number; /** 67-BUILD2 혼줄에 닿아 느려진 남은 초 */ slow?: number; /** 71-BOSSDUEL 마지막 두목이 나와 달아나는 남은 초 (치지도 맞지도 않고 다 달아나면 보상 없이 사라진다) */ flee?: number; /** 71-BOSSDUEL 우두머리가 부른 졸개 (달아나지 않는다) */ summoned?: true; phase?: 1 | 2 | 3; pattern?: ChampionPattern | null; patternSeq?: number; recovery?: number; champion?: ChampionState; bossRole?: 'midboss' | 'giant'; giant?: GiantState }
+export interface Mob { id: number; x: number; y: number; hp: number; max: number; kind: MobKind; cd: number; flash: number; wind: number; aimX: number; aimY: number; act: number; vx: number; vy: number; buff: number; poison: number; pdps: number; daze: number; bornAt?: number; /** 59-WIDE 큰 놈 사냥: 아직 장수 화면에 들어온 적 없는 정예 (그동안 bornAt 을 지금으로 밀어 「빨리 잡기」가 처음 본 때부터 세어진다) */ unseen?: boolean; /** 58-KITS 단검 독 겹 */ stack?: number; /** 65-BUILD 끌려가 치고 있는 망루 id (없으면 장수) */ aggro?: number; /** 67-BUILD2 혼줄에 닿아 느려진 남은 초 */ slow?: number; /** 71-BOSSDUEL 마지막 두목이 나와 달아나는 남은 초 (치지도 맞지도 않고 다 달아나면 보상 없이 사라진다) */ flee?: number; /** 71-BOSSDUEL 우두머리가 부른 졸개 (달아나지 않는다) */ summoned?: true; /** 채찍 올가미(W3): pull = 장수 앞으로 끌려오는 중 (c,n 장수에서 적 쪽 방향 · t 남은 초) · lasso = 느려진 남은 초 */ pull?: { c: number; n: number; t: number }; lasso?: number; phase?: 1 | 2 | 3; pattern?: ChampionPattern | null; patternSeq?: number; recovery?: number; champion?: ChampionState; bossRole?: 'midboss' | 'giant'; giant?: GiantState }
 export interface Chest { id: number; eliteId: number; x: number; y: number; bornAt: number; pickedAt?: number; state: 'ground' | 'opened' | 'claimed' | 'expired'; choicesRemaining: number; gold: number; large: boolean;
   /** 60-JACKPOT: boss = 중간 보스 상자(조합 하나를 고른다) · jackpot = 정예 상자가 터뜨린 것 */ boss?: boolean; jackpot?: ChestJackpot }
 /** 60-JACKPOT 정예 상자가 터뜨린 것 — count 단계(1·3·5·8) · picks 오른 칸(차례대로) · opened 그 가운데 새로 연 조합 · bonus 올릴 칸이 없어 엽전으로 바뀐 금 */
@@ -1148,10 +1148,10 @@ const turnOf = (a: number, b: number) => Math.atan2(Math.sin(a - b), Math.cos(a 
 /** 큰 놈 — 정예·두목·거구 (단검이 노리고 · 도끼 4단계가 세게 친다) */
 const bigFoe = (e: Mob) => !!e.giant || !!e.champion || e.kind === 'elite' || e.kind === 'boss'
 /** (x,y) 에서 radius 안의 가장 센 적 — 큰 놈 먼저, 그다음 남은 체력 (같으면 가까운 쪽) */
-function strongest(s: HaebiRun, x: number, y: number, radius: number) {
+function strongest(s: HaebiRun, x: number, y: number, radius: number, skip: readonly number[] = []) {
   let best: Mob | undefined, score = -Infinity, bd = Infinity
   for (const e of s.enemies) {
-    if (e.hp <= 0 || e.giant && !giantHasTarget(e.giant)) continue
+    if (e.hp <= 0 || e.giant && !giantHasTarget(e.giant) || skip.includes(e.id)) continue
     const d = mobDistance(e, x, y); if (d >= radius) continue
     const v = (bigFoe(e) ? e.max : 0) + e.hp
     if (v > score || v === score && d < bd) { score = v; bd = d; best = e }
@@ -1417,7 +1417,42 @@ function rainSpot(s: HaebiRun, fallback: Mob) {
   return best
 }
 /** 보조 공격 (58) — 질풍 도끼는 높이 던져 앞에 박히고 · 화살비는 뭉친 곳에만 · 검기는 걷는 쪽으로 · 나머지는 예전 그대로 */
+/**
+ * 올가미(whip 보조) — 닿으면 치고, 일반 적은 장수 앞 lassoPullTo px 까지 lassoPull 초 동안 끌려와 어지러워 서고(이미 그 안이면 안 끌린다),
+ * 정예·두목·철갑·곰·거구는 끌려오지 않고 느려지기만 한다 (lassoSlow 초 · 걸음 lassoSlowMul 배)
+ */
+function lassoHit(s: HaebiRun, e: Mob, damage: number, contact: Contact<string> | null, from: Point) {
+  hit(s, e, damage, true, from, contact ?? undefined)
+  if (s.kits) addOns(s, [e], false)
+  if (e.hp <= 0 || e.giant) return
+  e.lasso = C.lassoSlow
+  if (bigFoe(e) || steady(e)) return
+  e.daze = Math.max(e.daze, C.lassoPull + C.lassoDaze)
+  const dx = e.x - s.x, dy = e.y - s.y, d = Math.hypot(dx, dy) || 1
+  if (d > C.lassoPullTo) e.pull = { c: dx / d, n: dy / d, t: C.lassoPull }
+}
+/** 끌려오는 한 걸음 — 장수 앞 목표점까지 남은 시간에 비례해 다가온다 (마지막 걸음에 정확히 닿는다 · 목책은 못 넘는다) */
+function pullStep(s: HaebiRun, e: Mob, dt: number) {
+  const p = e.pull!, f = Math.min(1, dt / Math.max(dt, p.t))
+  pushMob(s, e, (s.x + p.c * C.lassoPullTo - e.x) * f, (s.y + p.n * C.lassoPullTo - e.y) * f)
+  p.t -= dt
+  if (p.t <= 0) delete e.pull
+}
 function secondary58(s: HaebiRun, target: Mob, angle: number, dist: number, power: number, tempo: number) {
+  if (s.kit === 'whip') {
+    // 올가미: 가장 센 적(큰 놈 먼저)에게 고리를 던진다 · 고리는 그 적을 따라 날아간다 · 단계 4마다·메아리마다 고리가 하나 더 (서로 다른 적에게)
+    power *= 1 + s.ranks.drill * T.drill; tempo *= 1 + s.ranks.drill * T.drillTempo
+    if (!s.ranks.lasso || s.cool.lasso) return
+    const range = (C.lassoRange + C.lassoRankRange * s.ranks.lasso) * KC.area, used: number[] = []
+    for (let i = 0, n = 1 + Math.floor(s.ranks.lasso / 4) + s.ranks.echo; i < n; i++) {
+      const e = strongest(s, s.x, s.y, range, used); if (!e) break
+      used.push(e.id)
+      const at = aimAt(e, s.x, s.y), a = Math.atan2(at.y - s.y, at.x - s.x), b = shoot(s, 'lasso', a, (C.lassoDamage + C.lassoRankDamage * s.ranks.lasso) * power, s.x, s.y, at.x, at.y)
+      if (b) { b.source = e.id; b.vx = Math.cos(a) * C.lassoSpeed; b.vy = Math.sin(a) * C.lassoSpeed; b.life = range / C.lassoSpeed * K.whip.lassoFlight }
+    }
+    if (used.length) { s.cool.lasso = C.lassoCooldown / tempo; s.attack = .3; s.face = Math.cos(angle) < 0 ? -1 : 1 }
+    return
+  }
   if (s.kit !== 'axe' && s.kit !== 'bow' && s.kit !== 'sword') { secondary(s, target, angle, power, tempo); return }
   power *= 1 + s.ranks.drill * T.drill; tempo *= 1 + s.ranks.drill * T.drillTempo
   if (s.kit === 'axe') {
@@ -1973,6 +2008,8 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
     if (e.hp <= 0) continue
     if (e.flee !== undefined) { fleeStep(s, e, dt); continue }
     e.cd = Math.max(0, e.cd - dt); e.flash = Math.max(0, e.flash - dt); e.buff = Math.max(0, e.buff - dt)
+    if (e.lasso) e.lasso = Math.max(0, e.lasso - dt)
+    if (e.pull) pullStep(s, e, dt)
     // 독 비수: 독이 도는 동안 초마다 깎인다 (숫자는 띄우지 않는다)
     if (e.giant) {
       if (e.poison > 0) { e.poison = Math.max(0, e.poison - dt); const part = giantPart(e.giant, e.giant.poisonPart); const point = part ? closestPoint(s, part.collider) : aimAt(e, s.x, s.y); hit(s, e, e.pdps * dt, false, null, disk(point.x, point.y, 0), true) }
@@ -2002,7 +2039,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
     // 65-BUILD 목책: 닿은 잡졸은 멈춰 서서 목책을 친다 (그동안 걷지도 장수를 치지도 않는다)
     if (s.build?.wall && m) { const hit = wallTouching(s.build, e, mobRadius(e)); if (hit.length) { for (const w of hit) { w.hp -= C.contactDamage * threat(s) * (m.hit ?? 1) * HW.bite * dt; w.flash = BU.flash }; continue } }
     else if (s.build && m) { const f = fenceTouching(s.build, e, mobRadius(e)); if (f) { f.hp -= C.contactDamage * threat(s) * (m.hit ?? 1) * BU.fence.bite * dt; f.flash = BU.flash; continue } }
-    const v = (C.mobSpeed + s.t * C.speedTimeScale) * (m?.speed ?? 1) * (s.pace ? 1 + ((PC.speedBoost as Record<string, number>)[s.stage] ?? 0) * paceFade(s) : 1) * (e.buff > 0 ? M.shamanSpeed : 1) * (kind === 'berserker' && e.hp < e.max / 2 ? M.berserkSpeed : 1) * (s.build?.v2 ? mobSlow(s, e) : 1)
+    const v = (C.mobSpeed + s.t * C.speedTimeScale) * (m?.speed ?? 1) * (s.pace ? 1 + ((PC.speedBoost as Record<string, number>)[s.stage] ?? 0) * paceFade(s) : 1) * (e.buff > 0 ? M.shamanSpeed : 1) * (kind === 'berserker' && e.hp < e.max / 2 ? M.berserkSpeed : 1) * (s.build?.v2 ? mobSlow(s, e) : 1) * (e.lasso ? C.lassoSlowMul : 1)
     // 65-BUILD 망루 어그로: 붙어 싸우는 잡졸 셋에 하나가 가까운 망루로 끌려가 친다
     if (s.build && m && !rangedMob(kind) && towerAggro(s, e, m.hit ?? 1, v, dt)) continue
     const ch = charge(kind)
@@ -2126,6 +2163,15 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
         if (s.combos.includes('meteor')) for (let i = 0; i < 3; i++) shoot(s, 'shard', s.kits ? away + (i - 1) * K.shard.spread : i * Math.PI * 2 / 3 + s.t, b.damage * C.splitDamage * cp(s, 'meteor'), b.x, b.y)
         // 폭우 (화살비 갈래 끝): 같은 자리에 한 번 더 (두 번째는 다시 안 부른다)
         if (!b.gen && s.kit === 'bow' && s.ranks.capB) { const c = T.cap.bow.b, again = shoot(s, 'rain', 0, b.damage * capShare(s.ranks.capB, c), b.x, b.y, b.x, b.y, 1); if (again) again.life = c.delay }
+      }
+    } else if (b.kind === 'lasso') {
+      // 올가미: 겨눈 적을 따라 날다 닿으면 치고 끌어당긴다 (그 적이 먼저 쓰러지면 사라진다)
+      const t = s.enemies.find(e => e.id === b.source && e.hp > 0)
+      if (!t) b.life = 0
+      else {
+        const at = aimAt(t, b.x, b.y), a = Math.atan2(at.y - b.y, at.x - b.x), contact = t.giant ? giantSweep(t.giant, from, b, b.radius) : null
+        b.vx = Math.cos(a) * C.lassoSpeed; b.vy = Math.sin(a) * C.lassoSpeed; b.angle = a
+        if (t.giant ? contact : Math.hypot(at.x - b.x, at.y - b.y) <= b.radius + 18) { b.life = 0; lassoHit(s, t, b.damage, contact, { x: b.x - b.vx * dt, y: b.y - b.vy * dt }) }
       }
     } else if (b.kind === 'lash') {
       // 말채찍 되감기(4단계~): 줄이 같은 쪽으로 돌아오며 한 번 더 — 끝 가산 없이 모두 같은 몫 · 장수는 그 사이 걸었어도 지금 자리에서
