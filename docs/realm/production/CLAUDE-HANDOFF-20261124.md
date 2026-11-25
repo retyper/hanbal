@@ -326,3 +326,11 @@
 - **결과 숫자**: 하네스 strip 판정 합격 · `npx tsc`(tools/out 밖) 오류 0 · `npm test` 통과 2199 · 실패 0.
 - **GIF**: `tools/out/lineup/gen-base-w-75-daegaya-soemoe-flow.gif` · `gen-soebi-flow.gif` · `gen-base-w-38-sangdang-bulmae-flow.gif` · `gen-gom-flow.gif` (칸 펼친 판은 같은 폴더 `…-flowframes.png`). 옛 띠는 `tools/out/strip/old-gen-*.png`.
 - **못 본 것**: 게임 화면에서 실제 재생 · 6배 확대 전수(자루 곧음은 5배 펼친 판 눈대중) · 얼굴 8~12배(쇠모 서기만 5배로 봄) · Claude API 검수(`claude-review.mjs`)는 돌리지 않고 독립 검수 에이전트로 대신함 · 곰 서기↔걷기 얼굴 같음 숫자 · 내려찍기 뒷발 자리를 화소로 잰 것(눈으로만) · 쇠모의 머리색 차이는 숫자로 재지 않음.
+
+## 열셋째 묶음 (활 다섯 · 11-25 낮 · Claude 일꾼) — 송비 게임에 들어감 · 너울·달래·미르·단궁은 동작 주문 중 (Z6~Z26)
+- 대상: 비류나 송비 · 행인 너울(hneoul) · 사로 달래(sdallae) · 고구려 미르(mir) · 하슬라 단궁(dangung). 지금 띠 첫 칸(3배)으로 다섯 모두 활 확인(`tools/out/z/first5.png`). 서기 장면은 모두 `style-scene-f-M.png`(너울은 S 장면이 없어 M + 「허리·팔다리만 가늘게」). 그림은 Codex 로만(그림 API 멈춤).
+- **송비**: Z1 활 쏘기 첫 판으로 굽고 `anim-harness strip songbi install` 판정 합격. 독립 검수(sonnet) 조건부: 칸1·4 시위가 위끝~손 한쪽뿐(아래 반쪽 없음) · 칸3 시위가 활에서 떨어진 곧은 막대. 칸3 은 화소로 막대를 지우고 활 위끝~아래끝을 이은 한 줄로 고침(`tools/out/z/stringfix.py` · 원본 `px/songbi-bow-3-v1.png`). 칸1·4 는 선을 그어 봤으나 발 아래로 삐져나와 되돌림 → 그대로(박달·다래·활미와 같은 선). 활 길이 서기 131 대 칸 77·99·104·82(59~79%). 커밋 6f0320aa(맞음 칸 없이). 맞음은 Z6 로 주문.
+- **서기 합격**(너울·달래·미르·단궁): 시위가 끊기지 않고 활 끝에 이어짐(눈으로 봄 · 서기 칸 6배 확대 전 단계는 아님) · 단궁은 땋은 머리가 올림머리처럼 읽힘(Codex 도 짚음) → 그대로. 장면은 `scene-pack.py <이름> bow` 로 만들었다(걸음 결 너울·달래 sway · 미르 bouncy · 단궁 proud · 쓰러짐 e).
+- 하네스 HEROES 에 hneoul·sdallae·mir·dangung 줄(hit=True) 넣음(작업 트리 · 아직 커밋 안 함) · 송비는 맞음이 오면 hit=True.
+- 번호: Z6 송비 맞음 · Z7~Z11 너울(걷기·활 쏘기·개성·쓰러짐·맞음) · Z12~Z16 달래 · Z17~Z21 미르 · Z22~Z26 단궁. 공유 파일 올리기는 `tools/out/z/stage_shared.py <열쇠> gen-<열쇠> [harness=<열쇠>]`.
+- GIF: `tools/out/lineup/gen-songbi-flow.gif`(칸을 펼친 판 `chk-gen-songbi-flowframes.png`) · **못 본 것**: 게임 화면 재생 · 송비 걷기 다리 교대(legalt.py 안 돌림 · 기존 걷기) · 활 쏘기 칸1·4 시위 반쪽.
