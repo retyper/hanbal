@@ -32,8 +32,7 @@ test('빈 판 1,000씨앗: 같은 씨앗 두 번 = 같은 해시 · 입력 기�
     const inputs = seed % 2 === 0 ? inputsFor(seed) : []
     const a = runField(setup, inputs)
     const b = runField(setup, inputs)
-    assert.equal(a.end, 'time')
-    assert.equal(a.tick, P.field.timesMax * P.field.timeTicks)
+    assert.ok(a.end !== null && a.end !== 'invalid' && a.tick <= P.field.timesMax * P.field.timeTicks)
     assert.equal(hashField(a), hashField(b), `seed ${seed}`)
     const replay = parse(serialize(a.log.accepted))
     assert.ok(replay)

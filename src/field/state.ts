@@ -12,15 +12,15 @@ const mix = (h: number, n: number): number => Math.imul(h ^ (n | 0), 0x01000193)
 export function hashField(s: FieldState): string {
   let h = 0x811c9dc5
   h = mix(h, s.tick); h = mix(h, s.seed); h = mix(h, s.end === null ? 0 : END_CODE[s.end])
-  h = mix(h, s.log.dropped); h = mix(h, s.log.accepted.length)
+  h = mix(h, s.log.dropped); h = mix(h, s.log.accepted.length); h = mix(h, s.winner)
   for (const q of s.squads) {
     h = mix(h, q.id); h = mix(h, q.side); h = mix(h, q.men); h = mix(h, q.menMax); h = mix(h, q.fresh)
     h = mix(h, q.u); h = mix(h, q.v); h = mix(h, q.goal ? q.goal.u : -1); h = mix(h, q.goal ? q.goal.v : -1)
-    h = mix(h, q.manual); h = mix(h, q.target); h = mix(h, q.hp); h = mix(h, q.morale)
+    h = mix(h, q.manual); h = mix(h, q.target); h = mix(h, q.hp); h = mix(h, q.morale); h = mix(h, q.stance); h = mix(h, q.shock)
   }
   for (const e of s.heroes) {
     h = mix(h, e.side); h = mix(h, e.u); h = mix(h, e.v); h = mix(h, e.goal ? e.goal.u : -1); h = mix(h, e.goal ? e.goal.v : -1)
-    h = mix(h, e.grp); h = mix(h, e.stun); h = mix(h, e.hp)
+    h = mix(h, e.grp); h = mix(h, e.stun); h = mix(h, e.hp); h = mix(h, e.manual)
   }
   return (h >>> 0).toString(16)
 }

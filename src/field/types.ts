@@ -14,6 +14,13 @@ export type InputGroup = 0 | 1 | 2 | 3
 /** 입력의 op: 0 = 그 무리를 (u, v) 로 보냄(손으로 몰기) · 1 = 손을 떼고 임시 AI 에 맡김 (자세·비기 같은 갈래는 뒤 카드가 더한다) */
 export const OP_MOVE = 0
 export const OP_AUTO = 1
+/** 자세 바꿈: u = 0 돌격 · 1 방진 · 2 길 트기 (앞줄 세모 방진 > 돌격 > 길 트기 > 방진) */
+export const OP_STANCE = 2
+/** 물러남: 그 판을 바로 진 것으로 끝낸다 (g 는 아무거나) */
+export const OP_RETREAT = 3
+export const STANCE_CHARGE = 0
+export const STANCE_HOLD = 1
+export const STANCE_OPEN = 2
 
 export type EndWhy = 'morale' | 'men' | 'time' | 'retreat' | 'invalid'
 
@@ -33,10 +40,17 @@ export interface Squad {
   u: number
   v: number
   goal: Point | null
+  /** 앞줄 자세 0 돌격 · 1 방진 · 2 길 트기 (활·기병은 무시) */
+  stance: 0 | 1 | 2
+  /** 처음 사기 · 사기 = morale0 - 잃은 몫 - shock (누적에서 바로 셈하므로 정수 깎임이 쌓이지 않는다) */
+  morale0: number
+  /** 옆구리·장수 쓰러짐으로 누적된 사기 꺾임 (천분율) */
+  shock: number
   /** 손으로 몰고 있으면 1 (임시 AI 가 목표를 안 바꾼다) */
   manual: 0 | 1
   /** 지금 노리는 적 대의 id · 없으면 -1 */
   target: number
+  /** 체력 · 천분의 일 명 단위 (men = hp 를 1000 으로 올림해서 나눈 것) */
   hp: number
   /** 0~1000 */
   morale: number
@@ -51,6 +65,8 @@ export interface Hero {
   goal: Point | null
   /** 붙어 있는 무리 (0~2) · 없으면 -1 */
   grp: number
+  /** 손으로 몰고 있으면 1 (아니면 임시 AI 가 제 편 앞줄 곁을 따른다) */
+  manual: 0 | 1
   /** 쓰러져 못 움직이는 남은 틱 */
   stun: number
   hp: number
@@ -98,5 +114,7 @@ export interface FieldState {
   /** 이번 때에 무리별(0~3)로 받은 입력 수 */
   used: [number, number, number, number]
   end: EndWhy | null
+  /** 끝났을 때 이긴 편 · 0 우리 · 1 적 · -1 비김(또는 아직) */
+  winner: -1 | 0 | 1
   log: FieldLog
 }
