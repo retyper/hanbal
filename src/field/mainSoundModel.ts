@@ -14,8 +14,13 @@ import { P } from '../tune/params.ts'
 /** 소리 자리 이름 — 어떤 파일을 붙일지는 mainSound.ts 의 표가 정한다 (여기는 모른다) */
 export type FieldSlot =
   | 'flag_charge' | 'flag_hold' | 'flag_open' | 'flag_move' | 'flag_horse'
-  | 'war_cry' | 'war_drums' | 'horse_start' | 'arrow_volley' | 'clash' | 'impact' | 'gate' | 'rout' | 'end_win' | 'end_lose'
-  | 'step_walk' | 'step_run' | 'hoof_walk' | 'hoof_gallop'
+  | 'war_cry' | 'war_drums' | 'horse_start' | 'arrow_volley' | 'arrow_hit' | 'clash' | 'impact' | 'gate' | 'rout' | 'end_win' | 'end_lose'
+  | 'step_walk_few' | 'step_walk_mid' | 'step_walk_many' | 'step_run_few' | 'step_run_mid' | 'step_run_many' | 'hoof_walk' | 'hoof_gallop'
+
+/** 이어지는 소리의 종류 — 발소리는 사람 수에 따라 세 단계(few · mid · many) 가운데 하나로 나간다 */
+export type LoopBase = 'step_walk' | 'step_run' | 'hoof_walk' | 'hoof_gallop'
+const TIERS = ['few', 'mid', 'many'] as const
+const tierSlot = (base: LoopBase, tier: number): FieldSlot => (base === 'hoof_walk' || base === 'hoof_gallop' ? base : `${base}_${TIERS[tier]}`) as FieldSlot
 
 export interface SoundSquad { id: number; side: 0 | 1; grp: 'front' | 'bows' | 'horse'; men: number; u: number; v: number; stance: number; lock: number; target: number }
 export interface SoundPiece { id: number; kind: 'stake' | 'gate'; hp: number }
@@ -36,18 +41,21 @@ export interface SoundEvent {
 }
 
 export interface Play { slot: FieldSlot; vol: number; pan: number; rate: number; loop: boolean }
-export interface LoopInfo { slot: FieldSlot; vol: number; pan: number; beatMul: number; beatMs: number }
+export interface LoopInfo { slot: FieldSlot; base: LoopBase; tier: number; vol: number; pan: number; beatMul: number; beatMs: number }
 
 export interface SoundState {
   last: SoundFrame | null
   speeds: Readonly<Record<number, number>>
   gallop: Readonly<Record<number, 1>>
   lastAt: Readonly<Record<string, number>>
-  beatAt: Readonly<Record<string, number>>
-  beatN: Readonly<Record<string, number>>
+  /** 이어지는 소리 종류마다 지금 단계 (0 적음 · 1 보통 · 2 많음) */
+  tiers: Readonly<Record<string, number>>
+  /** 단계가 바뀌어 두 고리가 겹쳐 넘어가는 중이면 옛 단계와 바뀐 시각(ms) */
+  xfade: Readonly<Record<string, { from: number; at: number }>>
+  lastNow: number
   duckUntil: number
 }
-export const newSoundState = (): SoundState => ({ last: null, speeds: {}, gallop: {}, lastAt: {}, beatAt: {}, beatN: {}, duckUntil: -1 })
+export const newSoundState = (): SoundState => ({ last: null, speeds: {}, gallop: {}, lastAt: {}, tiers: {}, xfade: {}, lastNow: -1, duckUntil: -1 })
 
 export interface SoundOut { state: SoundState; plays: Play[]; loops: LoopInfo[] }
 
@@ -61,17 +69,17 @@ function screenOf(cam: SoundCam, u: number, v: number): { sx: number; sy: number
 }
 
 /** 한 자리의 들림 — 좌우(pan) · 화면 밖 거리와 배율에 따른 크기(0~1) */
-export function audible(cam: SoundCam, u: number | undefined, v: number | undefined): { pan: number; gain: number } {
+export function audible(cam: SoundCam, u: number | undefined, v: number | undefined): { pan: number; gain: number; inView: boolean } {
   const f = F()
   const nearMul = f.zoomNear / 100
   const zoomGain = (f.soundZoomFarPct + (100 - f.soundZoomFarPct) * clamp((cam.zoomRel - 1) / Math.max(0.001, nearMul - 1), 0, 1)) / 100
-  if (u === undefined || v === undefined) return { pan: 0, gain: zoomGain }
+  if (u === undefined || v === undefined) return { pan: 0, gain: zoomGain, inView: true }
   const { sx, sy } = screenOf(cam, u, v)
   const hw = cam.vpW / 2, hh = cam.vpH / 2
   const out = Math.max(0, Math.abs(sx - hw) - hw, Math.abs(sy - hh) - hh)
   const fade = clamp(out / (cam.vpW * f.soundOffFadeScreens), 0, 1)
   const far = 1 - fade * (1 - f.soundOffMinPct / 100)
-  return { pan: clamp((sx - hw) / hw, -1, 1) * (f.soundPanMaxPct / 100), gain: far * zoomGain }
+  return { pan: clamp((sx - hw) / hw, -1, 1) * (f.soundPanMaxPct / 100), gain: far * zoomGain, inView: out === 0 }
 }
 
 const centerOf = (qs: readonly SoundSquad[]): { u: number; v: number } | null => {
@@ -147,16 +155,25 @@ export const flagEvent = (flag: FlagKind): SoundEvent => ({ kind: 'flag', flag }
 const GAP: Readonly<Record<FieldSlot, () => number>> = {
   flag_charge: () => 0, flag_hold: () => 0, flag_open: () => 0, flag_move: () => 0, flag_horse: () => 0,
   war_cry: () => F().soundGapCryMs, war_drums: () => F().soundGapDrumsMs, horse_start: () => F().soundGapCryMs,
-  arrow_volley: () => F().soundGapVolleyMs, clash: () => F().soundGapClashMs, impact: () => F().soundGapImpactMs,
+  arrow_volley: () => F().soundGapVolleyMs, arrow_hit: () => F().soundGapArrowHitMs, clash: () => F().soundGapClashMs, impact: () => F().soundGapImpactMs,
   gate: () => F().soundGapMs, rout: () => F().soundGapCryMs, end_win: () => F().soundGapEndMs, end_lose: () => F().soundGapEndMs,
-  step_walk: () => 0, step_run: () => 0, hoof_walk: () => 0, hoof_gallop: () => 0,
+  step_walk_few: () => 0, step_walk_mid: () => 0, step_walk_many: () => 0, step_run_few: () => 0, step_run_mid: () => 0, step_run_many: () => 0, hoof_walk: () => 0, hoof_gallop: () => 0,
 }
 const PRIORITY: Readonly<Record<FieldSlot, number>> = {
   end_win: 0, end_lose: 0, impact: 1, gate: 2, war_cry: 3, rout: 3,
   flag_charge: 4, flag_hold: 4, flag_open: 4, flag_move: 4, flag_horse: 4,
-  horse_start: 5, war_drums: 5, arrow_volley: 6, clash: 7, hoof_gallop: 8, step_run: 8, hoof_walk: 9, step_walk: 9,
+  horse_start: 5, war_drums: 5, arrow_volley: 6, arrow_hit: 6, clash: 7, hoof_gallop: 8, step_run_few: 8, step_run_mid: 8, step_run_many: 8,
+  hoof_walk: 9, step_walk_few: 9, step_walk_mid: 9, step_walk_many: 9,
 }
 const FLAG_SLOT: Readonly<Record<FlagKind, FieldSlot>> = { charge: 'flag_charge', hold: 'flag_hold', open: 'flag_open', horse: 'flag_horse', move: 'flag_move' }
+/** 걷는 사람 수 → 단계. 이전 단계가 있으면 내려갈 때 문턱의 몇 % 아래까지 내려가야 바뀐다 */
+export function tierOf(prev: number | undefined, men: number): number {
+  const f = F(), lo = [0, f.soundTierMidMen, f.soundTierManyMen]
+  const hyst = 1 - f.soundTierHystPct / 100
+  let t = 0
+  for (let i = 1; i < lo.length; i++) if (men >= lo[i]! || (prev !== undefined && prev >= i && men >= lo[i]! * hyst)) t = i
+  return t
+}
 /** 이보다 작게 들리는 소리는 내지 않는다 */
 const AUDIBLE_MIN = 0.02
 
@@ -202,7 +219,11 @@ function nearestFoeCells(cur: SoundFrame, q: SoundSquad): number {
 export interface LoopTarget { slot: FieldSlot; gain: number; pan: number; rate: number }
 export function loopTargets(loops: readonly LoopInfo[]): LoopTarget[] {
   const f = F()
-  return loops.map(l => ({ slot: l.slot, gain: l.vol * f.soundMasterPct / 100, pan: l.pan, rate: clamp(l.beatMul, f.soundLoopRateMinPct / 100, f.soundLoopRateMaxPct / 100) }))
+  // 말발굽은 걷기와 질주가 같은 파일이라 걷기를 느리고 작게 갈라 낸다
+  return loops.map(l => {
+    const walk = l.base === 'hoof_walk'
+    return { slot: l.slot, gain: l.vol * f.soundMasterPct / 100 * (walk ? f.soundHoofWalkGainPct / 100 : 1), pan: l.pan, rate: clamp(l.beatMul, f.soundLoopRateMinPct / 100, f.soundLoopRateMaxPct / 100) * (walk ? f.soundHoofWalkRatePct / 100 : 1) }
+  })
 }
 
 interface Cand { play: Play; pri: number; at: number }
@@ -212,7 +233,7 @@ interface Cand { play: Play; pri: number; at: number }
  * 숨은 탭이면 아무것도 내지 않고, 앞 프레임 기억만 갈아 둔다 (돌아와서 밀린 소리를 몰아 틀지 않게).
  */
 export function stepSound(st: SoundState, frame: SoundFrame, cam: SoundCam, events: readonly SoundEvent[], nowMs: number, hidden: boolean): SoundOut {
-  if (hidden) return { state: { ...newSoundState(), last: frame, speeds: {}, lastAt: st.lastAt }, plays: [], loops: [] }
+  if (hidden) return { state: { ...newSoundState(), last: frame, lastAt: st.lastAt }, plays: [], loops: [] }
   const f = F()
   const advanced = st.last === null || frame.tick !== st.last.tick
   const speeds = advanced && st.last !== null ? measureSpeeds(st.last, frame) : st.speeds
@@ -257,38 +278,49 @@ export function stepSound(st: SoundState, frame: SoundFrame, cam: SoundCam, even
     }
   }
 
-  // 이어지는 소리 — 종류마다 한 줄 · 대마다 사람 수와 들림을 더하고 박은 걸음 빠르기를 따른다
+  // 꽂히는 화살 — 겨누는 활마다 주기(arrowCycleMs)에 한 번, 쏜 지 arrowFlightMs 뒤에 맞은 대 자리에서
+  if (st.lastNow >= 0 && nowMs > st.lastNow && nowMs - st.lastNow < 2 * f.arrowCycleMs && frame.end === null) {
+    for (const q of frame.squads) {
+      if (q.grp !== 'bows' || q.men <= 0 || q.target < 0) continue
+      const tq = frame.squads.find(e => e.id === q.target)
+      if (tq === undefined || tq.men <= 0) continue
+      const ph = (hashUnit('arrow', q.id) + 1) / 2 * f.arrowCycleMs
+      if (Math.floor((nowMs + ph - f.arrowFlightMs) / f.arrowCycleMs) > Math.floor((st.lastNow + ph - f.arrowFlightMs) / f.arrowCycleMs)) add('arrow_hit', 0.5, tq.u, tq.v)
+    }
+  }
+  // 이어지는 소리 — 종류마다 한 줄 · 대마다 사람 수와 들림을 더하고, 걸음 빠르기는 박자 배율로 낸다
+  // 발소리는 한 명분 토막을 여러 겹으로 미리 구운 파일 세 단계(적음 · 보통 · 많음)가 있어 걷는 사람 수에 따라 하나를 고른다
   const duck = nowMs < duckUntil ? f.soundDuckPct / 100 : 1
-  const groups = new Map<FieldSlot, { w: number; pan: number; mul: number; n: number }>()
+  const groups = new Map<LoopBase, { w: number; pan: number; mul: number; men: number }>()
   for (const q of frame.squads) {
     const sp = speeds[q.id] ?? 0
     if (q.men <= 0 || q.lock >= 0 || sp <= 0) continue
-    const slot: FieldSlot = q.grp === 'horse' ? (gallop[q.id] === 1 ? 'hoof_gallop' : 'hoof_walk') : q.grp === 'front' && q.stance === 0 ? 'step_run' : 'step_walk'
+    const base: LoopBase = q.grp === 'horse' ? (gallop[q.id] === 1 ? 'hoof_gallop' : 'hoof_walk') : q.grp === 'front' && q.stance === 0 ? 'step_run' : 'step_walk'
     const a = audible(cam, q.u, q.v)
     const w = q.men * a.gain
-    const g = groups.get(slot) ?? { w: 0, pan: 0, mul: 0, n: 0 }
-    g.w += w; g.pan += w * a.pan; g.mul += w * (sp / refSpeed(q.grp)); g.n++
-    groups.set(slot, g)
+    const g = groups.get(base) ?? { w: 0, pan: 0, mul: 0, men: 0 }
+    g.w += w; g.pan += w * a.pan; g.mul += w * (sp / refSpeed(q.grp)); g.men += a.inView ? q.men : 0
+    groups.set(base, g)
   }
   const loops: LoopInfo[] = []
-  const beatAt: Record<string, number> = {}, beatN: Record<string, number> = { ...st.beatN }
-  for (const [slot, g] of groups) {
+  const tiers: Record<string, number> = { ...st.tiers }
+  const xfade: Record<string, { from: number; at: number }> = {}
+  for (const [k, v] of Object.entries(st.xfade)) if (nowMs - v.at < f.soundTierXfadeMs && nowMs >= v.at) xfade[k] = v
+  for (const [base, g] of groups) {
     if (g.w <= 0) continue
     const mul = clamp(g.mul / g.w, f.soundBeatMulMinPct / 100, f.soundBeatMulMaxPct / 100)
-    const base = slot === 'step_walk' ? f.soundWalkBeatMs : slot === 'step_run' ? f.soundRunBeatMs : slot === 'hoof_walk' ? f.soundHoofWalkBeatMs : f.soundHoofGallopBeatMs
-    const beatMs = base / mul
+    const beat = base === 'step_walk' ? f.soundWalkBeatMs : base === 'step_run' ? f.soundRunBeatMs : base === 'hoof_walk' ? f.soundHoofWalkBeatMs : f.soundHoofGallopBeatMs
     const vol = f.soundLoopVolPct / 100 * Math.sqrt(Math.min(1, g.w / f.soundLoopMenRef)) * duck
     const pan = g.pan / g.w
-    loops.push({ slot, vol, pan, beatMul: mul, beatMs })
-    const due = st.beatAt[slot]
-    if (due === undefined || nowMs >= due) {
-      const n = (beatN[slot] ?? 0) + 1
-      beatN[slot] = n
-      const rate = 1 + hashUnit(slot, n) * f.soundRateJitterPct / 100
-      const vv = vol * f.soundMasterPct / 100
-      if (vv >= AUDIBLE_MIN) cands.push({ play: { slot, vol: vv, pan, rate, loop: true }, pri: PRIORITY[slot], at: cands.length })
-      beatAt[slot] = nowMs + beatMs
-    } else beatAt[slot] = due
+    const crowd = base === 'step_walk' || base === 'step_run'
+    const tier = crowd ? tierOf(st.tiers[base], g.men) : 0
+    if (crowd && st.tiers[base] !== undefined && tier !== st.tiers[base]) xfade[base] = { from: st.tiers[base]!, at: nowMs }
+    tiers[base] = tier
+    const x = xfade[base]
+    const t = x === undefined ? 1 : clamp((nowMs - x.at) / Math.max(1, f.soundTierXfadeMs), 0, 1)
+    const one = (tr: number, k: number): void => { loops.push({ slot: tierSlot(base, tr), base, tier: tr, vol: vol * k, pan, beatMul: mul, beatMs: beat / mul }) }
+    // 단계가 바뀌는 동안은 옛 단계는 줄고 새 단계는 늘어난다 (같은 힘 겹침 · 뚝 끊기지 않게)
+    if (x !== undefined && t < 1) { one(x.from, Math.cos(t * Math.PI / 2)); one(tier, Math.sin(t * Math.PI / 2)) } else one(tier, 1)
   }
 
   // 같은 소리 되풀이 간격 → 우선순위 → 동시 수 상한
@@ -302,6 +334,6 @@ export function stepSound(st: SoundState, frame: SoundFrame, cam: SoundCam, even
     lastAt[c.play.slot] = nowMs
     plays.push(c.play)
   }
-  const next: SoundState = { last: advanced ? frame : st.last, speeds, gallop, lastAt, beatAt, beatN, duckUntil }
+  const next: SoundState = { last: advanced ? frame : st.last, speeds, gallop, lastAt, tiers, xfade, lastNow: nowMs, duckUntil }
   return { state: next, plays, loops }
 }

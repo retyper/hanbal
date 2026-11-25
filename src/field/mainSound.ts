@@ -25,7 +25,10 @@ export const PICKED: Readonly<Record<FieldSlot, Slot | null>> = {
   flag_charge: 'cmd_charge', flag_hold: 'cmd_hold', flag_open: 'cmd_open', flag_horse: 'cmd_horse', flag_move: 'ui_order',
   war_cry: 'war_cry', war_drums: 'war_drums', horse_start: 'horses', arrow_volley: 'arrow_volley', clash: 'battle_clash',
   gate: 'cmd_gate', end_win: 'horn_victory', end_lose: 'defeat',
-  impact: null, rout: null, step_walk: null, step_run: null, hoof_walk: null, hoof_gallop: null,
+  // 형이 고른 본편 소리 (11-25 저녁 고르기 판): 부딪힘 쾅 = 본편 필살 맞부딪힘 g3 · 무너지는 함성 = 본편 함성 h1
+  impact: 'battle_crit', rout: 'war_cry',
+  // 아래는 본편 표에 없는 새 파일이라 FIELD_FILE 에 있다
+  arrow_hit: null, step_walk_few: null, step_walk_mid: null, step_walk_many: null, step_run_few: null, step_run_mid: null, step_run_many: null, hoof_walk: null, hoof_gallop: null,
 }
 
 /**
@@ -33,7 +36,15 @@ export const PICKED: Readonly<Record<FieldSlot, Slot | null>> = {
  * 본편 소리 표(PICK)에 없는 새 파일이라 파일 길을 바로 적는다. 비어 있으면(지금) 그 자리는 조용하다. PICKED 보다 먼저 본다.
  * 이어지는 소리(step_walk · step_run · hoof_walk · hoof_gallop)는 돌아가며(loop) 계속 울리고 재생 빠르기가 박자 배율을 따른다.
  */
-export const FIELD_FILE: Readonly<Partial<Record<FieldSlot, string>>> = {}
+export const FIELD_FILE: Readonly<Partial<Record<FieldSlot, string>>> = {
+  // 발소리: 형이 고른 한 명분 소리(걷기 13264254 · 달리기 13264251)를 tools/field-crowd-steps.mjs 가 4 · 12 · 30 명분으로 겹쳐 구운 고리
+  step_walk_few: 'sfx/field_step_walk_few.ogg', step_walk_mid: 'sfx/field_step_walk_mid.ogg', step_walk_many: 'sfx/field_step_walk_many.ogg',
+  step_run_few: 'sfx/field_step_run_few.ogg', step_run_mid: 'sfx/field_step_run_mid.ogg', step_run_many: 'sfx/field_step_run_many.ogg',
+  // 말발굽: 걷기와 질주가 같은 파일(본편 말 소리 m 의 고리). 걷기는 느리고 작게(P.field.soundHoofWalkRatePct · GainPct)
+  hoof_walk: 'sfx/field_hoof_loop.ogg', hoof_gallop: 'sfx/field_hoof_loop.ogg',
+  // 꽂히는 화살: 형이 고른 「화살 맞는1」 (13254994)
+  arrow_hit: 'sfx/field_arrow_hit_b.ogg',
+}
 
 /** 이 자리에서 낼 파일의 주소 (없으면 null = 조용) */
 export function fileOf(slot: FieldSlot, base: string, files: Readonly<Partial<Record<FieldSlot, string>>> = FIELD_FILE): string | null {
@@ -186,7 +197,10 @@ export function createFieldSound(base: string = import.meta.env?.BASE_URL ?? '/'
     unlock() {
       unlocked = true
       const c = audio()
-      if (c !== null) void c.resume().catch(() => {})
+      if (c === null) return
+      void c.resume().catch(() => {})
+      // 이어지는 소리 파일을 미리 받아 풀어 둔다 — 단계가 처음 바뀔 때 늦게 나지 않게
+      for (const slot of Object.keys(FIELD_FILE) as FieldSlot[]) { const url = fileOf(slot, base); if (url !== null) void bufferOf(c, url) }
     },
     frame(frame, cam, events, nowMs) {
       const hidden = document.hidden

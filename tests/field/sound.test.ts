@@ -128,15 +128,15 @@ test('걷는 보병과 돌격 보병은 다른 이어지는 소리', () => {
   const cam = camAt(10, 10)
   const walk = run(newSoundState(), [{ f: mk(0, 1), cam, ev: [], now: 0 }, { f: mk(1, 1), cam, ev: [], now: 100 }])[1]!
   const charge = run(newSoundState(), [{ f: mk(0, 0), cam, ev: [], now: 0 }, { f: mk(1, 0), cam, ev: [], now: 100 }])[1]!
-  assert.ok(walk.loops.some(l => l.slot === 'step_walk') && !walk.loops.some(l => l.slot === 'step_run'))
-  assert.ok(charge.loops.some(l => l.slot === 'step_run') && !charge.loops.some(l => l.slot === 'step_walk'))
+  assert.ok(walk.loops.some(l => l.base === 'step_walk') && !walk.loops.some(l => l.base === 'step_run'))
+  assert.ok(charge.loops.some(l => l.base === 'step_run') && !charge.loops.some(l => l.base === 'step_walk'))
 })
 
 test('걷는 사람이 많을수록 이어지는 소리가 커진다 (상한 안에서)', () => {
   const step = 3 * U / P.field.hz
   const mk = (men: number) => {
     const f = (t: number) => frame(t, [sq(0, 0, 'front', 10, 10, { u: cell(10) + t * step, stance: 1, men }), sq(1, 1, 'front', 100, 10)])
-    return run(newSoundState(), [{ f: f(0), cam: camAt(10, 10), ev: [], now: 0 }, { f: f(1), cam: camAt(10, 10), ev: [], now: 100 }])[1]!.loops.find(l => l.slot === 'step_walk')!.vol
+    return run(newSoundState(), [{ f: f(0), cam: camAt(10, 10), ev: [], now: 0 }, { f: f(1), cam: camAt(10, 10), ev: [], now: 100 }])[1]!.loops.find(l => l.base === 'step_walk')!.vol
   }
   assert.ok(mk(20) < mk(200))
   assert.ok(mk(200) < mk(400))
@@ -194,9 +194,9 @@ test('쾅이 나면 이어지는 소리가 잠깐 낮아진다', () => {
   const step = 3 * U / P.field.hz
   const mk = (t: number, lock: boolean) => frame(t, [sq(0, 0, 'front', 10, 10, { u: cell(10) + t * step, stance: 1 }), sq(1, 1, 'front', 100, 10), sq(2, 0, 'front', 40, 10, { lock: lock ? 3 : -1 }), sq(3, 1, 'front', 43, 10, { lock: lock ? 2 : -1 })])
   const cam = camAt(25, 10)
-  const quiet = run(newSoundState(), [{ f: mk(0, false), cam, ev: [], now: 0 }, { f: mk(1, false), cam, ev: [], now: 100 }])[1]!.loops.find(l => l.slot === 'step_walk')!.vol
+  const quiet = run(newSoundState(), [{ f: mk(0, false), cam, ev: [], now: 0 }, { f: mk(1, false), cam, ev: [], now: 100 }])[1]!.loops.find(l => l.base === 'step_walk')!.vol
   const ducked = run(newSoundState(), [{ f: mk(0, false), cam, ev: [], now: 0 }, { f: mk(1, true), cam, now: 100 }])[1]!
-  const d = ducked.loops.find(l => l.slot === 'step_walk')!.vol
+  const d = ducked.loops.find(l => l.base === 'step_walk')!.vol
   assert.ok(d < quiet)
   assert.ok(ducked.plays.some(p => p.slot === 'impact'))
 })
@@ -235,32 +235,31 @@ test('모델 파일에 난수·시계·DOM 이 없다', () => {
   assert.deepEqual(code.match(/Math\.random|Date\.now|performance\.now|\bdocument\b|\bwindow\b|localStorage|setTimeout|setInterval|requestAnimationFrame/g) ?? [], [])
 })
 
-test('안 고른 자리는 조용하다 · 고른 자리는 본편 표의 이름을 쓴다', async () => {
-  const { PICKED } = await import('../../src/field/mainSound.ts')
-  const silent = Object.entries(PICKED).filter(([, v]) => v === null).map(([k]) => k).sort()
-  assert.deepEqual(silent, ['hoof_gallop', 'hoof_walk', 'impact', 'rout', 'step_run', 'step_walk'])
-  const { PICK } = await import('../../src/ui/realm/sound.ts')
-  for (const v of Object.values(PICKED)) if (v !== null) assert.ok(v in PICK, String(v))
-})
-
 test('이어지는 소리 파일의 재생 빠르기는 박자 배율을 따른다 (하한·상한 안에서)', async () => {
   const { loopTargets } = await import('../../src/field/mainSoundModel.ts')
   const a = loopTargets(horseLoop(5).loops).find(t => t.slot === 'hoof_gallop')!
   const b = loopTargets(horseLoop(7.5).loops).find(t => t.slot === 'hoof_gallop')!
   assert.ok(Math.abs(b.rate / a.rate - 1.5) < 1e-6)
   const slow = loopTargets(horseLoop(1).loops)[0]!, fast = loopTargets(horseLoop(30).loops)[0]!
-  assert.equal(slow.rate, P.field.soundLoopRateMinPct / 100)
+  assert.ok(Math.abs(slow.rate - P.field.soundLoopRateMinPct / 100 * P.field.soundHoofWalkRatePct / 100) < 1e-9)
   assert.equal(fast.rate, P.field.soundLoopRateMaxPct / 100)
   assert.ok(a.gain > 0 && a.gain <= 1)
 })
 
-test('파일 길: 고른 자리만 주소가 나오고 안 고른 자리는 null', async () => {
+test('형이 고른 일곱 자리가 모두 파일로 이어진다 (본편 표 · 새 파일)', async () => {
   const { fileOf, FIELD_FILE, PICKED } = await import('../../src/field/mainSound.ts')
-  assert.deepEqual(FIELD_FILE, {})
-  for (const s of ['step_walk', 'step_run', 'hoof_walk', 'hoof_gallop', 'impact', 'rout'] as const) assert.equal(fileOf(s, '/'), null)
-  assert.ok(String(fileOf('war_cry', '/hanbal/')).startsWith('/hanbal/realm/sfx/war_cry_'))
-  assert.equal(fileOf('hoof_walk', '/hanbal/', { hoof_walk: 'sfx/field_hoof_walk_a.ogg' }), '/hanbal/realm/sfx/field_hoof_walk_a.ogg')
-  assert.equal(PICKED.impact, null)
+  const root = path.resolve(import.meta.dirname, '../../public')
+  const all = Object.keys(PICKED) as (keyof typeof PICKED)[]
+  for (const s of all) {
+    const url = fileOf(s, '/')
+    assert.ok(url !== null, String(s))
+    const file = path.join(root, url!.slice(1))
+    assert.ok(fs.statSync(file).size > 1000, String(s) + ' ' + file)
+  }
+  assert.ok(String(fileOf('impact', '/')).endsWith('battle_crit_g3.mp3'))
+  assert.ok(String(fileOf('rout', '/')).endsWith('war_cry_h1.mp3'))
+  assert.equal(FIELD_FILE.hoof_walk, FIELD_FILE.hoof_gallop)
+  assert.equal(FIELD_FILE.arrow_hit, 'sfx/field_arrow_hit_b.ogg')
 })
 
 test('고르기 판이 가리키는 소리 파일이 모두 있고 0바이트가 아니다', () => {
@@ -270,4 +269,91 @@ test('고르기 판이 가리키는 소리 파일이 모두 있고 0바이트가
   for (const m of html.matchAll(/(?:N|E)\('[^']*', '([^']+)'/g)) names.add(m[1]!)
   assert.ok(names.size >= 25)
   for (const n of names) assert.ok(fs.statSync(path.join(root, 'sfx', n)).size > 1000, n)
+})
+
+/** 한 줄로 걷는 보병 한 대 (men 명) 가 두 틱 걸은 프레임 쌍 */
+function walkers(men: number, stance = 1, n = 1) {
+  const step = 3 * U / P.field.hz
+  const mk = (t: number) => frame(t, [...Array.from({ length: n }, (_, i) => sq(i, 0, 'front', 10 + i, 10, { u: cell(10 + i) + t * step, stance, men })), sq(90, 1, 'front', 100, 10)])
+  return { a: mk(0), b: mk(1), c: mk(2), d: mk(3) }
+}
+const tierOfWalk = (men: number, n = 1): number | undefined => {
+  const w = walkers(men, 1, n), cam = camAt(10, 10)
+  const o = run(newSoundState(), [{ f: w.a, cam, ev: [], now: 0 }, { f: w.b, cam, ev: [], now: 100 }])[1]!
+  return o.loops.find(l => l.base === 'step_walk')?.tier
+}
+
+test('걷는 사람 수에 따라 발소리 단계가 갈린다 (적음 · 보통 · 많음)', () => {
+  assert.equal(tierOfWalk(100), 0)
+  assert.equal(tierOfWalk(P.field.soundTierMidMen - 1), 0)
+  assert.equal(tierOfWalk(P.field.soundTierMidMen), 1)
+  assert.equal(tierOfWalk(P.field.soundTierManyMen - 1), 1)
+  assert.equal(tierOfWalk(P.field.soundTierManyMen), 2)
+})
+
+test('문턱 근처에서는 내려갈 때 조금 더 내려가야 단계가 바뀐다 (되풀이 방지)', async () => {
+  const { tierOf } = await import('../../src/field/mainSoundModel.ts')
+  const mid = P.field.soundTierMidMen
+  assert.equal(tierOf(undefined, mid - 1), 0)
+  assert.equal(tierOf(1, mid - 1), 1)
+  assert.equal(tierOf(1, Math.floor(mid * (1 - P.field.soundTierHystPct / 100)) - 1), 0)
+})
+
+test('단계가 바뀌는 동안 두 고리가 겹쳐 나가고 그 뒤에는 하나', () => {
+  const cam = camAt(10, 10), step = 3 * U / P.field.hz
+  const mk = (t: number, men: number) => frame(t, [sq(0, 0, 'front', 10, 10, { u: cell(10) + t * step, stance: 1, men }), sq(90, 1, 'front', 100, 10)])
+  const x = P.field.soundTierXfadeMs
+  const outs = run(newSoundState(), [
+    { f: mk(0, 300), cam, ev: [], now: 0 }, { f: mk(1, 300), cam, ev: [], now: 100 },
+    { f: mk(2, 600), cam, ev: [], now: 1000 },          // 보통으로 올라선 첫 프레임
+    { f: mk(3, 600), cam, ev: [], now: 1000 + x / 2 },  // 겹치는 중
+    { f: mk(4, 600), cam, ev: [], now: 1000 + x + 50 }, // 끝난 뒤
+  ])
+  const walk = (i: number) => outs[i]!.loops.filter(l => l.base === 'step_walk')
+  assert.equal(walk(1).length, 1)
+  assert.equal(walk(2).length, 2)
+  assert.deepEqual(walk(3).map(l => l.tier).sort(), [0, 1])
+  assert.ok(walk(3).every(l => l.vol > 0))
+  assert.equal(walk(4).length, 1)
+  assert.equal(walk(4)[0]!.tier, 1)
+  const t0 = walk(2).find(l => l.tier === 0)!.vol, t1 = walk(2).find(l => l.tier === 1)!.vol
+  assert.ok(t0 > t1)
+})
+
+test('발소리 크기는 사람 수에 따르고 단계 파일 이름은 자리 이름이다', () => {
+  const w = walkers(100, 0)
+  const o = run(newSoundState(), [{ f: w.a, cam: camAt(10, 10), ev: [], now: 0 }, { f: w.b, cam: camAt(10, 10), ev: [], now: 100 }])[1]!
+  assert.equal(o.loops[0]!.slot, 'step_run_few')
+})
+
+test('말발굽 걷기는 질주보다 느리고 작게 같은 파일에서 나온다', async () => {
+  const { loopTargets } = await import('../../src/field/mainSoundModel.ts')
+  const walk = loopTargets(horseLoop(2).loops).find(t => t.slot === 'hoof_walk')!
+  const gal = loopTargets(horseLoop(8).loops).find(t => t.slot === 'hoof_gallop')!
+  assert.ok(walk.rate < gal.rate)
+  assert.ok(walk.gain < gal.gain)
+})
+
+test('꽂히는 화살은 쏜 뒤 화살이 닿는 때에 맞은 대 자리에서 주기마다 한 번', () => {
+  const cycle = P.field.arrowCycleMs, flight = P.field.arrowFlightMs
+  const sqs = [sq(0, 0, 'bows', 40, 10, { target: 1 }), sq(1, 1, 'front', 60, 10)]
+  const cam = camAt(50, 10)
+  let st = newSoundState(), hits = 0
+  const times: number[] = []
+  for (let t = 0, tick = 0; t <= cycle * 4; t += 33, tick = Math.floor(t * P.field.hz / 1000)) {
+    const o = stepSound(st, frame(tick, sqs), cam, [], 1000 + t, false)
+    st = o.state
+    for (const p of o.plays) if (p.slot === 'arrow_hit') { hits++; times.push(t) }
+  }
+  assert.ok(hits >= 3 && hits <= 5, String(hits))
+  for (let i = 1; i < times.length; i++) assert.ok(Math.abs(times[i]! - times[i - 1]! - cycle) <= 34 + 1, times.join())
+  // 겨누지 않으면 나지 않는다
+  let st2 = newSoundState(), n2 = 0
+  for (let t = 0; t <= cycle * 3; t += 33) {
+    const o = stepSound(st2, frame(0, [sq(0, 0, 'bows', 40, 10), sq(1, 1, 'front', 60, 10)]), cam, [], 1000 + t, false)
+    st2 = o.state
+    n2 += o.plays.filter(p => p.slot === 'arrow_hit').length
+  }
+  assert.equal(n2, 0)
+  assert.ok(flight < cycle)
 })

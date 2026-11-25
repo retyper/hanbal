@@ -411,4 +411,8 @@ raid/boss_imugi_hurt.ogg  Freesound · https://freesound.org/people/Garuda1982/s
 raid/boss_bulgasari_roar.ogg  Freesound · https://freesound.org/people/Rotaredom/sounds/640805/ · "Mechanical_Roar.wav" · Rotaredom · CC0 · 일부(0.02~3.8초)를 잘라 크기를 맞춤
 raid/boss_bulgasari_attack.ogg  Freesound · https://freesound.org/people/LucasDuff/sounds/467701/ · "monster bite" · LucasDuff · CC0 · 일부(0.30~1.9초)를 잘라 크기를 맞춤
 raid/boss_bulgasari_hurt.ogg  Freesound · https://freesound.org/people/xkeril/sounds/703247/ · "Big falling debris (crash)" · xkeril · CC0 · 일부(0~2.5초)를 잘라 크기를 맞춤
-전장 소리 후보(고르는 중): sfx/field_*.ogg 18개 · 공유마당 공공누리 제1유형 · CC BY · 제목·저작자·원본 주소는 realm/field-sounds.html 과 assets_src/realm/sfx-in/gongu/manifest.tsv
+field_step_walk_c.ogg  공유마당 · 「발_흙길_고무신_여자_천천히걷기」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13264254 · 잘라 냄 · 형이 고름(11-25) · field_step_walk_{few,mid,many}.ogg 는 이 소리를 4 · 12 · 30명분으로 겹쳐 구운 것(tools/field-crowd-steps.mjs)이라 같은 출처
+field_step_run_c.ogg  공유마당 · 「발_흙길_고무신_어린이_달리기」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13264251 · 잘라 냄 · 형이 고름(11-25) · field_step_run_{few,mid,many}.ogg 는 이 소리를 겹쳐 구운 것이라 같은 출처
+field_arrow_hit_b.ogg  공유마당 · 「화살 맞는1」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254994 · 잘라 냄 · 형이 고름(11-25)
+field_hoof_loop.ogg  본편 말 소리 horses_m.wav 의 끝 0.3초를 앞에 겹쳐 물린 고리(출처는 horses_m 을 따른다)
+전장 소리 후보(고르는 중): sfx/field_*.ogg 중 위에 적지 않은 것 · 공유마당 공공누리 제1유형 · CC BY · 제목·저작자·원본 주소는 realm/field-sounds.html (형이 안 고른 후보는 바꿔 고를 수 있어 남겨 둔다)

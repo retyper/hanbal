@@ -25,45 +25,51 @@
 </style></head><body>
 <h1>전장 소리 고르기</h1>
 <p>새 전투 시험장에서 아직 소리가 없는 자리입니다. ▶ 를 눌러 들어 보고 마음에 드는 것을 고르면 아래 칸에 한 줄씩 쌓입니다. 다 고르면 복사해서 알려 주세요. 고른 것만 넣습니다.</p>
+<p>미리 켜 둔 표시는 11-25 저녁에 고르신 그대로입니다. 걷기·달리기 발소리는 한 명분이라서, 아래 「여러 명으로 만든 판」을 따로 구워 올렸습니다.</p>
 <p>이어지는 소리(발소리 · 말발굽)는 돌아가며 계속 들립니다. 빠르기 막대로 걸음이 빨라질 때 어떻게 들리는지 볼 수 있습니다. 새로 받은 후보는 공유마당 소리이고 공공누리 제1유형 또는 CC BY 입니다(출처는 제목 옆 링크). <span style="color:#7fd17a">초록 글자</span>는 이미 저장소에 있던 소리입니다. 크기는 본편 효과음과 비슷하게 맞췄지만 이어지는 소리는 조용하게 들릴 수 있습니다.</p>
 <div id="list"></div>
 <div id="out"><div class="r">고른 것 <span id="n">0</span>곳 <button id="cp">복사</button><span id="ok"></span></div><textarea id="ta" readonly placeholder="자리마다 후보를 고르면 여기에 적힙니다"></textarea></div>
 <script>
 const W = 'https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn='
 const N = (code, f, t, who, lic, n, len) => ({ code, f: 'sfx/' + f, t, who, lic, n, len })
+const C = (code, f, t, len) => ({ code, f: 'sfx/' + f, t, crowd: true, len })
 const E = (code, f, t, len) => ({ code, f: 'sfx/' + f, t, mine: true, len })
 const DATA = [
-  { slot: 'step_walk', name: '걷는 발소리', loop: true, when: '걷는 보병 · 사람 수가 많을수록 크게, 걸음이 빠를수록 빠르게', opts: [
+  { slot: 'step_walk', sel: 'c', name: '걷는 발소리', loop: true, when: '걷는 보병 · 사람 수가 많을수록 크게, 걸음이 빠를수록 빠르게', opts: [
     N('a', 'field_step_walk_a.ogg', '발_흙길_부츠_남자_천천히걷기', '한국저작권위원회', 'CC BY', 13264257, '3초'),
     N('b', 'field_step_walk_b.ogg', '발_흙길_구두_남자_천천히걷기', '한국저작권위원회', 'CC BY', 13264256, '3초'),
     N('c', 'field_step_walk_c.ogg', '발_흙길_고무신_여자_천천히걷기', '한국저작권위원회', 'CC BY', 13264254, '3초') ] },
-  { slot: 'step_run', name: '달리는 발소리', loop: true, when: '돌격으로 달리는 보병', opts: [
+  { slot: 'step_walk_crowd', name: '걷는 발소리 · 여러 명으로 만든 판 — 들어 보세요', loop: true, when: '걷기 c 한 명분을 4명 · 12명 · 30명분으로 겹쳐 구운 것입니다. 많을수록 웅성이는 행군 소리가 되는지, 겹 수나 흔들림이 마음에 안 들면 말씀해 주세요.', opts: [
+    C('few', 'field_step_walk_few.ogg', '적음 · 4명분 (낱낱이 들립니다)', '3초'), C('mid', 'field_step_walk_mid.ogg', '보통 · 12명분', '3초'), C('many', 'field_step_walk_many.ogg', '많음 · 30명분 (웅성임)', '3초') ] },
+  { slot: 'step_run', sel: 'c', name: '달리는 발소리', loop: true, when: '돌격으로 달리는 보병', opts: [
     N('a', 'field_step_run_a.ogg', '발_흙길_운동화_남자_신발신고뛰어가기', '한국저작권위원회', 'CC BY', 13264262, '3초'),
     N('b', 'field_step_run_b.ogg', '발_나무판자_운동화_남자_달리기', '한국저작권위원회', 'CC BY', 13264157, '3초'),
     N('c', 'field_step_run_c.ogg', '발_흙길_고무신_어린이_달리기', '한국저작권위원회', 'CC BY', 13264251, '3초') ] },
-  { slot: 'hoof_walk', name: '말발굽 걷기', loop: true, when: '기병이 걸을 때 · 빠르기 막대를 올리면 다그닥다그닥 빨라집니다', opts: [
+  { slot: 'step_run_crowd', name: '달리는 발소리 · 여러 명으로 만든 판 — 들어 보세요', loop: true, when: '달리기 c 한 명분을 4명 · 12명 · 30명분으로 겹쳐 구운 것입니다.', opts: [
+    C('few', 'field_step_run_few.ogg', '적음 · 4명분', '3초'), C('mid', 'field_step_run_mid.ogg', '보통 · 12명분', '3초'), C('many', 'field_step_run_many.ogg', '많음 · 30명분', '3초') ] },
+  { slot: 'hoof_walk', sel: 'horses_m', name: '말발굽 걷기', loop: true, when: '기병이 걸을 때 · 빠르기 막대를 올리면 다그닥다그닥 빨라집니다', opts: [
     N('a', 'field_hoof_walk_a.ogg', '말 발굽 걷는1', '김용배', 'CC BY', 13253320, '3.5초'),
     N('b', 'field_hoof_walk_b.ogg', '말발굽(아스팔트)', '김용배', 'CC BY', 13253347, '3초'),
     E('horses_a', 'horses_a.ogg', '본편 말 소리 a', '저장소'), E('horses_b', 'horses_b.ogg', '본편 말 소리 b', '저장소'),
     E('horses_c', 'horses_c.ogg', '본편 말 소리 c', '저장소'), E('horses_m', 'horses_m.wav', '본편 말 소리 m (본편에서 고르신 것)', '4초') ] },
-  { slot: 'hoof_gallop', name: '말발굽 질주', loop: true, when: '기병이 돌격으로 달릴 때', opts: [
+  { slot: 'hoof_gallop', sel: 'horses_m', name: '말발굽 질주', loop: true, when: '기병이 돌격으로 달릴 때', opts: [
     N('a', 'field_hoof_gallop_a.ogg', '말 여러마리 뛰는', '김용배', 'CC BY', 13253321, '3.5초'),
     N('b', 'field_hoof_gallop_b.ogg', '말발굽(아스팔트) 뒤쪽 3초', '김용배', 'CC BY', 13253347, '3초'),
     E('horses_a', 'horses_a.ogg', '본편 말 소리 a'), E('horses_b', 'horses_b.ogg', '본편 말 소리 b'),
     E('horses_c', 'horses_c.ogg', '본편 말 소리 c'), E('horses_m', 'horses_m.wav', '본편 말 소리 m (본편에서 고르신 것)', '4초') ] },
-  { slot: 'impact', name: '부딪힘 쾅', when: '돌격이 처음 맞붙는 순간 · 사람 수가 많을수록 큽니다', opts: [
+  { slot: 'impact', sel: 'battle_crit_g3', name: '부딪힘 쾅', when: '돌격이 처음 맞붙는 순간 · 사람 수가 많을수록 큽니다', opts: [
     N('a', 'field_impact_a.ogg', '몸_부딪히기_철_세게', '한국저작권위원회', 'CC BY', 13264030, '2.1초'),
     N('b', 'field_impact_b.ogg', '몸_부딪히기_세게', '한국저작권위원회', 'CC BY', 13264029, '0.3초'),
     N('c', 'field_impact_c.ogg', '몸_부딪히기_화살_세게', '한국저작권위원회', 'CC BY', 13264031, '1.6초'),
     E('battle_crit_g1', 'battle_crit_g1.mp3', '본편 필살 맞부딪힘 g1', '2.6초'), E('battle_crit_g2', 'battle_crit_g2.mp3', '본편 필살 맞부딪힘 g2', '2.6초'),
     E('battle_crit_g3', 'battle_crit_g3.mp3', '본편 필살 맞부딪힘 g3 (본편에서 고르신 것)', '2.6초') ] },
-  { slot: 'rout', name: '무너지는 함성', when: '사기가 꺾여 무너질 때', opts: [
+  { slot: 'rout', sel: 'war_cry_h1', name: '무너지는 함성', when: '사기가 꺾여 무너질 때', opts: [
     N('a', 'field_rout_a.ogg', '비명_20대남자_1 (0.9초부터 4초)', 'JICA', '공공누리 1유형', 13372428, '4초'),
     N('b', 'field_rout_b.ogg', '비명_20대남자_2 (1초부터 4초)', 'JICA', '공공누리 1유형', 13372429, '4초'),
     N('c', 'field_rout_c.ogg', 'LSMSE0308_비명 (앞 4초)', '한국저작권위원회', 'CC BY', 13312685, '4초'),
     E('war_cry_g1', 'war_cry_g1.wav', '본편 함성 g1', '3.2초'), E('war_cry_g2', 'war_cry_g2.wav', '본편 함성 g2'),
     E('war_cry_g3', 'war_cry_g3.wav', '본편 함성 g3'), E('war_cry_h1', 'war_cry_h1.mp3', '본편 함성 h1 (본편에서 고르신 것)', '1.9초') ] },
-  { slot: 'arrow_hit', name: '꽂히는 화살', when: '화살이 맞는 순간 (자리만 잡아 둡니다)', opts: [
+  { slot: 'arrow_hit', sel: 'b', name: '꽂히는 화살', when: '화살이 맞는 순간 (자리만 잡아 둡니다)', opts: [
     N('a', 'field_arrow_hit_a.ogg', '화살 맞는2', '김용배', 'CC BY', 13254995, '2.2초'),
     N('b', 'field_arrow_hit_b.ogg', '화살 맞는1', '김용배', 'CC BY', 13254994, '1.6초'),
     N('c', 'field_arrow_hit_c.ogg', '화살이 과녁에 맞을때 나는 나무 부서지는 소리', '한국저작권위원회', 'CC BY', 13221015, '3초') ] },
@@ -76,9 +82,9 @@ for (const s of DATA) {
   h += `<div class="slot"><div class="sh"><b>${s.name}</b><small>${s.when}</small></div>`
   if (s.loop) { rates[s.slot] = 1; h += `<div class="rate">빠르기 <input type="range" min="0.7" max="1.5" step="0.05" value="1" data-rate="${s.slot}"><output id="r-${s.slot}">1.00배</output></div>` }
   s.opts.forEach((o, i) => {
-    const who = o.mine ? `<span class="mine">저장소에 있던 소리 ${o.len || ''}</span>` : `<span class="d">${o.who} · ${o.lic} · ${o.len}</span>`
+    const who = o.crowd ? '<span class="mine">여러 명으로 겹쳐 구운 판 ' + o.len + '</span>' : o.mine ? `<span class="mine">저장소에 있던 소리 ${o.len || ''}</span>` : `<span class="d">${o.who} · ${o.lic} · ${o.len}</span>`
     const link = o.n ? `<a href="${W}${o.n}" target="_blank" rel="noopener">원본</a>` : ''
-    h += `<div class="opt"><button class="pl" data-slot="${s.slot}" data-i="${i}">▶</button><label><input type="radio" name="${s.slot}" value="${i}"><code>${o.code}</code>${o.t}${who}</label>${link}</div>`
+    h += `<div class="opt"><button class="pl" data-slot="${s.slot}" data-i="${i}">▶</button><label><input type="radio" name="${s.slot}" value="${i}"${s.sel === o.code ? ' checked' : ''}><code>${o.code}</code>${o.t}${who}</label>${link}</div>`
   })
   h += '</div>'
 }
@@ -108,14 +114,20 @@ list.addEventListener('input', (e) => {
   document.getElementById('r-' + r).textContent = rates[r].toFixed(2) + '배'
   if (playing && playing.slot === r) playing.a.playbackRate = rates[r]
 })
-list.addEventListener('change', (e) => {
-  const r = e.target
-  if (r.type !== 'radio') return
-  const s = DATA.find((x) => x.slot === r.name), o = s.opts[Number(r.value)]
-  pick[s.slot] = `${s.name} (${s.slot}) = ${o.code} ${o.t}${o.n ? ' [' + o.n + ']' : ''}`
+const show = () => {
   const v = Object.values(pick)
   document.getElementById('ta').value = v.join('\n')
   document.getElementById('n').textContent = v.length
+}
+const note = (s, o) => { pick[s.slot] = `${s.name} (${s.slot}) = ${o.code} ${o.t}${o.n ? ' [' + o.n + ']' : ''}` }
+for (const s of DATA) if (s.sel) note(s, s.opts.find((o) => o.code === s.sel))
+show()
+list.addEventListener('change', (e) => {
+  const r = e.target
+  if (r.type !== 'radio') return
+  const s = DATA.find((x) => x.slot === r.name)
+  note(s, s.opts[Number(r.value)])
+  show()
 })
 document.getElementById('cp').onclick = async () => {
   const t = document.getElementById('ta').value
