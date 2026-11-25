@@ -55,6 +55,7 @@ const CSS = `
 #fd-big{position:absolute;left:calc(8px + env(safe-area-inset-left));bottom:calc(var(--fd-bar,64px) + 12px + env(safe-area-inset-bottom));display:flex;gap:6px;background:#000d;border:1px solid ${GOLD}88;border-radius:10px;padding:6px;z-index:3}
 #fd-big[hidden]{display:none}
 .touch .fd-cells{display:none}
+.touch .fd-kb,.touch .fd-opt i,.touch .fd-pb em{display:none}
 .touch #fd-strip{min-height:0}
 .touch #fd-big{left:auto;right:calc(10px + env(safe-area-inset-right));bottom:calc(88px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(2,64px);padding:4px}
 .touch .fd-opt{min-width:64px}

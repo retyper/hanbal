@@ -488,6 +488,21 @@ const handlers = {
 }
 
 /** 고른 것 발밑 금빛 고리 + 장수가 무리 곁을 지날 때 한 번 튀는 「눌러 봐」 고리 */
+/** 대 하나의 몸 네모 (판 px · 가운데 + 가로(앞뒤 u) 세로(줄 v) 크기) — 몸 칸이 없으면 흩어짐 폭으로 */
+function bodyRect(q: VModel['squads'][number]): { x: number; y: number; w: number; h: number } {
+  const c = P.field.cellPx, pad = 0.6 * c
+  const bd = q.bd > 0 ? q.bd / P.field.unit * c : (P.field.spreadUCells * 2 + 1) * c, bw = q.bw > 0 ? q.bw / P.field.unit * c : (P.field.spreadVCells * 2 + 1) * c
+  return { x: pxOf(q.u), y: pxOf(q.v), w: bd + pad * 2, h: bw + pad * 2 }
+}
+/** 한 무리의 둥근 네모 테: 무리 하나에 하나 · 대가 흩어져 무리 폭이 groupSpanCells 를 넘으면 대마다 작은 테 */
+function groupRings(squads: VModel['squads'], kind: Ring['kind'], phase: number): Ring[] {
+  if (squads.length === 0) return []
+  const rs = squads.map(bodyRect)
+  const x0 = Math.min(...rs.map(r => r.x - r.w / 2)), x1 = Math.max(...rs.map(r => r.x + r.w / 2)), y0 = Math.min(...rs.map(r => r.y - r.h / 2)), y1 = Math.max(...rs.map(r => r.y + r.h / 2))
+  const lim = P.field.groupSpanCells * P.field.cellPx
+  if (x1 - x0 <= lim && y1 - y0 <= lim) return [{ x: (x0 + x1) / 2, y: (y0 + y1) / 2, w: x1 - x0, h: y1 - y0, rx: 0, ry: 0, kind, phase }]
+  return rs.map(r => ({ x: r.x, y: r.y, w: r.w, h: r.h, rx: 0, ry: 0, kind, phase }))
+}
 function ringsNow(now: number): Ring[] {
   const out: Ring[] = []
   const c = P.field.cellPx
@@ -495,30 +510,29 @@ function ringsNow(now: number): Ring[] {
     const h = heroNow()
     if (h !== undefined) out.push({ x: pxOf(h.u), y: pxOf(h.v), rx: P.field.ringHeroCells * c, ry: P.field.ringHeroCells * c * 0.45, kind: 'dim', phase: 0 })
   }
-  if (hoverG >= 0 && hoverG < 3 && !ui.sel.includes(hoverG as InputGroup)) for (const q of squadsOf(hoverG)) out.push({ x: pxOf(q.u), y: pxOf(q.v), rx: (P.field.spreadUCells + 2) * c, ry: (P.field.spreadVCells + 1.5) * c, kind: 'hover', phase: 0 })
+  if (hoverG >= 0 && hoverG < 3 && !ui.sel.includes(hoverG as InputGroup)) out.push(...groupRings(squadsOf(hoverG), 'hover', 0))
   for (const g of ui.sel) {
     if (g === 3) {
       const h = heroNow()
       if (h !== undefined) out.push({ x: pxOf(h.u), y: pxOf(h.v), rx: P.field.ringHeroCells * c, ry: P.field.ringHeroCells * c * 0.45, kind: 'sel', phase: 0 })
-    } else for (const q of squadsOf(g)) out.push({ x: pxOf(q.u), y: pxOf(q.v), rx: (P.field.spreadUCells + 2) * c, ry: (P.field.spreadVCells + 1.5) * c, kind: 'sel', phase: 0 })
+    } else out.push(...groupRings(squadsOf(g), 'sel', 0))
   }
   for (let i = foeFlash.length - 1; i >= 0; i--) {
     const fl = foeFlash[i]!
     const ph = (now - fl.at) / P.field.foeFlashMs
     const q = cur.squads[fl.id]
     if (ph >= 1 || q === undefined || q.men <= 0) { foeFlash.splice(i, 1); continue }
-    out.push({ x: pxOf(q.u), y: pxOf(q.v), rx: (P.field.spreadUCells + 2) * c, ry: (P.field.spreadVCells + 1.5) * c, kind: 'foe', phase: ph })
+    out.push(...groupRings([q], 'foe', ph))
   }
   const hh = heroNow()
   if (hh !== undefined && ui.phase === 'play' && hh.stun === 0) {
-    const ar = P.field.heroAuraCells * c, r2 = (P.field.heroAuraCells * P.field.unit) ** 2
+    const ar = P.field.heroAuraCells * c
     out.push({ x: pxOf(hh.u), y: pxOf(hh.v), rx: ar, ry: ar * 0.6, kind: 'aura', phase: 0 })
-    for (const q of cur.squads) if (q.side === 0 && q.men > 0 && (q.u - hh.u) ** 2 + (q.v - hh.v) ** 2 <= r2) out.push({ x: pxOf(q.u), y: pxOf(q.v), rx: c * 1.4, ry: c * 0.8, kind: 'glow', phase: 0 })
   }
   if (ui.phase === 'play' && !sentGroup) {
     for (const g of [0, 1, 2] as const) {
       if (nudgeAt[g]! > 0 && now - nudgeAt[g]! < P.field.nudgeMs) {
-        for (const q of squadsOf(g)) out.push({ x: pxOf(q.u), y: pxOf(q.v), rx: (P.field.spreadUCells + 2) * c, ry: (P.field.spreadVCells + 1.5) * c, kind: 'nudge', phase: (now - nudgeAt[g]!) / P.field.nudgeMs })
+        out.push(...groupRings(squadsOf(g), 'nudge', (now - nudgeAt[g]!) / P.field.nudgeMs))
       }
     }
   }
@@ -550,10 +564,20 @@ function fromOf(g: number): { x: number; y: number } | null {
 }
 function marks(): Mark[] {
   const out: Mark[] = []
+  const near = P.field.arriveCells * P.field.unit
   for (const g of ALL_GROUPS) {
     const goal = lastGoal[g]
     if (goal == null || !flagShown(g)) continue
-    out.push({ g, x: pxOf(goal.u), y: pxOf(goal.v), shape: lastShape[g]!, sel: ui.sel.includes(g) })
+    // 닿았으면 걷힌다 (싸움이 아니라 시작 화면의 깃은 늘 보인다)
+    if (ui.phase !== 'ready') {
+      const at = fromOf(g)
+      if (at !== null && (at.x - pxOf(goal.u)) ** 2 + (at.y - pxOf(goal.v)) ** 2 <= (near / P.field.unit * P.field.cellPx) ** 2) continue
+    }
+    const sel = ui.sel.includes(g)
+    // 같은 자리로 보낸 깃은 하나로 (무리 셋을 한 곳에 보내도 깃이 겹쳐 서지 않는다)
+    const dup = out.find(k => k.x === pxOf(goal.u) && k.y === pxOf(goal.v))
+    if (dup !== undefined) { if (sel) dup.sel = true; continue }
+    out.push({ g, x: pxOf(goal.u), y: pxOf(goal.v), shape: lastShape[g]!, sel })
   }
   return out
 }

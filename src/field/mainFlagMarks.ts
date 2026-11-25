@@ -13,7 +13,8 @@ export interface Mark { g: number; x: number; y: number; shape: MarkShape; sel: 
 /** 끌어서 그리는 네모 (판 px) */
 export interface Box { x0: number; y0: number; x1: number; y1: number }
 /** 발밑 고리 (판 px · 반지름은 가로 rx · 세로 ry) — sel 은 고른 것(늘 떠 있다) · nudge 는 한 번 퍼지며 사라지는 「눌러 봐」 (phase 0~1) */
-export interface Ring { x: number; y: number; rx: number; ry: number; kind: 'sel' | 'dim' | 'hover' | 'nudge' | 'foe' | 'aura' | 'glow'; phase: number }
+/** w·h 가 있으면 타원이 아니라 몸 네모를 감싸는 둥근 네모 테 (판 px · 가운데 x, y) */
+export interface Ring { w?: number; h?: number; x: number; y: number; rx: number; ry: number; kind: 'sel' | 'dim' | 'hover' | 'nudge' | 'foe' | 'aura' | 'glow'; phase: number }
 
 /** 활 사거리 띠: 활 한 대의 사거리 반원 (판 px) · lit 은 적 대가 그 안에 든 것 · sel 은 고른 것 · 겨눈 줄은 (x, y) → (tx, ty) */
 export interface Band { x: number; y: number; r: number; face: 1 | -1; sel: boolean; lit: boolean; tx: number; ty: number; aim: boolean }
@@ -69,13 +70,18 @@ export function drawMarks(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
   }
   for (const r of rings) {
     const grow = r.kind === 'nudge' ? 1 + r.phase * NUDGE_GROW : r.kind === 'foe' ? 1.3 - r.phase * 0.3 : 1
-    ctx.beginPath(); ctx.ellipse(r.x, r.y, r.rx * grow, r.ry * grow, 0, 0, FULL_TURN)
+    ctx.beginPath()
+    if (r.w !== undefined && r.h !== undefined) {
+      const w = r.w * grow, h = r.h * grow
+      ctx.roundRect(r.x - w / 2, r.y - h / 2, w, h, Math.min(w, h) * 0.2)
+    } else ctx.ellipse(r.x, r.y, r.rx * grow, r.ry * grow, 0, 0, FULL_TURN)
     ctx.strokeStyle = GOLD
     if (r.kind === 'foe') { ctx.strokeStyle = '#ff6a3c'; ctx.globalAlpha = 1 - r.phase; ctx.lineWidth = Math.max(2, 3.6 / z) }
     else if (r.kind === 'dim') { ctx.strokeStyle = MINE; ctx.globalAlpha = 0.7; ctx.lineWidth = Math.max(1.5, 2.4 / z) }
     else if (r.kind === 'hover') { ctx.globalAlpha = 0.75; ctx.lineWidth = Math.max(1.5, 2.6 / z) }
     else if (r.kind === 'aura') { ctx.strokeStyle = '#9cc8ff'; ctx.globalAlpha = 0.28; ctx.lineWidth = Math.max(1, 2 / z) }
     else if (r.kind === 'glow') { ctx.fillStyle = GOLD; ctx.globalAlpha = 0.35; ctx.fill(); ctx.globalAlpha = 0.6; ctx.lineWidth = Math.max(1, 1.6 / z) }
+    else if (r.kind === 'sel' && r.w !== undefined) { ctx.globalAlpha = 0.7; ctx.lineWidth = Math.max(1.5, 1.5 / z) }
     else if (r.kind === 'sel') {
       ctx.globalAlpha = RING_FILL_ALPHA; ctx.fillStyle = GOLD; ctx.fill()
       ctx.globalAlpha = 0.9; ctx.lineWidth = Math.max(1.5, 2.6 / z)

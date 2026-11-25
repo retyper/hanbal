@@ -44,7 +44,8 @@ const CSS = `
 @keyframes fd-low{50%{opacity:.35}}
 #fd-edge>b{min-width:44px;font-size:14px}
 #fd-edge>b:first-child{text-align:right}
-#fd-edge .tug{width:min(40vw,380px);height:18px}
+#fd-edge{z-index:5}
+#fd-edge .tug{width:min(40vw,380px);height:18px;background:#1a1f2b}
 #fd-edge .tug i.a{left:0;right:auto;background:#2f8cff}
 #fd-edge .tug i.b{right:0;left:auto;background:#c43e30}
 #fd-edge .tug u{position:absolute;top:-2px;bottom:-2px;width:2px;background:#f3ecd8;opacity:.85;text-decoration:none}
