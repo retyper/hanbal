@@ -202,6 +202,51 @@ def staff(d, hand, deg, back=None, front=None):
         d.ellipse([c[0] - 3 * Z, c[1] - 3 * Z, c[0] + 3 * Z, c[1] + 3 * Z], fill=BRONZE, outline=LINE, width=3)
 
 
+WHIP_LEN = 84   # 채찍 길이(게임 화소 · 손잡이 끝에서 끝까지) — 서기 그림의 채찍과 같은 길이(11-25 · 사벌 말갈기 시제품)
+WHIPC = (150, 98, 60)
+
+
+def whip_curve(d, hand, segs):
+    """채찍: 갈색 짧은 손잡이 + 가는 한 줄 곡선(끝에 잿빛 점). segs = [(방향 도, 길이)] — 0도 = 앞(오른쪽) · 90도 = 위. 손에서 첫 방향으로 이어진다."""
+    x, y = hand
+    pts = [(x, y)]
+    for deg, ln in segs:
+        r = math.radians(deg)
+        x, y = x + math.cos(r) * ln * Z, y - math.sin(r) * ln * Z
+        pts.append((x, y))
+    for _ in range(3):   # 모서리를 둥글게(Chaikin)
+        q = [pts[0]]
+        for a, b in zip(pts, pts[1:]):
+            q += [(a[0] * .75 + b[0] * .25, a[1] * .75 + b[1] * .25), (a[0] * .25 + b[0] * .75, a[1] * .25 + b[1] * .75)]
+        q.append(pts[-1])
+        pts = q
+    r0 = math.radians(segs[0][0])
+    g0 = (hand[0] - math.cos(r0) * 7 * Z, hand[1] + math.sin(r0) * 7 * Z)   # 손잡이: 손 뒤로 7
+    d.line([g0, hand], fill=LINE, width=int(3.6 * Z) + 6)
+    d.line([g0, hand], fill=WOOD, width=int(3.6 * Z))
+    d.line(pts, fill=LINE, width=int(1.7 * Z) + 6, joint='curve')
+    d.line(pts, fill=WHIPC, width=int(1.7 * Z), joint='curve')
+    e = pts[-1]
+    d.ellipse([e[0] - 1.8 * Z, e[1] - 1.8 * Z, e[0] + 1.8 * Z, e[1] + 1.8 * Z], fill=(170, 170, 176), outline=LINE, width=2)
+
+
+def whip_coil(d, hand):
+    """감아 쥔 채찍: 손에서 내려오는 둥근 고리 둘 + 끝 술(걷기 · 서기 · 맞음)"""
+    for k, (rx, ry) in enumerate(((9, 12), (6.5, 9))):
+        c = (hand[0] - 7 * Z, hand[1] + 11 * Z)
+        box = [c[0] - rx * Z, c[1] - ry * Z, c[0] + rx * Z, c[1] + ry * Z]
+        d.ellipse(box, outline=LINE, width=int(2.6 * Z) + 6)
+        d.ellipse(box, outline=WHIPC, width=int(2.6 * Z))
+    t = (hand[0] - 11 * Z, hand[1] + 24 * Z)
+    d.line([(hand[0] - 9 * Z, hand[1] + 20 * Z), t], fill=LINE, width=int(1.7 * Z) + 6)
+    d.line([(hand[0] - 9 * Z, hand[1] + 20 * Z), t], fill=WHIPC, width=int(1.7 * Z))
+    d.ellipse([t[0] - 1.8 * Z, t[1] - 1.8 * Z, t[0] + 1.8 * Z, t[1] + 1.8 * Z], fill=(170, 170, 176), outline=LINE, width=2)
+    g = (hand[0] + 3 * Z, hand[1] - 2 * Z)
+    d.line([hand, g], fill=LINE, width=int(3.6 * Z) + 6)
+    d.line([hand, g], fill=WOOD, width=int(3.6 * Z))
+
+
+
 def fingers(d, hand, fore_a, fill=None):
     """펴진 손바닥: 아래팔 방향으로 손가락 넷이 부채꼴로"""
     for k in (-1.5, -.5, .5, 1.5):
@@ -279,6 +324,8 @@ def figure(phase, swing_near, pose=None):
     # 단검(BLADE 짧음)은 팔을 고정하지 않는다 — 11-24 형 「단검 애들은 걷기할 때 팔이 부자연스럽다」 · 참고: 던파 도적(로그) 걷기는 주먹을 허리 높이에 두고 두 팔을 적당히 흔든다
     elif PROP['kind'] == 'staff':   # 가까운 손에 방울 지팡이를 쥐고 걷는다 — 쥔 팔은 한 손 칼처럼 고정, 먼 팔만 흔든다(무녀 · 11-25)
         arm_n = (28, 50)   # 손은 몸 앞 허리 높이(서기 그림처럼 지팡이가 몸 앞 옆에 섬 · 얼굴·몸통을 가로지르지 않게)
+    elif PROP['kind'] == 'whip':   # 채찍을 감아 쥔 가까운 손은 허리 옆에 고정, 먼 팔만 걷는 다리와 반대로 흔든다 (11-25 채찍 인형)
+        arm_n = (12, 40)
     elif PROP['kind'] == 'holdn':   # 맨손 주술 · 가까운 손에 물건(부채·향로·방울 막대) — 쥔 팔은 몸 앞에 고정, 먼 팔만 흔든다 (11-25 밤)
         arm_n = (28, 50)
     elif PROP['kind'] == 'holdf':   # 먼 팔에 물건(볏단)을 끼고 걷는다 — 먼 팔 고정, 가까운 팔만 흔든다
@@ -328,6 +375,13 @@ def figure(phase, swing_near, pose=None):
     if PROP['kind'] == 'sword':
         blade(d, hand_n, (pose or {}).get('blade', -38))
         d.ellipse([hand_n[0] - HAND * Z, hand_n[1] - HAND * Z, hand_n[0] + HAND * Z, hand_n[1] + HAND * Z], fill=NEAR, outline=LINE, width=3)   # 칼자루를 쥔 손
+    if PROP['kind'] == 'whip':   # 가까운 손이 채찍 손잡이를 쥔다: 포즈에 whip(방향 도 · 길이 목록)이 있으면 곡선 · 없으면 감아 쥠
+        wp = (pose or {}).get('whip')
+        if wp and wp != 'coil':
+            whip_curve(d, hand_n, wp)
+        else:
+            whip_coil(d, hand_n)
+        d.ellipse([hand_n[0] - HAND * Z, hand_n[1] - HAND * Z, hand_n[0] + HAND * Z, hand_n[1] + HAND * Z], fill=NEAR, outline=LINE, width=3)
     if PROP['kind'] == 'staff':   # 가까운 손이 방울 지팡이를 쥐고 · 먼 손은 손바닥을 편다 (주술 시전 · 무녀)
         if pose is not None and pose.get('palm', True):
             fingers(d, hand_f, arm_f[1])
@@ -642,6 +696,37 @@ IK_ATTACKS['thrust3'] = [
 ]
 IK_PROP = {'slash': 'sword', 'stab': 'sword', 'cast': 'staff', 'cast_hand': 'none', 'cast_hand2': 'none', 'cast_handn': 'none'}   # 공격마다 쥔 물건(없으면 두 손 긴 자루)
 
+# 채찍 「뒤에서 크게 휘돌려 딱」 (11-25 · 사벌 말갈기 시제품 · 형 「뒷발이 미끄러지면 힘이 빠진다」): 뒷발(near_foot · 잿빛)은 여덟 칸 내내 같은 자리(_RW)에 박히고 앞발(far_foot · 파랑)이 내딛는다.
+#   가까운 손이 채찍 손잡이 · 먼 팔은 균형을 잡는다. 곡선 whip = [(방향 도 · 0 = 앞 · 90 = 위, 길이)] (길이 합 = WHIP_LEN 84)
+#   1 풀어 손을 뒤 아래로(무게는 뒷발) 2 팔을 머리 위 뒤로(채찍이 등 뒤로 길게 늘어짐) 3 [힘 모음] 팔이 뒤 끝 · 윗몸 살짝 젖힘 4 앞발을 내딛으며 팔이 머리 위를 넘어 앞으로(채찍이 머리 위에 큰 호)
+#   5 [타격] 팔을 앞으로 쭉 · 채찍이 앞으로 곧게 뻗어 끝이 딱 6 같은 자세 · 끝이 되감김 7 당겨 거둠 8 서기에 가까운 자세
+_RW = -26
+IK_ATTACKS['whip'] = [
+    dict(_ik((-12, -8), (-22, 56), (14, 78), bend=-2, lean=-2, near_foot=(_RW, 0), far_foot=(8, 0)), whip=[(205, 28), (225, 28), (250, 28)]),
+    dict(_ik((-14, -10), (-12, 118), (24, 96), bend=-4, lean=-2, near_foot=(_RW, 0), far_foot=(9, 0)), whip=[(150, 26), (190, 28), (235, 30)]),
+    dict(_ik((-18, -12), (-26, 124), (34, 98), bend=-10, lean=-3, near_foot=(_RW, 0), far_foot=(10, 0)), whip=[(105, 26), (150, 28), (225, 30)]),
+    dict(_ik((-2, -12), (24, 126), (-6, 88), bend=10, near_foot=(_RW, 2, -24), far_foot=(20, 5)), whip=[(140, 28), (100, 28), (55, 28)]),
+    dict(_ik((6, -14), (48, 98), (-14, 82), bend=24, near_foot=(_RW, 3, -30), far_foot=(30, 0)), whip=[(4, 28), (0, 28), (-5, 28)]),
+    dict(_ik((6, -13), (48, 94), (-14, 82), bend=22, near_foot=(_RW, 3, -30), far_foot=(30, 0)), whip=[(8, 28), (-6, 28), (-30, 28)]),
+    dict(_ik((-2, -12), (26, 84), (4, 74), bend=12, near_foot=(_RW, 0, -12), far_foot=(16, 0)), whip=[(40, 24), (75, 30), (150, 30)]),
+    dict(_ik((0, -1), (12, 40), (10, 64), lean=1), whip='coil'),
+]
+IK_PROP['whip'] = 'whip'
+# 개성 동작 「채찍 한 번 튕겨 보기」: 감아 쥔 채 -> 손을 올려 고리를 풀며 채찍 끝이 아래로 늘어짐 -> 손목으로 낮게 앞으로 튕김 -> 도로 감음
+IK_QUIRKS['flick'] = [
+    dict(_ik((0, 0), (14, 44), (12, 64), **_S), prop='whip', whip='coil'),
+    dict(_ik((0, 0), (22, 78), (12, 66), **_S), prop='whip', whip=[(60, 6), (275, 30), (260, 26), (250, 22)]),
+    dict(_ik((0, 0), (26, 70), (8, 62), **_S), prop='whip', whip=[(8, 28), (0, 28), (-12, 28)]),
+    dict(_ik((0, -1), (14, 44), (10, 64), lean=1), prop='whip', whip='coil'),
+]
+# 맞음 네 칸(채찍): 감아 쥔 채 웅크림 -> 크게 젖혀지며 채찍이 뒤로 날림 -> 한 무릎 앉음(채찍 손잡이를 짚음) -> 넓게 섬(채찍을 내려 쥠)
+IK_QUIRKS['hit_whip'] = [
+    dict(_ik((-3, -8), (8, 50), (14, 72), bend=20, near_foot=(-10, 0), far_foot=(10, 0)), prop='whip', whip='coil'),
+    dict(_ik((3, -6), (-14, 76), (14, 98), bend=-42, near_foot=(-24, 0), far_foot=(8, 0)), prop='whip', whip=[(160, 28), (190, 28), (215, 28)]),
+    dict(_ik((-4, -54), (16, 30), (22, 44), bend=12, near_foot=(-30, 0), far_foot=(18, 0)), prop='whip', whip=[(-80, 20), (-95, 20), (-120, 20)]),
+    dict(_ik((0, -12), (14, 52), (16, 74), bend=8, near_foot=(-24, 0), far_foot=(20, 0)), prop='whip', whip=[(-60, 28), (-80, 28), (-100, 28)]),
+]
+
 
 def ik_attack_sheets(kind):
     """넓은 칸 2×2 판 둘(앞 넷 · 뒤 넷) + 한 줄 미리 보기"""
@@ -712,7 +797,7 @@ def main():
         return
     if len(sys.argv) > 1 and sys.argv[1] == 'walk':   # py pose-rig.py walk <걸음 결> <가슴 S|M|L|XL> [bow = 먼 쪽 손에 활을 쥐고 걷는다]
         key, bust = sys.argv[2], sys.argv[3]
-        if len(sys.argv) > 4 and sys.argv[4] in ('bow', 'pole2', 'shoulder', 'sword', 'staff', 'holdn', 'holdf', 'none'):
+        if len(sys.argv) > 4 and sys.argv[4] in ('bow', 'pole2', 'shoulder', 'sword', 'staff', 'holdn', 'holdf', 'none', 'whip'):
             PROP['kind'] = sys.argv[4]
         STYLE.clear()
         STYLE.update(STYLES[key])

@@ -20,7 +20,7 @@ H = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(H)
 
 BUST = dict(soebi='L', gaennae='L', galmae='XL', beodeul='L', heo='L', deulme='L', tneoul='L', budeul='L', gabi='L', baetsa='XL', odi='XL', sinneoul='XL', dana='XL', sogeum='XL', saltw='XL')
-KIND = dict(thrust='pole2', chop='pole2', slam='pole2', slash='sword', stab='sword', bow='bow', claw='none')
+KIND = dict(thrust='pole2', chop='pole2', slam='pole2', slash='sword', stab='sword', bow='bow', claw='none', whip='whip')
 
 WEAPON = {
     'pole2': ('The brown stick with a grey square only MARKS where her weapon is: draw her real two-handed weapon exactly as in the top-left reference '
@@ -32,6 +32,10 @@ WEAPON = {
               'The far hand (blue arm) is empty. Never draw a plain grey bar.',
               'her blade pulled in close', 'her blade arm flung back', 'the point of her blade resting on the ground as a support',
               'her blade raised forward in guard'),
+    'whip': ('The brown ring with a small grey dot only MARKS her coiled whip: draw her real whip exactly as in the top-left reference (the same thin braided brown cord with a small tassel at the end, the same length), held by the short handle in the near hand (light grey arm), '
+             'coiled in two loops when it hangs by her side and trailing as one unbroken thin line when it is flung. The far hand (blue arm) is empty. Never draw a grey dot or a plain ring.',
+             'her coiled whip pulled in against her thigh', 'her whip arm flung back with the cord streaming behind', 'the whip handle planted on the ground with the cord lying beside her as a support',
+             'the whip held low by her side, uncoiled and ready'),
     'bow': ('The brown curve with a white string is her bow: draw her real bow exactly as in the top-left reference, held in the far hand (blue arm). No arrow is nocked. Keep her quiver as in the reference.',
             'her bow pulled in close', 'her bow lifted high', 'her bow held upright beside her as a support',
             'her bow held forward, ready'),

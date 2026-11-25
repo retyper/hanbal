@@ -334,3 +334,12 @@
 - 하네스 HEROES 에 hneoul·sdallae·mir·dangung 줄(hit=True) 넣음(작업 트리 · 아직 커밋 안 함) · 송비는 맞음이 오면 hit=True.
 - 번호: Z6 송비 맞음 · Z7~Z11 너울(걷기·활 쏘기·개성·쓰러짐·맞음) · Z12~Z16 달래 · Z17~Z21 미르 · Z22~Z26 단궁. 공유 파일 올리기는 `tools/out/z/stage_shared.py <열쇠> gen-<열쇠> [harness=<열쇠>]`.
 - GIF: `tools/out/lineup/gen-songbi-flow.gif`(칸을 펼친 판 `chk-gen-songbi-flowframes.png`) · **못 본 것**: 게임 화면 재생 · 송비 걷기 다리 교대(legalt.py 안 돌림 · 기존 걷기) · 활 쏘기 칸1·4 시위 반쪽.
+
+## 채찍·밧줄 인형(시제품 말갈기) — 11-25 낮 (Claude 일꾼)
+- 대상: 채찍·밧줄 여자 장수 넷(사벌 말갈기 `malgalgi` · 미추홀 비라 `bira` · 우가 누리 `base-w-43-uga-nuri` · 탐라 오름비 `base-w-45-tamna-oreumbi`). 이번엔 **말갈기 한 명만**(배우는 판 장수 · 모든 손님이 처음 보는 장수). 코디네이터·형이 보고 통과시키면 나머지 셋에 퍼뜨린다. **말갈기 띠는 아직 게임에 설치하지 않았다.**
+- **인형 `whip`**(`tools/sprite-kit/pose-rig.py`): 채찍 곡선 `whip_curve`(갈색 짧은 손잡이 + 가는 한 줄 · 끝에 잿빛 점 · 길이 84) · 감아 쥔 채찍 `whip_coil` · 걷기 `walk <결> <가슴> whip`(가까운 손은 허리 옆에 고정 · 먼 팔만 흔듦) · 공격 `IK_ATTACKS['whip']` 여덟 칸(a1 풀어 뒤 아래 · a2 팔 머리 위 뒤 · a3 힘 모음 · a4 앞발 내딛으며 머리 위 큰 호 · b1 타격 곧게 · b2 버팀 · b3 거둠 · b4 서기 가까이) · **뒷발 `_RW=-26` 여덟 칸 내내 박힘 · 앞발이 내딛음** · 개성 `IK_QUIRKS['flick']`(채찍 튕겨 보기) · 맞음 `IK_QUIRKS['hit_whip']`. `scene-pack.py <이름> whip <결> e2 <가슴>` · `hit-jobs.py`(KIND whip + WEAPON whip) · `anim-harness.py` HEROES `malgalgi`(atk='whip', backfoot=True, legacy=(a1,a3,b3,b4) 추정).
+- 기존 인형은 바이트로 같음: `tools/out/m/rigcmp.sh` 를 HEAD 의 pose-rig 와 지금 것으로 돌려 두 출력(197줄 · md5 174개) 완전히 같음(`tools/out/w/cmpA.txt` = `cmpB.txt`).
+- 인형 공격 칸 화소 범위(뿌리 기준 · 칸 240×208 · 뿌리 92): 타격 b1 채찍 끝 앞 +133(칸 앞 한도 148 → 기본 칸 240 으로 충분 · `actw=264` 불필요 — Codex 그림이 오면 다시 잰다) · a3 왼쪽 끝은 처음 칸 끝 3px(잘림 위험) → 채찍을 등 뒤 아래로 처지게 고쳐 11px.
+- 주문(NOW · 보고 `### L<n> 전달`): L1 서기(합격 · 얼굴 환한 미소 · 채찍 쥔 손 = 화면 왼쪽 손 = 가까운 손 · 고리 둘 + 끝 술 · 먼 손 빈손 · 자동 측정 윤곽 59~66 으로 기준 58 을 넘으나 다른 서기와 같은 정도) · L2 걷기 · L3 휘두름 a · L4 휘두름 b · L5 개성(flick) · L6 쓰러짐 · L7 맞음. 장면: `scene-malgalgi-*.png`.
+- 퍼뜨릴 때: 서기 한 일감 → `scene-pack.py <이름> whip <결> e2 <M|L>` → 같은 L 형식 여섯 주문 → `tools/out/x/bake_all.sh <이름> gen-<띠>`류로 굽고 → `anim-harness.py strip <이름>`(설치 전 판정) → 형이 GIF 를 본 뒤 `strip install` · `wire-hero.py <열쇠> quirk=.3,.32,.4,.28 atk8 hit=4 times=.09,.08,.11,.05,.15,.07,.08,.12 act` · `hit-install.py`. 밧줄 올가미(비라 · 누리 · 오름비)는 채찍과 달리 올가미 고리가 있으니 whip 인형의 곡선 끝에 고리를 더해야 한다(아직 안 함).
+- **못 본 것**: Codex 동작 그림 전부(L2~L7 받는 중) · 게임 화면 · 걷기 다리 교대 · 뒷발 화소 측정 · 채찍 6배 · 얼굴 8배(서기만 봄).
