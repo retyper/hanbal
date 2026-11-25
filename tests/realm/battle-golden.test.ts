@@ -4,7 +4,7 @@
 // 큰 판(정책당 N판)은 tools/realm-golden.ts --n 10000. 앞 GOLDEN_N 판의 값은 이 시험과 같다.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { GOLDEN_N, POLICIES, goldenA, goldenB, RUNS } from './battle-golden-kit.ts'
+import { GOLDEN_N, POLICIES, goldenA, goldenB, RUNS, RUNS_MONTH } from './battle-golden-kit.ts'
 
 const GOLDEN: Record<string, string> = {
   'A auto': '459e7134 oc[draw:31,lose:56,rout:109,routed:38,win:66] ew[captured:69,draw:31,morale:69,retreat:3,share:116,withdraw:12]',
@@ -13,6 +13,9 @@ const GOLDEN: Record<string, string> = {
   'B tutorial 1': '65e2085d fd418ee7 ours:2',
   'B mahan 2': 'a5f4e171 35e797af ours:19',
   'B jumong 1': '6260ae01 20f339eb ours:7',
+  'C tutorial 1': 'a430c4a3 24b723e1 ours:2',
+  'C mahan 2': '7d8e7fc acf62e39 ours:3',
+  'C jumong 1': 'c4b3ad87 e1e55f2 ours:4',
 }
 
 for (const p of POLICIES) {
@@ -29,5 +32,14 @@ for (const [reg, nat, seed] of RUNS) {
     if (process.env['BAKE']) console.log(`  'B ${reg} ${seed}': '${hash}',`)
     assert.ok(ours > 0 || process.env['BAKE'], 'command 길을 지난 우리 싸움이 있어야 한다')
     assert.equal(hash, GOLDEN[`B ${reg} ${seed}`])
+  })
+}
+// C: 지금 새 판이 쓰는 달 시계(monthClock 1 · 한 턴 한 달)에서도 command 길을 지나는 16턴
+for (const [reg, nat, seed] of RUNS_MONTH) {
+  test(`골든 C 달 시계 command 길 16턴 ${reg} ${seed}`, () => {
+    const { hash, ours } = goldenB(reg, nat, seed, 16, 1)
+    if (process.env['BAKE']) console.log(`  'C ${reg} ${seed}': '${hash}',`)
+    assert.ok(ours > 0 || process.env['BAKE'], '달 시계에서도 command 길을 지난 우리 싸움이 있어야 한다')
+    assert.equal(hash, GOLDEN[`C ${reg} ${seed}`])
   })
 }

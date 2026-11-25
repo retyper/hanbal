@@ -3489,6 +3489,33 @@ export const SPEC = {
   },
 
   /**
+   * 전장(field) — 본편 전투 실시간화의 새 엔진 (docs/realm/battle-study/30-integrated.md §6 · src/field/)
+   * 길이는 정수 격자(1칸 = unit 단위)이고 시간은 고정 걸음(틱)이다. 값은 전부 **시작값**이다.
+   * 걷는 빠르기·크기는 F1b 의 벤치(tools/field-bench.ts)와 F7 의 봇 표로 조인다.
+   */
+  field: {
+    hz: k(10, 5, 30, 5, '전장 걸음 수 (1초에 몇 틱)', 'Hz'),
+    unit: k(256, 16, 1024, 16, '1칸의 정수 단위 수 (좌표는 이 단위의 정수)'),
+    timeTicks: k(300, 100, 600, 50, '한 때의 길이 (틱 · 10Hz 에서 30초)'),
+    timesMax: k(5, 3, 8, 1, '한 판의 때 수 (이걸 다 쓰면 시간 끝)'),
+    squadsPerGroupMax: k(4, 1, 6, 1, '무리(앞줄·활·기병)마다 대의 수 — 이 위로는 안 나눈다'),
+    squadMenRef: k(400, 100, 1200, 50, '대 하나의 기준 사람 수 (무리 사람 수 ÷ 이것 올림, 대 수 상한 안에서)', '명'),
+    bodiesMax: k(38, 12, 80, 1, '한 판의 몸 수 상한 (대 + 장수 + 마디) — 넘는 시작은 무효'),
+    retargetEvery: k(4, 1, 20, 1, '목표를 다시 고르는 틱 간격'),
+    inputPerGroupPerTime: k(3, 1, 10, 1, '한 때에 무리마다 받는 입력 수 (넘으면 버린다)'),
+    speedFrontCellsPerSec: k(3, 1, 12, 1, '앞줄 걸음 (1초에 칸)', '칸/초'),
+    speedBowsCellsPerSec: k(3, 1, 12, 1, '활 걸음 (1초에 칸)', '칸/초'),
+    speedHorseCellsPerSec: k(6, 1, 20, 1, '기병 걸음 (1초에 칸)', '칸/초'),
+    startMarginCells: k(10, 2, 40, 1, '시작할 때 판 끝에서 앞줄까지 거리', '칸'),
+    rowGapCells: k(4, 1, 12, 1, '앞줄 뒤로 활·기병이 서는 간격', '칸'),
+    spawnJitterCells: k(2, 0, 8, 1, '시작 자리를 씨앗으로 옆으로 흩는 폭 (± 칸)', '칸'),
+    contactGapCells: k(1, 1, 6, 1, '이만큼 가까우면 걸음을 멈춘다 (전투 규칙 전의 임시 접촉)', '칸'),
+    mapLenCells: k(160, 60, 400, 10, '시험 판의 길이 (우리 쪽에서 적 쪽까지)', '칸'),
+    mapWidthCells: k(40, 20, 120, 5, '시험 판의 폭', '칸'),
+    heroHp: k(1000, 100, 5000, 100, '장수 체력 시작값 (F4a 가 쓴다)'),
+  },
+
+  /**
    * 나라(realm) — 칠십팔국의 계절 판정 (docs/realm/SYSTEMS.md §3 · §4 · §14)
    *
    * 숫자는 전부 **초안**이다. 확정은 tools/realm-sim.ts 의 봇 대전으로 한다 (BUILD §3).

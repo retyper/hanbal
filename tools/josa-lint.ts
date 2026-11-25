@@ -11,7 +11,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-const DIRS = ['src/ui/realm', 'src/realm']
+const DIRS = ['src/ui/realm', 'src/realm', 'src/field']
 // '로' 와 '을(를)' 같은 둘 다 적기도 잡는다 (2026-10-20 끝 화면의 "골포국로 다시" · "마을을(를) 쥐었다")
 const PARTICLES = ['이', '가', '을', '를', '은', '는', '과', '와', '으로', '로', '이다', '이었다', '이고', '이며', '을\\(를\\)', '를\\(을\\)', '이\\(가\\)', '은\\(는\\)', '과\\(와\\)', '와\\(과\\)', '\\(으\\)로']
 const RE = new RegExp('\\$\\{([^{}]{1,120})\\}(' + PARTICLES.join('|') + ')(?=[\\s.,!?·)<`\'"—:;]|$)', 'g')

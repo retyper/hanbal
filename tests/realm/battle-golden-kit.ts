@@ -82,12 +82,14 @@ const fixedTactic = (i: number): Tactic => ({
   open: false,
   dusk: ['camp', 'press', 'camp', 'camp'],
 })
+/** 새 판이 실제로 쓰는 길(monthClock 1 · 한 턴 한 달) — 지역 셋 */
+export const RUNS_MONTH: Array<[RegionId, string, number]> = [['tutorial', 'baekje', 1], ['mahan', 'baekje', 2], ['jumong', 'goguryeo', 1]]
 export const RUNS: Array<[RegionId, string, number]> = [['tutorial', 'baekje', 1], ['mahan', 'baekje', 2], ['jumong', 'goguryeo', 1]]
 
 /** 16턴 — 우리 싸움마다 고정 명령을 command 길(tactics)로 준다. 턴마다 report 해시 · 마지막 realm 해시 · 우리 싸움 수 */
-export function goldenB(reg: RegionId, nat: string, seed: number, turns = 16): { hash: string; ours: number } {
+export function goldenB(reg: RegionId, nat: string, seed: number, turns = 16, monthClock: 0 | 1 = 0): { hash: string; ours: number } {
   const save = (P.realm as unknown as Record<string, number>)['monthClock']!
-  ;(P.realm as unknown as Record<string, number>)['monthClock'] = 0
+  ;(P.realm as unknown as Record<string, number>)['monthClock'] = monthClock
   try {
     let r: Realm = startRegion(reg, seed, nat)
     let acc = ''
