@@ -5,9 +5,10 @@
  */
 import { P } from '../tune/params.ts'
 import type { FieldState } from './types.ts'
+import { sideMorale } from './sim.ts'
 
 /** aim = 지금 싸우는 상대(대 id · 없으면 -1 · 손으로 몰았든 알아서든 같은 뜻) · foe = 「적을 쳐라」로 받은 적 · form = 앞줄 모양 FORM_* · cmd = 활·기병 명령 · lock = 맞물린 적 대 */
-export interface VSquad { id: number; side: 0 | 1; grp: string; kind: string; men: number; fresh: number; u: number; v: number; target: number; goal: { u: number; v: number } | null; stance: number; manual: number; aim: number; foe: number; form: number; cmd: number; lock: number; morale: number; morale0: number; order: number; orderTick: number; orderAt: { u: number; v: number } | null; ran: number; bonus: number; hitTick: number; flee: number; bw: number; bd: number; face: number; pushed: number; regrouped: number }
+export interface VSquad { id: number; side: 0 | 1; grp: string; kind: string; men: number; fresh: number; u: number; v: number; target: number; goal: { u: number; v: number } | null; stance: number; manual: number; aim: number; foe: number; form: number; cmd: number; lock: number; morale: number; morale0: number; order: number; orderTick: number; orderAt: { u: number; v: number } | null; ran: number; bonus: number; hitTick: number; flee: number; bw: number; bd: number; face: number; pushed: number; regrouped: number; menMax: number }
 /** dir 걷는 방향 · face 보는 쪽 · dash 내닫는 남은 틱 · dashCd/artCd 쿨타임 남은 틱 · artOn 비기 이어지는 틱 · why/whyTick 마지막으로 못 쓴 까닭 · atk 이번 틱에 친 것 · art 비기 이름 · mu/tong 능력치 */
 export interface VHero { side: 0 | 1; id: string; u: number; v: number; stun: number; goal: { u: number; v: number } | null; dir: number; face: number; dash: number; dashDir: number; dashCd: number; art: string; artCd: number; artOn: number; why: number; whyTick: number; atk: number; mu: number; tong: number; grit: number; gritN: number }
 /** 바닥에 놓인 조각 (목책 마디·문) — 칸 단위 · hp 0 이하면 부서진 것 */
@@ -38,6 +39,8 @@ export interface VModel {
   mapUUnits: number; mapVUnits: number
   /** 편마다(0 우리 · 1 적) 지기까지 남은 몫 0~1000 — 사기와 사람 수 가운데 문턱에 더 가까운 쪽 (끝 판정과 같은 식 · 그리는 쪽 전용) */
   edge: [number, number]
+  /** 편마다 편 사기 — 처음 사기에 견준 천분율 (sim 의 sideMorale 그대로 · 끝 판정과 같은 셈 · 이것이 P.realm.tacBreakMorale 아래로 가면 그 편이 무너진다) */
+  morale: [number, number]
   /** 방금 돈 틱에 누가 누구를 깎았나 (loss 사건 · how 0 칼 1 화살 2 장수 3 비기 4 부딪힘) · 기병이 도는 길 · 무리가 마지막으로 못 받은 명령의 까닭과 틱 */
   loss: VLoss[]
   events: VEvent[]
@@ -102,13 +105,14 @@ export function readField(s: FieldState): VModel {
   return {
     used,
     edge: [edgeOf(s, 0), edgeOf(s, 1)],
+    morale: [sideMorale(s, 0), sideMorale(s, 1)],
     face: s.map.camps[0].face,
     mapUUnits: s.map.u * unit, mapVUnits: s.map.w * unit,
     tick: s.tick,
     mapU: s.map.u, mapW: s.map.w,
     cells: s.map.cells,
     rule: s.map.rule,
-    squads: s.squads.map(q => ({ id: q.id, side: q.side, grp: q.grp, kind: q.kind, men: q.men, fresh: q.fresh, u: q.u, v: q.v, target: q.target, goal: q.goal === null ? null : { u: q.goal.u, v: q.goal.v }, stance: q.stance, manual: q.manual, aim: q.aim, foe: q.foe, form: q.form, cmd: q.cmd, lock: q.lock, morale: q.morale, morale0: q.morale0, order: q.order, orderTick: q.orderTick, orderAt: q.orderAt === null ? null : { u: q.orderAt.u, v: q.orderAt.v }, ran: q.ran, bonus: q.bonus, hitTick: q.hitTick, flee: q.flee, bw: q.bw, bd: q.bd, face: q.face, pushed: q.pushed, regrouped: q.regrouped })),
+    squads: s.squads.map(q => ({ id: q.id, side: q.side, grp: q.grp, kind: q.kind, men: q.men, fresh: q.fresh, u: q.u, v: q.v, target: q.target, goal: q.goal === null ? null : { u: q.goal.u, v: q.goal.v }, stance: q.stance, manual: q.manual, aim: q.aim, foe: q.foe, form: q.form, cmd: q.cmd, lock: q.lock, morale: q.morale, morale0: q.morale0, order: q.order, orderTick: q.orderTick, orderAt: q.orderAt === null ? null : { u: q.orderAt.u, v: q.orderAt.v }, ran: q.ran, bonus: q.bonus, hitTick: q.hitTick, flee: q.flee, bw: q.bw, bd: q.bd, face: q.face, pushed: q.pushed, regrouped: q.regrouped, menMax: q.menMax })),
     heroes: s.heroes.map(e => ({ side: e.side, id: e.id, u: e.u, v: e.v, stun: e.stun, goal: e.goal === null ? null : { u: e.goal.u, v: e.goal.v }, dir: e.dir, face: e.face, dash: e.dash, dashDir: e.dashDir, dashCd: e.dashCd, art: e.art, artCd: e.artCd, artOn: e.artOn, why: e.why, whyTick: e.whyTick, atk: e.atk, mu: e.mu, tong: e.tong, grit: e.grit, gritN: e.gritN })),
     loss: tickLoss(s),
     events: tickEvents(s),

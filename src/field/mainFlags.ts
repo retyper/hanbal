@@ -54,7 +54,7 @@ const CSS = `
 .fd-kb{position:absolute;left:4px;top:2px;font-size:11px;line-height:1;color:#f3ecd8aa;font-style:normal}
 @media (pointer:coarse){.fd-kb{display:none}}
 #fd-big{position:absolute;left:calc(8px + env(safe-area-inset-left));bottom:calc(var(--fd-bar,64px) + 12px + env(safe-area-inset-bottom));display:flex;gap:6px;background:#000d;border:1px solid ${GOLD}88;border-radius:10px;padding:6px;z-index:3}
-#fd-big[hidden]{display:none}
+#fd-big[hidden],.touch #fd-big[hidden]{display:none}
 #fd-lines{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--fd-bar,64px) + 12px + env(safe-area-inset-bottom));display:flex;gap:8px;z-index:4}
 #fd-lines[hidden]{display:none}
 .touch #fd-lines{bottom:calc(14px + env(safe-area-inset-bottom))}

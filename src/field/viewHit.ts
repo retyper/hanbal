@@ -91,7 +91,7 @@ export function ingestHits(cur: VModel, hits: readonly VLoss[], clk: number, rea
     } else if (e.kind === 'stand') {
       noteStand(cur, e.side, e.u, e.v, e.r, clk)
     } else if (e.kind === 'regroup') {
-      noteRegroup(cur, e.id, e.n, clk)
+      noteRegroup(cur, e.id, clk)
     } else if (e.kind === 'heroDown') {
       noteHeroDown(cur, prev, e.side, e.u, e.v, clk, real)
     } else if (e.kind === 'artHit' && e.to >= 0) {
@@ -122,11 +122,22 @@ export function ingestHits(cur: VModel, hits: readonly VLoss[], clk: number, rea
 
 const flagPos = (q: VSquad): { x: number; y: number } => ({ x: q.u / P.field.unit * P.field.cellPx, y: q.v / P.field.unit * P.field.cellPx })
 
-/** 상성이 맞은 무리: 깃 꺾임 · 점 흩어짐 · 사기 숫자 */
+/**
+ * 맞은 대가 밀린다: 달아나는 대와 기병 들이침에 옆을 맞은 대만 점이 흩어지고 몇이 돌아선다 ·
+ * 앞줄끼리 맞닿은 대(flee 0)는 대 모양째 kickFrontCells 밀린다 (맞닿은 방패 벽이 낱낱이 퍼져 달아나는 것처럼 읽히던 것 · 화면 2차)
+ * — 이미 더 큰 밀림이 걸려 있으면 그대로 둔다
+ */
+function shove(q: VSquad, dir: number, clk: number, scatter = false): void {
+  if (q.flee === 1 || scatter) { scats.set(q.id, { at: clk, dir }); if (q.flee === 1) return }
+  const k = kicks.get(q.id)
+  if (k !== undefined && clk - k.at < P.field.kickMs && k.cells >= P.field.kickFrontCells) return
+  kicks.set(q.id, { at: clk, dir, cells: P.field.kickFrontCells })
+}
+/** 상성이 맞은 무리: 깃 꺾임 · 밀림(달아나는 대만 흩어짐) · 사기 숫자 */
 function good(cur: VModel, a: VSquad | undefined, v: VSquad, clk: number): void {
   const dir = a !== undefined ? (v.u >= a.u ? 1 : -1) : (v.side === 0 ? -cur.face : cur.face)
   addTilt(v.id, P.field.flagTiltDeg * DEG, dir, clk)
-  scats.set(v.id, { at: clk, dir })
+  shove(v, dir, clk, a !== undefined && a.grp === 'horse')
   pend(v.id, v, clk, true)
 }
 
@@ -321,14 +332,14 @@ export function noteStand(cur: VModel, side: 0 | 1, u: number, v: number, r: num
   const rr = (r > 0 ? r : F.heroAuraCells * F.unit) ** 2
   for (const q of cur.squads) { if (q.side !== side || q.men <= 0) continue; const du = q.u - u, dv = q.v - v; if (du * du + dv * dv <= rr) { raised.set(q.id, clk); lifts.set(q.id, clk) } }
 }
-/** 다시 섬(regroup): 달아나던 대가 몸을 돌려 선다 — 그 대의 깃이 땅에서 일어서고 · 한 번 들썩 · 무기를 치켜들고 · 「+N」 */
-export function noteRegroup(cur: VModel, id: number, n: number, clk: number): void {
-  const F = P.field, q = cur.squads[id]
+/**
+ * 다시 섬(regroup): 달아나던 대가 몸을 돌려 선다 — 한 번 들썩 · 무기를 치켜들고 · 그 무리 깃이 금빛 테를 두르고 한 번 일어선다.
+ * 「+N」 은 화면 쪽(mainHud fly)이 그 대 몸 위에서 막대로 날려 보낸다 (판 위에 숫자·고리를 또 두지 않는다)
+ */
+export function noteRegroup(cur: VModel, id: number, clk: number): void {
+  const q = cur.squads[id]
   if (q === undefined || q.men <= 0) return
   rises.set(id, clk); raised.set(id, clk); lifts.set(id, clk)
-  pushShout({ x: px(q.u), y: px(q.v), at: clk, side: q.side, rings: 1, scale: 1, r: F.regroupRingCells * F.cellPx, gold: false, inward: false })
-  const up = q.morale0 > 0 ? Math.round(n * 100 / q.morale0) : 0
-  if (up >= 1) { pops.push({ at: clk, n: up, gold: false, plus: true, ...flagPos(q) }); if (pops.length > F.moralePopMax) pops.shift() }
 }
 /**
  * 장수가 쓰러짐(heroDown): 그 편 대마다 깃이 크게 꺾이고 점이 흩어진다 · 무리마다 가장 큰 대 위에 깎인 사기 숫자(금빛) ·
@@ -341,7 +352,7 @@ export function noteHeroDown(cur: VModel, prev: VModel | null, side: 0 | 1, u: n
     if (q.side !== side || q.men <= 0) continue
     const dir = q.u >= u ? 1 : -1
     addTilt(q.id, F.flagTiltDeg * DEG * F.slainTiltMul, dir, clk)
-    scats.set(q.id, { at: clk, dir })
+    shove(q, dir, clk)
     const b = best.get(q.grp)
     if (b === undefined || q.men > b.men) best.set(q.grp, q)
   }
@@ -453,6 +464,22 @@ export function drawStands(ctx: CanvasRenderingContext2D, m: VModel, hx: readonl
     ctx.strokeStyle = GOLD; ctx.lineWidth = Math.max(2.6, 3.2 / zoom); ctx.stroke()
   }
   ctx.globalAlpha = 1
+}
+
+/**
+ * 다시 서는 자리: 우리 대가 달아나는 동안(다시 선 적 없는 대 · 편이 안 무너졌을 때) 우리 장수 둘레 regroupCells 에 끊긴 고리 —
+ * 그 안으로 들어온 달아나는 대가 다시 선다. 장수 고리에만 보인다.
+ */
+export function drawRegroupZone(ctx: CanvasRenderingContext2D, m: VModel, hx: number, hy: number, clk: number, zoom: number, color: string): void {
+  const F = P.field
+  const h = m.heroes.find(e => e.side === 0)
+  if (h === undefined || h.stun > 0 || m.breakTick[0] >= 0 || m.end !== null) return
+  if (!m.squads.some(q => q.side === 0 && q.men > 0 && q.flee === 1 && q.regrouped === 0)) return
+  const R = F.regroupCells * F.cellPx
+  ctx.beginPath(); ctx.ellipse(hx, hy, R, R * 0.6, 0, 0, Math.PI * 2)
+  ctx.setLineDash([F.cellPx * 0.7, F.cellPx * 0.5]); ctx.lineDashOffset = clk / 40
+  ctx.globalAlpha = 0.5 + 0.3 * Math.sin(clk / 200); ctx.strokeStyle = color; ctx.lineWidth = Math.max(2, 2.6 / zoom); ctx.stroke()
+  ctx.setLineDash([]); ctx.globalAlpha = 1
 }
 
 export function drawShouts(ctx: CanvasRenderingContext2D, clk: number, zoom: number, teamColor: readonly string[]): void {

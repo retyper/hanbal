@@ -1,16 +1,18 @@
 /**
- * 위쪽 띠(단추 · 사기 띠 · 사람 수)와 끝 상자 — DOM (docs/realm/battle-study/42-feel-lens-f3.md 의 1 · 2 · 9 · 18)
- * 사기 띠는 글 없는 두 색 띠: 파랑은 왼쪽 · 붉은색은 오른쪽, 가득 찬 쪽이 멀쩡한 것이고 문턱(끝)에 가까울수록 줄어든다.
- * 남은 몫이 lowShare 아래면 깜박인다. 판 상태는 VModel 로만 읽는다.
- * 시간이 지나 바뀌는 것(다시 누름 대기)은 타이머를 예약하지 않고 frame(now) 이 챙긴다.
+ * 위쪽 띠(단추 · 사기 막대 둘)와 끝 상자 — DOM (docs/realm/battle-study/42-feel-lens-f3.md 의 1 · 2 · 9 · 18 · 화면 2차)
+ * 사기 막대는 편마다 하나: 우리(파랑)는 왼쪽 끝에서 · 적(붉음)은 오른쪽 끝에서 각자 줄어든다.
+ * 막대 길이 = (편 사기 − 무너짐 문턱) ÷ (1 − 문턱) — 막대가 다 비면 그 편이 무너진다(진다). 막대 바깥 끝에 편 사기 %를 작게 적는다.
+ * 문턱 위 standAbovePermille 안으로 들어오면 우리 막대는 붉게 뛰고 · 적 막대는 희게 번쩍이며 떤다(북은 소리 쪽).
+ * 깎인 몫은 밝은 잔상으로 hudGhostMs 남았다가 줄고 · 한 번에 chunkPermille 넘게 깎이면 그 몫이 덩어리째 떨어진다.
+ * 판 상태는 VModel 로만 읽는다. 시간이 지나 바뀌는 것(잔상 · 다시 누름 대기)은 타이머를 예약하지 않고 frame(now) 이 챙긴다.
  */
 import { t, type Key } from '../i18n/index.ts'
 import { P } from '../tune/params.ts'
 import type { VModel } from './viewRead.ts'
 
 export interface HudHandlers { onZoom(): void; onPause(): void; onAgain(): void; onHelp(): void }
-/** 이번에 판이 보인 큰 부딪힘 — gold 상성이 맞음(막대 테두리가 금빛으로 번쩍) · blocked 막힘 */
-export interface HudFx { gold: boolean; blocked: boolean; breakSide: number; rise?: readonly [number, number] }
+/** 이번에 판이 보인 큰 부딪힘 — gold 상성이 맞음(막대 테두리가 금빛으로 번쩍) · blocked 막힘 · breakSide 무너진 편(-1 없음) */
+export interface HudFx { gold: boolean; blocked: boolean; breakSide: number }
 /** 사기를 깎는 까닭 여섯 (stats.moraleBy 의 열쇠) 과 그 그림 */
 const CAUSES = ['arrows', 'melee', 'flank', 'hero', 'domino', 'push'] as const
 type Cause = typeof CAUSES[number]
@@ -21,15 +23,23 @@ export function topCause(by: Readonly<Record<Cause, number>>): Cause | null {
   for (const c of CAUSES) if (by[c] > bv) { bv = by[c]; best = c }
   return best
 }
-/** 끝 상자의 숫자: 쓰러뜨린 적 · 잃은 우리 병사 */
-export interface EndStats { killed: number; lost: number; flank: number; art: number; stand?: boolean; regroup?: number; grit?: number }
-export interface EndWhy { by: Readonly<Record<Cause, number>>; won: boolean }
+/** 편 사기(천분율) → 막대 길이(천분율) — 무너짐 문턱이 0 · 처음 사기가 1000 */
+export function barOf(morale: number): number {
+  const thr = P.realm.tacBreakMorale
+  return Math.round(Math.max(0, Math.min(1, (morale / 1000 - thr) / (1 - thr))) * 1000)
+}
+/** 끝 상자의 숫자: 쓰러뜨린 적 · 잃은 우리 병사 · 먹힌 옆치기 · 비기로 깎은 사기 · 버팀 · 다시 선 대 · 투지 발동 (모두 지난 일) */
+export interface EndStats { killed: number; lost: number; flank: number; art: number; stand?: number; regroup?: number; grit?: number }
+/** by = 까닭별 몫 · won = 이겼나 · morale = 판이 갈린 순간(먼저 무너진 틱)의 편 사기 둘(천분율) */
+export interface EndWhy { by: Readonly<Record<Cause, number>>; won: boolean; morale: readonly [number, number] }
 export interface Hud {
   setZoom(level: number): void
   setPaused(paused: boolean): void
   hide(hidden: boolean): void
-  /** 위 띠를 지금 판으로 고친다 · ready 면 사기 띠는 가득 */
+  /** 위 띠를 지금 판으로 고친다 */
   sync(m: VModel, fx?: HudFx): void
+  /** 다시 선 대의 「+N」: 화면 자리(x, y)에서 떠올랐다가 그 편 막대로 날아가 붙는다 */
+  fly(x: number, y: number, n: number, side: 0 | 1): void
   /** 끝 상자 (null 이면 닫는다) */
   showEnd(m: VModel | null, stats?: EndStats, why?: EndWhy): void
   frame(nowMs: number): void
@@ -44,50 +54,49 @@ const CSS = `
 #fd-hud button:active,#fd-end button:active{transform:scale(.94)}
 #fd-hud button.on{border-color:#ffd27a;color:#ffd27a}
 #fd-hud button.arm{border-color:#ffd27a;color:#1a1305;background:#ffd27a}
-#fd-edge{position:absolute;left:50%;top:calc(6px + env(safe-area-inset-top));transform:translateX(-50%);display:flex;align-items:center;gap:8px;pointer-events:none;font-size:14px;font-weight:700;text-shadow:0 1px 3px #000}
+#fd-edge{position:absolute;left:50%;top:calc(8px + env(safe-area-inset-top));transform:translateX(-50%);display:flex;align-items:center;gap:6px;pointer-events:none;font-size:13px;font-weight:700;text-shadow:0 1px 3px #000;z-index:5}
 #fd-edge[hidden]{display:none}
-#fd-edge .bar{position:relative;width:min(20vw,190px);height:20px;background:#0009;border:1px solid #fff4;border-radius:10px;overflow:hidden}
-#fd-edge .bar b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;z-index:1}
-#fd-edge .bar i{position:absolute;top:0;bottom:0;display:block}
-#fd-edge .bar i.a{right:0;background:#2f8cff}
-#fd-edge .bar i.b{left:0;background:#c43e30}
-#fd-edge .bar.low{animation:fd-low .5s steps(1) infinite}
-@keyframes fd-low{50%{opacity:.35}}
-#fd-edge>b{min-width:44px;font-size:14px}
-#fd-edge>b:first-child{text-align:right}
-#fd-edge{z-index:5}
-#fd-edge .tug{width:min(40vw,380px);height:18px;background:#1a1f2b}
-#fd-edge .tug i.a{left:0;right:auto;background:#2f8cff}
-#fd-edge .tug i.b{right:0;left:auto;background:#c43e30}
-#fd-edge .tug u{position:absolute;top:-2px;bottom:-2px;width:2px;background:#f3ecd8;opacity:.85;text-decoration:none}
+#fd-edge>b{min-width:34px;font-size:13px;color:#f3ecd8}
+#fd-edge>b.fd-p0{text-align:right}
+#fd-edge .fd-vs{width:10px}
+#fd-edge .fd-side{position:relative;width:min(19vw,180px);height:16px;background:#1a1f2b;border:1px solid #fff4;border-radius:8px;overflow:hidden}
+#fd-edge .fd-side i{position:absolute;top:0;bottom:0;display:block}
+#fd-edge .fd-s0 i{left:0}
+#fd-edge .fd-s1 i{right:0}
+#fd-edge .fd-side i.gh{background:#fff;opacity:.75;transition:width .35s ease-in}
+#fd-edge .fd-s0 i.fill{background:#2f8cff}
+#fd-edge .fd-s1 i.fill{background:#c43e30}
+#fd-edge .fd-side.danger{animation:fd-danger .6s ease-in-out infinite;border-color:#ff5a4a}
+@keyframes fd-danger{50%{box-shadow:0 0 0 3px #ff3b2b,0 0 10px #ff3b2b}}
+#fd-edge .fd-side.near{animation:fd-near .42s linear}
+@keyframes fd-near{0%{background:#fff}20%{transform:translateX(-2px)}40%{transform:translateX(2px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}}
+#fd-edge .fd-side.sh{animation:fd-sh .15s linear}
+@keyframes fd-sh{25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
+#fd-edge .fd-side.sh2{animation:fd-sh2 .32s linear}
+@keyframes fd-sh2{20%{transform:translateX(-6px)}40%{transform:translateX(5px)}60%{transform:translateX(-4px)}80%{transform:translateX(2px)}}
+#fd-edge .fd-side.gold{box-shadow:0 0 0 2px #ffd27a}
+#fd-edge .fd-side.up{box-shadow:0 0 0 2px #a8dcff}
 #fd-edge .chip{position:absolute;top:8px;width:9px;height:9px;pointer-events:none;animation:fd-fall .3s ease-in forwards}
 #fd-edge .chip.a{background:#2f8cff}
 #fd-edge .chip.b{background:#c43e30}
 #fd-edge .chip.big{width:14px;height:14px}
 #fd-edge .chip.pic{width:auto;height:auto;background:none}
 #fd-edge .chip.pic img{width:18px;height:18px;object-fit:contain;display:block}
-#fd-end .cb{display:flex;height:22px;max-width:300px;margin:0 auto 8px;border-radius:6px;overflow:hidden;gap:2px}
-#fd-end .cb span{display:flex;align-items:center;justify-content:center;background:#fff2;min-width:22px}
-#fd-end .cb img{width:18px;height:18px;object-fit:contain}
 @keyframes fd-fall{to{transform:translateY(26px) rotate(40deg);opacity:0}}
-#fd-edge .chunk{position:absolute;height:18px;pointer-events:none;border-radius:2px;transform-origin:50% 0;animation:fd-chunk .8s cubic-bezier(.5,0,1,1) forwards}
+#fd-edge .chunk{position:absolute;height:16px;pointer-events:none;border-radius:2px;transform-origin:50% 0;animation:fd-chunk .8s cubic-bezier(.5,0,1,1) forwards}
 #fd-edge .chunk.a{background:#2f8cff}
 #fd-edge .chunk.b{background:#c43e30}
 @keyframes fd-chunk{to{transform:translateY(52px) rotate(var(--r,16deg));opacity:0}}
-#fd-edge .chip.up{animation:fd-rise .45s ease-out forwards}
-@keyframes fd-rise{from{transform:translateY(34px) scale(1.7);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
-#fd-edge .bar.sh2{animation:fd-sh2 .32s linear}
-@keyframes fd-sh2{20%{transform:translateX(-6px)}40%{transform:translateX(5px)}60%{transform:translateX(-4px)}80%{transform:translateX(2px)}}
-#fd-edge .bar.sh{animation:fd-sh .15s linear}
-@keyframes fd-sh{25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
-#fd-edge .bar.gold{box-shadow:0 0 0 2px #ffd27a}
-#fd-end .st .up{color:#ffd27a}
-#fd-end .st{display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:center;margin:0 0 8px;font-size:15px;font-weight:700}
+.fd-fly{position:absolute;left:0;top:0;z-index:6;pointer-events:none;font-size:20px;font-weight:800;color:#a8dcff;text-shadow:0 0 3px #000,0 1px 3px #000;transition:transform .45s cubic-bezier(.5,0,.8,1),opacity .45s}
+.fd-fly.b{color:#ffb3a8}
 #fd-end{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom));display:flex;justify-content:center;pointer-events:none}
 #fd-end[hidden]{display:none}
-#fd-end>div{background:#000d;border:1px solid #ffd27a88;border-radius:10px;padding:12px 26px;text-align:center;pointer-events:auto}
-#fd-end h2{margin:0 0 6px;font-size:24px}
-#fd-end p{margin:0 0 10px;font-size:15px}
+#fd-end>div{background:#000d;border:1px solid #fff3;border-radius:10px;padding:10px 22px;text-align:center;pointer-events:auto;max-width:calc(100vw - 24px);box-sizing:border-box}
+#fd-end h2{margin:0 0 4px;font-size:24px}
+#fd-end .l1{margin:0 0 2px;font-size:16px;font-weight:700;color:#fff}
+#fd-end .l2{margin:0 0 8px;font-size:15px;color:#f3ecd8cc}
+#fd-end .st{display:flex;flex-wrap:wrap;gap:4px 16px;justify-content:center;margin:0 0 6px;font-size:14px;color:#f3ecd8cc}
+#fd-end .cz{margin:0 0 10px;font-size:13px;color:#f3ecd899}
 #fd-end button{min-width:180px;min-height:56px;font-size:20px;font-weight:700;border-color:#ffd27a;color:#1a1305;background:#ffd27a}
 `
 
@@ -100,25 +109,30 @@ export function mountHud(root: HTMLElement, h: HudHandlers, base = ''): Hud {
   hud.innerHTML = `<button id="fd-zoom" type="button"></button><button id="fd-pause" type="button"></button><button id="fd-helpbtn" type="button" aria-label="?">?</button><span style="flex:1"></span><button id="fd-again" type="button"></button>`
   const edge = document.createElement('div')
   edge.id = 'fd-edge'
-  // 줄다리기 막대 한 줄: 왼쪽 우리(파랑) · 오른쪽 적 · 가운데서 밀고, 양쪽 눈금은 한쪽 사기가 무너지는 선(처음의 55%)에서 막대가 서는 자리 — 글 없이 양 끝에 사람 수만
-  const edgeLine = Math.round(P.realm.tacBreakMorale / (P.realm.tacBreakMorale + 1) * 1000) / 10
-  edge.innerHTML = `<b id="fd-n0"></b><span class="bar tug" id="fd-b0"><i class="a"></i><i class="b"></i><u style="left:${edgeLine}%"></u><u style="left:${(100 - edgeLine).toFixed(1)}%"></u></span><b id="fd-n1"></b>`
+  // 막대 둘: 우리는 왼쪽 끝에서 · 적은 오른쪽 끝에서 줄어든다 (잔상 gh 가 채움 fill 뒤에 있다) · 바깥 끝에 편 사기 %
+  edge.innerHTML = `<b class="fd-p0"></b><span class="fd-side fd-s0"><i class="gh"></i><i class="fill"></i></span><span class="fd-vs"></span><span class="fd-side fd-s1"><i class="gh"></i><i class="fill"></i></span><b class="fd-p1"></b>`
   const end = document.createElement('div')
   end.id = 'fd-end'; end.hidden = true
-  end.innerHTML = `<div><h2 id="fd-endtext"></h2><div class="st" id="fd-endstats"></div><div class="cb" id="fd-cb"></div><p id="fd-why"></p><button id="fd-again2" type="button"></button></div>`
+  end.innerHTML = `<div><h2 id="fd-endtext"></h2><p class="l1" id="fd-l1"></p><p class="l2" id="fd-l2"></p><div class="st" id="fd-endstats"></div><p class="cz" id="fd-why"></p><button id="fd-again2" type="button"></button></div>`
   root.append(edge, hud, end)
   const $ = (id: string): HTMLElement => document.getElementById(id) as HTMLElement
+  const q = (sel: string): HTMLElement => edge.querySelector(sel) as HTMLElement
   const zoom = $('fd-zoom'), pause = $('fd-pause'), again = $('fd-again'), again2 = $('fd-again2')
-  const n0 = $('fd-n0'), n1 = $('fd-n1'), b0 = $('fd-b0'), b1 = b0
-  const fa = b0.querySelector('i.a') as HTMLElement, fb = b0.querySelector('i.b') as HTMLElement
-  const endText = $('fd-endtext'), endWhy = $('fd-why'), endStats = $('fd-endstats'), endBar = $('fd-cb')
+  const bars = [q('.fd-s0'), q('.fd-s1')] as const
+  const fills = [q('.fd-s0 .fill'), q('.fd-s1 .fill')] as const
+  const ghosts = [q('.fd-s0 .gh'), q('.fd-s1 .gh')] as const
+  const pcts = [q('.fd-p0'), q('.fd-p1')] as const
+  const endText = $('fd-endtext'), endL1 = $('fd-l1'), endL2 = $('fd-l2'), endWhy = $('fd-why'), endStats = $('fd-endstats')
   zoom.hidden = true // 시제품: 확대 단추는 뺀다 (51 §2) · 장수 따라가기 한 가지 배율
   again.textContent = again2.textContent = t('field.again')
   pause.textContent = t('field.pause')
   let armUntil = 0
   let goldUntil = 0
-  let prevPush = -1
   let breakSeen = -1
+  /** 편마다 직전 편 사기 · 잔상 길이 · 잔상이 줄기 시작할 때(0 = 안 기다림) · 문턱 곁에 있었나 */
+  const prevMor = [-1, -1], ghostLen = [1000, 1000], ghostAt = [0, 0], wasNear = [false, false]
+  /** 날아든 「+N」 이 닿아 막대가 옅은 파랑으로 빛나는 끝 시각 */
+  const upUntil = [0, 0]
   const prevBy: Record<Cause, number>[] = [{ arrows: 0, melee: 0, flank: 0, hero: 0, domino: 0, push: 0 }, { arrows: 0, melee: 0, flank: 0, hero: 0, domino: 0, push: 0 }]
   /** 그 편에 이번에 가장 크게 더해진 까닭 (조각에 같이 떨어뜨린다) */
   const newCause = (m: VModel, side: 0 | 1): Cause | null => {
@@ -128,50 +142,36 @@ export function mountHud(root: HTMLElement, h: HudHandlers, base = ''): Hud {
     for (const c of CAUSES) was[c] = now[c]
     return best
   }
-  /** 한 편의 사기 비율 (사람 수로 무게 · 처음 사기 대비) */
-  const moraleShare = (m: VModel, side: number): number => {
-    let num = 0, den = 0
-    for (const q of m.squads) if (q.side === side && q.men > 0) { num += q.morale * q.men; den += q.morale0 * q.men }
-    return den <= 0 ? 0 : num / den
+  /** 막대 안의 자리(천분율 · 그 편 막대가 차오르는 쪽 끝에서) → edge 안의 x */
+  const xOf = (side: 0 | 1, len: number): number => {
+    const r = bars[side].getBoundingClientRect(), o = edge.getBoundingClientRect()
+    return r.left - o.left + (side === 0 ? r.width * len / 1000 : r.width * (1 - len / 1000))
   }
-  const edgeBox = edge
-  const chip = (bar: HTMLElement, push: number, side: 0 | 1, big: boolean, cause: Cause | null = null, delay = 0): void => {
-    const r = bar.getBoundingClientRect(), o = edgeBox.getBoundingClientRect()
-    const x = r.left - o.left + r.width * push / 1000
+  const restart = (el: HTMLElement, cls: string): void => { el.classList.remove('sh', 'sh2', 'near'); void el.offsetWidth; el.classList.add(cls) }
+  const chip = (side: 0 | 1, len: number, big: boolean, cause: Cause | null = null, delay = 0): void => {
     const c = document.createElement('i')
     c.className = `chip ${side === 0 ? 'a' : 'b'}${big ? ' big' : ''}${cause !== null ? ' pic' : ''}`
     if (cause !== null) c.innerHTML = `<img src="${base}${CAUSE_ICON[cause]}" alt="">`
     if (delay > 0) c.style.animationDelay = `${delay}ms`
-    c.style.left = `${Math.round(x - 4)}px`
-    edgeBox.append(c)
+    c.style.left = `${Math.round(xOf(side, len) - 4)}px`
+    edge.append(c)
     c.addEventListener('animationend', () => c.remove())
-    bar.classList.remove('sh'); void bar.offsetWidth; bar.classList.add('sh')
+    restart(bars[side], 'sh')
   }
-  /** 막대가 크게 밀리면 줄어든 쪽 막대가 그 몫만큼 덩어리째 떨어진다 (from → to 천분율) */
-  const chunk = (bar: HTMLElement, from: number, to: number): void => {
-    const r = bar.getBoundingClientRect(), o = edgeBox.getBoundingClientRect()
-    const lo = Math.min(from, to), w = Math.abs(to - from)
+  /** 한 번에 크게 깎이면 그 편 막대에서 깎인 몫(from → to)이 덩어리째 떨어진다 */
+  const chunk = (side: 0 | 1, from: number, to: number): void => {
+    const r = bars[side].getBoundingClientRect(), o = edge.getBoundingClientRect()
+    const x0 = xOf(side, side === 0 ? to : from), w = Math.abs(from - to) * r.width / 1000
     const c = document.createElement('i')
-    c.className = `chunk ${to < from ? 'a' : 'b'}`
-    c.style.left = `${Math.round(r.left - o.left + r.width * lo / 1000)}px`
+    c.className = `chunk ${side === 0 ? 'a' : 'b'}`
+    c.style.left = `${Math.round(x0)}px`
     c.style.top = `${Math.round(r.top - o.top)}px`
-    c.style.width = `${Math.max(4, Math.round(r.width * w / 1000))}px`
-    c.style.setProperty('--r', `${to < from ? -16 : 16}deg`)
-    edgeBox.append(c)
+    c.style.width = `${Math.max(4, Math.round(w))}px`
+    c.style.setProperty('--r', `${side === 0 ? -16 : 16}deg`)
+    edge.append(c)
     c.addEventListener('animationend', () => c.remove())
-    bar.classList.remove('sh', 'sh2'); void bar.offsetWidth; bar.classList.add('sh2')
+    restart(bars[side], 'sh2')
   }
-  /** 다시 섬·버팀으로 되오르면 편 색 조각이 아래에서 막대로 날아든다 */
-  const rise = (bar: HTMLElement, push: number, side: 0 | 1, delay: number): void => {
-    const r = bar.getBoundingClientRect(), o = edgeBox.getBoundingClientRect()
-    const c = document.createElement('i')
-    c.className = `chip up ${side === 0 ? 'a' : 'b'}`
-    c.style.left = `${Math.round(r.left - o.left + r.width * push / 1000 + (side === 0 ? -14 : 6))}px`
-    if (delay > 0) c.style.animationDelay = `${delay}ms`
-    edgeBox.append(c)
-    c.addEventListener('animationend', () => c.remove())
-  }
-  let key = ''
   zoom.addEventListener('click', () => h.onZoom())
   pause.addEventListener('pointerdown', e => { e.preventDefault(); h.onPause() })
   $('fd-helpbtn').addEventListener('click', () => h.onHelp())
@@ -179,49 +179,89 @@ export function mountHud(root: HTMLElement, h: HudHandlers, base = ''): Hud {
     h.onAgain() // 확인 상자 없이 곧바로 새 판
   })
   again2.addEventListener('click', () => h.onAgain())
-  const men = (m: VModel, side: number): number => m.squads.reduce((a, q) => a + (q.side === side ? q.men : 0), 0)
+  let key = ''
 
   return {
     setZoom(level) { zoom.textContent = t(`field.zoom.${level}` as Key); zoom.classList.toggle('on', level > 0) },
     setPaused(p) { pause.textContent = t(p ? 'field.resume' : 'field.pause'); pause.classList.toggle('on', p) },
     hide(hidden) { hud.hidden = hidden; edge.hidden = hidden },
     sync(m, fx) {
-      // 막대가 크게 줄면 그 끝에서 조각이 떨어진다 (상성이 맞으면 막대 테두리가 금빛으로 번쩍)
-      // 우리 밀기 = 우리 사기 비율 / (우리 + 적) — 크게 밀리면 밀린 쪽 끝에서 조각이 떨어진다
-      const r0 = moraleShare(m, 0), r1 = moraleShare(m, 1)
-      const push = r0 + r1 <= 0 ? 500 : Math.round(r0 * 1000 / (r0 + r1))
-      if (prevPush >= 0 && Math.abs(push - prevPush) > P.field.chunkPermille) chunk(b0, prevPush, push)
-      if (fx?.rise !== undefined) for (const side of [0, 1] as const) for (let i = 0; i < Math.min(3, fx.rise[side]); i++) rise(b0, push, side, i * 90)
-      if (prevPush >= 0 && Math.abs(push - prevPush) > P.field.chipDropPermille) chip(b0, push, push < prevPush ? 0 : 1, Math.abs(push - prevPush) >= P.field.chipDropPermille * 3, newCause(m, push < prevPush ? 0 : 1))
-      prevPush = push
-      // 편이 무너지면 진 쪽 막대가 0.5초에 걸쳐 무너진다 (조각 여럿)
+      const thr = P.realm.tacBreakMorale * 1000
+      for (const side of [0, 1] as const) {
+        const mor = m.morale[side], len = barOf(mor), was = prevMor[side]!
+        if (was >= 0) {
+          const drop = was - mor
+          // 한 번에 크게 깎이면 깎인 몫이 덩어리째 · 조금 깎이면 그 까닭 그림 조각 하나
+          if (drop >= P.field.chunkPermille) chunk(side, barOf(was), len)
+          if (drop > P.field.chipDropPermille) chip(side, len, drop >= P.field.chipDropPermille * 3, newCause(m, side))
+        }
+        prevMor[side] = mor
+        if (len >= ghostLen[side]!) { ghostLen[side] = len; ghostAt[side] = 0 } else if (ghostAt[side] === 0) ghostAt[side] = performance.now()
+        // 문턱 위 standAbovePermille 안: 우리 막대는 붉게 뛰고 · 적 막대는 들어오는 순간 희게 번쩍이며 떤다 (기회)
+        const near = mor >= thr && mor < thr + P.field.standAbovePermille
+        if (side === 0) bars[0].classList.toggle('danger', near)
+        else if (near && !wasNear[1]) restart(bars[1], 'near')
+        wasNear[side] = near
+      }
+      // 편이 무너지면 그 편 막대에 조각 여럿이 차례로 떨어진다
       if (fx !== undefined && fx.breakSide >= 0 && breakSeen !== fx.breakSide) {
         breakSeen = fx.breakSide
-        for (let i = 0; i < 8; i++) chip(b0, fx.breakSide === 0 ? 20 + i * 60 : 980 - i * 60, fx.breakSide as 0 | 1, true, null, i * 60)
+        for (let i = 0; i < 8; i++) chip(fx.breakSide as 0 | 1, 980 - i * 120, true, null, i * 60)
       }
-      if (fx !== undefined && fx.gold) { goldUntil = performance.now() + P.field.goldFlashMs; b0.classList.add('gold'); b1.classList.add('gold') }
-      const k = `${push}|${m.edge[0]}|${m.edge[1]}|${men(m, 0)}|${men(m, 1)}`
+      if (fx !== undefined && fx.gold) { goldUntil = performance.now() + P.field.goldFlashMs; bars[0].classList.add('gold'); bars[1].classList.add('gold') }
+      const k = `${m.morale[0]}|${m.morale[1]}|${ghostLen[0]}|${ghostLen[1]}`
       if (k === key) return
       key = k
-      n0.textContent = men(m, 0).toLocaleString()
-      n1.textContent = men(m, 1).toLocaleString()
-      fa.style.width = `${push / 10}%`
-      fb.style.width = `${100 - push / 10}%`
-      b0.classList.toggle('low', m.edge[0] < P.field.edgeLowPermille || m.edge[1] < P.field.edgeLowPermille)
+      for (const side of [0, 1] as const) {
+        pcts[side].textContent = `${Math.floor(m.morale[side] / 10)}%` // 내림: 문턱(55%) 바로 아래가 55% 로 읽히지 않게
+        fills[side].style.width = `${barOf(m.morale[side]) / 10}%`
+        ghosts[side].style.width = `${ghostLen[side]! / 10}%`
+      }
+    },
+    fly(x, y, n, side) {
+      const el = document.createElement('b')
+      el.className = `fd-fly${side === 1 ? ' b' : ''}`
+      el.textContent = `+${n}`
+      el.style.transform = `translate(${Math.round(x)}px,${Math.round(y)}px)`
+      root.append(el)
+      const r = root.getBoundingClientRect(), b = bars[side].getBoundingClientRect()
+      const len = barOf(Math.max(0, prevMor[side]!))
+      const tx = b.left - r.left + (side === 0 ? b.width * len / 1000 : b.width * (1 - len / 1000)), ty = b.top - r.top - 4
+      // 그 대 위에서 잠깐 떠 있다가 막대로 날아간다 · 닿으면 막대가 옅은 파랑으로 한 번 빛난다
+      setTimeout(() => { el.style.transform = `translate(${Math.round(tx - 10)}px,${Math.round(ty)}px) scale(.7)`; el.style.opacity = '.4' }, P.field.flyHoldMs)
+      el.addEventListener('transitionend', () => { if (el.isConnected) { el.remove(); restart(bars[side], 'sh'); bars[side].classList.add('up'); upUntil[side] = performance.now() + P.field.goldFlashMs } })
     },
     showEnd(m, stats, why) {
       if (m === null || m.end === null) { end.hidden = true; return }
       end.hidden = false
-      endStats.innerHTML = stats === undefined ? '' : `<span>${t('field.res.killed', { n: stats.killed.toLocaleString() })}</span><span>${t('field.res.lost', { n: stats.lost.toLocaleString() })}</span>${stats.flank > 0 ? `<span>${t('field.res.flank', { n: stats.flank })}</span>` : ''}${stats.art > 0 ? `<span>${t('field.res.art', { n: stats.art })}</span>` : ''}${stats.stand === true ? `<span class="up">${t('field.res.stand')}</span>` : ''}${(stats.regroup ?? 0) > 0 ? `<span class="up">${t('field.res.regroup', { n: stats.regroup ?? 0 })}</span>` : ''}${(stats.grit ?? 0) > 0 ? `<span class="up">${t('field.res.grit')}</span>` : ''}`
       endText.textContent = t(m.winner === 0 ? 'field.end.win' : m.winner === 1 ? 'field.end.lose' : 'field.end.draw')
+      // 1줄: 어떻게 갈렸나 · 두 편 사기 · 2줄: 아깝다(진 판: 적 무너짐까지) · 남은 몫(이긴 판: 우리 무너짐까지)
+      const mor = why?.morale ?? m.morale
+      const thr = P.realm.tacBreakMorale * 1000
+      // 사기로 끝났는데 진 편 사기가 문턱 위였으면 칼 든 대가 다 달아나서 무너진 판이다 (엔진 breakNoBladesSec · sideBreak n 2)
+      const loser = m.winner === 0 ? 1 : 0
+      const kind = m.end === 'morale' && m.winner >= 0 && mor[loser] >= thr ? 'blades' : m.end
+      const how = kind === 'morale' || kind === 'men' || kind === 'blades' ? `field.res.head.${m.winner === 0 ? 'win' : 'lose'}.${kind}` : 'field.endwhy.time'
+      endL1.textContent = `${t(how as Key)} · ${t('field.res.pair', { a: Math.floor(mor[0] / 10), b: Math.floor(mor[1] / 10) })}`
+      // 1%p 아래는 소수 한 자리 (「0%p 남음」 처럼 읽히지 않게)
+      const g = Math.max(0, mor[m.winner === 0 ? 0 : 1] - thr), gap = g < 10 ? (g / 10).toFixed(1) : String(Math.round(g / 10))
+      endL2.textContent = m.winner < 0 ? '' : t(m.winner === 0 ? 'field.res.gap.win' : 'field.res.gap.lose', { n: gap })
+      const sp = (k: Key, n: number): string => `<span>${t(k, { n: n.toLocaleString() })}</span>`
+      endStats.innerHTML = stats === undefined ? '' : sp('field.res.killed', stats.killed) + sp('field.res.lost', stats.lost)
+        + (stats.flank > 0 ? sp('field.res.flank', stats.flank) : '') + (stats.art > 0 ? sp('field.res.art', stats.art) : '')
+        + ((stats.stand ?? 0) > 0 ? sp('field.res.stand', stats.stand ?? 0) : '') + ((stats.regroup ?? 0) > 0 ? sp('field.res.regroup', stats.regroup ?? 0) : '')
+        + ((stats.grit ?? 0) > 0 ? sp('field.res.grit', stats.grit ?? 0) : '')
       const top = why === undefined ? null : topCause(why.by)
-      endWhy.textContent = top === null || why === undefined ? t(`field.endwhy.${m.end}` as Key) : t(`field.cause.${why.won ? 'win' : 'lose'}.${top}` as Key)
-      // 까닭 막대: 여섯 몫을 그림과 길이로 (글 없이) · 0 인 몫은 없다
-      const tot = why === undefined ? 0 : CAUSES.reduce((a, c) => a + why.by[c], 0)
-      endBar.innerHTML = why === undefined || tot <= 0 ? '' : CAUSES.filter(c => why.by[c] > 0).map(c => `<span style="flex:${Math.max(1, Math.round(why.by[c] * 100 / tot))}"><img src="${base}${CAUSE_ICON[c]}" alt=""></span>`).join('')
+      endWhy.textContent = top === null || why === undefined ? '' : t(`field.cause.${why.won ? 'win' : 'lose'}.${top}` as Key)
     },
     frame(nowMs) {
-      if (goldUntil > 0 && performance.now() >= goldUntil) { goldUntil = 0; b0.classList.remove('gold'); b1.classList.remove('gold') }
+      const now = performance.now()
+      if (goldUntil > 0 && now >= goldUntil) { goldUntil = 0; bars[0].classList.remove('gold'); bars[1].classList.remove('gold') }
+      for (const side of [0, 1] as const) {
+        if (upUntil[side]! > 0 && now >= upUntil[side]!) { upUntil[side] = 0; bars[side].classList.remove('up') }
+        // 잔상: 깎인 뒤 hudGhostMs 동안 그 자리에 남았다가 지금 길이로 줄어든다
+        if (ghostAt[side]! > 0 && now - ghostAt[side]! >= P.field.hudGhostMs) { ghostAt[side] = 0; ghostLen[side] = barOf(prevMor[side]!); ghosts[side].style.width = `${ghostLen[side]! / 10}%` }
+      }
       if (armUntil > 0 && nowMs >= armUntil) { armUntil = 0; again.className = ''; again.textContent = t('field.again') }
     },
   }

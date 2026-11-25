@@ -13,7 +13,7 @@ import { dotDied, dotsOf, offU, offV, peekDots, resetForm, rowCount, rowOfDot, s
 import { FORM_HOLD, FORM_SCATTER, FORM_WALL, ORD_VOLLEY, moraleOf } from './viewFxRead.ts'
 import { drawRain, resetRain } from './viewRain.ts'
 import { drawDash, queueDash, resetDash } from './viewDash.ts'
-import { FLAG_FALLEN, bracedAt, drawOmens, drawShouts, drawStands, isShouting, liftOf, noteShouts, raisedAt, riseTilt, standingAt, drawPops, noteOmens, flagTilt, ingestHits, kickOf, resetHit, scatterOf, sc, shake, shakeAt, viewClock } from './viewHit.ts'
+import { FLAG_FALLEN, bracedAt, drawOmens, drawRegroupZone, drawShouts, drawStands, isShouting, liftOf, noteShouts, raisedAt, riseTilt, standingAt, drawPops, noteOmens, flagTilt, ingestHits, kickOf, resetHit, scatterOf, sc, shake, shakeAt, viewClock } from './viewHit.ts'
 import { computePairs, coolPress, notePush, dotMelee, drawParticles, flinchOf, isFront, maxFwdOf, minFwdOf, mo, noteLoss, partnerOf, resetMelee, spawn, swingChance, swings } from './viewMelee.ts'
 import { drawTerrain } from './viewTerrain.ts'
 import { TEAM_RGB } from './viewTint.ts'
@@ -325,7 +325,7 @@ export function bannerSpot(m: VModel, side: 0 | 1, grp: string, out: { u: number
  * 깃 꺾임·기운 채·떨어짐은 이 깃에 건다 (사기는 무리의 사람 수로 가중 평균 · 꺾임은 무리 안 대 가운데 가장 큰 것)
  */
 const spot = { u: 0, v: 0, id: 0 }
-/** trim = 금빛 테를 두를 깃의 자리 (at 의 첫 칸 번호) — 버티는 무리 · 다시 선 대 */
+/** trim = 금빛 테를 두를 깃의 자리 (at 의 첫 칸 번호) — 버티는 무리 · 대가 방금 다시 선 무리 */
 function addGroupFlags(m: VModel, at: number[], nowMs: number, trim: number[]): void {
   const GRPS = ['front', 'bows', 'horse']
   const dt = flagLast < 0 || nowMs < flagLast ? 1000 : Math.min(200, nowMs - flagLast)
@@ -343,25 +343,20 @@ function addGroupFlags(m: VModel, at: number[], nowMs: number, trim: number[]): 
       let stand = false
       for (const q of m.squads) if (q.side === side && q.grp === grp && standingAt(m, q)) { stand = true; break }
       const morFlag = stand && mor >= P.realm.tacBreakMorale ? Math.max(mor, P.field.waverPermille / 1000) : mor
-      let tilt = 0
-      for (const q of m.squads) if (q.side === side && q.grp === grp && q.men > 0) { const v = flagTilt(q.id, morFlag, enemyDir, nowMs, P.realm.tacBreakMorale); if (Math.abs(v) > Math.abs(tilt)) tilt = v }
+      let tilt = 0, rise = NaN
+      for (const q of m.squads) if (q.side === side && q.grp === grp && q.men > 0) {
+        const v = flagTilt(q.id, morFlag, enemyDir, nowMs, P.realm.tacBreakMorale); if (Math.abs(v) > Math.abs(tilt)) tilt = v
+        // 이 무리의 대가 방금 다시 섰으면 무리 깃이 한 번 일어서고 금빛 테 (깃은 무리마다 하나 · 대마다 따로 세우지 않는다)
+        if (q.flee === 0 && Number.isNaN(rise)) rise = riseTilt(q.id, nowMs, enemyDir >= 0 ? -1 : 1)
+      }
+      if (!Number.isNaN(rise) && Math.abs(tilt) < FLAG_FALLEN - 0.5) tilt = rise
       if (m.breakTick[side] >= 0 && (m.tick - m.breakTick[side]) / P.field.hz >= g * P.field.breakFlagSec) tilt = FLAG_FALLEN * (enemyDir >= 0 ? -1 : 1)
       const tx = unitsToPx(spot.u), ty = unitsToPx(spot.v)
       let s = flagSpot.get(side * 3 + g)
       if (s === undefined) { s = { x: tx, y: ty }; flagSpot.set(side * 3 + g, s) } else { s.x += (tx - s.x) * ease; s.y += (ty - s.y) * ease }
-      if (stand) trim.push(at.length)
+      if (stand || !Number.isNaN(rise)) trim.push(at.length)
       at.push(s.x, s.y, side, 3 + g, tilt)
     }
-  }
-  // 다시 선 대: 그 대 뒤에 작은 깃이 땅에서 일어선다 (regroupFlagMs 동안 · 무리 깃과 따로)
-  for (const q of m.squads) {
-    if (q.men <= 0 || q.flee === 1) continue
-    const enemyDir = q.side === 0 ? m.face : -m.face
-    const r = riseTilt(q.id, nowMs, enemyDir >= 0 ? -1 : 1)
-    if (Number.isNaN(r)) continue
-    const depth = q.bd > 0 ? q.bd : 2 * P.field.unit
-    trim.push(at.length)
-    at.push(unitsToPx(q.u - enemyDir * (depth / 2)), unitsToPx(q.v), q.side, 3 + (q.grp === 'front' ? 0 : q.grp === 'bows' ? 1 : 2), r)
   }
 }
 
@@ -671,10 +666,9 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
   }
   drawShadows(ctx, used, low, cam.zoom, baseH)
   drawStands(ctx, cur, heroX, heroY, standBuf, nowMs, cam.zoom, SIDE_COLOR)
+  drawRegroupZone(ctx, cur, heroX[0]!, heroY[0]!, nowMs, cam.zoom, SIDE_COLOR[0]!)
   order.sort(byY)
   for (const d of order) if (!d.hero) drawItem(ctx, d)
-  for (const d of order) if (d.hero) drawItem(ctx, d)
-  drawDash(ctx, nowMs)
   drawShouts(ctx, nowMs, cam.zoom, SIDE_COLOR)
 
   drawOmens(ctx, nowMs, cam.zoom)
@@ -683,6 +677,9 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
   addGroupFlags(cur, flagsAt, nowMs, trimBuf)
   drawParticles(ctx, nowMs, cam.zoom)
   drawBanners(ctx, flagsAt, cam.zoom, flagH, trimBuf)
+  // 장수는 깃보다 위에 (적 깃이 우리 장수 머리 위에 서서 적 깃을 든 것처럼 읽히던 것)
+  for (const d of order) if (d.hero) drawItem(ctx, d)
+  drawDash(ctx, nowMs)
   drawPops(ctx, nowMs, cam.zoom, flagH)
 
   // 화살: 낱낱의 짧은 선 (호를 그리며 난다) — 몸은 크림색 한 경로, 꼬리 3분의 1 은 쏜 편 색으로 편마다 한 경로 (누구 화살인지 읽히게)

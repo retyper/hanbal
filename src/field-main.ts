@@ -20,12 +20,12 @@ import { mountFirst, mountHelp, mountSteps, type First, type Help, type Steps } 
 import { drawMarks, type Band, type Box, type Mark, type MarkShape, type Ring } from './field/mainFlagMarks.ts'
 import { OP_AUTO, OP_MOVE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_VOLLEY, type FieldInput, type InputGroup } from './field/types.ts'
 import { serialize } from './field/rec.ts'
-import { mountHud, type EndStats, type Hud } from './field/mainHud.ts'
+import { mountHud, type EndStats, type EndWhy, type Hud } from './field/mainHud.ts'
 import { createFieldSound, soundCamOf, soundFrameOf } from './field/mainSound.ts'
 import type { FlagKind } from './field/mainSoundModel.ts'
 import { advance } from './field/viewLoop.ts'
 import { readField, type VLoss, type VModel } from './field/viewRead.ts'
-import { clusterCenter, fitZoom, followCam, frameBox, newCam, nextLevel, toField, toScreen, wholeZoom, type Rect, type Viewport } from './field/viewCamera.ts'
+import { clampCenter, clusterCenter, fitZoom, followCam, frameBox, newCam, nextLevel, toField, toScreen, wholeZoom, type Rect, type Viewport } from './field/viewCamera.ts'
 import { loadArt } from './field/viewArt.ts'
 import { drawField, focusPoints, resetFx, worldSize } from './field/view.ts'
 
@@ -121,8 +121,9 @@ let auraUntil = 0
 let firstDone = false
 /** 이번에 판이 보인 큰 부딪힘의 종류 (상성이 맞음 · 막힘) · 판이 시작할 때의 편별 사람 수 (끝 상자의 숫자) */
 let fxGold = false, fxBlocked = false
-/** 이번에 판에 난 되오름 (편마다 다시 섬·버팀 수) — 위 막대로 조각이 날아든다 */
-const fxRise: [number, number] = [0, 0]
+/** 이번에 다시 선 대 (그 대 위에서 「+N」 이 떠 막대로 날아간다) · 판이 갈린 순간(먼저 무너진 틱)의 편 사기 둘 (끝 상자의 두 숫자) */
+const flyQ: { id: number; n: number }[] = []
+let breakMor: [number, number] | null = null
 /** 찍는 큰 수: 2 화살비 · 3 옆치기 (찍을 때까지 판이 느려진다) · 누르고 있는 동안만 고른 무리(숫자키) · 마우스 올린 무리 */
 let aiming = -1, aimSince = 0
 let heldPick = -1
@@ -238,6 +239,13 @@ function followTarget(dt: number, snap = false): void {
   if (tgt === null || snap || pan !== null || direct) tgt = raw
   else { const k = 1 - Math.exp(-P.field.camTargetRate * dt); tgt = { x: tgt.x + (raw.x - tgt.x) * k, y: tgt.y + (raw.y - tgt.y) * k } }
   followCam(cam, tgt.x, tgt.y, dt, vp, b, snap, zt)
+  // 싸우는 동안 우리 장수는 늘 화면 가운데 camHeroBoxPermille 상자 안 — 벗어나면 카메라를 곧바로 그만큼 옮긴다 (손으로 둘러보는 동안은 빼고)
+  if (ui.phase === 'play' && hero !== undefined && pan === null && !camFree) {
+    const half = P.field.camHeroBoxPermille / 2000, mx = vp.w * half / cam.zoom, my = vp.h * half / cam.zoom
+    const hx = pxOf(hero.u), hy = pxOf(hero.v)
+    const c = clampCenter(cam.zoom, Math.max(hx - mx, Math.min(hx + mx, cam.x)), Math.max(hy - my, Math.min(hy + my, cam.y)), vp, b)
+    cam.x = c.x; cam.y = c.y
+  }
 }
 
 /** 장수에 가장 가까운 맞물림(우리 대가 싸우는 중이거나 적 대가 engageCells 안)의 가운데 · 없으면 null */
@@ -264,7 +272,7 @@ function restart(): void {
   resetFx()
   introLeft = P.field.introMs
   fsnd.stop(); soundTick = -1; soundEpoch = markEpoch
-  endAt = 0; viewMs = 0; pan = null; tgt = null; lossAcc = []; hist.length = 0
+  endAt = 0; viewMs = 0; pan = null; tgt = null; lossAcc = []; hist.length = 0; flyQ.length = 0; breakMor = null
   ui.phase = 'ready'; ui.sel = [3]
   queue = []; plan = []
   lastGoal.fill(null); lastShape.fill('move'); nudgeAt.fill(0)
@@ -731,8 +739,9 @@ function paint(now: number, alpha: number): void {
   arrows.sync(offscreenArrows())
   const pb = padBtns()
   pad.sync(!blocked && ui.phase === 'play' && cur.end === null, touchMode, touchMode && !heroOrdered && playMs < 3000, pb.dash, pb.skill, pb.rally, !blocked && ui.phase === 'ready')
-  hud.sync(lagged(now), { gold: fxGold, blocked: fxBlocked, breakSide: cur.breakTick[0] >= 0 ? 0 : cur.breakTick[1] >= 0 ? 1 : -1, rise: fxRise })
-  fxGold = false; fxBlocked = false; fxRise[0] = 0; fxRise[1] = 0
+  hud.sync(lagged(now), { gold: fxGold, blocked: fxBlocked, breakSide: cur.breakTick[0] >= 0 ? 0 : cur.breakTick[1] >= 0 ? 1 : -1 })
+  fxGold = false; fxBlocked = false
+  flyRegroups()
   hud.frame(now)
   hud.showEnd(endAt > 0 && now - endAt >= P.field.endBoxMs ? cur : null, endStats(), endWhy())
   const h = heroNow()
@@ -795,16 +804,35 @@ function lagged(now: number): VModel {
 }
 /** 끝 상자의 숫자: 쓰러뜨린 적 · 잃은 우리 병사 (처음 사람 수와 지금 사람 수의 차) */
 /** 끝 상자의 까닭: 진 판은 우리 편이 입은 까닭 · 이긴 판은 적 편이 입은 까닭 */
-function endWhy(): { by: Readonly<Record<'arrows' | 'melee' | 'flank' | 'hero' | 'domino' | 'push', number>>; won: boolean } | undefined {
+function endWhy(): EndWhy | undefined {
   if (cur.end === null || cur.winner < 0) return undefined
   const won = cur.winner === 0
-  return { by: cur.stats.moraleBy[won ? 1 : 0], won }
+  noteBreak()
+  return { by: cur.stats.moraleBy[won ? 1 : 0], won, morale: breakMor ?? cur.morale }
+}
+/** 어느 편이 처음 무너진 틱의 두 편 사기를 붙잡는다 (끝 상자는 갈린 순간의 숫자를 보인다 · 달아나는 3초 동안 바뀐 값이 아니라) */
+function noteBreak(): void {
+  if (breakMor === null && (cur.breakTick[0] >= 0 || cur.breakTick[1] >= 0)) breakMor = [cur.morale[0], cur.morale[1]]
+}
+/** 다시 선 대: 그 대 몸 위에 「+N」(편 사기가 오른 %p · 반올림 · 적어도 1)을 띄워 그 편 막대로 날려 보낸다 */
+function flyRegroups(): void {
+  for (const f of flyQ) {
+    const q = cur.squads[f.id]
+    if (q === undefined || q.morale0 <= 0) continue
+    let menMax = 0
+    for (const e of cur.squads) if (e.side === q.side) menMax += e.menMax
+    const up = Math.max(1, Math.round(f.n * q.menMax * 100 / Math.max(1, menMax) / q.morale0))
+    const s = toScreen(cam, vp, pxOf(q.u), pxOf(q.v) - P.field.soldierCells * P.field.cellPx * 1.2)
+    if (s.x < 0 || s.x > vp.w || s.y < 0 || s.y > vp.h) continue
+    hud.fly(s.x, s.y, up, q.side)
+  }
+  flyQ.length = 0
 }
 function endStats(): EndStats | undefined {
   if (cur.end === null) return undefined
   const st = cur.stats
   const h = heroNow()
-  return { killed: st.killed[0], lost: st.lost[0], flank: st.flankHits[0], art: Math.round(st.artMorale[0] / 10), stand: cur.stood[0] === 1, regroup: cur.squads.filter(q => q.side === 0 && q.regrouped === 1).length, grit: h?.gritN ?? 0 }
+  return { killed: st.killed[0], lost: st.lost[0], flank: st.flankHits[0], art: Math.round(st.artMorale[0] / 10), stand: cur.stood[0], regroup: cur.squads.filter(q => q.side === 0 && q.regrouped === 1).length, grit: h?.gritN ?? 0 }
 }
 /** 그 무리의 지금 명령 ORD_* (엔진이 정한 것 · 대마다 같다) */
 function ordOf(grp: string): number {
@@ -860,15 +888,16 @@ function frame(now: number): void {
       if (cur.loss.length > 0) lossAcc.push(...cur.loss)
       for (const ev of cur.events) {
         if (ev.kind === 'impact') { if (ev.how === 1) fxGold = true; else if (ev.how === 2) fxBlocked = true }
-        else if (ev.kind === 'regroup' || ev.kind === 'stand') fxRise[ev.side]++
+        else if (ev.kind === 'regroup') flyQ.push({ id: ev.id, n: ev.n })
       }
+      noteBreak()
     }
     if (cur.end !== null) { ui.phase = 'end'; drag = null; endAt = now; fsnd.end(cur.winner === 0) }
   }
   // 틱이 바뀌었거나 깃발을 새로 꽂았을 때 한 번 (시작 화면에서 꽂은 깃발 소리도 바로 나게)
   if (!paused && !blocked && (state.tick !== soundTick || markEpoch !== soundEpoch)) {
     soundTick = state.tick; soundEpoch = markEpoch
-    fsnd.frame(soundFrameOf(state, cur.edge), soundCamOf(cam, vp, bounds()), null, now)
+    fsnd.frame(soundFrameOf(state, cur.edge, cur.morale), soundCamOf(cam, vp, bounds()), null, now)
   }
   if (ui.phase === 'play' && !paused && !helpOpen) playMs += Math.min(dtMs, 100)
   if (!blocked && ui.phase === 'play' && introLeft > 0) introLeft = Math.max(0, introLeft - Math.min(dtMs, 100))

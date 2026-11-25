@@ -4,6 +4,7 @@
  * 처음 10초 안내는 그림 하나 + 한 줄: PC 는 마우스 그림(오른쪽 단추가 깜박), 폰은 누르라는 고리. 장수가 움직이면 걷힌다.
  */
 import { t } from '../i18n/index.ts'
+import { HAEBI_STICK, P } from '../tune/params.ts'
 import { keyLabel, KEYS, type ActionName } from './actions.ts'
 
 export interface Help { toggle(): void; close(): void; isOpen(): boolean }
@@ -83,8 +84,11 @@ export function mountFirst(root: HTMLElement): First {
       }
       el.hidden = false
       if (el.dataset['m'] !== m) { el.dataset['m'] = m; w = el.offsetWidth || 220; h = el.offsetHeight || 44 }
-      // 장수 곁 오른쪽 위 · 화면 밖으로 안 나가게
-      const px = Math.max(8, Math.min(vpW - w - 8, x + 40)), py = Math.max(60, Math.min(vpH - h - 120, y - 80))
+      // PC: 장수 곁 오른쪽 위 · 화면 밖으로 안 나가게 · 폰: 왼쪽 스틱 오른쪽 위 (오른쪽 큰 수 판·진 카드·왼쪽 가장자리 화살표와 겹치지 않게 · 말하는 것이 스틱이다)
+      const R = HAEBI_STICK.radius
+      const px = touch ? P.field.firstStickLeftPx + R * 2 + 12 : Math.max(8, Math.min(vpW - w - 8, x + 40))
+      // 폰은 스틱 위 끝 높이에 걸친다 (준비 화면의 진 카드 · 아래 단추보다 위)
+      const py = touch ? vpH - P.field.firstStickBottomPx - R * 2 - h / 2 : Math.max(60, Math.min(vpH - h - 120, y - 80))
       el.style.transform = `translate(${Math.round(px)}px,${Math.round(py)}px)`
     },
   }
