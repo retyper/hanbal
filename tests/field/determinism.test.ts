@@ -100,7 +100,8 @@ test('명령 수 제한이 없다: 같은 무리에 한 때 명령 20번을 넣�
 
 test('손으로 몬 무리는 그 자리로 간다 — 대마다 시작 줄의 상대 자리를 지키고 줄 가운데가 누른 곳이다 (판 밖으로 나가면 가운데를 당긴다)', () => {
   for (const [tu, tv] of [[50, 20], [50, 3]] as const) {
-    const s = runField(plainSetup(3, 1300, false), [{ tick: 1, g: 0, op: 0, u: U(tu), v: U(tv) }], 600)
+    // 300틱 (30초) — 편이 무너지면 손으로 몬 대도 손을 놓고 달아난다 (powerPerSec 7000 에서 600틱 안에 무너지는 판)
+    const s = runField(plainSetup(3, 1300, false), [{ tick: 1, g: 0, op: 0, u: U(tu), v: U(tv) }], 300)
     const front = s.squads.filter(q => q.side === 0 && q.grp === 'front')
     const cu = Math.trunc(front.reduce((a, q) => a + q.homeU, 0) / front.length), cv = Math.trunc(front.reduce((a, q) => a + q.homeV, 0) / front.length)
     for (const q of front) {

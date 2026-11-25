@@ -15,7 +15,7 @@ import { clamp, dist2, idiv, isqrt, stepToward } from './num.ts'
 import { emit, trySkill } from './hero.ts'
 import { sideMorale, alarmed, avgU, banks, campU, detour, fwd, lastU, lastV, leash, m, mul, nearestFoe, perTickAt, rankCmp, ticksOf } from './sim.ts'
 import { ORD_ATTACK, CMD_FIRE, CMD_HEIGHT, FORM_AUTO, FORM_CHARGE, FORM_HOLD, FORM_OPEN, GRPS, OP_RALLY, OP_STANCE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_NONE, ORD_VOLLEY, STANCE_CHARGE, STANCE_HOLD, WHY_NO_MEN, WHY_NONE, WHY_NOT_YET } from './types.ts'
-import { LINE_SHIELD, LINE_WEDGE, LINE_WINGS } from './types.ts'
+import { LINE_SHIELD, LINE_WEDGE, LINE_WINGS, STANCE_NONE, STANCE_OPEN } from './types.ts'
 import type { FieldInput, FieldState, Grp, Hero, Point, Squad } from './types.ts'
 
 const MILLI = 1000
@@ -40,11 +40,14 @@ const halfLine = (q: Squad, n: number): number => idiv(n * pitchOf(q) - (pitchOf
  * 돌격은 쐐기(가운데 대가 wedgeStepCells 앞) · 길 트기는 가운데가 openGapCells 더 벌어진 두 줄 · 기병은 양 날개에 둘씩(뒤로 한 대씩).
  * 기병의 기준 점은 앞줄 기준 점이고, 앞줄 줄 끝에서 wingOutCells 바깥 · wingBackCells 뒤 (frontHalf = 앞줄 줄의 반 길이).
  */
-export function slotOf(q: Squad, i: number, n: number, frontHalf: number): Point {
+export function slotOf(q: Squad, i: number, n: number, frontHalf: number, line = 0): Point {
   const f = fwd(q.side)
   if (q.grp === 'horse') {
     const wing = i % 2 === 0 ? -1 : 1, row = idiv(i, 2)
-    return { u: -f * (cells(P.field.wingBackCells) + row * (q.bd + cells(P.field.lineGapCells))), v: wing * (frontHalf + cells(P.field.wingOutCells) + idiv(q.bw, 2)) }
+    // 넓은 날개 진 (52 §6-1) — 기병이 더 바깥 · 더 앞 (옆치기가 빨리 닿는다)
+    const wide = line === LINE_WINGS
+    const back = wide ? P.field.lineWingsBackCells : P.field.wingBackCells, out = P.field.wingOutCells + (wide ? P.field.lineWingsOutCells : 0)
+    return { u: -f * (cells(back) + row * (q.bd + cells(P.field.lineGapCells))), v: wing * (frontHalf + cells(out) + idiv(q.bw, 2)) }
   }
   const p = pitchOf(q)
   const along = idiv((2 * i + 1 - n) * p, 2)
@@ -80,6 +83,8 @@ function setOrder(s: FieldState, side: 0 | 1, g: Grp, ord: number, at: Point | n
     q.order = ord; q.orderTick = s.tick; q.orderAt = at ? { ...at } : null
     q.manual = 0; q.foe = -1; q.ran = 0; q.hitTick = -1
     if (g === 'front') q.form = ord === ORD_CHARGE ? FORM_CHARGE : ord === ORD_HOLD ? FORM_HOLD : q.form === FORM_OPEN ? FORM_OPEN : FORM_AUTO
+    // 자세는 명령을 따른다 — 돌격·방진이 끝나면 기본 자세로 (길 트기는 남는다 · 끝난 돌격 자세가 판 내내 세모 상성에 걸리던 것)
+    if (g === 'front') q.stance = ord === ORD_CHARGE ? STANCE_CHARGE : ord === ORD_HOLD ? STANCE_HOLD : q.stance === STANCE_OPEN ? STANCE_OPEN : STANCE_NONE
     if (g === 'front') q.bd = cells(q.form === FORM_HOLD ? P.field.holdBodyDCells : P.field.bodyDCells)
   }
   s.route[side * 3 + ROW[g]] = []
@@ -172,6 +177,8 @@ export const broken = (q: Squad): boolean => q.morale * MILLI < q.morale0 * brea
  * 장수를 따르는 편의 대만 여기서 목표를 정한다 (손으로 몬 대·적을 쳐라 받은 대는 sim.ts 가 그대로 본다).
  */
 export function armyTick(s: FieldState, full: boolean): void {
+  standUp(s)
+  regroup(s)
   // 무너진 대는 달아난다 · 편이 무너졌으면(sideBreak) 그 편의 남은 대가 모두 손을 놓고 달아난다 (검수 B5)
   for (const q of s.squads) {
     const fall = s.breakTick[q.side] >= 0
@@ -211,7 +218,9 @@ function aiTactics(s: FieldState, side: 0 | 1): Array<() => void> {
   const foe = (1 - side) as 0 | 1
   // 큰 외침은 제 편 사기가 적보다 낮을 때만 (aiSkill 2 면 늘) — 앞선 쪽이 더 굳히지 않게
   const behind = P.field.aiSkill === 2 || sideMorale(s, side) < sideMorale(s, foe)
-  if (P.field.aiSkill >= 1 && behind && h.art === 'shout' && h.stun === 0 && h.dash === 0 && (h.artCd === 0 || h.grit >= MILLI)
+  // aiSkill 3 = 투지가 찼을 때만 (뒤진 편의 한 번 더 · 52 §6-2)
+  const ready = P.field.aiSkill === 3 ? h.grit >= MILLI : behind && (h.artCd === 0 || h.grit >= MILLI)
+  if (P.field.aiSkill >= 1 && ready && h.art === 'shout' && h.stun === 0 && h.dash === 0
     && s.squads.some(q => q.side === foe && q.men > 0 && q.flee === 0 && dist2(q.u, q.v, h.u, h.v) <= sq(cells(P.field.heroArtCells)))) acts.push(() => trySkill(s, h, h.u, h.v))
   const fr = live(groupOf(s, side, 'front'))
   if (fr.length === 0) return acts
@@ -289,7 +298,7 @@ function place(s: FieldState, side: 0 | 1): void {
     }
     s.anchor[idx] = anchor
     qs.forEach((q, i) => {
-      const o = slotOf(q, i, qs.length, frontHalf)
+      const o = slotOf(q, i, qs.length, frontHalf, s.lineup[side])
       const slot = { u: clamp(anchor.u + o.u, 0, lastU(s.map)), v: clamp(anchor.v + o.v, 0, lastV(s.map)) }
       if (q.flee === 1) { q.target = -1; q.goal = { u: clamp(campU(s, side) - f * cells(P.field.fleeBackCells), 0, lastU(s.map)), v: q.v }; return }
       if (q.order === ORD_CHARGE) {
@@ -358,7 +367,8 @@ export function runMul(s: FieldState, q: Squad): number {
   const acc = cells(charging ? P.field.chargeAccelCells : P.field.flankAccelCells)
   // 보병 걸음 = 1 로 잰 배수를 이 무리 걸음 배수로 (기병은 제 걸음이 이미 빠르다)
   const base = mul(top, idiv(P.field.speedFrontCellsPerSec * MILLI, q.grp === 'front' ? P.field.speedFrontCellsPerSec : P.field.speedHorseCellsPerSec))
-  return MILLI + idiv((Math.max(MILLI, base) - MILLI) * Math.min(q.ran, acc), Math.max(1, acc))
+  // 달리기 시작한 틱도 1 단위 몫을 준다 (ran 0 이면 배수가 정확히 1 이라 「달림」이 안 서고 ran 이 영영 0 이던 것 · 돌격의 쾅이 한 번도 안 나던 까닭)
+  return MILLI + Math.max(1, idiv((Math.max(MILLI, base) - MILLI) * Math.min(Math.max(q.ran, 1), acc), Math.max(1, acc)))
 }
 
 /** 지키는 편(진영 hold) — 깨기 전에는 제자리 · 깬 뒤에도 시작 자리에서 leashCells · 물가 안으로만 (sim.ts 의 옛 규칙 그대로) */
@@ -409,7 +419,7 @@ function formUp(s: FieldState): void {
       const qs = sorted(s, live(groupOf(s, side, g)))
       if (qs.length === 0) continue
       const a = g === 'bows' ? bowsAnchor(s, F, side, frontD, qs[0]!.bd) : F
-      const at = qs.map((q, i) => { const o = slotOf(q, i, qs.length, frontHalf); return { u: clamp(a.u + o.u, 0, lastU(s.map)), v: clamp(a.v + o.v, 0, lastV(s.map)) } })
+      const at = qs.map((q, i) => { const o = slotOf(q, i, qs.length, frontHalf, s.lineup[side]); return { u: clamp(a.u + o.u, 0, lastU(s.map)), v: clamp(a.v + o.v, 0, lastV(s.map)) } })
       qs.forEach((q, i) => { q.u = at[i]!.u; q.v = at[i]!.v; q.homeU = q.u; q.homeV = q.v })
     }
     for (const g of GRPS) s.anchor[side * 3 + ROW[g]] = g === 'front' ? F : centerOf(live(groupOf(s, side, g)))
@@ -437,4 +447,49 @@ export function flankStep(s: FieldState, q: Squad, t: Squad): { goal: Point; str
   if ((q.u - t.u) * ft <= -idiv(back, 2)) return { goal: { u: t.u, v: t.v }, strike: true, pts: [] }
   if ((q.u - near) * ft <= 0 || Math.abs(q.v - ev) <= reach) return { goal: p1, strike: false, pts: [p1, { u: t.u, v: t.v }] }
   return { goal: p0, strike: false, pts: [p0, p1, { u: t.u, v: t.v }] }
+}
+
+/**
+ * 버팀 (52 §6-2 · stand) — 편 사기가 무너짐 문턱 위 standAbovePermille 안으로 처음 내려온 틱에 (판마다 편에 한 번 · 장수가 서 있을 때)
+ * 장수 곁(heroArtCells)의 안 달아나는 대 사기가 standRallyPermille 되오르고, standSec 동안 꺾이는 몫의 standSteadyPermille 이 덜 꺾인다 (sim.ts fight · standing).
+ */
+function standUp(s: FieldState): void {
+  const line = breakLine()
+  for (const side of [0, 1] as const) {
+    if (s.stood[side] === 1 || s.breakTick[side] >= 0) continue
+    const h = heroOf(s, side)
+    if (!h || h.stun > 0) continue
+    const sm = sideMorale(s, side)
+    if (sm >= line + P.field.standAbovePermille || sm < line) continue
+    s.stood[side] = 1; s.standTick[side] = s.tick
+    const r = cells(P.field.heroArtCells), up = P.field.standRallyPermille
+    let n = 0
+    for (const q of s.squads) if (q.side === side && q.men > 0 && q.flee === 0 && dist2(q.u, q.v, h.u, h.v) <= r * r) { q.calm += up * MILLI; q.morale = clamp(q.morale + up, 0, MILLI); n++ }
+    emit(s, { kind: 'stand', side, id: -1, u: h.u, v: h.v, n, r })
+  }
+}
+
+/** 이 대가 버티는 중인가 (버팀이 선 뒤 standSec 안 · 제 편 장수가 서 있고 그 곁 heroArtCells 안) */
+export function standing(s: FieldState, q: Squad): boolean {
+  const t = s.standTick[q.side]
+  if (t < 0 || s.tick - t >= ticksOf(P.field.standSec)) return false
+  const h = heroOf(s, q.side)
+  return h !== null && h.stun === 0 && dist2(q.u, q.v, h.u, h.v) <= sq(cells(P.field.heroArtCells))
+}
+
+/**
+ * 다시 섬 (52 §6-5 · regroup) — 달아나는 대가 제 장수(쓰러지지 않은) 곁 regroupCells 안에 오면 사기를 무너짐 문턱 위 regroupPermille 까지 되올려 다시 선다
+ * (대마다 판에 한 번 · 편이 무너진 뒤는 안 선다).
+ */
+function regroup(s: FieldState): void {
+  const target = breakLine() + P.field.regroupPermille
+  for (const q of s.squads) {
+    if (q.flee !== 1 || q.regrouped === 1 || q.men <= 0 || s.breakTick[q.side] >= 0) continue
+    const h = heroOf(s, q.side)
+    if (!h || h.stun > 0 || dist2(q.u, q.v, h.u, h.v) > sq(cells(P.field.regroupCells))) continue
+    const need = idiv(q.morale0 * target, MILLI) - q.morale
+    if (need <= 0) continue
+    q.calm += need * MILLI; q.morale += need; q.regrouped = 1
+    emit(s, { kind: 'regroup', side: q.side, id: q.id, u: q.u, v: q.v, n: need })
+  }
 }

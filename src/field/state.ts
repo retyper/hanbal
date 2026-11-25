@@ -36,7 +36,7 @@ export function hashField(s: FieldState): string {
   for (const n of s.grpWhy) h = mix(h, n); for (const n of s.grpWhyTick) h = mix(h, n)
   for (const k of [0, 1] as const) { h = mix(h, s.stats.flankHits[k]); h = mix(h, s.stats.artMorale[k]); h = mix(h, s.stats.killed[k]); h = mix(h, s.stats.lost[k]); h = mix(h, s.planTick[k]); h = mix(h, s.frontLockTick[k])
     const mb = s.stats.moraleBy[k]; h = mix(h, mb.arrows); h = mix(h, mb.melee); h = mix(h, mb.flank); h = mix(h, mb.hero); h = mix(h, mb.domino); h = mix(h, mb.push)
-    h = mix(h, s.lineup[k]); h = mix(h, s.breakTick[k]); h = mix(h, s.breakWhy[k]); h = mix(h, s.stood[k]) }
+    h = mix(h, s.lineup[k]); h = mix(h, s.breakTick[k]); h = mix(h, s.breakWhy[k]); h = mix(h, s.stood[k]); h = mix(h, s.standTick[k]) }
   for (const q of s.squads) {
     h = hs(h, q.kind); h = hs(h, q.grp); h = mix(h, q.morale0); h = mix(h, q.flank); h = mix(h, q.homeU); h = mix(h, q.homeV)
     h = mix(h, q.id); h = mix(h, q.side); h = mix(h, q.men); h = mix(h, q.menMax); h = mix(h, q.fresh)
@@ -52,7 +52,7 @@ export function hashField(s: FieldState): string {
     h = mix(h, e.mu); h = mix(h, e.tong); h = mix(h, e.dir); h = mix(h, e.face); h = mix(h, e.foe); h = mix(h, e.atk); h = mix(h, e.dash); h = mix(h, e.dashDir); h = mix(h, e.dashCd)
     h = hs(h, e.art); h = mix(h, e.artCd); h = mix(h, e.artOn); h = mix(h, e.why); h = mix(h, e.whyTick)
     h = mix(h, e.hitIds.length); for (const n of e.hitIds) h = mix(h, n)
-    h = mix(h, e.grit)
+    h = mix(h, e.grit); h = mix(h, e.gritN)
   }
   return (h >>> 0).toString(16)
 }
@@ -69,6 +69,7 @@ export function snapshot(s: FieldState): FieldState {
     breakTick: [...s.breakTick] as FieldState['breakTick'],
     breakWhy: [...s.breakWhy] as FieldState['breakWhy'],
     stood: [s.stood[0], s.stood[1]],
+    standTick: [...s.standTick] as FieldState['standTick'],
     planTick: [...s.planTick] as FieldState['planTick'],
     frontLockTick: [...s.frontLockTick] as FieldState['frontLockTick'],
     anchor: s.anchor.map(p => ({ ...p })),

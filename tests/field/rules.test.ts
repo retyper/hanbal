@@ -204,7 +204,8 @@ test('hz 10·20·30 에서 한 판 길이가 같고(±10%) 목책을 깨는 시�
   const at = <T>(hz: number, fn: () => T): T => { (P.field as { hz: number }).hz = hz; try { return fn() } finally { (P.field as { hz: number }).hz = was } }
   for (const [name, mk] of MAPS.filter(([n]) => n === 'meet' || n === 'hold' || n === 'stake')) {
     // 목책은 문이 깨지느냐로 판 길이가 두 갈래라 씨앗 12개로는 흔들림이 ±10% 를 넘는다 (C2 · 장수 곁의 기운으로 판이 길어진 뒤 12씨앗 65.5/78.9초 · 48씨앗 73.4/72.6초) → 48
-    const N = name === 'stake' ? 48 : 12
+    // 대로도 투지·큰 외침(적 AI)이 판 길이를 흔들어 12씨앗이면 ±10% 를 넘는다 (판의 법칙 묶음 · 48씨앗 116.4 · 122.6 · 121.5초) → 48
+    const N = name === 'stake' || name === 'meet' ? 48 : 12
     const secs = (hz: number): number => at(hz, () => { let t = 0; for (let seed = 1; seed <= N; seed++) t += runField(plainSetup(seed, 1300, true, mk())).tick / hz; return t / N })
     const base = secs(10)
     for (const hz of [20, 30]) { const x = secs(hz); assert.ok(Math.abs(x - base) / base < 0.1, `${name} ${hz}Hz ${x.toFixed(1)}초 · 10Hz ${base.toFixed(1)}초`) }
@@ -248,7 +249,9 @@ test('편 사기는 오르지 않고 사람 수는 틱마다 늘지 않는다 (�
         const qs = s.squads.filter(q => q.side === side)
         const tot = qs.reduce((a, q) => a + q.menMax, 0)
         const mor = qs.reduce((a, q) => a + q.menMax * q.morale, 0) / tot
-        assert.ok(mor <= prev[side]! + 1e-9, `${name} seed ${seed} 편 ${side} 사기가 올랐다`)
+        // 오르는 것은 버팀·다시 섬·비기(큰 외침)가 그 틱에 난 편만 (52 §6 뒤집을 손)
+        const lift = s.log.events.some(e => e.tick === s.tick - 1 && e.side === side && (e.kind === 'stand' || e.kind === 'regroup' || e.kind === 'heroSkill'))
+        assert.ok(lift || mor <= prev[side]! + 1e-9, `${name} seed ${seed} 편 ${side} 사기가 올랐다`)
         prev[side] = mor
       }
       s.squads.forEach((q, i) => { assert.ok(q.men <= men[i]!, `${name} 사람이 늘었다`); men[i] = q.men })

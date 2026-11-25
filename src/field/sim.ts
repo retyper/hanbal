@@ -22,10 +22,10 @@ import { P } from '../tune/params.ts'
 import { clamp, dist2, idiv, isqrt, nearestDir, stepToward } from './num.ts'
 import { campPointU, groundAt, walkable } from './map.ts'
 import { G_BLOCK, G_HIGH, G_PLAIN, G_SHALLOW, GRPS, HERO_ART_DEFAULT, HERO_ARTS, HERO_DIR, HERO_DIRS, OP_ATTACK, OP_AUTO, OP_DASH, OP_HERO_DIR, OP_MOVE, OP_RETREAT, OP_SKILL, OP_STANCE, STANCE_CHARGE, STANCE_HOLD, STANCE_OPEN, WHY_NONE, CMD_COUNTER, CMD_HEIGHT, OP_AIM, OP_RALLY, ORD_ATTACK, ORD_CHARGE, ORD_FLANK, ORD_MOVE, ORD_NONE, ORD_VOLLEY, HIT_PLAIN, HIT_GOOD, HIT_BLOCKED, LOSS_ARROW, LOSS_BLADE, KIND_BEATS } from './types.ts'
-import { LINES, LOSS_ART, LOSS_HERO } from './types.ts'
+import { LINES, LINE_SHIELD, LINE_WEDGE, LINE_WINGS, LOSS_ART, LOSS_HERO, STANCE_NONE } from './types.ts'
 import type { FieldInput, FieldMap, FieldState, Grp, Hero, LiveSetup, MoraleBy, Point, Squad, UnitKind } from './types.ts'
-import { addShock, auraOf, emit, heroInput, heroMove, heroStrike, heroTakeHits, pruneEvents, standOf } from './hero.ts'
-import { armyInit, armyInput, armyTick, flankStep, follows, runMul } from './army.ts'
+import { addShock, auraOf, emit, gritTick, heroInput, heroMove, heroStrike, heroTakeHits, pruneEvents, standOf } from './hero.ts'
+import { armyInit, armyInput, armyTick, flankStep, follows, runMul, standing } from './army.ts'
 
 const NO_INPUTS: readonly FieldInput[] = []
 const ROW: Readonly<Record<Grp, number>> = { front: 0, bows: 1, horse: 2 }
@@ -102,7 +102,7 @@ function invalidSetup(s: LiveSetup): boolean {
 export function createField(setup: LiveSetup): FieldState {
   // 목책이 부서지면 칸이 바뀌므로 판은 지도 사본(칸 · 조각)을 쥔다 — 같은 지도로 다시 시작해도 안 변한다
   const map: FieldMap = { ...setup.map, cells: setup.map.cells.slice(), pieces: setup.map.pieces.map(p => ({ ...p, rem: 0 })) }
-  const s: FieldState = { tick: 0, seed: setup.seed, map, squads: [], heroes: [], anchor: [], route: [[], [], [], [], [], []], grpWhy: [0, 0, 0], grpWhyTick: [-1, -1, -1], stats: { flankHits: [0, 0], artMorale: [0, 0], killed: [0, 0], lost: [0, 0], moraleBy: [noCause(), noCause()] }, lineup: [0, 0], breakTick: [-1, -1], breakWhy: [0, 0], stood: [0, 0], planTick: [-1, -1], frontLockTick: [-1, -1], used: [0, 0, 0, 0], broken: [0, 0], end: null, winner: -1, log: { dropped: 0, accepted: [], events: [] } }
+  const s: FieldState = { tick: 0, seed: setup.seed, map, squads: [], heroes: [], anchor: [], route: [[], [], [], [], [], []], grpWhy: [0, 0, 0], grpWhyTick: [-1, -1, -1], stats: { flankHits: [0, 0], artMorale: [0, 0], killed: [0, 0], lost: [0, 0], moraleBy: [noCause(), noCause()] }, lineup: [0, 0], breakTick: [-1, -1], breakWhy: [0, 0], stood: [0, 0], standTick: [-1, -1], planTick: [-1, -1], frontLockTick: [-1, -1], used: [0, 0, 0, 0], broken: [0, 0], end: null, winner: -1, log: { dropped: 0, accepted: [], events: [] } }
   if (invalidSetup(setup)) { s.end = 'invalid'; return s }
   const unit = P.field.unit
   const jit = P.field.spawnJitterCells * unit
@@ -120,7 +120,7 @@ export function createField(setup: LiveSetup): FieldState {
     }
     GRPS.forEach(grp => {
       const men = ls.men[grp], n = squadCount(men)
-      const parts = groupKinds(ls, grp, n)
+      const parts = groupKinds(ls, grp, n, s.lineup[side])
       const fresh = Math.min(men, Math.max(0, ls.fresh?.[grp] ?? 0))
       for (let i = 0; i < n; i++) {
         const id = s.squads.length
@@ -128,7 +128,7 @@ export function createField(setup: LiveSetup): FieldState {
         const j = jit > 0 ? Math.floor(roll(s.seed, 0, `spawn:${id}`) * (2 * jit + 1)) - jit : 0
         const p = place(grp, i, n)
         const u = clamp(cp.axis === 1 ? p.u + j : p.u, 0, lastU(map)), v = clamp(cp.axis === 0 ? p.v + j : p.v, 0, lastV(map))
-        const stance = Math.floor(roll(s.seed, 0, `stance:${id}`) * 3) as 0 | 1 | 2
+        const stance = (P.field.stanceStart === 1 ? STANCE_NONE : Math.floor(roll(s.seed, 0, `stance:${id}`) * 3)) as 0 | 1 | 2 | 3
         s.squads.push({ id, side, grp, kind: parts[i]!.kind, men: cnt, menMax: cnt, fresh: men > 0 ? idiv(fresh * cnt, men) : 0, u, v, homeU: u, homeV: v, lock: -1, sleep: ticksOf(cp.asleep ?? 0), daze: 0, rem: 0, held: 0, flank: 0, stance, morale0: ls.morale, shock: 0, goal: null, manual: 0, target: -1, hp: cnt * MILLI, morale: ls.morale, foe: -1, calm: 0, form: 0, cmd: -1, reach: grp === 'bows' ? P.field.bowRangeCells * unit : 0, aim: -1,
           order: ORD_NONE, orderTick: -1, orderAt: null, ran: 0, bonus: 0, hitTick: -1, flee: 0,
           bw: P.field.bodyWCells * unit, bd: (grp === 'horse' ? P.field.horseBodyDCells : P.field.bodyDCells) * unit, face: side === 0 ? 0 : HERO_DIRS / 2, pushed: 0, regrouped: 0 })
@@ -138,7 +138,7 @@ export function createField(setup: LiveSetup): FieldState {
       const hp0 = place('front', 0, 1)
       const hero: Hero = { side, id: ls.hero.id, u: clamp(hp0.u, 0, lastU(map)), v: clamp(hp0.v, 0, lastV(map)), goal: null, manual: 0, grp: -1, stun: 0, hp: P.field.heroHp, rem: 0,
         mu: ls.hero.mu, tong: ls.hero.tong ?? ls.hero.mu, dir: -1, face: side === 0 ? 0 : HERO_DIRS / 2, foe: -1, atk: -1, dash: 0, dashDir: 0, dashCd: 0,
-        art: ls.hero.art ?? HERO_ART_DEFAULT, artCd: 0, artOn: 0, why: WHY_NONE, whyTick: -1, hitIds: [], grit: 0 }
+        art: ls.hero.art ?? HERO_ART_DEFAULT, artCd: 0, artOn: 0, why: WHY_NONE, whyTick: -1, hitIds: [], grit: 0, gritN: 0 }
       s.heroes.push(hero)
     }
   }
@@ -606,7 +606,7 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
     const e = s.squads[aim[q.id]!]!
     if (q.grp !== 'bows') contact[q.side] = true
     let v = mul(q.men * P.field.powerPerSec, K.grp[q.grp])
-    if (q.grp === 'front') v = mul(v, q.stance === STANCE_CHARGE ? K.charge : q.stance === STANCE_HOLD ? K.hold : K.open)
+    if (q.grp === 'front') v = mul(v, q.stance === STANCE_CHARGE ? K.charge : q.stance === STANCE_HOLD ? K.hold : q.stance === STANCE_OPEN ? K.open : MILLI)
     if (q.grp === 'bows' && openFront[q.side]) v = mul(v, K.openVolley)
     if (q.grp === 'bows' && groundAt(s.map, q.u, q.v) === G_HIGH) v = mul(v, K.height)
     // 세모 — 이긴 쪽은 세고 진 쪽이 받는 손실은 크다 (본편 tacTriUp/Down · tacTriTakeLose/Win)
@@ -616,6 +616,8 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
     }
     // 받는 배수 — 맞붙는 칼날에만 (화살비에는 받는 배수가 없다 · 화살은 방진에 세고 돌격에 약하다)
     if (e.grp === 'front' && q.grp !== 'bows') v = mul(v, e.stance === STANCE_CHARGE ? K.takenCharge : e.stance === STANCE_HOLD ? K.takenHold : MILLI)
+    // 방패 벽 진의 방진은 덜 받는다 (화살·칼날 둘 다 · 52 §6-1 「버팀에 덤」)
+    if (e.grp === 'front' && e.stance === STANCE_HOLD && s.lineup[e.side] === LINE_SHIELD) v = mul(v, P.field.lineShieldTakenPermille)
     if (e.grp === 'front' && q.grp === 'bows') v = mul(v, e.stance === STANCE_HOLD ? K.volleyHold : e.stance === STANCE_CHARGE ? K.volleyCharge : MILLI)
     if (e.grp === 'bows') v = mul(v, K.takenVolley)
     // 맞쏘기 명령 — 우리 활을 쏘는 적 활은 그 세기가 tacCounterCut 으로 꺾인다
@@ -636,7 +638,11 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
     let fl = false
     if (q.grp !== 'bows') {
       const k = hitArc(e, q)
-      if (k > 0) { v = mul(v, k === 2 ? P.field.rearHitPermille : P.field.sideHitPermille); flanked[e.id]!++; fl = true }
+      if (k > 0) { v = mul(v, k === 2 ? P.field.rearHitPermille : P.field.sideHitPermille); flanked[e.id]!++; fl = true 
+        // 진 (52 §6-1) — 창 쐐기의 앞줄은 옆이 약하고 · 넓은 날개의 기병은 옆·뒤를 더 세게 친다
+        if (e.grp === 'front' && s.lineup[e.side] === LINE_WEDGE) v = mul(v, P.field.lineWedgeSidePermille)
+        if (q.grp === 'horse' && s.lineup[q.side] === LINE_WINGS) v = mul(v, P.field.lineWingsFlankPermille)
+      }
     }
     dmg[e.id]! += v
     if (fl) sideV[e.id]! += v
@@ -686,7 +692,8 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
   for (const q of s.squads) {
     const raw = rawLoss(q, walled[q.side]!)
     const drop = raw - raw0[q.id]!
-    if (drop > 0 && q.men > 0) q.calm += drop * auraOf(s, q)
+    // 버팀 (stand) 중인 장수 곁의 대는 standSteadyPermille 이 덜 꺾인다 (곁의 기운과 겹치면 큰 쪽)
+    if (drop > 0 && q.men > 0) q.calm += drop * (standing(s, q) ? Math.max(auraOf(s, q), P.field.standSteadyPermille) : auraOf(s, q))
     const before = q.morale
     // 되오른 몫(곁의 기운·큰 외침·버팀)은 처음 사기의 moraleCapPermille 까지만 — 넘는 몫은 쌓아 두지 않는다 (둘 다 외치면 사기가 안 내려가 때를 다 쓰던 판)
     const top = Math.min(MILLI, mul(q.morale0, P.field.moraleCapPermille)), want = q.morale0 - raw + idiv(q.calm, MILLI)
@@ -870,6 +877,7 @@ export function stepField(s: FieldState, inputs: readonly FieldInput[] = NO_INPU
     if (q.daze > 0) q.daze--
   }
   heroMove(s, K, side => sideAsleep(s, side))
+  gritTick(s, side => sideMorale(s, side))
   s.tick++
   judge(s)
   if (s.end === null && s.tick >= P.field.timesMax * timeTicks()) { s.end = 'time'; judgeTime(s) }
@@ -948,7 +956,7 @@ function runImpacts(s: FieldState): boolean[] {
     const push = (blocked ? P.field.bounceCells : q.grp === 'horse' ? P.field.pushHorseCells : P.field.pushFrontCells) * P.field.unit
     shoves.push({ mover, from: { u: away.u, v: away.v }, len: push, by: q })
     if (blocked) addShock(s, q, P.field.blockedShock, 'melee')
-    else { q.bonus = ticksOf(P.field.chargeBonusSec); addShock(s, e, q.grp === 'horse' ? P.field.flankHitShock : P.field.chargeHitShock, q.grp === 'horse' ? 'flank' : 'melee') }
+    else { q.bonus = ticksOf(P.field.chargeBonusSec); addShock(s, e, q.grp === 'horse' ? P.field.flankHitShock : s.lineup[q.side] === LINE_WEDGE ? mul(P.field.chargeHitShock, P.field.lineWedgeShockPermille) : P.field.chargeHitShock, q.grp === 'horse' ? 'flank' : 'melee') }
     emit(s, { kind: 'impact', side: q.side, id: q.id, u: idiv(q.u + e.u, 2), v: idiv(q.v + e.v, 2), n: q.men + e.men, to: e.id, how: blocked ? HIT_BLOCKED : HIT_GOOD })
   }
   // 다른 대를 미는 것끼리는 서로 안 걸린다 — 같은 대를 여럿이 밀 때만 친 대의 시작 자리 차례 (같은 편끼리라 거울·차례에 안 기댄다)
@@ -1181,13 +1189,16 @@ const centerOut = (n: number): number[] => Array.from({ length: n }, (_, i) => i
  * 몫이 8분의 1 을 넘는 병종은 대 하나 이상 · 그 아래 병종의 사람은 가장 큰 병종에 붙인다.
  * 줄 자리: 앞줄은 방패가 가운데 · 창이 그 옆 · 긴 창이 끝 / 활 줄은 활이 가운데 · 쇠뇌가 끝 (돌려주는 배열의 차례 = 시작 줄의 차례).
  */
-export function groupKinds(ls: LiveSetup['sides'][number], grp: Grp, n: number): Array<{ kind: UnitKind; men: number }> {
+export function groupKinds(ls: LiveSetup['sides'][number], grp: Grp, n: number, line: number = LINE_WINGS): Array<{ kind: UnitKind; men: number }> {
   const men = ls.men[grp]
   if (n <= 0) return []
-  const order: UnitKind[] = grp === 'front' ? ['shield', 'spear', 'pike'] : grp === 'bows' ? ['bow', 'crossbow'] : ['horse']
+  // 병종이 없으면 진이 앞줄을 정한다 (52 §6-1) — 방패 벽 = 방패 4분의 3(가운데) · 창 쐐기 = 창 4분의 3(가운데) · 넓은 날개 = 반반
+  const wedge = grp === 'front' && line === LINE_WEDGE && ls.kinds === undefined
+  const order: UnitKind[] = grp === 'front' ? (wedge ? ['spear', 'shield', 'pike'] : ['shield', 'spear', 'pike']) : grp === 'bows' ? ['bow', 'crossbow'] : ['horse']
   let want = order.map(k => Math.max(0, ls.kinds?.[k] ?? 0))
   if (want.reduce((a, b) => a + b, 0) !== men) {
-    want = grp === 'front' ? [idiv(men, 2), men - idiv(men, 2), 0] : grp === 'bows' ? [men - idiv(men, 4), idiv(men, 4)] : [men]
+    const big = ls.kinds === undefined && line !== LINE_WINGS ? men - idiv(men, 4) : idiv(men, 2)
+    want = grp === 'front' ? [big, men - big, 0] : grp === 'bows' ? [men - idiv(men, 4), idiv(men, 4)] : [men]
   }
   // 8분의 1 아래 병종은 가장 큰 병종에 붙인다
   const big = want.indexOf(Math.max(...want))

@@ -163,7 +163,7 @@ export function trySkill(s: FieldState, h: Hero, tu: number, tv: number): void {
     h.artOn = h.dash
     h.hitIds = []
   }
-  if (extra) h.grit = 0
+  if (extra) { h.grit = 0; h.gritN++ }
   else h.artCd = ticksOf(artCdSec(h))
   h.why = WHY_NONE; h.whyTick = s.tick
   // 범위(단위)를 싣는다 — 닿은 대가 없어도 낸다 (검수 B2) · 곁에 퍼지는 비기(큰 외침·버텨라)는 장수 자리
@@ -330,4 +330,21 @@ function dashHit(s: FieldState, h: Hero, p: Point): void {
   if (!best) return
   addShock(s, best, P.field.heroDashShock, 'hero')
   emit(s, { kind: 'impact', side: h.side, id: -1, u: idiv(h.u + best.u, 2), v: idiv(h.v + best.v, 2), n: best.men, to: best.id, how: HIT_GOOD })
+}
+
+/**
+ * 투지 (52 §6-2) — 제 편 사기가 적보다 gritMinGapPermille 넘게 낮으면 그 차에 비례해 찬다 (10%p 차면 1초에 gritPerSec · 차는 gritGapCapPermille 까지만 본다).
+ * 쓰러진 장수는 안 찬다 · 찬 채로 비기를 쓰면 쿨타임이 돌고 있어도 한 번 더 (trySkill) · 편 사기는 sim.ts sideMorale (끝 판정과 같은 셈)
+ */
+export function gritTick(s: FieldState, sideMorale: (side: 0 | 1) => number): void {
+  // 1초에 한 번 (틱마다 바뀌는 빠르기를 틱 몫으로 나누면 hz 따라 어긋난다 · rules.test hz 시험)
+  if (s.tick % P.field.hz !== 0) return
+  const m0 = sideMorale(0), m1 = sideMorale(1)
+  for (const h of s.heroes) {
+    if (h.stun > 0 || h.grit >= MILLI || h.gritN >= P.field.gritUses) continue
+    const gap = (h.side === 0 ? m1 - m0 : m0 - m1)
+    if (gap <= P.field.gritMinGapPermille) continue
+    const per = idiv(P.field.gritPerSec * Math.min(gap, P.field.gritGapCapPermille), 100)
+    h.grit = Math.min(MILLI, h.grit + per)
+  }
 }

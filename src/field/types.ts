@@ -34,6 +34,8 @@ export const OP_RETREAT = 3
 export const STANCE_CHARGE = 0
 export const STANCE_HOLD = 1
 export const STANCE_OPEN = 2
+/** 기본 자세 (명령 없음 · 세모 상성에 안 낀다 · 세기 배수 1) — 돌격·방진 명령이 끝나면 이것으로 돌아간다 (길 트기는 남는다) */
+export const STANCE_NONE = 3
 /**
  * 적을 쳐라 (C2 · 50 조작 v2): g 0~3 (무리 셋 또는 장수) · u = 적 대 id · v = 0.
  * 앞줄·기병은 그 적에게 가서 맞붙고, 활은 그 적을 겨눈다 · 장수는 그 적에게 붙는다 · 그 적이 사라지면 알아서로 돌아간다
@@ -120,8 +122,8 @@ export interface Squad {
   u: number
   v: number
   goal: Point | null
-  /** 앞줄 자세 0 돌격 · 1 방진 · 2 길 트기 (활·기병은 무시) */
-  stance: 0 | 1 | 2
+  /** 앞줄 자세 0 돌격 · 1 방진 · 2 길 트기 · 3 기본(STANCE_NONE · 세모에 안 낀다) (활·기병은 무시) */
+  stance: 0 | 1 | 2 | 3
   /** 처음 사기 · 사기 = morale0 - 잃은 몫 - shock (누적에서 바로 셈하므로 정수 깎임이 쌓이지 않는다) */
   morale0: number
   /** 옆구리·장수 쓰러짐으로 누적된 사기 꺾임 (천분율) */
@@ -232,6 +234,8 @@ export interface Hero {
    * 화면은 찬 정도(÷ 1000)와 「찼다」(= 1000)를 읽는다
    */
   grit: number
+  /** 투지로 한 번 더 쓴 횟수 (gritUses 에 닿으면 더 안 찬다 · 양쪽이 번갈아 차서 때를 다 쓰던 판) */
+  gritN: number
 }
 
 export interface FieldInput { tick: number; g: InputGroup; op: number; u: number; v: number }
@@ -388,6 +392,8 @@ export interface FieldState {
   breakWhy: [number, number]
   /** 버팀을 쓴 편 (stand · 판마다 한 번) */
   stood: [0 | 1, 0 | 1]
+  /** 버팀이 선 틱 (-1 아직) — 이 틱부터 P.field.standSec 동안 그 편 장수 곁(heroArtCells)의 대가 덜 꺾인다 */
+  standTick: [number, number]
   /** 적의 큰 수 (입력 없는 편의 옆치기 · 51 §7) — 그 편이 옆치기를 거는 틱 (-1 없음 · 판을 만들 때 씨앗으로 정한다) */
   planTick: [number, number]
   /** 편마다 앞줄 대가 마지막으로 맞물린 틱 (-1 없음) — 맞물려 있으면 진의 기준점이 언다 (52 §1-3 · F 로 풀린다) */
