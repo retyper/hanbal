@@ -17,3 +17,7 @@
 
 ## 못 본 것
 사람 손의 채찍(거리 벌리기를 봇만큼 못할 수 있다) · 말투 값(crack/noose) 승률 차 · 올가미 끌려온 수 · 목책 문턱 `WALL.shop.whip .5` 로 목책 앞에서 멈추는 시간.
+
+## 표를 켰다 (W6 끝) · 되돌리는 법
+11-25 밤 표를 켰다: 말갈기 · 마가 말굽 · 늙은 대소 · 비라 · 우가 누리 · 탐라 오름비가 `whip` 묶음이다(`src/raid/kit-table.ts` 여섯 줄 · 말투는 `src/raid/whip-style.ts`).
+**되돌리기 한 줄**: `tools/raid-kit-overrides.json` 의 `bira` · `base-w-45-tamna-oreumbi` · `olddaeso` 를 `"dagger"` 로, `tools/raid-kit-table.mjs` 사전의 `whip: 'whip'` 을 `whip: 'dagger'` 로 되돌린 뒤 `node tools/raid-kit-table.mjs` (생성 결과의 타입 줄과 `whip` 건수 줄도 같이 돌아간다). 옛 판 기록(`kit:'dagger'`)은 어느 쪽이든 그대로 재생된다.

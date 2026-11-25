@@ -182,9 +182,9 @@ test('말갈기의 옛 기록(kit:dagger)은 채찍 묶음이 들어온 뒤에�
   assert.equal(sha(goldenRun('palisade', 'dagger', 11, 90)), '249006bf43ac9f1f9c550f4c227e5fba8fc5e971f26a8e5149d44d3e39dbd960')
 })
 
-test('표를 켜기 전: 채찍 그림의 여섯 장수는 아직 단검 묶음이다 (형의 판은 계속 단검) · 말투 표는 여섯 모두 안다', () => {
+test('표를 켠 뒤: 채찍 그림의 여섯 장수는 채찍 묶음이다 · 말투 표는 여섯 모두 안다', () => {
   assert.equal(WHIP_SPRITES.length, 6)
-  for (const key of WHIP_SPRITES) assert.equal(KIT_BY_SPRITE[key], 'dagger', key)
+  for (const key of WHIP_SPRITES) assert.equal(KIT_BY_SPRITE[key], 'whip', key)
   assert.deepEqual(WHIP_SPRITES.map(whipStyleOf), ['crack', 'crack', 'crack', 'noose', 'noose', 'noose'])
   assert.equal(whipStyleOf('haebi'), 'crack')
 })
@@ -379,4 +379,14 @@ test('봇: 채찍은 가장 가까운 적이 줄 길이의 0.7배 안이면 물�
   const walk = botInput(far)
   const orbit = botInput(Object.assign(createHaebi(7, 'stage', 'dagger', { simRules: '56B', kitRules: '58-KITS' }), { x: far.x, y: far.y }))
   assert.ok(Number.isFinite(walk.x) && Number.isFinite(orbit.x))
+})
+
+// ── W8 · 빌린 그림이 실제로 있다 (빈 칸·깨진 그림 없음) ──
+import { existsSync, readFileSync } from 'node:fs'
+import { nodeArt } from '../src/raid/power-ui.ts'
+test('채찍 묶음 칸 열여섯과 조합의 그림 파일이 모두 실제로 있다 · 비기 단추 그림도', () => {
+  for (const p of kitPowers('whip')) { const a = nodeArt('whip', p); assert.ok(existsSync(`public/realm/${a.src}`), `${p} → ${a.src}`) }
+  for (const p of ['ember', 'thunder', 'echo', 'tempo', 'reach'] as const) assert.ok(existsSync(`public/realm/${nodeArt('whip', p).src}`), p)
+  const css = readFileSync('src/raid/combat.css', 'utf8'), m = /#skill\[data-kit=whip\]:before\{background-image:url\('\/realm\/([^']+)'\)\}/.exec(css)
+  assert.ok(m && existsSync(`public/realm/${m[1]}`), '비기 단추 그림')
 })
