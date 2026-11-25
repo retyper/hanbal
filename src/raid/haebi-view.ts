@@ -20,7 +20,8 @@ import { fallCells, koFrame, koZoom } from './ko.ts'
 import { HAEBI_KO as KO } from '../tune/params.ts'
 import { HAEBI_ANIM as ANIM } from '../tune/params.ts'
 import { AURA_ART, drawAura, drawAuraBurst, drawAuraGround, type AuraArt, type AuraAt, type AuraKind } from './fx-aura.ts'
-import { HAEBI_IMPACT as FEEL, HAEBI_END as END, HAEBI_KITS as KITS58, HAEBI_ROPE as RP } from '../tune/params.ts'
+import { HAEBI_IMPACT as FEEL, HAEBI_END as END, HAEBI_KITS as KITS58, HAEBI_ROPE as RP, HAEBI_DASH as DASH } from '../tune/params.ts'
+import { DASH_CELLS } from './dash-cells.ts'
 import type { RaidFeel } from './impact.ts'
 import type { RaidEnding } from './ending.ts'
 import { FX_PATHS, drawFx } from './fx-art.ts'
@@ -161,6 +162,47 @@ export function sprite(ctx: CanvasRenderingContext2D, images: Map<string, HTMLIm
   if (face !== 1) ctx.scale(face, 1); ctx.translate(-tx, -ty); ctx.imageSmoothingEnabled = smooth
 }
 /**
+ * 영웅 대시 한 칸 (HAEBI_DASH · 화면만): 대시 칸 그림 경로 — 이 띠 장수에게 대시 칸이 없으면 null (그러면 예전 그대로)
+ */
+export const dashPathOf = (strip: string) => spriteName(strip) in DASH_CELLS ? `anim-px/dash/gen-${spriteName(strip)}.png` : null
+/** 지금 그릴 수 있는 대시 칸 (그림이 읽혔고 서기 띠 규격이 있다) */
+function dashReady(images: Map<string, HTMLImageElement> | null, strip: string) {
+  const p = dashPathOf(strip), main = SPRITE_PX[`gen-${spriteName(strip)}`]
+  return p && main && companionReady(images, p) ? { path: p, ch: main.cell[1], feet: main.feet, scale: DASH_CELLS[spriteName(strip)]! } : null
+}
+/** 대시 칸 한 장을 발 자리(x,y)에 — 서기와 같은 배율 · 뿌리를 축으로 face 쪽을 보고 · stretch 는 가로 늘임 */
+function drawDashCell(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, d: NonNullable<ReturnType<typeof dashReady>>, x: number, y: number, height: number, face: number, stretch: number) {
+  const img = images.get(d.path)!, k = height / d.ch * d.scale, p = companionPlace(img.width, DASH.geom.h, k, d.feet, DASH.geom)
+  const smooth = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = false
+  ctx.translate(Math.round(x + face * DASH.shiftX), Math.round(y - DASH.lift)); ctx.scale(face * stretch, 1)
+  ctx.drawImage(img, Math.round(p.left), Math.round(p.top), Math.round(p.w), Math.round(p.h))
+  ctx.scale(face * stretch, 1); ctx.translate(-Math.round(x + face * DASH.shiftX), -Math.round(y - DASH.lift)); ctx.imageSmoothingEnabled = smooth
+}
+type DashGhost = { x: number; y: number; face: number; t: number }
+const dashGhosts: DashGhost[] = []
+let dashGhostAt = -1
+/** 대시 잔상: 지나온 자리마다 대시 칸 한 장을 남겨 점점 옅어진다 (회피 잔상과 같은 수·같은 때) · 새 판이면 비운다 */
+function trackDashGhosts(s: HaebiRun) {
+  if (dashGhosts.length && s.t < dashGhosts[dashGhosts.length - 1]!.t) { dashGhosts.length = 0; dashGhostAt = -1 }
+  if (s.dash > 0 && s.t - dashGhostAt >= C.ghostEvery) { dashGhosts.push({ x: s.x, y: s.y, face: s.face, t: s.t }); dashGhostAt = s.t }
+  while (dashGhosts.length && s.t - dashGhosts[0]!.t > C.ghostLife) dashGhosts.shift()
+}
+function drawDashGhosts(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, d: NonNullable<ReturnType<typeof dashReady>>, height: number) {
+  const a = ctx.globalAlpha
+  for (const g of dashGhosts) { const k = 1 - (s.t - g.t) / C.ghostLife; if (k <= 0) continue; ctx.globalAlpha = a * DASH.ghostAlpha * k * k; drawDashCell(ctx, images, d, g.x, g.y, height, g.face, 1) }
+  ctx.globalAlpha = a
+}
+/** 발밑 흙먼지: 대시 동안 뒤로 흩어지는 낱낱 점 몇 개 (옅어지며) */
+function drawDashDust(ctx: CanvasRenderingContext2D, s: HaebiRun) {
+  const t = 1 - s.dash / C.dashTime, a = ctx.globalAlpha
+  ctx.fillStyle = DASH.dustColor
+  for (let i = 0; i < DASH.dust; i++) {
+    const d = DASH.dustDist * (.35 + .65 * (i + 1) / DASH.dust) * (.5 + .5 * t), lift = Math.sin((i + 1) * 2.1) * 4
+    ctx.globalAlpha = a * (1 - t) * (.8 - i * .15); ctx.beginPath(); ctx.arc(s.x - s.face * d, s.y - 2 + lift, DASH.dustSize * (1 + t), 0, TAU); ctx.fill()
+  }
+  ctx.globalAlpha = a
+}
+/**
  * 회피 잔상 — 화면 쪽에서만 들고 있는 그림 기록(판 상태는 읽기만). 지나온 자리마다 장수 실루엣을 남겨
  * 청록·자홍으로 살짝 갈라 빛으로 겹쳐 그리고 곧 사라진다.
  */
@@ -208,6 +250,8 @@ export const heroArtFiles = () => [...new Set([heroArt.base, heroArt.awake])]
 /** 계획이 20 칸 넘게 쓰는 장수의 덧 띠 (없어도 판은 돈다 — 부르는 쪽이 실패를 삼킨다) */
 /** 덧 띠를 굽는 키 배율 (그림 높이 ÷ 본 띠 칸 높이 · 규격 없으면 1) */
 const xScale = (path: string) => { const g = xGeomOf(path); return g ? companionScale(g.ch, g.xg) : 1 }
+/** 이 장수의 대시 칸 그림 (있으면 · 없어도 판은 돈다) */
+export const heroDashFiles = () => heroArtFiles().map(dashPathOf).filter((p): p is string => !!p)
 export const heroCompanionFiles = () => heroArtFiles().filter(p => usesCompanion(idlePlan(p))).map(companionOf)
 /** 마지막으로 판을 그린 그림 묶음 — 덧 띠가 왔는지 보려고 (화면 쪽 기억) */
 let viewImages: Map<string, HTMLImageElement> | null = null
@@ -262,8 +306,10 @@ function drawHero(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageEl
     for (let i = pose.ghosts; i >= 1; i--) { ctx.globalAlpha = a * pose.ghostAlpha * (1 - (i - 1) / pose.ghosts); sprite(ctx, images, path, ox + pose.ghostStep * i, oy, h, pose.ghostFrame, pose.face, false, density) }
     ctx.globalAlpha = a
   }
-  sprite(ctx, images, path, ox, oy, h, pose.frame, pose.face, s.hurt > 0, density, s.inv > 0 ? C.heroRim : 0)   // 11-23 형 「던파 슈퍼아머도 아닌데 왜 상시 노란 테두리」 → 무적(회피) 동안만
-  if (awakenedLook(s)) {
+  const dash = s.dash > 0 ? dashReady(images, path) : null   // 대시 칸이 있는 장수는 대시하는 동안 그 한 칸
+  if (dash) { drawDashDust(ctx, s); drawDashCell(ctx, images, dash, ox, oy, h, s.face, 1 + (DASH.stretch - 1) * (s.dash / C.dashTime)) }
+  else sprite(ctx, images, path, ox, oy, h, pose.frame, pose.face, s.hurt > 0, density, s.inv > 0 ? C.heroRim : 0)   // 11-23 형 「던파 슈퍼아머도 아닌데 왜 상시 노란 테두리」 → 무적(회피) 동안만
+  if (awakenedLook(s) && !dash) {
     // 각성: 몸이 금빛으로 맥박친다 (같은 그림을 빛으로 한 번 더)
     const op = ctx.globalCompositeOperation; ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .16 + .12 * Math.sin(s.t * 7)
     sprite(ctx, images, path, ox, oy, h, pose.frame, pose.face, false, density); ctx.globalCompositeOperation = op; ctx.globalAlpha = 1
@@ -981,7 +1027,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       const heroPath = heroSprite(s, images, density), pose = heroPose(s, { ...poseOptions(s), stopped: feel?.stopped ?? false, still: calmMotion || !!ending?.active, low: criticalLow })
       // 쓰러짐 KO — 맞은 멈춤 뒤 띠의 쓰러지는 칸을 차례로 (raid/ko.ts · 끝 칸에 머문다) · 막이 끝나 결과 창 뒤에도 누운 채
       if (ending?.kind === 'defeat') { pose.frame = koFrame(fallCells(planOf(heroPath)?.fall), ending.elapsed - END.defeat.freeze); pose.ghosts = 0 }
-      trackGhosts(s, heroPath, pose.frame); drawGhosts(ctx, images, s, heroH(s))
+      { const dashStrip = dashReady(images, heroPath); if (dashStrip) { trackDashGhosts(s); drawDashGhosts(ctx, images, s, dashStrip, heroH(s)) } else { trackGhosts(s, heroPath, pose.frame); drawGhosts(ctx, images, s, heroH(s)) } }
       // 오라: 뒤 겹(몸 뒤 빛 · 뒤 가닥) → 몸 → 앞 겹(앞 가닥 · 불티) · 발밑 고리와 표식은 땅 표식 차례에 이미 그렸다
       if (aura) drawAura(ctx, aura, false, auraAt)
       drawCast(ctx, s)

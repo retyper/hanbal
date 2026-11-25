@@ -1396,6 +1396,17 @@ export const HAEBI_ROPE = {
   swirlRopes: 2, swirlTurns: 1.3, swirlSquash: .6, swirlLag: .9, swirlArc: 18, swirlRing: .55,
 } as const
 /**
+ * 영웅 대시 한 칸 (형 11-25 「영웅대시 좋다」 · 장수마다 「뛰어드는 자세」 한 칸 · 그림 public/realm/anim-px/dash/gen-<띠 열쇠>.png · 표 raid/dash-cells.ts) — 화면만 · 판의 대시(거리·쿨·무적)는 그대로.
+ * 대시하는 동안(판 s.dash) 그 장수에게 대시 칸이 있으면 서기 띠 대신 그 한 칸을 그린다. 칸은 덧띠 규격 그대로: 칸 높이 h · 뿌리(가로 기준 · 뒤집는 축) root · 발바닥 줄 foot (원본 px)
+ *   → 서기의 발 줄·키와 같은 배율로 놓인다(그림 안에 뜬 높이가 들어 있다 · 그림자는 땅에 남는다).
+ * stretch = 대시 시작에 가로로 늘이는 배(→ 끝에서 1) · lift = 그리는 쪽에서 더 띄우는 px(그림은 그대로) · shiftX = 가는 쪽으로 더 미는 px
+ * ghostAlpha = 잔상 첫 진하기(점점 옅게 · 수는 HAEBI_RUN.ghostEvery·ghostLife 그대로) · dust = 발밑 흙먼지 점 수 · dustDist 뒤로 흩어지는 px · dustSize 점 반지름 · dustColor
+ */
+export const HAEBI_DASH = {
+  geom: { h: 224, root: 92, foot: 216 }, stretch: 1.08, lift: 0, shiftX: 0,
+  ghostAlpha: .42, dust: 3, dustDist: 26, dustSize: 4, dustColor: '#cdb78a',
+} as const
+/**
  * 56-C 목책을 진짜로 (11-21 형: 「3스테이지 목책이 오브젝트도 아니라서 다 그림 밟고 온다」) — 목책 돌파 판(규칙 56C)에만 선다.
  * 판을 가로지르는 목책 줄을 마디(축에 맞춘 상자)로 세운다. 장수도 적도 성한 마디에 막힌다 · 화살·던진 것은 넘어간다.
  * 적은 곧게 못 오면 가장 가까운 문(열린 문 · 부서진 마디)으로 돌아 들어온다(문까지 곧장 · 길 찾기 없음 · 프레임 예산).

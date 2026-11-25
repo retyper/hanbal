@@ -26,7 +26,7 @@ import { pushRaids } from './net/sync.ts'
 import { newCam, followCam, nextLevel, closest, toField, fieldView, clampCenter, bossFrameZoom, cameraBounds } from './raid/camera.ts'
 import { fieldBounds } from './raid/wide.ts'
 import { loadMeta, saveMeta, buy, refund, refundFee, record, recordJackpots, heroJackpots, shopCost, shopMax, stageOpen, stageName, pickStage, SHOP, STAGE_ORDER, type ShopKey } from './raid/meta.ts'
-import { drawField, imagePaths, setHeroArt, heroArtFiles, heroHdFiles, heroCompanionFiles, warmHeroSprites, heroFallCells, heroDrawHeight } from './raid/haebi-view.ts'
+import { drawField, imagePaths, setHeroArt, heroArtFiles, heroHdFiles, heroCompanionFiles, heroDashFiles, warmHeroSprites, heroFallCells, heroDrawHeight } from './raid/haebi-view.ts'
 import { fallTime, koSkippable, koTargetZoom, koZoom } from './raid/ko.ts'
 import { HAEBI_KO as KO } from './tune/params.ts'
 import { powerIcon, installPowerHints, comboIcon, rankMark, treeInfo, BRANCH_COLOR } from './raid/power-ui.ts'
@@ -435,7 +435,7 @@ function prepareHeroRaster(zoom: number) {
   const density = zoom * Math.max(canvas.width / C.width, canvas.height / C.height), key = Math.ceil(density * 16) + ''
   if (key !== heroWarmKey) { heroWarmKey = key; warmHeroSprites(images, density) }
   // 덧 띠(gen-X-x.png · 20 칸부터)는 없어도 판이 돈다 — 오면 굽고, 못 받으면 쓰러짐 18 → 19 그대로
-  for (const path of [...heroHdFiles(density), ...heroCompanionFiles()]) if (!hdRequested.has(path)) {
+  for (const path of [...heroHdFiles(density), ...heroCompanionFiles(), ...heroDashFiles()]) if (!hdRequested.has(path)) {
     hdRequested.add(path); const img = new Image()
     img.onload = () => { void img.decode().catch(() => {}).then(() => { images.set(path, img); heroWarmKey = ''; prepareHeroRaster(cam.zoom) }) }
     img.onerror = () => {} // Optional HD failure keeps approved base art.
