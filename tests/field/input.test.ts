@@ -100,7 +100,7 @@ test('조작표: 키마다 동작이 하나이고 (겹침 없음) · 이름으�
       assert.equal(actionOf(code), name)
     }
   }
-  assert.deepEqual([KEYS.pickHero, KEYS.pickFront, KEYS.pickBows, KEYS.pickHorse, KEYS.pickAll], [['Digit1'], ['Digit2'], ['Digit3'], ['Digit4'], ['Backquote']])
+  assert.deepEqual([KEYS.pickFront, KEYS.pickBows, KEYS.pickHorse, KEYS.pickHero, KEYS.rally], [['Digit1'], ['Digit2'], ['Digit3'], ['Digit4'], ['KeyF']])
   assert.deepEqual([KEYS.cmd1, KEYS.cmd2, KEYS.cmd3, KEYS.cmd4], [['KeyZ'], ['KeyX'], ['KeyC'], ['KeyV']])
   assert.equal(actionOf('F13'), null)
 })
@@ -147,4 +147,12 @@ test('장수 조작: WASD·스틱 → 16방위 번호 · 바뀔 때만 보내는
   for (let i = 0; i < 20; i++) stepField(s)
   assert.ok(s.heroes.find(e => e.side === 0)!.u > u0)
   assert.equal(s.log.dropped, 0)
+})
+
+test('큰 수 넷과 찍은 자리의 적 고르기', async () => {
+  const { BIG_ARTS, nearestFoe } = await import('../../src/field/input.ts')
+  assert.deepEqual([...BIG_ARTS], ['charge', 'hold', 'volley', 'flank'])
+  const sq = [{ id: 0, side: 0, men: 9, u: 10, v: 10 }, { id: 1, side: 1, men: 9, u: 100, v: 10 }, { id: 2, side: 1, men: 0, u: 52, v: 10 }, { id: 3, side: 1, men: 9, u: 60, v: 50 }]
+  assert.equal(nearestFoe(sq, 55, 10), 3, '산 적 가운데 가장 가까운 것 (쓰러진 대·우리 편은 안 센다)')
+  assert.equal(nearestFoe(sq.slice(0, 1), 5, 5), -1)
 })

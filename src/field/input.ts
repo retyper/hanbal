@@ -13,6 +13,8 @@ import { OP_ATTACK, OP_AUTO, OP_DASH, OP_HERO_DIR, OP_MOVE, OP_SKILL, OP_STANCE,
  */
 export const CMDS: readonly (readonly string[])[] = [['charge', 'hold', 'open'], ['volley', 'counter'], ['flank', 'punch', 'pursue', 'guard']]
 export type CmdGroup = 0 | 1 | 2
+/** 큰 수 넷 (화면 아래 고정 · Z X C V) — 돌격 · 방진은 바로 · 화살비 · 옆치기는 땅을 찍어 확정 */
+export const BIG_ARTS = ['charge', 'hold', 'volley', 'flank'] as const
 
 export interface InputCtx {
   /** 이 입력이 들어갈 틱 (시작 화면에서는 0) */
@@ -56,6 +58,17 @@ export function keysDir(up: boolean, down: boolean, left: boolean, right: boolea
 export function cmdInput(g: CmdGroup, idx: number, current: number, ctx: InputCtx): FieldInput {
   if (current === idx) return { tick: ctx.tick, g, op: OP_AUTO, u: 0, v: 0 }
   return { tick: ctx.tick, g, op: OP_STANCE, u: idx, v: 0 }
+}
+
+/** 찍은 자리에 가장 가까운 산 적 대 (sim 단위 · 없으면 -1) — 화살비·옆치기를 「찍은 자리의 적」에게 보낸다 */
+export function nearestFoe(squads: readonly { id: number; side: number; men: number; u: number; v: number }[], u: number, v: number): number {
+  let best = -1, bd = Infinity
+  for (const q of squads) {
+    if (q.side !== 1 || q.men <= 0) continue
+    const d = (q.u - u) ** 2 + (q.v - v) ** 2
+    if (d < bd) { bd = d; best = q.id }
+  }
+  return best
 }
 
 /** 입력 줄에서 같은 무리의 같은 갈래를 새 입력으로 바꾼다 (시작 화면에서 꽂아 둔 것 · 알아서는 그 무리의 자리·자세를 비운다) */

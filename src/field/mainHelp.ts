@@ -34,11 +34,11 @@ function rows(): { pc: string[]; touch: string[] } {
   const k = (a: ActionName, i = 0): string => keyLabel(KEYS[a][i] ?? '')
   return {
     pc: [
-      t('field.help.pc.pick', { k1: k('pickHero'), k2: k('pickFront'), k3: k('pickBows'), k4: k('pickHorse'), k5: k('pickAll') }),
+      t('field.help.pc.pick', { k1: k('pickFront'), k2: k('pickBows'), k3: k('pickHorse'), k4: k('pickHero'), k5: k('rally') }),
       t('field.help.pc.send'),
       t('field.help.pc.hero', { k1: k('heroUp') + k('heroLeft') + k('heroDown') + k('heroRight'), k2: k('dash'), k3: k('skillQ') }),
       t('field.help.pc.stance', { k1: k('cmd1'), k2: k('cmd2'), k3: k('cmd3'), k4: k('cmd4') }),
-      t('field.help.pc.cam', { k1: k('camFree'), k2: k('camFight') }),
+      t('field.help.pc.cam'),
       t('field.help.pc.pause', { k1: k('pause'), k2: k('pause', 1), k3: k('slow'), k4: k('go') }),
     ],
     touch: [t('field.help.t.pick'), t('field.help.t.send'), t('field.help.t.hero'), t('field.help.t.stance'), t('field.help.t.cam')],

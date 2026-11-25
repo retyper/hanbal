@@ -9,19 +9,20 @@
 import { t, type Key } from '../i18n/index.ts'
 import { P } from '../tune/params.ts'
 import { firstKeyLabel, type ActionName } from './actions.ts'
-import { cellWhy, cmdGroup, pickables, type UiState } from './pickmodel.ts'
-import { CMDS } from './input.ts'
+import { cellWhy, pickables, type UiState } from './pickmodel.ts'
+import { BIG_ARTS } from './input.ts'
 import type { InputGroup } from './types.ts'
 import type { VModel } from './viewRead.ts'
 
 export interface FlagsHandlers {
   onCell(g: InputGroup): void
-  onCmd(g: 0 | 1 | 2, idx: number): void
+  onBig(i: number): void
   onGo(): void
 }
 export type Tone = 'ok' | 'why'
 /** 아래 띠가 알아야 하는 바깥 사정 — cmd: 앞줄·활·기병이 지금 고른 명령 번호(알아서면 -1) · sentGroup: 무리를 한 번이라도 보냈는가 · touch: 손으로 쓰는 화면인가 */
-export interface FlagsCtx { cmd: readonly number[]; sentGroup: boolean; touch: boolean }
+/** big: 앞줄이 지금 고른 명령 번호(0 돌격 · 1 방진 · 없으면 -1) · aiming: 찍는 중인 큰 수 번호(2 화살비 · 3 옆치기 · 아니면 -1) */
+export interface FlagsCtx { front: number; aiming: number; sentGroup: boolean; touch: boolean }
 export interface FlagsView {
   sync(m: VModel, ui: UiState, c: FlagsCtx): void
   say(text: string, tone: Tone, nowMs: number): void
@@ -50,7 +51,7 @@ const CSS = `
 .fd-kb{position:absolute;left:4px;top:2px;font-size:11px;line-height:1;color:#f3ecd8aa;font-style:normal}
 @media (pointer:coarse){.fd-kb{display:none}}
 .fd-pop{position:absolute;left:0;bottom:calc(100% + 6px);display:flex;gap:6px;background:#000d;border:1px solid ${GOLD}88;border-radius:10px;padding:6px;z-index:3}
-.fd-opt{font:inherit;color:#f3ecd8;background:#0b1a2ecc;border:2px solid #2f8cff88;border-radius:8px;min-width:64px;min-height:56px;padding:3px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative;font-size:13px;transition:transform .08s}
+.fd-opt{font:inherit;color:#f3ecd8;background:#0b1a2ecc;border:2px solid #2f8cff88;border-radius:8px;min-width:60px;min-height:56px;padding:3px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative;font-size:13px;transition:transform .08s}
 .fd-opt:active{transform:scale(1.12)}
 .fd-opt img{width:30px;height:30px;object-fit:contain}
 .fd-opt.on{border-color:${GOLD};background:#2a2410d9}
@@ -92,15 +93,15 @@ export function mountFlags(root: HTMLElement, base: string, h: FlagsHandlers): F
     if (el === null) return
     const act = el.dataset['act']
     if (act === 'cell') h.onCell(Number(el.dataset['g']) as InputGroup)
-    else if (act === 'cmd') h.onCmd(Number(el.dataset['g']) as 0 | 1 | 2, Number(el.dataset['i']))
+    else if (act === 'big') h.onBig(Number(el.dataset['i']))
   })
 
   /** 명령 단추를 누르고 있는 중 (오래 누르면 뜻 한 줄 · 그때 뗀 손은 명령으로 치지 않는다) */
-  let hold: { g: number; i: number; t0: number } | null = null
+  let hold: { name: string; t0: number } | null = null
   let tipShown = false
   cells.addEventListener('pointerdown', e => {
     const el = (e.target as HTMLElement).closest('.fd-opt') as HTMLElement | null
-    if (el !== null) { hold = { g: Number(el.dataset['g']), i: Number(el.dataset['i']), t0: e.timeStamp }; tipShown = false }
+    if (el !== null) { hold = { name: el.dataset['n'] ?? '', t0: e.timeStamp }; tipShown = false }
   })
   for (const ev of ['pointerup', 'pointercancel', 'pointerleave'] as const) cells.addEventListener(ev, () => { hold = null; tip.hidden = true })
   cells.addEventListener('click', e => { if (tipShown) { tipShown = false; e.stopImmediatePropagation() } }, true)
@@ -118,27 +119,27 @@ export function mountFlags(root: HTMLElement, base: string, h: FlagsHandlers): F
   return {
     sync(m, ui, c) {
       const alive = [0, 1, 2, 3].map(g => cellWhy(m, g as InputGroup) === null ? 1 : 0)
-      const key = [ui.phase, ui.sel.join(''), alive.join(''), c.cmd.join(''), c.sentGroup ? 1 : 0, c.touch ? 1 : 0, m.end === null ? 0 : 1].join('|')
+      const key = [ui.phase, ui.sel.join(''), alive.join(''), c.front, c.aiming, c.sentGroup ? 1 : 0, c.touch ? 1 : 0, m.end === null ? 0 : 1].join('|')
       if (key === sig) return
       sig = key
       strip.hidden = ui.phase === 'end' || m.end !== null
       go.hidden = ui.phase !== 'ready'
       const shown = pickables(m, ui)
-      const cg = cmdGroup(m, ui)
+      const bigOn = ui.phase !== 'end' && m.end === null
       let html = ''
       for (const g of [0, 1, 2, 3] as const) {
         const live = shown.includes(g)
         const on = ui.sel.includes(g)
         let pop = ''
-        if (g === cg) {
-          pop = '<div class="fd-pop">' + CMDS[g]!.map((name, i) => `<button class="fd-opt${c.cmd[g] === i ? ' on' : ''}" type="button" data-act="cmd" data-g="${g}" data-i="${i}" title="${t(`war.cmdShort.${name}` as Key)}"><i>${firstKeyLabel(CMD_ACTION[i]!)}</i>${img(`flag/flag-${name}.png`)}<span>${t(`war.cmdName.${name}` as Key)}</span></button>`).join('') + '</div>'
+        if (g === 0 && bigOn) {
+          pop = '<div class="fd-pop">' + BIG_ARTS.map((name, i) => `<button class="fd-opt${(i < 2 && c.front === i) || c.aiming === i ? ' on' : ''}" type="button" data-act="big" data-i="${i}" data-n="${name}" title="${t(`war.cmdShort.${name}` as Key)}"><i>${firstKeyLabel(CMD_ACTION[i]!)}</i>${img(`flag/flag-${name}.png`)}<span>${t(`war.cmdName.${name}` as Key)}</span></button>`).join('') + '</div>'
         }
         html += `<div class="fd-slot"><button class="fd-cell${on ? ' on' : ''}${live ? '' : ' no'}" type="button" data-act="cell" data-g="${g}" aria-pressed="${on}" aria-label="${t(`field.g.${g}`)}"><i class="fd-kb">${firstKeyLabel(CELL_ACTION[g]!)}</i>${img(CELL_ICON[g]!)}<b>${t(`field.g.${g}`)}</b><em class="fd-ck">✓</em></button>${pop}</div>`
       }
       cells.innerHTML = html
       // 한 줄 안내: 처음 무리를 보내기 전까지만 (자세 단추가 떠 있으면 그 자리를 비운다)
       const line = ui.phase === 'ready' ? t(c.touch ? 'field.hint.ready.touch' : 'field.hint.ready.pc') : !c.sentGroup ? t(c.touch ? 'field.hint.group.touch' : 'field.hint.group.pc') : ''
-      const showHint = ui.phase !== 'end' && m.end === null && cg === null && line !== ''
+      const showHint = ui.phase !== 'end' && m.end === null && !bigOn && line !== ''
       hint.hidden = !showHint
       hint.innerHTML = showHint ? `<span>${line}</span>` : ''
     },
@@ -150,7 +151,7 @@ export function mountFlags(root: HTMLElement, base: string, h: FlagsHandlers): F
     frame(nowMs) {
       if (hold !== null && !tipShown && nowMs - hold.t0 >= P.field.cmdHintMs) {
         tipShown = true
-        tip.textContent = t(`war.cmdDoes.${CMDS[hold.g]![hold.i]!}` as Key)
+        tip.textContent = t(`war.cmdDoes.${hold.name}` as Key)
         tip.hidden = false
       }
       if (sayText !== '' && nowMs >= sayUntil) { sayText = ''; paintSay() }

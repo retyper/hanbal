@@ -4,19 +4,19 @@
  * 키는 `KeyboardEvent.code` 로 적는다 (한글 자판이어도 같은 자리의 키가 눌린다). 순수 표 — DOM 을 모른다.
  */
 export type ActionName =
-  | 'pickHero' | 'pickFront' | 'pickBows' | 'pickHorse' | 'pickAll'
+  | 'pickHero' | 'pickFront' | 'pickBows' | 'pickHorse' | 'rally'
   | 'cmd1' | 'cmd2' | 'cmd3' | 'cmd4'
   | 'heroUp' | 'heroDown' | 'heroLeft' | 'heroRight'
   | 'skillQ' | 'skillE' | 'skillR' | 'dash'
-  | 'camFree' | 'camFight' | 'camLeft' | 'camRight' | 'camUp' | 'camDown'
+  | 'camLeft' | 'camRight' | 'camUp' | 'camDown'
   | 'pause' | 'slow' | 'go' | 'help'
 
 export const KEYS: Readonly<Record<ActionName, readonly string[]>> = {
-  pickHero: ['Digit1'],
-  pickFront: ['Digit2'],
-  pickBows: ['Digit3'],
-  pickHorse: ['Digit4'],
-  pickAll: ['Backquote'],
+  pickFront: ['Digit1'],
+  pickBows: ['Digit2'],
+  pickHorse: ['Digit3'],
+  pickHero: ['Digit4'],
+  rally: ['KeyF'],
   cmd1: ['KeyZ'],
   cmd2: ['KeyX'],
   cmd3: ['KeyC'],
@@ -29,8 +29,6 @@ export const KEYS: Readonly<Record<ActionName, readonly string[]>> = {
   skillE: ['KeyE'],
   skillR: ['KeyR'],
   dash: ['Space'],
-  camFree: ['KeyY'],
-  camFight: ['Tab'],
   camLeft: ['ArrowLeft'],
   camRight: ['ArrowRight'],
   camUp: ['ArrowUp'],
@@ -48,7 +46,7 @@ export function actionOf(code: string): ActionName | null {
 }
 
 const LABEL: Readonly<Record<string, string>> = {
-  Backquote: '`', Space: 'Space', Escape: 'Esc', Enter: 'Enter', Tab: 'Tab', Slash: '?',
+  Space: 'Space', Escape: 'Esc', Enter: 'Enter', Tab: 'Tab', Slash: '?',
   ShiftLeft: 'Shift', ShiftRight: 'Shift', ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓',
 }
 /** 화면에 적을 키 글자 (code → 글자) */

@@ -11,14 +11,14 @@ import { plainSetup } from './field/scenario.ts'
 import { crossMap, highMap, ambushMap, meetMap, stakeMap } from './field/map.ts'
 import { createField, stepField } from './field/sim.ts'
 import { t, type Key } from './i18n/index.ts'
-import { attackInputs, cmdInput, dashInput, heroDirInput, keysDir, mergePlan, sendInputs, skillInput, CMDS, type CmdGroup, type InputCtx } from './field/input.ts'
+import { attackInputs, cmdInput, dashInput, heroDirInput, keysDir, mergePlan, nearestFoe, sendInputs, skillInput, BIG_ARTS, CMDS, type CmdGroup, type InputCtx } from './field/input.ts'
 import { actionOf, firstKeyLabel, KEYS } from './field/actions.ts'
-import { ALL_GROUPS, boxPick, cellWhy, cmdGroup, GRP_OF, normalizeSel, pickAt, type PickCand, type UiState } from './field/pickmodel.ts'
+import { ALL_GROUPS, cellWhy, GRP_OF, normalizeSel, pickAt, type PickCand, type UiState } from './field/pickmodel.ts'
 import { mountFlags, type FlagsView } from './field/mainFlags.ts'
 import { mountPad, type Pad, type PadBtn } from './field/mainPad.ts'
 import { mountFirst, mountHelp, mountSteps, type First, type Help, type Steps } from './field/mainHelp.ts'
 import { drawMarks, type Band, type Box, type Mark, type MarkShape, type Ring } from './field/mainFlagMarks.ts'
-import { OP_AUTO, OP_MOVE, type FieldInput, type InputGroup } from './field/types.ts'
+import { OP_AUTO, OP_MOVE, OP_STANCE, type FieldInput, type InputGroup } from './field/types.ts'
 import { serialize } from './field/rec.ts'
 import { mountHud, type Hud } from './field/mainHud.ts'
 import { createFieldSound, soundCamOf, soundFrameOf } from './field/mainSound.ts'
@@ -102,7 +102,12 @@ const lastShape: MarkShape[] = ['move', 'move', 'move', 'move']
 /** 앞줄 자세 단추의 지금 값 (알아서면 -1) · 무리를 한 번이라도 보냈나 · 장수를 한 번이라도 보냈나 */
 const cmdNow: number[] = [-1, -1, -1]
 let sentGroup = false
-let sentFront = false
+let usedCharge = false
+/** 찍는 큰 수: 2 화살비 · 3 옆치기 (찍을 때까지 판이 느려진다) · 누르고 있는 동안만 고른 무리(숫자키) · 마우스 올린 무리 */
+let aiming = -1, aimSince = 0
+let heldPick = -1
+let hoverG = -1
+let aimCur: HTMLImageElement
 /** 첫 판 안내 (처음 세 걸음 · 이기는 법 한 줄) — 다 하면 저장하고 다시 안 뜬다 */
 const TUT_KEY = 'field.tutorial.v1'
 const readTut = (): boolean => { try { return localStorage.getItem(TUT_KEY) === '1' } catch { return false } }
@@ -215,7 +220,7 @@ function restart(): void {
   queue = []; plan = []
   lastGoal.fill(null); lastShape.fill('move'); nudgeAt.fill(0)
   heroDirSent = -1; padDir = -1; foeFlash.length = 0; lastWhyTick = 0; lastGrpWhyTick.fill(0)
-  cmdNow.fill(-1); sentGroup = false; sentFront = false; stepOk.fill(false); flashStep = -1; playMs = 0; heroOrdered = false; heroStart = null
+  cmdNow.fill(-1); sentGroup = false; usedCharge = false; aiming = -1; stepOk.fill(false); flashStep = -1; playMs = 0; heroOrdered = false; heroStart = null
   camFree = false; camFight = false; cam.level = 0; hud.setZoom(0)
   hud.showEnd(null)
   markEpoch++
@@ -280,7 +285,7 @@ function pickCands(): PickCand[] {
     const goal = lastGoal[g]
     if (goal === null || goal === undefined || !flagShown(g)) continue
     const s = toScreen(cam, vp, pxOf(goal.u), pxOf(goal.v) - pole)
-    out.push({ g, x: s.x, y: s.y, reach: 0 })
+    out.push({ g, x: s.x, y: s.y, reach: P.field.flagPickCells * P.field.cellPx * cam.zoom })
   }
   return out
 }
@@ -314,11 +319,40 @@ function sendAt(px: number, py: number, now: number): void {
   else accept(sendInputs(sel, u, v, inputCtx()))
   const goal = { u: Math.max(0, Math.min(cur.mapUUnits, u)), v: Math.max(0, Math.min(cur.mapVUnits, v)) }
   for (const g of sel) { lastGoal[g] = goal; if (g !== 0 || cmdNow[0]! < 0) lastShape[g] = 'move' }
-  if (sel.includes(0) && ui.phase === 'play') sentFront = true
   if (sel.includes(3)) heroOrdered = true
   if (sel.some(g => g < 3)) sentGroup = true
   fsnd.order((sel.length === 1 && sel[0] === 2 ? 'horse' : 'move') as FlagKind)
   flags.say(sel.length > 1 ? t('field.say.many', { n: sel.length }) : t('field.say', { g: gName(sel[0]!), i: t(foe === null ? 'field.i.move' : 'field.i.chase') }), 'ok', now)
+  if (sel.some(g => g < 3)) setSel([3])
+}
+
+/** 큰 수 넷 (Z 돌격 · X 방진 · C 화살비 · V 옆치기) — 앞의 둘은 바로 · 뒤의 둘은 누르면 땅을 찍을 때까지 판이 느려진다 */
+function pressBig(i: number): void {
+  const now = performance.now()
+  if (i < 2) { pressCmd(0, i); return }
+  if (aiming === i) { cancelAim(); return }
+  const g = i === 2 ? 1 : 2
+  const why = cellWhy(cur, g as InputGroup)
+  if (why !== null) { flags.say(t(`field.why.${why}` as Key, { g: gName(g) }), 'why', now); return }
+  aiming = i; aimSince = now; markEpoch++
+  aimCur.src = `${import.meta.env.BASE_URL}realm/flag/flag-${BIG_ARTS[i]}.png`
+  cv.style.cursor = 'none'
+}
+function cancelAim(): void { if (aiming === -1) return; aiming = -1; markEpoch++; cv.style.cursor = ''; aimCur.hidden = true }
+/** 찍어서 확정: 그 자리에 가장 가까운 적 대가 표적 (엔진의 OP_AIM 이 오면 그것으로 바꾼다 · 그 전에는 명령을 고르고 그 적을 쳐라) */
+function confirmAim(px: number, py: number, now: number): void {
+  const g = (aiming === 2 ? 1 : 2) as CmdGroup, name = BIG_ARTS[aiming]!
+  const w = toField(cam, vp, px, py), u = unitsOf(w.x), v = unitsOf(w.y)
+  const foeId = nearestFoe(cur.squads, u, v)
+  const ic = inputCtx()
+  accept([{ tick: ic.tick, g, op: OP_STANCE, u: 0, v: 0 }, ...(foeId >= 0 ? attackInputs([g], foeId, ic) : sendInputs([g], u, v, ic))])
+  if (foeId >= 0) foeFlash.push({ id: foeId, at: now })
+  lastGoal[g] = { u: Math.max(0, Math.min(cur.mapUUnits, u)), v: Math.max(0, Math.min(cur.mapVUnits, v)) }; lastShape[g] = 'move'
+  sentGroup = true
+  fsnd.order((g === 2 ? 'horse' : 'move') as FlagKind)
+  flags.say(t('field.say.cmd', { g: gName(g), c: t(`war.cmdName.${name}` as Key), s: t(`war.cmdShort.${name}` as Key) }), 'ok', now)
+  cancelAim()
+  setSel([3])
 }
 
 /** 명령 단추 (또는 Z X C V) — g 무리의 idx 번째 명령 · 같은 명령을 다시 누르면 알아서 */
@@ -330,6 +364,7 @@ function pressCmd(g: CmdGroup, idx: number): void {
   if (name === undefined) return
   const i = cmdInput(g, idx, cmdNow[g]!, inputCtx())
   accept([i])
+  if (g === 0 && idx === 0 && ui.phase === 'play') usedCharge = true
   if (i.op === OP_AUTO) {
     cmdNow[g] = -1; if (g === 0) lastShape[0] = 'move'
     lastGoal[g] = null
@@ -405,7 +440,7 @@ function goBattle(): void {
 
 const handlers = {
   onCell: pickGroup,
-  onCmd: pressCmd,
+  onBig: pressBig,
   onGo: goBattle,
 }
 
@@ -413,6 +448,11 @@ const handlers = {
 function ringsNow(now: number): Ring[] {
   const out: Ring[] = []
   const c = P.field.cellPx
+  if (!ui.sel.includes(3)) {
+    const h = heroNow()
+    if (h !== undefined) out.push({ x: pxOf(h.u), y: pxOf(h.v), rx: P.field.ringHeroCells * c, ry: P.field.ringHeroCells * c * 0.45, kind: 'dim', phase: 0 })
+  }
+  if (hoverG >= 0 && hoverG < 3 && !ui.sel.includes(hoverG as InputGroup)) for (const q of squadsOf(hoverG)) out.push({ x: pxOf(q.u), y: pxOf(q.v), rx: (P.field.spreadUCells + 2) * c, ry: (P.field.spreadVCells + 1.5) * c, kind: 'hover', phase: 0 })
   for (const g of ui.sel) {
     if (g === 3) {
       const h = heroNow()
@@ -488,6 +528,11 @@ function midOf(): { x: number; y: number } {
 function onDown(e: PointerEvent): void {
   if (blocked || ui.phase === 'end' || cur.end !== null || helpOpen) return
   touchMode = e.pointerType !== 'mouse'
+  if (aiming !== -1) {
+    if (e.pointerType === 'mouse' && e.button === 2) cancelAim()
+    else if (e.pointerType !== 'mouse' || e.button === 0) confirmAim(e.clientX, e.clientY, e.timeStamp)
+    return
+  }
   ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY })
   if (e.pointerType !== 'mouse' && ptrs.size >= 2) {
     drag = null
@@ -512,7 +557,7 @@ function onMove(e: PointerEvent): void {
   if (drag !== null && drag.id === e.pointerId) {
     drag.x = e.clientX; drag.y = e.clientY
     const far = (drag.x - drag.x0) ** 2 + (drag.y - drag.y0) ** 2 >= P.field.dragMinPx * P.field.dragMinPx
-    if (far) { drag.moved = true; if (drag.mouse) drag.box = true }
+    if (far) drag.moved = true
   }
 }
 function onUp(e: PointerEvent): void {
@@ -525,18 +570,12 @@ function onUp(e: PointerEvent): void {
   const d = drag
   drag = null
   const cands = pickCands()
-  if (d.box) {
-    const got = boxPick(cands, d.x0, d.y0, d.x, d.y)
-    if (got.length > 0) setSel(got)
-    return
-  }
   if (d.moved) return
   const hit = pickAt(cands, d.x, d.y, P.field.pickRadiusPx, P.field.heroPickPermille)
   if (hit !== -1) { setSel([hit]); return }
   if (d.mouse) { setSel([3]); return }
   // 폰: 고른 채로 땅을 누르면 그 자리로 보낸다 (무리는 한 번 보내면 장수로 돌아온다)
   sendAt(d.x, d.y, e.timeStamp)
-  if (ui.sel.some(g => g < 3)) setSel([3])
 }
 function onCancel(e: PointerEvent): void {
   ptrs.delete(e.pointerId)
@@ -545,11 +584,7 @@ function onCancel(e: PointerEvent): void {
 }
 
 /** 쥐고 있는 네모 (판 px) */
-function boxNow(): Box | null {
-  if (drag === null || !drag.box) return null
-  const a = toField(cam, vp, drag.x0, drag.y0), b = toField(cam, vp, drag.x, drag.y)
-  return { x0: a.x, y0: a.y, x1: b.x, y1: b.y }
-}
+function boxNow(): Box | null { return null }
 
 /** 푼 카메라(또 시작 화면)를 화살표·가장자리로 옮긴다 */
 function movePan(dt: number): void {
@@ -566,15 +601,13 @@ function movePan(dt: number): void {
   const step = P.field.camPanPxPerSec * dt / cam.zoom
   pan = { x: base.x + dx * step, y: base.y + dy * step, until: Infinity }
 }
-function setFree(on: boolean): void {
-  camFree = on
-  if (on) { camFight = false; pan = { x: tgt?.x ?? cam.x, y: tgt?.y ?? cam.y, until: Infinity } } else if (ui.phase !== 'ready') pan = null
-  flags.say(t(on ? 'field.cam.free' : camFight ? 'field.cam.fight' : 'field.cam.hero'), 'ok', performance.now())
-}
 
 function paint(now: number, alpha: number): void {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   const box = boxNow()
+  const hv = mouse.in && !touchMode && aiming === -1 && ui.phase !== 'end' ? pickAt(pickCands(), mouse.x, mouse.y, P.field.pickRadiusPx, P.field.heroPickPermille) : -1
+  if (hv !== hoverG) { hoverG = hv; markEpoch++ }
+  if (aiming !== -1 && !touchMode) { aimCur.hidden = false; aimCur.style.transform = `translate(${Math.round(mouse.x - 24)}px,${Math.round(mouse.y - 24)}px)` }
   // 멈춤·끝(잠잠해진 뒤)·가로 안내 중에는 바뀐 것이 없으면 다시 안 그린다
   const calm = paused || frozen(now)
   const k = paintKey
@@ -587,7 +620,7 @@ function paint(now: number, alpha: number): void {
     k.x = cam.x; k.y = cam.y; k.z = cam.zoom; k.sel = selKey; k.epoch = markEpoch
   }
   flags.frame(now)
-  flags.sync(cur, ui, { cmd: cmdNow, sentGroup, touch: touchMode })
+  flags.sync(cur, ui, { front: cmdNow[0]!, aiming, sentGroup, touch: touchMode })
   tutorial(now)
   const pb = padBtns()
   pad.sync(!blocked && ui.phase === 'play' && cur.end === null, touchMode, touchMode && !heroOrdered && playMs < 3000, pb.dash, pb.skill)
@@ -623,7 +656,7 @@ function tutorial(now: number): void {
   if (tutDone) { steps.sync(false, null, false); return }
   const play = ui.phase === 'play'
   if (play && !stepOk[0] && heroOrdered && heroMovedNow()) { stepOk[0] = true; flashStep = 0; flashAt = now }
-  if (play && !stepOk[1] && sentFront) { stepOk[1] = true; flashStep = 1; flashAt = now }
+  if (play && !stepOk[1] && usedCharge) { stepOk[1] = true; flashStep = 1; flashAt = now }
   const hz0 = heroNow()
   if (play && !stepOk[2] && hz0 !== undefined && hz0.artCd > 0) { stepOk[2] = true; flashStep = 2; flashAt = now }
   const flashing = flashStep >= 0 && now - flashAt < P.field.stepFlashMs
@@ -634,7 +667,7 @@ function tutorial(now: number): void {
     steps.sync(false, null, false); return
   }
   const showStep = ui.phase === 'end' || cur.end !== null ? -1 : flashing ? flashStep : next
-  steps.sync(ui.phase !== 'end' && cur.end === null && playMs < P.field.goalMs, showStep < 0 ? null : t(`field.step.${showStep + 1}` as Key), flashing)
+  steps.sync(ui.phase !== 'end' && cur.end === null && playMs < P.field.goalMs, showStep < 0 ? null : t(showStep === 1 ? (touchMode ? 'field.step.2.touch' : 'field.step.2') : (`field.step.${showStep + 1}` as Key), { k: firstKeyLabel('cmd1') }), flashing)
 }
 /** 위쪽 숫자·사기 띠가 읽는 판 — 점이 먼저 쓰러지고 숫자가 따라가도록 numLagMs 전의 것 (판 값은 안 바꾼다) */
 function lagged(now: number): VModel {
@@ -660,7 +693,8 @@ function frame(now: number): void {
   watchLoad(dtMs)
   const stepMs = 1000 / P.field.hz
   if (heroStart === null) { const h = heroNow(); if (h !== undefined) heroStart = { u: h.u, v: h.v } }
-  const simMs = slow ? dtMs * P.field.slowPermille / 1000 : dtMs
+  if (aiming !== -1 && now - aimSince > P.field.aimMs) cancelAim()
+  const simMs = aiming !== -1 ? dtMs * P.field.aimSlowPermille / 1000 : slow ? dtMs * P.field.slowPermille / 1000 : dtMs
   if (!paused && !helpOpen && !blocked && cur.end === null && ui.phase === 'play') {
     const a = advance(acc, simMs, P.field.hz, P.field.maxCatchUpTicks)
     acc = a.acc
@@ -729,27 +763,28 @@ addEventListener('keydown', e => {
   if (a === null) return
   if (a === 'slow') { slow = true; return }
   if (a === 'camLeft' || a === 'camRight' || a === 'camUp' || a === 'camDown') { if (camFree || ui.phase === 'ready') e.preventDefault(); return }
-  if (e.repeat) { if (a === 'go' || a === 'camFight') e.preventDefault(); return }
+  if (e.repeat) { if (a === 'go') e.preventDefault(); return }
   if (helpOpen && (a === 'pause' || a === 'help')) { e.preventDefault(); toggleHelp(); return }
   e.preventDefault()
   switch (a) {
     case 'pickHero': pickGroup(3); break
-    case 'pickFront': pickGroup(0); break
-    case 'pickBows': pickGroup(1); break
-    case 'pickHorse': pickGroup(2); break
-    case 'pickAll': {
-      const all = ([0, 1, 2] as const).filter(g => cellWhy(cur, g) === null)
-      if (all.length > 0) setSel(all)
+    case 'pickFront': case 'pickBows': case 'pickHorse': {
+      // 누르고 있는 동안만 그 무리 (떼면 장수로 돌아온다)
+      const g = a === 'pickFront' ? 0 : a === 'pickBows' ? 1 : 2
+      if (cellWhy(cur, g) === null) { heldPick = g; setSel([g]) } else pickGroup(g)
       break
     }
-    case 'cmd1': case 'cmd2': case 'cmd3': case 'cmd4': {
-      const g = cmdGroup(cur, ui)
-      if (g !== null) pressCmd(g, Number(a.slice(3)) - 1)
+    case 'rally': {
+      // 전부 장수 곁으로 (엔진의 「모여라」가 오기 전에는 무리 셋을 알아서로)
+      const ic = inputCtx()
+      accept(([0, 1, 2] as const).filter(g => cellWhy(cur, g) === null).map(g => ({ tick: ic.tick, g, op: OP_AUTO, u: 0, v: 0 })))
+      cmdNow.fill(-1); lastGoal[0] = null; lastGoal[1] = null; lastGoal[2] = null
       break
     }
-    case 'camFree': if (ui.phase !== 'ready') setFree(!camFree); break
-    case 'camFight': if (ui.phase !== 'ready') { camFight = !camFight; if (camFree) { camFree = false; pan = null } flags.say(t(camFight ? 'field.cam.fight' : 'field.cam.hero'), 'ok', performance.now()) } break
-    case 'pause': paused = !paused; hud.setPaused(paused); break
+    case 'cmd1': case 'cmd2': case 'cmd3': case 'cmd4': pressBig(Number(a.slice(3)) - 1); break
+    case 'pause':
+      if (aiming !== -1) { cancelAim(); break }
+      paused = !paused; hud.setPaused(paused); break
     case 'go': goBattle(); break
     case 'help': toggleHelp(); break
     case 'dash': doDash(); break
@@ -758,6 +793,8 @@ addEventListener('keydown', e => {
   }
 })
 addEventListener('keyup', e => {
+  const up = actionOf(e.code)
+  if (heldPick >= 0 && (up === 'pickFront' || up === 'pickBows' || up === 'pickHorse')) { heldPick = -1; setSel([3]) }
   keysHeld.delete(e.code)
   if (actionOf(e.code) === 'slow') slow = false
   if (e.code === 'Space') e.preventDefault()
@@ -790,6 +827,10 @@ hud.setZoom(0)
 flags = mountFlags(root, import.meta.env.BASE_URL + 'realm/', handlers)
 help = mountHelp(root)
 first = mountFirst(root)
+aimCur = document.createElement('img')
+aimCur.id = 'fd-aimcur'; aimCur.hidden = true; aimCur.alt = ''
+aimCur.style.cssText = 'position:absolute;left:0;top:0;width:48px;height:48px;object-fit:contain;pointer-events:none;z-index:7'
+root.append(aimCur)
 pad = mountPad(root, import.meta.env.BASE_URL + 'realm/', { onDir: d => { padDir = d }, onDash: doDash, onSkill: doSkill })
 steps = mountSteps(root)
 root.append(document.getElementById('fd-rotate') as HTMLElement)
