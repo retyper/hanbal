@@ -222,7 +222,7 @@ export interface KitZone { kind: 'crack' | 'wall' | 'snare'; x: number; y: numbe
  * sealAt·sealLeft 이번 공격에 더 붙일 부적 · boltIdle 벽력이 준비된 채 기다린 시간 · mark 표식 적(0 = 없음) · step 그림자 걸음 재사용 · stepped 방금 그림자 걸음(다음 찌르기는 등 뒤) · focused 겨눔이 찼다고 알렸나
  */
 export interface KitState { still: number; aim: number; runAim: number; runT: number; swing: number; sealAt: number; sealLeft: number; zones: KitZone[]; mark: number; step: number; stepped: boolean; focused: boolean; boltIdle: number }
-export interface Effect { x: number; y: number; x2: number; y2: number; r: number; angle: number; life: number; total: number; kind: 'hit' | 'slash' | 'blast' | 'bolt' | 'skill' | 'ult' | 'death' | 'spike' | 'thrust' | 'buff' | 'ring' | 'thud'; color: string; mob?: Mob['kind']; face?: number; n?: number; crit?: boolean; ult?: Kit; tru?: boolean; awakened?: boolean; empowered?: boolean; awakenedRelease?: boolean; castSeq?: number; championCue?: 'enter' | 'roar' | 'recovery' | 'quake'; recoveryHit?: boolean; /** 64-BREAK 부위가 부서진 순간 (화면이 「부위 파괴!」) */ partBreak?: boolean; /** 66-CAP 최고 레벨 뒤 보상으로 받은 금 (화면이 「+금 · 회복」) */ capGold?: number; /** 68-BOSSCHEST 올릴 것이 없어 금으로 받은 보스 전리품 */ bossGold?: number; /** 67-BUILD2 우물이 한 번에 채운 체력 (화면이 물보라와 「+N」) */ wellHeal?: number }
+export interface Effect { x: number; y: number; x2: number; y2: number; r: number; angle: number; life: number; total: number; kind: 'hit' | 'slash' | 'blast' | 'bolt' | 'skill' | 'ult' | 'death' | 'spike' | 'thrust' | 'buff' | 'ring' | 'thud'; color: string; mob?: Mob['kind']; face?: number; n?: number; crit?: boolean; ult?: Kit; tru?: boolean; awakened?: boolean; empowered?: boolean; awakenedRelease?: boolean; castSeq?: number; championCue?: 'enter' | 'roar' | 'recovery' | 'quake'; recoveryHit?: boolean; /** 64-BREAK 부위가 부서진 순간 (화면이 「부위 파괴!」) */ partBreak?: boolean; /** 66-CAP 최고 레벨 뒤 보상으로 받은 금 (화면이 「+금 · 회복」) */ capGold?: number; /** 68-BOSSCHEST 올릴 것이 없어 금으로 받은 보스 전리품 */ bossGold?: number; /** 채찍(W5): 1 말채찍이 뻗는 줄 · 2 되감기로 돌아오는 줄 (화면이 줄 사슬로 그린다) */ lash?: 1 | 2; /** 67-BUILD2 우물이 한 번에 채운 체력 (화면이 물보라와 「+N」) */ wellHeal?: number }
 /** 이어지는 비기(용오름 창의 솟음 · 환영난무의 순간 이동 · 돌벼락의 물결) — 남은 수 n · 다음까지 t 초 · 처음 자리 · 이미 벤 적 · k 힘 몫(되받아치기는 작게) */
 export interface UltState { n: number; t: number; x: number; y: number; used: number[]; k: number }
 export interface Drop { x: number; y: number; value: number; age: number }
@@ -1372,7 +1372,7 @@ function primary58(s: HaebiRun, target: Mob, angle: number, dist: number, power:
     if (s.cool.lash || dist >= length) return
     s.cool.lash = C.whipCooldown / tempo; s.attack = .3; s.face = side(cos)
     const damage = (C.whipDamage + C.whipRankDamage * r) * power * P.base
-    fx(s, 'thrust', s.x, s.y, length, '#d9b27a', angle)
+    fx(s, 'thrust', s.x, s.y, length, '#d9b27a', angle); s.fx[s.fx.length - 1]!.lash = 1
     const { hits, tip, driven } = lashSweep(s, angle, length, width, damage, true)
     if (r >= P.back2Rank) { const b = shoot(s, 'lash', angle, damage * P.back2Share, s.x, s.y); if (b) { b.vx = 0; b.vy = 0; b.radius = length; b.life = P.back2 } }
     addOns(s, hits, tip >= P.bigTip || driven > 0)   // 큰 한 방: 끝에 셋 이상 · 끌려온 적을 첫 줄로 칠 때
@@ -2240,7 +2240,7 @@ export function stepHaebi(s: HaebiRun, input: RunInput, dt: number) {
       }
     } else if (b.kind === 'lash') {
       // 말채찍 되감기(4단계~): 줄이 같은 쪽으로 돌아오며 한 번 더 — 끝 가산 없이 모두 같은 몫 · 장수는 그 사이 걸었어도 지금 자리에서
-      if (b.life <= 0) { fx(s, 'thrust', s.x, s.y, b.radius, '#d9b27a', b.angle); addOns(s, lashSweep(s, b.angle, b.radius, C.whipWidth * area, b.damage, false).hits, false) }
+      if (b.life <= 0) { fx(s, 'thrust', s.x, s.y, b.radius, '#d9b27a', b.angle); s.fx[s.fx.length - 1]!.lash = 2; addOns(s, lashSweep(s, b.angle, b.radius, C.whipWidth * area, b.damage, false).hits, false) }
     } else if (s.kits && b.kind === 'gale' && b.gen !== 1) {
       // 58-KITS 질풍 도끼: 높이 던져 날아가는 동안은 치지 않고 · 떨어지면 둘레를 치고 박힌 채 돌며 · 질풍회륜(갈래 끝)이면 장수 쪽으로 돌아오며 벤다
       const P = K.gale

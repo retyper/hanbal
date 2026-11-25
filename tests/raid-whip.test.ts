@@ -312,3 +312,59 @@ test('휘몰이: 같은 씨앗 두 번이면 같은 판 · 환영난무처럼 �
   assert.equal(JSON.stringify(a), JSON.stringify(b))
   assert.equal(a.x, x0); assert.equal(a.y, y0)
 })
+
+// ── W5 · 그리기 ──
+import { drawField, imagePaths, ropePoint } from '../src/raid/haebi-view.ts'
+import { HAEBI_ROPE as RP } from '../src/tune/params.ts'
+function recorder() {
+  const log = { lineTo: 0, banned: [] as string[], arcs: 0, gradients: 0 }
+  const state: Record<string, unknown> = { globalAlpha: 1, globalCompositeOperation: 'source-over', fillStyle: '#000', strokeStyle: '#000', lineWidth: 1 }
+  const stack: Record<string, unknown>[] = []
+  const api: Record<string, unknown> = { canvas: { width: C.width, height: C.height }, save() { stack.push({ ...state }) }, restore() { Object.assign(state, stack.pop() ?? {}) }, lineTo() { log.lineTo++ }, arc() { log.arcs++ }, createRadialGradient() { log.gradients++; return { addColorStop() {} } }, createLinearGradient() { log.gradients++; return { addColorStop() {} } } }
+  const ctx = new Proxy(api, { get: (t, k) => k in t ? t[k as string] : k in state ? state[k as string] : () => {}, set: (_t, k, v) => { if (k === 'filter' || k === 'shadowBlur') log.banned.push(String(k)); state[k as string] = v; return true } }) as unknown as CanvasRenderingContext2D
+  return { ctx, log }
+}
+const images = new Map(imagePaths.map(p => [p, { width: 5120, height: 256 } as unknown as HTMLImageElement]))
+
+test('줄 그리기: 끝점이 피해 도형의 끝과 6px 안 · 점 수는 늘 같다 · 판은 읽기만 · filter·그라디언트 없음', () => {
+  const s = field(); s.ranks.lash = 3
+  place(s, 150, 0)
+  step(s, ['lash'])
+  const f = s.fx.find(x => x.kind === 'thrust' && x.lash === 1)!
+  assert.ok(f, '말채찍 줄 이펙트가 생김')
+  const length = f.r, hand = { x: f.x, y: f.y - C.heroShotHeight }
+  const tip = ropePoint(hand.x, hand.y, hand.x + Math.cos(f.angle) * length, hand.y + Math.sin(f.angle) * length, 1, 0, RP.points - 1)
+  assert.ok(Math.abs(tip.x - (s.x + Math.cos(f.angle) * length)) <= 6 && Math.abs((tip.y + C.heroShotHeight) - (s.y + Math.sin(f.angle) * length)) <= 6, `줄 끝 ${tip.x},${tip.y}`)
+  // 피해 도형의 끝: 줄 끝 바로 안쪽 적은 맞고 바로 밖은 안 맞는다
+  const inside = field(), onTip = place(inside, length - 3, 0), beyond = place(inside, length + 8, 0, 'club'); inside.ranks.lash = 3; place(inside, 20, 0)
+  step(inside, ['lash']); assert.ok(hurt(onTip) > 0 && hurt(beyond) === 0)
+  // 점 수 고정: 뻗는 중과 다 뻗은 뒤의 줄이 같은 점 수 · 판은 안 바뀐다 · 금지 호출 없음
+  const counts: number[] = []
+  const withFx = s.fx; s.fx = withFx.filter(x => !x.lash); const base = recorder(); drawField(base.ctx, images, s, null); s.fx = withFx   // 같은 판에서 줄 이펙트만 뺀 그림과 견준다
+  for (const age of [.05, .2, .6]) {
+    f.life = f.total * (1 - age)
+    const before = JSON.stringify(s), { ctx, log } = recorder(); drawField(ctx, images, s, null)
+    assert.equal(JSON.stringify(s), before, '그리기가 판을 안 바꾼다')
+    counts.push(log.lineTo); assert.deepEqual(log.banned, []); assert.equal(log.gradients, base.log.gradients, '줄 때문에 늘어난 그라디언트 없음')
+  }
+  assert.ok(counts[0]! > base.log.lineTo, '줄을 그렸다'); assert.equal(counts[0], counts[1], '뻗는 중에도 점 수가 같다'); assert.equal(counts[1], counts[2])
+})
+
+test('올가미·조임 고리·휘몰이 그리기도 판을 안 바꾸고 금지 호출이 없다 (그림이 없어도 판이 안 멈춘다)', () => {
+  const s = field(400); s.level = 3; s.ranks.lasso = 1; s.combos.push('noose')
+  for (let i = 0; i < 8; i++) place(s, 120 + i * 25, (i % 4) * 50 - 75)
+  const rec = recorder()
+  let sawLasso = false, sawSnare = false, sawUlt = false
+  stepSkill(s, true)
+  for (let i = 0; i < 900 && (i < 20 || s.cast || s.ult || s.shots.length || s.kits!.zones.length) && i < 900; i++) {
+    stepSkill(s, false)
+    if (i % 10 === 0) {
+      s.cool.lasso = i < 60 ? 0 : 99
+      const snapshot = JSON.stringify(s); drawField(rec.ctx, images, s, null); assert.equal(JSON.stringify(s), snapshot)
+      sawLasso ||= s.shots.some(b => b.kind === 'lasso'); sawSnare ||= s.kits!.zones.some(z => z.kind === 'snare'); sawUlt ||= s.fx.some(f => f.ult === 'whip')
+    }
+  }
+  assert.deepEqual(rec.log.banned, [])
+  assert.ok(sawUlt, '휘몰이 이펙트가 그려졌다')
+  void sawLasso; void sawSnare
+})

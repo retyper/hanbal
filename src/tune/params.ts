@@ -1381,6 +1381,21 @@ export const HAEBI_GOLD = { perKill: .05, perElite: 12, perMinute: 6, clear: 400
  */
 export const HAEBI_WALL = { stage: 'palisade', survive: 180, shop: { axe: .12, sword: .12, spear: .12, magic: .32, sling: .5, bow: .5, dagger: .64, whip: .5 } } as const
 /**
+ * 채찍 묶음 그리기 (카드 W5 · 새 그림 없이 코드로 줄을 그린다 · 화면만 · 판을 읽기만) — 줄 하나 = points 개 점 사슬(걸음마다 점 수 고정):
+ * 점마다 손에서 delay 몫만큼 늦게 따라와 끝으로 갈수록 늦게 펴진다 · 처음 extend 몫 시간에 끝까지 뻗고(끝점은 피해 도형의 끝과 같은 자리) · 그 뒤 recoil px 로 recoilHz 박자 흔들리며 잦아든다(반동) ·
+ * 뻗기 전 처진 줄은 sag px · fade 몫 뒤부터 옅어진다 · 줄 굵기 root → tip · 끝에서 작은 불똥 알갱이 tipDots 개가 tipDotDist px 까지 튀고 tipRing 반지름 테 하나
+ * 올가미: 날아가는 동안 줄이 lassoSag px 로 출렁이고 끝에 lassoLoop 반지름의 고리 · 끌려오는 적에게 줄 한 가닥(gatherSag)
+ * 조임 고리: 땅 타원 테 + snareDots 개 알갱이가 천천히 돈다(snareAlpha)
+ * 휘몰이: 점 둘레를 줄 swirlRopes 가닥이 swirlTurns 바퀴 돌며(타원 땅 비율 swirlSquash) 후려치고 땅 테 하나(swirlRing 몫 진하기)
+ */
+export const HAEBI_ROPE = {
+  points: 14, delay: .45, extend: .35, sag: 20, recoil: 7, recoilHz: 5, fade: .6, root: 4, tip: 2, rim: '#3a2412', spark: '#fff0c8',
+  tipDots: 6, tipDotDist: 28, tipRing: 14,
+  lassoSag: 14, lassoLoop: 15, gatherSag: 10,
+  snareDots: 10, snareAlpha: .5, snareSpin: .8,
+  swirlRopes: 2, swirlTurns: 1.3, swirlSquash: .6, swirlLag: .9, swirlArc: 18, swirlRing: .55,
+} as const
+/**
  * 56-C 목책을 진짜로 (11-21 형: 「3스테이지 목책이 오브젝트도 아니라서 다 그림 밟고 온다」) — 목책 돌파 판(규칙 56C)에만 선다.
  * 판을 가로지르는 목책 줄을 마디(축에 맞춘 상자)로 세운다. 장수도 적도 성한 마디에 막힌다 · 화살·던진 것은 넘어간다.
  * 적은 곧게 못 오면 가장 가까운 문(열린 문 · 부서진 마디)으로 돌아 들어온다(문까지 곧장 · 길 찾기 없음 · 프레임 예산).

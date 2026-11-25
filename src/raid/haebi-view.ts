@@ -20,7 +20,7 @@ import { fallCells, koFrame, koZoom } from './ko.ts'
 import { HAEBI_KO as KO } from '../tune/params.ts'
 import { HAEBI_ANIM as ANIM } from '../tune/params.ts'
 import { AURA_ART, drawAura, drawAuraBurst, drawAuraGround, type AuraArt, type AuraAt, type AuraKind } from './fx-aura.ts'
-import { HAEBI_IMPACT as FEEL, HAEBI_END as END, HAEBI_KITS as KITS58 } from '../tune/params.ts'
+import { HAEBI_IMPACT as FEEL, HAEBI_END as END, HAEBI_KITS as KITS58, HAEBI_ROPE as RP } from '../tune/params.ts'
 import type { RaidFeel } from './impact.ts'
 import type { RaidEnding } from './ending.ts'
 import { FX_PATHS, drawFx } from './fx-art.ts'
@@ -353,6 +353,49 @@ function trueFlare(ctx: CanvasRenderingContext2D, x: number, y: number, age: num
 function stripAlong(ctx: CanvasRenderingContext2D, img: HTMLImageElement | undefined, age: number, len: number, h: number) {
   if (img) ctx.drawImage(img, impactFrame(age) * 256, 0, 256, 128, 0, -h / 2, len, h)
 }
+/**
+ * 채찍 줄 한 가닥 (HAEBI_ROPE · 읽기만): 손(x0,y0)에서 끝(x1,y1)까지 점 RP.points 개 사슬 — 점마다 늦게 따라와(delay) 끝이 가장 늦게 펴지고,
+ * 아직 뻗는 중이면 줄이 처지고(wave = 옆으로 휘는 px · 위쪽이 양수) 다 뻗은 뒤엔 반동으로 흔들린다. reach 0~1 은 얼마나 뻗었나. 끝점 좌표를 돌려준다.
+ */
+export function ropePoint(x0: number, y0: number, x1: number, y1: number, reach: number, wave: number, i: number) {
+  const u = i / (RP.points - 1), e = Math.max(0, Math.min(1, (reach - u * RP.delay) / (1 - RP.delay)))
+  const dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy) || 1, off = wave * Math.sin(Math.PI * u)
+  return { x: x0 + dx * u * e - dy / len * off, y: y0 + dy * u * e + dx / len * off }
+}
+function drawRope(ctx: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number, reach: number, wave: number, color: string, width: number = RP.root) {
+  for (const [w, c] of [[width + 2, RP.rim], [width, color]] as const) {
+    ctx.strokeStyle = c; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(x0, y0)
+    for (let i = 1; i < RP.points; i++) { const p = ropePoint(x0, y0, x1, y1, reach, wave, i); ctx.lineTo(p.x, p.y) }
+    ctx.stroke()
+  }
+}
+/** 말채찍 한 번 (이펙트 thrust · lash): 뻗고 → 끝에서 딱 (불똥 알갱이·테) → 반동으로 잦아든다 · 2 = 되감기로 줄이 거둬진다 */
+function drawLash(ctx: CanvasRenderingContext2D, s: HaebiRun, f: HaebiRun['fx'][number], age: number) {
+  const x0 = f.x, y0 = f.y - C.heroShotHeight, x1 = x0 + Math.cos(f.angle) * f.r, y1 = y0 + Math.sin(f.angle) * f.r
+  const back = f.lash === 2, reach = back ? 1 - Math.min(1, age / RP.extend) : Math.min(1, age / RP.extend), q = Math.max(0, (age - RP.extend) / (1 - RP.extend))
+  const wave = reach < 1 ? RP.sag * (1 - reach) * (back ? -1 : 1) : RP.recoil * Math.sin(q * RP.recoilHz * TAU) * (1 - q)
+  ctx.globalAlpha *= age < RP.fade ? 1 : Math.max(0, (1 - age) / (1 - RP.fade))
+  drawRope(ctx, x0, y0, x1, y1, reach, wave, ULT_COLOR[s.kit], RP.root)
+  if (back || reach < 1) return
+  // 끝에서 딱: 하얀 테 하나 + 낱낱 불똥 알갱이 (햇살 줄무늬 아님)
+  ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = RP.spark; ctx.fillStyle = RP.spark
+  ctx.globalAlpha *= 1 - q; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x1, y1, RP.tipRing * (.4 + .6 * q), 0, TAU); ctx.stroke()
+  for (let i = 0; i < RP.tipDots; i++) { const a = f.angle + i * GOLDEN_TURN, d = RP.tipDotDist * q; ctx.beginPath(); ctx.arc(x1 + Math.cos(a) * d, y1 + Math.sin(a) * d, Math.max(.5, 3 * (1 - q)), 0, TAU); ctx.fill() }
+}
+/** 조임 고리(땅에 남는 줄 고리) — 땅 타원 테 + 천천히 도는 알갱이 (남은 시간이 짧으면 옅어진다) */
+function drawSnares(ctx: CanvasRenderingContext2D, s: HaebiRun) {
+  if (!s.kits) return
+  const R = KITS58.whip.snare.radius * areaScale(s)
+  for (const z of s.kits.zones) {
+    if (z.kind !== 'snare') continue
+    const k = Math.min(1, z.life / .6) * RP.snareAlpha
+    ctx.save(); ctx.globalAlpha = k; ctx.strokeStyle = RP.rim; ctx.lineWidth = 5; ctx.beginPath(); ctx.ellipse(z.x, z.y, R, R * .6, 0, 0, TAU); ctx.stroke()
+    ctx.strokeStyle = ULT_COLOR.whip; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(z.x, z.y, R, R * .6, 0, 0, TAU); ctx.stroke()
+    ctx.fillStyle = ULT_COLOR.whip
+    for (let i = 0; i < RP.snareDots; i++) { const a = i * TAU / RP.snareDots + z.life * RP.snareSpin; ctx.beginPath(); ctx.arc(z.x + Math.cos(a) * R, z.y + Math.sin(a) * R * .6, 3, 0, TAU); ctx.fill() }
+    ctx.restore()
+  }
+}
 /** 비기 그림 (판 상태는 읽기만) — f.ult 묶음마다 꼴이 다르다. 폰 프레임: filter·shadowBlur·그라디언트 없이 그림 띠와 선만 */
 function drawUlt(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, f: HaebiRun['fx'][number], age: number) {
   const kit = f.ult!, color = (f.awakened ?? f.tru) ? TRUE_COLOR[kit] : ULT_COLOR[kit], len = Math.hypot(f.x2 - f.x, f.y2 - f.y), lead = f.kind === 'skill'
@@ -412,6 +455,23 @@ function drawUlt(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageEle
     ctx.globalAlpha *= .5; sprite(ctx, images, heroSprite(s), f.x2, f.y2, heroH(s), 14, f.x2 < f.x ? 1 : -1); ctx.restore()
     for (const turn of [0, 1.7]) effectStrip(ctx, images, 'slash', f.x, f.y - 30, f.r * 1.3, age, f.angle * 2.1 + turn)
     stamp(ctx, images, 'raid/knife.png', f.x, f.y - 30, 40, f.angle * 2.1 + age * 6)
+  } else if (kit === 'whip') {
+    if (lead) {
+      // 휘몰이 모으기: 끌어모을 점 둘레에 땅 고리가 짙어진다 (줄은 끌려오는 적마다 따로 · 장수 손에서)
+      ctx.globalAlpha *= (1 - age) * .8; ctx.lineWidth = 3; ctx.setLineDash([10, 8]); ctx.beginPath(); ctx.ellipse(f.x, f.y, f.r * (1 - age * .35), f.r * (1 - age * .35) * RP.swirlSquash, 0, 0, TAU); ctx.stroke(); ctx.setLineDash([])
+      return
+    }
+    // 휘몰이 후려치기: 모인 점 둘레를 줄 둘이 크게 돌며 후려친다 (장수는 안 움직인다 · 환영난무와 다르다) + 땅 테
+    for (let k = 0; k < RP.swirlRopes; k++) {
+      const head = f.angle * Math.PI + k * Math.PI + age * TAU * RP.swirlTurns
+      ctx.beginPath(); ctx.lineWidth = RP.root + 2; ctx.strokeStyle = RP.rim; ctx.globalAlpha = 1 - age * .7
+      for (let j = 0; j < 2; j++) {
+        ctx.strokeStyle = j ? ULT_COLOR.whip : RP.rim; ctx.lineWidth = RP.root + 2 - j * 2; ctx.beginPath(); ctx.moveTo(f.x, f.y - 10)
+        for (let i = 1; i < RP.points; i++) { const u = i / (RP.points - 1), a = head - (1 - u) * RP.swirlLag; ctx.lineTo(f.x + Math.cos(a) * f.r * u, f.y - 10 - Math.sin(Math.PI * u) * RP.swirlArc + Math.sin(a) * f.r * u * RP.swirlSquash) }
+        ctx.stroke()
+      }
+    }
+    ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = RP.spark; ctx.globalAlpha = (1 - age) * RP.swirlRing; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(f.x, f.y, f.r * (.5 + .5 * age), f.r * (.5 + .5 * age) * RP.swirlSquash, 0, 0, TAU); ctx.stroke()
   } else if (kit === 'sling') {
     if (lead) {
       // 돌벼락 예고: 떨어질 둘레에 짙어지는 그림자 · 하늘에서 쏟아지는 돌 줄기 · 장수 머리 위로 크게 도는 팔매
@@ -849,6 +909,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   }
   // 두목·곰 내려찍기 · 돌·불 던지기 · 일제 사격이 떨어질 자리 · 타는 불바닥 — 모두 같은 붉은 말
   // 못 주운 기세는 마지막 1초에 옅어지며 사라진다 (dropLife)
+  drawSnares(ctx, s)   // 채찍 조합 조임 고리 (땅 위 · 몸 아래)
   for (const d of s.drops) { if (view && !inView(view, d.x, d.y, 30)) continue; const fade = Math.min(1, C.dropLife - d.age); if (fade < 1) ctx.globalAlpha = Math.max(0, fade); stamp(ctx, images, d.value > 2 ? 'raid/essence-large.png' : 'raid/essence.png', d.x, d.y, d.value > 2 ? 23 : 15); if (fade < 1) ctx.globalAlpha = 1 }
   drawGroundChests(ctx, images, s)
   if (destination) decal(ctx, images, 'mark-move', destination.x, destination.y, 30, 26, .85)
@@ -991,9 +1052,10 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       ctx.stroke()
       for (let i = 0; i < 5; i++) stamp(ctx, images, 'raid/arrow.png', b.x + Math.cos(i * 2.4) * r * .5, b.y + Math.sin(i * 2.4) * r * .35 - 14 - k * 260 - i * 16, 38, Math.PI / 2)
     } else if (b.kind === 'lasso') {
-      // 올가미: 장수 손에서 고리까지 삼 밧줄 한 줄 + 고리 (줄 그리기는 카드 W5 에서 다듬는다)
-      ctx.strokeStyle = ULT_COLOR[s.kit]; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(s.x, s.y - C.heroShotHeight); ctx.lineTo(p.x, p.y); ctx.stroke()
-      stamp(ctx, images, 'raid/rope.png', p.x, p.y, 34, b.angle)
+      // 올가미: 장수 손에서 고리까지 출렁이는 삼 밧줄 + 끝의 고리 (겨눈 쪽으로 열려 있다)
+      drawRope(ctx, s.x, s.y - C.heroShotHeight, p.x, p.y, 1, RP.lassoSag * Math.sin(b.life * 18), ULT_COLOR[s.kit])
+      ctx.strokeStyle = RP.rim; ctx.lineWidth = 5; ctx.beginPath(); ctx.ellipse(p.x, p.y, RP.lassoLoop, RP.lassoLoop * .6, b.angle, 0, TAU); ctx.stroke()
+      ctx.strokeStyle = '#c8b48a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(p.x, p.y, RP.lassoLoop, RP.lassoLoop * .6, b.angle, 0, TAU); ctx.stroke()
     } else if (b.kind === 'rain') {
       // 화살비: 남은 시간만큼 위에서 화살 셋이 무기 묶음 빛을 끌며 내려온다 (떨어질 자리의 금빛 테는 땅 차례에 · 판정은 땅 좌표 그대로)
       const k = Math.max(0, b.life) / C.rainDelay
@@ -1003,6 +1065,8 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       for (let i = 0; i < 3; i++) stamp(ctx, images, 'raid/arrow.png', b.x + (i - 1) * 18, b.y - 20 - k * 150 - i * 12, 40, Math.PI / 2)
     } else stamp(ctx, images, 'raid/wind-blade.png', p.x, p.y, 27, Math.atan2(b.vy,b.vx))
   }
+  // 채찍: 올가미·휘몰이에 끌려오는 적마다 장수 손에서 줄 한 가닥 (끌려오는 동안만)
+  if (s.kit === 'whip') for (const e of s.enemies) if (e.pull && e.hp > 0) { ctx.save(); drawRope(ctx, s.x, s.y - C.heroShotHeight, e.x, e.y - 22, 1, RP.gatherSag * Math.sin(e.pull.t * 40), ULT_COLOR.whip, 2); ctx.restore() }
   if (s.combos.includes('soulstorm')) for (let i = 0, n = C.stormOrbs + s.ranks.echo; i < n; i++) {
     const a = s.t * 3.2 + i * Math.PI * 2 / n
     stamp(ctx, images, 'raid/soul.png', s.x + Math.cos(a) * C.stormRadius * areaScale(s), s.y - 18 + Math.sin(a) * C.stormRadius * areaScale(s), 42, a + Math.PI / 2)
@@ -1029,6 +1093,8 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       if(img) ctx.drawImage(img,impactFrame(age)*256,0,256,128,0,-14,Math.hypot(dx,dy),28)
     } else if (f.kind === 'slash') {
       effectStrip(ctx,images,'slash',f.x,f.y-C.heroShotHeight,f.r,age,f.angle)
+    } else if (f.kind === 'thrust' && f.lash) {
+      drawLash(ctx, s, f, age)
     } else if (f.kind === 'thrust') {
       // 창 찌르기: 베기 띠를 찌른 방향으로 길고 납작하게 (길이 = 찌른 거리)
       ctx.translate(f.x, f.y - C.heroShotHeight); ctx.rotate(f.angle); ctx.scale(1, .32)
