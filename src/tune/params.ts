@@ -5500,3 +5500,13 @@ export const HAEBI_BREAKABLE = {
  * 값은 시작 값 (tools/raid-early.ts 서 있는 봇 12판 · docs/BALANCE.md 「76-PACE」).
  */
 export const HAEBI_PACE = { rampPaced: 30, eliteFirst: 60, stageBoost: { forest: 1.5 }, speedBoost: { forest: .5 }, boostPaced: 480 } as const
+
+/**
+ * 78-GAP 건물은 구석을 봉하지 못한다 (형 11-25 「틈 규칙」 · 벽 꼼수: 구석에 건물 셋을 붙여 세우고 그 안에 서면 적이 건물 앞에서 다 잡힌다).
+ * 건물끼리 · 건물과 땅 끝 · 건물과 고체(나무·바위·목책 밑동) 사이는 몸 사이 빈 거리가 gap 보다 좁아지지 않는다 — 건물은 길을 좁히고 효과를 주고 부서지지만 구석을 봉할 수는 없다.
+ * gap 몸 사이 빈 거리의 최소 px. 하한은 잡졸이 닿지 않고 지나는 36 (잡졸 몸 지름 2 × HAEBI_PALISADE.mobR = 20 + 75-WALL 닿는 여유 HAEBI_BREAKABLE.touch 6 을 양쪽 + 여유 4 — 닿는 여유 안에 들어서면 잡졸이 멈춰 물기 때문) 인데,
+ *   36 은 지나는 길 폭이 4px 라 정면으로 가는 적만 지나고 나머지는 건물 모서리에 닿아 문다 · 숲 벽 셋 맞은 수 31%(36) → 40%(52) → 50%(70) → 65%(80) → 80%(90) → 99%(110) 로 올라 70% 를 넘기는 첫 값 근처 90 으로 정했다.
+ * rate 서 있는 건물끼리·장수가 민 건물이 틈을 되찾는 빠르기(px/초 · 걸음마다 조금씩 풀려 떨리지 않는다) · 놓는 순간은 곧바로 벌린다.
+ * 값은 시작 값 (tools/raid-wall.ts · docs/BALANCE.md 「78-GAP」).
+ */
+export const HAEBI_GAP = { gap: 90, rate: 120 } as const

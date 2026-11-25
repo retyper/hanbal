@@ -1,9 +1,9 @@
 // 벽 셋 구석 꼼수 시험 (11-25 · journey-study 카드 0) — 장수를 땅 구석에 세워 가만히 두고, 설치물 셋을 둘레 R 에 0°·45°·90° 로 손으로 둘러 5분을 본다
 //   형 11-25 「건물들은 다 부서져야 · 막혀서 적이 공격 못 하는 꼼수」 — 벽이 장수를 감싸면 맞는 횟수가 얼마나 줄어드나
 //   node --experimental-strip-types tools/raid-wall.ts [stage forest] [kits axe,bow,dagger] [seeds 7,11,13]
-//   환경: MIN=5 · WALL=off (옛 판) · HPSCALE=1 (체력 배수 시험) · KIND=beacon (벽 종류: jar·sotdae·beacon·well·fence·tower·totem·catapult · none 이면 벽 없음) · R=60 (둘레 px) · SHOP=0 · 
+//   환경: MIN=5 · WALL=off (옛 판) · GAP=off (78-GAP 틈 규칙 끄기) · GAPPX=90 (틈 값 시험 · stageToolOpts 가 읽는다) · HPSCALE=1 (체력 배수 시험) · KIND=beacon (벽 종류: jar·sotdae·beacon·well·fence·tower·totem·catapult · none 이면 벽 없음) · R=60 (둘레 px) · SHOP=0 · 
 //   한 줄: 맞은 수/판 · 판 최저 체력 · 처치 · 끝에 서 있는 벽 · 비교 한 줄(벽 없음 대비 %)
-import { HAEBI_SHOP, HAEBI_BREAKABLE } from '../src/tune/params.ts'
+import { HAEBI_SHOP, HAEBI_BREAKABLE, HAEBI_GAP } from '../src/tune/params.ts'
 import { createHaebi, choose, stepHaebi, type Kit, type StageId, type Bonus } from '../src/raid/haebi.ts'
 import { botChoice } from '../src/raid/haebi-replay.ts'
 import { buildHp, standing, hasHp, type BuildKind } from '../src/raid/build.ts'
@@ -45,7 +45,7 @@ function main() {
   const run = (k: BuildKind | 'none') => kits.flatMap(kit => seeds.map(seed => wallRun(stage, kit, seed, minutes, share, k, radius)))
   const bare = run('none'), walled = kind === 'none' ? bare : run(kind)
   const line = (name: string, r: WallResult[]) => `${name} · 맞은 수 ${mean(r.map(x => x.hits)).toFixed(2)}/판 · 최저 체력 ${Math.round(mean(r.map(x => x.low)) * 100)}% · 처치 ${Math.round(mean(r.map(x => x.kills)))} · 죽음 ${r.filter(x => x.dead).length}/${r.length} · 끝에 선 벽 ${mean(r.map(x => x.standing)).toFixed(1)}`
-  console.log(`${stage} ${minutes}분 상점 ${share} R${radius} ${process.env['WALL'] === 'off' ? '옛 판(WALL=off)' : '75-WALL'} HPSCALE ${hpScale}`)
+  console.log(`${stage} ${minutes}분 상점 ${share} R${radius} ${process.env['WALL'] === 'off' ? '옛 판(WALL=off)' : '75-WALL'} ${process.env['GAP'] === 'off' ? '틈 없음(GAP=off)' : `78-GAP 틈 ${HAEBI_GAP.gap}`} HPSCALE ${hpScale}`)
   console.log('  ' + line('벽 없음', bare))
   console.log('  ' + line(`벽 셋 ${kind}`, walled))
   const b = mean(bare.map(x => x.hits)), w = mean(walled.map(x => x.hits))

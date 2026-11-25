@@ -6,7 +6,7 @@
  * 67-BUILD2 (형 11-23 「건설물 여러가지 더 · 창의적이게」): 장승 · 솟대 · 봉수대 · 포차 · 우물 다섯을 더해 여덟 종류 · 종류 칸은 그대로 셋.
  * 수치는 모두 HAEBI_BUILD · HAEBI_BUILD2 (tune/params.ts).
  */
-import { HAEBI_BUILD as B, HAEBI_BUILD2 as B2, HAEBI_BUILDUP as B3, HAEBI_BREAKABLE as HW } from '../tune/params.ts'
+import { HAEBI_BUILD as B, HAEBI_BUILD2 as B2, HAEBI_BUILDUP as B3, HAEBI_BREAKABLE as HW, HAEBI_GAP as GP } from '../tune/params.ts'
 
 export type BuildKind = 'tower' | 'fence' | 'jar' | 'totem' | 'sotdae' | 'beacon' | 'catapult' | 'well'
 /** 65-BUILD 의 셋 — 카드·나무에 서는 차례 (망루 → 목책 → 항아리) */
@@ -32,7 +32,7 @@ export const rebuildOf = (k: BuildKind) => k === 'tower' ? B.tower.rebuild : k =
  */
 export interface Structure { id: number; kind: BuildKind; x: number; y: number; hp: number; max: number; down: number; cd: number; flash: number; push: number; /** 75-WALL 판에서 놓인 무적이던 네 종류 — 체력이 있다 */ w?: true }
 /** items 선 것(놓인 차례) · nextId · jarXp 항아리가 더 얹어 준 기세(기록) */
-export interface BuildState { items: Structure[]; nextId: number; jarXp: number; /** 67-BUILD2 판 (여덟 종류) */ v2?: true; /** 69-BUILDUP 판 (화력·장전 칸) */ up?: true; /** 처음 낸 69-BUILDUP 판(옛 기록) — HAEBI_BUILDUP.v1 수치 */ upV1?: true; /** 75-WALL 판 (항아리·솟대·봉수대·우물도 체력이 있어 부서진다) */ wall?: true }
+export interface BuildState { items: Structure[]; nextId: number; jarXp: number; /** 67-BUILD2 판 (여덟 종류) */ v2?: true; /** 69-BUILDUP 판 (화력·장전 칸) */ up?: true; /** 처음 낸 69-BUILDUP 판(옛 기록) — HAEBI_BUILDUP.v1 수치 */ upV1?: true; /** 75-WALL 판 (항아리·솟대·봉수대·우물도 체력이 있어 부서진다) */ wall?: true; /** 78-GAP 판 (건물끼리 · 건물과 땅 끝·고체 사이는 적 한 명이 지나갈 틈보다 가까이 못 붙는다) */ gap?: true }
 export const newBuild = (): BuildState => ({ items: [], nextId: 1, jarXp: 0 })
 
 /** 그 단계에서 서 있는 수 — 1 + extraAt 에 이른 수 (단계 0 이면 0) · 우물만 늘 하나 (단계가 오르면 개수 대신 채우는 몫·쿨타임이 좋아진다) */
@@ -173,4 +173,27 @@ export function wallTouching(b: BuildState, body: { x: number; y: number }, radi
   const out: Structure[] = []
   for (const it of b.items) if (bearsHp(it) && standing(it) && Math.hypot(body.x - it.x, body.y - it.y) < bodyR(it) + radius + HW.touch) out.push(it)
   return out
+}
+/**
+ * 78-GAP 건물끼리의 틈 — 두 건물 몸 사이 빈 거리가 GP.gap 보다 좁으면 반씩 벌린다 (놓인 차례대로 · 한 번에 maxMove 까지만 — 서 있는 것끼리는 걸음마다 조금씩 풀려 떨리지 않는다).
+ * 같은 자리면 뒤의 것을 아래로. 하나라도 움직였으면 true
+ */
+export function gapBuild(b: BuildState, maxMove: number) {
+  const list = b.items
+  let moved = false
+  for (let pass = 0; pass < B.settlePasses; pass++) {
+    let any = false
+    for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
+      const p = list[i]!, q = list[j]!
+      if (!standing(p) || !standing(q)) continue
+      const need = bodyR(p) + bodyR(q) + GP.gap, dx = q.x - p.x, dy = q.y - p.y, d = Math.hypot(dx, dy)
+      if (d >= need) continue
+      const nx = d < 1e-6 ? 0 : dx / d, ny = d < 1e-6 ? 1 : dy / d, over = Math.min((need - d) / 2, maxMove)
+      p.x -= nx * over; p.y -= ny * over; q.x += nx * over; q.y += ny * over; any = true
+    }
+    if (!any) break
+    moved = true
+    if (maxMove !== Infinity) break   // 걸음마다 조금씩 — 한 번만
+  }
+  return moved
 }

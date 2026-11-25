@@ -3,10 +3,11 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { HAEBI_BREAKABLE as W, HAEBI_BUILD2 as B2, HAEBI_RUN as C } from '../src/tune/params.ts'
-import { createHaebi, stepHaebi, choose, spawnMob, KIT_RULES, BUILD_RULES, BUILD2_RULES, BUFF_RULES, WALL_RULES, type HaebiRun, type Mob } from '../src/raid/haebi.ts'
-import { standing, jarBonusAt, rebuildOf, bodyR, type BuildKind } from '../src/raid/build.ts'
+import { HAEBI_BREAKABLE as W, HAEBI_BUILD2 as B2, HAEBI_RUN as C, HAEBI_GAP as GP } from '../src/tune/params.ts'
+import { createHaebi, stepHaebi, choose, spawnMob, KIT_RULES, MAP_RULES, BUILD_RULES, BUILD2_RULES, BUFF_RULES, WALL_RULES, GAP_RULES, type HaebiRun, type Mob } from '../src/raid/haebi.ts'
+import { standing, jarBonusAt, rebuildOf, bodyR, type BuildKind, type Structure } from '../src/raid/build.ts'
 import { goldenRun } from './raid-golden-kit.ts'
+import { fieldBounds } from '../src/raid/wide.ts'
 
 const NEW_KINDS: BuildKind[] = ['jar', 'sotdae', 'beacon', 'well']
 /** 조용한 한 장짜리 판 (저절로 나오는 적·정예·일제 사격을 멈춘다 · 장수 무기도 쉰다) */
@@ -143,4 +144,58 @@ test('75-WALL + 74-BUFF 우물이 부서져도 이미 붙은 물기운은 끝까
   const t = mk(), v = one(t, 'well'); v.hp = 0; step(t, .05)
   step(t, 1)
   assert.equal(t.buffs!.length, 0)
+})
+
+// 78-GAP 건물은 구석을 봉하지 못한다 (형 11-25 「틈 규칙」) — 건물끼리 · 건물과 땅 끝 사이는 적 한 명이 지나갈 틈보다 가까이 못 붙는다
+const quietGap = (gap: boolean) => {
+  const s = createHaebi(5, 'stage', 'axe', { stage: 'forest', simRules: '56B', kitRules: KIT_RULES, mapRules: MAP_RULES, buildRules: BUILD_RULES, build2Rules: BUILD2_RULES, wallRules: WALL_RULES, ...(gap ? { gapRules: GAP_RULES } : {}) })
+  s.spawn = s.nextElite = s.nextBarrage = 1e9; rest(s); s.ranks.beacon = 1
+  return s
+}
+const putBeacon = (s: HaebiRun, x: number, y: number) => { s.build!.items.push({ id: s.build!.nextId++, kind: 'beacon', x, y, hp: 260, max: 260, down: 0, cd: 0, flash: 0, push: 0, w: true }); return s.build!.items[s.build!.items.length - 1]! }
+const gapOf = (a: Structure, b: Structure) => Math.hypot(a.x - b.x, a.y - b.y) - bodyR(a) - bodyR(b)
+
+test('78-GAP 붙여 놓은 건물 둘이 틈만큼 벌어진다 · 태그 없는 판은 옛 동작(맞닿기까지만)', () => {
+  for (const gap of [true, false]) {
+    const s = quietGap(gap); s.x = 600; s.y = 800
+    const a = putBeacon(s, 600, 500), b = putBeacon(s, 620, 500)   // 몸이 겹치게 붙인다
+    step(s, 1.5)
+    const g = gapOf(a, b)
+    if (gap) assert.ok(g >= GP.gap - 1, `틈 ${g}`)
+    else assert.ok(g < GP.gap - 1, `옛 판은 맞닿기까지만 ${g}`)
+  }
+})
+
+test('78-GAP 건물은 땅 끝에서도 틈만큼 떨어진다', () => {
+  const s = quietGap(true); s.x = 600; s.y = 800
+  const f = fieldBounds(s), a = putBeacon(s, f.left + 5, f.top + 5)
+  step(s, 1)
+  assert.ok(a.x - bodyR(a) - f.left >= GP.gap - 1 && a.y - bodyR(a) - f.top >= GP.gap - 1, `${a.x - f.left} ${a.y - f.top}`)
+})
+
+test('78-GAP 걸음마다 조금씩 벌어진다 (한 걸음에 rate × dt 를 넘지 않는다)', () => {
+  const s = quietGap(true); s.x = 600; s.y = 800
+  const a = putBeacon(s, 600, 500), b = putBeacon(s, 640, 500)
+  const x0 = b.x
+  stepHaebi(s, { x: 0, y: 0 }, 1 / 120)
+  assert.ok(b.x - x0 <= GP.rate / 120 + 1e-6 && b.x - x0 > 0, `${b.x - x0}`)
+  assert.ok(a.x < 600)
+})
+
+test('78-GAP 틈으로 잡졸이 지나간다 · 건물에 닿지 않는 길이면 (닿으면 75-WALL 대로 멈춰 문다)', () => {
+  for (const off of [0, 3]) {
+    const s = quietGap(true); s.x = 600; s.y = 760
+    const a = putBeacon(s, 600, 600), half = (bodyR(a) * 2 + GP.gap) / 2
+    a.x = 600 - half; putBeacon(s, 600 + half, 600)
+    const e = club(s, 600 + off, 440); e.cd = 9
+    let through = false
+    for (let i = 0; i < 6 * 120 && !through; i++) { stepHaebi(s, { x: 0, y: 0 }, 1 / 120); e.hp = e.max; e.cd = 9; through = e.y > 640 }
+    assert.ok(through, `off ${off} 멈춘 곳 ${e.x.toFixed(0)},${e.y.toFixed(0)}`)
+  }
+})
+
+test('78-GAP 같은 씨앗은 같은 판 · 옛 규칙 판과는 다르다', () => {
+  const h = (x: object) => createHash('sha256').update(JSON.stringify(goldenRun('forest', 'axe', 7, 60, x))).digest('hex')
+  assert.equal(h({ wallRules: WALL_RULES, gapRules: GAP_RULES }), h({ wallRules: WALL_RULES, gapRules: GAP_RULES }))
+  assert.notEqual(h({ wallRules: WALL_RULES, gapRules: GAP_RULES }), h({ wallRules: WALL_RULES }))
 })
