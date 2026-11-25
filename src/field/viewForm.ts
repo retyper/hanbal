@@ -8,7 +8,7 @@ import { P } from '../tune/params.ts'
 import { dotDu, dotDv, hash2 } from './viewDots.ts'
 import { FORM_CHARGE, FORM_HOLD, FORM_SCATTER } from './viewFxRead.ts'
 
-interface Layout { rows: number; rowOf: Int16Array; fwd: Float32Array; side: Float32Array; behind: Int16Array }
+interface Layout { uSpan: number; vSpan: number; rows: number; rowOf: Int16Array; fwd: Float32Array; side: Float32Array; behind: Int16Array }
 const layouts = new Map<number, Layout>()
 
 /** (자세, 점 자리 수)의 자리표: 줄 0 이 맨 앞 */
@@ -40,14 +40,16 @@ function layoutOf(form: number, N: number, depth: number): Layout {
       if (b < N) behind[s] = b
     }
   }
-  L = { rows, rowOf, fwd, side, behind }
+  let uLo = Infinity, uHi = -Infinity, vLo = Infinity, vHi = -Infinity
+  for (let s = 0; s < N; s++) { uLo = Math.min(uLo, fwd[s]!); uHi = Math.max(uHi, fwd[s]!); vLo = Math.min(vLo, side[s]!); vHi = Math.max(vHi, side[s]!) }
+  L = { uSpan: uHi - uLo, vSpan: vHi - vLo, rows, rowOf, fwd, side, behind }
   layouts.set(key, L)
   return L
 }
 
 /** 대 하나의 점 자리 기억 */
 export interface Dots {
-  N: number; form: number; face: number; lastT: number; mul: number; depth: number
+  N: number; form: number; face: number; lastT: number; mul: number; depth: number; bw: number; bd: number
   /** 지금 자리(칸) */
   cu: Float32Array; cv: Float32Array
   /** 점 → 자리 번호(모양이 있을 때) · 자리 → 점 */
@@ -64,7 +66,7 @@ const idx: number[] = []
 export function resetForm(): void { states.clear() }
 
 function make(N: number): Dots {
-  return { N, depth: 3, mul: 1, form: 0, face: 1, lastT: -1, cu: new Float32Array(N), cv: new Float32Array(N), slot: new Int16Array(N).fill(-1), occ: new Int16Array(N).fill(-1), hold: new Float64Array(N), gap: new Float32Array(N), wasDead: new Uint8Array(N), fills: [], formAt: -1e9 }
+  return { N, depth: 3, bw: 0, bd: 0, mul: 1, form: 0, face: 1, lastT: -1, cu: new Float32Array(N), cv: new Float32Array(N), slot: new Int16Array(N).fill(-1), occ: new Int16Array(N).fill(-1), hold: new Float64Array(N), gap: new Float32Array(N), wasDead: new Uint8Array(N), fills: [], formAt: -1e9 }
 }
 
 /** 줄 맞춘 자리는 점마다 ±lineJitterPx 만 흩는다 (칸 단위로 바꿔 더한다) */
@@ -73,7 +75,13 @@ function targetOf(d: Dots, id: number, k: number, out: { u: number; v: number })
   const s = d.slot[k]!
   if (d.form === FORM_SCATTER || s < 0) { out.u = dotDu(id, k); out.v = dotDv(id, k); return }
   const L = layoutOf(d.form, d.N, d.depth)
-  out.u = L.fwd[s]! * d.face * d.mul + jitter(id, k, 1); out.v = L.side[s]! * d.mul + jitter(id, k, 2)
+  // 몸(bw×bd 칸)이 오면 그 네모 안에 줄을 맞춘다 · 없으면 옛 간격
+  let su = d.mul, sv = d.mul
+  if (d.bw > 0 && d.bd > 0) {
+    su = L.uSpan > 0 ? Math.min(1.4, Math.max(0.7, d.bd * 0.75 / L.uSpan)) : 1
+    sv = L.vSpan > 0 ? Math.min(1.4, Math.max(0.7, d.bw * 0.9 / L.vSpan)) : 1
+  }
+  out.u = L.fwd[s]! * d.face * su + jitter(id, k, 1); out.v = L.side[s]! * sv + jitter(id, k, 2)
 }
 const tgt = { u: 0, v: 0 }
 
@@ -99,11 +107,12 @@ function assign(d: Dots, dead: ReadonlySet<number>): void {
 }
 
 /** 대의 점 기억 (N 이 바뀌면 새로) — 처음 만들 때는 자리에 바로 앉는다 */
-export function dotsOf(id: number, N: number, form: number, face: number, now: number, dead: ReadonlySet<number>, mul = 1, depth = 3): Dots {
+export function dotsOf(id: number, N: number, form: number, face: number, now: number, dead: ReadonlySet<number>, mul = 1, depth = 3, bw = 0, bd = 0): Dots {
   let d = states.get(id)
+  if (d !== undefined) { d.bw = bw; d.bd = bd }
   const fresh = d === undefined || d.N !== N
   if (fresh) {
-    d = make(N); states.set(id, d); d.mul = mul; d.depth = depth
+    d = make(N); states.set(id, d); d.mul = mul; d.depth = depth; d.bw = bw; d.bd = bd
     d.form = form; d.face = face; d.lastT = now
     for (let k = 0; k < N; k++) { d.cu[k] = dotDu(id, k); d.cv[k] = dotDv(id, k) }
     assign(d, dead)

@@ -33,6 +33,8 @@ export function noteLoss(h: VLoss, nowMs: number): void {
   const t = pressOf(h.to)
   t.taken += h.n; t.flinchAt = nowMs
 }
+/** 밀려난 거리가 늘었다 — 그 대의 줄이 움찔한다 */
+export function notePush(id: number, nowMs: number): void { pressOf(id).flinchAt = nowMs }
 /** 식히기: 두 값을 같이 줄여 비율은 지키고 오래된 것이 잊히게 (틱마다 한 번) */
 export function coolPress(dtMs: number): void {
   const k = Math.exp(-dtMs / P.field.pressMemMs)

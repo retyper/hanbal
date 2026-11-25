@@ -13,7 +13,7 @@ import { dotDied, dotsOf, offU, offV, peekDots, resetForm, rowCount, rowOfDot, s
 import { FORM_HOLD, FORM_SCATTER, moraleOf } from './viewFxRead.ts'
 import { drawDash, queueDash, resetDash } from './viewDash.ts'
 import { FLAG_FALLEN, bracedAt, drawOmens, drawPops, noteOmens, flagTilt, ingestHits, kickOf, resetHit, scatterOf, sc, shake, shakeAt, viewClock } from './viewHit.ts'
-import { computePairs, coolPress, dotMelee, drawParticles, flinchOf, isFront, maxFwdOf, minFwdOf, mo, noteLoss, partnerOf, resetMelee, spawn, swingChance, swings } from './viewMelee.ts'
+import { computePairs, coolPress, notePush, dotMelee, drawParticles, flinchOf, isFront, maxFwdOf, minFwdOf, mo, noteLoss, partnerOf, resetMelee, spawn, swingChance, swings } from './viewMelee.ts'
 import { drawTerrain } from './viewTerrain.ts'
 import { TEAM_RGB } from './viewTint.ts'
 import type { VLoss, VModel, VSquad } from './viewRead.ts'
@@ -22,6 +22,8 @@ const SIDE_COLOR = TEAM_RGB.map(c => `rgb(${c[0]},${c[1]},${c[2]})`) as readonly
 const GROUND_TILE_CELLS = 20
 const GROUND_FALLBACK = '#5b7a3c'
 const BACKDROP = '#10140d'
+/** 방향 번호(0~15) → 보는 쪽(+u 1 · -u -1 · 위아래 0) */
+const FACE_U: readonly number[] = [1, 1, 1, 1, 0, -1, -1, -1, -1, -1, -1, -1, 0, 1, 1, 1]
 const GROUND_VEIL = '#8c7650'
 const ARROW_COLOR = '#f4ead0'
 const FULL_TURN = 6.2832
@@ -50,7 +52,7 @@ interface Slots { N: number; dead: Set<number> }
 /** 활이 쏜 한 대 — 맞는 점이 쓰러지는 순간(t0 + 나는 시간)에 닿는다 */
 interface Shot { x0: number; y0: number; x1: number; y1: number; t0: number; side: 0 | 1 }
 /** 그리는 쪽 기억 — 점 수가 줄면 쓰러진 병사를 남기고 대의 마지막 방향을 기억한다 */
-const fx = { counts: new Map<number, number>(), menMax: new Map<number, number>(), face: new Map<number, 1 | -1>(), corpses: [] as Corpse[], tick: -1, slots: new Map<number, Slots>(), lastHit: new Map<number, { src: number; how: number }>(), shots: [] as Shot[], nowMs: 0, attackers: 0, routeAt: [-1, -1, -1, -1, -1, -1] as number[], dustAt: new Map<number, number>(), sparkAt: new Map<number, number>() }
+const fx = { pushed: new Map<number, number>(), counts: new Map<number, number>(), menMax: new Map<number, number>(), face: new Map<number, 1 | -1>(), corpses: [] as Corpse[], tick: -1, slots: new Map<number, Slots>(), lastHit: new Map<number, { src: number; how: number }>(), shots: [] as Shot[], nowMs: 0, attackers: 0, routeAt: [-1, -1, -1, -1, -1, -1] as number[], dustAt: new Map<number, number>(), sparkAt: new Map<number, number>() }
 const form0Hold = (q: VSquad): boolean => q.grp === 'front' && q.form === FORM_HOLD && q.flee !== 1
 /** 시험용 읽기: 지금 쓰러진 점 수 · 쓰러지기를 기다리는(앞날 born) 점 수 · 이번 장에서 치는 모습으로 그린 점 수 */
 export function fxStats(): { dead: number; pending: number; attackers: number; alive: number } {
@@ -59,7 +61,7 @@ export function fxStats(): { dead: number; pending: number; attackers: number; a
   return { dead, alive, pending: fx.corpses.filter(c => c.born > fx.nowMs).length, attackers: fx.attackers }
 }
 /** 새 판이 시작되면 부른다 */
-export function resetFx(): void { fx.counts.clear(); fx.menMax.clear(); fx.face.clear(); fx.corpses.length = 0; fx.tick = -1; fx.slots.clear(); fx.lastHit.clear(); fx.shots.length = 0; fx.routeAt.fill(-1); fx.dustAt.clear(); fx.sparkAt.clear(); resetForm(); resetMelee(); resetHit(); resetDash() }
+export function resetFx(): void { fx.pushed.clear(); fx.counts.clear(); fx.menMax.clear(); fx.face.clear(); fx.corpses.length = 0; fx.tick = -1; fx.slots.clear(); fx.lastHit.clear(); fx.shots.length = 0; fx.routeAt.fill(-1); fx.dustAt.clear(); fx.sparkAt.clear(); resetForm(); resetMelee(); resetHit(); resetDash() }
 
 const mix = (a: number, b: number, t: number): number => a + (b - a) * t
 /** sim 단위 → 판 px */
@@ -387,7 +389,11 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
       // 싸우는 중 = 엔진이 실제로 치고 있는 상대(aim)가 있다 — 손으로 몰았든 알아서든 같다 (target 은 가려는 적이라 손으로 몬 대는 -1)
       const aq = q.aim >= 0 ? cur.squads[q.aim] : undefined
       const fighting = cur.end === null && aq !== undefined && aq.men > 0
-      if (du0 !== 0) fx.face.set(q.id, du0 > 0 ? 1 : -1)
+      if (tickNew) { if (q.pushed > (fx.pushed.get(q.id) ?? q.pushed)) notePush(q.id, nowMs); fx.pushed.set(q.id, q.pushed) }
+      // 보는 쪽은 엔진의 향(16방위)이 정한다 (옆을 맞은 대는 옆을 보고 · 달아나는 대는 등을 보인다) · 위아래 향이면 움직임·싸움 상대로
+      const fu = FACE_U[q.face] ?? 0
+      if (fu !== 0) fx.face.set(q.id, fu as 1 | -1)
+      else if (du0 !== 0) fx.face.set(q.id, du0 > 0 ? 1 : -1)
       else if (fighting) fx.face.set(q.id, aq!.u >= q.u ? 1 : -1)
       const face = fx.face.get(q.id) ?? (side === 0 ? 1 : -1)
       const qu = pq === undefined ? q.u : mix(pq.u, q.u, alpha), qv = pq === undefined ? q.v : mix(pq.v, q.v, alpha)
@@ -400,7 +406,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
       const sl = settleDots(q, n, N0, cur, nowMs, qu, qv, strip, face === -1, sH, world.h)
       if (n === 0) continue
       const form = q.flee === 1 ? FORM_SCATTER : q.grp === 'front' ? q.form : 0
-      const dd = dotsOf(q.id, sl.N, form, face, nowMs, sl.dead, q.grp === 'horse' ? F.horseSpaceMul : q.grp === 'bows' ? F.bowsSpaceMul : 1, q.grp === 'front' ? F.depthFront : q.grp === 'bows' ? F.depthBows : F.depthHorse)
+      const dd = dotsOf(q.id, sl.N, form, face, nowMs, sl.dead, q.grp === 'horse' ? F.horseSpaceMul : q.grp === 'bows' ? F.bowsSpaceMul : 1, q.grp === 'front' ? F.depthFront : q.grp === 'bows' ? F.depthBows : F.depthHorse, q.bw / F.unit, q.bd / F.unit)
       const kickCells = kickOf(q.id, nowMs)
       if (running && nowMs - (fx.dustAt.get(-1 - q.id) ?? -1e9) > F.runDustMs) {
         fx.dustAt.set(-1 - q.id, nowMs)

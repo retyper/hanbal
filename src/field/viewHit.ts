@@ -221,10 +221,10 @@ export function drawOmens(ctx: CanvasRenderingContext2D, clk: number, zoom: numb
   for (const o of omens) {
     const age = clk - o.at, t = age / F.omenMs
     let a = Math.min(1, age / 150) * (t > 0.85 ? (1 - t) / 0.15 : 1)
-    if (F.omenBlinkHz > 0) a *= 0.7 + 0.3 * Math.sin(age / 1000 * F.omenBlinkHz * 6.2832)
+    if (F.omenBlinkHz > 0) a *= 0.88 + 0.12 * Math.sin(age / 1000 * F.omenBlinkHz * 6.2832)
     for (let pass = 0; pass < 2; pass++) {
       ctx.beginPath()
-      let carry = (age / 1000 * cp * 3) % step
+      let carry = (age / 1000 * cp * 3) % step, ex = 0, ey = 0, edx = 1, edy = 0
       for (let j = 1; j < o.pts.length; j++) {
         const ax = o.pts[j - 1]!.u / u * cp, ay = o.pts[j - 1]!.v / u * cp, bx = o.pts[j]!.u / u * cp, by = o.pts[j]!.v / u * cp
         const len = Math.hypot(bx - ax, by - ay)
@@ -235,10 +235,14 @@ export function drawOmens(ctx: CanvasRenderingContext2D, clk: number, zoom: numb
           ctx.moveTo(x - dx * half + nx * half, y - dy * half + ny * half); ctx.lineTo(x, y); ctx.lineTo(x - dx * half - nx * half, y - dy * half - ny * half)
         }
         carry = ((carry - len) % step + step) % step
+        ex = bx; ey = by; edx = dx; edy = dy
       }
-      ctx.globalAlpha = 0.9 * a
-      ctx.strokeStyle = pass === 0 ? '#2a0f0c' : '#d4473a'
-      ctx.lineWidth = Math.max(pass === 0 ? 4 : 2.4, (pass === 0 ? 5 : 3) / zoom)
+      // 끝은 화살촉 (더 큰 갈매기)
+      const hh = half * 1.7, enx = -edy, eny = edx
+      ctx.moveTo(ex - edx * hh + enx * hh, ey - edy * hh + eny * hh); ctx.lineTo(ex + edx * half * 0.6, ey + edy * half * 0.6); ctx.lineTo(ex - edx * hh - enx * hh, ey - edy * hh - eny * hh)
+      ctx.globalAlpha = a
+      ctx.strokeStyle = pass === 0 ? '#f4ead0' : '#dc3a2e'
+      ctx.lineWidth = Math.max(pass === 0 ? 6.4 : 4.2, (pass === 0 ? 7.2 : 4.6) / zoom)
       ctx.stroke()
     }
   }
