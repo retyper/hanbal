@@ -39,20 +39,33 @@ def key(rgb):
     return out
 
 
-def main(png, roots, ok, outdir):
+def main(png, roots, ok, outdir, full=False):
     im = Image.open(png).convert('RGB')
     cells = json.load(open(roots, encoding='utf-8'))['cells']
     import os
     os.makedirs(outdir, exist_ok=True)
+    fk = None
+    if full:   # DA17 처럼 서기 그림이 빠지고 칸 전체에 대시만 크게 온 판: 이미 모은 칸들의 평균 높이에 이 판의 평균 높이를 맞춘 한 배율
+        have = [Image.open(f'{outdir}/{f}').convert('RGBA').getchannel('A').getbbox() for f in os.listdir(outdir) if f.endswith('-dash.png')]
+        want = np.mean([b[3] - b[1] for b in have])
+        hs = []
+        for n in ok:
+            c = cells[n - 1]
+            x0, y0, w, h = [round(c[k] * S) for k in ('x', 'y', 'w', 'h')]
+            hs.append(keep_main(key(im.crop((x0 + INSET, y0 + INSET, x0 + w - INSET, y0 + h - INSET)))))
+        hh = [Image.fromarray(a).getchannel('A').getbbox() for a in hs]
+        fk = want / np.mean([b[3] - b[1] for b in hh])
+        print('전체 칸 판 배율 %.3f (모은 칸 평균 높이 %.1f 에 맞춤)' % (fk, want))
     for n in ok:
         c = cells[n - 1]
         x0, y0, w, h = [round(c[k] * S) for k in ('x', 'y', 'w', 'h')]
-        a = key(im.crop((x0 + w // 2, y0 + INSET, x0 + w - INSET, y0 + h - INSET)))   # 칸 테두리(DA14 는 검은 선이 남음)는 안쪽으로 잘라 뺀다
+        lx = x0 + INSET if full else x0 + w // 2
+        a = key(im.crop((lx, y0 + INSET, x0 + w - INSET, y0 + h - INSET)))   # 칸 테두리(DA14 는 검은 선이 남음)는 안쪽으로 잘라 뺀다
         a = keep_main(a)
         img = Image.fromarray(a, 'RGBA')
         bb = img.getchannel('A').getbbox()
         img = img.crop(bb)
-        k = 1 / (1.6 * c['scale'])
+        k = fk if full else 1 / (1.6 * c['scale'])
         img = img.resize((max(1, round(img.width * k)), max(1, round(img.height * k))), Image.LANCZOS)
         cell = Image.new('RGBA', (CW, CH))
         left = ROOT + SHIFT - img.width // 2
@@ -64,4 +77,4 @@ def main(png, roots, ok, outdir):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1], sys.argv[2], [int(v) for v in sys.argv[3].split(',')], sys.argv[4] if len(sys.argv) > 4 else 'tools/out/a2/cells')
+    main(sys.argv[1], sys.argv[2], [int(v) for v in sys.argv[3].split(',')], sys.argv[4] if len(sys.argv) > 4 and sys.argv[4] != 'full' else 'tools/out/a2/cells', 'full' in sys.argv[4:])

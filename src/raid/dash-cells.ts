@@ -1,4 +1,4 @@
-// 자동 생성 — tools/sprite-kit/dash-install.mjs (손으로 고치지 말 것) · 45명
+// 자동 생성 — tools/sprite-kit/dash-install.mjs (손으로 고치지 말 것) · 55명
 // 대시 칸이 있는 장수(띠 열쇠 gen-<열쇠>) → 그리는 배율 (그림 파일: public/realm/anim-px/dash/gen-<열쇠>.png · 한 칸 240×224)
 export const DASH_CELLS: Readonly<Record<string, number>> = {
   ara: 1,
@@ -6,8 +6,14 @@ export const DASH_CELLS: Readonly<Record<string, number>> = {
   aryeong: 1,
   bakdal: 1,
   baram: 1,
+  "base-w-02-goguryeo-lady": 1,
+  "base-w-10-pirate-captain": 1,
+  "base-w-13-young-archer": 1,
+  "base-w-17-mahan-pearl-diver": 1,
+  "base-w-23-usisan-whale-queen": 1,
   "base-w-27-mokji-jinha": 1,
   "base-w-29-golpo-janmul": 1,
+  "base-w-64-miri-dallae": 1,
   beom: 1,
   beombal: 1,
   beomi: 1,
@@ -45,5 +51,9 @@ export const DASH_CELLS: Readonly<Record<string, number>> = {
   sdallae: 1,
   sincheongan: 1,
   sinneoul: 1,
+  soenun: 1,
+  sogeumbi: 1,
   songbi: 1,
+  tneoul: 1,
+  yucheongan: 1,
 }
