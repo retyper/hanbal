@@ -25,9 +25,9 @@ function integersOnly(s: FieldState): void {
   for (const e of s.heroes) for (const n of [e.u, e.v, e.hp, e.stun]) assert.ok(Number.isInteger(n) && !Object.is(n, -0))
 }
 
-test('빈 판 1,000씨앗: 같은 씨앗 두 번 = 같은 해시 · 입력 기록 재생 = 같은 해시', () => {
+test('빈 판 200씨앗 (1,000씨앗은 tools/field-bench.ts): 같은 씨앗 두 번 = 같은 해시 · 입력 기록 재생 = 같은 해시', () => {
   const seen = new Set<string>()
-  for (let seed = 1; seed <= 1000; seed++) {
+  for (let seed = 1; seed <= 200; seed++) {
     const setup = plainSetup(seed, SIZES[seed % 3]!)
     const inputs = seed % 2 === 0 ? inputsFor(seed) : []
     const a = runField(setup, inputs)
@@ -37,10 +37,10 @@ test('빈 판 1,000씨앗: 같은 씨앗 두 번 = 같은 해시 · 입력 기�
     const replay = parse(serialize(a.log.accepted))
     assert.ok(replay)
     assert.equal(hashField(runField(setup, replay)), hashField(a), `재생 seed ${seed}`)
-    if (seed <= 3 || seed === 1000) integersOnly(a)
+    if (seed <= 3 || seed === 200) integersOnly(a)
     seen.add(hashField(a))
   }
-  assert.ok(seen.size > 900, `씨앗이 해시에 닿는다: ${seen.size}`)
+  assert.ok(seen.size > 180, `씨앗이 해시에 닿는다: ${seen.size}`)
 })
 
 test('틱을 하나씩 걸어도 runField 와 같다 · 끝난 판은 더 안 걷는다', () => {

@@ -17,7 +17,7 @@ import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { clamp, dist2, idiv, stepToward } from './num.ts'
 import { GRPS, OP_AUTO, OP_MOVE, OP_RETREAT, OP_STANCE, STANCE_CHARGE, STANCE_HOLD, STANCE_OPEN } from './types.ts'
-import type { FieldInput, FieldState, Grp, Hero, LiveSetup, Squad } from './types.ts'
+import type { FieldInput, FieldState, Grp, Hero, LiveSetup, Point, Squad } from './types.ts'
 
 const NO_INPUTS: readonly FieldInput[] = []
 const ROW: Readonly<Record<Grp, number>> = { front: 0, bows: 1, horse: 2 }
@@ -244,8 +244,8 @@ function judge(s: FieldState): void {
   }
   if (downs[0] === 0 && downs[1] === 0) return
   s.end = (downs[0] !== 0 ? downs[0] : downs[1]) === 2 ? 'morale' : 'men'
-  // 둘 다 무너졌으면 남은 몫이 적은 쪽이 진다 (같으면 적 편)
-  s.winner = downs[0] !== 0 && downs[1] !== 0 ? (share[0] < share[1] ? 1 : 0) : downs[0] !== 0 ? 1 : 0
+  // 둘 다 무너졌으면 남은 몫이 적은 쪽이 진다 (같으면 이름 붙은 굴림 — 늘 한 편이 이기면 대칭 판이 쏠린다)
+  s.winner = downs[0] !== 0 && downs[1] !== 0 ? (share[0] === share[1] ? (roll(s.seed, s.tick, 'tie') < 0.5 ? 0 : 1) : share[0] < share[1] ? 1 : 0) : downs[0] !== 0 ? 1 : 0
 }
 
 /** 때를 다 썼을 때 — 남은 세기(사람 × 사기)의 몫이 tacWinShare 위인 쪽이 이긴다 (아래쪽은 1 - 이것) · 그 사이는 비김 */
@@ -263,14 +263,18 @@ export function stepField(s: FieldState, inputs: readonly FieldInput[] = NO_INPU
   if (s.tick % P.field.retargetEvery === 0) retarget(s)
   const K = kit()
   fight(s, K)
-  for (const q of s.squads) {
-    if (!q.goal || q.men <= 0) continue
+  // 걸음은 모두 같은 틱 처음 자리에서 정하고 한꺼번에 옮긴다 (id 차례로 옮기면 먼저 도는 편이 뒤 편의 멈춤 판단을 바꿔 쏠린다)
+  const moves: Array<Point | null> = s.squads.map(q => {
+    if (!q.goal || q.men <= 0) return null
     if (q.manual === 0 && q.target >= 0) {
       const e = s.squads[q.target]!
-      if (dist2(q.u, q.v, e.u, e.v) <= (q.grp === 'bows' ? K.bowR2 : K.meleeR2)) continue
+      if (dist2(q.u, q.v, e.u, e.v) <= (q.grp === 'bows' ? K.bowR2 : K.meleeR2)) return null
     }
-    const p = stepToward(q.u, q.v, q.goal.u, q.goal.v, speedPerTick(q.grp))
-    q.u = p.u; q.v = p.v
+    return stepToward(q.u, q.v, q.goal.u, q.goal.v, speedPerTick(q.grp))
+  })
+  for (const q of s.squads) {
+    const p = moves[q.id]
+    if (p) { q.u = p.u; q.v = p.v }
   }
   for (const h of s.heroes) {
     if (h.stun > 0 || !h.goal) continue
