@@ -39,7 +39,7 @@ test('입력 하나로 움직인다: OP_HERO_DIR 한 번이면 그쪽으로 계�
   stepField(s, [{ tick: 0, g: 3, op: OP_HERO_DIR, u: 0, v: 1 }])
   for (let t = 1; t < 30; t++) stepField(s)
   const gone = h.u - u0
-  assert.equal(gone, 3 * P.field.heroSpeedCellsPerSec * P.field.unit, '3초에 걸음 × 3')
+  assert.equal(gone, 3 * Math.trunc(P.field.speedFrontCellsPerSec * P.field.unit * P.field.heroSpeedPermille / 1000), '3초에 걸음 × 3')
   stepField(s, [{ tick: 30, g: 3, op: OP_HERO_DIR, u: 0, v: 0 }])
   const u1 = h.u
   for (let t = 31; t < 60; t++) stepField(s)

@@ -24,7 +24,7 @@ import { campPointU, groundAt, walkable } from './map.ts'
 import { G_BLOCK, G_HIGH, G_PLAIN, G_SHALLOW, GRPS, HERO_ART_DEFAULT, HERO_ARTS, HERO_DIR, HERO_DIRS, OP_ATTACK, OP_AUTO, OP_DASH, OP_HERO_DIR, OP_MOVE, OP_RETREAT, OP_SKILL, OP_STANCE, STANCE_CHARGE, STANCE_HOLD, STANCE_OPEN, WHY_NONE, CMD_COUNTER, CMD_HEIGHT, OP_AIM, OP_RALLY, ORD_ATTACK, ORD_CHARGE, ORD_FLANK, ORD_MOVE, ORD_NONE, ORD_VOLLEY, HIT_PLAIN, HIT_GOOD, HIT_BLOCKED, LOSS_ARROW, LOSS_BLADE, KIND_BEATS } from './types.ts'
 import type { FieldInput, FieldMap, FieldState, Grp, Hero, LiveSetup, Point, Squad, UnitKind } from './types.ts'
 import { auraOf, emit, heroInput, heroMove, heroStrike, heroTakeHits, pruneEvents, standOf } from './hero.ts'
-import { armyInit, armyInput, armyTick, follows, runMul } from './army.ts'
+import { armyInit, armyInput, armyTick, flankStep, follows, runMul } from './army.ts'
 
 const NO_INPUTS: readonly FieldInput[] = []
 const ROW: Readonly<Record<Grp, number>> = { front: 0, bows: 1, horse: 2 }
@@ -866,7 +866,7 @@ function aiHeroGoal(s: FieldState, h: Hero): Point | null {
 }
 
 /** 앞줄 돌격 · 기병 옆치기 들이침인가 (도움닫기 덤을 받는 대) */
-const runner = (s: FieldState, q: Squad): boolean => (q.grp === 'front' && q.order === ORD_CHARGE) || (q.grp === 'horse' && q.order === ORD_FLANK && s.route[q.side * 3 + 2]!.length === 0)
+const runner = (s: FieldState, q: Squad): boolean => (q.grp === 'front' && q.order === ORD_CHARGE) || (q.grp === 'horse' && q.order === ORD_FLANK && q.target >= 0 && flankStep(s, q, s.squads[q.target]!).strike)
 
 /**
  * 돌격의 쾅 (51 §8) — 도움닫기(chargeMinRunCells · flankMinRunCells)를 한 대가 겨눈 적의 맞붙는 거리에 들면 한 번:
@@ -923,10 +923,10 @@ function shove(s: FieldState, mover: Squad, from: Point, len: number, bank: read
 function afterHits(s: FieldState, K: Kit, aim: readonly number[]): void {
   for (const q of s.squads) if (q.bonus > 0) q.bonus--
   for (const q of s.squads) {
-    if (q.men <= 0 || q.grp !== 'horse' || q.order !== ORD_FLANK || q.hitTick >= 0 || aim[q.id] !== q.target || q.target < 0) continue
-    const e = s.squads[q.target]!
-    // 옆·뒤에서 닿은 것만 옆치기가 먹힌 것 (52 §1-1)
-    if (hitArc(e, q) === 0) continue
+    if (q.men <= 0 || q.grp !== 'horse' || q.order !== ORD_FLANK || q.hitTick >= 0 || aim[q.id]! < 0) continue
+    const e = s.squads[aim[q.id]!]!
+    // 겨눈 대의 무리(찍은 적 무리)를 옆·뒤에서 친 것만 옆치기가 먹힌 것 (52 §1-1 · 가는 길에 스친 적 기병은 안 센다)
+    if (hitArc(e, q) === 0 || q.target < 0 || e.grp !== s.squads[q.target]!.grp) continue
     const first = !s.squads.some(o => o.side === q.side && o.grp === 'horse' && o.hitTick >= 0)
     q.hitTick = s.tick
     if (!first) continue
@@ -1099,7 +1099,8 @@ function turnFaces(s: FieldState): void {
     const every = q.grp === 'horse' ? P.field.turnHorseTicks : P.field.turnFrontTicks
     if (s.tick % Math.max(1, every) !== 0) continue
     if (q.lock >= 0 && q.flee === 0 && hitArc(q, s.squads[q.lock]!) === 0) continue
-    const t = q.aim >= 0 ? s.squads[q.aim]! : null
+    // 칼날로 맞닿은 적이 있을 때만 그쪽으로 돈다 (활이 멀리서 쏘는 적이나 다가오는 기병 쪽으로 미리 돌면 옆치기가 서지 않는다 · 진의 향은 적 쪽)
+    const t = q.aim >= 0 && touching(q, s.squads[q.aim]!) ? s.squads[q.aim]! : null
     const want = t ? nearestDir(t.u - q.u, t.v - q.v)
       : q.goal && dist2(q.u, q.v, q.goal.u, q.goal.v) > sq(P.field.unit) ? nearestDir(q.goal.u - q.u, q.goal.v - q.v)
       : fwd(q.side) > 0 ? 0 : HERO_DIRS / 2

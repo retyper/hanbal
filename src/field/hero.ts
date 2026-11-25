@@ -32,7 +32,8 @@ export function pruneEvents(s: FieldState): void {
 }
 
 /** 장수 걸음 (단위/초) */
-const heroSpeed = (): number => P.field.heroSpeedCellsPerSec * P.field.unit
+/** 장수 걸음 (단위/초) — 보병 걸음의 heroSpeedPermille (검수 B6 · 빠른 발은 내닫기) */
+const heroSpeed = (): number => mul(P.field.speedFrontCellsPerSec * P.field.unit, P.field.heroSpeedPermille)
 
 /** 통솔 배수 (‰) — 본편 leadMul = leadBase + leadPerMu × (무예 + 통솔) ÷ 2 (능력치 1~10 · 여기는 10배라 10 으로 나눈다 · 47 §1-D) */
 export function leadPermille(h: Hero): number {

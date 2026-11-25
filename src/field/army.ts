@@ -234,17 +234,10 @@ function place(s: FieldState, side: 0 | 1): void {
       anchor = dist2(c.u, c.v, q0.orderAt.u, q0.orderAt.v) > r * r ? stepPoint(c, q0.orderAt, r) : c
     }
     if (q0.order === ORD_FLANK) {
+      // 옆치기 — 대마다 제 쪽 바깥으로 돌아 (날개 둘이면 양쪽에서 집게로) 뒤에서 들이친다 · 단계는 자리로 가른다 (flankStep)
       const t = s.squads[q0.target]!
-      const rt = s.route[idx]!
-      const c = centerOf(qs)
-      if (rt.length > 0) {
-        const fresh = flankRoute(s, side, t, rt.length)
-        if (dist2(c.u, c.v, fresh[0]!.u, fresh[0]!.v) <= sq(cells(P.field.flankReachCells))) fresh.shift()
-        s.route[idx] = fresh
-      }
-      anchor = s.route[idx]!.length > 0 ? s.route[idx]![0]! : { u: t.u, v: t.v }
-      for (const q of qs) { q.target = t.id; q.goal = s.route[idx]!.length > 0 ? anchor : { u: t.u, v: t.v } }
-      s.anchor[idx] = anchor
+      qs.forEach((q, i) => { const st = flankStep(s, q, t); q.target = t.id; q.goal = st.goal; if (i === 0) s.route[idx] = st.pts })
+      s.anchor[idx] = centerOf(qs)
       continue
     }
     s.anchor[idx] = anchor
@@ -273,7 +266,7 @@ function place(s: FieldState, side: 0 | 1): void {
       // 기본 행동 — 닿는 적과 알아서 맞붙는다 · 기병은 무너지는(사기가 tacPursueMorale 아래) 적을 쫓는다
       const pursue = q.grp === 'horse' ? nearestFoe(s, q, (t, d) => d <= sq(cells(P.field.pursueCells)) && t.morale * MILLI < t.morale0 * m(P.realm.tacPursueMorale)) : null
       // 감싸기 (52 §1-4) — 맞물리지 않은 대는 wrapCells 안의 「우리와 맞물린 적」의 옆구리로 붙는다 (수가 남는 쪽이 저절로 감싼다)
-      if (q.lock < 0 && !pursue) {
+      if (q.lock < 0 && !pursue && q.grp !== 'horse') {
         const w = nearestFoe(s, q, (t, d) => d <= sq(cells(P.field.wrapCells)) && t.flee === 0 && t.lock >= 0 && s.squads[t.lock]!.side === side && s.squads[t.lock]!.id !== q.id && free(t, q))
         if (w) {
           const sv = q.v >= w.v ? 1 : -1
@@ -283,7 +276,8 @@ function place(s: FieldState, side: 0 | 1): void {
           return
         }
       }
-      const e = pursue ?? nearestFoe(s, q, (t, d) => (d <= engage2 || hunt) && t.flee === 0 && free(t, q))
+      // 기병 날개는 감싸기·맞붙기에 안 끼고 horseGuardCells 안의 적 기병만 막으러 간다 (52 §1-4 · 검수 W3 「예고 없이 가운데로 걸어 들어와 뭉친다」)
+      const e = pursue ?? (q.grp === 'horse' ? nearestFoe(s, q, (t, d) => t.grp === 'horse' && d <= sq(cells(P.field.horseGuardCells)) && t.flee === 0 && free(t, q)) : nearestFoe(s, q, (t, d) => (d <= engage2 || hunt) && t.flee === 0 && free(t, q)))
       if (e && !pursue && q.lock !== e.id) taken.set(e.id, (taken.get(e.id) ?? 0) + 1)
       q.target = e ? e.id : -1
       // 제 길(진 자리의 v)에 걸친 적이면 줄을 지킨 채 곧게 앞으로 · 아니면 그 적에게 (쫓기·돌아 들기)
@@ -309,7 +303,7 @@ export function runMul(s: FieldState, q: Squad): number {
   const t = q.target >= 0 ? s.squads[q.target] : undefined
   if (!t || t.men <= 0) return MILLI
   const charging = q.grp === 'front' && q.order === ORD_CHARGE
-  const striking = q.grp === 'horse' && q.order === ORD_FLANK && s.route[q.side * 3 + 2]!.length === 0
+  const striking = q.grp === 'horse' && q.order === ORD_FLANK && q.target >= 0 && flankStep(s, q, s.squads[q.target]!).strike
   if (!charging && !striking) return MILLI
   const start = cells(charging ? P.field.chargeRunCells : P.field.flankRunCells)
   if (dist2(q.u, q.v, t.u, t.v) > start * start) return MILLI
@@ -346,7 +340,9 @@ function moveAnchor(s: FieldState, side: 0 | 1): void {
   if (d2 <= slack * slack) return
   const root = isqrt(d2), len = root * root === d2 ? root : root + 1
   const goal = { u: t.u - idiv((t.u - a.u) * slack, len), v: t.v - idiv((t.v - a.v) * slack, len) }
-  s.anchor[side * 3] = stepToward(a.u, a.v, goal.u, goal.v, perTickAt(mul(P.field.speedFrontCellsPerSec * P.field.unit, P.field.anchorSpeedPermille), s.tick))
+  // 장수가 catchUpCells 넘게 앞서면 진이 뛰어 따라붙는다 (검수 B6 「장수가 군을 버리고 간다」)
+  const far = d2 > sq(cells(P.field.catchUpCells))
+  s.anchor[side * 3] = stepToward(a.u, a.v, goal.u, goal.v, perTickAt(mul(P.field.speedFrontCellsPerSec * P.field.unit, far ? P.field.catchUpPermille : P.field.anchorSpeedPermille), s.tick))
 }
 
 /**
@@ -371,4 +367,27 @@ function formUp(s: FieldState): void {
     }
     for (const g of GRPS) s.anchor[side * 3 + ROW[g]] = g === 'front' ? F : centerOf(live(groupOf(s, side, g)))
   }
+}
+
+/**
+ * 옆치기 한 대의 다음 자리 (자취를 들지 않고 지금 자리로 단계를 가른다 · 차례·거울에 안 기댄다):
+ * 겨눈 대 뒤(flankBackCells 의 반)를 넘었으면 들이침 · 적 앞줄 선을 넘었거나 바깥 길(적 몸 가장자리 + flankWideCells)에 섰으면 뒤 점으로 · 아니면 바깥 길 앞 점으로.
+ * 바깥 길은 이 대가 적 가운데보다 어느 쪽에 있느냐로 (판 밖이면 반대쪽 · 둘 다 밖이면 판 끝).
+ */
+export function flankStep(s: FieldState, q: Squad, t: Squad): { goal: Point; strike: boolean; pts: Point[] } {
+  const ft = fwd(t.side), back = cells(P.field.flankBackCells), reach = cells(P.field.flankReachCells)
+  const foes = s.squads.filter(e => e.side === t.side && e.men > 0 && e.flee === 0)
+  let vmin = t.v, vmax = t.v, vs = 0, near = t.u
+  for (const e of foes) { vmin = Math.min(vmin, e.v - idiv(e.bw, 2)); vmax = Math.max(vmax, e.v + idiv(e.bw, 2)); vs += e.v; if ((e.u - near) * ft > 0) near = e.u }
+  const vc = foes.length ? idiv(vs, foes.length) : t.v
+  const W = lastV(s.map), pad = cells(P.field.flankWideCells) + idiv(q.bw, 2)
+  const edge = (g: number): number => g > 0 ? vmax + pad : vmin - pad
+  let sgn = q.v >= vc ? 1 : -1
+  if (edge(sgn) < 0 || edge(sgn) > W) { if (!(edge(-sgn) < 0 || edge(-sgn) > W)) sgn = -sgn }
+  const ev = clamp(edge(sgn), 0, W)
+  const pin = (p: Point): Point => ({ u: clamp(p.u, 0, lastU(s.map)), v: clamp(p.v, 0, W) })
+  const p0 = pin({ u: near + ft * reach, v: ev }), p1 = pin({ u: t.u - ft * back, v: ev })
+  if ((q.u - t.u) * ft <= -idiv(back, 2)) return { goal: { u: t.u, v: t.v }, strike: true, pts: [] }
+  if ((q.u - near) * ft <= 0 || Math.abs(q.v - ev) <= reach) return { goal: p1, strike: false, pts: [p1, { u: t.u, v: t.v }] }
+  return { goal: p0, strike: false, pts: [p0, p1, { u: t.u, v: t.v }] }
 }
