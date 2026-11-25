@@ -20,10 +20,13 @@ permissions:
   pages: write
   id-token: write
 
-# 연달아 푸시해도 마지막 것만 올라간다.
+# 연달아 푸시해도 마지막 것은 반드시 올라간다.
+# 2026-11-25: 돌던 배포를 새 푸시가 취소하게 두었더니(cancel-in-progress: true) 일꾼 여럿이 몇 분마다 푸시하는 날에는
+# 배포가 하나도 끝나지 못했다(25번 가운데 21번 취소 · 형은 배포본으로만 확인한다). 돌던 것은 끝까지 가고,
+# 그 사이 온 푸시는 가장 새것 하나만 기다렸다가 이어서 돈다.
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
