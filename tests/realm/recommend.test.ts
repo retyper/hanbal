@@ -12,7 +12,10 @@ import { startTutorial } from '../../src/realm/data/regions/tutorial.ts'
 import { bustOf } from '../../src/realm/data/art.ts'
 import { AWAKEN_ART } from '../../src/realm/data/awaken-art.ts'
 import { DEX_AWOKE, DEX_DEMON } from '../../src/realm/person.ts'
-import { recHeroes, recsOf, type RaidPeek, type RecBook } from '../../src/ui/realm/recommend.ts'
+import { expReady, recHeroes, recsOf, workRec, yardRecs, type RaidPeek, type RecBook } from '../../src/ui/realm/recommend.ts'
+import { emptyDrill, spendCost } from '../../src/realm/drill.ts'
+import { emptyRelics, slotsFor } from '../../src/realm/relics.ts'
+import { sitesOf } from '../../src/realm/works.ts'
 import { P, getParam, setParam } from '../../src/tune/params.ts'
 import type { Realm } from '../../src/realm/types.ts'
 
@@ -93,6 +96,48 @@ describe('추천 점', () => {
     const out = recsOf(r, r.player, bustOf, {}, { ...raid, cleared: { ...raid.cleared, [top]: ['forest', 'ford'] }, gold: 50 * P.realm.recShopMul }, book())
     assert.deepEqual(out, [{ id: top, whys: ['shop'], hard: false, to: 'raid' }])
     assert.deepEqual(recsOf(r, r.player, bustOf, {}, { ...raid, gold: 49 }, book()), [])
+  })
+
+  it('원정: 쉬는 장수가 보낼 수 있으면 점 · 양식이 모자라거나 꺼 두면 안 뜬다', () => {
+    const r = byeonhanMini(1)
+    const ids = recHeroes(r, r.player, bustOf).map((h) => h.id)
+    r.stock[r.player] = { ...r.stock[r.player]!, grain: 9999 }
+    const idle = ids.filter((id) => expReady(r, r.player, [id]).length > 0)
+    assert.ok(idle.length > 0, '변한 작은 땅에서도 보낼 길이 있다')
+    const out = recsOf(r, r.player, bustOf, {}, quietRaid(r), book(), idle)
+    assert.equal(out.length, 1)
+    assert.ok(out[0]!.to === 'exp' && !out[0]!.hard && out[0]!.whys[0] === 'exp')
+    assert.deepEqual(recsOf(r, r.player, bustOf, {}, quietRaid(r), book({ quiet: { exp: r.season } }), idle), [], '들어가 보면 꺼진다')
+    assert.deepEqual(recsOf(r, r.player, bustOf, {}, quietRaid(r), book(), []), [], '쉬는 장수가 없으면 없다')
+    r.stock[r.player] = { ...r.stock[r.player]!, grain: 0 }
+    assert.deepEqual(recsOf(r, r.player, bustOf, {}, quietRaid(r), book(), idle), [], '양식이 없으면 없다')
+  })
+
+  it('단련터 단추: 공이 쌓였거나 안 낀 유물에 빈 칸이 있을 때만', () => {
+    const d = emptyDrill(), rl = emptyRelics()
+    assert.deepEqual(yardRecs(d, rl), [])
+    d.h['a'] = { points: spendCost(0) - 1, level: 0, add: {}, runs: 1 }
+    assert.deepEqual(yardRecs(d, rl), [], '공이 모자라다')
+    d.h['a']!.points = spendCost(0)
+    assert.deepEqual(yardRecs(d, rl), ['drill'])
+    d.h['a']!.points = 0
+    rl.own['x'] = { n: 1, seed: 1 }
+    assert.deepEqual(yardRecs(d, rl), slotsFor(0) > 0 ? ['relic'] : [], '빈 칸이 있고 안 낀 유물이 있다')
+    rl.wear['a'] = ['x']
+    assert.ok(!yardRecs(d, rl).includes('relic'), '이미 낀 유물은 안 권한다')
+  })
+
+  it('일터 첫 짓기: 하나도 안 지었고 지을 수 있을 때만 · 짓고 나면 꺼진다', () => {
+    const r = byeonhanMini(1)
+    const rich = { grain: 9999, wood: 9999, iron: 9999, salt: 9999, cloth: 9999 }
+    assert.deepEqual(workRec(r, r.player, {}), null, '자원이 없다')
+    const got = workRec(r, r.player, rich)
+    assert.ok(got !== null && got.town === r.nodes[r.factions[r.player]!.capital]!.name)
+    const cap = r.nodes[r.factions[r.player]!.capital]! as { sites?: unknown }
+    cap.sites = [{ what: got.work, lv: 1 }]
+    assert.ok(sitesOf(r.nodes[r.factions[r.player]!.capital]).length > 0)
+    assert.equal(workRec(r, r.player, rich), null, '하나라도 지었으면 꺼진다')
+    assert.equal(workRec(startTutorial(1), 'x', rich), null, '배우는 판은 0')
   })
 })
 

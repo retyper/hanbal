@@ -88,12 +88,12 @@ import { WONDER_CSS } from './wondermap.ts'
 import { LEAGUE_CSS, leagueChipHtml, leagueToastHtml } from './league.ts'
 import { BOND_CSS, endBondsHtml } from './bonds.ts'
 import { DEX_CSS, clanHeroes, dexHtml, dexToastHtml, loadDex, recordDex, toggleDexAwake, type DexBoard } from './dex.ts'
-import { recBurst, recCss, recDot, recsOf, syncBook, visitRec, type Rec } from './recommend.ts'
+import { recBurst, recCss, recDot, recsOf, syncBook, visitRec, workRec, yardRecs, type Rec } from './recommend.ts'
 import { SHOP, loadMeta, shopCost, shopMax } from '../../raid/meta.ts'
 import { DEX_AWOKE, DEX_SERVED, dexCatalog } from '../../realm/dex.ts'
 import { DRILL_CSS, drillLevel, engraveRun, hasDrill, hydrateDrillFaces, loadDrill, raiseHero, yardAct, yardAfterPaint, yardBack, yardHtml, yardRaised, yardReset, yardSearch, yardStripHtml, yardBeforePaint, type DrillKit } from './drill.ts'
 import { applyDrill, earnedOf } from '../../realm/drill.ts'
-import { RELIC_CSS, openRunTomb, pickRunRelic, putRelic, relicChips, takeOffRelic, tombHtml, tombRun, tombStripHtml, wornBy, type RelicKit } from './relics.ts'
+import { RELIC_CSS, loadRelics, openRunTomb, pickRunRelic, putRelic, relicChips, takeOffRelic, tombHtml, tombRun, tombStripHtml, wornBy, type RelicKit } from './relics.ts'
 import { RELIC } from '../../realm/data/relics.ts'
 import { LEVEL_LINE, TIER_MAX, levelName } from '../../realm/tier.ts'
 import { FIT_CSS, MQ_CSS, fitLabels, marquee } from './fit.ts'
@@ -5212,7 +5212,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const queued = busyNow + sending >= P.realm.expMax ? tr('exp.maxQ', { n: P.realm.expMax }) : left().grain < P.realm.expGrainPer * EXP_SEASONS[pick.len] ? tr('exp.noFood', { turn: turnWord(r) }) : null
     const block = heroBusy(r, x.id) ?? expBlock(r, me(), x.id, pick.dest, pick.len) ?? queued ?? (handsShort ? tr('exp.hands', { turn: turnWord(r) }) : null)
     // 고른 먼 땅의 그림이 원정 칸 뒤에 깔린다 — 고르면 바뀐다
-    let h = `<div class="exp" style="--expbg:url('${ART}exp/exp-${pick.dest}.jpg')"><b>${tr('exp.h')}</b><span class="mute">${tr('exp.blurb')}</span><div class="seg expd">`
+    let h = `<div class="exp" style="--expbg:url('${ART}exp/exp-${pick.dest}.jpg')">${rqNow.some((v) => v.id === x.id && v.to === 'exp') ? recDot(tr('rec.badge')) : ''}<b>${tr('exp.h')}</b><span class="mute">${tr('exp.blurb')}</span><div class="seg expd">`
     for (const d of DEST_IDS) {
       const ok = dests.includes(d)
       h += `<button class="${d === pick.dest ? 'on' : ''}" data-act="exp-dest" data-id="${x.id}" data-v="${d}"${ok ? '' : noBtn(farWhy(d))}>${esc(DESTS[d].name)}${ok ? '' : `<small>${farWhy(d)}</small>`}</button>`
@@ -5575,7 +5575,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const book = syncBook(r, me(), bustOf, !host.isolated)
     const m = loadMeta()
     const next = SHOP.filter((it) => m.shop[it.key] < shopMax(it.key)).map((it) => shopCost(it.key, m.shop[it.key]))
-    return recsOf(r, me(), bustOf, loadDex(), { cleared: m.heroes, gold: m.gold, cheapest: next.length > 0 ? Math.min(...next) : 0 }, book)
+    return recsOf(r, me(), bustOf, loadDex(), { cleared: m.heroes, gold: m.gold, cheapest: next.length > 0 ? Math.min(...next) : 0 }, book, idleHeroes(r, me()))
   }
 
   /**
@@ -5605,6 +5605,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 곳간을 부을 곳 — 짓던 큰 공사의 다음 단을 쌓을 수 있거나 큰 잔치를 열 수 있으면 (wonders.ts · 위원회 11-08 ⑦)
     const ww = wonderWorkOf(r, me())
     if (!musters.some((o) => o.kind === 'wonder' || o.kind === 'feast') && ((ww !== null && canWonder(r, me(), ww.what)) || (greatOpen(r, me()) && feastBlocked(r, me()) === null))) out.set('nation', tr('rec.wonder'))
+    // 일터를 한 번도 안 지었다 — 도읍에 지금 지을 수 있는 가장 싼 것 (recommend.ts workRec)
+    const fw = workRec(r, me(), left())
+    if (fw !== null && !out.has('nation') && !musters.some((o) => o.kind === 'work')) out.set('nation', tr('rec.idleBuild', { town: fw.town, work: WORKS[fw.work].name, grain: fw.grain, wood: fw.wood }))
     const idleRec = idleRecs(r)
     for (const [tab, text] of idleRec) out.set(tab, text) // 구체적인 까닭이 "할 일 없는 군대가 있다" 같은 일반 말을 덮는다
     for (const k of [...out.keys()]) if (sheet?.kind === k) out.delete(k)
@@ -6983,9 +6986,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       + (host.gameCount() > 0 ? ` <button class="btn ghost" data-act="export" data-tip="${tr('tp.exportTip', { n: host.gameCount() })}">${tr('more.export')}</button>` : '') + `</p><button class="btn fmx" data-act="fmore-x">${tr('more.close')}</button></div></details>`
     switch (f.kind) {
       case 'title': {
+        const yard = hasDrill() && yardRecs(loadDrill(), loadRelics()).length > 0 // 쓸 단련 공 · 안 낀 유물이 있으면 단추에 점 (recommend.ts)
         // 영웅전(도감) — 판을 넘어 남는 것 (VISION §5-4)
         const dexBtn = `<button class="btn big" data-act="dex-open">${tr('title.heroes')}</button>` // 형 10-25: 도감보다 즐거운 이름 · 숫자는 들어가면 보인다
-          + (hasDrill() ? `<button class="btn big" data-act="dy-title">${tr('title.drill')}</button>` : '') // 남은 단련 공은 아무 때나 쓴다 (HERO-GROWTH ★ §C)
+          + (hasDrill() ? `<button class="btn big${yard ? ' rq-yard' : ''}" data-act="dy-title">${tr('title.drill')}${yard ? recDot(tr('rec.badge')) : ''}</button>` : '') // 남은 단련 공은 아무 때나 쓴다 (HERO-GROWTH ★ §C)
           + ((host.pastGames?.() ?? []).length > 0 ? `<button class="btn big" data-act="annals-open">${tr('title.annals')}</button>` : '')
         // 끝나지 않은 다른 판들은 불러오기 안에 (형 10-28: 첫 화면에 늘어놓으니 단추가 화면 밖으로) — 몇 판 있는지만 단추에
         const shelfN = (host.slots?.() ?? []).length

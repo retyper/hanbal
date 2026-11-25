@@ -8,6 +8,9 @@
  *      새 규칙(0): 불꽃을 채웠는데 도깨비 도장이 없는 장수 → 열전 카드 (목책) · 도장 둘이 다 있고 이 판에서 깨어난 장수 → 장수 판의 초상 (한 번 보면 끝)
  *  - 자주 (soft): 새로 들어온 장수(한 번) · 열전에서 아직 아무 판도 못 깬 장수 하나(턴마다 바뀜) · 열전 금이 쌓였을 때.
  *      그 장수 판에 한 번 들어가 보면 끈다 (새 장수는 영영 · 나머지는 recQuietTurns 턴)
+ *  - 가벼운 것에 원정이 든다: 쉬는 장수가 지금 보낼 수 있는 원정이 있으면 그 장수 줄·원정 칸에 점 (장수 점 상한 recHeroMax 안에서 · 한 번 들어가 보면 recQuietTurns 턴 꺼짐)
+ *  - 판 밖 단련터 단추의 점 하나(yardRecs): 쓸 수 있는 단련 공이 쌓였다 · 안 낀 유물이 있고 빈 칸이 있다
+ *  - 일터 첫 짓기(workRec)는 아래 탭 「추천」 딱지(app.ts recTabs · 상한 recTabMax)가 받는다
  *  - 배우는 판에서는 아무것도 안 뜬다. 장수 추천은 한 번에 recHeroMax 까지 (무조건은 늘 뜬다)
  *  - 열전 카드로 가는 추천(목책 도깨비 · 가벼운 것 모두)은 이번 달 열전에 이미 나간 장수를 뺀다 (realm/raid-month.ts · 형 11-19) — 다음 달에 다시 뜬다
  *
@@ -18,13 +21,18 @@ import { ascendTrialOpen, hasAwakeningTrial } from '../../realm/trial-rules.ts'
 import { sealsOf } from '../../realm/person.ts'
 import { AWAKEN_ART } from '../../realm/data/awaken-art.ts'
 import { raidOpen } from '../../realm/raid-month.ts'
+import { DEST_IDS, destReachable, expBlock } from '../../realm/expedition.ts'
+import { sitesOf, workBlocked, workCost, workOptions, type WorkWhat } from '../../realm/works.ts'
+import { spendCost, type DrillStore } from '../../realm/drill.ts'
+import { holderOf, slotsFor, type RelicStore } from '../../realm/relics.ts'
+import type { Good } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 
 export const REC_KEY = 'hanbal.realm.rec'
 /** 왜 추천하나 — trial(옛 시련) · demon(목책 도깨비) · woke(도장 둘 · 깨어난 모습) · newbie · untried · shop */
-export type RecWhy = 'trial' | 'demon' | 'woke' | 'newbie' | 'untried' | 'shop'
+export type RecWhy = 'trial' | 'demon' | 'woke' | 'newbie' | 'untried' | 'shop' | 'exp'
 /** 장수 판에서 점이 붙는 곳 — 시련 카드 · 열전 카드 · 초상 */
-export type RecTo = 'trial' | 'raid' | 'pic'
+export type RecTo = 'trial' | 'raid' | 'pic' | 'exp'
 export interface Rec { readonly id: string; readonly whys: readonly RecWhy[]; readonly hard: boolean; readonly to: RecTo }
 
 /** 판 하나의 끈 기록 */
@@ -87,7 +95,7 @@ export function visitRec(r: Realm, rec: Rec, write: boolean): void {
   if (book === undefined) return
   for (const w of rec.whys) {
     if (w === 'newbie') book.fresh = book.fresh.filter((id) => id !== rec.id)
-    else if (w === 'untried' || w === 'shop') book.quiet[w] = r.season
+    else if (w === 'untried' || w === 'shop' || w === 'exp') book.quiet[w] = r.season
     else if (w === 'woke' && !book.woke.includes(rec.id)) book.woke.push(rec.id)
   }
   saveShelf(shelf)
@@ -96,8 +104,37 @@ export function visitRec(r: Realm, rec: Rec, write: boolean): void {
 /** 열전 기록 가운데 추천이 읽는 것 — 장수마다 깬 판 · 남은 금 · 가장 싼 다음 강화 값 */
 export interface RaidPeek { readonly cleared: Readonly<Record<string, readonly string[]>>; readonly gold: number; readonly cheapest: number }
 
+/** 쉬는 장수 가운데 지금 곧바로 원정을 보낼 수 있는 이 (가장 짧은 길로 닿는 땅이 있고 양식이 된다) */
+export function expReady(r: Realm, me: string, idle: readonly string[]): string[] {
+  const dests = DEST_IDS.filter((d) => destReachable(r, me, d))
+  return idle.filter((id) => dests.some((d) => expBlock(r, me, id, d, 0) === null)).sort()
+}
+
+/** 판 밖 단련터 단추의 점 — 단련 공을 쓸 수 있다(drill) · 안 낀 유물이 있고 빈 칸이 있다(relic). 둘 다 같은 단추 하나에 점 하나 */
+export function yardRecs(drill: DrillStore, relics: RelicStore): Array<'drill' | 'relic'> {
+  const out: Array<'drill' | 'relic'> = []
+  const heroes = Object.values(drill.h)
+  if (heroes.some((e) => e.points >= spendCost(e.level))) out.push('drill')
+  const spare = Object.keys(relics.own).some((id) => holderOf(relics, id) === null)
+  const room = Object.entries(drill.h).some(([id, e]) => (relics.wear[id]?.length ?? 0) < slotsFor(e.level))
+  if (spare && room) out.push('relic')
+  return out
+}
+
+/** 일터를 한 번도 안 지었고, 도읍에 지금 곧바로 지을 수 있는 가장 싼 일터 (없으면 null) — 아래 「나라」 탭 딱지 */
+export function workRec(r: Realm, me: string, have: Readonly<Partial<Record<Good, number>>>): { town: string; work: WorkWhat; grain: number; wood: number } | null {
+  if (r.region === 'tutorial' || r.outcome) return null
+  if (Object.values(r.nodes).some((n) => n.owner === me && sitesOf(n).length > 0)) return null
+  const cap = r.factions[me]?.capital
+  if (cap === undefined || r.nodes[cap]?.owner !== me) return null
+  const cheap = workOptions(r, cap).filter((w) => workBlocked(r, me, cap, w) === null)
+    .map((w) => ({ w, c: workCost(w, 1) })).filter((x) => (Object.entries(x.c) as Array<[Good, number]>).every(([g, n]) => (have[g] ?? 0) >= n))
+    .sort((a, b) => (a.c.grain ?? 0) + (a.c.wood ?? 0) - (b.c.grain ?? 0) - (b.c.wood ?? 0))[0]
+  return cheap === undefined ? null : { town: r.nodes[cap]?.name ?? '', work: cheap.w, grain: cheap.c.grain ?? 0, wood: cheap.c.wood ?? 0 }
+}
+
 /** 지금 추천할 장수 — 무조건 먼저, 그다음 가벼운 것 (recHeroMax 까지) */
-export function recsOf(r: Realm, me: string, face: (id: string) => string | undefined, dex: Readonly<Record<string, { readonly f: number } | undefined>>, raid: RaidPeek, book: RecBook): Rec[] {
+export function recsOf(r: Realm, me: string, face: (id: string) => string | undefined, dex: Readonly<Record<string, { readonly f: number } | undefined>>, raid: RaidPeek, book: RecBook, idle: readonly string[] = []): Rec[] {
   if (r.region === 'tutorial' || r.outcome) return []
   const R = P.realm, ours = recHeroes(r, me, face)
   const hard: Rec[] = []
@@ -114,7 +151,8 @@ export function recsOf(r: Realm, me: string, face: (id: string) => string | unde
   const quiet = (w: RecWhy): boolean => { const t = book.quiet[w]; return typeof t === 'number' && r.season < t + Math.round(R.recQuietTurns) }
   const soft = new Map<string, RecWhy[]>()
   const add = (id: string, w: RecWhy): void => {
-    if (hard.some((x) => x.id === id) || !raidOpen(r, id)) return // 가벼운 추천은 모두 열전 카드로 간다 — 이번 달 나간 장수는 빼고 아직 안 나간 장수를 권한다
+    // 가벼운 추천은 (원정 말고는) 열전 카드로 간다 — 이번 달 나간 장수는 빼고 아직 안 나간 장수를 권한다
+    if (hard.some((x) => x.id === id) || (w !== 'exp' && !raidOpen(r, id))) return
     const had = soft.get(id)
     if (had !== undefined) had.push(w)
     else if (soft.size < room) soft.set(id, [w])
@@ -126,12 +164,17 @@ export function recsOf(r: Realm, me: string, face: (id: string) => string | unde
     const used = ours.filter((h) => raidOpen(r, h.id)).sort((a, b) => (raid.cleared[b.id]?.length ?? 0) - (raid.cleared[a.id]?.length ?? 0))
     if (used.length > 0) add(used[0]!.id, 'shop')
   }
+  // 쉬는 장수가 보낼 수 있는 원정 — 턴마다 돌아가며 한 명 (이미 점이 붙은 장수면 그 장수에 이유만 보탠다)
+  if (!quiet('exp')) {
+    const ready = expReady(r, me, idle.filter((id) => live.has(id)))
+    if (ready.length > 0) add(ready[Math.abs(Math.floor(r.season)) % ready.length]!, 'exp')
+  }
   // 열전에서 아직 아무 판도 못 깬 장수 하나 — 턴마다 돌아가며
   if (!quiet('untried')) {
     const fresh = ours.filter((h) => raidOpen(r, h.id) && (raid.cleared[h.id]?.length ?? 0) === 0 && !soft.has(h.id) && !hard.some((x) => x.id === h.id))
     if (fresh.length > 0) add(fresh[Math.abs(Math.floor(r.season)) % fresh.length]!.id, 'untried')
   }
-  return [...hard, ...[...soft].map(([id, whys]) => ({ id, whys, hard: false, to: 'raid' as const }))]
+  return [...hard, ...[...soft].map(([id, whys]) => ({ id, whys, hard: false, to: (whys.includes('exp') && !whys.some((w) => w !== 'exp') ? 'exp' : 'raid') as RecTo }))]
 }
 
 /** 금빛 맥박 점 — 글을 얹지 않는다 (읽지 않고 보이게 · 꼬리표 금지) */
@@ -163,6 +206,8 @@ export const recCss = (): string => {
 .ap .trial-card.rq-on { position: relative; border: 2px solid #f2c94c !important; background: linear-gradient(180deg, #3a2c10cc, #1c160acc); box-shadow: 0 0 14px #f2c94c55; }
 .ap .trial-card .btn.rq-go { position: relative; overflow: visible; }
 .ap .trial-card .btn.rq-go > .rqd { top: -6px; right: -6px; }
+.ap .exp { position: relative; } .ap .exp > .rqd { top: 6px; right: 6px; }
+.ap .btn.big.rq-yard { position: relative; overflow: visible; } .ap .btn.big > .rqd { top: -4px; right: -4px; }
 .ap .hpic > .rqd { top: 8px; left: 8px; width: 16px; height: 16px; }
 .rqburst { position: fixed; z-index: 9999; width: 0; height: 0; pointer-events: none; }
 .rqburst .rqring { position: absolute; left: -22px; top: -22px; width: 44px; height: 44px; border-radius: 50%; border: 3px solid #ffd27a; animation: rqring ${burst}ms ease-out both; }
