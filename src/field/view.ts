@@ -11,8 +11,9 @@ import { ATTACK0, ATTACK_N, DOWN, HIT, RUN_N, STAND0, STAND_N, WALK0, WALK_N, he
 import { dotPh, hash2 } from './viewDots.ts'
 import { dotDied, dotsOf, offU, offV, peekDots, resetForm, rowCount, rowOfDot, stepDots } from './viewForm.ts'
 import { FORM_HOLD, FORM_SCATTER, FORM_WALL, ORD_VOLLEY, moraleOf } from './viewFxRead.ts'
+import { drawRain, resetRain } from './viewRain.ts'
 import { drawDash, queueDash, resetDash } from './viewDash.ts'
-import { FLAG_FALLEN, bracedAt, drawOmens, drawShouts, isShouting, noteShouts, drawPops, noteOmens, flagTilt, ingestHits, kickOf, resetHit, scatterOf, sc, shake, shakeAt, viewClock } from './viewHit.ts'
+import { FLAG_FALLEN, bracedAt, drawOmens, drawShouts, isShouting, liftOf, noteShouts, drawPops, noteOmens, flagTilt, ingestHits, kickOf, resetHit, scatterOf, sc, shake, shakeAt, viewClock } from './viewHit.ts'
 import { computePairs, coolPress, notePush, dotMelee, drawParticles, flinchOf, isFront, maxFwdOf, minFwdOf, mo, noteLoss, partnerOf, resetMelee, spawn, swingChance, swings } from './viewMelee.ts'
 import { drawTerrain } from './viewTerrain.ts'
 import { TEAM_RGB } from './viewTint.ts'
@@ -61,7 +62,7 @@ export function fxStats(): { dead: number; pending: number; attackers: number; a
   return { dead, alive, pending: fx.corpses.filter(c => c.born > fx.nowMs).length, attackers: fx.attackers }
 }
 /** 새 판이 시작되면 부른다 */
-export function resetFx(): void { fx.pushed.clear(); fx.counts.clear(); fx.menMax.clear(); fx.face.clear(); fx.corpses.length = 0; fx.tick = -1; fx.slots.clear(); fx.lastHit.clear(); fx.shots.length = 0; fx.routeAt.fill(-1); fx.dustAt.clear(); fx.sparkAt.clear(); flagSpot.clear(); flagLast = -1; resetForm(); resetMelee(); resetHit(); resetDash() }
+export function resetFx(): void { fx.pushed.clear(); fx.counts.clear(); fx.menMax.clear(); fx.face.clear(); fx.corpses.length = 0; fx.tick = -1; fx.slots.clear(); fx.lastHit.clear(); fx.shots.length = 0; fx.routeAt.fill(-1); fx.dustAt.clear(); fx.sparkAt.clear(); flagSpot.clear(); flagLast = -1; resetForm(); resetMelee(); resetHit(); resetDash(); resetRain() }
 
 const mix = (a: number, b: number, t: number): number => a + (b - a) * t
 /** sim 단위 → 판 px */
@@ -473,7 +474,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
       const od = aq === undefined ? undefined : peekDots(aq.id), osl = aq === undefined ? undefined : fx.slots.get(aq.id)
       const melee = fighting && q.grp !== 'bows'
       const volley = q.grp === 'bows' && q.order === ORD_VOLLEY && q.orderAt !== null && cur.tick - q.orderTick < F.volleySec * F.hz
-      if (volley) { const rx = unitsToPx(q.orderAt!.u), ry = unitsToPx(q.orderAt!.v); if (rainRing.length < 2 || rainRing[rainRing.length - 2] !== rx || rainRing[rainRing.length - 1] !== ry) rainRing.push(rx, ry) }
+      if (volley) { const rx = unitsToPx(q.orderAt!.u), ry = unitsToPx(q.orderAt!.v); if (rainRing.length < 3 || rainRing[rainRing.length - 3] !== rx || rainRing[rainRing.length - 2] !== ry) rainRing.push(rx, ry, rx >= unitsToPx(q.u) ? 1 : -1); rain.push(unitsToPx(qu), unitsToPx(qv), q.id * 137) }
       let chance = 0, flinch = 0, mor = 1, mf = 0, mn = 0
       if (melee) {
         if (tickNew) computePairs(q.id, dd, sl.dead, face, od, osl?.dead)
@@ -516,6 +517,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
         }
         scatterOf(q.id, k, nowMs)
         ox += (kickCells * (front ? 1 : 0.6) + sc.x) * F.cellPx
+        oy -= liftOf(q.id, nowMs)
         if (sc.turn) flipDot = !flipDot
         d.kind = 0; d.x = x + ox; d.y = y + oy; d.strip = strip; d.side = side; d.flip = flipDot; d.h = sH
         d.frame = pose(nowMs, ph, moving || gathering || (melee && mo.back === 1), fighting && front && swing)
@@ -537,18 +539,6 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
         if (kk === 'crossbow') d.h *= F.crossbowDropPermille / 1000
         if (fighting && front && swing) fx.attackers++
         drawn++
-        if (volley) {
-          // 화살비: 평소의 몇 배 촘촘하게 · 찍은 자리 둘레에 비스듬히 쏟아진다
-          const cyc = F.arrowCycleMs / F.rainDensity, ph0 = nowMs + ph * cyc, s0 = Math.floor(ph0 / cyc)
-          for (let j = 0; j * cyc < F.rainFlightMs; j++) {
-            const start = s0 - j, age = ph0 - start * cyc
-            if (age >= F.rainFlightMs) continue
-            const hh = hash2(q.id * 97 + k, start), ang = (hh % 6283) / 1000, rad = Math.sqrt(((hh >>> 8) % 1000) / 1000) * F.volleyRadiusCells * F.cellPx * 0.9
-            const lx = unitsToPx(q.orderAt!.u) + Math.cos(ang) * rad, ly = unitsToPx(q.orderAt!.v) + Math.sin(ang) * rad
-            rain.push(x, y - baseH * 0.5, lx, ly, age / F.rainFlightMs, side)
-            if (age > F.rainFlightMs * 0.94 && hh % 3 === 0 && (fx.sparkAt.get(q.id * 64 + k + 4096 * j) ?? -1) !== start) { fx.sparkAt.set(q.id * 64 + k + 4096 * j, start); spawn(0, lx, ly, (hh % 9) - 4, -5, nowMs, F.dustMs, F.cellPx * 0.14) }
-          }
-        }
         if (fighting && q.grp === 'bows' && aq !== undefined) {
           const cyc = F.arrowCycleMs, tt = (nowMs + ph * cyc) % cyc
           if (tt < F.arrowFlightMs) {
@@ -616,7 +606,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
     ctx.strokeStyle = '#f4ead0'; ctx.globalAlpha = 0.55; ctx.lineWidth = Math.max(F.rainRingPx, F.rainRingPx / cam.zoom)
     ctx.beginPath()
     const rr = F.volleyRadiusCells * F.cellPx
-    for (let i = 0; i < rainRing.length; i += 2) { ctx.moveTo(rainRing[i]! + rr, rainRing[i + 1]!); ctx.arc(rainRing[i]!, rainRing[i + 1]!, rr, 0, FULL_TURN) }
+    for (let i = 0; i < rainRing.length; i += 3) { ctx.moveTo(rainRing[i]! + rr, rainRing[i + 1]!); ctx.arc(rainRing[i]!, rainRing[i + 1]!, rr, 0, FULL_TURN) }
     ctx.stroke(); ctx.globalAlpha = 1
   }
   drawShadows(ctx, used, low, cam.zoom, baseH)
@@ -636,7 +626,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
   // 화살: 낱낱의 짧은 선 (호를 그리며 난다) — 몸은 크림색 한 경로, 꼬리 3분의 1 은 쏜 편 색으로 편마다 한 경로 (누구 화살인지 읽히게)
   if (arrows.length > 0) {
     ctx.globalAlpha = F.arrowFadePermille / 1000
-    ctx.lineWidth = Math.max(1.2, 1.2 / cam.zoom)
+    ctx.lineWidth = Math.max(1, 1 / cam.zoom)
     ctx.lineCap = 'round'
     const len = F.arrowLenCells * F.cellPx, arc = F.arrowArcCells * F.cellPx
     for (let pass = 0; pass < 3; pass++) {
@@ -656,22 +646,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
     }
     ctx.globalAlpha = 1
   }
-  // 화살비: 굵고 촘촘한 줄 (그림자 점이 떨어질 자리를 먼저 보인다)
-  if (rain.length > 0) {
-    const len = F.arrowLenCells * F.cellPx * 1.3, arc = F.arrowArcCells * F.cellPx * F.rainArcMul
-    ctx.globalAlpha = 0.3; ctx.fillStyle = '#1a1208'; ctx.beginPath()
-    for (let i = 0; i < rain.length; i += 6) ctx.rect(rain[i + 2]! - 1.5, rain[i + 3]! - 1, 3, 2)
-    ctx.fill(); ctx.globalAlpha = 1
-    ctx.strokeStyle = ARROW_COLOR; ctx.lineCap = 'round'; ctx.lineWidth = Math.max(F.rainWidthPx, F.rainWidthPx / cam.zoom)
-    ctx.beginPath()
-    for (let i = 0; i < rain.length; i += 6) {
-      const x0 = rain[i]!, y0 = rain[i + 1]!, x1 = rain[i + 2]!, y1 = rain[i + 3]!, t = rain[i + 4]!
-      const dist = Math.max(1, Math.abs(x1 - x0) + Math.abs(y1 - y0)), t0 = Math.max(0, t - len / dist)
-      ctx.moveTo(mix(x0, x1, t0), mix(y0, y1, t0) - 4 * t0 * (1 - t0) * arc)
-      ctx.lineTo(mix(x0, x1, t), mix(y0, y1, t) - 4 * t * (1 - t) * arc)
-    }
-    ctx.stroke()
-  }
+  drawRain(ctx, nowMs, cam.zoom, rainRing, rain)
   ctx.restore()
   return drawn
 }

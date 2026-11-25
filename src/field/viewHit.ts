@@ -261,22 +261,43 @@ export function drawOmens(ctx: CanvasRenderingContext2D, clk: number, zoom: numb
 /** 방진 앞 열이 부딪힘을 받아 더 낮춰 버티는 동안인가 (임팩트 뒤 braceMs) */
 export const bracedAt = (id: number, clk: number): boolean => { const t = braces.get(id); return t !== undefined && clk - t >= 0 && clk - t < P.field.braceMs }
 
-// ───────── 큰 외침(Q): 장수에서 퍼지는 낱낱 충격 줄 (채운 원·햇살이 아니라 짧은 호 조각 여럿) ─────────
+// ───────── 큰 외침(Q): 장수를 중심으로 끊긴 고리 셋이 차례로 퍼진다 (조각난 호 · 채운 원·햇살 아님) ─────────
 interface Shout { x: number; y: number; at: number; side: 0 | 1 }
 const shouts: Shout[] = []
-/** 비기 쿨이 새로 돌기 시작한 큰 외침을 잡는다 (사건 줄에 heroSkill 이 없어도 장수 칸의 쿨 오름으로 안다) */
+const lifts = new Map<number, number>()
+/** 비기 쿨이 새로 돌기 시작한 큰 외침을 잡는다 (장수 칸의 쿨 오름으로 안다) — 흙먼지·우리 대 들썩·적 대 뒷걸음도 여기서 건다 */
 export function noteShouts(cur: VModel, prev: VModel | null, clk: number): void {
   if (prev === null) return
+  const F = P.field
   for (const h of cur.heroes) {
     const p = prev.heroes.find(x => x.side === h.side)
-    if (h.art === 'shout' && p !== undefined && h.artCd > p.artCd) {
-      shouts.push({ x: h.u / P.field.unit * P.field.cellPx, y: h.v / P.field.unit * P.field.cellPx, at: clk, side: h.side })
-      if (shouts.length > 4) shouts.shift()
+    if (h.art !== 'shout' || p === undefined || h.artCd <= p.artCd) continue
+    const x = h.u / F.unit * F.cellPx, y = h.v / F.unit * F.cellPx
+    shouts.push({ x, y, at: clk, side: h.side })
+    if (shouts.length > 4) shouts.shift()
+    for (let i = 0; i < F.shoutDust; i++) {
+      const hh = hash2((clk | 0) + i, 7), ang = (hh % 628) / 100, sp = 40 + (hh >>> 9) % 70
+      spawn(0, x + Math.cos(ang) * 6, y + Math.sin(ang) * 4, Math.cos(ang) * sp, Math.sin(ang) * sp * 0.45 - 4, clk, F.shoutMs * 0.9, F.cellPx * 0.16)
+    }
+    const r2 = (F.heroAuraCells * F.unit) ** 2
+    for (const q of cur.squads) {
+      if (q.men <= 0) continue
+      const du = q.u - h.u, dv = q.v - h.v
+      if (du * du + dv * dv > r2) continue
+      if (q.side === h.side) lifts.set(q.id, clk)
+      else kicks.set(q.id, { at: clk, dir: du >= 0 ? 1 : -1, cells: 0.5 })
     }
   }
 }
+/** 큰 외침을 받은 우리 대가 한 번 들썩 (px 위로 · 0.15초) */
+export function liftOf(id: number, clk: number): number {
+  const t = lifts.get(id)
+  if (t === undefined) return 0
+  const k = (clk - t) / P.field.shoutLiftMs
+  return k < 0 || k >= 1 ? 0 : Math.sin(k * Math.PI) * P.field.shoutLiftPx
+}
 /** 이 편 장수가 지금 외치는 중인가 (외치는 칸을 보이게) */
-export const isShouting = (side: 0 | 1, clk: number): boolean => { for (const s of shouts) if (s.side === side && clk - s.at >= 0 && clk - s.at < P.field.shoutMs) return true; return false }
+export const isShouting = (side: 0 | 1, clk: number): boolean => { for (const s of shouts) if (s.side === side && clk - s.at >= 0 && clk - s.at < 450) return true; return false }
 export function drawShouts(ctx: CanvasRenderingContext2D, clk: number, zoom: number, teamColor: readonly string[]): void {
   const F = P.field
   let w = 0
@@ -285,23 +306,24 @@ export function drawShouts(ctx: CanvasRenderingContext2D, clk: number, zoom: num
   if (w === 0) return
   const R = F.heroAuraCells * F.cellPx
   ctx.lineCap = 'round'
-  for (let pass = 0; pass < 2; pass++) {
-    ctx.beginPath()
-    let any = false
-    for (const s of shouts) {
-      const t = (clk - s.at) / F.shoutMs
-      for (let i = pass; i < F.shoutPieces; i += 2) {
-        const h = hash2(s.at | 0, i), a = i / F.shoutPieces * 6.2832 + (h % 100) / 400, r = R * (1 - (1 - t) * (1 - t)) * (0.85 + ((h >>> 8) % 30) / 100)
-        ctx.moveTo(s.x + Math.cos(a - 0.1) * r, s.y + Math.sin(a - 0.1) * r * 0.75)
-        ctx.arc(s.x, s.y, r, a - 0.1, a + 0.1) // 짧은 호 조각 (타원으로 눌러 땅 위에 퍼지는 모양)
-        any = true
+  for (const s of shouts) {
+    for (let ring = 0; ring < 3; ring++) {
+      const age = clk - s.at - ring * 120
+      if (age < 0 || age >= 450) continue
+      const t = age / 450, r = F.cellPx + (R - F.cellPx) * (1 - (1 - t) * (1 - t))
+      // 조각난 고리: 여덟 조각 (조각마다 빈틈) · 굵기 3px → 1px · 흰색 → 편 색으로 옅어짐
+      ctx.beginPath()
+      const rot = ring * 0.4 + (s.at % 100) / 100
+      for (let i = 0; i < 8; i++) {
+        const a = rot + i * Math.PI / 4
+        ctx.moveTo(s.x + Math.cos(a - 0.3) * r, s.y + Math.sin(a - 0.3) * r * 0.75)
+        for (let j = 1; j <= 4; j++) { const b = a - 0.3 + j * 0.15; ctx.lineTo(s.x + Math.cos(b) * r, s.y + Math.sin(b) * r * 0.75) }
       }
+      ctx.strokeStyle = t < 0.5 ? '#ffffff' : teamColor[s.side]!
+      ctx.globalAlpha = 1 - t * 0.7
+      ctx.lineWidth = Math.max(1, (3 - 2 * t) * (1 / Math.min(1, zoom)))
+      ctx.stroke()
     }
-    if (!any) continue
-    ctx.strokeStyle = pass === 0 ? '#f4ead0' : teamColor[shouts[0]!.side]!
-    ctx.globalAlpha = 1 - (clk - shouts[0]!.at) / F.shoutMs * 0.8
-    ctx.lineWidth = Math.max(3, 3.4 / zoom)
-    ctx.stroke()
   }
   ctx.globalAlpha = 1
 }
