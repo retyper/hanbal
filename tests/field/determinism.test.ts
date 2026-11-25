@@ -11,7 +11,7 @@ import type { FieldInput, FieldState, InputGroup } from '../../src/field/types.t
 
 const SIZES = [600, 1300, 2100]
 
-/** 씨앗마다 다른 손질 열 — 한 때 상한(3)을 넘겨 버려지는 것도 섞인다 */
+/** 씨앗마다 다른 손질 열 — 꼴이 틀려 버려지는 것도 섞인다 */
 function inputsFor(seed: number): FieldInput[] {
   const out: FieldInput[] = []
   for (let k = 0; k < 24; k++) {
@@ -19,8 +19,9 @@ function inputsFor(seed: number): FieldInput[] {
     const stance = k % 7 === 3 && g < 3
     out.push({ tick: 10 + k * 53 + (seed % 7), g, op: stance ? 2 : k % 5 === 4 ? 1 : 0, u: stance ? (seed + k) % 3 : U(20 + ((seed * 7 + k * 13) % 120)), v: stance ? 0 : U((seed * 3 + k * 5) % 40) })
   }
-  // 한 때에 한 무리 입력 5개(한도 3 을 넘겨 버려진다) · 일부 판은 중간에 물러난다
+  // 한 무리에 입력 5개 · 꼴이 틀린 입력 하나(버려진다) · 일부 판은 중간에 물러난다
   for (let k = 0; k < 5; k++) out.push({ tick: 700 + k, g: 0, op: 0, u: U(30 + k), v: U(10) })
+  out.push({ tick: 702, g: 3, op: 5, u: 16, v: 1 })
   if (seed % 5 === 0) out.push({ tick: 450 + (seed % 40), g: 1, op: 3, u: 0, v: 0 })
   return out
 }
@@ -44,7 +45,7 @@ test('빈 판 200씨앗 · 모든 맵 (1,000씨앗은 tools/field-bench.ts): 같
     if (a.end === 'retreat') retreats++
     stances += a.log.accepted.filter(i => i.op === 2).length
   }
-  assert.ok(dropped > 0 && retreats > 0 && stances > 0, `시험 입력에 한도 넘김·물러남·자세가 실제로 섞인다 (${dropped} · ${retreats} · ${stances})`)
+  assert.ok(dropped > 0 && retreats > 0 && stances > 0, `시험 입력에 버림·물러남·자세가 실제로 섞인다 (${dropped} · ${retreats} · ${stances})`)
   assert.ok(seen.size > 180, `씨앗이 해시에 닿는다: ${seen.size}`)
 })
 
@@ -76,13 +77,22 @@ test('두 편이 걸어 서로 다가간다 (대 수는 무리마다 4 이하, �
   }
 })
 
-test('한 때에 무리당 입력 3개까지 · 넘치면 버리고 센다 · 다음 때에 다시 받는다', () => {
+test('명령 수 제한이 없다: 같은 무리에 한 때 명령 20번을 넣어도 전부 먹는다 · 한 틱 상한(inputPerTickMax)을 넘은 것만 버리고 센다 · 기록 재생이 같다', () => {
   const setup = plainSetup(2, 1300)
   const mv = (tick: number, k: number): FieldInput => ({ tick, g: 0, op: 0, u: U(30 + k), v: U(10) })
-  const s = runField(setup, [mv(1, 0), mv(2, 1), mv(3, 2), mv(4, 3), mv(5, 4), mv((P.field.timeSec * P.field.hz) + 1, 5)])
-  assert.equal(s.log.dropped, 2)
-  assert.equal(s.log.accepted.length, 4)
-  const w = runField(setup, [{ tick: 1, g: 0, op: 0, u: U(9999), v: 0 }, { tick: 2, g: 0, op: 7, u: 0, v: 0 }])
+  const twenty = Array.from({ length: 20 }, (_, k) => mv(1 + k, k))
+  const s = runField(setup, twenty, 40)
+  assert.equal(s.log.dropped, 0)
+  assert.equal(s.log.accepted.length, 20)
+  assert.equal(s.squads.find(q => q.side === 0 && q.grp === 'front')!.goal!.u - U(49), s.squads.find(q => q.side === 0 && q.grp === 'front')!.homeU - Math.trunc(s.squads.filter(q => q.side === 0 && q.grp === 'front').reduce((a, q) => a + q.homeU, 0) / 4), '마지막 명령이 먹었다')
+  assert.deepEqual(s.used, [0, 0, 0, 0], 'used 는 늘 0 (화면이 걷어낼 때까지 칸만 남김)')
+  const cap = P.field.inputPerTickMax
+  const flood = Array.from({ length: cap + 7 }, (_, k) => mv(3, k % 40))
+  const f = runField(setup, flood, 10)
+  assert.equal(f.log.accepted.length, cap)
+  assert.equal(f.log.dropped, 7)
+  assert.equal(hashField(runField(setup, parse(serialize(f.log.accepted))!, 10)), hashField(f), '기록 재생')
+  const w = runField(setup, [{ tick: 1, g: 0, op: 0, u: U(9999), v: 0 }, { tick: 2, g: 0, op: 99, u: 0, v: 0 }])
   assert.equal(w.log.dropped, 2)
 })
 

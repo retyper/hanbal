@@ -31,17 +31,22 @@ export function hashField(s: FieldState): string {
   h = mix(h, s.tick); h = mix(h, s.seed); h = mix(h, s.end === null ? 0 : END_CODE[s.end])
   // 장부(log.dropped · accepted)는 판 상태가 아니라 해시에 안 넣는다 — 버려진 입력이 있어도 기록 재생이 같은 해시를 낸다
   h = mix(h, s.winner); for (const n of s.used) h = mix(h, n); h = mix(h, s.broken[0]); h = mix(h, s.broken[1])
+  for (const p of s.anchor) { h = mix(h, p.u); h = mix(h, p.v) }
+  for (const r of s.route) { h = mix(h, r.length); for (const p of r) { h = mix(h, p.u); h = mix(h, p.v) } }
+  for (const n of s.grpWhy) h = mix(h, n); for (const n of s.grpWhyTick) h = mix(h, n)
   for (const q of s.squads) {
     h = hs(h, q.kind); h = hs(h, q.grp); h = mix(h, q.morale0); h = mix(h, q.flank); h = mix(h, q.homeU); h = mix(h, q.homeV)
     h = mix(h, q.id); h = mix(h, q.side); h = mix(h, q.men); h = mix(h, q.menMax); h = mix(h, q.fresh)
     h = mix(h, q.u); h = mix(h, q.v); h = mix(h, q.goal ? q.goal.u : -1); h = mix(h, q.goal ? q.goal.v : -1)
     h = mix(h, q.manual); h = mix(h, q.target); h = mix(h, q.hp); h = mix(h, q.morale); h = mix(h, q.stance); h = mix(h, q.shock); h = mix(h, q.lock); h = mix(h, q.sleep)
-    h = mix(h, q.daze); h = mix(h, q.rem); h = mix(h, q.held)
+    h = mix(h, q.daze); h = mix(h, q.rem); h = mix(h, q.held); h = mix(h, q.foe); h = mix(h, q.calm); h = mix(h, q.form); h = mix(h, q.cmd); h = mix(h, q.reach); h = mix(h, q.aim)
   }
   for (const e of s.heroes) {
     h = hs(h, e.id)
     h = mix(h, e.side); h = mix(h, e.u); h = mix(h, e.v); h = mix(h, e.goal ? e.goal.u : -1); h = mix(h, e.goal ? e.goal.v : -1)
     h = mix(h, e.grp); h = mix(h, e.stun); h = mix(h, e.hp); h = mix(h, e.manual); h = mix(h, e.rem)
+    h = mix(h, e.mu); h = mix(h, e.tong); h = mix(h, e.dir); h = mix(h, e.face); h = mix(h, e.foe); h = mix(h, e.atk); h = mix(h, e.dash); h = mix(h, e.dashDir); h = mix(h, e.dashCd)
+    h = hs(h, e.art); h = mix(h, e.artCd); h = mix(h, e.artOn); h = mix(h, e.why); h = mix(h, e.whyTick)
   }
   return (h >>> 0).toString(16)
 }
@@ -53,8 +58,12 @@ export function snapshot(s: FieldState): FieldState {
     map: { ...s.map, cells: s.map.cells.slice(), pieces: s.map.pieces.map(p => ({ ...p })) },
     squads: s.squads.map(q => ({ ...q, goal: q.goal ? { ...q.goal } : null })),
     heroes: s.heroes.map(e => ({ ...e, goal: e.goal ? { ...e.goal } : null })),
+    anchor: s.anchor.map(p => ({ ...p })),
+    route: s.route.map(r => r.map(p => ({ ...p }))),
+    grpWhy: [...s.grpWhy] as FieldState['grpWhy'],
+    grpWhyTick: [...s.grpWhyTick] as FieldState['grpWhyTick'],
     used: [...s.used] as FieldState['used'],
     broken: [s.broken[0], s.broken[1]],
-    log: { dropped: s.log.dropped, accepted: [...s.log.accepted] },
+    log: { dropped: s.log.dropped, accepted: [...s.log.accepted], events: [...s.log.events] },
   }
 }

@@ -21,8 +21,9 @@ import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { clamp, dist2, idiv, isqrt, stepToward } from './num.ts'
 import { campPointU, groundAt, walkable } from './map.ts'
-import { G_BLOCK, G_HIGH, G_PLAIN, G_SHALLOW, GRPS, OP_AUTO, OP_MOVE, OP_RETREAT, OP_STANCE, STANCE_CHARGE, STANCE_HOLD, STANCE_OPEN } from './types.ts'
+import { G_BLOCK, G_HIGH, G_PLAIN, G_SHALLOW, GRPS, HERO_ART_DEFAULT, HERO_ARTS, HERO_DIRS, OP_ATTACK, OP_AUTO, OP_DASH, OP_HERO_DIR, OP_MOVE, OP_RETREAT, OP_SKILL, OP_STANCE, STANCE_CHARGE, STANCE_HOLD, STANCE_OPEN, WHY_NONE, WHY_NOT_YET, CMD_FIRE, CMD_HEIGHT } from './types.ts'
 import type { FieldInput, FieldMap, FieldState, Grp, Hero, LiveSetup, Point, Squad } from './types.ts'
+import { heroGoal, heroInput } from './hero.ts'
 
 const NO_INPUTS: readonly FieldInput[] = []
 const ROW: Readonly<Record<Grp, number>> = { front: 0, bows: 1, horse: 2 }
@@ -32,16 +33,16 @@ const sq = (x: number): number => x * x
  * 초당 값을 이 틱의 몫으로 — 누적 내림의 차라서 hz 틱을 모으면 정확히 perSec 이다 (틱마다 내리면 hz 30 에서 걸음이 2% 짧았다 · 45 §2-8).
  * 틱 번호만 보므로 상태가 늘지 않고 거울·차례에 안 기댄다.
  */
-const perTickAt = (perSec: number, tick: number): number => idiv(perSec * ((tick % P.field.hz) + 1), P.field.hz) - idiv(perSec * (tick % P.field.hz), P.field.hz)
-const ticksOf = (sec: number): number => sec * P.field.hz
+export const perTickAt = (perSec: number, tick: number): number => idiv(perSec * ((tick % P.field.hz) + 1), P.field.hz) - idiv(perSec * (tick % P.field.hz), P.field.hz)
+export const ticksOf = (sec: number): number => sec * P.field.hz
 /** 한 때의 틱 수 */
 const timeTicks = (): number => ticksOf(P.field.timeSec)
 /** 편의 앞쪽 (편 0 은 u 가 커지는 쪽) — 거울 판에서 편 이름표와 u 가 함께 뒤집히므로 이 값으로 가르면 거울이 맞다 */
 const fwd = (side: 0 | 1): number => side === 0 ? 1 : -1
 
 /** 실수 상수(P.realm.tac*)를 ‰ 정수로 — 한 틱에 한 번만 센다 */
-const m = (x: number): number => Math.round(x * MILLI)
-const mul = (v: number, k: number): number => idiv(v * k, MILLI)
+export const m = (x: number): number => Math.round(x * MILLI)
+export const mul = (v: number, k: number): number => idiv(v * k, MILLI)
 
 /** 방진 > 돌격 > 길 트기 > 방진 (battlefield.ts FRONT_COUNTER 와 같은 순환) */
 const beats = (a: number, d: number): boolean => (a === STANCE_HOLD && d === STANCE_CHARGE) || (a === STANCE_CHARGE && d === STANCE_OPEN) || (a === STANCE_OPEN && d === STANCE_HOLD)
@@ -85,7 +86,11 @@ function invalidSetup(s: LiveSetup): boolean {
       bodies += squadCount(n)
     }
     if (total === 0) return true
-    if (side.hero) bodies++
+    if (side.hero) {
+      const hh = side.hero
+      if (!Number.isInteger(hh.mu) || hh.mu < 0 || (hh.tong !== undefined && (!Number.isInteger(hh.tong) || hh.tong < 0)) || (hh.art !== undefined && !HERO_ARTS.includes(hh.art))) return true
+      bodies++
+    }
   }
   return bodies > P.field.bodiesMax
 }
@@ -93,7 +98,7 @@ function invalidSetup(s: LiveSetup): boolean {
 export function createField(setup: LiveSetup): FieldState {
   // 목책이 부서지면 칸이 바뀌므로 판은 지도 사본(칸 · 조각)을 쥔다 — 같은 지도로 다시 시작해도 안 변한다
   const map: FieldMap = { ...setup.map, cells: setup.map.cells.slice(), pieces: setup.map.pieces.map(p => ({ ...p, rem: 0 })) }
-  const s: FieldState = { tick: 0, seed: setup.seed, map, squads: [], heroes: [], used: [0, 0, 0, 0], broken: [0, 0], end: null, winner: -1, log: { dropped: 0, accepted: [] } }
+  const s: FieldState = { tick: 0, seed: setup.seed, map, squads: [], heroes: [], anchor: [], route: [[], [], [], [], [], []], grpWhy: [0, 0, 0], grpWhyTick: [-1, -1, -1], used: [0, 0, 0, 0], broken: [0, 0], end: null, winner: -1, log: { dropped: 0, accepted: [], events: [] } }
   if (invalidSetup(setup)) { s.end = 'invalid'; return s }
   const unit = P.field.unit
   const jit = P.field.spawnJitterCells * unit
@@ -117,15 +122,19 @@ export function createField(setup: LiveSetup): FieldState {
         const p = place(grp, i, n)
         const u = clamp(cp.axis === 1 ? p.u + j : p.u, 0, lastU(map)), v = clamp(cp.axis === 0 ? p.v + j : p.v, 0, lastV(map))
         const stance = Math.floor(roll(s.seed, 0, `stance:${id}`) * 3) as 0 | 1 | 2
-        s.squads.push({ id, side, grp, kind: grp, men: cnt, menMax: cnt, fresh: men > 0 ? idiv(fresh * cnt, men) : 0, u, v, homeU: u, homeV: v, lock: -1, sleep: ticksOf(cp.asleep ?? 0), daze: 0, rem: 0, held: 0, flank: 0, stance, morale0: ls.morale, shock: 0, goal: null, manual: 0, target: -1, hp: cnt * MILLI, morale: ls.morale })
+        s.squads.push({ id, side, grp, kind: grp, men: cnt, menMax: cnt, fresh: men > 0 ? idiv(fresh * cnt, men) : 0, u, v, homeU: u, homeV: v, lock: -1, sleep: ticksOf(cp.asleep ?? 0), daze: 0, rem: 0, held: 0, flank: 0, stance, morale0: ls.morale, shock: 0, goal: null, manual: 0, target: -1, hp: cnt * MILLI, morale: ls.morale, foe: -1, calm: 0, form: 0, cmd: -1, reach: grp === 'bows' ? P.field.bowRangeCells * unit : 0, aim: -1 })
       }
     })
     if (ls.hero) {
       const hp0 = place('front', 0, 1)
-      const hero: Hero = { side, id: ls.hero.id, u: clamp(hp0.u, 0, lastU(map)), v: clamp(hp0.v, 0, lastV(map)), goal: null, manual: 0, grp: -1, stun: 0, hp: P.field.heroHp, rem: 0 }
+      const hero: Hero = { side, id: ls.hero.id, u: clamp(hp0.u, 0, lastU(map)), v: clamp(hp0.v, 0, lastV(map)), goal: null, manual: 0, grp: -1, stun: 0, hp: P.field.heroHp, rem: 0,
+        mu: ls.hero.mu, tong: ls.hero.tong ?? ls.hero.mu, dir: -1, face: side === 0 ? 0 : HERO_DIRS / 2, foe: -1, atk: -1, dash: 0, dashDir: 0, dashCd: 0,
+        art: ls.hero.art ?? HERO_ART_DEFAULT, artCd: 0, artOn: 0, why: WHY_NONE, whyTick: -1 }
       s.heroes.push(hero)
     }
   }
+  // 무리 기준 점 — 처음은 대들의 가운데 (걸음 1.5 가 진 자리를 이 점 둘레로 놓는다)
+  for (const side of [0, 1] as const) for (const g of GRPS) s.anchor.push(groupCenter(s, side, g))
   // 목책 체력은 치는 편(주인이 아닌 편) 사람 1,000명마다의 값 — 병력이 달라도 깨는 시간이 같다 (44 §2-3)
   const total = [0, 1].map(side => GRPS.reduce((a, g) => a + setup.sides[side]!.men[g], 0))
   for (const p of map.pieces) p.hp = Math.max(1, idiv(p.hp * total[1 - p.owner]!, MILLI))
@@ -182,13 +191,34 @@ function moveGroup(s: FieldState, grp: Grp, tu: number, tv: number): void {
   const bank = banks(s)
   for (const q of qs) {
     q.manual = 1
+    q.foe = -1
     q.target = -1
     const g = live.length === 0 ? { u: gu, v: gv } : { u: clamp(gu + q.homeU - cu, 0, L), v: clamp(gv + q.homeV - cv, 0, W) }
     q.goal = leash(s, q, g, bank)
   }
 }
 
-/** 입력 하나를 받는다. 한 때에 무리당 상한이 넘으면 버리고 센다 (손재주가 수를 덮지 않게 · 22 §3) */
+/** 산 적 대인가 (「적을 쳐라」의 u) */
+const liveFoe = (s: FieldState, id: number): boolean => id >= 0 && id < s.squads.length && s.squads[id]!.side === 1 && s.squads[id]!.men > 0
+
+/** 입력의 꼴이 맞나 — 맞지 않으면 버리고 센다 (판 상태로만 가르므로 기록 재생에서도 같다) */
+function inputOk(s: FieldState, i: FieldInput): boolean {
+  const unit = P.field.unit
+  const inMap = i.u >= 0 && i.v >= 0 && i.u <= s.map.u * unit && i.v <= s.map.w * unit
+  switch (i.op) {
+    case OP_MOVE: return inMap
+    case OP_AUTO: return true
+    // 앞줄은 0~2 (STANCE_*) · 활·기병은 0~3 (CMD_*) — 무리마다 뜻이 다르다 (types.ts OP_STANCE)
+    case OP_STANCE: return i.g < 3 && i.u >= 0 && i.u <= (i.g === 0 ? STANCE_OPEN : CMD_HEIGHT)
+    case OP_ATTACK: return i.v === 0 && liveFoe(s, i.u)
+    case OP_HERO_DIR: return i.g === 3 && i.u >= 0 && i.u < HERO_DIRS && (i.v === 0 || i.v === 1)
+    case OP_DASH: return i.g === 3 && i.u >= -1 && i.u < HERO_DIRS
+    case OP_SKILL: return i.g === 3 && inMap
+    default: return false
+  }
+}
+
+/** 입력 하나를 받는다 — 명령 수 제한은 없다 (50 조작 v2 · C2). 한 틱에 받는 수의 상한만 stepField 가 지킨다 */
 function applyInput(s: FieldState, i: FieldInput): void {
   // 물러남은 언제든 · op 만 본다 (무리 번호·자리는 상관없다 · 30 §6 규칙 3) — 기록에는 g 0 으로 남겨 기록 줄이 늘 읽힌다
   if (i.op === OP_RETREAT) {
@@ -197,30 +227,34 @@ function applyInput(s: FieldState, i: FieldInput): void {
     return
   }
   // 정수가 아닌 입력은 기록에 못 들어간다 (기록 전체가 안 읽히므로 받는 쪽에서 버린다)
-  if (![i.g, i.op, i.u, i.v].every(Number.isInteger) || !(i.g >= 0 && i.g <= 3)) { s.log.dropped++; return }
-  if (s.used[i.g] >= P.field.inputPerGroupPerTime) { s.log.dropped++; return }
-  const unit = P.field.unit
-  const inMap = i.u >= 0 && i.v >= 0 && i.u <= s.map.u * unit && i.v <= s.map.w * unit
-  const ok = i.op === OP_MOVE ? inMap : i.op === OP_AUTO || (i.op === OP_STANCE && i.g < 3 && (i.u === STANCE_CHARGE || i.u === STANCE_HOLD || i.u === STANCE_OPEN))
-  if (!ok) { s.log.dropped++; return }
-  s.used[i.g]++
-  s.log.accepted.push({ tick: i.tick, g: i.g, op: i.op, u: i.u, v: i.v })
+  if (![i.g, i.op, i.u, i.v].every(Number.isInteger) || !(i.g >= 0 && i.g <= 3) || !inputOk(s, i)) { s.log.dropped++; return }
+  s.log.accepted.push({ tick: i.tick, g: i.g, op: i.op, u: i.u, v: i.op === OP_DASH ? 0 : i.v })
   if (i.op === OP_STANCE) {
-    for (const q of s.squads) if (q.side === 0 && q.grp === GRPS[i.g]) q.stance = i.u as 0 | 1 | 2
+    groupOrder(s, i.g, i.u)
     return
   }
+  if (i.g === 3) { heroInput(s, i); return }
+  if (i.op === OP_ATTACK) { attackGroup(s, GRPS[i.g]!, i.u); return }
   // 판 끝 경계(칸 수 × unit)를 누른 것도 받되 판 안 마지막 단위로 붙인다
   const tu = clamp(i.u, 0, lastU(s.map)), tv = clamp(i.v, 0, lastV(s.map))
-  if (i.g === 3) {
-    const h = s.heroes.find(e => e.side === 0)
-    if (h) { h.goal = i.op === OP_MOVE ? { u: tu, v: tv } : null; h.manual = i.op === OP_MOVE ? 1 : 0 }
-    return
-  }
   if (i.op === OP_MOVE) { moveGroup(s, GRPS[i.g]!, tu, tv); return }
   for (const q of s.squads) {
     if (q.side !== 0 || q.grp !== GRPS[i.g]) continue
     q.manual = 0
+    q.foe = -1
     q.goal = null
+  }
+}
+
+/** 무리에 「적을 쳐라」 — 손을 떼되(manual 0) 그 적만 노린다 · 그 적이 사라지면 알아서로 (retarget 이 푼다) */
+function attackGroup(s: FieldState, grp: Grp, foe: number): void {
+  const e = s.squads[foe]!, bank = banks(s)
+  for (const q of s.squads) {
+    if (q.side !== 0 || q.grp !== grp) continue
+    q.manual = 0
+    q.foe = foe
+    q.target = foe
+    q.goal = q.men > 0 ? leash(s, q, detour(s, q, e), bank) : null
   }
 }
 
@@ -234,6 +268,9 @@ function retarget(s: FieldState): void {
   const alarm = ([0, 1] as const).map(side => !s.map.camps[side].hold || s.squads.some(q => q.side === side && q.men > 0 && near(s, q, P.field.holdTriggerCells)))
   for (const q of s.squads) {
     if (q.manual === 1 || q.men <= 0) continue
+    // 「적을 쳐라」 — 그 적이 살아 있으면 그 적만 (지키는 편의 경보도 안 본다 · 사람이 시킨 일이다) · 사라졌으면 알아서로
+    if (q.foe >= 0 && s.squads[q.foe]!.men <= 0) q.foe = -1
+    if (q.foe >= 0) { const f = s.squads[q.foe]!; q.target = f.id; q.goal = leash(s, q, detour(s, q, f), bank); continue }
     let e = nearestFoe(s, q, () => true)
     q.target = e ? e.id : -1
     // 돕기 — 같은 편 앞줄이 맞물려 있고 내가 supportCells 안에서 놀고 있으면 그 적에게 간다
@@ -353,7 +390,7 @@ function stepOnce(s: FieldState, K: Kit, side: 0 | 1, u: number, v: number, goal
 }
 
 /** 땅을 보고 걷는다 — 틱당 걸음이 1칸을 넘으면 1칸 이하로 나눠 찍어 벽을 건너뛰지 않는다 (돌격 달리기가 걸음을 키운다 · 45 §2-11) */
-function walk(s: FieldState, K: Kit, side: 0 | 1, u: number, v: number, goal: Point, speed: number): Point {
+export function walk(s: FieldState, K: Kit, side: 0 | 1, u: number, v: number, goal: Point, speed: number): Point {
   const unit = P.field.unit
   const n = Math.max(1, idiv(speed + unit - 1, unit))
   let p: Point = { u, v }
@@ -382,7 +419,7 @@ function clearLine(map: FieldMap, a: Point, b: Point, gate = false): boolean {
   return true
 }
 /** 칼날이 닿는 줄 (문은 사이에 두고 닿는다) */
-const bladeLine = (map: FieldMap, a: Point, b: Point): boolean => clearLine(map, a, b, true)
+export const bladeLine = (map: FieldMap, a: Point, b: Point): boolean => clearLine(map, a, b, true)
 
 /** 한 틱의 값표 (P.realm.tac* · P.field 를 ‰ 정수로 — 튜닝 콘솔이 값을 바꿔도 바로 따른다) */
 function kit() {
@@ -400,7 +437,7 @@ function kit() {
     perTickDen: MILLI * F.hz,
   }
 }
-type Kit = ReturnType<typeof kit>
+export type Kit = ReturnType<typeof kit>
 
 /** 잃은 몫 (사기 셈의 바탕 · 천분율) */
 const lostOf = (q: Squad): number => q.menMax > 0 ? idiv((q.menMax * MILLI - q.hp) * P.field.moraleLossLostShare, q.menMax * MILLI) : 0
@@ -545,6 +582,12 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
     const t = nearestFoe(s, q, (t, d) => t.grp === 'bows' && first[t.id]! >= 0 && d <= K.bowR2 && !covered(s, q, t))
     if (t) aim[q.id] = t.id
   }
+  // 적을 쳐라 — 받은 적이 닿는 거리에 있으면 그 적을 먼저 친다 (활은 맞쏘기보다 먼저)
+  for (const q of s.squads) {
+    if (q.men <= 0 || q.sleep > 0 || q.foe < 0) continue
+    const t = s.squads[q.foe]!, r2 = q.grp === 'bows' ? K.bowR2 : K.meleeR2
+    if (t.men > 0 && dist2(q.u, q.v, t.u, t.v) <= r2 && (q.grp === 'bows' ? !covered(s, q, t) : bladeLine(s.map, q, t))) aim[q.id] = t.id
+  }
   // 맞는 대가 보는 쪽 — 맞물린 적 → 노리는 적 → (손으로 몬 대처럼 둘 다 없으면) 가장 가까운 적 (45 §2-7)
   const facing = new Array<Squad | null | undefined>(n).fill(undefined)
   const facingOf = (e: Squad): Squad | null => {
@@ -581,6 +624,8 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
     dmg[e.id]! += v
   }
   for (const q of s.squads) if (q.men > 0 && q.lock >= 0) contact[q.side] = true
+  // 지금 싸우는 상대 (읽기용 · 화면의 「공격 중」) — 친 적 → 맞물린 적 → 없음
+  for (const q of s.squads) q.aim = q.men > 0 && q.sleep <= 0 && aim[q.id]! >= 0 ? aim[q.id]! : q.lock
   for (const q of s.squads) {
     if (q.men <= 0) continue
     const num = dmg[q.id]! + q.rem
@@ -614,6 +659,7 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
   for (const q of s.squads) {
     if (q.lock >= 0 && s.squads[q.lock]!.men <= 0) q.lock = -1
     if (q.target >= 0 && s.squads[q.target]!.men <= 0) q.target = -1
+    if (q.foe >= 0 && s.squads[q.foe]!.men <= 0) q.foe = -1
   }
   // 목책 문이 안 부서진 동안 그 안의 편은 잃은 몫에 덜 꺾인다 (본편 tacWallSteady). 부서진 뒤는 그때까지 덜 꺾인 몫(held)을 그대로 둔다
   const walled = [0, 1].map(side => s.map.pieces.some(p => p.owner === side && p.kind === 'gate' && p.hp > 0))
@@ -674,9 +720,12 @@ function marchSpeed(s: FieldState, side: 0 | 1): number {
 
 export function stepField(s: FieldState, inputs: readonly FieldInput[] = NO_INPUTS): void {
   if (s.end !== null) return
-  if (s.tick % timeTicks() === 0) s.used = [0, 0, 0, 0]
+  // 한 틱에 받는 입력은 inputPerTickMax 까지 (도배 방지 · 눈에 안 보이는 하나뿐) — 받은 것만 세므로 기록 재생도 같은 것을 받는다
+  const took = s.log.accepted.length
   for (const i of inputs) {
-    if (i.tick === s.tick) applyInput(s, i)
+    if (i.tick !== s.tick) continue
+    if (i.op !== OP_RETREAT && s.log.accepted.length - took >= P.field.inputPerTickMax) { s.log.dropped++; continue }
+    applyInput(s, i)
     if (s.end !== null) return
   }
   if (s.tick % Math.max(1, idiv(P.field.retargetMs * P.field.hz, MILLI)) === 0) retarget(s)
@@ -692,8 +741,8 @@ export function stepField(s: FieldState, inputs: readonly FieldInput[] = NO_INPU
       const e = s.squads[q.target]!
       if (dist2(q.u, q.v, e.u, e.v) <= (q.grp === 'bows' ? K.bowR2 : K.meleeR2) && (q.grp === 'bows' || bladeLine(s.map, q, e))) return null
     }
-    // 같이 닿기 — 맡긴 대는 제 편 칼날이 닿기 전까지 가장 느린 무리 걸음으로 간다 (기병 혼자 먼저 닿지 않게)
-    const sp = perTickAt(q.manual === 0 && !contact[q.side] ? Math.min(speedPerSec(q.grp), march[q.side]!) : speedPerSec(q.grp), s.tick)
+    // 같이 닿기 — 맡긴 대는 제 편 칼날이 닿기 전까지 가장 느린 무리 걸음으로 간다 (기병 혼자 먼저 닿지 않게 · 「적을 쳐라」를 받은 대는 제 걸음)
+    const sp = perTickAt(q.manual === 0 && q.foe < 0 && !contact[q.side] ? Math.min(speedPerSec(q.grp), march[q.side]!) : speedPerSec(q.grp), s.tick)
     return walk(s, K, q.side, q.u, q.v, q.goal, sp)
   })
   for (const q of s.squads) {
@@ -706,8 +755,9 @@ export function stepField(s: FieldState, inputs: readonly FieldInput[] = NO_INPU
     if (q.daze > 0) q.daze--
   }
   for (const h of s.heroes) {
-    if (h.stun > 0 || !h.goal || sideAsleep(s, h.side)) continue
-    const p = walk(s, K, h.side, h.u, h.v, h.goal, perTickAt(speedPerSec('front'), s.tick))
+    const goal = heroGoal(s, h)
+    if (h.stun > 0 || !goal || sideAsleep(s, h.side)) continue
+    const p = walk(s, K, h.side, h.u, h.v, goal, perTickAt(speedPerSec('front'), s.tick))
     h.u = p.u; h.v = p.v
   }
   s.tick++
@@ -731,4 +781,27 @@ export function runField(setup: LiveSetup, inputs: readonly FieldInput[] = NO_IN
     while (k < byTick.length && byTick[k]!.tick < s.tick) k++
   }
   return s
+}
+
+/** 무리의 산 대 가운데 (없으면 진영 자리) */
+export function groupCenter(s: FieldState, side: 0 | 1, g: Grp): Point {
+  let su = 0, sv = 0, n = 0
+  for (const q of s.squads) if (q.side === side && q.grp === g && q.men > 0) { su += q.u; sv += q.v; n++ }
+  return n > 0 ? { u: idiv(su, n), v: idiv(sv, n) } : { u: campU(s, side), v: campV(s, side) }
+}
+
+/**
+ * 무리마다 제 명령 (OP_STANCE · types.ts) — 앞줄은 자세와 모양, 활·기병은 cmd. 받을 수 없으면 까닭만 남긴다 (버리지 않는다).
+ * 걸음 1.5 에서 모양(진 자리)·기병 길·추격 조건이 붙는다.
+ */
+function groupOrder(s: FieldState, g: number, u: number): void {
+  const grp = GRPS[g]!
+  const why = g !== 0 && (u === CMD_FIRE || u === CMD_HEIGHT) ? WHY_NOT_YET : WHY_NONE
+  s.grpWhy[g] = why
+  s.grpWhyTick[g] = s.tick
+  if (why !== WHY_NONE) return
+  for (const q of s.squads) {
+    if (q.side !== 0 || q.grp !== grp) continue
+    if (g === 0) { q.stance = u as 0 | 1 | 2; q.form = u + 1 } else q.cmd = u
+  }
 }

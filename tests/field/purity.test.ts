@@ -5,7 +5,7 @@ import path from 'node:path'
 
 /** sim 쪽 파일: src/field 의 .ts 가운데 그리는 쪽(view*)·진입점(main*)이 아닌 것 전부. 새 sim 파일은 이 배열에 넣는다. */
 const DIR = path.resolve(import.meta.dirname, '../../src/field')
-const SIM_FILES = ['types', 'num', 'state', 'sim', 'rec', 'scenario', 'map', 'input', 'pickmodel']
+const SIM_FILES = ['types', 'num', 'state', 'sim', 'rec', 'scenario', 'map', 'input', 'pickmodel', 'hero']
 const BANNED = /\*\*|new Date|Math\.(random|sin|cos|tan|atan2?|asin|acos|hypot|pow|exp|log|log2|log10|cbrt)\b|Date\.now|performance\.now|\bdocument\b|\bwindow\b|localStorage|requestAnimationFrame|setTimeout|setInterval/g
 
 /** 주석과 문자열 속 글자는 세지 않는다 */
