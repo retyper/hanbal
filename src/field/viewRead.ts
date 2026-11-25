@@ -7,7 +7,7 @@ import { P } from '../tune/params.ts'
 import type { FieldState } from './types.ts'
 
 /** aim = 지금 싸우는 상대(대 id · 없으면 -1 · 손으로 몰았든 알아서든 같은 뜻) · foe = 「적을 쳐라」로 받은 적 · form = 앞줄 모양 FORM_* · cmd = 활·기병 명령 · lock = 맞물린 적 대 */
-export interface VSquad { id: number; side: 0 | 1; grp: string; kind: string; men: number; fresh: number; u: number; v: number; target: number; goal: { u: number; v: number } | null; stance: number; manual: number; aim: number; foe: number; form: number; cmd: number; lock: number; morale: number; morale0: number; order: number; orderTick: number; orderAt: { u: number; v: number } | null; ran: number; bonus: number; hitTick: number; flee: number }
+export interface VSquad { id: number; side: 0 | 1; grp: string; kind: string; men: number; fresh: number; u: number; v: number; target: number; goal: { u: number; v: number } | null; stance: number; manual: number; aim: number; foe: number; form: number; cmd: number; lock: number; morale: number; morale0: number; order: number; orderTick: number; orderAt: { u: number; v: number } | null; ran: number; bonus: number; hitTick: number; flee: number; bw: number; bd: number; face: number; pushed: number }
 /** dir 걷는 방향 · face 보는 쪽 · dash 내닫는 남은 틱 · dashCd/artCd 쿨타임 남은 틱 · artOn 비기 이어지는 틱 · why/whyTick 마지막으로 못 쓴 까닭 · atk 이번 틱에 친 것 · art 비기 이름 · mu/tong 능력치 */
 export interface VHero { side: 0 | 1; id: string; u: number; v: number; stun: number; goal: { u: number; v: number } | null; dir: number; face: number; dash: number; dashDir: number; dashCd: number; art: string; artCd: number; artOn: number; why: number; whyTick: number; atk: number; mu: number; tong: number }
 /** 바닥에 놓인 조각 (목책 마디·문) — 칸 단위 · hp 0 이하면 부서진 것 */
@@ -42,6 +42,8 @@ export interface VModel {
   /** 결과 통계 (편마다) · 적의 큰 수를 거는 틱 (편마다 · -1 없음) */
   stats: { flankHits: [number, number]; artMorale: [number, number]; killed: [number, number]; lost: [number, number] }
   planTick: [number, number]
+  /** 편마다 앞줄이 마지막으로 맞물린 틱 (진 기준점이 얼어 있는가) */
+  frontLockTick: [number, number]
   /** 무리 기준 점(깃발) [편 × 3 + 앞줄 0 · 활 1 · 기병 2] */
   anchor: { u: number; v: number }[]
   route: { u: number; v: number }[][]
@@ -97,13 +99,14 @@ export function readField(s: FieldState): VModel {
     mapU: s.map.u, mapW: s.map.w,
     cells: s.map.cells,
     rule: s.map.rule,
-    squads: s.squads.map(q => ({ id: q.id, side: q.side, grp: q.grp, kind: q.kind, men: q.men, fresh: q.fresh, u: q.u, v: q.v, target: q.target, goal: q.goal === null ? null : { u: q.goal.u, v: q.goal.v }, stance: q.stance, manual: q.manual, aim: q.aim, foe: q.foe, form: q.form, cmd: q.cmd, lock: q.lock, morale: q.morale, morale0: q.morale0, order: q.order, orderTick: q.orderTick, orderAt: q.orderAt === null ? null : { u: q.orderAt.u, v: q.orderAt.v }, ran: q.ran, bonus: q.bonus, hitTick: q.hitTick, flee: q.flee })),
+    squads: s.squads.map(q => ({ id: q.id, side: q.side, grp: q.grp, kind: q.kind, men: q.men, fresh: q.fresh, u: q.u, v: q.v, target: q.target, goal: q.goal === null ? null : { u: q.goal.u, v: q.goal.v }, stance: q.stance, manual: q.manual, aim: q.aim, foe: q.foe, form: q.form, cmd: q.cmd, lock: q.lock, morale: q.morale, morale0: q.morale0, order: q.order, orderTick: q.orderTick, orderAt: q.orderAt === null ? null : { u: q.orderAt.u, v: q.orderAt.v }, ran: q.ran, bonus: q.bonus, hitTick: q.hitTick, flee: q.flee, bw: q.bw, bd: q.bd, face: q.face, pushed: q.pushed })),
     heroes: s.heroes.map(e => ({ side: e.side, id: e.id, u: e.u, v: e.v, stun: e.stun, goal: e.goal === null ? null : { u: e.goal.u, v: e.goal.v }, dir: e.dir, face: e.face, dash: e.dash, dashDir: e.dashDir, dashCd: e.dashCd, art: e.art, artCd: e.artCd, artOn: e.artOn, why: e.why, whyTick: e.whyTick, atk: e.atk, mu: e.mu, tong: e.tong })),
     loss: tickLoss(s),
     events: tickEvents(s),
     anchor: s.anchor.map(p => ({ u: p.u, v: p.v })),
     stats: { flankHits: [s.stats.flankHits[0], s.stats.flankHits[1]], artMorale: [s.stats.artMorale[0], s.stats.artMorale[1]], killed: [s.stats.killed[0], s.stats.killed[1]], lost: [s.stats.lost[0], s.stats.lost[1]] },
     planTick: [s.planTick[0], s.planTick[1]],
+    frontLockTick: [s.frontLockTick[0], s.frontLockTick[1]],
     route: s.route.map(r => r.map(p => ({ u: p.u, v: p.v }))),
     grpWhy: [s.grpWhy[0], s.grpWhy[1], s.grpWhy[2]],
     grpWhyTick: [s.grpWhyTick[0], s.grpWhyTick[1], s.grpWhyTick[2]],
