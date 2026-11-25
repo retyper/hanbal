@@ -15,8 +15,12 @@ function inputsFor(seed: number): FieldInput[] {
   const out: FieldInput[] = []
   for (let k = 0; k < 24; k++) {
     const g = ((seed + k) % 4) as InputGroup
-    out.push({ tick: 10 + k * 53 + (seed % 7), g, op: k % 5 === 4 ? 1 : 0, u: U(20 + ((seed * 7 + k * 13) % 120)), v: U((seed * 3 + k * 5) % 40) })
+    const stance = k % 7 === 3 && g < 3
+    out.push({ tick: 10 + k * 53 + (seed % 7), g, op: stance ? 2 : k % 5 === 4 ? 1 : 0, u: stance ? (seed + k) % 3 : U(20 + ((seed * 7 + k * 13) % 120)), v: stance ? 0 : U((seed * 3 + k * 5) % 40) })
   }
+  // 한 때에 한 무리 입력 5개(한도 3 을 넘겨 버려진다) · 일부 판은 중간에 물러난다
+  for (let k = 0; k < 5; k++) out.push({ tick: 700 + k, g: 0, op: 0, u: U(30 + k), v: U(10) })
+  if (seed % 5 === 0) out.push({ tick: 450 + (seed % 40), g: 1, op: 3, u: 0, v: 0 })
   return out
 }
 
@@ -27,19 +31,24 @@ function integersOnly(s: FieldState): void {
 
 test('빈 판 200씨앗 (1,000씨앗은 tools/field-bench.ts): 같은 씨앗 두 번 = 같은 해시 · 입력 기록 재생 = 같은 해시', () => {
   const seen = new Set<string>()
+  let dropped = 0, retreats = 0, stances = 0
   for (let seed = 1; seed <= 200; seed++) {
     const setup = plainSetup(seed, SIZES[seed % 3]!)
     const inputs = seed % 2 === 0 ? inputsFor(seed) : []
     const a = runField(setup, inputs)
     const b = runField(setup, inputs)
-    assert.ok(a.end !== null && a.end !== 'invalid' && a.tick <= P.field.timesMax * P.field.timeTicks)
+    assert.ok(a.end !== null && a.end !== 'invalid' && a.tick <= P.field.timesMax * P.field.timeSec * P.field.hz)
     assert.equal(hashField(a), hashField(b), `seed ${seed}`)
     const replay = parse(serialize(a.log.accepted))
     assert.ok(replay)
     assert.equal(hashField(runField(setup, replay)), hashField(a), `재생 seed ${seed}`)
     if (seed <= 3 || seed === 200) integersOnly(a)
     seen.add(hashField(a))
+    dropped += a.log.dropped
+    if (a.end === 'retreat') retreats++
+    stances += a.log.accepted.filter(i => i.op === 2).length
   }
+  assert.ok(dropped > 0 && retreats > 0 && stances > 0, `시험 입력에 한도 넘김·물러남·자세가 실제로 섞인다 (${dropped} · ${retreats} · ${stances})`)
   assert.ok(seen.size > 180, `씨앗이 해시에 닿는다: ${seen.size}`)
 })
 
@@ -74,7 +83,7 @@ test('두 편이 걸어 서로 다가간다 (대 수는 무리마다 4 이하, �
 test('한 때에 무리당 입력 3개까지 · 넘치면 버리고 센다 · 다음 때에 다시 받는다', () => {
   const setup = plainSetup(2, 1300)
   const mv = (tick: number, k: number): FieldInput => ({ tick, g: 0, op: 0, u: U(30 + k), v: U(10) })
-  const s = runField(setup, [mv(1, 0), mv(2, 1), mv(3, 2), mv(4, 3), mv(5, 4), mv(P.field.timeTicks + 1, 5)])
+  const s = runField(setup, [mv(1, 0), mv(2, 1), mv(3, 2), mv(4, 3), mv(5, 4), mv((P.field.timeSec * P.field.hz) + 1, 5)])
   assert.equal(s.log.dropped, 2)
   assert.equal(s.log.accepted.length, 4)
   const w = runField(setup, [{ tick: 1, g: 0, op: 0, u: U(9999), v: 0 }, { tick: 2, g: 0, op: 7, u: 0, v: 0 }])
@@ -83,7 +92,7 @@ test('한 때에 무리당 입력 3개까지 · 넘치면 버리고 센다 · �
 
 test('손으로 몬 무리는 그 자리로 간다', () => {
   const s = runField(plainSetup(3, 1300), [{ tick: 1, g: 0, op: 0, u: U(50), v: U(10) }], 600)
-  for (const q of s.squads.filter(q => q.side === 0 && q.grp === 'front')) assert.deepEqual([q.u, q.v], [U(50), U(10)])
+  for (const q of s.squads.filter(q => q.side === 0 && q.grp === 'front')) assert.ok(Math.abs(q.u - U(50)) <= U(P.field.sepCells) && Math.abs(q.v - U(10)) <= U(P.field.sepCells), '그 자리 곁에 선다 (같은 편끼리는 밀려난다)')
 })
 
 test('무효 시작은 던지지 않고 invalid 로 끝난다 (음수 · 빈 편 · 소수 · 몸 수 상한)', () => {

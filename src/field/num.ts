@@ -4,7 +4,7 @@
  */
 import type { Point } from './types.ts'
 
-/** 0 쪽으로 자르는 정수 나눗셈 (음수에서 `|0`·`>>` 와 같지만 -0 을 내지 않는다) */
+/** 0 쪽으로 자르는 정수 나눗셈 (-0 을 내지 않는다). 2^31 을 넘는 값에서는 `|0`·`>>` 와 다르다 — 그쪽으로 바꾸지 말 것 */
 export const idiv = (a: number, b: number): number => Math.trunc(a / b) + 0
 
 export const clamp = (n: number, lo: number, hi: number): number => n < lo ? lo : n > hi ? hi : n

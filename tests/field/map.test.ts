@@ -43,8 +43,7 @@ test('바닥: 개울은 얕은 물 띠 + 여울 · 목책은 막힘 줄 + 문 �
   const st = stakeMap()
   const wallU = st.pieces[0]!.u0
   const blocked = Array.from({ length: st.w }, (_, v) => st.cells[wallU * st.w + v] === G_BLOCK)
-  assert.equal(blocked.filter(Boolean).length, st.w - P.field.gateCells)
-  assert.ok(blocked.some(x => !x), '문 틈이 있다')
+  assert.equal(blocked.filter(Boolean).length, st.w, '문도 부서지기 전에는 막혀 있다')
   assert.ok(st.pieces.some(p => p.kind === 'gate' && p.hp === P.field.gateHp))
   const h = highMap()
   assert.equal(h.highOwner, 1)
@@ -59,7 +58,7 @@ test('mapFor: 첫 조각은 맵이 되고 지어지지 않은 것은 null (대�
   assert.equal(mapFor(meta({}, { highland: true }))!.rule, 'high')
   assert.equal(mapFor(meta({ edgeKind: 'pass' }))!.rule, 'high')
   assert.equal(mapFor(meta({ edgeKind: 'ford' }))!.rule, 'cross')
-  assert.equal(mapFor(meta({ ambush: 'success' }))!.camps[1].asleep, P.field.asleepTicks)
+  assert.equal(mapFor(meta({ ambush: 'success' }))!.camps[1].asleep, P.field.asleepSec)
   assert.equal(mapFor(meta({ ambush: 'fail' }))!.camps[1].asleep, 0)
   assert.equal(mapFor(meta({ water: true })), null, '수상')
   assert.equal(mapFor(meta({}, { moat: true })), null, '해자')
@@ -78,7 +77,7 @@ test('걷기: 지키는 쪽은 제자리 · 깊은 물과 막힘에는 못 들�
   const step = (map: FieldMap, u: number): number => {
     const t = createField(plainSetup(1, 1300, false, map))
     const q = t.squads.find(x => x.side === 0 && x.grp === 'front')!
-    for (const o of t.squads) if (o !== q) { o.men = 0; o.hp = 0 }
+    for (const o of t.squads) if (o !== q) { o.men = 0; o.hp = 0; o.menMax = 0 }
     Object.assign(q, { u: U(u), v: U(13), goal: { u: U(150), v: U(13) }, manual: 1 })
     stepField(t)
     return q.u - U(u)
@@ -89,29 +88,40 @@ test('걷기: 지키는 쪽은 제자리 · 깊은 물과 막힘에는 못 들�
   const wallU = st.pieces[0]!.u0
   const t = createField(plainSetup(1, 1300, false, st))
   const q = t.squads.find(x => x.side === 0 && x.grp === 'front')!
-  for (const o of t.squads) if (o !== q) { o.men = 0; o.hp = 0 }
+  for (const o of t.squads) if (o !== q) { o.men = 0; o.hp = 0; o.menMax = 0 }
   Object.assign(q, { u: U(wallU) - 10, v: U(2), goal: { u: U(wallU + 5), v: U(2) }, manual: 1 })
   for (let i = 0; i < 40; i++) stepField(t)
   assert.ok(walkable(groundAt(st, q.u, q.v)), '막힘 칸 안에 서지 않는다')
   assert.ok(q.u < U(wallU), '벽을 뚫지 않는다')
 })
 
-test('목책: 문으로 돌아 지나간다 (한쪽에서 반대쪽 목표를 보면 문 가운데가 목표)', () => {
+test('목책: 문 곁의 적 앞줄이 문을 깨면 길이 열리고 지키는 편 사기가 꺾이며 지나갈 수 있다', () => {
   const st = stakeMap()
-  const wallU = st.pieces[0]!.u0
-  let passed = 0
-  for (let seed = 1; seed <= 6; seed++) {
-    const s = runField(plainSetup(seed, 1300, true, st), [], 700)
-    if (s.squads.some(q => q.side === 0 && q.men > 0 && q.u > U(wallU) + P.field.unit)) passed++
-  }
-  assert.ok(passed >= 5, `문을 지난 판 ${passed}/6`)
+  const setup = plainSetup(1, 1300, false, st)
+  const s = createField(setup)
+  const gate = s.map.pieces.find(p => p.kind === 'gate')!
+  const q = s.squads.find(x => x.side === 0 && x.grp === 'front')!
+  for (const o of s.squads) if (o !== q && o.side === 0) { o.men = 0; o.hp = 0; o.menMax = 0 }
+  const def = s.squads.filter(x => x.side === 1)
+  for (const d of def) d.manual = 1
+  Object.assign(q, { manual: 1, u: U(gate.u0) - U(1), v: U((gate.v0 + gate.v1) / 2), goal: null, men: 1300, menMax: 1300, hp: 1300000 })
+  const before = def[0]!.shock
+  let broke = -1
+  for (let i = 0; i < 1500 && s.end === null; i++) { stepField(s); if (broke < 0 && gate.hp === 0) broke = i }
+  assert.ok(broke > 0, '문이 깨졌다')
+  assert.ok(def[0]!.shock >= before + P.field.gateBreakMoraleLoss, '지키는 편 사기가 꺾였다')
+  assert.ok(walkable(groundAt(s.map, U(gate.u0) + 1, U(gate.v0) + 1)), '길이 열렸다')
+  assert.equal(st.cells[gate.u0 * st.w + gate.v0], G_BLOCK, '판의 지도 사본만 바뀌고 원래 지도는 그대로다')
+  assert.equal(st.pieces.find(p => p.kind === 'gate')!.hp, P.field.gateHp)
+  // 같은 setup 으로 다시 시작해도 판이 같다 (조각 사본)
+  assert.equal(hashField(createField(setup)), hashField(createField(plainSetup(1, 1300, false, stakeMap()))))
 })
 
 test('높은 터: 위에 선 활이 더 세게 쏘고 올라오는 쪽은 느리다', () => {
   const dmgOn = (map: FieldMap, high: boolean): number => {
     const s = createField(plainSetup(1, 1300, false, map))
     const a = s.squads.find(q => q.side === 1 && q.grp === 'bows')!, b = s.squads.find(q => q.side === 0 && q.grp === 'front')!
-    for (const o of s.squads) if (o !== a && o !== b) { o.men = 0; o.hp = 0 }
+    for (const o of s.squads) if (o !== a && o !== b) { o.men = 0; o.hp = 0; o.menMax = 0 }
     const au = high ? U(map.u - 5) : U(60)
     Object.assign(a, { u: au, v: U(20), goal: null, manual: 1 })
     Object.assign(b, { u: au - U(10), v: U(20), goal: null, manual: 1, stance: 1 })
@@ -125,7 +135,7 @@ test('높은 터: 위에 선 활이 더 세게 쏘고 올라오는 쪽은 느리
   const climb = (owner: 0 | 1): number => {
     const s = createField(plainSetup(1, 1300, false, { ...highMap(), highOwner: owner }))
     const q = s.squads.find(x => x.side === 0 && x.grp === 'front') as Squad
-    for (const o of s.squads) if (o !== q) { o.men = 0; o.hp = 0 }
+    for (const o of s.squads) if (o !== q) { o.men = 0; o.hp = 0; o.menMax = 0 }
     const u0 = U(hm.u - P.field.highDepthCells) + 5
     Object.assign(q, { u: u0, v: U(20), goal: { u: U(hm.u - 2), v: U(20) }, manual: 1 })
     stepField(s)
@@ -139,5 +149,5 @@ test('기습: 치는 쪽이 옆 가장자리에서 줄지어 시작한다', () =
   const att = s.squads.filter(q => q.side === 0)
   assert.ok(att.every(q => q.v < U(P.field.ambushEdgeCells + 2 * P.field.rowGapCells + 3)), '가장자리 곁')
   assert.ok(att.filter(q => q.grp === 'front').every(q => q.u > U(60)), '지키는 쪽 가까이')
-  assert.ok(s.map.camps[1].asleep === P.field.asleepTicks)
+  assert.ok(s.map.camps[1].asleep === P.field.asleepSec)
 })

@@ -49,6 +49,12 @@ export interface Squad {
   /** 시작 자리 (지키는 편은 여기서 leashCells 안에서만 움직인다) */
   homeU: number
   homeV: number
+  /** 맞물린 적 대의 id · 없으면 -1 (앞줄이 맞붙는 거리 안의 적 앞줄·기병과 맞물리면 지나쳐 걸을 수 없다 · 손으로 몰면 풀린다) */
+  lock: number
+  /** 잠든 남은 틱 (먹힌 기습 · 맞으면 0) */
+  sleep: number
+  /** 옆구리를 맞은 틱 수 (사기는 이것에서 바로 셈해 hz 를 바꿔도 같다) */
+  flank: number
   /** 손으로 몰고 있으면 1 (임시 AI 가 목표를 안 바꾼다) */
   manual: 0 | 1
   /** 지금 노리는 적 대의 id · 없으면 -1 */
@@ -102,7 +108,7 @@ export interface Camp {
   axis: 0 | 1
   /** 참이면 그 편은 시작 자리에서 leashCells 밖으로는 안 나간다 (지키는 쪽) */
   hold: boolean
-  /** 잠든 채 시작하는 틱 (효과는 F2b) */
+  /** 잠든 채 시작하는 시간 (초 · 맞으면 깬다) */
   asleep?: number
 }
 
@@ -149,6 +155,8 @@ export interface FieldState {
   heroes: Hero[]
   /** 이번 때에 무리별(0~3)로 받은 입력 수 */
   used: [number, number, number, number]
+  /** 진영이 무너진 편 (적이 진영 자리까지 들어오면 한 번 · 사기가 꺾인다) */
+  broken: [0 | 1, 0 | 1]
   end: EndWhy | null
   /** 끝났을 때 이긴 편 · 0 우리 · 1 적 · -1 비김(또는 아직) */
   winner: -1 | 0 | 1

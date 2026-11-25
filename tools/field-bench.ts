@@ -32,31 +32,38 @@ function firstContact(s: FieldState): number {
 const mapNames = arg('map', '')
 if (mapNames) {
   const men = Number(arg('men', '1300'))
-  const rows: string[] = []
-  let base = 0.5
-  for (const name of mapNames.split(',')) {
-    const mk = MAPS[name]
-    if (!mk) { console.log(`모르는 맵 ${name}`); continue }
-    let w0 = 0, mismatch = 0, contacts: number[] = [], steps = 0
-    const why: Record<string, number> = {}
-    for (let seed = 1; seed <= n; seed++) {
-      const setup = plainSetup(seed, men, true, mk())
-      const s = createField(setup)
-      let contact = -1
-      while (s.end === null) { stepField(s); if (contact < 0 && firstContact(s)) contact = s.tick }
-      if (hashField(s) !== hashField(runField(setup))) mismatch++
-      if (s.winner === 0) w0++
-      contacts.push(contact < 0 ? NaN : contact)
-      steps += s.tick
-      why[`${s.end}`] = (why[`${s.end}`] ?? 0) + 1
+  const ratios = arg('ratio', '1').split(',').map(Number)
+  for (const ratio of ratios) {
+    const rows: string[] = []
+    const rate: Record<string, [number, number, number]> = {}
+    for (const name of mapNames.split(',')) {
+      const mk = MAPS[name]
+      if (!mk) { console.log(`모르는 맵 ${name}`); continue }
+      let w0 = 0, w1 = 0, mismatch = 0
+      const contacts: number[] = []
+      let steps = 0
+      const why: Record<string, number> = {}
+      for (let seed = 1; seed <= n; seed++) {
+        const base = plainSetup(seed, men, true, mk())
+        const setup = { ...base, sides: [{ ...base.sides[0], men: { front: Math.round(base.sides[0].men.front * ratio), bows: Math.round(base.sides[0].men.bows * ratio), horse: Math.round(base.sides[0].men.horse * ratio) } }, base.sides[1]] as typeof base.sides }
+        const s = createField(setup)
+        let contact = -1
+        while (s.end === null) { stepField(s); if (contact < 0 && firstContact(s)) contact = s.tick }
+        if (hashField(s) !== hashField(runField(setup))) mismatch++
+        if (s.winner === 0) w0++
+        if (s.winner === 1) w1++
+        if (contact >= 0) contacts.push(contact)
+        steps += s.tick
+        why[`${s.end}`] = (why[`${s.end}`] ?? 0) + 1
+      }
+      bad += mismatch
+      contacts.sort((a, b) => a - b)
+      rate[name] = [w0 / n, w1 / n, (n - w0 - w1) / n]
+      const ref = rate['hold'] ?? rate['meet'] ?? [0.5, 0.5, 0]
+      rows.push(`${name.padEnd(10)} 치는 쪽 ${(w0 / n * 100).toFixed(1)}% · 지키는 쪽 ${(w1 / n * 100).toFixed(1)}% · 비김 ${((n - w0 - w1) / n * 100).toFixed(1)}%  | 지키는 쪽 평지 대조군 대비 ${((w1 / n - ref[1]) * 100).toFixed(1)}%p · 치는 쪽 대로 대비 ${((w0 / n - (rate['meet']?.[0] ?? 0.5)) * 100).toFixed(1)}%p | 첫 접촉 ${contacts.length ? (contacts[contacts.length >> 1]! / P.field.hz).toFixed(1) : '-'}초 · 평균 ${(steps / n / P.field.hz).toFixed(0)}초 ${JSON.stringify(why)} · 해시 불일치 ${mismatch}`)
     }
-    bad += mismatch
-    const c = contacts.filter(x => !Number.isNaN(x)).sort((a, b) => a - b)
-    const rate = w0 / n
-    if (name === 'meet') base = rate
-    rows.push(`${name.padEnd(10)} 편0(치는 쪽) 승률 ${(rate * 100).toFixed(1)}%  대로 대비 ${((rate - base) * 100).toFixed(1)}%p  첫 접촉 ${c.length ? (c[c.length >> 1]! / P.field.hz).toFixed(1) : '-'}초  평균 걸음 ${(steps / n).toFixed(0)}  끝 ${JSON.stringify(why)}  해시 불일치 ${mismatch}`)
+    console.log([`men=${men} 치는 쪽 병력비 ${ratio} n=${n}`, ...rows].join('\n'))
   }
-  console.log(`men=${men} n=${n}\n` + rows.join('\n'))
 } else {
   const sizes = arg('men', '600,1300,2100,5000,9000').split(',').map(Number)
   for (const men of sizes) {

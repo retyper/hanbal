@@ -6,18 +6,22 @@ import { hashField } from '../../src/field/state.ts'
 import { P } from '../../src/tune/params.ts'
 import type { FieldState } from '../../src/field/types.ts'
 
-const MAX = (): number => P.field.timesMax * P.field.timeTicks
+const MAX = (): number => P.field.timesMax * P.field.timeSec * P.field.hz
 
 test('임시 AI 끼리 판은 사기나 사람으로 때를 다 쓰기 전에 끝나고 이긴 편이 있다 (사람 수 600~9000)', () => {
+  let draws = 0, games = 0
   for (const men of [600, 1300, 2100, 5000, 9000]) {
     for (let seed = 1; seed <= 30; seed++) {
       const s = runField(plainSetup(seed, men))
       assert.ok(s.end === 'morale' || s.end === 'men', `${men}/${seed}: ${s.end}`)
       assert.ok(s.tick < MAX())
-      assert.ok(s.winner === 0 || s.winner === 1)
+      assert.ok(s.winner === 0 || s.winner === 1 || s.winner === -1)
+      games++
+      if (s.winner === -1) draws++
       assert.ok(s.tick > 200, '맞붙기 전에 끝나지 않는다')
     }
   }
+  assert.ok(draws <= games * 0.1, `비김이 너무 잦다 ${draws}/${games}`)
 })
 
 test('큰 사람 수에서도 값이 정수 범위 안이다 (대당 사람 수가 커진다)', () => {
@@ -42,7 +46,7 @@ test('사기가 문턱 아래로 가면 바로 끝나고 진 쪽은 무너진 �
   assert.equal(s.end, 'morale')
   const loser = s.winner === 0 ? 1 : 0
   let mw = 0, mn = 0
-  for (const q of s.squads) if (q.side === loser) { mw += q.men * q.morale; mn += q.men }
+  for (const q of s.squads) if (q.side === loser) { mw += q.menMax * q.morale; mn += q.menMax }
   assert.ok(mn > 0 && mw / mn < 700 * P.realm.tacBreakMorale + 1)
 })
 

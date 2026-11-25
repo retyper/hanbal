@@ -12,7 +12,7 @@ function duel(a: Partial<Squad> & { grp?: Grp }, b: Partial<Squad> & { grp?: Grp
   const s = createField(plainSetup(1, 1300, hero))
   const pick = (side: 0 | 1, grp: Grp): Squad => s.squads.find(q => q.side === side && q.grp === grp)!
   const A = pick(0, a.grp ?? 'front'), B = pick(1, b.grp ?? 'front')
-  for (const q of s.squads) if (q !== A && q !== B) { q.men = 0; q.hp = 0 }
+  for (const q of s.squads) if (q !== A && q !== B) { q.men = 0; q.hp = 0; q.menMax = 0 }
   for (const [q, o] of [[A, a], [B, b]] as const) {
     Object.assign(q, { men: men, menMax: men, hp: men * 1000, goal: null, manual: 1 }, o)
     q.hp = q.men * 1000
@@ -62,13 +62,29 @@ test('많은 쪽이 이기고 사기는 잃은 몫을 따라 줄기만 한다', 
   assert.ok(t.B.morale < t.A.morale)
 })
 
-test('옆구리를 맞으면 더 잃고 사기가 더 꺾인다', () => {
-  const front = duel({ stance: 1 }, { stance: 1 })
-  const side = duel({ stance: 1 }, { stance: 1 }, 1300)
-  side.B.u = side.A.u; side.B.v = side.A.v + U(P.field.flankVCells) + 1
-  run(front.s, 40); run(side.s, 40)
+test('옆구리: 다른 적과 맞물린 대를 옆에서 치면 더 잃고 사기가 더 꺾인다 (서로 옆에 서면 맞지 않는다)', () => {
+  /** 우리(0) 앞줄 A1 이 정면 · 기병 A2 가 정면(du) 또는 옆(dv)에서 적 앞줄 B 를 친다 */
+  const build = (sideOn: boolean) => {
+    const s = createField(plainSetup(1, 1300, false))
+    const pick = (side: 0 | 1, grp: Grp): Squad => s.squads.find(q => q.side === side && q.grp === grp)!
+    const A1 = pick(0, 'front'), A2 = pick(0, 'horse'), B = pick(1, 'front')
+    for (const q of s.squads) if (q !== A1 && q !== A2 && q !== B) { q.men = 0; q.hp = 0; q.menMax = 0 }
+    for (const q of [A1, A2, B]) { Object.assign(q, { goal: null, manual: 1, stance: 1, men: 600, menMax: 600, hp: 600000 }) }
+    B.u = U(50); B.v = U(20)
+    A1.u = B.u - U(1) / 2; A1.v = B.v
+    if (sideOn) { A2.u = B.u; A2.v = B.v + U(P.field.flankVCells) + 1 } else { A2.u = B.u - U(1); A2.v = B.v + 1 }
+    return { s, B }
+  }
+  const front = build(false), side = build(true)
+  run(front.s, 30); run(side.s, 30)
   assert.ok(side.B.hp < front.B.hp, '옆에서 친 쪽이 더 깎는다')
-  assert.ok(side.B.shock > 0 && front.B.shock === 0)
+  assert.ok(side.B.flank > 0 && front.B.flank === 0)
+  assert.ok(side.B.morale < front.B.morale)
+  // 서로 옆에 선 둘은 (맞는 대가 서로를 보고 있으니) 옆구리가 아니다
+  const mutual = duel({ stance: 1 }, { stance: 1 })
+  mutual.B.u = mutual.A.u; mutual.B.v = mutual.A.v + U(P.field.flankVCells) + 1
+  run(mutual.s, 30)
+  assert.equal(mutual.A.flank + mutual.B.flank, 0)
 })
 
 test('장수는 곁의 적 앞줄에 깎여 쓰러지면 몇 초 못 움직이고 죽지 않는다 (그 편 사기가 꺾인다)', () => {
@@ -79,7 +95,7 @@ test('장수는 곁의 적 앞줄에 깎여 쓰러지면 몇 초 못 움직이�
   for (let i = 0; i < 400 && d.s.end === null; i++) {
     stepField(d.s)
     assert.ok(h.hp > 0, '죽지 않는다')
-    if (h.stun === P.field.heroStunTicks) { downs++; assert.equal(h.hp, P.field.heroHp) }
+    if (h.stun === (P.field.heroStunSec * P.field.hz)) { downs++; assert.equal(h.hp, P.field.heroHp) }
   }
   assert.ok(downs >= 1, `쓰러졌다 ${downs}`)
 })

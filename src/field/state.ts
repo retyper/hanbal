@@ -6,33 +6,34 @@ import type { FieldMap, FieldState } from './types.ts'
 
 const END_CODE = { morale: 1, men: 2, time: 3, retreat: 4, invalid: 5 } as const
 
+const hs = (h: number, str: string): number => { for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 0x01000193); return h }
+
 /** `|0` 이 -0 과 NaN 을 0 으로 접는다 — 해시에 -0 이 끼지 않게 */
 const mix = (h: number, n: number): number => Math.imul(h ^ (n | 0), 0x01000193)
 
-const MAP_HASH = new WeakMap<object, number>()
-/** 지도(바닥 칸 · 진영 · 조각)의 해시 — cells 를 직접 훑는다 (JSON 을 거치면 Uint8Array 가 부푼다). 지도는 판 중에 안 바뀌어 한 번만 센다 */
+/** 지도(바닥 칸 · 진영 · 조각)의 해시 — cells 를 직접 훑는다 (JSON 을 거치면 Uint8Array 가 부푼다). 목책이 부서지면 판의 지도 사본이 바뀐다 */
 function hashMap(map: FieldMap): number {
-  const hit = MAP_HASH.get(map)
-  if (hit !== undefined) return hit
   let h = 0x811c9dc5
   h = mix(h, map.u); h = mix(h, map.w); h = mix(h, map.highOwner)
   for (let i = 0; i < map.cells.length; i++) h = mix(h, map.cells[i]!)
   for (const c of map.camps) { h = mix(h, c.u); h = mix(h, c.v); h = mix(h, c.face); h = mix(h, c.spread); h = mix(h, c.axis); h = mix(h, c.hold ? 1 : 0); h = mix(h, c.asleep ?? 0) }
   for (const p of map.pieces) { h = mix(h, p.id); h = mix(h, p.kind === 'stake' ? 1 : 2); h = mix(h, p.u0); h = mix(h, p.v0); h = mix(h, p.u1); h = mix(h, p.v1); h = mix(h, p.hp); h = mix(h, p.owner) }
-  MAP_HASH.set(map, h)
   return h
 }
 
 export function hashField(s: FieldState): string {
   let h = hashMap(s.map)
   h = mix(h, s.tick); h = mix(h, s.seed); h = mix(h, s.end === null ? 0 : END_CODE[s.end])
-  h = mix(h, s.log.dropped); h = mix(h, s.log.accepted.length); h = mix(h, s.winner)
+  // 장부(log.dropped · accepted)는 판 상태가 아니라 해시에 안 넣는다 — 버려진 입력이 있어도 기록 재생이 같은 해시를 낸다
+  h = mix(h, s.winner); for (const n of s.used) h = mix(h, n); h = mix(h, s.broken[0]); h = mix(h, s.broken[1])
   for (const q of s.squads) {
+    h = hs(h, q.kind); h = hs(h, q.grp); h = mix(h, q.morale0); h = mix(h, q.flank); h = mix(h, q.homeU); h = mix(h, q.homeV)
     h = mix(h, q.id); h = mix(h, q.side); h = mix(h, q.men); h = mix(h, q.menMax); h = mix(h, q.fresh)
     h = mix(h, q.u); h = mix(h, q.v); h = mix(h, q.goal ? q.goal.u : -1); h = mix(h, q.goal ? q.goal.v : -1)
-    h = mix(h, q.manual); h = mix(h, q.target); h = mix(h, q.hp); h = mix(h, q.morale); h = mix(h, q.stance); h = mix(h, q.shock)
+    h = mix(h, q.manual); h = mix(h, q.target); h = mix(h, q.hp); h = mix(h, q.morale); h = mix(h, q.stance); h = mix(h, q.shock); h = mix(h, q.lock); h = mix(h, q.sleep)
   }
   for (const e of s.heroes) {
+    h = hs(h, e.id)
     h = mix(h, e.side); h = mix(h, e.u); h = mix(h, e.v); h = mix(h, e.goal ? e.goal.u : -1); h = mix(h, e.goal ? e.goal.v : -1)
     h = mix(h, e.grp); h = mix(h, e.stun); h = mix(h, e.hp); h = mix(h, e.manual)
   }

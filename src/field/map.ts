@@ -24,6 +24,12 @@ function baseCamps(hold1: boolean): [Camp, Camp] {
   return [camp(m, idiv(w, 2), 1, w), camp(u - m, idiv(w, 2), -1, w, hold1)]
 }
 
+/** 지키는 편이 있는 맵의 진영: 치는 쪽이 지키는 쪽 앞에서 campGapCells 만큼 떨어져 시작한다 (첫 접촉 ≤ 20초) */
+function holdCamps(): [Camp, Camp] {
+  const [c0, c1] = baseCamps(true)
+  return [{ ...c0, u: c1.u - P.field.campGapCells }, c1]
+}
+
 /** u 칸 [a, b) 의 모든 줄을 이 바닥으로 */
 function fillCols(map: FieldMap, a: number, b: number, g: Ground): void {
   for (let cu = Math.max(0, a); cu < Math.min(map.u, b); cu++) map.cells.fill(g, cu * map.w, (cu + 1) * map.w)
@@ -37,13 +43,13 @@ export function meetMap(): FieldMap {
 
 /** 비교용 — 평지에서 적 편이 제자리를 지킨다 (지형의 몫을 가르는 대조군) */
 export function holdMap(): FieldMap {
-  const [c0, c1] = baseCamps(true)
+  const [c0, c1] = holdCamps()
   return blank('hold', c0, c1)
 }
 
 /** 개울 — 지키는 쪽 앞줄 바로 앞에 얕은 물 띠 + 여울(평지) 몇 칸. 지키는 쪽은 건너편에서 제자리를 지킨다 */
 export function crossMap(): FieldMap {
-  const [c0, c1] = baseCamps(true)
+  const [c0, c1] = holdCamps()
   const map = blank('cross', c0, c1)
   const far = c1.u - P.field.streamFromFrontCells
   fillCols(map, far - P.field.streamWidthCells, far, G_SHALLOW)
@@ -58,9 +64,9 @@ export function crossMap(): FieldMap {
   return map
 }
 
-/** 목책 — 지키는 쪽 앞에 막힘 줄 하나, 가운데에 문(틈). 마디·문은 Piece 로 hp 를 든다 (깨는 규칙은 F2b) */
+/** 목책 — 지키는 쪽 앞에 막힘 줄 하나, 가운데에 문. 마디·문은 Piece 로 hp 를 들고 부서져야 길이 열린다 (sim 이 판의 지도 사본에서 깬다) */
 export function stakeMap(): FieldMap {
-  const [c0, c1] = baseCamps(true)
+  const [c0, c1] = holdCamps()
   const wallU = c1.u - P.field.stakeFromFrontCells
   const mid = idiv(P.field.mapWidthCells, 2), half = idiv(P.field.gateCells, 2)
   const g0 = mid - half, g1 = g0 + P.field.gateCells
@@ -70,13 +76,13 @@ export function stakeMap(): FieldMap {
     { id: 2, kind: 'stake', u0: wallU, v0: g1, u1: wallU + 1, v1: P.field.mapWidthCells, hp: P.field.stakeHp, owner: 1 },
   ]
   const map = blank('stake', c0, c1, pieces)
-  for (const p of pieces) if (p.kind === 'stake') for (let v = p.v0; v < p.v1; v++) map.cells[wallU * map.w + v] = G_BLOCK
+  for (const p of pieces) for (let v = p.v0; v < p.v1; v++) map.cells[wallU * map.w + v] = G_BLOCK
   return map
 }
 
 /** 높은 터 — 지키는 쪽 진영 뒤쪽이 높다. 그 편은 제자리를 지키고, 위에 선 활이 세다 · 올라오는 쪽은 느리다 */
 export function highMap(): FieldMap {
-  const [c0, c1] = baseCamps(true)
+  const [c0, c1] = holdCamps()
   const map = blank('high', c0, c1, [], 1)
   fillCols(map, map.u - P.field.highDepthCells, map.u, G_HIGH)
   return map
@@ -86,7 +92,7 @@ export function highMap(): FieldMap {
 export function ambushMap(success: boolean): FieldMap {
   const [, c1] = baseCamps(false)
   const c0 = camp(c1.u - P.field.ambushUFromEndCells, P.field.ambushEdgeCells, 1, P.field.ambushSpreadCells, false, { axis: 1 })
-  const map = blank('ambush', c0, { ...c1, asleep: success ? P.field.asleepTicks : 0 })
+  const map = blank('ambush', c0, { ...c1, asleep: success ? P.field.asleepSec : 0 })
   return map
 }
 
