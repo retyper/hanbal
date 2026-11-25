@@ -104,7 +104,9 @@ export function ingestHits(cur: VModel, hits: readonly VLoss[], clk: number, rea
     if (clk - p.at < F.moralePopDelayMs) { pends[w++] = p; continue }
     const q = cur.squads[p.id]
     if (q === undefined) continue
-    const drop = Math.round((p.base - moraleOf(q)) * 100)
+    const raw = (p.base - moraleOf(q)) * 100
+    // 상성이 맞은 일은 작아도 「−1」 로 보인다 (깎이지 않았으면 안 띄운다)
+    const drop = p.gold && raw > 0 ? Math.max(1, Math.round(raw)) : Math.round(raw)
     if (drop >= 1) { pops.push({ at: clk, n: drop, gold: p.gold, ...flagPos(q) }); if (pops.length > F.moralePopMax) pops.shift() }
   }
   pends.length = w
