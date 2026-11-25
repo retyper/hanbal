@@ -251,7 +251,7 @@ function marks(): Mark[] {
   const out: Mark[] = []
   for (const g of [0, 1, 2, 3] as const) {
     const goal = lastGoal[g]
-    if (goal === null) continue
+    if (goal == null) continue
     if (ui.phase !== 'ready') {
       const moving = g === 3 ? cur.heroes.some(e => e.side === 0 && e.goal !== null) : cur.squads.some(q => q.side === 0 && q.grp === ['front', 'bows', 'horse'][g] && q.men > 0 && q.goal !== null)
       if (!moving && !queue.some(i => i.g === g && i.op === OP_MOVE)) continue
@@ -263,9 +263,10 @@ function marks(): Mark[] {
 
 function onDown(e: PointerEvent): void {
   if (blocked || ui.phase === 'end' || cur.end !== null || press !== null) return
-  if (ui.sel < 0) { flags.say(t('field.why.nosel'), 'why', e.timeStamp); return }
+  const sel = ui.sel
+  if (sel === -1) { flags.say(t('field.why.nosel'), 'why', e.timeStamp); return }
   ui.popup = false
-  press = { id: e.pointerId, g: ui.sel, x: e.clientX, y: e.clientY, cx: e.clientX, cy: e.clientY, t0: e.timeStamp }
+  press = { id: e.pointerId, g: sel, x: e.clientX, y: e.clientY, cx: e.clientX, cy: e.clientY, t0: e.timeStamp }
   try { cv.setPointerCapture(e.pointerId) } catch { /* 합성 입력 */ }
 }
 function onMove(e: PointerEvent): void {

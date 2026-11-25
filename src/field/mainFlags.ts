@@ -123,7 +123,7 @@ export function mountFlags(root: HTMLElement, base: string, h: FlagsHandlers): F
         const pips = Array.from({ length: P.field.inputPerGroupPerTime }, (_, i) => `<i class="${i < left ? 'f' : ''}"></i>`).join('')
         let pop = ''
         if (open && ui.sel === g) {
-          pop = '<div class="fd-pop">' + items.map(i => i.kind === 'stance'
+          pop = '<div class="fd-pop">' + items.map(i => i.kind === 'stance' && i.stance !== -1
             ? `<button class="fd-opt${stance === i.stance ? ' on' : ''}" type="button" data-act="stance" data-g="${g}" data-st="${i.stance}">${img(STANCE_FLAG[i.stance]!)}<span>${t(`field.i.${STANCE_KEY[i.stance]!}`)}</span></button>`
             : `<button class="fd-opt" type="button" data-act="auto" data-g="${g}"><span>${t('field.auto')}</span></button>`).join('') + '</div>'
         }

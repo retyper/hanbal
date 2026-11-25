@@ -42,8 +42,9 @@ export function cellWhy(m: VModel, g: InputGroup): CellWhy | null {
 
 export function pickables(m: VModel, ui: UiState): PickItem[] {
   if (ui.phase === 'end' || m.end !== null) return []
-  if (ui.popup && ui.sel >= 0 && aliveCell(m, ui.sel)) {
-    const g = ui.sel
+  const sel = ui.sel
+  if (ui.popup && sel !== -1 && aliveCell(m, sel)) {
+    const g = sel
     const out: PickItem[] = []
     if (g === 0) for (const st of [0, 1, 2] as const) out.push({ id: `stance${st}`, kind: 'stance', g, stance: st })
     out.push({ id: 'auto', kind: 'auto', g, stance: -1 })

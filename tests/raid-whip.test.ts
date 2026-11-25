@@ -269,7 +269,7 @@ test('당겨 치기(조합): 올가미에 끌려온 적은 다음 한 번의 말
 
 test('조임 고리(조합): 올가미가 닿은 자리에 줄 고리가 남아 밟는 적이 느려지고 깎인다 · 3초 뒤 사라진다', () => {
   const s = field(); s.ranks.lash = 0; s.ranks.lasso = 1; s.combos.push('noose'); s.ranks.reach = 2
-  const e = place(s, 230, 0, 'club', 5e6)
+  place(s, 230, 0, 'club', 5e6)
   step(s, ['lasso'])
   for (let i = 0; i < 240 && !s.kits!.zones.length; i++) step(s)
   const z = s.kits!.zones.find(x => x.kind === 'snare')!; assert.ok(z, '고리가 남음')
