@@ -10,9 +10,9 @@ import { fieldView, inView, type Cam, type Viewport } from './viewCamera.ts'
 import { ATTACK0, ATTACK_N, DOWN, HIT, RUN_N, STAND0, STAND_N, WALK0, WALK_N, heroKey, heroStrip, pieceImg, holdStripFor, runStripFor, sheetOf, stripFor, stripKey, type Art, type Strip } from './viewArt.ts'
 import { dotPh, hash2 } from './viewDots.ts'
 import { dotDied, dotsOf, offU, offV, peekDots, resetForm, rowCount, rowOfDot, stepDots } from './viewForm.ts'
-import { FORM_HOLD, FORM_SCATTER, FORM_WALL, moraleOf } from './viewFxRead.ts'
+import { FORM_HOLD, FORM_SCATTER, FORM_WALL, ORD_VOLLEY, moraleOf } from './viewFxRead.ts'
 import { drawDash, queueDash, resetDash } from './viewDash.ts'
-import { FLAG_FALLEN, bracedAt, drawOmens, drawPops, noteOmens, flagTilt, ingestHits, kickOf, resetHit, scatterOf, sc, shake, shakeAt, viewClock } from './viewHit.ts'
+import { FLAG_FALLEN, bracedAt, drawOmens, drawShouts, isShouting, noteShouts, drawPops, noteOmens, flagTilt, ingestHits, kickOf, resetHit, scatterOf, sc, shake, shakeAt, viewClock } from './viewHit.ts'
 import { computePairs, coolPress, notePush, dotMelee, drawParticles, flinchOf, isFront, maxFwdOf, minFwdOf, mo, noteLoss, partnerOf, resetMelee, spawn, swingChance, swings } from './viewMelee.ts'
 import { drawTerrain } from './viewTerrain.ts'
 import { TEAM_RGB } from './viewTint.ts'
@@ -52,7 +52,7 @@ interface Slots { N: number; dead: Set<number> }
 /** 활이 쏜 한 대 — 맞는 점이 쓰러지는 순간(t0 + 나는 시간)에 닿는다 */
 interface Shot { x0: number; y0: number; x1: number; y1: number; t0: number; side: 0 | 1 }
 /** 그리는 쪽 기억 — 점 수가 줄면 쓰러진 병사를 남기고 대의 마지막 방향을 기억한다 */
-const fx = { pushed: new Map<number, number>(), counts: new Map<number, number>(), menMax: new Map<number, number>(), face: new Map<number, 1 | -1>(), corpses: [] as Corpse[], tick: -1, slots: new Map<number, Slots>(), lastHit: new Map<number, { src: number; how: number }>(), shots: [] as Shot[], nowMs: 0, attackers: 0, routeAt: [-1, -1, -1, -1, -1, -1] as number[], dustAt: new Map<number, number>(), sparkAt: new Map<number, number>() }
+const fx = { rain: [] as number[], rainRing: [] as number[], pushed: new Map<number, number>(), counts: new Map<number, number>(), menMax: new Map<number, number>(), face: new Map<number, 1 | -1>(), corpses: [] as Corpse[], tick: -1, slots: new Map<number, Slots>(), lastHit: new Map<number, { src: number; how: number }>(), shots: [] as Shot[], nowMs: 0, attackers: 0, routeAt: [-1, -1, -1, -1, -1, -1] as number[], dustAt: new Map<number, number>(), sparkAt: new Map<number, number>() }
 const form0Hold = (q: VSquad): boolean => q.grp === 'front' && q.form === FORM_HOLD && q.flee !== 1
 /** 시험용 읽기: 지금 쓰러진 점 수 · 쓰러지기를 기다리는(앞날 born) 점 수 · 이번 장에서 치는 모습으로 그린 점 수 */
 export function fxStats(): { dead: number; pending: number; attackers: number; alive: number } {
@@ -199,7 +199,7 @@ function drawBanners(ctx: CanvasRenderingContext2D, at: readonly number[], zoom:
   ctx.lineWidth = Math.max(1, 1.4 / zoom)
   /** 한 깃: 장대 밑 (x, by) · 기울기 tilt 만큼 꼭대기가 옆으로 간다 · 떨어진 깃(FLAG_FALLEN)은 땅에 누운 장대 */
   const geom = (i: number): { bx: number; by: number; tx: number; ty: number; sz: number; hero: boolean; fall: boolean } => {
-    const kd = at[i + 3]!, hero = kd > 0, grp = kd === 3, tilt = at[i + 4]!
+    const kd = at[i + 3]!, hero = kd > 0, grp = kd >= 3, tilt = at[i + 4]!
     const baseH = grp ? flagH * gm : flagH
     const sz = Math.max(baseH * (hero ? 0.4 : 0.3), (hero ? F.heroFlagMinPx : F.flagMinPx) * (grp ? gm : 1) / zoom)
     const y = at[i + 1]!, bx = at[i]!, by = y - baseH * (hero ? 1.5 : 1.1)
@@ -235,6 +235,17 @@ function drawBanners(ctx: CanvasRenderingContext2D, at: readonly number[], zoom:
       ctx.globalAlpha = 1
     }
   }
+  // 무리 그림: 깃 면에 창(앞줄)·활·말 실루엣을 흰 가는 선으로 — 어느 무리 깃인지 읽히게
+  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(1.2, 1.3 / zoom); ctx.beginPath()
+  for (let i = 0; i < at.length; i += 5) {
+    const kd = at[i + 3]!
+    if (kd < 3) continue
+    const g = geom(i), x = g.tx, y = g.ty, s = g.sz
+    if (kd === 3) { ctx.moveTo(x + s * 0.5, y + s * 0.74); ctx.lineTo(x + s * 0.5, y + s * 0.1); ctx.moveTo(x + s * 0.38, y + s * 0.26); ctx.lineTo(x + s * 0.5, y + s * 0.06); ctx.lineTo(x + s * 0.62, y + s * 0.26) }
+    else if (kd === 4) { ctx.moveTo(x + s * 0.34, y + s * 0.08); ctx.quadraticCurveTo(x + s * 0.78, y + s * 0.4, x + s * 0.34, y + s * 0.72); ctx.moveTo(x + s * 0.34, y + s * 0.08); ctx.lineTo(x + s * 0.34, y + s * 0.72) }
+    else { ctx.moveTo(x + s * 0.28, y + s * 0.72); ctx.lineTo(x + s * 0.3, y + s * 0.3); ctx.lineTo(x + s * 0.46, y + s * 0.1); ctx.lineTo(x + s * 0.62, y + s * 0.2); ctx.lineTo(x + s * 0.78, y + s * 0.46); ctx.lineTo(x + s * 0.62, y + s * 0.5); ctx.lineTo(x + s * 0.5, y + s * 0.4); ctx.lineTo(x + s * 0.46, y + s * 0.72) }
+  }
+  ctx.stroke()
 }
 
 /** 기병이 도는 길: 낱낱 점선 (길이 새로 정해진 뒤 routeMs 동안 · 끝에서 옅어져 걷힌다) */
@@ -313,7 +324,7 @@ function addGroupFlags(m: VModel, at: number[], nowMs: number): void {
       const tx = unitsToPx(spot.u), ty = unitsToPx(spot.v)
       let s = flagSpot.get(side * 3 + g)
       if (s === undefined) { s = { x: tx, y: ty }; flagSpot.set(side * 3 + g, s) } else { s.x += (tx - s.x) * ease; s.y += (ty - s.y) * ease }
-      at.push(s.x, s.y, side, 3, tilt)
+      at.push(s.x, s.y, side, 3 + g, tilt)
     }
   }
 }
@@ -328,8 +339,8 @@ function drawItem(ctx: CanvasRenderingContext2D, d: Item): void {
   if (d.kind === 0 && d.hero) {
     // 장수 발밑: 그림자 위에 편 색 테두리 (병사 그림자는 편마다 한 경로로 미리 칠했다)
     ctx.fillStyle = SIDE_COLOR[d.side]!
-    ctx.globalAlpha = 0.4
-    ctx.beginPath(); ctx.ellipse(d.x, d.y, d.h * 0.3, d.h * 0.1, 0, 0, FULL_TURN); ctx.fill()
+    ctx.beginPath(); ctx.ellipse(d.x, d.y, d.h * 0.3, d.h * 0.1, 0, 0, FULL_TURN)
+    if (d.side === 0) { ctx.globalAlpha = 0.4; ctx.fill() }
     ctx.globalAlpha = 0.95; ctx.strokeStyle = SIDE_COLOR[d.side]!; ctx.lineWidth = Math.max(P.field.heroRingPx, d.h * 0.04); ctx.stroke()
     ctx.globalAlpha = 1
   }
@@ -384,7 +395,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
   fx.tick = cur.tick
   fx.nowMs = nowMs; fx.attackers = 0
   for (const h of hits) { fx.lastHit.set(h.to, { src: h.from, how: h.how }); noteLoss(h, nowMs) }
-  if (tickNew) { coolPress(1000 / F.hz); ingestHits(cur, hits, nowMs, realMs); noteOmens(cur, nowMs) }
+  if (tickNew) { coolPress(1000 / F.hz); ingestHits(cur, hits, nowMs, realMs); noteOmens(cur, nowMs); noteShouts(cur, prev, nowMs) }
   shakeAt(realMs)
   const world = worldSize(cur)
   const view = fieldView(cam, vp)
@@ -406,6 +417,8 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
   const pad = baseH * 3
   const lowShare = low ? F.lowDotsShare : 1000
   const arrows = arrowBuf; arrows.length = 0
+  const rain = fx.rain; rain.length = 0
+  const rainRing = fx.rainRing; rainRing.length = 0
   /** 대 깃 자리 (x · y · 편 · 장수면 1) — 끝에서 한꺼번에 그린다 */
   const flagsAt = flagBuf; flagsAt.length = 0
   let drawn = 0
@@ -459,6 +472,8 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
       const tqu = aq === undefined ? 0 : unitsToPx(aq.u), tqv = aq === undefined ? 0 : unitsToPx(aq.v)
       const od = aq === undefined ? undefined : peekDots(aq.id), osl = aq === undefined ? undefined : fx.slots.get(aq.id)
       const melee = fighting && q.grp !== 'bows'
+      const volley = q.grp === 'bows' && q.order === ORD_VOLLEY && q.orderAt !== null && cur.tick - q.orderTick < F.volleySec * F.hz
+      if (volley) { const rx = unitsToPx(q.orderAt!.u), ry = unitsToPx(q.orderAt!.v); if (rainRing.length < 2 || rainRing[rainRing.length - 2] !== rx || rainRing[rainRing.length - 1] !== ry) rainRing.push(rx, ry) }
       let chance = 0, flinch = 0, mor = 1, mf = 0, mn = 0
       if (melee) {
         if (tickNew) computePairs(q.id, dd, sl.dead, face, od, osl?.dead)
@@ -491,7 +506,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
           const pk = partnerOf(q.id, k)
           const rear = row >= 0 ? row >= 1 && row === rowCount(dd) - 1 : dd.cu[k]! * face <= mn + F.frontBandCells
           dotMelee(q.id, k, ph, face, front, rear && !front, true, mor, nowMs, x, y, pk >= 0 && aq !== undefined ? tqu + offU(aq.id, pk) * F.cellPx : NaN, pk >= 0 && aq !== undefined ? tqv + offV(aq.id, pk) * F.cellPx : NaN, chance, flinch)
-          ox = mo.x; oy = mo.y; swing = mo.swing
+          ox = mo.x - face * F.meleeGapCells * F.cellPx; oy = mo.y; swing = mo.swing
           if (mo.turn) flipDot = !flipDot
           if (mo.hitFrame && hash2(q.id * 3 + k, Math.floor(nowMs / F.animAttackMs)) % F.sparkEveryHits === 0 && aq !== undefined && nowMs - (fx.sparkAt.get(q.id * 64 + k) ?? -1e9) > F.animAttackMs * ATTACK_N * 0.8) {
             fx.sparkAt.set(q.id * 64 + k, nowMs)
@@ -522,6 +537,18 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
         if (kk === 'crossbow') d.h *= F.crossbowDropPermille / 1000
         if (fighting && front && swing) fx.attackers++
         drawn++
+        if (volley) {
+          // 화살비: 평소의 몇 배 촘촘하게 · 찍은 자리 둘레에 비스듬히 쏟아진다
+          const cyc = F.arrowCycleMs / F.rainDensity, ph0 = nowMs + ph * cyc, s0 = Math.floor(ph0 / cyc)
+          for (let j = 0; j * cyc < F.rainFlightMs; j++) {
+            const start = s0 - j, age = ph0 - start * cyc
+            if (age >= F.rainFlightMs) continue
+            const hh = hash2(q.id * 97 + k, start), ang = (hh % 6283) / 1000, rad = Math.sqrt(((hh >>> 8) % 1000) / 1000) * F.volleyRadiusCells * F.cellPx * 0.9
+            const lx = unitsToPx(q.orderAt!.u) + Math.cos(ang) * rad, ly = unitsToPx(q.orderAt!.v) + Math.sin(ang) * rad
+            rain.push(x, y - baseH * 0.5, lx, ly, age / F.rainFlightMs, side)
+            if (age > F.rainFlightMs * 0.94 && hh % 3 === 0 && (fx.sparkAt.get(q.id * 64 + k + 4096 * j) ?? -1) !== start) { fx.sparkAt.set(q.id * 64 + k + 4096 * j, start); spawn(0, lx, ly, (hh % 9) - 4, -5, nowMs, F.dustMs, F.cellPx * 0.14) }
+          }
+        }
         if (fighting && q.grp === 'bows' && aq !== undefined) {
           const cyc = F.arrowCycleMs, tt = (nowMs + ph * cyc) % cyc
           if (tt < F.arrowFlightMs) {
@@ -574,22 +601,30 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
     const d = nextItem()
     d.kind = 0; d.hero = true; d.x = x; d.y = y; d.strip = heroStrip(art, e.id, heroPick); d.side = e.side
     d.flip = (moved ? e.u < (pe?.u ?? e.u) : faceU < 0); d.h = baseH * F.heroScale / 100
-    d.frame = e.stun > 0 ? DOWN : pose(nowMs, 0, moved, cur.end === null && fighting && e.stun === 0)
+    d.frame = e.stun > 0 ? DOWN : isShouting(e.side, nowMs) ? ATTACK0 + 2 : pose(nowMs, 0, moved, cur.end === null && fighting && e.stun === 0)
     drawn++
     if (e.dash > 0 && e.stun === 0) {
       const hk = heroKey(art, e.id, heroPick), me = hk === null ? undefined : art.manifest?.[hk]
-      if (hk !== null && me !== undefined && queueDash(art.base, hk.slice(4), x, y, d.flip, d.h, me.bodyPx, nowMs)) { used--; flagsAt.push(x, y - d.h * 0.2, e.side, 1, 0); continue }
+      if (hk !== null && me !== undefined && queueDash(art.base, hk.slice(4), x, y, d.flip, d.h, me.bodyPx, nowMs)) { used--; continue }
     }
-    flagsAt.push(x, y - d.h * 0.2, e.side, e.stun > 0 ? 2 : 1, 0)
+    if (e.stun > 0) flagsAt.push(x, y - d.h * 0.2, e.side, 2, 0)
   }
 
   order.length = 0
   for (let i = 0; i < used; i++) order.push(pool[i]!)
+  if (rainRing.length > 0) {
+    ctx.strokeStyle = '#f4ead0'; ctx.globalAlpha = 0.55; ctx.lineWidth = Math.max(F.rainRingPx, F.rainRingPx / cam.zoom)
+    ctx.beginPath()
+    const rr = F.volleyRadiusCells * F.cellPx
+    for (let i = 0; i < rainRing.length; i += 2) { ctx.moveTo(rainRing[i]! + rr, rainRing[i + 1]!); ctx.arc(rainRing[i]!, rainRing[i + 1]!, rr, 0, FULL_TURN) }
+    ctx.stroke(); ctx.globalAlpha = 1
+  }
   drawShadows(ctx, used, low, cam.zoom, baseH)
   order.sort(byY)
   for (const d of order) if (!d.hero) drawItem(ctx, d)
   for (const d of order) if (d.hero) drawItem(ctx, d)
   drawDash(ctx, nowMs)
+  drawShouts(ctx, nowMs, cam.zoom, SIDE_COLOR)
 
   drawOmens(ctx, nowMs, cam.zoom)
   drawRoutes(ctx, cur, nowMs, cam.zoom)
@@ -600,6 +635,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
 
   // 화살: 낱낱의 짧은 선 (호를 그리며 난다) — 몸은 크림색 한 경로, 꼬리 3분의 1 은 쏜 편 색으로 편마다 한 경로 (누구 화살인지 읽히게)
   if (arrows.length > 0) {
+    ctx.globalAlpha = F.arrowFadePermille / 1000
     ctx.lineWidth = Math.max(1.2, 1.2 / cam.zoom)
     ctx.lineCap = 'round'
     const len = F.arrowLenCells * F.cellPx, arc = F.arrowArcCells * F.cellPx
@@ -618,6 +654,23 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
       }
       ctx.stroke()
     }
+    ctx.globalAlpha = 1
+  }
+  // 화살비: 굵고 촘촘한 줄 (그림자 점이 떨어질 자리를 먼저 보인다)
+  if (rain.length > 0) {
+    const len = F.arrowLenCells * F.cellPx * 1.3, arc = F.arrowArcCells * F.cellPx * F.rainArcMul
+    ctx.globalAlpha = 0.3; ctx.fillStyle = '#1a1208'; ctx.beginPath()
+    for (let i = 0; i < rain.length; i += 6) ctx.rect(rain[i + 2]! - 1.5, rain[i + 3]! - 1, 3, 2)
+    ctx.fill(); ctx.globalAlpha = 1
+    ctx.strokeStyle = ARROW_COLOR; ctx.lineCap = 'round'; ctx.lineWidth = Math.max(F.rainWidthPx, F.rainWidthPx / cam.zoom)
+    ctx.beginPath()
+    for (let i = 0; i < rain.length; i += 6) {
+      const x0 = rain[i]!, y0 = rain[i + 1]!, x1 = rain[i + 2]!, y1 = rain[i + 3]!, t = rain[i + 4]!
+      const dist = Math.max(1, Math.abs(x1 - x0) + Math.abs(y1 - y0)), t0 = Math.max(0, t - len / dist)
+      ctx.moveTo(mix(x0, x1, t0), mix(y0, y1, t0) - 4 * t0 * (1 - t0) * arc)
+      ctx.lineTo(mix(x0, x1, t), mix(y0, y1, t) - 4 * t * (1 - t) * arc)
+    }
+    ctx.stroke()
   }
   ctx.restore()
   return drawn

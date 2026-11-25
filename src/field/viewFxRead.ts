@@ -10,7 +10,7 @@ export const FORM_CHARGE = 1, FORM_HOLD = 2
 export const FORM_SCATTER = 9
 /** 방패 대의 방진 = 방패 벽 (그리는 쪽만 쓰는 가짜 모양 · 틈 없이 이어진다) */
 export const FORM_WALL = 10
-export const ORD_CHARGE = 1, ORD_HOLD = 2, ORD_FLANK = 4
+export const ORD_CHARGE = 1, ORD_HOLD = 2, ORD_VOLLEY = 3, ORD_FLANK = 4
 export const HIT_PLAIN = 0, HIT_GOOD = 1, HIT_BLOCKED = 2
 export const LOSS_ARROW = 1, LOSS_IMPACT = 4
 

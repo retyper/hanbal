@@ -8,6 +8,7 @@
 import { P } from '../tune/params.ts'
 import { hash2 } from './viewDots.ts'
 import { HIT_BLOCKED, HIT_GOOD, LOSS_IMPACT, eventsOf, moraleOf } from './viewFxRead.ts'
+import { spawn } from './viewMelee.ts'
 import type { VLoss, VModel, VSquad } from './viewRead.ts'
 
 /** 이 값이면 깃이 떨어진 것 */
@@ -88,7 +89,7 @@ export function ingestHits(cur: VModel, hits: readonly VLoss[], clk: number, rea
       if (v !== undefined && a !== undefined) good(cur, a, v, clk)
     } else if (e.kind === 'artHit' && e.to >= 0) {
       const v = cur.squads[e.to]
-      if (v !== undefined) { good(cur, undefined, v, clk); pops.push({ at: clk, n: Math.round(e.n / 10), gold: true, ...flagPos(v) }); if (pops.length > F.moralePopMax) pops.shift() }
+      if (v !== undefined) { good(cur, undefined, v, clk); const sh = cur.heroes.find(x => x.side === e.side); kicks.set(e.to, { at: clk, dir: sh !== undefined && v.u < sh.u ? -1 : 1, cells: F.kickFrontCells }); pops.push({ at: clk, n: Math.round(e.n / 10), gold: true, ...flagPos(v) }); if (pops.length > F.moralePopMax) pops.shift() }
     }
   }
   // 부딪힘 loss 가 사건 없이 오는 경우(옛 엔진·누락된 틱)도 받는다 — 같은 대의 첫 접촉 간격이 중복을 막는다
@@ -127,6 +128,12 @@ function land(cur: VModel, p: { att: number; vic: number; how: number }, nearest
   const a = cur.squads[p.att]!, v = cur.squads[p.vic]!
   const horse = a.grp === 'horse'
   const dir = v.u >= a.u ? 1 : -1
+  // 닿는 순간 흙먼지가 터진다 (두 대 사이 · 기병은 더 많이)
+  const mx = (a.u + v.u) / 2 / F.unit * F.cellPx, my = (a.v + v.v) / 2 / F.unit * F.cellPx, nb = Math.round(F.burstPieces * (horse ? 1.5 : 1))
+  for (let i = 0; i < nb; i++) {
+    const hh = hash2(p.att * 31 + i, Math.floor(clk)), ang = (hh % 628) / 100, sp = 25 + (hh >>> 9) % 45
+    spawn(0, mx + Math.cos(ang) * 4, my + Math.sin(ang) * 3 + (i % 5 - 2) * (a.bw > 0 ? a.bw / F.unit * F.cellPx / 5 : F.cellPx * 0.5), Math.cos(ang) * sp, Math.sin(ang) * sp * 0.55 - 10, clk, F.burstMs, F.cellPx * 0.2)
+  }
   if (p.how === HIT_BLOCKED) {
     kicks.set(p.att, { at: clk, dir: -dir, cells: F.kickBlockCells })
     addTilt(p.att, F.flagTiltDeg * DEG, -dir, clk)
@@ -253,3 +260,48 @@ export function drawOmens(ctx: CanvasRenderingContext2D, clk: number, zoom: numb
 
 /** 방진 앞 열이 부딪힘을 받아 더 낮춰 버티는 동안인가 (임팩트 뒤 braceMs) */
 export const bracedAt = (id: number, clk: number): boolean => { const t = braces.get(id); return t !== undefined && clk - t >= 0 && clk - t < P.field.braceMs }
+
+// ───────── 큰 외침(Q): 장수에서 퍼지는 낱낱 충격 줄 (채운 원·햇살이 아니라 짧은 호 조각 여럿) ─────────
+interface Shout { x: number; y: number; at: number; side: 0 | 1 }
+const shouts: Shout[] = []
+/** 비기 쿨이 새로 돌기 시작한 큰 외침을 잡는다 (사건 줄에 heroSkill 이 없어도 장수 칸의 쿨 오름으로 안다) */
+export function noteShouts(cur: VModel, prev: VModel | null, clk: number): void {
+  if (prev === null) return
+  for (const h of cur.heroes) {
+    const p = prev.heroes.find(x => x.side === h.side)
+    if (h.art === 'shout' && p !== undefined && h.artCd > p.artCd) {
+      shouts.push({ x: h.u / P.field.unit * P.field.cellPx, y: h.v / P.field.unit * P.field.cellPx, at: clk, side: h.side })
+      if (shouts.length > 4) shouts.shift()
+    }
+  }
+}
+/** 이 편 장수가 지금 외치는 중인가 (외치는 칸을 보이게) */
+export const isShouting = (side: 0 | 1, clk: number): boolean => { for (const s of shouts) if (s.side === side && clk - s.at >= 0 && clk - s.at < P.field.shoutMs) return true; return false }
+export function drawShouts(ctx: CanvasRenderingContext2D, clk: number, zoom: number, teamColor: readonly string[]): void {
+  const F = P.field
+  let w = 0
+  for (const s of shouts) if (clk - s.at < F.shoutMs) shouts[w++] = s
+  shouts.length = w
+  if (w === 0) return
+  const R = F.heroAuraCells * F.cellPx
+  ctx.lineCap = 'round'
+  for (let pass = 0; pass < 2; pass++) {
+    ctx.beginPath()
+    let any = false
+    for (const s of shouts) {
+      const t = (clk - s.at) / F.shoutMs
+      for (let i = pass; i < F.shoutPieces; i += 2) {
+        const h = hash2(s.at | 0, i), a = i / F.shoutPieces * 6.2832 + (h % 100) / 400, r = R * (1 - (1 - t) * (1 - t)) * (0.85 + ((h >>> 8) % 30) / 100)
+        ctx.moveTo(s.x + Math.cos(a - 0.1) * r, s.y + Math.sin(a - 0.1) * r * 0.75)
+        ctx.arc(s.x, s.y, r, a - 0.1, a + 0.1) // 짧은 호 조각 (타원으로 눌러 땅 위에 퍼지는 모양)
+        any = true
+      }
+    }
+    if (!any) continue
+    ctx.strokeStyle = pass === 0 ? '#f4ead0' : teamColor[shouts[0]!.side]!
+    ctx.globalAlpha = 1 - (clk - shouts[0]!.at) / F.shoutMs * 0.8
+    ctx.lineWidth = Math.max(3, 3.4 / zoom)
+    ctx.stroke()
+  }
+  ctx.globalAlpha = 1
+}
