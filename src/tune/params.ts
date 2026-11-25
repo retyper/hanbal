@@ -1383,13 +1383,13 @@ export const HAEBI_WALL = { stage: 'palisade', survive: 180, shop: { axe: .12, s
 /**
  * 채찍 묶음 그리기 (카드 W5 · 새 그림 없이 코드로 줄을 그린다 · 화면만 · 판을 읽기만) — 줄 하나 = points 개 점 사슬(걸음마다 점 수 고정):
  * 점마다 손에서 delay 몫만큼 늦게 따라와 끝으로 갈수록 늦게 펴진다 · 처음 extend 몫 시간에 끝까지 뻗고(끝점은 피해 도형의 끝과 같은 자리) · 그 뒤 recoil px 로 recoilHz 박자 흔들리며 잦아든다(반동) ·
- * 뻗기 전 처진 줄은 sag px · fade 몫 뒤부터 옅어진다 · 줄 굵기 root → tip · 끝에서 작은 불똥 알갱이 tipDots 개가 tipDotDist px 까지 튀고 tipRing 반지름 테 하나
+ * 뻗기 전 처진 줄은 sag px · fade 몫 뒤부터 옅어진다 · 줄 굵기 root(손 쪽) → tip(끝) 로 가늘어짐 · 어두운 테 rimPad 더 굵게 · 끝에서 작은 불똥 알갱이 tipDots 개가 tipDotDist px 까지 튀고 tipRing 반지름 테 하나
  * 올가미: 날아가는 동안 줄이 lassoSag px 로 출렁이고 끝에 lassoLoop 반지름의 고리 · 끌려오는 적에게 줄 한 가닥(gatherSag)
  * 조임 고리: 땅 타원 테 + snareDots 개 알갱이가 천천히 돈다(snareAlpha)
  * 휘몰이: 점 둘레를 줄 swirlRopes 가닥이 swirlTurns 바퀴 돌며(타원 땅 비율 swirlSquash) 후려치고 땅 테 하나(swirlRing 몫 진하기)
  */
 export const HAEBI_ROPE = {
-  points: 14, delay: .45, extend: .35, sag: 20, recoil: 7, recoilHz: 5, fade: .6, root: 4, tip: 2, rim: '#3a2412', spark: '#fff0c8',
+  points: 14, delay: .45, extend: .35, sag: 20, recoil: 7, recoilHz: 5, fade: .6, root: 3, tip: 1.5, rimPad: 1.5, rim: '#3a2412', spark: '#fff0c8',
   tipDots: 6, tipDotDist: 28, tipRing: 14,
   lassoSag: 14, lassoLoop: 15, gatherSag: 10,
   snareDots: 10, snareAlpha: .5, snareSpin: .8,
@@ -1399,11 +1399,11 @@ export const HAEBI_ROPE = {
  * 영웅 대시 한 칸 (형 11-25 「영웅대시 좋다」 · 장수마다 「뛰어드는 자세」 한 칸 · 그림 public/realm/anim-px/dash/gen-<띠 열쇠>.png · 표 raid/dash-cells.ts) — 화면만 · 판의 대시(거리·쿨·무적)는 그대로.
  * 대시하는 동안(판 s.dash) 그 장수에게 대시 칸이 있으면 서기 띠 대신 그 한 칸을 그린다. 칸은 덧띠 규격 그대로: 칸 높이 h · 뿌리(가로 기준 · 뒤집는 축) root · 발바닥 줄 foot (원본 px)
  *   → 서기의 발 줄·키와 같은 배율로 놓인다(그림 안에 뜬 높이가 들어 있다 · 그림자는 땅에 남는다).
- * stretch = 대시 시작에 가로로 늘이는 배(→ 끝에서 1) · lift = 그리는 쪽에서 더 띄우는 px(그림은 그대로) · shiftX = 가는 쪽으로 더 미는 px
+ * stretch = 대시 시작에 가로로 늘이는 배(→ 끝에서 1) · drop = 그림을 아래로 내리는 칸 화소(그림은 그대로 · 그림 속 뒤로 뻗은 발끝은 발 줄 위 51px 에 있어 너무 떠 보였다 → 39 내려 발끝이 땅 위 12px · 아홉 장 모두 발끝 줄이 같다) · hop = 대시 시작에 더 떠 있다가 끝에서 내려앉는 px(내닫고 착지) · shiftX = 가는 쪽으로 더 미는 px
  * ghostAlpha = 잔상 첫 진하기(점점 옅게 · 수는 HAEBI_RUN.ghostEvery·ghostLife 그대로) · dust = 발밑 흙먼지 점 수 · dustDist 뒤로 흩어지는 px · dustSize 점 반지름 · dustColor
  */
 export const HAEBI_DASH = {
-  geom: { h: 224, root: 92, foot: 216 }, stretch: 1.08, lift: 0, shiftX: 0,
+  geom: { h: 224, root: 92, foot: 216 }, stretch: 1.08, drop: 39, hop: 3, shiftX: 0,
   ghostAlpha: .42, dust: 3, dustDist: 26, dustSize: 4, dustColor: '#cdb78a',
 } as const
 /**

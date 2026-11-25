@@ -67,3 +67,10 @@ test('대시 잔상과 먼지는 판을 안 건드린다 · 대시 걸음 동안
   assert.ok(s.dash > 0 || s.x > 0)
   assert.ok(DASH.dust >= 2 && DASH.stretch > 1)
 })
+
+test('대시 몸이 낮아졌다: 그림 속 뒤로 뻗은 발끝(발 줄 위 51px)이 drop 뒤 땅 위 10~14 칸 화소 · 시작엔 hop 만큼 더 떠 있다가 끝에서 내려앉는다', () => {
+  const toeAboveFoot = 216 - 165   // 아홉 장 모두 발끝 줄이 165 (tools/out/dash 에서 알파를 훑어 잰 값)
+  const clearance = toeAboveFoot - DASH.drop
+  assert.ok(clearance >= 10 && clearance <= 14, `땅 위 ${clearance}px`)
+  assert.ok(DASH.hop >= 2 && DASH.hop <= 4)
+})

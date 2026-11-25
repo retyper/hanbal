@@ -171,12 +171,13 @@ function dashReady(images: Map<string, HTMLImageElement> | null, strip: string) 
   return p && main && companionReady(images, p) ? { path: p, ch: main.cell[1], feet: main.feet, scale: DASH_CELLS[spriteName(strip)]! } : null
 }
 /** 대시 칸 한 장을 발 자리(x,y)에 — 서기와 같은 배율 · 뿌리를 축으로 face 쪽을 보고 · stretch 는 가로 늘임 */
-function drawDashCell(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, d: NonNullable<ReturnType<typeof dashReady>>, x: number, y: number, height: number, face: number, stretch: number) {
+function drawDashCell(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, d: NonNullable<ReturnType<typeof dashReady>>, x: number, y: number, height: number, face: number, stretch: number, hop = 0) {
   const img = images.get(d.path)!, k = height / d.ch * d.scale, p = companionPlace(img.width, DASH.geom.h, k, d.feet, DASH.geom)
+  const tx = Math.round(x + face * DASH.shiftX), ty = Math.round(y + DASH.drop * k - hop)   // 그림 속 발끝이 너무 떠 있어 drop 만큼 내리고 · 시작엔 hop 만큼 더 뜬다
   const smooth = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = false
-  ctx.translate(Math.round(x + face * DASH.shiftX), Math.round(y - DASH.lift)); ctx.scale(face * stretch, 1)
+  ctx.translate(tx, ty); ctx.scale(face * stretch, 1)
   ctx.drawImage(img, Math.round(p.left), Math.round(p.top), Math.round(p.w), Math.round(p.h))
-  ctx.scale(face * stretch, 1); ctx.translate(-Math.round(x + face * DASH.shiftX), -Math.round(y - DASH.lift)); ctx.imageSmoothingEnabled = smooth
+  ctx.scale(face * stretch, 1); ctx.translate(-tx, -ty); ctx.imageSmoothingEnabled = smooth
 }
 type DashGhost = { x: number; y: number; face: number; t: number }
 const dashGhosts: DashGhost[] = []
@@ -307,7 +308,7 @@ function drawHero(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageEl
     ctx.globalAlpha = a
   }
   const dash = s.dash > 0 ? dashReady(images, path) : null   // 대시 칸이 있는 장수는 대시하는 동안 그 한 칸
-  if (dash) { drawDashDust(ctx, s); drawDashCell(ctx, images, dash, ox, oy, h, s.face, 1 + (DASH.stretch - 1) * (s.dash / C.dashTime)) }
+  if (dash) { drawDashDust(ctx, s); drawDashCell(ctx, images, dash, ox, oy, h, s.face, 1 + (DASH.stretch - 1) * (s.dash / C.dashTime), DASH.hop * (s.dash / C.dashTime)) }
   else sprite(ctx, images, path, ox, oy, h, pose.frame, pose.face, s.hurt > 0, density, s.inv > 0 ? C.heroRim : 0)   // 11-23 형 「던파 슈퍼아머도 아닌데 왜 상시 노란 테두리」 → 무적(회피) 동안만
   if (awakenedLook(s) && !dash) {
     // 각성: 몸이 금빛으로 맥박친다 (같은 그림을 빛으로 한 번 더)
@@ -409,10 +410,11 @@ export function ropePoint(x0: number, y0: number, x1: number, y1: number, reach:
   return { x: x0 + dx * u * e - dy / len * off, y: y0 + dy * u * e + dx / len * off }
 }
 function drawRope(ctx: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number, reach: number, wave: number, color: string, width: number = RP.root) {
-  for (const [w, c] of [[width + 2, RP.rim], [width, color]] as const) {
-    ctx.strokeStyle = c; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(x0, y0)
-    for (let i = 1; i < RP.points; i++) { const p = ropePoint(x0, y0, x1, y1, reach, wave, i); ctx.lineTo(p.x, p.y) }
-    ctx.stroke()
+  // 줄은 손 쪽이 굵고 끝으로 갈수록 가늘다 (RP.root → RP.tip) · 마디마다 따로 긋는다 (먼저 어두운 테 → 색)
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round'
+  for (const [pad, c] of [[RP.rimPad, RP.rim], [0, color]] as const) {
+    ctx.strokeStyle = c; let px = x0, py = y0
+    for (let i = 1; i < RP.points; i++) { const p = ropePoint(x0, y0, x1, y1, reach, wave, i), u = i / (RP.points - 1); ctx.lineWidth = width * (1 - u * (1 - RP.tip / RP.root)) + pad; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(p.x, p.y); ctx.stroke(); px = p.x; py = p.y }
   }
 }
 /** 말채찍 한 번 (이펙트 thrust · lash): 뻗고 → 끝에서 딱 (불똥 알갱이·테) → 반동으로 잦아든다 · 2 = 되감기로 줄이 거둬진다 */
