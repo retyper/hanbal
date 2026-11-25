@@ -236,18 +236,18 @@ def whip_curve(d, hand, segs, loop=False):
         d.ellipse(box, outline=WHIPC, width=int(1.7 * Z))
 
 
-def whip_coil(d, hand):
+def whip_coil(d, hand, side=-1):
     """감아 쥔 채찍: 손에서 내려오는 둥근 고리 둘 + 끝 술(걷기 · 서기 · 맞음)"""
     for k, (rx, ry) in enumerate(((9, 12), (6.5, 9))):
-        c = (hand[0] - 7 * Z, hand[1] + 11 * Z)
+        c = (hand[0] + side * 7 * Z, hand[1] + 11 * Z)
         box = [c[0] - rx * Z, c[1] - ry * Z, c[0] + rx * Z, c[1] + ry * Z]
         d.ellipse(box, outline=LINE, width=int(2.6 * Z) + 6)
         d.ellipse(box, outline=WHIPC, width=int(2.6 * Z))
-    t = (hand[0] - 11 * Z, hand[1] + 24 * Z)
-    d.line([(hand[0] - 9 * Z, hand[1] + 20 * Z), t], fill=LINE, width=int(1.7 * Z) + 6)
-    d.line([(hand[0] - 9 * Z, hand[1] + 20 * Z), t], fill=WHIPC, width=int(1.7 * Z))
+    t = (hand[0] + side * 11 * Z, hand[1] + 24 * Z)
+    d.line([(hand[0] + side * 9 * Z, hand[1] + 20 * Z), t], fill=LINE, width=int(1.7 * Z) + 6)
+    d.line([(hand[0] + side * 9 * Z, hand[1] + 20 * Z), t], fill=WHIPC, width=int(1.7 * Z))
     d.ellipse([t[0] - 1.8 * Z, t[1] - 1.8 * Z, t[0] + 1.8 * Z, t[1] + 1.8 * Z], fill=(170, 170, 176), outline=LINE, width=2)
-    g = (hand[0] + 3 * Z, hand[1] - 2 * Z)
+    g = (hand[0] - side * 3 * Z, hand[1] - 2 * Z)
     d.line([hand, g], fill=LINE, width=int(3.6 * Z) + 6)
     d.line([hand, g], fill=WOOD, width=int(3.6 * Z))
 
@@ -330,6 +330,8 @@ def figure(phase, swing_near, pose=None):
     # 단검(BLADE 짧음)은 팔을 고정하지 않는다 — 11-24 형 「단검 애들은 걷기할 때 팔이 부자연스럽다」 · 참고: 던파 도적(로그) 걷기는 주먹을 허리 높이에 두고 두 팔을 적당히 흔든다
     elif PROP['kind'] == 'staff':   # 가까운 손에 방울 지팡이를 쥐고 걷는다 — 쥔 팔은 한 손 칼처럼 고정, 먼 팔만 흔든다(무녀 · 11-25)
         arm_n = (28, 50)   # 손은 몸 앞 허리 높이(서기 그림처럼 지팡이가 몸 앞 옆에 섬 · 얼굴·몸통을 가로지르지 않게)
+    elif PROP['kind'] == 'whipf':   # 밧줄을 먼 손(파란 팔)에 감아 쥔 장수: 먼 팔은 허리 옆에 고정, 가까운 팔만 흔든다 (11-25 · 서기 그림이 먼 손에 쥐어서)
+        arm_f = (12, 40)
     elif PROP['kind'] == 'whip':   # 채찍을 감아 쥔 가까운 손은 허리 옆에 고정, 먼 팔만 걷는 다리와 반대로 흔든다 (11-25 채찍 인형)
         arm_n = (12, 40)
     elif PROP['kind'] == 'holdn':   # 맨손 주술 · 가까운 손에 물건(부채·향로·방울 막대) — 쥔 팔은 몸 앞에 고정, 먼 팔만 흔든다 (11-25 밤)
@@ -388,6 +390,13 @@ def figure(phase, swing_near, pose=None):
         else:
             whip_coil(d, hand_n)
         d.ellipse([hand_n[0] - HAND * Z, hand_n[1] - HAND * Z, hand_n[0] + HAND * Z, hand_n[1] + HAND * Z], fill=NEAR, outline=LINE, width=3)
+    if PROP['kind'] == 'whipf':   # 먼 손이 밧줄 손잡이를 쥔다(몸 앞으로 나오게 맨 위에 그린다)
+        wp = (pose or {}).get('whip')
+        if wp and wp != 'coil':
+            whip_curve(d, hand_f, wp, **({'loop': True} if pose.get('loop') else {}))
+        else:
+            whip_coil(d, hand_f, side=1)
+        d.ellipse([hand_f[0] - HAND * Z, hand_f[1] - HAND * Z, hand_f[0] + HAND * Z, hand_f[1] + HAND * Z], fill=FAR, outline=LINE, width=3)
     if PROP['kind'] == 'staff':   # 가까운 손이 방울 지팡이를 쥐고 · 먼 손은 손바닥을 편다 (주술 시전 · 무녀)
         if pose is not None and pose.get('palm', True):
             fingers(d, hand_f, arm_f[1])
@@ -766,6 +775,25 @@ for _n, _k, _lp, _qk in (("whip2", 1.0, False, 0.6), ("lasso", 0.78, True, 0.35)
     IK_QUIRKS['hit_' + _n] = [dict(q, **({} if q.get('whip') == 'coil' else dict(whip=[(a_, l_ * _qk) for a_, l_ in q['whip']], **({'loop': True} if _lp else {})))) for q in IK_QUIRKS['hit_whip']]
 
 
+def _swap_hands(q):
+    """밧줄 쥔 손을 먼 손(파란 팔)으로: 포즈의 가까운 손·먼 손 자리를 맞바꾼다(발·윗몸·밧줄 곡선은 그대로)"""
+    q = dict(q)
+    ik = dict(q['ik'])
+    ik['near_hand'], ik['far_hand'] = q['ik']['far_hand'], q['ik']['near_hand']
+    ik['near_elbow'], ik['far_elbow'] = q['ik'].get('far_elbow', 'down'), q['ik'].get('near_elbow', 'down')
+    q['ik'] = ik
+    if 'prop' in q:
+        q['prop'] = 'whipf'
+    return q
+
+
+for _n in ('whip2', 'lasso'):
+    IK_ATTACKS[_n + 'f'] = [_swap_hands(q) for q in IK_ATTACKS[_n]]
+    IK_PROP[_n + 'f'] = 'whipf'
+    IK_QUIRKS['flick_' + _n + 'f'] = [_swap_hands(q) for q in IK_QUIRKS['flick_' + _n]]
+    IK_QUIRKS['hit_' + _n + 'f'] = [_swap_hands(q) for q in IK_QUIRKS['hit_' + _n]]
+
+
 def ik_attack_sheets(kind):
     """넓은 칸 2×2 판 둘(앞 넷 · 뒤 넷) + 한 줄 미리 보기"""
     big_canvas()
@@ -835,7 +863,7 @@ def main():
         return
     if len(sys.argv) > 1 and sys.argv[1] == 'walk':   # py pose-rig.py walk <걸음 결> <가슴 S|M|L|XL> [bow = 먼 쪽 손에 활을 쥐고 걷는다]
         key, bust = sys.argv[2], sys.argv[3]
-        if len(sys.argv) > 4 and sys.argv[4] in ('bow', 'pole2', 'shoulder', 'sword', 'staff', 'holdn', 'holdf', 'none', 'whip'):
+        if len(sys.argv) > 4 and sys.argv[4] in ('bow', 'pole2', 'shoulder', 'sword', 'staff', 'holdn', 'holdf', 'none', 'whip', 'whipf'):
             PROP['kind'] = sys.argv[4]
         STYLE.clear()
         STYLE.update(STYLES[key])

@@ -6,6 +6,7 @@
     staff = 방울 지팡이(무녀): 걷기(staff) · 시전 여덟 칸(cast a·b = 방울 흔들고 손바닥으로 밀기) · 개성 동작(shake = 방울 흔들기) · 맞음(hit_staff)
     sword = 한 손 칼: 걷기(sword) · 내려베기 여덟 칸(slash a·b) · 개성 동작(inspect = 칼날 살피기)
     axe = 두 손 큰 도끼·망치: 걷기(pole2) · 내려찍기 여덟 칸(chop a·b) · 개성 동작(retie)
+    whip2f · lassof = 같은 밧줄을 먼 손에 쥐는 판(손 자리만 맞바꿈)
     whip2 · lasso = 밧줄(줄 130 · 끝 올가미 고리) — whip 과 같은 인형에 곡선·길이만 다름
     whip = 채찍(한 손 · 뒷발 박힘): 걷기(whip · 감아 쥔 손 허리 옆) · 휘둘러 딱 여덟 칸(whip a·b) · 개성 동작(flick = 채찍 튕겨 보기) · 맞음(hit_whip)
     dagger = 단검: 한 손 칼 인형에 짧은 칼날 · 걷기 팔을 흔듦 · 공격은 낮게 뛰어들어 가슴 높이로 찌르기(stab a·b)
@@ -38,12 +39,12 @@ def main(name, kind, style, fall, bust='M', idx='3'):
     if axe:
         kind = 'pole2'
     wkind = kind   # whip(길이 84 · 말갈기) · whip2(줄 130 · 우가 누리) · lasso(끝에 올가미 · 비라 · 오름비) — 모두 채찍 인형
-    whipk = kind in ('whip', 'whip2', 'lasso')
+    whipk = kind in ('whip', 'whip2', 'lasso', 'whip2f', 'lassof')   # 끝 f = 밧줄을 먼 손(파란 팔)에 쥔 장수(서기 그림이 먼 손에 쥐었을 때)
     if whipk:
         kind = 'whip'
     # 채찍 = 한 손 인형에 가는 곡선(11-25 · 사벌 말갈기 시제품)
     handk = {'hand': ('holdn', 'cast_hand'), 'hand2': ('none', 'cast_hand2'), 'handn': ('holdf', 'cast_handn'), 'handf': ('holdn', 'cast_handn')}.get(kind)   # 맨손·손 물건 주술(11-25 밤): 걷기 · 공격
-    prop = handk[0] if handk else kind if kind in ('pole2', 'sword', 'staff', 'whip') else 'bow'
+    prop = handk[0] if handk else 'whipf' if whipk and wkind.endswith('f') else kind if kind in ('pole2', 'sword', 'staff', 'whip') else 'bow'
     run('pose-rig.py', 'walk', style, bust, prop, *short)
     run('style-scene.py', 'motion8', st, f'{S}rig-f-walk-{style}-{bust}-{prop}-a.png', f'{S}rig-f-walk-{style}-{bust}-{prop}-b.png', f'{S}scene-{name}-walk8.png')
     made.append(f'scene-{name}-walk8.png')

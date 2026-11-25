@@ -122,6 +122,9 @@ HEROES = {
     'bulmae': dict(hit=True, strip='gen-base-w-38-sangdang-bulmae', atk='chop', atk8=True, act=True),   # 상당 불매(쇠망치 · 가슴 M) · 11-25 도끼·망치 묶음
     'gom': dict(hit=True, strip='gen-gom', atk='chop', atk8=True, act=True, legacy=(('a', 1), ('b', 3), ('b', 3), ('b', 4))),   # 웅천 곰(가시 몽둥이 · 가슴 M) · 11-25 도끼·망치 묶음
     'malgalgi': dict(hit=True, strip='gen-malgalgi', atk='whip', actw=288, atk8=True, act=True, backfoot=True, legacy=(('a', 1), ('a', 3), ('b', 3), ('b', 4))),   # 사벌 말갈기(채찍 · 가슴 M · 배우는 판 장수) · 11-25 채찍 인형 시제품(뒷발 박힘 · 앞발 내딛음)
+    'bira': dict(hit=True, strip='gen-bira', atk='whip', src='lassof', actw=288, backfoot=True, atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 3), ('b', 4))),   # 미추홀 비라(밧줄 올가미 · 먼 손에 쥠 · 우람한 뼈대) · 11-25 밧줄 퍼뜨리기(말갈기 인형 whip 변형 lassof)
+    'base-w-43-uga-nuri': dict(hit=True, strip='gen-base-w-43-uga-nuri', atk='whip', src='whip2f', actw=288, backfoot=True, atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 3), ('b', 4))),   # 우가 누리(밧줄 · 먼 손에 쥠 · 가슴 XL) · 11-25 밧줄 퍼뜨리기(whip2f)
+    'base-w-45-tamna-oreumbi': dict(hit=True, strip='gen-base-w-45-tamna-oreumbi', atk='whip', src='lassof', actw=288, backfoot=True, atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 3), ('b', 4))),   # 탐라 오름비(밧줄 올가미 · 먼 손에 쥠 · 가슴 L) · 11-25 밧줄 퍼뜨리기(lassof)
     'dallae2': dict(hit=True, strip='gen-dallae2', atk='slash', atk8=True, act=True, legacy=(('a', 1), ('a', 3), ('b', 2), ('b', 4))),   # 살해 달래(굽은 단검 둘 · 가슴 M) · 11-25 열넷째 묶음
     'areum': dict(hit=True, strip='gen-areum', atk='slam', atk8=True, act=True, lock='none'),   # 받은 그림 그대로(얼굴을 떠다 붙이지 않는다 — 11-24: 뭉친 얼굴이 여덟 칸에 퍼졌다) · 옛 lock='face': 메가 머리 뒤로 지나간다 — 머리 상자는 메를 자르고(「포스터」), 윗몸을 통째로 묶으면 떠다닌다(11-24 형) → 얼굴 안쪽만 묶는다
 }
