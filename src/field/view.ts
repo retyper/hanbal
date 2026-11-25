@@ -10,10 +10,10 @@ import { fieldView, inView, type Cam, type Viewport } from './viewCamera.ts'
 import { ATTACK0, ATTACK_N, DOWN, HIT, RUN_N, STAND0, STAND_N, WALK0, WALK_N, heroKey, heroStrip, pieceImg, runStripFor, sheetOf, stripFor, type Art, type Strip } from './viewArt.ts'
 import { dotPh, hash2, sideDotCounts } from './viewDots.ts'
 import { dotDied, dotsOf, offU, offV, peekDots, resetForm, rowCount, rowOfDot, stepDots } from './viewForm.ts'
-import { FORM_HOLD, moraleOf, sx } from './viewFxRead.ts'
+import { FORM_HOLD, FORM_SCATTER, moraleOf, sx } from './viewFxRead.ts'
 import { drawDash, queueDash, resetDash } from './viewDash.ts'
 import { FLAG_FALLEN, drawOmens, drawPops, noteOmens, flagTilt, ingestHits, kickOf, resetHit, scatterOf, sc, shake, shakeAt, viewClock } from './viewHit.ts'
-import { addStain, computePairs, coolPress, dotMelee, drawParticles, drawStains, flinchOf, isFront, maxFwdOf, minFwdOf, mo, noteLoss, partnerOf, resetMelee, spawn, swingChance, swings } from './viewMelee.ts'
+import { computePairs, coolPress, dotMelee, drawParticles, flinchOf, isFront, maxFwdOf, minFwdOf, mo, noteLoss, partnerOf, resetMelee, spawn, swingChance, swings } from './viewMelee.ts'
 import { drawTerrain } from './viewTerrain.ts'
 import { TEAM_RGB } from './viewTint.ts'
 import type { VLoss, VModel, VSquad } from './viewRead.ts'
@@ -190,8 +190,8 @@ function addProps(m: VModel, art: Art, view: ReturnType<typeof fieldView>): void
  * 크기는 화면 px 로 하한을 둔다 (멀리서도 읽히게). 장수 깃(kind 1)은 더 크고 쓰러진 동안(kind 2)은 속이 빈 테두리만.
  * 빨간 원·햇살 모양은 쓰지 않는다.
  */
-function drawBanners(ctx: CanvasRenderingContext2D, at: readonly number[], zoom: number, baseH: number): void {
-  const F = P.field
+function drawBanners(ctx: CanvasRenderingContext2D, at: readonly number[], zoom: number, flagH: number): void {
+  const F = P.field, gm = F.flagGroupPermille / 1000
   if (at.length === 0) return
   ctx.lineJoin = 'round'
   ctx.strokeStyle = ARROW_COLOR
@@ -199,9 +199,10 @@ function drawBanners(ctx: CanvasRenderingContext2D, at: readonly number[], zoom:
   /** 한 깃: 장대 밑 (x, by) · 기울기 tilt 만큼 꼭대기가 옆으로 간다 · 떨어진 깃(FLAG_FALLEN)은 땅에 누운 장대 */
   const geom = (i: number): { bx: number; by: number; tx: number; ty: number; sz: number; hero: boolean; fall: boolean } => {
     const kd = at[i + 3]!, hero = kd > 0, grp = kd === 3, tilt = at[i + 4]!
-    const sz = Math.max(baseH * (grp ? 0.34 : hero ? 0.4 : 0.3), (hero ? F.heroFlagMinPx : F.flagMinPx) / zoom)
+    const baseH = grp ? flagH * gm : flagH
+    const sz = Math.max(baseH * (hero ? 0.4 : 0.3), (hero ? F.heroFlagMinPx : F.flagMinPx) * (grp ? gm : 1) / zoom)
     const y = at[i + 1]!, bx = at[i]!, by = y - baseH * (hero ? 1.5 : 1.1)
-    const len = baseH * (grp ? 1.7 : hero ? 1.9 : 1.5) + sz * 1.2 - baseH * (hero ? 1.5 : 1.1)
+    const len = baseH * (hero ? 1.9 : 1.5) + sz * 1.2 - baseH * (hero ? 1.5 : 1.1)
     const fall = Math.abs(tilt) >= FLAG_FALLEN - 0.5
     const a = fall ? (tilt < 0 ? -1.35 : 1.35) : tilt
     return { bx, by: fall ? y - baseH * 0.15 : by, tx: bx + Math.sin(a) * len, ty: (fall ? y - baseH * 0.15 : by) - Math.cos(a) * len, sz, hero, fall }
@@ -259,15 +260,23 @@ function drawRoutes(ctx: CanvasRenderingContext2D, m: VModel, nowMs: number, zoo
   ctx.globalAlpha = 1
 }
 
-/** 무리 깃: 무리 기준 점(anchor)에 한 자루씩 — 우리 편 무리만 (적의 것은 대 깃으로 읽힌다) */
-function addGroupFlags(m: VModel, at: number[]): void {
-  if (m.anchor.length < 3) return
-  const GRPS = ['front', 'bows', 'horse']
-  for (let g = 0; g < 3; g++) {
-    let any = false
-    for (const q of m.squads) if (q.side === 0 && q.grp === GRPS[g] && q.men > 0) { any = true; break }
-    const a = m.anchor[g]
-    if (any && a !== undefined) at.push(unitsToPx(a.u), unitsToPx(a.v), 0, 3, 0)
+/**
+ * 무리 깃: 편마다 무리(앞줄·활·기병)마다 하나 — 무리 가운데에서 제 진영 쪽으로 뒤에 선다.
+ * 깃 꺾임·기운 채·떨어짐은 이 깃에 건다 (사기는 무리의 사람 수로 가중 평균 · 꺾임은 무리 안 대 가운데 가장 큰 것)
+ */
+function addGroupFlags(m: VModel, at: number[], nowMs: number): void {
+  const F = P.field, GRPS = ['front', 'bows', 'horse']
+  for (const side of [0, 1] as const) {
+    const enemyDir = side === 0 ? m.face : -m.face
+    for (const grp of GRPS) {
+      let men = 0, cu = 0, cv = 0, mor = 0
+      for (const q of m.squads) if (q.side === side && q.grp === grp && q.men > 0) { men += q.men; cu += q.u * q.men; cv += q.v * q.men; mor += moraleOf(q) * q.men }
+      if (men === 0) continue
+      mor /= men
+      let tilt = 0
+      for (const q of m.squads) if (q.side === side && q.grp === grp && q.men > 0) { const v = flagTilt(q.id, mor, enemyDir, nowMs, P.realm.tacBreakMorale); if (Math.abs(v) > Math.abs(tilt)) tilt = v }
+      at.push(unitsToPx(cu / men) - enemyDir * F.flagBackCells * F.cellPx, unitsToPx(cv / men), side, 3, tilt)
+    }
   }
 }
 
@@ -349,11 +358,10 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
   ctx.translate(-cam.x, -cam.y)
   drawGround(ctx, art, view)
   drawTerrain(ctx, cur, world.w, world.h)
-  drawStains(ctx, nowMs, F.soldierCells * F.cellPx)
 
   used = 0
   addProps(cur, art, view)
-  const baseH = F.soldierCells * F.cellPx
+  const baseH = F.soldierCells * F.cellPx, flagH = F.flagBaseCells * F.cellPx
   const pad = baseH * 3
   const lowShare = low ? F.lowDotsShare : 1000
   const arrows = arrowBuf; arrows.length = 0
@@ -382,10 +390,11 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
       const ranX = sx(q).ran
       const running = cur.end === null && moving && (ranX !== undefined ? ranX > 0 || (sx(q).flee ?? 0) === 1 : pq !== undefined && Math.hypot(q.u - pq.u, q.v - pq.v) / F.unit * F.hz > walkCps(q.grp) * F.runRatioPermille / 1000)
       const runStrip = running ? runStripFor(art, q.grp, q.kind) : null
-      const sl = settleDots(q, n, cur, nowMs, qu, qv, strip, face === -1, baseH, world.h)
+      const sH = q.grp === 'horse' ? baseH * F.horseBodyPermille / 1000 : baseH
+      const sl = settleDots(q, n, cur, nowMs, qu, qv, strip, face === -1, sH, world.h)
       if (n === 0) continue
-      const form = q.grp === 'front' ? q.form : 0
-      const dd = dotsOf(q.id, sl.N, form, face, nowMs, sl.dead)
+      const form = (sx(q).flee ?? 0) === 1 ? FORM_SCATTER : q.grp === 'front' ? q.form : 0
+      const dd = dotsOf(q.id, sl.N, form, face, nowMs, sl.dead, q.grp === 'horse' ? F.horseSpaceMul : 1)
       const kickCells = kickOf(q.id, nowMs)
       if (running && nowMs - (fx.dustAt.get(-1 - q.id) ?? -1e9) > F.runDustMs) {
         fx.dustAt.set(-1 - q.id, nowMs)
@@ -396,7 +405,6 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
         }
       }
       stepDots(dd, q.id, sl.dead, nowMs)
-      flagsAt.push(unitsToPx(qu) + kickCells * F.cellPx, unitsToPx(qv) - baseH * 0.2, side, 0, flagTilt(q.id, moraleOf(q), face, nowMs, P.realm.tacBreakMorale))
       const tqu = aq === undefined ? 0 : unitsToPx(aq.u), tqv = aq === undefined ? 0 : unitsToPx(aq.v)
       const od = aq === undefined ? undefined : peekDots(aq.id), osl = aq === undefined ? undefined : fx.slots.get(aq.id)
       const melee = fighting && q.grp !== 'bows'
@@ -443,7 +451,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
         scatterOf(q.id, k, nowMs)
         ox += (kickCells * (front ? 1 : 0.6) + sc.x) * F.cellPx
         if (sc.turn) flipDot = !flipDot
-        d.kind = 0; d.x = x + ox; d.y = y + oy; d.strip = strip; d.side = side; d.flip = flipDot; d.h = baseH
+        d.kind = 0; d.x = x + ox; d.y = y + oy; d.strip = strip; d.side = side; d.flip = flipDot; d.h = sH
         d.frame = pose(nowMs, ph, moving || gathering || (melee && mo.back === 1), fighting && front && swing)
         if (running && !fighting) {
           if (runStrip !== null) { d.strip = runStrip; d.frame = Math.floor(nowMs / F.runCellMs + ph * RUN_N) % RUN_N }
@@ -455,7 +463,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
           }
         }
         // 방진: 창을 앞으로 내민 채(공격 첫 칸 고정) 몸을 살짝 낮춘다
-        if (form === FORM_HOLD && !gathering && !fighting) { if (row >= 0 && row <= 1) d.frame = ATTACK0; d.h = baseH * F.holdDropPermille / 1000 }
+        if (form === FORM_HOLD && !gathering && !fighting) { if (row >= 0 && row <= 1) d.frame = ATTACK0; d.h = sH * F.holdDropPermille / 1000 }
         if (fighting && front && swing) fx.attackers++
         drawn++
         if (fighting && q.grp === 'bows' && aq !== undefined) {
@@ -479,18 +487,19 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
   fx.shots.length = ws
   // 쓰러진 병사: 오래된 것을 버리고 남은 것은 누운 칸(쓰러짐)으로 그리다 끝에서 옅어진다
   const cs = fx.corpses
-  while (cs.length > F.corpseMax) cs.shift()
+  while (cs.length > F.stainMax) cs.shift()
   let w = 0
-  for (const c of cs) if (nowMs - c.born < F.corpseMs) cs[w++] = c
+  for (const c of cs) if (nowMs - c.born < F.stainMs) cs[w++] = c
   cs.length = w
   for (const c of cs) {
     if (!inView(view, c.x, c.y, pad)) continue
     const age = (nowMs - c.born) / F.corpseMs
-    if (age >= 0 && !c.stained) { c.stained = true; addStain(c.x, c.y, c.born) }
+    const lyingMs = nowMs - c.born
     const d = nextItem()
     if (age < 0) { d.kind = 0; d.x = c.x; d.y = c.y; d.strip = c.strip; d.side = c.side; d.flip = c.flip; d.h = c.h; d.frame = pose(nowMs, c.ph, false, false); continue }
     d.kind = 1; d.x = c.x; d.y = c.y; d.strip = c.strip; d.side = c.side; d.flip = c.flip; d.h = c.h; d.frame = nowMs - c.born < F.hitFrameMs ? HIT : DOWN
-    d.alpha = age < 0.6 ? 1 : Math.max(0, 1 - (age - 0.6) / 0.4)
+    // 쓰러진 병사는 그림 그대로 눕고 어둡게(옅게) 남다가 끝에서 사라진다 (자국)
+    d.alpha = lyingMs < F.corpseMs ? 1 : lyingMs < F.stainMs * 0.85 ? Math.max(0.5, 1 - (lyingMs - F.corpseMs) / 600) : Math.max(0, 0.5 * (F.stainMs - lyingMs) / (F.stainMs * 0.15))
   }
   // 장수
   for (const e of cur.heroes) {
@@ -527,10 +536,10 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
 
   drawOmens(ctx, nowMs, cam.zoom)
   drawRoutes(ctx, cur, nowMs, cam.zoom)
-  addGroupFlags(cur, flagsAt)
+  addGroupFlags(cur, flagsAt, nowMs)
   drawParticles(ctx, nowMs, cam.zoom)
-  drawBanners(ctx, flagsAt, cam.zoom, baseH)
-  drawPops(ctx, nowMs, cam.zoom, baseH)
+  drawBanners(ctx, flagsAt, cam.zoom, flagH)
+  drawPops(ctx, nowMs, cam.zoom, flagH)
 
   // 화살: 낱낱의 짧은 선 (호를 그리며 난다) — 몸은 크림색 한 경로, 꼬리 3분의 1 은 쏜 편 색으로 편마다 한 경로 (누구 화살인지 읽히게)
   if (arrows.length > 0) {

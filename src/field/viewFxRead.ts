@@ -6,6 +6,8 @@ import type { VModel, VSquad } from './viewRead.ts'
 
 /** 앞줄 모양 · 무리 명령 · impact 의 how · loss 의 how (types.ts 와 같은 값 — 그리는 쪽이 sim 을 몰라도 되게 여기 둔다) */
 export const FORM_CHARGE = 1, FORM_HOLD = 2
+/** 그리는 쪽만 쓰는 가짜 모양: 달아나는 대는 흩어진다 (줄 선 덩어리가 풀려) */
+export const FORM_SCATTER = 9
 export const ORD_CHARGE = 1, ORD_HOLD = 2, ORD_FLANK = 4
 export const HIT_PLAIN = 0, HIT_GOOD = 1, HIT_BLOCKED = 2
 export const LOSS_ARROW = 1, LOSS_IMPACT = 4

@@ -11,9 +11,9 @@ const extent = (d: ReturnType<typeof dotsOf>, f: (k: number) => number, dead: Re
 
 test('방진은 흩어짐보다 촘촘하고 줄이 선다 · 돌격은 앞이 뾰족하다', () => {
   resetForm()
-  const auto = dotsOf(1, 16, 0, 1, 0, none)
+  const auto = dotsOf(1, 16, 9, 1, 0, none)
   const hold = dotsOf(2, 16, 2, 1, 0, none)
-  assert.ok(extent(hold, k => hold.cv[k]!) < extent(auto, k => auto.cv[k]!), '방진이 옆으로 더 좁다')
+  assert.ok(extent(hold, k => hold.cv[k]!) < extent(auto, k => auto.cv[k]!), '방진이 흩어짐보다 옆으로 좁다')
   assert.equal(rowCount(hold), 3)
   const wedge = dotsOf(3, 16, 1, 1, 0, none)
   let front = 0
@@ -57,4 +57,15 @@ test('점이 쓰러지면 300ms 뒤 뒷줄 점이 한 칸 나선다', () => {
   for (let t = 500; t < 1000; t += 50) stepDots(d, 7, dead, t)
   const k1 = d.occ[s0]!
   assert.equal(rowOfDot(d, k1), 0)
+})
+
+test('알아서(0)도 줄 선 덩어리 · 열 2~3 × 줄 · 흩어짐은 달아날 때만', () => {
+  resetForm()
+  const lines = dotsOf(11, 15, 0, 1, 0, none)
+  assert.equal(rowCount(lines), 3)
+  const scat = dotsOf(12, 15, 9, 1, 0, none)
+  assert.equal(rowCount(scat), 0)
+  assert.ok(extent(lines, k => lines.cu[k]!) < 2.5 && extent(lines, k => lines.cv[k]!) < 3.5, '덩어리가 작다')
+  const wide = dotsOf(13, 15, 0, 1, 0, none, 1.6)
+  assert.ok(extent(wide, k => wide.cv[k]!) > extent(lines, k => lines.cv[k]!), '기병은 더 벌어진다')
 })

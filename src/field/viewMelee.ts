@@ -153,12 +153,12 @@ export function drawParticles(ctx: CanvasRenderingContext2D, nowMs: number, zoom
       if (p.kind !== 0 || nowMs < p.at) continue
       const t = (nowMs - p.at) / p.life
       if (Math.min(2, Math.floor((1 - t) * 3)) !== bin) continue
-      const r = p.r * (0.6 + t * 0.9)
+      const r = Math.max(p.r, 2.4 / zoom) * (0.6 + t * 0.7)
       const x = p.x + p.vx * (nowMs - p.at) / 1000, y = p.y + p.vy * (nowMs - p.at) / 1000
       ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, 6.2832); any = true
     }
     if (!any) continue
-    ctx.fillStyle = '#c9b48a'; ctx.globalAlpha = 0.18 + bin * 0.14; ctx.fill()
+    ctx.fillStyle = '#a89674'; ctx.globalAlpha = 0.15 + bin * 0.12; ctx.fill()
   }
   ctx.globalAlpha = 1
   ctx.beginPath()
