@@ -70,8 +70,11 @@ let seed = num('seed', 7)
 const men = num('men', 1200)
 /** 우리 장수와 적장이 같은 그림이 되지 않게 열쇠를 나눈다 (둘 다 대시 칸이 있는 띠) */
 const HERO_KEY_OURS = 'ara', HERO_KEY_FOE = 'bakdal'
+/** 준비 화면에서 고른 우리 진 (0 방패 벽 · 1 창 쐐기 · 2 넓은 날개) — 「다시」 뒤에도 그대로 */
+let lineChoice = 0
 function newSetup() {
   const su = plainSetup(seed, men, true, makeMap())
+  su.sides[0].form = lineChoice as 0 | 1 | 2
   if (su.sides[0].hero !== null) su.sides[0].hero.id = HERO_KEY_OURS
   if (su.sides[1].hero !== null) su.sides[1].hero.id = HERO_KEY_FOE
   return su
@@ -479,8 +482,17 @@ function padBtns(): { dash: PadBtn; skill: PadBtn; rally: PadBtn } {
   return {
     rally: { lit: locked, frac: 0, sec: 0, label: t('field.rally'), key: firstKeyLabel('rally'), icon: 'flag/flag-guard.png' },
     dash: { frac: h === undefined ? 0 : Math.min(1, h.dashCd / dashMax), sec: h === undefined ? 0 : Math.ceil(h.dashCd / hz), label: t('field.dash'), key: firstKeyLabel('dash'), icon: 'flag/flag-charge.png' },
-    skill: { frac: h === undefined ? 0 : Math.min(1, h.artCd / artMax), sec: h === undefined ? 0 : Math.ceil(h.artCd / hz), label: art === 'none' ? '-' : t(`war.artName.${art}` as Key), key: firstKeyLabel('skillQ'), icon: art === 'none' ? '' : `flag/flag-art-${art}.png` },
+    skill: { grit: h?.grit ?? 0, lit: (h?.grit ?? 0) >= 1000, frac: h === undefined || h.grit >= 1000 ? 0 : Math.min(1, h.artCd / artMax), sec: h === undefined || h.grit >= 1000 ? 0 : Math.ceil(h.artCd / hz), label: art === 'none' ? '-' : t(`war.artName.${art}` as Key), key: firstKeyLabel('skillQ'), icon: art === 'none' ? '' : `flag/flag-art-${art}.png` },
   }
+}
+
+/** 준비 화면의 진 카드: 고르면 맵의 우리 진이 그 꼴로 다시 선다 */
+function pickLine(i: number): void {
+  if (ui.phase !== 'ready' || i === lineChoice) return
+  lineChoice = i
+  state = createField(newSetup()); cur = readField(state); prev = null; acc = 0
+  resetFx(); lossAcc = []; hist.length = 0
+  markEpoch++
 }
 
 function pickGroup(g: InputGroup): void {
@@ -504,6 +516,7 @@ function goBattle(): void {
 const handlers = {
   onCell: pickGroup,
   onBig: pressBig,
+  onLine: pickLine,
   onGo: goBattle,
 }
 
@@ -707,16 +720,16 @@ function paint(now: number, alpha: number): void {
     k.x = cam.x; k.y = cam.y; k.z = cam.zoom; k.sel = selKey; k.epoch = markEpoch
   }
   flags.frame(now)
-  flags.sync(cur, ui, { front: ordOf('front') === ORD_CHARGE ? 0 : ordOf('front') === ORD_HOLD ? 1 : -1, volley: ordOf('bows') === ORD_VOLLEY, flank: ordOf('horse') === ORD_FLANK, aiming, sentGroup, touch: touchMode })
+  flags.sync(cur, ui, { line: lineChoice, foeLine: cur.lineup[1], front: ordOf('front') === ORD_CHARGE ? 0 : ordOf('front') === ORD_HOLD ? 1 : -1, volley: ordOf('bows') === ORD_VOLLEY, flank: ordOf('horse') === ORD_FLANK, aiming, sentGroup, touch: touchMode })
   tutorial(now)
   root.classList.toggle('touch', touchMode)
   arrows.sync(offscreenArrows())
   const pb = padBtns()
   pad.sync(!blocked && ui.phase === 'play' && cur.end === null, touchMode, touchMode && !heroOrdered && playMs < 3000, pb.dash, pb.skill, pb.rally, !blocked && ui.phase === 'ready')
-  hud.sync(lagged(now), { gold: fxGold, blocked: fxBlocked })
+  hud.sync(lagged(now), { gold: fxGold, blocked: fxBlocked, breakSide: cur.breakTick[0] >= 0 ? 0 : cur.breakTick[1] >= 0 ? 1 : -1 })
   fxGold = false; fxBlocked = false
   hud.frame(now)
-  hud.showEnd(endAt > 0 && now - endAt >= P.field.endBoxMs ? cur : null, endStats())
+  hud.showEnd(endAt > 0 && now - endAt >= P.field.endBoxMs ? cur : null, endStats(), endWhy())
   const h = heroNow()
   const s = h === undefined ? null : toScreen(cam, vp, pxOf(h.u), pxOf(h.v))
   first.sync(!blocked && s !== null && !firstDone && !heroOrdered && (ui.phase === 'ready' || playMs < P.field.firstHintMs) && ui.phase !== 'end' && cur.end === null && !helpOpen, s?.x ?? 0, s?.y ?? 0, touchMode, vp.w, vp.h)
@@ -776,6 +789,12 @@ function lagged(now: number): VModel {
   return cur.end !== null ? cur : hist[0]!.m
 }
 /** 끝 상자의 숫자: 쓰러뜨린 적 · 잃은 우리 병사 (처음 사람 수와 지금 사람 수의 차) */
+/** 끝 상자의 까닭: 진 판은 우리 편이 입은 까닭 · 이긴 판은 적 편이 입은 까닭 */
+function endWhy(): { by: Readonly<Record<'arrows' | 'melee' | 'flank' | 'hero' | 'domino' | 'push', number>>; won: boolean } | undefined {
+  if (cur.end === null || cur.winner < 0) return undefined
+  const won = cur.winner === 0
+  return { by: cur.stats.moraleBy[won ? 1 : 0], won }
+}
 function endStats(): { killed: number; lost: number; flank: number; art: number } | undefined {
   if (cur.end === null) return undefined
   const st = cur.stats
@@ -947,7 +966,7 @@ hud = mountHud(root, {
   onPause: () => { paused = !paused; hud.setPaused(paused) },
   onAgain: restart,
   onHelp: toggleHelp,
-})
+}, import.meta.env.BASE_URL + 'realm/')
 hud.setZoom(0)
 flags = mountFlags(root, import.meta.env.BASE_URL + 'realm/', handlers)
 help = mountHelp(root)

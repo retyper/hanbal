@@ -8,7 +8,7 @@ import { stickDir } from './input.ts'
 
 export interface PadHandlers { onDir(dir: number): void; onDash(): void; onSkill(): void; onRally(): void }
 /** 단추 한 칸의 지금 모양: frac = 쿨이 남은 몫 0~1 · sec = 남은 초 · label = 이름 · key = 키 글자 · icon = 그림 경로 (없으면 글자만) */
-export interface PadBtn { lit?: boolean; frac: number; sec: number; label: string; key: string; icon: string }
+export interface PadBtn { lit?: boolean; grit?: number; frac: number; sec: number; label: string; key: string; icon: string }
 export interface Pad { sync(show: boolean, touch: boolean, shake: boolean, dash: PadBtn, skill: PadBtn, rally: PadBtn, readyStick: boolean): void }
 
 const GOLD = '#ffd27a'
@@ -76,13 +76,14 @@ export function mountPad(root: HTMLElement, base: string, h: PadHandlers): Pad {
   })
   const sigs = ['', '', '']
   const paint = (i: number, b: PadBtn): void => {
-    const sig = `${b.sec}|${b.label}|${b.key}|${b.icon}|${Math.round(b.frac * 40)}|${b.lit === true ? 1 : 0}`
+    const sig = `${b.sec}|${b.label}|${b.key}|${b.icon}|${Math.round(b.frac * 40)}|${b.lit === true ? 1 : 0}|${Math.round((b.grit ?? 0) / 25)}`
     if (sig === sigs[i]) return
     sigs[i] = sig
     const el = pad.children[i] as HTMLElement
     const cool = b.sec > 0
     el.className = `fd-pb${cool ? ' cool' : ''}${b.lit === true ? ' lit' : ''}`
-    const ring = cool ? `<svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="${R}" fill="none" stroke="${GOLD}" stroke-width="2.4" stroke-dasharray="${(b.frac * 100).toFixed(1)} 100"/></svg><s>${b.sec}</s>` : ''
+    const grit = (b.grit ?? 0) > 0 ? `<circle cx="18" cy="18" r="17.2" fill="none" stroke="#7fe3ff" stroke-width="1.4" stroke-dasharray="${((b.grit ?? 0) / 1000 * 108).toFixed(1)} 200"/>` : ''
+    const ring = cool || grit !== '' ? `<svg viewBox="0 0 36 36">${cool ? `<circle cx="18" cy="18" r="${R}" fill="none" stroke="${GOLD}" stroke-width="2.4" stroke-dasharray="${(b.frac * 100).toFixed(1)} 100"/>` : ''}${grit}</svg>${cool ? `<s>${b.sec}</s>` : ''}` : ''
     el.innerHTML = `<em>${b.key}</em>${b.icon === '' ? '' : `<img src="${base}${b.icon}" alt="">`}<b>${b.label}</b>${ring}`
   }
   return {

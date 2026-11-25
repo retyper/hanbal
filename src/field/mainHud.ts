@@ -10,9 +10,20 @@ import type { VModel } from './viewRead.ts'
 
 export interface HudHandlers { onZoom(): void; onPause(): void; onAgain(): void; onHelp(): void }
 /** 이번에 판이 보인 큰 부딪힘 — gold 상성이 맞음(막대 테두리가 금빛으로 번쩍) · blocked 막힘 */
-export interface HudFx { gold: boolean; blocked: boolean }
+export interface HudFx { gold: boolean; blocked: boolean; breakSide: number }
+/** 사기를 깎는 까닭 여섯 (stats.moraleBy 의 열쇠) 과 그 그림 */
+const CAUSES = ['arrows', 'melee', 'flank', 'hero', 'domino', 'push'] as const
+type Cause = typeof CAUSES[number]
+const CAUSE_ICON: Readonly<Record<Cause, string>> = { arrows: 'icon/unit-archer.png', melee: 'icon/unit-spear.png', flank: 'icon/unit-buyeo-cavalry.png', hero: 'icon/unit-general.png', domino: 'flag/flag-retreat.png', push: 'flag/flag-hold.png' }
+/** 그 편이 입은 몫이 가장 큰 까닭 (모두 0 이면 null) */
+export function topCause(by: Readonly<Record<Cause, number>>): Cause | null {
+  let best: Cause | null = null, bv = 0
+  for (const c of CAUSES) if (by[c] > bv) { bv = by[c]; best = c }
+  return best
+}
 /** 끝 상자의 숫자: 쓰러뜨린 적 · 잃은 우리 병사 */
 export interface EndStats { killed: number; lost: number; flank: number; art: number }
+export interface EndWhy { by: Readonly<Record<Cause, number>>; won: boolean }
 export interface Hud {
   setZoom(level: number): void
   setPaused(paused: boolean): void
@@ -20,7 +31,7 @@ export interface Hud {
   /** 위 띠를 지금 판으로 고친다 · ready 면 사기 띠는 가득 */
   sync(m: VModel, fx?: HudFx): void
   /** 끝 상자 (null 이면 닫는다) */
-  showEnd(m: VModel | null, stats?: EndStats): void
+  showEnd(m: VModel | null, stats?: EndStats, why?: EndWhy): void
   frame(nowMs: number): void
 }
 
@@ -53,6 +64,11 @@ const CSS = `
 #fd-edge .chip.a{background:#2f8cff}
 #fd-edge .chip.b{background:#c43e30}
 #fd-edge .chip.big{width:14px;height:14px}
+#fd-edge .chip.pic{width:auto;height:auto;background:none}
+#fd-edge .chip.pic img{width:18px;height:18px;object-fit:contain;display:block}
+#fd-end .cb{display:flex;height:22px;max-width:300px;margin:0 auto 8px;border-radius:6px;overflow:hidden;gap:2px}
+#fd-end .cb span{display:flex;align-items:center;justify-content:center;background:#fff2;min-width:22px}
+#fd-end .cb img{width:18px;height:18px;object-fit:contain}
 @keyframes fd-fall{to{transform:translateY(26px) rotate(40deg);opacity:0}}
 #fd-edge .bar.sh{animation:fd-sh .15s linear}
 @keyframes fd-sh{25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
@@ -66,7 +82,7 @@ const CSS = `
 #fd-end button{min-width:180px;min-height:56px;font-size:20px;font-weight:700;border-color:#ffd27a;color:#1a1305;background:#ffd27a}
 `
 
-export function mountHud(root: HTMLElement, h: HudHandlers): Hud {
+export function mountHud(root: HTMLElement, h: HudHandlers, base = ''): Hud {
   const style = document.createElement('style')
   style.textContent = CSS
   document.head.append(style)
@@ -80,19 +96,29 @@ export function mountHud(root: HTMLElement, h: HudHandlers): Hud {
   edge.innerHTML = `<b id="fd-n0"></b><span class="bar tug" id="fd-b0"><i class="a"></i><i class="b"></i><u style="left:${edgeLine}%"></u><u style="left:${(100 - edgeLine).toFixed(1)}%"></u></span><b id="fd-n1"></b>`
   const end = document.createElement('div')
   end.id = 'fd-end'; end.hidden = true
-  end.innerHTML = `<div><h2 id="fd-endtext"></h2><div class="st" id="fd-endstats"></div><p id="fd-why"></p><button id="fd-again2" type="button"></button></div>`
+  end.innerHTML = `<div><h2 id="fd-endtext"></h2><div class="st" id="fd-endstats"></div><div class="cb" id="fd-cb"></div><p id="fd-why"></p><button id="fd-again2" type="button"></button></div>`
   root.append(edge, hud, end)
   const $ = (id: string): HTMLElement => document.getElementById(id) as HTMLElement
   const zoom = $('fd-zoom'), pause = $('fd-pause'), again = $('fd-again'), again2 = $('fd-again2')
   const n0 = $('fd-n0'), n1 = $('fd-n1'), b0 = $('fd-b0'), b1 = b0
   const fa = b0.querySelector('i.a') as HTMLElement, fb = b0.querySelector('i.b') as HTMLElement
-  const endText = $('fd-endtext'), endWhy = $('fd-why'), endStats = $('fd-endstats')
+  const endText = $('fd-endtext'), endWhy = $('fd-why'), endStats = $('fd-endstats'), endBar = $('fd-cb')
   zoom.hidden = true // 시제품: 확대 단추는 뺀다 (51 §2) · 장수 따라가기 한 가지 배율
   again.textContent = again2.textContent = t('field.again')
   pause.textContent = t('field.pause')
   let armUntil = 0
   let goldUntil = 0
   let prevPush = -1
+  let breakSeen = -1
+  const prevBy: Record<Cause, number>[] = [{ arrows: 0, melee: 0, flank: 0, hero: 0, domino: 0, push: 0 }, { arrows: 0, melee: 0, flank: 0, hero: 0, domino: 0, push: 0 }]
+  /** 그 편에 이번에 가장 크게 더해진 까닭 (조각에 같이 떨어뜨린다) */
+  const newCause = (m: VModel, side: 0 | 1): Cause | null => {
+    const now = m.stats.moraleBy[side], was = prevBy[side]!
+    let best: Cause | null = null, bv = 0
+    for (const c of CAUSES) { const d = now[c] - was[c]; if (d > bv) { bv = d; best = c } }
+    for (const c of CAUSES) was[c] = now[c]
+    return best
+  }
   /** 한 편의 사기 비율 (사람 수로 무게 · 처음 사기 대비) */
   const moraleShare = (m: VModel, side: number): number => {
     let num = 0, den = 0
@@ -100,11 +126,13 @@ export function mountHud(root: HTMLElement, h: HudHandlers): Hud {
     return den <= 0 ? 0 : num / den
   }
   const edgeBox = edge
-  const chip = (bar: HTMLElement, push: number, side: 0 | 1, big: boolean): void => {
+  const chip = (bar: HTMLElement, push: number, side: 0 | 1, big: boolean, cause: Cause | null = null, delay = 0): void => {
     const r = bar.getBoundingClientRect(), o = edgeBox.getBoundingClientRect()
     const x = r.left - o.left + r.width * push / 1000
     const c = document.createElement('i')
-    c.className = `chip ${side === 0 ? 'a' : 'b'}${big ? ' big' : ''}`
+    c.className = `chip ${side === 0 ? 'a' : 'b'}${big ? ' big' : ''}${cause !== null ? ' pic' : ''}`
+    if (cause !== null) c.innerHTML = `<img src="${base}${CAUSE_ICON[cause]}" alt="">`
+    if (delay > 0) c.style.animationDelay = `${delay}ms`
     c.style.left = `${Math.round(x - 4)}px`
     edgeBox.append(c)
     c.addEventListener('animationend', () => c.remove())
@@ -129,8 +157,13 @@ export function mountHud(root: HTMLElement, h: HudHandlers): Hud {
       // 우리 밀기 = 우리 사기 비율 / (우리 + 적) — 크게 밀리면 밀린 쪽 끝에서 조각이 떨어진다
       const r0 = moraleShare(m, 0), r1 = moraleShare(m, 1)
       const push = r0 + r1 <= 0 ? 500 : Math.round(r0 * 1000 / (r0 + r1))
-      if (prevPush >= 0 && Math.abs(push - prevPush) > P.field.chipDropPermille) chip(b0, push, push < prevPush ? 0 : 1, Math.abs(push - prevPush) >= P.field.chipDropPermille * 3)
+      if (prevPush >= 0 && Math.abs(push - prevPush) > P.field.chipDropPermille) chip(b0, push, push < prevPush ? 0 : 1, Math.abs(push - prevPush) >= P.field.chipDropPermille * 3, newCause(m, push < prevPush ? 0 : 1))
       prevPush = push
+      // 편이 무너지면 진 쪽 막대가 0.5초에 걸쳐 무너진다 (조각 여럿)
+      if (fx !== undefined && fx.breakSide >= 0 && breakSeen !== fx.breakSide) {
+        breakSeen = fx.breakSide
+        for (let i = 0; i < 8; i++) chip(b0, fx.breakSide === 0 ? 20 + i * 60 : 980 - i * 60, fx.breakSide as 0 | 1, true, null, i * 60)
+      }
       if (fx !== undefined && fx.gold) { goldUntil = performance.now() + P.field.goldFlashMs; b0.classList.add('gold'); b1.classList.add('gold') }
       const k = `${push}|${m.edge[0]}|${m.edge[1]}|${men(m, 0)}|${men(m, 1)}`
       if (k === key) return
@@ -141,12 +174,16 @@ export function mountHud(root: HTMLElement, h: HudHandlers): Hud {
       fb.style.width = `${100 - push / 10}%`
       b0.classList.toggle('low', m.edge[0] < P.field.edgeLowPermille || m.edge[1] < P.field.edgeLowPermille)
     },
-    showEnd(m, stats) {
+    showEnd(m, stats, why) {
       if (m === null || m.end === null) { end.hidden = true; return }
       end.hidden = false
-      endStats.innerHTML = stats === undefined ? '' : `<span>${t('field.res.killed', { n: stats.killed.toLocaleString() })}</span><span>${t('field.res.lost', { n: stats.lost.toLocaleString() })}</span><span>${t('field.res.flank', { n: stats.flank })}</span><span>${t('field.res.art', { n: stats.art })}</span>`
+      endStats.innerHTML = stats === undefined ? '' : `<span>${t('field.res.killed', { n: stats.killed.toLocaleString() })}</span><span>${t('field.res.lost', { n: stats.lost.toLocaleString() })}</span>${stats.flank > 0 ? `<span>${t('field.res.flank', { n: stats.flank })}</span>` : ''}${stats.art > 0 ? `<span>${t('field.res.art', { n: stats.art })}</span>` : ''}`
       endText.textContent = t(m.winner === 0 ? 'field.end.win' : m.winner === 1 ? 'field.end.lose' : 'field.end.draw')
-      endWhy.textContent = t(`field.endwhy.${m.end}` as Key)
+      const top = why === undefined ? null : topCause(why.by)
+      endWhy.textContent = top === null || why === undefined ? t(`field.endwhy.${m.end}` as Key) : t(`field.cause.${why.won ? 'win' : 'lose'}.${top}` as Key)
+      // 까닭 막대: 여섯 몫을 그림과 길이로 (글 없이) · 0 인 몫은 없다
+      const tot = why === undefined ? 0 : CAUSES.reduce((a, c) => a + why.by[c], 0)
+      endBar.innerHTML = why === undefined || tot <= 0 ? '' : CAUSES.filter(c => why.by[c] > 0).map(c => `<span style="flex:${Math.max(1, Math.round(why.by[c] * 100 / tot))}"><img src="${base}${CAUSE_ICON[c]}" alt=""></span>`).join('')
     },
     frame(nowMs) {
       if (goldUntil > 0 && performance.now() >= goldUntil) { goldUntil = 0; b0.classList.remove('gold'); b1.classList.remove('gold') }
