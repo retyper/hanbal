@@ -3583,6 +3583,22 @@ export const en: Partial<Record<Key, string>> = {
   'field.go': 'Start battle',
   'field.auto': 'Auto',
   'field.left': 'Orders left this period: {n}',
+  // Field test arena top bar and end box (src/field/mainHud.ts)
+  'field.again': 'Again',
+  'field.again.sure': 'Press once more',
+  'field.pause': 'Pause',
+  'field.resume': 'Resume',
+  'field.zoom.0': 'View: auto',
+  'field.zoom.1': 'View: close',
+  'field.zoom.2': 'View: closer',
+  'field.end.win': 'Victory',
+  'field.end.lose': 'Defeat',
+  'field.end.draw': 'Draw',
+  'field.endwhy.morale': 'Morale broke first',
+  'field.endwhy.men': 'Too many soldiers were lost',
+  'field.endwhy.time': 'Time ran out',
+  'field.endwhy.retreat': 'You withdrew',
+  'field.endwhy.invalid': 'The start was not valid',
 }
 
 /** 아직 영어로 안 옮긴 키 — 일부러 비워 둔 것만 (한국어로 나간다) */

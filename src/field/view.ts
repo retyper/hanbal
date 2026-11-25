@@ -72,14 +72,14 @@ function pose(nowMs: number, phase: number, moving: boolean, attacking: boolean)
   return STAND0 + Math.floor(nowMs / F.animStandMs + phase * STAND_N) % STAND_N
 }
 
-function drawGround(ctx: CanvasRenderingContext2D, art: Art, view: ReturnType<typeof fieldView>, world: { w: number; h: number }): void {
+function drawGround(ctx: CanvasRenderingContext2D, art: Art, view: ReturnType<typeof fieldView>): void {
   const g = art.ground
   ctx.fillStyle = GROUND_FALLBACK
-  ctx.fillRect(0, 0, world.w, world.h)
+  ctx.fillRect(view.left, view.top, view.right - view.left, view.bottom - view.top)
   if (!(g.complete && g.naturalWidth > 0)) return
   const th = GROUND_TILE_CELLS * P.field.cellPx, tw = th * g.naturalWidth / g.naturalHeight
-  const x0 = Math.max(0, Math.floor(view.left / tw)), x1 = Math.min(Math.ceil(world.w / tw), Math.ceil(view.right / tw))
-  const y0 = Math.max(0, Math.floor(view.top / th)), y1 = Math.min(Math.ceil(world.h / th), Math.ceil(view.bottom / th))
+  const x0 = Math.floor(view.left / tw), x1 = Math.ceil(view.right / tw)
+  const y0 = Math.floor(view.top / th), y1 = Math.ceil(view.bottom / th)
   for (let ty = y0; ty < y1; ty++) for (let tx = x0; tx < x1; tx++) ctx.drawImage(g, tx * tw, ty * th, tw + 1, th + 1)
 }
 
@@ -109,6 +109,32 @@ function addProps(m: VModel, art: Art, view: ReturnType<typeof fieldView>): void
   }
 }
 
+/**
+ * 대마다 깃 하나 (대 가운데 위): 우리 = 네모 · 적 = 끝이 갈라진 제비꼬리. 모양으로 갈리니 색을 못 가려도 읽힌다.
+ * 크기는 화면 px 로 하한을 둔다 (멀리서도 읽히게). 장수 깃(kind 1)은 더 크고 쓰러진 동안(kind 2)은 속이 빈 테두리만.
+ * 빨간 원·햇살 모양은 쓰지 않는다.
+ */
+function drawBanners(ctx: CanvasRenderingContext2D, at: readonly number[], zoom: number, baseH: number): void {
+  const F = P.field
+  ctx.lineJoin = 'round'
+  for (let i = 0; i < at.length; i += 4) {
+    const x = at[i]!, y = at[i + 1]!, side = at[i + 2] as 0 | 1, kind = at[i + 3]!
+    const hero = kind > 0
+    const sz = Math.max(baseH * (hero ? 0.4 : 0.3), (hero ? F.heroFlagMinPx : F.flagMinPx) / zoom)
+    const top = y - baseH * (hero ? 1.9 : 1.5) - sz * 1.2
+    ctx.strokeStyle = ARROW_COLOR
+    ctx.lineWidth = Math.max(1, 1.4 / zoom)
+    ctx.beginPath(); ctx.moveTo(x, y - baseH * (hero ? 1.5 : 1.1)); ctx.lineTo(x, top); ctx.stroke()
+    ctx.beginPath()
+    ctx.moveTo(x, top)
+    if (side === 0) { ctx.lineTo(x + sz, top); ctx.lineTo(x + sz, top + sz * 0.8); ctx.lineTo(x, top + sz * 0.8) }
+    else { ctx.lineTo(x + sz, top); ctx.lineTo(x + sz * 0.62, top + sz * 0.4); ctx.lineTo(x + sz, top + sz * 0.8); ctx.lineTo(x, top + sz * 0.8) }
+    ctx.closePath()
+    if (kind !== 2) { ctx.fillStyle = SIDE_COLOR[side]!; ctx.fill() }
+    ctx.stroke()
+  }
+}
+
 function drawItem(ctx: CanvasRenderingContext2D, d: Item, low: boolean): void {
   if (d.kind === 2) {
     const img = d.img!
@@ -122,6 +148,7 @@ function drawItem(ctx: CanvasRenderingContext2D, d: Item, low: boolean): void {
     ctx.beginPath()
     ctx.ellipse(d.x, d.y, d.h * (d.hero ? 0.3 : 0.26), d.h * (d.hero ? 0.1 : 0.08), 0, 0, FULL_TURN)
     ctx.fill()
+    if (d.hero) { ctx.globalAlpha = 0.9; ctx.strokeStyle = SIDE_COLOR[d.side]!; ctx.lineWidth = Math.max(1.5, d.h * 0.05); ctx.stroke() }
     ctx.globalAlpha = 1
   }
   const s = d.strip
@@ -135,13 +162,6 @@ function drawItem(ctx: CanvasRenderingContext2D, d: Item, low: boolean): void {
     ctx.restore()
   } else ctx.drawImage(src, d.frame * s.cw, 0, s.cw, s.ch, d.x - dw / 2, d.y - s.feet * sc, dw, dh)
   if (d.alpha < 1) ctx.globalAlpha = 1
-  if (d.hero && d.kind === 0) {
-    // 장수 머리 위 작은 깃: 편 색 세모 (두 편이 한눈에 갈리게)
-    const hy = d.y - d.h * 1.22, r = d.h * 0.1
-    ctx.fillStyle = SIDE_COLOR[d.side]!
-    ctx.beginPath(); ctx.moveTo(d.x - r, hy - r); ctx.lineTo(d.x + r, hy - r); ctx.lineTo(d.x, hy + r); ctx.closePath(); ctx.fill()
-    ctx.strokeStyle = ARROW_COLOR; ctx.lineWidth = Math.max(1, r * 0.25); ctx.stroke()
-  }
 }
 
 /**
@@ -161,7 +181,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
   ctx.translate(vp.w / 2, vp.h / 2)
   ctx.scale(cam.zoom, cam.zoom)
   ctx.translate(-cam.x, -cam.y)
-  drawGround(ctx, art, view, world)
+  drawGround(ctx, art, view)
   drawTerrain(ctx, cur, world.w, world.h)
 
   used = 0
@@ -170,6 +190,8 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
   const pad = baseH * 3
   const lowShare = low ? F.lowDotsShare : 1000
   const arrows: number[] = []
+  /** 대 깃 자리 (x · y · 편 · 장수면 1) — 끝에서 한꺼번에 그린다 */
+  const flagsAt: number[] = []
   let drawn = 0
   for (const side of [0, 1] as const) {
     const mine = cur.squads.filter(q => q.side === side)
@@ -186,7 +208,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
       if (tq !== undefined && tq.men > 0) {
         const range = (q.grp === 'bows' ? F.bowRangeCells : F.meleeRangeCells + 1) * F.unit
         const du = q.u - tq.u, dv = q.v - tq.v
-        attacking = du * du + dv * dv <= range * range
+        attacking = cur.end === null && du * du + dv * dv <= range * range
       }
       if (du0 !== 0) fx.face.set(q.id, du0 > 0 ? 1 : -1)
       else if (tq !== undefined && tq.men > 0 && attacking) fx.face.set(q.id, tq.u >= q.u ? 1 : -1)
@@ -200,17 +222,18 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
         fx.corpses.push({ x, y, side, flip: face === -1, strip, h: baseH, born: nowMs })
       }
       if (n === 0) return
+      flagsAt.push(unitsToPx(qu), unitsToPx(qv) - baseH * 0.2, side, 0)
       const tqu = tq === undefined ? 0 : unitsToPx(tq.u), tqv = tq === undefined ? 0 : unitsToPx(tq.v)
       for (let k = 0; k < n; k++) {
         const o = dotOffset(q.id, k)
-        const x = unitsToPx(qu) + o.du * F.cellPx, y = unitsToPx(qv) + o.dv * F.cellPx
+        const x = unitsToPx(qu) + o.du * F.cellPx, y = Math.max(0, unitsToPx(qv) + o.dv * F.cellPx)
         if (!inView(view, x, y, pad)) continue
         const ph = dotPhase(q.id, k)
         const d = nextItem()
         d.kind = 0; d.x = x; d.y = y; d.strip = strip; d.side = side; d.flip = face === -1; d.h = baseH
         d.frame = pose(nowMs, ph, moving, attacking)
         drawn++
-        if (attacking && q.grp === 'bows' && tq !== undefined) {
+        if (attacking && q.grp === 'bows' && tq !== undefined && cur.end === null) {
           const cyc = F.arrowCycleMs, tt = (nowMs + ph * cyc) % cyc
           if (tt < F.arrowFlightMs) {
             const idx = Math.floor((nowMs + ph * cyc) / cyc), to = dotOffset(tq.id, (k + idx) % F.dotsPerSquadMax)
@@ -250,14 +273,17 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
     const d = nextItem()
     d.kind = 0; d.hero = true; d.x = x; d.y = y; d.strip = heroStrip(art, e.id, heroPick); d.side = e.side
     d.flip = (moved ? e.u < (pe?.u ?? e.u) : faceU < 0); d.h = baseH * F.heroScale / 100
-    d.frame = e.stun > 0 ? DOWN : pose(nowMs, 0, moved, fighting && e.stun === 0)
+    d.frame = e.stun > 0 ? DOWN : pose(nowMs, 0, moved, cur.end === null && fighting && e.stun === 0)
     drawn++
+    flagsAt.push(x, y - d.h * 0.2, e.side, e.stun > 0 ? 2 : 1)
   }
 
   order.length = 0
   for (let i = 0; i < used; i++) order.push(pool[i]!)
   order.sort((a, b) => a.y - b.y)
   for (const d of order) drawItem(ctx, d, low)
+
+  drawBanners(ctx, flagsAt, cam.zoom, baseH)
 
   // 화살: 낱낱의 짧은 선 (호를 그리며 난다)
   if (arrows.length > 0) {

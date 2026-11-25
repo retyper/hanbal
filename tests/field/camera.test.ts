@@ -44,3 +44,25 @@ test('frameBox: 점이 없으면 null · 있으면 모두 담고 배율은 맞�
   const v = fieldView({ level: 0, zoom: f.zoom, x: f.x, y: f.y }, VP)
   assert.ok(v.left <= 1000 && v.right >= 1200)
 })
+
+test('가까이 보기는 가장 빽빽한 한 무더기의 가운데를 돌려준다 (두 싸움 사이 빈 땅이 아니라)', async () => {
+  const { clusterCenter } = await import('../../src/field/viewCamera.ts')
+  assert.equal(clusterCenter([], [], 100), null)
+  // 왼쪽 한 점, 오른쪽 네 점 · 반경 100
+  const c = clusterCenter([0, 1000, 1010, 1020, 1030], [0, 500, 505, 510, 515], 100)!
+  assert.ok(c.x > 1000 && c.x < 1040 && c.y > 500 && c.y < 520)
+  const one = clusterCenter([5], [7], 10)!
+  assert.deepEqual(one, { x: 5, y: 7 })
+})
+
+test('배율이 먼저 당겨 들어가도 자리가 빈 가운데로 쏠리지 않는다 (보이는 폭을 같이 늦춘다)', () => {
+  const cam = { level: 0, zoom: 0.4, x: 1000, y: 480 }
+  const target = { x: 3000, y: 480 }
+  const seen: number[] = []
+  for (let i = 0; i < 30; i++) {
+    followCam(cam, target.x, target.y, 1 / 60, VP, B, false, 1.2)
+    seen.push(cam.zoom)
+  }
+  for (let i = 1; i < seen.length; i++) assert.ok(seen[i]! >= seen[i - 1]!, '배율은 한쪽으로만 변한다')
+  assert.ok(cam.x > 1000, '목표 쪽으로 간다')
+})

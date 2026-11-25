@@ -16,9 +16,10 @@ import { mountFlags, type FlagsView } from './field/mainFlags.ts'
 import { drawMarks, type Gesture as MarkGesture, type Mark, type MarkShape } from './field/mainFlagMarks.ts'
 import { OP_MOVE, OP_STANCE, STANCE_CHARGE, type FieldInput, type InputGroup } from './field/types.ts'
 import { serialize } from './field/rec.ts'
+import { mountHud, type Hud } from './field/mainHud.ts'
 import { advance } from './field/viewLoop.ts'
 import { readField, type VModel } from './field/viewRead.ts'
-import { followCam, frameBox, newCam, nextLevel, toField, wholeZoom, type Rect, type Viewport } from './field/viewCamera.ts'
+import { clusterCenter, fitZoom, followCam, frameBox, newCam, nextLevel, toField, wholeZoom, type Rect, type Viewport } from './field/viewCamera.ts'
 import { loadArt } from './field/viewArt.ts'
 import { drawField, focusPoints, resetFx, worldSize } from './field/view.ts'
 
@@ -29,25 +30,12 @@ const query = new URLSearchParams(location.search)
 const num = (key: string, dflt: number): number => { const v = Number(query.get(key)); return Number.isFinite(v) && query.has(key) ? Math.trunc(v) : dflt }
 const root = document.getElementById('field') as HTMLDivElement
 root.innerHTML = `<canvas id="fd-cv"></canvas>
-<div id="fd-hud"><span id="fd-info"></span><button id="fd-zoom" type="button">자동</button><button id="fd-pause" type="button">멈춤</button><button id="fd-again" type="button">다시</button></div>
-<div id="fd-end" hidden><div><h2 id="fd-endtext"></h2><p id="fd-why" hidden></p><button id="fd-again2" type="button">다시</button></div></div>
 <div id="fd-rotate" hidden><div><span>↻</span><h2>폰을 가로로 돌려 주세요</h2><p>가로 화면에서 전장을 봅니다.<br>돌리는 동안 전투는 멈춰 있습니다.</p></div></div>`
 const style = document.createElement('style')
 style.textContent = `
 html,body{margin:0;height:100%;background:#10140d;overflow:hidden;font-family:system-ui,sans-serif;color:#f3ecd8}
 #field{position:fixed;inset:0}
 #fd-cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
-#fd-hud{position:absolute;left:8px;top:calc(8px + env(safe-area-inset-top));display:flex;gap:6px;align-items:center;font-size:13px}
-#fd-hud[hidden]{display:none}
-#fd-hud button,#fd-end button{font:inherit;color:inherit;background:#0009;border:1px solid #fff4;border-radius:6px;padding:6px 10px;min-height:32px}
-#fd-hud button.on{border-color:#ffd27a;color:#ffd27a}
-#fd-info{background:#0009;border-radius:6px;padding:6px 8px}
-#fd-end{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-#fd-end[hidden]{display:none}
-#fd-end>div{background:#000c;border:1px solid #ffd27a88;border-radius:10px;padding:14px 26px;text-align:center;pointer-events:auto}
-#fd-end h2{margin:0 0 10px;font-size:24px}
-#fd-end p{margin:0 0 10px;font-size:14px}
-#fd-end button{min-width:96px;min-height:40px;font-size:16px;border-color:#ffd27a;color:#ffd27a}
 #fd-rotate{position:absolute;inset:0;background:#10140df0;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 16px;box-sizing:border-box}
 #fd-rotate[hidden]{display:none}
 #fd-rotate span{font-size:44px}
@@ -58,14 +46,7 @@ document.head.append(style)
 
 const cv = document.getElementById('fd-cv') as HTMLCanvasElement
 const ctx = cv.getContext('2d') as CanvasRenderingContext2D
-const hud = document.getElementById('fd-hud') as HTMLDivElement
-const info = document.getElementById('fd-info') as HTMLSpanElement
 const rotate = document.getElementById('fd-rotate') as HTMLDivElement
-const endBox = document.getElementById('fd-end') as HTMLDivElement
-const endText = document.getElementById('fd-endtext') as HTMLHeadingElement
-const zoomBtn = document.getElementById('fd-zoom') as HTMLButtonElement
-const pauseBtn = document.getElementById('fd-pause') as HTMLButtonElement
-const ZOOM_NAME = ['자동', '가까이', '더 가까이']
 
 const art = loadArt(import.meta.env.BASE_URL + 'realm/')
 const heroPick = query.get('hero')
@@ -85,6 +66,13 @@ let state = createField(plainSetup(seed, men, true, makeMap()))
 let cur: VModel = readField(state)
 let prev: VModel | null = null
 let paused = false
+/** 그리는 시계 (멈추면 서고 · 끝나면 잠깐 느려진다) · 끝난 시각 · 끌어서 옮긴 카메라 · 목표를 한 번 더 늦춘 자리 */
+let viewMs = 0
+let endAt = 0
+let pan: { x: number; y: number; until: number } | null = null
+let panDrag: { id: number; sx: number; sy: number; cx: number; cy: number } | null = null
+let tgt: { x: number; y: number } | null = null
+let hud: Hud
 let acc = 0
 let last = 0
 let raf = 0
@@ -104,7 +92,11 @@ let press: { id: number; g: InputGroup; x: number; y: number; cx: number; cy: nu
 let flags: FlagsView
 let vp: Viewport = { w: 1, h: 1 }
 let dpr = 1
-const bounds = (): Rect => { const w = worldSize(cur); return { left: 0, top: 0, right: w.w, bottom: w.h } }
+/** 카메라가 갈 수 있는 곳: 판 둘레에 여유를 둔다 (맨 위·옆 대가 잘리지 않게) */
+const bounds = (): Rect => {
+  const w = worldSize(cur), c = P.field.cellPx
+  return { left: -P.field.camMarginSideCells * c, top: -P.field.camMarginTopCells * c, right: w.w + P.field.camMarginSideCells * c, bottom: w.h + P.field.camMarginBottomCells * c }
+}
 let cam = newCam(vp, bounds())
 
 function resize(): void {
@@ -113,22 +105,38 @@ function resize(): void {
   cv.width = Math.round(vp.w * dpr); cv.height = Math.round(vp.h * dpr)
   blocked = innerWidth <= P.field.portraitMaxW && innerHeight > innerWidth
   rotate.hidden = !blocked
-  hud.hidden = blocked
+  hud.hide(blocked)
   cam = newCam(vp, bounds(), cam.level)
   followTarget(0, true)
 }
 
-/** 처음 2초는 판 전체 · 그 뒤는 맞붙은 곳(없으면 우리 진영)을 화면에 담는다. 단추로 고정 배율도 고른다 */
+/**
+ * 시작 화면: 높이에 맞춰 우리 진영 쪽을 보이고(옆으로 끌어 적 쪽을 본다) · 싸우는 중: 맞붙은 곳을 담는다.
+ * 가까이 보기는 두 싸움 사이 빈 땅이 아니라 가장 빽빽한 한 무더기를 따른다. 보는 곳은 한 번 더 늦춘다.
+ */
 function followTarget(dt: number, snap = false): void {
   const b = bounds()
-  if (introLeft > 0 || ui.phase === 'ready') {
-    followCam(cam, (b.left + b.right) / 2, (b.top + b.bottom) / 2, dt, vp, b, snap, wholeZoom(vp, b))
-    return
+  const now = performance.now()
+  if (pan !== null && now >= pan.until) pan = null
+  let raw: { x: number; y: number }
+  let zt: number | undefined
+  if (ui.phase === 'ready') {
+    zt = fitZoom(vp, b)
+    const ours = cur.squads.filter(q => q.side === 0 && q.men > 0)
+    const ox = ours.length === 0 ? (b.left + b.right) / 2 : pxOf(ours.reduce((a, q) => a + q.u, 0) / ours.length)
+    const off = (vp.w / 2 - vp.w * P.field.readyAnchorPermille / 1000) / zt
+    raw = { x: cur.face === 1 ? ox + off : ox - off, y: (b.top + b.bottom) / 2 }
+  } else {
+    const f = focusPoints(cur)
+    const box = frameBox(vp, b, f.xs, f.ys, P.field.frameMarginCells * P.field.cellPx)
+    if (box === null) raw = { x: cam.x, y: cam.y }
+    else if (cam.level === 0) { raw = { x: box.x, y: box.y }; zt = box.zoom }
+    else raw = clusterCenter(f.xs, f.ys, P.field.clusterCells * P.field.cellPx) ?? { x: box.x, y: box.y }
   }
-  const f = focusPoints(cur)
-  const box = frameBox(vp, b, f.xs, f.ys, P.field.frameMarginCells * P.field.cellPx)
-  if (box === null) { followCam(cam, cam.x, cam.y, dt, vp, b, snap); return }
-  followCam(cam, box.x, box.y, dt, vp, b, snap, cam.level === 0 ? box.zoom : undefined)
+  if (pan !== null) raw = { x: pan.x, y: pan.y }
+  if (tgt === null || snap || pan !== null) tgt = raw
+  else { const k = 1 - Math.exp(-P.field.camTargetRate * dt); tgt = { x: tgt.x + (raw.x - tgt.x) * k, y: tgt.y + (raw.y - tgt.y) * k } }
+  followCam(cam, tgt.x, tgt.y, dt, vp, b, snap, zt)
 }
 
 function restart(): void {
@@ -136,10 +144,11 @@ function restart(): void {
   state = createField(plainSetup(seed, men, true, makeMap())); cur = readField(state); prev = null; acc = 0
   resetFx()
   introLeft = P.field.introMs
+  endAt = 0; viewMs = 0; pan = null; panDrag = null; tgt = null
   ui.phase = 'ready'; ui.sel = -1; ui.popup = false
   queue = []; plan = [[], [], [], []]; lastMove = [-1, -1, -1, -1]; press = null
   lastGoal.fill(null); lastIntent.fill('move')
-  endBox.hidden = true
+  hud.showEnd(null)
   followTarget(0, true)
 }
 
@@ -151,12 +160,6 @@ function watchLoad(dtMs: number): void {
   const mid = [...gaps].sort((a, b) => a - b)[30]!
   gaps.length = 0
   if (mid > P.field.lowFrameMs) { low = true; resize() }
-}
-
-function showEnd(): void {
-  if (cur.end === null) { endBox.hidden = true; return }
-  endBox.hidden = false
-  endText.textContent = cur.winner === 0 ? '이겼습니다' : cur.winner === 1 ? '졌습니다' : '비겼습니다'
 }
 
 // ---- 깃발 (F5a): 칸 고르기 → 맵 누르기·길게·끌기 → 입력 줄 ----
@@ -264,15 +267,29 @@ function marks(): Mark[] {
 function onDown(e: PointerEvent): void {
   if (blocked || ui.phase === 'end' || cur.end !== null || press !== null) return
   const sel = ui.sel
-  if (sel === -1) { flags.say(t('field.why.nosel'), 'why', e.timeStamp); return }
+  if (sel === -1) {
+    panDrag = { id: e.pointerId, sx: e.clientX, sy: e.clientY, cx: cam.x, cy: cam.y }
+    try { cv.setPointerCapture(e.pointerId) } catch { /* 합성 입력 */ }
+    return
+  }
   ui.popup = false
   press = { id: e.pointerId, g: sel, x: e.clientX, y: e.clientY, cx: e.clientX, cy: e.clientY, t0: e.timeStamp }
   try { cv.setPointerCapture(e.pointerId) } catch { /* 합성 입력 */ }
 }
 function onMove(e: PointerEvent): void {
+  if (panDrag !== null && panDrag.id === e.pointerId) {
+    const dx = e.clientX - panDrag.sx, dy = e.clientY - panDrag.sy
+    if (dx * dx + dy * dy >= P.field.dragMinPx * P.field.dragMinPx || pan !== null) pan = { x: panDrag.cx - dx / cam.zoom, y: panDrag.cy - dy / cam.zoom, until: Infinity }
+  }
   if (press !== null && press.id === e.pointerId) { press.cx = e.clientX; press.cy = e.clientY }
 }
 function onUp(e: PointerEvent): void {
+  if (panDrag !== null && panDrag.id === e.pointerId) {
+    panDrag = null
+    if (pan === null) flags.say(t('field.why.nosel'), 'why', e.timeStamp)
+    else if (ui.phase !== 'ready') pan.until = performance.now() + P.field.panBackMs
+    return
+  }
   if (press === null || press.id !== e.pointerId) return
   const p = pressNow(e.timeStamp, e.clientX, e.clientY)
   press = null
@@ -283,16 +300,16 @@ function onUp(e: PointerEvent): void {
 
 function paint(now: number, alpha: number): void {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-  drawField(ctx, vp, cam, cur, prev, alpha, now, art, low, heroPick)
+  drawField(ctx, vp, cam, cur, prev, alpha, viewMs, art, low, heroPick)
   const live = press === null ? null : pressNow(now, press.cx, press.cy)
   const from = ui.sel >= 0 ? fromOf(ui.sel) : null
   drawMarks(ctx, vp, cam, marks(), from, live === null ? null : live.mg)
   flags.live(live === null ? null : live.r.why !== null ? whyText(live.r.g, live.r.why) : intentText(live.r.g, live.r.intent))
   flags.frame(now)
   flags.sync(cur, ui, usedNow(), frontStanceNow())
-  const side = (s: number): number => cur.squads.reduce((a, q) => a + (q.side === s ? q.men : 0), 0)
-  info.textContent = `우리 ${side(0).toLocaleString()} · 적 ${side(1).toLocaleString()}`
-  showEnd()
+  hud.sync(cur)
+  hud.frame(now)
+  hud.showEnd(endAt > 0 && now - endAt >= P.field.endBoxMs ? cur : null)
 }
 
 function frame(now: number): void {
@@ -312,11 +329,13 @@ function frame(now: number): void {
       if (queue.length > 0) queue = queue.filter(q => q.tick >= state.tick)
       prev = cur; cur = readField(state)
     }
-    if (cur.end !== null) { ui.phase = 'end'; press = null; flags.live(null) }
+    if (cur.end !== null) { ui.phase = 'end'; press = null; flags.live(null); endAt = now }
   }
   if (!blocked && ui.phase === 'play' && introLeft > 0) introLeft = Math.max(0, introLeft - Math.min(dtMs, 100))
-  followTarget(Math.min(dtMs, 100) / 1000)
-  paint(now, paused || blocked ? 1 : Math.min(1, acc / stepMs))
+  const dt = Math.min(dtMs, 100)
+  if (!paused && !blocked) viewMs += endAt > 0 && now - endAt < P.field.endSlowMs ? dt * P.field.endSlowPermille / 1000 : dt
+  followTarget(dt / 1000)
+  paint(now, blocked ? 1 : Math.min(1, acc / stepMs))
 }
 
 function wake(): void {
@@ -334,10 +353,6 @@ addEventListener('keydown', e => {
   else if (e.key === 'Escape') { ui.popup = false; ui.sel = -1; press = null; flags.live(null) }
   else if ((e.key === 'Enter' || e.key === ' ') && ui.phase === 'ready') { e.preventDefault(); handlers.onGo() }
 })
-zoomBtn.addEventListener('click', () => { cam.level = nextLevel(cam.level); zoomBtn.textContent = ZOOM_NAME[cam.level] ?? ''; zoomBtn.classList.toggle('on', cam.level > 0) })
-pauseBtn.addEventListener('click', () => { paused = !paused; pauseBtn.classList.toggle('on', paused) })
-document.getElementById('fd-again')!.addEventListener('click', restart)
-document.getElementById('fd-again2')!.addEventListener('click', restart)
 
 /** 입력 줄 길이를 재는 손잡이 (시험·보고용): 이번 판에서 받아들인 입력의 기록 */
 ;(window as unknown as Record<string, unknown>)['__fieldRec'] = (): string => serialize(state.log.accepted)
@@ -346,8 +361,8 @@ if (query.has('bench')) {
   /** 그리기 재기: ticks 틱 진행한 판을 draws 번 그리는 데 걸린 평균 ms. whole 이면 판 전체가 한 화면에 드는 배율(점이 다 든다) */
   ;(window as unknown as Record<string, unknown>)['__fieldBench'] = (ticks: number, draws: number, whole = false): { ms: number; dots: number } => {
     for (let i = 0; i < ticks && state.end === null; i++) { stepField(state); prev = cur; cur = readField(state) }
-    if (whole) { const b = bounds(); introLeft = 1; followCam(cam, (b.left + b.right) / 2, (b.top + b.bottom) / 2, 0, vp, b, true, wholeZoom(vp, b)) }
-    else { introLeft = 0; followTarget(0, true) }
+    if (whole) { const b = bounds(); followCam(cam, (b.left + b.right) / 2, (b.top + b.bottom) / 2, 0, vp, b, true, wholeZoom(vp, b)) }
+    else { followTarget(0, true) }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     let dots = 0
     const t0 = performance.now()
@@ -356,6 +371,12 @@ if (query.has('bench')) {
   }
 }
 
+hud = mountHud(root, {
+  onZoom: () => { cam.level = nextLevel(cam.level); hud.setZoom(cam.level) },
+  onPause: () => { paused = !paused; hud.setPaused(paused) },
+  onAgain: restart,
+})
+hud.setZoom(0)
 flags = mountFlags(root, import.meta.env.BASE_URL + 'realm/', handlers)
 root.append(document.getElementById('fd-rotate') as HTMLElement)
 resize()

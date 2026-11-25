@@ -28,6 +28,22 @@ export interface VModel {
   face: 1 | -1
   /** 맵 끝 (sim 단위) */
   mapUUnits: number; mapVUnits: number
+  /** 편마다(0 우리 · 1 적) 지기까지 남은 몫 0~1000 — 사기와 사람 수 가운데 문턱에 더 가까운 쪽 (끝 판정과 같은 식 · 그리는 쪽 전용) */
+  edge: [number, number]
+}
+
+/** 끝 판정(sim 의 judge)과 같은 식으로 문턱까지 남은 몫을 센다. 문턱은 본편 값을 읽기만 한다 */
+function edgeOf(s: FieldState, side: 0 | 1): number {
+  let men = 0, menMax = 0, mw = 0, m0 = 0
+  for (const q of s.squads) {
+    if (q.side !== side) continue
+    menMax += q.menMax; m0 = q.morale0; men += q.men; mw += q.menMax * q.morale
+  }
+  if (menMax <= 0 || m0 <= 0) return 0
+  const morale = mw / menMax
+  const byMorale = (morale / m0 - P.realm.tacBreakMorale) / (1 - P.realm.tacBreakMorale)
+  const byMen = (men / menMax - P.realm.tacBreakMen) / (1 - P.realm.tacBreakMen)
+  return Math.round(Math.max(0, Math.min(1, byMorale, byMen)) * 1000)
 }
 
 export function readField(s: FieldState): VModel {
@@ -35,6 +51,7 @@ export function readField(s: FieldState): VModel {
   const used: [number, number, number, number] = s.tick % timeTicks === 0 ? [0, 0, 0, 0] : [s.used[0], s.used[1], s.used[2], s.used[3]]
   return {
     used,
+    edge: [edgeOf(s, 0), edgeOf(s, 1)],
     face: s.map.camps[0].face,
     mapUUnits: s.map.u * unit, mapVUnits: s.map.w * unit,
     tick: s.tick,

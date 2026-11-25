@@ -3596,6 +3596,22 @@ export const ko = {
   'field.go': '전투 개시',
   'field.auto': '알아서',
   'field.left': '이번 때 남은 명령 {n}',
+  // 전장 시험장 위 띠·끝 상자 (src/field/mainHud.ts)
+  'field.again': '다시',
+  'field.again.sure': '한 번 더 누르세요',
+  'field.pause': '멈춤',
+  'field.resume': '계속',
+  'field.zoom.0': '화면 자동',
+  'field.zoom.1': '화면 가까이',
+  'field.zoom.2': '화면 더 가까이',
+  'field.end.win': '이겼습니다',
+  'field.end.lose': '졌습니다',
+  'field.end.draw': '비겼습니다',
+  'field.endwhy.morale': '사기가 먼저 꺾였습니다',
+  'field.endwhy.men': '병사를 너무 많이 잃었습니다',
+  'field.endwhy.time': '시간이 다 됐습니다',
+  'field.endwhy.retreat': '물러났습니다',
+  'field.endwhy.invalid': '시작 조건이 맞지 않습니다',
 } as const
 
 export type Key = keyof typeof ko
