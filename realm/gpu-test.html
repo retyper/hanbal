@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>화면 시험</title>
+<!-- 폰에서만 깨지는 것 찾기 (형 10-28: 갤럭시 업데이트 뒤 단추가 보라색·안 보임 · 받는 화면 바탕이 비침) — 칸마다 쓰는 그리기 방식이 하나씩 다르다. 깨진 번호만 말해 주면 그 방식을 안 쓰게 고친다 -->
+<style>
+  body { margin: 0; padding: 12px; background: #101318; color: #efe3c6; font: 15px/1.4 sans-serif; }
+  h1 { font-size: 18px; margin: 0 0 4px; } p.m { color: #a89c84; font-size: 13px; margin: 0 0 12px; }
+  .g { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .c { position: relative; height: 110px; border-radius: 8px; overflow: hidden; border: 1px solid #444; }
+  .c b { position: absolute; left: 6px; top: 4px; z-index: 5; font-size: 22px; color: #fff; text-shadow: 0 0 4px #000, 0 0 2px #000; }
+  .c span { position: absolute; left: 6px; bottom: 4px; z-index: 5; font-size: 12px; color: #fff; text-shadow: 0 0 3px #000; }
+  .x1 { background: #7a3020; }
+  .x2 { background: radial-gradient(ellipse at 50% 42%, #c08040 0, #503010 55%, #0a0907 100%); }
+  .x3 { background: linear-gradient(#a57a31, #2a6a8a); }
+  .x4 { display: flex; align-items: center; justify-content: center; }
+  .x4 i { font-style: normal; border-style: solid; border-width: 9px 12px; border-image: url(ui/btn-dark.png?v=2) 30 33 fill / 9px 12px stretch; padding: 3px 10px; }
+  .x5 i { font-style: normal; border-style: solid; border-width: 9px 12px; border-image: url(ui/btn-dark.png?v=2) 30 33 fill / 9px 12px stretch; padding: 3px 10px; filter: saturate(.7) brightness(.92); }
+  .x5 { display: flex; align-items: center; justify-content: center; }
+  .x6 { background: url(title/title-lobby.jpg) center / cover; }
+  .x7 { background: url(title/title-lobby.jpg) center / cover; animation: z 6s ease-in-out infinite alternate; }
+  @keyframes z { from { transform: scale(1.08); } to { transform: scale(1); } }
+  .x8 { background: url(title/title-lobby.jpg) center / cover; filter: brightness(.8); }
+  .x9 { background: url(title/title-lobby.jpg) center / cover; }
+  .x9::after { content: ''; position: absolute; inset: 0; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+  .x10 { background: #203040; box-shadow: inset 0 0 0 100vmax #305070; clip-path: inset(0); }
+  .x11 img { width: 100%; height: 100%; object-fit: cover; }
+  .x12 { background: #203040; } .x12 i { position: absolute; inset: 20px; background: url(fx/petals-strip.png) 0 0 / 800% 100%; will-change: transform; animation: z 3s infinite alternate; }
+</style>
+</head>
+<body>
+<h1>화면 시험</h1>
+<p class="m">칸마다 번호와 설명 글이 보여야 한다. 보라색·까만 칸·빈 칸·이상한 색이 있으면 그 번호를 알려 줘.</p>
+<div class="g">
+  <div class="c x1"><b>1</b><span>붉은 단색 바탕</span></div>
+  <div class="c x2"><b>2</b><span>둥근 그러데이션 (받는 화면 바탕)</span></div>
+  <div class="c x3"><b>3</b><span>금→파랑 그러데이션</span></div>
+  <div class="c x4"><i>단추 그림 테</i><b>4</b><span>단추 (보통)</span></div>
+  <div class="c x5"><i>흐린 단추</i><b>5</b><span>단추 + 흐림 효과</span></div>
+  <div class="c x6"><b>6</b><span>첫 화면 그림</span></div>
+  <div class="c x7"><b>7</b><span>첫 화면 그림 + 커졌다 작아짐</span></div>
+  <div class="c x8"><b>8</b><span>첫 화면 그림 + 어둡게</span></div>
+  <div class="c x9"><b>9</b><span>그림 위 흐림 유리</span></div>
+  <div class="c x10"><b>10</b><span>밝은 파랑이어야 함</span></div>
+  <div class="c x11"><img src="logo/emblem.png" alt=""><b>11</b><span>문장 그림</span></div>
+  <div class="c x12"><i></i><b>12</b><span>꽃잎 그림 움직임</span></div>
+</div>
+</body>
+</html>

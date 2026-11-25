@@ -1,0 +1,102 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>열전 무기 소리 고르기</title>
+<style>
+  :root { color-scheme: dark; }
+  body { background:#171c23; color:#e2dbcd; margin:0; padding:20px 16px 150px; font-family:"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; }
+  h1 { font-size:20px; margin:0 0 6px; }
+  p { color:#95a1ae; font-size:13px; line-height:1.7; max-width:780px; margin:6px 0 10px; }
+  .slot { border-top:1px solid #2c333d; padding:12px 0 8px; max-width:780px; }
+  .sh { display:flex; gap:8px; align-items:baseline; flex-wrap:wrap; margin-bottom:4px; } .sh b { font-size:16px; } .sh small { color:#8f99a5; }
+  .now { display:flex; align-items:center; gap:10px; padding:4px 0 6px; font-size:12.5px; color:#8f99a5; }
+  .now button { font:inherit; font-size:13px; min-height:40px; padding:0 14px; border-radius:10px; border:1px solid #3a4250; background:#20262f; color:#aeb8c4; cursor:pointer; }
+  .opt { display:flex; align-items:center; gap:10px; padding:6px 0; }
+  .opt button.pl { flex:none; width:64px; height:56px; font-size:22px; border-radius:12px; border:1px solid #4a5363; background:#2a313c; color:#e2dbcd; cursor:pointer; touch-action:manipulation; }
+  .opt button.pl:active { transform:scale(.94); }
+  .opt button.pl.on, .now button.on { background:#a57a31; border-color:#e0bd78; color:#fff; }
+  .opt label { flex:1; display:flex; align-items:flex-start; gap:10px; min-height:56px; padding:6px 10px; box-sizing:border-box; border-radius:12px; border:1px solid #2c333d; background:#1c222a; cursor:pointer; }
+  .opt input { width:22px; height:22px; margin:2px 0 0; accent-color:#e0bd78; flex:none; }
+  .opt .t { display:flex; flex-direction:column; gap:3px; }
+  .opt code { color:#ffd88f; font-size:13px; }
+  .opt .d { color:#8f99a5; font-size:12px; line-height:1.5; }
+  .opt label:has(input:checked) { border-color:#e0bd78; background:#2b2618; }
+  .opt label:has(input:checked) code::after { content:" ✓"; color:#ffd88f; }
+  #out { position:fixed; left:0; right:0; bottom:0; background:#0f1318f2; border-top:1px solid #4a4030; padding:10px 16px; }
+  #out textarea { width:100%; box-sizing:border-box; height:56px; background:#1b2028; color:#ffd88f; border:1px solid #3a4250; border-radius:8px; font:12px/1.5 monospace; }
+  #out .r { display:flex; gap:8px; align-items:center; margin-bottom:6px; font-size:13px; color:#95a1ae; }
+  #out button { font:inherit; min-height:40px; padding:0 18px; border-radius:10px; border:1px solid #e0bd78; background:#7d5a22; color:#fff4dc; cursor:pointer; }
+</style>
+</head><body>
+<h1>열전 무기 소리 고르기</h1>
+<p>장수 무기마다 휘두르는 소리 후보를 셋씩 모았습니다. ▶ 를 눌러 들어 보시고, 무기마다 마음에 드는 하나를 누르시면 아래 칸에 적힙니다. 다 고르신 뒤 「복사」를 눌러 붙여 주시면 그대로 넣겠습니다. 「지금 소리」는 지금 게임에서 나는 소리입니다.</p>
+<div id="list"></div>
+<div id="out"><div class="r">고른 것 <span id="n">0</span>곳 <button id="cp">복사</button><span id="ok"></span></div><textarea id="ta" readonly placeholder="무기마다 하나씩 고르시면 여기에 적힙니다"></textarea></div>
+<script>
+const C = 'sfx/cand/raid/', X = 'sfx/raid/'
+const DAGGER = { f: X + 'swing_3.ogg', rate: 1.6, d: '단검 소리 (swing_3 · 1.6배 빠르게)' }
+const AXE = { f: X + 'swing_1.ogg', rate: 0.85, d: '도끼 소리 (swing_1 · 0.85배 느리게)' }
+const DATA = [
+  { slot: 'raid_whip', name: '채찍 (휘둘러 딱)', now: DAGGER, opts: [
+    { code: 'raid_whip_g1', d: 'foleywhip05 · 김용배 · 공유마당 · CC BY · 0.27초' },
+    { code: 'raid_whip_g2', d: 'foleywhip04 · 김용배 · 공유마당 · CC BY · 0.26초' },
+    { code: 'raid_whip_g3', d: 'Whip Crack · SciFiSounds · Freesound · CC0 · 0.43초' }] },
+  { slot: 'raid_punch', name: '맨주먹 (퍽)', now: DAGGER, opts: [
+    { code: 'raid_punch_g1', d: 'K드라마 효과음 (853) 주먹으로 얼굴 타격 · 김용배 · 공유마당 · CC BY · 0.41초' },
+    { code: 'raid_punch_g2', d: 'foleyfightingthud04 · 김용배 · 공유마당 · CC BY · 0.38초' },
+    { code: 'raid_punch_g3', d: 'K영화 열두번째용의자 효과음 (979) 주먹 얼굴 타격 · 안영진 · 공유마당 · CC BY · 0.20초' }] },
+  { slot: 'raid_blunt', name: '망치·몽둥이 (둔탁하게 내려침)', now: AXE, opts: [
+    { code: 'raid_blunt_g1', d: 'K드라마 효과음 (642) 방망이 타격음 · 김용배 · 공유마당 · CC BY · 0.35초' },
+    { code: 'raid_blunt_g2', d: '나무망치로 말뚝박는 · 김용배 · 공유마당 · CC BY · 0.15초' },
+    { code: 'raid_blunt_g3', d: 'K영화 열두번째용의자 효과음 (971) 나무막대로 몸 때림 · 안영진 · 공유마당 · CC BY · 0.17초' }] },
+  { slot: 'raid_sickle', name: '낫 (휘어 베는 쇳소리)', now: DAGGER, opts: [
+    { code: 'raid_sickle_g1', d: 'K드라마 효과음 (840) 작은칼 휘두름 · 김용배 · 공유마당 · CC BY · 0.16초' },
+    { code: 'raid_sickle_g2', d: '칼 휙2 · 김용배 · 공유마당 · CC BY · 0.47초' },
+    { code: 'raid_sickle_g3', d: '칼 베기3 · 김용배 · 공유마당 · CC BY · 0.70초' }] },
+  { slot: 'raid_oar', name: '노·괭이 (긴 나무 자루 휘두름)', now: AXE, opts: [
+    { code: 'raid_oar_g1', d: '몽둥이 휘둘리는 · 김용배 · 공유마당 · CC BY · 0.22초' },
+    { code: 'raid_oar_g2', d: 'K영화 열두번째용의자 효과음 (975) 나무막대 휘두름 · 안영진 · 공유마당 · CC BY · 0.18초' },
+    { code: 'raid_oar_g3', d: 'Whoosh - Long Bamboo stick · Sadiquecat · Freesound · CC0 · 0.28초' }] },
+]
+const pick = {}
+let playing = null
+const list = document.getElementById('list')
+let h = ''
+for (const s of DATA) {
+  h += '<div class="slot"><div class="sh"><b>' + s.name + '</b><small>' + s.slot + '</small></div>'
+  h += '<div class="now"><button class="pl" data-f="' + s.now.f + '" data-rate="' + s.now.rate + '">지금 소리 ▶</button><span>' + s.now.d + '</span></div>'
+  s.opts.forEach((o, i) => {
+    h += '<div class="opt"><button class="pl" data-f="' + C + o.code + '.ogg">▶</button><label><input type="radio" name="' + s.slot + '" value="' + i + '"><span class="t"><code>' + o.code + '</code><span class="d">' + o.d + '</span></span></label></div>'
+  })
+  h += '</div>'
+}
+list.innerHTML = h
+function play(b) {
+  if (playing) { playing.a.pause(); playing.b.classList.remove('on') }
+  if (playing && playing.b === b) { playing = null; return }
+  const a = new Audio(b.dataset.f)
+  if (b.dataset.rate) { a.preservesPitch = false; a.playbackRate = Number(b.dataset.rate) }
+  a.play().catch(() => {})
+  b.classList.add('on')
+  a.onended = () => { b.classList.remove('on'); if (playing && playing.b === b) playing = null }
+  playing = { a, b }
+}
+list.addEventListener('click', (e) => {
+  const b = e.target.closest('button.pl')
+  if (b) play(b)
+})
+list.addEventListener('change', (e) => {
+  const r = e.target
+  const s = DATA.find((x) => x.slot === r.name)
+  const o = s.opts[Number(r.value)]
+  const b = r.closest('.opt').querySelector('button.pl')
+  if (!playing || playing.b !== b) play(b)
+  pick[s.slot] = s.name + ' (' + s.slot + ') → ' + o.code
+  const v = Object.values(pick)
+  document.getElementById('ta').value = v.join(String.fromCharCode(10))
+  document.getElementById('n').textContent = v.length
+})
+document.getElementById('cp').onclick = async () => {
+  const t = document.getElementById('ta').value
+  try { await navigator.clipboard.writeText(t); document.getElementById('ok').textContent = '복사했습니다' } catch { document.getElementById('ta').select() }
+}
+</script></body></html>

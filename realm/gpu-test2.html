@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>화면 시험 2</title>
+<!-- 1차(gpu-test.html)에서 형 갤럭시 크롬이 3(직선 그러데이션) · 5(단추 + filter) · 8(그림 + filter brightness)을 잘못 그렸다 (10-28).
+     어떤 꼴이 깨지고 어떤 우회가 먹는지 칸마다 하나씩 바꿔 본다 -->
+<style>
+  body { margin: 0; padding: 12px; background: #101318; color: #efe3c6; font: 15px/1.4 sans-serif; }
+  h1 { font-size: 18px; margin: 0 0 4px; } p.m { color: #a89c84; font-size: 13px; margin: 0 0 12px; }
+  h2 { font-size: 15px; margin: 16px 0 6px; color: #ffd27a; }
+  .g { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .c { position: relative; height: 90px; border-radius: 8px; overflow: hidden; border: 1px solid #444; }
+  .c b { position: absolute; left: 5px; top: 3px; z-index: 5; font-size: 20px; color: #fff; text-shadow: 0 0 4px #000, 0 0 2px #000; }
+  .c span { position: absolute; left: 5px; right: 4px; bottom: 3px; z-index: 5; font-size: 11px; color: #fff; text-shadow: 0 0 3px #000; line-height: 1.2; }
+  .lg { background: linear-gradient(#a57a31, #2a6a8a); }
+  .a1 { background: linear-gradient(to right, #a57a31, #2a6a8a); }
+  .a2 { background: linear-gradient(#a57a31, #8a6a31 50%, #2a6a8a); }
+  .a3 { background: linear-gradient(#a57a3100, #2a6a8a); }
+  .a4 { background: linear-gradient(45deg, #c03030, #3030c0); }
+  .a5 { background: linear-gradient(#a57a31, #2a6a8a); transform: translateZ(0); }
+  .a6 { background: linear-gradient(#a57a31, #2a6a8a); will-change: transform; }
+  .a7 { background: #2a6a8a radial-gradient(circle at 50% 0, #a57a31, #2a6a8a 140%); }
+  .a8 { background: linear-gradient(#a57a31, #2a6a8a); opacity: .99; }
+  .a9 { background: repeating-linear-gradient(#a57a31 0 10px, #2a6a8a 10px 20px); }
+  .im { background: url(title/title-lobby.jpg) center / cover; }
+  .f1 { filter: brightness(.8); }
+  .f2 { filter: saturate(.5); }
+  .f3 { filter: drop-shadow(0 0 6px #ff0); }
+  .f4 { filter: grayscale(1); }
+  .f5 { filter: blur(2px); }
+  .f6 { filter: brightness(.8); transform: translateZ(0); }
+  .f7 { filter: brightness(.8); will-change: filter; }
+  .f8::after { content: ''; position: absolute; inset: 0; background: #000; opacity: .2; }
+  .f9 { opacity: .8; }
+  .lg.sm { height: 40px; }
+  .big { height: 300px; }
+</style>
+</head>
+<body>
+<h1>화면 시험 2</h1>
+<p class="m">잘못 나온 번호와, 어떻게 잘못됐는지(보라색 · 까맣다 · 비었다 · 색이 이상하다 · 깜빡인다) 알려 줘. 화면을 찍어 주면 더 좋다.</p>
+<h2>A. 직선 그러데이션 (1차 3번)</h2>
+<div class="g">
+  <div class="c lg"><b>A0</b><span>1차 3번 그대로 (금→파랑)</span></div>
+  <div class="c a1"><b>A1</b><span>왼→오른쪽</span></div>
+  <div class="c a2"><b>A2</b><span>색 셋</span></div>
+  <div class="c a3"><b>A3</b><span>투명→파랑</span></div>
+  <div class="c a4"><b>A4</b><span>비스듬히 빨→파</span></div>
+  <div class="c a5"><b>A5</b><span>A0 + 층 띄움(translateZ)</span></div>
+  <div class="c a6"><b>A6</b><span>A0 + will-change</span></div>
+  <div class="c a7"><b>A7</b><span>둥근 그러데이션으로 흉내</span></div>
+  <div class="c a8"><b>A8</b><span>A0 + 거의 불투명</span></div>
+  <div class="c a9"><b>A9</b><span>줄무늬 반복</span></div>
+  <div class="c lg sm"><b>A10</b><span>낮은 칸</span></div>
+  <div class="c lg big"><b>A11</b><span>높은 칸</span></div>
+</div>
+<h2>F. 그림 + 효과 (1차 8번)</h2>
+<div class="g">
+  <div class="c im"><b>F0</b><span>효과 없음</span></div>
+  <div class="c im f1"><b>F1</b><span>어둡게 brightness</span></div>
+  <div class="c im f2"><b>F2</b><span>색 빼기 saturate</span></div>
+  <div class="c im f3"><b>F3</b><span>노란 그림자 drop-shadow</span></div>
+  <div class="c im f4"><b>F4</b><span>흑백 grayscale</span></div>
+  <div class="c im f5"><b>F5</b><span>흐리게 blur</span></div>
+  <div class="c im f6"><b>F6</b><span>F1 + 층 띄움</span></div>
+  <div class="c im f7"><b>F7</b><span>F1 + will-change</span></div>
+  <div class="c im f8"><b>F8</b><span>검은 막으로 어둡게</span></div>
+  <div class="c im f9"><b>F9</b><span>살짝 투명</span></div>
+</div>
+</body>
+</html>

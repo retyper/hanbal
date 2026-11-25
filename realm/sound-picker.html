@@ -1,0 +1,380 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>열국군웅전 소리 고르기</title>
+<style>
+  :root { color-scheme: dark; }
+  body { background:#171c23; color:#e2dbcd; margin:0; padding:22px 16px 60px;
+         font-family:"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; }
+  h1 { font-size:20px; letter-spacing:.06em; margin:0 0 6px; }
+  h2 { font-size:15px; letter-spacing:.1em; color:#ffb347; margin:30px 0 4px; }
+  h3 { font-size:14px; color:#e2dbcd; margin:20px 0 2px; }
+  h3 code { font-size:12px; }
+  p  { color:#95a1ae; font-size:13px; line-height:1.7; max-width:760px; margin:6px 0 10px; }
+  .row { display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+         padding:9px 0; border-top:1px solid #2c333d; }
+  .no  { font-weight:700; color:#ffb347; min-width:34px; font-size:15px; }
+  .nm  { font-size:13px; color:#ccd6e0; flex:1; min-width:160px; }
+  .dl  { font-size:11px; color:#6f7c8a; }
+  audio { height:34px; max-width:100%; }
+  code { background:#232a33; padding:1px 5px; border-radius:3px; color:#ffd88f; }
+  .warn { color:#e8a07a; }
+  .pick { color:#7fd17a; font-size:12px; }
+</style></head><body>
+
+<h1>열국군웅전 소리 고르기</h1>
+<p>맨 위 ⓪ 은 <b>공유마당</b>에서 받은 것(공공누리 제1유형·CC BY — 출처를 밝히고 쓴다). 그 아래는 <b>CC0</b>(퍼블릭 도메인) — Freesound 와 OpenGameArt 에서 받아 <code>public/realm/sfx/</code> 에 넣어 둔 후보다.
+<b class="pick">★ 지금 쓰는 것</b> 표시가 붙은 게 내가 먼저 골라 게임에 붙여 둔 것이다 (<code>src/ui/realm/sound.ts</code> 의 PICK). 들어 보고 <b>칸마다 번호만 말해 주면</b> 그걸로 바꾼다 (예: "3, 7, 12번").
+다 별로면 "OO 다시 찾아"라고 하면 된다.</p>
+<p>★ 나는 소리를 못 듣는다. 제목·길이·다운로드 수·설명만 보고 골랐다. 그래서 <span class="warn">일본·중국 느낌이 세게 나는 것</span>이
+섞였을 수 있다 — 그런 건 바로 빼 달라고 해 줘. 출처는 <code>sfx/CREDITS.txt</code>.</p>
+
+<p>각성 연출 소리를 처음부터 끝까지 이어서 들으려면 <a href="ascend-sound.html" style="color:#ffb347">각성 소리 듣기</a>.</p>
+
+<div id="list"></div>
+
+<script>
+// [칸 제목, 쓰는 곳 설명, [[파일, 설명, 길이]...]]
+const GROUPS = [
+  ['⓪ 11-03 새 후보 (공유마당 · 출처 표시)', [
+    ['capt_lock', '적장을 사로잡았다 — 싸움 중 사로잡는 순간 · 옥문이 닫히는 때 (옛 「뚱둥」 대신)', [
+      ["capt_lock_g1", "전통사물_큰자물쇠_열다 · (재)전주정보문화산업진흥원 · 공공누리 제1유형", "1.4초 · 철컥", "mp3"],
+      ["capt_lock_g2", "돌 문 열리는(쇠사슬) · 김용배 · CC BY", "2초 · 쇠사슬", "mp3"],
+      ["capt_lock_g3", "foleychainrattle04 · 김용배 · CC BY", "1.6초 · 쇠사슬 철렁", "mp3"],
+    ]],
+    ['bad_small', '작은 나쁜 일 — 사신이 빈손 · 흉흉한 소문 · 적 사신의 위협 · 싸우는 나라와 마주침 (낮은 큰북 한 번)', [
+      ["bad_small_g1", "북소리1번 · 김용배 · CC BY", "2.2초 · 둥", "mp3"],
+      ["bad_small_g2", "북소리B · 김용배 · CC BY", "2.2초 · 둥", "mp3"],
+      ["bad_small_g3", "북소리1번 낮게 · 김용배 · CC BY", "2.6초 · 더 낮은 둥", "mp3"],
+    ]],
+    ['bad_big', '큰 나쁜 일 — 싸움에서 짐 · 판에서 짐 · 장수를 잃음 · 원정·공작 실패 (큰북 두 번에 처지는 가락)', [
+      ["bad_big_g1", "북소리B 두 번 + 애절한 시나위대금 004 · CC BY", "4.2초", "mp3"],
+      ["bad_big_g2", "북소리1번 두 번 + 애절한 시나위대금 019 · CC BY", "4.2초", "mp3"],
+      ["bad_big_g3", "북소리1번 두 번 + 아쉬운 탈락 국악 효과음 · CC BY", "4.2초", "mp3"],
+    ]],
+    ['invade', '적 침공 알림 — 둥둥 큰북 (형: "경계 징 별로 · 침략당한 느낌")', [
+      ["invade_g1", "북소리A · 김용배 · CC BY", "3.2초 · 큰북 둥둥", "mp3"],
+      ["invade_g2", "북소리A + war horn(Freesound adharca · CC0) · 김용배 · CC BY", "4.2초 · 큰북 둥둥에 뿔나팔", "mp3"],
+      ["invade_g3", "북소리1번 세 번 겹침 · 김용배 · CC BY", "3.2초 · 둥 둥 둥", "mp3"],
+      ["invade_g4", "국악 효과음 #471 · 주식회사 아이티앤 · CC BY", "4초 · 위기", "mp3"],
+      ["invade_g5", "국악 효과음 #633 · 주식회사 아이티앤 · CC BY", "4초 · 위기", "mp3"],
+      ["invade_g6", "국악 효과음 #298 · 공유마당 · CC BY", "4초 · 위기", "mp3"],
+    ]],
+    ['tap_rite', '제사 지내기 — 힐 하는 소리 (형: "향피리 별로")', [
+      ["tap_rite_g7", "SE_05_10_요술봉 동작 효과음 · 공유마당 · CC BY", "4초 · 반짝이며 차오름", "mp3"],
+      ["tap_rite_g8", "LSMSE0602_마법과 벨 소리 · 한국저작권위원회 · CC BY", "4.4초 · 맑은 종", "mp3"],
+      ["tap_rite_g9", "사찰 풍경소리 · 한국저작권위원회 · CC BY", "3.5초 · 풍경", "mp3"],
+      ["tap_rite_g10", "SE_05_09_신선놀음 힐링 효과음 · 공유마당 · CC BY", "3.7초", "mp3"],
+      ["tap_rite_g11", "SE_10_02_신의 은총 거룩한 효과음 · 공유마당 · CC BY", "4.4초", "mp3"],
+      ["tap_rite_g12", "국악 효과음 #327 · 주식회사 아이티앤 · CC BY", "4.4초 · 신성", "mp3"],
+      ["tap_rite_g13", "국악 효과음 #364 · 공유마당 · CC BY", "4.4초 · 신성", "mp3"],
+    ]],
+    ['woo_break', '담판 · 마음의 벽이 무너질 때 (형: "개박살 소리 말고")', [
+      ["woo_break_g1", "LSMSE0602_마법과 벨 소리 · 한국저작권위원회 · CC BY", "4.4초 · 맑은 종", "mp3"],
+      ["woo_break_g2", "절마당 풍경1 · 김용배 · CC BY", "3.5초 · 풍경", "mp3"],
+      ["woo_break_g3", "국악 효과음 #277 · 공유마당 · CC BY", "3초", "mp3"],
+    ]],
+  ]],
+  ['⓪ 각성 연출 (2026-11-03 새로 · 공유마당 · 출처 표시하면 상업 이용 가능)', [
+    ['ax_rise', '각성 — 모임: 기운이 차오른다 (처음부터 번쩍까지 · 북 두구두구 아래에 깔린다)', [
+      ["ax_rise_g1", "SE_11_18_점점 상승하는 임팩트 · 공유마당 · CC BY", "8.5초 · 서서히 커지게", "mp3"],
+      ["ax_rise_g2", "LSMSE0909_Rise & Hit Long 1 · 한국저작권위원회 · CC BY", "8.5초 · 차오르다 끝에 한 방", "mp3"],
+      ["ax_rise_g3", "전통악기_징_열기_긴 · (재)전주정보문화산업진흥원 · 공공누리 제1유형", "8.5초 · 징을 열고 길게 끔", "mp3"],
+    ]],
+    ['ax_flash', '각성 — 번쩍: 각성 초상으로 바뀌는 한 방', [
+      ["ax_flash_g1", "SE_11_03_ 동양적인 징 임펙트 효과음 · 공유마당 · CC BY", "3.5초", "mp3"],
+      ["ax_flash_g2", "SE_11_17_웅장한 서막 임팩트 · 공유마당 · CC BY", "3.5초", "mp3"],
+      ["ax_flash_g3", "LSMSE0912_Trailer Hit 2 · 한국저작권위원회 · CC BY", "3.5초 (8초 자리의 한 방)", "mp3"],
+      ["ax_flash_g4", "파·파·밤 + 하강 — Trailer Hit 2 (한국저작권위원회 · CC BY) 를 셋으로 + 내려가는 울림·반짝임(합성)", "3.6초", "mp3"],
+      ["ax_flash_g5", "파·파·밤 + 하강 — Trailer Hit 1 · 3 (한국저작권위원회 · CC BY) + 내려가는 울림·반짝임(합성)", "3.6초", "mp3"],
+      ["ax_flash_g6", "밤 + 하강 — Trailer Hit 2 한 방 (한국저작권위원회 · CC BY) + 내려가는 울림·반짝임(합성)", "3.6초", "mp3"],
+    ]],
+    ['ax_tiger', '각성 — 범이 솟을 때 (불의 장수)', [
+      ["ax_tiger_g1", "동물_호랑이와 사자_서울대공원 동물원_사육장에서 포효하는 소리(단체음) · JICA · 공공누리 제1유형", "2.8초 (18초 자리)", "mp3"],
+      ["ax_tiger_g2", "맹수의 숨 소리 · 한국저작권위원회 · CC BY", "2.7초", "mp3"],
+    ]],
+    ['ax_bear', '각성 — 곰이 솟을 때 (땅의 장수)', [
+      ["ax_bear_g1", "곰 우리 1마리1 · 김용배 · CC BY", "2.5초 (3.8초 자리)", "mp3"],
+      ["ax_bear_g2", "곰 우리 1마리2 · 김용배 · CC BY", "1.8초", "mp3"],
+      ["ax_bear_g3", "곰 우리 1마리3 · 김용배 · CC BY", "2.6초", "mp3"],
+    ]],
+    ['ax_hawk', '각성 — 매가 솟을 때 (번개의 장수)', [
+      ["ax_hawk_g1", "독수리 울음 소리 · 한국저작권위원회 · CC BY", "2.6초", "mp3"],
+      ["ax_hawk_g2", "솔개 · 김용배 · CC BY", "2.8초", "mp3"],
+      ["ax_hawk_g3", "솔개2 · 김용배 · CC BY", "2.8초", "mp3"],
+    ]],
+    ['ax_crane', '각성 — 학이 솟을 때 (바람의 장수)', [
+      ["ax_crane_g1", "두루미 · 김용배 · CC BY", "2.8초", "mp3"],
+      ["ax_crane_g2", "새_재두루미_철원 동송읍_재두루미 한 쌍이 이길리 논에서 날아 오르며 내는 소리 · JICA · 공공누리 제1유형", "2.8초", "mp3"],
+      ["ax_crane_g3", "새_두루미_철원 갈말읍_두루미 두 쌍이 내대리 논에서 낱알 주워먹으며 내는 소리 · JICA · 공공누리 제1유형", "2.8초 (10초 자리)", "mp3"],
+    ]],
+    ['ax_dragon', '각성 — 청룡이 솟을 때 (물의 장수)', [
+      ["ax_dragon_g1", "SE_11_05_ 몬스터 등장 임팩트 효과 · 공유마당 · CC BY", "2.6초 (4.2초 자리)", "mp3"],
+      ["ax_dragon_g2", "LSMSE0401_강력한 저음 · 한국저작권위원회 · CC BY", "2.6초", "mp3"],
+      ["ax_dragon_g3", "SE_11_13_폭풍후 천둥 임팩트 · 공유마당 · CC BY", "2.6초", "mp3"],
+    ]],
+  ]],
+  ['⓪ 공유마당에서 새로 받은 것 (2026-10-23 · 출처 표시하면 상업 이용 가능)', [
+    ['war_cry', '싸움 함성 — 싸움이 열릴 때 · 돌격·추격 합', [
+      ["war_cry_g1", "battlefieldbackground01 · 김용배 · CC BY", "3초 잘라 냄", "wav"],
+      ["war_cry_g2", "battlefieldbackground02 · 김용배 · CC BY", "3초 잘라 냄", "wav"],
+      ["war_cry_g3", "돌격 나팔 · 김용배 · CC BY", "3초 잘라 냄", "wav"],
+    ]],
+    ['battle_clash', '맞부딪힘 — 한 합마다 (여럿이 칼·창·방패로 엉겨 붙는 소리)', [
+      ["battle_clash_g1", "Vikings in battle (swords crossing, shields bashing, men yelling) · DeadVDI · CC0", "2.2초 잘라 냄", "mp3"],
+      ["battle_clash_g2", "칼싸움BG + battlefieldbackground04 겹침 · 김용배 · CC BY", "2.2초 잘라 겹침", "mp3"],
+      ["battle_clash_g3", "SwordBattle2 (freefire66) + R05-24-Battle Scene (craigsmith) 겹침 · CC0", "2.2초 잘라 겹침", "mp3"],
+    ]],
+    ['battle_crit', '필살 맞부딪힘 — 상성에서 이긴 합 (더 무겁게 · 큰 한 방 + 함성)', [
+      ["battle_crit_g1", "Vikings in battle — 방패 부딪는 큰 한 방 자리 · DeadVDI · CC0", "2.6초 잘라 냄", "mp3"],
+      ["battle_crit_g2", "warriors fighting swords shields (mario1298 · CC0) + battlefieldbackground05 (김용배 · CC BY) 겹침", "2.6초 잘라 겹침", "mp3"],
+      ["battle_crit_g3", "칼 부딪는1 + 칼싸움BG + battlefieldbackground04 겹침 · 김용배 · CC BY", "2.6초 잘라 겹침", "mp3"],
+    ]],
+    ['tap_arms', '군사 명령을 누를 때 — 쇠·칼집·활시위', [
+      ["tap_arms_g1", "칼 집에넣는 · 김용배 · CC BY", "잘라 냄", "wav"],
+      ["tap_arms_g2", "국악 효과음 #361 (칼같이 쳐내는) · 주식회사 아이티앤 · CC BY", "잘라 냄", "wav"],
+      ["tap_arms_g3", "활시위당길때끼익1 · 김용배 · CC BY", "잘라 냄", "wav"],
+    ]],
+    ['tap_coin', '고용·짓기·교역 — 엽전', [
+      ["tap_coin_g1", "전통사물_엽전_찰랑이다_한주먹 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+      ["tap_coin_g2", "전통사물_엽전_떨어트리다_나무바닥_1개 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+      ["tap_coin_g3", "전통사물_엽전_올려놓다_상위에_천천히 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+    ]],
+    ['tap_brush', '사신·꾀·글 — 붓·종이', [
+      ["tap_brush_g1", "전통사물_붓_쓰다_글씨_천천히_ver.1 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+      ["tap_brush_g2", "전통사물_화선지_펼치다_천천히 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+      ["tap_brush_g3", "전통사물_고서_페이지_넘기다_중간 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+    ]],
+    ['tap_move', '정찰·원정·옮겨 살기 — 말굽·발걸음', [
+      ["tap_move_g1", "말 발굽 걷는1 · 김용배 · CC BY", "잘라 냄", "wav"],
+      ["tap_move_g2", "말 여러마리 뛰는 · 김용배 · CC BY", "잘라 냄", "wav"],
+      ["tap_move_g3", "전통사물_무명옷_옷소리_걷다 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+    ]],
+    ['tap_bell', '고르기·혼인·제사 — 방울·요령·풍경', [
+      ["tap_bell_g1", "국악기_방울1 · 한국저작권위원회 · CC BY", "잘라 냄", "wav"],
+      ["tap_bell_g2", "국악기_요령1 · 한국저작권위원회 · CC BY", "잘라 냄", "wav"],
+      ["tap_bell_g3", "근현대사물_풍경_치다_연속 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+    ]],
+    ['tap_drum', '판 시작·이어 하기 — 북·장구·징', [
+      ["tap_drum_g1", "전통악기_북_치다_느린속도 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+      ["tap_drum_g2", "전통악기_장구_치다_보통속도_Ver.1 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+      ["tap_drum_g3", "전통악기_징_열기_긴 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+    ]],
+    ['tap_map', '지도에서 고을 누르기 — 바둑알·장기알', [
+      ["tap_map_g1", "근현대사물_바둑알_두다_바둑판 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+      ["tap_map_g2", "전통사물_나무장기판_놓다_바닥_약하게 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+      ["tap_map_g3", "전통사물_장기알_장기알끼리_부딪히다_강하게 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+    ]],
+    ['tap_cancel', '닫기·물리기 — 딱따기·부채·목탁', [
+      ["tap_cancel_g1", "야경(딱딱이) · 김용배 · CC BY", "잘라 냄", "wav"],
+      ["tap_cancel_g2", "전통사물_부채_Ver.1_손에치다 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+      ["tap_cancel_g3", "전통사물_목탁_ver.2_치다_연속_중간 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+    ]],
+    ['bgm_title', '첫 화면 음악 — 웅장한 것', [
+      ["bgm_title_g1", "국악 BGM #218 (웅장하게 준비를 하는 분위기) · 주식회사 아이티앤 · CC BY", "1분 남짓", "mp3"],
+      ["bgm_title_g2", "국악 BGM #179 (벅차오르는 분위기) · 주식회사 아이티앤 · CC BY", "1분 남짓", "mp3"],
+      ["bgm_title_g3", "국악 BGM #186 (세상을 헤쳐나가는 분위기) · 주식회사 아이티앤 · CC BY", "1분 남짓", "mp3"],
+    ]],
+    ['bgm_win', '싸움을 이겼을 때 — 국악 팡파르 「빠바밤」 (형 10-29) · 한 번만 울린다 · 북 쿵쿵 → 징 쾅 → 태평소 → 북·징 맺음', [
+      ['bgm_win_g1', '태평소독주 시그널음악 011 + 북·징 · 한국저작권위원회 · CC BY', '15.7초', 'mp3'],
+      ['bgm_win_g2', '태평소독주 시그널음악 012 + 북·징 · 한국저작권위원회 · CC BY', '11.6초', 'mp3'],
+      ['bgm_win_g3', '태평소독주 시그널음악 016 + 북·징 · 한국저작권위원회 · CC BY', '16.3초', 'mp3'],
+      ['bgm_win_g4', '경복궁 수문장 교대식 현장 녹음(진짜 취타대 합주 · 사람 소리 섞임) · Freesound bmoreno #164169 · CC BY 4.0 — 쓸 대목을 초로 알려 주세요', '1분 23초', 'ogg'],
+      ['bgm_win_a', '옛것 — 형이 받은 추격풍 (형: "말 타며 달리기 시작하는 노래 같음")', '되풀이', 'mp3'],
+    ]],
+    ['bgm_war', '싸움 음악 — 긴장되되 신나지 않게', [
+      ["bgm_war_g1", "국악 BGM #60 (결전 직전의 상황) · 주식회사 아이티앤 · CC BY", "1분 남짓", "mp3"],
+      ["bgm_war_g2", "국악 BGM #244 (배틀하는 분위기) · 주식회사 아이티앤 · CC BY", "1분 남짓", "mp3"],
+      ["bgm_war_g3", "국악 BGM #38 (긴박한 상황) · 주식회사 아이티앤 · CC BY", "1분 남짓", "mp3"],
+    ]],
+    ['bgm_lose', '졌을 때 음악', [
+      ["bgm_lose_g1", "국악 BGM #112 (비극적인 분위기) · 주식회사 아이티앤 · CC BY", "1분 남짓", "mp3"],
+      ["bgm_lose_g2", "국악 BGM #250 (구슬픈 분위기) · 주식회사 아이티앤 · CC BY", "1분 남짓", "mp3"],
+      ["bgm_lose_g3", "국악 BGM #64 (비장한 분위기) · 주식회사 아이티앤 · CC BY", "1분 남짓", "mp3"],
+    ]],
+  ]],
+  ['① 화면 소리', [
+    ['ui_open', '문서가 열릴 때 — 종이·두루마리 넘기는 소리', [
+      ['ui_open_a', '책장 넘기기 · davidbain', '2.0초'],
+      ['ui_open_b', '종이 바스락 · BenjaminNelan', '1.1초'],
+      ['ui_open_c', '종이 한 장 넘김 · Rookster', '0.8초'],
+    ]],
+    ['ui_order', '명령을 내릴 때 — 나무를 톡 치는 부드러운 확인음', [
+      ['ui_order_a', '나무 두드림 · Mrguff', '0.9초'],
+      ['ui_order_b', '딱따기(클라베스) · cabled_mess', '0.4초'],
+      ['ui_order_c', '목탁 같은 나무토막 · Sadiquecat', '1.2초'],
+    ]],
+    ['ui_cancel', '물리기·닫기', [
+      ['ui_cancel_a', '취소음 (전자음일 수 있다) · unfa', '0.6초'],
+      ['ui_cancel_b', '취소·아니오 버튼 · el_boss', '0.6초'],
+      ['ui_cancel_c', '아주 짧은 나무 딸깍 · husamalhomsi', '0.1초'],
+    ]],
+  ]],
+  ['② 계절', [
+    ['season_turn', '계절이 넘어갈 때 — 징이나 큰북 한 번', [
+      ['season_turn_a', '징 · nkuitse', '5.2초'],
+      ['season_turn_b', '동아시아 타악기 한 소절 · LilMati', '4.0초'],
+      ['season_turn_c', '절 범종 (교토 대덕사 녹음 — 종소리 자체는 우리 범종과 비슷할 것) · nahmandub', '7.7초'],
+    ]],
+    ['amb_spring', '봄 바탕소리 (되풀이) — 새소리', [
+      ['amb_spring_a', '새 지저귐 (다운로드 14만 회) · DCPoke', '26초'],
+      ['amb_spring_b', '시냇가 새소리 · HighPeakEmma', '40초'],
+    ]],
+    ['amb_summer', '여름 바탕소리 — 매미·풀벌레', [
+      ['amb_summer_a', '매미 · dethrok', '46초'],
+      ['amb_summer_b', '숲 매미 (되풀이용으로 다듬은 것) · Nimlos', '15초'],
+    ]],
+    ['amb_autumn', '가을 바탕소리 — 바람과 마른 잎', [
+      ['amb_autumn_a', '가을바람과 마른 잎 (다운로드 5만 회) · Stek59', '43초'],
+      ['amb_autumn_b', '숲 바닥에 지는 잎, 바람 (되풀이용) · Mjeno', '20초'],
+      ['amb_autumn_c', '바람에 나뭇잎 · lunchmoney', '36초'],
+    ]],
+    ['amb_winter', '겨울 바탕소리 — 찬바람', [
+      ['amb_winter_a', '추운 겨울 · jordivburgel', '40초'],
+      ['amb_winter_b', '차가운 바람 (되풀이용) · The_Isot_is_Back', '21초'],
+      ['amb_winter_c', '울부짖는 바람 · Kodack', '26초'],
+    ]],
+  ]],
+  ['③ 싸움', [
+    ['war_drums', '군사를 낼 때 — 짧은 전쟁북', [
+      ['war_drums_a', '전쟁북 되풀이 · PearceWilsonKing', '7.4초'],
+      ['war_drums_b', '부족 북 되풀이 · PearceWilsonKing', '8.3초'],
+      ['war_drums_c', '원시 북 되풀이 (OpenGameArt) · hornpipe2', '5.7초'],
+          ['war_drums_b2', '② 를 2초로 자르고 끝을 빠르게 줄임 (10-27)', '2초', 'wav'],
+    ]],
+    ['battle_clash', '맞붙을 때 — 여럿이 칼 부딪는 소리', [
+      ['battle_clash_a', '칼 여러 번 부딪힘 · Sam300Productions', '10초'],
+      ['battle_clash_b', '칼 부딪힘 · Amaiguri', '6.6초'],
+      ['battle_clash_c', '함성 지르며 돌격 (말소리 없는 비명·고함) · florianreichelt', '18초'],
+    ]],
+    ['arrow_volley', '화살 비 — 여러 대가 한꺼번에', [
+      ['arrow_volley_b', '화살이 스쳐 날아감 · DigPro120', '4.5초'],
+      ['arrow_volley_c', '화살이 날아와 꽂힘 · craigsmith', '4.5초'],
+          ['arrow_volley_c3', '지금 쓰는 것 (10-23 고름)', '—'],
+    ]],
+    ['horses', '기병 — 말 달리는 소리', [
+      ['horses_a', '말 여러 마리 달림 · C-V', '11초'],
+      ['horses_b', '말 질주 (폴리) · StephenSaldanha', '12초'],
+      ['horses_c', '말 질주 (다운로드 1.5만 회) · Max_Headroom', '5.8초'],
+          ['horses_m', '셋을 시차를 두고 겹친 말 떼 (10-27)', '4초', 'wav'],
+    ]],
+    ['horn_victory', '이겼을 때 — 뿔나팔', [
+      ['horn_victory_a', '전쟁 뿔나팔 · adharca', '4.4초'],
+    ]],
+    ['defeat', '졌을 때 — 무겁게 가라앉는 소리', [
+      ['defeat_a', '낮은 징 울림 · Yin_Yang_Jake007', '6.4초'],
+      ['defeat_b', '징 세게 친 뒤 울림 · hiddenpersuader', '7.8초'],
+      ['defeat_c', '패배 음악 (중세풍, 서양풍일 수 있다 · OpenGameArt) · RandomMind', '45초'],
+          ['defeat_a3', '① 을 3초로 줄임 (10-27)', '3초', 'wav'],
+    ]],
+  ]],
+  ['④ 외교·살림', [
+    ['coins', '교역·재물이 들어올 때', [
+      ['coins_a', '돈주머니 · PhilSavlem', '1.7초'],
+      ['coins_b', '동전 떨어짐 · Jace', '2.3초'],
+      ['coins_c', '돈 소리 · rolandseer', '2.1초'],
+    ]],
+    ['envoy', '사신이 오갈 때 — 말·방울', [
+      ['envoy_a', '말이 걸어감 · MrFizzywig', '8.7초'],
+      ['envoy_b', '말 울음 (짧게) · shadoWisp', '1.5초'],
+      ['envoy_c', '버마 종 (방울 대신) · LozKaye', '5.9초'],
+    ]],
+    ['birth', '아이가 태어날 때 — 맑고 조용한 울림', [
+      ['birth_a', '작은 종 · steffcaffrey', '1.9초'],
+      ['birth_b', '싱잉볼 · inoshirodesign', '6.3초'],
+      ['birth_c', '<b>대금</b> 한 가락 (우리 피리!) · bletort', '6.7초'],
+    ]],
+    ['capture', '사로잡을 때 — 쇠사슬·포승', [
+      ['capture_a', '쇠사슬 끌림 · ani_music', '2.2초'],
+      ['capture_b', '족쇄 · zaqqazlowell', '0.8초'],
+      ['capture_c', '사슬 떨어짐 · Logicogonist', '0.9초'],
+    ]],
+    ['dex_new', '도감에 새 사람이 들 때 — 짧고 밝은 소리 (자주 울린다)', [
+      ['dex_new_a', '글로켄슈필 보물 소리 (다운로드 1.4만 회) · FunWithSound', '2.5초'],
+      ['dex_new_b', '반짝 업적음 · SkySpeira', '1.8초'],
+      ['dex_new_c', '<b>가야금</b> 한 음 (진짜 가야금 녹음) · spt3125', '9.5초'],
+      ['dex_new_c3', '위 거문고 「도~」를 3초로 자름 (10-27)', '3초', 'wav'],
+      ['dex_new_g1', '공유마당 국악 효과음 #159 (반짝이는) 앞 2초 · 아이티앤', '2초', 'wav'],
+      ['dex_new_g2', '공유마당 국악 효과음 #603 (반짝이는) 앞 2초 · 아이티앤', '2초', 'wav'],
+      ['dex_new_g3', '공유마당 국악 효과음 #328 (신비로운) 앞 2초 · 아이티앤', '2초', 'wav'],
+    ]],
+    ['wed', '혼인 — 형이 고른 꼭두각시 (10-28 · 국립국악원 디지털 이음 · 공공누리 1유형)', [
+      ['wed_g7', '<b>꼭두각시 01</b> — 경기민요 · 가야금 · 자진모리 1~4장단', '10초', 'wav'],
+      ['wed_c4', '옛것 — 국악 효과음 #503 (아이티앤)', '5.8초'],
+    ]],
+    ['bgm_wed', '혼례 장면 배경 음악 — 꼭두각시 01~04 이어 붙인 한 곡 (형 10-29 · 국립국악원 디지털 이음 · 공공누리 1유형) · 장면을 닫으면 잦아든다', [
+      ['bgm_wed_g1', '<b>꼭두각시 01·02·03·04</b> — 가야금 · 이어 붙임', '30초', 'mp3'],
+    ]],
+    ['tap_rite', '제사를 지낼 때 — 새 후보 (10-27 밤 · 장구·바라·무당 소리는 형이 별로라 했다) · CC BY', [
+      ['tap_rite_g4', '기묘한 종묘대금 효과음 001 (종묘 제례의 대금)', '3초', 'wav'],
+      ['tap_rite_g5', '애절한 시나위대금 효과음 001 (굿 음악 시나위)', '3초', 'wav'],
+      ['tap_rite_g6', '국악 효과음 #505 (신비로운) · 아이티앤', '3초', 'wav'],
+    ]],
+    ['hire_go', '장수를 들일 때 — 새 사람이 온다 (형 10-27: "음악 새로운 거")', [
+      ['hire_go_g1', '공유마당 국악 효과음 #117 (등장하는) · 아이티앤', '6.6초', 'mp3'],
+      ['hire_go_g2', '공유마당 국악 효과음 #107 (등장하는) · 아이티앤', '6.8초', 'mp3'],
+      ['hire_go_g3', '공유마당 국악 효과음 #355 (웅장한) · 아이티앤', '5.8초', 'mp3'],
+    ]],
+    ['relic_open', '유물 상자가 열릴 때 — 팡파레 (형 10-27)', [
+      ['relic_open_g1', '공유마당 「짧은 축하 효과음」', '5초', 'mp3'],
+      ['relic_open_g2', '공유마당 「승리의 군악대 효과음」', '8.4초', 'mp3'],
+      ['relic_open_g3', '공유마당 국악 효과음 #478 (축하해주는) · 아이티앤', '5.5초', 'mp3'],
+    ]],
+  ]],
+  ['⑤ 바탕 음악', [
+    ['bgm_map', '지도 화면 — 차분하게 오래 깔리는 음악 (하나 또는 둘을 돌려 튼다)', [
+      ['bgm_map_k1', '<b>국악원</b> 긴난봉가 (1·2·3 이음)', '72초', 'mp3'],
+      ['bgm_map_k2', '<b>국악원</b> 자진난봉가 (1·2 이음)', '22초', 'mp3'],
+      ['bgm_map_k3', '<b>국악원</b> 한갑득류 거문고산조 자진모리 (049~071 스물셋 이음)', '177초', 'mp3'],
+      ['bgm_map_k4', '<b>국악원</b> 양금 상령산 010·015·040 (앞 둘 끝 0.5초 줄임)', '135초', 'mp3'],
+      ['bgm_map_k5', '<b>국악원</b> 아리랑 01·02 → 쉼 1초 → 01·02 (메기고 받고 두 번)', '78초', 'mp3'],
+      ['bgm_map_k6', '<b>국악원</b> 밀양아리랑 01·02', '29초', 'mp3'],
+      ['bgm_map_k7', '<b>국악원</b> 뱃노래 01·02', '36초', 'mp3'],
+      ['bgm_map_k8', '<b>국악원</b> 상주모심기', '24초', 'mp3'],
+      ['bgm_map_k9', '<b>국악원</b> 정선아리랑 01·02', '51초', 'mp3'],
+      ['bgm_map_k10', '<b>국악원</b> 한오백년 02', '29초', 'mp3'],
+      ['bgm_map_k11', '<b>국악원</b> 진도아리랑 01·02·03', '48초', 'mp3'],
+      ['bgm_map_k12', '<b>국악원</b> 현악영산회상 중 「타령」 (정악 가야금)', '126초', 'mp3'],
+      ['bgm_map_k13', '<b>국악원</b> 수연장지곡 (거문고)', '72초', 'mp3'],
+      ['bgm_map_k14', '<b>국악원</b> 우조가락도드리 (양금)', '79초', 'mp3'],
+      ['bgm_map_k15', '<b>국악원</b> 방아타령 (산조 가야금)', '102초', 'mp3'],
+      ['bgm_map_k16', '<b>국악원</b> 25현 가야금을 위한 변주곡 「한오백년」', '84초', 'mp3'],
+      ['bgm_map_a', '고쟁(가야금 사촌) — 꽃 핀 골짜기 · neolein', '63초'],
+      ['bgm_map_b', '고쟁 — 카르스트 산 · neolein', '109초'],
+      ['bgm_map_c', '고쟁 독주 · neolein', '85초'],
+      ['bgm_map_d', '느린 동양풍 곡 "Orien" (미디 악기) · Tozan', '143초'],
+      ['bgm_map_e', '동양풍 곡 "참새 호수" (미디 악기) · Tozan', '122초'],
+    ]],
+    ['bgm_war', '싸움 화면 — 긴장되는 음악', [
+      ['bgm_war_c7v', '<b>사물놀이 #197 + 추임새</b> (5초 헐씨구 · 36초 잘한다)', '67초'],
+      ['bgm_war_c8v', '<b>사물놀이 LSMBG0704 + 추임새</b> (6초 얼씨구 · 10초 좋다 · 17초 하믄 · 20초 그러지 · 31초 헐씨구 · 35초 잘한다)', '91초'],
+      ['bgm_war_a', '"칼을 준비하라" · bojidar-bg', '88초'],
+      ['bgm_war_b', '"전쟁의 부름" 북·뿔나팔 (서양풍일 수 있다) · Umplix', '76초'],
+      ['bgm_war_c', '전쟁북 되풀이 (북만, 선율 없음) · BaDoink', '106초'],
+      ['bgm_war_d', '웅장한 전투 음악 (영화풍 관현악, 다운로드 1.1만 회) · Airwolf89', '111초'],
+    ]],
+  ]],
+]
+
+/** 게임에 붙인 것 — src/ui/realm/sound.ts 의 PICK 과 같게 둔다 */
+const PICK = { capt_lock: 'g1', bad_small: 'g2', bad_big: 'g2', invade: 'g4', woo_break: 'g1', ax_rise: 'g2', ax_flash: 'g3', ax_tiger: 'g2', ax_bear: 'g3', ax_hawk: 'g2', ax_crane: 'g1', ax_dragon: 'g1', ui_order: 'b', ui_open: 'c', season_turn: 'a', war_drums: 'b2', arrow_volley: 'c3', horses: 'm',
+  horn_victory: 'a', defeat: 'a3', capture: 'b', dex_new: 'c3', birth: 'c', envoy: 'b', coins: 'c', hire_go: 'g3', relic_open: 'g3', wed: 'g7', tap_rite: 'g11',
+  amb_spring: 'a', amb_summer: 'b', amb_autumn: 'b', amb_winter: 'b', bgm_map: 'k1', bgm_war: 'g1', bgm_title: 'g1', bgm_lose: 'g1', bgm_win: 'g1',
+  tap_arms: 'g1', tap_coin: 'g2', tap_brush: 'g2', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'c', war_cry: 'g1',
+  battle_clash: 'g3', battle_crit: 'g3' }
+let n = 0
+const out = []
+for (const [title, slots] of GROUPS) {
+  out.push(`<h2>${title}</h2>`)
+  for (const [slot, note, files] of slots) {
+    out.push(`<h3>${note} <code>${slot}</code></h3>`)
+    for (const [file, desc, len, ext = 'ogg'] of files) {
+      n++
+      out.push(`<div class="row"><b class="no">${n}</b><audio controls preload="none" src="sfx/${file}.${ext}"></audio>`
+        + (PICK[slot] !== undefined && file === `${slot}_${PICK[slot]}` ? '<b class="pick">★ 지금 쓰는 것</b>' : '')
+        + `<span class="nm">${desc}</span><span class="dl">${len} · sfx/${file}.${ext}</span></div>`)
+    }
+  }
+}
+document.getElementById('list').innerHTML = out.join('\n')
+</script>
+</body></html>

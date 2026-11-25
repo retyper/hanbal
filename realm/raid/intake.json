@@ -1,0 +1,153 @@
+{
+  "sources": [
+    {
+      "source": "haebi-pack-v1-H01.png.png",
+      "sha256": "04159575ca43c9b665d48ee201927be26002fac2090d91f16644333c00ec5ed7",
+      "size": [
+        1672,
+        941
+      ]
+    },
+    {
+      "source": "haebi-pack-v1-H06.png.png",
+      "sha256": "a0df185a805948ce8f871333fdd91bf0e5a341c43b38d61e31c555dc206cf149",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "source": "haebi-pack-v1-H09.png.png",
+      "sha256": "ec26e7ce57cd18ffe566edb1b1ba4ccd18b85ad9ec5d44176e3ef69d5ddeff37",
+      "size": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "source": "haebi-pack-v1-H07.png.png",
+      "sha256": "2405ea87d249b7ec94c6d72864aaca457cfd866a7ecf0ca89bd6a6827dad5fbd",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "source": "haebi-pack-v1-H08.png.png",
+      "sha256": "5e56629457422cdc0987683135d2b76a7b6fb2afbb76acdbc6a10f79fdd7b652",
+      "size": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "source": "haebi-pack-v1-H13-2.png.png",
+      "sha256": "650023beff919c1431cbcdbf408147f431ddea2a76617c73348279d08b998377",
+      "size": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "source": "haebi-pack-v1-H14.png.png",
+      "sha256": "b0c7062948538a3579aa6717c15e878f7b9bd633c5fe77c79265d3b5d3f4fca9",
+      "size": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "source": "haebi-pack-v1-H15.png.png",
+      "sha256": "77e604797d51fc317d34d0531ff5136c46913df02f39d687e041bb18471a77d6",
+      "size": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "source": "haebi-pack-v1-H16.png.png",
+      "sha256": "249150dc8bae907fef383a9a3d94b161a091aef99902f64f8c52e257e1ed15cc",
+      "size": [
+        1774,
+        887
+      ]
+    },
+    {
+      "source": "haebi-pack-v1-H17.png.png",
+      "sha256": "69c322884c27550d7b6267f2a0f5263a98f596dea7f13600e3d0810dd7d1b64c",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "source": "haebi-pack-v1-H18.png.png",
+      "sha256": "d7b2e21755bce85f1f643df68318422690eafc5d9eeef8e9b0a033de1511bda5",
+      "size": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "source": "haebi-pack-v1-H19.png.png",
+      "sha256": "19d39d8c7a01e85b5ad3ca1cddcf149107f3970e88414018de70e9dc195e7e67",
+      "size": [
+        1254,
+        1254
+      ]
+    }
+  ],
+  "impact": {
+    "frames": 8,
+    "width": 256,
+    "height": 256,
+    "aligned": "alpha bounds center, shared scale"
+  },
+  "effects": {
+    "slash": {
+      "frames": 8,
+      "cell": 256,
+      "sourceOrigin": [
+        0.16,
+        0.5
+      ],
+      "scale": 0.3723199383746309,
+      "anchor": [
+        128,
+        128
+      ]
+    },
+    "death": {
+      "frames": 8,
+      "cell": 256,
+      "sourceOrigin": [
+        0.5,
+        0.69
+      ],
+      "scale": 0.48277010154819383,
+      "anchor": [
+        128,
+        128
+      ]
+    },
+    "fire": {
+      "frames": 8,
+      "cell": 256,
+      "sourceOrigin": [
+        0.5,
+        0.7
+      ],
+      "scale": 0.44891640866873067,
+      "anchor": [
+        128,
+        128
+      ]
+    },
+    "lightning": {
+      "frames": 8,
+      "width": 256,
+      "height": 128,
+      "anchor": "left/right center"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>열전 판 기록</title>
+    <style>
+      body { margin: 0; padding: 16px; background: #0f1217; color: #e9dcc0; font: 14px/1.5 system-ui, sans-serif; }
+      h1 { font-size: 20px; margin: 0 0 8px; } p { color: #b9ad94; margin: 4px 0 12px; }
+      table { border-collapse: collapse; font-size: 12.5px; white-space: nowrap; } th, td { border: 1px solid #3a3226; padding: 3px 6px; text-align: right; }
+      th { background: #1e1912; position: sticky; top: 0; } td:nth-child(-n+4) { text-align: left; } .wrap { overflow-x: auto; }
+      .won { color: #9fe09f; } .lost { color: #ff9a8a; }
+    </style>
+    <script type="module" crossorigin src="/Program Files/Git/hanbal/assets/records-B6vlUHLb.js"></script>
+    <link rel="modulepreload" crossorigin href="/Program Files/Git/hanbal/assets/josa-D3PR0I1-.js">
+    <link rel="modulepreload" crossorigin href="/Program Files/Git/hanbal/assets/params-BoUp1nek.js">
+    <link rel="modulepreload" crossorigin href="/Program Files/Git/hanbal/assets/sync-B5bpf-05.js">
+    <link rel="modulepreload" crossorigin href="/Program Files/Git/hanbal/assets/runlog-DdLNqEOh.js">
+  </head>
+  <body>
+    <h1>열전 판 기록</h1>
+    <p id="msg">기록을 읽는 중입니다.</p>
+    <p><button id="dl" disabled>기록 파일로 받기</button></p>
+    <div class="wrap"><table id="t"></table></div>
+  </body>
+</html>

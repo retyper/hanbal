@@ -1,0 +1,61 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>겨루기 소리 고르기</title>
+<style>
+  :root { color-scheme: dark; }
+  body { background:#171c23; color:#e2dbcd; margin:0; padding:20px 16px 160px; font-family:"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; }
+  h1 { font-size:20px; margin:0 0 6px; }
+  p { color:#95a1ae; font-size:13px; line-height:1.7; max-width:780px; margin:6px 0 10px; }
+  .slot { border-top:1px solid #2c333d; padding:12px 0 8px; }
+  .sh { display:flex; gap:8px; align-items:baseline; flex-wrap:wrap; } .sh b { font-size:16px; } .sh small { color:#8f99a5; }
+  .opt { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:6px 0 6px 8px; }
+  .opt label { display:flex; align-items:center; gap:6px; min-width:160px; font-size:14px; color:#ccd6e0; cursor:pointer; }
+  .opt code { background:#232a33; padding:1px 6px; border-radius:3px; color:#ffd88f; font-size:13px; }
+  .opt .d { color:#7f8b98; font-size:12px; }
+  button.pl { font:inherit; font-size:15px; padding:8px 16px; border-radius:10px; border:1px solid #4a5363; background:#2a313c; color:#e2dbcd; cursor:pointer; }
+  button.pl.on { background:#e2b45a; color:#241608; }
+  #out { position:fixed; left:0; right:0; bottom:0; background:#10141a; border-top:1px solid #2c333d; padding:10px 16px; display:flex; gap:10px; align-items:center; }
+  #out textarea { flex:1; height:58px; background:#1d232b; color:#e2dbcd; border:1px solid #333b46; border-radius:8px; font-size:13px; padding:6px; }
+  #out button { font:inherit; font-size:15px; padding:12px 16px; border-radius:10px; border:0; background:#e2b45a; color:#241608; font-weight:700; }
+</style></head><body>
+<h1>장수 겨루기 소리 고르기</h1>
+<p>자리마다 ▶ 로 들어 보고 마음에 드는 것을 고르세요. 다 고르면 아래 「복사」를 눌러 붙여 주시면 그걸로 겨루기 소리를 완성합니다. 전부 Freesound CC0 (출처는 sfx/CREDITS.txt). 셋 다 별로면 「없음」을 고르면 더 찾아 옵니다.</p>
+<div id="list"></div>
+<div id="out"><textarea id="ta" readonly placeholder="고른 것이 여기 적힌다"></textarea><button id="cp">복사 (<span id="n">0</span>/9)</button></div>
+<script>
+const DATA = [{"slot":"good","name":"막음","when":"고리를 적당히 맞춰 막아 낼 때 — 칼과 칼이 부딪는 소리","opts":[{"f":"sfx/duel/good_a.ogg","code":"good_a","d":"Sword Clash · loudernoises · CC0"},{"f":"sfx/duel/good_b.ogg","code":"good_b","d":"Sword_Clash (7) · JohnBuhr · CC0"},{"f":"sfx/duel/good_c.ogg","code":"good_c","d":"Espada Clavandose (Sword Clash) · Atrius1 · CC0"}]},{"slot":"perfect","name":"정확 (챙)","when":"고리를 딱 맞췄을 때 — 날카롭게 울리는 쇳소리 (치명공격 직전)","opts":[{"f":"sfx/duel/perfect_a.ogg","code":"perfect_a","d":"Metal Sword Parry Impact Hit 4 · chungkury · CC0"},{"f":"sfx/duel/perfect_b.ogg","code":"perfect_b","d":"block3 · Empiremonkey · CC0"},{"f":"sfx/duel/perfect_c.ogg","code":"perfect_c","d":"Sword Tap · Foxfire- · CC0"}]},{"slot":"crit","name":"치명공격 베기","when":"정확히 받아 바로 베는 순간 — 크고 날카로운 베기","opts":[{"f":"sfx/duel/crit_a.ogg","code":"crit_a","d":"samurai slash · nekoninja · CC0"},{"f":"sfx/duel/crit_b.ogg","code":"crit_b","d":"Slash1 · Wenpire · CC0"},{"f":"sfx/duel/crit_c.ogg","code":"crit_c","d":"Deep Cut / Slash / Gash · SypherZent · CC0"}]},{"slot":"rushHit","name":"연타 맞음","when":"3초 연타에서 칼이 들어갈 때 — 짧고 빠른 타격","opts":[{"f":"sfx/duel/rushHit_a.ogg","code":"rushHit_a","d":"Slash · qubodup · CC0"},{"f":"sfx/duel/rushHit_b.ogg","code":"rushHit_b","d":"Sword Hit · qubodup · CC0"},{"f":"sfx/duel/rushHit_c.ogg","code":"rushHit_c","d":"Slicing through flesh · NeoSpica · CC0"}]},{"slot":"deflect","name":"연타 튕김","when":"연타를 적장이 튕겨 낼 때 — 짧은 챙","opts":[{"f":"sfx/duel/deflect_a.ogg","code":"deflect_a","d":"Click Metal Ting · GameAudio · CC0"},{"f":"sfx/duel/deflect_b.ogg","code":"deflect_b","d":"sword · CaptainYulef · CC0"},{"f":"sfx/duel/deflect_c.ogg","code":"deflect_c","d":"Anime metal clang · modusmogulus · CC0"}]},{"slot":"hurt","name":"내가 맞음","when":"고리를 놓쳐 적장의 칼에 맞을 때 — 둔탁한 타격","opts":[{"f":"sfx/duel/hurt_a.ogg","code":"hurt_a","d":"body_hit · insanity54 · CC0"},{"f":"sfx/duel/hurt_b.ogg","code":"hurt_b","d":"Sword hits the body · vdovitsky · CC0"},{"f":"sfx/duel/hurt_c.ogg","code":"hurt_c","d":"Major punch · janbezouska · CC0"}]},{"slot":"swing","name":"적장 휘두름","when":"적장의 칼이 들어오는 순간 (고리가 닿을 때) — 휙","opts":[{"f":"sfx/duel/swing_a.ogg","code":"swing_a","d":"Metallic Whoosh · MissCellany · CC0"},{"f":"sfx/duel/swing_b.ogg","code":"swing_b","d":"swosh swinging sword 37 · qubodup · CC0"},{"f":"sfx/duel/swing_c.ogg","code":"swing_c","d":"Swing Woosh · Jofae · CC0"}]},{"slot":"break","name":"체간 무너짐","when":"적장 체간이 꽉 차 비틀거릴 때 — 크고 묵직한 쇳소리","opts":[{"f":"sfx/duel/break_a.ogg","code":"break_a","d":"ANI Big Pipe Hit · ani_music · CC0"},{"f":"sfx/duel/break_b.ogg","code":"break_b","d":"Metallic Clang · eben-frostey · CC0"},{"f":"sfx/duel/break_c.ogg","code":"break_c","d":"Heavy Metal Thud on Ground · 7of9Designs · CC0"}]},{"slot":"intro","name":"겨루기 시작","when":"「장수 겨루기」 깃발로 들어갈 때 — 묵직한 울림","opts":[{"f":"sfx/duel/intro_a.ogg","code":"intro_a","d":"Very low frequency impact · AudioPapkin · CC0"},{"f":"sfx/duel/intro_b.ogg","code":"intro_b","d":"Impact SFX PS 017 · AudioPapkin · CC0"},{"f":"sfx/duel/intro_c.ogg","code":"intro_c","d":"Impact sfx 027 · AudioPapkin · CC0"}]}]
+const pick = {}
+let playing = null
+const list = document.getElementById('list')
+let h = ''
+for (const s of DATA) {
+  h += '<div class="slot"><div class="sh"><b>' + s.name + '</b><small>' + s.when + '</small></div>'
+  s.opts.forEach((o, i) => {
+    h += '<div class="opt"><button class="pl" data-f="' + o.f + '">▶</button><label><input type="radio" name="' + s.slot + '" value="' + i + '"><code>' + o.code + '</code></label><span class="d">' + o.d + '</span></div>'
+  })
+  h += '<div class="opt"><label><input type="radio" name="' + s.slot + '" value="-1"> 셋 다 별로 — 더 찾아 와</label></div></div>'
+}
+list.innerHTML = h
+list.addEventListener('click', (e) => {
+  const b = e.target.closest('button.pl')
+  if (!b) return
+  if (playing) { playing.a.pause(); playing.b.classList.remove('on') }
+  if (playing && playing.b === b) { playing = null; return }
+  const a = new Audio(b.dataset.f); a.play(); b.classList.add('on')
+  a.onended = () => { b.classList.remove('on'); if (playing && playing.b === b) playing = null }
+  playing = { a, b }
+})
+list.addEventListener('change', (e) => {
+  const r = e.target
+  const s = DATA.find((x) => x.slot === r.name)
+  const v = Number(r.value)
+  pick[s.slot] = s.name + ' (' + s.slot + ') → ' + (v < 0 ? '없음 · 더 찾기' : s.opts[v].code)
+  const vs = Object.values(pick)
+  document.getElementById('ta').value = '겨루기 소리\n' + vs.join('\n')
+  document.getElementById('n').textContent = vs.length
+})
+document.getElementById('cp').onclick = async () => {
+  const t = document.getElementById('ta').value
+  try { await navigator.clipboard.writeText(t); document.getElementById('cp').textContent = '복사했다' } catch { document.getElementById('ta').select() }
+}
+</script></body></html>

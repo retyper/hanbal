@@ -1,0 +1,94 @@
+사운드 출처: Kenney (https://kenney.nl) — Impact Sounds / UI Audio 팩
+라이선스: Creative Commons CC0 1.0 (퍼블릭 도메인). 출처 표기 의무 없음, 상업적 사용 가능.
+
+impactWood_*    화살이 나무 과녁에 박히는 소리
+impactGlass_*   공중 과녁이 깨지는 소리 (연쇄)
+impactBell_*    정중앙 명중 (크리티컬)
+impactSoft_*    빗나가 땅에 박히는 소리
+impactPlank_*   관통
+click / rollover / switch   UI (드래프트·해금·버튼)
+
+※ public/ 아래에 두었으므로 JS 번들에 포함되지 않는다.
+   첫 화면은 소리 없이 즉시 뜨고(C1·C6), 사운드는 뒤에서 따로 받는다.
+
+── 클리어음 (2026-08-24 교체) ──
+jingleClear     판 클리어. Freesound 'Level completed' by Ranner (ID 534797, CC0).
+                손으로 두들기는 북소리 — 형이 19개 후보에서 직접 골랐다.
+jingleClearBoss 보스 클리어. Freesound 'Taiko Drums - Mastered' by Soundholder (ID 621296, CC0)
+                — 형이 35~40초 구간을 골라 잘랐다 (편집: 페이드 인 30ms·아웃 250ms만).
+jingleUnlock    해금. Kenney Music Jingles 팩 jingles_PIZZI16 (CC0).
+jingleClear_alt1/alt2  예전 켄니 후보의 잔재 — 안 쓰면 지워도 된다.
+
+── 2026-08-31 추가 (형: "sfx가 많아야해. 패배할때 소리도 필요하고 능력지 올릴때 소리도") ──
+error_003/004        패배 — 여정이 끝났다. Kenney Interface Sounds (CC0).
+confirmation_002/004 스탯을 올렸다. 같은 팩.
+impactPunch_heavy_*  사람이 쓰러진다 — 퍽. Kenney Impact Sounds (CC0).
+impactMetal_medium_* 드론이 부서진다 — 금속. 같은 팩.
+
+※ (2026-09-10 해소 — 아래 fail_jingle) 패배음은 임시다. 지금은 인터페이스 팩의 짧은 부저인데, 여정이 끝나는 사건에는
+   한 소절짜리 곡이 더 어울린다 — 클리어음을 고른 방식(sound-candidates/)대로
+   형이 후보를 들어보고 고르는 게 맞다.
+
+후보 수집과 선정 과정은 저장소 sound-candidates/ (출처.txt) 참조.
+
+── 2026-09-10 추가 (형: "사운드는 직접 만들지 말고 자주 쓰이거나 적절한 걸 다운받아라") ──
+전부 Freesound.org, 라이선스 CC0 필터 + 다운로드순 상위에서 골랐다. hq 프리뷰(ogg)를 그대로 쓴다.
+수집 도구: 검색 HTML의 data-ogg 를 긁는 작은 스크립트 (세션 스크래치 fs.mjs) — 편집 없음.
+
+shot_longbow  활 릴리즈. 'Longbow Release 2' by saturdaysoundguy (ID 394179)
+shot_loose    활 릴리즈. 'Arrow Loose' by saturdaysoundguy (ID 394185)
+shot_flecha   활 릴리즈. '40 Soltar Flecha' by checholio (ID 443819)
+              → 셋을 매번 무작위로. 합성 텅·탁·쉭은 파일이 없을 때의 대체다 (sfx.ts release).
+boom_01       폭발(화전·화약통). 'bad explosion' (ID 47252, 작성자 계정 삭제됨, CC0)
+anvil_01/02   대장간 망치질. 'Anvil Hit 1' / 'Anvil Hit 2' by michorvath (ID 270589 / 270588)
+heart_01      붕괴 예고 심장 한 박. 'Single Heartbeat Clean HQ' by Lunardrive (ID 22440)
+roar_01       보스판 시작 포효. 'DRAGON_ROAR' by JoelAudio (ID 85568)
+fail_jingle   패배 한 소절. 'game fail' by Leszek_Szary (ID 146731) — 위의 "패배음은 임시다"를 푼다.
+              error_003/004 는 후보로 남겨둔다 (samples.ts FILES.fail 을 바꾸면 돌아간다).
+
+아직 합성으로 남은 것과 이유:
+  당김 삐걱·만작 긴장음   draw·strain 값에 매 프레임 연속으로 반응하는 지속음이라 파일 하나로는 안 된다.
+  살별 발사 서명(명적·화전…) 실제 릴리즈 위에 얹는 짧은 색. 살 아홉 종의 실사운드는 팩에 없다.
+  연쇄 종·북·현상금 두 음   음정이 연쇄 깊이/중 수에 따라 오르는 음악적 신호라 샘플 피치 변조로는 어색하다.
+grunt_01/02/03  맞은 사람의 신음 (살아남은 적의 몸통 명중 · 귀신은 낮게). Freesound CC0:
+              'Voice_AdultMale_PainGrunts_09' by MrFossy (ID 547209) · 'male_hurt9' by micahlg (ID 413186) ·
+              'Man getting hit' by Under7dude (ID 163441)
+
+── 2026-09-10 실패음 교체 (형: "실패 소리 개 엉망이야") ──
+fail_gong     징 한 번. 'gong.WAV' by BOSS MUSIC (Freesound ID 121800, CC0, 6.0초, 20,552회 내려받음).
+              왜 징인가: 이 게임의 소리는 전부 타악기다 — 클리어는 손북, 보스 클리어는 타이코.
+              8비트 부저(fail_jingle)는 그 세계 밖의 소리였다. 내가 소리를 못 듣는 탓에
+              다운로드 수만 보고 골랐던 것이 잘못이다. **후보는 형이 직접 고른다** →
+              배포 주소 뒤에 /sound-picker.html (예: https://retyper.github.io/hanbal/sound-picker.html).
+              그 페이지는 Freesound CDN 에서 바로 스트리밍하므로 게임 용량에 안 얹힌다.
+fail_jingle   (안 씀) 'game fail' by Leszek_Szary (146731). 후보로 남겨둔다.
+swing_01      환도 휘두름. 'swoosh' by PorkMuncher (263595, CC0).
+parry_01/02   패링 성공 — 쇠와 쇠. 'Sword Clash' by loudernoises (334169) ·
+              'Sword_Clash (7)' by JohnBuhr (326868). 둘을 번갈아 낸다.
+
+── 2026-09-10 패링 소리 교체 (형: "스윙하는 소리가 아니라 무슨 부메랑이 날라오는 소리잖아") ──
+맞는 말이었다. swing_01(1.83초 스우시)은 칼이 아니라 **날아오는 물건**의 소리다.
+한 동작을 셋으로 갈랐다 — 그림(발도·슬래시·납도)과 같은 시계를 쓴다 (P.parry.ready/slash).
+slash_01      슬래시. 'samurai slash' by nekoninja (Freesound 370204, CC0, 0.65초).
+unsheath_01   발도. 'unsheath_sword' by Qat (107589, CC0, 1.01초).
+sheath_01     납도. 'sheath_sword' by Qat (107590, CC0, 0.63초).
+swing_01      (안 씀) 'swoosh' by PorkMuncher (263595). 후보로 남겨둔다.
+
+── 2026-09-20 추가 (형: "효과음들도 마찬가지야. 죽는소리같은게 지금 없잖아.") — 전부 Freesound · CC0 ──
+받는 법: node tools/fetch-freesound.mjs get <ID> public/sfx/<이름>.ogg   (들어 보기: public/sound-picker.html)
+death_01      적이 죽는다. 'Male_Death_04' by Artmasterrich (ID 345456)
+death_02      〃 'Male Death Sound' by Blankened (ID 554443)
+death_03      〃 'Male Death 4' by scorpion67890 (ID 396801)
+hurt_01       내가 맞는다. 'Hurt 2 - (Male)' by Christopherderp (ID 342230)
+hurt_02       〃 'Male_Hurt_03' by Artmasterrich (ID 345439)
+hurt_03       〃 'Fast pain grunt, male' by DeqstersLab (ID 790832)
+              ※ 처음 받은 둘(547209 · 413186)은 **적의 신음(grunt_01·02)과 같은 파일**이었다 — 길이와 앞머리 무음이 소수점까지 같아서 알았다.
+                 내가 맞았는지 적이 맞았는지 귀로 갈라야 해서 바꿨다.
+herodeath_01  내가 죽는다. 'MaleDeathSound13' by Blankened (ID 577032)
+hawk_01       매가 떨어진다. 'Đại Bàng Trên Không' by SieuAmThanh (ID 556575)
+crash_01      화차가 부서진다. 'snd_box_smash' by gristi (ID 562189)
+crash_02      〃 'Smash' by egomassive (ID 536777)
+bossdeath_01  귀신이 죽는다 (0.8배로 낮춰 튼다). 'Monster Scream' by Mega-X-stream (ID 427412)
+bossdeath_02  〃 'monster_sound_medium_death' by Leadstarson (ID 559621)
+musket_01     총통. 'Musket Shot' by mlsulli (ID 234869)
+musket_02     〃 'musket' by fennelliott (ID 347647)

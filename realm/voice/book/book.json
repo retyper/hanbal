@@ -1,0 +1,278 @@
+{
+ "Achernar": {
+  "hz": 194,
+  "sec": 7.0
+ },
+ "Achird": {
+  "hz": 164,
+  "sec": 6.59
+ },
+ "Algenib": {
+  "hz": 104,
+  "sec": 6.82
+ },
+ "Algieba": {
+  "hz": 116,
+  "sec": 6.78
+ },
+ "Alnilam": {
+  "hz": 109,
+  "sec": 6.5
+ },
+ "Aoede": {
+  "hz": 189,
+  "sec": 6.94
+ },
+ "Arlo": {
+  "hz": 102,
+  "sec": 7.63
+ },
+ "Autonoe": {
+  "hz": 203,
+  "sec": 7.37
+ },
+ "Bodi": {
+  "hz": 119,
+  "sec": 6.33
+ },
+ "Brio": {
+  "hz": 130,
+  "sec": 6.9
+ },
+ "Callirrhoe": {
+  "hz": 186,
+  "sec": 6.9
+ },
+ "Charon": {
+  "hz": 97,
+  "sec": 7.16
+ },
+ "Cleo": {
+  "hz": 216,
+  "sec": 6.76
+ },
+ "Cruz": {
+  "hz": 99,
+  "sec": 7.23
+ },
+ "Daro": {
+  "hz": 107,
+  "sec": 6.85
+ },
+ "Despina": {
+  "hz": 207,
+  "sec": 7.5
+ },
+ "Elio": {
+  "hz": 97,
+  "sec": 6.68
+ },
+ "Enceladus": {
+  "hz": 156,
+  "sec": 6.79
+ },
+ "Enya": {
+  "hz": 177,
+  "sec": 6.68
+ },
+ "Enzo": {
+  "hz": 117,
+  "sec": 7.8
+ },
+ "Erinome": {
+  "hz": 203,
+  "sec": 6.6
+ },
+ "Fenrir": {
+  "hz": 110,
+  "sec": 6.91
+ },
+ "Finn": {
+  "hz": 113,
+  "sec": 6.75
+ },
+ "Gacrux": {
+  "hz": 153,
+  "sec": 6.87
+ },
+ "Gero": {
+  "hz": 130,
+  "sec": 7.29
+ },
+ "Hali": {
+  "hz": 189,
+  "sec": 7.56
+ },
+ "Iapetus": {
+  "hz": 142,
+  "sec": 6.6
+ },
+ "Jett": {
+  "hz": 119,
+  "sec": 6.68
+ },
+ "Jori": {
+  "hz": 207,
+  "sec": 7.18
+ },
+ "Kira": {
+  "hz": 186,
+  "sec": 7.8
+ },
+ "Knox": {
+  "hz": 115,
+  "sec": 6.68
+ },
+ "Koda": {
+  "hz": 125,
+  "sec": 6.63
+ },
+ "Kore": {
+  "hz": 186,
+  "sec": 6.63
+ },
+ "Laomedeia": {
+  "hz": 202,
+  "sec": 6.8
+ },
+ "Leda": {
+  "hz": 229,
+  "sec": 6.45
+ },
+ "Lora": {
+  "hz": 195,
+  "sec": 7.01
+ },
+ "Ludo": {
+  "hz": 118,
+  "sec": 6.95
+ },
+ "Lumi": {
+  "hz": 189,
+  "sec": 6.56
+ },
+ "Mako": {
+  "hz": 139,
+  "sec": 6.22
+ },
+ "Milo": {
+  "hz": 112,
+  "sec": 7.42
+ },
+ "Neno": {
+  "hz": 107,
+  "sec": 7.6
+ },
+ "Nika": {
+  "hz": 211,
+  "sec": 7.18
+ },
+ "Nyla": {
+  "hz": 170,
+  "sec": 7.05
+ },
+ "Olin": {
+  "hz": 115,
+  "sec": 7.68
+ },
+ "Orus": {
+  "hz": 150,
+  "sec": 6.85
+ },
+ "Puck": {
+  "hz": 143,
+  "sec": 6.97
+ },
+ "Pulcherrima": {
+  "hz": 133,
+  "sec": 7.6
+ },
+ "Rami": {
+  "hz": 109,
+  "sec": 6.37
+ },
+ "Rasalgethi": {
+  "hz": 158,
+  "sec": 6.45
+ },
+ "Riko": {
+  "hz": 124,
+  "sec": 7.62
+ },
+ "Rina": {
+  "hz": 197,
+  "sec": 6.25
+ },
+ "Sadachbia": {
+  "hz": 138,
+  "sec": 6.23
+ },
+ "Sadaltager": {
+  "hz": 110,
+  "sec": 6.47
+ },
+ "Sami": {
+  "hz": 178,
+  "sec": 8.1
+ },
+ "Schedar": {
+  "hz": 122,
+  "sec": 7.9
+ },
+ "Sola": {
+  "hz": 200,
+  "sec": 5.86
+ },
+ "Sulafat": {
+  "hz": 232,
+  "sec": 6.81
+ },
+ "Tari": {
+  "hz": 203,
+  "sec": 9.16
+ },
+ "Tavi": {
+  "hz": 201,
+  "sec": 8.08
+ },
+ "Tova": {
+  "hz": 165,
+  "sec": 8.68
+ },
+ "Umbriel": {
+  "hz": 105,
+  "sec": 7.74
+ },
+ "Varo": {
+  "hz": 126,
+  "sec": 6.52
+ },
+ "Veda": {
+  "hz": 189,
+  "sec": 6.52
+ },
+ "Vindemiatrix": {
+  "hz": 167,
+  "sec": 7.07
+ },
+ "Zali": {
+  "hz": 194,
+  "sec": 7.06
+ },
+ "Zeno": {
+  "hz": 127,
+  "sec": 7.28
+ },
+ "Zephyr": {
+  "hz": 245,
+  "sec": 7.91
+ },
+ "Zubenelgenubi": {
+  "hz": 150,
+  "sec": 6.13
+ },
+ "Zuri": {
+  "hz": 200,
+  "sec": 6.83
+ }
+}

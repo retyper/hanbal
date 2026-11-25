@@ -1,0 +1,27 @@
+아이콘 — game-icons.net · CC BY 3.0
+
+  https://game-icons.net · https://github.com/game-icons/icons
+  라이선스: Creative Commons Attribution 3.0 Unported (CC BY 3.0)
+  https://creativecommons.org/licenses/by/3.0/
+
+받은 그대로의 패스에서 **검은 배경 사각형 한 줄만** 걷어냈다 (tools/strip-icon-bg.mjs).
+그림 자체는 손대지 않았다. 색은 CSS가 입힌다 (ui/overlay.ts .hb-ic).
+
+  파일                원본                       만든 이
+  ─────────────────────────────────────────────────────────
+  stat-focus.svg      lorc/meditation            Lorc
+  nav-growth.svg      delapouite/upgrade         Delapouite
+  nav-collection.svg  lorc/laurels               Lorc
+  nav-map.svg         lorc/treasure-map          Lorc
+  nav-sandbox.svg     lorc/bubbling-flask        Lorc
+  nav-quiver.svg      delapouite/quiver          Delapouite
+  def-shield.svg      lorc/arrows-shield         Lorc
+  def-armor.svg       lorc/layered-armor         Lorc
+  forge-anvil.svg     lorc/anvil                 Lorc        (대장간 — 활 개조, 2026-09-02)
+  charm-rune.svg      lorc/rune-stone            Lorc        (부적)
+  shop-coins.svg      delapouite/coins           Delapouite  (살 가게)
+  bounty-crown.svg    lorc/crown                 Lorc        (금관 사수 — 현상금)
+
+※ 2026-09-20: 스탯 셋(str·steady·stamina)과 갈림길 다섯(fire·bomb·wind·scout·single)은 **그림**이 됐다
+   (public/sprites/stat-*.png · fork-*.png). 카드에 크게 서는 자리라서다. 그 글리프 파일은 지웠다.
+   여기 남은 것은 버튼 속 16px 글리프다 — 그 크기에서는 단색 글리프가 맞다.

@@ -1,0 +1,115 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>습격 목소리 고르기</title>
+<style>
+  :root { color-scheme: dark; }
+  body { background:#171c23; color:#e2dbcd; margin:0; padding:20px 16px 140px; font-family:"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; }
+  h1 { font-size:20px; margin:0 0 6px; }
+  h2 { font-size:15px; color:#ffb347; margin:28px 0 4px; }
+  p { color:#95a1ae; font-size:13px; line-height:1.7; max-width:780px; margin:6px 0 10px; }
+  .slot { border-top:1px solid #2c333d; padding:10px 0 6px; }
+  .slot.sus { background:#2a1d1a; border-radius:10px; padding:10px; margin:6px 0; border:1px solid #6a3a2a; }
+  .sh { display:flex; gap:8px; align-items:baseline; flex-wrap:wrap; } .sh b { font-size:15px; } .sh small { color:#8f99a5; }
+  .sh .sus { color:#ff9a7a; font-size:12px; }
+  .opt { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:5px 0 5px 8px; }
+  .opt label { display:flex; align-items:center; gap:6px; min-width:200px; flex:1; font-size:13px; color:#ccd6e0; cursor:pointer; }
+  .opt code { background:#232a33; padding:1px 5px; border-radius:3px; color:#ffd88f; font-size:12px; }
+  .opt .d { color:#7f8b98; font-size:11.5px; }
+  .opt.cur label { color:#7fd17a; } .opt.cur code { color:#7fd17a; }
+  .opt button.pl { font:inherit; font-size:13px; padding:5px 12px; border-radius:8px; border:1px solid #4a5363; background:#2a313c; color:#e2dbcd; cursor:pointer; }
+  .opt button.pl.on { background:#a57a31; border-color:#e0bd78; color:#fff; }
+  #out { position:fixed; left:0; right:0; bottom:0; background:#0f1318f2; border-top:1px solid #4a4030; padding:10px 16px; }
+  #out textarea { width:100%; box-sizing:border-box; height:56px; background:#1b2028; color:#ffd88f; border:1px solid #3a4250; border-radius:8px; font:12px/1.5 monospace; }
+  #out .r { display:flex; gap:8px; align-items:center; margin-bottom:6px; font-size:13px; color:#95a1ae; }
+  #out button { font:inherit; padding:6px 14px; border-radius:8px; border:1px solid #e0bd78; background:#7d5a22; color:#fff4dc; cursor:pointer; }
+  .feel { display:flex; flex-wrap:wrap; gap:10px; align-items:stretch; margin:8px 0 4px; }
+  .feel button { font:inherit; min-width:96px; padding:10px 14px; border-radius:10px; border:1px solid #4a5363; background:#2a313c; color:#e2dbcd; cursor:pointer; display:flex; flex-direction:column; gap:3px; align-items:center; transition:transform .08s; }
+  .feel button b { font-size:16px; } .feel button small { color:#8f99a5; font-size:11px; }
+  .feel button:active { transform:scale(.94); }
+  .feel button.on { background:#a57a31; border-color:#e0bd78; color:#fff; transform:scale(1.06); }
+  .feel button.all { border-color:#e0bd78; }
+  .feel label { display:flex; align-items:center; gap:6px; font-size:13px; color:#ccd6e0; }
+  #feel-note { color:#ff9a7a; }
+</style>
+</head><body>
+<h1>습격 목소리 고르기</h1>
+<p>습격(서바이버즈) 모드에서 날 목소리 후보를 자리마다 셋씩 모았다. 전부 Freesound CC0 이고 사람이 낸 소리다. ▶ 로 들어 보고 자리마다 마음에 드는 하나를 고르면 아래 칸에 적힌다. 다 고르면 「복사」를 눌러 나한테 붙여 주면 그대로 붙인다. 나는 소리를 못 듣는다. 제목·길이로만 골랐으니 이상하면 알려 주면 다시 찾는다.</p>
+<h2>기술 · 크리티컬 소리 견주기</h2>
+<p>열전 판과 같은 소리를 같은 차례로 냅니다. 비기·각성·진각성은 누름(기합과 「탁」) 뒤 시전이 끝나면 터집니다. 폰에서 열면 진동도 함께 납니다. 크기는 src/tune/params.ts 의 HAEBI_FEEL_TIERS 에서 한 줄씩 고칩니다.</p>
+<div class="feel" id="feel"><button data-k="skill"><b>비기</b><small></small></button><button data-k="awake"><b>각성</b><small></small></button><button data-k="true"><b>진각성</b><small></small></button><button data-k="crit"><b>크리티컬</b><small></small></button><button data-k="all" class="all"><b>넷 차례로</b><small>비기부터</small></button><label><input type="checkbox" id="fem"> 여자 기합</label></div>
+<p id="feel-note"></p>
+<script type="module">
+// 개발 서버(5174)에서만 — 판의 소리 코드(src/raid/sound.ts)를 그대로 불러 낸다
+let mod = null
+const snd = {}, ORDER = ['skill', 'awake', 'true', 'crit'], wait = (ms) => new Promise((r) => setTimeout(r, ms))
+const note = (t) => { document.getElementById('feel-note').textContent = t }
+async function load() {
+  if (mod) return mod
+  try {
+    const [s, h, p] = await Promise.all([import('/src/raid/sound.ts'), import('/src/ui/haptics.ts'), import('/src/tune/params.ts')])
+    mod = { s, hap: h.haptics(), F: p.HAEBI_FEEL_TIERS }
+  } catch { note('이 칸은 개발 서버에서만 소리가 납니다 (npm run dev -- --port 5174)') }
+  return mod
+}
+const btn = (k) => document.querySelector('#feel button[data-k="' + k + '"]')
+async function play(k) {
+  if (!await load()) return 0
+  const fem = document.getElementById('fem').checked, sn = snd[fem ? 'f' : 'm'] ??= mod.s.raidSound(fem, 'sword')
+  const b = btn(k); b.classList.add('on')
+  const ms = await sn.preview(k, () => { if (k === 'crit') mod.hap.crit(); else mod.hap.skill(k); setTimeout(() => b.classList.remove('on'), 260) })
+  return ms
+}
+document.getElementById('feel').addEventListener('click', async (e) => {
+  const b = e.target.closest('button'); if (!b) return
+  if (b.dataset.k !== 'all') { void play(b.dataset.k); return }
+  b.classList.add('on')
+  for (const k of ORDER) { const ms = await play(k); await wait(ms + 1500) }
+  b.classList.remove('on')
+})
+load().then((m) => {
+  if (!m) return
+  for (const k of ['skill', 'awake', 'true']) { const t = m.F.tiers[k]; btn(k).querySelector('small').textContent = '크기 ' + m.s.tierLoud(k).toFixed(2) + ' · 진동 ' + t.buzz.filter((_, i) => i % 2 === 0).reduce((a, x) => a + x, 0) + 'ms' }
+  btn('crit').querySelector('small').textContent = '크기 ' + m.F.crit.ping.toFixed(2) + ' · 진동 ' + m.F.crit.buzz + 'ms'
+})
+</script>
+<div id="list"></div>
+<div id="out"><div class="r">고른 것 <span id="n">0</span>곳 <button id="cp">복사</button><span id="ok"></span></div><textarea id="ta" readonly placeholder="자리마다 하나씩 고르면 여기에 적힙니다"></textarea></div>
+<script>
+const DATA = [{"slot":"raid_kiai_m","name":"남자 기합 (공격할 때)","opts":[{"f":"sfx/cand/raid/raid_kiai_m_g1.ogg","code":"raid_kiai_m_g1","d":"Male Attack Grunt · elynch0901 · CC0 · 0.70s"},{"f":"sfx/cand/raid/raid_kiai_m_g2.ogg","code":"raid_kiai_m_g2","d":"Swing grunt.mp3 · DeqstersLab · CC0 · 0.80s"},{"f":"sfx/cand/raid/raid_kiai_m_g3.ogg","code":"raid_kiai_m_g3","d":"S12_Grunt_Player_1.wav · kaygrum · CC0 · 0.56s"}]},{"slot":"raid_kiai_f","name":"여자 기합 (공격할 때)","opts":[{"f":"sfx/cand/raid/raid_kiai_f_g1.ogg","code":"raid_kiai_f_g1","d":"grunt.wav · Reitanna · CC0 · 0.38s"},{"f":"sfx/cand/raid/raid_kiai_f_g2.ogg","code":"raid_kiai_f_g2","d":"huah!.wav · Reitanna · CC0 · 0.62s"},{"f":"sfx/cand/raid/raid_kiai_f_g3.ogg","code":"raid_kiai_f_g3","d":"FemaleGrunt1.wav · BranndyBottle · CC0 · 0.56s"}]},{"slot":"raid_hurt_m","name":"남자 아픈 소리 (맞을 때)","opts":[{"f":"sfx/cand/raid/raid_hurt_m_g1.ogg","code":"raid_hurt_m_g1","d":"Voice_AdultMale_PainGrunts_09.wav · MrFossy · CC0 · 0.32s"},{"f":"sfx/cand/raid/raid_hurt_m_g2.ogg","code":"raid_hurt_m_g2","d":"male_hurt9.ogg · micahlg · CC0 · 0.38s"},{"f":"sfx/cand/raid/raid_hurt_m_g3.ogg","code":"raid_hurt_m_g3","d":"Hurt  1 - (Male) · Christopherderp · CC0 · 0.66s"}]},{"slot":"raid_hurt_f","name":"여자 아픈 소리 (맞을 때)","opts":[{"f":"sfx/cand/raid/raid_hurt_f_g1.ogg","code":"raid_hurt_f_g1","d":"female-hurt.wav · birdOfTheNorth · CC0 · 0.36s"},{"f":"sfx/cand/raid/raid_hurt_f_g2.ogg","code":"raid_hurt_f_g2","d":"female_hurt.wav · thatbennyguy · CC0 · 0.65s"},{"f":"sfx/cand/raid/raid_hurt_f_g3.ogg","code":"raid_hurt_f_g3","d":"Woman getting pain · Guinamun · CC0 · 0.46s"}]},{"slot":"raid_die_m","name":"남자 쓰러지는 신음 (적 병사)","opts":[{"f":"sfx/cand/raid/raid_die_m_g1.ogg","code":"raid_die_m_g1","d":"Death sound (male) · Replix · CC0 · 1.16s"},{"f":"sfx/cand/raid/raid_die_m_g2.ogg","code":"raid_die_m_g2","d":"Man Dying · Under7dude · CC0 · 1.50s"},{"f":"sfx/cand/raid/raid_die_m_g3.ogg","code":"raid_die_m_g3","d":"Male_Death_04 · Artmasterrich · CC0 · 0.98s"}]},{"slot":"raid_boss_roar","name":"두목 포효 (산적 두목 등장)","opts":[{"f":"sfx/cand/raid/raid_boss_roar_g1.ogg","code":"raid_boss_roar_g1","d":"Studio roar · AugustSandberg · CC0 · 2.97s"},{"f":"sfx/cand/raid/raid_boss_roar_g2.ogg","code":"raid_boss_roar_g2","d":"Middle Ages War Cry 3.wav · joelcarrsound · CC0 · 2.68s"},{"f":"sfx/cand/raid/raid_boss_roar_g3.ogg","code":"raid_boss_roar_g3","d":"Middle Ages War Cry.wav · joelcarrsound · CC0 · 1.87s"}]},{"slot":"raid_skill_m","name":"남자 큰 기합 (특수기)","opts":[{"f":"sfx/cand/raid/raid_skill_m_g1.ogg","code":"raid_skill_m_g1","d":"Middle Ages War Cry 2.wav · joelcarrsound · CC0 · 1.06s"},{"f":"sfx/cand/raid/raid_skill_m_g2.ogg","code":"raid_skill_m_g2","d":"yaaahhh.wav · GENERALMiDiGUy · CC0 · 1.38s"},{"f":"sfx/cand/raid/raid_skill_m_g3.ogg","code":"raid_skill_m_g3","d":"effort scream.wav · saraonsins · CC0 · 1.50s"}]},{"slot":"raid_skill_f","name":"여자 큰 기합 (특수기)","opts":[{"f":"sfx/cand/raid/raid_skill_f_g1.ogg","code":"raid_skill_f_g1","d":"female_shout_01.wav · slamaxu · CC0 · 1.50s"},{"f":"sfx/cand/raid/raid_skill_f_g2.ogg","code":"raid_skill_f_g2","d":"oneshout.wav · Ellenskellington · CC0 · 1.08s"},{"f":"sfx/cand/raid/raid_skill_f_g3.ogg","code":"raid_skill_f_g3","d":"girl-shout.wav · mariateresa_garcia · CC0 · 1.29s"}]}]
+const pick = {}
+let playing = null
+const list = document.getElementById('list')
+let h = ''
+for (const s of DATA) {
+  h += '<div class="slot"><div class="sh"><b>' + s.name + '</b><small>' + s.slot + '</small></div>'
+  s.opts.forEach((o, i) => {
+    h += '<div class="opt"><button class="pl" data-f="' + o.f + '">▶</button><label><input type="radio" name="' + s.slot + '" value="' + i + '"><code>' + o.code + '</code></label><span class="d">' + o.d + '</span></div>'
+  })
+  h += '</div>'
+}
+list.innerHTML = h
+list.addEventListener('click', (e) => {
+  const b = e.target.closest('button.pl')
+  if (!b) return
+  if (playing) { playing.a.pause(); playing.b.classList.remove('on') }
+  if (playing && playing.b === b) { playing = null; return }
+  const a = new Audio(b.dataset.f)
+  a.play().catch(() => {})
+  b.classList.add('on')
+  a.onended = () => { b.classList.remove('on'); if (playing && playing.b === b) playing = null }
+  playing = { a, b }
+})
+list.addEventListener('change', (e) => {
+  const r = e.target
+  const s = DATA.find((x) => x.slot === r.name)
+  const o = s.opts[Number(r.value)]
+  pick[s.slot] = s.name + ' (' + s.slot + ') → ' + o.code
+  const v = Object.values(pick)
+  document.getElementById('ta').value = v.join(String.fromCharCode(10))
+  document.getElementById('n').textContent = v.length
+})
+document.getElementById('cp').onclick = async () => {
+  const t = document.getElementById('ta').value
+  try { await navigator.clipboard.writeText(t); document.getElementById('ok').textContent = '복사했습니다' } catch { document.getElementById('ta').select() }
+}
+</script></body></html>

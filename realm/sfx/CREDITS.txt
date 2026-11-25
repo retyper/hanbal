@@ -1,0 +1,418 @@
+칠십팔국 소리 후보 — 전부 CC0 (퍼블릭 도메인). 출처 표기 의무는 없지만 나중에 찾으려고 적는다. (2026-10-22 수집)
+형식: 파일  출처 · ID/주소 · 제목 · 올린이 · 라이선스
+
+ui_open_a.ogg  Freesound · ID 136778 (https://freesound.org/s/136778/) · "Page Turn" · davidbain · CC0
+ui_open_b.ogg  Freesound · ID 353125 (https://freesound.org/s/353125/) · "Paper Rustle" · BenjaminNelan · CC0
+ui_open_c.ogg  Freesound · ID 615337 (https://freesound.org/s/615337/) · "Paper_Flip_01" · Rookster · CC0
+ui_order_a.ogg  Freesound · ID 369710 (https://freesound.org/s/369710/) · "Wood Knock" · Mrguff · CC0
+ui_order_b.ogg  Freesound · ID 368523 (https://freesound.org/s/368523/) · "Claves_Oneshot_Smartphone_Recording_01" · cabled_mess · CC0
+ui_order_c.ogg  Freesound · ID 742279 (https://freesound.org/s/742279/) · "Ashboy34 - Temple block - Lunarlander 1969" · Sadiquecat · CC0
+ui_cancel_a.ogg  Freesound · ID 565133 (https://freesound.org/s/565133/) · "UI_Cancel" · unfa · CC0
+ui_cancel_b.ogg  Freesound · ID 788602 (https://freesound.org/s/788602/) · "Cancel or No Button Sound" · el_boss · CC0
+ui_cancel_c.ogg  Freesound · ID 500928 (https://freesound.org/s/500928/) · "wood-click-2.wav" · husamalhomsi · CC0
+season_turn_a.ogg  Freesound · ID 18654 (https://freesound.org/s/18654/) · "gong.aiff" · nkuitse · CC0
+season_turn_b.ogg  Freesound · ID 445633 (https://freesound.org/s/445633/) · "Traditional Asian Percussion 01.wav" · LilMati · CC0
+season_turn_c.ogg  Freesound · ID 131348 (https://freesound.org/s/131348/) · "Bell at Daitokuji temple,kyoto.wav" · nahmandub · CC0
+amb_spring_a.ogg  Freesound · ID 387978 (https://freesound.org/s/387978/) · "Birds Singing 03.wav" · DCPoke · CC0
+amb_spring_b.ogg  Freesound · ID 559518 (https://freesound.org/s/559518/) · "Birds Singing Near Stream" · HighPeakEmma · CC0
+amb_summer_a.ogg  Freesound · ID 272169 (https://freesound.org/s/272169/) · "Cicadas " · dethrok · CC0
+amb_summer_b.ogg  Freesound · ID 422048 (https://freesound.org/s/422048/) · "forest_cicada_loop.flac" · Nimlos · CC0
+amb_autumn_a.ogg  Freesound · ID 457318 (https://freesound.org/s/457318/) · "Autumn wind and dry leaves.wav" · Stek59 · CC0
+amb_autumn_b.ogg  Freesound · ID 405140 (https://freesound.org/s/405140/) · "Autumn leaves falling on forest floor, moderate wind (loopable)" · Mjeno · CC0
+amb_autumn_c.ogg  Freesound · ID 378725 (https://freesound.org/s/378725/) · "Leaves Rustling in Wind - Zoom H6.wav" · lunchmoney · CC0
+amb_winter_a.ogg  Freesound · ID 216608 (https://freesound.org/s/216608/) · "Cold winter " · jordivburgel · CC0
+amb_winter_b.ogg  Freesound · ID 638434 (https://freesound.org/s/638434/) · "Cold Howling Wind/Breeze (Loopable)" · The_Isot_is_Back · CC0
+amb_winter_c.ogg  Freesound · ID 256862 (https://freesound.org/s/256862/) · "Howling Wind" · Kodack · CC0
+war_drums_a.ogg  Freesound · ID 274223 (https://freesound.org/s/274223/) · "War Drum Loop" · PearceWilsonKing · CC0
+war_drums_b.ogg  Freesound · ID 342465 (https://freesound.org/s/342465/) · "Tribe Drum Loop" · PearceWilsonKing · CC0
+battle_clash_a.ogg  Freesound · ID 611765 (https://freesound.org/s/611765/) · "Swords Clashing" · Sam300Productions · CC0
+battle_clash_b.ogg  Freesound · ID 518992 (https://freesound.org/s/518992/) · "SwordClash.wav" · Amaiguri · CC0
+battle_clash_c.ogg  Freesound · ID 563011 (https://freesound.org/s/563011/) · "People screaming in agony when charging into battle" · florianreichelt · CC0
+arrow_volley_b.ogg  Freesound · ID 394004 (https://freesound.org/s/394004/) · "Arrows Fly By.mp3" · DigPro120 · CC0
+arrow_volley_c.ogg  Freesound · ID 675820 (https://freesound.org/s/675820/) · "S23-22 Arrows fly & hit; indoors.wav" · craigsmith · CC0
+horses_a.ogg  Freesound · ID 583261 (https://freesound.org/s/583261/) · "Horses running final.wav" · C-V · CC0
+horses_b.ogg  Freesound · ID 165532 (https://freesound.org/s/165532/) · "SRS_Foley_Horse_Galloping.wav" · StephenSaldanha · CC0
+horses_c.ogg  Freesound · ID 175356 (https://freesound.org/s/175356/) · "Horse Galloping.wav" · Max_Headroom · CC0
+horn_victory_a.ogg  Freesound · ID 539956 (https://freesound.org/s/539956/) · "war horn.wav" · adharca · CC0
+defeat_a.ogg  Freesound · ID 415200 (https://freesound.org/s/415200/) · "Deep Gong Tolling.mp3" · Yin_Yang_Jake007 · CC0
+defeat_b.ogg  Freesound · ID 155461 (https://freesound.org/s/155461/) · "gong bash resonance" · hiddenpersuader · CC0
+coins_a.ogg  Freesound · ID 338260 (https://freesound.org/s/338260/) · "Money Bag" · PhilSavlem · CC0
+coins_b.ogg  Freesound · ID 17502 (https://freesound.org/s/17502/) · "Coin dropping.wav" · Jace · CC0
+coins_c.ogg  Freesound · ID 443334 (https://freesound.org/s/443334/) · "MONEY_001.wav" · rolandseer · CC0
+envoy_a.ogg  Freesound · ID 581833 (https://freesound.org/s/581833/) · "SFX - Horse - Walk.wav" · MrFizzywig · CC0
+envoy_b.ogg  Freesound · ID 269571 (https://freesound.org/s/269571/) · "horse neigh shortened.wav" · shadoWisp · CC0
+envoy_c.ogg  Freesound · ID 94024 (https://freesound.org/s/94024/) · "BurmaBell.aif" · LozKaye · CC0
+birth_a.ogg  Freesound · ID 452379 (https://freesound.org/s/452379/) · "Small Bell #2" · steffcaffrey · CC0
+birth_b.ogg  Freesound · ID 271370 (https://freesound.org/s/271370/) · "singing bowl strike sound" · inoshirodesign · CC0
+birth_c.ogg  Freesound · ID 94934 (https://freesound.org/s/94934/) · "Taegum-1.aif" · bletort · CC0
+capture_a.ogg  Freesound · ID 167914 (https://freesound.org/s/167914/) · "Steel chain dragged, shower reverb" · ani_music · CC0
+capture_b.ogg  Freesound · ID 581268 (https://freesound.org/s/581268/) · "shackles.wav" · zaqqazlowell · CC0
+capture_c.ogg  Freesound · ID 799421 (https://freesound.org/s/799421/) · "chaindrop 1" · Logicogonist · CC0
+dex_new_a.ogg  Freesound · ID 456965 (https://freesound.org/s/456965/) · "Short Success Sound Glockenspiel Treasure Video Game.mp3" · FunWithSound · CC0
+dex_new_b.ogg  Freesound · ID 715067 (https://freesound.org/s/715067/) · "achievement-sparkle" · SkySpeira · CC0
+dex_new_c.ogg  Freesound · ID 24551 (https://freesound.org/s/24551/) · "kayageum1_A2.wav" · spt3125 · CC0
+dex_new_c3.wav  위 dex_new_c 를 3초로 자르고 2초부터 줄임 (10-27) · CC0
+bgm_map_a.ogg  Freesound · ID 521367 (https://freesound.org/s/521367/) · "blossom valley in paradise" · neolein · CC0
+bgm_map_b.ogg  Freesound · ID 664200 (https://freesound.org/s/664200/) · "Karst mountains" · neolein · CC0
+bgm_map_c.ogg  Freesound · ID 472707 (https://freesound.org/s/472707/) · "guzheng solo" · neolein · CC0
+bgm_war_c.ogg  Freesound · ID 527829 (https://freesound.org/s/527829/) · "War Drums Loop.wav" · BaDoink · CC0
+bgm_war_d.ogg  Freesound · ID 346455 (https://freesound.org/s/346455/) · "Epic_Battle_Music_1.MP3" · Airwolf89 · CC0
+bgm_map_d.ogg  OpenGameArt · https://opengameart.org/content/orien · "Orien" · Tozan · CC0
+bgm_map_e.ogg  OpenGameArt · https://opengameart.org/content/mysterious-sparrow-lake · "Mysterious Sparrow Lake" · Tozan · CC0
+bgm_war_a.ogg  OpenGameArt · https://opengameart.org/content/prepare-your-swords · "Prepare your swords" · bojidar-bg · CC0
+bgm_war_b.ogg  OpenGameArt · https://opengameart.org/content/call-to-war · "Call to War" (사이트 미리듣기 ogg) · Umplix · CC0
+defeat_c.ogg  OpenGameArt · https://opengameart.org/content/medieval-defeat-theme · "Medieval: Defeat Theme" (사이트 미리듣기 ogg) · RandomMind · CC0
+war_drums_c.ogg  OpenGameArt · https://opengameart.org/content/prehistoric-drum-loop · "Prehistoric Drum Loop" (select.ogg) · hornpipe2 · CC0
+bgm_map_f.mp3  형이 받아 온 평상시 음악 (assets_src/realm/sfx-in/bgm후보.mp3) · 출처·이용 조건 적을 것 (형에게 물음)
+bgm_map_g.mp3  형이 받아 온 평상시 음악 둘째 (assets_src/realm/sfx-in/배경음2.mp3 · 2026-10-23) · bgm_map_f 와 번갈아 돈다 (sound.ts ROTATE) · 출처·이용 조건 적을 것 (형에게 물음)
+bgm_win_a.mp3  형이 받아 온 이긴 뒤 음악(처음엔 싸움 음악이었으나 "너무 신나서" 10-23 옮김) (assets_src/realm/sfx-in/뭔가 즐겁게 추격하는듯한 한국풍 음원.mp3 · 2026-10-23) · 출처·이용 조건 적을 것 (형에게 물음)
+
+# ── 2026-10-23 공유마당(gongu.copyright.or.kr) — 공공누리 제1유형(출처표시) · CC BY(저작자 표시) 만. 둘 다 출처를 밝히면 상업적 이용·변경 가능 (형: "출처표기해야 상업적으로 사용가능하니까 주의")
+# 누르는 소리(tap_*)는 첫 소리부터 짧게 잘라 wav 로 (브라우저 · 소리 크기 맞춤) — 변경 허락 범위 안
+tap_arms_g1.wav  공유마당 · 「칼 집에넣는」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254785
+tap_arms_g2.wav  공유마당 · 「국악 효과음 #361 (칼같이 쳐내는)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13380194
+tap_arms_g3.wav  공유마당 · 「활시위당길때끼익1」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13255006
+tap_coin_g1.wav  공유마당 · 「전통사물_엽전_찰랑이다_한주먹」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287409
+tap_coin_g2.wav  공유마당 · 「전통사물_엽전_떨어트리다_나무바닥_1개」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287406
+tap_coin_g3.wav  공유마당 · 「전통사물_엽전_올려놓다_상위에_천천히」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287408
+tap_brush_g1.wav  공유마당 · 「전통사물_붓_쓰다_글씨_천천히_ver.1」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287388
+tap_brush_g2.wav  공유마당 · 「전통사물_화선지_펼치다_천천히」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287479
+tap_brush_g3.wav  공유마당 · 「전통사물_고서_페이지_넘기다_중간」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287360
+tap_move_g1.wav  공유마당 · 「말 발굽 걷는1」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253320
+tap_move_g2.wav  공유마당 · 「말 여러마리 뛰는」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253321
+tap_move_g3.wav  공유마당 · 「전통사물_무명옷_옷소리_걷다」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287378
+tap_bell_g1.wav  공유마당 · 「국악기_방울1」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13265908
+tap_bell_g2.wav  공유마당 · 「국악기_요령1」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13265913
+tap_bell_g3.wav  공유마당 · 「근현대사물_풍경_치다_연속」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287314
+tap_drum_g1.wav  공유마당 · 「전통악기_북_치다_느린속도」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287482
+tap_drum_g2.wav  공유마당 · 「전통악기_장구_치다_보통속도_Ver.1」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287485
+tap_drum_g3.wav  공유마당 · 「전통악기_징_열기_긴」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287487
+tap_map_g1.wav  공유마당 · 「근현대사물_바둑알_두다_바둑판」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287272
+tap_map_g2.wav  공유마당 · 「전통사물_나무장기판_놓다_바닥_약하게」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287372
+tap_map_g3.wav  공유마당 · 「전통사물_장기알_장기알끼리_부딪히다_강하게」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287421
+tap_cancel_g1.wav  공유마당 · 「야경(딱딱이)」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254155
+tap_cancel_g2.wav  공유마당 · 「전통사물_부채_Ver.1_손에치다」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287385
+tap_cancel_g3.wav  공유마당 · 「전통사물_목탁_ver.2_치다_연속_중간」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287376
+bgm_title_g1.mp3  공유마당 · 「국악 BGM #218 (웅장하게 준비를 하는 분위기)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386958
+bgm_title_g2.mp3  공유마당 · 「국악 BGM #179 (벅차오르는 분위기)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386919
+bgm_title_g3.mp3  공유마당 · 「국악 BGM #186 (세상을 헤쳐나가는 분위기)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386926
+bgm_war_g1.mp3  공유마당 · 「국악 BGM #60 (결전 직전의 상황)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386800
+bgm_war_g2.mp3  공유마당 · 「국악 BGM #244 (배틀하는 분위기)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386984
+bgm_war_g3.mp3  공유마당 · 「국악 BGM #38 (긴박한 상황)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386778
+bgm_lose_g1.mp3  공유마당 · 「국악 BGM #112 (비극적인 분위기)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386852
+bgm_lose_g2.mp3  공유마당 · 「국악 BGM #250 (구슬픈 분위기)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386990
+bgm_lose_g3.mp3  공유마당 · 「국악 BGM #64 (비장한 분위기)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386804
+# 공공누리 제1유형 표시 문구: 이 게임의 위 소리 가운데 공공누리 표시가 있는 것은 (재)전주정보문화산업진흥원이 공공누리 제1유형으로 개방한 저작물을 이용하였으며, 공유마당(gongu.copyright.or.kr)에서 무료로 받을 수 있다.
+war_cry_g1.wav  공유마당 · 「battlefieldbackground01」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252054 · 앞 3초를 잘라 씀
+war_cry_g2.wav  공유마당 · 「battlefieldbackground02」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252055 · 앞 3초를 잘라 씀
+war_cry_g3.wav  공유마당 · 「돌격 나팔」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253190 · 앞 3초를 잘라 씀
+# 맞부딪힘(battle_clash · battle_crit) — 여러 소리를 2~3초씩 잘라 겹친 것은 원본마다 한 줄씩 적는다 (CC BY 는 잘라 겹쳐 변경함)
+battle_clash_g1.mp3  Freesound · ID 376646 (https://freesound.org/s/376646/) · "Vikings in battle (swords crossing, shields bashing, men yelling)" · DeadVDI · CC0 · 2.2초 잘라 씀
+battle_clash_g2.mp3  공유마당 · 「칼싸움BG」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254793 · 2.2초 잘라 겹쳐 씀(변경함)
+battle_clash_g2.mp3  공유마당 · 「battlefieldbackground04」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252057 · 2.2초 잘라 겹쳐 씀(변경함)
+battle_clash_g3.mp3  Freesound · ID 175951 (https://freesound.org/s/175951/) · "SwordBattle2.wav" · freefire66 · CC0 · 2.2초 잘라 겹쳐 씀
+battle_clash_g3.mp3  Freesound · ID 479537 (https://freesound.org/s/479537/) · "R05-24-Battle Scene.wav" · craigsmith · CC0 · 2.2초 잘라 겹쳐 씀
+battle_crit_g1.mp3  Freesound · ID 376646 (https://freesound.org/s/376646/) · "Vikings in battle (swords crossing, shields bashing, men yelling)" · DeadVDI · CC0 · 2.6초 잘라 씀
+battle_crit_g2.mp3  Freesound · ID 177084 (https://freesound.org/s/177084/) · "warriors fighting swords shields" · mario1298 · CC0 · 2.6초 잘라 겹쳐 씀
+battle_crit_g2.mp3  공유마당 · 「battlefieldbackground05」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252058 · 2.6초 잘라 겹쳐 씀(변경함)
+battle_crit_g3.mp3  공유마당 · 「칼 부딪는1」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254778 · 잘라 겹쳐 씀(변경함)
+battle_crit_g3.mp3  공유마당 · 「칼싸움BG」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254793 · 잘라 겹쳐 씀(변경함)
+battle_crit_g3.mp3  공유마당 · 「battlefieldbackground04」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252057 · 잘라 겹쳐 씀(변경함)
+# 2026-10-23 형이 소리 고르기 판에서 고른 것
+bgm_title_c6.ogg  공유마당 · 「Kingdom (가야금,타악기,대금,스트링,브라스)」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13262857 · 앞부분을 잘라 씀(변경함)
+bgm_lose_c3.ogg  공유마당 · 「국악 효과음 #137 (무거운 마무리)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13379970
+war_cry_c1.ogg  Freesound · ID 563011 (https://freesound.org/s/563011/) · "People screaming in agony when charging into battle" · florianreichelt · CC0 · 3초 잘라 씀
+arrow_volley_c3.ogg  Freesound · ID 789389 (https://freesound.org/s/789389/) · "Arrow Flyby" · modusmogulus · CC0 · 여러 발로 겹쳐 울림
+season_turn_c1.ogg  Freesound · ID 121800 (https://freesound.org/s/121800/) · "gong.WAV" · BOSS MUSIC · CC0
+battle_clash_c14.ogg  공유마당 · 「칼싸움BG」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254793 · 2.6초 잘라 씀(변경함)
+bgm_map_c2.ogg  공유마당 · 「국악 BGM #34 (아련하고 차분한)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386774
+bgm_map_c3.ogg  공유마당 · 「국악 BGM #44 (느긋한 마을)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386784
+bgm_map_c4.ogg  공유마당 · 「국악 BGM #81 (평화로운 마을)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386821
+bgm_map_c9.ogg  공유마당 · 「국악 BGM #182 (마음을 진정시키는)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386922
+bgm_map_c10.ogg  공유마당 · 「국악 BGM #192 (한적하고 여유로운)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386932
+bgm_war_c7.ogg  공유마당 · 「국악 BGM #197 (사물놀이)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386937
+bgm_war_c8.ogg  공유마당 · 「LSMBG0704_사물놀이」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13312616
+bgm_end_lose_c6.ogg  공유마당 · 「국악 BGM #228 (비극적인)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386968
+
+# 깃발 소리 — 형이 소리 고르기 판에서 고른 것 (2026-10-23 밤)
+cmd_art_c2.ogg  공유마당 · 「국악 효과음 #611 (웅장한)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387601
+cmd_capture_c1.ogg  Freesound · 「Lasso rope being spun, spinning through air then throw」 · zapsplat.com · CC0 · https://freesound.org/s/719638/
+cmd_charge_c1.ogg  Freesound · 「Stampede」 · bevibeldesign · CC0 · https://freesound.org/s/350425/
+cmd_drum_c1.ogg  공유마당 · 「전통악기_북_치다_빠른속도_MKH418_ST_192」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형 · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287483
+cmd_ford_c5.ogg  공유마당 · 「foleywatersplash01」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252339
+cmd_gate_c4.ogg  공유마당 · 「나무문 박살내는」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253053
+cmd_guard_c3.ogg  Freesound · 「shield guard」 · nekoninja · CC0 · https://freesound.org/s/370203/
+cmd_height_c5.ogg  공유마당 · 「화살 맞는2」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254995
+cmd_hold_c2.ogg  Freesound · 「Rowdy Group Hype Grunt, Boot Stomp and Shield Smash - WITH reverb.wav」 · WelvynZPorterSamples · CC0 · https://freesound.org/s/621326/
+cmd_horse_c4.ogg  Freesound · 「6 horses gallop.wav」 · bruno.auzet · CC0 · https://freesound.org/s/527430/
+cmd_open_c3.ogg  Freesound · 「Lightmetal_armor」 · mitchanary · CC0 · https://freesound.org/s/506148/
+cmd_ram_c3.ogg  Freesound · 「Boat Violently Beaching onto Shore - NO reverb.wav」 · WelvynZPorterSamples · CC0 · https://freesound.org/s/621332/
+cmd_retreat_c4.ogg  공유마당 · 「징소리A」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254592
+cmd_rocks_c1.ogg  공유마당 · 「절벽에서 돌 떨어지는」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254528
+bgm_end_win_w5.ogg  공유마당 · 「Joy of Victory」 · 유종수 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13211110
+cmd_counter_c10.ogg  공유마당 · 「K드라마 효과음 (495)」 화살 소리 일곱을 겹쳐 섞음 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13281778
+cmd_duel_c1.ogg  공유마당 · 「칼 뽑는1」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254783
+cmd_fire_c3.ogg  공유마당 · 「불 붙는」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253636
+cmd_charge_m1.ogg  돌격 = cmd_charge_c1(Freesound 350425 「Stampede」 · bevibeldesign · CC0) + war_cry_c1(위 함성) 을 섞음
+march_go_c7.ogg  공유마당 · 「갑옷 걷는」 + 「북 소리C」를 일곱 사람 발맞춤으로 겹쳐 섞음 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252709
+war_bell_k1.ogg  Kenney (https://kenney.nl) · 「Impact Sounds」 impactBell_heavy_001 · CC0 — 싸움이 열릴 때 종 (옛 활터 소리 · 고르기 판에서 바꾼다)
+war_drum_k1.ogg  Kenney (https://kenney.nl) · 「Impact Sounds」 impactWood_heavy_000 · CC0 — 싸움이 열릴 때 북 (옛 활터 소리)
+arm_go_c6.ogg  Freesound · "Anvil Hit 2" + "Lightmetal_armor" + "unsheath_sword" 섞음 · michorvath · mitchanary · Qat · CC0 · https://freesound.org/s/270588/
+draft_go_c4.ogg  Freesound · ID 621326 (https://freesound.org/s/621326/) · "Rowdy Group Hype Grunt, Boot Stomp and Shield Smash - WITH reverb" · WelvynZPorterSamples · CC0
+war_drum_c4.ogg  Freesound · ID 621326 (https://freesound.org/s/621326/) · "Rowdy Group Hype Grunt, Boot Stomp and Shield Smash - WITH reverb" · WelvynZPorterSamples · CC0
+march_go_c8.ogg  Freesound · ID 480675 (https://freesound.org/s/480675/) · "R27-40-March on Gravel Road" + war horn 섞음 · craigsmith · adharca · CC0
+war_bell_c5.ogg  공유마당 · 「징소리B」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254593
+bgm_bridal_c9.ogg  공유마당 · 「국악연주곡_반우반계 반엽 '남하여' 연주 1」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13263121
+cmd_hold_h1.mp3  형이 직접 받아 옴 (10-24 · 방진 「탱탱」 쇠판 소리) · 출처·라이선스 형에게 확인 중 — 받은 곳을 적을 것
+wed_c4.ogg  공유마당 · 「국악 효과음 #503」(환영해주는 축하해주는) · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13380336&menuNo=200020 · 7.4초를 5.8초로 자르고 끝을 줄임 · 혼례 소리 (형 10-24 고름)
+
+# 2026-10-25 싸움 소리 고르기 판에서 형이 고른 것
+cmd_retreat_c1.ogg  소라 나팔 · 김용배 · CC BY (저작자표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253859&menuNo=200020 (sfx/cand/cmd_retreat_1.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+cmd_rocks_c5.ogg  Rockslide_1.wav · NinjaSharkStudios · CC0 · https://freesound.org/s/608957/ (sfx/cand/cmd_rocks_5.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+battle_final_c1.ogg  BODY FALL - V HVY - DIRT · leonelmail · CC0 · https://freesound.org/s/504626/ (sfx/cand/battle_final_1.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+battle_duelwin_c2.ogg  Sword Contact (with swipe) · ultraaxvii · CC0 · https://freesound.org/s/591155/ (sfx/cand/battle_duelwin_2.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+battle_melee_c1.ogg  Sword clash 1.wav · spycrah · CC0 · https://freesound.org/s/471095/ (sfx/cand/battle_melee_1.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+battle_melee_c2.ogg  Sword Clash.wav · Bird_man · CC0 · https://freesound.org/s/275159/ (sfx/cand/battle_melee_2.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+battle_melee_c3.ogg  Sword Clash · loudernoises · CC0 · https://freesound.org/s/334169/ (sfx/cand/battle_melee_3.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+battle_melee_c4.ogg  Sword_Clash (7).wav · JohnBuhr · CC0 · https://freesound.org/s/326868/ (sfx/cand/battle_melee_4.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+battle_melee_c5.ogg  Swords Clash - High Quality #2 · Christopherderp · CC0 · https://freesound.org/s/364530/ (sfx/cand/battle_melee_5.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+battle_melee_c6.ogg  shield guard · nekoninja · CC0 · https://freesound.org/s/370203/ (sfx/cand/battle_melee_6.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+cmd_fire_c1.ogg  Burning arrow 05.wav · Introspectral · CC0 · https://freesound.org/s/262478/ (sfx/cand/cmd_fire_1.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+cmd_fire_c2.ogg  불 휙 · 김용배 · CC BY (저작자표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253638&menuNo=200020 (sfx/cand/cmd_fire_2.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+cmd_fire_c4.ogg  Basic Fire whoosh · LookIMadeAThing · CC0 · https://freesound.org/s/260554/ (sfx/cand/cmd_fire_4.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+cmd_fire_c5.ogg  Fire Burst Flash · Za-Games · CC0 · https://freesound.org/s/539972/ (sfx/cand/cmd_fire_5.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+relic_open_g1.mp3  공유마당 · 「SE_10_06_짧은 축하 효과음」 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13355458
+relic_open_g2.mp3  공유마당 · 「SE_10_01_승리의 군악대 효과음」 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13355453
+relic_open_g3.mp3  공유마당 · 「국악 효과음 #478」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387468
+hire_go_g1.mp3  공유마당 · 「국악 효과음 #117」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387107
+hire_go_g2.mp3  공유마당 · 「국악 효과음 #107」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387097
+hire_go_g3.mp3  공유마당 · 「국악 효과음 #355」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387345
+dex_new_g1.wav  공유마당 · 「국악 효과음 #159」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387149 · 앞 2초를 잘라 1.1초부터 줄임
+dex_new_g2.wav  공유마당 · 「국악 효과음 #603」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387593 · 앞 2초를 잘라 1.1초부터 줄임
+dex_new_g3.wav  공유마당 · 「국악 효과음 #328」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387318 · 앞 2초를 잘라 1.1초부터 줄임
+war_drums_b2.wav  위 war_drums_b 를 2초로 자르고 끝을 줄임 (10-27)
+defeat_a3.wav  위 defeat_a 를 3초로 줄임 (10-27)
+horses_m.wav  위 horses_a·b·c 를 시차를 두고 겹침 (10-27)
+tap_cancel_c.ogg  위 ui_cancel_c 와 같은 파일 (닫기 · 10-27 형 고름)
+tap_rite_g4.wav  공유마당 · 「471.기묘한 종묘대금 효과음 001」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13290512 · 앞 3초
+tap_rite_g5.wav  공유마당 · 「381.애절한 시나위대금 효과음 001」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13290422 · 소리가 나는 데부터 3초
+tap_rite_g6.wav  공유마당 · 「국악 효과음 #505」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387495 · 앞 3초
+wed_g7.wav  국립국악원 디지털 이음 · 국악 선율 「꼭두각시 01」(경기민요 꼭두각시 · 가야금 · 제1~4장단 · s1-911-001) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 10초 전부
+bgm_wed_g1.mp3  국립국악원 디지털 이음 · 국악 선율 「꼭두각시 01·02·03·04」(경기민요 꼭두각시 · 가야금 · s1-911-001~004 · 이어 붙임) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞추고 끝을 잦아들게
+bgm_map_k1.mp3  국립국악원 디지털 이음 · 「긴난봉가」 1·2·3 (가야금 · 이어 붙임) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
+bgm_map_k2.mp3  국립국악원 디지털 이음 · 「자진난봉가」 1·2 (가야금 · 이어 붙임) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
+bgm_map_k3.mp3  국립국악원 디지털 이음 · 「한갑득류 거문고산조 자진모리」 s2-001-049~071 (이어 붙임) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
+bgm_map_k4.mp3  국립국악원 디지털 이음 · 「상령산 010·015·040」 s5-111 (양금 · 이어 붙임) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
+bgm_map_k5.mp3  국립국악원 디지털 이음 · 「아리랑 01·02」 s1-914-001·002 (가야금 · 두 번 이어 붙임) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
+bgm_map_k6.mp3  국립국악원 디지털 이음 · 「밀양아리랑 01·02」 s1-941-001·002 (가야금) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
+bgm_map_k7.mp3  국립국악원 디지털 이음 · 「뱃노래 01·02」 s1-942-001·002 (가야금) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
+bgm_map_k8.mp3  국립국악원 디지털 이음 · 「상주모심기」 s1-943-001 (가야금) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
+bgm_map_k9.mp3  국립국악원 디지털 이음 · 「정선아리랑 01·02」 s1-945-001·002 (가야금) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
+bgm_map_k10.mp3  국립국악원 디지털 이음 · 「한오백년 02」 s1-946-002 (가야금) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
+bgm_map_k11.mp3  국립국악원 디지털 이음 · 「진도아리랑 01·02·03」 s1-936-001~003 (가야금) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
+bgm_map_k12.mp3  국립국악원 디지털 이음 · 「현악영산회상 중 타령」 (정악 가야금) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
+bgm_map_k13.mp3  국립국악원 디지털 이음 · 「수연장지곡」 (거문고) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
+bgm_map_k14.mp3  국립국악원 디지털 이음 · 「우조가락도드리」 (양금) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
+bgm_map_k15.mp3  국립국악원 디지털 이음 · 「방아타령」 (산조 가야금) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
+bgm_map_k16.mp3  국립국악원 디지털 이음 · 「25현가야금을 위한 변주곡 한오백년」 (25현 가야금) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
+bgm_map_k17.mp3  국립국악원 디지털 이음 · 「귀인」 (정악 아쟁 · Ajaeng_12) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 큰 대목을 눌러 소리 크기를 맞춤
+bgm_map_k18.mp3  국립국악원 디지털 이음 · 「우조초수대엽 010·015·030·040·050」 s5-211 (양금 · 이어 붙임) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 조각마다 끝을 잦아들게 하고 쉼을 둠 · 소리 크기 맞춤
+bgm_map_k19.mp3  국립국악원 디지털 이음 · 「닐리리아 01·02」 s1-912-001·002 (가야금 · 두 번 이어 붙임) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
+bgm_map_k20.mp3  국립국악원 디지털 이음 · 「도라지 01·02」 s1-913-001·002 (가야금 · 두 번 이어 붙임) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
+bgm_map_k21.mp3  국립국악원 디지털 이음 · 「아리랑 03·04」 s1-914-003·004 (가야금 · 두 번 이어 붙임) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
+bgm_map_k22.mp3  국립국악원 디지털 이음 · 「천안삼거리 01·02」 s1-915-001·002 (가야금 · 두 번 이어 붙임) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
+bgm_map_k23.mp3  국립국악원 디지털 이음 · 「한강수타령 01·02·03」 s1-916-001~003 (가야금 · 두 번 이어 붙임) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
+bgm_map_k24.mp3  국립국악원 디지털 이음 · 「자진한강수타령 01·02」 s1-917-001·002 (가야금 · 두 번 이어 붙임) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
+bgm_map_k25.mp3  국립국악원 디지털 이음 · 「창부타령 01·02·03」 s1-918-001~003 (가야금 · 두 번 이어 붙임) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
+bgm_war_c7v.ogg  국립국악원 디지털 이음 · 남창 추임새 「헐씨구」「잘한다」 · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 바탕 음악 bgm_war_c7(공유마당 「국악 BGM #197 (사물놀이)」 · 주식회사 아이티앤 · CC BY)에 얹음
+bgm_war_c8v.ogg  국립국악원 디지털 이음 · 남창 추임새 「얼씨구」「좋다」「하믄」「그러지」「헐씨구」「잘한다」 · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 바탕 음악 bgm_war_c8(공유마당 「LSMBG0704_사물놀이」 · 한국저작권위원회 · CC BY)에 얹음
+bgm_win_g1.mp3  공유마당 · 「태평소독주_시그널음악_011」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13289824 — 앞뒤에 「전통악기_북_치다_느린속도」·「전통악기_북_치다_빠른속도」((재)전주정보문화산업진흥원 · 공공누리 제1유형) · 「징소리B」(김용배 · CC BY)를 얹어 섞음
+bgm_win_g2.mp3  공유마당 · 「태평소독주_시그널음악_012」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13289825 — 북·징은 g1 과 같음
+bgm_win_g3.mp3  공유마당 · 「태평소독주_시그널음악_016」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13289829 — 북·징은 g1 과 같음
+ax_rise_g1.mp3  공유마당 · 「SE_11_18_점점 상승하는 임팩트」 · 공유마당 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13355490 · 잘라 냄
+ax_rise_g2.mp3  공유마당 · 「LSMSE0909_Rise & Hit Long 1」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13312779 · 잘라 냄
+ax_rise_g3.mp3  공유마당 · 「전통악기_징_열기_긴」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287487 · 잘라 냄
+ax_flash_g1.mp3  공유마당 · 「SE_11_03_ 동양적인 징 임펙트 효과음」 · 공유마당 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13355475 · 잘라 냄
+ax_flash_g2.mp3  공유마당 · 「SE_11_17_웅장한 서막 임팩트」 · 공유마당 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13355489 · 잘라 냄
+ax_flash_g3.mp3  공유마당 · 「LSMSE0912_Trailer Hit 2」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13312782 · 잘라 냄
+ax_tiger_g1.mp3  공유마당 · 「동물_호랑이와 사자_서울대공원 동물원_사육장에서 포효하는 소리(단체음)」 · JICA · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13371956 · 잘라 냄
+ax_tiger_g2.mp3  공유마당 · 「맹수의 숨 소리」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13220790 · 잘라 냄
+ax_bear_g1.mp3  공유마당 · 「곰 우리 1마리1」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252853 · 잘라 냄
+ax_bear_g2.mp3  공유마당 · 「곰 우리 1마리2」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252854 · 잘라 냄
+ax_bear_g3.mp3  공유마당 · 「곰 우리 1마리3」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252855 · 잘라 냄
+ax_hawk_g1.mp3  공유마당 · 「독수리 울음 소리」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13220785 · 잘라 냄
+ax_hawk_g2.mp3  공유마당 · 「솔개」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253875 · 잘라 냄
+ax_hawk_g3.mp3  공유마당 · 「솔개2」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253876 · 잘라 냄
+ax_crane_g1.mp3  공유마당 · 「두루미」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253217 · 잘라 냄
+ax_crane_g2.mp3  공유마당 · 「새_재두루미_철원 동송읍_재두루미 한 쌍이 이길리 논에서 날아 오르며 내는 소리」 · JICA · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13372029 · 잘라 냄
+ax_crane_g3.mp3  공유마당 · 「새_두루미_철원 갈말읍_두루미 두 쌍이 내대리 논에서 낱알 주워먹으며 내는 소리」 · JICA · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13372027 · 잘라 냄
+ax_dragon_g1.mp3  공유마당 · 「SE_11_05_ 몬스터 등장 임팩트 효과」 · 공유마당 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13355477 · 잘라 냄
+ax_dragon_g2.mp3  공유마당 · 「LSMSE0401_강력한 저음」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13312693 · 잘라 냄
+ax_dragon_g3.mp3  공유마당 · 「SE_11_13_폭풍후 천둥 임팩트」 · 공유마당 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13355485 · 잘라 냄
+ax_flash_g4.mp3  공유마당 · 「LSMSE0912_Trailer Hit 2」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13312782 · 잘라 세 번 이음 + 내려가는 울림·반짝임은 직접 합성
+ax_flash_g5.mp3  공유마당 · 「LSMSE0911_Trailer Hit 1」(https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13312781) · 「LSMSE0913_Trailer Hit 3」(https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13312783) · 한국저작권위원회 · CC BY(저작자 표시) · 잘라 이음 + 내려가는 울림·반짝임은 직접 합성
+ax_flash_g6.mp3  공유마당 · 「LSMSE0912_Trailer Hit 2」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13312782 · 한 방 + 내려가는 울림·반짝임은 직접 합성
+invade_g1.mp3  공유마당 · 「북소리A」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253631 · 잘라 냄
+invade_g2.mp3  공유마당 · 「북소리A + war horn(Freesound adharca · CC0)」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253631 · 잘라 냄
+invade_g3.mp3  공유마당 · 「북소리1번 세 번 겹침」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253630 · 잘라 냄
+tap_rite_g7.mp3  공유마당 · 「SE_05_10_요술봉 동작 효과음」 · 공유마당 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13355362 · 잘라 냄
+tap_rite_g8.mp3  공유마당 · 「LSMSE0602_마법과 벨 소리」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13312724 · 잘라 냄
+tap_rite_g9.mp3  공유마당 · 「사찰 풍경소리」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13220756 · 잘라 냄
+tap_rite_g10.mp3  공유마당 · 「SE_05_09_신선놀음 힐링 효과음」 · 공유마당 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13355361 · 잘라 냄
+woo_break_g1.mp3  공유마당 · 「LSMSE0602_마법과 벨 소리」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13312724 · 잘라 냄
+woo_break_g2.mp3  공유마당 · 「절마당 풍경1」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254527 · 잘라 냄
+woo_break_g3.mp3  공유마당 · 「국악 효과음 #277」 · 공유마당 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13380110 · 잘라 냄
+bad_small_g1.mp3  공유마당 · 「북소리1번」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253630 · 한 번만 잘라 냄
+bad_small_g2.mp3  공유마당 · 「북소리B」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253632 · 한 번만 잘라 냄
+bad_small_g3.mp3  공유마당 · 「북소리1번」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253630 · 한 번만 잘라 낮게(0.8배)
+bad_big_g1.mp3  공유마당 · 「북소리B」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253632 두 번 + 「384.애절한 시나위대금 효과음 004」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13290425 · 겹침
+bad_big_g2.mp3  공유마당 · 「북소리1번」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253630 두 번 + 「399.애절한 시나위대금 효과음 019」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13290440 · 겹침
+bad_big_g3.mp3  공유마당 · 「북소리1번」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253630 두 번 + 「SE_09_01_아쉬운 탈락 국악 효과음」 · 공유마당 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13355433 · 겹침
+invade_g4.mp3  공유마당 · 「국악 효과음 #471」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387461 · 잘라 냄
+invade_g5.mp3  공유마당 · 「국악 효과음 #633」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387623 · 잘라 냄
+invade_g6.mp3  공유마당 · 「국악 효과음 #298」 · 공유마당 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13380131 · 잘라 냄
+tap_rite_g11.mp3  공유마당 · 「SE_10_02_신의 은총 거룩한 효과음」 · 공유마당 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13355454 · 잘라 냄
+tap_rite_g12.mp3  공유마당 · 「국악 효과음 #327」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387317 · 잘라 냄
+tap_rite_g13.mp3  공유마당 · 「국악 효과음 #364」 · 공유마당 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13380197 · 잘라 냄
+capt_lock_g1.mp3  공유마당 · 「전통사물_큰자물쇠_열다」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287448 · 잘라 냄
+capt_lock_g2.mp3  공유마당 · 「돌 문 열리는(쇠사슬)」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253188 · 잘라 냄
+capt_lock_g3.mp3  공유마당 · 「foleychainrattle04」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252095 · 잘라 냄
+tap_rite_g14.wav  공유마당 · 「국악 효과음 #651」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387641 · 잘라 냄
+invade_g7.wav  공유마당 · 「시골 학교종(빨리)」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254040 · 잘라 냄
+capt_lock_g4.wav  공유마당 · 「기쁨_승리의_강의실_남성(20명)_멀다(300cm)_KM184_ST_192」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13288167 · 잘라 냄
+
+# 장수 겨루기 시험판 후보 (2026-11-09 · 형: "해외 어디든 무료 sfx 면 다 괜찮으니까 모아와봐") — sfx/duel/
+duel/good_a.ogg  Freesound · ID 334169 (https://freesound.org/s/334169/) · Sword Clash · loudernoises · CC0
+duel/good_b.ogg  Freesound · ID 326868 (https://freesound.org/s/326868/) · Sword_Clash (7) · JohnBuhr · CC0
+duel/good_c.ogg  Freesound · ID 470175 (https://freesound.org/s/470175/) · Espada Clavandose (Sword Clash) · Atrius1 · CC0
+duel/perfect_a.ogg  Freesound · ID 760636 (https://freesound.org/s/760636/) · Metal Sword Parry Impact Hit 4 · chungkury · CC0
+duel/perfect_b.ogg  Freesound · ID 616493 (https://freesound.org/s/616493/) · block3 · Empiremonkey · CC0
+duel/perfect_c.ogg  Freesound · ID 844258 (https://freesound.org/s/844258/) · Sword Tap · Foxfire- · CC0
+duel/crit_a.ogg  Freesound · ID 370204 (https://freesound.org/s/370204/) · samurai slash · nekoninja · CC0
+duel/crit_b.ogg  Freesound · ID 574821 (https://freesound.org/s/574821/) · Slash1 · Wenpire · CC0
+duel/crit_c.ogg  Freesound · ID 420674 (https://freesound.org/s/420674/) · Deep Cut / Slash / Gash · SypherZent · CC0
+duel/rushHit_a.ogg  Freesound · ID 442903 (https://freesound.org/s/442903/) · Slash · qubodup · CC0
+duel/rushHit_b.ogg  Freesound · ID 442769 (https://freesound.org/s/442769/) · Sword Hit · qubodup · CC0
+duel/rushHit_c.ogg  Freesound · ID 504615 (https://freesound.org/s/504615/) · Slicing through flesh · NeoSpica · CC0
+duel/deflect_a.ogg  Freesound · ID 220179 (https://freesound.org/s/220179/) · Click Metal Ting · GameAudio · CC0
+duel/deflect_b.ogg  Freesound · ID 640881 (https://freesound.org/s/640881/) · sword · CaptainYulef · CC0
+duel/deflect_c.ogg  Freesound · ID 784206 (https://freesound.org/s/784206/) · Anime metal clang · modusmogulus · CC0
+duel/hurt_a.ogg  Freesound · ID 276600 (https://freesound.org/s/276600/) · body_hit · insanity54 · CC0
+duel/hurt_b.ogg  Freesound · ID 411122 (https://freesound.org/s/411122/) · Sword hits the body · vdovitsky · CC0
+duel/hurt_c.ogg  Freesound · ID 399183 (https://freesound.org/s/399183/) · Major punch · janbezouska · CC0
+duel/swing_a.ogg  Freesound · ID 240640 (https://freesound.org/s/240640/) · Metallic Whoosh · MissCellany · CC0
+duel/swing_b.ogg  Freesound · ID 60024 (https://freesound.org/s/60024/) · swosh swinging sword 37 · qubodup · CC0
+duel/swing_c.ogg  Freesound · ID 389590 (https://freesound.org/s/389590/) · Swing Woosh · Jofae · CC0
+duel/break_a.ogg  Freesound · ID 244983 (https://freesound.org/s/244983/) · ANI Big Pipe Hit · ani_music · CC0
+duel/break_b.ogg  Freesound · ID 435681 (https://freesound.org/s/435681/) · Metallic Clang · eben-frostey · CC0
+duel/break_c.ogg  Freesound · ID 640204 (https://freesound.org/s/640204/) · Heavy Metal Thud on Ground · 7of9Designs · CC0
+duel/intro_a.ogg  Freesound · ID 541029 (https://freesound.org/s/541029/) · Very low frequency impact · AudioPapkin · CC0
+duel/intro_b.ogg  Freesound · ID 755054 (https://freesound.org/s/755054/) · Impact SFX PS 017 · AudioPapkin · CC0
+duel/intro_c.ogg  Freesound · ID 645898 (https://freesound.org/s/645898/) · Impact sfx 027 · AudioPapkin · CC0
+# 장수 겨루기 — 형이 직접 받아 준 소리 (2026-11-09 · 형 PC 다운로드 폴더 · 출처는 형이 안다)
+duel/good_h.mp3  형 · 「막음」
+duel/perfect_h.mp3  형 · 「정확」 (11-09 저녁 정확1·정확2 로 바뀜 · 안 씀)
+duel/perfect_h1.mp3 · perfect_h2.mp3  형 · 「정확1」「정확2」 (둘을 겹쳐 냄 · 휘두르는 소리)
+duel/deflect_h.mp3  형 · 「연타튕김」
+duel/rushHit_h1.mp3 · rushHit_h2.mp3 · rushHit_h3.mp3  형 · 「연타맞음1~3」 (셋을 번갈아)
+duel/hurt_h.mp3  형 · 「내가맞음」
+duel/break_h.mp3  형 · 「체간무너짐」 (앞 3.5초만 씀)
+duel/intro_h.wav  형 · 「겨루기시작_바라_타격음_강」
+# 형이 고른 후보: 치명공격 베기 = crit_a · 적장 휘두름 = swing_b
+duel/riser_h.mp3  형 · 「riser」 (겨루기 고리가 줄어드는 동안 · 11-09)
+
+# 11-09 밤 형이 받아 온 것 (형 플레이 테스트 · 출처는 형이 받은 곳)
+war_cry_h1.mp3  형 · 「전투시작함성」
+bgm_end_win_h1.mp3  형 · maksymmalko 「Victory Nomination Winner Champion Music」 (Pixabay 544991 · Pixabay Content License) — 판을 다 이겼을 때
+bgm_win_h2.mp3  형 · studiokolomna 「Steps of Victory Fanfare Awards」 (Pixabay 358350 · Pixabay Content License) — 싸움 하나 이겼을 때
+feast_h1.mp3  형 · 「잔치sfx」 (마을 잔치 장면 · 옛 꼭두각시 대신)
+plot/burn_h.mp3  형 · 「방화」 (60초에서 앞 5초만 잘라 씀)
+plot/rumor_h.mp3  형 · 「소문」
+plot/sow_h.mp3  형 · 「이간」
+plot/bribe_h.mp3  형 · 「매수」
+plot/night_h.mp3  형 · 「암살구출」 (암살·구출이 먹힌 장 · 밤 임무 끝)
+cand/raid/raid_kiai_m_g1.ogg  Freesound · ID 464485 (https://freesound.org/s/464485/) · Male Attack Grunt · elynch0901 · CC0
+cand/raid/raid_kiai_m_g2.ogg  Freesound · ID 661242 (https://freesound.org/s/661242/) · Swing grunt.mp3 · DeqstersLab · CC0
+cand/raid/raid_kiai_m_g3.ogg  Freesound · ID 464495 (https://freesound.org/s/464495/) · S12_Grunt_Player_1.wav · kaygrum · CC0
+cand/raid/raid_kiai_f_g1.ogg  Freesound · ID 242623 (https://freesound.org/s/242623/) · grunt.wav · Reitanna · CC0
+cand/raid/raid_kiai_f_g2.ogg  Freesound · ID 242617 (https://freesound.org/s/242617/) · huah!.wav · Reitanna · CC0
+cand/raid/raid_kiai_f_g3.ogg  Freesound · ID 464675 (https://freesound.org/s/464675/) · FemaleGrunt1.wav · BranndyBottle · CC0
+cand/raid/raid_hurt_m_g1.ogg  Freesound · ID 547209 (https://freesound.org/s/547209/) · Voice_AdultMale_PainGrunts_09.wav · MrFossy · CC0
+cand/raid/raid_hurt_m_g2.ogg  Freesound · ID 413186 (https://freesound.org/s/413186/) · male_hurt9.ogg · micahlg · CC0
+cand/raid/raid_hurt_m_g3.ogg  Freesound · ID 342229 (https://freesound.org/s/342229/) · Hurt  1 - (Male) · Christopherderp · CC0
+cand/raid/raid_hurt_f_g1.ogg  Freesound · ID 577968 (https://freesound.org/s/577968/) · female-hurt.wav · birdOfTheNorth · CC0
+cand/raid/raid_hurt_f_g2.ogg  Freesound · ID 203976 (https://freesound.org/s/203976/) · female_hurt.wav · thatbennyguy · CC0
+cand/raid/raid_hurt_f_g3.ogg  Freesound · ID 796094 (https://freesound.org/s/796094/) · Woman getting pain · Guinamun · CC0
+cand/raid/raid_die_m_g1.ogg  Freesound · ID 173126 (https://freesound.org/s/173126/) · Death sound (male) · Replix · CC0
+cand/raid/raid_die_m_g2.ogg  Freesound · ID 163442 (https://freesound.org/s/163442/) · Man Dying · Under7dude · CC0
+cand/raid/raid_die_m_g3.ogg  Freesound · ID 345456 (https://freesound.org/s/345456/) · Male_Death_04 · Artmasterrich · CC0
+cand/raid/raid_boss_roar_g1.ogg  Freesound · ID 265554 (https://freesound.org/s/265554/) · Studio roar · AugustSandberg · CC0
+cand/raid/raid_boss_roar_g2.ogg  Freesound · ID 521831 (https://freesound.org/s/521831/) · Middle Ages War Cry 3.wav · joelcarrsound · CC0
+cand/raid/raid_boss_roar_g3.ogg  Freesound · ID 521830 (https://freesound.org/s/521830/) · Middle Ages War Cry.wav · joelcarrsound · CC0
+cand/raid/raid_skill_m_g1.ogg  Freesound · ID 521832 (https://freesound.org/s/521832/) · Middle Ages War Cry 2.wav · joelcarrsound · CC0
+cand/raid/raid_skill_m_g2.ogg  Freesound · ID 490700 (https://freesound.org/s/490700/) · yaaahhh.wav · GENERALMiDiGUy · CC0
+cand/raid/raid_skill_m_g3.ogg  Freesound · ID 219815 (https://freesound.org/s/219815/) · effort scream.wav · saraonsins · CC0
+cand/raid/raid_skill_f_g1.ogg  Freesound · ID 509882 (https://freesound.org/s/509882/) · female_shout_01.wav · slamaxu · CC0
+cand/raid/raid_skill_f_g2.ogg  Freesound · ID 220307 (https://freesound.org/s/220307/) · oneshout.wav · Ellenskellington · CC0
+cand/raid/raid_skill_f_g3.ogg  Freesound · ID 219686 (https://freesound.org/s/219686/) · girl-shout.wav · mariateresa_garcia · CC0
+bgm_raid_d1.ogg  Pixabay · Primitive Battle Groove with Rhythmic Taiko Drums & Handclaps (491389) · DesiFreeMusic · Pixabay Content License · 형이 고름 (11-15 열전 전투 음악) · -18 LUFS
+
+# 열전 소리 · 형이 Pixabay 에서 받아 줌 (11-15 밤) · Pixabay Content License · 원본 assets_src/realm/sfx-in/raid/pixabay
+raid/swing_1~4.ogg  Pixabay · Heavy Greatsword Slash in the Air 1~4 (450242·450243·450245·450244) · yodguard
+raid/kiai_m_1.ogg · kiai_m_2.ogg  Pixabay · Male Soldier Voice Attack Grunt (520841) · 2 (520933) · PhatPhrogStudio
+raid/kiai_m_3.ogg  Pixabay · RPG M Knight Voice Attack Grunt (490291) · PhatPhrogStudio
+raid/kiai_m_heavy_1.ogg · kiai_m_heavy_2.ogg  Pixabay · Male Fighter Voice Heavy Attack Grunt (544355) · Voice 2 (582547) · PhatPhrogStudio
+raid/kiai_f_1.ogg  Pixabay · RPG Female Attack Grunt (481720) · PhatPhrogStudio
+raid/kiai_f_2.ogg  Freesound · ID 464495 · S12_Grunt_Player_1.wav · kaygrum · CC0 (형: 여자 기합은 이것)
+raid/hurt_f_1.ogg  Pixabay · Shock Gasp Female (383751) · Universfield
+raid/hurt_f_2.ogg  Pixabay · Female Hurt 2 (94301) · freesound_community
+raid/level.ogg  Pixabay · Level Up 2 (540176) · yodguard
+raid/defeat.ogg  Pixabay · Defeat Outros Game Sounds Collection (477823) · PhatPhrogStudio · 앞 10초
+raid/fire_1~3.ogg  Pixabay · Fire Magic 1·2·4 (378636·378638·378637) · yodguard
+raid/wind_1~3.ogg  Pixabay · Wind Magic 2·5·6 (378627·378630·378626) · yodguard
+raid/bolt_1~2.ogg  Pixabay · Lightning Magic 1·4 (378645·378647) · yodguard
+raid/earth_1~2.ogg · skill_hit.ogg  Pixabay · Earth Magic 1·2·5 (378599·378602·378598) · yodguard
+raid/light_1.ogg · light_2.ogg  Pixabay · Healing Magic 1·4 (378665·378668) · yodguard · Pixabay Content License (형이 받아 줌 11-15 · 열전 혼불)
+
+# 열전 돌팔매 묶음 후보 (11-16 · 형: 「돌팔매는 슬링샷 사운드 같은 거 찾으면 만들 수 있지 않을까?」) — sfx/cand/sling_<자리>_<번호>.ogg
+# 모두 Freesound CC0 · 앞뒤를 짧게 자르고 크기를 맞춤 · 지금 열전은 1번씩을 쓴다 (형이 고르면 바꿈)
+cand/sling_whirl_1.ogg  Lasso rope being spun, spinning through air then throw · zapsplat.com · CC0 · https://freesound.org/s/719638/ (앞 1.3초 · 도는 부분)
+cand/sling_whirl_2.ogg  Rope Swinging · Robo9418 · CC0 · https://freesound.org/s/841835/
+cand/sling_whirl_3.ogg  Rope Swinging.wav · EugeneEverett · CC0 · https://freesound.org/s/596514/ (2.1초부터 1.3초)
+cand/sling_release_1.ogg  Throwing / Whip Effect · denao270 · CC0 · https://freesound.org/s/346373/
+cand/sling_release_2.ogg  Throw 1.mp3 · deleted_user_6479820 · CC0 · https://freesound.org/s/394873/
+cand/sling_release_3.ogg  Slingshot 2 · renne100 · CC0 · https://freesound.org/s/353034/
+cand/sling_impact_1.ogg  Stone hit · CamoMano · CC0 · https://freesound.org/s/431019/
+cand/sling_impact_2.ogg  Single Rock hit Dirt.wav · worthahep88 · CC0 · https://freesound.org/s/319222/ (0.15초부터 0.6초)
+cand/sling_impact_3.ogg  impact-stone-heavy.wav · kasparsj · CC0 · https://freesound.org/s/513694/
+
+# 열전 타격 소리 (11-22 · 형이 고름: 일반 1·2 · 치명 1·2·3) — sfx/raid/hit_*.ogg · soundbible.com · CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)
+# 가공: 앞뒤 빈 소리 자름 · 끝 0.04초 페이드 · 모노 · 크기 -18 LUFS 맞춤 · ogg 로 바꿈
+raid/hit_n1.ogg  Realistic Punch · Mark DiAngelo · CC BY 3.0 · https://soundbible.com/2069-Realistic-Punch.html
+raid/hit_n2.ogg  Jab · Mike Koenig · CC BY 3.0 · https://soundbible.com/995-Jab.html
+raid/hit_c1.ogg  Strong Punch · Mike Koenig · CC BY 3.0 · https://soundbible.com/1773-Strong-Punch.html
+raid/hit_c2.ogg  Right Cross · Mike Koenig · CC BY 3.0 · https://soundbible.com/992-Right-Cross.html
+raid/hit_c3.ogg  Upper Cut · Mike Koenig · CC BY 3.0 · https://soundbible.com/993-Upper-Cut.html
+# 같은 날 형이 더 고름: 쓰러짐 1·2·3 · 떨어짐 1(상자 떨어질 때) · 터짐 1(기세 알 「뽁」에 얹음) · 같은 가공
+raid/down_1.ogg  Zombie In Pain · Mike Koenig · CC BY 3.0 · https://soundbible.com/1033-Zombie-In-Pain.html
+raid/down_2.ogg  Zombie Long Death · Mike Koenig · CC BY 3.0 · https://soundbible.com/1042-Zombie-Long-Death.html
+raid/down_3.ogg  Dying · Mike Koenig · CC BY 3.0 · https://soundbible.com/810-Dying.html
+raid/fall_1.ogg  Drop Sword · Caroline Ford · CC BY 3.0 · https://soundbible.com/906-Drop-Sword.html
+raid/pop_1.ogg  Blop · Mark DiAngelo · CC BY 3.0 · https://soundbible.com/2067-Blop.html
+bgm_raid_palisade.ogg · bgm_raid_forest.ogg · bgm_raid_ford.ogg · bgm_raid_snow.ogg · bgm_raid_fortress.ogg · bgm_raid_boss.ogg  Google Gemini 음악 만들기(Lyria)로 만든 곡 · 2026-11-22~23 · 열전 스테이지·두목 곡 · -18 LUFS
+
+# 보스 소리 (2026-11-24 형이 고름 · 백두 대호 · 이무기 · 불가사리)
+raid/boss_tiger_roar.ogg  Freesound · https://freesound.org/people/FALL-E/sounds/696476/ · "tiger, roar, growl, wild" · FALL-E · CC0 · 일부(14.46~18.03초)를 잘라 크기를 맞춤
+raid/boss_tiger_attack.ogg  Freesound · https://freesound.org/people/eZZin/sounds/811790/ · "Tiger roar female" · eZZin · CC0 · 일부(0~0.9초)를 잘라 크기를 맞춤
+raid/boss_tiger_hurt.ogg  Freesound · https://freesound.org/people/djlprojects/sounds/398254/ · "Low and Short Monster Growl or Purr" · djlprojects · CC BY 4.0 · 일부(0~1.33초)를 잘라 크기를 맞춤
+raid/boss_imugi_roar.ogg  Freesound · https://freesound.org/people/Bikkit99/sounds/837799/ · "Sea Creature Roar" · Bikkit99 · CC0 · 일부(2.55~6.63초)를 잘라 크기를 맞춤
+raid/boss_imugi_attack.ogg  Freesound · https://freesound.org/people/xoiziox/sounds/553374/ · "Snake Hiss" · xoiziox · CC0 · 일부(0.38~2.78초)를 잘라 크기를 맞춤
+raid/boss_imugi_hurt.ogg  Freesound · https://freesound.org/people/Garuda1982/sounds/541656/ · "hissing snake sound effect" · Garuda1982 · CC BY 4.0 · 일부(0.27~1.16초)를 잘라 크기를 맞춤
+raid/boss_bulgasari_roar.ogg  Freesound · https://freesound.org/people/Rotaredom/sounds/640805/ · "Mechanical_Roar.wav" · Rotaredom · CC0 · 일부(0.02~3.8초)를 잘라 크기를 맞춤
+raid/boss_bulgasari_attack.ogg  Freesound · https://freesound.org/people/LucasDuff/sounds/467701/ · "monster bite" · LucasDuff · CC0 · 일부(0.30~1.9초)를 잘라 크기를 맞춤
+raid/boss_bulgasari_hurt.ogg  Freesound · https://freesound.org/people/xkeril/sounds/703247/ · "Big falling debris (crash)" · xkeril · CC0 · 일부(0~2.5초)를 잘라 크기를 맞춤
+field_step_walk_c.ogg  공유마당 · 「발_흙길_고무신_여자_천천히걷기」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13264254 · 잘라 냄 · 형이 고름(11-25) · field_step_walk_{few,mid,many}.ogg 는 이 소리를 4 · 12 · 30명분으로 겹쳐 구운 것(tools/field-crowd-steps.mjs)이라 같은 출처
+field_step_run_c.ogg  공유마당 · 「발_흙길_고무신_어린이_달리기」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13264251 · 잘라 냄 · 형이 고름(11-25) · field_step_run_{few,mid,many}.ogg 는 이 소리를 겹쳐 구운 것이라 같은 출처
+field_arrow_hit_b.ogg  공유마당 · 「화살 맞는1」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254994 · 잘라 냄 · 형이 고름(11-25)
+field_hoof_loop.ogg  본편 말 소리 horses_m.wav 의 끝 0.3초를 앞에 겹쳐 물린 고리(출처는 horses_m 을 따른다)
+전장 소리 후보(고르는 중): sfx/field_*.ogg 중 위에 적지 않은 것 · 공유마당 공공누리 제1유형 · CC BY · 제목·저작자·원본 주소는 realm/field-sounds.html (형이 안 고른 후보는 바꿔 고를 수 있어 남겨 둔다)

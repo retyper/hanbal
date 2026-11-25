@@ -1,0 +1,180 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>열국군웅전 목소리 고르기</title>
+<style>
+  :root { color-scheme: dark; }
+  body { background:#171c23; color:#e2dbcd; margin:0; padding:22px 16px 60px; font-family:"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; }
+  h1 { font-size:20px; letter-spacing:.06em; margin:0 0 6px; }
+  h2 { font-size:15px; letter-spacing:.1em; color:#ffb347; margin:26px 0 4px; }
+  p { color:#95a1ae; font-size:13px; line-height:1.7; max-width:760px; margin:6px 0 10px; }
+  .row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:9px 0; border-top:1px solid #2c333d; }
+  .no { font-weight:700; color:#ffb347; min-width:34px; font-size:15px; }
+  .nm { font-size:13px; color:#ccd6e0; flex:1; min-width:160px; }
+  .pick { color:#7fd17a; font-size:12px; }
+  audio { height:34px; max-width:100%; }
+  code { background:#232a33; padding:1px 5px; border-radius:3px; color:#ffd88f; }
+</style></head><body>
+<div id="chief"></div>
+<div id="hire"></div>
+<h1>열국군웅전 목소리 고르기 — 장수를 누르면 나오는 대답</h1>
+<p>우리 장수 얼굴을 누르거나 장수가 이끄는 군대를 지도에서 고르면 그 장수가 곧바로 대답한다. 장수마다 열세 결 가운데 하나(아래 새 결 넷 칸 포함) — 생김·특성·능력치로 고른다 (<code>src/ui/realm/voice.ts</code>).
+결마다 대답 셋을 돌려 쓴다. 구글 AI 스튜디오 Gemini TTS(무료 목소리 + 사극 말투 지시)로 뽑았다.</p>
+<p>★ 나는 소리를 못 듣는다 — 빈 소리로 잘랐다. 어색한 결·대사는 "○○ 다시"라고 말해 주면 그 결만 다시 뽑는다.</p>
+<div id="list"></div>
+<script>
+const GROUPS = [
+  ['남 · 젊은 무사 (Enzo) — 특성 없는 젊은 장수 · 겁 많음', 'm-young', ['네!', '부르셨습니까!', '명만 내리십시오!']],
+  ['남 · 거친 노장 (Daro) — 무예 높음 · 술꾼 · 잔치꾼 · 대장장이 · 철의 손', 'm-gruff', ['예이!', '무슨 일이오!', '싸울 일이오?']],
+  ['남 · 꾀 많은 책사 (Cruz) — 지략·내정 높음 · 신중 · 무당 핏줄', 'm-sage', ['예.', '부르셨습니까.', '생각해 둔 바가 있사옵니다.']],
+  ['남 · 늙은 장수·군주 (Arlo) — 군주 · 일편단심·백 사람의 이름', 'm-elder', ['음.', '부르셨사옵니까.', '늙은 몸이나마 받들겠사옵니다.']],
+  ['남 · 매혹 (Neno) — 매혹', 'm-charm', ['음?', '저를 부르셨습니까.', '분부대로 하지요.']],
+  ['여 · 당찬 젊은 무사 (Cleo) — 특성 없는 젊은 여장수', 'w-bright', ['네!', '부르셨사옵니까?', '분부만 내리소서!']],
+  ['여 · 의젓한 장수 (Kira) — 여군주 · 무예·통솔 높음', 'w-cool', ['예.', '말씀하시지요.', '이 몸, 듣고 있사옵니다.']],
+  ['여 · 요염한 꾀 (Lumi) — 매혹 · 반골 · 지략 높음 · 장사꾼', 'w-sly', ['어머.', '저를 찾으셨사옵니까?', '무엇이든 말씀만 하시어요.']],
+  ['여 · 무녀 (Hali) — 무당 핏줄', 'w-shaman', ['하늘이 이르기를…', '부르셨사옵니까.', '신령께서 지켜보시옵니다.']],
+]
+let h = ''
+for (const [title, k, lines] of GROUPS) {
+  h += `<h2>${title}</h2>`
+  lines.forEach((t, i) => {
+    h += `<div class="row"><span class="no">${i + 1}</span><span class="nm">${t}</span><audio controls preload="none" src="voice/tap-${k}-${i + 1}.ogg"></audio></div>`
+  })
+}
+// 분부 받듦 — 일을 확정할 때 (voice/obey-<결>-1..3.ogg · 대사는 docs/realm/VOICE-LINES.md · 형 10-27)
+const OBEY = {
+  'm-young': ['맡겨 주시오! 곧 해내겠소.', '알겠소, 바로 가겠소!', '분부대로 하겠소!'],
+  'm-gruff': ['크하하, 맡겨 두시오!', '허허, 그쯤이야 문제없소.', '분부대로 합지요!'],
+  'm-sage': ['분부대로 하겠습니다.', '헤아려 두었습니다. 다녀오지요.', '뜻대로 이루어 보겠습니다.'],
+  'm-elder': ['허허, 늙은 몸이나마 다녀오리다.', '분부, 받들겠소.', '염려 마시오. 해내고 오리다.'],
+  'm-charm': ['그대 부탁이라면야, 기꺼이.', '맡겨 주시오. 실망시키지 않으리다.', '분부대로 하지요.'],
+  'w-bright': ['네! 맡겨 주세요!', '다녀올게요, 금방이에요!', '분부대로 할게요!'],
+  'w-cool': ['분부대로 하겠습니다.', '알겠습니다. 다녀오지요.', '맡은 일은 해냅니다.'],
+  'w-sly': ['후후, 그 정도쯤이야.', '분부대로 하지요. 기대하세요.', '맡겨만 주세요.'],
+  'w-shaman': ['하늘의 뜻대로 하겠어요.', '방울이 길을 열어 줄 거예요.', '분부, 받들겠어요.'],
+}
+h += `<h1 style="margin-top:40px">분부 — 일을 맡겨 확정할 때</h1><p>사신·공작을 보내거나 원정·맡기기·이끌기·설득을 정하면 그 장수가 분부를 받든다. 고를 때는 위의 짧은 대답 · 확정에는 이것 (형 10-27). 결마다 셋을 돌려 쓴다.</p>`
+for (const [title, k] of GROUPS) {
+  h += `<h2>${title}</h2>`
+  OBEY[k].forEach((t, i) => {
+    h += `<div class="row"><span class="no">${i + 1}</span><span class="nm">${t}</span><audio controls preload="none" src="voice/obey-${k}-${i + 1}.ogg"></audio></div>`
+  })
+}
+// 싸움 맡김 — 우리 장수가 싸움을 맡아 들 때 셋 · 맡긴 싸움이 끝나면 이김 · 짐 (voice/auto-<결>-1..3 · win · lose · 대사는 src/ui/realm/voice.ts AUTO_LINE · 형 10-27)
+const AUTO = {
+  'm-young': ["싸움은 제게 맡기시오!", "단숨에 깨뜨리고 오겠소!", "지켜보기만 하시오!", "이겼소! 보셨소?", "면목 없소… 다음엔 꼭!"],
+  'm-gruff': ["크하하, 이 싸움 내가 맡소!", "한바탕 쓸어 버리고 오리다!", "술상이나 차려 두시오!", "크하하! 싱겁구먼!", "크윽, 이번엔 내가 졌소."],
+  'm-sage': ["판은 이미 읽었습니다. 맡겨 주십시오.", "수를 두듯 이겨 보이겠습니다.", "서두르지 않고 이기겠습니다.", "헤아린 대로 되었습니다.", "수를 잘못 읽었습니다."],
+  'm-elder': ["허허, 늙은 칼이라도 날은 서 있소.", "이 싸움, 내가 거두리다.", "조상께 부끄럽지 않게 싸우겠소.", "허허, 아직 쓸 만하지요.", "허허… 늙은 몸이 부끄럽소."],
+  'm-charm': ["멋지게 이기고 오리다.", "그대는 웃으며 기다리시오.", "이 싸움, 내 몫으로 하지요.", "약속대로 이겼소.", "이런, 체면이 말이 아니군."],
+  'w-bright': ["제가 다 이기고 올게요!", "맡겨 주세요, 금방이에요!", "보고만 계세요!", "이겼어요! 봤죠?", "분해요… 다음엔 꼭 이길게요!"],
+  'w-cool': ["맡겨 주십시오. 이기고 오겠습니다.", "싸움은 제가 끝냅니다.", "물러서지 않겠습니다.", "이겼습니다.", "…송구합니다."],
+  'w-sly': ["후후, 재미있게 놀다 올게요.", "저들, 금방 울게 될 거예요.", "제게 맡겨 두세요.", "후후, 너무 쉬웠네요.", "흥, 오늘은 봐준 거예요."],
+  'w-shaman': ["하늘이 우리 편이에요. 맡겨 주세요.", "방울이 이길 길을 일러 줘요.", "별이 이긴다고 말하네요.", "하늘이 웃어요.", "하늘이 등을 돌렸어요…"],
+}
+h += `<h1 style="margin-top:40px">싸움 맡김 — 장수에게 싸움을 맡길 때 · 끝났을 때</h1><p>싸움 화면에서 「장수에게 맡긴다」를 누르면 총대장이 셋 가운데 하나를 말하고, 맡긴 싸움이 끝나면 이김·짐 한마디를 한다 (비기면 조용히).</p>`
+for (const [title, k] of GROUPS) {
+  h += `<h2>${title}</h2>`
+  AUTO[k].forEach((t, i) => {
+    const f = i < 3 ? String(i + 1) : i === 3 ? 'win' : 'lose'
+    h += `<div class="row"><span class="no">${i < 3 ? i + 1 : i === 3 ? '이김' : '짐'}</span><span class="nm">${t}</span><audio controls preload="none" src="voice/auto-${k}-${f}.ogg"></audio></div>`
+  })
+}
+const ARTS = [['snipe', '명궁의 한 발', '이 화살을 받아라!'], ['rite', '진중 굿', '천지신명이시여 굽어살피소서!'], ['sway', '항복 권유', '칼을 거두고 우리 편에 서라!'],
+  ['stand', '버텨라', '한 걸음도 물러서지 마라!'], ['ambush', '샛길 기습', '지금이다 샛길로 쳐라!'], ['vanguard', '선봉에 선다', '나를 따르라!'],
+  ['feint', '거짓 퇴각', '물러나는 척하라!'], ['order', '진을 다잡는다', '진을 갖춰라!'], ['shout', '큰 외침', '두려워 마라 우리가 이긴다!']]
+h += `<h1 style="margin-top:40px">싸움 기술 외침 — 장수가 기술을 쓰면 컷과 함께</h1><p>애니·게임 성우처럼 · 가성 없이 가슴소리로 힘주어 (형 10-26). 결마다 아홉.</p>`
+for (const [title, k] of GROUPS) {
+  h += `<h2>${title}</h2>`
+  ARTS.forEach(([a, nm, t], i) => {
+    h += `<div class="row"><span class="no">${i + 1}</span><span class="nm">${nm} — ${t}</span><audio controls preload="none" src="voice/art-${k}-${a}.ogg"></audio></div>`
+  })
+}
+// 성우진 B (형 10-29) — 같은 결의 장수 절반이 이 목소리·대사로 말한다 (voice/b/ · src/ui/realm/voice-b.ts)
+const CAST_B = {"m-young": {"v": "Mako", "lines": ["예!", "여기 있습니다!", "무엇이든 시키십시오!", "바로 해내겠습니다!", "다녀오겠습니다!", "명대로 하겠습니다!", "이 싸움은 제가 끝내겠습니다!", "눈 깜짝할 새 이기고 오겠습니다!", "뒤는 걱정 마십시오!", "해냈습니다!", "분합니다… 다시 하겠습니다!", "단 한 발이면 족하다!", "하늘이시여, 우리 군사를 지켜 주소서!", "무기를 내려놓으면 살려 주마!", "버텨라! 여기가 우리 땅이다!", "지금이다, 옆구리를 찔러라!", "내가 앞장선다, 따라와라!", "뒤로 빠져라, 놈들을 끌어들인다!", "대열을 맞춰라, 흩어지지 마라!", "우리가 이긴다! 함성을 질러라!"], "names": ["tap-m-young-1", "tap-m-young-2", "tap-m-young-3", "obey-m-young-1", "obey-m-young-2", "obey-m-young-3", "auto-m-young-1", "auto-m-young-2", "auto-m-young-3", "auto-m-young-win", "auto-m-young-lose", "art-m-young-snipe", "art-m-young-rite", "art-m-young-sway", "art-m-young-stand", "art-m-young-ambush", "art-m-young-vanguard", "art-m-young-feint", "art-m-young-order", "art-m-young-shout"]}, "m-gruff": {"v": "Algenib", "lines": ["어이!", "불렀소?", "한판 붙는 거요?", "크흐흐, 맡겨 두쇼!", "그깟 일, 금방이오!", "시키는 대로 하리다!", "크하하, 내 도끼가 운다!", "싹 쓸어 담고 오리다!", "고기나 구워 두시오!", "크하하! 이게 싸움이지!", "젠장, 오늘은 내가 밀렸소.", "단 한 발이면 족하다!", "하늘이시여, 우리 군사를 지켜 주소서!", "무기를 내려놓으면 살려 주마!", "버텨라! 여기가 우리 땅이다!", "지금이다, 옆구리를 찔러라!", "내가 앞장선다, 따라와라!", "뒤로 빠져라, 놈들을 끌어들인다!", "대열을 맞춰라, 흩어지지 마라!", "우리가 이긴다! 함성을 질러라!"], "names": ["tap-m-gruff-1", "tap-m-gruff-2", "tap-m-gruff-3", "obey-m-gruff-1", "obey-m-gruff-2", "obey-m-gruff-3", "auto-m-gruff-1", "auto-m-gruff-2", "auto-m-gruff-3", "auto-m-gruff-win", "auto-m-gruff-lose", "art-m-gruff-snipe", "art-m-gruff-rite", "art-m-gruff-sway", "art-m-gruff-stand", "art-m-gruff-ambush", "art-m-gruff-vanguard", "art-m-gruff-feint", "art-m-gruff-order", "art-m-gruff-shout"]}, "m-sage": {"v": "Olin", "lines": ["예, 듣고 있습니다.", "무슨 일이십니까.", "한 수 아뢰어도 되겠습니까.", "셈은 끝났습니다. 다녀오지요.", "그리하겠습니다.", "틀림없이 이루겠습니다.", "이 판의 끝은 이미 보입니다.", "한 수 한 수 몰아넣겠습니다.", "조급해하실 것 없습니다.", "셈대로 되었습니다.", "제 셈이 짧았습니다.", "단 한 발이면 족하다!", "하늘이시여, 우리 군사를 지켜 주소서!", "무기를 내려놓으면 살려 주마!", "버텨라! 여기가 우리 땅이다!", "지금이다, 옆구리를 찔러라!", "내가 앞장선다, 따라와라!", "뒤로 빠져라, 놈들을 끌어들인다!", "대열을 맞춰라, 흩어지지 마라!", "우리가 이긴다! 함성을 질러라!"], "names": ["tap-m-sage-1", "tap-m-sage-2", "tap-m-sage-3", "obey-m-sage-1", "obey-m-sage-2", "obey-m-sage-3", "auto-m-sage-1", "auto-m-sage-2", "auto-m-sage-3", "auto-m-sage-win", "auto-m-sage-lose", "art-m-sage-snipe", "art-m-sage-rite", "art-m-sage-sway", "art-m-sage-stand", "art-m-sage-ambush", "art-m-sage-vanguard", "art-m-sage-feint", "art-m-sage-order", "art-m-sage-shout"]}, "m-elder": {"v": "Jett", "lines": ["오냐.", "무슨 일이신가.", "이 늙은이가 할 일이 있소?", "허허, 다녀오리다.", "맡은 일은 끝을 보겠소.", "뜻대로 하리다.", "이 늙은 몸이 앞에 서겠소.", "젊은이들은 내 뒤를 따르라.", "허허, 오랜만에 피가 끓는구려.", "허허, 아직 녹슬지 않았소.", "세월은 못 이기는구려…", "단 한 발이면 족하다!", "하늘이시여, 우리 군사를 지켜 주소서!", "무기를 내려놓으면 살려 주마!", "버텨라! 여기가 우리 땅이다!", "지금이다, 옆구리를 찔러라!", "내가 앞장선다, 따라와라!", "뒤로 빠져라, 놈들을 끌어들인다!", "대열을 맞춰라, 흩어지지 마라!", "우리가 이긴다! 함성을 질러라!"], "names": ["tap-m-elder-1", "tap-m-elder-2", "tap-m-elder-3", "obey-m-elder-1", "obey-m-elder-2", "obey-m-elder-3", "auto-m-elder-1", "auto-m-elder-2", "auto-m-elder-3", "auto-m-elder-win", "auto-m-elder-lose", "art-m-elder-snipe", "art-m-elder-rite", "art-m-elder-sway", "art-m-elder-stand", "art-m-elder-ambush", "art-m-elder-vanguard", "art-m-elder-feint", "art-m-elder-order", "art-m-elder-shout"]}, "m-charm": {"v": "Algieba", "lines": ["날 찾았소?", "무슨 일이오, 그대.", "그대 부름이라면.", "그대를 위해서라면.", "기다리시오, 곧 돌아오리다.", "맡겨만 주시오.", "이 싸움, 아름답게 끝내리다.", "그대에게 승전을 바치겠소.", "잠시 눈을 떼지 마시오.", "그대에게 바친 승리요.", "오늘은… 운이 나빴소.", "단 한 발이면 족하다!", "하늘이시여, 우리 군사를 지켜 주소서!", "무기를 내려놓으면 살려 주마!", "버텨라! 여기가 우리 땅이다!", "지금이다, 옆구리를 찔러라!", "내가 앞장선다, 따라와라!", "뒤로 빠져라, 놈들을 끌어들인다!", "대열을 맞춰라, 흩어지지 마라!", "우리가 이긴다! 함성을 질러라!"], "names": ["tap-m-charm-1", "tap-m-charm-2", "tap-m-charm-3", "obey-m-charm-1", "obey-m-charm-2", "obey-m-charm-3", "auto-m-charm-1", "auto-m-charm-2", "auto-m-charm-3", "auto-m-charm-win", "auto-m-charm-lose", "art-m-charm-snipe", "art-m-charm-rite", "art-m-charm-sway", "art-m-charm-stand", "art-m-charm-ambush", "art-m-charm-vanguard", "art-m-charm-feint", "art-m-charm-order", "art-m-charm-shout"]}, "w-bright": {"v": "Veda", "lines": ["네네!", "저 여기 있어요!", "뭐든 시켜 주세요!", "금방 해낼게요!", "다녀오겠습니다!", "걱정 마세요, 맡겨 주세요!", "이번 싸움은 제 차례예요!", "눈 깜짝할 새 끝낼게요!", "응원해 주세요!", "해냈어요! 대단하죠?", "으으, 다음엔 안 질 거예요!", "단 한 발이면 족하다!", "하늘이시여, 우리 군사를 지켜 주소서!", "무기를 내려놓으면 살려 주마!", "버텨라! 여기가 우리 땅이다!", "지금이다, 옆구리를 찔러라!", "내가 앞장선다, 따라와라!", "뒤로 빠져라, 놈들을 끌어들인다!", "대열을 맞춰라, 흩어지지 마라!", "우리가 이긴다! 함성을 질러라!"], "names": ["tap-w-bright-1", "tap-w-bright-2", "tap-w-bright-3", "obey-w-bright-1", "obey-w-bright-2", "obey-w-bright-3", "auto-w-bright-1", "auto-w-bright-2", "auto-w-bright-3", "auto-w-bright-win", "auto-w-bright-lose", "art-w-bright-snipe", "art-w-bright-rite", "art-w-bright-sway", "art-w-bright-stand", "art-w-bright-ambush", "art-w-bright-vanguard", "art-w-bright-feint", "art-w-bright-order", "art-w-bright-shout"]}, "w-cool": {"v": "Sami", "lines": ["예.", "부르셨습니까.", "명을 기다리고 있었습니다.", "받들겠습니다.", "곧 끝내고 오겠습니다.", "명대로 하겠습니다.", "이 싸움, 제가 맡겠습니다.", "흔들림 없이 이기겠습니다.", "지켜보십시오.", "끝났습니다. 우리가 이겼습니다.", "…다음엔 지지 않겠습니다.", "단 한 발이면 족하다!", "하늘이시여, 우리 군사를 지켜 주소서!", "무기를 내려놓으면 살려 주마!", "버텨라! 여기가 우리 땅이다!", "지금이다, 옆구리를 찔러라!", "내가 앞장선다, 따라와라!", "뒤로 빠져라, 놈들을 끌어들인다!", "대열을 맞춰라, 흩어지지 마라!", "우리가 이긴다! 함성을 질러라!"], "names": ["tap-w-cool-1", "tap-w-cool-2", "tap-w-cool-3", "obey-w-cool-1", "obey-w-cool-2", "obey-w-cool-3", "auto-w-cool-1", "auto-w-cool-2", "auto-w-cool-3", "auto-w-cool-win", "auto-w-cool-lose", "art-w-cool-snipe", "art-w-cool-rite", "art-w-cool-sway", "art-w-cool-stand", "art-w-cool-ambush", "art-w-cool-vanguard", "art-w-cool-feint", "art-w-cool-order", "art-w-cool-shout"]}, "w-sly": {"v": "Tova", "lines": ["어머, 저요?", "무슨 일로 부르셨을까.", "말씀해 보세요, 들어 드릴게요.", "후후, 맡겨 두세요.", "재미있겠네요. 다녀올게요.", "그 정도는 일도 아니에요.", "후후, 저들이 가엾네요.", "살살 놀아 주고 올게요.", "눈 깜짝할 새 끝내 드리지요.", "후후, 싱거웠어요.", "흥… 이번 한 번뿐이에요.", "단 한 발이면 족하다!", "하늘이시여, 우리 군사를 지켜 주소서!", "무기를 내려놓으면 살려 주마!", "버텨라! 여기가 우리 땅이다!", "지금이다, 옆구리를 찔러라!", "내가 앞장선다, 따라와라!", "뒤로 빠져라, 놈들을 끌어들인다!", "대열을 맞춰라, 흩어지지 마라!", "우리가 이긴다! 함성을 질러라!"], "names": ["tap-w-sly-1", "tap-w-sly-2", "tap-w-sly-3", "obey-w-sly-1", "obey-w-sly-2", "obey-w-sly-3", "auto-w-sly-1", "auto-w-sly-2", "auto-w-sly-3", "auto-w-sly-win", "auto-w-sly-lose", "art-w-sly-snipe", "art-w-sly-rite", "art-w-sly-sway", "art-w-sly-stand", "art-w-sly-ambush", "art-w-sly-vanguard", "art-w-sly-feint", "art-w-sly-order", "art-w-sly-shout"]}, "w-shaman": {"v": "Tavi", "lines": ["신령이 속삭여요…", "부르셨나요.", "방울이 울렸어요.", "신령의 뜻대로.", "길이 보여요. 다녀올게요.", "받들겠어요.", "신령이 우리 곁에 있어요.", "하늘의 뜻을 따르겠어요.", "별들이 길을 비춰요.", "신령께서 기뻐하세요.", "하늘이 오늘은 외면했어요…", "단 한 발이면 족하다!", "하늘이시여, 우리 군사를 지켜 주소서!", "무기를 내려놓으면 살려 주마!", "버텨라! 여기가 우리 땅이다!", "지금이다, 옆구리를 찔러라!", "내가 앞장선다, 따라와라!", "뒤로 빠져라, 놈들을 끌어들인다!", "대열을 맞춰라, 흩어지지 마라!", "우리가 이긴다! 함성을 질러라!"], "names": ["tap-w-shaman-1", "tap-w-shaman-2", "tap-w-shaman-3", "obey-w-shaman-1", "obey-w-shaman-2", "obey-w-shaman-3", "auto-w-shaman-1", "auto-w-shaman-2", "auto-w-shaman-3", "auto-w-shaman-win", "auto-w-shaman-lose", "art-w-shaman-snipe", "art-w-shaman-rite", "art-w-shaman-sway", "art-w-shaman-stand", "art-w-shaman-ambush", "art-w-shaman-vanguard", "art-w-shaman-feint", "art-w-shaman-order", "art-w-shaman-shout"]}}
+h += `<h1 style="margin-top:40px">성우진 B — 같은 결의 장수 절반이 쓰는 다른 목소리·대사</h1><p>전엔 같은 결이면 다른 장수도 똑같은 대사를 쳤다. 이제 장수 이름으로 반씩 갈라 절반은 B 로 말한다. 어색한 결·대사는 「B ○○ 다시」라고 말해 주면 그것만 다시 뽑는다.</p>`
+for (const [title, k] of GROUPS) {
+  const g = CAST_B[k]
+  h += `<h2>${title.replace(/\(.*?\)/, '(' + g.v + ')')}</h2>`
+  g.lines.forEach((t, i) => { h += `<div class="row"><span class="no">${i + 1}</span><span class="nm">${g.names[i].split('-')[0]} — ${t}</span><audio controls preload="none" src="voice/b/${g.names[i]}.ogg"></audio></div>` })
+}
+// CAST_NEW BEGIN — 새 결 넷 (형 10-29: "이미지로는 20대가 많은데 진지하면 목소리가 다 40대 같다") · A 칸(voice/ 바로 아래) · src/ui/realm/voice-new.ts
+const CAST_NEW = [{"k":"m-knight","t":"남 · 청년 무장 — 20대 · 진지하고 곧음 (견지 서늘 · 온조 · 매눈 …)","v":"Orus","lines":["예, 여기 있사옵니다.","부르셨사옵니까.","명을 기다리고 있었사옵니다.","분부 받들겠사옵니다.","반드시 해내겠사옵니다.","맡은 일은 끝까지 완수하겠사옵니다.","이 싸움, 소장이 맡겠사옵니다.","흔들림 없이 적을 꺾겠사옵니다.","한 걸음도 물러서지 않겠사옵니다.","적을 물리쳤사옵니다.","면목 없사옵니다. 반드시 설욕하겠사옵니다.","이 화살을 받아라!","천지신명이시여, 굽어살피소서!","칼을 거두고 우리 편에 서라!","한 걸음도 물러서지 마라!","지금이다! 샛길로 쳐라!","나를 따르라!","물러나는 척하라!","진을 갖춰라!","두려워 마라! 우리가 이긴다!"],"names":["tap-m-knight-1","tap-m-knight-2","tap-m-knight-3","obey-m-knight-1","obey-m-knight-2","obey-m-knight-3","auto-m-knight-1","auto-m-knight-2","auto-m-knight-3","auto-m-knight-win","auto-m-knight-lose","art-m-knight-snipe","art-m-knight-rite","art-m-knight-sway","art-m-knight-stand","art-m-knight-ambush","art-m-knight-vanguard","art-m-knight-feint","art-m-knight-order","art-m-knight-shout"]},{"k":"w-knight","t":"여 · 젊은 여장수 — 20대 · 단정하고 결연 (대사 해달 · 험측 소리 · 견지 아라 …)","v":"Leda","lines":["예, 여기 있사옵니다.","부르셨사옵니까.","분부를 기다리고 있었사옵니다.","분부 받들겠사옵니다.","반드시 완수하겠사옵니다.","목숨을 걸고 임무를 다하겠사옵니다.","이 싸움, 제가 맡겠사옵니다.","한 치도 물러서지 않겠사옵니다.","반드시 이기고 돌아오겠사옵니다.","적을 물리쳤사옵니다.","송구하옵니다. 다시 한번 기회를 주시옵소서.","이 화살을 받아라!","천지신명이시여, 굽어살피소서!","칼을 거두고 우리 편에 서라!","한 걸음도 물러서지 마라!","지금이다! 샛길로 쳐라!","나를 따르라!","물러나는 척하라!","진을 갖춰라!","두려워 마라! 우리가 이긴다!"],"names":["tap-w-knight-1","tap-w-knight-2","tap-w-knight-3","obey-w-knight-1","obey-w-knight-2","obey-w-knight-3","auto-w-knight-1","auto-w-knight-2","auto-w-knight-3","auto-w-knight-win","auto-w-knight-lose","art-w-knight-snipe","art-w-knight-rite","art-w-knight-sway","art-w-knight-stand","art-w-knight-ambush","art-w-knight-vanguard","art-w-knight-feint","art-w-knight-order","art-w-knight-shout"]},{"k":"m-veteran","t":"남 · 중년 무장 — 35~50 · 굵고 노련 (오간 · 두만 · 대왕 다물 …)","v":"Ludo","lines":["소장, 여기 있소이다.","부르셨소이까.","무슨 일이옵니까.","알겠소이다. 맡겨 주시옵소서.","이런 일은 손에 익었사옵니다.","분부대로 처리하겠소이다.","싸움은 겪어 본 자가 이기는 법이옵니다.","소장이 판을 정리하고 오겠소이다.","느긋이 기다리시옵소서.","예상대로였소이다. 적을 물리쳤소이다.","허, 이번엔 소장이 수를 읽지 못했소이다.","이 화살을 받아라!","천지신명이시여, 굽어살피소서!","칼을 거두고 우리 편에 서라!","한 걸음도 물러서지 마라!","지금이다! 샛길로 쳐라!","나를 따르라!","물러나는 척하라!","진을 갖춰라!","두려워 마라! 우리가 이긴다!"],"names":["tap-m-veteran-1","tap-m-veteran-2","tap-m-veteran-3","obey-m-veteran-1","obey-m-veteran-2","obey-m-veteran-3","auto-m-veteran-1","auto-m-veteran-2","auto-m-veteran-3","auto-m-veteran-win","auto-m-veteran-lose","art-m-veteran-snipe","art-m-veteran-rite","art-m-veteran-sway","art-m-veteran-stand","art-m-veteran-ambush","art-m-veteran-vanguard","art-m-veteran-feint","art-m-veteran-order","art-m-veteran-shout"]},{"k":"w-matron","t":"여 · 나이 든 여인 — 40~55 · 차분하고 묵직 (무등 · 소금 · 뱃사공 · 물가)","v":"Jori","lines":["예, 여기 있사옵니다.","찾으셨사옵니까.","말씀하시옵소서.","분부대로 하겠사옵니다.","염려 놓으시옵소서.","이 몸이 맡겠사옵니다.","이 싸움은 이 몸이 맡겠사옵니다.","서두르지 않고 적을 꺾겠사옵니다.","무사히 돌아오겠사옵니다. 심려 놓으시옵소서.","무사히 적을 물리쳤사옵니다.","부끄럽사옵니다. 이 몸이 부족했사옵니다.","이 화살을 받아라!","천지신명이시여, 굽어살피소서!","칼을 거두고 우리 편에 서라!","한 걸음도 물러서지 마라!","지금이다! 샛길로 쳐라!","나를 따르라!","물러나는 척하라!","진을 갖춰라!","두려워 마라! 우리가 이긴다!"],"names":["tap-w-matron-1","tap-w-matron-2","tap-w-matron-3","obey-w-matron-1","obey-w-matron-2","obey-w-matron-3","auto-w-matron-1","auto-w-matron-2","auto-w-matron-3","auto-w-matron-win","auto-w-matron-lose","art-w-matron-snipe","art-w-matron-rite","art-w-matron-sway","art-w-matron-stand","art-w-matron-ambush","art-w-matron-vanguard","art-w-matron-feint","art-w-matron-order","art-w-matron-shout"]}]
+h += `<h1 style="margin-top:40px">새 결 넷 — 청년 무장 · 젊은 여장수 · 중년 무장 · 나이 든 여인</h1><p>스물 남짓의 진지한 무장이 마흔 같은 목소리로 말하던 것을 고쳤다. 장수 설정(나이·성격)대로 옮겼다 — 이 결의 장수는 모두 이 목소리 하나로 말한다. 어색한 결·대사는 「○○ 다시」라고 말해 주면 그것만 다시 뽑는다.</p>`
+for (const g of CAST_NEW) {
+  h += `<h2>${g.t} (${g.v})</h2>`
+  g.lines.forEach((t, i) => { h += `<div class="row"><span class="no">${i + 1}</span><span class="nm">${g.names[i].split('-')[0]} — ${t}</span><audio controls preload="none" src="voice/${g.names[i]}.ogg"></audio></div>` })
+}
+// CAST_NEW END
+// CAST_C BEGIN — 성우진 C (형 10-29: "대사 제대로") · 사극 말투 · 같은 결의 장수 셋에 하나가 이 목소리·대사로 말한다 (voice/c/ · src/ui/realm/voice-c.ts)
+const CAST_C = {"m-young":{"v":"Fenrir","lines":["예, 여기 있사옵니다!","부르셨사옵니까!","명을 내리시옵소서!","분부 받잡겠사옵니다!","반드시 해내겠사옵니다!","목숨 걸고 받들겠사옵니다!","이 싸움, 소장이 맡겠사옵니다!","적진을 단숨에 꿰뚫겠사옵니다!","승전보를 올리겠사옵니다!","적을 물리쳤사옵니다!","면목 없사옵니다. 반드시 설욕하겠사옵니다!","이 한 발로 네 목을 꿰리라!","신령이시여, 우리 군사에게 힘을 내리소서!","항복하라! 목숨만은 살려 주리라!","물러서는 자는 베리라! 버텨라!","숨은 군사여, 일어나 쳐라!","내가 선봉에 선다! 돌격하라!","물러서라! 적을 깊이 끌어들여라!","진을 굳혀라! 대오를 흩뜨리지 마라!","하늘이 우리 편이다! 함성을 올려라!"],"names":["tap-m-young-1","tap-m-young-2","tap-m-young-3","obey-m-young-1","obey-m-young-2","obey-m-young-3","auto-m-young-1","auto-m-young-2","auto-m-young-3","auto-m-young-win","auto-m-young-lose","art-m-young-snipe","art-m-young-rite","art-m-young-sway","art-m-young-stand","art-m-young-ambush","art-m-young-vanguard","art-m-young-feint","art-m-young-order","art-m-young-shout"]},"m-gruff":{"v":"Riko","lines":["예이, 여기 있소이다!","부르셨사옵니까!","싸울 일이오? 크하하!","분부 받잡겠소이다!","크하하, 맡겨만 주시오!","단숨에 쓸어버리겠소이다!","크하하! 이 싸움은 소장 몫이오!","적놈들을 쓸어버리고 오겠소이다!","개선 잔치나 차려 두시오!","크하하! 싱거운 놈들이었소!","크윽, 소장이 밀렸소이다!","이 한 발로 네 목을 꿰리라!","신령이시여, 우리 군사에게 힘을 내리소서!","항복하라! 목숨만은 살려 주리라!","물러서는 자는 베리라! 버텨라!","숨은 군사여, 일어나 쳐라!","내가 선봉에 선다! 돌격하라!","물러서라! 적을 깊이 끌어들여라!","진을 굳혀라! 대오를 흩뜨리지 마라!","하늘이 우리 편이다! 함성을 올려라!"],"names":["tap-m-gruff-1","tap-m-gruff-2","tap-m-gruff-3","obey-m-gruff-1","obey-m-gruff-2","obey-m-gruff-3","auto-m-gruff-1","auto-m-gruff-2","auto-m-gruff-3","auto-m-gruff-win","auto-m-gruff-lose","art-m-gruff-snipe","art-m-gruff-rite","art-m-gruff-sway","art-m-gruff-stand","art-m-gruff-ambush","art-m-gruff-vanguard","art-m-gruff-feint","art-m-gruff-order","art-m-gruff-shout"]},"m-sage":{"v":"Sadaltager","lines":["예, 하문하시옵소서.","소신, 대령하였사옵니다.","아뢸 말씀이 있사옵니다.","분부대로 하겠사옵니다.","계책은 이미 마련하였사옵니다.","반드시 뜻을 이루겠사옵니다.","적의 수는 이미 읽었사옵니다.","계책대로 적을 몰아넣겠사옵니다.","심려치 마시옵소서.","헤아린 그대로 되었사옵니다.","소신의 헤아림이 부족하였사옵니다.","이 한 발로 네 목을 꿰리라!","신령이시여, 우리 군사에게 힘을 내리소서!","항복하라! 목숨만은 살려 주리라!","물러서는 자는 베리라! 버텨라!","숨은 군사여, 일어나 쳐라!","내가 선봉에 선다! 돌격하라!","물러서라! 적을 깊이 끌어들여라!","진을 굳혀라! 대오를 흩뜨리지 마라!","하늘이 우리 편이다! 함성을 올려라!"],"names":["tap-m-sage-1","tap-m-sage-2","tap-m-sage-3","obey-m-sage-1","obey-m-sage-2","obey-m-sage-3","auto-m-sage-1","auto-m-sage-2","auto-m-sage-3","auto-m-sage-win","auto-m-sage-lose","art-m-sage-snipe","art-m-sage-rite","art-m-sage-sway","art-m-sage-stand","art-m-sage-ambush","art-m-sage-vanguard","art-m-sage-feint","art-m-sage-order","art-m-sage-shout"]},"m-elder":{"v":"Charon","lines":["노신, 여기 있사옵니다.","허허, 찾으셨사옵니까.","이 늙은이를 부르셨사옵니까.","허허, 분부 받잡겠사옵니다.","노신이 끝을 보겠사옵니다.","뜻을 받들겠사옵니다.","늙은 칼이나 아직 날이 섰사옵니다.","노신이 앞장서겠사옵니다.","젊은 것들아, 내 뒤를 따르라!","허허, 아직 쓸 만하지 않사옵니까.","허허, 세월은 속일 수 없나 보옵니다.","이 한 발로 네 목을 꿰리라!","신령이시여, 우리 군사에게 힘을 내리소서!","항복하라! 목숨만은 살려 주리라!","물러서는 자는 베리라! 버텨라!","숨은 군사여, 일어나 쳐라!","내가 선봉에 선다! 돌격하라!","물러서라! 적을 깊이 끌어들여라!","진을 굳혀라! 대오를 흩뜨리지 마라!","하늘이 우리 편이다! 함성을 올려라!"],"names":["tap-m-elder-1","tap-m-elder-2","tap-m-elder-3","obey-m-elder-1","obey-m-elder-2","obey-m-elder-3","auto-m-elder-1","auto-m-elder-2","auto-m-elder-3","auto-m-elder-win","auto-m-elder-lose","art-m-elder-snipe","art-m-elder-rite","art-m-elder-sway","art-m-elder-stand","art-m-elder-ambush","art-m-elder-vanguard","art-m-elder-feint","art-m-elder-order","art-m-elder-shout"]},"m-charm":{"v":"Umbriel","lines":["찾으셨사옵니까.","어인 일로 부르셨사옵니까.","하하, 무슨 분부이시온지.","명을 받들겠사옵니다.","보기 좋게 해내 보이겠소이다.","이내 돌아오겠사옵니다.","이 싸움, 멋지게 끝내 보이겠소이다.","여유롭게 지켜보시옵소서.","소인의 칼끝을 보시옵소서.","약조한 대로 이겨 왔사옵니다.","이런, 체면이 말이 아니옵니다.","이 한 발로 네 목을 꿰리라!","신령이시여, 우리 군사에게 힘을 내리소서!","항복하라! 목숨만은 살려 주리라!","물러서는 자는 베리라! 버텨라!","숨은 군사여, 일어나 쳐라!","내가 선봉에 선다! 돌격하라!","물러서라! 적을 깊이 끌어들여라!","진을 굳혀라! 대오를 흩뜨리지 마라!","하늘이 우리 편이다! 함성을 올려라!"],"names":["tap-m-charm-1","tap-m-charm-2","tap-m-charm-3","obey-m-charm-1","obey-m-charm-2","obey-m-charm-3","auto-m-charm-1","auto-m-charm-2","auto-m-charm-3","auto-m-charm-win","auto-m-charm-lose","art-m-charm-snipe","art-m-charm-rite","art-m-charm-sway","art-m-charm-stand","art-m-charm-ambush","art-m-charm-vanguard","art-m-charm-feint","art-m-charm-order","art-m-charm-shout"]},"w-bright":{"v":"Autonoe","lines":["예! 여기 있사옵니다!","부르셨사옵니까!","무엇이든 명하시옵소서!","분부 받잡겠사옵니다!","곧 해내겠사옵니다!","믿고 맡기시옵소서!","이 싸움, 앞장서 승리하겠사옵니다!","눈 깜짝할 새 끝내겠사옵니다!","승전보를 들고 오겠사옵니다!","이겼사옵니다! 보람 있는 싸움이었사옵니다!","분하옵니다! 반드시 설욕하겠사옵니다!","이 한 발로 네 목을 꿰리라!","신령이시여, 우리 군사에게 힘을 내리소서!","항복하라! 목숨만은 살려 주리라!","물러서는 자는 베리라! 버텨라!","숨은 군사여, 일어나 쳐라!","내가 선봉에 선다! 돌격하라!","물러서라! 적을 깊이 끌어들여라!","진을 굳혀라! 대오를 흩뜨리지 마라!","하늘이 우리 편이다! 함성을 올려라!"],"names":["tap-w-bright-1","tap-w-bright-2","tap-w-bright-3","obey-w-bright-1","obey-w-bright-2","obey-w-bright-3","auto-w-bright-1","auto-w-bright-2","auto-w-bright-3","auto-w-bright-win","auto-w-bright-lose","art-w-bright-snipe","art-w-bright-rite","art-w-bright-sway","art-w-bright-stand","art-w-bright-ambush","art-w-bright-vanguard","art-w-bright-feint","art-w-bright-order","art-w-bright-shout"]},"w-cool":{"v":"Kore","lines":["하명하시옵소서.","대령하였사옵니다.","명을 기다렸사옵니다.","받잡겠사옵니다.","그리하겠사옵니다.","곧 끝내고 오겠사옵니다.","이 싸움, 맡겠사옵니다.","물러섬은 없사옵니다.","반드시 끝을 보겠사옵니다.","끝났사옵니다.","송구하옵니다.","이 한 발로 네 목을 꿰리라!","신령이시여, 우리 군사에게 힘을 내리소서!","항복하라! 목숨만은 살려 주리라!","물러서는 자는 베리라! 버텨라!","숨은 군사여, 일어나 쳐라!","내가 선봉에 선다! 돌격하라!","물러서라! 적을 깊이 끌어들여라!","진을 굳혀라! 대오를 흩뜨리지 마라!","하늘이 우리 편이다! 함성을 올려라!"],"names":["tap-w-cool-1","tap-w-cool-2","tap-w-cool-3","obey-w-cool-1","obey-w-cool-2","obey-w-cool-3","auto-w-cool-1","auto-w-cool-2","auto-w-cool-3","auto-w-cool-win","auto-w-cool-lose","art-w-cool-snipe","art-w-cool-rite","art-w-cool-sway","art-w-cool-stand","art-w-cool-ambush","art-w-cool-vanguard","art-w-cool-feint","art-w-cool-order","art-w-cool-shout"]},"w-sly":{"v":"Despina","lines":["어머, 찾으셨사옵니까.","후후, 무슨 분부이시온지.","은밀한 일이시지요?","후후, 맡겨 두시옵소서.","그쯤이야 식은 죽 먹기지요.","흥미로운 일이옵니다. 다녀오지요.","후후, 저들이 가엾사옵니다.","살살 구슬리고 오지요.","느긋이 지켜보시옵소서.","후후, 싱거운 승부였사옵니다.","흥, 오늘은 운이 따르지 않았사옵니다.","이 한 발로 네 목을 꿰리라!","신령이시여, 우리 군사에게 힘을 내리소서!","항복하라! 목숨만은 살려 주리라!","물러서는 자는 베리라! 버텨라!","숨은 군사여, 일어나 쳐라!","내가 선봉에 선다! 돌격하라!","물러서라! 적을 깊이 끌어들여라!","진을 굳혀라! 대오를 흩뜨리지 마라!","하늘이 우리 편이다! 함성을 올려라!"],"names":["tap-w-sly-1","tap-w-sly-2","tap-w-sly-3","obey-w-sly-1","obey-w-sly-2","obey-w-sly-3","auto-w-sly-1","auto-w-sly-2","auto-w-sly-3","auto-w-sly-win","auto-w-sly-lose","art-w-sly-snipe","art-w-sly-rite","art-w-sly-sway","art-w-sly-stand","art-w-sly-ambush","art-w-sly-vanguard","art-w-sly-feint","art-w-sly-order","art-w-sly-shout"]},"w-shaman":{"v":"Gacrux","lines":["신령께서 이르시기를.","방울이 울렸나이다.","부르심을 들었나이다.","신령의 뜻대로 하오리다.","길이 열렸나이다. 다녀오리다.","하늘의 뜻을 받들겠나이다.","천지신명이 굽어살피시나이다.","방울이 승리의 길을 일러 주나이다.","별들이 우리 편에 섰나이다.","신령께서 기뻐하시나이다.","하늘이 등을 돌리셨나이다.","이 한 발로 네 목을 꿰리라!","신령이시여, 우리 군사에게 힘을 내리소서!","항복하라! 목숨만은 살려 주리라!","물러서는 자는 베리라! 버텨라!","숨은 군사여, 일어나 쳐라!","내가 선봉에 선다! 돌격하라!","물러서라! 적을 깊이 끌어들여라!","진을 굳혀라! 대오를 흩뜨리지 마라!","하늘이 우리 편이다! 함성을 올려라!"],"names":["tap-w-shaman-1","tap-w-shaman-2","tap-w-shaman-3","obey-w-shaman-1","obey-w-shaman-2","obey-w-shaman-3","auto-w-shaman-1","auto-w-shaman-2","auto-w-shaman-3","auto-w-shaman-win","auto-w-shaman-lose","art-w-shaman-snipe","art-w-shaman-rite","art-w-shaman-sway","art-w-shaman-stand","art-w-shaman-ambush","art-w-shaman-vanguard","art-w-shaman-feint","art-w-shaman-order","art-w-shaman-shout"]}}
+h += `<h1 style="margin-top:40px">성우진 C — 사극 말투 (~하옵니다 · ~하겠사옵니다 · ~시옵소서)</h1><p>「~에요」「~할게요」 같은 말을 빼고 장수다운 사극 말로 다시 썼다 (챗지피티와 교차 검증). 부르는 말(주군·그대·전하)은 넣지 않았다. 장수 이름으로 셋씩 갈라 하나는 C 로 말한다. 어색한 결·대사는 「C ○○ 다시」라고 말해 주면 그것만 다시 뽑는다.</p>`
+for (const [title, k] of GROUPS) {
+  const g = CAST_C[k]
+  if (g === undefined) { h += `<h2>${title.replace(/(.*?)/, '(C)')} — 아직 녹음 안 함</h2>`; continue }
+  h += `<h2>${title.replace(/(.*?)/, '(' + g.v + ')')}</h2>`
+  g.lines.forEach((t, i) => { h += `<div class="row"><span class="no">${i + 1}</span><span class="nm">${g.names[i].split('-')[0]} — ${t}</span><audio controls preload="none" src="voice/c/${g.names[i]}.ogg"></audio></div>` })
+}
+// CAST_C END
+// CAST_D_TRY BEGIN — 성우진 D 시험 (형 10-30: Voice Design 해 볼 수 있겠어?) · Voice Design 은 유료 등급이라 무료 목소리 중 젊은 결 셋 + 말투 칸으로 시험 (voice/d/try/ · docs/realm/cast/README.md 성우진 D)
+const D_TRY = {"k":"w-knight","t":"여 · 젊은 여장수 — 20대 · 단정하고 결연","lines":["예, 여기 있사옵니다.","부르셨사옵니까.","분부를 기다리고 있었사옵니다.","이 싸움, 제가 맡겠사옵니다!","한 치도 물러서지 않겠사옵니다!"],"a":["tap-w-knight-1","tap-w-knight-2","tap-w-knight-3","auto-w-knight-1","auto-w-knight-2"],"cand":[{"n":1,"v":"Leda","d":"Youthful · Higher pitch · ✔ 형이 골랐다 (10-30)"},{"n":2,"v":"Pulcherrima","d":"Forward · Middle pitch"},{"n":3,"v":"Nyla","d":"Direct and professional · Medium-high pitch"}],"files":["tap1","tap2","tap3","shout1","shout2"]}
+h += `<h1 style="margin-top:40px">성우진 D 시험 — ${D_TRY.t}</h1><p>목소리를 글로 지어 내는 Voice Design 은 AI 스튜디오에서 유료 등급(결제한 API 키)에서만 열린다. 그래서 무료 목소리 가운데 아직 안 쓴 젊은 결 셋에 말투 칸 지시를 붙여 뽑았다. 형이 1번 Leda 를 골랐다 (10-30: "Leda 가 제일 젊네") — 젊은 여장수 A 를 Leda 로 다시 녹음했다(아래 「젊은 여장수 새 목소리」). 앞 셋은 짧은 대답 · 뒤 둘은 싸움 외침.</p>`
+h += `<h2>지금 A (Leda · 새로 녹음 · 옛 Tari 는 git 기록에만)</h2>`
+D_TRY.lines.forEach((t, i) => { h += `<div class="row"><span class="no">${i + 1}</span><span class="nm">${t}</span><audio controls preload="none" src="voice/${D_TRY.a[i]}.ogg"></audio></div>` })
+for (const c of D_TRY.cand) {
+  h += `<h2>D 시험 ${c.n}번 (${c.v}) — ${c.d}</h2>`
+  D_TRY.lines.forEach((t, i) => { h += `<div class="row"><span class="no">${i + 1}</span><span class="nm">${t}</span><audio controls preload="none" src="voice/d/try/${D_TRY.k}-${c.n}-${D_TRY.files[i]}.ogg"></audio></div>` })
+}
+// CAST_D_TRY END
+// CAST_WK BEGIN — 젊은 여장수 새 목소리 (형 10-30: "성우진 D 중에서는 Leda 가 제일 젊네") · A = Leda (voice/) · B = Zephyr (voice/b/) · B 후보 Laomedeia (voice/d/try/)
+const WK = {"a":{"lines":["예, 여기 있사옵니다.","부르셨사옵니까.","분부를 기다리고 있었사옵니다.","분부 받들겠사옵니다.","반드시 완수하겠사옵니다.","목숨을 걸고 임무를 다하겠사옵니다.","이 싸움, 제가 맡겠사옵니다!","한 치도 물러서지 않겠사옵니다!","반드시 이기고 돌아오겠사옵니다!","적을 물리쳤사옵니다!","송구하옵니다. 다시 한번 기회를 주시옵소서.","이 화살을 받아라!","천지신명이시여, 굽어살피소서!","칼을 거두고 우리 편에 서라!","한 걸음도 물러서지 마라!","지금이다! 샛길로 쳐라!","나를 따르라!","물러나는 척하라!","진을 갖춰라!","두려워 마라! 우리가 이긴다!"],"names":["tap-w-knight-1","tap-w-knight-2","tap-w-knight-3","obey-w-knight-1","obey-w-knight-2","obey-w-knight-3","auto-w-knight-1","auto-w-knight-2","auto-w-knight-3","auto-w-knight-win","auto-w-knight-lose","art-w-knight-snipe","art-w-knight-rite","art-w-knight-sway","art-w-knight-stand","art-w-knight-ambush","art-w-knight-vanguard","art-w-knight-feint","art-w-knight-order","art-w-knight-shout"]},"b":{"lines":["예, 대령하였사옵니다.","부르심을 기다렸사옵니다.","말씀하시옵소서.","명을 받잡겠사옵니다.","반드시 해내고 돌아오겠사옵니다.","믿고 맡겨 주시옵소서.","이 싸움, 제가 앞장서겠사옵니다!","적진을 꿰뚫고 오겠사옵니다!","한 발도 물러서지 않겠사옵니다!","이겼사옵니다! 우리 군사가 해냈사옵니다!","분하옵니다… 다시 기회를 주시옵소서.","단 한 발이면 족하다!","하늘이시여, 우리 군사를 지켜 주소서!","무기를 내려놓으면 살려 주마!","버텨라! 여기가 우리 땅이다!","지금이다, 옆구리를 찔러라!","내가 앞장선다, 따라와라!","뒤로 빠져라, 놈들을 끌어들인다!","대열을 맞춰라, 흩어지지 마라!","우리가 이긴다! 함성을 질러라!"],"names":["tap-w-knight-1","tap-w-knight-2","tap-w-knight-3","obey-w-knight-1","obey-w-knight-2","obey-w-knight-3","auto-w-knight-1","auto-w-knight-2","auto-w-knight-3","auto-w-knight-win","auto-w-knight-lose","art-w-knight-snipe","art-w-knight-rite","art-w-knight-sway","art-w-knight-stand","art-w-knight-ambush","art-w-knight-vanguard","art-w-knight-feint","art-w-knight-order","art-w-knight-shout"]},"lao":{"lines":["예, 대령하였사옵니다.","부르심을 기다렸사옵니다.","말씀하시옵소서.","명을 받잡겠사옵니다.","반드시 해내고 돌아오겠사옵니다.","믿고 맡겨 주시옵소서.","분하옵니다… 다시 기회를 주시옵소서."],"names":["d/try/w-knight-lao-tap-w-knight-1","d/try/w-knight-lao-tap-w-knight-2","d/try/w-knight-lao-tap-w-knight-3","d/try/w-knight-lao-obey-w-knight-1","d/try/w-knight-lao-obey-w-knight-2","d/try/w-knight-lao-obey-w-knight-3","d/try/w-knight-lao-auto-w-knight-lose"]}}
+h += `<h1 style="margin-top:40px">젊은 여장수 새 목소리 — A Leda · B Zephyr</h1><p>스물 남짓한 진지한 여장수(대사 해달 · 신지 너울 · 번예 빛나 …)가 서른 넘게 들리던 것을 고쳤다. A(옛 Tari)는 형이 고른 Leda, B(옛 Erinome)는 형이 젊게 들은 목소리 가운데 Zephyr 로 다시 녹음했다. 등용 첫마디도 그 장수의 성우진 목소리로 다시 뽑았다(위 「등용 첫마디」의 젊은 여장수 칸). 3.8 TTS 규칙대로 말투 칸은 짧게 · 외침은 대본에 숨소리 태그(&lt;heavy breath&gt; &lt;grunt&gt; &lt;argh&gt;)를 넣고 차분한 줄과 따로 뽑았다.</p>`
+h += `<p>B 를 Laomedeia 로도 차분한 일곱 줄을 뽑아 견주었다. 같은 말투 칸에서 Laomedeia 는 음높이가 더 낮고(가운데 154Hz · Zephyr 165Hz) 오르내림이 커서(4.2 · 3.3 반음) 들뜬 쪽이라 Zephyr 로 정했다. 귀로 들어 보고 Laomedeia 가 낫다면 「B Laomedeia」라고 말해 주면 B 를 다시 뽑는다.</p>`
+for (const [k, title] of [['a', 'A · Leda'], ['b', 'B · Zephyr'], ['lao', 'B 후보 · Laomedeia (차분한 줄만 · 쓰지 않음)']]) {
+  const g = WK[k]
+  h += `<h2>${title}</h2>`
+  g.lines.forEach((t, i) => { h += `<div class="row"><span class="no">${i + 1}</span><span class="nm">${g.names[i].split('/').pop().replace(/^w-knight-lao-/, '').split('-')[0]} — ${t}</span><audio controls preload="none" src="voice/${k === 'b' ? 'b/' : ''}${g.names[i]}.ogg"></audio></div>` })
+}
+// CAST_WK END
+document.getElementById('list').innerHTML = h
+// 등용 첫마디 — 장수마다 하나 (voice/hire/<장수 id>.ogg · 대사는 src/realm/data/hire-lines.ts · 목록은 tools/hire-voice-list.ts --write)
+const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
+fetch('voice/hire/lines.json').then((r) => r.json()).then((rows) => {
+  let g = `<h1>등용 첫마디 — 내 사람이 되는 순간 (${rows.length}명)</h1><p>등용 장면에서 얼굴이 다 드러나면 그 장수가 이름 아래 「」 대사를 그대로 말한다. 결마다 묶어 한 번에 뽑고 빈 소리·글자 수로 잘랐다.</p>`
+    + `<p>★ 어색한 줄은 "○○(장수 id) 다시"라고 말해 주면 그 장수 것만 다시 뽑는다 · 대사를 고치면 글과 소리를 함께 바꾼다.</p>`
+  for (const [title, k] of GROUPS) {
+    const mine = rows.filter((x) => x.kind === k)
+    if (mine.length === 0) continue
+    g += `<h2>${title} — ${mine.length}명</h2>`
+    for (const x of mine) g += `<div class="row"><span class="no" style="min-width:96px;font-size:13px">${esc(x.name)}</span><span class="nm">${esc(x.text)} <code>${esc(x.id)}</code></span><audio controls preload="none" src="voice/hire/${encodeURIComponent(x.id)}.ogg"></audio></div>`
+  }
+  document.getElementById('hire').innerHTML = g + '<hr style="border:0;border-top:1px solid #2c333d;margin:40px 0 20px">'
+}).catch(() => {})
+// 군장 말 — 남의 나라 군장이 알현·맺음 화면에서 하는 말 (voice/chief/<결>-<상황>-<a|p>.ogg · 대사는 src/ui/realm/chief-lines.ts · 목록은 tools/chief-voice-list.ts --write)
+fetch('voice/chief/lines.json').then((r) => r.json()).then((rows) => {
+  const got = rows.filter((x) => x.has).length
+  let g = `<h1>군장 말 — 남의 나라 군장이 청을 걸고 · 맺고 · 물리칠 때 (${got}/${rows.length})</h1><p>사신의 청이 화면 가득 뜨거나 화친·동맹·조공·선물·거절을 맺은 화면에서 저쪽 군장이 말풍선 글 그대로 말한다. 군장 얼굴의 목소리 결 × 나라 성향 — 욕심 많은 나라는 적극, 조심스런 나라는 소극 (형 10-26).</p>`
+    + `<p>★ 어색한 줄은 "○○ 결 △△ 적극 다시"라고 말해 주면 그 줄만 다시 뽑는다 · 대사를 고치면 글과 소리를 함께 바꾼다.</p>`
+  for (const [title, k] of GROUPS) {
+    const mine = rows.filter((x) => x.kind === k)
+    if (mine.length === 0) continue
+    g += `<h2>${title}</h2>`
+    for (const x of mine) {
+      const au = x.has ? `<audio controls preload="none" src="voice/chief/${x.file}.ogg"></audio>` : '<span class="pick" style="color:#95a1ae">아직 없음</span>'
+      g += `<div class="row"><span class="no" style="min-width:120px;font-size:13px">${esc(x.sitName)} · ${x.mood === 'a' ? '적극' : '소극'}</span><span class="nm">${esc(x.text)}</span>${au}</div>`
+    }
+  }
+  document.getElementById('chief').innerHTML = g + '<hr style="border:0;border-top:1px solid #2c333d;margin:40px 0 20px">'
+  // 성우진 B 군장 (형 10-29) — 군장 얼굴로 반씩 갈라 B 는 다른 말·다른 목소리 (voice/b/chief · src/ui/realm/chief-lines-b.ts)
+  return fetch('voice/b/chief/lines.json').then((r) => r.json()).then((rb) => {
+    let gb = `<h1>군장 말 · 성우진 B (${rb.filter((x) => x.has).length}/${rb.length})</h1><p>같은 결·같은 성향이라도 군장 절반은 이 말로 한다.</p>`
+    for (const [title, k] of GROUPS) {
+      const mine = rb.filter((x) => x.kind === k)
+      if (mine.length === 0) continue
+      gb += `<h2>${title.replace(/\(.*?\)/, '(B)')}</h2>`
+      for (const x of mine) gb += `<div class="row"><span class="no" style="min-width:120px;font-size:13px">${esc(x.sitName)} · ${x.mood === 'a' ? '적극' : '소극'}</span><span class="nm">${esc(x.text)}</span><audio controls preload="none" src="voice/b/chief/${x.file}.ogg"></audio></div>`
+    }
+    document.getElementById('chief').insertAdjacentHTML('beforeend', gb)
+  })
+}).catch(() => {})
+</script>
+</body></html>
