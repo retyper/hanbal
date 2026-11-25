@@ -63,10 +63,11 @@ const BOT_PICKUP = 260, BOT_PICKUP_HP = .6
 /**
  * 58-KITS 무기마다 걷는 버릇 (봇이 원만 돌면 멈추기·곧게 달리기·버티기를 몰라 숫자가 거짓말을 한다 · 사람이 그 무기로 하는 만큼):
  * 활 = 적이 kite 안이면 물러나고(가까운 적일수록 세게 · 판 가운데로 center 만큼 당김) · 밖이면 stopFor 초씩 멈춰 겨눈다(stopEvery 초마다) · 돌팔매 = 적이 kite 안이면 물러난다 · 방울 = 체력이 hold 몫 넘으면 버틴다(기세 알도 안 주우러 감) ·
+ * 채찍 = 가장 가까운 적이 줄 길이의 whipKeep 배 안이면 물러난다(줄 끝 구간에 적을 두려고 · 다가오면 몸쪽은 약하다) · 밖이면 예전 원
  * 창 = 판을 가로로 오가며(laneSeconds 초마다 반대쪽 · laneX) 곧게 달린다 · 칼 = 체력이 hold 몫 넘으면 가까운 적에게 approach px 까지 다가가 앞을 본다 · 도끼·단검 = 예전 원
  * null = 예전 원 그대로 · 옛 규칙 판은 늘 null (옛 봇 판·재생 SHA 그대로)
  */
-const KIT_BOT = { kite: 150, crowd: 220, center: 1.5, stopEvery: 3, stopFor: 1.4, hold: .5, approach: 90, laneSeconds: 6, laneX: [220, 900] as const, laneSway: 150, laneRate: .2, laneSlope: .3 }
+const KIT_BOT = { kite: 150, crowd: 220, center: 1.5, stopEvery: 3, stopFor: 1.4, hold: .5, approach: 90, laneSeconds: 6, laneX: [220, 900] as const, laneSway: 150, laneRate: .2, laneSlope: .3, whipKeep: .7 }
 function kitWalk(s: HaebiRun): { x: number; y: number } | null {
   if (!s.kits) return null
   let nd = Infinity, cx = 0, cy = 0, n = 0, near: HaebiRun['enemies'][number] | undefined
@@ -83,6 +84,7 @@ function kitWalk(s: HaebiRun): { x: number; y: number } | null {
   }
   if (s.kit === 'bow') return nd < KIT_BOT.kite ? kite() : s.t % KIT_BOT.stopEvery < KIT_BOT.stopFor ? { x: 0, y: 0 } : null
   if (s.kit === 'sling') return nd < KIT_BOT.kite && n ? kite() : null
+  if (s.kit === 'whip') return nd < KIT_BOT.whipKeep * (C.whipLength + C.whipRankLength * s.ranks.lash) && n ? kite() : null
   if (s.kit === 'magic') return healthy ? { x: 0, y: 0 } : null
   if (s.kit === 'spear') {
     // 59-WIDE: 오가는 길을 지금 땅의 폭에 맞춰 늘린다 (곧게 달릴 길이 길어진다)

@@ -11,7 +11,7 @@ export function chestRanks(s: HaebiRun) {
   return (s.chests ?? []).reduce((n, c) => n + (c.pickedAt === undefined ? 0 : (c.large ? 2 : 1) - c.choicesRemaining), 0)
 }
 function main() {
-  const stages = (process.argv[2] ?? 'forest,ford,palisade,snow,fortress').split(',') as Exclude<StageId, 'trial'>[], kits = (process.argv[3] ?? 'axe,bow,spear,sword,dagger,magic,sling').split(',') as Kit[], seeds = (process.argv[4] ?? '7,11,23').split(',').map(Number)
+  const stages = (process.argv[2] ?? 'forest,ford,palisade,snow,fortress').split(',') as Exclude<StageId, 'trial'>[], kits = (process.argv[3] ?? 'axe,bow,spear,sword,dagger,magic,sling,whip').split(',') as Kit[], seeds = (process.argv[4] ?? '7,11,23').split(',').map(Number)
   const react = Number(process.env['REACT'] ?? .5), share = Number(process.env['SHOP'] ?? .5), jackpot = process.env['JACKPOT'] !== 'off', wide = process.env['MAP'] !== 'off'
   const bonus = Object.fromEntries(Object.entries(HAEBI_SHOP).filter(([k]) => k !== 'growth').map(([k, v]) => [k, Math.round((v as { max: number }).max * share)])) as Bonus
   const rows: { stage: string; kit: Kit; seed: number; won: boolean; time: number; chests: number; picked: number; ranks: number; level: number; tiers: number[] }[] = []

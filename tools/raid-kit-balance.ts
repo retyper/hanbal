@@ -6,7 +6,7 @@ import { HAEBI_RUN as C } from '../src/tune/params.ts'
 Object.assign(C, JSON.parse(process.env['OVR'] ?? '{}'))   // OVR='{"mobHp":90}' 로 바꿔 재 본다
 const seeds = (process.argv[2] ?? '7,11,23').split(',').map(Number)
 const opts = process.env['KITS'] === 'off' ? {} : { kitRules: KIT_RULES }
-for (const kit of ['axe', 'bow', 'spear', 'sword', 'dagger', 'magic', 'sling'] as Kit[]) for (const route of ['storm', 'fire'] as Route[]) {
+for (const kit of ['axe', 'bow', 'spear', 'sword', 'dagger', 'magic', 'sling', 'whip'] as Kit[]) for (const route of ['storm', 'fire'] as Route[]) {
   const rows = seeds.map(seed => { const per: number[] = []; let k = 0; const s = replay(seed, C.duration, route, r => { per.push(r.kills - k); k = r.kills }, kit, opts); return { s, per } })
   const won = rows.filter(r => r.s.state === 'won').length
   const t = rows.map(r => Math.round(r.s.t)).join('/'), kills = rows.map(r => r.s.kills).join('/'), hp = rows.map(r => Math.round(r.s.hp)).join('/')

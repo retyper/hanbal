@@ -14,7 +14,7 @@ import { botChoice, botInput, replay, type Route } from '../src/raid/haebi-repla
 Object.assign(HAEBI_RUN, JSON.parse(process.env['OVR'] ?? '{}')); Object.assign(HAEBI_MOBS, JSON.parse(process.env['MOVR'] ?? '{}'))
 Object.assign(HAEBI_AWAKEN, JSON.parse(process.env['AWOVR'] ?? '{}')); Object.assign(HAEBI_TREE, JSON.parse(process.env['TROVR'] ?? '{}'))
 for (const [k, v] of Object.entries(JSON.parse(process.env['STOVR'] ?? '{}'))) Object.assign((HAEBI_STAGES as Record<string, object>)[k]!, v)
-const kits = (process.argv[2] ?? 'axe,bow,spear,sword,dagger,magic,sling').split(',') as Kit[]
+const kits = (process.argv[2] ?? 'axe,bow,spear,sword,dagger,magic,sling,whip').split(',') as Kit[]
 const range = process.argv[3] ?? '1-10'
 const seeds = range.includes('-') ? (([a, b]) => Array.from({ length: b! - a! + 1 }, (_, i) => a! + i))(range.split('-').map(Number)) : range.split(',').map(Number)
 const stage = (process.argv[4] ?? 'forest') as StageId

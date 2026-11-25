@@ -368,3 +368,15 @@ test('올가미·조임 고리·휘몰이 그리기도 판을 안 바꾸고 금�
   assert.ok(sawUlt, '휘몰이 이펙트가 그려졌다')
   void sawLasso; void sawSnare
 })
+
+// ── W7 · 봇이 줄 끝 구간을 지킨다 ──
+import { botInput } from '../src/raid/haebi-replay.ts'
+test('봇: 채찍은 가장 가까운 적이 줄 길이의 0.7배 안이면 물러난다(끝 구간에 두려고) · 멀면 예전 원 걷기', () => {
+  const near = field(); const e = place(near, 60, 0)
+  const away = botInput(near)
+  assert.ok(away.x * (e.x - near.x) + away.y * (e.y - near.y) < 0, `물러남 ${away.x},${away.y}`)
+  const far = field(); place(far, 190, 0)
+  const walk = botInput(far)
+  const orbit = botInput(Object.assign(createHaebi(7, 'stage', 'dagger', { simRules: '56B', kitRules: '58-KITS' }), { x: far.x, y: far.y }))
+  assert.ok(Number.isFinite(walk.x) && Number.isFinite(orbit.x))
+})

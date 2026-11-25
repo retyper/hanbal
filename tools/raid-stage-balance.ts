@@ -73,7 +73,7 @@ function main() {
   // Explicit exploratory overrides are retained; they never write params files.
   Object.assign(HAEBI_MOBS, JSON.parse(process.env['MOVR'] ?? '{}')); Object.assign(HAEBI_WIDE, JSON.parse(process.env['WOVR'] ?? '{}'))   // WOVR: 넓은 맵 수치 시험 (예: {"strayScreens":1})
   for (const [k, v] of Object.entries(JSON.parse(process.env['STOVR'] ?? '{}'))) Object.assign((HAEBI_STAGES as Record<string, object>)[k]!, v)
-  const stages = (process.argv[2] ?? 'forest,ford,palisade,snow,fortress').split(',') as Exclude<StageId, 'trial'>[], kits = (process.argv[3] ?? 'axe,bow,spear,sword,dagger,magic,sling').split(',') as Kit[], seeds = (process.argv[4] ?? '7,11').split(',').map(Number)
+  const stages = (process.argv[2] ?? 'forest,ford,palisade,snow,fortress').split(',') as Exclude<StageId, 'trial'>[], kits = (process.argv[3] ?? 'axe,bow,spear,sword,dagger,magic,sling,whip').split(',') as Kit[], seeds = (process.argv[4] ?? '7,11').split(',').map(Number)
   const react = Number(process.env['REACT'] ?? .5), share = Number(process.env['SHOP'] ?? 0), policy = toolPolicy()
   const bonus = Object.fromEntries(Object.entries(HAEBI_SHOP).filter(([k]) => k !== 'growth').map(([k, v]) => [k, Math.round((v as { max: number }).max * share)])) as Bonus
   const magnetOverride = process.env['MAGOVR'] === undefined ? null : Number(process.env['MAGOVR'])

@@ -448,7 +448,7 @@ export const HAEBI_ULT = {
   phantom: { inv: .25, landInv: .3 },
   magic: { cooldown: 13, damage: 23, bolts: 40, fx: .5 },
   sling: { cooldown: 13, damage: 60, waves: 4, stones: 7, gap: .12, radius: 165, splash: 46, range: 480, fx: .5 },
-  /** whip 휘몰이: range 안의 일반 적 센 것부터 pull 마리를 줄로 장수 앞 spot px 한 점으로 gather 초 동안 끌어모은다(spread px 씩 퍼져 쌓임 · 정예·두목·철갑·곰·거구는 제 자리) → 그 점 둘레 radius 를 줄로 크게 돌려 hits 번(gap 초 간격) 후려친다(바깥 tipFrom 몫부터는 tip 배) · 시작값 · tools/raid-ult-dps.ts 로 잰다(카드 W7) */
+  /** whip 휘몰이: range 안의 일반 적 센 것부터 pull 마리를 줄로 장수 앞 spot px 한 점으로 gather 초 동안 끌어모은다(spread px 씩 퍼져 쌓임 · 정예·두목·철갑·곰·거구는 제 자리) → 그 점 둘레 radius 를 줄로 크게 돌려 hits 번(gap 초 간격) 후려친다(바깥 tipFrom 몫부터는 tip 배) · 시작값 · 재 보니(raid-ult-dps · 숲 · 씨앗 7·11 · 공통 전장) 초반 +67% · 중반 +39% · 후반 +62% · 두목 -36% (일곱 묶음 가운데 초반·후반 첫째 · 두목 아래) — 피해를 20% 낮춰도 초반은 그대로(쓰러뜨릴 체력까지만 세서) 후반 -3% 뿐이라 150 으로 둔다 */
   whip: { cooldown: 13, damage: 150, range: 480, pull: 16, spot: 90, spread: 22, gather: .35, radius: 130, hits: 2, gap: .25, tipFrom: .5, tip: 1.8, fx: .55 },
   /** 줄 비기(도끼·활·칼)가 견줘 보는 방향 수 — 가까운 적 이만큼 쪽으로 줄을 대 보고 가장 많이 걸리는 쪽 */
   aimTries: 16,

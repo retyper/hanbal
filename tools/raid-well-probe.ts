@@ -9,7 +9,7 @@ const range = process.argv[2] ?? '1-12'
 const seeds = (([a, b]) => Array.from({ length: b! - a! + 1 }, (_, i) => a! + i))(range.split('-').map(Number))
 const minutes = Number(process.argv[3] ?? 8)
 const stage = (process.argv[4] ?? 'forest') as StageId
-const kits = (process.argv[5] ?? 'axe,bow,spear,sword,dagger,magic,sling').split(',') as Kit[]
+const kits = (process.argv[5] ?? 'axe,bow,spear,sword,dagger,magic,sling,whip').split(',') as Kit[]
 for (const rank of (process.argv[6] ?? '1,3,5').split(',').map(Number)) {
   let healed = 0, share = 0, alive = 0, n = 0, old = 0
   for (const kit of kits) for (const seed of seeds) {
