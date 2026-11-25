@@ -8,10 +8,13 @@ import { stickDir } from './input.ts'
 
 export interface PadHandlers { onDir(dir: number): void; onDash(): void; onSkill(): void; onRally(): void }
 /** 단추 한 칸의 지금 모양: frac = 쿨이 남은 몫 0~1 · sec = 남은 초 · label = 이름 · key = 키 글자 · icon = 그림 경로 (없으면 글자만) */
-export interface PadBtn { lit?: boolean; grit?: number; frac: number; sec: number; label: string; key: string; icon: string }
+/** lit = 밝힘 · call = 투지가 차서 지금 쿨 없이 한 번 더 (금빛으로 부르며 뛴다) · grit = 투지 0~1000 (차오르는 고리) */
+export interface PadBtn { lit?: boolean; call?: boolean; grit?: number; frac: number; sec: number; label: string; key: string; icon: string }
 export interface Pad { sync(show: boolean, touch: boolean, shake: boolean, dash: PadBtn, skill: PadBtn, rally: PadBtn, readyStick: boolean): void }
 
 const GOLD = '#ffd27a'
+/** 투지 고리 (쿨 고리의 금빛과 갈리게 불빛) */
+const GRIT = '#ff9a3c'
 const R = 15.9155
 const CSS = `
 #fd-stick{position:absolute;left:calc(34px + env(safe-area-inset-left));bottom:calc(34px + env(safe-area-inset-bottom));width:${HAEBI_STICK.radius * 2}px;height:${HAEBI_STICK.radius * 2}px;border-radius:50%;background:#0b1a2e66;border:2px solid #f3ecd855;touch-action:none;z-index:6;display:none}
@@ -34,6 +37,9 @@ const CSS = `
 @media (pointer:coarse){.fd-pb em{display:none}}
 .fd-pb.lit{border-color:#fff;box-shadow:0 0 0 3px ${GOLD},0 0 12px ${GOLD}}
 .fd-pb.cool{opacity:.55;border-color:#f3ecd855}
+.fd-pb.call{background:#5a4210f0;border-color:#fff;box-shadow:0 0 0 3px ${GOLD},0 0 16px ${GOLD};animation:fd-call .7s ease-in-out infinite}
+.fd-pb.call:active{animation:none;transform:scale(1.12)}
+@keyframes fd-call{50%{transform:scale(1.14)}}
 .fd-pb svg{position:absolute;inset:-2px;width:calc(100% + 4px);height:calc(100% + 4px);transform:rotate(-90deg);pointer-events:none}
 .fd-pb s{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;text-decoration:none;color:#fff;text-shadow:0 1px 3px #000;pointer-events:none}
 `
@@ -76,13 +82,13 @@ export function mountPad(root: HTMLElement, base: string, h: PadHandlers): Pad {
   })
   const sigs = ['', '', '']
   const paint = (i: number, b: PadBtn): void => {
-    const sig = `${b.sec}|${b.label}|${b.key}|${b.icon}|${Math.round(b.frac * 40)}|${b.lit === true ? 1 : 0}|${Math.round((b.grit ?? 0) / 25)}`
+    const sig = `${b.sec}|${b.label}|${b.key}|${b.icon}|${Math.round(b.frac * 40)}|${b.lit === true ? 1 : 0}|${Math.round((b.grit ?? 0) / 25)}|${b.call === true ? 1 : 0}`
     if (sig === sigs[i]) return
     sigs[i] = sig
     const el = pad.children[i] as HTMLElement
     const cool = b.sec > 0
-    el.className = `fd-pb${cool ? ' cool' : ''}${b.lit === true ? ' lit' : ''}`
-    const grit = (b.grit ?? 0) > 0 ? `<circle cx="18" cy="18" r="17.2" fill="none" stroke="#7fe3ff" stroke-width="1.4" stroke-dasharray="${((b.grit ?? 0) / 1000 * 108).toFixed(1)} 200"/>` : ''
+    el.className = `fd-pb${cool && b.call !== true ? ' cool' : ''}${b.lit === true ? ' lit' : ''}${b.call === true ? ' call' : ''}`
+    const grit = (b.grit ?? 0) > 0 && b.call !== true ? `<circle cx="18" cy="18" r="17.2" fill="none" stroke="${GRIT}" stroke-width="2.2" stroke-dasharray="${((b.grit ?? 0) / 1000 * 108).toFixed(1)} 200"/>` : ''
     const ring = cool || grit !== '' ? `<svg viewBox="0 0 36 36">${cool ? `<circle cx="18" cy="18" r="${R}" fill="none" stroke="${GOLD}" stroke-width="2.4" stroke-dasharray="${(b.frac * 100).toFixed(1)} 100"/>` : ''}${grit}</svg>${cool ? `<s>${b.sec}</s>` : ''}` : ''
     el.innerHTML = `<em>${b.key}</em>${b.icon === '' ? '' : `<img src="${base}${b.icon}" alt="">`}<b>${b.label}</b>${ring}`
   }

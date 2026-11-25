@@ -20,7 +20,7 @@ import { mountFirst, mountHelp, mountSteps, type First, type Help, type Steps } 
 import { drawMarks, type Band, type Box, type Mark, type MarkShape, type Ring } from './field/mainFlagMarks.ts'
 import { OP_AUTO, OP_MOVE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_VOLLEY, type FieldInput, type InputGroup } from './field/types.ts'
 import { serialize } from './field/rec.ts'
-import { mountHud, type Hud } from './field/mainHud.ts'
+import { mountHud, type EndStats, type Hud } from './field/mainHud.ts'
 import { createFieldSound, soundCamOf, soundFrameOf } from './field/mainSound.ts'
 import type { FlagKind } from './field/mainSoundModel.ts'
 import { advance } from './field/viewLoop.ts'
@@ -121,6 +121,8 @@ let auraUntil = 0
 let firstDone = false
 /** 이번에 판이 보인 큰 부딪힘의 종류 (상성이 맞음 · 막힘) · 판이 시작할 때의 편별 사람 수 (끝 상자의 숫자) */
 let fxGold = false, fxBlocked = false
+/** 이번에 판에 난 되오름 (편마다 다시 섬·버팀 수) — 위 막대로 조각이 날아든다 */
+const fxRise: [number, number] = [0, 0]
 /** 찍는 큰 수: 2 화살비 · 3 옆치기 (찍을 때까지 판이 느려진다) · 누르고 있는 동안만 고른 무리(숫자키) · 마우스 올린 무리 */
 let aiming = -1, aimSince = 0
 let heldPick = -1
@@ -479,10 +481,13 @@ function padBtns(): { dash: PadBtn; skill: PadBtn; rally: PadBtn } {
   const artMax = Math.max(1, artCdSec(art) * hz)
   // 줄이 싸우는 중이라(앞줄이 맞물린 지 3초 안) 장수를 안 따라온다 — 모여라 단추가 밝아져 글 없이 읽힌다
   const locked = cur.frontLockTick[0] >= 0 && cur.tick - cur.frontLockTick[0] <= P.field.hz * P.field.rallyLitSec
+  // 투지: 다 쓰면(gritN) 고리를 끈다 · 차면 쿨과 상관없이 금빛으로 부른다 (장수가 쓰러져 있으면 못 쓰니 안 부른다)
+  const gritOn = h !== undefined && h.gritN < P.field.gritUses
+  const full = gritOn && h!.grit >= 1000 && h!.stun === 0
   return {
     rally: { lit: locked, frac: 0, sec: 0, label: t('field.rally'), key: firstKeyLabel('rally'), icon: 'flag/flag-guard.png' },
     dash: { frac: h === undefined ? 0 : Math.min(1, h.dashCd / dashMax), sec: h === undefined ? 0 : Math.ceil(h.dashCd / hz), label: t('field.dash'), key: firstKeyLabel('dash'), icon: 'flag/flag-charge.png' },
-    skill: { grit: h?.grit ?? 0, lit: (h?.grit ?? 0) >= 1000, frac: h === undefined || h.grit >= 1000 ? 0 : Math.min(1, h.artCd / artMax), sec: h === undefined || h.grit >= 1000 ? 0 : Math.ceil(h.artCd / hz), label: art === 'none' ? '-' : t(`war.artName.${art}` as Key), key: firstKeyLabel('skillQ'), icon: art === 'none' ? '' : `flag/flag-art-${art}.png` },
+    skill: { grit: gritOn ? h!.grit : 0, call: full, frac: h === undefined || full ? 0 : Math.min(1, h.artCd / artMax), sec: h === undefined || full ? 0 : Math.ceil(h.artCd / hz), label: art === 'none' ? '-' : t(`war.artName.${art}` as Key), key: firstKeyLabel('skillQ'), icon: art === 'none' ? '' : `flag/flag-art-${art}.png` },
   }
 }
 
@@ -726,8 +731,8 @@ function paint(now: number, alpha: number): void {
   arrows.sync(offscreenArrows())
   const pb = padBtns()
   pad.sync(!blocked && ui.phase === 'play' && cur.end === null, touchMode, touchMode && !heroOrdered && playMs < 3000, pb.dash, pb.skill, pb.rally, !blocked && ui.phase === 'ready')
-  hud.sync(lagged(now), { gold: fxGold, blocked: fxBlocked, breakSide: cur.breakTick[0] >= 0 ? 0 : cur.breakTick[1] >= 0 ? 1 : -1 })
-  fxGold = false; fxBlocked = false
+  hud.sync(lagged(now), { gold: fxGold, blocked: fxBlocked, breakSide: cur.breakTick[0] >= 0 ? 0 : cur.breakTick[1] >= 0 ? 1 : -1, rise: fxRise })
+  fxGold = false; fxBlocked = false; fxRise[0] = 0; fxRise[1] = 0
   hud.frame(now)
   hud.showEnd(endAt > 0 && now - endAt >= P.field.endBoxMs ? cur : null, endStats(), endWhy())
   const h = heroNow()
@@ -795,10 +800,11 @@ function endWhy(): { by: Readonly<Record<'arrows' | 'melee' | 'flank' | 'hero' |
   const won = cur.winner === 0
   return { by: cur.stats.moraleBy[won ? 1 : 0], won }
 }
-function endStats(): { killed: number; lost: number; flank: number; art: number } | undefined {
+function endStats(): EndStats | undefined {
   if (cur.end === null) return undefined
   const st = cur.stats
-  return { killed: st.killed[0], lost: st.lost[0], flank: st.flankHits[0], art: Math.round(st.artMorale[0] / 10) }
+  const h = heroNow()
+  return { killed: st.killed[0], lost: st.lost[0], flank: st.flankHits[0], art: Math.round(st.artMorale[0] / 10), stand: cur.stood[0] === 1, regroup: cur.squads.filter(q => q.side === 0 && q.regrouped === 1).length, grit: h?.gritN ?? 0 }
 }
 /** 그 무리의 지금 명령 ORD_* (엔진이 정한 것 · 대마다 같다) */
 function ordOf(grp: string): number {
@@ -852,7 +858,10 @@ function frame(now: number): void {
       if (queue.length > 0) queue = queue.filter(q => q.tick >= state.tick)
       prev = cur; cur = readField(state)
       if (cur.loss.length > 0) lossAcc.push(...cur.loss)
-      for (const ev of cur.events) if (ev.kind === 'impact') { if (ev.how === 1) fxGold = true; else if (ev.how === 2) fxBlocked = true }
+      for (const ev of cur.events) {
+        if (ev.kind === 'impact') { if (ev.how === 1) fxGold = true; else if (ev.how === 2) fxBlocked = true }
+        else if (ev.kind === 'regroup' || ev.kind === 'stand') fxRise[ev.side]++
+      }
     }
     if (cur.end !== null) { ui.phase = 'end'; drag = null; endAt = now; fsnd.end(cur.winner === 0) }
   }

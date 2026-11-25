@@ -59,7 +59,7 @@ export function fileOf(slot: FieldSlot, base: string, files: Readonly<Partial<Re
 }
 
 /** 엔진 사건 줄에서 최근 몇 틱 몫 (소리 모델이 앞 프레임 이후 것만 고른다 · 그리기 사이에 틱이 몇 번 돌아도 놓치지 않게) */
-const EVENT_KINDS: ReadonlySet<string> = new Set(['impact', 'rout', 'volley', 'gateBreak', 'loss', 'flankHit', 'artHit', 'heroDash', 'heroSkill', 'sideBreak', 'stand'])
+const EVENT_KINDS: ReadonlySet<string> = new Set(['impact', 'rout', 'volley', 'gateBreak', 'loss', 'flankHit', 'artHit', 'heroDash', 'heroSkill', 'sideBreak', 'stand', 'regroup'])
 function recentEvents(s: FieldState): SoundEngineEvent[] {
   const out: SoundEngineEvent[] = []
   const from = s.tick - P.field.maxCatchUpTicks * 2
@@ -72,12 +72,14 @@ function recentEvents(s: FieldState): SoundEngineEvent[] {
 
 /** 판 읽기 (FieldState → 소리 모델이 읽는 모양) — 읽기만 한다. edge 는 readField(state).edge */
 export function soundFrameOf(s: FieldState, edge: readonly [number, number]): SoundFrame {
+  const h = s.heroes.find(e => e.side === 0), foe = s.heroes.find(e => e.side === 1)
   return {
     tick: s.tick,
     squads: s.squads.map(q => ({ id: q.id, side: q.side, grp: q.grp, men: q.men, u: q.u, v: q.v, stance: q.stance, lock: q.lock, target: q.target, ran: q.ran, flee: q.flee, aim: q.aim, order: q.order })),
     pieces: s.map.pieces.map(p => ({ id: p.id, kind: p.kind, hp: p.hp })),
     edge, end: s.end, winner: s.winner,
     events: recentEvents(s),
+    hero: h === undefined ? undefined : { grit: h.grit, gritN: h.gritN, stun: h.stun, foeStun: foe?.stun ?? 0 },
   }
 }
 

@@ -10,7 +10,7 @@ import type { VModel } from './viewRead.ts'
 
 export interface HudHandlers { onZoom(): void; onPause(): void; onAgain(): void; onHelp(): void }
 /** 이번에 판이 보인 큰 부딪힘 — gold 상성이 맞음(막대 테두리가 금빛으로 번쩍) · blocked 막힘 */
-export interface HudFx { gold: boolean; blocked: boolean; breakSide: number }
+export interface HudFx { gold: boolean; blocked: boolean; breakSide: number; rise?: readonly [number, number] }
 /** 사기를 깎는 까닭 여섯 (stats.moraleBy 의 열쇠) 과 그 그림 */
 const CAUSES = ['arrows', 'melee', 'flank', 'hero', 'domino', 'push'] as const
 type Cause = typeof CAUSES[number]
@@ -22,7 +22,7 @@ export function topCause(by: Readonly<Record<Cause, number>>): Cause | null {
   return best
 }
 /** 끝 상자의 숫자: 쓰러뜨린 적 · 잃은 우리 병사 */
-export interface EndStats { killed: number; lost: number; flank: number; art: number }
+export interface EndStats { killed: number; lost: number; flank: number; art: number; stand?: boolean; regroup?: number; grit?: number }
 export interface EndWhy { by: Readonly<Record<Cause, number>>; won: boolean }
 export interface Hud {
   setZoom(level: number): void
@@ -70,9 +70,18 @@ const CSS = `
 #fd-end .cb span{display:flex;align-items:center;justify-content:center;background:#fff2;min-width:22px}
 #fd-end .cb img{width:18px;height:18px;object-fit:contain}
 @keyframes fd-fall{to{transform:translateY(26px) rotate(40deg);opacity:0}}
+#fd-edge .chunk{position:absolute;height:18px;pointer-events:none;border-radius:2px;transform-origin:50% 0;animation:fd-chunk .8s cubic-bezier(.5,0,1,1) forwards}
+#fd-edge .chunk.a{background:#2f8cff}
+#fd-edge .chunk.b{background:#c43e30}
+@keyframes fd-chunk{to{transform:translateY(52px) rotate(var(--r,16deg));opacity:0}}
+#fd-edge .chip.up{animation:fd-rise .45s ease-out forwards}
+@keyframes fd-rise{from{transform:translateY(34px) scale(1.7);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+#fd-edge .bar.sh2{animation:fd-sh2 .32s linear}
+@keyframes fd-sh2{20%{transform:translateX(-6px)}40%{transform:translateX(5px)}60%{transform:translateX(-4px)}80%{transform:translateX(2px)}}
 #fd-edge .bar.sh{animation:fd-sh .15s linear}
 @keyframes fd-sh{25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
 #fd-edge .bar.gold{box-shadow:0 0 0 2px #ffd27a}
+#fd-end .st .up{color:#ffd27a}
 #fd-end .st{display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:center;margin:0 0 8px;font-size:15px;font-weight:700}
 #fd-end{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom));display:flex;justify-content:center;pointer-events:none}
 #fd-end[hidden]{display:none}
@@ -138,6 +147,30 @@ export function mountHud(root: HTMLElement, h: HudHandlers, base = ''): Hud {
     c.addEventListener('animationend', () => c.remove())
     bar.classList.remove('sh'); void bar.offsetWidth; bar.classList.add('sh')
   }
+  /** 막대가 크게 밀리면 줄어든 쪽 막대가 그 몫만큼 덩어리째 떨어진다 (from → to 천분율) */
+  const chunk = (bar: HTMLElement, from: number, to: number): void => {
+    const r = bar.getBoundingClientRect(), o = edgeBox.getBoundingClientRect()
+    const lo = Math.min(from, to), w = Math.abs(to - from)
+    const c = document.createElement('i')
+    c.className = `chunk ${to < from ? 'a' : 'b'}`
+    c.style.left = `${Math.round(r.left - o.left + r.width * lo / 1000)}px`
+    c.style.top = `${Math.round(r.top - o.top)}px`
+    c.style.width = `${Math.max(4, Math.round(r.width * w / 1000))}px`
+    c.style.setProperty('--r', `${to < from ? -16 : 16}deg`)
+    edgeBox.append(c)
+    c.addEventListener('animationend', () => c.remove())
+    bar.classList.remove('sh', 'sh2'); void bar.offsetWidth; bar.classList.add('sh2')
+  }
+  /** 다시 섬·버팀으로 되오르면 편 색 조각이 아래에서 막대로 날아든다 */
+  const rise = (bar: HTMLElement, push: number, side: 0 | 1, delay: number): void => {
+    const r = bar.getBoundingClientRect(), o = edgeBox.getBoundingClientRect()
+    const c = document.createElement('i')
+    c.className = `chip up ${side === 0 ? 'a' : 'b'}`
+    c.style.left = `${Math.round(r.left - o.left + r.width * push / 1000 + (side === 0 ? -14 : 6))}px`
+    if (delay > 0) c.style.animationDelay = `${delay}ms`
+    edgeBox.append(c)
+    c.addEventListener('animationend', () => c.remove())
+  }
   let key = ''
   zoom.addEventListener('click', () => h.onZoom())
   pause.addEventListener('pointerdown', e => { e.preventDefault(); h.onPause() })
@@ -157,6 +190,8 @@ export function mountHud(root: HTMLElement, h: HudHandlers, base = ''): Hud {
       // 우리 밀기 = 우리 사기 비율 / (우리 + 적) — 크게 밀리면 밀린 쪽 끝에서 조각이 떨어진다
       const r0 = moraleShare(m, 0), r1 = moraleShare(m, 1)
       const push = r0 + r1 <= 0 ? 500 : Math.round(r0 * 1000 / (r0 + r1))
+      if (prevPush >= 0 && Math.abs(push - prevPush) > P.field.chunkPermille) chunk(b0, prevPush, push)
+      if (fx?.rise !== undefined) for (const side of [0, 1] as const) for (let i = 0; i < Math.min(3, fx.rise[side]); i++) rise(b0, push, side, i * 90)
       if (prevPush >= 0 && Math.abs(push - prevPush) > P.field.chipDropPermille) chip(b0, push, push < prevPush ? 0 : 1, Math.abs(push - prevPush) >= P.field.chipDropPermille * 3, newCause(m, push < prevPush ? 0 : 1))
       prevPush = push
       // 편이 무너지면 진 쪽 막대가 0.5초에 걸쳐 무너진다 (조각 여럿)
@@ -177,7 +212,7 @@ export function mountHud(root: HTMLElement, h: HudHandlers, base = ''): Hud {
     showEnd(m, stats, why) {
       if (m === null || m.end === null) { end.hidden = true; return }
       end.hidden = false
-      endStats.innerHTML = stats === undefined ? '' : `<span>${t('field.res.killed', { n: stats.killed.toLocaleString() })}</span><span>${t('field.res.lost', { n: stats.lost.toLocaleString() })}</span>${stats.flank > 0 ? `<span>${t('field.res.flank', { n: stats.flank })}</span>` : ''}${stats.art > 0 ? `<span>${t('field.res.art', { n: stats.art })}</span>` : ''}`
+      endStats.innerHTML = stats === undefined ? '' : `<span>${t('field.res.killed', { n: stats.killed.toLocaleString() })}</span><span>${t('field.res.lost', { n: stats.lost.toLocaleString() })}</span>${stats.flank > 0 ? `<span>${t('field.res.flank', { n: stats.flank })}</span>` : ''}${stats.art > 0 ? `<span>${t('field.res.art', { n: stats.art })}</span>` : ''}${stats.stand === true ? `<span class="up">${t('field.res.stand')}</span>` : ''}${(stats.regroup ?? 0) > 0 ? `<span class="up">${t('field.res.regroup', { n: stats.regroup ?? 0 })}</span>` : ''}${(stats.grit ?? 0) > 0 ? `<span class="up">${t('field.res.grit')}</span>` : ''}`
       endText.textContent = t(m.winner === 0 ? 'field.end.win' : m.winner === 1 ? 'field.end.lose' : 'field.end.draw')
       const top = why === undefined ? null : topCause(why.by)
       endWhy.textContent = top === null || why === undefined ? t(`field.endwhy.${m.end}` as Key) : t(`field.cause.${why.won ? 'win' : 'lose'}.${top}` as Key)

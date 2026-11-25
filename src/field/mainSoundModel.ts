@@ -28,14 +28,15 @@ export interface SoundSquad { id: number; side: 0 | 1; grp: 'front' | 'bows' | '
 export interface SoundEngineEvent { tick: number; kind: string; side: number; id: number; u: number; v: number; n: number; to: number; how: number }
 export interface SoundPiece { id: number; kind: 'stake' | 'gate'; hp: number }
 /** 한 프레임의 읽기 — 좌표는 sim 단위(1칸 = P.field.unit) */
-export interface SoundFrame { tick: number; squads: readonly SoundSquad[]; pieces: readonly SoundPiece[]; edge: readonly [number, number]; end: string | null; winner: number; events?: readonly SoundEngineEvent[] }
+/** hero = 우리 장수의 투지 (0~1000) · 투지로 한 번 더 쓴 횟수 · 두 장수의 쓰러진 틱(stun) — 투지가 차는 순간·쓰는 순간 · 장수가 쓰러지는 순간에 소리를 낸다 (없으면 안 낸다) */
+export interface SoundFrame { tick: number; squads: readonly SoundSquad[]; pieces: readonly SoundPiece[]; edge: readonly [number, number]; end: string | null; winner: number; events?: readonly SoundEngineEvent[]; hero?: { grit: number; gritN: number; stun: number; foeStun: number } | undefined }
 /** 카메라 — x, y 는 화면 가운데의 판 좌표(px) · zoom 은 화면 px / 판 px · zoomRel 은 맞춤 배율에 대한 몫(1 이상) */
 export interface SoundCam { x: number; y: number; zoom: number; vpW: number; vpH: number; zoomRel: number }
 
 export type FlagKind = 'charge' | 'hold' | 'open' | 'horse' | 'move'
 /** u, v 가 없으면 화면 소리(깃발·끝)라 가운데에서 늘 같은 크기로 난다 */
 export interface SoundEvent {
-  kind: 'impact' | 'impactGood' | 'clash' | 'volley' | 'arrowHit' | 'gateBreak' | 'rout' | 'heroDash' | 'heroSkill' | 'artHit' | 'sideBreak' | 'stand' | 'flag' | 'end'
+  kind: 'impact' | 'impactGood' | 'clash' | 'volley' | 'arrowHit' | 'gateBreak' | 'rout' | 'heroDash' | 'heroSkill' | 'artHit' | 'sideBreak' | 'stand' | 'regroup' | 'heroDown' | 'gritFull' | 'gritUse' | 'flag' | 'end'
   u?: number; v?: number
   /** 부딪힘 세기 0~1000 · clash 에서는 맞붙은 대 수 */
   power?: number
@@ -121,6 +122,7 @@ export function eventsFromDiff(prev: SoundFrame | null, cur: SoundFrame): SoundE
       case 'artHit': ev.push({ kind: 'artHit', ...pos }); break
       case 'sideBreak': ev.push({ kind: 'sideBreak', ...pos, side: e.side }); break
       case 'stand': ev.push({ kind: 'stand', ...pos, side: e.side }); break
+      case 'regroup': ev.push({ kind: 'regroup', ...pos, side: e.side }); break
       case 'heroDash': ev.push({ kind: 'heroDash', ...pos }); break
       case 'heroSkill': ev.push({ kind: 'heroSkill', ...pos }); break
       case 'loss': {
@@ -129,6 +131,14 @@ export function eventsFromDiff(prev: SoundFrame | null, cur: SoundFrame): SoundE
         break
       }
     }
+  }
+  // 투지: 우리 장수의 투지가 막 찼다 · 투지로 한 번 더 썼다 (화면 소리)
+  if (prev.hero !== undefined && cur.hero !== undefined) {
+    if (cur.hero.grit >= 1000 && prev.hero.grit < 1000) ev.push({ kind: 'gritFull' })
+    if (cur.hero.gritN > prev.hero.gritN) ev.push({ kind: 'gritUse' })
+    // 장수가 쓰러짐 (쓰러진 틱이 0 에서 오름) — 적장이면 판에서 가장 큰 순간이다
+    if (cur.hero.foeStun > 0 && prev.hero.foeStun === 0) ev.push({ kind: 'heroDown', side: 1 })
+    if (cur.hero.stun > 0 && prev.hero.stun === 0) ev.push({ kind: 'heroDown', side: 0 })
   }
   // 맞붙은 동안의 쇳소리 — 맞붙은 대마다 주기 틱에 한 번 (대 수가 많으면 더 자주 · 소리 쪽 간격이 상한)
   const first = Math.max(prev.tick + 1, cur.tick - F().maxCatchUpTicks + 1)
@@ -268,6 +278,12 @@ export function stepSound(st: SoundState, frame: SoundFrame, cam: SoundCam, even
       case 'rout': add('rout', 0.7, e.u, e.v); break
       case 'sideBreak': add('rout', 1, e.u, e.v); break // 편이 무너져 다 달아남: 무너지는 함성을 한 번 크게
       case 'stand': if (e.side === 0) add('war_cry', 0.6, e.u, e.v); break // 버팀: 형이 고른 함성 가운데 우리 편 것
+      case 'regroup': if (e.side === 0) add('war_cry', 0.4, e.u, e.v); break // 다시 섬: 같은 함성을 작게 (우리 편만)
+      case 'heroDown': // 장수가 쓰러짐: 적장이면 형이 고른 북과 함성을 크게 · 우리 장수면 쾅 한 번
+        if (e.side === 1) { add('war_drums', 1, e.u, e.v); add('war_cry', 0.9, e.u, e.v) } else add('impact', 0.9, e.u, e.v)
+        break
+      case 'gritFull': add('war_drums', 0.7, undefined, undefined); break // 투지가 찼다: 북 한 번 (단추가 금빛으로 부를 때)
+      case 'gritUse': add('war_cry', 0.8, undefined, undefined); break // 투지로 한 번 더: 비기 소리 위에 함성
       case 'heroDash': add('hero_dash', 0.5, e.u, e.v); break
       case 'heroSkill': add('hero_art', 0.7, e.u, e.v); break
       case 'artHit': add('impact', 0.7, e.u, e.v); break
