@@ -5,8 +5,7 @@ import { HAEBI_TREE as T, HAEBI_RUN as C } from '../src/tune/params.ts'
 import { createHaebi, stepHaebi, choose, reroll, xpNeeded, spawnMob, kitPowers, kitCombos, branchNodes, branchPoints, nodeAt, nodeOpen, mainBranch, treeTotal, nodeText, POWERS, BRANCHES, KITS, isCombo, type HaebiRun, type Kit, type Power } from '../src/raid/haebi.ts'
 import { replay, botInput, botChoice } from '../src/raid/haebi-replay.ts'
 
-// 채찍(whip)의 갈래 끝은 카드 W4 에서 짓는다 — 그때까지 이 목록에서 뺀다
-const KIT_LIST = (Object.keys(KITS) as Kit[]).filter(k => k !== 'whip')
+const KIT_LIST = Object.keys(KITS) as Kit[]
 const idle = { x: 0, y: 0 }
 const DT = 1 / 120
 /** 적이 안 나오는 판 */
@@ -119,7 +118,7 @@ test('갈래 끝 (주 무기 a · 보조 b) — 묶음마다 다른 꼴이 실�
   for (const kit of KIT_LIST) {
     const base = damageWith(kit, {})
     for (const cap of ['capA', 'capB'] as const) {
-      if (kit === 'sling' && cap === 'capA') continue   // 땅울림은 멈춤 (아래 따로)
+      if ((kit === 'sling' || kit === 'whip') && cap === 'capA') continue   // 땅울림은 멈춤 · 이어치기는 쓰러뜨려야 (둘 다 아래·채찍 시험에서 따로)
       const more = damageWith(kit, { [cap]: 1 }), most = damageWith(kit, { [cap]: 3 })
       assert.ok(more > base * 1.04, `${kit} ${cap} ${Math.round(base)} → ${Math.round(more)}`)
       assert.ok(most > more, `${kit} ${cap} 3단계가 더 세다 ${Math.round(more)} → ${Math.round(most)}`)

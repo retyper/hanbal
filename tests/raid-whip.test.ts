@@ -204,3 +204,111 @@ test('말투: 판 기록 opts 에 남고(normalizedRaidOpts) 그 기록으로 �
   const pulled = (style: 'crack' | 'noose') => { const s = make(style); s.ranks.lasso = 1; s.ranks.lash = 0; const e = place(s, 200, 0); for (let i = 0; i < 400 && !e.pull; i++) step(s, i ? [] : ['lasso']); return e.pull?.t ?? 0 }
   assert.ok(pulled('noose') < pulled('crack'), '올가미 말투가 더 빨리 끌어당긴다')
 })
+
+// ── W4 · 트리 · 조합 · 비기 휘몰이 ──
+import { treeTotal, comboOf, kitCombos } from '../src/raid/haebi.ts'
+import { HAEBI_ULT as U, HAEBI_TREE as T } from '../src/tune/params.ts'
+const stepSkill = (s: HaebiRun, skill: boolean) => { for (const k of Object.keys(s.cool) as (keyof HaebiRun['cool'])[]) s.cool[k] = 99; stepHaebi(s, { ...IDLE, skill }, DT) }
+/** 비기를 누르고 시전이 끝나 터진 직후까지 */
+function release(s: HaebiRun) { stepSkill(s, true); for (let i = 0; i < 900 && s.cast; i++) stepSkill(s, false) }
+
+test('트리: 16칸 · 점수대는 다른 묶음과 같다 · 조합 둘(당겨 치기·조임 고리)과 공용 뇌화 연옥', () => {
+  assert.equal(kitPowers('whip').length, 16)
+  for (const kit of ['axe', 'bow', 'spear', 'sword', 'dagger', 'magic', 'sling'] as const) assert.equal(treeTotal('whip'), treeTotal(kit), kit)
+  assert.deepEqual(kitCombos('whip').map(c => c.id).sort(), ['drive', 'inferno', 'noose'])
+  assert.equal(comboOf('drive').name, '당겨 치기')
+})
+
+test('이어치기(갈래 끝 a): 끝에 맞은 적이 쓰러지면 줄이 곁의 적에게 한 번 더 · 몸쪽에서 쓰러지면 안 이어진다', () => {
+  const run = (capA: number, dx: number) => {
+    const s = field(); s.ranks.capA = capA
+    const dying = place(s, dx, 0, 'club', 1), next = place(s, dx + 40, 90, 'club'), far = place(s, dx + 400, 400)
+    place(s, 20, 0, 'club')
+    step(s, ['lash']); return { dying, next, far, s }
+  }
+  const base = (C.whipDamage + C.whipRankDamage) * powerScale(field()) * K.whip.base
+  const a = run(1, 190)
+  assert.ok(a.dying.hp <= 0, '끝에서 쓰러짐')
+  assert.ok(Math.abs(hurt(a.next) - base * (T.cap.whip.a.share)) < 1e-6, `곁의 적 ${hurt(a.next)}`)
+  assert.equal(hurt(a.far), 0, '너무 먼 적은 안 이어진다')
+  assert.equal(hurt(run(0, 190).next), 0, '갈래 끝이 없으면 안 이어진다')
+  assert.equal(hurt(run(1, 20).next), 0, '몸쪽에서 쓰러지면 안 이어진다')
+  assert.ok(hurt(run(3, 190).next) > hurt(a.next), '단계가 오르면 더 세다')
+})
+
+test('휘감아 끌기(갈래 끝 b): 올가미에 걸린 적 둘레의 일반 적도 몫으로 맞고 함께 끌려온다 (정예는 제 자리)', () => {
+  const run = (capB: number) => {
+    const s = field(); s.ranks.lash = 0; s.ranks.lasso = 1; s.ranks.capB = capB
+    const main = place(s, 230, 0, 'club', 5e6), side = place(s, 250, 60), elite = place(s, 240, -60, 'elite'), far = place(s, 230, 300)
+    step(s, ['lasso'])
+    for (let i = 0; i < 160; i++) step(s)
+    return { s, main, side, elite, far }
+  }
+  const a = run(1), b = run(0)
+  assert.ok(dist(a.s, a.side) < 100 && hurt(a.side) > 0, `곁의 적 ${dist(a.s, a.side).toFixed(0)}px`)
+  assert.ok(dist(b.s, b.side) > 150 && hurt(b.side) === 0, '갈래 끝 없으면 그대로')
+  assert.equal(a.elite.pull, undefined); assert.equal(hurt(a.far), 0)
+})
+
+test('당겨 치기(조합): 올가미에 끌려온 적은 다음 한 번의 말채찍이 끝 구간으로 · 한 번뿐', () => {
+  const run = (combo: boolean) => {
+    const s = field(); s.ranks.lasso = 1; s.ranks.lash = 1; if (combo) s.combos.push('drive')
+    const e = place(s, 230, 0, 'club', 5e6)
+    step(s, ['lasso'])
+    for (let i = 0; i < 220 && !(e.pull); i++) step(s)
+    for (let i = 0; i < 80; i++) step(s)   // 끌려와 장수 앞(70px)에 선 뒤
+    const h0 = hurt(e); s.cool.lash = 0; step(s, ['lash']); const first = hurt(e) - h0
+    for (let i = 0; i < 130; i++) step(s)
+    const h1 = hurt(e); s.cool.lash = 0; step(s, ['lash']); return { first, second: hurt(e) - h1, driven: e.driven }
+  }
+  const on = run(true), off = run(false)
+  assert.ok(on.first > off.first * 1.7, `끌려온 적 ${on.first} vs ${off.first}`)
+  assert.equal(on.driven, undefined, '한 번 맞으면 표식이 걷힌다')
+  assert.ok(Math.abs(on.second - off.second) < on.second * .5, '두 번째는 보통 몫')
+})
+
+test('조임 고리(조합): 올가미가 닿은 자리에 줄 고리가 남아 밟는 적이 느려지고 깎인다 · 3초 뒤 사라진다', () => {
+  const s = field(); s.ranks.lash = 0; s.ranks.lasso = 1; s.combos.push('noose'); s.ranks.reach = 2
+  const e = place(s, 230, 0, 'club', 5e6)
+  step(s, ['lasso'])
+  for (let i = 0; i < 240 && !s.kits!.zones.length; i++) step(s)
+  const z = s.kits!.zones.find(x => x.kind === 'snare')!; assert.ok(z, '고리가 남음')
+  const bait = place(s, z.x - s.x + 20, z.y - s.y, 'club', 5e6)
+  const before = hurt(bait)
+  for (let i = 0; i < 90; i++) step(s)
+  assert.ok(hurt(bait) > before, '밟으면 깎인다'); assert.ok((bait.lasso ?? 0) > 0, '느려진다')
+  for (let i = 0; i < 120 * K.whip.snare.life; i++) step(s)
+  assert.ok(!s.kits!.zones.some(x => x.kind === 'snare'), '3초 뒤 사라짐')
+})
+
+test('휘몰이: 열여섯만 한 점으로 모은 뒤 그 점을 크게 두 번 후려친다 · 몸 둘레 원이 아니다 · 정예는 제 자리 · 쿨 13초', () => {
+  const s = field(400); s.level = Math.max(s.level, 3)
+  const crowd: Mob[] = []
+  for (let i = 0; i < 20; i++) crowd.push(place(s, 120 + (i % 5) * 40, -120 + Math.floor(i / 5) * 80, 'club', 5e6 - i * 1000))
+  const elite = place(s, 300, 160, 'iron'), behind = place(s, -250, 0, 'club', 1e6)
+  stepSkill(s, true)
+  assert.ok(Math.abs(s.skillCd - U.whip.cooldown) < .1, `쿨 ${s.skillCd}`)
+  for (let i = 0; i < 900 && s.cast; i++) stepSkill(s, false)
+  const gathered = s.enemies.filter(e => e.pull?.x !== undefined)
+  assert.equal(gathered.length, U.whip.pull, '모은 수는 열여섯')
+  assert.ok(gathered.every(e => crowd.includes(e)), '센 일반 적만')
+  assert.equal(elite.pull, undefined, '철갑은 제 자리')
+  assert.ok(s.ult, '후려치기가 이어진다'); const sx = s.ult!.x, sy = s.ult!.y, ox = elite.x, oy = elite.y
+  const dmg = (e: Mob) => hurt(e)
+  while (s.ult) stepSkill(s, false)
+  for (const e of gathered) assert.ok(Math.hypot(e.x - sx, e.y - sy) <= U.whip.spread * Math.sqrt(U.whip.pull) + 40, `모인 자리 ${Math.hypot(e.x - sx, e.y - sy).toFixed(0)}`)
+  const total = gathered.reduce((n, e) => n + dmg(e), 0)
+  assert.ok(total >= gathered.length * U.whip.damage * U.whip.hits * powerScale(s) * .9, `모두 두 번 맞음 ${total}`)
+  assert.equal(hurt(behind), 0, '등 뒤(점에서 먼 곳)는 안 맞는다 — 몸 둘레 원이 아님')
+  assert.ok(Math.hypot(elite.x - ox, elite.y - oy) < 40, '철갑은 끌려가지 않음')
+  assert.ok(crowd.filter(e => !gathered.includes(e)).every(e => hurt(e) < U.whip.damage * powerScale(s) * 2 * U.whip.tip + 1), '남은 넷은 점 둘레만 맞음')
+})
+
+test('휘몰이: 같은 씨앗 두 번이면 같은 판 · 환영난무처럼 장수가 옮겨 가지 않는다', () => {
+  const make = () => { const s = field(400); s.level = 3; for (let i = 0; i < 12; i++) place(s, 100 + i * 20, (i % 4) * 50 - 75, 'club'); return s }
+  const a = make(), b = make(), x0 = a.x, y0 = a.y
+  release(a); release(b)
+  for (let i = 0; i < 120; i++) { stepSkill(a, false); stepSkill(b, false) }
+  assert.equal(JSON.stringify(a), JSON.stringify(b))
+  assert.equal(a.x, x0); assert.equal(a.y, y0)
+})

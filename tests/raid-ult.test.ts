@@ -37,6 +37,7 @@ test('같은 씨앗·같은 입력이면 비기까지 같은 판 · 비기는 �
     assert.ok(s.cast && s.cast.kind === 'ult', `${kit} 시전`)
     release(s)
     assert.ok(s.inv >= C.skillInv - .02, `${kit} 무적`)
+    for (let i = 0; i < 120 && s.ult; i++) step(s, false)   // 휘몰이는 끌어모은 뒤(gather) 후려친다 — 이어지는 비기가 끝날 때까지
     assert.ok(s.damage > 0, `${kit} 맞힘`)
     const r1 = replay(5, 60, 'storm', undefined, kit), r2 = replay(5, 60, 'storm', undefined, kit)
     assert.deepEqual(r1, r2, `${kit} 봇 판`)

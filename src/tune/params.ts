@@ -448,8 +448,8 @@ export const HAEBI_ULT = {
   phantom: { inv: .25, landInv: .3 },
   magic: { cooldown: 13, damage: 23, bolts: 40, fx: .5 },
   sling: { cooldown: 13, damage: 60, waves: 4, stones: 7, gap: .12, radius: 165, splash: 46, range: 480, fx: .5 },
-  /** whip 휘몰이(카드 W4 에서 짓는다 · 그때까지는 환영난무와 같은 값을 빌려 둔다 — 아직 아무도 채찍 묶음으로 열전을 못 고른다) */
-  whip: { cooldown: 13, damage: 110, targets: 8, range: 320, gap: .07, splash: 40, beside: 24, fx: .38 },
+  /** whip 휘몰이: range 안의 일반 적 센 것부터 pull 마리를 줄로 장수 앞 spot px 한 점으로 gather 초 동안 끌어모은다(spread px 씩 퍼져 쌓임 · 정예·두목·철갑·곰·거구는 제 자리) → 그 점 둘레 radius 를 줄로 크게 돌려 hits 번(gap 초 간격) 후려친다(바깥 tipFrom 몫부터는 tip 배) · 시작값 · tools/raid-ult-dps.ts 로 잰다(카드 W7) */
+  whip: { cooldown: 13, damage: 150, range: 480, pull: 16, spot: 90, spread: 22, gather: .35, radius: 130, hits: 2, gap: .25, tipFrom: .5, tip: 1.8, fx: .55 },
   /** 줄 비기(도끼·활·칼)가 견줘 보는 방향 수 — 가까운 적 이만큼 쪽으로 줄을 대 보고 가장 많이 걸리는 쪽 */
   aimTries: 16,
   /**
@@ -1198,8 +1198,8 @@ export const HAEBI_TREE = { max: 3, rankStep: .4, upgradeChance: .5, ultDamage: 
     dagger: { a: { share: .5, step: .15, poison: 2.5 }, b: { share: .35, step: .15, shards: 3 } },
     magic: { a: { share: .7, step: .2 }, b: { share: .55, step: .2, split: 3 } },
     sling: { a: { daze: .45, daStep: .2 }, b: { bounces: 2, grow: .1 } },
-    /** 채찍 a 이어치기 · b 휘감아 끌기 — 카드 W4 에서 짓는다(처음 값은 자리만) */
-    whip: { a: { share: .5, step: .2 }, b: { share: .5, step: .2 } },
+    /** 채찍 a 이어치기: 줄 끝에 맞은 적이 쓰러지면 range px 안 곁의 적에게 한 번 더 딱(몫 share+단계) · b 휘감아 끌기: 올가미에 걸린 적 둘레 radius px 안 일반 적 count 마리도 함께 끌려오고 몫으로 맞는다 (시작값 · 카드 W7) */
+    whip: { a: { share: .7, step: .2, range: 150 }, b: { share: .35, step: .15, radius: 100, count: 3 } },
   },
 } as const
 /**
@@ -1238,6 +1238,8 @@ export const HAEBI_KITS = {
   bell: { groundTime: 2, radius: .6, damage: .5 },
   sling: { near: 90, nearShare: .5, far: .4, bounce: 70, bounceShare: .4, bigHits: 2 },
   whip: { base: 1.15, rootPart: .3, tipPart: .35, root: .6, tip: 1.8, daze: .2, back2: .22, back2Share: .5, back2Rank: 4, bigTip: 3, lassoFlight: 1.5,
+    /** 조임 고리(조합 noose): 올가미가 닿은 자리에 life 초 · tick 초마다 반지름 radius 안을 올가미 피해의 share 몫으로 깎고 걸음을 slow 초만큼 늦춤 · 땅에 max 개까지 (시작값 · 카드 W7) */
+    snare: { life: 3, tick: .3, radius: 70, share: .3, slow: .5, max: 6 },
     /** 말투 (opts.whipStyle · 판 기록에 남음): crack 딱 = 끝 구간이 길고 세다 · 올가미는 약하게 끈다 / noose 올가미 = 끝은 약하고 올가미가 빠르고 세게 끌며 느려짐이 길다 (시작값 · 카드 W7) */
     styles: { crack: { tip: 2.1, tipPart: .4, pull: .85, cool: 1, slow: 0 }, noose: { tip: 1.5, tipPart: .35, pull: 1.25, cool: .8, slow: .5 } } },
   gale: { flight: .45, throwMin: 90, throw: 220, splash: 60, spin: 1, spinEvery: .3, spinRadius: 46, spinShare: .4, arc: 90, landedSize: 38 },

@@ -206,7 +206,7 @@ export type StageId = keyof typeof ST
 export type Bonus = Record<Exclude<keyof typeof SH, 'growth'>, number>
 export const NO_BONUS: Bonus = { might: 0, vigor: 0, armor: 0, regen: 0, haste: 0, swift: 0, magnet: 0, wisdom: 0, revive: 0, reroll: 0, greed: 0, luck: 0 }
 /** daze: 진탕격에 맞아 멈춘 남은 시간 · act: 창돌격꾼·범 예고(+)·돌진(−) 시간 · 투창 사냥꾼 겨눔(+) · 방화꾼 다음 불바닥까지 · vx·vy: 돌진·던질 방향 · buff: 무당이 북돋운 남은 시간 */
-export interface Mob { id: number; x: number; y: number; hp: number; max: number; kind: MobKind; cd: number; flash: number; wind: number; aimX: number; aimY: number; act: number; vx: number; vy: number; buff: number; poison: number; pdps: number; daze: number; bornAt?: number; /** 59-WIDE 큰 놈 사냥: 아직 장수 화면에 들어온 적 없는 정예 (그동안 bornAt 을 지금으로 밀어 「빨리 잡기」가 처음 본 때부터 세어진다) */ unseen?: boolean; /** 58-KITS 단검 독 겹 */ stack?: number; /** 65-BUILD 끌려가 치고 있는 망루 id (없으면 장수) */ aggro?: number; /** 67-BUILD2 혼줄에 닿아 느려진 남은 초 */ slow?: number; /** 71-BOSSDUEL 마지막 두목이 나와 달아나는 남은 초 (치지도 맞지도 않고 다 달아나면 보상 없이 사라진다) */ flee?: number; /** 71-BOSSDUEL 우두머리가 부른 졸개 (달아나지 않는다) */ summoned?: true; /** 채찍 올가미(W3): pull = 장수 앞으로 끌려오는 중 (c,n 장수에서 적 쪽 방향 · t 남은 초) · lasso = 느려진 남은 초 */ pull?: { c: number; n: number; t: number }; lasso?: number; phase?: 1 | 2 | 3; pattern?: ChampionPattern | null; patternSeq?: number; recovery?: number; champion?: ChampionState; bossRole?: 'midboss' | 'giant'; giant?: GiantState }
+export interface Mob { id: number; x: number; y: number; hp: number; max: number; kind: MobKind; cd: number; flash: number; wind: number; aimX: number; aimY: number; act: number; vx: number; vy: number; buff: number; poison: number; pdps: number; daze: number; bornAt?: number; /** 59-WIDE 큰 놈 사냥: 아직 장수 화면에 들어온 적 없는 정예 (그동안 bornAt 을 지금으로 밀어 「빨리 잡기」가 처음 본 때부터 세어진다) */ unseen?: boolean; /** 58-KITS 단검 독 겹 */ stack?: number; /** 65-BUILD 끌려가 치고 있는 망루 id (없으면 장수) */ aggro?: number; /** 67-BUILD2 혼줄에 닿아 느려진 남은 초 */ slow?: number; /** 71-BOSSDUEL 마지막 두목이 나와 달아나는 남은 초 (치지도 맞지도 않고 다 달아나면 보상 없이 사라진다) */ flee?: number; /** 71-BOSSDUEL 우두머리가 부른 졸개 (달아나지 않는다) */ summoned?: true; /** 채찍 올가미(W3): pull = 장수 앞으로 끌려오는 중 (c,n 장수에서 적 쪽 방향 · t 남은 초) · lasso = 느려진 남은 초 */ pull?: { c: number; n: number; t: number; x?: number; y?: number }; lasso?: number; /** 올가미에 끌려온 적 — 다음 한 번의 말채찍이 늘 끝 구간으로 친다 (조합 당겨 치기) */ driven?: true; phase?: 1 | 2 | 3; pattern?: ChampionPattern | null; patternSeq?: number; recovery?: number; champion?: ChampionState; bossRole?: 'midboss' | 'giant'; giant?: GiantState }
 export interface Chest { id: number; eliteId: number; x: number; y: number; bornAt: number; pickedAt?: number; state: 'ground' | 'opened' | 'claimed' | 'expired'; choicesRemaining: number; gold: number; large: boolean;
   /** 60-JACKPOT: boss = 중간 보스 상자(조합 하나를 고른다) · jackpot = 정예 상자가 터뜨린 것 */ boss?: boolean; jackpot?: ChestJackpot }
 /** 60-JACKPOT 정예 상자가 터뜨린 것 — count 단계(1·3·5·8) · picks 오른 칸(차례대로) · opened 그 가운데 새로 연 조합 · bonus 올릴 칸이 없어 엽전으로 바뀐 금 */
@@ -215,7 +215,7 @@ export interface Missile { x: number; y: number; vx: number; vy: number; life: n
   /** 58-KITS: big = 큰 한 방(겨눔 화살 · 셋째 칼 반달 · 모두 꿰뚫음 · 벽력이 튐) · landed = 떨어져 박힌 질풍 도끼 · tick = 박힌 도끼가 다시 치기까지 · ember 의 source = 부적이 붙은 적 */
   big?: boolean; landed?: boolean; tick?: number }
 /** 58-KITS 땅에 남는 것 — crack 산 가르기(갈라진 땅) · wall 창벽(가로 창날 줄) · (x,y) 에서 (cos,sin) 쪽 · 남은 life · 다음 치기까지 tick */
-export interface KitZone { kind: 'crack' | 'wall'; x: number; y: number; cos: number; sin: number; life: number; tick: number; damage: number }
+export interface KitZone { kind: 'crack' | 'wall' | 'snare'; x: number; y: number; cos: number; sin: number; life: number; tick: number; damage: number }
 /**
  * 58-KITS 무기 개성 (docs/realm/WEAPON-IDENTITY-20261122.md) — 이 칸이 있는 판만 새 셈 (옛 기록은 없다 · 그대로 재생).
  * still 멈춰 선 시간(활 겨눔 · 방울 굿판) · aim 마지막으로 걸은 쪽 · runAim·runT 곧게 달리기를 시작한 쪽과 그 시간(창 돌격) · swing 휘두른 수(칼 1-2-3 · 도끼 셋째 내려찍기)
@@ -1219,20 +1219,27 @@ const crowdNear = (s: HaebiRun, radius: number) => s.enemies.reduce((n, e) => n 
 function lashSweep(s: HaebiRun, angle: number, length: number, width: number, damage: number, ends: boolean) {
   const P = K.whip, st = s.whipStyle ? P.styles[s.whipStyle] : null, tipMul = st?.tip ?? P.tip, tipPart = st?.tipPart ?? P.tipPart
   const cos = Math.cos(angle), sin = Math.sin(angle), shape = lineShape(s.x, s.y, cos, sin, length, width), side = cos < 0 ? -1 : 1
-  let tip = 0
+  let tip = 0, driven = 0
   const hits = collect(() => {
     for (const e of s.enemies) {
       if (e.hp <= 0) continue
       let along: number
       if (e.giant) { const c = giantContact(e, shape); if (!c) continue; along = (c.point.x - s.x) * cos + (c.point.y - s.y) * sin }
       else { if (!inLine(s.x, s.y, e, cos, sin, length, width)) continue; along = (e.x - s.x) * cos + (e.y - s.y) * sin }
-      const frac = along / length, atTip = ends && frac >= 1 - tipPart, atRoot = ends && frac < P.rootPart
-      hit(s, e, damage * (atTip ? tipMul : atRoot ? P.root : 1), true, undefined, shape, false, side)
+      // 당겨 치기(조합): 올가미에 끌려온 적은 어디에 서 있어도 이번 줄의 끝 구간으로 맞는다
+      const pulled = ends && !!e.driven; if (pulled) { delete e.driven; driven++ }
+      const frac = along / length, atTip = pulled || ends && frac >= 1 - tipPart, atRoot = !pulled && ends && frac < P.rootPart
+      hit(s, e, damage * (atTip ? tipMul * (pulled ? cp(s, 'drive') : 1) : atRoot ? P.root : 1), true, undefined, shape, false, side)
       if (atTip) { tip++; if (e.hp > 0 && !steady(e)) e.daze = Math.max(e.daze, P.daze) }
+      // 이어치기(갈래 끝): 끝에 맞은 적이 쓰러지면 줄이 곧장 곁의 적에게 한 번 더 딱 (한 번만 · 거기서 또 이어지지는 않는다)
+      if (atTip && e.hp <= 0 && s.ranks.capA) {
+        const c = T.cap.whip.a, n = nearest(s, e.x, e.y, [e.id], c.range * (s.kits ? KC.area : 1))
+        if (n && !n.giant) { fx(s, 'thrust', e.x, e.y, Math.hypot(n.x - e.x, n.y - e.y), '#d9b27a', Math.atan2(n.y - e.y, n.x - e.x)); hit(s, n, damage * capShare(s.ranks.capA, c), true, { x: e.x, y: e.y }) }
+      }
     }
   })
   if (s.palisade) wallHit(s, shape, 'melee')
-  return { hits, tip }
+  return { hits, tip, driven }
 }
 /** 주 무기 (58) — 묶음마다 하나의 문법 · 4단계가 몸 둘레 원으로 바뀌지 않는다 */
 function primary58(s: HaebiRun, target: Mob, angle: number, dist: number, power: number, area: number, tempo: number) {
@@ -1366,9 +1373,9 @@ function primary58(s: HaebiRun, target: Mob, angle: number, dist: number, power:
     s.cool.lash = C.whipCooldown / tempo; s.attack = .3; s.face = side(cos)
     const damage = (C.whipDamage + C.whipRankDamage * r) * power * P.base
     fx(s, 'thrust', s.x, s.y, length, '#d9b27a', angle)
-    const { hits, tip } = lashSweep(s, angle, length, width, damage, true)
+    const { hits, tip, driven } = lashSweep(s, angle, length, width, damage, true)
     if (r >= P.back2Rank) { const b = shoot(s, 'lash', angle, damage * P.back2Share, s.x, s.y); if (b) { b.vx = 0; b.vy = 0; b.radius = length; b.life = P.back2 } }
-    addOns(s, hits, tip >= P.bigTip)
+    addOns(s, hits, tip >= P.bigTip || driven > 0)   // 큰 한 방: 끝에 셋 이상 · 끌려온 적을 첫 줄로 칠 때
   } else if (s.kit === 'magic') {
     // 방울: 둘레가 내 땅 · 한자리에 서 있을수록 굿판이 넓고 세다 (걸으면 줄어든다) · 굿판이 다 차면 큰 한 방
     const P = K.bell, g = Math.min(1, k.still / P.groundTime), r = (C.bellRadius + C.bellRankRadius * s.ranks.bell) * area * (1 + P.radius * g)
@@ -1431,16 +1438,38 @@ function lassoHit(s: HaebiRun, e: Mob, damage: number, contact: Contact<string> 
   hit(s, e, damage, true, from, contact ?? undefined)
   if (s.kits) addOns(s, [e], false)
   if (e.hp <= 0 || e.giant) return
-  e.lasso = C.lassoSlow + (st?.slow ?? 0)
+  const spot = { x: e.x, y: e.y }
+  lassoGrab(s, e, pullTime, C.lassoSlow + (st?.slow ?? 0))
+  // 휘감아 끌기 (갈래 끝): 걸린 적 둘레의 일반 적도 몫으로 맞고 함께 끌려온다
+  if (s.ranks.capB) {
+    const c = T.cap.whip.b; let n = 0
+    for (const o of s.enemies) {
+      if (n >= c.count) break
+      if (o === e || o.hp <= 0 || o.giant || bigFoe(o) || steady(o) || Math.hypot(o.x - spot.x, o.y - spot.y) > c.radius) continue
+      n++; hit(s, o, damage * capShare(s.ranks.capB, c), true, from)
+      if (o.hp > 0) lassoGrab(s, o, pullTime, C.lassoSlow + (st?.slow ?? 0))
+    }
+  }
+  // 조임 고리 (조합): 걸린 자리에 줄 고리가 남는다
+  if (s.combos.includes('noose') && s.kits) {
+    const Z = K.whip.snare
+    if (s.kits.zones.filter(z => z.kind === 'snare').length >= Z.max) s.kits.zones.splice(s.kits.zones.findIndex(z => z.kind === 'snare'), 1)
+    s.kits.zones.push({ kind: 'snare', x: spot.x, y: spot.y, cos: 0, sin: 0, life: Z.life, tick: 0, damage: damage * Z.share * cp(s, 'noose') })
+  }
+}
+/** 올가미에 걸린 적 하나 — 느려지고, 일반 적은 장수 앞으로 끌려와 어지러워 선다 (이미 앞이면 안 끌림) · 당겨 치기 조합이면 다음 말채찍이 끝 구간으로 */
+function lassoGrab(s: HaebiRun, e: Mob, pullTime: number, slow: number) {
+  e.lasso = slow
   if (bigFoe(e) || steady(e)) return
   e.daze = Math.max(e.daze, pullTime + C.lassoDaze)
   const dx = e.x - s.x, dy = e.y - s.y, d = Math.hypot(dx, dy) || 1
-  if (d > C.lassoPullTo) e.pull = { c: dx / d, n: dy / d, t: pullTime }
+  if (d > C.lassoPullTo) { e.pull = { c: dx / d, n: dy / d, t: pullTime }; if (s.combos.includes('drive')) e.driven = true }
 }
 /** 끌려오는 한 걸음 — 장수 앞 목표점까지 남은 시간에 비례해 다가온다 (마지막 걸음에 정확히 닿는다 · 목책은 못 넘는다) */
 function pullStep(s: HaebiRun, e: Mob, dt: number) {
   const p = e.pull!, f = Math.min(1, dt / Math.max(dt, p.t))
-  pushMob(s, e, (s.x + p.c * C.lassoPullTo - e.x) * f, (s.y + p.n * C.lassoPullTo - e.y) * f)
+  const gx = p.x ?? s.x + p.c * C.lassoPullTo, gy = p.y ?? s.y + p.n * C.lassoPullTo   // x·y 가 있으면 그 점(휘몰이 모으기) · 없으면 장수 앞
+  pushMob(s, e, (gx - e.x) * f, (gy - e.y) * f)
   p.t -= dt
   if (p.t <= 0) delete e.pull
 }
@@ -1505,6 +1534,16 @@ function aura58(s: HaebiRun, angle: number | null, power: number, area: number, 
   for (const z of k.zones) {
     z.life -= dt; z.tick -= dt
     const a = Math.atan2(z.sin, z.cos)
+    if (z.kind === 'snare') {
+      // 조임 고리(채찍 조합): 밟는 적은 느려지고 천천히 깎인다
+      const Z = K.whip.snare, R = Z.radius * area
+      for (const e of s.enemies) if (e.hp > 0 && !e.giant && inRadius(e, z.x, z.y, R)) e.lasso = Math.max(e.lasso ?? 0, Z.slow)
+      if (z.tick > 0) continue
+      z.tick = Z.tick; fx(s, 'ring', z.x, z.y, R, '#c8b48a')
+      for (const e of s.enemies) if (e.hp > 0 && inRadius(e, z.x, z.y, R)) hit(s, e, z.damage, false, { x: z.x, y: z.y }, disk(z.x, z.y, R))
+      if (s.palisade) wallHit(s, disk(z.x, z.y, R), 'splash')
+      continue
+    }
     if (z.kind === 'crack') {
       // 산 가르기: 갈라진 땅 위의 적은 맞고 멈칫한다
       const L = K.crack.length * area, W = K.crack.width * area, shape = lineShape(z.x, z.y, z.cos, z.sin, L, W)
@@ -1627,10 +1666,24 @@ function ultimate(s: HaebiRun, mx: number, my: number, power: number, area: numb
     }
     ultFx(s, true, cx, cy, R, 0, s.x, s.y)   // 그림자 고리 (떨어질 자리) · 장수는 팔매를 크게 돌린다
     s.ult = { n: p.waves, t: 0, x: cx, y: cy, used: [], k }
+  } else if (s.kit === 'whip') {
+    // 휘몰이: 줄을 여럿 던져 둘레의 적을 장수 앞 한 점으로 끌어모은 뒤(정예·두목·철갑·곰·거구는 제 자리) 그 점을 줄로 크게 돌려 후려친다 — 몸 둘레 원이 아니고 순간이동도 없다
+    const p = U.whip, near = nearest(s, s.x, s.y, [], p.range * area), at = near ? aimAt(near, s.x, s.y) : null
+    const a = at ? Math.atan2(at.y - s.y, at.x - s.x) : s.face < 0 ? Math.PI : 0
+    const sx = heroX(s, s.x + Math.cos(a) * p.spot * area), sy = heroY(s, s.y + Math.sin(a) * p.spot * area)
+    const pool = s.enemies.filter(e => e.hp > 0 && !e.giant && e.flee === undefined && !bigFoe(e) && !steady(e) && mobDistance(e, s.x, s.y) < p.range * area).sort((x, y) => y.hp - x.hp || x.id - y.id).slice(0, p.pull)
+    pool.forEach((e, i) => {
+      const r = p.spread * Math.sqrt(i), b = i * GOLDEN
+      e.pull = { c: 0, n: 0, t: p.gather, x: sx + Math.cos(b) * r, y: sy + Math.sin(b) * r }
+      e.daze = Math.max(e.daze, p.gather + p.gap * p.hits)
+      if (s.combos.includes('drive')) e.driven = true
+    })
+    ultFx(s, true, sx, sy, p.radius * area, a, s.x, s.y)
+    s.ult = { n: p.hits, t: p.gather, x: sx, y: sy, used: [], k }
+    if (Math.abs(Math.cos(a)) > .1) s.face = Math.cos(a) < 0 ? -1 : 1
   } else {
     s.ult = { n: s.kit === 'spear' ? U.spear.pulses : U.dagger.targets, t: 0, x: s.x, y: s.y, used: [], k }
-    // 채찍(whip)의 휘몰이는 카드 W4 에서 짓는다 — 그때까지는 환영난무 길을 빌려 판이 멈추지 않게 한다
-    if (s.kit === 'dagger' || s.kit === 'whip') ultFx(s, true, s.x, s.y, 0)   // 그림자로 사라짐
+    if (s.kit === 'dagger') ultFx(s, true, s.x, s.y, 0)   // 그림자로 사라짐
   }
 }
 /** 돌벼락의 돌이 고르게 퍼지는 각 (해바라기 씨 배열) */
@@ -1649,6 +1702,12 @@ function ultTick(s: HaebiRun, dt: number, power: number, area: number) {
         if (e.hp > 0 && !steady(e)) pushMob(s, e, (e.x - s.x) / (d || 1) * p.knock, (e.y - s.y) / (d || 1) * p.knock)
       }
       if (s.palisade) wallHit(s, disk(s.x, s.y, r), 'skill')
+    } else if (s.kit === 'whip') {
+      // 모인 점 둘레를 줄이 크게 돌아 후려친다 — 바깥(tipFrom 몫부터)은 줄 끝이라 세다
+      const p = U.whip, i = p.hits - u.n, R = p.radius * area
+      ultFx(s, false, u.x, u.y, R, i, s.x, s.y)
+      for (const e of s.enemies) if (e.hp > 0 && inRadius(e, u.x, u.y, R)) hit(s, e, p.damage * power * (Math.hypot(e.x - u.x, e.y - u.y) >= R * p.tipFrom ? p.tip : 1), false, { x: u.x, y: u.y }, disk(u.x, u.y, R))
+      if (s.palisade) wallHit(s, disk(u.x, u.y, R), 'skill')
     } else if (s.kit === 'sling') {
       // 물결마다 돌 stones 개 — 해바라기 씨처럼 둘레 전체에 고르게, 물결마다 조금씩 어긋나게
       const p = U.sling, i = p.waves - u.n, R = p.radius * area, r = p.splash * area, all = p.waves * p.stones
@@ -1675,10 +1734,10 @@ function ultTick(s: HaebiRun, dt: number, power: number, area: number) {
         if (s.palisade) wallHit(s, disk(at.x, at.y, r), 'skill')
       }
     }
-    u.n--; u.t += s.kit === 'spear' ? U.spear.gap : s.kit === 'sling' ? U.sling.gap : U.dagger.gap
+    u.n--; u.t += s.kit === 'spear' ? U.spear.gap : s.kit === 'sling' ? U.sling.gap : s.kit === 'whip' ? U.whip.gap : U.dagger.gap
   }
   if (u.n > 0) return
-  if (s.kit === 'dagger' || s.kit === 'whip') { ultFx(s, false, u.x, u.y, 0, 0, s.x, s.y); s.x = u.x; s.y = u.y }   // 처음 자리로 돌아옴
+  if (s.kit === 'dagger') { ultFx(s, false, u.x, u.y, 0, 0, s.x, s.y); s.x = u.x; s.y = u.y }   // 처음 자리로 돌아옴
   if (s.phantom && s.kit === 'dagger') s.inv = Math.max(s.inv, U.phantom.landInv)   // 착지 무적
   s.ult = null
 }
