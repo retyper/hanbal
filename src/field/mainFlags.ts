@@ -31,6 +31,8 @@ export interface FlagsView {
 
 const CELL_ICON = ['icon/unit-spear.png', 'icon/unit-archer.png', 'icon/unit-buyeo-cavalry.png', 'icon/unit-general.png']
 const CELL_ACTION: readonly ActionName[] = ['pickFront', 'pickBows', 'pickHorse', 'pickHero']
+/** 큰 수가 누구의 수인가: Z·X 앞줄 · C 활 · V 기병 (단추 귀퉁이 그림) */
+const BIG_WHO = [0, 0, 1, 2] as const
 const CMD_ACTION: readonly ActionName[] = ['cmd1', 'cmd2', 'cmd3', 'cmd4']
 const GOLD = '#ffd27a'
 
@@ -44,10 +46,10 @@ const CSS = `
 .fd-cell:active{transform:scale(1.12)}
 .fd-cell img{width:30px;height:30px;object-fit:contain;display:block}
 .fd-cell b{font-size:13px;line-height:1}
-.fd-cell.on{border-color:${GOLD};background:#2a2410d9;box-shadow:0 0 0 1px ${GOLD}66}
+.fd-cell.on{border-color:#e8f2ff;background:#16294a;box-shadow:0 0 0 1px #e8f2ff88}
 .fd-cell.no{opacity:.4}
 .fd-ck{position:absolute;right:3px;top:2px;font-size:13px;color:${GOLD};font-style:normal;display:none}
-.fd-cell.on .fd-ck{display:block}
+.fd-cell.on .fd-ck{display:none}
 .fd-kb{position:absolute;left:4px;top:2px;font-size:11px;line-height:1;color:#f3ecd8aa;font-style:normal}
 @media (pointer:coarse){.fd-kb{display:none}}
 .fd-pop{position:absolute;left:0;bottom:calc(100% + 6px);display:flex;gap:6px;background:#000d;border:1px solid ${GOLD}88;border-radius:10px;padding:6px;z-index:3}
@@ -55,7 +57,8 @@ const CSS = `
 .fd-opt:active{transform:scale(1.12)}
 .fd-opt img{width:30px;height:30px;object-fit:contain}
 .fd-opt.on{border-color:${GOLD};background:#2a2410d9}
-.fd-opt.on::after{content:'✓';position:absolute;right:3px;top:0;color:${GOLD};font-size:13px}
+.fd-opt.on::after{content:'✓';position:absolute;left:4px;bottom:0;color:${GOLD};font-size:13px}
+.fd-who{position:absolute;right:2px;top:2px;width:17px;height:17px;object-fit:contain;opacity:.95;pointer-events:none}
 .fd-opt i{position:absolute;left:4px;top:2px;font-size:11px;line-height:1;color:#f3ecd8aa;font-style:normal}
 @media (pointer:coarse){.fd-opt i{display:none}}
 .fd-go{margin-left:auto;font:inherit;font-size:20px;font-weight:700;color:#1a1305;background:${GOLD};border:0;border-radius:12px;min-height:var(--fd-bar,64px);min-width:132px;padding:0 20px;box-shadow:0 2px 10px #0008;transition:transform .08s}
@@ -132,7 +135,7 @@ export function mountFlags(root: HTMLElement, base: string, h: FlagsHandlers): F
         const on = ui.sel.includes(g)
         let pop = ''
         if (g === 0 && bigOn) {
-          pop = '<div class="fd-pop">' + BIG_ARTS.map((name, i) => `<button class="fd-opt${(i < 2 && c.front === i) || (i === 2 && c.volley) || (i === 3 && c.flank) || c.aiming === i ? ' on' : ''}" type="button" data-act="big" data-i="${i}" data-n="${name}" title="${t(`war.cmdShort.${name}` as Key)}"><i>${firstKeyLabel(CMD_ACTION[i]!)}</i>${img(`flag/flag-${name}.png`)}<span>${t(`war.cmdName.${name}` as Key)}</span></button>`).join('') + '</div>'
+          pop = '<div class="fd-pop">' + BIG_ARTS.map((name, i) => `<button class="fd-opt${(i < 2 && c.front === i) || (i === 2 && c.volley) || (i === 3 && c.flank) || c.aiming === i ? ' on' : ''}" type="button" data-act="big" data-i="${i}" data-n="${name}" title="${t(`war.cmdShort.${name}` as Key)}"><i>${firstKeyLabel(CMD_ACTION[i]!)}</i><img class="fd-who" src="${base}${CELL_ICON[BIG_WHO[i]!]!}" alt="">${img(`flag/flag-${name}.png`)}<span>${t(`war.cmdName.${name}` as Key)}</span></button>`).join('') + '</div>'
         }
         html += `<div class="fd-slot"><button class="fd-cell${on ? ' on' : ''}${live ? '' : ' no'}" type="button" data-act="cell" data-g="${g}" aria-pressed="${on}" aria-label="${t(`field.g.${g}`)}"><i class="fd-kb">${firstKeyLabel(CELL_ACTION[g]!)}</i>${img(CELL_ICON[g]!)}<b>${t(`field.g.${g}`)}</b><em class="fd-ck">✓</em></button>${pop}</div>`
       }

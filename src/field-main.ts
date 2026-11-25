@@ -826,6 +826,7 @@ addEventListener('keydown', e => {
     case 'help': toggleHelp(); break
     case 'dash': doDash(); break
     case 'skillQ': doSkill(); break
+    case 'skillR': if (ui.phase === 'end') restart(); break // 끝난 뒤 R = 새 판
     default: break // 장수 기술·내닫기·걷기 키는 엔진의 입력 계약이 온 뒤 (묶음 나)
   }
 })

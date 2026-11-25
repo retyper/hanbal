@@ -72,7 +72,7 @@ export function drawMarks(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
     ctx.beginPath(); ctx.ellipse(r.x, r.y, r.rx * grow, r.ry * grow, 0, 0, FULL_TURN)
     ctx.strokeStyle = GOLD
     if (r.kind === 'foe') { ctx.strokeStyle = '#ff6a3c'; ctx.globalAlpha = 1 - r.phase; ctx.lineWidth = Math.max(2, 3.6 / z) }
-    else if (r.kind === 'dim') { ctx.globalAlpha = 0.35; ctx.lineWidth = Math.max(1, 2 / z) }
+    else if (r.kind === 'dim') { ctx.strokeStyle = MINE; ctx.globalAlpha = 0.7; ctx.lineWidth = Math.max(1.5, 2.4 / z) }
     else if (r.kind === 'hover') { ctx.globalAlpha = 0.75; ctx.lineWidth = Math.max(1.5, 2.6 / z) }
     else if (r.kind === 'aura') { ctx.strokeStyle = '#9cc8ff'; ctx.globalAlpha = 0.28; ctx.lineWidth = Math.max(1, 2 / z) }
     else if (r.kind === 'glow') { ctx.fillStyle = GOLD; ctx.globalAlpha = 0.35; ctx.fill(); ctx.globalAlpha = 0.6; ctx.lineWidth = Math.max(1, 1.6 / z) }
@@ -95,7 +95,7 @@ export function drawMarks(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
   for (const k of marks) pennant(ctx, k.x, k.y, k.sel ? poleH * SEL_POLE_SCALE : poleH, k.shape, k.sel, z)
   if (foes.length > 0) {
     const h = P.field.foeMarkCells * P.field.cellPx
-    ctx.fillStyle = '#ffb04a'; ctx.strokeStyle = '#2a1405'; ctx.lineWidth = Math.max(1, 1.5 / z)
+    ctx.fillStyle = '#d9372c'; ctx.strokeStyle = '#2a0805'; ctx.lineWidth = Math.max(1, 1.5 / z)
     ctx.beginPath()
     for (const f of foes) { ctx.moveTo(f.x - h * 0.6, f.y - h * 1.4); ctx.lineTo(f.x + h * 0.6, f.y - h * 1.4); ctx.lineTo(f.x, f.y - h * 0.4); ctx.closePath() }
     ctx.fill(); ctx.stroke()

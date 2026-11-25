@@ -62,7 +62,7 @@ const CSS = `
 #fd-end>div{background:#000d;border:1px solid #ffd27a88;border-radius:10px;padding:12px 26px;text-align:center;pointer-events:auto}
 #fd-end h2{margin:0 0 6px;font-size:24px}
 #fd-end p{margin:0 0 10px;font-size:15px}
-#fd-end button{min-width:96px;min-height:48px;font-size:16px;border-color:#ffd27a;color:#ffd27a}
+#fd-end button{min-width:180px;min-height:56px;font-size:20px;font-weight:700;border-color:#ffd27a;color:#1a1305;background:#ffd27a}
 `
 
 export function mountHud(root: HTMLElement, h: HudHandlers): Hud {
