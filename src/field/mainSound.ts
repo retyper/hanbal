@@ -14,8 +14,8 @@ import type { Slot } from '../ui/realm/sound.ts'
 import type { FieldState } from './types.ts'
 import type { Cam, Rect, Viewport } from './viewCamera.ts'
 import { fitZoom } from './viewCamera.ts'
-import { eventsFromDiff, flagEvent, loopTargets, newSoundState, stepSound } from './mainSoundModel.ts'
-import type { FieldSlot, FlagKind, LoopTarget, Play, SoundCam, SoundEngineEvent, SoundEvent, SoundFrame, SoundState } from './mainSoundModel.ts'
+import { eventsFromDiff, flagEvent, loopTargets, newSoundState, planLoops, stepSound } from './mainSoundModel.ts'
+import type { FieldSlot, FlagKind, LoopAction, LoopRun, LoopTarget, Play, SoundCam, SoundEngineEvent, SoundEvent, SoundFrame, SoundState } from './mainSoundModel.ts'
 
 /**
  * 자리 → 본편 소리 표의 자리 (파일 이름은 PICK 에서 읽는다 — 여기서 손으로 박지 않는다).
@@ -59,7 +59,7 @@ export function fileOf(slot: FieldSlot, base: string, files: Readonly<Partial<Re
 }
 
 /** 엔진 사건 줄에서 최근 몇 틱 몫 (소리 모델이 앞 프레임 이후 것만 고른다 · 그리기 사이에 틱이 몇 번 돌아도 놓치지 않게) */
-const EVENT_KINDS: ReadonlySet<string> = new Set(['impact', 'rout', 'volley', 'gateBreak', 'loss', 'flankHit', 'artHit', 'heroDash', 'heroSkill'])
+const EVENT_KINDS: ReadonlySet<string> = new Set(['impact', 'rout', 'volley', 'gateBreak', 'loss', 'flankHit', 'artHit', 'heroDash', 'heroSkill', 'sideBreak', 'stand'])
 function recentEvents(s: FieldState): SoundEngineEvent[] {
   const out: SoundEngineEvent[] = []
   const from = s.tick - P.field.maxCatchUpTicks * 2
@@ -162,52 +162,63 @@ export function createFieldSound(base: string = import.meta.env?.BASE_URL ?? '/'
     })
   }
 
-  /** 돌아가는 이어지는 소리 — 자리마다 하나 · 크기·좌우·재생 빠르기를 매 프레임 따라간다 */
+  /** 돌아가는 이어지는 소리 — 자리마다 하나 · 고리는 끊지 않고 크기·좌우·재생 빠르기만 바꾼다 (계획은 mainSoundModel.planLoops) */
   interface Running { src: AudioBufferSourceNode; gain: GainNode; pan: StereoPannerNode | null }
   const running = new Map<FieldSlot, Running>()
-  const starting = new Set<FieldSlot>()
-  function stopLoops(c: AudioContext | null, except?: ReadonlySet<FieldSlot>): void {
-    for (const [slot, r] of running) {
-      if (except?.has(slot)) continue
-      running.delete(slot)
-      // 끊길 때 꼬리 soundLoopTailMs (쾅과 함께 질주가 끊긴다) — 시간 상수는 꼬리의 1/3, 꼬리의 2배 뒤에 멈춘다
-      const tail = P.field.soundLoopTailMs / 1000
-      try { r.gain.gain.setTargetAtTime(0, c?.currentTime ?? 0, tail / 3); r.src.stop((c?.currentTime ?? 0) + tail * 2 + 0.02) } catch { /* 이미 멈춤 */ }
-      r.src.onended = () => { r.src.disconnect(); r.gain.disconnect(); r.pan?.disconnect() }
-    }
+  /** 아직 파일을 받는 중인 자리와 그 자리의 가장 최근 할 일 */
+  const want = new Map<FieldSlot, LoopAction>()
+  let plan: Record<string, LoopRun> = {}
+  function ramp(c: AudioContext, r: Running, a: LoopAction): void {
+    const now = c.currentTime
+    r.gain.gain.setTargetAtTime(Math.min(1, a.gain), now, Math.max(0.001, a.tc))
+    if (a.op !== 'mute') { r.src.playbackRate.setTargetAtTime(a.rate, now, 0.1); r.pan?.pan.setTargetAtTime(a.pan, now, 0.08) }
   }
-  function syncLoops(c: AudioContext, targets: readonly LoopTarget[]): void {
+  function killLoop(c: AudioContext | null, slot: FieldSlot, tc: number): void {
+    const r = running.get(slot)
+    want.delete(slot)
+    if (r === undefined) return
+    running.delete(slot)
+    const t = c?.currentTime ?? 0
+    try { r.gain.gain.setTargetAtTime(0, t, Math.max(0.001, tc)); r.src.stop(t + tc * 6 + 0.02) } catch { /* 이미 멈춤 */ }
+    r.src.onended = () => { r.src.disconnect(); r.gain.disconnect(); r.pan?.disconnect() }
+  }
+  /** 모두 멈춘다 (숨은 탭 · 소리 끔 · 새 판) — 계획도 비워 다음에 새로 튼다 */
+  function stopLoops(c: AudioContext | null): void {
+    for (const slot of [...running.keys()]) killLoop(c, slot, P.field.soundLoopTailMs / 3000)
+    want.clear(); plan = {}
+  }
+  function syncLoops(c: AudioContext, targets: readonly LoopTarget[], nowMs: number): void {
     const sfx = soundVolume('sfx')
-    const on = new Set<FieldSlot>()
-    for (const t of targets) {
-      const url = fileOf(t.slot, base)
-      if (url === null || sfx <= 0) continue
-      on.add(t.slot)
-      const r = running.get(t.slot)
-      if (r !== undefined) {
-        const now = c.currentTime
-        r.gain.gain.setTargetAtTime(Math.min(1, t.gain * sfx), now, 0.08)
-        r.src.playbackRate.setTargetAtTime(t.rate, now, 0.1)
-        r.pan?.pan.setTargetAtTime(t.pan, now, 0.08)
-      } else if (!starting.has(t.slot)) {
-        starting.add(t.slot)
-        void bufferOf(c, url).then(buf => {
-          starting.delete(t.slot)
-          if (buf === null || document.hidden || running.has(t.slot)) return
-          const src = c.createBufferSource(), gain = c.createGain()
-          src.buffer = buf; src.loop = true
-          src.playbackRate.value = t.rate
-          gain.gain.value = 0
-          gain.gain.setTargetAtTime(Math.min(1, t.gain * sfx), c.currentTime, 0.08)
-          let pan: StereoPannerNode | null = null, tail: AudioNode = gain
-          if (typeof c.createStereoPanner === 'function') { pan = c.createStereoPanner(); pan.pan.value = t.pan; gain.connect(pan); tail = pan }
-          src.connect(gain); tail.connect(c.destination)
-          src.start()
-          running.set(t.slot, { src, gain, pan })
-        })
-      }
+    const usable = sfx <= 0 ? [] : targets.filter(t => fileOf(t.slot, base) !== null).map(t => ({ ...t, gain: t.gain * sfx }))
+    const p = planLoops(plan, usable, nowMs)
+    plan = p.run
+    for (const a of p.actions) {
+      if (a.op === 'stop') { killLoop(c, a.slot, a.tc); continue }
+      const r = running.get(a.slot)
+      if (r !== undefined) { ramp(c, r, a); continue }
+      if (a.op === 'mute') continue
+      const pending = want.has(a.slot)
+      want.set(a.slot, a)
+      if (pending) continue
+      const url = fileOf(a.slot, base)
+      if (url === null) continue
+      void bufferOf(c, url).then(buf => {
+        const w = want.get(a.slot)
+        want.delete(a.slot)
+        if (buf === null || document.hidden || w === undefined || running.has(a.slot) || plan[a.slot] === undefined) return
+        const src = c.createBufferSource(), gain = c.createGain()
+        src.buffer = buf; src.loop = true
+        src.playbackRate.value = w.rate
+        gain.gain.value = 0
+        let pan: StereoPannerNode | null = null, tail: AudioNode = gain
+        if (typeof c.createStereoPanner === 'function') { pan = c.createStereoPanner(); pan.pan.value = w.pan; gain.connect(pan); tail = pan }
+        src.connect(gain); tail.connect(c.destination)
+        src.start()
+        const r: Running = { src, gain, pan }
+        running.set(a.slot, r)
+        ramp(c, r, { ...w, op: 'set' })
+      })
     }
-    stopLoops(c, on)
   }
 
   return {
@@ -230,7 +241,7 @@ export function createFieldSound(base: string = import.meta.env?.BASE_URL ?? '/'
       if (c === null) return
       if (c.state === 'suspended') void c.resume().catch(() => {})
       for (const p of out.plays) play(c, p)
-      syncLoops(c, loopTargets(out.loops))
+      syncLoops(c, loopTargets(out.loops), nowMs)
     },
     order(kind) { pending.push(flagEvent(kind)) },
     end(win) { pending.push({ kind: 'end', win }) },

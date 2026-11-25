@@ -3944,6 +3944,8 @@ export const SPEC = {
     soundMeleeCryEveryMs: k(6000, 1000, 30000, 500, '소리: 난투 함성이 되풀이되는 최소 간격', 'ms'),
     soundGallopFarPct: k(60, 10, 100, 5, '소리: 질주 발굽이 적에게서 soundGallopRangeCells 만큼 멀 때의 크기 (가까워질수록 100 으로 · 접촉 직전이 가장 큼)', '%'),
     soundLoopTailMs: k(150, 0, 600, 10, '소리: 이어지는 소리가 끊길 때 꼬리 (쾅과 함께 질주가 끊긴다)', 'ms'),
+    soundLoopFadeMs: k(400, 0, 1500, 50, '소리: 이어지는 소리의 세기·빠르기가 바뀌는 데 걸리는 시간 (고리는 끊지 않는다)', 'ms'),
+    soundLoopHoldMs: k(3000, 0, 8000, 100, '소리: 목표에서 빠진 이어지는 소리를 살려 두는 시간 (이보다 오래 빠졌을 때만 멈추고 다음에 새로 튼다)', 'ms'),
     /** 화면 검수 고침 (docs/realm/battle-study/42-feel-lens-f3.md) */
     edgeLowPermille: k(200, 50, 500, 10, '사기 띠: 남은 몫이 이 아래면 깜박인다 (천분율)'),
     endSlowMs: k(400, 0, 1500, 50, '끝난 뒤 이 시간 동안 그리는 시계를 느리게 돌린다 (마지막 한 방을 볼 틈)', 'ms'),

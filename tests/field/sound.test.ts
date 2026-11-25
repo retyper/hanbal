@@ -446,3 +446,48 @@ test('엔진 한 판(seed 3)을 소리 모델에 흘려도 같은 판은 같은 
   assert.ok((a.counts.step_run ?? 0) > 0 || (a.counts.hoof_gallop ?? 0) > 0)
   assert.ok(a.maxPlays <= P.field.soundVoicesMax)
 })
+
+test('고리는 잠깐 빠졌다 돌아와도 다시 시작하지 않는다 · 세기만 바뀌고 · 오래 빠졌을 때만 멈춘다', async () => {
+  const { planLoops } = await import('../../src/field/mainSoundModel.ts')
+  const t = (gain: number, rate = 1) => [{ slot: 'hoof_walk' as const, gain, pan: 0, rate }]
+  const hold = P.field.soundLoopHoldMs
+  let r = planLoops({}, t(0.4), 0)
+  assert.deepEqual(r.actions.map(a => a.op), ['start'])
+  // 0.4초마다 빠졌다 들어왔다 하는 것을 흉내 낸다 (한 판에 42번 다시 시작하던 병)
+  let starts = 1
+  for (let k = 1; k <= 40; k++) {
+    const now = k * 400
+    r = planLoops(r.run, k % 2 === 1 ? [] : t(0.4, 1 + k / 100), now)
+    for (const a of r.actions) { if (a.op === 'start') starts++; assert.notEqual(a.op, 'stop') }
+  }
+  assert.equal(starts, 1)
+  // 빠지면 꼬리 안에 조용해지고(mute) 다시 목표가 되면 set 으로 이어서 키운다
+  const out = planLoops(r.run, [], 20000)
+  assert.ok(out.actions.every(a => a.op === 'mute' || a.op === 'stop'))
+  const m = planLoops(planLoops(r.run, [], 20100).run, [], 20200)
+  assert.equal(m.actions.length, 0) // 이미 조용하면 되풀이해 시키지 않는다
+  assert.ok(Math.abs(out.actions.find(a => a.op === 'mute')?.tc ?? P.field.soundLoopTailMs / 3000 - P.field.soundLoopTailMs / 3000) < 1e-9)
+  // hold 보다 오래 빠졌다가 돌아오면 그때서야 멈추고 새로 시작한다
+  const gone = planLoops(r.run, [], 20000 + hold + 100)
+  assert.ok(gone.actions.some(a => a.op === 'stop'))
+  assert.equal(planLoops(gone.run, t(0.4), 20000 + hold + 200).actions[0]!.op, 'start')
+})
+
+test('한 판(seed 3 · 4)에서 이어지는 소리 고리마다 새로 시작한 횟수 ≤ 6', async () => {
+  const { soundLog } = await import('../../tools/field-sound-log.ts')
+  for (const seed of [3, 4]) {
+    const r = soundLog(seed, 1200)
+    for (const [slot, n] of Object.entries(r.starts)) assert.ok(n <= 6, `seed ${seed} ${slot} ${n}`)
+  }
+})
+
+test('편이 무너지면(sideBreak) 무너지는 함성이 크게 한 번 · 버팀(stand)은 우리 편 것만 함성', () => {
+  const s0 = [sq(0, 0, 'front', 40, 10)]
+  const cam = camAt(40, 10)
+  const at = (evs: SoundEngineEvent[]) => run(newSoundState(), [{ f: frame(0, s0), cam, ev: [], now: 0 }, { f: frame(1, s0, { events: evs }), cam, now: 100 }])[1]!.plays
+  const big = at([ee(0, 'sideBreak', { side: 1 })]).find(p => p.slot === 'rout')!
+  const small = at([ee(0, 'rout')]).find(p => p.slot === 'rout')!
+  assert.ok(big.vol > small.vol)
+  assert.equal(at([ee(0, 'stand', { side: 0 })]).filter(p => p.slot === 'war_cry').length, 1)
+  assert.equal(at([ee(0, 'stand', { side: 1 })]).filter(p => p.slot === 'war_cry').length, 0)
+})

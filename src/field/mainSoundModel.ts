@@ -35,12 +35,12 @@ export interface SoundCam { x: number; y: number; zoom: number; vpW: number; vpH
 export type FlagKind = 'charge' | 'hold' | 'open' | 'horse' | 'move'
 /** u, v 가 없으면 화면 소리(깃발·끝)라 가운데에서 늘 같은 크기로 난다 */
 export interface SoundEvent {
-  kind: 'impact' | 'impactGood' | 'clash' | 'volley' | 'arrowHit' | 'gateBreak' | 'rout' | 'heroDash' | 'heroSkill' | 'artHit' | 'flag' | 'end'
+  kind: 'impact' | 'impactGood' | 'clash' | 'volley' | 'arrowHit' | 'gateBreak' | 'rout' | 'heroDash' | 'heroSkill' | 'artHit' | 'sideBreak' | 'stand' | 'flag' | 'end'
   u?: number; v?: number
   /** 부딪힘 세기 0~1000 · clash 에서는 맞붙은 대 수 */
   power?: number
   /** impact 의 상성 구분 0 보통 · 1 맞음 · 2 막힘 · 사건이 난 틱 · 친 대 */
-  how?: number; tick?: number; id?: number
+  how?: number; tick?: number; id?: number; side?: number
   flag?: FlagKind
   win?: boolean
 }
@@ -119,6 +119,8 @@ export function eventsFromDiff(prev: SoundFrame | null, cur: SoundFrame): SoundE
       case 'volley': ev.push({ kind: 'volley', ...pos }); break
       case 'gateBreak': ev.push({ kind: 'gateBreak', ...pos }); break
       case 'artHit': ev.push({ kind: 'artHit', ...pos }); break
+      case 'sideBreak': ev.push({ kind: 'sideBreak', ...pos, side: e.side }); break
+      case 'stand': ev.push({ kind: 'stand', ...pos, side: e.side }); break
       case 'heroDash': ev.push({ kind: 'heroDash', ...pos }); break
       case 'heroSkill': ev.push({ kind: 'heroSkill', ...pos }); break
       case 'loss': {
@@ -264,6 +266,8 @@ export function stepSound(st: SoundState, frame: SoundFrame, cam: SoundCam, even
       case 'arrowHit': add('arrow_hit', 0.5, e.u, e.v); break
       case 'gateBreak': add('gate', 0.8, e.u, e.v); break
       case 'rout': add('rout', 0.7, e.u, e.v); break
+      case 'sideBreak': add('rout', 1, e.u, e.v); break // 편이 무너져 다 달아남: 무너지는 함성을 한 번 크게
+      case 'stand': if (e.side === 0) add('war_cry', 0.6, e.u, e.v); break // 버팀: 형이 고른 함성 가운데 우리 편 것
       case 'heroDash': add('hero_dash', 0.5, e.u, e.v); break
       case 'heroSkill': add('hero_art', 0.7, e.u, e.v); break
       case 'artHit': add('impact', 0.7, e.u, e.v); break
@@ -336,4 +340,34 @@ export function stepSound(st: SoundState, frame: SoundFrame, cam: SoundCam, even
   }
   const next: SoundState = { last: advanced ? frame : st.last, speeds, gallop, lastAt, tiers, xfade, lastNow: nowMs, duckUntil, impactAt, meleeCryAt }
   return { state: next, plays, loops }
+}
+
+/** 돌고 있는 이어지는 소리 하나 — 마지막으로 목표에 있던 시각(ms)과 지금 목표 크기 */
+export interface LoopRun { lastSeen: number; gain: number }
+/** 재생 쪽이 할 일: start 새로 틂 · set 크기·빠르기·좌우만 바꿈(고리는 안 끊긴다) · mute 목표에서 빠져 조용히(고리는 살려 둔다) · stop 실제로 멈춤. tc = 시간 상수(초) */
+export interface LoopAction { op: 'start' | 'set' | 'mute' | 'stop'; slot: FieldSlot; gain: number; pan: number; rate: number; tc: number }
+
+/**
+ * 고리를 끊지 않고 세기·빠르기만 soundLoopFadeMs 에 걸쳐 바꾼다. 목표에서 빠진 고리는 꼬리 soundLoopTailMs 로 조용해지되 (쾅과 함께 끊김)
+ * 살려 두고, 다시 목표가 되면 이어서 키운다. 실제로 멈추는 것(다음에 새로 트는 것)은 빠진 지 soundLoopHoldMs 가 넘은 뒤뿐이다 —
+ * 걷기·질주 갈림이나 단계가 틱마다 뒤집혀도 0.4초마다 다시 시작하지 않는다 (11-25 검수: 말발굽 고리가 한 판에 42번 다시 시작됐다).
+ */
+export function planLoops(run: Readonly<Record<string, LoopRun>>, targets: readonly LoopTarget[], nowMs: number): { run: Record<string, LoopRun>; actions: LoopAction[] } {
+  const f = F()
+  const next: Record<string, LoopRun> = {}
+  const actions: LoopAction[] = []
+  const fadeTc = f.soundLoopFadeMs / 3000, tailTc = f.soundLoopTailMs / 3000
+  const seen = new Set<string>()
+  for (const t of targets) {
+    seen.add(t.slot)
+    next[t.slot] = { lastSeen: nowMs, gain: t.gain }
+    actions.push({ op: run[t.slot] === undefined ? 'start' : 'set', slot: t.slot, gain: t.gain, pan: t.pan, rate: t.rate, tc: fadeTc })
+  }
+  for (const [slot, r] of Object.entries(run)) {
+    if (seen.has(slot)) continue
+    if (nowMs - r.lastSeen > f.soundLoopHoldMs) { actions.push({ op: 'stop', slot: slot as FieldSlot, gain: 0, pan: 0, rate: 1, tc: tailTc }); continue }
+    next[slot] = { lastSeen: r.lastSeen, gain: 0 }
+    if (r.gain > 0) actions.push({ op: 'mute', slot: slot as FieldSlot, gain: 0, pan: 0, rate: 1, tc: tailTc })
+  }
+  return { run: next, actions }
 }

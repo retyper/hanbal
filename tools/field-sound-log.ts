@@ -11,11 +11,11 @@ import path from 'node:path'
 import { createField, stepField } from '../src/field/sim.ts'
 import { plainSetup } from '../src/field/scenario.ts'
 import { P } from '../src/tune/params.ts'
-import { eventsFromDiff, newSoundState, stepSound } from '../src/field/mainSoundModel.ts'
+import { eventsFromDiff, loopTargets, newSoundState, planLoops, stepSound } from '../src/field/mainSoundModel.ts'
 import { soundFrameOf } from '../src/field/mainSound.ts'
-import type { SoundCam } from '../src/field/mainSoundModel.ts'
+import type { LoopRun, SoundCam } from '../src/field/mainSoundModel.ts'
 
-export function soundLog(seed: number, men: number): { text: string; counts: Record<string, number>; maxPlays: number } {
+export function soundLog(seed: number, men: number): { text: string; counts: Record<string, number>; maxPlays: number; starts: Record<string, number> } {
   const s = createField(plainSetup(seed, men, true))
   const cellPx = P.field.cellPx
   const cam: SoundCam = { x: s.map.u * cellPx / 2, y: s.map.w * cellPx / 2, zoom: 1, vpW: s.map.u * cellPx, vpH: s.map.w * cellPx, zoomRel: 1 }
@@ -23,6 +23,9 @@ export function soundLog(seed: number, men: number): { text: string; counts: Rec
   const perSec = new Map<number, { plays: Map<string, { n: number; max: number }>; loops: Map<string, number> }>()
   const counts: Record<string, number> = {}
   let maxPlays = 0
+  // 이어지는 소리 고리가 새로 시작된 횟수 (planLoops 의 start · 재생 쪽이 하는 것과 같다)
+  let run: Record<string, LoopRun> = {}
+  const starts: Record<string, number> = {}
   const msPerTick = 1000 / P.field.hz
   const maxTicks = P.field.timesMax * P.field.timeSec * P.field.hz
   for (let i = 0; i < maxTicks && s.end === null; i++) {
@@ -32,6 +35,9 @@ export function soundLog(seed: number, men: number): { text: string; counts: Rec
     const out = stepSound(st, fr, cam, eventsFromDiff(st.last, fr), now, false)
     st = out.state
     maxPlays = Math.max(maxPlays, out.plays.length)
+    const lp = planLoops(run, loopTargets(out.loops), now)
+    run = lp.run
+    for (const a of lp.actions) if (a.op === 'start') starts[a.slot] = (starts[a.slot] ?? 0) + 1
     const sec = Math.floor(now / 1000)
     const row = perSec.get(sec) ?? { plays: new Map(), loops: new Map() }
     perSec.set(sec, row)
@@ -51,8 +57,9 @@ export function soundLog(seed: number, men: number): { text: string; counts: Rec
     const lp = [...row.loops].map(([k, v]) => `${k}(${v.toFixed(2)})`).join(' ')
     lines.push(`${sec}\t${pl || '-'}\t${lp || '-'}`)
   }
-  lines.push('', '합계: ' + Object.entries(counts).sort().map(([k, v]) => `${k} ${v}`).join(' · '), `한 프레임 최대 소리 ${maxPlays} (상한 ${P.field.soundVoicesMax})`)
-  return { text: lines.join('\n') + '\n', counts, maxPlays }
+  lines.push('', '고리 새로 시작한 횟수: ' + (Object.entries(starts).sort().map(([k, v]) => `${k} ${v}`).join(' · ') || '없음'))
+  lines.push('합계: ' + Object.entries(counts).sort().map(([k, v]) => `${k} ${v}`).join(' · '), `한 프레임 최대 소리 ${maxPlays} (상한 ${P.field.soundVoicesMax})`)
+  return { text: lines.join('\n') + '\n', counts, maxPlays, starts }
 }
 
 if (process.argv[1] !== undefined && path.basename(process.argv[1]) === 'field-sound-log.ts') {
