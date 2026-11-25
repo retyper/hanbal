@@ -75,6 +75,10 @@ export function clusterCenter(xs: readonly number[], ys: readonly number[], radi
 export const toField = (cam: Cam, vp: Viewport, px: number, py: number): { x: number; y: number } =>
   ({ x: cam.x + (px - vp.w / 2) / cam.zoom, y: cam.y + (py - vp.h / 2) / cam.zoom })
 
+/** 판 좌표 → 화면 좌표(px) */
+export const toScreen = (cam: Cam, vp: Viewport, x: number, y: number): { x: number; y: number } =>
+  ({ x: vp.w / 2 + (x - cam.x) * cam.zoom, y: vp.h / 2 + (y - cam.y) * cam.zoom })
+
 /** 지금 화면이 덮는 판 좌표 */
 export const fieldView = (cam: Cam, vp: Viewport): Rect =>
   ({ left: cam.x - vp.w / (2 * cam.zoom), right: cam.x + vp.w / (2 * cam.zoom), top: cam.y - vp.h / (2 * cam.zoom), bottom: cam.y + vp.h / (2 * cam.zoom) })

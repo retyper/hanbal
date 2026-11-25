@@ -8,7 +8,7 @@ import { t, type Key } from '../i18n/index.ts'
 import { P } from '../tune/params.ts'
 import type { VModel } from './viewRead.ts'
 
-export interface HudHandlers { onZoom(): void; onPause(): void; onAgain(): void }
+export interface HudHandlers { onZoom(): void; onPause(): void; onAgain(): void; onHelp(): void }
 export interface Hud {
   setZoom(level: number): void
   setPaused(paused: boolean): void
@@ -51,7 +51,7 @@ export function mountHud(root: HTMLElement, h: HudHandlers): Hud {
   document.head.append(style)
   const hud = document.createElement('div')
   hud.id = 'fd-hud'
-  hud.innerHTML = `<button id="fd-zoom" type="button"></button><button id="fd-pause" type="button"></button><span style="flex:1"></span><button id="fd-again" type="button"></button>`
+  hud.innerHTML = `<button id="fd-zoom" type="button"></button><button id="fd-pause" type="button"></button><button id="fd-helpbtn" type="button" aria-label="?">?</button><span style="flex:1"></span><button id="fd-again" type="button"></button>`
   const edge = document.createElement('div')
   edge.id = 'fd-edge'
   edge.innerHTML = `<span class="bar" id="fd-b0"><i class="a"></i><b id="fd-n0"></b></span><span class="bar" id="fd-b1"><i class="b"></i><b id="fd-n1"></b></span>`
@@ -70,6 +70,7 @@ export function mountHud(root: HTMLElement, h: HudHandlers): Hud {
   let key = ''
   zoom.addEventListener('click', () => h.onZoom())
   pause.addEventListener('pointerdown', e => { e.preventDefault(); h.onPause() })
+  $('fd-helpbtn').addEventListener('click', () => h.onHelp())
   again.addEventListener('click', () => {
     if (armUntil > 0) { armUntil = 0; again.className = ''; again.textContent = t('field.again'); h.onAgain(); return }
     armUntil = performance.now() + P.field.noteMs

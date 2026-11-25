@@ -1,34 +1,36 @@
 /**
- * 아래 띠 (깃발) — 무리 칸 셋 + 장수 칸 · 자세 상자 · 전투 개시 단추 · 한 줄 말 (40-cards.md F5a)
+ * 아래 띠 (깃발) — 무리 칸 셋 + 장수 칸 · 자세 단추 셋 · 전투 개시 단추 · 한 줄 말 (50-control-v2.md)
  * DOM 이다. sim 을 모른다: 읽는 것은 VModel(viewRead.ts)과 pickmodel.ts 의 목록뿐이고, 눌림은 handlers 로 field-main 에 알린다.
+ * 칸은 맵에서 누르는 것과 같은 일을 하는 지름길이다. 고른 칸은 금빛 테두리 + ✓ (여럿이 골라질 수 있다).
+ * 자세 단추는 앞줄을 골랐을 때만 앞줄 칸 위에 뜬다 · 지금 자세에 ✓ · 다시 누르면 알아서.
  * 새 UI 의 네 가지: 설명(무엇인지 · 위의 힌트 줄) · 반응(누르면 커진다) · 눌린 채(금빛 테두리 + ✓) · 까닭(못 누르면 왜인지).
  * 시간이 지나 사라지는 글은 타이머를 예약하지 않고 frame(now) 이 지운다 (숨은 탭에서는 아무것도 안 돈다).
  */
-import { t } from '../i18n/index.ts'
+import { t, type Key } from '../i18n/index.ts'
 import { P } from '../tune/params.ts'
-import { cellWhy, pickables, type UiState } from './pickmodel.ts'
+import { firstKeyLabel, type ActionName } from './actions.ts'
+import { cellWhy, cmdGroup, pickables, type UiState } from './pickmodel.ts'
+import { CMDS } from './input.ts'
 import type { InputGroup } from './types.ts'
 import type { VModel } from './viewRead.ts'
 
 export interface FlagsHandlers {
   onCell(g: InputGroup): void
-  onStance(g: InputGroup, intent: 'charge' | 'hold' | 'open'): void
-  onAuto(g: InputGroup): void
+  onCmd(g: 0 | 1 | 2, idx: number): void
   onGo(): void
 }
-export type Tone = 'ok' | 'why' | 'live'
+export type Tone = 'ok' | 'why'
+/** 아래 띠가 알아야 하는 바깥 사정 — cmd: 앞줄·활·기병이 지금 고른 명령 번호(알아서면 -1) · sentGroup: 무리를 한 번이라도 보냈는가 · touch: 손으로 쓰는 화면인가 */
+export interface FlagsCtx { cmd: readonly number[]; sentGroup: boolean; touch: boolean }
 export interface FlagsView {
-  /** usedNow: 무리별로 이번 때에 쓴 입력 수 (줄 선 것까지) · stance: 앞줄 지금 자세 */
-  sync(m: VModel, ui: UiState, usedNow: readonly number[], stance: number): void
+  sync(m: VModel, ui: UiState, c: FlagsCtx): void
   say(text: string, tone: Tone, nowMs: number): void
-  /** 쥐고 있는 동안 보이는 말 (놓으면 사라진다) */
-  live(text: string | null): void
   frame(nowMs: number): void
 }
 
 const CELL_ICON = ['icon/unit-spear.png', 'icon/unit-archer.png', 'icon/unit-buyeo-cavalry.png', 'icon/unit-general.png']
-const STANCE_FLAG = ['flag/flag-charge.png', 'flag/flag-hold.png', 'flag/flag-open.png']
-const STANCE_KEY = ['charge', 'hold', 'open'] as const
+const CELL_ACTION: readonly ActionName[] = ['pickFront', 'pickBows', 'pickHorse', 'pickHero']
+const CMD_ACTION: readonly ActionName[] = ['cmd1', 'cmd2', 'cmd3', 'cmd4']
 const GOLD = '#ffd27a'
 
 const CSS = `
@@ -45,16 +47,16 @@ const CSS = `
 .fd-cell.no{opacity:.4}
 .fd-ck{position:absolute;right:3px;top:2px;font-size:13px;color:${GOLD};font-style:normal;display:none}
 .fd-cell.on .fd-ck{display:block}
-.fd-pips{display:flex;gap:3px;height:6px}
-.fd-pips i{width:12px;height:5px;border-radius:2px;background:#fff3;display:block}
-.fd-pips i.f{background:#7fb8ff}
-.fd-cell.on .fd-pips i.f{background:${GOLD}}
+.fd-kb{position:absolute;left:4px;top:2px;font-size:11px;line-height:1;color:#f3ecd8aa;font-style:normal}
+@media (pointer:coarse){.fd-kb{display:none}}
 .fd-pop{position:absolute;left:0;bottom:calc(100% + 6px);display:flex;gap:6px;background:#000d;border:1px solid ${GOLD}88;border-radius:10px;padding:6px;z-index:3}
 .fd-opt{font:inherit;color:#f3ecd8;background:#0b1a2ecc;border:2px solid #2f8cff88;border-radius:8px;min-width:64px;min-height:56px;padding:3px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative;font-size:13px;transition:transform .08s}
 .fd-opt:active{transform:scale(1.12)}
 .fd-opt img{width:30px;height:30px;object-fit:contain}
 .fd-opt.on{border-color:${GOLD};background:#2a2410d9}
 .fd-opt.on::after{content:'✓';position:absolute;right:3px;top:0;color:${GOLD};font-size:13px}
+.fd-opt i{position:absolute;left:4px;top:2px;font-size:11px;line-height:1;color:#f3ecd8aa;font-style:normal}
+@media (pointer:coarse){.fd-opt i{display:none}}
 .fd-go{margin-left:auto;font:inherit;font-size:20px;font-weight:700;color:#1a1305;background:${GOLD};border:0;border-radius:12px;min-height:var(--fd-bar,64px);min-width:132px;padding:0 20px;box-shadow:0 2px 10px #0008;transition:transform .08s}
 .fd-go:active{transform:scale(1.08)}
 .fd-go[hidden]{display:none}
@@ -64,8 +66,9 @@ const CSS = `
 #fd-say.why{color:#ffc7b0;font-size:18px}
 #fd-hint{position:absolute;left:calc(8px + env(safe-area-inset-left));bottom:calc(var(--fd-bar,64px) + 14px + env(safe-area-inset-bottom));display:flex;gap:8px;align-items:center;font-size:12px;color:#f3ecd8;pointer-events:none;flex-wrap:wrap;max-width:60vw}
 #fd-hint[hidden]{display:none}
+#fd-tip{position:absolute;left:calc(8px + env(safe-area-inset-left));bottom:calc(var(--fd-bar,64px) + 84px + env(safe-area-inset-bottom));max-width:min(420px,70vw);background:#000d;border:1px solid ${GOLD}88;border-radius:8px;padding:6px 10px;font-size:13px;line-height:1.4;color:#f3ecd8;pointer-events:none;z-index:5}
+#fd-tip[hidden]{display:none}
 #fd-hint span{background:#0009;border-radius:6px;padding:3px 7px;display:flex;align-items:center;gap:4px}
-#fd-hint img{width:16px;height:16px;object-fit:contain}
 `
 
 export function mountFlags(root: HTMLElement, base: string, h: FlagsHandlers): FlagsView {
@@ -79,77 +82,77 @@ export function mountFlags(root: HTMLElement, base: string, h: FlagsHandlers): F
   const say = document.createElement('div'); say.id = 'fd-say'; say.hidden = true
   const hint = document.createElement('div'); hint.id = 'fd-hint'; hint.hidden = true
   root.style.setProperty('--fd-bar', `${P.field.flagBarPx}px`)
-  root.append(hint, say, strip)
+  const tip = document.createElement('div'); tip.id = 'fd-tip'; tip.hidden = true
+  root.append(hint, say, tip, strip)
   const cells = strip.querySelector('.fd-cells') as HTMLDivElement
   const go = strip.querySelector('.fd-go') as HTMLButtonElement
   go.addEventListener('click', () => h.onGo())
   cells.addEventListener('click', e => {
     const el = (e.target as HTMLElement).closest('[data-act]') as HTMLElement | null
     if (el === null) return
-    const g = Number(el.dataset['g']) as InputGroup
     const act = el.dataset['act']
-    if (act === 'cell') h.onCell(g)
-    else if (act === 'stance') h.onStance(g, STANCE_KEY[Number(el.dataset['st'])]!)
-    else if (act === 'auto') h.onAuto(g)
+    if (act === 'cell') h.onCell(Number(el.dataset['g']) as InputGroup)
+    else if (act === 'cmd') h.onCmd(Number(el.dataset['g']) as 0 | 1 | 2, Number(el.dataset['i']))
   })
 
+  /** 명령 단추를 누르고 있는 중 (오래 누르면 뜻 한 줄 · 그때 뗀 손은 명령으로 치지 않는다) */
+  let hold: { g: number; i: number; t0: number } | null = null
+  let tipShown = false
+  cells.addEventListener('pointerdown', e => {
+    const el = (e.target as HTMLElement).closest('.fd-opt') as HTMLElement | null
+    if (el !== null) { hold = { g: Number(el.dataset['g']), i: Number(el.dataset['i']), t0: e.timeStamp }; tipShown = false }
+  })
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave'] as const) cells.addEventListener(ev, () => { hold = null; tip.hidden = true })
+  cells.addEventListener('click', e => { if (tipShown) { tipShown = false; e.stopImmediatePropagation() } }, true)
   let sig = ''
   let sayUntil = 0
-  let liveText: string | null = null
   let sayText = ''
   let sayTone: Tone = 'ok'
   const img = (src: string): string => `<img src="${base}${src}" alt="" draggable="false">`
   const paintSay = (): void => {
-    const text = liveText ?? sayText
-    say.hidden = text === ''
-    say.textContent = text
-    say.className = liveText !== null ? 'live' : sayTone
+    say.hidden = sayText === ''
+    say.textContent = sayText
+    say.className = sayTone
   }
 
   return {
-    sync(m, ui, usedNow, stance) {
+    sync(m, ui, c) {
       const alive = [0, 1, 2, 3].map(g => cellWhy(m, g as InputGroup) === null ? 1 : 0)
-      const key = [ui.phase, ui.sel, ui.popup ? 1 : 0, alive.join(''), usedNow.join(','), stance, m.end === null ? 0 : 1].join('|')
+      const key = [ui.phase, ui.sel.join(''), alive.join(''), c.cmd.join(''), c.sentGroup ? 1 : 0, c.touch ? 1 : 0, m.end === null ? 0 : 1].join('|')
       if (key === sig) return
       sig = key
       strip.hidden = ui.phase === 'end' || m.end !== null
       go.hidden = ui.phase !== 'ready'
-      const items = pickables(m, ui)
-      const open = items.some(i => i.kind !== 'cell')
+      const shown = pickables(m, ui)
+      const cg = cmdGroup(m, ui)
       let html = ''
       for (const g of [0, 1, 2, 3] as const) {
-        const live = alive[g] === 1
-        const left = Math.max(0, P.field.inputPerGroupPerTime - (usedNow[g] ?? 0))
-        const pips = Array.from({ length: P.field.inputPerGroupPerTime }, (_, i) => `<i class="${i < left ? 'f' : ''}"></i>`).join('')
+        const live = shown.includes(g)
+        const on = ui.sel.includes(g)
         let pop = ''
-        if (open && ui.sel === g) {
-          pop = '<div class="fd-pop">' + items.map(i => i.kind === 'stance' && i.stance !== -1
-            ? `<button class="fd-opt${stance === i.stance ? ' on' : ''}" type="button" data-act="stance" data-g="${g}" data-st="${i.stance}">${img(STANCE_FLAG[i.stance]!)}<span>${t(`field.i.${STANCE_KEY[i.stance]!}`)}</span></button>`
-            : `<button class="fd-opt" type="button" data-act="auto" data-g="${g}"><span>${t('field.auto')}</span></button>`).join('') + '</div>'
+        if (g === cg) {
+          pop = '<div class="fd-pop">' + CMDS[g]!.map((name, i) => `<button class="fd-opt${c.cmd[g] === i ? ' on' : ''}" type="button" data-act="cmd" data-g="${g}" data-i="${i}" title="${t(`war.cmdShort.${name}` as Key)}"><i>${firstKeyLabel(CMD_ACTION[i]!)}</i>${img(`flag/flag-${name}.png`)}<span>${t(`war.cmdName.${name}` as Key)}</span></button>`).join('') + '</div>'
         }
-        html += `<div class="fd-slot"><button class="fd-cell${ui.sel === g ? ' on' : ''}${live ? '' : ' no'}" type="button" data-act="cell" data-g="${g}" aria-pressed="${ui.sel === g}" aria-label="${t(`field.g.${g}`)}">${img(CELL_ICON[g]!)}<b>${t(`field.g.${g}`)}</b><span class="fd-pips" title="${t('field.left', { n: left })}">${live ? pips : ''}</span><em class="fd-ck">✓</em></button>${pop}</div>`
+        html += `<div class="fd-slot"><button class="fd-cell${on ? ' on' : ''}${live ? '' : ' no'}" type="button" data-act="cell" data-g="${g}" aria-pressed="${on}" aria-label="${t(`field.g.${g}`)}"><i class="fd-kb">${firstKeyLabel(CELL_ACTION[g]!)}</i>${img(CELL_ICON[g]!)}<b>${t(`field.g.${g}`)}</b><em class="fd-ck">✓</em></button>${pop}</div>`
       }
       cells.innerHTML = html
-      const showHint = ui.phase !== 'end' && m.end === null && !ui.popup
+      // 한 줄 안내: 처음 무리를 보내기 전까지만 (자세 단추가 떠 있으면 그 자리를 비운다)
+      const line = ui.phase === 'ready' ? t(c.touch ? 'field.hint.ready.touch' : 'field.hint.ready.pc') : !c.sentGroup ? t(c.touch ? 'field.hint.group.touch' : 'field.hint.group.pc') : ''
+      const showHint = ui.phase !== 'end' && m.end === null && cg === null && line !== ''
       hint.hidden = !showHint
-      if (showHint) {
-        hint.innerHTML = ui.sel < 0 && ui.phase === 'ready'
-          ? `<span>${t('field.hint.ready')}</span>`
-          : ui.sel < 0 ? '' : `<span>${t('field.hint.tap')}</span><span>${img(STANCE_FLAG[1]!)}${t('field.hint.hold')}</span><span>${img(STANCE_FLAG[0]!)}${t('field.hint.charge')}</span><span>${img(STANCE_FLAG[2]!)}${t('field.hint.open')}</span>`
-        if (hint.innerHTML === '') hint.hidden = true
-      }
+      hint.innerHTML = showHint ? `<span>${line}</span>` : ''
     },
     say(text, tone, nowMs) {
       sayText = text; sayTone = tone
       sayUntil = nowMs + P.field.noteMs
       paintSay()
     },
-    live(text) {
-      if (text === liveText) return
-      liveText = text
-      paintSay()
-    },
     frame(nowMs) {
+      if (hold !== null && !tipShown && nowMs - hold.t0 >= P.field.cmdHintMs) {
+        tipShown = true
+        tip.textContent = t(`war.cmdDoes.${CMDS[hold.g]![hold.i]!}` as Key)
+        tip.hidden = false
+      }
       if (sayText !== '' && nowMs >= sayUntil) { sayText = ''; paintSay() }
     },
   }
