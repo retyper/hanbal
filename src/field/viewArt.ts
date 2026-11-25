@@ -8,7 +8,7 @@
 import { teamTint } from './viewTint.ts'
 
 export const CELLS = 20
-export const STAND0 = 0, STAND_N = 4, WALK0 = 4, WALK_N = 8, ATTACK0 = 12, ATTACK_N = 6, DOWN = 19
+export const STAND0 = 0, STAND_N = 4, WALK0 = 4, WALK_N = 8, ATTACK0 = 12, ATTACK_N = 6, HIT = 18, DOWN = 19
 
 /** 무리 → 띠 (sim 의 kind 가 병종 이름표이고 띠가 있으면 그것을 먼저 쓴다) */
 const GRP_STRIP: Readonly<Record<string, string>> = { front: 'spear', bows: 'bow', horse: 'horse' }

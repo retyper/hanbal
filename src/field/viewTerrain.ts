@@ -6,17 +6,22 @@
 import type { VModel } from './viewRead.ts'
 
 const PX_PER_CELL = 8
-const WATER_SHALLOW = 'rgba(96,160,184,0.62)'
-const WATER_DEEP = 'rgba(42,92,138,0.88)'
-const WATER_EDGE = 'rgba(214,236,240,0.45)'
-const ROCK = 'rgba(52,50,46,0.92)'
-const ROCK_LIGHT = 'rgba(120,114,102,0.7)'
+const WATER_SHALLOW = 'rgba(78,138,128,0.6)'
+const WATER_DEEP = 'rgba(34,84,96,0.86)'
+const WATER_EDGE = 'rgba(214,236,226,0.45)'
+const SHADE = 'rgba(30,22,10,0.26)'
 const HIGH_LIGHT = 'rgba(255,238,190,0.26)'
 const HIGH_TOP = 'rgba(255,246,214,0.5)'
 const CLIFF = ['rgba(30,22,10,0.5)', 'rgba(30,22,10,0.3)', 'rgba(30,22,10,0.14)'] as const
 const SHALLOW = 1, DEEP = 2, BLOCK = 3, HIGH = 4
 
-const cache = new WeakMap<Readonly<Uint8Array>, HTMLCanvasElement | null>()
+/** 칸 배열마다 한 번 칠해 둔다. 칸 내용이나 부서진 조각이 바뀌면(목책이 깨지면) 서명이 달라져 다시 칠한다 */
+const cache = new WeakMap<Readonly<Uint8Array>, { sig: string; cv: HTMLCanvasElement | null }>()
+function signature(m: VModel): string {
+  let sum = 0
+  for (let i = 0; i < m.cells.length; i++) sum = (sum * 31 + m.cells[i]! + 1) % 1000003
+  return sum + ':' + m.pieces.map(p => (p.hp > 0 ? 1 : 0)).join('')
+}
 
 /** 평지뿐인 맵인가 (칠할 것이 없다) */
 export function isPlain(cells: Readonly<Uint8Array>): boolean {
@@ -37,11 +42,14 @@ function paint(m: VModel): HTMLCanvasElement {
     if (g === SHALLOW || g === DEEP) {
       c.fillStyle = g === DEEP ? WATER_DEEP : WATER_SHALLOW
       c.fillRect(x, y, S, S)
-      if (at(cu, v + 1) !== g && at(cu, v + 1) !== DEEP) { c.fillStyle = WATER_EDGE; c.fillRect(x, y + S - 2, S, 2) }
-      if (at(cu, v - 1) !== g && at(cu, v - 1) !== DEEP) { c.fillStyle = WATER_EDGE; c.fillRect(x, y, S, 2) }
+      const wet = (a: number): boolean => a === SHALLOW || a === DEEP
+      if (!wet(at(cu, v + 1))) { c.fillStyle = WATER_EDGE; c.fillRect(x, y + S - 2, S, 2) }
+      if (!wet(at(cu, v - 1))) { c.fillStyle = WATER_EDGE; c.fillRect(x, y, S, 2) }
+      if (!wet(at(cu - 1, v))) { c.fillStyle = WATER_EDGE; c.fillRect(x, y, 2, S) }
+      if (!wet(at(cu + 1, v))) { c.fillStyle = WATER_EDGE; c.fillRect(x + S - 2, y, 2, S) }
     } else if (g === BLOCK) {
-      c.fillStyle = ROCK; c.fillRect(x, y, S, S)
-      c.fillStyle = ROCK_LIGHT; c.fillRect(x + 1, y + 1, S - 3, 2)
+      // 막힌 칸(목책 밑 · 바위): 검게 메우지 않고 오른쪽 반 칸에 옅은 그늘만 (위에 선 말뚝이 주인공)
+      c.fillStyle = SHADE; c.fillRect(x + S / 2, y, S / 2, S)
     } else if (g === HIGH) {
       c.fillStyle = HIGH_LIGHT; c.fillRect(x, y, S, S)
       if (at(cu, v - 1) !== HIGH) { c.fillStyle = HIGH_TOP; c.fillRect(x, y, S, 2) }
@@ -62,7 +70,8 @@ function paint(m: VModel): HTMLCanvasElement {
 
 /** 맵 바닥 종류를 판 px 크기(worldW × worldH)로 늘려 그린다 */
 export function drawTerrain(ctx: CanvasRenderingContext2D, m: VModel, worldW: number, worldH: number): void {
-  let cv = cache.get(m.cells)
-  if (cv === undefined) { cv = isPlain(m.cells) ? null : paint(m); cache.set(m.cells, cv) }
-  if (cv !== null) ctx.drawImage(cv, 0, 0, worldW, worldH)
+  const sig = signature(m)
+  let e = cache.get(m.cells)
+  if (e === undefined || e.sig !== sig) { e = { sig, cv: isPlain(m.cells) ? null : paint(m) }; cache.set(m.cells, e) }
+  if (e.cv !== null) ctx.drawImage(e.cv, 0, 0, worldW, worldH)
 }

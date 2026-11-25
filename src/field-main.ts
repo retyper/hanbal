@@ -159,7 +159,7 @@ function watchLoad(dtMs: number): void {
   if (gaps.length < 60) return
   const mid = [...gaps].sort((a, b) => a - b)[30]!
   gaps.length = 0
-  if (mid > P.field.lowFrameMs) { low = true; resize() }
+  if (mid > P.field.lowFrameMs) { low = true; resetFx(); resize() }
 }
 
 // ---- 깃발 (F5a): 칸 고르기 → 맵 누르기·길게·끌기 → 입력 줄 ----

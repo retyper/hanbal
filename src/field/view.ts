@@ -7,7 +7,7 @@
  */
 import { P } from '../tune/params.ts'
 import { fieldView, inView, type Cam, type Viewport } from './viewCamera.ts'
-import { ATTACK0, ATTACK_N, DOWN, STAND0, STAND_N, WALK0, WALK_N, heroStrip, pieceImg, stripFor, type Art, type Strip } from './viewArt.ts'
+import { ATTACK0, ATTACK_N, DOWN, HIT, STAND0, STAND_N, WALK0, WALK_N, heroStrip, pieceImg, stripFor, type Art, type Strip } from './viewArt.ts'
 import { dotOffset, dotPhase, hash2, sideDotCounts } from './viewDots.ts'
 import { drawTerrain } from './viewTerrain.ts'
 import { TEAM_RGB } from './viewTint.ts'
@@ -253,7 +253,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
     if (!inView(view, c.x, c.y, pad)) continue
     const age = (nowMs - c.born) / F.corpseMs
     const d = nextItem()
-    d.kind = 1; d.x = c.x; d.y = c.y; d.strip = c.strip; d.side = c.side; d.flip = c.flip; d.h = c.h; d.frame = DOWN
+    d.kind = 1; d.x = c.x; d.y = c.y; d.strip = c.strip; d.side = c.side; d.flip = c.flip; d.h = c.h; d.frame = nowMs - c.born < F.hitFrameMs ? HIT : DOWN
     d.alpha = age < 0.6 ? 1 : Math.max(0, 1 - (age - 0.6) / 0.4)
   }
   // 장수
