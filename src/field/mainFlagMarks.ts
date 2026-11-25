@@ -78,7 +78,7 @@ export function drawMarks(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
     ctx.strokeStyle = GOLD
     if (r.kind === 'foe') { ctx.strokeStyle = '#ff6a3c'; ctx.globalAlpha = 1 - r.phase; ctx.lineWidth = Math.max(2, 3.6 / z) }
     else if (r.kind === 'dim') { ctx.strokeStyle = MINE; ctx.globalAlpha = 0.7; ctx.lineWidth = Math.max(1.5, 2.4 / z) }
-    else if (r.kind === 'hover') { ctx.globalAlpha = 0.75; ctx.lineWidth = Math.max(1.5, 2.6 / z) }
+    else if (r.kind === 'hover') { ctx.strokeStyle = '#f3ecd8'; ctx.globalAlpha = 0.8; ctx.lineWidth = Math.max(1, 1.5 / z) }
     else if (r.kind === 'aura') { ctx.strokeStyle = '#9cc8ff'; ctx.globalAlpha = 0.28; ctx.lineWidth = Math.max(1, 2 / z) }
     else if (r.kind === 'glow') { ctx.fillStyle = GOLD; ctx.globalAlpha = 0.35; ctx.fill(); ctx.globalAlpha = 0.6; ctx.lineWidth = Math.max(1, 1.6 / z) }
     else if (r.kind === 'sel' && r.w !== undefined) { ctx.globalAlpha = 0.7; ctx.lineWidth = Math.max(1.5, 1.5 / z) }

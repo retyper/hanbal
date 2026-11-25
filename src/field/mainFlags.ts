@@ -145,7 +145,7 @@ export function mountFlags(root: HTMLElement, base: string, h: FlagsHandlers): F
       }
       cells.innerHTML = html
       big.hidden = !bigOn
-      big.innerHTML = !bigOn ? '' : BIG_ARTS.map((name, i) => `<button class="fd-opt${(i < 2 && c.front === i) || (i === 2 && c.volley) || (i === 3 && c.flank) || c.aiming === i ? ' on' : ''}" type="button" data-act="big" data-i="${i}" data-n="${name}" title="${t(`war.cmdShort.${name}` as Key)}"><i>${firstKeyLabel(CMD_ACTION[i]!)}</i><img class="fd-who" src="${base}${CELL_ICON[BIG_WHO[i]!]!}" alt="">${img(`flag/flag-${name}.png`)}<span>${t(`war.cmdName.${name}` as Key)}</span></button>`).join('')
+      big.innerHTML = !bigOn ? '' : BIG_ARTS.map((name, i) => `<button class="fd-opt${(i < 2 && c.front === i) || (i === 2 && c.volley) || (i === 3 && c.flank) || c.aiming === i ? ' on' : ''}" type="button" data-act="big" data-i="${i}" data-n="${name}" title="${t(`field.big.${name}` as Key)}"><i>${firstKeyLabel(CMD_ACTION[i]!)}</i><img class="fd-who" src="${base}${CELL_ICON[BIG_WHO[i]!]!}" alt="">${img(`flag/flag-${name}.png`)}<span>${t(`war.cmdName.${name}` as Key)}</span></button>`).join('')
       // 한 줄 안내: 처음 무리를 보내기 전까지만 (자세 단추가 떠 있으면 그 자리를 비운다)
       const line = ui.phase === 'ready' ? t(c.touch ? 'field.hint.ready.touch' : 'field.hint.ready.pc') : !c.sentGroup ? t(c.touch ? 'field.hint.group.touch' : 'field.hint.group.pc') : ''
       const showHint = ui.phase !== 'end' && m.end === null && !bigOn && line !== ''
@@ -160,7 +160,7 @@ export function mountFlags(root: HTMLElement, base: string, h: FlagsHandlers): F
     frame(nowMs) {
       if (hold !== null && !tipShown && nowMs - hold.t0 >= P.field.cmdHintMs) {
         tipShown = true
-        tip.textContent = t(`war.cmdDoes.${hold.name}` as Key)
+        tip.textContent = t(`field.big.${hold.name}` as Key)
         tip.hidden = false
       }
       if (sayText !== '' && nowMs >= sayUntil) { sayText = ''; paintSay() }

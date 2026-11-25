@@ -9,7 +9,7 @@ import { stickDir } from './input.ts'
 export interface PadHandlers { onDir(dir: number): void; onDash(): void; onSkill(): void; onRally(): void }
 /** 단추 한 칸의 지금 모양: frac = 쿨이 남은 몫 0~1 · sec = 남은 초 · label = 이름 · key = 키 글자 · icon = 그림 경로 (없으면 글자만) */
 export interface PadBtn { lit?: boolean; frac: number; sec: number; label: string; key: string; icon: string }
-export interface Pad { sync(show: boolean, touch: boolean, shake: boolean, dash: PadBtn, skill: PadBtn, rally: PadBtn): void }
+export interface Pad { sync(show: boolean, touch: boolean, shake: boolean, dash: PadBtn, skill: PadBtn, rally: PadBtn, readyStick: boolean): void }
 
 const GOLD = '#ffd27a'
 const R = 15.9155
@@ -86,9 +86,9 @@ export function mountPad(root: HTMLElement, base: string, h: PadHandlers): Pad {
     el.innerHTML = `<em>${b.key}</em>${b.icon === '' ? '' : `<img src="${base}${b.icon}" alt="">`}<b>${b.label}</b>${ring}`
   }
   return {
-    sync(show, touch, shake, dash, skill, rally) {
+    sync(show, touch, shake, dash, skill, rally, readyStick) {
       pad.hidden = !show
-      stick.classList.toggle('on', show && touch)
+      stick.classList.toggle('on', (show || readyStick) && touch)
       stick.classList.toggle('shake', shake)
       if (show) { paint(0, dash); paint(1, skill); paint(2, rally) }
     },

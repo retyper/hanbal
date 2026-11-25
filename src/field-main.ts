@@ -68,7 +68,15 @@ const makeMap = () => {
 let low = query.get('gfx') === 'low'
 let seed = num('seed', 7)
 const men = num('men', 1200)
-let state = createField(plainSetup(seed, men, true, makeMap()))
+/** 우리 장수와 적장이 같은 그림이 되지 않게 열쇠를 나눈다 (둘 다 대시 칸이 있는 띠) */
+const HERO_KEY_OURS = 'ara', HERO_KEY_FOE = 'bakdal'
+function newSetup() {
+  const su = plainSetup(seed, men, true, makeMap())
+  if (su.sides[0].hero !== null) su.sides[0].hero.id = HERO_KEY_OURS
+  if (su.sides[1].hero !== null) su.sides[1].hero.id = HERO_KEY_FOE
+  return su
+}
+let state = createField(newSetup())
 let cur: VModel = readField(state)
 let prev: VModel | null = null
 /** 아직 그림이 못 읽은 깎임 사건 (한 프레임에 틱이 여럿 돌아도 안 빠진다) · 위쪽 숫자를 늦춰 보이려는 판 기록 */
@@ -104,6 +112,8 @@ const cmdNow: number[] = [-1, -1, -1]
 let sentGroup = false
 let usedCharge = false
 let leadK = 1
+let step3Latched = false
+let auraUntil = 0
 /** 싸움 중 어떤 입력이든 한 번 들어가면 처음 안내는 걷힌다 */
 let firstDone = false
 /** 이번에 판이 보인 큰 부딪힘의 종류 (상성이 맞음 · 막힘) · 판이 시작할 때의 편별 사람 수 (끝 상자의 숫자) */
@@ -245,7 +255,7 @@ function nearestFight(hero: { u: number; v: number }): { u: number; v: number } 
 
 function restart(): void {
   seed++
-  state = createField(plainSetup(seed, men, true, makeMap())); cur = readField(state); prev = null; acc = 0
+  state = createField(newSetup()); cur = readField(state); prev = null; acc = 0
   resetFx()
   introLeft = P.field.introMs
   fsnd.stop(); soundTick = -1; soundEpoch = markEpoch
@@ -265,8 +275,19 @@ const gaps: number[] = []
 /** 마지막으로 그린 때의 카메라·고른 것·깃발 표시 (멈춤·끝·가로 안내 중에 같으면 다시 안 그린다) */
 const paintKey = { x: NaN, y: NaN, z: NaN, sel: '', epoch: -1 }
 let markEpoch = 0
+let lowAuto = false, goodMs = 0, noLowUntil = 0
 function watchLoad(dtMs: number): void {
-  if (low || dtMs <= 0 || dtMs > 500) return
+  // 긴 프레임(탭이 뒤에 깔렸거나 멈췄던 것)은 세지 않는다
+  if (dtMs <= 0 || dtMs > P.field.lowIgnoreMs) return
+  const t0 = performance.now()
+  if (low) {
+    // 자동으로 내려갔다면 좋은 프레임이 lowBackSec 초 이어질 때 되돌린다 (되돌린 뒤 noLowSec 초는 다시 안 내린다)
+    if (!lowAuto) return
+    goodMs = dtMs <= P.field.lowFrameMs ? goodMs + dtMs : 0
+    if (goodMs >= P.field.lowBackSec * 1000) { low = false; lowAuto = false; goodMs = 0; noLowUntil = t0 + P.field.noLowSec * 1000; gaps.length = 0; resetFx(); resize() }
+    return
+  }
+  if (t0 < noLowUntil) return
   gaps.push(dtMs)
   if (gaps.length < 60) return
   const mid = [...gaps].sort((a, b) => a - b)[30]!
@@ -274,7 +295,7 @@ function watchLoad(dtMs: number): void {
   for (const g of gaps) if (g > P.field.lowLongMs) long++
   gaps.length = 0
   // 가운데값이 느리거나, 긴 프레임이 잦으면(들쭉날쭉) 저사양으로 내린다
-  if (mid > P.field.lowFrameMs || long * 1000 > P.field.lowLongPermille * 60) { low = true; resetFx(); resize() }
+  if (mid > P.field.lowFrameMs || long * 1000 > P.field.lowLongPermille * 60) { low = true; lowAuto = true; goodMs = 0; resetFx(); resize() }
 }
 
 // ---- 조작 v2: 맵에서 고르고 · 찍어서 보내고 · 자세는 단추 ----
@@ -352,7 +373,8 @@ function sendAt(px: number, py: number, now: number): void {
   if (foe !== null && foe.id >= 0) { accept(attackInputs(sel, foe.id, inputCtx())); foeFlash.push({ id: foe.id, at: now }) }
   else accept(sendInputs(sel, u, v, inputCtx()))
   const goal = { u: Math.max(0, Math.min(cur.mapUUnits, u)), v: Math.max(0, Math.min(cur.mapVUnits, v)) }
-  for (const g of sel) { lastGoal[g] = goal; if (g !== 0 || cmdNow[0]! < 0) lastShape[g] = 'move' }
+  // 적을 찍은 것은 붉은 테만 · 깃은 땅으로 보낼 때만 선다
+  if (foe === null || foe.id < 0) for (const g of sel) { lastGoal[g] = goal; if (g !== 0 || cmdNow[0]! < 0) lastShape[g] = 'move' }
   if (sel.includes(3)) heroOrdered = true
   if (sel.some(g => g < 3)) sentGroup = true
   fsnd.order((sel.length === 1 && sel[0] === 2 ? 'horse' : 'move') as FlagKind)
@@ -376,15 +398,13 @@ function pressBig(i: number): void {
 function cancelAim(): void { if (aiming === -1) return; aiming = -1; markEpoch++; cv.style.cursor = ''; aimCur.hidden = true }
 /** 찍어서 확정: 그 자리에 가장 가까운 적 대가 표적 (엔진의 OP_AIM 이 오면 그것으로 바꾼다 · 그 전에는 명령을 고르고 그 적을 쳐라) */
 function confirmAim(px: number, py: number, now: number): void {
-  const g = (aiming === 2 ? 1 : 2) as CmdGroup, name = BIG_ARTS[aiming]!
+  const g = (aiming === 2 ? 1 : 2) as CmdGroup
   const w = toField(cam, vp, px, py), u = unitsOf(w.x), v = unitsOf(w.y)
   const foeId = nearestFoe(cur.squads, u, v)
   accept([aimInput(g as 1 | 2, u, v, inputCtx())])
   if (foeId >= 0) foeFlash.push({ id: foeId, at: now })
-  lastGoal[g] = { u: Math.max(0, Math.min(cur.mapUUnits, u)), v: Math.max(0, Math.min(cur.mapVUnits, v)) }; lastShape[g] = 'move'
   sentGroup = true
   fsnd.order((g === 2 ? 'horse' : 'move') as FlagKind)
-  flags.say(t('field.say.cmd', { g: gName(g), c: t(`war.cmdName.${name}` as Key), s: t(`war.cmdShort.${name}` as Key) }), 'ok', now)
   cancelAim()
   setSel([...AFTER_ORDER])
 }
@@ -403,13 +423,10 @@ function pressCmd(g: CmdGroup, idx: number): void {
   if (i.op === OP_AUTO) {
     cmdNow[g] = -1; if (g === 0) lastShape[0] = 'move'
     lastGoal[g] = null
-    flags.say(t('field.say.auto', { g: gName(g) }), 'ok', now)
   } else {
     cmdNow[g] = idx
     if (g === 0) lastShape[0] = STANCE_SHAPE[idx]!
     fsnd.order((g === 0 ? name : g === 2 ? 'horse' : 'move') as FlagKind)
-    // 엔진이 이 명령을 아직 안 받아도 입력은 보내고, 그 명령의 뜻을 한 줄로 보인다
-    flags.say(t('field.say.cmd', { g: gName(g), c: t(`war.cmdName.${name}` as Key), s: t(`war.cmdShort.${name}` as Key) }), 'ok', now)
   }
 }
 
@@ -421,6 +438,7 @@ function heroInput(i: FieldInput): void {
 const artCdSec = (a: string): number => a === 'shout' ? P.field.heroCdShoutSec : a === 'stand' ? P.field.heroCdStandSec : a === 'snipe' ? P.field.heroCdSnipeSec : P.field.heroCdVanguardSec
 /** F · 모여라 단추: 전부 장수 곁으로 */
 function doRally(): void {
+  auraUntil = performance.now() + P.field.auraShowMs; markEpoch++
   accept([rallyInput(inputCtx())])
   cmdNow.fill(-1); lastGoal[0] = null; lastGoal[1] = null; lastGoal[2] = null
 }
@@ -434,10 +452,12 @@ function doSkill(): void {
 }
 /** WASD 와 스틱 가운데 지금 가려는 방향 · 바뀔 때만 입력을 보낸다 */
 function walkHero(): void {
-  if (ui.phase !== 'play' || paused || helpOpen) return
+  if ((ui.phase !== 'play' && ui.phase !== 'ready') || paused || helpOpen) return
   const held = (names: readonly string[]): boolean => names.some(n => keysHeld.has(n))
   const k = keysDir(held(KEYS.heroUp), held(KEYS.heroDown), held(KEYS.heroLeft), held(KEYS.heroRight))
   const want = k >= 0 ? k : padDir
+  // 준비 화면에서 장수를 움직이려 하면 곧바로 판이 시작된다 (「전투 개시」 단추는 그대로)
+  if (ui.phase === 'ready') { if (want >= 0) goBattle(); return }
   if (want !== heroDirSent) { heroInput(heroDirInput(want, heroDirSent, inputCtx())); heroDirSent = want }
 }
 /** 장수·무리가 못 받은 까닭을 한 줄로 */
@@ -525,7 +545,7 @@ function ringsNow(now: number): Ring[] {
     out.push(...groupRings([q], 'foe', ph))
   }
   const hh = heroNow()
-  if (hh !== undefined && ui.phase === 'play' && hh.stun === 0) {
+  if (hh !== undefined && ui.phase === 'play' && hh.stun === 0 && now < auraUntil) {
     const ar = P.field.heroAuraCells * c
     out.push({ x: pxOf(hh.u), y: pxOf(hh.v), rx: ar, ry: ar * 0.6, kind: 'aura', phase: 0 })
   }
@@ -692,7 +712,7 @@ function paint(now: number, alpha: number): void {
   root.classList.toggle('touch', touchMode)
   arrows.sync(offscreenArrows())
   const pb = padBtns()
-  pad.sync(!blocked && ui.phase === 'play' && cur.end === null, touchMode, touchMode && !heroOrdered && playMs < 3000, pb.dash, pb.skill, pb.rally)
+  pad.sync(!blocked && ui.phase === 'play' && cur.end === null, touchMode, touchMode && !heroOrdered && playMs < 3000, pb.dash, pb.skill, pb.rally, !blocked && ui.phase === 'ready')
   hud.sync(lagged(now), { gold: fxGold, blocked: fxBlocked })
   fxGold = false; fxBlocked = false
   hud.frame(now)
@@ -718,6 +738,18 @@ function foeMarks(): { x: number; y: number }[] {
   return out
 }
 /** 첫 판 안내 — 처음 세 걸음(지금은 둘) 한 줄과 이기는 법 한 줄 */
+/** 적 대가 장수 둘레 engageCells 안에 들었는가 (비기를 써 볼 만한 때) */
+/** 장수 비기 이름 (큰 외침 …) */
+function artLabel(): string {
+  const a = heroNow()?.art ?? 'none'
+  return a === 'none' ? t('field.step.3.art') : t(`war.artName.${a}` as Key)
+}
+function step3Ready(): boolean {
+  const h = heroNow()
+  if (h === undefined) return false
+  const r = P.field.engageCells * P.field.unit
+  return cur.squads.some(q => q.side === 1 && q.men > 0 && (q.u - h.u) * (q.u - h.u) + (q.v - h.v) * (q.v - h.v) <= r * r)
+}
 function tutorial(now: number): void {
   if (tutDone) { steps.sync(false, null, false); return }
   const play = ui.phase === 'play'
@@ -727,13 +759,15 @@ function tutorial(now: number): void {
   if (play && !stepOk[2] && hz0 !== undefined && hz0.artCd > 0) { stepOk[2] = true; stepOk[0] = true; stepOk[1] = true; flashStep = 2; flashAt = now }
   const flashing = flashStep >= 0 && now - flashAt < P.field.stepFlashMs
   const next = stepOk.indexOf(false)
+  // 셋째 걸음은 적 대가 비기 범위 안에 든 뒤에야 뜨고, 한 번 뜨면 쓰기 전에는 안 사라진다
+  if (next === 2 && !step3Latched && step3Ready()) step3Latched = true
   if (next === -1 && !flashing) {
     tutDone = true
     try { localStorage.setItem(TUT_KEY, '1') } catch { /* 저장 못 해도 이 판에서만 */ }
     steps.sync(false, null, false); return
   }
-  const showStep = ui.phase === 'end' || cur.end !== null ? -1 : flashing ? flashStep : next
-  steps.sync(ui.phase !== 'end' && cur.end === null && playMs < P.field.goalMs, showStep < 0 ? null : t(showStep === 1 ? (touchMode ? 'field.step.2.touch' : 'field.step.2') : (`field.step.${showStep + 1}` as Key), { k: firstKeyLabel('cmd1') }), flashing)
+  const showStep = ui.phase === 'end' || cur.end !== null ? -1 : flashing ? flashStep : next === 2 && !step3Latched ? -1 : next
+  steps.sync(ui.phase !== 'end' && cur.end === null && playMs < P.field.goalMs, showStep < 0 ? null : showStep === 1 ? t(touchMode ? 'field.step.2.touch' : 'field.step.2', { k: firstKeyLabel('cmd1') }) : showStep === 2 ? t(touchMode ? 'field.step.3.touch' : 'field.step.3', { k: firstKeyLabel('skillQ'), art: artLabel() }) : t(`field.step.${showStep + 1}` as Key), flashing)
 }
 /** 위쪽 숫자·사기 띠가 읽는 판 — 점이 먼저 쓰러지고 숫자가 따라가도록 numLagMs 전의 것 (판 값은 안 바꾼다) */
 function lagged(now: number): VModel {
@@ -750,20 +784,22 @@ function endStats(): { killed: number; lost: number; flank: number; art: number 
 /** 그 무리의 지금 명령 ORD_* (엔진이 정한 것 · 대마다 같다) */
 function ordOf(grp: string): number {
   const q = cur.squads.find(e => e.side === 0 && e.grp === grp && e.men > 0)
-  return q === undefined ? 0 : q.order
+  if (q === undefined) return 0
+  // 엔진이 끝난 명령을 되돌리기 전에는 「맞물려 있거나 받은 지 orderLitSec 초 안」일 때만 걸린 것으로 본다
+  return q.aim >= 0 || cur.tick - q.orderTick <= P.field.hz * P.field.orderLitSec ? q.order : 0
 }
 /** 화면 밖에 있는 우리 무리의 가장자리 화살표 자리 */
 function offscreenArrows(): { g: number; x: number; y: number; rot: number; icon: string }[] {
   const out: { g: number; x: number; y: number; rot: number; icon: string }[] = []
   if (blocked || ui.phase === 'end' || cur.end !== null) return out
-  const m = 36, cx = vp.w / 2, cy = (padTop + vp.h - padBottom) / 2
+  const m = 36, cx = vp.w / 2, cy = vp.h / 2
   for (const g of [0, 1, 2] as const) {
     const mine = squadsOf(g)
     if (mine.length === 0) continue
     const s = toScreen(cam, vp, pxOf(mine.reduce((a, q) => a + q.u, 0) / mine.length), pxOf(mine.reduce((a, q) => a + q.v, 0) / mine.length))
-    if (s.x >= 0 && s.x <= vp.w && s.y >= padTop && s.y <= vp.h - padBottom) continue
+    if (s.x >= -4 && s.x <= vp.w + 4 && s.y >= -4 && s.y <= vp.h + 4) continue
     const dx = s.x - cx, dy = s.y - cy
-    const k = Math.min((cx - m) / Math.max(1, Math.abs(dx)), ((vp.h - padBottom - padTop) / 2 - m) / Math.max(1, Math.abs(dy)))
+    const k = Math.min((cx - m) / Math.max(1, Math.abs(dx)), (vp.h / 2 - m) / Math.max(1, Math.abs(dy)))
     out.push({ g, x: cx + dx * k, y: cy + dy * k, rot: Math.atan2(dy, dx), icon: ['icon/unit-spear.png', 'icon/unit-archer.png', 'icon/unit-buyeo-cavalry.png'][g]! })
   }
   return out
