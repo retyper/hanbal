@@ -8,6 +8,22 @@ import numpy as np
 from PIL import Image
 S = 0.8; CW, CH, ROOT, FOOT = 240, 224, 92, 216
 FLOAT, SHIFT = 50, 6
+INSET = 9
+
+
+def keep_main(a):
+    """가장 큰 덩어리(+ 6px 안에 붙은 조각)만 남긴다 — 칸 테두리 조각·점 먼지를 뺀다"""
+    from scipy import ndimage
+    m = a[..., 3] > 0
+    lab, n = ndimage.label(ndimage.binary_dilation(m, iterations=6))
+    if n == 0:
+        return a
+    sz = ndimage.sum(m, lab, range(1, n + 1))
+    keepm = lab == (int(np.argmax(sz)) + 1)
+    a = a.copy()
+    a[..., 3] = np.where(keepm & m, a[..., 3], 0)
+    return a
+
 
 
 def key(rgb):
@@ -31,7 +47,8 @@ def main(png, roots, ok, outdir):
     for n in ok:
         c = cells[n - 1]
         x0, y0, w, h = [round(c[k] * S) for k in ('x', 'y', 'w', 'h')]
-        a = key(im.crop((x0 + w // 2, y0, x0 + w, y0 + h)))
+        a = key(im.crop((x0 + w // 2, y0 + INSET, x0 + w - INSET, y0 + h - INSET)))   # 칸 테두리(DA14 는 검은 선이 남음)는 안쪽으로 잘라 뺀다
+        a = keep_main(a)
         img = Image.fromarray(a, 'RGBA')
         bb = img.getchannel('A').getbbox()
         img = img.crop(bb)
