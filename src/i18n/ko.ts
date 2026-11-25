@@ -3584,6 +3584,7 @@ export const ko = {
   'field.why.none': '{g|이/가} 없습니다',
   'field.why.gone': '{g|이/가} 모두 쓰러졌습니다',
   'field.go': '전투 개시',
+  'field.rally': '모여라',
   'field.dash': '내닫기',
   'field.step.3': '3. 비기를 써 보세요',
   'field.herowhy.1': '쿨타임이 남았습니다',

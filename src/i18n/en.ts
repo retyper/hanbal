@@ -3571,6 +3571,7 @@ export const en: Partial<Record<Key, string>> = {
   'field.why.none': 'No {g}',
   'field.why.gone': '{g} has fallen',
   'field.go': 'Start battle',
+  'field.rally': 'Rally',
   'field.dash': 'Dash',
   'field.step.3': '3. Use your hero art',
   'field.herowhy.1': 'Still cooling down',

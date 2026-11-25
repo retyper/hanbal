@@ -419,6 +419,11 @@ function heroInput(i: FieldInput): void {
   queue.push(i); heroOrdered = true; markEpoch++
 }
 const artCdSec = (a: string): number => a === 'shout' ? P.field.heroCdShoutSec : a === 'stand' ? P.field.heroCdStandSec : a === 'snipe' ? P.field.heroCdSnipeSec : P.field.heroCdVanguardSec
+/** F · 모여라 단추: 전부 장수 곁으로 */
+function doRally(): void {
+  accept([rallyInput(inputCtx())])
+  cmdNow.fill(-1); lastGoal[0] = null; lastGoal[1] = null; lastGoal[2] = null
+}
 function doDash(): void { heroInput(dashInput(heroDirSent, inputCtx())) }
 function doSkill(): void {
   const h = heroNow()
@@ -443,13 +448,16 @@ function watchWhy(now: number): void {
     if (cur.grpWhy[g] !== 0 && cur.grpWhyTick[g] !== lastGrpWhyTick[g]) { lastGrpWhyTick[g] = cur.grpWhyTick[g]; flags.say(`${gName(g)} ${t(`field.herowhy.${cur.grpWhy[g]}` as Key)}`, 'why', now) }
   }
 }
-function padBtns(): { dash: PadBtn; skill: PadBtn } {
+function padBtns(): { dash: PadBtn; skill: PadBtn; rally: PadBtn } {
   const h = heroNow()
   const hz = P.field.hz
   const dashMax = Math.max(1, P.field.heroDashCdSec * hz)
   const art = h?.art ?? 'none'
   const artMax = Math.max(1, artCdSec(art) * hz)
+  // 줄이 싸우는 중이라(앞줄이 맞물린 지 3초 안) 장수를 안 따라온다 — 모여라 단추가 밝아져 글 없이 읽힌다
+  const locked = cur.frontLockTick[0] >= 0 && cur.tick - cur.frontLockTick[0] <= P.field.hz * P.field.rallyLitSec
   return {
+    rally: { lit: locked, frac: 0, sec: 0, label: t('field.rally'), key: firstKeyLabel('rally'), icon: 'flag/flag-guard.png' },
     dash: { frac: h === undefined ? 0 : Math.min(1, h.dashCd / dashMax), sec: h === undefined ? 0 : Math.ceil(h.dashCd / hz), label: t('field.dash'), key: firstKeyLabel('dash'), icon: 'flag/flag-charge.png' },
     skill: { frac: h === undefined ? 0 : Math.min(1, h.artCd / artMax), sec: h === undefined ? 0 : Math.ceil(h.artCd / hz), label: art === 'none' ? '-' : t(`war.artName.${art}` as Key), key: firstKeyLabel('skillQ'), icon: art === 'none' ? '' : `flag/flag-art-${art}.png` },
   }
@@ -660,7 +668,7 @@ function paint(now: number, alpha: number): void {
   root.classList.toggle('touch', touchMode)
   arrows.sync(offscreenArrows())
   const pb = padBtns()
-  pad.sync(!blocked && ui.phase === 'play' && cur.end === null, touchMode, touchMode && !heroOrdered && playMs < 3000, pb.dash, pb.skill)
+  pad.sync(!blocked && ui.phase === 'play' && cur.end === null, touchMode, touchMode && !heroOrdered && playMs < 3000, pb.dash, pb.skill, pb.rally)
   hud.sync(lagged(now), { gold: fxGold, blocked: fxBlocked })
   fxGold = false; fxBlocked = false
   hud.frame(now)
@@ -836,12 +844,7 @@ addEventListener('keydown', e => {
       if (cellWhy(cur, g) === null) { heldPick = g; setSel([g]) } else pickGroup(g)
       break
     }
-    case 'rally': {
-      // 전부 장수 곁으로 (엔진의 「모여라」가 오기 전에는 무리 셋을 알아서로)
-      accept([rallyInput(inputCtx())])
-      cmdNow.fill(-1); lastGoal[0] = null; lastGoal[1] = null; lastGoal[2] = null
-      break
-    }
+    case 'rally': doRally(); break
     case 'cmd1': case 'cmd2': case 'cmd3': case 'cmd4': pressBig(Number(a.slice(3)) - 1); break
     case 'pause':
       if (aiming !== -1) { cancelAim(); break }
@@ -894,7 +897,7 @@ aimCur = document.createElement('img')
 aimCur.id = 'fd-aimcur'; aimCur.hidden = true; aimCur.alt = ''
 aimCur.style.cssText = 'position:absolute;left:0;top:0;width:48px;height:48px;object-fit:contain;pointer-events:none;z-index:7'
 root.append(aimCur)
-pad = mountPad(root, import.meta.env.BASE_URL + 'realm/', { onDir: d => { padDir = d }, onDash: doDash, onSkill: doSkill })
+pad = mountPad(root, import.meta.env.BASE_URL + 'realm/', { onDir: d => { padDir = d }, onDash: doDash, onSkill: doSkill, onRally: doRally })
 steps = mountSteps(root)
 root.append(document.getElementById('fd-rotate') as HTMLElement)
 resize()

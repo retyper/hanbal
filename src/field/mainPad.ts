@@ -6,10 +6,10 @@
 import { HAEBI_STICK } from '../tune/params.ts'
 import { stickDir } from './input.ts'
 
-export interface PadHandlers { onDir(dir: number): void; onDash(): void; onSkill(): void }
+export interface PadHandlers { onDir(dir: number): void; onDash(): void; onSkill(): void; onRally(): void }
 /** 단추 한 칸의 지금 모양: frac = 쿨이 남은 몫 0~1 · sec = 남은 초 · label = 이름 · key = 키 글자 · icon = 그림 경로 (없으면 글자만) */
-export interface PadBtn { frac: number; sec: number; label: string; key: string; icon: string }
-export interface Pad { sync(show: boolean, touch: boolean, shake: boolean, dash: PadBtn, skill: PadBtn): void }
+export interface PadBtn { lit?: boolean; frac: number; sec: number; label: string; key: string; icon: string }
+export interface Pad { sync(show: boolean, touch: boolean, shake: boolean, dash: PadBtn, skill: PadBtn, rally: PadBtn): void }
 
 const GOLD = '#ffd27a'
 const R = 15.9155
@@ -32,6 +32,7 @@ const CSS = `
 .fd-pb b{font-size:11px;line-height:1;pointer-events:none}
 .fd-pb em{position:absolute;left:0;right:0;top:-15px;text-align:center;font-style:normal;font-size:11px;color:#f3ecd8aa;pointer-events:none}
 @media (pointer:coarse){.fd-pb em{display:none}}
+.fd-pb.lit{border-color:#fff;box-shadow:0 0 0 3px ${GOLD},0 0 12px ${GOLD}}
 .fd-pb.cool{opacity:.55;border-color:#f3ecd855}
 .fd-pb svg{position:absolute;inset:-2px;width:calc(100% + 4px);height:calc(100% + 4px);transform:rotate(-90deg);pointer-events:none}
 .fd-pb s{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;text-decoration:none;color:#fff;text-shadow:0 1px 3px #000;pointer-events:none}
@@ -45,7 +46,7 @@ export function mountPad(root: HTMLElement, base: string, h: PadHandlers): Pad {
   stick.innerHTML = '<i></i>'
   const knob = stick.firstElementChild as HTMLElement
   const pad = document.createElement('div'); pad.id = 'fd-pad'; pad.hidden = true
-  pad.innerHTML = ['dash', 'skill'].map(k => `<button class="fd-pb" type="button" data-k="${k}"></button>`).join('')
+  pad.innerHTML = ['dash', 'skill', 'rally'].map(k => `<button class="fd-pb" type="button" data-k="${k}"></button>`).join('')
   root.append(stick, pad)
   let cur = -1, id = -1
   const move = (e: PointerEvent): void => {
@@ -70,25 +71,26 @@ export function mountPad(root: HTMLElement, base: string, h: PadHandlers): Pad {
     const el = (e.target as HTMLElement).closest('[data-k]') as HTMLElement | null
     if (el === null) return
     e.preventDefault(); e.stopPropagation()
-    if (el.dataset['k'] === 'dash') h.onDash(); else h.onSkill()
+    const k = el.dataset['k']
+    if (k === 'dash') h.onDash(); else if (k === 'skill') h.onSkill(); else h.onRally()
   })
-  const sigs = ['', '']
+  const sigs = ['', '', '']
   const paint = (i: number, b: PadBtn): void => {
-    const sig = `${b.sec}|${b.label}|${b.key}|${b.icon}|${Math.round(b.frac * 40)}`
+    const sig = `${b.sec}|${b.label}|${b.key}|${b.icon}|${Math.round(b.frac * 40)}|${b.lit === true ? 1 : 0}`
     if (sig === sigs[i]) return
     sigs[i] = sig
     const el = pad.children[i] as HTMLElement
     const cool = b.sec > 0
-    el.className = `fd-pb${cool ? ' cool' : ''}`
+    el.className = `fd-pb${cool ? ' cool' : ''}${b.lit === true ? ' lit' : ''}`
     const ring = cool ? `<svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="${R}" fill="none" stroke="${GOLD}" stroke-width="2.4" stroke-dasharray="${(b.frac * 100).toFixed(1)} 100"/></svg><s>${b.sec}</s>` : ''
     el.innerHTML = `<em>${b.key}</em>${b.icon === '' ? '' : `<img src="${base}${b.icon}" alt="">`}<b>${b.label}</b>${ring}`
   }
   return {
-    sync(show, touch, shake, dash, skill) {
+    sync(show, touch, shake, dash, skill, rally) {
       pad.hidden = !show
       stick.classList.toggle('on', show && touch)
       stick.classList.toggle('shake', shake)
-      if (show) { paint(0, dash); paint(1, skill) }
+      if (show) { paint(0, dash); paint(1, skill); paint(2, rally) }
     },
   }
 }
