@@ -97,3 +97,29 @@ test('그림: 큰 마무리는 얼어 있는 동안 제 자리에서 부풀고 �
   assert.ok(!ops.some(o => /filter|Gradient|shadowBlur/.test(o)), '폰 그래픽 한도 — filter·그라디언트·번짐 없음')
   void f
 })
+
+// ── 카메라 당김 · 몸 크기 · 숫자 숨김 · 잔상 (코디네이터 11-25 「그놈이 한눈에」) ──
+import { criticalFinishFocus, criticalFinishPoses } from '../src/raid/critical-finish.ts'
+import { HAEBI_MOBS as MOBS } from '../src/tune/params.ts'
+test('카메라 당김: 얼어 있는 동안 bigZoom 의 90% 이상 · 처음 3프레임에 다 들어가고 · 풀린 뒤 .2초 안에 1배 · 그놈의 화면 키 ≥ 48px', () => {
+  const s = quiet(3), f = mark(s, 100)
+  const at = (t: number) => criticalFinishFocus(criticalFinishFrames(s, s.fx, t, true, false, CF, () => true), CF)
+  at(0)
+  assert.ok(at(CF.zoomIn)!.k >= 1 + (CF.bigZoom - 1) * .99, '처음 zoomIn 초(3프레임)에 다 들어감')
+  let focusMid = at(CF.zoomIn)!
+  for (const t of [CF.zoomIn, CF.bigHold * .5, CF.bigHold * .99]) { const g = at(t)!; if (t === CF.bigHold * .5) focusMid = g; assert.ok(g.k >= 1 + (CF.bigZoom - 1) * .9, `얼어 있는 동안 ${t}`) }
+  const justOut = at(CF.bigHold + .001)!.k; assert.ok(at(CF.bigHold + CF.zoomOut * .5)!.k < justOut, '풀리자마자 줄기 시작')
+  assert.equal(at(CF.bigHold + .2), null, '풀린 뒤 .2초 안에 1배')
+  assert.equal(focusMid.x, f.x); assert.equal(focusMid.y, f.y)
+  const body = MOBS.club.height * CF.holdScaleBig * CF.bigZoom
+  assert.ok(body >= 48, `맞은 놈 화면 키 ${body}px`)
+})
+test('얼어 있는 동안 몸은 부풀어 holdScaleBig 에 닿고 · 날아가는 길엔 잔상이 낱낱이 점점 옅게 남는다', () => {
+  const s = quiet(3), f = mark(s, 100), ev = criticalFinishEvent(f)!
+  const big = { ...CF, hold: CF.bigHold, holdScale: CF.holdScaleBig, holdRise: CF.bigRise, life: CF.life - CF.hold + CF.bigHold, trailOffsets: CF.bigTrail, trailAlpha: CF.bigTrailAlpha }
+  assert.ok(criticalFinishPoses(ev, CF.bigHold * .8, big).at(-1)!.scale >= CF.holdScaleBig * .99)
+  const flying = criticalFinishPoses(ev, CF.bigHold + .3, big)
+  assert.equal(flying.length, CF.bigTrail.length + 1)
+  const alphas = flying.slice(0, -1).map(p => p.alpha); assert.ok(alphas.every((a, i) => i === 0 || a < alphas[i - 1]!), `점점 옅게 ${alphas}`)
+  assert.ok(Math.abs(flying.at(-1)!.scale - (CF.holdScaleBig - (CF.holdScaleBig - CF.endScale) * (1 - (1 - .3 / (CF.life - CF.hold)) ** 3))) < .2, '부푼 채로 날아간다')
+})

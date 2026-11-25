@@ -1434,7 +1434,7 @@ export const HAEBI_IMPACT = {
   shakeLife: .2, shakeCritical: 2, shakeElite: 4, shakeHurt: 4, shakeSkill: 7, shakeMax: 8,
   shakeXHz: 91, shakeYHz: 77, shakeYShare: .6,
   /** 치명 마무리가 얼음에서 풀려 펑 하는 순간의 흔들림 (shakeMax 안에서 · 시작값) */
-  shakeFinish: 6,
+  shakeFinish: 8,
   mobFlash: .12, whiteTime: .05, mobJitter: 2.5, mobJitterHz: 83, squashX: 1.15, squashY: .9,
   numberPop: 1.6, numberPopTime: .08, numberCriticalPop: 1.85,
   deathDistance: 60, deathEliteDistance: 100, deathLift: 48, deathBounce: 13,
@@ -1450,7 +1450,13 @@ export const HAEBI_IMPACT = {
      * 풀리는 순간 「펑」: 하얀 테 하나가 popRing 반지름에서 popLife 초 동안 퍼지고 낱낱 알갱이 popDots 개가 popDotDistance 까지 튄다(햇살·붉은 원 없음) · 화면 흔들림 shakeFinish · 소리·진동도 이 순간
      * 잦기: 큰 마무리는 마지막 큰 것 뒤 bigGap 초가 지나야 다시 난다(그 사이 치명 마무리는 예전처럼 가볍게 `hold`) · 한 걸음에 여럿이 죽으면 가장 센 한 놈만 · 헤드리스(여덟 묶음·숲·씨앗 셋·4분·행운 최대): 치명 마무리는 분당 11~21번인데 큰 것은 분당 3.5~5.1번(12~17초에 한 번) · 판이 얼어 있는 몫 3.1~3.9% · 행운이 없으면 마무리 자체가 0(단검 등 뒤 치명만 있고 주 무기 마무리가 아니다)
      */
-    bigHold: .25, holdScaleBig: 1.22, bigGap: 8, dim: .5, dimColor: '#05070b', flash: .9, flashPart: .6, popLife: .32, popRingFrom: 22, popRingTo: 130, popRingWidth: 5, popRingColor: '#fff6dc', popDots: 10, popDotDistance: 150, popDotSize: 5 },
+    bigHold: .25, holdScaleBig: 1.6, bigRise: .3, bigGap: 8, dim: .58, dimColor: '#05070b', flash: .9, flashPart: 1.6, popLife: .32, popRingFrom: 22, popRingTo: 130, popRingWidth: 9, popRingColor: '#fff6dc', popDots: 10, popDotDistance: 150, popDotSize: 5,
+    /**
+     * 얼어 있는 동안 카메라가 맞은 놈 쪽으로 당겨 들어간다 (스매시의 마무리 확대 · 캔버스 변환 · 조작 단추는 그대로): 처음 zoomIn 초(60프레임 기준 3프레임)에 bigZoom 배까지 들어가
+     * 풀리는 순간 zoomOut 초 안에 1배로 튕겨 돌아온다 · 1 이면 꺼짐. 몸은 bigRise 몫 시간에 holdScaleBig 배까지 커진다(넓은 화면에서도 화면 키 48px 이상이 되게 · 시험).
+     * 날아가는 길에 낱낱 잔상 bigTrail 초 늦은 자리마다 한 장씩(점점 옅게 · 처음 bigTrailAlpha)
+     */
+    bigZoom: 1.35, zoomIn: .05, zoomOut: .15, bigTrail: [.03, .06, .09, .12], bigTrailAlpha: .32 },
 } as const
 
 /**

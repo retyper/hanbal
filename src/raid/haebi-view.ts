@@ -1,4 +1,4 @@
-import { criticalFinishFrames, criticalFinishHandled, drawCriticalFinishFrames } from './critical-finish.ts'
+import { criticalFinishFrames, criticalFinishFocus, criticalFinishHandled, drawCriticalFinishFrames } from './critical-finish.ts'
 import {drawImugiParent,drawImugiThreats,drawImugiWater} from './imugi-view.ts'
 import { drawTiger, drawTigerFall, drawTigerGround, drawTigerThreats } from './tiger-view.ts'
 import { drawBulgasari, drawBulgasariFall, drawBulgasariGround, drawBulgasariThreats } from './bulgasari-view.ts'
@@ -449,10 +449,10 @@ function drawUlt(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageEle
  * 판 시각으로 날린다(멈추면 같이 멈추고 시전 동안은 같이 느려진다). 크게 찍혔다 줄며 포물선으로 옆·위로 튀고 살짝 흔들린다 ·
  * 겹쳐도 읽히게 좌우를 번갈아 다른 폭으로 · 치명타는 더 빠르고 크고 금·주황 + 작은 터짐 · 개수 한도 drawNumbers (새것만).
  */
-type Num = { x: number; y: number; vx: number; vy: number; g: number; t: number; life: number; text: string; crit: boolean; kill: boolean; spin: number; sum: number; pop: number }
+type Num = { big?: true; x: number; y: number; vx: number; vy: number; g: number; t: number; life: number; text: string; crit: boolean; kill: boolean; spin: number; sum: number; pop: number }
 const nums: Num[] = [], seenNum = new WeakSet<object>()
 let numT = -1, numFlip = 0
-function trackNumbers(s: HaebiRun) {
+function trackNumbers(s: HaebiRun, isBig?: (f: object) => boolean) {
   if (s.t < numT) nums.length = 0   // 새 판
   numT = s.t
   for (const f of s.fx) {
@@ -463,16 +463,18 @@ function trackNumbers(s: HaebiRun) {
     const near = nums.find(p => s.t - p.t < C.numMergeTime && p.kill === kill && Math.abs(p.x - f.x) < C.numMerge && Math.abs(p.y - (f.y - (kill ? 30 : 16))) < C.numMerge)
     if (near) { near.sum += f.n; near.text = String(Math.round(near.sum)); near.pop = s.t; if (crit && !near.crit) { near.crit = true; near.life = C.numCritLife } continue }
     numFlip = (numFlip + 1) % 6
+    const heldBig = kill && !!isBig?.(f)   // 큰 마무리의 숫자는 얼어 있는 동안 그놈을 가리지 않게 숨겼다가 풀리는 순간 띄운다
     const side = (numFlip % 2 ? 1 : -1) * (.45 + (numFlip >> 1) * .3)
-    nums.push({ x: f.x, y: f.y - (kill ? 30 : 16), vx: side * C.numSpread * sp, vy: -C.numRise * sp, g: C.numGravity * sp * sp, t: s.t, life: crit ? C.numCritLife : C.numLife, text: String(Math.round(f.n)), crit, kill, spin: side * C.numWobble, sum: f.n, pop: s.t })
+    nums.push({ x: f.x, y: f.y - (kill ? 30 : 16), vx: side * C.numSpread * sp, vy: -C.numRise * sp, g: C.numGravity * sp * sp, t: s.t, life: crit ? C.numCritLife : C.numLife, text: String(Math.round(f.n)), crit, kill, spin: side * C.numWobble, sum: f.n, pop: s.t, ...(heldBig ? { big: true as const } : {}) })
     if (nums.length > C.drawNumbers) nums.shift()
   }
   for (let i = nums.length - 1; i >= 0; i--) if (s.t - nums[i]!.t >= nums[i]!.life) nums.splice(i, 1)
 }
-function drawNumbers(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, viewTime = s.t) {
+function drawNumbers(ctx: CanvasRenderingContext2D, images: Map<string, HTMLImageElement>, s: HaebiRun, viewTime = s.t, frozen = false) {
   const hit = images.get('raid/hit.png')
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'
   for (const p of nums) {
+    if (frozen && p.big) continue
     const age = viewTime - p.t, k = age / p.life; if (k < 0 || k >= 1) continue
     const x = p.x + p.vx * age, y = p.y + p.vy * age + p.g * age * age / 2
     const popT = FEEL.numberPopTime, pa = viewTime - p.pop, peak = p.crit ? FEEL.numberCriticalPop : FEEL.numberPop, scale = pa < popT ? peak - (peak - 1) * pa / popT : 1
@@ -794,12 +796,22 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   const qx = quake ? Math.round(Math.sin(time * FEEL.shakeXHz) * quake) : 0, qy = quake ? Math.round(Math.cos(time * FEEL.shakeYHz) * quake * FEEL.shakeYShare) : 0
   const z = cam?.zoom ?? 1, density = z * Math.max((ctx.canvas?.width ?? W) / W, (ctx.canvas?.height ?? H) / H)
   // 카메라가 1배·판 가운데가 아니면 그 변환으로 그린다 — 확대 중 · 59-WIDE 넓은 맵은 1배에서도 장수를 따라간다 (한 장짜리 판의 1배는 예전 그대로 변환 없음)
-  const camOn = !!cam && (z !== 1 || cam.x !== W / 2 || cam.y !== H / 2), bz = camOn ? z : 1
+  const camOn = !!cam && (z !== 1 || cam.x !== W / 2 || cam.y !== H / 2), bz0 = camOn ? z : 1
   // 넓은 맵은 옮김을 캔버스 화소에 맞춘다 (따라가는 동안 바닥·몸이 반 화소씩 번지지 않게)
   const px = (ctx.canvas?.width ?? W) / W, py = (ctx.canvas?.height ?? H) / H
   const ox = camOn ? s.wide ? Math.round((W / 2 - cam!.x * z) * px) / px : W / 2 - cam!.x * z : 0, oy = camOn ? s.wide ? Math.round((H / 2 - cam!.y * z) * py) / py : H / 2 - cam!.y * z : 0
-  const bx = ox + qx, by = oy + qy
-  if (camOn || quake) fieldTransform(ctx, bz, bx, by)
+  const bx0 = ox + qx, by0 = oy + qy
+  // 큰 마무리(얼었다가 펑): 얼어 있는 동안 카메라가 맞은 놈 쪽으로 당겨 들어가고 풀리면 튕겨 돌아온다 (캔버스 변환 · 그놈이 화면 가장자리면 당김이 화면 안에 갇힌다)
+  const finishFrames = criticalFinishFrames(s, s.fx, time, s.state === 'playing' && !ending?.active, criticalLow, FEEL.criticalFinish, feel?.isBig)
+  const focus = criticalFinishFocus(finishFrames, FEEL.criticalFinish)
+  let bz = bz0, bx = bx0, by = by0
+  if (focus) {
+    const sx = focus.x * bz0 + bx0, sy = focus.y * bz0 + by0
+    bz = bz0 * focus.k; bx = sx - (sx - bx0) * focus.k; by = sy - (sy - by0) * focus.k
+    if (!s.wide) { bx = Math.min(0, Math.max(W - W * bz, bx)); by = Math.min(0, Math.max(H - H * bz, by)) }
+  }
+  let heroRedraw: (() => void) | null = null
+  if (camOn || quake || focus) fieldTransform(ctx, bz, bx, by)
   const bg = images.get('raid/' + ST[s.stage].bg) ?? images.get('raid/forest.webp')
   // 59-WIDE: 지금 화면(판 좌표)에 걸친 것만 그린다 · 한 장짜리 판은 거르지 않는다(null)
   const view = s.wide ? WIDE_VIEW : null
@@ -913,6 +925,7 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
       if (aura) drawAura(ctx, aura, false, auraAt)
       drawCast(ctx, s)
       drawHero(ctx, images, s, heroPath, density, pose)
+      heroRedraw = () => drawHero(ctx, images, s, heroPath, density, pose)
       if (aura) { drawAura(ctx, aura, true, auraAt); drawAuraBurst(ctx, aura, auraAt, s.t - auraMem.burst) }
     }
   }
@@ -1000,7 +1013,6 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
   }
   // 맞은 불꽃(hit)은 새것 drawHits 개만 — 화살이 무리를 꿰면 한 프레임에 수백 개가 쌓여 폰이 버벅였다 (11-17 형 「이쯤 오면 렉」)
   let hitSkip = -C.drawHits, deathSkip = -C.drawDeaths; for (const f of s.fx) if (f.kind === 'hit') hitSkip++; else if (f.kind === 'death') deathSkip++
-  const finishFrames = criticalFinishFrames(s, s.fx, time, s.state === 'playing' && !ending?.active, criticalLow, FEEL.criticalFinish, feel?.isBig)
   let particleBudget = FX_ART.particleBudget
   let flareBudget = HIT_FLARE.budget
   for (const f of s.fx) {
@@ -1065,11 +1077,11 @@ export function drawField(ctx: CanvasRenderingContext2D, images: Map<string, HTM
     } else stamp(ctx, images, 'raid/hit.png', f.x, f.y, 30 * (1 - age * .5))
     ctx.restore()
   }
-  drawCriticalFinishFrames(ctx, finishFrames, (mob, face) => sprite(ctx, images, warlord(mob, s.stage), 0, 0, artHeight(mob, s.stage), 18, face), { size: FEEL.criticalFinish.starSize, color: FEEL.criticalFinish.starColor }, criticalLow ? undefined : { view: view ?? { left: -W, top: -H, right: 2 * W, bottom: 2 * H }, p: FEEL.criticalFinish })
+  drawCriticalFinishFrames(ctx, finishFrames, (mob, face, white) => sprite(ctx, images, warlord(mob, s.stage), 0, 0, artHeight(mob, s.stage), 18, face, white ? 'white' : false), { size: FEEL.criticalFinish.starSize, color: FEEL.criticalFinish.starColor }, criticalLow ? undefined : { hero: heroRedraw ?? undefined, view: view ?? { left: -W, top: -H, right: 2 * W, bottom: 2 * H }, p: FEEL.criticalFinish })
   // 붉은 예고(공격이 떨어질 자리)는 이제 땅 표식 차례에 깐다 (형 11-23 「패턴이 인물 위로 그려지는 건 이상하다 · 던파·테일즈위버도 그렇게 안 한다」) — 여기는 실제로 터지는 물줄기만
   for(const e of s.enemies)if(e.giant?.kind==='imugi'&&e.giant.attack&&e.giant.state==='strike')drawImugiWater(ctx,e.giant.attack)
   // 피해 숫자 — 알갱이로 튀어 나간다 (trackNumbers · drawNumbers)
-  trackNumbers(s); ctx.save(); drawNumbers(ctx, images, s, s.t + (ending?.effectTime ?? 0)); ctx.restore()
+  trackNumbers(s, feel?.isBig); ctx.save(); drawNumbers(ctx, images, s, s.t + (ending?.effectTime ?? 0), finishFrames.some(f => f.big && f.age < f.hold)); ctx.restore()
   trackBreaks(s); drawBreakText(ctx, s)   // 64-BREAK 「부위 파괴!」
   drawWellHeal(ctx, s); drawHeroWater(ctx, s); trackCap(s); drawCap(ctx, s)   // 최고 레벨 「수련을 모두 마쳤습니다」 · 66-CAP 「+금 · 회복」
   drawChampionOverlays(ctx, images, s, mobHeight, cam ? fieldView(cam) : undefined)
