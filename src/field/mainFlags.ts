@@ -32,7 +32,7 @@ const STANCE_KEY = ['charge', 'hold', 'open'] as const
 const GOLD = '#ffd27a'
 
 const CSS = `
-#fd-strip{position:absolute;left:0;right:0;bottom:0;padding:0 calc(8px + env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left));display:flex;align-items:flex-end;gap:8px;pointer-events:none}
+#fd-strip{position:absolute;left:0;right:0;bottom:0;min-height:calc(var(--fd-bar,64px) + 6px);padding:0 calc(8px + env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left));display:flex;align-items:flex-end;gap:8px;pointer-events:none}
 #fd-strip[hidden]{display:none}
 #fd-strip>*{pointer-events:auto}
 .fd-cells{display:flex;gap:6px}

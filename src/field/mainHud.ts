@@ -30,7 +30,7 @@ const CSS = `
 #fd-hud button.arm{border-color:#ffd27a;color:#1a1305;background:#ffd27a}
 #fd-edge{position:absolute;left:50%;top:calc(6px + env(safe-area-inset-top));transform:translateX(-50%);display:flex;align-items:center;gap:8px;pointer-events:none;font-size:14px;font-weight:700;text-shadow:0 1px 3px #000}
 #fd-edge[hidden]{display:none}
-#fd-edge .bar{position:relative;width:min(26vw,190px);height:20px;background:#0009;border:1px solid #fff4;border-radius:10px;overflow:hidden}
+#fd-edge .bar{position:relative;width:min(20vw,190px);height:20px;background:#0009;border:1px solid #fff4;border-radius:10px;overflow:hidden}
 #fd-edge .bar b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;z-index:1}
 #fd-edge .bar i{position:absolute;top:0;bottom:0;display:block}
 #fd-edge .bar i.a{right:0;background:#2f8cff}

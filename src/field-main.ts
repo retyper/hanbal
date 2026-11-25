@@ -93,9 +93,20 @@ let flags: FlagsView
 let vp: Viewport = { w: 1, h: 1 }
 let dpr = 1
 /** 카메라가 갈 수 있는 곳: 판 둘레에 여유를 둔다 (맨 위·옆 대가 잘리지 않게) */
+/** 위 단추·사기 띠 아래 끝과 아래 띠·안내 줄 위 끝 (화면 px) — 실제 DOM 높이를 읽는다. 이만큼은 카메라 여유로 둬서 판 끝 병사가 띠에 안 깔린다 */
+let padTop = 0, padBottom = 0, padTick = 0
+function measurePads(): void {
+  const bottomOf = (id: string): number => { const e = document.getElementById(id); return e === null || e.hidden ? 0 : e.getBoundingClientRect().bottom }
+  padTop = Math.ceil(Math.max(bottomOf('fd-hud'), bottomOf('fd-edge')))
+  const strip = document.getElementById('fd-strip'), hint = document.getElementById('fd-hint')
+  const stripTop = strip === null || strip.hidden ? vp.h : strip.getBoundingClientRect().top
+  const hintTop = hint === null || hint.hidden ? stripTop - P.field.hintBandPx : hint.getBoundingClientRect().top
+  padBottom = Math.max(0, Math.ceil(vp.h - Math.min(stripTop - P.field.hintBandPx, hintTop)))
+}
 const bounds = (): Rect => {
   const w = worldSize(cur), c = P.field.cellPx
-  return { left: -P.field.camMarginSideCells * c, top: -P.field.camMarginTopCells * c, right: w.w + P.field.camMarginSideCells * c, bottom: w.h + P.field.camMarginBottomCells * c }
+  const z0 = Math.max(0.05, (vp.h - padTop - padBottom) / w.h)
+  return { left: -P.field.camMarginSideCells * c, top: -Math.max(P.field.camMarginTopCells * c, padTop / z0), right: w.w + P.field.camMarginSideCells * c, bottom: w.h + Math.max(P.field.camMarginBottomCells * c, padBottom / z0) }
 }
 let cam = newCam(vp, bounds())
 
@@ -106,6 +117,7 @@ function resize(): void {
   blocked = innerWidth <= P.field.portraitMaxW && innerHeight > innerWidth
   rotate.hidden = !blocked
   hud.hide(blocked)
+  measurePads()
   cam = newCam(vp, bounds(), cam.level)
   followTarget(0, true)
 }
@@ -333,6 +345,7 @@ function frame(now: number): void {
   }
   if (!blocked && ui.phase === 'play' && introLeft > 0) introLeft = Math.max(0, introLeft - Math.min(dtMs, 100))
   const dt = Math.min(dtMs, 100)
+  if ((padTick++ & 15) === 0) measurePads()
   if (!paused && !blocked) viewMs += endAt > 0 && now - endAt < P.field.endSlowMs ? dt * P.field.endSlowPermille / 1000 : dt
   followTarget(dt / 1000)
   paint(now, blocked ? 1 : Math.min(1, acc / stepMs))
@@ -381,3 +394,4 @@ flags = mountFlags(root, import.meta.env.BASE_URL + 'realm/', handlers)
 root.append(document.getElementById('fd-rotate') as HTMLElement)
 resize()
 wake()
+;(window as unknown as Record<string, unknown>)['__fieldPads'] = (): { padTop: number; padBottom: number; zoom: number; vp: Viewport } => ({ padTop, padBottom, zoom: cam.zoom, vp })

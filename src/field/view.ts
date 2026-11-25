@@ -7,7 +7,7 @@
  */
 import { P } from '../tune/params.ts'
 import { fieldView, inView, type Cam, type Viewport } from './viewCamera.ts'
-import { ATTACK0, ATTACK_N, DOWN, HIT, STAND0, STAND_N, WALK0, WALK_N, heroStrip, pieceImg, stripFor, type Art, type Strip } from './viewArt.ts'
+import { ATTACK0, ATTACK_N, DOWN, HIT, STAND0, STAND_N, WALK0, WALK_N, heroStrip, pieceImg, sheetOf, stripFor, type Art, type Strip } from './viewArt.ts'
 import { dotOffset, dotPhase, hash2, sideDotCounts } from './viewDots.ts'
 import { drawTerrain } from './viewTerrain.ts'
 import { TEAM_RGB } from './viewTint.ts'
@@ -27,6 +27,7 @@ const pool: Item[] = []
 const order: Item[] = []
 let used = 0
 
+const byY = (a: Item, b: Item): number => a.y - b.y
 function nextItem(): Item {
   if (used === pool.length) pool.push({ y: 0, x: 0, kind: 0, strip: null, frame: 0, flip: false, side: 0, h: 0, img: null, alpha: 1, hero: false })
   const d = pool[used++]!
@@ -135,33 +136,48 @@ function drawBanners(ctx: CanvasRenderingContext2D, at: readonly number[], zoom:
   }
 }
 
-function drawItem(ctx: CanvasRenderingContext2D, d: Item, low: boolean): void {
+function drawItem(ctx: CanvasRenderingContext2D, d: Item): void {
   if (d.kind === 2) {
     const img = d.img!
     const w = d.h * img.naturalWidth / img.naturalHeight
     ctx.drawImage(img, d.x - w / 2, d.y - d.h, w, d.h)
     return
   }
-  if (d.kind === 0) {
+  if (d.kind === 0 && d.hero) {
+    // 장수 발밑: 그림자 위에 편 색 테두리 (병사 그림자는 편마다 한 경로로 미리 칠했다)
     ctx.fillStyle = SIDE_COLOR[d.side]!
-    ctx.globalAlpha = low ? 0.5 : 0.4
-    ctx.beginPath()
-    ctx.ellipse(d.x, d.y, d.h * (d.hero ? 0.3 : 0.26), d.h * (d.hero ? 0.1 : 0.08), 0, 0, FULL_TURN)
-    ctx.fill()
-    if (d.hero) { ctx.globalAlpha = 0.9; ctx.strokeStyle = SIDE_COLOR[d.side]!; ctx.lineWidth = Math.max(1.5, d.h * 0.05); ctx.stroke() }
+    ctx.globalAlpha = 0.4
+    ctx.beginPath(); ctx.ellipse(d.x, d.y, d.h * 0.3, d.h * 0.1, 0, 0, FULL_TURN); ctx.fill()
+    ctx.globalAlpha = 0.9; ctx.strokeStyle = SIDE_COLOR[d.side]!; ctx.lineWidth = Math.max(1.5, d.h * 0.05); ctx.stroke()
     ctx.globalAlpha = 1
   }
   const s = d.strip
   if (s === null) return
   const sc = d.h / s.bodyPx, dw = s.cw * sc, dh = s.ch * sc
-  const src = d.hero ? s.img : (s.tint[d.side] ?? s.img)
+  const sheet = sheetOf(s, d.hero ? -1 : d.side, d.flip)
   if (d.alpha < 1) ctx.globalAlpha = d.alpha
-  if (d.flip) {
-    ctx.save(); ctx.translate(d.x, d.y); ctx.scale(-1, 1)
-    ctx.drawImage(src, d.frame * s.cw, 0, s.cw, s.ch, -dw / 2, -s.feet * sc, dw, dh)
-    ctx.restore()
-  } else ctx.drawImage(src, d.frame * s.cw, 0, s.cw, s.ch, d.x - dw / 2, d.y - s.feet * sc, dw, dh)
+  ctx.drawImage(sheet, (d.frame % s.cols) * s.cw, Math.floor(d.frame / s.cols) * s.ch, s.cw, s.ch, d.x - dw / 2, d.y - s.feet * sc, dw, dh)
   if (d.alpha < 1) ctx.globalAlpha = 1
+}
+
+/** 병사 그림자: 편마다 한 경로로 모아 한 번에 칠한다 (점마다 칠하면 호출이 점 수에 그대로 비례한다) */
+function drawShadows(ctx: CanvasRenderingContext2D, count: number, low: boolean): void {
+  for (const side of [0, 1] as const) {
+    ctx.beginPath()
+    let any = false
+    for (let i = 0; i < count; i++) {
+      const d = pool[i]!
+      if (d.kind !== 0 || d.hero || d.side !== side) continue
+      const rx = d.h * 0.26
+      ctx.moveTo(d.x + rx, d.y); ctx.ellipse(d.x, d.y, rx, d.h * 0.08, 0, 0, FULL_TURN)
+      any = true
+    }
+    if (!any) continue
+    ctx.fillStyle = SIDE_COLOR[side]!
+    ctx.globalAlpha = low ? P.field.shadowAlphaLow / 100 : P.field.shadowAlpha / 100
+    ctx.fill()
+  }
+  ctx.globalAlpha = 1
 }
 
 /**
@@ -226,7 +242,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
       const tqu = tq === undefined ? 0 : unitsToPx(tq.u), tqv = tq === undefined ? 0 : unitsToPx(tq.v)
       for (let k = 0; k < n; k++) {
         const o = dotOffset(q.id, k)
-        const x = unitsToPx(qu) + o.du * F.cellPx, y = Math.max(0, unitsToPx(qv) + o.dv * F.cellPx)
+        const x = unitsToPx(qu) + o.du * F.cellPx, y = Math.min(world.h, Math.max(0, unitsToPx(qv) + o.dv * F.cellPx))
         if (!inView(view, x, y, pad)) continue
         const ph = dotPhase(q.id, k)
         const d = nextItem()
@@ -280,8 +296,9 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
 
   order.length = 0
   for (let i = 0; i < used; i++) order.push(pool[i]!)
-  order.sort((a, b) => a.y - b.y)
-  for (const d of order) drawItem(ctx, d, low)
+  drawShadows(ctx, used, low)
+  order.sort(byY)
+  for (const d of order) drawItem(ctx, d)
 
   drawBanners(ctx, flagsAt, cam.zoom, baseH)
 

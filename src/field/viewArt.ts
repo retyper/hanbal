@@ -5,6 +5,7 @@
  *  - 바닥 realm/raid/ground-forest.webp · 조각 realm/fx/field/*.png
  * 편 색을 입힌 복사본은 띠마다 한 번만 만들어 둔다 (viewTint.ts).
  */
+import { P } from '../tune/params.ts'
 import { teamTint } from './viewTint.ts'
 
 export const CELLS = 20
@@ -16,17 +17,29 @@ export const DEFAULT_HERO = 'gen-ara'
 
 interface Entry { cell: readonly [number, number]; feet: number; bodyPx: number; kind: string }
 
+/** 구운 판 한 장 (캔버스 또는 굳힌 그림) */
+export type Sheet = CanvasImageSource & { width: number; height: number }
+/**
+ * 구운 띠 — 원본 띠(폭 8760~10060px)를 프레임마다 줄여 찍지 않도록, 그릴 크기로 한 번 줄여 4096px 아래 폭으로 접어 둔다
+ * (열전 src/raid/haebi-view.ts 의 bakedStrip 을 본뜸 · 폰 GPU 텍스처 한도). 물들임은 구운 뒤에 · 뒤집은 판도 같이 구워 둬 프레임마다 뒤집지 않는다.
+ * 새 덧띠(질주·달리기 따위)도 bakeLayout/bakeSheet 한 길로 받는다.
+ */
 export interface Strip {
-  img: HTMLImageElement
-  /** 칸 가로·세로 · 발 줄(칸 위에서 y) · 몸 키(px) — 그릴 때 몸 키를 맞춘다 */
-  cw: number; ch: number; feet: number; bodyPx: number
-  /** 편 색 복사본 (병사만 · 장수는 null) */
-  tint: [HTMLCanvasElement | null, HTMLCanvasElement | null]
+  /** 구운 칸 가로·세로 · 한 줄 칸 수 · 발 줄(칸 위에서 y) · 몸 키(px) — 모두 구운 크기 기준, 그릴 때 몸 키를 맞춘다 */
+  cw: number; ch: number; cols: number; feet: number; bodyPx: number
+  /** 병사 띠면 편 색을 입힌다 */
+  soldier: boolean
+  /** [보통, 뒤집힘] */
+  plain: [Sheet, Sheet]
+  base: HTMLCanvasElement
+  /** [편][보통, 뒤집힘] — 처음 쓸 때 만든다 */
+  tint: [[Sheet | null, Sheet | null], [Sheet | null, Sheet | null]]
+  n: number
 }
 export interface Art {
   base: string
   manifest: Record<string, Entry> | null
-  strips: Map<string, Strip>
+  strips: Map<string, { ready: boolean; strip: Strip }>
   ground: HTMLImageElement
   pieces: Map<string, HTMLImageElement>
 }
@@ -39,19 +52,73 @@ export function loadArt(base: string): Art {
   return art
 }
 
-/** 열쇠의 띠 (처음 부르면 그림을 받기 시작한다 · 아직 안 왔으면 null) */
-export function stripByKey(art: Art, key: string): Strip | null {
-  let s = art.strips.get(key)
-  if (s === undefined) {
-    const e = art.manifest?.[key]
-    if (e === undefined) return null
-    const img = load(`${art.base}anim-px/${key}.png`)
-    s = { img, cw: e.cell[0], ch: e.cell[1], feet: e.feet, bodyPx: e.bodyPx, tint: [null, null] }
-    const made = s
-    if (e.kind === 'soldier') img.addEventListener('load', () => { made.tint = [teamTint(img, 0), teamTint(img, 1)] })
-    art.strips.set(key, s)
+/** 구운 판의 칸 배치: 원래 칸 cw×ch 를 높이 fh 로 줄이고(원본보다 크게는 안 키운다) 폭 maxW 안에 여러 줄로 접는다 */
+export function bakeLayout(cw: number, ch: number, n: number, wantH: number, maxW: number): { fw: number; fh: number; cols: number; rows: number } {
+  const fh = Math.max(1, Math.min(ch, Math.round(wantH)))
+  const fw = Math.max(1, Math.round(cw * fh / ch))
+  const cols = Math.max(1, Math.min(n, Math.floor(maxW / fw)))
+  return { fw, fh, cols, rows: Math.ceil(n / cols) }
+}
+
+/** 띠를 구워 캔버스 한 장으로 (mirror 면 칸마다 좌우를 뒤집어서) */
+export function bakeSheet(src: CanvasImageSource, cw: number, ch: number, n: number, lay: { fw: number; fh: number; cols: number; rows: number }, mirror: boolean): HTMLCanvasElement {
+  const cv = document.createElement('canvas')
+  cv.width = lay.cols * lay.fw; cv.height = lay.rows * lay.fh
+  const g = cv.getContext('2d') as CanvasRenderingContext2D
+  g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'
+  for (let i = 0; i < n; i++) {
+    const dx = (i % lay.cols) * lay.fw, dy = Math.floor(i / lay.cols) * lay.fh
+    if (mirror) { g.save(); g.translate(dx + lay.fw, dy); g.scale(-1, 1); g.drawImage(src, i * cw, 0, cw, ch, 0, 0, lay.fw, lay.fh); g.restore() }
+    else g.drawImage(src, i * cw, 0, cw, ch, dx, dy, lay.fw, lay.fh)
   }
-  return s.img.complete && s.img.naturalWidth > 0 ? s : null
+  return cv
+}
+
+/** 구운 캔버스를 굳힌 그림(ImageBitmap)으로 바꿔 쥔다 — 캔버스를 원본으로 찍으면 찍을 때마다 사본을 뜰 수 있다 */
+function solidify(cv: HTMLCanvasElement, put: (b: Sheet) => void): void {
+  if (typeof createImageBitmap === 'function') void createImageBitmap(cv).then(put, () => {})
+}
+
+/** 열쇠의 띠 (처음 부르면 그림을 받기 시작한다 · 구워질 때까지는 null) */
+export function stripByKey(art: Art, key: string): Strip | null {
+  const had = art.strips.get(key)
+  if (had !== undefined) return had.ready ? had.strip : null
+  const e = art.manifest?.[key]
+  if (e === undefined) return null
+  const img = load(`${art.base}anim-px/${key}.png`)
+  const slot: { ready: boolean; strip: Strip } = { ready: false, strip: null as unknown as Strip }
+  art.strips.set(key, slot)
+  const soldier = e.kind === 'soldier'
+  img.addEventListener('load', () => {
+    const F = P.field
+    const drawH = F.soldierCells * F.cellPx * (soldier ? 1 : F.heroScale / 100)
+    const wantH = e.cell[1] * drawH / e.bodyPx * F.bakeUpPermille / 1000
+    const lay = bakeLayout(e.cell[0], e.cell[1], CELLS, wantH, F.bakeMaxPx)
+    const r = lay.fh / e.cell[1]
+    const base = bakeSheet(img, e.cell[0], e.cell[1], CELLS, lay, false)
+    const st: Strip = { cw: lay.fw, ch: lay.fh, cols: lay.cols, feet: e.feet * r, bodyPx: e.bodyPx * r, soldier, plain: [base, bakeSheet(img, e.cell[0], e.cell[1], CELLS, lay, true)], base, tint: [[null, null], [null, null]], n: CELLS }
+    solidify(base, b => { st.plain[0] = b })
+    solidify(st.plain[1] as HTMLCanvasElement, b => { st.plain[1] = b })
+    slot.strip = st; slot.ready = true
+  })
+  return null
+}
+
+/** 그릴 판: 병사는 편 색을 입힌 것(처음 쓸 때 구운 작은 판에 입힌다) · 장수(side -1)는 그대로 */
+export function sheetOf(s: Strip, side: -1 | 0 | 1, flip: boolean): Sheet {
+  const f = flip ? 1 : 0
+  if (side < 0 || !s.soldier) return s.plain[f]
+  const row = s.tint[side as 0 | 1]!
+  if (row[f] === null) {
+    const lay = { fw: s.cw, fh: s.ch, cols: s.cols, rows: Math.ceil(s.n / s.cols) }
+    const t = teamTint(s.base, side as 0 | 1)
+    row[0] = t
+    const m = document.createElement('canvas'); m.width = t.width; m.height = t.height
+    const g = m.getContext('2d') as CanvasRenderingContext2D
+    for (let i = 0; i < s.n; i++) { const dx = (i % lay.cols) * lay.fw, dy = Math.floor(i / lay.cols) * lay.fh; g.save(); g.translate(dx + lay.fw, dy); g.scale(-1, 1); g.drawImage(t, dx, dy, lay.fw, lay.fh, 0, 0, lay.fw, lay.fh); g.restore() }
+    row[1] = m
+  }
+  return row[f]!
 }
 
 export function stripFor(art: Art, grp: string, kind: string): Strip | null {
