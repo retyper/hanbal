@@ -17,6 +17,8 @@ import { drawMarks, type Gesture as MarkGesture, type Mark, type MarkShape } fro
 import { OP_MOVE, OP_STANCE, STANCE_CHARGE, type FieldInput, type InputGroup } from './field/types.ts'
 import { serialize } from './field/rec.ts'
 import { mountHud, type Hud } from './field/mainHud.ts'
+import { createFieldSound, soundCamOf, soundFrameOf } from './field/mainSound.ts'
+import type { FlagKind } from './field/mainSoundModel.ts'
 import { advance } from './field/viewLoop.ts'
 import { readField, type VModel } from './field/viewRead.ts'
 import { clusterCenter, fitZoom, followCam, frameBox, newCam, nextLevel, toField, wholeZoom, type Rect, type Viewport } from './field/viewCamera.ts'
@@ -73,6 +75,9 @@ let pan: { x: number; y: number; until: number } | null = null
 let panDrag: { id: number; sx: number; sy: number; cx: number; cy: number } | null = null
 let tgt: { x: number; y: number } | null = null
 let hud: Hud
+/** 소리 (F3e) — 첫 손짓 뒤에만 나고 · 멈춤·숨은 탭에서는 안 부른다 */
+const fsnd = createFieldSound()
+let soundTick = -1, soundEpoch = 0
 let acc = 0
 let last = 0
 let raf = 0
@@ -159,6 +164,7 @@ function restart(): void {
   state = createField(plainSetup(seed, men, true, makeMap())); cur = readField(state); prev = null; acc = 0
   resetFx()
   introLeft = P.field.introMs
+  fsnd.stop(); soundTick = -1; soundEpoch = markEpoch
   endAt = 0; viewMs = 0; pan = null; panDrag = null; tgt = null
   ui.phase = 'ready'; ui.sel = -1; ui.popup = false
   queue = []; plan = [[], [], [], []]; lastMove = [-1, -1, -1, -1]; press = null
@@ -222,6 +228,7 @@ function commit(r: Translated, now: number, goal: { u: number; v: number } | nul
     if (r.inputs.some(i => i.op === OP_MOVE)) lastMove[r.g] = state.tick
   }
   markEpoch++
+  if (r.intent !== 'auto') fsnd.order((r.g === 2 ? 'horse' : r.intent) as FlagKind)
   if (goal !== null) { lastGoal[r.g] = goal; lastIntent[r.g] = r.intent }
   else if (r.intent === 'auto') lastGoal[r.g] = null
   else if (r.intent !== 'move') lastIntent[r.g] = r.intent
@@ -360,7 +367,12 @@ function frame(now: number): void {
       if (queue.length > 0) queue = queue.filter(q => q.tick >= state.tick)
       prev = cur; cur = readField(state)
     }
-    if (cur.end !== null) { ui.phase = 'end'; press = null; flags.live(null); endAt = now }
+    if (cur.end !== null) { ui.phase = 'end'; press = null; flags.live(null); endAt = now; fsnd.end(cur.winner === 0) }
+  }
+  // 틱이 바뀌었거나 깃발을 새로 꽂았을 때 한 번 (시작 화면에서 꽂은 깃발 소리도 바로 나게)
+  if (!paused && !blocked && (state.tick !== soundTick || markEpoch !== soundEpoch)) {
+    soundTick = state.tick; soundEpoch = markEpoch
+    fsnd.frame(soundFrameOf(state, cur.edge), soundCamOf(cam, vp, bounds()), null, now)
   }
   if (!blocked && ui.phase === 'play' && introLeft > 0) introLeft = Math.max(0, introLeft - Math.min(dtMs, 100))
   const dt = Math.min(dtMs, 100)
@@ -376,6 +388,9 @@ function wake(): void {
 // 탭에 돌아오면 밀린 시간을 몰아 돌리지 않는다 (rAF 가 이미 예약돼 있어도 시계를 새로 시작한다)
 document.addEventListener('visibilitychange', () => { last = 0; acc = 0; paintKey.x = NaN; wake() })
 addEventListener('resize', () => { resize(); wake() })
+addEventListener('pointerdown', () => fsnd.unlock(), true)
+addEventListener('keydown', () => fsnd.unlock(), true)
+addEventListener('pagehide', () => fsnd.stop())
 cv.addEventListener('pointerdown', onDown)
 cv.addEventListener('pointermove', onMove)
 cv.addEventListener('pointerup', onUp)
