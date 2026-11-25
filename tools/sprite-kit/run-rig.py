@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """창병(spear) 달리기 안내 인형 + 장면 (11-25 · A1 카드 · 새 칸은 덧띠 spear-x.png 로).
 pose-rig.py 를 고치지 않고 불러다 쓴다. 병사 띠 칸은 본 띠(public/realm/anim-px/spear.png · 칸 438x128 · 서기 0~3) 그대로.
-  py -3 -X utf8 -I tools/sprite-kit/run-rig.py run a|b <나갈.png>   달리기 앞 네 칸(a) · 뒤 네 칸(b = 다리 맞바꿈)(2x2): 땅 닿음 · 딛고 모음 · 뜸(뒷발 차고 앞무릎 듦) · 뜸(두 발 모임)
+  py -3 -X utf8 -I tools/sprite-kit/run-rig.py run a|b|hold <나갈.png>   달리기 앞 네 칸(a) · 뒤 네 칸(b = 다리 맞바꿈)(2x2): 땅 닿음 · 딛고 모음 · 뜸(뒷발 차고 앞무릎 듦) · 뜸(두 발 모임)
 장면 = 1920x1280 자홍 · 왼쪽 줄 384 = [본 띠 서기 / 본 띠 걷기 한 칸] 2배 · 오른쪽 2x2 인형 칸(768x640) · 곁파일 .roots.json.  병사 키 126 · 인형 키 137 → 0.92 배로 줄여 같은 키."""
 import importlib.util, json, sys
 import numpy as np
@@ -22,14 +22,21 @@ RUN = {
     4: dict(pelvis=(8, 18), near_foot=(-12, 36, -10), far_foot=(24, 20, 5)),             # 뜸: 두 발이 몸 아래로 모임
 }
 
+# 방진 버팀(RB1): 무릎을 낮추고 두 발을 벌려 땅에 박은 채 창끝을 앞 위로 세워 받침 (두 칸: 받침 · 더 낮춰 버팀)
+BRACE = {
+    11: dict(pelvis=(2, -16), near_foot=(-14, 0), far_foot=(18, 0), hands=((-4, 34), (32, 58)), bend=24),
+    12: dict(pelvis=(0, -20), near_foot=(-16, 0), far_foot=(20, 0), hands=((-6, 32), (34, 60)), bend=30),
+}
+
 
 def cell(n, swap=False):
     pr.big_canvas()
     pr.PROP['kind'] = 'pole2'
-    p = dict(RUN[n])
+    p = dict(RUN.get(n) or BRACE[n])
     if swap:   # 뒤 반 주기: 가까운 발과 먼 발의 자리를 맞바꾼다 (다리 교대)
         p['near_foot'], p['far_foot'] = p['far_foot'], p['near_foot']
-    ps = pr._ik(p['pelvis'], (4, 56), (32, 66), bend=20, lean=3, near_foot=p['near_foot'], far_foot=p['far_foot'])
+    hands, bend = p.get('hands', ((4, 56), (32, 66))), p.get('bend', 20)
+    ps = pr._ik(p['pelvis'], hands[0], hands[1], bend=bend, lean=3, near_foot=p['near_foot'], far_foot=p['far_foot'])
     im = pr.figure(None, True, ps)                     # 960x832 (게임 화소 4배)
     k = 0.5 * 126 / 137                                # 게임 화소 2배 · 병사 키에 맞춤
     im = im.resize((round(im.width * k), round(im.height * k)), Image.LANCZOS)
@@ -52,7 +59,7 @@ def scene(group, out):
         r = ref(i)
         o.paste(r, ((LW - r.width) // 2, j * CH_ + CH_ - 40 - r.height), r)
     rec = []
-    for k, n in enumerate((1, 2, 3, 4)):
+    for k, n in enumerate((11, 12) if group == 'hold' else (1, 2, 3, 4)):
         x0, y0 = LW + (k % 2) * CWD, (k // 2) * CH_
         o.paste(cell(n, group == 'b'), (x0, y0))
         rec.append(dict(x=x0, y=y0, w=CWD, h=CH_, root=x0 + RX, ground=y0 + GY))
