@@ -118,7 +118,7 @@ test('장수: 곁의 적에 사람 수 비례로 깎여 쓰러지면 몇 초 못
   const hit = (men: number): number => {
     const t = duel({}, { men }, 1300, true)
     const e = t.s.heroes[0]!
-    e.u = t.B.u - U(1); e.v = t.B.v; e.manual = 1; e.goal = null
+    e.u = t.B.u - U(1); e.v = t.B.v; e.manual = 1; e.goal = null; e.mu = 0 // 장수의 칼을 끄고 맞는 몫만 잰다
     t.A.u = U(20)
     run(t.s, 30)
     return P.field.heroHp - e.hp
@@ -143,7 +143,7 @@ test('장수는 멀쩡한 목책 너머·잠든 대에게는 안 맞는다', () 
   const C = pick(t, 1, 'front')
   keepOnly(t, [pick(t, 0, 'front'), C])
   const g = t.heroes.find(e => e.side === 0)!
-  Object.assign(g, { u: U(60), v: U(20), manual: 1, goal: null })
+  Object.assign(g, { u: U(60), v: U(20), manual: 1, goal: null, mu: 0 }) // 칼을 끈다 (치면 깨운다)
   place(C, 61, 20); C.sleep = 100
   t.squads[0]!.u = U(20)
   run(t, 30)
