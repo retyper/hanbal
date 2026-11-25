@@ -13,7 +13,7 @@ import { dotDied, dotsOf, offU, offV, peekDots, resetForm, rowCount, rowOfDot, s
 import { FORM_HOLD, FORM_SCATTER, FORM_WALL, ORD_VOLLEY, moraleOf } from './viewFxRead.ts'
 import { drawRain, resetRain } from './viewRain.ts'
 import { drawDash, queueDash, resetDash } from './viewDash.ts'
-import { FLAG_FALLEN, bracedAt, drawOmens, drawShouts, isShouting, liftOf, noteShouts, drawPops, noteOmens, flagTilt, ingestHits, kickOf, resetHit, scatterOf, sc, shake, shakeAt, viewClock } from './viewHit.ts'
+import { FLAG_FALLEN, bracedAt, drawOmens, drawShouts, isShouting, liftOf, noteShouts, raisedAt, drawPops, noteOmens, flagTilt, ingestHits, kickOf, resetHit, scatterOf, sc, shake, shakeAt, viewClock } from './viewHit.ts'
 import { computePairs, coolPress, notePush, dotMelee, drawParticles, flinchOf, isFront, maxFwdOf, minFwdOf, mo, noteLoss, partnerOf, resetMelee, spawn, swingChance, swings } from './viewMelee.ts'
 import { drawTerrain } from './viewTerrain.ts'
 import { TEAM_RGB } from './viewTint.ts'
@@ -31,7 +31,7 @@ const FULL_TURN = 6.2832
 const STAKE_VARIANTS = 17
 
 type Kind = 0 | 1 | 2 // 0 병사 · 1 쓰러진 병사 · 2 소품(목책 말뚝·문)
-interface Item { y: number; x: number; kind: Kind; strip: Strip | null; frame: number; flip: boolean; side: 0 | 1; h: number; img: HTMLImageElement | null; alpha: number; hero: boolean; rot: number; lift: number }
+interface Item { y: number; x: number; kind: Kind; strip: Strip | null; frame: number; flip: boolean; side: 0 | 1; h: number; img: HTMLImageElement | null; alpha: number; hero: boolean; rot: number; lift: number; grit: number }
 const pool: Item[] = []
 const order: Item[] = []
 let used = 0
@@ -40,9 +40,9 @@ let used = 0
 const arrowBuf: number[] = [], flagBuf: number[] = [], mine: VModel['squads'] = []
 const byY = (a: Item, b: Item): number => a.y - b.y
 function nextItem(): Item {
-  if (used === pool.length) pool.push({ y: 0, x: 0, kind: 0, strip: null, frame: 0, flip: false, side: 0, h: 0, img: null, alpha: 1, hero: false, rot: 0, lift: 0 })
+  if (used === pool.length) pool.push({ y: 0, x: 0, kind: 0, strip: null, frame: 0, flip: false, side: 0, h: 0, img: null, alpha: 1, hero: false, rot: 0, lift: 0, grit: 0 })
   const d = pool[used++]!
-  d.img = null; d.strip = null; d.alpha = 1; d.hero = false; d.rot = 0; d.lift = 0
+  d.img = null; d.strip = null; d.alpha = 1; d.hero = false; d.rot = 0; d.lift = 0; d.grit = 0
   return d
 }
 
@@ -278,6 +278,7 @@ const spotBuf: VSquad[] = []
 /** 무리 깃이 선 자리의 그리는 쪽 기억 (자리·옮겨 가는 부드러움) — 키 편×3+무리 */
 const flagSpot = new Map<number, { x: number; y: number }>()
 let flagLast = -1
+let drawNow = 0
 /**
  * 무리 깃 자리 (sim 단위): 깃은 무리의 가운데가 아니라 그 무리의 대 하나의 뒤 가장자리 바로 뒤에 붙는다 —
  * 앞줄 = 위에서 둘째 대 · 활 = 위에서 둘째 대 · 기병 = 위쪽 날개의 앞 대 (그 대가 없어지면 살아 있는 다음 대로).
@@ -322,6 +323,7 @@ function addGroupFlags(m: VModel, at: number[], nowMs: number): void {
       mor /= men
       let tilt = 0
       for (const q of m.squads) if (q.side === side && q.grp === grp && q.men > 0) { const v = flagTilt(q.id, mor, enemyDir, nowMs, P.realm.tacBreakMorale); if (Math.abs(v) > Math.abs(tilt)) tilt = v }
+      if (m.breakTick[side] >= 0 && (m.tick - m.breakTick[side]) / P.field.hz >= g * P.field.breakFlagSec) tilt = FLAG_FALLEN * (enemyDir >= 0 ? -1 : 1)
       const tx = unitsToPx(spot.u), ty = unitsToPx(spot.v)
       let s = flagSpot.get(side * 3 + g)
       if (s === undefined) { s = { x: tx, y: ty }; flagSpot.set(side * 3 + g, s) } else { s.x += (tx - s.x) * ease; s.y += (ty - s.y) * ease }
@@ -342,7 +344,17 @@ function drawItem(ctx: CanvasRenderingContext2D, d: Item): void {
     ctx.fillStyle = SIDE_COLOR[d.side]!
     ctx.beginPath(); ctx.ellipse(d.x, d.y, d.h * 0.3, d.h * 0.1, 0, 0, FULL_TURN)
     if (d.side === 0) { ctx.globalAlpha = 0.4; ctx.fill() }
-    ctx.globalAlpha = 0.95; ctx.strokeStyle = SIDE_COLOR[d.side]!; ctx.lineWidth = Math.max(P.field.heroRingPx, d.h * 0.04); ctx.stroke()
+    const base = Math.max(P.field.heroRingPx, d.h * 0.04)
+    ctx.globalAlpha = d.grit > 0 && d.grit < 1000 ? 0.4 : 0.95; ctx.strokeStyle = SIDE_COLOR[d.side]!; ctx.lineWidth = base; ctx.stroke()
+    if (d.grit >= 1000) {
+      // 투지 가득: 금빛이 아니라 편 색으로 두껍게 맥이 뛴다
+      const pulse = 0.5 + 0.5 * Math.sin(drawNow / P.field.gritPulseMs * FULL_TURN)
+      ctx.globalAlpha = 0.65 + 0.35 * pulse; ctx.lineWidth = base * (1.8 + 1.2 * pulse); ctx.stroke()
+    } else if (d.grit > 0) {
+      // 차오르는 동안은 고리의 호 길이로
+      ctx.beginPath(); ctx.ellipse(d.x, d.y, d.h * 0.3, d.h * 0.1, 0, -Math.PI / 2, -Math.PI / 2 + FULL_TURN * d.grit / 1000)
+      ctx.globalAlpha = 0.95; ctx.lineWidth = base * 1.7; ctx.stroke()
+    }
     ctx.globalAlpha = 1
   }
   const s = d.strip
@@ -392,6 +404,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
   const F = P.field
   if (cur.tick < fx.tick) resetFx()
   const nowMs = viewClock(realMs)
+  drawNow = nowMs
   const tickNew = cur.tick !== fx.tick
   fx.tick = cur.tick
   fx.nowMs = nowMs; fx.attackers = 0
@@ -450,14 +463,17 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
       const qu = pq === undefined ? q.u : mix(pq.u, q.u, alpha), qv = pq === undefined ? q.v : mix(pq.v, q.v, alpha)
       const strip = stripFor(art, q.grp, q.kind)
       const kk = stripKey(art, q.grp, q.kind)
-      const running = cur.end === null && moving && (q.ran > 0 || q.flee === 1)
+      const brkT = cur.breakTick[side], broken = brkT >= 0
+      const oBrk = cur.breakTick[side === 0 ? 1 : 0], winRaise = oBrk >= 0 && (cur.tick - oBrk) / F.hz < F.winRaiseSec
+      const fleeing = q.flee === 1 || broken
+      const running = moving && (q.ran > 0 || fleeing) && (cur.end === null || broken)
       const holdStrip = form0Hold(q) ? holdStripFor(art, q.grp, q.kind) : null
       const braced = holdStrip !== null && bracedAt(q.id, nowMs)
       const runStrip = running ? runStripFor(art, q.grp, q.kind) : null
       const sH = q.grp === 'horse' ? baseH * F.horseBodyPermille / 1000 : baseH
       const sl = settleDots(q, n, N0, cur, nowMs, qu, qv, strip, face === -1, sH, world.h)
       if (n === 0) continue
-      const form = q.flee === 1 ? FORM_SCATTER : q.grp === 'front' ? q.form : 0
+      const form = fleeing ? FORM_SCATTER : q.grp === 'front' ? q.form : 0
       const wall = kk === 'shield' && form === FORM_HOLD
       const dd = dotsOf(q.id, sl.N, wall ? FORM_WALL : form, face, nowMs, sl.dead, wall ? 1 : (q.grp === 'horse' ? F.horseSpaceMul : q.grp === 'bows' ? F.bowsSpaceMul : 1) * (kk === 'shield' ? F.shieldSpaceMul : kk === 'crossbow' ? F.crossbowSpaceMul : 1), q.grp === 'front' ? F.depthFront : q.grp === 'bows' ? F.depthBows : F.depthHorse, wall ? 0 : q.bw / F.unit, wall ? 0 : q.bd / F.unit)
       const kickCells = kickOf(q.id, nowMs)
@@ -521,6 +537,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
         if (sc.turn) flipDot = !flipDot
         d.kind = 0; d.x = x + ox; d.y = y + oy; d.strip = strip; d.side = side; d.flip = flipDot; d.h = sH
         d.frame = pose(nowMs, ph, moving || gathering || (melee && mo.back === 1), fighting && front && swing)
+        if ((winRaise || raisedAt(q.id, nowMs)) && !moving && !fighting) d.frame = ATTACK0 // 이긴 편·버팀을 받은 대는 무기를 치켜든다 (공격 첫 칸)
         if (running && !fighting) {
           if (runStrip !== null) { d.strip = runStrip; d.frame = Math.floor(nowMs / F.runCellMs + ph * RUN_N) % RUN_N }
           else {
@@ -589,6 +606,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
     }
     const moved = pe !== undefined && (pe.u !== e.u || pe.v !== e.v)
     const d = nextItem()
+    d.grit = e.grit
     d.kind = 0; d.hero = true; d.x = x; d.y = y; d.strip = heroStrip(art, e.id, heroPick); d.side = e.side
     d.flip = (moved ? e.u < (pe?.u ?? e.u) : faceU < 0); d.h = baseH * F.heroScale / 100
     d.frame = e.stun > 0 ? DOWN : isShouting(e.side, nowMs) ? ATTACK0 + 2 : pose(nowMs, 0, moved, cur.end === null && fighting && e.stun === 0)

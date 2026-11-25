@@ -57,3 +57,13 @@ test('사기 숫자는 상한 안이다', () => {
   assert.ok(pops.length <= P.field.moralePopMax)
   assert.equal(pops[0]!.n, 20)
 })
+
+test('버팀(stand)은 범위 안 우리 대만 무기를 치켜들게 한다 (0.3초)', async () => {
+  const { noteStand, raisedAt } = await import('../../src/field/viewHit.ts')
+  resetHit()
+  const m = model(), a = horse(m)
+  noteStand(m, 0, a.u, a.v, P.field.heroAuraCells * P.field.unit, 1000)
+  assert.equal(raisedAt(a.id, 1100), true)
+  assert.equal(raisedAt(a.id, 1000 + P.field.standRaiseMs + 10), false)
+  assert.equal(raisedAt(foe(m).id, 1100), false, '적 대는 아니다')
+})

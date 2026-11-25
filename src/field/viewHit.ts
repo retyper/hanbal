@@ -31,7 +31,7 @@ export const pops: Pop[] = []
 export const clockSt = { stopUntil: 0, last: -1, clk: 0, shAt: -1e9, shPx: 0, shMs: 1 }
 
 export function resetHit(): void {
-  braces.clear(); tilts.clear(); scats.clear(); kicks.clear(); omens.length = 0; lastImpact.clear(); pends.length = 0; pops.length = 0
+  braces.clear(); raised.clear(); tilts.clear(); scats.clear(); kicks.clear(); omens.length = 0; lastImpact.clear(); pends.length = 0; pops.length = 0
   clockSt.stopUntil = 0; clockSt.last = -1; clockSt.clk = 0; clockSt.shAt = -1e9
 }
 
@@ -87,6 +87,8 @@ export function ingestHits(cur: VModel, hits: readonly VLoss[], clk: number, rea
     } else if (e.kind === 'flankHit' && e.to >= 0) {
       const v = cur.squads[e.to], a = cur.squads[e.id]
       if (v !== undefined && a !== undefined) good(cur, a, v, clk)
+    } else if (e.kind === 'stand') {
+      noteStand(cur, e.side, e.u, e.v, e.r, clk)
     } else if (e.kind === 'artHit' && e.to >= 0) {
       const v = cur.squads[e.to]
       if (v !== undefined) { good(cur, undefined, v, clk); const sh = cur.heroes.find(x => x.side === e.side); kicks.set(e.to, { at: clk, dir: sh !== undefined && v.u < sh.u ? -1 : 1, cells: F.kickFrontCells }); pops.push({ at: clk, n: Math.round(e.n / 10), gold: true, ...flagPos(v) }); if (pops.length > F.moralePopMax) pops.shift() }
@@ -262,9 +264,10 @@ export function drawOmens(ctx: CanvasRenderingContext2D, clk: number, zoom: numb
 export const bracedAt = (id: number, clk: number): boolean => { const t = braces.get(id); return t !== undefined && clk - t >= 0 && clk - t < P.field.braceMs }
 
 // ───────── 큰 외침(Q): 장수를 중심으로 끊긴 고리 셋이 차례로 퍼진다 (조각난 호 · 채운 원·햇살 아님) ─────────
-interface Shout { x: number; y: number; at: number; side: 0 | 1 }
+interface Shout { x: number; y: number; at: number; side: 0 | 1; rings: number; scale: number; r: number }
 const shouts: Shout[] = []
 const lifts = new Map<number, number>()
+const raised = new Map<number, number>()
 /** 비기 쿨이 새로 돌기 시작한 큰 외침을 잡는다 (장수 칸의 쿨 오름으로 안다) — 흙먼지·우리 대 들썩·적 대 뒷걸음도 여기서 건다 */
 export function noteShouts(cur: VModel, prev: VModel | null, clk: number): void {
   if (prev === null) return
@@ -273,13 +276,15 @@ export function noteShouts(cur: VModel, prev: VModel | null, clk: number): void 
     const p = prev.heroes.find(x => x.side === h.side)
     if (h.art !== 'shout' || p === undefined || h.artCd <= p.artCd) continue
     const x = h.u / F.unit * F.cellPx, y = h.v / F.unit * F.cellPx
-    shouts.push({ x, y, at: clk, side: h.side })
+    const ev = eventsOf(cur).find(e => e.kind === 'heroSkill' && e.side === h.side)
+    const rUnits = ev !== undefined && ev.r > 0 ? ev.r : F.heroAuraCells * F.unit
+    shouts.push({ x, y, at: clk, side: h.side, rings: 3, scale: 1, r: rUnits / F.unit * F.cellPx })
     if (shouts.length > 4) shouts.shift()
     for (let i = 0; i < F.shoutDust; i++) {
       const hh = hash2((clk | 0) + i, 7), ang = (hh % 628) / 100, sp = 40 + (hh >>> 9) % 70
       spawn(0, x + Math.cos(ang) * 6, y + Math.sin(ang) * 4, Math.cos(ang) * sp, Math.sin(ang) * sp * 0.45 - 4, clk, F.shoutMs * 0.9, F.cellPx * 0.16)
     }
-    const r2 = (F.heroAuraCells * F.unit) ** 2
+    const r2 = rUnits * rUnits
     for (const q of cur.squads) {
       if (q.men <= 0) continue
       const du = q.u - h.u, dv = q.v - h.v
@@ -289,6 +294,16 @@ export function noteShouts(cur: VModel, prev: VModel | null, clk: number): void 
     }
   }
 }
+/** 버팀(stand): 장수에서 기운 범위의 우리 대로 짧은 흰 물결 한 번 · 그 대들이 무기를 한 번 치켜든다 */
+export function noteStand(cur: VModel, side: 0 | 1, u: number, v: number, r: number, clk: number): void {
+  const F = P.field
+  shouts.push({ x: u / F.unit * F.cellPx, y: v / F.unit * F.cellPx, at: clk, side, rings: 1, scale: F.standRingScale, r: (r > 0 ? r : F.heroAuraCells * F.unit) / F.unit * F.cellPx })
+  if (shouts.length > 4) shouts.shift()
+  const rr = (r > 0 ? r : F.heroAuraCells * F.unit) ** 2
+  for (const q of cur.squads) { if (q.side !== side || q.men <= 0) continue; const du = q.u - u, dv = q.v - v; if (du * du + dv * dv <= rr) raised.set(q.id, clk) }
+}
+/** 무기를 치켜드는 중인가 */
+export const raisedAt = (id: number, clk: number): boolean => { const t = raised.get(id); return t !== undefined && clk - t >= 0 && clk - t < P.field.standRaiseMs }
 /** 큰 외침을 받은 우리 대가 한 번 들썩 (px 위로 · 0.15초) */
 export function liftOf(id: number, clk: number): number {
   const t = lifts.get(id)
@@ -304,10 +319,10 @@ export function drawShouts(ctx: CanvasRenderingContext2D, clk: number, zoom: num
   for (const s of shouts) if (clk - s.at < F.shoutMs) shouts[w++] = s
   shouts.length = w
   if (w === 0) return
-  const R = F.heroAuraCells * F.cellPx
   ctx.lineCap = 'round'
   for (const s of shouts) {
-    for (let ring = 0; ring < 3; ring++) {
+    const R = s.r * s.scale
+    for (let ring = 0; ring < s.rings; ring++) {
       const age = clk - s.at - ring * 120
       if (age < 0 || age >= 450) continue
       const t = age / 450, r = F.cellPx + (R - F.cellPx) * (1 - (1 - t) * (1 - t))
