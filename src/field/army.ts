@@ -211,6 +211,8 @@ function place(s: FieldState, side: 0 | 1): void {
   const taken = new Map<number, number>()
   for (const q of s.squads) if (q.side === side && q.men > 0 && q.lock >= 0) taken.set(q.lock, (taken.get(q.lock) ?? 0) + 1)
   const free = (t: Squad, q: Squad): boolean => q.lock === t.id || (taken.get(t.id) ?? 0) < P.field.foeCapPerSquad
+  // 찾아 싸우기 — 한 번 맞붙은 뒤 huntSec 넘게 맞물린 앞줄이 없으면 거리와 상관없이 가까운 적에게 간다 (남은 대끼리 서로 비켜 서서 시간만 가는 판을 막는다)
+  const hunt = s.frontLockTick[side] >= 0 && s.tick - s.frontLockTick[side] > ticksOf(P.field.huntSec)
   const f = fwd(side)
   const engage2 = sq(cells(P.field.autoEngageCells))
   // 앞줄 기준 점 (장수 앞) · 앞줄 줄의 반 길이와 깊이 — 활·기병 자리가 이것에 맞춘다
@@ -262,6 +264,9 @@ function place(s: FieldState, side: 0 | 1): void {
         // 활은 진 자리로 가되 적이 닿는 거리(bowStandoffCells 덜)에 들면 그 자리에 서서 쏜다 (맞붙는 줄 안으로 따라 들어가지 않는다)
         const r = Math.max(0, q.reach - cells(P.field.bowStandoffCells))
         q.target = -1
+        // 칼날 든 적이 bowsBackoffCells 안에 오면 (앞줄이 깨져 활이 맨 앞이 되면) 뒤로 물러나 거리를 벌린다 · 아니면 서서 쏜다
+        const close = nearestFoe(s, q, (t, d) => t.grp !== 'bows' && t.flee === 0 && d <= sq(cells(P.field.bowsBackoffCells)))
+        if (close) { q.goal = { u: clamp(q.u - f * cells(P.field.bowsBackoffCells + 2), 0, lastU(s.map)), v: q.v }; return }
         q.goal = nearestFoe(s, q, (_t, d) => d <= r * r) ? null : slot
         return
       }
@@ -278,7 +283,7 @@ function place(s: FieldState, side: 0 | 1): void {
           return
         }
       }
-      const e = pursue ?? nearestFoe(s, q, (t, d) => d <= engage2 && t.flee === 0 && free(t, q))
+      const e = pursue ?? nearestFoe(s, q, (t, d) => (d <= engage2 || hunt) && t.flee === 0 && free(t, q))
       if (e && !pursue && q.lock !== e.id) taken.set(e.id, (taken.get(e.id) ?? 0) + 1)
       q.target = e ? e.id : -1
       // 제 길(진 자리의 v)에 걸친 적이면 줄을 지킨 채 곧게 앞으로 · 아니면 그 적에게 (쫓기·돌아 들기)
