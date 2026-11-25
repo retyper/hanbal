@@ -89,6 +89,8 @@ export interface RingOpts {
   readonly attack?: boolean
   /** 얼굴 표가 숨 쉰다 (단련터에서 공을 남긴 채 나가려 했을 때) */
   readonly hot?: boolean
+  /** 앞에 선 장수가 곧 고른 장수 — 고리를 돌려 앞에 오면 따로 누르지 않아도 고른 것(금빛 테두리 · ✓ · 목소리 · onFront). 고르는 수가 하나일 때만 (열전 장수 바꾸기 · 형 11-25 「선택을 두 번 해야 출전」) */
+  readonly frontPicks?: boolean
   /** 방향키 · Enter 를 받나 — 위에 떠 있는 판이 있으면 false (기본 true) */
   readonly keys?: boolean
 }
@@ -355,6 +357,7 @@ export function mountRing(host: HTMLElement, o: RingOpts): RingHandle {
       if (count !== null) count.innerHTML = `<b>${i + 1}</b> / ${n}`
       if (dot !== null) dot.style.left = `${((i / Math.max(1, n - 1)) * 100).toFixed(2)}%`
       o.onFront?.(h.id)
+      if (o.frontPicks === true && o.max === 1) { picked = [h.id]; attackAt = now; o.onPicked?.(h.id); paintPicked() }
     }
     if (bigShown !== shown && now - since >= R.ringBigMs) swapBig(h)
   }

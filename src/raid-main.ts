@@ -378,7 +378,8 @@ function renderHeroes() {
     heroes, max: 1, picked: [pick], start: heroId,
     text: { title: '데려갈 장수', party: '', prev: '이전 장수', next: '다음 장수', lv: n => String(n) },
     top: `<div class="rh-top"><h4 class="hrg-title">데려갈 장수 <small>${list.length}명</small></h4><p class="rh-note">${esc(note)}</p></div>`,
-    // 한 명만 — 다른 장수를 고르면 그 장수로 옮겨 가고, 고른 장수를 한 번 더 고르면 그 장수로 연다
+    // 한 명만 — 고리를 돌려 앞에 온 장수가 곧 고른 장수(아래 큰 단추 하나로 바꾼다) · 앞 장수를 한 번 더 누르면 바로 바꾼다. 예전엔 앞에 와도 눌러서 골라야 하고 단추를 또 눌러 두 번이었다
+    frontPicks: true, onFront: id => { pick = id; paintGo() },
     onToggle: id => { if (id === pick) { choose(id); return [pick] } pick = id; paintGo(); return [pick] },
     onPicked: heroVoice,
   }
