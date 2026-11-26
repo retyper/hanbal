@@ -70,7 +70,7 @@ let low = query.get('gfx') === 'low'
 let seed = num('seed', 7)
 const men = num('men', 1200)
 /** 우리 장수와 적장이 같은 그림이 되지 않게 열쇠를 나눈다 (둘 다 대시 칸이 있는 띠) */
-const HERO_KEY_OURS = 'ara', HERO_KEY_FOE = 'bakdal'
+const HERO_KEY_OURS = 'ara', HERO_KEY_FOE = query.get('foehero') ?? 'bakdal'
 /** 준비 화면에서 고른 우리 진 (0 방패 벽 · 1 창 쐐기 · 2 넓은 날개) — 「다시」 뒤에도 그대로 */
 let lineChoice = 0
 /** 적 진 (0~2) — 씨앗이 정한 것(엔진이 같은 굴림으로 고르던 값)을 우리가 미리 고른다. 같은 진이 세 판 연속 나오지 않게 직전 둘을 기억 */

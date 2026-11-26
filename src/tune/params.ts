@@ -3781,6 +3781,9 @@ export const SPEC = {
     lowFrameMs: k(28, 17, 60, 1, '프레임 간격 가운데값이 이것을 넘으면 저사양으로 내린다', 'ms'),
     cellPx: k(24, 8, 64, 2, '1칸의 그림 크기 (판 좌표 px · 배율 1 에서)', 'px'),
     soldierCells: k(1.33, 0.8, 4, 0.01, '병사 한 명의 키 (칸 · 32px · 기병은 말 포함 horseBodyPermille 배)', '칸'), /*vfx*/
+    heroCmRef: k(167, 100, 250, 1, '장수 그림 키의 기준 cm (소서노 · heroScale 이 이 키의 장수에 맞는다 · 장수 키는 cm 에 비례)', 'cm'),
+    heroCmDefault: k(165, 100, 250, 1, 'hero-height.ts 에 없는 장수 열쇠의 키 (본편 레이드와 같은 165)', 'cm'),
+    heroCmFit: [0.8, 1.3] as const, // 키 비 범위 (너무 크게·작게 그리지 않게 · 레이드 heroFit 과 같은 범위)
     heroScale: k(200, 100, 400, 5, '장수 키는 병사의 이만큼 (백분율 · 64px = 병사의 2배)'), /*vfx*/
     spreadUCells: k(1, 0, 8, 0.5, '대 안 점이 앞뒤로 흩어지는 폭 (± 칸)', '칸'),
     spreadVCells: k(4, 0, 12, 0.5, '대 안 점이 옆으로 흩어지는 폭 (± 칸)', '칸'),

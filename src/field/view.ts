@@ -6,6 +6,7 @@
  * 그리는 쪽 기억(쓰러진 병사 · 방향)은 이 파일 안에만 있고 sim 으로 안 나간다.
  */
 import { P } from '../tune/params.ts'
+import { HERO_CM } from '../realm/data/hero-height.ts'
 import { fieldView, inView, type Cam, type Viewport } from './viewCamera.ts'
 import { ATTACK0, ATTACK_N, DOWN, HIT, RUN_N, STAND0, STAND_N, WALK0, WALK_N, heroKey, heroStrip, pieceImg, holdStripFor, runStripFor, sheetOf, stripFor, stripKey, type Art, type Strip } from './viewArt.ts'
 import { dotPh, hash2 } from './viewDots.ts'
@@ -69,6 +70,11 @@ const mix = (a: number, b: number, t: number): number => a + (b - a) * t
 /** sim 단위 → 판 px */
 export const unitsToPx = (u: number): number => u / P.field.unit * P.field.cellPx
 /** 판 좌표로 바꾼 맵 크기 */
+/** 장수 키(cm · hero-height.ts) ÷ 기준 키 — 그림 몸 키(정수리~발 · 관·깃털 뺀 manifest bodyPx)가 이 비에 비례한다 (본편 레이드 heroFit 과 같은 법) */
+function cmRatio(key: string | null): number {
+  const cm = HERO_CM[(key ?? '').replace(/^gen-/, '')] ?? P.field.heroCmDefault
+  return Math.min(P.field.heroCmFit[1], Math.max(P.field.heroCmFit[0], cm / P.field.heroCmRef))
+}
 export const worldSize = (m: VModel): { w: number; h: number } => ({ w: m.mapU * P.field.cellPx, h: m.mapW * P.field.cellPx })
 
 /** 카메라가 담을 점들(판 px): 적 대와 engageCells 안에 붙은 대 · 없으면 우리 편 살아 있는 대 */
@@ -655,7 +661,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
     const d = nextItem()
     d.grit = e.gritN < F.gritUses ? e.grit : 0 // 투지를 다 썼으면(gritN) 고리를 끈다
     d.kind = 0; d.hero = true; d.x = x; d.y = y; d.strip = heroStrip(art, e.id, heroPick); d.side = e.side
-    d.flip = (moved ? e.u < (pe?.u ?? e.u) : faceU < 0); d.h = baseH * F.heroScale / 100
+    d.flip = (moved ? e.u < (pe?.u ?? e.u) : faceU < 0); d.h = baseH * F.heroScale / 100 * cmRatio(heroKey(art, e.id, heroPick))
     d.frame = e.stun > 0 ? DOWN : isShouting(e.side, nowMs) ? ATTACK0 + 2 : pose(nowMs, 0, moved, cur.end === null && fighting && e.stun === 0)
     // 밀침: 그 쪽으로 크게 내딛으며 휘두른다 (공격 칸을 끝까지 · 그림이 잠깐 커진다)
     const bash = e.stun > 0 ? -1 : bashPoseOf(e.side, nowMs)
