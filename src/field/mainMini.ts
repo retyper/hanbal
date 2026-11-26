@@ -9,7 +9,8 @@ import type { VModel } from './viewRead.ts'
 import { G_HIGH } from './types.ts'
 
 export interface Mini {
-  sync(m: VModel, cam: Cam, vp: Viewport, show: boolean, nowMs: number): void
+  /** tags: 시험판의 우리 무리 키 번호 (판 단위 자리 · 덩어리 곁에 숫자) */
+  sync(m: VModel, cam: Cam, vp: Viewport, show: boolean, nowMs: number, tags?: readonly { u: number; v: number; label: string }[]): void
 }
 export interface MiniHandlers { onPan(x: number, y: number): void }
 
@@ -95,7 +96,7 @@ export function mountMini(root: HTMLElement, h: MiniHandlers): Mini {
   }
   const px = (u: number): number => u / P.field.unit * P.field.cellPx * sc
   return {
-    sync(m, cam, vp, show, nowMs) {
+    sync(m, cam, vp, show, nowMs, tags) {
       if (box.hidden === show) box.hidden = !show
       if (!show) { root.style.setProperty('--fd-miniw', '0px'); return }
       const F = P.field
@@ -137,6 +138,11 @@ export function mountMini(root: HTMLElement, h: MiniHandlers): Mini {
         g.beginPath(); g.moveTo(x, y - s); g.lineTo(x + s, y + s * 0.7); g.lineTo(x - s, y + s * 0.7); g.closePath(); g.fill(); g.stroke()
         g.font = 'bold 11px system-ui,sans-serif'; g.textAlign = 'center'; g.textBaseline = 'bottom'; g.fillStyle = '#fff'
         g.fillText(String(left), x, y - s - 1)
+      }
+      // 시험판: 우리 무리 키 번호 (덩어리 곁 · 검은 테 흰 숫자)
+      if (tags !== undefined && tags.length > 0) {
+        g.font = 'bold 11px system-ui,sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineWidth = 3; g.strokeStyle = '#000'; g.fillStyle = '#fff'
+        for (const k of tags) { const x = px(k.u) - 7, y = px(k.v); g.strokeText(k.label, x, y); g.fillText(k.label, x, y) }
       }
       // 카메라가 보는 곳: 가는 흰 상자
       const v = fieldView(cam, vp)

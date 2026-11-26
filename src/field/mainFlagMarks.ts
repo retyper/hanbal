@@ -241,3 +241,19 @@ export function drawHeroHp(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam
   }
   ctx.restore()
 }
+
+/** 시험판(?mvp): 우리 무리 깃 곁의 키 번호 (판 px · 1~5 · 그 키로 고르는 무리가 판 어디 있는지) */
+export interface KeyTag { x: number; y: number; label: string; sel: boolean }
+export function drawKeyTags(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam, tags: readonly KeyTag[]): void {
+  if (tags.length === 0) return
+  const z = cam.zoom, r = P.field.keyTagPx / 2
+  ctx.save()
+  ctx.translate(vp.w / 2, vp.h / 2); ctx.scale(z, z); ctx.translate(-cam.x, -cam.y)
+  ctx.font = `bold ${Math.round(P.field.keyTagPx * 0.72 / z)}px system-ui,sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+  for (const k of tags) {
+    ctx.fillStyle = k.sel ? GOLD : '#0b1a2e'; ctx.strokeStyle = k.sel ? '#1a1305' : '#f3ecd8'; ctx.lineWidth = Math.max(1, 1.5 / z)
+    ctx.beginPath(); ctx.roundRect(k.x - r / z, k.y - r / z, 2 * r / z, 2 * r / z, 4 / z); ctx.fill(); ctx.stroke()
+    ctx.fillStyle = k.sel ? '#1a1305' : '#fff'; ctx.fillText(k.label, k.x, k.y + 0.5 / z)
+  }
+  ctx.restore()
+}

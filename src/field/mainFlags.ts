@@ -40,8 +40,6 @@ export interface FlagsView {
 
 const CELL_ICON = ['icon/unit-spear.png', 'icon/unit-archer.png', 'icon/unit-buyeo-cavalry.png', 'icon/unit-general.png']
 const CELL_ACTION: readonly ActionName[] = ['pickFront', 'pickBows', 'pickHorse', 'pickHero']
-/** 시험판(?mvp): 자리 단추를 작은 진 그림으로 — 우리는 오른쪽(적)을 본다 · 1 가운데 맨 앞 · 2 뒷줄 그 뒤 · 3 위 날개 · 4 아래 날개는 가운데 위아래 · 5 장수 맨 뒤 (줄 / 칸) */
-const FORM_AREA: Readonly<Record<number, string>> = { 0: '2 / 3', 1: '2 / 2', 2: '1 / 3', 4: '3 / 3', 3: '2 / 1' }
 /** 큰 수가 누구의 수인가: Z·X 앞줄 · C 활 · V 기병 (단추 귀퉁이 그림) */
 const BIG_WHO = [0, 0, 1, 2] as const
 const CMD_ACTION: readonly ActionName[] = ['cmd1', 'cmd2', 'cmd3', 'cmd4']
@@ -91,10 +89,6 @@ const CSS = `
 .fd-opt img{width:30px;height:30px;object-fit:contain}
 .fd-opt.on{border-color:${GOLD};background:#2a2410d9}
 .fd-opt.on::after{content:'✓';position:absolute;left:4px;bottom:0;color:${GOLD};font-size:13px}
-.fd-cells.fd-form{display:grid;grid-template-columns:repeat(3,auto);gap:3px}
-.fd-form .fd-cell{width:76px;min-height:var(--fd-formcell,44px);padding:2px 3px}
-.fd-form .fd-cell img{width:22px;height:22px}
-.fd-form .fd-cell b{font-size:12px}
 .fd-men{position:absolute;right:3px;top:2px;font-size:12px;font-weight:700;line-height:1.2;text-decoration:none;color:#e8f2ff;background:#0b1a2ecc;border-radius:4px;padding:0 3px}
 .fd-cd{position:absolute;left:0;right:0;bottom:0;background:#000a;border-radius:0 0 6px 6px;pointer-events:none}
 .fd-cds{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;font-size:18px;font-weight:800;color:#fff;text-decoration:none;text-shadow:0 1px 3px #000;pointer-events:none}
@@ -202,10 +196,9 @@ export function mountFlags(root: HTMLElement, base: string, h: FlagsHandlers): F
         const on = ui.sel.includes(g)
         const name = mvp && (g === 2 || g === 4) ? t(`field.mvp.g.${g}` as Key) : t(`field.g.${g === 4 ? 2 : g}` as Key)
         const kb = mvp ? String(k + 1) : firstKeyLabel(CELL_ACTION[g]!)
-        html += `<div class="fd-slot"${mvp ? ` style="grid-area:${FORM_AREA[g]}"` : ''}><button class="fd-cell${on ? ' on' : ''}${live ? '' : ' no'}" type="button" data-act="cell" data-g="${g}" aria-pressed="${on}" aria-label="${name}"><i class="fd-kb">${kb}</i>${img(CELL_ICON[g === 4 ? 2 : g]!)}<b>${name}</b>${mvp && g !== 3 ? `<u class="fd-men">${men[k]}</u>` : ''}<em class="fd-ck">✓</em></button></div>`
+        html += `<div class="fd-slot"><button class="fd-cell${on ? ' on' : ''}${live ? '' : ' no'}" type="button" data-act="cell" data-g="${g}" aria-pressed="${on}" aria-label="${name}"><i class="fd-kb">${kb}</i>${img(CELL_ICON[g === 4 ? 2 : g]!)}<b>${name}</b>${mvp && g !== 3 ? `<u class="fd-men">${men[k]}</u>` : ''}<em class="fd-ck">✓</em></button></div>`
       })
       cells.innerHTML = html
-      cells.classList.toggle('fd-form', mvp)
       big.hidden = !bigOn
       const cap = (k: number): string => mvp ? keyLabel(MVP_FLAG_KEYS[k] ?? '') : firstKeyLabel(CMD_ACTION[k]!)
       const opt = (name: string, i: number, key: number): string => `<button class="fd-opt${(i < 2 && c.front === i) || (i === 2 && c.volley) || (i === 3 && c.flank) || c.aiming === i ? ' on' : ''}" type="button" data-act="big" data-i="${i}" data-n="${name}" title="${t(`field.big.${name}` as Key)}"><i>${cap(key)}</i>${img(`flag/flag-${name}.png`)}<span>${t(`war.cmdName.${name}` as Key)}</span></button>`

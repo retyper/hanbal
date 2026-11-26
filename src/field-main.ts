@@ -19,7 +19,7 @@ import { mountFlags, MVP_CMDS, MVP_FLAG_KEYS, type FlagsView, type HeroBtn } fro
 import { mountArrows, mountPad, type Arrows, type Pad, type PadBtn } from './field/mainPad.ts'
 import { mountFirst, mountSteps, type First, type Steps } from './field/mainHelp.ts'
 import { mountHelp, type Help } from './field/mainCard.ts'
-import { drawHeroHp, drawMarks, drawOdds, drawPaths, drawVolley, drawWhiteFlags, type Odds, type Path, type Volley, type Band, type Box, type Mark, type MarkShape, type Ring } from './field/mainFlagMarks.ts'
+import { drawHeroHp, drawKeyTags, drawMarks, drawOdds, drawPaths, drawVolley, drawWhiteFlags, type Odds, type Path, type Volley, type Band, type Box, type Mark, type MarkShape, type Ring } from './field/mainFlagMarks.ts'
 import { G_HIGH, HIT_BLOCKED, LINES, OP_CALL, OP_AUTO, OP_MOVE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_VOLLEY, type FieldInput, type InputGroup } from './field/types.ts'
 import { roll } from './core/rng.ts'
 import { mountMini, type Mini } from './field/mainMini.ts'
@@ -31,7 +31,7 @@ import { advance } from './field/viewLoop.ts'
 import { readField, type VLoss, type VModel } from './field/viewRead.ts'
 import { clampCenter, clusterCenter, fitZoom, followCam, frameBox, newCam, nextLevel, toField, toScreen, wholeZoom, type Rect, type Viewport } from './field/viewCamera.ts'
 import { loadArt } from './field/viewArt.ts'
-import { drawField, focusPoints, resetFx, worldSize } from './field/view.ts'
+import { bannerSpot, drawField, focusPoints, resetFx, worldSize } from './field/view.ts'
 
 startGfxSafe()
 guardMedia()
@@ -529,6 +529,24 @@ function mvpCmd(k: number): void {
   const i = MVP_CMDS[g]?.[k]
   if (i !== undefined) pressBig(i)
 }
+/**
+ * 시험판: 우리 무리마다 키 번호 자리 (판 단위) — 앞줄·뒷줄·위 날개는 그 무리 깃 꼭대기 곁(bannerSpot) · 아래 날개(깃이 없다)는 그 날개 가운데 위 · 장수는 머리 위.
+ * 키는 아래 단추 차례 그대로 (1 앞줄 · 2 활 · 3 위 날개 · 4 아래 날개 · 5 장수) · 다 달아났거나 없는 무리는 뺀다
+ */
+function keyTags(): { g: InputGroup; u: number; v: number; label: string }[] {
+  const out: { g: InputGroup; u: number; v: number; label: string }[] = []
+  // 깃 있는 무리는 깃 꼭대기 곁(keyTagLiftCells 위) · 깃 없는 아래 날개·장수는 몸 바로 위(soldierCells)
+  const up = P.field.keyTagLiftCells * P.field.unit, near = P.field.soldierCells * P.field.unit, spot = { u: 0, v: 0, id: 0 }
+  MVP_GROUPS.forEach((g, k) => {
+    const label = String(k + 1)
+    if (g === 3) { const h = heroNow(); if (h !== undefined) out.push({ g, u: h.u, v: h.v - near * 2, label }); return }
+    const mine = squadsOf(g)
+    if (mine.length === 0) return
+    if ((g === 0 || g === 1 || g === 2) && bannerSpot(cur, 0, GRP_OF[g]!, spot) && mine.some(q => q.id === spot.id)) { out.push({ g, u: spot.u, v: spot.v - up, label }); return }
+    out.push({ g, u: mine.reduce((a, q) => a + q.u, 0) / mine.length, v: Math.min(...mine.map(q => q.v - q.bw / 2)) - near, label })
+  })
+  return out
+}
 /** 판 단위 자리(u, v)의 바닥 종류 (VModel 의 칸 배열을 읽기만 한다) */
 function groundOf(u: number, v: number): number {
   const cu = Math.floor(u / P.field.unit), cv2 = Math.floor(v / P.field.unit)
@@ -978,6 +996,7 @@ function paint(now: number, alpha: number): void {
       // 흰 깃: 달아나는 대 (두 편) · 장수 체력 고리 (두 편)
       drawWhiteFlags(ctx, vp, cam, cur.squads.filter(q => q.men > 0 && q.flee === 1).map(q => ({ x: pxOf(q.u), y: pxOf(q.v) - bodyRect(q).h / 2 })))
       drawHeroHp(ctx, vp, cam, cur.heroes.map(e => ({ x: pxOf(e.u), y: pxOf(e.v), frac: e.hp / P.field.heroHp, side: e.side })))
+      drawKeyTags(ctx, vp, cam, keyTags().map(k => ({ x: pxOf(k.u), y: pxOf(k.v), label: k.label, sel: ui.sel.includes(k.g) })))
     }
     k.x = cam.x; k.y = cam.y; k.z = cam.zoom; k.sel = selKey; k.epoch = markEpoch
   }
@@ -990,7 +1009,7 @@ function paint(now: number, alpha: number): void {
   if (MVP) syncReinfMarks()
   const pb = padBtns()
   pad.sync(!MVP && !blocked && ui.phase === 'play' && cur.end === null, touchMode, touchMode && !heroOrdered && playMs < 3000, pb.dash, pb.skill, pb.rally, !MVP && !blocked && ui.phase === 'ready')
-  mini.sync(cur, cam, vp, !blocked && !(touchMode && ui.phase === 'ready'), now) // 폰의 준비 화면은 판 전체가 이미 보인다
+  mini.sync(cur, cam, vp, !blocked && !(touchMode && ui.phase === 'ready'), now, MVP ? keyTags() : undefined) // 폰의 준비 화면은 판 전체가 이미 보인다
   hud.sync(lagged(now), { gold: fxGold, blocked: fxBlocked, breakSide: cur.breakTick[0] >= 0 ? 0 : cur.breakTick[1] >= 0 ? 1 : -1 })
   fxGold = false; fxBlocked = false
   flyRegroups()
@@ -1417,8 +1436,6 @@ hud = mountHud(root, {
 hud.setZoom(0)
 mini = mountMini(root, { onPan: (x, y) => { const hh = heroNow(); pan = { x, y, until: ui.phase === 'ready' ? Infinity : performance.now() + P.field.miniPanMs }; miniHero = hh === undefined ? null : { u: hh.u, v: hh.v }; paintKey.x = NaN } })
 flags = mountFlags(root, import.meta.env.BASE_URL + 'realm/', handlers)
-// 시험판: 아래 자리 단추가 세 줄 진 그림이라 깃발 칸·안내가 그 위로 오게 띠 높이를 늘린다
-if (MVP) root.style.setProperty('--fd-bar', `${P.field.mvpFormBarPx}px`)
 help = mountHelp(root, import.meta.env.BASE_URL + 'realm/', MVP)
 if (LAB) lab = mountLab(root, labCfg, savedLabConfig() === null, { onApply: cfg => { labCfg = cfg; seed = cfg.seed; restart() }, onLayout: () => { measurePads(); paintKey.x = NaN } })
 first = mountFirst(root)
