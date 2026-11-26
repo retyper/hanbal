@@ -195,7 +195,7 @@ export function armyTick(s: FieldState, full: boolean): void {
 /** 입력 없는 편의 큰 수 하나 — planTick 에 적 앞줄 가운데 사람이 가장 많은 대에 옆치기 · omenSec 전에 예고 (올 길) */
 function enemyPlan(s: FieldState, side: 0 | 1): void {
   const h = heroOf(s, side)
-  if (s.planTick[side] < 0 || !h || h.manual === 1) return
+  if (s.planTick[side] < 0 || !h || h.manual === 1 || s.ai[side] === 0) return
   const at = s.planTick[side]
   if (s.tick !== at - ticksOf(P.field.omenSec) && s.tick !== at) return
   let t: Squad | null = null
@@ -214,7 +214,7 @@ function enemyPlan(s: FieldState, side: 0 | 1): void {
 function aiTactics(s: FieldState, side: 0 | 1): Array<() => void> {
   const acts: Array<() => void> = []
   const h = heroOf(s, side)
-  if (!h || h.manual === 1 || s.breakTick[side] >= 0) return acts
+  if (!h || h.manual === 1 || s.ai[side] === 0 || s.breakTick[side] >= 0) return acts
   const foe = (1 - side) as 0 | 1
   // 큰 외침은 제 편 사기가 적보다 낮을 때만 (aiSkill 2 면 늘) — 앞선 쪽이 더 굳히지 않게
   const behind = P.field.aiSkill === 2 || sideMorale(s, side) < sideMorale(s, foe)

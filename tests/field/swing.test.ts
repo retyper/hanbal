@@ -5,12 +5,13 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createField, runField, stepField, ticksOf } from '../../src/field/sim.ts'
 import { plainSetup } from '../../src/field/scenario.ts'
+import { bothAi } from './kit.ts'
 import { P } from '../../src/tune/params.ts'
 import { MORALE_CAUSES, OP_SKILL, OP_STANCE, ORD_CHARGE, ORD_HOLD, ORD_NONE, STANCE_CHARGE } from '../../src/field/types.ts'
 
 test('편이 무너지면 sideBreak 하나 · sideBreakSec 동안 그 편의 산 대가 모두 달아난 뒤 끝나고 무너진 편이 진다', () => {
   for (const seed of [3, 5, 8]) {
-    const s = createField(plainSetup(seed, 1300))
+    const s = createField(bothAi(plainSetup(seed, 1300)))
     while (s.end === null && s.breakTick[0] < 0 && s.breakTick[1] < 0) stepField(s)
     assert.equal(s.end, null, `seed ${seed}: 무너지자마자 끝났다`)
     const side = s.breakTick[0] >= 0 ? 0 : 1
@@ -68,7 +69,7 @@ test('끝난 명령은 ORD_NONE 으로 — 돌격은 산 대가 모두 맞물리
 test('입력 없는 편(적 AI)이 진에 따라 방진·돌격을 쓴다 (검수 W10)', () => {
   let hold = 0, charge = 0
   for (let seed = 1; seed <= 12; seed++) {
-    const s = createField(plainSetup(seed, 1300))
+    const s = createField(bothAi(plainSetup(seed, 1300)))
     const seen = new Set<number>()
     while (s.end === null) { stepField(s); for (const q of s.squads) if (q.grp === 'front' && q.men > 0) seen.add(q.order) }
     if (seen.has(ORD_HOLD)) hold++

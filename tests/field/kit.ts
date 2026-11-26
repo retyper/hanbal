@@ -6,7 +6,7 @@ import assert from 'node:assert/strict'
 import { stepField } from '../../src/field/sim.ts'
 import { ambushMap, crossMap, highMap, holdMap, meetMap, stakeMap } from '../../src/field/map.ts'
 import { P } from '../../src/tune/params.ts'
-import type { FieldMap, FieldState, Grp, Squad } from '../../src/field/types.ts'
+import type { FieldMap, FieldState, Grp, LiveSetup, Squad } from '../../src/field/types.ts'
 import { HERO_DIRS } from '../../src/field/types.ts'
 
 export const U = (cells: number): number => cells * P.field.unit
@@ -91,6 +91,7 @@ export function mirror(s: FieldState): void {
   s.anchor = [...s.anchor.slice(3), ...s.anchor.slice(0, 3)].map(fp)
   s.route = [...s.route.slice(3), ...s.route.slice(0, 3)].map(r => r.map(fp))
   s.planTick = [s.planTick[1], s.planTick[0]]
+  s.ai = [s.ai[1], s.ai[0]]
   s.frontLockTick = [s.frontLockTick[1], s.frontLockTick[0]]
   s.lineup = [s.lineup[1], s.lineup[0]]
   s.breakTick = [s.breakTick[1], s.breakTick[0]]
@@ -138,4 +139,9 @@ export function squadKey(s: FieldState): string {
   const name = (id: number): string => id >= 0 ? tagOf(s.squads[id]!) : '-'
   return [...s.squads].sort((a, b) => tagOf(a) < tagOf(b) ? -1 : tagOf(a) > tagOf(b) ? 1 : 0)
     .map(q => [tagOf(q), q.kind, q.side, q.u, q.v, q.hp, q.morale, q.shock, q.flank, q.sleep, q.daze, q.rem, q.held, name(q.lock), name(q.target), q.goal ? `${q.goal.u},${q.goal.v}` : '-'].join(':')).join('|')
+}
+
+/** 두 편 다 적 AI 의 큰 수를 쓰는 시작 판 (편 0 의 player 를 끈다 · 사람이 쥔 편은 AI 큰 수를 안 쓴다 · 검수 E1) — 편 차례·대칭을 보는 시험용 */
+export function bothAi(st: LiveSetup): LiveSetup {
+  return { ...st, sides: [{ ...st.sides[0], player: false }, st.sides[1]] }
 }

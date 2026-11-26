@@ -34,7 +34,7 @@ export function hashField(s: FieldState): string {
   for (const p of s.anchor) { h = mix(h, p.u); h = mix(h, p.v) }
   for (const r of s.route) { h = mix(h, r.length); for (const p of r) { h = mix(h, p.u); h = mix(h, p.v) } }
   for (const n of s.grpWhy) h = mix(h, n); for (const n of s.grpWhyTick) h = mix(h, n)
-  for (const k of [0, 1] as const) { h = mix(h, s.stats.flankHits[k]); h = mix(h, s.stats.artMorale[k]); h = mix(h, s.stats.killed[k]); h = mix(h, s.stats.lost[k]); h = mix(h, s.planTick[k]); h = mix(h, s.frontLockTick[k])
+  for (const k of [0, 1] as const) { h = mix(h, s.stats.flankHits[k]); h = mix(h, s.stats.artMorale[k]); h = mix(h, s.stats.killed[k]); h = mix(h, s.stats.lost[k]); h = mix(h, s.planTick[k]); h = mix(h, s.ai[k]); h = mix(h, s.frontLockTick[k])
     const mb = s.stats.moraleBy[k]; h = mix(h, mb.arrows); h = mix(h, mb.melee); h = mix(h, mb.flank); h = mix(h, mb.hero); h = mix(h, mb.domino); h = mix(h, mb.push)
     h = mix(h, s.lineup[k]); h = mix(h, s.breakTick[k]); h = mix(h, s.breakWhy[k]); h = mix(h, s.stood[k]); h = mix(h, s.standTick[k]); h = mix(h, s.bladeTick[k]) }
   for (const q of s.squads) {
@@ -72,6 +72,7 @@ export function snapshot(s: FieldState): FieldState {
     standTick: [...s.standTick] as FieldState['standTick'],
     bladeTick: [...s.bladeTick] as FieldState['bladeTick'],
     planTick: [...s.planTick] as FieldState['planTick'],
+    ai: [s.ai[0], s.ai[1]],
     frontLockTick: [...s.frontLockTick] as FieldState['frontLockTick'],
     anchor: s.anchor.map(p => ({ ...p })),
     route: s.route.map(r => r.map(p => ({ ...p }))),
