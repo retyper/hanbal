@@ -165,6 +165,13 @@ export function heroStrip(art: Art, id: string, pick: string | null): Strip | nu
   return stripByKey(art, key)
 }
 
+/** 들판 소품 그림 (public/realm/field-props · 두 배로 구워 둠 · tools/field-props-bake.py) — 안 왔으면 null */
+export function propImg(art: Art, name: string): HTMLImageElement | null {
+  const key = `fp:${name}`
+  let i = art.pieces.get(key)
+  if (i === undefined) { i = load(`${art.base}field-props/${name}.png`); art.pieces.set(key, i) }
+  return i.complete && i.naturalWidth > 0 ? i : null
+}
 export function pieceImg(art: Art, name: string): HTMLImageElement | null {
   let i = art.pieces.get(name)
   if (i === undefined) { i = load(`${art.base}fx/field/${name}.png`); art.pieces.set(name, i) }

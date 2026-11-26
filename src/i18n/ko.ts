@@ -3673,6 +3673,7 @@ export const ko = {
   'lab.title': '전장 실험실',
   'lab.panel': '판 짜기',
   'lab.map': '땅',
+  'lab.map.mix': '들판(섞임)',
   'lab.map.meet': '평지',
   'lab.map.high': '높은 터',
   'lab.map.cross': '개울',

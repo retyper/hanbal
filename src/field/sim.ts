@@ -21,7 +21,7 @@ import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { clamp, dist2, idiv, isqrt, nearestDir, stepToward } from './num.ts'
 import { campPointU, groundAt, walkable } from './map.ts'
-import { G_BLOCK, G_HIGH, G_PLAIN, G_SHALLOW, GRPS, HERO_ART_DEFAULT, HERO_ARTS, HERO_DIR, HERO_DIRS, OP_ATTACK, OP_AUTO, OP_DASH, OP_HERO_DIR, OP_MOVE, OP_RETREAT, OP_SKILL, OP_STANCE, STANCE_CHARGE, STANCE_HOLD, STANCE_OPEN, WHY_NONE, CMD_COUNTER, CMD_HEIGHT, OP_AIM, OP_RALLY, ORD_ATTACK, ORD_CHARGE, ORD_FLANK, ORD_MOVE, ORD_NONE, ORD_VOLLEY, HIT_PLAIN, HIT_GOOD, HIT_BLOCKED, LOSS_ARROW, LOSS_BLADE, KIND_BEATS } from './types.ts'
+import { G_BLOCK, G_HIGH, G_PLAIN, G_SHALLOW, G_WOOD, GRPS, HERO_ART_DEFAULT, HERO_ARTS, HERO_DIR, HERO_DIRS, OP_ATTACK, OP_AUTO, OP_DASH, OP_HERO_DIR, OP_MOVE, OP_RETREAT, OP_SKILL, OP_STANCE, STANCE_CHARGE, STANCE_HOLD, STANCE_OPEN, WHY_NONE, CMD_COUNTER, CMD_HEIGHT, OP_AIM, OP_RALLY, ORD_ATTACK, ORD_CHARGE, ORD_FLANK, ORD_MOVE, ORD_NONE, ORD_VOLLEY, HIT_PLAIN, HIT_GOOD, HIT_BLOCKED, LOSS_ARROW, LOSS_BLADE, KIND_BEATS } from './types.ts'
 import { FORM_HOLD, KIND_GRP, LINES, LINE_SHIELD, LINE_WEDGE, LINE_WINGS, LOSS_ART, LOSS_HERO, OP_CALL, STANCE_NONE } from './types.ts'
 import type { FieldInput, FieldMap, FieldState, Grp, Hero, LiveSetup, MoraleBy, Point, Squad, UnitKind } from './types.ts'
 import { addShock, auraOf, emit, gritTick, heroInput, heroMove, heroStrike, heroTakeHits, pruneEvents, standOf } from './hero.ts'
@@ -494,10 +494,10 @@ export function detour(s: FieldState, q: Squad, e: Squad): Point {
 }
 
 /** 한 걸음 (1칸 이하) — 얕은 물과 올라가는 높은 터는 느리고, 깊은 물·막힘 칸에는 못 들어간다 (막히면 한 축으로 미끄러진다) */
-function stepOnce(s: FieldState, K: Kit, side: 0 | 1, u: number, v: number, goal: Point, speed: number): Point {
-  // 시험판(mvp): 오르막(가진 편이 아닌 쪽이 높은 터 위)은 mvpClimbPermille · 가진 편이 높은 터에서 앞(낮은 쪽)으로 내려가면 mvpDownhillPermille
+function stepOnce(s: FieldState, K: Kit, side: 0 | 1, u: number, v: number, goal: Point, speed: number, horse = false): Point {
+  // 시험판(mvp): 오르막(가진 편이 아닌 쪽이 높은 터 위)은 mvpClimbPermille · 가진 편이 높은 터에서 앞(낮은 쪽)으로 내려가면 mvpDownhillPermille · 숲의 기병은 mvpWoodHorsePermille
   const climb = s.mvp === 1 ? P.field.mvpClimbPermille : K.climb
-  const slow = (g: number): number => g === G_SHALLOW ? (s.mvp === 1 ? P.field.mvpWaterSpeedPermille : K.water) : g === G_HIGH && s.map.highOwner !== side ? climb : MILLI
+  const slow = (g: number): number => g === G_SHALLOW ? (s.mvp === 1 ? P.field.mvpWaterSpeedPermille : K.water) : g === G_HIGH && s.map.highOwner !== side ? climb : g === G_WOOD && horse ? P.field.mvpWoodHorsePermille : MILLI
   const full = stepToward(u, v, goal.u, goal.v, speed)
   let f = Math.min(slow(groundAt(s.map, u, v)), slow(groundAt(s.map, full.u, full.v)))
   if (s.mvp === 1 && f === MILLI && s.map.highOwner === side && groundAt(s.map, u, v) === G_HIGH && (goal.u - u) * fwd(side) > 0) f = P.field.mvpDownhillPermille
@@ -506,16 +506,26 @@ function stepOnce(s: FieldState, K: Kit, side: 0 | 1, u: number, v: number, goal
   const alongU = { u: p.u, v }, alongV = { u, v: p.v }
   const first = Math.abs(p.u - u) >= Math.abs(p.v - v) ? [alongU, alongV] : [alongV, alongU]
   for (const c of first) if ((c.u !== u || c.v !== v) && walkable(groundAt(s.map, c.u, c.v))) return c
+  // 들판(섞임): 바위에 정면으로 막히면 옆으로 비켜 돌아간다 (목표 쪽 옆 먼저 · 막혔으면 반대 옆) — 곧게 바위로 걷던 대가 그 앞에 서 버리던 것
+  if (s.map.sidestep === true) {
+    const len = Math.max(1, Math.max(Math.abs(p.u - u), Math.abs(p.v - v)))
+    const along = Math.abs(goal.u - u) >= Math.abs(goal.v - v)
+    const sg = along ? (goal.v >= v ? 1 : -1) : (goal.u >= u ? 1 : -1)
+    for (const d of [sg, -sg]) {
+      const c = along ? { u, v: v + d * len } : { u: u + d * len, v }
+      if (walkable(groundAt(s.map, c.u, c.v))) return c
+    }
+  }
   return { u, v }
 }
 
 /** 땅을 보고 걷는다 — 틱당 걸음이 1칸을 넘으면 1칸 이하로 나눠 찍어 벽을 건너뛰지 않는다 (돌격 달리기가 걸음을 키운다 · 45 §2-11) */
-export function walk(s: FieldState, K: Kit, side: 0 | 1, u: number, v: number, goal: Point, speed: number): Point {
+export function walk(s: FieldState, K: Kit, side: 0 | 1, u: number, v: number, goal: Point, speed: number, horse = false): Point {
   const unit = P.field.unit
   const n = Math.max(1, idiv(speed + unit - 1, unit))
   let p: Point = { u, v }
   for (let k = 0; k < n; k++) {
-    const nx = stepOnce(s, K, side, p.u, p.v, goal, idiv(speed * (k + 1), n) - idiv(speed * k, n))
+    const nx = stepOnce(s, K, side, p.u, p.v, goal, idiv(speed * (k + 1), n) - idiv(speed * k, n), horse)
     if (nx.u === p.u && nx.v === p.v) break
     p = nx
   }
@@ -640,7 +650,28 @@ function covered(s: FieldState, shooter: Squad, t: Squad): boolean {
 function inReach(s: FieldState, q: Squad, t: Squad, d: number): boolean {
   const up = s.mvp === 1 && groundAt(s.map, t.u, t.v) === G_HIGH && groundAt(s.map, q.u, q.v) !== G_HIGH
   const r = up ? mul(q.reach, P.field.mvpBowUpReachPermille) : q.reach
-  return d <= r * r
+  return d <= r * r && woodClear(s.map, q, t)
+}
+/** 숲이 있는 지도인가 (숲 칸은 늘거나 줄지 않는다) */
+const woodless = new WeakMap<Uint8Array, boolean>()
+/**
+ * 활 시선 — 쏘는 대 칸과 맞는 대 칸 사이에 숲 칸이 끼면 못 쏜다 (숲 가장자리 칸에 선 대는 내다 쏘고 맞는다 · 두 칸 안쪽은 숨는다).
+ * 반 칸 간격으로 찍어 본다
+ */
+function woodClear(map: FieldMap, a: Point, b: Point): boolean {
+  let none = woodless.get(map.cells)
+  if (none === undefined) { none = !map.cells.includes(G_WOOD); woodless.set(map.cells, none) }
+  if (none) return true
+  const unit = P.field.unit
+  const ac = idiv(a.u, unit) * map.w + idiv(a.v, unit), bc = idiv(b.u, unit) * map.w + idiv(b.v, unit)
+  const span = Math.max(Math.abs(b.u - a.u), Math.abs(b.v - a.v))
+  const n = Math.max(2, idiv(2 * span + unit - 1, unit))
+  for (let k = 1; k < n; k++) {
+    const u = a.u + idiv((b.u - a.u) * k, n), v = a.v + idiv((b.v - a.v) * k, n)
+    const c = idiv(u, unit) * map.w + idiv(v, unit)
+    if (c !== ac && c !== bc && groundAt(map, u, v) === G_WOOD) return false
+  }
+  return true
 }
 
 function fight(s: FieldState, K: Kit): [boolean, boolean] {
@@ -987,7 +1018,7 @@ export function stepField(s: FieldState, inputs: readonly FieldInput[] = NO_INPU
     const base = q.manual === 0 && q.foe < 0 && !fol && !contact[q.side] ? Math.min(speedPerSec(q.grp), march[q.side]!) : speedPerSec(q.grp)
     const rm = fol ? runMul(s, q) : MILLI
     run[q.id] = rm > MILLI
-    const p = walk(s, K, q.side, q.u, q.v, q.goal, perTickAt(mul(base, rm), s.tick))
+    const p = walk(s, K, q.side, q.u, q.v, q.goal, perTickAt(mul(base, rm), s.tick), q.grp === 'horse')
     // 몸 — 적 몸 앞 가장자리에서 멈추고 우리 몸과는 겹치지 않게 (틱 처음 자리 기준 · 차례에 안 기댄다)
     return bodyStep(s, q, p)
   })

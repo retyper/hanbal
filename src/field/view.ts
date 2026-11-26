@@ -8,7 +8,7 @@
 import { P } from '../tune/params.ts'
 import { HERO_CM } from '../realm/data/hero-height.ts'
 import { fieldView, inView, type Cam, type Viewport } from './viewCamera.ts'
-import { ATTACK0, ATTACK_N, DOWN, HIT, RUN_N, STAND0, STAND_N, WALK0, WALK_N, heroKey, heroStrip, pieceImg, holdStripFor, runStripFor, sheetOf, stripFor, stripKey, type Art, type Strip } from './viewArt.ts'
+import { ATTACK0, ATTACK_N, DOWN, HIT, RUN_N, STAND0, STAND_N, WALK0, WALK_N, heroKey, heroStrip, pieceImg, propImg, holdStripFor, runStripFor, sheetOf, stripFor, stripKey, type Art, type Strip } from './viewArt.ts'
 import { dotPh, hash2 } from './viewDots.ts'
 import { dotDied, dotsOf, offU, offV, peekDots, resetForm, rowCount, rowOfDot, stepDots } from './viewForm.ts'
 import { FORM_HOLD, FORM_SCATTER, FORM_WALL, ORD_VOLLEY, moraleOf } from './viewFxRead.ts'
@@ -390,11 +390,51 @@ function addGroupFlags(m: VModel, at: number[], nowMs: number, trim: number[]): 
   }
 }
 
+
+/** 들판 소품 가운데 바닥에 눕는 것 (풀·꽃·자갈·디딤돌·그루터기·통나무) — 병사 밑에 먼저 그린다 · 나머지(나무·바위·갈대·망루·솟대)는 병사와 y 차례로 */
+const FLAT_PROPS: ReadonlySet<string> = new Set(['grass-small', 'grass', 'grass-dry', 'flowers', 'flower', 'pebbles', 'stones', 'stones-wet', 'stump', 'log', 'step-1', 'step-2', 'step-3', 'step-4', 'step-5'])
+/** 바닥 소품을 그린다 (그림은 두 배로 구워 두었다 · 배율 1 화면 크기 = 그림 크기 / 2) */
+function drawFlatProps(ctx: CanvasRenderingContext2D, m: VModel, art: Art, view: ReturnType<typeof fieldView>): void {
+  const cp = P.field.cellPx
+  for (const d of m.deco) {
+    if (!FLAT_PROPS.has(d.k)) continue
+    const x = d.u * cp, y = d.v * cp
+    if (!inView(view, x, y, cp * 4)) continue
+    const img = propImg(art, d.k)
+    if (img === null) continue
+    const w = img.naturalWidth / 2, h = img.naturalHeight / 2
+    ctx.drawImage(img, x - w / 2, y - h, w, h)
+  }
+}
+/** 키 큰 소품을 병사와 함께 y 차례로 — 그 뒤(위쪽)에 산 대가 몸을 들이밀면 옅어진다 (나무 밑에 숨은 대가 보이게) */
+function addTallProps(m: VModel, art: Art, view: ReturnType<typeof fieldView>): void {
+  const F = P.field, cp = F.cellPx, k = cp / F.unit
+  for (const d of m.deco) {
+    if (FLAT_PROPS.has(d.k)) continue
+    const x = d.u * cp, y = d.v * cp
+    if (!inView(view, x, y, cp * 8)) continue
+    const img = propImg(art, d.k)
+    if (img === null) continue
+    const w = img.naturalWidth / 2, h = img.naturalHeight / 2
+    let hide = false
+    for (const q of m.squads) {
+      if (q.men <= 0) continue
+      const qx = q.u * k, qy = q.v * k, hw = Math.max(cp, q.bw * k / 2), hd = Math.max(cp, q.bd * k / 2)
+      if (qy < y && qy + hd > y - h && qx + hw > x - w * 0.5 && qx - hw < x + w * 0.5) { hide = true; break }
+    }
+    for (const e of m.heroes) { const ex = e.u * k, ey = e.v * k; if (!hide && ey < y && ey > y - h && Math.abs(ex - x) < w * 0.4) hide = true }
+    const it = nextItem()
+    it.kind = 2; it.x = x; it.y = y; it.img = img; it.h = h; it.alpha = hide ? F.propFadePermille / 1000 : 1
+  }
+}
+
 function drawItem(ctx: CanvasRenderingContext2D, d: Item): void {
   if (d.kind === 2) {
     const img = d.img!
     const w = d.h * img.naturalWidth / img.naturalHeight
+    if (d.alpha < 1) ctx.globalAlpha = d.alpha
     ctx.drawImage(img, d.x - w / 2, d.y - d.h, w, d.h)
+    if (d.alpha < 1) ctx.globalAlpha = 1
     return
   }
   if (d.kind === 0 && d.hero) {
@@ -504,9 +544,11 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
   ctx.fillRect(view.left, view.top, view.right - view.left, view.bottom - view.top)
   ctx.globalAlpha = 1
   drawTerrain(ctx, cur, world.w, world.h)
+  if (cur.deco.length > 0) drawFlatProps(ctx, cur, art, view)
 
   used = 0
   addProps(cur, art, view)
+  if (cur.deco.length > 0) addTallProps(cur, art, view)
   const baseH = F.soldierCells * F.cellPx, flagH = F.flagBaseCells * F.cellPx
   const pad = baseH * 3
   const lowShare = low ? F.lowDotsShare : 1000

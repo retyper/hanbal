@@ -3693,6 +3693,7 @@ export const en: Partial<Record<Key, string>> = {
   'lab.title': 'Battle lab',
   'lab.panel': 'Setup',
   'lab.map': 'Ground',
+  'lab.map.mix': 'Mixed field',
   'lab.map.meet': 'Plain',
   'lab.map.high': 'High ground',
   'lab.map.cross': 'Stream',

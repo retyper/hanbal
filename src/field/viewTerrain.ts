@@ -1,5 +1,5 @@
 /**
- * 바닥 종류 그리기: cells(0 평지 · 1 얕은 물 · 2 깊은 물 · 3 막힘 · 4 높은 터)를 맵마다 한 번 작은 캔버스에 칠해 두고 늘려 그린다.
+ * 바닥 종류 그리기: cells(0 평지 · 1 얕은 물 · 2 깊은 물 · 3 막힘 · 4 높은 터 · 5 숲)를 맵마다 한 번 작은 캔버스에 칠해 두고 늘려 그린다.
  * 높은 터는 밝게 + 아래·옆 가장자리에 층진 그늘(계단 모양 · 부드러운 그러데이션은 폰에서 깨져 쓰지 않는다)로 「높다」가 읽히게.
  * 물은 가장자리에 옅은 물가 띠. 그리는 쪽 전용 · 맵 배열을 읽기만 한다.
  */
@@ -12,11 +12,16 @@ const WATER_EDGE = 'rgba(214,236,226,0.45)'
 const SHADE = 'rgba(30,22,10,0.26)'
 const HIGH_LIGHT = 'rgba(255,238,190,0.4)'
 const HIGH_TOP = 'rgba(255,246,214,0.6)'
+const HIGH_LIGHT_LOW = 'rgba(255,238,190,0.16)'
+/** 낮은 언덕의 그늘 (들판 섞임 · 흐리기 전) */
+const CLIFF_LOW = ['rgba(30,22,10,0.34)', 'rgba(30,22,10,0.2)', 'rgba(30,22,10,0.1)', 'rgba(30,22,10,0.04)'] as const
 const CLIFF = ['rgba(30,22,10,0.6)', 'rgba(30,22,10,0.4)', 'rgba(30,22,10,0.22)', 'rgba(30,22,10,0.1)'] as const
 /** 높은 터의 등고선 — 가장자리에서 안쪽으로 이 칸 수마다 가는 줄 (0 = 가장자리 · 밝은 줄과 어두운 줄을 겹쳐 「턱」이 읽히게) */
 const CONTOURS = [0, 3, 7, 12] as const
 const EDGE_DARK = 'rgba(40,28,12,0.75)', EDGE_LIT = 'rgba(255,248,220,0.85)', CONTOUR = 'rgba(70,52,24,0.45)'
-const SHALLOW = 1, DEEP = 2, BLOCK = 3, HIGH = 4
+const SHALLOW = 1, DEEP = 2, BLOCK = 3, HIGH = 4, WOOD = 5
+/** 숲 칸: 짙은 풀빛 그늘 (나무 소품이 그 위에 선다) */
+const WOOD_FILL = 'rgba(46,70,30,0.42)'
 
 /** 칸 배열마다 한 번 칠해 둔다. 칸 내용이나 부서진 조각이 바뀌면(목책이 깨지면) 서명이 달라져 다시 칠한다 */
 const cache = new WeakMap<Readonly<Uint8Array>, { sig: string; cv: HTMLCanvasElement | null }>()
@@ -32,7 +37,7 @@ export function isPlain(cells: Readonly<Uint8Array>): boolean {
   return true
 }
 
-function paint(m: VModel): HTMLCanvasElement {
+function paint(m: VModel, soft = false): HTMLCanvasElement {
   const U = m.mapU, W = m.mapW, S = PX_PER_CELL
   const cv = document.createElement('canvas')
   cv.width = U * S; cv.height = W * S
@@ -53,19 +58,22 @@ function paint(m: VModel): HTMLCanvasElement {
     } else if (g === BLOCK) {
       // 막힌 칸(목책 밑 · 바위): 검게 메우지 않고 오른쪽 반 칸에 옅은 그늘만 (위에 선 말뚝이 주인공)
       c.fillStyle = SHADE; c.fillRect(x + S / 2, y, S / 2, S)
+    } else if (g === WOOD) {
+      c.fillStyle = WOOD_FILL; c.fillRect(x, y, S, S)
     } else if (g === HIGH) {
-      c.fillStyle = HIGH_LIGHT; c.fillRect(x, y, S, S)
-      if (at(cu, v - 1) !== HIGH) { c.fillStyle = HIGH_TOP; c.fillRect(x, y, S, 2) }
+      // 들판(섞임)의 낮은 언덕은 옅게 (흐린 뒤 안개처럼 하얗게 뜨지 않게)
+      c.fillStyle = soft ? HIGH_LIGHT_LOW : HIGH_LIGHT; c.fillRect(x, y, S, S)
+      if (at(cu, v - 1) !== HIGH && !soft) { c.fillStyle = HIGH_TOP; c.fillRect(x, y, S, 2) }
     }
   }
   // 높은 터의 그늘: 아래(v+) 가장자리와 앞(u 작은 쪽) 가장자리에 세 겹
   for (let cu = 0; cu < U; cu++) for (let v = 0; v < W; v++) {
     if (m.cells[cu * W + v] === HIGH) continue
     for (let n = 0; n < CLIFF.length; n++) {
-      if (at(cu, v - 1 - n) === HIGH && at(cu, v - n) !== HIGH) { c.fillStyle = CLIFF[n]!; c.fillRect(cu * S, v * S, S, S) }
+      if (at(cu, v - 1 - n) === HIGH && at(cu, v - n) !== HIGH) { c.fillStyle = (soft ? CLIFF_LOW : CLIFF)[n]!; c.fillRect(cu * S, v * S, S, S) }
     }
     for (let n = 0; n < CLIFF.length; n++) {
-      if (at(cu + 1 + n, v) === HIGH && at(cu + n, v) !== HIGH) { c.fillStyle = CLIFF[n]!; c.fillRect(cu * S, v * S, S, S) }
+      if (at(cu + 1 + n, v) === HIGH && at(cu + n, v) !== HIGH) { c.fillStyle = (soft ? CLIFF_LOW : CLIFF)[n]!; c.fillRect(cu * S, v * S, S, S) }
     }
   }
   // 높은 터의 등고선: 가장자리(옆이 낮은 칸)에서 안쪽으로 CONTOURS 칸째마다 그 가장자리를 따라 가는 줄
@@ -91,6 +99,21 @@ function paint(m: VModel): HTMLCanvasElement {
 export function drawTerrain(ctx: CanvasRenderingContext2D, m: VModel, worldW: number, worldH: number): void {
   const sig = signature(m)
   let e = cache.get(m.cells)
-  if (e === undefined || e.sig !== sig) { e = { sig, cv: isPlain(m.cells) ? null : paint(m) }; cache.set(m.cells, e) }
+  if (e === undefined || e.sig !== sig) { e = { sig, cv: isPlain(m.cells) ? null : m.deco.length > 0 ? soften(paint(m, true)) : paint(m) }; cache.set(m.cells, e) }
   if (e.cv !== null) ctx.drawImage(e.cv, 0, 0, worldW, worldH)
+}
+
+/**
+ * 들판(섞임)의 바닥은 비스듬한 개울·둥근 언덕·숲이라 칸 계단이 그대로 보인다 — 칠해 둔 작은 캔버스를 한 번 흐려 가장자리를 둥글린다
+ * (맵마다 한 번 · 움직이는 필터가 아니다 · filter 를 모르는 브라우저는 계단 그대로)
+ */
+const SOFT_PX = 3
+function soften(src: HTMLCanvasElement): HTMLCanvasElement {
+  const cv = document.createElement('canvas')
+  cv.width = src.width; cv.height = src.height
+  const c = cv.getContext('2d') as CanvasRenderingContext2D
+  c.filter = `blur(${SOFT_PX}px)`
+  c.drawImage(src, 0, 0)
+  c.filter = 'none'
+  return cv
 }
