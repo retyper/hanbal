@@ -31,7 +31,8 @@ export const MVP_GROUPS: readonly InputGroup[] = [0, 1, 2, 4, 3]
 /** 그 칸의 무리가 살아 있는가 (우리 편 · 사람 수 > 0) — 장수는 장수가 있으면 */
 export function aliveCell(m: VModel, g: InputGroup): boolean {
   if (g === 3) return m.heroes.some(e => e.side === 0)
-  return m.squads.some(q => q.side === 0 && inGroup(m, q, g) && q.men > 0)
+  // 시험판은 달아나는 대(흰 깃)를 빼고 센다 — 다 달아났으면 그 칸은 못 누른다
+  return m.squads.some(q => q.side === 0 && inGroup(m, q, g) && q.men > 0 && (!m.mvp || q.flee === 0))
 }
 
 /** 눌러도 안 되는 칸의 까닭 · 되면 null. none = 처음부터 없는 무리 · gone = 있었는데 다 쓰러짐 */

@@ -208,3 +208,36 @@ export function drawVolley(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam
   }
   ctx.restore()
 }
+
+/** 시험판(?mvp): 달아나는 대 위의 흰 깃 (판 px · 못 고르는 대 · 장수가 곁에 가야 다시 선다) */
+export function drawWhiteFlags(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam, pts: readonly { x: number; y: number }[]): void {
+  if (pts.length === 0) return
+  const z = cam.zoom, h = P.field.markPoleCells * P.field.cellPx
+  ctx.save()
+  ctx.translate(vp.w / 2, vp.h / 2); ctx.scale(z, z); ctx.translate(-cam.x, -cam.y)
+  ctx.lineWidth = Math.max(1, 1.6 / z); ctx.strokeStyle = '#3a3a3a'; ctx.fillStyle = '#f4f1ea'
+  for (const p of pts) {
+    const top = p.y - h, w = h * 0.55
+    ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x, top); ctx.stroke()
+    ctx.beginPath(); ctx.moveTo(p.x, top); ctx.lineTo(p.x + w, top + h * 0.12); ctx.lineTo(p.x + w * 0.85, top + h * 0.3); ctx.lineTo(p.x + w, top + h * 0.48); ctx.lineTo(p.x, top + h * 0.42); ctx.closePath()
+    ctx.fill(); ctx.stroke()
+  }
+  ctx.restore()
+}
+
+/** 시험판(?mvp): 장수 체력 고리 — 발밑 둘레에 남은 체력만큼 호 (그 편 색 · 3분의 1 아래면 붉게) */
+export interface HeroHp { x: number; y: number; frac: number; side: 0 | 1 }
+export function drawHeroHp(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam, hs: readonly HeroHp[]): void {
+  if (hs.length === 0) return
+  const z = cam.zoom, r = P.field.ringHeroCells * P.field.cellPx * 1.15
+  ctx.save()
+  ctx.translate(vp.w / 2, vp.h / 2); ctx.scale(z, z); ctx.translate(-cam.x, -cam.y)
+  for (const hh of hs) {
+    ctx.lineWidth = Math.max(3, 4 / z)
+    ctx.strokeStyle = '#0008'
+    ctx.beginPath(); ctx.ellipse(hh.x, hh.y, r, r * 0.45, 0, 0, FULL_TURN); ctx.stroke()
+    ctx.strokeStyle = hh.frac < 1 / 3 ? '#ff5a3c' : hh.side === 0 ? MINE : '#e0473a'
+    ctx.beginPath(); ctx.ellipse(hh.x, hh.y, r, r * 0.45, 0, -HALF_TURN / 2, -HALF_TURN / 2 + FULL_TURN * Math.max(0, Math.min(1, hh.frac))); ctx.stroke()
+  }
+  ctx.restore()
+}

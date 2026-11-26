@@ -10,11 +10,11 @@ import { sideMorale, wingOf } from './sim.ts'
 /** aim = 지금 싸우는 상대(대 id · 없으면 -1 · 손으로 몰았든 알아서든 같은 뜻) · foe = 「적을 쳐라」로 받은 적 · form = 앞줄 모양 FORM_* · cmd = 활·기병 명령 · lock = 맞물린 적 대 */
 export interface VSquad { id: number; side: 0 | 1; grp: string; kind: string; men: number; fresh: number; u: number; v: number; target: number; goal: { u: number; v: number } | null; stance: number; manual: number; aim: number; foe: number; form: number; cmd: number; lock: number; morale: number; morale0: number; order: number; orderTick: number; orderAt: { u: number; v: number } | null; ran: number; bonus: number; hitTick: number; flee: number; bw: number; bd: number; face: number; pushed: number; regrouped: number; menMax: number; /** 기병 날개 (0 왼 · 1 오른 · 기병이 아니면 -1) */ wing: number }
 /** dir 걷는 방향 · face 보는 쪽 · dash 내닫는 남은 틱 · dashCd/artCd 쿨타임 남은 틱 · artOn 비기 이어지는 틱 · why/whyTick 마지막으로 못 쓴 까닭 · atk 이번 틱에 친 것 · art 비기 이름 · mu/tong 능력치 */
-export interface VHero { side: 0 | 1; id: string; u: number; v: number; stun: number; goal: { u: number; v: number } | null; dir: number; face: number; dash: number; dashDir: number; dashCd: number; art: string; artCd: number; artOn: number; why: number; whyTick: number; atk: number; mu: number; tong: number; grit: number; gritN: number; runIn: number; bangTick: number }
+export interface VHero { side: 0 | 1; id: string; u: number; v: number; stun: number; goal: { u: number; v: number } | null; dir: number; face: number; dash: number; dashDir: number; dashCd: number; art: string; artCd: number; artOn: number; why: number; whyTick: number; atk: number; mu: number; tong: number; grit: number; gritN: number; runIn: number; bangTick: number; /** 체력 (장수 체력 고리) */ hp: number }
 /** 바닥에 놓인 조각 (목책 마디·문) — 칸 단위 · hp 0 이하면 부서진 것 */
 export interface VPiece { id: number; kind: 'stake' | 'gate'; u0: number; v0: number; u1: number; v1: number; hp: number }
 /** 방금 돈 틱에 난 부딪힘·무너짐·활 한 번 (kind impact 처음 맞물림 · rout 사기가 꺾임 · volley 활이 쏨 · how 는 impact 의 상성 구분 · 0 보통 1 맞음 2 막힘 · 없으면 0) */
-export interface VEvent { kind: 'impact' | 'rout' | 'volley' | 'omen' | 'flankHit' | 'artHit' | 'sideBreak' | 'stand' | 'regroup' | 'heroSkill' | 'heroDown' | 'heroBash'; side: 0 | 1; id: number; u: number; v: number; n: number; how: number; to: number; pts: { u: number; v: number }[]; r: number }
+export interface VEvent { kind: 'reinf' | 'impact' | 'rout' | 'volley' | 'omen' | 'flankHit' | 'artHit' | 'sideBreak' | 'stand' | 'regroup' | 'heroSkill' | 'heroDown' | 'heroBash'; side: 0 | 1; id: number; u: number; v: number; n: number; how: number; to: number; pts: { u: number; v: number }[]; r: number }
 /** 친 대 id(장수면 -1) · 맞은 대 id · 줄어든 사람 수 · 종류 */
 export interface VLoss { from: number; to: number; n: number; how: number }
 /** 편마다 깎인 사기의 까닭별 몫 (천분율 × 사람 · 그 편 menMax 합으로 나누면 깎인 사기 천분율) */
@@ -100,7 +100,7 @@ function tickEvents(s: FieldState): VEvent[] {
   const ev = s.log.events
   for (let i = ev.length - 1; i >= 0 && ev[i]!.tick >= s.tick - 1; i--) {
     const e = ev[i]!
-    if (e.kind === 'impact' || e.kind === 'rout' || e.kind === 'volley' || e.kind === 'omen' || e.kind === 'flankHit' || e.kind === 'artHit' || e.kind === 'sideBreak' || e.kind === 'stand' || e.kind === 'regroup' || e.kind === 'heroSkill' || e.kind === 'heroDown' || e.kind === 'heroBash') out.push({ kind: e.kind, side: e.side, id: e.id, u: e.u, v: e.v, n: e.n, how: e.how ?? 0, to: e.to ?? -1, pts: e.pts === undefined ? [] : e.pts.map(p => ({ u: p.u, v: p.v })), r: e.r ?? 0 })
+    if (e.kind === 'impact' || e.kind === 'rout' || e.kind === 'volley' || e.kind === 'omen' || e.kind === 'flankHit' || e.kind === 'artHit' || e.kind === 'sideBreak' || e.kind === 'stand' || e.kind === 'regroup' || e.kind === 'heroSkill' || e.kind === 'heroDown' || e.kind === 'heroBash' || e.kind === 'reinf') out.push({ kind: e.kind, side: e.side, id: e.id, u: e.u, v: e.v, n: e.n, how: e.how ?? 0, to: e.to ?? -1, pts: e.pts === undefined ? [] : e.pts.map(p => ({ u: p.u, v: p.v })), r: e.r ?? 0 })
   }
   return out.reverse()
 }
@@ -120,7 +120,7 @@ export function readField(s: FieldState): VModel {
     cells: s.map.cells,
     rule: s.map.rule,
     squads: s.squads.map(q => ({ id: q.id, side: q.side, grp: q.grp, kind: q.kind, men: q.men, fresh: q.fresh, u: q.u, v: q.v, target: q.target, goal: q.goal === null ? null : { u: q.goal.u, v: q.goal.v }, stance: q.stance, manual: q.manual, aim: q.aim, foe: q.foe, form: q.form, cmd: q.cmd, lock: q.lock, morale: q.morale, morale0: q.morale0, order: q.order, orderTick: q.orderTick, orderAt: q.orderAt === null ? null : { u: q.orderAt.u, v: q.orderAt.v }, ran: q.ran, bonus: q.bonus, hitTick: q.hitTick, flee: q.flee, bw: q.bw, bd: q.bd, face: q.face, pushed: q.pushed, regrouped: q.regrouped, menMax: q.menMax, wing: q.grp === 'horse' ? wingOf(s, q) : -1 })),
-    heroes: s.heroes.map(e => ({ side: e.side, id: e.id, u: e.u, v: e.v, stun: e.stun, goal: e.goal === null ? null : { u: e.goal.u, v: e.goal.v }, dir: e.dir, face: e.face, dash: e.dash, dashDir: e.dashDir, dashCd: e.dashCd, art: e.art, artCd: e.artCd, artOn: e.artOn, why: e.why, whyTick: e.whyTick, atk: e.atk, mu: e.mu, tong: e.tong, grit: e.grit, gritN: e.gritN, runIn: e.runIn, bangTick: e.bangTick })),
+    heroes: s.heroes.map(e => ({ side: e.side, id: e.id, u: e.u, v: e.v, stun: e.stun, goal: e.goal === null ? null : { u: e.goal.u, v: e.goal.v }, dir: e.dir, face: e.face, dash: e.dash, dashDir: e.dashDir, dashCd: e.dashCd, art: e.art, artCd: e.artCd, artOn: e.artOn, why: e.why, whyTick: e.whyTick, atk: e.atk, mu: e.mu, tong: e.tong, grit: e.grit, gritN: e.gritN, runIn: e.runIn, bangTick: e.bangTick, hp: e.hp })),
     loss: tickLoss(s),
     events: tickEvents(s),
     anchor: s.anchor.map(p => ({ u: p.u, v: p.v })),

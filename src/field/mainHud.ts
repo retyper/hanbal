@@ -73,7 +73,8 @@ export interface Hud {
   /** 다시 선 대의 「+N」: 화면 자리(x, y)에서 떠올랐다가 그 편 막대로 날아가 붙는다 */
   fly(x: number, y: number, n: number, side: 0 | 1): void
   /** 끝 상자 (null 이면 닫는다) */
-  showEnd(m: VModel | null, stats?: EndStats, why?: EndWhy, next?: EndNext): void
+  /** line: 시험판의 「무엇이 먹혔나 / 왜 졌나」 한 줄 (있으면 까닭 칸에) */
+  showEnd(m: VModel | null, stats?: EndStats, why?: EndWhy, next?: EndNext, line?: string): void
   frame(nowMs: number): void
 }
 
@@ -299,7 +300,7 @@ export function mountHud(root: HTMLElement, h: HudHandlers, base = '', mvp = fal
       setTimeout(() => { el.style.transform = `translate(${Math.round(tx - 10)}px,${Math.round(ty)}px) scale(.7)`; el.style.opacity = '.4' }, P.field.flyHoldMs)
       el.addEventListener('transitionend', () => { if (el.isConnected) { el.remove(); restart(bars[side], 'sh'); bars[side].classList.add('up'); upUntil[side] = performance.now() + P.field.goldFlashMs } })
     },
-    showEnd(m, stats, why, next) {
+    showEnd(m, stats, why, next, line) {
       if (m === null || m.end === null) { end.hidden = true; nxKey = ''; return }
       end.hidden = false
       endText.textContent = t(m.winner === 0 ? 'field.end.win' : m.winner === 1 ? 'field.end.lose' : 'field.end.draw')
@@ -330,7 +331,7 @@ export function mountHud(root: HTMLElement, h: HudHandlers, base = '', mvp = fal
         + ((stats.stand ?? 0) > 0 ? sp('field.res.stand', stats.stand ?? 0) : '') + ((stats.regroup ?? 0) > 0 ? sp('field.res.regroup', stats.regroup ?? 0) : '')
         + ((stats.grit ?? 0) > 0 ? sp('field.res.grit', stats.grit ?? 0) : '') + ((stats.bash ?? 0) > 0 ? sp('field.res.bash', stats.bash ?? 0) : '')
       const top = why === undefined ? null : topCause(why.by)
-      endWhy.textContent = top === null || why === undefined ? '' : t(`field.cause.${why.won ? 'win' : 'lose'}.${top}` as Key)
+      endWhy.textContent = line !== undefined ? line : top === null || why === undefined ? '' : t(`field.cause.${why.won ? 'win' : 'lose'}.${top}` as Key)
     },
     frame(nowMs) {
       const now = performance.now()

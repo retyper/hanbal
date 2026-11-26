@@ -195,8 +195,10 @@ export function armyTick(s: FieldState, full: boolean): void {
   regroup(s)
   // 무너진 대는 달아난다 · 편이 무너졌으면(sideBreak) 그 편의 남은 대가 모두 손을 놓고 달아난다 (검수 B5)
   for (const q of s.squads) {
-    const fall = s.breakTick[q.side] >= 0
-    q.flee = q.men > 0 && (broken(q) || fall) ? 1 : 0
+    const fall = s.breakTick[q.side] >= 0, was = q.flee
+    // 시험판(mvp): 한 번 무너진 대는 저절로 서지 않는다 (장수가 곁에 가야 다시 선다 · regroup) · 다시 선 대가 또 무너지면 판에서 빠진다
+    q.flee = q.men > 0 && (broken(q) || fall || (s.mvp === 1 && was === 1)) ? 1 : 0
+    if (s.mvp === 1 && was === 0 && q.flee === 1 && q.regrouped === 1 && !fall) { emit(s, { kind: 'rout', side: q.side, id: q.id, u: q.u, v: q.v, n: q.men }); q.men = 0; q.hp = 0; q.morale = 0; q.flee = 0; q.goal = null; continue }
     if (fall && q.manual === 1) { q.manual = 0; q.foe = -1 }
     // 시험판(mvp)의 사람 편: 명령 받고 선 대도 무너지면 손을 놓고 달아난다 (그 자리에 서서 끝까지 깎이지 않게)
     if (q.flee === 1 && q.manual === 1 && still(s, q.side)) { q.manual = 0; q.foe = -1; q.order = ORD_NONE }
@@ -527,9 +529,14 @@ function regroup(s: FieldState): void {
     if (q.flee !== 1 || q.regrouped === 1 || q.men <= 0 || s.breakTick[q.side] >= 0) continue
     const h = heroOf(s, q.side)
     if (!h || h.stun > 0 || dist2(q.u, q.v, h.u, h.v) > sq(cells(P.field.regroupCells))) continue
+    // 시험판(mvp): 싸움에서 빠져나온 뒤에만 다시 선다 (적이 mvpRallyClearCells 안에 있으면 못 선다 · 무너진 그 자리에서 곧바로 서던 것)
+    if (s.mvp === 1 && nearestFoe(s, q, (_t, d) => d <= sq(cells(P.field.mvpRallyClearCells))) !== null) continue
     const need = idiv(q.morale0 * target, MILLI) - q.morale
-    if (need <= 0) continue
-    q.calm += need * MILLI; q.morale += need; q.regrouped = 1
-    emit(s, { kind: 'regroup', side: q.side, id: q.id, u: q.u, v: q.v, n: need })
+    if (need <= 0 && s.mvp !== 1) continue
+    if (need > 0) { q.calm += need * MILLI; q.morale += need }
+    q.regrouped = 1
+    // 시험판: 달아남은 붙어 있으므로 다시 섬이 곧 멈춤이다 (가진 명령은 없다 · 그 자리에 선다)
+    if (s.mvp === 1) { q.flee = 0; q.manual = 0; q.goal = null }
+    emit(s, { kind: 'regroup', side: q.side, id: q.id, u: q.u, v: q.v, n: Math.max(0, need) })
   }
 }

@@ -34,6 +34,8 @@ export interface LabRecord {
   pauses: number
   pausedSec: number
   fastSec: number
+  /** 결과 한 줄 (무엇이 먹혔나 / 왜 졌나) */
+  line?: string
 }
 /** 봇 기준 하나 (판 짜임 열쇠마다 · 봇마다 묶음) */
 interface Base { n: number; sums: Record<string, LabBotSum> }
@@ -70,7 +72,7 @@ export interface Lab {
 
 const GOLD = '#ffd27a'
 const CSS = `
-#lab-side{position:absolute;left:0;top:60px;bottom:170px;width:300px;max-width:calc(100vw - 48px);overflow:auto;background:#10140df2;border:1px solid ${GOLD}66;border-left:0;border-radius:0 10px 10px 0;padding:10px 12px;box-sizing:border-box;z-index:8;font-size:13px;color:#f3ecd8}
+#lab-side{position:absolute;left:0;top:60px;bottom:250px;width:300px;max-width:calc(100vw - 48px);overflow:auto;background:#10140df2;border:1px solid ${GOLD}66;border-left:0;border-radius:0 10px 10px 0;padding:10px 12px;box-sizing:border-box;z-index:8;font-size:13px;color:#f3ecd8}
 #lab-side[hidden]{display:none}
 #lab-side h3{margin:10px 0 4px;font-size:13px;color:${GOLD}}
 #lab-side h3:first-child{margin-top:0}
@@ -259,10 +261,10 @@ ${sideHtml(0)}${sideHtml(1)}
     const winName = (w: number): string => t(w === 0 ? 'lab.win.0' : w === 1 ? 'lab.win.1' : 'lab.win.draw')
     const p2 = (n: number): string => String(n).padStart(2, '0')
     const when = (iso: string): string => { const d = new Date(iso); return `${p2(d.getMonth() + 1)}-${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}` }
-    const list = recs.slice().reverse().map(r => `<tr><td>${when(r.at)}</td><td>${t(`lab.map.${r.cfg.map}` as Key)}</td><td>${total(r.cfg.sides[0])} : ${total(r.cfg.sides[1])}</td><td>${r.seed}</td><td>${Math.round(r.sec)}${t('lab.sec')}</td><td>${winName(r.winner)}</td><td>${r.morale.join(' : ')}</td><td>${r.killed} / ${r.lost}</td><td>${r.flankHits}</td><td>${r.orders.reduce((a, b) => a + b, 0)}</td><td>${r.pauses} · ${Math.round(r.pausedSec)}${t('lab.sec')}</td></tr>`).join('')
+    const list = recs.slice().reverse().map(r => `<tr><td>${when(r.at)}</td><td>${t(`lab.map.${r.cfg.map}` as Key)}</td><td>${total(r.cfg.sides[0])} : ${total(r.cfg.sides[1])}</td><td>${r.seed}</td><td>${Math.round(r.sec)}${t('lab.sec')}</td><td>${winName(r.winner)}</td><td>${r.morale.join(' : ')}</td><td>${r.killed} / ${r.lost}</td><td>${r.flankHits}</td><td>${r.orders.reduce((a, b) => a + b, 0)}</td><td>${r.pauses} · ${Math.round(r.pausedSec)}${t('lab.sec')}</td><td style="text-align:left">${r.line ?? ''}</td></tr>`).join('')
     rec.innerHTML = `<div class="lab-bar"><b>${t('lab.records')} · ${t('lab.rec.n', { n: recs.length })}</b><button type="button" data-act="copy">${t('lab.copy')}</button><button type="button" data-act="down">${t('lab.download')}</button><button type="button" data-act="clear">${t(clearArmed ? 'lab.clearSure' : 'lab.clear')}</button><button type="button" data-act="close">${t('lab.close')}</button></div>
 ${recs.length === 0 ? `<p>${t('lab.empty')}</p>` : groupTable(recs, r => t(`lab.map.${r.cfg.map}` as Key), t('lab.sum.map')) + groupTable(recs, r => `${armyLabel(r.cfg.sides[0])} : ${armyLabel(r.cfg.sides[1])}`, t('lab.sum.army'))
-  + `<table><tr><th>${t('lab.col.when')}</th><th>${t('lab.map')}</th><th>${t('lab.col.army')}</th><th>${t('lab.seed')}</th><th>${t('lab.col.sec')}</th><th>${t('lab.col.win')}</th><th>${t('lab.col.mor')}</th><th>${t('lab.col.kl')}</th><th>${t('lab.col.flank')}</th><th>${t('lab.col.orders')}</th><th>${t('lab.col.pause')}</th></tr>${list}</table>`}`
+  + `<table><tr><th>${t('lab.col.when')}</th><th>${t('lab.map')}</th><th>${t('lab.col.army')}</th><th>${t('lab.seed')}</th><th>${t('lab.col.sec')}</th><th>${t('lab.col.win')}</th><th>${t('lab.col.mor')}</th><th>${t('lab.col.kl')}</th><th>${t('lab.col.flank')}</th><th>${t('lab.col.orders')}</th><th>${t('lab.col.pause')}</th><th>${t('lab.col.line')}</th></tr>${list}</table>`}`
   }
   rec.addEventListener('click', e => {
     const act = ((e.target as HTMLElement).closest('button') as HTMLButtonElement | null)?.dataset['act']

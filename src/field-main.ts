@@ -19,7 +19,7 @@ import { mountFlags, MVP_CMDS, MVP_FLAG_KEYS, type FlagsView, type HeroBtn } fro
 import { mountArrows, mountPad, type Arrows, type Pad, type PadBtn } from './field/mainPad.ts'
 import { mountFirst, mountSteps, type First, type Steps } from './field/mainHelp.ts'
 import { mountHelp, type Help } from './field/mainCard.ts'
-import { drawMarks, drawOdds, drawPaths, drawVolley, type Odds, type Path, type Volley, type Band, type Box, type Mark, type MarkShape, type Ring } from './field/mainFlagMarks.ts'
+import { drawHeroHp, drawMarks, drawOdds, drawPaths, drawVolley, drawWhiteFlags, type Odds, type Path, type Volley, type Band, type Box, type Mark, type MarkShape, type Ring } from './field/mainFlagMarks.ts'
 import { G_HIGH, HIT_BLOCKED, LINES, OP_CALL, OP_AUTO, OP_MOVE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_VOLLEY, type FieldInput, type InputGroup } from './field/types.ts'
 import { roll } from './core/rng.ts'
 import { mountMini, type Mini } from './field/mainMini.ts'
@@ -341,7 +341,7 @@ function nearestFight(hero: { u: number; v: number }): { u: number; v: number } 
 function restart(): void {
   // 실험실의 「다시」는 같은 판 (씨앗은 판 짜기에서 바꾼다)
   if (!LAB) { foeLine = nextFoeLine(); foeHist.push(foeLine); seed++ }
-  labRec = newLabRec()
+  labRec = newLabRec(); res = newRes()
   state = createField(newSetup()); cur = readField(state); prev = null; acc = 0
   resetFx()
   introLeft = P.field.introMs
@@ -391,7 +391,7 @@ const STANCE_SHAPE: readonly MarkShape[] = ['charge', 'hold', 'open']
 const unitsOf = (px: number): number => Math.round(px / P.field.cellPx * P.field.unit)
 const pxOf = (u: number): number => u / P.field.unit * P.field.cellPx
 const gName = (g: number): string => t(`field.g.${g}`  as Key)
-const squadsOf = (g: number): VModel['squads'] => cur.squads.filter(q => q.side === 0 && q.men > 0 && inGroup(cur, q, g as InputGroup))
+const squadsOf = (g: number): VModel['squads'] => cur.squads.filter(q => q.side === 0 && q.men > 0 && (!MVP || q.flee === 0) && inGroup(cur, q, g as InputGroup))
 function inputCtx(): InputCtx {
   return { tick: ui.phase === 'ready' ? 0 : state.tick, mapUUnits: cur.mapUUnits, mapVUnits: cur.mapVUnits }
 }
@@ -418,7 +418,8 @@ function pickCands(): PickCand[] {
   const out: PickCand[] = []
   const reach = P.field.spreadVCells * P.field.cellPx * cam.zoom
   for (const q of cur.squads) {
-    if (q.side !== 0 || q.men <= 0) continue
+    // 시험판: 달아나는 대(흰 깃)는 못 고른다
+    if (q.side !== 0 || q.men <= 0 || (MVP && q.flee === 1)) continue
     const s = toScreen(cam, vp, pxOf(q.u), pxOf(q.v))
     out.push({ g: (MVP && q.grp === 'horse' && q.wing === 1 ? 4 : GRP_OF.indexOf(q.grp)) as InputGroup, x: s.x, y: s.y, reach })
   }
@@ -972,7 +973,12 @@ function paint(now: number, alpha: number): void {
     lossAcc = []
     if (MVP) drawPaths(ctx, vp, cam, mvpPaths())
     drawMarks(ctx, vp, cam, marks(), MVP ? [] : ALL_GROUPS.map(g => ui.sel.includes(g) ? fromOf(g) : null), ringsNow(now), box, bandsNow(), foeMarks())
-    if (MVP) { drawVolley(ctx, vp, cam, volleysNow()); drawOdds(ctx, vp, cam, oddsNow()) }
+    if (MVP) {
+      drawVolley(ctx, vp, cam, volleysNow()); drawOdds(ctx, vp, cam, oddsNow())
+      // 흰 깃: 달아나는 대 (두 편) · 장수 체력 고리 (두 편)
+      drawWhiteFlags(ctx, vp, cam, cur.squads.filter(q => q.men > 0 && q.flee === 1).map(q => ({ x: pxOf(q.u), y: pxOf(q.v) - bodyRect(q).h / 2 })))
+      drawHeroHp(ctx, vp, cam, cur.heroes.map(e => ({ x: pxOf(e.u), y: pxOf(e.v), frac: e.hp / P.field.heroHp, side: e.side })))
+    }
     k.x = cam.x; k.y = cam.y; k.z = cam.zoom; k.sel = selKey; k.epoch = markEpoch
   }
   flags.frame(now)
@@ -990,7 +996,7 @@ function paint(now: number, alpha: number): void {
   flyRegroups()
   hud.frame(now)
   // 시험판은 까닭 한 줄을 숨긴다 (규칙 묶음 ③ 에서 「무엇이 먹혔나」 로 다시)
-  hud.showEnd(endAt > 0 && now - endAt >= P.field.endBoxMs ? cur : null, endStats(), MVP ? undefined : endWhy(), MVP ? undefined : { foe: nextFoeLine(), shout: heroNow()?.art === 'shout' })
+  hud.showEnd(endAt > 0 && now - endAt >= P.field.endBoxMs ? cur : null, endStats(), MVP ? undefined : endWhy(), MVP ? undefined : { foe: nextFoeLine(), shout: heroNow()?.art === 'shout' }, MVP && cur.end !== null ? resLine() : undefined)
   if (!blocked) {
     // 처음 화면의 큰 조작표: 첫 판들의 준비 화면에서 가운데에 크게 · 전투 개시나 첫 장수 입력에 ? 단추로 줄어든다
     // 시험판은 준비 화면(멈춘 채 시작)마다 늘 세 줄 그림을 띄운다 (본 판 수를 안 센다)
@@ -1166,7 +1172,7 @@ function labEnd(): void {
     at: new Date().toISOString(), build: __BUILD_ID__, cfg: structuredClone(labCfg), seed, sec: state.tick / P.field.hz, winner: cur.winner, end: cur.end ?? '',
     morale: [barPct(cur.morale[0]), barPct(cur.morale[1])], killed: cur.stats.killed[0], lost: cur.stats.lost[0], flankHits: cur.stats.flankHits[0],
     inputs: serialize(state.log.accepted), samples: labRec.samples, events: labRec.events, orders: labRec.orders,
-    pauses: labRec.pauses, pausedSec: labRec.pausedMs / 1000, fastSec: labRec.fastMs / 1000,
+    pauses: labRec.pauses, pausedSec: labRec.pausedMs / 1000, fastSec: labRec.fastMs / 1000, line: resLine(),
   })
 }
 /** 원군 예고 (판 가장자리) — 들어설 자리를 화면 안으로 붙여 그 편 색 화살표 + 병종 그림 + 남은 초 · 화면 밖이면 그쪽을 가리킨다 */
@@ -1188,6 +1194,42 @@ function syncReinfMarks(): void {
     if (img.getAttribute('src') !== src) img.src = src
     ;(d.querySelector('b') as HTMLElement).textContent = String(Math.max(0, Math.ceil((r.tick - state.tick) / P.field.hz)))
   })
+}
+// ---- 시험판 결과 한 줄: 무엇이 먹혔나 / 왜 졌나 (판 동안 사건으로 모은다 · 엔진 셈은 안 바꾼다) ----
+/** 우리 대가 어느 자리(무리 번호)인가 — 0 가운데 · 1 뒷줄 · 2 위 날개 · 4 아래 날개 */
+const slotOf = (q: VModel['squads'][number]): number => q.grp === 'front' ? 0 : q.grp === 'bows' ? 1 : q.wing === 1 ? 4 : 2
+const slotName = (g: number): string => g === 2 || g === 4 ? t(`field.mvp.g.${g}` as Key) : t(`field.g.${g}` as Key)
+const grpName = (grp: string): string => t(`field.g.${GRP_OF.indexOf(grp)}` as Key)
+interface ResRun { flank: { g: number; t: string } | null; kills: number[]; lost: Array<Record<string, number>> }
+const newRes = (): ResRun => ({ flank: null, kills: [0, 0, 0, 0, 0], lost: [{}, {}, {}, {}, {}] })
+let res: ResRun = newRes()
+function noteRes(ev: VModel['events'][number]): void {
+  const by = ev.id >= 0 ? cur.squads[ev.id] : undefined, to = ev.to >= 0 ? cur.squads[ev.to] : undefined
+  if (ev.kind === 'flankHit' && ev.side === 0 && res.flank === null && by !== undefined && to !== undefined) res.flank = { g: slotOf(by), t: to.grp }
+}
+/** 깎임 사건 — 우리 자리마다 쓰러뜨린 수 · 잃은 수를 친 적 무리별로 */
+function noteLoss(l: VModel['loss'][number]): void {
+  const by = l.from >= 0 ? cur.squads[l.from] : undefined, to = cur.squads[l.to]
+  if (by === undefined || to === undefined) return
+  if (by.side === 0) res.kills[slotOf(by)]! += l.n
+  else if (to.side === 0) { const x = res.lost[slotOf(to)]!; x[by.grp] = (x[by.grp] ?? 0) + l.n }
+}
+/** 이긴 판: 옆·뒤 치기가 있었으면 그것 · 없으면 가장 많이 쓰러뜨린 자리 / 진 판: 가장 많이 잃은(몫) 자리와 그 자리를 가장 많이 깎은 적 무리 */
+function resLine(): string {
+  if (cur.winner === 0) {
+    if (res.flank !== null) return t('field.mvp.res.flank', { g: slotName(res.flank.g), t: grpName(res.flank.t) })
+    const g = res.kills.indexOf(Math.max(...res.kills))
+    return t('field.mvp.res.win', { g: slotName(g) })
+  }
+  let worst = -1, share = 0
+  for (const g of [0, 1, 2, 4]) {
+    const max = cur.squads.filter(q => q.side === 0 && slotOf(q) === g).reduce((a, q) => a + q.menMax, 0)
+    const lost = Object.values(res.lost[g]!).reduce((a, b) => a + b, 0)
+    if (max > 0 && lost / max > share) { share = lost / max; worst = g }
+  }
+  if (worst < 0) return ''
+  const by = Object.entries(res.lost[worst]!).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'front'
+  return t((worst === 2 || worst === 4) && by === 'horse' ? 'field.mvp.res.block' : 'field.mvp.res.broke', { g: slotName(worst), t: grpName(by) })
 }
 function heroMovedNow(): boolean {
   const h = heroNow()
@@ -1220,10 +1262,12 @@ function frame(now: number): void {
       if (queue.length > 0) queue = queue.filter(q => q.tick >= state.tick)
       prev = cur; cur = readField(state)
       if (cur.loss.length > 0) lossAcc.push(...cur.loss)
+      if (MVP) for (const l of cur.loss) noteLoss(l)
       for (const ev of cur.events) {
         if (ev.kind === 'impact') { if (ev.how === 1) fxGold = true; else if (ev.how === 2) fxBlocked = true }
         else if (ev.kind === 'regroup') flyQ.push({ id: ev.id, n: ev.n })
         else if (ev.kind === 'heroBash' && ev.side === 0) bashN++
+        if (MVP) noteRes(ev)
       }
       noteBreak()
       if (LAB) labTick()
@@ -1373,6 +1417,8 @@ hud = mountHud(root, {
 hud.setZoom(0)
 mini = mountMini(root, { onPan: (x, y) => { const hh = heroNow(); pan = { x, y, until: ui.phase === 'ready' ? Infinity : performance.now() + P.field.miniPanMs }; miniHero = hh === undefined ? null : { u: hh.u, v: hh.v }; paintKey.x = NaN } })
 flags = mountFlags(root, import.meta.env.BASE_URL + 'realm/', handlers)
+// 시험판: 아래 자리 단추가 세 줄 진 그림이라 깃발 칸·안내가 그 위로 오게 띠 높이를 늘린다
+if (MVP) root.style.setProperty('--fd-bar', `${P.field.mvpFormBarPx}px`)
 help = mountHelp(root, import.meta.env.BASE_URL + 'realm/', MVP)
 if (LAB) lab = mountLab(root, labCfg, savedLabConfig() === null, { onApply: cfg => { labCfg = cfg; seed = cfg.seed; restart() }, onLayout: () => { measurePads(); paintKey.x = NaN } })
 first = mountFirst(root)

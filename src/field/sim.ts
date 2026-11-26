@@ -223,6 +223,9 @@ export function members(s: FieldState, side: 0 | 1, g: number): Squad[] {
   return s.squads.filter(q => q.side === side && q.grp === grp && (q.grp !== 'horse' || s.mvp !== 1 || wingOf(s, q) === (g === 4 ? 1 : 0)))
 }
 
+/** 명령을 받는 우리 대 — 시험판(mvp)은 달아나는 대(흰 깃)를 빼고 (장수가 다시 세우기 전에는 못 부린다) */
+const ordered = (s: FieldState, g: number): Squad[] => members(s, 0, g).filter(q => s.mvp !== 1 || q.flee === 0)
+
 /** 무리를 (tu, tv) 로 — 대마다 시작 줄의 상대 자리를 더해 한 점에 겹치지 않는다. 줄이 판 밖으로 나가면 가운데를 판 안으로 당긴다 (45 §1-3) */
 function moveGroup(s: FieldState, qs: readonly Squad[], tu: number, tv: number): void {
   const live = qs.filter(q => q.men > 0)
@@ -330,10 +333,10 @@ function applyInput(s: FieldState, i: FieldInput): void {
   if (i.op === OP_STANCE || i.op === OP_AIM || i.op === OP_RALLY) { armyInput(s, i); return }
   if (i.op === OP_CALL) { callReinf(s, 0); return }
   if (i.g === 3) { heroInput(s, i); return }
-  if (i.op === OP_ATTACK) { attackGroup(s, members(s, 0, i.g), i.u); return }
+  if (i.op === OP_ATTACK) { attackGroup(s, ordered(s, i.g), i.u); return }
   // 판 끝 경계(칸 수 × unit)를 누른 것도 받되 판 안 마지막 단위로 붙인다
   const tu = clamp(i.u, 0, lastU(s.map)), tv = clamp(i.v, 0, lastV(s.map))
-  if (i.op === OP_MOVE) { moveGroup(s, members(s, 0, i.g), tu, tv); return }
+  if (i.op === OP_MOVE) { moveGroup(s, ordered(s, i.g), tu, tv); return }
   for (const q of members(s, 0, i.g)) {
     q.manual = 0
     q.foe = -1
@@ -721,6 +724,8 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
     if (q.grp === 'front') v = mul(v, q.stance === STANCE_CHARGE ? K.charge : q.stance === STANCE_HOLD ? K.hold : q.stance === STANCE_OPEN ? K.open : MILLI)
     if (q.grp === 'bows' && openFront[q.side]) v = mul(v, K.openVolley)
     if (q.grp === 'bows' && groundAt(s.map, q.u, q.v) === G_HIGH) v = mul(v, K.height)
+    // 시험판(mvp): 화살은 기병을 잘 잡는다 (말은 큰 과녁) — 활에 정면으로 달려드는 기병은 닿기 전에 깎인다
+    if (s.mvp === 1 && q.grp === 'bows' && e.grp === 'horse') v = mul(v, P.field.mvpArrowHorsePermille)
     // 시험판(mvp): 칼날 — 높은 터를 가진 편이 위에서 치면 세고 · 남의 높은 터를 오르며 치면 약하다
     if (s.mvp === 1 && q.grp !== 'bows' && s.map.highOwner >= 0 && groundAt(s.map, q.u, q.v) === G_HIGH) v = mul(v, q.side === s.map.highOwner ? P.field.mvpHighMeleePermille : P.field.mvpClimbMeleePermille)
     // 세모 — 이긴 쪽은 세고 진 쪽이 받는 손실은 크다 (본편 tacTriUp/Down · tacTriTakeLose/Win)
