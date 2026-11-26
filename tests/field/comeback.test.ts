@@ -25,7 +25,7 @@ test('투지는 제 편 사기가 적보다 낮을 때만 차고 1000 에서 멈
   assert.equal(foe.grit, 0)
 })
 
-test('적장을 장수가 쓰러뜨리면 그 편 대마다 사기가 heroSlainShock 뚝 (편 사기 −25%p 언저리)', () => {
+test('적장을 장수가 쓰러뜨리면 그 편 대마다 사기가 heroSlainShock 뚝 (편 사기가 그만큼 내려간다)', () => {
   const s = createField(plainSetup(2, 1200))
   stepField(s)
   const before = sideMorale(s, 1)
