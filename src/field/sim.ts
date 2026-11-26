@@ -22,7 +22,7 @@ import { P } from '../tune/params.ts'
 import { clamp, dist2, idiv, isqrt, nearestDir, stepToward } from './num.ts'
 import { campPointU, groundAt, walkable } from './map.ts'
 import { G_BLOCK, G_HIGH, G_PLAIN, G_SHALLOW, GRPS, HERO_ART_DEFAULT, HERO_ARTS, HERO_DIR, HERO_DIRS, OP_ATTACK, OP_AUTO, OP_DASH, OP_HERO_DIR, OP_MOVE, OP_RETREAT, OP_SKILL, OP_STANCE, STANCE_CHARGE, STANCE_HOLD, STANCE_OPEN, WHY_NONE, CMD_COUNTER, CMD_HEIGHT, OP_AIM, OP_RALLY, ORD_ATTACK, ORD_CHARGE, ORD_FLANK, ORD_MOVE, ORD_NONE, ORD_VOLLEY, HIT_PLAIN, HIT_GOOD, HIT_BLOCKED, LOSS_ARROW, LOSS_BLADE, KIND_BEATS } from './types.ts'
-import { FORM_HOLD, LINES, LINE_SHIELD, LINE_WEDGE, LINE_WINGS, LOSS_ART, LOSS_HERO, STANCE_NONE } from './types.ts'
+import { FORM_HOLD, KIND_GRP, LINES, LINE_SHIELD, LINE_WEDGE, LINE_WINGS, LOSS_ART, LOSS_HERO, OP_CALL, STANCE_NONE } from './types.ts'
 import type { FieldInput, FieldMap, FieldState, Grp, Hero, LiveSetup, MoraleBy, Point, Squad, UnitKind } from './types.ts'
 import { addShock, auraOf, emit, gritTick, heroInput, heroMove, heroStrike, heroTakeHits, pruneEvents, standOf } from './hero.ts'
 import { armyInit, armyInput, armyTick, flankStep, follows, runMul, standing } from './army.ts'
@@ -129,6 +129,11 @@ export function createField(setup: LiveSetup): FieldState {
   if (invalidSetup(setup)) { s.end = 'invalid'; return s }
   if (setup.mvp === true) s.mvp = 1
   if (setup.mvp === true && setup.mvpTricks === true) s.tricks = 1
+  // 원군 (실험실 L2 · 시험판만) — 정한 초에 오거나 부르면 온다
+  if (setup.mvp === true && setup.reinf !== undefined) {
+    s.reinf = []
+    setup.reinf.forEach((r, side) => { if (r !== null && r.men > 0) { const p = reinfAt(s, side as 0 | 1, r.edge); s.reinf!.push({ side: side as 0 | 1, kind: r.kind, men: r.men, edge: r.edge, callSec: r.callSec, tick: r.sec >= 0 ? ticksOf(r.sec) : -1, done: 0, u: p.u, v: p.v, call: r.sec >= 0 ? 0 : 1 }) } })
+  }
   const unit = P.field.unit
   const jit = P.field.spawnJitterCells * unit
   for (const side of [0, 1] as const) {
@@ -243,6 +248,46 @@ function moveGroup(s: FieldState, qs: readonly Squad[], tu: number, tv: number):
   }
 }
 
+/** 원군이 들어서는 자리 — 0 제 편 뒤 끝 · 1 위 가장자리 · 2 아래 가장자리 (위·아래는 제 진영보다 4칸 뒤) */
+function reinfAt(s: FieldState, side: 0 | 1, edge: 0 | 1 | 2): Point {
+  const unit = P.field.unit, L = lastU(s.map), W = lastV(s.map)
+  if (edge === 0) return { u: side === 0 ? unit : L - unit, v: idiv(W, 2) }
+  return { u: clamp(campU(s, side) - fwd(side) * 4 * unit, 0, L), v: edge === 1 ? 2 * unit : W - 2 * unit }
+}
+
+/** 원군 부르기 — 그 편의 「부르면 옴」 원군이 아직 안 불렸으면 callSec 초 뒤로 (판에 한 번) */
+function callReinf(s: FieldState, side: 0 | 1): void {
+  for (const r of s.reinf ?? []) if (r.side === side && r.call === 1 && r.done === 0 && r.tick < 0) r.tick = s.tick + ticksOf(r.callSec)
+}
+
+/**
+ * 원군이 오는 틱 — 정한 가장자리(0 제 편 뒤 끝 · 1 위 · 2 아래)에서 대 몇으로 들어선다. 그 무리의 일원이 되어 진 자리로 간다 (시작 자리는 무리 가운데 뒤).
+ * 대 수·몸·사기는 처음 판과 같은 규칙 (squadCount · fitBody · 그 편 처음 사기).
+ */
+function arriveReinf(s: FieldState): void {
+  for (const r of s.reinf ?? []) {
+    if (r.done === 1 || r.tick !== s.tick) continue
+    r.done = 1
+    const grp = KIND_GRP[r.kind], n = squadCount(r.men), unit = P.field.unit, L = lastU(s.map), W = lastV(s.map), f = fwd(r.side)
+    const mate = s.squads.find(q => q.side === r.side)
+    const morale0 = mate?.morale0 ?? MILLI
+    const camp = campU(s, r.side), base: Point = { u: r.u, v: r.v }
+    const kin = s.squads.filter(q => q.side === r.side && q.grp === grp)
+    const hu = kin.length ? idiv(kin.reduce((a, q) => a + q.homeU, 0), kin.length) : camp, hv = kin.length ? idiv(kin.reduce((a, q) => a + q.homeV, 0), kin.length) : idiv(W, 2)
+    for (let i = 0; i < n; i++) {
+      const cnt = idiv(r.men, n) + (i < r.men % n ? 1 : 0)
+      const along = idiv((2 * i + 1 - n) * 4 * unit, 2)
+      const u = clamp(r.edge === 0 ? base.u : base.u + along, 0, L), v = clamp(r.edge === 0 ? base.v + along : base.v, 0, W)
+      const id = s.squads.length
+      s.squads.push({ id, side: r.side, grp, kind: r.kind, men: cnt, menMax: cnt, fresh: 0, u, v, homeU: clamp(hu - f * 6 * unit, 0, L), homeV: clamp(hv + along, 0, W), lock: -1, sleep: 0, daze: 0, rem: 0, held: 0, flank: 0, stance: STANCE_NONE, morale0, shock: 0, goal: null, manual: 0, target: -1, hp: cnt * MILLI, morale: morale0, foe: -1, calm: 0, form: 0, cmd: -1, reach: grp === 'bows' ? P.field.bowRangeCells * unit : 0, aim: -1,
+        order: ORD_NONE, orderTick: -1, orderAt: null, ran: 0, bonus: 0, hitTick: -1, flee: 0,
+        bw: 0, bd: 0, face: r.side === 0 ? 0 : HERO_DIRS / 2, pushed: 0, regrouped: 0, countered: 0, shoveU: 0, shoveV: 0, shoveN: 0 })
+      fitBody(s.squads[id]!)
+    }
+    emit(s, { kind: 'reinf', side: r.side, id: -1, u: base.u, v: base.v, n: r.men })
+  }
+}
+
 /** 산 적 대인가 (「적을 쳐라」의 u) */
 const liveFoe = (s: FieldState, id: number): boolean => id >= 0 && id < s.squads.length && s.squads[id]!.side === 1 && s.squads[id]!.men > 0
 
@@ -261,6 +306,7 @@ function inputOk(s: FieldState, i: FieldInput): boolean {
     case OP_SKILL: return i.g === 3 && inMap
     case OP_AIM: return (i.g === 1 || i.g === 2) && inMap
     case OP_RALLY: return true
+    case OP_CALL: return i.g === 3 && s.mvp === 1
     default: return false
   }
 }
@@ -277,6 +323,7 @@ function applyInput(s: FieldState, i: FieldInput): void {
   if (![i.g, i.op, i.u, i.v].every(Number.isInteger) || !(i.g >= 0 && i.g <= (s.mvp === 1 ? 4 : 3)) || !inputOk(s, i)) { s.log.dropped++; return }
   s.log.accepted.push({ tick: i.tick, g: i.g, op: i.op, u: i.u, v: i.op === OP_DASH ? 0 : i.v })
   if (i.op === OP_STANCE || i.op === OP_AIM || i.op === OP_RALLY) { armyInput(s, i); return }
+  if (i.op === OP_CALL) { callReinf(s, 0); return }
   if (i.g === 3) { heroInput(s, i); return }
   if (i.op === OP_ATTACK) { attackGroup(s, members(s, 0, i.g), i.u); return }
   // 판 끝 경계(칸 수 × unit)를 누른 것도 받되 판 안 마지막 단위로 붙인다
@@ -899,6 +946,7 @@ export function stepField(s: FieldState, inputs: readonly FieldInput[] = NO_INPU
     applyInput(s, i)
     if (s.end !== null) return
   }
+  arriveReinf(s)
   const retick = s.tick % Math.max(1, idiv(P.field.retargetMs * P.field.hz, MILLI)) === 0
   armyTick(s, retick || s.log.accepted.length > took)
   if (retick) retarget(s)

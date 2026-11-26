@@ -5,7 +5,7 @@
 import { ambushMap, crossMap, meetMap, mvpHighMap, mvpMap, mvpStakeMap } from './map.ts'
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
-import type { FieldMap, LiveSetup, LiveSide } from './types.ts'
+import type { FieldMap, LiveReinf, LiveSetup, LiveSide } from './types.ts'
 
 export function plainSetup(seed: number, men: number, withHero = true, map: FieldMap = meetMap()): LiveSetup {
   const front = Math.trunc(men / 2), bows = Math.trunc(men / 4), horse = men - front - bows
@@ -32,7 +32,7 @@ export const LAB_MAPS: readonly LabMap[] = ['meet', 'high', 'cross', 'stake', 'a
 /** 실험실의 한 편 — 자리 1 가운데(앞줄 병종) · 2 뒷줄(활 병종) · 3·4 날개(기병 · 사람 수는 둘이 반씩) · 5 대장(장수) */
 export interface LabSide { front: { kind: 'spear' | 'pike' | 'shield'; men: number }; bows: { kind: 'bow' | 'crossbow'; men: number }; horse: number }
 /** 실험실 판 짜임 (기록에 그대로 남는다) — foe: 적 사람 수 배(천분율 · 짠 적 군에 곱한다) · spread: 그 배가 씨앗으로 흔들리는 폭(천분율) */
-export interface LabConfig { v: 1; map: LabMap; sides: [LabSide, LabSide]; tricks: boolean; foe: number; spread: number; seed: number }
+export interface LabConfig { v: 1; map: LabMap; sides: [LabSide, LabSide]; tricks: boolean; foe: number; spread: number; seed: number; reinf: [LiveReinf | null, LiveReinf | null] }
 /** 묶음 단추 — 고른 군 · 보병 많은 군 · 기병 많은 군 · 수가 적은 군(800) */
 export const LAB_PRESETS: Readonly<Record<'even' | 'foot' | 'horse' | 'small', LabSide>> = {
   even: { front: { kind: 'spear', men: 600 }, bows: { kind: 'bow', men: 300 }, horse: 300 },
@@ -41,7 +41,9 @@ export const LAB_PRESETS: Readonly<Record<'even' | 'foot' | 'horse' | 'small', L
   small: { front: { kind: 'spear', men: 400 }, bows: { kind: 'bow', men: 200 }, horse: 200 },
 }
 /** 실험실의 처음 짜임 = 시험판(?mvp)과 같은 판 (적은 고른 군의 mvpFoeMenPermille ± mvpFoeMenSpreadPermille · 같은 씨앗이면 같은 판) */
-export const LAB_DEFAULT: LabConfig = { v: 1, map: 'meet', sides: [LAB_PRESETS.even, LAB_PRESETS.even], tricks: false, foe: P.field.mvpFoeMenPermille, spread: P.field.mvpFoeMenSpreadPermille, seed: 7 }
+export const LAB_DEFAULT: LabConfig = { v: 1, map: 'meet', sides: [LAB_PRESETS.even, LAB_PRESETS.even], tricks: false, foe: P.field.mvpFoeMenPermille, spread: P.field.mvpFoeMenSpreadPermille, seed: 7, reinf: [null, null] }
+/** 원군을 켤 때의 처음 값 — 우리는 대장이 부르면(R) 15초 뒤 · 적은 60초에 · 둘 다 기병 300 · 우리 위 · 적 뒤 */
+export const LAB_REINF: readonly [LiveReinf, LiveReinf] = [{ kind: 'horse', men: 300, sec: -1, callSec: 15, edge: 1 }, { kind: 'horse', men: 300, sec: 60, callSec: 15, edge: 0 }]
 /** 판 묶음 — 시험판과 같게(적 86%) · 맞대결(1200 : 1200 · 흔들림 없음) */
 export const LAB_SCENES: Readonly<Record<'mvp' | 'duel', Pick<LabConfig, 'sides' | 'foe' | 'spread'>>> = {
   mvp: { sides: [LAB_PRESETS.even, LAB_PRESETS.even], foe: P.field.mvpFoeMenPermille, spread: P.field.mvpFoeMenSpreadPermille },
@@ -69,5 +71,5 @@ export function labSetup(cfg: LabConfig, seed: number = cfg.seed): LiveSetup {
     const front = all > 0 ? Math.trunc(n * l.front.men / all) : 0, bows = all > 0 ? Math.trunc(n * l.bows.men / all) : 0, horse = Math.max(0, n - front - bows)
     return { ...base, form: 0, men: { front, bows, horse }, kinds: { [l.front.kind]: front, [l.bows.kind]: bows, horse } }
   }
-  return { ...su, key: `lab:${cfg.map}:${seed}`, sides: [side(su.sides[0], cfg.sides[0], 1000), side(su.sides[1], cfg.sides[1], k)], mvp: true, mvpTricks: cfg.tricks }
+  return { ...su, key: `lab:${cfg.map}:${seed}`, sides: [side(su.sides[0], cfg.sides[0], 1000), side(su.sides[1], cfg.sides[1], k)], mvp: true, mvpTricks: cfg.tricks, reinf: cfg.reinf ?? [null, null] }
 }

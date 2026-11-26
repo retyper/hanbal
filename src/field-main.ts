@@ -20,7 +20,7 @@ import { mountArrows, mountPad, type Arrows, type Pad, type PadBtn } from './fie
 import { mountFirst, mountSteps, type First, type Steps } from './field/mainHelp.ts'
 import { mountHelp, type Help } from './field/mainCard.ts'
 import { drawMarks, drawOdds, drawPaths, drawVolley, type Odds, type Path, type Volley, type Band, type Box, type Mark, type MarkShape, type Ring } from './field/mainFlagMarks.ts'
-import { G_HIGH, HIT_BLOCKED, LINES, OP_AUTO, OP_MOVE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_VOLLEY, type FieldInput, type InputGroup } from './field/types.ts'
+import { G_HIGH, HIT_BLOCKED, LINES, OP_CALL, OP_AUTO, OP_MOVE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_VOLLEY, type FieldInput, type InputGroup } from './field/types.ts'
 import { roll } from './core/rng.ts'
 import { mountMini, type Mini } from './field/mainMini.ts'
 import { serialize } from './field/rec.ts'
@@ -54,6 +54,15 @@ html,body{margin:0;height:100%;background:#10140d;overflow:hidden;font-family:sy
 #fd-cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
 #fd-rotate{position:absolute;inset:0;background:#10140df0;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 16px;box-sizing:border-box}
 #fd-rotate[hidden]{display:none}
+#fd-rf{position:absolute;left:0;top:0;pointer-events:none;z-index:4}
+.fd-rfi{position:absolute;left:-26px;top:-20px;display:flex;align-items:center;gap:3px;padding:3px 8px 3px 4px;border-radius:14px;background:#000b;border:2px solid #fff6;font-size:16px;font-weight:800;color:#fff}
+.fd-rfi[hidden]{display:none}
+.fd-rfi.s0{border-color:#2f8cff}
+.fd-rfi.s1{border-color:#d6483a}
+.fd-rfi img{width:26px;height:26px;object-fit:contain}
+.fd-rfi i{width:0;height:0;border:7px solid transparent;border-left:11px solid #fff;margin-right:-4px}
+.fd-rfi.s0 i{border-left-color:#2f8cff}
+.fd-rfi.s1 i{border-left-color:#d6483a}
 #fd-rotate span{font-size:44px}
 #fd-rotate h2{margin:8px 0;font-size:20px}
 #fd-rotate p{margin:0;font-size:14px;line-height:1.5}
@@ -546,10 +555,24 @@ function volleysNow(): Volley[] {
 /** 시험판의 장수 칸 단추 셋 (기본 판의 내닫기·비기·모여라 단추와 같은 쿨타임) */
 function mvpHeroBtns(): HeroBtn[] {
   const pb = padBtns()
-  return [pb.dash, pb.skill, pb.rally].map(b => ({ icon: b.icon, label: b.label, frac: b.frac, sec: b.frac > 0 ? b.sec : 0 }))
+  const out: HeroBtn[] = [pb.dash, pb.skill, pb.rally].map(b => ({ icon: b.icon, label: b.label, frac: b.frac, sec: b.frac > 0 ? b.sec : 0 }))
+  // R: 원군 부르기 (실험실 · 우리 원군이 「부르면 옴」일 때만 · 부른 뒤에는 오기까지 남은 몫과 초 · 오면 사라진다)
+  const r = ourCall()
+  if (r !== undefined) {
+    const left = r.tick < 0 ? 0 : Math.max(0, r.tick - state.tick), all = Math.max(1, r.callSec * P.field.hz)
+    out.push({ icon: KIND_ICON[r.kind] ?? '', label: t('field.mvp.call'), frac: r.tick < 0 ? 0 : Math.min(1, left / all), sec: Math.ceil(left / P.field.hz) })
+  }
+  return out
+}
+/** 병종 그림 (원군 단추·예고) */
+const KIND_ICON: Readonly<Record<string, string>> = { spear: 'icon/unit-spear.png', pike: 'icon/unit-spear.png', shield: 'icon/unit-spear.png', bow: 'icon/unit-archer.png', crossbow: 'icon/unit-archer.png', horse: 'icon/unit-buyeo-cavalry.png' }
+/** 우리 편의 「부르면 옴」 원군 (아직 안 왔으면 · 정한 초에 오는 원군은 아니다) */
+function ourCall(): VModel['reinf'][number] | undefined {
+  return cur.reinf.find(r => r.side === 0 && r.call && !r.done)
 }
 /** 시험판의 장수 기술 (Q 내닫기 · W 비기 · E 모여라 — 기본 판의 그 입력 그대로) · 누르면 그 기술이 닿는 거리 고리가 잠깐 뜬다 */
 function mvpHero(k: number): void {
+  if (k === 3) { const r = ourCall(); if (r !== undefined && r.tick < 0) accept([{ tick: inputCtx().tick, g: 3, op: OP_CALL, u: 0, v: 0 }]); return }
   if (k > 2) return
   heroRangeK = k; heroRangeUntil = performance.now() + P.field.auraShowMs; markEpoch++
   if (k === 0) doDash()
@@ -958,6 +981,7 @@ function paint(now: number, alpha: number): void {
   tutorial(now)
   root.classList.toggle('touch', touchMode)
   arrows.sync(offscreenArrows())
+  if (MVP) syncReinfMarks()
   const pb = padBtns()
   pad.sync(!MVP && !blocked && ui.phase === 'play' && cur.end === null, touchMode, touchMode && !heroOrdered && playMs < 3000, pb.dash, pb.skill, pb.rally, !MVP && !blocked && ui.phase === 'ready')
   mini.sync(cur, cam, vp, !blocked && !(touchMode && ui.phase === 'ready'), now) // 폰의 준비 화면은 판 전체가 이미 보인다
@@ -1111,7 +1135,7 @@ function offscreenArrows(): { g: number; x: number; y: number; rot: number; icon
 }
 // ---- 실험실 기록 (56 §2) ----
 /** 기록에 남기는 사건 종류 (impact 는 막힌 것만 「blocked」 로) */
-const LAB_EVENTS: ReadonlySet<string> = new Set(['flankHit', 'rout', 'regroup', 'heroDown', 'sideBreak', 'gateBreak'])
+const LAB_EVENTS: ReadonlySet<string> = new Set(['flankHit', 'rout', 'regroup', 'heroDown', 'sideBreak', 'gateBreak', 'reinf'])
 interface LabRun { samples: number[][]; events: LabRecord['events']; orders: number[]; pauses: number; pausedMs: number; fastMs: number; wasPaused: boolean }
 const newLabRec = (): LabRun => ({ samples: [], events: [], orders: [0, 0, 0, 0, 0], pauses: 0, pausedMs: 0, fastMs: 0, wasPaused: false })
 let labRec: LabRun = newLabRec()
@@ -1143,6 +1167,26 @@ function labEnd(): void {
     morale: [barPct(cur.morale[0]), barPct(cur.morale[1])], killed: cur.stats.killed[0], lost: cur.stats.lost[0], flankHits: cur.stats.flankHits[0],
     inputs: serialize(state.log.accepted), samples: labRec.samples, events: labRec.events, orders: labRec.orders,
     pauses: labRec.pauses, pausedSec: labRec.pausedMs / 1000, fastSec: labRec.fastMs / 1000,
+  })
+}
+/** 원군 예고 (판 가장자리) — 들어설 자리를 화면 안으로 붙여 그 편 색 화살표 + 병종 그림 + 남은 초 · 화면 밖이면 그쪽을 가리킨다 */
+const reinfBox = document.createElement('div')
+reinfBox.id = 'fd-rf'
+function syncReinfMarks(): void {
+  const items = ui.phase === 'end' ? [] : cur.reinf.filter(r => !r.done && r.tick >= 0)
+  while (reinfBox.children.length < items.length) { const d = document.createElement('div'); d.className = 'fd-rfi'; d.innerHTML = '<i></i><img alt=""><b></b>'; reinfBox.append(d) }
+  ;[...reinfBox.children].forEach((el, i) => {
+    const d = el as HTMLElement, r = items[i]
+    d.hidden = r === undefined
+    if (r === undefined) return
+    const m = P.field.reinfMarkMarginPx, sp = toScreen(cam, vp, pxOf(r.u), pxOf(r.v))
+    const x = Math.max(m, Math.min(vp.w - m * 2, sp.x)), y = Math.max(padTop + m, Math.min(vp.h - padBottom - m, sp.y))
+    d.style.transform = `translate(${Math.round(x)}px,${Math.round(y)}px)`
+    d.className = `fd-rfi s${r.side}`
+    ;(d.firstElementChild as HTMLElement).style.transform = `rotate(${Math.atan2(sp.y - y, sp.x - x) || (r.side === 0 ? 0 : Math.PI)}rad)`
+    const img = d.querySelector('img') as HTMLImageElement, src = import.meta.env.BASE_URL + 'realm/' + (KIND_ICON[r.kind] ?? '')
+    if (img.getAttribute('src') !== src) img.src = src
+    ;(d.querySelector('b') as HTMLElement).textContent = String(Math.max(0, Math.ceil((r.tick - state.tick) / P.field.hz)))
   })
 }
 function heroMovedNow(): boolean {
@@ -1339,6 +1383,7 @@ aimCur.style.cssText = 'position:absolute;left:0;top:0;width:48px;height:48px;ob
 root.append(aimCur)
 pad = mountPad(root, import.meta.env.BASE_URL + 'realm/', { onDir: d => { padDir = d }, onDash: doDash, onSkill: doSkill, onRally: doRally })
 steps = mountSteps(root)
+root.append(reinfBox)
 root.append(document.getElementById('fd-rotate') as HTMLElement)
 resize()
 /** 화면 배율(dpr)이 바뀌면(창을 다른 화면으로 옮김 · 확대) 다시 맞춘다 */

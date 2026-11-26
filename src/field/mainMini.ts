@@ -129,6 +129,15 @@ export function mountMini(root: HTMLElement, h: MiniHandlers): Mini {
         g.beginPath(); g.arc(x, y, F.miniHeroPx, 0, Math.PI * 2); g.fill()
         if (e.side === 0) { g.strokeStyle = GOLD; g.lineWidth = 1.5; g.beginPath(); g.arc(x, y, F.miniHeroPx + 3, 0, Math.PI * 2); g.stroke() }
       }
+      // 원군 예고 (실험실): 들어설 자리에 그 편 색 세모 + 남은 초 (아직 안 부른 원군은 안 보인다)
+      for (const r of m.reinf) {
+        if (r.done || r.tick < 0) continue
+        const x = px(r.u), y = px(r.v), s = F.miniArrowPx, left = Math.max(0, Math.ceil((r.tick - m.tick) / F.hz))
+        g.fillStyle = r.side === 0 ? MINE : FOE; g.strokeStyle = '#000'; g.lineWidth = 1
+        g.beginPath(); g.moveTo(x, y - s); g.lineTo(x + s, y + s * 0.7); g.lineTo(x - s, y + s * 0.7); g.closePath(); g.fill(); g.stroke()
+        g.font = 'bold 11px system-ui,sans-serif'; g.textAlign = 'center'; g.textBaseline = 'bottom'; g.fillStyle = '#fff'
+        g.fillText(String(left), x, y - s - 1)
+      }
       // 카메라가 보는 곳: 가는 흰 상자
       const v = fieldView(cam, vp)
       g.strokeStyle = '#fff'; g.lineWidth = 1

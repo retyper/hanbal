@@ -4,7 +4,8 @@
  * 기록은 판이 끝날 때마다 한 줄 · LAB_REC_MAX 줄까지 (넘으면 오래된 것부터 뺀다).
  */
 import { t, type Key } from '../i18n/index.ts'
-import { LAB_DEFAULT, LAB_MAPS, LAB_PRESETS, LAB_SCENES, type LabConfig, type LabSide } from './scenario.ts'
+import { LAB_DEFAULT, LAB_MAPS, LAB_PRESETS, LAB_REINF, LAB_SCENES, type LabConfig, type LabSide } from './scenario.ts'
+import type { LiveReinf } from './types.ts'
 import { LAB_BOTS, type LabBotSum } from './labbots.ts'
 
 export const LAB_KEY = 'zz.field.lab'
@@ -98,6 +99,8 @@ const CSS = `
 const FRONT_KINDS = ['spear', 'pike', 'shield'] as const
 const BOW_KINDS = ['bow', 'crossbow'] as const
 const MEN_MAX = 3000
+/** 원군 줄의 칸 이름 */
+const REINF_FIELDS: readonly string[] = ['rOn', 'rKind', 'rMen', 'rWhen', 'rSec', 'rEdge']
 
 /** 군 한 편을 짧게: 「창600 활300 기300」 */
 export function armyLabel(l: LabSide): string {
@@ -127,7 +130,19 @@ export function mountLab(root: HTMLElement, first: LabConfig, firstVisit: boolea
 <div class="lab-row"><span>${t('lab.slot.1')}</span><select data-f="frontKind" data-side="${s}">${opts(FRONT_KINDS, l.front.kind)}</select><input type="number" step="100" min="100" max="${MEN_MAX}" value="${l.front.men}" data-f="frontMen" data-side="${s}"></div>
 <div class="lab-row"><span>${t('lab.slot.2')}</span><select data-f="bowsKind" data-side="${s}">${opts(BOW_KINDS, l.bows.kind)}</select><input type="number" step="100" min="0" max="${MEN_MAX}" value="${l.bows.men}" data-f="bowsMen" data-side="${s}"></div>
 <div class="lab-row"><span>${t('lab.slot.34')}</span><span>${t('lab.kind.horse')}</span><input type="number" step="100" min="0" max="${MEN_MAX}" value="${l.horse}" data-f="horse" data-side="${s}"><small>${t('lab.wingNote')}</small></div>
-<div class="lab-row"><span>${t('lab.slot.5')}</span><span>${t('lab.hero')}</span></div>`
+<div class="lab-row"><span>${t('lab.slot.5')}</span><span>${t('lab.hero')}</span></div>
+${reinfHtml(s)}`
+  }
+  /** 원군 줄 — 켜고 끄기 · 병종 · 사람 · 오는 때(우리는 R 로 부르면 / 정한 초 · 적은 정한 초) · 가장자리 */
+  const reinfHtml = (s: 0 | 1): string => {
+    const r = cfg.reinf?.[s] ?? null
+    const head = `<div class="lab-row"><label><input type="checkbox" data-f="rOn" data-side="${s}"${r !== null ? ' checked' : ''}> ${t('lab.reinf')}</label>`
+    if (r === null) return head + '</div>'
+    const kinds = [...FRONT_KINDS, ...BOW_KINDS, 'horse'].map(k => `<option value="${k}"${k === r.kind ? ' selected' : ''}>${t(`lab.kind.${k}` as Key)}</option>`).join('')
+    const when = (s === 0 ? [['call', 'lab.reinf.call'], ['sec', 'lab.reinf.atSec']] : [['sec', 'lab.reinf.atSec']]).map(([v, k]) => `<option value="${v}"${(v === 'call') === (r.sec < 0) ? ' selected' : ''}>${t(k as Key)}</option>`).join('')
+    const edges = [0, 1, 2].map(e => `<option value="${e}"${e === r.edge ? ' selected' : ''}>${t(`lab.reinf.edge.${e}` as Key)}</option>`).join('')
+    return head + `<select data-f="rKind" data-side="${s}">${kinds}</select><input type="number" step="100" min="100" max="${MEN_MAX}" value="${r.men}" data-f="rMen" data-side="${s}"></div>
+<div class="lab-row"><span>${t('lab.reinf.when')}</span><select data-f="rWhen" data-side="${s}">${when}</select><input type="number" step="5" min="0" max="300" value="${r.sec < 0 ? r.callSec : r.sec}" data-f="rSec" data-side="${s}"><small>${t('lab.sec')}</small><select data-f="rEdge" data-side="${s}">${edges}</select></div>`
   }
   const paintSide = (): void => {
     side.innerHTML = `<h3>${t('lab.scene')}</h3><div class="lab-row">${(Object.keys(LAB_SCENES) as Array<keyof typeof LAB_SCENES>).map(k => `<button type="button" data-scene="${k}">${t(`lab.scene.${k}` as Key, { n: Math.round(LAB_SCENES[k].foe / 10) })}</button>`).join('')}</div>
@@ -187,6 +202,20 @@ ${sideHtml(0)}${sideHtml(1)}
     const el = e.target as HTMLInputElement
     const f = el.dataset['f'], s = Number(el.dataset['side']) as 0 | 1
     if (f === undefined) return
+    if (REINF_FIELDS.includes(f)) {
+      const cur = cfg.reinf ?? [null, null]
+      let r: LiveReinf | null = cur[s] === null ? null : { ...cur[s]! }
+      if (f === 'rOn') r = el.checked ? { ...LAB_REINF[s] } : null
+      else if (r !== null) {
+        if (f === 'rKind') r.kind = el.value as LiveReinf['kind']
+        else if (f === 'rMen') r.men = num(el.value, 100, MEN_MAX)
+        else if (f === 'rWhen') r.sec = el.value === 'call' ? -1 : Math.max(0, r.callSec)
+        else if (f === 'rSec') { const v = Math.max(0, Math.min(300, Math.round(Number(el.value) || 0))); if (r.sec < 0) r.callSec = v; else r.sec = v }
+        else if (f === 'rEdge') r.edge = Number(el.value) as 0 | 1 | 2
+      }
+      cfg = { ...cfg, reinf: s === 0 ? [r, cur[1]] : [cur[0], r] }
+      paintSide(); return
+    }
     const l: LabSide = structuredClone(cfg.sides[s] ?? cfg.sides[0])
     if (f === 'frontKind') l.front.kind = el.value as LabSide['front']['kind']
     else if (f === 'bowsKind') l.bows.kind = el.value as LabSide['bows']['kind']

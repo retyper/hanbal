@@ -34,6 +34,7 @@ export function hashField(s: FieldState): string {
   // 시험판(mvp)만 섞는다 — 옛 판의 해시는 그대로
   if (s.mvp === 1) h = mix(h, s.mvp)
   if (s.tricks === 1) h = mix(h, 7)
+  for (const r of s.reinf ?? []) { h = mix(h, r.side); h = hs(h, r.kind); h = mix(h, r.men); h = mix(h, r.edge); h = mix(h, r.callSec); h = mix(h, r.tick); h = mix(h, r.done); h = mix(h, r.u); h = mix(h, r.v); h = mix(h, r.call) }
   for (const p of s.anchor) { h = mix(h, p.u); h = mix(h, p.v) }
   for (const r of s.route) { h = mix(h, r.length); for (const p of r) { h = mix(h, p.u); h = mix(h, p.v) } }
   for (const n of s.grpWhy) h = mix(h, n); for (const n of s.grpWhyTick) h = mix(h, n)
@@ -84,5 +85,6 @@ export function snapshot(s: FieldState): FieldState {
     used: [...s.used] as FieldState['used'],
     broken: [s.broken[0], s.broken[1]],
     log: { dropped: s.log.dropped, accepted: [...s.log.accepted], events: [...s.log.events] },
+    ...(s.reinf === undefined ? {} : { reinf: s.reinf.map(r => ({ ...r })) }),
   }
 }

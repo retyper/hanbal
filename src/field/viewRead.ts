@@ -39,6 +39,8 @@ export interface VModel {
   mapUUnits: number; mapVUnits: number
   /** 고르고 오른쪽 누름 시험판(?mvp)인가 — 기병이 날개 둘(2 왼 · 4 오른)로 갈린다 */
   mvp: boolean
+  /** 원군 (실험실 L2) — 오는 틱(-1 아직 안 부름) · 왔나 · 들어서는 자리 · 병종 · 사람 수 */
+  reinf: { side: 0 | 1; kind: string; men: number; tick: number; done: boolean; u: number; v: number; callSec: number; call: boolean }[]
   /** 편마다(0 우리 · 1 적) 지기까지 남은 몫 0~1000 — 사기와 사람 수 가운데 문턱에 더 가까운 쪽 (끝 판정과 같은 식 · 그리는 쪽 전용) */
   edge: [number, number]
   /** 편마다 편 사기 — 처음 사기에 견준 천분율 (sim 의 sideMorale 그대로 · 끝 판정과 같은 셈 · 이것이 P.realm.tacBreakMorale 아래로 가면 그 편이 무너진다) */
@@ -112,7 +114,7 @@ export function readField(s: FieldState): VModel {
     morale: [sideMorale(s, 0), sideMorale(s, 1)],
     bladeTick: [s.bladeTick[0], s.bladeTick[1]],
     face: s.map.camps[0].face,
-    mapUUnits: s.map.u * unit, mapVUnits: s.map.w * unit, mvp: s.mvp === 1,
+    mapUUnits: s.map.u * unit, mapVUnits: s.map.w * unit, mvp: s.mvp === 1, reinf: (s.reinf ?? []).map(r => ({ side: r.side, kind: r.kind, men: r.men, tick: r.tick, done: r.done === 1, u: r.u, v: r.v, callSec: r.callSec, call: r.call === 1 })),
     tick: s.tick,
     mapU: s.map.u, mapW: s.map.w,
     cells: s.map.cells,

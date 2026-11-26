@@ -17,7 +17,7 @@ export function parse(text: string): FieldInput[] | null {
   const out: FieldInput[] = []
   for (const line of text.split(';')) {
     const f = line.split(',')
-    if (f.length !== 5 || !NUM.test(f[0]!) || !/^[0-3]$/.test(f[1]!) || !/^[0-9]+$/.test(f[2]!) || !NUM.test(f[3]!) || !NUM.test(f[4]!)) return null
+    if (f.length !== 5 || !NUM.test(f[0]!) || !/^[0-4]$/.test(f[1]!) || !/^[0-9]+$/.test(f[2]!) || !NUM.test(f[3]!) || !NUM.test(f[4]!)) return null
     out.push({ tick: parseInt(f[0]!, 36), g: Number(f[1]) as InputGroup, op: Number(f[2]), u: parseInt(f[3]!, 36), v: parseInt(f[4]!, 36) })
   }
   return out

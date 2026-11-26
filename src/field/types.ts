@@ -57,6 +57,8 @@ export const OP_SKILL = 7
 export const OP_AIM = 8
 /** 전부 장수 곁으로 (F · g 는 아무거나) — 우리 무리 셋의 명령을 모두 풀고 기본 행동(장수 따라 진 맞춰 옴)으로 */
 export const OP_RALLY = 9
+/** 원군 부르기 (g 3 · 시험판·실험실만 · 판에 한 번) — 편의 원군이 「부르면 옴」이면 callSec 초 뒤에 온다 */
+export const OP_CALL = 10
 
 /** 방향 번호의 수 */
 export const HERO_DIRS = 16
@@ -259,7 +261,7 @@ export interface FieldInput { tick: number; g: InputGroup; op: number; u: number
  * 사기 문턱: 처음 사기의 P.field.waverPermille(70%) 아래 = 흔들림 · P.realm.tacBreakMorale(55%) 아래 = 무너짐(rout · flee).
  * 줄은 끝없이 자라지 않는다: 마지막 eventKeepSec 초만 남긴다 (화면은 읽은 마지막 틱 뒤의 줄만 읽는다)
  */
-export type FieldEventKind = 'heroDash' | 'heroSkill' | 'heroDown' | 'heroUp' | 'impact' | 'rout' | 'gateBreak' | 'volley' | 'loss' | 'omen' | 'flankHit' | 'artHit' | 'sideBreak' | 'stand' | 'regroup' | 'heroBash'
+export type FieldEventKind = 'reinf' | 'heroDash' | 'heroSkill' | 'heroDown' | 'heroUp' | 'impact' | 'rout' | 'gateBreak' | 'volley' | 'loss' | 'omen' | 'flankHit' | 'artHit' | 'sideBreak' | 'stand' | 'regroup' | 'heroBash'
 /**
  * (C2 판의 법칙 묶음 · 52 §6 · 검수 B5) sideBreak 편이 무너짐 — 편 사기(또는 사람)가 문턱 아래로 간 틱에 한 번 · id -1 · (u, v) = 그 편 산 대의 가운데 ·
  *   n = 1 사람 · 2 사기 · 그 뒤 P.field.sideBreakSec 동안 그 편의 남은 대가 모두 달아나고 나서 판이 끝난다 (end · winner 는 그때 선다).
@@ -374,7 +376,13 @@ export interface LiveSetup {
   mvp?: boolean
   /** 시험판에서 적이 큰 수(예고 옆치기 · 알아서 방진·돌격·큰 외침)를 쓰나 (실험실의 「적의 꾀」 · 없으면 안 씀) */
   mvpTricks?: boolean
+  /** 원군 (실험실 L2) — 편마다 하나 또는 없음 */
+  reinf?: readonly [LiveReinf | null, LiveReinf | null]
 }
+/** 원군 하나 — kind 가 무리를 정한다(KIND_GRP) · sec ≥ 0 이면 그 초에 · -1 이면 대장의 원군 부르기(OP_CALL) 뒤 callSec 초에 · edge 0 뒤 · 1 위 · 2 아래 가장자리 */
+export interface LiveReinf { kind: UnitKind; men: number; sec: number; callSec: number; edge: 0 | 1 | 2 }
+/** 판 위의 원군 — tick: 오는 틱(-1 아직 안 부름) · done: 왔으면 1 · (u, v): 들어서는 자리 (판을 만들 때 정한다 · 화면이 예고 화살표를 여기에) */
+export interface ReinfState { side: 0 | 1; kind: UnitKind; men: number; edge: 0 | 1 | 2; callSec: number; tick: number; done: 0 | 1; u: number; v: number; /** 부르면 오는 원군이면 1 */ call: 0 | 1 }
 
 export interface FieldLog {
   /** 버린 입력 수 (틀린 꼴 · 한 틱 입력 상한 inputPerTickMax 를 넘은 것) */
@@ -430,4 +438,6 @@ export interface FieldState {
   mvp?: 0 | 1
   /** 시험판에서 적의 큰 수를 쓰면 1 (LiveSetup.mvpTricks) */
   tricks?: 0 | 1
+  /** 원군 (LiveSetup.reinf · 없으면 없음) */
+  reinf?: ReinfState[]
 }
