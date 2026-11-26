@@ -50,6 +50,8 @@ function layoutOf(form: number, N: number, depth: number): Layout {
 /** 대 하나의 점 자리 기억 */
 export interface Dots {
   N: number; form: number; face: number; lastT: number; mul: number; depth: number; bw: number; bd: number
+  /** 몸(bw×bd)에 맞춰 맞춘 격자: 산 점 수 · 그 가운데 점의 차례(앞줄부터) · 열(깊이) 수 · 줄(폭) 수 */
+  alive: number; gi: Int16Array; R: number; C: number
   /** 지금 자리(칸) */
   cu: Float32Array; cv: Float32Array
   /** 점 → 자리 번호(모양이 있을 때) · 자리 → 점 */
@@ -66,7 +68,7 @@ const idx: number[] = []
 export function resetForm(): void { states.clear() }
 
 function make(N: number): Dots {
-  return { N, depth: 3, bw: 0, bd: 0, mul: 1, form: 0, face: 1, lastT: -1, cu: new Float32Array(N), cv: new Float32Array(N), slot: new Int16Array(N).fill(-1), occ: new Int16Array(N).fill(-1), hold: new Float64Array(N), gap: new Float32Array(N), wasDead: new Uint8Array(N), fills: [], formAt: -1e9 }
+  return { N, depth: 3, bw: 0, bd: 0, alive: N, gi: new Int16Array(N), R: 1, C: 1, mul: 1, form: 0, face: 1, lastT: -1, cu: new Float32Array(N), cv: new Float32Array(N), slot: new Int16Array(N).fill(-1), occ: new Int16Array(N).fill(-1), hold: new Float64Array(N), gap: new Float32Array(N), wasDead: new Uint8Array(N), fills: [], formAt: -1e9 }
 }
 
 /** 줄 맞춘 자리는 점마다 ±lineJitterPx 만 흩는다 (칸 단위로 바꿔 더한다) */
@@ -74,6 +76,12 @@ const jitter = (id: number, k: number, salt: number): number => ((hash2(id * 3 +
 function targetOf(d: Dots, id: number, k: number, out: { u: number; v: number }): void {
   const s = d.slot[k]!
   if (d.form === FORM_SCATTER || s < 0) { out.u = dotDu(id, k); out.v = dotDv(id, k); return }
+  if (gridOn(d) && d.gi[k]! >= 0) {
+    const F = P.field, i = d.gi[k]!, r = Math.floor(i / d.C), c = i % d.C
+    const su = Math.min(F.dotMaxSpaceCells, Math.max(F.dotMinSpaceCells, d.bd / d.R)), sv = Math.min(F.dotMaxSpaceCells, Math.max(F.dotMinSpaceCells, d.bw / d.C))
+    out.u = ((d.R - 1) / 2 - r) * su * d.face + jitter(id, k, 1); out.v = (c - (d.C - 1) / 2) * sv + jitter(id, k, 2)
+    return
+  }
   const L = layoutOf(d.form, d.N, d.depth)
   // 몸(bw×bd 칸)이 오면 그 네모 안에 줄을 맞춘다 · 없으면 옛 간격
   let su = d.mul, sv = d.mul
@@ -84,6 +92,18 @@ function targetOf(d: Dots, id: number, k: number, out: { u: number; v: number })
   out.u = L.fwd[s]! * d.face * su + jitter(id, k, 1); out.v = L.side[s]! * sv + jitter(id, k, 2)
 }
 const tgt = { u: 0, v: 0 }
+
+/** 엔진 몸(bw×bd)이 오고 쐐기·흩어짐이 아니면 산 점을 그 네모 안의 격자로 세운다 (사람이 줄면 몸이 얇아지고 짧아지는 그대로) */
+const gridOn = (d: Dots): boolean => d.bw > 0 && d.bd > 0 && d.form !== FORM_CHARGE && d.form !== FORM_SCATTER
+/** 산 점을 자리 순서(앞줄부터)로 세어 격자 크기(열 R × 줄 C)를 다시 잡는다 */
+function reindex(d: Dots): void {
+  let a = 0
+  for (let s = 0; s < d.N; s++) { const k = d.occ[s]!; if (k >= 0) d.gi[k] = a++ }
+  d.alive = a
+  if (a === 0 || d.bw <= 0 || d.bd <= 0) { d.R = 1; d.C = Math.max(1, a); return }
+  d.R = Math.max(1, Math.min(a, Math.round(Math.sqrt(a * d.bd / d.bw))))
+  d.C = Math.ceil(a / d.R)
+}
 
 /** 살아 있는 점을 앞쪽부터 줄 순서대로 자리에 앉힌다 (줄 안은 위에서 아래) */
 function assign(d: Dots, dead: ReadonlySet<number>): void {
@@ -104,6 +124,7 @@ function assign(d: Dots, dead: ReadonlySet<number>): void {
     for (let i = 0; i < part.length; i++) { d.slot[part[i]!] = s + i; d.occ[s + i] = part[i]! }
     s = e
   }
+  reindex(d)
 }
 
 /** 대의 점 기억 (N 이 바뀌면 새로) — 처음 만들 때는 자리에 바로 앉는다 */
@@ -159,12 +180,13 @@ export function stepDots(d: Dots, id: number, dead: ReadonlySet<number>, now: nu
     for (const f of d.fills) { if (f.at <= now) { if (d.form !== FORM_SCATTER) fillChain(d, f.slot) } else d.fills[w++] = f }
     d.fills.length = w
   }
+  reindex(d)
   const a = 1 - Math.exp(-P.field.formEaseRate * dt)
   for (let k = 0; k < d.N; k++) {
     if (dead.has(k)) { if (d.wasDead[k] === 0) d.wasDead[k] = 1; continue }
     if (d.wasDead[k] === 1) {
       d.wasDead[k] = 0
-      if (d.form !== FORM_SCATTER) { let e = -1; for (let s = 0; s < d.N; s++) if (d.occ[s]! < 0) { e = s; break } if (e >= 0) { d.occ[e] = k; d.slot[k] = e } }
+      if (d.form !== FORM_SCATTER) { let e = -1; for (let s = 0; s < d.N; s++) if (d.occ[s]! < 0) { e = s; break } if (e >= 0) { d.occ[e] = k; d.slot[k] = e; reindex(d) } }
       targetOf(d, id, k, tgt); d.cu[k] = tgt.u; d.cv[k] = tgt.v; d.gap[k] = 0
       continue
     }
@@ -179,9 +201,10 @@ export function stepDots(d: Dots, id: number, dead: ReadonlySet<number>, now: nu
 export function rowOfDot(d: Dots, k: number): number {
   if (d.form === FORM_SCATTER) return -1
   const s = d.slot[k]!
+  if (gridOn(d)) return s < 0 ? -1 : Math.floor(d.gi[k]! / d.C)
   return s < 0 ? -1 : layoutOf(d.form, d.N, d.depth).rowOf[s]!
 }
-export const rowCount = (d: Dots): number => d.form === FORM_SCATTER ? 0 : layoutOf(d.form, d.N, d.depth).rows
+export const rowCount = (d: Dots): number => d.form === FORM_SCATTER ? 0 : gridOn(d) ? d.R : layoutOf(d.form, d.N, d.depth).rows
 /** 지금 점 자리 (모양 기억이 있으면 그것 · 없으면 옛 흩어짐) */
 export const offU = (id: number, k: number): number => states.get(id)?.cu[k] ?? dotDu(id, k)
 export const offV = (id: number, k: number): number => states.get(id)?.cv[k] ?? dotDv(id, k)

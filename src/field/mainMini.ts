@@ -83,7 +83,7 @@ export function mountMini(root: HTMLElement, h: MiniHandlers): Mini {
   return {
     sync(m, cam, vp, show, nowMs) {
       if (box.hidden === show) box.hidden = !show
-      if (!show) return
+      if (!show) { root.style.setProperty('--fd-miniw', '0px'); return }
       const F = P.field
       layout(m); bake(m)
       for (const e of m.events) if (e.kind === 'omen' && e.side === 1 && e.pts.length >= 2) { omen = { pts: e.pts.map(p => ({ x: px(p.u), y: px(p.v) })), at: nowMs } }

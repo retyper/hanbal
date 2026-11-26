@@ -770,7 +770,7 @@ function paint(now: number, alpha: number): void {
   arrows.sync(offscreenArrows())
   const pb = padBtns()
   pad.sync(!blocked && ui.phase === 'play' && cur.end === null, touchMode, touchMode && !heroOrdered && playMs < 3000, pb.dash, pb.skill, pb.rally, !blocked && ui.phase === 'ready')
-  mini.sync(cur, cam, vp, !blocked, now)
+  mini.sync(cur, cam, vp, !blocked && !(touchMode && ui.phase === 'ready'), now) // 폰의 준비 화면은 판 전체가 이미 보인다
   hud.sync(lagged(now), { gold: fxGold, blocked: fxBlocked, breakSide: cur.breakTick[0] >= 0 ? 0 : cur.breakTick[1] >= 0 ? 1 : -1 })
   fxGold = false; fxBlocked = false
   flyRegroups()

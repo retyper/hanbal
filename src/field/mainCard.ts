@@ -41,12 +41,12 @@ const CSS = `
 #fd-help .tgt{width:22px;height:22px;border-radius:50%;border:2px solid #ff6a3c;position:relative;margin:4px;box-sizing:border-box}
 #fd-help .tgt::after{content:'';position:absolute;left:5px;top:5px;width:8px;height:8px;border-radius:50%;background:#ff6a3c}
 #fd-help .arr{font-size:18px;color:${GOLD};align-self:center;margin:0 -2px}
-#fd-help .bars{display:flex;flex-direction:column;gap:3px}
-#fd-help .bar{width:46px;height:9px;border-radius:5px;background:#000;border:1px solid #fff6;position:relative;overflow:hidden;box-sizing:border-box;display:block}
-#fd-help .bar b{position:absolute;left:0;top:0;bottom:0;border-radius:5px;display:block}
-#fd-help .e b{background:#d6483a;width:30%}
-#fd-help .o b{background:#2f8cff;width:30%}
-#fd-help .z b{width:0}
+#fd-help .bar{width:110px;height:16px;border-radius:8px;background:#000;border:2px solid #f3ecd8aa;position:relative;overflow:hidden;box-sizing:border-box;display:block}
+#fd-help .bar b{position:absolute;left:0;top:0;bottom:0;border-radius:8px;display:block;width:14%}
+#fd-help .bar.e b{background:#d6483a}
+#fd-help .bar.o b{background:#2f8cff}
+#fd-help .wc{gap:4px;min-width:110px}
+#fd-help .wc span{font-size:13px;font-weight:700}
 #fd-help .x{margin:6px 0 0;font-size:12px;color:#f3ecd8aa}
 #fd-help.big .x{display:none}
 @media (max-height:460px){
@@ -62,6 +62,9 @@ const CSS = `
 #fd-help .stk::after{left:7px;top:7px;width:10px;height:10px}
 #fd-help kbd{font-size:13px;padding:0 5px}
 #fd-help .c span{font-size:10.5px}
+#fd-help .bar{width:78px;height:12px}
+#fd-help .wc{min-width:78px}
+#fd-help .wc span{font-size:11px}
 }
 @keyframes fd-pulse{0%,100%{box-shadow:0 0 0 0 ${GOLD}00}40%{box-shadow:0 0 0 6px ${GOLD}cc,0 0 16px ${GOLD}}}
 #fd-helpbtn.pulse{animation:fd-pulse .55s ease-in-out 3;border-color:${GOLD}}
@@ -82,8 +85,8 @@ function cardHtml(base: string, touch: boolean): string {
   const big = g(t('field.card.big'), chip(kl('cmd1'), 'flag/flag-charge.png', t('field.i.charge')) + chip(kl('cmd2'), 'flag/flag-hold.png', t('field.i.hold')) + chip(kl('cmd3'), 'flag/flag-volley.png', t('field.card.volley')) + chip(kl('cmd4'), 'flag/flag-flank.png', t('war.cmdName.flank')) + tgt)
   const send = `<b class="arr">→</b><div class="c">${touch ? '<i class="tgt" style="border-color:#ffd27a"></i>' : '<i class="mouse"></i>'}<span>${t('field.card.send')}</span></div>`
   const squads = g(t('field.card.squad'), chip(kl('pickFront'), 'icon/unit-spear.png', t('field.g.0')) + chip(kl('pickBows'), 'icon/unit-archer.png', t('field.g.1')) + chip(kl('pickHorse'), 'icon/unit-buyeo-cavalry.png', t('field.g.2')) + chip(kl('pickHero'), 'icon/unit-general.png', t('field.g.3')) + send)
-  const bars = (c: string): string => `<span class="bars"><i class="bar ${c}"><b></b></i><i class="bar ${c} z"><b></b></i></span>`
-  const win = g(t('field.card.win'), `<div class="c">${bars('e')}<span>${t('field.card.foe0')}</span></div><div class="c">${bars('o')}<span>${t('field.card.our0')}</span></div>`)
+  const bar = (c: string, label: string): string => `<div class="c wc"><i class="bar ${c}"><b></b></i><span>${label}</span></div>`
+  const win = g(t('field.card.win'), bar('e', t('field.card.foe0')) + bar('o', t('field.card.our0')))
   return `<div class="gs">${hero}${big}${squads}${win}</div>`
 }
 
