@@ -9,7 +9,7 @@ const PX_PER_CELL = 8
 const WATER_SHALLOW = 'rgba(78,138,128,0.6)'
 const WATER_DEEP = 'rgba(34,84,96,0.86)'
 /** 여름 장마의 불어난 흙탕물 */
-const WATER_FLOOD = 'rgba(122,108,72,0.85)'
+const WATER_FLOOD = 'rgba(124,98,60,0.88)'
 const WATER_EDGE = 'rgba(214,236,226,0.45)'
 const SHADE = 'rgba(30,22,10,0.26)'
 const HIGH_LIGHT = 'rgba(255,238,190,0.4)'
@@ -111,7 +111,7 @@ function paint(m: VModel, soft = false): HTMLCanvasElement {
 export function drawTerrain(ctx: CanvasRenderingContext2D, m: VModel, worldW: number, worldH: number): void {
   const sig = signature(m)
   let e = cache.get(m.cells)
-  if (e === undefined || e.sig !== sig) { e = { sig, cv: isPlain(m.cells) ? null : m.deco.length > 0 ? hillLayer(soften(paint(m, true)), m) : paint(m) }; cache.set(m.cells, e) }
+  if (e === undefined || e.sig !== sig) { e = { sig, cv: isPlain(m.cells) ? null : m.deco.length > 0 ? floodLayer(hillLayer(soften(paint(m, true)), m), m) : paint(m) }; cache.set(m.cells, e) }
   if (e.cv !== null) ctx.drawImage(e.cv, 0, 0, worldW, worldH)
 }
 
@@ -185,5 +185,35 @@ function hillLayer(base: HTMLCanvasElement, m: VModel): HTMLCanvasElement {
     t.globalCompositeOperation = 'destination-out'; lobes(h.lobes, 0.985, 0, 0); t.fill(); t.globalCompositeOperation = 'source-over'
     put(1)
   }
+  return base
+}
+
+/**
+ * 여름 장마의 여울 거품 (흐린 뒤에 얹어 또렷하게) — 물 칸의 위나 아래가 땅이고 그런 물 칸이 가로로 넷 넘게 이어진 곳(여울 가장자리 ·
+ * 비스듬한 개울의 칸 계단은 한두 칸이라 빠진다)에 흰 거품 점. 흐르는 물결은 viewSeason drawFlood 가 매 장 움직여 그린다. 맵마다 한 번 굽는다
+ */
+const FLOOD_FOAM = 'rgba(255,252,240,0.9)'
+function floodLayer(base: HTMLCanvasElement, m: VModel): HTMLCanvasElement {
+  if (m.season !== 'summer') return base
+  const S = PX_PER_CELL, U = m.mapU, W = m.mapW
+  const c = base.getContext('2d') as CanvasRenderingContext2D
+  const at = (cu: number, v: number): number => cu < 0 || v < 0 || cu >= U || v >= W ? -1 : m.cells[cu * W + v]!
+  const edge = (cu: number, v: number, dv: number): boolean => at(cu, v) === SHALLOW && at(cu, v + dv) !== SHALLOW && at(cu, v + dv) !== -1
+  const hsh = (a: number, b: number): number => { let x = Math.imul(a * 73856093 ^ b * 19349663, 0x45d9f3b); x ^= x >>> 15; return (x >>> 0) % 997 }
+  c.fillStyle = FLOOD_FOAM
+  c.beginPath()
+  for (let v = 0; v < W; v++) for (const dv of [-1, 1]) {
+    for (let cu = 0; cu < U; cu++) {
+      if (!edge(cu, v, dv)) continue
+      let n = 0
+      while (edge(cu + n, v, dv)) n++
+      if (n >= 4) for (let k = cu; k < cu + n; k++) {
+        const y = dv < 0 ? v * S + 1.5 : v * S + S - 1.5
+        for (let j = 0; j < 4; j++) { const x = k * S + 1 + j * 2 + (hsh(k * 4 + j, v) % 2), r = 0.9 + (hsh(j, k + v) % 3) * 0.4; c.moveTo(x + r, y + (hsh(k, j) % 3) - 1); c.arc(x, y + (hsh(k, j) % 3) - 1, r, 0, Math.PI * 2) }
+      }
+      cu += n
+    }
+  }
+  c.fill()
   return base
 }

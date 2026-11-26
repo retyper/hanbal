@@ -19,11 +19,11 @@ function tintOf(s: FieldSeason): number {
   return (s === 'spring' ? F.mvpTintSpringPermille : s === 'summer' ? F.mvpTintSummerPermille : s === 'autumn' ? F.mvpTintAutumnPermille : F.mvpTintWinterPermille) / 1000
 }
 
-/** 판 전체에 철 빛깔 한 겹 (판 px · 바닥 다음 · 병사 앞) */
-export function drawSeasonTint(ctx: CanvasRenderingContext2D, s: FieldSeason, w: number, h: number): void {
+/** 보이는 땅 전체(판 밖 여백까지 · 판 px 사각)에 철 빛깔 한 겹 (바닥 다음 · 병사 앞) */
+export function drawSeasonTint(ctx: CanvasRenderingContext2D, s: FieldSeason, view: { left: number; top: number; right: number; bottom: number }): void {
   const a = tintOf(s)
   if (a <= 0) return
-  ctx.globalAlpha = a; ctx.fillStyle = TINT[s]; ctx.fillRect(0, 0, w, h); ctx.globalAlpha = 1
+  ctx.globalAlpha = a; ctx.fillStyle = TINT[s]; ctx.fillRect(view.left, view.top, view.right - view.left, view.bottom - view.top); ctx.globalAlpha = 1
 }
 
 /** 수(0 이상의 정수) → 0~1 (같은 수면 같은 값) */
@@ -47,4 +47,29 @@ export function drawWeather(ctx: CanvasRenderingContext2D, view: { left: number;
     ctx.moveTo(view.left + x, view.top + y); ctx.lineTo(view.left + x - len * RAIN_SLANT, view.top + y + len)
   }
   ctx.strokeStyle = RAIN_COLOR; ctx.globalAlpha = 0.45; ctx.lineWidth = Math.max(1, 1.2 / zoom); ctx.stroke(); ctx.globalAlpha = 1
+}
+
+const FLOW_COLOR = '#f0e2bf'
+/**
+ * 장마의 불어난 개울 물결 — 보이는 물 칸(얕은 물)마다 몇에 짧은 밝은 줄이 흐르는 쪽(폭 방향 = 개울 줄기)으로 미끄러진다 ·
+ * 칸 수가 화면에 보이는 만큼만이라 싸다 (한 경로)
+ */
+export function drawFlood(ctx: CanvasRenderingContext2D, m: VModel, view: { left: number; top: number; right: number; bottom: number }, nowMs: number, zoom: number): void {
+  const F = P.field, cp = F.cellPx, U = m.mapU, W = m.mapW
+  const u0 = Math.max(0, Math.floor(view.left / cp)), u1 = Math.min(U - 1, Math.ceil(view.right / cp))
+  const v0 = Math.max(0, Math.floor(view.top / cp)), v1 = Math.min(W - 1, Math.ceil(view.bottom / cp))
+  const run = nowMs / 1000 * F.mvpFlowCellsPerSec, len = cp * 0.9
+  // 줄마다 물 줄기의 왼쪽 끝(보이는 폭 안 첫 물 칸) → 위아래 세 줄 차이로 기울기 (물결이 개울을 따라 비스듬히 흐르게)
+  const first: number[] = []
+  for (let v = v0 - 3; v <= v1 + 3; v++) { let f = -1; if (v >= 0 && v < W) for (let cu = Math.max(0, u0 - 8); cu <= Math.min(U - 1, u1 + 8); cu++) if (m.cells[cu * W + v] === 1) { f = cu; break } first.push(f) }
+  const slopeAt = (v: number): number => { const a = first[v - v0], b = first[v - v0 + 6]; return a !== undefined && b !== undefined && a >= 0 && b >= 0 ? (b - a) / 6 : 0 }
+  ctx.beginPath()
+  for (let cu = u0; cu <= u1; cu++) for (let v = v0; v <= v1; v++) {
+    if (m.cells[cu * W + v] !== 1) continue
+    const h = hash01(cu * 4099 + v * 131)
+    if (h > 0.55) continue
+    const k = slopeAt(v), t = (run + h * 7) % 1, x = (cu + 0.15 + 0.7 * hash01(cu * 31 + v * 7) + k * t) * cp, y = (v + t) * cp
+    ctx.moveTo(x, y); ctx.lineTo(x + k * len, y + len)
+  }
+  ctx.strokeStyle = FLOW_COLOR; ctx.globalAlpha = 0.55; ctx.lineWidth = Math.max(1, 1.6 / zoom); ctx.lineCap = 'round'; ctx.stroke(); ctx.globalAlpha = 1
 }

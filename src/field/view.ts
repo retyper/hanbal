@@ -17,7 +17,7 @@ import { drawDash, queueDash, resetDash } from './viewDash.ts'
 import { FLAG_FALLEN, bashDirOf, bashPoseOf, knockOf, knockSide, bracedAt, drawOmens, drawRegroupZone, drawShouts, drawStands, isShouting, liftOf, noteShouts, raisedAt, riseTilt, standingAt, drawPops, noteOmens, flagTilt, ingestHits, kickOf, resetHit, scatterOf, sc, shake, shakeAt, viewClock } from './viewHit.ts'
 import { computePairs, coolPress, notePush, dotMelee, drawParticles, flinchOf, isFront, maxFwdOf, minFwdOf, mo, noteLoss, partnerOf, resetMelee, spawn, swingChance, swings } from './viewMelee.ts'
 import { drawTerrain } from './viewTerrain.ts'
-import { drawSeasonTint, drawWeather } from './viewSeason.ts'
+import { drawFlood, drawSeasonTint, drawWeather } from './viewSeason.ts'
 import { TEAM_RGB } from './viewTint.ts'
 import type { VLoss, VModel, VSquad } from './viewRead.ts'
 
@@ -562,7 +562,8 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
   ctx.fillRect(view.left, view.top, view.right - view.left, view.bottom - view.top)
   ctx.globalAlpha = 1
   drawTerrain(ctx, cur, world.w, world.h)
-  if (cur.season !== null) drawSeasonTint(ctx, cur.season, world.w, world.h)
+  if (cur.season !== null) drawSeasonTint(ctx, cur.season, view) // 판 밖 여백까지 (판 둘레에 네모 테가 서지 않게)
+  if (cur.season === 'summer') drawFlood(ctx, cur, view, nowMs, cam.zoom)
   if (cur.deco.length > 0) drawFlatProps(ctx, cur, art, view)
 
   used = 0
