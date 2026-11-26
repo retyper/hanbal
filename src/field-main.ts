@@ -16,10 +16,12 @@ import { actionOf, firstKeyLabel, KEYS } from './field/actions.ts'
 import { AFTER_ORDER, ALL_GROUPS, aimExpired, aimPress, aimTap, cellWhy, GRP_OF, normalizeSel, pickAt, type PickCand, type UiState } from './field/pickmodel.ts'
 import { mountFlags, type FlagsView } from './field/mainFlags.ts'
 import { mountArrows, mountPad, type Arrows, type Pad, type PadBtn } from './field/mainPad.ts'
-import { mountFirst, mountHelp, mountSteps, type First, type Help, type Steps } from './field/mainHelp.ts'
+import { mountFirst, mountSteps, type First, type Steps } from './field/mainHelp.ts'
+import { mountHelp, type Help } from './field/mainCard.ts'
 import { drawMarks, type Band, type Box, type Mark, type MarkShape, type Ring } from './field/mainFlagMarks.ts'
 import { LINES, OP_AUTO, OP_MOVE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_VOLLEY, type FieldInput, type InputGroup } from './field/types.ts'
 import { roll } from './core/rng.ts'
+import { mountMini, type Mini } from './field/mainMini.ts'
 import { serialize } from './field/rec.ts'
 import { bladeLeftOf, mountHud, type EndStats, type EndWhy, type Hud } from './field/mainHud.ts'
 import { createFieldSound, soundCamOf, soundFrameOf } from './field/mainSound.ts'
@@ -167,6 +169,14 @@ let heroStart: { u: number; v: number } | null = null
 const nudgeAt = [0, 0, 0, 0]
 /** 카메라: 장수를 따라가는 것이 기본 · Tab 은 싸움을 따라감 · Y 는 풀기(화살표·가장자리·휠로 옮긴다) */
 let camFree = false
+/** 미니맵을 눌러 옮긴 카메라가 풀려 돌아오는 때를 가리는 장수 자리 (장수가 움직이면 곧바로 돌아온다) */
+/** 큰 조작표를 이미 본 판 수 (저장 칸) */
+const HELP_KEY = 'hanbal.field.helpSeen'
+let helpGames = 0
+try { helpGames = Math.max(0, Number(localStorage.getItem(HELP_KEY)) || 0) } catch { /* 저장 칸이 막혀도 판은 돈다 */ }
+let bigNow = false
+let miniHero: { u: number; v: number } | null = null
+let mini: Mini
 let camFight = false
 let helpOpen = false
 let slow = false
@@ -223,6 +233,7 @@ function followTarget(dt: number, snap = false): void {
   const b = bounds()
   const now = performance.now()
   if (pan !== null && now >= pan.until) pan = null
+  { const hh = heroNow(); if (miniHero !== null && (pan === null || hh === undefined || hh.u !== miniHero.u || hh.v !== miniHero.v)) { if (pan !== null && ui.phase !== 'ready') pan = null; miniHero = null } }
   let raw: { x: number; y: number }
   let zt: number | undefined
   let direct = false
@@ -759,14 +770,22 @@ function paint(now: number, alpha: number): void {
   arrows.sync(offscreenArrows())
   const pb = padBtns()
   pad.sync(!blocked && ui.phase === 'play' && cur.end === null, touchMode, touchMode && !heroOrdered && playMs < 3000, pb.dash, pb.skill, pb.rally, !blocked && ui.phase === 'ready')
+  mini.sync(cur, cam, vp, !blocked, now)
   hud.sync(lagged(now), { gold: fxGold, blocked: fxBlocked, breakSide: cur.breakTick[0] >= 0 ? 0 : cur.breakTick[1] >= 0 ? 1 : -1 })
   fxGold = false; fxBlocked = false
   flyRegroups()
   hud.frame(now)
   hud.showEnd(endAt > 0 && now - endAt >= P.field.endBoxMs ? cur : null, endStats(), endWhy(), { foe: nextFoeLine(), shout: heroNow()?.art === 'shout' })
+  if (!blocked) {
+    // 처음 화면의 큰 조작표: 첫 판들의 준비 화면에서 가운데에 크게 · 전투 개시나 첫 장수 입력에 ? 단추로 줄어든다
+    const wantBig = ui.phase === 'ready' && helpGames < P.field.helpBigGames && !heroOrdered
+    if (bigNow && !wantBig) { helpGames++; try { localStorage.setItem(HELP_KEY, String(helpGames)) } catch { /* 저장 못 해도 판은 돈다 */ } }
+    bigNow = wantBig
+    help.big(wantBig)
+  }
   const h = heroNow()
   const s = h === undefined ? null : toScreen(cam, vp, pxOf(h.u), pxOf(h.v))
-  first.sync(!blocked && s !== null && !firstDone && !stepOk[0] && !heroOrdered && (ui.phase === 'ready' || playMs < P.field.firstHintMs) && ui.phase !== 'end' && cur.end === null && !helpOpen, s?.x ?? 0, s?.y ?? 0, touchMode, vp.w, vp.h)
+  first.sync(!blocked && !bigNow && s !== null && !firstDone && !stepOk[0] && !heroOrdered && (ui.phase === 'ready' || playMs < P.field.firstHintMs) && ui.phase !== 'end' && cur.end === null && !helpOpen, s?.x ?? 0, s?.y ?? 0, touchMode, vp.w, vp.h)
 }
 /** 활 사거리 띠 (활 대마다 반원) — 적 대가 그 안에 들면 밝아지고, 겨눈 적에게는 가는 줄 */
 function bandsNow(): Band[] {
@@ -1031,8 +1050,9 @@ hud = mountHud(root, {
   onHelp: toggleHelp,
 }, import.meta.env.BASE_URL + 'realm/')
 hud.setZoom(0)
+mini = mountMini(root, { onPan: (x, y) => { const hh = heroNow(); pan = { x, y, until: ui.phase === 'ready' ? Infinity : performance.now() + P.field.miniPanMs }; miniHero = hh === undefined ? null : { u: hh.u, v: hh.v }; paintKey.x = NaN } })
 flags = mountFlags(root, import.meta.env.BASE_URL + 'realm/', handlers)
-help = mountHelp(root)
+help = mountHelp(root, import.meta.env.BASE_URL + 'realm/')
 first = mountFirst(root)
 arrows = mountArrows(root, import.meta.env.BASE_URL + 'realm/', g => { const gg = g as InputGroup; if (cellWhy(cur, gg) === null) setSel([gg]) })
 aimCur = document.createElement('img')
@@ -1053,4 +1073,4 @@ function watchDpr(): void {
 function onDprChange(): void { resize(); wake(); watchDpr() }
 watchDpr()
 wake()
-;(window as unknown as Record<string, unknown>)['__fieldPads'] = (): { padTop: number; padBottom: number; zoom: number; vp: Viewport } => ({ padTop, padBottom, zoom: cam.zoom, vp })
+;(window as unknown as Record<string, unknown>)['__fieldPads'] = (): { padTop: number; padBottom: number; zoom: number; x: number; y: number; vp: Viewport } => ({ padTop, padBottom, zoom: cam.zoom, x: cam.x, y: cam.y, vp })

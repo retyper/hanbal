@@ -51,7 +51,7 @@ const CSS = `
 .fd-cell.no{opacity:.4}
 .fd-ck{position:absolute;right:3px;top:2px;font-size:13px;color:${GOLD};font-style:normal;display:none}
 .fd-cell.on .fd-ck{display:none}
-.fd-kb{position:absolute;left:4px;top:2px;font-size:11px;line-height:1;color:#f3ecd8aa;font-style:normal}
+.fd-kb{position:absolute;left:3px;top:2px;font-size:14px;font-weight:700;line-height:1.2;min-width:16px;padding:0 4px;box-sizing:border-box;text-align:center;color:#fff;background:#0b1a2e;border:1px solid #f3ecd8;border-bottom-width:3px;border-radius:4px;font-style:normal}
 @media (pointer:coarse){.fd-kb{display:none}}
 #fd-big{position:absolute;left:calc(8px + env(safe-area-inset-left));bottom:calc(var(--fd-bar,64px) + 12px + env(safe-area-inset-bottom));display:flex;gap:6px;background:#000d;border:1px solid ${GOLD}88;border-radius:10px;padding:6px;z-index:3}
 #fd-big[hidden],.touch #fd-big[hidden]{display:none}
@@ -64,7 +64,7 @@ const CSS = `
 .fd-line b{font-size:13px;line-height:1.1}
 .fd-line.on{border-color:#ffd27a;background:#2a2410d9}
 .fd-line.on::after{content:'✓';position:absolute;right:4px;top:1px;color:#ffd27a;font-size:14px}
-#fd-foeline{position:absolute;right:calc(8px + env(safe-area-inset-right));top:calc(58px + env(safe-area-inset-top));display:flex;align-items:center;gap:6px;background:#000a;border:1px solid #c43e3088;border-radius:8px;padding:3px 6px;z-index:4;pointer-events:none}
+#fd-foeline{position:absolute;right:calc(16px + var(--fd-miniw,0px) + env(safe-area-inset-right));top:calc(58px + env(safe-area-inset-top));display:flex;align-items:center;gap:6px;background:#000a;border:1px solid #c43e3088;border-radius:8px;padding:3px 6px;z-index:4;pointer-events:none}
 #fd-foeline[hidden]{display:none}
 #fd-foeline svg{width:46px;height:30px}
 #fd-foeline img{width:16px;height:16px;object-fit:contain}
@@ -80,7 +80,7 @@ const CSS = `
 .fd-opt.on{border-color:${GOLD};background:#2a2410d9}
 .fd-opt.on::after{content:'✓';position:absolute;left:4px;bottom:0;color:${GOLD};font-size:13px}
 .fd-who{position:absolute;right:2px;top:2px;width:17px;height:17px;object-fit:contain;opacity:.95;pointer-events:none}
-.fd-opt i{position:absolute;left:4px;top:2px;font-size:11px;line-height:1;color:#f3ecd8aa;font-style:normal}
+.fd-opt i{position:absolute;left:3px;top:2px;font-size:14px;font-weight:700;line-height:1.2;min-width:16px;padding:0 4px;box-sizing:border-box;text-align:center;color:#fff;background:#0b1a2e;border:1px solid #f3ecd8;border-bottom-width:3px;border-radius:4px;font-style:normal}
 @media (pointer:coarse){.fd-opt i{display:none}}
 .fd-go{margin-left:auto;font:inherit;font-size:20px;font-weight:700;color:#1a1305;background:${GOLD};border:0;border-radius:12px;min-height:var(--fd-bar,64px);min-width:132px;padding:0 20px;box-shadow:0 2px 10px #0008;transition:transform .08s}
 .fd-go:active{transform:scale(1.08)}

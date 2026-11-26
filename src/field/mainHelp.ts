@@ -5,23 +5,11 @@
  */
 import { t } from '../i18n/index.ts'
 import { HAEBI_STICK, P } from '../tune/params.ts'
-import { keyLabel, KEYS, type ActionName } from './actions.ts'
 
-export interface Help { toggle(): void; close(): void; isOpen(): boolean }
 export interface First { sync(show: boolean, x: number, y: number, touch: boolean, vpW: number, vpH: number): void }
 
 const GOLD = '#ffd27a'
 const CSS = `
-#fd-help{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#000a;z-index:20;padding:0 calc(12px + env(safe-area-inset-right)) 0 calc(12px + env(safe-area-inset-left));box-sizing:border-box}
-#fd-help[hidden]{display:none}
-#fd-help>div{max-width:min(760px,100%);background:#10140df2;border:1px solid ${GOLD}88;border-radius:12px;padding:10px 14px;box-sizing:border-box;color:#f3ecd8}
-#fd-help h2{margin:0 0 6px;font-size:17px;color:${GOLD}}
-#fd-help .cols{display:flex;gap:16px}
-#fd-help .cols>div{flex:1 1 0;min-width:0}
-#fd-help h3{margin:0 0 3px;font-size:13px;color:#9cc8ff}
-#fd-help p{margin:0 0 4px;font-size:12.5px;line-height:1.35}
-#fd-help .x{margin:6px 0 0;font-size:12px;color:#f3ecd8aa}
-@media (max-width:700px){#fd-help .cols{gap:10px}#fd-help p{font-size:12px}}
 #fd-first{position:absolute;left:0;top:0;display:flex;align-items:center;gap:8px;pointer-events:none;z-index:4;font-size:15px;font-weight:700;color:#fff;text-shadow:0 1px 3px #000,0 0 8px #000;white-space:nowrap}
 #fd-first[hidden]{display:none}
 #fd-first .keys{display:grid;grid-template-columns:repeat(3,26px);grid-template-rows:repeat(2,26px);gap:3px;flex:none}
@@ -33,41 +21,10 @@ const CSS = `
 @keyframes fd-blink{50%{opacity:.25}}
 `
 
-/** 조작표에 적을 한 줄들 (키 글자는 표에서 · 아직 안 되는 동작의 줄은 만들지 않는다) */
-function rows(): { pc: string[]; touch: string[] } {
-  const k = (a: ActionName, i = 0): string => keyLabel(KEYS[a][i] ?? '')
-  return {
-    pc: [
-      t('field.help.pc.pick', { k1: k('pickFront'), k2: k('pickBows'), k3: k('pickHorse'), k4: k('pickHero'), k5: k('rally') }),
-      t('field.help.pc.send'),
-      t('field.help.pc.hero', { k1: k('heroUp') + k('heroLeft') + k('heroDown') + k('heroRight'), k2: k('dash'), k3: k('skillQ') }),
-      t('field.help.pc.stance', { k1: k('cmd1'), k2: k('cmd2'), k3: k('cmd3'), k4: k('cmd4') }),
-      t('field.help.pc.cam'),
-      t('field.help.pc.pause', { k1: k('pause'), k2: k('pause', 1), k3: k('slow'), k4: k('go') }),
-    ],
-    touch: [t('field.help.t.pick'), t('field.help.t.send'), t('field.help.t.hero'), t('field.help.t.stance'), t('field.help.t.cam')],
-  }
-}
-
-export function mountHelp(root: HTMLElement): Help {
+export function mountFirst(root: HTMLElement): First {
   const style = document.createElement('style')
   style.textContent = CSS
   document.head.append(style)
-  const box = document.createElement('div')
-  box.id = 'fd-help'; box.hidden = true
-  const r = rows()
-  box.innerHTML = `<div><h2>${t('field.help.title')}</h2><div class="cols"><div><h3>${t('field.help.pc')}</h3>${r.pc.map(s => `<p>${s}</p>`).join('')}</div><div><h3>${t('field.help.touch')}</h3>${r.touch.map(s => `<p>${s}</p>`).join('')}</div></div><p class="x">${t('field.help.close', { k: k0() })}</p></div>`
-  box.addEventListener('pointerdown', e => { e.stopPropagation(); box.hidden = true })
-  root.append(box)
-  return {
-    toggle() { box.hidden = !box.hidden },
-    close() { box.hidden = true },
-    isOpen() { return !box.hidden },
-  }
-}
-const k0 = (): string => keyLabel(KEYS.help[0] ?? '')
-
-export function mountFirst(root: HTMLElement): First {
   const el = document.createElement('div')
   el.id = 'fd-first'; el.hidden = true
   let mode = ''

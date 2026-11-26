@@ -33,7 +33,7 @@ const CSS = `
 .fd-pb:active{transform:scale(1.12)}
 .fd-pb img{width:26px;height:26px;object-fit:contain;pointer-events:none}
 .fd-pb b{font-size:11px;line-height:1;pointer-events:none}
-.fd-pb em{position:absolute;left:0;right:0;top:-15px;text-align:center;font-style:normal;font-size:11px;color:#f3ecd8aa;pointer-events:none}
+.fd-pb em{position:absolute;left:50%;transform:translateX(-50%);top:-24px;font-style:normal;font-size:14px;font-weight:700;line-height:1.2;padding:0 6px;color:#fff;background:#0b1a2e;border:1px solid #f3ecd8;border-bottom-width:3px;border-radius:4px;white-space:nowrap;pointer-events:none}
 @media (pointer:coarse){.fd-pb em{display:none}}
 .fd-pb.lit{border-color:#fff;box-shadow:0 0 0 3px ${GOLD},0 0 12px ${GOLD}}
 .fd-pb.cool{opacity:.55;border-color:#f3ecd855}
