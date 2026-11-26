@@ -325,11 +325,16 @@ export interface LiveSide {
   form?: 0 | 1 | 2
 }
 
-/** 바닥 종류 — 0 평지 · 1 얕은 물(느림) · 2 깊은 물(못 걸음) · 3 막힘(못 걸음) · 4 높은 터(위에 선 활이 세고, 올라오는 적은 느리다) · 5 숲(시험판: 기병 느림 · 활 시선을 막음) */
-export type Ground = 0 | 1 | 2 | 3 | 4 | 5
-export const G_PLAIN = 0, G_SHALLOW = 1, G_DEEP = 2, G_BLOCK = 3, G_HIGH = 4, G_WOOD = 5
+/** 바닥 종류 — 0 평지 · 1 얕은 물(느림) · 2 깊은 물(못 걸음) · 3 막힘(못 걸음) · 4 높은 터(위에 선 활이 세고, 올라오는 적은 느리다) · 5 숲(시험판: 기병 느림 · 활 시선을 막음) · 6 진흙(봄 개울가 · 느림) · 7 얼음(겨울 개울 · 어디로든 건넌다) */
+export type Ground = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
+export const G_PLAIN = 0, G_SHALLOW = 1, G_DEEP = 2, G_BLOCK = 3, G_HIGH = 4, G_WOOD = 5, G_MUD = 6, G_ICE = 7
+/** 시험판의 철 (본편 calendar 의 SeasonOfYear 와 같은 낱말 · 여름은 장마) — 0 봄 · 1 여름 · 2 가을(기준) · 3 겨울 */
+export type FieldSeason = 'spring' | 'summer' | 'autumn' | 'winter'
+export const FIELD_SEASONS: readonly FieldSeason[] = ['spring', 'summer', 'autumn', 'winter']
 /** 그리는 소품 하나 (칸 · 소수) — k 는 public/realm/field-props 의 그림 이름 · 판(sim)은 읽지 않는다 */
 export interface Deco { k: string; u: number; v: number }
+/** 언덕 하나 = 타원(가운데 u·v · 반지름 ru·rv · 칸) 몇 개의 합 */
+export interface Hill { lobes: readonly { u: number; v: number; ru: number; rv: number }[] }
 
 /** 진영 (칸 단위) — axis 0: 줄이 폭(v)으로 퍼지고 뒷줄은 u 쪽 뒤 · axis 1: 줄이 u 로 퍼지고 뒷줄은 v 쪽 뒤 (기습처럼 옆에서 시작) */
 export interface Camp {
@@ -365,6 +370,8 @@ export interface FieldMap {
   rule: MapRule
   /** 높은 터를 가진 편 · 없으면 -1 */
   highOwner: -1 | 0 | 1
+  /** 언덕 모양 (들판 섞임 · 칸 · 타원 둘 이상의 합 — 높은 터 칸은 이 합 안의 칸) · 그리는 쪽이 매끈한 둘레·빛·그늘·등고선으로 그린다 */
+  hills?: readonly Hill[]
   /** 참이면 막힌 칸에 정면으로 걸린 대가 옆으로 비켜 돌아간다 (들판 섞임의 바위 · 옛 맵은 없음) */
   sidestep?: boolean
   /** 그리는 소품 자리 (들판 섞임 · 없으면 없음) — 판은 안 읽고 해시에도 안 든다 */
@@ -384,6 +391,8 @@ export interface LiveSetup {
   mvpTricks?: boolean
   /** 시험판: 높은 터를 가진 편은 적이 높은 터에 올라와야 나선다 (실험실 「적이 높은 곳을 지킴」 · 없으면 거리로 나선다) */
   mvpHillHold?: boolean
+  /** 시험판의 철 (없으면 가을 = 기준 · 시험판만) */
+  season?: FieldSeason
   /** 원군 (실험실 L2) — 편마다 하나 또는 없음 */
   reinf?: readonly [LiveReinf | null, LiveReinf | null]
 }
@@ -450,4 +459,6 @@ export interface FieldState {
   hillHold?: 0 | 1
   /** 원군 (LiveSetup.reinf · 없으면 없음) */
   reinf?: ReinfState[]
+  /** 시험판의 철 번호 (FIELD_SEASONS 차례 · LiveSetup.season 이 있을 때만) */
+  season?: 0 | 1 | 2 | 3
 }

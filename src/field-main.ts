@@ -206,6 +206,8 @@ let miniHero: { u: number; v: number } | null = null
 let mini: Mini
 let camFight = false
 let helpOpen = false
+/** 시험판: 준비 화면의 조작표를 누름·Esc 로 접었나 (다시 시작하면 다시 편다) */
+let helpFolded = false
 let slow = false
 /** ?touch=1 은 폰 배치를 강제한다 (헤드리스·PC 에서 폰 화면을 볼 때) */
 const forceTouch = query.has('touch')
@@ -354,7 +356,7 @@ function restart(): void {
   introLeft = P.field.introMs
   fsnd.stop(); soundTick = -1; soundEpoch = markEpoch
   endAt = 0; viewMs = 0; pan = null; tgt = null; lossAcc = []; hist.length = 0; flyQ.length = 0; breakMor = null; bashN = 0
-  ui.phase = 'ready'; ui.sel = [3]
+  ui.phase = 'ready'; ui.sel = [3]; helpFolded = false
   queue = []; plan = []
   lastGoal.fill(null); lastShape.fill('move'); nudgeAt.fill(0); for (const l of tasks) l.length = 0
   volleyAt = null
@@ -1089,7 +1091,7 @@ function paint(now: number, alpha: number): void {
   if (!blocked) {
     // 처음 화면의 큰 조작표: 첫 판들의 준비 화면에서 가운데에 크게 · 전투 개시나 첫 장수 입력에 ? 단추로 줄어든다
     // 시험판은 준비 화면(멈춘 채 시작)마다 늘 세 줄 그림을 띄운다 (본 판 수를 안 센다)
-    const wantBig = MVP ? ui.phase === 'ready' : ui.phase === 'ready' && helpGames < P.field.helpBigGames && !heroOrdered
+    const wantBig = MVP ? ui.phase === 'ready' && !helpFolded : ui.phase === 'ready' && helpGames < P.field.helpBigGames && !heroOrdered
     if (bigNow && !wantBig && !MVP) { helpGames++; try { localStorage.setItem(HELP_KEY, String(helpGames)) } catch { /* 저장 못 해도 판은 돈다 */ } }
     bigNow = wantBig
     help.big(wantBig)
@@ -1445,6 +1447,8 @@ function toggleHelp(): void { help.toggle(); helpOpen = help.isOpen(); paintKey.
 addEventListener('keydown', e => {
   if (blocked) return
   keysHeld.add(e.code)
+  // 시험판: 준비 화면의 조작표는 Esc 로 ? 단추에 접힌다
+  if (MVP && bigNow && e.code === 'Escape') { e.preventDefault(); helpFolded = true; return }
   if (MVP && e.code === 'Digit5') { e.preventDefault(); if (!e.repeat) pickGroup(3); return }
   // 시험판: 고른 부대의 깃발은 Q W E R (롤처럼) · Tab 은 보통/두 배 빠르기 · WASD·Z X C V 는 안 쓴다
   if (MVP && MVP_FLAG_KEYS.includes(e.code)) { e.preventDefault(); if (!e.repeat && ui.phase !== 'end') mvpCmd(MVP_FLAG_KEYS.indexOf(e.code)); return }
@@ -1515,6 +1519,8 @@ hud.setZoom(0)
 mini = mountMini(root, { onOrder: MVP ? (x, y, chain) => { if (ui.phase !== 'end' && cur.end === null) mvpGive({ kind: 'move', u: Math.max(0, Math.min(cur.mapUUnits, unitsOf(x))), v: Math.max(0, Math.min(cur.mapVUnits, unitsOf(y))) }, performance.now(), chain) } : undefined, onPan: (x, y) => { const hh = heroNow(); pan = { x, y, until: ui.phase === 'ready' ? Infinity : performance.now() + P.field.miniPanMs }; miniHero = hh === undefined ? null : { u: hh.u, v: hh.v }; paintKey.x = NaN } })
 flags = mountFlags(root, import.meta.env.BASE_URL + 'realm/', handlers)
 help = mountHelp(root, import.meta.env.BASE_URL + 'realm/', MVP)
+// 시험판: 준비 화면의 조작표는 어디를 누르든 ? 단추에 접힌다 (누른 것은 그대로 한다)
+if (MVP) root.addEventListener('pointerdown', () => { if (bigNow) helpFolded = true }, true)
 if (LAB) lab = mountLab(root, labCfg, savedLabConfig() === null, { onApply: cfg => { labCfg = cfg; seed = cfg.seed; restart() }, onLayout: () => { measurePads(); paintKey.x = NaN } })
 first = mountFirst(root)
 arrows = mountArrows(root, import.meta.env.BASE_URL + 'realm/', g => { const gg = g as InputGroup; if (cellWhy(cur, gg) === null) setSel([gg]) })

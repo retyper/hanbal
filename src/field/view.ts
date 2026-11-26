@@ -58,6 +58,23 @@ export function setFieldSel(ids: readonly number[], hero: boolean, flags: readon
 }
 /** 고른 무리 깃의 자리 (at 의 첫 칸 번호) */
 const glowBuf: number[] = []
+/** 언덕 위에 선 대의 산 표 자리 (판 px · x, y 쌍) */
+const highBuf: number[] = []
+/** 높은 터 칸 (types.ts G_HIGH 와 같은 값 · 그리는 쪽은 판 정의를 들이지 않는다) */
+const HIGH_CELL = 4
+/** 언덕 위 대: 크림빛 봉우리 둘 (어두운 테) — 화면 크기 highMarkPx */
+function drawHighMarks(ctx: CanvasRenderingContext2D, at: readonly number[], zoom: number): void {
+  if (at.length === 0) return
+  const s = P.field.highMarkPx / zoom
+  ctx.beginPath()
+  for (let i = 0; i < at.length; i += 2) {
+    const x = at[i]!, y = at[i + 1]!
+    ctx.moveTo(x - s, y); ctx.lineTo(x - s * 0.25, y - s * 1.1); ctx.lineTo(x + s * 0.15, y - s * 0.45); ctx.lineTo(x + s * 0.45, y - s * 0.8); ctx.lineTo(x + s, y); ctx.closePath()
+  }
+  ctx.fillStyle = '#fff0c4'; ctx.globalAlpha = 0.95; ctx.fill()
+  ctx.strokeStyle = '#3a2a12'; ctx.lineWidth = Math.max(1, 1.4 / zoom); ctx.stroke()
+  ctx.globalAlpha = 1
+}
 
 /** born 이 앞날이면 아직 서 있다가 그때 맞음 칸 → 쓰러짐 칸으로 간다 (치는 쪽이 맞히는 순간에 맞춘다) · ph 는 서 있는 동안의 걸음 몫 */
 interface Corpse { x: number; y: number; side: 0 | 1; flip: boolean; strip: Strip | null; h: number; born: number; ph: number; stained: boolean }
@@ -612,6 +629,18 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
           spawn(0, unitsToPx(qu) + dd.cu[kk]! * F.cellPx - face * F.cellPx * 0.4, unitsToPx(qv) + dd.cv[kk]! * F.cellPx, -face * (8 + hh % 10), -4 - hh % 6, nowMs, F.runDustLife, F.cellPx * 0.2)
         }
       }
+      // 들판(섞임)의 언덕 위: 대 머리 위에 작은 산 표 · 올라가며 걷는 동안 발밑에 흙먼지(느려진 것이 보이게)
+      if (cur.hills.length > 0 && cur.cells[Math.floor(q.u / F.unit) * cur.mapW + Math.floor(q.v / F.unit)] === HIGH_CELL) {
+        highBuf.push(unitsToPx(qu), unitsToPx(qv) - sH * 1.25)
+        if (moving && !running && nowMs - (fx.dustAt.get(-5000 - q.id) ?? -1e9) > F.climbDustMs) {
+          fx.dustAt.set(-5000 - q.id, nowMs)
+          for (let j = 0; j < 3; j++) {
+            const hh = hash2(q.id * 17 + j, Math.floor(nowMs / F.climbDustMs)), kk = hh % dd.N
+            if (sl.dead.has(kk)) continue
+            spawn(0, unitsToPx(qu) + dd.cu[kk]! * F.cellPx, unitsToPx(qv) + dd.cv[kk]! * F.cellPx, -face * (4 + hh % 6), -3 - hh % 4, nowMs, F.runDustLife, F.cellPx * 0.18)
+          }
+        }
+      }
       stepDots(dd, q.id, sl.dead, nowMs)
       const tqu = aq === undefined ? 0 : unitsToPx(aq.u), tqv = aq === undefined ? 0 : unitsToPx(aq.v)
       const od = aq === undefined ? undefined : peekDots(aq.id), osl = aq === undefined ? undefined : fx.slots.get(aq.id)
@@ -789,6 +818,8 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
   addGroupFlags(cur, flagsAt, nowMs, trimBuf)
   drawParticles(ctx, nowMs, cam.zoom)
   drawBanners(ctx, flagsAt, cam.zoom, flagH, trimBuf, glowBuf)
+  drawHighMarks(ctx, highBuf, cam.zoom)
+  highBuf.length = 0
   // 장수는 깃보다 위에 (적 깃이 우리 장수 머리 위에 서서 적 깃을 든 것처럼 읽히던 것)
   for (const d of order) if (d.hero) drawItem(ctx, d)
   drawDash(ctx, nowMs)

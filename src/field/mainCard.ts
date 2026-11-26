@@ -51,6 +51,12 @@ const CSS = `
 #fd-help .fd-mv img{width:34px;height:34px;object-fit:contain}
 #fd-help .fd-mv.beats{gap:4px;margin-top:8px}
 #fd-help .x{margin:6px 0 0;font-size:12px;color:#f3ecd8aa}
+#fd-help.big.fd-hmvp{inset:calc(58px + env(safe-area-inset-top)) 0 auto 0;align-items:flex-start;padding:0 calc(var(--fd-miniw,0px) + 24px) 0 calc(12px + env(safe-area-inset-left))}
+#fd-help.big.fd-hmvp .card{display:flex;flex-wrap:wrap;align-items:center;gap:2px 16px;padding:4px 10px;max-width:min(980px,100%);background:#10140dd9}
+#fd-help.big.fd-hmvp .fd-mv{margin:0;font-size:13px;gap:4px}
+#fd-help.big.fd-hmvp .fd-mv img{width:24px;height:24px}
+#fd-help.big.fd-hmvp kbd{font-size:12px;padding:0 4px;border-bottom-width:3px}
+#fd-help.big.fd-hmvp .fd-mv.beats{margin:0}
 #fd-help.big .x{display:none}
 @media (max-height:460px){
 #fd-help.big{padding:0 calc(var(--fd-miniw,0px) + 20px) 0 12px}
@@ -112,6 +118,7 @@ export function mountHelp(root: HTMLElement, base: string, mvp = false): Help {
   document.head.append(style)
   const box = document.createElement('div')
   box.id = 'fd-help'; box.hidden = true
+  if (mvp) box.classList.add('fd-hmvp') // 시험판: 준비 화면의 조작표는 위 띠 밑에 납작하게 (판 가운데를 가리지 않게)
   const card = document.createElement('div')
   card.className = 'card'
   box.append(card)

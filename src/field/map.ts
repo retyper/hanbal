@@ -8,7 +8,7 @@
  */
 import { P } from '../tune/params.ts'
 import { G_BLOCK, G_DEEP, G_HIGH, G_PLAIN, G_SHALLOW, G_WOOD } from './types.ts'
-import type { Camp, Deco, FieldMap, Ground, MapRule, Piece } from './types.ts'
+import type { Camp, Deco, FieldMap, Ground, Hill, MapRule, Piece } from './types.ts'
 import { idiv } from './num.ts'
 import { roll } from '../core/rng.ts'
 
@@ -217,10 +217,25 @@ export function mixMap(seed: number): FieldMap {
   const fords = [Math.round(W * (0.2 + 0.15 * r('ford0'))), Math.round(W * (0.65 + 0.15 * r('ford1')))]
   for (const fv of fords) for (let cv = fv; cv < fv + F.mixFordCells; cv++) for (let k = -2; k <= F.mixStreamCells; k++) if (get(streamU(cv) + k - idiv(F.mixStreamCells, 2), cv) === G_SHALLOW) set(streamU(cv) + k - idiv(F.mixStreamCells, 2), cv, G_PLAIN)
   // 낮은 언덕: 한 옆(위 또는 아래) · 개울 한쪽에 (타원)
-  const top = r('hillSide') < 0.5, hv = top ? F.mixHillRvCells + 1 : W - F.mixHillRvCells - 2
-  const hu = mid + (r('hillU') < 0.5 ? -1 : 1) * (F.mixHillRuCells + F.mixStreamShiftCells)
-  for (let cu = hu - F.mixHillRuCells; cu <= hu + F.mixHillRuCells; cu++) for (let cv = hv - F.mixHillRvCells; cv <= hv + F.mixHillRvCells; cv++) {
-    const du = (cu - hu) / F.mixHillRuCells, dv = (cv - hv) / F.mixHillRvCells
+  // 개울에서 언덕 가로 반지름 + 3칸 + 언덕 높이만큼 개울이 비껴가는 몫을 띄운다 (개울이 언덕으로 흘러들지 않게) · 진영 시작 자리와도 띄운다
+  const Ru = F.mixHillRuCells, Rv = F.mixHillRvCells
+  const top = r('hillSide') < 0.5, hv = top ? Rv + 1 : W - Rv - 2
+  const clear = Ru + 3 + Math.ceil(Math.abs(slope) * Rv)
+  const lo = c0.u + F.mixHillCampCells, hi = c1.u - F.mixHillCampCells
+  // 처음 자리: 판 가운데에서 한쪽으로 (가로 반지름 + 개울 비킴 끝값) — 개울과 clear 보다 가까우면 개울 반대쪽으로 밀어낸다
+  let hu = mid + (r('hillU') < 0.5 ? -1 : 1) * (Ru + F.mixStreamShiftCells)
+  let side = hu >= streamU(hv) ? 1 : -1
+  if (Math.abs(hu - streamU(hv)) < clear) hu = streamU(hv) + side * clear
+  if (hu < lo || hu > hi) { side = -side; hu = streamU(hv) + side * clear }
+  hu = Math.max(lo, Math.min(hi, hu))
+  // 타원 둘의 합: 큰 몸 + 개울 반대쪽 판 안쪽으로 비켜선 작은 둔덕 (둘레가 둥글게 일그러져 자연스럽게)
+  const inward = top ? 1 : -1
+  const hill: Hill = { lobes: [
+    { u: hu, v: hv, ru: Ru, rv: Rv },
+    { u: hu + side * Math.round(Ru * (0.35 + 0.2 * r('lobeU'))), v: hv + inward * Math.round(Rv * (0.25 + 0.2 * r('lobeV'))), ru: Math.round(Ru * 0.6), rv: Math.round(Rv * 0.7) },
+  ] }
+  for (const l of hill.lobes) for (let cu = l.u - l.ru; cu <= l.u + l.ru; cu++) for (let cv = l.v - l.rv; cv <= l.v + l.rv; cv++) {
+    const du = (cu + 0.5 - l.u) / l.ru, dv = (cv + 0.5 - l.v) / l.rv
     if (du * du + dv * dv <= 1 && get(cu, cv) === G_PLAIN) set(cu, cv, G_HIGH)
   }
   // 막지 않을 곳: 두 진영 시작 자리 · 가운데 너른 땅
@@ -244,7 +259,7 @@ export function mixMap(seed: number): FieldMap {
     const v = back ? Math.round(W * (0.2 + 0.6 * r(`rockV${i}`))) : (r(`rockV${i}`) < 0.5 ? edge + 1 : W - edge - 2)
     blob(u, v, back ? 1 + Math.floor(r(`rockR${i}`) * 2) : 1, G_BLOCK)
   }
-  const map: FieldMap = { v: 1, u: U, w: W, cells, camps: [c0, c1], pieces: [], rule: 'meet', highOwner: -1, sidestep: true, deco: [] }
+  const map: FieldMap = { v: 1, u: U, w: W, cells, camps: [c0, c1], pieces: [], rule: 'meet', highOwner: -1, sidestep: true, hills: [hill], deco: [] }
   map.deco = mixDeco(map, seed, streamU, fords, hu, hv)
   return map
 }

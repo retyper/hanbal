@@ -42,9 +42,11 @@ function paint(m: VModel, soft = false): HTMLCanvasElement {
   const cv = document.createElement('canvas')
   cv.width = U * S; cv.height = W * S
   const c = cv.getContext('2d') as CanvasRenderingContext2D
-  const at = (cu: number, cv2: number): number => cu < 0 || cv2 < 0 || cu >= U || cv2 >= W ? -1 : m.cells[cu * W + cv2]!
+  // 들판(섞임)은 언덕을 칸이 아니라 모양(hills)으로 따로 그린다 (hillLayer) — 여기서는 높은 터 칸을 평지로 친다
+  const cells = soft && m.hills.length > 0 ? m.cells.map(g => g === HIGH ? 0 : g) : m.cells
+  const at = (cu: number, cv2: number): number => cu < 0 || cv2 < 0 || cu >= U || cv2 >= W ? -1 : cells[cu * W + cv2]!
   for (let cu = 0; cu < U; cu++) for (let v = 0; v < W; v++) {
-    const g = m.cells[cu * W + v]!
+    const g = cells[cu * W + v]!
     if (g === 0) continue
     const x = cu * S, y = v * S
     if (g === SHALLOW || g === DEEP) {
@@ -68,7 +70,7 @@ function paint(m: VModel, soft = false): HTMLCanvasElement {
   }
   // 높은 터의 그늘: 아래(v+) 가장자리와 앞(u 작은 쪽) 가장자리에 세 겹
   for (let cu = 0; cu < U; cu++) for (let v = 0; v < W; v++) {
-    if (m.cells[cu * W + v] === HIGH) continue
+    if (cells[cu * W + v] === HIGH) continue
     for (let n = 0; n < CLIFF.length; n++) {
       if (at(cu, v - 1 - n) === HIGH && at(cu, v - n) !== HIGH) { c.fillStyle = (soft ? CLIFF_LOW : CLIFF)[n]!; c.fillRect(cu * S, v * S, S, S) }
     }
@@ -79,7 +81,7 @@ function paint(m: VModel, soft = false): HTMLCanvasElement {
   // 높은 터의 등고선: 가장자리(옆이 낮은 칸)에서 안쪽으로 CONTOURS 칸째마다 그 가장자리를 따라 가는 줄
   const depth = (cu: number, v: number, du: number, dv: number): number => { let n = 0; while (at(cu - du * (n + 1), v - dv * (n + 1)) === HIGH) n++; return at(cu - du * (n + 1), v - dv * (n + 1)) === -1 ? -1 : n }
   for (let cu = 0; cu < U; cu++) for (let v = 0; v < W; v++) {
-    if (m.cells[cu * W + v] !== HIGH) continue
+    if (cells[cu * W + v] !== HIGH) continue
     const x = cu * S, y = v * S
     for (const [du, dv] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
       const d = depth(cu, v, du, dv)
@@ -99,7 +101,7 @@ function paint(m: VModel, soft = false): HTMLCanvasElement {
 export function drawTerrain(ctx: CanvasRenderingContext2D, m: VModel, worldW: number, worldH: number): void {
   const sig = signature(m)
   let e = cache.get(m.cells)
-  if (e === undefined || e.sig !== sig) { e = { sig, cv: isPlain(m.cells) ? null : m.deco.length > 0 ? soften(paint(m, true)) : paint(m) }; cache.set(m.cells, e) }
+  if (e === undefined || e.sig !== sig) { e = { sig, cv: isPlain(m.cells) ? null : m.deco.length > 0 ? hillLayer(soften(paint(m, true)), m) : paint(m) }; cache.set(m.cells, e) }
   if (e.cv !== null) ctx.drawImage(e.cv, 0, 0, worldW, worldH)
 }
 
@@ -116,4 +118,62 @@ function soften(src: HTMLCanvasElement): HTMLCanvasElement {
   c.drawImage(src, 0, 0)
   c.filter = 'none'
   return cv
+}
+
+/**
+ * 언덕을 모양으로 (들판 섞임) — 해가 왼쪽 위에서: 오른쪽 아래로 드리운 그림자 · 오른쪽 아래 비탈의 그늘 띠 · 왼쪽 위 비탈의 빛 ·
+ * 꼭대기 쪽으로 옅은 등고선 셋 · 둘레 테. 타원 몇 개의 합이라 둘레가 매끈하다(칸 계단 없음). 맵마다 한 번 굽는다.
+ * 빛·그늘은 한 번 흐려 부드럽게 (움직이는 필터가 아니다)
+ */
+const HILL_CAST = 'rgba(40,30,12,0.34)', HILL_BODY = 'rgba(92,116,48,0.30)', HILL_DARK = 'rgba(34,26,10,0.42)', HILL_LIT = 'rgba(255,240,196,0.42)'
+const HILL_RING = 'rgba(70,52,22,0.42)', HILL_RING_LIT = 'rgba(255,246,214,0.38)', HILL_RIM = 'rgba(48,34,14,0.55)'
+/** 등고선 (몸 반지름에 대한 몫) */
+const HILL_RINGS = [0.74, 0.5, 0.27] as const
+const HILL_SOFT_PX = 6
+function hillLayer(base: HTMLCanvasElement, m: VModel): HTMLCanvasElement {
+  if (m.hills.length === 0) return base
+  const S = PX_PER_CELL, W = base.width, H = base.height
+  const c = base.getContext('2d') as CanvasRenderingContext2D
+  const tmp = document.createElement('canvas'); tmp.width = W; tmp.height = H
+  const t = tmp.getContext('2d') as CanvasRenderingContext2D
+  type Lobe = { u: number; v: number; ru: number; rv: number }
+  /** 타원 합의 길 (k 몫으로 줄이고 · du·dv 몫만큼 옮긴다 · 칸 → px) */
+  const lobes = (ls: readonly Lobe[], k: number, du: number, dv: number): void => {
+    t.beginPath()
+    for (const l of ls) { const x = (l.u + du * l.ru) * S, y = (l.v + dv * l.rv) * S, rx = l.ru * k * S, ry = l.rv * k * S; t.moveTo(x + rx, y); t.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2) }
+  }
+  /** 몸에서 옮긴 몸을 뺀 초승달 (같은 색 한 덩이) */
+  const crescent = (ls: readonly Lobe[], color: string, du: number, dv: number): void => {
+    t.globalCompositeOperation = 'source-over'; lobes(ls, 1, 0, 0); t.fillStyle = color; t.fill()
+    t.globalCompositeOperation = 'destination-out'; lobes(ls, 1.04, du, dv); t.fillStyle = '#000'; t.fill()
+    t.globalCompositeOperation = 'source-over'
+  }
+  const put = (blur: number): void => { c.filter = blur > 0 ? `blur(${blur}px)` : 'none'; c.drawImage(tmp, 0, 0); c.filter = 'none'; t.clearRect(0, 0, W, H) }
+  for (const h of m.hills) {
+    // 드리운 그림자 (오른쪽 아래)
+    lobes(h.lobes, 1, 0.1, 0.16); t.fillStyle = HILL_CAST; t.fill(); put(HILL_SOFT_PX)
+    // 몸: 들보다 조금 짙은 풀빛
+    lobes(h.lobes, 1, 0, 0); t.fillStyle = HILL_BODY; t.fill(); put(2)
+    // 오른쪽 아래 비탈 그늘 · 왼쪽 위 비탈 빛
+    crescent(h.lobes, HILL_DARK, -0.2, -0.26); put(HILL_SOFT_PX)
+    crescent(h.lobes, HILL_LIT, 0.22, 0.28); put(HILL_SOFT_PX)
+    // 등고선: 꼭대기 쪽(왼쪽 위로 조금 치우쳐)으로 줄어드는 고리 · 겹친 타원 안쪽 호는 다른 타원으로 지운다
+    for (const [i, k] of HILL_RINGS.entries()) {
+      const du = -0.05 * (i + 1), dv = -0.07 * (i + 1)
+      // 바깥 고리만 둔덕까지 감싸고 · 꼭대기 쪽 고리는 큰 몸 하나로 (작은 둔덕마다 과녁처럼 고리가 따로 서지 않게)
+      const ls = i === 0 ? h.lobes : h.lobes.slice(0, 1)
+      t.lineWidth = 1.6
+      lobes(ls, k, du, dv); t.strokeStyle = HILL_RING; t.stroke()
+      t.globalCompositeOperation = 'destination-out'; lobes(ls, k - 0.03, du, dv); t.fillStyle = '#000'; t.fill(); t.globalCompositeOperation = 'source-over'
+      // 고리 바로 위(왼쪽 위)에 밝은 줄 한 겹 — 턱이 읽히게
+      lobes(ls, k, du - 0.012, dv - 0.018); t.strokeStyle = HILL_RING_LIT; t.lineWidth = 1; t.stroke()
+      t.globalCompositeOperation = 'destination-out'; lobes(ls, k - 0.03, du - 0.012, dv - 0.018); t.fill(); t.globalCompositeOperation = 'source-over'
+      put(0.6)
+    }
+    // 둘레 테
+    t.lineWidth = 2; lobes(h.lobes, 1, 0, 0); t.strokeStyle = HILL_RIM; t.stroke()
+    t.globalCompositeOperation = 'destination-out'; lobes(h.lobes, 0.985, 0, 0); t.fill(); t.globalCompositeOperation = 'source-over'
+    put(1)
+  }
+  return base
 }

@@ -4,7 +4,7 @@
  * 좌표는 sim 단위 그대로(unit 당 1칸) — 판 px 로 바꾸는 것은 view.ts. 조각(Piece)의 좌표는 칸 단위다.
  */
 import { P } from '../tune/params.ts'
-import type { Deco, FieldState } from './types.ts'
+import type { Deco, FieldState, Hill } from './types.ts'
 import { sideMorale, wingOf } from './sim.ts'
 
 /** aim = 지금 싸우는 상대(대 id · 없으면 -1 · 손으로 몰았든 알아서든 같은 뜻) · foe = 「적을 쳐라」로 받은 적 · form = 앞줄 모양 FORM_* · cmd = 활·기병 명령 · lock = 맞물린 적 대 */
@@ -27,6 +27,8 @@ export interface VModel {
   cells: Readonly<Uint8Array>
   /** 그리는 소품 자리 (들판 섞임 · 칸) */
   deco: readonly Deco[]
+  /** 언덕 모양 (들판 섞임 · 없으면 빈 배열) */
+  hills: readonly Hill[]
   rule: string
   squads: VSquad[]
   heroes: VHero[]
@@ -119,7 +121,7 @@ export function readField(s: FieldState): VModel {
     mapUUnits: s.map.u * unit, mapVUnits: s.map.w * unit, mvp: s.mvp === 1, reinf: (s.reinf ?? []).map(r => ({ side: r.side, kind: r.kind, men: r.men, tick: r.tick, done: r.done === 1, u: r.u, v: r.v, callSec: r.callSec, call: r.call === 1 })),
     tick: s.tick,
     mapU: s.map.u, mapW: s.map.w,
-    cells: s.map.cells, deco: s.map.deco ?? [],
+    cells: s.map.cells, deco: s.map.deco ?? [], hills: s.map.hills ?? [],
     rule: s.map.rule,
     squads: s.squads.map(q => ({ id: q.id, side: q.side, grp: q.grp, kind: q.kind, men: q.men, fresh: q.fresh, u: q.u, v: q.v, target: q.target, goal: q.goal === null ? null : { u: q.goal.u, v: q.goal.v }, stance: q.stance, manual: q.manual, aim: q.aim, foe: q.foe, form: q.form, cmd: q.cmd, lock: q.lock, morale: q.morale, morale0: q.morale0, order: q.order, orderTick: q.orderTick, orderAt: q.orderAt === null ? null : { u: q.orderAt.u, v: q.orderAt.v }, ran: q.ran, bonus: q.bonus, hitTick: q.hitTick, flee: q.flee, bw: q.bw, bd: q.bd, face: q.face, pushed: q.pushed, regrouped: q.regrouped, menMax: q.menMax, wing: q.grp === 'horse' ? wingOf(s, q) : -1, reach: q.reach })),
     heroes: s.heroes.map(e => ({ side: e.side, id: e.id, u: e.u, v: e.v, stun: e.stun, goal: e.goal === null ? null : { u: e.goal.u, v: e.goal.v }, dir: e.dir, face: e.face, dash: e.dash, dashDir: e.dashDir, dashCd: e.dashCd, art: e.art, artCd: e.artCd, artOn: e.artOn, why: e.why, whyTick: e.whyTick, atk: e.atk, mu: e.mu, tong: e.tong, grit: e.grit, gritN: e.gritN, runIn: e.runIn, bangTick: e.bangTick, hp: e.hp })),
