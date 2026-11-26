@@ -137,6 +137,8 @@ const flyQ: { id: number; n: number }[] = []
 let breakMor: [number, number] | null = null
 /** 찍는 큰 수: 2 화살비 · 3 옆치기 (찍을 때까지 판이 느려진다) · 누르고 있는 동안만 고른 무리(숫자키) · 마우스 올린 무리 */
 let aiming = -1, aimSince = 0
+/** 찍는 중이 저절로 취소된 직후 이 시각까지는 누름이 장수 공격으로 새지 않게 삼킨다 */
+let aimGraceUntil = 0
 let heldPick = -1
 let hoverG = -1
 let aimCur: HTMLImageElement
@@ -172,7 +174,7 @@ let slow = false
 const forceTouch = query.has('touch')
 let touchMode = forceTouch || matchMedia('(pointer: coarse)').matches
 const keysHeld = new Set<string>()
-const mouse = { x: 0, y: 0, in: false }
+const mouse = { x: 0, y: 0, in: false, at: 0 }
 let flags: FlagsView
 let help: Help
 let first: First
@@ -658,6 +660,7 @@ function midOf(): { x: number; y: number } {
 function onDown(e: PointerEvent): void {
   if (blocked || ui.phase === 'end' || cur.end !== null || helpOpen) return
   if (!forceTouch) touchMode = e.pointerType !== 'mouse'
+  if (aiming === -1 && e.timeStamp < aimGraceUntil) return // 막 취소된 직후의 누름: 적을 찍으려던 손가락이 장수를 보내지 않게
   if (aiming !== -1) {
     const kind = e.pointerType === 'mouse' && e.button === 2 ? 'cancel' : e.pointerType !== 'mouse' || e.button === 0 ? 'confirm' : null
     if (kind !== null) { const r = aimTap(aiming, kind); if (r.act === 'cancel') cancelAim(); else if (r.act === 'confirm') confirmAim(e.clientX, e.clientY, e.timeStamp) }
@@ -676,7 +679,7 @@ function onDown(e: PointerEvent): void {
   try { cv.setPointerCapture(e.pointerId) } catch { /* 합성 입력 */ }
 }
 function onMove(e: PointerEvent): void {
-  if (e.pointerType === 'mouse') { mouse.x = e.clientX; mouse.y = e.clientY; mouse.in = true }
+  if (e.pointerType === 'mouse') { mouse.x = e.clientX; mouse.y = e.clientY; mouse.in = true; mouse.at = e.timeStamp }
   const p = ptrs.get(e.pointerId)
   if (p !== undefined) { p.x = e.clientX; p.y = e.clientY }
   if (two !== null) {
@@ -735,7 +738,7 @@ function movePan(dt: number): void {
 function paint(now: number, alpha: number): void {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   const box = boxNow()
-  const hv = mouse.in && !touchMode && aiming === -1 && ui.phase !== 'end' ? pickAt(pickCands(), mouse.x, mouse.y, P.field.pickRadiusPx, P.field.heroPickPermille) : -1
+  const hv = mouse.in && !touchMode && aiming === -1 && ui.phase !== 'end' && now - mouse.at < P.field.hoverRingMs ? pickAt(pickCands(), mouse.x, mouse.y, P.field.pickRadiusPx, P.field.heroPickPermille) : -1
   if (hv !== hoverG) { hoverG = hv; markEpoch++ }
   if (aiming !== -1 && !touchMode) { aimCur.hidden = false; aimCur.style.transform = `translate(${Math.round(mouse.x - 24)}px,${Math.round(mouse.y - 24)}px)` }
   // 멈춤·끝(잠잠해진 뒤)·가로 안내 중에는 바뀐 것이 없으면 다시 안 그린다
@@ -856,7 +859,7 @@ function endStats(): EndStats | undefined {
 }
 /** 그 무리의 지금 명령 ORD_* (엔진이 정한 것 · 대마다 같다) */
 function ordOf(grp: string): number {
-  const q = cur.squads.find(e => e.side === 0 && e.grp === grp && e.men > 0)
+  const q = cur.squads.find(e => e.side === 0 && e.grp === grp && e.men > 0 && e.flee === 0)
   if (q === undefined) return 0
   // 엔진이 끝난 명령을 되돌리기 전에는 「맞물려 있거나 받은 지 orderLitSec 초 안」일 때만 걸린 것으로 본다
   return q.aim >= 0 || cur.tick - q.orderTick <= P.field.hz * P.field.orderLitSec ? q.order : 0
@@ -895,7 +898,7 @@ function frame(now: number): void {
   watchLoad(dtMs)
   const stepMs = 1000 / P.field.hz
   if (heroStart === null) { const h = heroNow(); if (h !== undefined) heroStart = { u: h.u, v: h.v } }
-  if (aimExpired(aiming, aimSince, now, P.field.aimMs)) cancelAim()
+  if (aimExpired(aiming, aimSince, now, touchMode ? P.field.aimTouchMs : P.field.aimMs)) { cancelAim(); aimGraceUntil = now + P.field.aimGraceMs }
   const simMs = (aiming !== -1 ? dtMs * P.field.aimSlowPermille / 1000 : slow ? dtMs * P.field.slowPermille / 1000 : dtMs)
   if (!paused && !helpOpen && !blocked && cur.end === null && ui.phase === 'play') {
     const a = advance(acc, simMs, P.field.hz, P.field.maxCatchUpTicks)

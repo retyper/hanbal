@@ -71,8 +71,9 @@ const CSS = `
 .touch .fd-cells{display:none}
 .touch .fd-kb,.touch .fd-opt i,.touch .fd-pb em{display:none}
 .touch #fd-strip{min-height:0}
-.touch #fd-big{left:auto;right:calc(10px + env(safe-area-inset-right));bottom:calc(88px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(2,64px);padding:4px}
-.touch .fd-opt{min-width:64px}
+.touch #fd-big{left:50%;right:auto;transform:translateX(-50%);bottom:calc(8px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,54px);gap:3px;padding:3px}
+.touch .fd-opt{min-width:54px;min-height:46px;padding:2px 3px;font-size:11px;gap:0}
+.touch .fd-opt img{width:22px;height:22px}
 .fd-opt{font:inherit;color:#f3ecd8;background:#0b1a2ecc;border:2px solid #2f8cff88;border-radius:8px;min-width:60px;min-height:56px;padding:3px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative;font-size:13px;transition:transform .08s}
 .fd-opt:active{transform:scale(1.12)}
 .fd-opt img{width:30px;height:30px;object-fit:contain}
