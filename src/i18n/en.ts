@@ -3686,6 +3686,7 @@ export const en: Partial<Record<Key, string>> = {
   'field.mvp.res.block': '{g} was stopped by the enemy {t}',
   'field.mvp.res.broke': '{g} broke against the enemy {t}',
   'lab.col.line': 'What worked / why',
+  'lab.base.stakeNote': 'Palisade assault: there is no way in yet (e.g. a gate breach), so bots cannot win',
   'lab.title': 'Battle lab',
   'lab.panel': 'Setup',
   'lab.map': 'Ground',

@@ -1090,8 +1090,11 @@ function runImpacts(s: FieldState): boolean[] {
     const away = blocked ? e : q
     const push = (blocked ? P.field.bounceCells : q.grp === 'horse' ? P.field.pushHorseCells : P.field.pushFrontCells) * P.field.unit
     shoves.push({ mover, from: { u: away.u, v: away.v }, len: push, by: q })
-    if (blocked) addShock(s, q, P.field.blockedShock, 'melee')
-    else { q.bonus = ticksOf(P.field.chargeBonusSec); const base = q.grp === 'horse' ? (rider && arc > 0 && e.grp === 'bows' ? P.field.mvpBowFlankShock : P.field.flankHitShock) : s.lineup[q.side] === LINE_WEDGE ? mul(P.field.chargeHitShock, P.field.lineWedgeShockPermille) : P.field.chargeHitShock
+    if (blocked) {
+      addShock(s, q, P.field.blockedShock, 'melee')
+      // 시험판(mvp): 기병이 창에 정면으로 막혀 튕기면 그 편 온 군이 본다 — 산 대마다 사기 mvpRepulseShock (막힌 날개가 화살을 받아 주는 덤보다 비싸게)
+      if (rider) for (const o of s.squads) if (o.side === q.side && o.men > 0 && o.flee === 0) addShock(s, o, P.field.mvpRepulseShock, 'domino')
+    } else { q.bonus = ticksOf(P.field.chargeBonusSec); const base = q.grp === 'horse' ? (rider && arc > 0 && e.grp === 'bows' ? P.field.mvpBowFlankShock : P.field.flankHitShock) : s.lineup[q.side] === LINE_WEDGE ? mul(P.field.chargeHitShock, P.field.lineWedgeShockPermille) : P.field.chargeHitShock
       // 시험판(mvp): 높은 터에서 낮은 데로 내리치면 쾅이 mvpDownhillShockPermille 배
       const down = s.mvp === 1 && groundAt(s.map, q.u, q.v) === G_HIGH && groundAt(s.map, e.u, e.v) !== G_HIGH
       addShock(s, e, down ? mul(base, P.field.mvpDownhillShockPermille) : base, q.grp === 'horse' ? 'flank' : 'melee') }

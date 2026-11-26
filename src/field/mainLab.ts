@@ -4,6 +4,7 @@
  * 기록은 판이 끝날 때마다 한 줄 · LAB_REC_MAX 줄까지 (넘으면 오래된 것부터 뺀다).
  */
 import { t, type Key } from '../i18n/index.ts'
+import { P } from '../tune/params.ts'
 import { LAB_DEFAULT, LAB_MAPS, LAB_PRESETS, LAB_REINF, LAB_SCENES, type LabConfig, type LabSide } from './scenario.ts'
 import type { LiveReinf } from './types.ts'
 import { LAB_BOTS, type LabBotSum } from './labbots.ts'
@@ -165,7 +166,9 @@ ${sideHtml(0)}${sideHtml(1)}
 
   // ---- 이 판의 봇 기준 (일꾼이 따로 돌린다 · 숨은 탭에서는 멈춘다 · 짜임마다 저장 칸에 남긴다) ----
   let worker: Worker | null = null, baseKey = '', baseDone = true
-  const keyOf = (c: LabConfig): string => JSON.stringify({ ...c, v: 1 })
+  // 열쇠에 시험판 값들을 같이 넣는다 (값을 고치면 남겨 둔 옛 기준을 쓰지 않게)
+  const knobs = JSON.stringify(Object.entries(P.field).filter(([k]) => k.startsWith('mvp') || k.startsWith('militia')))
+  const keyOf = (c: LabConfig): string => JSON.stringify({ ...c, v: 1, knobs })
   /** 마지막으로 보인 봇 기준 (서랍을 다시 칠해도 남게) */
   let baseView: { b: Base | null; done: number; total: number } = { b: null, done: 0, total: 1 }
   const paintBase = (b: Base | null, done: number, total: number): void => {
@@ -173,7 +176,7 @@ ${sideHtml(0)}${sideHtml(1)}
     const el = document.getElementById('lab-base')
     if (el === null) return
     if (b === null || done < total) { el.textContent = t('lab.base.wait', { n: done, m: total }); return }
-    el.innerHTML = LAB_BOTS.map(k => { const s = b.sums[k]!; return `<div>${t(`lab.base.${k}` as Key)} <b>${Math.round(100 * s.wins / Math.max(1, s.games))}%</b></div>` }).join('') + `<small>${t('lab.base.note', { a: cfg.seed, b: cfg.seed + b.n - 1, n: b.n })}</small>`
+    el.innerHTML = LAB_BOTS.map(k => { const s = b.sums[k]!; return `<div>${t(`lab.base.${k}` as Key)} <b>${Math.round(100 * s.wins / Math.max(1, s.games))}%</b></div>` }).join('') + `<small>${t('lab.base.note', { a: cfg.seed, b: cfg.seed + b.n - 1, n: b.n })}</small>${cfg.map === 'stake' ? `<small style="display:block">${t('lab.base.stakeNote')}</small>` : ''}`
   }
   function stopBase(): void { worker?.terminate(); worker = null }
   function startBase(): void {

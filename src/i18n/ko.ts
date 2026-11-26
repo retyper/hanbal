@@ -3666,6 +3666,7 @@ export const ko = {
   'field.mvp.res.block': '{g|이/가} 적 {t}에 막혔습니다',
   'field.mvp.res.broke': '{g|이/가} 적 {t}에 무너졌습니다',
   'lab.col.line': '무엇이 · 왜',
+  'lab.base.stakeNote': '목책 치기: 아직 안으로 들어갈 길(문 깨기 수 등)이 없어 봇은 못 이깁니다',
   'lab.title': '전장 실험실',
   'lab.panel': '판 짜기',
   'lab.map': '땅',
