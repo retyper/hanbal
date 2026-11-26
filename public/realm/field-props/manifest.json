@@ -1,27 +1,56 @@
 {
  "pine-big": {
   "w": 115,
-  "h": 121
+  "h": 121,
+  "seasons": {
+   "winter": "pine-big-winter",
+   "summer": "pine-big-summer",
+   "spring": "pine-big-spring"
+  }
  },
  "pine": {
   "w": 73,
-  "h": 88
+  "h": 88,
+  "seasons": {
+   "winter": "pine-winter",
+   "spring": "pine-spring"
+  }
  },
  "pine-small": {
   "w": 49,
-  "h": 56
+  "h": 56,
+  "seasons": {
+   "winter": "pine-small-winter",
+   "spring": "pine-small-spring"
+  }
  },
  "oak": {
   "w": 94,
-  "h": 96
+  "h": 96,
+  "seasons": {
+   "winter": "oak-winter",
+   "summer": "oak-summer",
+   "spring": "oak-spring",
+   "autumn": "oak-autumn"
+  }
  },
  "tree-dead": {
   "w": 80,
-  "h": 90
+  "h": 90,
+  "seasons": {
+   "winter": "tree-dead-winter",
+   "autumn": "tree-dead-autumn"
+  }
  },
  "tree-autumn": {
   "w": 68,
-  "h": 70
+  "h": 70,
+  "seasons": {
+   "winter": "tree-autumn-winter",
+   "summer": "tree-autumn-summer",
+   "spring": "tree-autumn-spring",
+   "autumn": "tree-autumn-autumn"
+  }
  },
  "stump": {
   "w": 43,
@@ -33,43 +62,85 @@
  },
  "rock-big": {
   "w": 87,
-  "h": 68
+  "h": 68,
+  "seasons": {
+   "winter": "rock-big-winter"
+  }
  },
  "rock": {
   "w": 54,
-  "h": 45
+  "h": 45,
+  "seasons": {
+   "winter": "rock-winter"
+  }
  },
  "rock-small": {
   "w": 32,
-  "h": 29
+  "h": 29,
+  "seasons": {
+   "winter": "rock-small-winter"
+  }
  },
  "rock-moss": {
   "w": 54,
-  "h": 41
+  "h": 41,
+  "seasons": {
+   "winter": "rock-moss-winter"
+  }
  },
  "cattail": {
   "w": 65,
-  "h": 65
+  "h": 65,
+  "seasons": {
+   "winter": "cattail-winter",
+   "summer": "cattail-summer"
+  }
  },
  "pebbles": {
   "w": 15,
-  "h": 10
+  "h": 10,
+  "seasons": {
+   "winter": "pebbles-winter"
+  }
  },
  "grass-dry": {
   "w": 41,
-  "h": 32
+  "h": 32,
+  "seasons": {
+   "winter": "grass-dry-winter",
+   "summer": "grass-dry-summer",
+   "spring": "grass-dry-spring",
+   "autumn": "grass-dry-autumn"
+  }
  },
  "grass-small": {
   "w": 16,
-  "h": 11
+  "h": 11,
+  "seasons": {
+   "winter": "grass-small-winter",
+   "summer": "grass-small-summer",
+   "spring": "grass-small-spring"
+  }
  },
  "grass": {
   "w": 30,
-  "h": 19
+  "h": 19,
+  "seasons": {
+   "winter": "grass-winter",
+   "summer": "grass-summer",
+   "spring": "grass-spring",
+   "autumn": "grass-autumn"
+  }
  },
  "flowers": {
   "w": 28,
-  "h": 18
+  "h": 18,
+  "seasons": {
+   "winter": "flowers-winter",
+   "summer": "flowers-summer",
+   "spring": "flowers-spring",
+   "autumn": "flowers-autumn"
+  }
  },
  "watchtower": {
   "w": 62,
@@ -85,15 +156,26 @@
  },
  "stones": {
   "w": 36,
-  "h": 21
+  "h": 21,
+  "seasons": {
+   "winter": "stones-winter"
+  }
  },
  "reeds-big": {
   "w": 58,
-  "h": 53
+  "h": 53,
+  "seasons": {
+   "winter": "reeds-big-winter",
+   "summer": "reeds-big-summer"
+  }
  },
  "reeds": {
   "w": 40,
-  "h": 41
+  "h": 41,
+  "seasons": {
+   "winter": "reeds-winter",
+   "summer": "reeds-summer"
+  }
  },
  "step-1": {
   "w": 48,
@@ -117,10 +199,98 @@
  },
  "flower": {
   "w": 34,
-  "h": 31
+  "h": 31,
+  "seasons": {
+   "winter": "flower-winter",
+   "spring": "flower-spring",
+   "autumn": "flower-autumn"
+  }
  },
  "iris": {
   "w": 33,
-  "h": 31
+  "h": 31,
+  "seasons": {
+   "winter": "iris-winter"
+  }
+ },
+ "snow-big": {
+  "w": 52,
+  "h": 20,
+  "only": "winter"
+ },
+ "snow": {
+  "w": 24,
+  "h": 11,
+  "only": "winter"
+ },
+ "ice": {
+  "w": 50,
+  "h": 22,
+  "only": "winter"
+ },
+ "puddle": {
+  "w": 44,
+  "h": 19,
+  "only": "summer"
+ },
+ "puddle-small": {
+  "w": 18,
+  "h": 10,
+  "only": "summer"
+ },
+ "mud-flow": {
+  "w": 72,
+  "h": 28,
+  "only": "summer"
+ },
+ "bush-wet": {
+  "w": 60,
+  "h": 46,
+  "only": "summer"
+ },
+ "mud-reeds": {
+  "w": 54,
+  "h": 26,
+  "only": "spring"
+ },
+ "mud": {
+  "w": 30,
+  "h": 13,
+  "only": "spring"
+ },
+ "bush-spring": {
+  "w": 49,
+  "h": 40,
+  "only": "spring"
+ },
+ "maple": {
+  "w": 68,
+  "h": 77,
+  "only": "autumn"
+ },
+ "maple-bush": {
+  "w": 49,
+  "h": 39,
+  "only": "autumn"
+ },
+ "silver-grass": {
+  "w": 53,
+  "h": 53,
+  "only": "autumn"
+ },
+ "leaf-pile": {
+  "w": 34,
+  "h": 17,
+  "only": "autumn"
+ },
+ "leaves": {
+  "w": 38,
+  "h": 17,
+  "only": "autumn"
+ },
+ "sheaves": {
+  "w": 50,
+  "h": 41,
+  "only": "autumn"
  }
 }

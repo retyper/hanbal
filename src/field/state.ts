@@ -35,6 +35,7 @@ export function hashField(s: FieldState): string {
   if (s.mvp === 1) h = mix(h, s.mvp)
   if (s.tricks === 1) h = mix(h, 7)
   if (s.hillHold === 1) h = mix(h, 11)
+  if (s.season !== undefined) h = mix(h, 101 + s.season)
   for (const r of s.reinf ?? []) { h = mix(h, r.side); h = hs(h, r.kind); h = mix(h, r.men); h = mix(h, r.edge); h = mix(h, r.callSec); h = mix(h, r.tick); h = mix(h, r.done); h = mix(h, r.u); h = mix(h, r.v); h = mix(h, r.call) }
   for (const p of s.anchor) { h = mix(h, p.u); h = mix(h, p.v) }
   for (const r of s.route) { h = mix(h, r.length); for (const p of r) { h = mix(h, p.u); h = mix(h, p.v) } }

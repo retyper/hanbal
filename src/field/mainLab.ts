@@ -6,7 +6,7 @@
 import { t, type Key } from '../i18n/index.ts'
 import { P } from '../tune/params.ts'
 import { LAB_DEFAULT, LAB_MAPS, LAB_PRESETS, LAB_REINF, LAB_SCENES, type LabConfig, type LabSide } from './scenario.ts'
-import type { LiveReinf } from './types.ts'
+import { FIELD_SEASONS, type FieldSeason, type LiveReinf } from './types.ts'
 import { LAB_BOTS, type LabBotSum } from './labbots.ts'
 
 export const LAB_KEY = 'zz.field.lab'
@@ -151,6 +151,7 @@ ${reinfHtml(s)}`
     side.innerHTML = `<h3>${t('lab.scene')}</h3><div class="lab-row">${(Object.keys(LAB_SCENES) as Array<keyof typeof LAB_SCENES>).map(k => `<button type="button" data-scene="${k}">${t(`lab.scene.${k}` as Key, { n: Math.round(LAB_SCENES[k].foe / 10) })}</button>`).join('')}</div>
 <h3>${t('lab.base')}</h3><div class="lab-base" id="lab-base"></div>
 <h3>${t('lab.map')}</h3><div class="lab-row">${LAB_MAPS.map(m => `<button type="button" data-map="${m}" class="${m === cfg.map ? 'on' : ''}">${t(`lab.map.${m}` as Key)}</button>`).join('')}</div>
+<h3>${t('lab.season')}</h3><div class="lab-row">${(['none', ...FIELD_SEASONS] as const).map(s => `<button type="button" data-season="${s}" class="${(cfg.season ?? 'none') === s ? 'on' : ''}">${t(`lab.season.${s}` as Key)}</button>`).join('')}</div>
 ${sideHtml(0)}${sideHtml(1)}
 <h3>${t('lab.foeOpts')}</h3>
 <div class="lab-row"><label><input type="checkbox" data-f="tricks"${cfg.tricks ? ' checked' : ''}> ${t('lab.tricks')}</label></div>
@@ -242,6 +243,8 @@ ${sideHtml(0)}${sideHtml(1)}
     const map = el.dataset['map'], preset = el.dataset['preset'], act = el.dataset['act'], scene = el.dataset['scene']
     if (scene !== undefined) { const sc = LAB_SCENES[scene as keyof typeof LAB_SCENES]; cfg = { ...cfg, sides: [structuredClone(sc.sides[0]), structuredClone(sc.sides[1])], foe: sc.foe, spread: sc.spread }; apply(); return }
     if (map !== undefined) { cfg = { ...cfg, map: map as LabConfig['map'] }; apply(); return }
+    const season = el.dataset['season']
+    if (season !== undefined) { const { season: _old, ...rest } = cfg; cfg = season === 'none' ? rest : { ...rest, season: season as FieldSeason }; apply(); return }
     if (preset !== undefined) {
       const s = Number(el.dataset['side']) as 0 | 1, l = structuredClone(LAB_PRESETS[preset as keyof typeof LAB_PRESETS])
       cfg = { ...cfg, sides: s === 0 ? [l, cfg.sides[1]] : [cfg.sides[0], l] }; apply(); return

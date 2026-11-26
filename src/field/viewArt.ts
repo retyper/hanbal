@@ -46,6 +46,8 @@ export interface Art {
   strips: Map<string, { ready: boolean; strip: Strip }>
   ground: HTMLImageElement
   pieces: Map<string, HTMLImageElement>
+  /** 들판 소품 표 (철 판 이름) — 아직 안 불렀으면 undefined · 부르는 중이면 null */
+  propMan?: Record<string, { seasons?: Record<string, string> }> | null
 }
 
 const load = (src: string): HTMLImageElement => { const i = new Image(); i.decoding = 'async'; i.src = src; return i }
@@ -166,7 +168,13 @@ export function heroStrip(art: Art, id: string, pick: string | null): Strip | nu
 }
 
 /** 들판 소품 그림 (public/realm/field-props · 두 배로 구워 둠 · tools/field-props-bake.py) — 안 왔으면 null */
-export function propImg(art: Art, name: string): HTMLImageElement | null {
+export function propImg(art: Art, name: string, season: string | null = null): HTMLImageElement | null {
+  // 철이 있으면 그 철 판으로 바꿔 끼운다 (manifest.json 의 seasons · 굽기 스크립트가 적는다 · 표가 오기 전에는 바탕 그림)
+  if (season !== null) {
+    if (art.propMan === undefined) { art.propMan = null; fetch(`${art.base}field-props/manifest.json`).then(r => r.json()).then((m: Record<string, { seasons?: Record<string, string> }>) => { art.propMan = m }).catch(() => { art.propMan = {} }) }
+    const alt = art.propMan?.[name]?.seasons?.[season]
+    if (alt !== undefined) name = alt
+  }
   const key = `fp:${name}`
   let i = art.pieces.get(key)
   if (i === undefined) { i = load(`${art.base}field-props/${name}.png`); art.pieces.set(key, i) }

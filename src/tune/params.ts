@@ -3773,6 +3773,19 @@ export const SPEC = {
     mixRockCount: k(4, 0, 12, 1, '들판(섞임): 바위 덩이 수 (막힘)'),
     mixGrassPermille: k(25, 0, 200, 5, '들판(섞임): 들 칸마다 풀·꽃 소품이 놓일 몫 (천분율 · 그림만)'),
     mvpWoodHorsePermille: k(600, 200, 1000, 50, '시험판(?mvp): 숲 칸에서 기병 걸음 (천분율 · 보병은 그대로)'),
+    mvpMudPermille: k(700, 200, 1000, 50, '시험판(?mvp) 봄: 개울가 녹은 진흙 칸 걸음 (천분율)'),
+    mvpRainSpeedPermille: k(900, 500, 1000, 25, '시험판(?mvp) 여름 장마: 어디서나 걸음 (천분율)'),
+    mvpRainBowPermille: k(900, 500, 1000, 25, '시험판(?mvp) 여름 장마: 활 닿는 거리 (천분율)'),
+    mvpSnowSpeedPermille: k(920, 500, 1000, 20, '시험판(?mvp) 겨울: 어디서나 걸음 (천분율 · 언 개울은 어디로든 건넌다)'),
+    mvpSnowRunPermille: k(700, 0, 1000, 50, '시험판(?mvp) 겨울: 기병 도움닫기에 더 붙는 몫 (천분율)'),
+    mixRainStreamCells: k(2, 0, 6, 1, '들판(섞임) 여름 장마: 개울이 넓어지는 칸 (불어난 물 · 여울로 건너야 빠르다)', '칸'),
+    mvpRainWaterPermille: k(450, 100, 1000, 25, '시험판(?mvp) 여름 장마: 불어난 개울(여울 말고) 걸음 (천분율 · 여울은 평지)'),
+    mixMudCells: k(2, 0, 6, 1, '들판(섞임) 봄: 개울 양쪽 진흙 너비', '칸'),
+    mvpTintSpringPermille: k(90, 0, 400, 10, '시험판(?mvp) 봄: 바닥 풀빛 한 겹 진하기 (천분율)'), /*vfx*/
+    mvpTintSummerPermille: k(160, 0, 400, 10, '시험판(?mvp) 여름 장마: 젖은 잿빛 한 겹 (천분율)'), /*vfx*/
+    mvpTintAutumnPermille: k(90, 0, 400, 10, '시험판(?mvp) 가을: 금빛 한 겹 (천분율)'), /*vfx*/
+    mvpTintWinterPermille: k(380, 0, 800, 10, '시험판(?mvp) 겨울: 눈빛 한 겹 (천분율)'), /*vfx*/
+    mvpRainDrops: k(90, 0, 400, 10, '시험판(?mvp) 여름 장마: 화면의 빗줄기 수 (낮은 사양은 반 · 성능 예산)'), /*vfx*/
     propFadePermille: k(220, 100, 1000, 20, '들판 소품: 나무·바위 뒤에 대가 들면 이만큼 옅게 (천분율)'), /*vfx*/
     highMarkPx: k(9, 4, 20, 1, '들판(섞임): 언덕 위에 선 대 머리 위 봉우리 표 크기 (화면)', 'px'), /*vfx*/
     climbDustMs: k(260, 80, 1000, 20, '들판(섞임): 언덕을 걸어 오르는 대 발밑 흙먼지 간격', 'ms'), /*vfx*/

@@ -8,6 +8,8 @@ import type { VModel } from './viewRead.ts'
 const PX_PER_CELL = 8
 const WATER_SHALLOW = 'rgba(78,138,128,0.6)'
 const WATER_DEEP = 'rgba(34,84,96,0.86)'
+/** 여름 장마의 불어난 흙탕물 */
+const WATER_FLOOD = 'rgba(122,108,72,0.85)'
 const WATER_EDGE = 'rgba(214,236,226,0.45)'
 const SHADE = 'rgba(30,22,10,0.26)'
 const HIGH_LIGHT = 'rgba(255,238,190,0.4)'
@@ -19,7 +21,9 @@ const CLIFF = ['rgba(30,22,10,0.6)', 'rgba(30,22,10,0.4)', 'rgba(30,22,10,0.22)'
 /** 높은 터의 등고선 — 가장자리에서 안쪽으로 이 칸 수마다 가는 줄 (0 = 가장자리 · 밝은 줄과 어두운 줄을 겹쳐 「턱」이 읽히게) */
 const CONTOURS = [0, 3, 7, 12] as const
 const EDGE_DARK = 'rgba(40,28,12,0.75)', EDGE_LIT = 'rgba(255,248,220,0.85)', CONTOUR = 'rgba(70,52,24,0.45)'
-const SHALLOW = 1, DEEP = 2, BLOCK = 3, HIGH = 4, WOOD = 5
+const SHALLOW = 1, DEEP = 2, BLOCK = 3, HIGH = 4, WOOD = 5, MUD = 6, ICE = 7
+/** 봄 개울가 진흙 · 겨울 언 개울 */
+const MUD_FILL = 'rgba(92,64,34,0.5)', ICE_FILL = 'rgba(214,232,242,0.85)', ICE_EDGE = 'rgba(255,255,255,0.7)'
 /** 숲 칸: 짙은 풀빛 그늘 (나무 소품이 그 위에 선다) */
 const WOOD_FILL = 'rgba(46,70,30,0.42)'
 
@@ -50,7 +54,7 @@ function paint(m: VModel, soft = false): HTMLCanvasElement {
     if (g === 0) continue
     const x = cu * S, y = v * S
     if (g === SHALLOW || g === DEEP) {
-      c.fillStyle = g === DEEP ? WATER_DEEP : WATER_SHALLOW
+      c.fillStyle = g === DEEP ? WATER_DEEP : m.season === 'summer' ? WATER_FLOOD : WATER_SHALLOW
       c.fillRect(x, y, S, S)
       const wet = (a: number): boolean => a === SHALLOW || a === DEEP
       if (!wet(at(cu, v + 1))) { c.fillStyle = WATER_EDGE; c.fillRect(x, y + S - 2, S, 2) }
@@ -60,6 +64,12 @@ function paint(m: VModel, soft = false): HTMLCanvasElement {
     } else if (g === BLOCK) {
       // 막힌 칸(목책 밑 · 바위): 검게 메우지 않고 오른쪽 반 칸에 옅은 그늘만 (위에 선 말뚝이 주인공)
       c.fillStyle = SHADE; c.fillRect(x + S / 2, y, S / 2, S)
+    } else if (g === MUD) {
+      c.fillStyle = MUD_FILL; c.fillRect(x, y, S, S)
+    } else if (g === ICE) {
+      c.fillStyle = ICE_FILL; c.fillRect(x, y, S, S)
+      if (at(cu - 1, v) !== ICE) { c.fillStyle = ICE_EDGE; c.fillRect(x, y, 2, S) }
+      if (at(cu + 1, v) !== ICE) { c.fillStyle = ICE_EDGE; c.fillRect(x + S - 2, y, 2, S) }
     } else if (g === WOOD) {
       c.fillStyle = WOOD_FILL; c.fillRect(x, y, S, S)
     } else if (g === HIGH) {

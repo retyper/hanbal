@@ -15,7 +15,7 @@ export interface Mini {
 /** onOrder: 시험판의 오른쪽 누름 — 고른 무리를 그 자리(판 px)로 (chain = Shift 로 길 잇기) */
 export interface MiniHandlers { onPan(x: number, y: number): void; onOrder?: ((x: number, y: number, chain: boolean) => void) | undefined }
 
-const GROUND = ['#b49560', '#7aa6b8', '#35607f', '#4a4036', '#dcc583', '#56703c'] as const
+const GROUND = ['#b49560', '#7aa6b8', '#35607f', '#4a4036', '#dcc583', '#56703c', '#6e5232', '#dbe8f0'] as const
 /** 높은 터의 가장자리 줄 (미니맵에서 언덕이 어디서 시작하는지) */
 const HIGH_EDGE = '#3a2a12'
 const MINE = '#2f8cff', FOE = '#d6483a', GOLD = '#ffd27a'

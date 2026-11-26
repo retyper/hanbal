@@ -17,6 +17,7 @@ import { drawDash, queueDash, resetDash } from './viewDash.ts'
 import { FLAG_FALLEN, bashDirOf, bashPoseOf, knockOf, knockSide, bracedAt, drawOmens, drawRegroupZone, drawShouts, drawStands, isShouting, liftOf, noteShouts, raisedAt, riseTilt, standingAt, drawPops, noteOmens, flagTilt, ingestHits, kickOf, resetHit, scatterOf, sc, shake, shakeAt, viewClock } from './viewHit.ts'
 import { computePairs, coolPress, notePush, dotMelee, drawParticles, flinchOf, isFront, maxFwdOf, minFwdOf, mo, noteLoss, partnerOf, resetMelee, spawn, swingChance, swings } from './viewMelee.ts'
 import { drawTerrain } from './viewTerrain.ts'
+import { drawSeasonTint, drawWeather } from './viewSeason.ts'
 import { TEAM_RGB } from './viewTint.ts'
 import type { VLoss, VModel, VSquad } from './viewRead.ts'
 
@@ -417,7 +418,7 @@ function drawFlatProps(ctx: CanvasRenderingContext2D, m: VModel, art: Art, view:
     if (!FLAT_PROPS.has(d.k)) continue
     const x = d.u * cp, y = d.v * cp
     if (!inView(view, x, y, cp * 4)) continue
-    const img = propImg(art, d.k)
+    const img = propImg(art, d.k, m.season)
     if (img === null) continue
     const w = img.naturalWidth / 2, h = img.naturalHeight / 2
     ctx.drawImage(img, x - w / 2, y - h, w, h)
@@ -430,7 +431,7 @@ function addTallProps(m: VModel, art: Art, view: ReturnType<typeof fieldView>): 
     if (FLAT_PROPS.has(d.k)) continue
     const x = d.u * cp, y = d.v * cp
     if (!inView(view, x, y, cp * 8)) continue
-    const img = propImg(art, d.k)
+    const img = propImg(art, d.k, m.season)
     if (img === null) continue
     const w = img.naturalWidth / 2, h = img.naturalHeight / 2
     let hide = false
@@ -561,6 +562,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
   ctx.fillRect(view.left, view.top, view.right - view.left, view.bottom - view.top)
   ctx.globalAlpha = 1
   drawTerrain(ctx, cur, world.w, world.h)
+  if (cur.season !== null) drawSeasonTint(ctx, cur.season, world.w, world.h)
   if (cur.deco.length > 0) drawFlatProps(ctx, cur, art, view)
 
   used = 0
@@ -849,6 +851,7 @@ export function drawField(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
     ctx.globalAlpha = 1
   }
   drawRain(ctx, nowMs, cam.zoom, rainRing, rain)
+  if (cur.season === 'summer') drawWeather(ctx, view, nowMs, cam.zoom, low)
   ctx.restore()
   return drawn
 }

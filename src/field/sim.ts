@@ -21,7 +21,7 @@ import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { clamp, dist2, idiv, isqrt, nearestDir, stepToward } from './num.ts'
 import { campPointU, groundAt, walkable } from './map.ts'
-import { G_BLOCK, G_HIGH, G_PLAIN, G_SHALLOW, G_WOOD, GRPS, HERO_ART_DEFAULT, HERO_ARTS, HERO_DIR, HERO_DIRS, OP_ATTACK, OP_AUTO, OP_DASH, OP_HERO_DIR, OP_MOVE, OP_RETREAT, OP_SKILL, OP_STANCE, STANCE_CHARGE, STANCE_HOLD, STANCE_OPEN, WHY_NONE, CMD_COUNTER, CMD_HEIGHT, OP_AIM, OP_RALLY, ORD_ATTACK, ORD_CHARGE, ORD_FLANK, ORD_MOVE, ORD_NONE, ORD_VOLLEY, HIT_PLAIN, HIT_GOOD, HIT_BLOCKED, LOSS_ARROW, LOSS_BLADE, KIND_BEATS } from './types.ts'
+import { G_BLOCK, G_HIGH, G_PLAIN, G_SHALLOW, G_WOOD, G_MUD, FIELD_SEASONS, GRPS, HERO_ART_DEFAULT, HERO_ARTS, HERO_DIR, HERO_DIRS, OP_ATTACK, OP_AUTO, OP_DASH, OP_HERO_DIR, OP_MOVE, OP_RETREAT, OP_SKILL, OP_STANCE, STANCE_CHARGE, STANCE_HOLD, STANCE_OPEN, WHY_NONE, CMD_COUNTER, CMD_HEIGHT, OP_AIM, OP_RALLY, ORD_ATTACK, ORD_CHARGE, ORD_FLANK, ORD_MOVE, ORD_NONE, ORD_VOLLEY, HIT_PLAIN, HIT_GOOD, HIT_BLOCKED, LOSS_ARROW, LOSS_BLADE, KIND_BEATS } from './types.ts'
 import { FORM_HOLD, KIND_GRP, LINES, LINE_SHIELD, LINE_WEDGE, LINE_WINGS, LOSS_ART, LOSS_HERO, OP_CALL, STANCE_NONE } from './types.ts'
 import type { FieldInput, FieldMap, FieldState, Grp, Hero, LiveSetup, MoraleBy, Point, Squad, UnitKind } from './types.ts'
 import { addShock, auraOf, emit, gritTick, heroInput, heroMove, heroStrike, heroTakeHits, pruneEvents, standOf } from './hero.ts'
@@ -130,6 +130,7 @@ export function createField(setup: LiveSetup): FieldState {
   if (setup.mvp === true) s.mvp = 1
   if (setup.mvp === true && setup.mvpTricks === true) s.tricks = 1
   if (setup.mvp === true && setup.mvpHillHold === true) s.hillHold = 1
+  if (setup.mvp === true && setup.season !== undefined) s.season = FIELD_SEASONS.indexOf(setup.season) as 0 | 1 | 2 | 3
   // 원군 (실험실 L2 · 시험판만) — 정한 초에 오거나 부르면 온다
   if (setup.mvp === true && setup.reinf !== undefined) {
     s.reinf = []
@@ -497,9 +498,12 @@ export function detour(s: FieldState, q: Squad, e: Squad): Point {
 function stepOnce(s: FieldState, K: Kit, side: 0 | 1, u: number, v: number, goal: Point, speed: number, horse = false): Point {
   // 시험판(mvp): 오르막(가진 편이 아닌 쪽이 높은 터 위)은 mvpClimbPermille · 가진 편이 높은 터에서 앞(낮은 쪽)으로 내려가면 mvpDownhillPermille · 숲의 기병은 mvpWoodHorsePermille
   const climb = s.mvp === 1 ? P.field.mvpClimbPermille : K.climb
-  const slow = (g: number): number => g === G_SHALLOW ? (s.mvp === 1 ? P.field.mvpWaterSpeedPermille : K.water) : g === G_HIGH && s.map.highOwner !== side ? climb : g === G_WOOD && horse ? P.field.mvpWoodHorsePermille : MILLI
+  const slow = (g: number): number => g === G_SHALLOW ? (s.mvp === 1 ? (s.season === 1 ? P.field.mvpRainWaterPermille : P.field.mvpWaterSpeedPermille) : K.water) : g === G_HIGH && s.map.highOwner !== side ? climb : g === G_WOOD && horse ? P.field.mvpWoodHorsePermille : g === G_MUD ? P.field.mvpMudPermille : MILLI
   const full = stepToward(u, v, goal.u, goal.v, speed)
   let f = Math.min(slow(groundAt(s.map, u, v)), slow(groundAt(s.map, full.u, full.v)))
+  // 철: 장마는 어디서나 느리고(mvpRainSpeedPermille) · 겨울은 눈에 조금 느리다(mvpSnowSpeedPermille)
+  if (s.season === 1) f = mul(f, P.field.mvpRainSpeedPermille)
+  else if (s.season === 3) f = mul(f, P.field.mvpSnowSpeedPermille)
   if (s.mvp === 1 && f === MILLI && s.map.highOwner === side && groundAt(s.map, u, v) === G_HIGH && (goal.u - u) * fwd(side) > 0) f = P.field.mvpDownhillPermille
   const p = f === MILLI ? full : stepToward(u, v, goal.u, goal.v, mul(speed, f))
   if (walkable(groundAt(s.map, p.u, p.v))) return p
@@ -709,6 +713,8 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
   }
   // 활의 닿는 거리 (화면이 읽는 칸 · 높은 터 위면 bowHighReachPermille 배)
   for (const q of s.squads) if (q.grp === 'bows') q.reach = groundAt(s.map, q.u, q.v) === G_HIGH ? mul(K.bowR, s.mvp === 1 ? P.field.mvpBowHighReachPermille : P.field.bowHighReachPermille) : K.bowR
+  // 장마: 젖은 시위 · 비에 활이 덜 닿는다
+  if (s.season === 1) for (const q of s.squads) if (q.grp === 'bows') q.reach = mul(q.reach, P.field.mvpRainBowPermille)
   // 겨눔 — 사거리 안의 가장 가까운 적 (도망치는 대는 안 친다)
   const aim = new Array<number>(n).fill(-1)
   for (const q of s.squads) {

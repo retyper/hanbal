@@ -417,7 +417,9 @@ export function runMul(s: FieldState, q: Squad): number {
   if (still(s, q.side) && (charging || mvpRider(s, q))) {
     const age = s.tick - q.orderTick, accT = Math.max(1, ticksOf(P.field.mvpRunAccelSec))
     if (age >= ticksOf(P.field.mvpRunSec)) return MILLI
-    return MILLI + Math.max(1, idiv((P.field.mvpRunPermille - MILLI) * Math.min(age + 1, accT), accT))
+    // 겨울: 눈밭에서 기병 도움닫기가 약하다 (더 붙는 몫에 mvpSnowRunPermille)
+    const top = q.grp === 'horse' && s.season === 3 ? MILLI + mul(P.field.mvpRunPermille - MILLI, P.field.mvpSnowRunPermille) : P.field.mvpRunPermille
+    return MILLI + Math.max(1, idiv((top - MILLI) * Math.min(age + 1, accT), accT))
   }
   const start = cells(charging ? P.field.chargeRunCells : P.field.flankRunCells)
   if (dist2(q.u, q.v, t.u, t.v) > start * start) return MILLI

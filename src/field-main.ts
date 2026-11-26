@@ -20,7 +20,7 @@ import { mountArrows, mountPad, type Arrows, type Pad, type PadBtn } from './fie
 import { mountFirst, mountSteps, type First, type Steps } from './field/mainHelp.ts'
 import { mountHelp, type Help } from './field/mainCard.ts'
 import { drawHeroHp, drawKeyTags, drawMarks, drawOdds, drawPaths, drawVolley, drawVolleyZone, drawWhiteFlags, type Odds, type Reach, type VolleyPath, type Path, type Volley, type Band, type Box, type Mark, type MarkShape, type Ring } from './field/mainFlagMarks.ts'
-import { G_HIGH, HIT_BLOCKED, LINES, OP_CALL, OP_AUTO, OP_MOVE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_VOLLEY, type FieldInput, type InputGroup } from './field/types.ts'
+import { G_HIGH, HIT_BLOCKED, LINES, OP_CALL, OP_AUTO, OP_MOVE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_VOLLEY, FIELD_SEASONS, type FieldInput, type FieldSeason, type InputGroup } from './field/types.ts'
 import { roll } from './core/rng.ts'
 import { mountMini, type Mini } from './field/mainMini.ts'
 import { serialize } from './field/rec.ts'
@@ -86,6 +86,8 @@ const makeMap = () => {
 }
 let low = query.get('gfx') === 'low'
 let seed = LAB ? labCfg.seed : num('seed', 7)
+/** 시험판의 철 (?season=spring·summer·autumn·winter · 없으면 기준) */
+const MVP_SEASON = (FIELD_SEASONS as readonly string[]).includes(query.get('season') ?? '') ? query.get('season') as FieldSeason : undefined
 const men = num('men', 1200)
 /** 우리 장수와 적장이 같은 그림이 되지 않게 열쇠를 나눈다 (둘 다 대시 칸이 있는 띠) */
 const HERO_KEY_OURS = 'ara', HERO_KEY_FOE = query.get('foehero') ?? 'bakdal'
@@ -102,7 +104,7 @@ let foeLine = foeRoll(seed)
 foeHist.push(foeLine)
 function newSetup() {
   if (MVP) {
-    const sm = LAB ? labSetup(labCfg, seed) : mvpSetup(seed, men)
+    const sm = LAB ? labSetup(labCfg, seed) : mvpSetup(seed, men, MVP_SEASON)
     if (sm.sides[0].hero !== null) sm.sides[0].hero.id = HERO_KEY_OURS
     if (sm.sides[1].hero !== null) sm.sides[1].hero.id = HERO_KEY_FOE
     return sm

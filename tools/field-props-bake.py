@@ -47,5 +47,36 @@ for name, (f, k) in PROPS.items():
   im.resize((w * KEEP, h * KEEP), Image.LANCZOS).save(OUT + name + '.png', optimize=True)
   man[name] = {'w': w, 'h': h}
   print(f'{name:12s} {f}  화면 {w}x{h}px  자홍 남음 {left}')
-json.dump(man, open(OUT + 'manifest.json', 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+# 철 판 (tools/out/props/cut/<철>/ts?-NN.png) — 바탕 소품을 같은 높이로 바꿔 끼우는 것 · 그 철에만 놓는 것(진흙·웅덩이·눈 더미·낙엽…)
+SEASON_DIR = {'spring': 'spring/ts2', 'summer': 'monsoon/ts3', 'autumn': 'autumn/ts4', 'winter': 'winter/ts1'}
+SWAP = {
+  'winter': {'pine-big': 1, 'pine': 2, 'pine-small': 3, 'oak': 4, 'tree-autumn': 4, 'tree-dead': 4, 'rock-big': 5, 'rock': 5, 'rock-moss': 5, 'rock-small': 6,
+             'pebbles': 6, 'stones': 6, 'grass': 8, 'grass-small': 8, 'flowers': 8, 'flower': 8, 'iris': 8, 'grass-dry': 9, 'reeds': 9, 'cattail': 9, 'reeds-big': 9},
+  'summer': {'oak': 1, 'tree-autumn': 2, 'pine-big': 3, 'grass': 6, 'grass-small': 6, 'grass-dry': 6, 'flowers': 5, 'cattail': 10, 'reeds': 10, 'reeds-big': 10},
+  'spring': {'pine-big': 1, 'tree-autumn': 2, 'oak': 3, 'pine': 4, 'pine-small': 4, 'grass': 7, 'grass-small': 7, 'grass-dry': 6, 'flowers': 8, 'flower': 8},
+  'autumn': {'oak': 1, 'tree-autumn': 2, 'tree-dead': 6, 'grass-dry': 7, 'grass': 7, 'flowers': 9, 'flower': 9},
+}
+EXTRA = {  # 이름: (철, 번호, 크기 배) — 그 철의 들판에만 따로 놓는다
+  'snow-big': ('winter', 7, 0.6), 'snow': ('winter', 8, 0.6), 'ice': ('winter', 10, 0.7),
+  'puddle': ('summer', 7, 0.6), 'puddle-small': ('summer', 8, 0.6), 'mud-flow': ('summer', 9, 0.6), 'bush-wet': ('summer', 4, 0.8),
+  'mud-reeds': ('spring', 9, 0.6), 'mud': ('spring', 10, 0.6), 'bush-spring': ('spring', 5, 0.8),
+  'maple': ('autumn', 3, 0.9), 'maple-bush': ('autumn', 4, 0.8), 'silver-grass': ('autumn', 5, 0.7), 'leaf-pile': ('autumn', 8, 0.5), 'leaves': ('autumn', 9, 0.5), 'sheaves': ('autumn', 10, 0.7),
+}
+for season, swap in SWAP.items():
+  for base, n in swap.items():
+    im = Image.open(CUT + SEASON_DIR[season] + '-%02d.png' % n).convert('RGBA')
+    im, left = clean(im, base in ('flowers', 'flower', 'iris') or (season == 'spring' and base == 'pine-big'))
+    h = man[base]['h']; w = max(1, round(im.size[0] * h / im.size[1]))
+    name = f'{base}-{season}'
+    im.resize((w * KEEP, h * KEEP), Image.LANCZOS).save(OUT + name + '.png', optimize=True)
+    man[base].setdefault('seasons', {})[season] = name
+    if left: print(f'{name:22s} 자홍 남음 {left}')
+for name, (season, n, k) in EXTRA.items():
+  im = Image.open(CUT + SEASON_DIR[season] + '-%02d.png' % n).convert('RGBA')
+  im, left = clean(im)
+  w, h = max(1, round(im.size[0] * S * k)), max(1, round(im.size[1] * S * k))
+  im.resize((w * KEEP, h * KEEP), Image.LANCZOS).save(OUT + name + '.png', optimize=True)
+  man[name] = {'w': w, 'h': h, 'only': season}
+  print(f'{name:12s} {season} 화면 {w}x{h}px  자홍 남음 {left}')
+json.dump(man, open(OUT + 'manifest.json', 'w', encoding='utf-8', newline='\n'), ensure_ascii=False, indent=1)
 print('manifest', len(man))

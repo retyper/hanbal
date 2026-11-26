@@ -7,8 +7,8 @@
  * 칸 순서: cells[cu * w + cv]. 해시·기록은 cells 를 직접 훑는다 (JSON 을 거치지 않는다).
  */
 import { P } from '../tune/params.ts'
-import { G_BLOCK, G_DEEP, G_HIGH, G_PLAIN, G_SHALLOW, G_WOOD } from './types.ts'
-import type { Camp, Deco, FieldMap, Ground, Hill, MapRule, Piece } from './types.ts'
+import { G_BLOCK, G_DEEP, G_HIGH, G_ICE, G_MUD, G_PLAIN, G_SHALLOW, G_WOOD } from './types.ts'
+import type { Camp, Deco, FieldMap, FieldSeason, Ground, Hill, MapRule, Piece } from './types.ts'
 import { idiv } from './num.ts'
 import { roll } from '../core/rng.ts'
 
@@ -198,7 +198,7 @@ export function mvpStakeDefMap(): FieldMap {
  * 한 옆에 낮은 언덕(누구 것도 아니다 · 오르면 느리고 위의 활은 멀리) · 비스듬한 개울(얕은 물)과 여울 둘 · 숲 두 덩이(기병 느림 · 활 시선 막음) ·
  * 바위 덩이 몇(막힘) · 가운데는 비운다. deco 는 그리는 소품 자리(판은 안 읽는다).
  */
-export function mixMap(seed: number): FieldMap {
+export function mixMap(seed: number, season?: FieldSeason): FieldMap {
   const F = P.field
   const U = idiv(F.mapLenCells * F.mixLenPermille, 1000), W = idiv(F.mvpMapWidthCells * F.mixWidthPermille, 1000)
   const gap = F.mapLenCells - 2 * F.mvpStartMarginCells, m = idiv(U - gap, 2)
@@ -259,13 +259,29 @@ export function mixMap(seed: number): FieldMap {
     const v = back ? Math.round(W * (0.2 + 0.6 * r(`rockV${i}`))) : (r(`rockV${i}`) < 0.5 ? edge + 1 : W - edge - 2)
     blob(u, v, back ? 1 + Math.floor(r(`rockR${i}`) * 2) : 1, G_BLOCK)
   }
+  // 철 (자리는 철과 상관없이 같다 · 개울 둘레만 바뀐다): 여름 장마 = 개울이 넓고 불었다(여울 말고는 허리까지 차 mvpRainWaterPermille 로 느림 · 막힌 깊은 물로 두면 적 진이 여울 한 곳에 몰려 판이 안 끝났다) · 겨울 = 언 개울(어디로든) · 봄 = 개울가 진흙
+  if (season !== undefined && season !== 'autumn') {
+    const half = idiv(F.mixStreamCells, 2), wide = season === 'summer' ? F.mixRainStreamCells : 0, mud = season === 'spring' ? F.mixMudCells : 0
+    const isFord = (cv: number): boolean => fords.some(fv => cv >= fv && cv < fv + F.mixFordCells)
+    for (let cv = 0; cv < W; cv++) {
+      const a = streamU(cv) - half, b = a + F.mixStreamCells - 1
+      for (let cu = a - (wide >> 1) - mud; cu <= b + wide - (wide >> 1) + mud; cu++) {
+        const g = get(cu, cv), band = cu >= a - (wide >> 1) && cu <= b + wide - (wide >> 1)
+        if (g === -1 || g === G_HIGH || g === G_BLOCK) continue
+        const stream = g === G_SHALLOW || (isFord(cv) && cu >= a && cu <= b)
+        if (season === 'summer' && band) set(cu, cv, isFord(cv) ? G_PLAIN : G_SHALLOW)
+        else if (season === 'winter' && stream) set(cu, cv, G_ICE)
+        else if (season === 'spring' && !band && g === G_PLAIN) set(cu, cv, G_MUD)
+      }
+    }
+  }
   const map: FieldMap = { v: 1, u: U, w: W, cells, camps: [c0, c1], pieces: [], rule: 'meet', highOwner: -1, sidestep: true, hills: [hill], deco: [] }
-  map.deco = mixDeco(map, seed, streamU, fords, hu, hv)
+  map.deco = mixDeco(map, seed, streamU, fords, season)
   return map
 }
 
 /** 들판 소품 자리 (칸 · 소수) — 숲에 나무 · 바위 칸에 바위 · 물가에 갈대 · 여울에 디딤돌 · 언덕에 그루터기·마른 풀 · 들에 풀·꽃 · 진영 뒤에 망루·솟대 */
-function mixDeco(map: FieldMap, seed: number, streamU: (cv: number) => number, fords: readonly number[], hu: number, hv: number): Deco[] {
+function mixDeco(map: FieldMap, seed: number, streamU: (cv: number) => number, fords: readonly number[], season?: FieldSeason): Deco[] {
   const F = P.field, U = map.u, W = map.w, out: Deco[] = []
   const h = (k: string): number => roll(seed, 0, `mixd:${k}`)
   const pick = <T,>(xs: readonly T[], k: string): T => xs[Math.floor(h(k) * xs.length) % xs.length]!
@@ -278,16 +294,28 @@ function mixDeco(map: FieldMap, seed: number, streamU: (cv: number) => number, f
       if (lone || h(`b${key}`) < 0.5) out.push({ k: lone ? pick(['rock-big', 'rock-big', 'rock-moss'], `bk${key}`) : pick(['rock', 'rock-small', 'rock-moss'], `bk${key}`), u: cu + 0.5, v: cv + 0.8 })
     } else if (g === G_HIGH && h(`h${key}`) < 0.035) out.push({ k: pick(['stump', 'grass-dry', 'tree-dead', 'grass-dry', 'pebbles'], `hk${key}`), u: cu + h(`hx${key}`), v: cv + h(`hy${key}`) })
     else if (g === G_PLAIN) {
-      const wetBy = at(cu - 1, cv) === G_SHALLOW || at(cu + 1, cv) === G_SHALLOW
+      const wet = (g2: number): boolean => g2 === G_SHALLOW || g2 === G_DEEP || g2 === G_ICE
+      const wetBy = wet(at(cu - 1, cv)) || wet(at(cu + 1, cv))
       if (wetBy && h(`r${key}`) < 0.3) out.push({ k: pick(['reeds', 'cattail', 'reeds-big', 'iris', 'grass'], `rk${key}`), u: cu + h(`rx${key}`), v: cv + h(`ry${key}`) })
       else if (h(`g${key}`) < F.mixGrassPermille / 1000) out.push({ k: pick(['grass-small', 'grass', 'grass-small', 'flowers', 'flower', 'pebbles', 'grass-dry'], `gk${key}`), u: cu + h(`gx${key}`), v: cv + h(`gy${key}`) })
     }
   }
+  // 철에만 놓는 소품 (철을 받은 판만 · 이름 열쇠가 달라 다른 소품 자리는 안 밀린다)
+  if (season !== undefined) for (let cu = 0; cu < U; cu++) for (let cv = 0; cv < W; cv++) {
+    const g = at(cu, cv), key = `${season}:${cu}:${cv}`, x = cu + h(`ex${key}`), y = cv + h(`ey${key}`), p = h(`e${key}`)
+    if (season === 'winter' && g === G_PLAIN && p < F.mixGrassPermille / 2000) out.push({ k: p < F.mixGrassPermille / 8000 ? 'snow-big' : 'snow', u: x, v: y })
+    else if (season === 'summer' && g === G_PLAIN && p < 0.006) out.push({ k: p < 0.002 ? 'puddle' : p < 0.004 ? 'puddle-small' : 'bush-wet', u: x, v: y })
+    else if (season === 'spring' && g === G_MUD && p < 0.12) out.push({ k: p < 0.05 ? 'mud-reeds' : 'mud', u: x, v: y })
+    else if (season === 'spring' && g === G_PLAIN && p < 0.002) out.push({ k: 'bush-spring', u: x, v: y })
+    else if (season === 'autumn' && g === G_PLAIN && p < 0.008) out.push({ k: pick(['leaf-pile', 'leaves', 'leaves', 'silver-grass'], `ek${key}`), u: x, v: y })
+    else if (season === 'autumn' && g === G_WOOD && p < 0.08) out.push({ k: p < 0.05 ? 'maple' : 'maple-bush', u: x, v: y })
+  }
+  if (season === 'autumn') for (const c of map.camps) for (let i = 0; i < 3; i++) out.push({ k: 'sheaves', u: c.u - c.face * (10 + i * 2), v: c.v + 24 + i * 2 * (c.face > 0 ? 1 : -1) })
   // 여울의 디딤돌: 물이던 줄을 따라
   for (const fv of fords) for (let cv = fv; cv < fv + F.mixFordCells; cv += 2) for (let k = 0; k < F.mixStreamCells; k++) out.push({ k: `step-${1 + Math.floor(h(`s${cv}:${k}`) * 5)}`, u: streamU(cv) + k - (F.mixStreamCells >> 1) + 0.5, v: cv + 0.5 + h(`sy${cv}:${k}`) })
   // 진영 뒤 망루 하나씩 · 우리 쪽에 솟대
   const [c0, c1] = map.camps
   out.push({ k: 'watchtower', u: c0.u - c0.face * 16, v: c0.v - 20 }, { k: 'watchtower', u: c1.u - c1.face * 16, v: c1.v + 20 }, { k: 'sotdae', u: c0.u - c0.face * 12, v: c0.v + 14 })
-  void hu; void hv
+
   return out
 }
