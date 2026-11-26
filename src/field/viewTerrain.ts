@@ -47,7 +47,9 @@ function paint(m: VModel, soft = false): HTMLCanvasElement {
   cv.width = U * S; cv.height = W * S
   const c = cv.getContext('2d') as CanvasRenderingContext2D
   // 들판(섞임)은 언덕을 칸이 아니라 모양(hills)으로 따로 그린다 (hillLayer) — 여기서는 높은 터 칸을 평지로 친다
-  const cells = soft && m.hills.length > 0 ? m.cells.map(g => g === HIGH ? 0 : g) : m.cells
+  // 여름 장마의 불은 개울도 칸이 아니라 매끈한 모양으로 따로 그린다 (floodLayer)
+  const flood = soft && m.season === 'summer'
+  const cells = soft && (m.hills.length > 0 || flood) ? m.cells.map(g => (g === HIGH && m.hills.length > 0) || (g === SHALLOW && flood) ? 0 : g) : m.cells
   const at = (cu: number, cv2: number): number => cu < 0 || cv2 < 0 || cu >= U || cv2 >= W ? -1 : cells[cu * W + cv2]!
   for (let cu = 0; cu < U; cu++) for (let v = 0; v < W; v++) {
     const g = cells[cu * W + v]!
@@ -189,29 +191,78 @@ function hillLayer(base: HTMLCanvasElement, m: VModel): HTMLCanvasElement {
 }
 
 /**
- * 여름 장마의 여울 거품 (흐린 뒤에 얹어 또렷하게) — 물 칸의 위나 아래가 땅이고 그런 물 칸이 가로로 넷 넘게 이어진 곳(여울 가장자리 ·
- * 비스듬한 개울의 칸 계단은 한두 칸이라 빠진다)에 흰 거품 점. 흐르는 물결은 viewSeason drawFlood 가 매 장 움직여 그린다. 맵마다 한 번 굽는다
+ * 여름 장마의 불은 개울 (흐린 바닥 위에 얹어 또렷하게) — 줄마다 물 칸 덩이의 왼·오른 끝을 이어 매끈한 둘레(칸 계단 없음)로:
+ * 밖에 옅은 둑 턱 → 짙은 흙탕 올리브 물 → 가운데 잿빛 푸른 물빛 띠(흐리게) → 짙은 젖은 물가 테. 여울(물이 끊긴 줄) 가장자리에만 흰 거품.
+ * 흐르는 물결은 viewSeason drawFlood 가 매 장 움직여 그린다. 맵마다 한 번 굽는다
  */
-const FLOOD_FOAM = 'rgba(255,252,240,0.9)'
+const FLOOD_LIP = 'rgba(206,186,134,0.6)', FLOOD_WATER = 'rgba(70,64,40,0.96)', FLOOD_SHEEN = 'rgba(132,152,160,0.5)', FLOOD_RIM = 'rgba(26,20,10,0.85)', FLOOD_FOAM = 'rgba(255,252,240,0.9)'
+/** 점 줄을 두 번 깎아 둥글린다 (Chaikin · 끝점은 그대로) */
+function chaikin(pts: readonly [number, number][]): [number, number][] {
+  let p = pts.slice() as [number, number][]
+  for (let it = 0; it < 2; it++) {
+    if (p.length < 3) break
+    const q: [number, number][] = [p[0]!]
+    for (let i = 0; i < p.length - 1; i++) { const a = p[i]!, b = p[i + 1]!; q.push([a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25], [a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75]) }
+    q.push(p[p.length - 1]!); p = q
+  }
+  return p
+}
 function floodLayer(base: HTMLCanvasElement, m: VModel): HTMLCanvasElement {
   if (m.season !== 'summer') return base
   const S = PX_PER_CELL, U = m.mapU, W = m.mapW
   const c = base.getContext('2d') as CanvasRenderingContext2D
   const at = (cu: number, v: number): number => cu < 0 || v < 0 || cu >= U || v >= W ? -1 : m.cells[cu * W + v]!
-  const edge = (cu: number, v: number, dv: number): boolean => at(cu, v) === SHALLOW && at(cu, v + dv) !== SHALLOW && at(cu, v + dv) !== -1
+  // 줄마다 물 덩이 (가장 긴 이어진 물 칸) · 없으면 null (여울 줄)
+  const rows: ({ l: number; r: number } | null)[] = []
+  for (let v = 0; v < W; v++) {
+    let best: { l: number; r: number } | null = null
+    for (let cu = 0; cu < U; cu++) {
+      if (at(cu, v) !== SHALLOW) continue
+      let e = cu
+      while (at(e + 1, v) === SHALLOW) e++
+      if (best === null || e - cu > best.r - best.l - 1) best = { l: cu, r: e + 1 }
+      cu = e
+    }
+    rows.push(best)
+  }
+  // 이어진 줄 묶음마다 매끈한 둘레 하나
+  const shapes: { left: [number, number][]; right: [number, number][] }[] = []
+  for (let v = 0; v < W; v++) {
+    if (rows[v] === null) continue
+    let e = v
+    while (e + 1 < W && rows[e + 1] !== null) e++
+    const left: [number, number][] = [], right: [number, number][] = []
+    left.push([rows[v]!.l, v]); right.push([rows[v]!.r, v])
+    for (let k = v; k <= e; k++) { left.push([rows[k]!.l, k + 0.5]); right.push([rows[k]!.r, k + 0.5]) }
+    left.push([rows[e]!.l, e + 1]); right.push([rows[e]!.r, e + 1])
+    shapes.push({ left: chaikin(left), right: chaikin(right) })
+    v = e
+  }
+  const outline = (sh: { left: [number, number][]; right: [number, number][] }, k: number): void => {
+    // k: 가운데로 줄이는 몫 (0 = 둘레 그대로 · 0.7 = 가운데 30% 띠)
+    c.beginPath()
+    sh.left.forEach(([u, v], i) => { const r = sh.right[Math.min(i, sh.right.length - 1)]!, mid = (u + r[0]) / 2, x = (u + (mid - u) * k) * S; if (i === 0) c.moveTo(x, v * S); else c.lineTo(x, v * S) })
+    for (let i = sh.right.length - 1; i >= 0; i--) { const [u, v] = sh.right[i]!, l = sh.left[Math.min(i, sh.left.length - 1)]!, mid = (u + l[0]) / 2; c.lineTo((u + (mid - u) * k) * S, v * S) }
+    c.closePath()
+  }
+  c.lineJoin = 'round'
+  for (const sh of shapes) { outline(sh, 0); c.strokeStyle = FLOOD_LIP; c.lineWidth = 4; c.stroke() }
+  for (const sh of shapes) { outline(sh, 0); c.fillStyle = FLOOD_WATER; c.fill() }
+  c.filter = 'blur(2px)'
+  for (const sh of shapes) { outline(sh, 0.62); c.fillStyle = FLOOD_SHEEN; c.fill() }
+  c.filter = 'none'
+  for (const sh of shapes) { outline(sh, 0); c.strokeStyle = FLOOD_RIM; c.lineWidth = 1.5; c.stroke() }
+  // 여울 거품: 물 덩이가 끊기는 줄(위나 아래가 여울 줄)의 끝 변을 따라
   const hsh = (a: number, b: number): number => { let x = Math.imul(a * 73856093 ^ b * 19349663, 0x45d9f3b); x ^= x >>> 15; return (x >>> 0) % 997 }
   c.fillStyle = FLOOD_FOAM
   c.beginPath()
-  for (let v = 0; v < W; v++) for (const dv of [-1, 1]) {
-    for (let cu = 0; cu < U; cu++) {
-      if (!edge(cu, v, dv)) continue
-      let n = 0
-      while (edge(cu + n, v, dv)) n++
-      if (n >= 4) for (let k = cu; k < cu + n; k++) {
-        const y = dv < 0 ? v * S + 1.5 : v * S + S - 1.5
-        for (let j = 0; j < 4; j++) { const x = k * S + 1 + j * 2 + (hsh(k * 4 + j, v) % 2), r = 0.9 + (hsh(j, k + v) % 3) * 0.4; c.moveTo(x + r, y + (hsh(k, j) % 3) - 1); c.arc(x, y + (hsh(k, j) % 3) - 1, r, 0, Math.PI * 2) }
-      }
-      cu += n
+  for (let v = 0; v < W; v++) {
+    const row = rows[v]
+    if (row === null || row === undefined) continue
+    for (const dv of [-1, 1]) {
+      if (v + dv < 0 || v + dv >= W || rows[v + dv] !== null) continue
+      const y = (dv < 0 ? v : v + 1) * S
+      for (let x = row.l * S + 1; x < row.r * S - 1; x += 2.2) { const j = hsh(Math.round(x), v + dv), r = 0.9 + (j % 3) * 0.45; c.moveTo(x + r, y + (j % 3) - 1); c.arc(x, y + (j % 3) - 1, r, 0, Math.PI * 2) }
     }
   }
   c.fill()

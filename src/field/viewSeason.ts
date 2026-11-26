@@ -49,7 +49,7 @@ export function drawWeather(ctx: CanvasRenderingContext2D, view: { left: number;
   ctx.strokeStyle = RAIN_COLOR; ctx.globalAlpha = 0.45; ctx.lineWidth = Math.max(1, 1.2 / zoom); ctx.stroke(); ctx.globalAlpha = 1
 }
 
-const FLOW_COLOR = '#f0e2bf'
+const FLOW_COLOR = '#c8d4d4'
 /**
  * 장마의 불어난 개울 물결 — 보이는 물 칸(얕은 물)마다 몇에 짧은 밝은 줄이 흐르는 쪽(폭 방향 = 개울 줄기)으로 미끄러진다 ·
  * 칸 수가 화면에 보이는 만큼만이라 싸다 (한 경로)
@@ -58,7 +58,7 @@ export function drawFlood(ctx: CanvasRenderingContext2D, m: VModel, view: { left
   const F = P.field, cp = F.cellPx, U = m.mapU, W = m.mapW
   const u0 = Math.max(0, Math.floor(view.left / cp)), u1 = Math.min(U - 1, Math.ceil(view.right / cp))
   const v0 = Math.max(0, Math.floor(view.top / cp)), v1 = Math.min(W - 1, Math.ceil(view.bottom / cp))
-  const run = nowMs / 1000 * F.mvpFlowCellsPerSec, len = cp * 0.9
+  const run = nowMs / 1000 * F.mvpFlowCellsPerSec / 3, len = cp * 3 // 길게(세 칸) · 성기게(물 칸의 열에 하나) · 옅게
   // 줄마다 물 줄기의 왼쪽 끝(보이는 폭 안 첫 물 칸) → 위아래 세 줄 차이로 기울기 (물결이 개울을 따라 비스듬히 흐르게)
   const first: number[] = []
   for (let v = v0 - 3; v <= v1 + 3; v++) { let f = -1; if (v >= 0 && v < W) for (let cu = Math.max(0, u0 - 8); cu <= Math.min(U - 1, u1 + 8); cu++) if (m.cells[cu * W + v] === 1) { f = cu; break } first.push(f) }
@@ -67,9 +67,9 @@ export function drawFlood(ctx: CanvasRenderingContext2D, m: VModel, view: { left
   for (let cu = u0; cu <= u1; cu++) for (let v = v0; v <= v1; v++) {
     if (m.cells[cu * W + v] !== 1) continue
     const h = hash01(cu * 4099 + v * 131)
-    if (h > 0.55) continue
-    const k = slopeAt(v), t = (run + h * 7) % 1, x = (cu + 0.15 + 0.7 * hash01(cu * 31 + v * 7) + k * t) * cp, y = (v + t) * cp
+    if (h > 0.1) continue
+    const k = slopeAt(v), t = (run + h * 70) % 1, x = (cu + 0.15 + 0.7 * hash01(cu * 31 + v * 7) + k * t * 3) * cp, y = (v + t * 3) * cp
     ctx.moveTo(x, y); ctx.lineTo(x + k * len, y + len)
   }
-  ctx.strokeStyle = FLOW_COLOR; ctx.globalAlpha = 0.55; ctx.lineWidth = Math.max(1, 1.6 / zoom); ctx.lineCap = 'round'; ctx.stroke(); ctx.globalAlpha = 1
+  ctx.strokeStyle = FLOW_COLOR; ctx.globalAlpha = 0.32; ctx.lineWidth = Math.max(1.2, 2 / zoom); ctx.lineCap = 'round'; ctx.stroke(); ctx.globalAlpha = 1
 }
