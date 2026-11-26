@@ -9,7 +9,7 @@
 import { t, type Key } from '../i18n/index.ts'
 import { P } from '../tune/params.ts'
 import { firstKeyLabel, type ActionName } from './actions.ts'
-import { cellWhy, pickables, type UiState } from './pickmodel.ts'
+import { cellWhy, MVP_GROUPS, pickables, type UiState } from './pickmodel.ts'
 import { BIG_ARTS } from './input.ts'
 import type { InputGroup } from './types.ts'
 import type { VModel } from './viewRead.ts'
@@ -25,8 +25,8 @@ export type Tone = 'ok' | 'why'
 /** big: 앞줄이 지금 고른 명령 번호(0 돌격 · 1 방진 · 없으면 -1) · aiming: 찍는 중인 큰 수 번호(2 화살비 · 3 옆치기 · 아니면 -1) */
 /** cmdG: 시험판(?mvp)이면 고른 무리 번호(0~2 · 장수나 없으면 -1) — 큰 수 줄은 그 무리의 것만 Z X 차례로 · 진 고르기·안내 줄은 숨는다 · 옛 판은 undefined */
 export interface FlagsCtx { line: number; foeLine: number; front: number; volley: boolean; flank: boolean; aiming: number; sentGroup: boolean; touch: boolean; cmdG?: number }
-/** 시험판(?mvp): 무리마다 제 큰 수 (BIG_ARTS 번호) — 앞줄 돌격·방진 · 활 화살비 · 기병 옆치기 */
-export const MVP_CMDS: readonly (readonly number[])[] = [[0, 1], [2], [3]]
+/** 시험판(?mvp): 무리마다 제 큰 수 (BIG_ARTS 번호 · 무리 번호 g 자리) — 앞줄 돌격·방진 · 활 화살비 · 날개 둘·장수는 없음 (기병 길은 사람이 오른쪽 누름으로 그린다) */
+export const MVP_CMDS: readonly (readonly number[])[] = [[0, 1], [2], [], [], []]
 export interface FlagsView {
   sync(m: VModel, ui: UiState, c: FlagsCtx): void
   say(text: string, tone: Tone, nowMs: number): void
@@ -163,7 +163,7 @@ export function mountFlags(root: HTMLElement, base: string, h: FlagsHandlers): F
 
   return {
     sync(m, ui, c) {
-      const alive = [0, 1, 2, 3].map(g => cellWhy(m, g as InputGroup) === null ? 1 : 0)
+      const alive = [0, 1, 2, 3, 4].map(g => cellWhy(m, g as InputGroup) === null ? 1 : 0)
       const key = [c.line, c.foeLine, ui.phase, ui.sel.join(''), alive.join(''), c.front, c.volley ? 1 : 0, c.flank ? 1 : 0, c.aiming, c.sentGroup ? 1 : 0, c.touch ? 1 : 0, m.end === null ? 0 : 1, c.cmdG ?? 'x'].join('|')
       const mvp = c.cmdG !== undefined
       if (key === sig) return
@@ -172,13 +172,16 @@ export function mountFlags(root: HTMLElement, base: string, h: FlagsHandlers): F
       go.hidden = ui.phase !== 'ready'
       const shown = pickables(m, ui)
       const mine = mvp ? MVP_CMDS[c.cmdG!] : undefined
-      const bigOn = mvp ? ui.phase !== 'end' && m.end === null && mine !== undefined : ui.phase === 'play' && m.end === null
+      const bigOn = mvp ? ui.phase !== 'end' && m.end === null && mine !== undefined && mine.length > 0 : ui.phase === 'play' && m.end === null
       let html = ''
-      for (const g of [0, 1, 2, 3] as const) {
+      // 시험판: 앞줄 · 활 · 왼 날개 · 오른 날개 · 장수 (키 1~5 · 화면 차례 그대로)
+      ;(mvp ? MVP_GROUPS : [0, 1, 2, 3] as const).forEach((g, k) => {
         const live = shown.includes(g)
         const on = ui.sel.includes(g)
-        html += `<div class="fd-slot"><button class="fd-cell${on ? ' on' : ''}${live ? '' : ' no'}" type="button" data-act="cell" data-g="${g}" aria-pressed="${on}" aria-label="${t(`field.g.${g}`)}"><i class="fd-kb">${firstKeyLabel(CELL_ACTION[g]!)}</i>${img(CELL_ICON[g]!)}<b>${t(`field.g.${g}`)}</b><em class="fd-ck">✓</em></button></div>`
-      }
+        const name = mvp && (g === 2 || g === 4) ? t(`field.mvp.g.${g}` as Key) : t(`field.g.${g === 4 ? 2 : g}` as Key)
+        const kb = mvp ? String(k + 1) : firstKeyLabel(CELL_ACTION[g]!)
+        html += `<div class="fd-slot"><button class="fd-cell${on ? ' on' : ''}${live ? '' : ' no'}" type="button" data-act="cell" data-g="${g}" aria-pressed="${on}" aria-label="${name}"><i class="fd-kb">${kb}</i>${img(CELL_ICON[g === 4 ? 2 : g]!)}<b>${name}</b><em class="fd-ck">✓</em></button></div>`
+      })
       cells.innerHTML = html
       big.hidden = !bigOn
       const opt = (name: string, i: number, key: number): string => `<button class="fd-opt${(i < 2 && c.front === i) || (i === 2 && c.volley) || (i === 3 && c.flank) || c.aiming === i ? ' on' : ''}" type="button" data-act="big" data-i="${i}" data-n="${name}" title="${t(`field.big.${name}` as Key)}"><i>${firstKeyLabel(CMD_ACTION[key]!)}</i>${img(`flag/flag-${name}.png`)}<span>${t(`war.cmdName.${name}` as Key)}</span></button>`

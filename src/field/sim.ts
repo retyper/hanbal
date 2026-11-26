@@ -207,9 +207,16 @@ export function nearestFoe(s: FieldState, q: Squad, ok: (t: Squad, d: number) =>
   return best
 }
 
+/** 기병 대의 날개 — 시작 자리가 판 폭 가운데보다 아래(v 큼)면 1 오른 날개 · 아니면 0 왼 날개 (앞을 보고 선 우리 편 기준) */
+export const wingOf = (s: FieldState, q: Squad): 0 | 1 => q.homeV * 2 > lastV(s.map) ? 1 : 0
+/** 입력의 무리 g 에 드는 side 편 대 — 0 앞줄 · 1 활 · 2 기병(시험판 mvp 는 왼 날개만) · 4 오른 날개(시험판만) */
+export function members(s: FieldState, side: 0 | 1, g: number): Squad[] {
+  const grp = GRPS[g === 4 ? 2 : g]
+  return s.squads.filter(q => q.side === side && q.grp === grp && (q.grp !== 'horse' || s.mvp !== 1 || wingOf(s, q) === (g === 4 ? 1 : 0)))
+}
+
 /** 무리를 (tu, tv) 로 — 대마다 시작 줄의 상대 자리를 더해 한 점에 겹치지 않는다. 줄이 판 밖으로 나가면 가운데를 판 안으로 당긴다 (45 §1-3) */
-function moveGroup(s: FieldState, grp: Grp, tu: number, tv: number): void {
-  const qs = s.squads.filter(q => q.side === 0 && q.grp === grp)
+function moveGroup(s: FieldState, qs: readonly Squad[], tu: number, tv: number): void {
   const live = qs.filter(q => q.men > 0)
   const L = lastU(s.map), W = lastV(s.map)
   let su = 0, sv = 0
@@ -266,16 +273,15 @@ function applyInput(s: FieldState, i: FieldInput): void {
     return
   }
   // 정수가 아닌 입력은 기록에 못 들어간다 (기록 전체가 안 읽히므로 받는 쪽에서 버린다)
-  if (![i.g, i.op, i.u, i.v].every(Number.isInteger) || !(i.g >= 0 && i.g <= 3) || !inputOk(s, i)) { s.log.dropped++; return }
+  if (![i.g, i.op, i.u, i.v].every(Number.isInteger) || !(i.g >= 0 && i.g <= (s.mvp === 1 ? 4 : 3)) || !inputOk(s, i)) { s.log.dropped++; return }
   s.log.accepted.push({ tick: i.tick, g: i.g, op: i.op, u: i.u, v: i.op === OP_DASH ? 0 : i.v })
   if (i.op === OP_STANCE || i.op === OP_AIM || i.op === OP_RALLY) { armyInput(s, i); return }
   if (i.g === 3) { heroInput(s, i); return }
-  if (i.op === OP_ATTACK) { attackGroup(s, GRPS[i.g]!, i.u); return }
+  if (i.op === OP_ATTACK) { attackGroup(s, members(s, 0, i.g), i.u); return }
   // 판 끝 경계(칸 수 × unit)를 누른 것도 받되 판 안 마지막 단위로 붙인다
   const tu = clamp(i.u, 0, lastU(s.map)), tv = clamp(i.v, 0, lastV(s.map))
-  if (i.op === OP_MOVE) { moveGroup(s, GRPS[i.g]!, tu, tv); return }
-  for (const q of s.squads) {
-    if (q.side !== 0 || q.grp !== GRPS[i.g]) continue
+  if (i.op === OP_MOVE) { moveGroup(s, members(s, 0, i.g), tu, tv); return }
+  for (const q of members(s, 0, i.g)) {
     q.manual = 0
     q.foe = -1
     q.goal = null
@@ -285,10 +291,9 @@ function applyInput(s: FieldState, i: FieldInput): void {
 }
 
 /** 무리에 「적을 쳐라」 — 손을 떼되(manual 0) 그 적만 노린다 · 그 적이 사라지면 알아서로 (retarget 이 푼다) */
-function attackGroup(s: FieldState, grp: Grp, foe: number): void {
+function attackGroup(s: FieldState, qs: readonly Squad[], foe: number): void {
   const e = s.squads[foe]!, bank = banks(s)
-  for (const q of s.squads) {
-    if (q.side !== 0 || q.grp !== grp) continue
+  for (const q of qs) {
     q.manual = 0
     q.foe = foe
     q.order = ORD_ATTACK
@@ -803,7 +808,8 @@ function sideTotals(s: FieldState, side: 0 | 1): { men: number; menMax: number; 
     m0 = q.morale0
     men += q.men
     // 달아나는 대는 싸움에서 빠진 몫이다 — 사기를 fleeCountPermille 만 센다 (달아난 대가 멀리서 편 사기를 받쳐 끝나지 않던 판 · 판의 법칙 묶음)
-    mw += q.menMax * (q.flee === 1 ? mul(q.morale, P.field.fleeCountPermille) : q.morale)
+    // 시험판(mvp)은 달아나는 대를 mvpFleeCountPermille 만 센다 (뒤가 뚫려 달아난 활이 편 사기에서 빠진다)
+    mw += q.menMax * (q.flee === 1 ? mul(q.morale, s.mvp === 1 ? P.field.mvpFleeCountPermille : P.field.fleeCountPermille) : q.morale)
   }
   return { men, menMax, morale: menMax > 0 ? idiv(mw, menMax) : 0, morale0: m0 }
 }
@@ -974,7 +980,9 @@ function aiHeroGoal(s: FieldState, h: Hero): Point | null {
 }
 
 /** 앞줄 돌격 · 기병 옆치기 들이침인가 (도움닫기 덤을 받는 대) */
-const runner = (s: FieldState, q: Squad): boolean => (q.grp === 'front' && q.order === ORD_CHARGE) || (q.grp === 'horse' && q.order === ORD_FLANK && q.target >= 0 && flankStep(s, q, s.squads[q.target]!).strike)
+const runner = (s: FieldState, q: Squad): boolean => (q.grp === 'front' && q.order === ORD_CHARGE) || (q.grp === 'horse' && q.order === ORD_FLANK && q.target >= 0 && flankStep(s, q, s.squads[q.target]!).strike) || mvpRider(s, q)
+/** 시험판(mvp)의 사람 편 기병이 「그 적을 쳐라」로 달려드는 중인가 — 있는 자리에서 곧게 달려 도움닫기 · 쾅을 받는다 (닿는 쪽 앞·옆·뒤로 갈린다) */
+export const mvpRider = (s: FieldState, q: Squad): boolean => s.mvp === 1 && still(s, q.side) && q.grp === 'horse' && q.order === ORD_ATTACK && q.foe >= 0
 
 /**
  * 돌격의 쾅 (51 §8) — 도움닫기(chargeMinRunCells · flankMinRunCells)를 한 대가 겨눈 적의 맞붙는 거리에 들면 한 번:
@@ -995,14 +1003,20 @@ function runImpacts(s: FieldState): boolean[] {
     q.ran = 0
     out[q.id] = true
     // 방진이거나 긴 창이면 기병 들이침이 막힌다 (긴 창은 방진이 아니어도 · C2 병종)
-    const blocked = q.grp === 'horse' && e.grp === 'front' && (e.stance === STANCE_HOLD || e.kind === 'pike')
+    // 시험판(mvp) 기병: 닿는 쪽(hitArc 0 앞 · 1 옆 · 2 뒤)으로 갈린다 — 기병을 이기는 병종(창)의 정면이면 막혀 튕긴다
+    const rider = mvpRider(s, q), arc = rider ? hitArc(e, q) : 0
+    const blocked = (q.grp === 'horse' && e.grp === 'front' && (e.stance === STANCE_HOLD || e.kind === 'pike')) || (rider && arc === 0 && beatsKind(e.kind, q.kind))
     const mover = blocked ? q : e
     const away = blocked ? e : q
     const push = (blocked ? P.field.bounceCells : q.grp === 'horse' ? P.field.pushHorseCells : P.field.pushFrontCells) * P.field.unit
     shoves.push({ mover, from: { u: away.u, v: away.v }, len: push, by: q })
     if (blocked) addShock(s, q, P.field.blockedShock, 'melee')
-    else { q.bonus = ticksOf(P.field.chargeBonusSec); addShock(s, e, q.grp === 'horse' ? (s.mvp === 1 && e.grp === 'bows' ? P.field.mvpBowFlankShock : P.field.flankHitShock) :s.lineup[q.side] === LINE_WEDGE ? mul(P.field.chargeHitShock, P.field.lineWedgeShockPermille) : P.field.chargeHitShock, q.grp === 'horse' ? 'flank' : 'melee') }
+    else { q.bonus = ticksOf(P.field.chargeBonusSec); addShock(s, e, q.grp === 'horse' ? (rider && arc > 0 && e.grp === 'bows' ? P.field.mvpBowFlankShock : P.field.flankHitShock) : s.lineup[q.side] === LINE_WEDGE ? mul(P.field.chargeHitShock, P.field.lineWedgeShockPermille) : P.field.chargeHitShock, q.grp === 'horse' ? 'flank' : 'melee') }
+    // 시험판(mvp): 기병이 활을 들이치면 그 둘레 mvpBowPanicCells 의 같은 편 활도 사기 mvpBowPanicShock 를 잃는다 (뒷줄이 통째로 흔들린다)
+    if (!blocked && rider && arc > 0 && e.grp === 'bows') for (const o of s.squads) if (o !== e && o.side === e.side && o.grp === 'bows' && o.men > 0 && dist2(o.u, o.v, e.u, e.v) <= sq(P.field.mvpBowPanicCells * P.field.unit)) addShock(s, o, P.field.mvpBowPanicShock, 'domino')
     emit(s, { kind: 'impact', side: q.side, id: q.id, u: idiv(q.u + e.u, 2), v: idiv(q.v + e.v, 2), n: q.men + e.men, to: e.id, how: blocked ? HIT_BLOCKED : HIT_GOOD })
+    // 옆·뒤로 닿은 쾅은 있는 옆치기 표(flankHit)로 읽힌다
+    if (!blocked && rider && arc > 0) { s.stats.flankHits[q.side]++; emit(s, { kind: 'flankHit', side: q.side, id: q.id, u: e.u, v: e.v, n: q.men, to: e.id }) }
   }
   // 다른 대를 미는 것끼리는 서로 안 걸린다 — 같은 대를 여럿이 밀 때만 친 대의 시작 자리 차례 (같은 편끼리라 거울·차례에 안 기댄다)
   shoves.sort((a, b) => a.mover === b.mover ? rankCmp(s, a.by, b.by) : a.mover.id - b.mover.id)

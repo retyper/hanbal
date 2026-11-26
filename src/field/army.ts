@@ -13,7 +13,7 @@ import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { clamp, dist2, idiv, isqrt, stepToward } from './num.ts'
 import { emit, trySkill } from './hero.ts'
-import { sideMorale, alarmed, avgU, banks, campU, detour, fwd, fitBody, lastU, lastV, leash, m, mul, nearestFoe, perTickAt, rankCmp, still, ticksOf } from './sim.ts'
+import { sideMorale, alarmed, avgU, banks, campU, detour, fwd, fitBody, lastU, lastV, leash, m, members, mul, mvpRider, nearestFoe, perTickAt, rankCmp, still, ticksOf } from './sim.ts'
 import { ORD_MOVE, ORD_ATTACK, CMD_FIRE, CMD_HEIGHT, FORM_AUTO, FORM_CHARGE, FORM_HOLD, FORM_OPEN, GRPS, OP_RALLY, OP_STANCE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_NONE, ORD_VOLLEY, STANCE_CHARGE, STANCE_HOLD, WHY_NO_MEN, WHY_NONE, WHY_NOT_YET } from './types.ts'
 import { LINE_SHIELD, LINE_WEDGE, LINE_WINGS, STANCE_NONE, STANCE_OPEN } from './types.ts'
 import type { FieldInput, FieldState, Grp, Hero, Point, Squad } from './types.ts'
@@ -83,15 +83,19 @@ export function armyInit(s: FieldState): void {
 }
 
 function setOrder(s: FieldState, side: 0 | 1, g: Grp, ord: number, at: Point | null): void {
-  for (const q of groupOf(s, side, g)) {
+  setOrderOf(groupOf(s, side, g), s, ord, at)
+  s.route[side * 3 + ROW[g]] = []
+}
+/** 대들에 명령을 건다 (시험판의 날개 하나처럼 무리의 일부만) */
+function setOrderOf(qs: readonly Squad[], s: FieldState, ord: number, at: Point | null): void {
+  for (const q of qs) {
     q.order = ord; q.orderTick = s.tick; q.orderAt = at ? { ...at } : null
     q.manual = 0; q.foe = -1; q.ran = 0; q.hitTick = -1
-    if (g === 'front') q.form = ord === ORD_CHARGE ? FORM_CHARGE : ord === ORD_HOLD ? FORM_HOLD : q.form === FORM_OPEN ? FORM_OPEN : FORM_AUTO
+    if (q.grp === 'front') q.form = ord === ORD_CHARGE ? FORM_CHARGE : ord === ORD_HOLD ? FORM_HOLD : q.form === FORM_OPEN ? FORM_OPEN : FORM_AUTO
     // 자세는 명령을 따른다 — 돌격·방진이 끝나면 기본 자세로 (길 트기는 남는다 · 끝난 돌격 자세가 판 내내 세모 상성에 걸리던 것)
-    if (g === 'front') q.stance = ord === ORD_CHARGE ? STANCE_CHARGE : ord === ORD_HOLD ? STANCE_HOLD : q.stance === STANCE_OPEN ? STANCE_OPEN : STANCE_NONE
-    if (g === 'front') fitBody(q)
+    if (q.grp === 'front') q.stance = ord === ORD_CHARGE ? STANCE_CHARGE : ord === ORD_HOLD ? STANCE_HOLD : q.stance === STANCE_OPEN ? STANCE_OPEN : STANCE_NONE
+    if (q.grp === 'front') fitBody(q)
   }
-  s.route[side * 3 + ROW[g]] = []
 }
 
 /** 옆치기를 건다 — 겨눈 적 대 t 의 옆 바깥 → 뒤를 돌아 들이친다 (도는 길은 t 를 따라 틱마다 다시 잡는다) */
@@ -188,11 +192,14 @@ export function armyTick(s: FieldState, full: boolean): void {
     const fall = s.breakTick[q.side] >= 0
     q.flee = q.men > 0 && (broken(q) || fall) ? 1 : 0
     if (fall && q.manual === 1) { q.manual = 0; q.foe = -1 }
+    // 시험판(mvp)의 사람 편: 명령 받고 선 대도 무너지면 손을 놓고 달아난다 (그 자리에 서서 끝까지 깎이지 않게)
+    if (q.flee === 1 && q.manual === 1 && still(s, q.side)) { q.manual = 0; q.foe = -1; q.order = ORD_NONE }
   }
   // 진 자리·목표는 retargetMs 마다(입력이 들어온 틱에는 곧바로) · 예고·명령 끝은 틱마다
-  for (const side of [0, 1] as const) if (follows(s, side)) { enemyPlan(s, side); expire(s, side) }
+  // 시험판(mvp)의 적은 큰 수(예고 옆치기 · 알아서 방진·돌격·큰 외침)를 안 쓴다 — 다가와 정면으로 싸우고 기병은 날개를 지킨다
+  for (const side of [0, 1] as const) if (follows(s, side)) { if (s.mvp !== 1) enemyPlan(s, side); expire(s, side) }
   // 적 AI 의 수는 두 편 다 같은 틱 상태로 먼저 정하고 나서 건다 (한 편이 먼저 건 수를 다른 편이 같은 틱에 읽으면 거울 판이 어긋난다)
-  if (full) { const acts = ([0, 1] as const).flatMap(side => follows(s, side) ? aiTactics(s, side) : []); for (const a of acts) a() }
+  if (full && s.mvp !== 1) { const acts = ([0, 1] as const).flatMap(side => follows(s, side) ? aiTactics(s, side) : []); for (const a of acts) a() }
   for (const side of [0, 1] as const) if (follows(s, side)) { moveAnchor(s, side); if (full) { place(s, side); holdCamp(s, side) } }
 }
 
@@ -249,29 +256,29 @@ function aiTactics(s: FieldState, side: 0 | 1): Array<() => void> {
 
 /** 명령이 끝났나 — 돌격은 겨눈 적이 없어지면 · 화살비는 volleySec · 옆치기는 닿고 flankStaySec 뒤(또는 flankMaxSec) */
 function expire(s: FieldState, side: 0 | 1): void {
-  for (const g of GRPS) {
-    const qs = groupOf(s, side, g)
+  // 시험판(mvp)의 사람 편: 기병은 날개 둘이 따로 명령을 받는다 · 「적을 쳐라」는 그 적이 달아나도 끝
+  const groups = GRPS.flatMap(g => g === 'horse' && still(s, side) ? [members(s, side, 2), members(s, side, 4)] : [groupOf(s, side, g)])
+  for (const qs of groups) {
     const q0 = qs[0]
     if (!q0 || q0.order === ORD_NONE) continue
     const age = s.tick - q0.orderTick
-    // 시험판(mvp)의 사람 편은 먼 길이라 옆치기에 때 한계가 없다
-    const flankMax = still(s, side) ? Infinity : ticksOf(P.field.flankMaxSec)
-    if (q0.order === ORD_VOLLEY && age >= ticksOf(P.field.volleySec)) done(s, side, g)
+    if (q0.order === ORD_VOLLEY && age >= ticksOf(P.field.volleySec)) done(s, side, qs)
     else if (q0.order === ORD_FLANK) {
       const t = q0.target >= 0 ? s.squads[q0.target]! : null
       const hit = qs.reduce((a, q) => q.hitTick >= 0 && (a < 0 || q.hitTick < a) ? q.hitTick : a, -1)
-      if (!t || t.men <= 0 || age >= flankMax || (hit >= 0 && s.tick - hit >= ticksOf(P.field.flankStaySec))) done(s, side, g)
-    } else if (q0.order === ORD_CHARGE && (age >= ticksOf(P.field.chargeMaxSec) || live(qs).every(q => q.lock >= 0))) done(s, side, g)
+      if (!t || t.men <= 0 || age >= ticksOf(P.field.flankMaxSec) || (hit >= 0 && s.tick - hit >= ticksOf(P.field.flankStaySec))) done(s, side, qs)
+    } else if (q0.order === ORD_CHARGE && (age >= ticksOf(P.field.chargeMaxSec) || live(qs).every(q => q.lock >= 0))) done(s, side, qs)
     // 돌격은 산 대가 모두 맞물리면 끝 (자세는 그대로 · 검수 W7) · 「적을 쳐라」는 그 적이 사라지면 끝
-    else if (q0.order === ORD_ATTACK && qs.every(q => q.foe < 0)) done(s, side, g)
+    else if (q0.order === ORD_ATTACK && qs.every(q => q.foe < 0 || (still(s, side) && s.squads[q.foe]!.flee === 1))) done(s, side, qs)
   }
 }
 
-/** 명령이 끝났다 — 기본 행동으로 · 시험판(mvp)의 사람 편은 진 자리로 돌아가지 않고 그 자리에 선다 (다음 명령을 기다린다) */
-function done(s: FieldState, side: 0 | 1, g: Grp): void {
-  setOrder(s, side, g, ORD_NONE, null)
+/** 명령이 끝났다 — 기본 행동으로 · 시험판(mvp)의 사람 편은 진 자리로 돌아가지 않고 그 자리에 선다 (다음 명령을 기다린다 · 저절로 빠지지 않는다) */
+function done(s: FieldState, side: 0 | 1, qs: readonly Squad[]): void {
+  setOrderOf(qs, s, ORD_NONE, null)
+  if (qs[0] !== undefined) s.route[side * 3 + ROW[qs[0].grp]] = []
   if (!still(s, side)) return
-  for (const q of live(groupOf(s, side, g))) { q.manual = 1; q.order = ORD_MOVE; q.goal = { u: q.u, v: q.v } }
+  for (const q of live(qs)) { q.manual = 1; q.order = ORD_MOVE; q.goal = { u: q.u, v: q.v } }
 }
 
 /** 진 자리와 목표 (장수를 따르는 편) */
@@ -294,7 +301,9 @@ function place(s: FieldState, side: 0 | 1): void {
     const idx = side * 3 + ROW[g]
     if (qs.length === 0) continue
     const q0 = qs[0]!
-    if (q0.manual === 1 || q0.foe >= 0) { s.anchor[idx] = centerOf(qs); continue }
+    // 시험판(mvp)의 사람 편은 명령 받은 대(날개 하나 등)만 빼고 나머지는 진 자리를 지킨다
+    const own = (q: Squad): boolean => q.manual === 1 || q.foe >= 0
+    if (still(s, side) ? qs.every(own) : own(q0)) { s.anchor[idx] = centerOf(qs); continue }
     let anchor = g === 'bows' ? bowsAnchor(s, F, side, frontD, q0.bd) : F
     if (q0.order === ORD_HOLD && q0.orderAt) anchor = q0.orderAt
     if (q0.order === ORD_VOLLEY && q0.orderAt) {
@@ -311,6 +320,7 @@ function place(s: FieldState, side: 0 | 1): void {
     }
     s.anchor[idx] = anchor
     qs.forEach((q, i) => {
+      if (still(s, side) && own(q)) return
       const o = slotOf(q, i, qs.length, frontHalf, s.lineup[side], wideOf(qs))
       const slot = { u: clamp(anchor.u + o.u, 0, lastU(s.map)), v: clamp(anchor.v + o.v, 0, lastV(s.map)) }
       // 기병 날개는 실제 앞줄보다 앞서지 않는다 — 장수가 앞서 걸으면 기준점이 앞줄보다 빨리 가서(따라붙기) 빠른 기병만 기준점 자리로 달려가
@@ -339,7 +349,7 @@ function place(s: FieldState, side: 0 | 1): void {
         return
       }
       // 기본 행동 — 닿는 적과 알아서 맞붙는다 · 기병은 무너지는(사기가 tacPursueMorale 아래) 적을 쫓는다
-      const pursue = q.grp === 'horse' ? nearestFoe(s, q, (t, d) => d <= sq(cells(P.field.pursueCells)) && t.morale * MILLI < t.morale0 * m(P.realm.tacPursueMorale)) : null
+      const pursue = q.grp === 'horse' && !still(s, side) ? nearestFoe(s, q, (t, d) => d <= sq(cells(P.field.pursueCells)) && t.morale * MILLI < t.morale0 * m(P.realm.tacPursueMorale)) : null
       // 감싸기 (52 §1-4) — 맞물리지 않은 대는 wrapCells 안의 「우리와 맞물린 적」의 옆구리로 붙는다 (수가 남는 쪽이 저절로 감싼다)
       if (q.lock < 0 && !pursue && q.grp !== 'horse') {
         const w = nearestFoe(s, q, (t, d) => d <= sq(cells(P.field.wrapCells)) && t.flee === 0 && t.lock >= 0 && s.squads[t.lock]!.side === side && s.squads[t.lock]!.id !== q.id && free(t, q))
@@ -378,7 +388,7 @@ export function runMul(s: FieldState, q: Squad): number {
   const t = q.target >= 0 ? s.squads[q.target] : undefined
   if (!t || t.men <= 0) return MILLI
   const charging = q.grp === 'front' && q.order === ORD_CHARGE
-  const striking = q.grp === 'horse' && q.order === ORD_FLANK && q.target >= 0 && flankStep(s, q, s.squads[q.target]!).strike
+  const striking = (q.grp === 'horse' && q.order === ORD_FLANK && q.target >= 0 && flankStep(s, q, s.squads[q.target]!).strike) || mvpRider(s, q)
   if (!charging && !striking) return MILLI
   const start = cells(charging ? P.field.chargeRunCells : P.field.flankRunCells)
   if (dist2(q.u, q.v, t.u, t.v) > start * start) return MILLI
@@ -407,7 +417,8 @@ function holdCamp(s: FieldState, side: 0 | 1): void {
  */
 function moveAnchor(s: FieldState, side: 0 | 1): void {
   const h = heroOf(s, side)!
-  if (s.squads.some(q => q.side === side && q.grp === 'front' && q.men > 0 && q.lock >= 0)) s.frontLockTick[side] = s.tick
+  // 시험판(mvp)은 앞줄끼리 맞물렸을 때만 언다 (기병 하나를 들이밀어 적 군 전체를 세워 두던 것)
+  if (s.squads.some(q => q.side === side && q.grp === 'front' && q.men > 0 && q.lock >= 0 && (s.mvp !== 1 || s.squads[q.lock]!.grp === 'front'))) s.frontLockTick[side] = s.tick
   const lt = s.frontLockTick[side]
   if (lt >= 0 && s.tick - lt < ticksOf(P.field.freezeSec)) return
   // 시험판(mvp)의 사람 편: 진은 장수를 안 따른다 (명령 없는 무리는 제자리)
@@ -465,18 +476,6 @@ export function flankStep(s: FieldState, q: Squad, t: Squad): { goal: Point; str
   const ev = clamp(edge(sgn), 0, W)
   const pin = (p: Point): Point => ({ u: clamp(p.u, 0, lastU(s.map)), v: clamp(p.v, 0, W) })
   const p0 = pin({ u: near + ft * reach, v: ev }), p1 = pin({ u: t.u - ft * back, v: ev })
-  if (still(s, q.side)) {
-    // 시험판(mvp): 적 무리 맨 뒤(몸 가장자리) 너머 flankBackCells 줄까지 돌아 나가 겨눈 대 바로 뒤로 옮겨 서서 곧게 들이친다 (적 활 뒤에 선 적 기병 날개에 걸리지 않게)
-    // 바깥 길은 판 가장자리 (적 날개 기병이 막으러 나오는 거리 밖으로) · 뒤 줄은 맨 뒤 몸 가장자리에서 mvpFlankBackCells
-    let far = t.u
-    for (const e of foes) { const b = e.u - ft * idiv(e.bd, 2); if ((b - far) * ft < 0) far = b }
-    const rear = far - ft * cells(P.field.mvpFlankBackCells), lane = sgn > 0 ? W - idiv(q.bw, 2) : idiv(q.bw, 2)
-    const m0 = pin({ u: near + ft * reach, v: lane }), r1 = pin({ u: rear, v: lane }), r2 = pin({ u: rear, v: t.v })
-    if ((q.u - t.u) * ft <= -idiv(back, 2) && Math.abs(q.v - t.v) * 2 <= t.bw + q.bw) return { goal: { u: t.u, v: t.v }, strike: true, pts: [] }
-    if ((q.u - rear) * ft <= reach) return { goal: r2, strike: false, pts: [r2, { u: t.u, v: t.v }] }
-    if ((q.u - near) * ft <= 0 || Math.abs(q.v - lane) <= reach) return { goal: r1, strike: false, pts: [r1, r2, { u: t.u, v: t.v }] }
-    return { goal: m0, strike: false, pts: [m0, r1, r2, { u: t.u, v: t.v }] }
-  }
   if ((q.u - t.u) * ft <= -idiv(back, 2)) return { goal: { u: t.u, v: t.v }, strike: true, pts: [] }
   if ((q.u - near) * ft <= 0 || Math.abs(q.v - ev) <= reach) return { goal: p1, strike: false, pts: [p1, { u: t.u, v: t.v }] }
   return { goal: p0, strike: false, pts: [p0, p1, { u: t.u, v: t.v }] }

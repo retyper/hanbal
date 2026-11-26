@@ -142,3 +142,32 @@ export function drawOdds(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam, 
   }
   ctx.restore()
 }
+
+/** 시험판(?mvp)의 길 하나 — 무리 g 의 가운데에서 마디들까지 (판 px) · sel 이면 굵게 */
+export interface Path { g: number; pts: readonly { x: number; y: number }[]; sel: boolean }
+/** 무리마다 길 색 (g 0 앞줄 · 1 활 · 2 왼 날개 · 3 장수 · 4 오른 날개) — 땅 위에서 서로 갈린다 */
+const PATH_COLORS = ['#9fc4ff', '#b7f08a', '#ffb35c', GOLD, '#f08ad8']
+
+/** 땅에 그리는 길 (멈춘 동안에도 보인다) — 무리 색 점선 · 마디마다 작은 점 */
+export function drawPaths(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam, paths: readonly Path[]): void {
+  if (paths.length === 0) return
+  const z = cam.zoom
+  ctx.save()
+  ctx.translate(vp.w / 2, vp.h / 2)
+  ctx.scale(z, z)
+  ctx.translate(-cam.x, -cam.y)
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round'
+  for (const p of paths) {
+    const color = PATH_COLORS[p.g] ?? GOLD
+    ctx.strokeStyle = color; ctx.fillStyle = color
+    ctx.globalAlpha = p.sel ? 0.95 : 0.6
+    ctx.lineWidth = (p.sel ? 3 : 2) / z
+    ctx.setLineDash([8 / z, 6 / z])
+    ctx.beginPath()
+    p.pts.forEach((q, i) => { if (i === 0) ctx.moveTo(q.x, q.y); else ctx.lineTo(q.x, q.y) })
+    ctx.stroke()
+    ctx.setLineDash([])
+    for (let i = 1; i < p.pts.length; i++) { ctx.beginPath(); ctx.arc(p.pts[i]!.x, p.pts[i]!.y, 4 / z, 0, FULL_TURN); ctx.fill() }
+  }
+  ctx.restore()
+}

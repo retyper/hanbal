@@ -98,8 +98,9 @@ function mvpCardHtml(base: string): string {
   const kb = (a: ActionName): string => `<kbd>${keyLabel(KEYS[a][0] ?? '')}</kbd>`
   const row = (body: string): string => `<div class="fd-mv">${body}</div>`
   const img = (p: string): string => `<img src="${base}${p}" alt="">`
-  const pick = kb('pickFront') + kb('pickBows') + kb('pickHorse') + kb('pickHero') + `<span>${t('field.mvp.pick')}</span><b class="arr">→</b><span>${t('field.mvp.flags')}</span>` + kb('cmd1') + kb('cmd2')
-  const order = `<i class="mouse"></i><span>${t('field.mvp.order')}</span>`
+  // 1 앞줄 · 2 활 · 3 왼 날개 · 4 오른 날개 · 5 장수
+  const pick = ['1', '2', '3', '4', '5'].map(n => `<kbd>${n}</kbd>`).join('') + `<span>${t('field.mvp.pick')}</span><b class="arr">→</b><span>${t('field.mvp.flags')}</span>` + kb('cmd1') + kb('cmd2')
+  const order = `<i class="mouse"></i><span>${t('field.mvp.order')}</span><kbd>Shift</kbd><span>${t('field.mvp.chain')}</span>`
   const pause = `<kbd>Space</kbd><span>${t('field.mvp.pause')}</span>`
   const arr = '<b class="arr">▶</b>'
   const beats = img('icon/unit-spear.png') + arr + img('icon/unit-buyeo-cavalry.png') + arr + img('icon/unit-archer.png') + arr + img('icon/unit-spear.png')

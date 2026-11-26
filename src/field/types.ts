@@ -16,8 +16,8 @@ export const KIND_GRP: Readonly<Record<UnitKind, Grp>> = { spear: 'front', pike:
 /** 본편 상성 표 (src/realm/battle.ts:69 BEATS 그대로 · 배 뺌) — 행이 이기는 병종 · 이기면 ×P.realm.counterUp · 지면 ×counterDown */
 export const KIND_BEATS: Readonly<Record<UnitKind, readonly UnitKind[]>> = { spear: ['horse', 'shield'], bow: ['spear'], pike: ['horse'], shield: ['bow'], horse: ['bow'], crossbow: ['shield'] }
 
-/** 입력의 g: 0 앞줄 · 1 활 · 2 기병 · 3 장수 */
-export type InputGroup = 0 | 1 | 2 | 3
+/** 입력의 g: 0 앞줄 · 1 활 · 2 기병 · 3 장수 · 4 오른 날개(시험판 ?mvp 만 · 그때 2 는 왼 날개) */
+export type InputGroup = 0 | 1 | 2 | 3 | 4
 /** 입력의 op: 0 = 그 무리를 (u, v) 로 보냄(손으로 몰기) · 1 = 손을 떼고 임시 AI 에 맡김 (자세·비기 같은 갈래는 뒤 카드가 더한다) */
 export const OP_MOVE = 0
 export const OP_AUTO = 1

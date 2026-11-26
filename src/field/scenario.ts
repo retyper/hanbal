@@ -3,6 +3,8 @@
  * 한 편 사람 수 men 을 앞줄 절반 · 활 4분의 1 · 기병 4분의 1 로 나눈 같은 두 편. 맵은 기본 대로(meet).
  */
 import { meetMap, mvpMap } from './map.ts'
+import { roll } from '../core/rng.ts'
+import { P } from '../tune/params.ts'
 import type { FieldMap, LiveSetup, LiveSide } from './types.ts'
 
 export function plainSetup(seed: number, men: number, withHero = true, map: FieldMap = meetMap()): LiveSetup {
@@ -17,6 +19,9 @@ export function plainSetup(seed: number, men: number, withHero = true, map: Fiel
  */
 export function mvpSetup(seed: number, men: number): LiveSetup {
   const su = plainSetup(seed, men, true, mvpMap())
+  // 적 사람 수는 씨앗으로 mvpFoeMenPermille ± mvpFoeMenSpreadPermille (진이 자리를 다시 잡아 시작 흩음이 지워지므로 판마다 다른 것은 이것)
+  const pm = P.field.mvpFoeMenPermille + Math.round((roll(seed, 0, 'mvp:foe') * 2 - 1) * P.field.mvpFoeMenSpreadPermille)
+  const n = Math.round(men * pm / 1000), front = Math.trunc(n / 2), bows = Math.trunc(n / 4), horse = n - front - bows
   const kinds = (sd: LiveSide): LiveSide => ({ ...sd, form: 0, kinds: { spear: sd.men.front, bow: sd.men.bows, horse: sd.men.horse } })
-  return { ...su, sides: [kinds(su.sides[0]), kinds(su.sides[1])], mvp: true }
+  return { ...su, sides: [kinds(su.sides[0]), kinds({ ...su.sides[1], men: { front, bows, horse } })], mvp: true }
 }

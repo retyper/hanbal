@@ -13,12 +13,12 @@ import { beatsKind, createField, stepField } from './field/sim.ts'
 import { t, type Key } from './i18n/index.ts'
 import { aimInput, attackInputs, cmdInput, dashInput, frontInput, rallyInput, heroDirInput, keysDir, mergePlan, nearestFoe, sendInputs, skillInput, BIG_ARTS, CMDS, type CmdGroup, type InputCtx } from './field/input.ts'
 import { actionOf, firstKeyLabel, KEYS } from './field/actions.ts'
-import { AFTER_ORDER, ALL_GROUPS, aimExpired, aimPress, aimTap, cellWhy, GRP_OF, normalizeSel, pickAt, type PickCand, type UiState } from './field/pickmodel.ts'
+import { AFTER_ORDER, ALL_GROUPS, inGroup, MVP_GROUPS, aimExpired, aimPress, aimTap, cellWhy, GRP_OF, normalizeSel, pickAt, type PickCand, type UiState } from './field/pickmodel.ts'
 import { mountFlags, MVP_CMDS, type FlagsView } from './field/mainFlags.ts'
 import { mountArrows, mountPad, type Arrows, type Pad, type PadBtn } from './field/mainPad.ts'
 import { mountFirst, mountSteps, type First, type Steps } from './field/mainHelp.ts'
 import { mountHelp, type Help } from './field/mainCard.ts'
-import { drawMarks, drawOdds, type Odds, type Band, type Box, type Mark, type MarkShape, type Ring } from './field/mainFlagMarks.ts'
+import { drawMarks, drawOdds, drawPaths, type Odds, type Path, type Band, type Box, type Mark, type MarkShape, type Ring } from './field/mainFlagMarks.ts'
 import { LINES, OP_AUTO, OP_MOVE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_VOLLEY, type FieldInput, type InputGroup } from './field/types.ts'
 import { roll } from './core/rng.ts'
 import { mountMini, type Mini } from './field/mainMini.ts'
@@ -37,7 +37,7 @@ guardMedia()
 
 const query = new URLSearchParams(location.search)
 const num = (key: string, dflt: number): number => { const v = Number(query.get(key)); return Number.isFinite(v) && query.has(key) ? Math.trunc(v) : dflt }
-/** ?mvp = 고르고 오른쪽 누름 시험판 (1 2 3 4 로 무리를 골라 둔 채 · 오른쪽 누름 땅 = 이동 · 적 = 공격 · Space 멈춤 · 장수 걷기·큰 수 넷·비기 단추 없음) */
+/** ?mvp = 고르고 오른쪽 누름 시험판 (1 앞줄 · 2 활 · 3 왼 날개 · 4 오른 날개 · 5 장수를 골라 둔 채 · 오른쪽 누름 땅 = 이동 · 적 = 공격 · Shift 길 잇기 · Space 멈춤 · 장수 걷기·큰 수 넷·비기 단추 없음) */
 const MVP = query.has('mvp')
 const root = document.getElementById('field') as HTMLDivElement
 root.innerHTML = `<canvas id="fd-cv"></canvas>
@@ -129,8 +129,8 @@ let queue: FieldInput[] = []
 /** 시작 화면에서 꽂아 둔 입력 (같은 무리·같은 갈래를 다시 꽂으면 바뀐다) */
 let plan: FieldInput[] = []
 /** 무리마다(0 앞줄 · 1 활 · 2 기병 · 3 장수) 마지막으로 보낸 자리와 깃발 모양 */
-const lastGoal: Array<{ u: number; v: number } | null> = [null, null, null, null]
-const lastShape: MarkShape[] = ['move', 'move', 'move', 'move']
+const lastGoal: Array<{ u: number; v: number } | null> = [null, null, null, null, null]
+const lastShape: MarkShape[] = ['move', 'move', 'move', 'move', 'move']
 /** 앞줄 자세 단추의 지금 값 (알아서면 -1) · 무리를 한 번이라도 보냈나 · 장수를 한 번이라도 보냈나 */
 const cmdNow: number[] = [-1, -1, -1]
 let sentGroup = false
@@ -176,7 +176,7 @@ const lastGrpWhyTick = [0, 0, 0]
 let heroOrdered = false
 /** 장수가 처음 선 자리 (움직였는지 보려고) · 무리 곁을 지날 때 튀는 고리의 시작 시각 */
 let heroStart: { u: number; v: number } | null = null
-const nudgeAt = [0, 0, 0, 0]
+const nudgeAt = [0, 0, 0, 0, 0]
 /** 카메라: 장수를 따라가는 것이 기본 · Tab 은 싸움을 따라감 · Y 는 풀기(화살표·가장자리·휠로 옮긴다) */
 let camFree = false
 /** 미니맵을 눌러 옮긴 카메라가 풀려 돌아오는 때를 가리는 장수 자리 (장수가 움직이면 곧바로 돌아온다) */
@@ -248,8 +248,21 @@ function followTarget(dt: number, snap = false): void {
   let zt: number | undefined
   let direct = false
   const hero = heroNow()
-  // 시험판(?mvp)은 싸우는 동안도 준비 화면 카메라 (판 높이에 맞춤 · 화살표·가장자리·휠·미니맵으로 옮긴다 · 장수를 안 따라간다)
-  if (ui.phase === 'ready' || MVP) {
+  if (MVP) {
+    // 시험판(?mvp): 두 편의 산(안 달아나는) 대를 다 담는 네모에 맞춘다 — 멀리 떨어진 처음은 넓게, 다가올수록 당겨 든다 (배율은 판을 채우는 배율 ~ mvpZoomMax)
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity
+    for (const q of cur.squads) {
+      if (q.men <= 0 || q.flee === 1) continue
+      const x = pxOf(q.u), y = pxOf(q.v)
+      x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y)
+    }
+    if (x0 > x1) { x0 = x1 = (b.left + b.right) / 2; y0 = y1 = (b.top + b.bottom) / 2 }
+    const mg = P.field.mvpFrameMarginCells * P.field.cellPx
+    const want = Math.min(vp.w / (x1 - x0 + 2 * mg), (vp.h - padTop - padBottom) / (y1 - y0 + 2 * mg))
+    zt = Math.min(Math.max(fitZoom(vp, b), P.field.mvpZoomMax), Math.max(fitZoom(vp, b), want))
+    // 위·아래 띠 사이 보이는 칸의 가운데에 담는다
+    raw = { x: (x0 + x1) / 2, y: (y0 + y1) / 2 - (padTop - padBottom) / 2 / zt }
+  } else if (ui.phase === 'ready') {
     zt = fitZoom(vp, b)
     const ours = cur.squads.filter(q => q.side === 0 && q.men > 0)
     const ox = ours.length === 0 ? (b.left + b.right) / 2 : pxOf(ours.reduce((a, q) => a + q.u, 0) / ours.length)
@@ -316,7 +329,7 @@ function restart(): void {
   endAt = 0; viewMs = 0; pan = null; tgt = null; lossAcc = []; hist.length = 0; flyQ.length = 0; breakMor = null; bashN = 0
   ui.phase = 'ready'; ui.sel = [3]
   queue = []; plan = []
-  lastGoal.fill(null); lastShape.fill('move'); nudgeAt.fill(0); lastFoe.fill(-1)
+  lastGoal.fill(null); lastShape.fill('move'); nudgeAt.fill(0); for (const l of tasks) l.length = 0
   heroDirSent = -1; padDir = -1; foeFlash.length = 0; lastWhyTick = 0; lastGrpWhyTick.fill(0)
   leadK = 1; cmdNow.fill(-1); sentGroup = false; usedCharge = false; aiming = -1; flashStep = -1; playMs = 0; heroOrdered = false; firstDone = false; heroStart = null
   camFree = false; camFight = false; cam.level = 0; hud.setZoom(0)
@@ -357,7 +370,7 @@ const STANCE_SHAPE: readonly MarkShape[] = ['charge', 'hold', 'open']
 const unitsOf = (px: number): number => Math.round(px / P.field.cellPx * P.field.unit)
 const pxOf = (u: number): number => u / P.field.unit * P.field.cellPx
 const gName = (g: number): string => t(`field.g.${g}`  as Key)
-const squadsOf = (g: number): VModel['squads'] => cur.squads.filter(q => q.side === 0 && q.grp === GRP_OF[g] && q.men > 0)
+const squadsOf = (g: number): VModel['squads'] => cur.squads.filter(q => q.side === 0 && q.men > 0 && inGroup(cur, q, g as InputGroup))
 function inputCtx(): InputCtx {
   return { tick: ui.phase === 'ready' ? 0 : state.tick, mapUUnits: cur.mapUUnits, mapVUnits: cur.mapVUnits }
 }
@@ -385,7 +398,7 @@ function pickCands(): PickCand[] {
   for (const q of cur.squads) {
     if (q.side !== 0 || q.men <= 0) continue
     const s = toScreen(cam, vp, pxOf(q.u), pxOf(q.v))
-    out.push({ g: GRP_OF.indexOf(q.grp) as InputGroup, x: s.x, y: s.y, reach })
+    out.push({ g: (MVP && q.grp === 'horse' && q.wing === 1 ? 4 : GRP_OF.indexOf(q.grp)) as InputGroup, x: s.x, y: s.y, reach })
   }
   const h = heroNow()
   if (h !== undefined) { const s = toScreen(cam, vp, pxOf(h.u), pxOf(h.v)); out.push({ g: 3, x: s.x, y: s.y, reach: 0 }) }
@@ -419,8 +432,8 @@ function enemyAt(px: number, py: number): { u: number; v: number; id: number } |
 }
 
 /** 고른 것을 누른 곳(화면 px)으로 보낸다 — 적 위면 그 적 쪽으로 (엔진에 「쳐라」가 오면 그것으로 바꾼다) */
-function sendAt(px: number, py: number, now: number): void {
-  if (MVP) { mvpSend(px, py, now); return }
+function sendAt(px: number, py: number, now: number, chain = false): void {
+  if (MVP) { mvpSend(px, py, now, chain); return }
   const w = toField(cam, vp, px, py)
   const foe = enemyAt(px, py)
   const u = foe === null ? unitsOf(w.x) : foe.u, v = foe === null ? unitsOf(w.y) : foe.v
@@ -437,31 +450,54 @@ function sendAt(px: number, py: number, now: number): void {
   if (sel.some(g => g < 3)) setSel([3])
 }
 
-/** 시험판(?mvp): 무리마다 마지막으로 찍은 적 대 (-1 없음 · 그 대 위에 깃 · 고른 무리면 점선) */
-const lastFoe: number[] = [-1, -1, -1, -1]
+/** 시험판(?mvp)의 길 한 마디 — 땅(그리로) 또는 적 대(그 대를 친다) */
+type Task = { kind: 'move'; u: number; v: number } | { kind: 'attack'; id: number }
+/** 무리마다(g 0~4) 길 — 맨 앞이 지금 하는 것 · Shift 로 잇는다 (mvpPathMax 까지) */
+const tasks: Task[][] = [[], [], [], [], []]
+/** 한 마디를 입력으로 (기병·앞줄·활·장수 모두 같은 문법 · 기병은 있는 자리에서 곧게 달려든다) */
+function issue(g: InputGroup, k: Task): void {
+  const ic = inputCtx()
+  accept(k.kind === 'attack' ? attackInputs([g], k.id, ic) : sendInputs([g], k.u, k.v, ic))
+}
+/** 그 마디가 끝났나 — 땅은 무리 가운데가 arriveCells 안 · 적은 그 대가 달아나거나 쓰러짐 */
+function taskDone(g: InputGroup, k: Task): boolean {
+  if (k.kind === 'attack') { const q = cur.squads[k.id]; return q === undefined || q.men <= 0 || q.flee === 1 }
+  const at = fromOf(g)
+  if (at === null) return true
+  const r = P.field.arriveCells * P.field.cellPx
+  return (at.x - pxOf(k.u)) ** 2 + (at.y - pxOf(k.v)) ** 2 <= r * r
+}
+/** 싸우는 동안(멈추지 않았을 때) 끝난 마디를 걷고 다음 마디를 보낸다 */
+function stepTasks(): void {
+  for (const g of MVP_GROUPS) {
+    const list = tasks[g]!
+    if (list.length === 0 || queue.some(i => i.g === g)) continue
+    if (!taskDone(g, list[0]!)) continue
+    list.shift(); markEpoch++
+    if (list.length > 0) issue(g, list[0]!)
+  }
+}
 /**
  * 시험판(?mvp)의 오른쪽 누름 — 땅이면 고른 무리가 그 자리로 · 적 대면 그 대를 친다 (앞줄은 맞붙고 · 활은 닿는 거리까지 가서 쏘고 ·
- * 기병이 적 활을 찍으면 옆치기 OP_AIM: 적 무리 맨 뒤로 돌아 들이친다). 고름은 그대로 남는다 (1 2 3 4 로 바꿀 때까지).
+ * 기병은 있는 자리에서 곧게 달려든다 — 뒤를 치려면 먼저 뒤로 간다). Shift 면 길을 잇는다(셋까지). 고름은 그대로 남는다.
  */
-function mvpSend(px: number, py: number, now: number): void {
+function mvpSend(px: number, py: number, now: number, chain: boolean): void {
   const w = toField(cam, vp, px, py)
   const foe = enemyAt(px, py)
   const sq = foe !== null && foe.id >= 0 ? cur.squads[foe.id] : undefined
-  const ic = inputCtx(), sel = ui.sel
-  if (sq !== undefined) {
-    accept(sel.flatMap(g => g === 2 && sq.grp === 'bows' ? [aimInput(2, sq.u, sq.v, ic)] : attackInputs([g], sq.id, ic)))
-    foeFlash.push({ id: sq.id, at: now })
-    for (const g of sel) { lastFoe[g] = sq.id; lastGoal[g] = null }
-  } else {
-    const u = foe === null ? unitsOf(w.x) : foe.u, v = foe === null ? unitsOf(w.y) : foe.v
-    accept(sendInputs(sel, u, v, ic))
-    const goal = { u: Math.max(0, Math.min(cur.mapUUnits, u)), v: Math.max(0, Math.min(cur.mapVUnits, v)) }
-    for (const g of sel) { lastGoal[g] = goal; lastShape[g] = 'move'; lastFoe[g] = -1 }
+  const k: Task = sq !== undefined ? { kind: 'attack', id: sq.id }
+    : { kind: 'move', u: Math.max(0, Math.min(cur.mapUUnits, foe === null ? unitsOf(w.x) : foe.u)), v: Math.max(0, Math.min(cur.mapVUnits, foe === null ? unitsOf(w.y) : foe.v)) }
+  for (const g of ui.sel) {
+    const list = tasks[g]!
+    if (chain && list.length > 0) { if (list.length < P.field.mvpPathMax) list.push(k); continue }
+    tasks[g] = [k]
+    issue(g, k)
   }
-  if (sel.includes(3)) heroOrdered = true
-  if (sel.some(g => g < 3)) sentGroup = true
-  fsnd.order((sel.length === 1 && sel[0] === 2 ? 'horse' : 'move') as FlagKind)
-  if (!touchMode) flags.say(sel.length > 1 ? t('field.say.many', { n: sel.length }) : t('field.say', { g: gName(sel[0]!), i: t(sq === undefined ? 'field.i.move' : 'field.i.chase') }), 'ok', now)
+  if (sq !== undefined) foeFlash.push({ id: sq.id, at: now })
+  markEpoch++
+  if (ui.sel.includes(3)) heroOrdered = true
+  if (ui.sel.some(g => g !== 3)) sentGroup = true
+  fsnd.order((ui.sel.some(g => g === 2 || g === 4) ? 'horse' : 'move') as FlagKind)
 }
 /** 시험판(?mvp)의 Z X: 고른 무리의 k 번째 큰 수 (앞줄 돌격·방진 · 활 화살비 · 기병 옆치기 · 장수는 없음) */
 function mvpCmd(k: number): void {
@@ -494,7 +530,6 @@ function confirmAim(px: number, py: number, now: number): void {
   sentGroup = true
   fsnd.order((g === 2 ? 'horse' : 'move') as FlagKind)
   cancelAim()
-  if (MVP && foeId >= 0 && g === 2) lastFoe[2] = foeId
   if (!MVP) setSel([...AFTER_ORDER])
 }
 
@@ -598,7 +633,7 @@ function goBattle(): void {
   ui.phase = 'play'
   introLeft = 0
   acc = 0
-  if (!MVP) pan = null
+  pan = null // 시험판도 준비 화면에서 옮겨 둔 카메라는 풀고 싸움을 담는다
   camFree = false; camFight = false
   if (MVP) { paused = false; hud.setPaused(false) }
   cam.level = 1; hud.setZoom(1)
@@ -635,7 +670,7 @@ function ringsNow(now: number): Ring[] {
     const h = heroNow()
     if (h !== undefined) out.push({ x: pxOf(h.u), y: pxOf(h.v), rx: P.field.ringHeroCells * c, ry: P.field.ringHeroCells * c * 0.45, kind: 'dim', phase: 0 })
   }
-  if (hoverG >= 0 && hoverG < 3 && !ui.sel.includes(hoverG as InputGroup)) out.push(...groupRings(squadsOf(hoverG), 'hover', 0))
+  if (hoverG >= 0 && hoverG !== 3 && !ui.sel.includes(hoverG as InputGroup)) out.push(...groupRings(squadsOf(hoverG), 'hover', 0))
   for (const g of ui.sel) {
     if (g === 3) {
       const h = heroNow()
@@ -704,13 +739,27 @@ function marks(): Mark[] {
     if (dup !== undefined) { if (sel) dup.sel = true; continue }
     out.push({ g, x: pxOf(goal.u), y: pxOf(goal.v), shape: lastShape[g]!, sel })
   }
-  // 시험판: 찍은 적 대 위에 깃 (준비 화면·멈춘 동안·아직 안 들어간 명령·그 대를 노리는 동안)
-  if (MVP) for (const g of ALL_GROUPS) {
-    const id = lastFoe[g]!
-    const q = id >= 0 ? cur.squads[id] : undefined
-    if (q === undefined || q.men <= 0) continue
-    const live = ui.phase === 'ready' || paused || queue.some(i => i.g === g) || (g < 3 && squadsOf(g).some(e => e.target === id || e.foe === id))
-    if (live) out.push({ g, x: pxOf(q.u), y: pxOf(q.v), shape: 'charge', sel: ui.sel.includes(g) })
+  // 시험판: 길의 마디마다 깃 (땅 = 가는 세모 · 적 = 뾰족한 세모 · 달아난 적은 걷힌다)
+  if (MVP) for (const g of MVP_GROUPS) for (const p of mvpPathPts(g)) out.push({ g, x: p.x, y: p.y, shape: p.attack ? 'charge' : 'move', sel: ui.sel.includes(g) })
+  return out
+}
+/** 무리 g 의 길 마디 자리 (판 px) — 달아났거나 쓰러진 적 마디는 뺀다 */
+function mvpPathPts(g: InputGroup): { x: number; y: number; attack: boolean }[] {
+  const out: { x: number; y: number; attack: boolean }[] = []
+  for (const k of tasks[g]!) {
+    if (k.kind === 'move') { out.push({ x: pxOf(k.u), y: pxOf(k.v), attack: false }); continue }
+    const q = cur.squads[k.id]
+    if (q !== undefined && q.men > 0 && q.flee === 0) out.push({ x: pxOf(q.u), y: pxOf(q.v), attack: true })
+  }
+  return out
+}
+/** 시험판: 무리마다 땅에 그리는 길 (무리 가운데 → 마디들 · 무리 색) */
+function mvpPaths(): Path[] {
+  const out: Path[] = []
+  for (const g of MVP_GROUPS) {
+    const pts = mvpPathPts(g), from = fromOf(g)
+    if (pts.length === 0 || from === null) continue
+    out.push({ g, pts: [from, ...pts.map(p => ({ x: p.x, y: p.y }))], sel: ui.sel.includes(g) })
   }
   return out
 }
@@ -741,7 +790,7 @@ function onDown(e: PointerEvent): void {
     two = { sx: m.x, sy: m.y, cx: pan?.x ?? tgt?.x ?? cam.x, cy: pan?.y ?? tgt?.y ?? cam.y }
     return
   }
-  if (e.pointerType === 'mouse' && e.button === 2) { sendAt(e.clientX, e.clientY, e.timeStamp); return }
+  if (e.pointerType === 'mouse' && e.button === 2) { sendAt(e.clientX, e.clientY, e.timeStamp, e.shiftKey); return }
   if (e.pointerType === 'mouse' && e.button !== 0) return
   drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, mouse: e.pointerType === 'mouse', box: false, moved: false }
   try { cv.setPointerCapture(e.pointerId) } catch { /* 합성 입력 */ }
@@ -764,7 +813,7 @@ function onMove(e: PointerEvent): void {
 function onUp(e: PointerEvent): void {
   ptrs.delete(e.pointerId)
   if (two !== null) {
-    if (ptrs.size < 2) { two = null; if (pan !== null) pan.until = camFree || ui.phase === 'ready' || MVP ? Infinity : performance.now() + P.field.panBackMs }
+    if (ptrs.size < 2) { two = null; if (pan !== null) pan.until = camFree || ui.phase === 'ready' ? Infinity : performance.now() + P.field.panBackMs }
     return
   }
   if (drag === null || drag.id !== e.pointerId) return
@@ -800,7 +849,7 @@ function movePan(dt: number): void {
   if (dx === 0 && dy === 0) return
   const base = pan ?? { x: tgt?.x ?? cam.x, y: tgt?.y ?? cam.y }
   const step = P.field.camPanPxPerSec * dt / cam.zoom
-  pan = { x: base.x + dx * step, y: base.y + dy * step, until: Infinity }
+  pan = { x: base.x + dx * step, y: base.y + dy * step, until: MVP && ui.phase === 'play' ? performance.now() + P.field.panBackMs : Infinity }
 }
 
 function paint(now: number, alpha: number): void {
@@ -819,12 +868,13 @@ function paint(now: number, alpha: number): void {
   if (!blocked && !same) {
     drawField(ctx, vp, cam, cur, prev, alpha, viewMs, art, low, heroPick, lossAcc)
     lossAcc = []
-    drawMarks(ctx, vp, cam, marks(), ALL_GROUPS.map(g => ui.sel.includes(g) ? fromOf(g) : null), ringsNow(now), box, bandsNow(), foeMarks())
+    if (MVP) drawPaths(ctx, vp, cam, mvpPaths())
+    drawMarks(ctx, vp, cam, marks(), MVP ? [] : ALL_GROUPS.map(g => ui.sel.includes(g) ? fromOf(g) : null), ringsNow(now), box, bandsNow(), foeMarks())
     if (MVP) drawOdds(ctx, vp, cam, oddsNow())
     k.x = cam.x; k.y = cam.y; k.z = cam.zoom; k.sel = selKey; k.epoch = markEpoch
   }
   flags.frame(now)
-  flags.sync(cur, ui, { line: lineChoice, foeLine: cur.lineup[1], front: ordOf('front') === ORD_CHARGE ? 0 : ordOf('front') === ORD_HOLD ? 1 : -1, volley: ordOf('bows') === ORD_VOLLEY, flank: ordOf('horse') === ORD_FLANK, aiming, sentGroup, touch: touchMode, ...(MVP ? { cmdG: ui.sel.length === 1 && ui.sel[0]! < 3 ? ui.sel[0]! : -1 } : {}) })
+  flags.sync(cur, ui, { line: lineChoice, foeLine: cur.lineup[1], front: ordOf('front') === ORD_CHARGE ? 0 : ordOf('front') === ORD_HOLD ? 1 : -1, volley: ordOf('bows') === ORD_VOLLEY, flank: ordOf('horse') === ORD_FLANK, aiming, sentGroup, touch: touchMode, ...(MVP ? { cmdG: ui.sel.length === 1 ? ui.sel[0]! : -1 } : {}) })
   tutorial(now)
   root.classList.toggle('touch', touchMode)
   arrows.sync(offscreenArrows())
@@ -835,7 +885,8 @@ function paint(now: number, alpha: number): void {
   fxGold = false; fxBlocked = false
   flyRegroups()
   hud.frame(now)
-  hud.showEnd(endAt > 0 && now - endAt >= P.field.endBoxMs ? cur : null, endStats(), endWhy(), MVP ? undefined : { foe: nextFoeLine(), shout: heroNow()?.art === 'shout' })
+  // 시험판은 까닭 한 줄을 숨긴다 (규칙 묶음 ③ 에서 「무엇이 먹혔나」 로 다시)
+  hud.showEnd(endAt > 0 && now - endAt >= P.field.endBoxMs ? cur : null, endStats(), MVP ? undefined : endWhy(), MVP ? undefined : { foe: nextFoeLine(), shout: heroNow()?.art === 'shout' })
   if (!blocked) {
     // 처음 화면의 큰 조작표: 첫 판들의 준비 화면에서 가운데에 크게 · 전투 개시나 첫 장수 입력에 ? 단추로 줄어든다
     // 시험판은 준비 화면(멈춘 채 시작)마다 늘 세 줄 그림을 띄운다 (본 판 수를 안 센다)
@@ -860,7 +911,7 @@ function bandsNow(): Band[] {
 /** 시험판(?mvp): 고른 무리(앞줄·활·기병 하나)와 적 대마다의 상성 세모 — 엔진 상성 표(beatsKind) 그대로 · 비기는 것은 안 그린다 · 마우스를 올린 적·찍은 적은 크게 */
 function oddsNow(): Odds[] {
   const g = ui.sel.length === 1 ? ui.sel[0]! : -1
-  if (g < 0 || g > 2 || ui.phase === 'end' || cur.end !== null) return []
+  if (g < 0 || g === 3 || ui.phase === 'end' || cur.end !== null) return []
   const mine = squadsOf(g)[0]
   if (mine === undefined) return []
   const out: Odds[] = []
@@ -868,7 +919,7 @@ function oddsNow(): Odds[] {
     if (q.side !== 1 || q.men <= 0) continue
     const up = beatsKind(mine.kind, q.kind)
     if (!up && !beatsKind(q.kind, mine.kind)) continue
-    out.push({ x: pxOf(q.u), y: pxOf(q.v) - bodyRect(q).h / 2 - P.field.soldierCells * P.field.cellPx, up, big: q.id === hoverFoe || q.id === lastFoe[g] })
+    out.push({ x: pxOf(q.u), y: pxOf(q.v) - bodyRect(q).h / 2 - P.field.soldierCells * P.field.cellPx, up, big: q.id === hoverFoe || tasks[g]!.some(k => k.kind === 'attack' && k.id === q.id) })
   }
   return out
 }
@@ -1023,6 +1074,8 @@ function frame(now: number): void {
   const dt = Math.min(dtMs, 100)
   if ((padTick++ & 15) === 0) measurePads()
   // 고른 것이 쓰러지면 장수로 돌아온다 · 장수가 무리 곁을 지나면 그 무리 고리가 튄다
+  // 시험판: 끝난 길 마디를 걷고 다음 마디로 (찍은 적이 달아나면 그 마디는 끝 · 멈춘 동안은 그대로)
+  if (MVP && ui.phase === 'play' && !paused && cur.end === null) stepTasks()
   const keep = normalizeSel(cur, ui.sel)
   if (keep !== ui.sel) { ui.sel = keep; markEpoch++ }
   watchNudge(now)
@@ -1058,16 +1111,16 @@ cv.addEventListener('wheel', e => {
   if (!(camFree || ui.phase === 'ready' || MVP) || blocked) return
   const base = pan ?? { x: tgt?.x ?? cam.x, y: tgt?.y ?? cam.y }
   const k = P.field.camWheelMul / 100 / cam.zoom
-  pan = { x: base.x + (e.deltaX !== 0 ? e.deltaX : e.deltaY) * k, y: base.y, until: Infinity }
+  pan = { x: base.x + (e.deltaX !== 0 ? e.deltaX : e.deltaY) * k, y: base.y, until: MVP && ui.phase === 'play' ? performance.now() + P.field.panBackMs : Infinity }
 }, { passive: false })
 
-/** 시험판(?mvp)의 키 — 1 2 3 4 는 골라 둔 채 · Z X 는 고른 무리의 큰 수 · Space 는 준비 화면이면 시작, 싸우는 중이면 멈춤 · 장수 단추(비기·모여라)는 없다. 다룬 키면 true */
+/** 시험판(?mvp)의 키 — 1~5 는 골라 둔 채 (5 는 위에서 따로) · Z X 는 고른 무리의 큰 수 · Space 는 준비 화면이면 시작, 싸우는 중이면 멈춤 · 장수 단추(비기·모여라)는 없다. 다룬 키면 true */
 function mvpKey(a: string): boolean {
   switch (a) {
     case 'pickFront': pickGroup(0); return true
     case 'pickBows': pickGroup(1); return true
     case 'pickHorse': pickGroup(2); return true
-    case 'pickHero': pickGroup(3); return true
+    case 'pickHero': pickGroup(4); return true // 시험판의 4 는 오른 날개 · 장수는 5
     case 'cmd1': case 'cmd2': case 'cmd3': case 'cmd4': mvpCmd(Number(a.slice(3)) - 1); return true
     case 'dash':
       if (ui.phase === 'ready') goBattle()
@@ -1082,6 +1135,7 @@ function toggleHelp(): void { help.toggle(); helpOpen = help.isOpen(); paintKey.
 addEventListener('keydown', e => {
   if (blocked) return
   keysHeld.add(e.code)
+  if (MVP && e.code === 'Digit5') { e.preventDefault(); if (!e.repeat) pickGroup(3); return }
   const a = actionOf(e.code)
   if (a === null) return
   if (a === 'slow') { slow = true; return }
@@ -1144,7 +1198,7 @@ hud = mountHud(root, {
   onHelp: toggleHelp,
 }, import.meta.env.BASE_URL + 'realm/')
 hud.setZoom(0)
-mini = mountMini(root, { onPan: (x, y) => { const hh = heroNow(); pan = { x, y, until: ui.phase === 'ready' || MVP ? Infinity : performance.now() + P.field.miniPanMs }; miniHero = hh === undefined ? null : { u: hh.u, v: hh.v }; paintKey.x = NaN } })
+mini = mountMini(root, { onPan: (x, y) => { const hh = heroNow(); pan = { x, y, until: ui.phase === 'ready' ? Infinity : performance.now() + P.field.miniPanMs }; miniHero = hh === undefined ? null : { u: hh.u, v: hh.v }; paintKey.x = NaN } })
 flags = mountFlags(root, import.meta.env.BASE_URL + 'realm/', handlers)
 help = mountHelp(root, import.meta.env.BASE_URL + 'realm/', MVP)
 first = mountFirst(root)
@@ -1171,5 +1225,6 @@ wake()
 /** 시험·보고용 손잡이: 대마다 화면 자리(px)와 사람 수·달아남 · 편 사기 · 틱 · 멈춤 (읽기만 한다) */
 ;(window as unknown as Record<string, unknown>)['__fieldSquads'] = (): unknown => ({
   tick: state.tick, phase: ui.phase, paused, sel: ui.sel, morale: cur.morale, flankHits: cur.stats.flankHits, end: cur.end,
-  squads: cur.squads.map(q => ({ id: q.id, side: q.side, grp: q.grp, kind: q.kind, men: q.men, flee: q.flee, morale: q.morale, order: q.order, ...toScreen(cam, vp, pxOf(q.u), pxOf(q.v)) })),
+  squads: cur.squads.map(q => ({ id: q.id, side: q.side, grp: q.grp, kind: q.kind, wing: q.wing, men: q.men, flee: q.flee, morale: q.morale, order: q.order, u: q.u, v: q.v, ...toScreen(cam, vp, pxOf(q.u), pxOf(q.v)) })),
+  toScreen: (u: number, v: number) => toScreen(cam, vp, pxOf(u), pxOf(v)),
 })

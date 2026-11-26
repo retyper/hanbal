@@ -19,23 +19,32 @@ export type CellWhy = 'gone' | 'none'
 export const GRP_OF: readonly string[] = ['front', 'bows', 'horse']
 export const ALL_GROUPS: readonly InputGroup[] = [0, 1, 2, 3]
 
+/** 대 q 가 무리 g 에 드나 (0 앞줄 · 1 활 · 2 기병 — 시험판은 왼 날개만 · 4 오른 날개(시험판)) */
+export function inGroup(m: VModel, q: VModel['squads'][number], g: InputGroup): boolean {
+  if (g === 4) return m.mvp && q.grp === 'horse' && q.wing === 1
+  if (g === 2 && m.mvp) return q.grp === 'horse' && q.wing === 0
+  return q.grp === GRP_OF[g]
+}
+/** 시험판(?mvp)에서 고를 수 있는 무리 (화면 차례: 앞줄 · 활 · 왼 날개 · 오른 날개 · 장수) */
+export const MVP_GROUPS: readonly InputGroup[] = [0, 1, 2, 4, 3]
+
 /** 그 칸의 무리가 살아 있는가 (우리 편 · 사람 수 > 0) — 장수는 장수가 있으면 */
 export function aliveCell(m: VModel, g: InputGroup): boolean {
   if (g === 3) return m.heroes.some(e => e.side === 0)
-  return m.squads.some(q => q.side === 0 && q.grp === GRP_OF[g] && q.men > 0)
+  return m.squads.some(q => q.side === 0 && inGroup(m, q, g) && q.men > 0)
 }
 
 /** 눌러도 안 되는 칸의 까닭 · 되면 null. none = 처음부터 없는 무리 · gone = 있었는데 다 쓰러짐 */
 export function cellWhy(m: VModel, g: InputGroup): CellWhy | null {
   if (aliveCell(m, g)) return null
   if (g === 3) return 'none'
-  return m.squads.some(q => q.side === 0 && q.grp === GRP_OF[g]) ? 'gone' : 'none'
+  return m.squads.some(q => q.side === 0 && inGroup(m, q, g)) ? 'gone' : 'none'
 }
 
 /** 아래 띠에 보일 칸 (살아 있는 것만 · 끝난 판은 없음) */
 export function pickables(m: VModel, ui: UiState): InputGroup[] {
   if (ui.phase === 'end' || m.end !== null) return []
-  return ALL_GROUPS.filter(g => aliveCell(m, g))
+  return (m.mvp ? MVP_GROUPS : ALL_GROUPS).filter(g => aliveCell(m, g))
 }
 
 /** 명령 단추를 보일 무리: 고른 것 가운데 살아 있는 첫 무리(앞줄 · 활 · 기병) — 장수만 골랐으면 없다 (단추의 뜻은 input.ts 의 CMDS) */
@@ -51,7 +60,7 @@ export function normalizeSel(m: VModel, sel: readonly InputGroup[]): readonly In
   if (live.length === sel.length && live.length > 0) return sel
   if (live.length > 0) return live
   if (aliveCell(m, 3)) return [3]
-  const first = ALL_GROUPS.find(g => aliveCell(m, g))
+  const first = (m.mvp ? MVP_GROUPS : ALL_GROUPS).find(g => aliveCell(m, g))
   return first === undefined ? [3] : [first]
 }
 
