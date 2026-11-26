@@ -16,7 +16,7 @@
  "gen-base-g-18-daegaya-king": 14,
  "gen-base-g-29-yeonna-myeongsol": 14,
  "gen-base-g-49-goguryeo-sona": 20,
- "gen-base-g-50-bullae-gwaha": 3,
+ "gen-base-g-50-bullae-gwaha": 10,
  "gen-base-g-59-yangmaek-maekson": 22,
  "gen-base-g-66-geonma-malbalgup": 10,
  "gen-base-g-67-gosaburi-buri": 6,
@@ -29,7 +29,7 @@
  "gen-base-w-83-gyeonji-beodeul": 5,
  "gen-daeso": 8,
  "gen-darae": 3,
- "gen-eureum": 4,
+ "gen-eureum": 13,
  "gen-gaon": 3,
  "gen-geumha": 10,
  "gen-horselord": 4,
@@ -39,5 +39,8 @@
  "gen-soebo": 6,
  "gen-songyang": 16,
  "gen-soseono": 5,
- "_1122": "11-22 형 「키 기준은 정수리」: 217명 머리를 확대해 관·깃털·모자 높이를 눈으로 잼(Claude) · 옛 값보다 크면 큰 값"
+ "_1122": "11-22 형 「키 기준은 정수리」: 217명 머리를 확대해 관·깃털·모자 높이를 눈으로 잼(Claude) · 옛 값보다 크면 큰 값",
+ "gen-base-g-44-maga-malgup": 10,
+ "gen-duman": 9,
+ "_1126": "11-26 형 「어떤 것은 키도 너무 작아」: 남장수 머리뼈 정수리를 손으로 읽어(tools/out/male-fix/marks.json · 모자 속은 눈썹-0.94×(턱-눈썹)) 남 기준 셋(g-40·g-38·g-20) 정수리~발 가운데에 맞춤 · 털모자·관이 큰데 0~4 로 적혀 6% 넘게 작던 넷(maga-malgup·duman·eureum·bullae-gwaha)"
 }
