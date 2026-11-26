@@ -174,3 +174,20 @@ export function mvpStakeMap(): FieldMap {
   for (const p of pieces) for (let v = p.v0; v < p.v1; v++) map.cells[wallU * map.w + v] = G_BLOCK
   return map
 }
+
+/** 실험실의 목책 지키기 — 우리(0)가 목책 뒤에서 지키고 적이 친다. 우리 진영 자리에서 앞(적 쪽)으로 mvpStakeFromCampCells 에 목책 줄 · 가운데 문 */
+export function mvpStakeDefMap(): FieldMap {
+  const u = P.field.mapLenCells, w = P.field.mapWidthCells, m = P.field.mvpStartMarginCells
+  const c0 = camp(m, idiv(w, 2), 1, w), c1 = camp(u - m, idiv(w, 2), -1, w)
+  const wallU = c0.u + P.field.mvpStakeFromCampCells
+  const mid = idiv(w, 2), half = idiv(P.field.gateCells, 2)
+  const g0 = mid - half, g1 = g0 + P.field.gateCells
+  const pieces: Piece[] = [
+    { id: 0, kind: 'stake', u0: wallU, v0: 0, u1: wallU + 1, v1: g0, hp: P.field.stakeHp, owner: 0 },
+    { id: 1, kind: 'gate', u0: wallU, v0: g0, u1: wallU + 1, v1: g1, hp: P.field.gateHp, owner: 0 },
+    { id: 2, kind: 'stake', u0: wallU, v0: g1, u1: wallU + 1, v1: w, hp: P.field.stakeHp, owner: 0 },
+  ]
+  const map = blank('stake', c0, c1, pieces)
+  for (const p of pieces) for (let v = p.v0; v < p.v1; v++) map.cells[wallU * map.w + v] = G_BLOCK
+  return map
+}

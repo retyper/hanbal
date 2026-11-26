@@ -129,6 +129,7 @@ export function createField(setup: LiveSetup): FieldState {
   if (invalidSetup(setup)) { s.end = 'invalid'; return s }
   if (setup.mvp === true) s.mvp = 1
   if (setup.mvp === true && setup.mvpTricks === true) s.tricks = 1
+  if (setup.mvp === true && setup.mvpHillHold === true) s.hillHold = 1
   // 원군 (실험실 L2 · 시험판만) — 정한 초에 오거나 부르면 온다
   if (setup.mvp === true && setup.reinf !== undefined) {
     s.reinf = []
@@ -159,7 +160,7 @@ export function createField(setup: LiveSetup): FieldState {
         const p = place(grp, i, n)
         const u = clamp(cp.axis === 1 ? p.u + j : p.u, 0, lastU(map)), v = clamp(cp.axis === 0 ? p.v + j : p.v, 0, lastV(map))
         const stance = (P.field.stanceStart === 1 ? STANCE_NONE : Math.floor(roll(s.seed, 0, `stance:${id}`) * 3)) as 0 | 1 | 2 | 3
-        s.squads.push({ id, side, grp, kind: parts[i]!.kind, men: cnt, menMax: cnt, fresh: men > 0 ? idiv(fresh * cnt, men) : 0, u, v, homeU: u, homeV: v, lock: -1, sleep: ticksOf(cp.asleep ?? 0), daze: 0, rem: 0, held: 0, flank: 0, stance, morale0: ls.morale, shock: 0, goal: null, manual: 0, target: -1, hp: cnt * MILLI, morale: ls.morale, foe: -1, calm: 0, form: 0, cmd: -1, reach: grp === 'bows' ? P.field.bowRangeCells * unit : 0, aim: -1,
+        s.squads.push({ id, side, grp, kind: parts[i]!.kind, men: cnt, menMax: cnt, fresh: men > 0 ? idiv(fresh * cnt, men) : 0, u, v, homeU: u, homeV: v, lock: -1, sleep: ticksOf(cp.asleep ?? 0), daze: 0, rem: 0, held: 0, flank: 0, stance, morale0: kindMorale(ls.morale, parts[i]!.kind), shock: 0, goal: null, manual: 0, target: -1, hp: cnt * MILLI, morale: kindMorale(ls.morale, parts[i]!.kind), foe: -1, calm: 0, form: 0, cmd: -1, reach: grp === 'bows' ? P.field.bowRangeCells * unit : 0, aim: -1,
           order: ORD_NONE, orderTick: -1, orderAt: null, ran: 0, bonus: 0, hitTick: -1, flee: 0,
           bw: 0, bd: 0, face: side === 0 ? 0 : HERO_DIRS / 2, pushed: 0, regrouped: 0, countered: 0, shoveU: 0, shoveV: 0, shoveN: 0 })
         fitBody(s.squads[id]!)
@@ -177,7 +178,8 @@ export function createField(setup: LiveSetup): FieldState {
   for (const side of [0, 1] as const) for (const g of GRPS) s.anchor.push(groupCenter(s, side, g))
   // 목책 체력은 치는 편(주인이 아닌 편) 사람 1,000명마다의 값 — 병력이 달라도 깨는 시간이 같다 (44 §2-3)
   const total = [0, 1].map(side => GRPS.reduce((a, g) => a + setup.sides[side]!.men[g], 0))
-  for (const p of map.pieces) p.hp = Math.max(1, idiv(p.hp * total[1 - p.owner]!, MILLI))
+  // 시험판·실험실은 목책 체력을 mvpPiecePermille 배로 (문이 판 안에 깨질 만하게)
+  for (const p of map.pieces) p.hp = Math.max(1, idiv(idiv(p.hp * total[1 - p.owner]!, MILLI) * (s.mvp === 1 ? P.field.mvpPiecePermille : MILLI), MILLI))
   armyInit(s)
   return s
 }
@@ -248,6 +250,9 @@ function moveGroup(s: FieldState, qs: readonly Squad[], tu: number, tv: number):
   }
 }
 
+/** 병종의 처음 사기 — 장정(militia)은 편 사기의 militiaMoralePermille (다른 병종은 편 사기 그대로) */
+const kindMorale = (morale: number, kind: string): number => kind === 'militia' ? mul(morale, P.field.militiaMoralePermille) : morale
+
 /** 원군이 들어서는 자리 — 0 제 편 뒤 끝 · 1 위 가장자리 · 2 아래 가장자리 (위·아래는 제 진영보다 4칸 뒤) */
 function reinfAt(s: FieldState, side: 0 | 1, edge: 0 | 1 | 2): Point {
   const unit = P.field.unit, L = lastU(s.map), W = lastV(s.map)
@@ -269,8 +274,8 @@ function arriveReinf(s: FieldState): void {
     if (r.done === 1 || r.tick !== s.tick) continue
     r.done = 1
     const grp = KIND_GRP[r.kind], n = squadCount(r.men), unit = P.field.unit, L = lastU(s.map), W = lastV(s.map), f = fwd(r.side)
-    const mate = s.squads.find(q => q.side === r.side)
-    const morale0 = mate?.morale0 ?? MILLI
+    const top = s.squads.reduce((a, q) => q.side === r.side ? Math.max(a, q.morale0) : a, 0)
+    const morale0 = kindMorale(top > 0 ? top : MILLI, r.kind)
     const camp = campU(s, r.side), base: Point = { u: r.u, v: r.v }
     const kin = s.squads.filter(q => q.side === r.side && q.grp === grp)
     const hu = kin.length ? idiv(kin.reduce((a, q) => a + q.homeU, 0), kin.length) : camp, hv = kin.length ? idiv(kin.reduce((a, q) => a + q.homeV, 0), kin.length) : idiv(W, 2)
@@ -358,7 +363,12 @@ export const still = (s: FieldState, side: 0 | 1): boolean => s.mvp === 1 && s.a
 export const sideAsleep = (s: FieldState, side: 0 | 1): boolean => s.squads.every(q => q.side !== side || q.men <= 0 || q.sleep > 0)
 
 /** 지키는 편이 깼나 — 지키는 편(hold)은 우리 대 하나에 적이 holdTriggerCells 안으로 들어야 나선다 (편 단위 · 44 §2-4) · 지키는 편이 아니면 늘 참 */
-export const alarmed = (s: FieldState, side: 0 | 1): boolean => !s.map.camps[side].hold || s.squads.some(q => q.side === side && q.men > 0 && near(s, q, P.field.holdTriggerCells))
+export const alarmed = (s: FieldState, side: 0 | 1): boolean => {
+  if (!s.map.camps[side].hold) return true
+  // 시험판의 「높은 곳을 지킴」: 높은 터를 가진 편은 적이 높은 터(비탈) 위에 올라와야 나선다 (거리가 아니라)
+  if (s.hillHold === 1 && s.map.highOwner === side) return s.squads.some(q => q.side !== side && q.men > 0 && groundAt(s.map, q.u, q.v) === G_HIGH)
+  return s.squads.some(q => q.side === side && q.men > 0 && near(s, q, P.field.holdTriggerCells))
+}
 
 /** 임시 AI — 가장 가까운 적 대를 목표로 · 장수는 제 편 앞줄 가장 앞 대 곁을 따른다. F6 의 정식 AI 가 대체한다 */
 function retarget(s: FieldState): void {
@@ -484,7 +494,7 @@ export function detour(s: FieldState, q: Squad, e: Squad): Point {
 function stepOnce(s: FieldState, K: Kit, side: 0 | 1, u: number, v: number, goal: Point, speed: number): Point {
   // 시험판(mvp): 오르막(가진 편이 아닌 쪽이 높은 터 위)은 mvpClimbPermille · 가진 편이 높은 터에서 앞(낮은 쪽)으로 내려가면 mvpDownhillPermille
   const climb = s.mvp === 1 ? P.field.mvpClimbPermille : K.climb
-  const slow = (g: number): number => g === G_SHALLOW ? K.water : g === G_HIGH && s.map.highOwner !== side ? climb : MILLI
+  const slow = (g: number): number => g === G_SHALLOW ? (s.mvp === 1 ? P.field.mvpWaterSpeedPermille : K.water) : g === G_HIGH && s.map.highOwner !== side ? climb : MILLI
   const full = stepToward(u, v, goal.u, goal.v, speed)
   let f = Math.min(slow(groundAt(s.map, u, v)), slow(groundAt(s.map, full.u, full.v)))
   if (s.mvp === 1 && f === MILLI && s.map.highOwner === side && groundAt(s.map, u, v) === G_HIGH && (goal.u - u) * fwd(side) > 0) f = P.field.mvpDownhillPermille
@@ -707,6 +717,7 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
     const e = s.squads[aim[q.id]!]!
     if (q.grp !== 'bows') contact[q.side] = true
     let v = mul(q.men * P.field.powerPerSec, K.grp[q.grp])
+    if (q.kind === 'militia') v = mul(v, P.field.militiaPowerPermille)
     if (q.grp === 'front') v = mul(v, q.stance === STANCE_CHARGE ? K.charge : q.stance === STANCE_HOLD ? K.hold : q.stance === STANCE_OPEN ? K.open : MILLI)
     if (q.grp === 'bows' && openFront[q.side]) v = mul(v, K.openVolley)
     if (q.grp === 'bows' && groundAt(s.map, q.u, q.v) === G_HIGH) v = mul(v, K.height)
@@ -725,7 +736,7 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
     if (e.grp === 'bows') v = mul(v, K.takenVolley)
     // 맞쏘기 명령 — 우리 활을 쏘는 적 활은 그 세기가 tacCounterCut 으로 꺾인다
     if (q.grp === 'bows' && e.grp === 'bows' && e.cmd === CMD_COUNTER && aim[e.id] === q.id) v = mul(v, K.counterCut)
-    if (groundAt(s.map, q.u, q.v) === G_SHALLOW) v = mul(v, K.ford)
+    if (groundAt(s.map, q.u, q.v) === G_SHALLOW) v = mul(v, s.mvp === 1 ? P.field.mvpFordPermille : K.ford)
     // 병종 상성 (51 §3) — 창 방진 > 기병 (기병이 방진을 치면 약하고, 방진이 기병을 치면 tacPunchHoldTake 배) · 기병 > 활 (tacFlank2)
     if (q.grp === 'horse' && e.grp === 'front' && e.stance === STANCE_HOLD) v = mul(v, P.field.horseVsHoldPermille)
     if (q.grp === 'front' && q.stance === STANCE_HOLD && e.grp === 'horse') v = mul(v, K.punchHold)
@@ -865,7 +876,8 @@ function sideTotals(s: FieldState, side: 0 | 1): { men: number; menMax: number; 
   for (const q of s.squads) {
     if (q.side !== side) continue
     menMax += q.menMax
-    m0 = q.morale0
+    // 시험판은 편에서 가장 높은 처음 사기를 기준으로 (사기가 낮게 시작하는 장정·뒤에 온 원군이 기준을 흔들지 않게)
+    m0 = s.mvp === 1 ? Math.max(m0, q.morale0) : q.morale0
     men += q.men
     // 달아나는 대는 싸움에서 빠진 몫이다 — 사기를 fleeCountPermille 만 센다 (달아난 대가 멀리서 편 사기를 받쳐 끝나지 않던 판 · 판의 법칙 묶음)
     // 시험판(mvp)은 달아나는 대를 mvpFleeCountPermille 만 센다 (뒤가 뚫려 달아난 활이 편 사기에서 빠진다)
@@ -1334,11 +1346,12 @@ export function groupKinds(ls: LiveSetup['sides'][number], grp: Grp, n: number, 
   if (n <= 0) return []
   // 병종이 없으면 진이 앞줄을 정한다 (52 §6-1) — 방패 벽 = 방패 4분의 3(가운데) · 창 쐐기 = 창 4분의 3(가운데) · 넓은 날개 = 반반
   const wedge = grp === 'front' && line === LINE_WEDGE && ls.kinds === undefined
-  const order: UnitKind[] = grp === 'front' ? (wedge ? ['spear', 'shield', 'pike'] : ['shield', 'spear', 'pike']) : grp === 'bows' ? ['bow', 'crossbow'] : ['horse']
+  // 장정(militia · 실험실)은 앞줄 맨 끝 차례 (병종을 받을 때만 · 없으면 0)
+  const order: UnitKind[] = grp === 'front' ? (wedge ? ['spear', 'shield', 'pike', 'militia'] : ['shield', 'spear', 'pike', 'militia']) : grp === 'bows' ? ['bow', 'crossbow'] : ['horse']
   let want = order.map(k => Math.max(0, ls.kinds?.[k] ?? 0))
   if (want.reduce((a, b) => a + b, 0) !== men) {
     const big = ls.kinds === undefined && line !== LINE_WINGS ? men - idiv(men, 4) : idiv(men, 2)
-    want = grp === 'front' ? [big, men - big, 0] : grp === 'bows' ? [men - idiv(men, 4), idiv(men, 4)] : [men]
+    want = grp === 'front' ? [big, men - big, 0, 0] : grp === 'bows' ? [men - idiv(men, 4), idiv(men, 4)] : [men]
   }
   // 8분의 1 아래 병종은 가장 큰 병종에 붙인다
   const big = want.indexOf(Math.max(...want))

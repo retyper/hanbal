@@ -9,12 +9,12 @@
 export type Grp = 'front' | 'bows' | 'horse'
 export const GRPS: readonly Grp[] = ['front', 'bows', 'horse']
 
-/** 본편 병종 (src/realm/battle.ts:12 UnitKind 에서 배를 뺀 여섯 · 전장의 대마다 하나) — 무리(grp)는 앞줄 = spear·pike·shield · 활 = bow·crossbow · 기병 = horse */
-export type UnitKind = 'spear' | 'pike' | 'shield' | 'bow' | 'crossbow' | 'horse'
-export const UNIT_KINDS: readonly UnitKind[] = ['spear', 'pike', 'shield', 'bow', 'crossbow', 'horse']
-export const KIND_GRP: Readonly<Record<UnitKind, Grp>> = { spear: 'front', pike: 'front', shield: 'front', bow: 'bows', crossbow: 'bows', horse: 'horse' }
+/** 본편 병종 (src/realm/battle.ts:12 UnitKind 에서 배를 뺀 여섯) + 장정(militia · 실험실의 농민군 · 앞줄 · 상성 없음 · 사기 낮음 · 값 싸고 약함) — 무리(grp)는 앞줄 = spear·pike·shield·militia · 활 = bow·crossbow · 기병 = horse */
+export type UnitKind = 'spear' | 'pike' | 'shield' | 'bow' | 'crossbow' | 'horse' | 'militia'
+export const UNIT_KINDS: readonly UnitKind[] = ['spear', 'pike', 'shield', 'bow', 'crossbow', 'horse', 'militia']
+export const KIND_GRP: Readonly<Record<UnitKind, Grp>> = { spear: 'front', pike: 'front', shield: 'front', bow: 'bows', crossbow: 'bows', horse: 'horse', militia: 'front' }
 /** 본편 상성 표 (src/realm/battle.ts:69 BEATS 그대로 · 배 뺌) — 행이 이기는 병종 · 이기면 ×P.realm.counterUp · 지면 ×counterDown */
-export const KIND_BEATS: Readonly<Record<UnitKind, readonly UnitKind[]>> = { spear: ['horse', 'shield'], bow: ['spear'], pike: ['horse'], shield: ['bow'], horse: ['bow'], crossbow: ['shield'] }
+export const KIND_BEATS: Readonly<Record<UnitKind, readonly UnitKind[]>> = { spear: ['horse', 'shield'], bow: ['spear'], pike: ['horse'], shield: ['bow'], horse: ['bow'], crossbow: ['shield'], militia: [] }
 
 /** 입력의 g: 0 앞줄 · 1 활 · 2 기병 · 3 장수 · 4 아래 날개(시험판 ?mvp 만 · 그때 2 는 위 날개) */
 export type InputGroup = 0 | 1 | 2 | 3 | 4
@@ -376,6 +376,8 @@ export interface LiveSetup {
   mvp?: boolean
   /** 시험판에서 적이 큰 수(예고 옆치기 · 알아서 방진·돌격·큰 외침)를 쓰나 (실험실의 「적의 꾀」 · 없으면 안 씀) */
   mvpTricks?: boolean
+  /** 시험판: 높은 터를 가진 편은 적이 높은 터에 올라와야 나선다 (실험실 「적이 높은 곳을 지킴」 · 없으면 거리로 나선다) */
+  mvpHillHold?: boolean
   /** 원군 (실험실 L2) — 편마다 하나 또는 없음 */
   reinf?: readonly [LiveReinf | null, LiveReinf | null]
 }
@@ -438,6 +440,8 @@ export interface FieldState {
   mvp?: 0 | 1
   /** 시험판에서 적의 큰 수를 쓰면 1 (LiveSetup.mvpTricks) */
   tricks?: 0 | 1
+  /** LiveSetup.mvpHillHold 면 1 */
+  hillHold?: 0 | 1
   /** 원군 (LiveSetup.reinf · 없으면 없음) */
   reinf?: ReinfState[]
 }

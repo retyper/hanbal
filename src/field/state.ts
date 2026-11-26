@@ -34,6 +34,7 @@ export function hashField(s: FieldState): string {
   // 시험판(mvp)만 섞는다 — 옛 판의 해시는 그대로
   if (s.mvp === 1) h = mix(h, s.mvp)
   if (s.tricks === 1) h = mix(h, 7)
+  if (s.hillHold === 1) h = mix(h, 11)
   for (const r of s.reinf ?? []) { h = mix(h, r.side); h = hs(h, r.kind); h = mix(h, r.men); h = mix(h, r.edge); h = mix(h, r.callSec); h = mix(h, r.tick); h = mix(h, r.done); h = mix(h, r.u); h = mix(h, r.v); h = mix(h, r.call) }
   for (const p of s.anchor) { h = mix(h, p.u); h = mix(h, p.v) }
   for (const r of s.route) { h = mix(h, r.length); for (const p of r) { h = mix(h, p.u); h = mix(h, p.v) } }

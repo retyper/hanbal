@@ -12,7 +12,10 @@ test('병종 상성 표는 본편 battle.ts 의 BEATS 와 같다 (배 빼고)', 
   const block = /const BEATS[^{]*\{([\s\S]*?)\n\}/.exec(src)![1]!
   const real: Record<string, string[]> = {}
   for (const m of block.matchAll(/^\s*(\w+): \[([^\]]*)\]/gm)) real[m[1]!] = [...m[2]!.matchAll(/'(\w+)'/g)].map(x => x[1]!)
-  for (const k of UNIT_KINDS) assert.deepEqual([...KIND_BEATS[k]], real[k]!.filter(x => x !== 'boat'), k)
+  // 장정(militia)은 실험실의 병종이라 본편 표에 없다 — 상성 없음 (아무도 이기지 않고 아무에게도 지지 않는다)
+  for (const k of UNIT_KINDS) if (k !== 'militia') assert.deepEqual([...KIND_BEATS[k]], real[k]!.filter(x => x !== 'boat'), k)
+  assert.deepEqual([...KIND_BEATS.militia], [])
+  for (const k of UNIT_KINDS) assert.ok(!KIND_BEATS[k].includes('militia'), k)
 })
 
 test('무리를 병종으로 가른다 — 기본(앞줄 방패·창 반반 · 활 4분의 3 활) · 줄 자리(방패 가운데 · 창 옆 · 긴 창 끝) · 사람 수가 맞는다', () => {

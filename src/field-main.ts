@@ -565,7 +565,7 @@ function mvpHeroBtns(): HeroBtn[] {
   return out
 }
 /** 병종 그림 (원군 단추·예고) */
-const KIND_ICON: Readonly<Record<string, string>> = { spear: 'icon/unit-spear.png', pike: 'icon/unit-spear.png', shield: 'icon/unit-spear.png', bow: 'icon/unit-archer.png', crossbow: 'icon/unit-archer.png', horse: 'icon/unit-buyeo-cavalry.png' }
+const KIND_ICON: Readonly<Record<string, string>> = { spear: 'icon/unit-spear.png', pike: 'icon/unit-pike.png', shield: 'icon/unit-shield-wall.png', bow: 'icon/unit-archer.png', crossbow: 'icon/unit-han-crossbow.png', horse: 'icon/unit-buyeo-cavalry.png', militia: 'icon/unit-porters.png' }
 /** 우리 편의 「부르면 옴」 원군 (아직 안 왔으면 · 정한 초에 오는 원군은 아니다) */
 function ourCall(): VModel['reinf'][number] | undefined {
   return cur.reinf.find(r => r.side === 0 && r.call && !r.done)

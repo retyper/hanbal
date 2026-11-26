@@ -96,7 +96,7 @@ const CSS = `
 #lab-rec th{color:${GOLD};font-weight:600}
 #lab-rec td:first-child,#lab-rec th:first-child{text-align:left}
 `
-const FRONT_KINDS = ['spear', 'pike', 'shield'] as const
+const FRONT_KINDS = ['spear', 'pike', 'shield', 'militia'] as const
 const BOW_KINDS = ['bow', 'crossbow'] as const
 const MEN_MAX = 3000
 /** 원군 줄의 칸 이름 */
@@ -151,6 +151,7 @@ ${reinfHtml(s)}`
 ${sideHtml(0)}${sideHtml(1)}
 <h3>${t('lab.foeOpts')}</h3>
 <div class="lab-row"><label><input type="checkbox" data-f="tricks"${cfg.tricks ? ' checked' : ''}> ${t('lab.tricks')}</label></div>
+<div class="lab-row"><label><input type="checkbox" data-f="hillHold"${cfg.hillHold !== false ? ' checked' : ''}> ${t('lab.hillHold')}</label></div>
 <div class="lab-row"><span>${t('lab.foeScale')}</span><input type="number" step="10" min="300" max="2000" value="${cfg.foe}" data-f="foe"></div>
 <div class="lab-row"><span>${t('lab.spread')}</span><input type="number" step="10" min="0" max="400" value="${cfg.spread}" data-f="spread"></div>
 <h3>${t('lab.seed')}</h3>
@@ -223,6 +224,7 @@ ${sideHtml(0)}${sideHtml(1)}
     else if (f === 'bowsMen') l.bows.men = num(el.value, 0, MEN_MAX)
     else if (f === 'horse') l.horse = num(el.value, 0, MEN_MAX)
     else if (f === 'tricks') { cfg = { ...cfg, tricks: el.checked }; return }
+    else if (f === 'hillHold') { cfg = { ...cfg, hillHold: el.checked }; return }
     else if (f === 'foe') { cfg = { ...cfg, foe: Math.max(300, Math.min(2000, Math.round(Number(el.value) || 1000))) }; return }
     else if (f === 'spread') { cfg = { ...cfg, spread: Math.max(0, Math.min(400, Math.round(Number(el.value) || 0))) }; return }
     else if (f === 'seed') { cfg = { ...cfg, seed: Math.max(1, Math.round(Number(el.value) || 1)) }; return }
