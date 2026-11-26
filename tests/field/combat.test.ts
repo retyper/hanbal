@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { createField, stepField } from '../../src/field/sim.ts'
+import { createField, fitBody, stepField } from '../../src/field/sim.ts'
 import { plainSetup } from '../../src/field/scenario.ts'
 import { stakeMap } from '../../src/field/map.ts'
 import { P } from '../../src/tune/params.ts'
@@ -67,11 +67,13 @@ test('향 (52 §1-1): 맞는 대가 보는 쪽 기준 앞 90° 는 정면 · 옆
     const s = createField(plainSetup(1, 1300, false))
     const A2 = pick(s, 0, 'horse'), B = pick(s, 1, 'front')
     keepOnly(s, [A2, B])
-    for (const q of [A2, B]) Object.assign(q, { goal: null, manual: 1, stance: 1, men: 600, menMax: 600, hp: 600000 })
+    for (const q of [A2, B]) { Object.assign(q, { goal: null, manual: 1, stance: 1, men: 600, menMax: 600, hp: 600000 }); fitBody(q) }
+    // 몸이 맞닿는 자리 (몸은 사람 수로 · fitBody)
     B.u = U(50); B.v = U(20)
-    if (at === 'front') { A2.u = B.u - U(2.5); A2.v = B.v }
-    else if (at === 'side') { A2.u = B.u; A2.v = B.v + U(3) }
-    else { A2.u = B.u + U(2.5); A2.v = B.v }
+    const du = (A2.bd + B.bd) / 2, dv = (A2.bw + B.bw) / 2
+    if (at === 'front') { A2.u = B.u - du; A2.v = B.v }
+    else if (at === 'side') { A2.u = B.u; A2.v = B.v + dv }
+    else { A2.u = B.u + du; A2.v = B.v }
     return { s, B }
   }
   // B 가 돌기 전 몇 틱만 본다 (보병은 turnFrontTicks 마다 한 눈금)

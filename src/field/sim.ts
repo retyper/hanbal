@@ -22,7 +22,7 @@ import { P } from '../tune/params.ts'
 import { clamp, dist2, idiv, isqrt, nearestDir, stepToward } from './num.ts'
 import { campPointU, groundAt, walkable } from './map.ts'
 import { G_BLOCK, G_HIGH, G_PLAIN, G_SHALLOW, GRPS, HERO_ART_DEFAULT, HERO_ARTS, HERO_DIR, HERO_DIRS, OP_ATTACK, OP_AUTO, OP_DASH, OP_HERO_DIR, OP_MOVE, OP_RETREAT, OP_SKILL, OP_STANCE, STANCE_CHARGE, STANCE_HOLD, STANCE_OPEN, WHY_NONE, CMD_COUNTER, CMD_HEIGHT, OP_AIM, OP_RALLY, ORD_ATTACK, ORD_CHARGE, ORD_FLANK, ORD_MOVE, ORD_NONE, ORD_VOLLEY, HIT_PLAIN, HIT_GOOD, HIT_BLOCKED, LOSS_ARROW, LOSS_BLADE, KIND_BEATS } from './types.ts'
-import { LINES, LINE_SHIELD, LINE_WEDGE, LINE_WINGS, LOSS_ART, LOSS_HERO, STANCE_NONE } from './types.ts'
+import { FORM_HOLD, LINES, LINE_SHIELD, LINE_WEDGE, LINE_WINGS, LOSS_ART, LOSS_HERO, STANCE_NONE } from './types.ts'
 import type { FieldInput, FieldMap, FieldState, Grp, Hero, LiveSetup, MoraleBy, Point, Squad, UnitKind } from './types.ts'
 import { addShock, auraOf, emit, gritTick, heroInput, heroMove, heroStrike, heroTakeHits, pruneEvents, standOf } from './hero.ts'
 import { armyInit, armyInput, armyTick, flankStep, follows, runMul, standing } from './army.ts'
@@ -57,6 +57,29 @@ const beats = (a: number, d: number): boolean => (a === STANCE_HOLD && d === STA
 export function squadCount(men: number): number {
   if (men <= 0) return 0
   return Math.min(men, P.field.squadsPerGroupMax)
+}
+
+/**
+ * 대 몸 (단위) — 사람 수로 열(앞뒤 깊이)과 줄(폭)을 정한다 (검수: 「군사는 인원수에 따라 진 형태도 달라진다」) ·
+ * 열 = √(사람 × 1000 ÷ bodyAspectPermille) 올림 (bodyMaxRanks 까지) · 줄 = 사람 ÷ 열 올림 · 폭 = 줄 × 한 사람 폭 · 깊이 = 열 × 한 사람 깊이 (방진은 holdDepthPermille 배).
+ * 사람이 죽으면 다시 잰다 — 깎이는 대는 줄이 짧아지고 얇아진다. 큰 대는 열이 bodyMaxRanks 에 닿은 뒤 옆으로만 넓어진다 (큰 군의 줄이 적 날개를 넘는다).
+ * 1200명 판의 처음 대(앞줄 150 · 활 75 · 기병 75)는 옛 고정 몸(3×2 · 3×2 · 3×3칸)과 같다. bodyByMen 0 이면 옛 고정 몸.
+ */
+export function fitBody(q: Squad): void {
+  const F = P.field, u = F.unit
+  const hold = q.grp === 'front' && q.form === FORM_HOLD
+  if (F.bodyByMen !== 1) { q.bw = F.bodyWCells * u; q.bd = (q.grp === 'horse' ? F.horseBodyDCells : hold ? F.holdBodyDCells : F.bodyDCells) * u; return }
+  const n = Math.max(1, q.men), n0 = Math.max(n, q.menMax)
+  const asp = q.grp === 'horse' ? F.horseAspectPermille : F.bodyAspectPermille
+  const x = idiv(n0 * MILLI, Math.max(1, asp)), r0 = isqrt(x)
+  const ranks0 = clamp(r0 * r0 < x ? r0 + 1 : r0, 1, F.bodyMaxRanks), files0 = idiv(n0 + ranks0 - 1, ranks0)
+  // 깎이면 먼저 얇아진다 (줄 폭은 그대로 · 열이 bodyThinRanks 아래로 갈 때부터 줄이 짧아진다 — 한 대가 먼저 좁아져 줄에 틈이 나 감싸이던 것)
+  const files = Math.max(1, Math.min(files0, idiv(n + F.bodyThinRanks - 1, F.bodyThinRanks))), ranks = idiv(n + files - 1, files)
+  const mw = q.grp === 'horse' ? F.horseManWPermille : q.grp === 'bows' ? F.bowsManWPermille : F.manWPermille
+  const md = q.grp === 'horse' ? F.horseManDPermille : q.grp === 'bows' ? F.bowsManDPermille : F.manDPermille
+  const min = mul(u, F.bodyMinPermille), d = Math.max(min, idiv(ranks * md * u, MILLI))
+  q.bw = Math.max(min, idiv(files * mw * u, MILLI))
+  q.bd = hold ? mul(d, F.holdDepthPermille) : d
 }
 
 /** 무리의 걸음 (단위/초) */
@@ -131,7 +154,8 @@ export function createField(setup: LiveSetup): FieldState {
         const stance = (P.field.stanceStart === 1 ? STANCE_NONE : Math.floor(roll(s.seed, 0, `stance:${id}`) * 3)) as 0 | 1 | 2 | 3
         s.squads.push({ id, side, grp, kind: parts[i]!.kind, men: cnt, menMax: cnt, fresh: men > 0 ? idiv(fresh * cnt, men) : 0, u, v, homeU: u, homeV: v, lock: -1, sleep: ticksOf(cp.asleep ?? 0), daze: 0, rem: 0, held: 0, flank: 0, stance, morale0: ls.morale, shock: 0, goal: null, manual: 0, target: -1, hp: cnt * MILLI, morale: ls.morale, foe: -1, calm: 0, form: 0, cmd: -1, reach: grp === 'bows' ? P.field.bowRangeCells * unit : 0, aim: -1,
           order: ORD_NONE, orderTick: -1, orderAt: null, ran: 0, bonus: 0, hitTick: -1, flee: 0,
-          bw: P.field.bodyWCells * unit, bd: (grp === 'horse' ? P.field.horseBodyDCells : P.field.bodyDCells) * unit, face: side === 0 ? 0 : HERO_DIRS / 2, pushed: 0, regrouped: 0, countered: 0, shoveU: 0, shoveV: 0, shoveN: 0 })
+          bw: 0, bd: 0, face: side === 0 ? 0 : HERO_DIRS / 2, pushed: 0, regrouped: 0, countered: 0, shoveU: 0, shoveV: 0, shoveN: 0 })
+        fitBody(s.squads[id]!)
       }
     })
     if (ls.hero) {
@@ -678,6 +702,7 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
     q.rem = num - d * K.perTickDen
     q.hp = Math.max(0, q.hp - d)
     q.men = menOf(q.hp)
+    if (q.men < men0 && q.men > 0) fitBody(q)
     if (flanked[q.id]! > 0) { q.flank++; s.stats.moraleBy[q.side].flank += (idiv(q.flank * P.field.moraleLossFlankPerSec, P.field.hz) - idiv((q.flank - 1) * P.field.moraleLossFlankPerSec, P.field.hz)) * q.menMax }
     if (d > 0) hitMorale(s, q, d, hits[q.id]!, sideV[q.id]!)
     if (dmg[q.id]! > 0 && q.sleep > 0) { q.sleep = 0; q.daze = ticksOf(P.field.edgeSec) }

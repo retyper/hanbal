@@ -13,7 +13,7 @@ import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { clamp, dist2, idiv, isqrt, stepToward } from './num.ts'
 import { emit, trySkill } from './hero.ts'
-import { sideMorale, alarmed, avgU, banks, campU, detour, fwd, lastU, lastV, leash, m, mul, nearestFoe, perTickAt, rankCmp, ticksOf } from './sim.ts'
+import { sideMorale, alarmed, avgU, banks, campU, detour, fwd, fitBody, lastU, lastV, leash, m, mul, nearestFoe, perTickAt, rankCmp, ticksOf } from './sim.ts'
 import { ORD_ATTACK, CMD_FIRE, CMD_HEIGHT, FORM_AUTO, FORM_CHARGE, FORM_HOLD, FORM_OPEN, GRPS, OP_RALLY, OP_STANCE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_NONE, ORD_VOLLEY, STANCE_CHARGE, STANCE_HOLD, WHY_NO_MEN, WHY_NONE, WHY_NOT_YET } from './types.ts'
 import { LINE_SHIELD, LINE_WEDGE, LINE_WINGS, STANCE_NONE, STANCE_OPEN } from './types.ts'
 import type { FieldInput, FieldState, Grp, Hero, Point, Squad } from './types.ts'
@@ -31,25 +31,29 @@ const live = (qs: readonly Squad[]): Squad[] => qs.filter(q => q.men > 0)
 const sorted = (s: FieldState, qs: Squad[]): Squad[] => qs.sort((a, b) => rankCmp(s, a, b))
 
 /** 줄 한 칸의 간격 (대 몸 폭 + 틈) — 방진은 holdGapCells */
-const pitchOf = (q: Squad): number => q.bw + cells(q.grp === 'front' && q.form === FORM_HOLD ? P.field.holdGapCells : P.field.lineGapCells)
+const pitchOf = (q: Squad, w = q.bw): number => w + cells(q.grp === 'front' && q.form === FORM_HOLD ? P.field.holdGapCells : P.field.lineGapCells)
 /** n 대가 선 줄의 반 길이 (단위) */
-const halfLine = (q: Squad, n: number): number => idiv(n * pitchOf(q) - (pitchOf(q) - q.bw), 2)
+const halfLine = (q: Squad, n: number, w = q.bw): number => idiv(n * pitchOf(q, w) - (pitchOf(q, w) - w), 2)
+/** 무리에서 가장 넓은 대 몸 폭 — 줄 간격은 이것으로 (사람 수로 몸 폭이 대마다 달라도 줄 자리가 겹치지 않게) */
+const wideOf = (qs: readonly Squad[]): number => qs.reduce((a, q) => Math.max(a, q.bw), 0)
 
 /**
  * 진 자리 (C2 묶음 3 · 무리 기준 점에서의 상대 자리) — 앞줄·활은 가로 한 줄(틈 lineGapCells) · 방진은 틈 holdGapCells ·
  * 돌격은 쐐기(가운데 대가 wedgeStepCells 앞) · 길 트기는 가운데가 openGapCells 더 벌어진 두 줄 · 기병은 양 날개에 둘씩(뒤로 한 대씩).
  * 기병의 기준 점은 앞줄 기준 점이고, 앞줄 줄 끝에서 wingOutCells 바깥 · wingBackCells 뒤 (frontHalf = 앞줄 줄의 반 길이).
  */
-export function slotOf(q: Squad, i: number, n: number, frontHalf: number, line = 0): Point {
+export function slotOf(q: Squad, i: number, n: number, frontHalf: number, line = 0, w = q.bw): Point {
   const f = fwd(q.side)
   if (q.grp === 'horse') {
-    const wing = i % 2 === 0 ? -1 : 1, row = idiv(i, 2)
+    // 차례(rankCmp · 시작 v → 뒤쪽 먼저)의 앞 절반은 왼 날개 · 뒤 절반은 오른 날개 · 날개 안에서는 앞 차례가 뒷줄 — 판을 만들 때 이 자리에 세운 뒤
+    // 시작 자리(homeV·homeU)가 바뀌어도 차례가 그대로라 첫 틱에 날개 둘이 서로 자리를 바꿔 위아래로 달리지 않는다 (예전 i % 2 는 같은 v 의 앞뒤 두 대를 양 날개로 갈랐다)
+    const left = idiv(n + 1, 2), wing = i < left ? -1 : 1, k = i < left ? i : i - left, row = (i < left ? left : n - left) - 1 - k
     // 넓은 날개 진 (52 §6-1) — 기병이 더 바깥 · 더 앞 (옆치기가 빨리 닿는다)
     const wide = line === LINE_WINGS
     const back = wide ? P.field.lineWingsBackCells : P.field.wingBackCells, out = P.field.wingOutCells + (wide ? P.field.lineWingsOutCells : 0)
     return { u: -f * (cells(back) + row * (q.bd + cells(P.field.lineGapCells))), v: wing * (frontHalf + cells(out) + idiv(q.bw, 2)) }
   }
-  const p = pitchOf(q)
+  const p = pitchOf(q, w)
   const along = idiv((2 * i + 1 - n) * p, 2)
   if (q.grp === 'front' && q.form === FORM_CHARGE) {
     const k = Math.min(i, n - 1 - i)
@@ -85,7 +89,7 @@ function setOrder(s: FieldState, side: 0 | 1, g: Grp, ord: number, at: Point | n
     if (g === 'front') q.form = ord === ORD_CHARGE ? FORM_CHARGE : ord === ORD_HOLD ? FORM_HOLD : q.form === FORM_OPEN ? FORM_OPEN : FORM_AUTO
     // 자세는 명령을 따른다 — 돌격·방진이 끝나면 기본 자세로 (길 트기는 남는다 · 끝난 돌격 자세가 판 내내 세모 상성에 걸리던 것)
     if (g === 'front') q.stance = ord === ORD_CHARGE ? STANCE_CHARGE : ord === ORD_HOLD ? STANCE_HOLD : q.stance === STANCE_OPEN ? STANCE_OPEN : STANCE_NONE
-    if (g === 'front') q.bd = cells(q.form === FORM_HOLD ? P.field.holdBodyDCells : P.field.bodyDCells)
+    if (g === 'front') fitBody(q)
   }
   s.route[side * 3 + ROW[g]] = []
 }
@@ -274,7 +278,7 @@ function place(s: FieldState, side: 0 | 1): void {
   // 앞줄 기준 점 (장수 앞) · 앞줄 줄의 반 길이와 깊이 — 활·기병 자리가 이것에 맞춘다
   const F = s.anchor[side * 3]!
   const fqs = sorted(s, live(groupOf(s, side, 'front')))
-  const frontHalf = fqs[0] ? halfLine(fqs[0], fqs.length) : cells(P.field.bodyWCells)
+  const frontHalf = fqs[0] ? halfLine(fqs[0], fqs.length, wideOf(fqs)) : cells(P.field.bodyWCells)
   const frontD = fqs[0] ? fqs[0].bd : cells(P.field.bodyDCells)
   for (const g of GRPS) {
     const qs = sorted(s, live(groupOf(s, side, g)))
@@ -298,7 +302,7 @@ function place(s: FieldState, side: 0 | 1): void {
     }
     s.anchor[idx] = anchor
     qs.forEach((q, i) => {
-      const o = slotOf(q, i, qs.length, frontHalf, s.lineup[side])
+      const o = slotOf(q, i, qs.length, frontHalf, s.lineup[side], wideOf(qs))
       const slot = { u: clamp(anchor.u + o.u, 0, lastU(s.map)), v: clamp(anchor.v + o.v, 0, lastV(s.map)) }
       // 기병 날개는 실제 앞줄보다 앞서지 않는다 — 장수가 앞서 걸으면 기준점이 앞줄보다 빨리 가서(따라붙기) 빠른 기병만 기준점 자리로 달려가
       // 앞줄보다 먼저 적 줄에 혼자 닿았다 (우리 기병만 날개 싸움에서 지던 까닭 · 입력 없는 장수는 앞줄을 앞지르지 않아 안 났다)
@@ -419,13 +423,13 @@ function formUp(s: FieldState): void {
     const F = frontAnchor(s, h)
     s.anchor[side * 3] = F
     const fqs = sorted(s, live(groupOf(s, side, 'front')))
-    const frontHalf = fqs[0] ? halfLine(fqs[0], fqs.length) : cells(P.field.bodyWCells)
+    const frontHalf = fqs[0] ? halfLine(fqs[0], fqs.length, wideOf(fqs)) : cells(P.field.bodyWCells)
     const frontD = fqs[0] ? fqs[0].bd : cells(P.field.bodyDCells)
     for (const g of GRPS) {
       const qs = sorted(s, live(groupOf(s, side, g)))
       if (qs.length === 0) continue
       const a = g === 'bows' ? bowsAnchor(s, F, side, frontD, qs[0]!.bd) : F
-      const at = qs.map((q, i) => { const o = slotOf(q, i, qs.length, frontHalf, s.lineup[side]); return { u: clamp(a.u + o.u, 0, lastU(s.map)), v: clamp(a.v + o.v, 0, lastV(s.map)) } })
+      const at = qs.map((q, i) => { const o = slotOf(q, i, qs.length, frontHalf, s.lineup[side], wideOf(qs)); return { u: clamp(a.u + o.u, 0, lastU(s.map)), v: clamp(a.v + o.v, 0, lastV(s.map)) } })
       qs.forEach((q, i) => { q.u = at[i]!.u; q.v = at[i]!.v; q.homeU = q.u; q.homeV = q.v })
     }
     for (const g of GRPS) s.anchor[side * 3 + ROW[g]] = g === 'front' ? F : centerOf(live(groupOf(s, side, g)))
