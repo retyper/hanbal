@@ -127,6 +127,7 @@ export function createField(setup: LiveSetup): FieldState {
   const map: FieldMap = { ...setup.map, cells: setup.map.cells.slice(), pieces: setup.map.pieces.map(p => ({ ...p, rem: 0 })) }
   const s: FieldState = { tick: 0, seed: setup.seed, map, squads: [], heroes: [], anchor: [], route: [[], [], [], [], [], []], grpWhy: [0, 0, 0], grpWhyTick: [-1, -1, -1], stats: { flankHits: [0, 0], artMorale: [0, 0], killed: [0, 0], lost: [0, 0], moraleBy: [noCause(), noCause()] }, lineup: [0, 0], breakTick: [-1, -1], breakWhy: [0, 0], stood: [0, 0], standTick: [-1, -1], bladeTick: [0, 0], planTick: [-1, -1], ai: [setup.sides?.[0]?.player ? 0 : 1, setup.sides?.[1]?.player ? 0 : 1], frontLockTick: [-1, -1], used: [0, 0, 0, 0], broken: [0, 0], end: null, winner: -1, log: { dropped: 0, accepted: [], events: [] } }
   if (invalidSetup(setup)) { s.end = 'invalid'; return s }
+  if (setup.mvp === true) s.mvp = 1
   const unit = P.field.unit
   const jit = P.field.spawnJitterCells * unit
   for (const side of [0, 1] as const) {
@@ -297,6 +298,9 @@ function attackGroup(s: FieldState, grp: Grp, foe: number): void {
   }
 }
 
+/** 시험판(mvp)에서 사람이 쥔 편인가 — 장수를 안 따라 제자리를 지킨다 (명령한 무리만 움직인다) */
+export const still = (s: FieldState, side: 0 | 1): boolean => s.mvp === 1 && s.ai[side] === 0
+
 /** 한 편의 산 대가 모두 자고 있나 (그 편 장수도 안 걷는다 · 45 §2-19) */
 export const sideAsleep = (s: FieldState, side: 0 | 1): boolean => s.squads.every(q => q.side !== side || q.men <= 0 || q.sleep > 0)
 
@@ -336,7 +340,7 @@ function retarget(s: FieldState): void {
   }
   for (const h of s.heroes) {
     if (h.manual === 1) continue
-    if (follows(s, h.side)) { h.goal = aiHeroGoal(s, h); continue }
+    if (follows(s, h.side)) { h.goal = still(s, h.side) ? null : aiHeroGoal(s, h); continue }
     let best: Squad | null = null, bd = 0
     for (const q of s.squads) {
       if (q.side !== h.side || q.grp !== 'front' || q.men <= 0) continue
@@ -997,7 +1001,7 @@ function runImpacts(s: FieldState): boolean[] {
     const push = (blocked ? P.field.bounceCells : q.grp === 'horse' ? P.field.pushHorseCells : P.field.pushFrontCells) * P.field.unit
     shoves.push({ mover, from: { u: away.u, v: away.v }, len: push, by: q })
     if (blocked) addShock(s, q, P.field.blockedShock, 'melee')
-    else { q.bonus = ticksOf(P.field.chargeBonusSec); addShock(s, e, q.grp === 'horse' ? P.field.flankHitShock : s.lineup[q.side] === LINE_WEDGE ? mul(P.field.chargeHitShock, P.field.lineWedgeShockPermille) : P.field.chargeHitShock, q.grp === 'horse' ? 'flank' : 'melee') }
+    else { q.bonus = ticksOf(P.field.chargeBonusSec); addShock(s, e, q.grp === 'horse' ? (s.mvp === 1 && e.grp === 'bows' ? P.field.mvpBowFlankShock : P.field.flankHitShock) :s.lineup[q.side] === LINE_WEDGE ? mul(P.field.chargeHitShock, P.field.lineWedgeShockPermille) : P.field.chargeHitShock, q.grp === 'horse' ? 'flank' : 'melee') }
     emit(s, { kind: 'impact', side: q.side, id: q.id, u: idiv(q.u + e.u, 2), v: idiv(q.v + e.v, 2), n: q.men + e.men, to: e.id, how: blocked ? HIT_BLOCKED : HIT_GOOD })
   }
   // 다른 대를 미는 것끼리는 서로 안 걸린다 — 같은 대를 여럿이 밀 때만 친 대의 시작 자리 차례 (같은 편끼리라 거울·차례에 안 기댄다)

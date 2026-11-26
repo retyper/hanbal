@@ -23,7 +23,10 @@ export interface FlagsHandlers {
 export type Tone = 'ok' | 'why'
 /** 아래 띠가 알아야 하는 바깥 사정 — cmd: 앞줄·활·기병이 지금 고른 명령 번호(알아서면 -1) · sentGroup: 무리를 한 번이라도 보냈는가 · touch: 손으로 쓰는 화면인가 */
 /** big: 앞줄이 지금 고른 명령 번호(0 돌격 · 1 방진 · 없으면 -1) · aiming: 찍는 중인 큰 수 번호(2 화살비 · 3 옆치기 · 아니면 -1) */
-export interface FlagsCtx { line: number; foeLine: number; front: number; volley: boolean; flank: boolean; aiming: number; sentGroup: boolean; touch: boolean }
+/** cmdG: 시험판(?mvp)이면 고른 무리 번호(0~2 · 장수나 없으면 -1) — 큰 수 줄은 그 무리의 것만 Z X 차례로 · 진 고르기·안내 줄은 숨는다 · 옛 판은 undefined */
+export interface FlagsCtx { line: number; foeLine: number; front: number; volley: boolean; flank: boolean; aiming: number; sentGroup: boolean; touch: boolean; cmdG?: number }
+/** 시험판(?mvp): 무리마다 제 큰 수 (BIG_ARTS 번호) — 앞줄 돌격·방진 · 활 화살비 · 기병 옆치기 */
+export const MVP_CMDS: readonly (readonly number[])[] = [[0, 1], [2], [3]]
 export interface FlagsView {
   sync(m: VModel, ui: UiState, c: FlagsCtx): void
   say(text: string, tone: Tone, nowMs: number): void
@@ -79,6 +82,8 @@ const CSS = `
 .fd-opt img{width:30px;height:30px;object-fit:contain}
 .fd-opt.on{border-color:${GOLD};background:#2a2410d9}
 .fd-opt.on::after{content:'✓';position:absolute;left:4px;bottom:0;color:${GOLD};font-size:13px}
+.fd-bighead{display:flex;align-items:center;padding:0 4px 0 2px;border-right:1px solid #ffd27a66;margin-right:2px}
+.fd-bighead img{width:34px;height:34px;object-fit:contain}
 .fd-who{position:absolute;right:2px;top:2px;width:17px;height:17px;object-fit:contain;opacity:.95;pointer-events:none}
 .fd-opt i{position:absolute;left:3px;top:2px;font-size:14px;font-weight:700;line-height:1.2;min-width:16px;padding:0 4px;box-sizing:border-box;text-align:center;color:#fff;background:#0b1a2e;border:1px solid #f3ecd8;border-bottom-width:3px;border-radius:4px;font-style:normal}
 @media (pointer:coarse){.fd-opt i{display:none}}
@@ -159,13 +164,15 @@ export function mountFlags(root: HTMLElement, base: string, h: FlagsHandlers): F
   return {
     sync(m, ui, c) {
       const alive = [0, 1, 2, 3].map(g => cellWhy(m, g as InputGroup) === null ? 1 : 0)
-      const key = [c.line, c.foeLine, ui.phase, ui.sel.join(''), alive.join(''), c.front, c.volley ? 1 : 0, c.flank ? 1 : 0, c.aiming, c.sentGroup ? 1 : 0, c.touch ? 1 : 0, m.end === null ? 0 : 1].join('|')
+      const key = [c.line, c.foeLine, ui.phase, ui.sel.join(''), alive.join(''), c.front, c.volley ? 1 : 0, c.flank ? 1 : 0, c.aiming, c.sentGroup ? 1 : 0, c.touch ? 1 : 0, m.end === null ? 0 : 1, c.cmdG ?? 'x'].join('|')
+      const mvp = c.cmdG !== undefined
       if (key === sig) return
       sig = key
       strip.hidden = ui.phase === 'end' || m.end !== null
       go.hidden = ui.phase !== 'ready'
       const shown = pickables(m, ui)
-      const bigOn = ui.phase === 'play' && m.end === null
+      const mine = mvp ? MVP_CMDS[c.cmdG!] : undefined
+      const bigOn = mvp ? ui.phase !== 'end' && m.end === null && mine !== undefined : ui.phase === 'play' && m.end === null
       let html = ''
       for (const g of [0, 1, 2, 3] as const) {
         const live = shown.includes(g)
@@ -174,13 +181,16 @@ export function mountFlags(root: HTMLElement, base: string, h: FlagsHandlers): F
       }
       cells.innerHTML = html
       big.hidden = !bigOn
-      big.innerHTML = !bigOn ? '' : BIG_ARTS.map((name, i) => `<button class="fd-opt${(i < 2 && c.front === i) || (i === 2 && c.volley) || (i === 3 && c.flank) || c.aiming === i ? ' on' : ''}" type="button" data-act="big" data-i="${i}" data-n="${name}" title="${t(`field.big.${name}` as Key)}"><i>${firstKeyLabel(CMD_ACTION[i]!)}</i><img class="fd-who" src="${base}${CELL_ICON[BIG_WHO[i]!]!}" alt="">${img(`flag/flag-${name}.png`)}<span>${t(`war.cmdName.${name}` as Key)}</span></button>`).join('')
+      const opt = (name: string, i: number, key: number): string => `<button class="fd-opt${(i < 2 && c.front === i) || (i === 2 && c.volley) || (i === 3 && c.flank) || c.aiming === i ? ' on' : ''}" type="button" data-act="big" data-i="${i}" data-n="${name}" title="${t(`field.big.${name}` as Key)}"><i>${firstKeyLabel(CMD_ACTION[key]!)}</i>${img(`flag/flag-${name}.png`)}<span>${t(`war.cmdName.${name}` as Key)}</span></button>`
+      // 시험판: 머리에 고른 무리 그림 하나 · 그 무리의 큰 수만 Z X 차례로
+      if (mvp) big.innerHTML = !bigOn || mine === undefined ? '' : `<span class="fd-bighead">${img(CELL_ICON[c.cmdG!]!)}</span>` + mine.map((i, k) => opt(BIG_ARTS[i]!, i, k)).join('')
+      else big.innerHTML = !bigOn ? '' : BIG_ARTS.map((name, i) => `<button class="fd-opt${(i < 2 && c.front === i) || (i === 2 && c.volley) || (i === 3 && c.flank) || c.aiming === i ? ' on' : ''}" type="button" data-act="big" data-i="${i}" data-n="${name}" title="${t(`field.big.${name}` as Key)}"><i>${firstKeyLabel(CMD_ACTION[i]!)}</i><img class="fd-who" src="${base}${CELL_ICON[BIG_WHO[i]!]!}" alt="">${img(`flag/flag-${name}.png`)}<span>${t(`war.cmdName.${name}` as Key)}</span></button>`).join('')
       // 한 줄 안내: 처음 무리를 보내기 전까지만 (자세 단추가 떠 있으면 그 자리를 비운다)
       const line = ui.phase === 'ready' ? t(c.touch ? 'field.hint.ready.touch' : 'field.hint.ready.pc') : !c.sentGroup ? t(c.touch ? 'field.hint.group.touch' : 'field.hint.group.pc') : ''
-      const showHint = ui.phase === 'play' && m.end === null && !bigOn && line !== ''
-      // 준비 화면: 진 카드 셋(고른 것 금빛 ✓) + 적의 진 (카드를 누르면 맵의 우리 진이 그 꼴로 다시 선다)
-      lines.hidden = ui.phase !== 'ready'; foe.hidden = ui.phase !== 'ready'
-      if (ui.phase === 'ready') {
+      const showHint = ui.phase === 'play' && m.end === null && !bigOn && line !== '' && !mvp
+      // 준비 화면: 진 카드 셋(고른 것 금빛 ✓) + 적의 진 (카드를 누르면 맵의 우리 진이 그 꼴로 다시 선다) · 시험판은 진이 하나라 숨는다
+      lines.hidden = ui.phase !== 'ready' || mvp; foe.hidden = ui.phase !== 'ready' || mvp
+      if (ui.phase === 'ready' && !mvp) {
         lines.innerHTML = [0, 1, 2].map(i => `<button class="fd-line${c.line === i ? ' on' : ''}" type="button" data-line="${i}" title="${t(`field.line.desc.${i}` as Key)}">${lineSvg(i)}<b>${t(`field.line.${i}` as Key)}</b></button>`).join('')
         foe.innerHTML = `${lineSvg(c.foeLine, '#ff8a7a')}${img('icon/unit-spear.png')}${img('icon/unit-archer.png')}${img('icon/unit-buyeo-cavalry.png')}`
       }

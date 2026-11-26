@@ -370,6 +370,8 @@ export interface LiveSetup {
   map: FieldMap
   sides: readonly [LiveSide, LiveSide]
   night: boolean
+  /** 고르고 오른쪽 누름 시험판 (field.html?mvp) — 사람이 쥔 편은 장수를 안 따라 제자리를 지키고 · 기병이 적 활을 맨 뒤로 돌아 친다 · 없으면 옛 판 그대로 */
+  mvp?: boolean
 }
 
 export interface FieldLog {
@@ -422,4 +424,6 @@ export interface FieldState {
   /** 끝났을 때 이긴 편 · 0 우리 · 1 적 · -1 비김(또는 아직) */
   winner: -1 | 0 | 1
   log: FieldLog
+  /** 고르고 오른쪽 누름 시험판이면 1 (LiveSetup.mvp · 없으면 옛 판) */
+  mvp?: 0 | 1
 }

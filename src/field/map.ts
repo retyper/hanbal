@@ -41,6 +41,12 @@ export function meetMap(): FieldMap {
   return blank('meet', c0, c1)
 }
 
+/** 시험판(field.html?mvp)의 대로 — 두 진영이 판 끝에서 mvpStartMarginCells 에 서서 더 멀리서 시작하고(생각할 틈) · 판이 mvpMapWidthCells 로 넓어 적 날개 바깥에 기병이 돌 길이 남는다 */
+export function mvpMap(): FieldMap {
+  const u = P.field.mapLenCells, w = P.field.mvpMapWidthCells, m = P.field.mvpStartMarginCells
+  return { ...blank('meet', camp(m, idiv(w, 2), 1, w), camp(u - m, idiv(w, 2), -1, w)), w, cells: new Uint8Array(u * w) }
+}
+
 /** 비교용 — 평지에서 적 편이 제자리를 지킨다 (지형의 몫을 가르는 대조군) */
 export function holdMap(): FieldMap {
   const [c0, c1] = holdCamps()

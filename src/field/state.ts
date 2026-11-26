@@ -31,6 +31,8 @@ export function hashField(s: FieldState): string {
   h = mix(h, s.tick); h = mix(h, s.seed); h = mix(h, s.end === null ? 0 : END_CODE[s.end])
   // 장부(log.dropped · accepted)는 판 상태가 아니라 해시에 안 넣는다 — 버려진 입력이 있어도 기록 재생이 같은 해시를 낸다
   h = mix(h, s.winner); for (const n of s.used) h = mix(h, n); h = mix(h, s.broken[0]); h = mix(h, s.broken[1])
+  // 시험판(mvp)만 섞는다 — 옛 판의 해시는 그대로
+  if (s.mvp === 1) h = mix(h, s.mvp)
   for (const p of s.anchor) { h = mix(h, p.u); h = mix(h, p.v) }
   for (const r of s.route) { h = mix(h, r.length); for (const p of r) { h = mix(h, p.u); h = mix(h, p.v) } }
   for (const n of s.grpWhy) h = mix(h, n); for (const n of s.grpWhyTick) h = mix(h, n)

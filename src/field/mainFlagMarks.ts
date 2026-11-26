@@ -114,3 +114,31 @@ export function drawMarks(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
   }
   ctx.restore()
 }
+
+/** 상성 표 하나 (판 px · 적 대 머리 위) — up 이면 고른 무리가 이 적을 이긴다(초록 ▲) · 아니면 이 적이 고른 무리를 이긴다(빨강 ▼) · big 은 마우스를 올린 적·겨눈 적 */
+export interface Odds { x: number; y: number; up: boolean; big: boolean }
+const ODDS_UP = '#5fd068', ODDS_DOWN = '#e0473a', ODDS_BIG = 1.8
+
+/** 시험판(?mvp): 고른 무리와 적 대 사이의 상성 표 (글 없이 세모만 · 엔진 상성 표 그대로를 넘겨 받는다) */
+export function drawOdds(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam, odds: readonly Odds[]): void {
+  if (odds.length === 0) return
+  const z = cam.zoom
+  // 화면에서 같은 크기 (멀리 봐도 읽히게)
+  const base = P.field.oddsMarkPx / z
+  ctx.save()
+  ctx.translate(vp.w / 2, vp.h / 2)
+  ctx.scale(z, z)
+  ctx.translate(-cam.x, -cam.y)
+  ctx.lineJoin = 'round'
+  ctx.lineWidth = Math.max(1, 1.5 / z)
+  ctx.strokeStyle = '#0b0f08'
+  for (const o of odds) {
+    const h = o.big ? base * ODDS_BIG : base, w = h * 0.62
+    ctx.fillStyle = o.up ? ODDS_UP : ODDS_DOWN
+    ctx.beginPath()
+    if (o.up) { ctx.moveTo(o.x, o.y - h); ctx.lineTo(o.x + w, o.y); ctx.lineTo(o.x - w, o.y) }
+    else { ctx.moveTo(o.x - w, o.y - h); ctx.lineTo(o.x + w, o.y - h); ctx.lineTo(o.x, o.y) }
+    ctx.closePath(); ctx.fill(); ctx.stroke()
+  }
+  ctx.restore()
+}

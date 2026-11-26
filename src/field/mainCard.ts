@@ -47,6 +47,9 @@ const CSS = `
 #fd-help .bar.o b{background:#2f8cff}
 #fd-help .wc{gap:4px;min-width:110px}
 #fd-help .wc span{font-size:13px;font-weight:700}
+#fd-help .fd-mv{display:flex;align-items:center;gap:6px;margin:4px 0;font-size:16px}
+#fd-help .fd-mv img{width:34px;height:34px;object-fit:contain}
+#fd-help .fd-mv.beats{gap:4px;margin-top:8px}
 #fd-help .x{margin:6px 0 0;font-size:12px;color:#f3ecd8aa}
 #fd-help.big .x{display:none}
 @media (max-height:460px){
@@ -90,7 +93,20 @@ function cardHtml(base: string, touch: boolean): string {
   return `<div class="gs">${hero}${big}${squads}${win}</div>`
 }
 
-export function mountHelp(root: HTMLElement, base: string): Help {
+/** 시험판(?mvp)의 조작 그림: 세 줄(키 글자 + 짧은 말) + 상성 그림 한 줄 (창 ▶ 기병 ▶ 활 ▶ 창 · 엔진 KIND_BEATS 그대로) */
+function mvpCardHtml(base: string): string {
+  const kb = (a: ActionName): string => `<kbd>${keyLabel(KEYS[a][0] ?? '')}</kbd>`
+  const row = (body: string): string => `<div class="fd-mv">${body}</div>`
+  const img = (p: string): string => `<img src="${base}${p}" alt="">`
+  const pick = kb('pickFront') + kb('pickBows') + kb('pickHorse') + kb('pickHero') + `<span>${t('field.mvp.pick')}</span><b class="arr">→</b><span>${t('field.mvp.flags')}</span>` + kb('cmd1') + kb('cmd2')
+  const order = `<i class="mouse"></i><span>${t('field.mvp.order')}</span>`
+  const pause = `<kbd>Space</kbd><span>${t('field.mvp.pause')}</span>`
+  const arr = '<b class="arr">▶</b>'
+  const beats = img('icon/unit-spear.png') + arr + img('icon/unit-buyeo-cavalry.png') + arr + img('icon/unit-archer.png') + arr + img('icon/unit-spear.png')
+  return row(pick) + row(order) + row(pause) + `<div class="fd-mv beats">${beats}</div>`
+}
+
+export function mountHelp(root: HTMLElement, base: string, mvp = false): Help {
   const style = document.createElement('style')
   style.textContent = CSS
   document.head.append(style)
@@ -107,7 +123,7 @@ export function mountHelp(root: HTMLElement, base: string): Help {
     const key = touch ? 't' : 'p'
     if (key === built) return
     built = key
-    card.innerHTML = `${cardHtml(base, touch)}<p class="x">${t('field.help.close', { k: keyLabel(KEYS.help[0] ?? '') })}</p>`
+    card.innerHTML = `${mvp ? mvpCardHtml(base) : cardHtml(base, touch)}<p class="x">${t('field.help.close', { k: keyLabel(KEYS.help[0] ?? '') })}</p>`
   }
   const stop = (): void => { clearTimeout(flyTimer); box.classList.remove('fly') }
   box.addEventListener('pointerdown', e => { if (box.classList.contains('big')) return; e.stopPropagation(); box.hidden = true })
