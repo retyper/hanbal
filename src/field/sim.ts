@@ -435,9 +435,12 @@ export function detour(s: FieldState, q: Squad, e: Squad): Point {
 
 /** 한 걸음 (1칸 이하) — 얕은 물과 올라가는 높은 터는 느리고, 깊은 물·막힘 칸에는 못 들어간다 (막히면 한 축으로 미끄러진다) */
 function stepOnce(s: FieldState, K: Kit, side: 0 | 1, u: number, v: number, goal: Point, speed: number): Point {
-  const slow = (g: number): number => g === G_SHALLOW ? K.water : g === G_HIGH && s.map.highOwner !== side ? K.climb : MILLI
+  // 시험판(mvp): 오르막(가진 편이 아닌 쪽이 높은 터 위)은 mvpClimbPermille · 가진 편이 높은 터에서 앞(낮은 쪽)으로 내려가면 mvpDownhillPermille
+  const climb = s.mvp === 1 ? P.field.mvpClimbPermille : K.climb
+  const slow = (g: number): number => g === G_SHALLOW ? K.water : g === G_HIGH && s.map.highOwner !== side ? climb : MILLI
   const full = stepToward(u, v, goal.u, goal.v, speed)
-  const f = Math.min(slow(groundAt(s.map, u, v)), slow(groundAt(s.map, full.u, full.v)))
+  let f = Math.min(slow(groundAt(s.map, u, v)), slow(groundAt(s.map, full.u, full.v)))
+  if (s.mvp === 1 && f === MILLI && s.map.highOwner === side && groundAt(s.map, u, v) === G_HIGH && (goal.u - u) * fwd(side) > 0) f = P.field.mvpDownhillPermille
   const p = f === MILLI ? full : stepToward(u, v, goal.u, goal.v, mul(speed, f))
   if (walkable(groundAt(s.map, p.u, p.v))) return p
   const alongU = { u: p.u, v }, alongV = { u, v: p.v }
@@ -573,6 +576,13 @@ function covered(s: FieldState, shooter: Squad, t: Squad): boolean {
   return false
 }
 /** 맞붙기 — 모든 대가 한꺼번에 치고 (순서에 안 따른다) 피해와 옆구리 맞음을 모았다가 한 번에 깎는다. 돌려주는 값: 편마다 칼날이 닿았나 (같이 닿기) */
+/** 활 q 가 거리² d 의 적 t 에 닿나 — 시험판(mvp)은 낮은 데서 높은 터 위로 쏘면 mvpBowUpReachPermille 만큼 짧다 */
+function inReach(s: FieldState, q: Squad, t: Squad, d: number): boolean {
+  const up = s.mvp === 1 && groundAt(s.map, t.u, t.v) === G_HIGH && groundAt(s.map, q.u, q.v) !== G_HIGH
+  const r = up ? mul(q.reach, P.field.mvpBowUpReachPermille) : q.reach
+  return d <= r * r
+}
+
 function fight(s: FieldState, K: Kit): [boolean, boolean] {
   const n = s.squads.length
   const dmg = new Array<number>(n).fill(0)
@@ -607,13 +617,12 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
     if (beatsKind(q.kind, e.kind)) counterShock(s, e, 'melee')
   }
   // 활의 닿는 거리 (화면이 읽는 칸 · 높은 터 위면 bowHighReachPermille 배)
-  for (const q of s.squads) if (q.grp === 'bows') q.reach = groundAt(s.map, q.u, q.v) === G_HIGH ? mul(K.bowR, P.field.bowHighReachPermille) : K.bowR
+  for (const q of s.squads) if (q.grp === 'bows') q.reach = groundAt(s.map, q.u, q.v) === G_HIGH ? mul(K.bowR, s.mvp === 1 ? P.field.mvpBowHighReachPermille : P.field.bowHighReachPermille) : K.bowR
   // 겨눔 — 사거리 안의 가장 가까운 적 (도망치는 대는 안 친다)
   const aim = new Array<number>(n).fill(-1)
   for (const q of s.squads) {
     if (q.men <= 0 || q.sleep > 0 || q.flee === 1) continue
-    const r2 = q.reach * q.reach
-    const t = q.grp === 'bows' ? nearestFoe(s, q, (t, d) => d <= r2 && !covered(s, q, t)) : nearestFoe(s, q, t => touching(q, t) && bladeLine(s.map, q, t))
+    const t = q.grp === 'bows' ? nearestFoe(s, q, (t, d) => inReach(s, q, t, d) && !covered(s, q, t)) : nearestFoe(s, q, t => touching(q, t) && bladeLine(s.map, q, t))
     if (t) aim[q.id] = t.id
   }
   // 맞쏘기 — 활은 사거리 안의 적 활 가운데 우리 편을 쏘고 있는 것을 앞줄보다 먼저 겨눈다 (알아서) · 맞쏘기 명령이면 적 활부터 (쏘든 안 쏘든)
@@ -623,7 +632,7 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
   const focus = new Array<boolean>(n).fill(false)
   for (const q of s.squads) {
     if (q.men <= 0 || q.sleep > 0 || q.grp !== 'bows' || q.flee === 1) continue
-    const ok = (t: Squad, d: number): boolean => d <= q.reach * q.reach && !covered(s, q, t)
+    const ok = (t: Squad, d: number): boolean => inReach(s, q, t, d) && !covered(s, q, t)
     let t = nearestFoe(s, q, (t, d) => t.grp === 'bows' && (q.cmd === CMD_COUNTER || first[t.id]! >= 0) && ok(t, d))
     const at = q.order === ORD_VOLLEY ? q.orderAt : null
     if (at) {
@@ -641,8 +650,8 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
   // 적을 쳐라 — 받은 적이 닿는 거리에 있으면 그 적을 먼저 친다 (활은 맞쏘기보다 먼저)
   for (const q of s.squads) {
     if (q.men <= 0 || q.sleep > 0 || q.foe < 0 || q.flee === 1) continue
-    const t = s.squads[q.foe]!, r2 = q.reach * q.reach
-    if (t.men > 0 && (q.grp === 'bows' ? dist2(q.u, q.v, t.u, t.v) <= r2 && !covered(s, q, t) : touching(q, t) && bladeLine(s.map, q, t))) aim[q.id] = t.id
+    const t = s.squads[q.foe]!
+    if (t.men > 0 && (q.grp === 'bows' ? inReach(s, q, t, dist2(q.u, q.v, t.u, t.v)) && !covered(s, q, t) : touching(q, t) && bladeLine(s.map, q, t))) aim[q.id] = t.id
   }
   // 맞물림 상한 (52 §1-2) — 한 적 대를 칼날로 치는 대는 foeCapPerSquad 까지 (맞물린 대 → 몸이 가까운 차례 → 시작 자리) · 남는 대는 기다린다
   capMelee(s, aim)
@@ -654,6 +663,8 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
     if (q.grp === 'front') v = mul(v, q.stance === STANCE_CHARGE ? K.charge : q.stance === STANCE_HOLD ? K.hold : q.stance === STANCE_OPEN ? K.open : MILLI)
     if (q.grp === 'bows' && openFront[q.side]) v = mul(v, K.openVolley)
     if (q.grp === 'bows' && groundAt(s.map, q.u, q.v) === G_HIGH) v = mul(v, K.height)
+    // 시험판(mvp): 칼날 — 높은 터를 가진 편이 위에서 치면 세고 · 남의 높은 터를 오르며 치면 약하다
+    if (s.mvp === 1 && q.grp !== 'bows' && s.map.highOwner >= 0 && groundAt(s.map, q.u, q.v) === G_HIGH) v = mul(v, q.side === s.map.highOwner ? P.field.mvpHighMeleePermille : P.field.mvpClimbMeleePermille)
     // 세모 — 이긴 쪽은 세고 진 쪽이 받는 손실은 크다 (본편 tacTriUp/Down · tacTriTakeLose/Win)
     if (q.grp === 'front' && e.grp === 'front') {
       if (beats(q.stance, e.stance)) v = mul(mul(v, K.up), K.triTakeLose)
@@ -903,7 +914,7 @@ export function stepField(s: FieldState, inputs: readonly FieldInput[] = NO_INPU
     if (q.lock >= 0 && q.manual === 0) return null
     if (q.manual === 0 && q.target >= 0) {
       const e = s.squads[q.target]!
-      if ((q.grp === 'bows' ? dist2(q.u, q.v, e.u, e.v) <= q.reach * q.reach : touching(q, e)) && (q.grp === 'bows' || bladeLine(s.map, q, e))) return null
+      if ((q.grp === 'bows' ? inReach(s, q, e, dist2(q.u, q.v, e.u, e.v)) : touching(q, e)) && (q.grp === 'bows' || bladeLine(s.map, q, e))) return null
     }
     // 같이 닿기 — 맡긴 대는 제 편 칼날이 닿기 전까지 가장 느린 무리 걸음으로 간다 (기병 혼자 먼저 닿지 않게 · 「적을 쳐라」를 받은 대는 제 걸음)
     // 장수를 따르는 편은 진 자리로 제 걸음 · 돌격·옆치기 들이침은 달리고 무너진 대는 도망친다 (army.ts runMul)
@@ -1001,7 +1012,9 @@ function runImpacts(s: FieldState): boolean[] {
     const e = s.squads[q.target]!
     if (e.men <= 0 || !touching(q, e) || !bladeLine(s.map, q, e)) continue
     const min = (q.grp === 'front' ? P.field.chargeMinRunCells : P.field.flankMinRunCells) * P.field.unit
-    if (q.ran < min) { q.ran = 0; continue }
+    // 시험판(mvp): 오르막(남의 높은 터 위)에서는 도움닫기가 안 된다
+    const uphill = s.mvp === 1 && s.map.highOwner >= 0 && q.side !== s.map.highOwner && groundAt(s.map, q.u, q.v) === G_HIGH
+    if (q.ran < min || uphill) { q.ran = 0; continue }
     q.ran = 0
     out[q.id] = true
     // 방진이거나 긴 창이면 기병 들이침이 막힌다 (긴 창은 방진이 아니어도 · C2 병종)
@@ -1013,7 +1026,10 @@ function runImpacts(s: FieldState): boolean[] {
     const push = (blocked ? P.field.bounceCells : q.grp === 'horse' ? P.field.pushHorseCells : P.field.pushFrontCells) * P.field.unit
     shoves.push({ mover, from: { u: away.u, v: away.v }, len: push, by: q })
     if (blocked) addShock(s, q, P.field.blockedShock, 'melee')
-    else { q.bonus = ticksOf(P.field.chargeBonusSec); addShock(s, e, q.grp === 'horse' ? (rider && arc > 0 && e.grp === 'bows' ? P.field.mvpBowFlankShock : P.field.flankHitShock) : s.lineup[q.side] === LINE_WEDGE ? mul(P.field.chargeHitShock, P.field.lineWedgeShockPermille) : P.field.chargeHitShock, q.grp === 'horse' ? 'flank' : 'melee') }
+    else { q.bonus = ticksOf(P.field.chargeBonusSec); const base = q.grp === 'horse' ? (rider && arc > 0 && e.grp === 'bows' ? P.field.mvpBowFlankShock : P.field.flankHitShock) : s.lineup[q.side] === LINE_WEDGE ? mul(P.field.chargeHitShock, P.field.lineWedgeShockPermille) : P.field.chargeHitShock
+      // 시험판(mvp): 높은 터에서 낮은 데로 내리치면 쾅이 mvpDownhillShockPermille 배
+      const down = s.mvp === 1 && groundAt(s.map, q.u, q.v) === G_HIGH && groundAt(s.map, e.u, e.v) !== G_HIGH
+      addShock(s, e, down ? mul(base, P.field.mvpDownhillShockPermille) : base, q.grp === 'horse' ? 'flank' : 'melee') }
     // 시험판(mvp): 기병이 활을 들이치면 그 둘레 mvpBowPanicCells 의 같은 편 활도 사기 mvpBowPanicShock 를 잃는다 (뒷줄이 통째로 흔들린다)
     if (!blocked && rider && arc > 0 && e.grp === 'bows') for (const o of s.squads) if (o !== e && o.side === e.side && o.grp === 'bows' && o.men > 0 && dist2(o.u, o.v, e.u, e.v) <= sq(P.field.mvpBowPanicCells * P.field.unit)) addShock(s, o, P.field.mvpBowPanicShock, 'domino')
     emit(s, { kind: 'impact', side: q.side, id: q.id, u: idiv(q.u + e.u, 2), v: idiv(q.v + e.v, 2), n: q.men + e.men, to: e.id, how: blocked ? HIT_BLOCKED : HIT_GOOD })

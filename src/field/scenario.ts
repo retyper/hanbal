@@ -2,7 +2,7 @@
  * 시험·벤치용 시작 판 (본편 Side 에서 LiveSetup 을 짓는 liveSetupOf 는 L 카드가 만든다).
  * 한 편 사람 수 men 을 앞줄 절반 · 활 4분의 1 · 기병 4분의 1 로 나눈 같은 두 편. 맵은 기본 대로(meet).
  */
-import { ambushMap, crossMap, highMap, meetMap, mvpMap, stakeMap } from './map.ts'
+import { ambushMap, crossMap, meetMap, mvpHighMap, mvpMap, mvpStakeMap } from './map.ts'
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import type { FieldMap, LiveSetup, LiveSide } from './types.ts'
@@ -31,8 +31,8 @@ export type LabMap = 'meet' | 'high' | 'cross' | 'stake' | 'ambushOk' | 'ambushB
 export const LAB_MAPS: readonly LabMap[] = ['meet', 'high', 'cross', 'stake', 'ambushOk', 'ambushBad']
 /** 실험실의 한 편 — 자리 1 가운데(앞줄 병종) · 2 뒷줄(활 병종) · 3·4 날개(기병 · 사람 수는 둘이 반씩) · 5 대장(장수) */
 export interface LabSide { front: { kind: 'spear' | 'pike' | 'shield'; men: number }; bows: { kind: 'bow' | 'crossbow'; men: number }; horse: number }
-/** 실험실 판 짜임 (기록에 그대로 남는다) — spread: 적 사람 수가 씨앗으로 흔들리는 폭(천분율) */
-export interface LabConfig { v: 1; map: LabMap; sides: [LabSide, LabSide]; tricks: boolean; spread: number; seed: number }
+/** 실험실 판 짜임 (기록에 그대로 남는다) — foe: 적 사람 수 배(천분율 · 짠 적 군에 곱한다) · spread: 그 배가 씨앗으로 흔들리는 폭(천분율) */
+export interface LabConfig { v: 1; map: LabMap; sides: [LabSide, LabSide]; tricks: boolean; foe: number; spread: number; seed: number }
 /** 묶음 단추 — 고른 군 · 보병 많은 군 · 기병 많은 군 · 수가 적은 군(800) */
 export const LAB_PRESETS: Readonly<Record<'even' | 'foot' | 'horse' | 'small', LabSide>> = {
   even: { front: { kind: 'spear', men: 600 }, bows: { kind: 'bow', men: 300 }, horse: 300 },
@@ -40,13 +40,19 @@ export const LAB_PRESETS: Readonly<Record<'even' | 'foot' | 'horse' | 'small', L
   horse: { front: { kind: 'spear', men: 400 }, bows: { kind: 'bow', men: 300 }, horse: 500 },
   small: { front: { kind: 'spear', men: 400 }, bows: { kind: 'bow', men: 200 }, horse: 200 },
 }
-export const LAB_DEFAULT: LabConfig = { v: 1, map: 'meet', sides: [LAB_PRESETS.even, LAB_PRESETS.even], tricks: false, spread: 100, seed: 7 }
+/** 실험실의 처음 짜임 = 시험판(?mvp)과 같은 판 (적은 고른 군의 mvpFoeMenPermille ± mvpFoeMenSpreadPermille · 같은 씨앗이면 같은 판) */
+export const LAB_DEFAULT: LabConfig = { v: 1, map: 'meet', sides: [LAB_PRESETS.even, LAB_PRESETS.even], tricks: false, foe: P.field.mvpFoeMenPermille, spread: P.field.mvpFoeMenSpreadPermille, seed: 7 }
+/** 판 묶음 — 시험판과 같게(적 86%) · 맞대결(1200 : 1200 · 흔들림 없음) */
+export const LAB_SCENES: Readonly<Record<'mvp' | 'duel', Pick<LabConfig, 'sides' | 'foe' | 'spread'>>> = {
+  mvp: { sides: [LAB_PRESETS.even, LAB_PRESETS.even], foe: P.field.mvpFoeMenPermille, spread: P.field.mvpFoeMenSpreadPermille },
+  duel: { sides: [LAB_PRESETS.even, LAB_PRESETS.even], foe: 1000, spread: 0 },
+}
 
 export function labMap(m: LabMap): FieldMap {
   switch (m) {
-    case 'high': return highMap()
+    case 'high': return mvpHighMap()
     case 'cross': return crossMap()
-    case 'stake': return stakeMap()
+    case 'stake': return mvpStakeMap()
     case 'ambushOk': return ambushMap(true)
     case 'ambushBad': return ambushMap(false)
     default: return mvpMap()
@@ -56,9 +62,11 @@ export function labMap(m: LabMap): FieldMap {
 /** 실험실 판 — 짠 대로 두 편을 세우고 시험판 규칙(고르고 오른쪽 누름 · 명령 없으면 제자리)으로 · 적 사람 수는 씨앗으로 ± spread 천분율 */
 export function labSetup(cfg: LabConfig, seed: number = cfg.seed): LiveSetup {
   const su = plainSetup(seed, 1200, true, labMap(cfg.map))
-  const k = 1000 + Math.round((roll(seed, 0, 'lab:foe') * 2 - 1) * cfg.spread)
+  // 시험판과 같은 굴림 열쇠·같은 나눔(사람 수를 배로 곱한 뒤 앞줄·활은 내림 · 나머지는 기병) — 처음 짜임이면 시험판과 똑같은 판이 선다
+  const k = (cfg.foe ?? 1000) + Math.round((roll(seed, 0, 'mvp:foe') * 2 - 1) * cfg.spread)
   const side = (base: LiveSide, l: LabSide, mul: number): LiveSide => {
-    const front = Math.max(0, Math.round(l.front.men * mul / 1000)), bows = Math.max(0, Math.round(l.bows.men * mul / 1000)), horse = Math.max(0, Math.round(l.horse * mul / 1000))
+    const all = l.front.men + l.bows.men + l.horse, n = Math.max(0, Math.round(all * mul / 1000))
+    const front = all > 0 ? Math.trunc(n * l.front.men / all) : 0, bows = all > 0 ? Math.trunc(n * l.bows.men / all) : 0, horse = Math.max(0, n - front - bows)
     return { ...base, form: 0, men: { front, bows, horse }, kinds: { [l.front.kind]: front, [l.bows.kind]: bows, horse } }
   }
   return { ...su, key: `lab:${cfg.map}:${seed}`, sides: [side(su.sides[0], cfg.sides[0], 1000), side(su.sides[1], cfg.sides[1], k)], mvp: true, mvpTricks: cfg.tricks }

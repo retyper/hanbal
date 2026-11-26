@@ -4,7 +4,8 @@
  * 기록은 판이 끝날 때마다 한 줄 · LAB_REC_MAX 줄까지 (넘으면 오래된 것부터 뺀다).
  */
 import { t, type Key } from '../i18n/index.ts'
-import { LAB_MAPS, LAB_PRESETS, type LabConfig, type LabSide } from './scenario.ts'
+import { LAB_DEFAULT, LAB_MAPS, LAB_PRESETS, LAB_SCENES, type LabConfig, type LabSide } from './scenario.ts'
+import { LAB_BOTS, type LabBotSum } from './labbots.ts'
 
 export const LAB_KEY = 'zz.field.lab'
 export const LAB_REC_MAX = 500
@@ -33,7 +34,11 @@ export interface LabRecord {
   pausedSec: number
   fastSec: number
 }
-interface Store { v: 1; cfg: LabConfig | null; recs: LabRecord[] }
+/** 봇 기준 하나 (판 짜임 열쇠마다 · 봇마다 묶음) */
+interface Base { n: number; sums: Record<string, LabBotSum> }
+interface Store { v: 1; cfg: LabConfig | null; recs: LabRecord[]; base?: Record<string, Base> }
+/** 봇 기준을 몇 판씩 · 몇 짜임까지 남기나 */
+const BASE_N = 40, BASE_KEEP = 30
 
 function load(): Store {
   try {
@@ -47,11 +52,13 @@ function save(s: Store): void {
   try { localStorage.setItem(LAB_KEY, JSON.stringify(s)) } catch { /* 저장 못 해도 판은 돈다 */ }
 }
 /** 저장해 둔 판 짜임 (없으면 null) */
-export const savedLabConfig = (): LabConfig | null => load().cfg
+export const savedLabConfig = (): LabConfig | null => { const c = load().cfg; return c === null ? null : { ...LAB_DEFAULT, ...c } }
 
 export interface LabHandlers {
   /** 짠 대로 판을 새로 세운다 (준비 화면 · 같은 씨앗) */
   onApply(cfg: LabConfig): void
+  /** 서랍이 열리거나 닫혔다 (카메라가 비켜 담을 폭이 바뀐다) */
+  onLayout(): void
 }
 export interface Lab {
   /** 끝난 판 한 줄을 더한다 */
@@ -74,6 +81,8 @@ const CSS = `
 #lab-side input[type=number]{width:70px}
 #lab-side .lab-go{background:${GOLD};color:#1a1305;border:0;font-weight:700}
 #lab-side small{color:#f3ecd8aa}
+#lab-side .lab-base div{display:inline-block;margin-right:10px}
+#lab-side .lab-base b{color:#ffd27a}
 #lab-tab{position:absolute;left:0;top:60px;z-index:9;font:inherit;font-size:13px;color:#1a1305;background:${GOLD};border:0;border-radius:0 8px 8px 0;padding:8px 6px;writing-mode:vertical-rl}
 #lab-side:not([hidden])~#lab-tab,#lab-side:not([hidden])~#lab-recbtn{left:min(300px,calc(100vw - 48px))}
 #lab-recbtn{position:absolute;left:0;top:170px;z-index:9;font:inherit;font-size:13px;color:#f3ecd8;background:#0b1a2ee6;border:1px solid ${GOLD}88;border-left:0;border-radius:0 8px 8px 0;padding:8px 6px;writing-mode:vertical-rl}
@@ -96,12 +105,13 @@ export function armyLabel(l: LabSide): string {
 }
 const total = (l: LabSide): number => l.front.men + l.bows.men + l.horse
 
-export function mountLab(root: HTMLElement, first: LabConfig, h: LabHandlers): Lab {
+/** firstVisit: 저장해 둔 짜임이 없으면(처음 온 사람) 서랍을 열어 둔 채 시작 */
+export function mountLab(root: HTMLElement, first: LabConfig, firstVisit: boolean, h: LabHandlers): Lab {
   const style = document.createElement('style')
   style.textContent = CSS
   document.head.append(style)
   let cfg: LabConfig = structuredClone(first)
-  const side = document.createElement('div'); side.id = 'lab-side'
+  const side = document.createElement('div'); side.id = 'lab-side'; side.hidden = !firstVisit
   const tab = document.createElement('button'); tab.id = 'lab-tab'; tab.type = 'button'; tab.textContent = t('lab.panel')
   const recBtn = document.createElement('button'); recBtn.id = 'lab-recbtn'; recBtn.type = 'button'
   const rec = document.createElement('div'); rec.id = 'lab-rec'; rec.hidden = true
@@ -120,16 +130,59 @@ export function mountLab(root: HTMLElement, first: LabConfig, h: LabHandlers): L
 <div class="lab-row"><span>${t('lab.slot.5')}</span><span>${t('lab.hero')}</span></div>`
   }
   const paintSide = (): void => {
-    side.innerHTML = `<h3>${t('lab.map')}</h3><div class="lab-row">${LAB_MAPS.map(m => `<button type="button" data-map="${m}" class="${m === cfg.map ? 'on' : ''}">${t(`lab.map.${m}` as Key)}</button>`).join('')}</div>
+    side.innerHTML = `<h3>${t('lab.scene')}</h3><div class="lab-row">${(Object.keys(LAB_SCENES) as Array<keyof typeof LAB_SCENES>).map(k => `<button type="button" data-scene="${k}">${t(`lab.scene.${k}` as Key, { n: Math.round(LAB_SCENES[k].foe / 10) })}</button>`).join('')}</div>
+<h3>${t('lab.base')}</h3><div class="lab-base" id="lab-base"></div>
+<h3>${t('lab.map')}</h3><div class="lab-row">${LAB_MAPS.map(m => `<button type="button" data-map="${m}" class="${m === cfg.map ? 'on' : ''}">${t(`lab.map.${m}` as Key)}</button>`).join('')}</div>
 ${sideHtml(0)}${sideHtml(1)}
 <h3>${t('lab.foeOpts')}</h3>
 <div class="lab-row"><label><input type="checkbox" data-f="tricks"${cfg.tricks ? ' checked' : ''}> ${t('lab.tricks')}</label></div>
+<div class="lab-row"><span>${t('lab.foeScale')}</span><input type="number" step="10" min="300" max="2000" value="${cfg.foe}" data-f="foe"></div>
 <div class="lab-row"><span>${t('lab.spread')}</span><input type="number" step="10" min="0" max="400" value="${cfg.spread}" data-f="spread"></div>
 <h3>${t('lab.seed')}</h3>
 <div class="lab-row"><input type="number" step="1" min="1" value="${cfg.seed}" data-f="seed"><button type="button" data-act="newseed">${t('lab.newSeed')}</button></div>
 <div class="lab-row"><button type="button" class="lab-go" data-act="apply">${t('lab.apply')}</button><button type="button" data-act="again">${t('lab.again')}</button></div>`
+    paintBase(baseView.b, baseView.done, baseView.total)
   }
-  const apply = (): void => { save({ ...load(), cfg }); paintSide(); h.onApply(structuredClone(cfg)) }
+  const apply = (): void => { save({ ...load(), cfg }); paintSide(); h.onApply(structuredClone(cfg)); startBase() }
+
+  // ---- 이 판의 봇 기준 (일꾼이 따로 돌린다 · 숨은 탭에서는 멈춘다 · 짜임마다 저장 칸에 남긴다) ----
+  let worker: Worker | null = null, baseKey = '', baseDone = true
+  const keyOf = (c: LabConfig): string => JSON.stringify({ ...c, v: 1 })
+  /** 마지막으로 보인 봇 기준 (서랍을 다시 칠해도 남게) */
+  let baseView: { b: Base | null; done: number; total: number } = { b: null, done: 0, total: 1 }
+  const paintBase = (b: Base | null, done: number, total: number): void => {
+    baseView = { b, done, total }
+    const el = document.getElementById('lab-base')
+    if (el === null) return
+    if (b === null || done < total) { el.textContent = t('lab.base.wait', { n: done, m: total }); return }
+    el.innerHTML = LAB_BOTS.map(k => { const s = b.sums[k]!; return `<div>${t(`lab.base.${k}` as Key)} <b>${Math.round(100 * s.wins / Math.max(1, s.games))}%</b></div>` }).join('') + `<small>${t('lab.base.note', { a: cfg.seed, b: cfg.seed + b.n - 1, n: b.n })}</small>`
+  }
+  function stopBase(): void { worker?.terminate(); worker = null }
+  function startBase(): void {
+    stopBase()
+    baseKey = keyOf(cfg)
+    const have = load().base?.[baseKey]
+    if (have !== undefined) { baseDone = true; paintBase(have, 1, 1); return }
+    baseDone = false
+    if (document.hidden) return
+    const key = baseKey
+    try { worker = new Worker(new URL('./mainLabWorker.ts', import.meta.url), { type: 'module' }) } catch { return }
+    paintBase(null, 0, BASE_N * LAB_BOTS.length)
+    worker.onmessage = (e: MessageEvent): void => {
+      const m = e.data as { key: string; done: number; total: number; sums: Record<string, LabBotSum> }
+      if (m.key !== baseKey) return
+      paintBase({ n: BASE_N, sums: m.sums }, m.done, m.total)
+      if (m.done < m.total) return
+      baseDone = true; stopBase()
+      const s = load(), base = { ...(s.base ?? {}), [key]: { n: BASE_N, sums: m.sums } }
+      const keys = Object.keys(base)
+      for (const k of keys.slice(0, Math.max(0, keys.length - BASE_KEEP))) delete base[k]
+      save({ ...s, base })
+    }
+    worker.postMessage({ key, cfg, n: BASE_N })
+  }
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stopBase(); else if (!baseDone) startBase() })
+  addEventListener('pagehide', stopBase)
   side.addEventListener('change', e => {
     const el = e.target as HTMLInputElement
     const f = el.dataset['f'], s = Number(el.dataset['side']) as 0 | 1
@@ -141,6 +194,7 @@ ${sideHtml(0)}${sideHtml(1)}
     else if (f === 'bowsMen') l.bows.men = num(el.value, 0, MEN_MAX)
     else if (f === 'horse') l.horse = num(el.value, 0, MEN_MAX)
     else if (f === 'tricks') { cfg = { ...cfg, tricks: el.checked }; return }
+    else if (f === 'foe') { cfg = { ...cfg, foe: Math.max(300, Math.min(2000, Math.round(Number(el.value) || 1000))) }; return }
     else if (f === 'spread') { cfg = { ...cfg, spread: Math.max(0, Math.min(400, Math.round(Number(el.value) || 0))) }; return }
     else if (f === 'seed') { cfg = { ...cfg, seed: Math.max(1, Math.round(Number(el.value) || 1)) }; return }
     cfg = { ...cfg, sides: s === 0 ? [l, cfg.sides[1]] : [cfg.sides[0], l] }
@@ -149,7 +203,8 @@ ${sideHtml(0)}${sideHtml(1)}
   side.addEventListener('click', e => {
     const el = (e.target as HTMLElement).closest('button') as HTMLButtonElement | null
     if (el === null) return
-    const map = el.dataset['map'], preset = el.dataset['preset'], act = el.dataset['act']
+    const map = el.dataset['map'], preset = el.dataset['preset'], act = el.dataset['act'], scene = el.dataset['scene']
+    if (scene !== undefined) { const sc = LAB_SCENES[scene as keyof typeof LAB_SCENES]; cfg = { ...cfg, sides: [structuredClone(sc.sides[0]), structuredClone(sc.sides[1])], foe: sc.foe, spread: sc.spread }; apply(); return }
     if (map !== undefined) { cfg = { ...cfg, map: map as LabConfig['map'] }; apply(); return }
     if (preset !== undefined) {
       const s = Number(el.dataset['side']) as 0 | 1, l = structuredClone(LAB_PRESETS[preset as keyof typeof LAB_PRESETS])
@@ -158,7 +213,7 @@ ${sideHtml(0)}${sideHtml(1)}
     if (act === 'newseed') { cfg = { ...cfg, seed: cfg.seed + 1 }; apply(); return }
     if (act === 'apply' || act === 'again') apply()
   })
-  tab.addEventListener('click', () => { side.hidden = !side.hidden })
+  tab.addEventListener('click', () => { side.hidden = !side.hidden; h.onLayout() })
   recBtn.addEventListener('click', () => { rec.hidden = !rec.hidden; clearArmed = false; if (!rec.hidden) paintRec() })
 
   /** 묶어 보기: 열쇠(땅 · 군)마다 판 수 · 우리가 이긴 몫 · 평균 길이 */
@@ -197,7 +252,7 @@ ${recs.length === 0 ? `<p>${t('lab.empty')}</p>` : groupTable(recs, r => t(`lab.
     }
   })
   const paintRecBtn = (): void => { recBtn.textContent = `${t('lab.records')} ${load().recs.length}` }
-  paintSide(); paintRecBtn()
+  paintSide(); paintRecBtn(); startBase()
   return {
     record(r) {
       const s = load()
@@ -206,6 +261,6 @@ ${recs.length === 0 ? `<p>${t('lab.empty')}</p>` : groupTable(recs, r => t(`lab.
       save(s); paintRecBtn()
       if (!rec.hidden) paintRec()
     },
-    open(show) { side.hidden = !show },
+    open(show) { if (side.hidden === !show) return; side.hidden = !show; h.onLayout() },
   }
 }

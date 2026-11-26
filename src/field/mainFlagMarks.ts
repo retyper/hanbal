@@ -116,7 +116,9 @@ export function drawMarks(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
 }
 
 /** 상성 표 하나 (판 px · 적 대 머리 위) — up 이면 고른 무리가 이 적을 이긴다(초록 ▲) · 아니면 이 적이 고른 무리를 이긴다(빨강 ▼) · big 은 마우스를 올린 적·겨눈 적 */
-export interface Odds { x: number; y: number; up: boolean; big: boolean }
+/** up: 고른 무리가 이긴다(▲) · 진다(▼) · null 이면 상성은 비기고 비탈 눈금만 · slope: 1 그 적이 높은 터 위(오르막 · 우리에게 불리) · -1 우리가 높은 터 위(내리막) · 0 같은 높이 */
+export interface Odds { x: number; y: number; up: boolean | null; big: boolean; slope: -1 | 0 | 1 }
+const SLOPE_UP = '#ffb08a', SLOPE_DOWN = '#9fe0a6'
 const ODDS_UP = '#5fd068', ODDS_DOWN = '#e0473a', ODDS_BIG = 1.8
 
 /** 시험판(?mvp): 고른 무리와 적 대 사이의 상성 표 (글 없이 세모만 · 엔진 상성 표 그대로를 넘겨 받는다) */
@@ -134,11 +136,21 @@ export function drawOdds(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam, 
   ctx.strokeStyle = '#0b0f08'
   for (const o of odds) {
     const h = o.big ? base * ODDS_BIG : base, w = h * 0.62
-    ctx.fillStyle = o.up ? ODDS_UP : ODDS_DOWN
-    ctx.beginPath()
-    if (o.up) { ctx.moveTo(o.x, o.y - h); ctx.lineTo(o.x + w, o.y); ctx.lineTo(o.x - w, o.y) }
-    else { ctx.moveTo(o.x - w, o.y - h); ctx.lineTo(o.x + w, o.y - h); ctx.lineTo(o.x, o.y) }
-    ctx.closePath(); ctx.fill(); ctx.stroke()
+    if (o.up !== null) {
+      ctx.fillStyle = o.up ? ODDS_UP : ODDS_DOWN
+      ctx.beginPath()
+      if (o.up) { ctx.moveTo(o.x, o.y - h); ctx.lineTo(o.x + w, o.y); ctx.lineTo(o.x - w, o.y) }
+      else { ctx.moveTo(o.x - w, o.y - h); ctx.lineTo(o.x + w, o.y - h); ctx.lineTo(o.x, o.y) }
+      ctx.closePath(); ctx.fill(); ctx.stroke()
+    }
+    // 비탈 눈금: 세모 오른쪽에 비스듬한 막대 — 오르는 비탈(/ 주황)이면 우리에게 불리 · 내리는 비탈(\ 초록)이면 유리
+    if (o.slope !== 0) {
+      const x0 = o.x + w + h * 0.25, x1 = x0 + h * 0.7
+      ctx.save(); ctx.lineWidth = Math.max(2, 3 / z); ctx.strokeStyle = o.slope > 0 ? SLOPE_UP : SLOPE_DOWN
+      ctx.beginPath()
+      if (o.slope > 0) { ctx.moveTo(x0, o.y); ctx.lineTo(x1, o.y - h) } else { ctx.moveTo(x0, o.y - h); ctx.lineTo(x1, o.y) }
+      ctx.stroke(); ctx.restore()
+    }
   }
   ctx.restore()
 }

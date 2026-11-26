@@ -20,7 +20,7 @@ import { mountArrows, mountPad, type Arrows, type Pad, type PadBtn } from './fie
 import { mountFirst, mountSteps, type First, type Steps } from './field/mainHelp.ts'
 import { mountHelp, type Help } from './field/mainCard.ts'
 import { drawMarks, drawOdds, drawPaths, drawVolley, type Odds, type Path, type Volley, type Band, type Box, type Mark, type MarkShape, type Ring } from './field/mainFlagMarks.ts'
-import { HIT_BLOCKED, LINES, OP_AUTO, OP_MOVE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_VOLLEY, type FieldInput, type InputGroup } from './field/types.ts'
+import { G_HIGH, HIT_BLOCKED, LINES, OP_AUTO, OP_MOVE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_VOLLEY, type FieldInput, type InputGroup } from './field/types.ts'
 import { roll } from './core/rng.ts'
 import { mountMini, type Mini } from './field/mainMini.ts'
 import { serialize } from './field/rec.ts'
@@ -207,6 +207,8 @@ let vp: Viewport = { w: 1, h: 1 }
 let dpr = 1
 /** 위 단추·사기 띠 아래 끝과 아래 띠·안내 줄 위 끝 (화면 px) — 실제 DOM 높이를 읽는다. 이만큼은 카메라 여유로 둬서 판 끝 병사가 띠에 안 깔린다 */
 let padTop = 0, padBottom = 0, padTick = 0
+/** 실험실의 판 짜기 서랍이 덮는 왼쪽 폭 (화면 px · 닫히면 0) */
+let padLeft = 0
 function measurePads(): void {
   const bottomOf = (id: string): number => { const e = document.getElementById(id); return e === null || e.hidden ? 0 : e.getBoundingClientRect().bottom }
   padTop = Math.ceil(Math.max(bottomOf('fd-hud'), bottomOf('fd-edge')))
@@ -214,6 +216,8 @@ function measurePads(): void {
   const stripTop = strip === null || strip.hidden ? vp.h : strip.getBoundingClientRect().top
   const hintTop = hint === null || hint.hidden ? stripTop - P.field.hintBandPx : hint.getBoundingClientRect().top
   padBottom = Math.max(0, Math.ceil(vp.h - Math.min(stripTop - P.field.hintBandPx, hintTop)))
+  const side = document.getElementById('lab-side')
+  padLeft = side === null || side.hidden ? 0 : Math.ceil(side.getBoundingClientRect().right)
 }
 /** 카메라가 갈 수 있는 곳: 판 둘레에 여유를 둔다 (맨 위·옆 대가 잘리지 않게) */
 const bounds = (): Rect => {
@@ -263,10 +267,11 @@ function followTarget(dt: number, snap = false): void {
     }
     if (x0 > x1) { x0 = x1 = (b.left + b.right) / 2; y0 = y1 = (b.top + b.bottom) / 2 }
     const mg = P.field.mvpFrameMarginCells * P.field.cellPx
-    const want = Math.min(vp.w / (x1 - x0 + 2 * mg), (vp.h - padTop - padBottom) / (y1 - y0 + 2 * mg))
+    // 실험실의 판 짜기 서랍이 열려 있으면 그 폭(padLeft)만큼 비켜 담는다 (우리 진이 서랍 밑에 깔리지 않게)
+    const want = Math.min((vp.w - padLeft) / (x1 - x0 + 2 * mg), (vp.h - padTop - padBottom) / (y1 - y0 + 2 * mg))
     zt = Math.min(Math.max(fitZoom(vp, b), P.field.mvpZoomMax), Math.max(fitZoom(vp, b), want))
-    // 위·아래 띠 사이 보이는 칸의 가운데에 담는다
-    raw = { x: (x0 + x1) / 2, y: (y0 + y1) / 2 - (padTop - padBottom) / 2 / zt }
+    // 위·아래 띠와 왼쪽 서랍 사이 보이는 칸의 가운데에 담는다
+    raw = { x: (x0 + x1) / 2 - padLeft / 2 / zt, y: (y0 + y1) / 2 - (padTop - padBottom) / 2 / zt }
   } else if (ui.phase === 'ready') {
     zt = fitZoom(vp, b)
     const ours = cur.squads.filter(q => q.side === 0 && q.men > 0)
@@ -327,7 +332,7 @@ function nearestFight(hero: { u: number; v: number }): { u: number; v: number } 
 function restart(): void {
   // 실험실의 「다시」는 같은 판 (씨앗은 판 짜기에서 바꾼다)
   if (!LAB) { foeLine = nextFoeLine(); foeHist.push(foeLine); seed++ }
-  labRec = newLabRec(); lab?.open(true)
+  labRec = newLabRec()
   state = createField(newSetup()); cur = readField(state); prev = null; acc = 0
   resetFx()
   introLeft = P.field.introMs
@@ -513,6 +518,11 @@ function mvpCmd(k: number): void {
   if (g === 3) { mvpHero(k); return }
   const i = MVP_CMDS[g]?.[k]
   if (i !== undefined) pressBig(i)
+}
+/** 판 단위 자리(u, v)의 바닥 종류 (VModel 의 칸 배열을 읽기만 한다) */
+function groundOf(u: number, v: number): number {
+  const cu = Math.floor(u / P.field.unit), cv2 = Math.floor(v / P.field.unit)
+  return cu < 0 || cv2 < 0 || cu >= cur.mapU || cv2 >= cur.mapW ? 0 : cur.cells[cu * cur.mapW + cv2]!
 }
 /** 시험판: 찍어 둔 화살비 자리 (u, v 는 sim 단위 · tick0 은 찍은 틱) */
 let volleyAt: { u: number; v: number; tick0: number } | null = null
@@ -909,7 +919,8 @@ function movePan(dt: number): void {
   if (!(camFree || ui.phase === 'ready' || MVP)) return
   const held = (names: readonly string[]): boolean => names.some(n => keysHeld.has(n))
   let dx = (held(KEYS.camRight) ? 1 : 0) - (held(KEYS.camLeft) ? 1 : 0), dy = (held(KEYS.camDown) ? 1 : 0) - (held(KEYS.camUp) ? 1 : 0)
-  if (mouse.in && !touchMode && !blocked) {
+  // 시험판·실험실은 마우스 가장자리로 카메라를 옮기지 않는다 (멈춰 둔 마우스가 화면 끝에 있으면 판이 저절로 흘러 찍은 자리가 어긋나던 것) — 화살표·휠·미니맵으로
+  if (mouse.in && !touchMode && !blocked && !MVP) {
     const e = P.field.camEdgePx
     if (mouse.x < e) dx--; else if (mouse.x > vp.w - e) dx++
     if (mouse.y < e) dy--; else if (mouse.y > vp.h - e) dy++
@@ -986,9 +997,12 @@ function oddsNow(): Odds[] {
   const out: Odds[] = []
   for (const q of cur.squads) {
     if (q.side !== 1 || q.men <= 0) continue
-    const up = beatsKind(mine.kind, q.kind)
-    if (!up && !beatsKind(q.kind, mine.kind)) continue
-    out.push({ x: pxOf(q.u), y: pxOf(q.v) - bodyRect(q).h / 2 - P.field.soldierCells * P.field.cellPx, up, big: q.id === hoverFoe || tasks[g]!.some(k => k.kind === 'attack' && k.id === q.id) })
+    const win = beatsKind(mine.kind, q.kind), lose = beatsKind(q.kind, mine.kind)
+    // 비탈: 그 적만 높은 터 위면 오르막(1) · 우리만 위면 내리막(-1)
+    const hiT = groundOf(q.u, q.v) === G_HIGH, hiM = groundOf(mine.u, mine.v) === G_HIGH
+    const slope = hiT && !hiM ? 1 : hiM && !hiT ? -1 : 0
+    if (!win && !lose && slope === 0) continue
+    out.push({ x: pxOf(q.u), y: pxOf(q.v) - bodyRect(q).h / 2 - P.field.soldierCells * P.field.cellPx, up: win ? true : lose ? false : null, slope, big: q.id === hoverFoe || tasks[g]!.some(k => k.kind === 'attack' && k.id === q.id) })
   }
   return out
 }
@@ -1196,7 +1210,8 @@ function frame(now: number): void {
   if (!paused && !helpOpen && !blocked && !frozen(now) && now >= hitStopUntil) viewMs += endAt > 0 && now - endAt < P.field.endSlowMs ? simMs * P.field.endSlowPermille / 1000 : simMs
   movePan(dt / 1000)
   // 시험판의 준비 화면(멈춘 채 길을 그리는 때)은 카메라를 늦추지 않는다 — 위·아래 띠 높이가 늦게 재져 목표가 옮겨 가는 동안 찍은 자리가 화면과 어긋나던 것
-  followTarget(dt / 1000, MVP && ui.phase === 'ready')
+  // 시험판·실험실: 판이 돌지 않을 때(준비 화면 · 멈춤)는 카메라를 늦추지 않고 곧바로 맞춘다 — 판이 돌 때만 부드럽게
+  followTarget(dt / 1000, MVP && (ui.phase !== 'play' || paused))
   paint(now, blocked ? 1 : Math.min(1, acc / stepMs))
 }
 
@@ -1315,7 +1330,7 @@ hud.setZoom(0)
 mini = mountMini(root, { onPan: (x, y) => { const hh = heroNow(); pan = { x, y, until: ui.phase === 'ready' ? Infinity : performance.now() + P.field.miniPanMs }; miniHero = hh === undefined ? null : { u: hh.u, v: hh.v }; paintKey.x = NaN } })
 flags = mountFlags(root, import.meta.env.BASE_URL + 'realm/', handlers)
 help = mountHelp(root, import.meta.env.BASE_URL + 'realm/', MVP)
-if (LAB) lab = mountLab(root, labCfg, { onApply: cfg => { labCfg = cfg; seed = cfg.seed; restart() } })
+if (LAB) lab = mountLab(root, labCfg, savedLabConfig() === null, { onApply: cfg => { labCfg = cfg; seed = cfg.seed; restart() }, onLayout: () => { measurePads(); paintKey.x = NaN } })
 first = mountFirst(root)
 arrows = mountArrows(root, import.meta.env.BASE_URL + 'realm/', g => { const gg = g as InputGroup; if (cellWhy(cur, gg) === null) setSel([gg]) })
 aimCur = document.createElement('img')

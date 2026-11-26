@@ -147,3 +147,30 @@ export function campPointU(b: number, side: 0 | 1): number {
 
 export const walkable = (g: Ground): boolean => g !== G_DEEP && g !== G_BLOCK
 export { G_HIGH, G_SHALLOW }
+
+/** 실험실의 높은 터 — 지키는 편이 언덕 위에 선다 (높은 터가 지키는 편 앞줄보다 mvpHillFrontCells 앞에서 판 끝까지 · 옛 highMap 은 지키는 편 뒤에만 있었다) */
+export function mvpHighMap(): FieldMap {
+  const [c0, c1] = holdCamps()
+  const map = blank('high', c0, c1, [], 1)
+  fillCols(map, c1.u - P.field.mvpHillFrontCells, map.u, G_HIGH)
+  return map
+}
+
+/**
+ * 실험실의 목책 — 지키는 편의 앞줄이 장수 앞에 줄 맞춰 서므로(진 자리) 목책을 그 앞줄 앞 mvpStakeFromCampCells(진영 자리에서)에 세운다.
+ * 옛 stakeMap 은 진영 자리 바로 앞이라 앞줄이 목책 바깥에 섰다. 마디·문은 stakeMap 과 같은 꼴.
+ */
+export function mvpStakeMap(): FieldMap {
+  const [c0, c1] = holdCamps()
+  const wallU = c1.u - P.field.mvpStakeFromCampCells
+  const mid = idiv(P.field.mapWidthCells, 2), half = idiv(P.field.gateCells, 2)
+  const g0 = mid - half, g1 = g0 + P.field.gateCells
+  const pieces: Piece[] = [
+    { id: 0, kind: 'stake', u0: wallU, v0: 0, u1: wallU + 1, v1: g0, hp: P.field.stakeHp, owner: 1 },
+    { id: 1, kind: 'gate', u0: wallU, v0: g0, u1: wallU + 1, v1: g1, hp: P.field.gateHp, owner: 1 },
+    { id: 2, kind: 'stake', u0: wallU, v0: g1, u1: wallU + 1, v1: P.field.mapWidthCells, hp: P.field.stakeHp, owner: 1 },
+  ]
+  const map = blank('stake', c0, c1, pieces)
+  for (const p of pieces) for (let v = p.v0; v < p.v1; v++) map.cells[wallU * map.w + v] = G_BLOCK
+  return map
+}

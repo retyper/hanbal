@@ -6,13 +6,16 @@
 import { P } from '../tune/params.ts'
 import { fieldView, type Cam, type Viewport } from './viewCamera.ts'
 import type { VModel } from './viewRead.ts'
+import { G_HIGH } from './types.ts'
 
 export interface Mini {
   sync(m: VModel, cam: Cam, vp: Viewport, show: boolean, nowMs: number): void
 }
 export interface MiniHandlers { onPan(x: number, y: number): void }
 
-const GROUND = ['#b49560', '#7aa6b8', '#35607f', '#4a4036', '#8c7a4a'] as const
+const GROUND = ['#b49560', '#7aa6b8', '#35607f', '#4a4036', '#dcc583'] as const
+/** 높은 터의 가장자리 줄 (미니맵에서 언덕이 어디서 시작하는지) */
+const HIGH_EDGE = '#3a2a12'
 const MINE = '#2f8cff', FOE = '#d6483a', GOLD = '#ffd27a'
 const CSS = `
 #fd-mini{position:absolute;right:calc(8px + env(safe-area-inset-right));top:calc(58px + env(safe-area-inset-top));z-index:3;border:1px solid #fff5;border-radius:6px;background:#000a;overflow:hidden;touch-action:none;opacity:.92}
@@ -76,6 +79,17 @@ export function mountMini(root: HTMLElement, h: MiniHandlers): Mini {
     for (let cu = 0; cu < m.mapU; cu++) for (let cv2 = 0; cv2 < m.mapW; cv2++) {
       x.fillStyle = GROUND[m.cells[cu * m.mapW + cv2] ?? 0] ?? GROUND[0]
       x.fillRect(Math.floor(cu * cs), Math.floor(cv2 * rs), Math.ceil(cs) + 1, Math.ceil(rs) + 1)
+    }
+    // 높은 터 가장자리: 옆이 낮은 칸이면 그쪽 변에 어두운 줄
+    x.fillStyle = HIGH_EDGE
+    const hi = (cu: number, cv2: number): boolean => cu < 0 || cv2 < 0 || cu >= m.mapU || cv2 >= m.mapW ? true : m.cells[cu * m.mapW + cv2] === G_HIGH
+    for (let cu = 0; cu < m.mapU; cu++) for (let cv2 = 0; cv2 < m.mapW; cv2++) {
+      if (m.cells[cu * m.mapW + cv2] !== G_HIGH) continue
+      const X = Math.floor(cu * cs), Y = Math.floor(cv2 * rs)
+      if (!hi(cu - 1, cv2)) x.fillRect(X, Y, 2, Math.ceil(rs) + 1)
+      if (!hi(cu + 1, cv2)) x.fillRect(X + Math.ceil(cs) - 1, Y, 2, Math.ceil(rs) + 1)
+      if (!hi(cu, cv2 - 1)) x.fillRect(X, Y, Math.ceil(cs) + 1, 2)
+      if (!hi(cu, cv2 + 1)) x.fillRect(X, Y + Math.ceil(rs) - 1, Math.ceil(cs) + 1, 2)
     }
     ground = c; groundFor = m.cells; groundKey = key
   }
