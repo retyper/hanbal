@@ -408,7 +408,7 @@ function sendAt(px: number, py: number, now: number): void {
   if (sel.includes(3)) heroOrdered = true
   if (sel.some(g => g < 3)) sentGroup = true
   fsnd.order((sel.length === 1 && sel[0] === 2 ? 'horse' : 'move') as FlagKind)
-  flags.say(sel.length > 1 ? t('field.say.many', { n: sel.length }) : t('field.say', { g: gName(sel[0]!), i: t(foe === null ? 'field.i.move' : 'field.i.chase') }), 'ok', now)
+  if (!touchMode) flags.say(sel.length > 1 ? t('field.say.many', { n: sel.length }) : t('field.say', { g: gName(sel[0]!), i: t(foe === null ? 'field.i.move' : 'field.i.chase') }), 'ok', now)
   if (sel.some(g => g < 3)) setSel([3])
 }
 
@@ -763,7 +763,7 @@ function paint(now: number, alpha: number): void {
   hud.showEnd(endAt > 0 && now - endAt >= P.field.endBoxMs ? cur : null, endStats(), endWhy(), { foe: nextFoeLine(), shout: heroNow()?.art === 'shout' })
   const h = heroNow()
   const s = h === undefined ? null : toScreen(cam, vp, pxOf(h.u), pxOf(h.v))
-  first.sync(!blocked && s !== null && !firstDone && !heroOrdered && (ui.phase === 'ready' || playMs < P.field.firstHintMs) && ui.phase !== 'end' && cur.end === null && !helpOpen, s?.x ?? 0, s?.y ?? 0, touchMode, vp.w, vp.h)
+  first.sync(!blocked && s !== null && !firstDone && !stepOk[0] && !heroOrdered && (ui.phase === 'ready' || playMs < P.field.firstHintMs) && ui.phase !== 'end' && cur.end === null && !helpOpen, s?.x ?? 0, s?.y ?? 0, touchMode, vp.w, vp.h)
 }
 /** 활 사거리 띠 (활 대마다 반원) — 적 대가 그 안에 들면 밝아지고, 겨눈 적에게는 가는 줄 */
 function bandsNow(): Band[] {

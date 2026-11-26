@@ -26,7 +26,8 @@ const CSS = `
 #fd-first[hidden]{display:none}
 #fd-first .keys{display:grid;grid-template-columns:repeat(3,26px);grid-template-rows:repeat(2,26px);gap:3px;flex:none}
 #fd-first .keys b{display:flex;align-items:center;justify-content:center;background:#0b1a2ecc;border:2px solid #f3ecd8;border-radius:5px;font-size:13px;text-shadow:none;animation:fd-blink .8s steps(1) infinite}
-#fd-first .keys .up{grid-column:2}
+#fd-first .keys .up{grid-column:2;grid-row:1}
+#fd-first .keys b:not(.up){grid-row:2}
 #fd-first .rb{animation:fd-blink .8s steps(1) infinite}
 #fd-first .tap{width:30px;height:30px;border:3px solid ${GOLD};border-radius:50%;flex:none;animation:fd-blink .8s steps(1) infinite}
 @keyframes fd-blink{50%{opacity:.25}}

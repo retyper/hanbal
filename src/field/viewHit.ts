@@ -234,7 +234,7 @@ export function drawPops(ctx: CanvasRenderingContext2D, clk: number, zoom: numbe
 interface Omen { at: number; pts: { u: number; v: number }[] }
 const omens: Omen[] = []
 export function noteOmens(cur: VModel, clk: number): void {
-  for (const e of eventsOf(cur)) if (e.kind === 'omen' && e.pts.length >= 2) {
+  for (const e of eventsOf(cur)) if (e.kind === 'omen' && e.side === 1 && e.pts.length >= 2) {
     omens.push({ at: clk, pts: e.pts.map(p => ({ u: p.u, v: p.v })) })
     if (omens.length > 4) omens.shift()
   }
