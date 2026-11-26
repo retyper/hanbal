@@ -19,13 +19,13 @@ export type CellWhy = 'gone' | 'none'
 export const GRP_OF: readonly string[] = ['front', 'bows', 'horse']
 export const ALL_GROUPS: readonly InputGroup[] = [0, 1, 2, 3]
 
-/** 대 q 가 무리 g 에 드나 (0 앞줄 · 1 활 · 2 기병 — 시험판은 왼 날개만 · 4 오른 날개(시험판)) */
+/** 대 q 가 무리 g 에 드나 (0 앞줄 · 1 활 · 2 기병 — 시험판은 위 날개만 · 4 아래 날개(시험판)) */
 export function inGroup(m: VModel, q: VModel['squads'][number], g: InputGroup): boolean {
   if (g === 4) return m.mvp && q.grp === 'horse' && q.wing === 1
   if (g === 2 && m.mvp) return q.grp === 'horse' && q.wing === 0
   return q.grp === GRP_OF[g]
 }
-/** 시험판(?mvp)에서 고를 수 있는 무리 (화면 차례: 앞줄 · 활 · 왼 날개 · 오른 날개 · 장수) */
+/** 시험판(?mvp)에서 고를 수 있는 무리 (화면 차례: 앞줄 · 활 · 위 날개 · 아래 날개 · 장수) */
 export const MVP_GROUPS: readonly InputGroup[] = [0, 1, 2, 4, 3]
 
 /** 그 칸의 무리가 살아 있는가 (우리 편 · 사람 수 > 0) — 장수는 장수가 있으면 */

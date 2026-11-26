@@ -145,7 +145,7 @@ export function drawOdds(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam, 
 
 /** 시험판(?mvp)의 길 하나 — 무리 g 의 가운데에서 마디들까지 (판 px) · sel 이면 굵게 */
 export interface Path { g: number; pts: readonly { x: number; y: number }[]; sel: boolean }
-/** 무리마다 길 색 (g 0 앞줄 · 1 활 · 2 왼 날개 · 3 장수 · 4 오른 날개) — 땅 위에서 서로 갈린다 */
+/** 무리마다 길 색 (g 0 앞줄 · 1 활 · 2 위 날개 · 3 장수 · 4 아래 날개) — 땅 위에서 서로 갈린다 */
 const PATH_COLORS = ['#9fc4ff', '#b7f08a', '#ffb35c', GOLD, '#f08ad8']
 
 /** 땅에 그리는 길 (멈춘 동안에도 보인다) — 무리 색 점선 · 마디마다 작은 점 */
@@ -168,6 +168,31 @@ export function drawPaths(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
     ctx.stroke()
     ctx.setLineDash([])
     for (let i = 1; i < p.pts.length; i++) { ctx.beginPath(); ctx.arc(p.pts[i]!.x, p.pts[i]!.y, 4 / z, 0, FULL_TURN); ctx.fill() }
+  }
+  ctx.restore()
+}
+
+/** 시험판(?mvp)의 화살비 자리 (판 px) — 찍기 전(placed false)은 마우스를 따라가고 · ok 아니면(활이 닿는 거리 밖 · 다가간 뒤 쏜다) 점선 · 찍은 뒤는 frac(남은 몫)만큼 줄어드는 안쪽 고리 */
+export interface Volley { x: number; y: number; r: number; ok: boolean; placed: boolean; frac: number }
+const VOLLEY_COLOR = '#cfe6ff', VOLLEY_FAR = '#ffb08a'
+
+export function drawVolley(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam, vs: readonly Volley[]): void {
+  if (vs.length === 0) return
+  const z = cam.zoom
+  ctx.save()
+  ctx.translate(vp.w / 2, vp.h / 2)
+  ctx.scale(z, z)
+  ctx.translate(-cam.x, -cam.y)
+  for (const v of vs) {
+    const color = v.ok || v.placed ? VOLLEY_COLOR : VOLLEY_FAR
+    ctx.beginPath(); ctx.arc(v.x, v.y, v.r, 0, FULL_TURN)
+    ctx.fillStyle = color; ctx.globalAlpha = v.placed ? 0.16 : 0.1; ctx.fill()
+    ctx.globalAlpha = 0.9; ctx.strokeStyle = color; ctx.lineWidth = Math.max(1.5, 2.5 / z)
+    ctx.setLineDash(v.ok || v.placed ? [] : [10 / z, 7 / z]); ctx.stroke(); ctx.setLineDash([])
+    if (v.placed && v.frac > 0) {
+      ctx.beginPath(); ctx.arc(v.x, v.y, v.r * v.frac, 0, FULL_TURN)
+      ctx.globalAlpha = 0.75; ctx.lineWidth = Math.max(1, 1.8 / z); ctx.stroke()
+    }
   }
   ctx.restore()
 }

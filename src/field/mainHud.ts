@@ -11,7 +11,7 @@ import { P } from '../tune/params.ts'
 import type { VModel } from './viewRead.ts'
 import { lineSvg } from './mainFlags.ts'
 
-export interface HudHandlers { onZoom(): void; onPause(): void; onAgain(): void; onHelp(): void; /** 결과 한 장에서 우리 진(0~2)을 눌렀다: 그 진으로 곧바로 다음 판 */ onNext(line: number): void }
+export interface HudHandlers { onZoom(): void; onPause(): void; onAgain(): void; onHelp(): void; /** 결과 한 장에서 우리 진(0~2)을 눌렀다: 그 진으로 곧바로 다음 판 */ onNext(line: number): void; /** 시험판(?mvp)의 빠르기 단추: 0 멈춤 · 1 보통 · 2 두 배 */ onSpeed?(n: 0 | 1 | 2): void }
 /** 결과 한 장의 다음 판 미리보기: 다음 적의 진 · 우리 비기가 큰 외침인가 */
 export interface EndNext { foe: number; shout: boolean }
 /** 막대에 적는 숫자(%): 막대 길이와 같은 셈 — 0 이면 무너짐 · 막대 위 숫자와 끝 상자가 같은 식을 쓴다 */
@@ -65,6 +65,8 @@ export interface EndWhy { by: Readonly<Record<Cause, number>>; won: boolean; mor
 export interface Hud {
   setZoom(level: number): void
   setPaused(paused: boolean): void
+  /** 시험판(?mvp)의 빠르기 단추 셋 가운데 켠 것 (0 멈춤 · 1 보통 · 2 두 배) */
+  setSpeed(n: 0 | 1 | 2): void
   hide(hidden: boolean): void
   /** 위 띠를 지금 판으로 고친다 */
   sync(m: VModel, fx?: HudFx): void
@@ -86,6 +88,9 @@ const CSS = `
 #fd-hud button.arm{border-color:#ffd27a;color:#1a1305;background:#ffd27a}
 #fd-edge{position:absolute;left:50%;top:calc(8px + env(safe-area-inset-top));transform:translateX(-50%);display:flex;align-items:center;gap:6px;pointer-events:none;font-size:13px;font-weight:700;text-shadow:0 1px 3px #000;z-index:5}
 #fd-edge[hidden]{display:none}
+#fd-edge .fd-mor{width:18px;height:24px;object-fit:contain}
+#fd-hud .fd-spd{display:flex;gap:2px}
+#fd-hud .fd-spd button{min-width:40px;padding:12px 8px;font-size:13px;letter-spacing:-2px}
 #fd-edge>b{min-width:34px;font-size:13px;color:#f3ecd8}
 #fd-edge>b.fd-p0{text-align:right}
 #fd-edge .fd-vs{width:10px}
@@ -143,17 +148,19 @@ const CSS = `
 /** 작은 칼 (곧은 날 · 코등이 · 자루) — 칼 든 대가 없다는 표시 */
 const SWORD = '<svg viewBox="0 0 16 16"><path d="M8 1 L9.2 3 V10 H6.8 V3 Z" fill="#f3ecd8" stroke="#1a1208" stroke-width=".8"/><rect x="4.5" y="10" width="7" height="1.6" fill="#c9a24a" stroke="#1a1208" stroke-width=".6"/><rect x="7.2" y="11.6" width="1.6" height="3.2" fill="#6b4a2a" stroke="#1a1208" stroke-width=".5"/></svg>'
 
-export function mountHud(root: HTMLElement, h: HudHandlers, base = ''): Hud {
+/** mvp: 시험판(?mvp) — 멈춤 곁에 빠르기 단추 셋(⏸ ▶ ▶▶) · 위 막대 둘 바깥에 사기 그림(북 깃) */
+export function mountHud(root: HTMLElement, h: HudHandlers, base = '', mvp = false): Hud {
   const style = document.createElement('style')
   style.textContent = CSS
   document.head.append(style)
   const hud = document.createElement('div')
   hud.id = 'fd-hud'
-  hud.innerHTML = `<button id="fd-zoom" type="button"></button><button id="fd-pause" type="button"></button><button id="fd-helpbtn" type="button" aria-label="?">?</button><span style="flex:1"></span><button id="fd-again" type="button"></button>`
+  hud.innerHTML = `<button id="fd-zoom" type="button"></button><button id="fd-pause" type="button"></button>${mvp ? `<span class="fd-spd">${['⏸', '▶', '▶▶'].map((g, i) => `<button type="button" data-spd="${i}" aria-label="${t(`field.spd.${i}` as Key)}">${g}</button>`).join('')}</span>` : ''}<button id="fd-helpbtn" type="button" aria-label="?">?</button><span style="flex:1"></span><button id="fd-again" type="button"></button>`
   const edge = document.createElement('div')
   edge.id = 'fd-edge'
   // 막대 둘: 우리는 왼쪽 끝에서 · 적은 오른쪽 끝에서 줄어든다 (잔상 gh 가 채움 fill 뒤에 있다) · 바깥 끝에 편 사기 %
-  edge.innerHTML = `<b class="fd-p0"></b><span class="fd-side fd-s0"><i class="gh"></i><i class="fill"></i><b class="fd-bl" hidden>${SWORD}<span></span></b></span><span class="fd-vs"></span><span class="fd-side fd-s1"><i class="gh"></i><i class="fill"></i><b class="fd-bl" hidden>${SWORD}<span></span></b></span><b class="fd-p1"></b>`
+  const mor = mvp ? `<img class="fd-mor" src="${base}flag/flag-drum.png" alt="${t('field.mvp.morale')}" title="${t('field.mvp.morale')}">` : ''
+  edge.innerHTML = `${mor}<b class="fd-p0"></b><span class="fd-side fd-s0"><i class="gh"></i><i class="fill"></i><b class="fd-bl" hidden>${SWORD}<span></span></b></span><span class="fd-vs"></span><span class="fd-side fd-s1"><i class="gh"></i><i class="fill"></i><b class="fd-bl" hidden>${SWORD}<span></span></b></span><b class="fd-p1"></b>${mor}`
   const end = document.createElement('div')
   end.id = 'fd-end'; end.hidden = true
   end.innerHTML = `<div><h2 id="fd-endtext"></h2><p class="l1" id="fd-l1"></p><p class="l2" id="fd-l2"></p><div class="st" id="fd-endstats"></div><p class="cz" id="fd-why"></p><div class="fd-nx" id="fd-nx"></div><button id="fd-again2" type="button"></button></div>`
@@ -225,6 +232,7 @@ export function mountHud(root: HTMLElement, h: HudHandlers, base = ''): Hud {
     h.onAgain() // 확인 상자 없이 곧바로 새 판
   })
   again2.addEventListener('click', () => h.onAgain())
+  hud.addEventListener('click', e => { const b = (e.target as HTMLElement).closest('[data-spd]') as HTMLElement | null; if (b !== null) h.onSpeed?.(Number(b.dataset['spd']) as 0 | 1 | 2) })
   const nx = $('fd-nx')
   nx.addEventListener('click', e => { const el = (e.target as HTMLElement).closest('[data-nl]') as HTMLElement | null; if (el !== null) h.onNext(Number(el.dataset['nl'])) })
   let nxKey = ''
@@ -233,6 +241,7 @@ export function mountHud(root: HTMLElement, h: HudHandlers, base = ''): Hud {
   return {
     setZoom(level) { zoom.textContent = t(`field.zoom.${level}` as Key); zoom.classList.toggle('on', level > 0) },
     setPaused(p) { pause.textContent = t(p ? 'field.resume' : 'field.pause'); pause.classList.toggle('on', p) },
+    setSpeed(n) { for (const b of hud.querySelectorAll<HTMLElement>('[data-spd]')) b.classList.toggle('on', Number(b.dataset['spd']) === n) },
     hide(hidden) { hud.hidden = hidden; edge.hidden = hidden },
     sync(m, fx) {
       const thr = P.realm.tacBreakMorale * 1000

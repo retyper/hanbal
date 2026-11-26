@@ -8,8 +8,8 @@
  */
 import { t, type Key } from '../i18n/index.ts'
 import { P } from '../tune/params.ts'
-import { firstKeyLabel, type ActionName } from './actions.ts'
-import { cellWhy, MVP_GROUPS, pickables, type UiState } from './pickmodel.ts'
+import { firstKeyLabel, keyLabel, type ActionName } from './actions.ts'
+import { cellWhy, inGroup, MVP_GROUPS, pickables, type UiState } from './pickmodel.ts'
 import { BIG_ARTS } from './input.ts'
 import type { InputGroup } from './types.ts'
 import type { VModel } from './viewRead.ts'
@@ -19,12 +19,17 @@ export interface FlagsHandlers {
   onBig(i: number): void
   onLine(i: number): void
   onGo(): void
+  /** 시험판(?mvp): 장수 칸의 기술 단추 k(0 내닫기 · 1 비기 · 2 모여라)를 눌렀다 · 올렸다(-1 내림) */
+  onHero?(k: number): void
+  onHeroHover?(k: number): void
 }
+/** 시험판(?mvp)의 장수 기술 단추 하나 — frac 은 남은 쿨타임 몫(0~1) · sec 은 남은 초 */
+export interface HeroBtn { icon: string; label: string; frac: number; sec: number }
 export type Tone = 'ok' | 'why'
 /** 아래 띠가 알아야 하는 바깥 사정 — cmd: 앞줄·활·기병이 지금 고른 명령 번호(알아서면 -1) · sentGroup: 무리를 한 번이라도 보냈는가 · touch: 손으로 쓰는 화면인가 */
 /** big: 앞줄이 지금 고른 명령 번호(0 돌격 · 1 방진 · 없으면 -1) · aiming: 찍는 중인 큰 수 번호(2 화살비 · 3 옆치기 · 아니면 -1) */
 /** cmdG: 시험판(?mvp)이면 고른 무리 번호(0~2 · 장수나 없으면 -1) — 큰 수 줄은 그 무리의 것만 Z X 차례로 · 진 고르기·안내 줄은 숨는다 · 옛 판은 undefined */
-export interface FlagsCtx { line: number; foeLine: number; front: number; volley: boolean; flank: boolean; aiming: number; sentGroup: boolean; touch: boolean; cmdG?: number }
+export interface FlagsCtx { line: number; foeLine: number; front: number; volley: boolean; flank: boolean; aiming: number; sentGroup: boolean; touch: boolean; cmdG?: number; heroBtns?: readonly HeroBtn[] }
 /** 시험판(?mvp): 무리마다 제 큰 수 (BIG_ARTS 번호 · 무리 번호 g 자리) — 앞줄 돌격·방진 · 활 화살비 · 날개 둘·장수는 없음 (기병 길은 사람이 오른쪽 누름으로 그린다) */
 export const MVP_CMDS: readonly (readonly number[])[] = [[0, 1], [2], [], [], []]
 export interface FlagsView {
@@ -38,6 +43,8 @@ const CELL_ACTION: readonly ActionName[] = ['pickFront', 'pickBows', 'pickHorse'
 /** 큰 수가 누구의 수인가: Z·X 앞줄 · C 활 · V 기병 (단추 귀퉁이 그림) */
 const BIG_WHO = [0, 0, 1, 2] as const
 const CMD_ACTION: readonly ActionName[] = ['cmd1', 'cmd2', 'cmd3', 'cmd4']
+/** 시험판(?mvp)의 깃발 키 — 롤처럼 Q W E R (왼쪽부터) */
+export const MVP_FLAG_KEYS: readonly string[] = ['KeyQ', 'KeyW', 'KeyE', 'KeyR']
 const GOLD = '#ffd27a'
 
 const CSS = `
@@ -82,6 +89,9 @@ const CSS = `
 .fd-opt img{width:30px;height:30px;object-fit:contain}
 .fd-opt.on{border-color:${GOLD};background:#2a2410d9}
 .fd-opt.on::after{content:'✓';position:absolute;left:4px;bottom:0;color:${GOLD};font-size:13px}
+.fd-men{position:absolute;right:3px;top:2px;font-size:12px;font-weight:700;line-height:1.2;text-decoration:none;color:#e8f2ff;background:#0b1a2ecc;border-radius:4px;padding:0 3px}
+.fd-cd{position:absolute;left:0;right:0;bottom:0;background:#000a;border-radius:0 0 6px 6px;pointer-events:none}
+.fd-cds{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;font-size:18px;font-weight:800;color:#fff;text-decoration:none;text-shadow:0 1px 3px #000;pointer-events:none}
 .fd-bighead{display:flex;align-items:center;padding:0 4px 0 2px;border-right:1px solid #ffd27a66;margin-right:2px}
 .fd-bighead img{width:34px;height:34px;object-fit:contain}
 .fd-who{position:absolute;right:2px;top:2px;width:17px;height:17px;object-fit:contain;opacity:.95;pointer-events:none}
@@ -138,8 +148,11 @@ export function mountFlags(root: HTMLElement, base: string, h: FlagsHandlers): F
     const act = el.dataset['act']
     if (act === 'cell') h.onCell(Number(el.dataset['g']) as InputGroup)
     else if (act === 'big') h.onBig(Number(el.dataset['i']))
+    else if (act === 'hero') h.onHero?.(Number(el.dataset['i']))
   })
   wire(cells); wire(big)
+  big.addEventListener('pointerover', e => { const el = (e.target as HTMLElement).closest('[data-act="hero"]') as HTMLElement | null; h.onHeroHover?.(el === null ? -1 : Number(el.dataset['i'])) })
+  big.addEventListener('pointerleave', () => h.onHeroHover?.(-1))
 
   /** 명령 단추를 누르고 있는 중 (오래 누르면 뜻 한 줄 · 그때 뗀 손은 명령으로 치지 않는다) */
   let hold: { name: string; t0: number } | null = null
@@ -164,8 +177,11 @@ export function mountFlags(root: HTMLElement, base: string, h: FlagsHandlers): F
   return {
     sync(m, ui, c) {
       const alive = [0, 1, 2, 3, 4].map(g => cellWhy(m, g as InputGroup) === null ? 1 : 0)
-      const key = [c.line, c.foeLine, ui.phase, ui.sel.join(''), alive.join(''), c.front, c.volley ? 1 : 0, c.flank ? 1 : 0, c.aiming, c.sentGroup ? 1 : 0, c.touch ? 1 : 0, m.end === null ? 0 : 1, c.cmdG ?? 'x'].join('|')
       const mvp = c.cmdG !== undefined
+      // 시험판: 무리 칸마다 산 사람 수 (장수 칸 빼고)
+      const menOf = (g: InputGroup): number => m.squads.reduce((a, q) => a + (q.side === 0 && inGroup(m, q, g) ? q.men : 0), 0)
+      const men = mvp ? MVP_GROUPS.map(g => g === 3 ? '' : String(menOf(g))) : []
+      const key = [c.line, c.foeLine, ui.phase, ui.sel.join(''), alive.join(''), c.front, c.volley ? 1 : 0, c.flank ? 1 : 0, c.aiming, c.sentGroup ? 1 : 0, c.touch ? 1 : 0, m.end === null ? 0 : 1, c.cmdG ?? 'x', men.join(','), (c.heroBtns ?? []).map(b => b.sec).join(',')].join('|')
       if (key === sig) return
       sig = key
       strip.hidden = ui.phase === 'end' || m.end !== null
@@ -174,19 +190,23 @@ export function mountFlags(root: HTMLElement, base: string, h: FlagsHandlers): F
       const mine = mvp ? MVP_CMDS[c.cmdG!] : undefined
       const bigOn = mvp ? ui.phase !== 'end' && m.end === null && mine !== undefined && mine.length > 0 : ui.phase === 'play' && m.end === null
       let html = ''
-      // 시험판: 앞줄 · 활 · 왼 날개 · 오른 날개 · 장수 (키 1~5 · 화면 차례 그대로)
+      // 시험판: 앞줄 · 활 · 위 날개 · 아래 날개 · 장수 (키 1~5 · 화면 차례 그대로)
       ;(mvp ? MVP_GROUPS : [0, 1, 2, 3] as const).forEach((g, k) => {
         const live = shown.includes(g)
         const on = ui.sel.includes(g)
         const name = mvp && (g === 2 || g === 4) ? t(`field.mvp.g.${g}` as Key) : t(`field.g.${g === 4 ? 2 : g}` as Key)
         const kb = mvp ? String(k + 1) : firstKeyLabel(CELL_ACTION[g]!)
-        html += `<div class="fd-slot"><button class="fd-cell${on ? ' on' : ''}${live ? '' : ' no'}" type="button" data-act="cell" data-g="${g}" aria-pressed="${on}" aria-label="${name}"><i class="fd-kb">${kb}</i>${img(CELL_ICON[g === 4 ? 2 : g]!)}<b>${name}</b><em class="fd-ck">✓</em></button></div>`
+        html += `<div class="fd-slot"><button class="fd-cell${on ? ' on' : ''}${live ? '' : ' no'}" type="button" data-act="cell" data-g="${g}" aria-pressed="${on}" aria-label="${name}"><i class="fd-kb">${kb}</i>${img(CELL_ICON[g === 4 ? 2 : g]!)}<b>${name}</b>${mvp && g !== 3 ? `<u class="fd-men">${men[k]}</u>` : ''}<em class="fd-ck">✓</em></button></div>`
       })
       cells.innerHTML = html
       big.hidden = !bigOn
-      const opt = (name: string, i: number, key: number): string => `<button class="fd-opt${(i < 2 && c.front === i) || (i === 2 && c.volley) || (i === 3 && c.flank) || c.aiming === i ? ' on' : ''}" type="button" data-act="big" data-i="${i}" data-n="${name}" title="${t(`field.big.${name}` as Key)}"><i>${firstKeyLabel(CMD_ACTION[key]!)}</i>${img(`flag/flag-${name}.png`)}<span>${t(`war.cmdName.${name}` as Key)}</span></button>`
+      const cap = (k: number): string => mvp ? keyLabel(MVP_FLAG_KEYS[k] ?? '') : firstKeyLabel(CMD_ACTION[k]!)
+      const opt = (name: string, i: number, key: number): string => `<button class="fd-opt${(i < 2 && c.front === i) || (i === 2 && c.volley) || (i === 3 && c.flank) || c.aiming === i ? ' on' : ''}" type="button" data-act="big" data-i="${i}" data-n="${name}" title="${t(`field.big.${name}` as Key)}"><i>${cap(key)}</i>${img(`flag/flag-${name}.png`)}<span>${t(`war.cmdName.${name}` as Key)}</span></button>`
       // 시험판: 머리에 고른 무리 그림 하나 · 그 무리의 큰 수만 Z X 차례로
-      if (mvp) big.innerHTML = !bigOn || mine === undefined ? '' : `<span class="fd-bighead">${img(CELL_ICON[c.cmdG!]!)}</span>` + mine.map((i, k) => opt(BIG_ARTS[i]!, i, k)).join('')
+      // 장수 칸: 기술 셋을 Z X C 로 (쿨타임은 단추 위 어두운 몫과 남은 초)
+      const hb = (b: HeroBtn, k: number): string => `<button class="fd-opt" type="button" data-act="hero" data-i="${k}"><i>${cap(k)}</i>${b.icon === '' ? '' : img(b.icon)}<span>${b.label}</span>${b.frac > 0 ? `<b class="fd-cd" style="height:${Math.round(b.frac * 100)}%"></b><s class="fd-cds">${b.sec}</s>` : ''}</button>`
+      if (mvp && c.cmdG === 3 && c.heroBtns !== undefined && ui.phase !== 'end' && m.end === null) { big.hidden = false; big.innerHTML = `<span class="fd-bighead">${img(CELL_ICON[3]!)}</span>` + c.heroBtns.map(hb).join('') }
+      else if (mvp) big.innerHTML = !bigOn || mine === undefined ? '' : `<span class="fd-bighead">${img(CELL_ICON[c.cmdG!]!)}</span>` + mine.map((i, k) => opt(BIG_ARTS[i]!, i, k)).join('')
       else big.innerHTML = !bigOn ? '' : BIG_ARTS.map((name, i) => `<button class="fd-opt${(i < 2 && c.front === i) || (i === 2 && c.volley) || (i === 3 && c.flank) || c.aiming === i ? ' on' : ''}" type="button" data-act="big" data-i="${i}" data-n="${name}" title="${t(`field.big.${name}` as Key)}"><i>${firstKeyLabel(CMD_ACTION[i]!)}</i><img class="fd-who" src="${base}${CELL_ICON[BIG_WHO[i]!]!}" alt="">${img(`flag/flag-${name}.png`)}<span>${t(`war.cmdName.${name}` as Key)}</span></button>`).join('')
       // 한 줄 안내: 처음 무리를 보내기 전까지만 (자세 단추가 떠 있으면 그 자리를 비운다)
       const line = ui.phase === 'ready' ? t(c.touch ? 'field.hint.ready.touch' : 'field.hint.ready.pc') : !c.sentGroup ? t(c.touch ? 'field.hint.group.touch' : 'field.hint.group.pc') : ''

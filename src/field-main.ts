@@ -14,11 +14,11 @@ import { t, type Key } from './i18n/index.ts'
 import { aimInput, attackInputs, cmdInput, dashInput, frontInput, rallyInput, heroDirInput, keysDir, mergePlan, nearestFoe, sendInputs, skillInput, BIG_ARTS, CMDS, type CmdGroup, type InputCtx } from './field/input.ts'
 import { actionOf, firstKeyLabel, KEYS } from './field/actions.ts'
 import { AFTER_ORDER, ALL_GROUPS, inGroup, MVP_GROUPS, aimExpired, aimPress, aimTap, cellWhy, GRP_OF, normalizeSel, pickAt, type PickCand, type UiState } from './field/pickmodel.ts'
-import { mountFlags, MVP_CMDS, type FlagsView } from './field/mainFlags.ts'
+import { mountFlags, MVP_CMDS, MVP_FLAG_KEYS, type FlagsView, type HeroBtn } from './field/mainFlags.ts'
 import { mountArrows, mountPad, type Arrows, type Pad, type PadBtn } from './field/mainPad.ts'
 import { mountFirst, mountSteps, type First, type Steps } from './field/mainHelp.ts'
 import { mountHelp, type Help } from './field/mainCard.ts'
-import { drawMarks, drawOdds, drawPaths, type Odds, type Path, type Band, type Box, type Mark, type MarkShape, type Ring } from './field/mainFlagMarks.ts'
+import { drawMarks, drawOdds, drawPaths, drawVolley, type Odds, type Path, type Volley, type Band, type Box, type Mark, type MarkShape, type Ring } from './field/mainFlagMarks.ts'
 import { LINES, OP_AUTO, OP_MOVE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_VOLLEY, type FieldInput, type InputGroup } from './field/types.ts'
 import { roll } from './core/rng.ts'
 import { mountMini, type Mini } from './field/mainMini.ts'
@@ -37,7 +37,7 @@ guardMedia()
 
 const query = new URLSearchParams(location.search)
 const num = (key: string, dflt: number): number => { const v = Number(query.get(key)); return Number.isFinite(v) && query.has(key) ? Math.trunc(v) : dflt }
-/** ?mvp = 고르고 오른쪽 누름 시험판 (1 앞줄 · 2 활 · 3 왼 날개 · 4 오른 날개 · 5 장수를 골라 둔 채 · 오른쪽 누름 땅 = 이동 · 적 = 공격 · Shift 길 잇기 · Space 멈춤 · 장수 걷기·큰 수 넷·비기 단추 없음) */
+/** ?mvp = 고르고 오른쪽 누름 시험판 (1 앞줄 · 2 활 · 3 위 날개 · 4 아래 날개 · 5 장수를 골라 둔 채 · 오른쪽 누름 땅 = 이동 · 적 = 공격 · Shift 길 잇기 · Space 멈춤 · 장수 걷기·큰 수 넷·비기 단추 없음) */
 const MVP = query.has('mvp')
 const root = document.getElementById('field') as HTMLDivElement
 root.innerHTML = `<canvas id="fd-cv"></canvas>
@@ -330,6 +330,7 @@ function restart(): void {
   ui.phase = 'ready'; ui.sel = [3]
   queue = []; plan = []
   lastGoal.fill(null); lastShape.fill('move'); nudgeAt.fill(0); for (const l of tasks) l.length = 0
+  volleyAt = null
   heroDirSent = -1; padDir = -1; foeFlash.length = 0; lastWhyTick = 0; lastGrpWhyTick.fill(0)
   leadK = 1; cmdNow.fill(-1); sentGroup = false; usedCharge = false; aiming = -1; flashStep = -1; playMs = 0; heroOrdered = false; firstDone = false; heroStart = null
   camFree = false; camFight = false; cam.level = 0; hud.setZoom(0)
@@ -502,8 +503,58 @@ function mvpSend(px: number, py: number, now: number, chain: boolean): void {
 /** 시험판(?mvp)의 Z X: 고른 무리의 k 번째 큰 수 (앞줄 돌격·방진 · 활 화살비 · 기병 옆치기 · 장수는 없음) */
 function mvpCmd(k: number): void {
   const g = ui.sel.length === 1 ? ui.sel[0]! : -1
+  if (g === 3) { mvpHero(k); return }
   const i = MVP_CMDS[g]?.[k]
   if (i !== undefined) pressBig(i)
+}
+/** 시험판: 찍어 둔 화살비 자리 (u, v 는 sim 단위 · tick0 은 찍은 틱) */
+let volleyAt: { u: number; v: number; tick0: number } | null = null
+/** 시험판의 화살비 고리 — 찍는 동안 마우스를 따라가는 것 · 찍어 둔 것(이어지는 동안 줄어든다) */
+function volleysNow(): Volley[] {
+  const out: Volley[] = []
+  const r = P.field.volleyRadiusCells * P.field.cellPx
+  if (volleyAt !== null) {
+    const live = ui.phase === 'ready' || squadsOf(1).some(q => q.order === ORD_VOLLEY)
+    const frac = ui.phase === 'ready' ? 1 : 1 - (state.tick - volleyAt.tick0) / (P.field.volleySec * P.field.hz)
+    if (!live || frac <= 0) volleyAt = null
+    else out.push({ x: pxOf(volleyAt.u), y: pxOf(volleyAt.v), r, ok: true, placed: true, frac })
+  }
+  if (aiming === 2 && mouse.in && !touchMode) {
+    const w = toField(cam, vp, mouse.x, mouse.y), at = fromOf(1)
+    const reach = P.field.bowRangeCells * P.field.cellPx * P.field.volleyReachPermille / 1000
+    out.push({ x: w.x, y: w.y, r, ok: at !== null && (at.x - w.x) ** 2 + (at.y - w.y) ** 2 <= reach * reach, placed: false, frac: 1 })
+  }
+  return out
+}
+/** 시험판의 장수 칸 단추 셋 (기본 판의 내닫기·비기·모여라 단추와 같은 쿨타임) */
+function mvpHeroBtns(): HeroBtn[] {
+  const pb = padBtns()
+  return [pb.dash, pb.skill, pb.rally].map(b => ({ icon: b.icon, label: b.label, frac: b.frac, sec: b.frac > 0 ? b.sec : 0 }))
+}
+/** 시험판의 장수 기술 (Q 내닫기 · W 비기 · E 모여라 — 기본 판의 그 입력 그대로) · 누르면 그 기술이 닿는 거리 고리가 잠깐 뜬다 */
+function mvpHero(k: number): void {
+  if (k > 2) return
+  heroRangeK = k; heroRangeUntil = performance.now() + P.field.auraShowMs; markEpoch++
+  if (k === 0) doDash()
+  else if (k === 1) doSkill()
+  else { doRally(); for (const g of [0, 1, 2, 4] as const) tasks[g]!.length = 0 }
+}
+/** 장수 기술이 닿는 거리 (칸) — 0 내닫기(내닫는 시간 × 걸음 × 배) · 1 비기 · 2 모여라(곁의 기운) */
+function heroRangeCells(k: number): number {
+  const F = P.field
+  if (k === 0) return F.heroDashMs / 1000 * F.speedFrontCellsPerSec * F.heroSpeedPermille / 1000 * F.heroDashSpeedPermille / 1000
+  return k === 1 ? F.heroArtCells : F.heroAuraCells
+}
+/** 시험판: 기술 고리 — 단추에 올린 것(-1 없음) · 누른 것과 그 고리가 걷히는 때 */
+let heroHoverK = -1, heroRangeK = -1, heroRangeUntil = 0
+/** 시험판의 빠르기 (1 보통 · 2 두 배 — 걸음 틱은 그대로, 한 프레임에 도는 틱 수만 두 배) · 마지막으로 켠 단추 */
+let speed: 1 | 2 = 1, speedLit = -1
+/** 빠르기 단추 (0 멈춤 · 1 보통 · 2 두 배) — 준비 화면에서 ▶ ▶▶ 는 곧 시작 */
+function setSpeed(n: 0 | 1 | 2): void {
+  if (n === 0) { if (ui.phase === 'play') { paused = true; hud.setPaused(true) } return }
+  speed = n
+  if (ui.phase === 'ready') goBattle()
+  else if (ui.phase === 'play' && paused) { paused = false; hud.setPaused(false) }
 }
 
 /** 큰 수 넷 (Z 돌격 · X 방진 · C 화살비 · V 옆치기) — 앞의 둘은 바로 · 뒤의 둘은 누르면 땅을 찍을 때까지 판이 느려진다 */
@@ -517,7 +568,7 @@ function pressBig(i: number): void {
   if (why !== null) { flags.say(t(`field.why.${why}` as Key, { g: gName(g) }), 'why', now); return }
   aiming = r.aiming; aimSince = now; markEpoch++
   aimCur.src = `${import.meta.env.BASE_URL}realm/flag/flag-${BIG_ARTS[i]}.png`
-  if (!touchMode) cv.style.cursor = 'none'
+  if (!touchMode) cv.style.cursor = MVP ? 'crosshair' : 'none'
 }
 function cancelAim(): void { if (aiming === -1) return; aiming = -1; markEpoch++; cv.style.cursor = ''; aimCur.hidden = true }
 /** 찍어서 확정: 그 자리에 가장 가까운 적 대가 표적 (엔진의 OP_AIM 이 오면 그것으로 바꾼다 · 그 전에는 명령을 고르고 그 적을 쳐라) */
@@ -526,6 +577,8 @@ function confirmAim(px: number, py: number, now: number): void {
   const w = toField(cam, vp, px, py), u = unitsOf(w.x), v = unitsOf(w.y)
   const foeId = nearestFoe(cur.squads, u, v)
   accept([aimInput(g as 1 | 2, u, v, inputCtx())])
+  // 시험판: 화살비 자리는 이어지는 동안 땅에 남는다 · 활의 길은 걷는다
+  if (MVP && g === 1) { volleyAt = { u, v, tick0: ui.phase === 'ready' ? 0 : state.tick }; tasks[1]!.length = 0 }
   if (foeId >= 0) foeFlash.push({ id: foeId, at: now })
   sentGroup = true
   fsnd.order((g === 2 ? 'horse' : 'move') as FlagKind)
@@ -645,6 +698,8 @@ const handlers = {
   onBig: pressBig,
   onLine: pickLine,
   onGo: goBattle,
+  onHero: (k: number) => { if (ui.phase !== 'end') mvpHero(k) },
+  onHeroHover: (k: number) => { if (k !== heroHoverK) { heroHoverK = k; markEpoch++ } },
 }
 
 /** 고른 것 발밑 금빛 고리 + 장수가 무리 곁을 지날 때 한 번 튀는 「눌러 봐」 고리 */
@@ -685,7 +740,10 @@ function ringsNow(now: number): Ring[] {
     out.push(...groupRings([q], 'foe', ph))
   }
   const hh = heroNow()
-  if (hh !== undefined && ui.phase === 'play' && hh.stun === 0 && now < auraUntil) {
+  // 시험판: 장수 기술 단추에 올렸거나 막 누른 기술이 닿는 거리
+  const rk = heroHoverK >= 0 ? heroHoverK : now < heroRangeUntil ? heroRangeK : -1
+  if (MVP && hh !== undefined && rk >= 0) { const r = heroRangeCells(rk) * c; out.push({ x: pxOf(hh.u), y: pxOf(hh.v), rx: r, ry: r * 0.6, kind: 'aura', phase: 0 }) }
+  if (hh !== undefined && ui.phase === 'play' && hh.stun === 0 && now < auraUntil && !MVP) {
     const ar = P.field.heroAuraCells * c
     out.push({ x: pxOf(hh.u), y: pxOf(hh.v), rx: ar, ry: ar * 0.6, kind: 'aura', phase: 0 })
   }
@@ -796,7 +854,7 @@ function onDown(e: PointerEvent): void {
   try { cv.setPointerCapture(e.pointerId) } catch { /* 합성 입력 */ }
 }
 function onMove(e: PointerEvent): void {
-  if (e.pointerType === 'mouse') { mouse.x = e.clientX; mouse.y = e.clientY; mouse.in = true; mouse.at = e.timeStamp }
+  if (e.pointerType === 'mouse') { mouse.x = e.clientX; mouse.y = e.clientY; mouse.in = true; mouse.at = e.timeStamp; if (MVP && aiming !== -1) markEpoch++ }
   const p = ptrs.get(e.pointerId)
   if (p !== undefined) { p.x = e.clientX; p.y = e.clientY }
   if (two !== null) {
@@ -859,7 +917,7 @@ function paint(now: number, alpha: number): void {
   if (hv !== hoverG) { hoverG = hv; markEpoch++ }
   const hf = MVP && mouse.in && !touchMode && ui.phase !== 'end' && now - mouse.at < P.field.hoverRingMs ? enemyAt(mouse.x, mouse.y)?.id ?? -1 : -1
   if (hf !== hoverFoe) { hoverFoe = hf; markEpoch++ }
-  if (aiming !== -1 && !touchMode) { aimCur.hidden = false; aimCur.style.transform = `translate(${Math.round(mouse.x - 24)}px,${Math.round(mouse.y - 24)}px)` }
+  if (aiming !== -1 && !touchMode && !MVP) { aimCur.hidden = false; aimCur.style.transform = `translate(${Math.round(mouse.x - 24)}px,${Math.round(mouse.y - 24)}px)` }
   // 멈춤·끝(잠잠해진 뒤)·가로 안내 중에는 바뀐 것이 없으면 다시 안 그린다
   const calm = paused || frozen(now)
   const k = paintKey
@@ -870,11 +928,12 @@ function paint(now: number, alpha: number): void {
     lossAcc = []
     if (MVP) drawPaths(ctx, vp, cam, mvpPaths())
     drawMarks(ctx, vp, cam, marks(), MVP ? [] : ALL_GROUPS.map(g => ui.sel.includes(g) ? fromOf(g) : null), ringsNow(now), box, bandsNow(), foeMarks())
-    if (MVP) drawOdds(ctx, vp, cam, oddsNow())
+    if (MVP) { drawVolley(ctx, vp, cam, volleysNow()); drawOdds(ctx, vp, cam, oddsNow()) }
     k.x = cam.x; k.y = cam.y; k.z = cam.zoom; k.sel = selKey; k.epoch = markEpoch
   }
   flags.frame(now)
-  flags.sync(cur, ui, { line: lineChoice, foeLine: cur.lineup[1], front: ordOf('front') === ORD_CHARGE ? 0 : ordOf('front') === ORD_HOLD ? 1 : -1, volley: ordOf('bows') === ORD_VOLLEY, flank: ordOf('horse') === ORD_FLANK, aiming, sentGroup, touch: touchMode, ...(MVP ? { cmdG: ui.sel.length === 1 ? ui.sel[0]! : -1 } : {}) })
+  flags.sync(cur, ui, { line: lineChoice, foeLine: cur.lineup[1], front: ordOf('front') === ORD_CHARGE ? 0 : ordOf('front') === ORD_HOLD ? 1 : -1, volley: ordOf('bows') === ORD_VOLLEY, flank: ordOf('horse') === ORD_FLANK, aiming, sentGroup, touch: touchMode, ...(MVP ? { cmdG: ui.sel.length === 1 ? ui.sel[0]! : -1, heroBtns: mvpHeroBtns() } : {}) })
+  if (MVP) { const lit = paused || ui.phase !== 'play' ? 0 : speed; if (lit !== speedLit) { speedLit = lit; hud.setSpeed(lit) } }
   tutorial(now)
   root.classList.toggle('touch', touchMode)
   arrows.sync(offscreenArrows())
@@ -1045,7 +1104,8 @@ function frame(now: number): void {
   const stepMs = 1000 / P.field.hz
   if (heroStart === null) { const h = heroNow(); if (h !== undefined) heroStart = { u: h.u, v: h.v } }
   if (aimExpired(aiming, aimSince, now, touchMode ? P.field.aimTouchMs : P.field.aimMs)) { cancelAim(); aimGraceUntil = now + P.field.aimGraceMs }
-  const simMs = (aiming !== -1 ? dtMs * P.field.aimSlowPermille / 1000 : slow ? dtMs * P.field.slowPermille / 1000 : dtMs)
+  // 시험판의 두 배 빠르기: 한 프레임에 쌓는 판 시간을 두 배로 — 틱 크기는 그대로라 같은 입력이면 같은 판 (결정론)
+  const simMs = (aiming !== -1 ? dtMs * P.field.aimSlowPermille / 1000 : slow ? dtMs * P.field.slowPermille / 1000 : dtMs) * (MVP ? speed : 1)
   if (!paused && !helpOpen && !blocked && cur.end === null && ui.phase === 'play') {
     const a = advance(acc, simMs, P.field.hz, P.field.maxCatchUpTicks)
     acc = a.acc
@@ -1120,8 +1180,8 @@ function mvpKey(a: string): boolean {
     case 'pickFront': pickGroup(0); return true
     case 'pickBows': pickGroup(1); return true
     case 'pickHorse': pickGroup(2); return true
-    case 'pickHero': pickGroup(4); return true // 시험판의 4 는 오른 날개 · 장수는 5
-    case 'cmd1': case 'cmd2': case 'cmd3': case 'cmd4': mvpCmd(Number(a.slice(3)) - 1); return true
+    case 'pickHero': pickGroup(4); return true // 시험판의 4 는 아래 날개 · 장수는 5
+    case 'cmd1': case 'cmd2': case 'cmd3': case 'cmd4': return true
     case 'dash':
       if (ui.phase === 'ready') goBattle()
       else if (ui.phase === 'play') { if (aiming !== -1) cancelAim(); paused = !paused; hud.setPaused(paused) }
@@ -1136,6 +1196,9 @@ addEventListener('keydown', e => {
   if (blocked) return
   keysHeld.add(e.code)
   if (MVP && e.code === 'Digit5') { e.preventDefault(); if (!e.repeat) pickGroup(3); return }
+  // 시험판: 고른 부대의 깃발은 Q W E R (롤처럼) · Tab 은 보통/두 배 빠르기 · WASD·Z X C V 는 안 쓴다
+  if (MVP && MVP_FLAG_KEYS.includes(e.code)) { e.preventDefault(); if (!e.repeat && ui.phase !== 'end') mvpCmd(MVP_FLAG_KEYS.indexOf(e.code)); return }
+  if (MVP && e.code === 'Tab') { e.preventDefault(); if (!e.repeat) speed = speed === 1 ? 2 : 1; return }
   const a = actionOf(e.code)
   if (a === null) return
   if (a === 'slow') { slow = true; return }
@@ -1196,7 +1259,8 @@ hud = mountHud(root, {
   onAgain: restart,
   onNext: (line: number) => { lineChoice = line; restart(); goBattle() },
   onHelp: toggleHelp,
-}, import.meta.env.BASE_URL + 'realm/')
+  onSpeed: setSpeed,
+}, import.meta.env.BASE_URL + 'realm/', MVP)
 hud.setZoom(0)
 mini = mountMini(root, { onPan: (x, y) => { const hh = heroNow(); pan = { x, y, until: ui.phase === 'ready' ? Infinity : performance.now() + P.field.miniPanMs }; miniHero = hh === undefined ? null : { u: hh.u, v: hh.v }; paintKey.x = NaN } })
 flags = mountFlags(root, import.meta.env.BASE_URL + 'realm/', handlers)

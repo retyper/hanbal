@@ -3733,7 +3733,7 @@ export const SPEC = {
     mvpBowPanicCells: k(16, 0, 40, 1, '시험판(field.html?mvp)만: 기병이 활을 들이치면 이 안의 같은 편 활도 놀란다', '칸'),
     mvpBowPanicShock: k(400, 0, 700, 10, '시험판(field.html?mvp)만: 그때 곁의 활이 잃는 사기 (천분율 · 들이칠 때마다)'),
     mvpMapWidthCells: k(64, 20, 120, 2, '시험판(field.html?mvp)만: 판의 폭 (넓으면 적 날개 기병 바깥에 우리 기병이 돌 길이 남는다)', '칸'),
-    mvpFoeMenPermille: k(820, 500, 1500, 10, '시험판(field.html?mvp)만: 적 사람 수 (우리의 천분율 · 판마다 씨앗으로 ± mvpFoeMenSpreadPermille)'),
+    mvpFoeMenPermille: k(860, 500, 1500, 10, '시험판(field.html?mvp)만: 적 사람 수 (우리의 천분율 · 판마다 씨앗으로 ± mvpFoeMenSpreadPermille)'),
     mvpFoeMenSpreadPermille: k(100, 0, 400, 10, '시험판(field.html?mvp)만: 적 사람 수가 판마다 흔들리는 폭 (천분율)'),
     mvpFleeCountPermille: k(300, 0, 1000, 50, '시험판(field.html?mvp)만: 편 사기에서 달아나는 대의 사기를 이만큼만 센다 (옛 판은 fleeCountPermille)'),
     mvpStartMarginCells: k(35, 2, 60, 1, '시험판(field.html?mvp)만: 판 끝에서 앞줄까지 거리 (작을수록 두 편이 멀리서 시작 · 명령 없이 첫 접촉 30초 넘게)', '칸'),

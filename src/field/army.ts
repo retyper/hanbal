@@ -130,7 +130,13 @@ function flankRoute(s: FieldState, side: 0 | 1, t: Squad, steps: number): Point[
 /** 큰 수·무리 명령 (OP_STANCE · OP_AIM · OP_RALLY) — 꼴은 sim.ts inputOk 가 이미 봤다 · 받을 수 없으면 까닭만 남긴다 */
 export function armyInput(s: FieldState, i: FieldInput, side: 0 | 1 = 0): void {
   const foe = (1 - side) as 0 | 1
-  if (i.op === OP_RALLY) { for (const g of GRPS) setOrder(s, side, g, ORD_NONE, null); s.frontLockTick[side] = -1; return }
+  if (i.op === OP_RALLY) {
+    for (const g of GRPS) setOrder(s, side, g, ORD_NONE, null); s.frontLockTick[side] = -1
+    // 시험판(mvp)의 사람 편은 진이 장수를 안 따르므로 모여라 때 진 기준점을 장수 앞으로 옮긴다 (무리가 장수 곁 제 자리로 온다)
+    const h = heroOf(s, side)
+    if (still(s, side) && h) s.anchor[side * 3] = frontAnchor(s, h)
+    return
+  }
   const g = GRPS[i.g]!
   const gi = i.g as 0 | 1 | 2
   const why = (w: number): void => { if (side === 0) { s.grpWhy[gi] = w; s.grpWhyTick[gi] = s.tick } }
@@ -349,7 +355,8 @@ function place(s: FieldState, side: 0 | 1): void {
         return
       }
       // 기본 행동 — 닿는 적과 알아서 맞붙는다 · 기병은 무너지는(사기가 tacPursueMorale 아래) 적을 쫓는다
-      const pursue = q.grp === 'horse' && !still(s, side) ? nearestFoe(s, q, (t, d) => d <= sq(cells(P.field.pursueCells)) && t.morale * MILLI < t.morale0 * m(P.realm.tacPursueMorale)) : null
+      // 시험판(mvp)은 두 편 다 기병이 저절로 쫓지 않는다 (적 기병은 날개를 지키기만 · 우리는 사람이 몬다)
+      const pursue = q.grp === 'horse' && s.mvp !== 1 ? nearestFoe(s, q, (t, d) => d <= sq(cells(P.field.pursueCells)) && t.morale * MILLI < t.morale0 * m(P.realm.tacPursueMorale)) : null
       // 감싸기 (52 §1-4) — 맞물리지 않은 대는 wrapCells 안의 「우리와 맞물린 적」의 옆구리로 붙는다 (수가 남는 쪽이 저절로 감싼다)
       if (q.lock < 0 && !pursue && q.grp !== 'horse') {
         const w = nearestFoe(s, q, (t, d) => d <= sq(cells(P.field.wrapCells)) && t.flee === 0 && t.lock >= 0 && s.squads[t.lock]!.side === side && s.squads[t.lock]!.id !== q.id && free(t, q))

@@ -207,9 +207,9 @@ export function nearestFoe(s: FieldState, q: Squad, ok: (t: Squad, d: number) =>
   return best
 }
 
-/** 기병 대의 날개 — 시작 자리가 판 폭 가운데보다 아래(v 큼)면 1 오른 날개 · 아니면 0 왼 날개 (앞을 보고 선 우리 편 기준) */
+/** 기병 대의 날개 — 시작 자리가 판 폭 가운데보다 아래(v 큼)면 1 아래 날개 · 아니면 0 위 날개 (화면 위·아래) */
 export const wingOf = (s: FieldState, q: Squad): 0 | 1 => q.homeV * 2 > lastV(s.map) ? 1 : 0
-/** 입력의 무리 g 에 드는 side 편 대 — 0 앞줄 · 1 활 · 2 기병(시험판 mvp 는 왼 날개만) · 4 오른 날개(시험판만) */
+/** 입력의 무리 g 에 드는 side 편 대 — 0 앞줄 · 1 활 · 2 기병(시험판 mvp 는 위 날개만) · 4 아래 날개(시험판만) */
 export function members(s: FieldState, side: 0 | 1, g: number): Squad[] {
   const grp = GRPS[g === 4 ? 2 : g]
   return s.squads.filter(q => q.side === side && q.grp === grp && (q.grp !== 'horse' || s.mvp !== 1 || wingOf(s, q) === (g === 4 ? 1 : 0)))
@@ -591,7 +591,8 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
   for (const q of s.squads) {
     q.lock = -1
     if (q.men <= 0 || q.grp !== 'front' || q.flee === 1) continue
-    const t = nearestFoe(s, q, (t) => t.grp !== 'bows' && touching(q, t) && bladeLine(s.map, q, t))
+    // 시험판(mvp)은 앞줄끼리만 맞물린다 — 기병 날개 하나가 적 앞줄 대 하나를 붙잡아 세워 적 줄을 토막 내던 것 (닿은 기병과는 서지 않고 치며 간다)
+    const t = nearestFoe(s, q, (t) => (s.mvp === 1 ? t.grp === 'front' : t.grp !== 'bows') && touching(q, t) && bladeLine(s.map, q, t))
     if (t) q.lock = t.id
   }
   // 돌격의 쾅 — 도움닫기를 한 대가 겨눈 적에 닿은 순간 (51 §8): 맞은 대가 밀려나고 덤이 붙는다 · 방진에 막힌 기병은 튕겨 나고 사기를 잃는다
