@@ -203,9 +203,10 @@ export function armyTick(s: FieldState, full: boolean): void {
   }
   // 진 자리·목표는 retargetMs 마다(입력이 들어온 틱에는 곧바로) · 예고·명령 끝은 틱마다
   // 시험판(mvp)의 적은 큰 수(예고 옆치기 · 알아서 방진·돌격·큰 외침)를 안 쓴다 — 다가와 정면으로 싸우고 기병은 날개를 지킨다
-  for (const side of [0, 1] as const) if (follows(s, side)) { if (s.mvp !== 1) enemyPlan(s, side); expire(s, side) }
+  const tricks = s.mvp !== 1 || s.tricks === 1
+  for (const side of [0, 1] as const) if (follows(s, side)) { if (tricks) enemyPlan(s, side); expire(s, side) }
   // 적 AI 의 수는 두 편 다 같은 틱 상태로 먼저 정하고 나서 건다 (한 편이 먼저 건 수를 다른 편이 같은 틱에 읽으면 거울 판이 어긋난다)
-  if (full && s.mvp !== 1) { const acts = ([0, 1] as const).flatMap(side => follows(s, side) ? aiTactics(s, side) : []); for (const a of acts) a() }
+  if (full && tricks) { const acts = ([0, 1] as const).flatMap(side => follows(s, side) ? aiTactics(s, side) : []); for (const a of acts) a() }
   for (const side of [0, 1] as const) if (follows(s, side)) { moveAnchor(s, side); if (full) { place(s, side); holdCamp(s, side) } }
 }
 

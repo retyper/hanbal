@@ -372,6 +372,8 @@ export interface LiveSetup {
   night: boolean
   /** 고르고 오른쪽 누름 시험판 (field.html?mvp) — 사람이 쥔 편은 장수를 안 따라 제자리를 지키고 · 기병이 적 활을 맨 뒤로 돌아 친다 · 없으면 옛 판 그대로 */
   mvp?: boolean
+  /** 시험판에서 적이 큰 수(예고 옆치기 · 알아서 방진·돌격·큰 외침)를 쓰나 (실험실의 「적의 꾀」 · 없으면 안 씀) */
+  mvpTricks?: boolean
 }
 
 export interface FieldLog {
@@ -426,4 +428,6 @@ export interface FieldState {
   log: FieldLog
   /** 고르고 오른쪽 누름 시험판이면 1 (LiveSetup.mvp · 없으면 옛 판) */
   mvp?: 0 | 1
+  /** 시험판에서 적의 큰 수를 쓰면 1 (LiveSetup.mvpTricks) */
+  tricks?: 0 | 1
 }

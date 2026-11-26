@@ -128,6 +128,7 @@ export function createField(setup: LiveSetup): FieldState {
   const s: FieldState = { tick: 0, seed: setup.seed, map, squads: [], heroes: [], anchor: [], route: [[], [], [], [], [], []], grpWhy: [0, 0, 0], grpWhyTick: [-1, -1, -1], stats: { flankHits: [0, 0], artMorale: [0, 0], killed: [0, 0], lost: [0, 0], moraleBy: [noCause(), noCause()] }, lineup: [0, 0], breakTick: [-1, -1], breakWhy: [0, 0], stood: [0, 0], standTick: [-1, -1], bladeTick: [0, 0], planTick: [-1, -1], ai: [setup.sides?.[0]?.player ? 0 : 1, setup.sides?.[1]?.player ? 0 : 1], frontLockTick: [-1, -1], used: [0, 0, 0, 0], broken: [0, 0], end: null, winner: -1, log: { dropped: 0, accepted: [], events: [] } }
   if (invalidSetup(setup)) { s.end = 'invalid'; return s }
   if (setup.mvp === true) s.mvp = 1
+  if (setup.mvp === true && setup.mvpTricks === true) s.tricks = 1
   const unit = P.field.unit
   const jit = P.field.spawnJitterCells * unit
   for (const side of [0, 1] as const) {

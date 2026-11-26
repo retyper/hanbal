@@ -7,7 +7,8 @@
 import { P } from './tune/params.ts'
 import { startGfxSafe } from './ui/gfxsafe.ts'
 import { guardMedia } from './ui/media-guard.ts'
-import { mvpSetup, plainSetup } from './field/scenario.ts'
+import { labSetup, LAB_DEFAULT, mvpSetup, plainSetup, type LabConfig } from './field/scenario.ts'
+import { mountLab, savedLabConfig, type Lab, type LabRecord } from './field/mainLab.ts'
 import { crossMap, highMap, ambushMap, meetMap, stakeMap } from './field/map.ts'
 import { beatsKind, createField, stepField } from './field/sim.ts'
 import { t, type Key } from './i18n/index.ts'
@@ -19,11 +20,11 @@ import { mountArrows, mountPad, type Arrows, type Pad, type PadBtn } from './fie
 import { mountFirst, mountSteps, type First, type Steps } from './field/mainHelp.ts'
 import { mountHelp, type Help } from './field/mainCard.ts'
 import { drawMarks, drawOdds, drawPaths, drawVolley, type Odds, type Path, type Volley, type Band, type Box, type Mark, type MarkShape, type Ring } from './field/mainFlagMarks.ts'
-import { LINES, OP_AUTO, OP_MOVE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_VOLLEY, type FieldInput, type InputGroup } from './field/types.ts'
+import { HIT_BLOCKED, LINES, OP_AUTO, OP_MOVE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_VOLLEY, type FieldInput, type InputGroup } from './field/types.ts'
 import { roll } from './core/rng.ts'
 import { mountMini, type Mini } from './field/mainMini.ts'
 import { serialize } from './field/rec.ts'
-import { bladeLeftOf, mountHud, type EndStats, type EndWhy, type Hud } from './field/mainHud.ts'
+import { barPct, bladeLeftOf, mountHud, type EndStats, type EndWhy, type Hud } from './field/mainHud.ts'
 import { createFieldSound, soundCamOf, soundFrameOf } from './field/mainSound.ts'
 import type { FlagKind } from './field/mainSoundModel.ts'
 import { advance } from './field/viewLoop.ts'
@@ -38,7 +39,11 @@ guardMedia()
 const query = new URLSearchParams(location.search)
 const num = (key: string, dflt: number): number => { const v = Number(query.get(key)); return Number.isFinite(v) && query.has(key) ? Math.trunc(v) : dflt }
 /** ?mvp = 고르고 오른쪽 누름 시험판 (1 앞줄 · 2 활 · 3 위 날개 · 4 아래 날개 · 5 장수를 골라 둔 채 · 오른쪽 누름 땅 = 이동 · 적 = 공격 · Shift 길 잇기 · Space 멈춤 · 장수 걷기·큰 수 넷·비기 단추 없음) */
-const MVP = query.has('mvp')
+/** lab.html (전장 실험실 · 56-lab.md) — 시험판 조작 그대로 · 왼쪽 판 짜기 · 판이 끝날 때마다 기록 한 줄 */
+const LAB = document.documentElement.dataset['lab'] === '1'
+const MVP = query.has('mvp') || LAB
+/** 실험실의 판 짜임 (저장해 둔 것 · 없으면 기본) */
+let labCfg: LabConfig = (LAB ? savedLabConfig() : null) ?? LAB_DEFAULT
 const root = document.getElementById('field') as HTMLDivElement
 root.innerHTML = `<canvas id="fd-cv"></canvas>
 <div id="fd-rotate" hidden><div><span>↻</span><h2>폰을 가로로 돌려 주세요</h2><p>가로 화면에서 전장을 봅니다.<br>돌리는 동안 전투는 멈춰 있습니다.</p></div></div>`
@@ -71,7 +76,7 @@ const makeMap = () => {
   }
 }
 let low = query.get('gfx') === 'low'
-let seed = num('seed', 7)
+let seed = LAB ? labCfg.seed : num('seed', 7)
 const men = num('men', 1200)
 /** 우리 장수와 적장이 같은 그림이 되지 않게 열쇠를 나눈다 (둘 다 대시 칸이 있는 띠) */
 const HERO_KEY_OURS = 'ara', HERO_KEY_FOE = query.get('foehero') ?? 'bakdal'
@@ -88,7 +93,7 @@ let foeLine = foeRoll(seed)
 foeHist.push(foeLine)
 function newSetup() {
   if (MVP) {
-    const sm = mvpSetup(seed, men)
+    const sm = LAB ? labSetup(labCfg, seed) : mvpSetup(seed, men)
     if (sm.sides[0].hero !== null) sm.sides[0].hero.id = HERO_KEY_OURS
     if (sm.sides[1].hero !== null) sm.sides[1].hero.id = HERO_KEY_FOE
     return sm
@@ -320,8 +325,9 @@ function nearestFight(hero: { u: number; v: number }): { u: number; v: number } 
 }
 
 function restart(): void {
-  foeLine = nextFoeLine(); foeHist.push(foeLine)
-  seed++
+  // 실험실의 「다시」는 같은 판 (씨앗은 판 짜기에서 바꾼다)
+  if (!LAB) { foeLine = nextFoeLine(); foeHist.push(foeLine); seed++ }
+  labRec = newLabRec(); lab?.open(true)
   state = createField(newSetup()); cur = readField(state); prev = null; acc = 0
   resetFx()
   introLeft = P.field.introMs
@@ -387,6 +393,7 @@ function setSel(g: readonly InputGroup[]): void {
 /** 입력을 줄에 더한다 (시작 화면이면 꽂아 둔 것을 바꾼다) */
 function accept(inputs: readonly FieldInput[]): void {
   if (inputs.length === 0) return
+  if (LAB) for (const i of inputs) labRec.orders[i.g] = (labRec.orders[i.g] ?? 0) + 1
   if (ui.phase === 'ready') plan = mergePlan(plan, inputs)
   else { queue.push(...inputs); firstDone = true }
   markEpoch++
@@ -610,6 +617,7 @@ function pressCmd(g: CmdGroup, idx: number): void {
 /** 장수 입력 (싸우는 중에만 · 입력 줄로) */
 function heroInput(i: FieldInput): void {
   if (ui.phase !== 'play') return
+  if (LAB) labRec.orders[3]!++
   queue.push(i); heroOrdered = true; markEpoch++
 }
 const artCdSec = (a: string): number => a === 'shout' ? P.field.heroCdShoutSec : a === 'stand' ? P.field.heroCdStandSec : a === 'snipe' ? P.field.heroCdSnipeSec : P.field.heroCdVanguardSec
@@ -681,6 +689,8 @@ function pickGroup(g: InputGroup): void {
 
 function goBattle(): void {
   if (ui.phase !== 'ready') return
+  // 실험실: 준비 화면에서 꽂아 둔 명령도 그 자리의 명령 수로 센다
+  if (LAB) { labRec = newLabRec(); for (const i of plan) labRec.orders[i.g]!++; lab?.open(false) }
   queue = plan.slice()
   plan = []
   ui.phase = 'play'
@@ -1085,6 +1095,42 @@ function offscreenArrows(): { g: number; x: number; y: number; rot: number; icon
   }
   return out
 }
+// ---- 실험실 기록 (56 §2) ----
+/** 기록에 남기는 사건 종류 (impact 는 막힌 것만 「blocked」 로) */
+const LAB_EVENTS: ReadonlySet<string> = new Set(['flankHit', 'rout', 'regroup', 'heroDown', 'sideBreak', 'gateBreak'])
+interface LabRun { samples: number[][]; events: LabRecord['events']; orders: number[]; pauses: number; pausedMs: number; fastMs: number; wasPaused: boolean }
+const newLabRec = (): LabRun => ({ samples: [], events: [], orders: [0, 0, 0, 0, 0], pauses: 0, pausedMs: 0, fastMs: 0, wasPaused: false })
+let labRec: LabRun = newLabRec()
+let lab: Lab | null = null
+/** 틱마다 (판이 도는 동안) — 5초마다 두 편 사기·사람 · 사건 */
+function labTick(): void {
+  if (state.tick % (5 * P.field.hz) === 0) {
+    let m0 = 0, m1 = 0
+    for (const q of cur.squads) if (q.side === 0) m0 += q.men; else m1 += q.men
+    labRec.samples.push([state.tick, cur.morale[0], cur.morale[1], m0, m1])
+  }
+  for (const ev of cur.events) {
+    if (LAB_EVENTS.has(ev.kind)) labRec.events.push([state.tick - 1, ev.kind, ev.side, ev.id, ev.to ?? -1])
+    else if (ev.kind === 'impact' && ev.how === HIT_BLOCKED) labRec.events.push([state.tick - 1, 'blocked', ev.side, ev.id, ev.to ?? -1])
+  }
+}
+/** 프레임마다 — 멈춘 횟수·시간 · 두 배로 돈 시간 */
+function labFrame(dtMs: number): void {
+  if (ui.phase !== 'play') return
+  if (paused && !labRec.wasPaused) labRec.pauses++
+  labRec.wasPaused = paused
+  if (paused) labRec.pausedMs += dtMs
+  else if (speed === 2) labRec.fastMs += dtMs
+}
+/** 판이 끝났다 — 기록 한 줄 (입력 줄까지 · 같은 짜임·씨앗으로 다시 돌릴 수 있다) */
+function labEnd(): void {
+  lab?.record({
+    at: new Date().toISOString(), build: __BUILD_ID__, cfg: structuredClone(labCfg), seed, sec: state.tick / P.field.hz, winner: cur.winner, end: cur.end ?? '',
+    morale: [barPct(cur.morale[0]), barPct(cur.morale[1])], killed: cur.stats.killed[0], lost: cur.stats.lost[0], flankHits: cur.stats.flankHits[0],
+    inputs: serialize(state.log.accepted), samples: labRec.samples, events: labRec.events, orders: labRec.orders,
+    pauses: labRec.pauses, pausedSec: labRec.pausedMs / 1000, fastSec: labRec.fastMs / 1000,
+  })
+}
 function heroMovedNow(): boolean {
   const h = heroNow()
   if (h === undefined || heroStart === null) return false
@@ -1103,7 +1149,8 @@ function frame(now: number): void {
   watchLoad(dtMs)
   const stepMs = 1000 / P.field.hz
   if (heroStart === null) { const h = heroNow(); if (h !== undefined) heroStart = { u: h.u, v: h.v } }
-  if (aimExpired(aiming, aimSince, now, touchMode ? P.field.aimTouchMs : P.field.aimMs)) { cancelAim(); aimGraceUntil = now + P.field.aimGraceMs }
+  // 시험판은 찍는 중이 저절로 풀리지 않는다 (멈춘 채 오래 고르다 풀린 뒤 Esc 가 멈춤을 뒤집던 것) — 찍기·오른쪽 누름·Esc 로만 끝난다
+  if (!MVP && aimExpired(aiming, aimSince, now, touchMode ? P.field.aimTouchMs : P.field.aimMs)) { cancelAim(); aimGraceUntil = now + P.field.aimGraceMs }
   // 시험판의 두 배 빠르기: 한 프레임에 쌓는 판 시간을 두 배로 — 틱 크기는 그대로라 같은 입력이면 같은 판 (결정론)
   const simMs = (aiming !== -1 ? dtMs * P.field.aimSlowPermille / 1000 : slow ? dtMs * P.field.slowPermille / 1000 : dtMs) * (MVP ? speed : 1)
   if (!paused && !helpOpen && !blocked && cur.end === null && ui.phase === 'play') {
@@ -1121,8 +1168,9 @@ function frame(now: number): void {
         else if (ev.kind === 'heroBash' && ev.side === 0) bashN++
       }
       noteBreak()
+      if (LAB) labTick()
     }
-    if (cur.end !== null) { ui.phase = 'end'; drag = null; endAt = now; fsnd.end(cur.winner === 0) }
+    if (cur.end !== null) { ui.phase = 'end'; drag = null; endAt = now; fsnd.end(cur.winner === 0); if (LAB) labEnd() }
   }
   // 틱이 바뀌었거나 깃발을 새로 꽂았을 때 한 번 (시작 화면에서 꽂은 깃발 소리도 바로 나게)
   if (!paused && !blocked && (state.tick !== soundTick || markEpoch !== soundEpoch)) {
@@ -1130,6 +1178,7 @@ function frame(now: number): void {
     fsnd.frame(soundFrameOf(state, cur.edge, cur.morale, [bladeLeftOf(cur, 0), bladeLeftOf(cur, 1)]), soundCamOf(cam, vp, bounds()), null, now)
   }
   if (ui.phase === 'play' && !paused && !helpOpen) playMs += Math.min(dtMs, 100)
+  if (LAB) labFrame(Math.min(dtMs, 100))
   if (!blocked && ui.phase === 'play' && introLeft > 0) introLeft = Math.max(0, introLeft - Math.min(dtMs, 100))
   const dt = Math.min(dtMs, 100)
   if ((padTick++ & 15) === 0) measurePads()
@@ -1146,7 +1195,8 @@ function frame(now: number): void {
   if (h0 !== undefined && p0 !== undefined && h0.stun > 0 && p0.stun === 0) hitStopUntil = now + P.field.heroDownStopMs
   if (!paused && !helpOpen && !blocked && !frozen(now) && now >= hitStopUntil) viewMs += endAt > 0 && now - endAt < P.field.endSlowMs ? simMs * P.field.endSlowPermille / 1000 : simMs
   movePan(dt / 1000)
-  followTarget(dt / 1000)
+  // 시험판의 준비 화면(멈춘 채 길을 그리는 때)은 카메라를 늦추지 않는다 — 위·아래 띠 높이가 늦게 재져 목표가 옮겨 가는 동안 찍은 자리가 화면과 어긋나던 것
+  followTarget(dt / 1000, MVP && ui.phase === 'ready')
   paint(now, blocked ? 1 : Math.min(1, acc / stepMs))
 }
 
@@ -1265,6 +1315,7 @@ hud.setZoom(0)
 mini = mountMini(root, { onPan: (x, y) => { const hh = heroNow(); pan = { x, y, until: ui.phase === 'ready' ? Infinity : performance.now() + P.field.miniPanMs }; miniHero = hh === undefined ? null : { u: hh.u, v: hh.v }; paintKey.x = NaN } })
 flags = mountFlags(root, import.meta.env.BASE_URL + 'realm/', handlers)
 help = mountHelp(root, import.meta.env.BASE_URL + 'realm/', MVP)
+if (LAB) lab = mountLab(root, labCfg, { onApply: cfg => { labCfg = cfg; seed = cfg.seed; restart() } })
 first = mountFirst(root)
 arrows = mountArrows(root, import.meta.env.BASE_URL + 'realm/', g => { const gg = g as InputGroup; if (cellWhy(cur, gg) === null) setSel([gg]) })
 aimCur = document.createElement('img')
