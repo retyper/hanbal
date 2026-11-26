@@ -102,7 +102,7 @@ const LINE_DOTS: readonly (readonly (readonly [number, number, number])[])[] = [
   [[6, 22, 0], [16, 14, 0], [44, 14, 0], [54, 22, 0], [26, 28, 1], [34, 28, 1], [4, 6, 2], [56, 6, 2]],
 ]
 const LINE_COLORS = ['#7fb8ff', '#9fd39a', '#ffd27a'] as const
-function lineSvg(i: number, front = ''): string {
+export function lineSvg(i: number, front = ''): string {
   const dots = LINE_DOTS[i] ?? LINE_DOTS[0]!
   return `<svg viewBox="0 0 60 42" aria-hidden="true">${dots.map(d => `<circle cx="${d[0]}" cy="${d[1]}" r="${d[2] === 0 ? 3.2 : 2.8}" fill="${front !== '' && d[2] === 0 ? front : LINE_COLORS[d[2]]}"/>`).join('')}</svg>`
 }

@@ -9,8 +9,29 @@
 import { t, type Key } from '../i18n/index.ts'
 import { P } from '../tune/params.ts'
 import type { VModel } from './viewRead.ts'
+import { lineSvg } from './mainFlags.ts'
 
-export interface HudHandlers { onZoom(): void; onPause(): void; onAgain(): void; onHelp(): void }
+export interface HudHandlers { onZoom(): void; onPause(): void; onAgain(): void; onHelp(): void; /** 결과 한 장에서 우리 진(0~2)을 눌렀다: 그 진으로 곧바로 다음 판 */ onNext(line: number): void }
+/** 결과 한 장의 다음 판 미리보기: 다음 적의 진 · 우리 비기가 큰 외침인가 */
+export interface EndNext { foe: number; shout: boolean }
+/** 막대에 적는 숫자(%): 막대 길이와 같은 셈 — 0 이면 무너짐 · 막대 위 숫자와 끝 상자가 같은 식을 쓴다 */
+export const barPct = (morale: number): number => Math.floor(barOf(morale) / 10)
+/**
+ * 아깝다 환산: 진 판에서 적 무너짐까지 남은 몫(천분율 · 막대의 %p 와 같은 사기 단위 ×10)을 우리 한 수의 몫으로 나눠
+ * 가장 적게 드는 수와 그 번수를 낸다 (한도 nearMissMaxUses 를 넘으면 null · 몫이 0 이면 그 수는 뺀다)
+ */
+export function nearMissOf(gapPermille: number, shout: boolean): { move: 'charge' | 'flank' | 'shout'; n: number } | null {
+  const F = P.field
+  const opts: { move: 'charge' | 'flank' | 'shout'; w: number }[] = [{ move: 'charge', w: F.nearMissChargePermille }, { move: 'flank', w: F.nearMissFlankPermille }]
+  if (shout) opts.push({ move: 'shout', w: F.nearMissSkillPermille })
+  let best: { move: 'charge' | 'flank' | 'shout'; n: number } | null = null
+  for (const o of opts) {
+    if (o.w <= 0) continue
+    const n = Math.max(1, Math.ceil(gapPermille / o.w))
+    if (best === null || n < best.n) best = { move: o.move, n }
+  }
+  return best !== null && best.n <= F.nearMissMaxUses ? best : null
+}
 /** 이번에 판이 보인 큰 부딪힘 — gold 상성이 맞음(막대 테두리가 금빛으로 번쩍) · blocked 막힘 · breakSide 무너진 편(-1 없음) */
 export interface HudFx { gold: boolean; blocked: boolean; breakSide: number }
 /** 사기를 깎는 까닭 여섯 (stats.moraleBy 의 열쇠) 과 그 그림 */
@@ -50,7 +71,7 @@ export interface Hud {
   /** 다시 선 대의 「+N」: 화면 자리(x, y)에서 떠올랐다가 그 편 막대로 날아가 붙는다 */
   fly(x: number, y: number, n: number, side: 0 | 1): void
   /** 끝 상자 (null 이면 닫는다) */
-  showEnd(m: VModel | null, stats?: EndStats, why?: EndWhy): void
+  showEnd(m: VModel | null, stats?: EndStats, why?: EndWhy, next?: EndNext): void
   frame(nowMs: number): void
 }
 
@@ -111,7 +132,12 @@ const CSS = `
 #fd-end .l2{margin:0 0 8px;font-size:15px;color:#f3ecd8cc}
 #fd-end .st{display:flex;flex-wrap:wrap;gap:4px 16px;justify-content:center;margin:0 0 6px;font-size:14px;color:#f3ecd8cc}
 #fd-end .cz{margin:0 0 10px;font-size:13px;color:#f3ecd899}
-#fd-end button{min-width:180px;min-height:56px;font-size:20px;font-weight:700;border-color:#ffd27a;color:#1a1305;background:#ffd27a}
+#fd-end #fd-again2{min-width:180px;min-height:56px;font-size:20px;font-weight:700;border-color:#ffd27a;color:#1a1305;background:#ffd27a}
+#fd-end .fd-nx{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 0 8px}
+#fd-end .fd-nxfoe{display:flex;flex-direction:column;align-items:center;font-size:12px;color:#ff8a7a;line-height:1.1}
+#fd-end .fd-nxfoe svg{width:48px;height:34px;display:block}
+#fd-end .fd-nxl{min-width:84px;min-height:52px;padding:2px 6px;font-size:13px;display:flex;flex-direction:column;align-items:center;gap:1px;border:1px solid #2f8cff88;color:#f3ecd8;background:#0b1a2ecc}
+#fd-end .fd-nxl svg{width:44px;height:30px;display:block}
 `
 
 /** 작은 칼 (곧은 날 · 코등이 · 자루) — 칼 든 대가 없다는 표시 */
@@ -130,7 +156,7 @@ export function mountHud(root: HTMLElement, h: HudHandlers, base = ''): Hud {
   edge.innerHTML = `<b class="fd-p0"></b><span class="fd-side fd-s0"><i class="gh"></i><i class="fill"></i><b class="fd-bl" hidden>${SWORD}<span></span></b></span><span class="fd-vs"></span><span class="fd-side fd-s1"><i class="gh"></i><i class="fill"></i><b class="fd-bl" hidden>${SWORD}<span></span></b></span><b class="fd-p1"></b>`
   const end = document.createElement('div')
   end.id = 'fd-end'; end.hidden = true
-  end.innerHTML = `<div><h2 id="fd-endtext"></h2><p class="l1" id="fd-l1"></p><p class="l2" id="fd-l2"></p><div class="st" id="fd-endstats"></div><p class="cz" id="fd-why"></p><button id="fd-again2" type="button"></button></div>`
+  end.innerHTML = `<div><h2 id="fd-endtext"></h2><p class="l1" id="fd-l1"></p><p class="l2" id="fd-l2"></p><div class="st" id="fd-endstats"></div><p class="cz" id="fd-why"></p><div class="fd-nx" id="fd-nx"></div><button id="fd-again2" type="button"></button></div>`
   root.append(edge, hud, end)
   const $ = (id: string): HTMLElement => document.getElementById(id) as HTMLElement
   const q = (sel: string): HTMLElement => edge.querySelector(sel) as HTMLElement
@@ -199,6 +225,9 @@ export function mountHud(root: HTMLElement, h: HudHandlers, base = ''): Hud {
     h.onAgain() // 확인 상자 없이 곧바로 새 판
   })
   again2.addEventListener('click', () => h.onAgain())
+  const nx = $('fd-nx')
+  nx.addEventListener('click', e => { const el = (e.target as HTMLElement).closest('[data-nl]') as HTMLElement | null; if (el !== null) h.onNext(Number(el.dataset['nl'])) })
+  let nxKey = ''
   let key = ''
 
   return {
@@ -243,7 +272,7 @@ export function mountHud(root: HTMLElement, h: HudHandlers, base = ''): Hud {
       if (k === key) return
       key = k
       for (const side of [0, 1] as const) {
-        pcts[side].textContent = `${Math.floor(m.morale[side] / 10)}%` // 내림: 문턱(55%) 바로 아래가 55% 로 읽히지 않게
+        pcts[side].textContent = `${barPct(m.morale[side])}%` // 막대가 빈 만큼 0 · 무너짐이 0
         fills[side].style.width = `${barOf(m.morale[side]) / 10}%`
         ghosts[side].style.width = `${ghostLen[side]! / 10}%`
       }
@@ -261,8 +290,8 @@ export function mountHud(root: HTMLElement, h: HudHandlers, base = ''): Hud {
       setTimeout(() => { el.style.transform = `translate(${Math.round(tx - 10)}px,${Math.round(ty)}px) scale(.7)`; el.style.opacity = '.4' }, P.field.flyHoldMs)
       el.addEventListener('transitionend', () => { if (el.isConnected) { el.remove(); restart(bars[side], 'sh'); bars[side].classList.add('up'); upUntil[side] = performance.now() + P.field.goldFlashMs } })
     },
-    showEnd(m, stats, why) {
-      if (m === null || m.end === null) { end.hidden = true; return }
+    showEnd(m, stats, why, next) {
+      if (m === null || m.end === null) { end.hidden = true; nxKey = ''; return }
       end.hidden = false
       endText.textContent = t(m.winner === 0 ? 'field.end.win' : m.winner === 1 ? 'field.end.lose' : 'field.end.draw')
       // 1줄: 어떻게 갈렸나 · 두 편 사기 · 2줄: 아깝다(진 판: 적 무너짐까지) · 남은 몫(이긴 판: 우리 무너짐까지)
@@ -272,10 +301,20 @@ export function mountHud(root: HTMLElement, h: HudHandlers, base = ''): Hud {
       const loser = m.winner === 0 ? 1 : 0
       const kind = m.end === 'morale' && m.winner >= 0 && mor[loser] >= thr ? 'blades' : m.end
       const how = kind === 'morale' || kind === 'men' || kind === 'blades' ? `field.res.head.${m.winner === 0 ? 'win' : 'lose'}.${kind}` : 'field.endwhy.time'
-      endL1.textContent = `${t(how as Key)} · ${t('field.res.pair', { a: Math.floor(mor[0] / 10), b: Math.floor(mor[1] / 10) })}`
-      // 1%p 아래는 소수 한 자리 (「0%p 남음」 처럼 읽히지 않게)
-      const g = Math.max(0, mor[m.winner === 0 ? 0 : 1] - thr), gap = g < 10 ? (g / 10).toFixed(1) : String(Math.round(g / 10))
-      endL2.textContent = m.winner < 0 ? '' : t(m.winner === 0 ? 'field.res.gap.win' : 'field.res.gap.lose', { n: gap })
+      endL1.textContent = `${t(how as Key)} · ${t('field.res.pair', { a: barPct(m.morale[0]), b: barPct(m.morale[1]) })}`
+      // 이긴 편의 막대에 남은 몫 (위 막대 숫자와 같은 식) · 환산은 그 편 사기가 문턱까지 남은 몫
+      const g = Math.max(0, m.morale[m.winner === 0 ? 0 : 1] - thr), gap = barPct(m.morale[m.winner === 0 ? 0 : 1])
+      // 진 판: 적 무너짐까지 N%p · 가장 적게 드는 수 (한도 안일 때만)
+      const nm = m.winner === 1 ? nearMissOf(g, next?.shout ?? false) : null
+      const mv = nm === null ? '' : ` · ${t('field.res.move', { name: t(nm.move === 'charge' ? 'field.i.charge' : nm.move === 'flank' ? 'war.cmdName.flank' : 'war.artName.shout'), n: nm.n })}`
+      endL2.textContent = m.winner < 0 ? '' : t(m.winner === 0 ? 'field.res.gap.win' : 'field.res.gap.lose', { n: gap }) + mv
+      // 다음 판: 다음 적의 진 그림 · 우리 진 셋 (누르면 곧바로 시작)
+      const nk = next === undefined ? '' : String(next.foe)
+      if (nk !== nxKey) {
+        nxKey = nk
+        nx.hidden = next === undefined
+        nx.innerHTML = next === undefined ? '' : `<span class="fd-nxfoe">${lineSvg(next.foe, '#ff8a7a')}<span>${t('field.res.next')} ${t(`field.line.${next.foe}` as Key)}</span></span>` + [0, 1, 2].map(i => `<button class="fd-nxl" type="button" data-nl="${i}">${lineSvg(i)}<b>${t(`field.line.${i}` as Key)}</b></button>`).join('')
+      }
       const sp = (k: Key, n: number): string => `<span>${t(k, { n: n.toLocaleString() })}</span>`
       endStats.innerHTML = stats === undefined ? '' : sp('field.res.killed', stats.killed) + sp('field.res.lost', stats.lost)
         + (stats.flank > 0 ? sp('field.res.flank', stats.flank) : '') + (stats.art > 0 ? sp('field.res.art', stats.art) : '')

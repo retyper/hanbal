@@ -18,7 +18,8 @@ import { mountFlags, type FlagsView } from './field/mainFlags.ts'
 import { mountArrows, mountPad, type Arrows, type Pad, type PadBtn } from './field/mainPad.ts'
 import { mountFirst, mountHelp, mountSteps, type First, type Help, type Steps } from './field/mainHelp.ts'
 import { drawMarks, type Band, type Box, type Mark, type MarkShape, type Ring } from './field/mainFlagMarks.ts'
-import { OP_AUTO, OP_MOVE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_VOLLEY, type FieldInput, type InputGroup } from './field/types.ts'
+import { LINES, OP_AUTO, OP_MOVE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_VOLLEY, type FieldInput, type InputGroup } from './field/types.ts'
+import { roll } from './core/rng.ts'
 import { serialize } from './field/rec.ts'
 import { bladeLeftOf, mountHud, type EndStats, type EndWhy, type Hud } from './field/mainHud.ts'
 import { createFieldSound, soundCamOf, soundFrameOf } from './field/mainSound.ts'
@@ -72,9 +73,19 @@ const men = num('men', 1200)
 const HERO_KEY_OURS = 'ara', HERO_KEY_FOE = 'bakdal'
 /** 준비 화면에서 고른 우리 진 (0 방패 벽 · 1 창 쐐기 · 2 넓은 날개) — 「다시」 뒤에도 그대로 */
 let lineChoice = 0
+/** 적 진 (0~2) — 씨앗이 정한 것(엔진이 같은 굴림으로 고르던 값)을 우리가 미리 고른다. 같은 진이 세 판 연속 나오지 않게 직전 둘을 기억 */
+const foeRoll = (s: number): number => Math.floor(roll(s, 0, 'line:1') * LINES)
+const foeHist: number[] = []
+function nextFoeLine(): number {
+  const c = foeRoll(seed + 1), n = foeHist.length
+  return n >= 2 && foeHist[n - 1] === c && foeHist[n - 2] === c ? (c + 1) % LINES : c
+}
+let foeLine = foeRoll(seed)
+foeHist.push(foeLine)
 function newSetup() {
   const su = plainSetup(seed, men, true, makeMap())
   su.sides[0].form = lineChoice as 0 | 1 | 2
+  su.sides[1].form = foeLine as 0 | 1 | 2
   if (su.sides[0].hero !== null) su.sides[0].hero.id = HERO_KEY_OURS
   if (su.sides[1].hero !== null) su.sides[1].hero.id = HERO_KEY_FOE
   return su
@@ -272,6 +283,7 @@ function nearestFight(hero: { u: number; v: number }): { u: number; v: number } 
 }
 
 function restart(): void {
+  foeLine = nextFoeLine(); foeHist.push(foeLine)
   seed++
   state = createField(newSetup()); cur = readField(state); prev = null; acc = 0
   resetFx()
@@ -748,7 +760,7 @@ function paint(now: number, alpha: number): void {
   fxGold = false; fxBlocked = false
   flyRegroups()
   hud.frame(now)
-  hud.showEnd(endAt > 0 && now - endAt >= P.field.endBoxMs ? cur : null, endStats(), endWhy())
+  hud.showEnd(endAt > 0 && now - endAt >= P.field.endBoxMs ? cur : null, endStats(), endWhy(), { foe: nextFoeLine(), shout: heroNow()?.art === 'shout' })
   const h = heroNow()
   const s = h === undefined ? null : toScreen(cam, vp, pxOf(h.u), pxOf(h.v))
   first.sync(!blocked && s !== null && !firstDone && !heroOrdered && (ui.phase === 'ready' || playMs < P.field.firstHintMs) && ui.phase !== 'end' && cur.end === null && !helpOpen, s?.x ?? 0, s?.y ?? 0, touchMode, vp.w, vp.h)
@@ -1012,6 +1024,7 @@ hud = mountHud(root, {
   onZoom: () => { cam.level = nextLevel(cam.level); hud.setZoom(cam.level) },
   onPause: () => { paused = !paused; hud.setPaused(paused) },
   onAgain: restart,
+  onNext: (line: number) => { lineChoice = line; restart(); goBattle() },
   onHelp: toggleHelp,
 }, import.meta.env.BASE_URL + 'realm/')
 hud.setZoom(0)
