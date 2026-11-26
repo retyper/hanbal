@@ -19,7 +19,7 @@ import { mountFlags, MVP_CMDS, MVP_FLAG_KEYS, type FlagsView, type HeroBtn } fro
 import { mountArrows, mountPad, type Arrows, type Pad, type PadBtn } from './field/mainPad.ts'
 import { mountFirst, mountSteps, type First, type Steps } from './field/mainHelp.ts'
 import { mountHelp, type Help } from './field/mainCard.ts'
-import { drawHeroHp, drawKeyTags, drawMarks, drawOdds, drawPaths, drawVolley, drawWhiteFlags, type Odds, type Path, type Volley, type Band, type Box, type Mark, type MarkShape, type Ring } from './field/mainFlagMarks.ts'
+import { drawHeroHp, drawKeyTags, drawMarks, drawOdds, drawPaths, drawVolley, drawVolleyZone, drawWhiteFlags, type Odds, type Reach, type VolleyPath, type Path, type Volley, type Band, type Box, type Mark, type MarkShape, type Ring } from './field/mainFlagMarks.ts'
 import { G_HIGH, HIT_BLOCKED, LINES, OP_CALL, OP_AUTO, OP_MOVE, ORD_CHARGE, ORD_FLANK, ORD_HOLD, ORD_VOLLEY, type FieldInput, type InputGroup } from './field/types.ts'
 import { roll } from './core/rng.ts'
 import { mountMini, type Mini } from './field/mainMini.ts'
@@ -31,7 +31,7 @@ import { advance } from './field/viewLoop.ts'
 import { readField, type VLoss, type VModel } from './field/viewRead.ts'
 import { clampCenter, clusterCenter, fitZoom, followCam, frameBox, newCam, nextLevel, toField, toScreen, wholeZoom, type Rect, type Viewport } from './field/viewCamera.ts'
 import { loadArt } from './field/viewArt.ts'
-import { bannerSpot, drawField, focusPoints, resetFx, worldSize } from './field/view.ts'
+import { bannerSpot, drawField, focusPoints, resetFx, setFieldSel, worldSize } from './field/view.ts'
 
 startGfxSafe()
 guardMedia()
@@ -125,6 +125,9 @@ let paused = false
 let viewMs = 0
 let endAt = 0
 let pan: { x: number; y: number; until: number } | null = null
+/** 시험판: 휠로 당기고 민 배율 (저절로 담는 배율에 곱한다 · 판 전체가 다 보이는 데까지 민다) · 가장자리에 마우스가 머문 때 · 무리 키를 마지막으로 누른 때 */
+let userZoom = 1, edgeSince = -1
+const lastPick = { g: -1, at: -1e9 }
 let tgt: { x: number; y: number } | null = null
 let hud: Hud
 /** 소리 (F3e) — 첫 손짓 뒤에만 나고 · 멈춤·숨은 탭에서는 안 부른다 */
@@ -260,6 +263,8 @@ const heroNow = (m: VModel = cur): VModel['heroes'][number] | undefined => m.her
 function followTarget(dt: number, snap = false): void {
   const b = bounds()
   const now = performance.now()
+  // 시험판: 판이 돌지 않는 동안(멈춤)은 손으로 옮긴 카메라가 돌아가지 않는다 — 다시 돌면 그때부터 panBackMs
+  if (MVP && pan !== null && pan.until !== Infinity && !mvpRunning()) pan.until = Math.max(pan.until, now + P.field.panBackMs)
   if (pan !== null && now >= pan.until) pan = null
   { const hh = heroNow(); if (miniHero !== null && (pan === null || hh === undefined || hh.u !== miniHero.u || hh.v !== miniHero.v)) { if (pan !== null && ui.phase !== 'ready' && !MVP) pan = null; miniHero = null } }
   let raw: { x: number; y: number }
@@ -279,6 +284,8 @@ function followTarget(dt: number, snap = false): void {
     // 실험실의 판 짜기 서랍이 열려 있으면 그 폭(padLeft)만큼 비켜 담는다 (우리 진이 서랍 밑에 깔리지 않게)
     const want = Math.min((vp.w - padLeft) / (x1 - x0 + 2 * mg), (vp.h - padTop - padBottom) / (y1 - y0 + 2 * mg))
     zt = Math.min(Math.max(fitZoom(vp, b), P.field.mvpZoomMax), Math.max(fitZoom(vp, b), want))
+    // 휠: 저절로 담는 배율에 곱한다 (1 아래) — 밀면 판 전체(wholeZoom)까지
+    zt = Math.max(wholeZoom(vp, b), zt * userZoom)
     // 위·아래 띠와 왼쪽 서랍 사이 보이는 칸의 가운데에 담는다
     raw = { x: (x0 + x1) / 2 - padLeft / 2 / zt, y: (y0 + y1) / 2 - (padTop - padBottom) / 2 / zt }
   } else if (ui.phase === 'ready') {
@@ -353,7 +360,7 @@ function restart(): void {
   volleyAt = null
   heroDirSent = -1; padDir = -1; foeFlash.length = 0; lastWhyTick = 0; lastGrpWhyTick.fill(0)
   leadK = 1; cmdNow.fill(-1); sentGroup = false; usedCharge = false; aiming = -1; flashStep = -1; playMs = 0; heroOrdered = false; firstDone = false; heroStart = null
-  camFree = false; camFight = false; cam.level = 0; hud.setZoom(0)
+  camFree = false; camFight = false; cam.level = 0; hud.setZoom(0); userZoom = 1
   hud.showEnd(null)
   markEpoch++
   followTarget(0, true)
@@ -397,6 +404,8 @@ function inputCtx(): InputCtx {
 }
 
 /** 고른 것을 바꾼다 (쓰러진 것은 빠지고 비면 장수로 돌아온다) */
+/** 시험판: 판이 돌고 있나 (싸우는 중 · 멈추지 않음 · 조작표 닫힘 · 끝나지 않음) */
+function mvpRunning(): boolean { return ui.phase === 'play' && !paused && !helpOpen && cur.end === null }
 function setSel(g: readonly InputGroup[]): void {
   const next = normalizeSel(cur, [...g].sort((a, b) => a - b) as InputGroup[])
   if (next.length === ui.sel.length && next.every((x, i) => x === ui.sel[i])) return
@@ -505,11 +514,18 @@ function stepTasks(): void {
  * 기병은 있는 자리에서 곧게 달려든다 — 뒤를 치려면 먼저 뒤로 간다). Shift 면 길을 잇는다(셋까지). 고름은 그대로 남는다.
  */
 function mvpSend(px: number, py: number, now: number, chain: boolean): void {
+  if (ui.sel.length === 0) return
   const w = toField(cam, vp, px, py)
   const foe = enemyAt(px, py)
   const sq = foe !== null && foe.id >= 0 ? cur.squads[foe.id] : undefined
   const k: Task = sq !== undefined ? { kind: 'attack', id: sq.id }
     : { kind: 'move', u: Math.max(0, Math.min(cur.mapUUnits, foe === null ? unitsOf(w.x) : foe.u)), v: Math.max(0, Math.min(cur.mapVUnits, foe === null ? unitsOf(w.y) : foe.v)) }
+  mvpGive(k, now, chain)
+}
+/** 시험판: 고른 무리마다 길 한 마디를 준다 (Shift 면 잇는다) — 판 위 오른쪽 누름 · 미니맵 오른쪽 누름이 같이 쓴다 */
+function mvpGive(k: Task, now: number, chain: boolean): void {
+  if (ui.sel.length === 0) return
+  const sq = k.kind === 'attack' ? cur.squads[k.id] : undefined
   for (const g of ui.sel) {
     const list = tasks[g]!
     if (chain && list.length > 0) { if (list.length < P.field.mvpPathMax) list.push(k); continue }
@@ -559,17 +575,43 @@ function volleysNow(): Volley[] {
   const out: Volley[] = []
   const r = P.field.volleyRadiusCells * P.field.cellPx
   if (volleyAt !== null) {
-    const live = ui.phase === 'ready' || squadsOf(1).some(q => q.order === ORD_VOLLEY)
-    const frac = ui.phase === 'ready' ? 1 : 1 - (state.tick - volleyAt.tick0) / (P.field.volleySec * P.field.hz)
+    const bows = squadsOf(1).filter(q => q.order === ORD_VOLLEY)
+    // 멈춘 채 찍은 것은 아직 엔진에 안 들어갔다(다음 틱) — 그동안도 남긴다
+    const live = ui.phase === 'ready' || bows.length > 0 || state.tick <= volleyAt.tick0 + 1
+    // 시험판: 활이 걸어가는 동안은 엔진이 화살비 시계를 멈춰 둔다(orderTick) — 고리도 그 시계를 따른다
+    const t0 = bows.length > 0 ? Math.max(bows[0]!.orderTick, volleyAt.tick0) : volleyAt.tick0
+    const frac = ui.phase === 'ready' ? 1 : 1 - (state.tick - t0) / (P.field.volleySec * P.field.hz)
     if (!live || frac <= 0) volleyAt = null
-    else out.push({ x: pxOf(volleyAt.u), y: pxOf(volleyAt.v), r, ok: true, placed: true, frac })
+    else { const x = pxOf(volleyAt.u), y = pxOf(volleyAt.v); out.push({ x, y, r, ok: true, placed: true, frac, path: walkPath(x, y) }) }
   }
-  if (aiming === 2 && mouse.in && !touchMode) {
+  if (aiming === 2 && mouse.in && !touchMode && MVP) {
+    // 시험판: 닿는 땅(활 대마다 닿는 원의 합) 안이면 초록 · 밖이면 붉은 고리와 X · 가장 가까운 활 대가 걸어갈 길을 점선으로
+    const w = toField(cam, vp, mouse.x, mouse.y), p = walkPath(w.x, w.y)
+    out.push({ x: w.x, y: w.y, r, ok: p === null, placed: false, frac: 1, path: p })
+  } else if (aiming === 2 && mouse.in && !touchMode) {
     const w = toField(cam, vp, mouse.x, mouse.y), at = fromOf(1)
     const reach = P.field.bowRangeCells * P.field.cellPx * P.field.volleyReachPermille / 1000
     out.push({ x: w.x, y: w.y, r, ok: at !== null && (at.x - w.x) ** 2 + (at.y - w.y) ** 2 <= reach * reach, placed: false, frac: 1 })
   }
   return out
+}
+/** 시험판: 활 대마다 화살비가 닿는 원 (판 px · 엔진의 volleyInReach 와 같은 반지름) */
+function volleyReach(): Reach[] {
+  return squadsOf(1).map(q => ({ x: pxOf(q.u), y: pxOf(q.v), r: pxOf(q.reach) * P.field.volleyReachPermille / 1000 }))
+}
+/** 시험판: 활 무리를 골랐거나 화살비를 찍는 동안 닿는 땅을 칠한다 */
+function zoneNow(): Reach[] {
+  return MVP && (aiming === 2 || ui.sel.includes(1)) && ui.phase !== 'end' && cur.end === null ? volleyReach() : []
+}
+/** 화살비 자리 (x, y 판 px) 가 닿는 땅 안이면 null · 밖이면 가장 가까운 활 대에서 닿기 시작하는 자리까지 */
+function walkPath(x: number, y: number): VolleyPath | null {
+  let best: VolleyPath | null = null, gap = Infinity
+  for (const c of volleyReach()) {
+    const d = Math.hypot(x - c.x, y - c.y)
+    if (d <= c.r) return null
+    if (d - c.r < gap) { gap = d - c.r; best = { x0: c.x, y0: c.y, x1: x + (c.x - x) / d * c.r, y1: y + (c.y - y) / d * c.r } }
+  }
+  return best
 }
 /** 시험판의 장수 칸 단추 셋 (기본 판의 내닫기·비기·모여라 단추와 같은 쿨타임) */
 function mvpHeroBtns(): HeroBtn[] {
@@ -581,6 +623,9 @@ function mvpHeroBtns(): HeroBtn[] {
     const left = r.tick < 0 ? 0 : Math.max(0, r.tick - state.tick), all = Math.max(1, r.callSec * P.field.hz)
     out.push({ icon: KIND_ICON[r.kind] ?? '', label: t('field.mvp.call'), frac: r.tick < 0 ? 0 : Math.min(1, left / all), sec: Math.ceil(left / P.field.hz) })
   }
+  // 버팀: 사람이 누르지 않는다 — 우리 사기가 무너짐 문턱 바로 위로 처음 내려오면 저절로 (판마다 한 번 · 걸려 있는 동안 남은 초)
+  const sLeft = cur.stood[0] === 1 && cur.standTick[0] >= 0 ? P.field.standSec * P.field.hz - (state.tick - cur.standTick[0]) : 0
+  out.push({ icon: 'flag/flag-art-stand.png', label: t('field.mvp.stand'), frac: 0, sec: Math.max(0, Math.ceil(sLeft / P.field.hz)), passive: cur.stood[0] !== 1 ? 'wait' : sLeft > 0 ? 'on' : 'used' })
   return out
 }
 /** 병종 그림 (원군 단추·예고) */
@@ -606,7 +651,7 @@ function heroRangeCells(k: number): number {
 }
 /** 시험판: 기술 고리 — 단추에 올린 것(-1 없음) · 누른 것과 그 고리가 걷히는 때 */
 let heroHoverK = -1, heroRangeK = -1, heroRangeUntil = 0
-/** 시험판의 빠르기 (1 보통 · 2 두 배 — 걸음 틱은 그대로, 한 프레임에 도는 틱 수만 두 배) · 마지막으로 켠 단추 */
+/** 시험판의 빠르기 단추 (1 ▶ 느리게 mvpSpeedSlowPermille · 2 ▶▶ 빠르게 mvpSpeedFastPermille — 틱 크기는 그대로, 한 프레임에 쌓는 판 시간만 바뀐다) · 마지막으로 켠 단추 */
 let speed: 1 | 2 = 1, speedLit = -1
 /** 빠르기 단추 (0 멈춤 · 1 보통 · 2 두 배) — 준비 화면에서 ▶ ▶▶ 는 곧 시작 */
 function setSpeed(n: 0 | 1 | 2): void {
@@ -737,6 +782,15 @@ function pickGroup(g: InputGroup): void {
   const why = cellWhy(cur, g)
   if (why !== null) { flags.say(t(`field.why.${why}` as Key, { g: gName(g) }), 'why', performance.now()); return }
   setSel([g])
+  // 시험판: 같은 무리 키를 두 번 빨리 누르면 카메라가 그 무리로 간다
+  if (MVP) {
+    const now = performance.now()
+    if (lastPick.g === g && now - lastPick.at <= P.field.mvpDoubleTapMs) {
+      const h = heroNow(), at = g === 3 ? (h === undefined ? null : { x: pxOf(h.u), y: pxOf(h.v) }) : fromOf(g)
+      if (at !== null) { pan = { x: at.x, y: at.y, until: ui.phase === 'ready' ? Infinity : now + P.field.panBackMs }; paintKey.x = NaN }
+      lastPick.g = -1
+    } else { lastPick.g = g; lastPick.at = now }
+  }
 }
 
 function goBattle(): void {
@@ -783,12 +837,13 @@ function groupRings(squads: VModel['squads'], kind: Ring['kind'], phase: number)
 function ringsNow(now: number): Ring[] {
   const out: Ring[] = []
   const c = P.field.cellPx
-  if (!ui.sel.includes(3)) {
+  if (!ui.sel.includes(3) && !MVP) {
     const h = heroNow()
     if (h !== undefined) out.push({ x: pxOf(h.u), y: pxOf(h.v), rx: P.field.ringHeroCells * c, ry: P.field.ringHeroCells * c * 0.45, kind: 'dim', phase: 0 })
   }
   if (hoverG >= 0 && hoverG !== 3 && !ui.sel.includes(hoverG as InputGroup)) out.push(...groupRings(squadsOf(hoverG), 'hover', 0))
-  for (const g of ui.sel) {
+  // 시험판은 고른 무리를 병사마다 발밑 테로 밝히므로(view setFieldSel) 무리 둘레 네모·장수 고리를 안 그린다
+  if (!MVP) for (const g of ui.sel) {
     if (g === 3) {
       const h = heroNow()
       if (h !== undefined) out.push({ x: pxOf(h.u), y: pxOf(h.v), rx: P.field.ringHeroCells * c, ry: P.field.ringHeroCells * c * 0.45, kind: 'sel', phase: 0 })
@@ -804,12 +859,14 @@ function ringsNow(now: number): Ring[] {
   const hh = heroNow()
   // 시험판: 장수 기술 단추에 올렸거나 막 누른 기술이 닿는 거리
   const rk = heroHoverK >= 0 ? heroHoverK : now < heroRangeUntil ? heroRangeK : -1
-  if (MVP && hh !== undefined && rk >= 0) { const r = heroRangeCells(rk) * c; out.push({ x: pxOf(hh.u), y: pxOf(hh.v), rx: r, ry: r * 0.6, kind: 'aura', phase: 0 }) }
+  // 장수를 고른 동안은 기술 셋(내닫기·큰 외침·모여라)이 닿는 거리를 옅은 점선으로 늘 · 단추에 올린 것·막 누른 것은 진하게
+  if (MVP && hh !== undefined && ui.sel.includes(3) && ui.phase !== 'end') for (let k = 0; k < 3; k++) if (k !== rk) { const r = heroRangeCells(k) * c; out.push({ x: pxOf(hh.u), y: pxOf(hh.v), rx: r, ry: r * 0.6, kind: 'auraDim', phase: 0 }) }
+  if (MVP && hh !== undefined && rk >= 0) { const r = heroRangeCells(rk) * c; out.push({ x: pxOf(hh.u), y: pxOf(hh.v), rx: r, ry: r * 0.6, kind: 'aura', phase: 1 }) }
   if (hh !== undefined && ui.phase === 'play' && hh.stun === 0 && now < auraUntil && !MVP) {
     const ar = P.field.heroAuraCells * c
     out.push({ x: pxOf(hh.u), y: pxOf(hh.v), rx: ar, ry: ar * 0.6, kind: 'aura', phase: 0 })
   }
-  if (ui.phase === 'play' && !sentGroup) {
+  if (ui.phase === 'play' && !sentGroup && !MVP) { // 시험판은 고른 무리만 밝힌다 (장수 곁을 지나는 무리 고리 튐 없음)
     for (const g of [0, 1, 2] as const) {
       if (nudgeAt[g]! > 0 && now - nudgeAt[g]! < P.field.nudgeMs) {
         out.push(...groupRings(squadsOf(g), 'nudge', (now - nudgeAt[g]!) / P.field.nudgeMs))
@@ -943,7 +1000,7 @@ function onUp(e: PointerEvent): void {
   if (d.moved) return
   const hit = pickAt(cands, d.x, d.y, P.field.pickRadiusPx, P.field.heroPickPermille)
   if (hit !== -1) { setSel([hit]); return }
-  if (d.mouse) { if (!MVP) setSel([3]); return }
+  if (d.mouse) { setSel(MVP ? [] : [3]); return }
   // 폰: 고른 채로 땅을 누르면 그 자리로 보낸다 (무리는 한 번 보내면 장수로 돌아온다)
   sendAt(d.x, d.y, e.timeStamp)
 }
@@ -967,6 +1024,16 @@ function movePan(dt: number): void {
     if (mouse.x < e) dx--; else if (mouse.x > vp.w - e) dx++
     if (mouse.y < e) dy--; else if (mouse.y > vp.h - e) dy++
   }
+  // 시험판: 판이 도는 동안에만 · 마우스가 가장자리에 mvpEdgeRestMs 머문 뒤에야 옮긴다 (스쳐 지나간 마우스로 판이 흐르지 않게 · 멈춤·준비 화면은 그대로)
+  if (MVP) {
+    const e = P.field.camEdgePx
+    const ex = mouse.x < e ? -1 : mouse.x > vp.w - e ? 1 : 0, ey = mouse.y < e ? -1 : mouse.y > vp.h - e ? 1 : 0
+    const at = mouse.in && !touchMode && !blocked && mvpRunning() && (ex !== 0 || ey !== 0)
+    const now = performance.now()
+    if (!at) edgeSince = -1
+    else if (edgeSince < 0) edgeSince = now
+    else if (now - edgeSince >= P.field.mvpEdgeRestMs) { dx += ex; dy += ey }
+  }
   if (dx === 0 && dy === 0) return
   const base = pan ?? { x: tgt?.x ?? cam.x, y: tgt?.y ?? cam.y }
   const step = P.field.camPanPxPerSec * dt / cam.zoom
@@ -987,11 +1054,14 @@ function paint(now: number, alpha: number): void {
   const selKey = ui.sel.join('')
   const same = calm && box === null && k.x === cam.x && k.y === cam.y && k.z === cam.zoom && k.sel === selKey && k.epoch === markEpoch
   if (!blocked && !same) {
+    // 시험판: 고른 무리만 밝힌다 (병사마다 발밑 테 · 깃이 커지고 빛남) · 안 고른 무리는 아무 표시 없음
+    if (MVP) setFieldSel(ui.sel.flatMap(g => g === 3 ? [] : squadsOf(g).map(q => q.id)), ui.sel.includes(3), [ui.sel.includes(0), ui.sel.includes(1), ui.sel.includes(2)])
     drawField(ctx, vp, cam, cur, prev, alpha, viewMs, art, low, heroPick, lossAcc)
     lossAcc = []
     if (MVP) drawPaths(ctx, vp, cam, mvpPaths())
     drawMarks(ctx, vp, cam, marks(), MVP ? [] : ALL_GROUPS.map(g => ui.sel.includes(g) ? fromOf(g) : null), ringsNow(now), box, bandsNow(), foeMarks())
     if (MVP) {
+      drawVolleyZone(ctx, vp, cam, zoneNow(), dpr)
       drawVolley(ctx, vp, cam, volleysNow()); drawOdds(ctx, vp, cam, oddsNow())
       // 흰 깃: 달아나는 대 (두 편) · 장수 체력 고리 (두 편)
       drawWhiteFlags(ctx, vp, cam, cur.squads.filter(q => q.men > 0 && q.flee === 1).map(q => ({ x: pxOf(q.u), y: pxOf(q.v) - bodyRect(q).h / 2 })))
@@ -1031,7 +1101,7 @@ function paint(now: number, alpha: number): void {
 /** 활 사거리 띠 (활 대마다 반원) — 적 대가 그 안에 들면 밝아지고, 겨눈 적에게는 가는 줄 */
 function bandsNow(): Band[] {
   // 평소에는 안 그린다 — 화살비를 찍는 동안과 활 무리를 고른 동안만 · 무리 가운데 기준 호 하나
-  if (aiming !== 2 && !ui.sel.includes(1)) return []
+  if (MVP || (aiming !== 2 && !ui.sel.includes(1))) return [] // 시험판은 반원 띠 대신 닿는 땅(zoneNow)
   const bows = squadsOf(1)
   if (bows.length === 0) return []
   const u = bows.reduce((a, q) => a + q.u, 0) / bows.length, v = bows.reduce((a, q) => a + q.v, 0) / bows.length
@@ -1271,7 +1341,7 @@ function frame(now: number): void {
   // 시험판은 찍는 중이 저절로 풀리지 않는다 (멈춘 채 오래 고르다 풀린 뒤 Esc 가 멈춤을 뒤집던 것) — 찍기·오른쪽 누름·Esc 로만 끝난다
   if (!MVP && aimExpired(aiming, aimSince, now, touchMode ? P.field.aimTouchMs : P.field.aimMs)) { cancelAim(); aimGraceUntil = now + P.field.aimGraceMs }
   // 시험판의 두 배 빠르기: 한 프레임에 쌓는 판 시간을 두 배로 — 틱 크기는 그대로라 같은 입력이면 같은 판 (결정론)
-  const simMs = (aiming !== -1 ? dtMs * P.field.aimSlowPermille / 1000 : slow ? dtMs * P.field.slowPermille / 1000 : dtMs) * (MVP ? speed : 1)
+  const simMs = (aiming !== -1 ? dtMs * P.field.aimSlowPermille / 1000 : slow ? dtMs * P.field.slowPermille / 1000 : dtMs) * (MVP ? (speed === 2 ? P.field.mvpSpeedFastPermille : P.field.mvpSpeedSlowPermille) / 1000 : 1)
   if (!paused && !helpOpen && !blocked && cur.end === null && ui.phase === 'play') {
     const a = advance(acc, simMs, P.field.hz, P.field.maxCatchUpTicks)
     acc = a.acc
@@ -1341,6 +1411,14 @@ cv.addEventListener('contextmenu', e => e.preventDefault())
 cv.addEventListener('wheel', e => {
   e.preventDefault()
   if (!(camFree || ui.phase === 'ready' || MVP) || blocked) return
+  // 시험판: 휠은 당기고 밀기 (판 전체가 보이는 데까지 민다)
+  if (MVP) {
+    const b = bounds(), auto = cam.zoom / userZoom
+    // 밀기만: 저절로 담는 배율(1)에서 판 전체(wholeZoom)까지 — 더 당기면 두 편 가운데 빈 땅만 커지므로 저절로 담는 배율이 끝
+    userZoom = Math.max(wholeZoom(vp, b) / auto, Math.min(1, userZoom * Math.exp(-e.deltaY * P.field.mvpWheelZoomPermille / 1e5)))
+    paintKey.x = NaN
+    return
+  }
   const base = pan ?? { x: tgt?.x ?? cam.x, y: tgt?.y ?? cam.y }
   const k = P.field.camWheelMul / 100 / cam.zoom
   pan = { x: base.x + (e.deltaX !== 0 ? e.deltaX : e.deltaY) * k, y: base.y, until: MVP && ui.phase === 'play' ? performance.now() + P.field.panBackMs : Infinity }
@@ -1434,7 +1512,7 @@ hud = mountHud(root, {
   onSpeed: setSpeed,
 }, import.meta.env.BASE_URL + 'realm/', MVP)
 hud.setZoom(0)
-mini = mountMini(root, { onPan: (x, y) => { const hh = heroNow(); pan = { x, y, until: ui.phase === 'ready' ? Infinity : performance.now() + P.field.miniPanMs }; miniHero = hh === undefined ? null : { u: hh.u, v: hh.v }; paintKey.x = NaN } })
+mini = mountMini(root, { onOrder: MVP ? (x, y, chain) => { if (ui.phase !== 'end' && cur.end === null) mvpGive({ kind: 'move', u: Math.max(0, Math.min(cur.mapUUnits, unitsOf(x))), v: Math.max(0, Math.min(cur.mapVUnits, unitsOf(y))) }, performance.now(), chain) } : undefined, onPan: (x, y) => { const hh = heroNow(); pan = { x, y, until: ui.phase === 'ready' ? Infinity : performance.now() + P.field.miniPanMs }; miniHero = hh === undefined ? null : { u: hh.u, v: hh.v }; paintKey.x = NaN } })
 flags = mountFlags(root, import.meta.env.BASE_URL + 'realm/', handlers)
 help = mountHelp(root, import.meta.env.BASE_URL + 'realm/', MVP)
 if (LAB) lab = mountLab(root, labCfg, savedLabConfig() === null, { onApply: cfg => { labCfg = cfg; seed = cfg.seed; restart() }, onLayout: () => { measurePads(); paintKey.x = NaN } })
@@ -1465,4 +1543,5 @@ wake()
   tick: state.tick, phase: ui.phase, paused, sel: ui.sel, morale: cur.morale, flankHits: cur.stats.flankHits, end: cur.end,
   squads: cur.squads.map(q => ({ id: q.id, side: q.side, grp: q.grp, kind: q.kind, wing: q.wing, men: q.men, flee: q.flee, morale: q.morale, order: q.order, u: q.u, v: q.v, ...toScreen(cam, vp, pxOf(q.u), pxOf(q.v)) })),
   toScreen: (u: number, v: number) => toScreen(cam, vp, pxOf(u), pxOf(v)),
+  volleyAt, aiming,
 })

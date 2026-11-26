@@ -12,7 +12,8 @@ export interface Mini {
   /** tags: 시험판의 우리 무리 키 번호 (판 단위 자리 · 덩어리 곁에 숫자) */
   sync(m: VModel, cam: Cam, vp: Viewport, show: boolean, nowMs: number, tags?: readonly { u: number; v: number; label: string }[]): void
 }
-export interface MiniHandlers { onPan(x: number, y: number): void }
+/** onOrder: 시험판의 오른쪽 누름 — 고른 무리를 그 자리(판 px)로 (chain = Shift 로 길 잇기) */
+export interface MiniHandlers { onPan(x: number, y: number): void; onOrder?: ((x: number, y: number, chain: boolean) => void) | undefined }
 
 const GROUND = ['#b49560', '#7aa6b8', '#35607f', '#4a4036', '#dcc583'] as const
 /** 높은 터의 가장자리 줄 (미니맵에서 언덕이 어디서 시작하는지) */
@@ -47,7 +48,12 @@ export function mountMini(root: HTMLElement, h: MiniHandlers): Mini {
     return { x: (ev.clientX - r.left - ox) / sc, y: (ev.clientY - r.top - oy) / sc }
   }
   const pan = (ev: PointerEvent): void => { const w = toWorld(ev); h.onPan(Math.max(0, Math.min(worldW, w.x)), Math.max(0, Math.min(worldH, w.y))) }
-  cv.addEventListener('pointerdown', ev => { ev.preventDefault(); ev.stopPropagation(); down = true; try { cv.setPointerCapture(ev.pointerId) } catch { /* 합성 입력 */ } pan(ev) })
+  cv.addEventListener('pointerdown', ev => {
+    ev.preventDefault(); ev.stopPropagation()
+    if (ev.button === 2 && h.onOrder !== undefined) { const w = toWorld(ev); h.onOrder(Math.max(0, Math.min(worldW, w.x)), Math.max(0, Math.min(worldH, w.y)), ev.shiftKey); return }
+    down = true; try { cv.setPointerCapture(ev.pointerId) } catch { /* 합성 입력 */ } pan(ev)
+  })
+  cv.addEventListener('contextmenu', ev => ev.preventDefault())
   cv.addEventListener('pointermove', ev => { if (down) pan(ev) })
   const up = (): void => { down = false }
   cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up)

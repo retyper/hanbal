@@ -14,7 +14,7 @@ export interface Mark { g: number; x: number; y: number; shape: MarkShape; sel: 
 export interface Box { x0: number; y0: number; x1: number; y1: number }
 /** 발밑 고리 (판 px · 반지름은 가로 rx · 세로 ry) — sel 은 고른 것(늘 떠 있다) · nudge 는 한 번 퍼지며 사라지는 「눌러 봐」 (phase 0~1) */
 /** w·h 가 있으면 타원이 아니라 몸 네모를 감싸는 둥근 네모 테 (판 px · 가운데 x, y) */
-export interface Ring { w?: number; h?: number; x: number; y: number; rx: number; ry: number; kind: 'sel' | 'dim' | 'hover' | 'nudge' | 'foe' | 'aura' | 'glow'; phase: number }
+export interface Ring { w?: number; h?: number; x: number; y: number; rx: number; ry: number; kind: 'sel' | 'dim' | 'hover' | 'nudge' | 'foe' | 'aura' | 'auraDim' | 'glow'; phase: number }
 
 /** 활 사거리 띠: 활 한 대의 사거리 반원 (판 px) · lit 은 적 대가 그 안에 든 것 · sel 은 고른 것 · 겨눈 줄은 (x, y) → (tx, ty) */
 export interface Band { x: number; y: number; r: number; face: 1 | -1; sel: boolean; lit: boolean; tx: number; ty: number; aim: boolean }
@@ -79,7 +79,8 @@ export function drawMarks(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
     if (r.kind === 'foe') { ctx.strokeStyle = '#ff6a3c'; ctx.globalAlpha = 1 - r.phase; ctx.lineWidth = Math.max(2, 3.6 / z) }
     else if (r.kind === 'dim') { ctx.strokeStyle = MINE; ctx.globalAlpha = 0.7; ctx.lineWidth = Math.max(1.5, 2.4 / z) }
     else if (r.kind === 'hover') { ctx.strokeStyle = '#f3ecd8'; ctx.globalAlpha = 0.8; ctx.lineWidth = Math.max(1, 1.5 / z) }
-    else if (r.kind === 'aura') { ctx.strokeStyle = '#9cc8ff'; ctx.globalAlpha = 0.28; ctx.lineWidth = Math.max(1, 2 / z) }
+    else if (r.kind === 'aura') { ctx.strokeStyle = '#9cc8ff'; ctx.globalAlpha = r.phase > 0 ? 0.85 : 0.28; ctx.lineWidth = Math.max(1, (r.phase > 0 ? 3 : 2) / z) }
+    else if (r.kind === 'auraDim') { ctx.strokeStyle = '#9cc8ff'; ctx.globalAlpha = 0.45; ctx.lineWidth = Math.max(1.5, 2 / z); ctx.setLineDash([8 / z, 6 / z]) }
     else if (r.kind === 'glow') { ctx.fillStyle = GOLD; ctx.globalAlpha = 0.35; ctx.fill(); ctx.globalAlpha = 0.6; ctx.lineWidth = Math.max(1, 1.6 / z) }
     else if (r.kind === 'sel' && r.w !== undefined) { ctx.globalAlpha = 0.7; ctx.lineWidth = Math.max(1.5, 1.5 / z) }
     else if (r.kind === 'sel') {
@@ -87,6 +88,7 @@ export function drawMarks(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
       ctx.globalAlpha = 0.9; ctx.lineWidth = Math.max(1.5, 2.6 / z)
     } else { ctx.globalAlpha = 1 - r.phase; ctx.lineWidth = Math.max(1.5, 3.4 / z) }
     ctx.stroke()
+    if (r.kind === 'auraDim') ctx.setLineDash([])
   }
   ctx.globalAlpha = 1
   for (const k of marks) {
@@ -185,8 +187,38 @@ export function drawPaths(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam,
 }
 
 /** 시험판(?mvp)의 화살비 자리 (판 px) — 찍기 전(placed false)은 마우스를 따라가고 · ok 아니면(활이 닿는 거리 밖 · 다가간 뒤 쏜다) 점선 · 찍은 뒤는 frac(남은 몫)만큼 줄어드는 안쪽 고리 */
-export interface Volley { x: number; y: number; r: number; ok: boolean; placed: boolean; frac: number }
-const VOLLEY_COLOR = '#cfe6ff', VOLLEY_FAR = '#ffb08a'
+/** 활이 걸어갈 길 (판 px · 가장 가까운 활 대 → 닿기 시작하는 자리) */
+export interface VolleyPath { x0: number; y0: number; x1: number; y1: number }
+/** ok 닿는 땅 안(초록) · 아니면 붉은 고리와 X · path 가 있으면 활이 걸어갈 점선 */
+export interface Volley { x: number; y: number; r: number; ok: boolean; placed: boolean; frac: number; path?: VolleyPath | null }
+const VOLLEY_COLOR = '#7fe07a', VOLLEY_FAR = '#ff6a4a', VOLLEY_PLACED = '#cfe6ff'
+/** 시험판(?mvp): 활 한 대가 화살비를 퍼부을 수 있는 원 (판 px) */
+export interface Reach { x: number; y: number; r: number }
+const ZONE_FILL = '#9fd0ff', ZONE_EDGE = '#dff0ff', ZONE_FILL_ALPHA = 0.2, ZONE_EDGE_ALPHA = 0.9
+let zoneCv: HTMLCanvasElement | null = null
+/**
+ * 시험판(?mvp): 활 무리의 닿는 땅 — 대마다 닿는 원의 합. 겹친 곳이 진해지지 않게 화면 밖 캔버스에 한 색으로 칠한 뒤 옅게 얹고,
+ * 바깥 테는 같은 캔버스에 원 r 을 칠하고 원 r − 테 를 지워 합집합의 둘레 띠만 남겨 진하게 얹는다
+ */
+export function drawVolleyZone(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam, cs: readonly Reach[], dpr: number): void {
+  if (cs.length === 0) return
+  const W = Math.max(1, Math.round(vp.w * dpr)), H = Math.max(1, Math.round(vp.h * dpr))
+  if (zoneCv === null) zoneCv = document.createElement('canvas')
+  if (zoneCv.width !== W || zoneCv.height !== H) { zoneCv.width = W; zoneCv.height = H }
+  const g = zoneCv.getContext('2d')
+  if (g === null) return
+  const z = cam.zoom, edge = P.field.mvpZoneEdgePx / z
+  const disks = (shrink: number): void => { g.beginPath(); for (const c of cs) { const r = Math.max(0, c.r - shrink); g.moveTo(c.x + r, c.y); g.arc(c.x, c.y, r, 0, FULL_TURN) } }
+  const put = (alpha: number): void => { ctx.save(); ctx.globalAlpha = alpha; ctx.drawImage(zoneCv!, 0, 0, vp.w, vp.h); ctx.restore() }
+  const world = (): void => g.setTransform(dpr * z, 0, 0, dpr * z, dpr * (vp.w / 2 - cam.x * z), dpr * (vp.h / 2 - cam.y * z))
+  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, W, H)
+  world(); disks(0); g.fillStyle = ZONE_FILL; g.fill()
+  put(ZONE_FILL_ALPHA)
+  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, W, H)
+  world(); disks(0); g.fillStyle = ZONE_EDGE; g.fill()
+  g.globalCompositeOperation = 'destination-out'; disks(edge); g.fill(); g.globalCompositeOperation = 'source-over'
+  put(ZONE_EDGE_ALPHA)
+}
 
 export function drawVolley(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam, vs: readonly Volley[]): void {
   if (vs.length === 0) return
@@ -196,10 +228,23 @@ export function drawVolley(ctx: CanvasRenderingContext2D, vp: Viewport, cam: Cam
   ctx.scale(z, z)
   ctx.translate(-cam.x, -cam.y)
   for (const v of vs) {
-    const color = v.ok || v.placed ? VOLLEY_COLOR : VOLLEY_FAR
+    const color = v.placed ? VOLLEY_PLACED : v.ok ? VOLLEY_COLOR : VOLLEY_FAR
+    // 걸어갈 길: 가장 가까운 활 대에서 닿기 시작하는 자리까지 점선 · 끝에 작은 점
+    if (v.path) {
+      const p = v.path
+      ctx.globalAlpha = 0.9; ctx.strokeStyle = VOLLEY_FAR; ctx.lineWidth = Math.max(1.5, 2.5 / z)
+      ctx.setLineDash([6 / z, 6 / z]); ctx.beginPath(); ctx.moveTo(p.x0, p.y0); ctx.lineTo(p.x1, p.y1); ctx.stroke(); ctx.setLineDash([])
+      ctx.beginPath(); ctx.arc(p.x1, p.y1, 4 / z, 0, FULL_TURN); ctx.fillStyle = VOLLEY_FAR; ctx.fill()
+    }
+    if (!v.ok && !v.placed) {
+      // 닿지 않는 자리: 고리 안에 X
+      const s = v.r * 0.45
+      ctx.globalAlpha = 0.95; ctx.strokeStyle = VOLLEY_FAR; ctx.lineWidth = Math.max(2, 3.5 / z)
+      ctx.beginPath(); ctx.moveTo(v.x - s, v.y - s); ctx.lineTo(v.x + s, v.y + s); ctx.moveTo(v.x + s, v.y - s); ctx.lineTo(v.x - s, v.y + s); ctx.stroke()
+    }
     ctx.beginPath(); ctx.arc(v.x, v.y, v.r, 0, FULL_TURN)
-    ctx.fillStyle = color; ctx.globalAlpha = v.placed ? 0.16 : 0.1; ctx.fill()
-    ctx.globalAlpha = 0.9; ctx.strokeStyle = color; ctx.lineWidth = Math.max(1.5, 2.5 / z)
+    ctx.fillStyle = color; ctx.globalAlpha = v.placed ? 0.16 : v.ok ? 0.22 : 0.1; ctx.fill()
+    ctx.globalAlpha = 0.95; ctx.strokeStyle = color; ctx.lineWidth = Math.max(2, (v.placed ? 2.5 : 3.5) / z)
     ctx.setLineDash(v.ok || v.placed ? [] : [10 / z, 7 / z]); ctx.stroke(); ctx.setLineDash([])
     if (v.placed && v.frac > 0) {
       ctx.beginPath(); ctx.arc(v.x, v.y, v.r * v.frac, 0, FULL_TURN)

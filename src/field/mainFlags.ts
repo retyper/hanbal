@@ -24,7 +24,8 @@ export interface FlagsHandlers {
   onHeroHover?(k: number): void
 }
 /** 시험판(?mvp)의 장수 기술 단추 하나 — frac 은 남은 쿨타임 몫(0~1) · sec 은 남은 초 */
-export interface HeroBtn { icon: string; label: string; frac: number; sec: number }
+/** passive: 누르는 단추가 아니라 저절로 걸리는 것의 표시 (버팀 · on 은 걸려 있는 동안 · used 는 이미 씀) */
+export interface HeroBtn { icon: string; label: string; frac: number; sec: number; passive?: 'wait' | 'on' | 'used' }
 export type Tone = 'ok' | 'why'
 /** 아래 띠가 알아야 하는 바깥 사정 — cmd: 앞줄·활·기병이 지금 고른 명령 번호(알아서면 -1) · sentGroup: 무리를 한 번이라도 보냈는가 · touch: 손으로 쓰는 화면인가 */
 /** big: 앞줄이 지금 고른 명령 번호(0 돌격 · 1 방진 · 없으면 -1) · aiming: 찍는 중인 큰 수 번호(2 화살비 · 3 옆치기 · 아니면 -1) */
@@ -94,6 +95,16 @@ const CSS = `
 .fd-cds{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;font-size:18px;font-weight:800;color:#fff;text-decoration:none;text-shadow:0 1px 3px #000;pointer-events:none}
 .fd-bighead{display:flex;align-items:center;padding:0 4px 0 2px;border-right:1px solid #ffd27a66;margin-right:2px}
 .fd-bighead img{width:34px;height:34px;object-fit:contain}
+.fd-passive{cursor:default;border-style:dashed}
+.fd-passive i{font-size:11px}
+.fd-passive.fd-pv-on{border-style:solid;border-color:${GOLD};background:#2a2410d9;box-shadow:0 0 10px ${GOLD}aa}
+.fd-passive.fd-pv-used{opacity:.4}
+#fd-strip.fd-mvp .fd-cell.on{border-color:#fff;background:#1f4c8c;box-shadow:0 0 0 2px #9fd0ff,0 0 14px 3px #6fb4ffcc}
+#fd-strip.fd-mvp .fd-cell.on img{transform:scale(1.15)}
+#fd-selname{position:absolute;left:calc(8px + env(safe-area-inset-left));bottom:calc(var(--fd-bar,64px) + 12px + var(--fd-bigh,0px) + env(safe-area-inset-bottom));font-size:26px;font-weight:800;line-height:1.1;color:#fff;text-shadow:0 1px 3px #000,0 0 10px #2f8cff;background:#0b1a2ecc;border:2px solid #9fd0ff;border-radius:10px;padding:4px 12px;pointer-events:none;z-index:3;white-space:nowrap}
+#fd-selname[hidden]{display:none}
+#fd-selname i{font-style:normal;display:inline-block;min-width:22px;text-align:center;margin-right:8px;padding:0 5px;border:1px solid #f3ecd8;border-bottom-width:3px;border-radius:5px;background:#0b1a2e;font-size:22px}
+.touch #fd-selname{display:none}
 .fd-who{position:absolute;right:2px;top:2px;width:17px;height:17px;object-fit:contain;opacity:.95;pointer-events:none}
 .fd-opt i{position:absolute;left:3px;top:2px;font-size:14px;font-weight:700;line-height:1.2;min-width:16px;padding:0 4px;box-sizing:border-box;text-align:center;color:#fff;background:#0b1a2e;border:1px solid #f3ecd8;border-bottom-width:3px;border-radius:4px;font-style:normal}
 @media (pointer:coarse){.fd-opt i{display:none}}
@@ -137,8 +148,10 @@ export function mountFlags(root: HTMLElement, base: string, h: FlagsHandlers): F
   const big = document.createElement('div'); big.id = 'fd-big'; big.hidden = true
   const lines = document.createElement('div'); lines.id = 'fd-lines'; lines.hidden = true
   const foe = document.createElement('div'); foe.id = 'fd-foeline'; foe.hidden = true
+  /** 시험판: 고른 무리 이름표 (키 · 이름 · 사람 수) — 큰 수 상자 바로 위 */
+  const selName = document.createElement('div'); selName.id = 'fd-selname'; selName.hidden = true
   lines.addEventListener('click', e => { const el = (e.target as HTMLElement).closest('[data-line]') as HTMLElement | null; if (el !== null) h.onLine(Number(el.dataset['line'])) })
-  root.append(hint, say, tip, big, lines, foe, strip)
+  root.append(hint, say, tip, big, selName, lines, foe, strip)
   const cells = strip.querySelector('.fd-cells') as HTMLDivElement
   const go = strip.querySelector('.fd-go') as HTMLButtonElement
   go.addEventListener('click', () => h.onGo())
@@ -181,7 +194,7 @@ export function mountFlags(root: HTMLElement, base: string, h: FlagsHandlers): F
       // 시험판: 무리 칸마다 산 사람 수 (장수 칸 빼고)
       const menOf = (g: InputGroup): number => m.squads.reduce((a, q) => a + (q.side === 0 && inGroup(m, q, g) ? q.men : 0), 0)
       const men = mvp ? MVP_GROUPS.map(g => g === 3 ? '' : String(menOf(g))) : []
-      const key = [c.line, c.foeLine, ui.phase, ui.sel.join(''), alive.join(''), c.front, c.volley ? 1 : 0, c.flank ? 1 : 0, c.aiming, c.sentGroup ? 1 : 0, c.touch ? 1 : 0, m.end === null ? 0 : 1, c.cmdG ?? 'x', men.join(','), (c.heroBtns ?? []).map(b => b.sec).join(',')].join('|')
+      const key = [c.line, c.foeLine, ui.phase, ui.sel.join(''), alive.join(''), c.front, c.volley ? 1 : 0, c.flank ? 1 : 0, c.aiming, c.sentGroup ? 1 : 0, c.touch ? 1 : 0, m.end === null ? 0 : 1, c.cmdG ?? 'x', men.join(','), (c.heroBtns ?? []).map(b => b.sec + (b.passive ?? '')).join(',')].join('|')
       if (key === sig) return
       sig = key
       strip.hidden = ui.phase === 'end' || m.end !== null
@@ -204,7 +217,7 @@ export function mountFlags(root: HTMLElement, base: string, h: FlagsHandlers): F
       const opt = (name: string, i: number, key: number): string => `<button class="fd-opt${(i < 2 && c.front === i) || (i === 2 && c.volley) || (i === 3 && c.flank) || c.aiming === i ? ' on' : ''}" type="button" data-act="big" data-i="${i}" data-n="${name}" title="${t(`field.big.${name}` as Key)}"><i>${cap(key)}</i>${img(`flag/flag-${name}.png`)}<span>${t(`war.cmdName.${name}` as Key)}</span></button>`
       // 시험판: 머리에 고른 무리 그림 하나 · 그 무리의 큰 수만 Z X 차례로
       // 장수 칸: 기술 셋을 Z X C 로 (쿨타임은 단추 위 어두운 몫과 남은 초)
-      const hb = (b: HeroBtn, k: number): string => `<button class="fd-opt" type="button" data-act="hero" data-i="${k}"><i>${cap(k)}</i>${b.icon === '' ? '' : img(b.icon)}<span>${b.label}</span>${b.frac > 0 ? `<b class="fd-cd" style="height:${Math.round(b.frac * 100)}%"></b><s class="fd-cds">${b.sec}</s>` : ''}</button>`
+      const hb = (b: HeroBtn, k: number): string => b.passive !== undefined ? `<span class="fd-opt fd-passive fd-pv-${b.passive}" title="${t('field.mvp.stand.tip')}"><i>${t('field.mvp.stand.auto')}</i>${b.icon === '' ? '' : img(b.icon)}<span>${b.label}</span>${b.passive === 'on' ? `<s class="fd-cds">${b.sec}</s>` : ''}</span>` : `<button class="fd-opt" type="button" data-act="hero" data-i="${k}"><i>${cap(k)}</i>${b.icon === '' ? '' : img(b.icon)}<span>${b.label}</span>${b.frac > 0 ? `<b class="fd-cd" style="height:${Math.round(b.frac * 100)}%"></b><s class="fd-cds">${b.sec}</s>` : ''}</button>`
       if (mvp && c.cmdG === 3 && c.heroBtns !== undefined && ui.phase !== 'end' && m.end === null) { big.hidden = false; big.innerHTML = `<span class="fd-bighead">${img(CELL_ICON[3]!)}</span>` + c.heroBtns.map(hb).join('') }
       else if (mvp) big.innerHTML = !bigOn || mine === undefined ? '' : `<span class="fd-bighead">${img(CELL_ICON[c.cmdG!]!)}</span>` + mine.map((i, k) => opt(BIG_ARTS[i]!, i, k)).join('')
       else big.innerHTML = !bigOn ? '' : BIG_ARTS.map((name, i) => `<button class="fd-opt${(i < 2 && c.front === i) || (i === 2 && c.volley) || (i === 3 && c.flank) || c.aiming === i ? ' on' : ''}" type="button" data-act="big" data-i="${i}" data-n="${name}" title="${t(`field.big.${name}` as Key)}"><i>${firstKeyLabel(CMD_ACTION[i]!)}</i><img class="fd-who" src="${base}${CELL_ICON[BIG_WHO[i]!]!}" alt="">${img(`flag/flag-${name}.png`)}<span>${t(`war.cmdName.${name}` as Key)}</span></button>`).join('')
@@ -216,6 +229,17 @@ export function mountFlags(root: HTMLElement, base: string, h: FlagsHandlers): F
       if (ui.phase === 'ready' && !mvp) {
         lines.innerHTML = [0, 1, 2].map(i => `<button class="fd-line${c.line === i ? ' on' : ''}" type="button" data-line="${i}" title="${t(`field.line.desc.${i}` as Key)}">${lineSvg(i)}<b>${t(`field.line.${i}` as Key)}</b></button>`).join('')
         foe.innerHTML = `${lineSvg(c.foeLine, '#ff8a7a')}${img('icon/unit-spear.png')}${img('icon/unit-archer.png')}${img('icon/unit-buyeo-cavalry.png')}`
+      }
+      if (mvp) {
+        // 고른 무리 이름표: 하나만 골랐을 때 · 큰 수 상자가 떠 있으면 그 위로 올린다
+        strip.classList.add('fd-mvp')
+        const g = c.cmdG!, k = MVP_GROUPS.indexOf(g as InputGroup)
+        selName.hidden = k < 0 || ui.phase === 'end' || m.end !== null
+        if (!selName.hidden) {
+          const name = g === 2 || g === 4 ? t(`field.mvp.g.${g}` as Key) : t(`field.g.${g}` as Key)
+          selName.innerHTML = `<i>${k + 1}</i>${name}${g === 3 ? '' : ` · ${men[k]}`}`
+          root.style.setProperty('--fd-bigh', big.hidden ? '0px' : `${big.offsetHeight + 6}px`)
+        }
       }
       hint.hidden = !showHint
       hint.innerHTML = showHint ? `<span>${line}</span>` : ''

@@ -160,12 +160,13 @@ function land(cur: VModel, p: { att: number; vic: number; how: number }, nearest
     if (nearest) { clockSt.stopUntil = Math.max(clockSt.stopUntil, real + F.stopBlockMs); clockSt.shAt = real; clockSt.shPx = F.shakeBlockPx; clockSt.shMs = F.shakeBlockMs }
     return
   }
-  kicks.set(p.vic, { at: clk, dir, cells: horse ? F.kickHorseCells : F.kickFrontCells })
+  // 시험판: 맞은 대가 눈에 띄게 뒤로 밀리고 화면이 더 크게 흔들린다 (그리는 쪽만)
+  kicks.set(p.vic, { at: clk, dir, cells: (horse ? F.kickHorseCells : F.kickFrontCells) * (cur.mvp ? F.mvpKickPermille / 1000 : 1) })
   braces.set(p.vic, clk)
   if (p.how === HIT_GOOD) good(cur, a, v, clk)
   if (nearest) {
     clockSt.stopUntil = Math.max(clockSt.stopUntil, real + (horse ? F.stopHorseMs : F.stopFrontMs))
-    clockSt.shAt = real; clockSt.shPx = horse ? F.shakeHorsePx : F.shakeFrontPx; clockSt.shMs = horse ? F.shakeHorseMs : F.shakeFrontMs
+    clockSt.shAt = real; clockSt.shPx = (horse ? F.shakeHorsePx : F.shakeFrontPx) * (cur.mvp ? F.mvpShakePermille / 1000 : 1); clockSt.shMs = horse ? F.shakeHorseMs : F.shakeFrontMs
   }
 }
 

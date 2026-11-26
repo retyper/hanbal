@@ -271,7 +271,9 @@ function expire(s: FieldState, side: 0 | 1): void {
     const q0 = qs[0]
     if (!q0 || q0.order === ORD_NONE) continue
     const age = s.tick - q0.orderTick
-    if (q0.order === ORD_VOLLEY && age >= ticksOf(P.field.volleySec)) done(s, side, qs)
+    // 시험판의 사람 편: 찍은 자리가 아직 닿지 않으면(걸어가는 중) 화살비 시계를 멈춰 둔다 — 닿은 때부터 volleySec
+    if (q0.order === ORD_VOLLEY && q0.orderAt && still(s, side) && !volleyInReach(qs, q0.orderAt)) { for (const q of qs) q.orderTick = s.tick }
+    else if (q0.order === ORD_VOLLEY && age >= ticksOf(P.field.volleySec)) done(s, side, qs)
     else if (q0.order === ORD_FLANK) {
       const t = q0.target >= 0 ? s.squads[q0.target]! : null
       const hit = qs.reduce((a, q) => q.hitTick >= 0 && (a < 0 || q.hitTick < a) ? q.hitTick : a, -1)
@@ -317,8 +319,10 @@ function place(s: FieldState, side: 0 | 1): void {
     if (q0.order === ORD_HOLD && q0.orderAt) anchor = q0.orderAt
     if (q0.order === ORD_VOLLEY && q0.orderAt) {
       // 화살비 — 찍은 자리가 닿는 거리(의 volleyReachPermille) 안에 들 때까지 다가간다 · 들면 선다
+      // 시험판의 사람 편: 활 대 하나라도 닿으면 선다 (화면의 「닿는 땅」 = 대마다 닿는 원의 합 그대로)
       const c = centerOf(qs), r = mul(qs[0]!.reach, P.field.volleyReachPermille)
-      anchor = dist2(c.u, c.v, q0.orderAt.u, q0.orderAt.v) > r * r ? stepPoint(c, q0.orderAt, r) : c
+      const near = still(s, side) ? volleyInReach(qs, q0.orderAt) : dist2(c.u, c.v, q0.orderAt.u, q0.orderAt.v) <= r * r
+      anchor = !near ? stepPoint(c, q0.orderAt, r) : c
     }
     if (q0.order === ORD_FLANK) {
       // 옆치기 — 대마다 제 쪽 바깥으로 돌아 (날개 둘이면 양쪽에서 집게로) 뒤에서 들이친다 · 단계는 자리로 가른다 (flankStep)
@@ -383,6 +387,15 @@ function place(s: FieldState, side: 0 | 1): void {
 }
 
 /** a 에서 b 쪽으로, b 에서 r 만큼 덜 간 점 */
+/** 시험판: 찍은 화살비 자리가 산 활 대 하나라도의 닿는 거리(대마다 reach 의 volleyReachPermille) 안인가 */
+function volleyInReach(qs: readonly Squad[], at: Point): boolean {
+  for (const q of qs) {
+    if (q.men <= 0 || q.flee === 1) continue
+    const r = mul(q.reach, P.field.volleyReachPermille)
+    if (dist2(q.u, q.v, at.u, at.v) <= r * r) return true
+  }
+  return false
+}
 function stepPoint(a: Point, b: Point, r: number): Point {
   const du = b.u - a.u, dv = b.v - a.v
   const d2 = du * du + dv * dv
@@ -400,6 +413,12 @@ export function runMul(s: FieldState, q: Squad): number {
   const charging = q.grp === 'front' && q.order === ORD_CHARGE
   const striking = (q.grp === 'horse' && q.order === ORD_FLANK && q.target >= 0 && flankStep(s, q, s.squads[q.target]!).strike) || mvpRider(s, q)
   if (!charging && !striking) return MILLI
+  // 시험판의 사람 편: 누른 때부터 달린다 (거리 문턱 없음) — 제 걸음의 mvpRunPermille 배까지 mvpRunAccelSec 안에 붙고, mvpRunSec 이 지나면 걷는다(도움닫기도 끝)
+  if (still(s, q.side) && (charging || mvpRider(s, q))) {
+    const age = s.tick - q.orderTick, accT = Math.max(1, ticksOf(P.field.mvpRunAccelSec))
+    if (age >= ticksOf(P.field.mvpRunSec)) return MILLI
+    return MILLI + Math.max(1, idiv((P.field.mvpRunPermille - MILLI) * Math.min(age + 1, accT), accT))
+  }
   const start = cells(charging ? P.field.chargeRunCells : P.field.flankRunCells)
   if (dist2(q.u, q.v, t.u, t.v) > start * start) return MILLI
   const top = charging ? P.field.chargeSpeedPermille : P.field.flankSpeedPermille

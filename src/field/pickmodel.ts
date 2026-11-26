@@ -57,6 +57,8 @@ export function cmdGroup(m: VModel, ui: UiState): 0 | 1 | 2 | null {
 
 /** 고른 것에서 쓰러진 것을 빼고, 비면 장수(없으면 살아 있는 첫 무리)로 돌아온다 — 같으면 같은 줄을 돌려준다 */
 export function normalizeSel(m: VModel, sel: readonly InputGroup[]): readonly InputGroup[] {
+  // 시험판: 빈 땅을 왼쪽으로 누르면 아무것도 안 고른 채로 둔다
+  if (m.mvp && sel.length === 0) return sel
   const live = sel.filter(g => aliveCell(m, g))
   if (live.length === sel.length && live.length > 0) return sel
   if (live.length > 0) return live
