@@ -1,0 +1,232 @@
+diff --git a/src/field/map.ts b/src/field/map.ts
+index b6034f0cc..f9f18c85c 100644
+--- a/src/field/map.ts
++++ b/src/field/map.ts
+@@ -7,7 +7,7 @@
+  * 칸 순서: cells[cu * w + cv]. 해시·기록은 cells 를 직접 훑는다 (JSON 을 거치지 않는다).
+  */
+ import { P } from '../tune/params.ts'
+-import { G_BLOCK, G_DEEP, G_HIGH, G_ICE, G_MUD, G_PLAIN, G_SHALLOW, G_WOOD } from './types.ts'
++import { G_BLOCK, G_DEEP, G_FORD, G_HIGH, G_ICE, G_MUD, G_PLAIN, G_SHALLOW, G_WOOD } from './types.ts'
+ import type { Camp, Deco, FieldMap, FieldSeason, Ground, Hill, MapRule, Piece } from './types.ts'
+ import { idiv } from './num.ts'
+ import { roll } from '../core/rng.ts'
+@@ -215,7 +215,7 @@ export function mixMap(seed: number, season?: FieldSeason): FieldMap {
+   for (let cv = 0; cv < W; cv++) for (let k = 0; k < F.mixStreamCells; k++) set(streamU(cv) + k - idiv(F.mixStreamCells, 2), cv, G_SHALLOW)
+   // 여울 둘: 위 반·아래 반에 하나씩 (그 줄은 평지 · 디딤돌)
+   const fords = [Math.round(W * (0.2 + 0.15 * r('ford0'))), Math.round(W * (0.65 + 0.15 * r('ford1')))]
+-  for (const fv of fords) for (let cv = fv; cv < fv + F.mixFordCells; cv++) for (let k = -2; k <= F.mixStreamCells; k++) if (get(streamU(cv) + k - idiv(F.mixStreamCells, 2), cv) === G_SHALLOW) set(streamU(cv) + k - idiv(F.mixStreamCells, 2), cv, G_PLAIN)
++  for (const fv of fords) for (let cv = fv; cv < fv + F.mixFordCells; cv++) for (let k = -2; k <= F.mixStreamCells; k++) if (get(streamU(cv) + k - idiv(F.mixStreamCells, 2), cv) === G_SHALLOW) set(streamU(cv) + k - idiv(F.mixStreamCells, 2), cv, G_FORD)
+   // 낮은 언덕: 한 옆(위 또는 아래) · 개울 한쪽에 (타원)
+   // 개울에서 언덕 가로 반지름 + 3칸 + 언덕 높이만큼 개울이 비껴가는 몫을 띄운다 (개울이 언덕으로 흘러들지 않게) · 진영 시작 자리와도 띄운다
+   const Ru = F.mixHillRuCells, Rv = F.mixHillRvCells
+@@ -268,8 +268,8 @@ export function mixMap(seed: number, season?: FieldSeason): FieldMap {
+       for (let cu = a - (wide >> 1) - mud; cu <= b + wide - (wide >> 1) + mud; cu++) {
+         const g = get(cu, cv), band = cu >= a - (wide >> 1) && cu <= b + wide - (wide >> 1)
+         if (g === -1 || g === G_HIGH || g === G_BLOCK) continue
+-        const stream = g === G_SHALLOW || (isFord(cv) && cu >= a && cu <= b)
+-        if (season === 'summer' && band) set(cu, cv, isFord(cv) ? G_PLAIN : G_SHALLOW)
++        const stream = g === G_SHALLOW || g === G_FORD
++        if (season === 'summer' && band) set(cu, cv, isFord(cv) ? G_FORD : G_SHALLOW)
+         else if (season === 'winter' && stream) set(cu, cv, G_ICE)
+         else if (season === 'spring' && !band && g === G_PLAIN) set(cu, cv, G_MUD)
+       }
+@@ -294,7 +294,7 @@ function mixDeco(map: FieldMap, seed: number, streamU: (cv: number) => number, f
+       if (lone || h(`b${key}`) < 0.5) out.push({ k: lone ? pick(['rock-big', 'rock-big', 'rock-moss'], `bk${key}`) : pick(['rock', 'rock-small', 'rock-moss'], `bk${key}`), u: cu + 0.5, v: cv + 0.8 })
+     } else if (g === G_HIGH && h(`h${key}`) < 0.035) out.push({ k: pick(['stump', 'grass-dry', 'tree-dead', 'grass-dry', 'pebbles'], `hk${key}`), u: cu + h(`hx${key}`), v: cv + h(`hy${key}`) })
+     else if (g === G_PLAIN) {
+-      const wet = (g2: number): boolean => g2 === G_SHALLOW || g2 === G_DEEP || g2 === G_ICE
++      const wet = (g2: number): boolean => g2 === G_SHALLOW || g2 === G_DEEP || g2 === G_ICE || g2 === G_FORD
+       const wetBy = wet(at(cu - 1, cv)) || wet(at(cu + 1, cv))
+       if (wetBy && h(`r${key}`) < 0.3) out.push({ k: pick(['reeds', 'cattail', 'reeds-big', 'iris', 'grass'], `rk${key}`), u: cu + h(`rx${key}`), v: cv + h(`ry${key}`) })
+       else if (h(`g${key}`) < F.mixGrassPermille / 1000) out.push({ k: pick(['grass-small', 'grass', 'grass-small', 'flowers', 'flower', 'pebbles', 'grass-dry'], `gk${key}`), u: cu + h(`gx${key}`), v: cv + h(`gy${key}`) })
+diff --git a/src/field/sim.ts b/src/field/sim.ts
+index 22a05643b..3303b4439 100644
+--- a/src/field/sim.ts
++++ b/src/field/sim.ts
+@@ -21,7 +21,7 @@ import { roll } from '../core/rng.ts'
+ import { P } from '../tune/params.ts'
+ import { clamp, dist2, idiv, isqrt, nearestDir, stepToward } from './num.ts'
+ import { campPointU, groundAt, walkable } from './map.ts'
+-import { G_BLOCK, G_HIGH, G_PLAIN, G_SHALLOW, G_WOOD, G_MUD, FIELD_SEASONS, GRPS, HERO_ART_DEFAULT, HERO_ARTS, HERO_DIR, HERO_DIRS, OP_ATTACK, OP_AUTO, OP_DASH, OP_HERO_DIR, OP_MOVE, OP_RETREAT, OP_SKILL, OP_STANCE, STANCE_CHARGE, STANCE_HOLD, STANCE_OPEN, WHY_NONE, CMD_COUNTER, CMD_HEIGHT, OP_AIM, OP_RALLY, ORD_ATTACK, ORD_CHARGE, ORD_FLANK, ORD_MOVE, ORD_NONE, ORD_VOLLEY, HIT_PLAIN, HIT_GOOD, HIT_BLOCKED, LOSS_ARROW, LOSS_BLADE, KIND_BEATS } from './types.ts'
++import { G_BLOCK, G_HIGH, G_PLAIN, G_SHALLOW, G_WOOD, G_MUD, G_FORD, FIELD_SEASONS, GRPS, HERO_ART_DEFAULT, HERO_ARTS, HERO_DIR, HERO_DIRS, OP_ATTACK, OP_AUTO, OP_DASH, OP_HERO_DIR, OP_MOVE, OP_RETREAT, OP_SKILL, OP_STANCE, STANCE_CHARGE, STANCE_HOLD, STANCE_OPEN, WHY_NONE, CMD_COUNTER, CMD_HEIGHT, OP_AIM, OP_RALLY, ORD_ATTACK, ORD_CHARGE, ORD_FLANK, ORD_MOVE, ORD_NONE, ORD_VOLLEY, HIT_PLAIN, HIT_GOOD, HIT_BLOCKED, LOSS_ARROW, LOSS_BLADE, KIND_BEATS } from './types.ts'
+ import { FORM_HOLD, KIND_GRP, LINES, LINE_SHIELD, LINE_WEDGE, LINE_WINGS, LOSS_ART, LOSS_HERO, OP_CALL, STANCE_NONE } from './types.ts'
+ import type { FieldInput, FieldMap, FieldState, Grp, Hero, LiveSetup, MoraleBy, Point, Squad, UnitKind } from './types.ts'
+ import { addShock, auraOf, emit, gritTick, heroInput, heroMove, heroStrike, heroTakeHits, pruneEvents, standOf } from './hero.ts'
+@@ -498,7 +498,7 @@ export function detour(s: FieldState, q: Squad, e: Squad): Point {
+ function stepOnce(s: FieldState, K: Kit, side: 0 | 1, u: number, v: number, goal: Point, speed: number, horse = false): Point {
+   // 시험판(mvp): 오르막(가진 편이 아닌 쪽이 높은 터 위)은 mvpClimbPermille · 가진 편이 높은 터에서 앞(낮은 쪽)으로 내려가면 mvpDownhillPermille · 숲의 기병은 mvpWoodHorsePermille
+   const climb = s.mvp === 1 ? P.field.mvpClimbPermille : K.climb
+-  const slow = (g: number): number => g === G_SHALLOW ? (s.mvp === 1 ? (s.season === 1 ? P.field.mvpRainWaterPermille : P.field.mvpWaterSpeedPermille) : K.water) : g === G_HIGH && s.map.highOwner !== side ? climb : g === G_WOOD && horse ? P.field.mvpWoodHorsePermille : g === G_MUD ? P.field.mvpMudPermille : MILLI
++  const slow = (g: number): number => g === G_SHALLOW ? (s.mvp === 1 ? (s.season === 1 ? P.field.mvpRainWaterPermille : P.field.mvpWaterSpeedPermille) : K.water) : g === G_FORD ? P.field.mvpWaterSpeedPermille : g === G_HIGH && s.map.highOwner !== side ? climb : g === G_WOOD && horse ? P.field.mvpWoodHorsePermille : g === G_MUD ? P.field.mvpMudPermille : MILLI
+   const full = stepToward(u, v, goal.u, goal.v, speed)
+   let f = Math.min(slow(groundAt(s.map, u, v)), slow(groundAt(s.map, full.u, full.v)))
+   // 철: 장마는 어디서나 느리고(mvpRainSpeedPermille) · 겨울은 눈에 조금 느리다(mvpSnowSpeedPermille)
+@@ -778,7 +778,8 @@ function fight(s: FieldState, K: Kit): [boolean, boolean] {
+     if (e.grp === 'bows') v = mul(v, K.takenVolley)
+     // 맞쏘기 명령 — 우리 활을 쏘는 적 활은 그 세기가 tacCounterCut 으로 꺾인다
+     if (q.grp === 'bows' && e.grp === 'bows' && e.cmd === CMD_COUNTER && aim[e.id] === q.id) v = mul(v, K.counterCut)
+-    if (groundAt(s.map, q.u, q.v) === G_SHALLOW) v = mul(v, s.mvp === 1 ? P.field.mvpFordPermille : K.ford)
++    const gq = groundAt(s.map, q.u, q.v)
++    if (gq === G_SHALLOW || gq === G_FORD) v = mul(v, s.mvp === 1 ? P.field.mvpFordPermille : K.ford)
+     // 병종 상성 (51 §3) — 창 방진 > 기병 (기병이 방진을 치면 약하고, 방진이 기병을 치면 tacPunchHoldTake 배) · 기병 > 활 (tacFlank2)
+     if (q.grp === 'horse' && e.grp === 'front' && e.stance === STANCE_HOLD) v = mul(v, P.field.horseVsHoldPermille)
+     if (q.grp === 'front' && q.stance === STANCE_HOLD && e.grp === 'horse') v = mul(v, K.punchHold)
+diff --git a/src/field/types.ts b/src/field/types.ts
+index d3a37d15e..d695bb791 100644
+--- a/src/field/types.ts
++++ b/src/field/types.ts
+@@ -325,9 +325,9 @@ export interface LiveSide {
+   form?: 0 | 1 | 2
+ }
+ 
+-/** 바닥 종류 — 0 평지 · 1 얕은 물(느림) · 2 깊은 물(못 걸음) · 3 막힘(못 걸음) · 4 높은 터(위에 선 활이 세고, 올라오는 적은 느리다) · 5 숲(시험판: 기병 느림 · 활 시선을 막음) · 6 진흙(봄 개울가 · 느림) · 7 얼음(겨울 개울 · 어디로든 건넌다) */
+-export type Ground = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
+-export const G_PLAIN = 0, G_SHALLOW = 1, G_DEEP = 2, G_BLOCK = 3, G_HIGH = 4, G_WOOD = 5, G_MUD = 6, G_ICE = 7
++/** 바닥 종류 — 0 평지 · 1 얕은 물(느림) · 2 깊은 물(못 걸음) · 3 막힘(못 걸음) · 4 높은 터(위에 선 활이 세고, 올라오는 적은 느리다) · 5 숲(시험판: 기병 느림 · 활 시선을 막음) · 6 진흙(봄 개울가 · 느림) · 7 얼음(겨울 개울 · 어디로든 건넌다) · 8 여울(얕은 물 · 디딤돌) · 9 강의 깊은 물(강 건너기 · 건널 수는 있으나 매우 불리) */
++export type Ground = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
++export const G_PLAIN = 0, G_SHALLOW = 1, G_DEEP = 2, G_BLOCK = 3, G_HIGH = 4, G_WOOD = 5, G_MUD = 6, G_ICE = 7, G_FORD = 8, G_RIVER = 9
+ /** 시험판의 철 (본편 calendar 의 SeasonOfYear 와 같은 낱말 · 여름은 장마) — 0 봄 · 1 여름 · 2 가을(기준) · 3 겨울 */
+ export type FieldSeason = 'spring' | 'summer' | 'autumn' | 'winter'
+ export const FIELD_SEASONS: readonly FieldSeason[] = ['spring', 'summer', 'autumn', 'winter']
+diff --git a/src/field/viewTerrain.ts b/src/field/viewTerrain.ts
+index cbb389b51..0c08462fa 100644
+--- a/src/field/viewTerrain.ts
++++ b/src/field/viewTerrain.ts
+@@ -21,7 +21,9 @@ const CLIFF = ['rgba(30,22,10,0.6)', 'rgba(30,22,10,0.4)', 'rgba(30,22,10,0.22)'
+ /** 높은 터의 등고선 — 가장자리에서 안쪽으로 이 칸 수마다 가는 줄 (0 = 가장자리 · 밝은 줄과 어두운 줄을 겹쳐 「턱」이 읽히게) */
+ const CONTOURS = [0, 3, 7, 12] as const
+ const EDGE_DARK = 'rgba(40,28,12,0.75)', EDGE_LIT = 'rgba(255,248,220,0.85)', CONTOUR = 'rgba(70,52,24,0.45)'
+-const SHALLOW = 1, DEEP = 2, BLOCK = 3, HIGH = 4, WOOD = 5, MUD = 6, ICE = 7
++const SHALLOW = 1, DEEP = 2, BLOCK = 3, HIGH = 4, WOOD = 5, MUD = 6, ICE = 7, FORD = 8, RIVER = 9
++/** 여울: 물빛을 옅게 (디딤돌 소품이 그 위에 선다) · 강의 깊은 물 */
++const WATER_FORD = 'rgba(128,182,168,0.55)', WATER_RIVER = 'rgba(30,74,92,0.9)'
+ /** 봄 개울가 진흙 · 겨울 언 개울 */
+ const MUD_FILL = 'rgba(92,64,34,0.5)', ICE_FILL = 'rgba(214,232,242,0.85)', ICE_EDGE = 'rgba(255,255,255,0.7)'
+ /** 숲 칸: 짙은 풀빛 그늘 (나무 소품이 그 위에 선다) */
+@@ -49,16 +51,16 @@ function paint(m: VModel, soft = false): HTMLCanvasElement {
+   // 들판(섞임)은 언덕을 칸이 아니라 모양(hills)으로 따로 그린다 (hillLayer) — 여기서는 높은 터 칸을 평지로 친다
+   // 여름 장마의 불은 개울도 칸이 아니라 매끈한 모양으로 따로 그린다 (floodLayer)
+   const flood = soft && m.season === 'summer'
+-  const cells = soft && (m.hills.length > 0 || flood) ? m.cells.map(g => (g === HIGH && m.hills.length > 0) || (g === SHALLOW && flood) ? 0 : g) : m.cells
++  const cells = soft && (m.hills.length > 0 || flood) ? m.cells.map(g => (g === HIGH && m.hills.length > 0) || ((g === SHALLOW || g === FORD) && flood) ? 0 : g) : m.cells
+   const at = (cu: number, cv2: number): number => cu < 0 || cv2 < 0 || cu >= U || cv2 >= W ? -1 : cells[cu * W + cv2]!
+   for (let cu = 0; cu < U; cu++) for (let v = 0; v < W; v++) {
+     const g = cells[cu * W + v]!
+     if (g === 0) continue
+     const x = cu * S, y = v * S
+-    if (g === SHALLOW || g === DEEP) {
+-      c.fillStyle = g === DEEP ? WATER_DEEP : m.season === 'summer' ? WATER_FLOOD : WATER_SHALLOW
++    if (g === SHALLOW || g === DEEP || g === FORD || g === RIVER) {
++      c.fillStyle = g === DEEP ? WATER_DEEP : g === RIVER ? WATER_RIVER : g === FORD ? WATER_FORD : m.season === 'summer' ? WATER_FLOOD : WATER_SHALLOW
+       c.fillRect(x, y, S, S)
+-      const wet = (a: number): boolean => a === SHALLOW || a === DEEP
++      const wet = (a: number): boolean => a === SHALLOW || a === DEEP || a === FORD || a === RIVER
+       if (!wet(at(cu, v + 1))) { c.fillStyle = WATER_EDGE; c.fillRect(x, y + S - 2, S, 2) }
+       if (!wet(at(cu, v - 1))) { c.fillStyle = WATER_EDGE; c.fillRect(x, y, S, 2) }
+       if (!wet(at(cu - 1, v))) { c.fillStyle = WATER_EDGE; c.fillRect(x, y, 2, S) }
+@@ -113,8 +115,15 @@ function paint(m: VModel, soft = false): HTMLCanvasElement {
+ export function drawTerrain(ctx: CanvasRenderingContext2D, m: VModel, worldW: number, worldH: number): void {
+   const sig = signature(m)
+   let e = cache.get(m.cells)
+-  if (e === undefined || e.sig !== sig) { e = { sig, cv: isPlain(m.cells) ? null : m.deco.length > 0 ? floodLayer(hillLayer(soften(paint(m, true)), m), m) : paint(m) }; cache.set(m.cells, e) }
+-  if (e.cv !== null) ctx.drawImage(e.cv, 0, 0, worldW, worldH)
++  const soft = m.deco.length > 0
++  if (e === undefined || e.sig !== sig) {
++    // 들판(섞임): 판 위아래로 EDGE_ROWS 줄씩 넓힌 칸으로 굽는다 — 개울이 판 끝에서 네모로 잘리지 않고 판 밖 여백으로 흘러 나간다
++    const x = soft ? extend(m) : m
++    e = { sig, cv: isPlain(m.cells) ? null : soft ? floodLayer(hillLayer(soften(paint(x, true)), x), x) : paint(m) }
++    cache.set(m.cells, e)
++  }
++  if (e.cv === null) return
++  if (soft) { const pad = worldH / m.mapW * EDGE_ROWS; ctx.drawImage(e.cv, 0, -pad, worldW, worldH + 2 * pad) } else ctx.drawImage(e.cv, 0, 0, worldW, worldH)
+ }
+ 
+ /**
+@@ -195,7 +204,7 @@ function hillLayer(base: HTMLCanvasElement, m: VModel): HTMLCanvasElement {
+  * 밖에 옅은 둑 턱 → 짙은 흙탕 올리브 물 → 가운데 잿빛 푸른 물빛 띠(흐리게) → 짙은 젖은 물가 테. 여울(물이 끊긴 줄) 가장자리에만 흰 거품.
+  * 흐르는 물결은 viewSeason drawFlood 가 매 장 움직여 그린다. 맵마다 한 번 굽는다
+  */
+-const FLOOD_LIP = 'rgba(206,186,134,0.6)', FLOOD_WATER = 'rgba(70,64,40,0.96)', FLOOD_SHEEN = 'rgba(132,152,160,0.5)', FLOOD_RIM = 'rgba(26,20,10,0.85)', FLOOD_FOAM = 'rgba(255,252,240,0.9)'
++const FLOOD_FORD = 'rgba(176,160,112,0.6)', FLOOD_LIP = 'rgba(206,186,134,0.6)', FLOOD_WATER = 'rgba(70,64,40,0.96)', FLOOD_SHEEN = 'rgba(132,152,160,0.5)', FLOOD_RIM = 'rgba(26,20,10,0.85)', FLOOD_FOAM = 'rgba(255,252,240,0.9)'
+ /** 점 줄을 두 번 깎아 둥글린다 (Chaikin · 끝점은 그대로) */
+ function chaikin(pts: readonly [number, number][]): [number, number][] {
+   let p = pts.slice() as [number, number][]
+@@ -212,14 +221,15 @@ function floodLayer(base: HTMLCanvasElement, m: VModel): HTMLCanvasElement {
+   const S = PX_PER_CELL, U = m.mapU, W = m.mapW
+   const c = base.getContext('2d') as CanvasRenderingContext2D
+   const at = (cu: number, v: number): number => cu < 0 || v < 0 || cu >= U || v >= W ? -1 : m.cells[cu * W + v]!
++  const flowing = (g: number): boolean => g === SHALLOW || g === FORD
+   // 줄마다 물 덩이 (가장 긴 이어진 물 칸) · 없으면 null (여울 줄)
+   const rows: ({ l: number; r: number } | null)[] = []
+   for (let v = 0; v < W; v++) {
+     let best: { l: number; r: number } | null = null
+     for (let cu = 0; cu < U; cu++) {
+-      if (at(cu, v) !== SHALLOW) continue
++      if (!flowing(at(cu, v))) continue
+       let e = cu
+-      while (at(e + 1, v) === SHALLOW) e++
++      while (flowing(at(e + 1, v))) e++
+       if (best === null || e - cu > best.r - best.l - 1) best = { l: cu, r: e + 1 }
+       cu = e
+     }
+@@ -251,8 +261,16 @@ function floodLayer(base: HTMLCanvasElement, m: VModel): HTMLCanvasElement {
+   c.filter = 'blur(2px)'
+   for (const sh of shapes) { outline(sh, 0.62); c.fillStyle = FLOOD_SHEEN; c.fill() }
+   c.filter = 'none'
++  // 여울 줄: 물 안에서 옅고 얕은 물빛 (둘레 안으로만)
++  const fordRow = (v: number): boolean => { const r = rows[v]; return r !== null && r !== undefined && at(r.l + ((r.r - r.l) >> 1), v) === FORD }
++  for (const sh of shapes) {
++    c.save(); outline(sh, 0); c.clip()
++    c.fillStyle = FLOOD_FORD
++    for (let v = 0; v < W; v++) if (fordRow(v)) c.fillRect(0, v * S, U * S, S)
++    c.restore()
++  }
+   for (const sh of shapes) { outline(sh, 0); c.strokeStyle = FLOOD_RIM; c.lineWidth = 1.5; c.stroke() }
+-  // 여울 거품: 물 덩이가 끊기는 줄(위나 아래가 여울 줄)의 끝 변을 따라
++  // 여울 거품: 불은 물이 여울 줄과 만나는 변을 따라 (물살이 얕은 데로 넘어가며 이는 거품)
+   const hsh = (a: number, b: number): number => { let x = Math.imul(a * 73856093 ^ b * 19349663, 0x45d9f3b); x ^= x >>> 15; return (x >>> 0) % 997 }
+   c.fillStyle = FLOOD_FOAM
+   c.beginPath()
+@@ -260,7 +278,7 @@ function floodLayer(base: HTMLCanvasElement, m: VModel): HTMLCanvasElement {
+     const row = rows[v]
+     if (row === null || row === undefined) continue
+     for (const dv of [-1, 1]) {
+-      if (v + dv < 0 || v + dv >= W || rows[v + dv] !== null) continue
++      if (v + dv < 0 || v + dv >= W || fordRow(v) || !fordRow(v + dv)) continue
+       const y = (dv < 0 ? v : v + 1) * S
+       for (let x = row.l * S + 1; x < row.r * S - 1; x += 2.2) { const j = hsh(Math.round(x), v + dv), r = 0.9 + (j % 3) * 0.45; c.moveTo(x + r, y + (j % 3) - 1); c.arc(x, y + (j % 3) - 1, r, 0, Math.PI * 2) }
+     }
+@@ -268,3 +286,32 @@ function floodLayer(base: HTMLCanvasElement, m: VModel): HTMLCanvasElement {
+   c.fill()
+   return base
+ }
++
++/** 판 밖으로 넓히는 줄 수 (위·아래 각각) */
++const EDGE_ROWS = 40
++/** 물 같은 바닥 (판 밖으로 이어 그린다) */
++const WETS: ReadonlySet<number> = new Set([SHALLOW, DEEP, MUD, ICE, FORD, RIVER])
++/**
++ * 판 위아래로 EDGE_ROWS 줄씩 넓힌 칸 (그리기 전용) — 끝 줄의 물 칸을 끝 여섯 줄의 기울기대로 비켜 이어 놓는다 · 물 아닌 칸은 평지 ·
++ * 언덕 자리도 그만큼 내린다
++ */
++function extend(m: VModel): VModel {
++  const U = m.mapU, W = m.mapW, W2 = W + 2 * EDGE_ROWS
++  const cells = new Uint8Array(U * W2)
++  for (let cu = 0; cu < U; cu++) for (let v = 0; v < W; v++) cells[cu * W2 + v + EDGE_ROWS] = m.cells[cu * W + v]!
++  const firstWet = (v: number): number => { for (let cu = 0; cu < U; cu++) if (WETS.has(m.cells[cu * W + v]!)) return cu; return -1 }
++  for (const [edge, inner, dir] of [[0, 6, -1], [W - 1, W - 7, 1]] as const) {
++    const a = firstWet(edge), b = firstWet(inner)
++    if (a < 0) continue
++    const slope = b < 0 ? 0 : (a - b) / 6
++    for (let k = 1; k <= EDGE_ROWS; k++) {
++      const shift = Math.round(slope * k), v2 = EDGE_ROWS + edge + dir * k
++      for (let cu = 0; cu < U; cu++) {
++        const g = m.cells[cu * W + edge]!, to = cu + shift
++        if (!WETS.has(g) || to < 0 || to >= U) continue
++        cells[to * W2 + v2] = g === FORD ? SHALLOW : g
++      }
++    }
++  }
++  return { ...m, cells, mapW: W2, hills: m.hills.map(h => ({ lobes: h.lobes.map(l => ({ ...l, v: l.v + EDGE_ROWS })) })) }
++}
